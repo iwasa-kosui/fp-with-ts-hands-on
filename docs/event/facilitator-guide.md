@@ -53,10 +53,12 @@
 - 失敗理由を `throw` ではなく呼び出し元が読める値として扱えている
 - 成功時だけ `ExaminationStarted` を記録し、失敗時に不要な event が残らない
 - 参加者が「ここまでできたらOK」の条件を説明できている
+- `pnpm --filter @fp-with-ts/clinic-example exercise:04` を実行し、次の追加要求を依頼する前に checklist と prompt を全員で確認する
 
 ## 進行上の注意
 
 - 参加者の環境トラブルは、まず [トラブルシューティング](./troubleshooting.md) の該当項目で切り分けます。
 - 赤いテストを先に直してしまわず、どの不変条件が破られたかを全員で確認します。
 - `04-agent-review` では、AI に任せる作業と人が確認する不変条件を分けて話します。
+- `05-mini-integration` は `collectFollowUpTargets` の1関数に集中し、petId mismatch、PII、Result、domain event の観点をまとめて確認します。
 - 時間が押した場合は、`05-mini-integration` の実装を講師の worked example に切り替え、設計判断の確認を優先します。
