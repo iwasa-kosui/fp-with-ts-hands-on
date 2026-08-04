@@ -11,6 +11,7 @@
     "exercise:01": "vitest run --config vitest.exercises.config.ts exercises/01-state-modeling.test.ts",
     "exercise:02": "vitest run --config vitest.exercises.config.ts exercises/02-boundary-and-ids.test.ts",
     "exercise:03": "vitest run --config vitest.exercises.config.ts exercises/03-result-errors.test.ts",
+    "exercise:04": "vitest run --config vitest.exercises.config.ts exercises/04-agent-review.test.ts",
     "exercise:05": "vitest run --config vitest.exercises.config.ts exercises/05-follow-up.test.ts",
     "typecheck": "tsc --noEmit"
   },
