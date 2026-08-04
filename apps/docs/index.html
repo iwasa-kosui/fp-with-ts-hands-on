@@ -743,6 +743,10 @@
       font-weight: 850;
     }
 
+    .mobile-title-break {
+      display: none;
+    }
+
     .feature-splats {
       display: grid;
       grid-template-columns: repeat(5, minmax(150px, 1fr));
@@ -1354,9 +1358,74 @@
       }
 
       .appointment-grid,
-      .chart-card,
-      .feature-splats {
+      .chart-card {
         grid-template-columns: 1fr;
+      }
+
+      section {
+        padding: 34px 0;
+      }
+
+      .section-head {
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .section-head h2 {
+        font-size: clamp(30px, 9vw, 36px);
+      }
+
+      .mobile-title-break {
+        display: block;
+      }
+
+      .section-head p {
+        font-size: 13px;
+        line-height: 1.65;
+      }
+
+      .feature-splats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .splat-card {
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-rows: auto auto;
+        column-gap: 8px;
+        row-gap: 2px;
+        min-height: 0;
+        place-items: start;
+        align-content: stretch;
+        padding: 10px;
+        border-width: 3px;
+        border-radius: var(--radius);
+        text-align: left;
+        transform: none;
+        box-shadow: 4px 4px 0 rgba(34, 54, 184, 0.16);
+      }
+
+      .splat-card .icon {
+        grid-row: 1 / span 2;
+        margin-bottom: 0;
+        font-size: 28px;
+        line-height: 1;
+      }
+
+      .splat-card strong {
+        margin-bottom: 0;
+        font-size: 14px;
+        line-height: 1.25;
+      }
+
+      .splat-card span:last-child {
+        font-size: 11px;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+      }
+
+      .splat-card:last-child {
+        grid-column: 1 / -1;
       }
 
       .floating-pet {
@@ -1536,7 +1605,7 @@
 
       <section id="features" aria-labelledby="features-title">
         <div class="section-head">
-          <h2 id="features-title">WAN NYAN OS でできること</h2>
+          <h2 id="features-title">WAN NYAN OSで<span class="mobile-title-break"></span>できること</h2>
           <p>最初は便利でした。予約から会計までがつながり、スタッフは画面を切り替えながら動物たちの来院をさばけるようになりました。</p>
         </div>
 
