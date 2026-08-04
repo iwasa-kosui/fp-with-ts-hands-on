@@ -1,14 +1,14 @@
-# 関数型ドメインモデリングハンズオン with TypeScript Implementation Plan
+# 関数型ドメインモデリングハンズオン with TypeScript 実装計画
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **エージェント実装者向け:** この計画をタスク単位で実装するときは、superpowers:subagent-driven-development（推奨）または superpowers:executing-plans を使う。進捗管理には `- [ ]` のチェックボックスを使う。
 
-**Goal:** 2026-08-30 のハンズオンイベントで使う、動物病院 example と Cloudflare Workers 配信のかわいいドキュメントサイトを構築する。
+**ゴール:** 2026-08-30 のハンズオンイベントで使う、動物病院 example と Cloudflare Workers 配信のかわいいドキュメントサイトを構築する。
 
-**Architecture:** pnpm workspace に `apps/docs` と `packages/clinic-example` を同居させる。docs は Vite が静的 assets を生成し、Worker は `/healthz` 以外を `ASSETS.fetch` に委譲する。example は DB なしの TypeScript + Vitest で、状態遷移、Zod + Branded Type、Result 型を小さな exercise として実装する。
+**アーキテクチャ:** pnpm workspace に `apps/docs` と `packages/clinic-example` を同居させる。docs は Vite が静的 assets を生成し、Worker は `/healthz` 以外を `ASSETS.fetch` に委譲する。example は DB なしの TypeScript + Vitest で、参加者がまず事故を起こし、その事故を状態遷移、境界、失敗処理、AI エージェントレビューの順で封じ込める。
 
-**Tech Stack:** pnpm, TypeScript, Vite, Vitest, Zod, Cloudflare Workers Static Assets, Wrangler
+**技術スタック:** pnpm, TypeScript, Vite, Vitest, Zod, Cloudflare Workers Static Assets, Wrangler
 
-## Global Constraints
+## 全体制約
 
 - 対象者は TypeScript 初級から中級。基本文法が書ける前提で、複雑な型テクニックは避ける。
 - 当日準備は Node.js、pnpm、GitHub clone のみ。DB、Docker、外部 API key は要求しない。
@@ -17,25 +17,28 @@
 - ドメイン型は `type`、`kind` discriminant、Readonly、Companion Object、関数プロパティ記法を使う。
 - `as` は原則禁止。Zod brand または `@ts-expect-error` の型テスト目的以外では使わない。
 - UI は動物病院らしいかわいさを持たせるが、教材本文とコードの可読性を最優先する。
+- 通常の `pnpm test` はセットアップ確認用として常に緑にする。module 開始時に赤くなるテストは `exercise:*` script で明示的に実行する。
+- 各 module で参加者が書くコードは1〜2関数に制限する。残りは worked example または optional exercise に置く。
+- 各 module は `インシデント -> 赤テスト -> 編集 -> 緑テスト -> エージェントレビュー` の固定フォーマットにする。
 
 ---
 
-### Task 1: Workspace Scaffold
+### タスク 1: ワークスペースの雛形作成
 
-**Files:**
-- Create: `package.json`
-- Create: `pnpm-workspace.yaml`
-- Create: `tsconfig.base.json`
-- Create: `.gitignore`
-- Modify: `README.md`
+**ファイル:**
+- 作成: `package.json`
+- 作成: `pnpm-workspace.yaml`
+- 作成: `tsconfig.base.json`
+- 作成: `.gitignore`
+- 変更: `README.md`
 
-**Interfaces:**
-- Produces: root scripts `dev`, `build`, `test`, `typecheck`, `preview`
-- Produces: workspace package names `@fp-with-ts/docs` and `@fp-with-ts/clinic-example`
+**インターフェース:**
+- 提供: root script `dev`, `build`, `test`, `typecheck`, `preview`
+- 提供: workspace package name `@fp-with-ts/docs` と `@fp-with-ts/clinic-example`
 
-- [ ] **Step 1: Create root package metadata**
+- [ ] **ステップ 1: root package metadata を作成する**
 
-Add `package.json`:
+`package.json` を追加する:
 
 ```json
 {
@@ -48,6 +51,7 @@ Add `package.json`:
     "dev": "pnpm --filter @fp-with-ts/docs dev",
     "build": "pnpm --filter @fp-with-ts/clinic-example build && pnpm --filter @fp-with-ts/docs build",
     "test": "pnpm --filter @fp-with-ts/clinic-example test",
+    "exercise:00": "pnpm --filter @fp-with-ts/clinic-example exercise:00",
     "typecheck": "pnpm --filter @fp-with-ts/clinic-example typecheck && pnpm --filter @fp-with-ts/docs typecheck",
     "preview": "pnpm --filter @fp-with-ts/docs preview"
   },
@@ -61,9 +65,9 @@ Add `package.json`:
 }
 ```
 
-- [ ] **Step 2: Create workspace file**
+- [ ] **ステップ 2: workspace file を作成する**
 
-Add `pnpm-workspace.yaml`:
+`pnpm-workspace.yaml` を追加する:
 
 ```yaml
 packages:
@@ -71,9 +75,9 @@ packages:
   - "packages/*"
 ```
 
-- [ ] **Step 3: Create base TypeScript config**
+- [ ] **ステップ 3: base TypeScript config を作成する**
 
-Add `tsconfig.base.json`:
+`tsconfig.base.json` を追加する:
 
 ```json
 {
@@ -90,9 +94,9 @@ Add `tsconfig.base.json`:
 }
 ```
 
-- [ ] **Step 4: Create ignore rules**
+- [ ] **ステップ 4: ignore rule を作成する**
 
-Add `.gitignore`:
+`.gitignore` を追加する:
 
 ```gitignore
 node_modules/
@@ -102,9 +106,9 @@ dist/
 tmp/
 ```
 
-- [ ] **Step 5: Replace README with event setup**
+- [ ] **ステップ 5: README をイベント向けセットアップに差し替える**
 
-Update `README.md`:
+`README.md` を更新する:
 
 ````markdown
 # fp-with-ts-hands-on
@@ -124,44 +128,46 @@ pnpm dev
 ## 当日の流れ
 
 1. 壊れやすい動物病院アプリを読む
-2. Discriminated Union で状態遷移を型にする
-3. Zod と Branded Type で境界と ID を守る
-4. Result 型でエラー処理を整理する
-5. AI エージェント時代の設計原則を確認する
+2. 事故テストを赤くして不変条件を確認する
+3. Discriminated Union で状態遷移を閉じる
+4. Zod と Branded Type で境界と ID を守る
+5. Result 型でエラー処理を整理する
+6. AI エージェントに同じ変更を頼む前提でレビューする
 ````
 
-- [ ] **Step 6: Install dependencies**
+- [ ] **ステップ 6: 依存関係をインストールする**
 
-Run: `pnpm install`
+実行: `pnpm install`
 
-Expected: lockfile is created and install succeeds.
+期待結果: lockfile が作成され、install が成功する。
 
-- [ ] **Step 7: Commit**
+- [ ] **ステップ 7: コミット**
 
 ```bash
 git add package.json pnpm-workspace.yaml tsconfig.base.json .gitignore README.md pnpm-lock.yaml
 git commit -m "chore: scaffold hands-on workspace"
 ```
 
-### Task 2: Clinic Example Baseline
+### タスク 2: 動物病院 example の壊れやすいベースライン
 
-**Files:**
-- Create: `packages/clinic-example/package.json`
-- Create: `packages/clinic-example/tsconfig.json`
-- Create: `packages/clinic-example/vitest.config.ts`
-- Create: `packages/clinic-example/src/legacy/appointment.ts`
-- Create: `packages/clinic-example/src/legacy/logger.ts`
-- Create: `packages/clinic-example/test/00-broken-app.test.ts`
-- Create: `packages/clinic-example/README.md`
+**ファイル:**
+- 作成: `packages/clinic-example/package.json`
+- 作成: `packages/clinic-example/tsconfig.json`
+- 作成: `packages/clinic-example/vitest.config.ts`
+- 作成: `packages/clinic-example/src/legacy/appointment.ts`
+- 作成: `packages/clinic-example/src/legacy/logger.ts`
+- 作成: `packages/clinic-example/test/00-setup.test.ts`
+- 作成: `packages/clinic-example/exercises/00-incident.test.ts`
+- 作成: `packages/clinic-example/README.md`
 
-**Interfaces:**
-- Produces: `bookAppointment(input: BookAppointmentInput): LegacyAppointment`
-- Produces: `updateStatus(id: string, newStatus: string, extra?: LegacyStatusExtra): LegacyAppointment`
-- Produces: `resetLegacyStore(): void`
+**インターフェース:**
+- 提供: `bookAppointment(input: BookAppointmentInput): LegacyAppointment`
+- 提供: `updateStatus(id: string, newStatus: string, extra?: LegacyStatusExtra): LegacyAppointment`
+- 提供: `resetLegacyStore(): void`
 
-- [ ] **Step 1: Create package metadata**
+- [ ] **ステップ 1: package metadata を作成する**
 
-Add `packages/clinic-example/package.json`:
+`packages/clinic-example/package.json` を追加する:
 
 ```json
 {
@@ -171,8 +177,12 @@ Add `packages/clinic-example/package.json`:
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "vitest run \"test/**/*.test.ts\"",
+    "test:watch": "vitest \"test/**/*.test.ts\"",
+    "exercise:00": "vitest run exercises/00-incident.test.ts",
+    "exercise:01": "vitest run exercises/01-state-modeling.test.ts",
+    "exercise:02": "vitest run exercises/02-boundary-and-ids.test.ts",
+    "exercise:03": "vitest run exercises/03-result-errors.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -184,9 +194,9 @@ Add `packages/clinic-example/package.json`:
 }
 ```
 
-- [ ] **Step 2: Create TypeScript config**
+- [ ] **ステップ 2: TypeScript config を作成する**
 
-Add `packages/clinic-example/tsconfig.json`:
+`packages/clinic-example/tsconfig.json` を追加する:
 
 ```json
 {
@@ -199,9 +209,9 @@ Add `packages/clinic-example/tsconfig.json`:
 }
 ```
 
-- [ ] **Step 3: Create Vitest config**
+- [ ] **ステップ 3: Vitest config を作成する**
 
-Add `packages/clinic-example/vitest.config.ts`:
+`packages/clinic-example/vitest.config.ts` を追加する:
 
 ```ts
 import { defineConfig } from "vitest/config";
@@ -213,9 +223,9 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 4: Add legacy logger**
+- [ ] **ステップ 4: legacy logger を追加する**
 
-Add `packages/clinic-example/src/legacy/logger.ts`:
+`packages/clinic-example/src/legacy/logger.ts` を追加する:
 
 ```ts
 export const logger = {
@@ -229,15 +239,15 @@ export const logger = {
 } as const;
 ```
 
-- [ ] **Step 5: Add fragile legacy appointment implementation**
+- [ ] **ステップ 5: 壊れやすい legacy appointment 実装を追加する**
 
-Add `packages/clinic-example/src/legacy/appointment.ts` with a single `LegacyAppointment` type containing `status: string` and optional fields for every state. Implement `bookAppointment`, `updateStatus`, and `resetLegacyStore` using an in-memory `Map`.
+`packages/clinic-example/src/legacy/appointment.ts` を追加する。`status: string` と各状態に必要な optional field をすべて含む、単一の `LegacyAppointment` type として実装する。`bookAppointment`、`updateStatus`、`resetLegacyStore` は in-memory `Map` で実装する。
 
-The `updateStatus` implementation must intentionally allow `paid -> in-examination` when `veterinarianId` is supplied. This is the incident participants will observe.
+`updateStatus` 実装では、`veterinarianId` が渡されたときに `paid -> in-examination` を意図的に許可する。参加者はこの事故を観察する。
 
-- [ ] **Step 6: Add failing-then-passing incident tests**
+- [ ] **ステップ 6: 緑のセットアップテストを追加する**
 
-Add `packages/clinic-example/test/00-broken-app.test.ts`:
+`packages/clinic-example/test/00-setup.test.ts` を追加する:
 
 ```ts
 import { beforeEach, describe, expect, test } from "vitest";
@@ -252,17 +262,56 @@ const sampleInput = {
   petId: "pet_001",
   petName: "Mugi",
   ownerId: "owner_001",
-  ownerName: "Sato",
-  ownerPhone: "090-0000-0000",
-  ownerEmail: "sato@example.test",
+  ownerName: "Owner A",
   scheduledAt: "2026-08-30T06:30:00.000Z",
   reason: "skin check",
 };
 
-describe("00 壊れやすい動物病院アプリ", () => {
+describe("setup", () => {
   beforeEach(() => resetLegacyStore());
 
-  test("会計済みから診察中へ戻れてしまう", () => {
+  test("予約から会計までの通常フローは動く", () => {
+    const created = bookAppointment(sampleInput);
+    updateStatus(created.id, "checked-in");
+    updateStatus(created.id, "in-examination", { veterinarianId: "vet_001" });
+    const paid = updateStatus(created.id, "paid", {
+      diagnosis: "dermatitis",
+      treatment: "ointment",
+      amount: 4800,
+    });
+
+    expect(paid.status).toBe("paid");
+    expect(paid.amount).toBe(4800);
+  });
+});
+```
+
+- [ ] **ステップ 7: 赤くなる事故 exercise を追加する**
+
+`packages/clinic-example/exercises/00-incident.test.ts` を追加する。このテストはハンズオン開始時点で意図的に失敗する:
+
+```ts
+import { beforeEach, describe, expect, test } from "vitest";
+import {
+  bookAppointment,
+  resetLegacyStore,
+  updateStatus,
+} from "../src/legacy/appointment.js";
+
+const sampleInput = {
+  id: "appt_001",
+  petId: "pet_001",
+  petName: "Mugi",
+  ownerId: "owner_001",
+  ownerName: "Owner A",
+  scheduledAt: "2026-08-30T06:30:00.000Z",
+  reason: "skin check",
+};
+
+describe("00 事故を起こす", () => {
+  beforeEach(() => resetLegacyStore());
+
+  test("会計済みの来院は診察中に戻せないはず", () => {
     const created = bookAppointment(sampleInput);
     updateStatus(created.id, "checked-in");
     updateStatus(created.id, "in-examination", { veterinarianId: "vet_001" });
@@ -276,16 +325,16 @@ describe("00 壊れやすい動物病院アプリ", () => {
       veterinarianId: "vet_002",
     });
 
-    expect(reverted.status).toBe("in-examination");
-    expect(reverted.veterinarianId).toBe("vet_002");
-    expect(reverted.diagnosis).toBe("dermatitis");
+    expect(reverted.status).toBe("paid");
   });
 });
 ```
 
-- [ ] **Step 7: Add package README**
+module 開始時の期待結果: legacy `updateStatus` が `paid -> in-examination` を許してしまうため失敗する。
 
-Add `packages/clinic-example/README.md` with module list and commands:
+- [ ] **ステップ 8: package README を追加する**
+
+`packages/clinic-example/README.md` を追加し、module の一覧と command を載せる:
 
 ````markdown
 # clinic-example
@@ -294,37 +343,42 @@ Add `packages/clinic-example/README.md` with module list and commands:
 
 ```bash
 pnpm --filter @fp-with-ts/clinic-example test
+pnpm --filter @fp-with-ts/clinic-example exercise:00
 pnpm --filter @fp-with-ts/clinic-example typecheck
 ```
 ````
 
-- [ ] **Step 8: Verify**
+- [ ] **ステップ 9: 検証**
 
-Run: `pnpm --filter @fp-with-ts/clinic-example test`
+実行: `pnpm --filter @fp-with-ts/clinic-example test`
 
-Expected: `00-broken-app.test.ts` passes and demonstrates the bug.
+期待結果: 成功する。セットアップ確認は緑のままにする。
 
-- [ ] **Step 9: Commit**
+実行: `pnpm --filter @fp-with-ts/clinic-example exercise:00`
+
+期待結果: `expected 'in-examination' to be 'paid'` で失敗する。参加者はこの事故を起点に調査する。
+
+- [ ] **ステップ 10: コミット**
 
 ```bash
 git add packages/clinic-example
 git commit -m "feat(example): add fragile clinic baseline"
 ```
 
-### Task 3: State Modeling Module
+### タスク 3: 状態モデリング module
 
-**Files:**
-- Create: `packages/clinic-example/src/shared/assert-never.ts`
-- Create: `packages/clinic-example/src/clinic/appointment.ts`
-- Create: `packages/clinic-example/test/01-state-modeling.test.ts`
+**ファイル:**
+- 作成: `packages/clinic-example/src/shared/assert-never.ts`
+- 作成: `packages/clinic-example/src/clinic/appointment.ts`
+- 作成: `packages/clinic-example/test/01-state-modeling.test.ts`
 
-**Interfaces:**
-- Produces: `type Appointment = Scheduled | CheckedIn | InExamination | Paid | Canceled`
-- Produces: `const Appointment.book`, `checkIn`, `startExamination`, `recordPayment`, `cancel`, `isTerminal`
+**インターフェース:**
+- 提供: `type Appointment = Scheduled | CheckedIn | InExamination | Paid | Canceled`
+- 提供: `const Appointment.book`, `checkIn`, `startExamination`, `recordPayment`, `cancel`, `isTerminal`
 
-- [ ] **Step 1: Add assertNever**
+- [ ] **ステップ 1: assertNever を追加する**
 
-Add `packages/clinic-example/src/shared/assert-never.ts`:
+`packages/clinic-example/src/shared/assert-never.ts` を追加する:
 
 ```ts
 export const assertNever = (value: never): never => {
@@ -332,25 +386,25 @@ export const assertNever = (value: never): never => {
 };
 ```
 
-- [ ] **Step 2: Add Appointment union and companion**
+- [ ] **ステップ 2: Appointment union と companion を追加する**
 
-Add `packages/clinic-example/src/clinic/appointment.ts`. Use `kind` as the discriminant. Define `Scheduled`, `CheckedIn`, `InExamination`, `Paid`, `Canceled`, `Appointment`, `RecordPaymentInput`, and `Appointment` companion object.
+`packages/clinic-example/src/clinic/appointment.ts` を追加する。`kind` を discriminant として使い、`Scheduled`、`CheckedIn`、`InExamination`、`Paid`、`Canceled`、`Appointment`、`RecordPaymentInput`、`Appointment` companion object を定義する。
 
-The companion object must include pure functions only. Every function receives `now: string` from the caller.
+companion object は pure function だけを持つ。すべての関数は呼び出し側から `now: string` を受け取る。参加者向け exercise では `Appointment.checkIn` と `Appointment.startExamination` だけを空欄にし、`recordPayment` と `cancel` は worked example として提供する。
 
-- [ ] **Step 3: Add runtime transition tests**
+- [ ] **ステップ 3: runtime の状態遷移テストを追加する**
 
-Add `packages/clinic-example/test/01-state-modeling.test.ts` tests for:
+`packages/clinic-example/test/01-state-modeling.test.ts` を追加し、次をテストする:
 
 - `Scheduled -> CheckedIn`
 - `CheckedIn -> InExamination`
 - `InExamination -> Paid`
 - `Scheduled -> Canceled`
-- terminal states are terminal via `Appointment.isTerminal`
+- terminal state が `Appointment.isTerminal` で terminal と判定されること
 
-- [ ] **Step 4: Add type contract tests**
+- [ ] **ステップ 4: 型契約テストを追加する**
 
-In the same test file, add `@ts-expect-error` calls:
+同じ test file に `@ts-expect-error` call を追加する:
 
 ```ts
 const paid = Appointment.recordPayment(inExamination, {
@@ -366,43 +420,113 @@ Appointment.startExamination(paid, "vet_001", NOW);
 Appointment.cancel(paid, "wrong", NOW);
 ```
 
-- [ ] **Step 5: Verify**
+- [ ] **ステップ 5: 検証**
 
-Run: `pnpm --filter @fp-with-ts/clinic-example typecheck`
+実行: `pnpm --filter @fp-with-ts/clinic-example typecheck`
 
-Expected: PASS. The `@ts-expect-error` comments are consumed by real type errors.
+期待結果: 成功する。`@ts-expect-error` comment が実際の型エラーで消費される。docs では「期待したエラーが出ることが成功条件になる typecheck test」であると説明する。
 
-Run: `pnpm --filter @fp-with-ts/clinic-example test`
+実行: `pnpm --filter @fp-with-ts/clinic-example test`
 
-Expected: PASS.
+期待結果: 成功する。
 
-- [ ] **Step 6: Commit**
+- [ ] **ステップ 6: コミット**
 
 ```bash
 git add packages/clinic-example/src/shared/assert-never.ts packages/clinic-example/src/clinic/appointment.ts packages/clinic-example/test/01-state-modeling.test.ts
 git commit -m "feat(example): model appointment states with discriminated unions"
 ```
 
-### Task 4: Boundary And Branded ID Module
+### タスク 4: 境界と Branded ID module
 
-**Files:**
-- Create: `packages/clinic-example/src/shared/result.ts`
-- Create: `packages/clinic-example/src/shared/schema-result.ts`
-- Create: `packages/clinic-example/src/clinic/appointment-id.ts`
-- Create: `packages/clinic-example/src/clinic/pet-id.ts`
-- Create: `packages/clinic-example/src/clinic/owner-id.ts`
-- Create: `packages/clinic-example/src/clinic/veterinarian-id.ts`
-- Create: `packages/clinic-example/src/clinic/exam-result.ts`
-- Create: `packages/clinic-example/test/02-boundary-and-ids.test.ts`
+**ファイル:**
+- 作成: `packages/clinic-example/src/clinic/appointment-id.ts`
+- 作成: `packages/clinic-example/src/clinic/pet-id.ts`
+- 作成: `packages/clinic-example/src/clinic/owner-id.ts`
+- 作成: `packages/clinic-example/src/clinic/veterinarian-id.ts`
+- 作成: `packages/clinic-example/src/clinic/exam-result.ts`
+- 作成: `packages/clinic-example/test/02-boundary-and-ids.test.ts`
 
-**Interfaces:**
-- Produces: `type Result<T, E>`, `ok`, `err`, `isOk`, `isErr`, `andThen`, `map`
-- Produces: each ID companion `parse(raw: unknown): Result<Id, ValidationError>`
-- Produces: `ExamResult.parse(raw: unknown): Result<ExamResult, ValidationError>`
+**インターフェース:**
+- 提供: 各 ID companion の `safeParse(raw: unknown): z.SafeParseReturnType<unknown, Id>`
+- 提供: `ExamResult.safeParse(raw: unknown): z.SafeParseReturnType<unknown, ExamResult>`
 
-- [ ] **Step 1: Add lightweight Result**
+- [ ] **ステップ 1: ID companion object を追加する**
 
-Add `packages/clinic-example/src/shared/result.ts`:
+各 ID file では、private brand symbol、Zod schema、schema から推論した type、`schema` と `parse` を持つ companion object を定義する。
+
+`pet-id.ts` の例:
+
+```ts
+import { z } from "zod";
+
+const PetIdBrand = Symbol("PetId");
+const PetIdSchema = z.string().regex(/^pet_[0-9]{3}$/).brand<typeof PetIdBrand>();
+export type PetId = z.infer<typeof PetIdSchema>;
+
+export const PetId = {
+  schema: PetIdSchema,
+  safeParse: (raw: unknown) => PetIdSchema.safeParse(raw),
+} as const;
+```
+
+prefix は `appt_`, `pet_`, `owner_`, `vet_` を使う。
+
+- [ ] **ステップ 2: ExamResult schema を追加する**
+
+`packages/clinic-example/src/clinic/exam-result.ts` を追加し、次の field を持たせる:
+
+- `examId: string`
+- `petId: PetId`
+- `collectedAt: string`
+- `items: ReadonlyArray<{ code: string; value: number; unit: string }>`
+
+Zod で `petId` を `PetId.schema` に通して変換する。`ExamResult.safeParse` を公開し、このタスクでは project Result type を導入しない。
+
+- [ ] **ステップ 3: テストを追加する**
+
+`packages/clinic-example/test/02-boundary-and-ids.test.ts` を追加する:
+
+- valid な exam payload は `success: true` を返す
+- `items` がない payload は `success: false` を返す
+- `PetId` と `OwnerId` が `@ts-expect-error` で入れ替え不能になる
+
+- [ ] **ステップ 4: 検証**
+
+実行: `pnpm --filter @fp-with-ts/clinic-example typecheck`
+
+期待結果: 成功する。
+
+実行: `pnpm --filter @fp-with-ts/clinic-example test`
+
+期待結果: 成功する。
+
+- [ ] **ステップ 5: コミット**
+
+```bash
+git add packages/clinic-example/src/clinic/*-id.ts packages/clinic-example/src/clinic/exam-result.ts packages/clinic-example/test/02-boundary-and-ids.test.ts
+git commit -m "feat(example): protect boundaries and ids with zod"
+```
+
+### タスク 5: Result とユースケース module
+
+**ファイル:**
+- 作成: `packages/clinic-example/src/shared/result.ts`
+- 作成: `packages/clinic-example/src/shared/schema-result.ts`
+- 作成: `packages/clinic-example/src/clinic/appointment-repository.ts`
+- 作成: `packages/clinic-example/src/clinic/use-cases.ts`
+- 作成: `packages/clinic-example/test/03-result-errors.test.ts`
+
+**インターフェース:**
+- 提供: `type Result<T, E>`, `ok`, `err`, `isOk`, `isErr`, `andThen`, `map`
+- 提供: `schemaResult(schema): (raw: unknown) => Result<T, ValidationError>`
+- 提供: `type AppointmentRepository`
+- 提供: `createInMemoryAppointmentRepository(initial?: ReadonlyArray<Appointment>): AppointmentRepository`
+- 提供: `startExaminationUseCase(repo, input): Result<InExamination, StartExaminationError>`
+
+- [ ] **ステップ 1: 軽量な Result を追加する**
+
+`packages/clinic-example/src/shared/result.ts` を追加する:
 
 ```ts
 export type Ok<T> = Readonly<{ kind: "Ok"; value: T }>;
@@ -429,9 +553,9 @@ export const andThen = <T, U, E>(
 ): Result<U, E> => (isOk(result) ? fn(result.value) : result);
 ```
 
-- [ ] **Step 2: Add schemaResult helper**
+- [ ] **ステップ 2: schemaResult helper を追加する**
 
-Add `packages/clinic-example/src/shared/schema-result.ts`:
+`packages/clinic-example/src/shared/schema-result.ts` を追加する:
 
 ```ts
 import type { z } from "zod";
@@ -451,79 +575,9 @@ export const schemaResult =
   };
 ```
 
-- [ ] **Step 3: Add ID companion objects**
+- [ ] **ステップ 3: repository を追加する**
 
-For each ID file, define a private brand symbol, a Zod schema, a type inferred from the schema, and a companion object with `schema` and `parse`.
-
-Example for `pet-id.ts`:
-
-```ts
-import { z } from "zod";
-import { schemaResult } from "../shared/schema-result.js";
-
-const PetIdBrand = Symbol("PetId");
-const PetIdSchema = z.string().regex(/^pet_[0-9]{3}$/).brand<typeof PetIdBrand>();
-export type PetId = z.infer<typeof PetIdSchema>;
-
-export const PetId = {
-  schema: PetIdSchema,
-  parse: schemaResult(PetIdSchema),
-} as const;
-```
-
-Use prefixes `appt_`, `pet_`, `owner_`, `vet_`.
-
-- [ ] **Step 4: Add ExamResult schema**
-
-Add `packages/clinic-example/src/clinic/exam-result.ts` with fields:
-
-- `examId: string`
-- `petId: PetId`
-- `collectedAt: string`
-- `items: ReadonlyArray<{ code: string; value: number; unit: string }>`
-
-Use Zod to transform `petId` through `PetId.schema`.
-
-- [ ] **Step 5: Add tests**
-
-Add `packages/clinic-example/test/02-boundary-and-ids.test.ts`:
-
-- valid exam payload returns `Ok`
-- missing `items` returns `Err` with `ValidationError`
-- `PetId` and `OwnerId` are not interchangeable with `@ts-expect-error`
-
-- [ ] **Step 6: Verify**
-
-Run: `pnpm --filter @fp-with-ts/clinic-example typecheck`
-
-Expected: PASS.
-
-Run: `pnpm --filter @fp-with-ts/clinic-example test`
-
-Expected: PASS.
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add packages/clinic-example/src/shared packages/clinic-example/src/clinic/*-id.ts packages/clinic-example/src/clinic/exam-result.ts packages/clinic-example/test/02-boundary-and-ids.test.ts
-git commit -m "feat(example): protect boundaries and ids with zod"
-```
-
-### Task 5: Result Use Case Module
-
-**Files:**
-- Create: `packages/clinic-example/src/clinic/appointment-repository.ts`
-- Create: `packages/clinic-example/src/clinic/use-cases.ts`
-- Create: `packages/clinic-example/test/03-result-errors.test.ts`
-
-**Interfaces:**
-- Produces: `type AppointmentRepository`
-- Produces: `createInMemoryAppointmentRepository(initial?: ReadonlyArray<Appointment>): AppointmentRepository`
-- Produces: `startExaminationUseCase(repo, input): Result<InExamination, StartExaminationError>`
-
-- [ ] **Step 1: Add repository**
-
-Add `packages/clinic-example/src/clinic/appointment-repository.ts`:
+`packages/clinic-example/src/clinic/appointment-repository.ts` を追加する:
 
 ```ts
 import type { Appointment } from "./appointment.js";
@@ -547,9 +601,9 @@ export const createInMemoryAppointmentRepository = (
 };
 ```
 
-- [ ] **Step 2: Add use case errors and guards**
+- [ ] **ステップ 4: use case error と guard を追加する**
 
-Add `packages/clinic-example/src/clinic/use-cases.ts` with:
+`packages/clinic-example/src/clinic/use-cases.ts` を追加し、次を定義する:
 
 ```ts
 export type AppointmentNotFound = Readonly<{
@@ -569,58 +623,58 @@ export type StartExaminationError =
   | ValidationError;
 ```
 
-Then implement:
+続けて次を実装する:
 
 - `ensureFound`
 - `ensureCheckedIn`
 - `startExaminationUseCase`
 
-The use case parses `appointmentId` and `veterinarianId`, looks up the appointment, guards `CheckedIn`, calls `Appointment.startExamination`, saves it, and returns `Ok`.
+use case は `appointmentId` と `veterinarianId` を parse し、appointment を lookup し、`CheckedIn` であることを guard し、`Appointment.startExamination` を呼んで保存し、`Ok` を返す。
 
-- [ ] **Step 3: Add Result tests**
+- [ ] **ステップ 5: Result のテストを追加する**
 
-Add `packages/clinic-example/test/03-result-errors.test.ts`:
+`packages/clinic-example/test/03-result-errors.test.ts` を追加する:
 
-- valid checked-in appointment returns `Ok`
-- unknown appointment id returns `AppointmentNotFound`
-- scheduled appointment returns `InvalidAppointmentState`
-- invalid id shape returns `ValidationError`
+- valid な checked-in appointment は `Ok` を返す
+- unknown appointment id は `AppointmentNotFound` を返す
+- scheduled appointment は `InvalidAppointmentState` を返す
+- invalid な id shape は `ValidationError` を返す
 
-- [ ] **Step 4: Verify**
+- [ ] **ステップ 6: 検証**
 
-Run: `pnpm --filter @fp-with-ts/clinic-example typecheck`
+実行: `pnpm --filter @fp-with-ts/clinic-example typecheck`
 
-Expected: PASS.
+期待結果: 成功する。
 
-Run: `pnpm --filter @fp-with-ts/clinic-example test`
+実行: `pnpm --filter @fp-with-ts/clinic-example test`
 
-Expected: PASS.
+期待結果: 成功する。
 
-- [ ] **Step 5: Commit**
+- [ ] **ステップ 7: コミット**
 
 ```bash
-git add packages/clinic-example/src/clinic/appointment-repository.ts packages/clinic-example/src/clinic/use-cases.ts packages/clinic-example/test/03-result-errors.test.ts
+git add packages/clinic-example/src/shared/result.ts packages/clinic-example/src/shared/schema-result.ts packages/clinic-example/src/clinic/appointment-repository.ts packages/clinic-example/src/clinic/use-cases.ts packages/clinic-example/test/03-result-errors.test.ts
 git commit -m "feat(example): compose appointment use cases with result"
 ```
 
-### Task 6: Docs App Scaffold
+### タスク 6: docs app の雛形作成
 
-**Files:**
-- Create: `apps/docs/package.json`
-- Create: `apps/docs/tsconfig.json`
-- Create: `apps/docs/vite.config.ts`
-- Create: `apps/docs/index.html`
-- Create: `apps/docs/src/main.ts`
-- Create: `apps/docs/src/content/modules.ts`
-- Create: `apps/docs/src/styles/base.css`
+**ファイル:**
+- 作成: `apps/docs/package.json`
+- 作成: `apps/docs/tsconfig.json`
+- 作成: `apps/docs/vite.config.ts`
+- 作成: `apps/docs/index.html`
+- 作成: `apps/docs/src/main.ts`
+- 作成: `apps/docs/src/content/modules.ts`
+- 作成: `apps/docs/src/styles/base.css`
 
-**Interfaces:**
-- Produces: `type ModuleContent`
-- Produces: docs app routes using hash paths: `#/`, `#/modules/00-read-broken-app`, etc.
+**インターフェース:**
+- 提供: `type ModuleContent`
+- 提供: `#/`, `#/modules/00-read-broken-app` などの hash path を使う docs app route
 
-- [ ] **Step 1: Create docs package metadata**
+- [ ] **ステップ 1: docs package metadata を作成する**
 
-Add `apps/docs/package.json`:
+`apps/docs/package.json` を追加する:
 
 ```json
 {
@@ -641,9 +695,9 @@ Add `apps/docs/package.json`:
 }
 ```
 
-- [ ] **Step 2: Create docs tsconfig**
+- [ ] **ステップ 2: docs tsconfig を作成する**
 
-Add `apps/docs/tsconfig.json`:
+`apps/docs/tsconfig.json` を追加する:
 
 ```json
 {
@@ -656,9 +710,9 @@ Add `apps/docs/tsconfig.json`:
 }
 ```
 
-- [ ] **Step 3: Create Vite config and HTML shell**
+- [ ] **ステップ 3: Vite config と HTML shell を作成する**
 
-Add `apps/docs/vite.config.ts`:
+`apps/docs/vite.config.ts` を追加する:
 
 ```ts
 import { defineConfig } from "vite";
@@ -671,69 +725,73 @@ export default defineConfig({
 });
 ```
 
-Add `apps/docs/index.html` with `<div id="app"></div>` and module script `/src/main.ts`.
+`apps/docs/index.html` を追加し、`<div id="app"></div>` と module script `/src/main.ts` を置く。
 
-- [ ] **Step 4: Add content data**
+- [ ] **ステップ 4: content data を追加する**
 
-Add `apps/docs/src/content/modules.ts` with 5 modules matching the event timetable:
+`apps/docs/src/content/modules.ts` を追加し、改訂後のイベントフローに合う 7 つの time block を定義する:
 
-- `00-read-broken-app`
+- `00-break-the-app`
+- `00-read-the-incident`
 - `01-state-modeling`
 - `02-boundary-and-ids`
 - `03-result-errors`
-- `04-agent-principles`
+- `04-agent-review`
+- `05-mini-integration`
 
-Each module includes `animal`, `minutes`, `title`, `incident`, `goal`, `commands`, and `sections`.
+各 module は `animal`, `minutes`, `title`, `incident`, `invariant`, `redCommand`, `editTarget`, `greenCommand`, `agentReview`, `doneWhen`, `sections` を持つ。
 
-- [ ] **Step 5: Add base renderer**
+- [ ] **ステップ 5: base renderer を追加する**
 
-Add `apps/docs/src/main.ts` that renders:
+`apps/docs/src/main.ts` を追加し、次を render する:
 
 - app header
-- sidebar module list
-- current module content based on `location.hash`
+- sidebar の module list
+- `location.hash` に基づく current module content
+- `Paid -> InExamination` を示す常時表示の incident summary
+- current phase indicator: `インシデント`, `赤テスト`, `編集`, `緑テスト`, `エージェントレビュー`
 - previous/next navigation
 
-Use DOM APIs and avoid framework dependencies.
+DOM API を使い、framework dependency は増やさない。
 
-- [ ] **Step 6: Add base CSS**
+- [ ] **ステップ 6: base CSS を追加する**
 
-Add `apps/docs/src/styles/base.css` with responsive layout:
+`apps/docs/src/styles/base.css` を追加し、responsive layout を定義する:
 
 - desktop: sidebar + main content
 - mobile: top module nav
-- code blocks: horizontal scroll
-- animal marker icons as text or CSS background
+- code block: horizontal scroll
+- animal marker icon: text または CSS background
 
-- [ ] **Step 7: Verify**
+- [ ] **ステップ 7: 検証**
 
-Run: `pnpm --filter @fp-with-ts/docs build`
+実行: `pnpm --filter @fp-with-ts/docs build`
 
-Expected: Vite build succeeds and writes `apps/docs/dist`.
+期待結果: Vite build が成功し、`apps/docs/dist` が出力される。
 
-- [ ] **Step 8: Commit**
+- [ ] **ステップ 8: コミット**
 
 ```bash
 git add apps/docs
 git commit -m "feat(docs): scaffold animal clinic guide"
 ```
 
-### Task 7: Polish Animal Clinic Documentation UI
+### タスク 7: 動物病院らしいドキュメント UI の仕上げ
 
-**Files:**
-- Modify: `apps/docs/src/content/modules.ts`
-- Modify: `apps/docs/src/main.ts`
-- Modify: `apps/docs/src/styles/base.css`
-- Create: `apps/docs/src/components/code-block.ts`
-- Create: `apps/docs/src/components/module-card.ts`
+**ファイル:**
+- 変更: `apps/docs/src/content/modules.ts`
+- 変更: `apps/docs/src/main.ts`
+- 変更: `apps/docs/src/styles/base.css`
+- 作成: `apps/docs/src/components/code-block.ts`
+- 作成: `apps/docs/src/components/module-card.ts`
 
-**Interfaces:**
-- Produces: reusable `renderCodeBlock(code: string, language: string): HTMLElement`
-- Produces: reusable `renderModuleCard(module: ModuleContent): HTMLElement`
+**インターフェース:**
+- 提供: 再利用可能な `renderCodeBlock(code: string, language: string): HTMLElement`
+- 提供: 再利用可能な `renderModuleCard(module: ModuleContent): HTMLElement`
 
-- [ ] **Step 1: Extract code block renderer**
+- [ ] **ステップ 1: code block renderer を切り出す**
 
-Add `apps/docs/src/components/code-block.ts`:
+`apps/docs/src/components/code-block.ts` を追加する:
 
 ```ts
 export const renderCodeBlock = (code: string, language: string): HTMLElement => {
@@ -753,84 +811,87 @@ export const renderCodeBlock = (code: string, language: string): HTMLElement => 
 };
 ```
 
-- [ ] **Step 2: Extract module card renderer**
+- [ ] **ステップ 2: module card renderer を切り出す**
 
-Add `apps/docs/src/components/module-card.ts` that renders animal marker, title, minutes, and goal.
+`apps/docs/src/components/module-card.ts` を追加し、animal marker、title、minutes、goal を render する。
 
-- [ ] **Step 3: Fill module content**
+- [ ] **ステップ 3: module content を埋める**
 
-Update `modules.ts` so each module has:
+`modules.ts` を更新し、各 module が参加者向けの固定フローを持つようにする:
 
-- one incident story
-- one short explanation
-- one command block
-- one code excerpt
-- one exercise checklist
+- `インシデント`: 動物病院で何が起きたか
+- `赤テスト`: 実行する exact command と期待する失敗
+- `編集`: 参加者が編集する 1〜2 個の関数
+- `緑テスト`: 再実行する exact command と期待する成功
+- `エージェントレビュー`: AI-assisted development を想定した prompt または review checklist
+- `完了条件`: 参加者向けの完了条件を 1 つ
 
-- [ ] **Step 4: Polish CSS**
+- [ ] **ステップ 4: CSS を仕上げる**
 
-Update `base.css`:
+`base.css` を更新する:
 
-- keep cards at `border-radius: 8px`
-- use a balanced palette: white, mint, pale yellow, teal, red accent
-- define stable sidebar width
-- ensure code blocks do not resize layout
-- ensure mobile navigation wraps without overlap
+- card は `border-radius: 8px` に収める
+- palette は white, mint, pale yellow, teal, red accent をバランスよく使う
+- sidebar width を安定させる
+- code block が layout を押し広げないようにする
+- mobile navigation が overlap せず wrap するようにする
+- animal marker は装飾だけでなく、state や incident の手がかりとして使う
+- first viewport に current incident、invariant、next command が見えるようにする
 
-- [ ] **Step 5: Verify visually**
+- [ ] **ステップ 5: 見た目を確認する**
 
-Start dev server:
+dev server を起動する:
 
 ```bash
 pnpm --filter @fp-with-ts/docs dev
 ```
 
-Open the local URL and check desktop and mobile widths. If Playwright is available, capture screenshots at 1440x900 and 390x844.
+local URL を開き、desktop と mobile width を確認する。Playwright が使える場合は 1440x900 と 390x844 の screenshot を撮る。
 
-- [ ] **Step 6: Verify build**
+- [ ] **ステップ 6: build を確認する**
 
-Run: `pnpm --filter @fp-with-ts/docs build`
+実行: `pnpm --filter @fp-with-ts/docs build`
 
-Expected: PASS.
+期待結果: 成功する。
 
-- [ ] **Step 7: Commit**
+- [ ] **ステップ 7: コミット**
 
 ```bash
 git add apps/docs/src
 git commit -m "feat(docs): polish animal clinic learning guide"
 ```
 
-### Task 8: Cloudflare Worker Static Assets
+### タスク 8: Cloudflare Worker Static Assets 配信
 
-**Files:**
-- Create: `wrangler.jsonc`
-- Create: `worker/index.ts`
-- Create: `worker/tsconfig.json`
-- Modify: `package.json`
+**ファイル:**
+- 作成: `wrangler.jsonc`
+- 作成: `worker/index.ts`
+- 作成: `worker/tsconfig.json`
+- 変更: `package.json`
 
-**Interfaces:**
-- Produces: Worker env type `{ ASSETS: Fetcher }`
-- Produces: `/healthz` endpoint returning `ok`
+**インターフェース:**
+- 提供: Worker env type `{ ASSETS: Fetcher }`
+- 提供: `/healthz` endpoint returning `ok`
 
-- [ ] **Step 1: Add Wrangler dev dependency**
+- [ ] **ステップ 1: Wrangler dev dependency を追加する**
 
-Update root `package.json` devDependencies:
+root `package.json` の devDependencies を更新する:
 
 ```json
 "wrangler": "^4.20.0",
 "@cloudflare/workers-types": "^4.20260804.0"
 ```
 
-Add scripts:
+script を追加する:
 
 ```json
 "cf:dev": "pnpm build && wrangler dev",
 "cf:deploy": "pnpm build && wrangler deploy"
 ```
 
-- [ ] **Step 2: Add Wrangler config**
+- [ ] **ステップ 2: Wrangler config を追加する**
 
-Add `wrangler.jsonc`:
+`wrangler.jsonc` を追加する:
 
 ```jsonc
 {
@@ -846,9 +907,9 @@ Add `wrangler.jsonc`:
 }
 ```
 
-- [ ] **Step 3: Add worker tsconfig**
+- [ ] **ステップ 3: worker tsconfig を追加する**
 
-Add `worker/tsconfig.json`:
+`worker/tsconfig.json` を追加する:
 
 ```json
 {
@@ -860,9 +921,9 @@ Add `worker/tsconfig.json`:
 }
 ```
 
-- [ ] **Step 4: Add Worker entrypoint**
+- [ ] **ステップ 4: Worker entrypoint を追加する**
 
-Add `worker/index.ts`:
+`worker/index.ts` を追加する:
 
 ```ts
 export type Env = Readonly<{
@@ -882,38 +943,38 @@ export default {
 } satisfies ExportedHandler<Env>;
 ```
 
-- [ ] **Step 5: Install and verify**
+- [ ] **ステップ 5: インストールして確認する**
 
-Run: `pnpm install`
+実行: `pnpm install`
 
-Run: `pnpm build`
+実行: `pnpm build`
 
-Run: `pnpm exec wrangler dev`
+実行: `pnpm exec wrangler dev`
 
-Expected: local Worker serves docs and `/healthz` returns `ok`.
+期待結果: local Worker が docs を配信し、`/healthz` が `ok` を返す。
 
-- [ ] **Step 6: Commit**
+- [ ] **ステップ 6: コミット**
 
 ```bash
 git add package.json pnpm-lock.yaml wrangler.jsonc worker
 git commit -m "feat(worker): serve docs with cloudflare static assets"
 ```
 
-### Task 9: Event Readiness Documentation
+### タスク 9: イベント当日用ドキュメント
 
-**Files:**
-- Modify: `README.md`
-- Create: `docs/event/facilitator-guide.md`
-- Create: `docs/event/participant-setup.md`
-- Create: `docs/event/troubleshooting.md`
+**ファイル:**
+- 変更: `README.md`
+- 作成: `docs/event/facilitator-guide.md`
+- 作成: `docs/event/participant-setup.md`
+- 作成: `docs/event/troubleshooting.md`
 
-**Interfaces:**
-- Produces: participant setup path for connpass and opening
-- Produces: facilitator guide aligned to 3-hour timetable
+**インターフェース:**
+- 提供: connpass と opening から参照できる participant setup path
+- 提供: 3 時間の timetable に揃えた facilitator guide
 
-- [ ] **Step 1: Add participant setup**
+- [ ] **ステップ 1: participant setup を追加する**
 
-Add `docs/event/participant-setup.md`:
+`docs/event/participant-setup.md` を追加する:
 
 ````markdown
 # 参加者向けセットアップ
@@ -944,13 +1005,13 @@ pnpm dev
 ```
 ````
 
-- [ ] **Step 2: Add facilitator guide**
+- [ ] **ステップ 2: facilitator guide を追加する**
 
-Add `docs/event/facilitator-guide.md` with the exact event timetable and module mapping. Include checkpoints at 0:30, 1:10, 1:55, 2:30.
+`docs/event/facilitator-guide.md` を追加し、イベントの正確な timetable と module mapping を載せる。checkpoint は 0:30, 1:10, 1:55, 2:30 に置く。
 
-- [ ] **Step 3: Add troubleshooting**
+- [ ] **ステップ 3: troubleshooting を追加する**
 
-Add `docs/event/troubleshooting.md` with fixes for:
+`docs/event/troubleshooting.md` を追加し、次の対処方法を載せる:
 
 - `pnpm: command not found`
 - Node.js version too old
@@ -958,75 +1019,75 @@ Add `docs/event/troubleshooting.md` with fixes for:
 - tests fail before edits
 - port already in use
 
-- [ ] **Step 4: Link docs from README**
+- [ ] **ステップ 4: README から docs へリンクする**
 
-Update `README.md` to link participant setup, facilitator guide, and troubleshooting.
+`README.md` を更新し、participant setup、facilitator guide、troubleshooting へリンクする。
 
-- [ ] **Step 5: Verify docs paths**
+- [ ] **ステップ 5: docs path を確認する**
 
-Run: `rg -n "participant-setup|facilitator-guide|troubleshooting" README.md docs/event`
+実行: `rg -n "participant-setup|facilitator-guide|troubleshooting" README.md docs/event`
 
-Expected: links and headings are present.
+期待結果: link と heading が存在する。
 
-- [ ] **Step 6: Commit**
+- [ ] **ステップ 6: コミット**
 
 ```bash
 git add README.md docs/event
 git commit -m "docs(event): add setup and facilitator guides"
 ```
 
-### Task 10: Final Verification
+### タスク 10: 最終検証
 
-**Files:**
-- Modify: only files reported by the failing command or visual QA finding.
+**ファイル:**
+- 変更: failing command または visual QA finding が示した file だけ
 
-**Interfaces:**
-- Consumes: all prior tasks
-- Produces: deployable site and runnable example
+**インターフェース:**
+- 利用: ここまでのすべての task
+- 提供: deployable な site と runnable な example
 
-- [ ] **Step 1: Run typecheck**
+- [ ] **ステップ 1: typecheck を実行する**
 
-Run: `pnpm typecheck`
+実行: `pnpm typecheck`
 
-Expected: PASS.
+期待結果: 成功する。
 
-- [ ] **Step 2: Run tests**
+- [ ] **ステップ 2: test を実行する**
 
-Run: `pnpm test`
+実行: `pnpm test`
 
-Expected: PASS.
+期待結果: 成功する。
 
-- [ ] **Step 3: Run build**
+- [ ] **ステップ 3: build を実行する**
 
-Run: `pnpm build`
+実行: `pnpm build`
 
-Expected: PASS and `apps/docs/dist` exists.
+期待結果: 成功し、`apps/docs/dist` が存在する。
 
-- [ ] **Step 4: Run Worker locally**
+- [ ] **ステップ 4: Worker をローカルで起動する**
 
-Run: `pnpm exec wrangler dev`
+実行: `pnpm exec wrangler dev`
 
-Expected: docs site loads, `/healthz` returns `ok`.
+期待結果: docs site が読み込まれ、`/healthz` が `ok` を返す。
 
-- [ ] **Step 5: Visual QA**
+- [ ] **ステップ 5: Visual QA を行う**
 
-Check:
+確認項目:
 
-- desktop 1440px: sidebar and content do not overlap
-- mobile 390px: module nav wraps cleanly
-- code blocks horizontally scroll
-- animal markers render
-- all module links navigate
+- desktop 1440px: sidebar と content が overlap しない
+- mobile 390px: module nav が clean に wrap する
+- code block が横スクロールできる
+- animal marker が render される
+- すべての module link が navigate する
 
-- [ ] **Step 6: Fix any verification issues**
+- [ ] **ステップ 6: 検証で見つかった問題を直す**
 
-For each issue, make the smallest scoped change and rerun the failing command.
+各 issue には最小範囲の修正を入れ、失敗した command を再実行する。
 
-- [ ] **Step 7: Commit fixes**
+- [ ] **ステップ 7: 修正をコミットする**
 
 ```bash
 git add .
 git commit -m "fix: address event readiness verification"
 ```
 
-Skip this commit if no fixes were needed.
+修正不要だった場合、このコミットは省略する。
