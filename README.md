@@ -12,6 +12,8 @@ pnpm dev
 
 `pnpm dev` のあと、表示された localhost URL を開いてください。
 
+当日前の確認には [参加者向けセットアップ](docs/event/participant-setup.md) を使ってください。進行側の準備は [ファシリテーターガイド](docs/event/facilitator-guide.md)、詰まったときの切り分けは [トラブルシューティング](docs/event/troubleshooting.md) にまとめています。
+
 ## 当日の流れ
 
 1. 壊れやすい動物病院アプリを読む

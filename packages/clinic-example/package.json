@@ -1,0 +1,23 @@
+{
+  "name": "@fp-with-ts/clinic-example",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "exercise:00": "vitest run --config vitest.exercises.config.ts exercises/00-incident.test.ts",
+    "exercise:01": "vitest run --config vitest.exercises.config.ts exercises/01-state-modeling.test.ts",
+    "exercise:02": "vitest run --config vitest.exercises.config.ts exercises/02-boundary-and-ids.test.ts",
+    "exercise:03": "vitest run --config vitest.exercises.config.ts exercises/03-result-errors.test.ts",
+    "exercise:05": "vitest run --config vitest.exercises.config.ts exercises/05-follow-up.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.0"
+  }
+}

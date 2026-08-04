@@ -13,14 +13,18 @@
     "exercise:02": "pnpm --filter @fp-with-ts/clinic-example exercise:02",
     "exercise:03": "pnpm --filter @fp-with-ts/clinic-example exercise:03",
     "exercise:05": "pnpm --filter @fp-with-ts/clinic-example exercise:05",
-    "typecheck": "pnpm --filter @fp-with-ts/clinic-example typecheck && pnpm --filter @fp-with-ts/docs typecheck",
-    "preview": "pnpm --filter @fp-with-ts/docs preview"
+    "typecheck": "pnpm --filter @fp-with-ts/clinic-example typecheck && pnpm --filter @fp-with-ts/docs typecheck && tsc -p worker/tsconfig.json --noEmit",
+    "preview": "pnpm --filter @fp-with-ts/docs preview",
+    "cf:dev": "pnpm build && wrangler dev",
+    "cf:deploy": "pnpm build && wrangler deploy"
   },
   "packageManager": "pnpm@9.12.0",
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
-    "typescript": "^5.6.0"
+    "@cloudflare/workers-types": "^5.20260804.1",
+    "typescript": "^5.6.0",
+    "wrangler": "^4.20.0"
   }
 }
