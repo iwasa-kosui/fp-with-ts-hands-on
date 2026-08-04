@@ -109,15 +109,17 @@
     .hero {
       position: relative;
       display: grid;
-      grid-template-columns: minmax(0, 0.9fr) minmax(260px, 360px);
-      gap: 22px;
+      grid-template-columns: minmax(0, 0.82fr) minmax(260px, 360px);
+      gap: 28px;
       align-items: start;
       margin-bottom: 28px;
     }
 
     .copy-panel {
       position: relative;
-      padding: clamp(22px, 4vw, 40px);
+      width: min(100%, 760px);
+      min-height: 350px;
+      padding: clamp(42px, 5vw, 70px) clamp(54px, 7vw, 96px);
       background: var(--paper-warm);
       border: 4px solid var(--line);
       border-radius: 48% 52% 45% 55% / 42% 44% 56% 58%;
@@ -159,8 +161,8 @@
     h1, h2, h3, p { margin-top: 0; }
     h1 {
       margin-bottom: 16px;
-      font-size: clamp(42px, 6vw, 82px);
-      line-height: 0.98;
+      font-size: clamp(48px, 5vw, 70px);
+      line-height: 1.04;
       letter-spacing: 0;
     }
 
@@ -177,8 +179,9 @@
     }
 
     .lead {
+      max-width: 560px;
       color: var(--text);
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 850;
     }
 
@@ -364,6 +367,11 @@
     @media (max-width: 860px) {
       .topbar { align-items: flex-start; flex-direction: column; }
       .hero { grid-template-columns: 1fr; }
+      .copy-panel {
+        min-height: 0;
+        padding: 34px 32px;
+        border-radius: 32% 68% 42% 58% / 42% 44% 56% 58%;
+      }
       .toc { position: static; }
       .story-grid { grid-template-columns: 1fr; }
       .mission-list { grid-template-columns: 1fr; }
