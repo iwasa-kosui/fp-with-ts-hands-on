@@ -96,4 +96,34 @@ describe("05 電話フォロー", () => {
       }),
     ]);
   });
+
+  test("検査結果の petId が予約の petId と違う場合は Result error を返す", () => {
+    const eventStore = createInMemoryDomainEventStore();
+    const result = collectFollowUpTargets({
+      candidates: [
+        {
+          appointment: paidAppointment,
+          examResult: {
+            examId: "exam_999",
+            petId: "pet_002",
+            collectedAt: NOW,
+            needsFollowUp: true,
+          },
+          ownerContact,
+        },
+      ],
+      eventStore,
+    });
+
+    expect(result).toMatchObject({
+      kind: "Err",
+      error: {
+        kind: "ExamResultPetMismatch",
+        appointmentId: paidAppointment.id,
+        expectedPetId: paidAppointment.petId,
+        actualPetId: PetId.schema.parse("pet_002"),
+      },
+    });
+    expect(eventStore.all()).toEqual([]);
+  });
 });

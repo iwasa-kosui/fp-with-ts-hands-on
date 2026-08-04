@@ -5,7 +5,10 @@ import { Appointment, type Appointment as AppointmentValue, type CheckedIn, type
 import { AppointmentId, type AppointmentId as AppointmentIdValue } from "./appointment-id.js";
 import type { AppointmentRepository } from "./appointment-repository.js";
 import type { DomainEventStore } from "./domain-event-store.js";
-import { ExaminationStarted } from "./domain-events.js";
+import { ExaminationStarted, FollowUpRequested } from "./domain-events.js";
+import { ExamResult } from "./exam-result.js";
+import type { PetId as PetIdValue } from "./pet-id.js";
+import type { OwnerContact } from "./owner-contact.js";
 import { VeterinarianId, type VeterinarianId as VeterinarianIdValue } from "./veterinarian-id.js";
 import type { Sensitive } from "../shared/sensitive.js";
 
@@ -73,11 +76,48 @@ export type FollowUpTarget = Readonly<{
   appointmentId: AppointmentIdValue;
   ownerPhone: Sensitive<string>;
 }>;
-export type FollowUpTargetError = Readonly<{ kind: "FollowUpTargetNotImplemented" }>;
+
+export type FollowUpCandidate = Readonly<{
+  appointment: AppointmentValue;
+  examResult: unknown;
+  ownerContact: OwnerContact;
+}>;
+
+export type FollowUpExamResult = Readonly<{
+  examId: string;
+  petId: PetIdValue;
+  collectedAt: string;
+  needsFollowUp: boolean;
+}>;
+
+export type ExamResultPetMismatch = Readonly<{
+  kind: "ExamResultPetMismatch";
+  appointmentId: AppointmentIdValue;
+  expectedPetId: PetIdValue;
+  actualPetId: PetIdValue;
+}>;
+
+export type FollowUpTargetError = ValidationError | ExamResultPetMismatch;
+
 export type CollectFollowUpTargetsInput = Readonly<{
-  candidates: ReadonlyArray<unknown>;
+  candidates: ReadonlyArray<FollowUpCandidate>;
   eventStore: DomainEventStore;
 }>;
+
+const FollowUpExamResultSchema = ExamResult.schema
+  .pick({
+    examId: true,
+    petId: true,
+    collectedAt: true,
+    needsFollowUp: true,
+  })
+  .partial({ needsFollowUp: true })
+  .transform((value) => ({
+    ...value,
+    needsFollowUp: value.needsFollowUp ?? false,
+  }));
+
+const parseFollowUpExamResult = schemaResult<FollowUpExamResult>(FollowUpExamResultSchema);
 
 // This deliberately incomplete exercise is implemented by participants in module 05.
 export const collectFollowUpTargets = (
