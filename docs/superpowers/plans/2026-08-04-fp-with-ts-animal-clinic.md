@@ -20,6 +20,13 @@
 - 通常の `pnpm test` はセットアップ確認用として常に緑にする。module 開始時に赤くなるテストは `exercise:*` script で明示的に実行する。
 - 各 module で参加者が書くコードは1〜2関数に制限する。残りは worked example または optional exercise に置く。
 - 各 module は `インシデント -> 赤テスト -> 編集 -> 緑テスト -> エージェントレビュー` の固定フォーマットにする。
+- PII ログ防御は `Sensitive` runtime wrapper + Zod transform の最小例として扱う。Pino redact や ESLint custom rule は参考リンクに留める。
+- ドメインイベントは use case 成功時に `ExaminationStarted` を記録する最小例として扱う。event sourcing や projection は扱わない。
+
+## 参考コンテンツ
+
+- [ログのPII漏洩を防止する: TypeScriptの型推論とランタイムの境界](https://kosui.me/posts/2026/03/16/typescript-pii-logging-defense): `02-boundary-and-ids` で、TypeScript の型だけではログ漏えいを防げないことと、`Sensitive` による runtime 防御を紹介する。
+- [TypeScriptでドメインイベントを容易に記録できるコード設計を考える](https://kosui.me/posts/2025/05/06/142842): `03-result-errors` と `05-mini-integration` で、状態変更をあとから調査できる出来事として残す設計を紹介する。
 
 ---
 
@@ -130,8 +137,8 @@ pnpm dev
 1. 壊れやすい動物病院アプリを読む
 2. 事故テストを赤くして不変条件を確認する
 3. Discriminated Union で状態遷移を閉じる
-4. Zod と Branded Type で境界と ID を守る
-5. Result 型でエラー処理を整理する
+4. Zod と Branded Type で境界、ID、PII ログ漏えいを守る
+5. Result 型でエラー処理を整理し、成功した状態変更をドメインイベントとして記録する
 6. AI エージェントに同じ変更を頼む前提でレビューする
 ````
 
@@ -245,6 +252,8 @@ export const logger = {
 
 `updateStatus` 実装では、`veterinarianId` が渡されたときに `paid -> in-examination` を意図的に許可する。参加者はこの事故を観察する。
 
+さらに `bookAppointment` と `updateStatus` は legacy logger に appointment 全体を渡す。`ownerEmail` や `ownerPhone` がそのまま構造化ログに出る PII 漏えいの種を残し、`02-boundary-and-ids` で runtime wrapper により回収する。
+
 - [ ] **ステップ 6: 緑のセットアップテストを追加する**
 
 `packages/clinic-example/test/00-setup.test.ts` を追加する:
@@ -263,6 +272,8 @@ const sampleInput = {
   petName: "Mugi",
   ownerId: "owner_001",
   ownerName: "Owner A",
+  ownerEmail: "owner@example.test",
+  ownerPhone: "090-0000-0000",
   scheduledAt: "2026-08-30T06:30:00.000Z",
   reason: "skin check",
 };
@@ -304,6 +315,8 @@ const sampleInput = {
   petName: "Mugi",
   ownerId: "owner_001",
   ownerName: "Owner A",
+  ownerEmail: "owner@example.test",
+  ownerPhone: "090-0000-0000",
   scheduledAt: "2026-08-30T06:30:00.000Z",
   reason: "skin check",
 };
@@ -440,18 +453,48 @@ git commit -m "feat(example): model appointment states with discriminated unions
 ### タスク 4: 境界と Branded ID module
 
 **ファイル:**
+- 作成: `packages/clinic-example/src/shared/sensitive.ts`
 - 作成: `packages/clinic-example/src/clinic/appointment-id.ts`
 - 作成: `packages/clinic-example/src/clinic/pet-id.ts`
 - 作成: `packages/clinic-example/src/clinic/owner-id.ts`
 - 作成: `packages/clinic-example/src/clinic/veterinarian-id.ts`
+- 作成: `packages/clinic-example/src/clinic/owner-contact.ts`
 - 作成: `packages/clinic-example/src/clinic/exam-result.ts`
 - 作成: `packages/clinic-example/test/02-boundary-and-ids.test.ts`
 
 **インターフェース:**
+- 提供: `type Sensitive<T>` と `Sensitive.of(value): Sensitive<T>`
 - 提供: 各 ID companion の `safeParse(raw: unknown): z.SafeParseReturnType<unknown, Id>`
+- 提供: `OwnerContact.safeParse(raw: unknown): z.SafeParseReturnType<unknown, OwnerContact>`
 - 提供: `ExamResult.safeParse(raw: unknown): z.SafeParseReturnType<unknown, ExamResult>`
 
-- [ ] **ステップ 1: ID companion object を追加する**
+- [ ] **ステップ 1: Sensitive runtime wrapper を追加する**
+
+`packages/clinic-example/src/shared/sensitive.ts` を追加する:
+
+```ts
+const REDACTED = "[REDACTED]";
+const inspectSymbol = Symbol.for("nodejs.util.inspect.custom");
+
+export type Sensitive<T> = Readonly<{
+  unwrap: () => T;
+  toJSON: () => string;
+  toString: () => string;
+}>;
+
+export const Sensitive = {
+  of: <T>(value: T): Sensitive<T> => ({
+    unwrap: () => value,
+    toJSON: () => REDACTED,
+    toString: () => REDACTED,
+    [inspectSymbol]: () => REDACTED,
+  }),
+} as const;
+```
+
+これは「TypeScript の構造的部分型や Branded Type だけではログ漏えいを防げない」ことを補う runtime 防御として扱う。`unwrap()` 後は素の値に戻るため、Agent Review では unwrap の利用箇所を必ず確認する。
+
+- [ ] **ステップ 2: ID companion object を追加する**
 
 各 ID file では、private brand symbol、Zod schema、schema から推論した type、`schema` と `parse` を持つ companion object を定義する。
 
@@ -472,7 +515,35 @@ export const PetId = {
 
 prefix は `appt_`, `pet_`, `owner_`, `vet_` を使う。
 
-- [ ] **ステップ 2: ExamResult schema を追加する**
+- [ ] **ステップ 3: OwnerContact schema を追加する**
+
+`packages/clinic-example/src/clinic/owner-contact.ts` を追加する。`ownerName`、`ownerEmail`、`ownerPhone` を Zod で parse し、PII field は `Sensitive.of` で包む。
+
+```ts
+import { z } from "zod";
+import { Sensitive, type Sensitive as SensitiveValue } from "../shared/sensitive.js";
+
+const sensitiveString = z.string().min(1).transform(Sensitive.of);
+
+const OwnerContactSchema = z.object({
+  ownerName: sensitiveString,
+  ownerEmail: z.string().email().transform(Sensitive.of),
+  ownerPhone: sensitiveString,
+});
+
+export type OwnerContact = Readonly<{
+  ownerName: SensitiveValue<string>;
+  ownerEmail: SensitiveValue<string>;
+  ownerPhone: SensitiveValue<string>;
+}>;
+
+export const OwnerContact = {
+  schema: OwnerContactSchema,
+  safeParse: (raw: unknown) => OwnerContactSchema.safeParse(raw),
+} as const;
+```
+
+- [ ] **ステップ 4: ExamResult schema を追加する**
 
 `packages/clinic-example/src/clinic/exam-result.ts` を追加し、次の field を持たせる:
 
@@ -483,15 +554,18 @@ prefix は `appt_`, `pet_`, `owner_`, `vet_` を使う。
 
 Zod で `petId` を `PetId.schema` に通して変換する。`ExamResult.safeParse` を公開し、このタスクでは project Result type を導入しない。
 
-- [ ] **ステップ 3: テストを追加する**
+- [ ] **ステップ 5: テストを追加する**
 
 `packages/clinic-example/test/02-boundary-and-ids.test.ts` を追加する:
 
 - valid な exam payload は `success: true` を返す
 - `items` がない payload は `success: false` を返す
 - `PetId` と `OwnerId` が `@ts-expect-error` で入れ替え不能になる
+- valid な owner contact payload は `Sensitive<string>` を返す
+- `JSON.stringify(parsedOwnerContact)` に `owner@example.test` や電話番号が含まれず、`[REDACTED]` が含まれる
+- `ownerEmail.unwrap()` で素の値を取り出せるが、docs と Agent Review で unwrap の利用箇所をレビュー対象にする
 
-- [ ] **ステップ 4: 検証**
+- [ ] **ステップ 6: 検証**
 
 実行: `pnpm --filter @fp-with-ts/clinic-example typecheck`
 
@@ -501,11 +575,11 @@ Zod で `petId` を `PetId.schema` に通して変換する。`ExamResult.safePa
 
 期待結果: 成功する。
 
-- [ ] **ステップ 5: コミット**
+- [ ] **ステップ 7: コミット**
 
 ```bash
-git add packages/clinic-example/src/clinic/*-id.ts packages/clinic-example/src/clinic/exam-result.ts packages/clinic-example/test/02-boundary-and-ids.test.ts
-git commit -m "feat(example): protect boundaries and ids with zod"
+git add packages/clinic-example/src/shared/sensitive.ts packages/clinic-example/src/clinic/*-id.ts packages/clinic-example/src/clinic/owner-contact.ts packages/clinic-example/src/clinic/exam-result.ts packages/clinic-example/test/02-boundary-and-ids.test.ts
+git commit -m "feat(example): protect boundaries ids and pii with zod"
 ```
 
 ### タスク 5: Result とユースケース module
@@ -514,6 +588,8 @@ git commit -m "feat(example): protect boundaries and ids with zod"
 - 作成: `packages/clinic-example/src/shared/result.ts`
 - 作成: `packages/clinic-example/src/shared/schema-result.ts`
 - 作成: `packages/clinic-example/src/clinic/appointment-repository.ts`
+- 作成: `packages/clinic-example/src/clinic/domain-events.ts`
+- 作成: `packages/clinic-example/src/clinic/domain-event-store.ts`
 - 作成: `packages/clinic-example/src/clinic/use-cases.ts`
 - 作成: `packages/clinic-example/test/03-result-errors.test.ts`
 
@@ -522,6 +598,8 @@ git commit -m "feat(example): protect boundaries and ids with zod"
 - 提供: `schemaResult(schema): (raw: unknown) => Result<T, ValidationError>`
 - 提供: `type AppointmentRepository`
 - 提供: `createInMemoryAppointmentRepository(initial?: ReadonlyArray<Appointment>): AppointmentRepository`
+- 提供: `type ClinicDomainEvent = ExaminationStarted`
+- 提供: `createInMemoryDomainEventStore(initial?: ReadonlyArray<ClinicDomainEvent>): DomainEventStore`
 - 提供: `startExaminationUseCase(repo, input): Result<InExamination, StartExaminationError>`
 
 - [ ] **ステップ 1: 軽量な Result を追加する**
@@ -601,7 +679,56 @@ export const createInMemoryAppointmentRepository = (
 };
 ```
 
-- [ ] **ステップ 4: use case error と guard を追加する**
+- [ ] **ステップ 4: domain event と event store を追加する**
+
+`packages/clinic-example/src/clinic/domain-events.ts` を追加する:
+
+```ts
+import type { AppointmentId } from "./appointment-id.js";
+import type { VeterinarianId } from "./veterinarian-id.js";
+
+export type ExaminationStarted = Readonly<{
+  kind: "ExaminationStarted";
+  eventId: string;
+  occurredAt: string;
+  appointmentId: AppointmentId;
+  veterinarianId: VeterinarianId;
+}>;
+
+export type ClinicDomainEvent = ExaminationStarted;
+
+export const ExaminationStarted = {
+  create: (input: Omit<ExaminationStarted, "kind">): ExaminationStarted => ({
+    kind: "ExaminationStarted",
+    ...input,
+  }),
+} as const;
+```
+
+`packages/clinic-example/src/clinic/domain-event-store.ts` を追加する:
+
+```ts
+import type { ClinicDomainEvent } from "./domain-events.js";
+
+export type DomainEventStore = Readonly<{
+  append: (event: ClinicDomainEvent) => void;
+  all: () => ReadonlyArray<ClinicDomainEvent>;
+}>;
+
+export const createInMemoryDomainEventStore = (
+  initial: ReadonlyArray<ClinicDomainEvent> = [],
+): DomainEventStore => {
+  const events = [...initial];
+  return {
+    append: (event) => {
+      events.push(event);
+    },
+    all: () => [...events],
+  };
+};
+```
+
+- [ ] **ステップ 5: use case error と guard を追加する**
 
 `packages/clinic-example/src/clinic/use-cases.ts` を追加し、次を定義する:
 
@@ -629,9 +756,9 @@ export type StartExaminationError =
 - `ensureCheckedIn`
 - `startExaminationUseCase`
 
-use case は `appointmentId` と `veterinarianId` を parse し、appointment を lookup し、`CheckedIn` であることを guard し、`Appointment.startExamination` を呼んで保存し、`Ok` を返す。
+use case は `appointmentId` と `veterinarianId` を parse し、appointment を lookup し、`CheckedIn` であることを guard し、`Appointment.startExamination` を呼んで保存し、`ExaminationStarted` を event store に append し、`Ok` を返す。`eventId` と `occurredAt` はテストしやすいよう caller から input で受け取る。validation、not found、不正状態では event を記録しない。
 
-- [ ] **ステップ 5: Result のテストを追加する**
+- [ ] **ステップ 6: Result と domain event のテストを追加する**
 
 `packages/clinic-example/test/03-result-errors.test.ts` を追加する:
 
@@ -639,8 +766,10 @@ use case は `appointmentId` と `veterinarianId` を parse し、appointment �
 - unknown appointment id は `AppointmentNotFound` を返す
 - scheduled appointment は `InvalidAppointmentState` を返す
 - invalid な id shape は `ValidationError` を返す
+- valid な checked-in appointment のときだけ `ExaminationStarted` が event store に記録される
+- 失敗時には event store が空のままになる
 
-- [ ] **ステップ 6: 検証**
+- [ ] **ステップ 7: 検証**
 
 実行: `pnpm --filter @fp-with-ts/clinic-example typecheck`
 
@@ -650,10 +779,10 @@ use case は `appointmentId` と `veterinarianId` を parse し、appointment �
 
 期待結果: 成功する。
 
-- [ ] **ステップ 7: コミット**
+- [ ] **ステップ 8: コミット**
 
 ```bash
-git add packages/clinic-example/src/shared/result.ts packages/clinic-example/src/shared/schema-result.ts packages/clinic-example/src/clinic/appointment-repository.ts packages/clinic-example/src/clinic/use-cases.ts packages/clinic-example/test/03-result-errors.test.ts
+git add packages/clinic-example/src/shared/result.ts packages/clinic-example/src/shared/schema-result.ts packages/clinic-example/src/clinic/appointment-repository.ts packages/clinic-example/src/clinic/domain-events.ts packages/clinic-example/src/clinic/domain-event-store.ts packages/clinic-example/src/clinic/use-cases.ts packages/clinic-example/test/03-result-errors.test.ts
 git commit -m "feat(example): compose appointment use cases with result"
 ```
 
@@ -734,12 +863,12 @@ export default defineConfig({
 - `00-break-the-app`
 - `00-read-the-incident`
 - `01-state-modeling`
-- `02-boundary-and-ids`
-- `03-result-errors`
+- `02-boundary-and-ids`: Zod、Branded ID、`Sensitive` による PII ログ防御
+- `03-result-errors`: Result、use case、成功時だけ残す domain event
 - `04-agent-review`
 - `05-mini-integration`
 
-各 module は `animal`, `minutes`, `title`, `incident`, `invariant`, `redCommand`, `editTarget`, `greenCommand`, `agentReview`, `doneWhen`, `sections` を持つ。
+各 module は `animal`, `minutes`, `title`, `incident`, `invariant`, `redCommand`, `editTarget`, `greenCommand`, `agentReview`, `doneWhen`, `sourceLinks`, `sections` を持つ。
 
 - [ ] **ステップ 5: base renderer を追加する**
 
@@ -750,6 +879,7 @@ export default defineConfig({
 - `location.hash` に基づく current module content
 - `Paid -> InExamination` を示す常時表示の incident summary
 - current phase indicator: `インシデント`, `赤テスト`, `編集`, `緑テスト`, `エージェントレビュー`
+- module に紐づく参考記事 links
 - previous/next navigation
 
 DOM API を使い、framework dependency は増やさない。
@@ -825,6 +955,7 @@ export const renderCodeBlock = (code: string, language: string): HTMLElement => 
 - `緑テスト`: 再実行する exact command と期待する成功
 - `エージェントレビュー`: AI-assisted development を想定した prompt または review checklist
 - `完了条件`: 参加者向けの完了条件を 1 つ
+- `参考記事`: module の判断に関係する kosui.me の記事リンク。`02-boundary-and-ids` には PII ログ防御記事、`03-result-errors` と `05-mini-integration` にはドメインイベント記事を紐づける。
 
 - [ ] **ステップ 4: CSS を仕上げる**
 

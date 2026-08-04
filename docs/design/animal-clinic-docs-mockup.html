@@ -3,25 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Animal Clinic Domain Modeling Docs Mockup</title>
+  <title>Animal Clinic Reservation & Chart System Mockup</title>
   <style>
     :root {
       color-scheme: light;
+      --cream: #fff8ce;
       --paper: #ffffff;
-      --mint-weak: #e9fbf5;
-      --mint: #b8f0dd;
-      --yellow: #fff3a7;
-      --teal: #007c7b;
-      --teal-dark: #09575a;
-      --red: #d83042;
-      --red-weak: #ffe7ea;
-      --ink: #172527;
-      --muted: #607175;
-      --line: #c8ddd8;
-      --bluegreen: #dff4f7;
-      --code-bg: #102326;
-      --code-fg: #e8fffb;
-      --shadow: 0 12px 28px rgba(9, 87, 90, 0.10);
+      --ink: #111116;
+      --blue: #2236b8;
+      --sky: #38a9f4;
+      --mint: #12dbb1;
+      --purple: #b998f5;
+      --pink: #ff4f93;
+      --coral: #ff654f;
+      --lemon: #ffd21b;
+      --green: #89dc54;
+      --line: #17204d;
+      --muted: #595c73;
+      --soft-shadow: 8px 10px 0 rgba(34, 54, 184, 0.16);
+      --hard-shadow: 7px 7px 0 #17204d;
       --radius: 8px;
     }
 
@@ -36,19 +36,21 @@
     body {
       margin: 0;
       min-width: 320px;
+      overflow-x: hidden;
       background:
-        linear-gradient(180deg, var(--mint-weak) 0, #ffffff 420px),
-        var(--paper);
+        radial-gradient(ellipse at 12% 18%, rgba(18, 219, 177, 0.55) 0 15%, transparent 15.4%),
+        radial-gradient(ellipse at 94% 6%, rgba(255, 210, 27, 0.65) 0 20%, transparent 20.4%),
+        radial-gradient(ellipse at 72% 100%, rgba(255, 79, 147, 0.20) 0 22%, transparent 22.5%),
+        var(--cream);
       color: var(--ink);
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: ui-rounded, "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", Meiryo, system-ui, sans-serif;
       font-size: 16px;
-      line-height: 1.6;
+      line-height: 1.65;
     }
 
     a {
-      color: var(--teal-dark);
-      text-decoration-color: rgba(0, 124, 123, 0.35);
-      text-underline-offset: 3px;
+      color: inherit;
+      text-decoration: none;
     }
 
     code,
@@ -56,89 +58,185 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     }
 
-    .site-shell {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
+    .page {
+      position: relative;
+      isolation: isolate;
+    }
+
+    .shape {
+      position: fixed;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.9;
+    }
+
+    .shape.splash-one {
+      top: 98px;
+      left: -46px;
+      width: 300px;
+      height: 230px;
+      border-radius: 45% 55% 50% 38% / 44% 46% 54% 56%;
+      background: var(--mint);
+      transform: rotate(12deg);
+    }
+
+    .shape.splash-two {
+      top: -54px;
+      right: -80px;
+      width: 460px;
+      height: 250px;
+      border-radius: 38% 45% 52% 48% / 54% 40% 48% 42%;
+      background: #fff27c;
+      transform: rotate(-5deg);
+    }
+
+    .shape.splash-three {
+      right: 2vw;
+      bottom: -80px;
+      width: 410px;
+      height: 280px;
+      border-radius: 48% 42% 35% 54% / 40% 55% 36% 52%;
+      background: rgba(56, 169, 244, 0.45);
+      transform: rotate(18deg);
+    }
+
+    .shape.zig {
+      width: 78px;
+      height: 94px;
+      background:
+        linear-gradient(135deg, transparent 0 35%, var(--blue) 35% 48%, transparent 48% 100%) 0 0 / 42px 42px repeat-y;
+      opacity: 0.75;
+      transform: rotate(5deg);
+    }
+
+    .shape.zig.one {
+      top: 120px;
+      left: 15vw;
+    }
+
+    .shape.zig.two {
+      right: 10vw;
+      bottom: 126px;
+      filter: hue-rotate(80deg);
     }
 
     .topbar {
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 20;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      padding: 10px clamp(18px, 4vw, 56px);
-      border-bottom: 1px solid rgba(9, 87, 90, 0.14);
-      background: rgba(255, 255, 255, 0.86);
+      gap: 18px;
+      padding: 14px clamp(18px, 4vw, 54px);
+      background: rgba(255, 248, 206, 0.78);
+      border-bottom: 3px solid rgba(34, 54, 184, 0.14);
       backdrop-filter: blur(14px);
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       min-width: 0;
-      font-weight: 760;
-      color: var(--teal-dark);
+      color: var(--ink);
+      font-size: clamp(18px, 2vw, 26px);
+      font-weight: 950;
+      letter-spacing: 0.08em;
       white-space: nowrap;
     }
 
     .brand-mark {
-      display: inline-grid;
-      width: 30px;
-      height: 30px;
+      display: grid;
+      width: 46px;
+      height: 36px;
       place-items: center;
-      border: 2px solid var(--teal);
-      border-radius: 8px;
-      background: var(--yellow);
-      font-size: 17px;
-      line-height: 1;
+      color: #ffffff;
+      background: var(--blue);
+      border: 3px solid var(--ink);
+      border-radius: 44% 56% 48% 52% / 42% 45% 55% 58%;
+      box-shadow: 3px 3px 0 var(--ink);
+      font-size: 23px;
+      animation: hop 2.7s ease-in-out infinite;
     }
 
     .nav {
       display: flex;
       flex-wrap: wrap;
-      align-items: center;
       justify-content: flex-end;
-      gap: 8px 14px;
-      color: var(--muted);
+      gap: 8px;
       font-size: 13px;
-      font-weight: 680;
+      font-weight: 900;
+      letter-spacing: 0.05em;
     }
 
     .nav a {
-      color: inherit;
-      text-decoration: none;
+      padding: 7px 12px;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper);
+      box-shadow: 3px 3px 0 rgba(34, 54, 184, 0.2);
     }
 
     main {
-      width: min(1180px, calc(100% - 36px));
+      width: min(1220px, calc(100% - 36px));
       margin: 0 auto;
     }
 
     .hero {
-      display: grid;
-      gap: 20px;
-      min-height: calc(100vh - 52px);
-      padding: clamp(22px, 4vw, 46px) 0 28px;
-      align-content: start;
+      position: relative;
+      min-height: calc(100vh - 66px);
+      padding: clamp(28px, 5vw, 58px) 0 34px;
     }
 
-    .hero-heading {
+    .hero-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 20px;
-      align-items: end;
+      grid-template-columns: minmax(300px, 0.84fr) minmax(0, 1.16fr);
+      gap: clamp(20px, 4vw, 48px);
+      align-items: center;
+    }
+
+    .copy-panel {
+      position: relative;
+      padding: clamp(22px, 4vw, 44px);
+      background: var(--paper);
+      border: 4px solid var(--line);
+      border-radius: 48% 52% 45% 55% / 42% 44% 56% 58%;
+      box-shadow: var(--hard-shadow);
+    }
+
+    .copy-panel::before,
+    .copy-panel::after {
+      content: "";
+      position: absolute;
+      background: var(--paper);
+      border: 4px solid var(--line);
+      border-radius: 999px;
+    }
+
+    .copy-panel::before {
+      top: -24px;
+      right: 20%;
+      width: 46px;
+      height: 46px;
+    }
+
+    .copy-panel::after {
+      right: -16px;
+      bottom: 18%;
+      width: 28px;
+      height: 28px;
     }
 
     .eyebrow {
-      margin: 0 0 5px;
-      color: var(--teal);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 12px;
+      color: var(--blue);
       font-size: 13px;
-      font-weight: 800;
-      letter-spacing: 0;
+      font-weight: 950;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
@@ -150,547 +248,870 @@
     }
 
     h1 {
-      max-width: 820px;
-      margin-bottom: 8px;
-      font-size: clamp(30px, 5vw, 58px);
-      line-height: 1.08;
+      margin-bottom: 16px;
+      font-size: clamp(38px, 6vw, 84px);
+      line-height: 0.98;
       letter-spacing: 0;
     }
 
+    .rainbow-word span:nth-child(1) { color: var(--pink); }
+    .rainbow-word span:nth-child(2) { color: var(--mint); }
+    .rainbow-word span:nth-child(3) { color: var(--lemon); }
+    .rainbow-word span:nth-child(4) { color: var(--sky); }
+    .rainbow-word span:nth-child(5) { color: var(--coral); }
+
     .lead {
-      max-width: 760px;
-      margin: 0;
-      color: #365558;
+      margin-bottom: 20px;
+      color: #30324a;
       font-size: clamp(15px, 2vw, 18px);
-    }
-
-    .date-ticket {
-      align-self: stretch;
-      display: grid;
-      min-width: 230px;
-      padding: 14px;
-      border: 1px solid var(--line);
-      border-left: 6px solid var(--teal);
-      border-radius: var(--radius);
-      background: var(--paper);
-      box-shadow: var(--shadow);
-    }
-
-    .date-ticket strong {
-      font-size: 24px;
-      line-height: 1.2;
-      color: var(--teal-dark);
-    }
-
-    .date-ticket span {
-      color: var(--muted);
-      font-size: 13px;
       font-weight: 700;
     }
 
-    .cockpit {
-      display: grid;
-      grid-template-columns: 1.05fr 0.95fr 0.9fr 1.1fr;
-      gap: 12px;
-      align-items: stretch;
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
-    .status-panel {
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 5px 10px;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      background: #fff27c;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 950;
+      box-shadow: 3px 3px 0 rgba(34, 54, 184, 0.18);
+    }
+
+    .system-window {
+      position: relative;
       min-width: 0;
-      padding: 14px;
-      border: 1px solid var(--line);
+      border: 4px solid var(--line);
       border-radius: var(--radius);
-      background: rgba(255, 255, 255, 0.94);
-      box-shadow: var(--shadow);
+      background: var(--paper);
+      box-shadow: 12px 12px 0 rgba(34, 54, 184, 0.22);
+      transform: rotate(-1deg);
     }
 
-    .status-panel.alert {
-      border-color: rgba(216, 48, 66, 0.44);
-      background: linear-gradient(180deg, #ffffff, var(--red-weak));
-    }
-
-    .panel-label {
+    .window-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 10px;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 820;
-      text-transform: uppercase;
+      gap: 12px;
+      padding: 10px 14px;
+      border-bottom: 4px solid var(--line);
+      background: var(--purple);
+      color: var(--ink);
+      font-weight: 950;
     }
 
-    .animal-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      min-height: 28px;
-      padding: 3px 8px;
-      border: 1px solid rgba(0, 124, 123, 0.24);
-      border-radius: 8px;
-      background: var(--mint-weak);
-      color: var(--teal-dark);
-      font-size: 13px;
-      font-weight: 760;
-      white-space: nowrap;
-    }
-
-    .panel-main {
-      margin: 0 0 8px;
-      font-size: 20px;
-      font-weight: 820;
-      line-height: 1.25;
-    }
-
-    .panel-note {
-      margin: 0;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .incident-flow,
-    .state-flow {
+    .window-buttons {
       display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-      margin: 11px 0 9px;
+      gap: 6px;
     }
 
-    .state {
-      display: inline-flex;
+    .window-buttons span {
+      width: 13px;
+      height: 13px;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      background: var(--lemon);
+    }
+
+    .window-buttons span:nth-child(2) {
+      background: var(--mint);
+    }
+
+    .window-buttons span:nth-child(3) {
+      background: var(--pink);
+    }
+
+    .app-dashboard {
+      display: grid;
+      grid-template-columns: 150px minmax(360px, 1fr) 230px;
+      min-height: 520px;
+    }
+
+    .sidebar {
+      padding: 14px;
+      border-right: 4px solid var(--line);
+      background: #e9fff8;
+    }
+
+    .clinic-stamp {
+      display: grid;
+      place-items: center;
+      min-height: 92px;
+      margin-bottom: 14px;
+      border: 3px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--lemon);
+      color: var(--blue);
+      text-align: center;
+      font-weight: 950;
+      line-height: 1.25;
+      box-shadow: 5px 5px 0 rgba(34, 54, 184, 0.15);
+    }
+
+    .side-menu {
+      display: grid;
+      gap: 8px;
+    }
+
+    .side-menu div {
+      display: flex;
       align-items: center;
       gap: 7px;
-      min-height: 34px;
-      padding: 6px 9px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
+      min-height: 36px;
+      padding: 6px 8px;
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
       background: var(--paper);
-      font-size: 13px;
-      font-weight: 780;
-      white-space: nowrap;
-    }
-
-    .state.bad {
-      border-color: rgba(216, 48, 66, 0.46);
-      background: #fff7f8;
-      color: var(--red);
-    }
-
-    .arrow {
-      color: var(--teal);
+      font-size: 12px;
       font-weight: 900;
     }
 
-    .arrow.bad {
-      color: var(--red);
+    .side-menu div.active {
+      background: var(--pink);
+      color: #ffffff;
     }
 
-    .command-list {
+    .schedule-board {
+      padding: 14px;
+      background: #fdfbff;
+    }
+
+    .board-head {
       display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .board-head h2 {
+      margin: 0;
+      font-size: clamp(22px, 3vw, 34px);
+      line-height: 1.1;
+    }
+
+    .date-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 6px 10px;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      background: var(--lemon);
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .appointment-grid {
+      display: grid;
+      grid-template-columns: 1fr;
       gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .appointment-card {
+      display: grid;
+      grid-template-columns: 42px 64px minmax(0, 1fr);
+      gap: 6px 9px;
+      align-items: center;
+      min-height: 70px;
+      padding: 9px 10px;
+      border: 3px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: 4px 4px 0 rgba(34, 54, 184, 0.16);
+    }
+
+    .appointment-card:nth-child(2) {
+      background: #fff0f7;
+    }
+
+    .appointment-card:nth-child(3) {
+      background: #ecfbff;
+    }
+
+    .pet-icon {
+      display: grid;
+      grid-row: 1 / span 2;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      background: var(--mint);
+      font-size: 25px;
+      filter: drop-shadow(2px 3px 0 rgba(34, 54, 184, 0.22));
+      animation: bob 2.6s ease-in-out infinite;
+    }
+
+    .appointment-card:nth-child(2) .pet-icon {
+      animation-delay: -0.7s;
+    }
+
+    .appointment-card:nth-child(3) .pet-icon {
+      animation-delay: -1.3s;
+    }
+
+    .time {
+      display: inline-flex;
+      margin-bottom: 0;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 950;
+    }
+
+    .appointment-card strong {
+      display: block;
+      margin-bottom: 0;
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .appointment-card p {
+      grid-column: 2 / -1;
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      line-height: 1.45;
+    }
+
+    .chart-card {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 10px;
+      padding: 12px;
+      border: 3px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff8ce;
+    }
+
+    .chart-patient {
+      padding: 12px;
+      border: 3px dashed var(--blue);
+      border-radius: var(--radius);
+      background: var(--paper);
+    }
+
+    .big-pet {
+      display: grid;
+      width: 86px;
+      height: 86px;
+      place-items: center;
+      margin-bottom: 8px;
+      border: 3px solid var(--line);
+      border-radius: 47% 53% 45% 55% / 50% 45% 55% 50%;
+      background: var(--mint);
+      font-size: 48px;
+      animation: hop 1.9s ease-in-out infinite;
+    }
+
+    .chart-patient h3,
+    .chart-notes h3 {
+      margin-bottom: 6px;
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .status-flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
       margin-top: 10px;
     }
 
-    .command-list code {
-      display: block;
-      width: 100%;
-      overflow-x: auto;
-      padding: 9px 10px;
-      border-radius: 7px;
-      background: var(--code-bg);
-      color: var(--code-fg);
-      font-size: 13px;
-      line-height: 1.45;
-      white-space: nowrap;
+    .status-flow span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 3px 8px;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper);
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 950;
+    }
+
+    .chart-notes {
+      display: grid;
+      gap: 9px;
+    }
+
+    .note-line {
+      padding: 9px;
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .note-line.alert {
+      background: #ffe4ef;
+      color: #be1f56;
+    }
+
+    .right-panel {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-left: 4px solid var(--line);
+      background: #fff3f0;
+    }
+
+    .mini-widget {
+      padding: 11px;
+      border: 3px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: 4px 4px 0 rgba(34, 54, 184, 0.14);
+    }
+
+    .mini-widget h3 {
+      margin-bottom: 7px;
+      color: var(--blue);
+      font-size: 14px;
+    }
+
+    .mini-widget p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .queue-row {
+      display: grid;
+      grid-template-columns: 36px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .queue-row span:first-child {
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      background: #e9fff8;
+      animation: bob 2.4s ease-in-out infinite;
+    }
+
+    .floating-pet {
+      position: absolute;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      border: 3px solid var(--line);
+      box-shadow: 4px 4px 0 rgba(34, 54, 184, 0.22);
+      font-size: clamp(28px, 4vw, 50px);
+      pointer-events: none;
+    }
+
+    .floating-pet.cat {
+      top: 8%;
+      right: 4%;
+      width: 86px;
+      height: 72px;
+      border-radius: 55% 45% 48% 52% / 46% 48% 52% 54%;
+      background: var(--lemon);
+      animation: jumpAcross 5.2s ease-in-out infinite;
+    }
+
+    .floating-pet.dog {
+      left: 1%;
+      bottom: 19%;
+      width: 84px;
+      height: 70px;
+      border-radius: 47% 53% 46% 54% / 52% 48% 52% 48%;
+      background: var(--pink);
+      animation: waggle 2.2s ease-in-out infinite;
+    }
+
+    .floating-pet.rabbit {
+      right: 27%;
+      bottom: 7%;
+      width: 76px;
+      height: 66px;
+      border-radius: 50% 50% 44% 56% / 50% 44% 56% 50%;
+      background: var(--mint);
+      animation: hop 2.1s ease-in-out infinite;
     }
 
     .below-fold-cue {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 14px;
+      display: flex;
       align-items: center;
-      margin-top: 2px;
-      padding: 10px 0 0;
-      border-top: 1px solid rgba(9, 87, 90, 0.16);
-      color: var(--muted);
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 3px dashed var(--blue);
+      color: var(--blue);
       font-size: 13px;
-      font-weight: 680;
+      font-weight: 950;
     }
 
-    .mini-animals {
+    .animal-train {
       display: flex;
-      gap: 7px;
-      font-size: 20px;
+      gap: 8px;
       white-space: nowrap;
     }
 
+    .animal-train span {
+      display: inline-block;
+      animation: trainHop 1.7s ease-in-out infinite;
+    }
+
+    .animal-train span:nth-child(2) { animation-delay: -0.2s; }
+    .animal-train span:nth-child(3) { animation-delay: -0.4s; }
+    .animal-train span:nth-child(4) { animation-delay: -0.6s; }
+    .animal-train span:nth-child(5) { animation-delay: -0.8s; }
+    .animal-train span:nth-child(6) { animation-delay: -1s; }
+
     section {
-      padding: 36px 0;
-      border-top: 1px solid rgba(9, 87, 90, 0.14);
+      padding: 44px 0;
     }
 
     .section-head {
       display: flex;
       align-items: end;
       justify-content: space-between;
-      gap: 20px;
+      gap: 22px;
       margin-bottom: 18px;
     }
 
     .section-head h2 {
+      max-width: 680px;
       margin: 0;
-      font-size: clamp(24px, 3vw, 34px);
-      line-height: 1.2;
+      color: var(--blue);
+      font-size: clamp(28px, 4vw, 54px);
+      line-height: 1.04;
       letter-spacing: 0;
     }
 
     .section-head p {
-      max-width: 520px;
+      max-width: 480px;
       margin: 0;
-      color: var(--muted);
-      font-size: 14px;
+      color: #333756;
+      font-weight: 760;
     }
 
-    .diagram-wrap {
+    .feature-splats {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 280px;
+      grid-template-columns: repeat(5, minmax(150px, 1fr));
       gap: 16px;
       align-items: stretch;
     }
 
-    .state-diagram {
-      padding: 18px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: linear-gradient(180deg, #ffffff, #f4fffb);
-      overflow-x: auto;
-    }
-
-    .diagram-lane {
+    .splat-card {
       display: grid;
-      grid-template-columns: repeat(4, minmax(148px, 1fr));
-      gap: 10px;
-      align-items: center;
-      min-width: 680px;
-      margin-bottom: 14px;
+      min-height: 190px;
+      place-items: center;
+      padding: 18px;
+      border: 4px solid var(--line);
+      border-radius: 42% 58% 48% 52% / 48% 46% 54% 52%;
+      background: var(--paper);
+      text-align: center;
+      box-shadow: var(--soft-shadow);
+      transform: rotate(-2deg);
     }
 
-    .diagram-node {
-      min-height: 98px;
-      padding: 12px;
-      border: 2px solid var(--teal);
+    .splat-card:nth-child(2) {
+      background: var(--lemon);
+      transform: rotate(3deg);
+    }
+
+    .splat-card:nth-child(3) {
+      background: var(--mint);
+      transform: rotate(-1deg);
+    }
+
+    .splat-card:nth-child(4) {
+      background: #ff8fb8;
+      transform: rotate(2deg);
+    }
+
+    .splat-card:nth-child(5) {
+      background: #90d7ff;
+      transform: rotate(-3deg);
+    }
+
+    .splat-card .icon {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 50px;
+      animation: bob 2.4s ease-in-out infinite;
+    }
+
+    .splat-card strong {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .splat-card span:last-child {
+      color: #25294a;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .state-area {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .state-map,
+    .legend {
+      border: 4px solid var(--line);
       border-radius: var(--radius);
       background: var(--paper);
+      box-shadow: var(--soft-shadow);
     }
 
-    .diagram-node strong {
+    .state-map {
+      overflow-x: auto;
+      padding: 18px;
+    }
+
+    .state-lane {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
+      gap: 12px;
+      min-width: 720px;
+      align-items: center;
+    }
+
+    .state-node {
+      min-height: 132px;
+      padding: 14px;
+      border: 3px solid var(--line);
+      border-radius: var(--radius);
+      background: #f4fff6;
+      text-align: center;
+      font-weight: 850;
+    }
+
+    .state-node:nth-child(2) { background: #fff0f7; }
+    .state-node:nth-child(3) { background: #e9f8ff; }
+    .state-node:nth-child(4) { background: #fff8ce; }
+
+    .state-node .animal {
       display: block;
-      margin-bottom: 3px;
-      color: var(--teal-dark);
-      font-size: 15px;
+      margin-bottom: 6px;
+      font-size: 40px;
+      animation: bob 2.5s ease-in-out infinite;
     }
 
-    .diagram-node span {
+    .state-node strong {
+      display: block;
+      color: var(--blue);
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    .state-node span:last-child {
       color: var(--muted);
       font-size: 12px;
     }
 
-    .diagram-branch {
+    .state-branch {
       display: grid;
-      grid-template-columns: minmax(148px, 1fr) minmax(148px, 1fr) minmax(148px, 1fr) minmax(148px, 1fr);
-      gap: 10px;
-      min-width: 680px;
+      grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(160px, 1fr);
+      gap: 12px;
+      min-width: 720px;
+      margin-top: 12px;
+    }
+
+    .cancel-node,
+    .paid-lock {
+      padding: 11px 12px;
+      border: 3px dashed var(--line);
+      border-radius: var(--radius);
+      font-weight: 950;
+      text-align: center;
     }
 
     .cancel-node {
       grid-column: 1 / span 2;
-      padding: 11px 12px;
-      border: 2px dashed var(--red);
-      border-radius: var(--radius);
-      background: #fff8d4;
-      color: var(--red);
-      font-weight: 820;
+      background: #f3eaff;
+      color: var(--blue);
     }
 
-    .stamp-node {
+    .paid-lock {
       grid-column: 4;
-      display: grid;
-      place-items: center;
-      min-height: 58px;
-      border: 2px solid var(--teal-dark);
-      border-radius: var(--radius);
-      background: var(--yellow);
-      color: var(--teal-dark);
-      font-weight: 900;
-      transform: rotate(-1deg);
+      background: var(--coral);
+      color: #ffffff;
+      transform: rotate(-2deg);
     }
 
     .legend {
       display: grid;
       gap: 10px;
       padding: 14px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--paper);
+      background: #fff3f0;
     }
 
     .legend-row {
       display: grid;
-      grid-template-columns: 34px minmax(0, 1fr);
+      grid-template-columns: 42px minmax(0, 1fr);
       gap: 10px;
       align-items: start;
-      color: var(--muted);
       font-size: 13px;
+      font-weight: 770;
     }
 
     .legend-icon {
       display: grid;
-      width: 34px;
-      height: 34px;
+      width: 42px;
+      height: 42px;
       place-items: center;
-      border-radius: 8px;
-      background: var(--bluegreen);
-      font-size: 20px;
+      border: 3px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper);
+      font-size: 23px;
     }
 
     .timeline {
       display: grid;
-      grid-template-columns: repeat(7, minmax(132px, 1fr));
-      gap: 8px;
+      grid-template-columns: repeat(7, minmax(144px, 1fr));
+      gap: 10px;
       overflow-x: auto;
-      padding-bottom: 4px;
+      padding: 8px 0 8px;
     }
 
     .time-stop {
-      min-height: 148px;
+      min-height: 165px;
       padding: 12px;
-      border: 1px solid var(--line);
+      border: 3px solid var(--line);
       border-radius: var(--radius);
       background: var(--paper);
+      box-shadow: 4px 4px 0 rgba(34, 54, 184, 0.18);
+      font-weight: 780;
+    }
+
+    .time-stop:nth-child(odd) {
+      background: #fff0f7;
     }
 
     .time-stop.active {
-      border-color: var(--red);
-      background: linear-gradient(180deg, var(--red-weak), #ffffff);
+      background: var(--lemon);
+      transform: rotate(-1deg);
     }
 
     .time-stop time {
       display: block;
       margin-bottom: 8px;
-      color: var(--teal);
+      color: var(--blue);
       font-size: 12px;
-      font-weight: 850;
+      font-weight: 950;
     }
 
     .time-stop strong {
       display: block;
       margin-bottom: 6px;
       font-size: 15px;
-      line-height: 1.35;
+      line-height: 1.3;
     }
 
     .time-stop span {
       color: var(--muted);
       font-size: 12px;
-    }
-
-    .module-board {
-      overflow-x: auto;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--paper);
-    }
-
-    .module-grid {
-      display: grid;
-      grid-template-columns: 190px repeat(5, minmax(150px, 1fr));
-      min-width: 980px;
-    }
-
-    .module-head,
-    .module-title,
-    .module-cell {
-      border-right: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-    }
-
-    .module-head {
-      position: sticky;
-      top: 51px;
-      z-index: 2;
-      padding: 10px 12px;
-      background: var(--teal-dark);
-      color: #f2fffc;
-      font-size: 12px;
-      font-weight: 850;
-      text-transform: uppercase;
-    }
-
-    .module-title {
-      padding: 13px 12px;
-      background: #f7fffd;
-    }
-
-    .module-title time {
-      display: block;
-      color: var(--teal);
-      font-size: 12px;
-      font-weight: 850;
-    }
-
-    .module-title strong {
-      display: block;
-      margin-top: 4px;
-      font-size: 14px;
-      line-height: 1.35;
-    }
-
-    .module-cell {
-      min-height: 104px;
-      padding: 12px;
-      background: #ffffff;
-      font-size: 13px;
-    }
-
-    .module-cell.incident {
-      background: #fff8f9;
-    }
-
-    .module-cell.agent {
-      background: #f0fbff;
-    }
-
-    .cell-kicker {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      margin-bottom: 7px;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 840;
-      text-transform: uppercase;
-    }
-
-    .cell-main {
-      margin: 0;
-      font-weight: 740;
       line-height: 1.45;
-    }
-
-    .cell-note {
-      margin: 6px 0 0;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-    }
-
-    .agent-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 8px;
-      padding: 4px 7px;
-      border: 1px solid rgba(0, 124, 123, 0.28);
-      border-radius: 7px;
-      background: #ffffff;
-      color: var(--teal-dark);
-      font-size: 12px;
-      font-weight: 780;
     }
 
     .reading-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
-      gap: 16px;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 440px);
+      gap: 18px;
       align-items: start;
     }
 
-    .doc-pane {
-      padding: 18px;
-      border: 1px solid var(--line);
+    .doc-pane,
+    pre {
+      border: 4px solid var(--line);
       border-radius: var(--radius);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .doc-pane {
+      position: relative;
+      padding: 20px;
       background: var(--paper);
+    }
+
+    .doc-pane::after {
+      content: "🐈";
+      position: absolute;
+      right: 18px;
+      bottom: -18px;
+      font-size: 42px;
+      animation: hop 2s ease-in-out infinite;
     }
 
     .doc-pane h3 {
       margin-bottom: 10px;
-      font-size: 18px;
+      color: var(--blue);
+      font-size: 24px;
     }
 
     .doc-pane p {
-      color: var(--muted);
-      font-size: 14px;
+      color: #333756;
+      font-weight: 750;
+    }
+
+    .callout {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      margin-top: 14px;
+      padding: 12px;
+      border: 3px dashed var(--line);
+      border-radius: var(--radius);
+      background: #fff0f7;
+    }
+
+    .callout strong {
+      display: block;
+      color: #be1f56;
+    }
+
+    .callout p {
+      margin: 0;
+      color: #333756;
+      font-size: 13px;
     }
 
     pre {
       overflow-x: auto;
       margin: 0;
-      padding: 14px;
-      border-radius: var(--radius);
-      background: var(--code-bg);
-      color: var(--code-fg);
+      padding: 18px;
+      background: #161a3e;
+      color: #fffad7;
       font-size: 13px;
       line-height: 1.55;
     }
 
-    .callout {
-      display: grid;
-      grid-template-columns: 44px minmax(0, 1fr);
-      gap: 12px;
-      align-items: start;
-      margin-top: 14px;
-      padding: 12px;
-      border: 1px solid rgba(216, 48, 66, 0.28);
-      border-radius: var(--radius);
-      background: var(--red-weak);
-    }
-
-    .callout strong {
-      display: block;
-      margin-bottom: 2px;
-      color: var(--red);
-    }
-
-    .callout p {
-      margin: 0;
-      color: #6b3139;
-    }
-
     footer {
-      margin-top: 34px;
-      padding: 28px 0 40px;
-      border-top: 1px solid rgba(9, 87, 90, 0.14);
-      color: var(--muted);
+      padding: 30px 0 46px;
+      color: var(--blue);
       font-size: 13px;
+      font-weight: 900;
+      text-align: center;
     }
 
-    @media (max-width: 980px) {
+    @keyframes hop {
+      0%, 100% {
+        transform: translateY(0) rotate(-2deg);
+      }
+      45% {
+        transform: translateY(-12px) rotate(4deg);
+      }
+      60% {
+        transform: translateY(-4px) rotate(-3deg);
+      }
+    }
+
+    @keyframes bob {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-8px);
+      }
+    }
+
+    @keyframes waggle {
+      0%, 100% {
+        transform: rotate(-5deg);
+      }
+      50% {
+        transform: rotate(7deg) translateY(-4px);
+      }
+    }
+
+    @keyframes jumpAcross {
+      0%, 100% {
+        transform: translate(0, 0) rotate(-5deg);
+      }
+      24% {
+        transform: translate(-28px, -34px) rotate(7deg);
+      }
+      48% {
+        transform: translate(-58px, 0) rotate(-3deg);
+      }
+      70% {
+        transform: translate(-30px, -22px) rotate(5deg);
+      }
+    }
+
+    @keyframes trainHop {
+      0%, 100% {
+        transform: translateY(0) rotate(0deg);
+      }
+      50% {
+        transform: translateY(-7px) rotate(8deg);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    @media (max-width: 1040px) {
       .hero {
         min-height: auto;
       }
 
-      .hero-heading,
-      .diagram-wrap,
+      .hero-grid,
+      .state-area,
       .reading-row {
         grid-template-columns: 1fr;
       }
 
-      .date-ticket {
-        min-width: 0;
+      .app-dashboard {
+        grid-template-columns: 130px minmax(360px, 1fr);
+        overflow-x: auto;
       }
 
-      .cockpit {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+      .right-panel {
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        border-top: 4px solid var(--line);
+        border-left: 0;
       }
 
-      .section-head {
-        display: grid;
+      .feature-splats {
+        grid-template-columns: repeat(3, minmax(150px, 1fr));
       }
     }
 
-    @media (max-width: 620px) {
+    @media (max-width: 720px) {
       body {
         font-size: 15px;
       }
@@ -698,10 +1119,10 @@
       .topbar {
         position: static;
         align-items: flex-start;
-        padding: 10px 18px;
+        padding: 12px 18px;
       }
 
-      .brand span:last-child {
+      .brand {
         white-space: normal;
       }
 
@@ -710,35 +1131,40 @@
       }
 
       main {
-        width: min(100% - 28px, 1180px);
+        width: min(100% - 28px, 1220px);
       }
 
-      h1 {
-        font-size: 32px;
+      .copy-panel {
+        border-radius: var(--radius);
       }
 
-      .cockpit {
+      .app-dashboard {
         grid-template-columns: 1fr;
       }
 
-      .status-panel {
-        padding: 13px;
+      .sidebar,
+      .right-panel {
+        border: 0;
+        border-bottom: 4px solid var(--line);
       }
 
-      .panel-main {
-        font-size: 18px;
-      }
-
-      .below-fold-cue {
+      .right-panel {
         grid-template-columns: 1fr;
       }
 
-      .mini-animals {
-        justify-content: flex-start;
+      .appointment-grid,
+      .chart-card,
+      .feature-splats {
+        grid-template-columns: 1fr;
       }
 
-      section {
-        padding: 28px 0;
+      .floating-pet {
+        display: none;
+      }
+
+      .below-fold-cue,
+      .section-head {
+        display: grid;
       }
 
       .timeline {
@@ -749,147 +1175,262 @@
       .time-stop {
         min-height: 0;
       }
-
-      .module-head {
-        position: static;
-      }
     }
   </style>
 </head>
 <body>
-  <div class="site-shell">
+  <div class="page">
+    <span class="shape splash-one" aria-hidden="true"></span>
+    <span class="shape splash-two" aria-hidden="true"></span>
+    <span class="shape splash-three" aria-hidden="true"></span>
+    <span class="shape zig one" aria-hidden="true"></span>
+    <span class="shape zig two" aria-hidden="true"></span>
+
     <header class="topbar" aria-label="サイトヘッダー">
-      <div class="brand">
+      <a class="brand" href="#">
         <span class="brand-mark" aria-hidden="true">🐾</span>
-        <span>Animal Clinic Domain Modeling</span>
-      </div>
+        <span>WAN NYAN CLINIC</span>
+      </a>
       <nav class="nav" aria-label="ページ内ナビゲーション">
-        <a href="#state-diagram">状態図</a>
-        <a href="#schedule">3時間の流れ</a>
-        <a href="#modules">modules</a>
-        <a href="#reading">教材本文</a>
+        <a href="#system">SYSTEM</a>
+        <a href="#states">STATES</a>
+        <a href="#schedule">LESSON</a>
+        <a href="#sources">SOURCE</a>
+        <a href="#reading">CODE</a>
       </nav>
     </header>
 
     <main>
-      <section class="hero" aria-labelledby="page-title">
-        <div class="hero-heading">
-          <div>
-            <p class="eyebrow">2026-08-30 hands-on docs mockup</p>
-            <h1 id="page-title">関数型ドメインモデリングハンズオン with TypeScript</h1>
+      <section class="hero" id="system" aria-labelledby="page-title">
+        <span class="floating-pet cat" aria-hidden="true">🐈</span>
+        <span class="floating-pet dog" aria-hidden="true">🐕</span>
+        <span class="floating-pet rabbit" aria-hidden="true">🐇</span>
+
+        <div class="hero-grid">
+          <div class="copy-panel">
+            <p class="eyebrow">🐱 2026-08-30 TypeScript hands-on</p>
+            <h1 id="page-title">
+              予約も<br>
+              カルテも<br>
+              <span class="rainbow-word" aria-label="できる">
+                <span>で</span><span>き</span><span>る</span><span>！</span><span>！</span>
+              </span>
+            </h1>
             <p class="lead">
-              動物病院の予約・診察・会計フローを題材に、事故を読んで型で閉じる教材サイト。かわいさは状態や失敗の手掛かりに寄せ、本文とコードの読みやすさを優先する。
+              動物病院の予約・診察・会計フローを題材に、状態遷移・入力境界・失敗処理を型で守る教材モック。
+              画面はにぎやか、ルールはきっちり。
             </p>
+            <div class="hero-tags" aria-label="教材トピック">
+              <span class="tag">🐾 Reservation</span>
+              <span class="tag">🩺 Chart</span>
+              <span class="tag">💳 Payment</span>
+              <span class="tag">🧪 Result</span>
+              <span class="tag">🔒 PII Defense</span>
+              <span class="tag">📜 Domain Events</span>
+            </div>
           </div>
-          <aside class="date-ticket" aria-label="イベント日程">
-            <span>診察予約票</span>
-            <strong>08.30 Sun</strong>
-            <span>3 hours / TypeScript</span>
-          </aside>
-        </div>
 
-        <div class="cockpit" aria-label="現在の学習状況">
-          <article class="status-panel alert">
-            <div class="panel-label">
-              <span>Current Incident</span>
-              <span class="animal-badge">🐢 会計済み票</span>
+          <div class="system-window" aria-label="動物病院の予約・カルテシステム画面モック">
+            <div class="window-top">
+              <span>Animal Clinic OS / Reservation & Chart</span>
+              <span class="window-buttons" aria-hidden="true"><span></span><span></span><span></span></span>
             </div>
-            <p class="panel-main">Paid -> InExamination</p>
-            <div class="incident-flow" aria-label="事故の状態遷移">
-              <span class="state">🐢 Paid</span>
-              <span class="arrow bad">→</span>
-              <span class="state bad">🐶 InExamination</span>
-            </div>
-            <p class="panel-note">会計済みスタンプが押されたカルテが、診察室へ戻ってしまう事故。</p>
-          </article>
+            <div class="app-dashboard">
+              <aside class="sidebar" aria-label="システムメニュー">
+                <div class="clinic-stamp">🐾<br>READY<br>09:00</div>
+                <div class="side-menu">
+                  <div class="active">📅 予約</div>
+                  <div>🩺 カルテ</div>
+                  <div>💉 検査</div>
+                  <div>💳 会計</div>
+                  <div>🤖 Review</div>
+                </div>
+              </aside>
 
-          <article class="status-panel">
-            <div class="panel-label">
-              <span>Invariant</span>
-              <span class="animal-badge">🦔 検査結果票</span>
-            </div>
-            <p class="panel-main">終端状態から戻れない</p>
-            <p class="panel-note">
-              Paid と Canceled は終端。ここから診察・受付・予約に戻す関数を型で表現できないようにする。
-            </p>
-          </article>
+              <div class="schedule-board">
+                <div class="board-head">
+                  <h2>今日の診察</h2>
+                  <span class="date-pill">08.30 Sun</span>
+                </div>
 
-          <article class="status-panel">
-            <div class="panel-label">
-              <span>Current Module</span>
-              <span class="animal-badge">🐱 受付</span>
-            </div>
-            <p class="panel-main">00 Incident</p>
-            <p class="panel-note">0:10-0:25 事故を起こす。まずは型が守れていない現在地を全員で再現する。</p>
-          </article>
+                <div class="appointment-grid" aria-label="予約一覧">
+                  <article class="appointment-card">
+                    <span class="pet-icon" aria-hidden="true">🐕</span>
+                    <span class="time">09:20</span>
+                    <strong>ポチ / ワクチン</strong>
+                    <p>CheckedIn。受付済み、診察室 1 へ案内待ち。</p>
+                  </article>
+                  <article class="appointment-card">
+                    <span class="pet-icon" aria-hidden="true">🐈</span>
+                    <span class="time">09:40</span>
+                    <strong>ミケ / 皮膚相談</strong>
+                    <p>Scheduled。飼い主アプリから問診票が届いた。</p>
+                  </article>
+                  <article class="appointment-card">
+                    <span class="pet-icon" aria-hidden="true">🐇</span>
+                    <span class="time">10:10</span>
+                    <strong>もも / 再診</strong>
+                    <p>InExamination。体重と食欲メモをカルテに反映。</p>
+                  </article>
+                </div>
 
-          <article class="status-panel">
-            <div class="panel-label">
-              <span>Next Command</span>
-              <span class="animal-badge">🐕‍🦺 実行係</span>
+                <div class="chart-card" aria-label="カルテ詳細">
+                  <div class="chart-patient">
+                    <span class="big-pet" aria-hidden="true">🐈</span>
+                    <h3>カルテ #AC-2408</h3>
+                    <p>ミケ / 3歳 / 皮膚相談。外部入力は parse 境界で診察券番号に変換済み。</p>
+                    <div class="status-flow" aria-label="状態遷移">
+                      <span>Scheduled</span>
+                      <span>CheckedIn</span>
+                      <span>InExamination</span>
+                      <span>Paid</span>
+                    </div>
+                  </div>
+                  <div class="chart-notes">
+                    <div class="note-line alert">🚫 Paid から InExamination へ戻す関数は存在しない</div>
+                    <div class="note-line alert">🔒 ownerEmail はログに出さず [REDACTED] にする</div>
+                    <div class="note-line">✅ Result 型で会計失敗の理由を表示</div>
+                    <div class="note-line">📜 ExaminationStarted を変更記録として残す</div>
+                    <div class="note-line">🤖 Agent Review: union の網羅性と as 偽造を確認</div>
+                  </div>
+                </div>
+              </div>
+
+              <aside class="right-panel" aria-label="待合と通知">
+                <div class="mini-widget">
+                  <h3>待合室</h3>
+                  <div class="queue-row"><span>🐶</span><strong>ポチ</strong><em>あと 1</em></div>
+                  <div class="queue-row"><span>🐱</span><strong>ミケ</strong><em>問診済</em></div>
+                  <div class="queue-row"><span>🐰</span><strong>もも</strong><em>診察中</em></div>
+                </div>
+                <div class="mini-widget">
+                  <h3>検査結果</h3>
+                  <p>失敗は例外で流さず Err として返す。画面も赤く、型も赤く。</p>
+                </div>
+                <div class="mini-widget">
+                  <h3>ログ防御</h3>
+                  <p>飼い主の連絡先は Sensitive に包み、構造化ログでは [REDACTED] にする。</p>
+                </div>
+                <div class="mini-widget">
+                  <h3>会計</h3>
+                  <p>Paid は終端状態。スタンプ後のカルテは診察室へ戻らない。</p>
+                </div>
+              </aside>
             </div>
-            <div class="command-list" aria-label="次に実行するコマンド">
-              <code>pnpm test -- --run 00-incident</code>
-              <code>pnpm typecheck</code>
-            </div>
-            <p class="panel-note">赤い検査結果を見てから、型とテストの両方で Green を確認する。</p>
-          </article>
+          </div>
         </div>
 
         <div class="below-fold-cue">
-          <span>この下で、状態図・3時間の流れ・各 module の Incident -> Red -> Edit -> Green -> Agent Review を同じ形式で追う。</span>
-          <span class="mini-animals" aria-hidden="true">🐰 🐱 🐶 🐢 🦔</span>
+          <span>下にスクロールすると、機能・状態図・3時間の教材フロー・コード例まで、動物たちと一緒に追えます。</span>
+          <span class="animal-train" aria-hidden="true"><span>🐈</span><span>🐕</span><span>🐇</span><span>🐢</span><span>🦜</span><span>🦔</span></span>
         </div>
       </section>
 
-      <section id="state-diagram" aria-labelledby="state-diagram-title">
+      <section aria-labelledby="features-title">
         <div class="section-head">
-          <h2 id="state-diagram-title">状態図</h2>
-          <p>動物アイコンは状態の意味に割り当てる。装飾ではなく、診察券・カルテ・検査結果票・会計済みスタンプとして読む。</p>
+          <h2 id="features-title">できること</h2>
+          <p>参考画像のようなポップな色面に、ハンズオンで扱う業務機能を載せる。かわいいだけでなく、何を型で守るかが一目で分かる構成。</p>
         </div>
 
-        <div class="diagram-wrap">
-          <div class="state-diagram" role="img" aria-label="Scheduled から CheckedIn、InExamination、Paid へ進み、Scheduled または CheckedIn から Canceled へ進む状態図">
-            <div class="diagram-lane">
-              <div class="diagram-node">
-                <strong>🐰 Scheduled</strong>
-                <span>診察券カード。予約はあるが、まだ受付前。</span>
+        <div class="feature-splats" aria-label="機能一覧">
+          <div class="splat-card">
+            <span class="icon" aria-hidden="true">📅</span>
+            <strong>予約管理</strong>
+            <span>Scheduled から始まる診察予定を整理。</span>
+          </div>
+          <div class="splat-card">
+            <span class="icon" aria-hidden="true">🩺</span>
+            <strong>カルテ</strong>
+            <span>診察中だけ編集できる情報を分ける。</span>
+          </div>
+          <div class="splat-card">
+            <span class="icon" aria-hidden="true">🐾</span>
+            <strong>待合室</strong>
+            <span>犬、猫、うさぎがぴょこぴょこ並ぶ。</span>
+          </div>
+          <div class="splat-card">
+            <span class="icon" aria-hidden="true">💳</span>
+            <strong>会計</strong>
+            <span>Paid は戻れない終端状態。</span>
+          </div>
+          <div class="splat-card">
+            <span class="icon" aria-hidden="true">🤖</span>
+            <strong>Agent Review</strong>
+            <span>AI に頼む前提で、型の穴を疑う。</span>
+          </div>
+          <div class="splat-card">
+            <span class="icon" aria-hidden="true">🔒</span>
+            <strong>PII ログ防御</strong>
+            <span>型だけでは漏れる値を Sensitive で包む。</span>
+          </div>
+          <div class="splat-card">
+            <span class="icon" aria-hidden="true">📜</span>
+            <strong>変更記録</strong>
+            <span>成功した状態変更を domain event に残す。</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="states" aria-labelledby="states-title">
+        <div class="section-head">
+          <h2 id="states-title">状態図もにぎやかに</h2>
+          <p>動物は単なる飾りではなく、予約・受付・診察・会計の状態を見分けるサインとして使う。</p>
+        </div>
+
+        <div class="state-area">
+          <div class="state-map" role="img" aria-label="Scheduled から CheckedIn、InExamination、Paid へ進み、Scheduled または CheckedIn から Canceled へ進む状態図">
+            <div class="state-lane">
+              <div class="state-node">
+                <span class="animal" aria-hidden="true">🐇</span>
+                <strong>Scheduled</strong>
+                <span>予約済み。まだ受付前。</span>
               </div>
-              <div class="diagram-node">
-                <strong>🐱 CheckedIn</strong>
-                <span>受付済み。カルテが今日の棚に入る。</span>
+              <div class="state-node">
+                <span class="animal" aria-hidden="true">🐈</span>
+                <strong>CheckedIn</strong>
+                <span>受付済み。待合室で順番待ち。</span>
               </div>
-              <div class="diagram-node">
-                <strong>🐶 InExamination</strong>
-                <span>診察中。獣医師が検査結果を更新する。</span>
+              <div class="state-node">
+                <span class="animal" aria-hidden="true">🐕</span>
+                <strong>InExamination</strong>
+                <span>診察中。カルテ更新可能。</span>
               </div>
-              <div class="diagram-node">
-                <strong>🐢 Paid</strong>
-                <span>会計済みスタンプ。終端状態。</span>
+              <div class="state-node">
+                <span class="animal" aria-hidden="true">🐢</span>
+                <strong>Paid</strong>
+                <span>会計済み。終端状態。</span>
               </div>
             </div>
-            <div class="diagram-branch">
+            <div class="state-branch">
               <div class="cancel-node">🦔 Scheduled | CheckedIn -> Canceled</div>
-              <div class="stamp-node">Paid は戻れない</div>
+              <div class="paid-lock">Paid は戻れない</div>
             </div>
           </div>
 
-          <aside class="legend" aria-label="動物アイコンの凡例">
+          <aside class="legend" aria-label="教材で扱う型の凡例">
             <div class="legend-row">
-              <span class="legend-icon">🐰</span>
-              <span><strong>診察券カード</strong><br>まだ動かせる予約状態。</span>
+              <span class="legend-icon">🐾</span>
+              <span><strong>Discriminated Union</strong><br>状態ごとに持てる値と遷移関数を分ける。</span>
             </div>
             <div class="legend-row">
-              <span class="legend-icon">🐶</span>
-              <span><strong>カルテ</strong><br>診察中の編集対象。</span>
+              <span class="legend-icon">🎫</span>
+              <span><strong>Branded Type</strong><br>診察券番号をただの string から分離する。</span>
             </div>
             <div class="legend-row">
-              <span class="legend-icon">🦔</span>
-              <span><strong>検査結果票</strong><br>失敗・警告・レビュー観点。</span>
+              <span class="legend-icon">🧪</span>
+              <span><strong>Result</strong><br>失敗を例外ではなく戻り値で表す。</span>
             </div>
             <div class="legend-row">
-              <span class="legend-icon">🐢</span>
-              <span><strong>会計済みスタンプ</strong><br>戻してはいけない終端。</span>
+              <span class="legend-icon">🔒</span>
+              <span><strong>Sensitive</strong><br>ログに出ると困る値を runtime でも赤く隠す。</span>
+            </div>
+            <div class="legend-row">
+              <span class="legend-icon">📜</span>
+              <span><strong>Domain Event</strong><br>あとから事故を追える変更記録を残す。</span>
+            </div>
+            <div class="legend-row">
+              <span class="legend-icon">🤖</span>
+              <span><strong>Agent Review</strong><br>AI が業務ルールを外していないか見る。</span>
             </div>
           </aside>
         </div>
@@ -904,113 +1445,66 @@
         <div class="timeline" aria-label="ハンズオンの時間割">
           <article class="time-stop active">
             <time>0:10-0:25</time>
-            <strong>事故を起こす</strong>
+            <strong>🐢 事故を起こす</strong>
             <span>Paid -> InExamination を再現し、なぜ通るのかを見る。</span>
           </article>
           <article class="time-stop">
             <time>0:25-0:40</time>
-            <strong>事故を読む</strong>
+            <strong>🐕 事故を読む</strong>
             <span>テスト、型、業務ルールのどこに穴があるかを読む。</span>
           </article>
           <article class="time-stop">
             <time>0:40-1:10</time>
-            <strong>Discriminated Union</strong>
+            <strong>🐾 Discriminated Union</strong>
             <span>状態ごとに持てる値と遷移関数を分ける。</span>
           </article>
           <article class="time-stop">
             <time>1:20-1:45</time>
-            <strong>Zod と Branded Type</strong>
-            <span>外部入力を診察券番号として検査してから入れる。</span>
+            <strong>🎫 Zod / Brand / PII</strong>
+            <span>外部入力を検査し、飼い主連絡先は Sensitive でログ漏えいから守る。</span>
           </article>
           <article class="time-stop">
             <time>1:45-2:15</time>
-            <strong>Result 型</strong>
-            <span>失敗を例外ではなく戻り値として見える形にする。</span>
+            <strong>🧪 Result と Event</strong>
+            <span>失敗を戻り値にし、成功した診察開始だけを変更記録に残す。</span>
           </article>
           <article class="time-stop">
             <time>2:15-2:35</time>
-            <strong>Agent 前提レビュー</strong>
+            <strong>🤖 Agent Review</strong>
             <span>同じ変更を AI に頼むなら、どこを疑うかを明文化する。</span>
           </article>
           <article class="time-stop">
             <time>2:35-2:50</time>
-            <strong>ミニ総合演習</strong>
+            <strong>🐈 ミニ総合演習</strong>
             <span>事故、境界、Result、レビューを小さく一周する。</span>
           </article>
         </div>
       </section>
 
-      <section id="modules" aria-labelledby="modules-title">
+      <section id="sources" aria-labelledby="sources-title">
         <div class="section-head">
-          <h2 id="modules-title">Module Format</h2>
-          <p>各 module は Incident -> Red -> Edit -> Green -> Agent Review の固定フォーマット。Agent Review は横の導線として常に見える。</p>
+          <h2 id="sources-title">参考記事を教材に混ぜる</h2>
+          <p>既存記事は別枠の読み物にせず、境界・ログ・変更記録の module に差し込む。記事の主張を小さなテストに落とし、当日の納得度につなげる。</p>
         </div>
 
-        <div class="module-board" aria-label="module ごとの固定フォーマット表">
-          <div class="module-grid">
-            <div class="module-head">Module</div>
-            <div class="module-head">Incident</div>
-            <div class="module-head">Red</div>
-            <div class="module-head">Edit</div>
-            <div class="module-head">Green</div>
-            <div class="module-head">Agent Review</div>
-
-            <div class="module-title"><time>0:10-0:25</time><strong>事故を起こす</strong></div>
-            <div class="module-cell incident"><span class="cell-kicker">🐢 incident</span><p class="cell-main">Paid -> InExamination を通してしまう。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🦔 red</span><p class="cell-main">失敗するべきテストが通る。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🐶 edit</span><p class="cell-main">事故を説明するテスト名に変える。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🐱 green</span><p class="cell-main">現状確認だけでまだ直さない。</p></div>
-            <div class="module-cell agent"><span class="cell-kicker">🦔 review</span><p class="cell-main">AI が「通るから正しい」と言っていないか確認。</p><span class="agent-link">Agent Review</span></div>
-
-            <div class="module-title"><time>0:25-0:40</time><strong>事故を読む</strong></div>
-            <div class="module-cell incident"><span class="cell-kicker">🐶 incident</span><p class="cell-main">カルテの状態と業務ルールが分離していない。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🦔 red</span><p class="cell-main">不変条件を文章で固定する。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🐰 edit</span><p class="cell-main">状態遷移表をコード横に置く。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🐱 green</span><p class="cell-main">守る対象が一文で言える。</p></div>
-            <div class="module-cell agent"><span class="cell-kicker">🦔 review</span><p class="cell-main">AI に渡す前提条件が足りるか見る。</p><span class="agent-link">Agent Review</span></div>
-
-            <div class="module-title"><time>0:40-1:10</time><strong>Discriminated Union で状態遷移を閉じる</strong></div>
-            <div class="module-cell incident"><span class="cell-kicker">🐢 incident</span><p class="cell-main">終端状態を入力に取る関数が残っている。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🦔 red</span><p class="cell-main">型エラーにしたい呼び出しを置く。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🐶 edit</span><p class="cell-main">status で union を分け、遷移関数の入力を狭める。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🐱 green</span><p class="cell-main">Paid から診察中へ戻すコードが書けない。</p></div>
-            <div class="module-cell agent"><span class="cell-kicker">🦔 review</span><p class="cell-main">union の網羅性と never の扱いを確認。</p><span class="agent-link">Agent Review</span></div>
-
-            <div class="module-title"><time>1:20-1:45</time><strong>Zod と Branded Type で外部入力を止める</strong></div>
-            <div class="module-cell incident"><span class="cell-kicker">🐰 incident</span><p class="cell-main">ただの string が診察券番号として混入する。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🦔 red</span><p class="cell-main">不正な入力が domain に入るテストを書く。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🐶 edit</span><p class="cell-main">parse 境界で Branded Type に変換する。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🐱 green</span><p class="cell-main">domain 内は検査済み値だけになる。</p></div>
-            <div class="module-cell agent"><span class="cell-kicker">🦔 review</span><p class="cell-main">as でブランドを偽造していないか見る。</p><span class="agent-link">Agent Review</span></div>
-
-            <div class="module-title"><time>1:45-2:15</time><strong>Result 型で失敗を見える形にする</strong></div>
-            <div class="module-cell incident"><span class="cell-kicker">🦔 incident</span><p class="cell-main">例外や null で失敗理由が流れてしまう。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🦔 red</span><p class="cell-main">失敗分岐の表示が抜けるケースを見る。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🐶 edit</span><p class="cell-main">Ok / Err で戻り値を明示する。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🐱 green</span><p class="cell-main">呼び出し側が Err を処理せざるを得ない。</p></div>
-            <div class="module-cell agent"><span class="cell-kicker">🦔 review</span><p class="cell-main">Err を握りつぶす実装がないか確認。</p><span class="agent-link">Agent Review</span></div>
-
-            <div class="module-title"><time>2:15-2:35</time><strong>AI エージェントに同じ変更を頼む前提でレビューする</strong></div>
-            <div class="module-cell incident"><span class="cell-kicker">🐕‍🦺 incident</span><p class="cell-main">AI が型を合わせただけで業務ルールを外す。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🦔 red</span><p class="cell-main">レビュー観点が曖昧だと見逃す。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🐶 edit</span><p class="cell-main">不変条件・境界・失敗処理の観点表を作る。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🐱 green</span><p class="cell-main">PR 差分を観点ごとに読める。</p></div>
-            <div class="module-cell agent"><span class="cell-kicker">🦔 review</span><p class="cell-main">この module 自体が review checklist。</p><span class="agent-link">Agent Review</span></div>
-
-            <div class="module-title"><time>2:35-2:50</time><strong>ミニ総合演習</strong></div>
-            <div class="module-cell incident"><span class="cell-kicker">🐢 incident</span><p class="cell-main">別の終端・入力・失敗ケースを小さく混ぜる。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🦔 red</span><p class="cell-main">事故を再現するテストを先に置く。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🐶 edit</span><p class="cell-main">union、brand、Result を必要な分だけ使う。</p></div>
-            <div class="module-cell"><span class="cell-kicker">🐱 green</span><p class="cell-main">不変条件がコード上で守られる。</p></div>
-            <div class="module-cell agent"><span class="cell-kicker">🦔 review</span><p class="cell-main">AI に頼むなら何を固定するかを言語化。</p><span class="agent-link">Agent Review</span></div>
-          </div>
+        <div class="feature-splats" aria-label="参考記事">
+          <a class="splat-card" href="https://kosui.me/posts/2026/03/16/typescript-pii-logging-defense">
+            <span class="icon" aria-hidden="true">🔒</span>
+            <strong>PII ログ防御</strong>
+            <span>構造的部分型や Branded Type だけではログ漏えいを防げない。Zod 境界で Sensitive に包む。</span>
+          </a>
+          <a class="splat-card" href="https://kosui.me/posts/2025/05/06/142842">
+            <span class="icon" aria-hidden="true">📜</span>
+            <strong>ドメインイベント</strong>
+            <span>状態変更をあとから調査できる出来事として記録する。失敗時には余計な event を残さない。</span>
+          </a>
         </div>
       </section>
 
       <section id="reading" aria-labelledby="reading-title">
         <div class="section-head">
-          <h2 id="reading-title">教材本文とコードの見え方</h2>
-          <p>本文は静かに、コードは暗い背景で読みやすく。動物病院の見た目は情報の分類にだけ使う。</p>
+          <h2 id="reading-title">コードも読みやすく</h2>
+          <p>見た目はポップにしつつ、本文とコードの読みやすさは残す。可愛い画面から、型で守るルールへ自然に入る。</p>
         </div>
 
         <div class="reading-row">
@@ -1020,7 +1514,7 @@
               まずは会計済みの診察記録を診察中に戻す操作を実行する。ここで直すのではなく、なぜ型が止めてくれないのかを読める状態にする。
             </p>
             <div class="callout">
-              <span class="legend-icon">🐢</span>
+              <span class="legend-icon" aria-hidden="true">🐢</span>
               <div>
                 <strong>守りたい不変条件</strong>
                 <p>Paid は終端状態。診察室に戻る遷移は業務上存在しない。</p>
