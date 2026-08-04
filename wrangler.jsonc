@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fp-with-ts-hands-on",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-08-04",
+  "assets": {
+    "directory": "apps/docs/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  }
+}
