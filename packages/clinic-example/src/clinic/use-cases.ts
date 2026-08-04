@@ -5,7 +5,10 @@ import { Appointment, type Appointment as AppointmentValue, type CheckedIn, type
 import { AppointmentId, type AppointmentId as AppointmentIdValue } from "./appointment-id.js";
 import type { AppointmentRepository } from "./appointment-repository.js";
 import type { DomainEventStore } from "./domain-event-store.js";
-import { ExaminationStarted } from "./domain-events.js";
+import { ExaminationStarted, FollowUpRequested } from "./domain-events.js";
+import { ExamResult } from "./exam-result.js";
+import type { PetId as PetIdValue } from "./pet-id.js";
+import type { OwnerContact } from "./owner-contact.js";
 import { VeterinarianId, type VeterinarianId as VeterinarianIdValue } from "./veterinarian-id.js";
 import type { Sensitive } from "../shared/sensitive.js";
 
@@ -73,14 +76,90 @@ export type FollowUpTarget = Readonly<{
   appointmentId: AppointmentIdValue;
   ownerPhone: Sensitive<string>;
 }>;
-export type FollowUpTargetError = Readonly<{ kind: "FollowUpTargetNotImplemented" }>;
+
+export type FollowUpCandidate = Readonly<{
+  appointment: AppointmentValue;
+  examResult: unknown;
+  ownerContact: OwnerContact;
+}>;
+
+export type FollowUpExamResult = Readonly<{
+  examId: string;
+  petId: PetIdValue;
+  collectedAt: string;
+  needsFollowUp: boolean;
+}>;
+
+export type ExamResultPetMismatch = Readonly<{
+  kind: "ExamResultPetMismatch";
+  appointmentId: AppointmentIdValue;
+  expectedPetId: PetIdValue;
+  actualPetId: PetIdValue;
+}>;
+
+export type FollowUpTargetError = ValidationError | ExamResultPetMismatch;
+
 export type CollectFollowUpTargetsInput = Readonly<{
-  candidates: ReadonlyArray<unknown>;
+  candidates: ReadonlyArray<FollowUpCandidate>;
   eventStore: DomainEventStore;
 }>;
 
-// This deliberately incomplete exercise is implemented by participants in module 05.
+const FollowUpExamResultSchema = ExamResult.schema
+  .pick({
+    examId: true,
+    petId: true,
+    collectedAt: true,
+    needsFollowUp: true,
+  })
+  .partial({ needsFollowUp: true })
+  .transform((value) => ({
+    ...value,
+    needsFollowUp: value.needsFollowUp ?? false,
+  }));
+
+const parseFollowUpExamResult = schemaResult<FollowUpExamResult>(FollowUpExamResultSchema);
+
+const ensureExamResultForAppointment = (
+  appointment: AppointmentValue,
+  examResult: FollowUpExamResult,
+): Result<FollowUpExamResult, ExamResultPetMismatch> =>
+  appointment.petId === examResult.petId
+    ? ok(examResult)
+    : err({
+        kind: "ExamResultPetMismatch",
+        appointmentId: appointment.id,
+        expectedPetId: appointment.petId,
+        actualPetId: examResult.petId,
+      });
+
 export const collectFollowUpTargets = (
-  _input: CollectFollowUpTargetsInput,
-): Result<ReadonlyArray<FollowUpTarget>, FollowUpTargetError> =>
-  err({ kind: "FollowUpTargetNotImplemented" });
+  input: CollectFollowUpTargetsInput,
+): Result<ReadonlyArray<FollowUpTarget>, FollowUpTargetError> => {
+  const targets: FollowUpTarget[] = [];
+  const events: ReturnType<typeof FollowUpRequested.create>[] = [];
+
+  for (const candidate of input.candidates) {
+    const parsed = parseFollowUpExamResult(candidate.examResult);
+    if (parsed.kind === "Err") return parsed;
+
+    const matching = ensureExamResultForAppointment(candidate.appointment, parsed.value);
+    if (matching.kind === "Err") return matching;
+
+    if (!matching.value.needsFollowUp) continue;
+    if (candidate.appointment.kind !== "Paid") continue;
+
+    targets.push({
+      appointmentId: candidate.appointment.id,
+      ownerPhone: candidate.ownerContact.ownerPhone,
+    });
+    events.push(FollowUpRequested.create({
+      eventId: `follow_up_${matching.value.examId}`,
+      occurredAt: matching.value.collectedAt,
+      appointmentId: candidate.appointment.id,
+    }));
+  }
+
+  for (const event of events) input.eventStore.append(event);
+
+  return ok(targets);
+};
