@@ -251,8 +251,8 @@
 
     h1 {
       margin-bottom: 16px;
-      font-size: clamp(38px, 6vw, 84px);
-      line-height: 0.98;
+      font-size: clamp(34px, 5vw, 68px);
+      line-height: 1.04;
       letter-spacing: 0;
     }
 
@@ -264,8 +264,9 @@
 
     .lead {
       margin-bottom: 20px;
+      max-width: 520px;
       color: #30324a;
-      font-size: clamp(15px, 2vw, 18px);
+      font-size: clamp(14px, 1.6vw, 16px);
       font-weight: 700;
       overflow-wrap: anywhere;
     }
@@ -1223,7 +1224,8 @@
       </a>
       <nav class="nav" aria-label="ページ内ナビゲーション">
         <a href="#system">TOP</a>
-        <a href="#schedule">LESSON</a>
+        <a href="#features">FEATURES</a>
+        <a href="#schedule">PROBLEMS</a>
         <a href="/module-00/">MODULE 00</a>
       </nav>
     </header>
@@ -1238,29 +1240,20 @@
           <div class="copy-panel">
             <p class="eyebrow">🐱 2026-08-30 TypeScript hands-on</p>
             <h1 id="page-title">
-              壊して<br>
-              型で<br>
-              <span class="rainbow-word" aria-label="直す">
-                <span>直</span><span>す</span><span>！</span><span>！</span><span>！</span>
+              ようこそ<br>
+              WAN NYAN<br>
+              <span class="rainbow-word" aria-label="OSへ">
+                <span>O</span><span>S</span><span>へ</span><span>！</span><span>！</span>
               </span>
             </h1>
             <p class="lead">
-              あなたは WAN NYAN CLINIC の予約・カルテシステムを引き継いだ開発者です。
-              予約、診察、会計、フォロー連絡に増えていく要求を、TypeScript で壊れにくく扱える形へ変えていきます。
+              WAN NYAN CLINIC の予約・カルテ管理をひとつにつなぐ、動物病院のための業務システムです。
             </p>
-            <div class="hero-tags" aria-label="教材トピック">
-              <span class="tag">🐾 Reservation</span>
-              <span class="tag">🩺 Chart</span>
-              <span class="tag">💳 Payment</span>
-              <span class="tag">🧪 Result</span>
-              <span class="tag">🔒 PII Defense</span>
-              <span class="tag">📜 Domain Events</span>
-            </div>
           </div>
 
           <div class="system-window" aria-label="動物病院の予約・カルテシステム画面">
             <div class="window-top">
-              <span>Animal Clinic OS / Reservation & Chart</span>
+              <span>WAN NYAN OS / Reservation & Chart</span>
               <span class="window-buttons" aria-hidden="true"><span></span><span></span><span></span></span>
             </div>
             <div class="app-dashboard">
@@ -1366,105 +1359,105 @@
         </div>
 
         <div class="below-fold-cue">
-          <span>下にスクロールして、今日の進め方と Module 00 の実行手順を確認します。</span>
+          <span>下にスクロールして、WAN NYAN OS の機能と、現場で起き始めた問題を確認します。</span>
           <span class="animal-train" aria-hidden="true"><span>🐈</span><span>🐕</span><span>🐇</span><span>🐢</span><span>🦜</span><span>🦔</span></span>
         </div>
       </section>
 
-      <section aria-labelledby="features-title">
+      <section id="features" aria-labelledby="features-title">
         <div class="section-head">
-          <h2 id="features-title">今日やること</h2>
-          <p>動物病院の現場で起きた小さな事故から始めます。業務の言葉で何が困るのかを読み、テストと型で守る形へつなげます。</p>
+          <h2 id="features-title">WAN NYAN OS でできること</h2>
+          <p>最初は便利でした。予約から会計までがつながり、スタッフは画面を切り替えながら動物たちの来院をさばけるようになりました。</p>
         </div>
 
         <div class="feature-splats" aria-label="機能一覧">
           <div class="splat-card">
             <span class="icon" aria-hidden="true">📅</span>
             <strong>予約管理</strong>
-            <span>Scheduled から始まる診察予定を整理。</span>
+            <span>来院予定、問診、受付状況をひとつの画面で確認。</span>
           </div>
           <div class="splat-card">
             <span class="icon" aria-hidden="true">🩺</span>
             <strong>カルテ</strong>
-            <span>診察中だけ編集できる情報を分ける。</span>
+            <span>診察メモ、バイタル、処方、注意事項を記録。</span>
           </div>
           <div class="splat-card">
             <span class="icon" aria-hidden="true">🐾</span>
             <strong>待合室</strong>
-            <span>予約、受付、診察中の違いを状態として読む。</span>
+            <span>受付済み、問診済み、診察中の患者を一覧化。</span>
           </div>
           <div class="splat-card">
             <span class="icon" aria-hidden="true">💳</span>
             <strong>会計</strong>
-            <span>Paid は戻れない終端状態。</span>
+            <span>診察料、検査料、処方料をまとめて会計。</span>
           </div>
           <div class="splat-card">
-            <span class="icon" aria-hidden="true">🤖</span>
-            <strong>Agent Review</strong>
-            <span>AI に頼む前提で、型の穴を疑う。</span>
+            <span class="icon" aria-hidden="true">☎️</span>
+            <strong>フォロー連絡</strong>
+            <span>検査後に連絡が必要な飼い主を抽出。</span>
           </div>
           <div class="splat-card">
             <span class="icon" aria-hidden="true">🔒</span>
-            <strong>PII ログ防御</strong>
-            <span>型だけでは漏れる値を Sensitive で包む。</span>
+            <strong>連絡先管理</strong>
+            <span>飼い主の電話番号やメールアドレスを管理。</span>
           </div>
           <div class="splat-card">
             <span class="icon" aria-hidden="true">📜</span>
-            <strong>変更記録</strong>
-            <span>成功した状態変更を domain event に残す。</span>
+            <strong>申し送り</strong>
+            <span>スタッフ間で注意事項や次回対応を共有。</span>
           </div>
         </div>
       </section>
 
       <section id="schedule" aria-labelledby="schedule-title">
         <div class="section-head">
-          <h2 id="schedule-title">3時間の流れ</h2>
-          <p>導入事故から始め、セッション中に増える要求と発覚する事故を、型・境界・Result・変更記録・Agent Review で受け止める。</p>
+          <h2 id="schedule-title">ところが、問題が増えてきた</h2>
+          <p>便利になった分だけ、要求も増えました。小さな改修を重ねるうちに、どの状態で何ができるのか、どの情報を外へ出してよいのかが分かりにくくなっています。</p>
         </div>
 
-        <div class="timeline" aria-label="ハンズオンの時間割">
+        <div class="timeline" aria-label="WAN NYAN OS に起きている問題">
           <article class="time-stop active">
-            <time>0:10-0:25</time>
-            <strong>🐢 導入事故を起こす</strong>
-            <span>Paid -> InExamination を再現し、なぜ通るのかを見る。</span>
+            <time>Problem 00</time>
+            <strong>🐢 会計済みが診察中へ戻る</strong>
+            <span>再診対応の改修後、閉じたはずの来院が診察室へ戻れるようになった。</span>
           </article>
           <article class="time-stop">
-            <time>0:25-0:40</time>
-            <strong>🐕 事故と次の要求を読む</strong>
-            <span>型の穴を読み、キャンセル理由と再診希望を残したい要求を追加する。</span>
+            <time>Problem 01</time>
+            <strong>🐕 キャンセル理由が残らない</strong>
+            <span>理由や再診希望日が、必要な状態にだけ結びついていない。</span>
           </article>
           <article class="time-stop">
-            <time>0:40-1:10</time>
-            <strong>🐾 Discriminated Union</strong>
-            <span>キャンセル理由を状態に入れ、終端状態に戻る遷移を閉じる。</span>
+            <time>Problem 02</time>
+            <strong>🐾 ID を取り違える</strong>
+            <span>外部検査 payload の petId と ownerId を間違えても気づきにくい。</span>
           </article>
           <article class="time-stop">
-            <time>1:20-1:45</time>
-            <strong>🎫 Zod / Brand / PII</strong>
-            <span>外部検査 payload の ID 取り違えと、飼い主連絡先のログ漏えいを止める。</span>
+            <time>Problem 03</time>
+            <strong>🎫 連絡先がログに出る</strong>
+            <span>調査のためのログが、飼い主の個人情報まで含んでしまう。</span>
           </article>
           <article class="time-stop">
-            <time>1:45-2:15</time>
-            <strong>🧪 Result と Event</strong>
-            <span>失敗理由を UI へ返し、成功した診察開始だけを変更記録に残す。</span>
+            <time>Problem 04</time>
+            <strong>🧪 失敗理由が UI に出せない</strong>
+            <span>throw と undefined が混ざり、スタッフに理由を説明しづらい。</span>
           </article>
           <article class="time-stop">
-            <time>2:15-2:35</time>
-            <strong>🤖 Agent Review</strong>
-            <span>次の追加要求を AI に頼むなら、どこを疑うかを明文化する。</span>
+            <time>Problem 05</time>
+            <strong>📜 変更を後から追えない</strong>
+            <span>いつ誰が診察開始したのか、事故調査でたどりにくい。</span>
           </article>
           <article class="time-stop">
-            <time>2:35-2:50</time>
-            <strong>🐈 当日追加要求</strong>
-            <span>電話フォロー対象抽出を追加し、境界、Result、event、レビューを小さく一周する。</span>
+            <time>Help wanted</time>
+            <strong>🐈 急募！どうにかしてくれるエンジニア</strong>
+            <span>便利な WAN NYAN OS を、変更に強いシステムへ立て直したい。</span>
           </article>
         </div>
       </section>
 
       <section id="reading" aria-labelledby="reading-title">
         <div class="section-head">
-          <h2 id="reading-title">最初のセッション</h2>
-          <p>詳しい手順はセッションページで確認します。トップでは全体像だけを見て、開始時に Module 00 のページを開きます。</p>
+          <h2 id="reading-title">急募！どうにかしてくれるエンジニア！</h2>
+          <p>あなたの最初の仕事は、会計済みの来院が診察中へ戻る事故を再現することです。すぐには直さず、何が業務ルールとして守られるべきかを読み解きます。</p>
         </div>
 
         <div class="reading-row">
@@ -1483,20 +1476,17 @@
             </div>
           </article>
 
-          <pre class="shiki-fallback" data-shiki-code aria-label="TypeScript コード例"><code>type VisitStatus =
-  | "Scheduled"
-  | "CheckedIn"
-  | "InExamination"
-  | "Paid"
-  | "Canceled";
+          <pre class="shiki-fallback" aria-label="WAN NYAN CLINIC のエンジニア募集"><code>WAN NYAN CLINIC / Engineering Help Wanted
 
-const moveToExamination = (visit: Visit): Visit => ({
-  ...visit,
-  status: "InExamination",
-});
+困っていること:
+- 会計済みの来院が診察中へ戻る
+- キャンセル理由や再診希望日が扱いづらい
+- 外部検査結果の ID を取り違えそう
+- 飼い主の連絡先がログに出そう
+- 変更履歴を後から追いづらい
 
-// 詳細手順は /module-00/ へ
-moveToExamination(paidVisit);</code></pre>
+最初の仕事:
+/module-00/ を開いて、導入事故を再現する</code></pre>
         </div>
       </section>
 
@@ -1505,29 +1495,5 @@ moveToExamination(paidVisit);</code></pre>
       </footer>
     </main>
   </div>
-  <script type="module">
-    import { codeToHtml } from "https://esm.sh/shiki@3.9.1";
-
-    void (async () => {
-      const codeBlock = document.querySelector("[data-shiki-code]");
-      const source = codeBlock?.querySelector("code")?.textContent;
-
-      if (codeBlock && source) {
-        const highlighted = await codeToHtml(source.trimEnd(), {
-          lang: "ts",
-          theme: "github-dark",
-        });
-
-        const template = document.createElement("template");
-        template.innerHTML = highlighted.trim();
-        const shikiPre = template.content.firstElementChild;
-
-        if (shikiPre instanceof HTMLElement) {
-          shikiPre.setAttribute("aria-label", "TypeScript コード例");
-          codeBlock.replaceWith(shikiPre);
-        }
-      }
-    })();
-  </script>
 </body>
 </html>
