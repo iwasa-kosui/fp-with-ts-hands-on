@@ -34,13 +34,14 @@
 
 `monorepo/apps/kosui-me/src/content/books/animal-clinic` のドラフトは、長編教材「育てる TypeScript アプリケーション」の書籍構想としては有用だが、今回の3時間イベントには重い。第0章と第1章は密度がある一方、第2章以降は見出しレベルで止まっている。
 
-今回の成果物では、長編の第0-6章 + 最終章をそのまま移植しない。イベントのお品書きに合わせ、ハンズオンを4 module + 横断レビューに圧縮する。
+今回の成果物では、長編の第0-6章 + 最終章をそのまま移植しない。イベントのお品書きに合わせ、ハンズオンを「診療セッション中に要求と事故が増える」6 module + 横断レビューに圧縮する。
 
 - `00-break-the-app`: 小さな仕様変更で壊れやすい実装に事故を起こす
-- `01-state-modeling`: Discriminated Union と純粋関数で状態遷移を表現する
-- `02-boundary-and-ids`: Zod と Branded Type で外部入力と ID を守る。owner contact は `Sensitive` に変換し、ログに出ても `[REDACTED]` になることを確認する。Result の設計説明はここでは扱わない
-- `03-result-errors`: Result 型でエラー処理を整理し、正常な状態変更だけをドメインイベントとして記録する
+- `01-state-modeling`: キャンセル理由と再診希望が増え、Discriminated Union と純粋関数で状態遷移を表現する
+- `02-boundary-and-ids`: 外部検査 payload と飼い主連絡先ログ漏えいが発覚する。Zod と Branded Type で外部入力と ID を守り、owner contact は `Sensitive` に変換してログに出ても `[REDACTED]` になることを確認する。Result の設計説明はここでは扱わない
+- `03-result-errors`: 呼び出し元へ失敗理由が伝わらない事故を扱う。Result 型でエラー処理を整理し、正常な状態変更だけをドメインイベントとして記録する
 - `04-agent-review`: 同じ仕様変更を AI エージェントに頼む前提で、各 module で得た設計原則をレビュー観点に変換する
+- `05-mini-integration`: 当日追加要求として「電話フォローが必要な患者を抽出する」を入れ、既存設計でどこまで受け止められるか確認する
 
 `Sensitive` 型とドメインイベントは本線に入れる。ただし、それぞれ深掘りしすぎない。PII ログ防御は「TypeScript の構造的部分型や Branded Type だけではログ漏えいを防げないので、Zod の入口で `Sensitive` に包んで runtime のシリアライズ結果を守る」ことに絞る。ドメインイベントは「事故調査に必要な変更記録を use case から残す」ことに絞る。Pino redact、ESLint custom rule、event sourcing、レイヤードアーキテクチャの詳細は参考リンクとして docs に置き、当日の手を動かす範囲から外す。
 
@@ -51,7 +52,17 @@
 
 ## 体験設計
 
-全 module は、ひとつの事故「会計済みの来院が診察中に戻る」を追いかける。参加者はまず legacy app に小さな仕様変更を入れて事故を起こし、その後の module で同じ事故を別の層から封じ込めていく。
+全 module は、ひとつの事故を直して終わるのではなく、診療セッション中に次々と増える要求と事故を扱う。参加者はまず legacy app に小さな仕様変更を入れて事故を起こし、その後の module で新しい要求や発覚した事故を受け止めながら、設計の判断軸を増やしていく。
+
+セッションで発生する要求と事故:
+
+- 導入事故: 会計済みの来院が診察中に戻る
+- 追加要求1: キャンセル理由と再診希望を残したい
+- 発覚事故1: 外部検査 payload の petId と ownerId を取り違えられる
+- 発覚事故2: 飼い主の連絡先が構造化ログに出る
+- 発覚事故3: 失敗理由が UI や呼び出し元へ伝わらない
+- 追加要求2: 診察開始などの出来事をあとから追えるようにしたい
+- 当日追加要求: 電話フォローが必要な患者を抽出したい
 
 - 状態遷移: `Paid` や `Canceled` から戻れない形を型で表現する
 - 境界と ID: 外部入力や ID 取り違えによって不正な状態が混入しないようにし、PII を `Sensitive` として runtime でも漏れにくくする
@@ -59,7 +70,7 @@
 - ドメインイベント: 正常に起きた状態変更を `ExaminationStarted` などの出来事として記録し、事故調査できる形にする
 - AI Agent Review: 同じ仕様変更を AI エージェントへ依頼するとき、何を指示し、何をレビューすべきかを各 module で確認する
 
-各 module の docs は `Incident -> Red -> Edit -> Green -> Agent Review` の固定フォーマットにする。最後の AI module で初めて設計原則を出すのではなく、各 module の最後に小さな Agent Review を置き、最後は総集編にする。
+各 module の docs は `New Request / Incident -> Red -> Edit -> Green -> Agent Review` の固定フォーマットにする。最後の AI module で初めて設計原則を出すのではなく、各 module の最後に小さな Agent Review を置き、最後は総集編にする。
 
 参加者が書くコードは各 module 1〜2関数に制限する。残りは穴埋め済み、または講師が解説する worked example として置く。発展課題は optional とし、3時間の本線から外す。
 
@@ -67,15 +78,15 @@
 
 connpass の大枠は維持しつつ、実際の進行は「読む」からではなく「事故を起こす」から始める。
 
-- 0:00-0:10 オープニング: 今日のゴールを「AI に変更を頼んでも壊れにくい動物病院ドメインにする」と置く
-- 0:10-0:25 事故を起こす: legacy app に小さな仕様変更を入れ、`paid -> in-examination` が起きる赤いテストを見る
-- 0:25-0:40 事故を読む: `status: string`、optional fields、`throw`、丸ごとログ、変更記録なしを確認し、欠けている不変条件を書き出す
-- 0:40-1:10 Discriminated Union で状態遷移を閉じる: `checkIn` と `startExamination` だけ参加者が実装し、`Paid` から戻れないことを型で確認する
+- 0:00-0:10 オープニング: 今日のゴールを「AI に次々と変更を頼んでも壊れにくい動物病院ドメインにする」と置く
+- 0:10-0:25 導入事故を起こす: legacy app に小さな仕様変更を入れ、`paid -> in-examination` が起きる赤いテストを見る
+- 0:25-0:40 事故と次の要求を読む: `status: string`、optional fields、`throw`、丸ごとログ、変更記録なしを確認し、「キャンセル理由と再診希望も残したい」という追加要求を出す
+- 0:40-1:10 Discriminated Union で状態遷移を閉じる: `checkIn`、`startExamination`、`cancelWithReason` のうち参加者が書く関数を2つに絞り、`Paid` から戻れないことと `Canceled` が理由を持つことを型で確認する
 - 1:10-1:20 休憩
-- 1:20-1:45 Zod と Branded Type で外部入力とログ漏えいを止める: 参加者が書くのは `PetId.safeParse`、検査結果 payload parse、`Sensitive.of` の利用箇所に絞る
-- 1:45-2:15 Result 型で失敗を見える形にし、成功時だけドメインイベントを記録する: `ValidationError | AppointmentNotFound | InvalidAppointmentState` を値として読み、`ExaminationStarted` が残ることを確認する
-- 2:15-2:35 AI エージェントに同じ変更を頼む前提でレビューする: どこが型で守られ、どこは人間のレビューが必要か確認する
-- 2:35-2:50 ミニ総合演習: 新しい仕様を1つ追加し、型エラー・テスト・Result のどれで守られるかを確認する
+- 1:20-1:45 新しい事故として外部入力とログ漏えいを扱う: 参加者が書くのは `PetId.safeParse`、検査結果 payload parse、`Sensitive.of` の利用箇所に絞る
+- 1:45-2:15 失敗理由と変更記録の要求を扱う: `ValidationError | AppointmentNotFound | InvalidAppointmentState` を値として読み、成功時だけ `ExaminationStarted` が残ることを確認する
+- 2:15-2:35 AI エージェントに次の追加要求を頼む前提でレビューする: どこが型で守られ、どこは人間のレビューが必要か確認する
+- 2:35-2:50 ミニ総合演習: 当日追加要求「電話フォローが必要な患者を抽出する」を入れ、型エラー・境界・Result・domain event・Agent Review のどれで守られるかを確認する
 - 2:50-3:00 まとめ、質疑応答
 
 ## 推奨アプローチ
@@ -148,7 +159,7 @@ example は CLI や DB を持たない。中心は TypeScript のドメインコ
 
 ## Exercise 設計
 
-参加者が迷わないよう、各 module は `Incident -> Red -> Edit -> Green -> Agent Review` の単位にする。
+参加者が迷わないよう、各 module は `New Request / Incident -> Red -> Edit -> Green -> Agent Review` の単位にする。
 
 - `00-break-the-app`
   - 通常の `pnpm test` は緑にする
@@ -156,26 +167,33 @@ example は CLI や DB を持たない。中心は TypeScript のドメインコ
   - legacy app に「再診察を開始する」小さな仕様変更を入れ、`paid -> in-examination` が起きることを確認する
   - `status: string`、optional fields、`throw`、丸ごとログ出力を読み、どの不変条件がコードにないかを言語化する
 - `01-state-modeling`
+  - 新しい要求として「キャンセル時に理由と再診希望日を残す」を追加する
   - `kind` の Discriminated Union を導入済みの partially completed code を埋める
-  - 参加者が実装するのは `Appointment.checkIn` と `Appointment.startExamination` の2関数に絞る
+  - 参加者が実装するのは `Appointment.startExamination` と `Appointment.cancelWithReason` の2関数に絞る
   - `@ts-expect-error` は typecheck 専用セクションとして扱い、「エラーが出ることを確認するテスト」であると docs 上に明記する
 - `02-boundary-and-ids`
+  - 新しく「外部検査 payload を取り込む」「飼い主へ検査後に連絡する」要求が来た直後、ID 取り違えと PII ログ漏えいが発覚する
   - 外部検査機関 API の unknown payload を Zod の `safeParse` で検査する
   - `PetId` / `OwnerId` / `AppointmentId` を Zod brand で分離し、取り違えを型エラーにする
   - owner contact payload の email / phone を `Sensitive.of` で包み、`JSON.stringify` しても `[REDACTED]` になることをテストする
   - ここで扱う PII 防御は、型だけでは守れない境界を runtime wrapper で補う例として位置づける
   - Result 型の設計や合成は次 module に送る
 - `03-result-errors`
+  - 新しく「診察開始に失敗した理由を UI に表示したい」「成功した診察開始をあとから追いたい」要求が来る
   - repository lookup、状態 guard、外部 payload parse を Result で合成する
   - controller ではなく use case の戻り値で失敗の種類を読む
   - 成功時だけ `ExaminationStarted` domain event を event store に残し、失敗時には記録されないことを確認する
   - domain event は「あとから事故を追える変更記録」の最小例として扱い、event sourcing の説明には広げない
 - `04-agent-review`
-  - コード変更はミニ総合演習1つに絞る
-  - 「同じ変更を AI エージェントに依頼するなら、どの不変条件・境界・失敗型を指示するか」をテンプレート化する
+  - AI エージェントに「電話フォロー対象を抽出する」変更を頼む前提で、ここまでの要求・事故を checklist 化する
+  - 「次の追加要求を AI エージェントに依頼するなら、どの不変条件・境界・失敗型を指示するか」をテンプレート化する
   - ここで新しい原則を出さず、各 module の Agent Review を横断チェックリストにまとめる
+- `05-mini-integration`
+  - 当日追加要求として「検査後に電話フォローが必要な患者を抽出する」を実装する
+  - 参加者は1関数だけ編集し、`Sensitive` を unwrap してログに出さない、終端状態を戻さない、失敗を Result で返す、必要な event を残す、という複数観点を一周する
+  - ここでは新しい型テクニックを出さず、セッション中に増えた要求を既存設計がどこまで受け止めるか確認する
 
-各 exercise には `README.md` と `exercises/*.test.ts` を置く。通常テストは常に緑、exercise コマンドは module の開始時に赤、module 終了時に緑になる。解答差分は `solutions/module-NN.patch` または `solutions/module-NN/` に置き、講師が詰まった参加者へ案内できるようにする。
+各 exercise には `README.md` と `exercises/*.test.ts` を置く。通常テストは常に緑、exercise コマンドは module の開始時に赤、module 終了時に緑になる。各 exercise の冒頭には「今回増えた要求」「発覚した事故」「この module で回収する範囲」を書く。解答差分は `solutions/module-NN.patch` または `solutions/module-NN/` に置き、講師が詰まった参加者へ案内できるようにする。
 
 ## ドキュメントサイト設計
 
@@ -185,7 +203,7 @@ docs site は「動物病院の院内ポータル」のような雰囲気にす�
 
 - 左サイドバー: module 一覧、所要時間、進捗の目安
 - メイン: 章本文、コードブロック、テスト実行コマンド
-- 右側または本文上部: 今日のカルテ、発生した事故、守りたい不変条件、次に実行するコマンド、現在の `Incident / Red / Edit / Green / Agent Review` フェーズ
+- 右側または本文上部: 今日のカルテ、今回増えた要求、発生した事故、守りたい不変条件、次に実行するコマンド、現在の `New Request / Incident / Red / Edit / Green / Agent Review` フェーズ
 - 下部: 次の module へのナビゲーション
 
 ビジュアル方針:
@@ -227,7 +245,7 @@ Cloudflare docs によると、Workers Static Assets は `assets.directory` を�
 - `pnpm test`
 - `pnpm build`
 - `pnpm preview` または `pnpm dev` でローカル表示確認
-- `pnpm --filter @fp-with-ts/clinic-example exercise:00` で module 開始時に赤くなる事故テストを確認
+- `pnpm --filter @fp-with-ts/clinic-example exercise:00` から `exercise:05` まで、module 開始時に赤くなる要求・事故テストを確認
 
 example の検証:
 
@@ -251,7 +269,7 @@ docs site の検証:
 - README にイベント当日の導線がある
 - 参加者が clone 後、5分以内に `pnpm install`、`pnpm test`、`pnpm dev` まで到達できる
 - docs site の top にイベントのタイムテーブルと module 対応がある
-- 各 module に `Incident -> Red -> Edit -> Green -> Agent Review` と「ここまでできたらOK」がある
+- 各 module に `New Request / Incident -> Red -> Edit -> Green -> Agent Review` と「ここまでできたらOK」がある
 - example は DB や外部 API key を要求しない
 - `pnpm typecheck`、`pnpm test`、`pnpm build` が通る
 - Cloudflare Workers で `apps/docs/dist` が配信できる

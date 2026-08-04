@@ -4,7 +4,7 @@
 
 **ゴール:** 2026-08-30 のハンズオンイベントで使う、動物病院 example と Cloudflare Workers 配信のかわいいドキュメントサイトを構築する。
 
-**アーキテクチャ:** pnpm workspace に `apps/docs` と `packages/clinic-example` を同居させる。docs は Vite が静的 assets を生成し、Worker は `/healthz` 以外を `ASSETS.fetch` に委譲する。example は DB なしの TypeScript + Vitest で、参加者がまず事故を起こし、その事故を状態遷移、境界、失敗処理、AI エージェントレビューの順で封じ込める。
+**アーキテクチャ:** pnpm workspace に `apps/docs` と `packages/clinic-example` を同居させる。docs は Vite が静的 assets を生成し、Worker は `/healthz` 以外を `ASSETS.fetch` に委譲する。example は DB なしの TypeScript + Vitest で、診療セッション中に次々と増える要求と事故を、状態遷移、境界、失敗処理、変更記録、AI エージェントレビューの順で受け止める。
 
 **技術スタック:** pnpm, TypeScript, Vite, Vitest, Zod, Cloudflare Workers Static Assets, Wrangler
 
@@ -19,7 +19,8 @@
 - UI は動物病院らしいかわいさを持たせるが、教材本文とコードの可読性を最優先する。
 - 通常の `pnpm test` はセットアップ確認用として常に緑にする。module 開始時に赤くなるテストは `exercise:*` script で明示的に実行する。
 - 各 module で参加者が書くコードは1〜2関数に制限する。残りは worked example または optional exercise に置く。
-- 各 module は `インシデント -> 赤テスト -> 編集 -> 緑テスト -> エージェントレビュー` の固定フォーマットにする。
+- 各 module は `要求追加 / インシデント -> 赤テスト -> 編集 -> 緑テスト -> エージェントレビュー` の固定フォーマットにする。
+- 単一の事故を最後まで引っ張らない。module ごとに「新しい要求」または「新たに発覚した事故」を置き、セッションが進むほど設計判断が増える体験にする。
 - PII ログ防御は `Sensitive` runtime wrapper + Zod transform の最小例として扱う。Pino redact や ESLint custom rule は参考リンクに留める。
 - ドメインイベントは use case 成功時に `ExaminationStarted` を記録する最小例として扱う。event sourcing や projection は扱わない。
 
@@ -59,6 +60,10 @@
     "build": "pnpm --filter @fp-with-ts/clinic-example build && pnpm --filter @fp-with-ts/docs build",
     "test": "pnpm --filter @fp-with-ts/clinic-example test",
     "exercise:00": "pnpm --filter @fp-with-ts/clinic-example exercise:00",
+    "exercise:01": "pnpm --filter @fp-with-ts/clinic-example exercise:01",
+    "exercise:02": "pnpm --filter @fp-with-ts/clinic-example exercise:02",
+    "exercise:03": "pnpm --filter @fp-with-ts/clinic-example exercise:03",
+    "exercise:05": "pnpm --filter @fp-with-ts/clinic-example exercise:05",
     "typecheck": "pnpm --filter @fp-with-ts/clinic-example typecheck && pnpm --filter @fp-with-ts/docs typecheck",
     "preview": "pnpm --filter @fp-with-ts/docs preview"
   },
@@ -137,9 +142,9 @@ pnpm dev
 1. 壊れやすい動物病院アプリを読む
 2. 事故テストを赤くして不変条件を確認する
 3. Discriminated Union で状態遷移を閉じる
-4. Zod と Branded Type で境界、ID、PII ログ漏えいを守る
-5. Result 型でエラー処理を整理し、成功した状態変更をドメインイベントとして記録する
-6. AI エージェントに同じ変更を頼む前提でレビューする
+4. 新たに発覚した外部入力事故と PII ログ漏えいを、Zod と Branded Type で守る
+5. 失敗理由を Result 型で返し、成功した状態変更をドメインイベントとして記録する
+6. AI エージェントに次の追加要求を頼む前提でレビューする
 ````
 
 - [ ] **ステップ 6: 依存関係をインストールする**
@@ -190,6 +195,7 @@ git commit -m "chore: scaffold hands-on workspace"
     "exercise:01": "vitest run exercises/01-state-modeling.test.ts",
     "exercise:02": "vitest run exercises/02-boundary-and-ids.test.ts",
     "exercise:03": "vitest run exercises/03-result-errors.test.ts",
+    "exercise:05": "vitest run exercises/05-follow-up.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -387,7 +393,8 @@ git commit -m "feat(example): add fragile clinic baseline"
 
 **インターフェース:**
 - 提供: `type Appointment = Scheduled | CheckedIn | InExamination | Paid | Canceled`
-- 提供: `const Appointment.book`, `checkIn`, `startExamination`, `recordPayment`, `cancel`, `isTerminal`
+- 提供: `type CancelReason = "owner-request" | "clinic-capacity" | "duplicate-booking"`
+- 提供: `const Appointment.book`, `checkIn`, `startExamination`, `recordPayment`, `cancelWithReason`, `isTerminal`
 
 - [ ] **ステップ 1: assertNever を追加する**
 
@@ -401,9 +408,9 @@ export const assertNever = (value: never): never => {
 
 - [ ] **ステップ 2: Appointment union と companion を追加する**
 
-`packages/clinic-example/src/clinic/appointment.ts` を追加する。`kind` を discriminant として使い、`Scheduled`、`CheckedIn`、`InExamination`、`Paid`、`Canceled`、`Appointment`、`RecordPaymentInput`、`Appointment` companion object を定義する。
+`packages/clinic-example/src/clinic/appointment.ts` を追加する。module 開始時の新しい要求は「キャンセル時に理由と再診希望日を残したい」。`kind` を discriminant として使い、`Scheduled`、`CheckedIn`、`InExamination`、`Paid`、`Canceled`、`Appointment`、`CancelReason`、`RecordPaymentInput`、`Appointment` companion object を定義する。
 
-companion object は pure function だけを持つ。すべての関数は呼び出し側から `now: string` を受け取る。参加者向け exercise では `Appointment.checkIn` と `Appointment.startExamination` だけを空欄にし、`recordPayment` と `cancel` は worked example として提供する。
+companion object は pure function だけを持つ。すべての関数は呼び出し側から `now: string` を受け取る。参加者向け exercise では `Appointment.startExamination` と `Appointment.cancelWithReason` だけを空欄にし、`checkIn` と `recordPayment` は worked example として提供する。
 
 - [ ] **ステップ 3: runtime の状態遷移テストを追加する**
 
@@ -412,7 +419,7 @@ companion object は pure function だけを持つ。すべての関数は呼び
 - `Scheduled -> CheckedIn`
 - `CheckedIn -> InExamination`
 - `InExamination -> Paid`
-- `Scheduled -> Canceled`
+- `Scheduled -> Canceled` with `reason` and optional `followUpRequestedAt`
 - terminal state が `Appointment.isTerminal` で terminal と判定されること
 
 - [ ] **ステップ 4: 型契約テストを追加する**
@@ -430,7 +437,10 @@ const paid = Appointment.recordPayment(inExamination, {
 Appointment.startExamination(paid, "vet_001", NOW);
 
 // @ts-expect-error Paid cannot be canceled.
-Appointment.cancel(paid, "wrong", NOW);
+Appointment.cancelWithReason(paid, "owner-request", NOW);
+
+// @ts-expect-error cancel reason must be a known domain value.
+Appointment.cancelWithReason(scheduled, "なんとなく", NOW);
 ```
 
 - [ ] **ステップ 5: 検証**
@@ -558,6 +568,8 @@ Zod で `petId` を `PetId.schema` に通して変換する。`ExamResult.safePa
 
 `packages/clinic-example/test/02-boundary-and-ids.test.ts` を追加する:
 
+- module 開始時の新しい要求は「外部検査 payload を取り込み、検査後に飼い主へ連絡したい」
+- 赤テストは `petId` と `ownerId` の取り違え、owner contact の素ログ出力を示す
 - valid な exam payload は `success: true` を返す
 - `items` がない payload は `success: false` を返す
 - `PetId` と `OwnerId` が `@ts-expect-error` で入れ替え不能になる
@@ -592,15 +604,17 @@ git commit -m "feat(example): protect boundaries ids and pii with zod"
 - 作成: `packages/clinic-example/src/clinic/domain-event-store.ts`
 - 作成: `packages/clinic-example/src/clinic/use-cases.ts`
 - 作成: `packages/clinic-example/test/03-result-errors.test.ts`
+- 作成: `packages/clinic-example/exercises/05-follow-up.test.ts`
 
 **インターフェース:**
 - 提供: `type Result<T, E>`, `ok`, `err`, `isOk`, `isErr`, `andThen`, `map`
 - 提供: `schemaResult(schema): (raw: unknown) => Result<T, ValidationError>`
 - 提供: `type AppointmentRepository`
 - 提供: `createInMemoryAppointmentRepository(initial?: ReadonlyArray<Appointment>): AppointmentRepository`
-- 提供: `type ClinicDomainEvent = ExaminationStarted`
+- 提供: `type ClinicDomainEvent = ExaminationStarted | FollowUpRequested`
 - 提供: `createInMemoryDomainEventStore(initial?: ReadonlyArray<ClinicDomainEvent>): DomainEventStore`
 - 提供: `startExaminationUseCase(repo, input): Result<InExamination, StartExaminationError>`
+- 提供: `collectFollowUpTargets(input): Result<ReadonlyArray<FollowUpTarget>, FollowUpTargetError>`
 
 - [ ] **ステップ 1: 軽量な Result を追加する**
 
@@ -695,11 +709,25 @@ export type ExaminationStarted = Readonly<{
   veterinarianId: VeterinarianId;
 }>;
 
-export type ClinicDomainEvent = ExaminationStarted;
+export type FollowUpRequested = Readonly<{
+  kind: "FollowUpRequested";
+  eventId: string;
+  occurredAt: string;
+  appointmentId: AppointmentId;
+}>;
+
+export type ClinicDomainEvent = ExaminationStarted | FollowUpRequested;
 
 export const ExaminationStarted = {
   create: (input: Omit<ExaminationStarted, "kind">): ExaminationStarted => ({
     kind: "ExaminationStarted",
+    ...input,
+  }),
+} as const;
+
+export const FollowUpRequested = {
+  create: (input: Omit<FollowUpRequested, "kind">): FollowUpRequested => ({
+    kind: "FollowUpRequested",
     ...input,
   }),
 } as const;
@@ -762,6 +790,7 @@ use case は `appointmentId` と `veterinarianId` を parse し、appointment �
 
 `packages/clinic-example/test/03-result-errors.test.ts` を追加する:
 
+- module 開始時の新しい要求は「診察開始に失敗した理由を UI に出し、成功した診察開始をあとから追いたい」
 - valid な checked-in appointment は `Ok` を返す
 - unknown appointment id は `AppointmentNotFound` を返す
 - scheduled appointment は `InvalidAppointmentState` を返す
@@ -769,7 +798,18 @@ use case は `appointmentId` と `veterinarianId` を parse し、appointment �
 - valid な checked-in appointment のときだけ `ExaminationStarted` が event store に記録される
 - 失敗時には event store が空のままになる
 
-- [ ] **ステップ 7: 検証**
+- [ ] **ステップ 7: ミニ総合演習の赤テストを追加する**
+
+`packages/clinic-example/exercises/05-follow-up.test.ts` を追加する。module 開始時の当日追加要求は「検査後に電話フォローが必要な患者を抽出したい」。この exercise は最初は失敗し、参加者は `collectFollowUpTargets` の1関数だけを編集する。
+
+赤テストは次を含める:
+
+- `Paid` または `InExamination` のうち、検査結果が `needsFollowUp: true` の appointment だけを対象にする
+- `Canceled` と validation failed payload は対象外にし、失敗理由を `Result` で返す
+- `ownerPhone` は `Sensitive` のまま扱い、ログ用 payload に素の電話番号が出ない
+- follow-up target を作ったときだけ `FollowUpRequested` domain event を記録する
+
+- [ ] **ステップ 8: 検証**
 
 実行: `pnpm --filter @fp-with-ts/clinic-example typecheck`
 
@@ -779,10 +819,10 @@ use case は `appointmentId` と `veterinarianId` を parse し、appointment �
 
 期待結果: 成功する。
 
-- [ ] **ステップ 8: コミット**
+- [ ] **ステップ 9: コミット**
 
 ```bash
-git add packages/clinic-example/src/shared/result.ts packages/clinic-example/src/shared/schema-result.ts packages/clinic-example/src/clinic/appointment-repository.ts packages/clinic-example/src/clinic/domain-events.ts packages/clinic-example/src/clinic/domain-event-store.ts packages/clinic-example/src/clinic/use-cases.ts packages/clinic-example/test/03-result-errors.test.ts
+git add packages/clinic-example/src/shared/result.ts packages/clinic-example/src/shared/schema-result.ts packages/clinic-example/src/clinic/appointment-repository.ts packages/clinic-example/src/clinic/domain-events.ts packages/clinic-example/src/clinic/domain-event-store.ts packages/clinic-example/src/clinic/use-cases.ts packages/clinic-example/test/03-result-errors.test.ts packages/clinic-example/exercises/05-follow-up.test.ts
 git commit -m "feat(example): compose appointment use cases with result"
 ```
 
@@ -860,15 +900,15 @@ export default defineConfig({
 
 `apps/docs/src/content/modules.ts` を追加し、改訂後のイベントフローに合う 7 つの time block を定義する:
 
-- `00-break-the-app`
-- `00-read-the-incident`
-- `01-state-modeling`
-- `02-boundary-and-ids`: Zod、Branded ID、`Sensitive` による PII ログ防御
-- `03-result-errors`: Result、use case、成功時だけ残す domain event
-- `04-agent-review`
-- `05-mini-integration`
+- `00-break-the-app`: 導入事故。`Paid -> InExamination` が通る
+- `00-read-the-incident`: legacy app を読み、次の要求「キャンセル理由と再診希望」を出す
+- `01-state-modeling`: 追加要求。キャンセル理由と再診希望を状態型へ入れる
+- `02-boundary-and-ids`: 発覚事故。外部検査 payload の ID 取り違えと PII ログ漏えいを止める
+- `03-result-errors`: 追加要求。失敗理由を UI に返し、成功した診察開始だけ domain event に残す
+- `04-agent-review`: 次の追加要求を AI に頼む前提でレビュー観点を作る
+- `05-mini-integration`: 当日追加要求。電話フォローが必要な患者を抽出する
 
-各 module は `animal`, `minutes`, `title`, `incident`, `invariant`, `redCommand`, `editTarget`, `greenCommand`, `agentReview`, `doneWhen`, `sourceLinks`, `sections` を持つ。
+各 module は `animal`, `minutes`, `title`, `newRequest`, `incident`, `invariant`, `redCommand`, `editTarget`, `greenCommand`, `agentReview`, `doneWhen`, `sourceLinks`, `sections` を持つ。
 
 - [ ] **ステップ 5: base renderer を追加する**
 
@@ -877,8 +917,8 @@ export default defineConfig({
 - app header
 - sidebar の module list
 - `location.hash` に基づく current module content
-- `Paid -> InExamination` を示す常時表示の incident summary
-- current phase indicator: `インシデント`, `赤テスト`, `編集`, `緑テスト`, `エージェントレビュー`
+- 現在の `newRequest` と `incident` を示す常時表示 summary
+- current phase indicator: `要求追加`, `インシデント`, `赤テスト`, `編集`, `緑テスト`, `エージェントレビュー`
 - module に紐づく参考記事 links
 - previous/next navigation
 
@@ -949,6 +989,7 @@ export const renderCodeBlock = (code: string, language: string): HTMLElement => 
 
 `modules.ts` を更新し、各 module が参加者向けの固定フローを持つようにする:
 
+- `要求追加`: セッション中に新しく増えた要求
 - `インシデント`: 動物病院で何が起きたか
 - `赤テスト`: 実行する exact command と期待する失敗
 - `編集`: 参加者が編集する 1〜2 個の関数

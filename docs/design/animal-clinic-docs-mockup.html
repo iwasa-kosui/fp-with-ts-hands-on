@@ -1247,8 +1247,8 @@
               </span>
             </h1>
             <p class="lead">
-              動物病院の予約・診察・会計フローを題材に、状態遷移・入力境界・失敗処理を型で守る教材モック。
-              画面はにぎやか、ルールはきっちり。
+              動物病院の予約・診察・会計フローを題材に、セッション中に増える要求と発覚する事故を型で受け止める教材モック。
+              画面はにぎやか、要求変更にはきっちり。
             </p>
             <div class="hero-tags" aria-label="教材トピック">
               <span class="tag">🐾 Reservation</span>
@@ -1355,8 +1355,8 @@
                   <p>ポチのワクチン前チェックは異常なし。ミケは皮膚検査待ち。</p>
                 </div>
                 <div class="mini-widget">
-                  <h3>連絡メモ</h3>
-                  <p>ミケの飼い主へ、検査後にアプリ通知。薬の塗り方説明を忘れずに。</p>
+                  <h3>追加要求</h3>
+                  <p>検査後に電話フォローが必要な患者を抽出したい。連絡先ログ漏えいも同時に疑う。</p>
                 </div>
                 <div class="mini-widget">
                   <h3>会計</h3>
@@ -1513,44 +1513,44 @@
       <section id="schedule" aria-labelledby="schedule-title">
         <div class="section-head">
           <h2 id="schedule-title">3時間の流れ</h2>
-          <p>事故から始め、型で状態遷移と入力境界を閉じ、最後に AI エージェントへ同じ変更を頼む前提でレビューする。</p>
+          <p>導入事故から始め、セッション中に増える要求と発覚する事故を、型・境界・Result・変更記録・Agent Review で受け止める。</p>
         </div>
 
         <div class="timeline" aria-label="ハンズオンの時間割">
           <article class="time-stop active">
             <time>0:10-0:25</time>
-            <strong>🐢 事故を起こす</strong>
+            <strong>🐢 導入事故を起こす</strong>
             <span>Paid -> InExamination を再現し、なぜ通るのかを見る。</span>
           </article>
           <article class="time-stop">
             <time>0:25-0:40</time>
-            <strong>🐕 事故を読む</strong>
-            <span>テスト、型、業務ルールのどこに穴があるかを読む。</span>
+            <strong>🐕 事故と次の要求を読む</strong>
+            <span>型の穴を読み、キャンセル理由と再診希望を残したい要求を追加する。</span>
           </article>
           <article class="time-stop">
             <time>0:40-1:10</time>
             <strong>🐾 Discriminated Union</strong>
-            <span>状態ごとに持てる値と遷移関数を分ける。</span>
+            <span>キャンセル理由を状態に入れ、終端状態に戻る遷移を閉じる。</span>
           </article>
           <article class="time-stop">
             <time>1:20-1:45</time>
             <strong>🎫 Zod / Brand / PII</strong>
-            <span>外部入力を検査し、飼い主連絡先は Sensitive でログ漏えいから守る。</span>
+            <span>外部検査 payload の ID 取り違えと、飼い主連絡先のログ漏えいを止める。</span>
           </article>
           <article class="time-stop">
             <time>1:45-2:15</time>
             <strong>🧪 Result と Event</strong>
-            <span>失敗を戻り値にし、成功した診察開始だけを変更記録に残す。</span>
+            <span>失敗理由を UI へ返し、成功した診察開始だけを変更記録に残す。</span>
           </article>
           <article class="time-stop">
             <time>2:15-2:35</time>
             <strong>🤖 Agent Review</strong>
-            <span>同じ変更を AI に頼むなら、どこを疑うかを明文化する。</span>
+            <span>次の追加要求を AI に頼むなら、どこを疑うかを明文化する。</span>
           </article>
           <article class="time-stop">
             <time>2:35-2:50</time>
-            <strong>🐈 ミニ総合演習</strong>
-            <span>事故、境界、Result、レビューを小さく一周する。</span>
+            <strong>🐈 当日追加要求</strong>
+            <span>電話フォロー対象抽出を追加し、境界、Result、event、レビューを小さく一周する。</span>
           </article>
         </div>
       </section>
@@ -1558,7 +1558,7 @@
       <section id="sources" aria-labelledby="sources-title">
         <div class="section-head">
           <h2 id="sources-title">参考記事を教材に混ぜる</h2>
-          <p>既存記事は別枠の読み物にせず、境界・ログ・変更記録の module に差し込む。記事の主張を小さなテストに落とし、当日の納得度につなげる。</p>
+          <p>既存記事は別枠の読み物にせず、セッション中に発覚するログ事故と、あとから追える変更記録の module に差し込む。記事の主張を小さなテストに落とし、当日の納得度につなげる。</p>
         </div>
 
         <div class="feature-splats" aria-label="参考記事">
