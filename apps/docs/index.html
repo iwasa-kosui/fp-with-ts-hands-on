@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Animal Clinic Reservation & Chart System Mockup</title>
+  <title>関数型ドメインモデリングハンズオン with TypeScript</title>
   <style>
     :root {
       color-scheme: light;
@@ -1222,11 +1222,9 @@
         <span>WAN NYAN CLINIC</span>
       </a>
       <nav class="nav" aria-label="ページ内ナビゲーション">
-        <a href="#system">SYSTEM</a>
-        <a href="#states">STATES</a>
+        <a href="#system">TOP</a>
         <a href="#schedule">LESSON</a>
-        <a href="#sources">SOURCE</a>
-        <a href="#reading">CODE</a>
+        <a href="/module-00/">MODULE 00</a>
       </nav>
     </header>
 
@@ -1240,15 +1238,15 @@
           <div class="copy-panel">
             <p class="eyebrow">🐱 2026-08-30 TypeScript hands-on</p>
             <h1 id="page-title">
-              予約も<br>
-              カルテも<br>
-              <span class="rainbow-word" aria-label="できる">
-                <span>で</span><span>き</span><span>る</span><span>！</span><span>！</span>
+              壊して<br>
+              型で<br>
+              <span class="rainbow-word" aria-label="直す">
+                <span>直</span><span>す</span><span>！</span><span>！</span><span>！</span>
               </span>
             </h1>
             <p class="lead">
-              動物病院の予約・診察・会計フローを題材に、セッション中に増える要求と発覚する事故を型で受け止める教材モック。
-              画面はにぎやか、要求変更にはきっちり。
+              動物病院の予約・診察・会計フローを題材に、壊れやすい実装を読み、外部入力・失敗・ログまで TypeScript で扱っていくハンズオンです。
+              まずは Module 00 で、会計済みの予約が診察中へ戻る事故を再現します。
             </p>
             <div class="hero-tags" aria-label="教材トピック">
               <span class="tag">🐾 Reservation</span>
@@ -1260,7 +1258,7 @@
             </div>
           </div>
 
-          <div class="system-window" aria-label="動物病院の予約・カルテシステム画面モック">
+          <div class="system-window" aria-label="動物病院の予約・カルテシステム画面">
             <div class="window-top">
               <span>Animal Clinic OS / Reservation & Chart</span>
               <span class="window-buttons" aria-hidden="true"><span></span><span></span><span></span></span>
@@ -1368,15 +1366,15 @@
         </div>
 
         <div class="below-fold-cue">
-          <span>下にスクロールすると、機能・状態図・3時間の教材フロー・コード例まで、動物たちと一緒に追えます。</span>
+          <span>下にスクロールして、今日の進め方と Module 00 の実行手順を確認します。</span>
           <span class="animal-train" aria-hidden="true"><span>🐈</span><span>🐕</span><span>🐇</span><span>🐢</span><span>🦜</span><span>🦔</span></span>
         </div>
       </section>
 
       <section aria-labelledby="features-title">
         <div class="section-head">
-          <h2 id="features-title">できること</h2>
-          <p>参考画像のようなポップな色面に、ハンズオンで扱う業務機能を載せる。かわいいだけでなく、何を型で守るかが一目で分かる構成。</p>
+          <h2 id="features-title">今日やること</h2>
+          <p>動物病院の業務に見える小さな違和感を、TypeScript の設計判断へつなげます。画面の裏側にあるルールを、テストと型で確認していきます。</p>
         </div>
 
         <div class="feature-splats" aria-label="機能一覧">
@@ -1393,7 +1391,7 @@
           <div class="splat-card">
             <span class="icon" aria-hidden="true">🐾</span>
             <strong>待合室</strong>
-            <span>犬、猫、うさぎがぴょこぴょこ並ぶ。</span>
+            <span>予約、受付、診察中の違いを状態として読む。</span>
           </div>
           <div class="splat-card">
             <span class="icon" aria-hidden="true">💳</span>
@@ -1415,98 +1413,6 @@
             <strong>変更記録</strong>
             <span>成功した状態変更を domain event に残す。</span>
           </div>
-        </div>
-      </section>
-
-      <section id="states" aria-labelledby="states-title">
-        <div class="section-head">
-          <h2 id="states-title">状態図もにぎやかに</h2>
-          <p>動物は単なる飾りではなく、予約・受付・診察・会計の状態を見分けるサインとして使う。</p>
-        </div>
-
-        <div class="state-area">
-          <div class="state-map">
-            <svg class="state-svg" viewBox="0 0 980 360" role="img" aria-labelledby="visit-state-svg-title visit-state-svg-desc">
-              <title id="visit-state-svg-title">動物病院の診察予約状態遷移図</title>
-              <desc id="visit-state-svg-desc">Scheduled から CheckedIn、InExamination、Paid へ進む。Scheduled または CheckedIn から Canceled へキャンセルできる。Paid と Canceled は終端状態。</desc>
-              <defs>
-                <marker id="arrow-main" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#2236b8"></path>
-                </marker>
-                <marker id="arrow-cancel" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b4ee6"></path>
-                </marker>
-              </defs>
-
-              <path class="transition-line" marker-end="url(#arrow-main)" d="M 190 100 H 275"></path>
-              <path class="transition-line" marker-end="url(#arrow-main)" d="M 425 100 H 510"></path>
-              <path class="transition-line" marker-end="url(#arrow-main)" d="M 660 100 H 745"></path>
-              <text class="svg-label" x="215" y="85">受付する</text>
-              <text class="svg-label" x="451" y="85">診察開始</text>
-              <text class="svg-label" x="692" y="85">会計する</text>
-
-              <path class="cancel-line" marker-end="url(#arrow-cancel)" d="M 115 160 C 115 235, 240 265, 360 270"></path>
-              <path class="cancel-line" marker-end="url(#arrow-cancel)" d="M 350 160 C 355 218, 385 245, 430 270"></path>
-              <text class="svg-label cancel" x="140" y="236">キャンセル</text>
-              <text class="svg-label cancel" x="372" y="236">キャンセル</text>
-
-              <path class="blocked-line" d="M 820 172 C 820 218, 760 235, 675 218"></path>
-              <text class="svg-label blocked" x="704" y="247">Paid から戻る遷移は存在しない</text>
-
-              <rect class="svg-node scheduled" x="40" y="40" width="150" height="120"></rect>
-              <text class="svg-animal" x="95" y="76">🐇</text>
-              <text class="svg-title" x="74" y="106">Scheduled</text>
-              <text class="svg-body" x="65" y="132">予約済み</text>
-
-              <rect class="svg-node checked-in" x="275" y="40" width="150" height="120"></rect>
-              <text class="svg-animal" x="330" y="76">🐈</text>
-              <text class="svg-title" x="313" y="106">CheckedIn</text>
-              <text class="svg-body" x="303" y="132">受付済み</text>
-
-              <rect class="svg-node exam" x="510" y="40" width="150" height="120"></rect>
-              <text class="svg-animal" x="565" y="76">🐕</text>
-              <text class="svg-title" x="525" y="106">InExamination</text>
-              <text class="svg-body" x="544" y="132">診察中</text>
-
-              <rect class="svg-node paid" x="745" y="40" width="150" height="120"></rect>
-              <text class="svg-animal" x="800" y="76">🐢</text>
-              <text class="svg-title" x="788" y="106">Paid</text>
-              <text class="svg-body" x="788" y="132">会計済み</text>
-              <text class="svg-label blocked" x="779" y="182">終端状態</text>
-
-              <rect class="svg-node canceled" x="360" y="270" width="150" height="64"></rect>
-              <text class="svg-animal" x="378" y="311">🦔</text>
-              <text class="svg-title" x="422" y="299">Canceled</text>
-              <text class="svg-body" x="422" y="320">キャンセル済み / 終端</text>
-            </svg>
-          </div>
-
-          <aside class="legend" aria-label="教材で扱う型の凡例">
-            <div class="legend-row">
-              <span class="legend-icon">🐾</span>
-              <span><strong>Discriminated Union</strong><br>状態ごとに持てる値と遷移関数を分ける。</span>
-            </div>
-            <div class="legend-row">
-              <span class="legend-icon">🎫</span>
-              <span><strong>Branded Type</strong><br>診察券番号をただの string から分離する。</span>
-            </div>
-            <div class="legend-row">
-              <span class="legend-icon">🧪</span>
-              <span><strong>Result</strong><br>失敗を例外ではなく戻り値で表す。</span>
-            </div>
-            <div class="legend-row">
-              <span class="legend-icon">🔒</span>
-              <span><strong>Sensitive</strong><br>ログに出ると困る値を runtime でも赤く隠す。</span>
-            </div>
-            <div class="legend-row">
-              <span class="legend-icon">📜</span>
-              <span><strong>Domain Event</strong><br>あとから事故を追える変更記録を残す。</span>
-            </div>
-            <div class="legend-row">
-              <span class="legend-icon">🤖</span>
-              <span><strong>Agent Review</strong><br>AI が業務ルールを外していないか見る。</span>
-            </div>
-          </aside>
         </div>
       </section>
 
@@ -1555,43 +1461,23 @@
         </div>
       </section>
 
-      <section id="sources" aria-labelledby="sources-title">
-        <div class="section-head">
-          <h2 id="sources-title">参考記事を教材に混ぜる</h2>
-          <p>既存記事は別枠の読み物にせず、セッション中に発覚するログ事故と、あとから追える変更記録の module に差し込む。記事の主張を小さなテストに落とし、当日の納得度につなげる。</p>
-        </div>
-
-        <div class="feature-splats" aria-label="参考記事">
-          <a class="splat-card" href="https://kosui.me/posts/2026/03/16/typescript-pii-logging-defense">
-            <span class="icon" aria-hidden="true">🔒</span>
-            <strong>PII ログ防御</strong>
-            <span>構造的部分型や Branded Type だけではログ漏えいを防げない。Zod 境界で Sensitive に包む。</span>
-          </a>
-          <a class="splat-card" href="https://kosui.me/posts/2025/05/06/142842">
-            <span class="icon" aria-hidden="true">📜</span>
-            <strong>ドメインイベント</strong>
-            <span>状態変更をあとから調査できる出来事として記録する。失敗時には余計な event を残さない。</span>
-          </a>
-        </div>
-      </section>
-
       <section id="reading" aria-labelledby="reading-title">
         <div class="section-head">
-          <h2 id="reading-title">コードも読みやすく</h2>
-          <p>見た目はポップにしつつ、本文とコードの読みやすさは残す。可愛い画面から、型で守るルールへ自然に入る。</p>
+          <h2 id="reading-title">最初のセッション</h2>
+          <p>詳しい手順はセッションページで確認します。トップでは全体像だけを見て、開始時に Module 00 のページを開きます。</p>
         </div>
 
         <div class="reading-row">
           <article class="doc-pane">
-            <h3>Module 00 / 事故を起こす</h3>
+            <h3>Module 00 / 導入事故を起こす</h3>
             <p>
-              まずは会計済みの診察記録を診察中に戻す操作を実行する。ここで直すのではなく、なぜ型が止めてくれないのかを読める状態にする。
+              会計済みの予約が診察中へ戻る事故を再現します。ここでは直さず、型が守れていない業務ルールを観察します。
             </p>
             <div class="callout">
               <span class="legend-icon" aria-hidden="true">🐢</span>
               <div>
-                <strong>守りたい不変条件</strong>
-                <p>Paid は終端状態。診察室に戻る遷移は業務上存在しない。</p>
+                <strong>セッションページへ</strong>
+                <p><a href="/module-00/">目次付きの Module 00 ページを開く</a></p>
               </div>
             </div>
           </article>
@@ -1608,13 +1494,13 @@ const moveToExamination = (visit: Visit): Visit => ({
   status: "InExamination",
 });
 
-// Incident: Paid -> InExamination が通ってしまう
+// 詳細手順は /module-00/ へ
 moveToExamination(paidVisit);</code></pre>
         </div>
       </section>
 
       <footer>
-        HTML mockup with Shiki CDN runtime highlighting. No external images or fonts.
+        fp-with-ts-hands-on / Animal Clinic Domain
       </footer>
     </main>
   </div>

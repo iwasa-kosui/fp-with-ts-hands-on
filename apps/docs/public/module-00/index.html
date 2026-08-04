@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Module 00 / 導入事故を起こす</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --cream: #fff8ce;
+      --paper-warm: #fffefa;
+      --ink: #111116;
+      --blue: #2236b8;
+      --mint: #12dbb1;
+      --pink: #ff4f93;
+      --coral: #ff654f;
+      --lemon: #ffd21b;
+      --line: #17204d;
+      --text: #1b1d33;
+      --soft-shadow: 8px 10px 0 rgba(34, 54, 184, 0.16);
+      --hard-shadow: 7px 7px 0 #17204d;
+      --radius: 8px;
+      font-family: ui-rounded, "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", Meiryo, system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 10% 12%, rgba(18, 219, 177, 0.55) 0 16%, transparent 16.4%),
+        radial-gradient(ellipse at 96% 3%, rgba(255, 210, 27, 0.65) 0 20%, transparent 20.4%),
+        radial-gradient(ellipse at 78% 100%, rgba(255, 79, 147, 0.20) 0 22%, transparent 22.5%),
+        var(--cream);
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    a { color: inherit; }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px clamp(18px, 4vw, 54px);
+      background: rgba(255, 248, 206, 0.96);
+      border-bottom: 3px solid rgba(34, 54, 184, 0.14);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--ink);
+      font-size: clamp(18px, 2vw, 26px);
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 46px;
+      height: 36px;
+      place-items: center;
+      color: #fff;
+      background: var(--blue);
+      border: 3px solid var(--ink);
+      border-radius: 44% 56% 48% 52% / 42% 45% 55% 58%;
+      box-shadow: 3px 3px 0 var(--ink);
+      font-size: 23px;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+    }
+
+    .nav a {
+      padding: 7px 12px;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper-warm);
+      box-shadow: 3px 3px 0 rgba(34, 54, 184, 0.2);
+      text-decoration: none;
+    }
+
+    main {
+      width: min(1160px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 38px 0 58px;
+    }
+
+    .hero {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(260px, 360px);
+      gap: 22px;
+      align-items: start;
+      margin-bottom: 28px;
+    }
+
+    .copy-panel {
+      position: relative;
+      padding: clamp(22px, 4vw, 40px);
+      background: var(--paper-warm);
+      border: 4px solid var(--line);
+      border-radius: 48% 52% 45% 55% / 42% 44% 56% 58%;
+      box-shadow: var(--hard-shadow);
+    }
+
+    .copy-panel::before,
+    .copy-panel::after {
+      content: "";
+      position: absolute;
+      background: var(--paper-warm);
+      border: 4px solid var(--line);
+      border-radius: 999px;
+    }
+
+    .copy-panel::before {
+      top: -24px;
+      right: 20%;
+      width: 46px;
+      height: 46px;
+    }
+
+    .copy-panel::after {
+      right: -16px;
+      bottom: 18%;
+      width: 28px;
+      height: 28px;
+    }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      margin-bottom: 16px;
+      font-size: clamp(42px, 6vw, 82px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      color: var(--blue);
+      font-size: clamp(28px, 4vw, 50px);
+      line-height: 1.08;
+    }
+
+    h3 {
+      color: var(--blue);
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    .lead {
+      color: var(--text);
+      font-size: 17px;
+      font-weight: 850;
+    }
+
+    .toc,
+    .panel,
+    pre {
+      border: 4px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper-warm);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .toc {
+      position: sticky;
+      top: 86px;
+      padding: 16px;
+    }
+
+    .toc strong {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--blue);
+      font-size: 18px;
+    }
+
+    .toc ol {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding-left: 22px;
+      font-weight: 900;
+    }
+
+    .toc a { text-decoration-thickness: 3px; }
+
+    .content {
+      display: grid;
+      gap: 18px;
+    }
+
+    .panel {
+      position: relative;
+      padding: 20px;
+    }
+
+    .panel:nth-child(odd) { background: #fff0f7; }
+    .panel:nth-child(even) { background: #fffefa; }
+
+    .checklist {
+      margin: 0;
+      padding-left: 1.2rem;
+      color: var(--text);
+      font-weight: 850;
+    }
+
+    .callout {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      margin-top: 14px;
+      padding: 12px;
+      border: 3px dashed var(--line);
+      border-radius: var(--radius);
+      background: #fff8ea;
+      color: var(--text);
+      font-weight: 850;
+    }
+
+    .legend-icon {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border: 3px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper-warm);
+      font-size: 23px;
+    }
+
+    .command-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    pre {
+      overflow-x: auto;
+      margin: 0;
+      padding: 18px;
+      background: #161a3e;
+      color: #fffad7;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .expected {
+      color: var(--coral);
+      font-weight: 950;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 3px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      font-weight: 850;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 2px solid #d8deea;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      width: 34%;
+      background: #eef6ff;
+      color: var(--blue);
+    }
+
+    tr:last-child th,
+    tr:last-child td { border-bottom: 0; }
+
+    footer {
+      margin-top: 34px;
+      padding: 24px 0;
+      border-top: 3px dashed var(--blue);
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 950;
+      text-align: center;
+    }
+
+    @media (max-width: 860px) {
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .hero { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .command-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar" aria-label="サイトヘッダー">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">🐾</span>
+      <span>WAN NYAN CLINIC</span>
+    </a>
+    <nav class="nav" aria-label="ページ内ナビゲーション">
+      <a href="/">TOP</a>
+      <a href="#toc">TOC</a>
+      <a href="#commands">COMMANDS</a>
+      <a href="#observe">OBSERVE</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="page-title">
+      <div class="copy-panel">
+        <p class="eyebrow">🐢 Module 00 / 15 min</p>
+        <h1 id="page-title">導入事故を<br>起こす</h1>
+        <p class="lead">
+          まずは直しません。会計済みの予約が診察中へ戻れてしまうことを再現し、
+          この後のセッションで守るべき業務ルールを言葉にします。
+        </p>
+      </div>
+
+      <aside id="toc" class="toc" aria-label="Module 00 の目次">
+        <strong>目次</strong>
+        <ol>
+          <li><a href="#goal">ゴール</a></li>
+          <li><a href="#commands">実行するコマンド</a></li>
+          <li><a href="#failure">期待する失敗</a></li>
+          <li><a href="#files">読むファイル</a></li>
+          <li><a href="#observe">観察すること</a></li>
+          <li><a href="#next">次のセッションへ</a></li>
+        </ol>
+      </aside>
+    </section>
+
+    <div class="content">
+      <section id="goal" class="panel">
+        <h2>ゴール</h2>
+        <ul class="checklist">
+          <li>通常テストが緑で始まることを確認する。</li>
+          <li>Module 00 の事故テストを赤くする。</li>
+          <li><code>Paid</code> は終端状態であり、診察中へ戻らないと説明できる。</li>
+        </ul>
+        <div class="callout">
+          <span class="legend-icon" aria-hidden="true">🐾</span>
+          <span>この module では実装を直しません。壊れ方を見て、次の設計判断に進みます。</span>
+        </div>
+      </section>
+
+      <section id="commands" class="panel">
+        <h2>実行するコマンド</h2>
+        <div class="command-grid">
+          <pre><code>pnpm test</code></pre>
+          <pre><code>pnpm --filter @fp-with-ts/clinic-example exercise:00</code></pre>
+        </div>
+      </section>
+
+      <section id="failure" class="panel">
+        <h2>期待する失敗</h2>
+        <p>
+          <code>exercise:00</code> は失敗します。失敗していれば正しい状態です。
+        </p>
+        <pre><code>expected 'in-examination' to be 'paid'</code></pre>
+        <p class="expected">Expected: paid / Received: in-examination</p>
+      </section>
+
+      <section id="files" class="panel">
+        <h2>読むファイル</h2>
+        <table>
+          <tbody>
+            <tr>
+              <th><code>packages/clinic-example/src/legacy/appointment.ts</code></th>
+              <td><code>status: string</code> と <code>updateStatus</code> がどこまでの遷移を許しているかを見る。</td>
+            </tr>
+            <tr>
+              <th><code>packages/clinic-example/src/legacy/logger.ts</code></th>
+              <td>予約情報を丸ごとログへ渡したとき、隠したい情報がどう扱われるかを見る。</td>
+            </tr>
+            <tr>
+              <th><code>packages/clinic-example/exercises/00-incident.test.ts</code></th>
+              <td>失敗する期待値が、どの業務ルールを表しているかを見る。</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="observe" class="panel">
+        <h2>観察すること</h2>
+        <ul class="checklist">
+          <li><code>Paid</code> は終端状態なのに、今の型にはその制約がない。</li>
+          <li>状態ごとに必要な情報が optional field として広がっている。</li>
+          <li><code>throw</code> される失敗は、呼び出し側が型だけでは分岐できない。</li>
+          <li>ログ出力で隠したい情報が、値の型だけでは守られていない。</li>
+        </ul>
+      </section>
+
+      <section id="next" class="panel">
+        <h2>次のセッションへ</h2>
+        <p>
+          次は「キャンセル理由と再診希望日を残したい」という要求を読みます。
+          どの状態にどの情報が必要なのかを整理し、状態ごとの形を TypeScript で表します。
+        </p>
+      </section>
+    </div>
+
+    <footer>
+      fp-with-ts-hands-on / Module 00
+    </footer>
+  </main>
+</body>
+</html>
