@@ -1145,6 +1145,10 @@
     @media (max-width: 720px) {
       body {
         font-size: 15px;
+        background:
+          radial-gradient(ellipse at 8% 12%, rgba(18, 219, 177, 0.55) 0 16%, transparent 16.5%),
+          radial-gradient(ellipse at 96% 0%, rgba(255, 210, 27, 0.68) 0 22%, transparent 22.5%),
+          var(--cream);
       }
 
       .topbar {
@@ -1162,15 +1166,84 @@
       }
 
       main {
-        width: min(100% - 28px, 1220px);
+        width: auto;
+        margin-right: 18px;
+        margin-left: 18px;
+      }
+
+      .hero {
+        padding: 28px 0 26px;
+      }
+
+      .hero-grid {
+        gap: 18px;
+      }
+
+      .hero-grid > * {
+        min-width: 0;
       }
 
       .copy-panel {
+        width: calc(100% - 12px);
+        max-width: 100%;
+        overflow: hidden;
+        padding: 22px 20px 26px;
         border-radius: var(--radius);
+        box-shadow: 5px 5px 0 var(--line);
+      }
+
+      .copy-panel::before,
+      .copy-panel::after {
+        display: none;
+      }
+
+      .eyebrow {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 12px;
+        line-height: 1.35;
+        white-space: normal;
+      }
+
+      h1 {
+        margin-bottom: 14px;
+        font-size: clamp(34px, 11vw, 44px);
+      }
+
+      .lead {
+        max-width: none;
+        margin-bottom: 0;
+        font-size: 14px;
+        line-height: 1.7;
+        word-break: break-all;
+      }
+
+      .system-window {
+        width: calc(100% - 12px);
+        max-width: 100%;
+        border-width: 3px;
+        box-shadow: 5px 5px 0 rgba(23, 32, 77, 0.18);
+      }
+
+      .window-top {
+        align-items: start;
+        padding: 9px 10px;
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      .window-top > span:first-child {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .window-buttons {
+        display: none;
       }
 
       .app-dashboard {
-        grid-template-columns: 1fr;
+        display: block;
+        min-height: 0;
       }
 
       .sidebar,
@@ -1179,8 +1252,105 @@
         border-bottom: 4px solid var(--line);
       }
 
+      .sidebar {
+        padding: 10px;
+      }
+
+      .clinic-stamp {
+        min-height: 62px;
+        margin-bottom: 8px;
+        line-height: 1.15;
+      }
+
+      .side-menu {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .side-menu div {
+        min-width: 0;
+        overflow: hidden;
+        min-height: 32px;
+        padding: 5px 7px;
+        font-size: 11px;
+      }
+
+      .schedule-board {
+        padding: 12px;
+      }
+
+      .board-head {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .board-head h2 {
+        font-size: 28px;
+      }
+
+      .date-pill {
+        min-height: 30px;
+        padding: 4px 8px;
+        font-size: 12px;
+      }
+
+      .appointment-card {
+        grid-template-columns: 38px minmax(0, 1fr);
+        min-height: 0;
+        padding: 9px;
+      }
+
+      .pet-icon {
+        grid-row: 1 / span 2;
+        width: 34px;
+        height: 34px;
+        font-size: 22px;
+      }
+
+      .time {
+        font-size: 11px;
+      }
+
+      .appointment-card strong {
+        font-size: 15px;
+      }
+
+      .appointment-card p {
+        grid-column: 1 / -1;
+        font-size: 11px;
+      }
+
+      .chart-card {
+        padding: 10px;
+      }
+
+      .chart-patient {
+        grid-template-columns: 48px minmax(0, 1fr);
+      }
+
+      .big-pet {
+        width: 46px;
+        height: 46px;
+        font-size: 28px;
+      }
+
+      .chart-patient h3 {
+        font-size: 15px;
+      }
+
+      .chart-patient p,
+      .chart-table,
+      .mini-widget p {
+        font-size: 11px;
+      }
+
+      .status-flow span {
+        font-size: 10px;
+      }
+
       .right-panel {
         grid-template-columns: 1fr;
+        padding: 10px;
       }
 
       .appointment-grid,
@@ -1238,7 +1408,7 @@
 
         <div class="hero-grid">
           <div class="copy-panel">
-            <p class="eyebrow">🐱 2026-08-30 TypeScript hands-on</p>
+            <p class="eyebrow">🐱 2026.08.30 / TS hands-on</p>
             <h1 id="page-title">
               ようこそ<br>
               WAN NYAN<br>
@@ -1247,7 +1417,7 @@
               </span>
             </h1>
             <p class="lead">
-              WAN NYAN CLINIC の予約・カルテ管理をひとつにつなぐ、動物病院のための業務システムです。
+              関数型ドメインモデリングを学ぶ教材です。動物病院の予約・カルテ管理システムを題材にします。
             </p>
           </div>
 
