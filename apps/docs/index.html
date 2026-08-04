@@ -1,16 +1,1646 @@
 <!doctype html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="関数型ドメインモデリングハンズオン with TypeScript の動物病院教材"
-    />
-    <title>Animal Clinic Hands-on</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Animal Clinic Reservation & Chart System Mockup</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --cream: #fff8ce;
+      --paper-warm: #fffefa;
+      --paper: #ffffff;
+      --ink: #111116;
+      --text: #1b1d33;
+      --blue: #2236b8;
+      --sky: #38a9f4;
+      --mint: #12dbb1;
+      --purple: #b998f5;
+      --pink: #ff4f93;
+      --coral: #ff654f;
+      --lemon: #ffd21b;
+      --green: #89dc54;
+      --line: #17204d;
+      --muted: #303452;
+      --soft-shadow: 8px 10px 0 rgba(34, 54, 184, 0.16);
+      --hard-shadow: 7px 7px 0 #17204d;
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      overflow-x: hidden;
+      background:
+        radial-gradient(ellipse at 12% 18%, rgba(18, 219, 177, 0.55) 0 15%, transparent 15.4%),
+        radial-gradient(ellipse at 94% 6%, rgba(255, 210, 27, 0.65) 0 20%, transparent 20.4%),
+        radial-gradient(ellipse at 72% 100%, rgba(255, 79, 147, 0.20) 0 22%, transparent 22.5%),
+        var(--cream);
+      color: var(--ink);
+      font-family: ui-rounded, "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", Meiryo, system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    code,
+    pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .page {
+      position: relative;
+      isolation: isolate;
+    }
+
+    .shape {
+      position: fixed;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.9;
+    }
+
+    .shape.splash-one {
+      top: 98px;
+      left: -46px;
+      width: 300px;
+      height: 230px;
+      border-radius: 45% 55% 50% 38% / 44% 46% 54% 56%;
+      background: var(--mint);
+      transform: rotate(12deg);
+    }
+
+    .shape.splash-two {
+      top: -54px;
+      right: -80px;
+      width: 460px;
+      height: 250px;
+      border-radius: 38% 45% 52% 48% / 54% 40% 48% 42%;
+      background: #fff27c;
+      transform: rotate(-5deg);
+    }
+
+    .shape.splash-three {
+      right: 2vw;
+      bottom: -80px;
+      width: 410px;
+      height: 280px;
+      border-radius: 48% 42% 35% 54% / 40% 55% 36% 52%;
+      background: rgba(56, 169, 244, 0.45);
+      transform: rotate(18deg);
+    }
+
+    .shape.zig {
+      width: 78px;
+      height: 94px;
+      background:
+        linear-gradient(135deg, transparent 0 35%, var(--blue) 35% 48%, transparent 48% 100%) 0 0 / 42px 42px repeat-y;
+      opacity: 0.75;
+      transform: rotate(5deg);
+    }
+
+    .shape.zig.one {
+      top: 120px;
+      left: 15vw;
+    }
+
+    .shape.zig.two {
+      right: 10vw;
+      bottom: 126px;
+      filter: hue-rotate(80deg);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px clamp(18px, 4vw, 54px);
+      background: rgba(255, 248, 206, 0.96);
+      border-bottom: 3px solid rgba(34, 54, 184, 0.14);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      color: var(--ink);
+      font-size: clamp(18px, 2vw, 26px);
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 46px;
+      height: 36px;
+      place-items: center;
+      color: #ffffff;
+      background: var(--blue);
+      border: 3px solid var(--ink);
+      border-radius: 44% 56% 48% 52% / 42% 45% 55% 58%;
+      box-shadow: 3px 3px 0 var(--ink);
+      font-size: 23px;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+    }
+
+    .nav a {
+      padding: 7px 12px;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper-warm);
+      box-shadow: 3px 3px 0 rgba(34, 54, 184, 0.2);
+    }
+
+    main {
+      width: min(1220px, calc(100% - 36px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      position: relative;
+      min-height: calc(100vh - 66px);
+      padding: clamp(28px, 5vw, 58px) 0 34px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, 0.9fr) minmax(0, 1.1fr);
+      gap: clamp(18px, 3vw, 34px);
+      align-items: center;
+    }
+
+    .copy-panel {
+      position: relative;
+      min-width: 0;
+      padding: clamp(22px, 4vw, 44px);
+      background: var(--paper-warm);
+      border: 4px solid var(--line);
+      border-radius: 48% 52% 45% 55% / 42% 44% 56% 58%;
+      box-shadow: var(--hard-shadow);
+    }
+
+    .copy-panel::before,
+    .copy-panel::after {
+      content: "";
+      position: absolute;
+      background: var(--paper-warm);
+      border: 4px solid var(--line);
+      border-radius: 999px;
+    }
+
+    .copy-panel::before {
+      top: -24px;
+      right: 20%;
+      width: 46px;
+      height: 46px;
+    }
+
+    .copy-panel::after {
+      right: -16px;
+      bottom: 18%;
+      width: 28px;
+      height: 28px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 12px;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 16px;
+      font-size: clamp(38px, 6vw, 84px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .rainbow-word span:nth-child(1) { color: var(--pink); }
+    .rainbow-word span:nth-child(2) { color: var(--mint); }
+    .rainbow-word span:nth-child(3) { color: var(--lemon); }
+    .rainbow-word span:nth-child(4) { color: var(--sky); }
+    .rainbow-word span:nth-child(5) { color: var(--coral); }
+
+    .lead {
+      margin-bottom: 20px;
+      color: #30324a;
+      font-size: clamp(15px, 2vw, 18px);
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      max-width: 100%;
+      min-height: 32px;
+      padding: 5px 10px;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      background: #fff27c;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 950;
+      box-shadow: 3px 3px 0 rgba(34, 54, 184, 0.18);
+      white-space: normal;
+    }
+
+    .system-window {
+      position: relative;
+      min-width: 0;
+      border: 2px solid #b9c3d6;
+      border-radius: var(--radius);
+      background: #ffffff;
+      box-shadow: 0 18px 36px rgba(31, 49, 86, 0.18);
+      overflow: hidden;
+      width: 111.111%;
+      margin-right: -11.111%;
+      transform: scale(0.9) rotate(-1deg);
+      transform-origin: left center;
+    }
+
+    .window-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      border-bottom: 1px solid #d8deea;
+      background: #f7f9fc;
+      color: #17213b;
+      font-weight: 850;
+    }
+
+    .window-buttons {
+      display: flex;
+      gap: 6px;
+    }
+
+    .window-buttons span {
+      width: 13px;
+      height: 13px;
+      border: 1px solid #aeb8ca;
+      border-radius: 999px;
+      background: #dbe6f6;
+    }
+
+    .window-buttons span:nth-child(2) {
+      background: #cdebdc;
+    }
+
+    .window-buttons span:nth-child(3) {
+      background: #f8cfd8;
+    }
+
+    .app-dashboard {
+      display: grid;
+      grid-template-columns: 140px minmax(340px, 1fr) 220px;
+      min-height: 520px;
+      background: #f4f7fb;
+    }
+
+    .sidebar {
+      padding: 10px;
+      border-right: 1px solid #d8deea;
+      background: #eef3f8;
+    }
+
+    .clinic-stamp {
+      display: grid;
+      place-items: center;
+      min-height: 92px;
+      margin-bottom: 14px;
+      border: 1px solid #d5dde9;
+      border-radius: var(--radius);
+      background: #ffffff;
+      color: #2453b3;
+      text-align: center;
+      font-weight: 850;
+      line-height: 1.25;
+      box-shadow: 0 6px 14px rgba(31, 49, 86, 0.08);
+    }
+
+    .side-menu {
+      display: grid;
+      gap: 8px;
+    }
+
+    .side-menu div {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 36px;
+      padding: 6px 8px;
+      border: 1px solid #d5dde9;
+      border-radius: var(--radius);
+      background: #ffffff;
+      font-size: 12px;
+      font-weight: 780;
+    }
+
+    .side-menu div.active {
+      border-color: #2f6fde;
+      background: #e8f1ff;
+      color: #164ca5;
+      font-weight: 850;
+    }
+
+    .schedule-board {
+      padding: 14px;
+      background: #ffffff;
+    }
+
+    .board-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .board-head h2 {
+      margin: 0;
+      font-size: clamp(22px, 3vw, 34px);
+      line-height: 1.1;
+    }
+
+    .date-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 6px 10px;
+      border: 1px solid #b9cdf4;
+      border-radius: 999px;
+      background: #edf4ff;
+      color: #1d56b3;
+      font-size: 13px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .appointment-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .appointment-card {
+      display: grid;
+      grid-template-columns: 42px 64px minmax(0, 1fr);
+      gap: 6px 9px;
+      align-items: center;
+      min-height: 70px;
+      padding: 9px 10px;
+      border: 1px solid #d8deea;
+      border-radius: var(--radius);
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(31, 49, 86, 0.06);
+    }
+
+    .appointment-card:nth-child(2) {
+      background: #fffafb;
+    }
+
+    .appointment-card:nth-child(3) {
+      background: #f8fcff;
+    }
+
+    .pet-icon {
+      display: grid;
+      grid-row: 1 / span 2;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border: 1px solid #c9d6e8;
+      border-radius: 999px;
+      background: #eef6ff;
+      font-size: 25px;
+    }
+
+    .time {
+      display: inline-flex;
+      margin-bottom: 0;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 950;
+    }
+
+    .appointment-card strong {
+      display: block;
+      margin-bottom: 0;
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .appointment-card p {
+      grid-column: 2 / -1;
+      margin: 0;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1.45;
+    }
+
+    .chart-card {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid #d8deea;
+      border-radius: var(--radius);
+      background: #f7f9fc;
+    }
+
+    .chart-patient {
+      display: grid;
+      grid-template-columns: 62px minmax(0, 1fr);
+      gap: 8px 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid #d8deea;
+      border-radius: var(--radius);
+      background: #ffffff;
+    }
+
+    .big-pet {
+      display: grid;
+      grid-row: 1 / span 2;
+      width: 58px;
+      height: 58px;
+      place-items: center;
+      border: 1px solid #c9d6e8;
+      border-radius: 47% 53% 45% 55% / 50% 45% 55% 50%;
+      background: #eef6ff;
+      font-size: 34px;
+    }
+
+    .chart-patient h3 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .chart-patient p {
+      margin: 0;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1.45;
+    }
+
+    .status-flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      grid-column: 1 / -1;
+      margin-top: 0;
+    }
+
+    .status-flow span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 3px 8px;
+      border: 1px solid #b9cdf4;
+      border-radius: 999px;
+      background: #edf4ff;
+      color: #1d56b3;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .chart-table {
+      width: 100%;
+      border: 1px solid #d8deea;
+      border-radius: var(--radius);
+      border-spacing: 0;
+      background: #ffffff;
+      overflow: hidden;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .chart-table th,
+    .chart-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e5eaf2;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .chart-table tr:last-child th,
+    .chart-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .chart-table th {
+      width: 92px;
+      background: #f7f9fc;
+      color: #44516a;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .chart-table td {
+      color: var(--text);
+      font-weight: 850;
+    }
+
+    .chart-table tr.alert th,
+    .chart-table tr.alert td {
+      background: #fff5f7;
+      color: #9f2945;
+    }
+
+    .right-panel {
+      display: grid;
+      gap: 10px;
+      padding: 10px;
+      border-left: 1px solid #d8deea;
+      background: #f7f9fc;
+    }
+
+    .mini-widget {
+      padding: 9px;
+      border: 1px solid #d8deea;
+      border-radius: var(--radius);
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(31, 49, 86, 0.05);
+    }
+
+    .mini-widget h3 {
+      margin-bottom: 7px;
+      color: var(--blue);
+      font-size: 14px;
+    }
+
+    .mini-widget p {
+      margin: 0;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1.45;
+    }
+
+    .queue-row {
+      display: grid;
+      grid-template-columns: 36px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .queue-row span:first-child {
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border: 1px solid #c9d6e8;
+      border-radius: 999px;
+      background: #eef6ff;
+    }
+
+    .floating-pet {
+      position: absolute;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      border: 3px solid var(--line);
+      box-shadow: 4px 4px 0 rgba(34, 54, 184, 0.22);
+      font-size: clamp(28px, 4vw, 50px);
+      pointer-events: none;
+    }
+
+    .floating-pet.cat {
+      top: 8%;
+      right: 4%;
+      width: 86px;
+      height: 72px;
+      border-radius: 55% 45% 48% 52% / 46% 48% 52% 54%;
+      background: var(--lemon);
+      animation: gentlePeek 7s ease-in-out infinite;
+    }
+
+    .floating-pet.dog {
+      left: 1%;
+      bottom: 19%;
+      width: 84px;
+      height: 70px;
+      border-radius: 47% 53% 46% 54% / 52% 48% 52% 48%;
+      background: #c90054;
+    }
+
+    .floating-pet.rabbit {
+      right: 27%;
+      bottom: 7%;
+      width: 76px;
+      height: 66px;
+      border-radius: 50% 50% 44% 56% / 50% 44% 56% 50%;
+      background: var(--mint);
+    }
+
+    .below-fold-cue {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 3px dashed var(--blue);
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 950;
+    }
+
+    .animal-train {
+      display: flex;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .animal-train span {
+      display: inline-block;
+    }
+
+    section {
+      padding: 44px 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 22px;
+      margin-bottom: 18px;
+    }
+
+    .section-head h2 {
+      max-width: 680px;
+      margin: 0;
+      color: var(--blue);
+      font-size: clamp(28px, 4vw, 54px);
+      line-height: 1.04;
+      letter-spacing: 0;
+    }
+
+    .section-head p {
+      max-width: 480px;
+      margin: 0;
+      color: var(--text);
+      font-weight: 850;
+    }
+
+    .feature-splats {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(150px, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .splat-card {
+      display: grid;
+      min-height: 190px;
+      place-items: center;
+      padding: 18px;
+      border: 4px solid var(--line);
+      border-radius: 42% 58% 48% 52% / 48% 46% 54% 52%;
+      background: var(--paper-warm);
+      text-align: center;
+      box-shadow: var(--soft-shadow);
+      transform: rotate(-2deg);
+    }
+
+    .splat-card:nth-child(2) {
+      background: var(--lemon);
+      transform: rotate(3deg);
+    }
+
+    .splat-card:nth-child(3) {
+      background: var(--mint);
+      transform: rotate(-1deg);
+    }
+
+    .splat-card:nth-child(4) {
+      background: #ff8fb8;
+      transform: rotate(2deg);
+    }
+
+    .splat-card:nth-child(5) {
+      background: #90d7ff;
+      transform: rotate(-3deg);
+    }
+
+    .splat-card .icon {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 50px;
+    }
+
+    .splat-card strong {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .splat-card span:last-child {
+      color: #25294a;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .state-area {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .state-map,
+    .legend {
+      border: 4px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper-warm);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .state-map {
+      overflow-x: auto;
+      padding: 18px;
+    }
+
+    .state-svg {
+      display: block;
+      width: 100%;
+      min-width: 860px;
+      height: auto;
+    }
+
+    .svg-node {
+      fill: #ffffff;
+      stroke: var(--line);
+      stroke-width: 3;
+      rx: 8;
+    }
+
+    .svg-node.scheduled { fill: #f4fff6; }
+    .svg-node.checked-in { fill: #fff0f7; }
+    .svg-node.exam { fill: #e9f8ff; }
+    .svg-node.paid { fill: #fff8ce; }
+    .svg-node.canceled { fill: #f3eaff; stroke-dasharray: 8 6; }
+
+    .transition-line {
+      fill: none;
+      stroke: var(--blue);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .cancel-line {
+      fill: none;
+      stroke: #6b4ee6;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 8 7;
+    }
+
+    .blocked-line {
+      fill: none;
+      stroke: var(--coral);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-dasharray: 8 8;
+    }
+
+    .svg-title {
+      fill: var(--blue);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .svg-body {
+      fill: var(--text);
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    .svg-animal {
+      font-size: 31px;
+    }
+
+    .svg-label {
+      fill: var(--text);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .svg-label.cancel {
+      fill: #4d36bd;
+    }
+
+    .svg-label.blocked {
+      fill: #c63f2e;
+    }
+
+    .legend {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      background: #fff8ea;
+    }
+
+    .legend-row {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .legend-icon {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border: 3px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper-warm);
+      font-size: 23px;
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(144px, 1fr));
+      gap: 10px;
+      overflow-x: auto;
+      padding: 8px 0 8px;
+    }
+
+    .time-stop {
+      min-height: 165px;
+      padding: 12px;
+      border: 3px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper-warm);
+      box-shadow: 4px 4px 0 rgba(34, 54, 184, 0.18);
+      font-weight: 850;
+    }
+
+    .time-stop:nth-child(odd) {
+      background: #fff0f7;
+    }
+
+    .time-stop.active {
+      background: var(--lemon);
+      transform: rotate(-1deg);
+    }
+
+    .time-stop time {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 950;
+    }
+
+    .time-stop strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 15px;
+      line-height: 1.3;
+    }
+
+    .time-stop span {
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1.45;
+    }
+
+    .reading-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 440px);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .doc-pane,
+    pre {
+      border: 4px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .doc-pane {
+      position: relative;
+      padding: 20px;
+      background: var(--paper-warm);
+    }
+
+    .doc-pane::after {
+      content: "🐈";
+      position: absolute;
+      right: 18px;
+      bottom: -18px;
+      font-size: 42px;
+    }
+
+    .doc-pane h3 {
+      margin-bottom: 10px;
+      color: var(--blue);
+      font-size: 24px;
+    }
+
+    .doc-pane p {
+      color: var(--text);
+      font-weight: 850;
+    }
+
+    .callout {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      margin-top: 14px;
+      padding: 12px;
+      border: 3px dashed var(--line);
+      border-radius: var(--radius);
+      background: #fff0f7;
+    }
+
+    .callout strong {
+      display: block;
+      color: #be1f56;
+    }
+
+    .callout p {
+      margin: 0;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    pre {
+      overflow-x: auto;
+      margin: 0;
+      padding: 18px;
+      background: #161a3e;
+      color: #fffad7;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    pre.shiki {
+      position: relative;
+      padding: 38px 18px 18px;
+      background: #0d1117;
+      color: #c9d1d9;
+      line-height: 1.7;
+    }
+
+    pre.shiki::before {
+      content: "TypeScript";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 7px 14px;
+      border-bottom: 2px solid rgba(201, 209, 217, 0.18);
+      background: #161b22;
+      color: #f0f6fc;
+      font-family: ui-rounded, "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", Meiryo, system-ui, sans-serif;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    pre.shiki code {
+      display: grid;
+      gap: 0;
+      min-width: max-content;
+    }
+
+    pre.shiki .line {
+      display: block;
+      min-height: 1.7em;
+    }
+
+    footer {
+      padding: 30px 0 46px;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    @keyframes gentlePeek {
+      0%, 100% {
+        transform: translateY(0) rotate(-4deg);
+      }
+      52% {
+        transform: translateY(-8px) rotate(3deg);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    @media (max-width: 1040px) {
+      .hero {
+        min-height: auto;
+      }
+
+      .hero-grid,
+      .state-area,
+      .reading-row {
+        grid-template-columns: 1fr;
+      }
+
+      .system-window {
+        width: 100%;
+        margin-right: 0;
+        transform: none;
+      }
+
+      .app-dashboard {
+        grid-template-columns: 130px minmax(360px, 1fr);
+        overflow-x: auto;
+      }
+
+      .right-panel {
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        border-top: 4px solid var(--line);
+        border-left: 0;
+      }
+
+      .feature-splats {
+        grid-template-columns: repeat(3, minmax(150px, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      body {
+        font-size: 15px;
+      }
+
+      .topbar {
+        position: static;
+        align-items: flex-start;
+        padding: 12px 18px;
+      }
+
+      .brand {
+        white-space: normal;
+      }
+
+      .nav {
+        display: none;
+      }
+
+      main {
+        width: min(100% - 28px, 1220px);
+      }
+
+      .copy-panel {
+        border-radius: var(--radius);
+      }
+
+      .app-dashboard {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar,
+      .right-panel {
+        border: 0;
+        border-bottom: 4px solid var(--line);
+      }
+
+      .right-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .appointment-grid,
+      .chart-card,
+      .feature-splats {
+        grid-template-columns: 1fr;
+      }
+
+      .floating-pet {
+        display: none;
+      }
+
+      .below-fold-cue,
+      .section-head {
+        display: grid;
+      }
+
+      .timeline {
+        grid-template-columns: 1fr;
+        overflow: visible;
+      }
+
+      .time-stop {
+        min-height: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <span class="shape splash-one" aria-hidden="true"></span>
+    <span class="shape splash-two" aria-hidden="true"></span>
+    <span class="shape splash-three" aria-hidden="true"></span>
+    <span class="shape zig one" aria-hidden="true"></span>
+    <span class="shape zig two" aria-hidden="true"></span>
+
+    <header class="topbar" aria-label="サイトヘッダー">
+      <a class="brand" href="#">
+        <span class="brand-mark" aria-hidden="true">🐾</span>
+        <span>WAN NYAN CLINIC</span>
+      </a>
+      <nav class="nav" aria-label="ページ内ナビゲーション">
+        <a href="#system">SYSTEM</a>
+        <a href="#states">STATES</a>
+        <a href="#schedule">LESSON</a>
+        <a href="#sources">SOURCE</a>
+        <a href="#reading">CODE</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" id="system" aria-labelledby="page-title">
+        <span class="floating-pet cat" aria-hidden="true">🐈</span>
+        <span class="floating-pet dog" aria-hidden="true">🐕</span>
+        <span class="floating-pet rabbit" aria-hidden="true">🐇</span>
+
+        <div class="hero-grid">
+          <div class="copy-panel">
+            <p class="eyebrow">🐱 2026-08-30 TypeScript hands-on</p>
+            <h1 id="page-title">
+              予約も<br>
+              カルテも<br>
+              <span class="rainbow-word" aria-label="できる">
+                <span>で</span><span>き</span><span>る</span><span>！</span><span>！</span>
+              </span>
+            </h1>
+            <p class="lead">
+              動物病院の予約・診察・会計フローを題材に、セッション中に増える要求と発覚する事故を型で受け止める教材モック。
+              画面はにぎやか、要求変更にはきっちり。
+            </p>
+            <div class="hero-tags" aria-label="教材トピック">
+              <span class="tag">🐾 Reservation</span>
+              <span class="tag">🩺 Chart</span>
+              <span class="tag">💳 Payment</span>
+              <span class="tag">🧪 Result</span>
+              <span class="tag">🔒 PII Defense</span>
+              <span class="tag">📜 Domain Events</span>
+            </div>
+          </div>
+
+          <div class="system-window" aria-label="動物病院の予約・カルテシステム画面モック">
+            <div class="window-top">
+              <span>Animal Clinic OS / Reservation & Chart</span>
+              <span class="window-buttons" aria-hidden="true"><span></span><span></span><span></span></span>
+            </div>
+            <div class="app-dashboard">
+              <aside class="sidebar" aria-label="システムメニュー">
+                <div class="clinic-stamp">🐾<br>READY<br>09:00</div>
+                <div class="side-menu">
+                  <div class="active">📅 予約</div>
+                  <div>🩺 カルテ</div>
+                  <div>💉 検査</div>
+                  <div>💳 会計</div>
+                  <div>📝 申し送り</div>
+                </div>
+              </aside>
+
+              <div class="schedule-board">
+                <div class="board-head">
+                  <h2>今日の診察</h2>
+                  <span class="date-pill">08.30 Sun</span>
+                </div>
+
+                <div class="appointment-grid" aria-label="予約一覧">
+                  <article class="appointment-card">
+                    <span class="pet-icon" aria-hidden="true">🐕</span>
+                    <span class="time">09:20</span>
+                    <strong>ポチ / ワクチン</strong>
+                    <p>受付済み。診察室 1 へ案内待ち。体重測定済み。</p>
+                  </article>
+                  <article class="appointment-card">
+                    <span class="pet-icon" aria-hidden="true">🐈</span>
+                    <span class="time">09:40</span>
+                    <strong>ミケ / 皮膚相談</strong>
+                    <p>予約済み。飼い主アプリから問診票が届いた。</p>
+                  </article>
+                  <article class="appointment-card">
+                    <span class="pet-icon" aria-hidden="true">🐇</span>
+                    <span class="time">10:10</span>
+                    <strong>もも / 再診</strong>
+                    <p>診察中。体重と食欲メモをカルテに反映。</p>
+                  </article>
+                </div>
+
+                <div class="chart-card" aria-label="カルテ詳細">
+                  <div class="chart-patient">
+                    <span class="big-pet" aria-hidden="true">🐈</span>
+                    <h3>カルテ #AC-2408</h3>
+                    <p>ミケ / 3歳 / メス避妊済み。主訴は耳まわりのかゆみと皮膚の赤み。</p>
+                    <div class="status-flow" aria-label="状態遷移">
+                      <span>予約済み</span>
+                      <span>受付済み</span>
+                      <span>診察中</span>
+                      <span>会計待ち</span>
+                    </div>
+                  </div>
+                  <table class="chart-table" aria-label="カルテ項目">
+                    <tbody>
+                      <tr class="alert">
+                        <th scope="row">注意</th>
+                        <td>アレルギー歴: ペニシリン系は要確認</td>
+                      </tr>
+                      <tr>
+                        <th scope="row">バイタル</th>
+                        <td>体重 4.2kg / 体温 38.4℃ / 食欲あり</td>
+                      </tr>
+                      <tr>
+                        <th scope="row">検査</th>
+                        <td>皮膚スタンプ検査を実施予定</td>
+                      </tr>
+                      <tr>
+                        <th scope="row">処方</th>
+                        <td>外用薬 7日分。再診は 2週間後</td>
+                      </tr>
+                      <tr>
+                        <th scope="row">会計</th>
+                        <td>診察料 + 検査料で見積り作成</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <aside class="right-panel" aria-label="待合と通知">
+                <div class="mini-widget">
+                  <h3>待合室</h3>
+                  <div class="queue-row"><span>🐶</span><strong>ポチ</strong><em>あと 1</em></div>
+                  <div class="queue-row"><span>🐱</span><strong>ミケ</strong><em>問診済</em></div>
+                  <div class="queue-row"><span>🐰</span><strong>もも</strong><em>診察中</em></div>
+                </div>
+                <div class="mini-widget">
+                  <h3>検査結果</h3>
+                  <p>ポチのワクチン前チェックは異常なし。ミケは皮膚検査待ち。</p>
+                </div>
+                <div class="mini-widget">
+                  <h3>追加要求</h3>
+                  <p>検査後に電話フォローが必要な患者を抽出したい。連絡先ログ漏えいも同時に疑う。</p>
+                </div>
+                <div class="mini-widget">
+                  <h3>会計</h3>
+                  <p>ポチはワクチン会計準備中。ミケは検査内容確定後に見積り更新。</p>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+
+        <div class="below-fold-cue">
+          <span>下にスクロールすると、機能・状態図・3時間の教材フロー・コード例まで、動物たちと一緒に追えます。</span>
+          <span class="animal-train" aria-hidden="true"><span>🐈</span><span>🐕</span><span>🐇</span><span>🐢</span><span>🦜</span><span>🦔</span></span>
+        </div>
+      </section>
+
+      <section aria-labelledby="features-title">
+        <div class="section-head">
+          <h2 id="features-title">できること</h2>
+          <p>参考画像のようなポップな色面に、ハンズオンで扱う業務機能を載せる。かわいいだけでなく、何を型で守るかが一目で分かる構成。</p>
+        </div>
+
+        <div class="feature-splats" aria-label="機能一覧">
+          <div class="splat-card">
+            <span class="icon" aria-hidden="true">📅</span>
+            <strong>予約管理</strong>
+            <span>Scheduled から始まる診察予定を整理。</span>
+          </div>
+          <div class="splat-card">
+            <span class="icon" aria-hidden="true">🩺</span>
+            <strong>カルテ</strong>
+            <span>診察中だけ編集できる情報を分ける。</span>
+          </div>
+          <div class="splat-card">
+            <span class="icon" aria-hidden="true">🐾</span>
+            <strong>待合室</strong>
+            <span>犬、猫、うさぎがぴょこぴょこ並ぶ。</span>
+          </div>
+          <div class="splat-card">
+            <span class="icon" aria-hidden="true">💳</span>
+            <strong>会計</strong>
+            <span>Paid は戻れない終端状態。</span>
+          </div>
+          <div class="splat-card">
+            <span class="icon" aria-hidden="true">🤖</span>
+            <strong>Agent Review</strong>
+            <span>AI に頼む前提で、型の穴を疑う。</span>
+          </div>
+          <div class="splat-card">
+            <span class="icon" aria-hidden="true">🔒</span>
+            <strong>PII ログ防御</strong>
+            <span>型だけでは漏れる値を Sensitive で包む。</span>
+          </div>
+          <div class="splat-card">
+            <span class="icon" aria-hidden="true">📜</span>
+            <strong>変更記録</strong>
+            <span>成功した状態変更を domain event に残す。</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="states" aria-labelledby="states-title">
+        <div class="section-head">
+          <h2 id="states-title">状態図もにぎやかに</h2>
+          <p>動物は単なる飾りではなく、予約・受付・診察・会計の状態を見分けるサインとして使う。</p>
+        </div>
+
+        <div class="state-area">
+          <div class="state-map">
+            <svg class="state-svg" viewBox="0 0 980 360" role="img" aria-labelledby="visit-state-svg-title visit-state-svg-desc">
+              <title id="visit-state-svg-title">動物病院の診察予約状態遷移図</title>
+              <desc id="visit-state-svg-desc">Scheduled から CheckedIn、InExamination、Paid へ進む。Scheduled または CheckedIn から Canceled へキャンセルできる。Paid と Canceled は終端状態。</desc>
+              <defs>
+                <marker id="arrow-main" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#2236b8"></path>
+                </marker>
+                <marker id="arrow-cancel" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b4ee6"></path>
+                </marker>
+              </defs>
+
+              <path class="transition-line" marker-end="url(#arrow-main)" d="M 190 100 H 275"></path>
+              <path class="transition-line" marker-end="url(#arrow-main)" d="M 425 100 H 510"></path>
+              <path class="transition-line" marker-end="url(#arrow-main)" d="M 660 100 H 745"></path>
+              <text class="svg-label" x="215" y="85">受付する</text>
+              <text class="svg-label" x="451" y="85">診察開始</text>
+              <text class="svg-label" x="692" y="85">会計する</text>
+
+              <path class="cancel-line" marker-end="url(#arrow-cancel)" d="M 115 160 C 115 235, 240 265, 360 270"></path>
+              <path class="cancel-line" marker-end="url(#arrow-cancel)" d="M 350 160 C 355 218, 385 245, 430 270"></path>
+              <text class="svg-label cancel" x="140" y="236">キャンセル</text>
+              <text class="svg-label cancel" x="372" y="236">キャンセル</text>
+
+              <path class="blocked-line" d="M 820 172 C 820 218, 760 235, 675 218"></path>
+              <text class="svg-label blocked" x="704" y="247">Paid から戻る遷移は存在しない</text>
+
+              <rect class="svg-node scheduled" x="40" y="40" width="150" height="120"></rect>
+              <text class="svg-animal" x="95" y="76">🐇</text>
+              <text class="svg-title" x="74" y="106">Scheduled</text>
+              <text class="svg-body" x="65" y="132">予約済み</text>
+
+              <rect class="svg-node checked-in" x="275" y="40" width="150" height="120"></rect>
+              <text class="svg-animal" x="330" y="76">🐈</text>
+              <text class="svg-title" x="313" y="106">CheckedIn</text>
+              <text class="svg-body" x="303" y="132">受付済み</text>
+
+              <rect class="svg-node exam" x="510" y="40" width="150" height="120"></rect>
+              <text class="svg-animal" x="565" y="76">🐕</text>
+              <text class="svg-title" x="525" y="106">InExamination</text>
+              <text class="svg-body" x="544" y="132">診察中</text>
+
+              <rect class="svg-node paid" x="745" y="40" width="150" height="120"></rect>
+              <text class="svg-animal" x="800" y="76">🐢</text>
+              <text class="svg-title" x="788" y="106">Paid</text>
+              <text class="svg-body" x="788" y="132">会計済み</text>
+              <text class="svg-label blocked" x="779" y="182">終端状態</text>
+
+              <rect class="svg-node canceled" x="360" y="270" width="150" height="64"></rect>
+              <text class="svg-animal" x="378" y="311">🦔</text>
+              <text class="svg-title" x="422" y="299">Canceled</text>
+              <text class="svg-body" x="422" y="320">キャンセル済み / 終端</text>
+            </svg>
+          </div>
+
+          <aside class="legend" aria-label="教材で扱う型の凡例">
+            <div class="legend-row">
+              <span class="legend-icon">🐾</span>
+              <span><strong>Discriminated Union</strong><br>状態ごとに持てる値と遷移関数を分ける。</span>
+            </div>
+            <div class="legend-row">
+              <span class="legend-icon">🎫</span>
+              <span><strong>Branded Type</strong><br>診察券番号をただの string から分離する。</span>
+            </div>
+            <div class="legend-row">
+              <span class="legend-icon">🧪</span>
+              <span><strong>Result</strong><br>失敗を例外ではなく戻り値で表す。</span>
+            </div>
+            <div class="legend-row">
+              <span class="legend-icon">🔒</span>
+              <span><strong>Sensitive</strong><br>ログに出ると困る値を runtime でも赤く隠す。</span>
+            </div>
+            <div class="legend-row">
+              <span class="legend-icon">📜</span>
+              <span><strong>Domain Event</strong><br>あとから事故を追える変更記録を残す。</span>
+            </div>
+            <div class="legend-row">
+              <span class="legend-icon">🤖</span>
+              <span><strong>Agent Review</strong><br>AI が業務ルールを外していないか見る。</span>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="schedule" aria-labelledby="schedule-title">
+        <div class="section-head">
+          <h2 id="schedule-title">3時間の流れ</h2>
+          <p>導入事故から始め、セッション中に増える要求と発覚する事故を、型・境界・Result・変更記録・Agent Review で受け止める。</p>
+        </div>
+
+        <div class="timeline" aria-label="ハンズオンの時間割">
+          <article class="time-stop active">
+            <time>0:10-0:25</time>
+            <strong>🐢 導入事故を起こす</strong>
+            <span>Paid -> InExamination を再現し、なぜ通るのかを見る。</span>
+          </article>
+          <article class="time-stop">
+            <time>0:25-0:40</time>
+            <strong>🐕 事故と次の要求を読む</strong>
+            <span>型の穴を読み、キャンセル理由と再診希望を残したい要求を追加する。</span>
+          </article>
+          <article class="time-stop">
+            <time>0:40-1:10</time>
+            <strong>🐾 Discriminated Union</strong>
+            <span>キャンセル理由を状態に入れ、終端状態に戻る遷移を閉じる。</span>
+          </article>
+          <article class="time-stop">
+            <time>1:20-1:45</time>
+            <strong>🎫 Zod / Brand / PII</strong>
+            <span>外部検査 payload の ID 取り違えと、飼い主連絡先のログ漏えいを止める。</span>
+          </article>
+          <article class="time-stop">
+            <time>1:45-2:15</time>
+            <strong>🧪 Result と Event</strong>
+            <span>失敗理由を UI へ返し、成功した診察開始だけを変更記録に残す。</span>
+          </article>
+          <article class="time-stop">
+            <time>2:15-2:35</time>
+            <strong>🤖 Agent Review</strong>
+            <span>次の追加要求を AI に頼むなら、どこを疑うかを明文化する。</span>
+          </article>
+          <article class="time-stop">
+            <time>2:35-2:50</time>
+            <strong>🐈 当日追加要求</strong>
+            <span>電話フォロー対象抽出を追加し、境界、Result、event、レビューを小さく一周する。</span>
+          </article>
+        </div>
+      </section>
+
+      <section id="sources" aria-labelledby="sources-title">
+        <div class="section-head">
+          <h2 id="sources-title">参考記事を教材に混ぜる</h2>
+          <p>既存記事は別枠の読み物にせず、セッション中に発覚するログ事故と、あとから追える変更記録の module に差し込む。記事の主張を小さなテストに落とし、当日の納得度につなげる。</p>
+        </div>
+
+        <div class="feature-splats" aria-label="参考記事">
+          <a class="splat-card" href="https://kosui.me/posts/2026/03/16/typescript-pii-logging-defense">
+            <span class="icon" aria-hidden="true">🔒</span>
+            <strong>PII ログ防御</strong>
+            <span>構造的部分型や Branded Type だけではログ漏えいを防げない。Zod 境界で Sensitive に包む。</span>
+          </a>
+          <a class="splat-card" href="https://kosui.me/posts/2025/05/06/142842">
+            <span class="icon" aria-hidden="true">📜</span>
+            <strong>ドメインイベント</strong>
+            <span>状態変更をあとから調査できる出来事として記録する。失敗時には余計な event を残さない。</span>
+          </a>
+        </div>
+      </section>
+
+      <section id="reading" aria-labelledby="reading-title">
+        <div class="section-head">
+          <h2 id="reading-title">コードも読みやすく</h2>
+          <p>見た目はポップにしつつ、本文とコードの読みやすさは残す。可愛い画面から、型で守るルールへ自然に入る。</p>
+        </div>
+
+        <div class="reading-row">
+          <article class="doc-pane">
+            <h3>Module 00 / 事故を起こす</h3>
+            <p>
+              まずは会計済みの診察記録を診察中に戻す操作を実行する。ここで直すのではなく、なぜ型が止めてくれないのかを読める状態にする。
+            </p>
+            <div class="callout">
+              <span class="legend-icon" aria-hidden="true">🐢</span>
+              <div>
+                <strong>守りたい不変条件</strong>
+                <p>Paid は終端状態。診察室に戻る遷移は業務上存在しない。</p>
+              </div>
+            </div>
+          </article>
+
+          <pre class="shiki-fallback" data-shiki-code aria-label="TypeScript コード例"><code>type VisitStatus =
+  | "Scheduled"
+  | "CheckedIn"
+  | "InExamination"
+  | "Paid"
+  | "Canceled";
+
+const moveToExamination = (visit: Visit): Visit => ({
+  ...visit,
+  status: "InExamination",
+});
+
+// Incident: Paid -> InExamination が通ってしまう
+moveToExamination(paidVisit);</code></pre>
+        </div>
+      </section>
+
+      <footer>
+        HTML mockup with Shiki CDN runtime highlighting. No external images or fonts.
+      </footer>
+    </main>
+  </div>
+  <script type="module">
+    import { codeToHtml } from "https://esm.sh/shiki@3.9.1";
+
+    void (async () => {
+      const codeBlock = document.querySelector("[data-shiki-code]");
+      const source = codeBlock?.querySelector("code")?.textContent;
+
+      if (codeBlock && source) {
+        const highlighted = await codeToHtml(source.trimEnd(), {
+          lang: "ts",
+          theme: "github-dark",
+        });
+
+        const template = document.createElement("template");
+        template.innerHTML = highlighted.trim();
+        const shikiPre = template.content.firstElementChild;
+
+        if (shikiPre instanceof HTMLElement) {
+          shikiPre.setAttribute("aria-label", "TypeScript コード例");
+          codeBlock.replaceWith(shikiPre);
+        }
+      }
+    })();
+  </script>
+</body>
 </html>
