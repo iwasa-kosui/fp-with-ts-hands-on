@@ -8,8 +8,10 @@
     :root {
       color-scheme: light;
       --cream: #fff8ce;
+      --paper-warm: #fffefa;
       --paper: #ffffff;
       --ink: #111116;
+      --text: #1b1d33;
       --blue: #2236b8;
       --sky: #38a9f4;
       --mint: #12dbb1;
@@ -19,7 +21,7 @@
       --lemon: #ffd21b;
       --green: #89dc54;
       --line: #17204d;
-      --muted: #595c73;
+      --muted: #303452;
       --soft-shadow: 8px 10px 0 rgba(34, 54, 184, 0.16);
       --hard-shadow: 7px 7px 0 #17204d;
       --radius: 8px;
@@ -129,7 +131,7 @@
       justify-content: space-between;
       gap: 18px;
       padding: 14px clamp(18px, 4vw, 54px);
-      background: rgba(255, 248, 206, 0.78);
+      background: rgba(255, 248, 206, 0.96);
       border-bottom: 3px solid rgba(34, 54, 184, 0.14);
       backdrop-filter: blur(14px);
     }
@@ -157,7 +159,6 @@
       border-radius: 44% 56% 48% 52% / 42% 45% 55% 58%;
       box-shadow: 3px 3px 0 var(--ink);
       font-size: 23px;
-      animation: hop 2.7s ease-in-out infinite;
     }
 
     .nav {
@@ -174,7 +175,7 @@
       padding: 7px 12px;
       border: 2px solid var(--line);
       border-radius: 999px;
-      background: var(--paper);
+      background: var(--paper-warm);
       box-shadow: 3px 3px 0 rgba(34, 54, 184, 0.2);
     }
 
@@ -191,15 +192,16 @@
 
     .hero-grid {
       display: grid;
-      grid-template-columns: minmax(300px, 0.84fr) minmax(0, 1.16fr);
-      gap: clamp(20px, 4vw, 48px);
+      grid-template-columns: minmax(340px, 0.9fr) minmax(0, 1.1fr);
+      gap: clamp(18px, 3vw, 34px);
       align-items: center;
     }
 
     .copy-panel {
       position: relative;
+      min-width: 0;
       padding: clamp(22px, 4vw, 44px);
-      background: var(--paper);
+      background: var(--paper-warm);
       border: 4px solid var(--line);
       border-radius: 48% 52% 45% 55% / 42% 44% 56% 58%;
       box-shadow: var(--hard-shadow);
@@ -209,7 +211,7 @@
     .copy-panel::after {
       content: "";
       position: absolute;
-      background: var(--paper);
+      background: var(--paper-warm);
       border: 4px solid var(--line);
       border-radius: 999px;
     }
@@ -265,17 +267,20 @@
       color: #30324a;
       font-size: clamp(15px, 2vw, 18px);
       font-weight: 700;
+      overflow-wrap: anywhere;
     }
 
     .hero-tags {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
+      min-width: 0;
     }
 
     .tag {
       display: inline-flex;
       align-items: center;
+      max-width: 100%;
       min-height: 32px;
       padding: 5px 10px;
       border: 2px solid var(--line);
@@ -285,16 +290,21 @@
       font-size: 13px;
       font-weight: 950;
       box-shadow: 3px 3px 0 rgba(34, 54, 184, 0.18);
+      white-space: normal;
     }
 
     .system-window {
       position: relative;
       min-width: 0;
-      border: 4px solid var(--line);
+      border: 2px solid #b9c3d6;
       border-radius: var(--radius);
-      background: var(--paper);
-      box-shadow: 12px 12px 0 rgba(34, 54, 184, 0.22);
-      transform: rotate(-1deg);
+      background: #ffffff;
+      box-shadow: 0 18px 36px rgba(31, 49, 86, 0.18);
+      overflow: hidden;
+      width: 111.111%;
+      margin-right: -11.111%;
+      transform: scale(0.9) rotate(-1deg);
+      transform-origin: left center;
     }
 
     .window-top {
@@ -303,10 +313,10 @@
       justify-content: space-between;
       gap: 12px;
       padding: 10px 14px;
-      border-bottom: 4px solid var(--line);
-      background: var(--purple);
-      color: var(--ink);
-      font-weight: 950;
+      border-bottom: 1px solid #d8deea;
+      background: #f7f9fc;
+      color: #17213b;
+      font-weight: 850;
     }
 
     .window-buttons {
@@ -317,29 +327,30 @@
     .window-buttons span {
       width: 13px;
       height: 13px;
-      border: 2px solid var(--line);
+      border: 1px solid #aeb8ca;
       border-radius: 999px;
-      background: var(--lemon);
+      background: #dbe6f6;
     }
 
     .window-buttons span:nth-child(2) {
-      background: var(--mint);
+      background: #cdebdc;
     }
 
     .window-buttons span:nth-child(3) {
-      background: var(--pink);
+      background: #f8cfd8;
     }
 
     .app-dashboard {
       display: grid;
-      grid-template-columns: 150px minmax(360px, 1fr) 230px;
+      grid-template-columns: 140px minmax(340px, 1fr) 220px;
       min-height: 520px;
+      background: #f4f7fb;
     }
 
     .sidebar {
-      padding: 14px;
-      border-right: 4px solid var(--line);
-      background: #e9fff8;
+      padding: 10px;
+      border-right: 1px solid #d8deea;
+      background: #eef3f8;
     }
 
     .clinic-stamp {
@@ -347,14 +358,14 @@
       place-items: center;
       min-height: 92px;
       margin-bottom: 14px;
-      border: 3px solid var(--line);
+      border: 1px solid #d5dde9;
       border-radius: var(--radius);
-      background: var(--lemon);
-      color: var(--blue);
+      background: #ffffff;
+      color: #2453b3;
       text-align: center;
-      font-weight: 950;
+      font-weight: 850;
       line-height: 1.25;
-      box-shadow: 5px 5px 0 rgba(34, 54, 184, 0.15);
+      box-shadow: 0 6px 14px rgba(31, 49, 86, 0.08);
     }
 
     .side-menu {
@@ -368,21 +379,23 @@
       gap: 7px;
       min-height: 36px;
       padding: 6px 8px;
-      border: 2px solid var(--line);
+      border: 1px solid #d5dde9;
       border-radius: var(--radius);
-      background: var(--paper);
+      background: #ffffff;
       font-size: 12px;
-      font-weight: 900;
+      font-weight: 780;
     }
 
     .side-menu div.active {
-      background: var(--pink);
-      color: #ffffff;
+      border-color: #2f6fde;
+      background: #e8f1ff;
+      color: #164ca5;
+      font-weight: 850;
     }
 
     .schedule-board {
       padding: 14px;
-      background: #fdfbff;
+      background: #ffffff;
     }
 
     .board-head {
@@ -404,12 +417,12 @@
       align-items: center;
       min-height: 36px;
       padding: 6px 10px;
-      border: 2px solid var(--line);
+      border: 1px solid #b9cdf4;
       border-radius: 999px;
-      background: var(--lemon);
-      color: var(--blue);
+      background: #edf4ff;
+      color: #1d56b3;
       font-size: 13px;
-      font-weight: 950;
+      font-weight: 850;
       white-space: nowrap;
     }
 
@@ -427,18 +440,18 @@
       align-items: center;
       min-height: 70px;
       padding: 9px 10px;
-      border: 3px solid var(--line);
+      border: 1px solid #d8deea;
       border-radius: var(--radius);
-      background: var(--paper);
-      box-shadow: 4px 4px 0 rgba(34, 54, 184, 0.16);
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(31, 49, 86, 0.06);
     }
 
     .appointment-card:nth-child(2) {
-      background: #fff0f7;
+      background: #fffafb;
     }
 
     .appointment-card:nth-child(3) {
-      background: #ecfbff;
+      background: #f8fcff;
     }
 
     .pet-icon {
@@ -447,20 +460,10 @@
       width: 38px;
       height: 38px;
       place-items: center;
-      border: 2px solid var(--line);
+      border: 1px solid #c9d6e8;
       border-radius: 999px;
-      background: var(--mint);
+      background: #eef6ff;
       font-size: 25px;
-      filter: drop-shadow(2px 3px 0 rgba(34, 54, 184, 0.22));
-      animation: bob 2.6s ease-in-out infinite;
-    }
-
-    .appointment-card:nth-child(2) .pet-icon {
-      animation-delay: -0.7s;
-    }
-
-    .appointment-card:nth-child(3) .pet-icon {
-      animation-delay: -1.3s;
     }
 
     .time {
@@ -481,54 +484,65 @@
     .appointment-card p {
       grid-column: 2 / -1;
       margin: 0;
-      color: var(--muted);
+      color: var(--text);
       font-size: 12px;
-      font-weight: 750;
+      font-weight: 850;
       line-height: 1.45;
     }
 
     .chart-card {
       display: grid;
-      grid-template-columns: 150px minmax(0, 1fr);
-      gap: 10px;
+      grid-template-columns: 1fr;
+      gap: 8px;
       padding: 12px;
-      border: 3px solid var(--line);
+      border: 1px solid #d8deea;
       border-radius: var(--radius);
-      background: #fff8ce;
+      background: #f7f9fc;
     }
 
     .chart-patient {
-      padding: 12px;
-      border: 3px dashed var(--blue);
+      display: grid;
+      grid-template-columns: 62px minmax(0, 1fr);
+      gap: 8px 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid #d8deea;
       border-radius: var(--radius);
-      background: var(--paper);
+      background: #ffffff;
     }
 
     .big-pet {
       display: grid;
-      width: 86px;
-      height: 86px;
+      grid-row: 1 / span 2;
+      width: 58px;
+      height: 58px;
       place-items: center;
-      margin-bottom: 8px;
-      border: 3px solid var(--line);
+      border: 1px solid #c9d6e8;
       border-radius: 47% 53% 45% 55% / 50% 45% 55% 50%;
-      background: var(--mint);
-      font-size: 48px;
-      animation: hop 1.9s ease-in-out infinite;
+      background: #eef6ff;
+      font-size: 34px;
     }
 
-    .chart-patient h3,
-    .chart-notes h3 {
-      margin-bottom: 6px;
+    .chart-patient h3 {
+      margin: 0;
       font-size: 17px;
       line-height: 1.2;
+    }
+
+    .chart-patient p {
+      margin: 0;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1.45;
     }
 
     .status-flow {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      margin-top: 10px;
+      grid-column: 1 / -1;
+      margin-top: 0;
     }
 
     .status-flow span {
@@ -536,47 +550,72 @@
       align-items: center;
       min-height: 28px;
       padding: 3px 8px;
-      border: 2px solid var(--line);
+      border: 1px solid #b9cdf4;
       border-radius: 999px;
-      background: var(--paper);
-      color: var(--blue);
+      background: #edf4ff;
+      color: #1d56b3;
       font-size: 11px;
-      font-weight: 950;
+      font-weight: 850;
     }
 
-    .chart-notes {
-      display: grid;
-      gap: 9px;
-    }
-
-    .note-line {
-      padding: 9px;
-      border: 2px solid var(--line);
+    .chart-table {
+      width: 100%;
+      border: 1px solid #d8deea;
       border-radius: var(--radius);
-      background: var(--paper);
+      border-spacing: 0;
+      background: #ffffff;
+      overflow: hidden;
       font-size: 12px;
       font-weight: 800;
+      line-height: 1.45;
     }
 
-    .note-line.alert {
-      background: #ffe4ef;
-      color: #be1f56;
+    .chart-table th,
+    .chart-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e5eaf2;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .chart-table tr:last-child th,
+    .chart-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .chart-table th {
+      width: 92px;
+      background: #f7f9fc;
+      color: #44516a;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .chart-table td {
+      color: var(--text);
+      font-weight: 850;
+    }
+
+    .chart-table tr.alert th,
+    .chart-table tr.alert td {
+      background: #fff5f7;
+      color: #9f2945;
     }
 
     .right-panel {
       display: grid;
       gap: 10px;
-      padding: 14px;
-      border-left: 4px solid var(--line);
-      background: #fff3f0;
+      padding: 10px;
+      border-left: 1px solid #d8deea;
+      background: #f7f9fc;
     }
 
     .mini-widget {
-      padding: 11px;
-      border: 3px solid var(--line);
+      padding: 9px;
+      border: 1px solid #d8deea;
       border-radius: var(--radius);
-      background: var(--paper);
-      box-shadow: 4px 4px 0 rgba(34, 54, 184, 0.14);
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(31, 49, 86, 0.05);
     }
 
     .mini-widget h3 {
@@ -587,9 +626,10 @@
 
     .mini-widget p {
       margin: 0;
-      color: var(--muted);
+      color: var(--text);
       font-size: 12px;
-      font-weight: 750;
+      font-weight: 850;
+      line-height: 1.45;
     }
 
     .queue-row {
@@ -607,10 +647,9 @@
       width: 36px;
       height: 36px;
       place-items: center;
-      border: 2px solid var(--line);
+      border: 1px solid #c9d6e8;
       border-radius: 999px;
-      background: #e9fff8;
-      animation: bob 2.4s ease-in-out infinite;
+      background: #eef6ff;
     }
 
     .floating-pet {
@@ -631,7 +670,7 @@
       height: 72px;
       border-radius: 55% 45% 48% 52% / 46% 48% 52% 54%;
       background: var(--lemon);
-      animation: jumpAcross 5.2s ease-in-out infinite;
+      animation: gentlePeek 7s ease-in-out infinite;
     }
 
     .floating-pet.dog {
@@ -640,8 +679,7 @@
       width: 84px;
       height: 70px;
       border-radius: 47% 53% 46% 54% / 52% 48% 52% 48%;
-      background: var(--pink);
-      animation: waggle 2.2s ease-in-out infinite;
+      background: #c90054;
     }
 
     .floating-pet.rabbit {
@@ -651,7 +689,6 @@
       height: 66px;
       border-radius: 50% 50% 44% 56% / 50% 44% 56% 50%;
       background: var(--mint);
-      animation: hop 2.1s ease-in-out infinite;
     }
 
     .below-fold-cue {
@@ -675,14 +712,7 @@
 
     .animal-train span {
       display: inline-block;
-      animation: trainHop 1.7s ease-in-out infinite;
     }
-
-    .animal-train span:nth-child(2) { animation-delay: -0.2s; }
-    .animal-train span:nth-child(3) { animation-delay: -0.4s; }
-    .animal-train span:nth-child(4) { animation-delay: -0.6s; }
-    .animal-train span:nth-child(5) { animation-delay: -0.8s; }
-    .animal-train span:nth-child(6) { animation-delay: -1s; }
 
     section {
       padding: 44px 0;
@@ -708,8 +738,8 @@
     .section-head p {
       max-width: 480px;
       margin: 0;
-      color: #333756;
-      font-weight: 760;
+      color: var(--text);
+      font-weight: 850;
     }
 
     .feature-splats {
@@ -726,7 +756,7 @@
       padding: 18px;
       border: 4px solid var(--line);
       border-radius: 42% 58% 48% 52% / 48% 46% 54% 52%;
-      background: var(--paper);
+      background: var(--paper-warm);
       text-align: center;
       box-shadow: var(--soft-shadow);
       transform: rotate(-2deg);
@@ -756,7 +786,6 @@
       display: block;
       margin-bottom: 8px;
       font-size: 50px;
-      animation: bob 2.4s ease-in-out infinite;
     }
 
     .splat-card strong {
@@ -769,7 +798,7 @@
     .splat-card span:last-child {
       color: #25294a;
       font-size: 13px;
-      font-weight: 780;
+      font-weight: 850;
     }
 
     .state-area {
@@ -783,7 +812,7 @@
     .legend {
       border: 4px solid var(--line);
       border-radius: var(--radius);
-      background: var(--paper);
+      background: var(--paper-warm);
       box-shadow: var(--soft-shadow);
     }
 
@@ -792,82 +821,86 @@
       padding: 18px;
     }
 
-    .state-lane {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(160px, 1fr));
-      gap: 12px;
-      min-width: 720px;
-      align-items: center;
+    .state-svg {
+      display: block;
+      width: 100%;
+      min-width: 860px;
+      height: auto;
     }
 
-    .state-node {
-      min-height: 132px;
-      padding: 14px;
-      border: 3px solid var(--line);
-      border-radius: var(--radius);
-      background: #f4fff6;
-      text-align: center;
+    .svg-node {
+      fill: #ffffff;
+      stroke: var(--line);
+      stroke-width: 3;
+      rx: 8;
+    }
+
+    .svg-node.scheduled { fill: #f4fff6; }
+    .svg-node.checked-in { fill: #fff0f7; }
+    .svg-node.exam { fill: #e9f8ff; }
+    .svg-node.paid { fill: #fff8ce; }
+    .svg-node.canceled { fill: #f3eaff; stroke-dasharray: 8 6; }
+
+    .transition-line {
+      fill: none;
+      stroke: var(--blue);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .cancel-line {
+      fill: none;
+      stroke: #6b4ee6;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 8 7;
+    }
+
+    .blocked-line {
+      fill: none;
+      stroke: var(--coral);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-dasharray: 8 8;
+    }
+
+    .svg-title {
+      fill: var(--blue);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .svg-body {
+      fill: var(--text);
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    .svg-animal {
+      font-size: 31px;
+    }
+
+    .svg-label {
+      fill: var(--text);
+      font-size: 12px;
       font-weight: 850;
     }
 
-    .state-node:nth-child(2) { background: #fff0f7; }
-    .state-node:nth-child(3) { background: #e9f8ff; }
-    .state-node:nth-child(4) { background: #fff8ce; }
-
-    .state-node .animal {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 40px;
-      animation: bob 2.5s ease-in-out infinite;
+    .svg-label.cancel {
+      fill: #4d36bd;
     }
 
-    .state-node strong {
-      display: block;
-      color: var(--blue);
-      font-size: 16px;
-      line-height: 1.25;
-    }
-
-    .state-node span:last-child {
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .state-branch {
-      display: grid;
-      grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(160px, 1fr);
-      gap: 12px;
-      min-width: 720px;
-      margin-top: 12px;
-    }
-
-    .cancel-node,
-    .paid-lock {
-      padding: 11px 12px;
-      border: 3px dashed var(--line);
-      border-radius: var(--radius);
-      font-weight: 950;
-      text-align: center;
-    }
-
-    .cancel-node {
-      grid-column: 1 / span 2;
-      background: #f3eaff;
-      color: var(--blue);
-    }
-
-    .paid-lock {
-      grid-column: 4;
-      background: var(--coral);
-      color: #ffffff;
-      transform: rotate(-2deg);
+    .svg-label.blocked {
+      fill: #c63f2e;
     }
 
     .legend {
       display: grid;
       gap: 10px;
       padding: 14px;
-      background: #fff3f0;
+      background: #fff8ea;
     }
 
     .legend-row {
@@ -876,7 +909,7 @@
       gap: 10px;
       align-items: start;
       font-size: 13px;
-      font-weight: 770;
+      font-weight: 850;
     }
 
     .legend-icon {
@@ -886,7 +919,7 @@
       place-items: center;
       border: 3px solid var(--line);
       border-radius: 999px;
-      background: var(--paper);
+      background: var(--paper-warm);
       font-size: 23px;
     }
 
@@ -903,9 +936,9 @@
       padding: 12px;
       border: 3px solid var(--line);
       border-radius: var(--radius);
-      background: var(--paper);
+      background: var(--paper-warm);
       box-shadow: 4px 4px 0 rgba(34, 54, 184, 0.18);
-      font-weight: 780;
+      font-weight: 850;
     }
 
     .time-stop:nth-child(odd) {
@@ -933,8 +966,9 @@
     }
 
     .time-stop span {
-      color: var(--muted);
+      color: var(--text);
       font-size: 12px;
+      font-weight: 850;
       line-height: 1.45;
     }
 
@@ -955,7 +989,7 @@
     .doc-pane {
       position: relative;
       padding: 20px;
-      background: var(--paper);
+      background: var(--paper-warm);
     }
 
     .doc-pane::after {
@@ -964,7 +998,6 @@
       right: 18px;
       bottom: -18px;
       font-size: 42px;
-      animation: hop 2s ease-in-out infinite;
     }
 
     .doc-pane h3 {
@@ -974,8 +1007,8 @@
     }
 
     .doc-pane p {
-      color: #333756;
-      font-weight: 750;
+      color: var(--text);
+      font-weight: 850;
     }
 
     .callout {
@@ -997,8 +1030,9 @@
 
     .callout p {
       margin: 0;
-      color: #333756;
+      color: var(--text);
       font-size: 13px;
+      font-weight: 850;
     }
 
     pre {
@@ -1011,6 +1045,41 @@
       line-height: 1.55;
     }
 
+    pre.shiki {
+      position: relative;
+      padding: 38px 18px 18px;
+      background: #0d1117;
+      color: #c9d1d9;
+      line-height: 1.7;
+    }
+
+    pre.shiki::before {
+      content: "TypeScript";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 7px 14px;
+      border-bottom: 2px solid rgba(201, 209, 217, 0.18);
+      background: #161b22;
+      color: #f0f6fc;
+      font-family: ui-rounded, "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", Meiryo, system-ui, sans-serif;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    pre.shiki code {
+      display: grid;
+      gap: 0;
+      min-width: max-content;
+    }
+
+    pre.shiki .line {
+      display: block;
+      min-height: 1.7em;
+    }
+
     footer {
       padding: 30px 0 46px;
       color: var(--blue);
@@ -1019,57 +1088,12 @@
       text-align: center;
     }
 
-    @keyframes hop {
+    @keyframes gentlePeek {
       0%, 100% {
-        transform: translateY(0) rotate(-2deg);
+        transform: translateY(0) rotate(-4deg);
       }
-      45% {
-        transform: translateY(-12px) rotate(4deg);
-      }
-      60% {
-        transform: translateY(-4px) rotate(-3deg);
-      }
-    }
-
-    @keyframes bob {
-      0%, 100% {
-        transform: translateY(0);
-      }
-      50% {
-        transform: translateY(-8px);
-      }
-    }
-
-    @keyframes waggle {
-      0%, 100% {
-        transform: rotate(-5deg);
-      }
-      50% {
-        transform: rotate(7deg) translateY(-4px);
-      }
-    }
-
-    @keyframes jumpAcross {
-      0%, 100% {
-        transform: translate(0, 0) rotate(-5deg);
-      }
-      24% {
-        transform: translate(-28px, -34px) rotate(7deg);
-      }
-      48% {
-        transform: translate(-58px, 0) rotate(-3deg);
-      }
-      70% {
-        transform: translate(-30px, -22px) rotate(5deg);
-      }
-    }
-
-    @keyframes trainHop {
-      0%, 100% {
-        transform: translateY(0) rotate(0deg);
-      }
-      50% {
-        transform: translateY(-7px) rotate(8deg);
+      52% {
+        transform: translateY(-8px) rotate(3deg);
       }
     }
 
@@ -1092,6 +1116,12 @@
       .state-area,
       .reading-row {
         grid-template-columns: 1fr;
+      }
+
+      .system-window {
+        width: 100%;
+        margin-right: 0;
+        transform: none;
       }
 
       .app-dashboard {
@@ -1243,7 +1273,7 @@
                   <div>🩺 カルテ</div>
                   <div>💉 検査</div>
                   <div>💳 会計</div>
-                  <div>🤖 Review</div>
+                  <div>📝 申し送り</div>
                 </div>
               </aside>
 
@@ -1258,19 +1288,19 @@
                     <span class="pet-icon" aria-hidden="true">🐕</span>
                     <span class="time">09:20</span>
                     <strong>ポチ / ワクチン</strong>
-                    <p>CheckedIn。受付済み、診察室 1 へ案内待ち。</p>
+                    <p>受付済み。診察室 1 へ案内待ち。体重測定済み。</p>
                   </article>
                   <article class="appointment-card">
                     <span class="pet-icon" aria-hidden="true">🐈</span>
                     <span class="time">09:40</span>
                     <strong>ミケ / 皮膚相談</strong>
-                    <p>Scheduled。飼い主アプリから問診票が届いた。</p>
+                    <p>予約済み。飼い主アプリから問診票が届いた。</p>
                   </article>
                   <article class="appointment-card">
                     <span class="pet-icon" aria-hidden="true">🐇</span>
                     <span class="time">10:10</span>
                     <strong>もも / 再診</strong>
-                    <p>InExamination。体重と食欲メモをカルテに反映。</p>
+                    <p>診察中。体重と食欲メモをカルテに反映。</p>
                   </article>
                 </div>
 
@@ -1278,21 +1308,38 @@
                   <div class="chart-patient">
                     <span class="big-pet" aria-hidden="true">🐈</span>
                     <h3>カルテ #AC-2408</h3>
-                    <p>ミケ / 3歳 / 皮膚相談。外部入力は parse 境界で診察券番号に変換済み。</p>
+                    <p>ミケ / 3歳 / メス避妊済み。主訴は耳まわりのかゆみと皮膚の赤み。</p>
                     <div class="status-flow" aria-label="状態遷移">
-                      <span>Scheduled</span>
-                      <span>CheckedIn</span>
-                      <span>InExamination</span>
-                      <span>Paid</span>
+                      <span>予約済み</span>
+                      <span>受付済み</span>
+                      <span>診察中</span>
+                      <span>会計待ち</span>
                     </div>
                   </div>
-                  <div class="chart-notes">
-                    <div class="note-line alert">🚫 Paid から InExamination へ戻す関数は存在しない</div>
-                    <div class="note-line alert">🔒 ownerEmail はログに出さず [REDACTED] にする</div>
-                    <div class="note-line">✅ Result 型で会計失敗の理由を表示</div>
-                    <div class="note-line">📜 ExaminationStarted を変更記録として残す</div>
-                    <div class="note-line">🤖 Agent Review: union の網羅性と as 偽造を確認</div>
-                  </div>
+                  <table class="chart-table" aria-label="カルテ項目">
+                    <tbody>
+                      <tr class="alert">
+                        <th scope="row">注意</th>
+                        <td>アレルギー歴: ペニシリン系は要確認</td>
+                      </tr>
+                      <tr>
+                        <th scope="row">バイタル</th>
+                        <td>体重 4.2kg / 体温 38.4℃ / 食欲あり</td>
+                      </tr>
+                      <tr>
+                        <th scope="row">検査</th>
+                        <td>皮膚スタンプ検査を実施予定</td>
+                      </tr>
+                      <tr>
+                        <th scope="row">処方</th>
+                        <td>外用薬 7日分。再診は 2週間後</td>
+                      </tr>
+                      <tr>
+                        <th scope="row">会計</th>
+                        <td>診察料 + 検査料で見積り作成</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
@@ -1305,15 +1352,15 @@
                 </div>
                 <div class="mini-widget">
                   <h3>検査結果</h3>
-                  <p>失敗は例外で流さず Err として返す。画面も赤く、型も赤く。</p>
+                  <p>ポチのワクチン前チェックは異常なし。ミケは皮膚検査待ち。</p>
                 </div>
                 <div class="mini-widget">
-                  <h3>ログ防御</h3>
-                  <p>飼い主の連絡先は Sensitive に包み、構造化ログでは [REDACTED] にする。</p>
+                  <h3>連絡メモ</h3>
+                  <p>ミケの飼い主へ、検査後にアプリ通知。薬の塗り方説明を忘れずに。</p>
                 </div>
                 <div class="mini-widget">
                   <h3>会計</h3>
-                  <p>Paid は終端状態。スタンプ後のカルテは診察室へ戻らない。</p>
+                  <p>ポチはワクチン会計準備中。ミケは検査内容確定後に見積り更新。</p>
                 </div>
               </aside>
             </div>
@@ -1378,33 +1425,60 @@
         </div>
 
         <div class="state-area">
-          <div class="state-map" role="img" aria-label="Scheduled から CheckedIn、InExamination、Paid へ進み、Scheduled または CheckedIn から Canceled へ進む状態図">
-            <div class="state-lane">
-              <div class="state-node">
-                <span class="animal" aria-hidden="true">🐇</span>
-                <strong>Scheduled</strong>
-                <span>予約済み。まだ受付前。</span>
-              </div>
-              <div class="state-node">
-                <span class="animal" aria-hidden="true">🐈</span>
-                <strong>CheckedIn</strong>
-                <span>受付済み。待合室で順番待ち。</span>
-              </div>
-              <div class="state-node">
-                <span class="animal" aria-hidden="true">🐕</span>
-                <strong>InExamination</strong>
-                <span>診察中。カルテ更新可能。</span>
-              </div>
-              <div class="state-node">
-                <span class="animal" aria-hidden="true">🐢</span>
-                <strong>Paid</strong>
-                <span>会計済み。終端状態。</span>
-              </div>
-            </div>
-            <div class="state-branch">
-              <div class="cancel-node">🦔 Scheduled | CheckedIn -> Canceled</div>
-              <div class="paid-lock">Paid は戻れない</div>
-            </div>
+          <div class="state-map">
+            <svg class="state-svg" viewBox="0 0 980 360" role="img" aria-labelledby="visit-state-svg-title visit-state-svg-desc">
+              <title id="visit-state-svg-title">動物病院の診察予約状態遷移図</title>
+              <desc id="visit-state-svg-desc">Scheduled から CheckedIn、InExamination、Paid へ進む。Scheduled または CheckedIn から Canceled へキャンセルできる。Paid と Canceled は終端状態。</desc>
+              <defs>
+                <marker id="arrow-main" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#2236b8"></path>
+                </marker>
+                <marker id="arrow-cancel" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b4ee6"></path>
+                </marker>
+              </defs>
+
+              <path class="transition-line" marker-end="url(#arrow-main)" d="M 190 100 H 275"></path>
+              <path class="transition-line" marker-end="url(#arrow-main)" d="M 425 100 H 510"></path>
+              <path class="transition-line" marker-end="url(#arrow-main)" d="M 660 100 H 745"></path>
+              <text class="svg-label" x="215" y="85">受付する</text>
+              <text class="svg-label" x="451" y="85">診察開始</text>
+              <text class="svg-label" x="692" y="85">会計する</text>
+
+              <path class="cancel-line" marker-end="url(#arrow-cancel)" d="M 115 160 C 115 235, 240 265, 360 270"></path>
+              <path class="cancel-line" marker-end="url(#arrow-cancel)" d="M 350 160 C 355 218, 385 245, 430 270"></path>
+              <text class="svg-label cancel" x="140" y="236">キャンセル</text>
+              <text class="svg-label cancel" x="372" y="236">キャンセル</text>
+
+              <path class="blocked-line" d="M 820 172 C 820 218, 760 235, 675 218"></path>
+              <text class="svg-label blocked" x="704" y="247">Paid から戻る遷移は存在しない</text>
+
+              <rect class="svg-node scheduled" x="40" y="40" width="150" height="120"></rect>
+              <text class="svg-animal" x="95" y="76">🐇</text>
+              <text class="svg-title" x="74" y="106">Scheduled</text>
+              <text class="svg-body" x="65" y="132">予約済み</text>
+
+              <rect class="svg-node checked-in" x="275" y="40" width="150" height="120"></rect>
+              <text class="svg-animal" x="330" y="76">🐈</text>
+              <text class="svg-title" x="313" y="106">CheckedIn</text>
+              <text class="svg-body" x="303" y="132">受付済み</text>
+
+              <rect class="svg-node exam" x="510" y="40" width="150" height="120"></rect>
+              <text class="svg-animal" x="565" y="76">🐕</text>
+              <text class="svg-title" x="525" y="106">InExamination</text>
+              <text class="svg-body" x="544" y="132">診察中</text>
+
+              <rect class="svg-node paid" x="745" y="40" width="150" height="120"></rect>
+              <text class="svg-animal" x="800" y="76">🐢</text>
+              <text class="svg-title" x="788" y="106">Paid</text>
+              <text class="svg-body" x="788" y="132">会計済み</text>
+              <text class="svg-label blocked" x="779" y="182">終端状態</text>
+
+              <rect class="svg-node canceled" x="360" y="270" width="150" height="64"></rect>
+              <text class="svg-animal" x="378" y="311">🦔</text>
+              <text class="svg-title" x="422" y="299">Canceled</text>
+              <text class="svg-body" x="422" y="320">キャンセル済み / 終端</text>
+            </svg>
           </div>
 
           <aside class="legend" aria-label="教材で扱う型の凡例">
@@ -1522,7 +1596,7 @@
             </div>
           </article>
 
-          <pre aria-label="TypeScript コード例"><code>type VisitStatus =
+          <pre class="shiki-fallback" data-shiki-code aria-label="TypeScript コード例"><code>type VisitStatus =
   | "Scheduled"
   | "CheckedIn"
   | "InExamination"
@@ -1540,9 +1614,31 @@ moveToExamination(paidVisit);</code></pre>
       </section>
 
       <footer>
-        Self-contained HTML mockup. No external CDN, images, fonts, or JavaScript.
+        HTML mockup with Shiki CDN runtime highlighting. No external images or fonts.
       </footer>
     </main>
   </div>
+  <script type="module">
+    import { codeToHtml } from "https://esm.sh/shiki@3.9.1";
+
+    const codeBlock = document.querySelector("[data-shiki-code]");
+    const source = codeBlock?.querySelector("code")?.textContent;
+
+    if (codeBlock && source) {
+      const highlighted = await codeToHtml(source.trimEnd(), {
+        lang: "ts",
+        theme: "github-dark",
+      });
+
+      const template = document.createElement("template");
+      template.innerHTML = highlighted.trim();
+      const shikiPre = template.content.firstElementChild;
+
+      if (shikiPre instanceof HTMLElement) {
+        shikiPre.setAttribute("aria-label", "TypeScript コード例");
+        codeBlock.replaceWith(shikiPre);
+      }
+    }
+  </script>
 </body>
 </html>
