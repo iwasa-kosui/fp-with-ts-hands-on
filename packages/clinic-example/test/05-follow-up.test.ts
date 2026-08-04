@@ -126,4 +126,39 @@ describe("05 電話フォロー", () => {
     });
     expect(eventStore.all()).toEqual([]);
   });
+
+  test("後続候補の検査結果が不一致なら event を記録せず Result error を返す", () => {
+    const eventStore = createInMemoryDomainEventStore();
+    const result = collectFollowUpTargets({
+      candidates: [
+        {
+          appointment: paidAppointment,
+          examResult: {
+            examId: "exam_001",
+            petId: "pet_001",
+            collectedAt: NOW,
+            needsFollowUp: true,
+          },
+          ownerContact,
+        },
+        {
+          appointment: paidAppointment,
+          examResult: {
+            examId: "exam_999",
+            petId: "pet_002",
+            collectedAt: NOW,
+            needsFollowUp: true,
+          },
+          ownerContact,
+        },
+      ],
+      eventStore,
+    });
+
+    expect(result).toMatchObject({
+      kind: "Err",
+      error: { kind: "ExamResultPetMismatch" },
+    });
+    expect(eventStore.all()).toEqual([]);
+  });
 });

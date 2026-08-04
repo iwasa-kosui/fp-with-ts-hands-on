@@ -136,6 +136,7 @@ export const collectFollowUpTargets = (
   input: CollectFollowUpTargetsInput,
 ): Result<ReadonlyArray<FollowUpTarget>, FollowUpTargetError> => {
   const targets: FollowUpTarget[] = [];
+  const events: ReturnType<typeof FollowUpRequested.create>[] = [];
 
   for (const candidate of input.candidates) {
     const parsed = parseFollowUpExamResult(candidate.examResult);
@@ -151,12 +152,14 @@ export const collectFollowUpTargets = (
       appointmentId: candidate.appointment.id,
       ownerPhone: candidate.ownerContact.ownerPhone,
     });
-    input.eventStore.append(FollowUpRequested.create({
+    events.push(FollowUpRequested.create({
       eventId: `follow_up_${matching.value.examId}`,
       occurredAt: matching.value.collectedAt,
       appointmentId: candidate.appointment.id,
     }));
   }
+
+  for (const event of events) input.eventStore.append(event);
 
   return ok(targets);
 };
