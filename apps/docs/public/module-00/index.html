@@ -219,6 +219,51 @@
       gap: 18px;
     }
 
+    .story-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .story-card {
+      min-height: 150px;
+      padding: 16px;
+      border: 3px solid var(--line);
+      border-radius: 42% 58% 48% 52% / 48% 46% 54% 52%;
+      background: var(--paper-warm);
+      box-shadow: 4px 4px 0 rgba(34, 54, 184, 0.18);
+      color: var(--text);
+      font-weight: 850;
+    }
+
+    .story-card:nth-child(2) { background: #fff0f7; }
+    .story-card:nth-child(3) { background: #e9f8ff; }
+
+    .story-card strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--blue);
+      font-size: 17px;
+    }
+
+    .mission-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .mission-list li {
+      padding: 12px;
+      border: 3px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff8ea;
+      color: var(--text);
+      font-weight: 850;
+    }
+
     .panel {
       position: relative;
       padding: 20px;
@@ -320,6 +365,8 @@
       .topbar { align-items: flex-start; flex-direction: column; }
       .hero { grid-template-columns: 1fr; }
       .toc { position: static; }
+      .story-grid { grid-template-columns: 1fr; }
+      .mission-list { grid-template-columns: 1fr; }
       .command-grid { grid-template-columns: 1fr; }
     }
   </style>
@@ -333,6 +380,7 @@
     <nav class="nav" aria-label="ページ内ナビゲーション">
       <a href="/">TOP</a>
       <a href="#toc">TOC</a>
+      <a href="#scenario">SCENARIO</a>
       <a href="#commands">COMMANDS</a>
       <a href="#observe">OBSERVE</a>
     </nav>
@@ -344,15 +392,17 @@
         <p class="eyebrow">🐢 Module 00 / 15 min</p>
         <h1 id="page-title">導入事故を<br>起こす</h1>
         <p class="lead">
-          まずは直しません。会計済みの予約が診察中へ戻れてしまうことを再現し、
-          この後のセッションで守るべき業務ルールを言葉にします。
+          あなたは WAN NYAN CLINIC の予約・カルテシステムを引き継いだ開発者です。
+          再診対応の改修後、会計済みの来院が診察中へ戻る事故が見つかりました。
         </p>
       </div>
 
       <aside id="toc" class="toc" aria-label="Module 00 の目次">
         <strong>目次</strong>
         <ol>
-          <li><a href="#goal">ゴール</a></li>
+          <li><a href="#scenario">今回の状況</a></li>
+          <li><a href="#incident">事故報告</a></li>
+          <li><a href="#mission">ミッション</a></li>
           <li><a href="#commands">実行するコマンド</a></li>
           <li><a href="#failure">期待する失敗</a></li>
           <li><a href="#files">読むファイル</a></li>
@@ -363,17 +413,48 @@
     </section>
 
     <div class="content">
-      <section id="goal" class="panel">
-        <h2>ゴール</h2>
-        <ul class="checklist">
-          <li>通常テストが緑で始まることを確認する。</li>
-          <li>Module 00 の事故テストを赤くする。</li>
-          <li><code>Paid</code> は終端状態であり、診察中へ戻らないと説明できる。</li>
-        </ul>
-        <div class="callout">
-          <span class="legend-icon" aria-hidden="true">🐾</span>
-          <span>この module では実装を直しません。壊れ方を見て、次の設計判断に進みます。</span>
+      <section id="scenario" class="panel">
+        <h2>今回の状況</h2>
+        <p>
+          WAN NYAN CLINIC では、予約、受付、診察、会計をひとつのシステムで扱っています。
+          受付では予約を確認し、診察室ではカルテを更新し、会計が終わるとその来院は閉じられます。
+        </p>
+        <div class="story-grid" aria-label="今回の背景">
+          <div class="story-card">
+            <strong>🐈 皮膚相談の再診</strong>
+            ミケの飼い主から、皮膚の赤みが残っているため再診したいという連絡が入りました。
+          </div>
+          <div class="story-card">
+            <strong>🩺 小さな改修</strong>
+            スタッフは「再診察を開始できるようにしてほしい」と依頼しました。
+          </div>
+          <div class="story-card">
+            <strong>💳 閉じたはずの来院</strong>
+            ところが、会計済みの来院まで診察中へ戻せることが分かりました。
+          </div>
         </div>
+      </section>
+
+      <section id="incident" class="panel">
+        <h2>事故報告</h2>
+        <p>
+          会計済みの来院が診察中へ戻ると、会計後に確定した診断、処方、請求金額が「まだ診察中の記録」として扱われます。
+          現場では、会計が終わった来院は閉じた記録であり、診察室に戻る操作は業務上存在しません。
+        </p>
+        <div class="callout">
+          <span class="legend-icon" aria-hidden="true">💳</span>
+          <span><code>Paid</code> は終端状態です。Module 00 では、この不変条件がコード上で守られていないことを確認します。</span>
+        </div>
+      </section>
+
+      <section id="mission" class="panel">
+        <h2>ミッション</h2>
+        <ul class="mission-list">
+          <li>通常テストが緑で始まることを確認する。</li>
+          <li>事故テストを実行し、業務上あり得ない遷移を再現する。</li>
+          <li>なぜ型が止められないのかを legacy 実装から読む。</li>
+          <li>次のセッションで守るべきルールを言葉にする。</li>
+        </ul>
       </section>
 
       <section id="commands" class="panel">
