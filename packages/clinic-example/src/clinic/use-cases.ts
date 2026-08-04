@@ -119,8 +119,44 @@ const FollowUpExamResultSchema = ExamResult.schema
 
 const parseFollowUpExamResult = schemaResult<FollowUpExamResult>(FollowUpExamResultSchema);
 
-// This deliberately incomplete exercise is implemented by participants in module 05.
+const ensureExamResultForAppointment = (
+  appointment: AppointmentValue,
+  examResult: FollowUpExamResult,
+): Result<FollowUpExamResult, ExamResultPetMismatch> =>
+  appointment.petId === examResult.petId
+    ? ok(examResult)
+    : err({
+        kind: "ExamResultPetMismatch",
+        appointmentId: appointment.id,
+        expectedPetId: appointment.petId,
+        actualPetId: examResult.petId,
+      });
+
 export const collectFollowUpTargets = (
-  _input: CollectFollowUpTargetsInput,
-): Result<ReadonlyArray<FollowUpTarget>, FollowUpTargetError> =>
-  err({ kind: "FollowUpTargetNotImplemented" });
+  input: CollectFollowUpTargetsInput,
+): Result<ReadonlyArray<FollowUpTarget>, FollowUpTargetError> => {
+  const targets: FollowUpTarget[] = [];
+
+  for (const candidate of input.candidates) {
+    const parsed = parseFollowUpExamResult(candidate.examResult);
+    if (parsed.kind === "Err") return parsed;
+
+    const matching = ensureExamResultForAppointment(candidate.appointment, parsed.value);
+    if (matching.kind === "Err") return matching;
+
+    if (!matching.value.needsFollowUp) continue;
+    if (candidate.appointment.kind !== "Paid") continue;
+
+    targets.push({
+      appointmentId: candidate.appointment.id,
+      ownerPhone: candidate.ownerContact.ownerPhone,
+    });
+    input.eventStore.append(FollowUpRequested.create({
+      eventId: `follow_up_${matching.value.examId}`,
+      occurredAt: matching.value.collectedAt,
+      appointmentId: candidate.appointment.id,
+    }));
+  }
+
+  return ok(targets);
+};
