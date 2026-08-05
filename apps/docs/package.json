@@ -4,11 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "tsc --noEmit && vite build",
-    "typecheck": "tsc --noEmit",
+    "dev": "astro dev --host 0.0.0.0",
+    "build": "astro check && astro build",
+    "typecheck": "astro check",
     "test": "vitest run",
-    "preview": "vite preview --host 0.0.0.0"
+    "test:visual": "playwright test",
+    "preview": "astro preview --host 0.0.0.0"
   },
   "dependencies": {
     "@astrojs/react": "^3.6.2",

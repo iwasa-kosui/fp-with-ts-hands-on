@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { startApp } from "../app";
-import type { ModuleContent } from "../content/module-content";
-import { modules } from "../content/modules";
-import { breakTheAppModule } from "../content/modules/00-break-the-app";
-import { miniIntegrationModule } from "../content/modules/05-mini-integration";
-import { stateModelingModule } from "../content/modules/01-state-modeling";
-import { renderModulePage } from "./module-page";
-import { renderNotFoundPage } from "./not-found-page";
+import { startApp } from "../../app";
+import type { ModuleContent } from "../../content/module-content";
+import { modules } from "../../content/modules";
+import { breakTheAppModule } from "../../content/modules/00-break-the-app";
+import { miniIntegrationModule } from "../../content/modules/05-mini-integration";
+import { stateModelingModule } from "../../content/modules/01-state-modeling";
+import { renderModulePage } from "../../pages/module-page";
+import { renderNotFoundPage } from "../../pages/not-found-page";
 
 describe("renderModulePage", () => {
   it("意味のあるランドマークとフォーカス可能な見出し、前後リンクを描画する", () => {

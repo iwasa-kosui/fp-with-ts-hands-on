@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { renderHomePage } from "./home-page";
-import { renderNotFoundPage } from "./not-found-page";
+import { renderHomePage } from "../../pages/home-page";
+import { renderNotFoundPage } from "../../pages/not-found-page";
 
 describe("renderHomePage", () => {
   it("元の WAN NYAN CLINIC のヒーローと問題導線を復元する", () => {

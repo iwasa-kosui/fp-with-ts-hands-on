@@ -1,0 +1,31 @@
+---
+import "../styles/base.css";
+
+interface Props {
+  title: string;
+  description?: string;
+  bodyClass?: string;
+}
+
+const { title, description, bodyClass } = Astro.props;
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {description === undefined ? null : <meta name="description" content={description} />}
+    <title>{title}</title>
+  </head>
+  <body class={bodyClass}>
+    <slot />
+    <script is:inline>
+      const heading = document.querySelector("h1");
+      if (heading instanceof HTMLElement) {
+        heading.tabIndex = -1;
+        heading.focus();
+      }
+    </script>
+  </body>
+</html>
