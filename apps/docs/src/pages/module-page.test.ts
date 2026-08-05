@@ -117,7 +117,8 @@ describe("renderModulePage", () => {
     for (const module of modules) {
       const page = renderModulePage(module);
       const toc = page.querySelector<HTMLElement>('nav.module-toc[aria-label="ページ内目次"]');
-      const links = [...(toc?.querySelectorAll<HTMLAnchorElement>('a[href^="#"]') ?? [])];
+      const links = [...(toc?.querySelectorAll<HTMLAnchorElement>('ol > li > a[href^="#"]') ?? [])]
+        .filter((link) => link.parentElement?.parentElement === toc?.firstElementChild);
       const sections = [
         ...page.querySelectorAll<HTMLElement>("main > section:not(.module-hero)"),
       ];
@@ -163,37 +164,51 @@ describe("renderModulePage", () => {
     );
   });
 
-  it("Module 00ではオンボーディングを最初の事故タスクより前に目次付きで描画する", () => {
+  it("Module 00ではオンボーディングを最初の事故タスクより前に階層化した目次付きで描画する", () => {
     const page = renderModulePage(breakTheAppModule);
     document.body.append(page);
 
     try {
-      const headings = [...page.querySelectorAll<HTMLElement>("main > section:not(.module-hero) h2")].map(
-        ({ textContent }) => textContent,
-      );
-      const tocLinks = [
-        ...page.querySelectorAll<HTMLAnchorElement>('.module-toc a[href^="#"]'),
-      ];
-      const tocLabels = tocLinks.map(({ textContent }) => textContent);
-      const tocHrefs = tocLinks.map((link) => link.getAttribute("href"));
-      const countHeadings = (heading: string): number =>
-        [...page.querySelectorAll("h2")].filter(({ textContent }) => textContent === heading).length;
+      const main = page.querySelector("main")!;
+      const onboarding = [...main.children].find((element) => element.matches("section#before-joining"))!;
 
-      expect(headings.slice(0, 6)).toEqual([
-        "この開発に参加するあなたへ",
-        "1回の来院で起きること",
-        "機能が届ける価値",
-        "アプリは業務をどう表すか",
-        "開発者として今日行うこと",
-        "事故",
-      ]);
-      expect(tocLabels.slice(0, 5)).toEqual(headings.slice(0, 5));
-      const valueMapTocIndex = tocHrefs.indexOf("#content-value-map-機能が届ける価値");
-      expect(valueMapTocIndex).toBeGreaterThanOrEqual(0);
-      expect(valueMapTocIndex).toBeLessThan(tocHrefs.indexOf("#trigger"));
-      expect(countHeadings("ミッション")).toBe(1);
-      expect(countHeadings("Red: 失敗を確認する")).toBe(1);
-      expect(countHeadings("先に読むファイル")).toBe(1);
+      expect(onboarding.firstElementChild?.textContent).toBe("開発に参加する前に");
+      expect([...onboarding.children]
+        .filter((element) => element.matches("section"))
+        .map((element) => element.firstElementChild?.textContent))
+        .toEqual([
+          "動物病院の役割",
+          "1回の来院の流れ",
+          "提供する機能と価値",
+          "来院をモデリングしよう",
+          "開発者として今日取り組むこと",
+        ]);
+      expect(onboarding.querySelector("#people > h4")?.textContent).toBe("登場人物");
+      expect([...main.children]
+        .filter((element) => element.matches("section"))
+        .map((element) => element.firstElementChild?.matches("h2") === true
+          ? element.firstElementChild.textContent
+          : undefined)
+        .filter((textContent): textContent is string => textContent !== undefined)[1])
+        .toBe("事故");
+
+      const toc = main.querySelector("nav.module-toc")!;
+      const onboardingItem = toc.querySelector('ol > li:has(a[href="#before-joining"])')!;
+      expect(onboardingItem.firstElementChild?.getAttribute("href")).toBe("#before-joining");
+      expect([...onboardingItem.children[1]!.children]
+        .map((element) => element.firstElementChild?.getAttribute("href")))
+        .toEqual([
+          "#hospital-role",
+          "#visit-flow",
+          "#function-and-value",
+          "#visit-modeling",
+          "#developer-task",
+        ]);
+      expect(onboardingItem.querySelector('a[href="#visit-flow"] + ol a')?.getAttribute("href")).toBe("#people");
+
+      const module01Toc = renderModulePage(stateModelingModule).querySelector("nav.module-toc")!;
+      expect(module01Toc.querySelector("ol > li > ol")).toBeNull();
+      expect(module01Toc.querySelector("ol > li > a")?.textContent).toBe("新しい要求");
     } finally {
       page.remove();
     }

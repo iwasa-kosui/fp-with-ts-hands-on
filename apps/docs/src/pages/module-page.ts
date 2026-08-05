@@ -1,4 +1,4 @@
-import { renderContentBlock } from "../components/content-block";
+import { renderContentBlock, renderOnboardingChapter } from "../components/content-block";
 import type { ContentBlock, ModuleContent, ModuleTrigger } from "../content/module-content";
 import { moduleNeighbors } from "../content/modules";
 import { modulePath } from "../routes";
@@ -258,24 +258,41 @@ const renderModuleContentBlock = (block: ContentBlock): HTMLElement => {
   return section;
 };
 
-const renderTableOfContents = (sections: readonly HTMLElement[]): HTMLElement => {
+type TableOfContentsItem = Readonly<{
+  id: string;
+  label: string;
+  children: readonly TableOfContentsItem[];
+}>;
+
+const collectTableOfContentsItems = (container: ParentNode): readonly TableOfContentsItem[] =>
+  [...container.querySelectorAll<HTMLElement>("section[id]")]
+    .filter((section) => section.parentNode === container)
+    .map((section) => ({
+      id: section.id,
+      label: [...section.children].find((element) => element.matches("h2, h3, h4"))?.textContent ?? section.id,
+      children: collectTableOfContentsItems(section),
+    }));
+
+const renderTableOfContents = (items: readonly TableOfContentsItem[]): HTMLElement => {
   const navigation = document.createElement("nav");
   navigation.className = "module-toc";
   navigation.setAttribute("aria-label", "ページ内目次");
-  const list = document.createElement("ol");
 
-  for (const section of sections) {
-    const heading = section.querySelector("h2");
-    if (heading === null) continue;
-    const item = document.createElement("li");
-    const link = document.createElement("a");
-    link.href = `#${section.id}`;
-    link.textContent = heading.textContent;
-    item.append(link);
-    list.append(item);
-  }
+  const renderList = (entries: readonly TableOfContentsItem[]): HTMLOListElement => {
+    const list = document.createElement("ol");
+    for (const entry of entries) {
+      const item = document.createElement("li");
+      const link = document.createElement("a");
+      link.href = `#${entry.id}`;
+      link.textContent = entry.label;
+      item.append(link);
+      if (entry.children.length > 0) item.append(renderList(entry.children));
+      list.append(item);
+    }
+    return list;
+  };
 
-  navigation.append(list);
+  navigation.append(renderList(items));
   return navigation;
 };
 
@@ -307,7 +324,7 @@ export const renderModulePage = (module: ModuleContent): HTMLElement => {
   page.className = "module-page";
   const main = document.createElement("main");
   const sectionsAndContent: HTMLElement[] = [
-    ...(module.introBlocks?.map(renderModuleContentBlock) ?? []),
+    ...(module.onboarding === undefined ? [] : [renderOnboardingChapter(module.onboarding)]),
     renderTrigger(module.trigger),
     identifySection("invariant", createSection("守る不変条件", createParagraph(module.invariant))),
     identifySection("mission", createSection("ミッション", createParagraph(module.mission))),
@@ -343,13 +360,12 @@ export const renderModulePage = (module: ModuleContent): HTMLElement => {
   const actionPlan = renderActionPlan(module);
   if (actionPlan !== undefined) sectionsAndContent.push(actionPlan);
 
-  const tocSections = sectionsAndContent.filter((element) => element.matches("section[id]"));
-  main.append(
-    renderHero(module),
-    renderTableOfContents(tocSections),
-    ...sectionsAndContent,
-    renderModuleNavigation(module),
-  );
+  main.append(renderHero(module), ...sectionsAndContent);
+  const tableOfContents = renderTableOfContents(collectTableOfContentsItems(main));
+  const tableOfContentsAnchor = main.children[1];
+  if (tableOfContentsAnchor === undefined) main.append(tableOfContents);
+  else main.insertBefore(tableOfContents, tableOfContentsAnchor);
+  main.append(renderModuleNavigation(module));
   page.append(renderSiteHeader(), main);
   return page;
 };
