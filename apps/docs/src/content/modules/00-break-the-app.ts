@@ -58,6 +58,29 @@ export const breakTheAppModule: ModuleContent = {
     { file: "src/legacy/appointment.ts", symbols: ["bookAppointment", "updateStatus"] },
   ],
   resources: [],
+  introBlocks: [
+    {
+      kind: "overview",
+      heading: "WAN NYAN OS 開発チームへようこそ",
+      introduction:
+        "WAN NYAN OS は、予約から受付、診察、会計、カルテまでを扱う動物病院向けのシステムです。ここで見る画面は業務のシナリオを伝えるためのもので、このワークショップで編集するのは packages/clinic-example の TypeScript コードです。",
+      items: [],
+    },
+    {
+      kind: "overview",
+      heading: "来院のライフサイクル",
+      introduction:
+        "来院は scheduled → checked-in → in-examination → paid と進みます。paid は終端状態であり、会計済みの来院を開き直すことはこのワークショップの対象外です。",
+      items: [],
+    },
+    {
+      kind: "overview",
+      heading: "コードとワークショップの地図",
+      introduction:
+        "packages/clinic-example の src/legacy には現在の実装、exercises には観察する失敗、test には既存の振る舞い、src/clinic にはこれから作る設計を置きます。以降は事故報告、状態モデリング、境界とID、Result、Agent Review を扱います。",
+      items: [],
+    },
+  ],
   blocks: [
     {
       kind: "prose",
@@ -76,47 +99,10 @@ export const breakTheAppModule: ModuleContent = {
       ],
     },
     {
-      kind: "checklist",
-      heading: "ミッション",
-      items: [
-        "通常テストが緑で始まることを確認する。",
-        "事故テストを実行し、業務上あり得ない遷移を再現する。",
-        "なぜ型が止められないのかを legacy 実装から読む。",
-        "次のセッションで守るべきルールを言葉にする。",
-      ],
-    },
-    {
       kind: "prose",
       heading: "赤テストを見る",
       paragraphs: [
         "通常テストは緑のままです。exercise だけを実行し、仕様変更が既存の string status をすり抜けることを確認します。",
-      ],
-    },
-    {
-      kind: "command",
-      phase: "red",
-      command: "pnpm --filter @fp-with-ts/clinic-example exercise:00",
-      expected: "exercise:00 は失敗します。失敗していれば正しい状態です。Expected: paid / Received: in-examination",
-    },
-    {
-      kind: "file-table",
-      heading: "読むファイル",
-      rows: [
-        {
-          file: "packages/clinic-example/src/legacy/appointment.ts",
-          focus: "status: string と updateStatus がどこまでの遷移を許しているかを見る。",
-          mode: "read",
-        },
-        {
-          file: "packages/clinic-example/src/legacy/logger.ts",
-          focus: "予約情報を丸ごとログへ渡したとき、隠したい情報がどう扱われるかを見る。",
-          mode: "read",
-        },
-        {
-          file: "packages/clinic-example/exercises/00-incident.test.ts",
-          focus: "失敗する期待値が、どの業務ルールを表しているかを見る。",
-          mode: "read",
-        },
       ],
     },
     {
