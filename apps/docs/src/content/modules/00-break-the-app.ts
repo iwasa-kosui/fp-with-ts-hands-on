@@ -59,6 +59,115 @@ export const breakTheAppModule: ModuleContent = {
     { file: "src/legacy/appointment.ts", symbols: ["bookAppointment", "updateStatus"] },
   ],
   resources: [],
+  onboarding: {
+    id: "before-joining",
+    heading: "開発に参加する前に",
+    sections: [
+      {
+        kind: "business-context",
+        id: "hospital-role",
+        heading: "動物病院の役割",
+        paragraphs: [
+          "飼い主が安心して来院でき、病院スタッフが予約から会計までを一貫して扱えるようにするアプリです。",
+          "完成形を一度に作るのではなく、システム障害を防ぐためのルールを見つけ、小さな改善と確認を繰り返します。まず、誰のどんな困りごとを守るのかを確かめます。",
+        ],
+      },
+      {
+        kind: "visit-flow",
+        id: "visit-flow",
+        heading: "1回の来院の流れ",
+        introduction:
+          "飼い主と病院スタッフは、来院の前後で次の仕事をつなげます。通常の再診手順は今回の演習では扱いません。",
+        steps: [
+          {
+            title: "予約",
+            description: "飼い主が来院の予定を伝え、病院が受け入れる準備をします。",
+          },
+          {
+            title: "受付",
+            description: "来院した飼い主と動物を確認し、診療につなげます。",
+          },
+          {
+            title: "診察と記録",
+            description: "獣医師が診察し、診療の内容を一貫した記録として残します。",
+          },
+          {
+            title: "会計と完了",
+            description: "確定した診療内容をもとに会計し、来院の記録を完了させます。",
+          },
+        ],
+        people: {
+          id: "people",
+          heading: "登場人物",
+          items: [
+            { name: "飼い主", description: "来院を予約し、動物とともに診療を受けます。" },
+            { name: "受付スタッフ", description: "来院を受け付け、診療へつなげます。" },
+            { name: "獣医師", description: "動物を診察し、診療内容を記録します。" },
+            { name: "会計担当", description: "確定した診療内容をもとに会計を行います。" },
+          ],
+        },
+      },
+      {
+        kind: "value-map",
+        id: "function-and-value",
+        heading: "提供する機能と価値",
+        introduction: "各機能が、誰にどんな価値を届けるかを確認します。",
+        rows: [
+          {
+            function: "予約・受付",
+            audiences: "受付スタッフ、飼い主",
+            value: "来院を迷わず正しく受け入れられる。",
+          },
+          {
+            function: "診察・カルテ",
+            audiences: "獣医師、病院スタッフ",
+            value: "診療の記録を一貫して扱える。",
+          },
+          {
+            function: "会計",
+            audiences: "会計担当、飼い主",
+            value: "確定した来院記録と会計を誤って壊さない。",
+          },
+          {
+            function: "フォロー連絡、連絡先の管理、申し送り",
+            audiences: "病院スタッフ、飼い主",
+            value: "必要な連絡を安全に引き継げる。",
+          },
+        ],
+      },
+      {
+        kind: "visit-model",
+        id: "visit-modeling",
+        heading: "来院をモデリングしよう",
+        introduction: "アプリでは、来院の進み具合をコードで扱う値に対応付けます。",
+        states: [
+          { label: "予約済み", code: "scheduled" },
+          { label: "受付済み", code: "checked-in" },
+          { label: "診察中", code: "in-examination" },
+          { label: "会計済み・来院完了", code: "paid" },
+        ],
+        rule: "今回の演習では、paid の来院を診察中へ戻さないことを守ります。",
+      },
+      {
+        kind: "developer-guide",
+        id: "developer-task",
+        heading: "開発者として今日取り組むこと",
+        introduction:
+          "packages/clinic-example の TypeScript コードを読み、守る価値を壊さない設計へ進む準備をします。",
+        items: [
+          {
+            title: "読む場所",
+            description:
+              "src/legacy で現在の実装を読み、exercises でシステム障害を再現し、test で既存の振る舞いを確認します。",
+          },
+          {
+            title: "これから作る設計",
+            description: "src/clinic に設計を置き、小さな改善と確認を重ねます。",
+          },
+        ],
+      },
+    ],
+  },
   introBlocks: [
     {
       kind: "overview",
