@@ -22,7 +22,7 @@
 
 ## File Structure
 
-- Modify: `apps/docs/src/content/module-content.ts` — Module 00専用オンボーディング章の型と `ModuleContent.onboarding` を定義する。
+- Modify: `apps/docs/src/content/module-content.ts` — Module 00専用オンボーディング章の型と `ModuleContent.onboarding` を追加し、ページ切替まで既存の `introBlocks` を互換として保持する。
 - Modify: `apps/docs/src/components/content-block.ts` — オンボーディング章を意味に合うHTMLで描画する `renderOnboardingChapter` を公開する。
 - Modify: `apps/docs/src/components/content-block.test.ts` — H2/H3/H4、順番のあるリスト、人物リスト、表、来院の進み具合を単体テストする。
 - Modify: `apps/docs/src/content/modules/00-break-the-app.ts` — 平坦な `introBlocks` を承認済みのオンボーディング章へ移行する。
@@ -90,7 +90,7 @@
 
 - [ ] **Step 3: 型を追加する**
 
-  `module-content.ts` に次の型を追加し、`ModuleContent` の `introBlocks?: readonly ContentBlock[]` を `onboarding?: OnboardingChapter` へ置き換える。
+  `module-content.ts` に次の型を追加し、`ModuleContent` に `onboarding?: OnboardingChapter` を追加する。このタスクでは既存の `introBlocks?: readonly ContentBlock[]` を残す。Module 00 のデータとページを同じコミットで切り替えるTask 3でのみ削除する。
 
   ```ts
   type OnboardingSectionBase = Readonly<{ id: string; heading: string }>;
@@ -205,7 +205,7 @@
 
 - [ ] **Step 3: Module 00データを移行する**
 
-  `00-break-the-app.ts` の `introBlocks` を削除し、`onboarding` に次の内容を入れる。
+  `00-break-the-app.ts` に `onboarding` として次の内容を入れる。このタスクでは既存の `introBlocks` も残し、Task 3でページを切り替えるまで現在の表示を保つ。
 
   - `business-context`: 飼い主が安心して来院でき、病院スタッフが予約から会計までを一貫して扱えるようにすることを説明する。
   - `visit-flow`: 予約、受付、診察と記録、会計と完了を順に置く。再診は `通常の再診手順は今回の演習では扱いません。` とだけ説明する。
@@ -238,6 +238,8 @@
 ## Task 3: 階層化した目次と導入の表示を実装する
 
 **Files:**
+- Modify: `apps/docs/src/content/module-content.ts`
+- Modify: `apps/docs/src/content/modules/00-break-the-app.ts`
 - Modify: `apps/docs/src/pages/module-page.ts`
 - Modify: `apps/docs/src/pages/module-page.test.ts`
 - Modify: `apps/docs/src/styles/base.css`
@@ -277,7 +279,7 @@
 
 - [ ] **Step 3: ページと目次を実装する**
 
-  `renderModulePage` で `module.onboarding` があるとき、`renderOnboardingChapter(module.onboarding)` を `trigger` より前に追加する。`introBlocks` を挿入していた処理は削除する。
+  `renderModulePage` で `module.onboarding` があるとき、`renderOnboardingChapter(module.onboarding)` を `trigger` より前に追加する。Module 00の `onboarding` が描画されるようになった同じ変更で、`00-break-the-app.ts` の互換用 `introBlocks` と `ModuleContent` の `introBlocks` を削除する。これにより、各コミットで型検査とページ表示の両方を保つ。
 
   目次用に、`section[id]` の直接の子 `section[id]` を再帰して次の形へ変換する関数を追加する。
 
@@ -311,7 +313,7 @@
 - [ ] **Step 6: コミットする**
 
   ```bash
-  git add apps/docs/src/pages/module-page.ts apps/docs/src/pages/module-page.test.ts apps/docs/src/styles/base.css
+  git add apps/docs/src/content/module-content.ts apps/docs/src/content/modules/00-break-the-app.ts apps/docs/src/pages/module-page.ts apps/docs/src/pages/module-page.test.ts apps/docs/src/styles/base.css
   git commit -m "feat(docs): 導入の階層を目次に反映する"
   ```
 
