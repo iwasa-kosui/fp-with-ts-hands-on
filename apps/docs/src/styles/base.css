@@ -4,11 +4,13 @@
   --color-muted: #52606d;
   --color-surface: #ffffff;
   --color-accent: #e76f51;
+  --color-accent-text: #b84a32;
   --color-border: #d9e2ec;
   --color-background: #fff8ce;
   --color-primary: #2236b8;
   --color-highlight: #12dbb1;
   --color-pink: #ff4f93;
+  --color-focus: #b32063;
   --color-lemon: #ffd21b;
   --color-code: #161a3e;
   --content-width: 72rem;
@@ -124,7 +126,7 @@ video {
 .site-header a:hover,
 .site-header a:focus-visible {
   background: #fff0f7;
-  outline: 0.1875rem solid var(--color-pink);
+  outline: 0.1875rem solid var(--color-focus);
   outline-offset: 0.1875rem;
 }
 
@@ -162,7 +164,7 @@ h1 {
 }
 
 h1:focus-visible {
-  outline: 0.25rem solid var(--color-pink);
+  outline: 0.25rem solid var(--color-focus);
   outline-offset: 0.375rem;
 }
 
@@ -414,7 +416,7 @@ h3 {
 [data-phase] > p:last-child,
 .command-block > p:last-child {
   margin: 0.875rem 0 0;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   font-weight: 950;
 }
 
@@ -513,7 +515,7 @@ h3 {
 [data-module-card] > a:focus-visible {
   translate: -0.125rem -0.125rem;
   box-shadow: 0.4375rem 0.4375rem 0 rgb(34 54 184 / 25%);
-  outline: 0.1875rem solid var(--color-pink);
+  outline: 0.1875rem solid var(--color-focus);
   outline-offset: 0.1875rem;
 }
 
@@ -579,7 +581,7 @@ h3 {
 .module-navigation a:hover,
 .module-navigation a:focus-visible {
   background: #fff0f7;
-  outline: 0.1875rem solid var(--color-pink);
+  outline: 0.1875rem solid var(--color-focus);
   outline-offset: 0.1875rem;
 }
 
@@ -680,5 +682,11 @@ label {
 
   .not-found-page nav {
     display: grid;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }
