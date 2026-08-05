@@ -1,24 +1,28 @@
-import type { ModuleContent } from "../content/modules";
+import type { ModuleContent } from "../content/module-content";
+import { modulePath } from "../routes";
 
 export const renderModuleCard = (module: ModuleContent): HTMLElement => {
-  const article = document.createElement("article");
-  article.className = "module-card";
+  const card = document.createElement("article");
+  card.dataset.moduleCard = "";
+
+  const link = document.createElement("a");
+  link.href = modulePath(module);
 
   const marker = document.createElement("span");
-  marker.className = `animal-marker animal-marker--${module.animal}`;
-  marker.textContent = module.animalLabel;
-  marker.setAttribute("aria-hidden", "true");
+  marker.className = "module-card-marker";
+  marker.ariaHidden = "true";
+  marker.textContent = module.caseStudy.avatar;
 
-  const content = document.createElement("div");
+  const heading = document.createElement("h2");
+  heading.textContent = module.title;
+
   const meta = document.createElement("p");
-  meta.className = "module-card__meta";
-  meta.textContent = `${module.id} / ${module.minutes} min`;
-  const title = document.createElement("h3");
-  title.textContent = module.title;
-  const goal = document.createElement("p");
-  goal.textContent = module.doneWhen;
-  content.append(meta, title, goal);
+  meta.textContent = `${module.label} · ${module.durationMinutes}分`;
 
-  article.append(marker, content);
-  return article;
+  const mission = document.createElement("p");
+  mission.textContent = module.mission;
+
+  link.append(marker, heading, meta, mission);
+  card.append(link);
+  return card;
 };
