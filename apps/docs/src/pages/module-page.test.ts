@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { startApp } from "../app";
 import type { ModuleContent } from "../content/module-content";
 import { miniIntegrationModule } from "../content/modules/05-mini-integration";
 import { stateModelingModule } from "../content/modules/01-state-modeling";
@@ -6,6 +7,27 @@ import { renderModulePage } from "./module-page";
 import { renderNotFoundPage } from "./not-found-page";
 
 describe("renderModulePage", () => {
+  it("意味のあるランドマークとフォーカス可能な見出し、前後リンクを描画する", () => {
+    window.history.replaceState({}, "", "/modules/01-state-modeling/");
+    const root = document.createElement("div");
+    document.body.append(root);
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
+
+    const stop = startApp(root, window);
+
+    expect(root.querySelector("header nav")).not.toBeNull();
+    expect(root.querySelector("main")).not.toBeNull();
+    const heading = root.querySelector<HTMLHeadingElement>("main h1");
+    expect(heading?.tabIndex).toBe(-1);
+    expect(document.activeElement).toBe(heading);
+    expect(root.querySelector('nav a[rel="prev"]')).not.toBeNull();
+    expect(root.querySelector('nav a[rel="next"]')).not.toBeNull();
+
+    stop();
+    scrollTo.mockRestore();
+    root.remove();
+  });
+
   it("モジュールを PRD の学習順序と前後ナビゲーションで描画する", () => {
     const page = renderModulePage(stateModelingModule);
 
