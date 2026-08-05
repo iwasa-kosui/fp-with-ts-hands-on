@@ -6,6 +6,23 @@ import { modules } from "../../modules/catalog";
 import { createAstroContainer } from "../render-astro";
 
 describe("ModuleLayout", () => {
+  it("keeps the mobile table of contents initially closed", async () => {
+    const container = await createAstroContainer();
+    const html = await container.renderToString(ModuleLayout, {
+      props: { module: modules[2] },
+      slots: { toc: "ミッション", default: "本文" },
+    });
+    const document = new DOMParser().parseFromString(html, "text/html");
+    const mobileToc = document.querySelector("details.case-file__toc--mobile");
+    const desktopNavigation = document.querySelector(".case-file__toc--desktop nav");
+
+    expect(mobileToc).not.toBeNull();
+    expect(mobileToc?.hasAttribute("open")).toBe(false);
+    expect(mobileToc?.querySelector("summary")?.textContent).toContain("目次");
+    expect(mobileToc?.querySelector("nav")?.textContent).toContain("ミッション");
+    expect(desktopNavigation?.textContent).toContain("ミッション");
+  });
+
   it("renders the case file hero, authored toc, body, and module navigation", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(ModuleLayout, {

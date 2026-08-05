@@ -72,6 +72,10 @@
   background: var(--case-mint);
 }
 
+.case-file__toc--desktop {
+  display: none;
+}
+
 .case-file__toc summary {
   padding: 0.8rem 1rem;
   cursor: pointer;
@@ -195,17 +199,13 @@
     gap: clamp(2rem, 5vw, 5rem);
   }
 
-  .case-file__toc {
+  .case-file__toc--desktop {
+    display: block;
     position: sticky;
     top: 1rem;
   }
 
-  .case-file__toc summary {
-    cursor: default;
-    list-style: none;
-  }
-
-  .case-file__toc summary::-webkit-details-marker {
+  .case-file__toc--mobile {
     display: none;
   }
 }
