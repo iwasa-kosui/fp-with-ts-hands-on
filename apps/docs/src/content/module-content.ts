@@ -50,6 +50,9 @@ export type ModuleContent = Readonly<{
 
 const isBlank = (value: string): boolean => value.trim().length === 0;
 
+const isEmptyOrHasBlank = (values: readonly string[]): boolean =>
+  values.length === 0 || values.some(isBlank);
+
 export const assertModuleMeetsPrd = (module: ModuleContent): void => {
   const triggerDetail =
     module.trigger.kind === "incident"
@@ -58,18 +61,49 @@ export const assertModuleMeetsPrd = (module: ModuleContent): void => {
         ? module.trigger.requirement
         : module.trigger.reviewProblem;
 
-  if (isBlank(module.trigger.situation) || isBlank(triggerDetail) || isBlank(module.invariant)) {
+  if (
+    isBlank(module.trigger.situation) ||
+    isBlank(triggerDetail) ||
+    isBlank(module.invariant) ||
+    isBlank(module.mission)
+  ) {
     throw new Error(`PRD-02: ${module.id}`);
   }
-  if (module.editTargets.length > 2) throw new Error(`PRD-06: ${module.id}`);
-  if (isBlank(module.technique.reason)) throw new Error(`PRD-04: ${module.id}`);
+  if (
+    module.editTargets.length > 2 ||
+    module.editTargets.some(({ file, symbol }) => isBlank(file) || isBlank(symbol))
+  ) {
+    throw new Error(`PRD-06: ${module.id}`);
+  }
+  if (isBlank(module.technique.name) || isBlank(module.technique.reason)) {
+    throw new Error(`PRD-04: ${module.id}`);
+  }
   if (isBlank(module.technique.limits)) throw new Error(`PRD-05: ${module.id}`);
-  if (isBlank(module.red.command) || isBlank(module.red.expected)) throw new Error(`PRD-03: ${module.id}`);
-  if (isBlank(module.green.command) || isBlank(module.green.expected) || isBlank(module.changeImpact)) {
+  if (
+    isBlank(module.red.command) ||
+    isBlank(module.red.expected) ||
+    module.filesToRead.length === 0 ||
+    module.filesToRead.some(({ file, focus }) => isBlank(file) || isBlank(focus))
+  ) {
+    throw new Error(`PRD-03: ${module.id}`);
+  }
+  if (
+    isBlank(module.green.command) ||
+    isBlank(module.green.expected) ||
+    isBlank(module.changeImpact) ||
+    isEmptyOrHasBlank(module.reviewPoints) ||
+    isEmptyOrHasBlank(module.doneWhen)
+  ) {
     throw new Error(`PRD-07: ${module.id}`);
   }
-  if (module.reflectionQuestions.length === 0) throw new Error(`PRD-08: ${module.id}`);
-  if (isBlank(module.fallbackGuidance) || module.workedExamples.length === 0) {
+  if (isEmptyOrHasBlank(module.reflectionQuestions)) throw new Error(`PRD-08: ${module.id}`);
+  if (
+    isBlank(module.fallbackGuidance) ||
+    module.workedExamples.length === 0 ||
+    module.workedExamples.some(
+      ({ file, symbols }) => isBlank(file) || isEmptyOrHasBlank(symbols),
+    )
+  ) {
     throw new Error(`PRD-12: ${module.id}`);
   }
 };

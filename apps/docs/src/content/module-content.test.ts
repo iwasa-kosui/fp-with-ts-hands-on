@@ -96,4 +96,116 @@ describe("assertModuleMeetsPrd", () => {
     };
     expect(() => assertModuleMeetsPrd(invalid)).toThrow("PRD-05");
   });
+
+  it.each([
+    [
+      "起点の状況",
+      {
+        ...validModule,
+        trigger: {
+          kind: "new-requirement" as const,
+          situation: "   ",
+          requirement: "キャンセル理由と再診希望を誤った状態に付けられないようにします。",
+        },
+      },
+    ],
+    [
+      "起点の詳細",
+      {
+        ...validModule,
+        trigger: {
+          kind: "new-requirement" as const,
+          situation: "予約状態へキャンセル情報を追加します。",
+          requirement: "   ",
+        },
+      },
+    ],
+    ["不変条件", { ...validModule, invariant: "   " }],
+    ["ミッション", { ...validModule, mission: "   " }],
+  ])("PRD-02: %sが空なら拒否する", (_label, invalid) => {
+    expect(() => assertModuleMeetsPrd(invalid)).toThrow("PRD-02");
+  });
+
+  it.each([
+    ["Red command", { ...validModule, red: { ...validModule.red, command: "   " } }],
+    ["Red expected", { ...validModule, red: { ...validModule.red, expected: "   " } }],
+    ["読むファイル", { ...validModule, filesToRead: [] }],
+    [
+      "読むファイルのパス",
+      { ...validModule, filesToRead: [{ ...validModule.filesToRead[0]!, file: "   " }] },
+    ],
+    [
+      "読むファイルの注目箇所",
+      { ...validModule, filesToRead: [{ ...validModule.filesToRead[0]!, focus: "   " }] },
+    ],
+  ])("PRD-03: %sが空なら拒否する", (_label, invalid) => {
+    expect(() => assertModuleMeetsPrd(invalid)).toThrow("PRD-03");
+  });
+
+  it.each([
+    ["技法名", { ...validModule, technique: { ...validModule.technique, name: "   " } }],
+    ["適用理由", { ...validModule, technique: { ...validModule.technique, reason: "   " } }],
+  ])("PRD-04: %sが空なら拒否する", (_label, invalid) => {
+    expect(() => assertModuleMeetsPrd(invalid)).toThrow("PRD-04");
+  });
+
+  it.each([
+    ["Green command", { ...validModule, green: { ...validModule.green, command: "   " } }],
+    ["Green expected", { ...validModule, green: { ...validModule.green, expected: "   " } }],
+    ["変更効果", { ...validModule, changeImpact: "   " }],
+    ["レビュー観点", { ...validModule, reviewPoints: [] }],
+    ["レビュー観点の説明", { ...validModule, reviewPoints: ["   "] }],
+    ["完了条件", { ...validModule, doneWhen: [] }],
+    ["完了条件の説明", { ...validModule, doneWhen: ["   "] }],
+  ])("PRD-07: %sが空なら拒否する", (_label, invalid) => {
+    expect(() => assertModuleMeetsPrd(invalid)).toThrow("PRD-07");
+  });
+
+  it.each([
+    ["設問がない", { ...validModule, reflectionQuestions: [] }],
+    ["空の設問", { ...validModule, reflectionQuestions: ["   "] }],
+  ])("PRD-08: %sなら拒否する", (_label, invalid) => {
+    expect(() => assertModuleMeetsPrd(invalid)).toThrow("PRD-08");
+  });
+
+  it.each([
+    ["代替進行", { ...validModule, fallbackGuidance: "   " }],
+    ["worked example", { ...validModule, workedExamples: [] }],
+    [
+      "worked exampleのファイル",
+      {
+        ...validModule,
+        workedExamples: [{ ...validModule.workedExamples[0]!, file: "   " }],
+      },
+    ],
+    [
+      "worked exampleのsymbol一覧",
+      {
+        ...validModule,
+        workedExamples: [{ ...validModule.workedExamples[0]!, symbols: [] }],
+      },
+    ],
+    [
+      "worked exampleのsymbol",
+      {
+        ...validModule,
+        workedExamples: [{ ...validModule.workedExamples[0]!, symbols: ["   "] }],
+      },
+    ],
+  ])("PRD-12: %sが空なら拒否する", (_label, invalid) => {
+    expect(() => assertModuleMeetsPrd(invalid)).toThrow("PRD-12");
+  });
+
+  it.each([
+    [
+      "編集対象のファイル",
+      { ...validModule, editTargets: [{ ...validModule.editTargets[0]!, file: "   " }] },
+    ],
+    [
+      "編集対象のsymbol",
+      { ...validModule, editTargets: [{ ...validModule.editTargets[0]!, symbol: "   " }] },
+    ],
+  ])("PRD-06: %sが空なら拒否する", (_label, invalid) => {
+    expect(() => assertModuleMeetsPrd(invalid)).toThrow("PRD-06");
+  });
 });
