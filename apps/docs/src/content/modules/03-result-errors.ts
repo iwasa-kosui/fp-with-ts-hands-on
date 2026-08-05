@@ -29,11 +29,11 @@ export const resultErrorsModule: ModuleContent = {
   ],
   red: {
     command: "pnpm --filter @fp-with-ts/clinic-example exercise:03",
-    expected: "starter では error.kind で失敗を返すこと、または失敗時に event を残さないことに関するテストが失敗します。",
+    expected: "starter では診察開始の成功と ExaminationStarted の append に関するテストが失敗します。",
   },
   green: {
     command: "pnpm --filter @fp-with-ts/clinic-example exercise:03",
-    expected: "失敗理由を Result の kind で返し、成功した診察開始だけを ExaminationStarted として記録できてテストが成功します。",
+    expected: "成功した診察開始を返し、ExaminationStarted を append できてテストが成功します。",
   },
   filesToRead: [
     {
@@ -50,7 +50,7 @@ export const resultErrorsModule: ModuleContent = {
     },
     {
       file: "exercises/03-result-errors.test.ts",
-      focus: "error.kind の失敗値と、失敗時には event store が空である期待値を確認します。",
+      focus: "成功した診察開始と ExaminationStarted の append に関する期待値を確認します。失敗の分岐は use-cases.ts の error union と guard から読みます。",
     },
   ],
   reviewPoints: [
@@ -66,7 +66,7 @@ export const resultErrorsModule: ModuleContent = {
   reflectionQuestions: [
     "UI に返す失敗値と、事故調査のために残す成功イベントは、なぜ別の値ですか。",
   ],
-  fallbackGuidance: "error.kind ごとの戻り値を確認し、失敗ケースでは event store が空、成功ケースだけ ExaminationStarted があることをテストします。",
+  fallbackGuidance: "StartExaminationError の union と各 guard の Err return を読み、exercise:03 では成功時の ExaminationStarted append だけを確認します。",
   workedExamples: [
     { file: "src/clinic/use-cases.ts", symbols: ["startExaminationUseCase"] },
   ],
@@ -86,7 +86,7 @@ export const resultErrorsModule: ModuleContent = {
       kind: "command",
       phase: "red",
       command: "pnpm --filter @fp-with-ts/clinic-example exercise:03",
-      expected: "starter の不足を確認します。この実装を読む環境では worked example があるため成功します。",
+      expected: "starter では成功した診察開始と ExaminationStarted の append が不足します。この実装を読む環境では worked example があるため成功します。",
     },
     {
       kind: "file-table",
@@ -134,7 +134,7 @@ export const resultErrorsModule: ModuleContent = {
       kind: "command",
       phase: "green",
       command: "pnpm --filter @fp-with-ts/clinic-example exercise:03",
-      expected: "失敗理由を値として返し、成功した診察開始だけを記録できて exercise:03 が成功します。",
+      expected: "成功した診察開始を返し、ExaminationStarted を append できて exercise:03 が成功します。",
     },
   ],
 };
