@@ -18,6 +18,16 @@ export type ContentBlock =
       heading: string;
       introduction: string;
       items: readonly Readonly<{ title: string; description: string }>[];
+    }>
+  | Readonly<{
+      kind: "value-map";
+      heading: string;
+      introduction: string;
+      rows: readonly Readonly<{
+        function: string;
+        audiences: string;
+        value: string;
+      }>[];
     }>;
 
 export type ModuleContent = Readonly<{

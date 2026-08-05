@@ -112,6 +112,41 @@ const renderOverview = (block: Extract<ContentBlock, { kind: "overview" }>): HTM
   return section;
 };
 
+const renderValueMap = (block: Extract<ContentBlock, { kind: "value-map" }>): HTMLElement => {
+  const section = document.createElement("section");
+  section.className = "content-block value-map-block";
+  section.append(heading(block.heading));
+
+  const introduction = document.createElement("p");
+  introduction.textContent = block.introduction;
+
+  const table = document.createElement("table");
+  const head = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  for (const label of ["機能", "届ける相手", "価値"]) {
+    const cell = document.createElement("th");
+    cell.scope = "col";
+    cell.textContent = label;
+    headerRow.append(cell);
+  }
+  head.append(headerRow);
+
+  const body = document.createElement("tbody");
+  for (const row of block.rows) {
+    const tableRow = document.createElement("tr");
+    for (const value of [row.function, row.audiences, row.value]) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      tableRow.append(cell);
+    }
+    body.append(tableRow);
+  }
+
+  table.append(head, body);
+  section.append(introduction, table);
+  return section;
+};
+
 const assertNever = (value: never): never => {
   throw new Error(`Unsupported content block: ${JSON.stringify(value)}`);
 };
@@ -130,6 +165,8 @@ export const renderContentBlock = (block: ContentBlock): HTMLElement => {
       return renderChecklist(block);
     case "overview":
       return renderOverview(block);
+    case "value-map":
+      return renderValueMap(block);
     default:
       return assertNever(block);
   }

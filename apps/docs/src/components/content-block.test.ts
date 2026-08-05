@@ -20,6 +20,18 @@ describe("renderContentBlock", () => {
         introduction: "業務の全体像を確認してから、最初の依頼に取り組みます。",
         items: [{ title: "予約", description: "来院の予定を登録する起点です。" }],
       },
+      {
+        kind: "value-map",
+        heading: "機能が届ける価値",
+        introduction: "各機能が、誰にどんな価値を届けるかを確認します。",
+        rows: [
+          {
+            function: "予約・受付",
+            audiences: "受付スタッフ、飼い主",
+            value: "来院を迷わず正しく受け入れられる。",
+          },
+        ],
+      },
     ];
 
     for (const block of blocks) {
@@ -127,5 +139,56 @@ describe("renderContentBlock", () => {
     expect(element.querySelector("li strong")?.nextSibling?.textContent).toBe(
       ": 来院の予定を登録する起点です。",
     );
+  });
+
+  it("value-map を見出し、説明、列見出し、全行を持つ意味論的な table で描画する", () => {
+    const element = renderContentBlock({
+      kind: "value-map",
+      heading: "機能が届ける価値",
+      introduction: "各機能が、誰にどんな価値を届けるかを確認します。",
+      rows: [
+        {
+          function: "予約・受付",
+          audiences: "受付スタッフ、飼い主",
+          value: "来院を迷わず正しく受け入れられる。",
+        },
+        {
+          function: "診察・カルテ",
+          audiences: "獣医師、病院スタッフ",
+          value: "診療の記録を一貫して扱える。",
+        },
+        {
+          function: "会計",
+          audiences: "会計担当、飼い主",
+          value: "確定した来院記録と会計を誤って壊さない。",
+        },
+        {
+          function: "フォロー・連絡先・申し送り",
+          audiences: "病院スタッフ、飼い主",
+          value: "必要な連絡を安全に引き継げる。",
+        },
+      ],
+    });
+
+    expect(element.tagName).toBe("SECTION");
+    expect(element.querySelector("h2")?.textContent).toBe("機能が届ける価値");
+    expect(element.querySelector("p")?.textContent).toBe(
+      "各機能が、誰にどんな価値を届けるかを確認します。",
+    );
+    expect(
+      [...element.querySelectorAll("th")].map(({ textContent, scope }) => [textContent, scope]),
+    ).toEqual([
+      ["機能", "col"],
+      ["届ける相手", "col"],
+      ["価値", "col"],
+    ]);
+    expect(
+      [...element.querySelectorAll("tbody tr")].map(({ textContent }) => textContent),
+    ).toEqual([
+      "予約・受付受付スタッフ、飼い主来院を迷わず正しく受け入れられる。",
+      "診察・カルテ獣医師、病院スタッフ診療の記録を一貫して扱える。",
+      "会計会計担当、飼い主確定した来院記録と会計を誤って壊さない。",
+      "フォロー・連絡先・申し送り病院スタッフ、飼い主必要な連絡を安全に引き継げる。",
+    ]);
   });
 });
