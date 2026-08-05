@@ -1,0 +1,49 @@
+---
+import { moduleNeighbors, modulePath, type ModuleSummary } from "../modules/catalog";
+import "../styles/modules.css";
+import BaseLayout from "./BaseLayout.astro";
+
+interface Props {
+  module: ModuleSummary;
+}
+
+const { module } = Astro.props;
+const { previous, next } = moduleNeighbors(module.slug);
+---
+
+<BaseLayout title={`${module.title} | FP with TypeScript`} description={module.summary}>
+  <div class="case-file">
+    <header class="case-file__site-header">
+      <a href="/">WAN NYAN CLINIC</a>
+    </header>
+    <main>
+      <section class="case-file__hero" aria-labelledby="module-title">
+        <p class="case-file__eyebrow">MODULE {module.sequence} · {module.durationMinutes}分</p>
+        <h1 id="module-title">{module.title}</h1>
+        <p class="case-file__summary">
+          <span aria-hidden="true">{module.animal.avatar}</span>
+          {module.animal.name}（{module.animal.type}） {module.summary}
+        </p>
+      </section>
+      <div class="case-file__body">
+        <details class="case-file__toc" open>
+          <summary>目次</summary>
+          <nav aria-label="ページ内目次"><slot name="toc" /></nav>
+        </details>
+        <article class="case-file__content"><slot /></article>
+      </div>
+      <nav class="case-file__module-nav" aria-label="前後のモジュール">
+        {
+          previous === undefined ? null : (
+            <a rel="prev" href={modulePath(previous)}>前へ: {previous.title}</a>
+          )
+        }
+        {
+          next === undefined ? null : (
+            <a rel="next" href={modulePath(next)}>次へ: {next.title}</a>
+          )
+        }
+      </nav>
+    </main>
+  </div>
+</BaseLayout>
