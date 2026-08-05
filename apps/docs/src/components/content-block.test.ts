@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ContentBlock } from "../content/module-content";
-import { renderContentBlock } from "./content-block";
+import type { ContentBlock, OnboardingChapter } from "../content/module-content";
+import { renderContentBlock, renderOnboardingChapter } from "./content-block";
 
 describe("renderContentBlock", () => {
   it("すべてのブロック種別を内容のある要素として描画する", () => {
@@ -190,5 +190,78 @@ describe("renderContentBlock", () => {
       "会計会計担当、飼い主確定した来院記録と会計を誤って壊さない。",
       "フォロー連絡、連絡先の管理、申し送り病院スタッフ、飼い主必要な連絡を安全に引き継げる。",
     ]);
+  });
+});
+
+describe("renderOnboardingChapter", () => {
+  it("オンボーディング章を見出しと区画ごとの意味論的な要素で描画する", () => {
+    const chapter: OnboardingChapter = {
+      id: "before-joining",
+      heading: "開発に参加する前に",
+      sections: [
+        {
+          kind: "business-context",
+          id: "hospital-role",
+          heading: "動物病院の役割",
+          paragraphs: ["飼い主と病院スタッフを支えます。"],
+        },
+        {
+          kind: "visit-flow",
+          id: "visit-flow",
+          heading: "1回の来院の流れ",
+          introduction: "来院の順番を確認します。",
+          steps: [{ title: "予約", description: "飼い主が予約する。" }],
+          people: {
+            id: "people",
+            heading: "登場人物",
+            items: [{ name: "飼い主", description: "診察を予約する。" }],
+          },
+        },
+        {
+          kind: "value-map",
+          id: "function-and-value",
+          heading: "提供する機能と価値",
+          introduction: "対応を確認します。",
+          rows: [{ function: "予約・受付", audiences: "飼い主", value: "迷わず来院できる。" }],
+        },
+        {
+          kind: "visit-model",
+          id: "visit-modeling",
+          heading: "来院をモデリングしよう",
+          introduction: "進み具合を記録します。",
+          states: [{ label: "予約済み", code: "scheduled" }],
+          rule: "会計済みの来院を診察中へ戻さない。",
+        },
+        {
+          kind: "developer-guide",
+          id: "developer-task",
+          heading: "開発者として今日取り組むこと",
+          introduction: "コードを確認します。",
+          items: [{ title: "src/legacy", description: "現在の実装です。" }],
+        },
+      ],
+    };
+    const element = renderOnboardingChapter(chapter);
+
+    expect(element.matches("section#before-joining.onboarding-chapter")).toBe(true);
+    expect(element.firstElementChild?.matches("h2")).toBe(true);
+    expect(element.firstElementChild?.textContent).toBe("開発に参加する前に");
+    expect(
+      [...element.children]
+        .filter((child) => child.matches("section"))
+        .map((child) => child.querySelector("h3")?.textContent),
+    ).toEqual([
+      "動物病院の役割",
+      "1回の来院の流れ",
+      "提供する機能と価値",
+      "来院をモデリングしよう",
+      "開発者として今日取り組むこと",
+    ]);
+    expect(element.querySelector("#visit-flow > ol > li")?.textContent).toContain("予約");
+    expect(element.querySelector("#people > h4")?.textContent).toBe("登場人物");
+    expect(element.querySelectorAll("#people li")).toHaveLength(1);
+    expect(
+      [...element.querySelectorAll("#function-and-value th")].map(({ textContent }) => textContent),
+    ).toEqual(["機能", "利用者", "価値"]);
   });
 });

@@ -30,6 +30,48 @@ export type ContentBlock =
       }>[];
     }>;
 
+type OnboardingSectionBase = Readonly<{ id: string; heading: string }>;
+
+export type OnboardingChapter = Readonly<{
+  id: string;
+  heading: string;
+  sections: readonly OnboardingSection[];
+}>;
+
+export type OnboardingSection =
+  | (OnboardingSectionBase &
+      Readonly<{ kind: "business-context"; paragraphs: readonly string[] }>)
+  | (OnboardingSectionBase &
+      Readonly<{
+        kind: "visit-flow";
+        introduction: string;
+        steps: readonly Readonly<{ title: string; description: string }>[];
+        people: Readonly<{
+          id: string;
+          heading: string;
+          items: readonly Readonly<{ name: string; description: string }>[];
+        }>;
+      }>)
+  | (OnboardingSectionBase &
+      Readonly<{
+        kind: "value-map";
+        introduction: string;
+        rows: readonly Readonly<{ function: string; audiences: string; value: string }>[];
+      }>)
+  | (OnboardingSectionBase &
+      Readonly<{
+        kind: "visit-model";
+        introduction: string;
+        states: readonly Readonly<{ label: string; code: string }>[];
+        rule: string;
+      }>)
+  | (OnboardingSectionBase &
+      Readonly<{
+        kind: "developer-guide";
+        introduction: string;
+        items: readonly Readonly<{ title: string; description: string }>[];
+      }>);
+
 export type ModuleContent = Readonly<{
   id: string;
   slug: string;
@@ -57,7 +99,7 @@ export type ModuleContent = Readonly<{
   fallbackGuidance: string;
   workedExamples: readonly Readonly<{ file: string; symbols: readonly string[] }>[];
   resources: readonly Readonly<{ label: string; href: string }>[];
-  introBlocks?: readonly ContentBlock[];
+  onboarding?: OnboardingChapter;
   blocks: readonly ContentBlock[];
   finalActionPlan?: Readonly<{
     implementationPrompt: string;
