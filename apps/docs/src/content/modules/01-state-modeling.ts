@@ -17,7 +17,7 @@ export const stateModelingModule: ModuleContent = {
     situation: "予約の状態と、キャンセル後に必要な業務情報を見直します。",
     requirement: "キャンセル理由と再診希望を、間違った状態に付けられないようにする。",
   },
-  invariant: "Scheduled -> CheckedIn -> InExamination -> Paid だけを許可し、Paid と Canceled は終端にする。",
+  invariant: "Scheduled -> CheckedIn -> InExamination -> Paid の進行を許可し、Scheduled または CheckedIn から Canceled へキャンセルできる。Paid と Canceled は終端にする。",
   mission: "状態ごとのデータを union に閉じ、2つの遷移関数だけで要求を受け止めます。",
   technique: {
     name: "Discriminated Union",
@@ -30,11 +30,11 @@ export const stateModelingModule: ModuleContent = {
   ],
   red: {
     command: "pnpm --filter @fp-with-ts/clinic-example exercise:01",
-    expected: "starter では不正な状態遷移または Canceled の必須情報に関するテストが失敗します。",
+    expected: "starter では不正な状態遷移、または Canceled の reason・canceledAt・任意の再診希望に関するテストが失敗します。",
   },
   green: {
     command: "pnpm --filter @fp-with-ts/clinic-example exercise:01",
-    expected: "CheckedIn からだけ診察を開始でき、Canceled には理由と再診希望が記録されてテストが成功します。",
+    expected: "CheckedIn からだけ診察を開始でき、Scheduled または CheckedIn からの Canceled には理由、キャンセル時刻、任意の再診希望が記録されてテストが成功します。",
   },
   filesToRead: [
     {
@@ -48,12 +48,12 @@ export const stateModelingModule: ModuleContent = {
   ],
   reviewPoints: [
     "kind の分岐が CheckedIn 以外からの診察開始を許していないか確認する。",
-    "Canceled にだけ reason と followUpRequestedAt が存在するか確認する。",
+    "Canceled にだけ reason、canceledAt、任意の followUpRequestedAt が存在するか確認する。",
     "@ts-expect-error が意図した箇所で型エラーを確認しているか確認する。",
   ],
   doneWhen: [
     "不正な遷移が型または Result のどちらで止まるか説明できる。",
-    "キャンセル理由と再診希望を Canceled 以外へ付けられないことを説明できる。",
+    "Scheduled または CheckedIn からだけキャンセルでき、キャンセル理由、時刻、任意の再診希望を Canceled 以外へ付けられないことを説明できる。",
   ],
   changeImpact: "状態とデータを同時に閉じるため、後続の use case は許可された状態だけを前提にできます。",
   reflectionQuestions: [
@@ -69,7 +69,8 @@ export const stateModelingModule: ModuleContent = {
       kind: "prose",
       heading: "要求を状態へ置く",
       paragraphs: [
-        "キャンセル理由と再診希望日は、すべての予約に付く optional field ではありません。Canceled という状態だけが持つ業務情報です。",
+        "キャンセル理由、キャンセル時刻、再診希望日は、すべての予約に付く optional field ではありません。Canceled という状態だけが持つ業務情報です。",
+        "キャンセルは Scheduled または CheckedIn から行えます。診察を開始した後や会計済みの予約はキャンセルへ遷移させません。",
         "状態を文字列で上書きする代わりに、kind で区別した union の次の値を返します。",
       ],
     },
@@ -95,7 +96,7 @@ export const stateModelingModule: ModuleContent = {
         },
         {
           file: "packages/clinic-example/src/clinic/appointment.ts",
-          focus: "Scheduled から理由と再診希望を持つ Canceled を返す。",
+          focus: "Scheduled または CheckedIn から、理由、キャンセル時刻、任意の再診希望を持つ Canceled を返す。",
           mode: "edit",
         },
       ],
@@ -104,14 +105,14 @@ export const stateModelingModule: ModuleContent = {
       kind: "code",
       heading: "状態とデータを同時に閉じる",
       language: "typescript",
-      code: "type Appointment =\n  | Readonly<{ kind: \"Scheduled\"; id: AppointmentId }>\n  | Readonly<{ kind: \"CheckedIn\"; id: AppointmentId }>\n  | Readonly<{ kind: \"InExamination\"; id: AppointmentId }>\n  | Readonly<{ kind: \"Paid\"; id: AppointmentId }>\n  | Readonly<{ kind: \"Canceled\"; id: AppointmentId; reason: string }>;",
+      code: "type Appointment =\n  | Readonly<{ kind: \"Scheduled\"; id: AppointmentId }>\n  | Readonly<{ kind: \"CheckedIn\"; id: AppointmentId }>\n  | Readonly<{ kind: \"InExamination\"; id: AppointmentId }>\n  | Readonly<{ kind: \"Paid\"; id: AppointmentId }>\n  | Readonly<{ kind: \"Canceled\"; id: AppointmentId; reason: CancelReason; canceledAt: string; followUpRequestedAt?: string }> ;",
     },
     {
       kind: "checklist",
       heading: "レビューすること",
       items: [
         "Paid と Canceled を終端状態として扱う。",
-        "Canceled 以外にキャンセル理由や再診希望を広げない。",
+        "Canceled 以外にキャンセル理由、キャンセル時刻、再診希望を広げない。",
         "@ts-expect-error が不正な組み合わせを型エラーとして検査する。",
       ],
     },

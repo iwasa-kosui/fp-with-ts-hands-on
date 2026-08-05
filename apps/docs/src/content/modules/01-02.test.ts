@@ -13,6 +13,20 @@ describe("state modeling and boundary modules", () => {
     expect(() => assertModuleMeetsPrd(stateModelingModule)).not.toThrow();
   });
 
+  it("teaches cancellation from either pre-examination state with its complete Canceled data", () => {
+    const stateShape = stateModelingModule.blocks.find(
+      (block) => block.kind === "code" && block.heading === "状態とデータを同時に閉じる",
+    );
+
+    expect(stateModelingModule.invariant).toContain("Scheduled または CheckedIn から Canceled へキャンセルできる");
+    expect(stateShape).toMatchObject({
+      kind: "code",
+      code: expect.stringContaining(
+        'Readonly<{ kind: "Canceled"; id: AppointmentId; reason: CancelReason; canceledAt: string; followUpRequestedAt?: string }>',
+      ),
+    });
+  });
+
   it("starts boundary protection from the ID and PII incident and limits edits to parsers", () => {
     expect(boundaryAndIdsModule.trigger.kind).toBe("incident");
     expect(boundaryAndIdsModule.editTargets.map(({ symbol }) => symbol)).toEqual([
