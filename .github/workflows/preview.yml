@@ -14,6 +14,8 @@ concurrency:
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 env:
   PREVIEW_WORKER_NAME: fp-with-ts-hands-on-pr-${{ github.event.pull_request.number }}
@@ -21,9 +23,6 @@ env:
 
 jobs:
   deploy:
-    permissions:
-      contents: read
-      issues: write
     if: >-
       github.event.action != 'closed' &&
       github.event.pull_request.head.repo.full_name == github.repository
