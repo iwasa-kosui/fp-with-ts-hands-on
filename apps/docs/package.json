@@ -11,10 +11,18 @@
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
+    "@astrojs/react": "^3.6.2",
     "@vitejs/plugin-legacy": "^5.4.0",
+    "astro": "^4.16.18",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "vite": "^5.4.0"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@playwright/test": "^1.62.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
     "happy-dom": "^15.11.7",
     "vitest": "^2.1.0"
   }
