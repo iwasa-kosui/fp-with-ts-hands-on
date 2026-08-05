@@ -65,6 +65,19 @@ describe("assertModuleMeetsPrd", () => {
     expect(() => assertModuleMeetsPrd(validModule)).not.toThrow();
   });
 
+  it("レビュー要求を起点とするモジュールを受理する", () => {
+    const reviewModule = {
+      ...validModule,
+      trigger: {
+        kind: "review" as const,
+        situation: "レビューで状態追加時の分岐漏れが指摘されました。",
+        reviewProblem: "新しい kind を追加しても網羅性確認が不足しています。",
+      },
+    };
+
+    expect(() => assertModuleMeetsPrd(reviewModule)).not.toThrow();
+  });
+
   it("編集対象が3関数なら拒否する", () => {
     const invalid = {
       ...validModule,
