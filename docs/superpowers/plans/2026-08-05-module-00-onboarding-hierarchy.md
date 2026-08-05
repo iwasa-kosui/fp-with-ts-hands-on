@@ -42,7 +42,7 @@
 - Consumes: 既存の `ContentBlock` と `renderContentBlock`。通常の実習ブロックはこの契約を維持する。
 - Produces: `OnboardingChapter`、`OnboardingSection`、`renderOnboardingChapter(chapter: OnboardingChapter): HTMLElement`。
 
-- [ ] **Step 1: オンボーディング章の失敗テストを書く**
+- [x] **Step 1: オンボーディング章の失敗テストを書く**
 
   `content-block.test.ts` に `renderOnboardingChapter` のテストを追加する。最小のフィクスチャは次の形にする。
 
@@ -82,13 +82,13 @@
     .toEqual(["機能", "利用者", "価値"]);
   ```
 
-- [ ] **Step 2: テストが失敗することを確認する**
+- [x] **Step 2: テストが失敗することを確認する**
 
   Run: `pnpm --filter @fp-with-ts/docs test -- src/components/content-block.test.ts`
 
   Expected: `renderOnboardingChapter` または `OnboardingChapter` が存在しないため失敗する。
 
-- [ ] **Step 3: 型を追加する**
+- [x] **Step 3: 型を追加する**
 
   `module-content.ts` に次の型を追加し、`ModuleContent` に `onboarding?: OnboardingChapter` を追加する。このタスクでは既存の `introBlocks?: readonly ContentBlock[]` を残す。Module 00 のデータとページを同じコミットで切り替えるTask 3でのみ削除する。
 
@@ -131,9 +131,9 @@
       }>);
   ```
 
-- [ ] **Step 4: オンボーディング章を描画する**
+- [x] **Step 4: オンボーディング章を描画する**
 
-  `content-block.ts` に `renderOnboardingChapter` を追加する。親を `section.onboarding-chapter`、親見出しを H2、各区画を直接の子 `section` とH3で作る。`visit-flow` は手順を `ol > li`、人物を `section` とH4および `ul > li`、`value-map` は `table`、`visit-model` はラベル・コードの対応リストとルール文、`developer-guide` は既存overviewと同じタイトル・説明のリストで描画する。
+  `content-block.ts` に `renderOnboardingChapter` を追加する。親を `section.onboarding-chapter`、親見出しを H2、各区画を直接の子 `section` とH3で作る。`visit-flow` は手順を `ol > li`、人物を `section` とH4および `dl > dt + dd`、`value-map` は `table`、`visit-model` はラベル・コードの対応リストとルール文、`developer-guide` は既存overviewと同じタイトル・説明のリストで描画する。
 
   ```ts
   export const renderOnboardingChapter = (chapter: OnboardingChapter): HTMLElement => {
@@ -150,13 +150,13 @@
 
   `renderOnboardingSection` では既存の `assertNever` を使い、すべての `kind` を網羅する。利用者が読む文字列は `textContent` に設定し、`innerHTML` を使わない。
 
-- [ ] **Step 5: 単体テストを成功させる**
+- [x] **Step 5: 単体テストを成功させる**
 
   Run: `pnpm --filter @fp-with-ts/docs test -- src/components/content-block.test.ts`
 
   Expected: PASS。
 
-- [ ] **Step 6: コミットする**
+- [x] **Step 6: コミットする**
 
   ```bash
   git add apps/docs/src/content/module-content.ts apps/docs/src/components/content-block.ts apps/docs/src/components/content-block.test.ts
@@ -173,7 +173,7 @@
 - Consumes: Task 1 の `ModuleContent.onboarding` と `OnboardingChapter`。
 - Produces: 承認済みの5区画と、その中の登場人物を持つ Module 00 データ。
 
-- [ ] **Step 1: Module 00の失敗テストを書く**
+- [x] **Step 1: Module 00の失敗テストを書く**
 
   `00-introduction.test.ts` で `breakTheAppModule.onboarding` を取得し、次を検証する。
 
@@ -197,13 +197,13 @@
 
   `visit-flow` を `kind === "visit-flow"` で絞り込み、手順が `予約`、`受付`、`診察と記録`、`会計と完了` の順であること、人物が `飼い主`、`受付スタッフ`、`獣医師`、`会計担当` であることを確認する。`visit-model` では `scheduled`、`checked-in`、`in-examination`、`paid` を確認し、前者の区画にこれらの値がないことも確認する。
 
-- [ ] **Step 2: テストが失敗することを確認する**
+- [x] **Step 2: テストが失敗することを確認する**
 
   Run: `pnpm --filter @fp-with-ts/docs test -- src/content/modules/00-introduction.test.ts`
 
   Expected: 現在は `introBlocks` のため、`onboarding` がないか期待した区画順と一致せず失敗する。
 
-- [ ] **Step 3: Module 00データを移行する**
+- [x] **Step 3: Module 00データを移行する**
 
   `00-break-the-app.ts` に `onboarding` として次の内容を入れる。このタスクでは既存の `introBlocks` も残し、Task 3でページを切り替えるまで現在の表示を保つ。
 
@@ -222,13 +222,13 @@
   );
   ```
 
-- [ ] **Step 4: コンテンツテストを成功させる**
+- [x] **Step 4: コンテンツテストを成功させる**
 
   Run: `pnpm --filter @fp-with-ts/docs test -- src/content/modules/00-introduction.test.ts`
 
   Expected: PASS。
 
-- [ ] **Step 5: コミットする**
+- [x] **Step 5: コミットする**
 
   ```bash
   git add apps/docs/src/content/modules/00-break-the-app.ts apps/docs/src/content/modules/00-introduction.test.ts
@@ -248,7 +248,7 @@
 - Consumes: Task 1 の `renderOnboardingChapter` と、各オンボーディング区画の `id`。
 - Produces: Module 00の入れ子目次、外側1枚だけの導入装飾、Module 01以降の平坦な目次の維持。
 
-- [ ] **Step 1: ページの失敗テストを書く**
+- [x] **Step 1: ページの失敗テストを書く**
 
   `module-page.test.ts` に次のアサーションを追加する。
 
@@ -271,13 +271,13 @@
 
   目次について、先頭リンクが `#before-joining`、その隣接する入れ子 `ol` が5区画へのリンクを持ち、`#visit-flow` の子リストが `#people` へのリンクを持つことを確認する。Module 01は子 `ol` を持たず、従来のトップレベル見出しを持つことを確認する。
 
-- [ ] **Step 2: テストが失敗することを確認する**
+- [x] **Step 2: テストが失敗することを確認する**
 
   Run: `pnpm --filter @fp-with-ts/docs test -- src/pages/module-page.test.ts`
 
   Expected: オンボーディング章をページが描画せず、入れ子目次もないため失敗する。
 
-- [ ] **Step 3: ページと目次を実装する**
+- [x] **Step 3: ページと目次を実装する**
 
   `renderModulePage` で `module.onboarding` があるとき、`renderOnboardingChapter(module.onboarding)` を `trigger` より前に追加する。Module 00の `onboarding` が描画されるようになった同じ変更で、`00-break-the-app.ts` の互換用 `introBlocks` と `ModuleContent` の `introBlocks` を削除する。これにより、各コミットで型検査とページ表示の両方を保つ。
 
@@ -300,17 +300,17 @@
 
   既存の目次の要素生成を、この `children` を再帰して `ol > li > a` と子 `ol` を追加する実装へ置き換える。通常モジュールの各 `section` に子 `section` はないため、子 `ol` は作られず既存の平坦表示を維持する。
 
-- [ ] **Step 4: スタイルを実装する**
+- [x] **Step 4: スタイルを実装する**
 
   `base.css` に、`.onboarding-chapter` を `main` 直下のカードとして扱う規則を追加する。`.onboarding-chapter > section` は `box-shadow`、角丸、交互背景を持たず、上の兄弟があるときだけ `border-top` と上余白を持つようにする。`#visit-flow > ol` は番号が読み取れる左余白を、`#people` は控えめな左余白を持つようにする。入れ子の目次は親より一段字下げし、親リンクと子リンクの行間を保つ。
 
-- [ ] **Step 5: ページテストを成功させる**
+- [x] **Step 5: ページテストを成功させる**
 
   Run: `pnpm --filter @fp-with-ts/docs test -- src/pages/module-page.test.ts`
 
   Expected: PASS。
 
-- [ ] **Step 6: コミットする**
+- [x] **Step 6: コミットする**
 
   ```bash
   git add apps/docs/src/content/module-content.ts apps/docs/src/content/modules/00-break-the-app.ts apps/docs/src/pages/module-page.ts apps/docs/src/pages/module-page.test.ts apps/docs/src/styles/base.css
@@ -326,31 +326,37 @@
 - Consumes: Task 1からTask 3の実装。
 - Produces: 検証済みのModule 00導入と、完了済みの実装計画。
 
-- [ ] **Step 1: 全体テストを実行する**
+- [x] **Step 1: 全体テストを実行する**
 
   Run: `pnpm --filter @fp-with-ts/docs test`
 
   Expected: PASS。
 
-- [ ] **Step 2: 型検査を実行する**
+- [x] **Step 2: 型検査を実行する**
 
   Run: `pnpm --filter @fp-with-ts/docs typecheck`
 
   Expected: PASS。
 
-- [ ] **Step 3: ビルドを実行する**
+- [x] **Step 3: ビルドを実行する**
 
   Run: `pnpm --filter @fp-with-ts/docs build`
 
   Expected: PASS。
 
-- [ ] **Step 4: 実装計画の完了項目を更新する**
+- [x] **Step 4: 実装計画の完了項目を更新する**
 
   実行済みのチェックボックスを `[x]` に変え、各タスクの検証コマンドと結果を末尾に記録する。
 
-- [ ] **Step 5: コミットする**
+- [x] **Step 5: コミットする**
 
   ```bash
   git add docs/superpowers/plans/2026-08-05-module-00-onboarding-hierarchy.md
   git commit -m "docs: Module 00導入の実装計画を記録する"
   ```
+
+## Verification results
+
+- `pnpm --filter @fp-with-ts/docs test` — PASS (11 test files, 96 tests passed)
+- `pnpm --filter @fp-with-ts/docs typecheck` — PASS (`tsc --noEmit`, exit 0)
+- `pnpm --filter @fp-with-ts/docs build` — PASS (`tsc --noEmit && vite build`, exit 0)
