@@ -307,6 +307,7 @@ export const renderModulePage = (module: ModuleContent): HTMLElement => {
   page.className = "module-page";
   const main = document.createElement("main");
   const sectionsAndContent: HTMLElement[] = [
+    ...(module.introBlocks?.map(renderModuleContentBlock) ?? []),
     renderTrigger(module.trigger),
     identifySection("invariant", createSection("守る不変条件", createParagraph(module.invariant))),
     identifySection("mission", createSection("ミッション", createParagraph(module.mission))),

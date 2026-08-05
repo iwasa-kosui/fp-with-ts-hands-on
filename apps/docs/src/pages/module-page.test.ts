@@ -157,10 +157,36 @@ describe("renderModulePage", () => {
         "Red: 失敗を確認する",
         "Green: 効果を確認する",
         "今回の状況",
-        "Red",
+        "赤テストを見る",
         "完了条件",
       ]),
     );
+  });
+
+  it("Module 00ではオンボーディングを最初の事故タスクより前に目次付きで描画する", () => {
+    const page = renderModulePage(breakTheAppModule);
+    document.body.append(page);
+
+    try {
+      const sectionIds = [...page.querySelectorAll<HTMLElement>("main > section:not(.module-hero)")].map(
+        ({ id }) => id,
+      );
+      const tocLinks = [
+        ...page.querySelectorAll<HTMLAnchorElement>('.module-toc a[href^="#"]'),
+      ].map((link) => link.getAttribute("href"));
+      const countHeadings = (heading: string): number =>
+        [...page.querySelectorAll("h2")].filter(({ textContent }) => textContent === heading).length;
+      const onboardingSectionId = "content-overview-wan-nyan-os-開発チームへようこそ";
+
+      expect(document.body.textContent).toContain("WAN NYAN OS 開発チームへようこそ");
+      expect(sectionIds.indexOf(onboardingSectionId)).toBeLessThan(sectionIds.indexOf("trigger"));
+      expect(tocLinks).toContain(`#${onboardingSectionId}`);
+      expect(countHeadings("ミッション")).toBe(1);
+      expect(countHeadings("Red: 失敗を確認する")).toBe(1);
+      expect(countHeadings("先に読むファイル")).toBe(1);
+    } finally {
+      page.remove();
+    }
   });
 
   it("code blockも目次から移動できるoptional sectionとして描画する", () => {
