@@ -30,51 +30,54 @@ describe("introduction modules", () => {
     });
   });
 
-  it("ワークショップの前提を案内し、共有済みの説明を重複させない", () => {
-    const overviewBlocks = breakTheAppModule.introBlocks?.filter(
-      (block): block is Extract<(typeof breakTheAppModule.introBlocks)[number], { kind: "overview" }> =>
-        block.kind === "overview",
-    );
-
-    expect(overviewBlocks?.map(({ heading }) => heading)).toEqual([
-      "WAN NYAN OS 開発チームへようこそ",
-      "来院のライフサイクル",
-      "コードとワークショップの地図",
+  it("顧客体験から守る価値と実装へ進む順にオンボーディングする", () => {
+    expect(breakTheAppModule.introBlocks?.map(({ heading }) => heading)).toEqual([
+      "この開発に参加するあなたへ",
+      "1回の来院で起きること",
+      "機能が届ける価値",
+      "アプリは業務をどう表すか",
+      "開発者として今日行うこと",
     ]);
-    expect(overviewBlocks).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          items: expect.arrayContaining([expect.objectContaining({ title: "プロダクト" })]),
-        }),
-        expect.objectContaining({
-          items: expect.arrayContaining([expect.objectContaining({ title: "状態の流れ" })]),
-        }),
-        expect.objectContaining({
-          items: expect.arrayContaining([expect.objectContaining({ title: "現在の実装" })]),
-        }),
-      ]),
-    );
 
-    for (const block of overviewBlocks ?? []) {
-      expect(block.items).not.toHaveLength(0);
-      expect(block.items.every(({ title }) => title.length > 0)).toBe(true);
+    const valueMap = breakTheAppModule.introBlocks?.find((block) => block.kind === "value-map");
+    expect(valueMap).toMatchObject({
+      rows: [
+        { function: "予約・受付", audiences: "受付スタッフ、飼い主", value: "来院を迷わず正しく受け入れられる。" },
+        { function: "診察・カルテ", audiences: "獣医師、病院スタッフ", value: "診療の記録を一貫して扱える。" },
+        { function: "会計", audiences: "会計担当、飼い主", value: "確定した来院記録と会計を誤って壊さない。" },
+        { function: "フォロー・連絡先・申し送り", audiences: "病院スタッフ、飼い主", value: "必要な連絡を安全に引き継げる。" },
+      ],
+    });
+
+    const visitBlock = breakTheAppModule.introBlocks?.find(
+      (block) => block.heading === "1回の来院で起きること",
+    );
+    const visitText = JSON.stringify(visitBlock);
+    for (const expectedText of ["予約", "受付", "診察と記録", "会計と完了", "再診"]) {
+      expect(visitText).toContain(expectedText);
+    }
+    for (const state of ["scheduled", "checked-in", "in-examination", "paid"]) {
+      expect(visitText).not.toContain(state);
     }
 
-    const onboardingText = JSON.stringify(overviewBlocks);
+    const stateBlock = breakTheAppModule.introBlocks?.find(
+      (block) => block.heading === "アプリは業務をどう表すか",
+    );
+    const stateText = JSON.stringify(stateBlock);
+    for (const expectedText of ["scheduled", "checked-in", "in-examination", "paid"]) {
+      expect(stateText).toContain(expectedText);
+    }
+    expect(stateText).toContain("paid の来院を診察中へ戻さない");
 
+    const developerBlock = breakTheAppModule.introBlocks?.find(
+      (block) => block.heading === "開発者として今日行うこと",
+    );
+    const developerText = JSON.stringify(developerBlock);
     for (const expectedText of [
-      "予約",
-      "受付",
-      "診察",
-      "会計",
-      "カルテ",
-      "scheduled",
-      "checked-in",
-      "in-examination",
-      "paid",
       "packages/clinic-example",
       "src/legacy",
       "exercises",
+      "test",
       "src/clinic",
       "事故報告",
       "状態モデリング",
@@ -82,7 +85,7 @@ describe("introduction modules", () => {
       "Result",
       "Agent Review",
     ]) {
-      expect(onboardingText).toContain(expectedText);
+      expect(developerText).toContain(expectedText);
     }
 
     for (const duplicateHeading of ["ミッション", "Red", "読むファイル"]) {

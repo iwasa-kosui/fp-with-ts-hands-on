@@ -168,19 +168,29 @@ describe("renderModulePage", () => {
     document.body.append(page);
 
     try {
-      const sectionIds = [...page.querySelectorAll<HTMLElement>("main > section:not(.module-hero)")].map(
-        ({ id }) => id,
+      const headings = [...page.querySelectorAll<HTMLElement>("main > section:not(.module-hero) h2")].map(
+        ({ textContent }) => textContent,
       );
       const tocLinks = [
         ...page.querySelectorAll<HTMLAnchorElement>('.module-toc a[href^="#"]'),
-      ].map((link) => link.getAttribute("href"));
+      ];
+      const tocLabels = tocLinks.map(({ textContent }) => textContent);
+      const tocHrefs = tocLinks.map((link) => link.getAttribute("href"));
       const countHeadings = (heading: string): number =>
         [...page.querySelectorAll("h2")].filter(({ textContent }) => textContent === heading).length;
-      const onboardingSectionId = "content-overview-wan-nyan-os-開発チームへようこそ";
 
-      expect(document.body.textContent).toContain("WAN NYAN OS 開発チームへようこそ");
-      expect(sectionIds.indexOf(onboardingSectionId)).toBeLessThan(sectionIds.indexOf("trigger"));
-      expect(tocLinks).toContain(`#${onboardingSectionId}`);
+      expect(headings.slice(0, 6)).toEqual([
+        "この開発に参加するあなたへ",
+        "1回の来院で起きること",
+        "機能が届ける価値",
+        "アプリは業務をどう表すか",
+        "開発者として今日行うこと",
+        "事故",
+      ]);
+      expect(tocLabels.slice(0, 5)).toEqual(headings.slice(0, 5));
+      expect(tocHrefs.indexOf("#content-value-map-機能が届ける価値")).toBeLessThan(
+        tocHrefs.indexOf("#trigger"),
+      );
       expect(countHeadings("ミッション")).toBe(1);
       expect(countHeadings("Red: 失敗を確認する")).toBe(1);
       expect(countHeadings("先に読むファイル")).toBe(1);

@@ -61,49 +61,109 @@ export const breakTheAppModule: ModuleContent = {
   introBlocks: [
     {
       kind: "overview",
-      heading: "WAN NYAN OS 開発チームへようこそ",
+      heading: "この開発に参加するあなたへ",
       introduction:
-        "WAN NYAN OS は、予約から受付、診察、会計、カルテまでを扱う動物病院向けのシステムです。ここで見る画面は業務のシナリオを伝えるためのもので、このワークショップで編集するのは packages/clinic-example の TypeScript コードです。",
+        "完成形を一度に作るのではなく、業務事故から守るべきルールを見つけ、小さな改善と確認を繰り返します。まず、誰のどんな困りごとを守るのかを確かめます。",
       items: [
         {
-          title: "プロダクト",
-          description: "予約、受付、診察、会計、カルテをつなぐ動物病院向けのシステムです。",
+          title: "あなたの役割",
+          description:
+            "TypeScript 開発者として、利用者の困りごとと、それを守る業務ルールの対応を確かめます。",
         },
         {
-          title: "ワークショップの対象",
-          description: "シナリオ画面ではなく、packages/clinic-example の TypeScript コードを編集します。",
+          title: "進め方",
+          description: "事故を観察し、守るべきルールを型に近づけ、確認を重ねます。",
         },
       ],
     },
     {
       kind: "overview",
-      heading: "来院のライフサイクル",
+      heading: "1回の来院で起きること",
       introduction:
-        "来院は scheduled → checked-in → in-examination → paid と進みます。paid は終端状態であり、会計済みの来院を開き直すことはこのワークショップの対象外です。",
+        "飼い主と病院スタッフは、来院の前後で次の仕事をつなげます。ここでは、業務の体験を状態値より先に確認します。",
       items: [
         {
-          title: "状態の流れ",
-          description: "scheduled から checked-in、in-examination を経て paid へ進みます。",
+          title: "予約",
+          description: "飼い主が来院の予定を伝え、病院が受け入れる準備をします。",
         },
         {
-          title: "終端状態",
-          description: "paid は会計済みの終端状態であり、開き直しはこのワークショップの対象外です。",
+          title: "受付",
+          description: "来院した飼い主と動物を確認し、診療につなげます。",
+        },
+        {
+          title: "診察と記録",
+          description: "獣医師が診察し、診療の内容を一貫した記録として残します。",
+        },
+        {
+          title: "会計と完了",
+          description: "確定した診療内容をもとに会計し、来院の記録を完了させます。",
+        },
+        {
+          title: "再診",
+          description: "飼い主からの相談を受け、次に必要な連絡を病院内で引き継ぎます。",
+        },
+      ],
+    },
+    {
+      kind: "value-map",
+      heading: "機能が届ける価値",
+      introduction:
+        "各機能が、誰にどんな価値を届けるかを確認します。",
+      rows: [
+        {
+          function: "予約・受付",
+          audiences: "受付スタッフ、飼い主",
+          value: "来院を迷わず正しく受け入れられる。",
+        },
+        {
+          function: "診察・カルテ",
+          audiences: "獣医師、病院スタッフ",
+          value: "診療の記録を一貫して扱える。",
+        },
+        {
+          function: "会計",
+          audiences: "会計担当、飼い主",
+          value: "確定した来院記録と会計を誤って壊さない。",
+        },
+        {
+          function: "フォロー・連絡先・申し送り",
+          audiences: "病院スタッフ、飼い主",
+          value: "必要な連絡を安全に引き継げる。",
         },
       ],
     },
     {
       kind: "overview",
-      heading: "コードとワークショップの地図",
+      heading: "アプリは業務をどう表すか",
       introduction:
-        "packages/clinic-example の src/legacy には現在の実装、exercises には観察する失敗、test には既存の振る舞い、src/clinic にはこれから作る設計を置きます。以降は事故報告、状態モデリング、境界とID、Result、Agent Review を扱います。",
+        "アプリでは、来院の進み具合を状態値で表します。業務で守るルールを、扱える状態の範囲に反映させます。",
       items: [
         {
-          title: "現在の実装",
-          description: "src/legacy に現在の実装、exercises に観察する失敗、test に既存の振る舞いを置きます。",
+          title: "状態の対応",
+          description:
+            "予約済み: scheduled、受付済み: checked-in、診察中: in-examination、会計済み・来院完了: paid と表します。",
+        },
+        {
+          title: "今回守ること",
+          description: "今回の演習では、paid の来院を診察中へ戻さないことを守ります。",
+        },
+      ],
+    },
+    {
+      kind: "overview",
+      heading: "開発者として今日行うこと",
+      introduction:
+        "packages/clinic-example の TypeScript コードを読み、守る価値を壊さない設計へ進む準備をします。",
+      items: [
+        {
+          title: "読む場所",
+          description:
+            "src/legacy で現在の実装を読み、exercises で事故を観察し、test で既存の振る舞いを確認します。",
         },
         {
           title: "これから作る設計",
-          description: "src/clinic に設計を置き、事故報告、状態モデリング、境界とID、Result、Agent Review を扱います。",
+          description:
+            "src/clinic に設計を置き、事故報告、状態モデリング、境界とID、Result、Agent Review を通じて守る価値につなげます。",
         },
       ],
     },
