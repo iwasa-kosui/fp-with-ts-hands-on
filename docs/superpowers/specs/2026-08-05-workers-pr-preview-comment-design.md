@@ -6,7 +6,7 @@ PR のプレビュー Worker がデプロイされた後に、その Workers URL
 
 ## URL の取得
 
-deploy job の Wrangler 実行結果を標準出力へ表示したうえで、`https://` で始まり `.workers.dev` で終わる URL を抽出する。抽出した URL を `GITHUB_OUTPUT` の `preview_url` として次のステップへ渡す。
+deploy job の Wrangler 実行結果を標準出力・標準エラーの両方から job log へ記録したうえで、`https://` で始まり `.workers.dev` で終わる URL を抽出する。パイプラインの失敗を維持するために `pipefail` を有効にし、抽出した URL を `GITHUB_OUTPUT` の `preview_url` として次のステップへ渡す。
 
 URL を抽出できない場合は deploy job を失敗として終了し、URL を含まないコメントは投稿しない。Worker 名と Cloudflare アカウントの workers.dev サブドメインをリポジトリ設定へ重複して持たず、Wrangler が実際にデプロイした URL を唯一の情報源にする。
 
