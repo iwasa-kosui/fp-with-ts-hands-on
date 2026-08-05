@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { assertModuleMeetsPrd } from "../module-content";
+import type { ContentBlock } from "../module-content";
 import { breakTheAppModule } from "./00-break-the-app";
 import { readTheIncidentModule } from "./00-read-the-incident";
 
@@ -31,7 +32,11 @@ describe("introduction modules", () => {
   });
 
   it("顧客体験から守る価値と実装へ進む順にオンボーディングする", () => {
-    expect(breakTheAppModule.introBlocks?.map(({ heading }) => heading)).toEqual([
+    const blocksWithHeading = (breakTheAppModule.introBlocks ?? []).filter(
+      (block): block is Exclude<ContentBlock, { kind: "command" }> => block.kind !== "command",
+    );
+
+    expect(blocksWithHeading.map(({ heading }) => heading)).toEqual([
       "この開発に参加するあなたへ",
       "1回の来院で起きること",
       "機能が届ける価値",
@@ -50,7 +55,7 @@ describe("introduction modules", () => {
     });
 
     const visitBlock = breakTheAppModule.introBlocks?.find(
-      (block) => block.heading === "1回の来院で起きること",
+      (block) => block.kind !== "command" && block.heading === "1回の来院で起きること",
     );
     const visitText = JSON.stringify(visitBlock);
     for (const expectedText of ["予約", "受付", "診察と記録", "会計と完了", "再診"]) {
@@ -61,7 +66,7 @@ describe("introduction modules", () => {
     }
 
     const stateBlock = breakTheAppModule.introBlocks?.find(
-      (block) => block.heading === "アプリは業務をどう表すか",
+      (block) => block.kind !== "command" && block.heading === "アプリは業務をどう表すか",
     );
     const stateText = JSON.stringify(stateBlock);
     for (const expectedText of ["scheduled", "checked-in", "in-examination", "paid"]) {
@@ -71,7 +76,7 @@ describe("introduction modules", () => {
     expect(stateText).toContain("再診の正規操作は今回の演習の対象外");
 
     const developerBlock = breakTheAppModule.introBlocks?.find(
-      (block) => block.heading === "開発者として今日行うこと",
+      (block) => block.kind !== "command" && block.heading === "開発者として今日行うこと",
     );
     const developerText = JSON.stringify(developerBlock);
     for (const expectedText of [
