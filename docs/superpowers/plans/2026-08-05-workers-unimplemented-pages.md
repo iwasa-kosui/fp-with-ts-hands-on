@@ -63,7 +63,6 @@
 - `apps/docs/src/pages/home-page.test.ts` — PRD-01 と7件の導線
 - `apps/docs/src/pages/module-page.test.ts` — 詳細セクションと前後ナビゲーション
 - `apps/docs/src/app.test.ts` — クリック、戻る・進む、正規 URL への置換
-- `apps/docs/src/styles/base.test.ts` — 必須クラスとレスポンシブ CSS
 - `apps/docs/src/prd-coverage.test.ts` — PRD-01〜10、12の最終対応検査
 
 ---
@@ -1229,7 +1228,6 @@ git commit -m "feat(docs): 通常パスのSPAルーターを配信入口へ接�
 
 **Files:**
 - Modify: `apps/docs/src/styles/base.css:1`
-- Test: `apps/docs/src/styles/base.test.ts`
 - Modify: `apps/docs/src/pages/module-page.test.ts`
 - Delete: `apps/docs/public/module-00/index.html`
 - Source: `apps/docs/public/module-00/index.html:1-396`
@@ -1238,30 +1236,19 @@ git commit -m "feat(docs): 通常パスのSPAルーターを配信入口へ接�
 - Consumes: Task 7〜9 が出力する class 名
 - Produces: 1440px と 390px で共通利用するデザイントークンとレスポンシブ CSS
 
-- [ ] **Step 1: 必須セレクターとレスポンシブ条件の失敗テストを書く**
+- [ ] **Step 1: DOM構造とproduction buildの移行前baselineを確認する**
 
-```ts
-import styles from "./base.css?raw";
+ページテストには、`header`、`nav`、`main`、フォーカス可能な `h1`、`rel="prev"`、`rel="next"` の存在確認を追加します。CSSのソース文字列はテストしません。2026年8月5日にユーザーが承認したTDD例外として、CSSは実画面で検証します。
 
-expect(styles).toContain(".site-header");
-expect(styles).toContain(".module-hero");
-expect(styles).toContain(".command-card");
-expect(styles).toContain(".file-table");
-expect(styles).toContain(".checklist");
-expect(styles).toContain(".module-navigation");
-expect(styles).toContain("@media (max-width: 700px)");
-expect(styles).toContain("overflow-x: auto");
-```
+Run: `pnpm --filter @fp-with-ts/docs exec vitest run src/pages/module-page.test.ts`
 
-ページテストには、`header`、`nav`、`main`、フォーカス可能な `h1`、`rel="prev"`、`rel="next"` の存在確認を追加します。
+Expected: PASS.
 
-- [ ] **Step 2: テストを実行して静的 Module 00 のスタイル不足を確認する**
+Run: `pnpm --filter @fp-with-ts/docs build`
 
-Run: `pnpm --filter @fp-with-ts/docs exec vitest run src/styles/base.test.ts src/pages/module-page.test.ts`
+Expected: PASS.
 
-Expected: FAIL for missing shared selectors and responsive rule.
-
-- [ ] **Step 3: 共通デザイントークンと部品スタイルを移す**
+- [ ] **Step 2: 共通デザイントークンと部品スタイルを移す**
 
 最低限、次の構造を `base.css` に含めます。
 
@@ -1297,9 +1284,9 @@ Expected: FAIL for missing shared selectors and responsive rule.
 
 既存 Module 00 のヘッダー、ヒーロー、目次、状況、ミッション、コマンド、ファイル表、チェックリスト、前後ナビゲーションを上記トークンへ接続します。動物名や事故固有のセレクターは作りません。
 
-- [ ] **Step 4: 自動テストとビルドを成功させる**
+- [ ] **Step 3: 自動テストとビルドを成功させる**
 
-Run: `pnpm --filter @fp-with-ts/docs exec vitest run src/styles/base.test.ts src/pages/module-page.test.ts`
+Run: `pnpm --filter @fp-with-ts/docs exec vitest run src/pages/module-page.test.ts`
 
 Expected: PASS.
 
@@ -1307,7 +1294,7 @@ Run: `pnpm --filter @fp-with-ts/docs build`
 
 Expected: PASS.
 
-- [ ] **Step 5: 1440px と 390px で全ページを確認する**
+- [ ] **Step 4: 1440px と 390px で全ページを確認する**
 
 Run: `pnpm --filter @fp-with-ts/docs dev`
 
@@ -1325,7 +1312,7 @@ Run: `pnpm --filter @fp-with-ts/docs dev`
 
 Expected: ページ全体の横スクロールがなく、コードと表だけが必要に応じて横スクロールします。前後ナビゲーションは390pxで縦並びになります。
 
-- [ ] **Step 6: 移行済みの旧静的ページを削除する**
+- [ ] **Step 5: 移行済みの旧静的ページを削除する**
 
 Task 2 でコンテンツ、Task 10 でスタイルを移したことを差分と画面で確認してから削除します。
 
@@ -1335,10 +1322,10 @@ Run: `pnpm --filter @fp-with-ts/docs build`
 
 Expected: `dist/index.html` と hashed assets が生成され、`dist/module-00/index.html` は生成されません。
 
-- [ ] **Step 7: コミットする**
+- [ ] **Step 6: コミットする**
 
 ```bash
-git add apps/docs/src/styles/base.css apps/docs/src/styles/base.test.ts apps/docs/src/pages/module-page.test.ts
+git add apps/docs/src/styles/base.css apps/docs/src/pages/module-page.test.ts
 git commit -m "style(docs): Module 00のデザインを全ページへ共通化"
 ```
 
