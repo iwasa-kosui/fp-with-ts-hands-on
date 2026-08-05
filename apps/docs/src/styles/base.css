@@ -691,3 +691,407 @@ label {
     scroll-behavior: auto;
   }
 }
+
+/* The landing page is deliberately more expressive than the study pages. */
+.wan-nyan-home {
+  --landing-cream: #fff8ce;
+  --landing-paper: #fffefa;
+  --landing-ink: #111116;
+  --landing-blue: #2236b8;
+  --landing-mint: #12dbb1;
+  --landing-pink: #ff4f93;
+  --landing-lemon: #ffd21b;
+  --landing-coral: #ff654f;
+  --landing-line: #17204d;
+  --landing-shadow: 0.5rem 0.625rem 0 rgb(34 54 184 / 16%);
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  color: var(--landing-ink);
+  background:
+    radial-gradient(ellipse at 12% 18%, rgb(18 219 177 / 55%) 0 15%, transparent 15.4%),
+    radial-gradient(ellipse at 94% 6%, rgb(255 210 27 / 65%) 0 20%, transparent 20.4%),
+    radial-gradient(ellipse at 72% 100%, rgb(255 79 147 / 20%) 0 22%, transparent 22.5%),
+    var(--landing-cream);
+}
+
+.wan-nyan-home .home-shape {
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.78;
+}
+
+.wan-nyan-home .home-shape--mint {
+  top: 6rem;
+  left: -3rem;
+  width: 18.75rem;
+  height: 14.375rem;
+  border-radius: 45% 55% 50% 38% / 44% 46% 54% 56%;
+  background: var(--landing-mint);
+  rotate: 12deg;
+}
+
+.wan-nyan-home .home-shape--lemon {
+  top: -3.375rem;
+  right: -5rem;
+  width: 28.75rem;
+  height: 15.625rem;
+  border-radius: 38% 45% 52% 48% / 54% 40% 48% 42%;
+  background: #fff27c;
+  rotate: -5deg;
+}
+
+.wan-nyan-home .home-shape--pink {
+  right: 2vw;
+  bottom: -5rem;
+  width: 25.625rem;
+  height: 17.5rem;
+  border-radius: 48% 42% 35% 54% / 40% 55% 36% 52%;
+  background: rgb(56 169 244 / 45%);
+  rotate: 18deg;
+}
+
+.wan-nyan-home .landing-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.125rem;
+  padding: 0.875rem clamp(1.125rem, 4vw, 3.375rem);
+  border-bottom: 0.1875rem solid rgb(34 54 184 / 14%);
+  background: rgb(255 248 206 / 96%);
+  backdrop-filter: blur(0.875rem);
+}
+
+.wan-nyan-home .landing-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--landing-ink);
+  font-size: clamp(1.125rem, 2vw, 1.625rem);
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.wan-nyan-home .landing-brand__mark {
+  display: grid;
+  width: 2.875rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 0.1875rem solid var(--landing-ink);
+  border-radius: 44% 56% 48% 52% / 42% 45% 55% 58%;
+  background: var(--landing-blue);
+  box-shadow: 0.1875rem 0.1875rem 0 var(--landing-ink);
+  color: #fff;
+  font-size: 1.4375rem;
+}
+
+.wan-nyan-home .landing-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.wan-nyan-home .landing-nav a {
+  padding: 0.4375rem 0.75rem;
+  border: 0.125rem solid var(--landing-line);
+  border-radius: 999px;
+  background: var(--landing-paper);
+  box-shadow: 0.1875rem 0.1875rem 0 rgb(34 54 184 / 20%);
+  color: var(--landing-ink);
+  font-size: 0.8125rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+}
+
+.wan-nyan-home .landing-nav a:hover,
+.wan-nyan-home .landing-nav a:focus-visible,
+.wan-nyan-home .callout a:hover,
+.wan-nyan-home .callout a:focus-visible {
+  background: #fff0f7;
+  outline: 0.1875rem solid #b32063;
+  outline-offset: 0.1875rem;
+}
+
+.wan-nyan-home .landing-main {
+  width: min(76.25rem, calc(100% - 2.25rem));
+  margin: 0 auto;
+}
+
+.wan-nyan-home .landing-main > section {
+  min-width: 0;
+  margin: 0;
+  padding: 2.75rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.wan-nyan-home .landing-hero {
+  position: relative;
+  min-height: calc(100vh - 4.125rem);
+  padding-top: clamp(1.75rem, 5vw, 3.625rem) !important;
+}
+
+.wan-nyan-home .landing-hero__grid {
+  display: grid;
+  grid-template-columns: minmax(21.25rem, 0.9fr) minmax(0, 1.1fr);
+  gap: clamp(1.125rem, 3vw, 2.125rem);
+  align-items: center;
+}
+
+.wan-nyan-home .copy-panel {
+  position: relative;
+  min-width: 0;
+  padding: clamp(1.375rem, 4vw, 2.75rem);
+  border: 0.25rem solid var(--landing-line);
+  border-radius: 48% 52% 45% 55% / 42% 44% 56% 58%;
+  background: var(--landing-paper);
+  box-shadow: 0.4375rem 0.4375rem 0 var(--landing-line);
+}
+
+.wan-nyan-home .copy-panel::before,
+.wan-nyan-home .copy-panel::after {
+  position: absolute;
+  border: 0.25rem solid var(--landing-line);
+  border-radius: 999px;
+  background: var(--landing-paper);
+  content: "";
+}
+
+.wan-nyan-home .copy-panel::before {
+  top: -1.5rem;
+  right: 20%;
+  width: 2.875rem;
+  height: 2.875rem;
+}
+
+.wan-nyan-home .copy-panel::after {
+  right: -1rem;
+  bottom: 18%;
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.wan-nyan-home .landing-eyebrow {
+  margin-bottom: 0.75rem;
+  color: var(--landing-blue);
+  font-size: 0.8125rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.wan-nyan-home h1 {
+  margin-bottom: 1rem;
+  color: var(--landing-ink);
+  font-size: clamp(2.375rem, 6vw, 5.25rem);
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.wan-nyan-home .rainbow-word span:nth-child(1) { color: var(--landing-pink); }
+.wan-nyan-home .rainbow-word span:nth-child(2) { color: var(--landing-mint); }
+.wan-nyan-home .rainbow-word span:nth-child(3) { color: var(--landing-lemon); }
+.wan-nyan-home .rainbow-word span:nth-child(4) { color: #38a9f4; }
+.wan-nyan-home .rainbow-word span:nth-child(5) { color: var(--landing-coral); }
+
+.wan-nyan-home .landing-lead,
+.wan-nyan-home .section-head p {
+  color: #30324a;
+  font-weight: 750;
+}
+
+.wan-nyan-home .landing-lead {
+  max-width: 32.5rem;
+  margin: 0;
+  font-size: clamp(0.9375rem, 2vw, 1.125rem);
+}
+
+.wan-nyan-home .system-window {
+  min-width: 0;
+  overflow: hidden;
+  border: 0.125rem solid #b9c3d6;
+  border-radius: 0.5rem;
+  background: #fff;
+  box-shadow: 0 1.125rem 2.25rem rgb(31 49 86 / 18%);
+  rotate: -1deg;
+}
+
+.wan-nyan-home .system-window__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border-bottom: 0.0625rem solid #d8deea;
+  background: #f7f9fc;
+  color: #17213b;
+  font-weight: 850;
+}
+
+.wan-nyan-home .system-window__buttons { display: flex; gap: 0.375rem; }
+.wan-nyan-home .system-window__buttons span { width: 0.8125rem; height: 0.8125rem; border: 0.0625rem solid #aeb8ca; border-radius: 999px; background: #dbe6f6; }
+.wan-nyan-home .system-window__buttons span:nth-child(2) { background: #cdebdc; }
+.wan-nyan-home .system-window__buttons span:nth-child(3) { background: #f8cfd8; }
+
+.wan-nyan-home .app-dashboard {
+  display: grid;
+  grid-template-columns: 8.75rem minmax(21.25rem, 1fr) 13.75rem;
+  min-height: 32.5rem;
+  background: #f4f7fb;
+}
+
+.wan-nyan-home .dashboard-sidebar {
+  padding: 0.625rem;
+  border-right: 0.0625rem solid #d8deea;
+  background: #eef3f8;
+}
+
+.wan-nyan-home .clinic-stamp {
+  display: grid;
+  min-height: 5.75rem;
+  margin-bottom: 0.875rem;
+  place-items: center;
+  border: 0.0625rem solid #d5dde9;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #2453b3;
+  font-weight: 850;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.wan-nyan-home .side-menu { display: grid; gap: 0.5rem; }
+.wan-nyan-home .side-menu span { min-height: 2.25rem; padding: 0.375rem 0.5rem; border: 0.0625rem solid #d5dde9; border-radius: 0.5rem; background: #fff; font-size: 0.75rem; font-weight: 780; }
+.wan-nyan-home .side-menu .is-active { border-color: #2f6fde; background: #e8f1ff; color: #164ca5; font-weight: 850; }
+
+.wan-nyan-home .schedule-board { padding: 0.875rem; background: #fff; }
+.wan-nyan-home .board-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.75rem; }
+.wan-nyan-home .board-head h2 { margin: 0; color: var(--landing-ink); font-size: clamp(1.375rem, 3vw, 2.125rem); line-height: 1.1; }
+.wan-nyan-home .date-pill { padding: 0.375rem 0.625rem; border: 0.0625rem solid #b9cdf4; border-radius: 999px; background: #edf4ff; color: #1d56b3; font-size: 0.8125rem; font-weight: 850; white-space: nowrap; }
+.wan-nyan-home .appointment-grid { display: grid; gap: 0.5rem; margin-bottom: 0.75rem; }
+.wan-nyan-home .appointment-card { display: grid; grid-template-columns: 2.625rem 4rem minmax(0, 1fr); gap: 0.375rem 0.5625rem; align-items: center; min-height: 4.375rem; padding: 0.5625rem 0.625rem; border: 0.0625rem solid #d8deea; border-radius: 0.5rem; background: #fff; }
+.wan-nyan-home .appointment-card:nth-child(2) { background: #fffafb; }
+.wan-nyan-home .appointment-card:nth-child(3) { background: #f8fcff; }
+.wan-nyan-home .pet-icon { display: grid; grid-row: 1 / span 2; width: 2.375rem; height: 2.375rem; place-items: center; border: 0.0625rem solid #c9d6e8; border-radius: 999px; background: #eef6ff; font-size: 1.5625rem; }
+.wan-nyan-home .time { color: var(--landing-blue); font-size: 0.75rem; font-weight: 950; }
+.wan-nyan-home .appointment-card strong { font-size: 1.0625rem; line-height: 1.2; }
+.wan-nyan-home .appointment-card p { grid-column: 2 / -1; margin: 0; color: #1b1d33; font-size: 0.75rem; font-weight: 780; line-height: 1.45; }
+
+.wan-nyan-home .chart-card { display: grid; gap: 0.5rem; padding: 0.75rem; border: 0.0625rem solid #d8deea; border-radius: 0.5rem; background: #f7f9fc; }
+.wan-nyan-home .chart-patient { display: grid; grid-template-columns: 3.875rem minmax(0, 1fr); gap: 0.5rem 0.625rem; align-items: center; padding: 0.625rem; border: 0.0625rem solid #d8deea; border-radius: 0.5rem; background: #fff; }
+.wan-nyan-home .big-pet { display: grid; grid-row: 1 / span 2; width: 3.625rem; height: 3.625rem; place-items: center; border: 0.0625rem solid #c9d6e8; border-radius: 47% 53% 45% 55% / 50% 45% 55% 50%; background: #eef6ff; font-size: 2.125rem; }
+.wan-nyan-home .chart-patient h3 { margin: 0; color: var(--landing-ink); font-size: 1.0625rem; }
+.wan-nyan-home .chart-patient p { margin: 0; color: #1b1d33; font-size: 0.75rem; font-weight: 780; }
+.wan-nyan-home .status-flow { display: flex; flex-wrap: wrap; grid-column: 1 / -1; gap: 0.375rem; }
+.wan-nyan-home .status-flow span { padding: 0.1875rem 0.5rem; border: 0.0625rem solid #b9cdf4; border-radius: 999px; background: #edf4ff; color: #1d56b3; font-size: 0.6875rem; font-weight: 850; }
+.wan-nyan-home .chart-table { width: 100%; border-spacing: 0; border: 0.0625rem solid #d8deea; border-radius: 0.5rem; background: #fff; color: #1b1d33; font-size: 0.75rem; font-weight: 780; }
+.wan-nyan-home .chart-table th, .wan-nyan-home .chart-table td { padding: 0.5rem 0.625rem; border-bottom: 0.0625rem solid #e5eaf2; text-align: left; vertical-align: top; }
+.wan-nyan-home .chart-table th { width: 5.75rem; background: #f7f9fc; color: #44516a; white-space: nowrap; }
+.wan-nyan-home .chart-table tr:last-child th, .wan-nyan-home .chart-table tr:last-child td { border-bottom: 0; }
+.wan-nyan-home .chart-table .is-alert th, .wan-nyan-home .chart-table .is-alert td { background: #fff5f7; color: #9f2945; }
+
+.wan-nyan-home .dashboard-notices { display: grid; gap: 0.625rem; padding: 0.625rem; border-left: 0.0625rem solid #d8deea; background: #f7f9fc; }
+.wan-nyan-home .mini-widget { padding: 0.5625rem; border: 0.0625rem solid #d8deea; border-radius: 0.5rem; background: #fff; }
+.wan-nyan-home .mini-widget h3 { margin: 0 0 0.4375rem; color: var(--landing-blue); font-size: 0.875rem; }
+.wan-nyan-home .mini-widget p { margin: 0; color: #1b1d33; font-size: 0.75rem; font-weight: 780; line-height: 1.45; }
+.wan-nyan-home .queue-row { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr) auto; gap: 0.5rem; align-items: center; margin-top: 0.5rem; font-size: 0.75rem; font-weight: 850; }
+.wan-nyan-home .queue-row span { display: grid; width: 2.25rem; height: 2.25rem; place-items: center; border: 0.0625rem solid #c9d6e8; border-radius: 999px; background: #eef6ff; }
+.wan-nyan-home .queue-row em { font-size: 0.6875rem; font-style: normal; }
+
+.wan-nyan-home .floating-pet { position: absolute; z-index: 5; display: grid; place-items: center; border: 0.1875rem solid var(--landing-line); box-shadow: 0.25rem 0.25rem 0 rgb(34 54 184 / 22%); font-size: clamp(1.75rem, 4vw, 3.125rem); pointer-events: none; }
+.wan-nyan-home .floating-pet--cat { top: 8%; right: 4%; width: 5.375rem; height: 4.5rem; border-radius: 55% 45% 48% 52% / 46% 48% 52% 54%; background: var(--landing-lemon); animation: gentle-peek 7s ease-in-out infinite; }
+.wan-nyan-home .floating-pet--dog { bottom: 19%; left: 1%; width: 5.25rem; height: 4.375rem; border-radius: 47% 53% 46% 54% / 52% 48% 52% 48%; background: #c90054; }
+.wan-nyan-home .floating-pet--rabbit { right: 27%; bottom: 7%; width: 4.75rem; height: 4.125rem; border-radius: 50% 50% 44% 56% / 50% 44% 56% 50%; background: var(--landing-mint); }
+.wan-nyan-home .below-fold-cue { display: flex; align-items: center; justify-content: space-between; gap: 0.875rem; margin-top: 1.125rem; padding-top: 0.875rem; border-top: 0.1875rem dashed var(--landing-blue); color: var(--landing-blue); font-size: 0.8125rem; font-weight: 950; }
+.wan-nyan-home .animal-train { display: flex; gap: 0.5rem; white-space: nowrap; }
+
+.wan-nyan-home .section-head { display: flex; align-items: end; justify-content: space-between; gap: 1.375rem; margin-bottom: 1.125rem; }
+.wan-nyan-home .section-head h2 { max-width: 42.5rem; margin: 0; color: var(--landing-blue); font-size: clamp(1.75rem, 4vw, 3.375rem); line-height: 1.04; letter-spacing: 0; }
+.wan-nyan-home .section-head p { max-width: 30rem; margin: 0; }
+.wan-nyan-home .mobile-title-break { display: none; }
+.wan-nyan-home .feature-splats { display: grid; grid-template-columns: repeat(5, minmax(9.375rem, 1fr)); gap: 1rem; align-items: stretch; }
+.wan-nyan-home .splat-card { display: grid; min-height: 11.875rem; place-items: center; padding: 1.125rem; border: 0.25rem solid var(--landing-line); border-radius: 42% 58% 48% 52% / 48% 46% 54% 52%; background: var(--landing-paper); box-shadow: var(--landing-shadow); text-align: center; transform: rotate(-2deg); }
+.wan-nyan-home .splat-card:nth-child(2) { background: var(--landing-lemon); transform: rotate(3deg); }
+.wan-nyan-home .splat-card:nth-child(3) { background: var(--landing-mint); transform: rotate(-1deg); }
+.wan-nyan-home .splat-card:nth-child(4) { background: #ff8fb8; transform: rotate(2deg); }
+.wan-nyan-home .splat-card:nth-child(5) { background: #90d7ff; transform: rotate(-3deg); }
+.wan-nyan-home .splat-card .icon { display: block; margin-bottom: 0.5rem; font-size: 3.125rem; }
+.wan-nyan-home .splat-card strong { display: block; margin-bottom: 0.4375rem; font-size: 1.125rem; line-height: 1.25; }
+.wan-nyan-home .splat-card span:last-child { color: #25294a; font-size: 0.8125rem; font-weight: 850; }
+
+.wan-nyan-home .timeline { display: grid; grid-template-columns: repeat(7, minmax(9rem, 1fr)); gap: 0.625rem; overflow-x: auto; padding: 0.5rem 0; }
+.wan-nyan-home .time-stop { min-height: 10.3125rem; padding: 0.75rem; border: 0.1875rem solid var(--landing-line); border-radius: 0.5rem; background: var(--landing-paper); box-shadow: 0.25rem 0.25rem 0 rgb(34 54 184 / 18%); font-weight: 850; }
+.wan-nyan-home .time-stop:nth-child(odd) { background: #fff0f7; }
+.wan-nyan-home .time-stop.is-active { background: var(--landing-lemon); transform: rotate(-1deg); }
+.wan-nyan-home .time-stop time { display: block; margin-bottom: 0.5rem; color: var(--landing-blue); font-size: 0.75rem; font-weight: 950; }
+.wan-nyan-home .time-stop strong { display: block; margin-bottom: 0.375rem; font-size: 0.9375rem; line-height: 1.3; }
+.wan-nyan-home .time-stop span { color: #1b1d33; font-size: 0.75rem; font-weight: 850; line-height: 1.45; }
+
+.wan-nyan-home .reading-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(18.75rem, 27.5rem); gap: 1.125rem; align-items: start; }
+.wan-nyan-home .doc-pane, .wan-nyan-home .help-wanted-code { border: 0.25rem solid var(--landing-line); border-radius: 0.5rem; box-shadow: var(--landing-shadow); }
+.wan-nyan-home .doc-pane { position: relative; padding: 1.25rem; background: var(--landing-paper); }
+.wan-nyan-home .doc-pane::after { position: absolute; right: 1.125rem; bottom: -1.125rem; content: "🐈"; font-size: 2.625rem; }
+.wan-nyan-home .doc-pane h3 { margin: 0 0 0.625rem; color: var(--landing-blue); font-size: 1.5rem; }
+.wan-nyan-home .doc-pane p { color: #1b1d33; font-weight: 850; }
+.wan-nyan-home .callout { display: grid; grid-template-columns: 3rem minmax(0, 1fr); gap: 0.75rem; align-items: start; margin-top: 0.875rem; padding: 0.75rem; border: 0.1875rem dashed var(--landing-line); border-radius: 0.5rem; background: #fff0f7; }
+.wan-nyan-home .legend-icon { display: grid; width: 2.625rem; height: 2.625rem; place-items: center; border: 0.1875rem solid var(--landing-line); border-radius: 999px; background: var(--landing-paper); font-size: 1.4375rem; }
+.wan-nyan-home .callout strong { display: block; color: #be1f56; }
+.wan-nyan-home .callout p { margin: 0; font-size: 0.8125rem; }
+.wan-nyan-home .help-wanted-code { overflow-x: auto; margin: 0; padding: 1.125rem; background: #161a3e; color: #fffad7; font-size: 0.8125rem; line-height: 1.55; }
+.wan-nyan-home .landing-footer { padding: 1.875rem 0 2.875rem; color: var(--landing-blue); font-size: 0.8125rem; font-weight: 900; text-align: center; }
+
+@keyframes gentle-peek {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  52% { transform: translateY(-0.5rem) rotate(3deg); }
+}
+
+@media (max-width: 65rem) {
+  .wan-nyan-home .landing-hero { min-height: auto; }
+  .wan-nyan-home .landing-hero__grid, .wan-nyan-home .reading-row { grid-template-columns: 1fr; }
+  .wan-nyan-home .app-dashboard { grid-template-columns: 8.125rem minmax(22.5rem, 1fr); overflow-x: auto; }
+  .wan-nyan-home .dashboard-notices { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 0.1875rem solid var(--landing-line); border-left: 0; }
+  .wan-nyan-home .feature-splats { grid-template-columns: repeat(3, minmax(9.375rem, 1fr)); }
+}
+
+@media (max-width: 43.75rem) {
+  .wan-nyan-home .landing-header { position: static; padding: 0.75rem 1.125rem; }
+  .wan-nyan-home .landing-brand { white-space: normal; }
+  .wan-nyan-home .landing-nav { display: none; }
+  .wan-nyan-home .landing-main { width: min(100% - 2.25rem, 76.25rem); }
+  .wan-nyan-home .landing-main > section { padding: 2.125rem 0; }
+  .wan-nyan-home .copy-panel { width: calc(100% - 0.75rem); padding: 1.375rem 1.25rem 1.625rem; border-radius: 0.5rem; }
+  .wan-nyan-home .copy-panel::before, .wan-nyan-home .copy-panel::after, .wan-nyan-home .floating-pet { display: none; }
+  .wan-nyan-home h1 { font-size: clamp(2.125rem, 11vw, 2.75rem); }
+  .wan-nyan-home .system-window { width: calc(100% - 0.75rem); rotate: 0deg; }
+  .wan-nyan-home .app-dashboard { display: block; min-height: 0; overflow: visible; }
+  .wan-nyan-home .dashboard-sidebar, .wan-nyan-home .dashboard-notices { border: 0; border-bottom: 0.1875rem solid var(--landing-line); }
+  .wan-nyan-home .side-menu { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wan-nyan-home .dashboard-notices { grid-template-columns: 1fr; }
+  .wan-nyan-home .appointment-card { grid-template-columns: 2.375rem minmax(0, 1fr); }
+  .wan-nyan-home .appointment-card p { grid-column: 1 / -1; }
+  .wan-nyan-home .section-head { display: grid; gap: 0.625rem; margin-bottom: 0.75rem; }
+  .wan-nyan-home .section-head h2 { font-size: clamp(1.875rem, 9vw, 2.25rem); }
+  .wan-nyan-home .mobile-title-break { display: block; }
+  .wan-nyan-home .feature-splats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+  .wan-nyan-home .splat-card { grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 0.5rem; min-height: 0; padding: 0.625rem; border-width: 0.1875rem; border-radius: 0.5rem; text-align: left; transform: none; }
+  .wan-nyan-home .splat-card .icon { grid-row: 1 / span 2; margin: 0; font-size: 1.75rem; }
+  .wan-nyan-home .splat-card strong { margin: 0; font-size: 0.875rem; }
+  .wan-nyan-home .splat-card span:last-child { font-size: 0.6875rem; }
+  .wan-nyan-home .splat-card:last-child { grid-column: 1 / -1; }
+  .wan-nyan-home .below-fold-cue { display: grid; }
+  .wan-nyan-home .timeline { grid-template-columns: 1fr; overflow: visible; }
+  .wan-nyan-home .time-stop { min-height: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wan-nyan-home *, .wan-nyan-home *::before, .wan-nyan-home *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}
