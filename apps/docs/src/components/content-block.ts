@@ -104,7 +104,7 @@ const renderOverview = (block: Extract<ContentBlock, { kind: "overview" }>): HTM
     const listItem = document.createElement("li");
     const title = document.createElement("strong");
     title.textContent = item.title;
-    listItem.append(title, document.createTextNode(item.description));
+    listItem.append(title, document.createTextNode(`: ${item.description}`));
     list.append(listItem);
   }
 

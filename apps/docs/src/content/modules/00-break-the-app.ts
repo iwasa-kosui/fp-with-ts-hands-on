@@ -64,21 +64,48 @@ export const breakTheAppModule: ModuleContent = {
       heading: "WAN NYAN OS 開発チームへようこそ",
       introduction:
         "WAN NYAN OS は、予約から受付、診察、会計、カルテまでを扱う動物病院向けのシステムです。ここで見る画面は業務のシナリオを伝えるためのもので、このワークショップで編集するのは packages/clinic-example の TypeScript コードです。",
-      items: [],
+      items: [
+        {
+          title: "プロダクト",
+          description: "予約、受付、診察、会計、カルテをつなぐ動物病院向けのシステムです。",
+        },
+        {
+          title: "ワークショップの対象",
+          description: "シナリオ画面ではなく、packages/clinic-example の TypeScript コードを編集します。",
+        },
+      ],
     },
     {
       kind: "overview",
       heading: "来院のライフサイクル",
       introduction:
         "来院は scheduled → checked-in → in-examination → paid と進みます。paid は終端状態であり、会計済みの来院を開き直すことはこのワークショップの対象外です。",
-      items: [],
+      items: [
+        {
+          title: "状態の流れ",
+          description: "scheduled から checked-in、in-examination を経て paid へ進みます。",
+        },
+        {
+          title: "終端状態",
+          description: "paid は会計済みの終端状態であり、開き直しはこのワークショップの対象外です。",
+        },
+      ],
     },
     {
       kind: "overview",
       heading: "コードとワークショップの地図",
       introduction:
         "packages/clinic-example の src/legacy には現在の実装、exercises には観察する失敗、test には既存の振る舞い、src/clinic にはこれから作る設計を置きます。以降は事故報告、状態モデリング、境界とID、Result、Agent Review を扱います。",
-      items: [],
+      items: [
+        {
+          title: "現在の実装",
+          description: "src/legacy に現在の実装、exercises に観察する失敗、test に既存の振る舞いを置きます。",
+        },
+        {
+          title: "これから作る設計",
+          description: "src/clinic に設計を置き、事故報告、状態モデリング、境界とID、Result、Agent Review を扱います。",
+        },
+      ],
     },
   ],
   blocks: [

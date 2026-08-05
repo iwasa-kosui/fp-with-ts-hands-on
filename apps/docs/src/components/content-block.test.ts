@@ -122,7 +122,10 @@ describe("renderContentBlock", () => {
     );
     expect(element.querySelector("ul")).not.toBeNull();
     expect([...element.querySelectorAll("li")].map(({ textContent }) => textContent)).toEqual([
-      "予約来院の予定を登録する起点です。",
+      "予約: 来院の予定を登録する起点です。",
     ]);
+    expect(element.querySelector("li strong")?.nextSibling?.textContent).toBe(
+      ": 来院の予定を登録する起点です。",
+    );
   });
 });

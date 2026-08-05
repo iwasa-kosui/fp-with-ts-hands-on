@@ -31,7 +31,36 @@ describe("introduction modules", () => {
   });
 
   it("ワークショップの前提を案内し、共有済みの説明を重複させない", () => {
-    const onboardingText = JSON.stringify(breakTheAppModule.introBlocks);
+    const overviewBlocks = breakTheAppModule.introBlocks?.filter(
+      (block): block is Extract<(typeof breakTheAppModule.introBlocks)[number], { kind: "overview" }> =>
+        block.kind === "overview",
+    );
+
+    expect(overviewBlocks?.map(({ heading }) => heading)).toEqual([
+      "WAN NYAN OS 開発チームへようこそ",
+      "来院のライフサイクル",
+      "コードとワークショップの地図",
+    ]);
+    expect(overviewBlocks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          items: expect.arrayContaining([expect.objectContaining({ title: "プロダクト" })]),
+        }),
+        expect.objectContaining({
+          items: expect.arrayContaining([expect.objectContaining({ title: "状態の流れ" })]),
+        }),
+        expect.objectContaining({
+          items: expect.arrayContaining([expect.objectContaining({ title: "現在の実装" })]),
+        }),
+      ]),
+    );
+
+    for (const block of overviewBlocks ?? []) {
+      expect(block.items).not.toHaveLength(0);
+      expect(block.items.every(({ title }) => title.length > 0)).toBe(true);
+    }
+
+    const onboardingText = JSON.stringify(overviewBlocks);
 
     for (const expectedText of [
       "予約",
