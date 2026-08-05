@@ -99,6 +99,7 @@ export type ModuleContent = Readonly<{
   fallbackGuidance: string;
   workedExamples: readonly Readonly<{ file: string; symbols: readonly string[] }>[];
   resources: readonly Readonly<{ label: string; href: string }>[];
+  introBlocks?: readonly ContentBlock[];
   onboarding?: OnboardingChapter;
   blocks: readonly ContentBlock[];
   finalActionPlan?: Readonly<{
