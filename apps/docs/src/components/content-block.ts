@@ -91,6 +91,27 @@ const renderChecklist = (block: Extract<ContentBlock, { kind: "checklist" }>): H
   return section;
 };
 
+const renderOverview = (block: Extract<ContentBlock, { kind: "overview" }>): HTMLElement => {
+  const section = document.createElement("section");
+  section.className = "content-block overview-block";
+  section.append(heading(block.heading));
+
+  const introduction = document.createElement("p");
+  introduction.textContent = block.introduction;
+
+  const list = document.createElement("ul");
+  for (const item of block.items) {
+    const listItem = document.createElement("li");
+    const title = document.createElement("strong");
+    title.textContent = item.title;
+    listItem.append(title, document.createTextNode(item.description));
+    list.append(listItem);
+  }
+
+  section.append(introduction, list);
+  return section;
+};
+
 const assertNever = (value: never): never => {
   throw new Error(`Unsupported content block: ${JSON.stringify(value)}`);
 };
@@ -107,6 +128,8 @@ export const renderContentBlock = (block: ContentBlock): HTMLElement => {
       return renderFileTable(block);
     case "checklist":
       return renderChecklist(block);
+    case "overview":
+      return renderOverview(block);
     default:
       return assertNever(block);
   }

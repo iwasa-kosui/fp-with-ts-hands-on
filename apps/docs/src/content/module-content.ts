@@ -12,7 +12,13 @@ export type ContentBlock =
       heading: string;
       rows: readonly Readonly<{ file: string; focus: string; mode: "read" | "edit" }>[];
     }>
-  | Readonly<{ kind: "checklist"; heading: string; items: readonly string[] }>;
+  | Readonly<{ kind: "checklist"; heading: string; items: readonly string[] }>
+  | Readonly<{
+      kind: "overview";
+      heading: string;
+      introduction: string;
+      items: readonly Readonly<{ title: string; description: string }>[];
+    }>;
 
 export type ModuleContent = Readonly<{
   id: string;

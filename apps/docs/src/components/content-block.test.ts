@@ -14,6 +14,12 @@ describe("renderContentBlock", () => {
         rows: [{ file: "src/a.ts", focus: "状態", mode: "read" }],
       },
       { kind: "checklist", heading: "完了条件", items: ["型検査が通ります。"] },
+      {
+        kind: "overview",
+        heading: "このアプリで扱うこと",
+        introduction: "業務の全体像を確認してから、最初の依頼に取り組みます。",
+        items: [{ title: "予約", description: "来院の予定を登録する起点です。" }],
+      },
     ];
 
     for (const block of blocks) {
@@ -98,6 +104,25 @@ describe("renderContentBlock", () => {
     expect([...element.querySelectorAll("li")].map(({ textContent }) => textContent)).toEqual([
       "型検査が通る",
       "テストが通る",
+    ]);
+  });
+
+  it("overview を見出し、導入、項目一覧の section で描画する", () => {
+    const element = renderContentBlock({
+      kind: "overview",
+      heading: "このアプリで扱うこと",
+      introduction: "業務の全体像を確認してから、最初の依頼に取り組みます。",
+      items: [{ title: "予約", description: "来院の予定を登録する起点です。" }],
+    });
+
+    expect(element.tagName).toBe("SECTION");
+    expect(element.querySelector("h2")?.textContent).toBe("このアプリで扱うこと");
+    expect(element.querySelector("p")?.textContent).toBe(
+      "業務の全体像を確認してから、最初の依頼に取り組みます。",
+    );
+    expect(element.querySelector("ul")).not.toBeNull();
+    expect([...element.querySelectorAll("li")].map(({ textContent }) => textContent)).toEqual([
+      "予約来院の予定を登録する起点です。",
     ]);
   });
 });
