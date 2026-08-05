@@ -214,7 +214,10 @@ describe("renderOnboardingChapter", () => {
           people: {
             id: "people",
             heading: "登場人物",
-            items: [{ name: "飼い主", description: "診察を予約する。" }],
+            items: [
+              { name: "飼い主", description: "診察を予約する。" },
+              { name: "受付スタッフ", description: "来院を受け付ける。" },
+            ],
           },
         },
         {
@@ -259,8 +262,20 @@ describe("renderOnboardingChapter", () => {
     ]);
     expect(element.querySelector("#visit-flow > ol > li")?.textContent).toContain("予約");
     expect(element.querySelector("#people > h4")?.textContent).toBe("登場人物");
-    expect(element.querySelector("#people > dl > dt")?.textContent).toBe("飼い主");
-    expect(element.querySelector("#people > dl > dt + dd")?.textContent).toBe("診察を予約する。");
+    const people = element.querySelector("#people > dl")!;
+    const roleDescriptionPairs = [...people.children]
+      .filter((child) => child.matches("dt"))
+      .map((term) => ({
+        term: term.textContent,
+        definition: term.nextElementSibling?.matches("dd") === true
+          ? term.nextElementSibling.textContent
+          : undefined,
+      }));
+    expect(roleDescriptionPairs).toEqual([
+      { term: "飼い主", definition: "診察を予約する。" },
+      { term: "受付スタッフ", definition: "来院を受け付ける。" },
+    ]);
+    expect([...people.children].map(({ tagName }) => tagName)).toEqual(["DT", "DD", "DT", "DD"]);
     expect(element.querySelector("#people > ul")).toBeNull();
     expect(
       [...element.querySelectorAll("#function-and-value th")].map(({ textContent }) => textContent),
