@@ -37,18 +37,53 @@ describe("renderModulePage", () => {
     expect(next?.href).toContain("/modules/02-boundary-and-ids/");
   });
 
-  it("起点から技法までを PRD の実習順序で描画する", () => {
+  it("サイトヘッダー、ヒーロー、全実習セクションを PRD の順序で描画する", () => {
     const page = renderModulePage(stateModelingModule);
-    const headings = [...page.querySelectorAll("h2")].map(({ textContent }) => textContent);
+    const siteHeader = page.children[0];
+    const main = page.children[1];
+    const hero = main?.firstElementChild;
 
-    expect(headings.slice(0, 7)).toEqual([
-      "新しい要求",
+    expect(siteHeader?.matches("header.site-header")).toBe(true);
+    expect(main?.matches("main")).toBe(true);
+    expect(hero?.matches("section.module-hero")).toBe(true);
+    expect(siteHeader?.querySelector('nav a[href="/"]')?.textContent).toContain("トップ");
+    expect(hero?.querySelector("h1")?.textContent).toBe("状態遷移を型にする");
+    expect(hero?.textContent).toContain("RABBIT");
+    expect(hero?.textContent).toContain("30分");
+
+    const structure = [...(main?.children ?? [])].map((element) => {
+      if (element.matches("section.module-hero")) return "ヒーロー";
+      if (element.matches("section[data-trigger]")) return "起点";
+      if (element.matches("figure.code-block")) return "コード本文";
+      if (element.matches("nav")) return "前後ナビゲーション";
+      return element.firstElementChild?.matches("h2") === true
+        ? element.firstElementChild.textContent
+        : undefined;
+    });
+
+    expect(structure).toEqual([
+      "ヒーロー",
+      "起点",
       "守る不変条件",
       "ミッション",
       "Red: 失敗を確認する",
       "編集対象",
       "Green: 効果を確認する",
       "使う技法: Discriminated Union",
+      "先に読むファイル",
+      "要求を状態へ置く",
+      "Red",
+      "読む場所と編集場所",
+      "コード本文",
+      "レビューすること",
+      "Green",
+      "レビュー観点",
+      "完了条件",
+      "業務への転用",
+      "振り返り",
+      "代替進行",
+      "参考リンク",
+      "前後ナビゲーション",
     ]);
   });
 

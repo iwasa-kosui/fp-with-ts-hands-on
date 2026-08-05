@@ -61,12 +61,22 @@ const triggerDetail = (trigger: ModuleTrigger): string => {
   }
 };
 
-const renderHeader = (module: ModuleContent): HTMLElement => {
+const renderSiteHeader = (): HTMLElement => {
   const header = document.createElement("header");
+  header.className = "site-header";
+  const navigation = document.createElement("nav");
+  navigation.ariaLabel = "サイトナビゲーション";
   const home = document.createElement("a");
   home.href = "/";
   home.textContent = "トップへ";
+  navigation.append(home);
+  header.append(navigation);
+  return header;
+};
 
+const renderHero = (module: ModuleContent): HTMLElement => {
+  const hero = document.createElement("section");
+  hero.className = "module-hero";
   const eyebrow = createParagraph(`${module.label} · ${module.durationMinutes}分`);
   eyebrow.className = "module-page__eyebrow";
   const title = document.createElement("h1");
@@ -74,8 +84,8 @@ const renderHeader = (module: ModuleContent): HTMLElement => {
   const caseStudy = createParagraph(
     `${module.caseStudy.avatar} ${module.caseStudy.animalName}（${module.caseStudy.animalType}） ${module.caseStudy.context}`,
   );
-  header.append(home, eyebrow, title, caseStudy);
-  return header;
+  hero.append(eyebrow, title, caseStudy);
+  return hero;
 };
 
 const renderTrigger = (trigger: ModuleTrigger): HTMLElement => {
@@ -223,10 +233,11 @@ const renderModuleNavigation = (module: ModuleContent): HTMLElement => {
 };
 
 export const renderModulePage = (module: ModuleContent): HTMLElement => {
-  const page = document.createElement("main");
+  const page = document.createElement("div");
   page.className = "module-page";
-  page.append(
-    renderHeader(module),
+  const main = document.createElement("main");
+  main.append(
+    renderHero(module),
     renderTrigger(module.trigger),
     createSection("守る不変条件", createParagraph(module.invariant)),
     createSection("ミッション", createParagraph(module.mission)),
@@ -237,9 +248,9 @@ export const renderModulePage = (module: ModuleContent): HTMLElement => {
     renderFilesToRead(module),
   );
 
-  for (const block of module.blocks) page.append(renderContentBlock(block));
+  for (const block of module.blocks) main.append(renderContentBlock(block));
 
-  page.append(
+  main.append(
     createSection("レビュー観点", createList(module.reviewPoints)),
     createSection("完了条件", createList(module.doneWhen)),
     createSection("業務への転用", createParagraph(module.changeImpact)),
@@ -249,7 +260,8 @@ export const renderModulePage = (module: ModuleContent): HTMLElement => {
   );
 
   const actionPlan = renderActionPlan(module);
-  if (actionPlan !== undefined) page.append(actionPlan);
-  page.append(renderModuleNavigation(module));
+  if (actionPlan !== undefined) main.append(actionPlan);
+  main.append(renderModuleNavigation(module));
+  page.append(renderSiteHeader(), main);
   return page;
 };
