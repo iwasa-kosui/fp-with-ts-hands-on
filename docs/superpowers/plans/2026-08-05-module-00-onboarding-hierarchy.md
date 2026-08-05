@@ -61,7 +61,10 @@
         people: {
           id: "people",
           heading: "登場人物",
-          items: [{ name: "飼い主", description: "診察を予約する。" }],
+          items: [
+            { name: "飼い主", description: "診察を予約する。" },
+            { name: "受付スタッフ", description: "来院を受け付ける。" },
+          ],
         },
       },
       { kind: "value-map", id: "function-and-value", heading: "提供する機能と価値", introduction: "対応を確認します。", rows: [{ function: "予約・受付", audiences: "飼い主", value: "迷わず来院できる。" }] },
@@ -77,7 +80,13 @@
     .toEqual(["動物病院の役割", "1回の来院の流れ", "提供する機能と価値", "来院をモデリングしよう", "開発者として今日取り組むこと"]);
   expect(element.querySelector("#visit-flow > ol > li")?.textContent).toContain("予約");
   expect(element.querySelector("#people > h4")?.textContent).toBe("登場人物");
-  expect(element.querySelectorAll("#people li")).toHaveLength(1);
+  expect([...element.querySelectorAll("#people > dl > dt")].map((term) => [
+    term.textContent,
+    term.nextElementSibling?.matches("dd") ? term.nextElementSibling.textContent : undefined,
+  ])).toEqual([
+    ["飼い主", "診察を予約する。"],
+    ["受付スタッフ", "来院を受け付ける。"],
+  ]);
   expect([...element.querySelectorAll("#function-and-value th")].map(({ textContent }) => textContent))
     .toEqual(["機能", "利用者", "価値"]);
   ```
