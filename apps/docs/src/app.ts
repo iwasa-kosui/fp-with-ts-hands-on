@@ -53,7 +53,12 @@ export const startApp = (
     }
 
     const destination = new URL(anchor.href, browserWindow.location.href);
-    if (destination.origin !== browserWindow.location.origin) return;
+    if (
+      destination.origin !== browserWindow.location.origin ||
+      destination.hash !== ""
+    ) {
+      return;
+    }
 
     event.preventDefault();
     browserWindow.history.pushState({}, "", destination.href);

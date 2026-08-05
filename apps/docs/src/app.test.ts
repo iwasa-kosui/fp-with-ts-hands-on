@@ -31,6 +31,7 @@ describe("startApp", () => {
 
   afterEach(() => {
     for (const stop of runningApps.splice(0)) stop();
+    document.body.replaceChildren();
     vi.restoreAllMocks();
   });
 
@@ -118,9 +119,62 @@ describe("startApp", () => {
     expect(root.querySelector("h1")?.textContent).toContain("状態遷移を型にする");
   });
 
+  it("フラグメント付きの同一 origin リンクをネイティブ遷移へ委ねる", () => {
+    window.history.replaceState({}, "", "/missing/");
+    const root = document.createElement("div");
+    document.body.append(root);
+    start(root);
+
+    const fragmentLink = root.querySelector<HTMLAnchorElement>('a[href="/#modules"]');
+    if (fragmentLink === null) throw new Error("modules fragment link is missing");
+    const pushState = vi.spyOn(window.history, "pushState");
+    vi.mocked(window.scrollTo).mockClear();
+    let intercepted: boolean | undefined;
+    root.addEventListener(
+      "click",
+      (event) => {
+        intercepted = event.defaultPrevented;
+        event.preventDefault();
+      },
+      { once: true },
+    );
+
+    dispatchClick(fragmentLink);
+
+    expect(intercepted).toBe(false);
+    expect(pushState).not.toHaveBeenCalled();
+    expect(window.scrollTo).not.toHaveBeenCalled();
+    expect(root.textContent).toContain("ページが見つかりません");
+  });
+
+  it("mailto リンクをネイティブ遷移へ委ねる", () => {
+    const root = document.createElement("div");
+    document.body.append(root);
+    start(root);
+    const mailLink = document.createElement("a");
+    mailLink.href = "mailto:staff@example.com";
+    root.append(mailLink);
+    const pushState = vi.spyOn(window.history, "pushState");
+    let intercepted: boolean | undefined;
+    root.addEventListener(
+      "click",
+      (event) => {
+        intercepted = event.defaultPrevented;
+        event.preventDefault();
+      },
+      { once: true },
+    );
+
+    dispatchClick(mailLink);
+
+    expect(intercepted).toBe(false);
+    expect(pushState).not.toHaveBeenCalled();
+  });
+
   it("描画ごとに先頭へ移動して見出しへフォーカスし、cleanup 後は再描画しない", () => {
     window.history.replaceState({}, "", "/modules/01-state-modeling/");
     const root = document.createElement("div");
+    document.body.append(root);
     const focus = vi.spyOn(HTMLElement.prototype, "focus");
     const stop = start(root);
 
@@ -128,6 +182,7 @@ describe("startApp", () => {
     expect(window.scrollTo).toHaveBeenLastCalledWith({ top: 0 });
     expect(focus).toHaveBeenLastCalledWith();
     expect(focus.mock.instances.at(-1)).toBe(initialHeading);
+    expect(document.activeElement).toBe(initialHeading);
 
     stop();
     window.history.replaceState({}, "", "/missing/");
