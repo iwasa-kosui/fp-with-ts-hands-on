@@ -97,7 +97,9 @@ const renderModules = (): HTMLElement => {
   const cards = document.createElement("div");
   cards.className = "module-cards";
   for (const module of modules) cards.append(renderModuleCard(module));
-  return createSection(homeContent.modulesTitle, cards);
+  const section = createSection(homeContent.modulesTitle, cards);
+  section.id = "modules";
+  return section;
 };
 
 const renderReferences = (): HTMLElement => {

@@ -1,5 +1,5 @@
 import { renderContentBlock } from "../components/content-block";
-import type { ModuleContent, ModuleTrigger } from "../content/module-content";
+import type { ContentBlock, ModuleContent, ModuleTrigger } from "../content/module-content";
 import { moduleNeighbors } from "../content/modules";
 import { modulePath } from "../routes";
 
@@ -28,6 +28,11 @@ const createList = (items: readonly string[]): HTMLUListElement => {
 const createSection = (title: string, ...children: readonly Node[]): HTMLElement => {
   const section = document.createElement("section");
   section.append(createHeading(title), ...children);
+  return section;
+};
+
+const identifySection = (id: string, section: HTMLElement): HTMLElement => {
+  section.id = id;
   return section;
 };
 
@@ -94,11 +99,13 @@ const renderTrigger = (trigger: ModuleTrigger): HTMLElement => {
     createParagraph(trigger.situation),
     createParagraph(triggerDetail(trigger)),
   );
+  section.id = "trigger";
   section.dataset.trigger = "";
   return section;
 };
 
 const renderCommand = (
+  id: "red" | "green",
   title: string,
   command: string,
   expected: string,
@@ -111,11 +118,19 @@ const renderCommand = (
 
   const result = createParagraph(expected);
   const section = createSection(title, commandBlock, result);
+  section.id = id;
   section.dataset.phase = phase;
   return section;
 };
 
 const renderEditTargets = (module: ModuleContent): HTMLElement => {
+  if (module.editTargets.length === 0) {
+    return identifySection(
+      "edit-targets",
+      createSection("編集対象", createParagraph("このモジュールではコードを編集しません。")),
+    );
+  }
+
   const list = document.createElement("ul");
   for (const target of module.editTargets.slice(0, 2)) {
     const item = document.createElement("li");
@@ -127,7 +142,7 @@ const renderEditTargets = (module: ModuleContent): HTMLElement => {
     item.append(file, document.createTextNode(" — "), symbol);
     list.append(item);
   }
-  return createSection("編集対象", list);
+  return identifySection("edit-targets", createSection("編集対象", list));
 };
 
 const renderTechnique = (module: ModuleContent): HTMLElement => {
@@ -142,6 +157,7 @@ const renderTechnique = (module: ModuleContent): HTMLElement => {
     limitsHeading,
     createParagraph(module.technique.limits),
   );
+  section.id = "technique";
   return section;
 };
 
@@ -154,7 +170,7 @@ const renderFilesToRead = (module: ModuleContent): HTMLElement => {
     item.append(file, document.createTextNode(` — ${entry.focus}`));
     list.append(item);
   }
-  return createSection("先に読むファイル", list);
+  return identifySection("files-to-read", createSection("先に読むファイル", list));
 };
 
 const renderFallback = (module: ModuleContent): HTMLElement => {
@@ -166,7 +182,10 @@ const renderFallback = (module: ModuleContent): HTMLElement => {
     item.append(file, document.createTextNode(` — ${example.symbols.join(", ")}`));
     examples.append(item);
   }
-  return createSection("代替進行", createParagraph(module.fallbackGuidance), examples);
+  return identifySection(
+    "fallback",
+    createSection("代替進行", createParagraph(module.fallbackGuidance), examples),
+  );
 };
 
 const renderResources = (module: ModuleContent): HTMLElement => {
@@ -179,7 +198,7 @@ const renderResources = (module: ModuleContent): HTMLElement => {
     item.append(link);
     list.append(item);
   }
-  return createSection("参考リンク", list);
+  return identifySection("resources", createSection("参考リンク", list));
 };
 
 const renderActionPlan = (module: ModuleContent): HTMLElement | undefined => {
@@ -200,13 +219,64 @@ const renderActionPlan = (module: ModuleContent): HTMLElement | undefined => {
   firstAction.id = "first-action";
   firstAction.name = "first-action";
 
-  return createSection(
-    "次の行動計画",
-    implementationLabel,
-    implementation,
-    firstActionLabel,
-    firstAction,
+  return identifySection(
+    "action-plan",
+    createSection(
+      "次の行動計画",
+      implementationLabel,
+      implementation,
+      firstActionLabel,
+      firstAction,
+    ),
   );
+};
+
+const toSectionSlug = (value: string): string =>
+  value
+    .normalize("NFKC")
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{Letter}\p{Number}]+/gu, "-")
+    .replace(/^-|-$/g, "");
+
+const contentBlockSectionId = (block: ContentBlock): string => {
+  const label = block.kind === "command" ? block.phase : block.heading;
+  return `content-${block.kind}-${toSectionSlug(label)}`;
+};
+
+const renderModuleContentBlock = (block: ContentBlock): HTMLElement => {
+  const element = renderContentBlock(block);
+  const id = contentBlockSectionId(block);
+  if (element.matches("section")) {
+    element.id = id;
+    return element;
+  }
+
+  if (block.kind !== "code") return element;
+  const section = createSection(block.heading, element);
+  section.id = id;
+  return section;
+};
+
+const renderTableOfContents = (sections: readonly HTMLElement[]): HTMLElement => {
+  const navigation = document.createElement("nav");
+  navigation.className = "module-toc";
+  navigation.setAttribute("aria-label", "ページ内目次");
+  const list = document.createElement("ol");
+
+  for (const section of sections) {
+    const heading = section.querySelector("h2");
+    if (heading === null) continue;
+    const item = document.createElement("li");
+    const link = document.createElement("a");
+    link.href = `#${section.id}`;
+    link.textContent = heading.textContent;
+    item.append(link);
+    list.append(item);
+  }
+
+  navigation.append(list);
+  return navigation;
 };
 
 const renderModuleNavigation = (module: ModuleContent): HTMLElement => {
@@ -236,32 +306,49 @@ export const renderModulePage = (module: ModuleContent): HTMLElement => {
   const page = document.createElement("div");
   page.className = "module-page";
   const main = document.createElement("main");
-  main.append(
-    renderHero(module),
+  const sectionsAndContent: HTMLElement[] = [
     renderTrigger(module.trigger),
-    createSection("守る不変条件", createParagraph(module.invariant)),
-    createSection("ミッション", createParagraph(module.mission)),
-    renderCommand("Red: 失敗を確認する", module.red.command, module.red.expected, "red"),
+    identifySection("invariant", createSection("守る不変条件", createParagraph(module.invariant))),
+    identifySection("mission", createSection("ミッション", createParagraph(module.mission))),
+    renderCommand("red", "Red: 失敗を確認する", module.red.command, module.red.expected, "red"),
     renderEditTargets(module),
-    renderCommand("Green: 効果を確認する", module.green.command, module.green.expected, "green"),
+    renderCommand(
+      "green",
+      "Green: 効果を確認する",
+      module.green.command,
+      module.green.expected,
+      "green",
+    ),
     renderTechnique(module),
     renderFilesToRead(module),
-  );
+  ];
 
-  for (const block of module.blocks) main.append(renderContentBlock(block));
+  for (const block of module.blocks) {
+    sectionsAndContent.push(renderModuleContentBlock(block));
+  }
 
-  main.append(
-    createSection("レビュー観点", createList(module.reviewPoints)),
-    createSection("完了条件", createList(module.doneWhen)),
-    createSection("業務への転用", createParagraph(module.changeImpact)),
-    createSection("振り返り", createList(module.reflectionQuestions)),
+  sectionsAndContent.push(
+    identifySection("review-points", createSection("レビュー観点", createList(module.reviewPoints))),
+    identifySection("done-when", createSection("完了条件", createList(module.doneWhen))),
+    identifySection(
+      "business-transfer",
+      createSection("業務への転用", createParagraph(module.changeImpact)),
+    ),
+    identifySection("reflection", createSection("振り返り", createList(module.reflectionQuestions))),
     renderFallback(module),
     renderResources(module),
   );
 
   const actionPlan = renderActionPlan(module);
-  if (actionPlan !== undefined) main.append(actionPlan);
-  main.append(renderModuleNavigation(module));
+  if (actionPlan !== undefined) sectionsAndContent.push(actionPlan);
+
+  const tocSections = sectionsAndContent.filter((element) => element.matches("section[id]"));
+  main.append(
+    renderHero(module),
+    renderTableOfContents(tocSections),
+    ...sectionsAndContent,
+    renderModuleNavigation(module),
+  );
   page.append(renderSiteHeader(), main);
   return page;
 };

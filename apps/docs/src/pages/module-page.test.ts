@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { startApp } from "../app";
 import type { ModuleContent } from "../content/module-content";
+import { modules } from "../content/modules";
+import { breakTheAppModule } from "../content/modules/00-break-the-app";
 import { miniIntegrationModule } from "../content/modules/05-mini-integration";
 import { stateModelingModule } from "../content/modules/01-state-modeling";
 import { renderModulePage } from "./module-page";
@@ -75,6 +77,7 @@ describe("renderModulePage", () => {
 
     const structure = [...(main?.children ?? [])].map((element) => {
       if (element.matches("section.module-hero")) return "ヒーロー";
+      if (element.matches("nav.module-toc")) return "ページ内目次";
       if (element.matches("section[data-trigger]")) return "起点";
       if (element.matches("figure.code-block")) return "コード本文";
       if (element.matches("nav")) return "前後ナビゲーション";
@@ -85,6 +88,7 @@ describe("renderModulePage", () => {
 
     expect(structure).toEqual([
       "ヒーロー",
+      "ページ内目次",
       "起点",
       "守る不変条件",
       "ミッション",
@@ -96,7 +100,7 @@ describe("renderModulePage", () => {
       "要求を状態へ置く",
       "Red",
       "読む場所と編集場所",
-      "コード本文",
+      "状態とデータを同時に閉じる",
       "レビューすること",
       "Green",
       "レビュー観点",
@@ -107,6 +111,72 @@ describe("renderModulePage", () => {
       "参考リンク",
       "前後ナビゲーション",
     ]);
+  });
+
+  it("全モジュールで実際のsection順に一意なfragmentを持つページ内目次を描画する", () => {
+    for (const module of modules) {
+      const page = renderModulePage(module);
+      const toc = page.querySelector<HTMLElement>('nav.module-toc[aria-label="ページ内目次"]');
+      const links = [...(toc?.querySelectorAll<HTMLAnchorElement>('a[href^="#"]') ?? [])];
+      const sections = [
+        ...page.querySelectorAll<HTMLElement>("main > section:not(.module-hero)"),
+      ];
+      const sectionIds = sections.map(({ id }) => id);
+
+      expect(toc).not.toBeNull();
+      expect(links).toHaveLength(sections.length);
+      expect(sectionIds.every((id) => id !== "")).toBe(true);
+      expect(new Set(sectionIds).size).toBe(sectionIds.length);
+      expect(links.map((link) => link.getAttribute("href"))).toEqual(
+        sectionIds.map((id) => `#${id}`),
+      );
+
+      for (const link of links) {
+        const targetId = link.getAttribute("href")?.slice(1);
+        if (targetId === undefined) throw new Error("toc target is missing");
+        const targets = [...page.querySelectorAll<HTMLElement>("section[id]")].filter(
+          ({ id }) => id === targetId,
+        );
+        expect(targets).toHaveLength(1);
+        expect(link.textContent).toBe(targets[0]?.querySelector("h2")?.textContent);
+      }
+    }
+  });
+
+  it("Module 00の主要項目へページ内目次から移動できる", () => {
+    const page = renderModulePage(breakTheAppModule);
+    const tocLabels = [
+      ...page.querySelectorAll<HTMLAnchorElement>('.module-toc a[href^="#"]'),
+    ].map(({ textContent }) => textContent);
+
+    expect(tocLabels).toEqual(
+      expect.arrayContaining([
+        "事故",
+        "守る不変条件",
+        "ミッション",
+        "Red: 失敗を確認する",
+        "Green: 効果を確認する",
+        "今回の状況",
+        "Red",
+        "完了条件",
+      ]),
+    );
+  });
+
+  it("code blockも目次から移動できるoptional sectionとして描画する", () => {
+    const page = renderModulePage(stateModelingModule);
+    const link = [...page.querySelectorAll<HTMLAnchorElement>('.module-toc a[href^="#"]')].find(
+      ({ textContent }) => textContent === "状態とデータを同時に閉じる",
+    );
+    const targetId = link?.getAttribute("href")?.slice(1);
+    const target = [...page.querySelectorAll<HTMLElement>("main > section[id]")].find(
+      ({ id }) => id === targetId,
+    );
+
+    expect(link).toBeDefined();
+    expect(link?.getAttribute("href")).toBe("#content-code-状態とデータを同時に閉じる");
+    expect(target?.querySelector("h2")?.textContent).toBe("状態とデータを同時に閉じる");
+    expect(target?.querySelector("figure.code-block")).not.toBeNull();
   });
 
   it("起点の kind に対応した見出しを描画する", () => {
@@ -147,6 +217,41 @@ describe("renderModulePage", () => {
 
     expect(page.querySelectorAll("[data-edit-target]")).toHaveLength(2);
     expect(page.textContent).not.toContain("Appointment.checkIn");
+  });
+
+  it("編集しない導入では空リストの代わりに明示文を描画する", () => {
+    const page = renderModulePage(breakTheAppModule);
+    const editSection = [...page.querySelectorAll("main > section")].find(
+      (section) => section.querySelector("h2")?.textContent === "編集対象",
+    );
+
+    expect(editSection?.textContent).toContain("このモジュールではコードを編集しません。");
+    expect(editSection?.querySelector("ul")).toBeNull();
+    expect(editSection?.querySelectorAll("[data-edit-target]")).toHaveLength(0);
+  });
+
+  it("編集するモジュールでは従来どおり編集対象リストを描画する", () => {
+    const page = renderModulePage(stateModelingModule);
+    const editSection = [...page.querySelectorAll("main > section")].find(
+      (section) => section.querySelector("h2")?.textContent === "編集対象",
+    );
+
+    expect(editSection?.querySelector("ul")).not.toBeNull();
+    expect(editSection?.querySelectorAll("[data-edit-target]")).toHaveLength(2);
+    expect(editSection?.textContent).not.toContain("このモジュールではコードを編集しません。");
+  });
+
+  it("Module 01で実行時要件とコンパイル時の不正な組み合わせを別のテストから案内する", () => {
+    const page = renderModulePage(stateModelingModule);
+    const filesSection = [...page.querySelectorAll("main > section")].find(
+      (section) => section.querySelector("h2")?.textContent === "先に読むファイル",
+    );
+
+    expect(filesSection?.textContent).toContain("exercises/01-state-modeling.test.ts");
+    expect(filesSection?.textContent).toContain("実行時要件");
+    expect(filesSection?.textContent).toContain("test/01-state-modeling.test.ts");
+    expect(filesSection?.textContent).toContain("@ts-expect-error");
+    expect(filesSection?.textContent).toContain("コンパイル時");
   });
 
   it("最終演習だけにラベル付きの行動計画入力欄を描画する", () => {

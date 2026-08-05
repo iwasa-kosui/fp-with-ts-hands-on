@@ -27,6 +27,21 @@ describe("state modeling and boundary modules", () => {
     });
   });
 
+  it("separates exercise runtime requirements from compile-time invalid combinations", () => {
+    expect(stateModelingModule.filesToRead).toEqual(
+      expect.arrayContaining([
+        {
+          file: "exercises/01-state-modeling.test.ts",
+          focus: expect.stringContaining("実行時要件"),
+        },
+        {
+          file: "test/01-state-modeling.test.ts",
+          focus: expect.stringMatching(/@ts-expect-error.*コンパイル時/),
+        },
+      ]),
+    );
+  });
+
   it("starts boundary protection from the ID and PII incident and limits edits to parsers", () => {
     expect(boundaryAndIdsModule.trigger.kind).toBe("incident");
     expect(boundaryAndIdsModule.editTargets.map(({ symbol }) => symbol)).toEqual([

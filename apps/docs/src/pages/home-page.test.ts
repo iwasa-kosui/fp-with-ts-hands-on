@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderHomePage } from "./home-page";
+import { renderNotFoundPage } from "./not-found-page";
 
 describe("renderHomePage", () => {
   it("段階的改善のゴールと参加に必要な案内を意味のあるセクションで描画する", () => {
@@ -52,5 +53,24 @@ describe("renderHomePage", () => {
     ]);
     expect(cards[0]?.textContent).toContain("導入事故を起こす");
     expect(cards[6]?.textContent).toContain("ミニ総合演習");
+  });
+
+  it("404のモジュール一覧リンクがホームに実在するfragmentを指す", () => {
+    const home = renderHomePage();
+    const notFound = renderNotFoundPage("/missing/");
+    document.body.append(home, notFound);
+
+    const link = notFound.querySelector<HTMLAnchorElement>('a[href="/#modules"]');
+    if (link === null) throw new Error("modules fragment link is missing");
+    const targetId = new URL(link.href).hash.slice(1);
+
+    expect(targetId).toBe("modules");
+    expect(document.querySelectorAll(`[id="${targetId}"]`)).toHaveLength(1);
+    expect(document.getElementById(targetId)?.querySelector("h2")?.textContent).toBe(
+      "7つのモジュール",
+    );
+
+    home.remove();
+    notFound.remove();
   });
 });

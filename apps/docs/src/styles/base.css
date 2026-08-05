@@ -266,7 +266,8 @@ h3 {
 .table-of-contents ol,
 .toc ol {
   display: grid;
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+  gap: 0.5rem 2rem;
   margin: 0;
   padding-left: 1.5rem;
   font-weight: 900;

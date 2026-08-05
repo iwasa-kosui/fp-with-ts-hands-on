@@ -43,7 +43,11 @@ export const stateModelingModule: ModuleContent = {
     },
     {
       file: "exercises/01-state-modeling.test.ts",
-      focus: "診察開始と理由付きキャンセルに求められる状態と値を期待値から確認します。",
+      focus: "診察開始と理由付きキャンセルという実行時要件を期待値から確認します。",
+    },
+    {
+      file: "test/01-state-modeling.test.ts",
+      focus: "@ts-expect-error で Paid からの再診察・キャンセルと未知のキャンセル理由がコンパイル時に拒否されることを確認します。",
     },
   ],
   reviewPoints: [
