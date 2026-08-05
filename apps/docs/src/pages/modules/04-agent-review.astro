@@ -1,0 +1,147 @@
+---
+import CodeBlock from "../../components/CodeBlock.astro";
+import CommandBlock from "../../components/CommandBlock.astro";
+import ModuleLayout from "../../layouts/ModuleLayout.astro";
+import { moduleBySlug } from "../../modules/catalog";
+
+const module = moduleBySlug("04-agent-review");
+if (module === undefined) throw new Error("Unknown module: 04-agent-review");
+---
+
+<ModuleLayout module={module}>
+  <ol slot="toc">
+    <li><a href="#separate-agent-review">依頼とレビューの責任を分ける</a></li>
+    <li><a href="#build-agent-request">エージェントへの依頼を組み立てる</a></li>
+    <li><a href="#human-requirement-review">人が要求からレビューする</a></li>
+    <li><a href="#finish-and-integrate">完了条件と統合演習への橋渡し</a></li>
+  </ol>
+
+  <section>
+    <h2 id="separate-agent-review">依頼とレビューの責任を分ける</h2>
+    <p>既存の設計判断を保ったまま、AI エージェントへ追加機能を依頼します。</p>
+    <p>
+      <strong>レビュー上の問題:</strong>
+      実装だけを頼むと、終端状態、境界、PII、失敗型の前提が抜けます。
+    </p>
+    <p>
+      AI エージェントへ渡す依頼には、実装対象だけでなく、既存の状態遷移、<code
+        >unknown</code
+      > の parse、<code>Sensitive</code>、<code>Result</code>、domain event
+      の制約を含めます。
+    </p>
+    <p>
+      <strong>守る不変条件:</strong>
+      依頼文とレビューで、守る状態遷移・境界・失敗値・記録を明示する。
+    </p>
+    <p>
+      今回のミッションは、<strong>型とテストで検証できること</strong>と、<strong
+        >人が要求から判断すること</strong
+      >を checklist と prompt に分けることです。
+    </p>
+  </section>
+
+  <section>
+    <h2 id="build-agent-request">エージェントへの依頼を組み立てる</h2>
+    <p>
+      checklist は見落としを防ぎ、prompt
+      は実装者が検証できる作業指示になります。依頼には次の5つの横断観点を具体的な制約として入れます。
+    </p>
+    <ol>
+      <li>既知の状態遷移を守り、終端状態を以前の状態へ戻さない。</li>
+      <li>外部の <code>unknown</code> は境界で parse してから使う。</li>
+      <li><code>Sensitive</code> で守る PII を unwrap してログへ出さない。</li>
+      <li><code>Result</code> の失敗を <code>error.kind</code> で扱う。</li>
+      <li>成功した変更だけを domain event として記録する。</li>
+    </ol>
+
+    <CommandBlock
+      phase="red"
+      command="pnpm --filter @fp-with-ts/clinic-example exercise:04"
+      expected="starter では checklist の観点または prompt の具体的な制約に関するテストが失敗します。この実装を読む環境では worked example があるため成功します。"
+    />
+
+    <h3>読む場所と編集場所</h3>
+    <dl>
+      <dt><code>packages/clinic-example/src/clinic/agent-review.ts</code></dt>
+      <dd>
+        <code>agentReviewChecklist</code> の5観点と <code
+          >buildFollowUpAgentPrompt</code
+        > が、既存の設計判断をどのように検証可能な依頼へ変えているか読みます。編集対象もこの2つだけです。
+      </dd>
+      <dt><code>packages/clinic-example/exercises/04-agent-review.test.ts</code></dt>
+      <dd>checklist の全観点と、prompt に必須の表現を確認します。</dd>
+    </dl>
+
+    <CodeBlock
+      language="text"
+      label="検証可能なエージェント依頼"
+      code={`電話フォロー対象を抽出してください。
+- 型とテスト: Result の error.kind、既知の状態遷移を確認する
+- 人のレビュー: 要求が終端状態、境界、PII、変更記録の意味を壊していないか確認する
+- Sensitive を unwrap してログに出さない
+- 成功時だけ FollowUpRequested domain event を記録する`}
+    />
+
+    <h3>使う技法: 検証可能な依頼とレビュー観点</h3>
+    <p>既存の設計判断を checklist と具体的な prompt に変換します。</p>
+    <p>
+      <strong>この技法の限界:</strong>
+      型が通ることだけで、追加機能が要求に適合することまで保証できるとは扱いません。
+    </p>
+  </section>
+
+  <section>
+    <h2 id="human-requirement-review">人が要求からレビューする</h2>
+    <p>
+      型とテストは、不正な組み合わせ、<code>Result.error.kind</code>
+      の既知の失敗、既知の状態遷移や振る舞いを検証できます。一方で、人は要求を読み、終端状態、システム境界、PII の扱い、成功記録の意味が業務に合っているかを判断します。
+    </p>
+
+    <h3>レビュー観点</h3>
+    <ul>
+      <li>型とテストで、既知の不正な状態遷移と <code>Result</code> の失敗値を確認する。</li>
+      <li>人が、追加要求に終端状態、境界、PII の前提漏れがないか確認する。</li>
+      <li>
+        人が、成功した変更だけを domain event として残す意味が要求に合うか確認する。
+      </li>
+      <li>prompt の各制約が、実装者の検証可能な行動として書かれているか確認する。</li>
+    </ul>
+
+    <CommandBlock
+      phase="green"
+      command="pnpm --filter @fp-with-ts/clinic-example exercise:04"
+      expected="状態遷移、境界、Sensitive、Result、domain event の5つの横断観点を含む依頼文を生成できて exercise:04 が成功します。"
+    />
+  </section>
+
+  <section>
+    <h2 id="finish-and-integrate">完了条件と統合演習への橋渡し</h2>
+    <h3>完了条件</h3>
+    <ul>
+      <li>次の機能を依頼する際の、検証可能なレビュー観点を持てる。</li>
+      <li>型とテストに任せる確認と、人が要求からレビューすべき確認を区別できる。</li>
+    </ul>
+
+    <h3>業務への転用</h3>
+    <p>
+      次の追加要求で既存の不変条件を prompt
+      に持ち込み、実装後に要求適合性を人が確認できます。
+    </p>
+
+    <h3>振り返り</h3>
+    <p>
+      型とテストに任せられる確認と、人が要求からレビューすべき確認はどこで分かれますか。
+    </p>
+
+    <h3>代替進行</h3>
+    <p>
+      実装できない場合は、状態遷移、境界、<code>Sensitive</code>、<code>Result</code>、domain
+      event の5項目を順に prompt へ入れ、検証可能な文になっているか確認します。
+    </p>
+
+    <h3>Module 05へ</h3>
+    <p>
+      次は、検査結果の入力境界、型付けした失敗、PII、状態判定、成功時の変更記録を一つの電話フォロー要求へ統合します。ここで作った5観点を、その実装依頼とレビューに使います。
+    </p>
+  </section>
+</ModuleLayout>
