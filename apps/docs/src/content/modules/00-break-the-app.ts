@@ -49,7 +49,7 @@ export const breakTheAppModule: ModuleContent = {
   ],
   reviewPoints: ["Paid から戻れる経路と、状態ごとに必須な情報を列挙させる。"],
   doneWhen: ["壊れた遷移を再現し、型にない不変条件を説明できる。"],
-  changeImpact: "次の状態モデリングで、Paid を終端状態として型に閉じる必要が明確になります。",
+  changeImpact: "次は状態遷移を型で表し、Paid を終端状態として型に閉じる必要を明確にします。",
   reflectionQuestions: [
     "Paid が終端であるというルールは、現在の型と updateStatus のどこで失われていますか。",
   ],
@@ -63,7 +63,7 @@ export const breakTheAppModule: ModuleContent = {
       kind: "overview",
       heading: "この開発に参加するあなたへ",
       introduction:
-        "完成形を一度に作るのではなく、業務事故から守るべきルールを見つけ、小さな改善と確認を繰り返します。まず、誰のどんな困りごとを守るのかを確かめます。",
+        "完成形を一度に作るのではなく、システム障害を防ぐためのルールを見つけ、小さな改善と確認を繰り返します。まず、誰のどんな困りごとを守るのかを確かめます。",
       items: [
         {
           title: "あなたの役割",
@@ -80,7 +80,7 @@ export const breakTheAppModule: ModuleContent = {
       kind: "overview",
       heading: "1回の来院で起きること",
       introduction:
-        "飼い主と病院スタッフは、来院の前後で次の仕事をつなげます。ここでは、業務の体験を状態値より先に確認します。",
+        "飼い主と病院スタッフは、来院の前後で次の仕事をつなげます。ここでは、業務の体験を状態より先に確認します。",
       items: [
         {
           title: "予約",
@@ -100,7 +100,7 @@ export const breakTheAppModule: ModuleContent = {
         },
         {
           title: "再診",
-          description: "再診の正規操作は今回の演習では扱いません。",
+          description: "通常の再診手順は今回の演習では扱いません。",
         },
       ],
     },
@@ -126,7 +126,7 @@ export const breakTheAppModule: ModuleContent = {
           value: "確定した来院記録と会計を誤って壊さない。",
         },
         {
-          function: "フォロー・連絡先・申し送り",
+          function: "フォロー連絡、連絡先の管理、申し送り",
           audiences: "病院スタッフ、飼い主",
           value: "必要な連絡を安全に引き継げる。",
         },
@@ -136,7 +136,7 @@ export const breakTheAppModule: ModuleContent = {
       kind: "overview",
       heading: "アプリは業務をどう表すか",
       introduction:
-        "アプリでは、来院の進み具合を状態値で表します。業務で守るルールを、扱える状態の範囲に反映させます。",
+        "アプリでは、来院の進み具合を状態で表します。業務で守るルールを、扱える状態の範囲に反映させます。",
       items: [
         {
           title: "状態の対応",
@@ -146,7 +146,7 @@ export const breakTheAppModule: ModuleContent = {
         {
           title: "今回守ること",
           description:
-            "今回の演習では、paid の来院を診察中へ戻さないことを守ります。再診の正規操作は今回の演習では扱いません。",
+            "今回の演習では、paid の来院を診察中へ戻さないことを守ります。通常の再診手順は今回の演習では扱いません。",
         },
       ],
     },
@@ -164,7 +164,7 @@ export const breakTheAppModule: ModuleContent = {
         {
           title: "これから作る設計",
           description:
-            "src/clinic に設計を置き、事故報告、状態モデリング、境界とID、Result、Agent Review を通じて守る価値につなげます。",
+            "src/clinic に設計を置き、事故報告、状態遷移を型で表す、境界とID、Result、エージェントレビューを通じて現場で守ることにつなげます。",
         },
       ],
     },

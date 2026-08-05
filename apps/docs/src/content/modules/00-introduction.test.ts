@@ -50,7 +50,7 @@ describe("introduction modules", () => {
         { function: "予約・受付", audiences: "受付スタッフ、飼い主", value: "来院を迷わず正しく受け入れられる。" },
         { function: "診察・カルテ", audiences: "獣医師、病院スタッフ", value: "診療の記録を一貫して扱える。" },
         { function: "会計", audiences: "会計担当、飼い主", value: "確定した来院記録と会計を誤って壊さない。" },
-        { function: "フォロー・連絡先・申し送り", audiences: "病院スタッフ、飼い主", value: "必要な連絡を安全に引き継げる。" },
+        { function: "フォロー連絡、連絡先の管理、申し送り", audiences: "病院スタッフ、飼い主", value: "必要な連絡を安全に引き継げる。" },
       ],
     });
 
@@ -64,7 +64,7 @@ describe("introduction modules", () => {
     const reExaminationItem = visitBlock?.kind === "overview"
       ? visitBlock.items.find(({ title }) => title === "再診")
       : undefined;
-    expect(reExaminationItem?.description).toBe("再診の正規操作は今回の演習では扱いません。");
+    expect(reExaminationItem?.description).toBe("通常の再診手順は今回の演習では扱いません。");
     for (const state of ["scheduled", "checked-in", "in-examination", "paid"]) {
       expect(visitText).not.toContain(state);
     }
@@ -77,7 +77,7 @@ describe("introduction modules", () => {
       expect(stateText).toContain(expectedText);
     }
     expect(stateText).toContain("paid の来院を診察中へ戻さない");
-    expect(stateText).toContain("再診の正規操作は今回の演習では扱いません。");
+    expect(stateText).toContain("通常の再診手順は今回の演習では扱いません。");
 
     const developerBlock = breakTheAppModule.introBlocks?.find(
       (block) => block.kind !== "command" && block.heading === "開発者として今日行うこと",
@@ -90,12 +90,17 @@ describe("introduction modules", () => {
       "test",
       "src/clinic",
       "事故報告",
-      "状態モデリング",
+      "状態遷移を型で表す",
       "境界とID",
       "Result",
-      "Agent Review",
+      "エージェントレビュー",
     ]) {
       expect(developerText).toContain(expectedText);
+    }
+
+    const introText = JSON.stringify(breakTheAppModule.introBlocks);
+    for (const prohibitedText of ["業務事故", "状態値", "再診の正規操作", "状態モデリング", "Agent Review"]) {
+      expect(introText).not.toContain(prohibitedText);
     }
 
     for (const duplicateHeading of ["ミッション", "Red", "読むファイル"]) {

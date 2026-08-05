@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Module 00を、顧客・現場の来院体験からプロダクト価値、状態値、実装へ進む開発メンバー向けオンボーディングに再構成する。
+**Goal:** Module 00を、利用者と現場の来院の流れからプロダクト価値、状態、実装へ進む開発メンバー向けオンボーディングに再構成する。
 
 **Architecture:** 既存の任意`introBlocks`と`overview`を再利用し、機能・届ける相手・価値だけを`value-map`という新しい構造化ブロックで表す。`introBlocks`はすでにヒーロー直後かつ共通の目次生成前に描画されるため、ページの描画経路やSPAルートは変更しない。
 
@@ -12,9 +12,9 @@
 
 - 正規ルート`/modules/00-break-the-app/`と既存SPAルーティングを変更しない。
 - `introBlocks`は任意のままとし、Module 01–05のコンテンツ契約と表示順を変えない。
-- ユーザーが読むオンボーディング本文は日本語で書き、コード上の型名・状態値だけは実装との対応のため英字を維持する。
-- 顧客・現場の来院体験を状態値より前に示す。
-- 再診の正規操作は今回の演習では扱いません。
+- ユーザーが読むオンボーディング本文は日本語で書き、コード上の型名・状態だけは実装との対応のため英字を維持する。
+- 利用者と現場の来院の流れを状態より前に示す。
+- 通常の再診手順は今回の演習では扱いません。
 - DOMは`document.createElement`と`textContent`で構築し、`innerHTML`を使わない。
 - 新しい視覚装飾は追加せず、既存のコンテンツセクションと表の表示規則を使う。
 
@@ -75,7 +75,7 @@ it("value-map を見出し、説明、列見出し、全行を持つ意味論的
         value: "確定した来院記録と会計を誤って壊さない。",
       },
       {
-        function: "フォロー・連絡先・申し送り",
+        function: "フォロー連絡、連絡先の管理、申し送り",
         audiences: "病院スタッフ、飼い主",
         value: "必要な連絡を安全に引き継げる。",
       },
@@ -94,7 +94,7 @@ it("value-map を見出し、説明、列見出し、全行を持つ意味論的
       "予約・受付受付スタッフ、飼い主来院を迷わず正しく受け入れられる。",
       "診察・カルテ獣医師、病院スタッフ診療の記録を一貫して扱える。",
       "会計会計担当、飼い主確定した来院記録と会計を誤って壊さない。",
-      "フォロー・連絡先・申し送り病院スタッフ、飼い主必要な連絡を安全に引き継げる。",
+      "フォロー連絡、連絡先の管理、申し送り病院スタッフ、飼い主必要な連絡を安全に引き継げる。",
     ]);
 });
 ```
@@ -180,12 +180,12 @@ expect(valueMap).toMatchObject({
     { function: "予約・受付", audiences: "受付スタッフ、飼い主", value: "来院を迷わず正しく受け入れられる。" },
     { function: "診察・カルテ", audiences: "獣医師、病院スタッフ", value: "診療の記録を一貫して扱える。" },
     { function: "会計", audiences: "会計担当、飼い主", value: "確定した来院記録と会計を誤って壊さない。" },
-    { function: "フォロー・連絡先・申し送り", audiences: "病院スタッフ、飼い主", value: "必要な連絡を安全に引き継げる。" },
+    { function: "フォロー連絡、連絡先の管理、申し送り", audiences: "病院スタッフ、飼い主", value: "必要な連絡を安全に引き継げる。" },
   ],
 });
 ```
 
-来院体験のblockを抽出してJSON化し、`予約`、`受付`、`診察と記録`、`会計と完了`、`再診`を含み、`scheduled`、`checked-in`、`in-examination`、`paid`を含まないことを検証する。状態対応blockでは4状態値と、`paid`から診察中へ戻さないルールを検証する。開発者blockでは`src/legacy`、`exercises`、`test`、`src/clinic`を検証する。既存の事故シナリオと業務影響を検証するテストは維持する。
+来院の流れを示すblockを抽出してJSON化し、`予約`、`受付`、`診察と記録`、`会計と完了`、`再診`を含み、`scheduled`、`checked-in`、`in-examination`、`paid`を含まないことを検証する。状態対応blockでは4つの状態と、`paid`から診察中へ戻さないルールを検証する。開発者blockでは`src/legacy`、`exercises`、`test`、`src/clinic`を検証する。既存の事故シナリオと業務影響を検証するテストは維持する。
 
 `module-page.test.ts`のModule 00表示テストで、最初の6つの`main > section:not(.module-hero) h2`が次に一致することを検証する。
 
@@ -206,17 +206,17 @@ expect(valueMap).toMatchObject({
 
 Run: `pnpm --filter @fp-with-ts/docs test -- src/content/modules/00-introduction.test.ts src/pages/module-page.test.ts`
 
-Expected: 現行の3つの導入見出しには顧客体験・価値マップ・状態対応の5区画がないためFAILする。
+Expected: 現行の3つの導入見出しには利用者の来院の流れ・価値の対応表・状態対応の5区画がないためFAILする。
 
 - [ ] **Step 3: Module 00の導入データを置き換える**
 
 `00-break-the-app.ts`の`introBlocks`を、次の順と内容で置き換える。
 
-1. `overview`「この開発に参加するあなたへ」: 完成形を一度に作らず、業務事故から守るべきルールを見つけ、小さな改善と確認を繰り返すこと。`あなたの役割`としてTypeScript開発者が誰のどんな困りごとを守るかを確かめること。
-2. `overview`「1回の来院で起きること」: `予約`、`受付`、`診察と記録`、`会計と完了`、`再診`の5項目を置く。`再診`の文言は「再診の正規操作は今回の演習では扱いません。」とする。状態値は含めない。
+1. `overview`「この開発に参加するあなたへ」: 完成形を一度に作らず、システム障害を防ぐためのルールを見つけ、小さな改善と確認を繰り返すこと。`あなたの役割`としてTypeScript開発者が誰のどんな困りごとを守るかを確かめること。
+2. `overview`「1回の来院で起きること」: `予約`、`受付`、`診察と記録`、`会計と完了`、`再診`の5項目を置く。`再診`の文言は「通常の再診手順は今回の演習では扱いません。」とする。状態は含めない。
 3. `value-map`「機能が届ける価値」: Step 1の4行をそのまま置く。
-4. `overview`「アプリは業務をどう表すか」: `予約済み: scheduled`、`受付済み: checked-in`、`診察中: in-examination`、`会計済み・来院完了: paid`を対応させる。`今回守ること`として、`paid`の来院を診察中へ戻さず、「再診の正規操作は今回の演習では扱いません。」と書く。
-5. `overview`「開発者として今日行うこと」: `packages/clinic-example`、`src/legacy`、`exercises`、`test`、`src/clinic`の役割を示し、事故報告、状態モデリング、境界とID、Result、Agent Reviewを守る価値とのつながりで予告する。
+4. `overview`「アプリは業務をどう表すか」: `予約済み: scheduled`、`受付済み: checked-in`、`診察中: in-examination`、`会計済み・来院完了: paid`を対応させる。`今回守ること`として、`paid`の来院を診察中へ戻さず、「通常の再診手順は今回の演習では扱いません。」と書く。
+5. `overview`「開発者として今日行うこと」: `packages/clinic-example`、`src/legacy`、`exercises`、`test`、`src/clinic`の役割を示し、事故報告、状態遷移を型で表す、境界とID、Result、エージェントレビューを現場で守ることとのつながりで予告する。
 
 `blocks`の事故シナリオ、業務影響、観察ポイント、次セッションへの導線は変更しない。`module-page.ts`の`introBlocks`描画と目次生成は既に必要な順序・ID・リンクを提供するため変更しない。
 
@@ -243,7 +243,7 @@ git commit -m "feat(docs): explain module 00 from customer journey"
 - Modify: `docs/superpowers/plans/2026-08-05-module-00-customer-journey-onboarding.md`
 
 **Interfaces:**
-- Verifies: 新しい価値マップ、Module 00の顧客優先順、正規ルート、Module 01–05の後方互換。
+- Verifies: 新しい価値の対応表、Module 00の利用者優先順、正規ルート、Module 01–05の後方互換。
 
 - [ ] **Step 1: 4つの回帰テストをまとめて実行する**
 
