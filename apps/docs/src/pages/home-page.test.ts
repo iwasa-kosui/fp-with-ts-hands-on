@@ -3,56 +3,37 @@ import { renderHomePage } from "./home-page";
 import { renderNotFoundPage } from "./not-found-page";
 
 describe("renderHomePage", () => {
-  it("段階的改善のゴールと参加に必要な案内を意味のあるセクションで描画する", () => {
+  it("元の WAN NYAN CLINIC のヒーローと問題導線を復元する", () => {
     const page = renderHomePage();
 
-    expect(page.querySelector("h1")?.textContent).toContain("FP with TypeScript");
-    expect(page.textContent).toContain("既存コードを全面刷新せず、1〜2関数の局所変更");
-    expect(page.textContent).toContain(
-      "要求または事故を読み、不変条件を見つけ、技法を選び、テストまたは型検査で効果を確認します。",
+    expect(page.querySelector("h1")?.textContent).toContain("WAN NYAN");
+    expect(page.querySelector("#system [aria-label=\"動物病院の予約・カルテシステム画面\"]")).not.toBeNull();
+    expect(page.querySelectorAll("#features .splat-card")).toHaveLength(7);
+    expect(page.querySelectorAll("#problems .time-stop")).toHaveLength(7);
+    expect(page.querySelector<HTMLAnchorElement>('a[href="#features"]')?.textContent).toBe("FEATURES");
+    expect(page.querySelector<HTMLAnchorElement>('a[href="#problems"]')?.textContent).toBe("PROBLEMS");
+    expect(page.querySelector<HTMLAnchorElement>('.landing-nav a[href="/modules/00-break-the-app/"]')?.textContent).toBe(
+      "MODULE 00",
     );
-
-    expect(page.querySelector("main > section.home-hero h1")?.textContent).toContain("FP with TypeScript");
-    const sections = Array.from(page.querySelectorAll("main > section:not(.home-hero)")).map(
-      (section) => section.querySelector("h2")?.textContent,
-    );
-    expect(sections).toEqual([
-      "対象者",
-      "開催情報",
-      "学習の流れ",
-      "参加前の準備",
-      "7つのモジュール",
-      "参考情報",
-    ]);
-    expect(page.textContent).toContain("TypeScript 初級から中級");
-    expect(page.textContent).toContain("2026年8月30日 15:00–18:00");
-    expect(page.textContent).toContain("Node.js 20 以上");
-    expect(page.textContent).toContain("データベース、Docker、外部サービスの API キーは必要ありません。");
-    expect(page.querySelector('a[href="https://kosui.me/posts/2026/03/16/typescript-pii-logging-defense"]'))
-      .not.toBeNull();
-    expect(page.querySelector('a[href="https://kosui.me/posts/2025/05/06/142842"]')).not.toBeNull();
   });
 
-  it("7件のモジュールカードを公開順の正規 URL へリンクする", () => {
+  it("WAN NYAN OS の機能、現場の問題、導入事故への案内を描画する", () => {
     const page = renderHomePage();
-    const cards = page.querySelectorAll("[data-module-card]");
 
-    expect(cards).toHaveLength(7);
-    expect(
-      Array.from(page.querySelectorAll<HTMLAnchorElement>("[data-module-card] a")).map(
-        ({ pathname }) => pathname,
-      ),
-    ).toEqual([
-      "/modules/00-break-the-app/",
-      "/modules/00-read-the-incident/",
-      "/modules/01-state-modeling/",
-      "/modules/02-boundary-and-ids/",
-      "/modules/03-result-errors/",
-      "/modules/04-agent-review/",
-      "/modules/05-mini-integration/",
-    ]);
-    expect(cards[0]?.textContent).toContain("導入事故を起こす");
-    expect(cards[6]?.textContent).toContain("ミニ総合演習");
+    expect(page.textContent).toContain("今日の診察");
+    expect(page.textContent).toContain("WAN NYAN OSでできること");
+    expect(page.textContent).toContain("ところが、問題が増えてきた");
+    expect(page.textContent).toContain("会計済みが診察中へ戻る");
+    expect(page.textContent).toContain("急募！どうにかしてくれるエンジニア！");
+  });
+
+  it("ページ内ナビゲーションと Module 00 の正規 URL を提供する", () => {
+    const page = renderHomePage();
+
+    expect(page.querySelector<HTMLAnchorElement>('.landing-nav a[href="#system"]')?.textContent).toBe("TOP");
+    expect(page.querySelector<HTMLAnchorElement>('.landing-nav a[href="#features"]')?.textContent).toBe("FEATURES");
+    expect(page.querySelector<HTMLAnchorElement>('.landing-nav a[href="#problems"]')?.textContent).toBe("PROBLEMS");
+    expect(page.querySelectorAll<HTMLAnchorElement>('a[href="/modules/00-break-the-app/"]')).toHaveLength(2);
   });
 
   it("404のモジュール一覧リンクがホームに実在するfragmentを指す", () => {
@@ -67,7 +48,7 @@ describe("renderHomePage", () => {
     expect(targetId).toBe("modules");
     expect(document.querySelectorAll(`[id="${targetId}"]`)).toHaveLength(1);
     expect(document.getElementById(targetId)?.querySelector("h2")?.textContent).toBe(
-      "7つのモジュール",
+      "急募！どうにかしてくれるエンジニア！",
     );
 
     home.remove();
