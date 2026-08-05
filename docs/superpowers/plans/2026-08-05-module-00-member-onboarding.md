@@ -208,7 +208,7 @@ Expected: exit code 0.
 
 - [ ] **Step 5: Review the direct route manually**
 
-Open `/modules/00-break-the-app/` without first visiting the home page. Confirm the reading order is: member onboarding → first incident task → commands and source files → observation points → next module.
+When a browser surface is available, open `/modules/00-break-the-app/` without first visiting the home page. Confirm the reading order is: member onboarding → first incident task → commands and source files → observation points → next module, and confirm that the route and table-of-contents links are not broken. When a browser surface is unavailable, use the existing Happy DOM direct-route and page tests as the nonvisual fallback to verify the same route and reading-order requirements, and record that visual inspection was unavailable.
 
 - [ ] **Step 6: Commit the plan and implementation**
 
