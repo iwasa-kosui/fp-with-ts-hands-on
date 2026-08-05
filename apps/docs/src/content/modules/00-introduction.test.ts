@@ -31,6 +31,28 @@ describe("introduction modules", () => {
     });
   });
 
+  it("Module 00ではテストの状態を自然な日本語で説明する", () => {
+    expect(breakTheAppModule.mission).toContain("テストが成功していても");
+    expect(breakTheAppModule.technique.name).toBe("システム障害を再現するテスト");
+    expect(breakTheAppModule.fallbackGuidance).toContain("システム障害を再現するテスト");
+
+    const incidentText = JSON.stringify(breakTheAppModule.blocks);
+    expect(incidentText).toContain("テストが失敗することを確認する");
+    expect(incidentText).toContain("通常のテストは成功したままです。");
+
+    const requirementText = JSON.stringify(readTheIncidentModule.blocks);
+    expect(requirementText).toContain("exercise:01 は成功します");
+    expect(requirementText).toContain("失敗するテストとして使い");
+
+    for (const unnaturalText of ["赤テスト", "緑になります", "緑のまま", "事故テスト"]) {
+      expect(incidentText).not.toContain(unnaturalText);
+      expect(requirementText).not.toContain(unnaturalText);
+      expect(breakTheAppModule.mission).not.toContain(unnaturalText);
+      expect(breakTheAppModule.technique.name).not.toContain(unnaturalText);
+      expect(breakTheAppModule.fallbackGuidance).not.toContain(unnaturalText);
+    }
+  });
+
   it("顧客体験から守る価値と実装へ進む順にオンボーディングする", () => {
     const blocksWithHeading = (breakTheAppModule.introBlocks ?? []).filter(
       (block): block is Exclude<ContentBlock, { kind: "command" }> => block.kind !== "command",

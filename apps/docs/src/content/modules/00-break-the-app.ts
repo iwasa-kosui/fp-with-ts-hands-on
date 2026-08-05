@@ -18,9 +18,9 @@ export const breakTheAppModule: ModuleContent = {
     incident: "会計済みの予約が診察中へ戻り、会計後の状態が壊れました。",
   },
   invariant: "Paid は終端状態で、診察中へ遷移しません。",
-  mission: "通常テストが緑でも残る不正な遷移を事故テストで観察します。",
+  mission: "通常のテストが成功していても見逃す不正な遷移を、システム障害を再現するテストで観察します。",
   technique: {
-    name: "事故テストによる観察",
+    name: "システム障害を再現するテスト",
     reason: "型に表現されていない業務ルールを観察可能な失敗にします。",
     limits: "このモジュールでは原因を観察するだけで、状態モデルは修正しません。",
   },
@@ -53,7 +53,8 @@ export const breakTheAppModule: ModuleContent = {
   reflectionQuestions: [
     "Paid が終端であるというルールは、現在の型と updateStatus のどこで失われていますか。",
   ],
-  fallbackGuidance: "通常テストを先に実行し、次に事故テストと legacy/appointment.ts の updateStatus を読み合わせます。",
+  fallbackGuidance:
+    "通常のテストを先に実行し、次にシステム障害を再現するテストと legacy/appointment.ts の updateStatus を読み合わせます。",
   workedExamples: [
     { file: "src/legacy/appointment.ts", symbols: ["bookAppointment", "updateStatus"] },
   ],
@@ -188,9 +189,9 @@ export const breakTheAppModule: ModuleContent = {
     },
     {
       kind: "prose",
-      heading: "赤テストを見る",
+      heading: "テストが失敗することを確認する",
       paragraphs: [
-        "通常テストは緑のままです。exercise だけを実行し、仕様変更が既存の string status をすり抜けることを確認します。",
+        "通常のテストは成功したままです。exercise だけを実行し、仕様変更が既存の string status をすり抜けることを確認します。",
       ],
     },
     {

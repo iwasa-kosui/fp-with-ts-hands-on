@@ -72,7 +72,7 @@ export const readTheIncidentModule: ModuleContent = {
       kind: "prose",
       heading: "次の編集の準備",
       paragraphs: [
-        "この実装には worked example が含まれるため exercise:01 は緑になります。当日の starter 差分では、同じ command を赤テストとして使い、状態とデータを同時に閉じる準備をします。",
+        "この実装には worked example が含まれるため exercise:01 は成功します。当日の starter 差分では、同じ command を失敗するテストとして使い、状態とデータを同時に閉じる準備をします。",
       ],
     },
   ],
