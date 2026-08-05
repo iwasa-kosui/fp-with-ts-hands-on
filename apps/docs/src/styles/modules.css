@@ -164,7 +164,7 @@
   border-left: 0.75rem solid var(--case-mint);
 }
 
-.command-block > header {
+.command-block__header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -172,7 +172,7 @@
   gap: 0.75rem;
 }
 
-.command-block h2 {
+.command-block__label {
   margin: 0;
   font-size: 1.2rem;
 }

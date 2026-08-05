@@ -3,6 +3,12 @@ import BreakTheAppPage from "../../../pages/modules/00-break-the-app.astro";
 import ReadTheIncidentPage from "../../../pages/modules/00-read-the-incident.astro";
 import { createAstroContainer } from "../../render-astro";
 
+const parseStaticMarkup = (html: string): Document =>
+  new DOMParser().parseFromString(
+    html.replaceAll(/<script\b[^>]*>[\s\S]*?<\/script>/g, ""),
+    "text/html",
+  );
+
 describe("Module 00 pages", () => {
   it("onboards participants before reproducing the incident", async () => {
     const container = await createAstroContainer();
@@ -17,6 +23,14 @@ describe("Module 00 pages", () => {
     expect(html).toContain("Paid は終端状態");
     expect(html).toContain("exercise:00");
     expect(html).toContain("src/legacy/appointment.ts");
+
+    const document = parseStaticMarkup(html);
+    expect([...document.querySelectorAll("h2")].map(({ textContent }) => textContent)).toEqual([
+      "開発に参加する前に",
+      "事故を観察する",
+      "失敗を再現する",
+      "レビューと次のセッション",
+    ]);
   });
 
   it("turns the cancellation incident into the next modeling requirement", async () => {
@@ -27,5 +41,10 @@ describe("Module 00 pages", () => {
     expect(html).toContain("Canceled は reason を持ち");
     expect(html).toContain("キャンセル理由");
     expect(html).toContain("exercise:01");
+
+    const document = parseStaticMarkup(html);
+    expect(
+      [...document.querySelectorAll("h2")].map(({ textContent }) => textContent),
+    ).toEqual(["要求を分解する", "要求をテストから読む", "次の編集の準備", "レビューと振り返り"]);
   });
 });
