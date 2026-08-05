@@ -100,7 +100,7 @@ export const breakTheAppModule: ModuleContent = {
         },
         {
           title: "再診",
-          description: "飼い主からの相談を受け、次に必要な連絡を病院内で引き継ぎます。",
+          description: "再診の正規操作は今回の演習では扱いません。",
         },
       ],
     },
@@ -146,7 +146,7 @@ export const breakTheAppModule: ModuleContent = {
         {
           title: "今回守ること",
           description:
-            "今回の演習では、paid の来院を診察中へ戻さないことを守ります。再診の正規操作は今回の演習の対象外です。",
+            "今回の演習では、paid の来院を診察中へ戻さないことを守ります。再診の正規操作は今回の演習では扱いません。",
         },
       ],
     },

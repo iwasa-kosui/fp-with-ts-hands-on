@@ -61,6 +61,10 @@ describe("introduction modules", () => {
     for (const expectedText of ["予約", "受付", "診察と記録", "会計と完了", "再診"]) {
       expect(visitText).toContain(expectedText);
     }
+    const reExaminationItem = visitBlock?.kind === "overview"
+      ? visitBlock.items.find(({ title }) => title === "再診")
+      : undefined;
+    expect(reExaminationItem?.description).toBe("再診の正規操作は今回の演習では扱いません。");
     for (const state of ["scheduled", "checked-in", "in-examination", "paid"]) {
       expect(visitText).not.toContain(state);
     }
@@ -73,7 +77,7 @@ describe("introduction modules", () => {
       expect(stateText).toContain(expectedText);
     }
     expect(stateText).toContain("paid の来院を診察中へ戻さない");
-    expect(stateText).toContain("再診の正規操作は今回の演習の対象外");
+    expect(stateText).toContain("再診の正規操作は今回の演習では扱いません。");
 
     const developerBlock = breakTheAppModule.introBlocks?.find(
       (block) => block.kind !== "command" && block.heading === "開発者として今日行うこと",
