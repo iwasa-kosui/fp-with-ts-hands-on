@@ -188,9 +188,9 @@ describe("renderModulePage", () => {
         "事故",
       ]);
       expect(tocLabels.slice(0, 5)).toEqual(headings.slice(0, 5));
-      expect(tocHrefs.indexOf("#content-value-map-機能が届ける価値")).toBeLessThan(
-        tocHrefs.indexOf("#trigger"),
-      );
+      const valueMapTocIndex = tocHrefs.indexOf("#content-value-map-機能が届ける価値");
+      expect(valueMapTocIndex).toBeGreaterThanOrEqual(0);
+      expect(valueMapTocIndex).toBeLessThan(tocHrefs.indexOf("#trigger"));
       expect(countHeadings("ミッション")).toBe(1);
       expect(countHeadings("Red: 失敗を確認する")).toBe(1);
       expect(countHeadings("先に読むファイル")).toBe(1);

@@ -145,7 +145,8 @@ export const breakTheAppModule: ModuleContent = {
         },
         {
           title: "今回守ること",
-          description: "今回の演習では、paid の来院を診察中へ戻さないことを守ります。",
+          description:
+            "今回の演習では、paid の来院を診察中へ戻さないことを守ります。再診の正規操作は今回の演習の対象外です。",
         },
       ],
     },

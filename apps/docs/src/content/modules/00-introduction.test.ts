@@ -68,6 +68,7 @@ describe("introduction modules", () => {
       expect(stateText).toContain(expectedText);
     }
     expect(stateText).toContain("paid の来院を診察中へ戻さない");
+    expect(stateText).toContain("再診の正規操作は今回の演習の対象外");
 
     const developerBlock = breakTheAppModule.introBlocks?.find(
       (block) => block.heading === "開発者として今日行うこと",
