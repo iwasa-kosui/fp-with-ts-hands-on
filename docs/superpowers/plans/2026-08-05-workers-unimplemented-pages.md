@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- 要件の基準は `docs/superpowers/specs/2026-08-05-fp-with-ts-hands-on-prd.md` です。
+- 要件の基準は `docs/prd/prd-001.md` です。
 - 設計の基準は `docs/superpowers/specs/2026-08-05-workers-unimplemented-pages-design.md` です。
 - PRD-01〜PRD-10 と PRD-12 を実装し、テストと対応付けます。
 - PRD-11 の30日後フォローアップは、2026年8月5日にユーザーが承認したスコープ例外です。
@@ -74,7 +74,7 @@
 - Modify: `apps/docs/tsconfig.json:2`
 - Modify: `package.json:10`
 - Modify: `pnpm-lock.yaml`
-- Modify: `docs/superpowers/specs/2026-08-05-fp-with-ts-hands-on-prd.md` の PRD-02
+- Modify: `docs/prd/prd-001.md` の PRD-02
 - Create: `apps/docs/vitest.config.ts`
 - Create: `apps/docs/src/content/module-content.ts`
 - Test: `apps/docs/src/content/module-content.test.ts`
@@ -324,7 +324,7 @@ PRD-11 自体は変更せず、本計画と設計書だけでスコープ例外�
 - [ ] **Step 7: コミットする**
 
 ```bash
-git add apps/docs/package.json apps/docs/tsconfig.json apps/docs/vitest.config.ts apps/docs/src/content/module-content.ts apps/docs/src/content/module-content.test.ts package.json pnpm-lock.yaml docs/superpowers/specs/2026-08-05-fp-with-ts-hands-on-prd.md
+git add apps/docs/package.json apps/docs/tsconfig.json apps/docs/vitest.config.ts apps/docs/src/content/module-content.ts apps/docs/src/content/module-content.test.ts package.json pnpm-lock.yaml docs/prd/prd-001.md
 git commit -m "test(docs): PRDコンテンツ契約を実行可能にする"
 ```
 
