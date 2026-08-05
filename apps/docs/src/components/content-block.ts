@@ -185,13 +185,13 @@ const renderOnboardingSection = (onboardingSection: OnboardingSection): HTMLElem
       people.id = onboardingSection.people.id;
       const peopleHeading = document.createElement("h4");
       peopleHeading.textContent = onboardingSection.people.heading;
-      const peopleList = document.createElement("ul");
+      const peopleList = document.createElement("dl");
       for (const person of onboardingSection.people.items) {
-        const item = document.createElement("li");
-        const name = document.createElement("strong");
+        const name = document.createElement("dt");
         name.textContent = person.name;
-        item.append(name, document.createTextNode(`: ${person.description}`));
-        peopleList.append(item);
+        const description = document.createElement("dd");
+        description.textContent = person.description;
+        peopleList.append(name, description);
       }
       people.append(peopleHeading, peopleList);
       section.append(introduction, steps, people);

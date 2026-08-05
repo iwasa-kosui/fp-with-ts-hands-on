@@ -259,7 +259,9 @@ describe("renderOnboardingChapter", () => {
     ]);
     expect(element.querySelector("#visit-flow > ol > li")?.textContent).toContain("予約");
     expect(element.querySelector("#people > h4")?.textContent).toBe("登場人物");
-    expect(element.querySelectorAll("#people li")).toHaveLength(1);
+    expect(element.querySelector("#people > dl > dt")?.textContent).toBe("飼い主");
+    expect(element.querySelector("#people > dl > dt + dd")?.textContent).toBe("診察を予約する。");
+    expect(element.querySelector("#people > ul")).toBeNull();
     expect(
       [...element.querySelectorAll("#function-and-value th")].map(({ textContent }) => textContent),
     ).toEqual(["機能", "利用者", "価値"]);
