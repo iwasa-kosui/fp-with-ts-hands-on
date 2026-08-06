@@ -75,14 +75,14 @@ if (session === undefined) throw new Error("Unknown session: 03-result-errors");
       </dd>
     </dl>
 
-    <h3>編集する場所</h3>
+    <h3>開始スナップショットで確認する境界</h3>
     <dl>
       <dt>
         <code>examples/session-03/src/boundary/exam-result.ts</code> — <code>ExamResult.safeParse</code>
       </dt>
       <dd>
-        外部入力の検証結果を <code>Result</code> として返す境界を読み、次の Session で use case
-        に渡す値と失敗を整理します。
+        外部入力を Zod の <code>safeParse</code> で検証する境界を読み、診察開始 use case
+        が受け取る検証済みの値と失敗を整理します。
       </dd>
     </dl>
 

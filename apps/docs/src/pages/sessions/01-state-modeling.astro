@@ -69,18 +69,21 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
       <dd>診察開始と理由付きキャンセルという実行時要件を、期待値から確認します。</dd>
     </dl>
 
-    <h3>編集する2関数</h3>
+    <h3>開始スナップショットで確認する2つの要求</h3>
     <dl>
       <dt>
-        <code>examples/session-01/src/appointment.ts</code> — <code>Appointment.startExamination</code>
+        <code>examples/session-01/exercises/state-modeling.test.ts</code> — <code
+          >Appointment.startExamination</code
+        >
       </dt>
-      <dd><code>CheckedIn</code> のときだけ <code>InExamination</code> を返します。</dd>
+      <dd><code>CheckedIn</code> から <code>InExamination</code> へ進む API を要求します。</dd>
       <dt>
-        <code>examples/session-01/src/appointment.ts</code> — <code>Appointment.cancelWithReason</code>
+        <code>examples/session-01/exercises/state-modeling.test.ts</code> — <code
+          >Appointment.cancelWithReason</code
+        >
       </dt>
       <dd>
-        <code>Scheduled</code> または <code>CheckedIn</code>
-        からだけ、理由、キャンセル時刻、任意の再診希望を持つ <code>Canceled</code> を返します。
+        理由、キャンセル時刻、任意の再診希望を持つ <code>Canceled</code> の API を要求します。
       </dd>
     </dl>
   </section>
