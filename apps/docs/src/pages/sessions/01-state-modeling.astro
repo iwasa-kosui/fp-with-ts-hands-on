@@ -101,8 +101,9 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
   | Readonly<{
       kind: "Canceled";
       appointmentId: string;
-      cancellationReason: string;
+      reason: string;
       canceledAt: string;
+      followUpRequestedAt?: string;
     }>;`}
     />
 
@@ -135,8 +136,9 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
       <li><code>kind</code> の分岐が CheckedIn 以外からの診察開始を許していない。</li>
       <li>Paid と Canceled を終端状態として扱っている。</li>
       <li>
-        Canceled にだけ <code>cancellationReason</code> と <code>canceledAt</code>
-        が存在する。
+        Canceled にだけ <code>reason</code>、<code>canceledAt</code>、任意の <code
+          >followUpRequestedAt</code
+        > が存在する。
       </li>
     </ul>
 
@@ -145,7 +147,7 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
       <li>不正な遷移を状態の型と遷移関数の引数で止める理由を説明できる。</li>
       <li>
         Scheduled または CheckedIn
-        からだけキャンセルでき、理由と時刻を Canceled
+        からだけキャンセルでき、理由、時刻、任意の再診希望を Canceled
         以外へ付けられないことを説明できる。
       </li>
     </ul>

@@ -27,6 +27,12 @@ describe("Session 05", () => {
     expect(page).toContain(
       'command="pnpm --filter @fp-with-ts/clinic-session-05 test"',
     );
+    expect(page).toContain("examples/session-05/exercises/follow-up.test.ts");
+    expect(page).not.toContain(
+      "examples/session-05/src/application/collect-follow-up-targets.ts",
+    );
+    expect(page).toContain("新しく導入する");
+    expect(page).toContain('href="/sessions/final/"');
     expect(page).not.toContain("packages/clinic-example");
   });
 
@@ -59,7 +65,7 @@ describe("Session 05", () => {
     expect(loop).toEqual([
       "問題を発見する: テストから、対象判定、petId mismatch、PII、Result、event の不足を特定する。",
       "手段を選ぶ: 既存の状態、入力境界、Sensitive、Result、domain event の役割へ対応付ける。",
-      "局所的に変更する: collectFollowUpTargets の1関数だけを編集する。",
+      "局所的に導入する: collectFollowUpTargets を新しい1関数として追加する。",
       "効果を確認する: Session 05 snapshot の通常テストを実行し、既存の制約が保たれていることを確認する。",
     ]);
 
