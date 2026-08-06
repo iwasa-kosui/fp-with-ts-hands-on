@@ -1,5 +1,11 @@
 # モジュール別コードエクスプローラー設計
 
+## 2026-08-06 統合範囲の更新
+
+並行する `refactor/clinic-session-examples` は、教材をセッション別packageへ分割し、7つのmodule pageを`final`を含む8つのsession pageへ置き換える計画である。削除予定の`ModuleLayout.astro`や現行module pageへこの設計を先に統合すると、workspaceの全パスと統合コードを作り直すことになる。
+
+そのため、このPRではファイルツリー、編集状態、単一ファイル実行、Monaco、WebContainer runnerという再利用可能な基盤と、将来の`/sessions/*`向け分離ヘッダーまでを実装する。以下のページ統合設計は、新しいsession packages、catalog、layout、routesが実装された後に、`SessionCodeExplorer.astro`とsession別project dataへ読み替えて適用する。現行module page、layout、styles、page contractには変更を加えない。
+
 ## 背景
 
 `apps/docs` の各モジュールページは、参加者が読むファイルと実行するテストをパスで案内している。一方、実際のコードを確認するにはリポジトリを別途開く必要があり、ページに書かれた説明、対象ファイル、テスト結果を往復しなければならない。

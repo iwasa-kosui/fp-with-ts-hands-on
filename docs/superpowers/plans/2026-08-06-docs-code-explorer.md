@@ -880,154 +880,54 @@ git commit -m "feat(docs): embed Monaco code editor"
 
 ---
 
-### Task 5: Add the explorer to every module and configure isolated delivery
+### Task 5: Configure isolated delivery without integrating the retiring module pages
+
+**Integration decision:** The concurrent `refactor/clinic-session-examples` plan replaces `packages/clinic-example` with per-session packages, replaces `/modules/*` with eight `/sessions/*` pages, and removes `ModuleLayout.astro` and `modules.css`. Per the user's direction, defer the Astro bridge, layout/page insertion, explorer styling, page-contract changes, and static-build route verification until that refactor is implemented. Do not modify files the refactor plans to delete or rewrite.
 
 **Files:**
-- Create: `apps/docs/src/components/code-explorer/ModuleCodeExplorer.astro`
-- Modify: `apps/docs/src/layouts/ModuleLayout.astro`
-- Modify: `apps/docs/src/styles/modules.css`
-- Modify: `apps/docs/src/test/pages/site-contract.test.ts`
-- Modify: `apps/docs/src/test/layouts/ModuleLayout.test.ts`
-- Modify: `apps/docs/scripts/verify-static-build.mjs`
 - Modify: `apps/docs/astro.config.ts`
 - Create: `apps/docs/public/_headers`
+- Create: `apps/docs/src/test/config/isolation-headers.test.ts`
 
 **Interfaces:**
-- Consumes: `module.slug`, `moduleWorkspaceFor`, `projectFiles`, `CodeExplorer`
-- Produces: one SSR + hydrated explorer per module page
-- Produces: COOP/COEP headers in Vite dev, Vite preview, and Cloudflare static assets
+- Produces: shared COOP/COEP values for Vite development and preview
+- Produces: the same headers for future Cloudflare Static Assets responses under `/sessions/*`
+- Defers: session-specific project data, `SessionCodeExplorer.astro`, layout insertion, responsive page styling, and eight-page integration tests
 
-- [ ] **Step 1: Write the failing all-pages integration test**
+- [ ] **Step 1: Write a failing header contract test**
 
-Name the breaks: a new or existing module page can omit the explorer, use the wrong initial file, or insert the explorer into the authored article outline.
+Name the breaks: local development can lack cross-origin isolation, preview can differ from development, or the future session asset path can deploy without the required static headers.
 
-Add to `site-contract.test.ts`:
-
-```ts
-const authoredModulePages = import.meta.glob<{ default: unknown }>(
-  "../../pages/modules/*.astro",
-  { eager: true },
-);
-
-it("renders one module-specific code explorer outside every article", async () => {
-  const container = await createAstroContainer();
-  for (const module of modules) {
-    const page = authoredModulePages[`../../pages/modules/${module.slug}.astro`]?.default;
-    expect(page, module.slug).toBeDefined();
-    const html = await container.renderToString(page as never, { partial: false });
-    const document = new DOMParser().parseFromString(html, "text/html");
-    const explorers = document.querySelectorAll('[data-code-explorer]');
-    expect(explorers, module.slug).toHaveLength(1);
-    expect(document.querySelector("article [data-code-explorer]"), module.slug).toBeNull();
-    expect(explorers[0]?.textContent, module.slug).toContain(
-      moduleWorkspaceFor(module.slug).initialFile,
-    );
-  }
-});
-```
-
-Import `moduleWorkspaceFor`. Reuse the existing `pageModules` glob rather than keeping two globs after the test is working.
-
-- [ ] **Step 2: Run the integration test and verify RED**
-
-Run: `pnpm --filter @fp-with-ts/docs test -- src/test/pages/site-contract.test.ts`
-
-Expected: FAIL because no module page renders `[data-code-explorer]`.
-
-- [ ] **Step 3: Add the Astro bridge and layout section**
-
-`ModuleCodeExplorer.astro` validates the slug and renders:
-
-```astro
----
-import { moduleWorkspaceFor } from "../../code-explorer/module-workspaces";
-import { projectFiles } from "../../code-explorer/project-files";
-import { CodeExplorer } from "./CodeExplorer";
-
-interface Props { moduleSlug: string }
-const workspace = moduleWorkspaceFor(Astro.props.moduleSlug);
----
-
-<CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} />
-```
-
-In `ModuleLayout.astro`, add a full-width section after `.case-file__body` and before module navigation:
-
-```astro
-<section class="case-file__playground" aria-labelledby="module-code-title">
-  <p class="case-file__playground-eyebrow">BROWSER PLAYGROUND</p>
-  <h2 id="module-code-title">コードを読んで実行する</h2>
-  <p>ファイルを選び、編集してから、このファイルだけを実行できます。</p>
-  <ModuleCodeExplorer moduleSlug={module.slug} />
-</section>
-```
-
-The explorer root must render `data-code-explorer={workspace.slug}`. Keep this section outside the page-authored `<article>` so current h2 outline tests stay unchanged.
-
-- [ ] **Step 4: Add responsive case-file styling**
-
-Add a 74rem-wide playground section. At 768px and above, use a two-column top area (`14rem minmax(0, 1fr)`) and a full-width output panel below. Below 768px, stack tree, editor, and output. Use existing case variables, a dark editor/output surface, visible focus rings, 44px minimum touch targets, and `overflow: hidden` on the shell with internal scroll regions.
-
-Use stable class prefixes:
-
-```css
-.case-file__playground {}
-.code-explorer {}
-.code-explorer__workspace {}
-.code-explorer__tree {}
-.code-explorer__editor {}
-.code-explorer__toolbar {}
-.code-explorer__output {}
-.code-explorer__dirty {}
-```
-
-Do not add inline SVG icons. Use text labels and CSS indicators.
-
-- [ ] **Step 5: Make static-build header verification fail first**
-
-Before adding `_headers`, update `verify-static-build.mjs` to read `dist/_headers` and require these exact lines:
-
-```js
-const headers = await readFile(new URL("_headers", distUrl), "utf8");
-for (const requiredHeader of [
-  "/modules/*",
-  "Cross-Origin-Embedder-Policy: require-corp",
-  "Cross-Origin-Opener-Policy: same-origin",
-]) {
-  if (!headers.includes(requiredHeader)) {
-    throw new Error(`Missing static asset header rule: ${requiredHeader}`);
-  }
-}
-```
-
-Run: `pnpm --filter @fp-with-ts/docs build`
-
-Expected: FAIL because `dist/_headers` does not exist.
-
-- [ ] **Step 6: Add production, development, and preview headers**
-
-Create `apps/docs/public/_headers`:
-
-```text
-/modules/*
-  Cross-Origin-Embedder-Policy: require-corp
-  Cross-Origin-Opener-Policy: same-origin
-```
-
-Update `astro.config.ts`:
+Create `isolation-headers.test.ts` that imports a named `isolationHeaders` export from `astro.config.ts`, reads `apps/docs/public/_headers`, and asserts:
 
 ```ts
-const isolationHeaders = {
+expect(isolationHeaders).toEqual({
   "Cross-Origin-Embedder-Policy": "require-corp",
   "Cross-Origin-Opener-Policy": "same-origin",
-};
+});
+expect(staticHeaders).toContain("/sessions/*");
+expect(staticHeaders).toContain("Cross-Origin-Embedder-Policy: require-corp");
+expect(staticHeaders).toContain("Cross-Origin-Opener-Policy: same-origin");
+```
+
+- [ ] **Step 2: Run the focused test and verify RED**
+
+Run: `pnpm --filter @fp-with-ts/docs test -- src/test/config/isolation-headers.test.ts`
+
+Expected: FAIL because the named export and `_headers` file do not exist.
+
+- [ ] **Step 3: Add development and preview isolation headers**
+
+Update `astro.config.ts` without changing its existing output or integration settings:
+
+```ts
+export const isolationHeaders = {
+  "Cross-Origin-Embedder-Policy": "require-corp",
+  "Cross-Origin-Opener-Policy": "same-origin",
+} as const;
 
 export default defineConfig({
-  devToolbar: { enabled: false },
-  integrations: [react()],
-  output: "static",
-  outDir: "./dist",
-  trailingSlash: "always",
+  // preserve the existing settings
   vite: {
     server: { headers: isolationHeaders },
     preview: { headers: isolationHeaders },
@@ -1035,35 +935,46 @@ export default defineConfig({
 });
 ```
 
-Do not change `wrangler.jsonc` or route all assets through the Worker; Cloudflare applies `_headers` to asset-first responses.
+- [ ] **Step 4: Add the future session Static Assets rule**
 
-- [ ] **Step 7: Run focused tests and the docs build**
+Create `apps/docs/public/_headers`:
+
+```text
+/sessions/*
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Opener-Policy: same-origin
+```
+
+Do not add `/modules/*`; the concurrent refactor removes those public routes. Do not change `wrangler.jsonc`, route all assets through the Worker, or modify `verify-static-build.mjs` before session assets exist.
+
+- [ ] **Step 5: Run focused tests, docs typecheck, and the static build**
 
 Run:
 
 ```bash
-pnpm --filter @fp-with-ts/docs test -- src/test/pages/site-contract.test.ts src/test/layouts/ModuleLayout.test.ts
+pnpm --filter @fp-with-ts/docs test -- src/test/config/isolation-headers.test.ts
+pnpm --filter @fp-with-ts/docs typecheck
 pnpm --filter @fp-with-ts/docs build
 ```
 
-Expected: page integration tests PASS; build PASS; verifier reports the existing HTML/route counts and accepts `dist/_headers`.
+Expected: header contract PASS, typecheck PASS, and the existing module-site build PASS while copying `_headers` to `dist`.
 
-- [ ] **Step 8: Commit Task 5**
+- [ ] **Step 6: Commit Task 5**
 
 ```bash
-git add apps/docs
-git commit -m "feat(docs): embed module code explorer"
+git add apps/docs/astro.config.ts apps/docs/public/_headers apps/docs/src/test/config/isolation-headers.test.ts
+git commit -m "feat(docs): configure isolated code execution"
 ```
 
 ---
 
-### Task 6: Verify the complete implementation and Cloudflare response contract
+### Task 6: Verify the reusable foundation and unchanged current site
 
 **Files:**
 - No planned file changes; any discovered defect returns to the task that owns the affected behavior
 
 **Interfaces:**
-- Verifies: docs UI contracts, code runner contracts, package tests, type safety, static build, Worker routes, and response headers
+- Verifies: project/workspace contracts, UI and runner contracts, package tests, type safety, static build, current Worker routes, and deferred-integration boundaries
 
 - [ ] **Step 1: Run all docs tests**
 
@@ -1083,31 +994,31 @@ Run: `pnpm typecheck`
 
 Expected: clinic package, Astro docs, and Worker typechecks PASS.
 
-- [ ] **Step 4: Run the production build**
+- [ ] **Step 4: Run the production build and inspect copied headers**
 
-Run: `pnpm build`
+Run:
 
-Expected: clinic TypeScript build and Astro static build PASS; static verifier accepts all routes and `_headers`.
+```bash
+pnpm build
+rg -n "Cross-Origin-(Embedder|Opener)-Policy|/sessions/" apps/docs/dist/_headers
+```
 
-- [ ] **Step 5: Verify deployed-shape headers through local Wrangler**
+Expected: clinic TypeScript build and Astro static build PASS; `dist/_headers` contains the future session route and both isolation headers.
+
+- [ ] **Step 5: Verify unchanged current Worker routes through local Wrangler**
 
 Start: `pnpm exec wrangler dev --local`
 
 In a second terminal run:
 
 ```bash
-curl --head http://localhost:8787/modules/01-state-modeling/
 curl http://localhost:8787/healthz
 curl --head http://localhost:8787/module-00/
 ```
 
-Expected:
+Expected: health response body is `ok`, and the existing compatibility route still returns `308` to `/modules/00-break-the-app/`. Stop Wrangler after the checks.
 
-- module response includes both COOP and COEP headers;
-- health response body is `ok`;
-- compatibility route returns `308` to `/modules/00-break-the-app/`.
-
-Stop Wrangler after the checks.
+The `/sessions/*` static header response cannot be exercised until the concurrent refactor creates session assets. The source contract and copied build artifact are the acceptance evidence for this PR.
 
 - [ ] **Step 6: Inspect the final diff and requirement coverage**
 
@@ -1121,11 +1032,12 @@ git log --oneline main..HEAD
 
 Confirm each accepted requirement maps to evidence:
 
-- seven module workspaces: catalog and page integration tests;
+- seven current workspaces: catalog contract tests;
 - file selection/edit/reset: React tests;
 - exactly one selected test/entrypoint: command tests;
-- imports use all edited files: runner lifecycle test;
-- one-time lazy install: runner lifecycle test;
+- imports use all edited files: runner lifecycle tests;
+- one-time lazy install and retry boundaries: runner lifecycle tests;
 - combined output and exit status: runner and UI tests;
-- Cloudflare/local isolation headers: build verifier and Wrangler response;
-- existing content and Worker behavior: full test/typecheck/build.
+- future session isolation headers: config contract and copied build artifact;
+- current content and Worker behavior remain unchanged: full test/typecheck/build and Wrangler smoke checks;
+- page/session integration is explicitly deferred until `refactor/clinic-session-examples` implements its new packages, catalog, layouts, and routes.
