@@ -1,17 +1,27 @@
-export type Env = Readonly<{
-  ASSETS: Fetcher;
+import { resolveWorkerRoute } from "./routes";
+
+type AssetsEnv = Readonly<{
+  ASSETS: Pick<Fetcher, "fetch">;
 }>;
 
-export default {
-  fetch: (request: Request, env: Env): Response | Promise<Response> => {
-    const url = new URL(request.url);
+export const handleRequest = async (
+  request: Request,
+  env: AssetsEnv,
+): Promise<Response> => {
+  const route = resolveWorkerRoute(new URL(request.url).pathname);
 
-    if (url.pathname === "/healthz") {
+  switch (route.kind) {
+    case "health":
       return new Response("ok", {
         headers: { "content-type": "text/plain; charset=utf-8" },
       });
-    }
+    case "redirect":
+      return Response.redirect(new URL(route.location, request.url), 308);
+    case "asset":
+      return env.ASSETS.fetch(request);
+  }
+};
 
-    return env.ASSETS.fetch(request);
-  },
+export default {
+  fetch: handleRequest,
 } satisfies ExportedHandler<Env>;
