@@ -16,6 +16,26 @@ const readPage = (slug: string): string =>
     "utf8",
   );
 
+const expectCommandBlock = (
+  source: string,
+  phase: "red" | "green",
+  command: string,
+): void => {
+  const commandBlocks = source.match(/<CommandBlock\b[\s\S]*?\/>/g) ?? [];
+  const hasAttribute = (block: string, name: string, value: string): boolean => {
+    const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`\\b${name}\\s*=\\s*(["'])${escapedValue}\\1`).test(block);
+  };
+
+  expect(
+    commandBlocks.some(
+      (block) =>
+        hasAttribute(block, "phase", phase) &&
+        hasAttribute(block, "command", command),
+    ),
+  ).toBe(true);
+};
+
 const expectAuthoredOutline = (
   document: Document,
   chapters: readonly string[],
@@ -56,10 +76,8 @@ describe("Sessions 03 and 04", () => {
 
     expect(resultErrors).toContain("examples/session-03/src/domain/");
     expect(resultErrors).toContain("examples/session-03/src/boundary/");
-    expect(resultErrors).toContain('command="pnpm exercise:03"');
-    expect(resultErrors).toContain(
-      'phase="green"\n      command="pnpm exercise:03"',
-    );
+    expectCommandBlock(resultErrors, "red", "pnpm exercise:03");
+    expectCommandBlock(resultErrors, "green", "pnpm exercise:03");
     expect(resultErrors).toContain(
       "pnpm --filter @fp-with-ts/clinic-session-03 test",
     );
@@ -71,10 +89,8 @@ describe("Sessions 03 and 04", () => {
       "examples/session-04/src/application/start-examination.ts",
     );
     expect(agentReview).toContain("dual-write");
-    expect(agentReview).toContain('command="pnpm exercise:04"');
-    expect(agentReview).toContain(
-      'phase="green"\n      command="pnpm exercise:04"',
-    );
+    expectCommandBlock(agentReview, "red", "pnpm exercise:04");
+    expectCommandBlock(agentReview, "green", "pnpm exercise:04");
     expect(agentReview).toContain(
       "pnpm --filter @fp-with-ts/clinic-session-04 test",
     );

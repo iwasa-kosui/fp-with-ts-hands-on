@@ -16,6 +16,26 @@ const readPage = (slug: string): string =>
     "utf8",
   );
 
+const expectCommandBlock = (
+  source: string,
+  phase: "red" | "green",
+  command: string,
+): void => {
+  const commandBlocks = source.match(/<CommandBlock\b[\s\S]*?\/>/g) ?? [];
+  const hasAttribute = (block: string, name: string, value: string): boolean => {
+    const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`\\b${name}\\s*=\\s*(["'])${escapedValue}\\1`).test(block);
+  };
+
+  expect(
+    commandBlocks.some(
+      (block) =>
+        hasAttribute(block, "phase", phase) &&
+        hasAttribute(block, "command", command),
+    ),
+  ).toBe(true);
+};
+
 const expectAuthoredOutline = (
   document: Document,
   chapters: readonly string[],
@@ -49,10 +69,8 @@ describe("Sessions 01 and 02", () => {
     const boundaryAndIds = readPage("02-boundary-and-ids");
 
     expect(stateModeling).toContain("examples/session-01");
-    expect(stateModeling).toContain('command="pnpm exercise:01"');
-    expect(stateModeling).toContain(
-      'phase="green"\n      command="pnpm exercise:01"',
-    );
+    expectCommandBlock(stateModeling, "red", "pnpm exercise:01");
+    expectCommandBlock(stateModeling, "green", "pnpm exercise:01");
     expect(stateModeling).toContain("reason: string;");
     expect(stateModeling).toContain("followUpRequestedAt?: string;");
     expect(stateModeling).toContain("cancellationReason: string;");
@@ -67,10 +85,8 @@ describe("Sessions 01 and 02", () => {
     expect(boundaryAndIds).toContain(
       "examples/session-02/src/domain/appointment.ts",
     );
-    expect(boundaryAndIds).toContain('command="pnpm exercise:02"');
-    expect(boundaryAndIds).toContain(
-      'phase="green"\n      command="pnpm exercise:02"',
-    );
+    expectCommandBlock(boundaryAndIds, "red", "pnpm exercise:02");
+    expectCommandBlock(boundaryAndIds, "green", "pnpm exercise:02");
     expect(boundaryAndIds).toContain(
       "pnpm --filter @fp-with-ts/clinic-session-02 test",
     );

@@ -15,6 +15,26 @@ const readPage = (slug: string): string =>
     "utf8",
   );
 
+const expectCommandBlock = (
+  source: string,
+  phase: "red" | "green",
+  command: string,
+): void => {
+  const commandBlocks = source.match(/<CommandBlock\b[\s\S]*?\/>/g) ?? [];
+  const hasAttribute = (block: string, name: string, value: string): boolean => {
+    const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`\\b${name}\\s*=\\s*(["'])${escapedValue}\\1`).test(block);
+  };
+
+  expect(
+    commandBlocks.some(
+      (block) =>
+        hasAttribute(block, "phase", phase) &&
+        hasAttribute(block, "command", command),
+    ),
+  ).toBe(true);
+};
+
 describe("Session 05", () => {
   it("uses the Session 05 starting snapshot and verification command", () => {
     const page = readPage("05-mini-integration");
@@ -23,10 +43,8 @@ describe("Session 05", () => {
       "examples/session-05/src/application/start-examination.ts",
     );
     expect(page).toContain("atomic");
-    expect(page).toContain('command="pnpm exercise:05"');
-    expect(page).toContain(
-      'phase="green"\n      command="pnpm exercise:05"',
-    );
+    expectCommandBlock(page, "red", "pnpm exercise:05");
+    expectCommandBlock(page, "green", "pnpm exercise:05");
     expect(page).toContain(
       "pnpm --filter @fp-with-ts/clinic-session-05 test",
     );
