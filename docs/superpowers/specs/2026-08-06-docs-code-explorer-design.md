@@ -4,7 +4,7 @@
 
 並行する `refactor/clinic-session-examples` は、教材をセッション別packageへ分割し、7つのmodule pageを`final`を含む8つのsession pageへ置き換える計画である。削除予定の`ModuleLayout.astro`や現行module pageへこの設計を先に統合すると、workspaceの全パスと統合コードを作り直すことになる。
 
-そのため、このPRではファイルツリー、編集状態、単一ファイル実行、Monaco、WebContainer runnerという再利用可能な基盤と、将来の`/sessions/*`向け分離ヘッダーまでを実装する。以下のページ統合設計は、新しいsession packages、catalog、layout、routesが実装された後に、`SessionCodeExplorer.astro`とsession別project dataへ読み替えて適用する。現行module page、layout、styles、page contractには変更を加えない。
+そのため、このPRではファイルツリー、編集状態、単一ファイル実行、Monaco、WebContainer runnerという再利用可能な基盤と、将来の`/sessions/*`向け分離ヘッダーまでを実装する。動作確認用として、現行教材を使う独立した`/code-explorer/`プレビューページも追加する。以下のセッションページ統合設計は、新しいsession packages、catalog、layout、routesが実装された後に、`SessionCodeExplorer.astro`とsession別project dataへ読み替えて適用する。現行module page、layout、styles、page contractには変更を加えない。
 
 ## 背景
 

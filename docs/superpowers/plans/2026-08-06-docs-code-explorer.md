@@ -20,6 +20,7 @@
 - Use one WebContainer instance per page and initialize it only after the first Run action.
 - Render terminal output as text. WebContainer combines stdout and stderr into one ordered output stream.
 - Serve `Cross-Origin-Embedder-Policy: require-corp` and `Cross-Origin-Opener-Policy: same-origin` in local development, preview, and deployed module pages.
+- Provide a standalone `/code-explorer/` preview using the current `01-state-modeling` workspace, with page-local styling and deployed isolation headers, while session-page integration is deferred.
 
 ---
 
@@ -968,7 +969,94 @@ git commit -m "feat(docs): configure isolated code execution"
 
 ---
 
-### Task 6: Verify the reusable foundation and unchanged current site
+### Task 6: Add a standalone page for trying the code explorer
+
+**Files:**
+- Create: `apps/docs/src/pages/code-explorer.astro`
+- Create: `apps/docs/src/styles/code-explorer-preview.css`
+- Create: `apps/docs/src/test/pages/code-explorer.test.ts`
+- Modify: `apps/docs/public/_headers`
+- Modify: `apps/docs/src/test/config/isolation-headers.test.ts`
+- Modify: `apps/docs/scripts/verify-static-build.mjs`
+
+**Interfaces:**
+- Consumes: `CodeExplorer`, `projectFiles`, and `moduleWorkspaceFor("01-state-modeling")`
+- Produces: `/code-explorer/`, a real editable/runnable preview independent of module and session layouts
+- Produces: deployed cross-origin isolation for `/code-explorer/*`
+
+- [ ] **Step 1: Write the failing Astro page test**
+
+Use `createAstroContainer` to render the new page. Assert a home link to `/`, the preview notice, the `01-state-modeling` description and initial `exercises/01-state-modeling.test.ts`, Run/reset controls, `data-code-explorer="01-state-modeling"`, and a `client="load"` Astro island.
+
+The page must contain this notice:
+
+```text
+これは現行の clinic-example を使う実験用プレビューです。編集内容はこのブラウザ内だけで動作し、保存されません。教材の session 化に伴い、題材やファイル構成は変更される場合があります。
+```
+
+- [ ] **Step 2: Run the page test and verify RED**
+
+Run: `pnpm --filter @fp-with-ts/docs test -- src/test/pages/code-explorer.test.ts`
+
+Expected: FAIL because `pages/code-explorer.astro` does not exist.
+
+- [ ] **Step 3: Add the standalone Astro page**
+
+Create `code-explorer.astro` using `BaseLayout`. Import its dedicated stylesheet, `CodeExplorer`, `projectFiles`, and `moduleWorkspaceFor`. Render a page-local home link, title, concise usage/browser guidance, the exact preview notice above, and:
+
+```astro
+<CodeExplorer
+  client:load
+  workspace={moduleWorkspaceFor("01-state-modeling")}
+  projectFiles={projectFiles}
+/>
+```
+
+Do not add a landing-page/navigation link and do not use `ModuleLayout` or a session layout.
+
+- [ ] **Step 4: Add dedicated responsive styling**
+
+Create `code-explorer-preview.css`, imported only by this page. Scope page-specific selectors beneath `.code-explorer-preview`. Style the page shell, nested file tree, editor host and SSR fallback, toolbar/buttons, dirty marker, output states, visible focus rings, internal scroll regions, and disabled controls. Use a two-column tree/editor layout with full-width output on wide screens and one column below 768px. Reuse existing CSS variables; do not edit `base.css` or `modules.css`.
+
+- [ ] **Step 5: Extend the deployed header contract with RED/GREEN evidence**
+
+First extend `isolation-headers.test.ts` to require both `/sessions/*` and `/code-explorer/*`, then run it and verify RED. Add this stanza without changing the existing session stanza:
+
+```text
+/code-explorer/*
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Opener-Policy: same-origin
+```
+
+Run the focused header test again and verify GREEN.
+
+- [ ] **Step 6: Extend the strict static-build contract**
+
+Before updating `verify-static-build.mjs`, run the docs build and verify it fails because `code-explorer/index.html` is unexpected. Then add that exact HTML file to `requiredHtmlFiles` and allow `/code-explorer/` in the internal-link path set. Do not otherwise alter existing module route expectations.
+
+- [ ] **Step 7: Run focused verification and the full docs suite**
+
+Run:
+
+```bash
+pnpm --filter @fp-with-ts/docs test -- src/components/code-explorer/CodeExplorer.test.tsx src/test/pages/code-explorer.test.ts src/test/config/isolation-headers.test.ts
+pnpm --filter @fp-with-ts/docs test
+pnpm --filter @fp-with-ts/docs typecheck
+pnpm --filter @fp-with-ts/docs build
+```
+
+Expected: all commands PASS, and `dist/code-explorer/index.html` plus the updated `dist/_headers` exist.
+
+- [ ] **Step 8: Commit Task 6**
+
+```bash
+git add apps/docs/src/pages/code-explorer.astro apps/docs/src/styles/code-explorer-preview.css apps/docs/src/test/pages/code-explorer.test.ts apps/docs/public/_headers apps/docs/src/test/config/isolation-headers.test.ts apps/docs/scripts/verify-static-build.mjs
+git commit -m "feat(docs): add code explorer preview page"
+```
+
+---
+
+### Task 7: Verify the reusable foundation and unchanged current site
 
 **Files:**
 - No planned file changes; any discovered defect returns to the task that owns the affected behavior
@@ -1000,10 +1088,10 @@ Run:
 
 ```bash
 pnpm build
-rg -n "Cross-Origin-(Embedder|Opener)-Policy|/sessions/" apps/docs/dist/_headers
+rg -n "Cross-Origin-(Embedder|Opener)-Policy|/(sessions|code-explorer)/" apps/docs/dist/_headers
 ```
 
-Expected: clinic TypeScript build and Astro static build PASS; `dist/_headers` contains the future session route and both isolation headers.
+Expected: clinic TypeScript build and Astro static build PASS; `dist/_headers` contains the future session route, the standalone preview route, and both isolation headers.
 
 - [ ] **Step 5: Verify unchanged current Worker routes through local Wrangler**
 
@@ -1014,9 +1102,10 @@ In a second terminal run:
 ```bash
 curl http://localhost:8787/healthz
 curl --head http://localhost:8787/module-00/
+curl --head http://localhost:8787/code-explorer/
 ```
 
-Expected: health response body is `ok`, and the existing compatibility route still returns `308` to `/modules/00-break-the-app/`. Stop Wrangler after the checks.
+Expected: health response body is `ok`, the existing compatibility route still returns `308` to `/modules/00-break-the-app/`, and the standalone preview response includes both isolation headers. Stop Wrangler after the checks.
 
 The `/sessions/*` static header response cannot be exercised until the concurrent refactor creates session assets. The source contract and copied build artifact are the acceptance evidence for this PR.
 
@@ -1038,6 +1127,7 @@ Confirm each accepted requirement maps to evidence:
 - imports use all edited files: runner lifecycle tests;
 - one-time lazy install and retry boundaries: runner lifecycle tests;
 - combined output and exit status: runner and UI tests;
+- standalone editable preview: Astro page test, static build contract, and local response headers;
 - future session isolation headers: config contract and copied build artifact;
 - current content and Worker behavior remain unchanged: full test/typecheck/build and Wrangler smoke checks;
 - page/session integration is explicitly deferred until `refactor/clinic-session-examples` implements its new packages, catalog, layouts, and routes.
