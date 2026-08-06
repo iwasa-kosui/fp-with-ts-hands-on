@@ -28,10 +28,6 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
       ではありません。<code>Canceled</code> という状態だけが持つ業務情報です。
     </p>
     <p>
-      予約時の受診理由を表す <code>reason</code> は状態遷移後も保持し、キャンセル理由は別の
-      <code>cancellationReason</code> として区別します。
-    </p>
-    <p>
       キャンセルは <code>Scheduled</code> または <code>CheckedIn</code>
       から行えます。診察を開始した後や会計済みの予約はキャンセルへ遷移させません。
     </p>
@@ -91,15 +87,14 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
       language="typescript"
       label="Appointment の状態ごとの形"
       code={`type Appointment =
-  | Readonly<{ kind: "Scheduled"; appointmentId: string; reason: string }>
-  | Readonly<{ kind: "CheckedIn"; appointmentId: string; reason: string }>
-  | Readonly<{ kind: "InExamination"; appointmentId: string; reason: string }>
-  | Readonly<{ kind: "Paid"; appointmentId: string; reason: string }>
+  | Readonly<{ kind: "Scheduled"; appointmentId: string }>
+  | Readonly<{ kind: "CheckedIn"; appointmentId: string }>
+  | Readonly<{ kind: "InExamination"; appointmentId: string }>
+  | Readonly<{ kind: "Paid"; appointmentId: string }>
   | Readonly<{
       kind: "Canceled";
       appointmentId: string;
       reason: string;
-      cancellationReason: string;
       canceledAt: string;
       followUpRequestedAt?: string;
     }>;`}
@@ -139,9 +134,7 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
       <li><code>kind</code> の分岐が CheckedIn 以外からの診察開始を許していない。</li>
       <li>Paid と Canceled を終端状態として扱っている。</li>
       <li>
-        Canceled は予約理由を表す <code>reason</code> を保ち、キャンセル理由を表す <code
-          >cancellationReason</code
-        >、<code
+        Canceled にだけキャンセル理由を表す <code>reason</code>、<code
           >canceledAt</code
         >、任意の <code>followUpRequestedAt</code> が存在する。
       </li>

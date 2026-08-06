@@ -24,7 +24,9 @@ const expectCommandBlock = (
   const commandBlocks = source.match(/<CommandBlock\b[\s\S]*?\/>/g) ?? [];
   const hasAttribute = (block: string, name: string, value: string): boolean => {
     const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return new RegExp(`\\b${name}\\s*=\\s*(["'])${escapedValue}\\1`).test(block);
+    return new RegExp(
+      `(?:^|\\s)${name}\\s*=\\s*(["'])${escapedValue}\\1`,
+    ).test(block);
   };
 
   expect(
@@ -73,7 +75,7 @@ describe("Sessions 01 and 02", () => {
     expectCommandBlock(stateModeling, "green", "pnpm exercise:01");
     expect(stateModeling).toContain("reason: string;");
     expect(stateModeling).toContain("followUpRequestedAt?: string;");
-    expect(stateModeling).toContain("cancellationReason: string;");
+    expect(stateModeling).not.toContain("cancellationReason");
     expect(stateModeling).toContain(
       "pnpm --filter @fp-with-ts/clinic-session-01 test",
     );

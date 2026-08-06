@@ -53,7 +53,6 @@ export const updateStatus = (
 ): LegacyAppointment => {
   const current = appointments.get(id);
   if (current === undefined) throw new Error(`Appointment not found: ${id}`);
-  if (current.status === "paid" || current.status === "canceled") return current;
   const updated: LegacyAppointment = { ...current, ...extra, status: newStatus };
   appointments.set(id, updated);
   logger.info("appointment status updated", updated);

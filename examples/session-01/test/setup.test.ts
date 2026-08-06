@@ -37,19 +37,4 @@ describe("Session 01 setup", () => {
     expect(paid.status).toBe("paid");
     expect(paid.amount).toBe(4800);
   });
-
-  it("会計済みの来院を以前の状態へ戻さない", () => {
-    const scheduled = bookAppointment(appointmentInput);
-    const paid = updateStatus(scheduled.id, "paid", {
-      diagnosis: "dermatitis",
-      treatment: "ointment",
-      amount: 4800,
-    });
-
-    const attempted = updateStatus(paid.id, "in-examination", {
-      veterinarianId: "55555555-5555-4555-8555-555555555555",
-    });
-
-    expect(attempted).toEqual(paid);
-  });
 });

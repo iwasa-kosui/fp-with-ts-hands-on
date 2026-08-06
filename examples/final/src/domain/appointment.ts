@@ -61,7 +61,6 @@ const CanceledSchema = z.object({
   ownerId: OwnerId.schema,
   scheduledAt: Timestamp.schema,
   reason: z.string().min(1),
-  cancellationReason: z.string().min(1),
   canceledAt: Timestamp.schema,
   followUpRequestedAt: Timestamp.schema.optional(),
 });
@@ -112,7 +111,7 @@ export const Appointment = {
   ): Paid => ({ ...examining, ...input, kind: "Paid", paidAt }),
   cancelWithReason: (
     appointment: Scheduled | CheckedIn,
-    cancellationReason: CancelReason,
+    reason: CancelReason,
     canceledAt: Timestamp,
     followUpRequestedAt?: Timestamp,
   ): Canceled => ({
@@ -121,8 +120,7 @@ export const Appointment = {
     petId: appointment.petId,
     ownerId: appointment.ownerId,
     scheduledAt: appointment.scheduledAt,
-    reason: appointment.reason,
-    cancellationReason,
+    reason,
     canceledAt,
     ...(followUpRequestedAt === undefined ? {} : { followUpRequestedAt }),
   }),

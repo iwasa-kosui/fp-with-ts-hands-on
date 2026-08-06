@@ -24,7 +24,9 @@ const expectCommandBlock = (
   const commandBlocks = source.match(/<CommandBlock\b[\s\S]*?\/>/g) ?? [];
   const hasAttribute = (block: string, name: string, value: string): boolean => {
     const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return new RegExp(`\\b${name}\\s*=\\s*(["'])${escapedValue}\\1`).test(block);
+    return new RegExp(
+      `(?:^|\\s)${name}\\s*=\\s*(["'])${escapedValue}\\1`,
+    ).test(block);
   };
 
   expect(
