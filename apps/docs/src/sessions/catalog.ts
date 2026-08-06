@@ -1,5 +1,6 @@
 export type SessionSummary = Readonly<{
   slug: string;
+  snapshot: ExampleSnapshot;
   sequence: "00-A" | "00-B" | "01" | "02" | "03" | "04" | "05" | "Final";
   label: string;
   title: string;
@@ -8,9 +9,19 @@ export type SessionSummary = Readonly<{
   summary: string;
 }>;
 
+export type ExampleSnapshot =
+  | "session-00"
+  | "session-01"
+  | "session-02"
+  | "session-03"
+  | "session-04"
+  | "session-05"
+  | "final";
+
 export const sessions = [
   {
     slug: "00-break-the-app",
+    snapshot: "session-00",
     sequence: "00-A",
     label: "DOG",
     title: "導入事故を起こす",
@@ -20,6 +31,7 @@ export const sessions = [
   },
   {
     slug: "00-read-the-incident",
+    snapshot: "session-00",
     sequence: "00-B",
     label: "CAT",
     title: "事故報告を読む",
@@ -29,6 +41,7 @@ export const sessions = [
   },
   {
     slug: "01-state-modeling",
+    snapshot: "session-01",
     sequence: "01",
     label: "RABBIT",
     title: "状態遷移を型にする",
@@ -38,6 +51,7 @@ export const sessions = [
   },
   {
     slug: "02-boundary-and-ids",
+    snapshot: "session-02",
     sequence: "02",
     label: "BIRD",
     title: "境界と ID を守る",
@@ -47,6 +61,7 @@ export const sessions = [
   },
   {
     slug: "03-result-errors",
+    snapshot: "session-03",
     sequence: "03",
     label: "HAMSTER",
     title: "失敗理由と変更記録を返す",
@@ -56,6 +71,7 @@ export const sessions = [
   },
   {
     slug: "04-agent-review",
+    snapshot: "session-04",
     sequence: "04",
     label: "TURTLE",
     title: "エージェントレビューを設計する",
@@ -65,6 +81,7 @@ export const sessions = [
   },
   {
     slug: "05-mini-integration",
+    snapshot: "session-05",
     sequence: "05",
     label: "FOX",
     title: "ミニ総合演習",
@@ -74,6 +91,7 @@ export const sessions = [
   },
   {
     slug: "final",
+    snapshot: "final",
     sequence: "Final",
     label: "完成例",
     title: "Kamae に従う動物病院サンプル",
