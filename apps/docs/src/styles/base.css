@@ -920,7 +920,7 @@ label {
   grid-area: eyebrow;
   margin-bottom: 0.75rem;
   color: var(--landing-blue);
-  font-size: 0.8125rem;
+  font-size: clamp(1rem, 1.4vw, 1.25rem);
   font-weight: 950;
   letter-spacing: 0.08em;
 }
@@ -1047,7 +1047,6 @@ label {
 
 .wan-nyan-home .floating-pet { position: absolute; z-index: 5; display: grid; place-items: center; border: 0.1875rem solid var(--landing-line); box-shadow: 0.25rem 0.25rem 0 rgb(34 54 184 / 22%); font-size: clamp(1.75rem, 4vw, 3.125rem); pointer-events: none; }
 .wan-nyan-home .floating-pet--cat { top: 8%; right: 4%; width: 5.375rem; height: 4.5rem; border-radius: 55% 45% 48% 52% / 46% 48% 52% 54%; background: var(--landing-lemon); animation: gentle-peek 7s ease-in-out infinite; }
-.wan-nyan-home .floating-pet--dog { bottom: 19%; left: 1%; width: 5.25rem; height: 4.375rem; border-radius: 47% 53% 46% 54% / 52% 48% 52% 48%; background: #c90054; }
 .wan-nyan-home .floating-pet--rabbit { right: 27%; bottom: 7%; width: 4.75rem; height: 4.125rem; border-radius: 50% 50% 44% 56% / 50% 44% 56% 50%; background: var(--landing-mint); }
 .wan-nyan-home .below-fold-cue { display: flex; align-items: center; justify-content: space-between; gap: 0.875rem; margin-top: 1.125rem; padding-top: 0.875rem; border-top: 0.1875rem dashed var(--landing-blue); color: var(--landing-blue); font-size: 0.8125rem; font-weight: 950; }
 .wan-nyan-home .animal-train { display: flex; gap: 0.5rem; white-space: nowrap; }
