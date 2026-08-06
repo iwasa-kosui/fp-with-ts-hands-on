@@ -1,3 +1,5 @@
+import { useId } from "react";
+
 type DirectoryNode = {
   name: string;
   path: string;
@@ -49,34 +51,43 @@ const DirectoryItems = ({
   dirtyPaths,
   disabled,
   onSelect,
+  treeId,
 }: Readonly<{
   directory: DirectoryNode;
   selectedPath: string;
   dirtyPaths: ReadonlySet<string>;
   disabled: boolean;
   onSelect: (path: string) => void;
+  treeId: string;
 }>) => (
   <>
-    {[...directory.directories.values()].map((child) => (
-      <li key={`directory:${child.path}`}>
-        <span className="code-explorer__folder">{child.name}</span>
-        <ul>
-          <DirectoryItems
-            directory={child}
-            selectedPath={selectedPath}
-            dirtyPaths={dirtyPaths}
-            disabled={disabled}
-            onSelect={onSelect}
-          />
-        </ul>
-      </li>
-    ))}
+    {[...directory.directories.values()].map((child) => {
+      const labelId = `${treeId}-folder-${encodeURIComponent(child.path)}`;
+      return (
+        <li key={`directory:${child.path}`}>
+          <span id={labelId} className="code-explorer__folder">
+            {child.name}
+          </span>
+          <ul aria-labelledby={labelId}>
+            <DirectoryItems
+              directory={child}
+              selectedPath={selectedPath}
+              dirtyPaths={dirtyPaths}
+              disabled={disabled}
+              onSelect={onSelect}
+              treeId={treeId}
+            />
+          </ul>
+        </li>
+      );
+    })}
     {[...directory.files].map(([fileName, path]) => (
       <li key={`file:${path}`}>
         <button
           type="button"
           data-path={path}
           aria-pressed={path === selectedPath}
+          aria-label={`${path}${dirtyPaths.has(path) ? "、変更あり" : ""}`}
           disabled={disabled}
           onClick={() => onSelect(path)}
         >
@@ -98,6 +109,7 @@ export const FileTree = ({
   onSelect,
 }: FileTreeProps) => {
   const root = buildTree(paths);
+  const treeId = useId();
 
   return (
     <nav aria-label="教材ファイル">
@@ -108,6 +120,7 @@ export const FileTree = ({
           dirtyPaths={dirtyPaths}
           disabled={disabled}
           onSelect={onSelect}
+          treeId={treeId}
         />
       </ul>
     </nav>

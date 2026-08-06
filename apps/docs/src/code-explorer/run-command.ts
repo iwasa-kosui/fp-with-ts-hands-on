@@ -1,4 +1,10 @@
 export type RunCommand = Readonly<{ command: string; args: readonly string[] }>;
+export type RunMode = "test" | "entrypoint";
+
+export const runModeFor = (path: string): RunMode | undefined => {
+  if (/^(exercises|test)\/.+\.test\.ts$/.test(path)) return "test";
+  return path.endsWith(".ts") ? "entrypoint" : undefined;
+};
 
 export const runCommandFor = (path: string): RunCommand | undefined => {
   if (/^exercises\/.+\.test\.ts$/.test(path)) {

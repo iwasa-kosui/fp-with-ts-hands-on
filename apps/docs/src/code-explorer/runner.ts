@@ -7,15 +7,23 @@ export type RunnerUpdate =
   | Readonly<{ kind: "phase"; phase: RunnerPhase }>
   | Readonly<{ kind: "output"; chunk: string }>
   | Readonly<{ kind: "type-files"; files: ProjectFiles }>;
-export type RunRequest = Readonly<{ filePath: string; files: ProjectFiles }>;
+export type RunRequest = Readonly<{
+  filePath: string;
+  files: ProjectFiles;
+  signal?: AbortSignal;
+}>;
 export type RunResult = Readonly<{ exitCode: number }>;
 export type Runtime = Readonly<{
   mount: (files: ProjectFiles) => Promise<void>;
-  install: (onOutput: (chunk: string) => void) => Promise<number>;
+  install: (
+    onOutput: (chunk: string) => void,
+    signal?: AbortSignal,
+  ) => Promise<number>;
   writeFiles: (files: ProjectFiles) => Promise<void>;
   execute: (
     command: RunCommand,
     onOutput: (chunk: string) => void,
+    signal?: AbortSignal,
   ) => Promise<number>;
   readTypeFiles: () => Promise<ProjectFiles>;
 }>;
@@ -69,11 +77,13 @@ export const createCodeRunner = (
 
   return {
     run: async (request, onUpdate) => {
+      const throwIfAborted = () => request.signal?.throwIfAborted();
       const command = runCommandFor(request.filePath);
       if (command === undefined) {
         throw new Error(`File cannot be run: ${request.filePath}`);
       }
 
+      throwIfAborted();
       if (runtimePromise === undefined) {
         onUpdate({ kind: "phase", phase: "booting" });
         const loading = loadRuntime()
@@ -84,6 +94,7 @@ export const createCodeRunner = (
         runtimePromise = loading;
       }
       const runtime = await runtimePromise;
+      throwIfAborted();
 
       if (mountPromise === undefined) {
         onUpdate({ kind: "phase", phase: "mounting" });
@@ -94,13 +105,14 @@ export const createCodeRunner = (
         mountPromise = mounting;
       }
       await mountPromise;
+      throwIfAborted();
 
       if (installPromise === undefined) {
         onUpdate({ kind: "phase", phase: "installing" });
         const installing = runtime
           .install((chunk) => {
             onUpdate({ kind: "output", chunk });
-          })
+          }, request.signal)
           .then((exitCode) => {
             if (exitCode !== 0) {
               throw new Error(`Dependency installation failed with exit code ${exitCode}`);
@@ -113,6 +125,7 @@ export const createCodeRunner = (
         installPromise = installing;
       }
       await installPromise;
+      throwIfAborted();
 
       if (typeFilesPromise === undefined) {
         const readingTypeFiles = runtime
@@ -127,12 +140,15 @@ export const createCodeRunner = (
         typeFilesPromise = readingTypeFiles;
       }
       await typeFilesPromise;
+      throwIfAborted();
 
       await runtime.writeFiles(request.files);
+      throwIfAborted();
       onUpdate({ kind: "phase", phase: "running" });
       const exitCode = await runtime.execute(command, (chunk) => {
         onUpdate({ kind: "output", chunk });
-      });
+      }, request.signal);
+      throwIfAborted();
       return { exitCode };
     },
   };
@@ -142,19 +158,46 @@ const runProcess = async (
   runtime: WebContainer,
   command: RunCommand,
   onOutput: (chunk: string) => void,
+  signal?: AbortSignal,
 ): Promise<number> => {
+  signal?.throwIfAborted();
   const process = await runtime.spawn(command.command, [...command.args], {
     env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" },
   });
+  const stopProcess = () => {
+    try {
+      process.kill();
+    } catch {
+      // The process may have exited between the abort event and this callback.
+    }
+  };
+  if (signal?.aborted) {
+    stopProcess();
+    await Promise.allSettled([process.exit]);
+    signal.throwIfAborted();
+  }
+  signal?.addEventListener("abort", stopProcess, { once: true });
   const outputNormalizer = createPlainTextOutputNormalizer(onOutput);
   const output = process.output.pipeTo(
     new WritableStream<string>({
       write: outputNormalizer.write,
       close: outputNormalizer.close,
     }),
+    signal === undefined ? undefined : { signal },
   );
-  const [exitCode] = await Promise.all([process.exit, output]);
-  return exitCode;
+  try {
+    const [exitCode] = await Promise.all([process.exit, output]);
+    signal?.throwIfAborted();
+    return exitCode;
+  } catch (error: unknown) {
+    if (signal?.aborted) {
+      await Promise.allSettled([process.exit, output]);
+      signal.throwIfAborted();
+    }
+    throw error;
+  } finally {
+    signal?.removeEventListener("abort", stopProcess);
+  }
 };
 
 type TerminalParserState =
@@ -359,7 +402,7 @@ const readExternalTypeFiles = async (runtime: WebContainer): Promise<ProjectFile
 
 const adaptWebContainer = (runtime: WebContainer): Runtime => ({
   mount: async (files) => runtime.mount(buildFileSystemTree(files)),
-  install: async (onOutput) =>
+  install: async (onOutput, signal) =>
     runProcess(
       runtime,
       {
@@ -367,13 +410,15 @@ const adaptWebContainer = (runtime: WebContainer): Runtime => ({
         args: ["install", "--no-progress", "--no-audit", "--no-fund"],
       },
       onOutput,
+      signal,
     ),
   writeFiles: async (files) => {
     await Promise.all(
       Object.entries(files).map(([path, source]) => runtime.fs.writeFile(path, source)),
     );
   },
-  execute: async (command, onOutput) => runProcess(runtime, command, onOutput),
+  execute: async (command, onOutput, signal) =>
+    runProcess(runtime, command, onOutput, signal),
   readTypeFiles: async () => readExternalTypeFiles(runtime),
 });
 

@@ -5,6 +5,7 @@ import {
   type RunnerPhase,
   type RunnerUpdate,
 } from "../../code-explorer/runner";
+import { runModeFor, type RunMode } from "../../code-explorer/run-command";
 import type { ModuleWorkspace, ProjectFiles } from "../../code-explorer/types";
 import { FileTree } from "./FileTree";
 import { MonacoEditor } from "./MonacoEditor";
@@ -60,6 +61,7 @@ export const CodeExplorer = ({
   const [execution, setExecution] = useState<ExecutionState>({ kind: "idle" });
   const [isRunning, setIsRunning] = useState(false);
   const runner = useRef<CodeRunner>();
+  const activeRun = useRef<AbortController>();
   const dirtyPaths = useMemo(
     () =>
       new Set(
@@ -70,7 +72,10 @@ export const CodeExplorer = ({
     [contents, projectFiles, workspace.visibleFiles],
   );
 
-  const updateExecution = (update: RunnerUpdate) => {
+  const updateExecution = (
+    update: RunnerUpdate,
+    provenance: Readonly<{ filePath: string; mode: RunMode | undefined }>,
+  ) => {
     if (update.kind === "type-files") {
       setTypeFiles(update.files);
       return;
@@ -79,56 +84,88 @@ export const CodeExplorer = ({
     setExecution((current) => {
       const output = outputFrom(current);
       if (update.kind === "phase") {
-        return { kind: "working", label: phaseLabels[update.phase], output };
+        return {
+          kind: "working",
+          label: phaseLabels[update.phase],
+          output,
+          ...provenance,
+        };
       }
       return {
         kind: "working",
         label: current.kind === "working" ? current.label : phaseLabels.running,
         output: `${output}${update.chunk}`,
+        ...provenance,
       };
     });
   };
 
   const run = async () => {
     if (isRunning) return;
+    const provenance = {
+      filePath: selectedPath,
+      mode: runModeFor(selectedPath),
+    };
     if (!supportsRuntime()) {
       setExecution({
         kind: "error",
         output: "",
         message:
           "ChromeまたはEdgeで開き、サイトの分離ヘッダーを確認してください。",
+        ...provenance,
       });
       return;
     }
 
     setIsRunning(true);
+    const controller = new AbortController();
+    activeRun.current = controller;
     setExecution({
       kind: "working",
       label: "実行を準備しています。",
       output: "",
+      ...provenance,
     });
 
     try {
       runner.current ??= runnerFactory();
       const result = await runner.current.run(
-        { filePath: selectedPath, files: contents },
-        updateExecution,
+        {
+          filePath: provenance.filePath,
+          files: contents,
+          signal: controller.signal,
+        },
+        (update) => updateExecution(update, provenance),
       );
       setExecution((current) => ({
         kind: "finished",
         output: outputFrom(current),
         exitCode: result.exitCode,
+        ...provenance,
       }));
     } catch (error: unknown) {
+      if (controller.signal.aborted) {
+        setExecution((current) => ({
+          kind: "canceled",
+          output: outputFrom(current),
+          message: "実行を停止しました。",
+          ...provenance,
+        }));
+        return;
+      }
       setExecution((current) => ({
         kind: "error",
         output: outputFrom(current),
         message: messageFrom(error),
+        ...provenance,
       }));
     } finally {
+      if (activeRun.current === controller) activeRun.current = undefined;
       setIsRunning(false);
     }
   };
+
+  const stop = () => activeRun.current?.abort();
 
   const resetSelectedFile = () => {
     setContents((current) => ({
@@ -176,6 +213,16 @@ export const CodeExplorer = ({
             >
               実行
             </button>
+            {isRunning ? (
+              <button
+                type="button"
+                data-action="stop"
+                aria-label="実行を停止"
+                onClick={stop}
+              >
+                停止
+              </button>
+            ) : null}
           </div>
         </div>
       </div>

@@ -269,6 +269,11 @@
   border-left-width: 0.75rem;
 }
 
+.code-explorer-preview .code-explorer__output--canceled {
+  border-color: var(--color-primary);
+  border-left-width: 0.75rem;
+}
+
 .code-explorer-preview :is(a, button):focus-visible {
   outline: 0.25rem solid var(--color-focus);
   outline-offset: 0.1875rem;

@@ -158,6 +158,23 @@ describe("CodeExplorer", () => {
     );
   });
 
+  it("keeps the completed run path and mode after another file is selected", async () => {
+    const runner = {
+      run: async () => ({ exitCode: 0 }),
+    } satisfies CodeRunner;
+    const host = await renderExplorer({ runnerFactory: () => runner });
+
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('[data-action="run"]')?.click(),
+    );
+    await selectFile(host, "src/example.ts");
+
+    const output = host.querySelector('[aria-label="実行結果"]')!;
+    expect(output.textContent).toContain("exercises/example.test.ts");
+    expect(output.textContent).toContain("テスト");
+    expect(output.textContent).not.toContain("src/example.ts");
+  });
+
   it("uses nested lists for folders and exposes every file as a button", async () => {
     const host = await renderExplorer();
     const navigation = host.querySelector('nav[aria-label="教材ファイル"]')!;
@@ -171,6 +188,62 @@ describe("CodeExplorer", () => {
     ).toBe("exercises");
     expect(exercisesButton.textContent).toContain("example.test.ts");
     expect(exercisesButton.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("distinguishes duplicate file names and labels nested folder lists", async () => {
+    const duplicateWorkspace = {
+      ...workspace,
+      initialFile: "exercises/01-state-modeling.test.ts",
+      visibleFiles: [
+        "exercises/01-state-modeling.test.ts",
+        "test/01-state-modeling.test.ts",
+      ],
+    } as const;
+    const duplicateFiles = {
+      "exercises/01-state-modeling.test.ts": "exercise",
+      "test/01-state-modeling.test.ts": "solution",
+    } as const;
+    const host = await renderExplorer({
+      workspace: duplicateWorkspace,
+      projectFiles: duplicateFiles,
+    });
+    const exerciseButton = host.querySelector<HTMLButtonElement>(
+      '[data-path="exercises/01-state-modeling.test.ts"]',
+    )!;
+    const solutionButton = host.querySelector<HTMLButtonElement>(
+      '[data-path="test/01-state-modeling.test.ts"]',
+    )!;
+    const folderLabels = [
+      ...host.querySelectorAll<HTMLElement>(".code-explorer__folder"),
+    ];
+    const initialFolderIds = folderLabels.map((label) => label.id);
+
+    expect(exerciseButton.textContent).toBe("01-state-modeling.test.ts");
+    expect(solutionButton.textContent).toBe("01-state-modeling.test.ts");
+    expect(exerciseButton.getAttribute("aria-label")).toBe(
+      "exercises/01-state-modeling.test.ts",
+    );
+    expect(solutionButton.getAttribute("aria-label")).toBe(
+      "test/01-state-modeling.test.ts",
+    );
+    expect(initialFolderIds.every((id) => id.length > 0)).toBe(true);
+    expect(new Set(initialFolderIds).size).toBe(initialFolderIds.length);
+    for (const label of folderLabels) {
+      expect(label.nextElementSibling?.getAttribute("aria-labelledby")).toBe(
+        label.id,
+      );
+    }
+
+    await editCurrentFile(host, "changed exercise");
+
+    expect(exerciseButton.getAttribute("aria-label")).toBe(
+      "exercises/01-state-modeling.test.ts、変更あり",
+    );
+    expect(
+      [...host.querySelectorAll<HTMLElement>(".code-explorer__folder")].map(
+        (label) => label.id,
+      ),
+    ).toEqual(initialFolderIds);
   });
 
   it("rejects unsupported runtimes without creating a runner", async () => {
@@ -245,6 +318,61 @@ describe("CodeExplorer", () => {
     );
     expect(host.textContent).toContain("partial output");
     expect(host.textContent).toContain("runtime failed");
+  });
+
+  it("stops a pending run and allows editing and running again", async () => {
+    let runCount = 0;
+    const runner = {
+      run: async (request) => {
+        runCount += 1;
+        if (runCount === 1) {
+          return new Promise<never>((_resolve, reject) => {
+            request.signal?.addEventListener(
+              "abort",
+              () => reject(request.signal?.reason),
+              { once: true },
+            );
+          });
+        }
+        return { exitCode: 0 };
+      },
+    } satisfies CodeRunner;
+    const host = await renderExplorer({ runnerFactory: () => runner });
+    const runButton = host.querySelector<HTMLButtonElement>(
+      '[data-action="run"]',
+    )!;
+
+    act(() => runButton.click());
+
+    const stopButton = host.querySelector<HTMLButtonElement>(
+      '[data-action="stop"]',
+    );
+    expect(stopButton?.textContent).toContain("停止");
+    expect(stopButton?.getAttribute("aria-label")).toBe("実行を停止");
+
+    await act(async () => stopButton?.click());
+    await vi.waitFor(() =>
+      expect(
+        host
+          .querySelector('[aria-label="実行結果"]')
+          ?.getAttribute("data-status"),
+      ).toBe("canceled"),
+    );
+
+    expect(host.textContent).toContain("実行を停止しました。");
+    const canceledOutput = host.querySelector('[aria-label="実行結果"]')!;
+    expect(canceledOutput.textContent).toContain("exercises/example.test.ts");
+    expect(canceledOutput.textContent).toContain("テスト");
+    expect(runButton.disabled).toBe(false);
+    expect(host.querySelector<HTMLTextAreaElement>("textarea")?.disabled).toBe(
+      false,
+    );
+
+    await editCurrentFile(host, "expect(value).toBe(3);");
+    await act(async () => runButton.click());
+
+    expect(runCount).toBe(2);
+    expect(host.textContent).toContain("終了コード 0");
   });
 
   it("treats a nonzero exit as failure and renders output as text", async () => {

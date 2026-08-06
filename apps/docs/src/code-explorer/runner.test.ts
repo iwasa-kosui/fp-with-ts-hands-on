@@ -274,6 +274,149 @@ describe("single-file execution", () => {
     ]);
   });
 
+  it("waits for a killed WebContainer process to exit before cancellation settles", async () => {
+    const emptyOutput = () =>
+      new ReadableStream<string>({
+        start(controller) {
+          controller.close();
+        },
+      });
+    let resolveExecution!: (exitCode: number) => void;
+    const executionExit = new Promise<number>((resolve) => {
+      resolveExecution = resolve;
+    });
+    const kill = vi.fn();
+    const spawn = vi.fn(async (command: string) =>
+      command === "npm"
+        ? { exit: Promise.resolve(0), output: emptyOutput(), kill: vi.fn() }
+        : {
+            exit: executionExit,
+            output: new ReadableStream<string>({ start: () => undefined }),
+            kill,
+          },
+    );
+    webContainerMock.boot.mockReset();
+    webContainerMock.boot.mockResolvedValue({
+      mount: async () => undefined,
+      spawn,
+      fs: {
+        writeFile: async () => undefined,
+        readdir: async () => [],
+        readFile: async () => "",
+      },
+    });
+    const runner = createWebContainerRunner();
+    const controller = new AbortController();
+    const running = runner.run(
+      {
+        filePath: "src/main.ts",
+        files: { "src/main.ts": "await new Promise(() => undefined);" },
+        signal: controller.signal,
+      },
+      () => undefined,
+    );
+    let runSettled = false;
+    void running.then(
+      () => {
+        runSettled = true;
+      },
+      () => {
+        runSettled = true;
+      },
+    );
+
+    await vi.waitFor(() => expect(spawn).toHaveBeenCalledTimes(2));
+    controller.abort();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(kill).toHaveBeenCalledOnce();
+    expect(runSettled).toBe(false);
+
+    resolveExecution(143);
+    await expect(running).rejects.toMatchObject({ name: "AbortError" });
+  });
+
+  it("waits for process exit when abort happens while spawn is pending", async () => {
+    const emptyOutput = () =>
+      new ReadableStream<string>({
+        start(controller) {
+          controller.close();
+        },
+      });
+    let resolveSpawn!: (process: {
+      exit: Promise<number>;
+      output: ReadableStream<string>;
+      kill: () => void;
+    }) => void;
+    const pendingSpawn = new Promise<{
+      exit: Promise<number>;
+      output: ReadableStream<string>;
+      kill: () => void;
+    }>((resolve) => {
+      resolveSpawn = resolve;
+    });
+    let rejectExecution!: (error: Error) => void;
+    const executionExit = new Promise<number>((_resolve, reject) => {
+      rejectExecution = reject;
+    });
+    const kill = vi.fn();
+    let outputAccessed = false;
+    const executionProcess = {
+      exit: executionExit,
+      get output() {
+        outputAccessed = true;
+        return new ReadableStream<string>({ start: () => undefined });
+      },
+      kill,
+    };
+    const spawn = vi.fn(async (command: string) =>
+      command === "npm"
+        ? { exit: Promise.resolve(0), output: emptyOutput(), kill: vi.fn() }
+        : pendingSpawn,
+    );
+    webContainerMock.boot.mockReset();
+    webContainerMock.boot.mockResolvedValue({
+      mount: async () => undefined,
+      spawn,
+      fs: {
+        writeFile: async () => undefined,
+        readdir: async () => [],
+        readFile: async () => "",
+      },
+    });
+    const runner = createWebContainerRunner();
+    const controller = new AbortController();
+    const running = runner.run(
+      {
+        filePath: "src/main.ts",
+        files: { "src/main.ts": "await new Promise(() => undefined);" },
+        signal: controller.signal,
+      },
+      () => undefined,
+    );
+    let runSettled = false;
+    void running.then(
+      () => {
+        runSettled = true;
+      },
+      () => {
+        runSettled = true;
+      },
+    );
+
+    await vi.waitFor(() => expect(spawn).toHaveBeenCalledTimes(2));
+    controller.abort();
+    resolveSpawn(executionProcess);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(kill).toHaveBeenCalledOnce();
+    expect(outputAccessed).toBe(false);
+    expect(runSettled).toBe(false);
+
+    rejectExecution(new Error("process terminated"));
+    await expect(running).rejects.toMatchObject({ name: "AbortError" });
+  });
+
   it.each([
     {
       name: "bare carriage return overwrites from column zero across chunks",
