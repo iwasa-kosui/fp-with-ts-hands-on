@@ -2,11 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** リポジトリ全体と `apps/docs/` の責務に分けた、製品非依存の `AGENTS.md` を整備する。
+**Goal:** 最終成果物として、リポジトリ全体と `apps/docs/` の責務に分けた、製品非依存の2つの `AGENTS.md` を整備する。
 
 **Architecture:** ルートファイルを教材全体の判断基準とし、`apps/docs/` の子ファイルは公開サイト固有の追加条件だけを持つ。ルートと子の継承関係を保ち、同じ規則を重複させない。
 
 **Tech Stack:** Markdown、pnpm 9.12.0、Node.js 20以上、Git
+
+製品非依存の制約と次の Global Constraints は、最終成果物である2つの `AGENTS.md` だけを対象とし、この計画書の実行手順と必須 sub-skill の表記は対象外とする。
 
 ## Global Constraints
 
@@ -129,8 +131,10 @@ Expected: FAIL。`apps/docs/AGENTS.md` がまだ存在しない。
 内容は次を満たす。
 
 - `src/pages/modules/*.astro` に限り、背景、登場人物の要求、出来事、参加者の作業、確認方法、期待する気づきをページ単体で理解できる構造にする。
+- 最初のモジュールだけでなく、後続モジュールも同じ学習構造を保つ。
 - 状態モデリングでは、業務イベント、遷移前、遷移後、実装する関数を対応させる。
-- すべての参加者向けページで自然な日本語を使うが、トップ、案内、エラーページにモジュール構造を強制しない。
+- 時系列や状態遷移を理解しづらい表だけで説明せず、内容に応じてタイムライン、段階表示、状態図、カードを使う。
+- すべての参加者向けページでは、日本の開発現場で自然な日本語を使い、不自然な直訳やプロジェクトで定着していない用語を避ける。ただし、トップ、案内、エラーページにモジュール構造を強制しない。
 - 明示的な依頼がない限り、トップページの見た目、文章、情報量、主要導線を変えない。
 - モジュール変更時に `catalog.ts`、Astroページ、ページテスト、静的ビルドの必須HTML、内部リンク、必要なWorkerルートを同期する。
 - 現行の `test:visual` はトップページだけを対象とすることを明記する。
