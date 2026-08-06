@@ -192,6 +192,65 @@
   outline-offset: 4px;
 }
 
+.requirement-dialogue {
+  display: grid;
+  gap: 0.75rem;
+  margin-block: 1.5rem;
+}
+
+.requirement-dialogue__line {
+  display: grid;
+  gap: 0.25rem;
+  max-width: 100%;
+}
+
+.requirement-dialogue__line--receptionist {
+  justify-items: end;
+}
+
+.requirement-dialogue__speaker {
+  margin: 0;
+  font-weight: 700;
+}
+
+.requirement-dialogue__bubble {
+  position: relative;
+  max-width: min(100%, 34rem);
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--case-line);
+  border-radius: 1rem;
+  background: var(--case-lemon);
+}
+
+.requirement-dialogue__bubble::after {
+  position: absolute;
+  bottom: -0.5rem;
+  left: 1rem;
+  width: 0;
+  height: 0;
+  border: 0.5rem solid transparent;
+  border-top-color: var(--case-line);
+  border-bottom: 0;
+  content: "";
+}
+
+.requirement-dialogue__line--receptionist .requirement-dialogue__bubble {
+  background: var(--case-mint);
+}
+
+.requirement-dialogue__line--receptionist .requirement-dialogue__bubble::after {
+  right: 1rem;
+  left: auto;
+}
+
+.requirement-prompt {
+  margin-block: 1.5rem;
+  padding: 1rem;
+  border-inline-start: 0.35rem solid var(--case-coral);
+  background: var(--case-lemon);
+}
+
 .visit-timeline {
   display: grid;
   gap: 1rem;
