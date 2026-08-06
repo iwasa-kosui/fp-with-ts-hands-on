@@ -53,7 +53,7 @@ describe("Session 05 state modeling", () => {
     expect(Appointment.isTerminal(paid)).toBe(true);
   });
 
-  it("Canceled にキャンセル理由と任意の再診希望時刻だけを保持する", () => {
+  it("予約理由を保ち、キャンセル理由と任意の再診希望時刻を分ける", () => {
     const followUpRequestedAt = Timestamp.parse(
       "2026-09-15T00:00:00.000Z",
     )._unsafeUnwrap();
@@ -66,11 +66,11 @@ describe("Session 05 state modeling", () => {
 
     expect(canceled).toMatchObject({
       kind: "Canceled",
-      reason: "owner-request",
+      reason: "skin check",
+      cancellationReason: "owner-request",
       canceledAt: "2026-08-30T06:30:00.000Z",
       followUpRequestedAt: "2026-09-15T00:00:00.000Z",
     });
-    expect(canceled).not.toHaveProperty("cancellationReason");
     expect(canceled).not.toHaveProperty("checkedInAt");
   });
 });

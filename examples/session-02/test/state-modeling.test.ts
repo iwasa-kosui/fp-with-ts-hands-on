@@ -23,13 +23,14 @@ const paymentInput = {
 } as const;
 const paidAt = "2026-08-30T07:00:00.000Z";
 const canceledAt = "2026-08-29T10:00:00.000Z";
+const followUpRequestedAt = "2026-09-15T00:00:00.000Z";
 const paid = Appointment.recordPayment(examining, paymentInput, paidAt);
 
 // @ts-expect-error Paid から診察を開始できません。
 Appointment.startExamination(paid, "55555555-5555-4555-8555-555555555555", startedAt);
 
 // @ts-expect-error Paid はキャンセルできません。
-Appointment.cancelWithReason(paid, "owner-request", canceledAt);
+Appointment.cancelWithReason(paid, "owner-request", canceledAt, followUpRequestedAt);
 
 describe("Session 02 state modeling", () => {
   it("予約から会計まで、状態に必要な情報を積み上げる", () => {
@@ -55,7 +56,7 @@ describe("Session 02 state modeling", () => {
       checkedIn,
       "owner-request",
       canceledAt,
-      "2026-09-15T00:00:00.000Z",
+      followUpRequestedAt,
     );
 
     expect(canceled).toEqual({
@@ -64,9 +65,10 @@ describe("Session 02 state modeling", () => {
       petId: "22222222-2222-4222-8222-222222222222",
       ownerId: "33333333-3333-4333-8333-333333333333",
       scheduledAt: "2026-08-30T06:30:00.000Z",
-      reason: "owner-request",
+      reason: "skin check",
+      cancellationReason: "owner-request",
       canceledAt,
-      followUpRequestedAt: "2026-09-15T00:00:00.000Z",
+      followUpRequestedAt,
     });
     expect(Appointment.isTerminal(scheduled)).toBe(false);
     expect(Appointment.isTerminal(checkedIn)).toBe(false);

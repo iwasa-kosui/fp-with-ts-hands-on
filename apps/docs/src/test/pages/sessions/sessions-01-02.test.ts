@@ -55,7 +55,7 @@ describe("Sessions 01 and 02", () => {
     );
     expect(stateModeling).toContain("reason: string;");
     expect(stateModeling).toContain("followUpRequestedAt?: string;");
-    expect(stateModeling).not.toContain("cancellationReason");
+    expect(stateModeling).toContain("cancellationReason: string;");
     expect(stateModeling).toContain(
       "pnpm --filter @fp-with-ts/clinic-session-01 test",
     );

@@ -85,7 +85,7 @@ if (session === undefined) throw new Error("Unknown session: final");
   ): Paid => ({ ...examining, ...input, kind: "Paid", paidAt }),
   cancelWithReason: (
     appointment: Scheduled | CheckedIn,
-    reason: CancelReason,
+    cancellationReason: CancelReason,
     canceledAt: Timestamp,
     followUpRequestedAt?: Timestamp,
   ): Canceled => ({
@@ -94,7 +94,8 @@ if (session === undefined) throw new Error("Unknown session: final");
     petId: appointment.petId,
     ownerId: appointment.ownerId,
     scheduledAt: appointment.scheduledAt,
-    reason,
+    reason: appointment.reason,
+    cancellationReason,
     canceledAt,
     ...(followUpRequestedAt === undefined ? {} : { followUpRequestedAt }),
   }),
