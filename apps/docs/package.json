@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev --host 0.0.0.0",
-    "build": "astro check && astro build",
+    "build": "astro check && astro build && node scripts/verify-static-build.mjs",
     "typecheck": "astro check",
     "test": "vitest run",
     "test:visual": "playwright test",
