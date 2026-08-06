@@ -6,10 +6,25 @@ import { EventId } from "../src/domain/event-id.js";
 import { ExamId } from "../src/domain/exam-id.js";
 import { ExamResult } from "../src/domain/exam-result.js";
 import { OwnerContact } from "../src/domain/owner-contact.js";
+import { OwnerEmail, type OwnerEmail as OwnerEmailValue } from "../src/domain/owner-email.js";
 import { OwnerId } from "../src/domain/owner-id.js";
+import { OwnerName, type OwnerName as OwnerNameValue } from "../src/domain/owner-name.js";
+import { OwnerPhone, type OwnerPhone as OwnerPhoneValue } from "../src/domain/owner-phone.js";
+import { PaymentAmount, type PaymentAmount as PaymentAmountValue } from "../src/domain/payment-amount.js";
 import { PetId } from "../src/domain/pet-id.js";
 import { Timestamp } from "../src/domain/timestamp.js";
 import { VeterinarianId } from "../src/domain/veterinarian-id.js";
+import type { Sensitive } from "../src/shared/sensitive.js";
+
+// @ts-expect-error raw number を PaymentAmount として扱えません。
+const rawPaymentAmount: PaymentAmountValue = 4800;
+// @ts-expect-error raw string を OwnerName として扱えません。
+const rawOwnerName: OwnerNameValue = "Owner A";
+// @ts-expect-error raw string を OwnerEmail として扱えません。
+const rawOwnerEmail: OwnerEmailValue = "owner@example.test";
+// @ts-expect-error raw string を OwnerPhone として扱えません。
+const rawOwnerPhone: OwnerPhoneValue = "090-0000-0000";
+void [rawPaymentAmount, rawOwnerName, rawOwnerEmail, rawOwnerPhone];
 
 describe("final boundary defense", () => {
   it("用途別 ID は UUID だけを受け入れ、型を取り違えられない", () => {
@@ -30,6 +45,32 @@ describe("final boundary defense", () => {
   it("Timestamp は ISO datetime だけを受け入れる", () => {
     expect(Timestamp.parse("2026-08-30T06:30:00.000Z").isOk()).toBe(true);
     expect(Timestamp.parse("2026/08/30 06:30").isErr()).toBe(true);
+  });
+
+  it("PaymentAmount は正の有限値だけを受け入れる", () => {
+    expect(PaymentAmount.parse(4800).isOk()).toBe(true);
+    expect(PaymentAmount.parse(0).isErr()).toBe(true);
+    expect(PaymentAmount.parse(-1).isErr()).toBe(true);
+    expect(PaymentAmount.parse(Number.POSITIVE_INFINITY).isErr()).toBe(true);
+  });
+
+  it("owner の氏名、メール、電話を用途別の値として検証する", () => {
+    const ownerName = OwnerName.parse("Owner A");
+    const ownerEmail = OwnerEmail.parse("owner@example.test");
+    const ownerPhone = OwnerPhone.parse("090-0000-0000");
+
+    expect(ownerName.isOk()).toBe(true);
+    expect(ownerEmail.isOk()).toBe(true);
+    expect(ownerPhone.isOk()).toBe(true);
+    expect(OwnerName.parse("   ").isErr()).toBe(true);
+    expect(OwnerEmail.parse("not-an-email").isErr()).toBe(true);
+    expect(OwnerPhone.parse("   ").isErr()).toBe(true);
+
+    if (ownerName.isOk()) {
+      // @ts-expect-error OwnerName と OwnerEmail は取り違えられません。
+      const email: OwnerEmailValue = ownerName.value;
+      void email;
+    }
   });
 
   it("unknown の検査結果を一つの境界で検証する", () => {
@@ -76,6 +117,10 @@ describe("final boundary defense", () => {
       ownerEmail: "owner@example.test",
       ownerPhone: "090-0000-0000",
     })._unsafeUnwrap();
+    const ownerName: Sensitive<OwnerNameValue> = contact.ownerName;
+    const ownerEmail: Sensitive<OwnerEmailValue> = contact.ownerEmail;
+    const ownerPhone: Sensitive<OwnerPhoneValue> = contact.ownerPhone;
+    void [ownerName, ownerEmail, ownerPhone];
 
     expect(String(contact.ownerPhone)).toBe("[REDACTED]");
     expect(JSON.stringify(contact)).toBe(
@@ -86,12 +131,12 @@ describe("final boundary defense", () => {
     expect(inspect(contact)).not.toContain("090-0000-0000");
   });
 
-  it("不正な owner contact を ValidationError として返す", () => {
-    const result = OwnerContact.parse({
-      ownerName: "Owner A",
-      ownerEmail: "not-an-email",
-      ownerPhone: "",
-    });
+  it.each([
+    { ownerName: "   ", ownerEmail: "owner@example.test", ownerPhone: "090-0000-0000" },
+    { ownerName: "Owner A", ownerEmail: "not-an-email", ownerPhone: "090-0000-0000" },
+    { ownerName: "Owner A", ownerEmail: "owner@example.test", ownerPhone: "   " },
+  ])("不正な owner contact を ValidationError として返す", (rawContact) => {
+    const result = OwnerContact.parse(rawContact);
 
     expect(result.isErr() && result.error.kind).toBe("ValidationError");
   });

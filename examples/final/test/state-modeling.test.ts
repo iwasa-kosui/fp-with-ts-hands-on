@@ -11,6 +11,15 @@ import {
 // @ts-expect-error Paid から診察を開始できません。
 Appointment.startExamination(paidAppointment, veterinarianId, startedAt);
 
+const examining = Appointment.startExamination(checkedIn, veterinarianId, startedAt);
+const rawPaymentInput = {
+  diagnosis: "dermatitis",
+  treatment: "ointment",
+  amount: 4800,
+};
+// @ts-expect-error recordPayment へ raw number を渡せません。
+Appointment.recordPayment(examining, rawPaymentInput, startedAt);
+
 describe("final state modeling", () => {
   it("CheckedIn から診察を開始し、状態固有の情報を必須で保持する", () => {
     const examining = Appointment.startExamination(checkedIn, veterinarianId, startedAt);

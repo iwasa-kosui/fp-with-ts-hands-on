@@ -9,6 +9,7 @@ import { AppointmentId } from "../src/domain/appointment-id.js";
 import { EventId } from "../src/domain/event-id.js";
 import { ExamId } from "../src/domain/exam-id.js";
 import { OwnerId } from "../src/domain/owner-id.js";
+import { PaymentAmount } from "../src/domain/payment-amount.js";
 import { PetId } from "../src/domain/pet-id.js";
 import { Timestamp } from "../src/domain/timestamp.js";
 import { VeterinarianId } from "../src/domain/veterinarian-id.js";
@@ -23,6 +24,7 @@ export const veterinarianId = VeterinarianId.parse(
 )._unsafeUnwrap();
 export const examId = ExamId.parse("77777777-7777-4777-8777-777777777777")._unsafeUnwrap();
 export const eventId = EventId.parse("66666666-6666-4666-8666-666666666666")._unsafeUnwrap();
+export const paymentAmount = PaymentAmount.parse(4800)._unsafeUnwrap();
 export const scheduledAt = Timestamp.parse("2026-08-30T06:00:00.000Z")._unsafeUnwrap();
 export const checkedInAt = Timestamp.parse("2026-08-30T06:20:00.000Z")._unsafeUnwrap();
 export const startedAt = Timestamp.parse("2026-08-30T06:30:00.000Z")._unsafeUnwrap();
@@ -56,7 +58,7 @@ export const paidAppointment = {
   kind: "Paid",
   diagnosis: "dermatitis",
   treatment: "ointment",
-  amount: 4800,
+  amount: paymentAmount,
   paidAt,
 } as const satisfies Paid;
 

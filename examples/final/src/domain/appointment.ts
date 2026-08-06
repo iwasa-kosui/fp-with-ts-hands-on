@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { AppointmentId } from "./appointment-id.js";
 import { OwnerId } from "./owner-id.js";
+import { PaymentAmount } from "./payment-amount.js";
 import { PetId } from "./pet-id.js";
 import { Timestamp } from "./timestamp.js";
 import { VeterinarianId } from "./veterinarian-id.js";
@@ -49,7 +50,7 @@ const PaidSchema = z.object({
   examinationStartedAt: Timestamp.schema,
   diagnosis: z.string().min(1),
   treatment: z.string().min(1),
-  amount: z.number().nonnegative(),
+  amount: PaymentAmount.schema,
   paidAt: Timestamp.schema,
 });
 
