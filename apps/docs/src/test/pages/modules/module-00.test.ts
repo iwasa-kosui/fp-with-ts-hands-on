@@ -25,6 +25,30 @@ describe("Module 00 pages", () => {
     expect(html).toContain("src/legacy/appointment.ts");
 
     const document = parseStaticMarkup(html);
+    const compact = (text: string | null): string =>
+      text?.replaceAll(/\s+/g, " ").trim() ?? "";
+    const transitionTable = document.querySelector("#visit-state-transitions");
+
+    expect(transitionTable?.getAttribute("aria-label")).toBe("来院の状態遷移");
+    expect(
+      [...(transitionTable?.querySelectorAll("thead th") ?? [])].map((cell) =>
+        compact(cell.textContent),
+      ),
+    ).toEqual(["業務で起きること", "遷移前の状態", "遷移後の状態", "その状態に残る情報"]);
+    expect(
+      [...(transitionTable?.querySelectorAll("tbody tr") ?? [])].map((row) =>
+        [...row.querySelectorAll("th, td")].map((cell) => compact(cell.textContent)),
+      ),
+    ).toEqual([
+      ["飼い主の予約を受け付ける", "来院記録なし", "予約済み（scheduled）", "予約日時"],
+      ["受付スタッフが来院を確認する", "予約済み（scheduled）", "受付済み（checked-in）", "受付時刻"],
+      ["獣医師が診察を開始する", "受付済み（checked-in）", "診察中（in-examination）", "担当獣医師、診察開始時刻"],
+      ["会計担当が診療内容と請求を確定する", "診察中（in-examination）", "会計済み・来院完了（paid）", "診断、処置、請求金額、会計時刻"],
+      ["飼い主または病院が予約を取り消す", "予約済み（scheduled）または受付済み（checked-in）", "キャンセル（canceled）", "キャンセル理由、キャンセル時刻、任意の再診希望日"],
+    ]);
+    expect(html).toContain("Paid と Canceled は終端状態");
+    expect(html).toContain("再診は新しい予約として扱い、今回の演習では扱いません");
+
     expect([...document.querySelectorAll("h2")].map(({ textContent }) => textContent)).toEqual([
       "開発に参加する前に",
       "事故を観察する",
