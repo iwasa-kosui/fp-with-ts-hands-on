@@ -274,7 +274,7 @@ describe("single-file execution", () => {
     ]);
   });
 
-  it("adapts WebContainer lazily and streams install and run output", async () => {
+  it("adapts WebContainer lazily and streams normalized install and run output", async () => {
     const outputStream = (chunks: readonly string[]) =>
       new ReadableStream<string>({
         start(controller) {
@@ -282,17 +282,34 @@ describe("single-file execution", () => {
           controller.close();
         },
       });
+    let executionCount = 0;
     const spawn = vi.fn(
       async (
         command: string,
         _args: readonly string[],
         _options: Readonly<{ env: Readonly<Record<string, string>> }>,
-      ) => ({
-        exit: Promise.resolve(0),
-        output: outputStream(
-          command === "npm" ? ["install out\n", "install err\n"] : ["run out\n", "run err\n"],
-        ),
-      }),
+      ) => {
+        if (command === "npm") {
+          return {
+            exit: Promise.resolve(0),
+            output: outputStream([
+              "working",
+              "\r⠋\x1b[1",
+              "G\x1b[0Kinstalled\r",
+              "\n",
+            ]),
+          };
+        }
+        executionCount += 1;
+        return {
+          exit: Promise.resolve(0),
+          output: outputStream(
+            executionCount === 1
+              ? ["\x1b[3", "2m1 test passed\r", "\n\x1b[?2", "5h"]
+              : ["✓ 日本", "語\nordinary trailing text"],
+          ),
+        };
+      },
     );
     const entry = (name: string, kind: "file" | "directory") => ({
       name,
@@ -340,6 +357,11 @@ describe("single-file execution", () => {
     });
     const runner = createWebContainerRunner();
     const updates: RunnerUpdate[] = [];
+    const outputText = () =>
+      updates
+        .filter((update) => update.kind === "output")
+        .map((update) => update.chunk)
+        .join("");
 
     expect(webContainerMock.boot).not.toHaveBeenCalled();
     await runner.run(
@@ -349,6 +371,9 @@ describe("single-file execution", () => {
       },
       (update) => updates.push(update),
     );
+    expect(outputText()).toBe("installed\n1 test passed\n");
+    expect(outputText()).not.toMatch(/[\u001b\u009b\r]/);
+
     await runner.run(
       {
         filePath: "src/main.ts",
@@ -365,24 +390,22 @@ describe("single-file execution", () => {
       },
     ]);
     expect(written.get("src/main.ts")).toBe("console.log('second')");
-    expect(spawn).toHaveBeenNthCalledWith(1, "npm", ["install"], {
-      env: { NO_COLOR: "1", FORCE_COLOR: "0" },
-    });
+    expect(spawn).toHaveBeenNthCalledWith(
+      1,
+      "npm",
+      ["install", "--no-progress", "--no-audit", "--no-fund"],
+      { env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" } },
+    );
     expect(spawn).toHaveBeenNthCalledWith(
       2,
       "npx",
       ["--no-install", "tsx", "src/main.ts"],
-      { env: { NO_COLOR: "1", FORCE_COLOR: "0" } },
+      { env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" } },
     );
     expect(spawn).toHaveBeenCalledTimes(3);
-    expect(updates.filter((update) => update.kind === "output")).toEqual([
-      { kind: "output", chunk: "install out\n" },
-      { kind: "output", chunk: "install err\n" },
-      { kind: "output", chunk: "run out\n" },
-      { kind: "output", chunk: "run err\n" },
-      { kind: "output", chunk: "run out\n" },
-      { kind: "output", chunk: "run err\n" },
-    ]);
+    expect(outputText()).toBe(
+      "installed\n1 test passed\n✓ 日本語\nordinary trailing text",
+    );
     expect(updates.filter((update) => update.kind === "type-files")).toEqual([
       {
         kind: "type-files",

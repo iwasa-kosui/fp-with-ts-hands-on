@@ -144,15 +144,193 @@ const runProcess = async (
   onOutput: (chunk: string) => void,
 ): Promise<number> => {
   const process = await runtime.spawn(command.command, [...command.args], {
-    env: { NO_COLOR: "1", FORCE_COLOR: "0" },
+    env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" },
   });
+  const outputNormalizer = createPlainTextOutputNormalizer(onOutput);
   const output = process.output.pipeTo(
     new WritableStream<string>({
-      write: (chunk) => onOutput(chunk),
+      write: outputNormalizer.write,
+      close: outputNormalizer.close,
     }),
   );
   const [exitCode] = await Promise.all([process.exit, output]);
   return exitCode;
+};
+
+type TerminalParserState =
+  | "text"
+  | "escape"
+  | "csi"
+  | "control-string"
+  | "control-string-escape";
+
+const isCsiFinal = (character: string): boolean => {
+  const codePoint = character.codePointAt(0)!;
+  return codePoint >= 0x40 && codePoint <= 0x7e;
+};
+
+const isControlCharacter = (character: string): boolean => {
+  const codePoint = character.codePointAt(0)!;
+  return codePoint < 0x20 || (codePoint >= 0x7f && codePoint <= 0x9f);
+};
+
+const createPlainTextOutputNormalizer = (
+  onOutput: (chunk: string) => void,
+): Readonly<{ write: (chunk: string) => void; close: () => void }> => {
+  let state: TerminalParserState = "text";
+  let csiSequence = "";
+  let line: string[] = [];
+  let cursor = 0;
+  let pendingCarriageReturn = false;
+
+  const emitLine = () => {
+    onOutput(`${line.join("")}\n`);
+    line = [];
+    cursor = 0;
+  };
+
+  const insertCharacter = (character: string) => {
+    while (line.length < cursor) line.push(" ");
+    line[cursor] = character;
+    cursor += 1;
+  };
+
+  const parameterAt = (
+    parameters: readonly string[],
+    index: number,
+    fallback: number,
+  ): number => {
+    const value = Number.parseInt(parameters[index] ?? "", 10);
+    return Number.isNaN(value) ? fallback : value;
+  };
+
+  const applyCsi = (sequence: string) => {
+    const final = sequence.at(-1);
+    if (final === undefined) return;
+    const parameterText = sequence.slice(0, -1).replace(/^[?><=]/, "");
+    const parameters = parameterText.split(";");
+
+    if (final === "G") {
+      cursor = Math.max(0, parameterAt(parameters, 0, 1) - 1);
+    } else if (final === "C") {
+      cursor += parameterAt(parameters, 0, 1);
+    } else if (final === "D") {
+      cursor = Math.max(0, cursor - parameterAt(parameters, 0, 1));
+    } else if (final === "H" || final === "f") {
+      cursor = Math.max(0, parameterAt(parameters, 1, 1) - 1);
+    } else if (final === "K") {
+      const mode = parameterAt(parameters, 0, 0);
+      if (mode === 0) {
+        line = line.slice(0, cursor);
+      } else if (mode === 1) {
+        line = line.slice(cursor + 1);
+        cursor = 0;
+      } else if (mode === 2) {
+        line = [];
+        cursor = 0;
+      }
+    }
+  };
+
+  const processTextCharacter = (character: string) => {
+    if (pendingCarriageReturn) {
+      pendingCarriageReturn = false;
+      if (character === "\n") {
+        emitLine();
+        return;
+      }
+      line = [];
+      cursor = 0;
+    }
+
+    if (character === "\x1b") {
+      state = "escape";
+    } else if (character === "\u009b") {
+      state = "csi";
+      csiSequence = "";
+    } else if (
+      character === "\u0090" ||
+      character === "\u0098" ||
+      character === "\u009d" ||
+      character === "\u009e" ||
+      character === "\u009f"
+    ) {
+      state = "control-string";
+    } else if (character === "\r") {
+      pendingCarriageReturn = true;
+    } else if (character === "\n") {
+      emitLine();
+    } else if (character === "\b") {
+      cursor = Math.max(0, cursor - 1);
+    } else if (character === "\t" || !isControlCharacter(character)) {
+      insertCharacter(character);
+    }
+  };
+
+  const processCharacter = (character: string) => {
+    if (state === "text") {
+      processTextCharacter(character);
+      return;
+    }
+
+    if (state === "escape") {
+      if (character === "[") {
+        state = "csi";
+        csiSequence = "";
+      } else if ("]PX^_".includes(character)) {
+        state = "control-string";
+      } else {
+        state = "text";
+      }
+      return;
+    }
+
+    if (state === "csi") {
+      if (character === "\x1b") {
+        state = "escape";
+        csiSequence = "";
+      } else if (isCsiFinal(character)) {
+        applyCsi(`${csiSequence}${character}`);
+        csiSequence = "";
+        state = "text";
+      } else if (isControlCharacter(character)) {
+        csiSequence = "";
+        state = "text";
+      } else {
+        csiSequence += character;
+      }
+      return;
+    }
+
+    if (state === "control-string") {
+      if (character === "\x07" || character === "\u009c") {
+        state = "text";
+      } else if (character === "\x1b") {
+        state = "control-string-escape";
+      }
+      return;
+    }
+
+    if (character === "\\" || character === "\u009c") {
+      state = "text";
+    } else if (character !== "\x1b") {
+      state = "control-string";
+    }
+  };
+
+  return {
+    write: (chunk) => {
+      for (const character of chunk) processCharacter(character);
+    },
+    close: () => {
+      pendingCarriageReturn = false;
+      state = "text";
+      csiSequence = "";
+      if (line.length > 0) onOutput(line.join(""));
+      line = [];
+      cursor = 0;
+    },
+  };
 };
 
 const readExternalTypeFiles = async (runtime: WebContainer): Promise<ProjectFiles> => {
@@ -184,7 +362,14 @@ const readExternalTypeFiles = async (runtime: WebContainer): Promise<ProjectFile
 const adaptWebContainer = (runtime: WebContainer): Runtime => ({
   mount: async (files) => runtime.mount(buildFileSystemTree(files)),
   install: async (onOutput) =>
-    runProcess(runtime, { command: "npm", args: ["install"] }, onOutput),
+    runProcess(
+      runtime,
+      {
+        command: "npm",
+        args: ["install", "--no-progress", "--no-audit", "--no-fund"],
+      },
+      onOutput,
+    ),
   writeFiles: async (files) => {
     await Promise.all(
       Object.entries(files).map(([path, source]) => runtime.fs.writeFile(path, source)),
