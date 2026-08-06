@@ -1,6 +1,6 @@
 export type SessionSummary = Readonly<{
   slug: string;
-  sequence: "00-A" | "00-B" | "01" | "02" | "03" | "04" | "05";
+  sequence: "00-A" | "00-B" | "01" | "02" | "03" | "04" | "05" | "Final";
   label: string;
   title: string;
   durationMinutes: number;
@@ -71,6 +71,15 @@ export const sessions = [
     durationMinutes: 15,
     animal: { name: "FOX", type: "fox", avatar: "🦊" },
     summary: "キツネの検査結果から、電話フォローが必要な患者だけを安全に抽出します。",
+  },
+  {
+    slug: "final",
+    sequence: "Final",
+    label: "完成例",
+    title: "Kamae に従う動物病院サンプル",
+    durationMinutes: 10,
+    animal: { name: "Mugi", type: "cat", avatar: "🐈" },
+    summary: "全セッションの設計要素を統合した実装を確認します。",
   },
 ] as const satisfies readonly SessionSummary[];
 

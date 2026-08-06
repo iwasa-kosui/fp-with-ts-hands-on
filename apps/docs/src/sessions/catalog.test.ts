@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { sessionBySlug, sessionNeighbors, sessionPath, sessions } from "./catalog";
 
 describe("session catalog", () => {
-  it("keeps the seven sessions in workshop order", () => {
+  it("keeps the sessions and final example in workshop order", () => {
     expect(sessions.map(({ slug }) => slug)).toEqual([
       "00-break-the-app",
       "00-read-the-incident",
@@ -11,6 +11,7 @@ describe("session catalog", () => {
       "03-result-errors",
       "04-agent-review",
       "05-mini-integration",
+      "final",
     ]);
   });
 
@@ -28,6 +29,13 @@ describe("session catalog", () => {
     expect(sessionNeighbors("01-state-modeling")).toEqual({
       previous: sessions[1],
       next: sessions[3],
+    });
+    expect(sessionNeighbors("05-mini-integration")).toEqual({
+      previous: sessions[5],
+      next: sessions[7],
+    });
+    expect(sessionNeighbors("final")).toEqual({
+      previous: sessions[6],
     });
   });
 });

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import BreakTheAppPage from "../../../pages/sessions/00-break-the-app.astro";
 import ReadTheIncidentPage from "../../../pages/sessions/00-read-the-incident.astro";
@@ -9,7 +10,30 @@ const parseStaticMarkup = (html: string): Document =>
     "text/html",
   );
 
+const readPage = (slug: string): string =>
+  readFileSync(
+    new URL("../../../pages/sessions/" + slug + ".astro", import.meta.url),
+    "utf8",
+  );
+
 describe("Session 00 pages", () => {
+  it("uses the Session 00 starting snapshot", () => {
+    const breakTheApp = readPage("00-break-the-app");
+    const readTheIncident = readPage("00-read-the-incident");
+
+    expect(breakTheApp).toContain("examples/session-00/src/appointment.ts");
+    expect(breakTheApp).toContain('command="pnpm exercise:00"');
+    expect(breakTheApp).toContain(
+      'command="pnpm --filter @fp-with-ts/clinic-session-00 test"',
+    );
+    expect(readTheIncident).toContain("examples/session-00/src/appointment.ts");
+    expect(readTheIncident).toContain(
+      'command="pnpm --filter @fp-with-ts/clinic-session-00 test"',
+    );
+    expect(breakTheApp).not.toContain("packages/clinic-example");
+    expect(readTheIncident).not.toContain("packages/clinic-example");
+  });
+
   it("onboards participants before reproducing the incident", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(BreakTheAppPage, { partial: false });
@@ -22,7 +46,7 @@ describe("Session 00 pages", () => {
     expect(html).toContain("来院をモデリングしよう");
     expect(html).toContain("Paid は終端状態");
     expect(html).toContain("exercise:00");
-    expect(html).toContain("src/legacy/appointment.ts");
+    expect(html).toContain("examples/session-00/src/appointment.ts");
 
     const document = parseStaticMarkup(html);
     const compact = (text: string | null): string =>
@@ -111,7 +135,7 @@ describe("Session 00 pages", () => {
     expect(html).toContain("事故報告を読む");
     expect(html).toContain("Canceled は reason を持ち");
     expect(html).toContain("キャンセル理由");
-    expect(html).toContain("exercise:01");
+    expect(html).toContain("@fp-with-ts/clinic-session-00 test");
 
     const document = parseStaticMarkup(html);
     const requirement = document.querySelector("#requirement");

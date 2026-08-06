@@ -21,7 +21,8 @@ if (session === undefined) throw new Error("Unknown session: 04-agent-review");
     <p>既存の設計判断を保ったまま、AI エージェントへ追加機能を依頼します。</p>
     <p>
       <strong>レビュー上の問題:</strong>
-      実装だけを頼むと、終端状態、境界、PII、失敗型の前提が抜けます。
+      実装だけを頼むと、終端状態、境界、PII、失敗型の前提に加え、状態保存と event
+      追記が分かれた dual-write の問題を見落とします。
     </p>
     <p>
       AI エージェントへ渡す依頼には、実装対象だけでなく、既存の状態遷移、<code
@@ -56,20 +57,26 @@ if (session === undefined) throw new Error("Unknown session: 04-agent-review");
 
     <CommandBlock
       phase="red"
-      command="pnpm --filter @fp-with-ts/clinic-example exercise:04"
-      expected="starter では checklist の観点または prompt の具体的な制約に関するテストが失敗します。この実装を読む環境では worked example があるため成功します。"
+      command="pnpm exercise:04"
+      expected="examples/session-04 には agent review の source がまだないため、dual-write と PII inspect を検出するテストが失敗します。"
     />
 
     <h3>読む場所と編集場所</h3>
     <dl>
-      <dt><code>packages/clinic-example/src/clinic/agent-review.ts</code></dt>
+      <dt><code>examples/session-04/src/application/start-examination.ts</code></dt>
       <dd>
-        <code>agentReviewChecklist</code> の5観点と <code
-          >buildFollowUpAgentPrompt</code
-        > が、既存の設計判断をどのように検証可能な依頼へ変えているか読みます。編集対象もこの2つだけです。
+        neverthrow の Result pipeline と、<code>repository.save</code> の後に <code
+          >eventStore.append</code
+        > を呼ぶ dual-write を読みます。
       </dd>
-      <dt><code>packages/clinic-example/exercises/04-agent-review.test.ts</code></dt>
-      <dd>checklist の全観点と、prompt に必須の表現を確認します。</dd>
+      <dt><code>examples/session-04/src/infrastructure/in-memory-appointment-repository.ts</code></dt>
+      <dd>予約状態の保存が event 追記と別の操作になっていることを確認します。</dd>
+      <dt><code>examples/session-04/src/infrastructure/in-memory-domain-event-store.ts</code></dt>
+      <dd>event 追記が予約状態の保存と別に失敗できることを確認します。</dd>
+      <dt><code>examples/session-04/exercises/agent-review.test.ts</code></dt>
+      <dd>review が <code>save(state, events)</code> と PII inspect を要求することを確認します。</dd>
+      <dt>review の要求</dt>
+      <dd>次の Session で追加する agent review は、状態と event の保存を一つにすること、PII を inspect から守ることを確認します。</dd>
     </dl>
 
     <CodeBlock
@@ -109,8 +116,8 @@ if (session === undefined) throw new Error("Unknown session: 04-agent-review");
 
     <CommandBlock
       phase="green"
-      command="pnpm --filter @fp-with-ts/clinic-example exercise:04"
-      expected="状態遷移、境界、Sensitive、Result、domain event の5つの横断観点を含む依頼文を生成できて exercise:04 が成功します。"
+      command="pnpm --filter @fp-with-ts/clinic-session-04 test"
+      expected="neverthrow の Result と、成功した診察開始だけを記録する通常テストが成功します。"
     />
   </section>
 

@@ -34,6 +34,11 @@ if (session === undefined) throw new Error("Unknown session: 05-mini-integration
       新しい技法は増やしません。これまでに閉じた不変条件を壊さず、電話フォローという運用上の要求を既存の型へ載せます。
     </p>
     <p>
+      <code>examples/session-05/src/application/start-examination.ts</code>
+      では、状態と event を <code>save(state, events)</code> へ渡す atomic save
+      まで完成しています。この保存契約を崩さずに統合演習へ進みます。
+    </p>
+    <p>
       検査結果と予約の <code>petId</code> が一致すること、診療状態が <code>Paid</code>
       であること、<code>needsFollowUp</code> が有効であることを順に確認します。飼い主の電話番号 <code
         >ownerPhone</code
@@ -51,19 +56,20 @@ if (session === undefined) throw new Error("Unknown session: 05-mini-integration
 
     <CommandBlock
       phase="red"
-      command="pnpm --filter @fp-with-ts/clinic-example exercise:05"
-      expected="starter では対象患者の抽出、petId mismatch、PII、Result、domain event のいずれかのテストが失敗します。この実装を読む環境では worked example があるため成功します。"
+      command="pnpm exercise:05"
+      expected="examples/session-05 には電話フォロー抽出の source がまだないため、対象判定、petId mismatch、PII、Result、domain event を要求するテストが失敗します。"
     />
 
     <h3>先に読むファイル</h3>
     <dl>
-      <dt><code>packages/clinic-example/src/clinic/use-cases.ts</code></dt>
+      <dt><code>examples/session-05/src/application/start-examination.ts</code></dt>
       <dd>
-        <code>collectFollowUpTargets</code> と、状態、入力境界、<code>Sensitive</code>、<code
-          >Result</code
-        >、domain event の既存設計を読み、引き継ぐ制約を確認します。
+        neverthrow の Result pipeline と、状態と event をまとめる atomic save
+        の既存設計を読み、引き継ぐ制約を確認します。
       </dd>
-      <dt><code>packages/clinic-example/exercises/05-follow-up.test.ts</code></dt>
+      <dt><code>examples/session-05/src/infrastructure/in-memory-appointment-gateway.ts</code></dt>
+      <dd><code>AppointmentStore.save(state, events)</code> が状態と event を一度に保存する契約を確認します。</dd>
+      <dt><code>examples/session-05/exercises/follow-up.test.ts</code></dt>
       <dd>
         電話フォロー対象、<code>petId mismatch</code>、PII、<code>Result</code>、domain
         event の期待値を一つずつ確認します。
@@ -73,7 +79,7 @@ if (session === undefined) throw new Error("Unknown session: 05-mini-integration
     <h3>編集する場所</h3>
     <dl>
       <dt>
-        <code>packages/clinic-example/src/clinic/use-cases.ts</code> — <code
+        <code>examples/session-05/src/application/collect-follow-up-targets.ts</code> — <code
           >collectFollowUpTargets</code
         >
       </dt>
@@ -104,14 +110,14 @@ if (session === undefined) throw new Error("Unknown session: 05-mini-integration
       </li>
       <li>局所的に変更する: collectFollowUpTargets の1関数だけを編集する。</li>
       <li>
-        効果を確認する: exercise:05 を再実行し、守れるようになった制約を確認する。
+        効果を確認する: Session 05 snapshot の通常テストを実行し、既存の制約が保たれていることを確認する。
       </li>
     </ol>
 
     <CommandBlock
       phase="green"
-      command="pnpm --filter @fp-with-ts/clinic-example exercise:05"
-      expected="対象患者だけを安全に抽出し、petId mismatch、PII、Result、domain event の全テストが成功します。"
+      command="pnpm --filter @fp-with-ts/clinic-session-05 test"
+      expected="atomic save、branded event ID、PII inspect を含む通常テストが成功します。"
     />
   </section>
 
@@ -165,6 +171,11 @@ if (session === undefined) throw new Error("Unknown session: 05-mini-integration
     <h3>まとめ</h3>
     <p>
       設計は将来の要求を予言するためではなく、次の変更で確認すべき場所を少なくするためにあります。
+    </p>
+
+    <h3>完成例へ</h3>
+    <p>
+      <a href="/sessions/final/">examples/final の完成例</a>で、電話フォローを含む全体の実装を確認します。
     </p>
   </section>
 

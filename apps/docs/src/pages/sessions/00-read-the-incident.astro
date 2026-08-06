@@ -41,36 +41,35 @@ if (session === undefined) throw new Error("Unknown session: 00-read-the-inciden
   <section id="exercise">
     <h2>要求をテストから読む</h2>
     <p>
-      演習テストを実行し、キャンセル状態の必須情報と終端状態の制約を期待値から読み取ります。
+      Session 00 snapshot の通常テストを実行して現在の動作を固定し、事故報告との差分から、キャンセル状態の必須情報と終端状態の制約を整理します。
     </p>
     <CommandBlock
-      phase="red"
-      command="pnpm --filter @fp-with-ts/clinic-example exercise:01"
-      expected="キャンセル状態の必須情報と終端状態の制約がテストから読み取れます。"
+      phase="green"
+      command="pnpm --filter @fp-with-ts/clinic-session-00 test"
+      expected="既存の通常フローは成功します。成功だけでは終端状態とキャンセル要件を確認できないことを事故報告と照合します。"
     />
 
     <h3>先に読むファイル</h3>
     <dl>
-      <dt><code>src/legacy/appointment.ts</code></dt>
+      <dt><code>examples/session-00/src/appointment.ts</code></dt>
       <dd>status だけでは、キャンセルされた理由も次の対応も分からない点を読みます。</dd>
-      <dt><code>exercises/01-state-modeling.test.ts</code></dt>
-      <dd>キャンセル状態の必須情報と終端状態の制約を期待値から読みます。</dd>
+      <dt>事故要件</dt>
+      <dd>Paid と Canceled は終端状態であり、Canceled には理由とキャンセル時刻が必要だと整理します。</dd>
     </dl>
   </section>
 
   <section id="preparation">
     <h2>次の編集の準備</h2>
     <p>
-      この実装には worked example が含まれるため <code>exercise:01</code>
-      は成功します。当日の starter 差分では、同じ command
-      を失敗するテストとして使い、状態とデータを同時に閉じる準備をします。
+      <code>examples/session-00</code>
+      は事故を再現する開始 snapshot です。このページでは実装を変更せず、次の Session 01
+      で固定する要求を言葉にします。
     </p>
 
     <h3>次に読む編集対象</h3>
     <p>
-      <code>src/clinic/appointment.ts</code> にある <code>Appointment</code> と <code
-        >Appointment.cancelWithReason</code
-      > を読みます。
+      <code>examples/session-00/src/appointment.ts</code> の <code>LegacyAppointment</code>
+      と <code>updateStatus</code> を読み、型に表現されていない要求を確認します。
     </p>
 
     <h3>使う技法: 状態別の要求整理</h3>
@@ -94,8 +93,8 @@ if (session === undefined) throw new Error("Unknown session: 00-read-the-inciden
 
     <CommandBlock
       phase="green"
-      command="pnpm --filter @fp-with-ts/clinic-example test"
-      expected="要求整理では実装を変更しないため、通常テストは成功したままです。"
+      command="pnpm --filter @fp-with-ts/clinic-session-00 test"
+      expected="要求整理では実装を変更しないため、Session 00 snapshot の通常テストは成功したままです。"
     />
 
     <h3>業務への転用</h3>

@@ -14,6 +14,7 @@ const requiredHtmlFiles = [
   "sessions/03-result-errors/index.html",
   "sessions/04-agent-review/index.html",
   "sessions/05-mini-integration/index.html",
+  "sessions/final/index.html",
 ];
 
 const missingHtmlFiles = [];

@@ -53,36 +53,30 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
     </p>
     <CommandBlock
       phase="red"
-      command="pnpm --filter @fp-with-ts/clinic-example exercise:01"
-      expected="starter では不正な状態遷移、または Canceled の reason・canceledAt・任意の再診希望に関するテストが失敗します。この実装を読む環境では worked example があるため成功します。"
+      command="pnpm exercise:01"
+      expected="examples/session-01 には型付き状態モデルがまだないため、診察開始と理由付きキャンセルを要求するテストが失敗します。"
     />
 
     <h3>先に読むファイル</h3>
     <dl>
-      <dt><code>packages/clinic-example/src/clinic/appointment.ts</code></dt>
+      <dt><code>examples/session-01/src/appointment.ts</code></dt>
       <dd>
-        <code>Appointment</code> union、<code>book</code>、<code>checkIn</code>、<code
-          >recordPayment</code
-        >、<code>isTerminal</code> は読むだけにし、各 <code>kind</code>
-        の情報と終端状態を確認します。
+        string status と optional fields を使う legacy 実装を読み、型に表現されていない状態と情報を確認します。
       </dd>
-      <dt><code>packages/clinic-example/exercises/01-state-modeling.test.ts</code></dt>
+      <dt><code>examples/session-01/test/incident-requirements.test.ts</code></dt>
+      <dd>5つの来院状態、2つの終端状態、キャンセルに必要な情報を要求として確認します。</dd>
+      <dt><code>examples/session-01/exercises/state-modeling.test.ts</code></dt>
       <dd>診察開始と理由付きキャンセルという実行時要件を、期待値から確認します。</dd>
-      <dt><code>packages/clinic-example/test/01-state-modeling.test.ts</code></dt>
-      <dd>
-        <code>@ts-expect-error</code> により、Paid
-        からの再診察・キャンセルと未知のキャンセル理由がコンパイル時に拒否されることを確認します。
-      </dd>
     </dl>
 
     <h3>編集する2関数</h3>
     <dl>
       <dt>
-        <code>src/clinic/appointment.ts</code> — <code>Appointment.startExamination</code>
+        <code>examples/session-01/src/appointment.ts</code> — <code>Appointment.startExamination</code>
       </dt>
       <dd><code>CheckedIn</code> のときだけ <code>InExamination</code> を返します。</dd>
       <dt>
-        <code>src/clinic/appointment.ts</code> — <code>Appointment.cancelWithReason</code>
+        <code>examples/session-01/src/appointment.ts</code> — <code>Appointment.cancelWithReason</code>
       </dt>
       <dd>
         <code>Scheduled</code> または <code>CheckedIn</code>
@@ -97,16 +91,15 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
       language="typescript"
       label="Appointment の状態ごとの形"
       code={`type Appointment =
-  | Readonly<{ kind: "Scheduled"; id: AppointmentId }>
-  | Readonly<{ kind: "CheckedIn"; id: AppointmentId }>
-  | Readonly<{ kind: "InExamination"; id: AppointmentId }>
-  | Readonly<{ kind: "Paid"; id: AppointmentId }>
+  | Readonly<{ kind: "Scheduled"; appointmentId: string }>
+  | Readonly<{ kind: "CheckedIn"; appointmentId: string }>
+  | Readonly<{ kind: "InExamination"; appointmentId: string }>
+  | Readonly<{ kind: "Paid"; appointmentId: string }>
   | Readonly<{
       kind: "Canceled";
-      id: AppointmentId;
-      reason: CancelReason;
+      appointmentId: string;
+      cancellationReason: string;
       canceledAt: string;
-      followUpRequestedAt?: string;
     }>;`}
     />
 
@@ -122,14 +115,13 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
 
     <h3>生成時の防止と遷移時の拒否</h3>
     <p>
-      union は、<code>Canceled</code> に必要な情報が欠けた値や、別の状態にキャンセル情報を付けた値の生成を型で防ぎます。一方、現在の予約から次の状態へ進めるかは実行時の判断なので、遷移関数が
-      <code>Result</code> で拒否します。どちらか一方ではなく、値の形と遷移の可否を別々に守ります。
+      union は、<code>Canceled</code> に必要な情報が欠けた値や、別の状態にキャンセル情報を付けた値の生成を型で防ぎます。純粋な遷移関数の引数を遷移元の型へ絞り、許可しない状態から呼び出せないようにします。
     </p>
 
     <CommandBlock
       phase="green"
-      command="pnpm --filter @fp-with-ts/clinic-example exercise:01"
-      expected="CheckedIn からだけ診察を開始でき、Scheduled または CheckedIn からの Canceled には理由、キャンセル時刻、任意の再診希望が記録されてテストが成功します。"
+      command="pnpm --filter @fp-with-ts/clinic-session-01 test"
+      expected="legacy の通常フローと、固定した事故要件のテストが成功します。"
     />
   </section>
 
@@ -140,22 +132,17 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
       <li><code>kind</code> の分岐が CheckedIn 以外からの診察開始を許していない。</li>
       <li>Paid と Canceled を終端状態として扱っている。</li>
       <li>
-        Canceled にだけ <code>reason</code>、<code>canceledAt</code>、任意の <code
-          >followUpRequestedAt</code
-        > が存在する。
-      </li>
-      <li>
-        <code>@ts-expect-error</code>
-        が、Paidからの不正な遷移や未知の理由を意図した箇所で型エラーとして検査している。
+        Canceled にだけ <code>cancellationReason</code> と <code>canceledAt</code>
+        が存在する。
       </li>
     </ul>
 
     <h3>完了条件</h3>
     <ul>
-      <li>不正な遷移が型または Result のどちらで止まるか説明できる。</li>
+      <li>不正な遷移を状態の型と遷移関数の引数で止める理由を説明できる。</li>
       <li>
         Scheduled または CheckedIn
-        からだけキャンセルでき、理由、時刻、任意の再診希望を Canceled
+        からだけキャンセルでき、理由と時刻を Canceled
         以外へ付けられないことを説明できる。
       </li>
     </ul>
@@ -168,16 +155,13 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
 
     <h3>振り返り</h3>
     <p>
-      不正な状態は生成時に防ぐべきですか、それとも遷移関数の Result
-      で拒否すべきですか。それぞれが守る責任の違いを説明してください。
+      不正な状態の生成と不正な遷移は、判別共用体と遷移関数の引数でそれぞれどう防げますか。
     </p>
 
     <h3>代替進行</h3>
     <p>
       実装できない場合は、提示済みの <code>Appointment</code> union
-      を使い、2関数だけを <code>kind</code> で分岐させます。最後に <code
-        >@ts-expect-error</code
-      > が意図した箇所にあるか確認します。
+      を使い、2関数だけを遷移元の型へ絞ります。
     </p>
 
     <h3>次のセッションへ</h3>

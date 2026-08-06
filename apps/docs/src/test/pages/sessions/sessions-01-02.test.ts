@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import StateModelingPage from "../../../pages/sessions/01-state-modeling.astro";
 import BoundaryAndIdsPage from "../../../pages/sessions/02-boundary-and-ids.astro";
@@ -7,6 +8,12 @@ const parseStaticMarkup = (html: string): Document =>
   new DOMParser().parseFromString(
     html.replaceAll(/<script\b[^>]*>[\s\S]*?<\/script>/g, ""),
     "text/html",
+  );
+
+const readPage = (slug: string): string =>
+  readFileSync(
+    new URL("../../../pages/sessions/" + slug + ".astro", import.meta.url),
+    "utf8",
   );
 
 const expectAuthoredOutline = (
@@ -37,6 +44,26 @@ const expectAuthoredOutline = (
 };
 
 describe("Sessions 01 and 02", () => {
+  it("uses each session's starting snapshot and verification command", () => {
+    const stateModeling = readPage("01-state-modeling");
+    const boundaryAndIds = readPage("02-boundary-and-ids");
+
+    expect(stateModeling).toContain("examples/session-01");
+    expect(stateModeling).toContain('command="pnpm exercise:01"');
+    expect(stateModeling).toContain(
+      'command="pnpm --filter @fp-with-ts/clinic-session-01 test"',
+    );
+    expect(boundaryAndIds).toContain(
+      "examples/session-02/src/domain/appointment.ts",
+    );
+    expect(boundaryAndIds).toContain('command="pnpm exercise:02"');
+    expect(boundaryAndIds).toContain(
+      'command="pnpm --filter @fp-with-ts/clinic-session-02 test"',
+    );
+    expect(stateModeling).not.toContain("packages/clinic-example");
+    expect(boundaryAndIds).not.toContain("packages/clinic-example");
+  });
+
   it("teaches state and data as one discriminated union", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(StateModelingPage, {

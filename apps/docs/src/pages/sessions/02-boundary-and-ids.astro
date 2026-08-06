@@ -49,23 +49,18 @@ if (session === undefined) throw new Error("Unknown session: 02-boundary-and-ids
     </p>
     <CommandBlock
       phase="red"
-      command="pnpm --filter @fp-with-ts/clinic-example exercise:02"
-      expected="starter では unknown の検証、ID の変換、PII の伏せ字のいずれかに関するテストが失敗します。この実装を読む環境では worked example があるため成功します。"
+      command="pnpm exercise:02"
+      expected="examples/session-02 には境界用 source がまだないため、unknown の検証、ID の変換、PII の伏せ字を要求するテストが失敗します。"
     />
 
     <h3>先に読むファイル</h3>
     <dl>
-      <dt><code>packages/clinic-example/src/clinic/pet-id.ts</code></dt>
+      <dt><code>examples/session-02/src/domain/appointment.ts</code></dt>
       <dd>
-        <code>PetId.safeParse</code> と <code>PetId.schema</code>
-        を worked example として読み、用途別 ID の変換境界を確認します。
+        判別共用体と純粋な状態遷移が完成している一方、ID は plain string
+        のままであることを確認します。
       </dd>
-      <dt><code>packages/clinic-example/src/shared/sensitive.ts</code></dt>
-      <dd>
-        <code>Sensitive.of</code>、<code>toJSON</code>、<code>toString</code>
-        を worked example として読み、PII が実行時に伏せられる理由を確認します。
-      </dd>
-      <dt><code>packages/clinic-example/exercises/02-boundary-and-ids.test.ts</code></dt>
+      <dt><code>examples/session-02/exercises/boundary-and-ids.test.ts</code></dt>
       <dd>
         <code>unknown</code> payload の検証と、<code>JSON.stringify</code> による <code
           >[REDACTED]</code
@@ -73,12 +68,12 @@ if (session === undefined) throw new Error("Unknown session: 02-boundary-and-ids
       </dd>
     </dl>
 
-    <h3>編集する2つの境界</h3>
+    <h3>開始スナップショットで確認する場所</h3>
     <dl>
-      <dt><code>src/clinic/exam-result.ts</code> — <code>ExamResult.safeParse</code></dt>
-      <dd><code>unknown</code> の検査結果 payload を検証し、domain の値へ変換します。</dd>
-      <dt><code>src/clinic/owner-contact.ts</code> — <code>OwnerContact.safeParse</code></dt>
-      <dd>連絡先を検証した後に <code>Sensitive</code> へ変換します。</dd>
+      <dt><code>examples/session-02/src/domain/appointment.ts</code> — <code>Appointment</code></dt>
+      <dd>状態モデルが用途別 ID をまだ区別していない点を確認します。</dd>
+      <dt><code>examples/session-02/test/state-modeling.test.ts</code></dt>
+      <dd>状態モデルの通常テストを基準に、次の境界で守るべき入力と PII を整理します。</dd>
     </dl>
   </section>
 
@@ -87,8 +82,9 @@ if (session === undefined) throw new Error("Unknown session: 02-boundary-and-ids
     <CodeBlock
       language="typescript"
       label="unknown を検証してから使う"
-      code={`const parsed = ExamResultPayload.safeParse(input);
-if (!parsed.success) return Result.err({ kind: "ValidationError" });`}
+      code={`const parsed = ExamResult.safeParse(raw);
+if (!parsed.success) return parsed;
+return parsed.data;`}
     />
 
     <h3>使う技法: Zod、Branded Type、Sensitive</h3>
@@ -123,8 +119,8 @@ if (!parsed.success) return Result.err({ kind: "ValidationError" });`}
 
     <CommandBlock
       phase="green"
-      command="pnpm --filter @fp-with-ts/clinic-example exercise:02"
-      expected="外部検査 payload を検証でき、連絡先を JSON.stringify しても [REDACTED] だけが出力されてテストが成功します。"
+      command="pnpm --filter @fp-with-ts/clinic-session-02 test"
+      expected="判別共用体による状態モデルの通常テストが成功します。"
     />
   </section>
 

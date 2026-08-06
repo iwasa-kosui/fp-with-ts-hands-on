@@ -49,46 +49,40 @@ if (session === undefined) throw new Error("Unknown session: 03-result-errors");
 
     <CommandBlock
       phase="red"
-      command="pnpm --filter @fp-with-ts/clinic-example exercise:03"
-      expected="starter では診察開始の成功と ExaminationStarted の append に関するテストが失敗します。この実装を読む環境では worked example があるため成功します。"
+      command="pnpm exercise:03"
+      expected="examples/session-03 には application、repository、domain event の source がまだないため、診察開始の結果と ExaminationStarted を要求するテストが失敗します。"
     />
 
     <h3>先に読むファイル</h3>
     <dl>
-      <dt><code>packages/clinic-example/src/clinic/use-cases.ts</code></dt>
+      <dt><code>examples/session-03/src/domain/*</code></dt>
       <dd>
-        <code>StartExaminationError</code> union、入力 schema、<code>ensureFound</code>、<code
-          >ensureCheckedIn</code
-        > と、<code>startExaminationUseCase</code> のすべての成功・失敗経路を読みます。
+        判別共用体の状態と用途別 ID を読み、診察開始 use case が受け取る domain
+        の値を確認します。
       </dd>
-      <dt><code>packages/clinic-example/src/clinic/appointment-repository.ts</code></dt>
+      <dt><code>examples/session-03/src/boundary/exam-result.ts</code></dt>
       <dd>
-        <code>findById</code> と <code>save</code>
-        が use case 境界のどの結果で呼ばれるか確認します。
+        Zod による <code>unknown</code> の検証と branded ID の変換を確認します。
       </dd>
-      <dt><code>packages/clinic-example/src/clinic/domain-event-store.ts</code></dt>
+      <dt><code>examples/session-03/src/boundary/owner-contact.ts</code></dt>
       <dd>
-        <code>append</code> と <code>all</code>
-        を読み、成功した変更記録だけを保存する責務を確認します。
+        連絡先を <code>Sensitive</code> に包み、PII を文字列化から守る境界を確認します。
       </dd>
-      <dt><code>packages/clinic-example/exercises/03-result-errors.test.ts</code></dt>
+      <dt><code>examples/session-03/exercises/result-errors.test.ts</code></dt>
       <dd>
-        成功した診察開始と <code>ExaminationStarted</code>
-        の append に関する期待値を確認します。失敗の分岐は <code>use-cases.ts</code>
-        の error union と guard から読みます。
+        neverthrow の <code>isOk()</code> と、成功時にだけ <code>ExaminationStarted</code>
+        を残す期待値を確認します。
       </dd>
     </dl>
 
     <h3>編集する場所</h3>
     <dl>
       <dt>
-        <code>packages/clinic-example/src/clinic/use-cases.ts</code> — <code
-          >startExaminationUseCase</code
-        >
+        <code>examples/session-03/src/boundary/exam-result.ts</code> — <code>ExamResult.safeParse</code>
       </dt>
       <dd>
-        この関数だけを編集し、schema、存在確認、状態確認からの早期 <code>Err</code>
-        return を置きます。
+        外部入力の検証結果を <code>Result</code> として返す境界を読み、次の Session で use case
+        に渡す値と失敗を整理します。
       </dd>
     </dl>
 
@@ -100,7 +94,9 @@ if (session === undefined) throw new Error("Unknown session: 03-result-errors");
   | Readonly<{ kind: "InvalidAppointmentState" }>
   | Readonly<{ kind: "ValidationError" }>;
 
-if (checkedIn.kind === "Err") return checkedIn;`}
+const result = startExaminationUseCase(repository, eventStore)(rawInput);
+if (result.isErr()) return result.error;
+return result.value;`}
     />
   </section>
 
@@ -128,8 +124,8 @@ if (checkedIn.kind === "Err") return checkedIn;`}
 
     <CommandBlock
       phase="green"
-      command="pnpm --filter @fp-with-ts/clinic-example exercise:03"
-      expected="成功した診察開始を返し、ExaminationStarted を1件 append できて exercise:03 が成功します。"
+      command="pnpm --filter @fp-with-ts/clinic-session-03 test"
+      expected="状態、用途別 ID、入力境界、PII 保護の通常テストが成功します。"
     />
   </section>
 

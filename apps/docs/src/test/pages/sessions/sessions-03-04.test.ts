@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import ResultErrorsPage from "../../../pages/sessions/03-result-errors.astro";
 import AgentReviewPage from "../../../pages/sessions/04-agent-review.astro";
@@ -7,6 +8,12 @@ const parseStaticMarkup = (html: string): Document =>
   new DOMParser().parseFromString(
     html.replaceAll(/<script\b[^>]*>[\s\S]*?<\/script>/g, ""),
     "text/html",
+  );
+
+const readPage = (slug: string): string =>
+  readFileSync(
+    new URL("../../../pages/sessions/" + slug + ".astro", import.meta.url),
+    "utf8",
   );
 
 const expectAuthoredOutline = (
@@ -43,6 +50,28 @@ const expectAuthoredOutline = (
 };
 
 describe("Sessions 03 and 04", () => {
+  it("uses each session's starting snapshot and verification command", () => {
+    const resultErrors = readPage("03-result-errors");
+    const agentReview = readPage("04-agent-review");
+
+    expect(resultErrors).toContain("examples/session-03/src/domain/");
+    expect(resultErrors).toContain("examples/session-03/src/boundary/");
+    expect(resultErrors).toContain('command="pnpm exercise:03"');
+    expect(resultErrors).toContain(
+      'command="pnpm --filter @fp-with-ts/clinic-session-03 test"',
+    );
+    expect(agentReview).toContain(
+      "examples/session-04/src/application/start-examination.ts",
+    );
+    expect(agentReview).toContain("dual-write");
+    expect(agentReview).toContain('command="pnpm exercise:04"');
+    expect(agentReview).toContain(
+      'command="pnpm --filter @fp-with-ts/clinic-session-04 test"',
+    );
+    expect(resultErrors).not.toContain("packages/clinic-example");
+    expect(agentReview).not.toContain("packages/clinic-example");
+  });
+
   it("separates typed failures from successful domain events", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(ResultErrorsPage, {

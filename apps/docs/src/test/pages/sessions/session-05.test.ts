@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import MiniIntegrationPage from "../../../pages/sessions/05-mini-integration.astro";
 import { createAstroContainer } from "../../render-astro";
@@ -8,7 +9,27 @@ const parseStaticMarkup = (html: string): Document =>
     "text/html",
   );
 
+const readPage = (slug: string): string =>
+  readFileSync(
+    new URL("../../../pages/sessions/" + slug + ".astro", import.meta.url),
+    "utf8",
+  );
+
 describe("Session 05", () => {
+  it("uses the Session 05 starting snapshot and verification command", () => {
+    const page = readPage("05-mini-integration");
+
+    expect(page).toContain(
+      "examples/session-05/src/application/start-examination.ts",
+    );
+    expect(page).toContain("atomic");
+    expect(page).toContain('command="pnpm exercise:05"');
+    expect(page).toContain(
+      'command="pnpm --filter @fp-with-ts/clinic-session-05 test"',
+    );
+    expect(page).not.toContain("packages/clinic-example");
+  });
+
   it("completes the integration loop and captures the next action", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(MiniIntegrationPage, {
@@ -39,7 +60,7 @@ describe("Session 05", () => {
       "問題を発見する: テストから、対象判定、petId mismatch、PII、Result、event の不足を特定する。",
       "手段を選ぶ: 既存の状態、入力境界、Sensitive、Result、domain event の役割へ対応付ける。",
       "局所的に変更する: collectFollowUpTargets の1関数だけを編集する。",
-      "効果を確認する: exercise:05 を再実行し、守れるようになった制約を確認する。",
+      "効果を確認する: Session 05 snapshot の通常テストを実行し、既存の制約が保たれていることを確認する。",
     ]);
 
     expect(
@@ -104,6 +125,8 @@ describe("Session 05", () => {
     expect(document.querySelector('a[rel="prev"]')?.getAttribute("href")).toBe(
       "/sessions/04-agent-review/",
     );
-    expect(document.querySelector('a[rel="next"]')).toBeNull();
+    expect(document.querySelector('a[rel="next"]')?.getAttribute("href")).toBe(
+      "/sessions/final/",
+    );
   });
 });
