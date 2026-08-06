@@ -223,11 +223,10 @@ const createPlainTextOutputNormalizer = (
       if (mode === 0) {
         line = line.slice(0, cursor);
       } else if (mode === 1) {
-        line = line.slice(cursor + 1);
-        cursor = 0;
+        const lastCell = Math.min(cursor, line.length - 1);
+        for (let index = 0; index <= lastCell; index += 1) line[index] = " ";
       } else if (mode === 2) {
         line = [];
-        cursor = 0;
       }
     }
   };
@@ -239,7 +238,6 @@ const createPlainTextOutputNormalizer = (
         emitLine();
         return;
       }
-      line = [];
       cursor = 0;
     }
 

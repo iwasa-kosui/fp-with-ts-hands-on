@@ -274,6 +274,57 @@ describe("single-file execution", () => {
     ]);
   });
 
+  it.each([
+    {
+      name: "bare carriage return overwrites from column zero across chunks",
+      chunks: ["abcdef", "\r", "XY\n"],
+      expected: "XYcdef\n",
+    },
+    {
+      name: "CSI 1K erases through the cursor without shifting the suffix",
+      chunks: ["abcdef\x1b[3G", "\x1b[1KXY\n"],
+      expected: "  XYef\n",
+    },
+    {
+      name: "CSI 2K clears the line without resetting the cursor column",
+      chunks: ["abcdef\x1b[3G", "\x1b[2KXY\n"],
+      expected: "  XY\n",
+    },
+  ])("normalizes terminal cursor semantics: $name", async ({ chunks, expected }) => {
+    const outputStream = (streamChunks: readonly string[]) =>
+      new ReadableStream<string>({
+        start(controller) {
+          for (const chunk of streamChunks) controller.enqueue(chunk);
+          controller.close();
+        },
+      });
+    const spawn = vi.fn(async (command: string) => ({
+      exit: Promise.resolve(0),
+      output: outputStream(command === "npm" ? [] : chunks),
+    }));
+    webContainerMock.boot.mockReset();
+    webContainerMock.boot.mockResolvedValue({
+      mount: async () => undefined,
+      spawn,
+      fs: {
+        writeFile: async () => undefined,
+        readdir: async () => [],
+        readFile: async () => "",
+      },
+    });
+    const runner = createWebContainerRunner();
+    const output: string[] = [];
+
+    await runner.run(
+      { filePath: "src/main.ts", files: { "src/main.ts": "" } },
+      (update) => {
+        if (update.kind === "output") output.push(update.chunk);
+      },
+    );
+
+    expect(output.join("")).toBe(expected);
+  });
+
   it("adapts WebContainer lazily and streams normalized install and run output", async () => {
     const outputStream = (chunks: readonly string[]) =>
       new ReadableStream<string>({
