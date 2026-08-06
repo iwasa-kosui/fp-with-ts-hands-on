@@ -2,6 +2,7 @@ import packageJsonSource from "../../../../packages/clinic-example/package.json?
 import tsconfigSource from "../../../../packages/clinic-example/tsconfig.json?raw";
 import vitestConfigSource from "../../../../packages/clinic-example/vitest.config.ts?raw";
 import exerciseConfigSource from "../../../../packages/clinic-example/vitest.exercises.config.ts?raw";
+import tsconfigBaseSource from "../../../../tsconfig.base.json?raw";
 import type { ProjectFiles } from "./types";
 
 const packageSources = import.meta.glob(
@@ -12,6 +13,10 @@ const packageSources = import.meta.glob(
 const packagePrefix = "../../../../packages/clinic-example/";
 const packageJson = JSON.parse(packageJsonSource) as {
   devDependencies?: Record<string, string>;
+  [key: string]: unknown;
+};
+const tsconfig = JSON.parse(tsconfigSource) as {
+  extends?: string;
   [key: string]: unknown;
 };
 
@@ -30,7 +35,12 @@ export const projectFiles: ProjectFiles = Object.freeze({
     null,
     2,
   ),
-  "tsconfig.json": tsconfigSource,
+  "tsconfig.json": JSON.stringify(
+    { ...tsconfig, extends: "./tsconfig.base.json" },
+    null,
+    2,
+  ),
+  "tsconfig.base.json": tsconfigBaseSource,
   "vitest.config.ts": vitestConfigSource,
   "vitest.exercises.config.ts": exerciseConfigSource,
 });

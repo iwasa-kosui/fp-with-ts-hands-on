@@ -58,6 +58,23 @@ const requiredFiles = {
 } as const;
 
 describe("module code workspaces", () => {
+  it("mounts the extended TypeScript config inside the project", () => {
+    const tsconfigSource = projectFiles["tsconfig.json"];
+    expect(tsconfigSource).toEqual(expect.any(String));
+    const tsconfig = JSON.parse(tsconfigSource!) as { extends: string };
+    expect(tsconfig.extends).toMatch(/^\.\/[^/]/);
+    const extendedPath = tsconfig.extends.slice(2);
+
+    const baseConfigSource = projectFiles[extendedPath];
+    expect(baseConfigSource, `missing extended tsconfig: ${extendedPath}`).toEqual(
+      expect.any(String),
+    );
+    const baseConfig = JSON.parse(baseConfigSource!) as {
+      compilerOptions?: Record<string, unknown>;
+    };
+    expect(Object.keys(baseConfig.compilerOptions ?? {})).not.toHaveLength(0);
+  });
+
   it("covers every catalog module with real, unique visible files", () => {
     for (const module of modules) {
       const workspace = moduleWorkspaceFor(module.slug);
