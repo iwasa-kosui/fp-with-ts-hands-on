@@ -1,0 +1,110 @@
+export type Scheduled = Readonly<{
+  kind: "Scheduled";
+  appointmentId: string;
+  petId: string;
+  ownerId: string;
+  scheduledAt: string;
+  reason: string;
+}>;
+
+export type CheckedIn = Readonly<{
+  kind: "CheckedIn";
+  appointmentId: string;
+  petId: string;
+  ownerId: string;
+  scheduledAt: string;
+  reason: string;
+  checkedInAt: string;
+}>;
+
+export type InExamination = Readonly<{
+  kind: "InExamination";
+  appointmentId: string;
+  petId: string;
+  ownerId: string;
+  scheduledAt: string;
+  reason: string;
+  checkedInAt: string;
+  veterinarianId: string;
+  examinationStartedAt: string;
+}>;
+
+export type Paid = Readonly<{
+  kind: "Paid";
+  appointmentId: string;
+  petId: string;
+  ownerId: string;
+  scheduledAt: string;
+  reason: string;
+  checkedInAt: string;
+  veterinarianId: string;
+  examinationStartedAt: string;
+  diagnosis: string;
+  treatment: string;
+  amount: number;
+  paidAt: string;
+}>;
+
+export type Canceled = Readonly<{
+  kind: "Canceled";
+  appointmentId: string;
+  petId: string;
+  ownerId: string;
+  scheduledAt: string;
+  reason: string;
+  checkedInAt?: string;
+  cancellationReason: string;
+  canceledAt: string;
+}>;
+
+export type Appointment = Scheduled | CheckedIn | InExamination | Paid | Canceled;
+
+export type BookAppointmentInput = Readonly<{
+  appointmentId: string;
+  petId: string;
+  ownerId: string;
+  scheduledAt: string;
+  reason: string;
+}>;
+
+export type RecordPaymentInput = Readonly<{
+  diagnosis: string;
+  treatment: string;
+  amount: number;
+}>;
+
+export const Appointment = {
+  book: (input: BookAppointmentInput): Scheduled => ({ kind: "Scheduled", ...input }),
+  checkIn: (appointment: Scheduled, now: string): CheckedIn => ({
+    ...appointment,
+    kind: "CheckedIn",
+    checkedInAt: now,
+  }),
+  startExamination: (
+    appointment: CheckedIn,
+    veterinarianId: string,
+    now: string,
+  ): InExamination => ({
+    ...appointment,
+    kind: "InExamination",
+    veterinarianId,
+    examinationStartedAt: now,
+  }),
+  recordPayment: (
+    appointment: InExamination,
+    input: RecordPaymentInput,
+    now: string,
+  ): Paid => ({ ...appointment, ...input, kind: "Paid", paidAt: now }),
+  cancelWithReason: (
+    appointment: Scheduled | CheckedIn,
+    cancellationReason: string,
+    now: string,
+  ): Canceled => ({
+    ...appointment,
+    kind: "Canceled",
+    cancellationReason,
+    canceledAt: now,
+  }),
+  isTerminal: (appointment: Appointment): appointment is Paid | Canceled =>
+    appointment.kind === "Paid" || appointment.kind === "Canceled",
+} as const;
