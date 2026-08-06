@@ -27,27 +27,74 @@ describe("Module 00 pages", () => {
     const document = parseStaticMarkup(html);
     const compact = (text: string | null): string =>
       text?.replaceAll(/\s+/g, " ").trim() ?? "";
-    const transitionTable = document.querySelector("#visit-state-transitions");
+    const transitionTimeline = document.querySelector(
+      "ol#visit-state-transitions.visit-timeline",
+    );
 
-    expect(transitionTable?.getAttribute("aria-label")).toBe("来院の状態遷移");
+    expect(transitionTimeline?.getAttribute("aria-label")).toBe("来院の状態遷移");
+
+    const steps = [...(transitionTimeline?.children ?? [])].filter((child) =>
+      child.classList.contains("visit-timeline__step"),
+    );
+    expect(steps).toHaveLength(4);
     expect(
-      [...(transitionTable?.querySelectorAll("thead th") ?? [])].map((cell) =>
-        compact(cell.textContent),
-      ),
-    ).toEqual(["業務で起きること", "遷移前の状態", "遷移後の状態", "その状態に残る情報"]);
-    expect(
-      [...(transitionTable?.querySelectorAll("tbody tr") ?? [])].map((row) =>
-        [...row.querySelectorAll("th, td")].map((cell) => compact(cell.textContent)),
-      ),
+      steps.map((step) => ({
+        event: compact(step.querySelector("h4")?.textContent ?? null),
+        actor: compact(step.querySelector(".visit-timeline__actor")?.textContent ?? null),
+        states: [...step.querySelectorAll(".visit-timeline__state")].map((state) => ({
+          name: compact(state.querySelector(".visit-timeline__state-name")?.textContent ?? null),
+          code: state.querySelector("code")?.textContent ?? null,
+        })),
+        record: compact(step.querySelector(".visit-timeline__record")?.textContent ?? null),
+      })),
     ).toEqual([
-      ["飼い主の予約を受け付ける", "来院記録なし", "予約済み（scheduled）", "予約日時"],
-      ["受付スタッフが来院を確認する", "予約済み（scheduled）", "受付済み（checked-in）", "受付時刻"],
-      ["獣医師が診察を開始する", "受付済み（checked-in）", "診察中（in-examination）", "担当獣医師、診察開始時刻"],
-      ["会計担当が診療内容と請求を確定する", "診察中（in-examination）", "会計済み・来院完了（paid）", "診断、処置、請求金額、会計時刻"],
-      ["飼い主または病院が予約を取り消す", "予約済み（scheduled）または受付済み（checked-in）", "キャンセル（canceled）", "キャンセル理由、キャンセル時刻、任意の再診希望日"],
+      {
+        event: "予約を受け付ける",
+        actor: "飼い主",
+        states: [
+          { name: "来院記録なし", code: null },
+          { name: "予約済み", code: "scheduled" },
+        ],
+        record: "予約日時を残す",
+      },
+      {
+        event: "来院を確認する",
+        actor: "受付スタッフ",
+        states: [
+          { name: "予約済み", code: "scheduled" },
+          { name: "受付済み", code: "checked-in" },
+        ],
+        record: "受付時刻を残す",
+      },
+      {
+        event: "診察を開始する",
+        actor: "獣医師",
+        states: [
+          { name: "受付済み", code: "checked-in" },
+          { name: "診察中", code: "in-examination" },
+        ],
+        record: "担当獣医師と診察開始時刻を残す",
+      },
+      {
+        event: "会計を確定する",
+        actor: "会計担当",
+        states: [
+          { name: "診察中", code: "in-examination" },
+          { name: "会計済み・来院完了", code: "paid" },
+        ],
+        record: "診断、処置、請求金額、会計時刻を残す",
+      },
     ]);
-    expect(html).toContain("Paid と Canceled は終端状態");
-    expect(html).toContain("再診は新しい予約として扱い、今回の演習では扱いません");
+    const cancellationBranch = document.querySelector(".visit-timeline__branch");
+    expect(compact(cancellationBranch?.querySelector(".visit-timeline__actor")?.textContent ?? null)).toBe(
+      "飼い主または病院",
+    );
+    expect(compact(cancellationBranch?.textContent ?? null)).toContain(
+      "予約済みまたは受付済みからだけキャンセルでき、キャンセル",
+    );
+    expect(
+      compact(document.querySelector(".visit-timeline__terminal")?.textContent ?? null),
+    ).toContain("Paid と Canceled は終端状態");
 
     expect([...document.querySelectorAll("h2")].map(({ textContent }) => textContent)).toEqual([
       "開発に参加する前に",
