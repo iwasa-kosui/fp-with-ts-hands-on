@@ -7,6 +7,7 @@ import {
 } from "../../code-explorer/runner";
 import type { ModuleWorkspace, ProjectFiles } from "../../code-explorer/types";
 import { FileTree } from "./FileTree";
+import { MonacoEditor } from "./MonacoEditor";
 import { OutputPanel, type ExecutionState } from "./OutputPanel";
 
 export type EditorProps = Readonly<{
@@ -21,7 +22,7 @@ export type EditorProps = Readonly<{
 export type CodeExplorerProps = Readonly<{
   workspace: ModuleWorkspace;
   projectFiles: ProjectFiles;
-  Editor: ComponentType<EditorProps>;
+  Editor?: ComponentType<EditorProps>;
   runnerFactory?: () => CodeRunner;
   supportsRuntime?: () => boolean;
 }>;
@@ -47,7 +48,7 @@ const messageFrom = (error: unknown): string =>
 export const CodeExplorer = ({
   workspace,
   projectFiles,
-  Editor,
+  Editor = MonacoEditor,
   runnerFactory = defaultRunnerFactory,
   supportsRuntime = defaultSupportsRuntime,
 }: CodeExplorerProps) => {
