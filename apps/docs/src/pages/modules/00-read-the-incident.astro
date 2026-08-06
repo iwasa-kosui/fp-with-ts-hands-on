@@ -9,19 +9,25 @@ if (module === undefined) throw new Error("Unknown module: 00-read-the-incident"
 
 <ModuleLayout module={module}>
   <ol slot="toc">
-    <li><a href="#requirement">要求を分解する</a></li>
+    <li><a href="#requirement">要求を整理しよう</a></li>
     <li><a href="#exercise">要求をテストから読む</a></li>
     <li><a href="#preparation">次の編集の準備</a></li>
     <li><a href="#review">レビューと振り返り</a></li>
   </ol>
 
   <section id="requirement">
-    <h2>要求を分解する</h2>
-    <p>
-      キャンセル後の業務対応に必要な情報を整理し、<strong
-        >キャンセル理由と再診希望日を残せるようにします</strong
-      >。
-    </p>
+    <h2>要求を整理しよう</h2>
+    <div class="requirement-dialogue" role="group" aria-label="飼い主と受付スタッフの会話">
+      <div class="requirement-dialogue__line requirement-dialogue__line--owner">
+        <p class="requirement-dialogue__speaker">飼い主</p>
+        <p class="requirement-dialogue__bubble">予約をキャンセルしたいです。落ち着いたら、再診も希望しています。</p>
+      </div>
+      <div class="requirement-dialogue__line requirement-dialogue__line--receptionist">
+        <p class="requirement-dialogue__speaker">受付スタッフ</p>
+        <p class="requirement-dialogue__bubble">承知しました。キャンセル理由と再診希望日を残して、次回の対応につなげましょう。</p>
+      </div>
+    </div>
+    <p class="requirement-prompt"><strong>参加者のみなさんへ:</strong> この要望を安全に扱うには、まず要求を整理しよう。どの状態に、どの情報が必要でしょうか。</p>
     <p>今回のミッションは、この追加要求を状態ごとに必要な情報へ分解することです。</p>
     <p>
       キャンセル理由と再診希望日は、どの予約にも付ける属性ではありません。<code>Canceled</code>

@@ -114,8 +114,70 @@ describe("Module 00 pages", () => {
     expect(html).toContain("exercise:01");
 
     const document = parseStaticMarkup(html);
+    const requirement = document.querySelector("#requirement");
+    const dialogue = requirement?.querySelector(".requirement-dialogue");
+    const prompt = requirement?.querySelector(".requirement-prompt");
+    const requirementChildren = [...(requirement?.children ?? [])];
+
+    expect(dialogue?.getAttribute("role")).toBe("group");
+    expect(dialogue?.getAttribute("aria-label")).toBe("飼い主と受付スタッフの会話");
+    const speakers = [...(dialogue?.querySelectorAll(".requirement-dialogue__speaker") ?? [])];
+    expect(
+      speakers.map(({ textContent }) => textContent),
+    ).toEqual(["飼い主", "受付スタッフ"]);
+    const ownerLine = dialogue?.querySelector(".requirement-dialogue__line--owner");
+    const receptionistLine = dialogue?.querySelector(".requirement-dialogue__line--receptionist");
+    expect(ownerLine?.querySelector(".requirement-dialogue__speaker")?.textContent).toBe("飼い主");
+    expect(receptionistLine?.querySelector(".requirement-dialogue__speaker")?.textContent).toBe(
+      "受付スタッフ",
+    );
+    const ownerBubble = ownerLine?.querySelector(".requirement-dialogue__bubble");
+    const receptionistBubble = receptionistLine?.querySelector(".requirement-dialogue__bubble");
+    expect(ownerLine).not.toBe(receptionistLine);
+    expect(ownerBubble).not.toBe(receptionistBubble);
+    expect(ownerBubble?.parentElement).toBe(ownerLine);
+    expect(receptionistBubble?.parentElement).toBe(receptionistLine);
+    expect(ownerBubble?.textContent).toContain("キャンセル");
+    expect(ownerBubble?.textContent).toContain("再診");
+    expect(ownerBubble?.textContent).toContain("希望");
+    expect(receptionistBubble?.textContent).toContain("キャンセル理由");
+    expect(receptionistBubble?.textContent).toContain("再診希望日");
+    expect(prompt?.textContent).toContain("参加者のみなさんへ");
+    expect(prompt?.textContent).toContain("要求を整理しよう");
+    const mission = requirementChildren.find(({ textContent }) =>
+      textContent?.includes("今回のミッションは、この追加要求を状態ごとに必要な情報へ分解することです。"),
+    );
+    const cancellationExplanation = requirementChildren.find(({ textContent }) =>
+      textContent?.replaceAll(/\s+/g, " ").trim().includes("Canceled という状態にだけ必要なデータです。"),
+    );
+    const invariant = requirementChildren.find(({ textContent }) =>
+      textContent?.includes("守る不変条件:"),
+    );
+    expect(cancellationExplanation?.textContent?.replaceAll(/\s+/g, " ").trim()).toContain(
+      "Canceled という状態にだけ必要なデータです。",
+    );
+    expect(invariant?.textContent).toContain("守る不変条件:");
+    expect(mission?.textContent).toContain(
+      "今回のミッションは、この追加要求を状態ごとに必要な情報へ分解することです。",
+    );
+    expect(requirementChildren.indexOf(dialogue as Element)).toBeLessThan(
+      requirementChildren.indexOf(prompt as Element),
+    );
+    expect(requirementChildren.indexOf(prompt as Element)).toBeLessThan(
+      requirementChildren.indexOf(cancellationExplanation as Element),
+    );
+    expect(requirementChildren.indexOf(prompt as Element)).toBeLessThan(
+      requirementChildren.indexOf(mission as Element),
+    );
+    expect(requirementChildren.indexOf(mission as Element)).toBeLessThan(
+      requirementChildren.indexOf(cancellationExplanation as Element),
+    );
+    expect(requirementChildren.indexOf(prompt as Element)).toBeLessThan(
+      requirementChildren.indexOf(invariant as Element),
+    );
     expect(
       [...document.querySelectorAll("h2")].map(({ textContent }) => textContent),
-    ).toEqual(["要求を分解する", "要求をテストから読む", "次の編集の準備", "レビューと振り返り"]);
+    ).toEqual(["要求を整理しよう", "要求をテストから読む", "次の編集の準備", "レビューと振り返り"]);
+    expect(document.querySelector('a[href="#requirement"]')?.textContent).toBe("要求を整理しよう");
   });
 });
