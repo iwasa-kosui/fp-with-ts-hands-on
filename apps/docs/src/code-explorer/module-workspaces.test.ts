@@ -77,4 +77,14 @@ describe("module code workspaces", () => {
       "Unknown module workspace: not-a-module",
     );
   });
+
+  it("returns visible files that cannot corrupt a later workspace result", () => {
+    const firstWorkspace = moduleWorkspaceFor("00-break-the-app");
+    expect(() => {
+      (firstWorkspace.visibleFiles as string[]).push("src/unexpected.ts");
+    }).toThrow();
+
+    const laterWorkspace = moduleWorkspaceFor("00-break-the-app");
+    expect(laterWorkspace.visibleFiles).not.toContain("src/unexpected.ts");
+  });
 });

@@ -109,5 +109,9 @@ export const moduleWorkspaceFor = (slug: string): ModuleWorkspace => {
     throw new Error(`Unknown module workspace: ${slug}`);
   }
 
-  return Object.freeze({ slug, ...workspace });
+  return Object.freeze({
+    slug,
+    ...workspace,
+    visibleFiles: Object.freeze([...workspace.visibleFiles]),
+  });
 };
