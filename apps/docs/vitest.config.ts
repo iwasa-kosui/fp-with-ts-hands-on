@@ -1,9 +1,10 @@
-import { defineConfig } from "vitest/config";
+/// <reference types="vitest/config" />
+import { getViteConfig } from "astro/config";
 
-export default defineConfig({
+export default getViteConfig({
   test: {
     environment: "happy-dom",
     globals: true,
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.{ts,tsx}", "../../worker/**/*.test.ts"],
   },
 });

@@ -1,0 +1,23 @@
+---
+import { CopyButton } from "./CopyButton";
+import CodeBlock from "./CodeBlock.astro";
+
+interface Props {
+  phase: "red" | "green";
+  command: string;
+  expected: string;
+}
+
+const { phase, command, expected } = Astro.props;
+---
+
+<div class:list={["command-block", `command-block--${phase}`]} data-phase={phase}>
+  <div class="command-block__header">
+    <p class="command-block__label">
+      <strong>{phase === "red" ? "失敗を確認する" : "効果を確認する"}</strong>
+    </p>
+    <CopyButton client:idle value={command} />
+  </div>
+  <CodeBlock code={command} language="shell" />
+  <p><strong>期待結果:</strong> {expected}</p>
+</div>

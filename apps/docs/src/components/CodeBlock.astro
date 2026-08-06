@@ -1,0 +1,14 @@
+---
+interface Props {
+  code: string;
+  language?: string;
+  label?: string;
+}
+
+const { code, language = "text", label } = Astro.props;
+---
+
+<figure class="code-block">
+  {label === undefined ? null : <figcaption>{label}</figcaption>}
+  <pre><code class={`language-${language}`}>{code}</code></pre>
+</figure>
