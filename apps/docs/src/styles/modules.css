@@ -192,6 +192,116 @@
   outline-offset: 4px;
 }
 
+.visit-timeline {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.visit-timeline__step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.visit-timeline__step:not(:last-child)::before {
+  position: absolute;
+  top: 2rem;
+  bottom: -1rem;
+  left: 0.95rem;
+  width: 2px;
+  background: var(--case-mint);
+  content: "";
+}
+
+.visit-timeline__index {
+  z-index: 1;
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--case-lemon);
+  font-weight: 800;
+}
+
+.visit-timeline__step h4 {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.visit-timeline__actor,
+.visit-timeline__record {
+  margin: 0.15rem 0 0;
+  color: color-mix(in srgb, var(--case-ink) 72%, var(--case-paper));
+  font-size: 0.9rem;
+}
+
+.visit-timeline__transition {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.5rem 0 0;
+}
+
+.visit-timeline__state {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--case-line);
+  border-radius: 0.35rem;
+  background: var(--case-mint);
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.visit-timeline__state code {
+  overflow-wrap: anywhere;
+  font-weight: 400;
+}
+
+.visit-timeline__branch {
+  margin: 1.25rem 0 0 2.75rem;
+  padding: 0.75rem 1rem;
+  border-left: 0.4rem solid var(--case-coral);
+  background: color-mix(in srgb, var(--case-lemon) 35%, var(--case-paper));
+}
+
+.visit-timeline__branch h4,
+.visit-timeline__branch p {
+  margin: 0;
+}
+
+.visit-timeline__branch p + p {
+  margin-top: 0.5rem;
+}
+
+.visit-timeline__terminal {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--case-line);
+  background: var(--case-lemon);
+}
+
+.visit-timeline .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @media (min-width: 768px) {
   .case-file__body {
     grid-template-columns: minmax(12rem, 17rem) minmax(0, 70ch);

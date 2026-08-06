@@ -105,14 +105,86 @@ if (module === undefined) throw new Error("Unknown module: 00-break-the-app");
 
     <section id="visit-modeling">
       <h3>来院をモデリングしよう</h3>
-      <p>アプリでは、来院の進み具合をコードで扱う値に対応付けます。</p>
-      <ol aria-label="来院状態の流れ">
-        <li>予約済み（<code>scheduled</code>）</li>
-        <li>受付済み（<code>checked-in</code>）</li>
-        <li>診察中（<code>in-examination</code>）</li>
-        <li>会計済み・来院完了（<code>paid</code>）</li>
+      <p>アプリでは、業務で起きた出来事ごとに、来院記録を次の状態へ進めます。</p>
+      <ol id="visit-state-transitions" class="visit-timeline" aria-label="来院の状態遷移">
+        <li class="visit-timeline__step">
+          <span class="visit-timeline__index" aria-hidden="true">1</span>
+          <div>
+            <h4>予約を受け付ける</h4>
+            <p class="visit-timeline__actor">飼い主</p>
+            <p class="visit-timeline__transition">
+              <span class="visit-timeline__state">
+                <span class="visit-timeline__state-name">来院記録なし</span>
+              </span>
+              <span class="sr-only">から</span><span aria-hidden="true">→</span>
+              <span class="visit-timeline__state">
+                <span class="visit-timeline__state-name">予約済み</span><code>scheduled</code>
+              </span>
+            </p>
+            <p class="visit-timeline__record">予約日時を残す</p>
+          </div>
+        </li>
+        <li class="visit-timeline__step">
+          <span class="visit-timeline__index" aria-hidden="true">2</span>
+          <div>
+            <h4>来院を確認する</h4>
+            <p class="visit-timeline__actor">受付スタッフ</p>
+            <p class="visit-timeline__transition">
+              <span class="visit-timeline__state">
+                <span class="visit-timeline__state-name">予約済み</span><code>scheduled</code>
+              </span>
+              <span class="sr-only">から</span><span aria-hidden="true">→</span>
+              <span class="visit-timeline__state">
+                <span class="visit-timeline__state-name">受付済み</span><code>checked-in</code>
+              </span>
+            </p>
+            <p class="visit-timeline__record">受付時刻を残す</p>
+          </div>
+        </li>
+        <li class="visit-timeline__step">
+          <span class="visit-timeline__index" aria-hidden="true">3</span>
+          <div>
+            <h4>診察を開始する</h4>
+            <p class="visit-timeline__actor">獣医師</p>
+            <p class="visit-timeline__transition">
+              <span class="visit-timeline__state">
+                <span class="visit-timeline__state-name">受付済み</span><code>checked-in</code>
+              </span>
+              <span class="sr-only">から</span><span aria-hidden="true">→</span>
+              <span class="visit-timeline__state">
+                <span class="visit-timeline__state-name">診察中</span><code>in-examination</code>
+              </span>
+            </p>
+            <p class="visit-timeline__record">担当獣医師と診察開始時刻を残す</p>
+          </div>
+        </li>
+        <li class="visit-timeline__step">
+          <span class="visit-timeline__index" aria-hidden="true">4</span>
+          <div>
+            <h4>会計を確定する</h4>
+            <p class="visit-timeline__actor">会計担当</p>
+            <p class="visit-timeline__transition">
+              <span class="visit-timeline__state">
+                <span class="visit-timeline__state-name">診察中</span><code>in-examination</code>
+              </span>
+              <span class="sr-only">から</span><span aria-hidden="true">→</span>
+              <span class="visit-timeline__state">
+                <span class="visit-timeline__state-name">会計済み・来院完了</span><code>paid</code>
+              </span>
+            </p>
+            <p class="visit-timeline__record">診断、処置、請求金額、会計時刻を残す</p>
+          </div>
+        </li>
       </ol>
-      <p><strong>守るルール:</strong> 今回の演習では、paid の来院を診察中へ戻さないことを守ります。</p>
+      <aside class="visit-timeline__branch" aria-labelledby="cancellation-branch-title">
+        <h4 id="cancellation-branch-title">キャンセルの分岐</h4>
+        <p class="visit-timeline__actor">飼い主または病院</p>
+        <p>予約済みまたは受付済みからだけキャンセルでき、キャンセル（<code>canceled</code>）へ進みます。</p>
+        <p>キャンセル理由、キャンセル時刻、任意の再診希望日を残します。</p>
+      </aside>
+      <aside class="visit-timeline__terminal" aria-label="終端状態のルール">
+        <strong>守るルール:</strong> Paid と Canceled は終端状態です。会計済みの来院を診察中へ戻す業務は存在しません。再診は新しい予約として扱い、今回の演習では扱いません。
+      </aside>
     </section>
 
     <section id="developer-task">
