@@ -1,0 +1,306 @@
+.code-explorer-preview {
+  min-height: 100vh;
+}
+
+.code-explorer-preview .code-explorer-preview__header {
+  padding: 0.75rem max(1rem, calc((100% - var(--content-width)) / 2));
+  border-bottom: 0.1875rem solid var(--color-text);
+  background: var(--color-background);
+}
+
+.code-explorer-preview .code-explorer-preview__header nav {
+  width: min(100%, var(--content-width));
+  margin-inline: auto;
+}
+
+.code-explorer-preview .code-explorer-preview__header a {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  padding: 0.4rem 0.75rem;
+  border: 0.1875rem solid var(--color-text);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.code-explorer-preview .code-explorer-preview__shell {
+  width: min(100% - 2rem, var(--content-width));
+  margin-inline: auto;
+  padding-block: clamp(2rem, 5vw, 4rem);
+}
+
+.code-explorer-preview .code-explorer-preview__intro {
+  max-width: 62rem;
+  margin-bottom: 2rem;
+}
+
+.code-explorer-preview .code-explorer-preview__eyebrow {
+  margin-bottom: 0.5rem;
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.code-explorer-preview .code-explorer-preview__intro > p {
+  max-width: 70ch;
+  font-weight: 700;
+}
+
+.code-explorer-preview .code-explorer-preview__notice {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 0.1875rem solid var(--color-text);
+  border-left-width: 0.75rem;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.code-explorer-preview .code-explorer-preview__notice strong {
+  color: var(--color-accent-text);
+}
+
+.code-explorer-preview .code-explorer-preview__notice p {
+  margin: 0.25rem 0 0;
+}
+
+.code-explorer-preview [data-code-explorer] {
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 1.75rem);
+  border: 0.25rem solid var(--color-text);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-hard);
+}
+
+.code-explorer-preview .code-explorer {
+  min-width: 0;
+}
+
+.code-explorer-preview .code-explorer > p {
+  margin-bottom: 1rem;
+  font-weight: 900;
+}
+
+.code-explorer-preview .code-explorer__workspace {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.32fr) minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+}
+
+.code-explorer-preview .code-explorer__workspace nav {
+  min-width: 0;
+  max-height: 38rem;
+  padding: 0.75rem;
+  overflow: auto;
+  border: 0.1875rem solid var(--color-text);
+  border-radius: var(--radius);
+  background: var(--color-background);
+  overscroll-behavior: contain;
+}
+
+.code-explorer-preview .code-explorer__workspace nav ul {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.code-explorer-preview .code-explorer__workspace nav ul ul {
+  margin: 0.25rem 0 0.5rem 0.45rem;
+  padding-left: 0.75rem;
+  border-left: 0.125rem solid var(--color-border);
+}
+
+.code-explorer-preview .code-explorer__workspace nav li + li {
+  margin-top: 0.25rem;
+}
+
+.code-explorer-preview .code-explorer__folder {
+  display: block;
+  padding: 0.25rem 0.4rem;
+  font-weight: 950;
+}
+
+.code-explorer-preview .code-explorer__workspace nav button {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  border: 0.125rem solid transparent;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.code-explorer-preview .code-explorer__workspace nav button > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.code-explorer-preview
+  .code-explorer__workspace
+  nav
+  button[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  background: var(--color-highlight);
+  font-weight: 900;
+}
+
+.code-explorer-preview .code-explorer__dirty {
+  flex: none;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  background: var(--color-pink);
+  color: var(--color-surface);
+  font-size: 0.6875rem;
+  font-weight: 950;
+}
+
+.code-explorer-preview .code-explorer__editor {
+  min-width: 0;
+  overflow: hidden;
+  border: 0.1875rem solid var(--color-text);
+  border-radius: var(--radius);
+  background: var(--color-code);
+}
+
+.code-explorer-preview .code-explorer__monaco {
+  position: relative;
+  min-width: 0;
+  min-height: 32rem;
+}
+
+.code-explorer-preview .code-explorer__monaco > pre {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 1rem;
+  overflow: auto;
+  background: var(--color-code);
+  color: var(--color-surface);
+  line-height: 1.55;
+  overscroll-behavior: contain;
+}
+
+.code-explorer-preview
+  .code-explorer__monaco
+  > div[aria-label^="コードエディタ:"] {
+  min-width: 0;
+  min-height: 32rem;
+}
+
+.code-explorer-preview .code-explorer__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-top: 0.1875rem solid var(--color-text);
+  background: var(--color-surface);
+}
+
+.code-explorer-preview .code-explorer__actions button {
+  min-height: 2.75rem;
+  padding: 0.45rem 0.8rem;
+  border: 0.1875rem solid var(--color-text);
+  border-radius: 0.375rem;
+  background: var(--color-lemon);
+  color: var(--color-text);
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.code-explorer-preview .code-explorer__actions [data-action="run"] {
+  background: var(--color-highlight);
+}
+
+.code-explorer-preview .code-explorer__output {
+  width: 100%;
+  min-width: 0;
+  margin-top: 1rem;
+  padding: 1rem;
+  overflow: hidden;
+  border: 0.1875rem solid var(--color-text);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.code-explorer-preview .code-explorer__output > p {
+  margin-bottom: 0.5rem;
+  font-weight: 950;
+}
+
+.code-explorer-preview .code-explorer__output pre {
+  max-height: 22rem;
+  margin: 0;
+  padding: 0.75rem;
+  overflow: auto;
+  border-radius: 0.375rem;
+  background: var(--color-code);
+  color: var(--color-surface);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overscroll-behavior: contain;
+}
+
+.code-explorer-preview .code-explorer__output--working {
+  border-color: var(--color-primary);
+}
+
+.code-explorer-preview .code-explorer__output--success {
+  border-color: var(--color-highlight);
+  border-left-width: 0.75rem;
+}
+
+.code-explorer-preview .code-explorer__output--failure {
+  border-color: var(--color-accent-text);
+  border-left-width: 0.75rem;
+}
+
+.code-explorer-preview .code-explorer__output--canceled {
+  border-color: var(--color-primary);
+  border-left-width: 0.75rem;
+}
+
+.code-explorer-preview :is(a, button):focus-visible {
+  outline: 0.25rem solid var(--color-focus);
+  outline-offset: 0.1875rem;
+}
+
+.code-explorer-preview button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 47.99rem) {
+  .code-explorer-preview .code-explorer__workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .code-explorer-preview .code-explorer__workspace nav {
+    max-height: 18rem;
+  }
+
+  .code-explorer-preview .code-explorer__monaco,
+  .code-explorer-preview
+    .code-explorer__monaco
+    > div[aria-label^="コードエディタ:"] {
+    min-height: 24rem;
+  }
+
+  .code-explorer-preview .code-explorer__actions button {
+    flex: 1 1 12rem;
+  }
+}

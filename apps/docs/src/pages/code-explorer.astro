@@ -1,0 +1,42 @@
+---
+import { CodeExplorer } from "../components/code-explorer/CodeExplorer";
+import { moduleWorkspaceFor } from "../code-explorer/module-workspaces";
+import { projectFiles } from "../code-explorer/project-files";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import "../styles/code-explorer-preview.css";
+
+const workspace = moduleWorkspaceFor("01-state-modeling");
+---
+
+<BaseLayout
+  title="Code Explorer プレビュー | FP with TypeScript"
+  description="ブラウザ上で TypeScript の教材コードを編集・実行する実験用プレビュー"
+  bodyClass="code-explorer-preview"
+>
+  <header class="code-explorer-preview__header" aria-label="サイトヘッダー">
+    <nav aria-label="サイトナビゲーション">
+      <a href="/">← WAN NYAN CLINIC ホームへ</a>
+    </nav>
+  </header>
+
+  <main class="code-explorer-preview__shell">
+    <section class="code-explorer-preview__intro" aria-labelledby="page-title">
+      <p class="code-explorer-preview__eyebrow">Experimental preview</p>
+      <h1 id="page-title">Code Explorer を試す</h1>
+      <p>
+        ファイルを選んでコードを書き換え、実行ボタンで TypeScript のテストを動かせます。選択中のファイルだけを元に戻すこともできます。
+      </p>
+      <p>
+        実行には最新版の Chrome または Edge を推奨します。初回は実行環境と依存パッケージの準備に時間がかかる場合があります。
+      </p>
+      <aside class="code-explorer-preview__notice" aria-label="プレビューについて">
+        <strong>試用前にご確認ください</strong>
+        <p>これは現行の clinic-example を使う実験用プレビューです。編集内容はこのブラウザ内だけで動作し、保存されません。教材の session 化に伴い、題材やファイル構成は変更される場合があります。</p>
+      </aside>
+    </section>
+
+    <div data-code-explorer={workspace.slug}>
+      <CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} />
+    </div>
+  </main>
+</BaseLayout>
