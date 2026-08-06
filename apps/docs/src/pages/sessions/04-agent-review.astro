@@ -1,14 +1,14 @@
 ---
 import CodeBlock from "../../components/CodeBlock.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
-import ModuleLayout from "../../layouts/ModuleLayout.astro";
-import { moduleBySlug } from "../../modules/catalog";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
 
-const module = moduleBySlug("04-agent-review");
-if (module === undefined) throw new Error("Unknown module: 04-agent-review");
+const session = sessionBySlug("04-agent-review");
+if (session === undefined) throw new Error("Unknown session: 04-agent-review");
 ---
 
-<ModuleLayout module={module}>
+<SessionLayout session={session}>
   <ol slot="toc">
     <li><a href="#separate-agent-review">依頼とレビューの責任を分ける</a></li>
     <li><a href="#build-agent-request">エージェントへの依頼を組み立てる</a></li>
@@ -139,9 +139,9 @@ if (module === undefined) throw new Error("Unknown module: 04-agent-review");
       event の5項目を順に prompt へ入れ、検証可能な文になっているか確認します。
     </p>
 
-    <h3>Module 05へ</h3>
+    <h3>Session 05へ</h3>
     <p>
       次は、検査結果の入力境界、型付けした失敗、PII、状態判定、成功時の変更記録を一つの電話フォロー要求へ統合します。ここで作った5観点を、その実装依頼とレビューに使います。
     </p>
   </section>
-</ModuleLayout>
+</SessionLayout>

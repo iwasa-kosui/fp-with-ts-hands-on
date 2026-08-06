@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import StateModelingPage from "../../../pages/modules/01-state-modeling.astro";
-import BoundaryAndIdsPage from "../../../pages/modules/02-boundary-and-ids.astro";
+import StateModelingPage from "../../../pages/sessions/01-state-modeling.astro";
+import BoundaryAndIdsPage from "../../../pages/sessions/02-boundary-and-ids.astro";
 import { createAstroContainer } from "../../render-astro";
 
 const parseStaticMarkup = (html: string): Document =>
@@ -36,7 +36,7 @@ const expectAuthoredOutline = (
   }
 };
 
-describe("Modules 01 and 02", () => {
+describe("Sessions 01 and 02", () => {
   it("teaches state and data as one discriminated union", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(StateModelingPage, {

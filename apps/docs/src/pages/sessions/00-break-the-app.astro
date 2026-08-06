@@ -1,13 +1,13 @@
 ---
 import CommandBlock from "../../components/CommandBlock.astro";
-import ModuleLayout from "../../layouts/ModuleLayout.astro";
-import { moduleBySlug } from "../../modules/catalog";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
 
-const module = moduleBySlug("00-break-the-app");
-if (module === undefined) throw new Error("Unknown module: 00-break-the-app");
+const session = sessionBySlug("00-break-the-app");
+if (session === undefined) throw new Error("Unknown session: 00-break-the-app");
 ---
 
-<ModuleLayout module={module}>
+<SessionLayout session={session}>
   <ol slot="toc">
     <li><a href="#before-joining">開発に参加する前に</a></li>
     <li><a href="#incident">事故を観察する</a></li>
@@ -308,4 +308,4 @@ if (module === undefined) throw new Error("Unknown module: 00-break-the-app");
       > の <code>updateStatus</code> を読み合わせます。
     </p>
   </section>
-</ModuleLayout>
+</SessionLayout>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import BreakTheAppPage from "../../../pages/modules/00-break-the-app.astro";
-import ReadTheIncidentPage from "../../../pages/modules/00-read-the-incident.astro";
+import BreakTheAppPage from "../../../pages/sessions/00-break-the-app.astro";
+import ReadTheIncidentPage from "../../../pages/sessions/00-read-the-incident.astro";
 import { createAstroContainer } from "../../render-astro";
 
 const parseStaticMarkup = (html: string): Document =>
@@ -9,7 +9,7 @@ const parseStaticMarkup = (html: string): Document =>
     "text/html",
   );
 
-describe("Module 00 pages", () => {
+describe("Session 00 pages", () => {
   it("onboards participants before reproducing the incident", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(BreakTheAppPage, { partial: false });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import ResultErrorsPage from "../../../pages/modules/03-result-errors.astro";
-import AgentReviewPage from "../../../pages/modules/04-agent-review.astro";
+import ResultErrorsPage from "../../../pages/sessions/03-result-errors.astro";
+import AgentReviewPage from "../../../pages/sessions/04-agent-review.astro";
 import { createAstroContainer } from "../../render-astro";
 
 const parseStaticMarkup = (html: string): Document =>
@@ -42,7 +42,7 @@ const expectAuthoredOutline = (
   ).toHaveLength(0);
 };
 
-describe("Modules 03 and 04", () => {
+describe("Sessions 03 and 04", () => {
   it("separates typed failures from successful domain events", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(ResultErrorsPage, {

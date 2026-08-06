@@ -7,13 +7,13 @@ const distPath = fileURLToPath(distUrl);
 const requiredHtmlFiles = [
   "index.html",
   "404.html",
-  "modules/00-break-the-app/index.html",
-  "modules/00-read-the-incident/index.html",
-  "modules/01-state-modeling/index.html",
-  "modules/02-boundary-and-ids/index.html",
-  "modules/03-result-errors/index.html",
-  "modules/04-agent-review/index.html",
-  "modules/05-mini-integration/index.html",
+  "sessions/00-break-the-app/index.html",
+  "sessions/00-read-the-incident/index.html",
+  "sessions/01-state-modeling/index.html",
+  "sessions/02-boundary-and-ids/index.html",
+  "sessions/03-result-errors/index.html",
+  "sessions/04-agent-review/index.html",
+  "sessions/05-mini-integration/index.html",
 ];
 
 const missingHtmlFiles = [];
@@ -29,10 +29,10 @@ if (missingHtmlFiles.length > 0) {
   throw new Error(`Missing required HTML files:\n${missingHtmlFiles.join("\n")}`);
 }
 
-const modulePaths = requiredHtmlFiles
-  .filter((htmlFile) => htmlFile.startsWith("modules/"))
+const sessionPaths = requiredHtmlFiles
+  .filter((htmlFile) => htmlFile.startsWith("sessions/"))
   .map((htmlFile) => `/${htmlFile.replace(/index\.html$/, "")}`);
-const allowedPaths = new Set(["/", "/module-00/", ...modulePaths]);
+const allowedPaths = new Set(["/", "/module-00/", ...sessionPaths]);
 const htmlFiles = [];
 
 const collectHtmlFiles = async (directory) => {

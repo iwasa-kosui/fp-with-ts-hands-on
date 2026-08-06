@@ -1,14 +1,14 @@
 ---
 import CodeBlock from "../../components/CodeBlock.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
-import ModuleLayout from "../../layouts/ModuleLayout.astro";
-import { moduleBySlug } from "../../modules/catalog";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
 
-const module = moduleBySlug("01-state-modeling");
-if (module === undefined) throw new Error("Unknown module: 01-state-modeling");
+const session = sessionBySlug("01-state-modeling");
+if (session === undefined) throw new Error("Unknown session: 01-state-modeling");
 ---
 
-<ModuleLayout module={module}>
+<SessionLayout session={session}>
   <ol slot="toc">
     <li><a href="#requirement-and-transitions">要求と状態遷移を整理する</a></li>
     <li><a href="#read-the-failure">失敗から編集箇所を読む</a></li>
@@ -186,4 +186,4 @@ if (module === undefined) throw new Error("Unknown module: 01-state-modeling");
       をそれぞれ適切な境界で守ります。
     </p>
   </section>
-</ModuleLayout>
+</SessionLayout>

@@ -1,4 +1,4 @@
-export type ModuleSummary = Readonly<{
+export type SessionSummary = Readonly<{
   slug: string;
   sequence: "00-A" | "00-B" | "01" | "02" | "03" | "04" | "05";
   label: string;
@@ -8,7 +8,7 @@ export type ModuleSummary = Readonly<{
   summary: string;
 }>;
 
-export const modules = [
+export const sessions = [
   {
     slug: "00-break-the-app",
     sequence: "00-A",
@@ -72,20 +72,21 @@ export const modules = [
     animal: { name: "FOX", type: "fox", avatar: "🦊" },
     summary: "キツネの検査結果から、電話フォローが必要な患者だけを安全に抽出します。",
   },
-] as const satisfies readonly ModuleSummary[];
+] as const satisfies readonly SessionSummary[];
 
-export const moduleBySlug = (slug: string): ModuleSummary | undefined =>
-  modules.find((module) => module.slug === slug);
+export const sessionBySlug = (slug: string): SessionSummary | undefined =>
+  sessions.find((session) => session.slug === slug);
 
-export const modulePath = (module: ModuleSummary): string => `/modules/${module.slug}/`;
+export const sessionPath = (session: SessionSummary): string =>
+  `/sessions/${session.slug}/`;
 
-export const moduleNeighbors = (
+export const sessionNeighbors = (
   slug: string,
-): Readonly<{ previous?: ModuleSummary; next?: ModuleSummary }> => {
-  const index = modules.findIndex((module) => module.slug === slug);
+): Readonly<{ previous?: SessionSummary; next?: SessionSummary }> => {
+  const index = sessions.findIndex((session) => session.slug === slug);
   if (index < 0) return {};
-  const previous = modules[index - 1];
-  const next = modules[index + 1];
+  const previous = sessions[index - 1];
+  const next = sessions[index + 1];
   return {
     ...(previous === undefined ? {} : { previous }),
     ...(next === undefined ? {} : { next }),

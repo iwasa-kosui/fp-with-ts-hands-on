@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import MiniIntegrationPage from "../../../pages/modules/05-mini-integration.astro";
+import MiniIntegrationPage from "../../../pages/sessions/05-mini-integration.astro";
 import { createAstroContainer } from "../../render-astro";
 
 const parseStaticMarkup = (html: string): Document =>
@@ -8,7 +8,7 @@ const parseStaticMarkup = (html: string): Document =>
     "text/html",
   );
 
-describe("Module 05", () => {
+describe("Session 05", () => {
   it("completes the integration loop and captures the next action", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(MiniIntegrationPage, {
@@ -102,7 +102,7 @@ describe("Module 05", () => {
     expect(actionPlan?.querySelector("button, input[type=submit]")).toBeNull();
 
     expect(document.querySelector('a[rel="prev"]')?.getAttribute("href")).toBe(
-      "/modules/04-agent-review/",
+      "/sessions/04-agent-review/",
     );
     expect(document.querySelector('a[rel="next"]')).toBeNull();
   });

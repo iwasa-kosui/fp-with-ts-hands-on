@@ -1,14 +1,14 @@
 ---
 import CodeBlock from "../../components/CodeBlock.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
-import ModuleLayout from "../../layouts/ModuleLayout.astro";
-import { moduleBySlug } from "../../modules/catalog";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
 
-const module = moduleBySlug("02-boundary-and-ids");
-if (module === undefined) throw new Error("Unknown module: 02-boundary-and-ids");
+const session = sessionBySlug("02-boundary-and-ids");
+if (session === undefined) throw new Error("Unknown session: 02-boundary-and-ids");
 ---
 
-<ModuleLayout module={module}>
+<SessionLayout session={session}>
   <ol slot="toc">
     <li><a href="#three-boundaries">事故を3つの境界へ分ける</a></li>
     <li><a href="#read-conversion-boundaries">失敗から変換境界を読む</a></li>
@@ -178,4 +178,4 @@ if (!parsed.success) return Result.err({ kind: "ValidationError" });`}
       入力境界で検証に失敗した理由を呼び出し側へ返せるよう、次は型付けしたエラーと、成功時だけ残す domain event を設計します。
     </p>
   </section>
-</ModuleLayout>
+</SessionLayout>

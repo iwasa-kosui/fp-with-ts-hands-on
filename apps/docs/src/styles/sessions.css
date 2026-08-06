@@ -16,7 +16,7 @@
 .case-file__site-header,
 .case-file__hero,
 .case-file__body,
-.case-file__module-nav {
+.case-file__session-nav {
   width: min(100% - 2rem, 74rem);
   margin-inline: auto;
 }
@@ -96,7 +96,7 @@
 }
 
 .case-file__toc a,
-.case-file__module-nav a,
+.case-file__session-nav a,
 .case-file__content a {
   color: inherit;
   text-decoration-thickness: 0.12em;
@@ -119,7 +119,7 @@
   line-height: 1.3;
 }
 
-.case-file__module-nav {
+.case-file__session-nav {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;

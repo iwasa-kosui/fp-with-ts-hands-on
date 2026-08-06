@@ -1,29 +1,29 @@
 ---
-import { moduleNeighbors, modulePath, type ModuleSummary } from "../modules/catalog";
-import "../styles/modules.css";
+import { sessionNeighbors, sessionPath, type SessionSummary } from "../sessions/catalog";
+import "../styles/sessions.css";
 import BaseLayout from "./BaseLayout.astro";
 
-interface Props {
-  module: ModuleSummary;
-}
+type Props = Readonly<{
+  session: SessionSummary;
+}>;
 
-const { module } = Astro.props;
-const { previous, next } = moduleNeighbors(module.slug);
+const { session } = Astro.props;
+const { previous, next } = sessionNeighbors(session.slug);
 const toc = await Astro.slots.render("toc");
 ---
 
-<BaseLayout title={`${module.title} | FP with TypeScript`} description={module.summary}>
+<BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
   <div class="case-file">
     <header class="case-file__site-header">
       <a href="/">WAN NYAN CLINIC</a>
     </header>
     <main>
-      <section class="case-file__hero" aria-labelledby="module-title">
-        <p class="case-file__eyebrow">MODULE {module.sequence} · {module.durationMinutes}分</p>
-        <h1 id="module-title">{module.title}</h1>
+      <section class="case-file__hero" aria-labelledby="session-title">
+        <p class="case-file__eyebrow">SESSION {session.sequence} · {session.durationMinutes}分</p>
+        <h1 id="session-title">{session.title}</h1>
         <p class="case-file__summary">
-          <span aria-hidden="true">{module.animal.avatar}</span>
-          {module.animal.name}（{module.animal.type}） {module.summary}
+          <span aria-hidden="true">{session.animal.avatar}</span>
+          {session.animal.name}（{session.animal.type}） {session.summary}
         </p>
       </section>
       <div class="case-file__body">
@@ -36,15 +36,15 @@ const toc = await Astro.slots.render("toc");
         </details>
         <article class="case-file__content"><slot /></article>
       </div>
-      <nav class="case-file__module-nav" aria-label="前後のモジュール">
+      <nav class="case-file__session-nav" aria-label="前後のセッション">
         {
           previous === undefined ? null : (
-            <a rel="prev" href={modulePath(previous)}>前へ: {previous.title}</a>
+            <a rel="prev" href={sessionPath(previous)}>前へ: {previous.title}</a>
           )
         }
         {
           next === undefined ? null : (
-            <a rel="next" href={modulePath(next)}>次へ: {next.title}</a>
+            <a rel="next" href={sessionPath(next)}>次へ: {next.title}</a>
           )
         }
       </nav>
