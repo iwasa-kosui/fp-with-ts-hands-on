@@ -51,11 +51,14 @@ describe("Sessions 01 and 02", () => {
     expect(stateModeling).toContain("examples/session-01");
     expect(stateModeling).toContain('command="pnpm exercise:01"');
     expect(stateModeling).toContain(
-      'command="pnpm --filter @fp-with-ts/clinic-session-01 test"',
+      'phase="green"\n      command="pnpm exercise:01"',
     );
     expect(stateModeling).toContain("reason: string;");
     expect(stateModeling).toContain("followUpRequestedAt?: string;");
     expect(stateModeling).not.toContain("cancellationReason");
+    expect(stateModeling).toContain(
+      "pnpm --filter @fp-with-ts/clinic-session-01 test",
+    );
     expect(stateModeling).toContain(
       "examples/session-01/src/domain/appointment.ts",
     );
@@ -66,7 +69,10 @@ describe("Sessions 01 and 02", () => {
     );
     expect(boundaryAndIds).toContain('command="pnpm exercise:02"');
     expect(boundaryAndIds).toContain(
-      'command="pnpm --filter @fp-with-ts/clinic-session-02 test"',
+      'phase="green"\n      command="pnpm exercise:02"',
+    );
+    expect(boundaryAndIds).toContain(
+      "pnpm --filter @fp-with-ts/clinic-session-02 test",
     );
     expect(stateModeling).not.toContain("packages/clinic-example");
     expect(boundaryAndIds).not.toContain("packages/clinic-example");

@@ -22,7 +22,12 @@ describe("Session 00 pages", () => {
     const readTheIncident = readPage("00-read-the-incident");
 
     expect(breakTheApp).toContain("examples/session-00/src/appointment.ts");
-    expect(breakTheApp).toContain('command="pnpm exercise:00"');
+    expect(breakTheApp).toContain(
+      'phase="red"\n      command="pnpm exercise:00"',
+    );
+    expect(breakTheApp).not.toContain(
+      'phase="green"\n      command="pnpm exercise:00"',
+    );
     expect(breakTheApp).toContain(
       'command="pnpm --filter @fp-with-ts/clinic-session-00 test"',
     );
@@ -30,6 +35,7 @@ describe("Session 00 pages", () => {
     expect(readTheIncident).toContain(
       'command="pnpm --filter @fp-with-ts/clinic-session-00 test"',
     );
+    expect(readTheIncident).not.toContain('command="pnpm exercise:00"');
     expect(breakTheApp).not.toContain("packages/clinic-example");
     expect(readTheIncident).not.toContain("packages/clinic-example");
   });

@@ -110,7 +110,7 @@ return result.value;`}
     <CodeBlock
       language="typescript"
       label="成功後の変更記録"
-      code={`input.eventStore.append(ExaminationStarted.create({ /* successful change */ }));`}
+      code={`eventStore.append(ExaminationStarted.create({ /* successful change */ }));`}
     />
 
     <h3>使う技法: Result と最小の Domain Event</h3>
@@ -124,9 +124,14 @@ return result.value;`}
 
     <CommandBlock
       phase="green"
-      command="pnpm --filter @fp-with-ts/clinic-session-03 test"
-      expected="状態、用途別 ID、入力境界、PII 保護の通常テストが成功します。"
+      command="pnpm exercise:03"
+      expected="同じ演習テストが成功し、Result と成功時だけの ExaminationStarted を確認できます。"
     />
+    <p>
+      続いて追加の回帰確認として <code
+        >pnpm --filter @fp-with-ts/clinic-session-03 test</code
+      > を実行し、状態、ID、入力境界、PII 保護も保たれていることを確認します。
+    </p>
   </section>
 
   <section>

@@ -117,9 +117,14 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
 
     <CommandBlock
       phase="green"
-      command="pnpm --filter @fp-with-ts/clinic-session-01 test"
-      expected="legacy の通常フローと、固定した事故要件のテストが成功します。"
+      command="pnpm exercise:01"
+      expected="同じ演習テストが成功し、診察開始と理由・再診希望付きキャンセルの契約を満たします。"
     />
+    <p>
+      続いて追加の回帰確認として <code
+        >pnpm --filter @fp-with-ts/clinic-session-01 test</code
+      > を実行し、開始 snapshot の既存動作も保たれていることを確認します。
+    </p>
   </section>
 
   <section>
@@ -129,9 +134,9 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
       <li><code>kind</code> の分岐が CheckedIn 以外からの診察開始を許していない。</li>
       <li>Paid と Canceled を終端状態として扱っている。</li>
       <li>
-        Canceled にだけ <code>reason</code>、<code>canceledAt</code>、任意の <code
-          >followUpRequestedAt</code
-        > が存在する。
+        Canceled にだけキャンセル理由を表す <code>reason</code>、<code
+          >canceledAt</code
+        >、任意の <code>followUpRequestedAt</code> が存在する。
       </li>
     </ul>
 

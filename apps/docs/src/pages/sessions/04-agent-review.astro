@@ -124,9 +124,14 @@ if (session === undefined) throw new Error("Unknown session: 04-agent-review");
 
     <CommandBlock
       phase="green"
-      command="pnpm --filter @fp-with-ts/clinic-session-04 test"
-      expected="neverthrow の Result と、成功した診察開始だけを記録する通常テストが成功します。"
+      command="pnpm exercise:04"
+      expected="同じ演習テストが成功し、review checklist と prompt が dual-write と PII inspect の改善を要求します。"
     />
+    <p>
+      続いて追加の回帰確認として <code
+        >pnpm --filter @fp-with-ts/clinic-session-04 test</code
+      > を実行し、Result と成功時だけのイベント記録も保たれていることを確認します。
+    </p>
   </section>
 
   <section>

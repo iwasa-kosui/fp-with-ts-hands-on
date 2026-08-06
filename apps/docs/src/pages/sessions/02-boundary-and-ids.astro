@@ -119,9 +119,14 @@ return parsed.data;`}
 
     <CommandBlock
       phase="green"
-      command="pnpm --filter @fp-with-ts/clinic-session-02 test"
-      expected="判別共用体による状態モデルの通常テストが成功します。"
+      command="pnpm exercise:02"
+      expected="同じ演習テストが成功し、unknown の検証、用途別 ID、PII の伏せ字を確認できます。"
     />
+    <p>
+      続いて追加の回帰確認として <code
+        >pnpm --filter @fp-with-ts/clinic-session-02 test</code
+      > を実行し、状態モデルの既存契約も保たれていることを確認します。
+    </p>
   </section>
 
   <section>

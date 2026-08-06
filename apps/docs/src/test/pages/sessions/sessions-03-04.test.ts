@@ -58,15 +58,25 @@ describe("Sessions 03 and 04", () => {
     expect(resultErrors).toContain("examples/session-03/src/boundary/");
     expect(resultErrors).toContain('command="pnpm exercise:03"');
     expect(resultErrors).toContain(
-      'command="pnpm --filter @fp-with-ts/clinic-session-03 test"',
+      'phase="green"\n      command="pnpm exercise:03"',
     );
+    expect(resultErrors).toContain(
+      "pnpm --filter @fp-with-ts/clinic-session-03 test",
+    );
+    expect(resultErrors).toContain(
+      "eventStore.append(ExaminationStarted.create",
+    );
+    expect(resultErrors).not.toContain("input.eventStore.append");
     expect(agentReview).toContain(
       "examples/session-04/src/application/start-examination.ts",
     );
     expect(agentReview).toContain("dual-write");
     expect(agentReview).toContain('command="pnpm exercise:04"');
     expect(agentReview).toContain(
-      'command="pnpm --filter @fp-with-ts/clinic-session-04 test"',
+      'phase="green"\n      command="pnpm exercise:04"',
+    );
+    expect(agentReview).toContain(
+      "pnpm --filter @fp-with-ts/clinic-session-04 test",
     );
     expect(agentReview).toContain(
       "examples/session-04/src/review/agent-review.ts",

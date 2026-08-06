@@ -25,7 +25,10 @@ describe("Session 05", () => {
     expect(page).toContain("atomic");
     expect(page).toContain('command="pnpm exercise:05"');
     expect(page).toContain(
-      'command="pnpm --filter @fp-with-ts/clinic-session-05 test"',
+      'phase="green"\n      command="pnpm exercise:05"',
+    );
+    expect(page).toContain(
+      "pnpm --filter @fp-with-ts/clinic-session-05 test",
     );
     expect(page).toContain("examples/session-05/exercises/follow-up.test.ts");
     expect(page).toContain(
