@@ -7,6 +7,7 @@ const distPath = fileURLToPath(distUrl);
 const requiredHtmlFiles = [
   "index.html",
   "404.html",
+  "code-explorer/index.html",
   "modules/00-break-the-app/index.html",
   "modules/00-read-the-incident/index.html",
   "modules/01-state-modeling/index.html",
@@ -32,7 +33,7 @@ if (missingHtmlFiles.length > 0) {
 const modulePaths = requiredHtmlFiles
   .filter((htmlFile) => htmlFile.startsWith("modules/"))
   .map((htmlFile) => `/${htmlFile.replace(/index\.html$/, "")}`);
-const allowedPaths = new Set(["/", "/module-00/", ...modulePaths]);
+const allowedPaths = new Set(["/", "/code-explorer/", "/module-00/", ...modulePaths]);
 const htmlFiles = [];
 
 const collectHtmlFiles = async (directory) => {
