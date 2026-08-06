@@ -56,7 +56,7 @@ Session 01 の成果として、`kind` を判別子に使う状態の判別共�
 
 ### `session-03`
 
-Session 02 の成果として、Zod による外部入力の検証、用途別の branded ID、`Sensitive<T>` による PII 保護を導入します。Result によるユースケースのエラー処理はまだ導入しません。
+Session 02 の成果として、Zod による外部入力の検証、用途別の branded ID、`Sensitive<T>` による PII 保護を導入します。予約、ペット、飼い主、獣医師、検査、イベントの識別子はすべて UUID とし、同じ実行時形式でも brand によって取り違えを防ぎます。Result によるユースケースのエラー処理はまだ導入しません。
 
 ### `session-04`
 
@@ -115,7 +115,7 @@ apps/docs/src/pages/sessions/
 
 ### 境界防御
 
-API、repository、時刻や識別子の生成結果など、ドメイン外から入る値は Zod schema で検証します。用途の異なる識別子は別の branded type にします。飼い主名、メールアドレス、電話番号は `Sensitive<T>` で包み、JSON、文字列変換、Node.js の inspect で値を公開しません。
+API、repository、時刻や識別子の生成結果など、ドメイン外から入る値は Zod schema で検証します。識別子はすべて UUID とし、用途ごとに別の branded type を定義します。飼い主名、メールアドレス、電話番号は `Sensitive<T>` で包み、JSON、文字列変換、Node.js の inspect で値を公開しません。
 
 ### エラー処理
 
