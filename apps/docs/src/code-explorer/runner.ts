@@ -63,7 +63,9 @@ export const createCodeRunner = (
   loadRuntime: () => Promise<Runtime>,
 ): CodeRunner => {
   let runtimePromise: Promise<Runtime> | undefined;
+  let mountPromise: Promise<void> | undefined;
   let installPromise: Promise<void> | undefined;
+  let typeFilesPromise: Promise<void> | undefined;
 
   return {
     run: async (request, onUpdate) => {
@@ -75,11 +77,6 @@ export const createCodeRunner = (
       if (runtimePromise === undefined) {
         onUpdate({ kind: "phase", phase: "booting" });
         const loading = loadRuntime()
-          .then(async (runtime) => {
-            onUpdate({ kind: "phase", phase: "mounting" });
-            await runtime.mount(request.files);
-            return runtime;
-          })
           .catch((error: unknown) => {
             if (runtimePromise === loading) runtimePromise = undefined;
             throw error;
@@ -88,18 +85,26 @@ export const createCodeRunner = (
       }
       const runtime = await runtimePromise;
 
+      if (mountPromise === undefined) {
+        onUpdate({ kind: "phase", phase: "mounting" });
+        const mounting = runtime.mount(request.files).catch((error: unknown) => {
+          if (mountPromise === mounting) mountPromise = undefined;
+          throw error;
+        });
+        mountPromise = mounting;
+      }
+      await mountPromise;
+
       if (installPromise === undefined) {
         onUpdate({ kind: "phase", phase: "installing" });
         const installing = runtime
           .install((chunk) => {
             onUpdate({ kind: "output", chunk });
           })
-          .then(async (exitCode) => {
+          .then((exitCode) => {
             if (exitCode !== 0) {
               throw new Error(`Dependency installation failed with exit code ${exitCode}`);
             }
-            const files = await runtime.readTypeFiles();
-            onUpdate({ kind: "type-files", files });
           })
           .catch((error: unknown) => {
             if (installPromise === installing) installPromise = undefined;
@@ -108,6 +113,20 @@ export const createCodeRunner = (
         installPromise = installing;
       }
       await installPromise;
+
+      if (typeFilesPromise === undefined) {
+        const readingTypeFiles = runtime
+          .readTypeFiles()
+          .then((files) => {
+            onUpdate({ kind: "type-files", files });
+          })
+          .catch((error: unknown) => {
+            if (typeFilesPromise === readingTypeFiles) typeFilesPromise = undefined;
+            throw error;
+          });
+        typeFilesPromise = readingTypeFiles;
+      }
+      await typeFilesPromise;
 
       await runtime.writeFiles(request.files);
       onUpdate({ kind: "phase", phase: "running" });
@@ -146,7 +165,10 @@ const readExternalTypeFiles = async (runtime: WebContainer): Promise<ProjectFile
         const path = `${directory}/${entry.name}`;
         if (entry.isDirectory()) {
           await visit(path);
-        } else if (entry.isFile() && (entry.name.endsWith(".d.ts") || entry.name === "package.json")) {
+        } else if (
+          entry.isFile() &&
+          (/\.d\.[cm]?ts$/.test(entry.name) || entry.name === "package.json")
+        ) {
           files[`file:///${path}`] = await runtime.fs.readFile(path, "utf8");
         }
       }),

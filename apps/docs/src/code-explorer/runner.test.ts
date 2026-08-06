@@ -172,6 +172,37 @@ describe("single-file execution", () => {
     expect(runtime.executedFiles).toEqual(["src/main.ts"]);
   });
 
+  it("retries mount on the retained runtime without booting again", async () => {
+    let loadCount = 0;
+    let mountCount = 0;
+    const phases: string[] = [];
+    const runtime: Runtime = {
+      mount: async () => {
+        mountCount += 1;
+        if (mountCount === 1) throw new Error("mount failed");
+      },
+      install: async () => 0,
+      writeFiles: async () => undefined,
+      execute: async () => 0,
+      readTypeFiles: async () => ({}),
+    };
+    const runner = createCodeRunner(async () => {
+      loadCount += 1;
+      return runtime;
+    });
+    const request = { filePath: "src/main.ts", files: { "src/main.ts": "" } };
+    const onUpdate = (update: RunnerUpdate) => {
+      if (update.kind === "phase") phases.push(update.phase);
+    };
+
+    await expect(runner.run(request, onUpdate)).rejects.toThrow("mount failed");
+    await expect(runner.run(request, onUpdate)).resolves.toEqual({ exitCode: 0 });
+
+    expect(loadCount).toBe(1);
+    expect(mountCount).toBe(2);
+    expect(phases).toEqual(["booting", "mounting", "mounting", "installing", "running"]);
+  });
+
   it("retries a failed install without executing the selected file", async () => {
     let installCount = 0;
     const executedFiles: string[] = [];
@@ -202,6 +233,47 @@ describe("single-file execution", () => {
     expect(executedFiles).toEqual(["src/main.ts"]);
   });
 
+  it("retries declaration collection without reinstalling dependencies", async () => {
+    let installCount = 0;
+    let typeReadCount = 0;
+    let executeCount = 0;
+    const runtime: Runtime = {
+      mount: async () => undefined,
+      install: async () => {
+        installCount += 1;
+        return 0;
+      },
+      writeFiles: async () => undefined,
+      execute: async () => {
+        executeCount += 1;
+        return 0;
+      },
+      readTypeFiles: async () => {
+        typeReadCount += 1;
+        if (typeReadCount === 1) throw new Error("type read failed");
+        return { "file:///node_modules/zod/index.d.cts": "zod types" };
+      },
+    };
+    const runner = createCodeRunner(async () => runtime);
+    const request = { filePath: "src/main.ts", files: { "src/main.ts": "" } };
+    const updates: RunnerUpdate[] = [];
+
+    await expect(runner.run(request, () => undefined)).rejects.toThrow("type read failed");
+    await expect(runner.run(request, (update) => updates.push(update))).resolves.toEqual({
+      exitCode: 0,
+    });
+
+    expect(installCount).toBe(1);
+    expect(typeReadCount).toBe(2);
+    expect(executeCount).toBe(1);
+    expect(updates.filter((update) => update.kind === "type-files")).toEqual([
+      {
+        kind: "type-files",
+        files: { "file:///node_modules/zod/index.d.cts": "zod types" },
+      },
+    ]);
+  });
+
   it("adapts WebContainer lazily and streams install and run output", async () => {
     const outputStream = (chunks: readonly string[]) =>
       new ReadableStream<string>({
@@ -228,7 +300,12 @@ describe("single-file execution", () => {
       isDirectory: () => kind === "directory",
     });
     const directoryEntries: Record<string, ReturnType<typeof entry>[]> = {
-      "node_modules/zod": [entry("index.d.ts", "file"), entry("index.js", "file")],
+      "node_modules/zod": [
+        entry("package.json", "file"),
+        entry("index.d.cts", "file"),
+        entry("index.d.mts", "file"),
+        entry("index.js", "file"),
+      ],
       "node_modules/vitest": [entry("package.json", "file"), entry("index.d.ts", "file")],
       "node_modules/@vitest": [entry("expect", "directory")],
       "node_modules/@vitest/expect": [
@@ -237,7 +314,9 @@ describe("single-file execution", () => {
       ],
     };
     const typeSources: Record<string, string> = {
-      "node_modules/zod/index.d.ts": "zod types",
+      "node_modules/zod/package.json": "{\"types\":\"./index.d.cts\"}",
+      "node_modules/zod/index.d.cts": "zod commonjs types",
+      "node_modules/zod/index.d.mts": "zod module types",
       "node_modules/vitest/package.json": "vitest package",
       "node_modules/vitest/index.d.ts": "vitest types",
       "node_modules/@vitest/expect/package.json": "expect package",
@@ -308,7 +387,9 @@ describe("single-file execution", () => {
       {
         kind: "type-files",
         files: {
-          "file:///node_modules/zod/index.d.ts": "zod types",
+          "file:///node_modules/zod/package.json": "{\"types\":\"./index.d.cts\"}",
+          "file:///node_modules/zod/index.d.cts": "zod commonjs types",
+          "file:///node_modules/zod/index.d.mts": "zod module types",
           "file:///node_modules/vitest/package.json": "vitest package",
           "file:///node_modules/vitest/index.d.ts": "vitest types",
           "file:///node_modules/@vitest/expect/package.json": "expect package",
