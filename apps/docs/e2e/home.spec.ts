@@ -17,3 +17,21 @@ test("mobile home keeps its approved appearance", async ({ page }) => {
     fullPage: true,
   });
 });
+
+test("home hero renders event metadata at a readable size", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1200 });
+  await page.goto("/");
+
+  const fontSize = await page.locator(".landing-eyebrow").evaluate((element) =>
+    Number.parseFloat(getComputedStyle(element).fontSize),
+  );
+
+  expect(fontSize).toBeGreaterThanOrEqual(16);
+});
+
+test("home hero omits the decorative dog badge", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1200 });
+  await page.goto("/");
+
+  await expect(page.locator(".floating-pet--dog")).toHaveCount(0);
+});
