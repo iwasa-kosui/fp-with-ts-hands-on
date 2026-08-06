@@ -23,5 +23,11 @@ it("診察開始と理由付きキャンセルを表現できる", async () => {
   );
 
   expect(examining.kind).toBe("InExamination");
-  expect(canceled).toMatchObject({ kind: "Canceled", reason: "owner-request" });
+  expect(canceled).toMatchObject({
+    kind: "Canceled",
+    reason: "owner-request",
+    canceledAt: "2026-08-29T10:00:00.000Z",
+    followUpRequestedAt: "2026-09-15T00:00:00.000Z",
+  });
+  expect(canceled).not.toHaveProperty("cancellationReason");
 });

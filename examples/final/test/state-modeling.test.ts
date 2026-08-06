@@ -32,6 +32,13 @@ describe("final state modeling", () => {
       startedAt,
     );
 
+    expect(canceled).toMatchObject({
+      kind: "Canceled",
+      reason: "owner request",
+      followUpRequestedAt: "2026-08-30T06:30:00.000Z",
+    });
+    expect(canceled).not.toHaveProperty("cancellationReason");
+    expect(canceled).not.toHaveProperty("checkedInAt");
     expect(Appointment.isTerminal(checkedIn)).toBe(false);
     expect(Appointment.isTerminal(paidAppointment)).toBe(true);
     expect(Appointment.isTerminal(canceled)).toBe(true);

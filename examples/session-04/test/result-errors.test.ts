@@ -41,6 +41,22 @@ const validInput = {
 } as const;
 
 describe("Session 04 start examination Result", () => {
+  it("Session 03 exercise と同じ公開入力と CheckedIn fixture で成功する", () => {
+    const repository = createInMemoryAppointmentRepository([checkedIn]);
+    const eventStore = createInMemoryDomainEventStore();
+
+    const result = startExaminationUseCase(repository, eventStore)({
+      appointmentId: "11111111-1111-4111-8111-111111111111",
+      veterinarianId: "44444444-4444-4444-8444-444444444444",
+      eventId: "55555555-5555-4555-8555-555555555555",
+      occurredAt: "2026-08-30T06:30:00.000Z",
+    });
+
+    expect(result.isOk()).toBe(true);
+    expect(repository.findById(appointmentId)?.kind).toBe("InExamination");
+    expect(eventStore.all()).toHaveLength(1);
+  });
+
   it("成功時だけ状態を保存し ExaminationStarted を記録する", () => {
     const repository = createInMemoryAppointmentRepository([checkedIn]);
     const eventStore = createInMemoryDomainEventStore();

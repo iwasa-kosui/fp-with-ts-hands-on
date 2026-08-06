@@ -57,9 +57,8 @@ export type Canceled = Readonly<{
   ownerId: OwnerId;
   scheduledAt: string;
   reason: string;
-  checkedInAt?: string;
-  cancellationReason: string;
   canceledAt: string;
+  followUpRequestedAt?: string;
 }>;
 
 export type Appointment = Scheduled | CheckedIn | InExamination | Paid | Canceled;
@@ -102,13 +101,18 @@ export const Appointment = {
   ): Paid => ({ ...appointment, ...input, kind: "Paid", paidAt: now }),
   cancelWithReason: (
     appointment: Scheduled | CheckedIn,
-    cancellationReason: string,
-    now: string,
+    reason: string,
+    canceledAt: string,
+    followUpRequestedAt?: string,
   ): Canceled => ({
-    ...appointment,
     kind: "Canceled",
-    cancellationReason,
-    canceledAt: now,
+    appointmentId: appointment.appointmentId,
+    petId: appointment.petId,
+    ownerId: appointment.ownerId,
+    scheduledAt: appointment.scheduledAt,
+    reason,
+    canceledAt,
+    ...(followUpRequestedAt === undefined ? {} : { followUpRequestedAt }),
   }),
   isTerminal: (appointment: Appointment): appointment is Paid | Canceled =>
     appointment.kind === "Paid" || appointment.kind === "Canceled",

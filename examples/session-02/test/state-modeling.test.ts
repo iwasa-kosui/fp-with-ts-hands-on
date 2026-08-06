@@ -55,6 +55,7 @@ describe("Session 02 state modeling", () => {
       checkedIn,
       "owner-request",
       canceledAt,
+      "2026-09-15T00:00:00.000Z",
     );
 
     expect(canceled).toEqual({
@@ -63,10 +64,9 @@ describe("Session 02 state modeling", () => {
       petId: "22222222-2222-4222-8222-222222222222",
       ownerId: "33333333-3333-4333-8333-333333333333",
       scheduledAt: "2026-08-30T06:30:00.000Z",
-      reason: "skin check",
-      checkedInAt: "2026-08-30T06:20:00.000Z",
-      cancellationReason: "owner-request",
+      reason: "owner-request",
       canceledAt,
+      followUpRequestedAt: "2026-09-15T00:00:00.000Z",
     });
     expect(Appointment.isTerminal(scheduled)).toBe(false);
     expect(Appointment.isTerminal(checkedIn)).toBe(false);
