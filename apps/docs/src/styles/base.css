@@ -76,14 +76,14 @@ video {
 #app,
 #app > *,
 .home-page,
-.session-page {
+.module-page {
   min-width: 0;
   max-width: 100%;
 }
 
 .page-shell,
 .home-page > main,
-.session-page > main,
+.module-page > main,
 .not-found-page {
   width: min(100% - 2rem, var(--content-width));
   margin-inline: auto;
@@ -131,7 +131,7 @@ video {
 }
 
 .home-page > main,
-.session-page > main,
+.module-page > main,
 .not-found-page {
   min-width: 0;
   padding-block: clamp(2rem, 5vw, 4rem);
@@ -183,7 +183,7 @@ h3 {
 }
 
 .home-hero,
-.session-hero {
+.module-hero {
   position: relative;
   min-width: 0;
   margin-bottom: 1.75rem;
@@ -195,7 +195,7 @@ h3 {
 }
 
 .home-hero::after,
-.session-hero::after {
+.module-hero::after {
   content: "";
   position: absolute;
   right: 12%;
@@ -208,7 +208,7 @@ h3 {
 }
 
 .home-hero p,
-.session-hero p {
+.module-hero p {
   color: var(--color-text);
   font-weight: 800;
 }
@@ -219,14 +219,14 @@ h3 {
   font-size: clamp(1rem, 2vw, 1.125rem);
 }
 
-.session-hero {
+.module-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(16rem, 0.65fr);
   gap: 0.25rem clamp(1.5rem, 4vw, 3rem);
   align-items: center;
 }
 
-.session-page__eyebrow {
+.module-page__eyebrow {
   grid-column: 1;
   margin-bottom: 0.75rem;
   color: var(--color-primary) !important;
@@ -236,12 +236,12 @@ h3 {
   text-transform: uppercase;
 }
 
-.session-hero h1 {
+.module-hero h1 {
   grid-column: 1;
   margin-bottom: 0;
 }
 
-.session-hero > p:last-child {
+.module-hero > p:last-child {
   grid-column: 2;
   grid-row: 1 / span 2;
   margin: 0;
@@ -251,7 +251,7 @@ h3 {
   background: #fff8ea;
 }
 
-.session-toc,
+.module-toc,
 .table-of-contents,
 .toc {
   min-width: 0;
@@ -262,7 +262,7 @@ h3 {
   box-shadow: var(--shadow-soft);
 }
 
-.session-toc ol,
+.module-toc ol,
 .table-of-contents ol,
 .toc ol {
   display: grid;
@@ -273,13 +273,13 @@ h3 {
   font-weight: 900;
 }
 
-.session-toc a,
+.module-toc a,
 .table-of-contents a,
 .toc a {
   text-decoration-thickness: 0.1875rem;
 }
 
-.session-toc ol ol {
+.module-toc ol ol {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.375rem;
@@ -288,11 +288,11 @@ h3 {
   font-weight: 750;
 }
 
-.session-toc li:has(> ol) > a {
+.module-toc li:has(> ol) > a {
   line-height: 1.5;
 }
 
-.session-page main > section:not(.session-hero),
+.module-page main > section:not(.module-hero),
 .home-page main > section:not(.home-hero),
 .not-found-page {
   min-width: 0;
@@ -304,30 +304,30 @@ h3 {
   box-shadow: var(--shadow-soft);
 }
 
-.session-page main > section:not(.session-hero):nth-of-type(odd),
+.module-page main > section:not(.module-hero):nth-of-type(odd),
 .home-page main > section:not(.home-hero):nth-of-type(odd) {
   background: #fff0f7;
 }
 
-.session-page main > section:not(.session-hero):nth-of-type(even),
+.module-page main > section:not(.module-hero):nth-of-type(even),
 .home-page main > section:not(.home-hero):nth-of-type(even) {
   background: #fffefa;
 }
 
-.session-page main > .onboarding-chapter > section {
+.module-page main > .onboarding-chapter > section {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
 }
 
-.session-page main > .onboarding-chapter > section + section {
+.module-page main > .onboarding-chapter > section + section {
   border-top: 0.125rem solid var(--color-text);
 }
 
-.session-page main > .onboarding-chapter #visit-flow > ol {
+.module-page main > .onboarding-chapter #visit-flow > ol {
   padding-left: 1.75rem;
 }
 
-.session-page main > .onboarding-chapter #people {
+.module-page main > .onboarding-chapter #people {
   margin-left: 0.75rem;
 }
 
@@ -349,15 +349,15 @@ h3 {
   letter-spacing: 0.08em;
 }
 
-.session-page main > section p,
+.module-page main > section p,
 .home-page main > section p,
 .not-found-page p {
   color: var(--color-text);
   font-weight: 700;
 }
 
-.session-page main > section ul,
-.session-page main > section ol,
+.module-page main > section ul,
+.module-page main > section ol,
 .home-page main > section ul,
 .home-page main > section ol {
   padding-left: 1.35rem;
@@ -365,7 +365,7 @@ h3 {
   font-weight: 750;
 }
 
-.session-page main > section li + li,
+.module-page main > section li + li,
 .home-page main > section li + li {
   margin-top: 0.5rem;
 }
@@ -518,17 +518,17 @@ h3 {
   border-bottom: 0;
 }
 
-.session-cards {
+.module-cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 
-[data-session-card] {
+[data-module-card] {
   min-width: 0;
 }
 
-[data-session-card] > a {
+[data-module-card] > a {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0.25rem 0.875rem;
@@ -542,15 +542,15 @@ h3 {
   text-decoration: none;
 }
 
-[data-session-card] > a:hover,
-[data-session-card] > a:focus-visible {
+[data-module-card] > a:hover,
+[data-module-card] > a:focus-visible {
   translate: -0.125rem -0.125rem;
   box-shadow: 0.4375rem 0.4375rem 0 rgb(34 54 184 / 25%);
   outline: 0.1875rem solid var(--color-focus);
   outline-offset: 0.1875rem;
 }
 
-.session-card-marker {
+.module-card-marker {
   display: grid;
   grid-row: 1 / span 3;
   width: 3rem;
@@ -562,23 +562,23 @@ h3 {
   font-size: 1.5rem;
 }
 
-[data-session-card] h2 {
+[data-module-card] h2 {
   margin: 0;
   font-size: 1.25rem;
 }
 
-[data-session-card] p {
+[data-module-card] p {
   grid-column: 2;
   margin: 0;
 }
 
-[data-session-card] p:last-child {
+[data-module-card] p:last-child {
   color: var(--color-muted);
   font-size: 0.875rem;
 }
 
-.session-page main > nav[aria-label="前後のセッション"],
-.session-navigation {
+.module-page main > nav[aria-label="前後のモジュール"],
+.module-navigation {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
@@ -587,8 +587,8 @@ h3 {
   border-top: 0.1875rem dashed var(--color-primary);
 }
 
-.session-page main > nav[aria-label="前後のセッション"] a,
-.session-navigation a {
+.module-page main > nav[aria-label="前後のモジュール"] a,
+.module-navigation a {
   display: block;
   min-width: 0;
   padding: 0.875rem 1rem;
@@ -601,16 +601,16 @@ h3 {
   text-decoration: none;
 }
 
-.session-page main > nav[aria-label="前後のセッション"] a[rel="next"],
-.session-navigation a[rel="next"] {
+.module-page main > nav[aria-label="前後のモジュール"] a[rel="next"],
+.module-navigation a[rel="next"] {
   grid-column: 2;
   text-align: right;
 }
 
-.session-page main > nav[aria-label="前後のセッション"] a:hover,
-.session-page main > nav[aria-label="前後のセッション"] a:focus-visible,
-.session-navigation a:hover,
-.session-navigation a:focus-visible {
+.module-page main > nav[aria-label="前後のモジュール"] a:hover,
+.module-page main > nav[aria-label="前後のモジュール"] a:focus-visible,
+.module-navigation a:hover,
+.module-navigation a:focus-visible {
   background: #fff0f7;
   outline: 0.1875rem solid var(--color-focus);
   outline-offset: 0.1875rem;
@@ -662,43 +662,43 @@ label {
   }
 
   .home-page > main,
-  .session-page > main,
+  .module-page > main,
   .not-found-page,
   .page-shell {
     width: min(100% - 1.5rem, var(--content-width));
   }
 
   .home-hero,
-  .session-hero {
+  .module-hero {
     padding: 2rem 1.25rem;
     border-radius: 2.5rem 3.5rem 2.75rem 3rem / 2.75rem 3rem 3.5rem 3.25rem;
   }
 
-  .session-hero,
-  .session-navigation,
-  .session-page main > nav[aria-label="前後のセッション"] {
+  .module-hero,
+  .module-navigation,
+  .module-page main > nav[aria-label="前後のモジュール"] {
     grid-template-columns: 1fr;
   }
 
-  .session-page__eyebrow,
-  .session-hero h1,
-  .session-hero > p:last-child,
-  .session-page main > nav[aria-label="前後のセッション"] a[rel="next"],
-  .session-navigation a[rel="next"] {
+  .module-page__eyebrow,
+  .module-hero h1,
+  .module-hero > p:last-child,
+  .module-page main > nav[aria-label="前後のモジュール"] a[rel="next"],
+  .module-navigation a[rel="next"] {
     grid-column: auto;
     grid-row: auto;
     text-align: left;
   }
 
-  .session-hero > p:last-child {
+  .module-hero > p:last-child {
     margin-top: 1rem;
   }
 
-  .session-cards {
+  .module-cards {
     grid-template-columns: 1fr;
   }
 
-  .session-toc,
+  .module-toc,
   .table-of-contents,
   .toc {
     position: static;
