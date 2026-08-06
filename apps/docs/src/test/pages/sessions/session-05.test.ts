@@ -28,10 +28,11 @@ describe("Session 05", () => {
       'command="pnpm --filter @fp-with-ts/clinic-session-05 test"',
     );
     expect(page).toContain("examples/session-05/exercises/follow-up.test.ts");
-    expect(page).not.toContain(
+    expect(page).toContain(
       "examples/session-05/src/application/collect-follow-up-targets.ts",
     );
-    expect(page).toContain("新しく導入する");
+    expect(page).toContain("新しく作成する source");
+    expect(page).toContain("1関数を実装");
     expect(page).toContain('href="/sessions/final/"');
     expect(page).not.toContain("packages/clinic-example");
   });
@@ -65,7 +66,7 @@ describe("Session 05", () => {
     expect(loop).toEqual([
       "問題を発見する: テストから、対象判定、petId mismatch、PII、Result、event の不足を特定する。",
       "手段を選ぶ: 既存の状態、入力境界、Sensitive、Result、domain event の役割へ対応付ける。",
-      "局所的に導入する: collectFollowUpTargets を新しい1関数として追加する。",
+      "局所的に作成する: collectFollowUpTargets を新しい1関数として実装する。",
       "効果を確認する: Session 05 snapshot の通常テストを実行し、既存の制約が保たれていることを確認する。",
     ]);
 
@@ -75,7 +76,7 @@ describe("Session 05", () => {
       ),
     ).toEqual([
       "追加要求と守る設計をつなぐ",
-      "既習技法を選び1関数だけを変える",
+      "既習技法を選び1関数を作成する",
       "統合ループで効果を確認する",
       "レビューと完了条件を確認する",
       "次の行動計画",

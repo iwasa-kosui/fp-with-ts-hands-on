@@ -56,6 +56,11 @@ describe("Sessions 01 and 02", () => {
     expect(stateModeling).toContain("reason: string;");
     expect(stateModeling).toContain("followUpRequestedAt?: string;");
     expect(stateModeling).not.toContain("cancellationReason");
+    expect(stateModeling).toContain(
+      "examples/session-01/src/domain/appointment.ts",
+    );
+    expect(stateModeling).toContain("新しく作成する source");
+    expect(stateModeling).toContain("2つの遷移関数を実装");
     expect(boundaryAndIds).toContain(
       "examples/session-02/src/domain/appointment.ts",
     );
@@ -83,7 +88,7 @@ describe("Sessions 01 and 02", () => {
 
     expectAuthoredOutline(parseStaticMarkup(html), [
       "要求と状態遷移を整理する",
-      "失敗から編集箇所を読む",
+      "失敗から作成対象を読む",
       "状態とデータを同時に閉じる",
       "レビューと次の境界へ",
     ]);

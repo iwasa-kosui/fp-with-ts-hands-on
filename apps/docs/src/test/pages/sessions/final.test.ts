@@ -21,6 +21,17 @@ describe("Final example", () => {
     expect(page).toContain("collectFollowUpTargets");
     expect(page).toContain("Zod");
     expect(page).toContain("neverthrow");
+    expect(page).toContain("Standard Schema");
+    expect(page).toContain("@standard-schema/spec");
+    expect(page).toContain("examples/final/src/shared/schema-result.ts");
+    expect(page).toContain("UUID");
+    expect(page).toContain("brand");
+    expect(page).toContain("examples/final/src/domain/appointment-id.ts");
+    expect(page).toContain("examples/final/src/domain/pet-id.ts");
+    expect(page).toContain("examples/final/src/domain/owner-id.ts");
+    expect(page).toContain("examples/final/src/domain/veterinarian-id.ts");
+    expect(page).toContain("examples/final/src/domain/event-id.ts");
+    expect(page).toContain("examples/final/src/domain/exam-id.ts");
     expect(page).toContain("save(state, events)");
     expect(page).toContain("Sensitive");
     expect(page).toContain("filter");

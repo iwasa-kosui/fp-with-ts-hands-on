@@ -61,7 +61,7 @@ if (session === undefined) throw new Error("Unknown session: 04-agent-review");
       expected="examples/session-04 には agent review の source がまだないため、dual-write と PII inspect を検出するテストが失敗します。"
     />
 
-    <h3>読む場所と編集場所</h3>
+    <h3>先に読むファイル</h3>
     <dl>
       <dt><code>examples/session-04/src/application/start-examination.ts</code></dt>
       <dd>
@@ -75,8 +75,16 @@ if (session === undefined) throw new Error("Unknown session: 04-agent-review");
       <dd>event 追記が予約状態の保存と別に失敗できることを確認します。</dd>
       <dt><code>examples/session-04/exercises/agent-review.test.ts</code></dt>
       <dd>review が <code>save(state, events)</code> と PII inspect を要求することを確認します。</dd>
-      <dt>review の要求</dt>
-      <dd>次の Session で追加する agent review は、状態と event の保存を一つにすること、PII を inspect から守ることを確認します。</dd>
+    </dl>
+
+    <h3>新しく作成する source</h3>
+    <dl>
+      <dt><code>examples/session-04/src/review/agent-review.ts</code></dt>
+      <dd>
+        RED の契約に従ってこのファイルを作成し、<code>agentReviewChecklist</code> と <code
+          >buildFollowUpAgentPrompt</code
+        > の2つの export を実装します。
+      </dd>
     </dl>
 
     <CodeBlock

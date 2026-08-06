@@ -27,6 +27,35 @@ if (session === undefined) throw new Error("Unknown session: final");
       <code>Appointment</code> companion にまとめています。用途別 ID
       は個別ファイルへ分け、同じ文字列を誤って取り違えないようにします。
     </p>
+    <p>
+      <code>examples/final/src/shared/schema-result.ts</code> は Standard Schema adapter
+      です。<code>@standard-schema/spec</code> の <code>StandardSchemaV1</code> を受け取り、<code
+        >schema["~standard"].validate(raw)</code
+      > の成功値を neverthrow の <code>Ok</code>、issues を <code>ValidationError</code>
+      の <code>Err</code> へ変換します。依存関係は <code>examples/final/package.json</code>
+      に明示しています。
+    </p>
+
+    <h3>用途別 ID の runtime 検証と brand</h3>
+    <p>
+      各 ID は Zod の <code>z.string().uuid()</code> で runtime の UUID
+      形式を検証し、ファイルごとに異なる <code>Symbol</code> を使う brand
+      でコンパイル時の取り違えを防ぎます。
+    </p>
+    <dl>
+      <dt><code>examples/final/src/domain/appointment-id.ts</code></dt>
+      <dd>予約を識別する <code>AppointmentId</code> を定義します。</dd>
+      <dt><code>examples/final/src/domain/pet-id.ts</code></dt>
+      <dd>診療対象の動物を識別する <code>PetId</code> を定義します。</dd>
+      <dt><code>examples/final/src/domain/owner-id.ts</code></dt>
+      <dd>飼い主を識別する <code>OwnerId</code> を定義します。</dd>
+      <dt><code>examples/final/src/domain/veterinarian-id.ts</code></dt>
+      <dd>担当獣医師を識別する <code>VeterinarianId</code> を定義します。</dd>
+      <dt><code>examples/final/src/domain/event-id.ts</code></dt>
+      <dd>domain event を識別する <code>EventId</code> を定義します。</dd>
+      <dt><code>examples/final/src/domain/exam-id.ts</code></dt>
+      <dd>外部検査を識別する <code>ExamId</code> を定義します。</dd>
+    </dl>
 
     <CodeBlock
       language="typescript"

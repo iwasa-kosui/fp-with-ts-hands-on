@@ -11,7 +11,7 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
 <SessionLayout session={session}>
   <ol slot="toc">
     <li><a href="#requirement-and-transitions">要求と状態遷移を整理する</a></li>
-    <li><a href="#read-the-failure">失敗から編集箇所を読む</a></li>
+    <li><a href="#read-the-failure">失敗から作成対象を読む</a></li>
     <li><a href="#close-state-and-data">状態とデータを同時に閉じる</a></li>
     <li><a href="#review-and-boundary">レビューと次の境界へ</a></li>
   </ol>
@@ -41,12 +41,13 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
       Canceled は終端にする。
     </p>
     <p>
-      今回のミッションは、状態ごとのデータを discriminated union に閉じ、2つの遷移関数だけを変更して要求を受け止めることです。
+      今回のミッションは、状態ごとのデータを discriminated union に閉じる source
+      を作成し、2つの遷移関数を実装して要求を受け止めることです。
     </p>
   </section>
 
   <section>
-    <h2 id="read-the-failure">失敗から編集箇所を読む</h2>
+    <h2 id="read-the-failure">失敗から作成対象を読む</h2>
     <p>
       まず演習テストを実行し、不正な状態遷移と <code>Canceled</code>
       に必要な情報を期待値から確認します。
@@ -69,21 +70,13 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
       <dd>診察開始と理由付きキャンセルという実行時要件を、期待値から確認します。</dd>
     </dl>
 
-    <h3>開始スナップショットで確認する2つの要求</h3>
+    <h3>新しく作成する source</h3>
     <dl>
-      <dt>
-        <code>examples/session-01/exercises/state-modeling.test.ts</code> — <code
-          >Appointment.startExamination</code
-        >
-      </dt>
-      <dd><code>CheckedIn</code> から <code>InExamination</code> へ進む API を要求します。</dd>
-      <dt>
-        <code>examples/session-01/exercises/state-modeling.test.ts</code> — <code
-          >Appointment.cancelWithReason</code
-        >
-      </dt>
+      <dt><code>examples/session-01/src/domain/appointment.ts</code></dt>
       <dd>
-        理由、キャンセル時刻、任意の再診希望を持つ <code>Canceled</code> の API を要求します。
+        RED の契約に従ってこのファイルを作成し、<code>Appointment.startExamination</code> と <code
+          >Appointment.cancelWithReason</code
+        > の2つの遷移関数を実装します。
       </dd>
     </dl>
   </section>
