@@ -30,7 +30,7 @@ pnpm test
 pnpm exercise:00
 ```
 
-セッション 01 から 05 では、対応する `pnpm exercise:01` から `pnpm exercise:05` を実行します。失敗する場合は、表示された期待値がそのセッションの問題を示していることを確認してから、サイトの手順に沿って進めます。
+セッション 01 から 05 では、対応する `pnpm exercise:01` から `pnpm exercise:05` を実行します。開始時は演習対象の source file が意図的にないため、assertion の前に import error で失敗します。これは想定どおりの開始状態です。サイトの手順に沿って file を作成・実装してから、同じ `pnpm exercise:NN` をもう一度実行し、演習の assertion を確認してください。
 
 ## 当日の流れ
 
