@@ -159,6 +159,19 @@ Create `code-playground.css` by moving all reusable selectors currently rooted a
 
 Use the `--playground-*` variables in every moved declaration. Keep the two-column grid and 32rem editor height on desktop; keep the existing one-column, 24rem editor-height mobile rules. Do not change `CodeExplorer.tsx`.
 
+Include the session wrapper's overflow guards in this shared stylesheet so the later browser test begins from the intended responsive behavior:
+
+```css
+.session-code-playground,
+.session-code-playground [data-code-explorer] {
+  min-width: 0;
+}
+
+.code-playground .code-explorer__workspace nav button > span:first-child {
+  overflow-wrap: anywhere;
+}
+```
+
 In `code-explorer.astro`, import `../styles/code-playground.css` and add `code-playground` to the existing main shell class. Remove only the moved reusable rules from `code-explorer-preview.css`; retain the preview page's outer layout, header, intro, eyebrow, and notice styles unchanged.
 
 - [ ] **Step 4: Run the component test to verify it passes**
@@ -313,9 +326,9 @@ git commit -m "feat(docs): embed playgrounds in sessions"
 - Consumes: the eight static routes, `.session-code-playground`, `[data-code-explorer]`, and the existing Playwright `baseURL` at `http://127.0.0.1:4321`.
 - Produces: browser-level confirmation that each target page shows usable controls without horizontal overflow at 390px and 1440px widths.
 
-- [ ] **Step 1: Write the failing responsive browser test**
+- [ ] **Step 1: Write the responsive browser regression test**
 
-Create the test before adjusting any responsive behavior. It must visit all eight routes at both widths; it must not click `実行`, because WebContainer startup is intentionally deferred and belongs to the existing component tests.
+Create the test after Tasks 1 and 2 have supplied the responsive behavior. It must visit all eight routes at both widths; it must not click `実行`, because WebContainer startup is intentionally deferred and belongs to the existing component tests.
 
 ```ts
 import { expect, test } from "@playwright/test";
@@ -356,40 +369,17 @@ for (const route of routes) {
 }
 ```
 
-- [ ] **Step 2: Run the responsive test to verify it fails**
+- [ ] **Step 2: Run the responsive test to establish the intended baseline**
 
 Run: `pnpm --filter @fp-with-ts/docs test:visual -- session-code-playground.spec.ts`
 
-Expected: FAIL because the new session pages or responsive stylesheet are not yet present on the test branch.
+Expected: PASS for 16 route/viewport combinations. Each view displays the file tree, editor actions, and output region inside the viewport. The shared stylesheet must retain the desktop `grid-template-columns: minmax(13rem, 0.32fr) minmax(0, 1fr)`, the mobile single-column rule, the 24rem mobile editor minimum, and the 2.75rem action-button minimum; it must not add a page-level horizontal scroller.
 
-- [ ] **Step 3: Adjust only the session Playground CSS required by the test**
-
-Keep the desktop `grid-template-columns: minmax(13rem, 0.32fr) minmax(0, 1fr)` and the mobile single-column rule. Add `min-width: 0` to the session wrapper and its direct execution container, and use `overflow-wrap: anywhere` for file-path labels. Preserve the existing 2.75rem minimum action-button height and its mobile `flex: 1 1 12rem` sizing.
-
-```css
-.session-code-playground,
-.session-code-playground [data-code-explorer] {
-  min-width: 0;
-}
-
-.code-playground .code-explorer__workspace nav button > span:first-child {
-  overflow-wrap: anywhere;
-}
-```
-
-Do not add a horizontal page-level scroller or shorten the editor below the existing 24rem mobile minimum.
-
-- [ ] **Step 4: Run the responsive browser test to verify it passes**
-
-Run: `pnpm --filter @fp-with-ts/docs test:visual -- session-code-playground.spec.ts`
-
-Expected: PASS for 16 route/viewport combinations. Each view displays the file tree, editor actions, and output region inside the viewport.
-
-- [ ] **Step 5: Perform the required visual inspection**
+- [ ] **Step 3: Perform the required visual inspection**
 
 Open each of the eight routes at 390px and 1440px. Confirm the visible file names do not force page-wide horizontal scrolling, the code editor is readable, reset/run buttons are tappable, the output panel is below the editor, and the Playground appears after the intended prerequisite section. Do not press `実行` as part of this layout inspection.
 
-- [ ] **Step 6: Run the complete docs and repository verification**
+- [ ] **Step 4: Run the complete docs and repository verification**
 
 Run these commands separately:
 
@@ -404,7 +394,7 @@ pnpm build
 
 Expected: all commands pass. The intentional `exercise:*` failures are not part of these normal-health commands.
 
-- [ ] **Step 7: Commit the responsive coverage**
+- [ ] **Step 5: Commit the responsive coverage**
 
 ```bash
 git add apps/docs/e2e/session-code-playground.spec.ts apps/docs/src/styles/code-playground.css
