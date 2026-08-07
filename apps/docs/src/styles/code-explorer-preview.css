@@ -25,6 +25,11 @@
   text-decoration: none;
 }
 
+.code-explorer-preview .code-explorer-preview__header a:focus-visible {
+  outline: 0.25rem solid var(--color-focus);
+  outline-offset: 0.1875rem;
+}
+
 .code-explorer-preview .code-explorer-preview__shell {
   width: min(100% - 2rem, var(--content-width));
   margin-inline: auto;

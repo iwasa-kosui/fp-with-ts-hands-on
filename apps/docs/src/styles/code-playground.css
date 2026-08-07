@@ -5,6 +5,7 @@
   --playground-primary: var(--color-primary);
   --playground-highlight: var(--color-highlight);
   --playground-danger: var(--color-accent-text);
+  --playground-dirty: var(--color-pink);
   --playground-focus: var(--color-focus);
   --playground-lemon: var(--color-lemon);
   --playground-code: var(--color-code);
@@ -19,6 +20,7 @@
   --playground-primary: var(--case-line);
   --playground-highlight: var(--case-mint);
   --playground-danger: var(--case-coral);
+  --playground-dirty: var(--case-coral);
   --playground-focus: var(--case-coral);
   --playground-lemon: var(--case-lemon);
   --playground-code: var(--case-ink);
@@ -121,7 +123,7 @@
   flex: none;
   padding: 0.1rem 0.35rem;
   border-radius: 999px;
-  background: var(--playground-danger);
+  background: var(--playground-dirty);
   color: var(--playground-surface);
   font-size: 0.6875rem;
   font-weight: 950;
