@@ -11,13 +11,13 @@ describe("resolveWorkerRoute", () => {
     (pathname) => {
       expect(resolveWorkerRoute(pathname)).toEqual({
         kind: "redirect",
-        location: "/modules/00-break-the-app/",
+        location: "/sessions/00-break-the-app/",
       });
     },
   );
 
   it("delegates static pages to assets", () => {
-    expect(resolveWorkerRoute("/modules/01-state-modeling/")).toEqual({
+    expect(resolveWorkerRoute("/sessions/01-state-modeling/")).toEqual({
       kind: "asset",
     });
   });

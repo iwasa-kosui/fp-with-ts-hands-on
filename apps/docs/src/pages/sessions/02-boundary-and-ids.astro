@@ -1,0 +1,182 @@
+---
+import CodeBlock from "../../components/CodeBlock.astro";
+import CommandBlock from "../../components/CommandBlock.astro";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+
+const session = sessionBySlug("02-boundary-and-ids");
+if (session === undefined) throw new Error("Unknown session: 02-boundary-and-ids");
+---
+
+<SessionLayout session={session}>
+  <ol slot="toc">
+    <li><a href="#three-boundaries">事故を3つの境界へ分ける</a></li>
+    <li><a href="#read-conversion-boundaries">失敗から変換境界を読む</a></li>
+    <li><a href="#protect-each-boundary">入力・ID・PIIを別々に守る</a></li>
+    <li><a href="#review-and-errors">レビューと次のエラー設計へ</a></li>
+  </ol>
+
+  <section>
+    <h2 id="three-boundaries">事故を3つの境界へ分ける</h2>
+    <p>外部サービスから届く検査結果を取り込み、飼い主へ連絡します。</p>
+    <p>
+      <strong>事故:</strong> 外部 payload の petId と ownerId
+      を取り違え、連絡先がログへ出ました。
+    </p>
+    <p>
+      外部 payload は TypeScript の型を持たない <code>unknown</code>
+      です。検証前に domain の値として使うと、<code>petId</code> と <code>ownerId</code>
+      のような異なる ID を取り違える入口になります。
+    </p>
+    <p>
+      さらに、正しく parse して用途別 ID
+      を得ても、飼い主の連絡先を文字列化すれば PII は漏えいします。入力の妥当性と出力の秘匿は独立して守ります。
+    </p>
+    <p>
+      <strong>守る不変条件:</strong> unknown は parse してから使い、ID
+      は用途をまたがず、PII は文字列化しても伏せる。
+    </p>
+    <p>
+      今回のミッションは、外部入力、用途別 ID、PII
+      の3つの境界を、それぞれ異なる仕組みで守ることです。
+    </p>
+  </section>
+
+  <section>
+    <h2 id="read-conversion-boundaries">失敗から変換境界を読む</h2>
+    <p>
+      演習テストを実行し、入力検証、ID変換、PIIの伏せ字のどこが不足しているか確認します。
+    </p>
+    <CommandBlock
+      phase="red"
+      command="pnpm exercise:02"
+      expected="examples/session-02 には境界用 source がまだないため、unknown の検証、ID の変換、PII の伏せ字を要求するテストが失敗します。"
+    />
+
+    <h3>先に読むファイル</h3>
+    <dl>
+      <dt><code>examples/session-02/src/domain/appointment.ts</code></dt>
+      <dd>
+        判別共用体と純粋な状態遷移が完成している一方、ID は plain string
+        のままであることを確認します。
+      </dd>
+      <dt><code>examples/session-02/exercises/boundary-and-ids.test.ts</code></dt>
+      <dd>
+        <code>unknown</code> payload の検証と、<code>JSON.stringify</code> による <code
+          >[REDACTED]</code
+        > の期待値を確認します。
+      </dd>
+    </dl>
+
+    <h3>開始スナップショットで確認する場所</h3>
+    <dl>
+      <dt><code>examples/session-02/src/domain/appointment.ts</code> — <code>Appointment</code></dt>
+      <dd>状態モデルが用途別 ID をまだ区別していない点を確認します。</dd>
+      <dt><code>examples/session-02/test/state-modeling.test.ts</code></dt>
+      <dd>状態モデルの通常テストを基準に、次の境界で守るべき入力と PII を整理します。</dd>
+    </dl>
+  </section>
+
+  <section>
+    <h2 id="protect-each-boundary">入力・ID・PIIを別々に守る</h2>
+    <CodeBlock
+      language="typescript"
+      label="unknown を検証してから使う"
+      code={`const parsed = ExamResult.safeParse(raw);
+if (!parsed.success) return parsed;
+return parsed.data;`}
+    />
+
+    <h3>使う技法: Zod、Branded Type、Sensitive</h3>
+    <dl>
+      <dt>Zod</dt>
+      <dd>
+        外部から来た <code>unknown</code>
+        の形と値を実行時に検証し、成功した値だけを domain へ渡します。
+      </dd>
+      <dt>Branded Type</dt>
+      <dd>
+        同じ文字列で表現される <code>PetId</code> と <code>OwnerId</code>
+        を用途別の型に分け、取り違えを型エラーにします。
+      </dd>
+      <dt>Sensitive</dt>
+      <dd>
+        PII を包み、<code>toJSON</code> と <code>toString</code> の実行時出力を <code
+          >[REDACTED]</code
+        > にします。
+      </dd>
+    </dl>
+    <p>
+      <strong>役割の限界:</strong> Branded Type
+      だけではログ漏えいを防げず、Sensitive だけでは入力妥当性を保証できません。Zod
+      で検証しても出力の秘匿は別に必要です。
+    </p>
+    <p>
+      payload を <code>as</code> で domain
+      型に見せかけず、unknown の parse、用途別 ID の変換、Sensitive
+      への変換という順序を保ちます。
+    </p>
+
+    <CommandBlock
+      phase="green"
+      command="pnpm exercise:02"
+      expected="同じ演習テストが成功し、unknown の検証、用途別 ID、PII の伏せ字を確認できます。"
+    />
+    <p>
+      続いて追加の回帰確認として <code
+        >pnpm --filter @fp-with-ts/clinic-session-02 test</code
+      > を実行し、状態モデルの既存契約も保たれていることを確認します。
+    </p>
+  </section>
+
+  <section>
+    <h2 id="review-and-errors">レビューと次のエラー設計へ</h2>
+    <h3>レビュー観点</h3>
+    <ul>
+      <li>payload を <code>as</code> で通さず、<code>unknown</code> から parse している。</li>
+      <li><code>petId</code> と <code>ownerId</code> の取り違えが型エラーになる。</li>
+      <li>
+        <code>Sensitive</code> を <code>JSON.stringify</code> しても、値が <code
+          >[REDACTED]</code
+        > になる。
+      </li>
+    </ul>
+
+    <h3>完了条件</h3>
+    <ul>
+      <li>入力境界、ID、runtime PII 防御の役割を分けて説明できる。</li>
+      <li>外部の <code>unknown</code> を domain の値にする順序を説明できる。</li>
+    </ul>
+
+    <h3>業務への転用</h3>
+    <p>
+      検査結果と連絡先を受け取る後続の use case
+      が、検証済みの ID と伏せられる PII だけを受け取れます。
+    </p>
+
+    <h3>振り返り</h3>
+    <p>
+      Zod、Branded Type、Sensitive は、それぞれどの境界と事故を担当していますか。
+    </p>
+
+    <h3>代替進行</h3>
+    <p>
+      実装できない場合は、payload を <code>unknown</code>
+      に戻し、parse、ID変換、Sensitive変換の順に確認します。最後に <code
+        >JSON.stringify</code
+      > の結果が <code>[REDACTED]</code> か確認します。
+    </p>
+
+    <h3>参考資料</h3>
+    <p>
+      <a href="https://kosui.me/posts/2026/03/16/typescript-pii-logging-defense"
+        >PII ログ漏洩を防止する</a
+      >
+    </p>
+
+    <h3>次のセッションへ</h3>
+    <p>
+      入力境界で検証に失敗した理由を呼び出し側へ返せるよう、次は型付けしたエラーと、成功時だけ残す domain event を設計します。
+    </p>
+  </section>
+</SessionLayout>

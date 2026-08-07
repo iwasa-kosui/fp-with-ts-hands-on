@@ -1,11 +1,13 @@
 ---
 import { CodeExplorer } from "../components/code-explorer/CodeExplorer";
-import { moduleWorkspaceFor } from "../code-explorer/module-workspaces";
-import { projectFiles } from "../code-explorer/project-files";
+import { projectFilesFor } from "../code-explorer/project-files";
+import { sessionWorkspaceFor } from "../code-explorer/session-workspaces";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import "../styles/code-explorer-preview.css";
 
-const workspace = moduleWorkspaceFor("01-state-modeling");
+const sessionSlug = "00-break-the-app";
+const workspace = sessionWorkspaceFor(sessionSlug);
+const projectFiles = projectFilesFor(sessionSlug);
 ---
 
 <BaseLayout
@@ -31,7 +33,7 @@ const workspace = moduleWorkspaceFor("01-state-modeling");
       </p>
       <aside class="code-explorer-preview__notice" aria-label="プレビューについて">
         <strong>試用前にご確認ください</strong>
-        <p>これは現行の clinic-example を使う実験用プレビューです。編集内容はこのブラウザ内だけで動作し、保存されません。教材の session 化に伴い、題材やファイル構成は変更される場合があります。</p>
+        <p>これは Session 00 の開始 snapshot を使う実験用プレビューです。編集内容はこのブラウザ内だけで動作し、保存されません。</p>
       </aside>
     </section>
 

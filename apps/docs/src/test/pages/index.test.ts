@@ -18,6 +18,6 @@ describe("home page", () => {
     expect(document.querySelector(".landing-hero__grid > .landing-eyebrow")).not.toBeNull();
     expect(document.querySelector(".copy-panel .landing-lead")).toBeNull();
     expect(document.querySelector(".landing-hero__grid > .landing-lead")).not.toBeNull();
-    expect(document.querySelector('a[href="/modules/00-break-the-app/"]')).not.toBeNull();
+    expect(document.querySelector('a[href="/sessions/00-break-the-app/"]')).not.toBeNull();
   });
 });
