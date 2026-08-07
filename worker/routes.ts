@@ -9,7 +9,7 @@ export const resolveWorkerRoute = (pathname: string): WorkerRoute => {
   if (pathname === "/module-00" || pathname === "/module-00/") {
     return {
       kind: "redirect",
-      location: "/modules/00-break-the-app/",
+      location: "/sessions/00-break-the-app/",
     };
   }
 

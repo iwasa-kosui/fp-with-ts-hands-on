@@ -14,6 +14,10 @@ describe("home page", () => {
     expect(document.querySelectorAll(".splat-card")).toHaveLength(7);
     expect(document.querySelectorAll(".time-stop")).toHaveLength(7);
     expect(document.querySelector("h1")?.textContent).toContain("WAN NYAN");
-    expect(document.querySelector('a[href="/modules/00-break-the-app/"]')).not.toBeNull();
+    expect(document.querySelector(".copy-panel .landing-eyebrow")).toBeNull();
+    expect(document.querySelector(".landing-hero__grid > .landing-eyebrow")).not.toBeNull();
+    expect(document.querySelector(".copy-panel .landing-lead")).toBeNull();
+    expect(document.querySelector(".landing-hero__grid > .landing-lead")).not.toBeNull();
+    expect(document.querySelector('a[href="/sessions/00-break-the-app/"]')).not.toBeNull();
   });
 });

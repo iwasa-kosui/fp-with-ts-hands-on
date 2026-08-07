@@ -1,12 +1,38 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import CodeExplorerPage from "../../pages/code-explorer.astro";
 import { createAstroContainer } from "../render-astro";
 
+const codePlaygroundStyles = readFileSync(
+  join(process.cwd(), "src/styles/code-playground.css"),
+  "utf8",
+);
+const codeExplorerPreviewStyles = readFileSync(
+  join(process.cwd(), "src/styles/code-explorer-preview.css"),
+  "utf8",
+);
+
 const previewNotice =
-  "これは現行の clinic-example を使う実験用プレビューです。編集内容はこのブラウザ内だけで動作し、保存されません。教材の session 化に伴い、題材やファイル構成は変更される場合があります。";
+  "これは Session 00 の開始 snapshot を使う実験用プレビューです。編集内容はこのブラウザ内だけで動作し、保存されません。";
 
 describe("code explorer preview page", () => {
-  it("renders the real state-modeling workspace as a load-hydrated standalone preview", async () => {
+  it("keeps the standalone preview dirty indicator pink", () => {
+    expect(codePlaygroundStyles).toMatch(
+      /\.code-playground\s*\{[^}]*--playground-dirty:\s*var\(--color-pink\)/,
+    );
+    expect(codePlaygroundStyles).toMatch(
+      /\.code-playground \.code-explorer__dirty\s*\{[^}]*background:\s*var\(--playground-dirty\)/,
+    );
+  });
+
+  it("keeps the preview header link keyboard focus style", () => {
+    expect(codeExplorerPreviewStyles).toMatch(
+      /\.code-explorer-preview \.code-explorer-preview__header a:focus-visible\s*\{[^}]*outline:\s*0\.25rem solid var\(--color-focus\)[^}]*outline-offset:\s*0\.1875rem/,
+    );
+  });
+
+  it("renders the self-contained Session 00 snapshot as a load-hydrated standalone preview", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(CodeExplorerPage, {
       partial: false,
@@ -16,10 +42,10 @@ describe("code explorer preview page", () => {
     expect(document.querySelector('a[href="/"]')).not.toBeNull();
     expect(document.body.textContent).toContain(previewNotice);
     expect(document.body.textContent).toContain(
-      "状態遷移の実装と型・実行時テストを編集して実行します。",
+      "事故を再現するテストと開始 snapshot を編集して実行します。",
     );
     expect(document.body.textContent).toContain(
-      "exercises/01-state-modeling.test.ts",
+      "exercises/incident.test.ts",
     );
     expect(
       document.querySelector('[data-action="run"]')?.textContent,
@@ -28,7 +54,7 @@ describe("code explorer preview page", () => {
       document.querySelector('[data-action="reset"]')?.textContent,
     ).toContain("リセット");
     expect(
-      document.querySelector('[data-code-explorer="01-state-modeling"]'),
+      document.querySelector('[data-code-explorer="00-break-the-app"]'),
     ).not.toBeNull();
     expect(
       document.querySelector('astro-island[client="load"]'),

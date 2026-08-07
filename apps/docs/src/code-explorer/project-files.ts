@@ -1,46 +1,91 @@
-import packageJsonSource from "../../../../packages/clinic-example/package.json?raw";
-import tsconfigSource from "../../../../packages/clinic-example/tsconfig.json?raw";
-import vitestConfigSource from "../../../../packages/clinic-example/vitest.config.ts?raw";
-import exerciseConfigSource from "../../../../packages/clinic-example/vitest.exercises.config.ts?raw";
 import tsconfigBaseSource from "../../../../tsconfig.base.json?raw";
+import {
+  sessionBySlug,
+  type ExampleSnapshot,
+} from "../sessions/catalog";
 import type { ProjectFiles } from "./types";
 
-const packageSources = import.meta.glob(
-  "../../../../packages/clinic-example/{src,exercises,test}/**/*.ts",
+const rawProjectFiles = import.meta.glob(
+  [
+    "../../../../examples/session-00/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
+    "../../../../examples/session-01/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
+    "../../../../examples/session-02/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
+    "../../../../examples/session-03/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
+    "../../../../examples/session-04/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
+    "../../../../examples/session-05/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
+    "../../../../examples/final/{package.json,tsconfig.json,vitest.config.ts,src/**/*.ts,test/**/*.ts}",
+  ],
   { eager: true, query: "?raw", import: "default" },
 ) as Record<string, string>;
 
-const packagePrefix = "../../../../packages/clinic-example/";
-const packageJson = JSON.parse(packageJsonSource) as {
-  devDependencies?: Record<string, string>;
-  [key: string]: unknown;
-};
-const tsconfig = JSON.parse(tsconfigSource) as {
-  extends?: string;
-  [key: string]: unknown;
+const snapshots = [
+  "session-00",
+  "session-01",
+  "session-02",
+  "session-03",
+  "session-04",
+  "session-05",
+  "final",
+] as const satisfies readonly ExampleSnapshot[];
+
+const requiredRuntimeFiles = [
+  "package.json",
+  "tsconfig.json",
+  "vitest.config.ts",
+] as const;
+
+const buildProjectFiles = (snapshot: ExampleSnapshot): ProjectFiles => {
+  const prefix = `../../../../examples/${snapshot}/`;
+  const files = Object.fromEntries(
+    Object.entries(rawProjectFiles)
+      .filter(([path]) => path.startsWith(prefix))
+      .map(([path, source]) => [path.slice(prefix.length), source]),
+  );
+  const missingRuntimeFiles = requiredRuntimeFiles.filter(
+    (path) => files[path] === undefined,
+  );
+  if (missingRuntimeFiles.length > 0) {
+    throw new Error(
+      `Missing runtime files for snapshot ${snapshot}: ${missingRuntimeFiles.join(", ")}`,
+    );
+  }
+
+  const packageJson = JSON.parse(files["package.json"]!) as {
+    devDependencies?: Record<string, string>;
+    [key: string]: unknown;
+  };
+  const tsconfig = JSON.parse(files["tsconfig.json"]!) as {
+    extends?: string;
+    [key: string]: unknown;
+  };
+
+  return Object.freeze({
+    ...files,
+    "package.json": JSON.stringify(
+      {
+        ...packageJson,
+        devDependencies: { ...packageJson.devDependencies, tsx: "4.23.9" },
+      },
+      null,
+      2,
+    ),
+    "tsconfig.json": JSON.stringify(
+      { ...tsconfig, extends: "./tsconfig.base.json" },
+      null,
+      2,
+    ),
+    "tsconfig.base.json": tsconfigBaseSource,
+  });
 };
 
-export const projectFiles: ProjectFiles = Object.freeze({
-  ...Object.fromEntries(
-    Object.entries(packageSources).map(([path, source]) => [
-      path.replace(packagePrefix, ""),
-      source,
-    ]),
-  ),
-  "package.json": JSON.stringify(
-    {
-      ...packageJson,
-      devDependencies: { ...packageJson.devDependencies, tsx: "4.23.9" },
-    },
-    null,
-    2,
-  ),
-  "tsconfig.json": JSON.stringify(
-    { ...tsconfig, extends: "./tsconfig.base.json" },
-    null,
-    2,
-  ),
-  "tsconfig.base.json": tsconfigBaseSource,
-  "vitest.config.ts": vitestConfigSource,
-  "vitest.exercises.config.ts": exerciseConfigSource,
-});
+const projectFilesBySnapshot = Object.fromEntries(
+  snapshots.map((snapshot) => [snapshot, buildProjectFiles(snapshot)]),
+) as Readonly<Record<ExampleSnapshot, ProjectFiles>>;
+
+export const projectFilesFor = (slug: string): ProjectFiles => {
+  const session = sessionBySlug(slug);
+  if (session === undefined) {
+    throw new Error(`Unknown session project: ${slug}`);
+  }
+  return projectFilesBySnapshot[session.snapshot];
+};

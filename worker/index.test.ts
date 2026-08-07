@@ -39,7 +39,7 @@ describe("worker request handler", () => {
 
       expect(response.status).toBe(308);
       expect(response.headers.get("location")).toBe(
-        "https://example.test/modules/00-break-the-app/",
+        "https://example.test/sessions/00-break-the-app/",
       );
       expect(fetch).not.toHaveBeenCalled();
     },
@@ -51,7 +51,7 @@ describe("worker request handler", () => {
     });
     const { env, fetch } = createAssets(assetResponse);
     const request = new Request(
-      "https://example.test/modules/01-state-modeling/?source=worker-test",
+      "https://example.test/sessions/01-state-modeling/?source=worker-test",
       { headers: { "x-request": "original" } },
     );
 
