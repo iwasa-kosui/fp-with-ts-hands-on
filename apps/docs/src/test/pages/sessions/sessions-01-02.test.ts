@@ -113,6 +113,7 @@ describe("Sessions 01 and 02", () => {
     expectAuthoredOutline(parseStaticMarkup(html), [
       "要求と状態遷移を整理する",
       "失敗から作成対象を読む",
+      "ブラウザで試す",
       "状態とデータを同時に閉じる",
       "レビューと次の境界へ",
     ]);
@@ -133,6 +134,7 @@ describe("Sessions 01 and 02", () => {
     expectAuthoredOutline(parseStaticMarkup(html), [
       "事故を3つの境界へ分ける",
       "失敗から変換境界を読む",
+      "ブラウザで試す",
       "入力・ID・PIIを別々に守る",
       "レビューと次のエラー設計へ",
     ]);

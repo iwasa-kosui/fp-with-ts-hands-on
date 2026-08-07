@@ -1,5 +1,6 @@
 ---
 import CommandBlock from "../../components/CommandBlock.astro";
+import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
 import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessionBySlug } from "../../sessions/catalog";
 
@@ -12,6 +13,7 @@ if (session === undefined) throw new Error("Unknown session: 00-break-the-app");
     <li><a href="#before-joining">開発に参加する前に</a></li>
     <li><a href="#incident">事故を観察する</a></li>
     <li><a href="#exercise">失敗を再現する</a></li>
+    <li><a href="#code-playground">ブラウザで試す</a></li>
     <li><a href="#review">レビューと次のセッション</a></li>
   </ol>
 
@@ -264,6 +266,8 @@ if (session === undefined) throw new Error("Unknown session: 00-break-the-app");
       <li>ログ出力で隠したい情報が、値の型だけでは守られていない。</li>
     </ul>
   </section>
+
+  <SessionCodePlayground slug={session.slug} />
 
   <section id="review">
     <h2>レビューと次のセッション</h2>

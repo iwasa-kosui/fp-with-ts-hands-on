@@ -1,6 +1,7 @@
 ---
 import CodeBlock from "../../components/CodeBlock.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
+import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
 import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessionBySlug } from "../../sessions/catalog";
 
@@ -12,6 +13,7 @@ if (session === undefined) throw new Error("Unknown session: 04-agent-review");
   <ol slot="toc">
     <li><a href="#separate-agent-review">依頼とレビューの責任を分ける</a></li>
     <li><a href="#build-agent-request">エージェントへの依頼を組み立てる</a></li>
+    <li><a href="#code-playground">ブラウザで試す</a></li>
     <li><a href="#human-requirement-review">人が要求からレビューする</a></li>
     <li><a href="#finish-and-integrate">完了条件と統合演習への橋渡し</a></li>
   </ol>
@@ -58,7 +60,7 @@ if (session === undefined) throw new Error("Unknown session: 04-agent-review");
     <CommandBlock
       phase="red"
       command="pnpm exercise:04"
-      expected="examples/session-04 には agent review の source がまだないため、dual-write と PII inspect を検出するテストが失敗します。"
+      expected="examples/session-04 の TODO だけがある agent review starter では、必要な export が未実装のため、dual-write と PII inspect を検出するテストが失敗します。"
     />
 
     <h3>先に読むファイル</h3>
@@ -77,11 +79,11 @@ if (session === undefined) throw new Error("Unknown session: 04-agent-review");
       <dd>review が <code>save(state, events)</code> と PII inspect を要求することを確認します。</dd>
     </dl>
 
-    <h3>新しく作成する source</h3>
+    <h3>実装する source</h3>
     <dl>
       <dt><code>examples/session-04/src/review/agent-review.ts</code></dt>
       <dd>
-        RED の契約に従ってこのファイルを作成し、<code>agentReviewChecklist</code> と <code
+        TODO だけがあるこの starter を編集し、<code>agentReviewChecklist</code> と <code
           >buildFollowUpAgentPrompt</code
         > の2つの export を実装します。
       </dd>
@@ -104,6 +106,8 @@ if (session === undefined) throw new Error("Unknown session: 04-agent-review");
       型が通ることだけで、追加機能が要求に適合することまで保証できるとは扱いません。
     </p>
   </section>
+
+  <SessionCodePlayground slug={session.slug} />
 
   <section>
     <h2 id="human-requirement-review">人が要求からレビューする</h2>

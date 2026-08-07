@@ -1,5 +1,6 @@
 ---
 import CommandBlock from "../../components/CommandBlock.astro";
+import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
 import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessionBySlug } from "../../sessions/catalog";
 
@@ -11,6 +12,7 @@ if (session === undefined) throw new Error("Unknown session: 05-mini-integration
   <ol slot="toc">
     <li><a href="#connect-requirement">追加要求と守る設計をつなぐ</a></li>
     <li><a href="#select-and-change">既習技法を選び1関数を作成する</a></li>
+    <li><a href="#code-playground">ブラウザで試す</a></li>
     <li><a href="#verify-integration-loop">統合ループで効果を確認する</a></li>
     <li><a href="#review-and-finish">レビューと完了条件を確認する</a></li>
     <li><a href="#action-plan">次の行動計画</a></li>
@@ -95,6 +97,8 @@ if (session === undefined) throw new Error("Unknown session: 05-mini-integration
       新しい抽象化や型テクニックは追加しません。
     </p>
   </section>
+
+  <SessionCodePlayground slug={session.slug} />
 
   <section>
     <h2 id="verify-integration-loop">統合ループで効果を確認する</h2>

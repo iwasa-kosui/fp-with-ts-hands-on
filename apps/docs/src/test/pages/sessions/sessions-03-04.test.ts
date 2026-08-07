@@ -99,7 +99,7 @@ describe("Sessions 03 and 04", () => {
     expect(agentReview).toContain(
       "examples/session-04/src/review/agent-review.ts",
     );
-    expect(agentReview).toContain("新しく作成する source");
+    expect(agentReview).toContain("実装する source");
     expect(agentReview).toContain("2つの export を実装");
     expect(resultErrors).not.toContain("packages/clinic-example");
     expect(agentReview).not.toContain("packages/clinic-example");
@@ -119,6 +119,7 @@ describe("Sessions 03 and 04", () => {
     expectAuthoredOutline(parseStaticMarkup(html), [
       "要求と結果の責任を分ける",
       "失敗を値として扱う",
+      "ブラウザで試す",
       "成功した変更だけを記録する",
       "レビューと適用範囲を確認する",
     ]);
@@ -139,6 +140,7 @@ describe("Sessions 03 and 04", () => {
     expectAuthoredOutline(parseStaticMarkup(html), [
       "依頼とレビューの責任を分ける",
       "エージェントへの依頼を組み立てる",
+      "ブラウザで試す",
       "人が要求からレビューする",
       "完了条件と統合演習への橋渡し",
     ]);

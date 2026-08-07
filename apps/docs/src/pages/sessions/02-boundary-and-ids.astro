@@ -1,6 +1,7 @@
 ---
 import CodeBlock from "../../components/CodeBlock.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
+import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
 import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessionBySlug } from "../../sessions/catalog";
 
@@ -12,6 +13,7 @@ if (session === undefined) throw new Error("Unknown session: 02-boundary-and-ids
   <ol slot="toc">
     <li><a href="#three-boundaries">事故を3つの境界へ分ける</a></li>
     <li><a href="#read-conversion-boundaries">失敗から変換境界を読む</a></li>
+    <li><a href="#code-playground">ブラウザで試す</a></li>
     <li><a href="#protect-each-boundary">入力・ID・PIIを別々に守る</a></li>
     <li><a href="#review-and-errors">レビューと次のエラー設計へ</a></li>
   </ol>
@@ -76,6 +78,8 @@ if (session === undefined) throw new Error("Unknown session: 02-boundary-and-ids
       <dd>状態モデルの通常テストを基準に、次の境界で守るべき入力と PII を整理します。</dd>
     </dl>
   </section>
+
+  <SessionCodePlayground slug={session.slug} />
 
   <section>
     <h2 id="protect-each-boundary">入力・ID・PIIを別々に守る</h2>

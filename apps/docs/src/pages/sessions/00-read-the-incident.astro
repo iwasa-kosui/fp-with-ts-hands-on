@@ -1,5 +1,6 @@
 ---
 import CommandBlock from "../../components/CommandBlock.astro";
+import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
 import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessionBySlug } from "../../sessions/catalog";
 
@@ -12,6 +13,7 @@ if (session === undefined) throw new Error("Unknown session: 00-read-the-inciden
     <li><a href="#requirement">要求を整理しよう</a></li>
     <li><a href="#exercise">要求をテストから読む</a></li>
     <li><a href="#preparation">次の編集の準備</a></li>
+    <li><a href="#code-playground">ブラウザで試す</a></li>
     <li><a href="#review">レビューと振り返り</a></li>
   </ol>
 
@@ -82,6 +84,8 @@ if (session === undefined) throw new Error("Unknown session: 00-read-the-inciden
       このセッションでは遷移関数を変更せず、次の状態モデリングに必要な整理までを行います。
     </p>
   </section>
+
+  <SessionCodePlayground slug={session.slug} />
 
   <section id="review">
     <h2>レビューと振り返り</h2>

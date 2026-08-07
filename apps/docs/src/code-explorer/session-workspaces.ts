@@ -74,6 +74,7 @@ const sessionWorkspaces = {
       "src/infrastructure/in-memory-domain-event-store.ts",
       "src/ports/appointment-repository.ts",
       "src/ports/domain-event-store.ts",
+      "src/review/agent-review.ts",
       "src/shared/schema-result.ts",
       "src/shared/sensitive.ts",
     ],

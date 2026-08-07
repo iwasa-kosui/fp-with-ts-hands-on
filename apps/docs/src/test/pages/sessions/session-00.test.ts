@@ -130,6 +130,7 @@ describe("Session 00 pages", () => {
       "開発に参加する前に",
       "事故を観察する",
       "失敗を再現する",
+      "ブラウザで試す",
       "レビューと次のセッション",
     ]);
   });
@@ -207,7 +208,7 @@ describe("Session 00 pages", () => {
     );
     expect(
       [...document.querySelectorAll("h2")].map(({ textContent }) => textContent),
-    ).toEqual(["要求を整理しよう", "要求をテストから読む", "次の編集の準備", "レビューと振り返り"]);
+    ).toEqual(["要求を整理しよう", "要求をテストから読む", "次の編集の準備", "ブラウザで試す", "レビューと振り返り"]);
     expect(document.querySelector('a[href="#requirement"]')?.textContent).toBe("要求を整理しよう");
   });
 });

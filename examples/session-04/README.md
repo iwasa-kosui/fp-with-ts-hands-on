@@ -8,6 +8,6 @@ pnpm --filter @fp-with-ts/clinic-session-04 test
 pnpm --filter @fp-with-ts/clinic-session-04 exercise
 ```
 
-`typecheck` と `test` は成功します。`exercise` は次に扱う agent review の source がまだ存在しないため、意図的に失敗します。
+`typecheck` と `test` は成功します。`exercise` は次に扱う agent review の TODO だけがある starter で必要な export が未実装のため、意図的に失敗します。
 
 この段階では repository の状態保存と event store への append は別操作です。また `eventId` と `occurredAt` は `string` のままです。両方とも次のレビューで扱う問題として意図的に残しています。
