@@ -99,7 +99,7 @@ describe("Sessions 03 and 04", () => {
     expect(agentReview).toContain(
       "examples/session-04/src/review/agent-review.ts",
     );
-    expect(agentReview).toContain("新しく作成する source");
+    expect(agentReview).toContain("実装する source");
     expect(agentReview).toContain("2つの export を実装");
     expect(resultErrors).not.toContain("packages/clinic-example");
     expect(agentReview).not.toContain("packages/clinic-example");

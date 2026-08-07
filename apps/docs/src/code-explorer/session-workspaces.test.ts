@@ -49,6 +49,7 @@ const requiredVisibleFiles = {
     "src/application/start-examination.ts",
     "src/infrastructure/in-memory-appointment-repository.ts",
     "src/infrastructure/in-memory-domain-event-store.ts",
+    "src/review/agent-review.ts",
     "test/result-errors.test.ts",
   ],
   "05-mini-integration": [
@@ -114,11 +115,13 @@ describe("session code workspaces", () => {
     }
   });
 
-  it("keeps exercise-created source absent from starter snapshots", () => {
+  it("keeps later exercise source absent while providing the editable Session 04 review starter", () => {
     expect(projectFilesFor("01-state-modeling")["src/domain/appointment.ts"]).toBeUndefined();
     expect(projectFilesFor("02-boundary-and-ids")["src/boundary/exam-result.ts"]).toBeUndefined();
     expect(projectFilesFor("03-result-errors")["src/application/start-examination.ts"]).toBeUndefined();
-    expect(projectFilesFor("04-agent-review")["src/review/agent-review.ts"]).toBeUndefined();
+    expect(projectFilesFor("04-agent-review")["src/review/agent-review.ts"]).toEqual(
+      expect.any(String),
+    );
     expect(projectFilesFor("05-mini-integration")["src/application/collect-follow-up-targets.ts"]).toBeUndefined();
   });
 
