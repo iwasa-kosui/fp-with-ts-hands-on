@@ -377,6 +377,12 @@ const createPlainTextOutputNormalizer = (
 const readExternalTypeFiles = async (runtime: WebContainer): Promise<ProjectFiles> => {
   const files: Record<string, string> = {};
 
+  const isMissingPathError = (error: unknown): boolean =>
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "ENOENT";
+
   const visit = async (directory: string): Promise<void> => {
     const entries = await runtime.fs.readdir(directory, { withFileTypes: true });
     await Promise.all(
@@ -394,8 +400,18 @@ const readExternalTypeFiles = async (runtime: WebContainer): Promise<ProjectFile
     );
   };
 
+  const visitIfPresent = async (directory: string): Promise<void> => {
+    try {
+      await visit(directory);
+    } catch (error: unknown) {
+      if (!isMissingPathError(error)) throw error;
+    }
+  };
+
   await Promise.all(
-    ["node_modules/zod", "node_modules/vitest", "node_modules/@vitest"].map(visit),
+    ["node_modules/zod", "node_modules/vitest", "node_modules/@vitest"].map(
+      visitIfPresent,
+    ),
   );
   return files;
 };

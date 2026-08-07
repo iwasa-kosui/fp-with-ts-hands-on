@@ -615,4 +615,93 @@ describe("single-file execution", () => {
       },
     ]);
   });
+
+  it("runs a project when Zod is not installed", async () => {
+    const emptyOutput = () =>
+      new ReadableStream<string>({
+        start(controller) {
+          controller.close();
+        },
+      });
+    const entry = (name: string, kind: "file" | "directory") => ({
+      name,
+      isFile: () => kind === "file",
+      isDirectory: () => kind === "directory",
+    });
+    const directoryEntries: Record<string, ReturnType<typeof entry>[]> = {
+      "node_modules/vitest": [entry("package.json", "file"), entry("index.d.ts", "file")],
+      "node_modules/@vitest": [entry("expect", "directory")],
+      "node_modules/@vitest/expect": [
+        entry("package.json", "file"),
+        entry("index.d.ts", "file"),
+      ],
+    };
+    const typeSources: Record<string, string> = {
+      "node_modules/vitest/package.json": "vitest package",
+      "node_modules/vitest/index.d.ts": "vitest types",
+      "node_modules/@vitest/expect/package.json": "expect package",
+      "node_modules/@vitest/expect/index.d.ts": "expect types",
+    };
+    const spawn = vi.fn(async () => ({
+      exit: Promise.resolve(0),
+      output: emptyOutput(),
+      kill: vi.fn(),
+    }));
+    webContainerMock.boot.mockReset();
+    webContainerMock.boot.mockResolvedValue({
+      mount: async () => undefined,
+      spawn,
+      fs: {
+        writeFile: async () => undefined,
+        readdir: async (path: string) => {
+          if (path === "node_modules/zod") {
+            throw Object.assign(new Error("ENOENT: no such file or directory"), {
+              code: "ENOENT",
+            });
+          }
+          return directoryEntries[path] ?? [];
+        },
+        readFile: async (path: string) => typeSources[path],
+      },
+    });
+    const updates: RunnerUpdate[] = [];
+
+    await expect(
+      createWebContainerRunner().run(
+        {
+          filePath: "exercises/incident.test.ts",
+          files: {
+            "exercises/incident.test.ts": "",
+            "package.json": "{}",
+          },
+        },
+        (update) => updates.push(update),
+      ),
+    ).resolves.toEqual({ exitCode: 0 });
+
+    expect(updates.filter((update) => update.kind === "type-files")).toEqual([
+      {
+        kind: "type-files",
+        files: {
+          "file:///node_modules/vitest/package.json": "vitest package",
+          "file:///node_modules/vitest/index.d.ts": "vitest types",
+          "file:///node_modules/@vitest/expect/package.json": "expect package",
+          "file:///node_modules/@vitest/expect/index.d.ts": "expect types",
+        },
+      },
+    ]);
+    expect(spawn).toHaveBeenLastCalledWith(
+      "npx",
+      [
+        "--no-install",
+        "vitest",
+        "run",
+        "--config",
+        "vitest.exercises.config.ts",
+        "exercises/incident.test.ts",
+        "--reporter=verbose",
+      ],
+      { env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" } },
+    );
+  });
 });
