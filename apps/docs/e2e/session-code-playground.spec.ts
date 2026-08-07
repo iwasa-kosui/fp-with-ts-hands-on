@@ -24,13 +24,20 @@ for (const route of routes) {
 
       const playground = page.locator(".session-code-playground");
       await expect(playground).toBeVisible();
+      await expect(playground.locator('[aria-label^="コードエディタ:"]')).toBeVisible();
       await expect(playground.locator('[data-action="reset"]')).toBeVisible();
       await expect(playground.locator('[data-action="run"]')).toBeVisible();
+      await expect(playground.locator('[aria-label="実行結果"]')).toBeVisible();
       const widths = await playground.evaluate((element) => ({
         clientWidth: element.clientWidth,
         scrollWidth: element.scrollWidth,
       }));
       expect(widths.scrollWidth).toBeLessThanOrEqual(widths.clientWidth + 1);
+      const pageWidths = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      expect(pageWidths.scrollWidth).toBeLessThanOrEqual(pageWidths.clientWidth + 1);
     });
   }
 }
