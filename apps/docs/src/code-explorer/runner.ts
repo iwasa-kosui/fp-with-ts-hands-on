@@ -380,8 +380,10 @@ const readExternalTypeFiles = async (runtime: WebContainer): Promise<ProjectFile
   const isMissingPathError = (error: unknown): boolean =>
     typeof error === "object" &&
     error !== null &&
-    "code" in error &&
-    error.code === "ENOENT";
+    (("code" in error && error.code === "ENOENT") ||
+      ("message" in error &&
+        typeof error.message === "string" &&
+        error.message.startsWith("ENOENT: no such file or directory")));
 
   const visit = async (directory: string): Promise<void> => {
     const entries = await runtime.fs.readdir(directory, { withFileTypes: true });

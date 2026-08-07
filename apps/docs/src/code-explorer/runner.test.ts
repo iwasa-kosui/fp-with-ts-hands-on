@@ -655,9 +655,9 @@ describe("single-file execution", () => {
         writeFile: async () => undefined,
         readdir: async (path: string) => {
           if (path === "node_modules/zod") {
-            throw Object.assign(new Error("ENOENT: no such file or directory"), {
-              code: "ENOENT",
-            });
+            throw new Error(
+              "ENOENT: no such file or directory, scandir '/home/example/node_modules/zod'",
+            );
           }
           return directoryEntries[path] ?? [];
         },
