@@ -1,0 +1,262 @@
+.code-playground {
+  --playground-text: var(--color-text);
+  --playground-surface: var(--color-surface);
+  --playground-background: var(--color-background);
+  --playground-primary: var(--color-primary);
+  --playground-highlight: var(--color-highlight);
+  --playground-danger: var(--color-accent-text);
+  --playground-focus: var(--color-focus);
+  --playground-lemon: var(--color-lemon);
+  --playground-code: var(--color-code);
+  --playground-border: var(--color-border);
+  --playground-shadow: var(--shadow-hard);
+}
+
+.case-file .code-playground {
+  --playground-text: var(--case-ink);
+  --playground-surface: var(--case-paper);
+  --playground-background: var(--case-mint);
+  --playground-primary: var(--case-line);
+  --playground-highlight: var(--case-mint);
+  --playground-danger: var(--case-coral);
+  --playground-focus: var(--case-coral);
+  --playground-lemon: var(--case-lemon);
+  --playground-code: var(--case-ink);
+  --playground-border: var(--case-line);
+  --playground-shadow: 0.375rem 0.375rem 0 var(--case-line);
+}
+
+.session-code-playground,
+.session-code-playground [data-code-explorer] {
+  min-width: 0;
+}
+
+.code-playground [data-code-explorer] {
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 1.75rem);
+  border: 0.25rem solid var(--playground-text);
+  border-radius: var(--radius);
+  background: var(--playground-surface);
+  box-shadow: var(--playground-shadow);
+}
+
+.code-playground .code-explorer {
+  min-width: 0;
+}
+
+.code-playground .code-explorer > p {
+  margin-bottom: 1rem;
+  font-weight: 900;
+}
+
+.code-playground .code-explorer__workspace {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.32fr) minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+}
+
+.code-playground .code-explorer__workspace nav {
+  min-width: 0;
+  max-height: 38rem;
+  padding: 0.75rem;
+  overflow: auto;
+  border: 0.1875rem solid var(--playground-text);
+  border-radius: var(--radius);
+  background: var(--playground-background);
+  overscroll-behavior: contain;
+}
+
+.code-playground .code-explorer__workspace nav ul {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.code-playground .code-explorer__workspace nav ul ul {
+  margin: 0.25rem 0 0.5rem 0.45rem;
+  padding-left: 0.75rem;
+  border-left: 0.125rem solid var(--playground-border);
+}
+
+.code-playground .code-explorer__workspace nav li + li {
+  margin-top: 0.25rem;
+}
+
+.code-playground .code-explorer__folder {
+  display: block;
+  padding: 0.25rem 0.4rem;
+  font-weight: 950;
+}
+
+.code-playground .code-explorer__workspace nav button {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  border: 0.125rem solid transparent;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--playground-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.code-playground .code-explorer__workspace nav button > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.code-playground .code-explorer__workspace nav button[aria-pressed="true"] {
+  border-color: var(--playground-primary);
+  background: var(--playground-highlight);
+  font-weight: 900;
+}
+
+.code-playground .code-explorer__dirty {
+  flex: none;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  background: var(--playground-danger);
+  color: var(--playground-surface);
+  font-size: 0.6875rem;
+  font-weight: 950;
+}
+
+.code-playground .code-explorer__editor {
+  min-width: 0;
+  overflow: hidden;
+  border: 0.1875rem solid var(--playground-text);
+  border-radius: var(--radius);
+  background: var(--playground-code);
+}
+
+.code-playground .code-explorer__monaco {
+  position: relative;
+  min-width: 0;
+  min-height: 32rem;
+}
+
+.code-playground .code-explorer__monaco > pre {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 1rem;
+  overflow: auto;
+  background: var(--playground-code);
+  color: var(--playground-surface);
+  line-height: 1.55;
+  overscroll-behavior: contain;
+}
+
+.code-playground .code-explorer__monaco > div[aria-label^="コードエディタ:"] {
+  min-width: 0;
+  min-height: 32rem;
+}
+
+.code-playground .code-explorer__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-top: 0.1875rem solid var(--playground-text);
+  background: var(--playground-surface);
+}
+
+.code-playground .code-explorer__actions button {
+  min-height: 2.75rem;
+  padding: 0.45rem 0.8rem;
+  border: 0.1875rem solid var(--playground-text);
+  border-radius: 0.375rem;
+  background: var(--playground-lemon);
+  color: var(--playground-text);
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.code-playground .code-explorer__actions [data-action="run"] {
+  background: var(--playground-highlight);
+}
+
+.code-playground .code-explorer__output {
+  width: 100%;
+  min-width: 0;
+  margin-top: 1rem;
+  padding: 1rem;
+  overflow: hidden;
+  border: 0.1875rem solid var(--playground-text);
+  border-radius: var(--radius);
+  background: var(--playground-surface);
+}
+
+.code-playground .code-explorer__output > p {
+  margin-bottom: 0.5rem;
+  font-weight: 950;
+}
+
+.code-playground .code-explorer__output pre {
+  max-height: 22rem;
+  margin: 0;
+  padding: 0.75rem;
+  overflow: auto;
+  border-radius: 0.375rem;
+  background: var(--playground-code);
+  color: var(--playground-surface);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overscroll-behavior: contain;
+}
+
+.code-playground .code-explorer__output--working {
+  border-color: var(--playground-primary);
+}
+
+.code-playground .code-explorer__output--success {
+  border-color: var(--playground-highlight);
+  border-left-width: 0.75rem;
+}
+
+.code-playground .code-explorer__output--failure {
+  border-color: var(--playground-danger);
+  border-left-width: 0.75rem;
+}
+
+.code-playground .code-explorer__output--canceled {
+  border-color: var(--playground-primary);
+  border-left-width: 0.75rem;
+}
+
+.code-playground :is(a, button):focus-visible {
+  outline: 0.25rem solid var(--playground-focus);
+  outline-offset: 0.1875rem;
+}
+
+.code-playground button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 47.99rem) {
+  .code-playground .code-explorer__workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .code-playground .code-explorer__workspace nav {
+    max-height: 18rem;
+  }
+
+  .code-playground .code-explorer__monaco,
+  .code-playground .code-explorer__monaco > div[aria-label^="コードエディタ:"] {
+    min-height: 24rem;
+  }
+
+  .code-playground .code-explorer__actions button {
+    flex: 1 1 12rem;
+  }
+}

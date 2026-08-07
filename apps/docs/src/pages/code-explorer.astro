@@ -3,6 +3,7 @@ import { CodeExplorer } from "../components/code-explorer/CodeExplorer";
 import { projectFilesFor } from "../code-explorer/project-files";
 import { sessionWorkspaceFor } from "../code-explorer/session-workspaces";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import "../styles/code-playground.css";
 import "../styles/code-explorer-preview.css";
 
 const sessionSlug = "00-break-the-app";
@@ -21,7 +22,7 @@ const projectFiles = projectFilesFor(sessionSlug);
     </nav>
   </header>
 
-  <main class="code-explorer-preview__shell">
+  <main class="code-explorer-preview__shell code-playground">
     <section class="code-explorer-preview__intro" aria-labelledby="page-title">
       <p class="code-explorer-preview__eyebrow">Experimental preview</p>
       <h1 id="page-title">Code Explorer を試す</h1>
