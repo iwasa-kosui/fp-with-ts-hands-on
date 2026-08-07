@@ -6,7 +6,7 @@ import {
   type RunnerUpdate,
 } from "../../code-explorer/runner";
 import { runModeFor, type RunMode } from "../../code-explorer/run-command";
-import type { ModuleWorkspace, ProjectFiles } from "../../code-explorer/types";
+import type { ProjectFiles, SessionWorkspace } from "../../code-explorer/types";
 import { FileTree } from "./FileTree";
 import { MonacoEditor } from "./MonacoEditor";
 import { OutputPanel, type ExecutionState } from "./OutputPanel";
@@ -21,7 +21,7 @@ export type EditorProps = Readonly<{
 }>;
 
 export type CodeExplorerProps = Readonly<{
-  workspace: ModuleWorkspace;
+  workspace: SessionWorkspace;
   projectFiles: ProjectFiles;
   Editor?: ComponentType<EditorProps>;
   runnerFactory?: () => CodeRunner;

@@ -1,0 +1,118 @@
+---
+import CommandBlock from "../../components/CommandBlock.astro";
+import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+
+const session = sessionBySlug("00-read-the-incident");
+if (session === undefined) throw new Error("Unknown session: 00-read-the-incident");
+---
+
+<SessionLayout session={session}>
+  <ol slot="toc">
+    <li><a href="#requirement">要求を整理しよう</a></li>
+    <li><a href="#exercise">要求をテストから読む</a></li>
+    <li><a href="#preparation">次の編集の準備</a></li>
+    <li><a href="#code-playground">ブラウザで試す</a></li>
+    <li><a href="#review">レビューと振り返り</a></li>
+  </ol>
+
+  <section id="requirement">
+    <h2>要求を整理しよう</h2>
+    <div class="requirement-dialogue" role="group" aria-label="飼い主と受付スタッフの会話">
+      <div class="requirement-dialogue__line requirement-dialogue__line--owner">
+        <p class="requirement-dialogue__speaker">飼い主</p>
+        <p class="requirement-dialogue__bubble">予約をキャンセルしたいです。落ち着いたら、再診も希望しています。</p>
+      </div>
+      <div class="requirement-dialogue__line requirement-dialogue__line--receptionist">
+        <p class="requirement-dialogue__speaker">受付スタッフ</p>
+        <p class="requirement-dialogue__bubble">承知しました。キャンセル理由と再診希望日を残して、次回の対応につなげましょう。</p>
+      </div>
+    </div>
+    <p class="requirement-prompt"><strong>参加者のみなさんへ:</strong> この要望を安全に扱うには、まず要求を整理しよう。どの状態に、どの情報が必要でしょうか。</p>
+    <p>今回のミッションは、この追加要求を状態ごとに必要な情報へ分解することです。</p>
+    <p>
+      キャンセル理由と再診希望日は、どの予約にも付ける属性ではありません。<code>Canceled</code>
+      という状態にだけ必要なデータです。
+    </p>
+    <p>
+      <strong>守る不変条件:</strong> Canceled は reason を持ち、再診希望はキャンセル時だけに存在します。
+    </p>
+  </section>
+
+  <section id="exercise">
+    <h2>要求をテストから読む</h2>
+    <p>
+      Session 00 snapshot の通常テストを実行して現在の動作を固定し、事故報告との差分から、キャンセル状態の必須情報と終端状態の制約を整理します。
+    </p>
+    <CommandBlock
+      phase="green"
+      command="pnpm --filter @fp-with-ts/clinic-session-00 test"
+      expected="既存の通常フローは成功します。成功だけでは終端状態とキャンセル要件を確認できないことを事故報告と照合します。"
+    />
+
+    <h3>先に読むファイル</h3>
+    <dl>
+      <dt><code>examples/session-00/src/appointment.ts</code></dt>
+      <dd>status だけでは、キャンセルされた理由も次の対応も分からない点を読みます。</dd>
+      <dt>事故要件</dt>
+      <dd>Paid と Canceled は終端状態であり、Canceled には理由とキャンセル時刻が必要だと整理します。</dd>
+    </dl>
+  </section>
+
+  <section id="preparation">
+    <h2>次の編集の準備</h2>
+    <p>
+      <code>examples/session-00</code>
+      は事故を再現する開始 snapshot です。このページでは実装を変更せず、次の Session 01
+      で固定する要求を言葉にします。
+    </p>
+
+    <h3>次に読む編集対象</h3>
+    <p>
+      <code>examples/session-00/src/appointment.ts</code> の <code>LegacyAppointment</code>
+      と <code>updateStatus</code> を読み、型に表現されていない要求を確認します。
+    </p>
+
+    <h3>使う技法: 状態別の要求整理</h3>
+    <p>
+      全予約への optional field
+      追加を避け、情報が属する状態を先に決めるため、状態別に要求を整理します。
+    </p>
+    <p>
+      <strong>この技法の限界:</strong>
+      このセッションでは遷移関数を変更せず、次の状態モデリングに必要な整理までを行います。
+    </p>
+  </section>
+
+  <SessionCodePlayground slug={session.slug} />
+
+  <section id="review">
+    <h2>レビューと振り返り</h2>
+    <h3>レビュー観点</h3>
+    <p>状態ごとの必須プロパティを表にし、optional で逃がしていないか確認します。</p>
+
+    <h3>完了条件</h3>
+    <p>次の要求を状態の種類ごとの情報として言い換えられることです。</p>
+
+    <CommandBlock
+      phase="green"
+      command="pnpm --filter @fp-with-ts/clinic-session-00 test"
+      expected="要求整理では実装を変更しないため、Session 00 snapshot の通常テストは成功したままです。"
+    />
+
+    <h3>業務への転用</h3>
+    <p>キャンセル理由と再診希望を Canceled 状態に閉じる次のモデリングへ進めます。</p>
+
+    <h3>振り返り</h3>
+    <p>
+      キャンセル理由と再診希望日を optional field
+      にすると、どの不正な予約を表現できてしまいますか。
+    </p>
+
+    <h3>代替進行</h3>
+    <p>
+      Scheduled と Canceled の必須情報を書き出し、Canceled 以外から reason と再診希望を外します。
+    </p>
+  </section>
+</SessionLayout>

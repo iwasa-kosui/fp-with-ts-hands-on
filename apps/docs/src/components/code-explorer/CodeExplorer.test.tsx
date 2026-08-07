@@ -22,6 +22,7 @@ const TestEditor: ComponentType<EditorProps> = ({
 
 const workspace = {
   slug: "01-state-modeling",
+  snapshot: "session-01",
   description: "状態を編集します。",
   initialFile: "exercises/example.test.ts",
   visibleFiles: ["exercises/example.test.ts", "src/example.ts"],

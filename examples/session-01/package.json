@@ -1,0 +1,14 @@
+{
+  "name": "@fp-with-ts/clinic-session-01",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "exercise": "vitest run --config vitest.exercises.config.ts"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.0"
+  }
+}
