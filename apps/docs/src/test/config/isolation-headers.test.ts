@@ -11,7 +11,7 @@ describe("cross-origin isolation headers", () => {
       "Cross-Origin-Embedder-Policy": "require-corp",
       "Cross-Origin-Opener-Policy": "same-origin",
     });
-    for (const route of ["/sessions/*", "/code-explorer/*"]) {
+    for (const route of ["/sessions/*", "/code-explorer/*", "/_astro/*"]) {
       expect(staticHeaders).toContain(`${route}
   Cross-Origin-Embedder-Policy: require-corp
   Cross-Origin-Opener-Policy: same-origin`);
