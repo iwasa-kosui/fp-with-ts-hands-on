@@ -100,6 +100,7 @@ describe("Session 05", () => {
     ).toEqual([
       "追加要求と守る設計をつなぐ",
       "既習技法を選び1関数を作成する",
+      "ブラウザで試す",
       "統合ループで効果を確認する",
       "レビューと完了条件を確認する",
       "次の行動計画",
@@ -108,12 +109,12 @@ describe("Session 05", () => {
     const tocLinks = [
       ...document.querySelectorAll('nav[aria-label="ページ内目次"] a'),
     ];
-    expect(tocLinks).toHaveLength(10);
+    expect(tocLinks).toHaveLength(12);
     expect(tocLinks.every((link) => link.id === "")).toBe(true);
     const tocTargets = [
       ...new Set(tocLinks.map((link) => link.getAttribute("href"))),
     ];
-    expect(tocTargets).toHaveLength(5);
+    expect(tocTargets).toHaveLength(6);
     for (const target of tocTargets) {
       expect(target).toMatch(/^#[a-z0-9-]+$/);
       expect(document.querySelectorAll(`article ${target}`)).toHaveLength(1);

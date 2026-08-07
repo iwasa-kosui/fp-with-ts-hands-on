@@ -1,6 +1,7 @@
 ---
 import CodeBlock from "../../components/CodeBlock.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
+import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
 import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessionBySlug } from "../../sessions/catalog";
 
@@ -12,6 +13,7 @@ if (session === undefined) throw new Error("Unknown session: 04-agent-review");
   <ol slot="toc">
     <li><a href="#separate-agent-review">依頼とレビューの責任を分ける</a></li>
     <li><a href="#build-agent-request">エージェントへの依頼を組み立てる</a></li>
+    <li><a href="#code-playground">ブラウザで試す</a></li>
     <li><a href="#human-requirement-review">人が要求からレビューする</a></li>
     <li><a href="#finish-and-integrate">完了条件と統合演習への橋渡し</a></li>
   </ol>
@@ -104,6 +106,8 @@ if (session === undefined) throw new Error("Unknown session: 04-agent-review");
       型が通ることだけで、追加機能が要求に適合することまで保証できるとは扱いません。
     </p>
   </section>
+
+  <SessionCodePlayground slug={session.slug} />
 
   <section>
     <h2 id="human-requirement-review">人が要求からレビューする</h2>
