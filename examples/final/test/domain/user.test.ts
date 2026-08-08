@@ -4,8 +4,11 @@ import { EventId } from "../../src/domain/aggregate/eventId.js";
 import type { EventContext } from "../../src/domain/aggregate/eventContext.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
+import { SessionTokenHash } from "../../src/domain/session/sessionTokenHash.js";
+import { SessionTokenPlaintext } from "../../src/domain/session/sessionTokenPlaintext.js";
 import { Permission } from "../../src/domain/user/permission.js";
 import { PasswordHash } from "../../src/domain/user/passwordHash.js";
+import { PlaintextPassword } from "../../src/domain/user/plaintextPassword.js";
 import { User, type User as UserState } from "../../src/domain/user/user.js";
 import { UserEmail } from "../../src/domain/user/userEmail.js";
 import { UserId } from "../../src/domain/user/userId.js";
@@ -117,5 +120,27 @@ describe("user aggregate", () => {
     const malformed = `scrypt$${"A".repeat(23)}==$${"A".repeat(86)}==`;
 
     expect(PasswordHash.parse(malformed).isErr()).toBe(true);
+  });
+
+  test("keeps sensitive identity and credential values nominally distinct", () => {
+    const plaintextPassword = PlaintextPassword.schema.parse(
+      "correct horse battery staple",
+    );
+    const tokenPlaintext = SessionTokenPlaintext.schema.parse("a".repeat(64));
+    const tokenHash = SessionTokenHash.schema.parse("b".repeat(64));
+    const acceptsEmail = (_value: typeof email): void => undefined;
+    const acceptsPasswordHash = (_value: typeof passwordHash): void => undefined;
+    const acceptsPlaintextPassword = (_value: typeof plaintextPassword): void => undefined;
+
+    if (false) {
+      // @ts-expect-error UserName cannot satisfy UserEmail.
+      acceptsEmail(name);
+      // @ts-expect-error SessionTokenHash cannot satisfy PasswordHash.
+      acceptsPasswordHash(tokenHash);
+      // @ts-expect-error SessionTokenPlaintext cannot satisfy PlaintextPassword.
+      acceptsPlaintextPassword(tokenPlaintext);
+    }
+
+    expect(plaintextPassword.unwrap()).not.toBe(tokenPlaintext.unwrap());
   });
 });

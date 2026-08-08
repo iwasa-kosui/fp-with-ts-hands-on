@@ -9,26 +9,28 @@ import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
 import type { PaymentAmount } from "../domain/appointment/paymentAmount.js";
 import type { Owner } from "../domain/owner/owner.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
+import type { OwnerName } from "../domain/owner/ownerName.js";
 import type { OwnerListResolver } from "../domain/owner/ownerResolver.js";
 import type { Pet } from "../domain/pet/pet.js";
 import type { PetId } from "../domain/pet/petId.js";
+import type { PetName } from "../domain/pet/petName.js";
 import type { PetListResolver } from "../domain/pet/petResolver.js";
 import type { User } from "../domain/user/user.js";
 import type { UserId } from "../domain/user/userId.js";
+import type { UserName } from "../domain/user/userName.js";
+import { assertNever } from "../domain/shared/assertNever.js";
 import type {
   UserByIdResolver,
   UserListResolver,
 } from "../domain/user/userResolver.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 
-const deletedLabel = "削除済み";
-
 type AppointmentViewBase = Readonly<{
   appointmentId: AppointmentId;
   ownerId: OwnerId;
-  ownerName: string;
+  ownerName: OwnerName | undefined;
   petId: PetId;
-  petName: string;
+  petName: PetName | undefined;
   scheduledAt: Timestamp;
 }>;
 type ScheduledAppointmentView = AppointmentViewBase & Readonly<{
@@ -42,14 +44,14 @@ type InExaminationAppointmentView = AppointmentViewBase & Readonly<{
   kind: "InExamination";
   checkedInAt: Timestamp;
   veterinarianId: VeterinarianId;
-  veterinarianName: string;
+  veterinarianName: UserName | undefined;
   examinationStartedAt: Timestamp;
 }>;
 type PaidAppointmentView = AppointmentViewBase & Readonly<{
   kind: "Paid";
   checkedInAt: Timestamp;
   veterinarianId: VeterinarianId;
-  veterinarianName: string;
+  veterinarianName: UserName | undefined;
   examinationStartedAt: Timestamp;
   amount: PaymentAmount;
   paidAt: Timestamp;
@@ -96,11 +98,9 @@ export const toAppointmentView =
       ownerName:
         owners
           .find((owner) => owner.ownerId === appointment.ownerId)
-          ?.name.unwrap() ?? deletedLabel,
+          ?.name,
       petId: appointment.petId,
-      petName:
-        pets.find((pet) => pet.petId === appointment.petId)?.name ??
-        deletedLabel,
+      petName: pets.find((pet) => pet.petId === appointment.petId)?.name,
       scheduledAt: appointment.scheduledAt,
     } as const;
     switch (appointment.kind) {
@@ -123,7 +123,7 @@ export const toAppointmentView =
           kind: appointment.kind,
           checkedInAt: appointment.checkedInAt,
           veterinarianId: appointment.veterinarianId,
-          veterinarianName: veterinarian?.name.unwrap() ?? deletedLabel,
+          veterinarianName: veterinarian?.name,
           examinationStartedAt: appointment.examinationStartedAt,
         } as const satisfies InExaminationAppointmentView;
       }
@@ -138,7 +138,7 @@ export const toAppointmentView =
           kind: appointment.kind,
           checkedInAt: appointment.checkedInAt,
           veterinarianId: appointment.veterinarianId,
-          veterinarianName: veterinarian?.name.unwrap() ?? deletedLabel,
+          veterinarianName: veterinarian?.name,
           examinationStartedAt: appointment.examinationStartedAt,
           amount: appointment.amount,
           paidAt: appointment.paidAt,
@@ -151,7 +151,7 @@ export const toAppointmentView =
           canceledAt: appointment.canceledAt,
         } as const satisfies CanceledAppointmentView;
       default:
-        return appointment satisfies never;
+        return assertNever(appointment);
     }
   };
 const run =

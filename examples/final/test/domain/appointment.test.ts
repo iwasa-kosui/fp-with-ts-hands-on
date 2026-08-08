@@ -5,6 +5,9 @@ import {
   type Paid,
 } from "../../src/domain/appointment/appointment.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
+import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
+import { Diagnosis } from "../../src/domain/appointment/diagnosis.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import type { EventContext } from "../../src/domain/aggregate/eventContext.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
@@ -13,7 +16,8 @@ import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
 import { PetId } from "../../src/domain/pet/petId.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
-import { Sensitive } from "../../src/domain/shared/sensitive.js";
+import { Treatment } from "../../src/domain/appointment/treatment.js";
+import { ExamResultItem } from "../../src/domain/examResult/examResultItem.js";
 
 const appointmentId = AppointmentId.schema.parse(
   "11111111-1111-4111-8111-111111111111",
@@ -26,10 +30,10 @@ const veterinarianId = VeterinarianId.schema.parse(
 const actorUserId = UserId.schema.parse("55555555-5555-4555-8555-555555555555");
 const scheduledAt = Timestamp.schema.parse("2026-08-30T06:00:00.000Z");
 const paymentAmount = PaymentAmount.schema.parse(4800);
-const visitReason = Sensitive.of("skin check");
-const diagnosis = Sensitive.of("dermatitis");
-const treatment = Sensitive.of("ointment");
-const cancellationReason = Sensitive.of("owner request");
+const visitReason = AppointmentReason.schema.parse("skin check");
+const diagnosis = Diagnosis.schema.parse("dermatitis");
+const treatment = Treatment.schema.parse("ointment");
+const cancellationReason = CancellationReason.schema.parse("owner request");
 
 const context = (eventId: string, occurredAt: string): EventContext => ({
   eventId: EventId.schema.parse(eventId),
@@ -91,6 +95,24 @@ const rawPaymentInput = {
 Appointment.recordPayment(paymentContext)(examining.aggregateState, rawPaymentInput);
 
 describe("appointment aggregate", () => {
+  test("keeps sensitive clinical values nominally distinct", () => {
+    const examItem = ExamResultItem.schema.parse("skin observation");
+    const acceptsAppointmentReason = (_value: typeof visitReason): void => undefined;
+    const acceptsDiagnosis = (_value: typeof diagnosis): void => undefined;
+    const acceptsTreatment = (_value: typeof treatment): void => undefined;
+
+    if (false) {
+      // @ts-expect-error CancellationReason cannot satisfy AppointmentReason.
+      acceptsAppointmentReason(cancellationReason);
+      // @ts-expect-error Treatment cannot satisfy Diagnosis.
+      acceptsDiagnosis(treatment);
+      // @ts-expect-error ExamResultItem cannot satisfy Treatment.
+      acceptsTreatment(examItem);
+    }
+
+    expect(visitReason.unwrap()).not.toBe(cancellationReason.unwrap());
+  });
+
   test("redacts every clinical free-text field when serialized", () => {
     const canceled = Appointment.cancel(canceledContext)(booked.aggregateState, cancellationReason);
 

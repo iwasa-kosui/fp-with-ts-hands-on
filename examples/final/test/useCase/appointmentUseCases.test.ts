@@ -18,9 +18,14 @@ import {
 } from "../../src/domain/appointment/appointment.js";
 import type { AppointmentEvent } from "../../src/domain/appointment/appointmentEvent.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
+import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
+import { Diagnosis } from "../../src/domain/appointment/diagnosis.js";
 import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
+import { Treatment } from "../../src/domain/appointment/treatment.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
+import { ExamResultItem } from "../../src/domain/examResult/examResultItem.js";
 import type { ExamResultRecorded } from "../../src/domain/examResult/examResultEvent.js";
 import {
   Owner,
@@ -29,7 +34,6 @@ import {
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
 import { Pet, type Pet as PetState } from "../../src/domain/pet/pet.js";
 import { PetId } from "../../src/domain/pet/petId.js";
-import { Sensitive } from "../../src/domain/shared/sensitive.js";
 import { PasswordHash } from "../../src/domain/user/passwordHash.js";
 import type { User } from "../../src/domain/user/user.js";
 import { UserEmail } from "../../src/domain/user/userEmail.js";
@@ -152,7 +156,7 @@ describe("appointment command use cases", () => {
       ownerId: ids.owner,
       petId: ids.pet,
       scheduledAt: times.scheduled,
-      reason: Sensitive.of("persistent cough"),
+      reason: AppointmentReason.schema.parse("persistent cough"),
     });
     expect(booked._unsafeUnwrap().appointment.kind).toBe("Scheduled");
 
@@ -195,7 +199,7 @@ describe("appointment command use cases", () => {
       appointmentId: ids.appointment,
       petId: ids.pet,
       collectedAt: times.now,
-      items: [Sensitive.of("private clinical observation")],
+      items: [ExamResultItem.schema.parse("private clinical observation")],
       needsFollowUp: true,
     });
     expect(exam._unsafeUnwrap().examResult.items[0]?.unwrap()).toBe(
@@ -211,8 +215,8 @@ describe("appointment command use cases", () => {
     }).run({
       actorUserId: ids.receptionist,
       appointmentId: ids.appointment,
-      diagnosis: Sensitive.of("dermatitis"),
-      treatment: Sensitive.of("ointment"),
+      diagnosis: Diagnosis.schema.parse("dermatitis"),
+      treatment: Treatment.schema.parse("ointment"),
       amount: PaymentAmount.schema.parse(4800),
     });
 
@@ -246,7 +250,7 @@ describe("appointment command use cases", () => {
       ownerId: ids.owner,
       petId: ids.otherPet,
       scheduledAt: times.scheduled,
-      reason: Sensitive.of("checkup"),
+      reason: AppointmentReason.schema.parse("checkup"),
     });
     expect(booking.isErr() && booking.error.kind).toBe("PetOwnerMismatch");
     expect(bookedEvents).toHaveLength(0);
@@ -270,7 +274,7 @@ describe("appointment command use cases", () => {
           ownerId: ids.owner,
           petId: ids.pet,
           scheduledAt: times.scheduled,
-          reason: Sensitive.of("checkup"),
+          reason: AppointmentReason.schema.parse("checkup"),
         }).aggregateState,
       ).aggregateState,
       ids.veterinarian,
@@ -293,7 +297,7 @@ describe("appointment command use cases", () => {
       appointmentId: ids.appointment,
       petId: ids.otherPet,
       collectedAt: times.now,
-      items: [Sensitive.of("observation")],
+      items: [ExamResultItem.schema.parse("observation")],
       needsFollowUp: false,
     });
     expect(exam.isErr() && exam.error.kind).toBe("ExamResultPetMismatch");
@@ -332,7 +336,7 @@ describe("appointment command use cases", () => {
       ownerId: ids.owner,
       petId: ids.pet,
       scheduledAt: times.scheduled,
-      reason: Sensitive.of("checkup"),
+      reason: AppointmentReason.schema.parse("checkup"),
     }).aggregateState;
     const result = await CheckInAppointmentUseCase.create({
       userResolver,
@@ -361,7 +365,7 @@ describe("appointment command use cases", () => {
       ownerId: ids.owner,
       petId: ids.pet,
       scheduledAt: times.scheduled,
-      reason: Sensitive.of("checkup"),
+      reason: AppointmentReason.schema.parse("checkup"),
     }).aggregateState;
     const canceled = await CancelAppointmentUseCase.create({
       userResolver,
@@ -372,7 +376,7 @@ describe("appointment command use cases", () => {
     }).run({
       actorUserId: ids.receptionist,
       appointmentId: ids.appointment,
-      reason: Sensitive.of("owner request"),
+      reason: CancellationReason.schema.parse("owner request"),
     });
     expect(canceled._unsafeUnwrap().appointment.kind).toBe("Canceled");
 
@@ -386,7 +390,7 @@ describe("appointment command use cases", () => {
     }).run({
       actorUserId: ids.receptionist,
       appointmentId: ids.appointment,
-      reason: Sensitive.of("again"),
+      reason: CancellationReason.schema.parse("again"),
     });
     expect(conflict.isErr() && conflict.error.kind).toBe(
       "InvalidAppointmentState",
@@ -407,7 +411,7 @@ describe("appointment command use cases", () => {
       ownerId: ids.owner,
       petId: ids.pet,
       scheduledAt: times.scheduled,
-      reason: Sensitive.of("private reason"),
+      reason: AppointmentReason.schema.parse("private reason"),
     });
     const checkedIn = Appointment.checkIn({
       eventId: eventIds.generate(),
@@ -438,7 +442,7 @@ describe("appointment command use cases", () => {
       }).run({
         actorUserId: ids.receptionist,
         appointmentId: ids.appointment,
-        reason: Sensitive.of("private cancellation"),
+        reason: CancellationReason.schema.parse("private cancellation"),
       }),
     ]);
 
@@ -466,7 +470,7 @@ describe("appointment query use cases", () => {
       ownerId: ids.owner,
       petId: ids.pet,
       scheduledAt: times.scheduled,
-      reason: Sensitive.of("private reason"),
+      reason: AppointmentReason.schema.parse("private reason"),
     });
     const checkedIn = Appointment.checkIn({
       eventId: eventIds.generate(),
@@ -483,8 +487,8 @@ describe("appointment query use cases", () => {
       occurredAt: times.now,
       actorUserId: ids.receptionist,
     })(examinationStarted.aggregateState, {
-      diagnosis: Sensitive.of("private diagnosis"),
-      treatment: Sensitive.of("private treatment"),
+      diagnosis: Diagnosis.schema.parse("private diagnosis"),
+      treatment: Treatment.schema.parse("private treatment"),
       amount: PaymentAmount.schema.parse(4800),
     });
     await createAppointmentEventStore(db).store(
@@ -498,18 +502,24 @@ describe("appointment query use cases", () => {
       userResolver,
       appointmentListResolver: createAppointmentListResolver(db),
       ownerListResolver: {
-        resolveAll: () => okAsync([] as readonly OwnerState[]),
+        resolveAll: () =>
+          okAsync([] as const satisfies readonly OwnerState[]),
       },
-      petListResolver: { resolveAll: () => okAsync([] as readonly PetState[]) },
-      userListResolver: { resolveAll: () => okAsync([] as readonly User[]) },
+      petListResolver: {
+        resolveAll: () =>
+          okAsync([] as const satisfies readonly PetState[]),
+      },
+      userListResolver: {
+        resolveAll: () => okAsync([] as const satisfies readonly User[]),
+      },
     }).run({ actorUserId: ids.veterinarianUser });
 
     expect(result._unsafeUnwrap().appointments).toHaveLength(1);
     expect(result._unsafeUnwrap().appointments[0]).toMatchObject({
       kind: "Paid",
-      ownerName: "削除済み",
-      petName: "削除済み",
-      veterinarianName: "削除済み",
+      ownerName: undefined,
+      petName: undefined,
+      veterinarianName: undefined,
     });
   });
 
@@ -523,7 +533,7 @@ describe("appointment query use cases", () => {
       ownerId: ids.owner,
       petId: ids.pet,
       scheduledAt: times.scheduled,
-      reason: Sensitive.of("checkup"),
+      reason: AppointmentReason.schema.parse("checkup"),
     }).aggregateState;
     const detail = await GetAppointmentUseCase.create({
       userResolver,
@@ -535,10 +545,10 @@ describe("appointment query use cases", () => {
       actorUserId: ids.veterinarianUser,
       appointmentId: ids.appointment,
     });
-    expect(detail._unsafeUnwrap().appointment).toMatchObject({
-      ownerName: "Owner A",
-      petName: "Mugi",
-    });
+    expect(detail._unsafeUnwrap().appointment.ownerName?.unwrap()).toBe("Owner A");
+    expect(detail._unsafeUnwrap().appointment.petName?.unwrap()).toBe("Mugi");
+    expect(JSON.stringify(detail)).not.toContain("Owner A");
+    expect(JSON.stringify(detail)).not.toContain("Mugi");
 
     const dashboard = await GetDashboardUseCase.create({
       userResolver,

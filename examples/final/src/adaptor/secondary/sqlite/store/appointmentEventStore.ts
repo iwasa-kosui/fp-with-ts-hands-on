@@ -6,6 +6,7 @@ import type { Appointment } from "../../../../domain/appointment/appointment.js"
 import type { AppointmentEvent } from "../../../../domain/appointment/appointmentEvent.js";
 import type { AppointmentStoreError } from "../../../../domain/appointment/appointmentStores.js";
 import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
+import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type { SqliteDatabase } from "../db.js";
 import { toEventRecord } from "../eventRecord.js";
 import { appointmentsTable, domainEventsTable } from "../schema.js";
@@ -43,7 +44,7 @@ const safeState = (state: Appointment): Readonly<Record<string, unknown>> => {
     case "Canceled":
       return { ...base, canceledAt: state.canceledAt };
     default:
-      return state satisfies never;
+      return assertNever(state);
   }
 };
 
@@ -60,7 +61,7 @@ const safePayload = (event: AppointmentEvent): Readonly<Record<string, unknown>>
     case "AppointmentCanceled":
       return { appointmentId: event.aggregateId };
     default:
-      return event satisfies never;
+      return assertNever(event);
   }
 };
 
@@ -99,7 +100,7 @@ const projectionState = (state: Appointment): Readonly<Record<string, unknown>> 
     case "Canceled":
       return { ...base, canceledAt: state.canceledAt };
     default:
-      return state satisfies never;
+      return assertNever(state);
   }
 };
 const AppointmentConflictSchema = z.object({
@@ -164,7 +165,7 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
                     ))
                     .run().changes;
                 default:
-                  return event satisfies never;
+                  return assertNever(event);
               }
             })();
             if (changes !== 1) {

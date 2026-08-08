@@ -3,6 +3,9 @@ import type { ResultAsync } from "neverthrow";
 import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { Owner } from "../domain/owner/owner.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
+import type { OwnerEmail } from "../domain/owner/ownerEmail.js";
+import type { OwnerName } from "../domain/owner/ownerName.js";
+import type { OwnerPhone } from "../domain/owner/ownerPhone.js";
 import type { OwnerListResolver } from "../domain/owner/ownerResolver.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
@@ -11,9 +14,9 @@ import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 
 export type OwnerView = Readonly<{
   ownerId: OwnerId;
-  name: string;
-  email: string;
-  phone: string;
+  name: OwnerName;
+  email: OwnerEmail;
+  phone: OwnerPhone;
 }>;
 export type UseCaseInput = Readonly<{ actorUserId: UserId }>;
 export type UseCaseOk = Readonly<{ owners: readonly OwnerView[] }>;
@@ -37,9 +40,9 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
 });
 const toView = (owner: Owner): OwnerView => ({
   ownerId: owner.ownerId,
-  name: owner.name.unwrap(),
-  email: owner.email.unwrap(),
-  phone: owner.phone.unwrap(),
+  name: owner.name,
+  email: owner.email,
+  phone: owner.phone,
 });
 const run =
   (dependencies: Dependencies) =>

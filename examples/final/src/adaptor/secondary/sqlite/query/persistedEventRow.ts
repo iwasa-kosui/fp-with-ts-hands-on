@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assertNever } from "../../../../domain/shared/assertNever.js";
 
 import { EventId } from "../../../../domain/aggregate/eventId.js";
 import { Timestamp } from "../../../../domain/aggregate/timestamp.js";
@@ -8,6 +9,7 @@ import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js
 import { ExamId } from "../../../../domain/examResult/examId.js";
 import { OwnerId } from "../../../../domain/owner/ownerId.js";
 import { PetId } from "../../../../domain/pet/petId.js";
+import { PetSpecies } from "../../../../domain/pet/petSpecies.js";
 import { SessionId } from "../../../../domain/session/sessionId.js";
 import { UserId } from "../../../../domain/user/userId.js";
 import { domainEventsTable } from "../schema.js";
@@ -36,7 +38,7 @@ const OwnerSafeStateSchema = z.object({ ownerId: OwnerId.schema }).strict();
 const PetSafeStateSchema = z.object({
   petId: PetId.schema,
   ownerId: OwnerId.schema,
-  species: z.string().trim().min(1).max(100),
+  species: PetSpecies.schema,
 }).strict();
 const AppointmentSafeBaseShape = {
   appointmentId: AppointmentId.schema,
@@ -283,7 +285,7 @@ const validateConsistency = (row: PersistedEventRow): void => {
       ensureSame(row.aggregateId, row.eventPayload.appointmentId);
       return;
     default:
-      row satisfies never;
+      return assertNever(row);
   }
 };
 

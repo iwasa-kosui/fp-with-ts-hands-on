@@ -1,18 +1,18 @@
 import { useForm } from "@inertiajs/react";
 
 import type { VeterinarianId } from "../../../../../domain/appointment/veterinarianId.js";
-import type { AppointmentView } from "../../../../../useCase/listAppointmentsUseCase.js";
 import { ErrorSummary, FieldError } from "../../components/FormErrors.js";
 import type { SharedPageProps } from "../../pageProps.js";
 import type {
   AppointmentActions,
+  AppointmentPageView,
   AppointmentVeterinarianOption,
 } from "../../routes/appointmentRoutes.js";
 import Layout from "../Layout.js";
 
 type Props = SharedPageProps &
   Readonly<{
-    appointment: AppointmentView;
+    appointment: AppointmentPageView;
     actions: AppointmentActions;
     veterinarianId: VeterinarianId | null;
     veterinarians?: readonly AppointmentVeterinarianOption[];
@@ -24,7 +24,7 @@ const submit = (form: ReturnType<typeof useForm>, path: string) =>
     form.post(path, { forceFormData: true, preserveScroll: true });
   };
 
-const stateDetails = (appointment: AppointmentView): React.ReactNode => {
+const stateDetails = (appointment: AppointmentPageView): React.ReactNode => {
   switch (appointment.kind) {
     case "Scheduled":
       return null;

@@ -1,6 +1,6 @@
 import type { User } from "./user.js";
 
-const isAdmin = (user: User): user is Extract<User, { kind: "Admin" }> => user.kind === "Admin";
+const isAdmin = (user: User) => user.kind === "Admin";
 
 const canManageUsers = (user: User): boolean => isAdmin(user);
 const canStartExamination = (user: User): boolean =>

@@ -1,5 +1,5 @@
 import { Link } from "@inertiajs/react";
-import type { AppointmentView } from "../../../../useCase/listAppointmentsUseCase.js";
+import type { AppointmentPageView } from "../routes/appointmentRoutes.js";
 import type { DashboardCounts } from "../../../../useCase/getDashboardUseCase.js";
 import type { SharedPageProps } from "../pageProps.js";
 import Layout from "./Layout.js";
@@ -8,7 +8,7 @@ type DashboardProps = SharedPageProps &
   Readonly<{
     counts: DashboardCounts;
     activeAppointments: readonly Readonly<
-      Pick<AppointmentView, "appointmentId" | "kind" | "petName" | "scheduledAt">
+      Pick<AppointmentPageView, "appointmentId" | "kind" | "petName" | "scheduledAt">
     >[];
   }>;
 

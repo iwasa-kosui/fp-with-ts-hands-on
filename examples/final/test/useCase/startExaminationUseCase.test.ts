@@ -1,6 +1,5 @@
 import { errAsync, okAsync, type ResultAsync } from "neverthrow";
 import { describe, expect, test } from "vitest";
-import { Sensitive } from "../../src/domain/shared/sensitive.js";
 
 import type { Clock } from "../../src/domain/aggregate/clock.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
@@ -14,6 +13,7 @@ import {
 } from "../../src/domain/appointment/appointment.js";
 import type { ExaminationStarted } from "../../src/domain/appointment/appointmentEvent.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
 import type { AppointmentByIdResolver } from "../../src/domain/appointment/appointmentResolver.js";
 import type { ExaminationStartedStore } from "../../src/domain/appointment/appointmentStores.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
@@ -79,7 +79,7 @@ const checkedIn = {
   petId: PetId.schema.parse("22222222-2222-4222-8222-222222222222"),
   ownerId: OwnerId.schema.parse("33333333-3333-4333-8333-333333333333"),
   scheduledAt: Timestamp.schema.parse("2026-08-30T06:00:00.000Z"),
-  reason: Sensitive.of("skin check"),
+  reason: AppointmentReason.schema.parse("skin check"),
   checkedInAt: Timestamp.schema.parse("2026-08-30T06:20:00.000Z"),
 } as const satisfies CheckedIn;
 

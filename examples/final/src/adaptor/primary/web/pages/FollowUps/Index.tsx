@@ -1,12 +1,12 @@
 import { useForm } from "@inertiajs/react";
 
-import type { FollowUpView } from "../../../../../useCase/listFollowUpsUseCase.js";
 import { ErrorSummary } from "../../components/FormErrors.js";
 import type { SharedPageProps } from "../../pageProps.js";
+import type { FollowUpPageView } from "../../routes/followUpRoutes.js";
 import Layout from "../Layout.js";
 
 type Props = SharedPageProps &
-  Readonly<{ followUps: readonly FollowUpView[] }>;
+  Readonly<{ followUps: readonly FollowUpPageView[] }>;
 
 export default function FollowUpsIndex({ auth, errors, followUps }: Props) {
   const form = useForm<{ appointmentIds: string[] }>({ appointmentIds: [] });

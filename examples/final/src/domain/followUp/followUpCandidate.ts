@@ -1,4 +1,3 @@
-import type { EventContext } from "../aggregate/eventContext.js";
 import type { Appointment } from "../appointment/appointment.js";
 import type { ExamResult } from "../examResult/examResult.js";
 import type { Owner } from "../owner/owner.js";
@@ -7,7 +6,6 @@ export type FollowUpCandidate = Readonly<{
   appointment: Appointment;
   owner: Owner;
   examResult: ExamResult;
-  context: EventContext;
 }>;
 
 export const FollowUpCandidate = {

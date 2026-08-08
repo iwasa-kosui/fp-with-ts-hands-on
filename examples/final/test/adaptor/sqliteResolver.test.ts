@@ -6,6 +6,7 @@ import { createAppointmentByIdResolver } from "../../src/adaptor/secondary/sqlit
 import { createEventHistoryReader } from "../../src/adaptor/secondary/sqlite/query/eventHistoryReader.js";
 import { createFollowUpRequestReader } from "../../src/adaptor/secondary/sqlite/query/followUpRequestReader.js";
 import { createExamResultByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/examResultResolver.js";
+import { createFollowUpResolver } from "../../src/adaptor/secondary/sqlite/resolver/followUpResolver.js";
 import {
   createUserByIdResolver,
   createUserListResolver,
@@ -113,6 +114,48 @@ const insertFollowUpEvent = (
 };
 
 describe("SQLite resolvers", () => {
+  test("resolves follow-up candidates from current projections without audit rows", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    db.run(sql.raw(
+      `INSERT INTO owners (owner_id, name, email, phone) VALUES ('${ownerId}', 'Owner', 'owner@example.test', '090-0000-0000')`,
+    ));
+    db.run(sql.raw(
+      `INSERT INTO pets (pet_id, owner_id, name, species) VALUES ('${petId}', '${ownerId}', 'Mugi', 'Cat')`,
+    ));
+    const paidState = JSON.stringify({
+      kind: "Paid",
+      appointmentId,
+      ownerId,
+      petId,
+      scheduledAt: "2026-08-10T01:00:00.000Z",
+      reason: "checkup",
+      checkedInAt: "2026-08-10T01:10:00.000Z",
+      veterinarianId: "30000000-0000-4000-8000-000000000005",
+      examinationStartedAt: "2026-08-10T01:20:00.000Z",
+      diagnosis: "diagnosis",
+      treatment: "treatment",
+      amount: 4800,
+      paidAt: "2026-08-10T02:00:00.000Z",
+    });
+    insertAppointment(db, "Paid", ownerId, petId, paidState);
+    const examState = JSON.stringify({
+      examId,
+      petId,
+      collectedAt: "2026-08-10T01:30:00.000Z",
+      items: ["observation"],
+      needsFollowUp: true,
+    });
+    db.run(sql.raw(
+      `INSERT INTO exam_results (exam_id, pet_id, state) VALUES ('${examId}', '${petId}', '${examState}')`,
+    ));
+
+    const result = await createFollowUpResolver(db).resolveCandidates();
+
+    expect(result._unsafeUnwrap()).toHaveLength(1);
+    expect(result._unsafeUnwrap()[0]).not.toHaveProperty("context");
+  });
+
   test("parses persisted rows back through domain schemas", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);

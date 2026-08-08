@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
+import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type { SessionCreated, SessionDeleted } from "../../../../domain/session/sessionEvent.js";
 import type { SqliteDatabase } from "../db.js";
 import { toEventRecord } from "../eventRecord.js";
@@ -51,7 +52,7 @@ export const createSessionEventStore = (db: SqliteDatabase) => ({
                   .run();
                 return;
               default:
-                event satisfies never;
+                return assertNever(event);
             }
           });
         }),

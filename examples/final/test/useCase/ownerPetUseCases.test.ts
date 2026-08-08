@@ -26,8 +26,12 @@ import type { EventIdGenerator } from "../../src/domain/aggregate/eventIdGenerat
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import type { Appointment } from "../../src/domain/appointment/appointment.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
+import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
+import { Diagnosis } from "../../src/domain/appointment/diagnosis.js";
 import type { AppointmentByPetIdResolver } from "../../src/domain/appointment/appointmentResolver.js";
 import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
+import { Treatment } from "../../src/domain/appointment/treatment.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { Sensitive } from "../../src/domain/shared/sensitive.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
@@ -45,6 +49,8 @@ import type {
 } from "../../src/domain/owner/ownerResolver.js";
 import { Pet, type Pet as PetState } from "../../src/domain/pet/pet.js";
 import { PetId } from "../../src/domain/pet/petId.js";
+import { PetName } from "../../src/domain/pet/petName.js";
+import { PetSpecies } from "../../src/domain/pet/petSpecies.js";
 import type {
   PetByIdResolver,
   PetByOwnerIdResolver,
@@ -126,19 +132,19 @@ const changedProfile = {
   email: OwnerEmail.schema.parse("changed@example.test"),
   phone: OwnerPhone.schema.parse("090-3333-4444"),
 } as const;
-const pet = {
+const pet = Pet.parse({
   petId: ids.pet,
   ownerId: ids.owner,
   name: "Mugi",
   species: "Cat",
-} as const satisfies PetState;
+})._unsafeUnwrap();
 const scheduled = {
   kind: "Scheduled",
   appointmentId: ids.appointment,
   ownerId: ids.owner,
   petId: ids.pet,
   scheduledAt: now,
-  reason: Sensitive.of("checkup"),
+  reason: AppointmentReason.schema.parse("checkup"),
 } as const satisfies Appointment;
 const otherOwner = {
   ...owner,
@@ -149,6 +155,12 @@ const otherPet = {
   petId: ids.otherPet,
   ownerId: ids.otherOwner,
 } as const satisfies PetState;
+const petRow = (state: PetState) => ({
+  petId: state.petId,
+  ownerId: state.ownerId,
+  name: state.name.unwrap(),
+  species: state.species,
+});
 const context = (sequence: number) => ({
   eventId: EventId.schema.parse(
     `88000000-0000-4000-8000-${sequence.toString().padStart(12, "0")}`,
@@ -296,8 +308,8 @@ describe("owner and pet management use cases", () => {
     }).run({
       actorUserId: ids.receptionist,
       ownerId: ids.owner,
-      name: "Sora",
-      species: "Dog",
+      name: PetName.schema.parse("Sora"),
+      species: PetSpecies.schema.parse("Dog"),
     });
     const updatedPet = await UpdatePetUseCase.create({
       ...common,
@@ -306,19 +318,19 @@ describe("owner and pet management use cases", () => {
     }).run({
       actorUserId: ids.receptionist,
       petId: ids.pet,
-      name: "Mugi II",
-      species: "Cat",
+      name: PetName.schema.parse("Mugi II"),
+      species: PetSpecies.schema.parse("Cat"),
     });
 
     expect(createdOwner._unsafeUnwrap().owner.ownerId).toBe(ids.newOwner);
-    expect(updatedOwner._unsafeUnwrap().owner.name).toBe("Alice Changed");
-    expect(createdPet._unsafeUnwrap().pet).toEqual({
+    expect(updatedOwner._unsafeUnwrap().owner.name.unwrap()).toBe("Alice Changed");
+    expect(createdPet._unsafeUnwrap().pet).toMatchObject({
       petId: ids.newPet,
       ownerId: ids.owner,
-      name: "Sora",
       species: "Dog",
     });
-    expect(updatedPet._unsafeUnwrap().pet.name).toBe("Mugi II");
+    expect(createdPet._unsafeUnwrap().pet.name.unwrap()).toBe("Sora");
+    expect(updatedPet._unsafeUnwrap().pet.name.unwrap()).toBe("Mugi II");
     expect(ownerEvents).toMatchObject([
       { kind: "OwnerCreated", eventPayload: { ownerId: ids.newOwner } },
       { kind: "OwnerUpdated", eventPayload: { ownerId: ids.owner } },
@@ -450,8 +462,8 @@ describe("owner and pet management use cases", () => {
           }).run({
             actorUserId: ids.veterinarian,
             ownerId: ids.owner,
-            name: "Sora",
-            species: "Dog",
+            name: PetName.schema.parse("Sora"),
+            species: PetSpecies.schema.parse("Dog"),
           }),
       ],
       [
@@ -466,8 +478,8 @@ describe("owner and pet management use cases", () => {
           }).run({
             actorUserId: ids.veterinarian,
             petId: ids.pet,
-            name: "Mugi II",
-            species: "Cat",
+            name: PetName.schema.parse("Mugi II"),
+            species: PetSpecies.schema.parse("Cat"),
           }),
       ],
       [
@@ -529,8 +541,8 @@ describe("owner and pet management use cases", () => {
     }).run({
       actorUserId: ids.admin,
       ownerId: ids.owner,
-      name: "Sora",
-      species: "Dog",
+      name: PetName.schema.parse("Sora"),
+      species: PetSpecies.schema.parse("Dog"),
     });
     const ownerWithPets = await DeleteOwnerUseCase.create({
       ...common,
@@ -571,8 +583,8 @@ describe("owner and pet management use cases", () => {
         "86000000-0000-4000-8000-000000000001",
       ),
       examinationStartedAt: now,
-      diagnosis: Sensitive.of("healthy"),
-      treatment: Sensitive.of("none"),
+      diagnosis: Diagnosis.schema.parse("healthy"),
+      treatment: Treatment.schema.parse("none"),
       amount: PaymentAmount.schema.parse(1000),
       paidAt: now,
     } as const satisfies Appointment;
@@ -582,6 +594,7 @@ describe("owner and pet management use cases", () => {
         "84000000-0000-4000-8000-000000000002",
       ),
       kind: "Canceled",
+      reason: CancellationReason.schema.parse("owner request"),
       canceledAt: now,
     } as const satisfies Appointment;
 
@@ -604,7 +617,7 @@ describe("owner and pet management use cases", () => {
     ]);
   });
 
-  test("owner queries expose only explicitly selected operational PII", async () => {
+  test("owner queries retain operational PII in Sensitive values", async () => {
     const owners = await ListOwnersUseCase.create({
       userResolver: userResolverFor(receptionist),
       ownerResolver: ownerResolverFor([owner]),
@@ -622,22 +635,27 @@ describe("owner and pet management use cases", () => {
       owners: [
         {
           ownerId: ids.owner,
-          name: "Alice Owner",
-          email: "alice@example.test",
-          phone: "090-1111-2222",
+          name: owner.name,
+          email: owner.email,
+          phone: owner.phone,
         },
       ],
     });
     expect(ownerDetail._unsafeUnwrap()).toEqual({
       owner: owners._unsafeUnwrap().owners[0],
     });
-    expect(pets._unsafeUnwrap()).toEqual({ pets: [pet] });
+    expect(pets._unsafeUnwrap()).toEqual({
+      pets: [pet],
+    });
     expect(Object.keys(ownerDetail._unsafeUnwrap().owner).sort()).toEqual([
       "email",
       "name",
       "ownerId",
       "phone",
     ]);
+    expect(JSON.stringify([owners, ownerDetail, pets])).not.toContain(
+      "alice@example.test",
+    );
   });
 
   test("SQLite deletion stores recheck stale eligibility atomically and preserve history", async () => {
@@ -651,7 +669,7 @@ describe("owner and pet management use cases", () => {
         phone: owner.phone.unwrap(),
       })
       .run();
-    db.insert(petsTable).values(pet).run();
+    db.insert(petsTable).values(petRow(pet)).run();
     db.insert(appointmentsTable)
       .values({
         appointmentId: scheduled.appointmentId,
@@ -760,7 +778,7 @@ describe("owner and pet management use cases", () => {
         phone: owner.phone.unwrap(),
       })
       .run();
-    petDb.insert(petsTable).values(pet).run();
+    petDb.insert(petsTable).values(petRow(pet)).run();
     const petResult = await createPetEventStore(petDb).store(
       Pet.delete(context(3))(pet),
       Pet.delete(context(4))({ ...otherPet, ownerId: ids.owner }),
@@ -843,7 +861,7 @@ describe("owner and pet management use cases", () => {
         phone: owner.phone.unwrap(),
       })
       .run();
-    petDb.insert(petsTable).values(pet).run();
+    petDb.insert(petsTable).values(petRow(pet)).run();
     const petResult = await createPetDeletedEventStore(petDb).store(
       Pet.delete(context(7))(pet),
       Pet.delete(context(8))(pet),
@@ -871,7 +889,7 @@ describe("owner and pet management use cases", () => {
         })
         .run();
     });
-    ownerDb.insert(petsTable).values(otherPet).run();
+    ownerDb.insert(petsTable).values(petRow(otherPet)).run();
     const ownerResult = await createOwnerEventStore(ownerDb).store(
       Owner.delete(context(9))(owner),
       Owner.delete(context(10))(otherOwner),
@@ -897,7 +915,7 @@ describe("owner and pet management use cases", () => {
         })
         .run();
     });
-    petDb.insert(petsTable).values([pet, otherPet]).run();
+    petDb.insert(petsTable).values([pet, otherPet].map(petRow)).run();
     petDb
       .insert(appointmentsTable)
       .values({

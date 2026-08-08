@@ -7,11 +7,15 @@ import {
   AppointmentId,
   type AppointmentId as AppointmentIdType,
 } from "../../../../domain/appointment/appointmentId.js";
+import { AppointmentReason } from "../../../../domain/appointment/appointmentReason.js";
+import { CancellationReason } from "../../../../domain/appointment/cancellationReason.js";
+import { Diagnosis } from "../../../../domain/appointment/diagnosis.js";
 import { PaymentAmount } from "../../../../domain/appointment/paymentAmount.js";
 import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js";
+import { Treatment } from "../../../../domain/appointment/treatment.js";
+import { ExamResultItem } from "../../../../domain/examResult/examResultItem.js";
 import { OwnerId } from "../../../../domain/owner/ownerId.js";
 import { PetId } from "../../../../domain/pet/petId.js";
-import { Sensitive } from "../../../../domain/shared/sensitive.js";
 import type { BookAppointmentUseCase } from "../../../../useCase/bookAppointmentUseCase.js";
 import type { CancelAppointmentUseCase } from "../../../../useCase/cancelAppointmentUseCase.js";
 import type { CheckInAppointmentUseCase } from "../../../../useCase/checkInAppointmentUseCase.js";
@@ -43,7 +47,7 @@ const BookingSchema = z.object({
   ownerId: OwnerId.schema,
   petId: PetId.schema,
   scheduledAt: Timestamp.schema,
-  reason: z.string().trim().min(1).max(500).transform(Sensitive.of),
+  reason: AppointmentReason.schema,
 });
 const StartExaminationSchema = z.object({
   veterinarianId: VeterinarianId.schema.optional(),
@@ -51,7 +55,7 @@ const StartExaminationSchema = z.object({
 const ExamResultSchema = z.object({
   petId: PetId.schema,
   collectedAt: Timestamp.schema,
-  item: z.string().trim().min(1).max(2_000).transform(Sensitive.of),
+  item: ExamResultItem.schema,
   needsFollowUp: z.preprocess(
     (value) =>
       value === undefined || value === "0" || value === "false" || value === false
@@ -63,18 +67,58 @@ const ExamResultSchema = z.object({
   ),
 });
 const PaymentSchema = z.object({
-  diagnosis: z.string().trim().min(1).max(500).transform(Sensitive.of),
-  treatment: z.string().trim().min(1).max(500).transform(Sensitive.of),
+  diagnosis: Diagnosis.schema,
+  treatment: Treatment.schema,
   amount: z.coerce.number().pipe(PaymentAmount.schema),
 });
 const CancelSchema = z.object({
-  reason: z.string().trim().min(1).max(500).transform(Sensitive.of),
+  reason: CancellationReason.schema,
 });
 const AppointmentDetailErrorSchema = z.enum([
   "invalid-state",
   "pet-mismatch",
   "appointment-conflict",
 ]);
+const deletedLabel = "削除済み";
+
+type AppointmentPageViewFor<T extends AppointmentView> = Readonly<
+  Omit<T, "ownerName" | "petName" | "veterinarianName"> & {
+    ownerName: string;
+    petName: string;
+  } & (T extends { veterinarianName: unknown }
+      ? { veterinarianName: string }
+      : Readonly<Record<never, never>>)
+>;
+export type AppointmentPageView = AppointmentView extends infer T
+  ? T extends AppointmentView
+    ? AppointmentPageViewFor<T>
+    : never
+  : never;
+
+export const toAppointmentPageView = (
+  appointment: AppointmentView,
+): AppointmentPageView => {
+  const base = {
+    ownerName: appointment.ownerName?.unwrap() ?? deletedLabel,
+    petName: appointment.petName?.unwrap() ?? deletedLabel,
+  } as const;
+  switch (appointment.kind) {
+    case "Scheduled":
+    case "CheckedIn":
+    case "Canceled":
+      return { ...appointment, ...base };
+    case "InExamination":
+    case "Paid":
+      return {
+        ...appointment,
+        ...base,
+        veterinarianName:
+          appointment.veterinarianName?.unwrap() ?? deletedLabel,
+      };
+    default:
+      return assertNever(appointment);
+  }
+};
 
 export type AppointmentActions = Readonly<{
   checkIn: boolean;
@@ -240,11 +284,10 @@ const renderAppointment = async (
     }
     veterinarianOptions = veterinarians.value.users
       .filter((user) => user.kind === "Veterinarian")
-      .flatMap((user) =>
-        user.veterinarianId === undefined
-          ? []
-          : [{ veterinarianId: user.veterinarianId, name: user.name.unwrap() }],
-      );
+      .map((user) => ({
+        veterinarianId: user.veterinarianId,
+        name: user.name.unwrap(),
+      }));
   }
   return dependencies.getAppointment
     .run({ actorUserId: actor.value.user.userId, appointmentId })
@@ -253,7 +296,7 @@ const renderAppointment = async (
         context.render(
           "Appointments/Show",
           withSharedProps(context, {
-            appointment,
+            appointment: toAppointmentPageView(appointment),
             actions: actionsFor(actor.value, appointment),
             veterinarianId:
               actor.value.user.kind === "Veterinarian"
@@ -312,12 +355,12 @@ const loadBookingOptions = async (
     .map(({ pets: values }) => ({
       owners: owners.value.owners.map((owner) => ({
         ownerId: owner.ownerId,
-        name: owner.name,
+        name: owner.name.unwrap(),
       })),
       pets: values.map((pet) => ({
         petId: pet.petId,
         ownerId: pet.ownerId,
-        name: pet.name,
+        name: pet.name.unwrap(),
       })),
     }))
     .mapErr((error) => {
@@ -370,7 +413,9 @@ export const registerAppointmentRoutes = (
         ({ appointments }) =>
           context.render(
             "Appointments/Index",
-            withSharedProps(context, { appointments }),
+            withSharedProps(context, {
+              appointments: appointments.map(toAppointmentPageView),
+            }),
           ),
         (error) => {
           switch (error.kind) {

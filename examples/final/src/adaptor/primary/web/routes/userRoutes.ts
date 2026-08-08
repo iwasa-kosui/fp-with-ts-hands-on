@@ -2,7 +2,7 @@ import type { Context, Hono } from "hono";
 import { err, ok, ResultAsync, type Result } from "neverthrow";
 import { z } from "zod";
 
-import { Sensitive } from "../../../../domain/shared/sensitive.js";
+import { PlaintextPassword } from "../../../../domain/user/plaintextPassword.js";
 import type { User } from "../../../../domain/user/user.js";
 import { UserEmail } from "../../../../domain/user/userEmail.js";
 import { UserId, type UserId as UserIdType } from "../../../../domain/user/userId.js";
@@ -26,15 +26,10 @@ import {
 import type { FieldErrors, WebEnvironment } from "../pageProps.js";
 
 const RoleSchema = z.enum(["Admin", "Receptionist", "Veterinarian"]);
-const PlaintextPasswordSchema = z
-  .string()
-  .min(12)
-  .max(200)
-  .transform(Sensitive.of);
 const CreateUserFormSchema = z.object({
   email: UserEmail.schema,
   name: UserName.schema,
-  password: PlaintextPasswordSchema,
+  password: PlaintextPassword.schema,
   role: RoleSchema,
 });
 const UpdateUserFormSchema = z.object({
@@ -43,7 +38,7 @@ const UpdateUserFormSchema = z.object({
   role: RoleSchema,
 });
 const ResetPasswordFormSchema = z.object({
-  password: PlaintextPasswordSchema,
+  password: PlaintextPassword.schema,
 });
 const UserIndexErrorSchema = z.enum([
   "cannot-delete-self",

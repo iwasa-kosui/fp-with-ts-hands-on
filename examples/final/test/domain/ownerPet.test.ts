@@ -8,9 +8,12 @@ import { ExamResult } from "../../src/domain/examResult/examResult.js";
 import * as ExamResultEventModule from "../../src/domain/examResult/examResultEvent.js";
 import { Owner } from "../../src/domain/owner/owner.js";
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
+import { OwnerName } from "../../src/domain/owner/ownerName.js";
 import * as OwnerEventModule from "../../src/domain/owner/ownerEvent.js";
 import { Pet } from "../../src/domain/pet/pet.js";
 import { PetId } from "../../src/domain/pet/petId.js";
+import { PetName } from "../../src/domain/pet/petName.js";
+import { PetSpecies } from "../../src/domain/pet/petSpecies.js";
 import * as PetEventModule from "../../src/domain/pet/petEvent.js";
 import { UserId } from "../../src/domain/user/userId.js";
 
@@ -51,6 +54,17 @@ describe("owner and pet aggregates", () => {
     }
 
     expect(ownerId).not.toBe(petId);
+  });
+
+  test("does not accept a raw string as a pet species", () => {
+    const acceptsPetSpecies = (_species: PetSpecies): void => undefined;
+
+    if (false) {
+      // @ts-expect-error PetSpecies must be parsed at an external boundary.
+      acceptsPetSpecies("Cat");
+    }
+
+    expect(PetSpecies.schema.parse("Cat")).toBe("Cat");
   });
 
   test("defaults examination follow-up to false and rejects empty items", () => {
@@ -117,6 +131,26 @@ describe("owner and pet aggregates", () => {
     expect(JSON.stringify(parsed._unsafeUnwrap())).not.toContain("090-0000-0000");
   });
 
+  test("wraps pet name PII at the parsing boundary", () => {
+    const parsed = Pet.parse({
+      petId,
+      ownerId,
+      name: "Mochi",
+      species: "Cat",
+    });
+
+    expect(parsed.isOk()).toBe(true);
+    expect(JSON.stringify(parsed._unsafeUnwrap())).not.toContain("Mochi");
+
+    const petName = parsed._unsafeUnwrap().name;
+    const ownerName = OwnerName.schema.parse("Owner B");
+    const acceptsPetName = (_value: typeof petName): void => undefined;
+    if (false) {
+      // @ts-expect-error OwnerName cannot satisfy PetName.
+      acceptsPetName(ownerName);
+    }
+  });
+
   test("creates, updates, and physically deletes an owner through events without PII payloads", () => {
     const owner = Owner.parse({
       ownerId,
@@ -169,8 +203,8 @@ describe("owner and pet aggregates", () => {
     const pet = Pet.parse({ petId, ownerId, name: "Mochi", species: "Cat" })._unsafeUnwrap();
     const created = Pet.create(createdContext)(pet);
     const updated = Pet.update(updatedContext)(created.aggregateState, {
-      name: "Mochi Jr.",
-      species: "Cat",
+      name: PetName.schema.parse("Mochi Jr."),
+      species: PetSpecies.schema.parse("Cat"),
     });
     const deleted = Pet.delete(deletedContext)(updated.aggregateState);
 
@@ -185,10 +219,11 @@ describe("owner and pet aggregates", () => {
     expect(updated).toMatchObject({
       kind: "PetUpdated",
       aggregateId: petId,
-      aggregateState: { petId, ownerId, name: "Mochi Jr.", species: "Cat" },
       eventName: "pet.updated",
       eventPayload: { petId, ownerId },
     });
+    expect(updated.aggregateState.name.unwrap()).toBe("Mochi Jr.");
+    expect(updated.aggregateState).toMatchObject({ petId, ownerId, species: "Cat" });
     expect(deleted.aggregateState).toBeUndefined();
     expect(deleted.eventPayload).toEqual({ petId, ownerId });
     expect(JSON.stringify([created.eventPayload, updated.eventPayload, deleted.eventPayload])).not.toContain(

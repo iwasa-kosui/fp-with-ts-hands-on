@@ -14,6 +14,7 @@ import {
 import AppointmentsIndex from "../../src/adaptor/primary/web/pages/Appointments/Index.js";
 import AppointmentNew from "../../src/adaptor/primary/web/pages/Appointments/New.js";
 import AppointmentShow from "../../src/adaptor/primary/web/pages/Appointments/Show.js";
+import type { AppointmentPageView } from "../../src/adaptor/primary/web/routes/appointmentRoutes.js";
 import Dashboard from "../../src/adaptor/primary/web/pages/Dashboard.js";
 import EventsIndex from "../../src/adaptor/primary/web/pages/Events/Index.js";
 import FollowUpsIndex from "../../src/adaptor/primary/web/pages/FollowUps/Index.js";
@@ -29,7 +30,6 @@ import {
   createApp,
   createApplicationDependencies,
 } from "../../src/app.js";
-import type { AppointmentView } from "../../src/useCase/listAppointmentsUseCase.js";
 
 const adminId = UserId.schema.parse("76000000-0000-4000-8000-000000000001");
 const vetId = UserId.schema.parse("76000000-0000-4000-8000-000000000002");
@@ -69,13 +69,13 @@ const incompletePaidView = {
   amount: paymentAmount,
 };
 // @ts-expect-error Paid requires the full safe chronology and veterinarian projection.
-const invalidPaidView: AppointmentView = incompletePaidView;
+const invalidPaidView: AppointmentPageView = incompletePaidView;
 
 const scheduledWithPaidState = {
   ...scheduledView,
   // @ts-expect-error Scheduled cannot carry Paid-only state fields.
   paidAt,
-} as const satisfies AppointmentView;
+} as const satisfies AppointmentPageView;
 
 describe("clinic page SSR", () => {
   test("renders exact role-aware navigation", async () => {
@@ -185,7 +185,7 @@ describe("clinic page SSR", () => {
       ...scheduledView,
       kind: "CheckedIn" as const,
       checkedInAt,
-    } satisfies AppointmentView;
+    } satisfies AppointmentPageView;
     const examiningView = {
       ...scheduledView,
       kind: "InExamination" as const,
@@ -193,7 +193,7 @@ describe("clinic page SSR", () => {
       veterinarianId,
       veterinarianName: "Clinic Vet",
       examinationStartedAt,
-    } satisfies AppointmentView;
+    } satisfies AppointmentPageView;
     const paidView = {
       ...scheduledView,
       kind: "Paid" as const,
@@ -203,12 +203,12 @@ describe("clinic page SSR", () => {
       examinationStartedAt,
       amount: paymentAmount,
       paidAt,
-    } satisfies AppointmentView;
+    } satisfies AppointmentPageView;
     const canceledView = {
       ...scheduledView,
       kind: "Canceled" as const,
       canceledAt,
-    } satisfies AppointmentView;
+    } satisfies AppointmentPageView;
 
     const scheduled = await renderPage(AppointmentShow, {
       ...shared("Admin"), appointment: scheduledView, actions: noActions, veterinarianId: null,

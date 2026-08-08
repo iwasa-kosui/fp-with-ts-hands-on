@@ -17,7 +17,7 @@ import { Session } from "../domain/session/session.js";
 import type { SessionId } from "../domain/session/sessionId.js";
 import type { SessionCreatedStore } from "../domain/session/sessionStores.js";
 import type { SessionTokenGenerator } from "../domain/session/sessionTokenGenerator.js";
-import type { Sensitive } from "../domain/shared/sensitive.js";
+import type { SessionTokenPlaintext } from "../domain/session/sessionTokenPlaintext.js";
 import type { User } from "../domain/user/user.js";
 import type { PasswordHash } from "../domain/user/passwordHash.js";
 import type { UserEmail } from "../domain/user/userEmail.js";
@@ -38,7 +38,7 @@ export type UseCaseOk = Readonly<{
   userId: UserId;
   sessionId: SessionId;
   expiresAt: TimestampValue;
-  sessionToken: Sensitive<string>;
+  sessionToken: SessionTokenPlaintext;
 }>;
 export type InvalidCredentials = Readonly<{ kind: "InvalidCredentials" }>;
 export type PasswordVerificationFailed = Readonly<{

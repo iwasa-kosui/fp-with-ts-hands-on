@@ -14,6 +14,7 @@ import { UserId } from "../../../../domain/user/userId.js";
 import { UserName } from "../../../../domain/user/userName.js";
 import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js";
 import type { User } from "../../../../domain/user/user.js";
+import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type { SqliteDatabase } from "../db.js";
 import { usersTable } from "../schema.js";
 
@@ -46,7 +47,7 @@ const parseRow = (row: typeof usersTable.$inferSelect): User => {
         veterinarianId: VeterinarianId.schema.parse(row.veterinarianId),
       };
     default:
-      return role satisfies never;
+      return assertNever(role);
   }
 };
 

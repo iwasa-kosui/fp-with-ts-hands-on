@@ -12,13 +12,15 @@ import {
   type PetUpdated,
 } from "./petEvent.js";
 import { PetId } from "./petId.js";
+import { PetName } from "./petName.js";
+import { PetSpecies } from "./petSpecies.js";
 
 const PetSchema = z
   .object({
     petId: PetId.schema,
     ownerId: OwnerId.schema,
-    name: z.string().trim().min(1).max(100),
-    species: z.string().trim().min(1).max(100),
+    name: PetName.schema,
+    species: PetSpecies.schema,
   })
   .readonly();
 

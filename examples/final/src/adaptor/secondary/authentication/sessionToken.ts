@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 
-import { Sensitive } from "../../../domain/shared/sensitive.js";
 import { SessionTokenHash } from "../../../domain/session/sessionTokenHash.js";
+import { SessionTokenPlaintext } from "../../../domain/session/sessionTokenPlaintext.js";
 import type { SessionTokenGenerator } from "../../../domain/session/sessionTokenGenerator.js";
 
 const generate = () => {
@@ -9,7 +9,7 @@ const generate = () => {
   const hash = createHash("sha256").update(plaintext).digest("hex");
 
   return {
-    plaintext: Sensitive.of(plaintext),
+    plaintext: SessionTokenPlaintext.schema.parse(plaintext),
     hash: SessionTokenHash.schema.parse(hash),
   };
 };

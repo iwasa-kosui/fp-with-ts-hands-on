@@ -1,8 +1,6 @@
 import { err, ok, type Result, type ResultAsync } from "neverthrow";
 
 import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
-import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
-import type { Sensitive } from "../domain/shared/sensitive.js";
 import { Permission } from "../domain/user/permission.js";
 import type { Admin, User } from "../domain/user/user.js";
 import type { UserId } from "../domain/user/userId.js";
@@ -10,14 +8,9 @@ import type {
   UserByIdResolver,
   UserListResolver,
 } from "../domain/user/userResolver.js";
+import { toUserView, type UserView } from "./userView.js";
 
-export type UserView = Readonly<{
-  kind: User["kind"];
-  userId: UserId;
-  email: Sensitive<string>;
-  name: Sensitive<string>;
-  veterinarianId?: VeterinarianId;
-}>;
+export type { UserView } from "./userView.js";
 export type UseCaseInput = Readonly<{ actorUserId: UserId }>;
 export type UseCaseOk = Readonly<{ users: readonly UserView[] }>;
 export type Unauthorized = Readonly<{
@@ -50,22 +43,6 @@ const ensureAdmin = (user: User): Result<Admin, Unauthorized> =>
   Permission.isAdmin(user)
     ? ok(user)
     : err({ kind: "Unauthorized", actorUserId: user.userId });
-const toView = (user: User): UserView =>
-  user.kind === "Veterinarian"
-    ? {
-        kind: user.kind,
-        userId: user.userId,
-        email: user.email,
-        name: user.name,
-        veterinarianId: user.veterinarianId,
-      }
-    : {
-        kind: user.kind,
-        userId: user.userId,
-        email: user.email,
-        name: user.name,
-      };
-
 const run =
   (dependencies: Dependencies) =>
   (input: UseCaseInput): UseCaseOutput =>
@@ -77,7 +54,7 @@ const run =
       .andThen(() =>
         dependencies.userListResolver.resolveAll().mapErr(toRepositoryError),
       )
-      .map((users) => ({ users: users.map(toView) }));
+      .map((users) => ({ users: users.map(toUserView) }));
 
 export const ListUsersUseCase = {
   create: (dependencies: Dependencies): ListUsersUseCase => ({

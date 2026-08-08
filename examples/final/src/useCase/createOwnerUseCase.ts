@@ -16,9 +16,9 @@ import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 
 export type OwnerView = Readonly<{
   ownerId: OwnerId;
-  name: string;
-  email: string;
-  phone: string;
+  name: OwnerName;
+  email: OwnerEmail;
+  phone: OwnerPhone;
 }>;
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;
@@ -55,9 +55,9 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
 });
 const toView = (owner: Owner): OwnerView => ({
   ownerId: owner.ownerId,
-  name: owner.name.unwrap(),
-  email: owner.email.unwrap(),
-  phone: owner.phone.unwrap(),
+  name: owner.name,
+  email: owner.email,
+  phone: owner.phone,
 });
 const createEvent = (dependencies: Dependencies, input: UseCaseInput) =>
   ResultAsync.fromPromise(

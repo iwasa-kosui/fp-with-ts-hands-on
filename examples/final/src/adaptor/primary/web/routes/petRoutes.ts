@@ -4,6 +4,8 @@ import { z } from "zod";
 
 import { OwnerId, type OwnerId as OwnerIdType } from "../../../../domain/owner/ownerId.js";
 import { PetId, type PetId as PetIdType } from "../../../../domain/pet/petId.js";
+import { PetName } from "../../../../domain/pet/petName.js";
+import { PetSpecies } from "../../../../domain/pet/petSpecies.js";
 import type { CreatePetUseCase } from "../../../../useCase/createPetUseCase.js";
 import type { DeletePetUseCase } from "../../../../useCase/deletePetUseCase.js";
 import type { GetPetUseCase } from "../../../../useCase/getPetUseCase.js";
@@ -24,8 +26,8 @@ import {
 import type { FieldErrors, WebEnvironment } from "../pageProps.js";
 
 const PetProfileShape = {
-  name: z.string().trim().min(1).max(100),
-  species: z.string().trim().min(1).max(100),
+  name: PetName.schema,
+  species: PetSpecies.schema,
 };
 const CreatePetFormSchema = z.object({
   ownerId: OwnerId.schema,
@@ -57,7 +59,12 @@ export type PetOwnerOption = Readonly<{
   name: string;
 }>;
 
-const toPageView = (pet: PetView): PetPageView => ({ ...pet });
+const toPageView = (pet: PetView): PetPageView => ({
+  petId: pet.petId,
+  ownerId: pet.ownerId,
+  name: pet.name.unwrap(),
+  species: pet.species,
+});
 
 const parseForm = <TOutput, TInput>(
   context: Context<WebEnvironment>,
@@ -131,7 +138,7 @@ const loadOwnerOptions = async (
     .map(({ owners }) =>
       owners.map((owner) => ({
         ownerId: owner.ownerId,
-        name: owner.name,
+        name: owner.name.unwrap(),
       })),
     )
     .mapErr((error) => {

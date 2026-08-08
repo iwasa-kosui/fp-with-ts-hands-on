@@ -1,8 +1,8 @@
-import type { Sensitive } from "../shared/sensitive.js";
 import type { SessionTokenHash } from "./sessionTokenHash.js";
+import type { SessionTokenPlaintext } from "./sessionTokenPlaintext.js";
 
 export type SessionToken = Readonly<{
-  plaintext: Sensitive<string>;
+  plaintext: SessionTokenPlaintext;
   hash: SessionTokenHash;
 }>;
 

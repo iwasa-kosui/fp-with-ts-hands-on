@@ -9,8 +9,6 @@ import {
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
 import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
-import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
-import type { Sensitive } from "../domain/shared/sensitive.js";
 import { Permission } from "../domain/user/permission.js";
 import {
   User,
@@ -24,14 +22,9 @@ import type {
 } from "../domain/user/passwordHasher.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import type { UserPasswordResetStore } from "../domain/user/userStores.js";
+import { toUserView, type UserView } from "./userView.js";
 
-export type UserView = Readonly<{
-  kind: UserState["kind"];
-  userId: UserId;
-  email: Sensitive<string>;
-  name: Sensitive<string>;
-  veterinarianId?: VeterinarianId;
-}>;
+export type { UserView } from "./userView.js";
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;
   targetUserId: UserId;
@@ -106,22 +99,6 @@ const createEvent =
       ),
       (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
-const toView = (user: UserState): UserView =>
-  user.kind === "Veterinarian"
-    ? {
-        kind: user.kind,
-        userId: user.userId,
-        email: user.email,
-        name: user.name,
-        veterinarianId: user.veterinarianId,
-      }
-    : {
-        kind: user.kind,
-        userId: user.userId,
-        email: user.email,
-        name: user.name,
-      };
-
 const run =
   (dependencies: Dependencies) =>
   (input: UseCaseInput): UseCaseOutput =>
@@ -146,7 +123,7 @@ const run =
           .store(event)
           .mapErr(toRepositoryError),
       )
-      .map((event) => ({ user: toView(event.aggregateState) }));
+      .map((event) => ({ user: toUserView(event.aggregateState) }));
 
 export const ResetUserPasswordUseCase = {
   create: (dependencies: Dependencies): ResetUserPasswordUseCase => ({

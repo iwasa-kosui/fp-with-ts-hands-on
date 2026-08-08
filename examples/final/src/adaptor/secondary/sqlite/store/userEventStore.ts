@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { err, errAsync, ok, ResultAsync } from "neverthrow";
 
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
+import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type {
   UserCreated,
   UserDeleted,
@@ -76,7 +77,7 @@ const createUserProjectionEventStore = (db: SqliteDatabase) =>
                   return;
                 }
                 default:
-                  event satisfies never;
+                  return assertNever(event);
               }
             });
           }),

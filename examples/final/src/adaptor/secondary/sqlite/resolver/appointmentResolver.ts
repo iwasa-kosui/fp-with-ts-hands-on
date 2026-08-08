@@ -5,6 +5,9 @@ import { z } from "zod";
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import { Timestamp } from "../../../../domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
+import { AppointmentReason } from "../../../../domain/appointment/appointmentReason.js";
+import { CancellationReason } from "../../../../domain/appointment/cancellationReason.js";
+import { Diagnosis } from "../../../../domain/appointment/diagnosis.js";
 import type {
   AppointmentByPetIdResolver,
   AppointmentByIdResolver,
@@ -12,9 +15,9 @@ import type {
 } from "../../../../domain/appointment/appointmentResolver.js";
 import { PaymentAmount } from "../../../../domain/appointment/paymentAmount.js";
 import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js";
+import { Treatment } from "../../../../domain/appointment/treatment.js";
 import { OwnerId } from "../../../../domain/owner/ownerId.js";
 import { PetId } from "../../../../domain/pet/petId.js";
-import { Sensitive } from "../../../../domain/shared/sensitive.js";
 import type { SqliteDatabase } from "../db.js";
 import { appointmentsTable } from "../schema.js";
 
@@ -23,7 +26,7 @@ const baseShape = {
   petId: PetId.schema,
   ownerId: OwnerId.schema,
   scheduledAt: Timestamp.schema,
-  reason: z.string().transform(Sensitive.of),
+  reason: AppointmentReason.schema,
 };
 const AppointmentSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("Scheduled"), ...baseShape }),
@@ -45,14 +48,18 @@ const AppointmentSchema = z.discriminatedUnion("kind", [
     checkedInAt: Timestamp.schema,
     veterinarianId: VeterinarianId.schema,
     examinationStartedAt: Timestamp.schema,
-    diagnosis: z.string().transform(Sensitive.of),
-    treatment: z.string().transform(Sensitive.of),
+    diagnosis: Diagnosis.schema,
+    treatment: Treatment.schema,
     amount: PaymentAmount.schema,
     paidAt: Timestamp.schema,
   }),
   z.object({
     kind: z.literal("Canceled"),
-    ...baseShape,
+    appointmentId: AppointmentId.schema,
+    petId: PetId.schema,
+    ownerId: OwnerId.schema,
+    scheduledAt: Timestamp.schema,
+    reason: CancellationReason.schema,
     canceledAt: Timestamp.schema,
   }),
 ]);

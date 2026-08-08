@@ -8,6 +8,8 @@ import {
 } from "../domain/followUp/collectFollowUpTargets.js";
 import type { FollowUpCandidate } from "../domain/followUp/followUpCandidate.js";
 import type { FollowUpResolver } from "../domain/followUp/followUpResolver.js";
+import type { OwnerName } from "../domain/owner/ownerName.js";
+import type { OwnerPhone } from "../domain/owner/ownerPhone.js";
 import type { PetId } from "../domain/pet/petId.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
@@ -17,8 +19,8 @@ import type { FollowUpRequestReader } from "./query/followUpRequestReader.js";
 export type FollowUpView = Readonly<{
   appointmentId: AppointmentId;
   petId: PetId;
-  ownerName: string;
-  ownerPhone: string;
+  ownerName: OwnerName | undefined;
+  ownerPhone: OwnerPhone;
   requested: boolean;
 }>;
 export type UseCaseInput = Readonly<{ actorUserId: UserId }>;
@@ -83,8 +85,8 @@ const run =
           return {
             appointmentId: target.appointmentId,
             petId: target.petId,
-            ownerName: candidate?.owner.name.unwrap() ?? "削除済み",
-            ownerPhone: target.ownerPhone.unwrap(),
+            ownerName: candidate?.owner.name,
+            ownerPhone: target.ownerPhone,
             requested: wasRequested(
               requestedAppointmentIds,
               target.appointmentId,

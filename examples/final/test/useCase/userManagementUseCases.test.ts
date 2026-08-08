@@ -27,7 +27,7 @@ import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { Session } from "../../src/domain/session/session.js";
 import { SessionId } from "../../src/domain/session/sessionId.js";
 import { SessionTokenHash } from "../../src/domain/session/sessionTokenHash.js";
-import { Sensitive } from "../../src/domain/shared/sensitive.js";
+import { PlaintextPassword } from "../../src/domain/user/plaintextPassword.js";
 import { User, type User as UserState } from "../../src/domain/user/user.js";
 import { UserEmail } from "../../src/domain/user/userEmail.js";
 import type {
@@ -77,8 +77,8 @@ const ids = {
   ),
 } as const;
 const now = Timestamp.schema.parse("2026-08-09T02:00:00.000Z");
-const password = Sensitive.of("new secure password");
-const initialPassword = Sensitive.of("initial secure password");
+const password = PlaintextPassword.schema.parse("new secure password");
+const initialPassword = PlaintextPassword.schema.parse("initial secure password");
 const actorEmail = UserEmail.schema.parse("actor@example.test");
 const targetEmail = UserEmail.schema.parse("target@example.test");
 const changedEmail = UserEmail.schema.parse("changed@example.test");

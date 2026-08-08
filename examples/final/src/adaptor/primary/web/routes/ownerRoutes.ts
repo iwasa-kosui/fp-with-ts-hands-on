@@ -51,9 +51,9 @@ export type OwnerPageView = Readonly<{
 
 const toPageView = (owner: OwnerView): OwnerPageView => ({
   ownerId: owner.ownerId,
-  name: owner.name,
-  email: owner.email,
-  phone: owner.phone,
+  name: owner.name.unwrap(),
+  email: owner.email.unwrap(),
+  phone: owner.phone.unwrap(),
 });
 
 const parseForm = (

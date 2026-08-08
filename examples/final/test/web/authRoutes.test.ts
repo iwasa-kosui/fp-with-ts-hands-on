@@ -177,6 +177,35 @@ describe("Hono/Inertia authentication boundary", () => {
     expect(html).not.toContain(credentials.password);
   });
 
+  test("renders production assets from the validated composition setting", async () => {
+    const { app } = createHarness(true);
+
+    const response = await app.request("/setup");
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain("/static/client.js");
+    expect(html).toContain("/static/styles.css");
+    expect(html).not.toContain("/src/adaptor/primary/web/client.tsx");
+  });
+
+  test("rejects an unknown NODE_ENV at the composition boundary", () => {
+    const database = createSqliteDatabase(":memory:");
+    migrateDatabase(database);
+    const previousNodeEnvironment = process.env.NODE_ENV;
+
+    try {
+      process.env.NODE_ENV = "staging";
+      expect(() => createApplicationDependencies(database)).toThrow();
+    } finally {
+      if (previousNodeEnvironment === undefined) {
+        delete process.env.NODE_ENV;
+      } else {
+        process.env.NODE_ENV = previousNodeEnvironment;
+      }
+    }
+  });
+
   test("sets a host-scoped HttpOnly SameSite cookie whose plaintext is absent from SQLite", async () => {
     const harness = createHarness();
 

@@ -1,12 +1,14 @@
 import { describe, expect, test } from "vitest";
-import { Sensitive } from "../../src/domain/shared/sensitive.js";
 
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import type { EventContext } from "../../src/domain/aggregate/eventContext.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { Appointment, type Appointment as AppointmentState } from "../../src/domain/appointment/appointment.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
+import { Diagnosis } from "../../src/domain/appointment/diagnosis.js";
 import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
+import { Treatment } from "../../src/domain/appointment/treatment.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
 import { ExamResult, type ExamResult as ExamResultValue } from "../../src/domain/examResult/examResult.js";
@@ -49,7 +51,7 @@ const paidAppointment = (() => {
     ownerId,
     petId,
     scheduledAt,
-    reason: Sensitive.of("skin check"),
+    reason: AppointmentReason.schema.parse("skin check"),
   });
   const checkedIn = Appointment.checkIn(
     context("88888888-8888-4888-8888-888888888888", "2026-08-30T06:20:00.000Z"),
@@ -61,8 +63,8 @@ const paidAppointment = (() => {
   return Appointment.recordPayment(
     context("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "2026-08-30T07:00:00.000Z"),
   )(examining.aggregateState, {
-    diagnosis: Sensitive.of("skin inflammation"),
-    treatment: Sensitive.of("ointment"),
+    diagnosis: Diagnosis.schema.parse("skin inflammation"),
+    treatment: Treatment.schema.parse("ointment"),
     amount: paymentAmount,
   }).aggregateState;
 })();
@@ -74,18 +76,17 @@ const scheduledAppointment = Appointment.book(
   ownerId,
   petId,
   scheduledAt,
-  reason: Sensitive.of("skin check"),
+  reason: AppointmentReason.schema.parse("skin check"),
 }).aggregateState;
 
 const candidate = (
-  eventId: string,
+  _eventId: string,
   examResult: ExamResultValue,
   appointment: AppointmentState = paidAppointment,
 ): FollowUpCandidate => ({
   appointment,
   owner,
   examResult,
-  context: context(eventId, "2026-08-31T06:00:00.000Z"),
 });
 
 const needsFollowUp = ExamResult.parse({
@@ -119,14 +120,8 @@ describe("follow-up target collection", () => {
     expect(targets._unsafeUnwrap()[0]).toMatchObject({
       appointmentId,
       petId,
-      event: {
-        kind: "FollowUpRequested",
-        aggregateId: appointmentId,
-        aggregateName: "FollowUp",
-        aggregateState: undefined,
-        eventPayload: { appointmentId, petId },
-      },
     });
+    expect(targets._unsafeUnwrap()[0]).not.toHaveProperty("event");
   });
 
   test("returns an error for the whole candidate set when any examination belongs to another pet", () => {

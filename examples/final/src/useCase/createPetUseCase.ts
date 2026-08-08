@@ -14,6 +14,8 @@ import type { OwnerId } from "../domain/owner/ownerId.js";
 import type { OwnerByIdResolver } from "../domain/owner/ownerResolver.js";
 import { Pet } from "../domain/pet/pet.js";
 import type { PetId } from "../domain/pet/petId.js";
+import type { PetName } from "../domain/pet/petName.js";
+import type { PetSpecies } from "../domain/pet/petSpecies.js";
 import type { PetCreatedStore } from "../domain/pet/petStores.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
@@ -23,14 +25,14 @@ import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 export type PetView = Readonly<{
   petId: PetId;
   ownerId: OwnerId;
-  name: string;
-  species: string;
+  name: PetName;
+  species: PetSpecies;
 }>;
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;
   ownerId: OwnerId;
-  name: string;
-  species: string;
+  name: PetName;
+  species: PetSpecies;
 }>;
 export type UseCaseOk = Readonly<{ pet: PetView }>;
 export type OwnerNotFound = Readonly<{

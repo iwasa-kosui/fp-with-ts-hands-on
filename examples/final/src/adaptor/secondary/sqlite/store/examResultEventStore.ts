@@ -3,6 +3,7 @@ import { ResultAsync } from "neverthrow";
 
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import type { ExamResultEvent } from "../../../../domain/examResult/examResultEvent.js";
+import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type { SqliteDatabase } from "../db.js";
 import { toEventRecord } from "../eventRecord.js";
 import { domainEventsTable, examResultsTable } from "../schema.js";
@@ -53,7 +54,7 @@ export const createExamResultEventStore = (db: SqliteDatabase) => ({
                   .run();
                 return;
               default:
-                event satisfies never;
+                return assertNever(event);
             }
           });
         }),

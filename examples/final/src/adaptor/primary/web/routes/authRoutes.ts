@@ -2,7 +2,7 @@ import type { Context, Hono } from "hono";
 import { err, ok, ResultAsync } from "neverthrow";
 import { z } from "zod";
 
-import { Sensitive } from "../../../../domain/shared/sensitive.js";
+import { PlaintextPassword } from "../../../../domain/user/plaintextPassword.js";
 import { UserEmail } from "../../../../domain/user/userEmail.js";
 import { UserName } from "../../../../domain/user/userName.js";
 import type { Clock } from "../../../../domain/aggregate/clock.js";
@@ -23,19 +23,14 @@ import {
   type ValidationError,
 } from "../middleware/useCaseResponse.js";
 
-const PlaintextPasswordSchema = z
-  .string()
-  .min(12)
-  .max(200)
-  .transform(Sensitive.of);
 const SetupFormSchema = z.object({
   email: UserEmail.schema,
   name: UserName.schema,
-  password: PlaintextPasswordSchema,
+  password: PlaintextPassword.schema,
 });
 const LoginFormSchema = z.object({
   email: UserEmail.schema,
-  password: PlaintextPasswordSchema,
+  password: PlaintextPassword.schema,
 });
 
 type AuthRouteDependencies = Readonly<{

@@ -1,14 +1,11 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 
-import { EventId } from "../../../../domain/aggregate/eventId.js";
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
-import { Timestamp } from "../../../../domain/aggregate/timestamp.js";
 import type { FollowUpResolver } from "../../../../domain/followUp/followUpResolver.js";
 import { Owner } from "../../../../domain/owner/owner.js";
-import { UserId } from "../../../../domain/user/userId.js";
 import type { SqliteDatabase } from "../db.js";
-import { appointmentsTable, domainEventsTable, examResultsTable, ownersTable } from "../schema.js";
+import { appointmentsTable, examResultsTable, ownersTable } from "../schema.js";
 import { parseAppointmentRow } from "./appointmentResolver.js";
 import { parseExamResultRow } from "./examResultResolver.js";
 
@@ -20,20 +17,10 @@ export const createFollowUpResolver = (db: SqliteDatabase): FollowUpResolver => 
           appointment: appointmentsTable,
           owner: ownersTable,
           examResult: examResultsTable,
-          eventId: domainEventsTable.eventId,
-          occurredAt: domainEventsTable.occurredAt,
-          actorUserId: domainEventsTable.actorUserId,
         })
           .from(appointmentsTable)
           .innerJoin(ownersTable, eq(appointmentsTable.ownerId, ownersTable.ownerId))
           .innerJoin(examResultsTable, eq(appointmentsTable.petId, examResultsTable.petId))
-          .innerJoin(
-            domainEventsTable,
-            and(
-              eq(domainEventsTable.aggregateId, appointmentsTable.appointmentId),
-              eq(domainEventsTable.eventName, "appointment.payment-recorded"),
-            ),
-          )
           .where(eq(appointmentsTable.status, "Paid"))
           .all();
 
@@ -41,11 +28,6 @@ export const createFollowUpResolver = (db: SqliteDatabase): FollowUpResolver => 
           appointment: parseAppointmentRow(row.appointment),
           owner: Owner.schema.parse(row.owner),
           examResult: parseExamResultRow(row.examResult),
-          context: {
-            eventId: EventId.schema.parse(row.eventId),
-            occurredAt: Timestamp.schema.parse(row.occurredAt),
-            actorUserId: UserId.schema.parse(row.actorUserId),
-          },
         }));
       }),
       (cause): RepositoryError => ({

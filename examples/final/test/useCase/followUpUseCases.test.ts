@@ -15,7 +15,10 @@ import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { Appointment } from "../../src/domain/appointment/appointment.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
+import { Diagnosis } from "../../src/domain/appointment/diagnosis.js";
 import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
+import { Treatment } from "../../src/domain/appointment/treatment.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
 import { ExamResult } from "../../src/domain/examResult/examResult.js";
@@ -24,7 +27,6 @@ import { FollowUpRequested } from "../../src/domain/followUp/followUpRequested.j
 import { Owner } from "../../src/domain/owner/owner.js";
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
 import { PetId } from "../../src/domain/pet/petId.js";
-import { Sensitive } from "../../src/domain/shared/sensitive.js";
 import { PasswordHash } from "../../src/domain/user/passwordHash.js";
 import type { User } from "../../src/domain/user/user.js";
 import { UserEmail } from "../../src/domain/user/userEmail.js";
@@ -101,7 +103,7 @@ const bookedEvent = Appointment.book({
   ownerId: ids.owner,
   petId: ids.pet,
   scheduledAt: paymentAt,
-  reason: Sensitive.of("private reason"),
+  reason: AppointmentReason.schema.parse("private reason"),
 });
 const checkedInEvent = Appointment.checkIn({
   eventId: EventId.schema.parse("61000000-0000-4000-8000-000000000015"),
@@ -120,8 +122,8 @@ const paidEvent = Appointment.recordPayment({
 })(
   examinationStartedEvent.aggregateState,
   {
-    diagnosis: Sensitive.of("private diagnosis"),
-    treatment: Sensitive.of("private treatment"),
+    diagnosis: Diagnosis.schema.parse("private diagnosis"),
+    treatment: Treatment.schema.parse("private treatment"),
     amount: PaymentAmount.schema.parse(4800),
   },
 );
@@ -136,11 +138,6 @@ const candidate = {
   appointment: paidEvent.aggregateState,
   owner,
   examResult,
-  context: {
-    eventId: ids.paymentEvent,
-    occurredAt: paymentAt,
-    actorUserId: ids.receptionist,
-  },
 } as const satisfies FollowUpCandidate;
 
 describe("follow-up use cases", () => {
@@ -409,13 +406,16 @@ describe("follow-up use cases", () => {
       },
     }).run({ actorUserId: ids.veterinarian });
 
-    expect(result._unsafeUnwrap().followUps[0]).toMatchObject({
+    const followUp = result._unsafeUnwrap().followUps[0];
+    expect(followUp).toMatchObject({
       appointmentId: ids.appointment,
       petId: ids.pet,
-      ownerName: "Owner Secret",
-      ownerPhone: "090-9999-9999",
       requested: false,
     });
+    expect(followUp?.ownerName?.unwrap()).toBe("Owner Secret");
+    expect(followUp?.ownerPhone.unwrap()).toBe("090-9999-9999");
+    expect(JSON.stringify(followUp)).not.toContain("Owner Secret");
+    expect(JSON.stringify(followUp)).not.toContain("090-9999-9999");
   });
 });
 

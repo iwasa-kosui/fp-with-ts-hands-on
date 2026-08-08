@@ -4,8 +4,8 @@ import type { EventContext } from "../aggregate/eventContext.js";
 import { Timestamp } from "../aggregate/timestamp.js";
 import { PetId } from "../pet/petId.js";
 import { schemaResult } from "../shared/schemaResult.js";
-import { Sensitive } from "../shared/sensitive.js";
 import { ExamId } from "./examId.js";
+import { ExamResultItem } from "./examResultItem.js";
 import {
   createExamResultDeleted,
   createExamResultRecorded,
@@ -20,7 +20,7 @@ const ExamResultSchema = z
     examId: ExamId.schema,
     petId: PetId.schema,
     collectedAt: Timestamp.schema,
-    items: z.array(z.string().trim().min(1).transform(Sensitive.of)).min(1).readonly(),
+    items: z.array(ExamResultItem.schema).min(1).readonly(),
     needsFollowUp: z.boolean().default(false),
   })
   .readonly();

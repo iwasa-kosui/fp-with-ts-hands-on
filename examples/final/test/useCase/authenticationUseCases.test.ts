@@ -24,9 +24,10 @@ import type {
 } from "../../src/domain/session/sessionStores.js";
 import type { SessionTokenGenerator } from "../../src/domain/session/sessionTokenGenerator.js";
 import { SessionTokenHash } from "../../src/domain/session/sessionTokenHash.js";
-import { Sensitive } from "../../src/domain/shared/sensitive.js";
+import { SessionTokenPlaintext } from "../../src/domain/session/sessionTokenPlaintext.js";
 import type { User } from "../../src/domain/user/user.js";
 import { PasswordHash } from "../../src/domain/user/passwordHash.js";
+import { PlaintextPassword } from "../../src/domain/user/plaintextPassword.js";
 import { UserEmail } from "../../src/domain/user/userEmail.js";
 import type { UserCreated } from "../../src/domain/user/userEvent.js";
 import { UserId } from "../../src/domain/user/userId.js";
@@ -63,13 +64,13 @@ const now = Timestamp.schema.parse("2026-08-09T01:30:00.000Z");
 const expiresAt = Timestamp.schema.parse("2026-08-09T09:30:00.000Z");
 const email = UserEmail.schema.parse("admin@example.test");
 const name = UserName.schema.parse("Clinic Admin");
-const password = Sensitive.of("correct horse battery staple");
-const wrongPassword = Sensitive.of("wrong password");
+const password = PlaintextPassword.schema.parse("correct horse battery staple");
+const wrongPassword = PlaintextPassword.schema.parse("wrong password");
 const dummyPasswordHash = PasswordHash.schema.parse(
   `scrypt$${"D".repeat(22)}==$${"E".repeat(86)}==`,
 );
 const token = {
-  plaintext: Sensitive.of("cookie-only-token"),
+  plaintext: SessionTokenPlaintext.schema.parse("a".repeat(64)),
   hash: SessionTokenHash.schema.parse("a".repeat(64)),
 } as const;
 const repositoryError = {

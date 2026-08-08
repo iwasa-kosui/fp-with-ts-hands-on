@@ -1,5 +1,4 @@
 import { describe, expect, test } from "vitest";
-import { Sensitive } from "../../src/domain/shared/sensitive.js";
 import { sql } from "drizzle-orm";
 
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
@@ -25,6 +24,8 @@ import type { EventContext } from "../../src/domain/aggregate/eventContext.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { Appointment } from "../../src/domain/appointment/appointment.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
+import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
 import { ExamResult } from "../../src/domain/examResult/examResult.js";
@@ -218,7 +219,7 @@ describe("SQLite event stores", () => {
       petId: ids.pet,
       ownerId: ids.owner,
       scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
-      reason: Sensitive.of("persistent cough"),
+      reason: AppointmentReason.schema.parse("persistent cough"),
     });
     const examResult = unwrap(ExamResult.parse({
       examId: ids.exam,
@@ -298,7 +299,7 @@ describe("SQLite event stores", () => {
       petId: ids.pet,
       ownerId: ids.owner,
       scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
-      reason: Sensitive.of("private reason"),
+      reason: AppointmentReason.schema.parse("private reason"),
     });
     await store.store(booked);
     const checkedIn = Appointment.checkIn(eventContext(41))(booked.aggregateState);
@@ -309,7 +310,7 @@ describe("SQLite event stores", () => {
     );
     const canceled = Appointment.cancel(eventContext(43))(
       checkedIn.aggregateState,
-      Sensitive.of("private cancellation"),
+      CancellationReason.schema.parse("private cancellation"),
     );
 
     const results = await Promise.all([store.store(started), store.store(canceled)]);
@@ -333,7 +334,7 @@ describe("SQLite event stores", () => {
       petId: ids.pet,
       ownerId: ids.owner,
       scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
-      reason: Sensitive.of("private reason"),
+      reason: AppointmentReason.schema.parse("private reason"),
     });
     await store.store(booked);
     const checkedIn = Appointment.checkIn(eventContext(51))(booked.aggregateState);
@@ -345,7 +346,7 @@ describe("SQLite event stores", () => {
       ),
       Appointment.cancel(eventContext(53))(
         checkedIn.aggregateState,
-        Sensitive.of("private cancellation"),
+        CancellationReason.schema.parse("private cancellation"),
       ),
     );
 

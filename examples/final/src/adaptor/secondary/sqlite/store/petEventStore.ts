@@ -40,7 +40,7 @@ const createPetProjectionEventStore = (db: SqliteDatabase) =>
               const values = {
                 petId: state.petId,
                 ownerId: state.ownerId,
-                name: state.name,
+                name: state.name.unwrap(),
                 species: state.species,
               };
               tx.insert(petsTable)

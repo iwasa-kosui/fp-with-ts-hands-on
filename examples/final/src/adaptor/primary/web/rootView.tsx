@@ -1,8 +1,10 @@
 import { serializePage, type PageObject, type RootView } from "@hono/inertia";
 import { renderToStaticMarkup } from "react-dom/server";
 
-const Document = ({ page }: Readonly<{ page: PageObject }>) => {
-  const isProduction = process.env.NODE_ENV === "production";
+const Document = ({
+  page,
+  isProduction,
+}: Readonly<{ page: PageObject; isProduction: boolean }>) => {
   const clientSource = isProduction
     ? "/static/client.js"
     : "/src/adaptor/primary/web/client.tsx";
@@ -30,5 +32,7 @@ const Document = ({ page }: Readonly<{ page: PageObject }>) => {
   );
 };
 
-export const rootView: RootView = (page) =>
-  `<!DOCTYPE html>${renderToStaticMarkup(<Document page={page} />)}`;
+export const createRootView = (isProduction: boolean): RootView => (page) =>
+  `<!DOCTYPE html>${renderToStaticMarkup(
+    <Document page={page} isProduction={isProduction} />,
+  )}`;

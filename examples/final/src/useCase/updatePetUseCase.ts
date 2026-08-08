@@ -12,6 +12,8 @@ import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
 import { Pet } from "../domain/pet/pet.js";
 import type { PetId } from "../domain/pet/petId.js";
+import type { PetName } from "../domain/pet/petName.js";
+import type { PetSpecies } from "../domain/pet/petSpecies.js";
 import type { PetByIdResolver } from "../domain/pet/petResolver.js";
 import type { PetUpdatedStore } from "../domain/pet/petStores.js";
 import type { UserId } from "../domain/user/userId.js";
@@ -22,14 +24,14 @@ import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 export type PetView = Readonly<{
   petId: PetId;
   ownerId: OwnerId;
-  name: string;
-  species: string;
+  name: PetName;
+  species: PetSpecies;
 }>;
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;
   petId: PetId;
-  name: string;
-  species: string;
+  name: PetName;
+  species: PetSpecies;
 }>;
 export type UseCaseOk = Readonly<{ pet: PetView }>;
 export type PetNotFound = Readonly<{ kind: "PetNotFound"; petId: PetId }>;

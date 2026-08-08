@@ -1,13 +1,13 @@
 import { Link } from "@inertiajs/react";
 
-import type { AppointmentView } from "../../../../../useCase/listAppointmentsUseCase.js";
 import type { SharedPageProps } from "../../pageProps.js";
+import type { AppointmentPageView } from "../../routes/appointmentRoutes.js";
 import Layout from "../Layout.js";
 
 type Props = SharedPageProps &
-  Readonly<{ appointments: readonly AppointmentView[] }>;
+  Readonly<{ appointments: readonly AppointmentPageView[] }>;
 
-const veterinarianName = (appointment: AppointmentView): string => {
+const veterinarianName = (appointment: AppointmentPageView): string => {
   switch (appointment.kind) {
     case "InExamination":
     case "Paid":

@@ -3,6 +3,7 @@ import type { Hono } from "hono";
 import type { GetDashboardUseCase } from "../../../../useCase/getDashboardUseCase.js";
 import type { InstallationStatusQuery } from "../../../../useCase/query/installationStatusQuery.js";
 import type { WebEnvironment } from "../pageProps.js";
+import { toAppointmentPageView } from "./appointmentRoutes.js";
 import { withSharedProps } from "../middleware/sharedProps.js";
 import {
   assertNever,
@@ -41,12 +42,15 @@ export const registerDashboardRoutes = (
             withSharedProps(context, {
               counts: dashboard.counts,
               activeAppointments: dashboard.activeAppointments.map(
-                (appointment) => ({
-                  appointmentId: appointment.appointmentId,
-                  kind: appointment.kind,
-                  petName: appointment.petName,
-                  scheduledAt: appointment.scheduledAt,
-                }),
+                (appointment) => {
+                  const pageView = toAppointmentPageView(appointment);
+                  return {
+                    appointmentId: pageView.appointmentId,
+                    kind: pageView.kind,
+                    petName: pageView.petName,
+                    scheduledAt: pageView.scheduledAt,
+                  };
+                },
               ),
             }),
           ),

@@ -15,6 +15,7 @@ import {
   type Scheduled,
 } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
+import type { AppointmentReason } from "../domain/appointment/appointmentReason.js";
 import type { AppointmentBookedStore, AppointmentConflict, AppointmentStoreError } from "../domain/appointment/appointmentStores.js";
 import type { Owner } from "../domain/owner/owner.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
@@ -24,7 +25,6 @@ import type { PetId } from "../domain/pet/petId.js";
 import type { PetByIdResolver } from "../domain/pet/petResolver.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
-import type { Sensitive } from "../domain/shared/sensitive.js";
 import { ensureCanManageClinic } from "./authorization.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 
@@ -33,7 +33,7 @@ export type UseCaseInput = Readonly<{
   ownerId: OwnerId;
   petId: PetId;
   scheduledAt: Timestamp;
-  reason: Sensitive<string>;
+  reason: AppointmentReason;
 }>;
 export type UseCaseOk = Readonly<{ appointment: Scheduled }>;
 export type OwnerNotFound = Readonly<{

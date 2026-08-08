@@ -13,7 +13,10 @@ import {
 import type { AppointmentId } from "./appointmentId.js";
 import type { PaymentAmount } from "./paymentAmount.js";
 import type { VeterinarianId } from "./veterinarianId.js";
-import type { Sensitive } from "../shared/sensitive.js";
+import type { AppointmentReason } from "./appointmentReason.js";
+import type { CancellationReason } from "./cancellationReason.js";
+import type { Diagnosis } from "./diagnosis.js";
+import type { Treatment } from "./treatment.js";
 
 export type Scheduled = Readonly<{
   kind: "Scheduled";
@@ -21,7 +24,7 @@ export type Scheduled = Readonly<{
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: Timestamp;
-  reason: Sensitive<string>;
+  reason: AppointmentReason;
 }>;
 
 export type CheckedIn = Readonly<{
@@ -30,7 +33,7 @@ export type CheckedIn = Readonly<{
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: Timestamp;
-  reason: Sensitive<string>;
+  reason: AppointmentReason;
   checkedInAt: Timestamp;
 }>;
 
@@ -40,7 +43,7 @@ export type InExamination = Readonly<{
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: Timestamp;
-  reason: Sensitive<string>;
+  reason: AppointmentReason;
   checkedInAt: Timestamp;
   veterinarianId: VeterinarianId;
   examinationStartedAt: Timestamp;
@@ -52,12 +55,12 @@ export type Paid = Readonly<{
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: Timestamp;
-  reason: Sensitive<string>;
+  reason: AppointmentReason;
   checkedInAt: Timestamp;
   veterinarianId: VeterinarianId;
   examinationStartedAt: Timestamp;
-  diagnosis: Sensitive<string>;
-  treatment: Sensitive<string>;
+  diagnosis: Diagnosis;
+  treatment: Treatment;
   amount: PaymentAmount;
   paidAt: Timestamp;
 }>;
@@ -68,7 +71,7 @@ export type Canceled = Readonly<{
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: Timestamp;
-  reason: Sensitive<string>;
+  reason: CancellationReason;
   canceledAt: Timestamp;
 }>;
 
@@ -78,8 +81,6 @@ export type BookAppointmentInput = Readonly<Omit<Scheduled, "kind">>;
 export type RecordPaymentInput = Readonly<
   Pick<Paid, "diagnosis" | "treatment" | "amount">
 >;
-export type CancelReason = Sensitive<string>;
-
 const book =
   (context: EventContext) =>
   (input: BookAppointmentInput): AppointmentBooked => {
@@ -164,7 +165,7 @@ const cancel =
   (context: EventContext) =>
   (
     appointment: Scheduled | CheckedIn,
-    reason: CancelReason,
+    reason: CancellationReason,
   ): AppointmentCanceled => {
     const aggregateState = {
       kind: "Canceled",

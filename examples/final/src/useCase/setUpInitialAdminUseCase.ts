@@ -14,7 +14,7 @@ import {
 import { Session } from "../domain/session/session.js";
 import type { SessionId } from "../domain/session/sessionId.js";
 import type { SessionTokenGenerator } from "../domain/session/sessionTokenGenerator.js";
-import type { Sensitive } from "../domain/shared/sensitive.js";
+import type { SessionTokenPlaintext } from "../domain/session/sessionTokenPlaintext.js";
 import { User } from "../domain/user/user.js";
 import type { UserEmail } from "../domain/user/userEmail.js";
 import type { UserId } from "../domain/user/userId.js";
@@ -40,7 +40,7 @@ export type UseCaseOk = Readonly<{
   userId: UserId;
   sessionId: SessionId;
   expiresAt: TimestampValue;
-  sessionToken: Sensitive<string>;
+  sessionToken: SessionTokenPlaintext;
 }>;
 
 export type { InitialAdminAlreadyExists } from "./persistence/initialAdminSetupStore.js";

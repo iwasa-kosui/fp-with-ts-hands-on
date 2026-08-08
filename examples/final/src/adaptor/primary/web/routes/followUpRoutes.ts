@@ -3,7 +3,10 @@ import { err, ok, ResultAsync, type Result } from "neverthrow";
 import { z } from "zod";
 
 import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
-import type { ListFollowUpsUseCase } from "../../../../useCase/listFollowUpsUseCase.js";
+import type {
+  FollowUpView,
+  ListFollowUpsUseCase,
+} from "../../../../useCase/listFollowUpsUseCase.js";
 import type { RequestFollowUpUseCase } from "../../../../useCase/requestFollowUpUseCase.js";
 import { withSharedProps } from "../middleware/sharedProps.js";
 import {
@@ -27,6 +30,21 @@ type FollowUpRouteDependencies = Readonly<{
   listFollowUps: ListFollowUpsUseCase;
   requestFollowUp: RequestFollowUpUseCase;
 }>;
+export type FollowUpPageView = Readonly<{
+  appointmentId: FollowUpView["appointmentId"];
+  petId: FollowUpView["petId"];
+  ownerName: string;
+  ownerPhone: string;
+  requested: boolean;
+}>;
+
+const toPageView = (followUp: FollowUpView): FollowUpPageView => ({
+  appointmentId: followUp.appointmentId,
+  petId: followUp.petId,
+  ownerName: followUp.ownerName?.unwrap() ?? "削除済み",
+  ownerPhone: followUp.ownerPhone.unwrap(),
+  requested: followUp.requested,
+});
 
 const requireClinicManager = (
   context: Context<WebEnvironment>,
@@ -73,7 +91,10 @@ const loadFollowUps = async (
       ({ followUps }) =>
         context.render(
           "FollowUps/Index",
-          withSharedProps(context, { followUps, errors }),
+          withSharedProps(context, {
+            followUps: followUps.map(toPageView),
+            errors,
+          }),
         ),
       (error) => {
         switch (error.kind) {
