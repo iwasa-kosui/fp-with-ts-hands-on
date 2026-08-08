@@ -45,8 +45,6 @@ export type UserDeleted = UserDomainEvent<
   Readonly<{ userId: UserId }>
 >;
 
-export type UserEvent = UserCreated | UserUpdated | UserPasswordReset | UserDeleted;
-
 const create = <
   TAggregateState extends User | undefined,
   TKind extends string,
@@ -71,4 +69,22 @@ const create = <
   actorUserId: context.actorUserId,
 });
 
-export const UserEvent = { create } as const;
+export const createUserCreated = (context: EventContext, user: User): UserCreated =>
+  create(context, user.userId, user, "UserCreated", "user.created", {
+    userId: user.userId,
+    role: user.kind,
+  });
+
+export const createUserUpdated = (context: EventContext, user: User): UserUpdated =>
+  create(context, user.userId, user, "UserUpdated", "user.updated", {
+    userId: user.userId,
+    role: user.kind,
+  });
+
+export const createUserPasswordReset = (context: EventContext, user: User): UserPasswordReset =>
+  create(context, user.userId, user, "UserPasswordReset", "user.password-reset", {
+    userId: user.userId,
+  });
+
+export const createUserDeleted = (context: EventContext, userId: UserId): UserDeleted =>
+  create(context, userId, undefined, "UserDeleted", "user.deleted", { userId });

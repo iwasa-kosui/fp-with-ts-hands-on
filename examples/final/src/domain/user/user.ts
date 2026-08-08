@@ -1,7 +1,16 @@
 import type { VeterinarianId } from "../appointment/veterinarianId.js";
 import type { EventContext } from "../aggregate/eventContext.js";
 import type { PasswordHash } from "./passwordHash.js";
-import { UserEvent, type UserCreated, type UserDeleted, type UserPasswordReset, type UserUpdated } from "./userEvent.js";
+import {
+  createUserCreated,
+  createUserDeleted,
+  createUserPasswordReset,
+  createUserUpdated,
+  type UserCreated,
+  type UserDeleted,
+  type UserPasswordReset,
+  type UserUpdated,
+} from "./userEvent.js";
 import type { UserEmail } from "./userEmail.js";
 import type { UserId } from "./userId.js";
 import type { UserName } from "./userName.js";
@@ -12,6 +21,7 @@ export type Admin = Readonly<{
   email: UserEmail;
   name: UserName;
   passwordHash: PasswordHash;
+  veterinarianId?: never;
 }>;
 
 export type Receptionist = Readonly<{
@@ -20,6 +30,7 @@ export type Receptionist = Readonly<{
   email: UserEmail;
   name: UserName;
   passwordHash: PasswordHash;
+  veterinarianId?: never;
 }>;
 
 export type Veterinarian = Readonly<{
@@ -39,28 +50,14 @@ export type UserProfile = Readonly<{
 }>;
 
 const create = (context: EventContext) => (user: User): UserCreated =>
-  UserEvent.create(
-    context,
-    user.userId,
-    user,
-    "UserCreated",
-    "user.created",
-    { userId: user.userId, role: user.kind },
-  );
+  createUserCreated(context, user);
 
 const update =
   (context: EventContext) =>
   (user: User, profile: UserProfile): UserUpdated => {
     const aggregateState = { ...user, ...profile } as const satisfies User;
 
-    return UserEvent.create(
-      context,
-      aggregateState.userId,
-      aggregateState,
-      "UserUpdated",
-      "user.updated",
-      { userId: aggregateState.userId, role: aggregateState.kind },
-    );
+    return createUserUpdated(context, aggregateState);
   };
 
 const resetPassword =
@@ -68,25 +65,11 @@ const resetPassword =
   (user: User, passwordHash: PasswordHash): UserPasswordReset => {
     const aggregateState = { ...user, passwordHash } as const satisfies User;
 
-    return UserEvent.create(
-      context,
-      aggregateState.userId,
-      aggregateState,
-      "UserPasswordReset",
-      "user.password-reset",
-      { userId: aggregateState.userId },
-    );
+    return createUserPasswordReset(context, aggregateState);
   };
 
 const remove = (context: EventContext) => (user: User): UserDeleted =>
-  UserEvent.create(
-    context,
-    user.userId,
-    undefined,
-    "UserDeleted",
-    "user.deleted",
-    { userId: user.userId },
-  );
+  createUserDeleted(context, user.userId);
 
 export const User = {
   create,

@@ -32,8 +32,6 @@ export type SessionDeleted = SessionDomainEvent<
   Readonly<{ sessionId: SessionId; userId: UserId }>
 >;
 
-export type SessionEvent = SessionCreated | SessionDeleted;
-
 const create = <
   TAggregateState extends Session | undefined,
   TKind extends string,
@@ -58,4 +56,14 @@ const create = <
   actorUserId: context.actorUserId,
 });
 
-export const SessionEvent = { create } as const;
+export const createSessionCreated = (context: EventContext, session: Session): SessionCreated =>
+  create(context, session.sessionId, session, "SessionCreated", "session.created", {
+    sessionId: session.sessionId,
+    userId: session.userId,
+  });
+
+export const createSessionDeleted = (context: EventContext, session: Session): SessionDeleted =>
+  create(context, session.sessionId, undefined, "SessionDeleted", "session.deleted", {
+    sessionId: session.sessionId,
+    userId: session.userId,
+  });

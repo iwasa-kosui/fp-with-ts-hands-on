@@ -11,6 +11,11 @@ import { UserEmail } from "../../src/domain/user/userEmail.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
 
+// @ts-expect-error 任意のユーザーイベントを作る generic factory は公開しません。
+import { UserEvent } from "../../src/domain/user/userEvent.js";
+// @ts-expect-error 任意のセッションイベントを作る generic factory は公開しません。
+import { SessionEvent } from "../../src/domain/session/sessionEvent.js";
+
 const userId = UserId.schema.parse("11111111-1111-4111-8111-111111111111");
 const veterinarianId = VeterinarianId.schema.parse(
   "22222222-2222-4222-8222-222222222222",
@@ -23,7 +28,9 @@ const context: EventContext = {
 };
 const email = UserEmail.schema.parse("vet@example.test");
 const name = UserName.schema.parse("Dr. Aki");
-const passwordHash = PasswordHash.schema.parse("salt:derived-key");
+const passwordHash = PasswordHash.schema.parse(
+  `scrypt$${"A".repeat(22)}==$${"A".repeat(86)}==`,
+);
 
 const admin = {
   kind: "Admin",
@@ -47,6 +54,30 @@ const veterinarian = {
   passwordHash,
   veterinarianId,
 } as const satisfies UserState;
+
+const predeclaredAdminWithVeterinarianId = {
+  kind: "Admin",
+  userId,
+  email,
+  name,
+  passwordHash,
+  veterinarianId,
+} as const;
+
+// @ts-expect-error Admin は veterinarianId を持てません。
+const invalidAdmin: UserState = predeclaredAdminWithVeterinarianId;
+
+const predeclaredReceptionistWithVeterinarianId = {
+  kind: "Receptionist",
+  userId,
+  email,
+  name,
+  passwordHash,
+  veterinarianId,
+} as const;
+
+// @ts-expect-error Receptionist は veterinarianId を持てません。
+const invalidReceptionist: UserState = predeclaredReceptionistWithVeterinarianId;
 
 // @ts-expect-error Veterinarian には veterinarianId が必要です。
 const invalidVeterinarian: UserState = {
@@ -72,7 +103,7 @@ describe("user aggregate", () => {
       actorUserId,
     });
     expect(JSON.stringify(event)).not.toContain("vet@example.test");
-    expect(JSON.stringify(event)).not.toContain("salt:derived-key");
+    expect(JSON.stringify(event)).not.toContain(passwordHash.unwrap());
   });
 
   test("evaluates permissions from the user role", () => {
@@ -80,5 +111,11 @@ describe("user aggregate", () => {
     expect(Permission.canManageUsers(receptionist)).toBe(false);
     expect(Permission.canStartExamination(veterinarian)).toBe(true);
     expect(Permission.canStartExamination(receptionist)).toBe(false);
+  });
+
+  test("rejects password hashes that are not bounded scrypt records", () => {
+    const malformed = `scrypt$${"A".repeat(23)}==$${"A".repeat(86)}==`;
+
+    expect(PasswordHash.parse(malformed).isErr()).toBe(true);
   });
 });
