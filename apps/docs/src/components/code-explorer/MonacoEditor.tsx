@@ -173,11 +173,6 @@ export const MonacoEditor = (props: EditorProps) => {
       });
       const nextRuntime: EditorRuntime = { ...resources, editor };
       runtime.current = nextRuntime;
-      updateHighlights(
-        nextRuntime,
-        resources.models.get(current.path),
-        current.highlights,
-      );
       setReady(true);
     };
 

@@ -37,6 +37,8 @@ const defaultSupportsRuntime = (): boolean =>
 
 const defaultRunnerFactory = (): CodeRunner => createWebContainerRunner();
 
+const noHighlights: readonly CodeHighlight[] = [];
+
 const phaseLabels: Readonly<Record<RunnerPhase, string>> = {
   booting: "実行環境を起動しています。",
   mounting: "教材ファイルを準備しています。",
@@ -243,7 +245,7 @@ export const CodeExplorer = ({
             typeFiles={typeFiles}
             disabled={isRunning}
             readOnly={isGuided}
-            highlights={selectedGuide?.highlights ?? []}
+            highlights={selectedGuide?.highlights ?? noHighlights}
             onChange={(value) => {
               if (isGuided) return;
               setContents((current) => ({ ...current, [selectedPath]: value }));
