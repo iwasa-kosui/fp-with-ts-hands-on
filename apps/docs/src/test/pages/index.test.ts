@@ -18,6 +18,18 @@ describe("home page", () => {
     expect(document.querySelector(".landing-hero__grid > .landing-eyebrow")).not.toBeNull();
     expect(document.querySelector(".copy-panel .landing-lead")).toBeNull();
     expect(document.querySelector(".landing-hero__grid > .landing-lead")).not.toBeNull();
-    expect(document.querySelector('a[href="/sessions/00-break-the-app/"]')).not.toBeNull();
+    const sessionLink = document.querySelector<HTMLAnchorElement>(
+      'a[href="/sessions/00-onboarding/"]',
+    );
+    expect(sessionLink).not.toBeNull();
+    expect(document.body.textContent).toContain(
+      "オンボーディング: 退職した先人のコードを引き継ぐ",
+    );
+    expect(document.querySelector("#sessions")?.textContent).toContain(
+      "業務と先人のコードを理解する",
+    );
+    expect(document.querySelector("#sessions")?.textContent).not.toContain(
+      "事故を再現",
+    );
   });
 });

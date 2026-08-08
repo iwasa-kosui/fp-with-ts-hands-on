@@ -5,9 +5,9 @@ import { createAstroContainer } from "../../test/render-astro";
 
 const cases = [
   {
-    slug: "00-break-the-app",
-    initialFile: "exercises/incident.test.ts",
-    description: "事故を再現するテストと開始 snapshot を編集して実行します。",
+    slug: "01-state-modeling",
+    initialFile: "exercises/state-modeling.test.ts",
+    description: "状態別の要求と作成対象を開始 snapshot で確認します。",
   },
   {
     slug: "final",

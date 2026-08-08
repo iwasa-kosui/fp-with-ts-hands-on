@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type * as Monaco from "monaco-editor";
+import type { CodeHighlight } from "../../code-explorer/code-guide";
 import type { EditorProps } from "./CodeExplorer";
 
 type MonacoApi = typeof Monaco;
@@ -15,6 +16,7 @@ type EditorResources = {
 type EditorRuntime = EditorResources & {
   editor: Monaco.editor.IStandaloneCodeEditor;
   changeSubscription?: Monaco.IDisposable;
+  highlightDecorations?: Monaco.editor.IEditorDecorationsCollection;
 };
 
 export const modelUriFor = (path: string): string => `file:///${path}`;
@@ -90,8 +92,53 @@ const synchronizeValue = (
   }
 };
 
+const updateHighlights = (
+  runtime: EditorRuntime,
+  model: Monaco.editor.ITextModel | undefined,
+  highlights: readonly CodeHighlight[],
+): void => {
+  runtime.highlightDecorations?.clear();
+  if (model === undefined || highlights.length === 0) return;
+
+  runtime.highlightDecorations = runtime.editor.createDecorationsCollection(
+    highlights.map(({ startLineNumber, endLineNumber }) => ({
+      range: new runtime.monaco.Range(
+        startLineNumber,
+        1,
+        endLineNumber,
+        model.getLineMaxColumn(endLineNumber),
+      ),
+      options: {
+        isWholeLine: true,
+        className: "code-explorer__highlighted-line",
+        linesDecorationsClassName: "code-explorer__highlighted-gutter",
+      },
+    })),
+  );
+  const first = highlights[0];
+  if (first !== undefined) {
+    runtime.editor.revealRangeInCenter(
+      new runtime.monaco.Range(
+        first.startLineNumber,
+        1,
+        first.endLineNumber,
+        1,
+      ),
+    );
+  }
+};
+
 export const MonacoEditor = (props: EditorProps) => {
-  const { path, value, files, typeFiles, disabled, onChange } = props;
+  const {
+    path,
+    value,
+    files,
+    typeFiles,
+    disabled,
+    readOnly,
+    highlights,
+    onChange,
+  } = props;
   const editorHost = useRef<HTMLDivElement>(null);
   const runtime = useRef<EditorRuntime>();
   const latestProps = useRef(props);
@@ -122,7 +169,7 @@ export const MonacoEditor = (props: EditorProps) => {
       const editor = monaco.editor.create(editorHost.current, {
         automaticLayout: true,
         model: resources.models.get(current.path) ?? null,
-        readOnly: current.disabled,
+        readOnly: current.disabled || current.readOnly,
       });
       const nextRuntime: EditorRuntime = { ...resources, editor };
       runtime.current = nextRuntime;
@@ -137,6 +184,7 @@ export const MonacoEditor = (props: EditorProps) => {
       if (current === undefined) return;
 
       current.changeSubscription?.dispose();
+      current.highlightDecorations?.clear();
       for (const disposable of current.extraLibs) disposable.dispose();
       current.editor.dispose();
       for (const model of current.ownedModels) model.dispose();
@@ -168,7 +216,8 @@ export const MonacoEditor = (props: EditorProps) => {
         onChangeRef.current(current.editor.getValue());
       }
     });
-  }, [path, ready]);
+    updateHighlights(current, model, highlights);
+  }, [highlights, path, ready]);
 
   useEffect(() => {
     const current = runtime.current;
@@ -185,14 +234,38 @@ export const MonacoEditor = (props: EditorProps) => {
   useEffect(() => {
     const current = runtime.current;
     if (!ready || current === undefined) return;
-    current.editor.updateOptions({ readOnly: disabled });
-  }, [disabled, ready]);
+    current.editor.updateOptions({ readOnly: disabled || readOnly });
+  }, [disabled, readOnly, ready]);
+
+  const sourceLines = value.split("\n");
 
   return (
     <div className="code-explorer__monaco">
       {ready ? null : (
         <pre aria-label={`コード: ${path}`}>
-          <code>{`${path}\n${value}`}</code>
+          <code>
+            <span className="code-explorer__source-path">{path}</span>
+            {sourceLines.map((line, index) => {
+              const lineNumber = index + 1;
+              const isHighlighted = highlights.some(
+                ({ startLineNumber, endLineNumber }) =>
+                  startLineNumber <= lineNumber && lineNumber <= endLineNumber,
+              );
+              return (
+                <span
+                  key={lineNumber}
+                  data-line={lineNumber}
+                  className={
+                    isHighlighted
+                      ? "code-explorer__source-line code-explorer__source-line--highlighted"
+                      : "code-explorer__source-line"
+                  }
+                >
+                  {line}
+                </span>
+              );
+            })}
+          </code>
         </pre>
       )}
       <div ref={editorHost} aria-label={`コードエディタ: ${path}`} />

@@ -1,6 +1,4 @@
 import { describe, expect, it } from "vitest";
-import BreakTheAppPage from "../../../pages/sessions/00-break-the-app.astro";
-import ReadTheIncidentPage from "../../../pages/sessions/00-read-the-incident.astro";
 import StateModelingPage from "../../../pages/sessions/01-state-modeling.astro";
 import BoundaryAndIdsPage from "../../../pages/sessions/02-boundary-and-ids.astro";
 import ResultErrorsPage from "../../../pages/sessions/03-result-errors.astro";
@@ -16,16 +14,6 @@ const parseStaticMarkup = (html: string): Document =>
   );
 
 const pages = [
-  {
-    slug: "00-break-the-app",
-    Page: BreakTheAppPage,
-    initialFile: "exercises/incident.test.ts",
-  },
-  {
-    slug: "00-read-the-incident",
-    Page: ReadTheIncidentPage,
-    initialFile: "test/setup.test.ts",
-  },
   {
     slug: "01-state-modeling",
     Page: StateModelingPage,

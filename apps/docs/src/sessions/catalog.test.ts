@@ -4,8 +4,7 @@ import { sessionBySlug, sessionNeighbors, sessionPath, sessions } from "./catalo
 describe("session catalog", () => {
   it("keeps the sessions and final example in workshop order", () => {
     expect(sessions.map(({ slug }) => slug)).toEqual([
-      "00-break-the-app",
-      "00-read-the-incident",
+      "00-onboarding",
       "01-state-modeling",
       "02-boundary-and-ids",
       "03-result-errors",
@@ -27,15 +26,15 @@ describe("session catalog", () => {
       "/sessions/01-state-modeling/",
     );
     expect(sessionNeighbors("01-state-modeling")).toEqual({
-      previous: sessions[1],
-      next: sessions[3],
+      previous: sessions[0],
+      next: sessions[2],
     });
     expect(sessionNeighbors("05-mini-integration")).toEqual({
-      previous: sessions[5],
-      next: sessions[7],
+      previous: sessions[4],
+      next: sessions[6],
     });
     expect(sessionNeighbors("final")).toEqual({
-      previous: sessions[6],
+      previous: sessions[5],
     });
   });
 });

@@ -12,8 +12,8 @@ describe("static site contract", () => {
       .filter((slug): slug is string => slug !== undefined)
       .sort();
 
-    expect(slugs).toHaveLength(8);
-    expect(sessions).toHaveLength(8);
+    expect(slugs).toHaveLength(7);
+    expect(sessions).toHaveLength(7);
     expect(slugs).toEqual(sessions.map(({ slug }) => slug).slice().sort());
   });
 
@@ -25,7 +25,7 @@ describe("static site contract", () => {
 
     expect(html).toContain("ページが見つかりません");
     expect(html).toContain('href="/"');
-    expect(html).toContain('href="/sessions/00-break-the-app/"');
+    expect(html).toContain('href="/sessions/00-onboarding/"');
     expect(scripts).toHaveLength(1);
     expect(scripts[0]?.textContent).toContain('document.querySelector("h1")');
     expect(document.querySelector("script[src], astro-island")).toBeNull();

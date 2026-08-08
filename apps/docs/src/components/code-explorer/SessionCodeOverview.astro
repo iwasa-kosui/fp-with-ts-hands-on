@@ -1,0 +1,24 @@
+---
+import { onboardingGuides } from "../../code-explorer/onboarding-guides";
+import { projectFilesFor } from "../../code-explorer/project-files";
+import { sessionWorkspaceFor } from "../../code-explorer/session-workspaces";
+import "../../styles/code-playground.css";
+import { CodeExplorer } from "./CodeExplorer";
+
+const slug = "00-onboarding";
+const workspace = sessionWorkspaceFor(slug);
+const projectFiles = projectFilesFor(slug);
+---
+
+<section class="session-code-overview code-playground" aria-labelledby="design-overview">
+  <h2 id="design-overview">先人のコードを眺める</h2>
+  <p>今日は修正せず、後続セッションで確認する設計課題の場所を把握します。</p>
+  <div data-code-explorer={workspace.slug} data-code-overview>
+    <CodeExplorer
+      client:load
+      workspace={workspace}
+      projectFiles={projectFiles}
+      guides={onboardingGuides}
+    />
+  </div>
+</section>

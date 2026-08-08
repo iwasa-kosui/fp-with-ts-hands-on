@@ -6,12 +6,17 @@ describe("resolveWorkerRoute", () => {
     expect(resolveWorkerRoute("/healthz")).toEqual({ kind: "health" });
   });
 
-  it.each(["/module-00", "/module-00/"])(
+  it.each([
+    "/module-00",
+    "/module-00/",
+    "/sessions/00-break-the-app/",
+    "/sessions/00-read-the-incident/",
+  ])(
     "redirects the legacy path %s",
     (pathname) => {
       expect(resolveWorkerRoute(pathname)).toEqual({
         kind: "redirect",
-        location: "/sessions/00-break-the-app/",
+        location: "/sessions/00-onboarding/",
       });
     },
   );

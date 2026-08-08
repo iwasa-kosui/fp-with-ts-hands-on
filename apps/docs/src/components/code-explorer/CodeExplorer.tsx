@@ -6,6 +6,7 @@ import {
   type RunnerUpdate,
 } from "../../code-explorer/runner";
 import { runModeFor, type RunMode } from "../../code-explorer/run-command";
+import type { CodeGuide, CodeHighlight } from "../../code-explorer/code-guide";
 import type { ProjectFiles, SessionWorkspace } from "../../code-explorer/types";
 import { FileTree } from "./FileTree";
 import { MonacoEditor } from "./MonacoEditor";
@@ -17,12 +18,15 @@ export type EditorProps = Readonly<{
   files: ProjectFiles;
   typeFiles: ProjectFiles;
   disabled: boolean;
+  readOnly: boolean;
+  highlights: readonly CodeHighlight[];
   onChange: (value: string) => void;
 }>;
 
 export type CodeExplorerProps = Readonly<{
   workspace: SessionWorkspace;
   projectFiles: ProjectFiles;
+  guides?: readonly CodeGuide[];
   Editor?: ComponentType<EditorProps>;
   runnerFactory?: () => CodeRunner;
   supportsRuntime?: () => boolean;
@@ -32,6 +36,8 @@ const defaultSupportsRuntime = (): boolean =>
   globalThis.crossOriginIsolated === true && typeof WebAssembly !== "undefined";
 
 const defaultRunnerFactory = (): CodeRunner => createWebContainerRunner();
+
+const noHighlights: readonly CodeHighlight[] = [];
 
 const phaseLabels: Readonly<Record<RunnerPhase, string>> = {
   booting: "実行環境を起動しています。",
@@ -49,11 +55,22 @@ const messageFrom = (error: unknown): string =>
 export const CodeExplorer = ({
   workspace,
   projectFiles,
+  guides,
   Editor = MonacoEditor,
   runnerFactory = defaultRunnerFactory,
   supportsRuntime = defaultSupportsRuntime,
 }: CodeExplorerProps) => {
-  const [selectedPath, setSelectedPath] = useState(workspace.initialFile);
+  const availableGuides = guides ?? [];
+  const [selectedGuideId, setSelectedGuideId] = useState(
+    availableGuides[0]?.id,
+  );
+  const selectedGuide = availableGuides.find(
+    ({ id }) => id === selectedGuideId,
+  );
+  const isGuided = selectedGuide !== undefined;
+  const [selectedPath, setSelectedPath] = useState(
+    selectedGuide?.path ?? workspace.initialFile,
+  );
   const [contents, setContents] = useState<ProjectFiles>(() => ({
     ...projectFiles,
   }));
@@ -174,59 +191,99 @@ export const CodeExplorer = ({
     }));
   };
 
+  const selectGuide = (guide: CodeGuide) => {
+    setSelectedGuideId(guide.id);
+    setSelectedPath(guide.path);
+  };
+
   return (
     <section className="code-explorer">
       <p>{workspace.description}</p>
       <div className="code-explorer__workspace">
-        <FileTree
-          paths={workspace.visibleFiles}
-          selectedPath={selectedPath}
-          dirtyPaths={dirtyPaths}
-          disabled={isRunning}
-          onSelect={setSelectedPath}
-        />
+        {isGuided ? (
+          <ol className="code-explorer__guides" aria-label="設計課題">
+            {availableGuides.map((guide, index) => (
+              <li key={guide.id}>
+                <button
+                  type="button"
+                  data-code-guide={guide.id}
+                  aria-pressed={guide.id === selectedGuideId}
+                  onClick={() => selectGuide(guide)}
+                >
+                  <span aria-hidden="true">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span>{guide.title}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <FileTree
+            paths={workspace.visibleFiles}
+            selectedPath={selectedPath}
+            dirtyPaths={dirtyPaths}
+            disabled={isRunning}
+            onSelect={setSelectedPath}
+          />
+        )}
         <div className="code-explorer__editor">
+          {isGuided ? (
+            <div className="code-explorer__guide-detail" aria-live="polite">
+              <p>
+                <strong>現在の設計:</strong> {selectedGuide.currentDesign}
+              </p>
+              <p>
+                <strong>将来困り得ること:</strong> {selectedGuide.futureRisk}
+              </p>
+            </div>
+          ) : null}
           <Editor
             path={selectedPath}
             value={contents[selectedPath] ?? ""}
             files={contents}
             typeFiles={typeFiles}
             disabled={isRunning}
-            onChange={(value) =>
-              setContents((current) => ({ ...current, [selectedPath]: value }))
-            }
+            readOnly={isGuided}
+            highlights={selectedGuide?.highlights ?? noHighlights}
+            onChange={(value) => {
+              if (isGuided) return;
+              setContents((current) => ({ ...current, [selectedPath]: value }));
+            }}
           />
-          <div className="code-explorer__actions">
-            <button
-              type="button"
-              data-action="reset"
-              disabled={isRunning}
-              onClick={resetSelectedFile}
-            >
-              選択中のファイルをリセット
-            </button>
-            <button
-              type="button"
-              data-action="run"
-              disabled={isRunning}
-              onClick={run}
-            >
-              実行
-            </button>
-            {isRunning ? (
+          {isGuided ? null : (
+            <div className="code-explorer__actions">
               <button
                 type="button"
-                data-action="stop"
-                aria-label="実行を停止"
-                onClick={stop}
+                data-action="reset"
+                disabled={isRunning}
+                onClick={resetSelectedFile}
               >
-                停止
+                選択中のファイルをリセット
               </button>
-            ) : null}
-          </div>
+              <button
+                type="button"
+                data-action="run"
+                disabled={isRunning}
+                onClick={run}
+              >
+                実行
+              </button>
+              {isRunning ? (
+                <button
+                  type="button"
+                  data-action="stop"
+                  aria-label="実行を停止"
+                  onClick={stop}
+                >
+                  停止
+                </button>
+              ) : null}
+            </div>
+          )}
         </div>
       </div>
-      <OutputPanel state={execution} />
+      {isGuided ? null : <OutputPanel state={execution} />}
     </section>
   );
 };

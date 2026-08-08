@@ -9,7 +9,7 @@ describe("SessionLayout", () => {
   it("keeps the mobile table of contents initially closed", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(SessionLayout, {
-      props: { session: sessions[2] },
+      props: { session: sessions[1] },
       slots: { toc: "ミッション", default: "本文" },
     });
     const document = new DOMParser().parseFromString(html, "text/html");
@@ -26,7 +26,7 @@ describe("SessionLayout", () => {
   it("renders the case file hero, authored toc, body, and session navigation", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(SessionLayout, {
-      props: { session: sessions[2] },
+      props: { session: sessions[1] },
       slots: {
         toc: markHTMLString('<ol><li><a href="#mission">ミッション</a></li></ol>'),
         default: markHTMLString('<section id="mission"><h2>ミッション</h2></section>'),
@@ -37,7 +37,7 @@ describe("SessionLayout", () => {
     expect(html).toContain("状態遷移を型にする");
     expect(html).toContain('aria-label="ページ内目次"');
     expect(html).toContain('<section id="mission"><h2>ミッション</h2></section>');
-    expect(html).toContain('/sessions/00-read-the-incident/');
+    expect(html).toContain('/sessions/00-onboarding/');
     expect(html).toContain('/sessions/02-boundary-and-ids/');
   });
 
