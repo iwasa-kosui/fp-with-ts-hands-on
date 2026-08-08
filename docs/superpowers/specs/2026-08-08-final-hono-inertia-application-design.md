@@ -20,6 +20,8 @@
 
 外部メール送信、外部認証、イベント再生による projection の再構築、デプロイ構成は対象外です。物理削除後も過去イベントを保持するため、削除を個人情報の完全消去としては扱いません。
 
+各 event store は最新の projection とイベント履歴を同じ transaction で永続化します。イベント履歴は監査用の read port から直接参照するだけで、aggregate の replay・rehydration やイベントの compaction には使用しません。
+
 ## 実行環境と採用ライブラリ
 
 - Node.js 20
@@ -314,4 +316,3 @@ cookie には `HttpOnly` と `SameSite=Lax` を設定します。本番相当の
 - PII とパスワードハッシュが Inertia props やイベント履歴画面へ出ないこと
 
 完了前に package 単体の test と typecheck に加え、リポジトリ全体の `pnpm typecheck`、`pnpm test`、`pnpm build` を実行します。
-

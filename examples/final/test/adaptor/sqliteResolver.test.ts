@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
 import { createAppointmentByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/appointmentResolver.js";
-import { createEventResolver } from "../../src/adaptor/secondary/sqlite/resolver/eventResolver.js";
+import { createEventHistoryReader } from "../../src/adaptor/secondary/sqlite/query/eventHistoryReader.js";
 import { createExamResultByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/examResultResolver.js";
 import {
   createUserByIdResolver,
@@ -98,7 +98,7 @@ describe("SQLite resolvers", () => {
     await createUserEventStore(db).store(event);
 
     const resolvedUser = await createUserByIdResolver(db).resolveById(userId);
-    const resolvedEvents = await createEventResolver(db).resolveAll();
+    const resolvedEvents = await createEventHistoryReader(db).list();
 
     expect(resolvedUser.isOk() && resolvedUser.value?.kind).toBe("Admin");
     expect(resolvedUser.isOk() && resolvedUser.value?.email.unwrap()).toBe("admin@example.test");
@@ -217,9 +217,11 @@ describe("SQLite resolvers", () => {
     migrateDatabase(db);
     insertDomainEvent(db, overrides);
 
-    const result = await createEventResolver(db).resolveAll();
+    const result = await createEventHistoryReader(db).list();
 
     expect(result.isErr()).toBe(true);
-    expect(result.isErr() && result.error.operation).toBe("EventResolver.resolveAll");
+    expect(result.isErr() && result.error.operation).toBe(
+      "EventHistoryReader.list",
+    );
   });
 });

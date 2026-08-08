@@ -1,7 +1,5 @@
 import { err, ok, type Result, type ResultAsync } from "neverthrow";
 
-import type { AnyDomainEvent } from "../domain/aggregate/domainEvent.js";
-import type { DomainEventResolver } from "../domain/aggregate/domainEventResolver.js";
 import type { EventId } from "../domain/aggregate/eventId.js";
 import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { Timestamp } from "../domain/aggregate/timestamp.js";
@@ -9,6 +7,10 @@ import type { User, Admin } from "../domain/user/user.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
+import type {
+  EventHistoryEntry,
+  EventHistoryReader,
+} from "./query/eventHistoryReader.js";
 
 const redacted = "[REDACTED]";
 const safeKeys = new Set([
@@ -53,7 +55,7 @@ export type UseCaseError = UnauthorizedError | UseCaseRepositoryError;
 export type UseCaseOutput = ResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
-  eventResolver: DomainEventResolver;
+  eventHistoryReader: EventHistoryReader;
 }>;
 export type ListEventsUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
@@ -92,7 +94,7 @@ const sanitizeRecord = (
         ]),
       )
     : undefined;
-const toView = (event: AnyDomainEvent): EventView => ({
+const toView = (event: EventHistoryEntry): EventView => ({
   eventId: event.eventId,
   aggregateId:
     typeof event.aggregateId === "string" ? event.aggregateId : redacted,
@@ -112,7 +114,7 @@ const run =
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureAdmin)
       .andThen(() =>
-        dependencies.eventResolver.resolveAll().mapErr(toRepositoryError),
+        dependencies.eventHistoryReader.list().mapErr(toRepositoryError),
       )
       .map((events) => ({ events: events.map(toView) }));
 

@@ -5,11 +5,11 @@ import {
   createSqliteDatabase,
   migrateDatabase,
 } from "../../src/adaptor/secondary/sqlite/db.js";
-import { createEventResolver } from "../../src/adaptor/secondary/sqlite/resolver/eventResolver.js";
+import { createEventHistoryReader } from "../../src/adaptor/secondary/sqlite/query/eventHistoryReader.js";
+import { createFollowUpRequestReader } from "../../src/adaptor/secondary/sqlite/query/followUpRequestReader.js";
 import { createAppointmentEventStore } from "../../src/adaptor/secondary/sqlite/store/appointmentEventStore.js";
 import { createFollowUpEventStore } from "../../src/adaptor/secondary/sqlite/store/followUpEventStore.js";
 import type { Clock } from "../../src/domain/aggregate/clock.js";
-import type { AnyDomainEvent } from "../../src/domain/aggregate/domainEvent.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { Appointment } from "../../src/domain/appointment/appointment.js";
@@ -30,6 +30,7 @@ import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
 import { ListEventsUseCase } from "../../src/useCase/listEventsUseCase.js";
 import { ListFollowUpsUseCase } from "../../src/useCase/listFollowUpsUseCase.js";
+import type { EventHistoryEntry } from "../../src/useCase/query/eventHistoryReader.js";
 import { RequestFollowUpUseCase } from "../../src/useCase/requestFollowUpUseCase.js";
 
 const ids = {
@@ -155,7 +156,7 @@ describe("follow-up use cases", () => {
     });
 
     expect(result._unsafeUnwrap().appointmentIds).toEqual([ids.appointment]);
-    const history = await createEventResolver(db).resolveAll();
+    const history = await createEventHistoryReader(db).list();
     const events = history._unsafeUnwrap();
     expect(events.map((event) => event.eventId)).toEqual([
       ids.paymentEvent,
@@ -166,6 +167,11 @@ describe("follow-up use cases", () => {
       actorUserId: ids.receptionist,
       eventName: "follow-up.requested",
     });
+    expect(
+      (
+        await createFollowUpRequestReader(db).listRequestedAppointmentIds()
+      )._unsafeUnwrap(),
+    ).toEqual([ids.appointment]);
   });
 
   test("validates every candidate before deduplication and stores no partial batch on mismatch", async () => {
@@ -284,7 +290,7 @@ describe("follow-up use cases", () => {
 
     expect(result.isErr() && result.error.kind).toBe("RepositoryError");
     expect(
-      (await createEventResolver(db).resolveAll())._unsafeUnwrap(),
+      (await createEventHistoryReader(db).list())._unsafeUnwrap(),
     ).toEqual([]);
   });
 
@@ -292,7 +298,9 @@ describe("follow-up use cases", () => {
     const result = await ListFollowUpsUseCase.create({
       userResolver,
       followUpResolver: { resolveCandidates: () => okAsync([candidate]) },
-      eventResolver: { resolveAll: () => okAsync([]) },
+      followUpRequestReader: {
+        listRequestedAppointmentIds: () => okAsync([]),
+      },
     }).run({ actorUserId: ids.veterinarian });
 
     expect(result._unsafeUnwrap().followUps[0]).toMatchObject({
@@ -307,7 +315,6 @@ describe("follow-up use cases", () => {
 
 describe("event history query", () => {
   const rawEvent = {
-    kind: "MaliciousEvent",
     eventId: ids.paymentEvent,
     aggregateId: ids.appointment,
     aggregateName: "Appointment",
@@ -329,28 +336,28 @@ describe("event history query", () => {
     },
     occurredAt: paymentAt,
     actorUserId: ids.receptionist,
-  } as const satisfies AnyDomainEvent;
+  } as const satisfies EventHistoryEntry;
 
   test("rejects non-Admin before resolving events", async () => {
-    let eventResolverCalls = 0;
+    let eventHistoryReaderCalls = 0;
     const result = await ListEventsUseCase.create({
       userResolver,
-      eventResolver: {
-        resolveAll: () => {
-          eventResolverCalls += 1;
+      eventHistoryReader: {
+        list: () => {
+          eventHistoryReaderCalls += 1;
           return okAsync([rawEvent]);
         },
       },
     }).run({ actorUserId: ids.receptionist });
 
     expect(result.isErr() && result.error.kind).toBe("Unauthorized");
-    expect(eventResolverCalls).toBe(0);
+    expect(eventHistoryReaderCalls).toBe(0);
   });
 
   test("returns metadata and only redacted/sanitized state and payload", async () => {
     const result = await ListEventsUseCase.create({
       userResolver,
-      eventResolver: { resolveAll: () => okAsync([rawEvent]) },
+      eventHistoryReader: { list: () => okAsync([rawEvent]) },
     }).run({ actorUserId: ids.admin });
 
     const serialized = JSON.stringify(result._unsafeUnwrap());

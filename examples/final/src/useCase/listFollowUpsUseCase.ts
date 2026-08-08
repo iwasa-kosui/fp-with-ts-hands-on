@@ -1,7 +1,5 @@
 import type { ResultAsync } from "neverthrow";
 
-import type { AnyDomainEvent } from "../domain/aggregate/domainEvent.js";
-import type { DomainEventResolver } from "../domain/aggregate/domainEventResolver.js";
 import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import {
@@ -14,6 +12,7 @@ import type { PetId } from "../domain/pet/petId.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
+import type { FollowUpRequestReader } from "./query/followUpRequestReader.js";
 
 export type FollowUpView = Readonly<{
   appointmentId: AppointmentId;
@@ -34,7 +33,7 @@ export type UseCaseOutput = ResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
   followUpResolver: FollowUpResolver;
-  eventResolver: DomainEventResolver;
+  followUpRequestReader: FollowUpRequestReader;
 }>;
 export type ListFollowUpsUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
@@ -45,14 +44,9 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
   operation: error.operation,
 });
 const wasRequested = (
-  events: readonly AnyDomainEvent[],
+  requestedAppointmentIds: readonly AppointmentId[],
   appointmentId: AppointmentId,
-): boolean =>
-  events.some(
-    (event) =>
-      event.eventName === "follow-up.requested" &&
-      event.aggregateId === appointmentId,
-  );
+): boolean => requestedAppointmentIds.includes(appointmentId);
 const run =
   (dependencies: Dependencies) =>
   (input: UseCaseInput): UseCaseOutput =>
@@ -72,12 +66,16 @@ const run =
         })),
       )
       .andThen(({ candidates, targets }) =>
-        dependencies.eventResolver
-          .resolveAll()
+        dependencies.followUpRequestReader
+          .listRequestedAppointmentIds()
           .mapErr(toRepositoryError)
-          .map((events) => ({ candidates, targets, events })),
+          .map((requestedAppointmentIds) => ({
+            candidates,
+            targets,
+            requestedAppointmentIds,
+          })),
       )
-      .map(({ candidates, targets, events }) => ({
+      .map(({ candidates, targets, requestedAppointmentIds }) => ({
         followUps: targets.map((target) => {
           const candidate: FollowUpCandidate | undefined = candidates.find(
             (item) => item.appointment.appointmentId === target.appointmentId,
@@ -87,7 +85,10 @@ const run =
             petId: target.petId,
             ownerName: candidate?.owner.name.unwrap() ?? "削除済み",
             ownerPhone: target.ownerPhone.unwrap(),
-            requested: wasRequested(events, target.appointmentId),
+            requested: wasRequested(
+              requestedAppointmentIds,
+              target.appointmentId,
+            ),
           };
         }),
       }));

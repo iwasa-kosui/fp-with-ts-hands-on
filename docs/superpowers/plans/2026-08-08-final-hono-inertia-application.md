@@ -82,7 +82,6 @@
 - Create: `examples/final/drizzle.config.ts`
 - Create: `examples/final/.gitignore`
 - Create: `examples/final/src/domain/aggregate/domainEvent.ts`
-- Create: `examples/final/src/domain/aggregate/domainEventResolver.ts`
 - Create: `examples/final/src/domain/aggregate/aggregateStore.ts`
 - Create: `examples/final/src/domain/aggregate/eventContext.ts`
 - Create: `examples/final/src/domain/aggregate/clock.ts`
@@ -96,7 +95,7 @@
 - Create: `examples/final/test/domain/aggregate.test.ts`
 
 **Interfaces:**
-- Produces: `DomainEvent`, `AnyDomainEvent`, `DomainEventResolver`, `AggregateStore<TEvent>`, `EventContext`, `Clock`, `EventIdGenerator`, `EventId`, `Timestamp`, `UserId`, `RepositoryError`, `Sensitive<T>`, `schemaResult`
+- Produces: `DomainEvent`, `AnyDomainEvent`, `AggregateStore<TEvent>`, `EventContext`, `Clock`, `EventIdGenerator`, `EventId`, `Timestamp`, `UserId`, `RepositoryError`, `Sensitive<T>`, `schemaResult`
 
 - [ ] **Step 1: Add dependencies and scripts**
 
@@ -488,7 +487,10 @@ git commit -m "feat(final): 患者管理と電話フォローのイベントモ�
 - Create: `examples/final/src/adaptor/secondary/sqlite/resolver/appointmentResolver.ts`
 - Create: `examples/final/src/adaptor/secondary/sqlite/resolver/examResultResolver.ts`
 - Create: `examples/final/src/adaptor/secondary/sqlite/resolver/followUpResolver.ts`
-- Create: `examples/final/src/adaptor/secondary/sqlite/resolver/eventResolver.ts`
+- Create: `examples/final/src/useCase/query/eventHistoryReader.ts`
+- Create: `examples/final/src/useCase/query/followUpRequestReader.ts`
+- Create: `examples/final/src/adaptor/secondary/sqlite/query/eventHistoryReader.ts`
+- Create: `examples/final/src/adaptor/secondary/sqlite/query/followUpRequestReader.ts`
 - Create: `examples/final/src/adaptor/secondary/sqlite/store/userEventStore.ts`
 - Create: `examples/final/src/adaptor/secondary/sqlite/store/sessionEventStore.ts`
 - Create: `examples/final/src/adaptor/secondary/sqlite/store/ownerEventStore.ts`
@@ -502,7 +504,7 @@ git commit -m "feat(final): 患者管理と電話フォローのイベントモ�
 
 **Interfaces:**
 - Consumes: every resolver/store contract from Tasks 2, 3, and 5
-- Produces: `createSqliteDatabase(path)`, `migrateDatabase(db)`, concrete resolver and event store factories
+- Produces: `createSqliteDatabase(path)`, `migrateDatabase(db)`, concrete resolver, query reader, and event store factories
 
 - [ ] **Step 1: Write failing SQLite integration tests**
 
@@ -666,7 +668,7 @@ git commit -m "feat(final): 飼い主とペットの管理use caseを追加"
 - Create: `examples/final/test/useCase/followUpUseCases.test.ts`
 
 **Interfaces:**
-- Consumes: all clinic resolvers, event-specific stores, `DomainEventResolver`, `Clock`, and ID generators
+- Consumes: all clinic resolvers, event-specific stores, `EventHistoryReader`, `FollowUpRequestReader`, `Clock`, and ID generators
 - Produces: all remaining clinic command/query use cases and page DTOs
 
 - [ ] **Step 1: Write failing lifecycle and follow-up tests**

@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, test } from "vitest";
 
 import {
@@ -13,7 +16,7 @@ import {
   createExamResultByIdResolver,
   createExamResultByPetIdResolver,
 } from "../../src/adaptor/secondary/sqlite/resolver/examResultResolver.js";
-import { createEventResolver } from "../../src/adaptor/secondary/sqlite/resolver/eventResolver.js";
+import { createEventHistoryReader } from "../../src/adaptor/secondary/sqlite/query/eventHistoryReader.js";
 import { createFollowUpResolver } from "../../src/adaptor/secondary/sqlite/resolver/followUpResolver.js";
 import {
   createOwnerByIdResolver,
@@ -56,7 +59,6 @@ describe("public SQLite resolver architecture", () => {
       createAppointmentListResolver(db),
       createExamResultByIdResolver(db),
       createExamResultByPetIdResolver(db),
-      createEventResolver(db),
       createFollowUpResolver(db),
     ];
 
@@ -77,8 +79,34 @@ describe("public SQLite resolver architecture", () => {
       ["resolveAll"],
       ["resolveById"],
       ["resolveByPetId"],
-      ["resolveAll"],
       ["resolveCandidates"],
     ]);
+  });
+
+  test("keeps event history outside domain resolvers as a list-only reader", () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+
+    expect(Object.keys(createEventHistoryReader(db))).toEqual(["list"]);
+    expect(
+      existsSync(
+        fileURLToPath(
+          new URL(
+            "../../src/domain/aggregate/domainEventResolver.ts",
+            import.meta.url,
+          ),
+        ),
+      ),
+    ).toBe(false);
+    expect(
+      existsSync(
+        fileURLToPath(
+          new URL(
+            "../../src/adaptor/secondary/sqlite/resolver/eventResolver.ts",
+            import.meta.url,
+          ),
+        ),
+      ),
+    ).toBe(false);
   });
 });

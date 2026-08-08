@@ -2,8 +2,6 @@ import { asc } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
-import type { AnyDomainEvent } from "../../../../domain/aggregate/domainEvent.js";
-import type { DomainEventResolver } from "../../../../domain/aggregate/domainEventResolver.js";
 import { EventId } from "../../../../domain/aggregate/eventId.js";
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import { Timestamp } from "../../../../domain/aggregate/timestamp.js";
@@ -15,6 +13,10 @@ import { OwnerId } from "../../../../domain/owner/ownerId.js";
 import { PetId } from "../../../../domain/pet/petId.js";
 import { SessionId } from "../../../../domain/session/sessionId.js";
 import { UserId } from "../../../../domain/user/userId.js";
+import type {
+  EventHistoryEntry,
+  EventHistoryReader,
+} from "../../../../useCase/query/eventHistoryReader.js";
 import type { SqliteDatabase } from "../db.js";
 import { domainEventsTable } from "../schema.js";
 
@@ -293,38 +295,12 @@ const validateConsistency = (row: EventRow): void => {
   }
 };
 
-const eventKind = (eventName: EventRow["eventName"]): string => {
-  switch (eventName) {
-    case "user.created": return "UserCreated";
-    case "user.updated": return "UserUpdated";
-    case "user.password-reset": return "UserPasswordReset";
-    case "user.deleted": return "UserDeleted";
-    case "session.created": return "SessionCreated";
-    case "session.deleted": return "SessionDeleted";
-    case "owner.created": return "OwnerCreated";
-    case "owner.updated": return "OwnerUpdated";
-    case "owner.deleted": return "OwnerDeleted";
-    case "pet.created": return "PetCreated";
-    case "pet.updated": return "PetUpdated";
-    case "pet.deleted": return "PetDeleted";
-    case "appointment.booked": return "AppointmentBooked";
-    case "appointment.checked-in": return "AppointmentCheckedIn";
-    case "appointment.examination-started": return "ExaminationStarted";
-    case "appointment.payment-recorded": return "PaymentRecorded";
-    case "appointment.canceled": return "AppointmentCanceled";
-    case "exam-result.recorded": return "ExamResultRecorded";
-    case "exam-result.updated": return "ExamResultUpdated";
-    case "exam-result.deleted": return "ExamResultDeleted";
-    case "follow-up.requested": return "FollowUpRequested";
-    default: return eventName satisfies never;
-  }
-};
-
-const parseRow = (raw: typeof domainEventsTable.$inferSelect): AnyDomainEvent => {
+const parseRow = (
+  raw: typeof domainEventsTable.$inferSelect,
+): EventHistoryEntry => {
   const row = EventRowSchema.parse(raw);
   validateConsistency(row);
   return {
-    kind: eventKind(row.eventName),
     eventId: row.eventId,
     aggregateId: row.aggregateId,
     aggregateName: row.aggregateName,
@@ -336,15 +312,22 @@ const parseRow = (raw: typeof domainEventsTable.$inferSelect): AnyDomainEvent =>
   };
 };
 
-export const createEventResolver = (db: SqliteDatabase): DomainEventResolver => ({
-  resolveAll: () =>
+export const createEventHistoryReader = (
+  db: SqliteDatabase,
+): EventHistoryReader => ({
+  list: () =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() =>
-        db.select().from(domainEventsTable).orderBy(asc(domainEventsTable.occurredAt)).all().map(parseRow),
+        db
+          .select()
+          .from(domainEventsTable)
+          .orderBy(asc(domainEventsTable.occurredAt))
+          .all()
+          .map(parseRow),
       ),
       (cause): RepositoryError => ({
         kind: "RepositoryError",
-        operation: "EventResolver.resolveAll",
+        operation: "EventHistoryReader.list",
         cause,
       }),
     ),
