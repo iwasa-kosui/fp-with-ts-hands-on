@@ -55,9 +55,9 @@ const ExamResultSchema = z.object({
   item: z.string().trim().min(1).max(2_000).transform(Sensitive.of),
   needsFollowUp: z.preprocess(
     (value) =>
-      value === undefined || value === "false" || value === false
+      value === undefined || value === "0" || value === "false" || value === false
         ? false
-        : value === "true" || value === "on" || value === true
+        : value === "1" || value === "true" || value === "on" || value === true
           ? true
           : value,
     z.boolean(),

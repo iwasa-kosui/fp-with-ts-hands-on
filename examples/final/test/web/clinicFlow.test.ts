@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { objectToFormData } from "@inertiajs/core";
 import { describe, expect, test } from "vitest";
 
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
@@ -76,6 +77,21 @@ const post = (
       "Content-Type": "application/x-www-form-urlencoded",
       Origin: "http://localhost",
       ...(cookie === undefined ? {} : { Cookie: cookie }),
+    },
+  });
+const postInertiaFormData = (
+  harness: Harness,
+  path: string,
+  values: Parameters<typeof objectToFormData>[0],
+  cookie: string,
+) =>
+  harness.app.request(path, {
+    method: "POST",
+    body: objectToFormData(values),
+    headers: {
+      ...inertiaHeaders,
+      Origin: "http://localhost",
+      Cookie: cookie,
     },
   });
 const page = (harness: Harness, path: string, cookie: string) =>
@@ -279,18 +295,33 @@ describe("clinic workflow routes", () => {
     });
     expect(harness.database.select().from(examResultsTable).all()).toHaveLength(0);
 
-    const examResult = await post(
+    const noFollowUp = await postInertiaFormData(
+      harness,
+      `/appointments/${appointment.appointmentId}/exam-results`,
+      {
+        petId: pet.petId,
+        collectedAt: "2026-08-09T02:00:00.000Z",
+        item: "Routine finding",
+        needsFollowUp: false,
+      },
+      veterinarianCookie,
+    );
+    expect(noFollowUp.status).toBe(303);
+    expect(harness.database.select().from(examResultsTable).all()).toHaveLength(1);
+
+    const examResult = await postInertiaFormData(
       harness,
       `/appointments/${appointment.appointmentId}/exam-results`,
       {
         petId: pet.petId,
         collectedAt: "2026-08-09T02:00:00.000Z",
         item: "Highly sensitive clinical finding",
-        needsFollowUp: "true",
+        needsFollowUp: true,
       },
       veterinarianCookie,
     );
     expect(examResult.status).toBe(303);
+    expect(harness.database.select().from(examResultsTable).all()).toHaveLength(2);
 
     harness.setTime("2026-08-09T02:30:00.000Z");
     const paid = await post(
