@@ -57,18 +57,11 @@ describe("owner and pet aggregates", () => {
 
     if (false) {
       // @ts-expect-error Event unions expose no generic factory.
-      OwnerEventModule.create(createdContext, owner.ownerId, owner, "OwnerCreated", "owner.created");
+      OwnerEventModule.create;
       // @ts-expect-error Event unions expose no generic factory.
-      PetEventModule.create(createdContext, pet.petId, pet.ownerId, pet, "PetCreated", "pet.created");
+      PetEventModule.create;
       // @ts-expect-error Event unions expose no generic factory.
-      ExamResultEventModule.create(
-        createdContext,
-        result.examId,
-        result.petId,
-        result,
-        "ExamResultRecorded",
-        "exam-result.recorded",
-      );
+      ExamResultEventModule.create;
     }
 
     expect([
