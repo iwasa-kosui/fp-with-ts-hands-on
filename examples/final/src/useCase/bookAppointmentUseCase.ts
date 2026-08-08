@@ -24,6 +24,7 @@ import type { PetId } from "../domain/pet/petId.js";
 import type { PetByIdResolver } from "../domain/pet/petResolver.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
+import type { Sensitive } from "../domain/shared/sensitive.js";
 import { ensureCanManageClinic } from "./authorization.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 
@@ -32,7 +33,7 @@ export type UseCaseInput = Readonly<{
   ownerId: OwnerId;
   petId: PetId;
   scheduledAt: Timestamp;
-  reason: string;
+  reason: Sensitive<string>;
 }>;
 export type UseCaseOk = Readonly<{ appointment: Scheduled }>;
 export type OwnerNotFound = Readonly<{

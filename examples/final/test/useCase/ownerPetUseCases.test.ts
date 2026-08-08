@@ -29,6 +29,7 @@ import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
 import type { AppointmentByPetIdResolver } from "../../src/domain/appointment/appointmentResolver.js";
 import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
+import { Sensitive } from "../../src/domain/shared/sensitive.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
 import {
   Owner,
@@ -137,7 +138,7 @@ const scheduled = {
   ownerId: ids.owner,
   petId: ids.pet,
   scheduledAt: now,
-  reason: "checkup",
+  reason: Sensitive.of("checkup"),
 } as const satisfies Appointment;
 const otherOwner = {
   ...owner,
@@ -570,8 +571,8 @@ describe("owner and pet management use cases", () => {
         "86000000-0000-4000-8000-000000000001",
       ),
       examinationStartedAt: now,
-      diagnosis: "healthy",
-      treatment: "none",
+      diagnosis: Sensitive.of("healthy"),
+      treatment: Sensitive.of("none"),
       amount: PaymentAmount.schema.parse(1000),
       paidAt: now,
     } as const satisfies Appointment;

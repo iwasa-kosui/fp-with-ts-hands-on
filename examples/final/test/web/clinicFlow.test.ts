@@ -336,12 +336,16 @@ describe("clinic workflow routes", () => {
       `/appointments/${appointment.appointmentId}`,
       receptionistCookie,
     );
-    await expect(paidPage.json()).resolves.toMatchObject({
+    const paidProps = await paidPage.json();
+    expect(paidProps).toMatchObject({
       props: {
-        appointment: { kind: "Paid", state: { diagnosis: "Dermatitis", treatment: "Topical care", amount: 12500 } },
+        appointment: { kind: "Paid", amount: 12500 },
         actions: { checkIn: false, cancel: false, startExamination: false, recordExamResult: false, recordPayment: false },
       },
     });
+    expect(JSON.stringify(paidProps)).not.toContain("Dermatitis");
+    expect(JSON.stringify(paidProps)).not.toContain("Topical care");
+    expect(paidProps.props.appointment).not.toHaveProperty("state");
   });
 
   test("enforces role boundaries before validation and returns actionable validation/conflict pages", async () => {
@@ -451,7 +455,8 @@ describe("clinic workflow routes", () => {
       `/appointments/${cancelable.appointmentId}`,
       adminCookie,
     );
-    await expect(canceledPage.json()).resolves.toMatchObject({
+    const canceledProps = await canceledPage.json();
+    expect(canceledProps).toMatchObject({
       props: {
         appointment: { kind: "Canceled" },
         actions: {
@@ -463,6 +468,9 @@ describe("clinic workflow routes", () => {
         },
       },
     });
+    expect(JSON.stringify(canceledProps)).not.toContain("Owner requested cancellation");
+    expect(canceledProps.props.appointment).not.toHaveProperty("state");
+    expect(canceledProps.props.appointment).not.toHaveProperty("reason");
   });
 
   test("requests follow-ups with fresh event identity and retains deleted relation labels", async () => {

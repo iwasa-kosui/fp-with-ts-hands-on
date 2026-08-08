@@ -13,6 +13,7 @@ import {
 import type { AppointmentId } from "./appointmentId.js";
 import type { PaymentAmount } from "./paymentAmount.js";
 import type { VeterinarianId } from "./veterinarianId.js";
+import type { Sensitive } from "../shared/sensitive.js";
 
 export type Scheduled = Readonly<{
   kind: "Scheduled";
@@ -20,7 +21,7 @@ export type Scheduled = Readonly<{
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: Timestamp;
-  reason: string;
+  reason: Sensitive<string>;
 }>;
 
 export type CheckedIn = Readonly<{
@@ -29,7 +30,7 @@ export type CheckedIn = Readonly<{
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: Timestamp;
-  reason: string;
+  reason: Sensitive<string>;
   checkedInAt: Timestamp;
 }>;
 
@@ -39,7 +40,7 @@ export type InExamination = Readonly<{
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: Timestamp;
-  reason: string;
+  reason: Sensitive<string>;
   checkedInAt: Timestamp;
   veterinarianId: VeterinarianId;
   examinationStartedAt: Timestamp;
@@ -51,12 +52,12 @@ export type Paid = Readonly<{
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: Timestamp;
-  reason: string;
+  reason: Sensitive<string>;
   checkedInAt: Timestamp;
   veterinarianId: VeterinarianId;
   examinationStartedAt: Timestamp;
-  diagnosis: string;
-  treatment: string;
+  diagnosis: Sensitive<string>;
+  treatment: Sensitive<string>;
   amount: PaymentAmount;
   paidAt: Timestamp;
 }>;
@@ -67,7 +68,7 @@ export type Canceled = Readonly<{
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: Timestamp;
-  reason: string;
+  reason: Sensitive<string>;
   canceledAt: Timestamp;
 }>;
 
@@ -77,7 +78,7 @@ export type BookAppointmentInput = Readonly<Omit<Scheduled, "kind">>;
 export type RecordPaymentInput = Readonly<
   Pick<Paid, "diagnosis" | "treatment" | "amount">
 >;
-export type CancelReason = string;
+export type CancelReason = Sensitive<string>;
 
 const book =
   (context: EventContext) =>

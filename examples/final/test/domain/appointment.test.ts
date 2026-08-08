@@ -13,6 +13,7 @@ import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
 import { PetId } from "../../src/domain/pet-id.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
+import { Sensitive } from "../../src/domain/shared/sensitive.js";
 
 const appointmentId = AppointmentId.schema.parse(
   "11111111-1111-4111-8111-111111111111",
@@ -25,6 +26,10 @@ const veterinarianId = VeterinarianId.schema.parse(
 const actorUserId = UserId.schema.parse("55555555-5555-4555-8555-555555555555");
 const scheduledAt = Timestamp.schema.parse("2026-08-30T06:00:00.000Z");
 const paymentAmount = PaymentAmount.schema.parse(4800);
+const visitReason = Sensitive.of("skin check");
+const diagnosis = Sensitive.of("dermatitis");
+const treatment = Sensitive.of("ointment");
+const cancellationReason = Sensitive.of("owner request");
 
 const context = (eventId: string, occurredAt: string): EventContext => ({
   eventId: EventId.schema.parse(eventId),
@@ -58,7 +63,7 @@ const booked = Appointment.book(bookedContext)({
   petId,
   ownerId,
   scheduledAt,
-  reason: "skin check",
+  reason: visitReason,
 });
 const checkedIn = Appointment.checkIn(checkedInContext)(booked.aggregateState);
 const examining = Appointment.startExamination(examinationContext)(
@@ -66,8 +71,8 @@ const examining = Appointment.startExamination(examinationContext)(
   veterinarianId,
 );
 const paid = Appointment.recordPayment(paymentContext)(examining.aggregateState, {
-  diagnosis: "dermatitis",
-  treatment: "ointment",
+  diagnosis,
+  treatment,
   amount: paymentAmount,
 });
 
@@ -77,8 +82,8 @@ const paidAppointment: Paid = paid.aggregateState;
 Appointment.startExamination(examinationContext)(paidAppointment, veterinarianId);
 
 const rawPaymentInput = {
-  diagnosis: "dermatitis",
-  treatment: "ointment",
+  diagnosis,
+  treatment,
   amount: 4800,
 };
 
@@ -86,6 +91,15 @@ const rawPaymentInput = {
 Appointment.recordPayment(paymentContext)(examining.aggregateState, rawPaymentInput);
 
 describe("appointment aggregate", () => {
+  test("redacts every clinical free-text field when serialized", () => {
+    const canceled = Appointment.cancel(canceledContext)(booked.aggregateState, cancellationReason);
+
+    expect(JSON.stringify(booked.aggregateState)).not.toContain("skin check");
+    expect(JSON.stringify(paid.aggregateState)).not.toContain("dermatitis");
+    expect(JSON.stringify(paid.aggregateState)).not.toContain('"ointment"');
+    expect(JSON.stringify(canceled.aggregateState)).not.toContain("owner request");
+  });
+
   test("books a scheduled appointment event with the resulting state", () => {
     expect(booked).toEqual({
       kind: "AppointmentBooked",
@@ -98,7 +112,7 @@ describe("appointment aggregate", () => {
         petId,
         ownerId,
         scheduledAt,
-        reason: "skin check",
+        reason: visitReason,
       },
       eventName: "appointment.booked",
       eventPayload: { appointmentId },
@@ -119,7 +133,7 @@ describe("appointment aggregate", () => {
         petId,
         ownerId,
         scheduledAt,
-        reason: "skin check",
+        reason: visitReason,
         checkedInAt: checkedInContext.occurredAt,
       },
       eventName: "appointment.checked-in",
@@ -141,7 +155,7 @@ describe("appointment aggregate", () => {
         petId,
         ownerId,
         scheduledAt,
-        reason: "skin check",
+        reason: visitReason,
         checkedInAt: checkedInContext.occurredAt,
         veterinarianId,
         examinationStartedAt: examinationContext.occurredAt,
@@ -165,12 +179,12 @@ describe("appointment aggregate", () => {
         petId,
         ownerId,
         scheduledAt,
-        reason: "skin check",
+        reason: visitReason,
         checkedInAt: checkedInContext.occurredAt,
         veterinarianId,
         examinationStartedAt: examinationContext.occurredAt,
-        diagnosis: "dermatitis",
-        treatment: "ointment",
+        diagnosis,
+        treatment,
         amount: paymentAmount,
         paidAt: paymentContext.occurredAt,
       },
@@ -182,7 +196,7 @@ describe("appointment aggregate", () => {
   });
 
   test("cancels an appointment event with the resulting state", () => {
-    const canceled = Appointment.cancel(canceledContext)(booked.aggregateState, "owner request");
+    const canceled = Appointment.cancel(canceledContext)(booked.aggregateState, cancellationReason);
 
     expect(canceled).toEqual({
       kind: "AppointmentCanceled",
@@ -195,7 +209,7 @@ describe("appointment aggregate", () => {
         petId,
         ownerId,
         scheduledAt,
-        reason: "owner request",
+        reason: cancellationReason,
         canceledAt: canceledContext.occurredAt,
       },
       eventName: "appointment.canceled",

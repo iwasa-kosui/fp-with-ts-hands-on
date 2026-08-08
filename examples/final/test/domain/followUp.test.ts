@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { Sensitive } from "../../src/domain/shared/sensitive.js";
 
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import type { EventContext } from "../../src/domain/aggregate/eventContext.js";
@@ -48,7 +49,7 @@ const paidAppointment = (() => {
     ownerId,
     petId,
     scheduledAt,
-    reason: "skin check",
+    reason: Sensitive.of("skin check"),
   });
   const checkedIn = Appointment.checkIn(
     context("88888888-8888-4888-8888-888888888888", "2026-08-30T06:20:00.000Z"),
@@ -60,8 +61,8 @@ const paidAppointment = (() => {
   return Appointment.recordPayment(
     context("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "2026-08-30T07:00:00.000Z"),
   )(examining.aggregateState, {
-    diagnosis: "skin inflammation",
-    treatment: "ointment",
+    diagnosis: Sensitive.of("skin inflammation"),
+    treatment: Sensitive.of("ointment"),
     amount: paymentAmount,
   }).aggregateState;
 })();
@@ -73,7 +74,7 @@ const scheduledAppointment = Appointment.book(
   ownerId,
   petId,
   scheduledAt,
-  reason: "skin check",
+  reason: Sensitive.of("skin check"),
 }).aggregateState;
 
 const candidate = (

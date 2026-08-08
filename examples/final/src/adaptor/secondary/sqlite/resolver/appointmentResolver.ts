@@ -14,6 +14,7 @@ import { PaymentAmount } from "../../../../domain/appointment/paymentAmount.js";
 import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js";
 import { OwnerId } from "../../../../domain/owner/ownerId.js";
 import { PetId } from "../../../../domain/pet/petId.js";
+import { Sensitive } from "../../../../domain/shared/sensitive.js";
 import type { SqliteDatabase } from "../db.js";
 import { appointmentsTable } from "../schema.js";
 
@@ -22,7 +23,7 @@ const baseShape = {
   petId: PetId.schema,
   ownerId: OwnerId.schema,
   scheduledAt: Timestamp.schema,
-  reason: z.string(),
+  reason: z.string().transform(Sensitive.of),
 };
 const AppointmentSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("Scheduled"), ...baseShape }),
@@ -44,8 +45,8 @@ const AppointmentSchema = z.discriminatedUnion("kind", [
     checkedInAt: Timestamp.schema,
     veterinarianId: VeterinarianId.schema,
     examinationStartedAt: Timestamp.schema,
-    diagnosis: z.string(),
-    treatment: z.string(),
+    diagnosis: z.string().transform(Sensitive.of),
+    treatment: z.string().transform(Sensitive.of),
     amount: PaymentAmount.schema,
     paidAt: Timestamp.schema,
   }),

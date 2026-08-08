@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { Sensitive } from "../../src/domain/shared/sensitive.js";
 
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
 import {
@@ -11,6 +12,7 @@ import {
   usersTable,
 } from "../../src/adaptor/secondary/sqlite/schema.js";
 import { createAppointmentEventStore } from "../../src/adaptor/secondary/sqlite/store/appointmentEventStore.js";
+import { createAppointmentByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/appointmentResolver.js";
 import { createExamResultEventStore } from "../../src/adaptor/secondary/sqlite/store/examResultEventStore.js";
 import { createFollowUpEventStore } from "../../src/adaptor/secondary/sqlite/store/followUpEventStore.js";
 import { createOwnerEventStore } from "../../src/adaptor/secondary/sqlite/store/ownerEventStore.js";
@@ -99,7 +101,7 @@ describe("SQLite event stores", () => {
       petId: ids.pet,
       ownerId: ids.owner,
       scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
-      reason: "persistent cough",
+      reason: Sensitive.of("persistent cough"),
     });
     const examResult = unwrap(ExamResult.parse({
       examId: ids.exam,
@@ -124,6 +126,12 @@ describe("SQLite event stores", () => {
     expect(await db.select().from(ownersTable)).toHaveLength(1);
     expect(await db.select().from(petsTable)).toHaveLength(1);
     expect(await db.select().from(appointmentsTable)).toHaveLength(1);
+    const appointmentRow = db.select().from(appointmentsTable).get();
+    expect(JSON.stringify(appointmentRow?.state)).toContain("persistent cough");
+    const resolvedAppointment = await createAppointmentByIdResolver(db).resolveById(ids.appointment);
+    expect(resolvedAppointment.isOk()).toBe(true);
+    expect(resolvedAppointment._unsafeUnwrap()?.reason.unwrap()).toBe("persistent cough");
+    expect(JSON.stringify(resolvedAppointment._unsafeUnwrap())).not.toContain("persistent cough");
     expect(await db.select().from(examResultsTable)).toHaveLength(1);
     const history = await db.select().from(domainEventsTable);
     expect(history).toHaveLength(7);

@@ -23,6 +23,7 @@ import type { FollowUpRequested } from "../../src/domain/followUp/followUpReques
 import { Owner } from "../../src/domain/owner/owner.js";
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
 import { PetId } from "../../src/domain/pet/petId.js";
+import { Sensitive } from "../../src/domain/shared/sensitive.js";
 import { PasswordHash } from "../../src/domain/user/passwordHash.js";
 import type { User } from "../../src/domain/user/user.js";
 import { UserEmail } from "../../src/domain/user/userEmail.js";
@@ -109,14 +110,14 @@ const paidEvent = Appointment.recordPayment({
         ownerId: ids.owner,
         petId: ids.pet,
         scheduledAt: paymentAt,
-        reason: "private reason",
+        reason: Sensitive.of("private reason"),
       }).aggregateState,
     ).aggregateState,
     ids.veterinarianId,
   ).aggregateState,
   {
-    diagnosis: "private diagnosis",
-    treatment: "private treatment",
+    diagnosis: Sensitive.of("private diagnosis"),
+    treatment: Sensitive.of("private treatment"),
     amount: PaymentAmount.schema.parse(4800),
   },
 );
@@ -321,9 +322,9 @@ describe("event history query", () => {
     aggregateState: {
       kind: "Paid",
       appointmentId: ids.appointment,
-      reason: "private reason",
-      diagnosis: "private diagnosis",
-      treatment: "private treatment",
+      reason: Sensitive.of("private reason"),
+      diagnosis: Sensitive.of("private diagnosis"),
+      treatment: Sensitive.of("private treatment"),
       passwordHash: "password hash",
       sessionToken: "session token",
       unknownSecret: "must not leak",

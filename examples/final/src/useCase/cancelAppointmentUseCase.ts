@@ -21,6 +21,7 @@ import type { AppointmentByIdResolver } from "../domain/appointment/appointmentR
 import type { AppointmentCanceledStore } from "../domain/appointment/appointmentStores.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
+import type { Sensitive } from "../domain/shared/sensitive.js";
 import { ensureCanManageClinic } from "./authorization.js";
 import {
   ensureAppointmentFound,
@@ -32,7 +33,7 @@ import {
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;
   appointmentId: AppointmentId;
-  reason: string;
+  reason: Sensitive<string>;
 }>;
 export type UseCaseOk = Readonly<{ appointment: Canceled }>;
 export type InvalidAppointmentState = Readonly<{

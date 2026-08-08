@@ -32,8 +32,11 @@ export type AppointmentView = Readonly<{
   veterinarianId?: VeterinarianId;
   veterinarianName?: string;
   scheduledAt: Timestamp;
-  reason: string;
-  state: Appointment;
+  checkedInAt?: Timestamp;
+  examinationStartedAt?: Timestamp;
+  amount?: number;
+  paidAt?: Timestamp;
+  canceledAt?: Timestamp;
 }>;
 export type UseCaseInput = Readonly<{ actorUserId: UserId }>;
 export type UseCaseOk = Readonly<{ appointments: readonly AppointmentView[] }>;
@@ -72,7 +75,7 @@ export const toAppointmentView =
       (user) =>
         user.kind === "Veterinarian" && user.veterinarianId === veterinarianId,
     );
-    const base = {
+    const base: AppointmentView = {
       appointmentId: appointment.appointmentId,
       kind: appointment.kind,
       ownerId: appointment.ownerId,
@@ -85,8 +88,18 @@ export const toAppointmentView =
         pets.find((pet) => pet.petId === appointment.petId)?.name ??
         deletedLabel,
       scheduledAt: appointment.scheduledAt,
-      reason: appointment.reason,
-      state: appointment,
+      ...(appointment.kind === "CheckedIn" || appointment.kind === "InExamination" || appointment.kind === "Paid"
+        ? { checkedInAt: appointment.checkedInAt }
+        : {}),
+      ...(appointment.kind === "InExamination" || appointment.kind === "Paid"
+        ? { examinationStartedAt: appointment.examinationStartedAt }
+        : {}),
+      ...(appointment.kind === "Paid"
+        ? { amount: appointment.amount, paidAt: appointment.paidAt }
+        : {}),
+      ...(appointment.kind === "Canceled"
+        ? { canceledAt: appointment.canceledAt }
+        : {}),
     } as const;
     return veterinarianId === undefined
       ? base

@@ -43,8 +43,8 @@ export default function AppointmentShow({
   }>({
     petId: appointment.petId,
     collectedAt:
-      appointment.state.kind === "InExamination"
-        ? appointment.state.examinationStartedAt
+      appointment.kind === "InExamination"
+        ? appointment.examinationStartedAt ?? appointment.scheduledAt
         : appointment.scheduledAt,
     item: "",
     needsFollowUp: false,
@@ -69,24 +69,21 @@ export default function AppointmentShow({
         <dt>予約日時</dt><dd>{appointment.scheduledAt}</dd>
         <dt>飼い主</dt><dd>{appointment.ownerName}</dd>
         <dt>ペット</dt><dd>{appointment.petName}</dd>
-        <dt>来院理由</dt><dd>{appointment.reason}</dd>
         <dt>担当獣医師</dt><dd>{appointment.veterinarianName ?? "未割当"}</dd>
-        {appointment.state.kind === "CheckedIn" || appointment.state.kind === "InExamination" || appointment.state.kind === "Paid" ? (
-          <><dt>受付日時</dt><dd>{appointment.state.checkedInAt}</dd></>
-        ) : null}
-        {appointment.state.kind === "InExamination" || appointment.state.kind === "Paid" ? (
-          <><dt>診察開始日時</dt><dd>{appointment.state.examinationStartedAt}</dd></>
-        ) : null}
-        {appointment.state.kind === "Paid" ? (
+        {appointment.checkedInAt === undefined ? null : (
+          <><dt>受付日時</dt><dd>{appointment.checkedInAt}</dd></>
+        )}
+        {appointment.examinationStartedAt === undefined ? null : (
+          <><dt>診察開始日時</dt><dd>{appointment.examinationStartedAt}</dd></>
+        )}
+        {appointment.kind === "Paid" ? (
           <>
-            <dt>診断</dt><dd>{appointment.state.diagnosis}</dd>
-            <dt>処置</dt><dd>{appointment.state.treatment}</dd>
-            <dt>支払額</dt><dd>{appointment.state.amount} 円</dd>
-            <dt>会計日時</dt><dd>{appointment.state.paidAt}</dd>
+            <dt>支払額</dt><dd>{appointment.amount} 円</dd>
+            <dt>会計日時</dt><dd>{appointment.paidAt}</dd>
           </>
         ) : null}
-        {appointment.state.kind === "Canceled" ? (
-          <><dt>キャンセル日時</dt><dd>{appointment.state.canceledAt}</dd></>
+        {appointment.kind === "Canceled" ? (
+          <><dt>キャンセル日時</dt><dd>{appointment.canceledAt}</dd></>
         ) : null}
       </dl>
 

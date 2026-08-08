@@ -3,7 +3,6 @@ import { err, ok, ResultAsync, type Result } from "neverthrow";
 import { z } from "zod";
 
 import { Timestamp } from "../../../../domain/aggregate/timestamp.js";
-import type { Appointment } from "../../../../domain/appointment/appointment.js";
 import {
   AppointmentId,
   type AppointmentId as AppointmentIdType,
@@ -44,7 +43,7 @@ const BookingSchema = z.object({
   ownerId: OwnerId.schema,
   petId: PetId.schema,
   scheduledAt: Timestamp.schema,
-  reason: z.string().trim().min(1).max(500),
+  reason: z.string().trim().min(1).max(500).transform(Sensitive.of),
 });
 const StartExaminationSchema = z.object({
   veterinarianId: VeterinarianId.schema.optional(),
@@ -64,12 +63,12 @@ const ExamResultSchema = z.object({
   ),
 });
 const PaymentSchema = z.object({
-  diagnosis: z.string().trim().min(1).max(500),
-  treatment: z.string().trim().min(1).max(500),
+  diagnosis: z.string().trim().min(1).max(500).transform(Sensitive.of),
+  treatment: z.string().trim().min(1).max(500).transform(Sensitive.of),
   amount: z.coerce.number().pipe(PaymentAmount.schema),
 });
 const CancelSchema = z.object({
-  reason: z.string().trim().min(1).max(500),
+  reason: z.string().trim().min(1).max(500).transform(Sensitive.of),
 });
 const AppointmentDetailErrorSchema = z.enum([
   "invalid-state",
@@ -169,7 +168,7 @@ const requireExaminer = (
 
 const actionsFor = (
   actor: AuthenticatedActor,
-  appointment: Appointment,
+  appointment: AppointmentView,
 ): AppointmentActions => {
   const manager =
     actor.user.kind === "Admin" || actor.user.kind === "Receptionist";
@@ -255,7 +254,7 @@ const renderAppointment = async (
           "Appointments/Show",
           withSharedProps(context, {
             appointment,
-            actions: actionsFor(actor.value, appointment.state),
+            actions: actionsFor(actor.value, appointment),
             veterinarianId:
               actor.value.user.kind === "Veterinarian"
                 ? actor.value.user.veterinarianId

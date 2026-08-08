@@ -21,6 +21,7 @@ import type { PaymentAmount } from "../domain/appointment/paymentAmount.js";
 import type { PaymentRecordedStore } from "../domain/appointment/appointmentStores.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
+import type { Sensitive } from "../domain/shared/sensitive.js";
 import { ensureCanManageClinic } from "./authorization.js";
 import {
   ensureAppointmentFound,
@@ -32,8 +33,8 @@ import {
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;
   appointmentId: AppointmentId;
-  diagnosis: string;
-  treatment: string;
+  diagnosis: Sensitive<string>;
+  treatment: Sensitive<string>;
   amount: PaymentAmount;
 }>;
 export type UseCaseOk = Readonly<{ appointment: Paid }>;

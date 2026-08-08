@@ -151,7 +151,7 @@ describe("appointment command use cases", () => {
       ownerId: ids.owner,
       petId: ids.pet,
       scheduledAt: times.scheduled,
-      reason: "persistent cough",
+      reason: Sensitive.of("persistent cough"),
     });
     expect(booked._unsafeUnwrap().appointment.kind).toBe("Scheduled");
 
@@ -210,8 +210,8 @@ describe("appointment command use cases", () => {
     }).run({
       actorUserId: ids.receptionist,
       appointmentId: ids.appointment,
-      diagnosis: "dermatitis",
-      treatment: "ointment",
+      diagnosis: Sensitive.of("dermatitis"),
+      treatment: Sensitive.of("ointment"),
       amount: PaymentAmount.schema.parse(4800),
     });
 
@@ -245,7 +245,7 @@ describe("appointment command use cases", () => {
       ownerId: ids.owner,
       petId: ids.otherPet,
       scheduledAt: times.scheduled,
-      reason: "checkup",
+      reason: Sensitive.of("checkup"),
     });
     expect(booking.isErr() && booking.error.kind).toBe("PetOwnerMismatch");
     expect(bookedEvents).toHaveLength(0);
@@ -269,7 +269,7 @@ describe("appointment command use cases", () => {
           ownerId: ids.owner,
           petId: ids.pet,
           scheduledAt: times.scheduled,
-          reason: "checkup",
+          reason: Sensitive.of("checkup"),
         }).aggregateState,
       ).aggregateState,
       ids.veterinarian,
@@ -331,7 +331,7 @@ describe("appointment command use cases", () => {
       ownerId: ids.owner,
       petId: ids.pet,
       scheduledAt: times.scheduled,
-      reason: "checkup",
+      reason: Sensitive.of("checkup"),
     }).aggregateState;
     const result = await CheckInAppointmentUseCase.create({
       userResolver,
@@ -360,7 +360,7 @@ describe("appointment command use cases", () => {
       ownerId: ids.owner,
       petId: ids.pet,
       scheduledAt: times.scheduled,
-      reason: "checkup",
+      reason: Sensitive.of("checkup"),
     }).aggregateState;
     const canceled = await CancelAppointmentUseCase.create({
       userResolver,
@@ -371,7 +371,7 @@ describe("appointment command use cases", () => {
     }).run({
       actorUserId: ids.receptionist,
       appointmentId: ids.appointment,
-      reason: "owner request",
+      reason: Sensitive.of("owner request"),
     });
     expect(canceled._unsafeUnwrap().appointment.kind).toBe("Canceled");
 
@@ -385,7 +385,7 @@ describe("appointment command use cases", () => {
     }).run({
       actorUserId: ids.receptionist,
       appointmentId: ids.appointment,
-      reason: "again",
+      reason: Sensitive.of("again"),
     });
     expect(conflict.isErr() && conflict.error.kind).toBe(
       "InvalidAppointmentState",
@@ -406,7 +406,7 @@ describe("appointment query use cases", () => {
       ownerId: ids.owner,
       petId: ids.pet,
       scheduledAt: times.scheduled,
-      reason: "private reason",
+      reason: Sensitive.of("private reason"),
     }).aggregateState;
     const checkedIn = Appointment.checkIn({
       eventId: eventIdGenerator().generate(),
@@ -424,8 +424,8 @@ describe("appointment query use cases", () => {
         occurredAt: times.now,
         actorUserId: ids.receptionist,
       })(examining, {
-        diagnosis: "private diagnosis",
-        treatment: "private treatment",
+        diagnosis: Sensitive.of("private diagnosis"),
+        treatment: Sensitive.of("private treatment"),
         amount: PaymentAmount.schema.parse(4800),
       }),
     );
@@ -459,7 +459,7 @@ describe("appointment query use cases", () => {
       ownerId: ids.owner,
       petId: ids.pet,
       scheduledAt: times.scheduled,
-      reason: "checkup",
+      reason: Sensitive.of("checkup"),
     }).aggregateState;
     const detail = await GetAppointmentUseCase.create({
       userResolver,

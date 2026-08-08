@@ -61,6 +61,45 @@ const safePayload = (event: AppointmentEvent): Readonly<Record<string, unknown>>
   }
 };
 
+const projectionState = (state: Appointment): Readonly<Record<string, unknown>> => {
+  const base = {
+    kind: state.kind,
+    appointmentId: state.appointmentId,
+    ownerId: state.ownerId,
+    petId: state.petId,
+    scheduledAt: state.scheduledAt,
+    reason: state.reason.unwrap(),
+  };
+  switch (state.kind) {
+    case "Scheduled":
+      return base;
+    case "CheckedIn":
+      return { ...base, checkedInAt: state.checkedInAt };
+    case "InExamination":
+      return {
+        ...base,
+        checkedInAt: state.checkedInAt,
+        veterinarianId: state.veterinarianId,
+        examinationStartedAt: state.examinationStartedAt,
+      };
+    case "Paid":
+      return {
+        ...base,
+        checkedInAt: state.checkedInAt,
+        veterinarianId: state.veterinarianId,
+        examinationStartedAt: state.examinationStartedAt,
+        diagnosis: state.diagnosis.unwrap(),
+        treatment: state.treatment.unwrap(),
+        amount: state.amount,
+        paidAt: state.paidAt,
+      };
+    case "Canceled":
+      return { ...base, canceledAt: state.canceledAt };
+    default:
+      return state satisfies never;
+  }
+};
+
 export const createAppointmentEventStore = (db: SqliteDatabase) => ({
   store: (...events: readonly AppointmentEvent[]) =>
     ResultAsync.fromPromise(
@@ -73,7 +112,7 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
               status: state.kind,
               ownerId: state.ownerId,
               petId: state.petId,
-              state,
+              state: projectionState(state),
             };
             tx.insert(appointmentsTable)
               .values(values)

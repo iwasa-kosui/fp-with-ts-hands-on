@@ -54,15 +54,6 @@ const scheduledView = {
   petId,
   petName: "Mugi",
   scheduledAt,
-  reason: "Annual checkup",
-  state: {
-    kind: "Scheduled" as const,
-    appointmentId,
-    ownerId,
-    petId,
-    scheduledAt,
-    reason: "Annual checkup",
-  },
 };
 
 describe("clinic page SSR", () => {
@@ -135,21 +126,16 @@ describe("clinic page SSR", () => {
     expect(scheduled).not.toContain("診察結果を記録");
     expect(scheduled).not.toContain("会計を記録");
 
-    const examiningState = {
-      ...scheduledView.state,
-      kind: "InExamination" as const,
-      checkedInAt: Timestamp.schema.parse("2026-08-09T01:30:00.000Z"),
-      veterinarianId,
-      examinationStartedAt: Timestamp.schema.parse("2026-08-09T02:00:00.000Z"),
-    };
+    const examinationStartedAt = Timestamp.schema.parse("2026-08-09T02:00:00.000Z");
     const examining = await renderPage(AppointmentShow, {
       ...shared("Veterinarian"),
       appointment: {
         ...scheduledView,
         kind: "InExamination",
-        veterinarianId: examiningState.veterinarianId,
+        checkedInAt: Timestamp.schema.parse("2026-08-09T01:30:00.000Z"),
+        veterinarianId,
         veterinarianName: "Clinic Vet",
-        state: examiningState,
+        examinationStartedAt,
       },
       actions: {
         checkIn: false,
@@ -158,7 +144,7 @@ describe("clinic page SSR", () => {
         recordExamResult: true,
         recordPayment: false,
       },
-      veterinarianId: examiningState.veterinarianId,
+      veterinarianId,
       errors: { item: "診察結果を確認してください。" },
     });
     expect(examining).toContain("診察結果を記録");
@@ -289,11 +275,19 @@ describe("Inertia security boundary", () => {
       adminRow.passwordHash,
       sessionRow.tokenHash,
       privateFinding,
+      "Private visit reason",
+      "Private diagnosis",
+      "Private treatment",
     ];
     for (const path of ["/", "/appointments", `/appointments/${appointment.appointmentId}`, "/events"]) {
       const response = await app.request(path, { headers: { ...inertiaHeaders, Cookie: adminCookie } });
-      const body = await response.text();
+      const page = await response.json();
+      const body = JSON.stringify(page);
       for (const value of forbiddenValues) expect(body).not.toContain(value);
+      if (path === "/appointments" || path.startsWith("/appointments/")) {
+        expect(body).not.toContain('"state"');
+        expect(body).not.toContain('"reason"');
+      }
     }
     const dashboard = await app.request("/", {
       headers: { ...inertiaHeaders, Cookie: adminCookie },
