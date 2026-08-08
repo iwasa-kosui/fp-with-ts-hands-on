@@ -16,6 +16,9 @@ export const createSqliteDatabase = (path: string): SqliteDatabase => {
   return drizzle(client, { schema: sqliteSchema });
 };
 
-export const migrateDatabase = (db: SqliteDatabase): void => {
-  migrate(db, { migrationsFolder });
+export const migrateDatabase = (
+  db: SqliteDatabase,
+  folder = migrationsFolder,
+): void => {
+  migrate(db, { migrationsFolder: folder });
 };

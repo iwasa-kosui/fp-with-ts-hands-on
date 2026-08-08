@@ -1,0 +1,80 @@
+:root {
+  color: #17312b;
+  background: #f5f1e8;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  color: white;
+  background: #174f43;
+}
+
+.brand {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+main {
+  width: min(52rem, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 3rem 0;
+}
+
+form {
+  display: grid;
+  gap: 1rem;
+  max-width: 30rem;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+input,
+button {
+  padding: 0.7rem;
+  font: inherit;
+}
+
+.error {
+  margin: -0.5rem 0 0;
+  color: #a12622;
+}
+
+.counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 1rem;
+}
+
+.counts div {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: white;
+}
+
+.counts dd {
+  margin: 0.25rem 0 0;
+  font-size: 2rem;
+  font-weight: 700;
+}

@@ -6,9 +6,15 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 export default defineConfig(({ mode }) => {
+  const inertiaPlugin = inertiaPages({
+    pagesDir: "src/adaptor/primary/web/pages",
+    outFile: "src/adaptor/primary/web/pages.gen.ts",
+    serverModule: "../../../app.js",
+  });
+
   if (mode === "client") {
     return {
-      plugins: [inertiaPages(), react()],
+      plugins: [inertiaPlugin, react()],
       build: {
         copyPublicDir: false,
         emptyOutDir: false,
@@ -26,7 +32,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
-      inertiaPages(),
+      inertiaPlugin,
       react(),
       devServer({ entry: "./src/app.ts", adapter: nodeAdapter }),
       build({
