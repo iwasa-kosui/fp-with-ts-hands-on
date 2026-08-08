@@ -1,5 +1,6 @@
 import { errAsync, okAsync } from "neverthrow";
 import { describe, expect, test } from "vitest";
+import { sql } from "drizzle-orm";
 
 import {
   createSqliteDatabase,
@@ -339,6 +340,7 @@ describe("follow-up use cases", () => {
     expect(
       (await createEventHistoryReader(db).list())._unsafeUnwrap(),
     ).toEqual([]);
+    expect(db.all(sql.raw("SELECT appointment_id FROM follow_up_request_claims"))).toEqual([]);
   });
 
   test("returns a typed conflict for duplicate direct requests and retains one history row", async () => {
@@ -362,6 +364,9 @@ describe("follow-up use cases", () => {
       appointmentId: ids.appointment,
     });
     expect((await createEventHistoryReader(db).list())._unsafeUnwrap()).toHaveLength(1);
+    expect(db.all(sql.raw("SELECT appointment_id FROM follow_up_request_claims"))).toEqual([
+      { appointment_id: ids.appointment },
+    ]);
   });
 
   test("rolls back a follow-up batch when one appointment was already requested", async () => {
@@ -390,6 +395,9 @@ describe("follow-up use cases", () => {
     const events = (await createEventHistoryReader(db).list())._unsafeUnwrap();
     expect(events).toHaveLength(1);
     expect(events[0]?.aggregateId).toBe(ids.appointment);
+    expect(db.all(sql.raw("SELECT appointment_id FROM follow_up_request_claims"))).toEqual([
+      { appointment_id: ids.appointment },
+    ]);
   });
 
   test("lists validated targets for shared clinic read access", async () => {

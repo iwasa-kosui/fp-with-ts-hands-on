@@ -77,20 +77,19 @@ const user = (name: string): UserState => ({
 });
 
 describe("SQLite event stores", () => {
-  test("fresh migrations install the partial follow-up uniqueness index", () => {
+  test("fresh migrations install an empty follow-up request claim projection", () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
 
     expect(
       db.all(sql.raw(
-        "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'follow_up_requested_appointment_unique'",
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'follow_up_request_claims'",
       ))[0],
-    ).toMatchObject({
-      sql: expect.stringContaining("WHERE `event_name` = 'follow-up.requested'"),
-    });
+    ).toEqual({ name: "follow_up_request_claims" });
+    expect(db.all(sql.raw("SELECT appointment_id FROM follow_up_request_claims"))).toEqual([]);
   });
 
-  test("the uniqueness migration upgrades legacy duplicate follow-up rows", () => {
+  test("the claim migration backfills legacy duplicates without rewriting audit history", () => {
     const db = createSqliteDatabase(":memory:");
     db.run(sql.raw(
       "CREATE TABLE domain_events (event_id text PRIMARY KEY NOT NULL, aggregate_id text NOT NULL, event_name text NOT NULL)",
@@ -126,11 +125,15 @@ describe("SQLite event stores", () => {
         db.all(sql.raw(
           "SELECT event_id FROM domain_events WHERE event_name = 'follow-up.requested'",
         )),
-      ).toEqual([{ event_id: "first" }]);
+      ).toEqual([{ event_id: "first" }, { event_id: "duplicate" }]);
+      expect(
+        db.all(sql.raw("SELECT appointment_id FROM follow_up_request_claims")),
+      ).toEqual([{ appointment_id: ids.appointment }]);
       expect(() =>
         db.run(sql`INSERT INTO domain_events (event_id, aggregate_id, event_name)
           VALUES (${"new-duplicate"}, ${ids.appointment}, ${"follow-up.requested"})`),
-      ).toThrow();
+      ).not.toThrow();
+      expect(db.all(sql.raw("SELECT event_id FROM domain_events"))).toHaveLength(3);
     } finally {
       rmSync(migrationFolder, { recursive: true, force: true });
     }
