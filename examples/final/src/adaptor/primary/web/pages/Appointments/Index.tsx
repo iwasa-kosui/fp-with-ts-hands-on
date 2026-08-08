@@ -7,6 +7,20 @@ import Layout from "../Layout.js";
 type Props = SharedPageProps &
   Readonly<{ appointments: readonly AppointmentView[] }>;
 
+const veterinarianName = (appointment: AppointmentView): string => {
+  switch (appointment.kind) {
+    case "InExamination":
+    case "Paid":
+      return appointment.veterinarianName;
+    case "Scheduled":
+    case "CheckedIn":
+    case "Canceled":
+      return "未割当";
+    default:
+      return appointment satisfies never;
+  }
+};
+
 export default function AppointmentsIndex({ auth, appointments }: Props) {
   const canBook =
     auth.user?.role === "Admin" || auth.user?.role === "Receptionist";
@@ -37,7 +51,7 @@ export default function AppointmentsIndex({ auth, appointments }: Props) {
                 <td>{appointment.kind}</td>
                 <td>{appointment.ownerName}</td>
                 <td>{appointment.petName}</td>
-                <td>{appointment.veterinarianName ?? "未割当"}</td>
+                <td>{veterinarianName(appointment)}</td>
               </tr>
             ))}
           </tbody>

@@ -6,6 +6,7 @@ import type { Appointment } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import type { AppointmentListResolver } from "../domain/appointment/appointmentResolver.js";
 import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
+import type { PaymentAmount } from "../domain/appointment/paymentAmount.js";
 import type { Owner } from "../domain/owner/owner.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
 import type { OwnerListResolver } from "../domain/owner/ownerResolver.js";
@@ -22,22 +23,47 @@ import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 
 const deletedLabel = "削除済み";
 
-export type AppointmentView = Readonly<{
+type AppointmentViewBase = Readonly<{
   appointmentId: AppointmentId;
-  kind: Appointment["kind"];
   ownerId: OwnerId;
   ownerName: string;
   petId: PetId;
   petName: string;
-  veterinarianId?: VeterinarianId;
-  veterinarianName?: string;
   scheduledAt: Timestamp;
-  checkedInAt?: Timestamp;
-  examinationStartedAt?: Timestamp;
-  amount?: number;
-  paidAt?: Timestamp;
-  canceledAt?: Timestamp;
 }>;
+type ScheduledAppointmentView = AppointmentViewBase & Readonly<{
+  kind: "Scheduled";
+}>;
+type CheckedInAppointmentView = AppointmentViewBase & Readonly<{
+  kind: "CheckedIn";
+  checkedInAt: Timestamp;
+}>;
+type InExaminationAppointmentView = AppointmentViewBase & Readonly<{
+  kind: "InExamination";
+  checkedInAt: Timestamp;
+  veterinarianId: VeterinarianId;
+  veterinarianName: string;
+  examinationStartedAt: Timestamp;
+}>;
+type PaidAppointmentView = AppointmentViewBase & Readonly<{
+  kind: "Paid";
+  checkedInAt: Timestamp;
+  veterinarianId: VeterinarianId;
+  veterinarianName: string;
+  examinationStartedAt: Timestamp;
+  amount: PaymentAmount;
+  paidAt: Timestamp;
+}>;
+type CanceledAppointmentView = AppointmentViewBase & Readonly<{
+  kind: "Canceled";
+  canceledAt: Timestamp;
+}>;
+export type AppointmentView =
+  | ScheduledAppointmentView
+  | CheckedInAppointmentView
+  | InExaminationAppointmentView
+  | PaidAppointmentView
+  | CanceledAppointmentView;
 export type UseCaseInput = Readonly<{ actorUserId: UserId }>;
 export type UseCaseOk = Readonly<{ appointments: readonly AppointmentView[] }>;
 export type UseCaseRepositoryError = Readonly<{
@@ -61,23 +87,11 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
   kind: "RepositoryError",
   operation: error.operation,
 });
-const veterinarianIdOf = (
-  appointment: Appointment,
-): VeterinarianId | undefined =>
-  appointment.kind === "InExamination" || appointment.kind === "Paid"
-    ? appointment.veterinarianId
-    : undefined;
 export const toAppointmentView =
   (owners: readonly Owner[], pets: readonly Pet[], users: readonly User[]) =>
   (appointment: Appointment): AppointmentView => {
-    const veterinarianId = veterinarianIdOf(appointment);
-    const veterinarian = users.find(
-      (user) =>
-        user.kind === "Veterinarian" && user.veterinarianId === veterinarianId,
-    );
-    const base: AppointmentView = {
+    const base = {
       appointmentId: appointment.appointmentId,
-      kind: appointment.kind,
       ownerId: appointment.ownerId,
       ownerName:
         owners
@@ -88,26 +102,57 @@ export const toAppointmentView =
         pets.find((pet) => pet.petId === appointment.petId)?.name ??
         deletedLabel,
       scheduledAt: appointment.scheduledAt,
-      ...(appointment.kind === "CheckedIn" || appointment.kind === "InExamination" || appointment.kind === "Paid"
-        ? { checkedInAt: appointment.checkedInAt }
-        : {}),
-      ...(appointment.kind === "InExamination" || appointment.kind === "Paid"
-        ? { examinationStartedAt: appointment.examinationStartedAt }
-        : {}),
-      ...(appointment.kind === "Paid"
-        ? { amount: appointment.amount, paidAt: appointment.paidAt }
-        : {}),
-      ...(appointment.kind === "Canceled"
-        ? { canceledAt: appointment.canceledAt }
-        : {}),
     } as const;
-    return veterinarianId === undefined
-      ? base
-      : {
+    switch (appointment.kind) {
+      case "Scheduled":
+        return { ...base, kind: appointment.kind } as const satisfies ScheduledAppointmentView;
+      case "CheckedIn":
+        return {
           ...base,
-          veterinarianId,
+          kind: appointment.kind,
+          checkedInAt: appointment.checkedInAt,
+        } as const satisfies CheckedInAppointmentView;
+      case "InExamination": {
+        const veterinarian = users.find(
+          (user) =>
+            user.kind === "Veterinarian" &&
+            user.veterinarianId === appointment.veterinarianId,
+        );
+        return {
+          ...base,
+          kind: appointment.kind,
+          checkedInAt: appointment.checkedInAt,
+          veterinarianId: appointment.veterinarianId,
           veterinarianName: veterinarian?.name.unwrap() ?? deletedLabel,
-        };
+          examinationStartedAt: appointment.examinationStartedAt,
+        } as const satisfies InExaminationAppointmentView;
+      }
+      case "Paid": {
+        const veterinarian = users.find(
+          (user) =>
+            user.kind === "Veterinarian" &&
+            user.veterinarianId === appointment.veterinarianId,
+        );
+        return {
+          ...base,
+          kind: appointment.kind,
+          checkedInAt: appointment.checkedInAt,
+          veterinarianId: appointment.veterinarianId,
+          veterinarianName: veterinarian?.name.unwrap() ?? deletedLabel,
+          examinationStartedAt: appointment.examinationStartedAt,
+          amount: appointment.amount,
+          paidAt: appointment.paidAt,
+        } as const satisfies PaidAppointmentView;
+      }
+      case "Canceled":
+        return {
+          ...base,
+          kind: appointment.kind,
+          canceledAt: appointment.canceledAt,
+        } as const satisfies CanceledAppointmentView;
+      default:
+        return appointment satisfies never;
+    }
   };
 const run =
   (dependencies: Dependencies) =>

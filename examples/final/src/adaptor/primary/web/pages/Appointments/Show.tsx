@@ -24,6 +24,33 @@ const submit = (form: ReturnType<typeof useForm>, path: string) =>
     form.post(path, { forceFormData: true, preserveScroll: true });
   };
 
+const stateDetails = (appointment: AppointmentView): React.ReactNode => {
+  switch (appointment.kind) {
+    case "Scheduled":
+      return null;
+    case "CheckedIn":
+      return <><dt>受付日時</dt><dd>{appointment.checkedInAt}</dd></>;
+    case "InExamination":
+      return <>
+        <dt>受付日時</dt><dd>{appointment.checkedInAt}</dd>
+        <dt>担当獣医師</dt><dd>{appointment.veterinarianName}</dd>
+        <dt>診察開始日時</dt><dd>{appointment.examinationStartedAt}</dd>
+      </>;
+    case "Paid":
+      return <>
+        <dt>受付日時</dt><dd>{appointment.checkedInAt}</dd>
+        <dt>担当獣医師</dt><dd>{appointment.veterinarianName}</dd>
+        <dt>診察開始日時</dt><dd>{appointment.examinationStartedAt}</dd>
+        <dt>支払額</dt><dd>{appointment.amount} 円</dd>
+        <dt>会計日時</dt><dd>{appointment.paidAt}</dd>
+      </>;
+    case "Canceled":
+      return <><dt>キャンセル日時</dt><dd>{appointment.canceledAt}</dd></>;
+    default:
+      return appointment satisfies never;
+  }
+};
+
 export default function AppointmentShow({
   actions,
   appointment,
@@ -44,7 +71,7 @@ export default function AppointmentShow({
     petId: appointment.petId,
     collectedAt:
       appointment.kind === "InExamination"
-        ? appointment.examinationStartedAt ?? appointment.scheduledAt
+        ? appointment.examinationStartedAt
         : appointment.scheduledAt,
     item: "",
     needsFollowUp: false,
@@ -69,22 +96,7 @@ export default function AppointmentShow({
         <dt>予約日時</dt><dd>{appointment.scheduledAt}</dd>
         <dt>飼い主</dt><dd>{appointment.ownerName}</dd>
         <dt>ペット</dt><dd>{appointment.petName}</dd>
-        <dt>担当獣医師</dt><dd>{appointment.veterinarianName ?? "未割当"}</dd>
-        {appointment.checkedInAt === undefined ? null : (
-          <><dt>受付日時</dt><dd>{appointment.checkedInAt}</dd></>
-        )}
-        {appointment.examinationStartedAt === undefined ? null : (
-          <><dt>診察開始日時</dt><dd>{appointment.examinationStartedAt}</dd></>
-        )}
-        {appointment.kind === "Paid" ? (
-          <>
-            <dt>支払額</dt><dd>{appointment.amount} 円</dd>
-            <dt>会計日時</dt><dd>{appointment.paidAt}</dd>
-          </>
-        ) : null}
-        {appointment.kind === "Canceled" ? (
-          <><dt>キャンセル日時</dt><dd>{appointment.canceledAt}</dd></>
-        ) : null}
+        {stateDetails(appointment)}
       </dl>
 
       {actions.checkIn ? (

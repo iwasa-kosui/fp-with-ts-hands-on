@@ -20,6 +20,7 @@ import FollowUpsIndex from "../../src/adaptor/primary/web/pages/FollowUps/Index.
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
+import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
 import { PetId } from "../../src/domain/pet/petId.js";
@@ -28,6 +29,7 @@ import {
   createApp,
   createApplicationDependencies,
 } from "../../src/app.js";
+import type { AppointmentView } from "../../src/useCase/listAppointmentsUseCase.js";
 
 const adminId = UserId.schema.parse("76000000-0000-4000-8000-000000000001");
 const vetId = UserId.schema.parse("76000000-0000-4000-8000-000000000002");
@@ -55,6 +57,25 @@ const scheduledView = {
   petName: "Mugi",
   scheduledAt,
 };
+const checkedInAt = Timestamp.schema.parse("2026-08-10T03:10:00.000Z");
+const examinationStartedAt = Timestamp.schema.parse("2026-08-10T03:20:00.000Z");
+const paidAt = Timestamp.schema.parse("2026-08-10T04:00:00.000Z");
+const canceledAt = Timestamp.schema.parse("2026-08-09T03:00:00.000Z");
+const paymentAmount = PaymentAmount.schema.parse(12_500);
+
+const incompletePaidView = {
+  ...scheduledView,
+  kind: "Paid" as const,
+  amount: paymentAmount,
+};
+// @ts-expect-error Paid requires the full safe chronology and veterinarian projection.
+const invalidPaidView: AppointmentView = incompletePaidView;
+
+const scheduledWithPaidState = {
+  ...scheduledView,
+  // @ts-expect-error Scheduled cannot carry Paid-only state fields.
+  paidAt,
+} as const satisfies AppointmentView;
 
 describe("clinic page SSR", () => {
   test("renders exact role-aware navigation", async () => {
@@ -150,6 +171,71 @@ describe("clinic page SSR", () => {
     expect(examining).toContain("診察結果を記録");
     expect(examining).toContain('aria-describedby="item-error"');
     expect(examining).not.toContain("会計を記録");
+  });
+
+  test("renders exact safe detail fields for every appointment state", async () => {
+    const noActions = {
+      checkIn: false,
+      cancel: false,
+      startExamination: false,
+      recordExamResult: false,
+      recordPayment: false,
+    } as const;
+    const checkedInView = {
+      ...scheduledView,
+      kind: "CheckedIn" as const,
+      checkedInAt,
+    } satisfies AppointmentView;
+    const examiningView = {
+      ...scheduledView,
+      kind: "InExamination" as const,
+      checkedInAt,
+      veterinarianId,
+      veterinarianName: "Clinic Vet",
+      examinationStartedAt,
+    } satisfies AppointmentView;
+    const paidView = {
+      ...scheduledView,
+      kind: "Paid" as const,
+      checkedInAt,
+      veterinarianId,
+      veterinarianName: "Clinic Vet",
+      examinationStartedAt,
+      amount: paymentAmount,
+      paidAt,
+    } satisfies AppointmentView;
+    const canceledView = {
+      ...scheduledView,
+      kind: "Canceled" as const,
+      canceledAt,
+    } satisfies AppointmentView;
+
+    const scheduled = await renderPage(AppointmentShow, {
+      ...shared("Admin"), appointment: scheduledView, actions: noActions, veterinarianId: null,
+    });
+    const checkedIn = await renderPage(AppointmentShow, {
+      ...shared("Admin"), appointment: checkedInView, actions: noActions, veterinarianId: null,
+    });
+    const examining = await renderPage(AppointmentShow, {
+      ...shared("Admin"), appointment: examiningView, actions: noActions, veterinarianId: null,
+    });
+    const paid = await renderPage(AppointmentShow, {
+      ...shared("Admin"), appointment: paidView, actions: noActions, veterinarianId: null,
+    });
+    const canceled = await renderPage(AppointmentShow, {
+      ...shared("Admin"), appointment: canceledView, actions: noActions, veterinarianId: null,
+    });
+
+    expect(scheduled).not.toContain("担当獣医師");
+    expect(checkedIn).toContain(checkedInAt);
+    expect(checkedIn).not.toContain("診察開始日時");
+    expect(examining).toContain(examinationStartedAt);
+    expect(examining).toContain("Clinic Vet");
+    expect(paid).toContain(`${paymentAmount}`);
+    expect(paid).toContain("支払額");
+    expect(paid).toContain(paidAt);
+    expect(canceled).toContain(canceledAt);
+    expect(canceled).not.toContain("受付日時");
   });
 
   test("renders lists and redacted event fields structurally without rebuilding hidden values", async () => {
