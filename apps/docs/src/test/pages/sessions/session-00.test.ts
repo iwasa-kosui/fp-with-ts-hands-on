@@ -1,7 +1,5 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import BreakTheAppPage from "../../../pages/sessions/00-break-the-app.astro";
-import ReadTheIncidentPage from "../../../pages/sessions/00-read-the-incident.astro";
+import OnboardingPage from "../../../pages/sessions/00-onboarding.astro";
 import { createAstroContainer } from "../../render-astro";
 
 const parseStaticMarkup = (html: string): Document =>
@@ -10,53 +8,75 @@ const parseStaticMarkup = (html: string): Document =>
     "text/html",
   );
 
-const readPage = (slug: string): string =>
-  readFileSync(
-    new URL("../../../pages/sessions/" + slug + ".astro", import.meta.url),
-    "utf8",
-  );
+const compact = (text: string | null): string =>
+  text?.replaceAll(/\s+/g, " ").trim() ?? "";
 
-describe("Session 00 pages", () => {
-  it("uses the Session 00 starting snapshot", () => {
-    const breakTheApp = readPage("00-break-the-app");
-    const readTheIncident = readPage("00-read-the-incident");
+describe("Session 00 onboarding page", () => {
+  it("onboards the successor without starting an incident exercise", async () => {
+    const container = await createAstroContainer();
+    const html = await container.renderToString(OnboardingPage, { partial: false });
+    const document = parseStaticMarkup(html);
 
-    expect(breakTheApp).toContain("examples/session-00/src/appointment.ts");
-    expect(breakTheApp).toContain(
-      'phase="red"\n      command="pnpm exercise:00"',
+    expect(document.querySelector("h1")?.textContent).toContain(
+      "オンボーディング: 退職した先人のコードを引き継ぐ",
     );
-    expect(breakTheApp).not.toContain(
-      'phase="green"\n      command="pnpm exercise:00"',
+    expect(document.querySelector(".case-file__eyebrow")?.textContent).toContain(
+      "SESSION 00 · 30分",
     );
-    expect(breakTheApp).toContain(
-      'command="pnpm --filter @fp-with-ts/clinic-session-00 test"',
+    expect(html).toContain("すべてバイブコーディングで作りました");
+    expect(html).toContain("そこで採用されたエンジニアが、あなたです");
+    expect(html).not.toContain("事故報告");
+    expect(html).not.toContain("事故を再現");
+    expect(html).not.toContain("pnpm exercise:00");
+    expect(html).not.toContain('data-action="run"');
+    expect(html).not.toContain('data-action="reset"');
+
+    const story = document.querySelector(".onboarding-story");
+    expect(story?.getAttribute("role")).toBe("group");
+    expect(story?.getAttribute("aria-label")).toBe(
+      "先人の獣医から新任エンジニアへの引き継ぎ",
     );
-    expect(readTheIncident).toContain("examples/session-00/src/appointment.ts");
-    expect(readTheIncident).toContain(
-      'command="pnpm --filter @fp-with-ts/clinic-session-00 test"',
+    expect(
+      [...(story?.querySelectorAll(".onboarding-story__speaker") ?? [])].map(
+        ({ textContent }) => textContent,
+      ),
+    ).toEqual(["先人の獣医", "院長", "院長"]);
+    expect(
+      [...(story?.querySelectorAll(".onboarding-story__bubble") ?? [])].map(
+        ({ textContent }) => textContent,
+      ),
+    ).toEqual([
+      "この動物病院のシステムは、診療の合間にすべてバイブコーディングで作りました！",
+      "その偉大な獣医さんが退職してしまいました。システムのことを詳しく知る人がいません……",
+      "そこで採用されたエンジニアが、あなたです。まずは病院の仕事と先人のコードを知るところから始めてください",
+    ]);
+
+    const headings = [
+      "着任初日のオンボーディング",
+      "この病院とアプリケーションを知る",
+      "来院とコードの対応を知る",
+      "先人のコードを眺める",
+      "明日の開発に備える",
+    ];
+    expect([...document.querySelectorAll("article h2")].map(({ textContent }) => textContent)).toEqual(
+      headings,
     );
-    expect(readTheIncident).not.toContain('command="pnpm exercise:00"');
-    expect(breakTheApp).not.toContain("packages/clinic-example");
-    expect(readTheIncident).not.toContain("packages/clinic-example");
+    expect(
+      [...document.querySelectorAll('nav[aria-label="ページ内目次"] a')]
+        .slice(0, 5)
+        .map(({ textContent }) => textContent),
+    ).toEqual(headings);
+    expect(document.querySelectorAll("[data-code-guide]")).toHaveLength(5);
+
+    expect(compact(document.querySelector(".onboarding-decision")?.textContent ?? null)).toBe(
+      "しかし、まだ問題は顕在化していません。迂闊にリファクタリングすれば、既存仕様を壊してしまうかもしれません。今日は業務、仕様、設計の理解に留め、明日から実際の開発に着手しましょう。",
+    );
   });
 
-  it("onboards participants before reproducing the incident", async () => {
+  it("preserves the visit flow and maps its business concepts to code", async () => {
     const container = await createAstroContainer();
-    const html = await container.renderToString(BreakTheAppPage, { partial: false });
-
-    expect(html).toContain("開発に参加する前に");
-    expect(html).toContain("動物病院の役割");
-    expect(html).toContain("1回の来院の流れ");
-    expect(html).toContain("登場人物");
-    expect(html).toContain("提供する機能と価値");
-    expect(html).toContain("来院をモデリングしよう");
-    expect(html).toContain("Paid は終端状態");
-    expect(html).toContain("exercise:00");
-    expect(html).toContain("examples/session-00/src/appointment.ts");
-
+    const html = await container.renderToString(OnboardingPage, { partial: false });
     const document = parseStaticMarkup(html);
-    const compact = (text: string | null): string =>
-      text?.replaceAll(/\s+/g, " ").trim() ?? "";
     const transitionTimeline = document.querySelector(
       "ol#visit-state-transitions.visit-timeline",
     );
@@ -115,6 +135,7 @@ describe("Session 00 pages", () => {
         record: "診断、処置、請求金額、会計時刻を残す",
       },
     ]);
+
     const cancellationBranch = document.querySelector(".visit-timeline__branch");
     expect(compact(cancellationBranch?.querySelector(".visit-timeline__actor")?.textContent ?? null)).toBe(
       "飼い主または病院",
@@ -122,93 +143,21 @@ describe("Session 00 pages", () => {
     expect(compact(cancellationBranch?.textContent ?? null)).toContain(
       "予約済みまたは受付済みからだけキャンセルでき、キャンセル",
     );
-    expect(
-      compact(document.querySelector(".visit-timeline__terminal")?.textContent ?? null),
-    ).toContain("Paid と Canceled は終端状態");
+    expect(compact(document.querySelector(".visit-timeline__terminal")?.textContent ?? null)).toContain(
+      "Paid と Canceled は終端状態",
+    );
 
-    expect([...document.querySelectorAll("h2")].map(({ textContent }) => textContent)).toEqual([
-      "開発に参加する前に",
-      "事故を観察する",
-      "失敗を再現する",
-      "ブラウザで試す",
-      "レビューと次のセッション",
+    const correspondence = [...document.querySelectorAll("#visit-and-code tbody tr")].map(
+      (row) => [
+        compact(row.querySelector('th[scope="row"]')?.textContent ?? null),
+        compact(row.querySelector("td code")?.textContent ?? null),
+      ],
+    );
+    expect(correspondence).toEqual([
+      ["来院記録", "LegacyAppointment"],
+      ["予約を受け付ける", "bookAppointment"],
+      ["状態を更新する", "updateStatus"],
+      ["運用ログ", "logger.info"],
     ]);
-  });
-
-  it("turns the cancellation incident into the next modeling requirement", async () => {
-    const container = await createAstroContainer();
-    const html = await container.renderToString(ReadTheIncidentPage, { partial: false });
-
-    expect(html).toContain("事故報告を読む");
-    expect(html).toContain("Canceled は reason を持ち");
-    expect(html).toContain("キャンセル理由");
-    expect(html).toContain("@fp-with-ts/clinic-session-00 test");
-
-    const document = parseStaticMarkup(html);
-    const requirement = document.querySelector("#requirement");
-    const dialogue = requirement?.querySelector(".requirement-dialogue");
-    const prompt = requirement?.querySelector(".requirement-prompt");
-    const requirementChildren = [...(requirement?.children ?? [])];
-
-    expect(dialogue?.getAttribute("role")).toBe("group");
-    expect(dialogue?.getAttribute("aria-label")).toBe("飼い主と受付スタッフの会話");
-    const speakers = [...(dialogue?.querySelectorAll(".requirement-dialogue__speaker") ?? [])];
-    expect(
-      speakers.map(({ textContent }) => textContent),
-    ).toEqual(["飼い主", "受付スタッフ"]);
-    const ownerLine = dialogue?.querySelector(".requirement-dialogue__line--owner");
-    const receptionistLine = dialogue?.querySelector(".requirement-dialogue__line--receptionist");
-    expect(ownerLine?.querySelector(".requirement-dialogue__speaker")?.textContent).toBe("飼い主");
-    expect(receptionistLine?.querySelector(".requirement-dialogue__speaker")?.textContent).toBe(
-      "受付スタッフ",
-    );
-    const ownerBubble = ownerLine?.querySelector(".requirement-dialogue__bubble");
-    const receptionistBubble = receptionistLine?.querySelector(".requirement-dialogue__bubble");
-    expect(ownerLine).not.toBe(receptionistLine);
-    expect(ownerBubble).not.toBe(receptionistBubble);
-    expect(ownerBubble?.parentElement).toBe(ownerLine);
-    expect(receptionistBubble?.parentElement).toBe(receptionistLine);
-    expect(ownerBubble?.textContent).toContain("キャンセル");
-    expect(ownerBubble?.textContent).toContain("再診");
-    expect(ownerBubble?.textContent).toContain("希望");
-    expect(receptionistBubble?.textContent).toContain("キャンセル理由");
-    expect(receptionistBubble?.textContent).toContain("再診希望日");
-    expect(prompt?.textContent).toContain("参加者のみなさんへ");
-    expect(prompt?.textContent).toContain("要求を整理しよう");
-    const mission = requirementChildren.find(({ textContent }) =>
-      textContent?.includes("今回のミッションは、この追加要求を状態ごとに必要な情報へ分解することです。"),
-    );
-    const cancellationExplanation = requirementChildren.find(({ textContent }) =>
-      textContent?.replaceAll(/\s+/g, " ").trim().includes("Canceled という状態にだけ必要なデータです。"),
-    );
-    const invariant = requirementChildren.find(({ textContent }) =>
-      textContent?.includes("守る不変条件:"),
-    );
-    expect(cancellationExplanation?.textContent?.replaceAll(/\s+/g, " ").trim()).toContain(
-      "Canceled という状態にだけ必要なデータです。",
-    );
-    expect(invariant?.textContent).toContain("守る不変条件:");
-    expect(mission?.textContent).toContain(
-      "今回のミッションは、この追加要求を状態ごとに必要な情報へ分解することです。",
-    );
-    expect(requirementChildren.indexOf(dialogue as Element)).toBeLessThan(
-      requirementChildren.indexOf(prompt as Element),
-    );
-    expect(requirementChildren.indexOf(prompt as Element)).toBeLessThan(
-      requirementChildren.indexOf(cancellationExplanation as Element),
-    );
-    expect(requirementChildren.indexOf(prompt as Element)).toBeLessThan(
-      requirementChildren.indexOf(mission as Element),
-    );
-    expect(requirementChildren.indexOf(mission as Element)).toBeLessThan(
-      requirementChildren.indexOf(cancellationExplanation as Element),
-    );
-    expect(requirementChildren.indexOf(prompt as Element)).toBeLessThan(
-      requirementChildren.indexOf(invariant as Element),
-    );
-    expect(
-      [...document.querySelectorAll("h2")].map(({ textContent }) => textContent),
-    ).toEqual(["要求を整理しよう", "要求をテストから読む", "次の編集の準備", "ブラウザで試す", "レビューと振り返り"]);
-    expect(document.querySelector('a[href="#requirement"]')?.textContent).toBe("要求を整理しよう");
   });
 });

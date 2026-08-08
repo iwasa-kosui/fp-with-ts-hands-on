@@ -27,7 +27,12 @@ describe("worker request handler", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it.each(["/module-00", "/module-00/"])(
+  it.each([
+    "/module-00",
+    "/module-00/",
+    "/sessions/00-break-the-app/",
+    "/sessions/00-read-the-incident/",
+  ])(
     "redirects the legacy module path %s permanently",
     async (pathname) => {
       const { env, fetch } = createAssets(new Response("asset"));
@@ -39,7 +44,7 @@ describe("worker request handler", () => {
 
       expect(response.status).toBe(308);
       expect(response.headers.get("location")).toBe(
-        "https://example.test/sessions/00-break-the-app/",
+        "https://example.test/sessions/00-onboarding/",
       );
       expect(fetch).not.toHaveBeenCalled();
     },

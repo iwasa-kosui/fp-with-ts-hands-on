@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test";
 
 const routes = [
-  "/sessions/00-break-the-app/",
-  "/sessions/00-read-the-incident/",
   "/sessions/01-state-modeling/",
   "/sessions/02-boundary-and-ids/",
   "/sessions/03-result-errors/",

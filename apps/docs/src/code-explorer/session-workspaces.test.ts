@@ -4,8 +4,7 @@ import { projectFilesFor } from "./project-files";
 import { sessionWorkspaceFor } from "./session-workspaces";
 
 const expectedSnapshots = {
-  "00-break-the-app": "session-00",
-  "00-read-the-incident": "session-00",
+  "00-onboarding": "session-00",
   "01-state-modeling": "session-01",
   "02-boundary-and-ids": "session-02",
   "03-result-errors": "session-03",
@@ -15,14 +14,7 @@ const expectedSnapshots = {
 } as const;
 
 const requiredVisibleFiles = {
-  "00-break-the-app": [
-    "exercises/incident.test.ts",
-    "test/setup.test.ts",
-    "src/appointment.ts",
-    "src/logger.ts",
-  ],
-  "00-read-the-incident": [
-    "test/setup.test.ts",
+  "00-onboarding": [
     "src/appointment.ts",
     "src/logger.ts",
   ],
@@ -73,10 +65,6 @@ describe("session code workspaces", () => {
       expect(session.snapshot).toBe(expectedSnapshots[session.slug]);
       expect(sessionWorkspaceFor(session.slug).snapshot).toBe(session.snapshot);
     }
-
-    expect(projectFilesFor("00-break-the-app")).toBe(
-      projectFilesFor("00-read-the-incident"),
-    );
   });
 
   it("mounts a runnable manifest, local TypeScript config, and real visible files", () => {
@@ -135,13 +123,13 @@ describe("session code workspaces", () => {
   });
 
   it("returns visible files that cannot corrupt a later workspace result", () => {
-    const firstWorkspace = sessionWorkspaceFor("00-break-the-app");
+    const firstWorkspace = sessionWorkspaceFor("00-onboarding");
     expect(() => {
       (firstWorkspace.visibleFiles as string[]).push("src/unexpected.ts");
     }).toThrow();
 
     expect(
-      sessionWorkspaceFor("00-break-the-app").visibleFiles,
+      sessionWorkspaceFor("00-onboarding").visibleFiles,
     ).not.toContain("src/unexpected.ts");
   });
 });

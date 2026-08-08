@@ -1,7 +1,7 @@
 export type SessionSummary = Readonly<{
   slug: string;
   snapshot: ExampleSnapshot;
-  sequence: "00-A" | "00-B" | "01" | "02" | "03" | "04" | "05" | "Final";
+  sequence: "00" | "01" | "02" | "03" | "04" | "05" | "Final";
   label: string;
   title: string;
   durationMinutes: number;
@@ -20,24 +20,15 @@ export type ExampleSnapshot =
 
 export const sessions = [
   {
-    slug: "00-break-the-app",
+    slug: "00-onboarding",
     snapshot: "session-00",
-    sequence: "00-A",
+    sequence: "00",
     label: "DOG",
-    title: "導入事故を起こす",
-    durationMinutes: 15,
+    title: "オンボーディング: 退職した先人のコードを引き継ぐ",
+    durationMinutes: 30,
     animal: { name: "DOG", type: "dog", avatar: "🐕" },
-    summary: "WAN NYAN CLINIC の予約・カルテシステムで再診対応を扱います。",
-  },
-  {
-    slug: "00-read-the-incident",
-    snapshot: "session-00",
-    sequence: "00-B",
-    label: "CAT",
-    title: "事故報告を読む",
-    durationMinutes: 15,
-    animal: { name: "CAT", type: "cat", avatar: "🐈" },
-    summary: "キャンセル後の業務対応に必要な情報を整理します。",
+    summary:
+      "WAN NYAN CLINIC の業務とアプリケーション、先人のコードに残る設計課題を概観します。",
   },
   {
     slug: "01-state-modeling",

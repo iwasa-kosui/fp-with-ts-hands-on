@@ -3,25 +3,10 @@ import { projectFilesFor } from "./project-files";
 import type { SessionWorkspace } from "./types";
 
 const sessionWorkspaces = {
-  "00-break-the-app": {
-    initialFile: "exercises/incident.test.ts",
-    description: "事故を再現するテストと開始 snapshot を編集して実行します。",
-    visibleFiles: [
-      "exercises/incident.test.ts",
-      "test/setup.test.ts",
-      "src/appointment.ts",
-      "src/logger.ts",
-    ],
-  },
-  "00-read-the-incident": {
-    initialFile: "test/setup.test.ts",
-    description: "事故報告と照合する開始 snapshot を編集して実行します。",
-    visibleFiles: [
-      "test/setup.test.ts",
-      "exercises/incident.test.ts",
-      "src/appointment.ts",
-      "src/logger.ts",
-    ],
+  "00-onboarding": {
+    initialFile: "src/appointment.ts",
+    description: "先人が残した開始 snapshot から、後で確認する設計課題を概観します。",
+    visibleFiles: ["src/appointment.ts", "src/logger.ts"],
   },
   "01-state-modeling": {
     initialFile: "exercises/state-modeling.test.ts",

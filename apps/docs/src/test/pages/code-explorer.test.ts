@@ -42,10 +42,10 @@ describe("code explorer preview page", () => {
     expect(document.querySelector('a[href="/"]')).not.toBeNull();
     expect(document.body.textContent).toContain(previewNotice);
     expect(document.body.textContent).toContain(
-      "事故を再現するテストと開始 snapshot を編集して実行します。",
+      "先人が残した開始 snapshot から、後で確認する設計課題を概観します。",
     );
     expect(document.body.textContent).toContain(
-      "exercises/incident.test.ts",
+      "src/appointment.ts",
     );
     expect(
       document.querySelector('[data-action="run"]')?.textContent,
@@ -54,7 +54,7 @@ describe("code explorer preview page", () => {
       document.querySelector('[data-action="reset"]')?.textContent,
     ).toContain("リセット");
     expect(
-      document.querySelector('[data-code-explorer="00-break-the-app"]'),
+      document.querySelector('[data-code-explorer="00-onboarding"]'),
     ).not.toBeNull();
     expect(
       document.querySelector('astro-island[client="load"]'),
