@@ -17,7 +17,12 @@ const sources = {
 const expectedEvidence = {
   "string-status": ["status: string", "newStatus: string"],
   "optional-state-data": ["veterinarianId?: string", "cancelReason?: string"],
-  "plain-string-ids": ["id: string", "petId: string", "ownerId: string"],
+  "plain-string-ids": [
+    "id: string",
+    "petId: string",
+    "ownerId: string",
+    "veterinarianId?: string",
+  ],
   "throw-not-found": ["throw new Error"],
   "raw-pii-log": [
     "ownerEmail: string",

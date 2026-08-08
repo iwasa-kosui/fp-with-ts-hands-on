@@ -23,10 +23,11 @@ export const onboardingGuides = [
   {
     id: "plain-string-ids",
     title: "用途の異なる ID がすべて string である",
-    currentDesign: "予約、動物、飼い主の ID が同じ string です。",
+    currentDesign: "予約、動物、飼い主、獣医師の ID が同じ string です。",
     futureRisk: "同じ実行時形式の ID を TypeScript が区別できません。",
     path: "src/appointment.ts",
     highlights: [
+      { startLineNumber: 4, endLineNumber: 4 },
       { startLineNumber: 12, endLineNumber: 19 },
       { startLineNumber: 26, endLineNumber: 33 },
     ],
