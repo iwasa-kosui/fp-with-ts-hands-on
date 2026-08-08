@@ -4,6 +4,7 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 
 export const installationTable = sqliteTable("installation", {
   installationKey: text("installation_key").primaryKey(),
@@ -69,16 +70,24 @@ export const examResultsTable = sqliteTable("exam_results", {
   state: text("state", { mode: "json" }).notNull(),
 });
 
-export const domainEventsTable = sqliteTable("domain_events", {
-  eventId: text("event_id").primaryKey(),
-  aggregateId: text("aggregate_id").notNull(),
-  aggregateName: text("aggregate_name").notNull(),
-  aggregateState: text("aggregate_state", { mode: "json" }),
-  eventName: text("event_name").notNull(),
-  eventPayload: text("event_payload", { mode: "json" }).notNull(),
-  occurredAt: text("occurred_at").notNull(),
-  actorUserId: text("actor_user_id").notNull(),
-});
+export const domainEventsTable = sqliteTable(
+  "domain_events",
+  {
+    eventId: text("event_id").primaryKey(),
+    aggregateId: text("aggregate_id").notNull(),
+    aggregateName: text("aggregate_name").notNull(),
+    aggregateState: text("aggregate_state", { mode: "json" }),
+    eventName: text("event_name").notNull(),
+    eventPayload: text("event_payload", { mode: "json" }).notNull(),
+    occurredAt: text("occurred_at").notNull(),
+    actorUserId: text("actor_user_id").notNull(),
+  },
+  (table) => [
+    uniqueIndex("follow_up_requested_appointment_unique")
+      .on(table.aggregateId)
+      .where(sql`${table.eventName} = 'follow-up.requested'`),
+  ],
+);
 
 export const sqliteSchema = {
   installationTable,

@@ -18,7 +18,7 @@ import {
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
 import type { PaymentAmount } from "../domain/appointment/paymentAmount.js";
-import type { PaymentRecordedStore } from "../domain/appointment/appointmentStores.js";
+import type { AppointmentConflict, AppointmentStoreError, PaymentRecordedStore } from "../domain/appointment/appointmentStores.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import type { Sensitive } from "../domain/shared/sensitive.js";
@@ -56,6 +56,7 @@ export type UseCaseError =
   | AppointmentNotFound
   | InvalidAppointmentState
   | IdentityGenerationFailed
+  | AppointmentConflict
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
@@ -73,6 +74,10 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
   kind: "RepositoryError",
   operation: error.operation,
 });
+const toStoreError = (
+  error: AppointmentStoreError,
+): UseCaseRepositoryError | AppointmentConflict =>
+  error.kind === "AppointmentConflict" ? error : toRepositoryError(error);
 const ensureInExamination = (
   appointment: AppointmentState,
 ): Result<InExamination, InvalidAppointmentState> =>
@@ -120,7 +125,7 @@ const run =
       .andThrough((event) =>
         dependencies.paymentRecordedStore
           .store(event)
-          .mapErr(toRepositoryError),
+          .mapErr(toStoreError),
       )
       .map((event) => ({ appointment: event.aggregateState }));
 

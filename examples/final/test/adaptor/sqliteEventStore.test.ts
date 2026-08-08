@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vitest";
 import { Sensitive } from "../../src/domain/shared/sensitive.js";
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { sql } from "drizzle-orm";
 
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
 import {
@@ -24,6 +29,7 @@ import type { EventContext } from "../../src/domain/aggregate/eventContext.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { Appointment } from "../../src/domain/appointment/appointment.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
 import { ExamResult } from "../../src/domain/examResult/examResult.js";
 import { FollowUpRequested } from "../../src/domain/followUp/followUpRequested.js";
@@ -48,6 +54,7 @@ const ids = {
   pet: PetId.schema.parse("00000000-0000-4000-8000-000000000005"),
   appointment: AppointmentId.schema.parse("00000000-0000-4000-8000-000000000006"),
   exam: ExamId.schema.parse("00000000-0000-4000-8000-000000000007"),
+  veterinarian: VeterinarianId.schema.parse("00000000-0000-4000-8000-000000000008"),
 } as const;
 
 const eventContext = (sequence: number): EventContext => ({
@@ -70,6 +77,65 @@ const user = (name: string): UserState => ({
 });
 
 describe("SQLite event stores", () => {
+  test("fresh migrations install the partial follow-up uniqueness index", () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+
+    expect(
+      db.all(sql.raw(
+        "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'follow_up_requested_appointment_unique'",
+      ))[0],
+    ).toMatchObject({
+      sql: expect.stringContaining("WHERE `event_name` = 'follow-up.requested'"),
+    });
+  });
+
+  test("the uniqueness migration upgrades legacy duplicate follow-up rows", () => {
+    const db = createSqliteDatabase(":memory:");
+    db.run(sql.raw(
+      "CREATE TABLE domain_events (event_id text PRIMARY KEY NOT NULL, aggregate_id text NOT NULL, event_name text NOT NULL)",
+    ));
+    db.run(sql`INSERT INTO domain_events (event_id, aggregate_id, event_name)
+      VALUES (${"first"}, ${ids.appointment}, ${"follow-up.requested"})`);
+    db.run(sql`INSERT INTO domain_events (event_id, aggregate_id, event_name)
+      VALUES (${"duplicate"}, ${ids.appointment}, ${"follow-up.requested"})`);
+    const migrationFolder = mkdtempSync(join(tmpdir(), "clinic-follow-up-migration-"));
+    mkdirSync(join(migrationFolder, "meta"));
+    writeFileSync(
+      join(migrationFolder, "meta", "_journal.json"),
+      JSON.stringify({
+        version: "7",
+        dialect: "sqlite",
+        entries: [{
+          idx: 0,
+          version: "6",
+          when: 1786374000000,
+          tag: "0002_follow_up_request_unique",
+          breakpoints: true,
+        }],
+      }),
+    );
+    copyFileSync(
+      fileURLToPath(new URL("../../drizzle/0002_follow_up_request_unique.sql", import.meta.url)),
+      join(migrationFolder, "0002_follow_up_request_unique.sql"),
+    );
+
+    try {
+      migrateDatabase(db, migrationFolder);
+      expect(
+        db.all(sql.raw(
+          "SELECT event_id FROM domain_events WHERE event_name = 'follow-up.requested'",
+        )),
+      ).toEqual([{ event_id: "first" }]);
+      expect(() =>
+        db.run(sql`INSERT INTO domain_events (event_id, aggregate_id, event_name)
+          VALUES (${"new-duplicate"}, ${ids.appointment}, ${"follow-up.requested"})`),
+      ).toThrow();
+    } finally {
+      rmSync(migrationFolder, { recursive: true, force: true });
+    }
+  });
+
   test("typed events update every projection and append sanitized history", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
@@ -170,6 +236,71 @@ describe("SQLite event stores", () => {
     expect(result.isErr()).toBe(true);
     expect((await db.select().from(usersTable))[0]?.name).toBe("Before");
     expect(await db.select().from(domainEventsTable)).toHaveLength(1);
+  });
+
+  test("accepts exactly one coordinated stale appointment transition", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const store = createAppointmentEventStore(db);
+    const booked = Appointment.book(eventContext(40))({
+      appointmentId: ids.appointment,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
+      reason: Sensitive.of("private reason"),
+    });
+    await store.store(booked);
+    const checkedIn = Appointment.checkIn(eventContext(41))(booked.aggregateState);
+    await store.store(checkedIn);
+    const started = Appointment.startExamination(eventContext(42))(
+      checkedIn.aggregateState,
+      ids.veterinarian,
+    );
+    const canceled = Appointment.cancel(eventContext(43))(
+      checkedIn.aggregateState,
+      Sensitive.of("private cancellation"),
+    );
+
+    const results = await Promise.all([store.store(started), store.store(canceled)]);
+
+    expect(results.filter((result) => result.isOk())).toHaveLength(1);
+    expect(results.filter((result) => result.isErr())).toHaveLength(1);
+    expect(results.find((result) => result.isErr())?._unsafeUnwrapErr()).toMatchObject({
+      kind: "AppointmentConflict",
+      appointmentId: ids.appointment,
+    });
+    expect(await db.select().from(appointmentsTable)).toHaveLength(1);
+    expect(await db.select().from(domainEventsTable)).toHaveLength(3);
+  });
+
+  test("rolls back an appointment batch when a later transition is stale", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const store = createAppointmentEventStore(db);
+    const booked = Appointment.book(eventContext(50))({
+      appointmentId: ids.appointment,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
+      reason: Sensitive.of("private reason"),
+    });
+    await store.store(booked);
+    const checkedIn = Appointment.checkIn(eventContext(51))(booked.aggregateState);
+    await store.store(checkedIn);
+    const result = await store.store(
+      Appointment.startExamination(eventContext(52))(
+        checkedIn.aggregateState,
+        ids.veterinarian,
+      ),
+      Appointment.cancel(eventContext(53))(
+        checkedIn.aggregateState,
+        Sensitive.of("private cancellation"),
+      ),
+    );
+
+    expect(result._unsafeUnwrapErr()).toMatchObject({ kind: "AppointmentConflict" });
+    expect((await createAppointmentByIdResolver(db).resolveById(ids.appointment))._unsafeUnwrap()?.kind).toBe("CheckedIn");
+    expect(await db.select().from(domainEventsTable)).toHaveLength(2);
   });
 
   test("a projection constraint failure rolls back earlier projection and event writes", async () => {

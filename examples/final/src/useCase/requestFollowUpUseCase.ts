@@ -18,11 +18,12 @@ import {
 } from "../domain/followUp/collectFollowUpTargets.js";
 import { FollowUpRequested } from "../domain/followUp/followUpRequested.js";
 import type { FollowUpResolver } from "../domain/followUp/followUpResolver.js";
-import type { FollowUpRequestedStore } from "../domain/followUp/followUpStores.js";
+import type { FollowUpRequestConflict, FollowUpRequestedStore, FollowUpStoreError } from "../domain/followUp/followUpStores.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
+import type { FollowUpRequestReader } from "./query/followUpRequestReader.js";
 
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;
@@ -44,12 +45,14 @@ export type UseCaseError =
   | UnauthorizedError
   | CollectFollowUpTargetsError
   | FollowUpTargetNotFound
+  | FollowUpRequestConflict
   | IdentityGenerationFailed
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
   followUpResolver: FollowUpResolver;
+  followUpRequestReader: FollowUpRequestReader;
   followUpRequestedStore: FollowUpRequestedStore;
   eventIdGenerator: EventIdGenerator;
   clock: Clock;
@@ -62,11 +65,27 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
   kind: "RepositoryError",
   operation: error.operation,
 });
+const toStoreError = (
+  error: FollowUpStoreError,
+): UseCaseRepositoryError | FollowUpRequestConflict =>
+  error.kind === "FollowUpRequestConflict" ? error : toRepositoryError(error);
 const uniqueIds = (ids: readonly AppointmentId[]): readonly AppointmentId[] =>
   ids.reduce<readonly AppointmentId[]>(
     (unique, id) => (unique.includes(id) ? unique : [...unique, id]),
     [],
   );
+const ensureNotRequested =
+  (appointmentIds: readonly AppointmentId[]) =>
+  (
+    requestedIds: readonly AppointmentId[],
+  ): Result<void, FollowUpRequestConflict> => {
+    const duplicate = uniqueIds(appointmentIds).find((appointmentId) =>
+      requestedIds.includes(appointmentId),
+    );
+    return duplicate === undefined
+      ? ok(undefined)
+      : err({ kind: "FollowUpRequestConflict", appointmentId: duplicate });
+  };
 const selectTargets =
   (appointmentIds: readonly AppointmentId[]) =>
   (
@@ -119,6 +138,12 @@ const run =
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() =>
+        dependencies.followUpRequestReader
+          .listRequestedAppointmentIds()
+          .mapErr(toRepositoryError),
+      )
+      .andThen(ensureNotRequested(input.appointmentIds))
+      .andThen(() =>
         dependencies.followUpResolver
           .resolveCandidates()
           .mapErr(toRepositoryError),
@@ -131,7 +156,7 @@ const run =
           ? okAsync(events)
           : dependencies.followUpRequestedStore
               .store(...events)
-              .mapErr(toRepositoryError)
+              .mapErr(toStoreError)
               .map(() => events),
       )
       .map((events) => ({

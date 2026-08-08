@@ -1,8 +1,11 @@
+import { and, eq, or } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
+import { z } from "zod";
 
-import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import type { Appointment } from "../../../../domain/appointment/appointment.js";
 import type { AppointmentEvent } from "../../../../domain/appointment/appointmentEvent.js";
+import type { AppointmentStoreError } from "../../../../domain/appointment/appointmentStores.js";
+import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
 import type { SqliteDatabase } from "../db.js";
 import { toEventRecord } from "../eventRecord.js";
 import { appointmentsTable, domainEventsTable } from "../schema.js";
@@ -99,10 +102,14 @@ const projectionState = (state: Appointment): Readonly<Record<string, unknown>> 
       return state satisfies never;
   }
 };
+const AppointmentConflictSchema = z.object({
+  kind: z.literal("AppointmentConflict"),
+  appointmentId: AppointmentId.schema,
+});
 
 export const createAppointmentEventStore = (db: SqliteDatabase) => ({
   store: (...events: readonly AppointmentEvent[]) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromPromise<void, AppointmentStoreError>(
       Promise.resolve().then(() =>
         db.transaction((tx) => {
           events.forEach((event) => {
@@ -114,10 +121,58 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
               petId: state.petId,
               state: projectionState(state),
             };
-            tx.insert(appointmentsTable)
-              .values(values)
-              .onConflictDoUpdate({ target: appointmentsTable.appointmentId, set: values })
-              .run();
+            const changes = (() => {
+              switch (event.kind) {
+                case "AppointmentBooked":
+                  return tx.insert(appointmentsTable)
+                    .values(values)
+                    .onConflictDoNothing({ target: appointmentsTable.appointmentId })
+                    .run().changes;
+                case "AppointmentCheckedIn":
+                  return tx.update(appointmentsTable)
+                    .set(values)
+                    .where(and(
+                      eq(appointmentsTable.appointmentId, state.appointmentId),
+                      eq(appointmentsTable.status, "Scheduled"),
+                    ))
+                    .run().changes;
+                case "ExaminationStarted":
+                  return tx.update(appointmentsTable)
+                    .set(values)
+                    .where(and(
+                      eq(appointmentsTable.appointmentId, state.appointmentId),
+                      eq(appointmentsTable.status, "CheckedIn"),
+                    ))
+                    .run().changes;
+                case "PaymentRecorded":
+                  return tx.update(appointmentsTable)
+                    .set(values)
+                    .where(and(
+                      eq(appointmentsTable.appointmentId, state.appointmentId),
+                      eq(appointmentsTable.status, "InExamination"),
+                    ))
+                    .run().changes;
+                case "AppointmentCanceled":
+                  return tx.update(appointmentsTable)
+                    .set(values)
+                    .where(and(
+                      eq(appointmentsTable.appointmentId, state.appointmentId),
+                      or(
+                        eq(appointmentsTable.status, "Scheduled"),
+                        eq(appointmentsTable.status, "CheckedIn"),
+                      ),
+                    ))
+                    .run().changes;
+                default:
+                  return event satisfies never;
+              }
+            })();
+            if (changes !== 1) {
+              throw {
+                kind: "AppointmentConflict",
+                appointmentId: event.aggregateId,
+              } as const;
+            }
             tx.insert(domainEventsTable)
               .values(toEventRecord(
                 event,
@@ -128,10 +183,15 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
           });
         }),
       ),
-      (cause): RepositoryError => ({
-        kind: "RepositoryError",
-        operation: "AppointmentEventStore.store",
-        cause,
-      }),
+      (cause): AppointmentStoreError => {
+        const conflict = AppointmentConflictSchema.safeParse(cause);
+        return conflict.success
+          ? conflict.data
+          : {
+              kind: "RepositoryError",
+              operation: "AppointmentEventStore.store",
+              cause,
+            };
+      },
     ),
 } as const);

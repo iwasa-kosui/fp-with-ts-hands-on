@@ -443,6 +443,7 @@ export const createApplicationDependencies = (
     requestFollowUp: RequestFollowUpUseCase.create({
       userResolver: clinicUserByIdResolver,
       followUpResolver,
+      followUpRequestReader,
       followUpRequestedStore: followUpEventStore,
       eventIdGenerator,
       clock,

@@ -7,6 +7,7 @@ import {
 } from "../../src/adaptor/secondary/sqlite/db.js";
 import { createAppointmentListResolver } from "../../src/adaptor/secondary/sqlite/resolver/appointmentResolver.js";
 import { createAppointmentEventStore } from "../../src/adaptor/secondary/sqlite/store/appointmentEventStore.js";
+import { appointmentsTable, domainEventsTable } from "../../src/adaptor/secondary/sqlite/schema.js";
 import type { Clock } from "../../src/domain/aggregate/clock.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import type { EventIdGenerator } from "../../src/domain/aggregate/eventIdGenerator.js";
@@ -391,14 +392,14 @@ describe("appointment command use cases", () => {
       "InvalidAppointmentState",
     );
   });
-});
 
-describe("appointment query use cases", () => {
-  test("retains terminal appointments and labels deleted owner, pet, and veterinarian records", async () => {
+  test("returns one typed conflict when coordinated use cases resolve the same stale state", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
-    const scheduled = Appointment.book({
-      eventId: eventIdGenerator().generate(),
+    const store = createAppointmentEventStore(db);
+    const eventIds = eventIdGenerator();
+    const booked = Appointment.book({
+      eventId: eventIds.generate(),
       occurredAt: times.now,
       actorUserId: ids.receptionist,
     })({
@@ -407,27 +408,90 @@ describe("appointment query use cases", () => {
       petId: ids.pet,
       scheduledAt: times.scheduled,
       reason: Sensitive.of("private reason"),
-    }).aggregateState;
+    });
     const checkedIn = Appointment.checkIn({
-      eventId: eventIdGenerator().generate(),
+      eventId: eventIds.generate(),
       occurredAt: times.now,
       actorUserId: ids.receptionist,
-    })(scheduled).aggregateState;
-    const examining = Appointment.startExamination({
-      eventId: eventIdGenerator().generate(),
+    })(booked.aggregateState);
+    await store.store(booked, checkedIn);
+    const staleResolver = { resolveById: () => okAsync(checkedIn.aggregateState) };
+
+    const [started, canceled] = await Promise.all([
+      StartExaminationUseCase.create({
+        userResolver,
+        appointmentResolver: staleResolver,
+        examinationStartedStore: store,
+        clock,
+        eventIdGenerator: eventIds,
+      }).run({
+        actorUserId: ids.veterinarianUser,
+        appointmentId: ids.appointment,
+        veterinarianId: ids.veterinarian,
+      }),
+      CancelAppointmentUseCase.create({
+        userResolver,
+        appointmentResolver: staleResolver,
+        appointmentCanceledStore: store,
+        clock,
+        eventIdGenerator: eventIds,
+      }).run({
+        actorUserId: ids.receptionist,
+        appointmentId: ids.appointment,
+        reason: Sensitive.of("private cancellation"),
+      }),
+    ]);
+
+    expect([started, canceled].filter((result) => result.isOk())).toHaveLength(1);
+    expect([started, canceled].find((result) => result.isErr())?._unsafeUnwrapErr()).toMatchObject({
+      kind: "AppointmentConflict",
+      appointmentId: ids.appointment,
+    });
+    expect(await db.select().from(appointmentsTable)).toHaveLength(1);
+    expect(await db.select().from(domainEventsTable)).toHaveLength(3);
+  });
+});
+
+describe("appointment query use cases", () => {
+  test("retains terminal appointments and labels deleted owner, pet, and veterinarian records", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const eventIds = eventIdGenerator();
+    const booked = Appointment.book({
+      eventId: eventIds.generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })({
+      appointmentId: ids.appointment,
+      ownerId: ids.owner,
+      petId: ids.pet,
+      scheduledAt: times.scheduled,
+      reason: Sensitive.of("private reason"),
+    });
+    const checkedIn = Appointment.checkIn({
+      eventId: eventIds.generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })(booked.aggregateState);
+    const examinationStarted = Appointment.startExamination({
+      eventId: eventIds.generate(),
       occurredAt: times.now,
       actorUserId: ids.veterinarianUser,
-    })(checkedIn, ids.veterinarian).aggregateState;
+    })(checkedIn.aggregateState, ids.veterinarian);
+    const payment = Appointment.recordPayment({
+      eventId: eventIds.generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })(examinationStarted.aggregateState, {
+      diagnosis: Sensitive.of("private diagnosis"),
+      treatment: Sensitive.of("private treatment"),
+      amount: PaymentAmount.schema.parse(4800),
+    });
     await createAppointmentEventStore(db).store(
-      Appointment.recordPayment({
-        eventId: eventIdGenerator().generate(),
-        occurredAt: times.now,
-        actorUserId: ids.receptionist,
-      })(examining, {
-        diagnosis: Sensitive.of("private diagnosis"),
-        treatment: Sensitive.of("private treatment"),
-        amount: PaymentAmount.schema.parse(4800),
-      }),
+      booked,
+      checkedIn,
+      examinationStarted,
+      payment,
     );
 
     const result = await ListAppointmentsUseCase.create({

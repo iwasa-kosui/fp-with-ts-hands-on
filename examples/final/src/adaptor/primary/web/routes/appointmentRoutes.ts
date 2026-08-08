@@ -416,6 +416,8 @@ export const registerAppointmentRoutes = (
               return renderBooking(context, dependencies, {
                 petId: "選択した飼い主に登録されたペットを選んでください。",
               });
+            case "AppointmentConflict":
+              return context.redirect(`${detailUrl(error.appointmentId)}?error=appointment-conflict`, 303);
             case "IdentityGenerationFailed":
             case "RepositoryError":
               return repositoryFailure(context);
@@ -457,6 +459,8 @@ export const registerAppointmentRoutes = (
               return respondToUseCaseError(context, { kind: "NotFound" });
             case "InvalidAppointmentState":
               return invalidState(context, appointmentId.value);
+            case "AppointmentConflict":
+              return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
             case "IdentityGenerationFailed":
             case "RepositoryError":
               return repositoryFailure(context);
@@ -497,6 +501,8 @@ export const registerAppointmentRoutes = (
               return respondToUseCaseError(context, { kind: "NotFound" });
             case "InvalidAppointmentState":
               return invalidState(context, appointmentId.value);
+            case "AppointmentConflict":
+              return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
             case "RepositoryError":
               return repositoryFailure(context);
             default:
@@ -567,6 +573,8 @@ export const registerAppointmentRoutes = (
               return respondToUseCaseError(context, { kind: "NotFound" });
             case "InvalidAppointmentState":
               return invalidState(context, appointmentId.value);
+            case "AppointmentConflict":
+              return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
             case "IdentityGenerationFailed":
             case "RepositoryError":
               return repositoryFailure(context);
@@ -598,6 +606,8 @@ export const registerAppointmentRoutes = (
               return respondToUseCaseError(context, { kind: "NotFound" });
             case "InvalidAppointmentState":
               return invalidState(context, appointmentId.value);
+            case "AppointmentConflict":
+              return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
             case "IdentityGenerationFailed":
             case "RepositoryError":
               return repositoryFailure(context);

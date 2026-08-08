@@ -15,6 +15,13 @@
       "when": 1786287600000,
       "tag": "0001_installation",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786374000000,
+      "tag": "0002_follow_up_request_unique",
+      "breakpoints": true
     }
   ]
 }

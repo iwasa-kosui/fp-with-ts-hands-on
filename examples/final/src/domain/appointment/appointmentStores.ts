@@ -1,4 +1,6 @@
-import type { AggregateStore } from "../aggregate/aggregateStore.js";
+import type { ResultAsync } from "neverthrow";
+import type { RepositoryError } from "../aggregate/repositoryError.js";
+import type { AppointmentId } from "./appointmentId.js";
 import type {
   AppointmentBooked,
   AppointmentCanceled,
@@ -7,8 +9,16 @@ import type {
   PaymentRecorded,
 } from "./appointmentEvent.js";
 
-export type AppointmentBookedStore = AggregateStore<AppointmentBooked>;
-export type AppointmentCheckedInStore = AggregateStore<AppointmentCheckedIn>;
-export type ExaminationStartedStore = AggregateStore<ExaminationStarted>;
-export type PaymentRecordedStore = AggregateStore<PaymentRecorded>;
-export type AppointmentCanceledStore = AggregateStore<AppointmentCanceled>;
+export type AppointmentConflict = Readonly<{
+  kind: "AppointmentConflict";
+  appointmentId: AppointmentId;
+}>;
+export type AppointmentStoreError = RepositoryError | AppointmentConflict;
+type AppointmentStore<TEvent> = Readonly<{
+  store: (...events: readonly TEvent[]) => ResultAsync<void, AppointmentStoreError>;
+}>;
+export type AppointmentBookedStore = AppointmentStore<AppointmentBooked>;
+export type AppointmentCheckedInStore = AppointmentStore<AppointmentCheckedIn>;
+export type ExaminationStartedStore = AppointmentStore<ExaminationStarted>;
+export type PaymentRecordedStore = AppointmentStore<PaymentRecorded>;
+export type AppointmentCanceledStore = AppointmentStore<AppointmentCanceled>;

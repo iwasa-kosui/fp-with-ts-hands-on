@@ -15,7 +15,7 @@ import {
   type Scheduled,
 } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
-import type { AppointmentBookedStore } from "../domain/appointment/appointmentStores.js";
+import type { AppointmentBookedStore, AppointmentConflict, AppointmentStoreError } from "../domain/appointment/appointmentStores.js";
 import type { Owner } from "../domain/owner/owner.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
 import type { OwnerByIdResolver } from "../domain/owner/ownerResolver.js";
@@ -60,6 +60,7 @@ export type UseCaseError =
   | PetNotFound
   | PetOwnerMismatch
   | IdentityGenerationFailed
+  | AppointmentConflict
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type AppointmentIdGenerator = Readonly<{
@@ -82,6 +83,10 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
   kind: "RepositoryError",
   operation: error.operation,
 });
+const toStoreError = (
+  error: AppointmentStoreError,
+): UseCaseRepositoryError | AppointmentConflict =>
+  error.kind === "AppointmentConflict" ? error : toRepositoryError(error);
 const ensureOwner =
   (ownerId: OwnerId) =>
   (owner: Owner | undefined): Result<Owner, OwnerNotFound> =>
@@ -143,7 +148,7 @@ const run =
       .andThrough((event) =>
         dependencies.appointmentBookedStore
           .store(event)
-          .mapErr(toRepositoryError),
+          .mapErr(toStoreError),
       )
       .map((event) => ({ appointment: event.aggregateState }));
 

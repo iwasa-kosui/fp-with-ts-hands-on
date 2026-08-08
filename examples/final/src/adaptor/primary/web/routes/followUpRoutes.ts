@@ -143,6 +143,8 @@ export const registerFollowUpRoutes = (
               return respondToUseCaseError(context, { kind: "Unauthorized" });
             case "FollowUpTargetNotFound":
               return context.redirect("/follow-ups?error=target-not-found", 303);
+            case "FollowUpRequestConflict":
+              return context.redirect("/follow-ups?error=request-conflict", 303);
             case "ExamResultPetMismatch":
             case "IdentityGenerationFailed":
             case "RepositoryError":

@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { objectToFormData } from "@inertiajs/core";
 import { describe, expect, test } from "vitest";
+import { errAsync, okAsync } from "neverthrow";
 
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
 import {
@@ -12,6 +13,12 @@ import {
   usersTable,
 } from "../../src/adaptor/secondary/sqlite/schema.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
+import { EventId } from "../../src/domain/aggregate/eventId.js";
+import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { createUserByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/userResolver.js";
+import { createFollowUpResolver } from "../../src/adaptor/secondary/sqlite/resolver/followUpResolver.js";
+import { createFollowUpEventStore } from "../../src/adaptor/secondary/sqlite/store/followUpEventStore.js";
+import { RequestFollowUpUseCase } from "../../src/useCase/requestFollowUpUseCase.js";
 import {
   createApp,
   createApplicationDependencies,
@@ -421,6 +428,34 @@ describe("clinic workflow routes", () => {
       props: { errors: { form: "現在の予約状態ではこの操作を実行できません。画面を更新して状態を確認してください。" } },
     });
 
+    const conflictAppointmentId = AppointmentId.schema.parse(appointment.appointmentId);
+    const authoritativeConflictApp = createApp({
+      ...createApplicationDependencies(harness.database, { isProduction: false }),
+      checkInAppointment: {
+        run: () => errAsync({
+          kind: "AppointmentConflict" as const,
+          appointmentId: conflictAppointmentId,
+        }),
+      },
+    });
+    const authoritativeConflict = await authoritativeConflictApp.request(
+      `/appointments/${appointment.appointmentId}/check-in`,
+      {
+        method: "POST",
+        body: new URLSearchParams(),
+        headers: {
+          ...inertiaHeaders,
+          "Content-Type": "application/x-www-form-urlencoded",
+          Origin: "http://localhost",
+          Cookie: adminCookie,
+        },
+      },
+    );
+    expect(authoritativeConflict.status).toBe(303);
+    expect(authoritativeConflict.headers.get("location")).toBe(
+      `/appointments/${appointment.appointmentId}?error=appointment-conflict`,
+    );
+
     const invalidPayment = await post(
       harness,
       `/appointments/${appointment.appointmentId}/payment`,
@@ -523,6 +558,55 @@ describe("clinic workflow routes", () => {
       .get();
     expect(followUpEvent?.eventId).not.toBe(paymentEvent?.eventId);
     expect(followUpEvent?.occurredAt).toBe("2026-08-09T03:00:00.000Z");
+    const duplicate = await post(
+      harness,
+      "/follow-ups/request",
+      { appointmentIds: appointment.appointmentId },
+      adminCookie,
+    );
+    expect(duplicate.status).toBe(303);
+    expect(duplicate.headers.get("location")).toBe("/follow-ups?error=request-conflict");
+    expect(
+      harness.database
+        .select()
+        .from(domainEventsTable)
+        .where(eq(domainEventsTable.eventName, "follow-up.requested"))
+        .all(),
+    ).toHaveLength(1);
+
+    const staleRequestFollowUp = RequestFollowUpUseCase.create({
+      userResolver: createUserByIdResolver(harness.database),
+      followUpResolver: createFollowUpResolver(harness.database),
+      followUpRequestReader: { listRequestedAppointmentIds: () => okAsync([]) },
+      followUpRequestedStore: createFollowUpEventStore(harness.database),
+      eventIdGenerator: {
+        generate: () => EventId.schema.parse("71000000-0000-4000-8000-000000000001"),
+      },
+      clock: { now: () => Timestamp.schema.parse("2026-08-09T03:30:00.000Z") },
+    });
+    const staleApp = createApp({
+      ...createApplicationDependencies(harness.database, { isProduction: false }),
+      requestFollowUp: staleRequestFollowUp,
+    });
+    const stale = await staleApp.request("/follow-ups/request", {
+      method: "POST",
+      body: new URLSearchParams({ appointmentIds: appointment.appointmentId }),
+      headers: {
+        ...inertiaHeaders,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Origin: "http://localhost",
+        Cookie: adminCookie,
+      },
+    });
+    expect(stale.status).toBe(303);
+    expect(stale.headers.get("location")).toBe("/follow-ups?error=request-conflict");
+    expect(
+      harness.database
+        .select()
+        .from(domainEventsTable)
+        .where(eq(domainEventsTable.eventName, "follow-up.requested"))
+        .all(),
+    ).toHaveLength(1);
 
     expect((await post(harness, `/pets/${pet.petId}/delete`, {}, adminCookie)).status).toBe(302);
     expect((await post(harness, `/owners/${owner.ownerId}/delete`, {}, adminCookie)).status).toBe(302);

@@ -19,7 +19,7 @@ import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
 import { ExamResult } from "../../src/domain/examResult/examResult.js";
 import type { FollowUpCandidate } from "../../src/domain/followUp/followUpCandidate.js";
-import type { FollowUpRequested } from "../../src/domain/followUp/followUpRequested.js";
+import { FollowUpRequested } from "../../src/domain/followUp/followUpRequested.js";
 import { Owner } from "../../src/domain/owner/owner.js";
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
 import { PetId } from "../../src/domain/pet/petId.js";
@@ -54,6 +54,8 @@ const ids = {
   otherExam: ExamId.schema.parse("61000000-0000-4000-8000-000000000011"),
   paymentEvent: EventId.schema.parse("61000000-0000-4000-8000-000000000012"),
   followUpEvent: EventId.schema.parse("61000000-0000-4000-8000-000000000013"),
+  secondFollowUpEvent: EventId.schema.parse("61000000-0000-4000-8000-000000000017"),
+  thirdFollowUpEvent: EventId.schema.parse("61000000-0000-4000-8000-000000000018"),
 } as const;
 const paymentAt = Timestamp.schema.parse("2026-08-09T02:00:00.000Z");
 const followUpAt = Timestamp.schema.parse("2026-08-09T03:00:00.000Z");
@@ -79,6 +81,9 @@ const userResolver = {
   resolveById: (userId: UserId) =>
     okAsync(users.find((user) => user.userId === userId)),
 };
+const noFollowUpRequests = {
+  listRequestedAppointmentIds: () => okAsync([]),
+};
 const owner = Owner.parse({
   ownerId: ids.owner,
   name: "Owner Secret",
@@ -86,35 +91,33 @@ const owner = Owner.parse({
   phone: "090-9999-9999",
 })._unsafeUnwrap();
 
+const bookedEvent = Appointment.book({
+  eventId: EventId.schema.parse("61000000-0000-4000-8000-000000000016"),
+  occurredAt: paymentAt,
+  actorUserId: ids.receptionist,
+})({
+  appointmentId: ids.appointment,
+  ownerId: ids.owner,
+  petId: ids.pet,
+  scheduledAt: paymentAt,
+  reason: Sensitive.of("private reason"),
+});
+const checkedInEvent = Appointment.checkIn({
+  eventId: EventId.schema.parse("61000000-0000-4000-8000-000000000015"),
+  occurredAt: paymentAt,
+  actorUserId: ids.receptionist,
+})(bookedEvent.aggregateState);
+const examinationStartedEvent = Appointment.startExamination({
+  eventId: EventId.schema.parse("61000000-0000-4000-8000-000000000014"),
+  occurredAt: paymentAt,
+  actorUserId: ids.veterinarian,
+})(checkedInEvent.aggregateState, ids.veterinarianId);
 const paidEvent = Appointment.recordPayment({
   eventId: ids.paymentEvent,
   occurredAt: paymentAt,
   actorUserId: ids.receptionist,
 })(
-  Appointment.startExamination({
-    eventId: EventId.schema.parse("61000000-0000-4000-8000-000000000014"),
-    occurredAt: paymentAt,
-    actorUserId: ids.veterinarian,
-  })(
-    Appointment.checkIn({
-      eventId: EventId.schema.parse("61000000-0000-4000-8000-000000000015"),
-      occurredAt: paymentAt,
-      actorUserId: ids.receptionist,
-    })(
-      Appointment.book({
-        eventId: EventId.schema.parse("61000000-0000-4000-8000-000000000016"),
-        occurredAt: paymentAt,
-        actorUserId: ids.receptionist,
-      })({
-        appointmentId: ids.appointment,
-        ownerId: ids.owner,
-        petId: ids.pet,
-        scheduledAt: paymentAt,
-        reason: Sensitive.of("private reason"),
-      }).aggregateState,
-    ).aggregateState,
-    ids.veterinarianId,
-  ).aggregateState,
+  examinationStartedEvent.aggregateState,
   {
     diagnosis: Sensitive.of("private diagnosis"),
     treatment: Sensitive.of("private treatment"),
@@ -143,10 +146,16 @@ describe("follow-up use cases", () => {
   test("uses fresh event identity and time instead of payment provenance, and both history rows insert", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
-    await createAppointmentEventStore(db).store(paidEvent);
+    await createAppointmentEventStore(db).store(
+      bookedEvent,
+      checkedInEvent,
+      examinationStartedEvent,
+      paidEvent,
+    );
 
     const result = await RequestFollowUpUseCase.create({
       userResolver,
+      followUpRequestReader: noFollowUpRequests,
       followUpResolver: { resolveCandidates: () => okAsync([candidate]) },
       followUpRequestedStore: createFollowUpEventStore(db),
       eventIdGenerator: { generate: () => ids.followUpEvent },
@@ -159,11 +168,9 @@ describe("follow-up use cases", () => {
     expect(result._unsafeUnwrap().appointmentIds).toEqual([ids.appointment]);
     const history = await createEventHistoryReader(db).list();
     const events = history._unsafeUnwrap();
-    expect(events.map((event) => event.eventId)).toEqual([
-      ids.paymentEvent,
-      ids.followUpEvent,
-    ]);
-    expect(events[1]).toMatchObject({
+    expect(events.map((event) => event.eventId)).toContain(ids.paymentEvent);
+    expect(events.map((event) => event.eventId)).toContain(ids.followUpEvent);
+    expect(events.at(-1)).toMatchObject({
       occurredAt: followUpAt,
       actorUserId: ids.receptionist,
       eventName: "follow-up.requested",
@@ -191,6 +198,7 @@ describe("follow-up use cases", () => {
     } as const satisfies FollowUpCandidate;
     const result = await RequestFollowUpUseCase.create({
       userResolver,
+      followUpRequestReader: noFollowUpRequests,
       followUpResolver: {
         resolveCandidates: () => okAsync([candidate, mismatched]),
       },
@@ -219,6 +227,7 @@ describe("follow-up use cases", () => {
     const batches: (readonly FollowUpRequested[])[] = [];
     const result = await RequestFollowUpUseCase.create({
       userResolver,
+      followUpRequestReader: noFollowUpRequests,
       followUpResolver: {
         resolveCandidates: () => okAsync([candidate, duplicate]),
       },
@@ -243,6 +252,7 @@ describe("follow-up use cases", () => {
   test("returns a repository error when the single batch store fails", async () => {
     const result = await RequestFollowUpUseCase.create({
       userResolver,
+      followUpRequestReader: noFollowUpRequests,
       followUpResolver: { resolveCandidates: () => okAsync([candidate]) },
       followUpRequestedStore: {
         store: () =>
@@ -265,6 +275,41 @@ describe("follow-up use cases", () => {
     });
   });
 
+  test("returns an early typed conflict without resolving or storing an existing request", async () => {
+    let resolverCalls = 0;
+    let storeCalls = 0;
+    const result = await RequestFollowUpUseCase.create({
+      userResolver,
+      followUpRequestReader: {
+        listRequestedAppointmentIds: () => okAsync([ids.appointment]),
+      },
+      followUpResolver: {
+        resolveCandidates: () => {
+          resolverCalls += 1;
+          return okAsync([candidate]);
+        },
+      },
+      followUpRequestedStore: {
+        store: () => {
+          storeCalls += 1;
+          return okAsync(undefined);
+        },
+      },
+      eventIdGenerator: { generate: () => ids.followUpEvent },
+      clock: { now: () => followUpAt },
+    }).run({
+      actorUserId: ids.receptionist,
+      appointmentIds: [ids.appointment],
+    });
+
+    expect(result._unsafeUnwrapErr()).toEqual({
+      kind: "FollowUpRequestConflict",
+      appointmentId: ids.appointment,
+    });
+    expect(resolverCalls).toBe(0);
+    expect(storeCalls).toBe(0);
+  });
+
   test("rolls back the whole SQLite batch when a later follow-up insert fails", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
@@ -278,6 +323,7 @@ describe("follow-up use cases", () => {
     } as const satisfies FollowUpCandidate;
     const result = await RequestFollowUpUseCase.create({
       userResolver,
+      followUpRequestReader: noFollowUpRequests,
       followUpResolver: {
         resolveCandidates: () => okAsync([candidate, second]),
       },
@@ -293,6 +339,57 @@ describe("follow-up use cases", () => {
     expect(
       (await createEventHistoryReader(db).list())._unsafeUnwrap(),
     ).toEqual([]);
+  });
+
+  test("returns a typed conflict for duplicate direct requests and retains one history row", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const store = createFollowUpEventStore(db);
+    const first = FollowUpRequested.create(
+      { eventId: ids.followUpEvent, occurredAt: followUpAt, actorUserId: ids.receptionist },
+      ids.appointment,
+      ids.pet,
+    );
+    const duplicate = FollowUpRequested.create(
+      { eventId: ids.secondFollowUpEvent, occurredAt: followUpAt, actorUserId: ids.receptionist },
+      ids.appointment,
+      ids.pet,
+    );
+
+    expect((await store.store(first)).isOk()).toBe(true);
+    expect((await store.store(duplicate))._unsafeUnwrapErr()).toMatchObject({
+      kind: "FollowUpRequestConflict",
+      appointmentId: ids.appointment,
+    });
+    expect((await createEventHistoryReader(db).list())._unsafeUnwrap()).toHaveLength(1);
+  });
+
+  test("rolls back a follow-up batch when one appointment was already requested", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const store = createFollowUpEventStore(db);
+    await store.store(FollowUpRequested.create(
+      { eventId: ids.followUpEvent, occurredAt: followUpAt, actorUserId: ids.receptionist },
+      ids.appointment,
+      ids.pet,
+    ));
+    const result = await store.store(
+      FollowUpRequested.create(
+        { eventId: ids.secondFollowUpEvent, occurredAt: followUpAt, actorUserId: ids.receptionist },
+        ids.otherAppointment,
+        ids.otherPet,
+      ),
+      FollowUpRequested.create(
+        { eventId: ids.thirdFollowUpEvent, occurredAt: followUpAt, actorUserId: ids.receptionist },
+        ids.appointment,
+        ids.pet,
+      ),
+    );
+
+    expect(result._unsafeUnwrapErr()).toMatchObject({ kind: "FollowUpRequestConflict" });
+    const events = (await createEventHistoryReader(db).list())._unsafeUnwrap();
+    expect(events).toHaveLength(1);
+    expect(events[0]?.aggregateId).toBe(ids.appointment);
   });
 
   test("lists validated targets for shared clinic read access", async () => {
