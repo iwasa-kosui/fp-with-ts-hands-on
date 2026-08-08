@@ -100,7 +100,7 @@
 
 - [ ] **Step 1: Add dependencies and scripts**
 
-Set `dev`, `build`, `db:generate`, `db:migrate`, `typecheck`, and `test` scripts. Add `@hono/inertia@^0.7.0`, `@hono/node-server@^2.1.0`, `@inertiajs/react@^3.6.1`, `hono@^4.12.8`, `react@^19.2.4`, `react-dom@^19.2.4`, `drizzle-orm@^0.45.3`, and `better-sqlite3@^11.9.1` as runtime dependencies. Add `@hono/vite-build@^1.11.1`, `@hono/vite-dev-server@^0.26.1`, `@vitejs/plugin-react@^4.3.4`, `@types/better-sqlite3@^7.6.13`, `@types/react@^19.2.14`, `@types/react-dom@^19.2.3`, `drizzle-kit@^0.31.10`, and `vite@^6.1.1` as dev dependencies. Keep neverthrow, Zod, Standard Schema, and Vitest.
+Set `dev`, `build`, `db:generate`, `db:migrate`, `typecheck`, and `test` scripts. Add `@hono/inertia@^0.7.0`, `@hono/node-server@^2.1.0`, `@inertiajs/react@^3.6.1`, `hono@^4.12.8`, `react@^19.2.4`, `react-dom@^19.2.4`, `drizzle-orm@^0.45.2`, and `better-sqlite3@^11.9.1` as runtime dependencies. Add `@hono/vite-build@^1.11.1`, `@hono/vite-dev-server@^0.26.1`, `@vitejs/plugin-react@^4.3.4`, `@types/better-sqlite3@^7.6.13`, `@types/react@^19.2.14`, `@types/react-dom@^19.2.3`, `drizzle-kit@^0.31.10`, and `vite@^6.1.1` as dev dependencies. Keep neverthrow, Zod, Standard Schema, and Vitest.
 
 ```json
 {
