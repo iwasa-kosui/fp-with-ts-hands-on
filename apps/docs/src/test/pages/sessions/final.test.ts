@@ -35,6 +35,11 @@ describe("Final application", () => {
     expect(page).toContain("Receptionist");
     expect(page).toContain("Veterinarian");
     expect(page).toContain("EventHistoryReader");
+    expect(page).toContain("Node v25.4.0");
+    expect(page).toContain("Node.js 20 ではローカル実行していません");
+    expect(page).toContain("Admin capability");
+    expect(page).toContain("SanitizedAuditRecord");
+    expect(page).toContain("dist/app.js");
     expect(page).toContain("pnpm --filter @fp-with-ts/clinic-final dev");
     expect(page).toContain("pnpm --filter @fp-with-ts/clinic-final build");
     expect(page).toContain(

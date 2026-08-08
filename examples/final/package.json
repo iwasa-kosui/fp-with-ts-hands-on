@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --mode client && vite build && node test/builtEntrySmoke.mjs",
+    "build": "vite build --mode client && vite build && vite build --mode app-artifact && node test/builtEntrySmoke.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "typecheck": "tsc --noEmit",

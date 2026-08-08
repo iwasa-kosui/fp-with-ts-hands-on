@@ -35,7 +35,9 @@ if (session === undefined) throw new Error("Unknown session: final");
       <dt><code>src/adaptor/secondary</code></dt>
       <dd>Drizzle/SQLite、パスワードハッシュ、セッショントークンを扱います。</dd>
       <dt><code>src/app.ts</code></dt>
-      <dd>migration、依存関係、middleware、route を一つの Hono app に構成します。</dd>
+      <dd>SQLite を明示的に受け取る factory、依存関係、middleware、route を一つの Hono app に構成します。</dd>
+      <dt><code>src/server.ts</code></dt>
+      <dd>既定の file SQLite と migration directory を選び、production server entry の app を構成します。</dd>
     </dl>
     <p>
       状態遷移関数が作るのは、操作後の projection を持つ typed event です。次は <code
@@ -77,7 +79,7 @@ if (session === undefined) throw new Error("Unknown session: final");
   <section>
     <h2 id="final-operations">起動して業務フローを試す</h2>
     <p>
-      Node.js 20 以上と pnpm を用意します。リポジトリルートで依存関係を入れ、final package の dev server を起動します。
+      Node.js 20 以上と pnpm を用意します。手元では Node v25.4.0 で検証しており、Node.js 20 ではローカル実行していません（サポート対象は Node.js 20 以上です）。リポジトリルートで依存関係を入れ、final package の dev server を起動します。
     </p>
     <CodeBlock
       language="shell"
@@ -107,7 +109,7 @@ pnpm --filter @fp-with-ts/clinic-final exec node dist/index.js`}
     />
     <p>
       <code>db:migrate</code> は現在の migration を file SQLite へ適用し、<code>db:generate</code> は schema 変更時の SQL を生成します。<code>build</code> は
-      <code>dist/index.js</code>、<code>dist/static/client.js</code>、<code>dist/static/styles.css</code> を作り、ソケットを開かない built-entry smoke check も行います。
+      常に port 3000 で Node server を起動する <code>dist/index.js</code>、ソケットを開かずに明示した SQLite へ接続できる app factory の <code>dist/app.js</code>、<code>dist/static/client.js</code>、<code>dist/static/styles.css</code> を作ります。built smoke は <code>dist/app.js</code> に <code>:memory:</code> SQLite と migration directory を渡し、<code>app.request</code> で確認します。
     </p>
   </section>
 
@@ -165,7 +167,7 @@ export const StartExaminationUseCase = {
       の insert/update/delete を組み立て、同じ event の監査行とともに1つの Drizzle transaction へ保存します。両方を atomic に確定する契約が、現在状態と監査記録の片落ちを防ぎます。
     </p>
     <p>
-      <code>EventHistoryReader</code> は SQLite の保存行を Zod で検証し、event ID、aggregate ID、event name、実行者、時刻で構成したサニタイズ済みの監査情報を Admin 画面へ届けます。この read port の出力契約により、パスワードハッシュ、セッショントークンハッシュ、カルテ内容を監査画面の props から分離します。
+      監査用の1メソッド port は <code>EventHistoryReader.list(admin: Admin): ResultAsync&lt;readonly SanitizedAuditRecord[], RepositoryError&gt;</code> です。Admin capability を受け取る reader 境界で SQLite の保存行を Zod 検証し、許可した event ID、aggregate ID、event name、実行者、時刻、業務上安全な値だけを <code>SanitizedAuditRecord</code> へ写して Admin 画面へ届けます。この出力契約により、監査画面の props は表示を許可した情報だけで構成されます。
     </p>
     <p>
       ユーザー、飼い主、ペットの削除は現在の projection を物理削除します。削除 event と過去の監査行は保持されるため、この操作は個人情報の完全消去を意味しません。利用目的と保持期間は型で決められないため、人が別途レビューする制約として残ります。

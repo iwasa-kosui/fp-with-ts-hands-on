@@ -39,6 +39,38 @@ const deletedContext = context(
 );
 
 describe("owner and pet aggregates", () => {
+  test("keeps owner and pet IDs nominally distinct", () => {
+    const acceptsOwnerId = (_id: OwnerId): void => undefined;
+    const acceptsPetId = (_id: PetId): void => undefined;
+
+    if (false) {
+      // @ts-expect-error A PetId cannot satisfy an OwnerId parameter.
+      acceptsOwnerId(petId);
+      // @ts-expect-error An OwnerId cannot satisfy a PetId parameter.
+      acceptsPetId(ownerId);
+    }
+
+    expect(ownerId).not.toBe(petId);
+  });
+
+  test("defaults examination follow-up to false and rejects empty items", () => {
+    const defaulted = ExamResult.parse({
+      examId,
+      petId,
+      collectedAt: Timestamp.schema.parse("2026-08-30T06:30:00.000Z"),
+      items: ["observation"],
+    });
+    const empty = ExamResult.parse({
+      examId,
+      petId,
+      collectedAt: Timestamp.schema.parse("2026-08-30T06:30:00.000Z"),
+      items: [],
+    });
+
+    expect(defaulted._unsafeUnwrap().needsFollowUp).toBe(false);
+    expect(empty.isErr()).toBe(true);
+  });
+
   test("exports only fixed event constructors and always omits deleted aggregate state", () => {
     const owner = Owner.parse({
       ownerId,

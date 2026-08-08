@@ -21,11 +21,20 @@ import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
 import { PasswordHash } from "../../src/domain/user/passwordHash.js";
 import { User } from "../../src/domain/user/user.js";
+import type { Admin, Receptionist } from "../../src/domain/user/user.js";
 import { UserEmail } from "../../src/domain/user/userEmail.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
+import type { SanitizedAuditRecord } from "../../src/useCase/query/eventHistoryReader.js";
 
 const passwordHash = `scrypt$${"A".repeat(22)}==$${"B".repeat(86)}==`;
+const auditAdmin = {
+  kind: "Admin",
+  userId: UserId.schema.parse("20000000-0000-4000-8000-000000000020"),
+  email: UserEmail.schema.parse("audit-admin@example.test"),
+  name: UserName.schema.parse("Audit Admin"),
+  passwordHash: PasswordHash.schema.parse(passwordHash),
+} as const satisfies Admin;
 const appointmentId = "30000000-0000-4000-8000-000000000001";
 const ownerId = "30000000-0000-4000-8000-000000000002";
 const petId = "30000000-0000-4000-8000-000000000003";
@@ -122,11 +131,48 @@ describe("SQLite resolvers", () => {
     await createUserEventStore(db).store(event);
 
     const resolvedUser = await createUserByIdResolver(db).resolveById(userId);
-    const resolvedEvents = await createEventHistoryReader(db).list();
+    const eventHistoryReader = createEventHistoryReader(db);
+    const resolvedEvents = await eventHistoryReader.list(auditAdmin);
+
+    if (false) {
+      const receptionist = {
+        ...auditAdmin,
+        kind: "Receptionist",
+      } as const satisfies Receptionist;
+      // @ts-expect-error Audit history requires an Admin capability.
+      eventHistoryReader.list(receptionist);
+
+      const rawPayload: Readonly<Record<string, unknown>> = {
+        privateNote: { nested: "must not reach a direct consumer" },
+      };
+      const unsafeRecord: SanitizedAuditRecord = {
+        ...resolvedEvents._unsafeUnwrap()[0]!,
+        // @ts-expect-error Sanitized audit DTOs accept only safe scalar values.
+        eventPayload: rawPayload,
+      };
+      void unsafeRecord;
+    }
 
     expect(resolvedUser.isOk() && resolvedUser.value?.kind).toBe("Admin");
     expect(resolvedUser.isOk() && resolvedUser.value?.email.unwrap()).toBe("admin@example.test");
-    expect(resolvedEvents.isOk() && resolvedEvents.value).toHaveLength(1);
+    expect(resolvedEvents._unsafeUnwrap()).toEqual([
+      {
+        eventId: event.eventId,
+        aggregateId: userId,
+        aggregateName: "User",
+        aggregateState: { kind: "Admin", userId },
+        eventName: "user.created",
+        eventPayload: { role: "Admin", userId },
+        occurredAt: event.occurredAt,
+        actorUserId: userId,
+      },
+    ]);
+    expect(JSON.stringify(resolvedEvents._unsafeUnwrap())).not.toContain(
+      "admin@example.test",
+    );
+    expect(JSON.stringify(resolvedEvents._unsafeUnwrap())).not.toContain(
+      passwordHash,
+    );
   });
 
   test("maps a corrupt SQLite row to RepositoryError", async () => {
@@ -276,7 +322,7 @@ describe("SQLite resolvers", () => {
     migrateDatabase(db);
     insertDomainEvent(db, overrides);
 
-    const result = await createEventHistoryReader(db).list();
+    const result = await createEventHistoryReader(db).list(auditAdmin);
 
     expect(result.isErr()).toBe(true);
     expect(result.isErr() && result.error.operation).toBe(
@@ -308,7 +354,7 @@ describe("SQLite resolvers", () => {
     migrateDatabase(db);
     insertFollowUpEvent(db, overrides);
 
-    const result = await createEventHistoryReader(db).list();
+    const result = await createEventHistoryReader(db).list(auditAdmin);
 
     expect(result.isErr()).toBe(true);
     expect(result.isErr() && result.error.operation).toBe(

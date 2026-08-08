@@ -32,7 +32,7 @@ import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
 import { ListEventsUseCase } from "../../src/useCase/listEventsUseCase.js";
 import { ListFollowUpsUseCase } from "../../src/useCase/listFollowUpsUseCase.js";
-import type { EventHistoryEntry } from "../../src/useCase/query/eventHistoryReader.js";
+import type { SanitizedAuditRecord } from "../../src/useCase/query/eventHistoryReader.js";
 import { RequestFollowUpUseCase } from "../../src/useCase/requestFollowUpUseCase.js";
 
 const ids = {
@@ -167,7 +167,7 @@ describe("follow-up use cases", () => {
     });
 
     expect(result._unsafeUnwrap().appointmentIds).toEqual([ids.appointment]);
-    const history = await createEventHistoryReader(db).list();
+    const history = await createEventHistoryReader(db).list(users[0]);
     const events = history._unsafeUnwrap();
     expect(events.map((event) => event.eventId)).toContain(ids.paymentEvent);
     expect(events.map((event) => event.eventId)).toContain(ids.followUpEvent);
@@ -338,7 +338,7 @@ describe("follow-up use cases", () => {
 
     expect(result.isErr() && result.error.kind).toBe("RepositoryError");
     expect(
-      (await createEventHistoryReader(db).list())._unsafeUnwrap(),
+      (await createEventHistoryReader(db).list(users[0]))._unsafeUnwrap(),
     ).toEqual([]);
     expect(db.all(sql.raw("SELECT appointment_id FROM follow_up_request_claims"))).toEqual([]);
   });
@@ -363,7 +363,7 @@ describe("follow-up use cases", () => {
       kind: "FollowUpRequestConflict",
       appointmentId: ids.appointment,
     });
-    expect((await createEventHistoryReader(db).list())._unsafeUnwrap()).toHaveLength(1);
+    expect((await createEventHistoryReader(db).list(users[0]))._unsafeUnwrap()).toHaveLength(1);
     expect(db.all(sql.raw("SELECT appointment_id FROM follow_up_request_claims"))).toEqual([
       { appointment_id: ids.appointment },
     ]);
@@ -392,7 +392,7 @@ describe("follow-up use cases", () => {
     );
 
     expect(result._unsafeUnwrapErr()).toMatchObject({ kind: "FollowUpRequestConflict" });
-    const events = (await createEventHistoryReader(db).list())._unsafeUnwrap();
+    const events = (await createEventHistoryReader(db).list(users[0]))._unsafeUnwrap();
     expect(events).toHaveLength(1);
     expect(events[0]?.aggregateId).toBe(ids.appointment);
     expect(db.all(sql.raw("SELECT appointment_id FROM follow_up_request_claims"))).toEqual([
@@ -420,29 +420,18 @@ describe("follow-up use cases", () => {
 });
 
 describe("event history query", () => {
-  const rawEvent = {
+  const safeAuditRecord = {
     eventId: ids.paymentEvent,
     aggregateId: ids.appointment,
     aggregateName: "Appointment",
-    aggregateState: {
-      kind: "Paid",
-      appointmentId: ids.appointment,
-      reason: Sensitive.of("private reason"),
-      diagnosis: Sensitive.of("private diagnosis"),
-      treatment: Sensitive.of("private treatment"),
-      passwordHash: "password hash",
-      sessionToken: "session token",
-      unknownSecret: "must not leak",
-    },
+    aggregateState: { kind: "Paid", appointmentId: ids.appointment },
     eventName: "appointment.payment-recorded",
     eventPayload: {
       appointmentId: ids.appointment,
-      ownerEmail: "owner@example.test",
-      cause: new Error("repository private cause"),
     },
     occurredAt: paymentAt,
     actorUserId: ids.receptionist,
-  } as const satisfies EventHistoryEntry;
+  } as const satisfies SanitizedAuditRecord;
 
   test("rejects non-Admin before resolving events", async () => {
     let eventHistoryReaderCalls = 0;
@@ -451,7 +440,7 @@ describe("event history query", () => {
       eventHistoryReader: {
         list: () => {
           eventHistoryReaderCalls += 1;
-          return okAsync([rawEvent]);
+          return okAsync([safeAuditRecord]);
         },
       },
     }).run({ actorUserId: ids.receptionist });
@@ -460,10 +449,16 @@ describe("event history query", () => {
     expect(eventHistoryReaderCalls).toBe(0);
   });
 
-  test("returns metadata and only redacted/sanitized state and payload", async () => {
+  test("passes the resolved Admin capability and returns reader DTOs unchanged", async () => {
+    let receivedAdmin: User | undefined;
     const result = await ListEventsUseCase.create({
       userResolver,
-      eventHistoryReader: { list: () => okAsync([rawEvent]) },
+      eventHistoryReader: {
+        list: (admin) => {
+          receivedAdmin = admin;
+          return okAsync([safeAuditRecord]);
+        },
+      },
     }).run({ actorUserId: ids.admin });
 
     const serialized = JSON.stringify(result._unsafeUnwrap());
@@ -475,17 +470,8 @@ describe("event history query", () => {
       occurredAt: paymentAt,
       actorUserId: ids.receptionist,
     });
-    for (const secret of [
-      "private reason",
-      "private diagnosis",
-      "private treatment",
-      "password hash",
-      "session token",
-      "must not leak",
-      "owner@example.test",
-      "repository private cause",
-    ]) {
-      expect(serialized).not.toContain(secret);
-    }
+    expect(receivedAdmin?.kind).toBe("Admin");
+    expect(receivedAdmin?.userId).toBe(ids.admin);
+    expect(serialized).toBe(JSON.stringify({ events: [safeAuditRecord] }));
   });
 });

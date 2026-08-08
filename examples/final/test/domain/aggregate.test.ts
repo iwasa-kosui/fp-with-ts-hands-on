@@ -1,9 +1,11 @@
 import { ResultAsync } from "neverthrow";
+import { inspect } from "node:util";
 import { describe, expect, test } from "vitest";
 import type { AggregateStore } from "../../src/domain/aggregate/aggregateStore.js";
 import type { DomainEvent } from "../../src/domain/aggregate/domainEvent.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
+import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
 import { Sensitive } from "../../src/domain/shared/sensitive.js";
 import { UserId } from "../../src/domain/user/userId.js";
 
@@ -45,5 +47,22 @@ describe("aggregate event contracts", () => {
     expect(deleted.aggregateState).toBeUndefined();
     expect(received).toEqual([deleted]);
     expect(JSON.stringify(Sensitive.of("owner@example.test"))).toBe('"[REDACTED]"');
+  });
+
+  test("redacts Sensitive through JSON, String, and Node inspection", () => {
+    const sensitive = Sensitive.of("owner@example.test");
+
+    expect(JSON.stringify(sensitive)).toBe('"[REDACTED]"');
+    expect(String(sensitive)).toBe("[REDACTED]");
+    expect(inspect(sensitive)).toBe("[REDACTED]");
+  });
+
+  test("rejects invalid timestamps and non-positive or non-finite payment amounts", () => {
+    expect(Timestamp.parse("not-a-timestamp").isErr()).toBe(true);
+    expect(Timestamp.parse("2026-99-99T25:61:00Z").isErr()).toBe(true);
+
+    for (const amount of [0, -1, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      expect(PaymentAmount.parse(amount).isErr()).toBe(true);
+    }
   });
 });

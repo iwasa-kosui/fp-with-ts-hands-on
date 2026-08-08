@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { fileURLToPath } from "node:url";
 
 import { inertia } from "@hono/inertia";
 import { Hono } from "hono";
@@ -536,16 +535,15 @@ export const createApp = (dependencies: ApplicationDependencies) => {
   return app;
 };
 
-const databasePath =
-  process.env.NODE_ENV === "test"
-    ? ":memory:"
-    : fileURLToPath(new URL("../clinic.sqlite", import.meta.url));
-const database = createSqliteDatabase(databasePath);
-migrateDatabase(
-  database,
-  fileURLToPath(new URL("../drizzle", import.meta.url)),
-);
+export type DatabaseBackedApplicationOptions = Readonly<{
+  databasePath: string;
+  migrationsFolder: string;
+}>;
 
-const app = createApp(createApplicationDependencies(database));
-
-export default app;
+export const createDatabaseBackedApp = (
+  options: DatabaseBackedApplicationOptions,
+) => {
+  const database = createSqliteDatabase(options.databasePath);
+  migrateDatabase(database, options.migrationsFolder);
+  return createApp(createApplicationDependencies(database));
+};

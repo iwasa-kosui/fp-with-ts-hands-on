@@ -4,7 +4,7 @@
 
 ## セットアップと実行
 
-Node.js 20 以上と pnpm を使います。リポジトリルートで依存関係を入れ、アプリを起動します。
+Node.js 20 以上と pnpm を使います。手元では Node v25.4.0 で検証しており、Node.js 20 ではローカル実行していません（サポート対象は Node.js 20 以上です）。リポジトリルートで依存関係を入れ、アプリを起動します。
 
 ```bash
 pnpm install
@@ -20,7 +20,7 @@ pnpm --filter @fp-with-ts/clinic-final db:generate
 
 初回アクセスは `/setup` へ進み、最初の `Admin` を登録します。以後は `/login` からログインします。初期登録は installation marker、Admin、session、対応する2件の監査行を1つの transaction で確定します。
 
-production build は次で作成します。このコマンドは `dist/index.js`、`dist/static/client.js`、`dist/static/styles.css` を作り、ソケットを開かない built-entry smoke check も行います。実際の Node server は built entry を実行すると port 3000 で起動します。
+production build は次で作成します。このコマンドは、常に port 3000 で Node server を起動する `dist/index.js`、ソケットを開かずに明示した SQLite へ接続できる app factory の `dist/app.js`、`dist/static/client.js`、`dist/static/styles.css` を作ります。built smoke は `dist/app.js` に `:memory:` SQLite と migration directory を渡し、`app.request` で動作を確認します。
 
 ```bash
 pnpm --filter @fp-with-ts/clinic-final build
@@ -41,9 +41,10 @@ pnpm --filter @fp-with-ts/clinic-final exec node dist/index.js
 - `src/useCase`: one-method resolver/read port と event store を `ResultAsync` で合成する業務処理
 - `src/adaptor/primary`: Hono route、認証 cookie、Inertia props、React page
 - `src/adaptor/secondary`: Drizzle/SQLite resolver、query reader、event store、パスワードハッシュ
-- `src/app.ts`: migration、依存関係、middleware、route を一つの Hono app へ構成
+- `src/app.ts`: SQLite を明示的に受け取る factory、依存関係、middleware、route を一つの Hono app へ構成
+- `src/server.ts`: 既定の `clinic.sqlite` と migration directory を選び、production server entry の app を構成
 
-command use case は `AppointmentByIdResolver.resolveById` のような用途ごとの1メソッド port から現在状態を読み、ドメインが作った typed event を `ExaminationStartedStore.store` のような event store へ渡します。event store は event から projection の insert/update/delete と監査行の insert を組み立て、Drizzle transaction で両方を atomic に保存します。`EventHistoryReader` は保存行を Zod で検証し、サニタイズ済みの監査情報を Admin の一覧画面へ届けます。
+command use case は `AppointmentByIdResolver.resolveById` のような用途ごとの1メソッド port から現在状態を読み、ドメインが作った typed event を `ExaminationStartedStore.store` のような event store へ渡します。event store は event から projection の insert/update/delete と監査行の insert を組み立て、Drizzle transaction で両方を atomic に保存します。監査用の1メソッド port は `EventHistoryReader.list(admin: Admin): ResultAsync<readonly SanitizedAuditRecord[], RepositoryError>` です。Admin capability を受け取る reader 境界で保存行を Zod 検証し、許可した項目だけを `SanitizedAuditRecord` へ写して Admin の一覧画面へ届けます。
 
 ユーザー、飼い主、ペットの削除は projection の物理削除です。削除 event と過去の監査行は保持されるため、この操作は個人情報の完全消去を意味しません。この制約は、利用目的と保持期間を別途レビューする必要があることを示します。
 
