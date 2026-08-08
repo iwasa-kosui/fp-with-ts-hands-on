@@ -45,4 +45,11 @@ const create = <
   actorUserId: context.actorUserId,
 });
 
-export const PetEvent = { create } as const;
+export const createPetCreated = (context: EventContext, pet: Pet): PetCreated =>
+  create(context, pet.petId, pet.ownerId, pet, "PetCreated", "pet.created");
+
+export const createPetUpdated = (context: EventContext, pet: Pet): PetUpdated =>
+  create(context, pet.petId, pet.ownerId, pet, "PetUpdated", "pet.updated");
+
+export const createPetDeleted = (context: EventContext, pet: Pet): PetDeleted =>
+  create(context, pet.petId, pet.ownerId, undefined, "PetDeleted", "pet.deleted");

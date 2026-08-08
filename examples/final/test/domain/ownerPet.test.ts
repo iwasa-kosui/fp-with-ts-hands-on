@@ -5,10 +5,16 @@ import type { EventContext } from "../../src/domain/aggregate/eventContext.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
 import { ExamResult } from "../../src/domain/examResult/examResult.js";
+import {
+  createExamResultDeleted,
+  type ExamResultEvent,
+} from "../../src/domain/examResult/examResultEvent.js";
 import { Owner } from "../../src/domain/owner/owner.js";
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
+import { createOwnerDeleted, type OwnerEvent } from "../../src/domain/owner/ownerEvent.js";
 import { Pet } from "../../src/domain/pet/pet.js";
 import { PetId } from "../../src/domain/pet/petId.js";
+import { createPetDeleted, type PetEvent } from "../../src/domain/pet/petEvent.js";
 import { UserId } from "../../src/domain/user/userId.js";
 
 const ownerId = OwnerId.schema.parse("33333333-3333-4333-8333-333333333333");
@@ -36,6 +42,45 @@ const deletedContext = context(
 );
 
 describe("owner and pet aggregates", () => {
+  test("exports only fixed event constructors and always omits deleted aggregate state", () => {
+    const owner = Owner.parse({
+      ownerId,
+      name: "Owner A",
+      email: "owner@example.test",
+      phone: "090-0000-0000",
+    })._unsafeUnwrap();
+    const pet = Pet.parse({ petId, ownerId, name: "Mochi", species: "Cat" })._unsafeUnwrap();
+    const result = ExamResult.parse({
+      examId,
+      petId,
+      collectedAt: Timestamp.schema.parse("2026-08-30T06:30:00.000Z"),
+      items: ["skin inflammation"],
+      needsFollowUp: true,
+    })._unsafeUnwrap();
+
+    if (false) {
+      // @ts-expect-error Event unions expose no generic factory.
+      OwnerEvent.create(createdContext, owner.ownerId, owner, "OwnerCreated", "owner.created");
+      // @ts-expect-error Event unions expose no generic factory.
+      PetEvent.create(createdContext, pet.petId, pet.ownerId, pet, "PetCreated", "pet.created");
+      // @ts-expect-error Event unions expose no generic factory.
+      ExamResultEvent.create(
+        createdContext,
+        result.examId,
+        result.petId,
+        result,
+        "ExamResultRecorded",
+        "exam-result.recorded",
+      );
+    }
+
+    expect([
+      createOwnerDeleted(deletedContext, owner.ownerId).aggregateState,
+      createPetDeleted(deletedContext, pet).aggregateState,
+      createExamResultDeleted(deletedContext, result).aggregateState,
+    ]).toEqual([undefined, undefined, undefined]);
+  });
+
   test("wraps owner PII at the parsing boundary", () => {
     const parsed = Owner.parse({
       ownerId,

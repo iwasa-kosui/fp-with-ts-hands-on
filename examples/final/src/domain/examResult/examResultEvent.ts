@@ -60,4 +60,41 @@ const create = <
   actorUserId: context.actorUserId,
 });
 
-export const ExamResultEvent = { create } as const;
+export const createExamResultRecorded = (
+  context: EventContext,
+  result: ExamResult,
+): ExamResultRecorded =>
+  create(
+    context,
+    result.examId,
+    result.petId,
+    result,
+    "ExamResultRecorded",
+    "exam-result.recorded",
+  );
+
+export const createExamResultUpdated = (
+  context: EventContext,
+  result: ExamResult,
+): ExamResultUpdated =>
+  create(
+    context,
+    result.examId,
+    result.petId,
+    result,
+    "ExamResultUpdated",
+    "exam-result.updated",
+  );
+
+export const createExamResultDeleted = (
+  context: EventContext,
+  result: ExamResult,
+): ExamResultDeleted =>
+  create(
+    context,
+    result.examId,
+    result.petId,
+    undefined,
+    "ExamResultDeleted",
+    "exam-result.deleted",
+  );

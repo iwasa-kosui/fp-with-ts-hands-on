@@ -7,7 +7,9 @@ import { schemaResult } from "../shared/schemaResult.js";
 import { Sensitive } from "../shared/sensitive.js";
 import { ExamId } from "./examId.js";
 import {
-  ExamResultEvent,
+  createExamResultDeleted,
+  createExamResultRecorded,
+  createExamResultUpdated,
   type ExamResultDeleted,
   type ExamResultRecorded,
   type ExamResultUpdated,
@@ -27,39 +29,18 @@ export type ExamResult = Readonly<z.infer<typeof ExamResultSchema>>;
 export type ExamResultUpdate = Readonly<Pick<ExamResult, "items" | "needsFollowUp">>;
 
 const create = (context: EventContext) => (result: ExamResult): ExamResultRecorded =>
-  ExamResultEvent.create(
-    context,
-    result.examId,
-    result.petId,
-    result,
-    "ExamResultRecorded",
-    "exam-result.recorded",
-  );
+  createExamResultRecorded(context, result);
 
 const update =
   (context: EventContext) =>
   (result: ExamResult, changes: ExamResultUpdate): ExamResultUpdated => {
     const aggregateState = { ...result, ...changes } as const satisfies ExamResult;
 
-    return ExamResultEvent.create(
-      context,
-      result.examId,
-      result.petId,
-      aggregateState,
-      "ExamResultUpdated",
-      "exam-result.updated",
-    );
+    return createExamResultUpdated(context, aggregateState);
   };
 
 const remove = (context: EventContext) => (result: ExamResult): ExamResultDeleted =>
-  ExamResultEvent.create(
-    context,
-    result.examId,
-    result.petId,
-    undefined,
-    "ExamResultDeleted",
-    "exam-result.deleted",
-  );
+  createExamResultDeleted(context, result);
 
 export const ExamResult = {
   schema: ExamResultSchema,

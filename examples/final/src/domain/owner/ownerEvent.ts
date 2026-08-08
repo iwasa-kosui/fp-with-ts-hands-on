@@ -51,4 +51,11 @@ const create = <
   actorUserId: context.actorUserId,
 });
 
-export const OwnerEvent = { create } as const;
+export const createOwnerCreated = (context: EventContext, owner: Owner): OwnerCreated =>
+  create(context, owner.ownerId, owner, "OwnerCreated", "owner.created");
+
+export const createOwnerUpdated = (context: EventContext, owner: Owner): OwnerUpdated =>
+  create(context, owner.ownerId, owner, "OwnerUpdated", "owner.updated");
+
+export const createOwnerDeleted = (context: EventContext, ownerId: OwnerId): OwnerDeleted =>
+  create(context, ownerId, undefined, "OwnerDeleted", "owner.deleted");
