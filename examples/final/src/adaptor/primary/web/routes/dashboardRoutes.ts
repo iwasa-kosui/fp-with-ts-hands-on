@@ -38,7 +38,17 @@ export const registerDashboardRoutes = (
         (dashboard) =>
           context.render(
             "Dashboard",
-            withSharedProps(context, dashboard),
+            withSharedProps(context, {
+              counts: dashboard.counts,
+              activeAppointments: dashboard.activeAppointments.map(
+                (appointment) => ({
+                  appointmentId: appointment.appointmentId,
+                  kind: appointment.kind,
+                  petName: appointment.petName,
+                  scheduledAt: appointment.scheduledAt,
+                }),
+              ),
+            }),
           ),
         (error) => {
           switch (error.kind) {

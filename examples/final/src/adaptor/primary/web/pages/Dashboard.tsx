@@ -1,8 +1,16 @@
-import type { UseCaseOk as DashboardView } from "../../../../useCase/getDashboardUseCase.js";
+import { Link } from "@inertiajs/react";
+import type { AppointmentView } from "../../../../useCase/listAppointmentsUseCase.js";
+import type { DashboardCounts } from "../../../../useCase/getDashboardUseCase.js";
 import type { SharedPageProps } from "../pageProps.js";
 import Layout from "./Layout.js";
 
-type DashboardProps = SharedPageProps & DashboardView;
+type DashboardProps = SharedPageProps &
+  Readonly<{
+    counts: DashboardCounts;
+    activeAppointments: readonly Readonly<
+      Pick<AppointmentView, "appointmentId" | "kind" | "petName" | "scheduledAt">
+    >[];
+  }>;
 
 export default function Dashboard({
   activeAppointments,
@@ -25,7 +33,9 @@ export default function Dashboard({
           <ul>
             {activeAppointments.map((appointment) => (
               <li key={appointment.appointmentId}>
-                {appointment.petName} — {appointment.kind}
+                <Link href={`/appointments/${appointment.appointmentId}`}>
+                  {appointment.petName} — {appointment.kind}
+                </Link>
               </li>
             ))}
           </ul>

@@ -1,0 +1,48 @@
+import { Link } from "@inertiajs/react";
+
+import type { AppointmentView } from "../../../../../useCase/listAppointmentsUseCase.js";
+import type { SharedPageProps } from "../../pageProps.js";
+import Layout from "../Layout.js";
+
+type Props = SharedPageProps &
+  Readonly<{ appointments: readonly AppointmentView[] }>;
+
+export default function AppointmentsIndex({ auth, appointments }: Props) {
+  const canBook =
+    auth.user?.role === "Admin" || auth.user?.role === "Receptionist";
+  return (
+    <Layout title="予約一覧" user={auth.user}>
+      {canBook ? <p><Link href="/appointments/new">予約を登録</Link></p> : null}
+      {appointments.length === 0 ? (
+        <p>予約はありません。</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">予約日時</th>
+              <th scope="col">状態</th>
+              <th scope="col">飼い主</th>
+              <th scope="col">ペット</th>
+              <th scope="col">担当獣医師</th>
+            </tr>
+          </thead>
+          <tbody>
+            {appointments.map((appointment) => (
+              <tr key={appointment.appointmentId}>
+                <td>
+                  <Link href={`/appointments/${appointment.appointmentId}`}>
+                    {appointment.scheduledAt}
+                  </Link>
+                </td>
+                <td>{appointment.kind}</td>
+                <td>{appointment.ownerName}</td>
+                <td>{appointment.petName}</td>
+                <td>{appointment.veterinarianName ?? "未割当"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </Layout>
+  );
+}

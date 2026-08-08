@@ -20,6 +20,7 @@ export default function Layout({ children, title, user }: LayoutProps) {
         {user === undefined || user === null ? null : (
           <nav aria-label="メインナビゲーション">
             <Link href="/">ダッシュボード</Link>
+            <Link href="/appointments">予約</Link>
             {user.role === "Admin" ? (
               <Link href="/users">ユーザー</Link>
             ) : null}
@@ -27,7 +28,11 @@ export default function Layout({ children, title, user }: LayoutProps) {
               <>
                 <Link href="/owners">飼い主</Link>
                 <Link href="/pets">ペット</Link>
+                <Link href="/follow-ups">フォローアップ</Link>
               </>
+            ) : null}
+            {user.role === "Admin" ? (
+              <Link href="/events">イベント</Link>
             ) : null}
             <span className="role">{user.role}</span>
             <Link as="button" href="/logout" method="post">

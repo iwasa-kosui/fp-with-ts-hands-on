@@ -15,9 +15,11 @@ import {
   type SqliteDatabase,
 } from "./adaptor/secondary/sqlite/db.js";
 import {
+  createAppointmentByIdResolver,
   createAppointmentByPetIdResolver,
   createAppointmentListResolver,
 } from "./adaptor/secondary/sqlite/resolver/appointmentResolver.js";
+import { createFollowUpResolver } from "./adaptor/secondary/sqlite/resolver/followUpResolver.js";
 import {
   createOwnerByIdResolver,
   createOwnerListResolver,
@@ -28,6 +30,8 @@ import {
   createPetListResolver,
 } from "./adaptor/secondary/sqlite/resolver/petResolver.js";
 import { createInstallationStatusQuery } from "./adaptor/secondary/sqlite/query/installationStatusQuery.js";
+import { createEventHistoryReader } from "./adaptor/secondary/sqlite/query/eventHistoryReader.js";
+import { createFollowUpRequestReader } from "./adaptor/secondary/sqlite/query/followUpRequestReader.js";
 import {
   createSessionByIdResolver,
   createSessionByTokenHashResolver,
@@ -51,12 +55,18 @@ import {
   createPetDeletedEventStore,
   createPetEventStore,
 } from "./adaptor/secondary/sqlite/store/petEventStore.js";
+import { createAppointmentEventStore } from "./adaptor/secondary/sqlite/store/appointmentEventStore.js";
+import { createExamResultEventStore } from "./adaptor/secondary/sqlite/store/examResultEventStore.js";
+import { createFollowUpEventStore } from "./adaptor/secondary/sqlite/store/followUpEventStore.js";
 import { createAuthenticationMiddleware } from "./adaptor/primary/web/middleware/authentication.js";
 import { createSharedPropsMiddleware } from "./adaptor/primary/web/middleware/sharedProps.js";
 import type { WebEnvironment } from "./adaptor/primary/web/pageProps.js";
 import { rootView } from "./adaptor/primary/web/rootView.js";
 import { registerAuthRoutes } from "./adaptor/primary/web/routes/authRoutes.js";
+import { registerAppointmentRoutes } from "./adaptor/primary/web/routes/appointmentRoutes.js";
 import { registerDashboardRoutes } from "./adaptor/primary/web/routes/dashboardRoutes.js";
+import { registerEventRoutes } from "./adaptor/primary/web/routes/eventRoutes.js";
+import { registerFollowUpRoutes } from "./adaptor/primary/web/routes/followUpRoutes.js";
 import { registerOwnerRoutes } from "./adaptor/primary/web/routes/ownerRoutes.js";
 import { registerPetRoutes } from "./adaptor/primary/web/routes/petRoutes.js";
 import { registerUserRoutes } from "./adaptor/primary/web/routes/userRoutes.js";
@@ -64,7 +74,9 @@ import type { Clock } from "./domain/aggregate/clock.js";
 import { EventId } from "./domain/aggregate/eventId.js";
 import type { EventIdGenerator } from "./domain/aggregate/eventIdGenerator.js";
 import { Timestamp } from "./domain/aggregate/timestamp.js";
+import { AppointmentId } from "./domain/appointment/appointmentId.js";
 import { VeterinarianId } from "./domain/appointment/veterinarianId.js";
+import { ExamId } from "./domain/examResult/examId.js";
 import { OwnerId } from "./domain/owner/ownerId.js";
 import { PetId } from "./domain/pet/petId.js";
 import type { SessionByTokenHashResolver } from "./domain/session/sessionResolver.js";
@@ -75,18 +87,28 @@ import { UserId } from "./domain/user/userId.js";
 import { CreateOwnerUseCase, type CreateOwnerUseCase as CreateOwner } from "./useCase/createOwnerUseCase.js";
 import { CreatePetUseCase, type CreatePetUseCase as CreatePet } from "./useCase/createPetUseCase.js";
 import { CreateUserUseCase, type CreateUserUseCase as CreateUser } from "./useCase/createUserUseCase.js";
+import { BookAppointmentUseCase, type BookAppointmentUseCase as BookAppointment } from "./useCase/bookAppointmentUseCase.js";
+import { CancelAppointmentUseCase, type CancelAppointmentUseCase as CancelAppointment } from "./useCase/cancelAppointmentUseCase.js";
+import { CheckInAppointmentUseCase, type CheckInAppointmentUseCase as CheckInAppointment } from "./useCase/checkInAppointmentUseCase.js";
 import { DeleteOwnerUseCase, type DeleteOwnerUseCase as DeleteOwner } from "./useCase/deleteOwnerUseCase.js";
 import { DeletePetUseCase, type DeletePetUseCase as DeletePet } from "./useCase/deletePetUseCase.js";
 import { DeleteUserUseCase, type DeleteUserUseCase as DeleteUser } from "./useCase/deleteUserUseCase.js";
 import { GetOwnerUseCase, type GetOwnerUseCase as GetOwner } from "./useCase/getOwnerUseCase.js";
 import { GetPetUseCase, type GetPetUseCase as GetPet } from "./useCase/getPetUseCase.js";
+import { GetAppointmentUseCase, type GetAppointmentUseCase as GetAppointment } from "./useCase/getAppointmentUseCase.js";
 import type { InstallationStatusQuery } from "./useCase/query/installationStatusQuery.js";
 import { GetDashboardUseCase, type GetDashboardUseCase as GetDashboard } from "./useCase/getDashboardUseCase.js";
 import { ListOwnersUseCase, type ListOwnersUseCase as ListOwners } from "./useCase/listOwnersUseCase.js";
 import { ListPetsUseCase, type ListPetsUseCase as ListPets } from "./useCase/listPetsUseCase.js";
+import { ListAppointmentsUseCase, type ListAppointmentsUseCase as ListAppointments } from "./useCase/listAppointmentsUseCase.js";
+import { ListEventsUseCase, type ListEventsUseCase as ListEvents } from "./useCase/listEventsUseCase.js";
+import { ListFollowUpsUseCase, type ListFollowUpsUseCase as ListFollowUps } from "./useCase/listFollowUpsUseCase.js";
 import { ListUsersUseCase, type ListUsersUseCase as ListUsers } from "./useCase/listUsersUseCase.js";
 import { LogInUseCase, type LogInUseCase as LogIn } from "./useCase/logInUseCase.js";
 import { LogOutUseCase, type LogOutUseCase as LogOut } from "./useCase/logOutUseCase.js";
+import { RecordExamResultUseCase, type RecordExamResultUseCase as RecordExamResult } from "./useCase/recordExamResultUseCase.js";
+import { RecordPaymentUseCase, type RecordPaymentUseCase as RecordPayment } from "./useCase/recordPaymentUseCase.js";
+import { RequestFollowUpUseCase, type RequestFollowUpUseCase as RequestFollowUp } from "./useCase/requestFollowUpUseCase.js";
 import { ResetUserPasswordUseCase, type ResetUserPasswordUseCase as ResetUserPassword } from "./useCase/resetUserPasswordUseCase.js";
 import {
   SetUpInitialAdminUseCase,
@@ -95,6 +117,7 @@ import {
 import { UpdateOwnerUseCase, type UpdateOwnerUseCase as UpdateOwner } from "./useCase/updateOwnerUseCase.js";
 import { UpdatePetUseCase, type UpdatePetUseCase as UpdatePet } from "./useCase/updatePetUseCase.js";
 import { UpdateUserUseCase, type UpdateUserUseCase as UpdateUser } from "./useCase/updateUserUseCase.js";
+import { StartExaminationUseCase, type StartExaminationUseCase as StartExamination } from "./useCase/startExaminationUseCase.js";
 
 export type ApplicationDependencies = Readonly<{
   sessionByTokenHashResolver: SessionByTokenHashResolver;
@@ -119,6 +142,17 @@ export type ApplicationDependencies = Readonly<{
   createPet: CreatePet;
   updatePet: UpdatePet;
   deletePet: DeletePet;
+  listAppointments: ListAppointments;
+  getAppointment: GetAppointment;
+  bookAppointment: BookAppointment;
+  checkInAppointment: CheckInAppointment;
+  startExamination: StartExamination;
+  recordExamResult: RecordExamResult;
+  recordPayment: RecordPayment;
+  cancelAppointment: CancelAppointment;
+  listFollowUps: ListFollowUps;
+  requestFollowUp: RequestFollowUp;
+  listEvents: ListEvents;
   clock: Clock;
   isProduction: boolean;
 }>;
@@ -148,6 +182,12 @@ const ownerIdGenerator = {
 } as const;
 const petIdGenerator = {
   generate: () => PetId.schema.parse(randomUUID()),
+} as const;
+const appointmentIdGenerator = {
+  generate: () => AppointmentId.schema.parse(randomUUID()),
+} as const;
+const examIdGenerator = {
+  generate: () => ExamId.schema.parse(randomUUID()),
 } as const;
 const dummyPasswordHash = PasswordHash.schema.parse(
   `scrypt$${"D".repeat(22)}==$${"E".repeat(86)}==`,
@@ -180,6 +220,17 @@ export const createApplicationDependencies = (
   const managementPetListResolver = createPetListResolver(database);
   const managementAppointmentByPetIdResolver =
     createAppointmentByPetIdResolver(database);
+  const clinicAppointmentByIdResolver = createAppointmentByIdResolver(database);
+  const clinicAppointmentListResolver = createAppointmentListResolver(database);
+  const clinicOwnerByIdResolver = createOwnerByIdResolver(database);
+  const clinicOwnerListResolver = createOwnerListResolver(database);
+  const clinicPetByIdResolver = createPetByIdResolver(database);
+  const clinicPetListResolver = createPetListResolver(database);
+  const clinicUserByIdResolver = createUserByIdResolver(database);
+  const clinicUserListResolver = createUserListResolver(database);
+  const followUpResolver = createFollowUpResolver(database);
+  const followUpRequestReader = createFollowUpRequestReader(database);
+  const eventHistoryReader = createEventHistoryReader(database);
   const sessionEventStore = createSessionEventStore(database);
   const initialAdminSetupStore = createInitialAdminSetupStore(database);
   const userEventStore = createUserEventStore(database);
@@ -188,6 +239,9 @@ export const createApplicationDependencies = (
   const ownerDeletedEventStore = createOwnerDeletedEventStore(database);
   const petEventStore = createPetEventStore(database);
   const petDeletedEventStore = createPetDeletedEventStore(database);
+  const appointmentEventStore = createAppointmentEventStore(database);
+  const examResultEventStore = createExamResultEventStore(database);
+  const followUpEventStore = createFollowUpEventStore(database);
 
   return {
     sessionByTokenHashResolver,
@@ -322,6 +376,81 @@ export const createApplicationDependencies = (
       clock,
       eventIdGenerator,
     }),
+    listAppointments: ListAppointmentsUseCase.create({
+      userResolver: clinicUserByIdResolver,
+      appointmentListResolver: clinicAppointmentListResolver,
+      ownerListResolver: clinicOwnerListResolver,
+      petListResolver: clinicPetListResolver,
+      userListResolver: clinicUserListResolver,
+    }),
+    getAppointment: GetAppointmentUseCase.create({
+      userResolver: clinicUserByIdResolver,
+      appointmentResolver: clinicAppointmentByIdResolver,
+      ownerResolver: clinicOwnerByIdResolver,
+      petResolver: clinicPetByIdResolver,
+      veterinarianResolver: clinicUserListResolver,
+    }),
+    bookAppointment: BookAppointmentUseCase.create({
+      userResolver: clinicUserByIdResolver,
+      ownerResolver: clinicOwnerByIdResolver,
+      petResolver: clinicPetByIdResolver,
+      appointmentBookedStore: appointmentEventStore,
+      appointmentIdGenerator,
+      clock,
+      eventIdGenerator,
+    }),
+    checkInAppointment: CheckInAppointmentUseCase.create({
+      userResolver: clinicUserByIdResolver,
+      appointmentResolver: clinicAppointmentByIdResolver,
+      appointmentCheckedInStore: appointmentEventStore,
+      clock,
+      eventIdGenerator,
+    }),
+    startExamination: StartExaminationUseCase.create({
+      userResolver: clinicUserByIdResolver,
+      appointmentResolver: clinicAppointmentByIdResolver,
+      examinationStartedStore: appointmentEventStore,
+      clock,
+      eventIdGenerator,
+    }),
+    recordExamResult: RecordExamResultUseCase.create({
+      userResolver: clinicUserByIdResolver,
+      appointmentResolver: clinicAppointmentByIdResolver,
+      examResultRecordedStore: examResultEventStore,
+      examIdGenerator,
+      clock,
+      eventIdGenerator,
+    }),
+    recordPayment: RecordPaymentUseCase.create({
+      userResolver: clinicUserByIdResolver,
+      appointmentResolver: clinicAppointmentByIdResolver,
+      paymentRecordedStore: appointmentEventStore,
+      clock,
+      eventIdGenerator,
+    }),
+    cancelAppointment: CancelAppointmentUseCase.create({
+      userResolver: clinicUserByIdResolver,
+      appointmentResolver: clinicAppointmentByIdResolver,
+      appointmentCanceledStore: appointmentEventStore,
+      clock,
+      eventIdGenerator,
+    }),
+    listFollowUps: ListFollowUpsUseCase.create({
+      userResolver: clinicUserByIdResolver,
+      followUpResolver,
+      followUpRequestReader,
+    }),
+    requestFollowUp: RequestFollowUpUseCase.create({
+      userResolver: clinicUserByIdResolver,
+      followUpResolver,
+      followUpRequestedStore: followUpEventStore,
+      eventIdGenerator,
+      clock,
+    }),
+    listEvents: ListEventsUseCase.create({
+      userResolver: clinicUserByIdResolver,
+      eventHistoryReader,
+    }),
     clock,
     isProduction:
       options.isProduction ?? process.env.NODE_ENV === "production",
@@ -379,6 +508,24 @@ export const createApp = (dependencies: ApplicationDependencies) => {
     deletePet: dependencies.deletePet,
     listOwners: dependencies.listOwners,
   });
+  registerAppointmentRoutes(app, {
+    listAppointments: dependencies.listAppointments,
+    getAppointment: dependencies.getAppointment,
+    bookAppointment: dependencies.bookAppointment,
+    checkInAppointment: dependencies.checkInAppointment,
+    startExamination: dependencies.startExamination,
+    recordExamResult: dependencies.recordExamResult,
+    recordPayment: dependencies.recordPayment,
+    cancelAppointment: dependencies.cancelAppointment,
+    listOwners: dependencies.listOwners,
+    listPets: dependencies.listPets,
+    listUsers: dependencies.listUsers,
+  });
+  registerFollowUpRoutes(app, {
+    listFollowUps: dependencies.listFollowUps,
+    requestFollowUp: dependencies.requestFollowUp,
+  });
+  registerEventRoutes(app, { listEvents: dependencies.listEvents });
 
   app.onError((error) =>
     error instanceof HTTPException
