@@ -19,6 +19,7 @@ import type { SessionCreatedStore } from "../domain/session/sessionStores.js";
 import type { SessionTokenGenerator } from "../domain/session/sessionTokenGenerator.js";
 import type { Sensitive } from "../domain/shared/sensitive.js";
 import type { User } from "../domain/user/user.js";
+import type { PasswordHash } from "../domain/user/passwordHash.js";
 import type { UserEmail } from "../domain/user/userEmail.js";
 import type { UserId } from "../domain/user/userId.js";
 import type {
@@ -60,6 +61,7 @@ export type Dependencies = Readonly<{
   userResolver: UserResolver;
   sessionCreatedStore: SessionCreatedStore;
   passwordHasher: PasswordHasher;
+  dummyPasswordHash: PasswordHash;
   sessionTokenGenerator: SessionTokenGenerator;
   clock: Clock;
   eventIdGenerator: EventIdGenerator;
@@ -73,20 +75,25 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
   kind: "RepositoryError",
   operation: error.operation,
 });
-const ensureUser = (
-  user: User | undefined,
-): Result<User, InvalidCredentials> =>
-  user === undefined ? err({ kind: "InvalidCredentials" }) : ok(user);
 const ensureVerified =
-  (user: User) =>
+  (user: User | undefined) =>
   (verified: boolean): Result<User, InvalidCredentials> =>
-    verified ? ok(user) : err({ kind: "InvalidCredentials" });
+    user !== undefined && verified
+      ? ok(user)
+      : err({ kind: "InvalidCredentials" });
 const verifyPassword =
-  (passwordHasher: PasswordHasher, password: PlaintextPassword) =>
-  (user: User) =>
+  (
+    passwordHasher: PasswordHasher,
+    dummyPasswordHash: PasswordHash,
+    password: PlaintextPassword,
+  ) =>
+  (user: User | undefined) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() =>
-        passwordHasher.verify(password, user.passwordHash),
+        passwordHasher.verify(
+          password,
+          user?.passwordHash ?? dummyPasswordHash,
+        ),
       ),
       (): PasswordVerificationFailed => ({
         kind: "PasswordVerificationFailed",
@@ -134,8 +141,13 @@ const run =
     dependencies.userResolver
       .resolveByEmail(input.email)
       .mapErr(toRepositoryError)
-      .andThen(ensureUser)
-      .andThen(verifyPassword(dependencies.passwordHasher, input.password))
+      .andThen(
+        verifyPassword(
+          dependencies.passwordHasher,
+          dependencies.dummyPasswordHash,
+          input.password,
+        ),
+      )
       .andThen((user) => generateSession(dependencies, user.userId))
       .andThrough(({ event }) =>
         dependencies.sessionCreatedStore.store(event).mapErr(toRepositoryError),

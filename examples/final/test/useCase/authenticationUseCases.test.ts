@@ -22,6 +22,7 @@ import type { SessionTokenGenerator } from "../../src/domain/session/sessionToke
 import { SessionTokenHash } from "../../src/domain/session/sessionTokenHash.js";
 import { Sensitive } from "../../src/domain/shared/sensitive.js";
 import type { User } from "../../src/domain/user/user.js";
+import { PasswordHash } from "../../src/domain/user/passwordHash.js";
 import { UserEmail } from "../../src/domain/user/userEmail.js";
 import type { UserCreated } from "../../src/domain/user/userEvent.js";
 import { UserId } from "../../src/domain/user/userId.js";
@@ -55,6 +56,9 @@ const email = UserEmail.schema.parse("admin@example.test");
 const name = UserName.schema.parse("Clinic Admin");
 const password = Sensitive.of("correct horse battery staple");
 const wrongPassword = Sensitive.of("wrong password");
+const dummyPasswordHash = PasswordHash.schema.parse(
+  `scrypt$${"D".repeat(22)}==$${"E".repeat(86)}==`,
+);
 const token = {
   plaintext: Sensitive.of("cookie-only-token"),
   hash: SessionTokenHash.schema.parse("a".repeat(64)),
@@ -235,6 +239,7 @@ describe("LogInUseCase", () => {
       userResolver: userResolverFor([admin]),
       sessionCreatedStore: createdSessionStore(events),
       passwordHasher: scryptPasswordHasher,
+      dummyPasswordHash,
       sessionTokenGenerator,
       clock,
       eventIdGenerator: eventIdGenerator(),
@@ -271,6 +276,7 @@ describe("LogInUseCase", () => {
     const base = {
       sessionCreatedStore: createdSessionStore([]),
       passwordHasher: scryptPasswordHasher,
+      dummyPasswordHash,
       sessionTokenGenerator,
       clock,
       eventIdGenerator: eventIdGenerator(),
@@ -294,6 +300,52 @@ describe("LogInUseCase", () => {
     });
   });
 
+  test("verifies missing and existing users exactly once before returning the same credential error", async () => {
+    const passwordHash = await scryptPasswordHasher.hash(password);
+    const admin = {
+      kind: "Admin",
+      userId,
+      email,
+      name,
+      passwordHash,
+    } as const satisfies User;
+    const runInvalidAttempt = async (
+      users: readonly User[],
+      attemptedPassword: typeof password,
+    ) => {
+      const verifiedHashes: string[] = [];
+      const result = await LogInUseCase.create({
+        userResolver: userResolverFor(users),
+        sessionCreatedStore: createdSessionStore([]),
+        passwordHasher: {
+          hash: scryptPasswordHasher.hash,
+          verify: (_password, hash) => {
+            verifiedHashes.push(hash.unwrap());
+            return Promise.resolve(false);
+          },
+        },
+        dummyPasswordHash,
+        sessionTokenGenerator,
+        clock,
+        eventIdGenerator: eventIdGenerator(),
+        sessionIdGenerator: { generate: () => sessionId },
+      }).run({ email, password: attemptedPassword });
+      return { result, verifiedHashes } as const;
+    };
+
+    const missing = await runInvalidAttempt([], password);
+    const incorrect = await runInvalidAttempt([admin], wrongPassword);
+
+    expect(missing.verifiedHashes).toEqual([dummyPasswordHash.unwrap()]);
+    expect(incorrect.verifiedHashes).toEqual([passwordHash.unwrap()]);
+    expect(missing.result.isErr() && missing.result.error).toEqual({
+      kind: "InvalidCredentials",
+    });
+    expect(incorrect.result.isErr() && incorrect.result.error).toEqual({
+      kind: "InvalidCredentials",
+    });
+  });
+
   test("returns typed redacted errors for resolver and password verification failures", async () => {
     const failingResolver = {
       resolveById: () => errAsync(repositoryError),
@@ -304,6 +356,7 @@ describe("LogInUseCase", () => {
       userResolver: failingResolver,
       sessionCreatedStore: createdSessionStore([]),
       passwordHasher: scryptPasswordHasher,
+      dummyPasswordHash,
       sessionTokenGenerator,
       clock,
       eventIdGenerator: eventIdGenerator(),
@@ -329,6 +382,7 @@ describe("LogInUseCase", () => {
         hash: scryptPasswordHasher.hash,
         verify: () => Promise.reject(new Error("password included here")),
       },
+      dummyPasswordHash,
       sessionTokenGenerator,
       clock,
       eventIdGenerator: eventIdGenerator(),
