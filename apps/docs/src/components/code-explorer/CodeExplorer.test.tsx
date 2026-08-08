@@ -2,20 +2,32 @@ import { act, type ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CodeRunner } from "../../code-explorer/runner";
+import type { CodeGuide } from "../../code-explorer/code-guide";
 import type { EditorProps } from "./CodeExplorer";
 import { CodeExplorer } from "./CodeExplorer";
 
 const TestEditor: ComponentType<EditorProps> = ({
+  path,
   value,
   typeFiles,
   disabled,
+  readOnly,
+  highlights,
   onChange,
 }) => (
   <textarea
     aria-label="コードエディタ"
+    data-path={path}
+    data-highlights={highlights
+      .map(
+        ({ startLineNumber, endLineNumber }) =>
+          `${startLineNumber}:${endLineNumber}`,
+      )
+      .join(",")}
     data-type-file={typeFiles["file:///node_modules/vitest/index.d.ts"]}
     value={value}
     disabled={disabled}
+    readOnly={readOnly}
     onChange={(event) => onChange(event.currentTarget.value)}
   />
 );
@@ -33,6 +45,25 @@ const files = {
   "src/example.ts": "export const value = 1;",
   "package.json": "{}",
 } as const;
+
+const guides = [
+  {
+    id: "string-status",
+    title: "状態を任意の文字列で表している",
+    currentDesign: "status と newStatus は string です。",
+    futureRisk: "許可する状態と遷移を型から判断できません。",
+    path: "src/example.ts",
+    highlights: [{ startLineNumber: 1, endLineNumber: 1 }],
+  },
+  {
+    id: "throw-error",
+    title: "予期可能な失敗を throw している",
+    currentDesign: "見つからない場合に例外を送出します。",
+    futureRisk: "呼び出し側が失敗の種類を型から判断できません。",
+    path: "exercises/example.test.ts",
+    highlights: [{ startLineNumber: 1, endLineNumber: 1 }],
+  },
+] as const satisfies readonly CodeGuide[];
 
 const roots: Root[] = [];
 
@@ -88,6 +119,37 @@ describe("CodeExplorer", () => {
     });
     document.body.replaceChildren();
     vi.unstubAllGlobals();
+  });
+
+  it("uses guides to open highlighted source without mutable controls", async () => {
+    const runnerFactory = vi.fn<() => CodeRunner>();
+    const host = await renderExplorer({ guides, runnerFactory });
+
+    const first = host.querySelector<HTMLButtonElement>(
+      '[data-code-guide="string-status"]',
+    )!;
+    const second = host.querySelector<HTMLButtonElement>(
+      '[data-code-guide="throw-error"]',
+    )!;
+
+    expect(first.getAttribute("aria-pressed")).toBe("true");
+    expect(host.querySelector("textarea")?.readOnly).toBe(true);
+    expect(host.querySelector("textarea")?.dataset.path).toBe("src/example.ts");
+    expect(host.querySelector("textarea")?.dataset.highlights).toBe("1:1");
+    expect(host.querySelector('[data-action="reset"]')).toBeNull();
+    expect(host.querySelector('[data-action="run"]')).toBeNull();
+    expect(host.querySelector('[aria-label="実行結果"]')).toBeNull();
+
+    await act(async () => second.click());
+
+    expect(second.getAttribute("aria-pressed")).toBe("true");
+    expect(host.querySelector("textarea")?.dataset.path).toBe(
+      "exercises/example.test.ts",
+    );
+    expect(host.textContent).toContain(
+      "呼び出し側が失敗の種類を型から判断できません。",
+    );
+    expect(runnerFactory).not.toHaveBeenCalled();
   });
 
   it("keeps edits across file switches and resets only the selected file", async () => {
