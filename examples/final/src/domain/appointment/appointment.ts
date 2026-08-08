@@ -1,6 +1,6 @@
 import type { Timestamp } from "../aggregate/timestamp.js";
-import type { OwnerId } from "../owner-id.js";
-import type { PetId } from "../pet-id.js";
+import type { OwnerId } from "../owner/ownerId.js";
+import type { PetId } from "../pet/petId.js";
 import type { EventContext } from "../aggregate/eventContext.js";
 import {
   AppointmentEvent,

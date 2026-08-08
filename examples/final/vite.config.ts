@@ -5,6 +5,12 @@ import nodeAdapter from "@hono/vite-dev-server/node";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+const serveUnlessTesting = (appName: string) => `
+import { serve } from "@hono/node-server"
+if (process.env.NODE_ENV !== "test") {
+  serve({ fetch: ${appName}.fetch, port: 3000 })
+}`;
+
 export default defineConfig(({ mode }) => {
   const inertiaPlugin = inertiaPages({
     pagesDir: "src/adaptor/primary/web/pages",
@@ -38,6 +44,7 @@ export default defineConfig(({ mode }) => {
       build({
         entry: "./src/app.ts",
         external: ["better-sqlite3"],
+        entryContentAfterHooks: [serveUnlessTesting],
       }),
     ],
   };

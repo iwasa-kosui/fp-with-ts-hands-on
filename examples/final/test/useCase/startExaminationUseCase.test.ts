@@ -17,8 +17,8 @@ import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
 import type { AppointmentByIdResolver } from "../../src/domain/appointment/appointmentResolver.js";
 import type { ExaminationStartedStore } from "../../src/domain/appointment/appointmentStores.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
-import { OwnerId } from "../../src/domain/owner-id.js";
-import { PetId } from "../../src/domain/pet-id.js";
+import { OwnerId } from "../../src/domain/owner/ownerId.js";
+import { PetId } from "../../src/domain/pet/petId.js";
 import {
   type User,
   type Veterinarian,

@@ -1,4 +1,13 @@
-import { ExamId as ExamIdValue, type ExamId as ExamIdValueType } from "../exam-id.js";
+import { z } from "zod";
 
-export type ExamId = ExamIdValueType;
-export const ExamId = ExamIdValue;
+import { schemaResult } from "../shared/schemaResult.js";
+
+const ExamIdBrand = Symbol();
+const ExamIdSchema = z.string().uuid().brand<typeof ExamIdBrand>();
+
+export type ExamId = z.infer<typeof ExamIdSchema>;
+
+export const ExamId = {
+  schema: ExamIdSchema,
+  parse: schemaResult(ExamIdSchema),
+} as const;

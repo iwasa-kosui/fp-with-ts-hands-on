@@ -10,196 +10,192 @@ if (session === undefined) throw new Error("Unknown session: final");
 
 <SessionLayout session={session}>
   <ol slot="toc">
-    <li><a href="#final-structure">一概念一ファイルの構成を確認する</a></li>
-    <li><a href="#final-flow">診察開始の流れを追う</a></li>
-    <li><a href="#final-follow-up">電話フォローとPII保護を確認する</a></li>
-    <li><a href="#code-playground">ブラウザで試す</a></li>
-    <li><a href="#final-verify">完成例を検証する</a></li>
+    <li><a href="#final-structure">事故を防ぐ構成を確認する</a></li>
+    <li><a href="#final-operations">起動して業務フローを試す</a></li>
+    <li><a href="#final-flow">診察開始の ResultAsync を追う</a></li>
+    <li><a href="#final-persistence">保存と監査の契約を確認する</a></li>
+    <li><a href="#code-playground">ブラウザで読む</a></li>
+    <li><a href="#final-verify">コマンドで検証する</a></li>
   </ol>
 
   <section>
-    <h2 id="final-structure">一概念一ファイルの構成を確認する</h2>
+    <h2 id="final-structure">事故を防ぐ構成を確認する</h2>
     <p>
-      <code>examples/final</code> は、各セッションで扱った事故への対策を統合した Kamae
-      の完成例です。domain、application、ports、infrastructure、shared
-      の責務を分け、一概念一ファイルで配置しています。
-    </p>
-    <p>
-      <code>examples/final/src/domain/appointment.ts</code> は、Zod schema、状態の判別共用体、純粋な遷移関数を
-      <code>Appointment</code> companion にまとめています。用途別 ID
-      は個別ファイルへ分け、同じ文字列を誤って取り違えないようにします。
-    </p>
-    <p>
-      <code>examples/final/src/shared/schema-result.ts</code> は Standard Schema adapter
-      です。<code>@standard-schema/spec</code> の <code>StandardSchemaV1</code> を受け取り、<code
-        >schema["~standard"].validate(raw)</code
-      > の成功値を neverthrow の <code>Ok</code>、issues を <code>ValidationError</code>
-      の <code>Err</code> へ変換します。依存関係は <code>examples/final/package.json</code>
-      に明示しています。
-    </p>
-
-    <h3>用途別 ID の runtime 検証と brand</h3>
-    <p>
-      各 ID は Zod の <code>z.string().uuid()</code> で runtime の UUID
-      形式を検証し、ファイルごとに異なる <code>Symbol</code> を使う brand
-      でコンパイル時の取り違えを防ぎます。
+      予約が終端状態から戻る、入力や ID を取り違える、現在状態だけ更新されて監査記録が残らない、PII
+      が不要な画面へ混じる。<code>examples/final</code> は、これまでのセッションで観察した業務事故への対策を、Hono・Inertia・React・Drizzle・SQLite
+      で動く一つの完成アプリへ接続したものです。
     </p>
     <dl>
-      <dt><code>examples/final/src/domain/appointment-id.ts</code></dt>
-      <dd>予約を識別する <code>AppointmentId</code> を定義します。</dd>
-      <dt><code>examples/final/src/domain/pet-id.ts</code></dt>
-      <dd>診療対象の動物を識別する <code>PetId</code> を定義します。</dd>
-      <dt><code>examples/final/src/domain/owner-id.ts</code></dt>
-      <dd>飼い主を識別する <code>OwnerId</code> を定義します。</dd>
-      <dt><code>examples/final/src/domain/veterinarian-id.ts</code></dt>
-      <dd>担当獣医師を識別する <code>VeterinarianId</code> を定義します。</dd>
-      <dt><code>examples/final/src/domain/event-id.ts</code></dt>
-      <dd>domain event を識別する <code>EventId</code> を定義します。</dd>
-      <dt><code>examples/final/src/domain/exam-id.ts</code></dt>
-      <dd>外部検査を識別する <code>ExamId</code> を定義します。</dd>
+      <dt><code>src/domain</code></dt>
+      <dd>判別共用体の状態、branded ID、<code>Sensitive</code>、純粋な遷移、typed domain event を置きます。</dd>
+      <dt><code>src/useCase</code></dt>
+      <dd>用途ごとの one-method resolver/read port と event store を <code>ResultAsync</code> で合成します。</dd>
+      <dt><code>src/adaptor/primary</code></dt>
+      <dd>HTTP、認証 cookie、Inertia props、React page を扱います。</dd>
+      <dt><code>src/adaptor/secondary</code></dt>
+      <dd>Drizzle/SQLite、パスワードハッシュ、セッショントークンを扱います。</dd>
+      <dt><code>src/app.ts</code></dt>
+      <dd>migration、依存関係、middleware、route を一つの Hono app に構成します。</dd>
     </dl>
-
+    <p>
+      状態遷移関数が作るのは、操作後の projection を持つ typed event です。次は <code
+        >examples/final/src/domain/appointment/appointment.ts</code
+      > の実際の診察開始部分です。引数の <code>CheckedIn</code> が有効な遷移元を限定し、成功した操作だけを <code>ExaminationStarted</code>
+      として表します。
+    </p>
     <CodeBlock
       language="typescript"
-      label="Appointment companion"
-      code={`export const Appointment = {
-  schema: AppointmentSchema,
-  book: (input: BookAppointmentInput): Scheduled => ({ kind: "Scheduled", ...input }),
-  checkIn: (scheduled: Scheduled, checkedInAt: Timestamp): CheckedIn => ({
-    ...scheduled,
-    kind: "CheckedIn",
-    checkedInAt,
-  }),
-  startExamination: (
+      label="appointment.ts の診察開始"
+      code={`const startExamination =
+  (context: EventContext) =>
+  (
     checkedIn: CheckedIn,
     veterinarianId: VeterinarianId,
-    examinationStartedAt: Timestamp,
-  ): InExamination => ({
-    ...checkedIn,
-    kind: "InExamination",
-    veterinarianId,
-    examinationStartedAt,
+  ): ExaminationStarted => {
+    const aggregateState = {
+      ...checkedIn,
+      kind: "InExamination",
+      veterinarianId,
+      examinationStartedAt: context.occurredAt,
+    } as const satisfies InExamination;
+
+    return AppointmentEvent.create(
+      context,
+      aggregateState.appointmentId,
+      aggregateState,
+      "ExaminationStarted",
+      "appointment.examination-started",
+      { appointmentId: aggregateState.appointmentId, veterinarianId },
+    );
+  };`}
+    />
+    <p>
+      この型は無効な呼び出しを減らしますが、永続化した現在状態の競合や利用者の権限まで単独では守りません。それらは use case、resolver、event store、route のテストで確認します。
+    </p>
+  </section>
+
+  <section>
+    <h2 id="final-operations">起動して業務フローを試す</h2>
+    <p>
+      Node.js 20 以上と pnpm を用意します。リポジトリルートで依存関係を入れ、final package の dev server を起動します。
+    </p>
+    <CodeBlock
+      language="shell"
+      label="セットアップと開発起動"
+      code={`pnpm install
+pnpm --filter @fp-with-ts/clinic-final dev`}
+    />
+    <p>
+      起動時に Drizzle migration が適用され、既定で <code>examples/final/clinic.sqlite</code> という file SQLite を使います。初回アクセスで
+      <code>/setup</code> から最初の <code>Admin</code> を登録します。初期設定後は <code>/login</code> からログインします。
+    </p>
+    <ul>
+      <li><code>Admin</code>: ユーザー管理と監査履歴の確認</li>
+      <li><code>Receptionist</code>: 飼い主・ペット・予約の登録、受付、会計、キャンセル</li>
+      <li><code>Veterinarian</code>: 診察開始、検査結果登録、電話フォロー依頼</li>
+    </ul>
+    <p>
+      予約は <code>Scheduled → CheckedIn → InExamination → Paid</code> と進み、現在状態とロールに応じた操作だけが画面に現れます。キャンセル、検査結果、電話フォロー、管理者の監査一覧も同じ app から操作できます。
+    </p>
+    <CodeBlock
+      language="shell"
+      label="migration と production build"
+      code={`pnpm --filter @fp-with-ts/clinic-final db:migrate
+pnpm --filter @fp-with-ts/clinic-final db:generate
+pnpm --filter @fp-with-ts/clinic-final build
+pnpm --filter @fp-with-ts/clinic-final exec node dist/index.js`}
+    />
+    <p>
+      <code>db:migrate</code> は現在の migration を file SQLite へ適用し、<code>db:generate</code> は schema 変更時の SQL を生成します。<code>build</code> は
+      <code>dist/index.js</code>、<code>dist/static/client.js</code>、<code>dist/static/styles.css</code> を作り、ソケットを開かない built-entry smoke check も行います。
+    </p>
+  </section>
+
+  <section>
+    <h2 id="final-flow">診察開始の ResultAsync を追う</h2>
+    <p>
+      <code>examples/final/src/useCase/startExaminationUseCase.ts</code> の <code>StartExaminationUseCase</code> は、実行者、予約、対象の獣医師を用途別 ID で受け取ります。<code>UserByIdResolver.resolveById</code>
+      で権限を確認した後、<code>AppointmentByIdResolver.resolveById</code> で予約を読み、予期可能な失敗を <code>ResultAsync</code> の値として返します。
+    </p>
+    <CodeBlock
+      language="typescript"
+      label="StartExaminationUseCase の実際の pipeline"
+      code={`const run =
+  ({
+    userResolver,
+    appointmentResolver,
+    examinationStartedStore,
+    clock,
+    eventIdGenerator,
+  }: Dependencies) =>
+  (input: UseCaseInput): UseCaseOutput =>
+    userResolver
+      .resolveById(input.actorUserId)
+      .andThen(ensureUserFound(input.actorUserId))
+      .andThen(ensureCanStartExamination(input.veterinarianId))
+      .andThen(() => appointmentResolver.resolveById(input.appointmentId))
+      .andThen(ensureAppointmentFound(input.appointmentId))
+      .andThen(ensureCheckedIn)
+      .map((appointment) =>
+        Appointment.startExamination({
+          eventId: eventIdGenerator.generate(),
+          occurredAt: clock.now(),
+          actorUserId: input.actorUserId,
+        })(appointment, input.veterinarianId),
+      )
+      .andThrough((event) => examinationStartedStore.store(event))
+      .map((event) => ({ appointment: event.aggregateState }));
+
+export const StartExaminationUseCase = {
+  create: (dependencies: Dependencies): StartExaminationUseCase => ({
+    run: run(dependencies),
   }),
-  recordPayment: (
-    examining: InExamination,
-    input: RecordPaymentInput,
-    paidAt: Timestamp,
-  ): Paid => ({ ...examining, ...input, kind: "Paid", paidAt }),
-  cancelWithReason: (
-    appointment: Scheduled | CheckedIn,
-    reason: CancelReason,
-    canceledAt: Timestamp,
-    followUpRequestedAt?: Timestamp,
-  ): Canceled => ({
-    kind: "Canceled",
-    appointmentId: appointment.appointmentId,
-    petId: appointment.petId,
-    ownerId: appointment.ownerId,
-    scheduledAt: appointment.scheduledAt,
-    reason,
-    canceledAt,
-    ...(followUpRequestedAt === undefined ? {} : { followUpRequestedAt }),
-  }),
-  isPaid: (appointment: Appointment) => appointment.kind === "Paid",
-  isTerminal: (appointment: Appointment) =>
-    appointment.kind === "Paid" || appointment.kind === "Canceled",
 } as const;`}
     />
+    <p>
+      この curry した <code>run(dependencies)(input)</code> 形状により、clock、event ID generator、resolver、store をテストで固定できます。一方で DB の一意性競合は型だけでは止められないため、store が競合を <code>AppointmentConflict</code>
+      として返すテストも必要です。
+    </p>
   </section>
 
   <section>
-    <h2 id="final-flow">診察開始の流れを追う</h2>
+    <h2 id="final-persistence">保存と監査の契約を確認する</h2>
     <p>
-      <code>startExaminationUseCase</code> は外部の <code>unknown</code> を Zod
-      で parse し、neverthrow の Result pipeline へ渡します。予約の取得と状態確認の後、<code
-        >Appointment.startExamination</code
-      > で純粋に次の状態と event を組み立てます。
+      use case は、ドメインが作った typed event を <code>ExaminationStartedStore.store(event)</code> のように event store へ渡します。secondary adaptor の event store は event が持つ状態から projection
+      の insert/update/delete を組み立て、同じ event の監査行とともに1つの Drizzle transaction へ保存します。両方を atomic に確定する契約が、現在状態と監査記録の片落ちを防ぎます。
     </p>
     <p>
-      最後に <code>store.save(state, events)</code>
-      を一度だけ呼び、状態と event を atomic save します。保存が失敗した場合は <code
-        >isErr()</code
-      > で扱える失敗値を返し、片方だけを保存しません。
-    </p>
-
-    <CodeBlock
-      language="typescript"
-      label="startExaminationUseCase"
-      code={`export const startExaminationUseCase = (
-  resolver: AppointmentResolver,
-  store: AppointmentStore,
-) =>
-  (raw: unknown): Result<InExamination, StartExaminationError> =>
-    StartExaminationInput.parse(raw).andThen((input) =>
-      resolver
-        .findById(input.appointmentId)
-        .andThen(ensureFound(input.appointmentId))
-        .andThen(ensureCheckedIn)
-        .map((checkedIn) => transition(input, checkedIn))
-        .andThrough(({ state, event }) => store.save(state, [event]))
-        .map(({ state }) => state),
-    );`}
-    />
-  </section>
-
-  <section>
-    <h2 id="final-follow-up">電話フォローとPII保護を確認する</h2>
-    <p>
-      <code>collectFollowUpTargets</code> は候補全体を parse
-      してから、検査結果と予約の pet ID を検証します。不正な候補が一件でもあれば <code
-        >isErr()</code
-      > になるため、途中まで作った target や event を返しません。
+      <code>EventHistoryReader</code> は SQLite の保存行を Zod で検証し、event ID、aggregate ID、event name、実行者、時刻で構成したサニタイズ済みの監査情報を Admin 画面へ届けます。この read port の出力契約により、パスワードハッシュ、セッショントークンハッシュ、カルテ内容を監査画面の props から分離します。
     </p>
     <p>
-      検証済みの候補は <code>filter</code>、<code>reduce</code>、<code>map</code>
-      で宣言的に処理します。飼い主の電話番号は <code>Sensitive</code>
-      のまま返し、JSON、文字列、Node.js inspect では <code>[REDACTED]</code>
-      だけを表示して PII を守ります。
+      ユーザー、飼い主、ペットの削除は現在の projection を物理削除します。削除 event と過去の監査行は保持されるため、この操作は個人情報の完全消去を意味しません。利用目的と保持期間は型で決められないため、人が別途レビューする制約として残ります。
     </p>
-
-    <CodeBlock
-      language="typescript"
-      label="collectFollowUpTargets"
-      code={`export const collectFollowUpTargets = (
-  raw: unknown,
-): Result<ReadonlyArray<FollowUpTarget>, CollectFollowUpTargetsError> =>
-  FollowUpCandidates.parse(raw)
-    .andThen(collectValidatedCandidates)
-    .map((candidates) =>
-      candidates
-        .filter(FollowUpCandidate.needsPhoneCall)
-        .reduce<ReadonlyArray<FollowUpCandidate>>(
-          (unique, candidate) =>
-            unique.some(
-              ({ appointment }) =>
-                appointment.appointmentId === candidate.appointment.appointmentId,
-            )
-              ? unique
-              : [...unique, candidate],
-          [],
-        )
-        .map(FollowUpTarget.fromCandidate),
-    );`}
-    />
   </section>
 
   <SessionCodePlayground slug={session.slug} />
 
   <section>
-    <h2 id="final-verify">完成例を検証する</h2>
+    <h2 id="final-verify">コマンドで検証する</h2>
     <p>
-      型検査で状態、用途別 ID、境界の契約を確認し、テストで Result、atomic save、PII
-      保護、電話フォローの振る舞いを確認します。
+      package テストは temp file SQLite への migration、初期管理者とログイン、3ロールの認可、予約から会計・フォロー・監査までの業務フロー、projection と監査行の atomicity、PII の非表示を確認します。
     </p>
     <CodeBlock
       language="shell"
       label="final package の検証"
       code={`pnpm --filter @fp-with-ts/clinic-final typecheck
-pnpm --filter @fp-with-ts/clinic-final test`}
+pnpm --filter @fp-with-ts/clinic-final test
+pnpm --filter @fp-with-ts/clinic-final build`}
+    />
+    <p>リポジトリ全体の通常テスト、型検査、build はルートで実行します。</p>
+    <CodeBlock
+      language="shell"
+      label="workspace 全体の検証"
+      code={`pnpm test
+pnpm typecheck
+pnpm build`}
     />
     <p>
-      完成例は一度に導入する雛形ではありません。各セッションで事故と要求に対応して選んだ設計が、同じ package
-      の中でどのようにつながるかを確認するための参照実装です。
+      この完成アプリは、すべての技法を一度に導入する雛形ではありません。各対策がどの事故を減らし、どの制約をテストと人のレビューに残すかを確認するための参照実装です。
     </p>
   </section>
 </SessionLayout>

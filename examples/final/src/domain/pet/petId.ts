@@ -1,4 +1,13 @@
-import { PetId as PetIdValue, type PetId as PetIdValueType } from "../pet-id.js";
+import { z } from "zod";
 
-export type PetId = PetIdValueType;
-export const PetId = PetIdValue;
+import { schemaResult } from "../shared/schemaResult.js";
+
+const PetIdBrand = Symbol();
+const PetIdSchema = z.string().uuid().brand<typeof PetIdBrand>();
+
+export type PetId = z.infer<typeof PetIdSchema>;
+
+export const PetId = {
+  schema: PetIdSchema,
+  parse: schemaResult(PetIdSchema),
+} as const;

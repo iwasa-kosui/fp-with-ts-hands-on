@@ -52,10 +52,16 @@ const requiredVisibleFiles = {
     "test/start-examination.test.ts",
   ],
   final: [
-    "test/follow-up.test.ts",
-    "src/application/collect-follow-up-targets.ts",
-    "src/application/start-examination.ts",
-    "src/domain/appointment.ts",
+    "test/useCase/startExaminationUseCase.test.ts",
+    "test/web/clinicFlow.test.ts",
+    "src/app.ts",
+    "src/domain/appointment/appointment.ts",
+    "src/domain/appointment/appointmentResolver.ts",
+    "src/domain/appointment/appointmentStores.ts",
+    "src/useCase/startExaminationUseCase.ts",
+    "src/adaptor/primary/web/routes/appointmentRoutes.ts",
+    "src/adaptor/secondary/sqlite/resolver/appointmentResolver.ts",
+    "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
   ],
 } as const;
 

@@ -1,4 +1,13 @@
-import { OwnerId as OwnerIdValue, type OwnerId as OwnerIdValueType } from "../owner-id.js";
+import { z } from "zod";
 
-export type OwnerId = OwnerIdValueType;
-export const OwnerId = OwnerIdValue;
+import { schemaResult } from "../shared/schemaResult.js";
+
+const OwnerIdBrand = Symbol();
+const OwnerIdSchema = z.string().uuid().brand<typeof OwnerIdBrand>();
+
+export type OwnerId = z.infer<typeof OwnerIdSchema>;
+
+export const OwnerId = {
+  schema: OwnerIdSchema,
+  parse: schemaResult(OwnerIdSchema),
+} as const;
