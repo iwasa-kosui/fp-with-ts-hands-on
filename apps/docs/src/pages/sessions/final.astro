@@ -109,7 +109,7 @@ pnpm --filter @fp-with-ts/clinic-final exec node dist/index.js`}
     />
     <p>
       <code>db:migrate</code> は現在の migration を file SQLite へ適用し、<code>db:generate</code> は schema 変更時の SQL を生成します。<code>build</code> は
-      常に port 3000 で Node server を起動する <code>dist/index.js</code>、ソケットを開かずに明示した SQLite へ接続できる app factory の <code>dist/app.js</code>、<code>dist/static/client.js</code>、<code>dist/static/styles.css</code> を作ります。built smoke は <code>dist/app.js</code> に <code>:memory:</code> SQLite と migration directory を渡し、<code>app.request</code> で確認します。
+      常に port 3000 で Node server を起動する <code>dist/index.js</code>、ソケットを開かずに明示した SQLite へ接続できる app factory の <code>dist/app.js</code>、<code>dist/static/client.js</code>、<code>dist/static/styles.css</code> を作ります。server entry は Vite の production mode を <code>isProduction: true</code> として構成するため、<code>NODE_ENV を指定せず</code>実行しても production asset と Secure cookie を使います。<code>dist/app.js</code> の factory を直接使う場合は <code>isProduction</code> を必ず指定します。built smoke は <code>:memory:</code> SQLite、migration directory、<code>isProduction: true</code> を渡し、production shell と Secure session cookie を <code>app.request</code> で確認します。
     </p>
   </section>
 
@@ -138,13 +138,7 @@ pnpm --filter @fp-with-ts/clinic-final exec node dist/index.js`}
       .andThen(() => appointmentResolver.resolveById(input.appointmentId))
       .andThen(ensureAppointmentFound(input.appointmentId))
       .andThen(ensureCheckedIn)
-      .map((appointment) =>
-        Appointment.startExamination({
-          eventId: eventIdGenerator.generate(),
-          occurredAt: clock.now(),
-          actorUserId: input.actorUserId,
-        })(appointment, input.veterinarianId),
-      )
+      .andThen(createEvent({ clock, eventIdGenerator }, input))
       .andThrough((event) => examinationStartedStore.store(event))
       .map((event) => ({ appointment: event.aggregateState }));
 
@@ -155,8 +149,7 @@ export const StartExaminationUseCase = {
 } as const;`}
     />
     <p>
-      この curry した <code>run(dependencies)(input)</code> 形状により、clock、event ID generator、resolver、store をテストで固定できます。一方で DB の一意性競合は型だけでは止められないため、store が競合を <code>AppointmentConflict</code>
-      として返すテストも必要です。
+      この curry した <code>run(dependencies)(input)</code> 形状により、clock、event ID generator、resolver、store をテストで固定できます。<code>createEvent</code> は generator、clock、純粋遷移の同期例外を <code>ResultAsync.fromPromise</code> で <code>IdentityGenerationFailed</code> に変換し、store を呼びません。一方で DB の一意性競合は型だけでは止められないため、store が競合を <code>AppointmentConflict</code> として返すテストも必要です。
     </p>
   </section>
 

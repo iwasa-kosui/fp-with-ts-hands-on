@@ -548,6 +548,7 @@ export const registerAppointmentRoutes = (
               return invalidState(context, appointmentId.value);
             case "AppointmentConflict":
               return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
+            case "IdentityGenerationFailed":
             case "RepositoryError":
               return repositoryFailure(context);
             default:

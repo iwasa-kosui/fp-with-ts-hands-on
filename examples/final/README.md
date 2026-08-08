@@ -20,7 +20,7 @@ pnpm --filter @fp-with-ts/clinic-final db:generate
 
 初回アクセスは `/setup` へ進み、最初の `Admin` を登録します。以後は `/login` からログインします。初期登録は installation marker、Admin、session、対応する2件の監査行を1つの transaction で確定します。
 
-production build は次で作成します。このコマンドは、常に port 3000 で Node server を起動する `dist/index.js`、ソケットを開かずに明示した SQLite へ接続できる app factory の `dist/app.js`、`dist/static/client.js`、`dist/static/styles.css` を作ります。built smoke は `dist/app.js` に `:memory:` SQLite と migration directory を渡し、`app.request` で動作を確認します。
+production build は次で作成します。このコマンドは、常に port 3000 で Node server を起動する `dist/index.js`、ソケットを開かずに明示した SQLite へ接続できる app factory の `dist/app.js`、`dist/static/client.js`、`dist/static/styles.css` を作ります。server entry は Vite の production mode を `isProduction: true` として構成するため、`NODE_ENV` を指定せず `node dist/index.js` を実行しても production asset と Secure cookie を使います。`dist/app.js` の factory を直接使う場合は `isProduction` を必ず指定します。built smoke は `:memory:` SQLite、migration directory、`isProduction: true` を渡し、production shell と Secure session cookie を `app.request` で確認します。
 
 ```bash
 pnpm --filter @fp-with-ts/clinic-final build
@@ -42,7 +42,7 @@ pnpm --filter @fp-with-ts/clinic-final exec node dist/index.js
 - `src/adaptor/primary`: Hono route、認証 cookie、Inertia props、React page
 - `src/adaptor/secondary`: Drizzle/SQLite resolver、query reader、event store、パスワードハッシュ
 - `src/app.ts`: SQLite を明示的に受け取る factory、依存関係、middleware、route を一つの Hono app へ構成
-- `src/server.ts`: 既定の `clinic.sqlite` と migration directory を選び、production server entry の app を構成
+- `src/server.ts`: 既定の `clinic.sqlite`、migration directory、Vite の production flag を選び、server entry の app を構成
 
 command use case は `AppointmentByIdResolver.resolveById` のような用途ごとの1メソッド port から現在状態を読み、ドメインが作った typed event を `ExaminationStartedStore.store` のような event store へ渡します。event store は event から projection の insert/update/delete と監査行の insert を組み立て、Drizzle transaction で両方を atomic に保存します。監査用の1メソッド port は `EventHistoryReader.list(admin: Admin): ResultAsync<readonly SanitizedAuditRecord[], RepositoryError>` です。Admin capability を受け取る reader 境界で保存行を Zod 検証し、許可した項目だけを `SanitizedAuditRecord` へ写して Admin の一覧画面へ届けます。
 

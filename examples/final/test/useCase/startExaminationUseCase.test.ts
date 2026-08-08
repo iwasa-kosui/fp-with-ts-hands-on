@@ -286,4 +286,46 @@ describe("StartExaminationUseCase", () => {
     expect(receivedEvents).toHaveLength(1);
     expect(receivedEvents[0]?.kind).toBe("ExaminationStarted");
   });
+
+  test("returns IdentityGenerationFailed without storing when event ID generation throws", async () => {
+    const storedEvents: ExaminationStarted[] = [];
+    const useCase = StartExaminationUseCase.create(
+      createDependencies({
+        eventIdGenerator: {
+          generate: () => {
+            throw new Error("event ID unavailable");
+          },
+        },
+        examinationStartedStore: successfulStore(storedEvents),
+      }),
+    );
+
+    const result = await useCase.run(input);
+
+    expect(result.isErr() && result.error).toEqual({
+      kind: "IdentityGenerationFailed",
+    });
+    expect(storedEvents).toHaveLength(0);
+  });
+
+  test("returns IdentityGenerationFailed without storing when the clock throws", async () => {
+    const storedEvents: ExaminationStarted[] = [];
+    const useCase = StartExaminationUseCase.create(
+      createDependencies({
+        clock: {
+          now: () => {
+            throw new Error("clock unavailable");
+          },
+        },
+        examinationStartedStore: successfulStore(storedEvents),
+      }),
+    );
+
+    const result = await useCase.run(input);
+
+    expect(result.isErr() && result.error).toEqual({
+      kind: "IdentityGenerationFailed",
+    });
+    expect(storedEvents).toHaveLength(0);
+  });
 });

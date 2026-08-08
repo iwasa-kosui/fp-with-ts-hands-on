@@ -40,6 +40,9 @@ describe("Final application", () => {
     expect(page).toContain("Admin capability");
     expect(page).toContain("SanitizedAuditRecord");
     expect(page).toContain("dist/app.js");
+    expect(page).toContain("NODE_ENV を指定せず");
+    expect(page).toContain("isProduction: true");
+    expect(page).toContain("IdentityGenerationFailed");
     expect(page).toContain("pnpm --filter @fp-with-ts/clinic-final dev");
     expect(page).toContain("pnpm --filter @fp-with-ts/clinic-final build");
     expect(page).toContain(

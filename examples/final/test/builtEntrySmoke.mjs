@@ -24,6 +24,7 @@ const { createDatabaseBackedApp } = await import("../dist/app.js");
 const app = createDatabaseBackedApp({
   databasePath: ":memory:",
   migrationsFolder: fileURLToPath(new URL("../drizzle", import.meta.url)),
+  isProduction: true,
 });
 const response = await app.request("/", {
   headers: {
@@ -35,3 +36,47 @@ const response = await app.request("/", {
 
 assert.equal(response.status, 302);
 assert.equal(response.headers.get("location"), "/setup");
+
+const setupPage = await app.request("/setup", {
+  headers: { Accept: "text/html" },
+});
+const setupHtml = await setupPage.text();
+assert.equal(setupPage.status, 200);
+assert.match(setupHtml, /\/static\/client\.js/);
+assert.match(setupHtml, /\/static\/styles\.css/);
+assert.doesNotMatch(setupHtml, /\/src\/adaptor\/primary\/web\/client\.tsx/);
+
+const setupResponse = await app.request("/setup", {
+  method: "POST",
+  body: new URLSearchParams({
+    email: "built-admin@example.test",
+    name: "Built Admin",
+    password: "correct horse battery staple",
+  }),
+  headers: {
+    Accept: "application/json",
+    "Content-Type": "application/x-www-form-urlencoded",
+    Origin: "http://localhost",
+    "X-Inertia": "true",
+    "X-Inertia-Version": "1",
+  },
+});
+assert.equal(setupResponse.status, 302);
+assert.match(setupResponse.headers.get("set-cookie") ?? "", /; Secure(?:;|$)/);
+
+const loginResponse = await app.request("/login", {
+  method: "POST",
+  body: new URLSearchParams({
+    email: "built-admin@example.test",
+    password: "correct horse battery staple",
+  }),
+  headers: {
+    Accept: "application/json",
+    "Content-Type": "application/x-www-form-urlencoded",
+    Origin: "http://localhost",
+    "X-Inertia": "true",
+    "X-Inertia-Version": "1",
+  },
+});
+assert.equal(loginResponse.status, 302);
+assert.match(loginResponse.headers.get("set-cookie") ?? "", /; Secure(?:;|$)/);

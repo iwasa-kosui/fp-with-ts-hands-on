@@ -5,7 +5,6 @@ import { Hono } from "hono";
 import { csrf } from "hono/csrf";
 import { HTTPException } from "hono/http-exception";
 import { secureHeaders } from "hono/secure-headers";
-import { z } from "zod";
 
 import { scryptPasswordHasher } from "./adaptor/secondary/authentication/scryptPasswordHasher.js";
 import { sessionTokenGenerator } from "./adaptor/secondary/authentication/sessionToken.js";
@@ -159,16 +158,12 @@ export type ApplicationDependencies = Readonly<{
 
 type CompositionOptions = Readonly<{
   clock?: Clock;
-  isProduction?: boolean;
+  isProduction: boolean;
 }>;
 
 const systemClock: Clock = {
   now: () => Timestamp.schema.parse(new Date().toISOString()),
 };
-const RuntimeEnvironmentSchema = z
-  .enum(["development", "test", "production"])
-  .optional()
-  .transform((environment) => environment ?? "development");
 const eventIdGenerator: EventIdGenerator = {
   generate: () => EventId.schema.parse(randomUUID()),
 };
@@ -199,10 +194,9 @@ const dummyPasswordHash = PasswordHash.schema.parse(
 
 export const createApplicationDependencies = (
   database: SqliteDatabase,
-  options: CompositionOptions = {},
+  options: CompositionOptions,
 ): ApplicationDependencies => {
   const clock = options.clock ?? systemClock;
-  const runtimeEnvironment = RuntimeEnvironmentSchema.parse(process.env.NODE_ENV);
 
   const sessionByTokenHashResolver =
     createSessionByTokenHashResolver(database);
@@ -458,7 +452,7 @@ export const createApplicationDependencies = (
       eventHistoryReader,
     }),
     clock,
-    isProduction: options.isProduction ?? runtimeEnvironment === "production",
+    isProduction: options.isProduction,
   };
 };
 
@@ -546,6 +540,7 @@ export const createApp = (dependencies: ApplicationDependencies) => {
 export type DatabaseBackedApplicationOptions = Readonly<{
   databasePath: string;
   migrationsFolder: string;
+  isProduction: boolean;
 }>;
 
 export const createDatabaseBackedApp = (
@@ -553,5 +548,9 @@ export const createDatabaseBackedApp = (
 ) => {
   const database = createSqliteDatabase(options.databasePath);
   migrateDatabase(database, options.migrationsFolder);
-  return createApp(createApplicationDependencies(database));
+  return createApp(
+    createApplicationDependencies(database, {
+      isProduction: options.isProduction,
+    }),
+  );
 };
