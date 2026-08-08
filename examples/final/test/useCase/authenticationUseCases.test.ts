@@ -43,6 +43,7 @@ import {
 } from "../../src/useCase/setUpInitialAdminUseCase.js";
 
 const userId = UserId.schema.parse("10000000-0000-4000-8000-000000000001");
+const otherUserId = UserId.schema.parse("10000000-0000-4000-8000-000000000005");
 const sessionId = SessionId.schema.parse(
   "10000000-0000-4000-8000-000000000002",
 );
@@ -425,5 +426,29 @@ describe("LogOutUseCase", () => {
       eventPayload: { sessionId, userId },
     });
     expect(JSON.stringify(events[0])).not.toContain(token.hash.unwrap());
+  });
+
+  test("rejects a session owned by another user without storing a deletion event", async () => {
+    const session = {
+      sessionId,
+      userId: otherUserId,
+      tokenHash: token.hash,
+      expiresAt,
+    } as const satisfies Session;
+    const events: SessionDeleted[] = [];
+    const useCase = LogOutUseCase.create({
+      sessionResolver: sessionResolverFor(session),
+      sessionDeletedStore: deletedSessionStore(events),
+      clock,
+      eventIdGenerator: eventIdGenerator(),
+    });
+
+    const result = await useCase.run({ actorUserId: userId, sessionId });
+
+    expect(result.isErr() && result.error).toEqual({
+      kind: "Unauthorized",
+      actorUserId: userId,
+    });
+    expect(events).toHaveLength(0);
   });
 });

@@ -143,6 +143,119 @@ const fixtures = async () => {
   return { actor, target, veterinarian } as const;
 };
 
+type UnauthorizedManagementAttempt = (
+  userResolver: UserResolver,
+  touch: (dependency: string) => void,
+  nonAdmin: UserState,
+) => Promise<string>;
+
+const unauthorizedManagementAttempts = [
+  [
+    "update",
+    async (userResolver, touch) => {
+      const result = await UpdateUserUseCase.create({
+        userResolver,
+        userUpdatedStore: {
+          store: () => {
+            touch("store");
+            return okAsync(undefined);
+          },
+        },
+        clock,
+        eventIdGenerator: {
+          generate: () => {
+            touch("event id generator");
+            return eventIdGenerator().generate();
+          },
+        },
+        veterinarianIdGenerator: {
+          generate: () => {
+            touch("veterinarian id generator");
+            return ids.veterinarian;
+          },
+        },
+      }).run({
+        actorUserId: ids.target,
+        targetUserId: ids.actor,
+        email: changedEmail,
+        name: changedName,
+        role: "Veterinarian",
+      });
+      return result.isErr() ? result.error.kind : "Ok";
+    },
+  ],
+  [
+    "reset password",
+    async (userResolver, touch, nonAdmin) => {
+      const result = await ResetUserPasswordUseCase.create({
+        userResolver,
+        userPasswordResetStore: {
+          store: () => {
+            touch("store");
+            return okAsync(undefined);
+          },
+        },
+        passwordHasher: {
+          hash: () => {
+            touch("password hasher");
+            return Promise.resolve(nonAdmin.passwordHash);
+          },
+          verify: scryptPasswordHasher.verify,
+        },
+        clock,
+        eventIdGenerator: {
+          generate: () => {
+            touch("event id generator");
+            return eventIdGenerator().generate();
+          },
+        },
+      }).run({
+        actorUserId: ids.target,
+        targetUserId: ids.actor,
+        password,
+      });
+      return result.isErr() ? result.error.kind : "Ok";
+    },
+  ],
+  [
+    "delete",
+    async (userResolver, touch) => {
+      const result = await DeleteUserUseCase.create({
+        userResolver,
+        userDeletedStore: {
+          store: () => {
+            touch("store");
+            return okAsync(undefined);
+          },
+        },
+        clock,
+        eventIdGenerator: {
+          generate: () => {
+            touch("event id generator");
+            return eventIdGenerator().generate();
+          },
+        },
+      }).run({
+        actorUserId: ids.target,
+        targetUserId: ids.actor,
+      });
+      return result.isErr() ? result.error.kind : "Ok";
+    },
+  ],
+  [
+    "list",
+    async (userResolver) => {
+      const result = await ListUsersUseCase.create({ userResolver }).run({
+        actorUserId: ids.target,
+      });
+      return result.isErr() ? result.error.kind : "Ok";
+    },
+  ],
+] as const satisfies readonly (readonly [
+  string,
+  UnauthorizedManagementAttempt,
+])[];
+
 describe("admin user management", () => {
   test("creates a Veterinarian with generated user and veterinarian IDs", async () => {
     const { actor } = await fixtures();
@@ -314,6 +427,42 @@ describe("admin user management", () => {
     expect(result.isErr() && result.error.kind).toBe("Unauthorized");
     expect(events).toHaveLength(0);
   });
+
+  test.each(unauthorizedManagementAttempts)(
+    "short-circuits non-Admin %s before resolving targets or invoking side effects",
+    async (_name, attempt) => {
+      const { target: nonAdmin } = await fixtures();
+      const touchedDependencies: string[] = [];
+      let resolveByIdCalls = 0;
+      const userResolver = {
+        resolveById: () => {
+          resolveByIdCalls += 1;
+          if (resolveByIdCalls > 1) {
+            touchedDependencies.push("target resolver");
+          }
+          return okAsync(nonAdmin);
+        },
+        resolveByEmail: () => {
+          touchedDependencies.push("email resolver");
+          return okAsync(undefined);
+        },
+        resolveAll: () => {
+          touchedDependencies.push("list resolver");
+          return okAsync([]);
+        },
+      } as const satisfies UserResolver;
+
+      const errorKind = await attempt(
+        userResolver,
+        (dependency) => touchedDependencies.push(dependency),
+        nonAdmin,
+      );
+
+      expect(errorKind).toBe("Unauthorized");
+      expect(resolveByIdCalls).toBe(1);
+      expect(touchedDependencies).toEqual([]);
+    },
+  );
 
   test("rejects self-delete and deletion of the last Admin", async () => {
     const { actor } = await fixtures();
