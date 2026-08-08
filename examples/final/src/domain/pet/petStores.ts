@@ -10,8 +10,19 @@ export type PetHasActiveAppointmentStoreError = Readonly<{
   kind: "PetHasActiveAppointment";
   petId: PetId;
 }>;
+export type PetNotFoundStoreError = Readonly<{
+  kind: "PetNotFound";
+  petId: PetId;
+}>;
+export type PetDeletionConflictStoreError = Readonly<{
+  kind: "PetDeletionConflict";
+  petId: PetId;
+}>;
 export type PetDeletedStoreError =
-  PetHasActiveAppointmentStoreError | RepositoryError;
+  | PetHasActiveAppointmentStoreError
+  | PetNotFoundStoreError
+  | PetDeletionConflictStoreError
+  | RepositoryError;
 export type PetDeletedStore = Readonly<{
   store: (
     ...events: readonly PetDeleted[]

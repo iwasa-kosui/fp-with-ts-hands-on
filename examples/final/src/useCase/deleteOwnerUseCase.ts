@@ -30,6 +30,10 @@ export type OwnerNotFound = Readonly<{
   ownerId: OwnerId;
 }>;
 export type OwnerHasPets = Readonly<{ kind: "OwnerHasPets"; ownerId: OwnerId }>;
+export type OwnerDeletionConflict = Readonly<{
+  kind: "OwnerDeletionConflict";
+  ownerId: OwnerId;
+}>;
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
@@ -41,6 +45,7 @@ export type UseCaseError =
   | UnauthorizedError
   | OwnerNotFound
   | OwnerHasPets
+  | OwnerDeletionConflict
   | IdentityGenerationFailed
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
@@ -62,8 +67,12 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
 });
 const toStoreError = (
   error: OwnerDeletedStoreError,
-): OwnerHasPets | UseCaseRepositoryError =>
-  error.kind === "OwnerHasPets" ? error : toRepositoryError(error);
+):
+  | OwnerNotFound
+  | OwnerHasPets
+  | OwnerDeletionConflict
+  | UseCaseRepositoryError =>
+  error.kind === "RepositoryError" ? toRepositoryError(error) : error;
 const ensureOwner =
   (ownerId: OwnerId) =>
   (owner: Owner | undefined): Result<Owner, OwnerNotFound> =>

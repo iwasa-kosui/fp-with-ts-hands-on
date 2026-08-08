@@ -10,7 +10,19 @@ export type OwnerHasPetsStoreError = Readonly<{
   kind: "OwnerHasPets";
   ownerId: OwnerId;
 }>;
-export type OwnerDeletedStoreError = OwnerHasPetsStoreError | RepositoryError;
+export type OwnerNotFoundStoreError = Readonly<{
+  kind: "OwnerNotFound";
+  ownerId: OwnerId;
+}>;
+export type OwnerDeletionConflictStoreError = Readonly<{
+  kind: "OwnerDeletionConflict";
+  ownerId: OwnerId;
+}>;
+export type OwnerDeletedStoreError =
+  | OwnerHasPetsStoreError
+  | OwnerNotFoundStoreError
+  | OwnerDeletionConflictStoreError
+  | RepositoryError;
 export type OwnerDeletedStore = Readonly<{
   store: (
     ...events: readonly OwnerDeleted[]

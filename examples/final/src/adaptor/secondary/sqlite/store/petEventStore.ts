@@ -8,8 +8,10 @@ import type {
   PetUpdated,
 } from "../../../../domain/pet/petEvent.js";
 import type {
+  PetDeletionConflictStoreError,
   PetDeletedStore,
   PetHasActiveAppointmentStoreError,
+  PetNotFoundStoreError,
 } from "../../../../domain/pet/petStores.js";
 import type { SqliteDatabase } from "../db.js";
 import { toEventRecord } from "../eventRecord.js";
@@ -71,6 +73,15 @@ const petHasActiveAppointment = (
   kind: "PetHasActiveAppointment",
   petId,
 });
+const petNotFound = (
+  petId: PetDeleted["aggregateId"],
+): PetNotFoundStoreError => ({ kind: "PetNotFound", petId });
+const petDeletionConflict = (
+  petId: PetDeleted["aggregateId"],
+): PetDeletionConflictStoreError => ({
+  kind: "PetDeletionConflict",
+  petId,
+});
 
 export const createPetDeletedEventStore = (
   db: SqliteDatabase,
@@ -80,6 +91,30 @@ export const createPetDeletedEventStore = (
       Promise.resolve().then(() =>
         db.transaction((tx) => {
           const petIds = events.map(({ aggregateId }) => aggregateId);
+          const duplicatePetId = petIds.find(
+            (petId, index) => petIds.indexOf(petId) !== index,
+          );
+          if (duplicatePetId !== undefined) {
+            return err(petDeletionConflict(duplicatePetId));
+          }
+
+          const livePetIds =
+            petIds.length === 0
+              ? []
+              : tx
+                  .select({ petId: petsTable.petId })
+                  .from(petsTable)
+                  .where(inArray(petsTable.petId, petIds))
+                  .all()
+                  .map(({ petId }) => petId);
+          const livePetIdSet = new Set(livePetIds);
+          const missingPet = events.find(
+            ({ aggregateId }) => !livePetIdSet.has(aggregateId),
+          );
+          if (missingPet !== undefined) {
+            return err(petNotFound(missingPet.aggregateId));
+          }
+
           const blockingAppointment =
             petIds.length === 0
               ? undefined
@@ -103,9 +138,15 @@ export const createPetDeletedEventStore = (
           }
 
           events.forEach((event) => {
-            tx.delete(petsTable)
+            const result = tx
+              .delete(petsTable)
               .where(eq(petsTable.petId, event.aggregateId))
               .run();
+            if (result.changes !== 1) {
+              throw new TypeError(
+                "Pet deletion preflight and affected rows diverged",
+              );
+            }
             tx.insert(domainEventsTable)
               .values(
                 toEventRecord(event, undefined, {

@@ -8,8 +8,10 @@ import type {
   OwnerUpdated,
 } from "../../../../domain/owner/ownerEvent.js";
 import type {
+  OwnerDeletionConflictStoreError,
   OwnerDeletedStore,
   OwnerHasPetsStoreError,
+  OwnerNotFoundStoreError,
 } from "../../../../domain/owner/ownerStores.js";
 import type { SqliteDatabase } from "../db.js";
 import { toEventRecord } from "../eventRecord.js";
@@ -69,6 +71,15 @@ const ownerHasPets = (
   kind: "OwnerHasPets",
   ownerId,
 });
+const ownerNotFound = (
+  ownerId: OwnerDeleted["aggregateId"],
+): OwnerNotFoundStoreError => ({ kind: "OwnerNotFound", ownerId });
+const ownerDeletionConflict = (
+  ownerId: OwnerDeleted["aggregateId"],
+): OwnerDeletionConflictStoreError => ({
+  kind: "OwnerDeletionConflict",
+  ownerId,
+});
 
 export const createOwnerDeletedEventStore = (
   db: SqliteDatabase,
@@ -78,6 +89,30 @@ export const createOwnerDeletedEventStore = (
       Promise.resolve().then(() =>
         db.transaction((tx) => {
           const ownerIds = events.map(({ aggregateId }) => aggregateId);
+          const duplicateOwnerId = ownerIds.find(
+            (ownerId, index) => ownerIds.indexOf(ownerId) !== index,
+          );
+          if (duplicateOwnerId !== undefined) {
+            return err(ownerDeletionConflict(duplicateOwnerId));
+          }
+
+          const liveOwnerIds =
+            ownerIds.length === 0
+              ? []
+              : tx
+                  .select({ ownerId: ownersTable.ownerId })
+                  .from(ownersTable)
+                  .where(inArray(ownersTable.ownerId, ownerIds))
+                  .all()
+                  .map(({ ownerId }) => ownerId);
+          const liveOwnerIdSet = new Set(liveOwnerIds);
+          const missingOwner = events.find(
+            ({ aggregateId }) => !liveOwnerIdSet.has(aggregateId),
+          );
+          if (missingOwner !== undefined) {
+            return err(ownerNotFound(missingOwner.aggregateId));
+          }
+
           const blockingPet =
             ownerIds.length === 0
               ? undefined
@@ -96,9 +131,15 @@ export const createOwnerDeletedEventStore = (
           }
 
           events.forEach((event) => {
-            tx.delete(ownersTable)
+            const result = tx
+              .delete(ownersTable)
               .where(eq(ownersTable.ownerId, event.aggregateId))
               .run();
+            if (result.changes !== 1) {
+              throw new TypeError(
+                "Owner deletion preflight and affected rows diverged",
+              );
+            }
             tx.insert(domainEventsTable)
               .values(
                 toEventRecord(event, undefined, { ownerId: event.aggregateId }),

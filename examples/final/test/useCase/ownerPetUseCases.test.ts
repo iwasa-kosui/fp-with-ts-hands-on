@@ -12,8 +12,14 @@ import {
   ownersTable,
   petsTable,
 } from "../../src/adaptor/secondary/sqlite/schema.js";
-import { createOwnerDeletedEventStore } from "../../src/adaptor/secondary/sqlite/store/ownerEventStore.js";
-import { createPetDeletedEventStore } from "../../src/adaptor/secondary/sqlite/store/petEventStore.js";
+import {
+  createOwnerDeletedEventStore,
+  createOwnerEventStore,
+} from "../../src/adaptor/secondary/sqlite/store/ownerEventStore.js";
+import {
+  createPetDeletedEventStore,
+  createPetEventStore,
+} from "../../src/adaptor/secondary/sqlite/store/petEventStore.js";
 import type { Clock } from "../../src/domain/aggregate/clock.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import type { EventIdGenerator } from "../../src/domain/aggregate/eventIdGenerator.js";
@@ -59,8 +65,10 @@ const ids = {
   veterinarian: UserId.schema.parse("81000000-0000-4000-8000-000000000003"),
   owner: OwnerId.schema.parse("82000000-0000-4000-8000-000000000001"),
   newOwner: OwnerId.schema.parse("82000000-0000-4000-8000-000000000002"),
+  otherOwner: OwnerId.schema.parse("82000000-0000-4000-8000-000000000003"),
   pet: PetId.schema.parse("83000000-0000-4000-8000-000000000001"),
   newPet: PetId.schema.parse("83000000-0000-4000-8000-000000000002"),
+  otherPet: PetId.schema.parse("83000000-0000-4000-8000-000000000003"),
   appointment: AppointmentId.schema.parse(
     "84000000-0000-4000-8000-000000000001",
   ),
@@ -124,6 +132,22 @@ const scheduled = {
   scheduledAt: now,
   reason: "checkup",
 } as const satisfies Appointment;
+const otherOwner = {
+  ...owner,
+  ownerId: ids.otherOwner,
+} as const satisfies OwnerState;
+const otherPet = {
+  ...pet,
+  petId: ids.otherPet,
+  ownerId: ids.otherOwner,
+} as const satisfies PetState;
+const context = (sequence: number) => ({
+  eventId: EventId.schema.parse(
+    `88000000-0000-4000-8000-${sequence.toString().padStart(12, "0")}`,
+  ),
+  occurredAt: now,
+  actorUserId: ids.admin,
+});
 
 const userResolverFor = (actor: User): UserResolver => ({
   resolveById: (userId) => okAsync(userId === actor.userId ? actor : undefined),
@@ -154,6 +178,90 @@ const storeEvents = <T>(events: T[]) => ({
     return okAsync(undefined);
   },
 });
+
+const authorizationSpies = () => {
+  const forbiddenTouches: string[] = [];
+  let actorLookups = 0;
+  const touch = (name: string) => forbiddenTouches.push(name);
+  return {
+    userResolver: {
+      resolveById: () => {
+        actorLookups += 1;
+        return okAsync(veterinarian);
+      },
+      resolveByEmail: () => {
+        touch("userResolver.resolveByEmail");
+        return okAsync(undefined);
+      },
+      resolveAll: () => {
+        touch("userResolver.resolveAll");
+        return okAsync([veterinarian]);
+      },
+    } as const satisfies UserResolver,
+    ownerResolver: {
+      resolveById: () => {
+        touch("ownerResolver.resolveById");
+        return okAsync(owner);
+      },
+      resolveAll: () => {
+        touch("ownerResolver.resolveAll");
+        return okAsync([owner]);
+      },
+    } as const satisfies OwnerResolver,
+    petResolver: {
+      resolveById: () => {
+        touch("petResolver.resolveById");
+        return okAsync(pet);
+      },
+      resolveByOwnerId: () => {
+        touch("petResolver.resolveByOwnerId");
+        return okAsync([pet]);
+      },
+      resolveAll: () => {
+        touch("petResolver.resolveAll");
+        return okAsync([pet]);
+      },
+    } as const satisfies PetResolver,
+    appointmentResolver: {
+      resolveByPetId: () => {
+        touch("appointmentResolver.resolveByPetId");
+        return okAsync([scheduled]);
+      },
+    } as const satisfies AppointmentByPetResolver,
+    store: {
+      store: () => {
+        touch("store.store");
+        return okAsync(undefined);
+      },
+    },
+    clock: {
+      now: () => {
+        touch("clock.now");
+        return now;
+      },
+    } as const satisfies Clock,
+    eventIdGenerator: {
+      generate: () => {
+        touch("eventIdGenerator.generate");
+        return context(91).eventId;
+      },
+    } as const satisfies EventIdGenerator,
+    ownerIdGenerator: {
+      generate: () => {
+        touch("ownerIdGenerator.generate");
+        return ids.newOwner;
+      },
+    },
+    petIdGenerator: {
+      generate: () => {
+        touch("petIdGenerator.generate");
+        return ids.newPet;
+      },
+    },
+    forbiddenTouches,
+    actorLookups: () => actorLookups,
+  } as const;
+};
 
 describe("owner and pet management use cases", () => {
   test("Receptionist creates and updates owners and pets through typed events", async () => {
@@ -270,6 +378,137 @@ describe("owner and pet management use cases", () => {
     });
     expect(petResult._unsafeUnwrapErr().kind).toBe("Unauthorized");
     expect(touched).toEqual([]);
+  });
+
+  test("all ten management use cases reject Veterinarian after only actor lookup", async () => {
+    const attempts = [
+      [
+        "create owner",
+        (spies: ReturnType<typeof authorizationSpies>) =>
+          CreateOwnerUseCase.create({
+            userResolver: spies.userResolver,
+            ownerCreatedStore: spies.store,
+            ownerIdGenerator: spies.ownerIdGenerator,
+            clock: spies.clock,
+            eventIdGenerator: spies.eventIdGenerator,
+          }).run({ actorUserId: ids.veterinarian, ...changedProfile }),
+      ],
+      [
+        "update owner",
+        (spies: ReturnType<typeof authorizationSpies>) =>
+          UpdateOwnerUseCase.create({
+            userResolver: spies.userResolver,
+            ownerResolver: spies.ownerResolver,
+            ownerUpdatedStore: spies.store,
+            clock: spies.clock,
+            eventIdGenerator: spies.eventIdGenerator,
+          }).run({
+            actorUserId: ids.veterinarian,
+            ownerId: ids.owner,
+            ...changedProfile,
+          }),
+      ],
+      [
+        "delete owner",
+        (spies: ReturnType<typeof authorizationSpies>) =>
+          DeleteOwnerUseCase.create({
+            userResolver: spies.userResolver,
+            ownerResolver: spies.ownerResolver,
+            petResolver: spies.petResolver,
+            ownerDeletedStore: spies.store,
+            clock: spies.clock,
+            eventIdGenerator: spies.eventIdGenerator,
+          }).run({ actorUserId: ids.veterinarian, ownerId: ids.owner }),
+      ],
+      [
+        "list owners",
+        (spies: ReturnType<typeof authorizationSpies>) =>
+          ListOwnersUseCase.create({
+            userResolver: spies.userResolver,
+            ownerResolver: spies.ownerResolver,
+          }).run({ actorUserId: ids.veterinarian }),
+      ],
+      [
+        "get owner",
+        (spies: ReturnType<typeof authorizationSpies>) =>
+          GetOwnerUseCase.create({
+            userResolver: spies.userResolver,
+            ownerResolver: spies.ownerResolver,
+          }).run({ actorUserId: ids.veterinarian, ownerId: ids.owner }),
+      ],
+      [
+        "create pet",
+        (spies: ReturnType<typeof authorizationSpies>) =>
+          CreatePetUseCase.create({
+            userResolver: spies.userResolver,
+            ownerResolver: spies.ownerResolver,
+            petCreatedStore: spies.store,
+            petIdGenerator: spies.petIdGenerator,
+            clock: spies.clock,
+            eventIdGenerator: spies.eventIdGenerator,
+          }).run({
+            actorUserId: ids.veterinarian,
+            ownerId: ids.owner,
+            name: "Sora",
+            species: "Dog",
+          }),
+      ],
+      [
+        "update pet",
+        (spies: ReturnType<typeof authorizationSpies>) =>
+          UpdatePetUseCase.create({
+            userResolver: spies.userResolver,
+            petResolver: spies.petResolver,
+            petUpdatedStore: spies.store,
+            clock: spies.clock,
+            eventIdGenerator: spies.eventIdGenerator,
+          }).run({
+            actorUserId: ids.veterinarian,
+            petId: ids.pet,
+            name: "Mugi II",
+            species: "Cat",
+          }),
+      ],
+      [
+        "delete pet",
+        (spies: ReturnType<typeof authorizationSpies>) =>
+          DeletePetUseCase.create({
+            userResolver: spies.userResolver,
+            petResolver: spies.petResolver,
+            appointmentResolver: spies.appointmentResolver,
+            petDeletedStore: spies.store,
+            clock: spies.clock,
+            eventIdGenerator: spies.eventIdGenerator,
+          }).run({ actorUserId: ids.veterinarian, petId: ids.pet }),
+      ],
+      [
+        "list pets",
+        (spies: ReturnType<typeof authorizationSpies>) =>
+          ListPetsUseCase.create({
+            userResolver: spies.userResolver,
+            petResolver: spies.petResolver,
+          }).run({ actorUserId: ids.veterinarian }),
+      ],
+      [
+        "get pet",
+        (spies: ReturnType<typeof authorizationSpies>) =>
+          GetPetUseCase.create({
+            userResolver: spies.userResolver,
+            petResolver: spies.petResolver,
+          }).run({ actorUserId: ids.veterinarian, petId: ids.pet }),
+      ],
+    ] as const;
+
+    for (const [name, attempt] of attempts) {
+      const spies = authorizationSpies();
+      const result = await attempt(spies);
+      expect(result._unsafeUnwrapErr(), name).toEqual({
+        kind: "Unauthorized",
+        actorUserId: ids.veterinarian,
+      });
+      expect(spies.actorLookups(), name).toBe(1);
+      expect(spies.forbiddenTouches, name).toEqual([]);
+    }
   });
 
   test("rejects missing owner and deletion-ineligible aggregates before emitting events", async () => {
@@ -483,5 +722,204 @@ describe("owner and pet management use cases", () => {
     expect(db.select().from(appointmentsTable).all()).toHaveLength(1);
     expect(db.select().from(examResultsTable).all()).toHaveLength(1);
     expect(db.select().from(domainEventsTable).all()).toHaveLength(1);
+  });
+
+  test("guarded stores reject stale targets before any batch write", async () => {
+    const ownerDb = createSqliteDatabase(":memory:");
+    migrateDatabase(ownerDb);
+    ownerDb
+      .insert(ownersTable)
+      .values({
+        ownerId: owner.ownerId,
+        name: owner.name.unwrap(),
+        email: owner.email.unwrap(),
+        phone: owner.phone.unwrap(),
+      })
+      .run();
+    const ownerResult = await createOwnerDeletedEventStore(ownerDb).store(
+      Owner.delete(context(1))(owner),
+      Owner.delete(context(2))(otherOwner),
+    );
+
+    expect(ownerResult._unsafeUnwrapErr()).toEqual({
+      kind: "OwnerNotFound",
+      ownerId: ids.otherOwner,
+    });
+    expect(ownerDb.select().from(ownersTable).all()).toHaveLength(1);
+    expect(ownerDb.select().from(domainEventsTable).all()).toEqual([]);
+
+    const petDb = createSqliteDatabase(":memory:");
+    migrateDatabase(petDb);
+    petDb
+      .insert(ownersTable)
+      .values({
+        ownerId: owner.ownerId,
+        name: owner.name.unwrap(),
+        email: owner.email.unwrap(),
+        phone: owner.phone.unwrap(),
+      })
+      .run();
+    petDb.insert(petsTable).values(pet).run();
+    const petResult = await createPetEventStore(petDb).store(
+      Pet.delete(context(3))(pet),
+      Pet.delete(context(4))({ ...otherPet, ownerId: ids.owner }),
+    );
+
+    expect(petResult._unsafeUnwrapErr()).toEqual({
+      kind: "PetNotFound",
+      petId: ids.otherPet,
+    });
+    expect(petDb.select().from(petsTable).all()).toHaveLength(1);
+    expect(petDb.select().from(domainEventsTable).all()).toEqual([]);
+  });
+
+  test("delete use cases map authoritative stale-target errors without PII", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const ownerResult = await DeleteOwnerUseCase.create({
+      userResolver: userResolverFor(admin),
+      ownerResolver: ownerResolverFor([owner]),
+      petResolver: petResolverFor([]),
+      ownerDeletedStore: createOwnerDeletedEventStore(db),
+      clock,
+      eventIdGenerator: eventIdGenerator(),
+    }).run({ actorUserId: ids.admin, ownerId: ids.owner });
+    const petResult = await DeletePetUseCase.create({
+      userResolver: userResolverFor(admin),
+      petResolver: petResolverFor([pet]),
+      appointmentResolver: appointmentResolverFor([]),
+      petDeletedStore: createPetDeletedEventStore(db),
+      clock,
+      eventIdGenerator: eventIdGenerator(),
+    }).run({ actorUserId: ids.admin, petId: ids.pet });
+
+    expect(ownerResult._unsafeUnwrapErr()).toEqual({
+      kind: "OwnerNotFound",
+      ownerId: ids.owner,
+    });
+    expect(petResult._unsafeUnwrapErr()).toEqual({
+      kind: "PetNotFound",
+      petId: ids.pet,
+    });
+    expect(JSON.stringify([ownerResult, petResult])).not.toContain(
+      "alice@example.test",
+    );
+    expect(db.select().from(domainEventsTable).all()).toEqual([]);
+  });
+
+  test("guarded stores reject duplicate aggregate IDs without phantom history", async () => {
+    const ownerDb = createSqliteDatabase(":memory:");
+    migrateDatabase(ownerDb);
+    ownerDb
+      .insert(ownersTable)
+      .values({
+        ownerId: owner.ownerId,
+        name: owner.name.unwrap(),
+        email: owner.email.unwrap(),
+        phone: owner.phone.unwrap(),
+      })
+      .run();
+    const ownerResult = await createOwnerEventStore(ownerDb).store(
+      Owner.delete(context(5))(owner),
+      Owner.delete(context(6))(owner),
+    );
+
+    expect(ownerResult._unsafeUnwrapErr()).toEqual({
+      kind: "OwnerDeletionConflict",
+      ownerId: ids.owner,
+    });
+    expect(ownerDb.select().from(ownersTable).all()).toHaveLength(1);
+    expect(ownerDb.select().from(domainEventsTable).all()).toEqual([]);
+
+    const petDb = createSqliteDatabase(":memory:");
+    migrateDatabase(petDb);
+    petDb
+      .insert(ownersTable)
+      .values({
+        ownerId: owner.ownerId,
+        name: owner.name.unwrap(),
+        email: owner.email.unwrap(),
+        phone: owner.phone.unwrap(),
+      })
+      .run();
+    petDb.insert(petsTable).values(pet).run();
+    const petResult = await createPetDeletedEventStore(petDb).store(
+      Pet.delete(context(7))(pet),
+      Pet.delete(context(8))(pet),
+    );
+
+    expect(petResult._unsafeUnwrapErr()).toEqual({
+      kind: "PetDeletionConflict",
+      petId: ids.pet,
+    });
+    expect(petDb.select().from(petsTable).all()).toHaveLength(1);
+    expect(petDb.select().from(domainEventsTable).all()).toEqual([]);
+  });
+
+  test("guarded stores preflight every relationship before multi-delete side effects", async () => {
+    const ownerDb = createSqliteDatabase(":memory:");
+    migrateDatabase(ownerDb);
+    [owner, otherOwner].forEach((state) => {
+      ownerDb
+        .insert(ownersTable)
+        .values({
+          ownerId: state.ownerId,
+          name: state.name.unwrap(),
+          email: state.email.unwrap(),
+          phone: state.phone.unwrap(),
+        })
+        .run();
+    });
+    ownerDb.insert(petsTable).values(otherPet).run();
+    const ownerResult = await createOwnerEventStore(ownerDb).store(
+      Owner.delete(context(9))(owner),
+      Owner.delete(context(10))(otherOwner),
+    );
+
+    expect(ownerResult._unsafeUnwrapErr()).toEqual({
+      kind: "OwnerHasPets",
+      ownerId: ids.otherOwner,
+    });
+    expect(ownerDb.select().from(ownersTable).all()).toHaveLength(2);
+    expect(ownerDb.select().from(domainEventsTable).all()).toEqual([]);
+
+    const petDb = createSqliteDatabase(":memory:");
+    migrateDatabase(petDb);
+    [owner, otherOwner].forEach((state) => {
+      petDb
+        .insert(ownersTable)
+        .values({
+          ownerId: state.ownerId,
+          name: state.name.unwrap(),
+          email: state.email.unwrap(),
+          phone: state.phone.unwrap(),
+        })
+        .run();
+    });
+    petDb.insert(petsTable).values([pet, otherPet]).run();
+    petDb
+      .insert(appointmentsTable)
+      .values({
+        ...scheduled,
+        appointmentId: AppointmentId.schema.parse(
+          "84000000-0000-4000-8000-000000000002",
+        ),
+        ownerId: ids.otherOwner,
+        petId: ids.otherPet,
+        status: "Scheduled",
+        state: { ...scheduled, ownerId: ids.otherOwner, petId: ids.otherPet },
+      })
+      .run();
+    const petResult = await createPetDeletedEventStore(petDb).store(
+      Pet.delete(context(11))(pet),
+      Pet.delete(context(12))(otherPet),
+    );
+
+    expect(petResult._unsafeUnwrapErr()).toEqual({
+      kind: "PetHasActiveAppointment",
+      petId: ids.otherPet,
+    });
+    expect(petDb.select().from(petsTable).all()).toHaveLength(2);
+    expect(petDb.select().from(domainEventsTable).all()).toEqual([]);
   });
 });
