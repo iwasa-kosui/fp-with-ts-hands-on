@@ -3,7 +3,11 @@ import { ResultAsync } from "neverthrow";
 
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import { Pet } from "../../../../domain/pet/pet.js";
-import type { PetResolver } from "../../../../domain/pet/petResolver.js";
+import type {
+  PetByIdResolver,
+  PetByOwnerIdResolver,
+  PetListResolver,
+} from "../../../../domain/pet/petResolver.js";
 import type { SqliteDatabase } from "../db.js";
 import { petsTable } from "../schema.js";
 
@@ -14,25 +18,31 @@ const repositoryError = (operation: string) => (cause: unknown): RepositoryError
   cause,
 });
 
-export const createPetResolver = (db: SqliteDatabase): PetResolver => ({
+export const createPetByIdResolver = (db: SqliteDatabase): PetByIdResolver => ({
   resolveById: (petId) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() => {
         const row = db.select().from(petsTable).where(eq(petsTable.petId, petId)).get();
         return row === undefined ? undefined : parseRow(row);
       }),
-      repositoryError("PetResolver.resolveById"),
+      repositoryError("PetByIdResolver.resolveById"),
     ),
+});
+
+export const createPetByOwnerIdResolver = (db: SqliteDatabase): PetByOwnerIdResolver => ({
   resolveByOwnerId: (ownerId) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() =>
         db.select().from(petsTable).where(eq(petsTable.ownerId, ownerId)).all().map(parseRow),
       ),
-      repositoryError("PetResolver.resolveByOwnerId"),
+      repositoryError("PetByOwnerIdResolver.resolveByOwnerId"),
     ),
+});
+
+export const createPetListResolver = (db: SqliteDatabase): PetListResolver => ({
   resolveAll: () =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() => db.select().from(petsTable).all().map(parseRow)),
-      repositoryError("PetResolver.resolveAll"),
+      repositoryError("PetListResolver.resolveAll"),
     ),
 });

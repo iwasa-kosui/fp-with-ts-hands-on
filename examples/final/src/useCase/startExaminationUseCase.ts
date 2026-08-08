@@ -8,11 +8,11 @@ import {
   type InExamination,
 } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
-import type { AppointmentResolver } from "../domain/appointment/appointmentResolver.js";
+import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
 import type { ExaminationStartedStore } from "../domain/appointment/appointmentStores.js";
 import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
 import type { UserId } from "../domain/user/userId.js";
-import type { UserResolver } from "../domain/user/userResolver.js";
+import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanStartExamination } from "./authorization.js";
 import {
   ensureAppointmentFound,
@@ -42,8 +42,8 @@ export type UseCaseError =
 export type UseCaseOutput = ResultAsync<UseCaseOk, UseCaseError>;
 
 export type Dependencies = Readonly<{
-  userResolver: UserResolver;
-  appointmentResolver: AppointmentResolver;
+  userResolver: UserByIdResolver;
+  appointmentResolver: AppointmentByIdResolver;
   examinationStartedStore: ExaminationStartedStore;
   clock: Clock;
   eventIdGenerator: EventIdGenerator;

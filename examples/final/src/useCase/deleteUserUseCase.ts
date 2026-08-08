@@ -16,7 +16,10 @@ import {
   type User as UserState,
 } from "../domain/user/user.js";
 import type { UserId } from "../domain/user/userId.js";
-import type { UserResolver } from "../domain/user/userResolver.js";
+import type {
+  UserByIdResolver,
+  UserListResolver,
+} from "../domain/user/userResolver.js";
 import type {
   UserDeletedStore,
   UserDeletedStoreError,
@@ -50,7 +53,8 @@ export type UseCaseError =
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
-  userResolver: UserResolver;
+  userByIdResolver: UserByIdResolver;
+  userListResolver: UserListResolver;
   userDeletedStore: UserDeletedStore;
   clock: Clock;
   eventIdGenerator: EventIdGenerator;
@@ -107,20 +111,20 @@ const createEvent =
 const run =
   (dependencies: Dependencies) =>
   (input: UseCaseInput): UseCaseOutput =>
-    dependencies.userResolver
+    dependencies.userByIdResolver
       .resolveById(input.actorUserId)
       .mapErr(toRepositoryError)
       .andThen(ensureActor(input.actorUserId))
       .andThen(ensureAdmin)
       .andThen(() =>
-        dependencies.userResolver
+        dependencies.userByIdResolver
           .resolveById(input.targetUserId)
           .mapErr(toRepositoryError),
       )
       .andThen(ensureTarget(input.targetUserId))
       .andThen(ensureNotSelf(input.actorUserId))
       .andThen((target) =>
-        dependencies.userResolver
+        dependencies.userListResolver
           .resolveAll()
           .mapErr(toRepositoryError)
           .andThen((users) => ensureNotLastAdmin(users)(target)),

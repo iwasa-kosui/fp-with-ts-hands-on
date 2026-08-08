@@ -11,15 +11,15 @@ import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
 import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import { Owner } from "../domain/owner/owner.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
-import type { OwnerResolver } from "../domain/owner/ownerResolver.js";
+import type { OwnerByIdResolver } from "../domain/owner/ownerResolver.js";
 import type {
   OwnerDeletedStore,
   OwnerDeletedStoreError,
 } from "../domain/owner/ownerStores.js";
 import type { Pet } from "../domain/pet/pet.js";
-import type { PetResolver } from "../domain/pet/petResolver.js";
+import type { PetByOwnerIdResolver } from "../domain/pet/petResolver.js";
 import type { UserId } from "../domain/user/userId.js";
-import type { UserResolver } from "../domain/user/userResolver.js";
+import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 
@@ -50,9 +50,9 @@ export type UseCaseError =
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
-  userResolver: UserResolver;
-  ownerResolver: OwnerResolver;
-  petResolver: PetResolver;
+  userResolver: UserByIdResolver;
+  ownerResolver: OwnerByIdResolver;
+  petResolver: PetByOwnerIdResolver;
   ownerDeletedStore: OwnerDeletedStore;
   clock: Clock;
   eventIdGenerator: EventIdGenerator;

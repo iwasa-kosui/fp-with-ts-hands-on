@@ -4,7 +4,10 @@ import { z } from "zod";
 
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import { ExamResult } from "../../../../domain/examResult/examResult.js";
-import type { ExamResultResolver } from "../../../../domain/examResult/examResultResolver.js";
+import type {
+  ExamResultByIdResolver,
+  ExamResultByPetIdResolver,
+} from "../../../../domain/examResult/examResultResolver.js";
 import { ExamId } from "../../../../domain/examResult/examId.js";
 import { PetId } from "../../../../domain/pet/petId.js";
 import type { SqliteDatabase } from "../db.js";
@@ -30,15 +33,20 @@ const repositoryError = (operation: string) => (cause: unknown): RepositoryError
   cause,
 });
 
-export const createExamResultResolver = (db: SqliteDatabase): ExamResultResolver => ({
+export const createExamResultByIdResolver = (db: SqliteDatabase): ExamResultByIdResolver => ({
   resolveById: (examId) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() => {
         const row = db.select().from(examResultsTable).where(eq(examResultsTable.examId, examId)).get();
         return row === undefined ? undefined : parseExamResultRow(row);
       }),
-      repositoryError("ExamResultResolver.resolveById"),
+      repositoryError("ExamResultByIdResolver.resolveById"),
     ),
+});
+
+export const createExamResultByPetIdResolver = (
+  db: SqliteDatabase,
+): ExamResultByPetIdResolver => ({
   resolveByPetId: (petId) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() =>
@@ -47,6 +55,6 @@ export const createExamResultResolver = (db: SqliteDatabase): ExamResultResolver
           .all()
           .map(parseExamResultRow),
       ),
-      repositoryError("ExamResultResolver.resolveByPetId"),
+      repositoryError("ExamResultByPetIdResolver.resolveByPetId"),
     ),
 });

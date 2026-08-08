@@ -26,7 +26,7 @@ import type { EventIdGenerator } from "../../src/domain/aggregate/eventIdGenerat
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import type { Appointment } from "../../src/domain/appointment/appointment.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
-import type { AppointmentByPetResolver } from "../../src/domain/appointment/appointmentResolver.js";
+import type { AppointmentByPetIdResolver } from "../../src/domain/appointment/appointmentResolver.js";
 import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
@@ -38,16 +38,23 @@ import { OwnerEmail } from "../../src/domain/owner/ownerEmail.js";
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
 import { OwnerName } from "../../src/domain/owner/ownerName.js";
 import { OwnerPhone } from "../../src/domain/owner/ownerPhone.js";
-import type { OwnerResolver } from "../../src/domain/owner/ownerResolver.js";
+import type {
+  OwnerByIdResolver,
+  OwnerListResolver,
+} from "../../src/domain/owner/ownerResolver.js";
 import { Pet, type Pet as PetState } from "../../src/domain/pet/pet.js";
 import { PetId } from "../../src/domain/pet/petId.js";
-import type { PetResolver } from "../../src/domain/pet/petResolver.js";
+import type {
+  PetByIdResolver,
+  PetByOwnerIdResolver,
+  PetListResolver,
+} from "../../src/domain/pet/petResolver.js";
 import { PasswordHash } from "../../src/domain/user/passwordHash.js";
 import type { User } from "../../src/domain/user/user.js";
 import { UserEmail } from "../../src/domain/user/userEmail.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
-import type { UserResolver } from "../../src/domain/user/userResolver.js";
+import type { UserByIdResolver } from "../../src/domain/user/userResolver.js";
 import { CreateOwnerUseCase } from "../../src/useCase/createOwnerUseCase.js";
 import { CreatePetUseCase } from "../../src/useCase/createPetUseCase.js";
 import { DeleteOwnerUseCase } from "../../src/useCase/deleteOwnerUseCase.js";
@@ -149,17 +156,18 @@ const context = (sequence: number) => ({
   actorUserId: ids.admin,
 });
 
-const userResolverFor = (actor: User): UserResolver => ({
+const userResolverFor = (actor: User): UserByIdResolver => ({
   resolveById: (userId) => okAsync(userId === actor.userId ? actor : undefined),
-  resolveByEmail: () => okAsync(undefined),
-  resolveAll: () => okAsync([actor]),
 });
-const ownerResolverFor = (owners: readonly OwnerState[]): OwnerResolver => ({
+type OwnerResolverFixture = OwnerByIdResolver & OwnerListResolver;
+type PetResolverFixture = PetByIdResolver & PetByOwnerIdResolver & PetListResolver;
+
+const ownerResolverFor = (owners: readonly OwnerState[]): OwnerResolverFixture => ({
   resolveById: (ownerId) =>
     okAsync(owners.find((candidate) => candidate.ownerId === ownerId)),
   resolveAll: () => okAsync(owners),
 });
-const petResolverFor = (pets: readonly PetState[]): PetResolver => ({
+const petResolverFor = (pets: readonly PetState[]): PetResolverFixture => ({
   resolveById: (petId) =>
     okAsync(pets.find((candidate) => candidate.petId === petId)),
   resolveByOwnerId: (ownerId) =>
@@ -168,7 +176,7 @@ const petResolverFor = (pets: readonly PetState[]): PetResolver => ({
 });
 const appointmentResolverFor = (
   appointments: readonly Appointment[],
-): AppointmentByPetResolver => ({
+): AppointmentByPetIdResolver => ({
   resolveByPetId: (petId) =>
     okAsync(appointments.filter((candidate) => candidate.petId === petId)),
 });
@@ -189,15 +197,7 @@ const authorizationSpies = () => {
         actorLookups += 1;
         return okAsync(veterinarian);
       },
-      resolveByEmail: () => {
-        touch("userResolver.resolveByEmail");
-        return okAsync(undefined);
-      },
-      resolveAll: () => {
-        touch("userResolver.resolveAll");
-        return okAsync([veterinarian]);
-      },
-    } as const satisfies UserResolver,
+    } as const satisfies UserByIdResolver,
     ownerResolver: {
       resolveById: () => {
         touch("ownerResolver.resolveById");
@@ -207,7 +207,7 @@ const authorizationSpies = () => {
         touch("ownerResolver.resolveAll");
         return okAsync([owner]);
       },
-    } as const satisfies OwnerResolver,
+    } as const satisfies OwnerResolverFixture,
     petResolver: {
       resolveById: () => {
         touch("petResolver.resolveById");
@@ -221,13 +221,13 @@ const authorizationSpies = () => {
         touch("petResolver.resolveAll");
         return okAsync([pet]);
       },
-    } as const satisfies PetResolver,
+    } as const satisfies PetResolverFixture,
     appointmentResolver: {
       resolveByPetId: () => {
         touch("appointmentResolver.resolveByPetId");
         return okAsync([scheduled]);
       },
-    } as const satisfies AppointmentByPetResolver,
+    } as const satisfies AppointmentByPetIdResolver,
     store: {
       store: () => {
         touch("store.store");
@@ -339,7 +339,7 @@ describe("owner and pet management use cases", () => {
 
   test("Veterinarian is rejected before protected owner or pet data is resolved", async () => {
     const touched: string[] = [];
-    const ownerResolver: OwnerResolver = {
+    const ownerResolver: OwnerResolverFixture = {
       resolveById: () => {
         touched.push("owner");
         return okAsync(owner);
@@ -349,7 +349,7 @@ describe("owner and pet management use cases", () => {
         return okAsync([owner]);
       },
     };
-    const petResolver: PetResolver = {
+    const petResolver: PetResolverFixture = {
       resolveById: () => {
         touched.push("pet");
         return okAsync(pet);

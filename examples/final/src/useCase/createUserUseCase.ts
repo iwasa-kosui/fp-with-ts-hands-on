@@ -24,7 +24,10 @@ import type {
   PasswordHasher,
   PlaintextPassword,
 } from "../domain/user/passwordHasher.js";
-import type { UserResolver } from "../domain/user/userResolver.js";
+import type {
+  UserByEmailResolver,
+  UserByIdResolver,
+} from "../domain/user/userResolver.js";
 import type { UserCreatedStore } from "../domain/user/userStores.js";
 
 export type UserView = Readonly<{
@@ -69,7 +72,8 @@ export type VeterinarianIdGenerator = Readonly<{
   generate: () => VeterinarianId;
 }>;
 export type Dependencies = Readonly<{
-  userResolver: UserResolver;
+  userByIdResolver: UserByIdResolver;
+  userByEmailResolver: UserByEmailResolver;
   userCreatedStore: UserCreatedStore;
   passwordHasher: PasswordHasher;
   clock: Clock;
@@ -166,13 +170,13 @@ const toView = (user: UserState): UserView =>
 const run =
   (dependencies: Dependencies) =>
   (input: UseCaseInput): UseCaseOutput =>
-    dependencies.userResolver
+    dependencies.userByIdResolver
       .resolveById(input.actorUserId)
       .mapErr(toRepositoryError)
       .andThen(ensureUser(input.actorUserId))
       .andThen(ensureAdmin)
       .andThen(() =>
-        dependencies.userResolver
+        dependencies.userByEmailResolver
           .resolveByEmail(input.email)
           .mapErr(toRepositoryError),
       )

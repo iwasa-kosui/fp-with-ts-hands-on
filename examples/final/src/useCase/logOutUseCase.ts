@@ -14,7 +14,7 @@ import {
   type Session as SessionState,
 } from "../domain/session/session.js";
 import type { SessionId } from "../domain/session/sessionId.js";
-import type { SessionResolver } from "../domain/session/sessionResolver.js";
+import type { SessionByIdResolver } from "../domain/session/sessionResolver.js";
 import type { SessionDeletedStore } from "../domain/session/sessionStores.js";
 import type { UserId } from "../domain/user/userId.js";
 
@@ -45,7 +45,7 @@ export type UseCaseError =
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
-  sessionResolver: SessionResolver;
+  sessionResolver: SessionByIdResolver;
   sessionDeletedStore: SessionDeletedStore;
   clock: Clock;
   eventIdGenerator: EventIdGenerator;

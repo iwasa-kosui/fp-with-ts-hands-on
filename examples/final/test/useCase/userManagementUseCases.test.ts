@@ -7,7 +7,10 @@ import {
   createSqliteDatabase,
   migrateDatabase,
 } from "../../src/adaptor/secondary/sqlite/db.js";
-import { createUserResolver } from "../../src/adaptor/secondary/sqlite/resolver/userResolver.js";
+import {
+  createUserByIdResolver,
+  createUserListResolver,
+} from "../../src/adaptor/secondary/sqlite/resolver/userResolver.js";
 import {
   domainEventsTable,
   sessionsTable,
@@ -35,7 +38,11 @@ import type {
 } from "../../src/domain/user/userEvent.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
-import type { UserResolver } from "../../src/domain/user/userResolver.js";
+import type {
+  UserByEmailResolver,
+  UserByIdResolver,
+  UserListResolver,
+} from "../../src/domain/user/userResolver.js";
 import type {
   UserCreatedStore,
   UserPasswordResetStore,
@@ -98,12 +105,20 @@ const context = (sequence: number, actorUserId = ids.actor): EventContext => ({
   actorUserId,
 });
 
-const userResolverFor = (users: readonly UserState[]): UserResolver => ({
+type UserResolverFixture = UserByIdResolver & UserByEmailResolver & UserListResolver;
+
+const userResolverFor = (users: readonly UserState[]): UserResolverFixture => ({
   resolveById: (userId) =>
     okAsync(users.find((user) => user.userId === userId)),
   resolveByEmail: (email) =>
     okAsync(users.find((user) => user.email.unwrap() === email.unwrap())),
   resolveAll: () => okAsync(users),
+});
+
+const splitUserResolvers = (userResolver: UserResolverFixture) => ({
+  userByIdResolver: userResolver,
+  userByEmailResolver: userResolver,
+  userListResolver: userResolver,
 });
 
 const storeEvents = <T>(events: T[]) => ({
@@ -141,7 +156,7 @@ const fixtures = async () => {
 };
 
 type UnauthorizedManagementAttempt = (
-  userResolver: UserResolver,
+  userResolver: UserResolverFixture,
   touch: (dependency: string) => void,
   nonAdmin: UserState,
 ) => Promise<string>;
@@ -151,7 +166,8 @@ const unauthorizedManagementAttempts = [
     "update",
     async (userResolver, touch) => {
       const result = await UpdateUserUseCase.create({
-        userResolver,
+        userByIdResolver: userResolver,
+        userByEmailResolver: userResolver,
         userUpdatedStore: {
           store: () => {
             touch("store");
@@ -218,7 +234,8 @@ const unauthorizedManagementAttempts = [
     "delete",
     async (userResolver, touch) => {
       const result = await DeleteUserUseCase.create({
-        userResolver,
+        userByIdResolver: userResolver,
+        userListResolver: userResolver,
         userDeletedStore: {
           store: () => {
             touch("store");
@@ -242,7 +259,10 @@ const unauthorizedManagementAttempts = [
   [
     "list",
     async (userResolver) => {
-      const result = await ListUsersUseCase.create({ userResolver }).run({
+      const result = await ListUsersUseCase.create({
+        userByIdResolver: userResolver,
+        userListResolver: userResolver,
+      }).run({
         actorUserId: ids.target,
       });
       return result.isErr() ? result.error.kind : "Ok";
@@ -258,7 +278,7 @@ describe("admin user management", () => {
     const { actor } = await fixtures();
     const events: UserCreated[] = [];
     const dependencies = {
-      userResolver: userResolverFor([actor]),
+      ...splitUserResolvers(userResolverFor([actor])),
       userCreatedStore: storeEvents(events) satisfies UserCreatedStore,
       passwordHasher: scryptPasswordHasher,
       clock,
@@ -311,7 +331,7 @@ describe("admin user management", () => {
 
     const preserved = await UpdateUserUseCase.create({
       ...base,
-      userResolver: userResolverFor([actor, veterinarian]),
+      ...splitUserResolvers(userResolverFor([actor, veterinarian])),
     } satisfies UpdateDependencies).run({
       actorUserId: ids.actor,
       targetUserId: ids.target,
@@ -329,7 +349,7 @@ describe("admin user management", () => {
 
     const changedRole = await UpdateUserUseCase.create({
       ...base,
-      userResolver: userResolverFor([actor, veterinarian]),
+      ...splitUserResolvers(userResolverFor([actor, veterinarian])),
     } satisfies UpdateDependencies).run({
       actorUserId: ids.actor,
       targetUserId: ids.target,
@@ -349,7 +369,7 @@ describe("admin user management", () => {
   test("generates a Veterinarian ID when another role is promoted", async () => {
     const { actor, target } = await fixtures();
     const result = await UpdateUserUseCase.create({
-      userResolver: userResolverFor([actor, target]),
+      ...splitUserResolvers(userResolverFor([actor, target])),
       userUpdatedStore: storeEvents<UserUpdated>([]),
       clock,
       eventIdGenerator: eventIdGenerator(),
@@ -404,7 +424,7 @@ describe("admin user management", () => {
     const { target } = await fixtures();
     const events: UserCreated[] = [];
     const useCase = CreateUserUseCase.create({
-      userResolver: userResolverFor([target]),
+      ...splitUserResolvers(userResolverFor([target])),
       userCreatedStore: storeEvents(events),
       passwordHasher: scryptPasswordHasher,
       clock,
@@ -447,7 +467,7 @@ describe("admin user management", () => {
           touchedDependencies.push("list resolver");
           return okAsync([]);
         },
-      } as const satisfies UserResolver;
+      } as const satisfies UserResolverFixture;
 
       const errorKind = await attempt(
         userResolver,
@@ -471,7 +491,8 @@ describe("admin user management", () => {
 
     const selfDelete = await DeleteUserUseCase.create({
       ...base,
-      userResolver: userResolverFor([actor]),
+      userByIdResolver: userResolverFor([actor]),
+      userListResolver: userResolverFor([actor]),
     } satisfies DeleteDependencies).run({
       actorUserId: ids.actor,
       targetUserId: ids.actor,
@@ -486,10 +507,11 @@ describe("admin user management", () => {
     } as const satisfies UserState;
     const lastAdmin = await DeleteUserUseCase.create({
       ...base,
-      userResolver: {
+      userByIdResolver: {
         resolveById: (userId) =>
           okAsync(userId === ids.actor ? actor : soleAdmin),
-        resolveByEmail: () => okAsync(undefined),
+      },
+      userListResolver: {
         resolveAll: () => okAsync([soleAdmin]),
       },
     } satisfies DeleteDependencies).run({
@@ -504,7 +526,8 @@ describe("admin user management", () => {
   test("lists Admin-visible users without password hashes", async () => {
     const { actor, target } = await fixtures();
     const result = await ListUsersUseCase.create({
-      userResolver: userResolverFor([actor, target]),
+      userByIdResolver: userResolverFor([actor, target]),
+      userListResolver: userResolverFor([actor, target]),
     }).run({ actorUserId: ids.actor });
 
     expect(result._unsafeUnwrap().users).toHaveLength(2);
@@ -534,7 +557,8 @@ describe("DeleteUserUseCase SQLite integration", () => {
       Session.create(context(3))(session),
     );
     const useCase = DeleteUserUseCase.create({
-      userResolver: createUserResolver(db),
+      userByIdResolver: createUserByIdResolver(db),
+      userListResolver: createUserListResolver(db),
       userDeletedStore: userStore,
       clock,
       eventIdGenerator: eventIdGenerator(),
@@ -607,13 +631,15 @@ describe("DeleteUserUseCase SQLite integration", () => {
     const staleResolver = userResolverFor([actor, otherAdmin]);
     const deletionStore = createUserEventStore(db);
     const deleteOther = DeleteUserUseCase.create({
-      userResolver: staleResolver,
+      userByIdResolver: staleResolver,
+      userListResolver: staleResolver,
       userDeletedStore: deletionStore,
       clock,
       eventIdGenerator: eventIdGenerator(),
     });
     const deleteActor = DeleteUserUseCase.create({
-      userResolver: staleResolver,
+      userByIdResolver: staleResolver,
+      userListResolver: staleResolver,
       userDeletedStore: deletionStore,
       clock,
       eventIdGenerator: eventIdGenerator(),

@@ -13,7 +13,11 @@ import type {
   SessionDeleted,
 } from "../../src/domain/session/sessionEvent.js";
 import { SessionId } from "../../src/domain/session/sessionId.js";
-import type { SessionResolver } from "../../src/domain/session/sessionResolver.js";
+import type {
+  SessionByIdResolver,
+  SessionByTokenHashResolver,
+  SessionByUserIdResolver,
+} from "../../src/domain/session/sessionResolver.js";
 import type {
   SessionCreatedStore,
   SessionDeletedStore,
@@ -27,7 +31,11 @@ import { UserEmail } from "../../src/domain/user/userEmail.js";
 import type { UserCreated } from "../../src/domain/user/userEvent.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
-import type { UserResolver } from "../../src/domain/user/userResolver.js";
+import type {
+  UserByEmailResolver,
+  UserByIdResolver,
+  UserListResolver,
+} from "../../src/domain/user/userResolver.js";
 import type { UserCreatedStore } from "../../src/domain/user/userStores.js";
 import {
   LogInUseCase,
@@ -82,7 +90,12 @@ const sessionTokenGenerator = {
   generate: () => token,
 } as const satisfies SessionTokenGenerator;
 
-const userResolverFor = (users: readonly User[]): UserResolver => ({
+type UserResolverFixture = UserByIdResolver & UserByEmailResolver & UserListResolver;
+type SessionResolverFixture = SessionByIdResolver &
+  SessionByTokenHashResolver &
+  SessionByUserIdResolver;
+
+const userResolverFor = (users: readonly User[]): UserResolverFixture => ({
   resolveById: (resolvedUserId) =>
     okAsync(users.find((user) => user.userId === resolvedUserId)),
   resolveByEmail: (resolvedEmail) =>
@@ -92,7 +105,7 @@ const userResolverFor = (users: readonly User[]): UserResolver => ({
   resolveAll: () => okAsync(users),
 });
 
-const sessionResolverFor = (session: Session | undefined): SessionResolver => ({
+const sessionResolverFor = (session: Session | undefined): SessionResolverFixture => ({
   resolveById: () => okAsync(session),
   resolveByTokenHash: () => okAsync(session),
   resolveByUserId: () => okAsync(session === undefined ? [] : [session]),
@@ -352,7 +365,7 @@ describe("LogInUseCase", () => {
       resolveById: () => errAsync(repositoryError),
       resolveByEmail: () => errAsync(repositoryError),
       resolveAll: () => errAsync(repositoryError),
-    } as const satisfies UserResolver;
+    } as const satisfies UserResolverFixture;
     const resolverResult = await LogInUseCase.create({
       userResolver: failingResolver,
       sessionCreatedStore: createdSessionStore([]),

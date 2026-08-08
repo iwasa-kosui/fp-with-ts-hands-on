@@ -17,7 +17,10 @@ import { createUserUpdated } from "../domain/user/userEvent.js";
 import type { UserEmail } from "../domain/user/userEmail.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserName } from "../domain/user/userName.js";
-import type { UserResolver } from "../domain/user/userResolver.js";
+import type {
+  UserByEmailResolver,
+  UserByIdResolver,
+} from "../domain/user/userResolver.js";
 import type { UserUpdatedStore } from "../domain/user/userStores.js";
 
 export type UserView = Readonly<{
@@ -61,7 +64,8 @@ export type VeterinarianIdGenerator = Readonly<{
   generate: () => VeterinarianId;
 }>;
 export type Dependencies = Readonly<{
-  userResolver: UserResolver;
+  userByIdResolver: UserByIdResolver;
+  userByEmailResolver: UserByEmailResolver;
   userUpdatedStore: UserUpdatedStore;
   clock: Clock;
   eventIdGenerator: EventIdGenerator;
@@ -157,19 +161,19 @@ const toView = (user: User): UserView =>
 const run =
   (dependencies: Dependencies) =>
   (input: UseCaseInput): UseCaseOutput =>
-    dependencies.userResolver
+    dependencies.userByIdResolver
       .resolveById(input.actorUserId)
       .mapErr(toRepositoryError)
       .andThen(ensureActor(input.actorUserId))
       .andThen(ensureAdmin)
       .andThen(() =>
-        dependencies.userResolver
+        dependencies.userByIdResolver
           .resolveById(input.targetUserId)
           .mapErr(toRepositoryError),
       )
       .andThen(ensureTarget(input.targetUserId))
       .andThen((target) =>
-        dependencies.userResolver
+        dependencies.userByEmailResolver
           .resolveByEmail(input.email)
           .mapErr(toRepositoryError)
           .andThen(ensureEmailAvailable(target.userId))

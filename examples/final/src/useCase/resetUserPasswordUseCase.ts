@@ -22,7 +22,7 @@ import type {
   PasswordHasher,
   PlaintextPassword,
 } from "../domain/user/passwordHasher.js";
-import type { UserResolver } from "../domain/user/userResolver.js";
+import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import type { UserPasswordResetStore } from "../domain/user/userStores.js";
 
 export type UserView = Readonly<{
@@ -59,7 +59,7 @@ export type UseCaseError =
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
-  userResolver: UserResolver;
+  userResolver: UserByIdResolver;
   userPasswordResetStore: UserPasswordResetStore;
   passwordHasher: PasswordHasher;
   clock: Clock;

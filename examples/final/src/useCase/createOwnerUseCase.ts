@@ -10,7 +10,7 @@ import type { OwnerName } from "../domain/owner/ownerName.js";
 import type { OwnerPhone } from "../domain/owner/ownerPhone.js";
 import type { OwnerCreatedStore } from "../domain/owner/ownerStores.js";
 import type { UserId } from "../domain/user/userId.js";
-import type { UserResolver } from "../domain/user/userResolver.js";
+import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 
@@ -39,7 +39,7 @@ export type UseCaseError =
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type OwnerIdGenerator = Readonly<{ generate: () => OwnerId }>;
 export type Dependencies = Readonly<{
-  userResolver: UserResolver;
+  userResolver: UserByIdResolver;
   ownerCreatedStore: OwnerCreatedStore;
   ownerIdGenerator: OwnerIdGenerator;
   clock: Clock;

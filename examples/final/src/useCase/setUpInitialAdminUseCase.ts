@@ -26,7 +26,7 @@ import type {
   PasswordHasher,
   PlaintextPassword,
 } from "../domain/user/passwordHasher.js";
-import type { UserResolver } from "../domain/user/userResolver.js";
+import type { UserListResolver } from "../domain/user/userResolver.js";
 import type { UserCreatedStore } from "../domain/user/userStores.js";
 
 const sessionDurationMs = 8 * 60 * 60 * 1_000;
@@ -69,7 +69,7 @@ export type UserIdGenerator = Readonly<{ generate: () => UserId }>;
 export type SessionIdGenerator = Readonly<{ generate: () => SessionId }>;
 
 export type Dependencies = Readonly<{
-  userResolver: UserResolver;
+  userResolver: UserListResolver;
   userCreatedStore: UserCreatedStore;
   sessionCreatedStore: SessionCreatedStore;
   passwordHasher: PasswordHasher;

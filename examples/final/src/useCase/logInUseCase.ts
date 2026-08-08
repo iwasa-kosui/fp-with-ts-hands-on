@@ -26,7 +26,7 @@ import type {
   PasswordHasher,
   PlaintextPassword,
 } from "../domain/user/passwordHasher.js";
-import type { UserResolver } from "../domain/user/userResolver.js";
+import type { UserByEmailResolver } from "../domain/user/userResolver.js";
 
 const sessionDurationMs = 8 * 60 * 60 * 1_000;
 
@@ -58,7 +58,7 @@ export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 
 export type SessionIdGenerator = Readonly<{ generate: () => SessionId }>;
 export type Dependencies = Readonly<{
-  userResolver: UserResolver;
+  userResolver: UserByEmailResolver;
   sessionCreatedStore: SessionCreatedStore;
   passwordHasher: PasswordHasher;
   dummyPasswordHash: PasswordHash;

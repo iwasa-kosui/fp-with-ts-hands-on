@@ -2,10 +2,13 @@ import { describe, expect, test } from "vitest";
 import { sql } from "drizzle-orm";
 
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
-import { createAppointmentResolver } from "../../src/adaptor/secondary/sqlite/resolver/appointmentResolver.js";
+import { createAppointmentByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/appointmentResolver.js";
 import { createEventResolver } from "../../src/adaptor/secondary/sqlite/resolver/eventResolver.js";
-import { createExamResultResolver } from "../../src/adaptor/secondary/sqlite/resolver/examResultResolver.js";
-import { createUserResolver } from "../../src/adaptor/secondary/sqlite/resolver/userResolver.js";
+import { createExamResultByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/examResultResolver.js";
+import {
+  createUserByIdResolver,
+  createUserListResolver,
+} from "../../src/adaptor/secondary/sqlite/resolver/userResolver.js";
 import { createUserEventStore } from "../../src/adaptor/secondary/sqlite/store/userEventStore.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
@@ -94,7 +97,7 @@ describe("SQLite resolvers", () => {
     });
     await createUserEventStore(db).store(event);
 
-    const resolvedUser = await createUserResolver(db).resolveById(userId);
+    const resolvedUser = await createUserByIdResolver(db).resolveById(userId);
     const resolvedEvents = await createEventResolver(db).resolveAll();
 
     expect(resolvedUser.isOk() && resolvedUser.value?.kind).toBe("Admin");
@@ -110,12 +113,12 @@ describe("SQLite resolvers", () => {
       "VALUES ('not-a-uuid', 'Admin', 'not-an-email', 'Broken', 'not-a-password-hash', NULL)",
     ));
 
-    const result = await createUserResolver(db).resolveAll();
+    const result = await createUserListResolver(db).resolveAll();
 
     expect(result.isErr()).toBe(true);
     expect(result.isErr() && result.error).toMatchObject({
       kind: "RepositoryError",
-      operation: "UserResolver.resolveAll",
+      operation: "UserListResolver.resolveAll",
     });
   });
 
@@ -127,10 +130,10 @@ describe("SQLite resolvers", () => {
       `VALUES ('20000000-0000-4000-8000-000000000010', 'Superuser', 'root@example.test', 'Root', '${passwordHash}', NULL)`,
     ));
 
-    const result = await createUserResolver(db).resolveAll();
+    const result = await createUserListResolver(db).resolveAll();
 
     expect(result.isErr()).toBe(true);
-    expect(result.isErr() && result.error.operation).toBe("UserResolver.resolveAll");
+    expect(result.isErr() && result.error.operation).toBe("UserListResolver.resolveAll");
   });
 
   test.each([
@@ -146,7 +149,7 @@ describe("SQLite resolvers", () => {
       `VALUES ('20000000-0000-4000-8000-000000000012', '${role}', 'role@example.test', 'Role', '${passwordHash}', ${veterinarianSql})`,
     ));
 
-    const result = await createUserResolver(db).resolveAll();
+    const result = await createUserListResolver(db).resolveAll();
 
     expect(result.isErr()).toBe(true);
   });
@@ -169,12 +172,12 @@ describe("SQLite resolvers", () => {
       migrateDatabase(db);
       insertAppointment(db, status, rowOwnerId, rowPetId, state);
 
-      const result = await createAppointmentResolver(db).resolveById(
+      const result = await createAppointmentByIdResolver(db).resolveById(
         AppointmentId.schema.parse(appointmentId),
       );
 
       expect(result.isErr()).toBe(true);
-      expect(result.isErr() && result.error.operation).toBe("AppointmentResolver.resolveById");
+      expect(result.isErr() && result.error.operation).toBe("AppointmentByIdResolver.resolveById");
     },
   );
 
@@ -198,10 +201,10 @@ describe("SQLite resolvers", () => {
       `INSERT INTO exam_results (exam_id, pet_id, state) VALUES ('${examId}', '${petId}', '${state}')`,
     ));
 
-    const result = await createExamResultResolver(db).resolveById(ExamId.schema.parse(examId));
+    const result = await createExamResultByIdResolver(db).resolveById(ExamId.schema.parse(examId));
 
     expect(result.isErr()).toBe(true);
-    expect(result.isErr() && result.error.operation).toBe("ExamResultResolver.resolveById");
+    expect(result.isErr() && result.error.operation).toBe("ExamResultByIdResolver.resolveById");
   });
 
   test.each([

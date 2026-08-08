@@ -9,35 +9,35 @@ import {
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
 import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
-import { Owner, type OwnerProfile } from "../domain/owner/owner.js";
-import type { OwnerEmail } from "../domain/owner/ownerEmail.js";
-import type { OwnerId } from "../domain/owner/ownerId.js";
-import type { OwnerName } from "../domain/owner/ownerName.js";
-import type { OwnerPhone } from "../domain/owner/ownerPhone.js";
-import type { OwnerByIdResolver } from "../domain/owner/ownerResolver.js";
-import type { OwnerUpdatedStore } from "../domain/owner/ownerStores.js";
+import {
+  Appointment,
+  type Appointment as AppointmentState,
+  type CheckedIn,
+  type Scheduled,
+} from "../domain/appointment/appointment.js";
+import type { AppointmentId } from "../domain/appointment/appointmentId.js";
+import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
+import type { AppointmentCheckedInStore } from "../domain/appointment/appointmentStores.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";
-import { ensureUserFound, type UnauthorizedError } from "./errors.js";
+import {
+  ensureAppointmentFound,
+  ensureUserFound,
+  type AppointmentNotFound,
+  type UnauthorizedError,
+} from "./errors.js";
 
-export type OwnerView = Readonly<{
-  ownerId: OwnerId;
-  name: string;
-  email: string;
-  phone: string;
-}>;
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;
-  ownerId: OwnerId;
-  name: OwnerName;
-  email: OwnerEmail;
-  phone: OwnerPhone;
+  appointmentId: AppointmentId;
 }>;
-export type UseCaseOk = Readonly<{ owner: OwnerView }>;
-export type OwnerNotFound = Readonly<{
-  kind: "OwnerNotFound";
-  ownerId: OwnerId;
+export type UseCaseOk = Readonly<{ appointment: CheckedIn }>;
+export type InvalidAppointmentState = Readonly<{
+  kind: "InvalidAppointmentState";
+  appointmentId: AppointmentId;
+  expectedKind: "Scheduled";
+  actualKind: Exclude<AppointmentState["kind"], "Scheduled">;
 }>;
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
@@ -48,18 +48,19 @@ export type UseCaseRepositoryError = Readonly<{
 }>;
 export type UseCaseError =
   | UnauthorizedError
-  | OwnerNotFound
+  | AppointmentNotFound
+  | InvalidAppointmentState
   | IdentityGenerationFailed
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
-  ownerResolver: OwnerByIdResolver;
-  ownerUpdatedStore: OwnerUpdatedStore;
+  appointmentResolver: AppointmentByIdResolver;
+  appointmentCheckedInStore: AppointmentCheckedInStore;
   clock: Clock;
   eventIdGenerator: EventIdGenerator;
 }>;
-export type UpdateOwnerUseCase = Readonly<{
+export type CheckInAppointmentUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
@@ -67,29 +68,27 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
   kind: "RepositoryError",
   operation: error.operation,
 });
-const ensureOwner =
-  (ownerId: OwnerId) =>
-  (owner: Owner | undefined): Result<Owner, OwnerNotFound> =>
-    owner === undefined ? err({ kind: "OwnerNotFound", ownerId }) : ok(owner);
-const toView = (owner: Owner): OwnerView => ({
-  ownerId: owner.ownerId,
-  name: owner.name.unwrap(),
-  email: owner.email.unwrap(),
-  phone: owner.phone.unwrap(),
-});
+const ensureScheduled = (
+  appointment: AppointmentState,
+): Result<Scheduled, InvalidAppointmentState> =>
+  appointment.kind === "Scheduled"
+    ? ok(appointment)
+    : err({
+        kind: "InvalidAppointmentState",
+        appointmentId: appointment.appointmentId,
+        expectedKind: "Scheduled",
+        actualKind: appointment.kind,
+      });
 const createEvent =
-  (dependencies: Dependencies, input: UseCaseInput) => (owner: Owner) =>
+  (dependencies: Dependencies, input: UseCaseInput) =>
+  (appointment: Scheduled) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() =>
-        Owner.update({
+        Appointment.checkIn({
           eventId: dependencies.eventIdGenerator.generate(),
           occurredAt: dependencies.clock.now(),
           actorUserId: input.actorUserId,
-        })(owner, {
-          name: input.name,
-          email: input.email,
-          phone: input.phone,
-        } as const satisfies OwnerProfile),
+        })(appointment),
       ),
       (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
@@ -102,19 +101,22 @@ const run =
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() =>
-        dependencies.ownerResolver
-          .resolveById(input.ownerId)
+        dependencies.appointmentResolver
+          .resolveById(input.appointmentId)
           .mapErr(toRepositoryError),
       )
-      .andThen(ensureOwner(input.ownerId))
+      .andThen(ensureAppointmentFound(input.appointmentId))
+      .andThen(ensureScheduled)
       .andThen(createEvent(dependencies, input))
       .andThrough((event) =>
-        dependencies.ownerUpdatedStore.store(event).mapErr(toRepositoryError),
+        dependencies.appointmentCheckedInStore
+          .store(event)
+          .mapErr(toRepositoryError),
       )
-      .map((event) => ({ owner: toView(event.aggregateState) }));
+      .map((event) => ({ appointment: event.aggregateState }));
 
-export const UpdateOwnerUseCase = {
-  create: (dependencies: Dependencies): UpdateOwnerUseCase => ({
+export const CheckInAppointmentUseCase = {
+  create: (dependencies: Dependencies): CheckInAppointmentUseCase => ({
     run: run(dependencies),
   }),
 } as const;

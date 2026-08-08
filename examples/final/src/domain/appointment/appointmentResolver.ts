@@ -5,14 +5,18 @@ import type { Appointment } from "./appointment.js";
 import type { AppointmentId } from "./appointmentId.js";
 import type { PetId } from "../pet/petId.js";
 
-export type AppointmentResolver = Readonly<{
+export type AppointmentByIdResolver = Readonly<{
   resolveById: (
     appointmentId: AppointmentId,
   ) => ResultAsync<Appointment | undefined, RepositoryError>;
 }>;
 
-export type AppointmentByPetResolver = Readonly<{
+export type AppointmentByPetIdResolver = Readonly<{
   resolveByPetId: (
     petId: PetId,
   ) => ResultAsync<readonly Appointment[], RepositoryError>;
+}>;
+
+export type AppointmentListResolver = Readonly<{
+  resolveAll: () => ResultAsync<readonly Appointment[], RepositoryError>;
 }>;

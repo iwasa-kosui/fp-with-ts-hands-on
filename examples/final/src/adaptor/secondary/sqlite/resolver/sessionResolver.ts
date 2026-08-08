@@ -4,7 +4,11 @@ import { z } from "zod";
 
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import { Timestamp } from "../../../../domain/aggregate/timestamp.js";
-import type { SessionResolver } from "../../../../domain/session/sessionResolver.js";
+import type {
+  SessionByIdResolver,
+  SessionByTokenHashResolver,
+  SessionByUserIdResolver,
+} from "../../../../domain/session/sessionResolver.js";
 import { SessionId } from "../../../../domain/session/sessionId.js";
 import { SessionTokenHash } from "../../../../domain/session/sessionTokenHash.js";
 import { UserId } from "../../../../domain/user/userId.js";
@@ -25,28 +29,38 @@ const repositoryError = (operation: string) => (cause: unknown): RepositoryError
   cause,
 });
 
-export const createSessionResolver = (db: SqliteDatabase): SessionResolver => ({
+export const createSessionByIdResolver = (db: SqliteDatabase): SessionByIdResolver => ({
   resolveById: (sessionId) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() => {
         const row = db.select().from(sessionsTable).where(eq(sessionsTable.sessionId, sessionId)).get();
         return row === undefined ? undefined : parseRow(row);
       }),
-      repositoryError("SessionResolver.resolveById"),
+      repositoryError("SessionByIdResolver.resolveById"),
     ),
+});
+
+export const createSessionByTokenHashResolver = (
+  db: SqliteDatabase,
+): SessionByTokenHashResolver => ({
   resolveByTokenHash: (tokenHash) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() => {
         const row = db.select().from(sessionsTable).where(eq(sessionsTable.tokenHash, tokenHash.unwrap())).get();
         return row === undefined ? undefined : parseRow(row);
       }),
-      repositoryError("SessionResolver.resolveByTokenHash"),
+      repositoryError("SessionByTokenHashResolver.resolveByTokenHash"),
     ),
+});
+
+export const createSessionByUserIdResolver = (
+  db: SqliteDatabase,
+): SessionByUserIdResolver => ({
   resolveByUserId: (userId) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() =>
         db.select().from(sessionsTable).where(eq(sessionsTable.userId, userId)).all().map(parseRow),
       ),
-      repositoryError("SessionResolver.resolveByUserId"),
+      repositoryError("SessionByUserIdResolver.resolveByUserId"),
     ),
 });

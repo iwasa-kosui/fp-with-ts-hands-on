@@ -12,10 +12,10 @@ import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
 import { Pet } from "../domain/pet/pet.js";
 import type { PetId } from "../domain/pet/petId.js";
-import type { PetResolver } from "../domain/pet/petResolver.js";
+import type { PetByIdResolver } from "../domain/pet/petResolver.js";
 import type { PetUpdatedStore } from "../domain/pet/petStores.js";
 import type { UserId } from "../domain/user/userId.js";
-import type { UserResolver } from "../domain/user/userResolver.js";
+import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 
@@ -47,8 +47,8 @@ export type UseCaseError =
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
-  userResolver: UserResolver;
-  petResolver: PetResolver;
+  userResolver: UserByIdResolver;
+  petResolver: PetByIdResolver;
   petUpdatedStore: PetUpdatedStore;
   clock: Clock;
   eventIdGenerator: EventIdGenerator;

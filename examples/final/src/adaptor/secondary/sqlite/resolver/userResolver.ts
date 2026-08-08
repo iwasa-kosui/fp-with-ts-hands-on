@@ -3,7 +3,11 @@ import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
-import type { UserResolver } from "../../../../domain/user/userResolver.js";
+import type {
+  UserByEmailResolver,
+  UserByIdResolver,
+  UserListResolver,
+} from "../../../../domain/user/userResolver.js";
 import { PasswordHash } from "../../../../domain/user/passwordHash.js";
 import { UserEmail } from "../../../../domain/user/userEmail.js";
 import { UserId } from "../../../../domain/user/userId.js";
@@ -52,26 +56,32 @@ const repositoryError = (operation: string) => (cause: unknown): RepositoryError
   cause,
 });
 
-export const createUserResolver = (db: SqliteDatabase): UserResolver => ({
+export const createUserByIdResolver = (db: SqliteDatabase): UserByIdResolver => ({
   resolveById: (userId) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() => {
         const row = db.select().from(usersTable).where(eq(usersTable.userId, userId)).get();
         return row === undefined ? undefined : parseRow(row);
       }),
-      repositoryError("UserResolver.resolveById"),
+      repositoryError("UserByIdResolver.resolveById"),
     ),
+});
+
+export const createUserByEmailResolver = (db: SqliteDatabase): UserByEmailResolver => ({
   resolveByEmail: (email) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() => {
         const row = db.select().from(usersTable).where(eq(usersTable.email, email.unwrap())).get();
         return row === undefined ? undefined : parseRow(row);
       }),
-      repositoryError("UserResolver.resolveByEmail"),
+      repositoryError("UserByEmailResolver.resolveByEmail"),
     ),
+});
+
+export const createUserListResolver = (db: SqliteDatabase): UserListResolver => ({
   resolveAll: () =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() => db.select().from(usersTable).all().map(parseRow)),
-      repositoryError("UserResolver.resolveAll"),
+      repositoryError("UserListResolver.resolveAll"),
     ),
 });

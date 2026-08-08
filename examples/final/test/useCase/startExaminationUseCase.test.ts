@@ -13,7 +13,7 @@ import {
 } from "../../src/domain/appointment/appointment.js";
 import type { ExaminationStarted } from "../../src/domain/appointment/appointmentEvent.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
-import type { AppointmentResolver } from "../../src/domain/appointment/appointmentResolver.js";
+import type { AppointmentByIdResolver } from "../../src/domain/appointment/appointmentResolver.js";
 import type { ExaminationStartedStore } from "../../src/domain/appointment/appointmentStores.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { OwnerId } from "../../src/domain/owner-id.js";
@@ -25,7 +25,7 @@ import {
 import { UserEmail } from "../../src/domain/user/userEmail.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
-import type { UserResolver } from "../../src/domain/user/userResolver.js";
+import type { UserByIdResolver } from "../../src/domain/user/userResolver.js";
 import { PasswordHash } from "../../src/domain/user/passwordHash.js";
 import {
   type Dependencies,
@@ -93,19 +93,17 @@ const repositoryError: RepositoryError = {
   cause: new Error("database unavailable"),
 };
 
-const userResolverFor = (user: User | undefined): UserResolver =>
+const userResolverFor = (user: User | undefined): UserByIdResolver =>
   ({
     resolveById: () => okAsync(user),
-    resolveByEmail: () => okAsync(undefined),
-    resolveAll: () => okAsync([]),
-  }) as const satisfies UserResolver;
+  }) as const satisfies UserByIdResolver;
 
 const appointmentResolverFor = (
   appointment: Appointment | undefined,
-): AppointmentResolver =>
+): AppointmentByIdResolver =>
   ({
     resolveById: () => okAsync(appointment),
-  }) as const satisfies AppointmentResolver;
+  }) as const satisfies AppointmentByIdResolver;
 
 const successfulStore = (
   storedEvents: ExaminationStarted[],
@@ -200,7 +198,7 @@ describe("StartExaminationUseCase", () => {
             appointmentResolverCalled = true;
             return okAsync(checkedIn);
           },
-        } as const satisfies AppointmentResolver,
+        } as const satisfies AppointmentByIdResolver,
       }),
     );
 
@@ -220,7 +218,7 @@ describe("StartExaminationUseCase", () => {
             appointmentResolverCalled = true;
             return okAsync(checkedIn);
           },
-        } as const satisfies AppointmentResolver,
+        } as const satisfies AppointmentByIdResolver,
       }),
     );
 
@@ -236,15 +234,13 @@ describe("StartExaminationUseCase", () => {
       createDependencies({
         userResolver: {
           resolveById: () => errAsync(repositoryError),
-          resolveByEmail: () => errAsync(repositoryError),
-          resolveAll: () => errAsync(repositoryError),
-        } as const satisfies UserResolver,
+        } as const satisfies UserByIdResolver,
         appointmentResolver: {
           resolveById: () => {
             appointmentResolverCalled = true;
             return okAsync(checkedIn);
           },
-        } as const satisfies AppointmentResolver,
+        } as const satisfies AppointmentByIdResolver,
       }),
     );
 
@@ -260,7 +256,7 @@ describe("StartExaminationUseCase", () => {
       createDependencies({
         appointmentResolver: {
           resolveById: () => errAsync(repositoryError),
-        } as const satisfies AppointmentResolver,
+        } as const satisfies AppointmentByIdResolver,
         examinationStartedStore: successfulStore(storedEvents),
       }),
     );

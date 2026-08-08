@@ -13,16 +13,16 @@ import {
   Appointment,
   type Appointment as AppointmentState,
 } from "../domain/appointment/appointment.js";
-import type { AppointmentByPetResolver } from "../domain/appointment/appointmentResolver.js";
+import type { AppointmentByPetIdResolver } from "../domain/appointment/appointmentResolver.js";
 import { Pet } from "../domain/pet/pet.js";
 import type { PetId } from "../domain/pet/petId.js";
-import type { PetResolver } from "../domain/pet/petResolver.js";
+import type { PetByIdResolver } from "../domain/pet/petResolver.js";
 import type {
   PetDeletedStore,
   PetDeletedStoreError,
 } from "../domain/pet/petStores.js";
 import type { UserId } from "../domain/user/userId.js";
-import type { UserResolver } from "../domain/user/userResolver.js";
+import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 
@@ -53,9 +53,9 @@ export type UseCaseError =
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
-  userResolver: UserResolver;
-  petResolver: PetResolver;
-  appointmentResolver: AppointmentByPetResolver;
+  userResolver: UserByIdResolver;
+  petResolver: PetByIdResolver;
+  appointmentResolver: AppointmentByPetIdResolver;
   petDeletedStore: PetDeletedStore;
   clock: Clock;
   eventIdGenerator: EventIdGenerator;

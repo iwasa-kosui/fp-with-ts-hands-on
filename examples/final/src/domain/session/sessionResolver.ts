@@ -6,8 +6,14 @@ import type { Session } from "./session.js";
 import type { SessionId } from "./sessionId.js";
 import type { SessionTokenHash } from "./sessionTokenHash.js";
 
-export type SessionResolver = Readonly<{
+export type SessionByIdResolver = Readonly<{
   resolveById: (sessionId: SessionId) => ResultAsync<Session | undefined, RepositoryError>;
+}>;
+
+export type SessionByTokenHashResolver = Readonly<{
   resolveByTokenHash: (tokenHash: SessionTokenHash) => ResultAsync<Session | undefined, RepositoryError>;
+}>;
+
+export type SessionByUserIdResolver = Readonly<{
   resolveByUserId: (userId: UserId) => ResultAsync<readonly Session[], RepositoryError>;
 }>;

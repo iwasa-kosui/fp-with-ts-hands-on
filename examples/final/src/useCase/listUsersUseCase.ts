@@ -6,7 +6,10 @@ import type { Sensitive } from "../domain/shared/sensitive.js";
 import { Permission } from "../domain/user/permission.js";
 import type { Admin, User } from "../domain/user/user.js";
 import type { UserId } from "../domain/user/userId.js";
-import type { UserResolver } from "../domain/user/userResolver.js";
+import type {
+  UserByIdResolver,
+  UserListResolver,
+} from "../domain/user/userResolver.js";
 
 export type UserView = Readonly<{
   kind: User["kind"];
@@ -27,7 +30,10 @@ export type UseCaseRepositoryError = Readonly<{
 }>;
 export type UseCaseError = Unauthorized | UseCaseRepositoryError;
 export type UseCaseOutput = ResultAsync<UseCaseOk, UseCaseError>;
-export type Dependencies = Readonly<{ userResolver: UserResolver }>;
+export type Dependencies = Readonly<{
+  userByIdResolver: UserByIdResolver;
+  userListResolver: UserListResolver;
+}>;
 export type ListUsersUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
@@ -63,13 +69,13 @@ const toView = (user: User): UserView =>
 const run =
   (dependencies: Dependencies) =>
   (input: UseCaseInput): UseCaseOutput =>
-    dependencies.userResolver
+    dependencies.userByIdResolver
       .resolveById(input.actorUserId)
       .mapErr(toRepositoryError)
       .andThen(ensureActor(input.actorUserId))
       .andThen(ensureAdmin)
       .andThen(() =>
-        dependencies.userResolver.resolveAll().mapErr(toRepositoryError),
+        dependencies.userListResolver.resolveAll().mapErr(toRepositoryError),
       )
       .map((users) => ({ users: users.map(toView) }));
 

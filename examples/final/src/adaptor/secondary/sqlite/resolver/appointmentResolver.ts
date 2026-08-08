@@ -6,8 +6,9 @@ import type { RepositoryError } from "../../../../domain/aggregate/repositoryErr
 import { Timestamp } from "../../../../domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
 import type {
-  AppointmentByPetResolver,
-  AppointmentResolver,
+  AppointmentByPetIdResolver,
+  AppointmentByIdResolver,
+  AppointmentListResolver,
 } from "../../../../domain/appointment/appointmentResolver.js";
 import { PaymentAmount } from "../../../../domain/appointment/paymentAmount.js";
 import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js";
@@ -91,9 +92,9 @@ const repositoryError =
     cause,
   });
 
-export const createAppointmentResolver = (
+export const createAppointmentByIdResolver = (
   db: SqliteDatabase,
-): AppointmentResolver & AppointmentByPetResolver => ({
+): AppointmentByIdResolver => ({
   resolveById: (appointmentId) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() => {
@@ -104,8 +105,13 @@ export const createAppointmentResolver = (
           .get();
         return row === undefined ? undefined : parseAppointmentRow(row);
       }),
-      repositoryError("AppointmentResolver.resolveById"),
+      repositoryError("AppointmentByIdResolver.resolveById"),
     ),
+});
+
+export const createAppointmentByPetIdResolver = (
+  db: SqliteDatabase,
+): AppointmentByPetIdResolver => ({
   resolveByPetId: (petId) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() =>
@@ -116,6 +122,18 @@ export const createAppointmentResolver = (
           .all()
           .map(parseAppointmentRow),
       ),
-      repositoryError("AppointmentResolver.resolveByPetId"),
+      repositoryError("AppointmentByPetIdResolver.resolveByPetId"),
+    ),
+});
+
+export const createAppointmentListResolver = (
+  db: SqliteDatabase,
+): AppointmentListResolver => ({
+  resolveAll: () =>
+    ResultAsync.fromPromise(
+      Promise.resolve().then(() =>
+        db.select().from(appointmentsTable).all().map(parseAppointmentRow),
+      ),
+      repositoryError("AppointmentListResolver.resolveAll"),
     ),
 });
