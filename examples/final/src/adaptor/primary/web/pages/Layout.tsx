@@ -19,6 +19,16 @@ export default function Layout({ children, title, user }: LayoutProps) {
         </Link>
         {user === undefined || user === null ? null : (
           <nav aria-label="メインナビゲーション">
+            <Link href="/">ダッシュボード</Link>
+            {user.role === "Admin" ? (
+              <Link href="/users">ユーザー</Link>
+            ) : null}
+            {user.role === "Admin" || user.role === "Receptionist" ? (
+              <>
+                <Link href="/owners">飼い主</Link>
+                <Link href="/pets">ペット</Link>
+              </>
+            ) : null}
             <span className="role">{user.role}</span>
             <Link as="button" href="/logout" method="post">
               ログアウト

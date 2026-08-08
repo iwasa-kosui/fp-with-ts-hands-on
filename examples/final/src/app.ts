@@ -14,9 +14,19 @@ import {
   migrateDatabase,
   type SqliteDatabase,
 } from "./adaptor/secondary/sqlite/db.js";
-import { createAppointmentListResolver } from "./adaptor/secondary/sqlite/resolver/appointmentResolver.js";
-import { createOwnerListResolver } from "./adaptor/secondary/sqlite/resolver/ownerResolver.js";
-import { createPetListResolver } from "./adaptor/secondary/sqlite/resolver/petResolver.js";
+import {
+  createAppointmentByPetIdResolver,
+  createAppointmentListResolver,
+} from "./adaptor/secondary/sqlite/resolver/appointmentResolver.js";
+import {
+  createOwnerByIdResolver,
+  createOwnerListResolver,
+} from "./adaptor/secondary/sqlite/resolver/ownerResolver.js";
+import {
+  createPetByIdResolver,
+  createPetByOwnerIdResolver,
+  createPetListResolver,
+} from "./adaptor/secondary/sqlite/resolver/petResolver.js";
 import { createInstallationStatusQuery } from "./adaptor/secondary/sqlite/query/installationStatusQuery.js";
 import {
   createSessionByIdResolver,
@@ -29,29 +39,62 @@ import {
 } from "./adaptor/secondary/sqlite/resolver/userResolver.js";
 import { createSessionEventStore } from "./adaptor/secondary/sqlite/store/sessionEventStore.js";
 import { createInitialAdminSetupStore } from "./adaptor/secondary/sqlite/store/initialAdminSetupStore.js";
+import {
+  createUserDeletedEventStore,
+  createUserEventStore,
+} from "./adaptor/secondary/sqlite/store/userEventStore.js";
+import {
+  createOwnerDeletedEventStore,
+  createOwnerEventStore,
+} from "./adaptor/secondary/sqlite/store/ownerEventStore.js";
+import {
+  createPetDeletedEventStore,
+  createPetEventStore,
+} from "./adaptor/secondary/sqlite/store/petEventStore.js";
 import { createAuthenticationMiddleware } from "./adaptor/primary/web/middleware/authentication.js";
 import { createSharedPropsMiddleware } from "./adaptor/primary/web/middleware/sharedProps.js";
 import type { WebEnvironment } from "./adaptor/primary/web/pageProps.js";
 import { rootView } from "./adaptor/primary/web/rootView.js";
 import { registerAuthRoutes } from "./adaptor/primary/web/routes/authRoutes.js";
 import { registerDashboardRoutes } from "./adaptor/primary/web/routes/dashboardRoutes.js";
+import { registerOwnerRoutes } from "./adaptor/primary/web/routes/ownerRoutes.js";
+import { registerPetRoutes } from "./adaptor/primary/web/routes/petRoutes.js";
+import { registerUserRoutes } from "./adaptor/primary/web/routes/userRoutes.js";
 import type { Clock } from "./domain/aggregate/clock.js";
 import { EventId } from "./domain/aggregate/eventId.js";
 import type { EventIdGenerator } from "./domain/aggregate/eventIdGenerator.js";
 import { Timestamp } from "./domain/aggregate/timestamp.js";
+import { VeterinarianId } from "./domain/appointment/veterinarianId.js";
+import { OwnerId } from "./domain/owner/ownerId.js";
+import { PetId } from "./domain/pet/petId.js";
 import type { SessionByTokenHashResolver } from "./domain/session/sessionResolver.js";
 import { SessionId } from "./domain/session/sessionId.js";
 import { PasswordHash } from "./domain/user/passwordHash.js";
 import type { UserByIdResolver } from "./domain/user/userResolver.js";
 import { UserId } from "./domain/user/userId.js";
+import { CreateOwnerUseCase, type CreateOwnerUseCase as CreateOwner } from "./useCase/createOwnerUseCase.js";
+import { CreatePetUseCase, type CreatePetUseCase as CreatePet } from "./useCase/createPetUseCase.js";
+import { CreateUserUseCase, type CreateUserUseCase as CreateUser } from "./useCase/createUserUseCase.js";
+import { DeleteOwnerUseCase, type DeleteOwnerUseCase as DeleteOwner } from "./useCase/deleteOwnerUseCase.js";
+import { DeletePetUseCase, type DeletePetUseCase as DeletePet } from "./useCase/deletePetUseCase.js";
+import { DeleteUserUseCase, type DeleteUserUseCase as DeleteUser } from "./useCase/deleteUserUseCase.js";
+import { GetOwnerUseCase, type GetOwnerUseCase as GetOwner } from "./useCase/getOwnerUseCase.js";
+import { GetPetUseCase, type GetPetUseCase as GetPet } from "./useCase/getPetUseCase.js";
 import type { InstallationStatusQuery } from "./useCase/query/installationStatusQuery.js";
 import { GetDashboardUseCase, type GetDashboardUseCase as GetDashboard } from "./useCase/getDashboardUseCase.js";
+import { ListOwnersUseCase, type ListOwnersUseCase as ListOwners } from "./useCase/listOwnersUseCase.js";
+import { ListPetsUseCase, type ListPetsUseCase as ListPets } from "./useCase/listPetsUseCase.js";
+import { ListUsersUseCase, type ListUsersUseCase as ListUsers } from "./useCase/listUsersUseCase.js";
 import { LogInUseCase, type LogInUseCase as LogIn } from "./useCase/logInUseCase.js";
 import { LogOutUseCase, type LogOutUseCase as LogOut } from "./useCase/logOutUseCase.js";
+import { ResetUserPasswordUseCase, type ResetUserPasswordUseCase as ResetUserPassword } from "./useCase/resetUserPasswordUseCase.js";
 import {
   SetUpInitialAdminUseCase,
   type SetUpInitialAdminUseCase as SetUpInitialAdmin,
 } from "./useCase/setUpInitialAdminUseCase.js";
+import { UpdateOwnerUseCase, type UpdateOwnerUseCase as UpdateOwner } from "./useCase/updateOwnerUseCase.js";
+import { UpdatePetUseCase, type UpdatePetUseCase as UpdatePet } from "./useCase/updatePetUseCase.js";
+import { UpdateUserUseCase, type UpdateUserUseCase as UpdateUser } from "./useCase/updateUserUseCase.js";
 
 export type ApplicationDependencies = Readonly<{
   sessionByTokenHashResolver: SessionByTokenHashResolver;
@@ -61,6 +104,21 @@ export type ApplicationDependencies = Readonly<{
   logIn: LogIn;
   logOut: LogOut;
   getDashboard: GetDashboard;
+  listUsers: ListUsers;
+  createUser: CreateUser;
+  updateUser: UpdateUser;
+  resetUserPassword: ResetUserPassword;
+  deleteUser: DeleteUser;
+  listOwners: ListOwners;
+  getOwner: GetOwner;
+  createOwner: CreateOwner;
+  updateOwner: UpdateOwner;
+  deleteOwner: DeleteOwner;
+  listPets: ListPets;
+  getPet: GetPet;
+  createPet: CreatePet;
+  updatePet: UpdatePet;
+  deletePet: DeletePet;
   clock: Clock;
   isProduction: boolean;
 }>;
@@ -81,6 +139,15 @@ const userIdGenerator = {
 } as const;
 const sessionIdGenerator = {
   generate: () => SessionId.schema.parse(randomUUID()),
+} as const;
+const veterinarianIdGenerator = {
+  generate: () => VeterinarianId.schema.parse(randomUUID()),
+} as const;
+const ownerIdGenerator = {
+  generate: () => OwnerId.schema.parse(randomUUID()),
+} as const;
+const petIdGenerator = {
+  generate: () => PetId.schema.parse(randomUUID()),
 } as const;
 const dummyPasswordHash = PasswordHash.schema.parse(
   `scrypt$${"D".repeat(22)}==$${"E".repeat(86)}==`,
@@ -103,8 +170,24 @@ export const createApplicationDependencies = (
   const appointmentListResolver = createAppointmentListResolver(database);
   const ownerListResolver = createOwnerListResolver(database);
   const petListResolver = createPetListResolver(database);
+  const managementUserByIdResolver = createUserByIdResolver(database);
+  const managementUserByEmailResolver = createUserByEmailResolver(database);
+  const managementUserListResolver = createUserListResolver(database);
+  const managementOwnerByIdResolver = createOwnerByIdResolver(database);
+  const managementOwnerListResolver = createOwnerListResolver(database);
+  const managementPetByIdResolver = createPetByIdResolver(database);
+  const managementPetByOwnerIdResolver = createPetByOwnerIdResolver(database);
+  const managementPetListResolver = createPetListResolver(database);
+  const managementAppointmentByPetIdResolver =
+    createAppointmentByPetIdResolver(database);
   const sessionEventStore = createSessionEventStore(database);
   const initialAdminSetupStore = createInitialAdminSetupStore(database);
+  const userEventStore = createUserEventStore(database);
+  const userDeletedEventStore = createUserDeletedEventStore(database);
+  const ownerEventStore = createOwnerEventStore(database);
+  const ownerDeletedEventStore = createOwnerDeletedEventStore(database);
+  const petEventStore = createPetEventStore(database);
+  const petDeletedEventStore = createPetDeletedEventStore(database);
 
   return {
     sessionByTokenHashResolver,
@@ -142,6 +225,103 @@ export const createApplicationDependencies = (
       petListResolver,
       userListResolver: dashboardUserListResolver,
     }),
+    listUsers: ListUsersUseCase.create({
+      userByIdResolver: managementUserByIdResolver,
+      userListResolver: managementUserListResolver,
+    }),
+    createUser: CreateUserUseCase.create({
+      userByIdResolver: managementUserByIdResolver,
+      userByEmailResolver: managementUserByEmailResolver,
+      userCreatedStore: userEventStore,
+      passwordHasher: scryptPasswordHasher,
+      clock,
+      eventIdGenerator,
+      userIdGenerator,
+      veterinarianIdGenerator,
+    }),
+    updateUser: UpdateUserUseCase.create({
+      userByIdResolver: managementUserByIdResolver,
+      userByEmailResolver: managementUserByEmailResolver,
+      userUpdatedStore: userEventStore,
+      clock,
+      eventIdGenerator,
+      veterinarianIdGenerator,
+    }),
+    resetUserPassword: ResetUserPasswordUseCase.create({
+      userResolver: managementUserByIdResolver,
+      userPasswordResetStore: userEventStore,
+      passwordHasher: scryptPasswordHasher,
+      clock,
+      eventIdGenerator,
+    }),
+    deleteUser: DeleteUserUseCase.create({
+      userByIdResolver: managementUserByIdResolver,
+      userListResolver: managementUserListResolver,
+      userDeletedStore: userDeletedEventStore,
+      clock,
+      eventIdGenerator,
+    }),
+    listOwners: ListOwnersUseCase.create({
+      userResolver: managementUserByIdResolver,
+      ownerResolver: managementOwnerListResolver,
+    }),
+    getOwner: GetOwnerUseCase.create({
+      userResolver: managementUserByIdResolver,
+      ownerResolver: managementOwnerByIdResolver,
+    }),
+    createOwner: CreateOwnerUseCase.create({
+      userResolver: managementUserByIdResolver,
+      ownerCreatedStore: ownerEventStore,
+      ownerIdGenerator,
+      clock,
+      eventIdGenerator,
+    }),
+    updateOwner: UpdateOwnerUseCase.create({
+      userResolver: managementUserByIdResolver,
+      ownerResolver: managementOwnerByIdResolver,
+      ownerUpdatedStore: ownerEventStore,
+      clock,
+      eventIdGenerator,
+    }),
+    deleteOwner: DeleteOwnerUseCase.create({
+      userResolver: managementUserByIdResolver,
+      ownerResolver: managementOwnerByIdResolver,
+      petResolver: managementPetByOwnerIdResolver,
+      ownerDeletedStore: ownerDeletedEventStore,
+      clock,
+      eventIdGenerator,
+    }),
+    listPets: ListPetsUseCase.create({
+      userResolver: managementUserByIdResolver,
+      petResolver: managementPetListResolver,
+    }),
+    getPet: GetPetUseCase.create({
+      userResolver: managementUserByIdResolver,
+      petResolver: managementPetByIdResolver,
+    }),
+    createPet: CreatePetUseCase.create({
+      userResolver: managementUserByIdResolver,
+      ownerResolver: managementOwnerByIdResolver,
+      petCreatedStore: petEventStore,
+      petIdGenerator,
+      clock,
+      eventIdGenerator,
+    }),
+    updatePet: UpdatePetUseCase.create({
+      userResolver: managementUserByIdResolver,
+      petResolver: managementPetByIdResolver,
+      petUpdatedStore: petEventStore,
+      clock,
+      eventIdGenerator,
+    }),
+    deletePet: DeletePetUseCase.create({
+      userResolver: managementUserByIdResolver,
+      petResolver: managementPetByIdResolver,
+      appointmentResolver: managementAppointmentByPetIdResolver,
+      petDeletedStore: petDeletedEventStore,
+      clock,
+      eventIdGenerator,
+    }),
     clock,
     isProduction:
       options.isProduction ?? process.env.NODE_ENV === "production",
@@ -176,6 +356,28 @@ export const createApp = (dependencies: ApplicationDependencies) => {
   registerDashboardRoutes(app, {
     installationStatusQuery: dependencies.installationStatusQuery,
     getDashboard: dependencies.getDashboard,
+  });
+  registerUserRoutes(app, {
+    listUsers: dependencies.listUsers,
+    createUser: dependencies.createUser,
+    updateUser: dependencies.updateUser,
+    resetUserPassword: dependencies.resetUserPassword,
+    deleteUser: dependencies.deleteUser,
+  });
+  registerOwnerRoutes(app, {
+    listOwners: dependencies.listOwners,
+    getOwner: dependencies.getOwner,
+    createOwner: dependencies.createOwner,
+    updateOwner: dependencies.updateOwner,
+    deleteOwner: dependencies.deleteOwner,
+  });
+  registerPetRoutes(app, {
+    listPets: dependencies.listPets,
+    getPet: dependencies.getPet,
+    createPet: dependencies.createPet,
+    updatePet: dependencies.updatePet,
+    deletePet: dependencies.deletePet,
+    listOwners: dependencies.listOwners,
   });
 
   app.onError((error) =>

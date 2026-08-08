@@ -51,9 +51,35 @@ label {
 }
 
 input,
+select,
 button {
   padding: 0.7rem;
   font: inherit;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+th,
+td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #d7d0c4;
+  text-align: left;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.notice {
+  padding: 0.75rem;
+  border-left: 0.25rem solid #8b6b24;
+  background: #fff8dc;
 }
 
 .error {
