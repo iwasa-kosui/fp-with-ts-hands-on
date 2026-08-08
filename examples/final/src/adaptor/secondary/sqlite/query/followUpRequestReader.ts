@@ -1,12 +1,10 @@
-import { eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
 import type { FollowUpRequestReader } from "../../../../useCase/query/followUpRequestReader.js";
 import type { SqliteDatabase } from "../db.js";
-import { domainEventsTable } from "../schema.js";
-import { parsePersistedEventRow } from "./persistedEventRow.js";
+import { followUpRequestClaimsTable } from "../schema.js";
 
 export const createFollowUpRequestReader = (
   db: SqliteDatabase,
@@ -15,12 +13,10 @@ export const createFollowUpRequestReader = (
     ResultAsync.fromPromise(
       Promise.resolve().then(() =>
         db
-          .select()
-          .from(domainEventsTable)
-          .where(eq(domainEventsTable.eventName, "follow-up.requested"))
+          .select({ appointmentId: followUpRequestClaimsTable.appointmentId })
+          .from(followUpRequestClaimsTable)
           .all()
-          .map(parsePersistedEventRow)
-          .map((event) => AppointmentId.schema.parse(event.aggregateId)),
+          .map((claim) => AppointmentId.schema.parse(claim.appointmentId)),
       ),
       (cause): RepositoryError => ({
         kind: "RepositoryError",

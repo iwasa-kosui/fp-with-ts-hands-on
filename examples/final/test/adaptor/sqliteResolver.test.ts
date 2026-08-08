@@ -11,7 +11,10 @@ import {
   createUserListResolver,
 } from "../../src/adaptor/secondary/sqlite/resolver/userResolver.js";
 import { createUserEventStore } from "../../src/adaptor/secondary/sqlite/store/userEventStore.js";
-import { domainEventsTable } from "../../src/adaptor/secondary/sqlite/schema.js";
+import {
+  domainEventsTable,
+  followUpRequestClaimsTable,
+} from "../../src/adaptor/secondary/sqlite/schema.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
@@ -157,6 +160,41 @@ describe("SQLite resolvers", () => {
     expect(result.isErr() && result.error.operation).toBe("UserListResolver.resolveAll");
   });
 
+  test("follow-up requested state comes only from the claim projection", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const auditOnlyAppointmentId = "30000000-0000-4000-8000-000000000099";
+    db.insert(followUpRequestClaimsTable).values({ appointmentId }).run();
+    insertFollowUpEvent(db, {
+      aggregateState: { privateNote: "malformed audit must be ignored" },
+    });
+    insertFollowUpEvent(db, {
+      eventId: "41000000-0000-4000-8000-000000000099",
+      aggregateId: auditOnlyAppointmentId,
+      eventPayload: { appointmentId: auditOnlyAppointmentId, petId },
+    });
+
+    const result = await createFollowUpRequestReader(db).listRequestedAppointmentIds();
+
+    expect(result.isOk()).toBe(true);
+    expect(result.isOk() && result.value).toEqual([
+      AppointmentId.schema.parse(appointmentId),
+    ]);
+  });
+
+  test("rejects a malformed appointment id in the follow-up claim projection", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    db.insert(followUpRequestClaimsTable).values({ appointmentId: "not-an-appointment-id" }).run();
+
+    const result = await createFollowUpRequestReader(db).listRequestedAppointmentIds();
+
+    expect(result.isErr()).toBe(true);
+    expect(result.isErr() && result.error.operation).toBe(
+      "FollowUpRequestReader.listRequestedAppointmentIds",
+    );
+  });
+
   test.each([
     ["Admin", "20000000-0000-4000-8000-000000000011"],
     ["Receptionist", "20000000-0000-4000-8000-000000000011"],
@@ -270,12 +308,11 @@ describe("SQLite resolvers", () => {
     migrateDatabase(db);
     insertFollowUpEvent(db, overrides);
 
-    const result =
-      await createFollowUpRequestReader(db).listRequestedAppointmentIds();
+    const result = await createEventHistoryReader(db).list();
 
     expect(result.isErr()).toBe(true);
     expect(result.isErr() && result.error.operation).toBe(
-      "FollowUpRequestReader.listRequestedAppointmentIds",
+      "EventHistoryReader.list",
     );
   });
 });
