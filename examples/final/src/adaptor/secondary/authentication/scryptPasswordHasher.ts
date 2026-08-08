@@ -31,7 +31,13 @@ const verify = async (
   password: Parameters<PasswordHasher["verify"]>[0],
   passwordHash: Parameters<PasswordHasher["verify"]>[1],
 ): Promise<boolean> => {
-  const [algorithm, encodedSalt, encodedKey] = passwordHash.unwrap().split("$");
+  const parsedHash = PasswordHash.schema.safeParse(passwordHash.unwrap());
+
+  if (!parsedHash.success) {
+    return false;
+  }
+
+  const [algorithm, encodedSalt, encodedKey] = parsedHash.data.unwrap().split("$");
 
   if (algorithm !== "scrypt" || encodedSalt === undefined || encodedKey === undefined) {
     return false;
@@ -39,10 +45,6 @@ const verify = async (
 
   const expectedKey = Buffer.from(encodedKey, "base64");
   const salt = Buffer.from(encodedSalt, "base64");
-
-  if (expectedKey.length !== derivedKeyLength || salt.length !== saltLength) {
-    return false;
-  }
 
   const derivedKey = await deriveKey(password.unwrap(), salt);
 
