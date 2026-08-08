@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { err, ok, ResultAsync } from "neverthrow";
+import { err, errAsync, ok, ResultAsync } from "neverthrow";
 
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import type {
@@ -17,6 +17,7 @@ import { domainEventsTable, usersTable } from "../schema.js";
 import type { SqliteDatabase } from "../db.js";
 
 type UserEvent = UserCreated | UserUpdated | UserPasswordReset;
+type AnyUserEvent = UserEvent | UserDeleted;
 
 const projectionValues = (
   state: Exclude<UserEvent["aggregateState"], undefined>,
@@ -37,7 +38,7 @@ const safeState = (state: Exclude<UserEvent["aggregateState"], undefined>) => ({
     : {}),
 });
 
-export const createUserEventStore = (db: SqliteDatabase) =>
+const createUserProjectionEventStore = (db: SqliteDatabase) =>
   ({
     store: (...events: readonly UserEvent[]) =>
       ResultAsync.fromPromise(
@@ -141,3 +142,41 @@ export const createUserDeletedEventStore = (
       }),
     ).andThen((result) => result),
 });
+
+const mixedEventKindsError = (): RepositoryError => ({
+  kind: "RepositoryError",
+  operation: "UserEventStore.store",
+  cause: new TypeError(
+    "User deletion events require an isolated guarded transaction",
+  ),
+});
+
+export const createUserEventStore = (db: SqliteDatabase) => {
+  const projectionStore = createUserProjectionEventStore(db);
+  const deletionStore = createUserDeletedEventStore(db);
+
+  function store(
+    ...events: readonly UserEvent[]
+  ): ReturnType<typeof projectionStore.store>;
+  function store(
+    ...events: readonly UserDeleted[]
+  ): ReturnType<typeof deletionStore.store>;
+  function store(...events: readonly AnyUserEvent[]) {
+    const deletionEvents = events.filter(
+      (event) => event.kind === "UserDeleted",
+    );
+    const projectionEvents = events.filter(
+      (event) => event.kind !== "UserDeleted",
+    );
+
+    if (deletionEvents.length > 0 && projectionEvents.length > 0) {
+      return errAsync(mixedEventKindsError());
+    }
+
+    return deletionEvents.length > 0
+      ? deletionStore.store(...deletionEvents)
+      : projectionStore.store(...projectionEvents);
+  }
+
+  return { store } as const;
+};

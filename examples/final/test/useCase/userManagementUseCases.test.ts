@@ -14,10 +14,7 @@ import {
   usersTable,
 } from "../../src/adaptor/secondary/sqlite/schema.js";
 import { createSessionEventStore } from "../../src/adaptor/secondary/sqlite/store/sessionEventStore.js";
-import {
-  createUserDeletedEventStore,
-  createUserEventStore,
-} from "../../src/adaptor/secondary/sqlite/store/userEventStore.js";
+import { createUserEventStore } from "../../src/adaptor/secondary/sqlite/store/userEventStore.js";
 import type { Clock } from "../../src/domain/aggregate/clock.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import type { EventContext } from "../../src/domain/aggregate/eventContext.js";
@@ -538,7 +535,7 @@ describe("DeleteUserUseCase SQLite integration", () => {
     );
     const useCase = DeleteUserUseCase.create({
       userResolver: createUserResolver(db),
-      userDeletedStore: createUserDeletedEventStore(db),
+      userDeletedStore: userStore,
       clock,
       eventIdGenerator: eventIdGenerator(),
     });
@@ -608,7 +605,7 @@ describe("DeleteUserUseCase SQLite integration", () => {
       ),
     );
     const staleResolver = userResolverFor([actor, otherAdmin]);
-    const deletionStore = createUserDeletedEventStore(db);
+    const deletionStore = createUserEventStore(db);
     const deleteOther = DeleteUserUseCase.create({
       userResolver: staleResolver,
       userDeletedStore: deletionStore,
