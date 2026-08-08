@@ -29,6 +29,10 @@ const OwnerFormSchema = z.object({
   email: OwnerEmail.schema,
   phone: OwnerPhone.schema,
 });
+const OwnerDetailErrorSchema = z.enum([
+  "owner-has-pets",
+  "owner-deletion-conflict",
+]);
 
 type OwnerRouteDependencies = Readonly<{
   listOwners: ListOwnersUseCase;
@@ -158,6 +162,25 @@ const loadOwner = async (
     );
 };
 
+const ownerDetailErrors = (rawError: string | undefined): FieldErrors => {
+  const parsed = OwnerDetailErrorSchema.safeParse(rawError);
+  if (!parsed.success) return {};
+  const code = parsed.data;
+  switch (code) {
+    case "owner-has-pets":
+      return {
+        form:
+          "ペットが登録されている飼い主は削除できません。先にペットを確認してください。",
+      };
+    case "owner-deletion-conflict":
+      return {
+        form: "飼い主を削除できませんでした。最新の状態を確認してください。",
+      };
+    default:
+      return assertNever(code);
+  }
+};
+
 export const registerOwnerRoutes = (
   app: Hono<WebEnvironment>,
   dependencies: OwnerRouteDependencies,
@@ -219,7 +242,13 @@ export const registerOwnerRoutes = (
     if (authorized.isErr()) return authorized.error;
     const ownerId = parseOwnerId(context, context.req.param("ownerId"));
     return ownerId.match(
-      (value) => loadOwner(context, dependencies, value),
+      (value) =>
+        loadOwner(
+          context,
+          dependencies,
+          value,
+          ownerDetailErrors(context.req.query("error")),
+        ),
       (response) => response,
     );
   });
@@ -290,8 +319,15 @@ export const registerOwnerRoutes = (
             case "OwnerNotFound":
               return respondToUseCaseError(context, { kind: "NotFound" });
             case "OwnerHasPets":
+              return context.redirect(
+                `/owners/${ownerId.value}?error=owner-has-pets`,
+                303,
+              );
             case "OwnerDeletionConflict":
-              return respondToUseCaseError(context, { kind: "Conflict" });
+              return context.redirect(
+                `/owners/${ownerId.value}?error=owner-deletion-conflict`,
+                303,
+              );
             case "IdentityGenerationFailed":
             case "RepositoryError":
               return respondToUseCaseError(context, {

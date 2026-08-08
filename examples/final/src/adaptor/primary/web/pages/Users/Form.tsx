@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 
 import type { UserPageView } from "../../routes/userRoutes.js";
 import type { SharedPageProps } from "../../pageProps.js";
+import { ErrorSummary, FieldError } from "../../components/FormErrors.js";
 import Layout from "../Layout.js";
 
 type UserFormProps = SharedPageProps &
@@ -10,9 +11,6 @@ type UserFormProps = SharedPageProps &
     mode: "create" | "edit";
     user: UserPageView | null;
   }>;
-
-const ErrorMessage = ({ message }: Readonly<{ message: string | undefined }>) =>
-  message === undefined ? null : <p className="error">{message}</p>;
 
 export default function UserForm({ auth, errors, mode, user }: UserFormProps) {
   const profile = useForm({
@@ -56,11 +54,14 @@ export default function UserForm({ auth, errors, mode, user }: UserFormProps) {
       title={mode === "create" ? "ユーザーを追加" : "ユーザーを編集"}
       user={auth.user}
     >
+      <ErrorSummary errors={errors} />
       <form onSubmit={submitProfile}>
         <label>
           名前
           <input
             autoComplete="name"
+            aria-describedby={errors.name === undefined ? undefined : "name-error"}
+            aria-invalid={errors.name !== undefined}
             name="name"
             onChange={(event) => profile.setData("name", event.target.value)}
             required
@@ -68,11 +69,13 @@ export default function UserForm({ auth, errors, mode, user }: UserFormProps) {
             value={profile.data.name}
           />
         </label>
-        <ErrorMessage message={errors.name} />
+        <FieldError field="name" message={errors.name} />
         <label>
           メールアドレス
           <input
             autoComplete="email"
+            aria-describedby={errors.email === undefined ? undefined : "email-error"}
+            aria-invalid={errors.email !== undefined}
             name="email"
             onChange={(event) => profile.setData("email", event.target.value)}
             required
@@ -80,10 +83,12 @@ export default function UserForm({ auth, errors, mode, user }: UserFormProps) {
             value={profile.data.email}
           />
         </label>
-        <ErrorMessage message={errors.email} />
+        <FieldError field="email" message={errors.email} />
         <label>
           役割
           <select
+            aria-describedby={errors.role === undefined ? undefined : "role-error"}
+            aria-invalid={errors.role !== undefined}
             name="role"
             onChange={(event) => setRole(event.target.value)}
             value={profile.data.role}
@@ -93,13 +98,15 @@ export default function UserForm({ auth, errors, mode, user }: UserFormProps) {
             <option value="Veterinarian">Veterinarian</option>
           </select>
         </label>
-        <ErrorMessage message={errors.role} />
+        <FieldError field="role" message={errors.role} />
         {mode === "create" ? (
           <>
             <label>
               初期パスワード
               <input
                 autoComplete="new-password"
+                aria-describedby={errors.password === undefined ? undefined : "password-error"}
+                aria-invalid={errors.password !== undefined}
                 name="password"
                 onChange={(event) =>
                   profile.setData("password", event.target.value)
@@ -109,7 +116,7 @@ export default function UserForm({ auth, errors, mode, user }: UserFormProps) {
                 value={profile.data.password}
               />
             </label>
-            <ErrorMessage message={errors.password} />
+            <FieldError field="password" message={errors.password} />
           </>
         ) : null}
         <button disabled={profile.processing} type="submit">
@@ -124,6 +131,8 @@ export default function UserForm({ auth, errors, mode, user }: UserFormProps) {
               新しいパスワード
               <input
                 autoComplete="new-password"
+                aria-describedby={errors.password === undefined ? undefined : "password-error"}
+                aria-invalid={errors.password !== undefined}
                 name="password"
                 onChange={(event) =>
                   password.setData("password", event.target.value)
@@ -133,7 +142,7 @@ export default function UserForm({ auth, errors, mode, user }: UserFormProps) {
                 value={password.data.password}
               />
             </label>
-            <ErrorMessage message={errors.password} />
+            <FieldError field="password" message={errors.password} />
             <button disabled={password.processing} type="submit">
               パスワードを再設定
             </button>

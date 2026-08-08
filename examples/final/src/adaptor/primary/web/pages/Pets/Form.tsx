@@ -6,6 +6,7 @@ import type {
   PetPageView,
 } from "../../routes/petRoutes.js";
 import type { SharedPageProps } from "../../pageProps.js";
+import { ErrorSummary, FieldError } from "../../components/FormErrors.js";
 import Layout from "../Layout.js";
 
 type PetFormProps = SharedPageProps &
@@ -14,9 +15,6 @@ type PetFormProps = SharedPageProps &
     pet: PetPageView | null;
     owners: readonly PetOwnerOption[];
   }>;
-
-const ErrorMessage = ({ message }: Readonly<{ message: string | undefined }>) =>
-  message === undefined ? null : <p className="error">{message}</p>;
 
 export default function PetForm({ auth, errors, mode, owners, pet }: PetFormProps) {
   const form = useForm({
@@ -40,11 +38,14 @@ export default function PetForm({ auth, errors, mode, owners, pet }: PetFormProp
       title={mode === "create" ? "ペットを追加" : "ペットの詳細・編集"}
       user={auth.user}
     >
+      <ErrorSummary errors={errors} />
       <form onSubmit={submit}>
         {mode === "create" ? (
           <label>
             飼い主
             <select
+              aria-describedby={errors.ownerId === undefined ? undefined : "ownerId-error"}
+              aria-invalid={errors.ownerId !== undefined}
               name="ownerId"
               onChange={(event) => form.setData("ownerId", event.target.value)}
               required
@@ -63,10 +64,12 @@ export default function PetForm({ auth, errors, mode, owners, pet }: PetFormProp
         ) : (
           <p>飼い主 ID: {pet?.ownerId}</p>
         )}
-        <ErrorMessage message={errors.ownerId} />
+        <FieldError field="ownerId" message={errors.ownerId} />
         <label>
           名前
           <input
+            aria-describedby={errors.name === undefined ? undefined : "name-error"}
+            aria-invalid={errors.name !== undefined}
             name="name"
             onChange={(event) => form.setData("name", event.target.value)}
             required
@@ -74,10 +77,12 @@ export default function PetForm({ auth, errors, mode, owners, pet }: PetFormProp
             value={form.data.name}
           />
         </label>
-        <ErrorMessage message={errors.name} />
+        <FieldError field="name" message={errors.name} />
         <label>
           種別
           <input
+            aria-describedby={errors.species === undefined ? undefined : "species-error"}
+            aria-invalid={errors.species !== undefined}
             name="species"
             onChange={(event) => form.setData("species", event.target.value)}
             required
@@ -85,7 +90,7 @@ export default function PetForm({ auth, errors, mode, owners, pet }: PetFormProp
             value={form.data.species}
           />
         </label>
-        <ErrorMessage message={errors.species} />
+        <FieldError field="species" message={errors.species} />
         <button disabled={form.processing || (mode === "create" && owners.length === 0)} type="submit">
           {mode === "create" ? "追加" : "更新"}
         </button>

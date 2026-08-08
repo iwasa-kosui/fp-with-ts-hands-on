@@ -2,17 +2,18 @@ import { Link, useForm } from "@inertiajs/react";
 
 import type { UserPageView } from "../../routes/userRoutes.js";
 import type { SharedPageProps } from "../../pageProps.js";
+import { ErrorSummary } from "../../components/FormErrors.js";
 import Layout from "../Layout.js";
 
 type UsersIndexProps = SharedPageProps &
   Readonly<{ users: readonly UserPageView[] }>;
 
-export default function UsersIndex({ auth, users }: UsersIndexProps) {
+export default function UsersIndex({ auth, errors, users }: UsersIndexProps) {
   const deletion = useForm({});
   const remove = (user: UserPageView) => {
     if (
       window.confirm(
-        `${user.name} を削除しますか？この操作は元に戻せません。`,
+        `${user.name} のアカウントのプロジェクションを物理削除しますか？監査履歴は保持され、個人情報の完全消去ではありません。`,
       )
     ) {
       deletion.post(`/users/${user.userId}/delete`, { forceFormData: true });
@@ -21,7 +22,11 @@ export default function UsersIndex({ auth, users }: UsersIndexProps) {
 
   return (
     <Layout title="ユーザー管理" user={auth.user}>
+      <ErrorSummary errors={errors} />
       <p><Link href="/users/new">ユーザーを追加</Link></p>
+      <p className="notice">
+        削除するとアカウントのプロジェクションを物理削除します。監査履歴は保持されます。個人情報の完全消去ではありません。
+      </p>
       {users.length === 0 ? (
         <p>ユーザーはいません。</p>
       ) : (

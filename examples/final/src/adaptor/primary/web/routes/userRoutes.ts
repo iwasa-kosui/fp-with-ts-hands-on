@@ -45,6 +45,10 @@ const UpdateUserFormSchema = z.object({
 const ResetPasswordFormSchema = z.object({
   password: PlaintextPasswordSchema,
 });
+const UserIndexErrorSchema = z.enum([
+  "cannot-delete-self",
+  "cannot-delete-last-admin",
+]);
 
 type UserRouteDependencies = Readonly<{
   listUsers: ListUsersUseCase;
@@ -151,6 +155,20 @@ const renderEdit = (
       );
 };
 
+const userIndexErrors = (rawError: string | undefined): FieldErrors => {
+  const parsed = UserIndexErrorSchema.safeParse(rawError);
+  if (!parsed.success) return {};
+  const code = parsed.data;
+  switch (code) {
+    case "cannot-delete-self":
+      return { form: "自分自身のアカウントは削除できません。" };
+    case "cannot-delete-last-admin":
+      return { form: "最後の管理者アカウントは削除できません。" };
+    default:
+      return assertNever(code);
+  }
+};
+
 export const registerUserRoutes = (
   app: Hono<WebEnvironment>,
   dependencies: UserRouteDependencies,
@@ -163,6 +181,7 @@ export const registerUserRoutes = (
           "Users/Index",
           withSharedProps(context, {
             users: result.users.map(toPageView),
+            errors: userIndexErrors(context.req.query("error")),
           }),
         ),
       (response) => response,
@@ -341,8 +360,15 @@ export const registerUserRoutes = (
             case "UserNotFound":
               return respondToUseCaseError(context, { kind: "NotFound" });
             case "CannotDeleteSelf":
+              return context.redirect(
+                "/users?error=cannot-delete-self",
+                303,
+              );
             case "CannotDeleteLastAdmin":
-              return respondToUseCaseError(context, { kind: "Conflict" });
+              return context.redirect(
+                "/users?error=cannot-delete-last-admin",
+                303,
+              );
             case "IdentityGenerationFailed":
             case "RepositoryError":
               return respondToUseCaseError(context, {

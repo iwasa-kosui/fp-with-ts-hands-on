@@ -87,6 +87,24 @@ td {
   color: #a12622;
 }
 
+.error-summary {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #a12622;
+  border-radius: 0.25rem;
+  color: #7d1c19;
+  background: #fff1f0;
+}
+
+.error-summary p {
+  margin-top: 0;
+  font-weight: 700;
+}
+
+.error-summary ul {
+  margin-bottom: 0;
+}
+
 .counts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));

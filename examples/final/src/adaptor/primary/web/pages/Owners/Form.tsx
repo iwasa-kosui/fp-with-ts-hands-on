@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 
 import type { OwnerPageView } from "../../routes/ownerRoutes.js";
 import type { SharedPageProps } from "../../pageProps.js";
+import { ErrorSummary, FieldError } from "../../components/FormErrors.js";
 import Layout from "../Layout.js";
 
 type OwnerFormProps = SharedPageProps &
@@ -10,9 +11,6 @@ type OwnerFormProps = SharedPageProps &
     mode: "create" | "edit";
     owner: OwnerPageView | null;
   }>;
-
-const ErrorMessage = ({ message }: Readonly<{ message: string | undefined }>) =>
-  message === undefined ? null : <p className="error">{message}</p>;
 
 export default function OwnerForm({ auth, errors, mode, owner }: OwnerFormProps) {
   const form = useForm({
@@ -36,11 +34,14 @@ export default function OwnerForm({ auth, errors, mode, owner }: OwnerFormProps)
       title={mode === "create" ? "飼い主を追加" : "飼い主の詳細・編集"}
       user={auth.user}
     >
+      <ErrorSummary errors={errors} />
       <form onSubmit={submit}>
         <label>
           名前
           <input
             autoComplete="name"
+            aria-describedby={errors.name === undefined ? undefined : "name-error"}
+            aria-invalid={errors.name !== undefined}
             name="name"
             onChange={(event) => form.setData("name", event.target.value)}
             required
@@ -48,11 +49,13 @@ export default function OwnerForm({ auth, errors, mode, owner }: OwnerFormProps)
             value={form.data.name}
           />
         </label>
-        <ErrorMessage message={errors.name} />
+        <FieldError field="name" message={errors.name} />
         <label>
           メールアドレス
           <input
             autoComplete="email"
+            aria-describedby={errors.email === undefined ? undefined : "email-error"}
+            aria-invalid={errors.email !== undefined}
             name="email"
             onChange={(event) => form.setData("email", event.target.value)}
             required
@@ -60,11 +63,13 @@ export default function OwnerForm({ auth, errors, mode, owner }: OwnerFormProps)
             value={form.data.email}
           />
         </label>
-        <ErrorMessage message={errors.email} />
+        <FieldError field="email" message={errors.email} />
         <label>
           電話番号
           <input
             autoComplete="tel"
+            aria-describedby={errors.phone === undefined ? undefined : "phone-error"}
+            aria-invalid={errors.phone !== undefined}
             name="phone"
             onChange={(event) => form.setData("phone", event.target.value)}
             required
@@ -72,7 +77,7 @@ export default function OwnerForm({ auth, errors, mode, owner }: OwnerFormProps)
             value={form.data.phone}
           />
         </label>
-        <ErrorMessage message={errors.phone} />
+        <FieldError field="phone" message={errors.phone} />
         <button disabled={form.processing} type="submit">
           {mode === "create" ? "追加" : "更新"}
         </button>

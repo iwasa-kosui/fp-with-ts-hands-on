@@ -32,6 +32,10 @@ const CreatePetFormSchema = z.object({
   ...PetProfileShape,
 });
 const UpdatePetFormSchema = z.object(PetProfileShape);
+const PetDetailErrorSchema = z.enum([
+  "pet-has-active-appointment",
+  "pet-deletion-conflict",
+]);
 
 type PetRouteDependencies = Readonly<{
   listPets: ListPetsUseCase;
@@ -201,6 +205,25 @@ const loadPet = async (
     );
 };
 
+const petDetailErrors = (rawError: string | undefined): FieldErrors => {
+  const parsed = PetDetailErrorSchema.safeParse(rawError);
+  if (!parsed.success) return {};
+  const code = parsed.data;
+  switch (code) {
+    case "pet-has-active-appointment":
+      return {
+        form:
+          "進行中の予約があるペットは削除できません。先に予約を確認してください。",
+      };
+    case "pet-deletion-conflict":
+      return {
+        form: "ペットを削除できませんでした。最新の状態を確認してください。",
+      };
+    default:
+      return assertNever(code);
+  }
+};
+
 export const registerPetRoutes = (
   app: Hono<WebEnvironment>,
   dependencies: PetRouteDependencies,
@@ -278,7 +301,13 @@ export const registerPetRoutes = (
     if (authorized.isErr()) return authorized.error;
     const petId = parsePetId(context, context.req.param("petId"));
     return petId.match(
-      (value) => loadPet(context, dependencies, value),
+      (value) =>
+        loadPet(
+          context,
+          dependencies,
+          value,
+          petDetailErrors(context.req.query("error")),
+        ),
       (response) => response,
     );
   });
@@ -345,8 +374,15 @@ export const registerPetRoutes = (
             case "PetNotFound":
               return respondToUseCaseError(context, { kind: "NotFound" });
             case "PetHasActiveAppointment":
+              return context.redirect(
+                `/pets/${petId.value}?error=pet-has-active-appointment`,
+                303,
+              );
             case "PetDeletionConflict":
-              return respondToUseCaseError(context, { kind: "Conflict" });
+              return context.redirect(
+                `/pets/${petId.value}?error=pet-deletion-conflict`,
+                303,
+              );
             case "IdentityGenerationFailed":
             case "RepositoryError":
               return respondToUseCaseError(context, {
