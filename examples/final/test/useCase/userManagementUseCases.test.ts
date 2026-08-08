@@ -14,7 +14,10 @@ import {
   usersTable,
 } from "../../src/adaptor/secondary/sqlite/schema.js";
 import { createSessionEventStore } from "../../src/adaptor/secondary/sqlite/store/sessionEventStore.js";
-import { createUserEventStore } from "../../src/adaptor/secondary/sqlite/store/userEventStore.js";
+import {
+  createUserDeletedEventStore,
+  createUserEventStore,
+} from "../../src/adaptor/secondary/sqlite/store/userEventStore.js";
 import type { Clock } from "../../src/domain/aggregate/clock.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import type { EventContext } from "../../src/domain/aggregate/eventContext.js";
@@ -64,6 +67,7 @@ const ids = {
   target: UserId.schema.parse("20000000-0000-4000-8000-000000000002"),
   created: UserId.schema.parse("20000000-0000-4000-8000-000000000003"),
   session: SessionId.schema.parse("20000000-0000-4000-8000-000000000004"),
+  otherSession: SessionId.schema.parse("20000000-0000-4000-8000-000000000006"),
   veterinarian: VeterinarianId.schema.parse(
     "20000000-0000-4000-8000-000000000005",
   ),
@@ -385,7 +389,7 @@ describe("DeleteUserUseCase SQLite integration", () => {
     );
     const useCase = DeleteUserUseCase.create({
       userResolver: createUserResolver(db),
-      userDeletedStore: userStore,
+      userDeletedStore: createUserDeletedEventStore(db),
       clock,
       eventIdGenerator: eventIdGenerator(),
     });
@@ -419,5 +423,77 @@ describe("DeleteUserUseCase SQLite integration", () => {
     expect(JSON.stringify(deletion)).not.toContain(
       target.passwordHash.unwrap(),
     );
+  });
+
+  test("authoritatively guards reciprocal stale-read deletes from removing every Admin", async () => {
+    const { actor } = await fixtures();
+    const otherAdmin = {
+      ...actor,
+      userId: ids.target,
+      email: targetEmail,
+      name: targetName,
+    } as const satisfies UserState;
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    await createUserEventStore(db).store(
+      User.create(context(10))(actor),
+      User.create(context(11))(otherAdmin),
+    );
+    const sessions = [
+      {
+        sessionId: ids.session,
+        userId: ids.actor,
+        tokenHash: SessionTokenHash.schema.parse("c".repeat(64)),
+        expiresAt: Timestamp.schema.parse("2026-08-09T10:00:00.000Z"),
+      },
+      {
+        sessionId: ids.otherSession,
+        userId: ids.target,
+        tokenHash: SessionTokenHash.schema.parse("d".repeat(64)),
+        expiresAt: Timestamp.schema.parse("2026-08-09T10:00:00.000Z"),
+      },
+    ] as const;
+    await createSessionEventStore(db).store(
+      ...sessions.map((session, index) =>
+        Session.create(context(12 + index, session.userId))(session),
+      ),
+    );
+    const staleResolver = userResolverFor([actor, otherAdmin]);
+    const deletionStore = createUserDeletedEventStore(db);
+    const deleteOther = DeleteUserUseCase.create({
+      userResolver: staleResolver,
+      userDeletedStore: deletionStore,
+      clock,
+      eventIdGenerator: eventIdGenerator(),
+    });
+    const deleteActor = DeleteUserUseCase.create({
+      userResolver: staleResolver,
+      userDeletedStore: deletionStore,
+      clock,
+      eventIdGenerator: eventIdGenerator(),
+    });
+
+    const results = await Promise.all([
+      deleteOther.run({ actorUserId: ids.actor, targetUserId: ids.target }),
+      deleteActor.run({ actorUserId: ids.target, targetUserId: ids.actor }),
+    ]);
+
+    expect(results.filter((result) => result.isOk())).toHaveLength(1);
+    expect(results.filter((result) => result.isErr())).toHaveLength(1);
+    expect(
+      results.find((result) => result.isErr())?._unsafeUnwrapErr(),
+    ).toEqual({
+      kind: "CannotDeleteLastAdmin",
+    });
+    const remainingUsers = await db.select().from(usersTable);
+    expect(remainingUsers).toHaveLength(1);
+    const remainingSessions = await db.select().from(sessionsTable);
+    expect(remainingSessions).toHaveLength(1);
+    expect(remainingSessions[0]?.userId).toBe(remainingUsers[0]?.userId);
+    const deletionHistory = (await db.select().from(domainEventsTable)).filter(
+      ({ eventName }) => eventName === "user.deleted",
+    );
+    expect(deletionHistory).toHaveLength(1);
+    expect(deletionHistory[0]?.aggregateId).not.toBe(remainingUsers[0]?.userId);
   });
 });

@@ -17,7 +17,10 @@ import {
 } from "../domain/user/user.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserResolver } from "../domain/user/userResolver.js";
-import type { UserDeletedStore } from "../domain/user/userStores.js";
+import type {
+  UserDeletedStore,
+  UserDeletedStoreError,
+} from "../domain/user/userStores.js";
 
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;
@@ -60,6 +63,10 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
   kind: "RepositoryError",
   operation: error.operation,
 });
+const toStoreError = (
+  error: UserDeletedStoreError,
+): CannotDeleteLastAdmin | UseCaseRepositoryError =>
+  error.kind === "CannotDeleteLastAdmin" ? error : toRepositoryError(error);
 const ensureActor =
   (actorUserId: UserId) =>
   (user: UserState | undefined): Result<UserState, Unauthorized> =>
@@ -120,7 +127,7 @@ const run =
       )
       .andThen(createEvent(dependencies, input.actorUserId))
       .andThrough((event) =>
-        dependencies.userDeletedStore.store(event).mapErr(toRepositoryError),
+        dependencies.userDeletedStore.store(event).mapErr(toStoreError),
       )
       .map((event) => ({ userId: event.aggregateId }));
 
