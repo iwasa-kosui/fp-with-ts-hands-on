@@ -71,9 +71,12 @@ export type Canceled = Readonly<{
   canceledAt: Timestamp;
 }>;
 
-export type Appointment = Scheduled | CheckedIn | InExamination | Paid | Canceled;
+export type Appointment =
+  Scheduled | CheckedIn | InExamination | Paid | Canceled;
 export type BookAppointmentInput = Readonly<Omit<Scheduled, "kind">>;
-export type RecordPaymentInput = Readonly<Pick<Paid, "diagnosis" | "treatment" | "amount">>;
+export type RecordPaymentInput = Readonly<
+  Pick<Paid, "diagnosis" | "treatment" | "amount">
+>;
 export type CancelReason = string;
 
 const book =
@@ -115,7 +118,10 @@ const checkIn =
 
 const startExamination =
   (context: EventContext) =>
-  (checkedIn: CheckedIn, veterinarianId: VeterinarianId): ExaminationStarted => {
+  (
+    checkedIn: CheckedIn,
+    veterinarianId: VeterinarianId,
+  ): ExaminationStarted => {
     const aggregateState = {
       ...checkedIn,
       kind: "InExamination",
@@ -155,7 +161,10 @@ const recordPayment =
 
 const cancel =
   (context: EventContext) =>
-  (appointment: Scheduled | CheckedIn, reason: CancelReason): AppointmentCanceled => {
+  (
+    appointment: Scheduled | CheckedIn,
+    reason: CancelReason,
+  ): AppointmentCanceled => {
     const aggregateState = {
       kind: "Canceled",
       appointmentId: appointment.appointmentId,
@@ -182,4 +191,8 @@ export const Appointment = {
   startExamination,
   recordPayment,
   cancel,
+  isActive: (appointment: Appointment) =>
+    appointment.kind === "Scheduled" ||
+    appointment.kind === "CheckedIn" ||
+    appointment.kind === "InExamination",
 } as const;

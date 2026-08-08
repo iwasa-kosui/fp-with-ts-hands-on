@@ -4,9 +4,15 @@ import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
 import type { User } from "../domain/user/user.js";
 import type { UnauthorizedError } from "./errors.js";
 
-export const ensureCanStartExamination = (
-  veterinarianId: VeterinarianId,
-) =>
+export const ensureCanManageClinic = (
+  user: User,
+): Result<User, UnauthorizedError> =>
+  user.kind === "Admin" || user.kind === "Receptionist"
+    ? ok(user)
+    : err({ kind: "Unauthorized", actorUserId: user.userId });
+
+export const ensureCanStartExamination =
+  (veterinarianId: VeterinarianId) =>
   (user: User): Result<User, UnauthorizedError> =>
     user.kind === "Admin" ||
     (user.kind === "Veterinarian" && user.veterinarianId === veterinarianId)

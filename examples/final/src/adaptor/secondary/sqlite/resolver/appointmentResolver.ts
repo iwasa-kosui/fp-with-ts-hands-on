@@ -5,7 +5,10 @@ import { z } from "zod";
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import { Timestamp } from "../../../../domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
-import type { AppointmentResolver } from "../../../../domain/appointment/appointmentResolver.js";
+import type {
+  AppointmentByPetResolver,
+  AppointmentResolver,
+} from "../../../../domain/appointment/appointmentResolver.js";
 import { PaymentAmount } from "../../../../domain/appointment/paymentAmount.js";
 import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js";
 import { OwnerId } from "../../../../domain/owner/ownerId.js";
@@ -22,7 +25,11 @@ const baseShape = {
 };
 const AppointmentSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("Scheduled"), ...baseShape }),
-  z.object({ kind: z.literal("CheckedIn"), ...baseShape, checkedInAt: Timestamp.schema }),
+  z.object({
+    kind: z.literal("CheckedIn"),
+    ...baseShape,
+    checkedInAt: Timestamp.schema,
+  }),
   z.object({
     kind: z.literal("InExamination"),
     ...baseShape,
@@ -62,7 +69,8 @@ const AppointmentRowSchema = z.object({
   state: AppointmentSchema,
 });
 
-export const parseAppointmentState = (state: unknown) => AppointmentSchema.parse(state);
+export const parseAppointmentState = (state: unknown) =>
+  AppointmentSchema.parse(state);
 export const parseAppointmentRow = (raw: unknown) => {
   const row = AppointmentRowSchema.parse(raw);
   if (
@@ -75,21 +83,39 @@ export const parseAppointmentRow = (raw: unknown) => {
   }
   return row.state;
 };
-const repositoryError = (operation: string) => (cause: unknown): RepositoryError => ({
-  kind: "RepositoryError",
-  operation,
-  cause,
-});
+const repositoryError =
+  (operation: string) =>
+  (cause: unknown): RepositoryError => ({
+    kind: "RepositoryError",
+    operation,
+    cause,
+  });
 
-export const createAppointmentResolver = (db: SqliteDatabase): AppointmentResolver => ({
+export const createAppointmentResolver = (
+  db: SqliteDatabase,
+): AppointmentResolver & AppointmentByPetResolver => ({
   resolveById: (appointmentId) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() => {
-        const row = db.select().from(appointmentsTable)
+        const row = db
+          .select()
+          .from(appointmentsTable)
           .where(eq(appointmentsTable.appointmentId, appointmentId))
           .get();
         return row === undefined ? undefined : parseAppointmentRow(row);
       }),
       repositoryError("AppointmentResolver.resolveById"),
+    ),
+  resolveByPetId: (petId) =>
+    ResultAsync.fromPromise(
+      Promise.resolve().then(() =>
+        db
+          .select()
+          .from(appointmentsTable)
+          .where(eq(appointmentsTable.petId, petId))
+          .all()
+          .map(parseAppointmentRow),
+      ),
+      repositoryError("AppointmentResolver.resolveByPetId"),
     ),
 });

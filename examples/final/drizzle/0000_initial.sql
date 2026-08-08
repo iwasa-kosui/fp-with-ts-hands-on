@@ -45,8 +45,7 @@ CREATE TABLE `appointments` (
 CREATE TABLE `exam_results` (
 	`exam_id` text PRIMARY KEY NOT NULL,
 	`pet_id` text NOT NULL,
-	`state` text NOT NULL,
-	FOREIGN KEY (`pet_id`) REFERENCES `pets`(`pet_id`) ON UPDATE no action ON DELETE restrict
+	`state` text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `domain_events` (

@@ -1,10 +1,17 @@
-import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import {
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 
 export const usersTable = sqliteTable(
   "users",
   {
     userId: text("user_id").primaryKey(),
-    role: text("role", { enum: ["Admin", "Receptionist", "Veterinarian"] }).notNull(),
+    role: text("role", {
+      enum: ["Admin", "Receptionist", "Veterinarian"],
+    }).notNull(),
     email: text("email").notNull(),
     name: text("name").notNull(),
     passwordHash: text("password_hash").notNull(),
@@ -54,9 +61,7 @@ export const appointmentsTable = sqliteTable("appointments", {
 
 export const examResultsTable = sqliteTable("exam_results", {
   examId: text("exam_id").primaryKey(),
-  petId: text("pet_id")
-    .notNull()
-    .references(() => petsTable.petId, { onDelete: "restrict" }),
+  petId: text("pet_id").notNull(),
   state: text("state", { mode: "json" }).notNull(),
 });
 
