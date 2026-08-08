@@ -9,17 +9,17 @@ import { Owner } from "../../../../domain/owner/owner.js";
 import { UserId } from "../../../../domain/user/userId.js";
 import type { SqliteDatabase } from "../db.js";
 import { appointmentsTable, domainEventsTable, examResultsTable, ownersTable } from "../schema.js";
-import { parseAppointmentState } from "./appointmentResolver.js";
-import { parseExamResultState } from "./examResultResolver.js";
+import { parseAppointmentRow } from "./appointmentResolver.js";
+import { parseExamResultRow } from "./examResultResolver.js";
 
 export const createFollowUpResolver = (db: SqliteDatabase): FollowUpResolver => ({
   resolveCandidates: () =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() => {
         const rows = db.select({
-          appointmentState: appointmentsTable.state,
+          appointment: appointmentsTable,
           owner: ownersTable,
-          examResultState: examResultsTable.state,
+          examResult: examResultsTable,
           eventId: domainEventsTable.eventId,
           occurredAt: domainEventsTable.occurredAt,
           actorUserId: domainEventsTable.actorUserId,
@@ -38,9 +38,9 @@ export const createFollowUpResolver = (db: SqliteDatabase): FollowUpResolver => 
           .all();
 
         return rows.map((row) => ({
-          appointment: parseAppointmentState(row.appointmentState),
+          appointment: parseAppointmentRow(row.appointment),
           owner: Owner.schema.parse(row.owner),
-          examResult: parseExamResultState(row.examResultState),
+          examResult: parseExamResultRow(row.examResult),
           context: {
             eventId: EventId.schema.parse(row.eventId),
             occurredAt: Timestamp.schema.parse(row.occurredAt),

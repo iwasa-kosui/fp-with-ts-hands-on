@@ -47,8 +47,34 @@ const AppointmentSchema = z.discriminatedUnion("kind", [
     canceledAt: Timestamp.schema,
   }),
 ]);
+const AppointmentStatusSchema = z.enum([
+  "Scheduled",
+  "CheckedIn",
+  "InExamination",
+  "Paid",
+  "Canceled",
+]);
+const AppointmentRowSchema = z.object({
+  appointmentId: AppointmentId.schema,
+  status: AppointmentStatusSchema,
+  ownerId: OwnerId.schema,
+  petId: PetId.schema,
+  state: AppointmentSchema,
+});
 
 export const parseAppointmentState = (state: unknown) => AppointmentSchema.parse(state);
+export const parseAppointmentRow = (raw: unknown) => {
+  const row = AppointmentRowSchema.parse(raw);
+  if (
+    row.appointmentId !== row.state.appointmentId ||
+    row.status !== row.state.kind ||
+    row.ownerId !== row.state.ownerId ||
+    row.petId !== row.state.petId
+  ) {
+    throw new TypeError("Corrupt appointment projection");
+  }
+  return row.state;
+};
 const repositoryError = (operation: string) => (cause: unknown): RepositoryError => ({
   kind: "RepositoryError",
   operation,
@@ -62,7 +88,7 @@ export const createAppointmentResolver = (db: SqliteDatabase): AppointmentResolv
         const row = db.select().from(appointmentsTable)
           .where(eq(appointmentsTable.appointmentId, appointmentId))
           .get();
-        return row === undefined ? undefined : parseAppointmentState(row.state);
+        return row === undefined ? undefined : parseAppointmentRow(row);
       }),
       repositoryError("AppointmentResolver.resolveById"),
     ),

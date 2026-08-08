@@ -19,10 +19,12 @@ const BaseUserRowSchema = z.object({
   name: UserName.schema,
   passwordHash: PasswordHash.schema,
 });
+const UserRoleSchema = z.enum(["Admin", "Receptionist", "Veterinarian"]);
 
 const parseRow = (row: typeof usersTable.$inferSelect): User => {
   const base = BaseUserRowSchema.parse(row);
-  switch (row.role) {
+  const role = UserRoleSchema.parse(row.role);
+  switch (role) {
     case "Admin":
       if (row.veterinarianId !== null) {
         throw new TypeError("Admin must not have a veterinarian id");
@@ -40,7 +42,7 @@ const parseRow = (row: typeof usersTable.$inferSelect): User => {
         veterinarianId: VeterinarianId.schema.parse(row.veterinarianId),
       };
     default:
-      return row.role satisfies never;
+      return role satisfies never;
   }
 };
 

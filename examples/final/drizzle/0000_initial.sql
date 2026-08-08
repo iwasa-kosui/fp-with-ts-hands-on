@@ -37,8 +37,8 @@ CREATE TABLE `pets` (
 CREATE TABLE `appointments` (
 	`appointment_id` text PRIMARY KEY NOT NULL,
 	`status` text NOT NULL,
-	`owner_id` text,
-	`pet_id` text,
+	`owner_id` text NOT NULL,
+	`pet_id` text NOT NULL,
 	`state` text NOT NULL
 );
 --> statement-breakpoint

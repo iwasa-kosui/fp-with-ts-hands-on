@@ -47,8 +47,8 @@ export const appointmentsTable = sqliteTable("appointments", {
   status: text("status", {
     enum: ["Scheduled", "CheckedIn", "InExamination", "Paid", "Canceled"],
   }).notNull(),
-  ownerId: text("owner_id"),
-  petId: text("pet_id"),
+  ownerId: text("owner_id").notNull(),
+  petId: text("pet_id").notNull(),
   state: text("state", { mode: "json" }).notNull(),
 });
 
