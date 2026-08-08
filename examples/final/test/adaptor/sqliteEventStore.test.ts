@@ -1,9 +1,5 @@
 import { describe, expect, test } from "vitest";
 import { Sensitive } from "../../src/domain/shared/sensitive.js";
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { sql } from "drizzle-orm";
 
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
@@ -55,6 +51,8 @@ const ids = {
   appointment: AppointmentId.schema.parse("00000000-0000-4000-8000-000000000006"),
   exam: ExamId.schema.parse("00000000-0000-4000-8000-000000000007"),
   veterinarian: VeterinarianId.schema.parse("00000000-0000-4000-8000-000000000008"),
+  otherAppointment: AppointmentId.schema.parse("00000000-0000-4000-8000-000000000009"),
+  otherPet: PetId.schema.parse("00000000-0000-4000-8000-000000000010"),
 } as const;
 
 const eventContext = (sequence: number): EventContext => ({
@@ -80,6 +78,7 @@ describe("SQLite event stores", () => {
   test("fresh migrations install an empty follow-up request claim projection", () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
+    migrateDatabase(db);
 
     expect(
       db.all(sql.raw(
@@ -89,54 +88,103 @@ describe("SQLite event stores", () => {
     expect(db.all(sql.raw("SELECT appointment_id FROM follow_up_request_claims"))).toEqual([]);
   });
 
-  test("the claim migration backfills legacy duplicates without rewriting audit history", () => {
+  test("0003 upgrades the actually recorded old 0002 schema and resumes follow-up writes", async () => {
     const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    db.run(sql.raw("DELETE FROM __drizzle_migrations WHERE created_at > 1786374000000"));
+    db.run(sql.raw("DROP TABLE follow_up_request_claims"));
     db.run(sql.raw(
-      "CREATE TABLE domain_events (event_id text PRIMARY KEY NOT NULL, aggregate_id text NOT NULL, event_name text NOT NULL)",
+      "CREATE UNIQUE INDEX follow_up_requested_appointment_unique " +
+      "ON domain_events (aggregate_id) WHERE event_name = 'follow-up.requested'",
     ));
-    db.run(sql`INSERT INTO domain_events (event_id, aggregate_id, event_name)
-      VALUES (${"first"}, ${ids.appointment}, ${"follow-up.requested"})`);
-    db.run(sql`INSERT INTO domain_events (event_id, aggregate_id, event_name)
-      VALUES (${"duplicate"}, ${ids.appointment}, ${"follow-up.requested"})`);
-    const migrationFolder = mkdtempSync(join(tmpdir(), "clinic-follow-up-migration-"));
-    mkdirSync(join(migrationFolder, "meta"));
-    writeFileSync(
-      join(migrationFolder, "meta", "_journal.json"),
-      JSON.stringify({
-        version: "7",
-        dialect: "sqlite",
-        entries: [{
-          idx: 0,
-          version: "6",
-          when: 1786374000000,
-          tag: "0002_follow_up_request_unique",
-          breakpoints: true,
-        }],
-      }),
-    );
-    copyFileSync(
-      fileURLToPath(new URL("../../drizzle/0002_follow_up_request_unique.sql", import.meta.url)),
-      join(migrationFolder, "0002_follow_up_request_unique.sql"),
-    );
+    db.insert(domainEventsTable).values({
+      eventId: "11000000-0000-4000-8000-000000000001",
+      aggregateId: ids.appointment,
+      aggregateName: "FollowUp",
+      aggregateState: null,
+      eventName: "follow-up.requested",
+      eventPayload: { appointmentId: ids.appointment, petId: ids.pet },
+      occurredAt: "2026-08-08T00:01:00.000Z",
+      actorUserId: ids.actor,
+    }).run();
 
-    try {
-      migrateDatabase(db, migrationFolder);
-      expect(
-        db.all(sql.raw(
-          "SELECT event_id FROM domain_events WHERE event_name = 'follow-up.requested'",
-        )),
-      ).toEqual([{ event_id: "first" }, { event_id: "duplicate" }]);
-      expect(
-        db.all(sql.raw("SELECT appointment_id FROM follow_up_request_claims")),
-      ).toEqual([{ appointment_id: ids.appointment }]);
-      expect(() =>
-        db.run(sql`INSERT INTO domain_events (event_id, aggregate_id, event_name)
-          VALUES (${"new-duplicate"}, ${ids.appointment}, ${"follow-up.requested"})`),
-      ).not.toThrow();
-      expect(db.all(sql.raw("SELECT event_id FROM domain_events"))).toHaveLength(3);
-    } finally {
-      rmSync(migrationFolder, { recursive: true, force: true });
+    expect(
+      db.all(sql.raw(
+        "SELECT created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 1",
+      )),
+    ).toEqual([{ created_at: 1786374000000 }]);
+    expect(
+      db.all(sql.raw(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'follow_up_request_claims'",
+      )),
+    ).toEqual([]);
+    expect(
+      db.all(sql.raw(
+        "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'follow_up_requested_appointment_unique'",
+      )),
+    ).toEqual([{ name: "follow_up_requested_appointment_unique" }]);
+
+    migrateDatabase(db);
+
+    expect(
+      db.all(sql.raw(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'follow_up_request_claims'",
+      )),
+    ).toEqual([{ name: "follow_up_request_claims" }]);
+    expect(
+      db.all(sql.raw(
+        "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'follow_up_requested_appointment_unique'",
+      )),
+    ).toEqual([]);
+    expect(db.all(sql.raw("SELECT appointment_id FROM follow_up_request_claims"))).toEqual([
+      { appointment_id: ids.appointment },
+    ]);
+
+    const result = await createFollowUpEventStore(db).store(
+      FollowUpRequested.create(eventContext(32), ids.otherAppointment, ids.otherPet),
+    );
+    expect(result.isOk()).toBe(true);
+    expect(await db.select().from(domainEventsTable)).toHaveLength(2);
+  });
+
+  test("migrating a 0001 database keeps duplicate audit ids exactly and claims once", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    db.run(sql.raw("DELETE FROM __drizzle_migrations WHERE created_at >= 1786374000000"));
+    db.run(sql.raw("DROP TABLE follow_up_request_claims"));
+    const legacyRows = [
+      "12000000-0000-4000-8000-000000000001",
+      "12000000-0000-4000-8000-000000000002",
+    ] as const;
+    for (const eventId of legacyRows) {
+      db.insert(domainEventsTable).values({
+        eventId,
+        aggregateId: ids.appointment,
+        aggregateName: "FollowUp",
+        aggregateState: null,
+        eventName: "follow-up.requested",
+        eventPayload: { appointmentId: ids.appointment, petId: ids.pet },
+        occurredAt: "2026-08-08T00:01:00.000Z",
+        actorUserId: ids.actor,
+      }).run();
     }
+
+    migrateDatabase(db);
+
+    expect(
+      db.all(sql.raw(
+        "SELECT event_id FROM domain_events WHERE event_name = 'follow-up.requested' ORDER BY event_id",
+      )),
+    ).toEqual(legacyRows.map((eventId) => ({ event_id: eventId })));
+    expect(db.all(sql.raw("SELECT appointment_id FROM follow_up_request_claims"))).toEqual([
+      { appointment_id: ids.appointment },
+    ]);
+
+    const result = await createFollowUpEventStore(db).store(
+      FollowUpRequested.create(eventContext(33), ids.appointment, ids.pet),
+    );
+    expect(result.isErr() && result.error.kind).toBe("FollowUpRequestConflict");
+    expect(await db.select().from(domainEventsTable)).toHaveLength(2);
   });
 
   test("typed events update every projection and append sanitized history", async () => {

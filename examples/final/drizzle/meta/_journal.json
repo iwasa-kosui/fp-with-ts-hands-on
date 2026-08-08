@@ -22,6 +22,13 @@
       "when": 1786374000000,
       "tag": "0002_follow_up_request_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1786460400000,
+      "tag": "0003_follow_up_request_claim_compatibility",
+      "breakpoints": true
     }
   ]
 }
