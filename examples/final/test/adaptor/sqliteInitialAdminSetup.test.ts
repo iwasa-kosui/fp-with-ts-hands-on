@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+
+import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
 import { describe, expect, test } from "vitest";
 
 import {
@@ -8,9 +12,11 @@ import {
   domainEventsTable,
   installationTable,
   sessionsTable,
+  sqliteSchema,
   usersTable,
 } from "../../src/adaptor/secondary/sqlite/schema.js";
 import { createInitialAdminSetupStore } from "../../src/adaptor/secondary/sqlite/store/initialAdminSetupStore.js";
+import { createInstallationStatusQuery } from "../../src/adaptor/secondary/sqlite/query/installationStatusQuery.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { Session } from "../../src/domain/session/session.js";
@@ -24,6 +30,21 @@ import { UserName } from "../../src/domain/user/userName.js";
 
 const now = Timestamp.schema.parse("2026-08-09T01:30:00.000Z");
 const expiresAt = Timestamp.schema.parse("2026-08-09T09:30:00.000Z");
+
+const createMigrationHarness = () => {
+  const client = new Database(":memory:");
+  client.pragma("foreign_keys = ON");
+  return { client, db: drizzle(client, { schema: sqliteSchema }) } as const;
+};
+
+const applyMigration = (
+  client: ReturnType<typeof createMigrationHarness>["client"],
+  name: "0000_initial.sql" | "0001_installation.sql",
+) => {
+  client.exec(
+    readFileSync(new URL(`../../drizzle/${name}`, import.meta.url), "utf8"),
+  );
+};
 
 const setupEvents = (
   suffix: "1" | "2",
@@ -66,6 +87,54 @@ const setupEvents = (
 };
 
 describe("SQLite initial Admin setup store", () => {
+  test("backfills the installation claim when upgrading a database with an existing user", async () => {
+    const { client, db } = createMigrationHarness();
+    applyMigration(client, "0000_initial.sql");
+    db.insert(usersTable)
+      .values({
+        userId: "70000000-0000-4000-8000-000000000001",
+        role: "Admin",
+        email: "existing@example.test",
+        name: "Existing Admin",
+        passwordHash: `scrypt$${"A".repeat(22)}==$${"B".repeat(86)}==`,
+        veterinarianId: null,
+      })
+      .run();
+
+    applyMigration(client, "0001_installation.sql");
+    applyMigration(client, "0001_installation.sql");
+
+    const status = await createInstallationStatusQuery(db).get();
+    const candidate = setupEvents("1", "new@example.test");
+    const setup = await createInitialAdminSetupStore(db).store(
+      candidate.userEvent,
+      candidate.sessionEvent,
+    );
+
+    expect(status._unsafeUnwrap()).toEqual({ kind: "Installed" });
+    expect(setup.isErr() && setup.error).toEqual({
+      kind: "InitialAdminAlreadyExists",
+    });
+    expect(db.select().from(installationTable).all()).toHaveLength(1);
+    expect(db.select().from(usersTable).all()).toHaveLength(1);
+    expect(db.select().from(sessionsTable).all()).toEqual([]);
+    expect(db.select().from(domainEventsTable).all()).toEqual([]);
+  });
+
+  test("leaves a genuinely empty upgraded database available for setup", async () => {
+    const { client, db } = createMigrationHarness();
+    applyMigration(client, "0000_initial.sql");
+
+    applyMigration(client, "0001_installation.sql");
+
+    const status = await createInstallationStatusQuery(db).get();
+
+    expect(status._unsafeUnwrap()).toEqual({
+      kind: "InitialSetupAvailable",
+    });
+    expect(db.select().from(installationTable).all()).toEqual([]);
+  });
+
   test("atomically lets exactly one concurrent setup claim the installation", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
