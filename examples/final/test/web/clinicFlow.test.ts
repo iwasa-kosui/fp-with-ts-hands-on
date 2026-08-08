@@ -383,7 +383,12 @@ describe("clinic workflow routes", () => {
     const invalid = await post(
       harness,
       "/appointments",
-      { ownerId: "bad", petId: "bad", scheduledAt: "bad", reason: "" },
+      {
+        ownerId: "ATTACKER_RAW_INVALID_OWNER_ID",
+        petId: "ATTACKER_RAW_INVALID_PET_ID",
+        scheduledAt: "ATTACKER_RAW_INVALID_TIMESTAMP",
+        reason: "",
+      },
       adminCookie,
     );
     const invalidPage = await invalid.json();
@@ -392,7 +397,10 @@ describe("clinic workflow routes", () => {
       component: "Appointments/New",
       props: { errors: { ownerId: expect.any(String), petId: expect.any(String), scheduledAt: expect.any(String), reason: expect.any(String) } },
     });
-    expect(JSON.stringify(invalidPage)).not.toContain("bad");
+    const invalidBody = JSON.stringify(invalidPage);
+    expect(invalidBody).not.toContain("ATTACKER_RAW_INVALID_OWNER_ID");
+    expect(invalidBody).not.toContain("ATTACKER_RAW_INVALID_PET_ID");
+    expect(invalidBody).not.toContain("ATTACKER_RAW_INVALID_TIMESTAMP");
 
     const { owner, pet } = await createOwnerAndPet(harness, adminCookie);
     await post(
