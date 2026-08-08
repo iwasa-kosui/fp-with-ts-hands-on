@@ -4,12 +4,14 @@ import { sql } from "drizzle-orm";
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
 import { createAppointmentByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/appointmentResolver.js";
 import { createEventHistoryReader } from "../../src/adaptor/secondary/sqlite/query/eventHistoryReader.js";
+import { createFollowUpRequestReader } from "../../src/adaptor/secondary/sqlite/query/followUpRequestReader.js";
 import { createExamResultByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/examResultResolver.js";
 import {
   createUserByIdResolver,
   createUserListResolver,
 } from "../../src/adaptor/secondary/sqlite/resolver/userResolver.js";
 import { createUserEventStore } from "../../src/adaptor/secondary/sqlite/store/userEventStore.js";
+import { domainEventsTable } from "../../src/adaptor/secondary/sqlite/schema.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
@@ -77,6 +79,25 @@ const insertDomainEvent = (
     `'${aggregateState}', 'user.created', '${eventPayload}', ` +
     "'2026-08-08T04:00:00.000Z', '40000000-0000-4000-8000-000000000003')",
   ));
+};
+
+const insertFollowUpEvent = (
+  db: ReturnType<typeof createSqliteDatabase>,
+  overrides: Readonly<Record<string, unknown>>,
+) => {
+  db.insert(domainEventsTable)
+    .values({
+      eventId: "41000000-0000-4000-8000-000000000001",
+      aggregateId: appointmentId,
+      aggregateName: "FollowUp",
+      aggregateState: null,
+      eventName: "follow-up.requested",
+      eventPayload: { appointmentId, petId },
+      occurredAt: "2026-08-08T04:00:00.000Z",
+      actorUserId: "41000000-0000-4000-8000-000000000002",
+      ...overrides,
+    })
+    .run();
 };
 
 describe("SQLite resolvers", () => {
@@ -222,6 +243,39 @@ describe("SQLite resolvers", () => {
     expect(result.isErr()).toBe(true);
     expect(result.isErr() && result.error.operation).toBe(
       "EventHistoryReader.list",
+    );
+  });
+
+  test.each([
+    [{ eventId: "not-an-event-id" }, "event identity"],
+    [{ occurredAt: "not-a-timestamp" }, "timestamp"],
+    [{ actorUserId: "not-an-actor-id" }, "actor"],
+    [{ aggregateName: "Appointment" }, "aggregate name"],
+    [{ aggregateState: { appointmentId } }, "null aggregate state"],
+    [
+      {
+        eventPayload: {
+          appointmentId: "30000000-0000-4000-8000-000000000099",
+          petId,
+        },
+      },
+      "aggregate and payload consistency",
+    ],
+    [
+      { eventPayload: { appointmentId, petId, privateNote: "must reject" } },
+      "exact payload",
+    ],
+  ])("rejects a malformed follow-up history row with invalid %s", async (overrides, _label) => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    insertFollowUpEvent(db, overrides);
+
+    const result =
+      await createFollowUpRequestReader(db).listRequestedAppointmentIds();
+
+    expect(result.isErr()).toBe(true);
+    expect(result.isErr() && result.error.operation).toBe(
+      "FollowUpRequestReader.listRequestedAppointmentIds",
     );
   });
 });

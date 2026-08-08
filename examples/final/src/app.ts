@@ -17,6 +17,7 @@ import {
 import { createAppointmentListResolver } from "./adaptor/secondary/sqlite/resolver/appointmentResolver.js";
 import { createOwnerListResolver } from "./adaptor/secondary/sqlite/resolver/ownerResolver.js";
 import { createPetListResolver } from "./adaptor/secondary/sqlite/resolver/petResolver.js";
+import { createInstallationStatusQuery } from "./adaptor/secondary/sqlite/query/installationStatusQuery.js";
 import {
   createSessionByIdResolver,
   createSessionByTokenHashResolver,
@@ -27,7 +28,7 @@ import {
   createUserListResolver,
 } from "./adaptor/secondary/sqlite/resolver/userResolver.js";
 import { createSessionEventStore } from "./adaptor/secondary/sqlite/store/sessionEventStore.js";
-import { createUserEventStore } from "./adaptor/secondary/sqlite/store/userEventStore.js";
+import { createInitialAdminSetupStore } from "./adaptor/secondary/sqlite/store/initialAdminSetupStore.js";
 import { createAuthenticationMiddleware } from "./adaptor/primary/web/middleware/authentication.js";
 import { createSharedPropsMiddleware } from "./adaptor/primary/web/middleware/sharedProps.js";
 import type { WebEnvironment } from "./adaptor/primary/web/pageProps.js";
@@ -41,8 +42,9 @@ import { Timestamp } from "./domain/aggregate/timestamp.js";
 import type { SessionByTokenHashResolver } from "./domain/session/sessionResolver.js";
 import { SessionId } from "./domain/session/sessionId.js";
 import { PasswordHash } from "./domain/user/passwordHash.js";
-import type { UserByIdResolver, UserListResolver } from "./domain/user/userResolver.js";
+import type { UserByIdResolver } from "./domain/user/userResolver.js";
 import { UserId } from "./domain/user/userId.js";
+import type { InstallationStatusQuery } from "./useCase/query/installationStatusQuery.js";
 import { GetDashboardUseCase, type GetDashboardUseCase as GetDashboard } from "./useCase/getDashboardUseCase.js";
 import { LogInUseCase, type LogInUseCase as LogIn } from "./useCase/logInUseCase.js";
 import { LogOutUseCase, type LogOutUseCase as LogOut } from "./useCase/logOutUseCase.js";
@@ -54,7 +56,7 @@ import {
 export type ApplicationDependencies = Readonly<{
   sessionByTokenHashResolver: SessionByTokenHashResolver;
   authenticatedUserByIdResolver: UserByIdResolver;
-  userListResolver: UserListResolver;
+  installationStatusQuery: InstallationStatusQuery;
   setUpInitialAdmin: SetUpInitialAdmin;
   logIn: LogIn;
   logOut: LogOut;
@@ -94,24 +96,22 @@ export const createApplicationDependencies = (
     createSessionByTokenHashResolver(database);
   const sessionByIdResolver = createSessionByIdResolver(database);
   const authenticatedUserByIdResolver = createUserByIdResolver(database);
-  const setupUserListResolver = createUserListResolver(database);
+  const installationStatusQuery = createInstallationStatusQuery(database);
   const loginUserByEmailResolver = createUserByEmailResolver(database);
   const dashboardUserByIdResolver = createUserByIdResolver(database);
   const dashboardUserListResolver = createUserListResolver(database);
   const appointmentListResolver = createAppointmentListResolver(database);
   const ownerListResolver = createOwnerListResolver(database);
   const petListResolver = createPetListResolver(database);
-  const userEventStore = createUserEventStore(database);
   const sessionEventStore = createSessionEventStore(database);
+  const initialAdminSetupStore = createInitialAdminSetupStore(database);
 
   return {
     sessionByTokenHashResolver,
     authenticatedUserByIdResolver,
-    userListResolver: setupUserListResolver,
+    installationStatusQuery,
     setUpInitialAdmin: SetUpInitialAdminUseCase.create({
-      userResolver: setupUserListResolver,
-      userCreatedStore: userEventStore,
-      sessionCreatedStore: sessionEventStore,
+      initialAdminSetupStore,
       passwordHasher: scryptPasswordHasher,
       sessionTokenGenerator,
       clock,
@@ -166,7 +166,7 @@ export const createApp = (dependencies: ApplicationDependencies) => {
   app.use("*", createSharedPropsMiddleware());
 
   registerAuthRoutes(app, {
-    userResolver: dependencies.userListResolver,
+    installationStatusQuery: dependencies.installationStatusQuery,
     setUpInitialAdmin: dependencies.setUpInitialAdmin,
     logIn: dependencies.logIn,
     logOut: dependencies.logOut,
@@ -174,7 +174,7 @@ export const createApp = (dependencies: ApplicationDependencies) => {
     isProduction: dependencies.isProduction,
   });
   registerDashboardRoutes(app, {
-    userResolver: dependencies.userListResolver,
+    installationStatusQuery: dependencies.installationStatusQuery,
     getDashboard: dependencies.getDashboard,
   });
 

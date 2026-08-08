@@ -1,6 +1,4 @@
 import {
-  err,
-  ok,
   ResultAsync,
   type Result,
   type ResultAsync as UseResultAsync,
@@ -15,7 +13,6 @@ import {
 } from "../domain/aggregate/timestamp.js";
 import { Session } from "../domain/session/session.js";
 import type { SessionId } from "../domain/session/sessionId.js";
-import type { SessionCreatedStore } from "../domain/session/sessionStores.js";
 import type { SessionTokenGenerator } from "../domain/session/sessionTokenGenerator.js";
 import type { Sensitive } from "../domain/shared/sensitive.js";
 import { User } from "../domain/user/user.js";
@@ -26,8 +23,10 @@ import type {
   PasswordHasher,
   PlaintextPassword,
 } from "../domain/user/passwordHasher.js";
-import type { UserListResolver } from "../domain/user/userResolver.js";
-import type { UserCreatedStore } from "../domain/user/userStores.js";
+import type {
+  InitialAdminAlreadyExists,
+  InitialAdminSetupStore,
+} from "./persistence/initialAdminSetupStore.js";
 
 const sessionDurationMs = 8 * 60 * 60 * 1_000;
 
@@ -44,9 +43,7 @@ export type UseCaseOk = Readonly<{
   sessionToken: Sensitive<string>;
 }>;
 
-export type InitialAdminAlreadyExists = Readonly<{
-  kind: "InitialAdminAlreadyExists";
-}>;
+export type { InitialAdminAlreadyExists } from "./persistence/initialAdminSetupStore.js";
 export type PasswordHashingFailed = Readonly<{ kind: "PasswordHashingFailed" }>;
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
@@ -69,9 +66,7 @@ export type UserIdGenerator = Readonly<{ generate: () => UserId }>;
 export type SessionIdGenerator = Readonly<{ generate: () => SessionId }>;
 
 export type Dependencies = Readonly<{
-  userResolver: UserListResolver;
-  userCreatedStore: UserCreatedStore;
-  sessionCreatedStore: SessionCreatedStore;
+  initialAdminSetupStore: InitialAdminSetupStore;
   passwordHasher: PasswordHasher;
   sessionTokenGenerator: SessionTokenGenerator;
   clock: Clock;
@@ -88,13 +83,6 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
   kind: "RepositoryError",
   operation: error.operation,
 });
-
-const ensureNoUsers = (
-  users: readonly unknown[],
-): Result<void, InitialAdminAlreadyExists> =>
-  users.length === 0
-    ? ok(undefined)
-    : err({ kind: "InitialAdminAlreadyExists" });
 
 const hashPassword = (
   passwordHasher: PasswordHasher,
@@ -169,11 +157,7 @@ const generateSession = (dependencies: Dependencies, userId: UserId) =>
 const run =
   (dependencies: Dependencies) =>
   (input: UseCaseInput): UseCaseOutput =>
-    dependencies.userResolver
-      .resolveAll()
-      .mapErr(toRepositoryError)
-      .andThen(ensureNoUsers)
-      .andThen(() => hashPassword(dependencies.passwordHasher, input.password))
+    hashPassword(dependencies.passwordHasher, input.password)
       .andThen((passwordHash) =>
         generateInitialAdmin(dependencies, input, passwordHash),
       )
@@ -182,15 +166,14 @@ const run =
           (sessionResult) => ({ userEvent, sessionResult }),
         ),
       )
-      .andThrough(({ userEvent }) =>
-        dependencies.userCreatedStore
-          .store(userEvent)
-          .mapErr(toRepositoryError),
-      )
-      .andThrough(({ sessionResult }) =>
-        dependencies.sessionCreatedStore
-          .store(sessionResult.event)
-          .mapErr(toRepositoryError),
+      .andThrough(({ userEvent, sessionResult }) =>
+        dependencies.initialAdminSetupStore
+          .store(userEvent, sessionResult.event)
+          .mapErr((error) =>
+            error.kind === "RepositoryError"
+              ? toRepositoryError(error)
+              : error,
+          ),
       )
       .map(({ sessionResult }) => ({
         userId: sessionResult.event.aggregateState.userId,

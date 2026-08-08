@@ -579,7 +579,7 @@ git commit -m "feat(final): イベントからSQLite projectionを原子的に�
 
 - [ ] **Step 1: Write failing use case tests**
 
-Cover setup only at zero users, login success/failure, 8-hour expiration, logout event, Admin-only management, veterinarian ID creation, profile/role update, password reset, self-delete rejection, last-admin rejection, session revocation on delete, and list output without password hashes.
+Cover setup only while the singleton installation marker is unclaimed, login success/failure, 8-hour expiration, logout event, Admin-only management, veterinarian ID creation, profile/role update, password reset, self-delete rejection, last-admin rejection, session revocation on delete, and list output without password hashes.
 
 - [ ] **Step 2: Run focused tests and confirm failure**
 
@@ -728,7 +728,7 @@ git commit -m "feat(final): 予約ライフサイクルと電話フォローを�
 
 - [ ] **Step 1: Write failing Hono/Inertia auth tests**
 
-Use `app.request`. Verify `/setup` is available only with zero users, successful setup/login sets an HttpOnly SameSite cookie, invalid login returns Inertia form errors, protected `/` redirects without a session, expired sessions redirect, logout clears the cookie, CSRF rejects a cross-origin form request, and response props omit hashes.
+Use `app.request`. Verify `/setup` is available only while the singleton installation marker is unclaimed, successful setup/login sets an HttpOnly SameSite cookie, invalid login returns Inertia form errors, protected `/` redirects without a session, expired sessions redirect, logout clears the cookie, CSRF rejects a cross-origin form request, and response props omit hashes.
 
 - [ ] **Step 2: Run web tests and confirm failure**
 

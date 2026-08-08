@@ -1,7 +1,7 @@
 import type { Hono } from "hono";
 
-import type { UserListResolver } from "../../../../domain/user/userResolver.js";
 import type { GetDashboardUseCase } from "../../../../useCase/getDashboardUseCase.js";
+import type { InstallationStatusQuery } from "../../../../useCase/query/installationStatusQuery.js";
 import type { WebEnvironment } from "../pageProps.js";
 import { withSharedProps } from "../middleware/sharedProps.js";
 import {
@@ -10,7 +10,7 @@ import {
 } from "../middleware/useCaseResponse.js";
 
 type DashboardRouteDependencies = Readonly<{
-  userResolver: UserListResolver;
+  installationStatusQuery: InstallationStatusQuery;
   getDashboard: GetDashboardUseCase;
 }>;
 
@@ -21,11 +21,15 @@ export const registerDashboardRoutes = (
   app.get("/", async (context) => {
     const actor = context.get("actor");
     if (actor === undefined) {
-      const users = await dependencies.userResolver.resolveAll();
-      if (users.isErr()) {
+      const installation = await dependencies.installationStatusQuery.get();
+      if (installation.isErr()) {
         return respondToUseCaseError(context, { kind: "RepositoryError" });
       }
-      return context.redirect(users.value.length === 0 ? "/setup" : "/login");
+      return context.redirect(
+        installation.value.kind === "InitialSetupAvailable"
+          ? "/setup"
+          : "/login",
+      );
     }
 
     return dependencies.getDashboard

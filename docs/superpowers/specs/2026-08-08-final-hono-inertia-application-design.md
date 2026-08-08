@@ -18,9 +18,9 @@
 - 電話フォロー対象の抽出と `FollowUpRequested` の記録
 - 管理者向けイベント履歴
 
-外部メール送信、外部認証、イベント再生による projection の再構築、デプロイ構成は対象外です。物理削除後も過去イベントを保持するため、削除を個人情報の完全消去としては扱いません。
+外部メール送信、外部認証、デプロイ構成は対象外です。物理削除後も過去イベントを保持するため、削除を個人情報の完全消去としては扱いません。
 
-各 event store は最新の projection とイベント履歴を同じ transaction で永続化します。イベント履歴は監査用の read port から直接参照するだけで、aggregate の replay・rehydration やイベントの compaction には使用しません。
+各 event store は最新の projection と監査イベントを同じ transaction で永続化します。`EventHistoryReader` は検証・サニタイズ済みの監査行を直接一覧します。
 
 ## 実行環境と採用ライブラリ
 
@@ -244,7 +244,7 @@ companion object の `create(dependencies)` が `{ run: run(dependencies) }` を
 
 ## 認証と認可
 
-最初の管理者は、ユーザーが0件の場合だけ `/setup` から登録できます。パスワードは Node.js の `scrypt` でハッシュ化します。ログイン成功時にセッションを発行し、8時間後に失効させます。
+最初の管理者は、singleton installation marker が未取得の場合だけ `/setup` から登録できます。marker、管理者 projection、セッション projection、2件の監査イベントは同じ transaction で確定します。パスワードは Node.js の `scrypt` でハッシュ化します。ログイン成功時にセッションを発行し、8時間後に失効させます。
 
 cookie には `HttpOnly` と `SameSite=Lax` を設定します。本番相当の起動では `Secure` も設定します。Hono の CSRF middleware と secure headers middleware を適用します。
 
@@ -308,7 +308,7 @@ cookie には `HttpOnly` と `SameSite=Lax` を設定します。本番相当の
 
 ### Hono と Inertia のテスト
 
-- 初期管理者登録がユーザー0件の場合だけ使えること
+- 初期管理者登録が installation marker の未取得時だけ使え、同時実行でも一方だけが成功すること
 - ログイン、ログアウト、セッション失効が動くこと
 - 各ロールの許可と拒否が route と use case の両方で機能すること
 - フォーム入力エラーが Inertia response に変換されること

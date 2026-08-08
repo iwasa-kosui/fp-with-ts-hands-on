@@ -5,11 +5,11 @@ import { z } from "zod";
 import { Sensitive } from "../../../../domain/shared/sensitive.js";
 import { UserEmail } from "../../../../domain/user/userEmail.js";
 import { UserName } from "../../../../domain/user/userName.js";
-import type { UserListResolver } from "../../../../domain/user/userResolver.js";
 import type { Clock } from "../../../../domain/aggregate/clock.js";
 import type { LogInUseCase } from "../../../../useCase/logInUseCase.js";
 import type { LogOutUseCase } from "../../../../useCase/logOutUseCase.js";
 import type { SetUpInitialAdminUseCase } from "../../../../useCase/setUpInitialAdminUseCase.js";
+import type { InstallationStatusQuery } from "../../../../useCase/query/installationStatusQuery.js";
 import type { WebEnvironment } from "../pageProps.js";
 import {
   clearSessionCookie,
@@ -39,7 +39,7 @@ const LoginFormSchema = z.object({
 });
 
 type AuthRouteDependencies = Readonly<{
-  userResolver: UserListResolver;
+  installationStatusQuery: InstallationStatusQuery;
   setUpInitialAdmin: SetUpInitialAdminUseCase;
   logIn: LogInUseCase;
   logOut: LogOutUseCase;
@@ -67,21 +67,19 @@ const parseForm = <TOutput, TInput>(
         } as const satisfies ValidationError);
   });
 
-const installationIsEmpty = async (dependencies: AuthRouteDependencies) => {
-  const users = await dependencies.userResolver.resolveAll();
-  return users.map((resolvedUsers) => resolvedUsers.length === 0);
-};
+const getInstallationStatus = (dependencies: AuthRouteDependencies) =>
+  dependencies.installationStatusQuery.get();
 
 export const registerAuthRoutes = (
   app: Hono<WebEnvironment>,
   dependencies: AuthRouteDependencies,
 ): void => {
   app.get("/setup", async (context) => {
-    const empty = await installationIsEmpty(dependencies);
-    if (empty.isErr()) {
+    const installation = await getInstallationStatus(dependencies);
+    if (installation.isErr()) {
       return respondToUseCaseError(context, { kind: "RepositoryError" });
     }
-    if (!empty.value) {
+    if (installation.value.kind === "Installed") {
       return context.redirect(
         context.get("actor") === undefined ? "/login" : "/",
       );
@@ -90,6 +88,14 @@ export const registerAuthRoutes = (
   });
 
   app.post("/setup", async (context) => {
+    const installation = await getInstallationStatus(dependencies);
+    if (installation.isErr()) {
+      return respondToUseCaseError(context, { kind: "RepositoryError" });
+    }
+    if (installation.value.kind === "Installed") {
+      return context.redirect("/login");
+    }
+
     const parsed = await parseForm(context, SetupFormSchema);
     if (parsed.isErr()) {
       return respondToUseCaseError(context, parsed.error, {
@@ -131,11 +137,11 @@ export const registerAuthRoutes = (
   });
 
   app.get("/login", async (context) => {
-    const empty = await installationIsEmpty(dependencies);
-    if (empty.isErr()) {
+    const installation = await getInstallationStatus(dependencies);
+    if (installation.isErr()) {
       return respondToUseCaseError(context, { kind: "RepositoryError" });
     }
-    if (empty.value) {
+    if (installation.value.kind === "InitialSetupAvailable") {
       return context.redirect("/setup");
     }
     if (context.get("actor") !== undefined) {
@@ -145,11 +151,11 @@ export const registerAuthRoutes = (
   });
 
   app.post("/login", async (context) => {
-    const empty = await installationIsEmpty(dependencies);
-    if (empty.isErr()) {
+    const installation = await getInstallationStatus(dependencies);
+    if (installation.isErr()) {
       return respondToUseCaseError(context, { kind: "RepositoryError" });
     }
-    if (empty.value) {
+    if (installation.value.kind === "InitialSetupAvailable") {
       return context.redirect("/setup");
     }
 
@@ -204,11 +210,15 @@ export const registerAuthRoutes = (
   app.post("/logout", async (context) => {
     const actor = context.get("actor");
     if (actor === undefined) {
-      const empty = await installationIsEmpty(dependencies);
-      if (empty.isErr()) {
+      const installation = await getInstallationStatus(dependencies);
+      if (installation.isErr()) {
         return respondToUseCaseError(context, { kind: "RepositoryError" });
       }
-      return context.redirect(empty.value ? "/setup" : "/login");
+      return context.redirect(
+        installation.value.kind === "InitialSetupAvailable"
+          ? "/setup"
+          : "/login",
+      );
     }
 
     return dependencies.logOut

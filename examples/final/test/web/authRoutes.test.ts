@@ -1,8 +1,13 @@
 import { eq } from "drizzle-orm";
+import { errAsync } from "neverthrow";
 import { describe, expect, test } from "vitest";
 
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
-import { sessionsTable } from "../../src/adaptor/secondary/sqlite/schema.js";
+import {
+  installationTable,
+  sessionsTable,
+  usersTable,
+} from "../../src/adaptor/secondary/sqlite/schema.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import {
   createApp,
@@ -68,6 +73,69 @@ const setUp = async (harness: ReturnType<typeof createHarness>) => {
 };
 
 describe("Hono/Inertia authentication boundary", () => {
+  test("uses the installation marker instead of stale user projections for routing policy", async () => {
+    const unclaimed = createHarness();
+    unclaimed.database.insert(usersTable).values({
+      userId: "76000000-0000-4000-8000-000000000001",
+      role: "Admin",
+      email: "stale@example.test",
+      name: "Stale Admin",
+      passwordHash: `scrypt$${"A".repeat(22)}==$${"B".repeat(86)}==`,
+      veterinarianId: null,
+    }).run();
+
+    const unclaimedDashboard = await unclaimed.app.request("/", {
+      headers: inertiaHeaders,
+    });
+
+    expect(unclaimedDashboard.status).toBe(302);
+    expect(unclaimedDashboard.headers.get("location")).toBe("/setup");
+
+    const claimed = createHarness();
+    claimed.database
+      .insert(installationTable)
+      .values({ installationKey: "clinic" })
+      .run();
+
+    const claimedLogin = await claimed.app.request("/login", {
+      headers: inertiaHeaders,
+    });
+    const claimedSetup = await claimed.app.request("/setup", {
+      headers: inertiaHeaders,
+    });
+
+    expect(claimedLogin.status).toBe(200);
+    expect(claimedSetup.status).toBe(302);
+    expect(claimedSetup.headers.get("location")).toBe("/login");
+  });
+
+  test("maps installation-status query failures safely and exposes no user-list policy dependency", async () => {
+    const database = createSqliteDatabase(":memory:");
+    migrateDatabase(database);
+    const composed = createApplicationDependencies(database, {
+      clock,
+      isProduction: false,
+    });
+    const app = createApp({
+      ...composed,
+      installationStatusQuery: {
+        get: () =>
+          errAsync({
+            kind: "RepositoryError",
+            operation: "InstallationStatusQuery.get",
+            cause: new Error("private database cause"),
+          }),
+      },
+    });
+
+    const response = await app.request("/", { headers: inertiaHeaders });
+    const serializedDependencies = JSON.stringify(Object.keys(composed));
+
+    expect(response.status).toBe(500);
+    expect(await response.text()).not.toContain("private database cause");
+    expect(serializedDependencies).not.toContain("userListResolver");
+  });
+
   test("directs an empty installation to setup and makes setup unavailable after the first Admin", async () => {
     const harness = createHarness();
 

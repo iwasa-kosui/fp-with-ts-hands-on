@@ -5,6 +5,10 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
+export const installationTable = sqliteTable("installation", {
+  installationKey: text("installation_key").primaryKey(),
+});
+
 export const usersTable = sqliteTable(
   "users",
   {
@@ -77,6 +81,7 @@ export const domainEventsTable = sqliteTable("domain_events", {
 });
 
 export const sqliteSchema = {
+  installationTable,
   usersTable,
   sessionsTable,
   ownersTable,

@@ -1,6 +1,3 @@
-import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-
 import { describe, expect, test } from "vitest";
 
 import {
@@ -17,6 +14,8 @@ import {
   createExamResultByPetIdResolver,
 } from "../../src/adaptor/secondary/sqlite/resolver/examResultResolver.js";
 import { createEventHistoryReader } from "../../src/adaptor/secondary/sqlite/query/eventHistoryReader.js";
+import { createFollowUpRequestReader } from "../../src/adaptor/secondary/sqlite/query/followUpRequestReader.js";
+import { createInstallationStatusQuery } from "../../src/adaptor/secondary/sqlite/query/installationStatusQuery.js";
 import { createFollowUpResolver } from "../../src/adaptor/secondary/sqlite/resolver/followUpResolver.js";
 import {
   createOwnerByIdResolver,
@@ -83,30 +82,14 @@ describe("public SQLite resolver architecture", () => {
     ]);
   });
 
-  test("keeps event history outside domain resolvers as a list-only reader", () => {
+  test("exposes each query as a one-method reader", () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
 
     expect(Object.keys(createEventHistoryReader(db))).toEqual(["list"]);
-    expect(
-      existsSync(
-        fileURLToPath(
-          new URL(
-            "../../src/domain/aggregate/domainEventResolver.ts",
-            import.meta.url,
-          ),
-        ),
-      ),
-    ).toBe(false);
-    expect(
-      existsSync(
-        fileURLToPath(
-          new URL(
-            "../../src/adaptor/secondary/sqlite/resolver/eventResolver.ts",
-            import.meta.url,
-          ),
-        ),
-      ),
-    ).toBe(false);
+    expect(Object.keys(createFollowUpRequestReader(db))).toEqual([
+      "listRequestedAppointmentIds",
+    ]);
+    expect(Object.keys(createInstallationStatusQuery(db))).toEqual(["get"]);
   });
 });

@@ -36,7 +36,6 @@ import type {
   UserByIdResolver,
   UserListResolver,
 } from "../../src/domain/user/userResolver.js";
-import type { UserCreatedStore } from "../../src/domain/user/userStores.js";
 import {
   LogInUseCase,
   type Dependencies as LogInDependencies,
@@ -49,6 +48,7 @@ import {
   SetUpInitialAdminUseCase,
   type Dependencies as SetUpDependencies,
 } from "../../src/useCase/setUpInitialAdminUseCase.js";
+import type { InitialAdminSetupStore } from "../../src/useCase/persistence/initialAdminSetupStore.js";
 
 const userId = UserId.schema.parse("10000000-0000-4000-8000-000000000001");
 const otherUserId = UserId.schema.parse("10000000-0000-4000-8000-000000000005");
@@ -111,13 +111,6 @@ const sessionResolverFor = (session: Session | undefined): SessionResolverFixtur
   resolveByUserId: () => okAsync(session === undefined ? [] : [session]),
 });
 
-const createdUserStore = (events: UserCreated[]): UserCreatedStore => ({
-  store: (...newEvents) => {
-    events.push(...newEvents);
-    return okAsync(undefined);
-  },
-});
-
 const createdSessionStore = (
   events: SessionCreated[],
 ): SessionCreatedStore => ({
@@ -137,13 +130,16 @@ const deletedSessionStore = (
 });
 
 const setupDependencies = (
-  users: readonly User[],
   userEvents: UserCreated[],
   sessionEvents: SessionCreated[],
 ): SetUpDependencies => ({
-  userResolver: userResolverFor(users),
-  userCreatedStore: createdUserStore(userEvents),
-  sessionCreatedStore: createdSessionStore(sessionEvents),
+  initialAdminSetupStore: {
+    store: (userEvent, sessionEvent) => {
+      userEvents.push(userEvent);
+      sessionEvents.push(sessionEvent);
+      return okAsync(undefined);
+    },
+  },
   passwordHasher: scryptPasswordHasher,
   sessionTokenGenerator,
   clock,
@@ -157,7 +153,7 @@ describe("SetUpInitialAdminUseCase", () => {
     const userEvents: UserCreated[] = [];
     const sessionEvents: SessionCreated[] = [];
     const useCase = SetUpInitialAdminUseCase.create(
-      setupDependencies([], userEvents, sessionEvents),
+      setupDependencies(userEvents, sessionEvents),
     );
 
     const result = await useCase.run({ email, name, password });
@@ -190,33 +186,30 @@ describe("SetUpInitialAdminUseCase", () => {
     expect(serialized).not.toContain(token.hash.unwrap());
   });
 
-  test("rejects setup when any user already exists", async () => {
-    const existingHash = await scryptPasswordHasher.hash(password);
-    const existing = {
-      kind: "Admin",
-      userId,
-      email,
-      name,
-      passwordHash: existingHash,
-    } as const satisfies User;
+  test("preserves the authoritative initial-setup conflict from persistence", async () => {
     const userEvents: UserCreated[] = [];
     const sessionEvents: SessionCreated[] = [];
-    const useCase = SetUpInitialAdminUseCase.create(
-      setupDependencies([existing], userEvents, sessionEvents),
-    );
+    const rejectingStore = {
+      store: () => errAsync({ kind: "InitialAdminAlreadyExists" }),
+    } as const satisfies InitialAdminSetupStore;
+    const useCase = SetUpInitialAdminUseCase.create({
+      ...setupDependencies(userEvents, sessionEvents),
+      initialAdminSetupStore: rejectingStore,
+    });
 
     const result = await useCase.run({ email, name, password });
 
     expect(result.isErr() && result.error).toEqual({
       kind: "InitialAdminAlreadyExists",
     });
+    expect(JSON.stringify(result)).not.toContain(token.plaintext.unwrap());
     expect(userEvents).toHaveLength(0);
     expect(sessionEvents).toHaveLength(0);
   });
 
   test("returns a typed redacted error when password hashing throws synchronously", async () => {
     const dependencies = {
-      ...setupDependencies([], [], []),
+      ...setupDependencies([], []),
       passwordHasher: {
         hash: () => {
           throw new Error(`hash failed for ${password.unwrap()}`);
