@@ -42,7 +42,7 @@ describe("code explorer preview page", () => {
     expect(document.querySelector('a[href="/"]')).not.toBeNull();
     expect(document.body.textContent).toContain(previewNotice);
     expect(document.body.textContent).toContain(
-      "先人が残した開始 snapshot から、後で確認する設計課題を概観します。",
+      "先人が残したコードを手がかりに、今後向き合う設計上の課題を見渡します。",
     );
     expect(document.body.textContent).toContain(
       "src/appointment.ts",

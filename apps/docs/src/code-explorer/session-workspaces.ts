@@ -5,7 +5,8 @@ import type { SessionWorkspace } from "./types";
 const sessionWorkspaces = {
   "00-onboarding": {
     initialFile: "src/appointment.ts",
-    description: "先人が残した開始 snapshot から、後で確認する設計課題を概観します。",
+    description:
+      "先人が残したコードを手がかりに、今後向き合う設計上の課題を見渡します。",
     visibleFiles: ["src/appointment.ts", "src/logger.ts"],
   },
   "01-state-modeling": {
