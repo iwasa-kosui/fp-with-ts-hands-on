@@ -7,6 +7,7 @@ import { Icon, type IconName } from "./Icon.js";
 export type NavigationKey =
   | "dashboard"
   | "appointments"
+  | "reception"
   | "users"
   | "owners"
   | "pets"
@@ -44,11 +45,11 @@ const navigationItems: readonly NavigationItem[] = [
     roles: ["Admin", "Receptionist", "Veterinarian"],
   },
   {
-    key: "users",
-    href: "/users",
-    label: "ユーザー",
-    icon: "users",
-    roles: ["Admin"],
+    key: "reception",
+    href: "/reception",
+    label: "受付ボード",
+    icon: "reception",
+    roles: ["Admin", "Receptionist", "Veterinarian"],
   },
   {
     key: "owners",
@@ -72,9 +73,16 @@ const navigationItems: readonly NavigationItem[] = [
     roles: ["Admin", "Receptionist"],
   },
   {
+    key: "users",
+    href: "/users",
+    label: "ユーザー",
+    icon: "users",
+    roles: ["Admin"],
+  },
+  {
     key: "events",
     href: "/events",
-    label: "イベント",
+    label: "イベント履歴",
     icon: "events",
     roles: ["Admin"],
   },

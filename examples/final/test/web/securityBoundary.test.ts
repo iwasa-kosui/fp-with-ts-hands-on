@@ -107,6 +107,7 @@ describe("clinic page SSR", () => {
       ...dashboardProps,
     });
     expect(adminHtml).toContain('href="/appointments"');
+    expect(adminHtml).toContain('href="/reception"');
     expect(adminHtml).toContain('href="/follow-ups"');
     expect(adminHtml).toContain('href="/events"');
     expect(adminHtml).toContain('href="/users"');
@@ -116,6 +117,7 @@ describe("clinic page SSR", () => {
       ...dashboardProps,
     });
     expect(receptionistHtml).toContain('href="/appointments"');
+    expect(receptionistHtml).toContain('href="/reception"');
     expect(receptionistHtml).toContain('href="/follow-ups"');
     expect(receptionistHtml).not.toContain('href="/events"');
     expect(receptionistHtml).not.toContain('href="/users"');
@@ -125,6 +127,7 @@ describe("clinic page SSR", () => {
       ...dashboardProps,
     });
     expect(vetHtml).toContain('href="/appointments"');
+    expect(vetHtml).toContain('href="/reception"');
     expect(vetHtml).not.toContain('href="/follow-ups"');
     expect(vetHtml).not.toContain('href="/events"');
     expect(vetHtml).not.toContain('href="/owners"');
@@ -485,7 +488,7 @@ describe("Inertia security boundary", () => {
       "Private treatment",
     ];
     const appointmentDetailPath = `/appointments/${appointment.appointmentId}`;
-    for (const path of ["/", "/appointments", appointmentDetailPath, "/events"]) {
+    for (const path of ["/", "/appointments", "/reception", appointmentDetailPath, "/events"]) {
       const response = await app.request(path, { headers: { ...inertiaHeaders, Cookie: adminCookie } });
       const page = await response.json();
       const body = JSON.stringify(page);
@@ -502,7 +505,7 @@ describe("Inertia security boundary", () => {
         expect(body).toContain("Private diagnosis");
         expect(body).toContain("Private treatment");
       }
-      if (path === "/appointments" || path.startsWith("/appointments/")) {
+      if (path === "/appointments" || path === "/reception" || path.startsWith("/appointments/")) {
         expect(body).not.toContain('"state"');
         expect(body).not.toContain('"reason"');
       }

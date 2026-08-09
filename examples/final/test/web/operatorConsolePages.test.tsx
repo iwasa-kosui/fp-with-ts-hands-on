@@ -134,6 +134,9 @@ describe("Operator Console shell", () => {
     expect(html).toContain('title="ダッシュボード"');
     expect(html).toContain('href="/events"');
     expect(html).toContain('href="/users"');
+    expect(html).toContain('href="/reception"');
+    expect(html.indexOf('href="/appointments"')).toBeLessThan(html.indexOf('href="/reception"'));
+    expect(html.indexOf('href="/reception"')).toBeLessThan(html.indexOf('href="/owners"'));
     expect(html).toContain("新しい予約");
     expect(html).not.toContain("iconify");
     expect(html).not.toContain("fonts.googleapis.com");
@@ -153,7 +156,7 @@ describe("Operator Console shell", () => {
     expect(html).toContain('aria-label="アプリケーションサイドバー"');
     expect(html).toContain('href="/appointments"');
     expect(html).toContain('aria-label="予約カレンダー"');
-    expect(html).not.toContain('aria-label="受付ボード"');
+    expect(html).toContain('aria-label="受付ボード"');
     expect(html).toContain('aria-current="page"');
     expect(html).not.toContain('href="/owners"');
     expect(html).not.toContain('href="/follow-ups"');
@@ -174,6 +177,7 @@ describe("Operator Console shell", () => {
 
     expect(html).toContain('aria-label="メインナビゲーション"');
     expect(html).toContain('href="/appointments"');
+    expect(html).toContain('href="/reception"');
     expect(html).toContain('href="/owners"');
     expect(html).toContain('href="/pets"');
     expect(html).toContain('href="/follow-ups"');

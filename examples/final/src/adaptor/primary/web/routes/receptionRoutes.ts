@@ -12,6 +12,7 @@ import type { ListOwnersUseCase } from "../../../../useCase/listOwnersUseCase.js
 import type { ListPetsUseCase } from "../../../../useCase/listPetsUseCase.js";
 import type { ListVeterinariansUseCase } from "../../../../useCase/listVeterinariansUseCase.js";
 import type { RegisterWalkInUseCase } from "../../../../useCase/registerWalkInUseCase.js";
+import type { GetReceptionBoardUseCase } from "../../../../useCase/getReceptionBoardUseCase.js";
 import { withSharedProps } from "../middleware/sharedProps.js";
 import { assertNever, issuesToFieldErrors, respondToUseCaseError, type ValidationError } from "../middleware/useCaseResponse.js";
 import type { AuthenticatedActor, FieldErrors, WebEnvironment } from "../pageProps.js";
@@ -26,16 +27,23 @@ const WalkInSchema = z.object({
   receptionNote: z.preprocess((value) => value === "" ? null : value, ReceptionNote.schema.nullable()),
 });
 type Dependencies = Readonly<{
+  getReceptionBoard: GetReceptionBoardUseCase;
   listOwners: ListOwnersUseCase;
   listPets: ListPetsUseCase;
   listVeterinarians: ListVeterinariansUseCase;
   registerWalkIn: RegisterWalkInUseCase;
 }>;
-const requireManager = (context: Context<WebEnvironment>): Result<AuthenticatedActor, Response> => {
+const requireActor = (context: Context<WebEnvironment>): Result<AuthenticatedActor, Response> => {
   const actor = context.get("actor");
-  if (actor === undefined) return err(respondToUseCaseError(context, { kind: "Unauthenticated" }));
-  return actor.user.kind === "Admin" || actor.user.kind === "Receptionist"
-    ? ok(actor)
+  return actor === undefined
+    ? err(respondToUseCaseError(context, { kind: "Unauthenticated" }))
+    : ok(actor);
+};
+const requireManager = (context: Context<WebEnvironment>): Result<AuthenticatedActor, Response> => {
+  const actor = requireActor(context);
+  if (actor.isErr()) return actor;
+  return actor.value.user.kind === "Admin" || actor.value.user.kind === "Receptionist"
+    ? actor
     : err(respondToUseCaseError(context, { kind: "Unauthorized" }));
 };
 const parseBody = (context: Context<WebEnvironment>) => ResultAsync.fromPromise(
@@ -71,6 +79,21 @@ const renderWalkIn = async (context: Context<WebEnvironment>, dependencies: Depe
   );
 };
 export const registerReceptionRoutes = (app: Hono<WebEnvironment>, dependencies: Dependencies): void => {
+  app.get("/reception", async (context) => {
+    const actor = requireActor(context);
+    if (actor.isErr()) return actor.error;
+    const result = await dependencies.getReceptionBoard.run({ actorUserId: actor.value.user.userId });
+    return result.match(
+      ({ board }) => context.render("Reception/Index", withSharedProps(context, { board, currentTime: board.loadedAt })),
+      (error) => {
+        switch (error.kind) {
+          case "Unauthorized": return respondToUseCaseError(context, { kind: "Unauthorized" });
+          case "RepositoryError": return respondToUseCaseError(context, { kind: "RepositoryError" });
+          default: return assertNever(error);
+        }
+      },
+    );
+  });
   app.get("/reception/walk-ins/new", (context) => {
     const actor = requireManager(context);
     return actor.isErr() ? actor.error : renderWalkIn(context, dependencies, actor.value);

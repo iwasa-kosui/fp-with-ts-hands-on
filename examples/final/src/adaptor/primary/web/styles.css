@@ -836,6 +836,79 @@ td {
   background: var(--danger-soft);
 }
 
+.reception-board {
+  display: grid;
+  gap: 16px;
+}
+
+.reception-board__updated {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: right;
+}
+
+.reception-section {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.reception-section > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 0 16px;
+  cursor: pointer;
+  font-weight: 700;
+  list-style-position: inside;
+}
+
+.reception-section > summary:focus-visible {
+  outline: 3px solid var(--primary-soft);
+  outline-offset: -3px;
+}
+
+.reception-section__rows {
+  display: grid;
+  border-top: 1px solid var(--border);
+}
+
+.reception-section__empty {
+  margin: 0;
+  padding: 20px 16px;
+  color: var(--text-muted);
+}
+
+.reception-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+}
+
+.reception-row + .reception-row {
+  border-top: 1px solid var(--border);
+}
+
+.reception-row__details {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(76px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.reception-row__details > div { min-width: 0; }
+.reception-row__details dt { margin-bottom: 4px; color: var(--text-muted); font-size: 12px; }
+.reception-row__details dd { margin: 0; overflow-wrap: anywhere; font-size: 14px; }
+.reception-row__action { min-width: 112px; }
+.reception-row__action .button { width: 100%; white-space: nowrap; }
+.reception-row__action form { margin: 0; }
+
 @media (min-width: 768px) and (max-width: 1099px) {
   .metrics-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -982,6 +1055,11 @@ td {
   .calendar-toolbar__navigation,
   .calendar-toolbar__controls { justify-content: space-between; }
   .appointment-calendar__scroll { max-width: 100%; }
+
+  .reception-board__updated { text-align: left; }
+  .reception-row { grid-template-columns: 1fr; }
+  .reception-row__details { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reception-row__action { min-width: 0; }
 }
 
 @media (prefers-reduced-motion: no-preference) {

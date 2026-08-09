@@ -32,6 +32,7 @@ import { createInstallationStatusQuery } from "./adaptor/secondary/sqlite/query/
 import { createEventHistoryReader } from "./adaptor/secondary/sqlite/query/eventHistoryReader.js";
 import { createFollowUpRequestReader } from "./adaptor/secondary/sqlite/query/followUpRequestReader.js";
 import { createAppointmentCalendarReader } from "./adaptor/secondary/sqlite/query/appointmentCalendarReader.js";
+import { createReceptionBoardReader } from "./adaptor/secondary/sqlite/query/receptionBoardReader.js";
 import {
   createSessionByIdResolver,
   createSessionByTokenHashResolver,
@@ -127,6 +128,7 @@ import { ReassignAppointmentVeterinarianUseCase, type ReassignAppointmentVeterin
 import { ListVeterinariansUseCase, type ListVeterinariansUseCase as ListVeterinarians } from "./useCase/listVeterinariansUseCase.js";
 import { UpdateReceptionNoteUseCase, type UpdateReceptionNoteUseCase as UpdateReceptionNote } from "./useCase/updateReceptionNoteUseCase.js";
 import { ReceiveAppointmentDepositUseCase, type ReceiveAppointmentDepositUseCase as ReceiveAppointmentDeposit } from "./useCase/receiveAppointmentDepositUseCase.js";
+import { GetReceptionBoardUseCase, type GetReceptionBoardUseCase as GetReceptionBoard } from "./useCase/getReceptionBoardUseCase.js";
 
 export type ApplicationDependencies = Readonly<{
   sessionByTokenHashResolver: SessionByTokenHashResolver;
@@ -152,6 +154,7 @@ export type ApplicationDependencies = Readonly<{
   updatePet: UpdatePet;
   deletePet: DeletePet;
   listAppointmentCalendar: ListAppointmentCalendar;
+  getReceptionBoard: GetReceptionBoard;
   getAppointment: GetAppointment;
   bookAppointment: BookAppointment;
   updateAppointment: UpdateAppointment;
@@ -247,6 +250,7 @@ export const createApplicationDependencies = (
   const followUpRequestReader = createFollowUpRequestReader(database);
   const eventHistoryReader = createEventHistoryReader(database);
   const appointmentCalendarReader = createAppointmentCalendarReader(database);
+  const receptionBoardReader = createReceptionBoardReader(database);
   const sessionEventStore = createSessionEventStore(database);
   const initialAdminSetupStore = createInitialAdminSetupStore(database);
   const userEventStore = createUserEventStore(database);
@@ -395,6 +399,11 @@ export const createApplicationDependencies = (
     listAppointmentCalendar: ListAppointmentCalendarUseCase.create({
       userResolver: clinicUserByIdResolver,
       appointmentCalendarReader,
+    }),
+    getReceptionBoard: GetReceptionBoardUseCase.create({
+      clock,
+      userResolver: clinicUserByIdResolver,
+      receptionBoardReader,
     }),
     getAppointment: GetAppointmentUseCase.create({
       userResolver: clinicUserByIdResolver,
@@ -594,6 +603,7 @@ export const createApp = (dependencies: ApplicationDependencies) => {
     listVeterinarians: dependencies.listVeterinarians,
   });
   registerReceptionRoutes(app, {
+    getReceptionBoard: dependencies.getReceptionBoard,
     listOwners: dependencies.listOwners,
     listPets: dependencies.listPets,
     listVeterinarians: dependencies.listVeterinarians,

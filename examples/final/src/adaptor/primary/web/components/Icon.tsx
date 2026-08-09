@@ -11,6 +11,7 @@ export type IconName =
   | "owners"
   | "paw"
   | "plus"
+  | "reception"
   | "users";
 
 const paths: Readonly<Record<IconName, ReactElement>> = {
@@ -24,6 +25,7 @@ const paths: Readonly<Record<IconName, ReactElement>> = {
   owners: <path d="M16 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1m6-9a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm10 9v-1a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />,
   paw: <path d="M12 14c-2.9-3-7-1.4-7 2.1 0 2.5 3.1 3.5 7 4.8 3.9-1.3 7-2.3 7-4.8 0-3.5-4.1-5.1-7-2.1ZM7.2 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm3.2-3a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm4.2 3a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm2.3 2.8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />,
   plus: <path d="M12 5v14m-7-7h14" />,
+  reception: <path d="M6 4h12v16H6V4Zm3-2h6v4H9V2Zm0 8h6m-6 4h6m-6 4h4" />,
   users: <path d="M16 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1m14-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />,
 };
 
