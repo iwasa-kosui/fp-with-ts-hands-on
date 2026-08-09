@@ -4,10 +4,11 @@ import { Sensitive } from "../../../domain/shared/sensitive.js";
 export type PayloadSensitivity = "Regular" | "Sensitive";
 
 type AuditJsonPrimitive = string | number | boolean | null;
+type AuditJsonObject = { readonly [key: string]: AuditJsonValue };
 export type AuditJsonValue =
   | AuditJsonPrimitive
   | readonly AuditJsonValue[]
-  | { readonly [key: string]: AuditJsonValue };
+  | AuditJsonObject;
 
 const regularEventNames = new Set<string>();
 
@@ -21,8 +22,18 @@ const isPlainObject = (value: object): boolean => {
   return prototype === Object.prototype || prototype === null;
 };
 
+const isAuditJsonObject = (value: AuditJsonValue): value is AuditJsonObject =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
 export const toAuditJsonValue = (value: unknown): AuditJsonValue => {
   if (Sensitive.is(value)) return toAuditJsonValue(value.unwrap());
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    Object.getOwnPropertySymbols(value).length > 0
+  ) {
+    throw new TypeError("Audit JSON cannot contain symbol keys");
+  }
   if (value === null || typeof value === "string" || typeof value === "boolean") {
     return value;
   }
@@ -33,14 +44,19 @@ export const toAuditJsonValue = (value: unknown): AuditJsonValue => {
   if (Array.isArray(value)) return value.map(toAuditJsonValue);
   if (typeof value === "object") {
     if (!isPlainObject(value)) throw new TypeError("Audit JSON requires a plain object");
-    if (Object.getOwnPropertySymbols(value).length > 0) {
-      throw new TypeError("Audit JSON cannot contain symbol keys");
-    }
     return Object.fromEntries(
       Object.entries(value).map(([key, item]) => [key, toAuditJsonValue(item)]),
     );
   }
   throw new TypeError(`Audit JSON cannot contain ${typeof value}`);
+};
+
+const toAuditJsonObject = (value: unknown): AuditJsonObject => {
+  const serialized = toAuditJsonValue(value);
+  if (!isAuditJsonObject(serialized)) {
+    throw new TypeError("Audit event payload requires a plain object");
+  }
+  return serialized;
 };
 
 export type EventRecord = Readonly<{
@@ -68,10 +84,5 @@ export const toEventRecord = (event: AnyDomainEvent): EventRecord => ({
     payloadSensitivity: classifyPayloadSensitivity(event.eventName),
   },
   aggregateState: toAuditJsonValue(event.aggregateState ?? null),
-  eventPayload: Object.fromEntries(
-    Object.entries(event.eventPayload).map(([key, value]) => [
-      key,
-      toAuditJsonValue(value),
-    ]),
-  ),
+  eventPayload: toAuditJsonObject(event.eventPayload),
 });

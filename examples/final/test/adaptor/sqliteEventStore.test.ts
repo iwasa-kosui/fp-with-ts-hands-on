@@ -14,7 +14,10 @@ import {
   usersTable,
 } from "../../src/adaptor/secondary/sqlite/schema.js";
 import { classifyPayloadSensitivity } from "../../src/adaptor/secondary/sqlite/eventPersistence.js";
-import { toAuditJsonValue } from "../../src/adaptor/secondary/sqlite/eventRecord.js";
+import {
+  toAuditJsonValue,
+  toEventRecord,
+} from "../../src/adaptor/secondary/sqlite/eventRecord.js";
 import { createAppointmentEventStore } from "../../src/adaptor/secondary/sqlite/store/appointmentEventStore.js";
 import { createAppointmentByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/appointmentResolver.js";
 import { createExamResultEventStore } from "../../src/adaptor/secondary/sqlite/store/examResultEventStore.js";
@@ -48,6 +51,7 @@ import { UserEmail } from "../../src/domain/user/userEmail.js";
 import { createUserUpdated } from "../../src/domain/user/userEvent.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
+import { Sensitive } from "../../src/domain/shared/sensitive.js";
 
 const ids = {
   actor: UserId.schema.parse("00000000-0000-4000-8000-000000000001"),
@@ -81,6 +85,14 @@ const user = (name: string): Admin => ({
   name: UserName.schema.parse(name),
   passwordHash: PasswordHash.schema.parse(`scrypt$${"A".repeat(22)}==$${"B".repeat(86)}==`),
 });
+
+const eventWithRuntimePayload = (payload: unknown) => {
+  const event = User.create(eventContext(38))(user("Audit Admin"));
+  if (!Reflect.set(event, "eventPayload", payload)) {
+    throw new TypeError("test event payload replacement failed");
+  }
+  return event;
+};
 
 const restoreLegacyAuditSchema = (db: ReturnType<typeof createSqliteDatabase>): void => {
   db.run(sql.raw("DROP TRIGGER IF EXISTS domain_event_payloads_classification"));
@@ -289,9 +301,70 @@ describe("SQLite event stores", () => {
     expect(() => db.insert(domainEventSensitivePayloadsTable).values(payload).run())
       .toThrow(/classification/i);
     db.insert(domainEventPayloadsTable).values(payload).run();
-    db.run(sql`UPDATE domain_events SET payload_sensitivity = ${"Sensitive"} WHERE event_id = ${eventId}`);
     expect(() => db.insert(domainEventSensitivePayloadsTable).values(payload).run())
       .toThrow(/already stored/i);
+  });
+
+  test("audit metadata and both payload tables are append-only", () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const regularEventId = "15000000-0000-4000-8000-000000000001";
+    const sensitiveEventId = "15000000-0000-4000-8000-000000000002";
+    db.insert(domainEventsTable).values([
+      {
+        eventId: regularEventId,
+        aggregateId: ids.appointment,
+        aggregateName: "Appointment",
+        eventName: "audit.regular-fixture",
+        occurredAt: "2026-08-08T00:01:00.000Z",
+        actorUserId: ids.actor,
+        payloadSensitivity: "Regular",
+      },
+      {
+        eventId: sensitiveEventId,
+        aggregateId: ids.owner,
+        aggregateName: "Owner",
+        eventName: "owner.updated",
+        occurredAt: "2026-08-08T00:02:00.000Z",
+        actorUserId: ids.actor,
+        payloadSensitivity: "Sensitive",
+      },
+    ]).run();
+    db.insert(domainEventPayloadsTable).values({
+      eventId: regularEventId,
+      aggregateState: { kind: "Regular" },
+      eventPayload: { fact: "regular fact" },
+    }).run();
+    db.insert(domainEventSensitivePayloadsTable).values({
+      eventId: sensitiveEventId,
+      aggregateState: { email: "owner@example.test" },
+      eventPayload: { reason: "private reason" },
+    }).run();
+    const before = {
+      metadata: db.select().from(domainEventsTable).all(),
+      regular: db.select().from(domainEventPayloadsTable).all(),
+      sensitive: db.select().from(domainEventSensitivePayloadsTable).all(),
+    };
+
+    const mutations = [
+      sql`UPDATE domain_events SET payload_sensitivity = ${"Sensitive"} WHERE event_id = ${regularEventId}`,
+      sql`DELETE FROM domain_events WHERE event_id = ${regularEventId}`,
+      sql`UPDATE domain_event_payloads SET event_id = ${sensitiveEventId} WHERE event_id = ${regularEventId}`,
+      sql`UPDATE domain_event_payloads SET event_payload = ${JSON.stringify({ fact: "changed" })} WHERE event_id = ${regularEventId}`,
+      sql`DELETE FROM domain_event_payloads WHERE event_id = ${regularEventId}`,
+      sql`UPDATE domain_event_sensitive_payloads SET event_id = ${regularEventId} WHERE event_id = ${sensitiveEventId}`,
+      sql`UPDATE domain_event_sensitive_payloads SET event_payload = ${JSON.stringify({ reason: "changed" })} WHERE event_id = ${sensitiveEventId}`,
+      sql`DELETE FROM domain_event_sensitive_payloads WHERE event_id = ${sensitiveEventId}`,
+    ];
+    for (const mutation of mutations) {
+      expect(() => db.run(mutation)).toThrow();
+    }
+
+    expect({
+      metadata: db.select().from(domainEventsTable).all(),
+      regular: db.select().from(domainEventPayloadsTable).all(),
+      sensitive: db.select().from(domainEventSensitivePayloadsTable).all(),
+    }).toEqual(before);
   });
 
   test("unknown event names are sensitive and audit serialization refuses duck typing and non-JSON values", () => {
@@ -306,6 +379,53 @@ describe("SQLite event stores", () => {
     expect(unwrapCalled).toBe(false);
     expect(() => toAuditJsonValue(Symbol("private"))).toThrow(/symbol/i);
     expect(() => toAuditJsonValue(() => "private")).toThrow(/function/i);
+  });
+
+  test("toEventRecord recursively preserves nested Sensitive values, arrays, and objects", () => {
+    const record = toEventRecord(eventWithRuntimePayload({
+      nested: [
+        Sensitive.of("private audit fact"),
+        { deeper: Sensitive.of("private nested fact") },
+      ],
+    }));
+
+    expect(record.eventPayload).toEqual({
+      nested: ["private audit fact", { deeper: "private nested fact" }],
+    });
+  });
+
+  test("toEventRecord rejects symbol keys before they can be omitted", () => {
+    const hidden = Symbol("hidden");
+    const topLevelPayload = {};
+    Object.defineProperty(topLevelPayload, hidden, {
+      enumerable: true,
+      value: "private audit fact",
+    });
+    const arrayPayload: unknown[] = ["visible"];
+    Object.defineProperty(arrayPayload, hidden, {
+      enumerable: true,
+      value: "private array fact",
+    });
+
+    expect(() => toEventRecord(eventWithRuntimePayload(topLevelPayload)))
+      .toThrow(/symbol/i);
+    expect(() => toEventRecord(eventWithRuntimePayload(arrayPayload)))
+      .toThrow(/symbol/i);
+  });
+
+  test.each([
+    ["symbol", Symbol("private")],
+    ["array", ["private"]],
+    ["Date", new Date("2026-08-09T00:00:00.000Z")],
+    ["class instance", new (class AuditPayload { readonly fact = "private"; })()],
+  ])("toEventRecord rejects a top-level %s payload", (_label, payload) => {
+    expect(() => toEventRecord(eventWithRuntimePayload(payload)))
+      .toThrow(/symbol|plain object/i);
+  });
+
+  test("toEventRecord rejects a nested non-finite number", () => {
+    expect(() => toEventRecord(eventWithRuntimePayload({ amount: Number.POSITIVE_INFINITY })))
+      .toThrow(/non-finite/i);
   });
 
   test("typed events update every projection and append full payloads only to sensitive history", async () => {
