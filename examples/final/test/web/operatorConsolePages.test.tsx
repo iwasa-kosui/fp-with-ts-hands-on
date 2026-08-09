@@ -92,6 +92,7 @@ describe("Operator Console shell", () => {
     expect(html).toContain('aria-label="アプリケーションサイドバー"');
     expect(html).toContain('aria-label="メインナビゲーション"');
     expect(html).toContain('aria-current="page"');
+    expect(html).toContain('title="ダッシュボード"');
     expect(html).toContain('href="/events"');
     expect(html).toContain('href="/users"');
     expect(html).toContain("新しい予約");

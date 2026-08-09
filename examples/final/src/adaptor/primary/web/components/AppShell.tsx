@@ -91,13 +91,35 @@ export const AppShell = ({
   if (user === undefined || user === null) {
     return (
       <div className="app-shell app-shell--public">
-        <main className="app-content">{children}</main>
+        <main className="app-content app-main">{children}</main>
       </div>
     );
   }
 
   return (
-    <div className="app-shell">
+    <div
+      className={
+        isNavigationOpen
+          ? "app-shell app-shell--navigation-open"
+          : "app-shell"
+      }
+    >
+      <button
+        aria-controls="app-navigation"
+        aria-expanded={isNavigationOpen}
+        aria-label={isNavigationOpen ? "ナビゲーションを閉じる" : "ナビゲーションを開く"}
+        className="navigation-toggle"
+        onClick={() => setIsNavigationOpen((isOpen) => !isOpen)}
+        type="button"
+      >
+        <Icon name="menu" />
+      </button>
+      <button
+        aria-label="ナビゲーションを閉じる"
+        className="navigation-backdrop"
+        onClick={() => setIsNavigationOpen(false)}
+        type="button"
+      />
       <aside aria-label="アプリケーションサイドバー" className="app-sidebar">
         <div className="app-sidebar__brand">
           <Link className="brand" href="/">
@@ -105,16 +127,6 @@ export const AppShell = ({
             <span>関数型どうぶつ病院</span>
           </Link>
         </div>
-        <button
-          aria-controls="app-navigation"
-          aria-expanded={isNavigationOpen}
-          aria-label="ナビゲーションを開く"
-          className="navigation-toggle"
-          onClick={() => setIsNavigationOpen((isOpen) => !isOpen)}
-          type="button"
-        >
-          <Icon name="menu" />
-        </button>
         <nav
           aria-label="メインナビゲーション"
           className="app-navigation"
@@ -133,6 +145,7 @@ export const AppShell = ({
                 }
                 href={item.href}
                 key={item.key}
+                title={item.label}
               >
                 <Icon name={item.icon} />
                 <span>{item.label}</span>
@@ -141,13 +154,20 @@ export const AppShell = ({
         </nav>
         <div className="app-sidebar__user">
           <span className="role">{user.role}</span>
-          <Link as="button" className="app-sidebar__logout" href="/logout" method="post">
+          <Link
+            aria-label="ログアウト"
+            as="button"
+            className="app-sidebar__logout"
+            href="/logout"
+            method="post"
+            title="ログアウト"
+          >
             <Icon name="logout" />
             <span>ログアウト</span>
           </Link>
         </div>
       </aside>
-      <main className="app-content">
+      <main className="app-content app-main">
         <header className="top-bar">
           <p>{title}</p>
           <span>{user.role}</span>
