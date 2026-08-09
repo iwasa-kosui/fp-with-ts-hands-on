@@ -7,6 +7,7 @@ import { Timestamp } from "../../../../domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
 import { AppointmentVersion } from "../../../../domain/appointment/appointmentVersion.js";
 import { BookingKind } from "../../../../domain/appointment/bookingKind.js";
+import { ReceptionNote } from "../../../../domain/appointment/receptionNote.js";
 import { ServiceCode } from "../../../../domain/appointment/serviceCode.js";
 import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js";
 import type { ReceptionBoardReader, ReceptionBoardReaderRow } from "../../../../useCase/query/receptionBoardReader.js";
@@ -18,12 +19,12 @@ const DepositReceivedSchema = z.object({ kind: z.literal("DepositReceived") });
 const SettledSchema = z.object({ kind: z.literal("Settled"), settledAt: Timestamp.schema });
 const DepositRefundedSchema = z.object({ kind: z.literal("DepositRefunded") });
 const ProjectedStateSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("Scheduled"), settlement: z.union([NoPaymentSchema, DepositReceivedSchema]).optional() }),
-  z.object({ kind: z.literal("CheckedIn"), checkedInAt: Timestamp.schema, settlement: z.union([NoPaymentSchema, DepositReceivedSchema]).optional() }),
-  z.object({ kind: z.literal("InExamination"), checkedInAt: Timestamp.schema, examinationStartedAt: Timestamp.schema, settlement: z.union([NoPaymentSchema, DepositReceivedSchema]).optional() }),
-  z.object({ kind: z.literal("AwaitingPayment"), checkedInAt: Timestamp.schema, examinationStartedAt: Timestamp.schema, examinationCompletedAt: Timestamp.schema, settlement: z.union([NoPaymentSchema, DepositReceivedSchema]).optional() }),
+  z.object({ kind: z.literal("Scheduled"), settlement: z.union([NoPaymentSchema, DepositReceivedSchema]) }),
+  z.object({ kind: z.literal("CheckedIn"), checkedInAt: Timestamp.schema, settlement: z.union([NoPaymentSchema, DepositReceivedSchema]) }),
+  z.object({ kind: z.literal("InExamination"), checkedInAt: Timestamp.schema, examinationStartedAt: Timestamp.schema, settlement: z.union([NoPaymentSchema, DepositReceivedSchema]) }),
+  z.object({ kind: z.literal("AwaitingPayment"), checkedInAt: Timestamp.schema, examinationStartedAt: Timestamp.schema, examinationCompletedAt: Timestamp.schema, settlement: z.union([NoPaymentSchema, DepositReceivedSchema]) }),
   z.object({ kind: z.literal("Paid"), checkedInAt: Timestamp.schema, examinationStartedAt: Timestamp.schema, examinationCompletedAt: Timestamp.schema, settlement: SettledSchema }),
-  z.object({ kind: z.literal("Canceled"), canceledAt: Timestamp.schema, settlement: z.union([NoPaymentSchema, DepositRefundedSchema]).optional() }),
+  z.object({ kind: z.literal("Canceled"), canceledAt: Timestamp.schema, settlement: z.union([NoPaymentSchema, DepositRefundedSchema]) }),
 ]);
 const RowSchema = z.object({
   appointmentId: AppointmentId.schema,
@@ -32,6 +33,7 @@ const RowSchema = z.object({
   scheduledAt: Timestamp.schema,
   ownerName: z.string().min(1),
   petName: z.string().min(1),
+  receptionNote: ReceptionNote.schema.nullable(),
   serviceCode: ServiceCode.schema,
   assignedVeterinarianId: VeterinarianId.schema.nullable(),
   assignedVeterinarianName: z.string().min(1).nullable(),
@@ -63,14 +65,14 @@ const statusSortAtOf = (row: ParsedRow): z.infer<typeof Timestamp.schema> => {
     default: return row.state satisfies never;
   }
 };
-const expectedSettlement = (state: ParsedRow["state"]): ParsedRow["settlementStatus"] | undefined =>
-  state.settlement?.kind;
+const expectedSettlement = (state: ParsedRow["state"]): ParsedRow["settlementStatus"] =>
+  state.settlement.kind;
 
 const toReaderRow = (loadedAt: z.infer<typeof Timestamp.schema>) => (raw: unknown): ReceptionBoardReaderRow => {
   const row = RowSchema.parse(raw);
   if (row.appointmentStatus !== row.state.kind) throw new TypeError("Corrupt appointment status projection");
   const stateSettlement = expectedSettlement(row.state);
-  if (stateSettlement !== undefined && stateSettlement !== row.settlementStatus) throw new TypeError("Corrupt settlement status projection");
+  if (stateSettlement !== row.settlementStatus) throw new TypeError("Corrupt settlement status projection");
   if (["InExamination", "AwaitingPayment", "Paid"].includes(row.appointmentStatus) && row.assignedVeterinarianId === null) throw new TypeError("Corrupt veterinarian projection");
   const checkedInAt = checkedInAtOf(row.state);
   return {
@@ -82,6 +84,7 @@ const toReaderRow = (loadedAt: z.infer<typeof Timestamp.schema>) => (raw: unknow
     waitingMinutes: checkedInAt === null ? null : Math.max(0, Math.floor((Date.parse(loadedAt) - Date.parse(checkedInAt)) / 60_000)),
     ownerName: row.ownerName,
     petName: row.petName,
+    receptionNote: row.receptionNote,
     serviceCode: row.serviceCode,
     assignedVeterinarianId: row.assignedVeterinarianId,
     assignedVeterinarianName: row.assignedVeterinarianName,
@@ -100,6 +103,7 @@ export const createReceptionBoardReader = (db: SqliteDatabase): ReceptionBoardRe
       scheduledAt: appointmentsTable.scheduledAt,
       ownerName: ownersTable.name,
       petName: petsTable.name,
+      receptionNote: appointmentsTable.receptionNote,
       serviceCode: appointmentsTable.serviceCode,
       assignedVeterinarianId: appointmentsTable.assignedVeterinarianId,
       assignedVeterinarianName: usersTable.name,

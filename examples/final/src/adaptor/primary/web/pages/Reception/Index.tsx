@@ -40,8 +40,8 @@ export default function ReceptionIndex({ auth, board, currentTime: _currentTime 
   }, []);
 
   const sections = [
-    { key: "scheduled", label: "予約済", rows: board.scheduled, expanded: true },
-    { key: "checked-in", label: "受付済", rows: board.checkedIn, expanded: true },
+    { key: "scheduled", label: "未受付", rows: board.scheduled, expanded: true },
+    { key: "checked-in", label: "診察待ち", rows: board.checkedIn, expanded: true },
     { key: "in-examination", label: "診察中", rows: board.inExamination, expanded: true },
     { key: "awaiting-payment", label: "会計待ち", rows: board.awaitingPayment, expanded: true },
     { key: "paid", label: "完了", rows: board.paid, expanded: false },

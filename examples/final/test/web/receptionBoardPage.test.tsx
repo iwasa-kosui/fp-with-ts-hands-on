@@ -19,6 +19,7 @@ const row = (suffix: string, appointmentStatus: ReceptionBoardRow["appointmentSt
   waitingMinutes: appointmentStatus === "Scheduled" ? null : 25,
   ownerName: "山田 花子",
   petName: "むぎ",
+  receptionNote: `受付メモ${suffix}`,
   serviceCode: "GeneralConsultation",
   assignedVeterinarianName: "佐藤 獣医師",
   appointmentStatus,
@@ -45,7 +46,9 @@ describe("ReceptionIndex SSR", () => {
   test("renders a vertical six-section Japanese board with paid and canceled collapsed", () => {
     const html = renderToString(createElement(ReceptionIndex, props)).replaceAll("<!-- -->", "");
 
-    for (const label of ["予約済", "受付済", "診察中", "会計待ち", "完了", "キャンセル"]) expect(html).toContain(label);
+    for (const label of ["未受付", "診察待ち", "診察中", "会計待ち", "完了", "キャンセル"]) expect(html).toContain(label);
+    expect(html).not.toContain("予約済み");
+    expect(html).not.toContain("受付済み");
     expect((html.match(/class="reception-section reception-section--/g) ?? [])).toHaveLength(6);
     expect(html).toContain("予約時刻");
     expect(html).toContain("受付時刻");
@@ -73,7 +76,12 @@ describe("ReceptionIndex SSR", () => {
     expect(html).toContain("診察を開始");
     expect(html).toContain(`href="/appointments/${board.awaitingPayment[0]?.appointmentId}"`);
     expect(html).toContain("会計へ");
-    expect(html).not.toContain("受付メモ");
+    expect(html).toContain("受付メモ11");
+    expect(html).toContain("受付メモ21");
+    expect(html).toContain("受付メモ31");
+    expect(html).toContain("受付メモ41");
+    expect(html).toContain("受付メモ51");
+    expect(html).toContain("受付メモ61");
     expect(html).not.toContain("来院理由");
     expect(html).not.toContain("診断");
   });

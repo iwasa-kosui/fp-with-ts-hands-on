@@ -4,6 +4,7 @@ import { describe, expect, test } from "vitest";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
 import { AppointmentVersion } from "../../src/domain/appointment/appointmentVersion.js";
+import { ReceptionNote } from "../../src/domain/appointment/receptionNote.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { GetReceptionBoardUseCase } from "../../src/useCase/getReceptionBoardUseCase.js";
@@ -26,6 +27,7 @@ const row = (
   waitingMinutes: appointmentStatus === "Scheduled" ? null : 25,
   ownerName: `飼い主${suffix}`,
   petName: `ペット${suffix}`,
+  receptionNote: ReceptionNote.schema.parse(`受付メモ${suffix}`),
   serviceCode: "GeneralConsultation",
   assignedVeterinarianId: veterinarianId,
   assignedVeterinarianName: "佐藤 獣医師",
@@ -78,6 +80,8 @@ describe("GetReceptionBoardUseCase", () => {
     expect(board.awaitingPayment.map((item) => item.appointmentId)).toEqual([source[7]?.appointmentId, source[6]?.appointmentId]);
     expect(board.paid.map((item) => item.appointmentId)).toEqual([source[9]?.appointmentId, source[8]?.appointmentId]);
     expect(board.canceled).toHaveLength(1);
+    expect(board.paid[0]?.receptionNote).toBe("受付メモ52");
+    expect(board.canceled[0]?.receptionNote).toBe("受付メモ61");
   });
 
   test.each([
@@ -100,7 +104,8 @@ describe("GetReceptionBoardUseCase", () => {
 
     expect(projected?.primaryAction).toBe(expected);
     expect(Object.keys(projected ?? {}).sort()).toEqual([
-      "appointmentId", "appointmentStatus", "assignedVeterinarianName", "bookingKind", "checkedInAt", "ownerName", "petName", "primaryAction", "scheduledAt", "serviceCode", "settlementStatus", "version", "waitingMinutes",
+      "appointmentId", "appointmentStatus", "assignedVeterinarianName", "bookingKind", "checkedInAt", "ownerName", "petName", "primaryAction", "receptionNote", "scheduledAt", "serviceCode", "settlementStatus", "version", "waitingMinutes",
     ]);
+    expect(projected?.receptionNote).toBe("受付メモ71");
   });
 });

@@ -838,6 +838,7 @@ td {
 
 .reception-board {
   display: grid;
+  min-width: 0;
   gap: 16px;
 }
 
@@ -849,7 +850,7 @@ td {
 }
 
 .reception-section {
-  overflow: hidden;
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -868,12 +869,13 @@ td {
 }
 
 .reception-section > summary:focus-visible {
-  outline: 3px solid var(--primary-soft);
+  outline: 3px solid var(--primary);
   outline-offset: -3px;
 }
 
 .reception-section__rows {
   display: grid;
+  min-width: 0;
   border-top: 1px solid var(--border);
 }
 
@@ -885,10 +887,11 @@ td {
 
 .reception-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(104px, max-content);
+  min-width: 0;
+  gap: 12px;
   align-items: center;
-  padding: 14px 16px;
+  padding: 12px;
 }
 
 .reception-row + .reception-row {
@@ -897,15 +900,27 @@ td {
 
 .reception-row__details {
   display: grid;
-  grid-template-columns: repeat(10, minmax(76px, 1fr));
-  gap: 12px;
+  grid-template-columns:
+    minmax(0, 0.75fr)
+    minmax(0, 0.75fr)
+    minmax(0, 0.7fr)
+    minmax(0, 1fr)
+    minmax(0, 0.75fr)
+    minmax(0, 1.6fr)
+    minmax(0, 1.1fr)
+    minmax(0, 1fr)
+    minmax(0, 0.75fr)
+    minmax(0, 0.95fr)
+    minmax(0, 0.95fr);
+  min-width: 0;
+  gap: 6px;
   margin: 0;
 }
 
 .reception-row__details > div { min-width: 0; }
 .reception-row__details dt { margin-bottom: 4px; color: var(--text-muted); font-size: 12px; }
 .reception-row__details dd { margin: 0; overflow-wrap: anywhere; font-size: 14px; }
-.reception-row__action { min-width: 112px; }
+.reception-row__action { min-width: 0; }
 .reception-row__action .button { width: 100%; white-space: nowrap; }
 .reception-row__action form { margin: 0; }
 
@@ -953,6 +968,20 @@ td {
     overflow: hidden;
     clip: rect(0 0 0 0);
     white-space: nowrap;
+  }
+
+  .reception-row {
+    grid-template-columns: minmax(0, 1fr) minmax(104px, max-content);
+    gap: 8px;
+    padding: 10px 8px;
+  }
+
+  .reception-row__details { gap: 4px; }
+  .reception-row__details dt { font-size: 11px; }
+  .reception-row__details dd { font-size: 13px; }
+  .reception-row__action .button {
+    padding-inline: 8px;
+    font-size: 13px;
   }
 }
 
@@ -1060,6 +1089,7 @@ td {
   .reception-row { grid-template-columns: 1fr; }
   .reception-row__details { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .reception-row__action { min-width: 0; }
+  .reception-row__note { grid-column: 1 / -1; }
 }
 
 @media (prefers-reduced-motion: no-preference) {

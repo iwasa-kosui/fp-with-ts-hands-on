@@ -48,6 +48,7 @@ const toBoardRow = (actor: User) => (row: ReceptionBoardReaderRow): ReceptionBoa
   waitingMinutes: row.waitingMinutes,
   ownerName: row.ownerName,
   petName: row.petName,
+  receptionNote: row.receptionNote?.unwrap() ?? null,
   serviceCode: row.serviceCode,
   assignedVeterinarianName: row.assignedVeterinarianName,
   appointmentStatus: row.appointmentStatus,

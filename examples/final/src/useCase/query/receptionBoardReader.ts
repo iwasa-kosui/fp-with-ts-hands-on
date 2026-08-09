@@ -7,6 +7,7 @@ import type { AppointmentId } from "../../domain/appointment/appointmentId.js";
 import type { AppointmentVersion } from "../../domain/appointment/appointmentVersion.js";
 import type { BookingKind } from "../../domain/appointment/bookingKind.js";
 import type { BusinessDate, BusinessDateRange } from "../../domain/appointment/businessDate.js";
+import type { ReceptionNote } from "../../domain/appointment/receptionNote.js";
 import type { ServiceCode } from "../../domain/appointment/serviceCode.js";
 import type { SettlementState } from "../../domain/appointment/settlementState.js";
 import type { VeterinarianId } from "../../domain/appointment/veterinarianId.js";
@@ -23,6 +24,7 @@ export type ReceptionBoardRow = Readonly<{
   waitingMinutes: number | null;
   ownerName: string;
   petName: string;
+  receptionNote: string | null;
   serviceCode: ServiceCode;
   assignedVeterinarianName: string | null;
   appointmentStatus: Appointment["kind"];
@@ -42,7 +44,8 @@ export type ReceptionBoard = Readonly<{
 }>;
 
 export type ReceptionBoardReaderRow = Readonly<
-  Omit<ReceptionBoardRow, "primaryAction"> & {
+  Omit<ReceptionBoardRow, "primaryAction" | "receptionNote"> & {
+    receptionNote: ReceptionNote | null;
     assignedVeterinarianId: VeterinarianId | null;
     statusSortAt: Timestamp;
   }

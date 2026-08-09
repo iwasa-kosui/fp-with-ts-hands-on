@@ -445,7 +445,7 @@ describe("Inertia security boundary", () => {
     await post(app, "/appointments", {
       ownerId: owner.ownerId,
       petId: pet.petId,
-      scheduledAt: "2026-08-10T03:00:00.000Z",
+      scheduledAt: "2026-08-09T03:00:00.000Z",
       serviceCode: "GeneralConsultation",
       durationMinutes: "30",
       assignedVeterinarianId: "",
@@ -453,16 +453,21 @@ describe("Inertia security boundary", () => {
     }, adminCookie);
     const appointment = database.select().from(appointmentsTable).get();
     if (appointment === undefined) throw new TypeError("appointment missing");
-    await post(app, `/appointments/${appointment.appointmentId}/check-in`, {
+    const authorizedReceptionNote = "Authorized reception note";
+    await post(app, `/appointments/${appointment.appointmentId}/reception-note`, {
       expectedVersion: "1",
+      receptionNote: authorizedReceptionNote,
+    }, adminCookie);
+    await post(app, `/appointments/${appointment.appointmentId}/check-in`, {
+      expectedVersion: "2",
     }, adminCookie);
     await post(app, `/appointments/${appointment.appointmentId}/start-examination`, {
-      expectedVersion: "2",
+      expectedVersion: "3",
     }, vetCookie);
     const privateFinding = "Highly sensitive clinical finding";
     await post(app, `/appointments/${appointment.appointmentId}/exam-results`, {
       petId: pet.petId,
-      expectedVersion: "3",
+      expectedVersion: "4",
       collectedAt: "2026-08-09T03:00:00.000Z",
       item: privateFinding,
       needsFollowUp: "true",
@@ -471,7 +476,7 @@ describe("Inertia security boundary", () => {
       diagnosis: "Private diagnosis",
       treatment: "Private treatment",
       finalAmount: "12500",
-      expectedVersion: "4",
+      expectedVersion: "5",
     }, adminCookie);
 
     const adminRow = database.select().from(usersTable).where(eq(usersTable.email, "admin@example.test")).get();
@@ -486,6 +491,7 @@ describe("Inertia security boundary", () => {
       "Private visit reason",
       "Private diagnosis",
       "Private treatment",
+      authorizedReceptionNote,
     ];
     const appointmentDetailPath = `/appointments/${appointment.appointmentId}`;
     for (const path of ["/", "/appointments", "/reception", appointmentDetailPath, "/events"]) {
@@ -497,14 +503,18 @@ describe("Inertia security boundary", () => {
             "Private visit reason",
             "Private diagnosis",
             "Private treatment",
+            authorizedReceptionNote,
           ].includes(value))
-        : forbiddenValues;
+        : path === "/reception"
+          ? forbiddenValues.filter((value) => value !== authorizedReceptionNote)
+          : forbiddenValues;
       for (const value of valuesForbiddenOnThisPage) expect(body).not.toContain(value);
       if (path === appointmentDetailPath) {
         expect(body).toContain("Private visit reason");
         expect(body).toContain("Private diagnosis");
         expect(body).toContain("Private treatment");
       }
+      if (path === "/reception") expect(body).toContain(authorizedReceptionNote);
       if (path === "/appointments" || path === "/reception" || path.startsWith("/appointments/")) {
         expect(body).not.toContain('"state"');
         expect(body).not.toContain('"reason"');
@@ -565,7 +575,7 @@ describe("Inertia security boundary", () => {
       diagnosis: "do not echo diagnosis",
       treatment: "do not echo treatment",
       finalAmount: "0",
-      expectedVersion: "5",
+      expectedVersion: "6",
     }, adminCookie);
     const invalidBody = await invalid.text();
     expect(invalidBody).not.toContain("do not echo diagnosis");

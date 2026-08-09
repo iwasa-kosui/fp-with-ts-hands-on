@@ -45,6 +45,11 @@ const projectedAction = (row: ReceptionBoardRow, onSubmittingChange: (submitting
 
 export const ReceptionRow = ({ row, onSubmittingChange = () => undefined }: Props): ReactElement => {
   const status = appointmentPresentation(row.appointmentStatus);
+  const statusLabel = row.appointmentStatus === "Scheduled"
+    ? "未受付"
+    : row.appointmentStatus === "CheckedIn"
+      ? "診察待ち"
+      : status.label;
   return <article className="reception-row">
     <dl className="reception-row__details">
       <div><dt>予約時刻</dt><dd>{row.bookingKind === "WalkIn" ? "飛び込み" : jstTime(row.scheduledAt)}</dd></div>
@@ -52,10 +57,11 @@ export const ReceptionRow = ({ row, onSubmittingChange = () => undefined }: Prop
       <div><dt>待ち時間</dt><dd>{row.waitingMinutes === null ? "—" : `${row.waitingMinutes}分`}</dd></div>
       <div><dt>飼い主</dt><dd>{row.ownerName}</dd></div>
       <div><dt>ペット</dt><dd>{row.petName}</dd></div>
+      <div className="reception-row__note"><dt>受付メモ</dt><dd>{row.receptionNote ?? "なし"}</dd></div>
       <div><dt>診療メニュー</dt><dd>{servicePresentation(row.serviceCode)}</dd></div>
       <div><dt>担当医</dt><dd>{row.assignedVeterinarianName ?? "未定"}</dd></div>
       <div><dt>予約種別</dt><dd>{row.bookingKind === "Reserved" ? "予約" : "飛び込み"}</dd></div>
-      <div><dt>診療状態</dt><dd><StatusBadge tone={status.tone}>{status.label}</StatusBadge></dd></div>
+      <div><dt>診療状態</dt><dd><StatusBadge tone={status.tone}>{statusLabel}</StatusBadge></dd></div>
       <div><dt>支払状態</dt><dd>{settlementPresentation(row.settlementStatus)}</dd></div>
     </dl>
     <div className="reception-row__action">{projectedAction(row, onSubmittingChange)}</div>
