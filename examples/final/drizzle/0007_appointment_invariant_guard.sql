@@ -123,7 +123,7 @@ OR EXISTS (
 					`timezone_start` = 20
 					OR (
 						substr(`value`, 20, 1) = '.'
-						AND `timezone_start` > 21
+						AND `timezone_start` BETWEEN 22 AND 24
 						AND substr(
 							`value`, 21, `timezone_start` - 21
 						) NOT GLOB '*[^0-9]*'

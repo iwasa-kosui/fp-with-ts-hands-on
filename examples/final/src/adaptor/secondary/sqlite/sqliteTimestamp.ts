@@ -19,6 +19,3 @@ export const sqliteJulianDay = (
 ): SQL<number> => modifier === undefined
   ? sql<number>`julianday(${sqliteTimestampText(value)})`
   : sql<number>`julianday(${sqliteTimestampText(value)}, ${modifier})`;
-
-export const sqliteInstantIsNull = (value: TimestampSqlInput): SQL<boolean> =>
-  sql<boolean>`${sqliteJulianDay(value)} IS NULL`;

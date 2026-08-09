@@ -1,8 +1,10 @@
-import { and, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, or } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
+import { Timestamp, type Timestamp as TimestampValue } from "../../../../domain/aggregate/timestamp.js";
 import type { Appointment } from "../../../../domain/appointment/appointment.js";
+import { AppointmentDuration, type AppointmentDuration as AppointmentDurationValue } from "../../../../domain/appointment/appointmentDuration.js";
 import type { AppointmentEvent } from "../../../../domain/appointment/appointmentEvent.js";
 import type { AppointmentStoreError } from "../../../../domain/appointment/appointmentStores.js";
 import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
@@ -11,7 +13,6 @@ import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type { SqliteDatabase } from "../db.js";
 import { persistDomainEvent } from "../eventPersistence.js";
 import { appointmentsTable } from "../schema.js";
-import { sqliteJulianDay } from "../sqliteTimestamp.js";
 
 type AppointmentProjectionEvent = Exclude<
   AppointmentEvent,
@@ -83,6 +84,22 @@ const VeterinarianScheduleConflictSchema = z.object({
   appointmentId: AppointmentId.schema,
   conflictingAppointmentId: AppointmentId.schema,
 });
+const StoredVeterinarianScheduleSchema = z.object({
+  appointmentId: AppointmentId.schema,
+  scheduledAt: Timestamp.schema,
+  durationMinutes: AppointmentDuration.schema,
+});
+
+const intervalEndEpochMilliseconds = (
+  scheduledAt: TimestampValue,
+  durationMinutes: AppointmentDurationValue,
+): number => {
+  const end = Timestamp.toEpochMilliseconds(scheduledAt) + durationMinutes * 60_000;
+  if (!Timestamp.schema.safeParse(new Date(end).toISOString()).success) {
+    throw new TypeError("Appointment interval end is outside Timestamp range");
+  }
+  return end;
+};
 
 const depositAmountOf = (state: Appointment): number | null =>
   state.settlement.kind === "NoPayment" ? null : state.settlement.depositAmount;
@@ -119,33 +136,41 @@ const ensureVeterinarianScheduleAvailable = (
 ): void => {
   const state = event.aggregateState;
   if (!checksVeterinarianSchedule(event) || state.assignedVeterinarianId === null) return;
-  const storedStart = sqliteJulianDay(appointmentsTable.scheduledAt);
-  const storedEnd = sqliteJulianDay(
-    appointmentsTable.scheduledAt,
-    sql`'+' || ${appointmentsTable.durationMinutes} || ' minutes'`,
-  );
-  const candidateStart = sqliteJulianDay(state.scheduledAt);
-  const candidateEnd = sqliteJulianDay(
-    state.scheduledAt,
-    sql`'+' || ${state.durationMinutes} || ' minutes'`,
-  );
-  const conflicting = tx
-    .select({ appointmentId: appointmentsTable.appointmentId })
+  const storedSchedules = tx
+    .select({
+      appointmentId: appointmentsTable.appointmentId,
+      scheduledAt: appointmentsTable.scheduledAt,
+      durationMinutes: appointmentsTable.durationMinutes,
+    })
     .from(appointmentsTable)
     .where(and(
       eq(appointmentsTable.assignedVeterinarianId, state.assignedVeterinarianId),
       inArray(appointmentsTable.status, ["Scheduled", "CheckedIn"]),
       ne(appointmentsTable.appointmentId, state.appointmentId),
-      sql`${storedStart} < ${candidateEnd}`,
-      sql`${candidateStart} < ${storedEnd}`,
     ))
-    .limit(1)
-    .get();
+    .all()
+    .map((row) => StoredVeterinarianScheduleSchema.parse(row));
+  const storedIntervals = storedSchedules.map((schedule) => ({
+    appointmentId: schedule.appointmentId,
+    start: Timestamp.toEpochMilliseconds(schedule.scheduledAt),
+    end: intervalEndEpochMilliseconds(
+      schedule.scheduledAt,
+      schedule.durationMinutes,
+    ),
+  }));
+  const candidateStart = Timestamp.toEpochMilliseconds(state.scheduledAt);
+  const candidateEnd = intervalEndEpochMilliseconds(
+    state.scheduledAt,
+    state.durationMinutes,
+  );
+  const conflicting = storedIntervals.find(({ start, end }) =>
+    start < candidateEnd && candidateStart < end,
+  );
   if (conflicting !== undefined) {
     throw {
       kind: "VeterinarianScheduleConflict",
       appointmentId: state.appointmentId,
-      conflictingAppointmentId: AppointmentId.schema.parse(conflicting.appointmentId),
+      conflictingAppointmentId: conflicting.appointmentId,
     } as const;
   }
 };

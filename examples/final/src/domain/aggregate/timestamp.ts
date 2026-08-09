@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { schemaResult } from "../shared/schemaResult.js";
 
-const timestampParts = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?(?:Z|([+-])(\d{2}):?(\d{2}))$/;
+const timestampParts = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(?:Z|([+-])(\d{2}):?(\d{2}))$/;
 
 const isLeapYear = (year: number): boolean =>
   year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
@@ -41,4 +41,5 @@ export const Timestamp = {
   schema: TimestampSchema,
   canonicalSchema: CanonicalTimestampSchema,
   parse: schemaResult(TimestampSchema),
+  toEpochMilliseconds: (value: Timestamp): number => Date.parse(value),
 } as const;

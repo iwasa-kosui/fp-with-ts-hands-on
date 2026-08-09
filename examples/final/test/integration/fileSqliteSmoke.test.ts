@@ -754,9 +754,11 @@ describe("file SQLite application smoke", () => {
     const actor = {
       kind: "Admin" as const,
       userId: actorUserId,
-      email: "admin@example.test" as never,
-      name: "Admin" as never,
-      passwordHash: "hash" as never,
+      email: UserEmail.schema.parse("admin@example.test"),
+      name: UserName.schema.parse("Admin"),
+      passwordHash: PasswordHash.schema.parse(
+        `scrypt$${"A".repeat(22)}==$${"B".repeat(86)}==`,
+      ),
     };
     const range = {
       startsAt: Timestamp.schema.parse("2026-08-09T15:00:00Z"),
@@ -1088,6 +1090,82 @@ describe("file SQLite application smoke", () => {
         database.insert(domainEventPayloadsTable).values(payload).run();
       } else {
         database.insert(domainEventSensitivePayloadsTable).values(payload).run();
+      }
+      const before = snapshotLegacyMigrationState(database);
+
+      expect(() => migrateDatabase(database)).toThrow();
+      expect(snapshotLegacyMigrationState(database)).toEqual(before);
+    },
+  );
+
+  test.each(["Projection", "Regular", "Sensitive"] as const)(
+    "rejects and fully rolls back a %s timestamp with sub-millisecond precision",
+    (source) => {
+      const database = createSqliteDatabase(":memory:");
+      migrateDatabase(database);
+      database.run(sql.raw(
+        "DELETE FROM __drizzle_migrations WHERE created_at = 1786806000000",
+      ));
+      const appointmentId = "7f100000-0000-4000-8000-000000000001";
+      const ownerId = "7f100000-0000-4000-8000-000000000002";
+      const petId = "7f100000-0000-4000-8000-000000000003";
+      const scheduledAt = "2026-08-10T10:00:00.0005Z";
+      const state = {
+        kind: "Scheduled",
+        appointmentId,
+        ownerId,
+        petId,
+        scheduledAt,
+        durationMinutes: 30,
+        serviceCode: "GeneralConsultation",
+        bookingKind: "Reserved",
+        assignedVeterinarianId: null,
+        visitReason: "fraction precision",
+        receptionNote: null,
+        settlement: { kind: "NoPayment" },
+        version: 1,
+      } as const;
+      expect(Timestamp.schema.safeParse(scheduledAt).success).toBe(false);
+      if (source === "Projection") {
+        database.insert(appointmentsTable).values({
+          appointmentId,
+          status: "Scheduled",
+          ownerId,
+          petId,
+          scheduledAt,
+          durationMinutes: 30,
+          serviceCode: "GeneralConsultation",
+          bookingKind: "Reserved",
+          assignedVeterinarianId: null,
+          receptionNote: null,
+          settlementStatus: "NoPayment",
+          depositAmount: null,
+          version: 1,
+          state,
+        }).run();
+      } else {
+        const eventId = source === "Regular"
+          ? "7f100000-0000-4000-8000-000000000004"
+          : "7f100000-0000-4000-8000-000000000005";
+        database.insert(domainEventsTable).values({
+          eventId,
+          aggregateId: appointmentId,
+          aggregateName: "Appointment",
+          eventName: "appointment.booked",
+          occurredAt: "2026-08-10T09:00:00Z",
+          actorUserId: "7f100000-0000-4000-8000-000000000006",
+          payloadSensitivity: source,
+        }).run();
+        const payload = {
+          eventId,
+          aggregateState: state,
+          eventPayload: { appointmentId },
+        };
+        if (source === "Regular") {
+          database.insert(domainEventPayloadsTable).values(payload).run();
+        } else {
+          database.insert(domainEventSensitivePayloadsTable).values(payload).run();
+        }
       }
       const before = snapshotLegacyMigrationState(database);
 

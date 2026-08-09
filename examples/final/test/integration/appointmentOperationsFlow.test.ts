@@ -171,7 +171,7 @@ const bookVaccination = async (
 };
 
 describe("file SQLite appointment operations flow", () => {
-  test("rejects an impossible timestamp before conflict checks or any appointment audit write", async () => {
+  test("rejects invalid and sub-millisecond timestamps before conflict checks or any appointment audit write", async () => {
     const harness = createHarness();
     const adminCookie = await setup(harness);
     const veterinarianRow = await createUser(harness, adminCookie, {
@@ -183,7 +183,7 @@ describe("file SQLite appointment operations flow", () => {
     const bookedResponse = await post(harness, "/appointments", {
       ownerId: owner.ownerId,
       petId: pet.petId,
-      scheduledAt: "2026-08-10T12:00:00+09:00",
+      scheduledAt: "2026-08-10T18:30:00+09:00",
       serviceCode: "GeneralConsultation",
       durationMinutes: "30",
       assignedVeterinarianId: veterinarianRow.veterinarianId,
@@ -195,7 +195,7 @@ describe("file SQLite appointment operations flow", () => {
     expect(existingAppointmentId).not.toBe("");
     expect(harness.database.select().from(appointmentsTable)
       .where(eq(appointmentsTable.appointmentId, existingAppointmentId)).get()?.scheduledAt)
-      .toBe("2026-08-10T03:00:00.000Z");
+      .toBe("2026-08-10T09:30:00.000Z");
     const before = {
       appointments: harness.database.select().from(appointmentsTable).all(),
       events: harness.database.select().from(domainEventsTable).all(),
@@ -203,25 +203,30 @@ describe("file SQLite appointment operations flow", () => {
       sensitive: harness.database.select().from(domainEventSensitivePayloadsTable).all(),
     };
 
-    const rejected = await post(harness, "/appointments", {
-      ownerId: owner.ownerId,
-      petId: pet.petId,
-      scheduledAt: "2026-08-10T12:00:00+99:99",
-      serviceCode: "GeneralConsultation",
-      durationMinutes: "30",
-      assignedVeterinarianId: veterinarianRow.veterinarianId,
-      reason: "競合を迂回してはいけない予約",
-    }, adminCookie);
+    for (const scheduledAt of [
+      "2026-08-10T12:00:00+99:99",
+      "2026-08-10T10:00:00.0005Z",
+    ]) {
+      const rejected = await post(harness, "/appointments", {
+        ownerId: owner.ownerId,
+        petId: pet.petId,
+        scheduledAt,
+        serviceCode: "GeneralConsultation",
+        durationMinutes: "30",
+        assignedVeterinarianId: veterinarianRow.veterinarianId,
+        reason: "競合を迂回してはいけない予約",
+      }, adminCookie);
 
-    expect(rejected.status).toBe(200);
-    await expect(rejected.json()).resolves.toMatchObject({
-      component: "Appointments/New",
-      props: { errors: { scheduledAt: "入力内容を確認してください" } },
-    });
-    expect(harness.database.select().from(appointmentsTable).all()).toEqual(before.appointments);
-    expect(harness.database.select().from(domainEventsTable).all()).toEqual(before.events);
-    expect(harness.database.select().from(domainEventPayloadsTable).all()).toEqual(before.regular);
-    expect(harness.database.select().from(domainEventSensitivePayloadsTable).all()).toEqual(before.sensitive);
+      expect(rejected.status).toBe(200);
+      await expect(rejected.json()).resolves.toMatchObject({
+        component: "Appointments/New",
+        props: { errors: { scheduledAt: "入力内容を確認してください" } },
+      });
+      expect(harness.database.select().from(appointmentsTable).all()).toEqual(before.appointments);
+      expect(harness.database.select().from(domainEventsTable).all()).toEqual(before.events);
+      expect(harness.database.select().from(domainEventPayloadsTable).all()).toEqual(before.regular);
+      expect(harness.database.select().from(domainEventSensitivePayloadsTable).all()).toEqual(before.sensitive);
+    }
 
     const calendar = await page(
       harness,

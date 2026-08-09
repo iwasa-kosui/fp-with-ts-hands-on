@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { eq, sql } from "drizzle-orm";
+import { Buffer } from "node:buffer";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -1072,45 +1073,247 @@ describe("SQLite event stores", () => {
     storedStatus,
     conflicts,
   ) => {
+    const directory = mkdtempSync(join(tmpdir(), "clinic-final-compact-overlap-"));
+    try {
+      const db = createSqliteDatabase(join(directory, "clinic.sqlite"));
+      migrateDatabase(db);
+      const store = createAppointmentEventStore(db);
+      const bookAt = (
+        appointmentId: AppointmentId,
+        startsAt: string,
+        sequence: number,
+      ) => Appointment.book(eventContext(sequence))({
+        appointmentId,
+        petId: ids.pet,
+        ownerId: ids.owner,
+        scheduledAt: Timestamp.schema.parse(startsAt),
+        durationMinutes: AppointmentDuration.schema.parse(30),
+        serviceCode: ServiceCode.schema.parse("GeneralConsultation"),
+        bookingKind: "Reserved",
+        assignedVeterinarianId: ids.veterinarian,
+        visitReason: AppointmentReason.schema.parse(`compact offset ${sequence}`),
+        receptionNote: null,
+      });
+      const existing = bookAt(ids.appointment, storedAt, 20);
+      (await store.store(existing))._unsafeUnwrap();
+      if (storedStatus === "CheckedIn") {
+        db.update(appointmentsTable)
+          .set({ status: storedStatus })
+          .where(eq(appointmentsTable.appointmentId, ids.appointment))
+          .run();
+      }
+      const candidate = bookAt(ids.otherAppointment, candidateAt, 21);
+
+      const result = await store.store(candidate);
+
+      expect(result.isErr()).toBe(conflicts);
+      if (conflicts) {
+        expect(result._unsafeUnwrapErr()).toEqual({
+          kind: "VeterinarianScheduleConflict",
+          appointmentId: ids.otherAppointment,
+          conflictingAppointmentId: ids.appointment,
+        });
+      }
+    } finally {
+      rmSync(directory, { force: true, recursive: true });
+    }
+  });
+
+  test.each([
+    {
+      case: "an invalid stored start",
+      storedAt: "not-a-timestamp",
+      storedDuration: 30,
+      candidateAt: "2026-08-10T00:15:00Z",
+    },
+    {
+      case: "a BLOB stored start",
+      storedAt: Buffer.from("2026-08-10T00:00:00Z"),
+      storedDuration: 30,
+      candidateAt: "2026-08-10T00:15:00Z",
+    },
+    {
+      case: "a numeric Julian stored start",
+      storedAt: 2461262,
+      storedDuration: 30,
+      candidateAt: "2026-08-09T12:15:00Z",
+    },
+    {
+      case: "a date-only stored start",
+      storedAt: "2026-08-10",
+      storedDuration: 30,
+      candidateAt: "2026-08-10T00:15:00Z",
+    },
+    {
+      case: "a NULL stored duration",
+      storedAt: "2026-08-10T00:00:00Z",
+      storedDuration: null,
+      candidateAt: "2026-08-10T00:15:00Z",
+    },
+    {
+      case: "a negative stored duration",
+      storedAt: "2026-08-10T00:00:00Z",
+      storedDuration: -30,
+      candidateAt: "2026-08-10T00:15:00Z",
+    },
+    {
+      case: "a zero stored duration",
+      storedAt: "2026-08-10T00:00:00Z",
+      storedDuration: 0,
+      candidateAt: "2026-08-10T00:15:00Z",
+    },
+    {
+      case: "a non-number stored duration",
+      storedAt: "2026-08-10T00:00:00Z",
+      storedDuration: "thirty",
+      candidateAt: "2026-08-10T00:15:00Z",
+    },
+    {
+      case: "an unsupported positive stored duration",
+      storedAt: "2026-08-10T00:00:00Z",
+      storedDuration: 20,
+      candidateAt: "2026-08-10T00:15:00Z",
+    },
+    {
+      case: "a stored interval whose end leaves the supported calendar",
+      storedAt: "9999-12-31T23:59:00Z",
+      storedDuration: 60,
+      candidateAt: "2026-08-10T00:15:00Z",
+    },
+  ] satisfies ReadonlyArray<Readonly<{
+    case: string;
+    storedAt: string | number | Buffer;
+    storedDuration: string | number | null;
+    candidateAt: string;
+  }>>) (
+    "fails closed without writes when the same veterinarian has $case",
+    async ({ storedAt, storedDuration, candidateAt }) => {
+      const directory = mkdtempSync(join(tmpdir(), "clinic-final-corrupt-overlap-"));
+      try {
+        const db = createSqliteDatabase(join(directory, "clinic.sqlite"));
+        migrateDatabase(db);
+        const store = createAppointmentEventStore(db);
+        const existing = Appointment.book(eventContext(20))({
+          appointmentId: ids.appointment,
+          petId: ids.pet,
+          ownerId: ids.owner,
+          scheduledAt: Timestamp.schema.parse("2026-08-10T00:00:00Z"),
+          durationMinutes: AppointmentDuration.schema.parse(30),
+          serviceCode: ServiceCode.schema.parse("GeneralConsultation"),
+          bookingKind: "Reserved",
+          assignedVeterinarianId: ids.veterinarian,
+          visitReason: AppointmentReason.schema.parse("corrupt stored appointment"),
+          receptionNote: null,
+        });
+        (await store.store(existing))._unsafeUnwrap();
+        db.$client.pragma("foreign_keys = OFF");
+        db.$client.exec(`
+          CREATE TABLE appointments_corrupt (
+            appointment_id text PRIMARY KEY,
+            status text NOT NULL,
+            owner_id text NOT NULL,
+            pet_id text NOT NULL,
+            scheduled_at text,
+            duration_minutes integer,
+            service_code text NOT NULL,
+            booking_kind text NOT NULL,
+            assigned_veterinarian_id text,
+            reception_note text,
+            settlement_status text NOT NULL,
+            deposit_amount integer,
+            version integer NOT NULL,
+            state text NOT NULL
+          );
+          INSERT INTO appointments_corrupt SELECT * FROM appointments;
+          DROP TABLE appointments;
+          ALTER TABLE appointments_corrupt RENAME TO appointments;
+        `);
+        db.$client.pragma("foreign_keys = ON");
+        db.$client.prepare(`
+          UPDATE appointments
+          SET scheduled_at = ?, duration_minutes = ?
+          WHERE appointment_id = ?
+        `).run(storedAt, storedDuration, ids.appointment);
+        const before = {
+          appointments: db.select().from(appointmentsTable).all(),
+          ...auditTablesSnapshot(db),
+        };
+        const candidate = Appointment.book(eventContext(21))({
+          appointmentId: ids.otherAppointment,
+          petId: ids.otherPet,
+          ownerId: ids.owner,
+          scheduledAt: Timestamp.schema.parse(candidateAt),
+          durationMinutes: AppointmentDuration.schema.parse(15),
+          serviceCode: ServiceCode.schema.parse("FollowUpVisit"),
+          bookingKind: "Reserved",
+          assignedVeterinarianId: ids.veterinarian,
+          visitReason: AppointmentReason.schema.parse("candidate appointment"),
+          receptionNote: null,
+        });
+
+        const result = await store.store(candidate);
+
+        expect(result._unsafeUnwrapErr()).toMatchObject({
+          kind: "RepositoryError",
+          operation: "AppointmentEventStore.store",
+        });
+        expect({
+          appointments: db.select().from(appointmentsTable).all(),
+          ...auditTablesSnapshot(db),
+        }).toEqual(before);
+      } finally {
+        rmSync(directory, { force: true, recursive: true });
+      }
+    },
+  );
+
+  test.each([
+    ["another veterinarian's active row", ids.otherVeterinarian, "Scheduled"],
+    ["the same veterinarian's non-active row", ids.veterinarian, "InExamination"],
+  ] as const)("does not let corrupt %s block the candidate schedule", async (
+    _case,
+    storedVeterinarianId,
+    storedStatus,
+  ) => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
     const store = createAppointmentEventStore(db);
-    const bookAt = (
-      appointmentId: AppointmentId,
-      startsAt: string,
-      sequence: number,
-    ) => Appointment.book(eventContext(sequence))({
-      appointmentId,
+    const existing = Appointment.book(eventContext(22))({
+      appointmentId: ids.appointment,
       petId: ids.pet,
       ownerId: ids.owner,
-      scheduledAt: Timestamp.schema.parse(startsAt),
+      scheduledAt: Timestamp.schema.parse("2026-08-10T00:00:00Z"),
       durationMinutes: AppointmentDuration.schema.parse(30),
       serviceCode: ServiceCode.schema.parse("GeneralConsultation"),
       bookingKind: "Reserved",
-      assignedVeterinarianId: ids.veterinarian,
-      visitReason: AppointmentReason.schema.parse(`compact offset ${sequence}`),
+      assignedVeterinarianId: storedVeterinarianId,
+      visitReason: AppointmentReason.schema.parse("unrelated stored appointment"),
       receptionNote: null,
     });
-    const existing = bookAt(ids.appointment, storedAt, 20);
     (await store.store(existing))._unsafeUnwrap();
-    if (storedStatus === "CheckedIn") {
-      db.update(appointmentsTable)
-        .set({ status: storedStatus })
-        .where(eq(appointmentsTable.appointmentId, ids.appointment))
-        .run();
-    }
-    const candidate = bookAt(ids.otherAppointment, candidateAt, 21);
+    db.update(appointmentsTable)
+      .set({ scheduledAt: "not-a-timestamp", status: storedStatus })
+      .where(eq(appointmentsTable.appointmentId, ids.appointment))
+      .run();
+    const candidate = Appointment.book(eventContext(23))({
+      appointmentId: ids.otherAppointment,
+      petId: ids.otherPet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T00:15:00Z"),
+      durationMinutes: AppointmentDuration.schema.parse(15),
+      serviceCode: ServiceCode.schema.parse("FollowUpVisit"),
+      bookingKind: "Reserved",
+      assignedVeterinarianId: ids.veterinarian,
+      visitReason: AppointmentReason.schema.parse("candidate appointment"),
+      receptionNote: null,
+    });
 
     const result = await store.store(candidate);
 
-    expect(result.isErr()).toBe(conflicts);
-    if (conflicts) {
-      expect(result._unsafeUnwrapErr()).toEqual({
-        kind: "VeterinarianScheduleConflict",
-        appointmentId: ids.otherAppointment,
-        conflictingAppointmentId: ids.appointment,
-      });
-    }
+    expect(result.isOk()).toBe(true);
+    expect(db.select().from(appointmentsTable).all()
+      .some(({ appointmentId }) => appointmentId === ids.otherAppointment))
+      .toBe(true);
   });
 
   test.each([

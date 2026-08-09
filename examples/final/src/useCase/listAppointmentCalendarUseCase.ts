@@ -1,6 +1,7 @@
 import type { ResultAsync } from "neverthrow";
 
 import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
+import { Timestamp } from "../domain/aggregate/timestamp.js";
 import { BusinessDate, type BusinessDate as BusinessDateValue } from "../domain/appointment/businessDate.js";
 import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
 import type { UserId } from "../domain/user/userId.js";
@@ -45,7 +46,9 @@ const run = (dependencies: Dependencies) => (input: UseCaseInput): UseCaseOutput
       .filter((appointment) => input.includeCanceled || appointment.appointmentStatus !== "Canceled")
       .filter((appointment) => input.veterinarianId === null || appointment.assignedVeterinarianId === input.veterinarianId)
       .sort((left, right) =>
-        left.startsAt.localeCompare(right.startsAt) || left.petName.localeCompare(right.petName, "ja"),
+        Timestamp.toEpochMilliseconds(left.startsAt) - Timestamp.toEpochMilliseconds(right.startsAt) ||
+        left.petName.localeCompare(right.petName, "ja") ||
+        left.appointmentId.localeCompare(right.appointmentId),
       ))
     .map((appointments) => ({ appointments }));
 

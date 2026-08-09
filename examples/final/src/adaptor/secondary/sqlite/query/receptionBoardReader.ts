@@ -11,9 +11,10 @@ import { ReceptionNote } from "../../../../domain/appointment/receptionNote.js";
 import { ServiceCode } from "../../../../domain/appointment/serviceCode.js";
 import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js";
 import type { ReceptionBoardReader, ReceptionBoardReaderRow } from "../../../../useCase/query/receptionBoardReader.js";
+import { ensureAppointmentScheduledTimestampsValid } from "../appointmentTimestampPreflight.js";
 import type { SqliteDatabase } from "../db.js";
 import { appointmentsTable, ownersTable, petsTable, usersTable } from "../schema.js";
-import { sqliteInstantIsNull, sqliteJulianDay } from "../sqliteTimestamp.js";
+import { sqliteJulianDay } from "../sqliteTimestamp.js";
 
 const NoPaymentSchema = z.object({ kind: z.literal("NoPayment") });
 const DepositReceivedSchema = z.object({ kind: z.literal("DepositReceived") });
@@ -98,14 +99,7 @@ const toReaderRow = (loadedAt: z.infer<typeof Timestamp.schema>) => (raw: unknow
 export const createReceptionBoardReader = (db: SqliteDatabase): ReceptionBoardReader => ({
   list: (_actor, range, loadedAt) => ResultAsync.fromPromise(
     Promise.resolve().then(() => {
-      const invalid = db.select({ appointmentId: appointmentsTable.appointmentId })
-        .from(appointmentsTable)
-        .where(sqliteInstantIsNull(appointmentsTable.scheduledAt))
-        .limit(1)
-        .get();
-      if (invalid !== undefined) {
-        throw new TypeError("Corrupt appointment scheduled timestamp projection");
-      }
+      ensureAppointmentScheduledTimestampsValid(db);
       const scheduledInstant = sqliteJulianDay(appointmentsTable.scheduledAt);
       const rangeStart = sqliteJulianDay(range.startsAt);
       const rangeEnd = sqliteJulianDay(range.endsAt);

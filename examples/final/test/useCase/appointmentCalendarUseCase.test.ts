@@ -43,6 +43,70 @@ describe("BusinessDate", () => {
 });
 
 describe("ListAppointmentCalendarUseCase", () => {
+  test("sorts final DTOs by instant, pet name, and appointment ID independently of reader order", async () => {
+    const base = {
+      endsAt: Timestamp.schema.parse("2026-08-09T15:30:00Z"),
+      durationMinutes: 30 as const,
+      serviceCode: "GeneralConsultation" as const,
+      bookingKind: "Reserved" as const,
+      assignedVeterinarianId: veterinarianId,
+      assignedVeterinarianName: "佐藤 獣医師",
+      appointmentStatus: "Scheduled" as const,
+      settlementStatus: "NoPayment" as const,
+    };
+    const sameInstantFirstId = {
+      ...base,
+      appointmentId: AppointmentId.schema.parse("82000000-0000-4000-8000-000000000002"),
+      startsAt: Timestamp.schema.parse("2026-08-10T01:00+1000"),
+      petName: "あずき",
+    };
+    const sameInstantSecondId = {
+      ...base,
+      appointmentId: AppointmentId.schema.parse("82000000-0000-4000-8000-000000000004"),
+      startsAt: Timestamp.schema.parse("2026-08-09T15:00:00Z"),
+      petName: "あずき",
+    };
+    const sameInstantLaterPet = {
+      ...base,
+      appointmentId: AppointmentId.schema.parse("82000000-0000-4000-8000-000000000003"),
+      startsAt: Timestamp.schema.parse("2026-08-10T00:30+0930"),
+      petName: "むぎ",
+    };
+    const laterInstant = {
+      ...base,
+      appointmentId: AppointmentId.schema.parse("82000000-0000-4000-8000-000000000001"),
+      startsAt: Timestamp.schema.parse("2026-08-09T01:30-1400"),
+      petName: "いちご",
+    };
+    const useCase = ListAppointmentCalendarUseCase.create({
+      userResolver: { resolveById: () => okAsync(actor) },
+      appointmentCalendarReader: {
+        list: () => okAsync([
+          laterInstant,
+          sameInstantSecondId,
+          sameInstantLaterPet,
+          sameInstantFirstId,
+        ]),
+      },
+    });
+
+    const result = await useCase.run({
+      actorUserId,
+      date: BusinessDate.schema.parse("2026-08-09"),
+      view: "day",
+      veterinarianId: null,
+      includeCanceled: true,
+    });
+
+    expect(result._unsafeUnwrap().appointments.map(({ appointmentId }) => appointmentId))
+      .toEqual([
+        sameInstantFirstId.appointmentId,
+        sameInstantSecondId.appointmentId,
+        sameInstantLaterPet.appointmentId,
+        laterInstant.appointmentId,
+      ]);
+  });
+
   test("keeps canceled appointments hidden by default and filters by veterinarian", async () => {
     const scheduled = {
       appointmentId: AppointmentId.schema.parse("82000000-0000-4000-8000-000000000001"),
