@@ -118,7 +118,7 @@ describe("SQLite initial Admin setup store", () => {
     expect(db.select().from(installationTable).all()).toHaveLength(1);
     expect(db.select().from(usersTable).all()).toHaveLength(1);
     expect(db.select().from(sessionsTable).all()).toEqual([]);
-    expect(db.select().from(domainEventsTable).all()).toEqual([]);
+    expect(client.prepare("SELECT event_id FROM domain_events").all()).toEqual([]);
   });
 
   test("leaves a genuinely empty upgraded database available for setup", async () => {

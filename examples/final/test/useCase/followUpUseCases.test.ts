@@ -35,7 +35,7 @@ import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
 import { ListEventsUseCase } from "../../src/useCase/listEventsUseCase.js";
 import { ListFollowUpsUseCase } from "../../src/useCase/listFollowUpsUseCase.js";
-import type { SanitizedAuditRecord } from "../../src/useCase/query/eventHistoryReader.js";
+import type { AuditEventSummary } from "../../src/useCase/query/eventHistoryReader.js";
 import { RequestFollowUpUseCase } from "../../src/useCase/requestFollowUpUseCase.js";
 
 const ids = {
@@ -451,14 +451,11 @@ describe("event history query", () => {
     eventId: ids.paymentEvent,
     aggregateId: ids.appointment,
     aggregateName: "Appointment",
-    aggregateState: { kind: "Paid", appointmentId: ids.appointment },
     eventName: "appointment.payment-recorded",
-    eventPayload: {
-      appointmentId: ids.appointment,
-    },
     occurredAt: paymentAt,
     actorUserId: ids.receptionist,
-  } as const satisfies SanitizedAuditRecord;
+    payloadSensitivity: "Sensitive",
+  } as const satisfies AuditEventSummary;
 
   test("rejects non-Admin before resolving events", async () => {
     let eventHistoryReaderCalls = 0;

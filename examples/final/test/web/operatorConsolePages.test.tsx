@@ -379,7 +379,7 @@ describe("Operator Console shell", () => {
     expect(html).toContain('name="appointmentIds"');
   });
 
-  test("renders sanitized audit event data in an accessible table", () => {
+  test("renders a sensitive known audit event as summary-only data", () => {
     const html = renderPublicPage(
       <EventsIndex
         auth={{ user: { userId: adminId, role: "Admin" } }}
@@ -389,11 +389,10 @@ describe("Operator Console shell", () => {
           actorUserId: adminId,
           aggregateId: appointmentId,
           aggregateName: "Appointment",
-          aggregateState: { kind: "Paid" },
           eventId: EventId.schema.parse("78000000-0000-4000-8000-000000000001"),
           eventName: "appointment.payment-recorded",
-          eventPayload: { appointmentId },
           occurredAt: Timestamp.schema.parse("2026-08-09T03:00:00.000Z"),
+          payloadSensitivity: "Sensitive",
         }]}
       />,
     );
@@ -402,12 +401,39 @@ describe("Operator Console shell", () => {
     expect(html).toContain('role="status"');
     expect(html).toContain("監査履歴には個人情報を表示しません");
     expect(html).toContain("78000000-0000-4000-8000-000000000001");
-    expect(html).toContain("appointment.payment-recorded");
+    expect(html).toContain("会計を記録");
+    expect(html).toContain("機微情報を含みます");
     expect(html).toContain("76000000-0000-4000-8000-000000000001");
     expect(html).toContain("Appointment");
     expect(html).toContain("75000000-0000-4000-8000-000000000001");
-    expect(html).toContain("<dl");
+    expect(html).not.toContain("<dl");
     expect(html).not.toContain("raw payload");
     expect(html).not.toContain("<pre");
+  });
+
+  test("renders an unknown sensitive event with only its event id", () => {
+    const html = renderPublicPage(
+      <EventsIndex
+        auth={{ user: { userId: adminId, role: "Admin" } }}
+        errors={{}}
+        flash={{}}
+        events={[{
+          actorUserId: adminId,
+          aggregateId: "private-aggregate-id",
+          aggregateName: "PrivateAggregate",
+          eventId: EventId.schema.parse("78000000-0000-4000-8000-000000000099"),
+          eventName: "future.private-event",
+          occurredAt: Timestamp.schema.parse("2026-08-09T03:00:00.000Z"),
+          payloadSensitivity: "Sensitive",
+        }]}
+      />,
+    );
+
+    expect(html).toContain("機微イベント");
+    expect(html).toContain("78000000-0000-4000-8000-000000000099");
+    expect(html).not.toContain("future.private-event");
+    expect(html).not.toContain("private-aggregate-id");
+    expect(html).not.toContain("PrivateAggregate");
+    expect(html).not.toContain(String(adminId));
   });
 });

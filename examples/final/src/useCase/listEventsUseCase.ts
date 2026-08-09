@@ -6,11 +6,11 @@ import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 import type {
+  AuditEventSummary,
   EventHistoryReader,
-  SanitizedAuditRecord,
 } from "./query/eventHistoryReader.js";
 
-export type EventView = SanitizedAuditRecord;
+export type EventView = AuditEventSummary;
 export type UseCaseInput = Readonly<{ actorUserId: UserId }>;
 export type UseCaseOk = Readonly<{ events: readonly EventView[] }>;
 export type UseCaseRepositoryError = Readonly<{

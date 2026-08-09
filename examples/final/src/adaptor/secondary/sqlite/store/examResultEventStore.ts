@@ -5,8 +5,8 @@ import type { RepositoryError } from "../../../../domain/aggregate/repositoryErr
 import type { ExamResultEvent } from "../../../../domain/examResult/examResultEvent.js";
 import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type { SqliteDatabase } from "../db.js";
-import { toEventRecord } from "../eventRecord.js";
-import { domainEventsTable, examResultsTable } from "../schema.js";
+import { persistDomainEvent } from "../eventPersistence.js";
+import { examResultsTable } from "../schema.js";
 
 export const createExamResultEventStore = (db: SqliteDatabase) => ({
   store: (...events: readonly ExamResultEvent[]) =>
@@ -30,28 +30,12 @@ export const createExamResultEventStore = (db: SqliteDatabase) => ({
                   .values(values)
                   .onConflictDoUpdate({ target: examResultsTable.examId, set: values })
                   .run();
-                tx.insert(domainEventsTable)
-                  .values(toEventRecord(
-                    event,
-                    {
-                      examId: state.examId,
-                      petId: state.petId,
-                      collectedAt: state.collectedAt,
-                      needsFollowUp: state.needsFollowUp,
-                    },
-                    { examId: state.examId, petId: state.petId },
-                  ))
-                  .run();
+                persistDomainEvent(tx, event);
                 return;
               }
               case "ExamResultDeleted":
                 tx.delete(examResultsTable).where(eq(examResultsTable.examId, event.aggregateId)).run();
-                tx.insert(domainEventsTable)
-                  .values(toEventRecord(event, undefined, {
-                    examId: event.aggregateId,
-                    petId: event.eventPayload.petId,
-                  }))
-                  .run();
+                persistDomainEvent(tx, event);
                 return;
               default:
                 return assertNever(event);

@@ -84,12 +84,32 @@ export const domainEventsTable = sqliteTable("domain_events", {
   eventId: text("event_id").primaryKey(),
   aggregateId: text("aggregate_id").notNull(),
   aggregateName: text("aggregate_name").notNull(),
-  aggregateState: text("aggregate_state", { mode: "json" }),
   eventName: text("event_name").notNull(),
-  eventPayload: text("event_payload", { mode: "json" }).notNull(),
   occurredAt: text("occurred_at").notNull(),
   actorUserId: text("actor_user_id").notNull(),
+  payloadSensitivity: text("payload_sensitivity", {
+    enum: ["Regular", "Sensitive"],
+  }).notNull(),
 });
+
+export const domainEventPayloadsTable = sqliteTable("domain_event_payloads", {
+  eventId: text("event_id")
+    .primaryKey()
+    .references(() => domainEventsTable.eventId),
+  aggregateState: text("aggregate_state", { mode: "json" }),
+  eventPayload: text("event_payload", { mode: "json" }).notNull(),
+});
+
+export const domainEventSensitivePayloadsTable = sqliteTable(
+  "domain_event_sensitive_payloads",
+  {
+    eventId: text("event_id")
+      .primaryKey()
+      .references(() => domainEventsTable.eventId),
+    aggregateState: text("aggregate_state", { mode: "json" }),
+    eventPayload: text("event_payload", { mode: "json" }).notNull(),
+  },
+);
 
 export const sqliteSchema = {
   installationTable,
@@ -101,4 +121,6 @@ export const sqliteSchema = {
   examResultsTable,
   followUpRequestClaimsTable,
   domainEventsTable,
+  domainEventPayloadsTable,
+  domainEventSensitivePayloadsTable,
 } as const;

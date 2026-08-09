@@ -8,80 +8,13 @@ import type { AppointmentStoreError } from "../../../../domain/appointment/appoi
 import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
 import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type { SqliteDatabase } from "../db.js";
-import { toEventRecord } from "../eventRecord.js";
-import { appointmentsTable, domainEventsTable } from "../schema.js";
+import { persistDomainEvent } from "../eventPersistence.js";
+import { appointmentsTable } from "../schema.js";
 
 type AppointmentProjectionEvent = Exclude<
   AppointmentEvent,
   { kind: "AppointmentExaminationCompleted" }
 >;
-
-const safeState = (state: Appointment): Readonly<Record<string, unknown>> => {
-  const base = {
-    kind: state.kind,
-    appointmentId: state.appointmentId,
-    ownerId: state.ownerId,
-    petId: state.petId,
-    scheduledAt: state.scheduledAt,
-  };
-
-  switch (state.kind) {
-    case "Scheduled":
-      return base;
-    case "CheckedIn":
-      return { ...base, checkedInAt: state.checkedInAt };
-    case "InExamination":
-      return {
-        ...base,
-        checkedInAt: state.checkedInAt,
-        veterinarianId: state.veterinarianId,
-        examinationStartedAt: state.examinationStartedAt,
-      };
-    case "AwaitingPayment":
-      return {
-        ...base,
-        checkedInAt: state.checkedInAt,
-        veterinarianId: state.veterinarianId,
-        examinationStartedAt: state.examinationStartedAt,
-        examId: state.examId,
-        examinationCompletedAt: state.examinationCompletedAt,
-      };
-    case "Paid":
-      return {
-        ...base,
-        checkedInAt: state.checkedInAt,
-        veterinarianId: state.veterinarianId,
-        examinationStartedAt: state.examinationStartedAt,
-        examId: state.examId,
-        examinationCompletedAt: state.examinationCompletedAt,
-        amount: state.amount,
-        paidAt: state.paidAt,
-      };
-    case "Canceled":
-      return { ...base, canceledAt: state.canceledAt };
-    default:
-      return assertNever(state);
-  }
-};
-
-const safePayload = (
-  event: AppointmentProjectionEvent,
-): Readonly<Record<string, unknown>> => {
-  switch (event.kind) {
-    case "ExaminationStarted":
-      return {
-        appointmentId: event.aggregateId,
-        veterinarianId: event.aggregateState.veterinarianId,
-      };
-    case "AppointmentBooked":
-    case "AppointmentCheckedIn":
-    case "PaymentRecorded":
-    case "AppointmentCanceled":
-      return { appointmentId: event.aggregateId };
-    default:
-      return assertNever(event);
-  }
-};
 
 const projectionState = (state: Appointment): Readonly<Record<string, unknown>> => {
   const base = {
@@ -203,13 +136,7 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
                 appointmentId: event.aggregateId,
               } as const;
             }
-            tx.insert(domainEventsTable)
-              .values(toEventRecord(
-                event,
-                safeState(state),
-                safePayload(event),
-              ))
-              .run();
+            persistDomainEvent(tx, event);
           });
         }),
       ),

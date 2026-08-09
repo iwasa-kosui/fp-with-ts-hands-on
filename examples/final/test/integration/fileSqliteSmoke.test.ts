@@ -11,6 +11,8 @@ import {
 } from "../../src/adaptor/secondary/sqlite/db.js";
 import {
   appointmentsTable,
+  domainEventPayloadsTable,
+  domainEventSensitivePayloadsTable,
   domainEventsTable,
   examResultsTable,
   installationTable,
@@ -136,12 +138,20 @@ describe("file SQLite application smoke", () => {
       value: 1,
     });
     const persistedEvents = secondConnection.select().from(domainEventsTable).all();
+    const regularPayloads = secondConnection.select().from(domainEventPayloadsTable).all();
+    const sensitivePayloads = secondConnection
+      .select()
+      .from(domainEventSensitivePayloadsTable)
+      .all();
     expect(persistedEvents).toHaveLength(2);
+    expect(regularPayloads).toEqual([]);
+    expect(sensitivePayloads).toHaveLength(persistedEvents.length);
     expect(persistedEvents.map(({ eventName }) => eventName).sort()).toEqual([
       "session.created",
       "user.created",
     ]);
     const serializedEvents = JSON.stringify(persistedEvents);
+    const serializedSensitivePayloads = JSON.stringify(sensitivePayloads);
     for (const privateValue of [
       "admin@example.test",
       "Clinic Admin",
@@ -149,6 +159,7 @@ describe("file SQLite application smoke", () => {
       secondConnection.select().from(sessionsTable).get()?.tokenHash,
     ]) {
       expect(serializedEvents).not.toContain(privateValue);
+      expect(serializedSensitivePayloads).toContain(privateValue);
     }
   });
 
@@ -207,6 +218,12 @@ describe("file SQLite application smoke", () => {
       value: 0,
     });
     expect(secondConnection.select({ value: count() }).from(domainEventsTable).get()).toEqual({
+      value: 0,
+    });
+    expect(secondConnection.select({ value: count() }).from(domainEventPayloadsTable).get()).toEqual({
+      value: 0,
+    });
+    expect(secondConnection.select({ value: count() }).from(domainEventSensitivePayloadsTable).get()).toEqual({
       value: 0,
     });
   });

@@ -13,6 +13,7 @@ import {
 } from "../../src/adaptor/secondary/sqlite/resolver/userResolver.js";
 import { createUserEventStore } from "../../src/adaptor/secondary/sqlite/store/userEventStore.js";
 import {
+  domainEventSensitivePayloadsTable,
   domainEventsTable,
   followUpRequestClaimsTable,
 } from "../../src/adaptor/secondary/sqlite/schema.js";
@@ -26,7 +27,6 @@ import type { Admin, Receptionist } from "../../src/domain/user/user.js";
 import { UserEmail } from "../../src/domain/user/userEmail.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
-import type { SanitizedAuditRecord } from "../../src/useCase/query/eventHistoryReader.js";
 
 const passwordHash = `scrypt$${"A".repeat(22)}==$${"B".repeat(86)}==`;
 const auditAdmin = {
@@ -87,30 +87,45 @@ const insertDomainEvent = (
   });
   db.run(sql.raw(
     "INSERT INTO domain_events " +
-    "(event_id, aggregate_id, aggregate_name, aggregate_state, event_name, event_payload, occurred_at, actor_user_id) " +
+    "(event_id, aggregate_id, aggregate_name, event_name, occurred_at, actor_user_id, payload_sensitivity) " +
     `VALUES ('40000000-0000-4000-8000-000000000002', '${aggregateId}', '${aggregateName}', ` +
-    `'${aggregateState}', 'user.created', '${eventPayload}', ` +
-    "'2026-08-08T04:00:00.000Z', '40000000-0000-4000-8000-000000000003')",
+    "'user.created', '2026-08-08T04:00:00.000Z', " +
+    "'40000000-0000-4000-8000-000000000003', 'Sensitive')",
+  ));
+  db.run(sql.raw(
+    "INSERT INTO domain_event_sensitive_payloads " +
+    "(event_id, aggregate_state, event_payload) " +
+    `VALUES ('40000000-0000-4000-8000-000000000002', '${aggregateState}', '${eventPayload}')`,
   ));
 };
 
 const insertFollowUpEvent = (
   db: ReturnType<typeof createSqliteDatabase>,
-  overrides: Readonly<Record<string, unknown>>,
+  overrides: Readonly<{
+    eventId?: string;
+    aggregateId?: string;
+    aggregateName?: string;
+    aggregateState?: unknown | null;
+    eventPayload?: Readonly<Record<string, unknown>>;
+    occurredAt?: string;
+    actorUserId?: string;
+  }>,
 ) => {
-  db.insert(domainEventsTable)
-    .values({
-      eventId: "41000000-0000-4000-8000-000000000001",
-      aggregateId: appointmentId,
-      aggregateName: "FollowUp",
-      aggregateState: null,
-      eventName: "follow-up.requested",
-      eventPayload: { appointmentId, petId },
-      occurredAt: "2026-08-08T04:00:00.000Z",
-      actorUserId: "41000000-0000-4000-8000-000000000002",
-      ...overrides,
-    })
-    .run();
+  const eventId = overrides.eventId ?? "41000000-0000-4000-8000-000000000001";
+  db.insert(domainEventsTable).values({
+    eventId,
+    aggregateId: overrides.aggregateId ?? appointmentId,
+    aggregateName: overrides.aggregateName ?? "FollowUp",
+    eventName: "follow-up.requested",
+    occurredAt: overrides.occurredAt ?? "2026-08-08T04:00:00.000Z",
+    actorUserId: overrides.actorUserId ?? "41000000-0000-4000-8000-000000000002",
+    payloadSensitivity: "Sensitive",
+  }).run();
+  db.insert(domainEventSensitivePayloadsTable).values({
+    eventId,
+    aggregateState: overrides.aggregateState ?? null,
+    eventPayload: overrides.eventPayload ?? { appointmentId, petId },
+  }).run();
 };
 
 describe("SQLite resolvers", () => {
@@ -187,15 +202,6 @@ describe("SQLite resolvers", () => {
       // @ts-expect-error Audit history requires an Admin capability.
       eventHistoryReader.list(receptionist);
 
-      const rawPayload: Readonly<Record<string, unknown>> = {
-        privateNote: { nested: "must not reach a direct consumer" },
-      };
-      const unsafeRecord: SanitizedAuditRecord = {
-        ...resolvedEvents._unsafeUnwrap()[0]!,
-        // @ts-expect-error Sanitized audit DTOs accept only safe scalar values.
-        eventPayload: rawPayload,
-      };
-      void unsafeRecord;
     }
 
     expect(resolvedUser.isOk() && resolvedUser.value?.kind).toBe("Admin");
@@ -205,11 +211,10 @@ describe("SQLite resolvers", () => {
         eventId: event.eventId,
         aggregateId: userId,
         aggregateName: "User",
-        aggregateState: { kind: "Admin", userId },
         eventName: "user.created",
-        eventPayload: { role: "Admin", userId },
         occurredAt: event.occurredAt,
         actorUserId: userId,
+        payloadSensitivity: "Sensitive",
       },
     ]);
     expect(JSON.stringify(resolvedEvents._unsafeUnwrap())).not.toContain(
@@ -357,44 +362,32 @@ describe("SQLite resolvers", () => {
     expect(result.isErr() && result.error.operation).toBe("ExamResultByIdResolver.resolveById");
   });
 
-  test.each([
-    [{ aggregateName: "Owner" }, "aggregate name"],
-    [{ aggregateId: "not-a-uuid" }, "aggregate id"],
-    [{ eventPayload: JSON.stringify({ userId: "not-a-uuid", role: "Admin" }) }, "payload"],
-    [{ aggregateState: JSON.stringify({ email: "must-not-be-here@example.test" }) }, "state"],
-  ])("rejects corrupt domain-event %s", async (overrides, _label) => {
+  test("lists generic metadata without reading a sensitive payload", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
-    insertDomainEvent(db, overrides);
+    insertDomainEvent(db, {
+      aggregateId: "future-aggregate-id",
+      aggregateName: "FutureAggregate",
+      aggregateState: JSON.stringify({ privateNote: "must stay separated" }),
+      eventPayload: JSON.stringify({ privateNote: "must stay separated" }),
+    });
 
     const result = await createEventHistoryReader(db).list(auditAdmin);
 
-    expect(result.isErr()).toBe(true);
-    expect(result.isErr() && result.error.operation).toBe(
-      "EventHistoryReader.list",
-    );
+    expect(result.isOk()).toBe(true);
+    expect(result._unsafeUnwrap()[0]).toMatchObject({
+      aggregateId: "future-aggregate-id",
+      aggregateName: "FutureAggregate",
+      payloadSensitivity: "Sensitive",
+    });
+    expect(JSON.stringify(result._unsafeUnwrap())).not.toContain("must stay separated");
   });
 
   test.each([
     [{ eventId: "not-an-event-id" }, "event identity"],
     [{ occurredAt: "not-a-timestamp" }, "timestamp"],
     [{ actorUserId: "not-an-actor-id" }, "actor"],
-    [{ aggregateName: "Appointment" }, "aggregate name"],
-    [{ aggregateState: { appointmentId } }, "null aggregate state"],
-    [
-      {
-        eventPayload: {
-          appointmentId: "30000000-0000-4000-8000-000000000099",
-          petId,
-        },
-      },
-      "aggregate and payload consistency",
-    ],
-    [
-      { eventPayload: { appointmentId, petId, privateNote: "must reject" } },
-      "exact payload",
-    ],
-  ])("rejects a malformed follow-up history row with invalid %s", async (overrides, _label) => {
+  ])("rejects a malformed event metadata row with invalid %s", async (overrides, _label) => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
     insertFollowUpEvent(db, overrides);

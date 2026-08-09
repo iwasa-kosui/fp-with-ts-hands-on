@@ -4,6 +4,8 @@ import { sql } from "drizzle-orm";
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
 import {
   appointmentsTable,
+  domainEventPayloadsTable,
+  domainEventSensitivePayloadsTable,
   domainEventsTable,
   examResultsTable,
   ownersTable,
@@ -11,6 +13,8 @@ import {
   sessionsTable,
   usersTable,
 } from "../../src/adaptor/secondary/sqlite/schema.js";
+import { classifyPayloadSensitivity } from "../../src/adaptor/secondary/sqlite/eventPersistence.js";
+import { toAuditJsonValue } from "../../src/adaptor/secondary/sqlite/eventRecord.js";
 import { createAppointmentEventStore } from "../../src/adaptor/secondary/sqlite/store/appointmentEventStore.js";
 import { createAppointmentByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/appointmentResolver.js";
 import { createExamResultEventStore } from "../../src/adaptor/secondary/sqlite/store/examResultEventStore.js";
@@ -78,6 +82,27 @@ const user = (name: string): Admin => ({
   passwordHash: PasswordHash.schema.parse(`scrypt$${"A".repeat(22)}==$${"B".repeat(86)}==`),
 });
 
+const restoreLegacyAuditSchema = (db: ReturnType<typeof createSqliteDatabase>): void => {
+  db.run(sql.raw("DROP TRIGGER IF EXISTS domain_event_payloads_classification"));
+  db.run(sql.raw("DROP TRIGGER IF EXISTS domain_event_sensitive_payloads_classification"));
+  db.run(sql.raw("DROP TABLE IF EXISTS domain_event_payloads"));
+  db.run(sql.raw("DROP TABLE IF EXISTS domain_event_sensitive_payloads"));
+  db.run(sql.raw("DROP TABLE domain_events"));
+  db.run(sql.raw(`
+    CREATE TABLE domain_events (
+      event_id text PRIMARY KEY NOT NULL,
+      aggregate_id text NOT NULL,
+      aggregate_name text NOT NULL,
+      aggregate_state text,
+      event_name text NOT NULL,
+      event_payload text NOT NULL,
+      occurred_at text NOT NULL,
+      actor_user_id text NOT NULL
+    )
+  `));
+  db.run(sql.raw("DELETE FROM __drizzle_migrations WHERE created_at > 1786460400000"));
+};
+
 describe("SQLite event stores", () => {
   test("fresh migrations install an empty follow-up request claim projection", () => {
     const db = createSqliteDatabase(":memory:");
@@ -95,22 +120,24 @@ describe("SQLite event stores", () => {
   test("0003 upgrades the actually recorded old 0002 schema and resumes follow-up writes", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
+    restoreLegacyAuditSchema(db);
     db.run(sql.raw("DELETE FROM __drizzle_migrations WHERE created_at > 1786374000000"));
     db.run(sql.raw("DROP TABLE follow_up_request_claims"));
     db.run(sql.raw(
       "CREATE UNIQUE INDEX follow_up_requested_appointment_unique " +
       "ON domain_events (aggregate_id) WHERE event_name = 'follow-up.requested'",
     ));
-    db.insert(domainEventsTable).values({
-      eventId: "11000000-0000-4000-8000-000000000001",
-      aggregateId: ids.appointment,
-      aggregateName: "FollowUp",
-      aggregateState: null,
-      eventName: "follow-up.requested",
-      eventPayload: { appointmentId: ids.appointment, petId: ids.pet },
-      occurredAt: "2026-08-08T00:01:00.000Z",
-      actorUserId: ids.actor,
-    }).run();
+    db.run(sql`
+      INSERT INTO domain_events (
+        event_id, aggregate_id, aggregate_name, aggregate_state, event_name,
+        event_payload, occurred_at, actor_user_id
+      ) VALUES (
+        ${"11000000-0000-4000-8000-000000000001"}, ${ids.appointment},
+        ${"FollowUp"}, ${null}, ${"follow-up.requested"},
+        ${JSON.stringify({ appointmentId: ids.appointment, petId: ids.pet })},
+        ${"2026-08-08T00:01:00.000Z"}, ${ids.actor}
+      )
+    `);
 
     expect(
       db.all(sql.raw(
@@ -154,6 +181,7 @@ describe("SQLite event stores", () => {
   test("migrating a 0001 database keeps duplicate audit ids exactly and claims once", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
+    restoreLegacyAuditSchema(db);
     db.run(sql.raw("DELETE FROM __drizzle_migrations WHERE created_at >= 1786374000000"));
     db.run(sql.raw("DROP TABLE follow_up_request_claims"));
     const legacyRows = [
@@ -161,16 +189,17 @@ describe("SQLite event stores", () => {
       "12000000-0000-4000-8000-000000000002",
     ] as const;
     for (const eventId of legacyRows) {
-      db.insert(domainEventsTable).values({
-        eventId,
-        aggregateId: ids.appointment,
-        aggregateName: "FollowUp",
-        aggregateState: null,
-        eventName: "follow-up.requested",
-        eventPayload: { appointmentId: ids.appointment, petId: ids.pet },
-        occurredAt: "2026-08-08T00:01:00.000Z",
-        actorUserId: ids.actor,
-      }).run();
+      db.run(sql`
+        INSERT INTO domain_events (
+          event_id, aggregate_id, aggregate_name, aggregate_state, event_name,
+          event_payload, occurred_at, actor_user_id
+        ) VALUES (
+          ${eventId}, ${ids.appointment}, ${"FollowUp"}, ${null},
+          ${"follow-up.requested"},
+          ${JSON.stringify({ appointmentId: ids.appointment, petId: ids.pet })},
+          ${"2026-08-08T00:01:00.000Z"}, ${ids.actor}
+        )
+      `);
     }
 
     migrateDatabase(db);
@@ -191,7 +220,95 @@ describe("SQLite event stores", () => {
     expect(await db.select().from(domainEventsTable)).toHaveLength(2);
   });
 
-  test("typed events update every projection and append sanitized history", async () => {
+  test("0004 moves every legacy audit payload to the sensitive table without changing JSON", () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    restoreLegacyAuditSchema(db);
+    const legacyRows = [
+      {
+        eventId: "13000000-0000-4000-8000-000000000001",
+        aggregateState: { ownerId: ids.owner, email: "owner@example.test" },
+        eventPayload: { reason: "private reason" },
+      },
+      {
+        eventId: "13000000-0000-4000-8000-000000000002",
+        aggregateState: null,
+        eventPayload: { appointmentId: ids.appointment },
+      },
+    ] as const;
+    for (const row of legacyRows) {
+      db.run(sql`
+        INSERT INTO domain_events (
+          event_id, aggregate_id, aggregate_name, aggregate_state, event_name,
+          event_payload, occurred_at, actor_user_id
+        ) VALUES (
+          ${row.eventId}, ${ids.appointment}, ${"Appointment"},
+          ${row.aggregateState === null ? null : JSON.stringify(row.aggregateState)},
+          ${"legacy.unknown"}, ${JSON.stringify(row.eventPayload)},
+          ${"2026-08-08T00:01:00.000Z"}, ${ids.actor}
+        )
+      `);
+    }
+
+    migrateDatabase(db);
+    migrateDatabase(db);
+
+    const metadata = db.select().from(domainEventsTable).all();
+    const regular = db.select().from(domainEventPayloadsTable).all();
+    const sensitive = db
+      .select()
+      .from(domainEventSensitivePayloadsTable)
+      .all()
+      .sort((left, right) => left.eventId.localeCompare(right.eventId));
+    expect(metadata).toHaveLength(legacyRows.length);
+    expect(metadata.every(({ payloadSensitivity }) => payloadSensitivity === "Sensitive")).toBe(true);
+    expect(regular).toEqual([]);
+    expect(sensitive).toEqual(legacyRows.map((row) => ({
+      eventId: row.eventId,
+      aggregateState: row.aggregateState,
+      eventPayload: row.eventPayload,
+    })));
+    expect(db.all(sql.raw("PRAGMA foreign_key_check"))).toEqual([]);
+  });
+
+  test("payload tables reject classification mismatch and a second placement for one event", () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const eventId = "14000000-0000-4000-8000-000000000001";
+    db.insert(domainEventsTable).values({
+      eventId,
+      aggregateId: ids.appointment,
+      aggregateName: "Appointment",
+      eventName: "audit.regular-fixture",
+      occurredAt: "2026-08-08T00:01:00.000Z",
+      actorUserId: ids.actor,
+      payloadSensitivity: "Regular",
+    }).run();
+    const payload = { eventId, aggregateState: null, eventPayload: {} };
+
+    expect(() => db.insert(domainEventSensitivePayloadsTable).values(payload).run())
+      .toThrow(/classification/i);
+    db.insert(domainEventPayloadsTable).values(payload).run();
+    db.run(sql`UPDATE domain_events SET payload_sensitivity = ${"Sensitive"} WHERE event_id = ${eventId}`);
+    expect(() => db.insert(domainEventSensitivePayloadsTable).values(payload).run())
+      .toThrow(/already stored/i);
+  });
+
+  test("unknown event names are sensitive and audit serialization refuses duck typing and non-JSON values", () => {
+    expect(classifyPayloadSensitivity("future.unknown-event")).toBe("Sensitive");
+    let unwrapCalled = false;
+    expect(() => toAuditJsonValue({
+      unwrap: () => {
+        unwrapCalled = true;
+        return "private";
+      },
+    })).toThrow(/function/i);
+    expect(unwrapCalled).toBe(false);
+    expect(() => toAuditJsonValue(Symbol("private"))).toThrow(/symbol/i);
+    expect(() => toAuditJsonValue(() => "private")).toThrow(/function/i);
+  });
+
+  test("typed events update every projection and append full payloads only to sensitive history", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
 
@@ -254,19 +371,29 @@ describe("SQLite event stores", () => {
     expect(resolvedAppointment._unsafeUnwrap()?.reason.unwrap()).toBe("persistent cough");
     expect(JSON.stringify(resolvedAppointment._unsafeUnwrap())).not.toContain("persistent cough");
     expect(await db.select().from(examResultsTable)).toHaveLength(1);
-    const history = await db.select().from(domainEventsTable);
-    expect(history).toHaveLength(7);
+    const metadata = await db.select().from(domainEventsTable);
+    const regular = await db.select().from(domainEventPayloadsTable);
+    const sensitive = await db.select().from(domainEventSensitivePayloadsTable);
+    expect(metadata).toHaveLength(7);
+    expect(metadata[0]).not.toHaveProperty("aggregateState");
+    expect(metadata[0]).not.toHaveProperty("eventPayload");
+    expect(metadata.every(({ payloadSensitivity }) => payloadSensitivity === "Sensitive")).toBe(true);
+    expect(regular).toHaveLength(0);
+    expect(sensitive).toHaveLength(metadata.length);
 
-    const serializedHistory = JSON.stringify(history);
-    expect(serializedHistory).not.toContain("Clinic Admin");
-    expect(serializedHistory).not.toContain("admin@example.test");
-    expect(serializedHistory).not.toContain(createdUser.aggregateState.passwordHash.unwrap());
-    expect(serializedHistory).not.toContain(createdSession.aggregateState.tokenHash.unwrap());
-    expect(serializedHistory).not.toContain("Owner Hanako");
-    expect(serializedHistory).not.toContain("owner@example.test");
-    expect(serializedHistory).not.toContain("090-1111-2222");
-    expect(serializedHistory).not.toContain("persistent cough");
-    expect(serializedHistory).not.toContain("private clinical observation");
+    const serializedMetadata = JSON.stringify(metadata);
+    const serializedSensitive = JSON.stringify(sensitive);
+    expect(serializedMetadata).not.toContain("owner@example.test");
+    expect(serializedMetadata).not.toContain("persistent cough");
+    expect(serializedSensitive).toContain("Clinic Admin");
+    expect(serializedSensitive).toContain("admin@example.test");
+    expect(serializedSensitive).toContain(createdUser.aggregateState.passwordHash.unwrap());
+    expect(serializedSensitive).toContain(createdSession.aggregateState.tokenHash.unwrap());
+    expect(serializedSensitive).toContain("Owner Hanako");
+    expect(serializedSensitive).toContain("owner@example.test");
+    expect(serializedSensitive).toContain("090-1111-2222");
+    expect(serializedSensitive).toContain("persistent cough");
+    expect(serializedSensitive).toContain("private clinical observation");
   });
 
   test("a duplicate event id rolls back its preceding projection update", async () => {

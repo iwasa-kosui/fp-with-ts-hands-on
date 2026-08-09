@@ -16,8 +16,8 @@ import type {
   UserDeletedStoreError,
   UserUpdatedStoreError,
 } from "../../../../domain/user/userStores.js";
-import { toEventRecord } from "../eventRecord.js";
-import { domainEventsTable, usersTable } from "../schema.js";
+import { persistDomainEvent } from "../eventPersistence.js";
+import { usersTable } from "../schema.js";
 import type { SqliteDatabase } from "../db.js";
 
 type UserEvent = UserCreated | UserUpdated | UserPasswordReset;
@@ -33,14 +33,6 @@ const projectionValues = (
   name: state.name.unwrap(),
   passwordHash: state.passwordHash.unwrap(),
   veterinarianId: state.kind === "Veterinarian" ? state.veterinarianId : null,
-});
-
-const safeState = (state: Exclude<UserEvent["aggregateState"], undefined>) => ({
-  kind: state.kind,
-  userId: state.userId,
-  ...(state.kind === "Veterinarian"
-    ? { veterinarianId: state.veterinarianId }
-    : {}),
 });
 
 const createUserProjectionEventStore = (db: SqliteDatabase) =>
@@ -85,22 +77,7 @@ const createUserProjectionEventStore = (db: SqliteDatabase) =>
                       set: values,
                     })
                     .run();
-                  const payload =
-                    event.kind === "UserPasswordReset"
-                      ? { userId: event.aggregateId }
-                      : {
-                          userId: event.aggregateId,
-                          role: event.aggregateState.kind,
-                        };
-                  tx.insert(domainEventsTable)
-                    .values(
-                      toEventRecord(
-                        event,
-                        safeState(event.aggregateState),
-                        payload,
-                      ),
-                    )
-                    .run();
+                  persistDomainEvent(tx, event);
                   return;
                 }
                 default:
@@ -158,13 +135,7 @@ export const createUserDeletedEventStore = (
             tx.delete(usersTable)
               .where(eq(usersTable.userId, event.aggregateId))
               .run();
-            tx.insert(domainEventsTable)
-              .values(
-                toEventRecord(event, undefined, {
-                  userId: event.aggregateId,
-                }),
-              )
-              .run();
+            persistDomainEvent(tx, event);
           });
           return ok(undefined);
         }),

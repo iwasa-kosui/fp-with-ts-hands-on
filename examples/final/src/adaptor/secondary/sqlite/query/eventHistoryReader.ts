@@ -1,75 +1,43 @@
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import type {
+  AuditEventSummary,
   EventHistoryReader,
-  SanitizedAuditRecord,
-  SanitizedAuditValue,
 } from "../../../../useCase/query/eventHistoryReader.js";
 import type { SqliteDatabase } from "../db.js";
-import { domainEventsTable } from "../schema.js";
+import {
+  domainEventPayloadsTable,
+  domainEventsTable,
+} from "../schema.js";
 import {
   parsePersistedEventRow,
   type PersistedEventRow,
 } from "./persistedEventRow.js";
 
-const redacted = "[REDACTED]";
-const safeKeys = new Set([
-  "kind",
-  "role",
-  "userId",
-  "veterinarianId",
-  "sessionId",
-  "expiresAt",
-  "ownerId",
-  "petId",
-  "species",
-  "appointmentId",
-  "scheduledAt",
-  "checkedInAt",
-  "examinationStartedAt",
-  "amount",
-  "paidAt",
-  "canceledAt",
-  "examId",
-  "collectedAt",
-  "needsFollowUp",
-]);
-
-const sanitizeValue = (key: string, value: unknown): SanitizedAuditValue =>
-  safeKeys.has(key) &&
-  (typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "boolean" ||
-    value === null)
-    ? value
-    : redacted;
-
-const sanitizeRecord = (
-  value: Readonly<Record<string, unknown>> | null,
-): Readonly<Record<string, SanitizedAuditValue>> | undefined =>
-  value === null
-    ? undefined
-    : Object.fromEntries(
-        Object.entries(value).map(([key, item]) => [
-          key,
-          sanitizeValue(key, item),
-        ]),
-      );
-
-const toSanitizedAuditRecord = (
+const toAuditEventSummary = (
   row: PersistedEventRow,
-): SanitizedAuditRecord => ({
-  eventId: row.eventId,
-  aggregateId: row.aggregateId,
-  aggregateName: row.aggregateName,
-  aggregateState: sanitizeRecord(row.aggregateState),
-  eventName: row.eventName,
-  eventPayload: sanitizeRecord(row.eventPayload) ?? {},
-  occurredAt: row.occurredAt,
-  actorUserId: row.actorUserId,
-});
+): AuditEventSummary => {
+  const metadata = {
+    eventId: row.eventId,
+    aggregateId: row.aggregateId,
+    aggregateName: row.aggregateName,
+    eventName: row.eventName,
+    occurredAt: row.occurredAt,
+    actorUserId: row.actorUserId,
+    payloadSensitivity: row.payloadSensitivity,
+  };
+  return row.payloadSensitivity === "Regular"
+    ? {
+        ...metadata,
+        regularPayload: {
+          aggregateState: row.regularAggregateState,
+          eventPayload: row.regularEventPayload ?? {},
+        },
+      }
+    : metadata;
+};
 
 export const createEventHistoryReader = (
   db: SqliteDatabase,
@@ -78,12 +46,26 @@ export const createEventHistoryReader = (
     ResultAsync.fromPromise(
       Promise.resolve().then(() =>
         db
-          .select()
+          .select({
+            eventId: domainEventsTable.eventId,
+            aggregateId: domainEventsTable.aggregateId,
+            aggregateName: domainEventsTable.aggregateName,
+            eventName: domainEventsTable.eventName,
+            occurredAt: domainEventsTable.occurredAt,
+            actorUserId: domainEventsTable.actorUserId,
+            payloadSensitivity: domainEventsTable.payloadSensitivity,
+            regularAggregateState: domainEventPayloadsTable.aggregateState,
+            regularEventPayload: domainEventPayloadsTable.eventPayload,
+          })
           .from(domainEventsTable)
+          .leftJoin(
+            domainEventPayloadsTable,
+            eq(domainEventPayloadsTable.eventId, domainEventsTable.eventId),
+          )
           .orderBy(asc(domainEventsTable.occurredAt))
           .all()
           .map(parsePersistedEventRow)
-          .map(toSanitizedAuditRecord),
+          .map(toAuditEventSummary),
       ),
       (cause): RepositoryError => ({
         kind: "RepositoryError",

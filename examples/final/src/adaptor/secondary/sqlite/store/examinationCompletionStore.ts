@@ -8,10 +8,9 @@ import type { AppointmentStoreError } from "../../../../domain/appointment/appoi
 import type { ExaminationCompletionStore } from "../../../../domain/examResult/examResultStores.js";
 import type { ExamResultRecorded } from "../../../../domain/examResult/examResultEvent.js";
 import type { SqliteDatabase } from "../db.js";
-import { toEventRecord } from "../eventRecord.js";
+import { persistDomainEvent } from "../eventPersistence.js";
 import {
   appointmentsTable,
-  domainEventsTable,
   examResultsTable,
 } from "../schema.js";
 
@@ -54,28 +53,6 @@ const toAppointmentValues = (event: AppointmentExaminationCompleted) => ({
   },
 });
 
-const toSafeExamState = (event: ExamResultRecorded) => ({
-  examId: event.aggregateState.examId,
-  petId: event.aggregateState.petId,
-  collectedAt: event.aggregateState.collectedAt,
-  needsFollowUp: event.aggregateState.needsFollowUp,
-});
-
-const toSafeAppointmentState = (
-  event: AppointmentExaminationCompleted,
-) => ({
-  kind: event.aggregateState.kind,
-  appointmentId: event.aggregateState.appointmentId,
-  ownerId: event.aggregateState.ownerId,
-  petId: event.aggregateState.petId,
-  scheduledAt: event.aggregateState.scheduledAt,
-  checkedInAt: event.aggregateState.checkedInAt,
-  veterinarianId: event.aggregateState.veterinarianId,
-  examinationStartedAt: event.aggregateState.examinationStartedAt,
-  examId: event.aggregateState.examId,
-  examinationCompletedAt: event.aggregateState.examinationCompletedAt,
-});
-
 export const createExaminationCompletionStore = (
   db: SqliteDatabase,
 ): ExaminationCompletionStore => ({
@@ -107,30 +84,8 @@ export const createExaminationCompletionStore = (
           tx.insert(examResultsTable)
             .values(toExamResultValues(examResult))
             .run();
-          tx.insert(domainEventsTable)
-            .values(
-              toEventRecord(
-                examResult,
-                toSafeExamState(examResult),
-                {
-                  examId: examResult.aggregateId,
-                  petId: examResult.aggregateState.petId,
-                },
-              ),
-            )
-            .run();
-          tx.insert(domainEventsTable)
-            .values(
-              toEventRecord(
-                appointment,
-                toSafeAppointmentState(appointment),
-                {
-                  appointmentId: appointment.aggregateId,
-                  examId: appointment.aggregateState.examId,
-                },
-              ),
-            )
-            .run();
+          persistDomainEvent(tx, examResult);
+          persistDomainEvent(tx, appointment);
         });
       }),
       (cause) => {

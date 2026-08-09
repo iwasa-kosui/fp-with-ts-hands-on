@@ -610,7 +610,7 @@ describe("DeleteUserUseCase SQLite integration", () => {
     const deletion = history.find(
       ({ eventName }) => eventName === "user.deleted",
     );
-    expect(deletion?.aggregateState).toBeNull();
+    expect(deletion?.payloadSensitivity).toBe("Sensitive");
     expect(JSON.stringify(deletion)).not.toContain(targetEmail.unwrap());
     expect(JSON.stringify(deletion)).not.toContain(targetName.unwrap());
     expect(JSON.stringify(deletion)).not.toContain(

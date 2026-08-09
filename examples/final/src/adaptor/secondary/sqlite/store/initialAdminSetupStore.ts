@@ -8,9 +8,8 @@ import type {
   InitialAdminSetupStore,
 } from "../../../../useCase/persistence/initialAdminSetupStore.js";
 import type { SqliteDatabase } from "../db.js";
-import { toEventRecord } from "../eventRecord.js";
+import { persistDomainEvent } from "../eventPersistence.js";
 import {
-  domainEventsTable,
   installationTable,
   sessionsTable,
   usersTable,
@@ -55,41 +54,12 @@ export const createInitialAdminSetupStore = (
           }
 
           tx.insert(usersTable).values(userProjection(userEvent)).run();
-          tx.insert(domainEventsTable)
-            .values(
-              toEventRecord(
-                userEvent,
-                {
-                  kind: userEvent.aggregateState.kind,
-                  userId: userEvent.aggregateState.userId,
-                },
-                {
-                  userId: userEvent.aggregateId,
-                  role: userEvent.aggregateState.kind,
-                },
-              ),
-            )
-            .run();
+          persistDomainEvent(tx, userEvent);
 
           tx.insert(sessionsTable)
             .values(sessionProjection(sessionEvent))
             .run();
-          tx.insert(domainEventsTable)
-            .values(
-              toEventRecord(
-                sessionEvent,
-                {
-                  sessionId: sessionEvent.aggregateState.sessionId,
-                  userId: sessionEvent.aggregateState.userId,
-                  expiresAt: sessionEvent.aggregateState.expiresAt,
-                },
-                {
-                  sessionId: sessionEvent.aggregateId,
-                  userId: sessionEvent.aggregateState.userId,
-                },
-              ),
-            )
-            .run();
+          persistDomainEvent(tx, sessionEvent);
           return ok(undefined);
         }),
       ),

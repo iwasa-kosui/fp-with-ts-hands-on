@@ -5,8 +5,8 @@ import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
 import type { FollowUpRequested } from "../../../../domain/followUp/followUpRequested.js";
 import type { FollowUpStoreError } from "../../../../domain/followUp/followUpStores.js";
 import type { SqliteDatabase } from "../db.js";
-import { toEventRecord } from "../eventRecord.js";
-import { domainEventsTable, followUpRequestClaimsTable } from "../schema.js";
+import { persistDomainEvent } from "../eventPersistence.js";
+import { followUpRequestClaimsTable } from "../schema.js";
 
 const FollowUpRequestConflictSchema = z.object({
   kind: z.literal("FollowUpRequestConflict"),
@@ -35,12 +35,7 @@ export const createFollowUpEventStore = (db: SqliteDatabase) => ({
               }
               throw cause;
             }
-            tx.insert(domainEventsTable)
-              .values(toEventRecord(event, undefined, {
-                appointmentId: event.aggregateId,
-                petId: event.eventPayload.petId,
-              }))
-              .run();
+            persistDomainEvent(tx, event);
           });
         }),
       ),

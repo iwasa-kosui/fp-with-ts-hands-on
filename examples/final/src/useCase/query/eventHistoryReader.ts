@@ -6,22 +6,23 @@ import type { Timestamp } from "../../domain/aggregate/timestamp.js";
 import type { Admin } from "../../domain/user/user.js";
 import type { UserId } from "../../domain/user/userId.js";
 
-export type SanitizedAuditValue = string | number | boolean | null;
-export type SanitizedAuditRecord = Readonly<{
+export type PayloadSensitivity = "Regular" | "Sensitive";
+export type AuditEventSummary = Readonly<{
   eventId: EventId;
   aggregateId: string;
   aggregateName: string;
   eventName: string;
   occurredAt: Timestamp;
   actorUserId: UserId;
-  aggregateState:
-    | Readonly<Record<string, SanitizedAuditValue>>
-    | undefined;
-  eventPayload: Readonly<Record<string, SanitizedAuditValue>>;
+  payloadSensitivity: PayloadSensitivity;
+  regularPayload?: Readonly<{
+    aggregateState: unknown | null;
+    eventPayload: Readonly<Record<string, unknown>>;
+  }>;
 }>;
 
 export type EventHistoryReader = Readonly<{
   list: (
     admin: Admin,
-  ) => ResultAsync<readonly SanitizedAuditRecord[], RepositoryError>;
+  ) => ResultAsync<readonly AuditEventSummary[], RepositoryError>;
 }>;

@@ -14,8 +14,8 @@ import type {
   OwnerNotFoundStoreError,
 } from "../../../../domain/owner/ownerStores.js";
 import type { SqliteDatabase } from "../db.js";
-import { toEventRecord } from "../eventRecord.js";
-import { domainEventsTable, ownersTable, petsTable } from "../schema.js";
+import { persistDomainEvent } from "../eventPersistence.js";
+import { ownersTable, petsTable } from "../schema.js";
 
 type OwnerProjectionEvent = OwnerCreated | OwnerUpdated;
 type OwnerEvent = OwnerProjectionEvent | OwnerDeleted;
@@ -49,15 +49,7 @@ const createOwnerProjectionEventStore = (db: SqliteDatabase) =>
                   set: values,
                 })
                 .run();
-              tx.insert(domainEventsTable)
-                .values(
-                  toEventRecord(
-                    event,
-                    { ownerId: state.ownerId },
-                    { ownerId: state.ownerId },
-                  ),
-                )
-                .run();
+              persistDomainEvent(tx, event);
             });
           }),
         ),
@@ -140,11 +132,7 @@ export const createOwnerDeletedEventStore = (
                 "Owner deletion preflight and affected rows diverged",
               );
             }
-            tx.insert(domainEventsTable)
-              .values(
-                toEventRecord(event, undefined, { ownerId: event.aggregateId }),
-              )
-              .run();
+            persistDomainEvent(tx, event);
           });
           return ok(undefined);
         }),

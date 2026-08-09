@@ -5,8 +5,8 @@ import type { RepositoryError } from "../../../../domain/aggregate/repositoryErr
 import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type { SessionCreated, SessionDeleted } from "../../../../domain/session/sessionEvent.js";
 import type { SqliteDatabase } from "../db.js";
-import { toEventRecord } from "../eventRecord.js";
-import { domainEventsTable, sessionsTable } from "../schema.js";
+import { persistDomainEvent } from "../eventPersistence.js";
+import { sessionsTable } from "../schema.js";
 
 type SessionEvent = SessionCreated | SessionDeleted;
 
@@ -29,27 +29,12 @@ export const createSessionEventStore = (db: SqliteDatabase) => ({
                   .values(values)
                   .onConflictDoUpdate({ target: sessionsTable.sessionId, set: values })
                   .run();
-                tx.insert(domainEventsTable)
-                  .values(toEventRecord(
-                    event,
-                    {
-                      sessionId: state.sessionId,
-                      userId: state.userId,
-                      expiresAt: state.expiresAt,
-                    },
-                    { sessionId: state.sessionId, userId: state.userId },
-                  ))
-                  .run();
+                persistDomainEvent(tx, event);
                 return;
               }
               case "SessionDeleted":
                 tx.delete(sessionsTable).where(eq(sessionsTable.sessionId, event.aggregateId)).run();
-                tx.insert(domainEventsTable)
-                  .values(toEventRecord(event, undefined, {
-                    sessionId: event.aggregateId,
-                    userId: event.eventPayload.userId,
-                  }))
-                  .run();
+                persistDomainEvent(tx, event);
                 return;
               default:
                 return assertNever(event);

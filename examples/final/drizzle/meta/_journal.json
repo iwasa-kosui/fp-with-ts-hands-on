@@ -29,6 +29,13 @@
       "when": 1786460400000,
       "tag": "0003_follow_up_request_claim_compatibility",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1786546800000,
+      "tag": "0004_audit_payload_split",
+      "breakpoints": true
     }
   ]
 }

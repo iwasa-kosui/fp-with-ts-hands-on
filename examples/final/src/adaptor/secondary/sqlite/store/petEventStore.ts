@@ -14,8 +14,8 @@ import type {
   PetNotFoundStoreError,
 } from "../../../../domain/pet/petStores.js";
 import type { SqliteDatabase } from "../db.js";
-import { toEventRecord } from "../eventRecord.js";
-import { appointmentsTable, domainEventsTable, petsTable } from "../schema.js";
+import { persistDomainEvent } from "../eventPersistence.js";
+import { appointmentsTable, petsTable } from "../schema.js";
 
 type PetProjectionEvent = PetCreated | PetUpdated;
 type PetEvent = PetProjectionEvent | PetDeleted;
@@ -52,19 +52,7 @@ const createPetProjectionEventStore = (db: SqliteDatabase) =>
                 .values(values)
                 .onConflictDoUpdate({ target: petsTable.petId, set: values })
                 .run();
-              tx.insert(domainEventsTable)
-                .values(
-                  toEventRecord(
-                    event,
-                    {
-                      petId: state.petId,
-                      ownerId: state.ownerId,
-                      species: state.species,
-                    },
-                    { petId: state.petId, ownerId: state.ownerId },
-                  ),
-                )
-                .run();
+              persistDomainEvent(tx, event);
             });
           }),
         ),
@@ -152,14 +140,7 @@ export const createPetDeletedEventStore = (
                 "Pet deletion preflight and affected rows diverged",
               );
             }
-            tx.insert(domainEventsTable)
-              .values(
-                toEventRecord(event, undefined, {
-                  petId: event.aggregateId,
-                  ownerId: event.eventPayload.ownerId,
-                }),
-              )
-              .run();
+            persistDomainEvent(tx, event);
           });
           return ok(undefined);
         }),

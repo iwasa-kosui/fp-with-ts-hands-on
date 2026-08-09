@@ -313,14 +313,13 @@ describe("clinic page SSR", () => {
         eventName: "appointment.payment-recorded",
         occurredAt: Timestamp.schema.parse("2026-08-09T03:00:00.000Z"),
         actorUserId: adminId,
-        aggregateState: { kind: "Paid", diagnosis: "[REDACTED]" },
-        eventPayload: { appointmentId, secret: "[REDACTED]" },
+        payloadSensitivity: "Sensitive",
       }],
     });
-    expect(events).toContain("[REDACTED]");
-    expect(events).toContain("<dt>diagnosis</dt><dd>[REDACTED]</dd>");
-    expect(events).toContain("<dt>secret</dt><dd>[REDACTED]</dd>");
-    expect(events).toContain("appointment.payment-recorded");
+    expect(events).toContain("機微情報を含みます");
+    expect(events).toContain("会計を記録");
+    expect(events).not.toContain("diagnosis");
+    expect(events).not.toContain("secret");
     expect(events).not.toContain("<pre");
   });
 });
@@ -456,6 +455,12 @@ describe("Inertia security boundary", () => {
       },
     });
     const eventBody = JSON.stringify(events);
+    expect(events.props.events.every((event: Record<string, unknown>) =>
+      event.payloadSensitivity === "Sensitive" &&
+      !("regularPayload" in event) &&
+      !("aggregateState" in event) &&
+      !("eventPayload" in event),
+    )).toBe(true);
     for (const value of [
       "hanako.owner@example.test",
       "090-1234-5678",
