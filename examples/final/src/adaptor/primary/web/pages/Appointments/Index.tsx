@@ -68,7 +68,7 @@ export default function AppointmentsIndex({ auth, appointments }: Props) {
                   </td>
                   <td>
                     <StatusBadge tone={status.tone}>
-                      {status.label} ({status.canonical})
+                      {status.label}
                     </StatusBadge>
                   </td>
                   <td>{appointment.ownerName}</td>

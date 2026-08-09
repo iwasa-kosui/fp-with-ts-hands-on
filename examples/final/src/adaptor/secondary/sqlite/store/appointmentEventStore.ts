@@ -109,7 +109,8 @@ const checksVeterinarianSchedule = (
   event.kind === "AppointmentBooked" ||
   event.kind === "AppointmentUpdated" ||
   event.kind === "AppointmentWalkInRegistered" ||
-  event.kind === "AppointmentVeterinarianReassigned";
+  event.kind === "AppointmentVeterinarianReassigned" ||
+  event.kind === "ExaminationStarted";
 
 const ensureVeterinarianScheduleAvailable = (
   tx: Parameters<Parameters<SqliteDatabase["transaction"]>[0]>[0],
@@ -188,6 +189,33 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
                       eq(appointmentsTable.version, expectedVersion),
                     ))
                     .run().changes;
+                case "AppointmentReceptionNoteUpdated":
+                  return tx.update(appointmentsTable)
+                    .set(values)
+                    .where(and(
+                      eq(appointmentsTable.appointmentId, state.appointmentId),
+                      inArray(appointmentsTable.status, [
+                        "Scheduled",
+                        "CheckedIn",
+                        "InExamination",
+                        "AwaitingPayment",
+                      ]),
+                      eq(appointmentsTable.version, expectedVersion),
+                    ))
+                    .run().changes;
+                case "AppointmentDepositReceived":
+                  return tx.update(appointmentsTable)
+                    .set(values)
+                    .where(and(
+                      eq(appointmentsTable.appointmentId, state.appointmentId),
+                      or(
+                        eq(appointmentsTable.status, "Scheduled"),
+                        eq(appointmentsTable.status, "CheckedIn"),
+                      ),
+                      eq(appointmentsTable.settlementStatus, "NoPayment"),
+                      eq(appointmentsTable.version, expectedVersion),
+                    ))
+                    .run().changes;
                 case "ExaminationStarted":
                   return tx.update(appointmentsTable)
                     .set(values)
@@ -197,7 +225,7 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
                       eq(appointmentsTable.version, expectedVersion),
                     ))
                     .run().changes;
-                case "PaymentRecorded":
+                case "AppointmentFinalSettlementRecorded":
                   return tx.update(appointmentsTable)
                     .set(values)
                     .where(and(

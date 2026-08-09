@@ -123,6 +123,8 @@ import { UpdateAppointmentUseCase, type UpdateAppointmentUseCase as UpdateAppoin
 import { RegisterWalkInUseCase, type RegisterWalkInUseCase as RegisterWalkIn } from "./useCase/registerWalkInUseCase.js";
 import { ReassignAppointmentVeterinarianUseCase, type ReassignAppointmentVeterinarianUseCase as ReassignAppointmentVeterinarian } from "./useCase/reassignAppointmentVeterinarianUseCase.js";
 import { ListVeterinariansUseCase, type ListVeterinariansUseCase as ListVeterinarians } from "./useCase/listVeterinariansUseCase.js";
+import { UpdateReceptionNoteUseCase, type UpdateReceptionNoteUseCase as UpdateReceptionNote } from "./useCase/updateReceptionNoteUseCase.js";
+import { ReceiveAppointmentDepositUseCase, type ReceiveAppointmentDepositUseCase as ReceiveAppointmentDeposit } from "./useCase/receiveAppointmentDepositUseCase.js";
 
 export type ApplicationDependencies = Readonly<{
   sessionByTokenHashResolver: SessionByTokenHashResolver;
@@ -153,6 +155,8 @@ export type ApplicationDependencies = Readonly<{
   updateAppointment: UpdateAppointment;
   registerWalkIn: RegisterWalkIn;
   reassignAppointmentVeterinarian: ReassignAppointmentVeterinarian;
+  updateReceptionNote: UpdateReceptionNote;
+  receiveAppointmentDeposit: ReceiveAppointmentDeposit;
   listVeterinarians: ListVeterinarians;
   checkInAppointment: CheckInAppointment;
   startExamination: StartExamination;
@@ -437,6 +441,20 @@ export const createApplicationDependencies = (
       clock,
       eventIdGenerator,
     }),
+    updateReceptionNote: UpdateReceptionNoteUseCase.create({
+      userResolver: clinicUserByIdResolver,
+      appointmentResolver: clinicAppointmentByIdResolver,
+      appointmentReceptionNoteUpdatedStore: appointmentEventStore,
+      clock,
+      eventIdGenerator,
+    }),
+    receiveAppointmentDeposit: ReceiveAppointmentDepositUseCase.create({
+      userResolver: clinicUserByIdResolver,
+      appointmentResolver: clinicAppointmentByIdResolver,
+      appointmentDepositReceivedStore: appointmentEventStore,
+      clock,
+      eventIdGenerator,
+    }),
     listVeterinarians: ListVeterinariansUseCase.create({
       userResolver: clinicUserByIdResolver,
       userListResolver: clinicUserListResolver,
@@ -568,6 +586,8 @@ export const createApp = (dependencies: ApplicationDependencies) => {
     listVeterinarians: dependencies.listVeterinarians,
     updateAppointment: dependencies.updateAppointment,
     reassignAppointmentVeterinarian: dependencies.reassignAppointmentVeterinarian,
+    updateReceptionNote: dependencies.updateReceptionNote,
+    receiveAppointmentDeposit: dependencies.receiveAppointmentDeposit,
   });
   registerReceptionRoutes(app, {
     listOwners: dependencies.listOwners,

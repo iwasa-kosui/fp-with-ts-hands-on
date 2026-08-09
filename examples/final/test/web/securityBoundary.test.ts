@@ -64,11 +64,13 @@ const scheduledView = {
   petId,
   petName: "Mugi",
   scheduledAt,
+  scheduledEndsAt: Timestamp.schema.parse("2026-08-10T03:30:00.000Z"),
   durationMinutes: 30 as const,
   serviceCode: "GeneralConsultation" as const,
   bookingKind: "Reserved" as const,
   assignedVeterinarianId: null,
-  visitReason,
+  assignedVeterinarianName: "未定",
+  visitReason: visitReason.unwrap(),
   receptionNote: null,
   settlement: { kind: "NoPayment" as const },
   version: AppointmentVersion.schema.parse(1),
@@ -152,7 +154,7 @@ describe("clinic page SSR", () => {
     expect(dashboardHtml).toContain("<dt>ペット</dt><dd>2</dd>");
     expect(dashboardHtml).toContain('aria-label="進行中の予約"');
     expect(dashboardHtml).toContain("診察中");
-    expect(dashboardHtml).toContain("InExamination");
+    expect(dashboardHtml).not.toContain("InExamination");
     expect(dashboardHtml).not.toContain("Hanako Owner");
     expect(dashboardHtml).not.toContain("在庫管理");
     expect(dashboardHtml).not.toContain("システム通知");
@@ -161,7 +163,7 @@ describe("clinic page SSR", () => {
     expect(appointmentsHtml).toContain('aria-label="予約一覧"');
     expect(appointmentsHtml).toContain('href="/appointments/new"');
     expect(appointmentsHtml).toContain("予約済み");
-    expect(appointmentsHtml).toContain("Scheduled");
+    expect(appointmentsHtml).not.toContain("Scheduled");
     expect(appointmentsHtml).toContain("Hanako Owner");
     expect(veterinarianAppointmentsHtml).not.toContain('href="/appointments/new"');
   });
@@ -188,11 +190,15 @@ describe("clinic page SSR", () => {
       ...shared("Receptionist"),
       appointment: scheduledView,
       actions: {
+        edit: true,
         checkIn: true,
+        reassignVeterinarian: true,
+        updateReceptionNote: true,
+        receiveDeposit: false,
         cancel: true,
         startExamination: false,
         recordExamResult: false,
-        recordPayment: false,
+        settle: false,
       },
       veterinarianId: null,
     });
@@ -215,11 +221,15 @@ describe("clinic page SSR", () => {
         examinationStartedAt,
       },
       actions: {
+        edit: false,
         checkIn: false,
+        reassignVeterinarian: false,
+        updateReceptionNote: false,
+        receiveDeposit: false,
         cancel: false,
         startExamination: false,
         recordExamResult: true,
-        recordPayment: false,
+        settle: false,
       },
       veterinarianId,
       errors: { item: "診察結果を確認してください。" },
@@ -231,11 +241,15 @@ describe("clinic page SSR", () => {
 
   test("renders exact safe detail fields for every appointment state", async () => {
     const noActions = {
+      edit: false,
       checkIn: false,
+      reassignVeterinarian: false,
+      updateReceptionNote: false,
+      receiveDeposit: false,
       cancel: false,
       startExamination: false,
       recordExamResult: false,
-      recordPayment: false,
+      settle: false,
     } as const;
     const checkedInView = {
       ...scheduledView,
@@ -247,6 +261,7 @@ describe("clinic page SSR", () => {
       ...scheduledView,
       kind: "InExamination" as const,
       assignedVeterinarianId: veterinarianId,
+      assignedVeterinarianName: "Clinic Vet",
       checkedInAt,
       veterinarianId,
       veterinarianName: "Clinic Vet",
@@ -263,8 +278,8 @@ describe("clinic page SSR", () => {
     const paidView = {
       ...awaitingPaymentView,
       kind: "Paid" as const,
-      diagnosis: Diagnosis.schema.parse("private diagnosis"),
-      treatment: Treatment.schema.parse("private treatment"),
+      diagnosis: Diagnosis.schema.parse("private diagnosis").unwrap(),
+      treatment: Treatment.schema.parse("private treatment").unwrap(),
       settlement: {
         kind: "Settled" as const,
         finalAmount: paymentAmount,
@@ -297,7 +312,7 @@ describe("clinic page SSR", () => {
     const awaitingPayment = await renderPage(AppointmentShow, {
       ...shared("Admin"),
       appointment: awaitingPaymentView,
-      actions: { ...noActions, recordPayment: true },
+      actions: { ...noActions, settle: true },
       veterinarianId: null,
     });
     const paid = await renderPage(AppointmentShow, {
@@ -307,7 +322,8 @@ describe("clinic page SSR", () => {
       ...shared("Admin"), appointment: canceledView, actions: noActions, veterinarianId: null,
     });
 
-    expect(scheduled).not.toContain("担当獣医師");
+    expect(scheduled).toContain("担当獣医師");
+    expect(scheduled).toContain("未定");
     expect(scheduled).toContain("現在実行できる操作はありません");
     expect(checkedIn).toContain(checkedInAt);
     expect(checkedIn).not.toContain("診察開始日時");
@@ -328,7 +344,7 @@ describe("clinic page SSR", () => {
       ...shared("Admin"),
       appointments: [scheduledView],
     });
-    expect(appointments).toContain("Scheduled");
+    expect(appointments).not.toContain("Scheduled");
     expect(appointments).toContain("Hanako Owner");
 
     const followUps = await renderPage(FollowUpsIndex, {
@@ -424,11 +440,16 @@ describe("Inertia security boundary", () => {
     }, adminCookie);
     const appointment = database.select().from(appointmentsTable).get();
     if (appointment === undefined) throw new TypeError("appointment missing");
-    await post(app, `/appointments/${appointment.appointmentId}/check-in`, {}, adminCookie);
-    await post(app, `/appointments/${appointment.appointmentId}/start-examination`, {}, vetCookie);
+    await post(app, `/appointments/${appointment.appointmentId}/check-in`, {
+      expectedVersion: "1",
+    }, adminCookie);
+    await post(app, `/appointments/${appointment.appointmentId}/start-examination`, {
+      expectedVersion: "2",
+    }, vetCookie);
     const privateFinding = "Highly sensitive clinical finding";
     await post(app, `/appointments/${appointment.appointmentId}/exam-results`, {
       petId: pet.petId,
+      expectedVersion: "3",
       collectedAt: "2026-08-09T03:00:00.000Z",
       item: privateFinding,
       needsFollowUp: "true",
@@ -436,7 +457,8 @@ describe("Inertia security boundary", () => {
     await post(app, `/appointments/${appointment.appointmentId}/payment`, {
       diagnosis: "Private diagnosis",
       treatment: "Private treatment",
-      amount: "12500",
+      finalAmount: "12500",
+      expectedVersion: "4",
     }, adminCookie);
 
     const adminRow = database.select().from(usersTable).where(eq(usersTable.email, "admin@example.test")).get();
@@ -452,11 +474,24 @@ describe("Inertia security boundary", () => {
       "Private diagnosis",
       "Private treatment",
     ];
-    for (const path of ["/", "/appointments", `/appointments/${appointment.appointmentId}`, "/events"]) {
+    const appointmentDetailPath = `/appointments/${appointment.appointmentId}`;
+    for (const path of ["/", "/appointments", appointmentDetailPath, "/events"]) {
       const response = await app.request(path, { headers: { ...inertiaHeaders, Cookie: adminCookie } });
       const page = await response.json();
       const body = JSON.stringify(page);
-      for (const value of forbiddenValues) expect(body).not.toContain(value);
+      const valuesForbiddenOnThisPage = path === appointmentDetailPath
+        ? forbiddenValues.filter((value) => ![
+            "Private visit reason",
+            "Private diagnosis",
+            "Private treatment",
+          ].includes(value))
+        : forbiddenValues;
+      for (const value of valuesForbiddenOnThisPage) expect(body).not.toContain(value);
+      if (path === appointmentDetailPath) {
+        expect(body).toContain("Private visit reason");
+        expect(body).toContain("Private diagnosis");
+        expect(body).toContain("Private treatment");
+      }
       if (path === "/appointments" || path.startsWith("/appointments/")) {
         expect(body).not.toContain('"state"');
         expect(body).not.toContain('"reason"');
@@ -486,7 +521,7 @@ describe("Inertia security boundary", () => {
       component: "Events/Index",
       props: {
         events: expect.arrayContaining([
-          expect.objectContaining({ eventName: "appointment.payment-recorded", eventId: expect.any(String) }),
+          expect.objectContaining({ eventName: "appointment.final-settlement-recorded", eventId: expect.any(String) }),
           expect.objectContaining({ eventName: "exam-result.recorded", eventId: expect.any(String) }),
         ]),
       },
@@ -516,7 +551,8 @@ describe("Inertia security boundary", () => {
     const invalid = await post(app, `/appointments/${appointment.appointmentId}/payment`, {
       diagnosis: "do not echo diagnosis",
       treatment: "do not echo treatment",
-      amount: "0",
+      finalAmount: "0",
+      expectedVersion: "5",
     }, adminCookie);
     const invalidBody = await invalid.text();
     expect(invalidBody).not.toContain("do not echo diagnosis");

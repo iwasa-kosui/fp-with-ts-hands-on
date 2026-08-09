@@ -27,6 +27,7 @@ import { ExamResultItem } from "../../src/domain/examResult/examResultItem.js";
 import { AppointmentDuration } from "../../src/domain/appointment/appointmentDuration.js";
 import { ReceptionNote } from "../../src/domain/appointment/receptionNote.js";
 import { ServiceCode } from "../../src/domain/appointment/serviceCode.js";
+import { SettlementAdjustmentAmount } from "../../src/domain/appointment/settlementAdjustmentAmount.js";
 
 const appointmentId = AppointmentId.schema.parse(
   "11111111-1111-4111-8111-111111111111",
@@ -135,6 +136,135 @@ const rawPaymentInput = {
 Appointment.recordPayment(paymentContext)(awaitingPayment.aggregateState, rawPaymentInput);
 
 describe("appointment aggregate", () => {
+  test("updates a reception note only while the appointment is active", () => {
+    const note = ReceptionNote.schema.parse("handle in a quiet room");
+    const updated = Appointment.updateReceptionNote(updatedContext)(
+      awaitingPayment.aggregateState,
+      note,
+    );
+
+    expect(updated).toMatchObject({
+      kind: "AppointmentReceptionNoteUpdated",
+      eventName: "appointment.reception-note-updated",
+      aggregateState: { kind: "AwaitingPayment", version: 5 },
+    });
+    expect(updated.aggregateState.receptionNote?.unwrap()).toBe(
+      "handle in a quiet room",
+    );
+
+    // @ts-expect-error Paid の受付メモは更新できません。
+    Appointment.updateReceptionNote(updatedContext)(paid.aggregateState, note);
+  });
+
+  test("receives one positive deposit only for an eligible vaccination appointment", () => {
+    const vaccination = Appointment.book(bookedContext)({
+      appointmentId,
+      petId,
+      ownerId,
+      scheduledAt,
+      durationMinutes: AppointmentDuration.schema.parse(15),
+      serviceCode: ServiceCode.schema.parse("Vaccination"),
+      bookingKind: "Reserved",
+      assignedVeterinarianId: null,
+      visitReason,
+      receptionNote: null,
+      settlement: noPayment,
+    }).aggregateState;
+    const amount = PaymentAmount.schema.parse(7000);
+
+    const received = Appointment.receiveDeposit(updatedContext)(vaccination, amount);
+
+    expect(received._unsafeUnwrap()).toMatchObject({
+      kind: "AppointmentDepositReceived",
+      eventName: "appointment.deposit-received",
+      aggregateState: {
+        kind: "Scheduled",
+        version: 2,
+        settlement: {
+          kind: "DepositReceived",
+          depositAmount: amount,
+          receivedAt: updatedContext.occurredAt,
+        },
+      },
+    });
+    expect(
+      Appointment.receiveDeposit(updatedContext)(
+        received._unsafeUnwrap().aggregateState,
+        amount,
+      )._unsafeUnwrapErr(),
+    ).toMatchObject({ kind: "DepositAlreadyReceived" });
+    expect(
+      Appointment.receiveDeposit(updatedContext)(booked.aggregateState, amount)
+        ._unsafeUnwrapErr(),
+    ).toMatchObject({ kind: "DepositNotAllowed" });
+  });
+
+  test.each([
+    { final: 9000, additional: 2000, refund: 0 },
+    { final: 7000, additional: 0, refund: 0 },
+    { final: 5000, additional: 0, refund: 2000 },
+  ])(
+    "records the server-calculated final settlement for final=$final",
+    ({ final, additional, refund }) => {
+      const prepaid = {
+        ...awaitingPayment.aggregateState,
+        settlement: receivedDeposit(7000),
+      } as const satisfies typeof awaitingPayment.aggregateState;
+      const finalAmount = PaymentAmount.schema.parse(final);
+
+      const settled = Appointment.settle(paymentContext)(prepaid, {
+        diagnosis,
+        treatment,
+        finalAmount,
+      });
+
+      expect(settled).toMatchObject({
+        kind: "AppointmentFinalSettlementRecorded",
+        eventName: "appointment.final-settlement-recorded",
+        aggregateState: {
+          kind: "Paid",
+          diagnosis,
+          treatment,
+          version: 5,
+          settlement: {
+            kind: "Settled",
+            finalAmount,
+            depositAmount: SettlementAdjustmentAmount.schema.parse(7000),
+            additionalPaymentAmount:
+              SettlementAdjustmentAmount.schema.parse(additional),
+            refundAmount: SettlementAdjustmentAmount.schema.parse(refund),
+            settledAt: paymentContext.occurredAt,
+          },
+        },
+      });
+    },
+  );
+
+  test("includes the full deposit refund in a prepaid cancellation event", () => {
+    const prepaid = {
+      ...booked.aggregateState,
+      serviceCode: ServiceCode.schema.parse("Vaccination"),
+      settlement: receivedDeposit(7000),
+    } as const satisfies typeof booked.aggregateState;
+
+    const canceled = Appointment.cancel(canceledContext)(prepaid, cancellationReason);
+
+    expect(canceled).toMatchObject({
+      eventPayload: {
+        appointmentId,
+        refundAmount: PaymentAmount.schema.parse(7000),
+      },
+      aggregateState: {
+        kind: "Canceled",
+        settlement: {
+          kind: "DepositRefunded",
+          depositAmount: PaymentAmount.schema.parse(7000),
+          refundedAt: canceledContext.occurredAt,
+        },
+      },
+    });
+  });
+
   test("updates every editable field of a Scheduled appointment and increments its version", () => {
     const changedReason = AppointmentReason.schema.parse("changed private reason");
     const updated = Appointment.update(updatedContext)(booked.aggregateState, {
@@ -419,9 +549,9 @@ describe("appointment aggregate", () => {
     });
   });
 
-  test("records a payment event with the resulting state", () => {
+  test("records a final settlement event with the resulting state", () => {
     expect(paid).toEqual({
-      kind: "PaymentRecorded",
+      kind: "AppointmentFinalSettlementRecorded",
       eventId: paymentContext.eventId,
       aggregateId: appointmentId,
       aggregateName: "Appointment",
@@ -453,7 +583,7 @@ describe("appointment aggregate", () => {
         diagnosis,
         treatment,
       },
-      eventName: "appointment.payment-recorded",
+      eventName: "appointment.final-settlement-recorded",
       eventPayload: { appointmentId },
       occurredAt: paymentContext.occurredAt,
       actorUserId,
@@ -486,7 +616,7 @@ describe("appointment aggregate", () => {
         canceledAt: canceledContext.occurredAt,
       },
       eventName: "appointment.canceled",
-      eventPayload: { appointmentId },
+      eventPayload: { appointmentId, refundAmount: 0 },
       occurredAt: canceledContext.occurredAt,
       actorUserId,
     });

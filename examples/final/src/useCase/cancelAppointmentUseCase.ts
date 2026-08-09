@@ -17,6 +17,7 @@ import {
   type Scheduled,
 } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
+import type { AppointmentVersion } from "../domain/appointment/appointmentVersion.js";
 import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
 import type { AppointmentCanceledStore, AppointmentStoreError, StaleAppointmentVersion } from "../domain/appointment/appointmentStores.js";
 import type { CancellationReason } from "../domain/appointment/cancellationReason.js";
@@ -25,6 +26,7 @@ import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";
 import {
   ensureAppointmentFound,
+  ensureAppointmentVersion,
   ensureUserFound,
   type AppointmentNotFound,
   type UnauthorizedError,
@@ -33,6 +35,7 @@ import {
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;
   appointmentId: AppointmentId;
+  expectedVersion: AppointmentVersion;
   reason: CancellationReason;
 }>;
 export type UseCaseOk = Readonly<{ appointment: Canceled }>;
@@ -118,6 +121,7 @@ const run =
           .mapErr(toRepositoryError),
       )
       .andThen(ensureAppointmentFound(input.appointmentId))
+      .andThen(ensureAppointmentVersion(input.appointmentId, input.expectedVersion))
       .andThen(ensureCancellable)
       .andThen(createEvent(dependencies, input))
       .andThrough((event) =>

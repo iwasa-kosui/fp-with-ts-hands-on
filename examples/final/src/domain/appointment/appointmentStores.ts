@@ -6,6 +6,9 @@ import type {
   AppointmentBooked,
   AppointmentCanceled,
   AppointmentCheckedIn,
+  AppointmentDepositReceived,
+  AppointmentFinalSettlementRecorded,
+  AppointmentReceptionNoteUpdated,
   ExaminationStarted,
   PaymentRecorded,
   AppointmentUpdated,
@@ -34,6 +37,9 @@ export type AppointmentBookedStore = AppointmentStore<AppointmentBooked>;
 export type AppointmentCheckedInStore = AppointmentStore<AppointmentCheckedIn>;
 export type ExaminationStartedStore = AppointmentStore<ExaminationStarted>;
 export type PaymentRecordedStore = AppointmentStore<PaymentRecorded>;
+export type AppointmentReceptionNoteUpdatedStore = AppointmentStore<AppointmentReceptionNoteUpdated>;
+export type AppointmentDepositReceivedStore = AppointmentStore<AppointmentDepositReceived>;
+export type AppointmentFinalSettlementRecordedStore = AppointmentStore<AppointmentFinalSettlementRecorded>;
 export type AppointmentCanceledStore = AppointmentStore<AppointmentCanceled>;
 export type AppointmentUpdatedStore = AppointmentStore<AppointmentUpdated>;
 export type AppointmentWalkInRegisteredStore = AppointmentStore<AppointmentWalkInRegistered>;

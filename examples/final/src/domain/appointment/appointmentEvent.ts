@@ -4,6 +4,8 @@ import type { Appointment, AwaitingPayment, Canceled, CheckedIn, InExamination, 
 import type { AppointmentId } from "./appointmentId.js";
 import type { VeterinarianId } from "./veterinarianId.js";
 import type { ExamId } from "../examResult/examId.js";
+import type { PaymentAmount } from "./paymentAmount.js";
+import type { SettlementAdjustmentAmount } from "./settlementAdjustmentAmount.js";
 
 type AppointmentDomainEvent<
   TAggregateState extends Appointment,
@@ -54,18 +56,37 @@ export type AppointmentExaminationCompleted = AppointmentDomainEvent<
   Readonly<{ appointmentId: AppointmentId; examId: ExamId }>
 >;
 
-export type PaymentRecorded = AppointmentDomainEvent<
-  Paid,
-  "PaymentRecorded",
-  "appointment.payment-recorded",
+export type AppointmentReceptionNoteUpdated = AppointmentDomainEvent<
+  Scheduled | CheckedIn | InExamination | AwaitingPayment,
+  "AppointmentReceptionNoteUpdated",
+  "appointment.reception-note-updated",
   Readonly<{ appointmentId: AppointmentId }>
 >;
+
+export type AppointmentDepositReceived = AppointmentDomainEvent<
+  Scheduled | CheckedIn,
+  "AppointmentDepositReceived",
+  "appointment.deposit-received",
+  Readonly<{ appointmentId: AppointmentId; depositAmount: PaymentAmount }>
+>;
+
+export type AppointmentFinalSettlementRecorded = AppointmentDomainEvent<
+  Paid,
+  "AppointmentFinalSettlementRecorded",
+  "appointment.final-settlement-recorded",
+  Readonly<{ appointmentId: AppointmentId }>
+>;
+
+export type PaymentRecorded = AppointmentFinalSettlementRecorded;
 
 export type AppointmentCanceled = AppointmentDomainEvent<
   Canceled,
   "AppointmentCanceled",
   "appointment.canceled",
-  Readonly<{ appointmentId: AppointmentId }>
+  Readonly<{
+    appointmentId: AppointmentId;
+    refundAmount: SettlementAdjustmentAmount;
+  }>
 >;
 
 export type AppointmentUpdated = AppointmentDomainEvent<
@@ -94,7 +115,9 @@ export type AppointmentEvent =
   | AppointmentCheckedIn
   | ExaminationStarted
   | AppointmentExaminationCompleted
-  | PaymentRecorded
+  | AppointmentReceptionNoteUpdated
+  | AppointmentDepositReceived
+  | AppointmentFinalSettlementRecorded
   | AppointmentCanceled
   | AppointmentUpdated
   | AppointmentWalkInRegistered

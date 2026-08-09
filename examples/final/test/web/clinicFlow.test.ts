@@ -6,6 +6,7 @@ import { errAsync, okAsync } from "neverthrow";
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
 import {
   appointmentsTable,
+  domainEventSensitivePayloadsTable,
   domainEventsTable,
   examResultsTable,
   ownersTable,
@@ -178,6 +179,83 @@ const createOwnerAndPet = async (harness: Harness, cookie: string) => {
 };
 
 describe("clinic workflow routes", () => {
+  test("updates reception notes and refunds a prepaid vaccination cancellation", async () => {
+    const harness = createHarness();
+    const adminCookie = await setup(harness);
+    const { owner, pet } = await createOwnerAndPet(harness, adminCookie);
+    const booked = await post(harness, "/appointments", {
+      ownerId: owner.ownerId,
+      petId: pet.petId,
+      scheduledAt: "2026-08-10T03:00:00.000Z",
+      serviceCode: "Vaccination",
+      durationMinutes: "15",
+      assignedVeterinarianId: "",
+      reason: "Vaccination visit",
+    }, adminCookie);
+    expect(booked.status).toBe(303);
+    const appointment = harness.database.select().from(appointmentsTable).get();
+    if (appointment === undefined) throw new TypeError("appointment was not booked");
+
+    const noted = await post(
+      harness,
+      `/appointments/${appointment.appointmentId}/reception-note`,
+      { expectedVersion: "1", receptionNote: "Keep refrigerated vaccine ready" },
+      adminCookie,
+    );
+    expect(noted.status).toBe(303);
+    const deposited = await post(
+      harness,
+      `/appointments/${appointment.appointmentId}/deposit`,
+      { expectedVersion: "2", depositAmount: "7000" },
+      adminCookie,
+    );
+    expect(deposited.status).toBe(303);
+    const detail = await page(
+      harness,
+      `/appointments/${appointment.appointmentId}`,
+      adminCookie,
+    );
+    await expect(detail.json()).resolves.toMatchObject({
+      props: {
+        appointment: {
+          receptionNote: "Keep refrigerated vaccine ready",
+          settlement: { kind: "DepositReceived", depositAmount: 7_000 },
+          version: 3,
+        },
+        actions: { receiveDeposit: false, cancel: true },
+      },
+    });
+
+    const canceled = await post(
+      harness,
+      `/appointments/${appointment.appointmentId}/cancel`,
+      { expectedVersion: "3", reason: "Owner requested cancellation" },
+      adminCookie,
+    );
+    expect(canceled.status).toBe(303);
+    expect(harness.database.select().from(appointmentsTable).get()).toMatchObject({
+      status: "Canceled",
+      settlementStatus: "DepositRefunded",
+      depositAmount: 7_000,
+      version: 4,
+    });
+    expect(
+      harness.database.select().from(domainEventsTable).all()
+        .map(({ eventName }) => eventName)
+        .filter((eventName) => eventName.startsWith("appointment.")),
+    ).toEqual([
+      "appointment.booked",
+      "appointment.reception-note-updated",
+      "appointment.deposit-received",
+      "appointment.canceled",
+    ]);
+    const sensitiveAudit = JSON.stringify(
+      harness.database.select().from(domainEventSensitivePayloadsTable).all(),
+    );
+    expect(sensitiveAudit).toContain("Keep refrigerated vaccine ready");
+    expect(sensitiveAudit).toContain('\"refundAmount\":7000');
+  });
+
   test("drives booking through payment and exposes only state-valid actions", async () => {
     const harness = createHarness();
     const adminCookie = await setup(harness);
@@ -241,7 +319,7 @@ describe("clinic workflow routes", () => {
       component: "Appointments/Show",
       props: {
         appointment: { kind: "Scheduled", ownerName: "Hanako Owner", petName: "Mugi" },
-        actions: { checkIn: true, cancel: true, startExamination: false, recordExamResult: false, recordPayment: false },
+        actions: { checkIn: true, cancel: true, startExamination: false, recordExamResult: false, settle: false },
       },
     });
 
@@ -249,7 +327,7 @@ describe("clinic workflow routes", () => {
       (await post(
         harness,
         `/appointments/${appointment.appointmentId}/check-in`,
-        {},
+        { expectedVersion: "1" },
         receptionistCookie,
       )).status,
     ).toBe(303);
@@ -261,7 +339,7 @@ describe("clinic workflow routes", () => {
     await expect(checkedIn.json()).resolves.toMatchObject({
       props: {
         appointment: { kind: "CheckedIn" },
-        actions: { checkIn: false, cancel: false, startExamination: true, recordExamResult: false, recordPayment: false },
+        actions: { checkIn: false, cancel: false, startExamination: true, recordExamResult: false, settle: false },
       },
     });
 
@@ -269,7 +347,7 @@ describe("clinic workflow routes", () => {
       (await post(
         harness,
         `/appointments/${appointment.appointmentId}/start-examination`,
-        {},
+        { expectedVersion: "2" },
         veterinarianCookie,
       )).status,
     ).toBe(303);
@@ -281,7 +359,7 @@ describe("clinic workflow routes", () => {
     await expect(examining.json()).resolves.toMatchObject({
       props: {
         appointment: { kind: "InExamination", veterinarianName: "Clinic Vet" },
-        actions: { checkIn: false, cancel: false, startExamination: false, recordExamResult: true, recordPayment: false },
+        actions: { checkIn: false, cancel: false, startExamination: false, recordExamResult: true, settle: false },
       },
     });
     const adminExamining = await page(
@@ -296,7 +374,7 @@ describe("clinic workflow routes", () => {
           cancel: false,
           startExamination: false,
           recordExamResult: true,
-          recordPayment: false,
+          settle: false,
         },
         veterinarians: [{
           veterinarianId: veterinarianRow.veterinarianId,
@@ -311,6 +389,7 @@ describe("clinic workflow routes", () => {
       `/appointments/${appointment.appointmentId}/exam-results`,
       {
         petId: pet.petId,
+        expectedVersion: "3",
         collectedAt: "2026-08-09T02:00:00.000Z",
         item: "Do not store this result",
         needsFollowUp: "definitely",
@@ -328,6 +407,7 @@ describe("clinic workflow routes", () => {
       `/appointments/${appointment.appointmentId}/exam-results`,
       {
         petId: pet.petId,
+        expectedVersion: "3",
         collectedAt: "2026-08-09T02:00:00.000Z",
         item: "Routine finding",
         needsFollowUp: false,
@@ -349,7 +429,7 @@ describe("clinic workflow routes", () => {
           cancel: false,
           startExamination: false,
           recordExamResult: false,
-          recordPayment: true,
+          settle: true,
         },
       },
     });
@@ -361,7 +441,7 @@ describe("clinic workflow routes", () => {
     await expect(veterinarianAwaitingPayment.json()).resolves.toMatchObject({
       props: {
         appointment: { kind: "AwaitingPayment" },
-        actions: { recordExamResult: false, recordPayment: false },
+        actions: { recordExamResult: false, settle: false },
       },
     });
 
@@ -370,6 +450,7 @@ describe("clinic workflow routes", () => {
       `/appointments/${appointment.appointmentId}/exam-results`,
       {
         petId: pet.petId,
+        expectedVersion: "4",
         collectedAt: "2026-08-09T02:00:00.000Z",
         item: "Highly sensitive clinical finding",
         needsFollowUp: true,
@@ -386,7 +467,7 @@ describe("clinic workflow routes", () => {
     const paid = await post(
       harness,
       `/appointments/${appointment.appointmentId}/payment`,
-      { diagnosis: "Dermatitis", treatment: "Topical care", amount: "12500" },
+      { diagnosis: "Dermatitis", treatment: "Topical care", finalAmount: "12500", expectedVersion: "4" },
       receptionistCookie,
     );
     expect(paid.status).toBe(303);
@@ -399,11 +480,11 @@ describe("clinic workflow routes", () => {
     expect(paidProps).toMatchObject({
       props: {
         appointment: { kind: "Paid", amount: 12500 },
-        actions: { checkIn: false, cancel: false, startExamination: false, recordExamResult: false, recordPayment: false },
+        actions: { checkIn: false, cancel: false, startExamination: false, recordExamResult: false, settle: false },
       },
     });
-    expect(JSON.stringify(paidProps)).not.toContain("Dermatitis");
-    expect(JSON.stringify(paidProps)).not.toContain("Topical care");
+    expect(JSON.stringify(paidProps)).toContain("Dermatitis");
+    expect(JSON.stringify(paidProps)).toContain("Topical care");
     expect(paidProps.props.appointment).not.toHaveProperty("state");
   });
 
@@ -419,7 +500,7 @@ describe("clinic workflow routes", () => {
     const forbidden = await post(
       harness,
       "/appointments/not-an-id/check-in",
-      {},
+      { expectedVersion: "1" },
       veterinarianCookie,
     );
     expect(forbidden.status).toBe(403);
@@ -466,13 +547,13 @@ describe("clinic workflow routes", () => {
     await post(
       harness,
       `/appointments/${appointment.appointmentId}/check-in`,
-      {},
+      { expectedVersion: "1" },
       adminCookie,
     );
     const repeated = await post(
       harness,
       `/appointments/${appointment.appointmentId}/check-in`,
-      {},
+      { expectedVersion: "2" },
       adminCookie,
     );
     expect(repeated.status).toBe(303);
@@ -503,7 +584,7 @@ describe("clinic workflow routes", () => {
       `/appointments/${appointment.appointmentId}/check-in`,
       {
         method: "POST",
-        body: new URLSearchParams(),
+        body: new URLSearchParams({ expectedVersion: "2" }),
         headers: {
           ...inertiaHeaders,
           "Content-Type": "application/x-www-form-urlencoded",
@@ -520,11 +601,11 @@ describe("clinic workflow routes", () => {
     const invalidPayment = await post(
       harness,
       `/appointments/${appointment.appointmentId}/payment`,
-      { diagnosis: "x", treatment: "y", amount: "0" },
+      { diagnosis: "x", treatment: "y", finalAmount: "0", expectedVersion: "2" },
       adminCookie,
     );
     await expect(invalidPayment.json()).resolves.toMatchObject({
-      props: { errors: { amount: expect.any(String) } },
+      props: { errors: { finalAmount: expect.any(String) } },
     });
 
     await post(
@@ -542,7 +623,7 @@ describe("clinic workflow routes", () => {
     const canceled = await post(
       harness,
       `/appointments/${cancelable.appointmentId}/cancel`,
-      { reason: "Owner requested cancellation" },
+      { reason: "Owner requested cancellation", expectedVersion: "1" },
       adminCookie,
     );
     expect(canceled.status).toBe(303);
@@ -560,7 +641,7 @@ describe("clinic workflow routes", () => {
           cancel: false,
           startExamination: false,
           recordExamResult: false,
-          recordPayment: false,
+          settle: false,
         },
       },
     });
@@ -671,16 +752,17 @@ describe("clinic workflow routes", () => {
     await post(harness, "/appointments", { ownerId: owner.ownerId, petId: pet.petId, scheduledAt: "2026-08-10T03:00:00.000Z", serviceCode: "GeneralConsultation", durationMinutes: "30", assignedVeterinarianId: "", reason: "Follow-up flow" }, adminCookie);
     const appointment = harness.database.select().from(appointmentsTable).get();
     if (appointment === undefined) throw new TypeError("appointment missing");
-    await post(harness, `/appointments/${appointment.appointmentId}/check-in`, {}, adminCookie);
-    await post(harness, `/appointments/${appointment.appointmentId}/start-examination`, {}, vetCookie);
+    await post(harness, `/appointments/${appointment.appointmentId}/check-in`, { expectedVersion: "1" }, adminCookie);
+    await post(harness, `/appointments/${appointment.appointmentId}/start-examination`, { expectedVersion: "2" }, vetCookie);
     await post(harness, `/appointments/${appointment.appointmentId}/exam-results`, {
       petId: pet.petId,
+      expectedVersion: "3",
       collectedAt: "2026-08-09T02:00:00.000Z",
       item: "private result",
       needsFollowUp: "true",
     }, vetCookie);
     harness.setTime("2026-08-09T02:30:00.000Z");
-    await post(harness, `/appointments/${appointment.appointmentId}/payment`, { diagnosis: "D", treatment: "T", amount: "1000" }, adminCookie);
+    await post(harness, `/appointments/${appointment.appointmentId}/payment`, { diagnosis: "D", treatment: "T", finalAmount: "1000", expectedVersion: "4" }, adminCookie);
 
     const followUps = await page(harness, "/follow-ups", adminCookie);
     await expect(followUps.json()).resolves.toMatchObject({
@@ -699,7 +781,7 @@ describe("clinic workflow routes", () => {
     const paymentEvent = harness.database
       .select()
       .from(domainEventsTable)
-      .where(eq(domainEventsTable.eventName, "appointment.payment-recorded"))
+      .where(eq(domainEventsTable.eventName, "appointment.final-settlement-recorded"))
       .get();
     const followUpEvent = harness.database
       .select()

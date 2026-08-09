@@ -1,20 +1,27 @@
-import { ResultAsync } from "neverthrow";
+import { err, ok, ResultAsync, type Result } from "neverthrow";
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
 import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import {
   Appointment,
+  type Appointment as AppointmentState,
   type CheckedIn,
   type InExamination,
 } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
-import type { AppointmentStoreError, ExaminationStartedStore, StaleAppointmentVersion } from "../domain/appointment/appointmentStores.js";
+import type {
+  AppointmentStoreError,
+  ExaminationStartedStore,
+  StaleAppointmentVersion,
+  VeterinarianScheduleConflict,
+} from "../domain/appointment/appointmentStores.js";
+import type { AppointmentVersion } from "../domain/appointment/appointmentVersion.js";
 import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
+import type { User } from "../domain/user/user.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
-import { ensureCanStartExamination } from "./authorization.js";
 import {
   ensureAppointmentFound,
   ensureCheckedIn,
@@ -27,27 +34,22 @@ import {
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;
   appointmentId: AppointmentId;
-  veterinarianId: VeterinarianId;
+  expectedVersion: AppointmentVersion;
+  veterinarianId: VeterinarianId | undefined;
 }>;
-
-export type UseCaseOk = Readonly<{
-  appointment: InExamination;
-}>;
-
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
-
+export type UseCaseOk = Readonly<{ appointment: InExamination }>;
+export type IdentityGenerationFailed = Readonly<{ kind: "IdentityGenerationFailed" }>;
+export type VeterinarianRequired = Readonly<{ kind: "VeterinarianRequired" }>;
 export type UseCaseError =
   | UnauthorizedError
   | AppointmentNotFound
   | InvalidAppointmentState
   | StaleAppointmentVersion
+  | VeterinarianScheduleConflict
+  | VeterinarianRequired
   | IdentityGenerationFailed
   | RepositoryError;
-
 export type UseCaseOutput = ResultAsync<UseCaseOk, UseCaseError>;
-
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
   appointmentResolver: AppointmentByIdResolver;
@@ -55,34 +57,61 @@ export type Dependencies = Readonly<{
   clock: Clock;
   eventIdGenerator: EventIdGenerator;
 }>;
-
 export type StartExaminationUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const createEvent =
-  (
-    {
-      clock,
-      eventIdGenerator,
-    }: Pick<Dependencies, "clock" | "eventIdGenerator">,
-    input: UseCaseInput,
-  ) =>
-  (appointment: CheckedIn) =>
-    ResultAsync.fromPromise(
-      Promise.resolve().then(() =>
-        Appointment.startExamination({
-          eventId: eventIdGenerator.generate(),
-          occurredAt: clock.now(),
-          actorUserId: input.actorUserId,
-        })(appointment, input.veterinarianId),
-      ),
-      (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
-    );
+type Examiner = Extract<User, { kind: "Admin" | "Veterinarian" }>;
+const ensureExaminer = (user: User): Result<Examiner, UnauthorizedError> =>
+  user.kind === "Admin" || user.kind === "Veterinarian"
+    ? ok(user)
+    : err({ kind: "Unauthorized", actorUserId: user.userId });
+const ensureVersion =
+  (input: UseCaseInput) =>
+  (appointment: AppointmentState): Result<AppointmentState, StaleAppointmentVersion> =>
+    appointment.version === input.expectedVersion
+      ? ok(appointment)
+      : err({
+          kind: "StaleAppointmentVersion",
+          appointmentId: appointment.appointmentId,
+          expectedVersion: input.expectedVersion,
+        });
+
+export const selectVeterinarian = (
+  actor: Examiner,
+  appointment: CheckedIn,
+  requested: VeterinarianId | undefined,
+): Result<VeterinarianId, UnauthorizedError | VeterinarianRequired> => {
+  if (appointment.assignedVeterinarianId !== null) {
+    return actor.kind === "Admin" ||
+      actor.veterinarianId === appointment.assignedVeterinarianId
+      ? ok(appointment.assignedVeterinarianId)
+      : err({ kind: "Unauthorized", actorUserId: actor.userId });
+  }
+  if (actor.kind === "Veterinarian") return ok(actor.veterinarianId);
+  return requested === undefined
+    ? err({ kind: "VeterinarianRequired" })
+    : ok(requested);
+};
+
+const createEvent = (
+  dependencies: Pick<Dependencies, "clock" | "eventIdGenerator">,
+  input: UseCaseInput,
+  appointment: CheckedIn,
+  veterinarianId: VeterinarianId,
+) => ResultAsync.fromPromise(
+  Promise.resolve().then(() => Appointment.startExamination({
+    eventId: dependencies.eventIdGenerator.generate(),
+    occurredAt: dependencies.clock.now(),
+    actorUserId: input.actorUserId,
+  })(appointment, veterinarianId)),
+  (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
+);
 const toStoreError = (
   error: AppointmentStoreError,
-): RepositoryError | StaleAppointmentVersion =>
-  error.kind === "StaleAppointmentVersion"
+): RepositoryError | StaleAppointmentVersion | VeterinarianScheduleConflict =>
+  error.kind === "StaleAppointmentVersion" ||
+  error.kind === "VeterinarianScheduleConflict"
     ? error
     : error.kind === "RepositoryError"
       ? error
@@ -91,29 +120,23 @@ const toStoreError = (
           operation: "StartExaminationUseCase.store",
           cause: error,
         };
-
 const run =
-  ({
-    userResolver,
-    appointmentResolver,
-    examinationStartedStore,
-    clock,
-    eventIdGenerator,
-  }: Dependencies) =>
+  (dependencies: Dependencies) =>
   (input: UseCaseInput): UseCaseOutput =>
-    userResolver
-      .resolveById(input.actorUserId)
+    dependencies.userResolver.resolveById(input.actorUserId)
       .andThen(ensureUserFound(input.actorUserId))
-      .andThen(ensureCanStartExamination(input.veterinarianId))
-      .andThen(() => appointmentResolver.resolveById(input.appointmentId))
-      .andThen(ensureAppointmentFound(input.appointmentId))
-      .andThen(ensureCheckedIn)
-      .andThen(createEvent({ clock, eventIdGenerator }, input))
-      .andThrough((event) => examinationStartedStore.store(event).mapErr(toStoreError))
+      .andThen(ensureExaminer)
+      .andThen((actor) => dependencies.appointmentResolver.resolveById(input.appointmentId)
+        .andThen(ensureAppointmentFound(input.appointmentId))
+        .andThen(ensureVersion(input))
+        .andThen(ensureCheckedIn)
+        .andThen((appointment) => selectVeterinarian(actor, appointment, input.veterinarianId)
+          .map((veterinarianId) => ({ appointment, veterinarianId }))))
+      .andThen(({ appointment, veterinarianId }) =>
+        createEvent(dependencies, input, appointment, veterinarianId))
+      .andThrough((event) => dependencies.examinationStartedStore.store(event).mapErr(toStoreError))
       .map((event) => ({ appointment: event.aggregateState }));
 
 export const StartExaminationUseCase = {
-  create: (dependencies: Dependencies): StartExaminationUseCase => ({
-    run: run(dependencies),
-  }),
+  create: (dependencies: Dependencies): StartExaminationUseCase => ({ run: run(dependencies) }),
 } as const;

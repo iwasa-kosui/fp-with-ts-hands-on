@@ -19,6 +19,7 @@ import Setup from "../../src/adaptor/primary/web/pages/Setup.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { AppointmentVersion } from "../../src/domain/appointment/appointmentVersion.js";
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
 import { PetId } from "../../src/domain/pet/petId.js";
 import { UserId } from "../../src/domain/user/userId.js";
@@ -34,6 +35,35 @@ const ownerId = OwnerId.schema.parse("73000000-0000-4000-8000-000000000001");
 const petId = PetId.schema.parse("74000000-0000-4000-8000-000000000001");
 const appointmentId = AppointmentId.schema.parse("75000000-0000-4000-8000-000000000001");
 const scheduledAt = Timestamp.schema.parse("2026-08-10T03:00:00.000Z");
+const appointmentBase = {
+  appointmentId,
+  ownerId,
+  ownerName: "Hanako Owner",
+  petId,
+  petName: "Mugi",
+  scheduledAt,
+  scheduledEndsAt: Timestamp.schema.parse("2026-08-10T03:30:00.000Z"),
+  durationMinutes: 30 as const,
+  serviceCode: "GeneralConsultation" as const,
+  bookingKind: "Reserved" as const,
+  assignedVeterinarianId: null,
+  assignedVeterinarianName: "未定",
+  visitReason: "定期健診",
+  receptionNote: null,
+  settlement: { kind: "NoPayment" as const },
+  version: AppointmentVersion.schema.parse(1),
+};
+const noAppointmentActions = {
+  edit: false,
+  checkIn: false,
+  reassignVeterinarian: false,
+  updateReceptionNote: false,
+  receiveDeposit: false,
+  startExamination: false,
+  recordExamResult: false,
+  settle: false,
+  cancel: false,
+} as const;
 
 describe("Operator Console shell", () => {
   test("renders the login form with labelled controls and accessible errors", () => {
@@ -274,24 +304,19 @@ describe("Operator Console shell", () => {
     const awaitingPaymentHtml = renderPublicPage(
       <AppointmentShow
         actions={{
-          cancel: false,
-          checkIn: false,
-          recordExamResult: false,
-          recordPayment: true,
-          startExamination: false,
+          ...noAppointmentActions,
+          settle: true,
         }}
         appointment={{
+          ...appointmentBase,
           appointmentId,
           checkedInAt: Timestamp.schema.parse("2026-08-10T03:10:00.000Z"),
           examId: "71000000-0000-4000-8000-000000000030",
           examinationCompletedAt: Timestamp.schema.parse("2026-08-10T03:30:00.000Z"),
           examinationStartedAt: Timestamp.schema.parse("2026-08-10T03:20:00.000Z"),
           kind: "AwaitingPayment",
-          ownerId,
-          ownerName: "Hanako Owner",
-          petId,
-          petName: "Mugi",
-          scheduledAt,
+          assignedVeterinarianId: "77000000-0000-4000-8000-000000000001",
+          assignedVeterinarianName: "Clinic Vet",
           veterinarianId: "77000000-0000-4000-8000-000000000001",
           veterinarianName: "Clinic Vet",
         }}
@@ -304,20 +329,13 @@ describe("Operator Console shell", () => {
     const scheduledHtml = renderPublicPage(
       <AppointmentShow
         actions={{
+          ...noAppointmentActions,
           cancel: true,
           checkIn: true,
-          recordExamResult: false,
-          recordPayment: false,
-          startExamination: false,
         }}
         appointment={{
-          appointmentId,
+          ...appointmentBase,
           kind: "Scheduled",
-          ownerId,
-          ownerName: "Hanako Owner",
-          petId,
-          petName: "Mugi",
-          scheduledAt,
         }}
         auth={{ user: { userId: adminId, role: "Receptionist" } }}
         errors={{}}
@@ -340,20 +358,12 @@ describe("Operator Console shell", () => {
     const html = renderPublicPage(
       <AppointmentShow
         actions={{
-          cancel: false,
-          checkIn: false,
-          recordExamResult: false,
-          recordPayment: true,
-          startExamination: false,
+          ...noAppointmentActions,
+          settle: true,
         }}
         appointment={{
-          appointmentId,
+          ...appointmentBase,
           kind: "Scheduled",
-          ownerId,
-          ownerName: "Hanako Owner",
-          petId,
-          petName: "Mugi",
-          scheduledAt,
         }}
         auth={{ user: { userId: adminId, role: "Receptionist" } }}
         errors={{}}
@@ -374,20 +384,11 @@ describe("Operator Console shell", () => {
     const html = renderPublicPage(
       <AppointmentShow
         actions={{
-          cancel: false,
-          checkIn: false,
-          recordExamResult: false,
-          recordPayment: false,
-          startExamination: false,
+          ...noAppointmentActions,
         }}
         appointment={{
-          appointmentId,
+          ...appointmentBase,
           kind: "Scheduled",
-          ownerId,
-          ownerName: "Hanako Owner",
-          petId,
-          petName: "Mugi",
-          scheduledAt,
         }}
         auth={{ user: { userId: adminId, role: "Receptionist" } }}
         errors={{}}

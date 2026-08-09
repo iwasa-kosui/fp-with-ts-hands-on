@@ -42,6 +42,10 @@ import { AppointmentVersion } from "../../src/domain/appointment/appointmentVers
 import { AppointmentDuration } from "../../src/domain/appointment/appointmentDuration.js";
 import { ServiceCode } from "../../src/domain/appointment/serviceCode.js";
 import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
+import { Diagnosis } from "../../src/domain/appointment/diagnosis.js";
+import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
+import { ReceptionNote } from "../../src/domain/appointment/receptionNote.js";
+import { Treatment } from "../../src/domain/appointment/treatment.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
 import { ExamResult } from "../../src/domain/examResult/examResult.js";
@@ -722,6 +726,224 @@ describe("SQLite event stores", () => {
     expect(result.isErr()).toBe(true);
     expect((await db.select().from(usersTable))[0]?.name).toBe("Before");
     expect(await db.select().from(domainEventsTable)).toHaveLength(1);
+  });
+
+  test("persists reception, deposit, final settlement, and prepaid refund only in sensitive audit payloads", async () => {
+    const paidDb = createSqliteDatabase(":memory:");
+    migrateDatabase(paidDb);
+    const paidStore = createAppointmentEventStore(paidDb);
+    const booked = Appointment.book(eventContext(1))({
+      appointmentId: ids.appointment,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
+      serviceCode: ServiceCode.schema.parse("Vaccination"),
+      reason: AppointmentReason.schema.parse("private vaccination reason"),
+    });
+    const noted = Appointment.updateReceptionNote(eventContext(2))(
+      booked.aggregateState,
+      ReceptionNote.schema.parse("private reception note"),
+    );
+    const deposited = Appointment.receiveDeposit(eventContext(3))(
+      noted.aggregateState,
+      PaymentAmount.schema.parse(7_000),
+    )._unsafeUnwrap();
+    if (deposited.aggregateState.kind !== "Scheduled") {
+      throw new TypeError("scheduled deposit fixture changed state unexpectedly");
+    }
+    const checkedIn = Appointment.checkIn(eventContext(4))(deposited.aggregateState);
+    const started = Appointment.startExamination(eventContext(5))(
+      checkedIn.aggregateState,
+      ids.veterinarian,
+    );
+    (await paidStore.store(booked, noted, deposited, checkedIn, started))._unsafeUnwrap();
+    const examResult = ExamResult.create(eventContext(6))(unwrap(ExamResult.parse({
+      examId: ids.exam,
+      petId: ids.pet,
+      collectedAt: "2026-08-08T00:06:00.000Z",
+      items: ["private finding"],
+      needsFollowUp: false,
+    })));
+    const completed = Appointment.completeExamination(eventContext(7))(
+      started.aggregateState,
+      { examId: ids.exam },
+    );
+    (await createExaminationCompletionStore(paidDb).store(examResult, completed))._unsafeUnwrap();
+    const settled = Appointment.settle(eventContext(8))(completed.aggregateState, {
+      diagnosis: Diagnosis.schema.parse("private diagnosis"),
+      treatment: Treatment.schema.parse("private treatment"),
+      finalAmount: PaymentAmount.schema.parse(5_000),
+    });
+    (await paidStore.store(settled))._unsafeUnwrap();
+
+    expect(paidDb.select().from(appointmentsTable).get()).toMatchObject({
+      status: "Paid",
+      settlementStatus: "Settled",
+      depositAmount: 7_000,
+      version: 7,
+    });
+    const paidSensitive = JSON.stringify(
+      paidDb.select().from(domainEventSensitivePayloadsTable).all(),
+    );
+    for (const value of [
+      "private vaccination reason",
+      "private reception note",
+      "private diagnosis",
+      "private treatment",
+      '"refundAmount":2000',
+    ]) expect(paidSensitive).toContain(value);
+    expect(paidDb.select().from(domainEventPayloadsTable).all()).toHaveLength(0);
+
+    const canceledDb = createSqliteDatabase(":memory:");
+    migrateDatabase(canceledDb);
+    const canceledStore = createAppointmentEventStore(canceledDb);
+    const cancelBooked = Appointment.book(eventContext(10))({
+      appointmentId: ids.appointment,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
+      serviceCode: ServiceCode.schema.parse("Vaccination"),
+      reason: AppointmentReason.schema.parse("private cancellation visit"),
+    });
+    const cancelDeposit = Appointment.receiveDeposit(eventContext(11))(
+      cancelBooked.aggregateState,
+      PaymentAmount.schema.parse(7_000),
+    )._unsafeUnwrap();
+    const canceled = Appointment.cancel(eventContext(12))(
+      cancelDeposit.aggregateState,
+      CancellationReason.schema.parse("private cancellation"),
+    );
+    (await canceledStore.store(cancelBooked, cancelDeposit, canceled))._unsafeUnwrap();
+
+    expect(canceledDb.select().from(appointmentsTable).get()).toMatchObject({
+      status: "Canceled",
+      settlementStatus: "DepositRefunded",
+      depositAmount: 7_000,
+      version: 3,
+    });
+    const canceledSensitive = JSON.stringify(
+      canceledDb.select().from(domainEventSensitivePayloadsTable).all(),
+    );
+    expect(canceledSensitive).toContain('"refundAmount":7000');
+    expect(canceledDb.select().from(domainEventPayloadsTable).all()).toHaveLength(0);
+  });
+
+  test("a duplicate deposit event id rolls back the settlement projection", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const store = createAppointmentEventStore(db);
+    const booked = Appointment.book(eventContext(10))({
+      appointmentId: ids.appointment,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
+      serviceCode: ServiceCode.schema.parse("Vaccination"),
+      reason: AppointmentReason.schema.parse("private vaccination reason"),
+    });
+    (await store.store(booked))._unsafeUnwrap();
+    const deposit = Appointment.receiveDeposit({
+      ...eventContext(11),
+      eventId: booked.eventId,
+    })(booked.aggregateState, PaymentAmount.schema.parse(7_000))._unsafeUnwrap();
+
+    const result = await store.store(deposit);
+
+    expect(result.isErr()).toBe(true);
+    expect(db.select().from(appointmentsTable).get()).toMatchObject({
+      status: "Scheduled",
+      settlementStatus: "NoPayment",
+      depositAmount: null,
+      version: 1,
+    });
+    expect(db.select().from(domainEventsTable).all()).toHaveLength(1);
+    expect(db.select().from(domainEventSensitivePayloadsTable).all()).toHaveLength(1);
+  });
+
+  test("a duplicate final settlement event id rolls back payment and clinical projections", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const store = createAppointmentEventStore(db);
+    const booked = Appointment.book(eventContext(10))({
+      appointmentId: ids.appointment,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
+      reason: AppointmentReason.schema.parse("private reason"),
+    });
+    const checkedIn = Appointment.checkIn(eventContext(11))(booked.aggregateState);
+    const started = Appointment.startExamination(eventContext(12))(
+      checkedIn.aggregateState,
+      ids.veterinarian,
+    );
+    const examResult = ExamResult.create(eventContext(13))(unwrap(ExamResult.parse({
+      examId: ids.exam,
+      petId: ids.pet,
+      collectedAt: "2026-08-08T00:13:00.000Z",
+      items: ["private finding"],
+      needsFollowUp: false,
+    })));
+    const completed = Appointment.completeExamination(eventContext(14))(
+      started.aggregateState,
+      { examId: ids.exam },
+    );
+    (await store.store(booked, checkedIn, started))._unsafeUnwrap();
+    (await createExaminationCompletionStore(db).store(examResult, completed))._unsafeUnwrap();
+    const settled = Appointment.settle({
+      ...eventContext(15),
+      eventId: booked.eventId,
+    })(completed.aggregateState, {
+      diagnosis: Diagnosis.schema.parse("private diagnosis"),
+      treatment: Treatment.schema.parse("private treatment"),
+      finalAmount: PaymentAmount.schema.parse(9_000),
+    });
+
+    const result = await store.store(settled);
+
+    expect(result.isErr()).toBe(true);
+    expect(db.select().from(appointmentsTable).get()).toMatchObject({
+      status: "AwaitingPayment",
+      settlementStatus: "NoPayment",
+      version: 4,
+    });
+    expect(JSON.stringify(db.select().from(appointmentsTable).get())).not.toContain("private diagnosis");
+    expect(JSON.stringify(db.select().from(appointmentsTable).get())).not.toContain("private treatment");
+    expect(db.select().from(domainEventsTable).all()).toHaveLength(5);
+    expect(db.select().from(domainEventSensitivePayloadsTable).all()).toHaveLength(5);
+  });
+
+  test("a duplicate prepaid cancellation event id rolls back both refund and cancellation", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const store = createAppointmentEventStore(db);
+    const booked = Appointment.book(eventContext(10))({
+      appointmentId: ids.appointment,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
+      serviceCode: ServiceCode.schema.parse("Vaccination"),
+      reason: AppointmentReason.schema.parse("private vaccination reason"),
+    });
+    const deposit = Appointment.receiveDeposit(eventContext(11))(
+      booked.aggregateState,
+      PaymentAmount.schema.parse(7_000),
+    )._unsafeUnwrap();
+    (await store.store(booked, deposit))._unsafeUnwrap();
+    const canceled = Appointment.cancel({
+      ...eventContext(12),
+      eventId: booked.eventId,
+    })(deposit.aggregateState, CancellationReason.schema.parse("private cancellation"));
+
+    const result = await store.store(canceled);
+
+    expect(result.isErr()).toBe(true);
+    expect(db.select().from(appointmentsTable).get()).toMatchObject({
+      status: "Scheduled",
+      settlementStatus: "DepositReceived",
+      depositAmount: 7_000,
+      version: 2,
+    });
+    expect(db.select().from(domainEventsTable).all()).toHaveLength(2);
+    expect(db.select().from(domainEventSensitivePayloadsTable).all()).toHaveLength(2);
   });
 
   test("accepts exactly one coordinated stale appointment transition", async () => {

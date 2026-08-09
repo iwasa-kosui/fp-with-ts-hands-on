@@ -1,7 +1,7 @@
 import type { ResultAsync } from "neverthrow";
 
 import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
-import type { Timestamp } from "../domain/aggregate/timestamp.js";
+import { Timestamp } from "../domain/aggregate/timestamp.js";
 import type {
   Appointment,
   AwaitingPayment,
@@ -41,11 +41,13 @@ type AppointmentViewBase = Readonly<{
   petId: PetId;
   petName: PetName | undefined;
   scheduledAt: Timestamp;
+  scheduledEndsAt: Timestamp;
   durationMinutes: Appointment["durationMinutes"];
   serviceCode: Appointment["serviceCode"];
   bookingKind: Appointment["bookingKind"];
   visitReason: Appointment["visitReason"];
   receptionNote: Appointment["receptionNote"];
+  assignedVeterinarianName: UserName | undefined;
   version: Appointment["version"];
 }>;
 type ScheduledAppointmentView = AppointmentViewBase & Readonly<{
@@ -134,6 +136,12 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
 export const toAppointmentView =
   (owners: readonly Owner[], pets: readonly Pet[], users: readonly User[]) =>
   (appointment: Appointment): AppointmentView => {
+    const assignedVeterinarian = appointment.assignedVeterinarianId === null
+      ? undefined
+      : users.find(
+          (user) => user.kind === "Veterinarian" &&
+            user.veterinarianId === appointment.assignedVeterinarianId,
+        );
     const base = {
       appointmentId: appointment.appointmentId,
       ownerId: appointment.ownerId,
@@ -144,11 +152,17 @@ export const toAppointmentView =
       petId: appointment.petId,
       petName: pets.find((pet) => pet.petId === appointment.petId)?.name,
       scheduledAt: appointment.scheduledAt,
+      scheduledEndsAt: Timestamp.schema.parse(
+        new Date(
+          Date.parse(appointment.scheduledAt) + appointment.durationMinutes * 60_000,
+        ).toISOString(),
+      ),
       durationMinutes: appointment.durationMinutes,
       serviceCode: appointment.serviceCode,
       bookingKind: appointment.bookingKind,
       visitReason: appointment.visitReason,
       receptionNote: appointment.receptionNote,
+      assignedVeterinarianName: assignedVeterinarian?.name,
       version: appointment.version,
     } as const;
     switch (appointment.kind) {

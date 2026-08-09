@@ -61,7 +61,7 @@ export default function Dashboard({
                       <td>{appointment.petName}</td>
                       <td>
                         <StatusBadge tone={status.tone}>
-                          {status.label} ({status.canonical})
+                          {status.label}
                         </StatusBadge>
                       </td>
                     </tr>

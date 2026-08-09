@@ -17,6 +17,7 @@ import type {
 } from "../domain/appointment/appointment.js";
 import { Appointment as AppointmentAggregate } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
+import type { AppointmentVersion } from "../domain/appointment/appointmentVersion.js";
 import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
 import type {
   AppointmentStoreError,
@@ -32,6 +33,7 @@ import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import {
   ensureAppointmentFound,
+  ensureAppointmentVersion,
   ensureUserFound,
   type AppointmentNotFound,
   type UnauthorizedError,
@@ -40,6 +42,7 @@ import {
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;
   appointmentId: AppointmentId;
+  expectedVersion: AppointmentVersion;
   petId: PetId;
   collectedAt: Timestamp;
   items: readonly ExamResultItem[];
@@ -177,6 +180,7 @@ const run =
           .resolveById(input.appointmentId)
           .mapErr(toRepositoryError)
           .andThen(ensureAppointmentFound(input.appointmentId))
+          .andThen(ensureAppointmentVersion(input.appointmentId, input.expectedVersion))
           .andThen(ensureInExamination)
           .andThen(ensureAssigned(user)),
       )

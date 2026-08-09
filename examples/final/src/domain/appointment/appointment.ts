@@ -1,4 +1,5 @@
 import type { Timestamp } from "../aggregate/timestamp.js";
+import { err, ok, type Result } from "neverthrow";
 import type { OwnerId } from "../owner/ownerId.js";
 import type { PetId } from "../pet/petId.js";
 import type { EventContext } from "../aggregate/eventContext.js";
@@ -8,8 +9,10 @@ import {
   type AppointmentCanceled,
   type AppointmentCheckedIn,
   type AppointmentExaminationCompleted,
+  type AppointmentDepositReceived,
+  type AppointmentFinalSettlementRecorded,
+  type AppointmentReceptionNoteUpdated,
   type ExaminationStarted,
-  type PaymentRecorded,
   type AppointmentUpdated,
   type AppointmentWalkInRegistered,
   type AppointmentVeterinarianReassigned,
@@ -34,6 +37,7 @@ import {
   type Settled,
 } from "./settlementState.js";
 import type { Treatment } from "./treatment.js";
+import { SettlementAdjustmentAmount } from "./settlementAdjustmentAmount.js";
 
 export type AppointmentBase = Readonly<{
   appointmentId: AppointmentId;
@@ -113,6 +117,28 @@ export type RecordPaymentInput = Readonly<{
   treatment: Treatment;
   amount: PaymentAmount;
 }>;
+export type SettleAppointmentInput = Readonly<{
+  diagnosis: Diagnosis;
+  treatment: Treatment;
+  finalAmount: PaymentAmount;
+}>;
+export type DepositNotAllowed = Readonly<{
+  kind: "DepositNotAllowed";
+  appointmentId: AppointmentId;
+}>;
+export type DepositAlreadyReceived = Readonly<{
+  kind: "DepositAlreadyReceived";
+  appointmentId: AppointmentId;
+}>;
+export type InvalidDepositAppointmentState = Readonly<{
+  kind: "InvalidDepositAppointmentState";
+  appointmentId: AppointmentId;
+  actualKind: Exclude<Appointment["kind"], "Scheduled" | "CheckedIn">;
+}>;
+export type DepositRuleError =
+  | DepositNotAllowed
+  | DepositAlreadyReceived
+  | InvalidDepositAppointmentState;
 export type UpdateAppointmentInput = Readonly<{
   ownerId: OwnerId;
   petId: PetId;
@@ -234,6 +260,79 @@ const reassignVeterinarian =
     );
   };
 
+type ReceptionNoteUpdatable =
+  | Scheduled
+  | CheckedIn
+  | InExamination
+  | AwaitingPayment;
+
+const updateReceptionNote =
+  (context: EventContext) =>
+  (
+    appointment: ReceptionNoteUpdatable,
+    receptionNote: ReceptionNote | null,
+  ): AppointmentReceptionNoteUpdated => {
+    const aggregateState = {
+      ...appointment,
+      receptionNote,
+      version: nextVersion(appointment.version),
+    } as const satisfies ReceptionNoteUpdatable;
+
+    return AppointmentEvent.create(
+      context,
+      aggregateState.appointmentId,
+      aggregateState,
+      "AppointmentReceptionNoteUpdated",
+      "appointment.reception-note-updated",
+      { appointmentId: aggregateState.appointmentId },
+    );
+  };
+
+const receiveDeposit =
+  (context: EventContext) =>
+  (
+    appointment: Appointment,
+    depositAmount: PaymentAmount,
+  ): Result<AppointmentDepositReceived, DepositRuleError> => {
+    if (appointment.serviceCode !== "Vaccination") {
+      return err({
+        kind: "DepositNotAllowed",
+        appointmentId: appointment.appointmentId,
+      });
+    }
+    if (appointment.kind !== "Scheduled" && appointment.kind !== "CheckedIn") {
+      return err({
+        kind: "InvalidDepositAppointmentState",
+        appointmentId: appointment.appointmentId,
+        actualKind: appointment.kind,
+      });
+    }
+    if (appointment.settlement.kind === "DepositReceived") {
+      return err({
+        kind: "DepositAlreadyReceived",
+        appointmentId: appointment.appointmentId,
+      });
+    }
+    const aggregateState = {
+      ...appointment,
+      settlement: {
+        kind: "DepositReceived",
+        depositAmount,
+        receivedAt: context.occurredAt,
+      },
+      version: nextVersion(appointment.version),
+    } as const satisfies Scheduled | CheckedIn;
+
+    return ok(AppointmentEvent.create(
+      context,
+      aggregateState.appointmentId,
+      aggregateState,
+      "AppointmentDepositReceived",
+      "appointment.deposit-received",
+      { appointmentId: aggregateState.appointmentId, depositAmount },
+    ));
+  };
+
 const checkIn =
   (context: EventContext) =>
   (scheduled: Scheduled): AppointmentCheckedIn => {
@@ -278,12 +377,12 @@ const startExamination =
     );
   };
 
-const recordPayment =
+const settle =
   (context: EventContext) =>
   (
     awaitingPayment: AwaitingPayment,
-    input: RecordPaymentInput,
-  ): PaymentRecorded => {
+    input: SettleAppointmentInput,
+  ): AppointmentFinalSettlementRecorded => {
     const aggregateState = {
       ...awaitingPayment,
       kind: "Paid",
@@ -291,7 +390,7 @@ const recordPayment =
       treatment: input.treatment,
       settlement: Settlement.settle(
         awaitingPayment.settlement,
-        input.amount,
+        input.finalAmount,
         context.occurredAt,
       ),
       version: nextVersion(awaitingPayment.version),
@@ -301,11 +400,20 @@ const recordPayment =
       context,
       aggregateState.appointmentId,
       aggregateState,
-      "PaymentRecorded",
-      "appointment.payment-recorded",
+      "AppointmentFinalSettlementRecorded",
+      "appointment.final-settlement-recorded",
       { appointmentId: aggregateState.appointmentId },
     );
   };
+
+const recordPayment =
+  (context: EventContext) =>
+  (awaitingPayment: AwaitingPayment, input: RecordPaymentInput) =>
+    settle(context)(awaitingPayment, {
+      diagnosis: input.diagnosis,
+      treatment: input.treatment,
+      finalAmount: input.amount,
+    });
 
 const completeExamination =
   (context: EventContext) =>
@@ -337,6 +445,11 @@ const cancel =
     appointment: Scheduled | CheckedIn,
     reason: CancellationReason,
   ): AppointmentCanceled => {
+    const refundAmount = SettlementAdjustmentAmount.schema.parse(
+      appointment.settlement.kind === "DepositReceived"
+        ? appointment.settlement.depositAmount
+        : 0,
+    );
     const aggregateState = {
       ...appointment,
       kind: "Canceled",
@@ -358,7 +471,7 @@ const cancel =
       aggregateState,
       "AppointmentCanceled",
       "appointment.canceled",
-      { appointmentId: aggregateState.appointmentId },
+      { appointmentId: aggregateState.appointmentId, refundAmount },
     );
   };
 
@@ -367,10 +480,13 @@ export const Appointment = {
   update,
   registerWalkIn,
   reassignVeterinarian,
+  updateReceptionNote,
+  receiveDeposit,
   checkIn,
   startExamination,
   completeExamination,
   recordPayment,
+  settle,
   cancel,
   isActive: (appointment: Appointment) =>
     appointment.kind === "Scheduled" ||

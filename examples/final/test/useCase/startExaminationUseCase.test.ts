@@ -50,6 +50,7 @@ const startedAt = Timestamp.schema.parse("2026-08-30T06:30:00.000Z");
 const input = {
   actorUserId,
   appointmentId,
+  expectedVersion: AppointmentVersion.schema.parse(2),
   veterinarianId,
 } as const;
 
@@ -179,6 +180,20 @@ describe("StartExaminationUseCase", () => {
     expect(storedEvents).toHaveLength(0);
   });
 
+  test("returns a stale version before validating the appointment state", async () => {
+    const result = await StartExaminationUseCase.create(
+      createDependencies({
+        appointmentResolver: appointmentResolverFor(scheduled),
+      }),
+    ).run(input);
+
+    expect(result._unsafeUnwrapErr()).toMatchObject({
+      kind: "StaleAppointmentVersion",
+      appointmentId,
+      expectedVersion: input.expectedVersion,
+    });
+  });
+
   test("returns InvalidAppointmentState without storing when the appointment is not CheckedIn", async () => {
     const storedEvents: ExaminationStarted[] = [];
     const useCase = StartExaminationUseCase.create(
@@ -188,7 +203,10 @@ describe("StartExaminationUseCase", () => {
       }),
     );
 
-    const result = await useCase.run(input);
+    const result = await useCase.run({
+      ...input,
+      expectedVersion: scheduled.version,
+    });
 
     expect(result.isErr() && result.error).toEqual({
       kind: "InvalidAppointmentState",
@@ -219,24 +237,59 @@ describe("StartExaminationUseCase", () => {
     expect(appointmentResolverCalled).toBe(false);
   });
 
-  test("returns Unauthorized without resolving the appointment when a veterinarian selects another veterinarian", async () => {
-    let appointmentResolverCalled = false;
+  test("returns Unauthorized when another veterinarian is already assigned", async () => {
+    const assignedToOther = {
+      ...checkedIn,
+      assignedVeterinarianId: otherVeterinarianId,
+    } as const satisfies CheckedIn;
     const useCase = StartExaminationUseCase.create(
       createDependencies({
         userResolver: userResolverFor(veterinarian),
-        appointmentResolver: {
-          resolveById: () => {
-            appointmentResolverCalled = true;
-            return okAsync(checkedIn);
-          },
-        } as const satisfies AppointmentByIdResolver,
+        appointmentResolver: appointmentResolverFor(assignedToOther),
       }),
     );
 
-    const result = await useCase.run({ ...input, veterinarianId: otherVeterinarianId });
+    const result = await useCase.run({ ...input, veterinarianId: undefined });
 
     expect(result.isErr() && result.error.kind).toBe("Unauthorized");
-    expect(appointmentResolverCalled).toBe(false);
+  });
+
+  test("uses the assigned veterinarian even when an administrator does not request one", async () => {
+    const assigned = {
+      ...checkedIn,
+      assignedVeterinarianId: veterinarianId,
+    } as const satisfies CheckedIn;
+    const result = await StartExaminationUseCase.create(
+      createDependencies({ appointmentResolver: appointmentResolverFor(assigned) }),
+    ).run({ ...input, veterinarianId: undefined });
+
+    expect(result._unsafeUnwrap().appointment.assignedVeterinarianId).toBe(veterinarianId);
+  });
+
+  test("requires an administrator to select a veterinarian for an unassigned appointment", async () => {
+    let storeCalls = 0;
+    const result = await StartExaminationUseCase.create(createDependencies({
+      examinationStartedStore: {
+        store: () => {
+          storeCalls += 1;
+          return okAsync(undefined);
+        },
+      },
+    })).run({ ...input, veterinarianId: undefined });
+
+    expect(result._unsafeUnwrapErr()).toEqual({ kind: "VeterinarianRequired" });
+    expect(storeCalls).toBe(0);
+  });
+
+  test("rejects a stale version before reading the clock or generating an event ID", async () => {
+    let sideEffects = 0;
+    const result = await StartExaminationUseCase.create(createDependencies({
+      clock: { now: () => { sideEffects += 1; return startedAt; } },
+      eventIdGenerator: { generate: () => { sideEffects += 1; return eventId; } },
+    })).run({ ...input, expectedVersion: AppointmentVersion.schema.parse(1) });
+
+    expect(result._unsafeUnwrapErr()).toMatchObject({ kind: "StaleAppointmentVersion" });
+    expect(sideEffects).toBe(0);
   });
 
   test("returns a user resolver RepositoryError without resolving the appointment", async () => {

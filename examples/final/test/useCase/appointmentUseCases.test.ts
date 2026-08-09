@@ -64,6 +64,8 @@ import { UpdateAppointmentUseCase } from "../../src/useCase/updateAppointmentUse
 import { RegisterWalkInUseCase } from "../../src/useCase/registerWalkInUseCase.js";
 import { ReassignAppointmentVeterinarianUseCase } from "../../src/useCase/reassignAppointmentVeterinarianUseCase.js";
 import { ListVeterinariansUseCase } from "../../src/useCase/listVeterinariansUseCase.js";
+import { UpdateReceptionNoteUseCase } from "../../src/useCase/updateReceptionNoteUseCase.js";
+import { ReceiveAppointmentDepositUseCase } from "../../src/useCase/receiveAppointmentDepositUseCase.js";
 
 const ids = {
   admin: UserId.schema.parse("51000000-0000-4000-8000-000000000001"),
@@ -146,6 +148,130 @@ const petResolver = {
 };
 
 describe("appointment command use cases", () => {
+  test("updates an active reception note for reception staff and rejects veterinarians before resolving", async () => {
+    const scheduled = Appointment.book({
+      eventId: eventIdGenerator().generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })({
+      appointmentId: ids.appointment,
+      ownerId: ids.owner,
+      petId: ids.pet,
+      scheduledAt: times.scheduled,
+      reason: AppointmentReason.schema.parse("checkup"),
+    }).aggregateState;
+    const note = ReceptionNote.schema.parse("quiet room requested");
+    let stored: AppointmentState | undefined;
+    const useCase = UpdateReceptionNoteUseCase.create({
+      userResolver,
+      appointmentResolver: { resolveById: () => okAsync(scheduled) },
+      appointmentReceptionNoteUpdatedStore: {
+        store: (event) => {
+          stored = event.aggregateState;
+          return okAsync(undefined);
+        },
+      },
+      clock,
+      eventIdGenerator: eventIdGenerator(),
+    });
+
+    const result = await useCase.run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+      expectedVersion: scheduled.version,
+      receptionNote: note,
+    });
+
+    expect(result._unsafeUnwrap().appointment.receptionNote?.unwrap()).toBe(
+      "quiet room requested",
+    );
+    expect(stored).toMatchObject({ version: 2 });
+
+    let resolverCalls = 0;
+    const denied = await UpdateReceptionNoteUseCase.create({
+      userResolver,
+      appointmentResolver: {
+        resolveById: () => {
+          resolverCalls += 1;
+          return okAsync(scheduled);
+        },
+      },
+      appointmentReceptionNoteUpdatedStore: { store: () => okAsync(undefined) },
+      clock,
+      eventIdGenerator: eventIdGenerator(),
+    }).run({
+      actorUserId: ids.veterinarianUser,
+      appointmentId: ids.appointment,
+      expectedVersion: scheduled.version,
+      receptionNote: note,
+    });
+    expect(denied._unsafeUnwrapErr()).toMatchObject({ kind: "Unauthorized" });
+    expect(resolverCalls).toBe(0);
+  });
+
+  test("receives a vaccination deposit and rejects stale input before generating side effects", async () => {
+    const scheduled = Appointment.book({
+      eventId: eventIdGenerator().generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })({
+      appointmentId: ids.appointment,
+      ownerId: ids.owner,
+      petId: ids.pet,
+      scheduledAt: times.scheduled,
+      durationMinutes: AppointmentDuration.schema.parse(15),
+      serviceCode: ServiceCode.schema.parse("Vaccination"),
+      bookingKind: "Reserved",
+      assignedVeterinarianId: null,
+      visitReason: AppointmentReason.schema.parse("vaccination"),
+      receptionNote: null,
+      settlement: { kind: "NoPayment" },
+    }).aggregateState;
+    let stored: AppointmentState | undefined;
+    let generated = 0;
+    const useCase = ReceiveAppointmentDepositUseCase.create({
+      userResolver,
+      appointmentResolver: { resolveById: () => okAsync(scheduled) },
+      appointmentDepositReceivedStore: {
+        store: (event) => {
+          stored = event.aggregateState;
+          return okAsync(undefined);
+        },
+      },
+      clock: { now: () => { generated += 1; return times.now; } },
+      eventIdGenerator: {
+        generate: () => {
+          generated += 1;
+          return eventIdGenerator().generate();
+        },
+      },
+    });
+    const amount = PaymentAmount.schema.parse(3000);
+
+    const received = await useCase.run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+      expectedVersion: scheduled.version,
+      depositAmount: amount,
+    });
+    expect(received._unsafeUnwrap().appointment).toMatchObject({
+      settlement: { kind: "DepositReceived", depositAmount: amount },
+      version: 2,
+    });
+    expect(stored).toMatchObject({ version: 2 });
+    expect(generated).toBe(2);
+
+    generated = 0;
+    const stale = await useCase.run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+      expectedVersion: AppointmentVersion.schema.parse(2),
+      depositAmount: amount,
+    });
+    expect(stale._unsafeUnwrapErr()).toMatchObject({ kind: "StaleAppointmentVersion" });
+    expect(generated).toBe(0);
+  });
+
   test("runs booking through examination result and payment with typed events", async () => {
     let appointment: AppointmentState | undefined;
     const appointmentEvents: AppointmentEvent[] = [];
@@ -192,7 +318,7 @@ describe("appointment command use cases", () => {
       appointmentCheckedInStore: appointmentStore,
       clock,
       eventIdGenerator: eventIds,
-    }).run({ actorUserId: ids.receptionist, appointmentId: ids.appointment });
+    }).run({ actorUserId: ids.receptionist, appointmentId: ids.appointment, expectedVersion: AppointmentVersion.schema.parse(1) });
     expect(checkedIn._unsafeUnwrap().appointment).toMatchObject({
       kind: "CheckedIn",
       version: 2,
@@ -207,6 +333,7 @@ describe("appointment command use cases", () => {
     }).run({
       actorUserId: ids.veterinarianUser,
       appointmentId: ids.appointment,
+      expectedVersion: AppointmentVersion.schema.parse(2),
       veterinarianId: ids.veterinarian,
     });
     expect(started._unsafeUnwrap().appointment).toMatchObject({
@@ -232,6 +359,7 @@ describe("appointment command use cases", () => {
     }).run({
       actorUserId: ids.veterinarianUser,
       appointmentId: ids.appointment,
+      expectedVersion: AppointmentVersion.schema.parse(3),
       petId: ids.pet,
       collectedAt: times.now,
       items: [ExamResultItem.schema.parse("private clinical observation")],
@@ -255,9 +383,10 @@ describe("appointment command use cases", () => {
     }).run({
       actorUserId: ids.receptionist,
       appointmentId: ids.appointment,
+      expectedVersion: AppointmentVersion.schema.parse(4),
       diagnosis: Diagnosis.schema.parse("dermatitis"),
       treatment: Treatment.schema.parse("ointment"),
-      amount: PaymentAmount.schema.parse(4800),
+      finalAmount: PaymentAmount.schema.parse(4800),
     });
 
     expect(paid._unsafeUnwrap().appointment).toMatchObject({
@@ -275,7 +404,7 @@ describe("appointment command use cases", () => {
       "AppointmentCheckedIn",
       "ExaminationStarted",
       "AppointmentExaminationCompleted",
-      "PaymentRecorded",
+      "AppointmentFinalSettlementRecorded",
     ]);
     expect(examEvents).toHaveLength(1);
   });
@@ -348,6 +477,7 @@ describe("appointment command use cases", () => {
     }).run({
       actorUserId: ids.veterinarianUser,
       appointmentId: ids.appointment,
+      expectedVersion: examining.version,
       petId: ids.otherPet,
       collectedAt: times.now,
       items: [ExamResultItem.schema.parse("observation")],
@@ -449,6 +579,7 @@ describe("appointment command use cases", () => {
       }).run({
         actorUserId: ids.veterinarianUser,
         appointmentId: ids.appointment,
+        expectedVersion: examining.version,
         petId: ids.pet,
         collectedAt: times.now,
         items: [ExamResultItem.schema.parse("observation")],
@@ -478,6 +609,7 @@ describe("appointment command use cases", () => {
     }).run({
       actorUserId: ids.veterinarianUser,
       appointmentId: ids.appointment,
+      expectedVersion: AppointmentVersion.schema.parse(1),
     });
 
     expect(result.isErr() && result.error.kind).toBe("Unauthorized");
@@ -506,11 +638,51 @@ describe("appointment command use cases", () => {
           throw new Error("generator unavailable");
         },
       },
-    }).run({ actorUserId: ids.receptionist, appointmentId: ids.appointment });
+    }).run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+      expectedVersion: scheduled.version,
+    });
 
     expect(result.isErr() && result.error).toEqual({
       kind: "IdentityGenerationFailed",
     });
+  });
+
+  test("rejects a stale check-in before clock, ID generation, and store calls", async () => {
+    const scheduled = Appointment.book({
+      eventId: eventIdGenerator().generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })({
+      appointmentId: ids.appointment,
+      ownerId: ids.owner,
+      petId: ids.pet,
+      scheduledAt: times.scheduled,
+      reason: AppointmentReason.schema.parse("checkup"),
+    }).aggregateState;
+    let sideEffects = 0;
+    const result = await CheckInAppointmentUseCase.create({
+      userResolver,
+      appointmentResolver: { resolveById: () => okAsync(scheduled) },
+      appointmentCheckedInStore: {
+        store: () => {
+          sideEffects += 1;
+          return okAsync(undefined);
+        },
+      },
+      clock: { now: () => { sideEffects += 1; return times.now; } },
+      eventIdGenerator: {
+        generate: () => { sideEffects += 1; return eventIdGenerator().generate(); },
+      },
+    }).run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+      expectedVersion: AppointmentVersion.schema.parse(2),
+    });
+
+    expect(result._unsafeUnwrapErr()).toMatchObject({ kind: "StaleAppointmentVersion" });
+    expect(sideEffects).toBe(0);
   });
 
   test("cancels Scheduled appointments and rejects terminal-state cancellation", async () => {
@@ -534,6 +706,7 @@ describe("appointment command use cases", () => {
     }).run({
       actorUserId: ids.receptionist,
       appointmentId: ids.appointment,
+      expectedVersion: scheduled.version,
       reason: CancellationReason.schema.parse("owner request"),
     });
     expect(canceled._unsafeUnwrap().appointment.kind).toBe("Canceled");
@@ -548,6 +721,7 @@ describe("appointment command use cases", () => {
     }).run({
       actorUserId: ids.receptionist,
       appointmentId: ids.appointment,
+      expectedVersion: terminal.version,
       reason: CancellationReason.schema.parse("again"),
     });
     expect(conflict.isErr() && conflict.error.kind).toBe(
@@ -589,6 +763,7 @@ describe("appointment command use cases", () => {
       }).run({
         actorUserId: ids.veterinarianUser,
         appointmentId: ids.appointment,
+        expectedVersion: checkedIn.aggregateState.version,
         veterinarianId: ids.veterinarian,
       }),
       CancelAppointmentUseCase.create({
@@ -600,6 +775,7 @@ describe("appointment command use cases", () => {
       }).run({
         actorUserId: ids.receptionist,
         appointmentId: ids.appointment,
+        expectedVersion: checkedIn.aggregateState.version,
         reason: CancellationReason.schema.parse("private cancellation"),
       }),
     ]);

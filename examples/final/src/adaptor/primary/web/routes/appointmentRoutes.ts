@@ -13,6 +13,7 @@ import { AppointmentVersion } from "../../../../domain/appointment/appointmentVe
 import { CancellationReason } from "../../../../domain/appointment/cancellationReason.js";
 import { Diagnosis } from "../../../../domain/appointment/diagnosis.js";
 import { PaymentAmount } from "../../../../domain/appointment/paymentAmount.js";
+import { ReceptionNote } from "../../../../domain/appointment/receptionNote.js";
 import { ServiceCode } from "../../../../domain/appointment/serviceCode.js";
 import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js";
 import { Treatment } from "../../../../domain/appointment/treatment.js";
@@ -35,6 +36,8 @@ import type { ReassignAppointmentVeterinarianUseCase } from "../../../../useCase
 import type { RecordExamResultUseCase } from "../../../../useCase/recordExamResultUseCase.js";
 import type { RecordPaymentUseCase } from "../../../../useCase/recordPaymentUseCase.js";
 import type { StartExaminationUseCase } from "../../../../useCase/startExaminationUseCase.js";
+import type { UpdateReceptionNoteUseCase } from "../../../../useCase/updateReceptionNoteUseCase.js";
+import type { ReceiveAppointmentDepositUseCase } from "../../../../useCase/receiveAppointmentDepositUseCase.js";
 import { withSharedProps } from "../middleware/sharedProps.js";
 import {
   assertNever,
@@ -70,10 +73,27 @@ const ReassignVeterinarianSchema = z.object({
     VeterinarianId.schema.nullable(),
   ),
 });
+const VersionedMutationShape = {
+  expectedVersion: z.coerce.number().pipe(AppointmentVersion.schema),
+} as const;
+const CheckInSchema = z.object(VersionedMutationShape);
+const ReceptionNoteSchema = z.object({
+  ...VersionedMutationShape,
+  receptionNote: z.preprocess(
+    (value) => value === "" ? null : value,
+    ReceptionNote.schema.nullable(),
+  ),
+});
+const DepositSchema = z.object({
+  ...VersionedMutationShape,
+  depositAmount: z.coerce.number().pipe(PaymentAmount.schema),
+});
 const StartExaminationSchema = z.object({
+  ...VersionedMutationShape,
   veterinarianId: VeterinarianId.schema.optional(),
 });
 const ExamResultSchema = z.object({
+  ...VersionedMutationShape,
   petId: PetId.schema,
   collectedAt: Timestamp.schema,
   item: ExamResultItem.schema,
@@ -88,11 +108,13 @@ const ExamResultSchema = z.object({
   ),
 });
 const PaymentSchema = z.object({
+  ...VersionedMutationShape,
   diagnosis: Diagnosis.schema,
   treatment: Treatment.schema,
-  amount: z.coerce.number().pipe(PaymentAmount.schema),
+  finalAmount: z.coerce.number().pipe(PaymentAmount.schema),
 });
 const CancelSchema = z.object({
+  ...VersionedMutationShape,
   reason: CancellationReason.schema,
 });
 const AppointmentDetailErrorSchema = z.enum([
@@ -101,15 +123,35 @@ const AppointmentDetailErrorSchema = z.enum([
   "appointment-conflict",
   "schedule-conflict",
   "prepaid-fields",
+  "deposit-not-allowed",
+  "deposit-already-received",
+  "veterinarian-required",
+  "veterinarian-mismatch",
 ]);
 const deletedLabel = "削除済み";
 
 type AppointmentPageViewFor<T extends AppointmentView> = Readonly<
-  Omit<T, "ownerName" | "petName" | "veterinarianName"> & {
+  Omit<
+    T,
+    | "ownerName"
+    | "petName"
+    | "veterinarianName"
+    | "assignedVeterinarianName"
+    | "visitReason"
+    | "receptionNote"
+    | "diagnosis"
+    | "treatment"
+  > & {
     ownerName: string;
     petName: string;
+    assignedVeterinarianName: string;
+    visitReason: string;
+    receptionNote: string | null;
   } & (T extends { veterinarianName: unknown }
       ? { veterinarianName: string }
+      : Readonly<Record<never, never>>) &
+    (T extends { diagnosis: unknown; treatment: unknown }
+      ? { diagnosis: string; treatment: string }
       : Readonly<Record<never, never>>)
 >;
 export type AppointmentPageView = AppointmentView extends infer T
@@ -120,10 +162,19 @@ export type AppointmentPageView = AppointmentView extends infer T
 
 export const toAppointmentPageView = (
   appointment: AppointmentView,
+  discloseSensitive = false,
 ): AppointmentPageView => {
   const base = {
     ownerName: appointment.ownerName?.unwrap() ?? deletedLabel,
     petName: appointment.petName?.unwrap() ?? deletedLabel,
+    assignedVeterinarianName:
+      appointment.assignedVeterinarianId === null
+        ? "未定"
+        : appointment.assignedVeterinarianName?.unwrap() ?? deletedLabel,
+    visitReason: discloseSensitive ? appointment.visitReason.unwrap() : "非表示",
+    receptionNote: discloseSensitive
+      ? appointment.receptionNote?.unwrap() ?? null
+      : null,
   } as const;
   switch (appointment.kind) {
     case "Scheduled":
@@ -132,12 +183,20 @@ export const toAppointmentPageView = (
       return { ...appointment, ...base };
     case "InExamination":
     case "AwaitingPayment":
+      return {
+        ...appointment,
+        ...base,
+        veterinarianName:
+          appointment.veterinarianName?.unwrap() ?? deletedLabel,
+      };
     case "Paid":
       return {
         ...appointment,
         ...base,
         veterinarianName:
           appointment.veterinarianName?.unwrap() ?? deletedLabel,
+        diagnosis: discloseSensitive ? appointment.diagnosis.unwrap() : "非表示",
+        treatment: discloseSensitive ? appointment.treatment.unwrap() : "非表示",
       };
     default:
       return assertNever(appointment);
@@ -145,13 +204,15 @@ export const toAppointmentPageView = (
 };
 
 export type AppointmentActions = Readonly<{
+  edit: boolean;
   checkIn: boolean;
-  cancel: boolean;
+  reassignVeterinarian: boolean;
+  updateReceptionNote: boolean;
+  receiveDeposit: boolean;
   startExamination: boolean;
   recordExamResult: boolean;
-  recordPayment: boolean;
-  edit?: boolean;
-  reassignVeterinarian?: boolean;
+  settle: boolean;
+  cancel: boolean;
 }>;
 export type AppointmentOwnerOption = Readonly<{
   ownerId: z.infer<typeof OwnerId.schema>;
@@ -181,6 +242,8 @@ type AppointmentRouteDependencies = Readonly<{
   listVeterinarians: ListVeterinariansUseCase;
   updateAppointment: UpdateAppointmentUseCase;
   reassignAppointmentVeterinarian: ReassignAppointmentVeterinarianUseCase;
+  updateReceptionNote: UpdateReceptionNoteUseCase;
+  receiveAppointmentDeposit: ReceiveAppointmentDepositUseCase;
 }>;
 
 const parseBody = <TOutput, TInput>(
@@ -249,19 +312,32 @@ const actionsFor = (
     (actor.user.kind === "Veterinarian" &&
       appointment.kind === "InExamination" &&
       actor.user.veterinarianId === appointment.veterinarianId);
+  const active =
+    appointment.kind !== "Paid" && appointment.kind !== "Canceled";
+  const depositEligible =
+    manager &&
+    appointment.serviceCode === "Vaccination" &&
+    (appointment.kind === "Scheduled" || appointment.kind === "CheckedIn") &&
+    appointment.settlement.kind === "NoPayment";
+  const canStart =
+    appointment.kind === "CheckedIn" &&
+    (actor.user.kind === "Admin" ||
+      (actor.user.kind === "Veterinarian" &&
+        (appointment.assignedVeterinarianId === null ||
+          appointment.assignedVeterinarianId === actor.user.veterinarianId)));
   return {
+    edit: manager && appointment.kind === "Scheduled",
     checkIn: manager && appointment.kind === "Scheduled",
-    cancel:
+    reassignVeterinarian:
       manager &&
       (appointment.kind === "Scheduled" || appointment.kind === "CheckedIn"),
-    startExamination:
-      (actor.user.kind === "Admin" || actor.user.kind === "Veterinarian") &&
-      appointment.kind === "CheckedIn",
+    updateReceptionNote: manager && active,
+    receiveDeposit: depositEligible,
+    startExamination: canStart,
     recordExamResult:
       appointment.kind === "InExamination" && assignedExaminer,
-    recordPayment: manager && appointment.kind === "AwaitingPayment",
-    edit: manager && appointment.kind === "Scheduled",
-    reassignVeterinarian:
+    settle: manager && appointment.kind === "AwaitingPayment",
+    cancel:
       manager &&
       (appointment.kind === "Scheduled" || appointment.kind === "CheckedIn"),
   };
@@ -290,6 +366,14 @@ const detailErrors = (raw: string | undefined): FieldErrors => {
       return { form: "選択した時間帯には、この獣医師の別の予約があります。" };
     case "prepaid-fields":
       return { form: "前受金の登録後は、ペットと診療メニューを変更できません。" };
+    case "deposit-not-allowed":
+      return { form: "事前会計は予防接種の予約だけで利用できます。" };
+    case "deposit-already-received":
+      return { form: "この予約の前受金はすでに登録されています。" };
+    case "veterinarian-required":
+      return { veterinarianId: "担当獣医師を選択してください。" };
+    case "veterinarian-mismatch":
+      return { form: "この予約を診察開始できるのは、担当獣医師または管理者です。" };
     default:
       return assertNever(code);
   }
@@ -330,7 +414,7 @@ const renderAppointment = async (
         context.render(
           "Appointments/Show",
           withSharedProps(context, {
-            appointment: toAppointmentPageView(appointment),
+            appointment: toAppointmentPageView(appointment, true),
             actions: actionsFor(actor.value, appointment),
             veterinarianId:
               actor.value.user.kind === "Veterinarian"
@@ -505,7 +589,9 @@ export const registerAppointmentRoutes = (
           context.render(
             "Appointments/Index",
             withSharedProps(context, {
-              appointments: appointments.map(toAppointmentPageView),
+              appointments: appointments.map((appointment) =>
+                toAppointmentPageView(appointment),
+              ),
             }),
           ),
         (error) => {
@@ -669,13 +755,73 @@ export const registerAppointmentRoutes = (
     );
   });
 
+  app.post("/appointments/:appointmentId/reception-note", async (context) => {
+    const actor = requireClinicManager(context);
+    if (actor.isErr()) return actor.error;
+    const appointmentId = parseAppointmentId(context, context.req.param("appointmentId"));
+    if (appointmentId.isErr()) return appointmentId.error;
+    const parsed = await parseBody(context, ReceptionNoteSchema);
+    if (parsed.isErr()) return renderAppointment(context, dependencies, appointmentId.value, parsed.error.errors);
+    return dependencies.updateReceptionNote.run({
+      actorUserId: actor.value.user.userId,
+      appointmentId: appointmentId.value,
+      expectedVersion: parsed.value.expectedVersion,
+      receptionNote: parsed.value.receptionNote,
+    }).match(
+      () => context.redirect(detailUrl(appointmentId.value), 303),
+      (error) => {
+        switch (error.kind) {
+          case "Unauthorized": return respondToUseCaseError(context, { kind: "Unauthorized" });
+          case "AppointmentNotFound": return respondToUseCaseError(context, { kind: "NotFound" });
+          case "InvalidAppointmentState": return invalidState(context, appointmentId.value);
+          case "StaleAppointmentVersion": return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
+          case "IdentityGenerationFailed":
+          case "RepositoryError": return repositoryFailure(context);
+          default: return assertNever(error);
+        }
+      },
+    );
+  });
+
+  app.post("/appointments/:appointmentId/deposit", async (context) => {
+    const actor = requireClinicManager(context);
+    if (actor.isErr()) return actor.error;
+    const appointmentId = parseAppointmentId(context, context.req.param("appointmentId"));
+    if (appointmentId.isErr()) return appointmentId.error;
+    const parsed = await parseBody(context, DepositSchema);
+    if (parsed.isErr()) return renderAppointment(context, dependencies, appointmentId.value, parsed.error.errors);
+    return dependencies.receiveAppointmentDeposit.run({
+      actorUserId: actor.value.user.userId,
+      appointmentId: appointmentId.value,
+      expectedVersion: parsed.value.expectedVersion,
+      depositAmount: parsed.value.depositAmount,
+    }).match(
+      () => context.redirect(detailUrl(appointmentId.value), 303),
+      (error) => {
+        switch (error.kind) {
+          case "Unauthorized": return respondToUseCaseError(context, { kind: "Unauthorized" });
+          case "AppointmentNotFound": return respondToUseCaseError(context, { kind: "NotFound" });
+          case "InvalidDepositAppointmentState": return invalidState(context, appointmentId.value);
+          case "DepositNotAllowed": return context.redirect(`${detailUrl(appointmentId.value)}?error=deposit-not-allowed`, 303);
+          case "DepositAlreadyReceived": return context.redirect(`${detailUrl(appointmentId.value)}?error=deposit-already-received`, 303);
+          case "StaleAppointmentVersion": return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
+          case "IdentityGenerationFailed":
+          case "RepositoryError": return repositoryFailure(context);
+          default: return assertNever(error);
+        }
+      },
+    );
+  });
+
   app.post("/appointments/:appointmentId/check-in", async (context) => {
     const actor = requireClinicManager(context);
     if (actor.isErr()) return actor.error;
     const appointmentId = parseAppointmentId(context, context.req.param("appointmentId"));
     if (appointmentId.isErr()) return appointmentId.error;
+    const parsed = await parseBody(context, CheckInSchema);
+    if (parsed.isErr()) return renderAppointment(context, dependencies, appointmentId.value, parsed.error.errors);
     return dependencies.checkInAppointment
-      .run({ actorUserId: actor.value.user.userId, appointmentId: appointmentId.value })
+      .run({ actorUserId: actor.value.user.userId, appointmentId: appointmentId.value, expectedVersion: parsed.value.expectedVersion })
       .match(
         () => context.redirect(detailUrl(appointmentId.value), 303),
         (error) => {
@@ -707,17 +853,13 @@ export const registerAppointmentRoutes = (
     if (parsed.isErr()) {
       return renderAppointment(context, dependencies, appointmentId.value, parsed.error.errors);
     }
-    const veterinarianId =
-      actor.value.user.kind === "Veterinarian"
-        ? actor.value.user.veterinarianId
-        : parsed.value.veterinarianId;
-    if (veterinarianId === undefined) {
-      return renderAppointment(context, dependencies, appointmentId.value, {
-        veterinarianId: "担当する獣医師 ID を入力してください。",
-      });
-    }
     return dependencies.startExamination
-      .run({ actorUserId: actor.value.user.userId, appointmentId: appointmentId.value, veterinarianId })
+      .run({
+        actorUserId: actor.value.user.userId,
+        appointmentId: appointmentId.value,
+        expectedVersion: parsed.value.expectedVersion,
+        veterinarianId: parsed.value.veterinarianId,
+      })
       .match(
         () => context.redirect(detailUrl(appointmentId.value), 303),
         (error) => {
@@ -730,6 +872,10 @@ export const registerAppointmentRoutes = (
               return invalidState(context, appointmentId.value);
             case "StaleAppointmentVersion":
               return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
+            case "VeterinarianScheduleConflict":
+              return context.redirect(`${detailUrl(appointmentId.value)}?error=schedule-conflict`, 303);
+            case "VeterinarianRequired":
+              return context.redirect(`${detailUrl(appointmentId.value)}?error=veterinarian-required`, 303);
             case "IdentityGenerationFailed":
             case "RepositoryError":
               return repositoryFailure(context);
@@ -753,6 +899,7 @@ export const registerAppointmentRoutes = (
       .run({
         actorUserId: actor.value.user.userId,
         appointmentId: appointmentId.value,
+        expectedVersion: parsed.value.expectedVersion,
         petId: parsed.value.petId,
         collectedAt: parsed.value.collectedAt,
         items: [parsed.value.item],
@@ -825,7 +972,12 @@ export const registerAppointmentRoutes = (
       return renderAppointment(context, dependencies, appointmentId.value, parsed.error.errors);
     }
     return dependencies.cancelAppointment
-      .run({ actorUserId: actor.value.user.userId, appointmentId: appointmentId.value, reason: parsed.value.reason })
+      .run({
+        actorUserId: actor.value.user.userId,
+        appointmentId: appointmentId.value,
+        expectedVersion: parsed.value.expectedVersion,
+        reason: parsed.value.reason,
+      })
       .match(
         () => context.redirect(detailUrl(appointmentId.value), 303),
         (error) => {
