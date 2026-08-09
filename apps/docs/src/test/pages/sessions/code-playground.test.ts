@@ -39,7 +39,11 @@ const pages = [
     Page: MiniIntegrationPage,
     initialFile: "exercises/follow-up.test.ts",
   },
-  { slug: "final", Page: FinalPage, initialFile: "test/follow-up.test.ts" },
+  {
+    slug: "final",
+    Page: FinalPage,
+    initialFile: "test/useCase/startExaminationUseCase.test.ts",
+  },
 ] as const;
 
 describe("session code playgrounds", () => {

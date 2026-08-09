@@ -7,36 +7,50 @@ const readPage = (slug: string): string =>
     "utf8",
   );
 
-describe("Final example", () => {
-  it("documents the completed Kamae package and its four-part walkthrough", () => {
+describe("Final application", () => {
+  it("documents the runnable clinic flow and the safeguards behind it", () => {
     const page = readPage("final");
 
     expect(page).toContain("examples/final");
     expect(page).toContain('id="final-structure"');
     expect(page).toContain('id="final-flow"');
-    expect(page).toContain('id="final-follow-up"');
+    expect(page).toContain('id="final-operations"');
+    expect(page).toContain('id="final-persistence"');
     expect(page).toContain('id="final-verify"');
-    expect(page).toContain("Appointment companion");
-    expect(page).toContain("startExaminationUseCase");
-    expect(page).toContain("collectFollowUpTargets");
-    expect(page).toContain("Zod");
-    expect(page).toContain("neverthrow");
-    expect(page).toContain("Standard Schema");
-    expect(page).toContain("@standard-schema/spec");
-    expect(page).toContain("examples/final/src/shared/schema-result.ts");
-    expect(page).toContain("UUID");
-    expect(page).toContain("brand");
-    expect(page).toContain("examples/final/src/domain/appointment-id.ts");
-    expect(page).toContain("examples/final/src/domain/pet-id.ts");
-    expect(page).toContain("examples/final/src/domain/owner-id.ts");
-    expect(page).toContain("examples/final/src/domain/veterinarian-id.ts");
-    expect(page).toContain("examples/final/src/domain/event-id.ts");
-    expect(page).toContain("examples/final/src/domain/exam-id.ts");
-    expect(page).toContain("save(state, events)");
-    expect(page).toContain("Sensitive");
-    expect(page).toContain("filter");
-    expect(page).toContain("map");
-    expect(page).toContain("reduce");
+    expect(page).toContain("domain");
+    expect(page).toContain("adaptor/primary");
+    expect(page).toContain("adaptor/secondary");
+    expect(page).toContain("useCase");
+    expect(page).toContain("app.ts");
+    expect(page).toContain("StartExaminationUseCase");
+    expect(page).toContain("ResultAsync");
+    expect(page).toContain("resolveById");
+    expect(page).toContain("examinationStartedStore.store(event)");
+    expect(page).toContain("Drizzle");
+    expect(page).toContain("transaction");
+    expect(page).toContain("clinic.sqlite");
+    expect(page).toContain("/setup");
+    expect(page).toContain("/login");
+    expect(page).toContain("Admin");
+    expect(page).toContain("Receptionist");
+    expect(page).toContain("Veterinarian");
+    expect(page).toContain(
+      "Scheduled → CheckedIn → InExamination → AwaitingPayment → Paid",
+    );
+    expect(page).toContain("ExaminationCompletionStore");
+    expect(page).toContain("AppointmentExaminationCompleted");
+    expect(page).toContain("監査履歴から現在状態を復元しません");
+    expect(page).toContain("EventHistoryReader");
+    expect(page).toContain("Node v25.4.0");
+    expect(page).toContain("Node.js 20 ではローカル実行していません");
+    expect(page).toContain("Admin capability");
+    expect(page).toContain("SanitizedAuditRecord");
+    expect(page).toContain("dist/app.js");
+    expect(page).toContain("NODE_ENV を指定せず");
+    expect(page).toContain("isProduction: true");
+    expect(page).toContain("IdentityGenerationFailed");
+    expect(page).toContain("pnpm --filter @fp-with-ts/clinic-final dev");
+    expect(page).toContain("pnpm --filter @fp-with-ts/clinic-final build");
     expect(page).toContain(
       "pnpm --filter @fp-with-ts/clinic-final typecheck",
     );

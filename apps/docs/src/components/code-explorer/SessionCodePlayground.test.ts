@@ -11,8 +11,9 @@ const cases = [
   },
   {
     slug: "final",
-    initialFile: "test/follow-up.test.ts",
-    description: "全セッションを統合した完成 snapshot を編集して実行します。",
+    initialFile: "test/useCase/startExaminationUseCase.test.ts",
+    description:
+      "業務フローを Hono・Inertia・SQLite へ接続した完成アプリを確認します。",
   },
 ] as const;
 
