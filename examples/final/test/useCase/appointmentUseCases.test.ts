@@ -319,6 +319,75 @@ describe("appointment command use cases", () => {
     expect(completionEvents).toHaveLength(0);
   });
 
+  test("maps synchronous examination-completion dependency failures without storing", async () => {
+    const examining = Appointment.startExamination({
+      eventId: eventIdGenerator().generate(),
+      occurredAt: times.now,
+      actorUserId: ids.veterinarianUser,
+    })(
+      Appointment.checkIn({
+        eventId: eventIdGenerator().generate(),
+        occurredAt: times.now,
+        actorUserId: ids.receptionist,
+      })(
+        Appointment.book({
+          eventId: eventIdGenerator().generate(),
+          occurredAt: times.now,
+          actorUserId: ids.receptionist,
+        })({
+          appointmentId: ids.appointment,
+          ownerId: ids.owner,
+          petId: ids.pet,
+          scheduledAt: times.scheduled,
+          reason: AppointmentReason.schema.parse("checkup"),
+        }).aggregateState,
+      ).aggregateState,
+      ids.veterinarian,
+    ).aggregateState;
+
+    for (const dependency of ["clock", "examIdGenerator", "eventIdGenerator"] as const) {
+      let storeCalls = 0;
+      const generatedEventIds = eventIdGenerator();
+      const throwFailure = (): never => {
+        throw new Error(`${dependency} failed`);
+      };
+      const result = await RecordExamResultUseCase.create({
+        userResolver,
+        appointmentResolver: { resolveById: () => okAsync(examining) },
+        examinationCompletionStore: {
+          store: () => {
+            storeCalls += 1;
+            return okAsync(undefined);
+          },
+        },
+        examIdGenerator: {
+          generate: dependency === "examIdGenerator" ? throwFailure : () => ids.exam,
+        },
+        clock: {
+          now: dependency === "clock" ? throwFailure : () => times.now,
+        },
+        eventIdGenerator: {
+          generate:
+            dependency === "eventIdGenerator"
+              ? throwFailure
+              : generatedEventIds.generate,
+        },
+      }).run({
+        actorUserId: ids.veterinarianUser,
+        appointmentId: ids.appointment,
+        petId: ids.pet,
+        collectedAt: times.now,
+        items: [ExamResultItem.schema.parse("observation")],
+        needsFollowUp: false,
+      });
+
+      expect(result._unsafeUnwrapErr()).toEqual({
+        kind: "IdentityGenerationFailed",
+      });
+      expect(storeCalls).toBe(0);
+    }
+  });
+
   test("rejects unauthorized roles before protected appointment resolvers", async () => {
     let appointmentResolverCalls = 0;
     const result = await CheckInAppointmentUseCase.create({

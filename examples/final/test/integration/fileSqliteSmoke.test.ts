@@ -10,14 +10,27 @@ import {
   migrateDatabase,
 } from "../../src/adaptor/secondary/sqlite/db.js";
 import {
+  appointmentsTable,
   domainEventsTable,
+  examResultsTable,
   installationTable,
   sessionsTable,
   usersTable,
 } from "../../src/adaptor/secondary/sqlite/schema.js";
 import { createInitialAdminSetupStore } from "../../src/adaptor/secondary/sqlite/store/initialAdminSetupStore.js";
+import { createAppointmentByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/appointmentResolver.js";
+import { createAppointmentEventStore } from "../../src/adaptor/secondary/sqlite/store/appointmentEventStore.js";
+import { createExaminationCompletionStore } from "../../src/adaptor/secondary/sqlite/store/examinationCompletionStore.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
+import { Appointment } from "../../src/domain/appointment/appointment.js";
+import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
+import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
+import { ExamId } from "../../src/domain/examResult/examId.js";
+import { ExamResult } from "../../src/domain/examResult/examResult.js";
+import { OwnerId } from "../../src/domain/owner/ownerId.js";
+import { PetId } from "../../src/domain/pet/petId.js";
 import { Session } from "../../src/domain/session/session.js";
 import { SessionId } from "../../src/domain/session/sessionId.js";
 import { SessionTokenHash } from "../../src/domain/session/sessionTokenHash.js";
@@ -196,5 +209,122 @@ describe("file SQLite application smoke", () => {
     expect(secondConnection.select({ value: count() }).from(domainEventsTable).get()).toEqual({
       value: 0,
     });
+  });
+
+  test("keeps an existing appointment and restores AwaitingPayment through a second file connection", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "clinic-final-awaiting-payment-"));
+    temporaryDirectories.push(directory);
+    const databasePath = join(directory, "clinic.sqlite");
+    const database = createSqliteDatabase(databasePath);
+    migrateDatabase(database);
+
+    const actorUserId = UserId.schema.parse(
+      "78000000-0000-4000-8000-000000000001",
+    );
+    const appointmentId = AppointmentId.schema.parse(
+      "78000000-0000-4000-8000-000000000002",
+    );
+    const ownerId = OwnerId.schema.parse(
+      "78000000-0000-4000-8000-000000000003",
+    );
+    const petId = PetId.schema.parse(
+      "78000000-0000-4000-8000-000000000004",
+    );
+    const veterinarianId = VeterinarianId.schema.parse(
+      "78000000-0000-4000-8000-000000000005",
+    );
+    const examId = ExamId.schema.parse(
+      "78000000-0000-4000-8000-000000000006",
+    );
+    const context = (eventId: string, occurredAt: string) => ({
+      eventId: EventId.schema.parse(eventId),
+      occurredAt: Timestamp.schema.parse(occurredAt),
+      actorUserId,
+    });
+    const booked = Appointment.book(
+      context(
+        "78000000-0000-4000-8000-000000000010",
+        "2026-08-09T06:00:00.000Z",
+      ),
+    )({
+      appointmentId,
+      ownerId,
+      petId,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
+      reason: AppointmentReason.schema.parse("private reason"),
+    });
+    const checkedIn = Appointment.checkIn(
+      context(
+        "78000000-0000-4000-8000-000000000011",
+        "2026-08-10T01:00:00.000Z",
+      ),
+    )(booked.aggregateState);
+    const started = Appointment.startExamination(
+      context(
+        "78000000-0000-4000-8000-000000000012",
+        "2026-08-10T01:10:00.000Z",
+      ),
+    )(checkedIn.aggregateState, veterinarianId);
+    (
+      await createAppointmentEventStore(database).store(
+        booked,
+        checkedIn,
+        started,
+      )
+    )._unsafeUnwrap();
+    const existingEventIds = database
+      .select({ eventId: domainEventsTable.eventId })
+      .from(domainEventsTable)
+      .all();
+
+    migrateDatabase(database);
+    const examResult = ExamResult.create(
+      context(
+        "78000000-0000-4000-8000-000000000013",
+        "2026-08-10T01:20:00.000Z",
+      ),
+    )(
+      ExamResult.parse({
+        examId,
+        petId,
+        collectedAt: "2026-08-10T01:20:00.000Z",
+        items: ["private clinical result"],
+        needsFollowUp: false,
+      })._unsafeUnwrap(),
+    );
+    const completed = Appointment.completeExamination(
+      context(
+        "78000000-0000-4000-8000-000000000014",
+        "2026-08-10T01:20:00.000Z",
+      ),
+    )(started.aggregateState, { examId });
+    (
+      await createExaminationCompletionStore(database).store(
+        examResult,
+        completed,
+      )
+    )._unsafeUnwrap();
+
+    const secondConnection = createSqliteDatabase(databasePath);
+    expect(
+      (
+        await createAppointmentByIdResolver(secondConnection).resolveById(
+          appointmentId,
+        )
+      )._unsafeUnwrap(),
+    ).toMatchObject({
+      kind: "AwaitingPayment",
+      examId,
+      examinationCompletedAt: "2026-08-10T01:20:00.000Z",
+    });
+    expect(secondConnection.select().from(appointmentsTable).all()).toHaveLength(1);
+    expect(secondConnection.select().from(examResultsTable).all()).toHaveLength(1);
+    expect(
+      secondConnection
+        .select({ eventId: domainEventsTable.eventId })
+        .from(domainEventsTable)
+        .all(),
+    ).toEqual(expect.arrayContaining(existingEventIds));
+    expect(secondConnection.select().from(domainEventsTable).all()).toHaveLength(5);
   });
 });

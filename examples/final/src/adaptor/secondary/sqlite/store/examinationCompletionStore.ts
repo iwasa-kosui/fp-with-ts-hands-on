@@ -20,6 +20,20 @@ const AppointmentConflictSchema = z.object({
   appointmentId: AppointmentId.schema,
 });
 
+const ensureMatchingEvents = (
+  examResult: ExamResultRecorded,
+  appointment: AppointmentExaminationCompleted,
+): void => {
+  if (
+    examResult.aggregateId !== appointment.aggregateState.examId ||
+    examResult.aggregateState.petId !== appointment.aggregateState.petId ||
+    examResult.actorUserId !== appointment.actorUserId ||
+    examResult.eventId === appointment.eventId
+  ) {
+    throw new TypeError("Mismatched examination completion events");
+  }
+};
+
 const toExamResultValues = (event: ExamResultRecorded) => ({
   examId: event.aggregateState.examId,
   petId: event.aggregateState.petId,
@@ -67,8 +81,9 @@ export const createExaminationCompletionStore = (
 ): ExaminationCompletionStore => ({
   store: (examResult, appointment) =>
     ResultAsync.fromPromise<void, AppointmentStoreError>(
-      Promise.resolve().then(() =>
-        db.transaction((tx) => {
+      Promise.resolve().then(() => {
+        ensureMatchingEvents(examResult, appointment);
+        return db.transaction((tx) => {
           const changes = tx
             .update(appointmentsTable)
             .set(toAppointmentValues(appointment))
@@ -116,8 +131,8 @@ export const createExaminationCompletionStore = (
               ),
             )
             .run();
-        }),
-      ),
+        });
+      }),
       (cause) => {
         const conflict = AppointmentConflictSchema.safeParse(cause);
         return conflict.success

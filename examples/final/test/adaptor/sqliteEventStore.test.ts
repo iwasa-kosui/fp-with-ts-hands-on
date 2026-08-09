@@ -436,6 +436,51 @@ describe("SQLite event stores", () => {
     expect(await db.select().from(domainEventsTable)).toHaveLength(3);
   });
 
+  test("rejects mismatched examination events before changing either projection", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const appointmentStore = createAppointmentEventStore(db);
+    const booked = Appointment.book(eventContext(25))({
+      appointmentId: ids.appointment,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
+      reason: AppointmentReason.schema.parse("private reason"),
+    });
+    const checkedIn = Appointment.checkIn(eventContext(26))(booked.aggregateState);
+    const started = Appointment.startExamination(eventContext(27))(
+      checkedIn.aggregateState,
+      ids.veterinarian,
+    );
+    (await appointmentStore.store(booked, checkedIn, started))._unsafeUnwrap();
+    const mismatchedExamResult = ExamResult.create(eventContext(28))(
+      unwrap(ExamResult.parse({
+        examId: ids.otherExam,
+        petId: ids.pet,
+        collectedAt: "2026-08-08T01:18:00.000Z",
+        items: ["private result"],
+        needsFollowUp: false,
+      })),
+    );
+    const completion = Appointment.completeExamination(eventContext(29))(
+      started.aggregateState,
+      { examId: ids.exam },
+    );
+
+    const result = await createExaminationCompletionStore(db).store(
+      mismatchedExamResult,
+      completion,
+    );
+
+    expect(result.isErr() && result.error.kind).toBe("RepositoryError");
+    expect(await db.select().from(examResultsTable)).toHaveLength(0);
+    expect(
+      (await createAppointmentByIdResolver(db).resolveById(ids.appointment))
+        ._unsafeUnwrap(),
+    ).toMatchObject({ kind: "InExamination" });
+    expect(await db.select().from(domainEventsTable)).toHaveLength(3);
+  });
+
   test("rolls back an appointment batch when a later transition is stale", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);

@@ -195,15 +195,15 @@ describe("clinic page SSR", () => {
       veterinarianName: "Clinic Vet",
       examinationStartedAt,
     } satisfies AppointmentPageView;
-    const paidView = {
-      ...scheduledView,
-      kind: "Paid" as const,
-      checkedInAt,
-      veterinarianId,
-      veterinarianName: "Clinic Vet",
-      examinationStartedAt,
+    const awaitingPaymentView = {
+      ...examiningView,
+      kind: "AwaitingPayment" as const,
       examId: ExamId.schema.parse("71000000-0000-4000-8000-000000000030"),
       examinationCompletedAt: Timestamp.schema.parse("2026-08-09T02:30:00.000Z"),
+    } satisfies AppointmentPageView;
+    const paidView = {
+      ...awaitingPaymentView,
+      kind: "Paid" as const,
       amount: paymentAmount,
       paidAt,
     } satisfies AppointmentPageView;
@@ -222,6 +222,12 @@ describe("clinic page SSR", () => {
     const examining = await renderPage(AppointmentShow, {
       ...shared("Admin"), appointment: examiningView, actions: noActions, veterinarianId: null,
     });
+    const awaitingPayment = await renderPage(AppointmentShow, {
+      ...shared("Admin"),
+      appointment: awaitingPaymentView,
+      actions: { ...noActions, recordPayment: true },
+      veterinarianId: null,
+    });
     const paid = await renderPage(AppointmentShow, {
       ...shared("Admin"), appointment: paidView, actions: noActions, veterinarianId: null,
     });
@@ -234,6 +240,9 @@ describe("clinic page SSR", () => {
     expect(checkedIn).not.toContain("診察開始日時");
     expect(examining).toContain(examinationStartedAt);
     expect(examining).toContain("Clinic Vet");
+    expect(awaitingPayment).toContain("診察結果記録済み・会計待ち");
+    expect(awaitingPayment).toContain("会計を記録");
+    expect(awaitingPayment).not.toContain("診察結果を記録");
     expect(paid).toContain(`${paymentAmount}`);
     expect(paid).toContain("支払額");
     expect(paid).toContain(paidAt);
