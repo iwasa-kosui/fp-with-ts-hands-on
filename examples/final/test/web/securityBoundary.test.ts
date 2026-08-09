@@ -571,6 +571,41 @@ describe("Inertia security boundary", () => {
     const vetEvents = await app.request("/events", { headers: { ...inertiaHeaders, Cookie: vetCookie } });
     expect(vetEvents.status).toBe(403);
 
+    const rejectedReveal = await post(
+      app,
+      "/events/not-a-valid-event-id/sensitive-payload",
+      {},
+      vetCookie,
+    );
+    expect(rejectedReveal.status).toBe(403);
+    const rejectedBody = await rejectedReveal.text();
+    for (const value of forbiddenValues) expect(rejectedBody).not.toContain(value);
+
+    const examResultEvent = events.props.events.find(
+      (event: Record<string, unknown>) =>
+        event.eventName === "exam-result.recorded",
+    );
+    expect(examResultEvent).toBeDefined();
+    const revealResponse = await post(
+      app,
+      `/events/${String(examResultEvent?.eventId)}/sensitive-payload`,
+      {},
+      adminCookie,
+    );
+    const revealedBody = await revealResponse.text();
+    expect(revealResponse.status).toBe(200);
+    expect(revealResponse.headers.get("cache-control")).toContain("no-store");
+    expect(revealResponse.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(revealedBody).toContain(privateFinding);
+    expect(revealResponse.url).not.toContain(privateFinding);
+
+    const eventsAfterReveal = await app.request("/events", {
+      headers: { ...inertiaHeaders, Cookie: adminCookie },
+    });
+    const eventsAfterBody = await eventsAfterReveal.text();
+    expect(eventsAfterBody).toContain("audit.sensitive-payload-viewed");
+    for (const value of forbiddenValues) expect(eventsAfterBody).not.toContain(value);
+
     const invalid = await post(app, `/appointments/${appointment.appointmentId}/payment`, {
       diagnosis: "do not echo diagnosis",
       treatment: "do not echo treatment",

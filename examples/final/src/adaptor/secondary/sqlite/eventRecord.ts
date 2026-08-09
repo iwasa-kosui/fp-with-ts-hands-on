@@ -10,7 +10,9 @@ export type AuditJsonValue =
   | readonly AuditJsonValue[]
   | AuditJsonObject;
 
-const regularEventNames = new Set<string>();
+const regularEventNames = new Set<string>([
+  "audit.sensitive-payload-viewed",
+]);
 
 export const classifyPayloadSensitivity = (
   eventName: string,

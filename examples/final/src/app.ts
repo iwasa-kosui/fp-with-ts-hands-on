@@ -30,6 +30,7 @@ import {
 } from "./adaptor/secondary/sqlite/resolver/petResolver.js";
 import { createInstallationStatusQuery } from "./adaptor/secondary/sqlite/query/installationStatusQuery.js";
 import { createEventHistoryReader } from "./adaptor/secondary/sqlite/query/eventHistoryReader.js";
+import { createSensitiveAuditPayloadDisclosure } from "./adaptor/secondary/sqlite/query/sensitiveAuditPayloadDisclosure.js";
 import { createFollowUpRequestReader } from "./adaptor/secondary/sqlite/query/followUpRequestReader.js";
 import { createAppointmentCalendarReader } from "./adaptor/secondary/sqlite/query/appointmentCalendarReader.js";
 import { createReceptionBoardReader } from "./adaptor/secondary/sqlite/query/receptionBoardReader.js";
@@ -106,6 +107,7 @@ import { ListOwnersUseCase, type ListOwnersUseCase as ListOwners } from "./useCa
 import { ListPetsUseCase, type ListPetsUseCase as ListPets } from "./useCase/listPetsUseCase.js";
 import { ListAppointmentCalendarUseCase, type ListAppointmentCalendarUseCase as ListAppointmentCalendar } from "./useCase/listAppointmentCalendarUseCase.js";
 import { ListEventsUseCase, type ListEventsUseCase as ListEvents } from "./useCase/listEventsUseCase.js";
+import { RevealSensitiveAuditPayloadUseCase, type RevealSensitiveAuditPayloadUseCase as RevealSensitiveAuditPayload } from "./useCase/revealSensitiveAuditPayloadUseCase.js";
 import { ListFollowUpsUseCase, type ListFollowUpsUseCase as ListFollowUps } from "./useCase/listFollowUpsUseCase.js";
 import { ListUsersUseCase, type ListUsersUseCase as ListUsers } from "./useCase/listUsersUseCase.js";
 import { LogInUseCase, type LogInUseCase as LogIn } from "./useCase/logInUseCase.js";
@@ -171,6 +173,7 @@ export type ApplicationDependencies = Readonly<{
   listFollowUps: ListFollowUps;
   requestFollowUp: RequestFollowUp;
   listEvents: ListEvents;
+  revealSensitiveAuditPayload: RevealSensitiveAuditPayload;
   clock: Clock;
   isProduction: boolean;
 }>;
@@ -249,6 +252,8 @@ export const createApplicationDependencies = (
   const followUpResolver = createFollowUpResolver(database);
   const followUpRequestReader = createFollowUpRequestReader(database);
   const eventHistoryReader = createEventHistoryReader(database);
+  const sensitiveAuditPayloadDisclosure =
+    createSensitiveAuditPayloadDisclosure(database);
   const appointmentCalendarReader = createAppointmentCalendarReader(database);
   const receptionBoardReader = createReceptionBoardReader(database);
   const sessionEventStore = createSessionEventStore(database);
@@ -521,6 +526,12 @@ export const createApplicationDependencies = (
       userResolver: clinicUserByIdResolver,
       eventHistoryReader,
     }),
+    revealSensitiveAuditPayload: RevealSensitiveAuditPayloadUseCase.create({
+      userResolver: clinicUserByIdResolver,
+      sensitiveAuditPayloadDisclosure,
+      clock,
+      eventIdGenerator,
+    }),
     clock,
     isProduction: options.isProduction,
   };
@@ -613,7 +624,10 @@ export const createApp = (dependencies: ApplicationDependencies) => {
     listFollowUps: dependencies.listFollowUps,
     requestFollowUp: dependencies.requestFollowUp,
   });
-  registerEventRoutes(app, { listEvents: dependencies.listEvents });
+  registerEventRoutes(app, {
+    listEvents: dependencies.listEvents,
+    revealSensitiveAuditPayload: dependencies.revealSensitiveAuditPayload,
+  });
 
   app.onError((error) =>
     error instanceof HTTPException

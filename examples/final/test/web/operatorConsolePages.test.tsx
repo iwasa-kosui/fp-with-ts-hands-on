@@ -12,7 +12,9 @@ import AppointmentEdit from "../../src/adaptor/primary/web/pages/Appointments/Ed
 import WalkInNew from "../../src/adaptor/primary/web/pages/Reception/WalkIn.js";
 import { suggestedDurationAfterServiceChange } from "../../src/adaptor/primary/web/components/AppointmentForm.js";
 import Dashboard from "../../src/adaptor/primary/web/pages/Dashboard.js";
-import EventsIndex from "../../src/adaptor/primary/web/pages/Events/Index.js";
+import EventsIndex, {
+  SensitiveAuditPayloadDetail,
+} from "../../src/adaptor/primary/web/pages/Events/Index.js";
 import FollowUpsIndex from "../../src/adaptor/primary/web/pages/FollowUps/Index.js";
 import Login from "../../src/adaptor/primary/web/pages/Login.js";
 import Setup from "../../src/adaptor/primary/web/pages/Setup.js";
@@ -507,12 +509,78 @@ describe("Operator Console shell", () => {
     expect(html).toContain("78000000-0000-4000-8000-000000000001");
     expect(html).toContain("会計を記録");
     expect(html).toContain("機微情報を含みます");
+    expect(html).toContain("機微情報を開示");
     expect(html).toContain("76000000-0000-4000-8000-000000000001");
     expect(html).toContain("Appointment");
     expect(html).toContain("75000000-0000-4000-8000-000000000001");
     expect(html).not.toContain("<dl");
     expect(html).not.toContain("raw payload");
     expect(html).not.toContain("<pre");
+  });
+
+  test("明示開示した全JSONをPII警告・閉じる導線とともに安全なtext nodeで表示する", () => {
+    const html = renderPublicPage(
+      <SensitiveAuditPayloadDetail
+        payload={{
+          aggregateState: {
+            kind: "Paid",
+            internalCode: "EXAM-PRIVATE",
+            nested: { attack: "</pre><script>alert('xss')</script>" },
+          },
+          eventPayload: {
+            diagnosis: "機微な診断",
+            array: ["one", { treatment: "機微な処置" }],
+          },
+        }}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("個人情報・診療情報を含みます");
+    expect(html).toContain("集約状態（JSON）");
+    expect(html).toContain("イベントペイロード（JSON）");
+    expect(html).toContain("EXAM-PRIVATE");
+    expect(html).toContain("機微な診断");
+    expect(html).toContain("機微な処置");
+    expect(html).toContain("閉じる");
+    expect(html).toContain("&lt;/pre&gt;&lt;script&gt;");
+    expect(html).not.toContain("</pre><script>");
+  });
+
+  test("機微payload閲覧イベントを通常の監査technical dataとして日本語表示する", () => {
+    const targetEventId = EventId.schema.parse(
+      "78000000-0000-4000-8000-000000000010",
+    );
+    const viewedAt = Timestamp.schema.parse("2026-08-09T03:01:00.000Z");
+    const html = renderPublicPage(
+      <EventsIndex
+        auth={{ user: { userId: adminId, role: "Admin" } }}
+        errors={{}}
+        flash={{}}
+        events={[{
+          actorUserId: adminId,
+          aggregateId: targetEventId,
+          aggregateName: "Audit",
+          eventId: EventId.schema.parse("78000000-0000-4000-8000-000000000011"),
+          eventName: "audit.sensitive-payload-viewed",
+          occurredAt: viewedAt,
+          payloadSensitivity: "Regular",
+          regularPayload: {
+            aggregateState: null,
+            eventPayload: {
+              targetEventId,
+              viewerUserId: adminId,
+              viewedAt,
+            },
+          },
+        }]}
+      />,
+    );
+
+    expect(html).toContain("機微監査情報を開示");
+    expect(html).toContain("targetEventId");
+    expect(html).toContain(targetEventId);
+    expect(html).not.toContain("機微情報を含みます");
   });
 
   test("renders an unknown sensitive event with only its event id", () => {

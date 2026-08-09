@@ -5,6 +5,7 @@ import { describe, expect, test } from "vitest";
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
 import {
   appointmentsTable,
+  domainEventPayloadsTable,
   domainEventsTable,
   ownersTable,
   petsTable,
@@ -124,6 +125,114 @@ const createUser = async (
 };
 
 describe("management route boundary", () => {
+  test("Adminだけが明示POSTで機微監査本文を開示し、閲覧自体を通常一覧へ記録する", async () => {
+    const harness = createHarness();
+    const adminCookie = await setUp(harness);
+    const admin = harness.database.select().from(usersTable).get();
+    const targetEvent = harness.database
+      .select()
+      .from(domainEventsTable)
+      .where(eq(domainEventsTable.eventName, "user.created"))
+      .get();
+    expect(admin).toBeDefined();
+    expect(targetEvent).toBeDefined();
+    if (admin === undefined || targetEvent === undefined) return;
+
+    const summaryBefore = await requestPage(harness, "/events", adminCookie);
+    const summaryBeforeBody = await summaryBefore.text();
+    expect(summaryBeforeBody).not.toContain(admin.email);
+    expect(summaryBeforeBody).not.toContain(admin.name);
+    expect(summaryBeforeBody).not.toContain(admin.passwordHash);
+
+    const response = await postForm(
+      harness,
+      `/events/${targetEvent.eventId}/sensitive-payload`,
+      {},
+      adminCookie,
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toContain("no-store");
+    expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(payload).toMatchObject({
+      aggregateState: {
+        userId: admin.userId,
+        email: admin.email,
+        name: admin.name,
+        passwordHash: admin.passwordHash,
+      },
+      eventPayload: { userId: admin.userId, role: "Admin" },
+    });
+
+    const viewed = harness.database
+      .select()
+      .from(domainEventsTable)
+      .where(eq(domainEventsTable.eventName, "audit.sensitive-payload-viewed"))
+      .get();
+    expect(viewed).toMatchObject({
+      aggregateId: targetEvent.eventId,
+      aggregateName: "Audit",
+      actorUserId: admin.userId,
+      payloadSensitivity: "Regular",
+    });
+    expect(viewed).toBeDefined();
+    if (viewed === undefined) return;
+    expect(
+      harness.database.select().from(domainEventPayloadsTable)
+        .where(eq(domainEventPayloadsTable.eventId, viewed.eventId)).get(),
+    ).toMatchObject({
+      aggregateState: null,
+      eventPayload: {
+        targetEventId: targetEvent.eventId,
+        viewerUserId: admin.userId,
+        viewedAt: now,
+      },
+    });
+
+    const summaryAfter = await requestPage(harness, "/events", adminCookie);
+    const summaryAfterBody = await summaryAfter.text();
+    expect(summaryAfterBody).toContain("audit.sensitive-payload-viewed");
+    expect(summaryAfterBody).not.toContain(admin.email);
+    expect(summaryAfterBody).not.toContain(admin.name);
+    expect(summaryAfterBody).not.toContain(admin.passwordHash);
+
+    const regularReveal = await postForm(
+      harness,
+      `/events/${viewed.eventId}/sensitive-payload`,
+      {},
+      adminCookie,
+    );
+    expect(regularReveal.status).toBe(409);
+    expect(await regularReveal.text()).toBe("Conflict");
+  });
+
+  test.each([
+    ["Receptionist", receptionistCredentials],
+    ["Veterinarian", veterinarianCredentials],
+  ] as const)(
+    "%sはtarget IDのvalidationより前に機微監査開示を拒否される",
+    async (role, credentials) => {
+      const harness = createHarness();
+      const adminCookie = await setUp(harness);
+      await createUser(harness, adminCookie, { ...credentials, role });
+      const cookie = await logIn(harness, credentials);
+      const eventsBefore = harness.database.select().from(domainEventsTable).all();
+
+      const response = await postForm(
+        harness,
+        "/events/not-a-valid-event-id/sensitive-payload",
+        {},
+        cookie,
+      );
+
+      expect(response.status).toBe(403);
+      expect(await response.text()).toBe("Forbidden");
+      expect(harness.database.select().from(domainEventsTable).all())
+        .toEqual(eventsBefore);
+    },
+  );
+
   test("Admin can list, create, update, reset, and physically delete users without exposing secrets", async () => {
     const harness = createHarness();
     const adminCookie = await setUp(harness);

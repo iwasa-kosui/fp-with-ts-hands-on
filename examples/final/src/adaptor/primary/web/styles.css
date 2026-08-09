@@ -800,6 +800,38 @@ td {
   overflow-wrap: anywhere;
 }
 
+.audit-payload,
+.audit-payload__action {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.audit-payload {
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+}
+
+.audit-payload h3 {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+.audit-payload__json {
+  max-width: min(72vw, 760px);
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--surface);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;

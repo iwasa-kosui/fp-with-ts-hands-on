@@ -48,6 +48,8 @@ export const eventPresentation = (eventName: string): EventPresentation => {
       return { kind: "Known", label: "診察結果を削除" };
     case "follow-up.requested":
       return { kind: "Known", label: "フォローアップを依頼" };
+    case "audit.sensitive-payload-viewed":
+      return { kind: "Known", label: "機微監査情報を開示" };
     default:
       return { kind: "Unknown", label: "機微イベント" };
   }
