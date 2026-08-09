@@ -11,6 +11,13 @@ const daysInMonth = (year: number, month: number): number => {
   return days[month - 1] ?? 0;
 };
 
+const canonicalFourDigitYearInstant = (value: string): string | undefined => {
+  const epochMilliseconds = Date.parse(value);
+  if (!Number.isFinite(epochMilliseconds)) return undefined;
+  const canonical = new Date(epochMilliseconds).toISOString();
+  return /^\d{4}-/.test(canonical) ? canonical : undefined;
+};
+
 const isRealFiniteInstant = (value: string): boolean => {
   const match = timestampParts.exec(value);
   if (match === null) return false;
@@ -23,7 +30,7 @@ const isRealFiniteInstant = (value: string): boolean => {
     day >= 1 && day <= daysInMonth(year, month) &&
     offsetHour <= 14 && offsetMinute <= 59 &&
     (offsetHour < 14 || offsetMinute === 0) &&
-    Number.isFinite(Date.parse(value));
+    canonicalFourDigitYearInstant(value) !== undefined;
 };
 
 const TimestampSchema = z.string()
@@ -31,9 +38,14 @@ const TimestampSchema = z.string()
   .refine(isRealFiniteInstant, { message: "Invalid timestamp" })
   .brand<"Timestamp">();
 
-const CanonicalTimestampSchema = TimestampSchema.transform((value) =>
-  TimestampSchema.parse(new Date(value).toISOString()),
-);
+const CanonicalTimestampSchema = TimestampSchema.transform((value, context) => {
+  const canonical = canonicalFourDigitYearInstant(value);
+  if (canonical === undefined) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid timestamp" });
+    return z.NEVER;
+  }
+  return canonical;
+}).pipe(TimestampSchema);
 
 export type Timestamp = z.infer<typeof TimestampSchema>;
 

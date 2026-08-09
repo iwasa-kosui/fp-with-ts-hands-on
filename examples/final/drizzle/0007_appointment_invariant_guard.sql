@@ -100,6 +100,8 @@ OR EXISTS (
 	WHERE `value_type` <> 'text'
 		OR `sqlite_value` IS NULL
 		OR julianday(`sqlite_value`) IS NULL
+		OR julianday(`sqlite_value`) < julianday('0000-01-01T00:00:00.000Z')
+		OR julianday(`sqlite_value`) > julianday('9999-12-31T23:59:59.999Z')
 		OR date(substr(`value`, 1, 10)) IS NULL
 		OR date(substr(`value`, 1, 10)) <> substr(`value`, 1, 10)
 		OR substr(`value`, 1, 4) NOT GLOB '[0-9][0-9][0-9][0-9]'

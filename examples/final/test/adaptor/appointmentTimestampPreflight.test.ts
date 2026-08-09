@@ -105,6 +105,8 @@ describe("appointment scheduled timestamp preflight", () => {
     ["impossible calendar day", "2026-02-30T01:00Z"],
     ["24 hour", "2026-08-10T24:00:00Z"],
     ["offset beyond 14 hours", "2026-08-10T01:02+14:01"],
+    ["instant below the four-digit UTC year range", "0000-01-01T00:00:00+14:00"],
+    ["instant above the four-digit UTC year range", "9999-12-31T23:59:59-14:00"],
     ["empty string", ""],
     ["NULL", null],
   ] satisfies ReadonlyArray<readonly [string, CorruptTimestamp]>) (

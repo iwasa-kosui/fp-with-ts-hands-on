@@ -1180,6 +1180,18 @@ describe("SQLite event stores", () => {
       storedDuration: 60,
       candidateAt: "2026-08-10T00:15:00Z",
     },
+    {
+      case: "a stored start below the four-digit UTC year range",
+      storedAt: "0000-01-01T00:00:00+14:00",
+      storedDuration: 30,
+      candidateAt: "2026-08-10T00:15:00Z",
+    },
+    {
+      case: "a stored start above the four-digit UTC year range",
+      storedAt: "9999-12-31T23:59:59-14:00",
+      storedDuration: 30,
+      candidateAt: "2026-08-10T00:15:00Z",
+    },
   ] satisfies ReadonlyArray<Readonly<{
     case: string;
     storedAt: string | number | Buffer;

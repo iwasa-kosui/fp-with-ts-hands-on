@@ -1174,6 +1174,162 @@ describe("file SQLite application smoke", () => {
     },
   );
 
+  test.each([
+    ["Projection", "lower", "0000-01-01T00:00:00+14:00"],
+    ["Regular", "lower", "0000-01-01T00:00:00+1400"],
+    ["Sensitive", "lower", "0000-01-01T00:00:00+14:00"],
+    ["Projection", "upper", "9999-12-31T23:59:59-14:00"],
+    ["Regular", "upper", "9999-12-31T23:59:59-1400"],
+    ["Sensitive", "upper", "9999-12-31T23:59:59-14:00"],
+  ] as const)(
+    "rejects and fully rolls back a %s timestamp beyond the %s UTC year boundary",
+    (source, _boundary, scheduledAt) => {
+      const database = createSqliteDatabase(":memory:");
+      migrateDatabase(database);
+      database.run(sql.raw(
+        "DELETE FROM __drizzle_migrations WHERE created_at = 1786806000000",
+      ));
+      const appointmentId = "7f200000-0000-4000-8000-000000000001";
+      const ownerId = "7f200000-0000-4000-8000-000000000002";
+      const petId = "7f200000-0000-4000-8000-000000000003";
+      const state = {
+        kind: "Scheduled",
+        appointmentId,
+        ownerId,
+        petId,
+        scheduledAt,
+        durationMinutes: 30,
+        serviceCode: "GeneralConsultation",
+        bookingKind: "Reserved",
+        assignedVeterinarianId: null,
+        visitReason: "UTC year boundary",
+        receptionNote: null,
+        settlement: { kind: "NoPayment" },
+        version: 1,
+      } as const;
+      if (source === "Projection") {
+        database.insert(appointmentsTable).values({
+          appointmentId,
+          status: "Scheduled",
+          ownerId,
+          petId,
+          scheduledAt,
+          durationMinutes: 30,
+          serviceCode: "GeneralConsultation",
+          bookingKind: "Reserved",
+          assignedVeterinarianId: null,
+          receptionNote: null,
+          settlementStatus: "NoPayment",
+          depositAmount: null,
+          version: 1,
+          state,
+        }).run();
+      } else {
+        const eventId = source === "Regular"
+          ? "7f200000-0000-4000-8000-000000000004"
+          : "7f200000-0000-4000-8000-000000000005";
+        database.insert(domainEventsTable).values({
+          eventId,
+          aggregateId: appointmentId,
+          aggregateName: "Appointment",
+          eventName: "appointment.booked",
+          occurredAt: "2026-08-10T09:00:00Z",
+          actorUserId: "7f200000-0000-4000-8000-000000000006",
+          payloadSensitivity: source,
+        }).run();
+        const payload = {
+          eventId,
+          aggregateState: state,
+          eventPayload: { appointmentId },
+        };
+        if (source === "Regular") {
+          database.insert(domainEventPayloadsTable).values(payload).run();
+        } else {
+          database.insert(domainEventSensitivePayloadsTable).values(payload).run();
+        }
+      }
+      const before = snapshotLegacyMigrationState(database);
+
+      expect(() => migrateDatabase(database)).toThrow();
+      expect(snapshotLegacyMigrationState(database)).toEqual(before);
+    },
+  );
+
+  test.each([
+    ["Projection", "0000-01-01T14:00:00+1400"],
+    ["Sensitive", "9999-12-31T09:59:59.999-14:00"],
+  ] as const)(
+    "accepts, journals, and idempotently preserves a %s timestamp at a supported UTC year boundary",
+    (source, scheduledAt) => {
+      const database = createSqliteDatabase(":memory:");
+      migrateDatabase(database);
+      database.run(sql.raw(
+        "DELETE FROM __drizzle_migrations WHERE created_at = 1786806000000",
+      ));
+      const appointmentId = "7f300000-0000-4000-8000-000000000001";
+      const ownerId = "7f300000-0000-4000-8000-000000000002";
+      const petId = "7f300000-0000-4000-8000-000000000003";
+      const state = {
+        kind: "Scheduled",
+        appointmentId,
+        ownerId,
+        petId,
+        scheduledAt,
+        durationMinutes: 30,
+        serviceCode: "GeneralConsultation",
+        bookingKind: "Reserved",
+        assignedVeterinarianId: null,
+        visitReason: "supported UTC year boundary",
+        receptionNote: null,
+        settlement: { kind: "NoPayment" },
+        version: 1,
+      } as const;
+      if (source === "Projection") {
+        database.insert(appointmentsTable).values({
+          appointmentId,
+          status: "Scheduled",
+          ownerId,
+          petId,
+          scheduledAt,
+          durationMinutes: 30,
+          serviceCode: "GeneralConsultation",
+          bookingKind: "Reserved",
+          assignedVeterinarianId: null,
+          receptionNote: null,
+          settlementStatus: "NoPayment",
+          depositAmount: null,
+          version: 1,
+          state,
+        }).run();
+      } else {
+        const eventId = "7f300000-0000-4000-8000-000000000004";
+        database.insert(domainEventsTable).values({
+          eventId,
+          aggregateId: appointmentId,
+          aggregateName: "Appointment",
+          eventName: "appointment.booked",
+          occurredAt: "2026-08-10T09:00:00Z",
+          actorUserId: "7f300000-0000-4000-8000-000000000006",
+          payloadSensitivity: "Sensitive",
+        }).run();
+        database.insert(domainEventSensitivePayloadsTable).values({
+          eventId,
+          aggregateState: state,
+          eventPayload: { appointmentId },
+        }).run();
+      }
+
+      migrateDatabase(database);
+      const afterFirstMigration = snapshotLegacyMigrationState(database);
+      migrateDatabase(database);
+
+      expect(snapshotLegacyMigrationState(database)).toEqual(afterFirstMigration);
+      expect(afterFirstMigration.migrationJournal).toContainEqual(
+        expect.objectContaining({ created_at: 1786806000000 }),
+      );
+    },
+  );
+
   test("migrates a new file and persists first-admin setup through the real app", async () => {
     const directory = mkdtempSync(join(tmpdir(), "clinic-final-"));
     temporaryDirectories.push(directory);

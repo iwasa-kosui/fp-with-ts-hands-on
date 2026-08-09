@@ -100,6 +100,21 @@ const post = (
     ...(cookie === undefined ? {} : { Cookie: cookie }),
   },
 });
+const put = (
+  harness: Harness,
+  path: string,
+  values: Readonly<Record<string, string>>,
+  cookie: string,
+) => harness.app.request(path, {
+  method: "PUT",
+  body: new URLSearchParams(values),
+  headers: {
+    ...inertiaHeaders,
+    "Content-Type": "application/x-www-form-urlencoded",
+    Origin: "http://localhost",
+    Cookie: cookie,
+  },
+});
 const page = (harness: Harness, path: string, cookie: string) =>
   harness.app.request(path, { headers: { ...inertiaHeaders, Cookie: cookie } });
 const setup = async (harness: Harness): Promise<string> =>
@@ -171,7 +186,7 @@ const bookVaccination = async (
 };
 
 describe("file SQLite appointment operations flow", () => {
-  test("rejects invalid and sub-millisecond timestamps before conflict checks or any appointment audit write", async () => {
+  test("rejects unsupported timestamps before conflict checks or any appointment audit write", async () => {
     const harness = createHarness();
     const adminCookie = await setup(harness);
     const veterinarianRow = await createUser(harness, adminCookie, {
@@ -206,6 +221,8 @@ describe("file SQLite appointment operations flow", () => {
     for (const scheduledAt of [
       "2026-08-10T12:00:00+99:99",
       "2026-08-10T10:00:00.0005Z",
+      "0000-01-01T00:00:00+14:00",
+      "9999-12-31T23:59:59-14:00",
     ]) {
       const rejected = await post(harness, "/appointments", {
         ownerId: owner.ownerId,
@@ -220,6 +237,31 @@ describe("file SQLite appointment operations flow", () => {
       expect(rejected.status).toBe(200);
       await expect(rejected.json()).resolves.toMatchObject({
         component: "Appointments/New",
+        props: { errors: { scheduledAt: "入力内容を確認してください" } },
+      });
+      expect(harness.database.select().from(appointmentsTable).all()).toEqual(before.appointments);
+      expect(harness.database.select().from(domainEventsTable).all()).toEqual(before.events);
+      expect(harness.database.select().from(domainEventPayloadsTable).all()).toEqual(before.regular);
+      expect(harness.database.select().from(domainEventSensitivePayloadsTable).all()).toEqual(before.sensitive);
+
+      const updateRejected = await put(
+        harness,
+        `/appointments/${existingAppointmentId}`,
+        {
+          expectedVersion: "1",
+          ownerId: owner.ownerId,
+          petId: pet.petId,
+          scheduledAt,
+          serviceCode: "GeneralConsultation",
+          durationMinutes: "30",
+          assignedVeterinarianId: veterinarianRow.veterinarianId,
+          reason: "競合を迂回してはいけない更新",
+        },
+        adminCookie,
+      );
+      expect(updateRejected.status).toBe(200);
+      await expect(updateRejected.json()).resolves.toMatchObject({
+        component: "Appointments/Edit",
         props: { errors: { scheduledAt: "入力内容を確認してください" } },
       });
       expect(harness.database.select().from(appointmentsTable).all()).toEqual(before.appointments);
