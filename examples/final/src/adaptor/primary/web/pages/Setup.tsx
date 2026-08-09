@@ -38,7 +38,6 @@ export default function Setup({ errors }: SharedPageProps) {
                 id="name"
                 name="name"
                 onChange={(event) => form.setData("name", event.target.value)}
-                type="text"
                 value={form.data.name}
               />
             </FormField>
