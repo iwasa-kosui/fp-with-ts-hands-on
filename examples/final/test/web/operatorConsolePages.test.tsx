@@ -53,4 +53,26 @@ describe("Operator Console shell", () => {
     expect(html).not.toContain('href="/users"');
     expect(html).not.toContain('href="/events"');
   });
+
+  test("keeps receptionist operational destinations available without administrative destinations", () => {
+    const html = renderToString(
+      <Layout
+        activeNavigation="follow-ups"
+        title="フォローアップ"
+        user={{ userId: adminId, role: "Receptionist" }}
+      >
+        <p>content</p>
+      </Layout>,
+    );
+
+    expect(html).toContain('aria-label="メインナビゲーション"');
+    expect(html).toContain('href="/appointments"');
+    expect(html).toContain('href="/owners"');
+    expect(html).toContain('href="/pets"');
+    expect(html).toContain('href="/follow-ups"');
+    expect(html).toContain('aria-label="フォローアップ"');
+    expect(html).toContain('aria-current="page"');
+    expect(html).not.toContain('href="/users"');
+    expect(html).not.toContain('href="/events"');
+  });
 });
