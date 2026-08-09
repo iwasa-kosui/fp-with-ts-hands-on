@@ -4,6 +4,7 @@ import { useEffect, type ReactElement } from "react";
 import { BusinessDate } from "../../../../domain/appointment/businessDate.js";
 import type { CalendarView } from "../../../../useCase/listAppointmentCalendarUseCase.js";
 import { buttonClassName } from "./Button.js";
+import { calendarQuery, normalizeCalendarView } from "./calendarToolbarNavigation.js";
 
 type Props = Readonly<{
   date: string;
@@ -24,21 +25,18 @@ const label = (date: string, includeYear: boolean): string => {
   return `${includeYear ? `${year}年` : ""}${month}月${day}日（${weekday}）`;
 };
 
-const query = (date: string, view: CalendarView, veterinarianId: string | null, includeCanceled: boolean): string => {
-  const params = new URLSearchParams({ date, view });
-  if (veterinarianId !== null) params.set("veterinarianId", veterinarianId);
-  if (includeCanceled) params.set("canceled", "1");
-  return `/appointments?${params.toString()}`;
-};
-
 export const CalendarToolbar = ({
   date, today, requestedView, selectedVeterinarianId, includeCanceled, veterinarians,
 }: Props): ReactElement => {
   useEffect(() => {
-    if (requestedView === null) {
-      const defaultView: CalendarView = window.matchMedia("(max-width: 767px)").matches ? "day" : "week";
-      router.get(query(date, defaultView, selectedVeterinarianId, includeCanceled), {}, { replace: true });
-    }
+    normalizeCalendarView({
+      requestedView,
+      date,
+      veterinarianId: selectedVeterinarianId,
+      includeCanceled,
+      isCompactViewport: () => window.matchMedia("(max-width: 767px)").matches,
+      navigate: (href, options) => router.get(href, {}, options),
+    });
   }, [date, includeCanceled, requestedView, selectedVeterinarianId]);
 
   const view = requestedView ?? "week";
@@ -53,23 +51,23 @@ export const CalendarToolbar = ({
     <section aria-label="カレンダー操作" className="calendar-toolbar">
       <p className="calendar-toolbar__current-date" aria-live="polite">{currentRange}</p>
       <div className="calendar-toolbar__navigation" role="group" aria-label="日付操作">
-        <Link className={buttonClassName("secondary")} href={query(previous, view, selectedVeterinarianId, includeCanceled)}>前へ</Link>
-        <Link className={buttonClassName("secondary")} href={query(today, view, selectedVeterinarianId, includeCanceled)}>今日</Link>
-        <Link className={buttonClassName("secondary")} href={query(next, view, selectedVeterinarianId, includeCanceled)}>次へ</Link>
+        <Link className={buttonClassName("secondary")} href={calendarQuery({ date: previous, view, veterinarianId: selectedVeterinarianId, includeCanceled })}>前へ</Link>
+        <Link className={buttonClassName("secondary")} href={calendarQuery({ date: today, view, veterinarianId: selectedVeterinarianId, includeCanceled })}>今日</Link>
+        <Link className={buttonClassName("secondary")} href={calendarQuery({ date: next, view, veterinarianId: selectedVeterinarianId, includeCanceled })}>次へ</Link>
       </div>
       <div className="calendar-toolbar__controls">
         <span className="calendar-toolbar__view" aria-label="表示単位">
-          <Link aria-current={view === "day" ? "page" : undefined} className={buttonClassName(view === "day" ? "primary" : "secondary")} href={query(date, "day", selectedVeterinarianId, includeCanceled)}>日</Link>
-          <Link aria-current={view === "week" ? "page" : undefined} className={buttonClassName(view === "week" ? "primary" : "secondary")} href={query(date, "week", selectedVeterinarianId, includeCanceled)}>週</Link>
+          <Link aria-current={view === "day" ? "page" : undefined} className={buttonClassName(view === "day" ? "primary" : "secondary")} href={calendarQuery({ date, view: "day", veterinarianId: selectedVeterinarianId, includeCanceled })}>日</Link>
+          <Link aria-current={view === "week" ? "page" : undefined} className={buttonClassName(view === "week" ? "primary" : "secondary")} href={calendarQuery({ date, view: "week", veterinarianId: selectedVeterinarianId, includeCanceled })}>週</Link>
         </span>
         <label>
           担当獣医師
-          <select aria-label="担当獣医師で絞り込む" defaultValue={selectedVeterinarianId ?? ""} onChange={(event) => router.get(query(date, view, event.currentTarget.value || null, includeCanceled))}>
+          <select aria-label="担当獣医師で絞り込む" defaultValue={selectedVeterinarianId ?? ""} onChange={(event) => router.get(calendarQuery({ date, view, veterinarianId: event.currentTarget.value || null, includeCanceled }))}>
             <option value="">すべて</option>
             {veterinarians.map((veterinarian) => <option key={veterinarian.veterinarianId} value={veterinarian.veterinarianId}>{veterinarian.name}</option>)}
           </select>
         </label>
-        <Link className={buttonClassName("ghost")} href={query(date, view, selectedVeterinarianId, !includeCanceled)}>
+        <Link className={buttonClassName("ghost")} href={calendarQuery({ date, view, veterinarianId: selectedVeterinarianId, includeCanceled: !includeCanceled })}>
           {includeCanceled ? "キャンセルを隠す" : "キャンセルを表示"}
         </Link>
       </div>

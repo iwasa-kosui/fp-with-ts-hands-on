@@ -8,6 +8,7 @@ import { appointmentPresentation } from "./appointmentPresentation.js";
 import {
   layoutAppointmentCards,
   partitionCalendarAppointments,
+  calendarMinimumLaneWidthPixels,
   type CalendarCardLayout,
 } from "./appointmentCalendarLayout.js";
 import { servicePresentation } from "./servicePresentation.js";
@@ -47,13 +48,15 @@ const Card = ({ layout }: Readonly<{ layout: CalendarCardLayout }>): ReactElemen
   const veterinarian = appointment.assignedVeterinarianName ?? "担当医未定";
   const settlement = settlementPresentation(appointment.settlementStatus);
   const placement: CSSProperties = {
-    top: `${layout.topMinutes}px`,
-    height: `${Math.max(layout.heightMinutes, 1)}px`,
+    top: `${layout.topPixels}px`,
+    height: `${Math.max(layout.heightPixels, 1)}px`,
     left: `calc(${layout.lane} * (100% / ${layout.laneCount}))`,
     width: `calc(100% / ${layout.laneCount})`,
   };
   return <Link aria-label={`${timeRange(appointment)}、${appointment.petName}、${service}、${veterinarian}、${status.label}、${settlement}`} className="appointment-calendar__card" href={`/appointments/${appointment.appointmentId}`} style={placement}>
-    <span>{timeRange(appointment)}（{appointment.durationMinutes}分）・{appointment.petName}・{veterinarian}・{service}・{appointment.bookingKind === "Reserved" ? "予約" : "飛び込み"}・{status.label}・{settlement}</span>
+    <span className="appointment-calendar__card-row">{timeRange(appointment)}（{appointment.durationMinutes}分）・{appointment.petName}</span>
+    <span className="appointment-calendar__card-row">{service}・{appointment.bookingKind === "Reserved" ? "予約" : "飛び込み"}・{veterinarian}</span>
+    <span className="appointment-calendar__card-row">{status.label}・{settlement}</span>
   </Link>;
 };
 
@@ -73,7 +76,10 @@ export default function AppointmentCalendar({ date, view, appointments, veterina
     : dates.map((value) => ({ key: value, label: dateLabel(value) }));
   const display = partitionCalendarAppointments({ date, view, appointments });
   const layouts = layoutAppointmentCards({ date, view, appointments: display.main });
-  const gridTemplateColumns = `72px repeat(${columns.length}, minmax(180px, 1fr))`;
+  const gridTemplateColumns = `72px ${columns.map((column) => {
+    const laneCount = Math.max(1, ...layouts.filter((layout) => layout.columnKey === column.key).map((layout) => layout.laneCount));
+    return `${laneCount * calendarMinimumLaneWidthPixels}px`;
+  }).join(" ")}`;
   return <>
     <AuxiliaryList label="08:00より前の予約" appointments={display.before} view={view} />
     <section aria-label="予約カレンダー" className="appointment-calendar"><div className="appointment-calendar__scroll"><div className="appointment-calendar__headers" style={{ gridTemplateColumns }}><span>時刻</span>{columns.map((column) => <span key={column.key}>{column.label}</span>)}</div><div className="appointment-calendar__timeline" style={{ gridTemplateColumns }}><div className="appointment-calendar__times">{Array.from({ length: 12 }, (_, index) => <span key={index}>{String(index + 8).padStart(2, "0")}:00</span>)}</div>{columns.map((column) => <div className="appointment-calendar__column" key={column.key}>{layouts.filter((layout) => layout.columnKey === column.key).map((layout) => <Card key={layout.appointment.appointmentId} layout={layout} />)}</div>)}</div></div></section>

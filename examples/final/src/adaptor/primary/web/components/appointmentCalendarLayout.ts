@@ -3,6 +3,9 @@ import type { AppointmentCalendarItem } from "../../../../useCase/query/appointm
 
 const mainStartsAtMinute = 8 * 60;
 const mainEndsAtMinute = 20 * 60;
+export const calendarPixelsPerMinute = 4;
+export const calendarMinimumLaneWidthPixels = 260;
+export const calendarTimelineHeightPixels = (mainEndsAtMinute - mainStartsAtMinute) * calendarPixelsPerMinute;
 
 type JstDateTime = Readonly<{ date: string; minuteOfDay: number }>;
 
@@ -62,6 +65,8 @@ export type CalendarCardLayout = Readonly<{
   laneCount: number;
   topMinutes: number;
   heightMinutes: number;
+  topPixels: number;
+  heightPixels: number;
 }>;
 
 const columnKey = (view: CalendarView, appointment: AppointmentCalendarItem): string =>
@@ -116,6 +121,8 @@ const withLanes = (
           laneCount: 0,
           topMinutes: Math.max(startMinute, mainStartsAtMinute) - mainStartsAtMinute,
           heightMinutes: Math.max(0, Math.min(endMinute, mainEndsAtMinute) - Math.max(startMinute, mainStartsAtMinute)),
+          topPixels: (Math.max(startMinute, mainStartsAtMinute) - mainStartsAtMinute) * calendarPixelsPerMinute,
+          heightPixels: Math.max(0, Math.min(endMinute, mainEndsAtMinute) - Math.max(startMinute, mainStartsAtMinute)) * calendarPixelsPerMinute,
         };
       });
       return assigned.map((item) => ({ ...item, laneCount: laneEnds.length }));

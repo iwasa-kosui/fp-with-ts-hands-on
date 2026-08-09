@@ -1,4 +1,6 @@
 :root {
+  --calendar-pixel-per-minute: 4px;
+  --calendar-hour-height: 240px;
   --app-bg: #f4f7fb;
   --surface: #ffffff;
   --surface-subtle: #f8fafc;
@@ -533,13 +535,18 @@ td {
 }
 
 .appointment-calendar {
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
 }
 
-.appointment-calendar__scroll { overflow-x: auto; }
+.appointment-calendar__scroll {
+  max-width: 100%;
+  overflow: auto;
+}
 
 .appointment-calendar__headers,
 .appointment-calendar__timeline {
@@ -563,23 +570,23 @@ td {
 }
 
 .appointment-calendar__timeline {
-  min-height: 720px;
+  min-height: 2880px;
 }
 
 .appointment-calendar__times {
   grid-column: 1;
   grid-row: 1;
   display: grid;
-  grid-template-rows: repeat(12, 60px);
+  grid-template-rows: repeat(12, var(--calendar-hour-height));
   border-right: 1px solid var(--border);
 }
 
 .appointment-calendar__column {
   position: relative;
   min-width: 0;
-  height: 720px;
+  height: 2880px;
   border-right: 1px solid var(--border);
-  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 14px, var(--border) 15px);
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 239px, var(--border) 240px);
 }
 
 .appointment-calendar__times span {
@@ -593,19 +600,24 @@ td {
   z-index: 1;
   box-sizing: border-box;
   min-width: 0;
-  padding: 1px 3px;
-  overflow: visible;
+  padding: 3px 6px;
+  overflow: hidden;
   border: 1px solid var(--primary);
   border-radius: 6px;
   background: var(--surface-active);
   color: var(--text);
   font-size: 10px;
-  line-height: 1.1;
+  line-height: 16px;
   text-decoration: none;
 }
 
 .appointment-calendar__card:hover { background: var(--primary-soft); }
-.appointment-calendar__card span { display: block; white-space: normal; }
+.appointment-calendar__card:focus-visible { outline-offset: -2px; }
+.appointment-calendar__card-row {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+}
 
 .appointment-calendar__auxiliary {
   margin: 12px 0;

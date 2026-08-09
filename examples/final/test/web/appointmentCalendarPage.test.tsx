@@ -38,6 +38,21 @@ describe("AppointmentCalendar", () => {
     expect(html).not.toContain("受付メモ");
   });
 
+  test("keeps each required Japanese appointment field in three compact rows inside the detail link", () => {
+    const html = renderToString(createElement(AppointmentCalendar, {
+      date: "2026-08-09", view: "day", appointments: [item],
+      veterinarians: [{ veterinarianId: item.assignedVeterinarianId, name: "佐藤 獣医師" }],
+      selectedVeterinarianId: null,
+    }));
+
+    const visibleText = html.replaceAll("<!-- -->", "");
+    expect(html).toContain('class="appointment-calendar__card-row"');
+    expect((html.match(/appointment-calendar__card-row/g) ?? [])).toHaveLength(3);
+    expect(visibleText).toContain("10:00〜10:30（30分）・むぎ");
+    expect(visibleText).toContain("一般診療・予約・佐藤 獣医師");
+    expect(visibleText).toContain("予約済み・未精算");
+  });
+
   test("orders day columns as unassigned then veterinarian name and keeps out-of-hours appointments in lists", () => {
     const early = { ...item, appointmentId: AppointmentId.schema.parse("84000000-0000-4000-8000-000000000004"), startsAt: "2026-08-08T22:45:00.000Z" as never, endsAt: "2026-08-08T23:15:00.000Z" as never, assignedVeterinarianId: null, assignedVeterinarianName: null };
     const late = { ...item, appointmentId: AppointmentId.schema.parse("84000000-0000-4000-8000-000000000005"), startsAt: "2026-08-09T11:00:00.000Z" as never, endsAt: "2026-08-09T11:30:00.000Z" as never, assignedVeterinarianId: null, assignedVeterinarianName: null };
@@ -54,6 +69,25 @@ describe("AppointmentCalendar", () => {
     expect(html.indexOf("佐藤 獣医師")).toBeLessThan(html.indexOf("山田 獣医師"));
     expect(html).toContain("08:00より前の予約");
     expect(html).toContain("20:00以降の予約");
+  });
+
+  test("renders every overlapping week card as an independently focusable detail link with its veterinarian", () => {
+    const secondVeterinarianId = VeterinarianId.schema.parse("84000000-0000-4000-8000-000000000008");
+    const first = { ...item, appointmentId: AppointmentId.schema.parse("84000000-0000-4000-8000-000000000009"), petName: "あお", endsAt: "2026-08-09T01:15:00.000Z" as never, durationMinutes: 15 as const };
+    const second = { ...item, appointmentId: AppointmentId.schema.parse("84000000-0000-4000-8000-000000000010"), petName: "いお", durationMinutes: 30 as const, assignedVeterinarianId: secondVeterinarianId, assignedVeterinarianName: "山田 獣医師" };
+    const third = { ...item, appointmentId: AppointmentId.schema.parse("84000000-0000-4000-8000-000000000011"), petName: "うお", endsAt: "2026-08-09T01:45:00.000Z" as never, durationMinutes: 45 as const, assignedVeterinarianId: null, assignedVeterinarianName: null };
+    const html = renderToString(createElement(AppointmentCalendar, {
+      date: "2026-08-09", view: "week", appointments: [first, second, third],
+      veterinarians: [{ veterinarianId: item.assignedVeterinarianId, name: "佐藤 獣医師" }, { veterinarianId: secondVeterinarianId, name: "山田 獣医師" }], selectedVeterinarianId: null,
+    })).replaceAll("<!-- -->", "");
+
+    expect(html).toContain("8/9(日)");
+    expect(html).toContain("佐藤 獣医師");
+    expect(html).toContain("山田 獣医師");
+    expect(html).toContain("担当医未定");
+    expect((html.match(/class="appointment-calendar__card"/g) ?? [])).toHaveLength(3);
+    expect((html.match(/href="\/appointments\//g) ?? [])).toHaveLength(3);
+    expect(html).toContain("260px 260px 260px 260px 260px 260px 780px");
   });
 
   test("shows manager-only booking actions at reachable paths without pre-adding the Task 7 board", () => {
