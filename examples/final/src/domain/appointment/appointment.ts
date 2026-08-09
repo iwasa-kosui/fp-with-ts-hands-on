@@ -293,7 +293,31 @@ const receiveDeposit =
   (
     appointment: Appointment,
     depositAmount: PaymentAmount,
-  ): Result<AppointmentDepositReceived, DepositRuleError> => {
+  ): Result<AppointmentDepositReceived, DepositRuleError> =>
+    validateDeposit(appointment).map((eligible) => {
+      const aggregateState = {
+        ...eligible,
+        settlement: {
+          kind: "DepositReceived",
+          depositAmount,
+          receivedAt: context.occurredAt,
+        },
+        version: nextVersion(eligible.version),
+      } as const satisfies Scheduled | CheckedIn;
+
+      return AppointmentEvent.create(
+        context,
+        aggregateState.appointmentId,
+        aggregateState,
+        "AppointmentDepositReceived",
+        "appointment.deposit-received",
+        { appointmentId: aggregateState.appointmentId, depositAmount },
+      );
+    });
+
+const validateDeposit = (
+  appointment: Appointment,
+): Result<Scheduled | CheckedIn, DepositRuleError> => {
     if (appointment.serviceCode !== "Vaccination") {
       return err({
         kind: "DepositNotAllowed",
@@ -313,24 +337,7 @@ const receiveDeposit =
         appointmentId: appointment.appointmentId,
       });
     }
-    const aggregateState = {
-      ...appointment,
-      settlement: {
-        kind: "DepositReceived",
-        depositAmount,
-        receivedAt: context.occurredAt,
-      },
-      version: nextVersion(appointment.version),
-    } as const satisfies Scheduled | CheckedIn;
-
-    return ok(AppointmentEvent.create(
-      context,
-      aggregateState.appointmentId,
-      aggregateState,
-      "AppointmentDepositReceived",
-      "appointment.deposit-received",
-      { appointmentId: aggregateState.appointmentId, depositAmount },
-    ));
+    return ok(appointment);
   };
 
 const checkIn =
@@ -481,6 +488,7 @@ export const Appointment = {
   registerWalkIn,
   reassignVeterinarian,
   updateReceptionNote,
+  validateDeposit,
   receiveDeposit,
   checkIn,
   startExamination,

@@ -1082,6 +1082,81 @@ describe("SQLite event stores", () => {
     if (blocking) expect(result._unsafeUnwrapErr()).toMatchObject({ kind: "VeterinarianScheduleConflict" });
   });
 
+  test.each(["Scheduled", "CheckedIn"] as const)(
+    "atomically rejects assigning an unassigned CheckedIn appointment when the veterinarian has an overlapping %s appointment",
+    async (blockingStatus) => {
+      const db = createSqliteDatabase(":memory:");
+      migrateDatabase(db);
+      const store = createAppointmentEventStore(db);
+      const target = Appointment.book(eventContext(54))({
+        appointmentId: ids.appointment,
+        petId: ids.pet,
+        ownerId: ids.owner,
+        scheduledAt: Timestamp.schema.parse("2026-08-10T10:15:00.000Z"),
+        durationMinutes: AppointmentDuration.schema.parse(15),
+        serviceCode: ServiceCode.schema.parse("GeneralConsultation"),
+        bookingKind: "Reserved",
+        assignedVeterinarianId: null,
+        visitReason: AppointmentReason.schema.parse("target private reason"),
+        receptionNote: null,
+        settlement: { kind: "NoPayment" },
+      });
+      const targetCheckedIn = Appointment.checkIn(eventContext(55))(target.aggregateState);
+      const blocking = Appointment.book(eventContext(56))({
+        appointmentId: ids.otherAppointment,
+        petId: ids.otherPet,
+        ownerId: ids.owner,
+        scheduledAt: Timestamp.schema.parse("2026-08-10T10:00:00.000Z"),
+        durationMinutes: AppointmentDuration.schema.parse(30),
+        serviceCode: ServiceCode.schema.parse("FollowUpVisit"),
+        bookingKind: "Reserved",
+        assignedVeterinarianId: ids.veterinarian,
+        visitReason: AppointmentReason.schema.parse("blocking private reason"),
+        receptionNote: null,
+        settlement: { kind: "NoPayment" },
+      });
+      (await store.store(target, targetCheckedIn, blocking))._unsafeUnwrap();
+      if (blockingStatus === "CheckedIn") {
+        (await store.store(
+          Appointment.checkIn(eventContext(57))(blocking.aggregateState),
+        ))._unsafeUnwrap();
+      }
+      const targetBefore = db
+        .select()
+        .from(appointmentsTable)
+        .all()
+        .find((row) => row.appointmentId === ids.appointment);
+      const eventsBefore = db.select().from(domainEventsTable).all();
+      const sensitiveBefore = db
+        .select()
+        .from(domainEventSensitivePayloadsTable)
+        .all();
+      const started = Appointment.startExamination(eventContext(58))(
+        targetCheckedIn.aggregateState,
+        ids.veterinarian,
+      );
+
+      const result = await store.store(started);
+
+      expect(result._unsafeUnwrapErr()).toEqual({
+        kind: "VeterinarianScheduleConflict",
+        appointmentId: ids.appointment,
+        conflictingAppointmentId: ids.otherAppointment,
+      });
+      expect(
+        db
+          .select()
+          .from(appointmentsTable)
+          .all()
+          .find((row) => row.appointmentId === ids.appointment),
+      ).toEqual(targetBefore);
+      expect(db.select().from(domainEventsTable).all()).toEqual(eventsBefore);
+      expect(db.select().from(domainEventSensitivePayloadsTable).all()).toEqual(
+        sensitiveBefore,
+      );
+    },
+  );
+
   test("waits on a real SQLite write lock and rechecks overlap before persisting the second booking", async () => {
     const directory = mkdtempSync(join(tmpdir(), "clinic-final-overlap-"));
     const databasePath = join(directory, "clinic.sqlite");

@@ -40,6 +40,12 @@ export type UseCaseInput = Readonly<{
 export type UseCaseOk = Readonly<{ appointment: InExamination }>;
 export type IdentityGenerationFailed = Readonly<{ kind: "IdentityGenerationFailed" }>;
 export type VeterinarianRequired = Readonly<{ kind: "VeterinarianRequired" }>;
+export type VeterinarianMismatch = Readonly<{
+  kind: "VeterinarianMismatch";
+  appointmentId: AppointmentId;
+  assignedVeterinarianId: VeterinarianId;
+  actorVeterinarianId: VeterinarianId;
+}>;
 export type UseCaseError =
   | UnauthorizedError
   | AppointmentNotFound
@@ -47,6 +53,7 @@ export type UseCaseError =
   | StaleAppointmentVersion
   | VeterinarianScheduleConflict
   | VeterinarianRequired
+  | VeterinarianMismatch
   | IdentityGenerationFailed
   | RepositoryError;
 export type UseCaseOutput = ResultAsync<UseCaseOk, UseCaseError>;
@@ -81,12 +88,20 @@ export const selectVeterinarian = (
   actor: Examiner,
   appointment: CheckedIn,
   requested: VeterinarianId | undefined,
-): Result<VeterinarianId, UnauthorizedError | VeterinarianRequired> => {
+): Result<
+  VeterinarianId,
+  UnauthorizedError | VeterinarianRequired | VeterinarianMismatch
+> => {
   if (appointment.assignedVeterinarianId !== null) {
     return actor.kind === "Admin" ||
       actor.veterinarianId === appointment.assignedVeterinarianId
       ? ok(appointment.assignedVeterinarianId)
-      : err({ kind: "Unauthorized", actorUserId: actor.userId });
+      : err({
+          kind: "VeterinarianMismatch",
+          appointmentId: appointment.appointmentId,
+          assignedVeterinarianId: appointment.assignedVeterinarianId,
+          actorVeterinarianId: actor.veterinarianId,
+        });
   }
   if (actor.kind === "Veterinarian") return ok(actor.veterinarianId);
   return requested === undefined

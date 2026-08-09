@@ -1,4 +1,4 @@
-import { okAsync } from "neverthrow";
+import { okAsync, type Result } from "neverthrow";
 import { describe, expect, test } from "vitest";
 
 import {
@@ -270,6 +270,104 @@ describe("appointment command use cases", () => {
     });
     expect(stale._unsafeUnwrapErr()).toMatchObject({ kind: "StaleAppointmentVersion" });
     expect(generated).toBe(0);
+  });
+
+  test("returns every deposit business error before clock, identity, and store side effects", async () => {
+    const vaccination = Appointment.book({
+      eventId: eventIdGenerator().generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })({
+      appointmentId: ids.appointment,
+      ownerId: ids.owner,
+      petId: ids.pet,
+      scheduledAt: times.scheduled,
+      durationMinutes: AppointmentDuration.schema.parse(15),
+      serviceCode: ServiceCode.schema.parse("Vaccination"),
+      bookingKind: "Reserved",
+      assignedVeterinarianId: null,
+      visitReason: AppointmentReason.schema.parse("vaccination"),
+      receptionNote: null,
+      settlement: { kind: "NoPayment" },
+    }).aggregateState;
+    const checkedIn = Appointment.checkIn({
+      eventId: eventIdGenerator().generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })(vaccination).aggregateState;
+    const examining = Appointment.startExamination({
+      eventId: eventIdGenerator().generate(),
+      occurredAt: times.now,
+      actorUserId: ids.veterinarianUser,
+    })(checkedIn, ids.veterinarian).aggregateState;
+    const fixtures = [
+      {
+        appointment: {
+          ...vaccination,
+          serviceCode: ServiceCode.schema.parse("GeneralConsultation"),
+        } satisfies AppointmentState,
+        expectedKind: "DepositNotAllowed",
+      },
+      {
+        appointment: examining,
+        expectedKind: "InvalidDepositAppointmentState",
+      },
+      {
+        appointment: {
+          ...vaccination,
+          settlement: {
+            kind: "DepositReceived" as const,
+            depositAmount: PaymentAmount.schema.parse(1_000),
+            receivedAt: times.now,
+          },
+        } satisfies AppointmentState,
+        expectedKind: "DepositAlreadyReceived",
+      },
+    ] as const;
+
+    for (const fixture of fixtures) {
+      let clockCalls = 0;
+      let generatorCalls = 0;
+      let storeCalls = 0;
+      const result = await ReceiveAppointmentDepositUseCase.create({
+        userResolver,
+        appointmentResolver: {
+          resolveById: () => okAsync(fixture.appointment),
+        },
+        appointmentDepositReceivedStore: {
+          store: () => {
+            storeCalls += 1;
+            return okAsync(undefined);
+          },
+        },
+        clock: {
+          now: () => {
+            clockCalls += 1;
+            return times.now;
+          },
+        },
+        eventIdGenerator: {
+          generate: () => {
+            generatorCalls += 1;
+            throw new TypeError("identity unavailable");
+          },
+        },
+      }).run({
+        actorUserId: ids.receptionist,
+        appointmentId: ids.appointment,
+        expectedVersion: fixture.appointment.version,
+        depositAmount: PaymentAmount.schema.parse(3_000),
+      });
+
+      expect(result._unsafeUnwrapErr()).toMatchObject({
+        kind: fixture.expectedKind,
+      });
+      expect({ clockCalls, generatorCalls, storeCalls }).toEqual({
+        clockCalls: 0,
+        generatorCalls: 0,
+        storeCalls: 0,
+      });
+    }
   });
 
   test("runs booking through examination result and payment with typed events", async () => {
@@ -683,6 +781,201 @@ describe("appointment command use cases", () => {
 
     expect(result._unsafeUnwrapErr()).toMatchObject({ kind: "StaleAppointmentVersion" });
     expect(sideEffects).toBe(0);
+  });
+
+  test("rejects stale versions for every appointment mutation before clocks, identities, and stores", async () => {
+    const scheduled = Appointment.book({
+      eventId: eventIdGenerator().generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })({
+      appointmentId: ids.appointment,
+      ownerId: ids.owner,
+      petId: ids.pet,
+      scheduledAt: times.scheduled,
+      durationMinutes: AppointmentDuration.schema.parse(15),
+      serviceCode: ServiceCode.schema.parse("Vaccination"),
+      bookingKind: "Reserved",
+      assignedVeterinarianId: null,
+      visitReason: AppointmentReason.schema.parse("vaccination"),
+      receptionNote: null,
+      settlement: { kind: "NoPayment" },
+    }).aggregateState;
+    const nextEventContext = (sequence: number) => ({
+      eventId: EventId.schema.parse(
+        `53000000-0000-4000-8000-${sequence.toString().padStart(12, "0")}`,
+      ),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    });
+    const checkedIn = Appointment.checkIn(nextEventContext(2))(scheduled).aggregateState;
+    const examining = Appointment.startExamination(nextEventContext(3))(
+      checkedIn,
+      ids.veterinarian,
+    ).aggregateState;
+    const awaitingPayment = Appointment.completeExamination(nextEventContext(4))(
+      examining,
+      { examId: ids.exam },
+    ).aggregateState;
+    const counters = { clock: 0, eventId: 0, examId: 0, store: 0 };
+    const reset = () => {
+      counters.clock = 0;
+      counters.eventId = 0;
+      counters.examId = 0;
+      counters.store = 0;
+    };
+    const countingClock = {
+      now: () => {
+        counters.clock += 1;
+        return times.now;
+      },
+    } as const satisfies Clock;
+    const countingEventIds = {
+      generate: () => {
+        counters.eventId += 1;
+        return eventIdGenerator().generate();
+      },
+    } as const satisfies EventIdGenerator;
+    const staleVersion = (appointment: AppointmentState) =>
+      AppointmentVersion.schema.parse(appointment.version + 1);
+    const assertNoSideEffects = async <T, E extends Readonly<{ kind: string }>>(
+      run: () => PromiseLike<Result<T, E>>,
+    ) => {
+      reset();
+      const result = await run();
+      expect(result._unsafeUnwrapErr()).toMatchObject({ kind: "StaleAppointmentVersion" });
+      expect(counters).toEqual({ clock: 0, eventId: 0, examId: 0, store: 0 });
+    };
+
+    await assertNoSideEffects(() => UpdateReceptionNoteUseCase.create({
+      userResolver,
+      appointmentResolver: { resolveById: () => okAsync(scheduled) },
+      appointmentReceptionNoteUpdatedStore: {
+        store: () => {
+          counters.store += 1;
+          return okAsync(undefined);
+        },
+      },
+      clock: countingClock,
+      eventIdGenerator: countingEventIds,
+    }).run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+      expectedVersion: staleVersion(scheduled),
+      receptionNote: ReceptionNote.schema.parse("private note"),
+    }));
+    await assertNoSideEffects(() => ReceiveAppointmentDepositUseCase.create({
+      userResolver,
+      appointmentResolver: { resolveById: () => okAsync(scheduled) },
+      appointmentDepositReceivedStore: {
+        store: () => {
+          counters.store += 1;
+          return okAsync(undefined);
+        },
+      },
+      clock: countingClock,
+      eventIdGenerator: countingEventIds,
+    }).run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+      expectedVersion: staleVersion(scheduled),
+      depositAmount: PaymentAmount.schema.parse(1_000),
+    }));
+    await assertNoSideEffects(() => CheckInAppointmentUseCase.create({
+      userResolver,
+      appointmentResolver: { resolveById: () => okAsync(scheduled) },
+      appointmentCheckedInStore: {
+        store: () => {
+          counters.store += 1;
+          return okAsync(undefined);
+        },
+      },
+      clock: countingClock,
+      eventIdGenerator: countingEventIds,
+    }).run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+      expectedVersion: staleVersion(scheduled),
+    }));
+    await assertNoSideEffects(() => StartExaminationUseCase.create({
+      userResolver,
+      appointmentResolver: { resolveById: () => okAsync(checkedIn) },
+      examinationStartedStore: {
+        store: () => {
+          counters.store += 1;
+          return okAsync(undefined);
+        },
+      },
+      clock: countingClock,
+      eventIdGenerator: countingEventIds,
+    }).run({
+      actorUserId: ids.veterinarianUser,
+      appointmentId: ids.appointment,
+      expectedVersion: staleVersion(checkedIn),
+      veterinarianId: ids.veterinarian,
+    }));
+    await assertNoSideEffects(() => RecordExamResultUseCase.create({
+      userResolver,
+      appointmentResolver: { resolveById: () => okAsync(examining) },
+      examinationCompletionStore: {
+        store: () => {
+          counters.store += 1;
+          return okAsync(undefined);
+        },
+      },
+      clock: countingClock,
+      eventIdGenerator: countingEventIds,
+      examIdGenerator: {
+        generate: () => {
+          counters.examId += 1;
+          return ids.exam;
+        },
+      },
+    }).run({
+      actorUserId: ids.veterinarianUser,
+      appointmentId: ids.appointment,
+      expectedVersion: staleVersion(examining),
+      petId: ids.pet,
+      collectedAt: times.now,
+      items: [ExamResultItem.schema.parse("finding")],
+      needsFollowUp: false,
+    }));
+    await assertNoSideEffects(() => RecordPaymentUseCase.create({
+      userResolver,
+      appointmentResolver: { resolveById: () => okAsync(awaitingPayment) },
+      paymentRecordedStore: {
+        store: () => {
+          counters.store += 1;
+          return okAsync(undefined);
+        },
+      },
+      clock: countingClock,
+      eventIdGenerator: countingEventIds,
+    }).run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+      expectedVersion: staleVersion(awaitingPayment),
+      diagnosis: Diagnosis.schema.parse("diagnosis"),
+      treatment: Treatment.schema.parse("treatment"),
+      finalAmount: PaymentAmount.schema.parse(1_000),
+    }));
+    await assertNoSideEffects(() => CancelAppointmentUseCase.create({
+      userResolver,
+      appointmentResolver: { resolveById: () => okAsync(scheduled) },
+      appointmentCanceledStore: {
+        store: () => {
+          counters.store += 1;
+          return okAsync(undefined);
+        },
+      },
+      clock: countingClock,
+      eventIdGenerator: countingEventIds,
+    }).run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+      expectedVersion: staleVersion(scheduled),
+      reason: CancellationReason.schema.parse("private cancellation"),
+    }));
   });
 
   test("cancels Scheduled appointments and rejects terminal-state cancellation", async () => {

@@ -330,6 +330,8 @@ describe("Operator Console shell", () => {
       <AppointmentShow
         actions={{
           ...noAppointmentActions,
+          edit: true,
+          reassignVeterinarian: true,
           cancel: true,
           checkIn: true,
         }}
@@ -341,6 +343,32 @@ describe("Operator Console shell", () => {
         errors={{}}
         flash={{}}
         veterinarianId={null}
+        veterinarians={[{
+          veterinarianId: "77000000-0000-4000-8000-000000000001",
+          name: "Clinic Vet",
+        }]}
+      />,
+    );
+    const checkedInHtml = renderPublicPage(
+      <AppointmentShow
+        actions={{
+          ...noAppointmentActions,
+          reassignVeterinarian: true,
+        }}
+        appointment={{
+          ...appointmentBase,
+          kind: "CheckedIn",
+          checkedInAt: Timestamp.schema.parse("2026-08-10T03:10:00.000Z"),
+          version: AppointmentVersion.schema.parse(2),
+        }}
+        auth={{ user: { userId: adminId, role: "Receptionist" } }}
+        errors={{}}
+        flash={{}}
+        veterinarianId={null}
+        veterinarians={[{
+          veterinarianId: "77000000-0000-4000-8000-000000000001",
+          name: "Clinic Vet",
+        }]}
       />,
     );
 
@@ -350,8 +378,17 @@ describe("Operator Console shell", () => {
     expect(awaitingPaymentHtml).toContain("会計を記録");
     expect(awaitingPaymentHtml).not.toContain("診察結果を記録");
     expect(scheduledHtml).toContain("受付する");
+    expect(scheduledHtml).toContain(`href="/appointments/${appointmentId}/edit"`);
+    expect(scheduledHtml).toContain("予約内容を変更");
+    expect(scheduledHtml).toContain('name="assignedVeterinarianId"');
+    expect(scheduledHtml).toContain('name="expectedVersion"');
+    expect(scheduledHtml).toContain("Clinic Vet");
+    expect(scheduledHtml).toContain("担当獣医師を変更");
     expect(scheduledHtml).toContain("予約をキャンセル");
     expect(scheduledHtml).not.toContain("会計を記録");
+    expect(checkedInHtml).not.toContain("予約内容を変更");
+    expect(checkedInHtml).toContain('name="assignedVeterinarianId"');
+    expect(checkedInHtml).toContain("担当獣医師を変更");
   });
 
   test("renders an action that the server authorizes even when the state does not imply it", () => {

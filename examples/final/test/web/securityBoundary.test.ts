@@ -332,8 +332,12 @@ describe("clinic page SSR", () => {
     expect(awaitingPayment).toContain("診察結果記録済み・会計待ち");
     expect(awaitingPayment).toContain("会計を記録");
     expect(awaitingPayment).not.toContain("診察結果を記録");
-    expect(paid).toContain(`${paymentAmount}`);
-    expect(paid).toContain("支払額");
+    expect(paid).toContain("private diagnosis");
+    expect(paid).toContain("private treatment");
+    expect(paid).toContain("診断");
+    expect(paid).toContain("処置");
+    expect(paid).toContain(`${paymentAmount} 円`);
+    expect(paid).toContain("最終請求額");
     expect(paid).toContain(paidAt);
     expect(canceled).toContain(canceledAt);
     expect(canceled).not.toContain("受付日時");

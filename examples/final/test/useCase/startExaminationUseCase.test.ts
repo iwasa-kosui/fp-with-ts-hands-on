@@ -237,7 +237,7 @@ describe("StartExaminationUseCase", () => {
     expect(appointmentResolverCalled).toBe(false);
   });
 
-  test("returns Unauthorized when another veterinarian is already assigned", async () => {
+  test("returns VeterinarianMismatch when another veterinarian is already assigned", async () => {
     const assignedToOther = {
       ...checkedIn,
       assignedVeterinarianId: otherVeterinarianId,
@@ -251,7 +251,12 @@ describe("StartExaminationUseCase", () => {
 
     const result = await useCase.run({ ...input, veterinarianId: undefined });
 
-    expect(result.isErr() && result.error.kind).toBe("Unauthorized");
+    expect(result._unsafeUnwrapErr()).toEqual({
+      kind: "VeterinarianMismatch",
+      appointmentId,
+      assignedVeterinarianId: otherVeterinarianId,
+      actorVeterinarianId: veterinarianId,
+    });
   });
 
   test("uses the assigned veterinarian even when an administrator does not request one", async () => {

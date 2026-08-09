@@ -491,11 +491,37 @@ describe("clinic workflow routes", () => {
   test("enforces role boundaries before validation and returns actionable validation/conflict pages", async () => {
     const harness = createHarness();
     const adminCookie = await setup(harness);
-    await createUser(harness, adminCookie, {
+    const assignedVeterinarian = await createUser(harness, adminCookie, {
       ...veterinarian,
       role: "Veterinarian",
     });
+    if (assignedVeterinarian?.veterinarianId === null || assignedVeterinarian === undefined) {
+      throw new TypeError("assigned veterinarian missing");
+    }
     const veterinarianCookie = await login(harness, veterinarian);
+    const otherVeterinarian = {
+      email: "other-vet@example.test",
+      name: "Other Clinic Vet",
+      password: "other veterinarian password value",
+    } as const;
+    await createUser(harness, adminCookie, {
+      ...otherVeterinarian,
+      role: "Veterinarian",
+    });
+    const otherVeterinarianCookie = await login(harness, otherVeterinarian);
+    await createUser(harness, adminCookie, {
+      ...receptionist,
+      role: "Receptionist",
+    });
+    const receptionistCookie = await login(harness, receptionist);
+
+    const forbiddenStart = await post(
+      harness,
+      "/appointments/not-an-id/start-examination",
+      {},
+      receptionistCookie,
+    );
+    expect(forbiddenStart.status).toBe(403);
 
     const forbidden = await post(
       harness,
@@ -539,7 +565,7 @@ describe("clinic workflow routes", () => {
     await post(
       harness,
       "/appointments",
-      { ownerId: owner.ownerId, petId: pet.petId, scheduledAt: "2026-08-10T03:00:00.000Z", serviceCode: "Vaccination", durationMinutes: "15", assignedVeterinarianId: "", reason: "Vaccination" },
+      { ownerId: owner.ownerId, petId: pet.petId, scheduledAt: "2026-08-10T03:00:00.000Z", serviceCode: "Vaccination", durationMinutes: "15", assignedVeterinarianId: assignedVeterinarian.veterinarianId ?? "", reason: "Vaccination" },
       adminCookie,
     );
     const appointment = harness.database.select().from(appointmentsTable).get();
@@ -568,6 +594,40 @@ describe("clinic workflow routes", () => {
     await expect(conflictPage.json()).resolves.toMatchObject({
       props: { errors: { form: "現在の予約状態ではこの操作を実行できません。画面を更新して状態を確認してください。" } },
     });
+
+    const eventsBeforeMismatch = harness.database
+      .select()
+      .from(domainEventsTable)
+      .all();
+    const mismatch = await post(
+      harness,
+      `/appointments/${appointment.appointmentId}/start-examination`,
+      { expectedVersion: "2" },
+      otherVeterinarianCookie,
+    );
+    expect(mismatch.status).toBe(303);
+    expect(mismatch.headers.get("location")).toBe(
+      `/appointments/${appointment.appointmentId}?error=veterinarian-mismatch`,
+    );
+    const mismatchPage = await page(
+      harness,
+      mismatch.headers.get("location") ?? "",
+      otherVeterinarianCookie,
+    );
+    await expect(mismatchPage.json()).resolves.toMatchObject({
+      props: {
+        errors: {
+          form: "この予約を診察開始できるのは、担当獣医師または管理者です。",
+        },
+      },
+    });
+    expect(harness.database.select().from(appointmentsTable).get()).toMatchObject({
+      status: "CheckedIn",
+      version: 2,
+    });
+    expect(harness.database.select().from(domainEventsTable).all()).toEqual(
+      eventsBeforeMismatch,
+    );
 
     const conflictAppointmentId = AppointmentId.schema.parse(appointment.appointmentId);
     const authoritativeConflictApp = createApp({
@@ -672,6 +732,22 @@ describe("clinic workflow routes", () => {
     const appointment = harness.database.select().from(appointmentsTable).get();
     if (appointment === undefined) throw new TypeError("appointment missing");
 
+    const detailPage = await page(
+      harness,
+      `/appointments/${appointment.appointmentId}`,
+      adminCookie,
+    );
+    await expect(detailPage.json()).resolves.toMatchObject({
+      component: "Appointments/Show",
+      props: {
+        appointment: { appointmentId: appointment.appointmentId, version: 1 },
+        actions: { edit: true, reassignVeterinarian: true },
+        veterinarians: [
+          { veterinarianId: vet.veterinarianId, name: "Clinic Vet" },
+        ],
+      },
+    });
+
     const editPage = await page(harness, `/appointments/${appointment.appointmentId}/edit`, adminCookie);
     await expect(editPage.json()).resolves.toMatchObject({
       component: "Appointments/Edit",
@@ -737,6 +813,132 @@ describe("clinic workflow routes", () => {
       ].includes(event.eventName));
     expect(new Set(auditEvents.map((event) => event.eventId)).size).toBe(3);
     expect(auditEvents.every((event) => event.payloadSensitivity === "Sensitive")).toBe(true);
+  });
+
+  test("requires expectedVersion and maps authoritative stale conflicts for every appointment mutation", async () => {
+    const harness = createHarness();
+    const adminCookie = await setup(harness);
+    const { owner, pet } = await createOwnerAndPet(harness, adminCookie);
+    const booked = await post(harness, "/appointments", {
+      ownerId: owner.ownerId,
+      petId: pet.petId,
+      scheduledAt: "2026-08-10T05:00:00.000Z",
+      serviceCode: "Vaccination",
+      durationMinutes: "30",
+      assignedVeterinarianId: "",
+      reason: "private versioning test",
+    }, adminCookie);
+    expect(booked.status).toBe(303);
+    const appointment = harness.database.select().from(appointmentsTable).get();
+    if (appointment === undefined) throw new TypeError("appointment missing");
+    const mutationCases = [
+      {
+        suffix: "reception-note",
+        values: { receptionNote: "private reception note" },
+      },
+      { suffix: "deposit", values: { depositAmount: "1000" } },
+      { suffix: "check-in", values: {} },
+      { suffix: "start-examination", values: {} },
+      {
+        suffix: "exam-results",
+        values: {
+          petId: pet.petId,
+          collectedAt: "2026-08-09T02:00:00.000Z",
+          item: "private finding",
+          needsFollowUp: "false",
+        },
+      },
+      {
+        suffix: "payment",
+        values: {
+          diagnosis: "private diagnosis",
+          treatment: "private treatment",
+          finalAmount: "1000",
+        },
+      },
+      { suffix: "cancel", values: { reason: "private cancellation" } },
+    ] as const;
+    const projectionBefore = harness.database.select().from(appointmentsTable).get();
+    const eventsBefore = harness.database.select().from(domainEventsTable).all();
+    const sensitiveBefore = harness.database
+      .select()
+      .from(domainEventSensitivePayloadsTable)
+      .all();
+
+    for (const mutation of mutationCases) {
+      const response = await post(
+        harness,
+        `/appointments/${appointment.appointmentId}/${mutation.suffix}`,
+        mutation.values,
+        adminCookie,
+      );
+      expect(response.status, mutation.suffix).toBe(200);
+      await expect(response.json(), mutation.suffix).resolves.toMatchObject({
+        component: "Appointments/Show",
+        props: { errors: { expectedVersion: expect.any(String) } },
+      });
+      expect(harness.database.select().from(appointmentsTable).get()).toEqual(
+        projectionBefore,
+      );
+      expect(harness.database.select().from(domainEventsTable).all()).toEqual(
+        eventsBefore,
+      );
+      expect(
+        harness.database.select().from(domainEventSensitivePayloadsTable).all(),
+      ).toEqual(sensitiveBefore);
+    }
+
+    const appointmentId = AppointmentId.schema.parse(appointment.appointmentId);
+    const staleError = {
+      kind: "StaleAppointmentVersion" as const,
+      appointmentId,
+      expectedVersion: AppointmentVersion.schema.parse(99),
+    };
+    const staleUseCase = { run: () => errAsync(staleError) };
+    const staleApp = createApp({
+      ...createApplicationDependencies(harness.database, {
+        clock: harness.clock,
+        isProduction: false,
+      }),
+      updateReceptionNote: staleUseCase,
+      receiveAppointmentDeposit: staleUseCase,
+      checkInAppointment: staleUseCase,
+      startExamination: staleUseCase,
+      recordExamResult: staleUseCase,
+      recordPayment: staleUseCase,
+      cancelAppointment: staleUseCase,
+    });
+    for (const mutation of mutationCases) {
+      const response = await staleApp.request(
+        `/appointments/${appointment.appointmentId}/${mutation.suffix}`,
+        {
+          method: "POST",
+          body: new URLSearchParams({
+            ...mutation.values,
+            expectedVersion: "99",
+          }),
+          headers: {
+            ...inertiaHeaders,
+            "Content-Type": "application/x-www-form-urlencoded",
+            Origin: "http://localhost",
+            Cookie: adminCookie,
+          },
+        },
+      );
+      expect(response.status, mutation.suffix).toBe(303);
+      expect(response.headers.get("location"), mutation.suffix).toBe(
+        `/appointments/${appointment.appointmentId}?error=appointment-conflict`,
+      );
+      expect(harness.database.select().from(appointmentsTable).get()).toEqual(
+        projectionBefore,
+      );
+      expect(harness.database.select().from(domainEventsTable).all()).toEqual(
+        eventsBefore,
+      );
+      expect(
+        harness.database.select().from(domainEventSensitivePayloadsTable).all(),
+      ).toEqual(sensitiveBefore);
+    }
   });
 
   test("requests follow-ups with fresh event identity and retains deleted relation labels", async () => {

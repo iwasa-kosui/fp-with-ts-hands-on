@@ -876,6 +876,8 @@ export const registerAppointmentRoutes = (
               return context.redirect(`${detailUrl(appointmentId.value)}?error=schedule-conflict`, 303);
             case "VeterinarianRequired":
               return context.redirect(`${detailUrl(appointmentId.value)}?error=veterinarian-required`, 303);
+            case "VeterinarianMismatch":
+              return context.redirect(`${detailUrl(appointmentId.value)}?error=veterinarian-mismatch`, 303);
             case "IdentityGenerationFailed":
             case "RepositoryError":
               return repositoryFailure(context);

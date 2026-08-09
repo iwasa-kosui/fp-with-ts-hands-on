@@ -80,7 +80,7 @@ const ensureVersion =
 const createEvent = (
   dependencies: Dependencies,
   input: ReceiveAppointmentDepositInput,
-  appointment: AppointmentState,
+  appointment: Scheduled | CheckedIn,
 ) => ResultAsync.fromPromise(
   Promise.resolve().then(() => Appointment.receiveDeposit({
     eventId: dependencies.eventIdGenerator.generate(),
@@ -99,6 +99,7 @@ const run =
       .andThen(() => dependencies.appointmentResolver.resolveById(input.appointmentId).mapErr(toRepositoryError))
       .andThen(ensureAppointmentFound(input.appointmentId))
       .andThen(ensureVersion(input))
+      .andThen(Appointment.validateDeposit)
       .andThen((appointment) => createEvent(dependencies, input, appointment))
       .andThrough((event) => dependencies.appointmentDepositReceivedStore.store(event).mapErr(toStoreError))
       .map((event) => ({ appointment: event.aggregateState }));

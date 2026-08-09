@@ -1,4 +1,4 @@
-import { useForm } from "@inertiajs/react";
+import { Link, useForm } from "@inertiajs/react";
 
 import type { VeterinarianId } from "../../../../../domain/appointment/veterinarianId.js";
 import { buttonClassName } from "../../components/Button.js";
@@ -59,7 +59,9 @@ const stateDetails = (appointment: AppointmentPageView): React.ReactNode => {
         <dt>担当獣医師</dt><dd>{appointment.veterinarianName}</dd>
         <dt>診察開始日時</dt><dd>{appointment.examinationStartedAt}</dd>
         <dt>診察完了日時</dt><dd>{appointment.examinationCompletedAt}</dd>
-        <dt>支払額</dt><dd>{appointment.amount} 円</dd>
+        <dt>診断</dt><dd>{appointment.diagnosis}</dd>
+        <dt>処置</dt><dd>{appointment.treatment}</dd>
+        <dt>最終請求額</dt><dd>{appointment.settlement.finalAmount} 円</dd>
         <dt>会計日時</dt><dd>{appointment.paidAt}</dd>
       </>;
     case "Canceled":
@@ -85,6 +87,10 @@ export default function AppointmentShow({
     receptionNote: appointment.receptionNote ?? "",
   });
   const deposit = useForm({ expectedVersion: appointment.version, depositAmount: "" });
+  const reassignVeterinarian = useForm({
+    expectedVersion: appointment.version,
+    assignedVeterinarianId: appointment.assignedVeterinarianId ?? "",
+  });
   const startExam = useForm({
     expectedVersion: appointment.version,
     veterinarianId: appointment.assignedVeterinarianId ?? veterinarianId ?? "",
@@ -136,7 +142,9 @@ export default function AppointmentShow({
     }
   };
   const hasAvailableAction =
+    actions.edit ||
     actions.checkIn ||
+    actions.reassignVeterinarian ||
     actions.cancel ||
     actions.startExamination ||
     actions.recordExamResult ||
@@ -174,6 +182,68 @@ export default function AppointmentShow({
             {hasAvailableAction ? null : (
               <InlineAlert>現在実行できる操作はありません</InlineAlert>
             )}
+            {actions.edit ? (
+              <Link
+                className={buttonClassName("secondary")}
+                href={`${base}/edit`}
+              >
+                予約内容を変更
+              </Link>
+            ) : null}
+
+            {actions.reassignVeterinarian ? (
+              <form
+                className="workflow-primary"
+                onSubmit={submit(reassignVeterinarian, `${base}/veterinarian`)}
+              >
+                <input
+                  name="expectedVersion"
+                  type="hidden"
+                  value={reassignVeterinarian.data.expectedVersion}
+                />
+                <label htmlFor="assignedVeterinarianId">
+                  担当獣医師
+                  <select
+                    aria-describedby={errors.assignedVeterinarianId === undefined
+                      ? undefined
+                      : "assignedVeterinarianId-error"}
+                    aria-invalid={errors.assignedVeterinarianId === undefined
+                      ? undefined
+                      : true}
+                    id="assignedVeterinarianId"
+                    name="assignedVeterinarianId"
+                    onChange={(event) =>
+                      reassignVeterinarian.setData(
+                        "assignedVeterinarianId",
+                        event.target.value,
+                      )}
+                    value={reassignVeterinarian.data.assignedVeterinarianId}
+                  >
+                    <option value="">未定</option>
+                    {veterinarians.map((veterinarian) => (
+                      <option
+                        key={veterinarian.veterinarianId}
+                        value={veterinarian.veterinarianId}
+                      >
+                        {veterinarian.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <FieldError
+                  field="assignedVeterinarianId"
+                  message={errors.assignedVeterinarianId}
+                />
+                <button
+                  className={buttonClassName("secondary")}
+                  disabled={reassignVeterinarian.processing}
+                  type="submit"
+                >
+                  {reassignVeterinarian.processing ? "変更中…" : "担当獣医師を変更"}
+                </button>
+              </form>
+            ) : null}
+
             {actions.checkIn ? (
               <form className="workflow-primary" onSubmit={submit(checkIn, `${base}/check-in`)}>
                 <input name="expectedVersion" type="hidden" value={checkIn.data.expectedVersion} />
