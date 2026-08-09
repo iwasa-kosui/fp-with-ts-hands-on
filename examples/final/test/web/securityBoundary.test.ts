@@ -274,6 +274,7 @@ describe("clinic page SSR", () => {
     });
 
     expect(scheduled).not.toContain("担当獣医師");
+    expect(scheduled).toContain("現在実行できる操作はありません");
     expect(checkedIn).toContain(checkedInAt);
     expect(checkedIn).not.toContain("診察開始日時");
     expect(examining).toContain(examinationStartedAt);

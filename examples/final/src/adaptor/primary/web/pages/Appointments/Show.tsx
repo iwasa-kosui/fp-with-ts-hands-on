@@ -1,7 +1,11 @@
 import { useForm } from "@inertiajs/react";
 
 import type { VeterinarianId } from "../../../../../domain/appointment/veterinarianId.js";
+import { buttonClassName } from "../../components/Button.js";
+import { appointmentPresentation } from "../../components/appointmentPresentation.js";
 import { ErrorSummary, FieldError } from "../../components/FormErrors.js";
+import { InlineAlert, Card } from "../../components/Surface.js";
+import { StatusBadge } from "../../components/StatusBadge.js";
 import type { SharedPageProps } from "../../pageProps.js";
 import type {
   AppointmentActions,
@@ -69,6 +73,7 @@ export default function AppointmentShow({
   veterinarians = [],
 }: Props) {
   const base = `/appointments/${appointment.appointmentId}`;
+  const presentation = appointmentPresentation(appointment.kind);
   const checkIn = useForm({});
   const startExam = useForm({ veterinarianId: veterinarianId ?? "" });
   const exam = useForm<{
@@ -96,28 +101,52 @@ export default function AppointmentShow({
       });
     }
   };
+  const hasAvailableAction =
+    actions.checkIn ||
+    actions.cancel ||
+    actions.startExamination ||
+    actions.recordExamResult ||
+    actions.recordPayment;
 
   return (
-    <Layout title="予約詳細" user={auth.user}>
+    <Layout activeNavigation="appointments" title="予約詳細" user={auth.user}>
       <ErrorSummary errors={errors} />
-      <dl>
-        <dt>状態</dt><dd>{appointment.kind}</dd>
-        <dt>予約日時</dt><dd>{appointment.scheduledAt}</dd>
-        <dt>飼い主</dt><dd>{appointment.ownerName}</dd>
-        <dt>ペット</dt><dd>{appointment.petName}</dd>
-        {stateDetails(appointment)}
-      </dl>
+      <div className="appointment-workspace">
+        <section aria-label="予約情報" className="appointment-summary">
+          <Card>
+            <div className="appointment-summary__status">
+              <StatusBadge tone={presentation.tone}>{presentation.label}</StatusBadge>
+              <span className="status-canonical">{presentation.canonical}</span>
+            </div>
+            <dl>
+              <dt>予約日時</dt><dd>{appointment.scheduledAt}</dd>
+              <dt>飼い主</dt><dd>{appointment.ownerName}</dd>
+              <dt>ペット</dt><dd>{appointment.petName}</dd>
+              {stateDetails(appointment)}
+            </dl>
+          </Card>
+        </section>
 
-      {actions.checkIn ? (
-        <form onSubmit={submit(checkIn, `${base}/check-in`)}>
-          <button disabled={checkIn.processing} type="submit">
-            {checkIn.processing ? "受付中…" : "受付する"}
-          </button>
-        </form>
-      ) : null}
+        <aside aria-label="現在の操作" className="workflow-panel">
+          <Card>
+            {hasAvailableAction ? null : (
+              <InlineAlert>現在実行できる操作はありません</InlineAlert>
+            )}
+            {actions.checkIn ? (
+              <form className="workflow-primary" onSubmit={submit(checkIn, `${base}/check-in`)}>
+                <button
+                  aria-busy={checkIn.processing || undefined}
+                  className={buttonClassName()}
+                  disabled={checkIn.processing}
+                  type="submit"
+                >
+                  {checkIn.processing ? "受付中…" : "受付する"}
+                </button>
+              </form>
+            ) : null}
 
-      {actions.startExamination ? (
-        <form onSubmit={submit(startExam, `${base}/start-examination`)}>
+            {actions.startExamination ? (
+              <form className="workflow-primary" onSubmit={submit(startExam, `${base}/start-examination`)}>
           {auth.user?.role === "Admin" ? (
             <>
               <label htmlFor="veterinarianId">
@@ -144,14 +173,19 @@ export default function AppointmentShow({
               <FieldError field="veterinarianId" message={errors.veterinarianId} />
             </>
           ) : null}
-          <button disabled={startExam.processing} type="submit">
-            {startExam.processing ? "開始中…" : "診察を開始"}
-          </button>
-        </form>
-      ) : null}
+                <button
+                  aria-busy={startExam.processing || undefined}
+                  className={buttonClassName()}
+                  disabled={startExam.processing}
+                  type="submit"
+                >
+                  {startExam.processing ? "開始中…" : "診察を開始"}
+                </button>
+              </form>
+            ) : null}
 
-      {actions.recordExamResult ? (
-        <form onSubmit={submit(exam, `${base}/exam-results`)}>
+            {actions.recordExamResult ? (
+              <form className="workflow-primary" onSubmit={submit(exam, `${base}/exam-results`)}>
           <input name="petId" type="hidden" value={exam.data.petId} />
           <label htmlFor="collectedAt">
             採取日時（ISO 8601）
@@ -189,14 +223,19 @@ export default function AppointmentShow({
             電話フォローが必要
           </label>
           <FieldError field="needsFollowUp" message={errors.needsFollowUp} />
-          <button disabled={exam.processing} type="submit">
-            {exam.processing ? "記録中…" : "診察結果を記録"}
-          </button>
-        </form>
-      ) : null}
+                <button
+                  aria-busy={exam.processing || undefined}
+                  className={buttonClassName()}
+                  disabled={exam.processing}
+                  type="submit"
+                >
+                  {exam.processing ? "記録中…" : "診察結果を記録"}
+                </button>
+              </form>
+            ) : null}
 
-      {actions.recordPayment ? (
-        <form onSubmit={submit(payment, `${base}/payment`)}>
+            {actions.recordPayment ? (
+              <form className="workflow-primary" onSubmit={submit(payment, `${base}/payment`)}>
           {(["diagnosis", "treatment", "amount"] as const).map((field) => (
             <div key={field}>
               <label htmlFor={field}>
@@ -214,14 +253,19 @@ export default function AppointmentShow({
               <FieldError field={field} message={errors[field]} />
             </div>
           ))}
-          <button disabled={payment.processing} type="submit">
-            {payment.processing ? "記録中…" : "会計を記録"}
-          </button>
-        </form>
-      ) : null}
+                <button
+                  aria-busy={payment.processing || undefined}
+                  className={buttonClassName()}
+                  disabled={payment.processing}
+                  type="submit"
+                >
+                  {payment.processing ? "記録中…" : "会計を記録"}
+                </button>
+              </form>
+            ) : null}
 
-      {actions.cancel ? (
-        <form onSubmit={submitCancellation}>
+            {actions.cancel ? (
+              <form className="danger-zone" onSubmit={submitCancellation}>
           <label htmlFor="reason">
             キャンセル理由
             <textarea
@@ -234,11 +278,19 @@ export default function AppointmentShow({
             />
           </label>
           <FieldError field="reason" message={errors.reason} />
-          <button disabled={cancellation.processing} type="submit">
-            {cancellation.processing ? "処理中…" : "予約をキャンセル"}
-          </button>
-        </form>
-      ) : null}
+                <button
+                  aria-busy={cancellation.processing || undefined}
+                  className={buttonClassName("danger")}
+                  disabled={cancellation.processing}
+                  type="submit"
+                >
+                  {cancellation.processing ? "処理中…" : "予約をキャンセル"}
+                </button>
+              </form>
+            ) : null}
+          </Card>
+        </aside>
+      </div>
     </Layout>
   );
 }

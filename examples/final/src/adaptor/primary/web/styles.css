@@ -405,6 +405,83 @@ td {
   text-align: center;
 }
 
+.appointment-booking-card {
+  max-width: 720px;
+  padding: 24px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.appointment-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  align-items: start;
+  gap: 24px;
+}
+
+.appointment-summary .surface-card,
+.workflow-panel .surface-card {
+  padding: 24px;
+}
+
+.appointment-summary__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.status-canonical {
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.appointment-summary dl {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) minmax(0, 1fr);
+  gap: 12px 16px;
+  margin: 0;
+}
+
+.appointment-summary dt {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.appointment-summary dd {
+  margin: 0;
+}
+
+.workflow-panel .surface-card {
+  display: grid;
+  gap: 16px;
+}
+
+.workflow-primary,
+.danger-zone {
+  display: grid;
+  gap: 12px;
+}
+
+.danger-zone {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -580,6 +657,20 @@ td {
 
   .page-header {
     flex-direction: column;
+  }
+
+  .form-grid,
+  .appointment-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .appointment-summary dl {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .appointment-summary dd {
+    margin-bottom: 12px;
   }
 }
 

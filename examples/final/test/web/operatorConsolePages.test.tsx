@@ -4,9 +4,15 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
 import Layout from "../../src/adaptor/primary/web/pages/Layout.js";
+import AppointmentNew from "../../src/adaptor/primary/web/pages/Appointments/New.js";
+import AppointmentShow from "../../src/adaptor/primary/web/pages/Appointments/Show.js";
 import Dashboard from "../../src/adaptor/primary/web/pages/Dashboard.js";
 import Login from "../../src/adaptor/primary/web/pages/Login.js";
 import Setup from "../../src/adaptor/primary/web/pages/Setup.js";
+import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
+import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { OwnerId } from "../../src/domain/owner/ownerId.js";
+import { PetId } from "../../src/domain/pet/petId.js";
 import { UserId } from "../../src/domain/user/userId.js";
 
 const adminId = UserId.schema.parse(
@@ -15,6 +21,11 @@ const adminId = UserId.schema.parse(
 
 const renderPublicPage = (page: ReactElement): string =>
   renderToString(page);
+
+const ownerId = OwnerId.schema.parse("73000000-0000-4000-8000-000000000001");
+const petId = PetId.schema.parse("74000000-0000-4000-8000-000000000001");
+const appointmentId = AppointmentId.schema.parse("75000000-0000-4000-8000-000000000001");
+const scheduledAt = Timestamp.schema.parse("2026-08-10T03:00:00.000Z");
 
 describe("Operator Console shell", () => {
   test("renders the login form with labelled controls and accessible errors", () => {
@@ -153,5 +164,87 @@ describe("Operator Console shell", () => {
     expect(administratorHtml).not.toContain("新しい予約");
     expect(veterinarianHtml).not.toContain('href="/appointments/new"');
     expect(veterinarianHtml).not.toContain("新しい予約");
+  });
+
+  test("renders booking as an accessible form with a route back to the appointment list", () => {
+    const html = renderPublicPage(
+      <AppointmentNew
+        auth={{ user: { userId: adminId, role: "Receptionist" } }}
+        errors={{ reason: "来院理由を確認してください。" }}
+        flash={{}}
+        owners={[{ ownerId, name: "Hanako Owner" }]}
+        pets={[{ ownerId, petId, name: "Mugi" }]}
+      />,
+    );
+
+    expect(html).toContain('aria-label="予約登録"');
+    expect(html).toContain('href="/appointments"');
+    expect(html).toContain('aria-describedby="reason-error"');
+  });
+
+  test("renders only the server-authorized state workflow actions", () => {
+    const awaitingPaymentHtml = renderPublicPage(
+      <AppointmentShow
+        actions={{
+          cancel: false,
+          checkIn: false,
+          recordExamResult: false,
+          recordPayment: true,
+          startExamination: false,
+        }}
+        appointment={{
+          appointmentId,
+          checkedInAt: Timestamp.schema.parse("2026-08-10T03:10:00.000Z"),
+          examId: "71000000-0000-4000-8000-000000000030",
+          examinationCompletedAt: Timestamp.schema.parse("2026-08-10T03:30:00.000Z"),
+          examinationStartedAt: Timestamp.schema.parse("2026-08-10T03:20:00.000Z"),
+          kind: "AwaitingPayment",
+          ownerId,
+          ownerName: "Hanako Owner",
+          petId,
+          petName: "Mugi",
+          scheduledAt,
+          veterinarianId: "77000000-0000-4000-8000-000000000001",
+          veterinarianName: "Clinic Vet",
+        }}
+        auth={{ user: { userId: adminId, role: "Receptionist" } }}
+        errors={{}}
+        flash={{}}
+        veterinarianId={null}
+      />,
+    );
+    const scheduledHtml = renderPublicPage(
+      <AppointmentShow
+        actions={{
+          cancel: true,
+          checkIn: true,
+          recordExamResult: false,
+          recordPayment: false,
+          startExamination: false,
+        }}
+        appointment={{
+          appointmentId,
+          kind: "Scheduled",
+          ownerId,
+          ownerName: "Hanako Owner",
+          petId,
+          petName: "Mugi",
+          scheduledAt,
+        }}
+        auth={{ user: { userId: adminId, role: "Receptionist" } }}
+        errors={{}}
+        flash={{}}
+        veterinarianId={null}
+      />,
+    );
+
+    expect(awaitingPaymentHtml).toContain('aria-label="予約情報"');
+    expect(awaitingPaymentHtml).toContain('aria-label="現在の操作"');
+    expect(awaitingPaymentHtml).toContain("会計待ち");
+    expect(awaitingPaymentHtml).toContain("会計を記録");
+    expect(awaitingPaymentHtml).not.toContain("診察結果を記録");
+    expect(scheduledHtml).toContain("受付する");
+    expect(scheduledHtml).toContain("予約をキャンセル");
+    expect(scheduledHtml).not.toContain("会計を記録");
   });
 });
