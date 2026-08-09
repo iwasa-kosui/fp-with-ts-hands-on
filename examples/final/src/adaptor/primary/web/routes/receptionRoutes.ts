@@ -14,7 +14,7 @@ import type { ListVeterinariansUseCase } from "../../../../useCase/listVeterinar
 import type { RegisterWalkInUseCase } from "../../../../useCase/registerWalkInUseCase.js";
 import type { GetReceptionBoardUseCase } from "../../../../useCase/getReceptionBoardUseCase.js";
 import { withSharedProps } from "../middleware/sharedProps.js";
-import { assertNever, issuesToFieldErrors, respondToUseCaseError, type ValidationError } from "../middleware/useCaseResponse.js";
+import { assertNever, issuesToFieldErrors, publicOperationErrorMessage, respondToUseCaseError, type ValidationError } from "../middleware/useCaseResponse.js";
 import type { AuthenticatedActor, FieldErrors, WebEnvironment } from "../pageProps.js";
 
 const WalkInSchema = z.object({
@@ -112,7 +112,7 @@ export const registerReceptionRoutes = (app: Hono<WebEnvironment>, dependencies:
           case "PetNotFound":
           case "PetOwnerMismatch": return renderWalkIn(context, dependencies, actor.value, { petId: "選択した飼い主に登録されたペットを選んでください。" });
           case "VeterinarianNotFound": return renderWalkIn(context, dependencies, actor.value, { assignedVeterinarianId: "選択した担当獣医師が見つかりません。" });
-          case "VeterinarianScheduleConflict": return renderWalkIn(context, dependencies, actor.value, { assignedVeterinarianId: "選択した時間帯には、この獣医師の別の予約があります。" });
+          case "VeterinarianScheduleConflict": return renderWalkIn(context, dependencies, actor.value, { assignedVeterinarianId: publicOperationErrorMessage("VeterinarianScheduleConflict") });
           case "IdentityGenerationFailed":
           case "RepositoryError": return respondToUseCaseError(context, { kind: "RepositoryError" });
           default: return assertNever(error);

@@ -4,7 +4,7 @@ import type { CSSProperties, ReactElement } from "react";
 import { BusinessDate } from "../../../../domain/appointment/businessDate.js";
 import type { CalendarView } from "../../../../useCase/listAppointmentCalendarUseCase.js";
 import type { AppointmentCalendarItem } from "../../../../useCase/query/appointmentCalendarReader.js";
-import { appointmentPresentation } from "./appointmentPresentation.js";
+import { appointmentPresentation, bookingKindPresentation } from "./appointmentPresentation.js";
 import {
   layoutAppointmentCards,
   partitionCalendarAppointments,
@@ -55,7 +55,7 @@ const Card = ({ layout }: Readonly<{ layout: CalendarCardLayout }>): ReactElemen
   };
   return <Link aria-label={`${timeRange(appointment)}、${appointment.petName}、${service}、${veterinarian}、${status.label}、${settlement}`} className="appointment-calendar__card" href={`/appointments/${appointment.appointmentId}`} style={placement}>
     <span className="appointment-calendar__card-row">{timeRange(appointment)}（{appointment.durationMinutes}分）・{appointment.petName}</span>
-    <span className="appointment-calendar__card-row">{service}・{appointment.bookingKind === "Reserved" ? "予約" : "飛び込み"}・{veterinarian}</span>
+    <span className="appointment-calendar__card-row">{service}・{bookingKindPresentation(appointment.bookingKind)}・{veterinarian}</span>
     <span className="appointment-calendar__card-row">{status.label}・{settlement}</span>
   </Link>;
 };

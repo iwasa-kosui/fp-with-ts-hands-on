@@ -4,10 +4,10 @@ import type { VeterinarianId } from "../../../../../domain/appointment/veterinar
 import { buttonClassName } from "../../components/Button.js";
 import {
   appointmentPresentation,
-  bookingKindLabel,
-  serviceLabel,
-  settlementLabel,
+  bookingKindPresentation,
 } from "../../components/appointmentPresentation.js";
+import { servicePresentation } from "../../components/servicePresentation.js";
+import { settlementDetailPresentation } from "../../components/settlementPresentation.js";
 import { ErrorSummary, FieldError } from "../../components/FormErrors.js";
 import { InlineAlert, Card } from "../../components/Surface.js";
 import { StatusBadge } from "../../components/StatusBadge.js";
@@ -166,12 +166,12 @@ export default function AppointmentShow({
               <dt>終了日時</dt><dd>{appointment.scheduledEndsAt}</dd>
               <dt>飼い主</dt><dd>{appointment.ownerName}</dd>
               <dt>ペット</dt><dd>{appointment.petName}</dd>
-              <dt>診療メニュー</dt><dd>{serviceLabel(appointment.serviceCode)}</dd>
-              <dt>予約種別</dt><dd>{bookingKindLabel(appointment.bookingKind)}</dd>
+              <dt>診療メニュー</dt><dd>{servicePresentation(appointment.serviceCode)}</dd>
+              <dt>予約種別</dt><dd>{bookingKindPresentation(appointment.bookingKind)}</dd>
               <dt>担当獣医師</dt><dd>{appointment.assignedVeterinarianName}</dd>
               <dt>来院理由</dt><dd>{appointment.visitReason}</dd>
               <dt>受付メモ</dt><dd>{appointment.receptionNote ?? "なし"}</dd>
-              <dt>支払状態</dt><dd>{settlementLabel(appointment.settlement)}</dd>
+              <dt>支払状態</dt><dd>{settlementDetailPresentation(appointment.settlement)}</dd>
               {stateDetails(appointment)}
             </dl>
           </Card>

@@ -6,6 +6,7 @@ import { buttonClassName } from "../../components/Button.js";
 import { DataTable } from "../../components/DataTable.js";
 import { ErrorSummary } from "../../components/FormErrors.js";
 import { EmptyState, InlineAlert } from "../../components/Surface.js";
+import { rolePresentation } from "../../components/rolePresentation.js";
 import Layout from "../Layout.js";
 
 type UsersIndexProps = SharedPageProps &
@@ -50,7 +51,7 @@ export default function UsersIndex({ auth, errors, users }: UsersIndexProps) {
               <tr key={user.userId}>
                 <td>{user.name}</td>
                 <td>{user.email}</td>
-                <td>{user.role}</td>
+                <td>{rolePresentation(user.role)}</td>
                 <td>
                   <div className="table-actions">
                     <Link className={buttonClassName("secondary")} href={`/users/${user.userId}/edit`}>編集</Link>

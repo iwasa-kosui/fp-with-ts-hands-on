@@ -579,6 +579,7 @@ describe("Inertia security boundary", () => {
     );
     expect(rejectedReveal.status).toBe(403);
     const rejectedBody = await rejectedReveal.text();
+    expect(rejectedBody).toBe("この監査情報を表示する権限がありません。");
     for (const value of forbiddenValues) expect(rejectedBody).not.toContain(value);
 
     const examResultEvent = events.props.events.find(

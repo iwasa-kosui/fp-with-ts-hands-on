@@ -15,6 +15,8 @@ import Dashboard from "../../src/adaptor/primary/web/pages/Dashboard.js";
 import EventsIndex, {
   SensitiveAuditPayloadDetail,
 } from "../../src/adaptor/primary/web/pages/Events/Index.js";
+import UserForm from "../../src/adaptor/primary/web/pages/Users/Form.js";
+import UsersIndex from "../../src/adaptor/primary/web/pages/Users/Index.js";
 import FollowUpsIndex from "../../src/adaptor/primary/web/pages/FollowUps/Index.js";
 import Login from "../../src/adaptor/primary/web/pages/Login.js";
 import Setup from "../../src/adaptor/primary/web/pages/Setup.js";
@@ -187,6 +189,52 @@ describe("Operator Console shell", () => {
     expect(html).toContain('aria-current="page"');
     expect(html).not.toContain('href="/users"');
     expect(html).not.toContain('href="/events"');
+  });
+
+  test("keeps internal appointment and role codes out of visible Japanese operator text", () => {
+    const roles = ["Admin", "Receptionist", "Veterinarian"] as const;
+    const users = roles.map((role, index) => ({
+      userId: UserId.schema.parse(`76000000-0000-4000-8000-00000000000${index + 2}`),
+      role,
+      email: `${role.toLowerCase()}@example.test`,
+      name: `${role} user`,
+    }));
+    const html = [
+      ...roles.map((role) => renderToString(
+        <Layout title="予約詳細" user={{ userId: adminId, role }}>
+          <p>業務画面</p>
+        </Layout>,
+      )),
+      renderToString(
+        <UsersIndex
+          auth={{ user: { userId: adminId, role: "Admin" } }}
+          errors={{}}
+          flash={{}}
+          users={users}
+        />,
+      ),
+      renderToString(
+        <UserForm
+          auth={{ user: { userId: adminId, role: "Admin" } }}
+          errors={{}}
+          flash={{}}
+          mode="create"
+          user={null}
+        />,
+      ),
+    ].join("\n");
+
+    for (const internalCode of [
+      "Scheduled", "CheckedIn", "InExamination", "AwaitingPayment",
+      "Paid", "Canceled", "Admin", "Receptionist", "Veterinarian",
+      "GeneralConsultation", "FollowUpVisit", "Vaccination",
+      "ExaminationOrProcedure", "Reserved", "WalkIn",
+    ]) {
+      expect(html).not.toContain(`>${internalCode}<`);
+    }
+    for (const label of ["管理者", "受付", "獣医師"]) {
+      expect(html).toContain(label);
+    }
   });
 
   test("does not render a dashboard booking action without a server-projected capability", () => {
@@ -496,7 +544,7 @@ describe("Operator Console shell", () => {
           aggregateId: appointmentId,
           aggregateName: "Appointment",
           eventId: EventId.schema.parse("78000000-0000-4000-8000-000000000001"),
-          eventName: "appointment.payment-recorded",
+          eventName: "appointment.final-settlement-recorded",
           occurredAt: Timestamp.schema.parse("2026-08-09T03:00:00.000Z"),
           payloadSensitivity: "Sensitive",
         }]}

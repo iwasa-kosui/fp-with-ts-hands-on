@@ -3,6 +3,7 @@ import { useState, type ReactElement, type ReactNode } from "react";
 
 import type { AuthenticatedUserView } from "../pageProps.js";
 import { Icon, type IconName } from "./Icon.js";
+import { rolePresentation } from "./rolePresentation.js";
 
 export type NavigationKey =
   | "dashboard"
@@ -103,6 +104,7 @@ export const AppShell = ({
       </div>
     );
   }
+  const roleLabel = rolePresentation(user.role);
 
   return (
     <div
@@ -161,7 +163,7 @@ export const AppShell = ({
             ))}
         </nav>
         <div className="app-sidebar__user">
-          <span className="role">{user.role}</span>
+          <span className="role">{roleLabel}</span>
           <Link
             aria-label="ログアウト"
             as="button"
@@ -178,7 +180,7 @@ export const AppShell = ({
       <main className="app-content app-main">
         <header className="top-bar">
           <p>{title}</p>
-          <span>{user.role}</span>
+          <span>{roleLabel}</span>
         </header>
         <div className="app-content__inner">{children}</div>
       </main>

@@ -3,7 +3,7 @@ import type { FormEvent, ReactElement } from "react";
 
 import type { ReceptionBoardRow } from "../../../../useCase/query/receptionBoardReader.js";
 import { buttonClassName } from "./Button.js";
-import { appointmentPresentation } from "./appointmentPresentation.js";
+import { appointmentPresentation, bookingKindPresentation } from "./appointmentPresentation.js";
 import { servicePresentation } from "./servicePresentation.js";
 import { settlementPresentation } from "./settlementPresentation.js";
 import { StatusBadge } from "./StatusBadge.js";
@@ -52,7 +52,7 @@ export const ReceptionRow = ({ row, onSubmittingChange = () => undefined }: Prop
       : status.label;
   return <article className="reception-row">
     <dl className="reception-row__details">
-      <div><dt>予約時刻</dt><dd>{row.bookingKind === "WalkIn" ? "飛び込み" : jstTime(row.scheduledAt)}</dd></div>
+      <div><dt>予約時刻</dt><dd>{row.bookingKind === "WalkIn" ? bookingKindPresentation(row.bookingKind) : jstTime(row.scheduledAt)}</dd></div>
       <div><dt>受付時刻</dt><dd>{jstTime(row.checkedInAt)}</dd></div>
       <div><dt>待ち時間</dt><dd>{row.waitingMinutes === null ? "—" : `${row.waitingMinutes}分`}</dd></div>
       <div><dt>飼い主</dt><dd>{row.ownerName}</dd></div>
@@ -60,7 +60,7 @@ export const ReceptionRow = ({ row, onSubmittingChange = () => undefined }: Prop
       <div className="reception-row__note"><dt>受付メモ</dt><dd>{row.receptionNote ?? "なし"}</dd></div>
       <div><dt>診療メニュー</dt><dd>{servicePresentation(row.serviceCode)}</dd></div>
       <div><dt>担当医</dt><dd>{row.assignedVeterinarianName ?? "未定"}</dd></div>
-      <div><dt>予約種別</dt><dd>{row.bookingKind === "Reserved" ? "予約" : "飛び込み"}</dd></div>
+      <div><dt>予約種別</dt><dd>{bookingKindPresentation(row.bookingKind)}</dd></div>
       <div><dt>診療状態</dt><dd><StatusBadge tone={status.tone}>{statusLabel}</StatusBadge></dd></div>
       <div><dt>支払状態</dt><dd>{settlementPresentation(row.settlementStatus)}</dd></div>
     </dl>

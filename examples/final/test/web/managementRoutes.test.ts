@@ -303,7 +303,7 @@ describe("management route boundary", () => {
       );
 
       expect(response.status).toBe(403);
-      expect(await response.text()).toBe("Forbidden");
+      expect(await response.text()).toBe("この監査情報を表示する権限がありません。");
       expect(harness.database.select().from(domainEventsTable).all())
         .toEqual(eventsBefore);
     },

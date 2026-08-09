@@ -39,6 +39,7 @@ import { withSharedProps } from "../middleware/sharedProps.js";
 import {
   assertNever,
   issuesToFieldErrors,
+  publicOperationErrorMessage,
   respondToUseCaseError,
   type ValidationError,
 } from "../middleware/useCaseResponse.js";
@@ -118,12 +119,14 @@ const AppointmentDetailErrorSchema = z.enum([
   "invalid-state",
   "pet-mismatch",
   "appointment-conflict",
+  "appointment-not-editable",
   "schedule-conflict",
   "prepaid-fields",
   "deposit-not-allowed",
   "deposit-already-received",
   "veterinarian-required",
   "veterinarian-mismatch",
+  "settlement-conflict",
 ]);
 const deletedLabel = "削除済み";
 
@@ -356,20 +359,24 @@ const detailErrors = (raw: string | undefined): FieldErrors => {
       };
     case "appointment-conflict":
       return {
-        form: "別の端末で予約が更新されました。最新の内容を確認してください。",
+        form: publicOperationErrorMessage("StaleAppointmentVersion"),
       };
+    case "appointment-not-editable":
+      return { form: publicOperationErrorMessage("InvalidAppointmentStateEdit") };
     case "schedule-conflict":
-      return { form: "選択した時間帯には、この獣医師の別の予約があります。" };
+      return { form: publicOperationErrorMessage("VeterinarianScheduleConflict") };
     case "prepaid-fields":
       return { form: "前受金の登録後は、ペットと診療メニューを変更できません。" };
     case "deposit-not-allowed":
-      return { form: "事前会計は予防接種の予約だけで利用できます。" };
+      return { form: publicOperationErrorMessage("DepositNotAllowed") };
     case "deposit-already-received":
-      return { form: "この予約の前受金はすでに登録されています。" };
+      return { form: publicOperationErrorMessage("DepositAlreadyReceived") };
     case "veterinarian-required":
       return { veterinarianId: "担当獣医師を選択してください。" };
     case "veterinarian-mismatch":
-      return { form: "この予約を診察開始できるのは、担当獣医師または管理者です。" };
+      return { form: publicOperationErrorMessage("UnassignedOrDifferentVeterinarian") };
+    case "settlement-conflict":
+      return { form: publicOperationErrorMessage("SettlementConflict") };
     default:
       return assertNever(code);
   }
@@ -539,7 +546,7 @@ const renderEdit = async (
     }
   }
   if (appointment.value.appointment.kind !== "Scheduled") {
-    return invalidState(context, appointmentId);
+    return context.redirect(`${detailUrl(appointmentId)}?error=appointment-not-editable`, 303);
   }
   const options = await loadBookingOptions(context, dependencies);
   if (options.isErr()) return options.error;
@@ -612,7 +619,7 @@ export const registerAppointmentRoutes = (
               });
             case "VeterinarianScheduleConflict":
               return renderBooking(context, dependencies, {
-                assignedVeterinarianId: "選択した時間帯には、この獣医師の別の予約があります。",
+                assignedVeterinarianId: publicOperationErrorMessage("VeterinarianScheduleConflict"),
               });
             case "StaleAppointmentVersion":
               return context.redirect(`${detailUrl(error.appointmentId)}?error=appointment-conflict`, 303);
@@ -660,7 +667,7 @@ export const registerAppointmentRoutes = (
         switch (error.kind) {
           case "Unauthorized": return respondToUseCaseError(context, { kind: "Unauthorized" });
           case "AppointmentNotFound": return respondToUseCaseError(context, { kind: "NotFound" });
-          case "InvalidAppointmentState": return invalidState(context, appointmentId.value);
+          case "InvalidAppointmentState": return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-not-editable`, 303);
           case "StaleAppointmentVersion": return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
           case "VeterinarianScheduleConflict": return context.redirect(`${detailUrl(appointmentId.value)}?error=schedule-conflict`, 303);
           case "PrepaidAppointmentImmutableFieldsChanged": return context.redirect(`${detailUrl(appointmentId.value)}?error=prepaid-fields`, 303);
@@ -711,13 +718,21 @@ export const registerAppointmentRoutes = (
 
   app.get("/appointments/:appointmentId", (context) => {
     const parsed = parseAppointmentId(context, context.req.param("appointmentId"));
+    const rawError = context.req.query("error");
+    if (
+      parsed.isOk() &&
+      rawError !== undefined &&
+      !AppointmentDetailErrorSchema.safeParse(rawError).success
+    ) {
+      return context.redirect(detailUrl(parsed.value), 303);
+    }
     return parsed.match(
       (appointmentId) =>
         renderAppointment(
           context,
           dependencies,
           appointmentId,
-          detailErrors(context.req.query("error")),
+          detailErrors(rawError),
         ),
       (response) => response,
     );
@@ -921,7 +936,7 @@ export const registerAppointmentRoutes = (
             case "InvalidAppointmentState":
               return invalidState(context, appointmentId.value);
             case "StaleAppointmentVersion":
-              return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
+              return context.redirect(`${detailUrl(appointmentId.value)}?error=settlement-conflict`, 303);
             case "IdentityGenerationFailed":
             case "RepositoryError":
               return repositoryFailure(context);

@@ -927,7 +927,11 @@ describe("clinic workflow routes", () => {
       );
       expect(response.status, mutation.suffix).toBe(303);
       expect(response.headers.get("location"), mutation.suffix).toBe(
-        `/appointments/${appointment.appointmentId}?error=appointment-conflict`,
+        `/appointments/${appointment.appointmentId}?error=${
+          mutation.suffix === "payment"
+            ? "settlement-conflict"
+            : "appointment-conflict"
+        }`,
       );
       expect(harness.database.select().from(appointmentsTable).get()).toEqual(
         projectionBefore,
@@ -940,6 +944,89 @@ describe("clinic workflow routes", () => {
       ).toEqual(sensitiveBefore);
     }
   });
+
++  test("maps only allowlisted appointment errors to Japanese text without reflecting query or repository details", async () => {
+    const harness = createHarness();
+    const adminCookie = await setup(harness);
+    const { owner, pet } = await createOwnerAndPet(harness, adminCookie);
+    expect((await post(harness, "/appointments", {
+      ownerId: owner.ownerId,
+      petId: pet.petId,
+      scheduledAt: "2026-08-10T05:00:00.000Z",
+      serviceCode: "Vaccination",
+      durationMinutes: "15",
+      assignedVeterinarianId: "",
+      reason: "allowlisted errors",
+    }, adminCookie)).status).toBe(303);
+    const appointment = harness.database.select().from(appointmentsTable).get();
+    if (appointment === undefined) throw new TypeError("appointment missing");
+
+    const expectedMessages = [
+      ["schedule-conflict", "選択した時間帯には、この獣医師の別の予約があります。"],
+      ["appointment-conflict", "別の端末で予約が更新されました。最新の内容を確認してください。"],
+      ["appointment-not-editable", "受付後の予約内容は変更できません。"],
+      ["deposit-not-allowed", "事前会計は予防接種の予約だけで利用できます。"],
+      ["deposit-already-received", "この予約の前受金はすでに登録されています。"],
+      ["veterinarian-mismatch", "この予約を診察開始できるのは、担当獣医師または管理者です。"],
+      ["settlement-conflict", "会計情報が更新されています。金額を確認し直してください。"],
+    ] as const;
+    for (const [code, message] of expectedMessages) {
+      const response = await page(
+        harness,
+        `/appointments/${appointment.appointmentId}?error=${code}`,
+        adminCookie,
+      );
+      await expect(response.json(), code).resolves.toMatchObject({
+        props: { errors: { form: message } },
+      });
+    }
+
+    const privateQueryValue = "PII_SHOULD_NOT_BE_REFLECTED";
+    const rejectedQuery = await page(
+      harness,
+      `/appointments/${appointment.appointmentId}?error=${privateQueryValue}`,
+      adminCookie,
+    );
+    expect(await rejectedQuery.text()).not.toContain(privateQueryValue);
+
+    expect((await post(
+      harness,
+      `/appointments/${appointment.appointmentId}/check-in`,
+      { expectedVersion: "1" },
+      adminCookie,
+    )).status).toBe(303);
+    const noLongerEditable = await page(
+      harness,
+      `/appointments/${appointment.appointmentId}/edit`,
+      adminCookie,
+    );
+    expect(noLongerEditable.status).toBe(303);
+    expect(noLongerEditable.headers.get("location")).toBe(
+      `/appointments/${appointment.appointmentId}?error=appointment-not-editable`,
+    );
+
+    const repositoryApp = createApp({
+      ...createApplicationDependencies(harness.database, {
+        clock: harness.clock,
+        isProduction: false,
+      }),
+      getAppointment: {
+        run: () => errAsync({
+          kind: "RepositoryError" as const,
+          operation: "PII_SHOULD_NOT_BE_IN_REPOSITORY_RESPONSE",
+        }),
+      },
+    });
+    const repositoryFailure = await repositoryApp.request(
+      `/appointments/${appointment.appointmentId}`,
+      { headers: { ...inertiaHeaders, Cookie: adminCookie } },
+    );
+    expect(repositoryFailure.status).toBe(500);
+    expect(await repositoryFailure.text()).toBe(
+      "処理を完了できませんでした。時間をおいて再度お試しください。",
+    );
+  });
+
 
   test("requests follow-ups with fresh event identity and retains deleted relation labels", async () => {
     const harness = createHarness();

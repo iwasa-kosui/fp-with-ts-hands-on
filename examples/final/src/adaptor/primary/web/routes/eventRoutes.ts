@@ -58,7 +58,7 @@ export const registerEventRoutes = (
       return respondToUseCaseError(context, { kind: "Unauthenticated" });
     }
     if (actor.user.kind !== "Admin") {
-      return respondToUseCaseError(context, { kind: "Unauthorized" });
+      return respondToUseCaseError(context, { kind: "UnauthorizedDisclosure" });
     }
     const targetEventId = EventId.parse(context.req.param("eventId"));
     if (targetEventId.isErr()) {
@@ -74,7 +74,7 @@ export const registerEventRoutes = (
         (error) => {
           switch (error.kind) {
             case "Unauthorized":
-              return respondToUseCaseError(context, { kind: "Unauthorized" });
+              return respondToUseCaseError(context, { kind: "UnauthorizedDisclosure" });
             case "AuditEventNotFound":
               return respondToUseCaseError(context, { kind: "NotFound" });
             case "AuditPayloadNotSensitive":

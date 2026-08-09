@@ -7,6 +7,7 @@ import { buttonClassName } from "../../components/Button.js";
 import { ErrorSummary } from "../../components/FormErrors.js";
 import { FormField } from "../../components/FormField.js";
 import { Card } from "../../components/Surface.js";
+import { rolePresentation } from "../../components/rolePresentation.js";
 import Layout from "../Layout.js";
 
 type UserFormProps = SharedPageProps &
@@ -89,9 +90,9 @@ export default function UserForm({ auth, errors, mode, user }: UserFormProps) {
           onChange={(event) => setRole(event.target.value)}
           value={profile.data.role}
         >
-          <option value="Admin">Admin</option>
-          <option value="Receptionist">Receptionist</option>
-          <option value="Veterinarian">Veterinarian</option>
+          <option value="Admin">{rolePresentation("Admin")}</option>
+          <option value="Receptionist">{rolePresentation("Receptionist")}</option>
+          <option value="Veterinarian">{rolePresentation("Veterinarian")}</option>
         </select>
       </FormField>
     </>
