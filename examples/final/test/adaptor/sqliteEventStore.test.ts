@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Worker } from "node:worker_threads";
 
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
 import {
@@ -71,6 +72,7 @@ const ids = {
   veterinarian: VeterinarianId.schema.parse("00000000-0000-4000-8000-000000000008"),
   otherAppointment: AppointmentId.schema.parse("00000000-0000-4000-8000-000000000009"),
   otherPet: PetId.schema.parse("00000000-0000-4000-8000-000000000010"),
+  otherVeterinarian: VeterinarianId.schema.parse("00000000-0000-4000-8000-000000000011"),
 } as const;
 
 const eventContext = (sequence: number): EventContext => ({
@@ -83,6 +85,44 @@ const unwrap = <T>(result: { isOk: () => boolean; _unsafeUnwrap: () => T }): T =
   expect(result.isOk()).toBe(true);
   return result._unsafeUnwrap();
 };
+
+const sqliteLockWorkerSource = String.raw`
+  const Database = require("better-sqlite3");
+  const { parentPort, workerData } = require("node:worker_threads");
+
+  const database = new Database(workerData.databasePath);
+  const releaseSignal = new Int32Array(workerData.releaseSignal);
+  database.pragma("foreign_keys = ON");
+  database.pragma("busy_timeout = 5000");
+  database.exec("BEGIN IMMEDIATE");
+  database.prepare("INSERT INTO appointments (appointment_id, status, owner_id, pet_id, scheduled_at, duration_minutes, service_code, booking_kind, assigned_veterinarian_id, reception_note, settlement_status, deposit_amount, version, state) VALUES (@appointmentId, @status, @ownerId, @petId, @scheduledAt, @durationMinutes, @serviceCode, @bookingKind, @assignedVeterinarianId, @receptionNote, @settlementStatus, @depositAmount, @version, @state)").run(workerData.appointment);
+  database.prepare("INSERT INTO domain_events (event_id, aggregate_id, aggregate_name, event_name, occurred_at, actor_user_id, payload_sensitivity) VALUES (@eventId, @aggregateId, @aggregateName, @eventName, @occurredAt, @actorUserId, @payloadSensitivity)").run(workerData.eventMetadata);
+  database.prepare("INSERT INTO domain_event_sensitive_payloads (event_id, aggregate_state, event_payload) VALUES (@eventId, @aggregateState, @eventPayload)").run(workerData.sensitivePayload);
+
+  parentPort.postMessage("locked");
+  Atomics.wait(releaseSignal, 0, 0);
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 300);
+  database.exec("COMMIT");
+  parentPort.postMessage("committed");
+  database.close();
+`;
+
+const waitForWorkerMessage = (
+  worker: Worker,
+  expectedMessage: "locked" | "committed",
+): Promise<void> => new Promise((resolve, reject) => {
+  const onMessage = (message: unknown): void => {
+    if (message !== expectedMessage) return;
+    worker.off("error", onError);
+    resolve();
+  };
+  const onError = (error: Error): void => {
+    worker.off("message", onMessage);
+    reject(error);
+  };
+  worker.on("message", onMessage);
+  worker.once("error", onError);
+});
 
 const user = (name: string): Admin => ({
   kind: "Admin",
@@ -701,7 +741,7 @@ describe("SQLite event stores", () => {
     expect(await db.select().from(domainEventsTable)).toHaveLength(3);
   });
 
-  test("enforces half-open veterinarian overlap while allowing null assignment and self updates", async () => {
+  test("enforces half-open veterinarian overlap while allowing null or different assignments and self updates", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
     const store = createAppointmentEventStore(db);
@@ -737,8 +777,14 @@ describe("SQLite event stores", () => {
     expect((await store.store(bookAt(boundaryId, "2026-08-10T10:30:00.000Z", ids.veterinarian, 48))).isOk()).toBe(true);
     const unassignedId = AppointmentId.schema.parse("00000000-0000-4000-8000-000000000013");
     expect((await store.store(bookAt(unassignedId, "2026-08-10T10:15:00.000Z", null, 49))).isOk()).toBe(true);
+    const existingUnassignedId = AppointmentId.schema.parse("00000000-0000-4000-8000-000000000014");
+    expect((await store.store(bookAt(existingUnassignedId, "2026-08-10T11:00:00.000Z", null, 50))).isOk()).toBe(true);
+    const assignedAgainstUnassignedId = AppointmentId.schema.parse("00000000-0000-4000-8000-000000000015");
+    expect((await store.store(bookAt(assignedAgainstUnassignedId, "2026-08-10T11:15:00.000Z", ids.veterinarian, 51))).isOk()).toBe(true);
+    const differentlyAssignedId = AppointmentId.schema.parse("00000000-0000-4000-8000-000000000016");
+    expect((await store.store(bookAt(differentlyAssignedId, "2026-08-10T10:15:00.000Z", ids.otherVeterinarian, 52))).isOk()).toBe(true);
 
-    const selfUpdate = Appointment.update(eventContext(50))(existing.aggregateState, {
+    const selfUpdate = Appointment.update(eventContext(53))(existing.aggregateState, {
       ownerId: ids.owner,
       petId: ids.pet,
       scheduledAt: Timestamp.schema.parse("2026-08-10T10:10:00.000Z"),
@@ -795,14 +841,13 @@ describe("SQLite event stores", () => {
     if (blocking) expect(result._unsafeUnwrapErr()).toMatchObject({ kind: "VeterinarianScheduleConflict" });
   });
 
-  test("allows only one overlapping booking from two SQLite connections", async () => {
+  test("waits on a real SQLite write lock and rechecks overlap before persisting the second booking", async () => {
     const directory = mkdtempSync(join(tmpdir(), "clinic-final-overlap-"));
     const databasePath = join(directory, "clinic.sqlite");
     try {
       const firstDb = createSqliteDatabase(databasePath);
       migrateDatabase(firstDb);
       const secondDb = createSqliteDatabase(databasePath);
-      const firstStore = createAppointmentEventStore(firstDb);
       const secondStore = createAppointmentEventStore(secondDb);
       const booked = (appointmentId: AppointmentId, sequence: number) =>
         Appointment.book(eventContext(sequence))({
@@ -819,16 +864,77 @@ describe("SQLite event stores", () => {
           settlement: { kind: "NoPayment" },
         });
 
-      const [first, second] = await Promise.all([
-        firstStore.store(booked(ids.appointment, 53)),
-        secondStore.store(booked(ids.otherAppointment, 54)),
-      ]);
-      expect([first, second].filter((result) => result.isOk())).toHaveLength(1);
-      expect([first, second].find((result) => result.isErr())?._unsafeUnwrapErr()).toMatchObject({
-        kind: "VeterinarianScheduleConflict",
+      const firstBooked = booked(ids.appointment, 54);
+      const secondBooked = booked(ids.otherAppointment, 55);
+      const firstRecord = toEventRecord(firstBooked);
+      const firstState = firstBooked.aggregateState;
+      const releaseSignalBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
+      const releaseSignal = new Int32Array(releaseSignalBuffer);
+      const worker = new Worker(sqliteLockWorkerSource, {
+        eval: true,
+        workerData: {
+          databasePath,
+          releaseSignal: releaseSignalBuffer,
+          appointment: {
+            appointmentId: firstState.appointmentId,
+            status: firstState.kind,
+            ownerId: firstState.ownerId,
+            petId: firstState.petId,
+            scheduledAt: firstState.scheduledAt,
+            durationMinutes: firstState.durationMinutes,
+            serviceCode: firstState.serviceCode,
+            bookingKind: firstState.bookingKind,
+            assignedVeterinarianId: firstState.assignedVeterinarianId,
+            receptionNote: null,
+            settlementStatus: firstState.settlement.kind,
+            depositAmount: null,
+            version: firstState.version,
+            state: JSON.stringify({
+              ...firstState,
+              visitReason: firstState.visitReason.unwrap(),
+            }),
+          },
+          eventMetadata: firstRecord.metadata,
+          sensitivePayload: {
+            eventId: firstRecord.metadata.eventId,
+            aggregateState: JSON.stringify(firstRecord.aggregateState),
+            eventPayload: JSON.stringify(firstRecord.eventPayload),
+          },
+        },
       });
-      expect(firstDb.select().from(appointmentsTable).all()).toHaveLength(1);
-      expect(firstDb.select().from(domainEventsTable).all()).toHaveLength(1);
+      const locked = waitForWorkerMessage(worker, "locked");
+      const committed = waitForWorkerMessage(worker, "committed");
+      await locked;
+
+      const waitStartedAt = performance.now();
+      Atomics.store(releaseSignal, 0, 1);
+      Atomics.notify(releaseSignal, 0);
+      const second = await secondStore.store(secondBooked);
+      const waitDurationMilliseconds = performance.now() - waitStartedAt;
+      await committed;
+
+      expect(second._unsafeUnwrapErr()).toEqual({
+        kind: "VeterinarianScheduleConflict",
+        appointmentId: ids.otherAppointment,
+        conflictingAppointmentId: ids.appointment,
+      });
+      expect(waitDurationMilliseconds).toBeGreaterThanOrEqual(200);
+      expect(firstDb.select().from(appointmentsTable).all()).toEqual([
+        expect.objectContaining({ appointmentId: ids.appointment }),
+      ]);
+      expect(firstDb.select().from(domainEventsTable).all()).toEqual([
+        expect.objectContaining({
+          eventId: firstBooked.eventId,
+          aggregateId: ids.appointment,
+        }),
+      ]);
+      expect(firstDb.select().from(domainEventPayloadsTable).all()).toHaveLength(0);
+      expect(firstDb.select().from(domainEventSensitivePayloadsTable).all()).toEqual([
+        expect.objectContaining({ eventId: firstBooked.eventId }),
+      ]);
+      expect(firstDb.select().from(appointmentsTable).all().filter(({ appointmentId }) => appointmentId === ids.otherAppointment)).toHaveLength(0);
+      expect(firstDb.select().from(domainEventsTable).all().filter(({ aggregateId }) => aggregateId === ids.otherAppointment)).toHaveLength(0);
+      expect(firstDb.select().from(domainEventSensitivePayloadsTable).all().filter(({ eventId }) => eventId === secondBooked.eventId)).toHaveLength(0);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
