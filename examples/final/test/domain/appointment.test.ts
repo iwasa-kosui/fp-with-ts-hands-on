@@ -13,6 +13,11 @@ import type { EventContext } from "../../src/domain/aggregate/eventContext.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
 import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
+import {
+  Settlement,
+  type DepositReceived,
+  type NoPayment,
+} from "../../src/domain/appointment/settlementState.js";
 import { PetId } from "../../src/domain/pet/petId.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
@@ -36,6 +41,13 @@ const visitReason = AppointmentReason.schema.parse("skin check");
 const diagnosis = Diagnosis.schema.parse("dermatitis");
 const treatment = Treatment.schema.parse("ointment");
 const cancellationReason = CancellationReason.schema.parse("owner request");
+const settledAt = Timestamp.schema.parse("2026-08-30T07:10:00.000Z");
+const noPayment = { kind: "NoPayment" } as const satisfies NoPayment;
+const receivedDeposit = (depositAmount: number): DepositReceived => ({
+  kind: "DepositReceived",
+  depositAmount: PaymentAmount.schema.parse(depositAmount),
+  receivedAt: Timestamp.schema.parse("2026-08-29T06:30:00.000Z"),
+});
 
 const context = (eventId: string, occurredAt: string): EventContext => ({
   eventId: EventId.schema.parse(eventId),
@@ -112,6 +124,26 @@ const rawPaymentInput = {
 Appointment.recordPayment(paymentContext)(awaitingPayment.aggregateState, rawPaymentInput);
 
 describe("appointment aggregate", () => {
+  test("settles a payment without a deposit as the additional payment", () => {
+    expect(Settlement.settle(noPayment, PaymentAmount.schema.parse(5000), settledAt)).toMatchObject({
+      kind: "Settled",
+      depositAmount: 0,
+      additionalPaymentAmount: 5000,
+      refundAmount: 0,
+    });
+  });
+
+  test("settles an excess deposit as a refund", () => {
+    expect(
+      Settlement.settle(receivedDeposit(7000), PaymentAmount.schema.parse(5000), settledAt),
+    ).toMatchObject({
+      kind: "Settled",
+      depositAmount: 7000,
+      additionalPaymentAmount: 0,
+      refundAmount: 2000,
+    });
+  });
+
   test("keeps sensitive clinical values nominally distinct", () => {
     const examItem = ExamResultItem.schema.parse("skin observation");
     const acceptsAppointmentReason = (_value: typeof visitReason): void => undefined;
