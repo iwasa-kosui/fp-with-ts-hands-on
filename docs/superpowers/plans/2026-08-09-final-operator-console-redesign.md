@@ -98,7 +98,7 @@ const adminHtml = renderToString(
   </Layout>,
 );
 
-expect(adminHtml).toContain('class="app-sidebar"');
+expect(adminHtml).toContain('aria-label="アプリケーションサイドバー"');
 expect(adminHtml).toContain('aria-current="page"');
 expect(adminHtml).toContain('aria-label="メインナビゲーション"');
 expect(adminHtml).toContain('href="/events"');
@@ -201,16 +201,15 @@ git push origin codex/feat-final-hono-inertia-drizzle
 - [ ] **Step 1: auth card と field relation の failing assertions を追加する**
 
 ```tsx
-expect(loginHtml).toContain('class="auth-shell"');
-expect(loginHtml).toContain('class="auth-card"');
-expect(loginHtml).toContain('class="form-field"');
+expect(loginHtml).toContain('aria-label="ログイン"');
+expect(loginHtml).toContain("関数型どうぶつ病院");
 expect(loginHtml).toContain('autoComplete="email"');
 expect(loginHtml).toContain('aria-describedby="email-error"');
 expect(loginHtml).toContain('role="alert"');
 
 expect(setupHtml).toContain("最初の管理者を登録");
-expect(setupHtml).toContain('class="button button--primary"');
-expect(setupHtml).not.toContain('class="app-sidebar"');
+expect(setupHtml).toContain('aria-label="初期管理者登録"');
+expect(setupHtml).not.toContain('aria-label="メインナビゲーション"');
 ```
 
 - [ ] **Step 2: focused test を RED にする**
@@ -288,18 +287,17 @@ git push origin codex/feat-final-hono-inertia-drizzle
 - [ ] **Step 1: dashboard/list visual hierarchy の failing tests を追加する**
 
 ```tsx
-expect(dashboardHtml).toContain('class="metrics-grid"');
-expect(dashboardHtml).toContain('class="metric-card"');
+expect(dashboardHtml).toContain("<dt>飼い主</dt><dd>1</dd>");
+expect(dashboardHtml).toContain("<dt>ペット</dt><dd>2</dd>");
 expect(dashboardHtml).toContain('aria-label="進行中の予約"');
-expect(dashboardHtml).toContain('class="status-badge status-badge--warning"');
 expect(dashboardHtml).toContain("診察中");
 expect(dashboardHtml).toContain("InExamination");
 expect(dashboardHtml).not.toContain("在庫管理");
 expect(dashboardHtml).not.toContain("システム通知");
 expect(dashboardHtml).not.toContain("検索");
 
-expect(appointmentsHtml).toContain('class="data-table-scroll"');
-expect(appointmentsHtml).toContain('class="button button--primary"');
+expect(appointmentsHtml).toContain('aria-label="予約一覧"');
+expect(appointmentsHtml).toContain('href="/appointments/new"');
 expect(appointmentsHtml).toContain("予約済み");
 expect(appointmentsHtml).toContain("Scheduled");
 ```
@@ -372,19 +370,18 @@ git push origin codex/feat-final-hono-inertia-drizzle
 - [ ] **Step 1: appointment workspace の failing tests を追加する**
 
 ```tsx
-expect(newHtml).toContain('class="form-card"');
-expect(newHtml).toContain('class="form-grid"');
+expect(newHtml).toContain('aria-label="予約登録"');
+expect(newHtml).toContain('href="/appointments"');
 expect(newHtml).toContain('aria-describedby="reason-error"');
 
-expect(awaitingPaymentHtml).toContain('class="appointment-workspace"');
-expect(awaitingPaymentHtml).toContain('class="appointment-summary"');
-expect(awaitingPaymentHtml).toContain('class="workflow-panel"');
+expect(awaitingPaymentHtml).toContain('aria-label="予約情報"');
+expect(awaitingPaymentHtml).toContain('aria-label="現在の操作"');
 expect(awaitingPaymentHtml).toContain("会計待ち");
 expect(awaitingPaymentHtml).toContain("会計を記録");
 expect(awaitingPaymentHtml).not.toContain("診察結果を記録");
 
-expect(scheduledHtml).toContain('class="workflow-primary"');
-expect(scheduledHtml).toContain('class="danger-zone"');
+expect(scheduledHtml).toContain("受付する");
+expect(scheduledHtml).toContain("予約をキャンセル");
 ```
 
 - [ ] **Step 2: focused test を RED にする**
@@ -457,16 +454,16 @@ git push origin codex/feat-final-hono-inertia-drizzle
 
 ```tsx
 expect(usersHtml).toContain('aria-label="ユーザー一覧"');
-expect(usersHtml).toContain('class="table-actions"');
-expect(usersHtml).toContain('class="button button--danger"');
+expect(usersHtml).toContain("編集");
+expect(usersHtml).toContain("削除");
 expect(usersHtml).toContain("監査履歴は保持されます");
 
-expect(userEditHtml).toContain('class="settings-grid"');
+expect(userEditHtml).toContain('aria-label="プロフィール"');
 expect(userEditHtml).toContain("プロフィール");
 expect(userEditHtml).toContain("パスワードを再設定");
 
-expect(ownerHtml).toContain('class="form-card"');
-expect(petHtml).toContain('class="form-card"');
+expect(ownerHtml).toContain('aria-label="飼い主編集"');
+expect(petHtml).toContain('aria-label="ペット編集"');
 ```
 
 - [ ] **Step 2: management page tests を RED にする**
@@ -525,7 +522,7 @@ expect(followUpHtml).toContain("1件を選択中");
 expect(followUpHtml).toContain("未依頼");
 
 expect(eventsHtml).toContain('aria-label="監査イベント一覧"');
-expect(eventsHtml).toContain('class="audit-fields"');
+expect(eventsHtml).toContain("<dl");
 expect(eventsHtml).toContain("監査履歴には個人情報を表示しません");
 expect(eventsHtml).not.toContain("raw payload");
 expect(eventsHtml).not.toContain("<pre");
@@ -581,18 +578,18 @@ git push origin codex/feat-final-hono-inertia-drizzle
 ```tsx
 expect(shellHtml).toContain('aria-controls="app-navigation"');
 expect(shellHtml).toContain('aria-expanded="false"');
-expect(shellHtml).toContain('class="mobile-nav-backdrop"');
-expect(tableHtml).toContain('class="data-table-scroll"');
+expect(shellHtml).toContain('id="app-navigation"');
+expect(tableHtml).toContain('aria-label="予約一覧"');
 expect(errorHtml).toContain('aria-live="polite"');
 ```
 
-CSS text test では `@media (max-width: 1099px)`、`@media (max-width: 767px)`、`@media (prefers-reduced-motion: reduce)`、`:focus-visible`、`.data-table-scroll { overflow-x: auto; }` が存在することを確認する。
+class 名や CSS source text は自動テストしない。breakpoint、focus ring、reduced motion、table overflow は Step 5 の実ブラウザ確認で、利用者が観測する見た目と操作として検証する。
 
 - [ ] **Step 2: responsive contract test を RED にする**
 
 Run: `pnpm --filter @fp-with-ts/clinic-final test -- test/web/operatorConsolePages.test.tsx`
 
-Expected: any missing breakpoint, backdrop, reduced-motion, or focus assertion FAILS.
+Expected: missing navigation relation、accessible table name、または error live region により FAILS.
 
 - [ ] **Step 3: tablet/mobile/reduced-motion CSS を完成する**
 
