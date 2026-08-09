@@ -19,7 +19,12 @@ import { appointmentsTable, domainEventsTable, petsTable } from "../schema.js";
 
 type PetProjectionEvent = PetCreated | PetUpdated;
 type PetEvent = PetProjectionEvent | PetDeleted;
-const activeStatuses = ["Scheduled", "CheckedIn", "InExamination"] as const;
+const activeStatuses = [
+  "Scheduled",
+  "CheckedIn",
+  "InExamination",
+  "AwaitingPayment",
+] as const;
 
 const repositoryError =
   (operation: string) =>

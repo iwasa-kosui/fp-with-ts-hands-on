@@ -604,4 +604,73 @@ describe("SQLite event stores", () => {
     const history = await db.select().from(domainEventsTable);
     expect(history.map(({ eventName }) => eventName)).toContain("pet.deleted");
   });
+
+  test("blocks a stale pet deletion after its appointment reaches AwaitingPayment", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const owner = unwrap(Owner.parse({
+      ownerId: ids.owner,
+      name: "Owner Hanako",
+      email: "owner@example.test",
+      phone: "090-1111-2222",
+    }));
+    const pet = unwrap(Pet.parse({
+      petId: ids.pet,
+      ownerId: ids.owner,
+      name: "Mugi",
+      species: "Cat",
+    }));
+    await createOwnerEventStore(db).store(Owner.create(eventContext(38))(owner));
+    const petStore = createPetEventStore(db);
+    await petStore.store(Pet.create(eventContext(39))(pet));
+    const staleDeletion = Pet.delete(eventContext(40))(pet);
+    const booked = Appointment.book(eventContext(41))({
+      appointmentId: ids.appointment,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
+      reason: AppointmentReason.schema.parse("private reason"),
+    });
+    const checkedIn = Appointment.checkIn(eventContext(42))(
+      booked.aggregateState,
+    );
+    const started = Appointment.startExamination(eventContext(43))(
+      checkedIn.aggregateState,
+      ids.veterinarian,
+    );
+    const awaitingPayment = Appointment.completeExamination(eventContext(44))(
+      started.aggregateState,
+      { examId: ids.exam },
+    );
+    await createAppointmentEventStore(db).store(booked, checkedIn, started);
+    const examResult = ExamResult.create(eventContext(45))(
+      unwrap(ExamResult.parse({
+        examId: ids.exam,
+        petId: ids.pet,
+        collectedAt: "2026-08-08T00:45:00.000Z",
+        items: ["private result"],
+        needsFollowUp: false,
+      })),
+    );
+    await createExaminationCompletionStore(db).store(
+      examResult,
+      awaitingPayment,
+    );
+    expect(
+      db.select().from(appointmentsTable).get()?.status,
+    ).toBe("AwaitingPayment");
+
+    const result = await petStore.store(staleDeletion);
+
+    expect(result.isErr() && result.error).toEqual({
+      kind: "PetHasActiveAppointment",
+      petId: ids.pet,
+    });
+    expect(await db.select().from(petsTable)).toHaveLength(1);
+    expect(
+      (await db.select().from(domainEventsTable)).filter(
+        ({ eventName }) => eventName === "pet.deleted",
+      ),
+    ).toHaveLength(0);
+  });
 });
