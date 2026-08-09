@@ -247,4 +247,74 @@ describe("Operator Console shell", () => {
     expect(scheduledHtml).toContain("予約をキャンセル");
     expect(scheduledHtml).not.toContain("会計を記録");
   });
+
+  test("renders an action that the server authorizes even when the state does not imply it", () => {
+    const html = renderPublicPage(
+      <AppointmentShow
+        actions={{
+          cancel: false,
+          checkIn: false,
+          recordExamResult: false,
+          recordPayment: true,
+          startExamination: false,
+        }}
+        appointment={{
+          appointmentId,
+          kind: "Scheduled",
+          ownerId,
+          ownerName: "Hanako Owner",
+          petId,
+          petName: "Mugi",
+          scheduledAt,
+        }}
+        auth={{ user: { userId: adminId, role: "Receptionist" } }}
+        errors={{}}
+        flash={{}}
+        veterinarianId={null}
+      />,
+    );
+
+    expect(html).toContain('aria-label="現在の操作"');
+    expect(html).toContain("会計を記録");
+    expect(html).not.toContain("受付する");
+    expect(html).not.toContain("予約をキャンセル");
+    expect(html).not.toContain("診察を開始");
+    expect(html).not.toContain("診察結果を記録");
+  });
+
+  test("renders no action form when the server authorizes no actions", () => {
+    const html = renderPublicPage(
+      <AppointmentShow
+        actions={{
+          cancel: false,
+          checkIn: false,
+          recordExamResult: false,
+          recordPayment: false,
+          startExamination: false,
+        }}
+        appointment={{
+          appointmentId,
+          kind: "Scheduled",
+          ownerId,
+          ownerName: "Hanako Owner",
+          petId,
+          petName: "Mugi",
+          scheduledAt,
+        }}
+        auth={{ user: { userId: adminId, role: "Receptionist" } }}
+        errors={{}}
+        flash={{}}
+        veterinarianId={null}
+      />,
+    );
+
+    expect(html).toContain('aria-label="現在の操作"');
+    expect(html).toContain("現在実行できる操作はありません");
+    expect(html).not.toContain("<form");
+    expect(html).not.toContain("受付する");
+    expect(html).not.toContain("予約をキャンセル");
+    expect(html).not.toContain("診察を開始");
+    expect(html).not.toContain("診察結果を記録");
+    expect(html).not.toContain("会計を記録");
+  });
 });
