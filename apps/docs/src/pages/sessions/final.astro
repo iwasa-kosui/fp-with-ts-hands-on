@@ -97,7 +97,7 @@ pnpm --filter @fp-with-ts/clinic-final dev`}
       <li><code>Veterinarian</code>: 診察開始、検査結果登録、電話フォロー依頼</li>
     </ul>
     <p>
-      予約は <code>Scheduled → CheckedIn → InExamination → Paid</code> と進み、現在状態とロールに応じた操作だけが画面に現れます。キャンセル、検査結果、電話フォロー、管理者の監査一覧も同じ app から操作できます。
+      予約は <code>Scheduled → CheckedIn → InExamination → AwaitingPayment → Paid</code> と進みます。診察結果を記録すると会計待ちへ遷移し、獣医師には結果の再登録を出さず、受付・管理者にだけ会計操作を表示します。キャンセル、電話フォロー、管理者の監査一覧も同じ app から操作できます。
     </p>
     <CodeBlock
       language="shell"
@@ -158,6 +158,12 @@ export const StartExaminationUseCase = {
     <p>
       use case は、ドメインが作った typed event を <code>ExaminationStartedStore.store(event)</code> のように event store へ渡します。secondary adaptor の event store は event が持つ状態から projection
       の insert/update/delete を組み立て、同じ event の監査行とともに1つの Drizzle transaction へ保存します。両方を atomic に確定する契約が、現在状態と監査記録の片落ちを防ぎます。
+    </p>
+    <p>
+      診察結果の記録では <code>ExaminationCompletionStore</code> が <code>ExamResultRecorded</code> と <code>AppointmentExaminationCompleted</code> を受け取ります。診察結果 projection、<code>AwaitingPayment</code> の予約 projection、2件の監査 event を1つの transaction で保存し、同じ <code>InExamination</code> を読んだ並行操作は条件付き更新で片方だけを確定します。
+    </p>
+    <p>
+      現在状態は各 event store が同じ transaction で更新する projection から読みます。監査履歴から現在状態を復元しません。監査行の再生や圧縮も行わず、履歴は管理者向けの監査 query だけに使います。
     </p>
     <p>
       監査用の1メソッド port は <code>EventHistoryReader.list(admin: Admin): ResultAsync&lt;readonly SanitizedAuditRecord[], RepositoryError&gt;</code> です。Admin capability を受け取る reader 境界で SQLite の保存行を Zod 検証し、許可した event ID、aggregate ID、event name、実行者、時刻、業務上安全な値だけを <code>SanitizedAuditRecord</code> へ写して Admin 画面へ届けます。この出力契約により、監査画面の props は表示を許可した情報だけで構成されます。

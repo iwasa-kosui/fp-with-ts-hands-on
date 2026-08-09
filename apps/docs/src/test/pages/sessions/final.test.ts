@@ -34,6 +34,12 @@ describe("Final application", () => {
     expect(page).toContain("Admin");
     expect(page).toContain("Receptionist");
     expect(page).toContain("Veterinarian");
+    expect(page).toContain(
+      "Scheduled → CheckedIn → InExamination → AwaitingPayment → Paid",
+    );
+    expect(page).toContain("ExaminationCompletionStore");
+    expect(page).toContain("AppointmentExaminationCompleted");
+    expect(page).toContain("監査履歴から現在状態を復元しません");
     expect(page).toContain("EventHistoryReader");
     expect(page).toContain("Node v25.4.0");
     expect(page).toContain("Node.js 20 ではローカル実行していません");

@@ -33,7 +33,7 @@ pnpm --filter @fp-with-ts/clinic-final exec node dist/index.js
 - `Receptionist`: 飼い主・ペット管理、予約、受付、会計、キャンセルを担当します。
 - `Veterinarian`: 診察開始、検査結果登録、電話フォロー依頼を担当します。
 
-予約は `Scheduled → CheckedIn → InExamination → Paid` と進み、許可された状態でだけ操作ボタンを表示します。電話フォローは、会計済み予約、要フォローの検査結果、一致する pet ID を検証して対象を作ります。
+予約は `Scheduled → CheckedIn → InExamination → AwaitingPayment → Paid` と進みます。診察結果を記録すると `AwaitingPayment` へ遷移し、診察結果の再送信を止めて、受付・管理者にだけ会計操作を表示します。電話フォローは、会計済み予約、要フォローの検査結果、一致する pet ID を検証して対象を作ります。
 
 ## コードの責務
 
@@ -45,6 +45,10 @@ pnpm --filter @fp-with-ts/clinic-final exec node dist/index.js
 - `src/server.ts`: 既定の `clinic.sqlite`、migration directory、Vite の production flag を選び、server entry の app を構成
 
 command use case は `AppointmentByIdResolver.resolveById` のような用途ごとの1メソッド port から現在状態を読み、ドメインが作った typed event を `ExaminationStartedStore.store` のような event store へ渡します。event store は event から projection の insert/update/delete と監査行の insert を組み立て、Drizzle transaction で両方を atomic に保存します。監査用の1メソッド port は `EventHistoryReader.list(admin: Admin): ResultAsync<readonly SanitizedAuditRecord[], RepositoryError>` です。Admin capability を受け取る reader 境界で保存行を Zod 検証し、許可した項目だけを `SanitizedAuditRecord` へ写して Admin の一覧画面へ届けます。
+
+診察結果の記録では `ExaminationCompletionStore` が `ExamResultRecorded` と `AppointmentExaminationCompleted` を受け取り、診察結果 projection、`AwaitingPayment` の予約 projection、2件の監査 event を1つの transaction で保存します。同じ `InExamination` を読んだ並行操作は条件付き更新で競合し、片方だけが確定します。
+
+現在状態は各 event store が同じ transaction で更新する projection から読みます。監査履歴から現在状態を復元せず、監査行の再生や圧縮も行いません。
 
 ユーザー、飼い主、ペットの削除は projection の物理削除です。削除 event と過去の監査行は保持されるため、この操作は個人情報の完全消去を意味しません。この制約は、利用目的と保持期間を別途レビューする必要があることを示します。
 
