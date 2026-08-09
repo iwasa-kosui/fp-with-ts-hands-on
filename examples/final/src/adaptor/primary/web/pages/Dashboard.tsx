@@ -1,7 +1,6 @@
 import { Link } from "@inertiajs/react";
 import type { AppointmentPageView } from "../routes/appointmentRoutes.js";
 import type { DashboardCounts } from "../../../../useCase/getDashboardUseCase.js";
-import { buttonClassName } from "../components/Button.js";
 import { DataTable } from "../components/DataTable.js";
 import { appointmentPresentation } from "../components/appointmentPresentation.js";
 import { Card, EmptyState } from "../components/Surface.js";
@@ -22,18 +21,8 @@ export default function Dashboard({
   auth,
   counts,
 }: DashboardProps) {
-  const canBook =
-    auth.user?.role === "Admin" || auth.user?.role === "Receptionist";
-
   return (
     <Layout
-      actions={
-        canBook ? (
-          <Link className={buttonClassName()} href="/appointments/new">
-            新しい予約
-          </Link>
-        ) : undefined
-      }
       activeNavigation="dashboard"
       description="現在の業務状況を確認します。"
       title="ダッシュボード"

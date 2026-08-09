@@ -128,7 +128,7 @@ describe("Operator Console shell", () => {
     expect(html).not.toContain('href="/events"');
   });
 
-  test("shows the dashboard booking action only to operational booking roles", () => {
+  test("does not render a dashboard booking action without a server-projected capability", () => {
     const props = {
       activeAppointments: [],
       counts: { owners: 0, pets: 0, appointments: 0, activeAppointments: 0 },
@@ -149,8 +149,8 @@ describe("Operator Console shell", () => {
       />,
     );
 
-    expect(administratorHtml).toContain('href="/appointments/new"');
-    expect(administratorHtml).toContain("新しい予約");
+    expect(administratorHtml).not.toContain('href="/appointments/new"');
+    expect(administratorHtml).not.toContain("新しい予約");
     expect(veterinarianHtml).not.toContain('href="/appointments/new"');
     expect(veterinarianHtml).not.toContain("新しい予約");
   });
