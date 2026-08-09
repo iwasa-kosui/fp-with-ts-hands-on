@@ -583,6 +583,52 @@ td {
   min-height: 44px;
 }
 
+.follow-up-form {
+  max-width: none;
+}
+
+.batch-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+}
+
+.batch-action-bar__selection {
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.audit-fields {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.audit-fields div {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.audit-fields dt {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.audit-fields dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;

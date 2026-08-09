@@ -7,8 +7,11 @@ import Layout from "../../src/adaptor/primary/web/pages/Layout.js";
 import AppointmentNew from "../../src/adaptor/primary/web/pages/Appointments/New.js";
 import AppointmentShow from "../../src/adaptor/primary/web/pages/Appointments/Show.js";
 import Dashboard from "../../src/adaptor/primary/web/pages/Dashboard.js";
+import EventsIndex from "../../src/adaptor/primary/web/pages/Events/Index.js";
+import FollowUpsIndex from "../../src/adaptor/primary/web/pages/FollowUps/Index.js";
 import Login from "../../src/adaptor/primary/web/pages/Login.js";
 import Setup from "../../src/adaptor/primary/web/pages/Setup.js";
+import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
@@ -316,5 +319,71 @@ describe("Operator Console shell", () => {
     expect(html).not.toContain("診察を開始");
     expect(html).not.toContain("診察結果を記録");
     expect(html).not.toContain("会計を記録");
+  });
+
+  test("renders follow-up selection with its initial disabled batch action", () => {
+    const html = renderPublicPage(
+      <FollowUpsIndex
+        auth={{ user: { userId: adminId, role: "Receptionist" } }}
+        errors={{}}
+        flash={{}}
+        followUps={[
+          {
+            appointmentId,
+            ownerName: "Hanako Owner",
+            ownerPhone: "090-1234-5678",
+            petId,
+            requested: false,
+          },
+          {
+            appointmentId: AppointmentId.schema.parse("75000000-0000-4000-8000-000000000002"),
+            ownerName: "Taro Owner",
+            ownerPhone: "080-1234-5678",
+            petId,
+            requested: true,
+          },
+        ]}
+      />,
+    );
+
+    expect(html).toContain('aria-label="フォローアップ対象"');
+    expect(html).toContain('aria-label="フォローアップの一括操作"');
+    expect(html).toContain("0件を選択中");
+    expect(html).toContain("未依頼");
+    expect(html).toContain("依頼済み");
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>フォローアップを依頼<\/button>/);
+    expect(html).toContain('name="appointmentIds"');
+  });
+
+  test("renders sanitized audit event data in an accessible table", () => {
+    const html = renderPublicPage(
+      <EventsIndex
+        auth={{ user: { userId: adminId, role: "Admin" } }}
+        errors={{}}
+        flash={{}}
+        events={[{
+          actorUserId: adminId,
+          aggregateId: appointmentId,
+          aggregateName: "Appointment",
+          aggregateState: { kind: "Paid" },
+          eventId: EventId.schema.parse("78000000-0000-4000-8000-000000000001"),
+          eventName: "appointment.payment-recorded",
+          eventPayload: { appointmentId },
+          occurredAt: Timestamp.schema.parse("2026-08-09T03:00:00.000Z"),
+        }]}
+      />,
+    );
+
+    expect(html).toContain('aria-label="監査イベント一覧"');
+    expect(html).toContain('role="status"');
+    expect(html).toContain("監査履歴には個人情報を表示しません");
+    expect(html).toContain("78000000-0000-4000-8000-000000000001");
+    expect(html).toContain("appointment.payment-recorded");
+    expect(html).toContain("76000000-0000-4000-8000-000000000001");
+    expect(html).toContain("Appointment");
+    expect(html).toContain("75000000-0000-4000-8000-000000000001");
+    expect(html).toContain("<dl");
+    expect(html).not.toContain("raw payload");
+    expect(html).not.toContain("<pre");
   });
 });

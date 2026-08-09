@@ -1,6 +1,10 @@
 import { useForm } from "@inertiajs/react";
 
+import { buttonClassName } from "../../components/Button.js";
+import { DataTable } from "../../components/DataTable.js";
 import { ErrorSummary } from "../../components/FormErrors.js";
+import { EmptyState, InlineAlert } from "../../components/Surface.js";
+import { StatusBadge } from "../../components/StatusBadge.js";
 import type { SharedPageProps } from "../../pageProps.js";
 import type { FollowUpPageView } from "../../routes/followUpRoutes.js";
 import Layout from "../Layout.js";
@@ -10,6 +14,7 @@ type Props = SharedPageProps &
 
 export default function FollowUpsIndex({ auth, errors, followUps }: Props) {
   const form = useForm<{ appointmentIds: string[] }>({ appointmentIds: [] });
+  const selectedCountLabel = `${form.data.appointmentIds.length}件を選択中`;
   const toggle = (appointmentId: string, selected: boolean) =>
     form.setData(
       "appointmentIds",
@@ -23,13 +28,16 @@ export default function FollowUpsIndex({ auth, errors, followUps }: Props) {
   };
 
   return (
-    <Layout title="フォローアップ" user={auth.user}>
+    <Layout activeNavigation="follow-ups" title="フォローアップ" user={auth.user}>
       <ErrorSummary errors={errors} />
+      <InlineAlert>
+        依頼済みの対象は再度依頼できません。選択した対象だけを一括で依頼します。
+      </InlineAlert>
       {followUps.length === 0 ? (
-        <p>電話フォローが必要な診察はありません。</p>
+        <EmptyState>電話フォローが必要な診察はありません。</EmptyState>
       ) : (
-        <form onSubmit={submit}>
-          <table>
+        <form className="follow-up-form" onSubmit={submit}>
+          <DataTable label="フォローアップ対象">
             <thead>
               <tr>
                 <th scope="col">選択</th>
@@ -56,17 +64,28 @@ export default function FollowUpsIndex({ auth, errors, followUps }: Props) {
                   <td>{followUp.ownerName}</td>
                   <td>{followUp.ownerPhone}</td>
                   <td>{followUp.appointmentId}</td>
-                  <td>{followUp.requested ? "依頼済み" : "未依頼"}</td>
+                  <td>
+                    <StatusBadge tone={followUp.requested ? "success" : "neutral"}>
+                      {followUp.requested ? "依頼済み" : "未依頼"}
+                    </StatusBadge>
+                  </td>
                 </tr>
               ))}
             </tbody>
-          </table>
-          <button
-            disabled={form.processing || form.data.appointmentIds.length === 0}
-            type="submit"
-          >
-            {form.processing ? "依頼中…" : "フォローアップを依頼"}
-          </button>
+          </DataTable>
+          <section aria-label="フォローアップの一括操作" className="batch-action-bar">
+            <span aria-live="polite" className="batch-action-bar__selection">
+              {selectedCountLabel}
+            </span>
+            <button
+              aria-busy={form.processing || undefined}
+              className={buttonClassName()}
+              disabled={form.processing || form.data.appointmentIds.length === 0}
+              type="submit"
+            >
+              {form.processing ? "依頼中…" : "フォローアップを依頼"}
+            </button>
+          </section>
         </form>
       )}
     </Layout>
