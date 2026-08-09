@@ -417,6 +417,9 @@ describe("Inertia security boundary", () => {
       ownerId: owner.ownerId,
       petId: pet.petId,
       scheduledAt: "2026-08-10T03:00:00.000Z",
+      serviceCode: "GeneralConsultation",
+      durationMinutes: "30",
+      assignedVeterinarianId: "",
       reason: "Private visit reason",
     }, adminCookie);
     const appointment = database.select().from(appointmentsTable).get();

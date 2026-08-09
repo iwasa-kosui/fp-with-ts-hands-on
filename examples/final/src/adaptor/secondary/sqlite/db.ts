@@ -12,6 +12,7 @@ const migrationsFolder = fileURLToPath(new URL("../../../../drizzle", import.met
 export const createSqliteDatabase = (path: string): SqliteDatabase => {
   const client = new Database(path);
   client.pragma("foreign_keys = ON");
+  client.pragma("busy_timeout = 5000");
 
   return drizzle(client, { schema: sqliteSchema });
 };

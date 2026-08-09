@@ -98,7 +98,11 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
 const toStoreError = (
   error: AppointmentStoreError,
 ): UseCaseRepositoryError | StaleAppointmentVersion =>
-  error.kind === "StaleAppointmentVersion" ? error : toRepositoryError(error);
+  error.kind === "StaleAppointmentVersion"
+    ? error
+    : error.kind === "RepositoryError"
+      ? toRepositoryError(error)
+      : { kind: "RepositoryError", operation: "RecordExamResultUseCase.store" };
 const ensureExaminer = (user: User): Result<Examiner, UnauthorizedError> =>
   user.kind === "Admin" || user.kind === "Veterinarian"
     ? ok(user)

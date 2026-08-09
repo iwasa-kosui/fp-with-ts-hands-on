@@ -1,5 +1,8 @@
 import { describe, expect, test } from "vitest";
 import { sql } from "drizzle-orm";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
 import {
@@ -34,6 +37,8 @@ import { Appointment } from "../../src/domain/appointment/appointment.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
 import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
 import { AppointmentVersion } from "../../src/domain/appointment/appointmentVersion.js";
+import { AppointmentDuration } from "../../src/domain/appointment/appointmentDuration.js";
+import { ServiceCode } from "../../src/domain/appointment/serviceCode.js";
 import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
@@ -694,6 +699,139 @@ describe("SQLite event stores", () => {
     });
     expect(await db.select().from(appointmentsTable)).toHaveLength(1);
     expect(await db.select().from(domainEventsTable)).toHaveLength(3);
+  });
+
+  test("enforces half-open veterinarian overlap while allowing null assignment and self updates", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const store = createAppointmentEventStore(db);
+    const bookAt = (
+      appointmentId: AppointmentId,
+      startsAt: string,
+      assignedVeterinarianId: VeterinarianId | null,
+      sequence: number,
+    ) => Appointment.book(eventContext(sequence))({
+      appointmentId,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse(startsAt),
+      durationMinutes: AppointmentDuration.schema.parse(30),
+      serviceCode: ServiceCode.schema.parse("GeneralConsultation"),
+      bookingKind: "Reserved",
+      assignedVeterinarianId,
+      visitReason: AppointmentReason.schema.parse(`private reason ${sequence}`),
+      receptionNote: null,
+      settlement: { kind: "NoPayment" },
+    });
+    const existing = bookAt(ids.appointment, "2026-08-10T10:00:00.000Z", ids.veterinarian, 46);
+    (await store.store(existing))._unsafeUnwrap();
+
+    const overlap = bookAt(ids.otherAppointment, "2026-08-10T10:29:00.000Z", ids.veterinarian, 47);
+    expect((await store.store(overlap))._unsafeUnwrapErr()).toEqual({
+      kind: "VeterinarianScheduleConflict",
+      appointmentId: ids.otherAppointment,
+      conflictingAppointmentId: ids.appointment,
+    });
+
+    const boundaryId = AppointmentId.schema.parse("00000000-0000-4000-8000-000000000012");
+    expect((await store.store(bookAt(boundaryId, "2026-08-10T10:30:00.000Z", ids.veterinarian, 48))).isOk()).toBe(true);
+    const unassignedId = AppointmentId.schema.parse("00000000-0000-4000-8000-000000000013");
+    expect((await store.store(bookAt(unassignedId, "2026-08-10T10:15:00.000Z", null, 49))).isOk()).toBe(true);
+
+    const selfUpdate = Appointment.update(eventContext(50))(existing.aggregateState, {
+      ownerId: ids.owner,
+      petId: ids.pet,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T10:10:00.000Z"),
+      durationMinutes: AppointmentDuration.schema.parse(15),
+      serviceCode: ServiceCode.schema.parse("FollowUpVisit"),
+      assignedVeterinarianId: ids.veterinarian,
+      visitReason: AppointmentReason.schema.parse("updated private reason"),
+    });
+    expect((await store.store(selfUpdate)).isOk()).toBe(true);
+  });
+
+  test.each([
+    ["Scheduled", true],
+    ["CheckedIn", true],
+    ["InExamination", false],
+    ["AwaitingPayment", false],
+    ["Paid", false],
+    ["Canceled", false],
+  ] as const)("treats %s as overlap blocking=%s", async (status, blocking) => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const store = createAppointmentEventStore(db);
+    const existing = Appointment.book(eventContext(51))({
+      appointmentId: ids.appointment,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T10:00:00.000Z"),
+      durationMinutes: AppointmentDuration.schema.parse(30),
+      serviceCode: ServiceCode.schema.parse("GeneralConsultation"),
+      bookingKind: "Reserved",
+      assignedVeterinarianId: ids.veterinarian,
+      visitReason: AppointmentReason.schema.parse("existing private reason"),
+      receptionNote: null,
+      settlement: { kind: "NoPayment" },
+    });
+    (await store.store(existing))._unsafeUnwrap();
+    db.update(appointmentsTable).set({ status }).run();
+    const candidate = Appointment.book(eventContext(52))({
+      appointmentId: ids.otherAppointment,
+      petId: ids.otherPet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T10:15:00.000Z"),
+      durationMinutes: AppointmentDuration.schema.parse(15),
+      serviceCode: ServiceCode.schema.parse("FollowUpVisit"),
+      bookingKind: "Reserved",
+      assignedVeterinarianId: ids.veterinarian,
+      visitReason: AppointmentReason.schema.parse("candidate private reason"),
+      receptionNote: null,
+      settlement: { kind: "NoPayment" },
+    });
+
+    const result = await store.store(candidate);
+    expect(result.isErr()).toBe(blocking);
+    if (blocking) expect(result._unsafeUnwrapErr()).toMatchObject({ kind: "VeterinarianScheduleConflict" });
+  });
+
+  test("allows only one overlapping booking from two SQLite connections", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "clinic-final-overlap-"));
+    const databasePath = join(directory, "clinic.sqlite");
+    try {
+      const firstDb = createSqliteDatabase(databasePath);
+      migrateDatabase(firstDb);
+      const secondDb = createSqliteDatabase(databasePath);
+      const firstStore = createAppointmentEventStore(firstDb);
+      const secondStore = createAppointmentEventStore(secondDb);
+      const booked = (appointmentId: AppointmentId, sequence: number) =>
+        Appointment.book(eventContext(sequence))({
+          appointmentId,
+          petId: ids.pet,
+          ownerId: ids.owner,
+          scheduledAt: Timestamp.schema.parse("2026-08-10T10:00:00.000Z"),
+          durationMinutes: AppointmentDuration.schema.parse(30),
+          serviceCode: ServiceCode.schema.parse("GeneralConsultation"),
+          bookingKind: "Reserved",
+          assignedVeterinarianId: ids.veterinarian,
+          visitReason: AppointmentReason.schema.parse(`concurrent private reason ${sequence}`),
+          receptionNote: null,
+          settlement: { kind: "NoPayment" },
+        });
+
+      const [first, second] = await Promise.all([
+        firstStore.store(booked(ids.appointment, 53)),
+        secondStore.store(booked(ids.otherAppointment, 54)),
+      ]);
+      expect([first, second].filter((result) => result.isOk())).toHaveLength(1);
+      expect([first, second].find((result) => result.isErr())?._unsafeUnwrapErr()).toMatchObject({
+        kind: "VeterinarianScheduleConflict",
+      });
+      expect(firstDb.select().from(appointmentsTable).all()).toHaveLength(1);
+      expect(firstDb.select().from(domainEventsTable).all()).toHaveLength(1);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   test("rejects a transition whose previous version does not match the current projection", async () => {

@@ -24,6 +24,9 @@ import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { Treatment } from "../../src/domain/appointment/treatment.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
 import { ExamResultItem } from "../../src/domain/examResult/examResultItem.js";
+import { AppointmentDuration } from "../../src/domain/appointment/appointmentDuration.js";
+import { ReceptionNote } from "../../src/domain/appointment/receptionNote.js";
+import { ServiceCode } from "../../src/domain/appointment/serviceCode.js";
 
 const appointmentId = AppointmentId.schema.parse(
   "11111111-1111-4111-8111-111111111111",
@@ -79,6 +82,14 @@ const canceledContext = context(
   "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   "2026-08-29T07:00:00.000Z",
 );
+const updatedContext = context(
+  "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  "2026-08-29T08:00:00.000Z",
+);
+const walkInContext = context(
+  "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  "2026-08-30T08:00:00.000Z",
+);
 
 const booked = Appointment.book(bookedContext)({
   appointmentId,
@@ -124,6 +135,80 @@ const rawPaymentInput = {
 Appointment.recordPayment(paymentContext)(awaitingPayment.aggregateState, rawPaymentInput);
 
 describe("appointment aggregate", () => {
+  test("updates every editable field of a Scheduled appointment and increments its version", () => {
+    const changedReason = AppointmentReason.schema.parse("changed private reason");
+    const updated = Appointment.update(updatedContext)(booked.aggregateState, {
+      ownerId,
+      petId,
+      scheduledAt: Timestamp.schema.parse("2026-08-30T09:00:00.000Z"),
+      durationMinutes: AppointmentDuration.schema.parse(60),
+      serviceCode: ServiceCode.schema.parse("ExaminationOrProcedure"),
+      assignedVeterinarianId: veterinarianId,
+      visitReason: changedReason,
+    });
+
+    expect(updated).toMatchObject({
+      kind: "AppointmentUpdated",
+      eventName: "appointment.updated",
+      eventId: updatedContext.eventId,
+      aggregateState: {
+        kind: "Scheduled",
+        scheduledAt: "2026-08-30T09:00:00.000Z",
+        durationMinutes: 60,
+        serviceCode: "ExaminationOrProcedure",
+        assignedVeterinarianId: veterinarianId,
+        version: 2,
+      },
+    });
+    expect(updated.aggregateState.visitReason.unwrap()).toBe("changed private reason");
+  });
+
+  test("registers a walk-in directly as CheckedIn with one server timestamp and version 1", () => {
+    const walkIn = Appointment.registerWalkIn(walkInContext)({
+      appointmentId,
+      ownerId,
+      petId,
+      durationMinutes: AppointmentDuration.schema.parse(15),
+      serviceCode: ServiceCode.schema.parse("Vaccination"),
+      assignedVeterinarianId: null,
+      visitReason,
+      receptionNote: ReceptionNote.schema.parse("private reception note"),
+    });
+
+    expect(walkIn).toMatchObject({
+      kind: "AppointmentWalkInRegistered",
+      eventName: "appointment.walk-in-registered",
+      aggregateState: {
+        kind: "CheckedIn",
+        scheduledAt: walkInContext.occurredAt,
+        checkedInAt: walkInContext.occurredAt,
+        bookingKind: "WalkIn",
+        version: 1,
+      },
+    });
+    expect(walkIn.aggregateState.receptionNote?.unwrap()).toBe("private reception note");
+  });
+
+  test("reassigns a veterinarian in Scheduled and CheckedIn while preserving the remaining state", () => {
+    const scheduledReassigned = Appointment.reassignVeterinarian(updatedContext)(
+      booked.aggregateState,
+      veterinarianId,
+    );
+    const checkedInReassigned = Appointment.reassignVeterinarian(updatedContext)(
+      checkedIn.aggregateState,
+      null,
+    );
+
+    expect(scheduledReassigned).toMatchObject({
+      kind: "AppointmentVeterinarianReassigned",
+      eventName: "appointment.veterinarian-reassigned",
+      aggregateState: { kind: "Scheduled", assignedVeterinarianId: veterinarianId, version: 2 },
+    });
+    expect(checkedInReassigned).toMatchObject({
+      aggregateState: { kind: "CheckedIn", assignedVeterinarianId: null, version: 3 },
+    });
+  });
+
   test("carries operational fields and increments the version through the existing lifecycle", () => {
     expect(booked.aggregateState).toMatchObject({
       kind: "Scheduled",

@@ -10,7 +10,7 @@ import {
 } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
-import type { ExaminationStartedStore, StaleAppointmentVersion } from "../domain/appointment/appointmentStores.js";
+import type { AppointmentStoreError, ExaminationStartedStore, StaleAppointmentVersion } from "../domain/appointment/appointmentStores.js";
 import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
@@ -79,6 +79,18 @@ const createEvent =
       ),
       (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
+const toStoreError = (
+  error: AppointmentStoreError,
+): RepositoryError | StaleAppointmentVersion =>
+  error.kind === "StaleAppointmentVersion"
+    ? error
+    : error.kind === "RepositoryError"
+      ? error
+      : {
+          kind: "RepositoryError",
+          operation: "StartExaminationUseCase.store",
+          cause: error,
+        };
 
 const run =
   ({
@@ -97,7 +109,7 @@ const run =
       .andThen(ensureAppointmentFound(input.appointmentId))
       .andThen(ensureCheckedIn)
       .andThen(createEvent({ clock, eventIdGenerator }, input))
-      .andThrough((event) => examinationStartedStore.store(event))
+      .andThrough((event) => examinationStartedStore.store(event).mapErr(toStoreError))
       .map((event) => ({ appointment: event.aggregateState }));
 
 export const StartExaminationUseCase = {

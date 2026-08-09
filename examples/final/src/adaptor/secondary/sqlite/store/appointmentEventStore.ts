@@ -1,4 +1,4 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
@@ -77,6 +77,11 @@ const StaleAppointmentVersionSchema = z.object({
   appointmentId: AppointmentId.schema,
   expectedVersion: AppointmentVersion.schema,
 });
+const VeterinarianScheduleConflictSchema = z.object({
+  kind: z.literal("VeterinarianScheduleConflict"),
+  appointmentId: AppointmentId.schema,
+  conflictingAppointmentId: AppointmentId.schema,
+});
 
 const depositAmountOf = (state: Appointment): number | null =>
   state.settlement.kind === "NoPayment" ? null : state.settlement.depositAmount;
@@ -98,6 +103,41 @@ const toAppointmentValues = (state: Appointment) => ({
   state: projectionState(state),
 });
 
+const checksVeterinarianSchedule = (
+  event: AppointmentProjectionEvent,
+): boolean =>
+  event.kind === "AppointmentBooked" ||
+  event.kind === "AppointmentUpdated" ||
+  event.kind === "AppointmentWalkInRegistered" ||
+  event.kind === "AppointmentVeterinarianReassigned";
+
+const ensureVeterinarianScheduleAvailable = (
+  tx: Parameters<Parameters<SqliteDatabase["transaction"]>[0]>[0],
+  event: AppointmentProjectionEvent,
+): void => {
+  const state = event.aggregateState;
+  if (!checksVeterinarianSchedule(event) || state.assignedVeterinarianId === null) return;
+  const conflicting = tx
+    .select({ appointmentId: appointmentsTable.appointmentId })
+    .from(appointmentsTable)
+    .where(and(
+      eq(appointmentsTable.assignedVeterinarianId, state.assignedVeterinarianId),
+      inArray(appointmentsTable.status, ["Scheduled", "CheckedIn"]),
+      ne(appointmentsTable.appointmentId, state.appointmentId),
+      sql`julianday(${appointmentsTable.scheduledAt}) < julianday(${state.scheduledAt}, '+' || ${state.durationMinutes} || ' minutes')`,
+      sql`julianday(${state.scheduledAt}) < julianday(${appointmentsTable.scheduledAt}, '+' || ${appointmentsTable.durationMinutes} || ' minutes')`,
+    ))
+    .limit(1)
+    .get();
+  if (conflicting !== undefined) {
+    throw {
+      kind: "VeterinarianScheduleConflict",
+      appointmentId: state.appointmentId,
+      conflictingAppointmentId: AppointmentId.schema.parse(conflicting.appointmentId),
+    } as const;
+  }
+};
+
 export const createAppointmentEventStore = (db: SqliteDatabase) => ({
   store: (...events: readonly AppointmentProjectionEvent[]) =>
     ResultAsync.fromPromise<void, AppointmentStoreError>(
@@ -105,6 +145,7 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
         db.transaction((tx) => {
           events.forEach((event) => {
             const state = event.aggregateState;
+            ensureVeterinarianScheduleAvailable(tx, event);
             const values = toAppointmentValues(state);
             const expectedVersion = state.version === 1
               ? state.version
@@ -112,6 +153,7 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
             const changes = (() => {
               switch (event.kind) {
                 case "AppointmentBooked":
+                case "AppointmentWalkInRegistered":
                   return tx.insert(appointmentsTable)
                     .values(values)
                     .onConflictDoNothing({ target: appointmentsTable.appointmentId })
@@ -122,6 +164,27 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
                     .where(and(
                       eq(appointmentsTable.appointmentId, state.appointmentId),
                       eq(appointmentsTable.status, "Scheduled"),
+                      eq(appointmentsTable.version, expectedVersion),
+                    ))
+                    .run().changes;
+                case "AppointmentUpdated":
+                  return tx.update(appointmentsTable)
+                    .set(values)
+                    .where(and(
+                      eq(appointmentsTable.appointmentId, state.appointmentId),
+                      eq(appointmentsTable.status, "Scheduled"),
+                      eq(appointmentsTable.version, expectedVersion),
+                    ))
+                    .run().changes;
+                case "AppointmentVeterinarianReassigned":
+                  return tx.update(appointmentsTable)
+                    .set(values)
+                    .where(and(
+                      eq(appointmentsTable.appointmentId, state.appointmentId),
+                      or(
+                        eq(appointmentsTable.status, "Scheduled"),
+                        eq(appointmentsTable.status, "CheckedIn"),
+                      ),
                       eq(appointmentsTable.version, expectedVersion),
                     ))
                     .run().changes;
@@ -168,12 +231,14 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
             }
             persistDomainEvent(tx, event);
           });
-        }),
+        }, { behavior: "immediate" }),
       ),
       (cause): AppointmentStoreError => {
         const stale = StaleAppointmentVersionSchema.safeParse(cause);
-        return stale.success
-          ? stale.data
+        if (stale.success) return stale.data;
+        const conflict = VeterinarianScheduleConflictSchema.safeParse(cause);
+        return conflict.success
+          ? conflict.data
           : {
               kind: "RepositoryError",
               operation: "AppointmentEventStore.store",

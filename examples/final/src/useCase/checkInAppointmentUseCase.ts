@@ -72,7 +72,11 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
 const toStoreError = (
   error: AppointmentStoreError,
 ): UseCaseRepositoryError | StaleAppointmentVersion =>
-  error.kind === "StaleAppointmentVersion" ? error : toRepositoryError(error);
+  error.kind === "StaleAppointmentVersion"
+    ? error
+    : error.kind === "RepositoryError"
+      ? toRepositoryError(error)
+      : { kind: "RepositoryError", operation: "CheckInAppointmentUseCase.store" };
 const ensureScheduled = (
   appointment: AppointmentState,
 ): Result<Scheduled, InvalidAppointmentState> =>

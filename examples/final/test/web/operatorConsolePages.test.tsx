@@ -8,6 +8,9 @@ import AppointmentNew, {
   toAppointmentTimestamp,
 } from "../../src/adaptor/primary/web/pages/Appointments/New.js";
 import AppointmentShow from "../../src/adaptor/primary/web/pages/Appointments/Show.js";
+import AppointmentEdit from "../../src/adaptor/primary/web/pages/Appointments/Edit.js";
+import WalkInNew from "../../src/adaptor/primary/web/pages/Reception/WalkIn.js";
+import { suggestedDurationAfterServiceChange } from "../../src/adaptor/primary/web/components/AppointmentForm.js";
 import Dashboard from "../../src/adaptor/primary/web/pages/Dashboard.js";
 import EventsIndex from "../../src/adaptor/primary/web/pages/Events/Index.js";
 import FollowUpsIndex from "../../src/adaptor/primary/web/pages/FollowUps/Index.js";
@@ -184,6 +187,7 @@ describe("Operator Console shell", () => {
         flash={{}}
         owners={[{ ownerId, name: "Hanako Owner" }]}
         pets={[{ ownerId, petId, name: "Mugi" }]}
+        veterinarians={[]}
       />,
     );
 
@@ -192,6 +196,63 @@ describe("Operator Console shell", () => {
     expect(html).toContain('name="scheduledAt"');
     expect(html).toContain('type="datetime-local"');
     expect(html).toContain('aria-describedby="reason-error"');
+    expect(html).toContain("一般診療");
+    expect(html).toContain("再診");
+    expect(html).toContain("予防接種");
+    expect(html).toContain("検査・処置");
+    expect(html).toContain("担当医未定");
+  });
+
+  test("shares the Japanese appointment fields across edit and walk-in forms", () => {
+    const options = {
+      owners: [{ ownerId, name: "Hanako Owner" }],
+      pets: [{ ownerId, petId, name: "Mugi" }],
+      veterinarians: [{
+        veterinarianId: "77000000-0000-4000-8000-000000000001",
+        name: "Clinic Vet",
+      }],
+    } as const;
+    const editHtml = renderPublicPage(
+      <AppointmentEdit
+        {...options}
+        appointment={{
+          appointmentId,
+          ownerId,
+          petId,
+          scheduledAt,
+          durationMinutes: 30,
+          serviceCode: "GeneralConsultation",
+          assignedVeterinarianId: null,
+          visitReason: "定期健診",
+          version: 1,
+          immutablePetAndService: false,
+        }}
+        auth={{ user: { userId: adminId, role: "Receptionist" } }}
+        errors={{}}
+        flash={{}}
+      />,
+    );
+    const walkInHtml = renderPublicPage(
+      <WalkInNew
+        {...options}
+        auth={{ user: { userId: adminId, role: "Receptionist" } }}
+        errors={{ receptionNote: "受付メモを確認してください。" }}
+        flash={{}}
+      />,
+    );
+
+    for (const label of ["飼い主", "ペット", "診療メニュー", "所要時間", "担当獣医師", "来院理由"]) {
+      expect(editHtml).toContain(label);
+      expect(walkInHtml).toContain(label);
+    }
+    expect(editHtml).toContain('name="expectedVersion"');
+    expect(walkInHtml).toContain("受付メモ");
+    expect(walkInHtml).not.toContain('name="scheduledAt"');
+  });
+
+  test("suggests a service duration only until the operator manually changes it", () => {
+    expect(suggestedDurationAfterServiceChange("Vaccination", false, 30)).toBe(15);
+    expect(suggestedDurationAfterServiceChange("ExaminationOrProcedure", true, 45)).toBe(45);
   });
 
   test("converts a picked local appointment time to the timestamp accepted by booking", () => {

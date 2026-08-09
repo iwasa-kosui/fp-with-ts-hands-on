@@ -24,6 +24,7 @@ import type {
 } from "../../src/domain/appointment/appointmentEvent.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
 import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
+import { AppointmentVersion } from "../../src/domain/appointment/appointmentVersion.js";
 import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
 import { Diagnosis } from "../../src/domain/appointment/diagnosis.js";
 import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
@@ -59,6 +60,10 @@ import {
 import { RecordExamResultUseCase } from "../../src/useCase/recordExamResultUseCase.js";
 import { RecordPaymentUseCase } from "../../src/useCase/recordPaymentUseCase.js";
 import { StartExaminationUseCase } from "../../src/useCase/startExaminationUseCase.js";
+import { UpdateAppointmentUseCase } from "../../src/useCase/updateAppointmentUseCase.js";
+import { RegisterWalkInUseCase } from "../../src/useCase/registerWalkInUseCase.js";
+import { ReassignAppointmentVeterinarianUseCase } from "../../src/useCase/reassignAppointmentVeterinarianUseCase.js";
+import { ListVeterinariansUseCase } from "../../src/useCase/listVeterinariansUseCase.js";
 
 const ids = {
   admin: UserId.schema.parse("51000000-0000-4000-8000-000000000001"),
@@ -158,6 +163,7 @@ describe("appointment command use cases", () => {
       userResolver,
       ownerResolver,
       petResolver,
+      userListResolver: { resolveAll: () => okAsync(users) },
       appointmentBookedStore: appointmentStore,
       appointmentIdGenerator: { generate: () => ids.appointment },
       clock,
@@ -280,6 +286,7 @@ describe("appointment command use cases", () => {
       userResolver,
       ownerResolver,
       petResolver,
+      userListResolver: { resolveAll: () => okAsync(users) },
       appointmentBookedStore: {
         store: (...events) => {
           bookedEvents.push(...events);
@@ -349,6 +356,41 @@ describe("appointment command use cases", () => {
     expect(exam.isErr() && exam.error.kind).toBe("ExamResultPetMismatch");
     expect(examEvents).toHaveLength(0);
     expect(completionEvents).toHaveLength(0);
+  });
+
+  test("rejects an unknown assigned veterinarian before booking is stored", async () => {
+    let storeCalls = 0;
+    const unknownVeterinarianId = VeterinarianId.schema.parse(
+      "51000000-0000-4000-8000-000000000099",
+    );
+    const result = await BookAppointmentUseCase.create({
+      userResolver,
+      userListResolver: { resolveAll: () => okAsync(users) },
+      ownerResolver,
+      petResolver,
+      appointmentBookedStore: {
+        store: () => {
+          storeCalls += 1;
+          return okAsync(undefined);
+        },
+      },
+      appointmentIdGenerator: { generate: () => ids.appointment },
+      clock,
+      eventIdGenerator: eventIdGenerator(),
+    }).run({
+      actorUserId: ids.receptionist,
+      ownerId: ids.owner,
+      petId: ids.pet,
+      scheduledAt: times.scheduled,
+      reason: AppointmentReason.schema.parse("checkup"),
+      assignedVeterinarianId: unknownVeterinarianId,
+    });
+
+    expect(result._unsafeUnwrapErr()).toEqual({
+      kind: "VeterinarianNotFound",
+      veterinarianId: unknownVeterinarianId,
+    });
+    expect(storeCalls).toBe(0);
   });
 
   test("maps synchronous examination-completion dependency failures without storing", async () => {
@@ -570,6 +612,185 @@ describe("appointment command use cases", () => {
     });
     expect(await db.select().from(appointmentsTable)).toHaveLength(1);
     expect(await db.select().from(domainEventsTable)).toHaveLength(3);
+  });
+
+  test("updates only Scheduled appointments, checks expectedVersion, and preserves prepaid immutable fields", async () => {
+    const scheduled = Appointment.book({
+      eventId: eventIdGenerator().generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })({
+      appointmentId: ids.appointment,
+      ownerId: ids.owner,
+      petId: ids.pet,
+      scheduledAt: times.scheduled,
+      durationMinutes: AppointmentDuration.schema.parse(15),
+      serviceCode: ServiceCode.schema.parse("Vaccination"),
+      bookingKind: "Reserved",
+      assignedVeterinarianId: null,
+      visitReason: AppointmentReason.schema.parse("vaccination"),
+      receptionNote: null,
+      settlement: {
+        kind: "DepositReceived",
+        depositAmount: PaymentAmount.schema.parse(1000),
+        receivedAt: times.now,
+      },
+    }).aggregateState;
+    let current: AppointmentState = scheduled;
+    let storeCalls = 0;
+    const useCase = UpdateAppointmentUseCase.create({
+      userResolver,
+      ownerResolver,
+      petResolver,
+      userListResolver: { resolveAll: () => okAsync(users) },
+      appointmentResolver: { resolveById: () => okAsync(current) },
+      appointmentUpdatedStore: {
+        store: (event) => {
+          storeCalls += 1;
+          current = event.aggregateState;
+          return okAsync(undefined);
+        },
+      },
+      clock,
+      eventIdGenerator: eventIdGenerator(),
+    });
+    const valid = await useCase.run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+      expectedVersion: scheduled.version,
+      ownerId: ids.owner,
+      petId: ids.pet,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T02:00:00.000Z"),
+      durationMinutes: AppointmentDuration.schema.parse(30),
+      serviceCode: scheduled.serviceCode,
+      assignedVeterinarianId: ids.veterinarian,
+      visitReason: AppointmentReason.schema.parse("changed reason"),
+    });
+    expect(valid._unsafeUnwrap().appointment).toMatchObject({ version: 2, durationMinutes: 30 });
+
+    current = scheduled;
+    const immutable = await useCase.run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+      expectedVersion: scheduled.version,
+      ownerId: ids.owner,
+      petId: ids.pet,
+      scheduledAt: times.scheduled,
+      durationMinutes: scheduled.durationMinutes,
+      serviceCode: ServiceCode.schema.parse("GeneralConsultation"),
+      assignedVeterinarianId: null,
+      visitReason: scheduled.visitReason,
+    });
+    expect(immutable._unsafeUnwrapErr()).toMatchObject({
+      kind: "PrepaidAppointmentImmutableFieldsChanged",
+    });
+
+    const stale = await useCase.run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+      expectedVersion: AppointmentVersion.schema.parse(2),
+      ownerId: ids.owner,
+      petId: ids.pet,
+      scheduledAt: times.scheduled,
+      durationMinutes: scheduled.durationMinutes,
+      serviceCode: scheduled.serviceCode,
+      assignedVeterinarianId: null,
+      visitReason: scheduled.visitReason,
+    });
+    expect(stale._unsafeUnwrapErr()).toMatchObject({ kind: "StaleAppointmentVersion" });
+
+    current = Appointment.checkIn({
+      eventId: eventIdGenerator().generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })(scheduled).aggregateState;
+    const invalidState = await useCase.run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+      expectedVersion: current.version,
+      ownerId: ids.owner,
+      petId: ids.pet,
+      scheduledAt: times.scheduled,
+      durationMinutes: scheduled.durationMinutes,
+      serviceCode: scheduled.serviceCode,
+      assignedVeterinarianId: null,
+      visitReason: scheduled.visitReason,
+    });
+    expect(invalidState._unsafeUnwrapErr()).toMatchObject({ kind: "InvalidAppointmentState" });
+    expect(storeCalls).toBe(1);
+  });
+
+  test("registers walk-ins with the server clock and reassigns Scheduled or CheckedIn appointments", async () => {
+    let stored: AppointmentState | undefined;
+    const common = {
+      userResolver,
+      ownerResolver,
+      petResolver,
+      userListResolver: { resolveAll: () => okAsync(users) },
+      clock,
+      eventIdGenerator: eventIdGenerator(),
+    } as const;
+    const walkIn = await RegisterWalkInUseCase.create({
+      ...common,
+      appointmentWalkInRegisteredStore: {
+        store: (event) => {
+          stored = event.aggregateState;
+          return okAsync(undefined);
+        },
+      },
+      appointmentIdGenerator: { generate: () => ids.appointment },
+    }).run({
+      actorUserId: ids.receptionist,
+      ownerId: ids.owner,
+      petId: ids.pet,
+      durationMinutes: AppointmentDuration.schema.parse(15),
+      serviceCode: ServiceCode.schema.parse("FollowUpVisit"),
+      assignedVeterinarianId: null,
+      visitReason: AppointmentReason.schema.parse("walk in"),
+      receptionNote: ReceptionNote.schema.parse("private note"),
+    });
+    expect(walkIn._unsafeUnwrap().appointment).toMatchObject({
+      kind: "CheckedIn",
+      bookingKind: "WalkIn",
+      scheduledAt: times.now,
+      checkedInAt: times.now,
+      version: 1,
+    });
+
+    const reassign = await ReassignAppointmentVeterinarianUseCase.create({
+      userResolver,
+      userListResolver: common.userListResolver,
+      appointmentResolver: { resolveById: () => okAsync(stored) },
+      appointmentVeterinarianReassignedStore: {
+        store: (event) => {
+          stored = event.aggregateState;
+          return okAsync(undefined);
+        },
+      },
+      clock,
+      eventIdGenerator: eventIdGenerator(),
+    }).run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+      expectedVersion: AppointmentVersion.schema.parse(1),
+      assignedVeterinarianId: ids.veterinarian,
+    });
+    expect(reassign._unsafeUnwrap().appointment).toMatchObject({
+      kind: "CheckedIn",
+      assignedVeterinarianId: ids.veterinarian,
+      version: 2,
+    });
+  });
+
+  test("lists only veterinarian IDs and display names for every authenticated clinic role", async () => {
+    const result = await ListVeterinariansUseCase.create({
+      userResolver,
+      userListResolver: { resolveAll: () => okAsync(users) },
+    }).run({ actorUserId: ids.veterinarianUser });
+
+    expect(result._unsafeUnwrap()).toEqual({
+      veterinarians: [{ veterinarianId: ids.veterinarian, name: userBase.name }],
+    });
   });
 });
 

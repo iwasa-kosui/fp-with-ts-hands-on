@@ -68,13 +68,37 @@ export type AppointmentCanceled = AppointmentDomainEvent<
   Readonly<{ appointmentId: AppointmentId }>
 >;
 
+export type AppointmentUpdated = AppointmentDomainEvent<
+  Scheduled,
+  "AppointmentUpdated",
+  "appointment.updated",
+  Readonly<{ appointmentId: AppointmentId }>
+>;
+
+export type AppointmentWalkInRegistered = AppointmentDomainEvent<
+  CheckedIn,
+  "AppointmentWalkInRegistered",
+  "appointment.walk-in-registered",
+  Readonly<{ appointmentId: AppointmentId }>
+>;
+
+export type AppointmentVeterinarianReassigned = AppointmentDomainEvent<
+  Scheduled | CheckedIn,
+  "AppointmentVeterinarianReassigned",
+  "appointment.veterinarian-reassigned",
+  Readonly<{ appointmentId: AppointmentId; veterinarianId: VeterinarianId | null }>
+>;
+
 export type AppointmentEvent =
   | AppointmentBooked
   | AppointmentCheckedIn
   | ExaminationStarted
   | AppointmentExaminationCompleted
   | PaymentRecorded
-  | AppointmentCanceled;
+  | AppointmentCanceled
+  | AppointmentUpdated
+  | AppointmentWalkInRegistered
+  | AppointmentVeterinarianReassigned;
 
 const create = <
   TAggregateState extends Appointment,

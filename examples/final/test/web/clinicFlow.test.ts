@@ -48,16 +48,18 @@ const veterinarian = {
 
 const createHarness = () => {
   let currentTime = Timestamp.schema.parse("2026-08-09T01:30:00.000Z");
+  const clock = { now: () => currentTime } as const;
   const database = createSqliteDatabase(":memory:");
   migrateDatabase(database);
   const app = createApp(
     createApplicationDependencies(database, {
-      clock: { now: () => currentTime },
+      clock,
       isProduction: false,
     }),
   );
   return {
     app,
+    clock,
     database,
     setTime: (value: string) => {
       currentTime = Timestamp.schema.parse(value);
@@ -87,6 +89,21 @@ const post = (
       ...(cookie === undefined ? {} : { Cookie: cookie }),
     },
   });
+const put = (
+  harness: Harness,
+  path: string,
+  values: Readonly<Record<string, string>>,
+  cookie: string,
+) => harness.app.request(path, {
+  method: "PUT",
+  body: new URLSearchParams(values),
+  headers: {
+    ...inertiaHeaders,
+    "Content-Type": "application/x-www-form-urlencoded",
+    Origin: "http://localhost",
+    Cookie: cookie,
+  },
+});
 const postInertiaFormData = (
   harness: Harness,
   path: string,
@@ -200,6 +217,9 @@ describe("clinic workflow routes", () => {
         ownerId: owner.ownerId,
         petId: pet.petId,
         scheduledAt: "2026-08-10T03:00:00.000Z",
+        serviceCode: "GeneralConsultation",
+        durationMinutes: "30",
+        assignedVeterinarianId: "",
         reason: "Annual checkup",
       },
       receptionistCookie,
@@ -438,7 +458,7 @@ describe("clinic workflow routes", () => {
     await post(
       harness,
       "/appointments",
-      { ownerId: owner.ownerId, petId: pet.petId, scheduledAt: "2026-08-10T03:00:00.000Z", reason: "Vaccination" },
+      { ownerId: owner.ownerId, petId: pet.petId, scheduledAt: "2026-08-10T03:00:00.000Z", serviceCode: "Vaccination", durationMinutes: "15", assignedVeterinarianId: "", reason: "Vaccination" },
       adminCookie,
     );
     const appointment = harness.database.select().from(appointmentsTable).get();
@@ -470,7 +490,7 @@ describe("clinic workflow routes", () => {
 
     const conflictAppointmentId = AppointmentId.schema.parse(appointment.appointmentId);
     const authoritativeConflictApp = createApp({
-      ...createApplicationDependencies(harness.database, { isProduction: false }),
+      ...createApplicationDependencies(harness.database, { clock: harness.clock, isProduction: false }),
       checkInAppointment: {
         run: () => errAsync({
           kind: "StaleAppointmentVersion" as const,
@@ -510,7 +530,7 @@ describe("clinic workflow routes", () => {
     await post(
       harness,
       "/appointments",
-      { ownerId: owner.ownerId, petId: pet.petId, scheduledAt: "2026-08-11T03:00:00.000Z", reason: "Cancelable visit" },
+      { ownerId: owner.ownerId, petId: pet.petId, scheduledAt: "2026-08-11T03:00:00.000Z", serviceCode: "GeneralConsultation", durationMinutes: "30", assignedVeterinarianId: "", reason: "Cancelable visit" },
       adminCookie,
     );
     const cancelable = harness.database
@@ -549,6 +569,95 @@ describe("clinic workflow routes", () => {
     expect(canceledProps.props.appointment).not.toHaveProperty("reason");
   });
 
+  test("edits, reassigns, and registers walk-ins through Japanese operator forms", async () => {
+    const harness = createHarness();
+    const adminCookie = await setup(harness);
+    const vet = await createUser(harness, adminCookie, {
+      ...veterinarian,
+      role: "Veterinarian",
+    });
+    if (vet?.veterinarianId === null || vet === undefined) throw new TypeError("vet missing");
+    const { owner, pet } = await createOwnerAndPet(harness, adminCookie);
+    const booked = await post(harness, "/appointments", {
+      ownerId: owner.ownerId,
+      petId: pet.petId,
+      scheduledAt: "2026-08-10T05:00:00.000Z",
+      serviceCode: "GeneralConsultation",
+      durationMinutes: "30",
+      assignedVeterinarianId: "",
+      reason: "private initial reason",
+    }, adminCookie);
+    expect(booked.status).toBe(303);
+    const appointment = harness.database.select().from(appointmentsTable).get();
+    if (appointment === undefined) throw new TypeError("appointment missing");
+
+    const editPage = await page(harness, `/appointments/${appointment.appointmentId}/edit`, adminCookie);
+    await expect(editPage.json()).resolves.toMatchObject({
+      component: "Appointments/Edit",
+      props: {
+        appointment: { appointmentId: appointment.appointmentId, version: 1, visitReason: "private initial reason" },
+        veterinarians: [{ veterinarianId: vet.veterinarianId, name: "Clinic Vet" }],
+      },
+    });
+    const updated = await put(harness, `/appointments/${appointment.appointmentId}`, {
+      expectedVersion: "1",
+      ownerId: owner.ownerId,
+      petId: pet.petId,
+      scheduledAt: "2026-08-10T06:00:00.000Z",
+      serviceCode: "ExaminationOrProcedure",
+      durationMinutes: "60",
+      assignedVeterinarianId: vet.veterinarianId,
+      reason: "private updated reason",
+    }, adminCookie);
+    expect(updated.status).toBe(303);
+    expect(harness.database.select().from(appointmentsTable).get()).toMatchObject({
+      scheduledAt: "2026-08-10T06:00:00.000Z",
+      serviceCode: "ExaminationOrProcedure",
+      durationMinutes: 60,
+      assignedVeterinarianId: vet.veterinarianId,
+      version: 2,
+    });
+
+    const reassigned = await post(harness, `/appointments/${appointment.appointmentId}/veterinarian`, {
+      expectedVersion: "2",
+      assignedVeterinarianId: "",
+    }, adminCookie);
+    expect(reassigned.status).toBe(303);
+    expect(harness.database.select().from(appointmentsTable).get()).toMatchObject({
+      assignedVeterinarianId: null,
+      version: 3,
+    });
+
+    const walkInPage = await page(harness, "/reception/walk-ins/new", adminCookie);
+    await expect(walkInPage.json()).resolves.toMatchObject({ component: "Reception/WalkIn" });
+    harness.setTime("2026-08-09T04:00:00.000Z");
+    const walkIn = await post(harness, "/reception/walk-ins", {
+      ownerId: owner.ownerId,
+      petId: pet.petId,
+      serviceCode: "FollowUpVisit",
+      durationMinutes: "15",
+      assignedVeterinarianId: vet.veterinarianId,
+      reason: "private walk-in reason",
+      receptionNote: "private reception note",
+    }, adminCookie);
+    expect(walkIn.status).toBe(303);
+    const walkInRow = harness.database.select().from(appointmentsTable).all()
+      .find((row) => row.bookingKind === "WalkIn");
+    expect(walkInRow).toMatchObject({
+      status: "CheckedIn",
+      scheduledAt: "2026-08-09T04:00:00.000Z",
+      version: 1,
+    });
+    const auditEvents = harness.database.select().from(domainEventsTable).all()
+      .filter((event) => [
+        "appointment.updated",
+        "appointment.veterinarian-reassigned",
+        "appointment.walk-in-registered",
+      ].includes(event.eventName));
+    expect(new Set(auditEvents.map((event) => event.eventId)).size).toBe(3);
+    expect(auditEvents.every((event) => event.payloadSensitivity === "Sensitive")).toBe(true);
+  });
+
   test("requests follow-ups with fresh event identity and retains deleted relation labels", async () => {
     const harness = createHarness();
     const adminCookie = await setup(harness);
@@ -559,7 +668,7 @@ describe("clinic workflow routes", () => {
     if (vet?.veterinarianId === null || vet === undefined) throw new TypeError("vet missing");
     const vetCookie = await login(harness, veterinarian);
     const { owner, pet } = await createOwnerAndPet(harness, adminCookie);
-    await post(harness, "/appointments", { ownerId: owner.ownerId, petId: pet.petId, scheduledAt: "2026-08-10T03:00:00.000Z", reason: "Follow-up flow" }, adminCookie);
+    await post(harness, "/appointments", { ownerId: owner.ownerId, petId: pet.petId, scheduledAt: "2026-08-10T03:00:00.000Z", serviceCode: "GeneralConsultation", durationMinutes: "30", assignedVeterinarianId: "", reason: "Follow-up flow" }, adminCookie);
     const appointment = harness.database.select().from(appointmentsTable).get();
     if (appointment === undefined) throw new TypeError("appointment missing");
     await post(harness, `/appointments/${appointment.appointmentId}/check-in`, {}, adminCookie);
@@ -626,7 +735,7 @@ describe("clinic workflow routes", () => {
       clock: { now: () => Timestamp.schema.parse("2026-08-09T03:30:00.000Z") },
     });
     const staleApp = createApp({
-      ...createApplicationDependencies(harness.database, { isProduction: false }),
+      ...createApplicationDependencies(harness.database, { clock: harness.clock, isProduction: false }),
       requestFollowUp: staleRequestFollowUp,
     });
     const stale = await staleApp.request("/follow-ups/request", {

@@ -10,6 +10,9 @@ import {
   type AppointmentExaminationCompleted,
   type ExaminationStarted,
   type PaymentRecorded,
+  type AppointmentUpdated,
+  type AppointmentWalkInRegistered,
+  type AppointmentVeterinarianReassigned,
 } from "./appointmentEvent.js";
 import type { ExamId } from "../examResult/examId.js";
 import type { AppointmentId } from "./appointmentId.js";
@@ -110,6 +113,25 @@ export type RecordPaymentInput = Readonly<{
   treatment: Treatment;
   amount: PaymentAmount;
 }>;
+export type UpdateAppointmentInput = Readonly<{
+  ownerId: OwnerId;
+  petId: PetId;
+  scheduledAt: Timestamp;
+  durationMinutes: AppointmentDurationValue;
+  serviceCode: ServiceCodeValue;
+  assignedVeterinarianId: VeterinarianId | null;
+  visitReason: AppointmentReason;
+}>;
+export type RegisterWalkInInput = Readonly<{
+  appointmentId: AppointmentId;
+  ownerId: OwnerId;
+  petId: PetId;
+  durationMinutes: AppointmentDurationValue;
+  serviceCode: ServiceCodeValue;
+  assignedVeterinarianId: VeterinarianId | null;
+  visitReason: AppointmentReason;
+  receptionNote: ReceptionNote | null;
+}>;
 const book =
   (context: EventContext) =>
   (input: BookAppointmentInput): AppointmentBooked => {
@@ -147,6 +169,70 @@ const book =
 
 const nextVersion = (version: AppointmentVersionValue): AppointmentVersionValue =>
   AppointmentVersion.schema.parse(version + 1);
+
+const update =
+  (context: EventContext) =>
+  (scheduled: Scheduled, input: UpdateAppointmentInput): AppointmentUpdated => {
+    const aggregateState = {
+      ...scheduled,
+      ...input,
+      version: nextVersion(scheduled.version),
+    } as const satisfies Scheduled;
+
+    return AppointmentEvent.create(
+      context,
+      aggregateState.appointmentId,
+      aggregateState,
+      "AppointmentUpdated",
+      "appointment.updated",
+      { appointmentId: aggregateState.appointmentId },
+    );
+  };
+
+const registerWalkIn =
+  (context: EventContext) =>
+  (input: RegisterWalkInInput): AppointmentWalkInRegistered => {
+    const aggregateState = {
+      kind: "CheckedIn",
+      ...input,
+      scheduledAt: context.occurredAt,
+      checkedInAt: context.occurredAt,
+      bookingKind: "WalkIn",
+      settlement: { kind: "NoPayment" },
+      version: AppointmentVersion.schema.parse(1),
+    } as const satisfies CheckedIn;
+
+    return AppointmentEvent.create(
+      context,
+      aggregateState.appointmentId,
+      aggregateState,
+      "AppointmentWalkInRegistered",
+      "appointment.walk-in-registered",
+      { appointmentId: aggregateState.appointmentId },
+    );
+  };
+
+const reassignVeterinarian =
+  (context: EventContext) =>
+  (
+    appointment: Scheduled | CheckedIn,
+    veterinarianId: VeterinarianId | null,
+  ): AppointmentVeterinarianReassigned => {
+    const aggregateState = {
+      ...appointment,
+      assignedVeterinarianId: veterinarianId,
+      version: nextVersion(appointment.version),
+    } satisfies Scheduled | CheckedIn;
+
+    return AppointmentEvent.create(
+      context,
+      aggregateState.appointmentId,
+      aggregateState,
+      "AppointmentVeterinarianReassigned",
+      "appointment.veterinarian-reassigned",
+      { appointmentId: aggregateState.appointmentId, veterinarianId },
+    );
+  };
 
 const checkIn =
   (context: EventContext) =>
@@ -278,6 +364,9 @@ const cancel =
 
 export const Appointment = {
   book,
+  update,
+  registerWalkIn,
+  reassignVeterinarian,
   checkIn,
   startExamination,
   completeExamination,

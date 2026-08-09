@@ -16,7 +16,7 @@ import {
 } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import type { AppointmentReason } from "../domain/appointment/appointmentReason.js";
-import type { AppointmentBookedStore, AppointmentStoreError, StaleAppointmentVersion } from "../domain/appointment/appointmentStores.js";
+import type { AppointmentBookedStore, AppointmentStoreError, StaleAppointmentVersion, VeterinarianScheduleConflict } from "../domain/appointment/appointmentStores.js";
 import { AppointmentDuration, type AppointmentDuration as AppointmentDurationValue } from "../domain/appointment/appointmentDuration.js";
 import type { BookingKind } from "../domain/appointment/bookingKind.js";
 import type { ReceptionNote } from "../domain/appointment/receptionNote.js";
@@ -31,6 +31,8 @@ import type { PetId } from "../domain/pet/petId.js";
 import type { PetByIdResolver } from "../domain/pet/petResolver.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
+import type { User } from "../domain/user/user.js";
+import type { UserListResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 
@@ -66,6 +68,10 @@ export type UseCaseRepositoryError = Readonly<{
   kind: "RepositoryError";
   operation: string;
 }>;
+export type VeterinarianNotFound = Readonly<{
+  kind: "VeterinarianNotFound";
+  veterinarianId: VeterinarianId;
+}>;
 export type UseCaseError =
   | UnauthorizedError
   | OwnerNotFound
@@ -73,6 +79,8 @@ export type UseCaseError =
   | PetOwnerMismatch
   | IdentityGenerationFailed
   | StaleAppointmentVersion
+  | VeterinarianScheduleConflict
+  | VeterinarianNotFound
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type AppointmentIdGenerator = Readonly<{
@@ -82,6 +90,7 @@ export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
   ownerResolver: OwnerByIdResolver;
   petResolver: PetByIdResolver;
+  userListResolver: UserListResolver;
   appointmentBookedStore: AppointmentBookedStore;
   appointmentIdGenerator: AppointmentIdGenerator;
   clock: Clock;
@@ -97,8 +106,8 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
 });
 const toStoreError = (
   error: AppointmentStoreError,
-): UseCaseRepositoryError | StaleAppointmentVersion =>
-  error.kind === "StaleAppointmentVersion" ? error : toRepositoryError(error);
+): UseCaseRepositoryError | StaleAppointmentVersion | VeterinarianScheduleConflict =>
+  error.kind === "RepositoryError" ? toRepositoryError(error) : error;
 const ensureOwner =
   (ownerId: OwnerId) =>
   (owner: Owner | undefined): Result<Owner, OwnerNotFound> =>
@@ -118,6 +127,15 @@ const ensurePetOwner =
           expectedOwnerId: ownerId,
           actualOwnerId: pet.ownerId,
         });
+const ensureVeterinarian =
+  (veterinarianId: VeterinarianId | null | undefined) =>
+  (users: readonly User[]): Result<void, VeterinarianNotFound> =>
+    veterinarianId === null || veterinarianId === undefined ||
+      users.some((user) =>
+        user.kind === "Veterinarian" && user.veterinarianId === veterinarianId
+      )
+      ? ok(undefined)
+      : err({ kind: "VeterinarianNotFound", veterinarianId });
 const createEvent = (dependencies: Dependencies, input: UseCaseInput) =>
   ResultAsync.fromPromise(
     Promise.resolve().then(() =>
@@ -162,6 +180,12 @@ const run =
       )
       .andThen(ensurePet(input.petId))
       .andThen(ensurePetOwner(input.ownerId))
+      .andThen(() =>
+        dependencies.userListResolver
+          .resolveAll()
+          .mapErr(toRepositoryError),
+      )
+      .andThen(ensureVeterinarian(input.assignedVeterinarianId))
       .andThen(() => createEvent(dependencies, input))
       .andThrough((event) =>
         dependencies.appointmentBookedStore

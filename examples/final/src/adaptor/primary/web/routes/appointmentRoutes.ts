@@ -8,9 +8,12 @@ import {
   type AppointmentId as AppointmentIdType,
 } from "../../../../domain/appointment/appointmentId.js";
 import { AppointmentReason } from "../../../../domain/appointment/appointmentReason.js";
+import { AppointmentDuration } from "../../../../domain/appointment/appointmentDuration.js";
+import { AppointmentVersion } from "../../../../domain/appointment/appointmentVersion.js";
 import { CancellationReason } from "../../../../domain/appointment/cancellationReason.js";
 import { Diagnosis } from "../../../../domain/appointment/diagnosis.js";
 import { PaymentAmount } from "../../../../domain/appointment/paymentAmount.js";
+import { ServiceCode } from "../../../../domain/appointment/serviceCode.js";
 import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js";
 import { Treatment } from "../../../../domain/appointment/treatment.js";
 import { ExamResultItem } from "../../../../domain/examResult/examResultItem.js";
@@ -26,7 +29,9 @@ import type {
 } from "../../../../useCase/listAppointmentsUseCase.js";
 import type { ListOwnersUseCase } from "../../../../useCase/listOwnersUseCase.js";
 import type { ListPetsUseCase } from "../../../../useCase/listPetsUseCase.js";
-import type { ListUsersUseCase } from "../../../../useCase/listUsersUseCase.js";
+import type { ListVeterinariansUseCase } from "../../../../useCase/listVeterinariansUseCase.js";
+import type { UpdateAppointmentUseCase } from "../../../../useCase/updateAppointmentUseCase.js";
+import type { ReassignAppointmentVeterinarianUseCase } from "../../../../useCase/reassignAppointmentVeterinarianUseCase.js";
 import type { RecordExamResultUseCase } from "../../../../useCase/recordExamResultUseCase.js";
 import type { RecordPaymentUseCase } from "../../../../useCase/recordPaymentUseCase.js";
 import type { StartExaminationUseCase } from "../../../../useCase/startExaminationUseCase.js";
@@ -43,11 +48,27 @@ import type {
   WebEnvironment,
 } from "../pageProps.js";
 
-const BookingSchema = z.object({
+const AppointmentInputSchema = z.object({
   ownerId: OwnerId.schema,
   petId: PetId.schema,
   scheduledAt: Timestamp.schema,
+  serviceCode: ServiceCode.schema,
+  durationMinutes: z.coerce.number().pipe(AppointmentDuration.schema),
+  assignedVeterinarianId: z.preprocess(
+    (value) => value === "" ? null : value,
+    VeterinarianId.schema.nullable(),
+  ),
   reason: AppointmentReason.schema,
+});
+const UpdateAppointmentSchema = AppointmentInputSchema.extend({
+  expectedVersion: z.coerce.number().pipe(AppointmentVersion.schema),
+});
+const ReassignVeterinarianSchema = z.object({
+  expectedVersion: z.coerce.number().pipe(AppointmentVersion.schema),
+  assignedVeterinarianId: z.preprocess(
+    (value) => value === "" ? null : value,
+    VeterinarianId.schema.nullable(),
+  ),
 });
 const StartExaminationSchema = z.object({
   veterinarianId: VeterinarianId.schema.optional(),
@@ -78,6 +99,8 @@ const AppointmentDetailErrorSchema = z.enum([
   "invalid-state",
   "pet-mismatch",
   "appointment-conflict",
+  "schedule-conflict",
+  "prepaid-fields",
 ]);
 const deletedLabel = "削除済み";
 
@@ -127,6 +150,8 @@ export type AppointmentActions = Readonly<{
   startExamination: boolean;
   recordExamResult: boolean;
   recordPayment: boolean;
+  edit?: boolean;
+  reassignVeterinarian?: boolean;
 }>;
 export type AppointmentOwnerOption = Readonly<{
   ownerId: z.infer<typeof OwnerId.schema>;
@@ -153,7 +178,9 @@ type AppointmentRouteDependencies = Readonly<{
   cancelAppointment: CancelAppointmentUseCase;
   listOwners: ListOwnersUseCase;
   listPets: ListPetsUseCase;
-  listUsers: ListUsersUseCase;
+  listVeterinarians: ListVeterinariansUseCase;
+  updateAppointment: UpdateAppointmentUseCase;
+  reassignAppointmentVeterinarian: ReassignAppointmentVeterinarianUseCase;
 }>;
 
 const parseBody = <TOutput, TInput>(
@@ -233,6 +260,10 @@ const actionsFor = (
     recordExamResult:
       appointment.kind === "InExamination" && assignedExaminer,
     recordPayment: manager && appointment.kind === "AwaitingPayment",
+    edit: manager && appointment.kind === "Scheduled",
+    reassignVeterinarian:
+      manager &&
+      (appointment.kind === "Scheduled" || appointment.kind === "CheckedIn"),
   };
 };
 
@@ -253,8 +284,12 @@ const detailErrors = (raw: string | undefined): FieldErrors => {
       };
     case "appointment-conflict":
       return {
-        form: "予約を更新できませんでした。最新の状態を確認してください。",
+        form: "別の端末で予約が更新されました。最新の内容を確認してください。",
       };
+    case "schedule-conflict":
+      return { form: "選択した時間帯には、この獣医師の別の予約があります。" };
+    case "prepaid-fields":
+      return { form: "前受金の登録後は、ペットと診療メニューを変更できません。" };
     default:
       return assertNever(code);
   }
@@ -269,8 +304,8 @@ const renderAppointment = async (
   const actor = requireActor(context);
   if (actor.isErr()) return actor.error;
   let veterinarianOptions: readonly AppointmentVeterinarianOption[] = [];
-  if (actor.value.user.kind === "Admin") {
-    const veterinarians = await dependencies.listUsers.run({
+  if (actor.value.user.kind === "Admin" || actor.value.user.kind === "Receptionist") {
+    const veterinarians = await dependencies.listVeterinarians.run({
       actorUserId: actor.value.user.userId,
     });
     if (veterinarians.isErr()) {
@@ -283,12 +318,10 @@ const renderAppointment = async (
           return assertNever(veterinarians.error);
       }
     }
-    veterinarianOptions = veterinarians.value.users
-      .filter((user) => user.kind === "Veterinarian")
-      .map((user) => ({
-        veterinarianId: user.veterinarianId,
-        name: user.name.unwrap(),
-      }));
+    veterinarianOptions = veterinarians.value.veterinarians.map((veterinarian) => ({
+      veterinarianId: veterinarian.veterinarianId,
+      name: veterinarian.name.unwrap(),
+    }));
   }
   return dependencies.getAppointment
     .run({ actorUserId: actor.value.user.userId, appointmentId })
@@ -330,6 +363,7 @@ const loadBookingOptions = async (
     Readonly<{
       owners: readonly AppointmentOwnerOption[];
       pets: readonly AppointmentPetOption[];
+      veterinarians: readonly AppointmentVeterinarianOption[];
     }>,
     Response
   >
@@ -352,6 +386,14 @@ const loadBookingOptions = async (
   const pets = await dependencies.listPets.run({
     actorUserId: actor.value.user.userId,
   });
+  const veterinarians = await dependencies.listVeterinarians.run({
+    actorUserId: actor.value.user.userId,
+  });
+  if (veterinarians.isErr()) {
+    return err(respondToUseCaseError(context, {
+      kind: veterinarians.error.kind === "Unauthorized" ? "Unauthorized" : "RepositoryError",
+    }));
+  }
   return pets
     .map(({ pets: values }) => ({
       owners: owners.value.owners.map((owner) => ({
@@ -362,6 +404,10 @@ const loadBookingOptions = async (
         petId: pet.petId,
         ownerId: pet.ownerId,
         name: pet.name.unwrap(),
+      })),
+      veterinarians: veterinarians.value.veterinarians.map((veterinarian) => ({
+        veterinarianId: veterinarian.veterinarianId,
+        name: veterinarian.name.unwrap(),
       })),
     }))
     .mapErr((error) => {
@@ -390,6 +436,50 @@ const renderBooking = async (
       ),
     (response) => response,
   );
+};
+
+const renderEdit = async (
+  context: Context<WebEnvironment>,
+  dependencies: AppointmentRouteDependencies,
+  appointmentId: AppointmentIdType,
+  errors: FieldErrors = {},
+): Promise<Response> => {
+  const actor = requireClinicManager(context);
+  if (actor.isErr()) return actor.error;
+  const appointment = await dependencies.getAppointment.run({
+    actorUserId: actor.value.user.userId,
+    appointmentId,
+  });
+  if (appointment.isErr()) {
+    switch (appointment.error.kind) {
+      case "Unauthorized": return respondToUseCaseError(context, { kind: "Unauthorized" });
+      case "AppointmentNotFound": return respondToUseCaseError(context, { kind: "NotFound" });
+      case "RepositoryError": return repositoryFailure(context);
+      default: return assertNever(appointment.error);
+    }
+  }
+  if (appointment.value.appointment.kind !== "Scheduled") {
+    return invalidState(context, appointmentId);
+  }
+  const options = await loadBookingOptions(context, dependencies);
+  if (options.isErr()) return options.error;
+  const value = appointment.value.appointment;
+  return context.render("Appointments/Edit", withSharedProps(context, {
+    ...options.value,
+    appointment: {
+      appointmentId: value.appointmentId,
+      ownerId: value.ownerId,
+      petId: value.petId,
+      scheduledAt: value.scheduledAt,
+      durationMinutes: value.durationMinutes,
+      serviceCode: value.serviceCode,
+      assignedVeterinarianId: value.assignedVeterinarianId,
+      visitReason: value.visitReason.unwrap(),
+      version: value.version,
+      immutablePetAndService: value.settlement.kind === "DepositReceived",
+    },
+    errors,
+  }));
 };
 
 const detailUrl = (appointmentId: AppointmentIdType): string =>
@@ -438,7 +528,7 @@ export const registerAppointmentRoutes = (
   app.post("/appointments", async (context) => {
     const actor = requireClinicManager(context);
     if (actor.isErr()) return actor.error;
-    const parsed = await parseBody(context, BookingSchema);
+    const parsed = await parseBody(context, AppointmentInputSchema);
     if (parsed.isErr()) {
       return renderBooking(context, dependencies, parsed.error.errors);
     }
@@ -462,6 +552,14 @@ export const registerAppointmentRoutes = (
               return renderBooking(context, dependencies, {
                 petId: "選択した飼い主に登録されたペットを選んでください。",
               });
+            case "VeterinarianNotFound":
+              return renderBooking(context, dependencies, {
+                assignedVeterinarianId: "選択した担当獣医師が見つかりません。",
+              });
+            case "VeterinarianScheduleConflict":
+              return renderBooking(context, dependencies, {
+                assignedVeterinarianId: "選択した時間帯には、この獣医師の別の予約があります。",
+              });
             case "StaleAppointmentVersion":
               return context.redirect(`${detailUrl(error.appointmentId)}?error=appointment-conflict`, 303);
             case "IdentityGenerationFailed":
@@ -472,6 +570,89 @@ export const registerAppointmentRoutes = (
           }
         },
       );
+  });
+
+  app.get("/appointments/:appointmentId/edit", async (context) => {
+    const actor = requireClinicManager(context);
+    if (actor.isErr()) return actor.error;
+    const appointmentId = parseAppointmentId(context, context.req.param("appointmentId"));
+    if (appointmentId.isErr()) return appointmentId.error;
+    return renderEdit(context, dependencies, appointmentId.value);
+  });
+
+  app.put("/appointments/:appointmentId", async (context) => {
+    const actor = requireClinicManager(context);
+    if (actor.isErr()) return actor.error;
+    const appointmentId = parseAppointmentId(context, context.req.param("appointmentId"));
+    if (appointmentId.isErr()) return appointmentId.error;
+    const parsed = await parseBody(context, UpdateAppointmentSchema);
+    if (parsed.isErr()) {
+      return renderEdit(context, dependencies, appointmentId.value, parsed.error.errors);
+    }
+    return dependencies.updateAppointment.run({
+      actorUserId: actor.value.user.userId,
+      appointmentId: appointmentId.value,
+      expectedVersion: parsed.value.expectedVersion,
+      ownerId: parsed.value.ownerId,
+      petId: parsed.value.petId,
+      scheduledAt: parsed.value.scheduledAt,
+      durationMinutes: parsed.value.durationMinutes,
+      serviceCode: parsed.value.serviceCode,
+      assignedVeterinarianId: parsed.value.assignedVeterinarianId,
+      visitReason: parsed.value.reason,
+    }).match(
+      () => context.redirect(detailUrl(appointmentId.value), 303),
+      (error) => {
+        switch (error.kind) {
+          case "Unauthorized": return respondToUseCaseError(context, { kind: "Unauthorized" });
+          case "AppointmentNotFound": return respondToUseCaseError(context, { kind: "NotFound" });
+          case "InvalidAppointmentState": return invalidState(context, appointmentId.value);
+          case "StaleAppointmentVersion": return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
+          case "VeterinarianScheduleConflict": return context.redirect(`${detailUrl(appointmentId.value)}?error=schedule-conflict`, 303);
+          case "PrepaidAppointmentImmutableFieldsChanged": return context.redirect(`${detailUrl(appointmentId.value)}?error=prepaid-fields`, 303);
+          case "OwnerNotFound":
+          case "PetNotFound":
+          case "PetOwnerMismatch":
+          case "VeterinarianNotFound":
+            return renderEdit(context, dependencies, appointmentId.value, {
+              form: "入力内容を確認してください。",
+            });
+          case "IdentityGenerationFailed":
+          case "RepositoryError": return repositoryFailure(context);
+          default: return assertNever(error);
+        }
+      },
+    );
+  });
+
+  app.post("/appointments/:appointmentId/veterinarian", async (context) => {
+    const actor = requireClinicManager(context);
+    if (actor.isErr()) return actor.error;
+    const appointmentId = parseAppointmentId(context, context.req.param("appointmentId"));
+    if (appointmentId.isErr()) return appointmentId.error;
+    const parsed = await parseBody(context, ReassignVeterinarianSchema);
+    if (parsed.isErr()) return renderAppointment(context, dependencies, appointmentId.value, parsed.error.errors);
+    return dependencies.reassignAppointmentVeterinarian.run({
+      actorUserId: actor.value.user.userId,
+      appointmentId: appointmentId.value,
+      expectedVersion: parsed.value.expectedVersion,
+      assignedVeterinarianId: parsed.value.assignedVeterinarianId,
+    }).match(
+      () => context.redirect(detailUrl(appointmentId.value), 303),
+      (error) => {
+        switch (error.kind) {
+          case "Unauthorized": return respondToUseCaseError(context, { kind: "Unauthorized" });
+          case "AppointmentNotFound": return respondToUseCaseError(context, { kind: "NotFound" });
+          case "InvalidAppointmentState": return invalidState(context, appointmentId.value);
+          case "StaleAppointmentVersion": return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
+          case "VeterinarianScheduleConflict": return context.redirect(`${detailUrl(appointmentId.value)}?error=schedule-conflict`, 303);
+          case "VeterinarianNotFound": return renderAppointment(context, dependencies, appointmentId.value, { assignedVeterinarianId: "選択した担当獣医師が見つかりません。" });
+          case "IdentityGenerationFailed":
+          case "RepositoryError": return repositoryFailure(context);
+          default: return assertNever(error);
+        }
+      },
+    );
   });
 
   app.get("/appointments/:appointmentId", (context) => {

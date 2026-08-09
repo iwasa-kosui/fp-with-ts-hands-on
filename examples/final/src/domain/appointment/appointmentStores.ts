@@ -8,6 +8,9 @@ import type {
   AppointmentCheckedIn,
   ExaminationStarted,
   PaymentRecorded,
+  AppointmentUpdated,
+  AppointmentWalkInRegistered,
+  AppointmentVeterinarianReassigned,
 } from "./appointmentEvent.js";
 
 export type StaleAppointmentVersion = Readonly<{
@@ -15,7 +18,15 @@ export type StaleAppointmentVersion = Readonly<{
   appointmentId: AppointmentId;
   expectedVersion: AppointmentVersion;
 }>;
-export type AppointmentStoreError = RepositoryError | StaleAppointmentVersion;
+export type VeterinarianScheduleConflict = Readonly<{
+  kind: "VeterinarianScheduleConflict";
+  appointmentId: AppointmentId;
+  conflictingAppointmentId: AppointmentId;
+}>;
+export type AppointmentStoreError =
+  | RepositoryError
+  | StaleAppointmentVersion
+  | VeterinarianScheduleConflict;
 type AppointmentStore<TEvent> = Readonly<{
   store: (...events: readonly TEvent[]) => ResultAsync<void, AppointmentStoreError>;
 }>;
@@ -24,3 +35,6 @@ export type AppointmentCheckedInStore = AppointmentStore<AppointmentCheckedIn>;
 export type ExaminationStartedStore = AppointmentStore<ExaminationStarted>;
 export type PaymentRecordedStore = AppointmentStore<PaymentRecorded>;
 export type AppointmentCanceledStore = AppointmentStore<AppointmentCanceled>;
+export type AppointmentUpdatedStore = AppointmentStore<AppointmentUpdated>;
+export type AppointmentWalkInRegisteredStore = AppointmentStore<AppointmentWalkInRegistered>;
+export type AppointmentVeterinarianReassignedStore = AppointmentStore<AppointmentVeterinarianReassigned>;
