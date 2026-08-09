@@ -4,7 +4,9 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
 import OwnersForm from "../../src/adaptor/primary/web/pages/Owners/Form.js";
+import OwnersIndex from "../../src/adaptor/primary/web/pages/Owners/Index.js";
 import PetsForm from "../../src/adaptor/primary/web/pages/Pets/Form.js";
+import PetsIndex from "../../src/adaptor/primary/web/pages/Pets/Index.js";
 import UsersForm from "../../src/adaptor/primary/web/pages/Users/Form.js";
 import UsersIndex from "../../src/adaptor/primary/web/pages/Users/Index.js";
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
@@ -59,6 +61,114 @@ const expectAccessibleError = (
 };
 
 describe("management page accessibility", () => {
+  test("management indexes expose named tables, edit and delete actions, retained history, and empty states", async () => {
+    const usersHtml = await renderPage(UsersIndex, {
+      ...sharedProps,
+      users: [{ userId: adminId, role: "Admin", name: "Clinic Admin", email: "admin@example.test" }],
+      errors: {},
+    });
+    expect(usersHtml).toContain('aria-label="ユーザー一覧"');
+    expect(usersHtml).toContain(`href="/users/${adminId}/edit"`);
+    expect(usersHtml).toContain("編集");
+    expect(usersHtml).toContain("削除");
+    expect(usersHtml).toContain("監査履歴は保持されます");
+    expect(usersHtml).toContain("個人情報の完全消去ではありません");
+    expect(usersHtml).toContain("disabled");
+
+    const ownersHtml = await renderPage(OwnersIndex, {
+      ...sharedProps,
+      owners: [{ ownerId, name: "Hanako Owner", email: "hanako@example.test", phone: "090-1234-5678" }],
+      errors: {},
+    });
+    expect(ownersHtml).toContain('aria-label="飼い主一覧"');
+    expect(ownersHtml).toContain(`href="/owners/${ownerId}"`);
+    expect(ownersHtml).toContain("削除後も監査履歴は保持されます");
+
+    const petsHtml = await renderPage(PetsIndex, {
+      ...sharedProps,
+      pets: [{ petId, ownerId, name: "Mugi", species: "Cat" }],
+      errors: {},
+    });
+    expect(petsHtml).toContain('aria-label="ペット一覧"');
+    expect(petsHtml).toContain(`href="/pets/${petId}"`);
+    expect(petsHtml).toContain("診療・監査履歴は保持されます");
+    expect(petsHtml).toContain("履歴の消去操作ではありません");
+
+    const emptyUsersHtml = await renderPage(UsersIndex, {
+      ...sharedProps,
+      users: [],
+      errors: {},
+    });
+    expect(emptyUsersHtml).toContain("ユーザーはいません。");
+    expect(emptyUsersHtml).not.toContain('aria-label="ユーザー一覧"');
+
+    const emptyOwnersHtml = await renderPage(OwnersIndex, {
+      ...sharedProps,
+      owners: [],
+      errors: {},
+    });
+    expect(emptyOwnersHtml).toContain("飼い主はいません。");
+    expect(emptyOwnersHtml).not.toContain('aria-label="飼い主一覧"');
+
+    const emptyPetsHtml = await renderPage(PetsIndex, {
+      ...sharedProps,
+      pets: [],
+      errors: {},
+    });
+    expect(emptyPetsHtml).toContain("ペットはいません。");
+    expect(emptyPetsHtml).not.toContain('aria-label="ペット一覧"');
+  });
+
+  test("management forms name their modes and expose profile, password, owner, and pet boundaries", async () => {
+    const userCreateHtml = await renderPage(UsersForm, {
+      ...sharedProps,
+      mode: "create",
+      user: null,
+      errors: {},
+    });
+    expect(userCreateHtml).toContain('aria-label="ユーザー作成"');
+    expect(userCreateHtml).not.toContain("パスワードを再設定");
+
+    const userEditHtml = await renderPage(UsersForm, {
+      ...sharedProps,
+      mode: "edit",
+      user: { userId: adminId, role: "Admin", name: "Clinic Admin", email: "admin@example.test" },
+      errors: {},
+    });
+    expect(userEditHtml).toContain('aria-label="プロフィール"');
+    expect(userEditHtml).toContain('aria-label="パスワードを再設定"');
+
+    const ownerEditHtml = await renderPage(OwnersForm, {
+      ...sharedProps,
+      mode: "edit",
+      owner: { ownerId, name: "Hanako Owner", email: "hanako@example.test", phone: "090-1234-5678" },
+      errors: {},
+    });
+    expect(ownerEditHtml).toContain('aria-label="飼い主編集"');
+    expect(ownerEditHtml).toContain('id="name"');
+
+    const petEditHtml = await renderPage(PetsForm, {
+      ...sharedProps,
+      mode: "edit",
+      pet: { petId, ownerId, name: "Mugi", species: "Cat" },
+      owners: [],
+      errors: {},
+    });
+    expect(petEditHtml).toContain('aria-label="ペット編集"');
+    expect(petEditHtml).toContain("飼い主 ID");
+    expect(petEditHtml).not.toContain('name="ownerId"');
+
+    const petCreateHtml = await renderPage(PetsForm, {
+      ...sharedProps,
+      mode: "create",
+      pet: null,
+      owners: [{ ownerId, name: "Hanako Owner" }],
+      errors: {},
+    });
+    expect(petCreateHtml).toContain('name="ownerId"');
+    expect(petCreateHtml).toContain("Hanako Owner");
+  });
+
   test("user create and reset forms connect summaries and field errors to their controls", async () => {
     const createHtml = await renderPage(UsersForm, {
       ...sharedProps,

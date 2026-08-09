@@ -2,7 +2,10 @@ import { Link, useForm } from "@inertiajs/react";
 
 import type { UserPageView } from "../../routes/userRoutes.js";
 import type { SharedPageProps } from "../../pageProps.js";
+import { buttonClassName } from "../../components/Button.js";
+import { DataTable } from "../../components/DataTable.js";
 import { ErrorSummary } from "../../components/FormErrors.js";
+import { EmptyState, InlineAlert } from "../../components/Surface.js";
 import Layout from "../Layout.js";
 
 type UsersIndexProps = SharedPageProps &
@@ -21,16 +24,24 @@ export default function UsersIndex({ auth, errors, users }: UsersIndexProps) {
   };
 
   return (
-    <Layout title="ユーザー管理" user={auth.user}>
+    <Layout
+      actions={
+        <Link className={buttonClassName()} href="/users/new">
+          ユーザーを追加
+        </Link>
+      }
+      activeNavigation="users"
+      title="ユーザー管理"
+      user={auth.user}
+    >
       <ErrorSummary errors={errors} />
-      <p><Link href="/users/new">ユーザーを追加</Link></p>
-      <p className="notice">
+      <InlineAlert>
         削除するとアカウントのプロジェクションを物理削除します。監査履歴は保持されます。個人情報の完全消去ではありません。
-      </p>
+      </InlineAlert>
       {users.length === 0 ? (
-        <p>ユーザーはいません。</p>
+        <EmptyState>ユーザーはいません。</EmptyState>
       ) : (
-        <table>
+        <DataTable label="ユーザー一覧">
           <thead>
             <tr><th scope="col">名前</th><th scope="col">メール</th><th scope="col">役割</th><th scope="col">操作</th></tr>
           </thead>
@@ -41,8 +52,9 @@ export default function UsersIndex({ auth, errors, users }: UsersIndexProps) {
                 <td>{user.email}</td>
                 <td>{user.role}</td>
                 <td className="actions">
-                  <Link href={`/users/${user.userId}/edit`}>編集</Link>
+                  <Link className={buttonClassName("secondary")} href={`/users/${user.userId}/edit`}>編集</Link>
                   <button
+                    className={buttonClassName("danger")}
                     disabled={
                       deletion.processing || auth.user?.userId === user.userId
                     }
@@ -55,7 +67,7 @@ export default function UsersIndex({ auth, errors, users }: UsersIndexProps) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </DataTable>
       )}
     </Layout>
   );

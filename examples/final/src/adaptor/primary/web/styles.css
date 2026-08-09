@@ -410,6 +410,43 @@ td {
   padding: 24px;
 }
 
+.management-form-card {
+  max-width: 720px;
+  padding: 24px;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+}
+
+.settings-grid .management-form-card {
+  max-width: none;
+}
+
+.settings-grid h2 {
+  margin: 0 0 16px;
+  font-size: 16px;
+}
+
+.metadata-list {
+  margin: 0;
+}
+
+.metadata-list dt {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.metadata-list dd {
+  margin: 4px 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -660,6 +697,7 @@ td {
   }
 
   .form-grid,
+  .settings-grid,
   .appointment-workspace {
     grid-template-columns: 1fr;
   }
