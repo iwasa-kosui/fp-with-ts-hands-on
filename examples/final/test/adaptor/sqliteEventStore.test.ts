@@ -94,6 +94,33 @@ const eventWithRuntimePayload = (payload: unknown) => {
   return event;
 };
 
+const appendOnlyTriggerNames = [
+  "domain_event_payloads_append_only_delete",
+  "domain_event_payloads_append_only_update",
+  "domain_event_sensitive_payloads_append_only_delete",
+  "domain_event_sensitive_payloads_append_only_update",
+  "domain_events_append_only_delete",
+  "domain_events_append_only_update",
+] as const;
+
+const expectAppendOnlyTriggers = (db: ReturnType<typeof createSqliteDatabase>): void => {
+  expect(db.all(sql.raw(`
+    SELECT name FROM sqlite_master
+    WHERE type = 'trigger' AND name LIKE '%_append_only_%'
+    ORDER BY name
+  `))).toEqual(appendOnlyTriggerNames.map((name) => ({ name })));
+};
+
+const restoreBase0004AppliedDatabase = (
+  db: ReturnType<typeof createSqliteDatabase>,
+): void => {
+  migrateDatabase(db);
+  for (const triggerName of appendOnlyTriggerNames) {
+    db.run(sql.raw(`DROP TRIGGER IF EXISTS ${triggerName}`));
+  }
+  db.run(sql.raw("DELETE FROM __drizzle_migrations WHERE created_at > 1786546800000"));
+};
+
 const restoreLegacyAuditSchema = (db: ReturnType<typeof createSqliteDatabase>): void => {
   db.run(sql.raw("DROP TRIGGER IF EXISTS domain_event_payloads_classification"));
   db.run(sql.raw("DROP TRIGGER IF EXISTS domain_event_sensitive_payloads_classification"));
@@ -127,6 +154,7 @@ describe("SQLite event stores", () => {
       ))[0],
     ).toEqual({ name: "follow_up_request_claims" });
     expect(db.all(sql.raw("SELECT appointment_id FROM follow_up_request_claims"))).toEqual([]);
+    expectAppendOnlyTriggers(db);
   });
 
   test("0003 upgrades the actually recorded old 0002 schema and resumes follow-up writes", async () => {
@@ -281,6 +309,7 @@ describe("SQLite event stores", () => {
       eventPayload: row.eventPayload,
     })));
     expect(db.all(sql.raw("PRAGMA foreign_key_check"))).toEqual([]);
+    expectAppendOnlyTriggers(db);
   });
 
   test("payload tables reject classification mismatch and a second placement for one event", () => {
@@ -305,9 +334,19 @@ describe("SQLite event stores", () => {
       .toThrow(/already stored/i);
   });
 
-  test("audit metadata and both payload tables are append-only", () => {
+  test("0005 makes a journaled BASE 0004 audit database append-only", () => {
     const db = createSqliteDatabase(":memory:");
-    migrateDatabase(db);
+    restoreBase0004AppliedDatabase(db);
+    expect(
+      db.all(sql.raw(
+        "SELECT created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 1",
+      )),
+    ).toEqual([{ created_at: 1786546800000 }]);
+    expect(db.all(sql.raw(`
+      SELECT name FROM sqlite_master
+      WHERE type = 'trigger' AND name LIKE '%_append_only_%'
+    `))).toEqual([]);
+
     const regularEventId = "15000000-0000-4000-8000-000000000001";
     const sensitiveEventId = "15000000-0000-4000-8000-000000000002";
     db.insert(domainEventsTable).values([
@@ -345,6 +384,20 @@ describe("SQLite event stores", () => {
       regular: db.select().from(domainEventPayloadsTable).all(),
       sensitive: db.select().from(domainEventSensitivePayloadsTable).all(),
     };
+
+    migrateDatabase(db);
+    migrateDatabase(db);
+    expect(
+      db.all(sql.raw(
+        "SELECT created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 1",
+      )),
+    ).toEqual([{ created_at: 1786633200000 }]);
+    expectAppendOnlyTriggers(db);
+    expect({
+      metadata: db.select().from(domainEventsTable).all(),
+      regular: db.select().from(domainEventPayloadsTable).all(),
+      sensitive: db.select().from(domainEventSensitivePayloadsTable).all(),
+    }).toEqual(before);
 
     const mutations = [
       sql`UPDATE domain_events SET payload_sensitivity = ${"Sensitive"} WHERE event_id = ${regularEventId}`,
