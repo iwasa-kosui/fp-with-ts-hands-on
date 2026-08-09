@@ -25,10 +25,15 @@ const CalendarRowSchema = z.object({
   settlementStatus: z.enum(["NoPayment", "DepositReceived", "Settled", "DepositRefunded"]),
 });
 
-const toCalendarItem = (row: z.infer<typeof CalendarRowSchema>): AppointmentCalendarItem => ({
-  ...row,
-  endsAt: Timestamp.schema.parse(new Date(Date.parse(row.startsAt) + row.durationMinutes * 60_000).toISOString()),
+const AppointmentCalendarItemSchema = CalendarRowSchema.extend({
+  endsAt: Timestamp.schema,
 });
+
+const toCalendarItem = (row: z.infer<typeof CalendarRowSchema>): AppointmentCalendarItem =>
+  AppointmentCalendarItemSchema.parse({
+    ...row,
+    endsAt: Timestamp.schema.parse(new Date(Date.parse(row.startsAt) + row.durationMinutes * 60_000).toISOString()),
+  });
 
 export const createAppointmentCalendarReader = (db: SqliteDatabase): AppointmentCalendarReader => ({
   list: (_actor, range) => ResultAsync.fromPromise(

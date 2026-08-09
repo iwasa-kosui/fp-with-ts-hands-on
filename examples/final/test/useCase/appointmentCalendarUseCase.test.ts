@@ -60,11 +60,13 @@ describe("ListAppointmentCalendarUseCase", () => {
     const canceled = {
       ...scheduled,
       appointmentId: AppointmentId.schema.parse("82000000-0000-4000-8000-000000000002"),
+      petName: "わさび",
       appointmentStatus: "Canceled" as const,
     };
+    let receivedRange: unknown;
     const useCase = ListAppointmentCalendarUseCase.create({
       userResolver: { resolveById: () => okAsync(actor) },
-      appointmentCalendarReader: { list: () => okAsync([canceled, scheduled]) },
+      appointmentCalendarReader: { list: (_actor, range) => { receivedRange = range; return okAsync([canceled, scheduled]); } },
     });
 
     const result = await useCase.run({
@@ -76,5 +78,15 @@ describe("ListAppointmentCalendarUseCase", () => {
     });
 
     expect(result._unsafeUnwrap().appointments).toEqual([scheduled]);
+    expect(receivedRange).toEqual(BusinessDate.weekRange(BusinessDate.schema.parse("2026-08-09")));
+
+    const includeCanceled = await useCase.run({
+      actorUserId,
+      date: BusinessDate.schema.parse("2026-08-09"),
+      view: "week",
+      veterinarianId: veterinarianId,
+      includeCanceled: true,
+    });
+    expect(includeCanceled._unsafeUnwrap().appointments).toEqual([scheduled, canceled]);
   });
 });

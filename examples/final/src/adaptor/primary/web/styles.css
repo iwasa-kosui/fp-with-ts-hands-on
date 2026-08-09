@@ -542,7 +542,7 @@ td {
 .appointment-calendar__scroll { overflow-x: auto; }
 
 .appointment-calendar__headers,
-.appointment-calendar__grid {
+.appointment-calendar__timeline {
   display: grid;
   min-width: max-content;
 }
@@ -562,19 +562,24 @@ td {
   text-align: center;
 }
 
-.appointment-calendar__grid {
-  grid-template-rows: repeat(48, 15px);
-  position: relative;
+.appointment-calendar__timeline {
   min-height: 720px;
-  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 14px, var(--border) 15px);
 }
 
 .appointment-calendar__times {
   grid-column: 1;
-  grid-row: 1 / span 48;
+  grid-row: 1;
   display: grid;
   grid-template-rows: repeat(12, 60px);
   border-right: 1px solid var(--border);
+}
+
+.appointment-calendar__column {
+  position: relative;
+  min-width: 0;
+  height: 720px;
+  border-right: 1px solid var(--border);
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 14px, var(--border) 15px);
 }
 
 .appointment-calendar__times span {
@@ -584,24 +589,23 @@ td {
 }
 
 .appointment-calendar__card {
+  position: absolute;
   z-index: 1;
-  display: grid;
-  align-content: start;
-  gap: 2px;
+  box-sizing: border-box;
   min-width: 0;
-  margin: 2px 4px;
-  padding: 5px 7px;
-  overflow: hidden;
+  padding: 1px 3px;
+  overflow: visible;
   border: 1px solid var(--primary);
   border-radius: 6px;
   background: var(--surface-active);
   color: var(--text);
-  font-size: 12px;
-  line-height: 1.25;
+  font-size: 10px;
+  line-height: 1.1;
   text-decoration: none;
 }
 
 .appointment-calendar__card:hover { background: var(--primary-soft); }
+.appointment-calendar__card span { display: block; white-space: normal; }
 
 .appointment-calendar__auxiliary {
   margin: 12px 0;

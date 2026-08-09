@@ -17,6 +17,7 @@ type Props = SharedPageProps &
     veterinarians?: readonly Readonly<{ veterinarianId: string; name: string }>[];
     selectedVeterinarianId?: string | null;
     includeCanceled?: boolean;
+    today?: string;
   }>;
 
 const toCalendarItem = (appointment: AppointmentCalendarItem | AppointmentPageView): AppointmentCalendarItem =>
@@ -37,7 +38,7 @@ const toCalendarItem = (appointment: AppointmentCalendarItem | AppointmentPageVi
     };
 
 export default function AppointmentsIndex({
-  auth, date = "2026-08-09", requestedView = "week", appointments, veterinarians = [], selectedVeterinarianId = null, includeCanceled = false,
+  auth, date = "2026-08-09", requestedView = "week", appointments, veterinarians = [], selectedVeterinarianId = null, includeCanceled = false, today = date,
 }: Props) {
   const canBook =
     auth.user?.role === "Admin" || auth.user?.role === "Receptionist";
@@ -47,14 +48,14 @@ export default function AppointmentsIndex({
     <Layout
       actions={
         canBook ? (
-          <><Link className={buttonClassName()} href="/appointments/new">新しい予約</Link><Link className={buttonClassName("secondary")} href="/reception/walk-in">飛び込み受付</Link></>
+          <><Link className={buttonClassName()} href="/appointments/new">新しい予約</Link><Link className={buttonClassName("secondary")} href="/reception/walk-ins/new">飛び込み受付</Link></>
         ) : undefined
       }
       activeNavigation="appointments"
       title="予約カレンダー"
       user={auth.user}
     >
-      <CalendarToolbar date={date} requestedView={requestedView} selectedVeterinarianId={selectedVeterinarianId} includeCanceled={includeCanceled} veterinarians={veterinarians} />
+      <CalendarToolbar date={date} today={today} requestedView={requestedView} selectedVeterinarianId={selectedVeterinarianId} includeCanceled={includeCanceled} veterinarians={veterinarians} />
       <AppointmentCalendar date={date} view={view} appointments={calendarAppointments} veterinarians={veterinarians} selectedVeterinarianId={selectedVeterinarianId} />
     </Layout>
   );

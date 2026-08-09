@@ -25,6 +25,17 @@ describe("appointment calendar route", () => {
     const response = await app.request("/appointments?date=2026-02-29&view=month", { headers: { ...inertiaHeaders, Cookie: cookie } });
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({ component: "Appointments/Index", props: { date: "2026-08-09", requestedView: null } });
+    await expect(response.json()).resolves.toMatchObject({ component: "Appointments/Index", props: { date: "2026-08-09", today: "2026-08-09", requestedView: null } });
+  });
+
+  test("allows a manager to open the walk-in form from the calendar action", async () => {
+    const app = createHarness();
+    const setup = await post(app, "/setup", { email: "admin@example.test", name: "管理者", password: "correct horse battery staple" });
+    const cookie = setup.headers.get("set-cookie")?.split(";")[0] ?? "";
+
+    const response = await app.request("/reception/walk-ins/new", { headers: { ...inertiaHeaders, Cookie: cookie } });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ component: "Reception/WalkIn" });
   });
 });

@@ -2,17 +2,27 @@ import { Link, router } from "@inertiajs/react";
 import { useEffect, type ReactElement } from "react";
 
 import { BusinessDate } from "../../../../domain/appointment/businessDate.js";
-import { Timestamp } from "../../../../domain/aggregate/timestamp.js";
 import type { CalendarView } from "../../../../useCase/listAppointmentCalendarUseCase.js";
 import { buttonClassName } from "./Button.js";
 
 type Props = Readonly<{
   date: string;
+  today: string;
   requestedView: CalendarView | null;
   selectedVeterinarianId: string | null;
   includeCanceled: boolean;
   veterinarians: readonly Readonly<{ veterinarianId: string; name: string }>[];
 }>;
+
+const weekdays = ["日", "月", "火", "水", "木", "金", "土"] as const;
+const label = (date: string, includeYear: boolean): string => {
+  const instant = new Date(`${date}T12:00:00.000Z`);
+  const year = instant.getUTCFullYear();
+  const month = instant.getUTCMonth() + 1;
+  const day = instant.getUTCDate();
+  const weekday = weekdays[instant.getUTCDay()];
+  return `${includeYear ? `${year}年` : ""}${month}月${day}日（${weekday}）`;
+};
 
 const query = (date: string, view: CalendarView, veterinarianId: string | null, includeCanceled: boolean): string => {
   const params = new URLSearchParams({ date, view });
@@ -22,7 +32,7 @@ const query = (date: string, view: CalendarView, veterinarianId: string | null, 
 };
 
 export const CalendarToolbar = ({
-  date, requestedView, selectedVeterinarianId, includeCanceled, veterinarians,
+  date, today, requestedView, selectedVeterinarianId, includeCanceled, veterinarians,
 }: Props): ReactElement => {
   useEffect(() => {
     if (requestedView === null) {
@@ -35,10 +45,13 @@ export const CalendarToolbar = ({
   const businessDate = BusinessDate.schema.parse(date);
   const previous = BusinessDate.shift(businessDate, view === "day" ? -1 : -7);
   const next = BusinessDate.shift(businessDate, view === "day" ? 1 : 7);
-  const today = BusinessDate.fromTimestamp(Timestamp.schema.parse(new Date().toISOString()));
+  const weekStart = BusinessDate.shift(businessDate, -((new Date(`${businessDate}T12:00:00.000Z`).getUTCDay() + 6) % 7));
+  const weekEnd = BusinessDate.shift(weekStart, 6);
+  const currentRange = view === "day" ? label(date, true) : `${label(weekStart, true)}〜${label(weekEnd, false)}`;
 
   return (
     <section aria-label="カレンダー操作" className="calendar-toolbar">
+      <p className="calendar-toolbar__current-date" aria-live="polite">{currentRange}</p>
       <div className="calendar-toolbar__navigation" role="group" aria-label="日付操作">
         <Link className={buttonClassName("secondary")} href={query(previous, view, selectedVeterinarianId, includeCanceled)}>前へ</Link>
         <Link className={buttonClassName("secondary")} href={query(today, view, selectedVeterinarianId, includeCanceled)}>今日</Link>

@@ -33,8 +33,10 @@ export const registerAppointmentCalendarRoutes = (
   app.get("/appointments", async (context) => {
     const actor = requireActor(context);
     if (actor.isErr()) return actor.error;
+    const now = dependencies.clock.now();
     const parsedDate = BusinessDate.schema.safeParse(context.req.query("date"));
-    const date = parsedDate.success ? parsedDate.data : BusinessDate.fromTimestamp(dependencies.clock.now());
+    const today = BusinessDate.fromTimestamp(now);
+    const date = parsedDate.success ? parsedDate.data : today;
     const view = requestedView(context.req.query("view"));
     const includeCanceled = context.req.query("canceled") === "1";
     const veterinarianResult = await dependencies.listVeterinarians.run({ actorUserId: actor.value.user.userId });
@@ -59,6 +61,7 @@ export const registerAppointmentCalendarRoutes = (
     return calendar.match(
       ({ appointments }) => context.render("Appointments/Index", withSharedProps(context, {
         date,
+        today,
         requestedView: view,
         appointments,
         veterinarians,

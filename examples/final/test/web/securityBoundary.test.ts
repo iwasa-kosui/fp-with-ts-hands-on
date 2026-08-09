@@ -143,10 +143,14 @@ describe("clinic page SSR", () => {
     });
     const appointmentsHtml = await renderPage(AppointmentsIndex, {
       ...shared("Admin"),
+      date: "2026-08-10",
+      today: "2026-08-10",
       appointments: [scheduledView],
     });
     const veterinarianAppointmentsHtml = await renderPage(AppointmentsIndex, {
       ...shared("Veterinarian"),
+      date: "2026-08-10",
+      today: "2026-08-10",
       appointments: [scheduledView],
     });
 
@@ -346,6 +350,8 @@ describe("clinic page SSR", () => {
   test("renders lists and redacted event fields structurally without rebuilding hidden values", async () => {
     const appointments = await renderPage(AppointmentsIndex, {
       ...shared("Admin"),
+      date: "2026-08-10",
+      today: "2026-08-10",
       appointments: [scheduledView],
     });
     expect(appointments).not.toContain("Scheduled");

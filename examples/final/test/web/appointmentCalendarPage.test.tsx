@@ -56,15 +56,36 @@ describe("AppointmentCalendar", () => {
     expect(html).toContain("20:00以降の予約");
   });
 
-  test("makes the calendar page the reservation navigation entry while preserving booking and walk-in actions", () => {
+  test("shows manager-only booking actions at reachable paths without pre-adding the Task 7 board", () => {
     const html = renderToString(createElement(AppointmentsIndex, {
       auth: { user: { userId: UserId.schema.parse("84000000-0000-4000-8000-000000000003"), role: "Receptionist" } },
       errors: {}, flash: {}, date: "2026-08-09", requestedView: "day", appointments: [item],
-      veterinarians: [], selectedVeterinarianId: null, includeCanceled: false,
+      veterinarians: [], selectedVeterinarianId: null, includeCanceled: false, today: "2026-08-09",
     }));
 
     expect(html).toContain("予約カレンダー");
     expect(html).toContain('href="/appointments/new"');
-    expect(html).toContain('href="/reception/walk-in"');
+    expect(html).toContain('href="/reception/walk-ins/new"');
+    expect(html).not.toContain('href="/reception/board"');
+    const veterinarianHtml = renderToString(createElement(AppointmentsIndex, {
+      auth: { user: { userId: UserId.schema.parse("84000000-0000-4000-8000-000000000007"), role: "Veterinarian" } },
+      errors: {}, flash: {}, date: "2026-08-09", requestedView: "day", appointments: [item],
+      veterinarians: [], selectedVeterinarianId: null, includeCanceled: false, today: "2026-08-09",
+    }));
+    expect(veterinarianHtml).not.toContain("飛び込み受付");
+  });
+
+  test("shows the JST day or Monday-to-Sunday range and uses the server-provided today", () => {
+    const dayHtml = renderToString(createElement(AppointmentsIndex, {
+      auth: { user: null }, errors: {}, flash: {}, date: "2026-08-09", requestedView: "day", appointments: [], veterinarians: [], selectedVeterinarianId: null, includeCanceled: false, today: "2026-08-10",
+    }));
+    const weekHtml = renderToString(createElement(AppointmentsIndex, {
+      auth: { user: null }, errors: {}, flash: {}, date: "2026-08-09", requestedView: "week", appointments: [], veterinarians: [], selectedVeterinarianId: null, includeCanceled: false, today: "2026-08-10",
+    }));
+
+    expect(dayHtml).toContain("2026年8月9日（日）");
+    expect(dayHtml).toContain('href="/appointments?date=2026-08-10&amp;view=day"');
+    expect(weekHtml).toContain("2026年8月3日（月）〜8月9日（日）");
+    expect(weekHtml).toContain('aria-current="page"');
   });
 });
