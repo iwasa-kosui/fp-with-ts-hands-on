@@ -85,8 +85,8 @@ describe("GetReceptionBoardUseCase", () => {
   });
 
   test("sorts offset status timestamps by instant instead of their serialized text", async () => {
-    const earlier = row("81", "CheckedIn", "2026-08-10T00:00:00+14:00");
-    const later = row("82", "CheckedIn", "2026-08-09T23:00:00-14:00");
+    const earlier = row("81", "CheckedIn", "2026-08-10T00:00+1400");
+    const later = row("82", "CheckedIn", "2026-08-09T23:00-1400");
     const useCase = GetReceptionBoardUseCase.create({
       clock: { now: () => at("2026-08-10T14:00:00Z") },
       userResolver: { resolveById: () => okAsync(users.Admin) },

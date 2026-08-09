@@ -11,6 +11,7 @@ import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type { SqliteDatabase } from "../db.js";
 import { persistDomainEvent } from "../eventPersistence.js";
 import { appointmentsTable } from "../schema.js";
+import { sqliteJulianDay } from "../sqliteTimestamp.js";
 
 type AppointmentProjectionEvent = Exclude<
   AppointmentEvent,
@@ -118,6 +119,16 @@ const ensureVeterinarianScheduleAvailable = (
 ): void => {
   const state = event.aggregateState;
   if (!checksVeterinarianSchedule(event) || state.assignedVeterinarianId === null) return;
+  const storedStart = sqliteJulianDay(appointmentsTable.scheduledAt);
+  const storedEnd = sqliteJulianDay(
+    appointmentsTable.scheduledAt,
+    sql`'+' || ${appointmentsTable.durationMinutes} || ' minutes'`,
+  );
+  const candidateStart = sqliteJulianDay(state.scheduledAt);
+  const candidateEnd = sqliteJulianDay(
+    state.scheduledAt,
+    sql`'+' || ${state.durationMinutes} || ' minutes'`,
+  );
   const conflicting = tx
     .select({ appointmentId: appointmentsTable.appointmentId })
     .from(appointmentsTable)
@@ -125,8 +136,8 @@ const ensureVeterinarianScheduleAvailable = (
       eq(appointmentsTable.assignedVeterinarianId, state.assignedVeterinarianId),
       inArray(appointmentsTable.status, ["Scheduled", "CheckedIn"]),
       ne(appointmentsTable.appointmentId, state.appointmentId),
-      sql`julianday(${appointmentsTable.scheduledAt}) < julianday(${state.scheduledAt}, '+' || ${state.durationMinutes} || ' minutes')`,
-      sql`julianday(${state.scheduledAt}) < julianday(${appointmentsTable.scheduledAt}, '+' || ${appointmentsTable.durationMinutes} || ' minutes')`,
+      sql`${storedStart} < ${candidateEnd}`,
+      sql`${candidateStart} < ${storedEnd}`,
     ))
     .limit(1)
     .get();

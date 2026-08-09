@@ -192,7 +192,8 @@ OR EXISTS (
 	FROM `_0007_appointment_states`
 	WHERE json_extract(`state`, '$.settlement.kind') = 'Settled'
 		AND (
-			json_type(`state`, '$.settlement.finalAmount') IS NOT 'integer'
+			json_type(`state`, '$.settlement.settledAt') IS NOT 'text'
+			OR json_type(`state`, '$.settlement.finalAmount') IS NOT 'integer'
 			OR json_type(`state`, '$.settlement.depositAmount') IS NOT 'integer'
 			OR json_type(`state`, '$.settlement.additionalPaymentAmount') IS NOT 'integer'
 			OR json_type(`state`, '$.settlement.refundAmount') IS NOT 'integer'

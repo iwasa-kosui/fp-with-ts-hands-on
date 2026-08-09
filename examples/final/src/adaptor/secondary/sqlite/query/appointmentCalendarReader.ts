@@ -11,6 +11,7 @@ import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js
 import type { AppointmentCalendarItem, AppointmentCalendarReader } from "../../../../useCase/query/appointmentCalendarReader.js";
 import type { SqliteDatabase } from "../db.js";
 import { appointmentsTable, petsTable, usersTable } from "../schema.js";
+import { sqliteInstantIsNull, sqliteJulianDay } from "../sqliteTimestamp.js";
 
 const CalendarRowSchema = z.object({
   appointmentId: AppointmentId.schema,
@@ -38,7 +39,17 @@ const toCalendarItem = (row: z.infer<typeof CalendarRowSchema>): AppointmentCale
 export const createAppointmentCalendarReader = (db: SqliteDatabase): AppointmentCalendarReader => ({
   list: (_actor, range) => ResultAsync.fromPromise(
     Promise.resolve().then(() => {
-      const scheduledInstant = sql<number>`julianday(${appointmentsTable.scheduledAt})`;
+      const invalid = db.select({ appointmentId: appointmentsTable.appointmentId })
+        .from(appointmentsTable)
+        .where(sqliteInstantIsNull(appointmentsTable.scheduledAt))
+        .limit(1)
+        .get();
+      if (invalid !== undefined) {
+        throw new TypeError("Corrupt appointment scheduled timestamp projection");
+      }
+      const scheduledInstant = sqliteJulianDay(appointmentsTable.scheduledAt);
+      const rangeStart = sqliteJulianDay(range.startsAt);
+      const rangeEnd = sqliteJulianDay(range.endsAt);
       return db.select({
       appointmentId: appointmentsTable.appointmentId,
       startsAt: appointmentsTable.scheduledAt,
@@ -56,8 +67,8 @@ export const createAppointmentCalendarReader = (db: SqliteDatabase): Appointment
         eq(usersTable.veterinarianId, appointmentsTable.assignedVeterinarianId),
         eq(usersTable.role, "Veterinarian"),
       ))
-      .where(sql`${scheduledInstant} >= julianday(${range.startsAt})
-        AND ${scheduledInstant} < julianday(${range.endsAt})`)
+      .where(sql`${scheduledInstant} >= ${rangeStart}
+        AND ${scheduledInstant} < ${rangeEnd}`)
       .orderBy(asc(scheduledInstant), asc(petsTable.name))
       .all().map((row) => CalendarRowSchema.parse(row)).map(toCalendarItem);
     }),

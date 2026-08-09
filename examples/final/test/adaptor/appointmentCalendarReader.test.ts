@@ -57,6 +57,7 @@ test("compares offset timestamps as instants at both half-open range boundaries"
   migrateDatabase(database);
   const ownerId = "83100000-0000-4000-8000-000000000001";
   const petId = "83100000-0000-4000-8000-000000000002";
+  const otherPetId = "83100000-0000-4000-8000-000000000009";
   database.insert(ownersTable).values({
     ownerId,
     name: "飼い主",
@@ -64,6 +65,7 @@ test("compares offset timestamps as instants at both half-open range boundaries"
     phone: "090-0000-0000",
   }).run();
   database.insert(petsTable).values({ petId, ownerId, name: "こむぎ", species: "Dog" }).run();
+  database.insert(petsTable).values({ petId: otherPetId, ownerId, name: "あずき", species: "Cat" }).run();
 
   const base = {
     status: "Scheduled" as const,
@@ -100,6 +102,22 @@ test("compares offset timestamps as instants at both half-open range boundaries"
       appointmentId: "83100000-0000-4000-8000-000000000013",
       scheduledAt: "2026-08-10T15:00:00Z",
     },
+    {
+      ...base,
+      appointmentId: "83100000-0000-4000-8000-000000000014",
+      petId: otherPetId,
+      scheduledAt: "2026-08-10T00:30+0930",
+    },
+    {
+      ...base,
+      appointmentId: "83100000-0000-4000-8000-000000000015",
+      scheduledAt: "2026-08-11T04:29:59.500+1400",
+    },
+    {
+      ...base,
+      appointmentId: "83100000-0000-4000-8000-000000000016",
+      scheduledAt: "2026-08-10T01:00-1400",
+    },
   ]).run();
 
   const result = await createAppointmentCalendarReader(database).list(actor, {
@@ -108,7 +126,49 @@ test("compares offset timestamps as instants at both half-open range boundaries"
   });
 
   expect(result._unsafeUnwrap().map(({ appointmentId }) => appointmentId)).toEqual([
+    "83100000-0000-4000-8000-000000000014",
     "83100000-0000-4000-8000-000000000011",
     "83100000-0000-4000-8000-000000000012",
+    "83100000-0000-4000-8000-000000000015",
   ]);
+});
+
+test("rejects a post-migration appointment whose scheduled projection is not an instant", async () => {
+  const database = createSqliteDatabase(":memory:");
+  migrateDatabase(database);
+  const ownerId = "83200000-0000-4000-8000-000000000001";
+  const petId = "83200000-0000-4000-8000-000000000002";
+  database.insert(ownersTable).values({
+    ownerId,
+    name: "飼い主",
+    email: "owner@example.test",
+    phone: "090-0000-0000",
+  }).run();
+  database.insert(petsTable).values({ petId, ownerId, name: "こむぎ", species: "Dog" }).run();
+  database.insert(appointmentsTable).values({
+    appointmentId: "83200000-0000-4000-8000-000000000003",
+    status: "Scheduled",
+    ownerId,
+    petId,
+    scheduledAt: "not-a-timestamp",
+    durationMinutes: 30,
+    serviceCode: "GeneralConsultation",
+    bookingKind: "Reserved",
+    assignedVeterinarianId: null,
+    receptionNote: null,
+    settlementStatus: "NoPayment",
+    depositAmount: null,
+    version: 1,
+    state: { kind: "Scheduled" },
+  }).run();
+
+  const result = await createAppointmentCalendarReader(database).list(actor, {
+    startsAt: Timestamp.schema.parse("2026-08-09T15:00:00Z"),
+    endsAt: Timestamp.schema.parse("2026-08-10T15:00:00Z"),
+  });
+
+  expect(result._unsafeUnwrapErr()).toMatchObject({
+    kind: "RepositoryError",
+    operation: "AppointmentCalendarReader.list",
+  });
 });

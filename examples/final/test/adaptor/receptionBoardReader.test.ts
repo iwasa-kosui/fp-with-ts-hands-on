@@ -79,6 +79,21 @@ describe("createReceptionBoardReader", () => {
         appointmentId: "92100000-0000-4000-8000-000000000013",
         scheduledAt: "2026-08-10T15:00:00Z",
       },
+      {
+        ...base,
+        appointmentId: "92100000-0000-4000-8000-000000000014",
+        scheduledAt: "2026-08-10T00:30+0930",
+      },
+      {
+        ...base,
+        appointmentId: "92100000-0000-4000-8000-000000000015",
+        scheduledAt: "2026-08-11T04:29:59.500+1400",
+      },
+      {
+        ...base,
+        appointmentId: "92100000-0000-4000-8000-000000000016",
+        scheduledAt: "2026-08-10T01:00-1400",
+      },
     ]).run();
 
     const result = await createReceptionBoardReader(database).list(
@@ -90,10 +105,46 @@ describe("createReceptionBoardReader", () => {
       at("2026-08-10T14:30:00Z"),
     );
 
-    expect(result._unsafeUnwrap().map(({ appointmentId }) => appointmentId)).toEqual([
+    expect(result._unsafeUnwrap().map(({ appointmentId }) => appointmentId).sort()).toEqual([
       "92100000-0000-4000-8000-000000000011",
       "92100000-0000-4000-8000-000000000012",
+      "92100000-0000-4000-8000-000000000014",
+      "92100000-0000-4000-8000-000000000015",
     ]);
+  });
+
+  test("rejects a post-migration appointment whose scheduled projection is not an instant", async () => {
+    const { database, ownerId, petId } = setup();
+    database.insert(appointmentsTable).values({
+      appointmentId: "92200000-0000-4000-8000-000000000001",
+      status: "Scheduled",
+      ownerId,
+      petId,
+      scheduledAt: "not-a-timestamp",
+      durationMinutes: 30,
+      serviceCode: "GeneralConsultation",
+      bookingKind: "Reserved",
+      assignedVeterinarianId: null,
+      receptionNote: null,
+      settlementStatus: "NoPayment",
+      depositAmount: null,
+      version: 1,
+      state: { kind: "Scheduled", settlement: { kind: "NoPayment" } },
+    }).run();
+
+    const result = await createReceptionBoardReader(database).list(
+      actor,
+      {
+        startsAt: at("2026-08-09T15:00:00Z"),
+        endsAt: at("2026-08-10T15:00:00Z"),
+      },
+      at("2026-08-10T14:30:00Z"),
+    );
+
+    expect(result._unsafeUnwrapErr()).toMatchObject({
+      kind: "RepositoryError",
+      operation: "ReceptionBoardReader.list",
+    });
   });
 
   test("rejects a corrupt status projection whose required chronology is missing", async () => {

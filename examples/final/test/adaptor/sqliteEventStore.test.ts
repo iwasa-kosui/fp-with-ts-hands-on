@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -1034,6 +1034,83 @@ describe("SQLite event stores", () => {
       visitReason: AppointmentReason.schema.parse("updated private reason"),
     })._unsafeUnwrap();
     expect((await store.store(selfUpdate)).isOk()).toBe(true);
+  });
+
+  test.each([
+    [
+      "a CheckedIn stored compact +0930 timestamp without seconds",
+      "2026-08-10T19:00+0930",
+      "2026-08-10T09:45:00Z",
+      "CheckedIn",
+      true,
+    ],
+    [
+      "a compact -1400 candidate timestamp",
+      "2026-08-10T10:15:00Z",
+      "2026-08-09T20:00-1400",
+      "Scheduled",
+      true,
+    ],
+    [
+      "compact stored +1400 and candidate +0930 fractional timestamps",
+      "2026-08-10T23:59:59.500+1400",
+      "2026-08-10T19:44:59.500+0930",
+      "Scheduled",
+      true,
+    ],
+    [
+      "compact timestamps touching at the half-open boundary",
+      "2026-08-10T10:00+0930",
+      "2026-08-09T11:00-1400",
+      "Scheduled",
+      false,
+    ],
+  ] as const)("handles %s by instant", async (
+    _case,
+    storedAt,
+    candidateAt,
+    storedStatus,
+    conflicts,
+  ) => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const store = createAppointmentEventStore(db);
+    const bookAt = (
+      appointmentId: AppointmentId,
+      startsAt: string,
+      sequence: number,
+    ) => Appointment.book(eventContext(sequence))({
+      appointmentId,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse(startsAt),
+      durationMinutes: AppointmentDuration.schema.parse(30),
+      serviceCode: ServiceCode.schema.parse("GeneralConsultation"),
+      bookingKind: "Reserved",
+      assignedVeterinarianId: ids.veterinarian,
+      visitReason: AppointmentReason.schema.parse(`compact offset ${sequence}`),
+      receptionNote: null,
+    });
+    const existing = bookAt(ids.appointment, storedAt, 20);
+    (await store.store(existing))._unsafeUnwrap();
+    if (storedStatus === "CheckedIn") {
+      db.update(appointmentsTable)
+        .set({ status: storedStatus })
+        .where(eq(appointmentsTable.appointmentId, ids.appointment))
+        .run();
+    }
+    const candidate = bookAt(ids.otherAppointment, candidateAt, 21);
+
+    const result = await store.store(candidate);
+
+    expect(result.isErr()).toBe(conflicts);
+    if (conflicts) {
+      expect(result._unsafeUnwrapErr()).toEqual({
+        kind: "VeterinarianScheduleConflict",
+        appointmentId: ids.otherAppointment,
+        conflictingAppointmentId: ids.appointment,
+      });
+    }
   });
 
   test.each([

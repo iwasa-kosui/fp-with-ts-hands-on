@@ -17,18 +17,24 @@ import {
   domainEventsTable,
   examResultsTable,
   installationTable,
+  ownersTable,
+  petsTable,
   sessionsTable,
   usersTable,
 } from "../../src/adaptor/secondary/sqlite/schema.js";
 import { createInitialAdminSetupStore } from "../../src/adaptor/secondary/sqlite/store/initialAdminSetupStore.js";
 import { createAppointmentByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/appointmentResolver.js";
+import { createAppointmentCalendarReader } from "../../src/adaptor/secondary/sqlite/query/appointmentCalendarReader.js";
+import { createReceptionBoardReader } from "../../src/adaptor/secondary/sqlite/query/receptionBoardReader.js";
 import { createAppointmentEventStore } from "../../src/adaptor/secondary/sqlite/store/appointmentEventStore.js";
 import { createExaminationCompletionStore } from "../../src/adaptor/secondary/sqlite/store/examinationCompletionStore.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { Appointment } from "../../src/domain/appointment/appointment.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { AppointmentDuration } from "../../src/domain/appointment/appointmentDuration.js";
 import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
+import { ServiceCode } from "../../src/domain/appointment/serviceCode.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
 import { ExamResult } from "../../src/domain/examResult/examResult.js";
@@ -515,6 +521,281 @@ describe("file SQLite application smoke", () => {
       expect(() => migrateDatabase(database)).toThrow();
     },
   );
+
+  test.each([
+    ["projection", "missing", undefined],
+    ["projection", "null", null],
+    ["projection", "non-text", 123],
+    ["regular audit", "missing", undefined],
+    ["regular audit", "null", null],
+    ["regular audit", "non-text", 123],
+    ["sensitive audit", "missing", undefined],
+    ["sensitive audit", "null", null],
+    ["sensitive audit", "non-text", 123],
+  ] as const)(
+    "rejects and fully rolls back a %s Settled state with %s settledAt",
+    (source, _case, settledAt) => {
+      const database = createSqliteDatabase(":memory:");
+      migrateDatabase(database);
+      database.run(sql.raw(
+        "DELETE FROM __drizzle_migrations WHERE created_at = 1786806000000",
+      ));
+      const appointmentId = "7d500000-0000-4000-8000-000000000001";
+      const ownerId = "7d500000-0000-4000-8000-000000000002";
+      const petId = "7d500000-0000-4000-8000-000000000003";
+      const state = {
+        kind: "Paid",
+        appointmentId,
+        ownerId,
+        petId,
+        scheduledAt: "2026-08-10T01:00:00.000Z",
+        serviceCode: "GeneralConsultation",
+        settlement: {
+          kind: "Settled",
+          finalAmount: 5000,
+          depositAmount: 0,
+          additionalPaymentAmount: 5000,
+          refundAmount: 0,
+          ...(settledAt === undefined ? {} : { settledAt }),
+        },
+      };
+      if (source === "projection") {
+        database.insert(appointmentsTable).values({
+          appointmentId,
+          status: "Paid",
+          ownerId,
+          petId,
+          scheduledAt: state.scheduledAt,
+          durationMinutes: 30,
+          serviceCode: "GeneralConsultation",
+          bookingKind: "Reserved",
+          assignedVeterinarianId: null,
+          receptionNote: null,
+          settlementStatus: "Settled",
+          depositAmount: 0,
+          version: 1,
+          state,
+        }).run();
+      } else {
+        const sensitivity = source === "regular audit" ? "Regular" : "Sensitive";
+        const eventId = source === "regular audit"
+          ? "7d500000-0000-4000-8000-000000000004"
+          : "7d500000-0000-4000-8000-000000000005";
+        database.insert(domainEventsTable).values({
+          eventId,
+          aggregateId: appointmentId,
+          aggregateName: "Appointment",
+          eventName: "appointment.final-settlement-recorded",
+          occurredAt: "2026-08-10T02:00:00.000Z",
+          actorUserId: "7d500000-0000-4000-8000-000000000006",
+          payloadSensitivity: sensitivity,
+        }).run();
+        const payload = {
+          eventId,
+          aggregateState: state,
+          eventPayload: { appointmentId },
+        };
+        if (sensitivity === "Regular") {
+          database.insert(domainEventPayloadsTable).values(payload).run();
+        } else {
+          database.insert(domainEventSensitivePayloadsTable).values(payload).run();
+        }
+      }
+      const before = snapshotLegacyMigrationState(database);
+
+      expect(() => migrateDatabase(database)).toThrow();
+      expect(snapshotLegacyMigrationState(database)).toEqual(before);
+    },
+  );
+
+  test("accepts valid Settled timestamps in every source from 0006 and remains idempotent", () => {
+    const database = createSqliteDatabase(":memory:");
+    migrateDatabase(database);
+    database.run(sql.raw(
+      "DELETE FROM __drizzle_migrations WHERE created_at = 1786806000000",
+    ));
+    const appointmentId = "7d600000-0000-4000-8000-000000000001";
+    const ownerId = "7d600000-0000-4000-8000-000000000002";
+    const petId = "7d600000-0000-4000-8000-000000000003";
+    const state = {
+      kind: "Paid",
+      appointmentId,
+      ownerId,
+      petId,
+      scheduledAt: "2026-08-10T01:00:00+0930",
+      serviceCode: "GeneralConsultation",
+      settlement: {
+        kind: "Settled",
+        finalAmount: 5000,
+        depositAmount: 0,
+        additionalPaymentAmount: 5000,
+        refundAmount: 0,
+        settledAt: "2026-08-10T02:00:00+0930",
+      },
+    } as const;
+    database.insert(appointmentsTable).values({
+      appointmentId,
+      status: "Paid",
+      ownerId,
+      petId,
+      scheduledAt: state.scheduledAt,
+      durationMinutes: 30,
+      serviceCode: state.serviceCode,
+      bookingKind: "Reserved",
+      assignedVeterinarianId: null,
+      receptionNote: null,
+      settlementStatus: state.settlement.kind,
+      depositAmount: state.settlement.depositAmount,
+      version: 1,
+      state,
+    }).run();
+    for (const [sensitivity, eventId] of [
+      ["Regular", "7d600000-0000-4000-8000-000000000004"],
+      ["Sensitive", "7d600000-0000-4000-8000-000000000005"],
+    ] as const) {
+      database.insert(domainEventsTable).values({
+        eventId,
+        aggregateId: appointmentId,
+        aggregateName: "Appointment",
+        eventName: "appointment.final-settlement-recorded",
+        occurredAt: "2026-08-10T02:00:00.000Z",
+        actorUserId: "7d600000-0000-4000-8000-000000000006",
+        payloadSensitivity: sensitivity,
+      }).run();
+      const payload = {
+        eventId,
+        aggregateState: state,
+        eventPayload: { appointmentId },
+      };
+      if (sensitivity === "Regular") {
+        database.insert(domainEventPayloadsTable).values(payload).run();
+      } else {
+        database.insert(domainEventSensitivePayloadsTable).values(payload).run();
+      }
+    }
+
+    migrateDatabase(database);
+    const afterFirstMigration = snapshotLegacyMigrationState(database);
+    migrateDatabase(database);
+
+    expect(snapshotLegacyMigrationState(database)).toEqual(afterFirstMigration);
+  });
+
+  test("keeps a compact-offset row visible and overlap-safe after it passes 0007", async () => {
+    const database = createSqliteDatabase(":memory:");
+    migrateDatabase(database);
+    database.run(sql.raw(
+      "DELETE FROM __drizzle_migrations WHERE created_at = 1786806000000",
+    ));
+    const appointmentId = "7d700000-0000-4000-8000-000000000001";
+    const candidateId = AppointmentId.schema.parse(
+      "7d700000-0000-4000-8000-000000000002",
+    );
+    const ownerId = OwnerId.schema.parse("7d700000-0000-4000-8000-000000000003");
+    const petId = PetId.schema.parse("7d700000-0000-4000-8000-000000000004");
+    const veterinarianId = VeterinarianId.schema.parse(
+      "7d700000-0000-4000-8000-000000000005",
+    );
+    const actorUserId = UserId.schema.parse("7d700000-0000-4000-8000-000000000006");
+    database.insert(ownersTable).values({
+      ownerId,
+      name: "Compact Owner",
+      email: "compact.owner@example.test",
+      phone: "090-0000-0000",
+    }).run();
+    database.insert(petsTable).values({
+      petId,
+      ownerId,
+      name: "Compact Pet",
+      species: "Cat",
+    }).run();
+    database.insert(usersTable).values({
+      userId: "7d700000-0000-4000-8000-000000000007",
+      role: "Veterinarian",
+      email: "compact.vet@example.test",
+      name: "Compact Vet",
+      passwordHash: "hash",
+      veterinarianId,
+    }).run();
+    const scheduledAt = "2026-08-10T00:30+0930";
+    const state = {
+      kind: "Scheduled",
+      appointmentId,
+      ownerId,
+      petId,
+      scheduledAt,
+      durationMinutes: 30,
+      serviceCode: "GeneralConsultation",
+      bookingKind: "Reserved",
+      assignedVeterinarianId: veterinarianId,
+      visitReason: "compact legacy",
+      receptionNote: null,
+      settlement: { kind: "NoPayment" },
+      version: 1,
+    } as const;
+    database.insert(appointmentsTable).values({
+      appointmentId,
+      status: state.kind,
+      ownerId,
+      petId,
+      scheduledAt,
+      durationMinutes: state.durationMinutes,
+      serviceCode: state.serviceCode,
+      bookingKind: state.bookingKind,
+      assignedVeterinarianId: veterinarianId,
+      receptionNote: null,
+      settlementStatus: state.settlement.kind,
+      depositAmount: null,
+      version: state.version,
+      state,
+    }).run();
+
+    migrateDatabase(database);
+    const actor = {
+      kind: "Admin" as const,
+      userId: actorUserId,
+      email: "admin@example.test" as never,
+      name: "Admin" as never,
+      passwordHash: "hash" as never,
+    };
+    const range = {
+      startsAt: Timestamp.schema.parse("2026-08-09T15:00:00Z"),
+      endsAt: Timestamp.schema.parse("2026-08-10T15:00:00Z"),
+    };
+
+    expect((await createAppointmentCalendarReader(database).list(actor, range))
+      ._unsafeUnwrap().map((row) => row.appointmentId)).toEqual([appointmentId]);
+    expect((await createReceptionBoardReader(database).list(
+      actor,
+      range,
+      Timestamp.schema.parse("2026-08-10T00:00:00Z"),
+    ))._unsafeUnwrap().map((row) => row.appointmentId)).toEqual([appointmentId]);
+
+    const candidate = Appointment.book({
+      eventId: EventId.schema.parse("7d700000-0000-4000-8000-000000000008"),
+      occurredAt: Timestamp.schema.parse("2026-08-09T14:00:00Z"),
+      actorUserId,
+    })({
+      appointmentId: candidateId,
+      ownerId,
+      petId,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T00:45+0930"),
+      durationMinutes: AppointmentDuration.schema.parse(30),
+      serviceCode: ServiceCode.schema.parse("GeneralConsultation"),
+      bookingKind: "Reserved",
+      assignedVeterinarianId: veterinarianId,
+      visitReason: AppointmentReason.schema.parse("overlapping compact candidate"),
+      receptionNote: null,
+    });
+    const result = await createAppointmentEventStore(database).store(candidate);
+
+    expect(result._unsafeUnwrapErr()).toEqual({
+      kind: "VeterinarianScheduleConflict",
+      appointmentId: candidateId,
+      conflictingAppointmentId: appointmentId,
+    });
+    expect(database.select().from(appointmentsTable).all()).toHaveLength(1);
+  });
 
   test.each([
     [
