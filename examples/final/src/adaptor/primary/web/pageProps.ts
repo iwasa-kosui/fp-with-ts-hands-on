@@ -24,7 +24,14 @@ export type WebVariables = Readonly<{
   sharedProps: SharedPageProps;
 }>;
 
+export type ViteHtmlTransformer = Readonly<{
+  transformIndexHtml: (url: string, html: string) => Promise<string>;
+}>;
+
 export type WebEnvironment = Readonly<{
+  Bindings: Readonly<{
+    vite?: ViteHtmlTransformer;
+  }>;
   Variables: WebVariables;
 }>;
 

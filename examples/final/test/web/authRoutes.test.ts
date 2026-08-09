@@ -165,6 +165,24 @@ describe("Hono/Inertia authentication boundary", () => {
     expect(setupAfterCreation.headers.get("location")).toBe("/login");
   });
 
+  test("accepts the JSON submission sent by the Inertia setup form", async () => {
+    const harness = createHarness();
+
+    const response = await harness.app.request("/setup", {
+      method: "POST",
+      body: JSON.stringify(credentials),
+      headers: {
+        ...inertiaHeaders,
+        "Content-Type": "application/json",
+        Origin: "http://localhost",
+      },
+    });
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe("/");
+    expect(response.headers.get("set-cookie")).toContain("clinic_session=");
+  });
+
   test("renders the required Inertia shell without placing secrets in HTML", async () => {
     const { app } = createHarness();
 
@@ -175,6 +193,23 @@ describe("Hono/Inertia authentication boundary", () => {
     expect(html).toContain('data-page="app"');
     expect(html).toContain("/src/adaptor/primary/web/client.tsx");
     expect(html).not.toContain(credentials.password);
+  });
+
+  test("passes development HTML through Vite so React Refresh is initialized", async () => {
+    const { app } = createHarness();
+    const reactRefreshPreamble =
+      '<script type="module">window.$RefreshReg$ = () => {};</script>';
+
+    const response = await app.request("/setup", undefined, {
+      vite: {
+        transformIndexHtml: async (_url: string, html: string) =>
+          html.replace("</head>", `${reactRefreshPreamble}</head>`),
+      },
+    });
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain(reactRefreshPreamble);
   });
 
   test("renders production assets from the validated composition setting", async () => {

@@ -58,7 +58,11 @@ export default defineConfig(({ mode }) => {
     plugins: [
       inertiaPlugin,
       react(),
-      devServer({ entry: "./src/server.ts", adapter: nodeAdapter }),
+      devServer({
+        entry: "./src/server.ts",
+        adapter: nodeAdapter,
+        injectClientScript: false,
+      }),
       build({
         entry: "./src/server.ts",
         external: ["better-sqlite3"],

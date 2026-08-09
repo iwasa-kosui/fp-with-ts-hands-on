@@ -47,7 +47,9 @@ const parseForm = <TOutput, TInput>(
   schema: z.ZodType<TOutput, z.ZodTypeDef, TInput>,
 ) =>
   ResultAsync.fromPromise(
-    context.req.parseBody(),
+    context.req.header("content-type")?.startsWith("application/json") === true
+      ? context.req.json()
+      : context.req.parseBody(),
     (): ValidationError => ({
       kind: "ValidationError",
       errors: { form: "入力内容を確認してください" },

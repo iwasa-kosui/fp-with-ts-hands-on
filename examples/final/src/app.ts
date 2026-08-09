@@ -59,6 +59,7 @@ import { createExamResultEventStore } from "./adaptor/secondary/sqlite/store/exa
 import { createFollowUpEventStore } from "./adaptor/secondary/sqlite/store/followUpEventStore.js";
 import { createAuthenticationMiddleware } from "./adaptor/primary/web/middleware/authentication.js";
 import { createSharedPropsMiddleware } from "./adaptor/primary/web/middleware/sharedProps.js";
+import { createViteHtmlMiddleware } from "./adaptor/primary/web/middleware/viteHtml.js";
 import type { WebEnvironment } from "./adaptor/primary/web/pageProps.js";
 import { createRootView } from "./adaptor/primary/web/rootView.js";
 import { registerAuthRoutes } from "./adaptor/primary/web/routes/authRoutes.js";
@@ -461,6 +462,7 @@ export const createApp = (dependencies: ApplicationDependencies) => {
 
   app.use("*", secureHeaders());
   app.use("*", csrf());
+  app.use("*", createViteHtmlMiddleware(dependencies.isProduction));
   app.use(
     "*",
     inertia({ version: "1", rootView: createRootView(dependencies.isProduction) }),
