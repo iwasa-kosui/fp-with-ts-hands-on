@@ -385,26 +385,131 @@ td {
   line-height: 20px;
 }
 
-.counts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-  gap: 1rem;
-}
-
-.counts div {
-  padding: 1rem;
-  border-radius: 0.5rem;
+.surface-card {
   border: 1px solid var(--border);
+  border-radius: 12px;
   background: var(--surface);
 }
 
-.counts dd {
-  margin: 0.25rem 0 0;
-  font-size: 2rem;
+.inline-alert {
+  padding: 12px 16px;
+  border-left: 4px solid var(--info);
+  border-radius: 8px;
+  color: var(--info);
+  background: var(--info-soft);
+}
+
+.empty-state {
+  padding: 24px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+}
+
+.metrics-grid .surface-card {
+  padding: 16px;
+}
+
+.metrics-grid dt {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.metrics-grid dd {
+  margin: 8px 0 0;
+  font-size: 28px;
   font-weight: 700;
 }
 
+.dashboard-queue {
+  margin-top: 24px;
+  padding: 20px;
+}
+
+.dashboard-queue h2 {
+  margin: 0 0 16px;
+  font-size: 16px;
+}
+
+.data-table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.data-table-scroll table {
+  min-width: 640px;
+}
+
+.data-table-scroll th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.data-table-scroll th,
+.data-table-scroll td {
+  height: 44px;
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+
+.data-table-scroll tr {
+  min-height: 44px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-badge--neutral {
+  color: var(--text-muted);
+  background: var(--surface-subtle);
+}
+
+.status-badge--info {
+  color: var(--info);
+  background: var(--info-soft);
+}
+
+.status-badge--success {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.status-badge--warning {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.status-badge--danger {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
 @media (max-width: 1099px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .app-sidebar {
     width: 64px;
     flex-basis: 64px;
@@ -423,6 +528,10 @@ td {
 }
 
 @media (max-width: 767px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
   .app-shell {
     display: block;
   }

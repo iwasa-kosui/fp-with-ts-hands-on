@@ -1,5 +1,10 @@
 import { Link } from "@inertiajs/react";
 
+import { buttonClassName } from "../../components/Button.js";
+import { DataTable } from "../../components/DataTable.js";
+import { appointmentPresentation } from "../../components/appointmentPresentation.js";
+import { EmptyState } from "../../components/Surface.js";
+import { StatusBadge } from "../../components/StatusBadge.js";
 import type { SharedPageProps } from "../../pageProps.js";
 import type { AppointmentPageView } from "../../routes/appointmentRoutes.js";
 import Layout from "../Layout.js";
@@ -26,12 +31,22 @@ export default function AppointmentsIndex({ auth, appointments }: Props) {
   const canBook =
     auth.user?.role === "Admin" || auth.user?.role === "Receptionist";
   return (
-    <Layout title="予約一覧" user={auth.user}>
-      {canBook ? <p><Link href="/appointments/new">予約を登録</Link></p> : null}
+    <Layout
+      actions={
+        canBook ? (
+          <Link className={buttonClassName()} href="/appointments/new">
+            新しい予約
+          </Link>
+        ) : undefined
+      }
+      activeNavigation="appointments"
+      title="予約一覧"
+      user={auth.user}
+    >
       {appointments.length === 0 ? (
-        <p>予約はありません。</p>
+        <EmptyState>予約はありません。</EmptyState>
       ) : (
-        <table>
+        <DataTable label="予約一覧">
           <thead>
             <tr>
               <th scope="col">予約日時</th>
@@ -42,21 +57,28 @@ export default function AppointmentsIndex({ auth, appointments }: Props) {
             </tr>
           </thead>
           <tbody>
-            {appointments.map((appointment) => (
-              <tr key={appointment.appointmentId}>
-                <td>
-                  <Link href={`/appointments/${appointment.appointmentId}`}>
-                    {appointment.scheduledAt}
-                  </Link>
-                </td>
-                <td>{appointment.kind}</td>
-                <td>{appointment.ownerName}</td>
-                <td>{appointment.petName}</td>
-                <td>{veterinarianName(appointment)}</td>
-              </tr>
-            ))}
+            {appointments.map((appointment) => {
+              const status = appointmentPresentation(appointment.kind);
+              return (
+                <tr key={appointment.appointmentId}>
+                  <td>
+                    <Link href={`/appointments/${appointment.appointmentId}`}>
+                      {appointment.scheduledAt}
+                    </Link>
+                  </td>
+                  <td>
+                    <StatusBadge tone={status.tone}>
+                      {status.label} ({status.canonical})
+                    </StatusBadge>
+                  </td>
+                  <td>{appointment.ownerName}</td>
+                  <td>{appointment.petName}</td>
+                  <td>{veterinarianName(appointment)}</td>
+                </tr>
+              );
+            })}
           </tbody>
-        </table>
+        </DataTable>
       )}
     </Layout>
   );

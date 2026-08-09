@@ -112,6 +112,44 @@ describe("clinic page SSR", () => {
     expect(vetHtml).not.toContain('href="/owners"');
   });
 
+  test("renders only safe dashboard metrics and appointment list fields", async () => {
+    const dashboardHtml = await renderPage(Dashboard, {
+      ...shared("Admin"),
+      counts: { owners: 1, pets: 2, appointments: 3, activeAppointments: 1 },
+      activeAppointments: [{
+        appointmentId,
+        kind: "InExamination" as const,
+        petName: "Mugi",
+        scheduledAt,
+      }],
+    });
+    const appointmentsHtml = await renderPage(AppointmentsIndex, {
+      ...shared("Admin"),
+      appointments: [scheduledView],
+    });
+    const veterinarianAppointmentsHtml = await renderPage(AppointmentsIndex, {
+      ...shared("Veterinarian"),
+      appointments: [scheduledView],
+    });
+
+    expect(dashboardHtml).toContain("<dt>飼い主</dt><dd>1</dd>");
+    expect(dashboardHtml).toContain("<dt>ペット</dt><dd>2</dd>");
+    expect(dashboardHtml).toContain('aria-label="進行中の予約"');
+    expect(dashboardHtml).toContain("診察中");
+    expect(dashboardHtml).toContain("InExamination");
+    expect(dashboardHtml).not.toContain("Hanako Owner");
+    expect(dashboardHtml).not.toContain("在庫管理");
+    expect(dashboardHtml).not.toContain("システム通知");
+    expect(dashboardHtml).not.toContain("検索");
+
+    expect(appointmentsHtml).toContain('aria-label="予約一覧"');
+    expect(appointmentsHtml).toContain('href="/appointments/new"');
+    expect(appointmentsHtml).toContain("予約済み");
+    expect(appointmentsHtml).toContain("Scheduled");
+    expect(appointmentsHtml).toContain("Hanako Owner");
+    expect(veterinarianAppointmentsHtml).not.toContain('href="/appointments/new"');
+  });
+
   test("renders accessible booking and state-specific appointment forms", async () => {
     const booking = await renderPage(AppointmentNew, {
       ...shared("Receptionist"),

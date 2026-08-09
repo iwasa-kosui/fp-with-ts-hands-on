@@ -4,6 +4,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
 import Layout from "../../src/adaptor/primary/web/pages/Layout.js";
+import Dashboard from "../../src/adaptor/primary/web/pages/Dashboard.js";
 import Login from "../../src/adaptor/primary/web/pages/Login.js";
 import Setup from "../../src/adaptor/primary/web/pages/Setup.js";
 import { UserId } from "../../src/domain/user/userId.js";
@@ -125,5 +126,32 @@ describe("Operator Console shell", () => {
     expect(html).toContain('aria-current="page"');
     expect(html).not.toContain('href="/users"');
     expect(html).not.toContain('href="/events"');
+  });
+
+  test("shows the dashboard booking action only to operational booking roles", () => {
+    const props = {
+      activeAppointments: [],
+      counts: { owners: 0, pets: 0, appointments: 0, activeAppointments: 0 },
+      errors: {},
+      flash: {},
+    } as const;
+
+    const administratorHtml = renderToString(
+      <Dashboard
+        {...props}
+        auth={{ user: { userId: adminId, role: "Admin" } }}
+      />,
+    );
+    const veterinarianHtml = renderToString(
+      <Dashboard
+        {...props}
+        auth={{ user: { userId: adminId, role: "Veterinarian" } }}
+      />,
+    );
+
+    expect(administratorHtml).toContain('href="/appointments/new"');
+    expect(administratorHtml).toContain("新しい予約");
+    expect(veterinarianHtml).not.toContain('href="/appointments/new"');
+    expect(veterinarianHtml).not.toContain("新しい予約");
   });
 });

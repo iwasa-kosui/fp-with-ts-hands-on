@@ -1,6 +1,11 @@
 import { Link } from "@inertiajs/react";
 import type { AppointmentPageView } from "../routes/appointmentRoutes.js";
 import type { DashboardCounts } from "../../../../useCase/getDashboardUseCase.js";
+import { buttonClassName } from "../components/Button.js";
+import { DataTable } from "../components/DataTable.js";
+import { appointmentPresentation } from "../components/appointmentPresentation.js";
+import { Card, EmptyState } from "../components/Surface.js";
+import { StatusBadge } from "../components/StatusBadge.js";
 import type { SharedPageProps } from "../pageProps.js";
 import Layout from "./Layout.js";
 
@@ -17,30 +22,67 @@ export default function Dashboard({
   auth,
   counts,
 }: DashboardProps) {
+  const canBook =
+    auth.user?.role === "Admin" || auth.user?.role === "Receptionist";
+
   return (
-    <Layout title="ダッシュボード" user={auth.user}>
-      <dl className="counts">
-        <div><dt>飼い主</dt><dd>{counts.owners}</dd></div>
-        <div><dt>ペット</dt><dd>{counts.pets}</dd></div>
-        <div><dt>予約</dt><dd>{counts.appointments}</dd></div>
-        <div><dt>進行中</dt><dd>{counts.activeAppointments}</dd></div>
+    <Layout
+      actions={
+        canBook ? (
+          <Link className={buttonClassName()} href="/appointments/new">
+            新しい予約
+          </Link>
+        ) : undefined
+      }
+      activeNavigation="dashboard"
+      description="現在の業務状況を確認します。"
+      title="ダッシュボード"
+      user={auth.user}
+    >
+      <dl className="metrics-grid">
+        <Card><dt>飼い主</dt><dd>{counts.owners}</dd></Card>
+        <Card><dt>ペット</dt><dd>{counts.pets}</dd></Card>
+        <Card><dt>予約</dt><dd>{counts.appointments}</dd></Card>
+        <Card><dt>進行中</dt><dd>{counts.activeAppointments}</dd></Card>
       </dl>
-      <section>
-        <h2>進行中の予約</h2>
-        {activeAppointments.length === 0 ? (
-          <p>進行中の予約はありません。</p>
-        ) : (
-          <ul>
-            {activeAppointments.map((appointment) => (
-              <li key={appointment.appointmentId}>
-                <Link href={`/appointments/${appointment.appointmentId}`}>
-                  {appointment.petName} — {appointment.kind}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <Card className="dashboard-queue">
+        <section aria-label="進行中の予約">
+          <h2>進行中の予約</h2>
+          {activeAppointments.length === 0 ? (
+            <EmptyState>進行中の予約はありません。</EmptyState>
+          ) : (
+            <DataTable label="進行中の予約">
+              <thead>
+                <tr>
+                  <th scope="col">予約日時</th>
+                  <th scope="col">ペット</th>
+                  <th scope="col">状態</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activeAppointments.map((appointment) => {
+                  const status = appointmentPresentation(appointment.kind);
+                  return (
+                    <tr key={appointment.appointmentId}>
+                      <td>
+                        <Link href={`/appointments/${appointment.appointmentId}`}>
+                          {appointment.scheduledAt}
+                        </Link>
+                      </td>
+                      <td>{appointment.petName}</td>
+                      <td>
+                        <StatusBadge tone={status.tone}>
+                          {status.label} ({status.canonical})
+                        </StatusBadge>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </DataTable>
+          )}
+        </section>
+      </Card>
     </Layout>
   );
 }
