@@ -1,9 +1,10 @@
 import { describe, expect, test } from "vitest";
 import { sql } from "drizzle-orm";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Worker } from "node:worker_threads";
+import { z } from "zod";
 
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
 import {
@@ -127,6 +128,19 @@ const sqliteLockWorkerSource = String.raw`
       parentPort.postMessage("closed");
     }
   })();
+`;
+
+const sqliteReleaseWorkerSource = String.raw`
+  const { parentPort, workerData } = require("node:worker_threads");
+  const attemptSignal = new Int32Array(workerData.attemptSignal);
+  const releaseSignal = new Int32Array(workerData.releaseSignal);
+  parentPort.postMessage("ready");
+  Atomics.wait(attemptSignal, 0, 0);
+  parentPort.postMessage("attempt-observed");
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+  Atomics.store(releaseSignal, 0, 1);
+  Atomics.notify(releaseSignal, 0);
+  parentPort.postMessage("released");
 `;
 
 const user = (name: string): Admin => ({
@@ -849,16 +863,20 @@ describe("SQLite event stores", () => {
   test("waits on a real SQLite write lock and rechecks overlap before persisting the second booking", async () => {
     const directory = mkdtempSync(join(tmpdir(), "clinic-final-overlap-"));
     const databasePath = join(directory, "clinic.sqlite");
+    const resultPath = join(directory, "second-result.json");
     let firstDb: ReturnType<typeof createSqliteDatabase> | undefined;
-    let secondDb: ReturnType<typeof createSqliteDatabase> | undefined;
-    let worker: Worker | undefined;
-    let releaseSignal: Int32Array | undefined;
-    let observedExit: Promise<WorkerExitOutcome> | undefined;
+    let firstWorker: Worker | undefined;
+    let secondWorker: Worker | undefined;
+    let releaseWorker: Worker | undefined;
+    let firstReleaseSignal: Int32Array | undefined;
+    let secondStartSignal: Int32Array | undefined;
+    let attemptSignal: Int32Array | undefined;
+    let firstExit: Promise<WorkerExitOutcome> | undefined;
+    let secondExit: Promise<WorkerExitOutcome> | undefined;
+    let releaseExit: Promise<WorkerExitOutcome> | undefined;
     try {
       firstDb = createSqliteDatabase(databasePath);
       migrateDatabase(firstDb);
-      secondDb = createSqliteDatabase(databasePath);
-      const secondStore = createAppointmentEventStore(secondDb);
       const booked = (appointmentId: AppointmentId, sequence: number) =>
         Appointment.book(eventContext(sequence))({
           appointmentId,
@@ -878,13 +896,17 @@ describe("SQLite event stores", () => {
       const secondBooked = booked(ids.otherAppointment, 55);
       const firstRecord = toEventRecord(firstBooked);
       const firstState = firstBooked.aggregateState;
-      const releaseSignalBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
-      releaseSignal = new Int32Array(releaseSignalBuffer);
-      worker = new Worker(sqliteLockWorkerSource, {
+      const firstReleaseBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
+      const secondStartBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
+      const attemptBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
+      firstReleaseSignal = new Int32Array(firstReleaseBuffer);
+      secondStartSignal = new Int32Array(secondStartBuffer);
+      attemptSignal = new Int32Array(attemptBuffer);
+      firstWorker = new Worker(sqliteLockWorkerSource, {
         eval: true,
         workerData: {
           databasePath,
-          releaseSignal: releaseSignalBuffer,
+          releaseSignal: firstReleaseBuffer,
           appointment: {
             appointmentId: firstState.appointmentId,
             status: firstState.kind,
@@ -912,21 +934,77 @@ describe("SQLite event stores", () => {
           },
         },
       });
-      observedExit = observeWorkerExit(worker, 2_000);
-      await waitForWorkerMessage(worker, "locked", 1_000);
-
-      const secondResult = secondStore.store(secondBooked);
-      Atomics.store(releaseSignal, 0, 1);
-      Atomics.notify(releaseSignal, 0);
-      const second = await secondResult;
-      const exit = await observedExit;
-
-      expect(second._unsafeUnwrapErr()).toEqual({
+      secondWorker = new Worker(
+        new URL("./sqliteProductionStoreWorker.ts", import.meta.url),
+        {
+          execArgv: ["--import", "tsx"],
+          workerData: {
+            kind: "Run",
+            databasePath,
+            resultPath,
+            startSignal: secondStartBuffer,
+            attemptSignal: attemptBuffer,
+            appointmentId: secondBooked.aggregateId,
+            petId: secondBooked.aggregateState.petId,
+            ownerId: secondBooked.aggregateState.ownerId,
+            assignedVeterinarianId: ids.veterinarian,
+            eventId: secondBooked.eventId,
+            actorUserId: secondBooked.actorUserId,
+            occurredAt: secondBooked.occurredAt,
+            scheduledAt: secondBooked.aggregateState.scheduledAt,
+          },
+        },
+      );
+      releaseWorker = new Worker(sqliteReleaseWorkerSource, {
+        eval: true,
+        workerData: {
+          attemptSignal: attemptBuffer,
+          releaseSignal: firstReleaseBuffer,
+        },
+      });
+      firstExit = observeWorkerExit(firstWorker, 10_000);
+      secondExit = observeWorkerExit(secondWorker, 10_000);
+      releaseExit = observeWorkerExit(releaseWorker, 10_000);
+      await Promise.all([
+        waitForWorkerMessage(firstWorker, "locked", 5_000),
+        waitForWorkerMessage(secondWorker, "ready", 5_000),
+        waitForWorkerMessage(releaseWorker, "ready", 5_000),
+      ]);
+      const secondAttempting = waitForWorkerMessage(secondWorker, "attempting", 5_000);
+      const secondCompleted = waitForWorkerMessage(secondWorker, "completed", 5_000);
+      Atomics.store(secondStartSignal, 0, 1);
+      Atomics.notify(secondStartSignal, 0);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 200);
+      await secondAttempting;
+      await secondCompleted;
+      const exits = await Promise.all([firstExit, secondExit, releaseExit]);
+      expect(exits).toEqual([
+        { kind: "Exited", code: 0 },
+        { kind: "Exited", code: 0 },
+        { kind: "Exited", code: 0 },
+      ]);
+      const secondResult = z.object({
+        kind: z.literal("Err"),
+        error: z.discriminatedUnion("kind", [
+          z.object({
+            kind: z.literal("VeterinarianScheduleConflict"),
+            appointmentId: AppointmentId.schema,
+            conflictingAppointmentId: AppointmentId.schema,
+          }),
+          z.object({
+            kind: z.literal("RepositoryError"),
+            operation: z.string(),
+            cause: z.string(),
+          }),
+        ]),
+        elapsedMilliseconds: z.number(),
+      }).parse(JSON.parse(readFileSync(resultPath, "utf8")));
+      expect(secondResult.error).toEqual({
         kind: "VeterinarianScheduleConflict",
         appointmentId: ids.otherAppointment,
         conflictingAppointmentId: ids.appointment,
       });
-      expect(exit).toEqual({ kind: "Exited", code: 0 });
+      expect(secondResult.elapsedMilliseconds).toBeGreaterThanOrEqual(75);
       expect(firstDb.select().from(appointmentsTable).all()).toEqual([
         expect.objectContaining({ appointmentId: ids.appointment }),
       ]);
@@ -945,21 +1023,42 @@ describe("SQLite event stores", () => {
       expect(firstDb.select().from(domainEventSensitivePayloadsTable).all().filter(({ eventId }) => eventId === secondBooked.eventId)).toHaveLength(0);
     } finally {
       try {
-        if (worker !== undefined && releaseSignal !== undefined && observedExit !== undefined) {
-          const cleanupReleaseSignal = releaseSignal;
-          await shutdownWorker(worker, () => {
-            Atomics.store(cleanupReleaseSignal, 0, 1);
-            Atomics.notify(cleanupReleaseSignal, 0);
-          }, observedExit, 1_000);
+        if (firstWorker !== undefined && firstReleaseSignal !== undefined && firstExit !== undefined) {
+          const signal = firstReleaseSignal;
+          await shutdownWorker(firstWorker, () => {
+            Atomics.store(signal, 0, 1);
+            Atomics.notify(signal, 0);
+          }, firstExit, 1_000);
         }
       } finally {
         try {
-          secondDb?.$client.close();
+          if (secondWorker !== undefined && secondStartSignal !== undefined && secondExit !== undefined) {
+            const signal = secondStartSignal;
+            await shutdownWorker(secondWorker, () => {
+              Atomics.store(signal, 0, 1);
+              Atomics.notify(signal, 0);
+            }, secondExit, 1_000);
+          }
         } finally {
           try {
-            firstDb?.$client.close();
+            if (releaseWorker !== undefined && attemptSignal !== undefined && releaseExit !== undefined) {
+              const attempt = attemptSignal;
+              const release = firstReleaseSignal;
+              await shutdownWorker(releaseWorker, () => {
+                Atomics.store(attempt, 0, 1);
+                Atomics.notify(attempt, 0);
+                if (release !== undefined) {
+                  Atomics.store(release, 0, 1);
+                  Atomics.notify(release, 0);
+                }
+              }, releaseExit, 1_000);
+            }
           } finally {
-            rmSync(directory, { recursive: true, force: true });
+            try {
+              firstDb?.$client.close();
+            } finally {
+              rmSync(directory, { recursive: true, force: true });
+            }
           }
         }
       }

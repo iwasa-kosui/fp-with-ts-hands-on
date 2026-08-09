@@ -121,6 +121,9 @@ importers:
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.10
+      tsx:
+        specifier: ^4.23.11
+        version: 4.23.11
       vite:
         specifier: ^6.1.1
         version: 6.4.3(@types/node@22.20.1)(lightningcss@1.33.0)(terser@5.49.1)(tsx@4.23.11)(yaml@2.9.0)

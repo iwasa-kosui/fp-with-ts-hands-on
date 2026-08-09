@@ -147,3 +147,20 @@ test("a timed-out SQLite lock holder is released, closed, and removed", async ()
   expect(existsSync(directory)).toBe(false);
   expectNoWaitListeners(worker);
 });
+
+test("a TypeScript worker loads the production appointment store module", async () => {
+  const worker = new Worker(
+    new URL("./sqliteProductionStoreWorker.ts", import.meta.url),
+    {
+      execArgv: ["--import", "tsx"],
+      workerData: { kind: "Probe" },
+    },
+  );
+  const exit = observeWorkerExit(worker, 10_000);
+  try {
+    await waitForWorkerMessage(worker, "ready", 5_000);
+    expect(await exit).toEqual({ kind: "Exited", code: 0 });
+  } finally {
+    await shutdownWorker(worker, () => undefined, exit, 1_000);
+  }
+});

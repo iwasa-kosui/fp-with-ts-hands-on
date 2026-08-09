@@ -33,6 +33,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.4",
     "drizzle-kit": "^0.31.10",
+    "tsx": "^4.23.11",
     "vite": "^6.1.1",
     "vitest": "^2.1.0"
   }
