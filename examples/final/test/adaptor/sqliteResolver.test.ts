@@ -146,6 +146,94 @@ const insertFollowUpEvent = (
 };
 
 describe("SQLite resolvers", () => {
+  test("rejects a non-vaccination deposit as a corrupt appointment projection", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    insertAppointment(db, "Scheduled", ownerId, petId, scheduledState({
+      settlement: {
+        kind: "DepositReceived",
+        depositAmount: 7000,
+        receivedAt: "2026-08-10T00:30:00.000Z",
+      },
+    }));
+
+    const result = await createAppointmentByIdResolver(db).resolveById(
+      AppointmentId.schema.parse(appointmentId),
+    );
+
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toMatchObject({
+      kind: "RepositoryError",
+      operation: "AppointmentByIdResolver.resolveById",
+    });
+  });
+
+  test.each([
+    { finalAmount: 9000, depositAmount: 7000, additionalPaymentAmount: 2000, refundAmount: 0 },
+    { finalAmount: 7000, depositAmount: 7000, additionalPaymentAmount: 0, refundAmount: 0 },
+    { finalAmount: 5000, depositAmount: 7000, additionalPaymentAmount: 0, refundAmount: 2000 },
+  ])("restores a consistent final settlement from SQLite %#", async (amounts) => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const paidState = scheduledState({
+      kind: "Paid",
+      serviceCode: "Vaccination",
+      assignedVeterinarianId: "30000000-0000-4000-8000-000000000005",
+      settlement: {
+        kind: "Settled",
+        ...amounts,
+        settledAt: "2026-08-10T02:00:00.000Z",
+      },
+      version: 5,
+      checkedInAt: "2026-08-10T01:10:00.000Z",
+      examinationStartedAt: "2026-08-10T01:20:00.000Z",
+      examId,
+      examinationCompletedAt: "2026-08-10T01:30:00.000Z",
+      diagnosis: "diagnosis",
+      treatment: "treatment",
+    });
+    insertAppointment(db, "Paid", ownerId, petId, paidState);
+
+    const result = await createAppointmentByIdResolver(db).resolveById(
+      AppointmentId.schema.parse(appointmentId),
+    );
+
+    expect(result._unsafeUnwrap()?.settlement).toMatchObject(amounts);
+  });
+
+  test("rejects an inconsistent final settlement as a corrupt appointment projection", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const paidState = scheduledState({
+      kind: "Paid",
+      serviceCode: "Vaccination",
+      assignedVeterinarianId: "30000000-0000-4000-8000-000000000005",
+      settlement: {
+        kind: "Settled",
+        finalAmount: 5000,
+        depositAmount: 1000,
+        additionalPaymentAmount: 9999,
+        refundAmount: 8888,
+        settledAt: "2026-08-10T02:00:00.000Z",
+      },
+      version: 5,
+      checkedInAt: "2026-08-10T01:10:00.000Z",
+      examinationStartedAt: "2026-08-10T01:20:00.000Z",
+      examId,
+      examinationCompletedAt: "2026-08-10T01:30:00.000Z",
+      diagnosis: "diagnosis",
+      treatment: "treatment",
+    });
+    insertAppointment(db, "Paid", ownerId, petId, paidState);
+
+    const result = await createAppointmentByIdResolver(db).resolveById(
+      AppointmentId.schema.parse(appointmentId),
+    );
+
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toMatchObject({ kind: "RepositoryError" });
+  });
+
   test("resolves follow-up candidates from current projections without audit rows", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);

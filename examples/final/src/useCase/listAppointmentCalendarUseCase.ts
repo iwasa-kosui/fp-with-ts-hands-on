@@ -34,7 +34,12 @@ const run = (dependencies: Dependencies) => (input: UseCaseInput): UseCaseOutput
   dependencies.userResolver.resolveById(input.actorUserId)
     .mapErr(toRepositoryError)
     .andThen(ensureUserFound(input.actorUserId))
-    .andThen((actor) => dependencies.appointmentCalendarReader.list(actor, BusinessDate.weekRange(input.date))
+    .andThen((actor) => dependencies.appointmentCalendarReader.list(
+      actor,
+      input.view === "day"
+        ? BusinessDate.dayRange(input.date)
+        : BusinessDate.weekRange(input.date),
+    )
       .mapErr(toRepositoryError))
     .map((appointments) => appointments
       .filter((appointment) => input.includeCanceled || appointment.appointmentStatus !== "Canceled")

@@ -52,7 +52,7 @@ import type {
 const AppointmentInputSchema = z.object({
   ownerId: OwnerId.schema,
   petId: PetId.schema,
-  scheduledAt: Timestamp.schema,
+  scheduledAt: Timestamp.canonicalSchema,
   serviceCode: ServiceCode.schema,
   durationMinutes: z.coerce.number().pipe(AppointmentDuration.schema),
   assignedVeterinarianId: z.preprocess(
@@ -126,6 +126,7 @@ const AppointmentDetailErrorSchema = z.enum([
   "deposit-already-received",
   "veterinarian-required",
   "veterinarian-mismatch",
+  "veterinarian-not-found",
   "settlement-conflict",
 ]);
 const deletedLabel = "削除済み";
@@ -375,6 +376,8 @@ const detailErrors = (raw: string | undefined): FieldErrors => {
       return { veterinarianId: "担当獣医師を選択してください。" };
     case "veterinarian-mismatch":
       return { form: publicOperationErrorMessage("UnassignedOrDifferentVeterinarian") };
+    case "veterinarian-not-found":
+      return { veterinarianId: "選択した担当獣医師が見つかりません。" };
     case "settlement-conflict":
       return { form: publicOperationErrorMessage("SettlementConflict") };
     default:
@@ -861,6 +864,8 @@ export const registerAppointmentRoutes = (
               return context.redirect(`${detailUrl(appointmentId.value)}?error=veterinarian-required`, 303);
             case "VeterinarianMismatch":
               return context.redirect(`${detailUrl(appointmentId.value)}?error=veterinarian-mismatch`, 303);
+            case "VeterinarianNotFound":
+              return context.redirect(`${detailUrl(appointmentId.value)}?error=veterinarian-not-found`, 303);
             case "IdentityGenerationFailed":
             case "RepositoryError":
               return repositoryFailure(context);

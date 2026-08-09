@@ -16,10 +16,15 @@ import type {
   AppointmentByIdResolver,
   AppointmentListResolver,
 } from "../../../../domain/appointment/appointmentResolver.js";
-import { PaymentAmount } from "../../../../domain/appointment/paymentAmount.js";
 import { ReceptionNote } from "../../../../domain/appointment/receptionNote.js";
 import { ServiceCode } from "../../../../domain/appointment/serviceCode.js";
-import { SettlementAdjustmentAmount } from "../../../../domain/appointment/settlementAdjustmentAmount.js";
+import {
+  DepositReceived,
+  DepositRefunded,
+  NoPayment,
+  Settled,
+  Settlement,
+} from "../../../../domain/appointment/settlementState.js";
 import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js";
 import { Treatment } from "../../../../domain/appointment/treatment.js";
 import { ExamId } from "../../../../domain/examResult/examId.js";
@@ -41,42 +46,23 @@ const baseShape = {
   receptionNote: ReceptionNote.schema.nullable(),
   version: AppointmentVersion.schema,
 };
-const NoPaymentSchema = z.object({ kind: z.literal("NoPayment") });
-const DepositReceivedSchema = z.object({
-  kind: z.literal("DepositReceived"),
-  depositAmount: PaymentAmount.schema,
-  receivedAt: Timestamp.schema,
-});
-const SettledSchema = z.object({
-  kind: z.literal("Settled"),
-  finalAmount: PaymentAmount.schema,
-  depositAmount: SettlementAdjustmentAmount.schema,
-  additionalPaymentAmount: SettlementAdjustmentAmount.schema,
-  refundAmount: SettlementAdjustmentAmount.schema,
-  settledAt: Timestamp.schema,
-});
-const DepositRefundedSchema = z.object({
-  kind: z.literal("DepositRefunded"),
-  depositAmount: PaymentAmount.schema,
-  refundedAt: Timestamp.schema,
-});
 const AppointmentSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("Scheduled"),
     ...baseShape,
-    settlement: z.union([NoPaymentSchema, DepositReceivedSchema]),
+    settlement: z.union([NoPayment.schema, DepositReceived.schema]),
   }),
   z.object({
     kind: z.literal("CheckedIn"),
     ...baseShape,
-    settlement: z.union([NoPaymentSchema, DepositReceivedSchema]),
+    settlement: z.union([NoPayment.schema, DepositReceived.schema]),
     checkedInAt: Timestamp.schema,
   }),
   z.object({
     kind: z.literal("InExamination"),
     ...baseShape,
     assignedVeterinarianId: VeterinarianId.schema,
-    settlement: z.union([NoPaymentSchema, DepositReceivedSchema]),
+    settlement: z.union([NoPayment.schema, DepositReceived.schema]),
     checkedInAt: Timestamp.schema,
     examinationStartedAt: Timestamp.schema,
   }),
@@ -84,7 +70,7 @@ const AppointmentSchema = z.discriminatedUnion("kind", [
     kind: z.literal("AwaitingPayment"),
     ...baseShape,
     assignedVeterinarianId: VeterinarianId.schema,
-    settlement: z.union([NoPaymentSchema, DepositReceivedSchema]),
+    settlement: z.union([NoPayment.schema, DepositReceived.schema]),
     checkedInAt: Timestamp.schema,
     examinationStartedAt: Timestamp.schema,
     examId: ExamId.schema,
@@ -94,7 +80,7 @@ const AppointmentSchema = z.discriminatedUnion("kind", [
     kind: z.literal("Paid"),
     ...baseShape,
     assignedVeterinarianId: VeterinarianId.schema,
-    settlement: SettledSchema,
+    settlement: Settled.schema,
     checkedInAt: Timestamp.schema,
     examinationStartedAt: Timestamp.schema,
     examId: ExamId.schema,
@@ -105,11 +91,19 @@ const AppointmentSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("Canceled"),
     ...baseShape,
-    settlement: z.union([NoPaymentSchema, DepositRefundedSchema]),
+    settlement: z.union([NoPayment.schema, DepositRefunded.schema]),
     cancellationReason: CancellationReason.schema,
     canceledAt: Timestamp.schema,
   }),
-]);
+]).superRefine((appointment, context) => {
+  if (!Settlement.isAllowedForService(appointment.serviceCode, appointment.settlement)) {
+    context.addIssue({
+      code: "custom",
+      message: "この診療内容では前受金を利用できません。",
+      path: ["settlement"],
+    });
+  }
+});
 const AppointmentStatusSchema = z.enum([
   "Scheduled",
   "CheckedIn",

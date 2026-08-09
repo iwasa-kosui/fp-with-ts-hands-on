@@ -21,7 +21,6 @@ import { AppointmentDuration, type AppointmentDuration as AppointmentDurationVal
 import type { BookingKind } from "../domain/appointment/bookingKind.js";
 import type { ReceptionNote } from "../domain/appointment/receptionNote.js";
 import { ServiceCode, type ServiceCode as ServiceCodeValue } from "../domain/appointment/serviceCode.js";
-import type { DepositReceived, NoPayment } from "../domain/appointment/settlementState.js";
 import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
 import type { Owner } from "../domain/owner/owner.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
@@ -47,7 +46,6 @@ export type UseCaseInput = Readonly<{
   bookingKind?: BookingKind;
   assignedVeterinarianId?: VeterinarianId | null;
   receptionNote?: ReceptionNote | null;
-  settlement?: NoPayment | DepositReceived;
 }>;
 export type UseCaseOk = Readonly<{ appointment: Scheduled }>;
 export type OwnerNotFound = Readonly<{
@@ -154,7 +152,6 @@ const createEvent = (dependencies: Dependencies, input: UseCaseInput) =>
         assignedVeterinarianId: input.assignedVeterinarianId ?? null,
         visitReason: input.reason,
         receptionNote: input.receptionNote ?? null,
-        settlement: input.settlement ?? { kind: "NoPayment" },
       }),
     ),
     (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),

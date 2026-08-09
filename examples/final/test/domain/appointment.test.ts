@@ -15,6 +15,7 @@ import { OwnerId } from "../../src/domain/owner/ownerId.js";
 import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
 import {
   Settlement,
+  SettlementState,
   type DepositReceived,
   type NoPayment,
 } from "../../src/domain/appointment/settlementState.js";
@@ -199,6 +200,54 @@ describe("appointment aggregate", () => {
     ).toMatchObject({ kind: "DepositNotAllowed" });
   });
 
+  test("does not allow an initial deposit to be injected while booking", () => {
+    const inputWithInjectedSettlement = {
+      appointmentId,
+      petId,
+      ownerId,
+      scheduledAt,
+      durationMinutes: AppointmentDuration.schema.parse(30),
+      serviceCode: ServiceCode.schema.parse("GeneralConsultation"),
+      bookingKind: "Reserved" as const,
+      assignedVeterinarianId: null,
+      visitReason,
+      receptionNote: null,
+      settlement: receivedDeposit(7000),
+    };
+
+    const event = Appointment.book(bookedContext)(
+      inputWithInjectedSettlement as unknown as Parameters<
+        ReturnType<typeof Appointment.book>
+      >[0],
+    );
+
+    expect(event.aggregateState.settlement).toEqual({ kind: "NoPayment" });
+  });
+
+  test.each([
+    { finalAmount: 9000, depositAmount: 7000, additionalPaymentAmount: 2000, refundAmount: 0 },
+    { finalAmount: 7000, depositAmount: 7000, additionalPaymentAmount: 0, refundAmount: 0 },
+    { finalAmount: 5000, depositAmount: 7000, additionalPaymentAmount: 0, refundAmount: 2000 },
+  ])("accepts a mathematically consistent settled tuple %#", (amounts) => {
+    expect(SettlementState.schema.safeParse({
+      kind: "Settled",
+      ...amounts,
+      settledAt,
+    }).success).toBe(true);
+  });
+
+  test.each([
+    { finalAmount: 5000, depositAmount: 1000, additionalPaymentAmount: 9999, refundAmount: 0 },
+    { finalAmount: 5000, depositAmount: 7000, additionalPaymentAmount: 0, refundAmount: 0 },
+    { finalAmount: 7000, depositAmount: 7000, additionalPaymentAmount: 1, refundAmount: 1 },
+  ])("rejects a mathematically impossible settled tuple %#", (amounts) => {
+    expect(SettlementState.schema.safeParse({
+      kind: "Settled",
+      ...amounts,
+      settledAt,
+    }).success).toBe(false);
+  });
+
   test.each([
     { final: 9000, additional: 2000, refund: 0 },
     { final: 7000, additional: 0, refund: 0 },
@@ -275,7 +324,7 @@ describe("appointment aggregate", () => {
       serviceCode: ServiceCode.schema.parse("ExaminationOrProcedure"),
       assignedVeterinarianId: veterinarianId,
       visitReason: changedReason,
-    });
+    })._unsafeUnwrap();
 
     expect(updated).toMatchObject({
       kind: "AppointmentUpdated",
@@ -291,6 +340,44 @@ describe("appointment aggregate", () => {
       },
     });
     expect(updated.aggregateState.visitReason.unwrap()).toBe("changed private reason");
+  });
+
+  test("rejects a service update that would make a received deposit ineligible", () => {
+    const vaccination = Appointment.book(bookedContext)({
+      appointmentId,
+      petId,
+      ownerId,
+      scheduledAt,
+      durationMinutes: AppointmentDuration.schema.parse(15),
+      serviceCode: ServiceCode.schema.parse("Vaccination"),
+      bookingKind: "Reserved",
+      assignedVeterinarianId: null,
+      visitReason,
+      receptionNote: null,
+      settlement: noPayment,
+    }).aggregateState;
+    const prepaid = Appointment.receiveDeposit(updatedContext)(
+      vaccination,
+      PaymentAmount.schema.parse(7000),
+    )._unsafeUnwrap().aggregateState;
+    if (prepaid.kind !== "Scheduled") {
+      throw new TypeError("a deposit must preserve the scheduled state");
+    }
+
+    const result = Appointment.update(paymentContext)(prepaid, {
+      ownerId,
+      petId,
+      scheduledAt,
+      durationMinutes: AppointmentDuration.schema.parse(30),
+      serviceCode: ServiceCode.schema.parse("GeneralConsultation"),
+      assignedVeterinarianId: null,
+      visitReason,
+    });
+
+    expect(result._unsafeUnwrapErr()).toEqual({
+      kind: "DepositNotAllowed",
+      appointmentId,
+    });
   });
 
   test("registers a walk-in directly as CheckedIn with one server timestamp and version 1", () => {

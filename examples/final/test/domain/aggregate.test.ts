@@ -60,6 +60,18 @@ describe("aggregate event contracts", () => {
   test("rejects invalid timestamps and non-positive or non-finite payment amounts", () => {
     expect(Timestamp.parse("not-a-timestamp").isErr()).toBe(true);
     expect(Timestamp.parse("2026-99-99T25:61:00Z").isErr()).toBe(true);
+    expect(Timestamp.parse("2026-08-10T12:34:00+99:99").isErr()).toBe(true);
+    expect(Timestamp.parse("2026-08-10T12:34:00+14:01").isErr()).toBe(true);
+    expect(Timestamp.parse("2026-02-30T12:34:00Z").isErr()).toBe(true);
+
+    for (const valid of [
+      "2026-08-10T12:34Z",
+      "2026-08-10T12:34:56.123+09:30",
+      "2026-08-10T12:34:56+0930",
+      "2026-08-10T12:34:56-14:00",
+    ]) {
+      expect(Timestamp.parse(valid).isOk(), valid).toBe(true);
+    }
 
     for (const amount of [0, -1, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
       expect(PaymentAmount.parse(amount).isErr()).toBe(true);

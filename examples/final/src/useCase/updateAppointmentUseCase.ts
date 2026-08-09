@@ -97,11 +97,13 @@ const ensureVeterinarian = (veterinarianId: VeterinarianId | null) => (users: re
     : err({ kind: "VeterinarianNotFound", veterinarianId });
 const createEvent = (dependencies: Dependencies, input: UpdateAppointmentInput, appointment: Scheduled) =>
   ResultAsync.fromPromise(
-    Promise.resolve().then(() => Appointment.update({
+    Promise.resolve().then(() => ({
       eventId: dependencies.eventIdGenerator.generate(),
       occurredAt: dependencies.clock.now(),
       actorUserId: input.actorUserId,
-    })(appointment, {
+    })),
+    (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
+  ).andThen((context) => Appointment.update(context)(appointment, {
       ownerId: input.ownerId,
       petId: input.petId,
       scheduledAt: input.scheduledAt,
@@ -109,9 +111,10 @@ const createEvent = (dependencies: Dependencies, input: UpdateAppointmentInput, 
       serviceCode: input.serviceCode,
       assignedVeterinarianId: input.assignedVeterinarianId,
       visitReason: input.visitReason,
-    })),
-    (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
-  );
+    }).mapErr((): PrepaidAppointmentImmutableFieldsChanged => ({
+      kind: "PrepaidAppointmentImmutableFieldsChanged",
+      appointmentId: appointment.appointmentId,
+    })));
 const run = (dependencies: Dependencies) => (input: UpdateAppointmentInput): UseCaseOutput =>
   dependencies.userResolver.resolveById(input.actorUserId).mapErr(toRepositoryError)
     .andThen(ensureUserFound(input.actorUserId)).andThen(ensureCanManageClinic)

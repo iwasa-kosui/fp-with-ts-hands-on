@@ -482,6 +482,7 @@ export const createApplicationDependencies = (
     }),
     startExamination: StartExaminationUseCase.create({
       userResolver: clinicUserByIdResolver,
+      userListResolver: clinicUserListResolver,
       appointmentResolver: clinicAppointmentByIdResolver,
       examinationStartedStore: appointmentEventStore,
       clock,

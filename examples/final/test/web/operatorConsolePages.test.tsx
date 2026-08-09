@@ -12,7 +12,10 @@ import AppointmentEdit from "../../src/adaptor/primary/web/pages/Appointments/Ed
 import WalkInNew from "../../src/adaptor/primary/web/pages/Reception/WalkIn.js";
 import AppointmentCalendar from "../../src/adaptor/primary/web/components/AppointmentCalendar.js";
 import { ReceptionRow } from "../../src/adaptor/primary/web/components/ReceptionRow.js";
-import { suggestedDurationAfterServiceChange } from "../../src/adaptor/primary/web/components/AppointmentForm.js";
+import {
+  suggestedDurationAfterServiceChange,
+  toLocalAppointmentDateTime,
+} from "../../src/adaptor/primary/web/components/AppointmentForm.js";
 import Dashboard from "../../src/adaptor/primary/web/pages/Dashboard.js";
 import EventsIndex, {
   SensitiveAuditPayloadDetail,
@@ -600,16 +603,10 @@ describe("Operator Console shell", () => {
 
   test("converts a picked local appointment time to the timestamp accepted by booking", () => {
     const timestamp = toAppointmentTimestamp("2026-08-10T12:34");
-    const roundTrip = new Date(timestamp);
 
+    expect(timestamp).toBe("2026-08-10T03:34:00.000Z");
     expect(Timestamp.schema.safeParse(timestamp).success).toBe(true);
-    expect([
-      roundTrip.getFullYear(),
-      roundTrip.getMonth() + 1,
-      roundTrip.getDate(),
-      roundTrip.getHours(),
-      roundTrip.getMinutes(),
-    ]).toEqual([2026, 8, 10, 12, 34]);
+    expect(toLocalAppointmentDateTime(timestamp ?? "")).toBe("2026-08-10T12:34");
     expect(toAppointmentTimestamp("")).toBe("");
   });
 
@@ -845,7 +842,8 @@ describe("Operator Console shell", () => {
     expect(html).toContain("機微情報を含みます");
     expect(html).toContain("機微情報を開示");
     expect(html).toContain("76000000-0000-4000-8000-000000000001");
-    expect(html).toContain("Appointment");
+    expect(html).toContain("予約");
+    expect(html).not.toContain("Appointment");
     expect(html).toContain("75000000-0000-4000-8000-000000000001");
     expect(html).not.toContain("<dl");
     expect(html).not.toContain("raw payload");
@@ -912,9 +910,34 @@ describe("Operator Console shell", () => {
     );
 
     expect(html).toContain("機微監査情報を開示");
+    expect(html).toContain("監査");
+    expect(html).not.toContain(">Audit<");
     expect(html).toContain("targetEventId");
     expect(html).toContain(targetEventId);
     expect(html).not.toContain("機微情報を含みます");
+  });
+
+  test("既知イベントの未知の集約名を伏せ、集約IDは監査照合用に保持する", () => {
+    const html = renderPublicPage(
+      <EventsIndex
+        auth={{ user: { userId: adminId, role: "Admin" } }}
+        errors={{}}
+        flash={{}}
+        events={[{
+          actorUserId: adminId,
+          aggregateId: appointmentId,
+          aggregateName: "PrivateAggregate",
+          eventId: EventId.schema.parse("78000000-0000-4000-8000-000000000012"),
+          eventName: "appointment.booked",
+          occurredAt: Timestamp.schema.parse("2026-08-09T03:02:00.000Z"),
+          payloadSensitivity: "Sensitive",
+        }]}
+      />,
+    );
+
+    expect(html).toContain("対象データ");
+    expect(html).toContain(appointmentId);
+    expect(html).not.toContain("PrivateAggregate");
   });
 
   test("renders an unknown sensitive event with only its event id", () => {

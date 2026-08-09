@@ -513,7 +513,7 @@ describe("SQLite event stores", () => {
       db.all(sql.raw(
         "SELECT created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 1",
       )),
-    ).toEqual([{ created_at: 1786719600000 }]);
+    ).toEqual([{ created_at: 1786806000000 }]);
     expectAppendOnlyTriggers(db);
     expect(auditTablesSnapshot(db)).toEqual(before);
     expectAuditRowsAppendOnly(db, eventIds, before);
@@ -538,7 +538,7 @@ describe("SQLite event stores", () => {
       db.all(sql.raw(
         "SELECT created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 1",
       )),
-    ).toEqual([{ created_at: 1786719600000 }]);
+    ).toEqual([{ created_at: 1786806000000 }]);
     expectAppendOnlyTriggers(db);
     expect(auditTablesSnapshot(db)).toEqual(before);
     expectAuditRowsAppendOnly(db, eventIds, before);
@@ -1033,7 +1033,7 @@ describe("SQLite event stores", () => {
       serviceCode: ServiceCode.schema.parse("FollowUpVisit"),
       assignedVeterinarianId: ids.veterinarian,
       visitReason: AppointmentReason.schema.parse("updated private reason"),
-    });
+    })._unsafeUnwrap();
     expect((await store.store(selfUpdate)).isOk()).toBe(true);
   });
 

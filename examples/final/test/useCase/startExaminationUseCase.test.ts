@@ -27,7 +27,10 @@ import {
 import { UserEmail } from "../../src/domain/user/userEmail.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
-import type { UserByIdResolver } from "../../src/domain/user/userResolver.js";
+import type {
+  UserByIdResolver,
+  UserListResolver,
+} from "../../src/domain/user/userResolver.js";
 import { PasswordHash } from "../../src/domain/user/passwordHash.js";
 import {
   type Dependencies,
@@ -109,6 +112,9 @@ const userResolverFor = (user: User | undefined): UserByIdResolver =>
     resolveById: () => okAsync(user),
   }) as const satisfies UserByIdResolver;
 
+const userListResolverFor = (users: readonly User[]): UserListResolver =>
+  ({ resolveAll: () => okAsync(users) }) as const satisfies UserListResolver;
+
 const appointmentResolverFor = (
   appointment: Appointment | undefined,
 ): AppointmentByIdResolver =>
@@ -131,6 +137,7 @@ const createDependencies = (
 ): Dependencies =>
   ({
     userResolver: userResolverFor(admin),
+    userListResolver: userListResolverFor([admin, veterinarian]),
     appointmentResolver: appointmentResolverFor(checkedIn),
     examinationStartedStore: successfulStore([]),
     clock: { now: () => startedAt } as const satisfies Clock,
@@ -284,6 +291,46 @@ describe("StartExaminationUseCase", () => {
 
     expect(result._unsafeUnwrapErr()).toEqual({ kind: "VeterinarianRequired" });
     expect(storeCalls).toBe(0);
+  });
+
+  test.each([
+    ["unknown veterinarian", []],
+    ["non-veterinarian user", [receptionist]],
+  ] as const)("rejects an administrator-selected %s before producing side effects", async (
+    _case,
+    users,
+  ) => {
+    const selectedId = _case === "non-veterinarian user"
+      ? VeterinarianId.schema.parse(receptionist.userId)
+      : otherVeterinarianId;
+    const calls = { clock: 0, eventId: 0, store: 0 };
+    const result = await StartExaminationUseCase.create(createDependencies({
+      userListResolver: userListResolverFor(users),
+      clock: {
+        now: () => {
+          calls.clock += 1;
+          return startedAt;
+        },
+      },
+      eventIdGenerator: {
+        generate: () => {
+          calls.eventId += 1;
+          return eventId;
+        },
+      },
+      examinationStartedStore: {
+        store: () => {
+          calls.store += 1;
+          return okAsync(undefined);
+        },
+      },
+    })).run({ ...input, veterinarianId: selectedId });
+
+    expect(result._unsafeUnwrapErr()).toEqual({
+      kind: "VeterinarianNotFound",
+      veterinarianId: selectedId,
+    });
+    expect(calls).toEqual({ clock: 0, eventId: 0, store: 0 });
   });
 
   test("rejects a stale version before reading the clock or generating an event ID", async () => {

@@ -138,6 +138,7 @@ const userResolver = {
   resolveById: (userId: UserId) =>
     okAsync(users.find((user) => user.userId === userId)),
 };
+const userListResolver = { resolveAll: () => okAsync(users) } as const;
 const ownerResolver = {
   resolveById: (ownerId: OwnerId) =>
     okAsync(ownerId === owner.ownerId ? owner : undefined),
@@ -424,6 +425,7 @@ describe("appointment command use cases", () => {
 
     const started = await StartExaminationUseCase.create({
       userResolver,
+      userListResolver,
       appointmentResolver: { resolveById: () => okAsync(appointment) },
       examinationStartedStore: appointmentStore,
       clock,
@@ -899,6 +901,7 @@ describe("appointment command use cases", () => {
     }));
     await assertNoSideEffects(() => StartExaminationUseCase.create({
       userResolver,
+      userListResolver,
       appointmentResolver: { resolveById: () => okAsync(checkedIn) },
       examinationStartedStore: {
         store: () => {
@@ -1049,6 +1052,7 @@ describe("appointment command use cases", () => {
     const [started, canceled] = await Promise.all([
       StartExaminationUseCase.create({
         userResolver,
+        userListResolver,
         appointmentResolver: staleResolver,
         examinationStartedStore: store,
         clock,
@@ -1084,7 +1088,7 @@ describe("appointment command use cases", () => {
   });
 
   test("updates only Scheduled appointments, checks expectedVersion, and preserves prepaid immutable fields", async () => {
-    const scheduled = Appointment.book({
+    const booked = Appointment.book({
       eventId: eventIdGenerator().generate(),
       occurredAt: times.now,
       actorUserId: ids.receptionist,
@@ -1099,12 +1103,15 @@ describe("appointment command use cases", () => {
       assignedVeterinarianId: null,
       visitReason: AppointmentReason.schema.parse("vaccination"),
       receptionNote: null,
-      settlement: {
-        kind: "DepositReceived",
-        depositAmount: PaymentAmount.schema.parse(1000),
-        receivedAt: times.now,
-      },
     }).aggregateState;
+    const scheduled = Appointment.receiveDeposit({
+      eventId: eventIdGenerator().generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })(booked, PaymentAmount.schema.parse(1000))._unsafeUnwrap().aggregateState;
+    if (scheduled.kind !== "Scheduled") {
+      throw new TypeError("a deposit must preserve the scheduled state");
+    }
     let current: AppointmentState = scheduled;
     let storeCalls = 0;
     const useCase = UpdateAppointmentUseCase.create({
@@ -1135,7 +1142,7 @@ describe("appointment command use cases", () => {
       assignedVeterinarianId: ids.veterinarian,
       visitReason: AppointmentReason.schema.parse("changed reason"),
     });
-    expect(valid._unsafeUnwrap().appointment).toMatchObject({ version: 2, durationMinutes: 30 });
+    expect(valid._unsafeUnwrap().appointment).toMatchObject({ version: 3, durationMinutes: 30 });
 
     current = scheduled;
     const immutable = await useCase.run({
@@ -1157,7 +1164,7 @@ describe("appointment command use cases", () => {
     const stale = await useCase.run({
       actorUserId: ids.receptionist,
       appointmentId: ids.appointment,
-      expectedVersion: AppointmentVersion.schema.parse(2),
+      expectedVersion: AppointmentVersion.schema.parse(3),
       ownerId: ids.owner,
       petId: ids.pet,
       scheduledAt: times.scheduled,
@@ -1269,7 +1276,7 @@ describe("appointment query use cases", () => {
     const visitReason = AppointmentReason.schema.parse("private specialist visit");
     const receptionNote = ReceptionNote.schema.parse("private reception note");
     const depositAmount = PaymentAmount.schema.parse(1200);
-    const scheduled = Appointment.book({
+    const booked = Appointment.book({
       eventId: eventIds.generate(),
       occurredAt: times.now,
       actorUserId: ids.receptionist,
@@ -1279,17 +1286,20 @@ describe("appointment query use cases", () => {
       petId: ids.pet,
       scheduledAt: times.scheduled,
       durationMinutes: AppointmentDuration.schema.parse(45),
-      serviceCode: ServiceCode.schema.parse("ExaminationOrProcedure"),
+      serviceCode: ServiceCode.schema.parse("Vaccination"),
       bookingKind: "WalkIn",
       assignedVeterinarianId: ids.veterinarian,
       visitReason,
       receptionNote,
-      settlement: {
-        kind: "DepositReceived",
-        depositAmount,
-        receivedAt: times.now,
-      },
     }).aggregateState;
+    const scheduled = Appointment.receiveDeposit({
+      eventId: eventIds.generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })(booked, depositAmount)._unsafeUnwrap().aggregateState;
+    if (scheduled.kind !== "Scheduled") {
+      throw new TypeError("a deposit must preserve the scheduled state");
+    }
     const checkedIn = Appointment.checkIn({
       eventId: eventIds.generate(),
       occurredAt: times.now,
@@ -1331,7 +1341,7 @@ describe("appointment query use cases", () => {
       petId: ids.pet,
       scheduledAt: times.scheduled,
       durationMinutes: 45,
-      serviceCode: "ExaminationOrProcedure",
+      serviceCode: "Vaccination",
       bookingKind: "WalkIn",
       visitReason,
       receptionNote,
@@ -1346,7 +1356,7 @@ describe("appointment query use cases", () => {
         depositAmount,
         receivedAt: times.now,
       },
-      version: 1,
+      version: 2,
     });
     expect(project(checkedIn)).toMatchObject({
       ...common,
@@ -1354,7 +1364,7 @@ describe("appointment query use cases", () => {
       assignedVeterinarianId: ids.veterinarian,
       settlement: { kind: "DepositReceived", depositAmount },
       checkedInAt: times.now,
-      version: 2,
+      version: 3,
     });
     expect(project(examining)).toMatchObject({
       ...common,
@@ -1363,7 +1373,7 @@ describe("appointment query use cases", () => {
       settlement: { kind: "DepositReceived", depositAmount },
       checkedInAt: times.now,
       examinationStartedAt: times.now,
-      version: 3,
+      version: 4,
     });
     expect(project(awaitingPayment)).toMatchObject({
       ...common,
@@ -1371,7 +1381,7 @@ describe("appointment query use cases", () => {
       assignedVeterinarianId: ids.veterinarian,
       settlement: { kind: "DepositReceived", depositAmount },
       examId: ids.exam,
-      version: 4,
+      version: 5,
     });
     expect(project(paid)).toMatchObject({
       ...common,
@@ -1389,7 +1399,7 @@ describe("appointment query use cases", () => {
       },
       amount: 4800,
       paidAt: times.now,
-      version: 5,
+      version: 6,
     });
     expect(project(canceled)).toMatchObject({
       ...common,
@@ -1402,7 +1412,7 @@ describe("appointment query use cases", () => {
         refundedAt: times.now,
       },
       canceledAt: times.now,
-      version: 3,
+      version: 4,
     });
   });
 

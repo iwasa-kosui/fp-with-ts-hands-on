@@ -88,5 +88,16 @@ describe("ListAppointmentCalendarUseCase", () => {
       includeCanceled: true,
     });
     expect(includeCanceled._unsafeUnwrap().appointments).toEqual([scheduled, canceled]);
+
+    await useCase.run({
+      actorUserId,
+      date: BusinessDate.schema.parse("2026-08-09"),
+      view: "day",
+      veterinarianId: null,
+      includeCanceled: false,
+    });
+    expect(receivedRange).toEqual(
+      BusinessDate.dayRange(BusinessDate.schema.parse("2026-08-09")),
+    );
   });
 });

@@ -21,7 +21,10 @@ import type { AppointmentVersion } from "../domain/appointment/appointmentVersio
 import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
 import type { User } from "../domain/user/user.js";
 import type { UserId } from "../domain/user/userId.js";
-import type { UserByIdResolver } from "../domain/user/userResolver.js";
+import type {
+  UserByIdResolver,
+  UserListResolver,
+} from "../domain/user/userResolver.js";
 import {
   ensureAppointmentFound,
   ensureCheckedIn,
@@ -46,6 +49,10 @@ export type VeterinarianMismatch = Readonly<{
   assignedVeterinarianId: VeterinarianId;
   actorVeterinarianId: VeterinarianId;
 }>;
+export type VeterinarianNotFound = Readonly<{
+  kind: "VeterinarianNotFound";
+  veterinarianId: VeterinarianId;
+}>;
 export type UseCaseError =
   | UnauthorizedError
   | AppointmentNotFound
@@ -54,11 +61,13 @@ export type UseCaseError =
   | VeterinarianScheduleConflict
   | VeterinarianRequired
   | VeterinarianMismatch
+  | VeterinarianNotFound
   | IdentityGenerationFailed
   | RepositoryError;
 export type UseCaseOutput = ResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
+  userListResolver: UserListResolver;
   appointmentResolver: AppointmentByIdResolver;
   examinationStartedStore: ExaminationStartedStore;
   clock: Clock;
@@ -83,6 +92,14 @@ const ensureVersion =
           appointmentId: appointment.appointmentId,
           expectedVersion: input.expectedVersion,
         });
+const ensureVeterinarianExists =
+  (veterinarianId: VeterinarianId) =>
+  (users: readonly User[]): Result<void, VeterinarianNotFound> =>
+    users.some((user) =>
+      user.kind === "Veterinarian" && user.veterinarianId === veterinarianId
+    )
+      ? ok(undefined)
+      : err({ kind: "VeterinarianNotFound", veterinarianId });
 
 export const selectVeterinarian = (
   actor: Examiner,
@@ -146,7 +163,14 @@ const run =
         .andThen(ensureVersion(input))
         .andThen(ensureCheckedIn)
         .andThen((appointment) => selectVeterinarian(actor, appointment, input.veterinarianId)
-          .map((veterinarianId) => ({ appointment, veterinarianId }))))
+          .map((veterinarianId) => ({ actor, appointment, veterinarianId }))))
+      .andThen((selection) =>
+        selection.actor.kind === "Admin" &&
+        selection.appointment.assignedVeterinarianId === null
+          ? dependencies.userListResolver.resolveAll()
+            .andThen(ensureVeterinarianExists(selection.veterinarianId))
+            .map(() => selection)
+          : ok(selection))
       .andThen(({ appointment, veterinarianId }) =>
         createEvent(dependencies, input, appointment, veterinarianId))
       .andThrough((event) => dependencies.examinationStartedStore.store(event).mapErr(toStoreError))

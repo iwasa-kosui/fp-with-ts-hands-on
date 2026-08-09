@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type Ref } from "react";
 import { SensitiveAuditPayload } from "../../../../../useCase/query/sensitiveAuditPayloadDisclosure.js";
 import type { EventView } from "../../../../../useCase/listEventsUseCase.js";
 import { Button } from "../../components/Button.js";
+import { aggregatePresentation } from "../../components/aggregatePresentation.js";
 import { DataTable } from "../../components/DataTable.js";
 import { eventPresentation } from "../../components/eventPresentation.js";
 import { EmptyState, InlineAlert } from "../../components/Surface.js";
@@ -200,7 +201,7 @@ export default function EventsIndex({ auth, events }: Props) {
                   <td>{event.occurredAt}</td>
                   <td>{event.eventId}</td>
                   <td>{presentation.label}</td>
-                  <td>{event.aggregateName}<br /><small>{event.aggregateId}</small></td>
+                  <td>{aggregatePresentation(event.aggregateName)}<br /><small>{event.aggregateId}</small></td>
                   <td>{event.actorUserId}</td>
                   <td><EventPayload event={event} /></td>
                 </tr>

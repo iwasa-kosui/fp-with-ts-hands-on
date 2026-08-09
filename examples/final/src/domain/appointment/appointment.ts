@@ -100,7 +100,10 @@ export type Canceled = Omit<AppointmentBase, "settlement"> & Readonly<{
 
 export type Appointment =
   Scheduled | CheckedIn | InExamination | AwaitingPayment | Paid | Canceled;
-type OperationalBookAppointmentInput = Readonly<Omit<Scheduled, "kind" | "version">>;
+type OperationalBookAppointmentInput = Readonly<
+  Omit<Scheduled, "kind" | "version" | "settlement"> &
+  { settlement?: NoPayment }
+>;
 type LegacyBookAppointmentInput = Readonly<{
   appointmentId: AppointmentId;
   petId: PetId;
@@ -179,7 +182,7 @@ const book =
         : null,
       visitReason: "visitReason" in input ? input.visitReason : input.reason,
       receptionNote: "receptionNote" in input ? input.receptionNote : null,
-      settlement: "settlement" in input ? input.settlement : { kind: "NoPayment" },
+      settlement: { kind: "NoPayment" },
       version: AppointmentVersion.schema.parse(1),
     } as const satisfies Scheduled;
 
@@ -198,21 +201,30 @@ const nextVersion = (version: AppointmentVersionValue): AppointmentVersionValue 
 
 const update =
   (context: EventContext) =>
-  (scheduled: Scheduled, input: UpdateAppointmentInput): AppointmentUpdated => {
+  (
+    scheduled: Scheduled,
+    input: UpdateAppointmentInput,
+  ): Result<AppointmentUpdated, DepositNotAllowed> => {
+    if (!Settlement.isAllowedForService(input.serviceCode, scheduled.settlement)) {
+      return err({
+        kind: "DepositNotAllowed",
+        appointmentId: scheduled.appointmentId,
+      });
+    }
     const aggregateState = {
       ...scheduled,
       ...input,
       version: nextVersion(scheduled.version),
     } as const satisfies Scheduled;
 
-    return AppointmentEvent.create(
+    return ok(AppointmentEvent.create(
       context,
       aggregateState.appointmentId,
       aggregateState,
       "AppointmentUpdated",
       "appointment.updated",
       { appointmentId: aggregateState.appointmentId },
-    );
+    ));
   };
 
 const registerWalkIn =

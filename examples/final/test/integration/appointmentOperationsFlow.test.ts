@@ -171,6 +171,145 @@ const bookVaccination = async (
 };
 
 describe("file SQLite appointment operations flow", () => {
+  test("rejects an impossible timestamp before conflict checks or any appointment audit write", async () => {
+    const harness = createHarness();
+    const adminCookie = await setup(harness);
+    const veterinarianRow = await createUser(harness, adminCookie, {
+      ...veterinarian,
+      role: "Veterinarian",
+    });
+    if (veterinarianRow.veterinarianId === null) throw new TypeError("veterinarian id missing");
+    const { owner, pet } = await createOwnerAndPet(harness, adminCookie);
+    const bookedResponse = await post(harness, "/appointments", {
+      ownerId: owner.ownerId,
+      petId: pet.petId,
+      scheduledAt: "2026-08-10T12:00:00+09:00",
+      serviceCode: "GeneralConsultation",
+      durationMinutes: "30",
+      assignedVeterinarianId: veterinarianRow.veterinarianId,
+      reason: "既存の予約",
+    }, adminCookie);
+    expect(bookedResponse.status).toBe(303);
+    const existingAppointmentId = bookedResponse.headers.get("location")
+      ?.split("/").at(-1) ?? "";
+    expect(existingAppointmentId).not.toBe("");
+    expect(harness.database.select().from(appointmentsTable)
+      .where(eq(appointmentsTable.appointmentId, existingAppointmentId)).get()?.scheduledAt)
+      .toBe("2026-08-10T03:00:00.000Z");
+    const before = {
+      appointments: harness.database.select().from(appointmentsTable).all(),
+      events: harness.database.select().from(domainEventsTable).all(),
+      regular: harness.database.select().from(domainEventPayloadsTable).all(),
+      sensitive: harness.database.select().from(domainEventSensitivePayloadsTable).all(),
+    };
+
+    const rejected = await post(harness, "/appointments", {
+      ownerId: owner.ownerId,
+      petId: pet.petId,
+      scheduledAt: "2026-08-10T12:00:00+99:99",
+      serviceCode: "GeneralConsultation",
+      durationMinutes: "30",
+      assignedVeterinarianId: veterinarianRow.veterinarianId,
+      reason: "競合を迂回してはいけない予約",
+    }, adminCookie);
+
+    expect(rejected.status).toBe(200);
+    await expect(rejected.json()).resolves.toMatchObject({
+      component: "Appointments/New",
+      props: { errors: { scheduledAt: "入力内容を確認してください" } },
+    });
+    expect(harness.database.select().from(appointmentsTable).all()).toEqual(before.appointments);
+    expect(harness.database.select().from(domainEventsTable).all()).toEqual(before.events);
+    expect(harness.database.select().from(domainEventPayloadsTable).all()).toEqual(before.regular);
+    expect(harness.database.select().from(domainEventSensitivePayloadsTable).all()).toEqual(before.sensitive);
+
+    const calendar = await page(
+      harness,
+      "/appointments?date=2026-08-10&view=day",
+      adminCookie,
+    );
+    await expect(calendar.json()).resolves.toMatchObject({
+      props: {
+        appointments: [expect.objectContaining({ appointmentId: existingAppointmentId })],
+      },
+    });
+  });
+
+  test("rejects an administrator-selected missing or non-veterinarian ID without writing", async () => {
+    const harness = createHarness();
+    const adminCookie = await setup(harness);
+    const receptionistRow = await createUser(harness, adminCookie, {
+      ...receptionist,
+      role: "Receptionist",
+    });
+    const { owner, pet } = await createOwnerAndPet(harness, adminCookie);
+    const booked = await post(harness, "/appointments", {
+      ownerId: owner.ownerId,
+      petId: pet.petId,
+      scheduledAt: "2026-08-10T05:00:00.000Z",
+      serviceCode: "GeneralConsultation",
+      durationMinutes: "30",
+      assignedVeterinarianId: "",
+      reason: "担当医未定の診察",
+    }, adminCookie);
+    expect(booked.status).toBe(303);
+    const appointmentId = booked.headers.get("location")?.split("/").at(-1);
+    if (appointmentId === undefined) throw new TypeError("appointment was not booked");
+    expect((await post(harness, `/appointments/${appointmentId}/check-in`, {
+      expectedVersion: "1",
+    }, adminCookie)).status).toBe(303);
+    const before = {
+      appointments: harness.database.select().from(appointmentsTable).all(),
+      events: harness.database.select().from(domainEventsTable).all(),
+      regular: harness.database.select().from(domainEventPayloadsTable).all(),
+      sensitive: harness.database.select().from(domainEventSensitivePayloadsTable).all(),
+    };
+
+    for (const selectedId of [
+      "7e000000-0000-4000-8000-000000000001",
+      receptionistRow.userId,
+    ]) {
+      const rejected = await post(
+        harness,
+        `/appointments/${appointmentId}/start-examination`,
+        { expectedVersion: "2", veterinarianId: selectedId },
+        adminCookie,
+      );
+      expect(rejected.status).toBe(303);
+      expect(rejected.headers.get("location")).toBe(
+        `/appointments/${appointmentId}?error=veterinarian-not-found`,
+      );
+      const detail = await page(
+        harness,
+        rejected.headers.get("location") ?? "",
+        adminCookie,
+      );
+      await expect(detail.json()).resolves.toMatchObject({
+        props: {
+          errors: {
+            veterinarianId: "選択した担当獣医師が見つかりません。",
+          },
+        },
+      });
+      expect(harness.database.select().from(appointmentsTable).all())
+        .toEqual(before.appointments);
+      expect(harness.database.select().from(domainEventsTable).all())
+        .toEqual(before.events);
+      expect(harness.database.select().from(domainEventPayloadsTable).all())
+        .toEqual(before.regular);
+      expect(harness.database.select().from(domainEventSensitivePayloadsTable).all())
+        .toEqual(before.sensitive);
+    }
+    expect(before.appointments).toEqual([
+      expect.objectContaining({
+        appointmentId,
+        assignedVeterinarianId: null,
+        status: "CheckedIn",
+        version: 2,
+      }),
+    ]);
+  });
+
   test("runs assigned vaccination through refund settlement, cancellation, audit reveal, and both operational read models", async () => {
     const harness = createHarness();
     const adminCookie = await setup(harness);

@@ -1,0 +1,194 @@
+CREATE VIEW `_0007_appointment_timestamps` AS
+WITH `_0007_appointment_states` (`source_id`, `state`) AS (
+	SELECT `appointment_id`, `state` FROM `appointments`
+	UNION ALL
+	SELECT `domain_events`.`event_id`, `domain_event_payloads`.`aggregate_state`
+	FROM `domain_events`
+	INNER JOIN `domain_event_payloads`
+		ON `domain_event_payloads`.`event_id` = `domain_events`.`event_id`
+	WHERE `domain_events`.`aggregate_name` = 'Appointment'
+		AND `domain_event_payloads`.`aggregate_state` IS NOT NULL
+	UNION ALL
+	SELECT `domain_events`.`event_id`, `domain_event_sensitive_payloads`.`aggregate_state`
+	FROM `domain_events`
+	INNER JOIN `domain_event_sensitive_payloads`
+		ON `domain_event_sensitive_payloads`.`event_id` = `domain_events`.`event_id`
+	WHERE `domain_events`.`aggregate_name` = 'Appointment'
+		AND `domain_event_sensitive_payloads`.`aggregate_state` IS NOT NULL
+)
+SELECT
+	`_0007_appointment_states`.`source_id` AS `source_id`,
+	`timestamp`.`key` AS `field_name`,
+	`timestamp`.`type` AS `value_type`,
+	`timestamp`.`value` AS `value`,
+	CASE
+		WHEN substr(`timestamp`.`value`, -1, 1) = 'Z'
+			THEN `timestamp`.`value`
+		WHEN substr(`timestamp`.`value`, -6, 1) IN ('+', '-')
+			THEN `timestamp`.`value`
+		WHEN substr(`timestamp`.`value`, -5, 1) IN ('+', '-')
+			THEN substr(`timestamp`.`value`, 1, length(`timestamp`.`value`) - 2)
+				|| ':' || substr(`timestamp`.`value`, -2, 2)
+		ELSE NULL
+	END AS `sqlite_value`,
+	CASE
+		WHEN substr(`timestamp`.`value`, -1, 1) = 'Z'
+			THEN length(`timestamp`.`value`)
+		WHEN substr(`timestamp`.`value`, -6, 1) IN ('+', '-')
+			THEN length(`timestamp`.`value`) - 5
+		WHEN substr(`timestamp`.`value`, -5, 1) IN ('+', '-')
+			THEN length(`timestamp`.`value`) - 4
+		ELSE NULL
+	END AS `timezone_start`
+FROM `_0007_appointment_states`
+INNER JOIN json_tree(
+	CASE
+		WHEN json_valid(`_0007_appointment_states`.`state`)
+			THEN `_0007_appointment_states`.`state`
+		ELSE '{}'
+	END
+) AS `timestamp`
+WHERE `timestamp`.`key` IN (
+	'scheduledAt', 'checkedInAt', 'examinationStartedAt',
+	'examinationCompletedAt', 'receivedAt', 'settledAt', 'refundedAt', 'canceledAt'
+);
+--> statement-breakpoint
+CREATE TABLE `_0007_appointment_validation` (
+	`is_valid` integer NOT NULL CHECK (`is_valid` = 1)
+);
+--> statement-breakpoint
+INSERT INTO `_0007_appointment_validation` (`is_valid`)
+SELECT CASE WHEN EXISTS (
+	SELECT 1
+	FROM `appointments`
+	WHERE json_valid(`state`) <> 1
+		OR json_type(`state`) IS NOT 'object'
+		OR json_type(`state`, '$.scheduledAt') IS NOT 'text'
+		OR json_extract(`state`, '$.scheduledAt') <> `scheduled_at`
+)
+OR EXISTS (
+	SELECT 1
+	FROM (
+		SELECT `domain_events`.`aggregate_name`, `domain_event_payloads`.`aggregate_state`
+		FROM `domain_events`
+		INNER JOIN `domain_event_payloads`
+			ON `domain_event_payloads`.`event_id` = `domain_events`.`event_id`
+		UNION ALL
+		SELECT `domain_events`.`aggregate_name`, `domain_event_sensitive_payloads`.`aggregate_state`
+		FROM `domain_events`
+		INNER JOIN `domain_event_sensitive_payloads`
+			ON `domain_event_sensitive_payloads`.`event_id` = `domain_events`.`event_id`
+	) AS `audit_state`
+	WHERE `audit_state`.`aggregate_name` = 'Appointment'
+		AND `audit_state`.`aggregate_state` IS NOT NULL
+		AND (
+			json_valid(`audit_state`.`aggregate_state`) <> 1
+			OR json_type(`audit_state`.`aggregate_state`) IS NOT 'object'
+		)
+)
+OR EXISTS (
+	SELECT 1
+	FROM `_0007_appointment_timestamps`
+	WHERE `value_type` <> 'text'
+		OR `sqlite_value` IS NULL
+		OR julianday(`sqlite_value`) IS NULL
+		OR date(substr(`value`, 1, 10)) IS NULL
+		OR date(substr(`value`, 1, 10)) <> substr(`value`, 1, 10)
+		OR substr(`value`, 1, 4) NOT GLOB '[0-9][0-9][0-9][0-9]'
+		OR substr(`value`, 5, 1) <> '-'
+		OR substr(`value`, 6, 2) NOT GLOB '[0-9][0-9]'
+		OR substr(`value`, 8, 1) <> '-'
+		OR substr(`value`, 9, 2) NOT GLOB '[0-9][0-9]'
+		OR substr(`value`, 11, 1) <> 'T'
+		OR substr(`value`, 12, 2) NOT GLOB '[0-9][0-9]'
+		OR CAST(substr(`value`, 12, 2) AS integer) NOT BETWEEN 0 AND 23
+		OR substr(`value`, 14, 1) <> ':'
+		OR substr(`value`, 15, 2) NOT GLOB '[0-9][0-9]'
+		OR CAST(substr(`value`, 15, 2) AS integer) NOT BETWEEN 0 AND 59
+		OR NOT (
+			`timezone_start` = 17
+			OR (
+				substr(`value`, 17, 1) = ':'
+				AND substr(`value`, 18, 2) GLOB '[0-9][0-9]'
+				AND CAST(substr(`value`, 18, 2) AS integer) BETWEEN 0 AND 59
+				AND (
+					`timezone_start` = 20
+					OR (
+						substr(`value`, 20, 1) = '.'
+						AND `timezone_start` > 21
+						AND substr(
+							`value`, 21, `timezone_start` - 21
+						) NOT GLOB '*[^0-9]*'
+					)
+				)
+			)
+		)
+		OR NOT (
+			substr(`value`, -1, 1) = 'Z'
+			OR (
+				substr(`value`, -6, 1) IN ('+', '-')
+				AND substr(`value`, -5, 2) GLOB '[0-9][0-9]'
+				AND substr(`value`, -3, 1) = ':'
+				AND substr(`value`, -2, 2) GLOB '[0-9][0-9]'
+				AND CAST(substr(`value`, -5, 2) AS integer) BETWEEN 0 AND 14
+				AND CAST(substr(`value`, -2, 2) AS integer) BETWEEN 0 AND 59
+				AND (
+					CAST(substr(`value`, -5, 2) AS integer) < 14
+					OR CAST(substr(`value`, -2, 2) AS integer) = 0
+				)
+			)
+			OR (
+				substr(`value`, -5, 1) IN ('+', '-')
+				AND substr(`value`, -4, 4) GLOB '[0-9][0-9][0-9][0-9]'
+				AND CAST(substr(`value`, -4, 2) AS integer) BETWEEN 0 AND 14
+				AND CAST(substr(`value`, -2, 2) AS integer) BETWEEN 0 AND 59
+				AND (
+					CAST(substr(`value`, -4, 2) AS integer) < 14
+					OR CAST(substr(`value`, -2, 2) AS integer) = 0
+				)
+			)
+		)
+) OR EXISTS (
+	SELECT 1
+	FROM `appointments`
+	WHERE json_extract(`state`, '$.serviceCode') <> 'Vaccination'
+		AND (
+			json_extract(`state`, '$.settlement.kind') IN (
+				'DepositReceived', 'DepositRefunded'
+			)
+			OR (
+				json_extract(`state`, '$.settlement.kind') = 'Settled'
+				AND json_extract(`state`, '$.settlement.depositAmount') > 0
+			)
+		)
+) OR EXISTS (
+	SELECT 1
+	FROM `appointments`
+	WHERE json_extract(`state`, '$.settlement.kind') = 'Settled'
+		AND (
+			json_type(`state`, '$.settlement.finalAmount') IS NOT 'integer'
+			OR json_type(`state`, '$.settlement.depositAmount') IS NOT 'integer'
+			OR json_type(`state`, '$.settlement.additionalPaymentAmount') IS NOT 'integer'
+			OR json_type(`state`, '$.settlement.refundAmount') IS NOT 'integer'
+			OR json_extract(`state`, '$.settlement.finalAmount') <= 0
+			OR json_extract(`state`, '$.settlement.depositAmount') < 0
+			OR json_extract(`state`, '$.settlement.additionalPaymentAmount') < 0
+			OR json_extract(`state`, '$.settlement.refundAmount') < 0
+			OR json_extract(`state`, '$.settlement.additionalPaymentAmount') <>
+				max(
+					json_extract(`state`, '$.settlement.finalAmount') -
+					json_extract(`state`, '$.settlement.depositAmount'),
+					0
+				)
+			OR json_extract(`state`, '$.settlement.refundAmount') <>
+				max(
+					json_extract(`state`, '$.settlement.depositAmount') -
+					json_extract(`state`, '$.settlement.finalAmount'),
+					0
+				)
+		)
+) THEN 0 ELSE 1 END;
+--> statement-breakpoint
+DROP TABLE `_0007_appointment_validation`;
+--> statement-breakpoint
+DROP VIEW `_0007_appointment_timestamps`;

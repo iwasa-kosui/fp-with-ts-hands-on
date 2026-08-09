@@ -4,8 +4,14 @@ import { useState } from "react";
 import { ServiceCode, ServiceMenu, type ServiceCode as ServiceCodeValue } from "../../../../domain/appointment/serviceCode.js";
 import { buttonClassName } from "./Button.js";
 import { FormField } from "./FormField.js";
+import {
+  toAppointmentTimestamp,
+  toLocalAppointmentDateTime,
+} from "./appointmentDateTime.js";
 import { servicePresentation } from "./servicePresentation.js";
 import type { FieldErrors } from "../pageProps.js";
+
+export { toAppointmentTimestamp, toLocalAppointmentDateTime } from "./appointmentDateTime.js";
 
 export type AppointmentOwnerOption = Readonly<{ ownerId: string; name: string }>;
 export type AppointmentPetOption = Readonly<{ petId: string; ownerId: string; name: string }>;
@@ -36,19 +42,6 @@ export const suggestedDurationAfterServiceChange = (
 ): number => durationManuallyChanged
   ? currentDuration
   : ServiceMenu.defaultDuration(serviceCode);
-
-export const toAppointmentTimestamp = (localDateTime: string): string => {
-  if (localDateTime === "") return "";
-  const timestamp = new Date(localDateTime);
-  return Number.isNaN(timestamp.valueOf()) ? localDateTime : timestamp.toISOString();
-};
-
-export const toLocalAppointmentDateTime = (timestamp: string): string => {
-  const value = new Date(timestamp);
-  if (Number.isNaN(value.valueOf())) return timestamp;
-  const local = new Date(value.valueOf() - value.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 16);
-};
 
 type Props = Readonly<{
   action: string;
@@ -84,7 +77,7 @@ export const AppointmentForm = (props: Props) => {
     form.transform((data) => ({
       ...data,
       ...(props.mode === "Reserved"
-        ? { scheduledAt: toAppointmentTimestamp(data.scheduledAt) }
+        ? { scheduledAt: toAppointmentTimestamp(data.scheduledAt) ?? data.scheduledAt }
         : { scheduledAt: "" }),
     }));
     form[props.method](props.action, { forceFormData: true });
