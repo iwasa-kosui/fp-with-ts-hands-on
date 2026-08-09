@@ -9,8 +9,17 @@ import type {
 } from "./userEvent.js";
 
 export type UserCreatedStore = AggregateStore<UserCreated>;
-export type UserUpdatedStore = AggregateStore<UserUpdated>;
 export type UserPasswordResetStore = AggregateStore<UserPasswordReset>;
+export type CannotDowngradeLastAdminStoreError = Readonly<{
+  kind: "CannotDowngradeLastAdmin";
+}>;
+export type UserUpdatedStoreError =
+  CannotDowngradeLastAdminStoreError | RepositoryError;
+export type UserUpdatedStore = Readonly<{
+  store: (
+    ...events: readonly UserUpdated[]
+  ) => ResultAsync<void, UserUpdatedStoreError>;
+}>;
 export type CannotDeleteLastAdminStoreError = Readonly<{
   kind: "CannotDeleteLastAdmin";
 }>;

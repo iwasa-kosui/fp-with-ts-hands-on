@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { okAsync } from "neverthrow";
+import { errAsync, okAsync } from "neverthrow";
 import { describe, expect, test } from "vitest";
 
 import { scryptPasswordHasher } from "../../src/adaptor/secondary/authentication/scryptPasswordHasher.js";
@@ -385,6 +385,29 @@ describe("admin user management", () => {
     expect(result._unsafeUnwrap().user).toMatchObject({
       kind: "Veterinarian",
       veterinarianId: ids.veterinarian,
+    });
+  });
+
+  test("propagates the authoritative last-Admin downgrade conflict without returning an updated user", async () => {
+    const { actor } = await fixtures();
+    const result = await UpdateUserUseCase.create({
+      ...splitUserResolvers(userResolverFor([actor])),
+      userUpdatedStore: {
+        store: () => errAsync({ kind: "CannotDowngradeLastAdmin" } as const),
+      },
+      clock,
+      eventIdGenerator: eventIdGenerator(),
+      veterinarianIdGenerator: { generate: () => ids.veterinarian },
+    }).run({
+      actorUserId: ids.actor,
+      targetUserId: ids.actor,
+      email: actorEmail,
+      name: actorName,
+      role: "Receptionist",
+    });
+
+    expect(result.isErr() && result.error).toEqual({
+      kind: "CannotDowngradeLastAdmin",
     });
   });
 

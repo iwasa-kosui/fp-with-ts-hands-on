@@ -273,6 +273,10 @@ export const registerUserRoutes = (
               return renderEdit(context, authorized.value, userId.value, {
                 email: "このメールアドレスは既に使用されています",
               });
+            case "CannotDowngradeLastAdmin":
+              return renderEdit(context, authorized.value, userId.value, {
+                role: "最後の管理者は管理者以外の役割に変更できません。",
+              });
             case "IdentityGenerationFailed":
             case "RepositoryError":
               return respondToUseCaseError(context, {

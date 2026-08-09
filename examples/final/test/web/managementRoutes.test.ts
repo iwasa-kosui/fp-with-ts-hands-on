@@ -334,6 +334,43 @@ describe("management route boundary", () => {
     );
   });
 
+  test("returns a safe role error when the update store rejects the last Admin downgrade", async () => {
+    const harness = createHarness();
+    const adminCookie = await setUp(harness);
+    const admin = harness.database.select().from(usersTable).get();
+    expect(admin).toBeDefined();
+    if (admin === undefined) return;
+    const app = createApp({
+      ...harness.dependencies,
+      updateUser: {
+        run: () => errAsync({ kind: "CannotDowngradeLastAdmin" } as const),
+      },
+    });
+
+    const response = await postForm(
+      { app },
+      `/users/${admin.userId}`,
+      {
+        email: adminCredentials.email,
+        name: adminCredentials.name,
+        role: "Receptionist",
+      },
+      adminCookie,
+    );
+    const page = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(page).toMatchObject({
+      component: "Users/Form",
+      props: {
+        errors: {
+          role: "最後の管理者は管理者以外の役割に変更できません。",
+        },
+      },
+    });
+    expect(JSON.stringify(page)).not.toContain(admin.passwordHash);
+  });
+
   test("Receptionist manages owner and pet PII through explicit page DTOs and guarded physical deletion", async () => {
     const harness = createHarness();
     const adminCookie = await setUp(harness);

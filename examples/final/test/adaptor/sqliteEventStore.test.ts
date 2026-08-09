@@ -39,8 +39,9 @@ import { Session } from "../../src/domain/session/session.js";
 import { SessionId } from "../../src/domain/session/sessionId.js";
 import { SessionTokenHash } from "../../src/domain/session/sessionTokenHash.js";
 import { PasswordHash } from "../../src/domain/user/passwordHash.js";
-import { User, type User as UserState } from "../../src/domain/user/user.js";
+import { User, type Admin, type User as UserState } from "../../src/domain/user/user.js";
 import { UserEmail } from "../../src/domain/user/userEmail.js";
+import { createUserUpdated } from "../../src/domain/user/userEvent.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
 
@@ -69,7 +70,7 @@ const unwrap = <T>(result: { isOk: () => boolean; _unsafeUnwrap: () => T }): T =
   return result._unsafeUnwrap();
 };
 
-const user = (name: string): UserState => ({
+const user = (name: string): Admin => ({
   kind: "Admin",
   userId: ids.user,
   email: UserEmail.schema.parse("admin@example.test"),
@@ -530,6 +531,51 @@ describe("SQLite event stores", () => {
     expect(result.isErr()).toBe(true);
     expect(await db.select().from(usersTable)).toHaveLength(0);
     expect(await db.select().from(domainEventsTable)).toHaveLength(0);
+  });
+
+  test("authoritatively accepts only one of two stale last-Admin downgrades", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const store = createUserEventStore(db);
+    const firstAdmin = user("First Admin");
+    const secondAdmin = {
+      ...user("Second Admin"),
+      userId: UserId.schema.parse("00000000-0000-4000-8000-000000000099"),
+      email: UserEmail.schema.parse("second-admin@example.test"),
+    } as const satisfies UserState;
+    await store.store(
+      User.create(eventContext(34))(firstAdmin),
+      User.create(eventContext(35))(secondAdmin),
+    );
+    const firstDowngrade = createUserUpdated(eventContext(36), {
+      ...firstAdmin,
+      kind: "Receptionist",
+    });
+    const secondDowngrade = createUserUpdated(eventContext(37), {
+      ...secondAdmin,
+      kind: "Receptionist",
+    });
+
+    const results = await Promise.all([
+      store.store(firstDowngrade),
+      store.store(secondDowngrade),
+    ]);
+
+    expect(results.filter((result) => result.isOk())).toHaveLength(1);
+    expect(results.filter((result) => result.isErr())).toHaveLength(1);
+    expect(results.find((result) => result.isErr())?._unsafeUnwrapErr()).toEqual({
+      kind: "CannotDowngradeLastAdmin",
+    });
+    const users = await db.select().from(usersTable);
+    expect(users.filter(({ role }) => role === "Admin")).toHaveLength(1);
+    expect(users.filter(({ role }) => role === "Receptionist")).toHaveLength(1);
+    const updateHistory = (await db.select().from(domainEventsTable)).filter(
+      ({ eventName }) => eventName === "user.updated",
+    );
+    expect(updateHistory).toHaveLength(1);
+    expect(updateHistory[0]?.aggregateId).toBe(
+      users.find(({ role }) => role === "Receptionist")?.userId,
+    );
   });
 
   test("a deletion event physically removes the projection and retains its history", async () => {

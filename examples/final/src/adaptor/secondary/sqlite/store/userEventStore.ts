@@ -10,8 +10,11 @@ import type {
   UserUpdated,
 } from "../../../../domain/user/userEvent.js";
 import type {
+  CannotDowngradeLastAdminStoreError,
   CannotDeleteLastAdminStoreError,
   UserDeletedStore,
+  UserDeletedStoreError,
+  UserUpdatedStoreError,
 } from "../../../../domain/user/userStores.js";
 import { toEventRecord } from "../eventRecord.js";
 import { domainEventsTable, usersTable } from "../schema.js";
@@ -19,6 +22,7 @@ import type { SqliteDatabase } from "../db.js";
 
 type UserEvent = UserCreated | UserUpdated | UserPasswordReset;
 type AnyUserEvent = UserEvent | UserDeleted;
+type AnyUserStoreError = UserUpdatedStoreError | UserDeletedStoreError;
 
 const projectionValues = (
   state: Exclude<UserEvent["aggregateState"], undefined>,
@@ -45,6 +49,29 @@ const createUserProjectionEventStore = (db: SqliteDatabase) =>
       ResultAsync.fromPromise(
         Promise.resolve().then(() =>
           db.transaction((tx) => {
+            const adminIds = new Set(
+              tx
+                .select({ userId: usersTable.userId })
+                .from(usersTable)
+                .where(eq(usersTable.role, "Admin"))
+                .all()
+                .map(({ userId }) => userId),
+            );
+            let removesAdminRole = false;
+            events.forEach((event) => {
+              if (event.kind !== "UserUpdated") return;
+              const wasAdmin = adminIds.has(event.aggregateId);
+              if (event.aggregateState.kind === "Admin") {
+                adminIds.add(event.aggregateId);
+                return;
+              }
+              adminIds.delete(event.aggregateId);
+              removesAdminRole = removesAdminRole || wasAdmin;
+            });
+            if (removesAdminRole && adminIds.size < 1) {
+              return err(cannotDowngradeLastAdmin());
+            }
+
             events.forEach((event) => {
               switch (event.kind) {
                 case "UserCreated":
@@ -80,6 +107,7 @@ const createUserProjectionEventStore = (db: SqliteDatabase) =>
                   return assertNever(event);
               }
             });
+            return ok(undefined);
           }),
         ),
         (cause): RepositoryError => ({
@@ -87,8 +115,13 @@ const createUserProjectionEventStore = (db: SqliteDatabase) =>
           operation: "UserEventStore.store",
           cause,
         }),
-      ),
+      ).andThen((result) => result),
   }) as const;
+
+const cannotDowngradeLastAdmin =
+  (): CannotDowngradeLastAdminStoreError => ({
+    kind: "CannotDowngradeLastAdmin",
+  });
 
 const cannotDeleteLastAdmin = (): CannotDeleteLastAdminStoreError => ({
   kind: "CannotDeleteLastAdmin",
@@ -157,12 +190,20 @@ export const createUserEventStore = (db: SqliteDatabase) => {
   const deletionStore = createUserDeletedEventStore(db);
 
   function store(
-    ...events: readonly UserEvent[]
-  ): ReturnType<typeof projectionStore.store>;
+    ...events: readonly UserCreated[]
+  ): ResultAsync<void, RepositoryError>;
+  function store(
+    ...events: readonly UserUpdated[]
+  ): ResultAsync<void, UserUpdatedStoreError>;
+  function store(
+    ...events: readonly UserPasswordReset[]
+  ): ResultAsync<void, RepositoryError>;
   function store(
     ...events: readonly UserDeleted[]
   ): ReturnType<typeof deletionStore.store>;
-  function store(...events: readonly AnyUserEvent[]) {
+  function store(
+    ...events: readonly AnyUserEvent[]
+  ): ResultAsync<void, AnyUserStoreError> {
     const deletionEvents = events.filter(
       (event) => event.kind === "UserDeleted",
     );
@@ -175,8 +216,12 @@ export const createUserEventStore = (db: SqliteDatabase) => {
     }
 
     return deletionEvents.length > 0
-      ? deletionStore.store(...deletionEvents)
-      : projectionStore.store(...projectionEvents);
+      ? deletionStore
+          .store(...deletionEvents)
+          .mapErr((error): AnyUserStoreError => error)
+      : projectionStore
+          .store(...projectionEvents)
+          .mapErr((error): AnyUserStoreError => error);
   }
 
   return { store } as const;

@@ -21,7 +21,10 @@ import type {
   UserByEmailResolver,
   UserByIdResolver,
 } from "../domain/user/userResolver.js";
-import type { UserUpdatedStore } from "../domain/user/userStores.js";
+import type {
+  UserUpdatedStore,
+  UserUpdatedStoreError,
+} from "../domain/user/userStores.js";
 import { toUserView, type UserView } from "./userView.js";
 
 export type { UserView } from "./userView.js";
@@ -41,6 +44,9 @@ export type UserNotFound = Readonly<{ kind: "UserNotFound"; userId: UserId }>;
 export type UserEmailAlreadyExists = Readonly<{
   kind: "UserEmailAlreadyExists";
 }>;
+export type CannotDowngradeLastAdmin = Readonly<{
+  kind: "CannotDowngradeLastAdmin";
+}>;
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
@@ -52,6 +58,7 @@ export type UseCaseError =
   | Unauthorized
   | UserNotFound
   | UserEmailAlreadyExists
+  | CannotDowngradeLastAdmin
   | IdentityGenerationFailed
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
@@ -74,6 +81,10 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
   kind: "RepositoryError",
   operation: error.operation,
 });
+const toStoreError = (
+  error: UserUpdatedStoreError,
+): CannotDowngradeLastAdmin | UseCaseRepositoryError =>
+  error.kind === "CannotDowngradeLastAdmin" ? error : toRepositoryError(error);
 const ensureActor =
   (actorUserId: UserId) =>
   (user: User | undefined): Result<User, Unauthorized> =>
@@ -161,7 +172,7 @@ const run =
       .andThen(updateState(dependencies, input))
       .andThen(createEvent(dependencies, input.actorUserId))
       .andThrough((event) =>
-        dependencies.userUpdatedStore.store(event).mapErr(toRepositoryError),
+        dependencies.userUpdatedStore.store(event).mapErr(toStoreError),
       )
       .map((event) => ({ user: toUserView(event.aggregateState) }));
 
