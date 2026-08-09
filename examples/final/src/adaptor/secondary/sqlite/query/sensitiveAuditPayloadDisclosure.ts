@@ -4,10 +4,10 @@ import { z } from "zod";
 
 import { EventId } from "../../../../domain/aggregate/eventId.js";
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
+import { SensitiveAuditPayload } from "../../../../useCase/query/sensitiveAuditPayloadDisclosure.js";
 import type {
   AuditEventNotFound,
   AuditPayloadNotSensitive,
-  SensitiveAuditPayload,
   SensitiveAuditPayloadDisclosure,
   SensitiveAuditPayloadDisclosureError,
 } from "../../../../useCase/query/sensitiveAuditPayloadDisclosure.js";
@@ -26,19 +26,6 @@ const AuditPayloadNotSensitiveSchema = z.object({
   kind: z.literal("AuditPayloadNotSensitive"),
   eventId: EventId.schema,
 }).strict();
-const JsonValueSchema = z.union([
-  z.null(),
-  z.string(),
-  z.number(),
-  z.boolean(),
-  z.array(z.unknown()),
-  z.record(z.unknown()),
-]);
-const SensitiveAuditPayloadSchema = z.object({
-  aggregateState: JsonValueSchema,
-  eventPayload: z.record(z.unknown()),
-}).strict();
-
 const toDisclosureError = (
   cause: unknown,
 ): SensitiveAuditPayloadDisclosureError => {
@@ -85,7 +72,12 @@ const readSensitivePayload = (
   if (payload === undefined) {
     throw new TypeError("Corrupt sensitive domain event payload");
   }
-  return SensitiveAuditPayloadSchema.parse(payload);
+  return SensitiveAuditPayload.parse(payload).match(
+    (decoded) => decoded,
+    () => {
+      throw new TypeError("Corrupt sensitive domain event payload");
+    },
+  );
 };
 
 export const createSensitiveAuditPayloadDisclosure = (

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { z } from "zod";
 
-import type { SensitiveAuditPayload } from "../../../../../useCase/query/sensitiveAuditPayloadDisclosure.js";
+import { SensitiveAuditPayload } from "../../../../../useCase/query/sensitiveAuditPayloadDisclosure.js";
 import type { EventView } from "../../../../../useCase/listEventsUseCase.js";
 import { Button } from "../../components/Button.js";
 import { DataTable } from "../../components/DataTable.js";
@@ -11,19 +10,6 @@ import type { SharedPageProps } from "../../pageProps.js";
 import Layout from "../Layout.js";
 
 type Props = SharedPageProps & Readonly<{ events: readonly EventView[] }>;
-
-const JsonValueSchema = z.union([
-  z.null(),
-  z.string(),
-  z.number(),
-  z.boolean(),
-  z.array(z.unknown()),
-  z.record(z.unknown()),
-]);
-const SensitiveAuditPayloadSchema = z.object({
-  aggregateState: JsonValueSchema,
-  eventPayload: z.record(z.unknown()),
-}).strict();
 
 type RevealState =
   | Readonly<{ kind: "Closed" }>
@@ -111,10 +97,10 @@ const SensitivePayload = ({ eventId }: Readonly<{ eventId: string }>) => {
         signal: controller.signal,
       });
       if (!response.ok) throw new TypeError("Sensitive payload reveal failed");
-      const payload = SensitiveAuditPayloadSchema.safeParse(await response.json());
-      if (!payload.success) throw new TypeError("Invalid sensitive payload response");
+      const payload = SensitiveAuditPayload.parse(await response.json());
+      if (payload.isErr()) throw new TypeError("Invalid sensitive payload response");
       if (!controller.signal.aborted) {
-        setState({ kind: "Revealed", payload: payload.data });
+        setState({ kind: "Revealed", payload: payload.value });
       }
     } catch (cause) {
       if (

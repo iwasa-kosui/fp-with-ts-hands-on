@@ -1,13 +1,28 @@
 import type { ResultAsync } from "neverthrow";
+import { z } from "zod";
 
 import type { SensitiveAuditPayloadViewed } from "../../domain/aggregate/auditEvent.js";
 import type { EventId } from "../../domain/aggregate/eventId.js";
 import type { RepositoryError } from "../../domain/aggregate/repositoryError.js";
+import {
+  AuditJsonObject,
+  AuditJsonValue,
+} from "../../domain/shared/auditJson.js";
+import { schemaResult } from "../../domain/shared/schemaResult.js";
 
-export type SensitiveAuditPayload = Readonly<{
-  aggregateState: unknown | null;
-  eventPayload: Readonly<Record<string, unknown>>;
-}>;
+const SensitiveAuditPayloadSchema = z.object({
+  aggregateState: AuditJsonValue.schema,
+  eventPayload: AuditJsonObject.schema,
+}).strict();
+
+export type SensitiveAuditPayload = Readonly<
+  z.infer<typeof SensitiveAuditPayloadSchema>
+>;
+
+export const SensitiveAuditPayload = {
+  schema: SensitiveAuditPayloadSchema,
+  parse: schemaResult(SensitiveAuditPayloadSchema),
+} as const;
 
 export type AuditEventNotFound = Readonly<{
   kind: "AuditEventNotFound";

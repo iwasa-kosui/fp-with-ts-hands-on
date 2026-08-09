@@ -1,16 +1,21 @@
 import { eq } from "drizzle-orm";
 import { errAsync } from "neverthrow";
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
+import { SensitiveAuditPayloadDetail } from "../../src/adaptor/primary/web/pages/Events/Index.js";
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
 import {
   appointmentsTable,
   domainEventPayloadsTable,
+  domainEventSensitivePayloadsTable,
   domainEventsTable,
   ownersTable,
   petsTable,
   usersTable,
 } from "../../src/adaptor/secondary/sqlite/schema.js";
+import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
 import { PetId } from "../../src/domain/pet/petId.js";
@@ -18,6 +23,7 @@ import {
   createApp,
   createApplicationDependencies,
 } from "../../src/app.js";
+import { SensitiveAuditPayload } from "../../src/useCase/query/sensitiveAuditPayloadDisclosure.js";
 
 const now = Timestamp.schema.parse("2026-08-09T01:30:00.000Z");
 const clock = { now: () => now } as const;
@@ -125,6 +131,76 @@ const createUser = async (
 };
 
 describe("management route boundary", () => {
+  test("SQLite保存からHTTP・client decode・React preまで特殊JSON keyを欠落させずescape表示する", async () => {
+    const harness = createHarness();
+    const adminCookie = await setUp(harness);
+    const admin = harness.database.select().from(usersTable).get();
+    expect(admin).toBeDefined();
+    if (admin === undefined) return;
+    const targetEventId = EventId.schema.parse(
+      "83000000-0000-4000-8000-000000000001",
+    );
+    const specialObjectJson = `{"__proto__":{"evidence":"root-proto"},"constructor":{"evidence":"root-constructor"},"prototype":{"evidence":"root-prototype"},"nested":{"__proto__":{"evidence":"nested-proto"},"constructor":{"evidence":"nested-constructor"},"prototype":{"evidence":"nested-prototype"}},"html":"</pre><script>alert('xss')</script>"}`;
+    const aggregateState: unknown = JSON.parse(specialObjectJson);
+    const eventPayload: unknown = JSON.parse(specialObjectJson);
+    harness.database.insert(domainEventsTable).values({
+      eventId: targetEventId,
+      aggregateId: "special-json-audit",
+      aggregateName: "AuditFixture",
+      eventName: "future.special-json-audit",
+      occurredAt: "2026-08-09T01:29:00.000Z",
+      actorUserId: admin.userId,
+      payloadSensitivity: "Sensitive",
+    }).run();
+    harness.database.insert(domainEventSensitivePayloadsTable).values({
+      eventId: targetEventId,
+      aggregateState,
+      eventPayload,
+    }).run();
+
+    const response = await postForm(
+      harness,
+      `/events/${targetEventId}/sensitive-payload`,
+      {},
+      adminCookie,
+    );
+    const decoded = SensitiveAuditPayload.parse(
+      await response.json(),
+    )._unsafeUnwrap();
+
+    expect(response.status).toBe(200);
+    expect(JSON.stringify(decoded.aggregateState)).toBe(specialObjectJson);
+    expect(JSON.stringify(decoded.eventPayload)).toBe(specialObjectJson);
+    const nestedState = decoded.aggregateState === null ||
+        typeof decoded.aggregateState !== "object"
+      ? undefined
+      : Object.getOwnPropertyDescriptor(decoded.aggregateState, "nested")?.value;
+    expect(nestedState).not.toBeNull();
+    expect(typeof nestedState).toBe("object");
+    if (nestedState === null || typeof nestedState !== "object") return;
+    for (const value of [
+      decoded.aggregateState,
+      decoded.eventPayload,
+      nestedState,
+    ]) {
+      if (value === null || typeof value !== "object") return;
+      expect(Object.hasOwn(value, "__proto__")).toBe(true);
+      expect(Object.hasOwn(value, "constructor")).toBe(true);
+      expect(Object.hasOwn(value, "prototype")).toBe(true);
+    }
+    expect(Object.getOwnPropertyDescriptor({}, "evidence")).toBeUndefined();
+
+    const html = renderToString(createElement(SensitiveAuditPayloadDetail, {
+      payload: decoded,
+      onClose: () => undefined,
+    }));
+    expect(html).toContain("__proto__");
+    expect(html).toContain("root-proto");
+    expect(html).toContain("nested-proto");
+    expect(html).toContain("&lt;/pre&gt;&lt;script&gt;");
+    expect(html).not.toContain("</pre><script>");
+  });
+
   test("Adminだけが明示POSTで機微監査本文を開示し、閲覧自体を通常一覧へ記録する", async () => {
     const harness = createHarness();
     const adminCookie = await setUp(harness);

@@ -31,10 +31,14 @@ const sensitivePayload = {
   },
   eventPayload: { diagnosis: "機微な診断" },
 } as const;
+const specialObjectJson = `{"__proto__":{"evidence":"root-proto"},"constructor":{"evidence":"root-constructor"},"prototype":{"evidence":"root-prototype"},"nested":{"__proto__":{"evidence":"nested-proto"},"constructor":{"evidence":"nested-constructor"},"prototype":{"evidence":"nested-prototype"}},"html":"</pre><script>alert('xss')</script>"}`;
+const specialObject: unknown = JSON.parse(specialObjectJson);
 
 const insertTarget = (
   db: ReturnType<typeof createSqliteDatabase>,
   sensitivity: "Regular" | "Sensitive" = "Sensitive",
+  payload: typeof domainEventSensitivePayloadsTable.$inferInsert =
+    sensitivePayload,
 ): void => {
   db.insert(domainEventsTable).values({
     eventId: targetEventId,
@@ -49,7 +53,7 @@ const insertTarget = (
     sensitivity === "Sensitive"
       ? domainEventSensitivePayloadsTable
       : domainEventPayloadsTable,
-  ).values(sensitivePayload).run();
+  ).values(payload).run();
 };
 
 const viewedEvent = (eventId = viewedEventId) =>
@@ -59,6 +63,73 @@ const viewedEvent = (eventId = viewedEventId) =>
   );
 
 describe("SQLite SensitiveAuditPayloadDisclosure", () => {
+  test("root/nestedの特殊JSON keyをown propertyのまま本文から欠落させない", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    insertTarget(db, "Sensitive", {
+      eventId: targetEventId,
+      aggregateState: specialObject,
+      eventPayload: specialObject,
+    });
+
+    const result = await createSensitiveAuditPayloadDisclosure(db)
+      .revealAndRecord(targetEventId, viewedEvent());
+    if (result.isErr()) {
+      throw result.error.kind === "RepositoryError"
+        ? result.error.cause
+        : result.error;
+    }
+    const revealed = result._unsafeUnwrap();
+    const aggregateState = revealed.aggregateState;
+    expect(aggregateState).not.toBeNull();
+    expect(typeof aggregateState).toBe("object");
+    if (aggregateState === null || typeof aggregateState !== "object") return;
+    const nestedState = Object.getOwnPropertyDescriptor(
+      aggregateState,
+      "nested",
+    )?.value;
+    const nestedPayload = Object.getOwnPropertyDescriptor(
+      revealed.eventPayload,
+      "nested",
+    )?.value;
+    expect(nestedState).not.toBeNull();
+    expect(typeof nestedState).toBe("object");
+    expect(nestedPayload).not.toBeNull();
+    expect(typeof nestedPayload).toBe("object");
+    if (
+      nestedState === null || typeof nestedState !== "object" ||
+      nestedPayload === null || typeof nestedPayload !== "object"
+    ) return;
+
+    for (const value of [
+      aggregateState,
+      revealed.eventPayload,
+      nestedState,
+      nestedPayload,
+    ]) {
+      expect(Object.hasOwn(value, "__proto__")).toBe(true);
+      expect(Object.hasOwn(value, "constructor")).toBe(true);
+      expect(Object.hasOwn(value, "prototype")).toBe(true);
+    }
+    expect(Object.keys(aggregateState)).toEqual([
+      "__proto__",
+      "constructor",
+      "prototype",
+      "nested",
+      "html",
+    ]);
+    expect(Object.keys(revealed.eventPayload)).toEqual([
+      "__proto__",
+      "constructor",
+      "prototype",
+      "nested",
+      "html",
+    ]);
+    expect(JSON.stringify(aggregateState)).toBe(specialObjectJson);
+    expect(JSON.stringify(revealed.eventPayload)).toBe(specialObjectJson);
+    expect(Object.getOwnPropertyDescriptor({}, "evidence")).toBeUndefined();
+  });
+
   test("機微本文のreadと本文を含まないRegular閲覧イベントを一つのtransactionでcommitする", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);

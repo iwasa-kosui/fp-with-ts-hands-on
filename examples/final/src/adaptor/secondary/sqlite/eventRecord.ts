@@ -1,14 +1,12 @@
 import type { AnyDomainEvent } from "../../../domain/aggregate/domainEvent.js";
+import type {
+  AuditJsonObject,
+  AuditJsonValue,
+} from "../../../domain/shared/auditJson.js";
 import { Sensitive } from "../../../domain/shared/sensitive.js";
 
 export type PayloadSensitivity = "Regular" | "Sensitive";
-
-type AuditJsonPrimitive = string | number | boolean | null;
-type AuditJsonObject = { readonly [key: string]: AuditJsonValue };
-export type AuditJsonValue =
-  | AuditJsonPrimitive
-  | readonly AuditJsonValue[]
-  | AuditJsonObject;
+export type { AuditJsonValue } from "../../../domain/shared/auditJson.js";
 
 const regularEventNames = new Set<string>([
   "audit.sensitive-payload-viewed",
