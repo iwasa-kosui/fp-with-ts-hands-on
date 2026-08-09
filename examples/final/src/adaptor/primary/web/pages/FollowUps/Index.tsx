@@ -24,7 +24,11 @@ export default function FollowUpsIndex({ auth, errors, followUps }: Props) {
     );
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    form.post("/follow-ups/request", { forceFormData: true, preserveScroll: true });
+    form.post("/follow-ups/request", {
+      forceFormData: true,
+      preserveScroll: true,
+      onSuccess: () => form.reset("appointmentIds"),
+    });
   };
 
   return (
