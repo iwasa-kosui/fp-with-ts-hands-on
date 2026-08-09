@@ -152,7 +152,8 @@ describe("Operator Console shell", () => {
 
     expect(html).toContain('aria-label="アプリケーションサイドバー"');
     expect(html).toContain('href="/appointments"');
-    expect(html).toContain('aria-label="予約"');
+    expect(html).toContain('aria-label="予約カレンダー"');
+    expect(html).toContain('aria-label="受付ボード"');
     expect(html).toContain('aria-current="page"');
     expect(html).not.toContain('href="/owners"');
     expect(html).not.toContain('href="/follow-ups"');

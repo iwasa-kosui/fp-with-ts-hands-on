@@ -160,11 +160,11 @@ describe("clinic page SSR", () => {
     expect(dashboardHtml).not.toContain("システム通知");
     expect(dashboardHtml).not.toContain("検索");
 
-    expect(appointmentsHtml).toContain('aria-label="予約一覧"');
+    expect(appointmentsHtml).toContain('aria-label="予約カレンダー"');
     expect(appointmentsHtml).toContain('href="/appointments/new"');
     expect(appointmentsHtml).toContain("予約済み");
     expect(appointmentsHtml).not.toContain("Scheduled");
-    expect(appointmentsHtml).toContain("Hanako Owner");
+    expect(appointmentsHtml).not.toContain("Hanako Owner");
     expect(veterinarianAppointmentsHtml).not.toContain('href="/appointments/new"');
   });
 
@@ -349,7 +349,7 @@ describe("clinic page SSR", () => {
       appointments: [scheduledView],
     });
     expect(appointments).not.toContain("Scheduled");
-    expect(appointments).toContain("Hanako Owner");
+    expect(appointments).not.toContain("Hanako Owner");
 
     const followUps = await renderPage(FollowUpsIndex, {
       ...shared("Receptionist"),

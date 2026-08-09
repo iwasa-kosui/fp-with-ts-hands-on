@@ -1,85 +1,61 @@
 import { Link } from "@inertiajs/react";
 
 import { buttonClassName } from "../../components/Button.js";
-import { DataTable } from "../../components/DataTable.js";
-import { appointmentPresentation } from "../../components/appointmentPresentation.js";
-import { EmptyState } from "../../components/Surface.js";
-import { StatusBadge } from "../../components/StatusBadge.js";
+import AppointmentCalendar from "../../components/AppointmentCalendar.js";
+import { CalendarToolbar } from "../../components/CalendarToolbar.js";
 import type { SharedPageProps } from "../../pageProps.js";
+import type { CalendarView } from "../../../../../useCase/listAppointmentCalendarUseCase.js";
+import type { AppointmentCalendarItem } from "../../../../../useCase/query/appointmentCalendarReader.js";
 import type { AppointmentPageView } from "../../routes/appointmentRoutes.js";
 import Layout from "../Layout.js";
 
 type Props = SharedPageProps &
-  Readonly<{ appointments: readonly AppointmentPageView[] }>;
+  Readonly<{
+    date?: string;
+    requestedView?: CalendarView | null;
+    appointments: readonly AppointmentCalendarItem[] | readonly AppointmentPageView[];
+    veterinarians?: readonly Readonly<{ veterinarianId: string; name: string }>[];
+    selectedVeterinarianId?: string | null;
+    includeCanceled?: boolean;
+  }>;
 
-const veterinarianName = (appointment: AppointmentPageView): string => {
-  switch (appointment.kind) {
-    case "InExamination":
-    case "AwaitingPayment":
-    case "Paid":
-      return appointment.veterinarianName;
-    case "Scheduled":
-    case "CheckedIn":
-    case "Canceled":
-      return "未割当";
-    default:
-      return appointment satisfies never;
-  }
-};
+const toCalendarItem = (appointment: AppointmentCalendarItem | AppointmentPageView): AppointmentCalendarItem =>
+  "startsAt" in appointment
+    ? appointment
+    : {
+      appointmentId: appointment.appointmentId,
+      startsAt: appointment.scheduledAt,
+      endsAt: appointment.scheduledEndsAt,
+      durationMinutes: appointment.durationMinutes,
+      petName: appointment.petName,
+      serviceCode: appointment.serviceCode,
+      bookingKind: appointment.bookingKind,
+      assignedVeterinarianId: appointment.assignedVeterinarianId,
+      assignedVeterinarianName: appointment.assignedVeterinarianName,
+      appointmentStatus: appointment.kind,
+      settlementStatus: appointment.settlement.kind,
+    };
 
-export default function AppointmentsIndex({ auth, appointments }: Props) {
+export default function AppointmentsIndex({
+  auth, date = "2026-08-09", requestedView = "week", appointments, veterinarians = [], selectedVeterinarianId = null, includeCanceled = false,
+}: Props) {
   const canBook =
     auth.user?.role === "Admin" || auth.user?.role === "Receptionist";
+  const view = requestedView ?? "week";
+  const calendarAppointments = appointments.map(toCalendarItem);
   return (
     <Layout
       actions={
         canBook ? (
-          <Link className={buttonClassName()} href="/appointments/new">
-            新しい予約
-          </Link>
+          <><Link className={buttonClassName()} href="/appointments/new">新しい予約</Link><Link className={buttonClassName("secondary")} href="/reception/walk-in">飛び込み受付</Link></>
         ) : undefined
       }
       activeNavigation="appointments"
-      title="予約一覧"
+      title="予約カレンダー"
       user={auth.user}
     >
-      {appointments.length === 0 ? (
-        <EmptyState>予約はありません。</EmptyState>
-      ) : (
-        <DataTable label="予約一覧">
-          <thead>
-            <tr>
-              <th scope="col">予約日時</th>
-              <th scope="col">状態</th>
-              <th scope="col">飼い主</th>
-              <th scope="col">ペット</th>
-              <th scope="col">担当獣医師</th>
-            </tr>
-          </thead>
-          <tbody>
-            {appointments.map((appointment) => {
-              const status = appointmentPresentation(appointment.kind);
-              return (
-                <tr key={appointment.appointmentId}>
-                  <td>
-                    <Link href={`/appointments/${appointment.appointmentId}`}>
-                      {appointment.scheduledAt}
-                    </Link>
-                  </td>
-                  <td>
-                    <StatusBadge tone={status.tone}>
-                      {status.label}
-                    </StatusBadge>
-                  </td>
-                  <td>{appointment.ownerName}</td>
-                  <td>{appointment.petName}</td>
-                  <td>{veterinarianName(appointment)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </DataTable>
-      )}
+      <CalendarToolbar date={date} requestedView={requestedView} selectedVeterinarianId={selectedVeterinarianId} includeCanceled={includeCanceled} veterinarians={veterinarians} />
+      <AppointmentCalendar date={date} view={view} appointments={calendarAppointments} veterinarians={veterinarians} selectedVeterinarianId={selectedVeterinarianId} />
     </Layout>
   );
 }

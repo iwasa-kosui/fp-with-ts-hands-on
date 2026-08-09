@@ -31,6 +31,7 @@ import {
 import { createInstallationStatusQuery } from "./adaptor/secondary/sqlite/query/installationStatusQuery.js";
 import { createEventHistoryReader } from "./adaptor/secondary/sqlite/query/eventHistoryReader.js";
 import { createFollowUpRequestReader } from "./adaptor/secondary/sqlite/query/followUpRequestReader.js";
+import { createAppointmentCalendarReader } from "./adaptor/secondary/sqlite/query/appointmentCalendarReader.js";
 import {
   createSessionByIdResolver,
   createSessionByTokenHashResolver,
@@ -64,6 +65,7 @@ import type { WebEnvironment } from "./adaptor/primary/web/pageProps.js";
 import { createRootView } from "./adaptor/primary/web/rootView.js";
 import { registerAuthRoutes } from "./adaptor/primary/web/routes/authRoutes.js";
 import { registerAppointmentRoutes } from "./adaptor/primary/web/routes/appointmentRoutes.js";
+import { registerAppointmentCalendarRoutes } from "./adaptor/primary/web/routes/appointmentCalendarRoutes.js";
 import { registerDashboardRoutes } from "./adaptor/primary/web/routes/dashboardRoutes.js";
 import { registerEventRoutes } from "./adaptor/primary/web/routes/eventRoutes.js";
 import { registerFollowUpRoutes } from "./adaptor/primary/web/routes/followUpRoutes.js";
@@ -101,7 +103,7 @@ import type { InstallationStatusQuery } from "./useCase/query/installationStatus
 import { GetDashboardUseCase, type GetDashboardUseCase as GetDashboard } from "./useCase/getDashboardUseCase.js";
 import { ListOwnersUseCase, type ListOwnersUseCase as ListOwners } from "./useCase/listOwnersUseCase.js";
 import { ListPetsUseCase, type ListPetsUseCase as ListPets } from "./useCase/listPetsUseCase.js";
-import { ListAppointmentsUseCase, type ListAppointmentsUseCase as ListAppointments } from "./useCase/listAppointmentsUseCase.js";
+import { ListAppointmentCalendarUseCase, type ListAppointmentCalendarUseCase as ListAppointmentCalendar } from "./useCase/listAppointmentCalendarUseCase.js";
 import { ListEventsUseCase, type ListEventsUseCase as ListEvents } from "./useCase/listEventsUseCase.js";
 import { ListFollowUpsUseCase, type ListFollowUpsUseCase as ListFollowUps } from "./useCase/listFollowUpsUseCase.js";
 import { ListUsersUseCase, type ListUsersUseCase as ListUsers } from "./useCase/listUsersUseCase.js";
@@ -149,7 +151,7 @@ export type ApplicationDependencies = Readonly<{
   createPet: CreatePet;
   updatePet: UpdatePet;
   deletePet: DeletePet;
-  listAppointments: ListAppointments;
+  listAppointmentCalendar: ListAppointmentCalendar;
   getAppointment: GetAppointment;
   bookAppointment: BookAppointment;
   updateAppointment: UpdateAppointment;
@@ -244,6 +246,7 @@ export const createApplicationDependencies = (
   const followUpResolver = createFollowUpResolver(database);
   const followUpRequestReader = createFollowUpRequestReader(database);
   const eventHistoryReader = createEventHistoryReader(database);
+  const appointmentCalendarReader = createAppointmentCalendarReader(database);
   const sessionEventStore = createSessionEventStore(database);
   const initialAdminSetupStore = createInitialAdminSetupStore(database);
   const userEventStore = createUserEventStore(database);
@@ -389,12 +392,9 @@ export const createApplicationDependencies = (
       clock,
       eventIdGenerator,
     }),
-    listAppointments: ListAppointmentsUseCase.create({
+    listAppointmentCalendar: ListAppointmentCalendarUseCase.create({
       userResolver: clinicUserByIdResolver,
-      appointmentListResolver: clinicAppointmentListResolver,
-      ownerListResolver: clinicOwnerListResolver,
-      petListResolver: clinicPetListResolver,
-      userListResolver: clinicUserListResolver,
+      appointmentCalendarReader,
     }),
     getAppointment: GetAppointmentUseCase.create({
       userResolver: clinicUserByIdResolver,
@@ -573,7 +573,6 @@ export const createApp = (dependencies: ApplicationDependencies) => {
     listOwners: dependencies.listOwners,
   });
   registerAppointmentRoutes(app, {
-    listAppointments: dependencies.listAppointments,
     getAppointment: dependencies.getAppointment,
     bookAppointment: dependencies.bookAppointment,
     checkInAppointment: dependencies.checkInAppointment,
@@ -588,6 +587,11 @@ export const createApp = (dependencies: ApplicationDependencies) => {
     reassignAppointmentVeterinarian: dependencies.reassignAppointmentVeterinarian,
     updateReceptionNote: dependencies.updateReceptionNote,
     receiveAppointmentDeposit: dependencies.receiveAppointmentDeposit,
+  });
+  registerAppointmentCalendarRoutes(app, {
+    clock: dependencies.clock,
+    listAppointmentCalendar: dependencies.listAppointmentCalendar,
+    listVeterinarians: dependencies.listVeterinarians,
   });
   registerReceptionRoutes(app, {
     listOwners: dependencies.listOwners,

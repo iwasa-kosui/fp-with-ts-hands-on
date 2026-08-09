@@ -24,10 +24,7 @@ import type { BookAppointmentUseCase } from "../../../../useCase/bookAppointment
 import type { CancelAppointmentUseCase } from "../../../../useCase/cancelAppointmentUseCase.js";
 import type { CheckInAppointmentUseCase } from "../../../../useCase/checkInAppointmentUseCase.js";
 import type { GetAppointmentUseCase } from "../../../../useCase/getAppointmentUseCase.js";
-import type {
-  AppointmentView,
-  ListAppointmentsUseCase,
-} from "../../../../useCase/listAppointmentsUseCase.js";
+import type { AppointmentView } from "../../../../useCase/listAppointmentsUseCase.js";
 import type { ListOwnersUseCase } from "../../../../useCase/listOwnersUseCase.js";
 import type { ListPetsUseCase } from "../../../../useCase/listPetsUseCase.js";
 import type { ListVeterinariansUseCase } from "../../../../useCase/listVeterinariansUseCase.js";
@@ -229,7 +226,6 @@ export type AppointmentVeterinarianOption = Readonly<{
 }>;
 
 type AppointmentRouteDependencies = Readonly<{
-  listAppointments: ListAppointmentsUseCase;
   getAppointment: GetAppointmentUseCase;
   bookAppointment: BookAppointmentUseCase;
   checkInAppointment: CheckInAppointmentUseCase;
@@ -579,34 +575,6 @@ export const registerAppointmentRoutes = (
   app: Hono<WebEnvironment>,
   dependencies: AppointmentRouteDependencies,
 ): void => {
-  app.get("/appointments", async (context) => {
-    const actor = requireActor(context);
-    if (actor.isErr()) return actor.error;
-    return dependencies.listAppointments
-      .run({ actorUserId: actor.value.user.userId })
-      .match(
-        ({ appointments }) =>
-          context.render(
-            "Appointments/Index",
-            withSharedProps(context, {
-              appointments: appointments.map((appointment) =>
-                toAppointmentPageView(appointment),
-              ),
-            }),
-          ),
-        (error) => {
-          switch (error.kind) {
-            case "Unauthorized":
-              return respondToUseCaseError(context, { kind: "Unauthorized" });
-            case "RepositoryError":
-              return repositoryFailure(context);
-            default:
-              return assertNever(error);
-          }
-        },
-      );
-  });
-
   app.get("/appointments/new", (context) =>
     renderBooking(context, dependencies),
   );
