@@ -37,6 +37,12 @@ describe("appointment schedule", () => {
     ).toBe(false);
   });
 
+  test("calculates the schedule end from its start and configured duration", () => {
+    expect(
+      AppointmentSchedule.endsAt(schedule("2026-08-09T10:45:00.000Z", 60)),
+    ).toBe("2026-08-09T11:45:00.000Z");
+  });
+
   test("detects schedules whose half-open time ranges intersect", () => {
     expect(
       AppointmentSchedule.overlaps(
@@ -75,5 +81,10 @@ describe("appointment schedule", () => {
     expect(note.unwrap()).toBe("keep the pet calm");
     expect(JSON.stringify(note)).toBe('"[REDACTED]"');
     expect(ReceptionNote.parse("   ").isErr()).toBe(true);
+  });
+
+  test("accepts a 1000-character reception note and rejects 1001 characters", () => {
+    expect(ReceptionNote.parse("a".repeat(1000)).isOk()).toBe(true);
+    expect(ReceptionNote.parse("a".repeat(1001)).isErr()).toBe(true);
   });
 });

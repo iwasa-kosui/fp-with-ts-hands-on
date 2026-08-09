@@ -730,6 +730,34 @@ describe("Operator Console shell", () => {
     expect(html).not.toContain("診察結果を記録");
   });
 
+  test("connects reception-note and deposit validation errors to their controls", () => {
+    const html = renderPublicPage(
+      <AppointmentShow
+        actions={{
+          ...noAppointmentActions,
+          receiveDeposit: true,
+          updateReceptionNote: true,
+        }}
+        appointment={{
+          ...appointmentBase,
+          kind: "Scheduled",
+          serviceCode: "Vaccination",
+        }}
+        auth={{ user: { userId: adminId, role: "Receptionist" } }}
+        errors={{
+          depositAmount: "前受金額を確認してください。",
+          receptionNote: "受付メモを確認してください。",
+        }}
+        flash={{}}
+        veterinarianId={null}
+      />,
+    );
+
+    expect(html).toContain('aria-describedby="receptionNote-error"');
+    expect(html).toContain('aria-describedby="depositAmount-error"');
+    expect(html.match(/aria-invalid="true"/g)).toHaveLength(2);
+  });
+
   test("renders no action form when the server authorizes no actions", () => {
     const html = renderPublicPage(
       <AppointmentShow

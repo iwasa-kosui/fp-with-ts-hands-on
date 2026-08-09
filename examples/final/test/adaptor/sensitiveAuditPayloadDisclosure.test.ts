@@ -128,6 +128,8 @@ describe("SQLite SensitiveAuditPayloadDisclosure", () => {
     expect(JSON.stringify(aggregateState)).toBe(specialObjectJson);
     expect(JSON.stringify(revealed.eventPayload)).toBe(specialObjectJson);
     expect(Object.getOwnPropertyDescriptor({}, "evidence")).toBeUndefined();
+    expect("evidence" in {}).toBe(false);
+    expect(Object.prototype).not.toHaveProperty("evidence");
   });
 
   test("機微本文のreadと本文を含まないRegular閲覧イベントを一つのtransactionでcommitする", async () => {

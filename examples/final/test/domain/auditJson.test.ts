@@ -41,6 +41,8 @@ describe("Audit JSON identity-preserving codec", () => {
       JSON.parse(specialObjectJson),
     );
     expect(Object.getOwnPropertyDescriptor({}, "evidence")).toBeUndefined();
+    expect("evidence" in {}).toBe(false);
+    expect(Object.prototype).not.toHaveProperty("evidence");
   });
 
   test("SensitiveAuditPayload境界もstate/payloadのobject identityを再構築せず返す", () => {

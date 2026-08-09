@@ -6,7 +6,10 @@ import type { ReceptionBoard } from "../../../../../useCase/query/receptionBoard
 import { buttonClassName } from "../../components/Button.js";
 import { ReceptionSection } from "../../components/ReceptionSection.js";
 import type { SharedPageProps } from "../../pageProps.js";
-import { startReceptionPolling } from "../../receptionPolling.js";
+import {
+  createBrowserReceptionPollingEnvironment,
+  startReceptionPolling,
+} from "../../receptionPolling.js";
 import Layout from "../Layout.js";
 
 type Props = SharedPageProps & Readonly<{ board: ReceptionBoard; currentTime: Timestamp }>;
@@ -28,14 +31,13 @@ export default function ReceptionIndex({ auth, board, currentTime: _currentTime 
     let routerBusy = false;
     const offStart = router.on("start", () => { routerBusy = true; });
     const offFinish = router.on("finish", () => { routerBusy = false; });
-    const stop = startReceptionPolling({
-      setInterval: (callback, milliseconds) => window.setInterval(callback, milliseconds),
-      clearInterval: (handle) => window.clearInterval(Number(handle)),
-      isVisible: () => document.visibilityState === "visible",
-      subscribeVisibility: (listener) => { document.addEventListener("visibilitychange", listener); return () => document.removeEventListener("visibilitychange", listener); },
+    const environment = createBrowserReceptionPollingEnvironment({
+      document,
       isBusy: () => busy.current || routerBusy,
-      reload: (onFinish) => router.reload({ only: ["board"], onFinish }),
+      reload: (options) => router.reload(options),
+      window,
     });
+    const stop = startReceptionPolling(environment);
     return () => { stop(); offStart(); offFinish(); };
   }, []);
 

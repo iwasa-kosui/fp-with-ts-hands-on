@@ -1,6 +1,10 @@
 import { describe, expect, test, vi } from "vitest";
 
-import { startReceptionPolling, type ReceptionPollingEnvironment } from "../../src/adaptor/primary/web/receptionPolling.js";
+import {
+  createBrowserReceptionPollingEnvironment,
+  startReceptionPolling,
+  type ReceptionPollingEnvironment,
+} from "../../src/adaptor/primary/web/receptionPolling.js";
 
 const harness = () => {
   let interval: (() => void) | undefined;
@@ -57,5 +61,65 @@ describe("startReceptionPolling", () => {
     fake.finish();
     fake.tick();
     expect(fake.reload).toHaveBeenCalledTimes(2);
+  });
+
+  test("connects browser visibility, 30-second interval, partial reload, busy state, and cleanup", () => {
+    let interval: (() => void) | undefined;
+    let intervalMilliseconds: number | undefined;
+    let visibilityListener: (() => void) | undefined;
+    let visible = true;
+    let busy = false;
+    const clearInterval = vi.fn();
+    const removeEventListener = vi.fn();
+    const reload = vi.fn();
+    const environment = createBrowserReceptionPollingEnvironment({
+      document: {
+        addEventListener: (_event: string, listener: () => void) => {
+          visibilityListener = listener;
+        },
+        get visibilityState() {
+          return visible ? "visible" : "hidden";
+        },
+        removeEventListener,
+      },
+      isBusy: () => busy,
+      reload,
+      window: {
+        clearInterval,
+        setInterval: (callback: () => void, milliseconds: number) => {
+          interval = callback;
+          intervalMilliseconds = milliseconds;
+          return 42;
+        },
+      },
+    });
+
+    const stop = startReceptionPolling(environment);
+    expect(intervalMilliseconds).toBe(30_000);
+    interval?.();
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(reload.mock.calls[0]?.[0]).toEqual({
+      onFinish: expect.any(Function),
+      only: ["board"],
+    });
+    reload.mock.calls[0]?.[0].onFinish();
+
+    visible = false;
+    interval?.();
+    expect(reload).toHaveBeenCalledTimes(1);
+    visible = true;
+    visibilityListener?.();
+    expect(reload).toHaveBeenCalledTimes(2);
+    reload.mock.calls[1]?.[0].onFinish();
+    busy = true;
+    interval?.();
+    expect(reload).toHaveBeenCalledTimes(2);
+
+    stop();
+    expect(clearInterval).toHaveBeenCalledWith(42);
+    expect(removeEventListener).toHaveBeenCalledWith(
+      "visibilitychange",
+      expect.any(Function),
+    );
   });
 });

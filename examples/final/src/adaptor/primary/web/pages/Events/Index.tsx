@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type Ref } from "react";
 
 import { SensitiveAuditPayload } from "../../../../../useCase/query/sensitiveAuditPayloadDisclosure.js";
 import type { EventView } from "../../../../../useCase/listEventsUseCase.js";
@@ -57,13 +57,20 @@ const JsonDocument = ({ value }: Readonly<{ value: unknown }>) => (
 );
 
 export const SensitiveAuditPayloadDetail = ({
+  containerRef,
   payload,
   onClose,
 }: Readonly<{
+  containerRef?: Ref<HTMLElement>;
   payload: SensitiveAuditPayload;
   onClose: () => void;
 }>) => (
-  <section aria-label="開示した機微監査情報" className="audit-payload">
+  <section
+    aria-label="開示した機微監査情報"
+    className="audit-payload"
+    ref={containerRef}
+    tabIndex={-1}
+  >
     <InlineAlert>
       個人情報・診療情報を含みます。業務上必要な場合だけ確認してください。
     </InlineAlert>
@@ -80,7 +87,13 @@ export const SensitiveAuditPayloadDetail = ({
 const SensitivePayload = ({ eventId }: Readonly<{ eventId: string }>) => {
   const [state, setState] = useState<RevealState>();
   const request = useRef<AbortController | undefined>(undefined);
+  const detail = useRef<HTMLElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
   useEffect(() => () => request.current?.abort(), []);
+  useEffect(() => {
+    if (state?.kind === "Revealed") detail.current?.focus();
+    if (state?.kind === "Closed") trigger.current?.focus();
+  }, [state?.kind]);
 
   const reveal = async (): Promise<void> => {
     request.current?.abort();
@@ -115,6 +128,7 @@ const SensitivePayload = ({ eventId }: Readonly<{ eventId: string }>) => {
   if (state?.kind === "Revealed") {
     return (
       <SensitiveAuditPayloadDetail
+        containerRef={detail}
         payload={state.payload}
         onClose={() => setState({ kind: "Closed" })}
       />
@@ -129,6 +143,7 @@ const SensitivePayload = ({ eventId }: Readonly<{ eventId: string }>) => {
       <Button
         type="button"
         variant="secondary"
+        ref={trigger}
         disabled={state?.kind === "Loading"}
         onClick={() => void reveal()}
       >

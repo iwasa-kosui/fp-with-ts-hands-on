@@ -263,6 +263,8 @@ export default function AppointmentShow({
                 <input name="expectedVersion" type="hidden" value={receptionNote.data.expectedVersion} />
                 <label htmlFor="receptionNote">受付メモ
                   <textarea
+                    aria-describedby={errors.receptionNote === undefined ? undefined : "receptionNote-error"}
+                    aria-invalid={errors.receptionNote === undefined ? undefined : true}
                     id="receptionNote"
                     name="receptionNote"
                     onChange={(event) => receptionNote.setData("receptionNote", event.target.value)}
@@ -281,6 +283,8 @@ export default function AppointmentShow({
                 <input name="expectedVersion" type="hidden" value={deposit.data.expectedVersion} />
                 <label htmlFor="depositAmount">前受金額（円）
                   <input
+                    aria-describedby={errors.depositAmount === undefined ? undefined : "depositAmount-error"}
+                    aria-invalid={errors.depositAmount === undefined ? undefined : true}
                     id="depositAmount"
                     min="1"
                     name="depositAmount"

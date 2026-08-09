@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactElement } from "react";
+import { forwardRef, type ButtonHTMLAttributes } from "react";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
@@ -9,13 +9,14 @@ type ButtonProps = Readonly<
   ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }
 >;
 
-export const Button = ({
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   className,
   variant,
   ...props
-}: ButtonProps): ReactElement => (
+}, ref) => (
   <button
     {...props}
     className={[buttonClassName(variant), className].filter(Boolean).join(" ")}
+    ref={ref}
   />
-);
+));
