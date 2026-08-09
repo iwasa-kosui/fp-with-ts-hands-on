@@ -108,6 +108,7 @@ export const toAppointmentPageView = (
     case "Canceled":
       return { ...appointment, ...base };
     case "InExamination":
+    case "AwaitingPayment":
     case "Paid":
       return {
         ...appointment,
@@ -231,7 +232,7 @@ const actionsFor = (
       appointment.kind === "CheckedIn",
     recordExamResult:
       appointment.kind === "InExamination" && assignedExaminer,
-    recordPayment: manager && appointment.kind === "InExamination",
+    recordPayment: manager && appointment.kind === "AwaitingPayment",
   };
 };
 
@@ -588,6 +589,8 @@ export const registerAppointmentRoutes = (
               return invalidState(context, appointmentId.value);
             case "ExamResultPetMismatch":
               return context.redirect(`${detailUrl(appointmentId.value)}?error=pet-mismatch`, 303);
+            case "AppointmentConflict":
+              return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
             case "IdentityGenerationFailed":
             case "RepositoryError":
               return repositoryFailure(context);

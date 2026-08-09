@@ -22,6 +22,7 @@ import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
+import { ExamId } from "../../src/domain/examResult/examId.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
 import { PetId } from "../../src/domain/pet/petId.js";
@@ -201,6 +202,8 @@ describe("clinic page SSR", () => {
       veterinarianId,
       veterinarianName: "Clinic Vet",
       examinationStartedAt,
+      examId: ExamId.schema.parse("71000000-0000-4000-8000-000000000030"),
+      examinationCompletedAt: Timestamp.schema.parse("2026-08-09T02:30:00.000Z"),
       amount: paymentAmount,
       paidAt,
     } satisfies AppointmentPageView;

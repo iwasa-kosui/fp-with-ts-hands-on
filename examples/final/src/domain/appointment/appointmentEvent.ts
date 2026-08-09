@@ -1,8 +1,9 @@
 import type { DomainEvent } from "../aggregate/domainEvent.js";
 import type { EventContext } from "../aggregate/eventContext.js";
-import type { Appointment, Canceled, CheckedIn, InExamination, Paid, Scheduled } from "./appointment.js";
+import type { Appointment, AwaitingPayment, Canceled, CheckedIn, InExamination, Paid, Scheduled } from "./appointment.js";
 import type { AppointmentId } from "./appointmentId.js";
 import type { VeterinarianId } from "./veterinarianId.js";
+import type { ExamId } from "../examResult/examId.js";
 
 type AppointmentDomainEvent<
   TAggregateState extends Appointment,
@@ -46,6 +47,13 @@ export type ExaminationStarted = AppointmentDomainEvent<
   Readonly<{ appointmentId: AppointmentId; veterinarianId: VeterinarianId }>
 >;
 
+export type AppointmentExaminationCompleted = AppointmentDomainEvent<
+  AwaitingPayment,
+  "AppointmentExaminationCompleted",
+  "appointment.examination-completed",
+  Readonly<{ appointmentId: AppointmentId; examId: ExamId }>
+>;
+
 export type PaymentRecorded = AppointmentDomainEvent<
   Paid,
   "PaymentRecorded",
@@ -64,6 +72,7 @@ export type AppointmentEvent =
   | AppointmentBooked
   | AppointmentCheckedIn
   | ExaminationStarted
+  | AppointmentExaminationCompleted
   | PaymentRecorded
   | AppointmentCanceled;
 

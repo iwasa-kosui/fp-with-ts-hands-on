@@ -7,6 +7,7 @@ import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import type { AppointmentListResolver } from "../domain/appointment/appointmentResolver.js";
 import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
 import type { PaymentAmount } from "../domain/appointment/paymentAmount.js";
+import type { ExamId } from "../domain/examResult/examId.js";
 import type { Owner } from "../domain/owner/owner.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
 import type { OwnerName } from "../domain/owner/ownerName.js";
@@ -47,12 +48,23 @@ type InExaminationAppointmentView = AppointmentViewBase & Readonly<{
   veterinarianName: UserName | undefined;
   examinationStartedAt: Timestamp;
 }>;
+type AwaitingPaymentAppointmentView = AppointmentViewBase & Readonly<{
+  kind: "AwaitingPayment";
+  checkedInAt: Timestamp;
+  veterinarianId: VeterinarianId;
+  veterinarianName: UserName | undefined;
+  examinationStartedAt: Timestamp;
+  examId: ExamId;
+  examinationCompletedAt: Timestamp;
+}>;
 type PaidAppointmentView = AppointmentViewBase & Readonly<{
   kind: "Paid";
   checkedInAt: Timestamp;
   veterinarianId: VeterinarianId;
   veterinarianName: UserName | undefined;
   examinationStartedAt: Timestamp;
+  examId: ExamId;
+  examinationCompletedAt: Timestamp;
   amount: PaymentAmount;
   paidAt: Timestamp;
 }>;
@@ -64,6 +76,7 @@ export type AppointmentView =
   | ScheduledAppointmentView
   | CheckedInAppointmentView
   | InExaminationAppointmentView
+  | AwaitingPaymentAppointmentView
   | PaidAppointmentView
   | CanceledAppointmentView;
 export type UseCaseInput = Readonly<{ actorUserId: UserId }>;
@@ -127,6 +140,23 @@ export const toAppointmentView =
           examinationStartedAt: appointment.examinationStartedAt,
         } as const satisfies InExaminationAppointmentView;
       }
+      case "AwaitingPayment": {
+        const veterinarian = users.find(
+          (user) =>
+            user.kind === "Veterinarian" &&
+            user.veterinarianId === appointment.veterinarianId,
+        );
+        return {
+          ...base,
+          kind: appointment.kind,
+          checkedInAt: appointment.checkedInAt,
+          veterinarianId: appointment.veterinarianId,
+          veterinarianName: veterinarian?.name,
+          examinationStartedAt: appointment.examinationStartedAt,
+          examId: appointment.examId,
+          examinationCompletedAt: appointment.examinationCompletedAt,
+        } as const satisfies AwaitingPaymentAppointmentView;
+      }
       case "Paid": {
         const veterinarian = users.find(
           (user) =>
@@ -140,6 +170,8 @@ export const toAppointmentView =
           veterinarianId: appointment.veterinarianId,
           veterinarianName: veterinarian?.name,
           examinationStartedAt: appointment.examinationStartedAt,
+          examId: appointment.examId,
+          examinationCompletedAt: appointment.examinationCompletedAt,
           amount: appointment.amount,
           paidAt: appointment.paidAt,
         } as const satisfies PaidAppointmentView;

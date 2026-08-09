@@ -59,10 +59,15 @@ const paidAppointment = (() => {
   const examining = Appointment.startExamination(
     context("99999999-9999-4999-8999-999999999999", "2026-08-30T06:30:00.000Z"),
   )(checkedIn.aggregateState, veterinarianId);
+  const completed = Appointment.completeExamination(
+    context("ffffffff-ffff-4fff-8fff-ffffffffffff", "2026-08-30T06:45:00.000Z"),
+  )(examining.aggregateState, {
+    examId: ExamId.schema.parse("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"),
+  });
 
   return Appointment.recordPayment(
     context("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "2026-08-30T07:00:00.000Z"),
-  )(examining.aggregateState, {
+  )(completed.aggregateState, {
     diagnosis: Diagnosis.schema.parse("skin inflammation"),
     treatment: Treatment.schema.parse("ointment"),
     amount: paymentAmount,

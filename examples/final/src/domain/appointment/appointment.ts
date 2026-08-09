@@ -7,9 +7,11 @@ import {
   type AppointmentBooked,
   type AppointmentCanceled,
   type AppointmentCheckedIn,
+  type AppointmentExaminationCompleted,
   type ExaminationStarted,
   type PaymentRecorded,
 } from "./appointmentEvent.js";
+import type { ExamId } from "../examResult/examId.js";
 import type { AppointmentId } from "./appointmentId.js";
 import type { PaymentAmount } from "./paymentAmount.js";
 import type { VeterinarianId } from "./veterinarianId.js";
@@ -49,6 +51,20 @@ export type InExamination = Readonly<{
   examinationStartedAt: Timestamp;
 }>;
 
+export type AwaitingPayment = Readonly<{
+  kind: "AwaitingPayment";
+  appointmentId: AppointmentId;
+  petId: PetId;
+  ownerId: OwnerId;
+  scheduledAt: Timestamp;
+  reason: AppointmentReason;
+  checkedInAt: Timestamp;
+  veterinarianId: VeterinarianId;
+  examinationStartedAt: Timestamp;
+  examId: ExamId;
+  examinationCompletedAt: Timestamp;
+}>;
+
 export type Paid = Readonly<{
   kind: "Paid";
   appointmentId: AppointmentId;
@@ -59,6 +75,8 @@ export type Paid = Readonly<{
   checkedInAt: Timestamp;
   veterinarianId: VeterinarianId;
   examinationStartedAt: Timestamp;
+  examId: ExamId;
+  examinationCompletedAt: Timestamp;
   diagnosis: Diagnosis;
   treatment: Treatment;
   amount: PaymentAmount;
@@ -76,8 +94,9 @@ export type Canceled = Readonly<{
 }>;
 
 export type Appointment =
-  Scheduled | CheckedIn | InExamination | Paid | Canceled;
+  Scheduled | CheckedIn | InExamination | AwaitingPayment | Paid | Canceled;
 export type BookAppointmentInput = Readonly<Omit<Scheduled, "kind">>;
+export type CompleteExaminationInput = Readonly<{ examId: ExamId }>;
 export type RecordPaymentInput = Readonly<
   Pick<Paid, "diagnosis" | "treatment" | "amount">
 >;
@@ -143,9 +162,12 @@ const startExamination =
 
 const recordPayment =
   (context: EventContext) =>
-  (examining: InExamination, input: RecordPaymentInput): PaymentRecorded => {
+  (
+    awaitingPayment: AwaitingPayment,
+    input: RecordPaymentInput,
+  ): PaymentRecorded => {
     const aggregateState = {
-      ...examining,
+      ...awaitingPayment,
       ...input,
       kind: "Paid",
       paidAt: context.occurredAt,
@@ -158,6 +180,29 @@ const recordPayment =
       "PaymentRecorded",
       "appointment.payment-recorded",
       { appointmentId: aggregateState.appointmentId },
+    );
+  };
+
+const completeExamination =
+  (context: EventContext) =>
+  (
+    examining: InExamination,
+    input: CompleteExaminationInput,
+  ): AppointmentExaminationCompleted => {
+    const aggregateState = {
+      ...examining,
+      kind: "AwaitingPayment",
+      examId: input.examId,
+      examinationCompletedAt: context.occurredAt,
+    } as const satisfies AwaitingPayment;
+
+    return AppointmentEvent.create(
+      context,
+      aggregateState.appointmentId,
+      aggregateState,
+      "AppointmentExaminationCompleted",
+      "appointment.examination-completed",
+      { appointmentId: aggregateState.appointmentId, examId: input.examId },
     );
   };
 
@@ -191,10 +236,12 @@ export const Appointment = {
   book,
   checkIn,
   startExamination,
+  completeExamination,
   recordPayment,
   cancel,
   isActive: (appointment: Appointment) =>
     appointment.kind === "Scheduled" ||
     appointment.kind === "CheckedIn" ||
-    appointment.kind === "InExamination",
+    appointment.kind === "InExamination" ||
+    appointment.kind === "AwaitingPayment",
 } as const;

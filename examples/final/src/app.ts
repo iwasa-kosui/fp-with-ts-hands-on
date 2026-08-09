@@ -55,7 +55,7 @@ import {
   createPetEventStore,
 } from "./adaptor/secondary/sqlite/store/petEventStore.js";
 import { createAppointmentEventStore } from "./adaptor/secondary/sqlite/store/appointmentEventStore.js";
-import { createExamResultEventStore } from "./adaptor/secondary/sqlite/store/examResultEventStore.js";
+import { createExaminationCompletionStore } from "./adaptor/secondary/sqlite/store/examinationCompletionStore.js";
 import { createFollowUpEventStore } from "./adaptor/secondary/sqlite/store/followUpEventStore.js";
 import { createAuthenticationMiddleware } from "./adaptor/primary/web/middleware/authentication.js";
 import { createSharedPropsMiddleware } from "./adaptor/primary/web/middleware/sharedProps.js";
@@ -240,7 +240,7 @@ export const createApplicationDependencies = (
   const petEventStore = createPetEventStore(database);
   const petDeletedEventStore = createPetDeletedEventStore(database);
   const appointmentEventStore = createAppointmentEventStore(database);
-  const examResultEventStore = createExamResultEventStore(database);
+  const examinationCompletionStore = createExaminationCompletionStore(database);
   const followUpEventStore = createFollowUpEventStore(database);
 
   return {
@@ -416,7 +416,7 @@ export const createApplicationDependencies = (
     recordExamResult: RecordExamResultUseCase.create({
       userResolver: clinicUserByIdResolver,
       appointmentResolver: clinicAppointmentByIdResolver,
-      examResultRecordedStore: examResultEventStore,
+      examinationCompletionStore,
       examIdGenerator,
       clock,
       eventIdGenerator,

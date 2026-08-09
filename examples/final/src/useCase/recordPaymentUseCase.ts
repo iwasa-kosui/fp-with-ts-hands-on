@@ -12,7 +12,7 @@ import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import {
   Appointment,
   type Appointment as AppointmentState,
-  type InExamination,
+  type AwaitingPayment,
   type Paid,
 } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
@@ -42,8 +42,8 @@ export type UseCaseOk = Readonly<{ appointment: Paid }>;
 export type InvalidAppointmentState = Readonly<{
   kind: "InvalidAppointmentState";
   appointmentId: AppointmentId;
-  expectedKind: "InExamination";
-  actualKind: Exclude<AppointmentState["kind"], "InExamination">;
+  expectedKind: "AwaitingPayment";
+  actualKind: Exclude<AppointmentState["kind"], "AwaitingPayment">;
 }>;
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
@@ -79,20 +79,20 @@ const toStoreError = (
   error: AppointmentStoreError,
 ): UseCaseRepositoryError | AppointmentConflict =>
   error.kind === "AppointmentConflict" ? error : toRepositoryError(error);
-const ensureInExamination = (
+const ensureAwaitingPayment = (
   appointment: AppointmentState,
-): Result<InExamination, InvalidAppointmentState> =>
-  appointment.kind === "InExamination"
+): Result<AwaitingPayment, InvalidAppointmentState> =>
+  appointment.kind === "AwaitingPayment"
     ? ok(appointment)
     : err({
         kind: "InvalidAppointmentState",
         appointmentId: appointment.appointmentId,
-        expectedKind: "InExamination",
+        expectedKind: "AwaitingPayment",
         actualKind: appointment.kind,
       });
 const createEvent =
   (dependencies: Dependencies, input: UseCaseInput) =>
-  (appointment: InExamination) =>
+  (appointment: AwaitingPayment) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() =>
         Appointment.recordPayment({
@@ -121,7 +121,7 @@ const run =
           .mapErr(toRepositoryError),
       )
       .andThen(ensureAppointmentFound(input.appointmentId))
-      .andThen(ensureInExamination)
+      .andThen(ensureAwaitingPayment)
       .andThen(createEvent(dependencies, input))
       .andThrough((event) =>
         dependencies.paymentRecordedStore

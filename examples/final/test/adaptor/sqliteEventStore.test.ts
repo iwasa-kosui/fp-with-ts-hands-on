@@ -14,6 +14,7 @@ import {
 import { createAppointmentEventStore } from "../../src/adaptor/secondary/sqlite/store/appointmentEventStore.js";
 import { createAppointmentByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/appointmentResolver.js";
 import { createExamResultEventStore } from "../../src/adaptor/secondary/sqlite/store/examResultEventStore.js";
+import { createExaminationCompletionStore } from "../../src/adaptor/secondary/sqlite/store/examinationCompletionStore.js";
 import { createFollowUpEventStore } from "../../src/adaptor/secondary/sqlite/store/followUpEventStore.js";
 import { createOwnerEventStore } from "../../src/adaptor/secondary/sqlite/store/ownerEventStore.js";
 import { createPetEventStore } from "../../src/adaptor/secondary/sqlite/store/petEventStore.js";
@@ -51,6 +52,7 @@ const ids = {
   pet: PetId.schema.parse("00000000-0000-4000-8000-000000000005"),
   appointment: AppointmentId.schema.parse("00000000-0000-4000-8000-000000000006"),
   exam: ExamId.schema.parse("00000000-0000-4000-8000-000000000007"),
+  otherExam: ExamId.schema.parse("00000000-0000-4000-8000-000000000011"),
   veterinarian: VeterinarianId.schema.parse("00000000-0000-4000-8000-000000000008"),
   otherAppointment: AppointmentId.schema.parse("00000000-0000-4000-8000-000000000009"),
   otherPet: PetId.schema.parse("00000000-0000-4000-8000-000000000010"),
@@ -322,6 +324,115 @@ describe("SQLite event stores", () => {
       appointmentId: ids.appointment,
     });
     expect(await db.select().from(appointmentsTable)).toHaveLength(1);
+    expect(await db.select().from(domainEventsTable)).toHaveLength(3);
+  });
+
+  test("atomically records one examination completion from concurrent stale submissions", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const appointmentStore = createAppointmentEventStore(db);
+    const booked = Appointment.book(eventContext(10))({
+      appointmentId: ids.appointment,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
+      reason: AppointmentReason.schema.parse("private reason"),
+    });
+    const checkedIn = Appointment.checkIn(eventContext(11))(booked.aggregateState);
+    const started = Appointment.startExamination(eventContext(12))(
+      checkedIn.aggregateState,
+      ids.veterinarian,
+    );
+    await appointmentStore.store(booked, checkedIn, started);
+    const examinationCompletionStore = createExaminationCompletionStore(db);
+    const firstResult = ExamResult.create(eventContext(13))(unwrap(ExamResult.parse({
+      examId: ids.exam,
+      petId: ids.pet,
+      collectedAt: "2026-08-08T01:03:00.000Z",
+      items: ["first private result"],
+      needsFollowUp: false,
+    })));
+    const secondResult = ExamResult.create(eventContext(15))(unwrap(ExamResult.parse({
+      examId: ids.otherExam,
+      petId: ids.pet,
+      collectedAt: "2026-08-08T01:05:00.000Z",
+      items: ["second private result"],
+      needsFollowUp: true,
+    })));
+    const firstCompletion = Appointment.completeExamination(eventContext(14))(
+      started.aggregateState,
+      { examId: ids.exam },
+    );
+    const secondCompletion = Appointment.completeExamination(eventContext(16))(
+      started.aggregateState,
+      { examId: ids.otherExam },
+    );
+
+    const results = await Promise.all([
+      examinationCompletionStore.store(firstResult, firstCompletion),
+      examinationCompletionStore.store(secondResult, secondCompletion),
+    ]);
+
+    expect(results.filter((result) => result.isOk())).toHaveLength(1);
+    expect(results.filter((result) => result.isErr())).toHaveLength(1);
+    expect(results.find((result) => result.isErr())?._unsafeUnwrapErr()).toMatchObject({
+      kind: "AppointmentConflict",
+      appointmentId: ids.appointment,
+    });
+    expect(await db.select().from(examResultsTable)).toHaveLength(1);
+    expect(
+      (await createAppointmentByIdResolver(db).resolveById(ids.appointment))
+        ._unsafeUnwrap(),
+    ).toMatchObject({ kind: "AwaitingPayment" });
+    expect((await db.select().from(domainEventsTable)).map(({ eventName }) => eventName)).toEqual([
+      "appointment.booked",
+      "appointment.checked-in",
+      "appointment.examination-started",
+      "exam-result.recorded",
+      "appointment.examination-completed",
+    ]);
+  });
+
+  test("rolls back both projections and the exam event when the completion event conflicts", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const appointmentStore = createAppointmentEventStore(db);
+    const booked = Appointment.book(eventContext(20))({
+      appointmentId: ids.appointment,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
+      reason: AppointmentReason.schema.parse("private reason"),
+    });
+    const checkedIn = Appointment.checkIn(eventContext(21))(booked.aggregateState);
+    const started = Appointment.startExamination(eventContext(22))(
+      checkedIn.aggregateState,
+      ids.veterinarian,
+    );
+    await appointmentStore.store(booked, checkedIn, started);
+    const examResult = ExamResult.create(eventContext(23))(unwrap(ExamResult.parse({
+      examId: ids.exam,
+      petId: ids.pet,
+      collectedAt: "2026-08-08T01:13:00.000Z",
+      items: ["private result"],
+      needsFollowUp: false,
+    })));
+    const completion = Appointment.completeExamination({
+      ...eventContext(24),
+      eventId: started.eventId,
+    })(started.aggregateState, { examId: ids.exam });
+
+    const result = await createExaminationCompletionStore(db).store(
+      examResult,
+      completion,
+    );
+
+    expect(result.isErr()).toBe(true);
+    expect(await db.select().from(examResultsTable)).toHaveLength(0);
+    expect(
+      (await createAppointmentByIdResolver(db).resolveById(ids.appointment))
+        ._unsafeUnwrap(),
+    ).toMatchObject({ kind: "InExamination" });
     expect(await db.select().from(domainEventsTable)).toHaveLength(3);
   });
 

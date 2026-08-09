@@ -133,6 +133,8 @@ describe("SQLite resolvers", () => {
       checkedInAt: "2026-08-10T01:10:00.000Z",
       veterinarianId: "30000000-0000-4000-8000-000000000005",
       examinationStartedAt: "2026-08-10T01:20:00.000Z",
+      examId,
+      examinationCompletedAt: "2026-08-10T01:30:00.000Z",
       diagnosis: "diagnosis",
       treatment: "treatment",
       amount: 4800,

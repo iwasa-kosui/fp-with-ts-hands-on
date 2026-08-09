@@ -62,12 +62,23 @@ const InExaminationSafeStateSchema = z.object({
   veterinarianId: VeterinarianId.schema,
   examinationStartedAt: Timestamp.schema,
 }).strict();
+const AwaitingPaymentSafeStateSchema = z.object({
+  kind: z.literal("AwaitingPayment"),
+  ...AppointmentSafeBaseShape,
+  checkedInAt: Timestamp.schema,
+  veterinarianId: VeterinarianId.schema,
+  examinationStartedAt: Timestamp.schema,
+  examId: ExamId.schema,
+  examinationCompletedAt: Timestamp.schema,
+}).strict();
 const PaidSafeStateSchema = z.object({
   kind: z.literal("Paid"),
   ...AppointmentSafeBaseShape,
   checkedInAt: Timestamp.schema,
   veterinarianId: VeterinarianId.schema,
   examinationStartedAt: Timestamp.schema,
+  examId: ExamId.schema,
+  examinationCompletedAt: Timestamp.schema,
   amount: PaymentAmount.schema,
   paidAt: Timestamp.schema,
 }).strict();
@@ -168,6 +179,16 @@ const examinationStartedEvent = EventIdentitySchema.extend({
     veterinarianId: VeterinarianId.schema,
   }).strict(),
 }).strict();
+const examinationCompletedEvent = EventIdentitySchema.extend({
+  aggregateId: AppointmentId.schema,
+  aggregateName: z.literal("Appointment"),
+  aggregateState: AwaitingPaymentSafeStateSchema,
+  eventName: z.literal("appointment.examination-completed"),
+  eventPayload: z.object({
+    appointmentId: AppointmentId.schema,
+    examId: ExamId.schema,
+  }).strict(),
+}).strict();
 const examResultEvent = <TEventName extends "exam-result.recorded" | "exam-result.updated">(
   eventName: TEventName,
 ) => EventIdentitySchema.extend({
@@ -201,6 +222,7 @@ const EventRowSchema = z.discriminatedUnion("eventName", [
   appointmentEvent("appointment.booked", ScheduledSafeStateSchema),
   appointmentEvent("appointment.checked-in", CheckedInSafeStateSchema),
   examinationStartedEvent,
+  examinationCompletedEvent,
   appointmentEvent("appointment.payment-recorded", PaidSafeStateSchema),
   appointmentEvent("appointment.canceled", CanceledSafeStateSchema),
   examResultEvent("exam-result.recorded"),
@@ -272,6 +294,10 @@ const validateConsistency = (row: PersistedEventRow): void => {
     case "appointment.examination-started":
       ensureSame(row.aggregateId, row.aggregateState.appointmentId, row.eventPayload.appointmentId);
       ensureSame(row.aggregateState.veterinarianId, row.eventPayload.veterinarianId);
+      return;
+    case "appointment.examination-completed":
+      ensureSame(row.aggregateId, row.aggregateState.appointmentId, row.eventPayload.appointmentId);
+      ensureSame(row.aggregateState.examId, row.eventPayload.examId);
       return;
     case "exam-result.recorded":
     case "exam-result.updated":

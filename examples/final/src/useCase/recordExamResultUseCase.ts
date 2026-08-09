@@ -12,14 +12,20 @@ import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { Timestamp } from "../domain/aggregate/timestamp.js";
 import type {
   Appointment,
+  AwaitingPayment,
   InExamination,
 } from "../domain/appointment/appointment.js";
+import { Appointment as AppointmentAggregate } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
+import type {
+  AppointmentConflict,
+  AppointmentStoreError,
+} from "../domain/appointment/appointmentStores.js";
 import { ExamResult } from "../domain/examResult/examResult.js";
 import type { ExamId } from "../domain/examResult/examId.js";
 import type { ExamResultItem } from "../domain/examResult/examResultItem.js";
-import type { ExamResultRecordedStore } from "../domain/examResult/examResultStores.js";
+import type { ExaminationCompletionStore } from "../domain/examResult/examResultStores.js";
 import type { PetId } from "../domain/pet/petId.js";
 import type { User } from "../domain/user/user.js";
 import type { UserId } from "../domain/user/userId.js";
@@ -39,7 +45,10 @@ export type UseCaseInput = Readonly<{
   items: readonly ExamResultItem[];
   needsFollowUp: boolean;
 }>;
-export type UseCaseOk = Readonly<{ examResult: ExamResult }>;
+export type UseCaseOk = Readonly<{
+  examResult: ExamResult;
+  appointment: AwaitingPayment;
+}>;
 export type InvalidAppointmentState = Readonly<{
   kind: "InvalidAppointmentState";
   appointmentId: AppointmentId;
@@ -65,13 +74,14 @@ export type UseCaseError =
   | InvalidAppointmentState
   | ExamResultPetMismatch
   | IdentityGenerationFailed
+  | AppointmentConflict
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type ExamIdGenerator = Readonly<{ generate: () => ExamId }>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
   appointmentResolver: AppointmentByIdResolver;
-  examResultRecordedStore: ExamResultRecordedStore;
+  examinationCompletionStore: ExaminationCompletionStore;
   examIdGenerator: ExamIdGenerator;
   clock: Clock;
   eventIdGenerator: EventIdGenerator;
@@ -85,6 +95,10 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
   kind: "RepositoryError",
   operation: error.operation,
 });
+const toStoreError = (
+  error: AppointmentStoreError,
+): UseCaseRepositoryError | AppointmentConflict =>
+  error.kind === "AppointmentConflict" ? error : toRepositoryError(error);
 const ensureExaminer = (user: User): Result<Examiner, UnauthorizedError> =>
   user.kind === "Admin" || user.kind === "Veterinarian"
     ? ok(user)
@@ -117,9 +131,14 @@ const ensurePet =
           expectedPetId: appointment.petId,
           actualPetId: input.petId,
         });
-const createEvent = (dependencies: Dependencies, input: UseCaseInput) =>
+const createEvents = (
+  dependencies: Dependencies,
+  input: UseCaseInput,
+  appointment: InExamination,
+) =>
   ResultAsync.fromPromise(
     Promise.resolve().then(() => {
+      const occurredAt = dependencies.clock.now();
       const result = {
         examId: dependencies.examIdGenerator.generate(),
         petId: input.petId,
@@ -127,11 +146,17 @@ const createEvent = (dependencies: Dependencies, input: UseCaseInput) =>
         items: input.items,
         needsFollowUp: input.needsFollowUp,
       } as const satisfies ExamResult;
-      return ExamResult.create({
+      const examResult = ExamResult.create({
         eventId: dependencies.eventIdGenerator.generate(),
-        occurredAt: dependencies.clock.now(),
+        occurredAt,
         actorUserId: input.actorUserId,
       })(result);
+      const appointmentCompleted = AppointmentAggregate.completeExamination({
+        eventId: dependencies.eventIdGenerator.generate(),
+        occurredAt,
+        actorUserId: input.actorUserId,
+      })(appointment, { examId: result.examId });
+      return { examResult, appointmentCompleted } as const;
     }),
     (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
   );
@@ -152,13 +177,16 @@ const run =
           .andThen(ensureAssigned(user)),
       )
       .andThen(ensurePet(input))
-      .andThen(() => createEvent(dependencies, input))
-      .andThrough((event) =>
-        dependencies.examResultRecordedStore
-          .store(event)
-          .mapErr(toRepositoryError),
+      .andThen((appointment) => createEvents(dependencies, input, appointment))
+      .andThrough(({ examResult, appointmentCompleted }) =>
+        dependencies.examinationCompletionStore
+          .store(examResult, appointmentCompleted)
+          .mapErr(toStoreError),
       )
-      .map((event) => ({ examResult: event.aggregateState }));
+      .map(({ examResult, appointmentCompleted }) => ({
+        examResult: examResult.aggregateState,
+        appointment: appointmentCompleted.aggregateState,
+      }));
 
 export const RecordExamResultUseCase = {
   create: (dependencies: Dependencies): RecordExamResultUseCase => ({

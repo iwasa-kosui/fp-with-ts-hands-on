@@ -10,6 +10,7 @@ type Props = SharedPageProps &
 const veterinarianName = (appointment: AppointmentPageView): string => {
   switch (appointment.kind) {
     case "InExamination":
+    case "AwaitingPayment":
     case "Paid":
       return appointment.veterinarianName;
     case "Scheduled":

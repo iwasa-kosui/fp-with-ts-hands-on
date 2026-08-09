@@ -7,6 +7,7 @@ import {
 } from "../../src/adaptor/secondary/sqlite/db.js";
 import { createAppointmentListResolver } from "../../src/adaptor/secondary/sqlite/resolver/appointmentResolver.js";
 import { createAppointmentEventStore } from "../../src/adaptor/secondary/sqlite/store/appointmentEventStore.js";
+import { createExaminationCompletionStore } from "../../src/adaptor/secondary/sqlite/store/examinationCompletionStore.js";
 import { appointmentsTable, domainEventsTable } from "../../src/adaptor/secondary/sqlite/schema.js";
 import type { Clock } from "../../src/domain/aggregate/clock.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
@@ -16,7 +17,10 @@ import {
   Appointment,
   type Appointment as AppointmentState,
 } from "../../src/domain/appointment/appointment.js";
-import type { AppointmentEvent } from "../../src/domain/appointment/appointmentEvent.js";
+import type {
+  AppointmentEvent,
+  AppointmentExaminationCompleted,
+} from "../../src/domain/appointment/appointmentEvent.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
 import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
 import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
@@ -25,6 +29,7 @@ import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
 import { Treatment } from "../../src/domain/appointment/treatment.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
+import { ExamResult } from "../../src/domain/examResult/examResult.js";
 import { ExamResultItem } from "../../src/domain/examResult/examResultItem.js";
 import type { ExamResultRecorded } from "../../src/domain/examResult/examResultEvent.js";
 import {
@@ -185,9 +190,11 @@ describe("appointment command use cases", () => {
     const exam = await RecordExamResultUseCase.create({
       userResolver,
       appointmentResolver: { resolveById: () => okAsync(appointment) },
-      examResultRecordedStore: {
-        store: (...events) => {
-          examEvents.push(...events);
+      examinationCompletionStore: {
+        store: (examEvent, appointmentEvent) => {
+          examEvents.push(examEvent);
+          appointmentEvents.push(appointmentEvent);
+          appointment = appointmentEvent.aggregateState;
           return okAsync(undefined);
         },
       },
@@ -205,6 +212,10 @@ describe("appointment command use cases", () => {
     expect(exam._unsafeUnwrap().examResult.items[0]?.unwrap()).toBe(
       "private clinical observation",
     );
+    expect(exam._unsafeUnwrap().appointment).toMatchObject({
+      kind: "AwaitingPayment",
+      examId: ids.exam,
+    });
 
     const paid = await RecordPaymentUseCase.create({
       userResolver,
@@ -225,6 +236,7 @@ describe("appointment command use cases", () => {
       "AppointmentBooked",
       "AppointmentCheckedIn",
       "ExaminationStarted",
+      "AppointmentExaminationCompleted",
       "PaymentRecorded",
     ]);
     expect(examEvents).toHaveLength(1);
@@ -280,12 +292,14 @@ describe("appointment command use cases", () => {
       ids.veterinarian,
     ).aggregateState;
     const examEvents: ExamResultRecorded[] = [];
+    const completionEvents: AppointmentExaminationCompleted[] = [];
     const exam = await RecordExamResultUseCase.create({
       userResolver,
       appointmentResolver: { resolveById: () => okAsync(examining) },
-      examResultRecordedStore: {
-        store: (...events) => {
-          examEvents.push(...events);
+      examinationCompletionStore: {
+        store: (examEvent, appointmentEvent) => {
+          examEvents.push(examEvent);
+          completionEvents.push(appointmentEvent);
           return okAsync(undefined);
         },
       },
@@ -302,6 +316,7 @@ describe("appointment command use cases", () => {
     });
     expect(exam.isErr() && exam.error.kind).toBe("ExamResultPetMismatch");
     expect(examEvents).toHaveLength(0);
+    expect(completionEvents).toHaveLength(0);
   });
 
   test("rejects unauthorized roles before protected appointment resolvers", async () => {
@@ -482,21 +497,45 @@ describe("appointment query use cases", () => {
       occurredAt: times.now,
       actorUserId: ids.veterinarianUser,
     })(checkedIn.aggregateState, ids.veterinarian);
+    const examResult = ExamResult.parse({
+      examId: ids.exam,
+      petId: ids.pet,
+      collectedAt: times.now,
+      items: ["private clinical observation"],
+      needsFollowUp: false,
+    })._unsafeUnwrap();
+    const examResultRecorded = ExamResult.create({
+      eventId: eventIds.generate(),
+      occurredAt: times.now,
+      actorUserId: ids.veterinarianUser,
+    })(examResult);
+    const examinationCompleted = Appointment.completeExamination({
+      eventId: eventIds.generate(),
+      occurredAt: times.now,
+      actorUserId: ids.veterinarianUser,
+    })(examinationStarted.aggregateState, { examId: ids.exam });
     const payment = Appointment.recordPayment({
       eventId: eventIds.generate(),
       occurredAt: times.now,
       actorUserId: ids.receptionist,
-    })(examinationStarted.aggregateState, {
+    })(examinationCompleted.aggregateState, {
       diagnosis: Diagnosis.schema.parse("private diagnosis"),
       treatment: Treatment.schema.parse("private treatment"),
       amount: PaymentAmount.schema.parse(4800),
     });
-    await createAppointmentEventStore(db).store(
+    const initialStoreResult = await createAppointmentEventStore(db).store(
       booked,
       checkedIn,
       examinationStarted,
-      payment,
     );
+    const completionStoreResult = await createExaminationCompletionStore(db).store(
+      examResultRecorded,
+      examinationCompleted,
+    );
+    const paymentStoreResult = await createAppointmentEventStore(db).store(payment);
+    expect(initialStoreResult).toMatchObject({ value: undefined });
+    expect(completionStoreResult).toMatchObject({ value: undefined });
+    expect(paymentStoreResult).toMatchObject({ value: undefined });
 
     const result = await ListAppointmentsUseCase.create({
       userResolver,
@@ -514,12 +553,17 @@ describe("appointment query use cases", () => {
       },
     }).run({ actorUserId: ids.veterinarianUser });
 
-    expect(result._unsafeUnwrap().appointments).toHaveLength(1);
-    expect(result._unsafeUnwrap().appointments[0]).toMatchObject({
-      kind: "Paid",
-      ownerName: undefined,
-      petName: undefined,
-      veterinarianName: undefined,
+    expect(result).toMatchObject({
+      value: {
+        appointments: [
+          {
+            kind: "Paid",
+            ownerName: undefined,
+            petName: undefined,
+            veterinarianName: undefined,
+          },
+        ],
+      },
     });
   });
 

@@ -583,6 +583,8 @@ describe("owner and pet management use cases", () => {
         "86000000-0000-4000-8000-000000000001",
       ),
       examinationStartedAt: now,
+      examId: ExamId.schema.parse("86000000-0000-4000-8000-000000000002"),
+      examinationCompletedAt: now,
       diagnosis: Diagnosis.schema.parse("healthy"),
       treatment: Treatment.schema.parse("none"),
       amount: PaymentAmount.schema.parse(1000),

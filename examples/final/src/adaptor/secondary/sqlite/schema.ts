@@ -56,7 +56,14 @@ export const petsTable = sqliteTable("pets", {
 export const appointmentsTable = sqliteTable("appointments", {
   appointmentId: text("appointment_id").primaryKey(),
   status: text("status", {
-    enum: ["Scheduled", "CheckedIn", "InExamination", "Paid", "Canceled"],
+    enum: [
+      "Scheduled",
+      "CheckedIn",
+      "InExamination",
+      "AwaitingPayment",
+      "Paid",
+      "Canceled",
+    ],
   }).notNull(),
   ownerId: text("owner_id").notNull(),
   petId: text("pet_id").notNull(),

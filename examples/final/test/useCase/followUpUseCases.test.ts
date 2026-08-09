@@ -9,6 +9,7 @@ import {
 import { createEventHistoryReader } from "../../src/adaptor/secondary/sqlite/query/eventHistoryReader.js";
 import { createFollowUpRequestReader } from "../../src/adaptor/secondary/sqlite/query/followUpRequestReader.js";
 import { createAppointmentEventStore } from "../../src/adaptor/secondary/sqlite/store/appointmentEventStore.js";
+import { createExaminationCompletionStore } from "../../src/adaptor/secondary/sqlite/store/examinationCompletionStore.js";
 import { createFollowUpEventStore } from "../../src/adaptor/secondary/sqlite/store/followUpEventStore.js";
 import type { Clock } from "../../src/domain/aggregate/clock.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
@@ -115,12 +116,30 @@ const examinationStartedEvent = Appointment.startExamination({
   occurredAt: paymentAt,
   actorUserId: ids.veterinarian,
 })(checkedInEvent.aggregateState, ids.veterinarianId);
+const examinationCompletedEvent = Appointment.completeExamination({
+  eventId: EventId.schema.parse("61000000-0000-4000-8000-000000000019"),
+  occurredAt: paymentAt,
+  actorUserId: ids.veterinarian,
+})(examinationStartedEvent.aggregateState, { examId: ids.exam });
+const examResultRecordedEvent = ExamResult.create({
+  eventId: EventId.schema.parse("61000000-0000-4000-8000-000000000020"),
+  occurredAt: paymentAt,
+  actorUserId: ids.veterinarian,
+})(
+  ExamResult.parse({
+    examId: ids.exam,
+    petId: ids.pet,
+    collectedAt: paymentAt,
+    items: ["private clinical free text"],
+    needsFollowUp: true,
+  })._unsafeUnwrap(),
+);
 const paidEvent = Appointment.recordPayment({
   eventId: ids.paymentEvent,
   occurredAt: paymentAt,
   actorUserId: ids.receptionist,
 })(
-  examinationStartedEvent.aggregateState,
+  examinationCompletedEvent.aggregateState,
   {
     diagnosis: Diagnosis.schema.parse("private diagnosis"),
     treatment: Treatment.schema.parse("private treatment"),
@@ -144,12 +163,20 @@ describe("follow-up use cases", () => {
   test("uses fresh event identity and time instead of payment provenance, and both history rows insert", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
-    await createAppointmentEventStore(db).store(
-      bookedEvent,
-      checkedInEvent,
-      examinationStartedEvent,
-      paidEvent,
-    );
+    (
+      await createAppointmentEventStore(db).store(
+        bookedEvent,
+        checkedInEvent,
+        examinationStartedEvent,
+      )
+    )._unsafeUnwrap();
+    (
+      await createExaminationCompletionStore(db).store(
+        examResultRecordedEvent,
+        examinationCompletedEvent,
+      )
+    )._unsafeUnwrap();
+    (await createAppointmentEventStore(db).store(paidEvent))._unsafeUnwrap();
 
     const result = await RequestFollowUpUseCase.create({
       userResolver,

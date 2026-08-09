@@ -36,11 +36,20 @@ const stateDetails = (appointment: AppointmentPageView): React.ReactNode => {
         <dt>担当獣医師</dt><dd>{appointment.veterinarianName}</dd>
         <dt>診察開始日時</dt><dd>{appointment.examinationStartedAt}</dd>
       </>;
+    case "AwaitingPayment":
+      return <>
+        <dt>受付日時</dt><dd>{appointment.checkedInAt}</dd>
+        <dt>担当獣医師</dt><dd>{appointment.veterinarianName}</dd>
+        <dt>診察開始日時</dt><dd>{appointment.examinationStartedAt}</dd>
+        <dt>診察完了日時</dt><dd>{appointment.examinationCompletedAt}</dd>
+        <dt>進行状況</dt><dd>診察結果記録済み・会計待ち</dd>
+      </>;
     case "Paid":
       return <>
         <dt>受付日時</dt><dd>{appointment.checkedInAt}</dd>
         <dt>担当獣医師</dt><dd>{appointment.veterinarianName}</dd>
         <dt>診察開始日時</dt><dd>{appointment.examinationStartedAt}</dd>
+        <dt>診察完了日時</dt><dd>{appointment.examinationCompletedAt}</dd>
         <dt>支払額</dt><dd>{appointment.amount} 円</dd>
         <dt>会計日時</dt><dd>{appointment.paidAt}</dd>
       </>;

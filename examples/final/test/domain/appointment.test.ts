@@ -17,6 +17,7 @@ import { PetId } from "../../src/domain/pet/petId.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { Treatment } from "../../src/domain/appointment/treatment.js";
+import { ExamId } from "../../src/domain/examResult/examId.js";
 import { ExamResultItem } from "../../src/domain/examResult/examResultItem.js";
 
 const appointmentId = AppointmentId.schema.parse(
@@ -28,6 +29,7 @@ const veterinarianId = VeterinarianId.schema.parse(
   "44444444-4444-4444-8444-444444444444",
 );
 const actorUserId = UserId.schema.parse("55555555-5555-4555-8555-555555555555");
+const examId = ExamId.schema.parse("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee");
 const scheduledAt = Timestamp.schema.parse("2026-08-30T06:00:00.000Z");
 const paymentAmount = PaymentAmount.schema.parse(4800);
 const visitReason = AppointmentReason.schema.parse("skin check");
@@ -53,6 +55,10 @@ const examinationContext = context(
   "88888888-8888-4888-8888-888888888888",
   "2026-08-30T06:30:00.000Z",
 );
+const completionContext = context(
+  "abababab-abab-4bab-8bab-abababababab",
+  "2026-08-30T06:50:00.000Z",
+);
 const paymentContext = context(
   "99999999-9999-4999-8999-999999999999",
   "2026-08-30T07:00:00.000Z",
@@ -74,7 +80,11 @@ const examining = Appointment.startExamination(examinationContext)(
   checkedIn.aggregateState,
   veterinarianId,
 );
-const paid = Appointment.recordPayment(paymentContext)(examining.aggregateState, {
+const awaitingPayment = Appointment.completeExamination(completionContext)(
+  examining.aggregateState,
+  { examId },
+);
+const paid = Appointment.recordPayment(paymentContext)(awaitingPayment.aggregateState, {
   diagnosis,
   treatment,
   amount: paymentAmount,
@@ -85,6 +95,13 @@ const paidAppointment: Paid = paid.aggregateState;
 // @ts-expect-error Paid から診察を開始できません。
 Appointment.startExamination(examinationContext)(paidAppointment, veterinarianId);
 
+// @ts-expect-error InExamination から直接会計できません。
+Appointment.recordPayment(paymentContext)(examining.aggregateState, {
+  diagnosis,
+  treatment,
+  amount: paymentAmount,
+});
+
 const rawPaymentInput = {
   diagnosis,
   treatment,
@@ -92,7 +109,7 @@ const rawPaymentInput = {
 };
 
 // @ts-expect-error recordPayment へ raw number を渡せません。
-Appointment.recordPayment(paymentContext)(examining.aggregateState, rawPaymentInput);
+Appointment.recordPayment(paymentContext)(awaitingPayment.aggregateState, rawPaymentInput);
 
 describe("appointment aggregate", () => {
   test("keeps sensitive clinical values nominally distinct", () => {
@@ -189,6 +206,32 @@ describe("appointment aggregate", () => {
     });
   });
 
+  test("completes an examination into an awaiting-payment event", () => {
+    expect(awaitingPayment).toEqual({
+      kind: "AppointmentExaminationCompleted",
+      eventId: completionContext.eventId,
+      aggregateId: appointmentId,
+      aggregateName: "Appointment",
+      aggregateState: {
+        kind: "AwaitingPayment",
+        appointmentId,
+        petId,
+        ownerId,
+        scheduledAt,
+        reason: visitReason,
+        checkedInAt: checkedInContext.occurredAt,
+        veterinarianId,
+        examinationStartedAt: examinationContext.occurredAt,
+        examId,
+        examinationCompletedAt: completionContext.occurredAt,
+      },
+      eventName: "appointment.examination-completed",
+      eventPayload: { appointmentId, examId },
+      occurredAt: completionContext.occurredAt,
+      actorUserId,
+    });
+  });
+
   test("records a payment event with the resulting state", () => {
     expect(paid).toEqual({
       kind: "PaymentRecorded",
@@ -205,6 +248,8 @@ describe("appointment aggregate", () => {
         checkedInAt: checkedInContext.occurredAt,
         veterinarianId,
         examinationStartedAt: examinationContext.occurredAt,
+        examId,
+        examinationCompletedAt: completionContext.occurredAt,
         diagnosis,
         treatment,
         amount: paymentAmount,

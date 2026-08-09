@@ -16,6 +16,7 @@ import type {
 import { PaymentAmount } from "../../../../domain/appointment/paymentAmount.js";
 import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js";
 import { Treatment } from "../../../../domain/appointment/treatment.js";
+import { ExamId } from "../../../../domain/examResult/examId.js";
 import { OwnerId } from "../../../../domain/owner/ownerId.js";
 import { PetId } from "../../../../domain/pet/petId.js";
 import type { SqliteDatabase } from "../db.js";
@@ -43,11 +44,22 @@ const AppointmentSchema = z.discriminatedUnion("kind", [
     examinationStartedAt: Timestamp.schema,
   }),
   z.object({
+    kind: z.literal("AwaitingPayment"),
+    ...baseShape,
+    checkedInAt: Timestamp.schema,
+    veterinarianId: VeterinarianId.schema,
+    examinationStartedAt: Timestamp.schema,
+    examId: ExamId.schema,
+    examinationCompletedAt: Timestamp.schema,
+  }),
+  z.object({
     kind: z.literal("Paid"),
     ...baseShape,
     checkedInAt: Timestamp.schema,
     veterinarianId: VeterinarianId.schema,
     examinationStartedAt: Timestamp.schema,
+    examId: ExamId.schema,
+    examinationCompletedAt: Timestamp.schema,
     diagnosis: Diagnosis.schema,
     treatment: Treatment.schema,
     amount: PaymentAmount.schema,
@@ -67,6 +79,7 @@ const AppointmentStatusSchema = z.enum([
   "Scheduled",
   "CheckedIn",
   "InExamination",
+  "AwaitingPayment",
   "Paid",
   "Canceled",
 ]);

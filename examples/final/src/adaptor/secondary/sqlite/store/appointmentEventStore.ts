@@ -11,6 +11,11 @@ import type { SqliteDatabase } from "../db.js";
 import { toEventRecord } from "../eventRecord.js";
 import { appointmentsTable, domainEventsTable } from "../schema.js";
 
+type AppointmentProjectionEvent = Exclude<
+  AppointmentEvent,
+  { kind: "AppointmentExaminationCompleted" }
+>;
+
 const safeState = (state: Appointment): Readonly<Record<string, unknown>> => {
   const base = {
     kind: state.kind,
@@ -32,12 +37,23 @@ const safeState = (state: Appointment): Readonly<Record<string, unknown>> => {
         veterinarianId: state.veterinarianId,
         examinationStartedAt: state.examinationStartedAt,
       };
+    case "AwaitingPayment":
+      return {
+        ...base,
+        checkedInAt: state.checkedInAt,
+        veterinarianId: state.veterinarianId,
+        examinationStartedAt: state.examinationStartedAt,
+        examId: state.examId,
+        examinationCompletedAt: state.examinationCompletedAt,
+      };
     case "Paid":
       return {
         ...base,
         checkedInAt: state.checkedInAt,
         veterinarianId: state.veterinarianId,
         examinationStartedAt: state.examinationStartedAt,
+        examId: state.examId,
+        examinationCompletedAt: state.examinationCompletedAt,
         amount: state.amount,
         paidAt: state.paidAt,
       };
@@ -48,7 +64,9 @@ const safeState = (state: Appointment): Readonly<Record<string, unknown>> => {
   }
 };
 
-const safePayload = (event: AppointmentEvent): Readonly<Record<string, unknown>> => {
+const safePayload = (
+  event: AppointmentProjectionEvent,
+): Readonly<Record<string, unknown>> => {
   switch (event.kind) {
     case "ExaminationStarted":
       return {
@@ -86,12 +104,23 @@ const projectionState = (state: Appointment): Readonly<Record<string, unknown>> 
         veterinarianId: state.veterinarianId,
         examinationStartedAt: state.examinationStartedAt,
       };
+    case "AwaitingPayment":
+      return {
+        ...base,
+        checkedInAt: state.checkedInAt,
+        veterinarianId: state.veterinarianId,
+        examinationStartedAt: state.examinationStartedAt,
+        examId: state.examId,
+        examinationCompletedAt: state.examinationCompletedAt,
+      };
     case "Paid":
       return {
         ...base,
         checkedInAt: state.checkedInAt,
         veterinarianId: state.veterinarianId,
         examinationStartedAt: state.examinationStartedAt,
+        examId: state.examId,
+        examinationCompletedAt: state.examinationCompletedAt,
         diagnosis: state.diagnosis.unwrap(),
         treatment: state.treatment.unwrap(),
         amount: state.amount,
@@ -109,7 +138,7 @@ const AppointmentConflictSchema = z.object({
 });
 
 export const createAppointmentEventStore = (db: SqliteDatabase) => ({
-  store: (...events: readonly AppointmentEvent[]) =>
+  store: (...events: readonly AppointmentProjectionEvent[]) =>
     ResultAsync.fromPromise<void, AppointmentStoreError>(
       Promise.resolve().then(() =>
         db.transaction((tx) => {
@@ -150,7 +179,7 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
                     .set(values)
                     .where(and(
                       eq(appointmentsTable.appointmentId, state.appointmentId),
-                      eq(appointmentsTable.status, "InExamination"),
+                      eq(appointmentsTable.status, "AwaitingPayment"),
                     ))
                     .run().changes;
                 case "AppointmentCanceled":

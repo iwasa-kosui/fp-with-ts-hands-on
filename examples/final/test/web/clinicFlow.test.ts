@@ -275,7 +275,7 @@ describe("clinic workflow routes", () => {
           cancel: false,
           startExamination: false,
           recordExamResult: true,
-          recordPayment: true,
+          recordPayment: false,
         },
         veterinarians: [{
           veterinarianId: veterinarianRow.veterinarianId,
@@ -315,8 +315,36 @@ describe("clinic workflow routes", () => {
     );
     expect(noFollowUp.status).toBe(303);
     expect(harness.database.select().from(examResultsTable).all()).toHaveLength(1);
+    const awaitingPayment = await page(
+      harness,
+      `/appointments/${appointment.appointmentId}`,
+      receptionistCookie,
+    );
+    await expect(awaitingPayment.json()).resolves.toMatchObject({
+      props: {
+        appointment: { kind: "AwaitingPayment" },
+        actions: {
+          checkIn: false,
+          cancel: false,
+          startExamination: false,
+          recordExamResult: false,
+          recordPayment: true,
+        },
+      },
+    });
+    const veterinarianAwaitingPayment = await page(
+      harness,
+      `/appointments/${appointment.appointmentId}`,
+      veterinarianCookie,
+    );
+    await expect(veterinarianAwaitingPayment.json()).resolves.toMatchObject({
+      props: {
+        appointment: { kind: "AwaitingPayment" },
+        actions: { recordExamResult: false, recordPayment: false },
+      },
+    });
 
-    const examResult = await postInertiaFormData(
+    const staleExamResult = await postInertiaFormData(
       harness,
       `/appointments/${appointment.appointmentId}/exam-results`,
       {
@@ -327,8 +355,11 @@ describe("clinic workflow routes", () => {
       },
       veterinarianCookie,
     );
-    expect(examResult.status).toBe(303);
-    expect(harness.database.select().from(examResultsTable).all()).toHaveLength(2);
+    expect(staleExamResult.status).toBe(303);
+    expect(staleExamResult.headers.get("location")).toContain(
+      "error=invalid-state",
+    );
+    expect(harness.database.select().from(examResultsTable).all()).toHaveLength(1);
 
     harness.setTime("2026-08-09T02:30:00.000Z");
     const paid = await post(
