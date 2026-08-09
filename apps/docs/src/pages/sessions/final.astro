@@ -21,8 +21,7 @@ if (session === undefined) throw new Error("Unknown session: final");
   <section>
     <h2 id="final-structure">事故を防ぐ構成を確認する</h2>
     <p>
-      予約が終端状態から戻る、入力や ID を取り違える、現在状態だけ更新されて監査記録が残らない、PII
-      が不要な画面へ混じる。<code>examples/final</code> は、これまでのセッションで観察した業務事故への対策を、Hono・Inertia・React・Drizzle・SQLite
+      予約が終端状態から戻る、入力や ID を取り違える、現在状態だけ更新されて監査記録が残らない、機微情報が不要な画面やログへ混じる。<code>examples/final</code> は、これまでのセッションで観察した業務事故への対策を、Hono・Inertia・React・Drizzle・SQLite
       で動く一つの完成アプリへ接続したものです。
     </p>
     <dl>
@@ -40,39 +39,27 @@ if (session === undefined) throw new Error("Unknown session: final");
       <dd>既定の file SQLite と migration directory を選び、production server entry の app を構成します。</dd>
     </dl>
     <p>
-      状態遷移関数が作るのは、操作後の projection を持つ typed event です。次は <code
-        >examples/final/src/domain/appointment/appointment.ts</code
-      > の実際の診察開始部分です。引数の <code>CheckedIn</code> が有効な遷移元を限定し、成功した操作だけを <code>ExaminationStarted</code>
-      として表します。
+      予約の診療種別と所要時間は、画面からの任意文字列ではなく固定診療メニューです。次は <code
+        >examples/final/src/domain/appointment/serviceCode.ts</code
+      > の実際の定義です。
     </p>
     <CodeBlock
       language="typescript"
-      label="appointment.ts の診察開始"
-      code={`const startExamination =
-  (context: EventContext) =>
-  (
-    checkedIn: CheckedIn,
-    veterinarianId: VeterinarianId,
-  ): ExaminationStarted => {
-    const aggregateState = {
-      ...checkedIn,
-      kind: "InExamination",
-      veterinarianId,
-      examinationStartedAt: context.occurredAt,
-    } as const satisfies InExamination;
+      label="serviceCode.ts の固定診療メニュー"
+      code={`const defaultDurations = {
+  GeneralConsultation: 30,
+  FollowUpVisit: 15,
+  Vaccination: 15,
+  ExaminationOrProcedure: 60,
+} as const satisfies Readonly<Record<ServiceCode, AppointmentDuration>>;
 
-    return AppointmentEvent.create(
-      context,
-      aggregateState.appointmentId,
-      aggregateState,
-      "ExaminationStarted",
-      "appointment.examination-started",
-      { appointmentId: aggregateState.appointmentId, veterinarianId },
-    );
-  };`}
+export const ServiceMenu = {
+  defaultDuration: (serviceCode: ServiceCode): AppointmentDuration =>
+    defaultDurations[serviceCode],
+} as const;`}
     />
     <p>
-      この型は無効な呼び出しを減らしますが、永続化した現在状態の競合や利用者の権限まで単独では守りません。それらは use case、resolver、event store、route のテストで確認します。
+      この型は無効な診療種別を減らしますが、スケジュールの競合や利用者の権限まで単独では守りません。それらは use case、resolver、event store、route のテストで確認します。
     </p>
   </section>
 
@@ -97,7 +84,13 @@ pnpm --filter @fp-with-ts/clinic-final dev`}
       <li><code>Veterinarian</code>: 診察開始、検査結果登録、電話フォロー依頼</li>
     </ul>
     <p>
-      予約は <code>Scheduled → CheckedIn → InExamination → AwaitingPayment → Paid</code> と進みます。診察結果を記録すると会計待ちへ遷移し、獣医師には結果の再登録を出さず、受付・管理者にだけ会計操作を表示します。キャンセル、電話フォロー、管理者の監査一覧も同じ app から操作できます。
+      <code>/appointments</code> は JST の日・週表示を切り替える予約カレンダー、<code>/reception</code> は来院後の進行を六つの縦セクションで追う受付ボードです。ナビゲーションと URL を分け、カレンダーはキャンセル表示、担当獣医師、日付を query に同期します。
+    </p>
+    <p>
+      担当獣医師未定の予約は許可し、担当を設定した <code>Scheduled</code> / <code>CheckedIn</code> だけ、同じ担当獣医師の重複を拒否します。時間帯は半開区間 <code>[start, end)</code> なので、終了と開始が同時刻の予約は重複しません。
+    </p>
+    <p>
+      来院状態は <code>Scheduled → CheckedIn → InExamination → AwaitingPayment → Paid</code> と進み、別軸の settlement state が支払いを追跡します。予防接種の <code>Scheduled</code> / <code>CheckedIn</code> だけ一度の前受金を記録できます。診察後は最終額と前受金から、追加支払い、返金、差額なしをサーバーが差額精算します。前受済みのキャンセルは全額返金と状態遷移を同じ transaction で確定します。
     </p>
     <CodeBlock
       language="shell"
@@ -114,50 +107,45 @@ pnpm --filter @fp-with-ts/clinic-final exec node dist/index.js`}
   </section>
 
   <section>
-    <h2 id="final-flow">診察開始の ResultAsync を追う</h2>
+    <h2 id="final-flow">診察開始の ResultAsync と競合制御を追う</h2>
     <p>
-      <code>examples/final/src/useCase/startExaminationUseCase.ts</code> の <code>StartExaminationUseCase</code> は、実行者、予約、対象の獣医師を用途別 ID で受け取ります。<code>UserByIdResolver.resolveById</code>
-      で権限を確認した後、<code>AppointmentByIdResolver.resolveById</code> で予約を読み、予期可能な失敗を <code>ResultAsync</code> の値として返します。
+      <code>examples/final/src/useCase/startExaminationUseCase.ts</code> の <code>StartExaminationUseCase</code> は、実行者、予約、画面が読んだ version を受け取ります。<code>UserByIdResolver.resolveById</code>
+      で権限を確認した後、<code>AppointmentByIdResolver.resolveById</code> で予約を読み、状態と <code>expectedVersion</code> を検証します。予期可能な失敗は <code>ResultAsync</code> の値として返します。
     </p>
     <CodeBlock
       language="typescript"
-      label="StartExaminationUseCase の実際の pipeline"
-      code={`const run =
-  ({
-    userResolver,
-    appointmentResolver,
-    examinationStartedStore,
-    clock,
-    eventIdGenerator,
-  }: Dependencies) =>
-  (input: UseCaseInput): UseCaseOutput =>
-    userResolver
-      .resolveById(input.actorUserId)
-      .andThen(ensureUserFound(input.actorUserId))
-      .andThen(ensureCanStartExamination(input.veterinarianId))
-      .andThen(() => appointmentResolver.resolveById(input.appointmentId))
-      .andThen(ensureAppointmentFound(input.appointmentId))
-      .andThen(ensureCheckedIn)
-      .andThen(createEvent({ clock, eventIdGenerator }, input))
-      .andThrough((event) => examinationStartedStore.store(event))
-      .map((event) => ({ appointment: event.aggregateState }));
+      label="appointmentEventStore.ts の診察開始更新（要点）"
+      code={`const expectedVersion = state.version === 1
+  ? state.version
+  : AppointmentVersion.schema.parse(state.version - 1);
 
-export const StartExaminationUseCase = {
-  create: (dependencies: Dependencies): StartExaminationUseCase => ({
-    run: run(dependencies),
-  }),
-} as const;`}
+const changes = tx.update(appointmentsTable)
+  .set(values)
+  .where(and(
+    eq(appointmentsTable.appointmentId, state.appointmentId),
+    eq(appointmentsTable.status, "CheckedIn"),
+    eq(appointmentsTable.version, expectedVersion),
+  ))
+  .run().changes;
+
+if (changes !== 1) {
+  throw {
+    kind: "StaleAppointmentVersion",
+    appointmentId: event.aggregateId,
+    expectedVersion,
+  } as const;
+}
+persistDomainEvent(tx, event);`}
     />
     <p>
-      この curry した <code>run(dependencies)(input)</code> 形状により、clock、event ID generator、resolver、store をテストで固定できます。<code>createEvent</code> は generator、clock、純粋遷移の同期例外を <code>ResultAsync.fromPromise</code> で <code>IdentityGenerationFailed</code> に変換し、store を呼びません。一方で DB の一意性競合は型だけでは止められないため、store が競合を <code>AppointmentConflict</code> として返すテストも必要です。
+      この curry した <code>run(dependencies)(input)</code> 形状により、clock、event ID generator、resolver、store をテストで固定できます。<code>createEvent</code> は generator、clock、純粋遷移の同期例外を <code>ResultAsync.fromPromise</code> で <code>IdentityGenerationFailed</code> に変換し、store を呼びません。同じ予約の古い version は <code>StaleAppointmentVersion</code>、同じ担当者の重複は <code>VeterinarianScheduleConflict</code> として呼び出し側が扱えます。
     </p>
   </section>
 
   <section>
     <h2 id="final-persistence">保存と監査の契約を確認する</h2>
     <p>
-      use case は、ドメインが作った typed event を <code>ExaminationStartedStore.store(event)</code> のように event store へ渡します。secondary adaptor の event store は event が持つ状態から projection
-      の insert/update/delete を組み立て、同じ event の監査行とともに1つの Drizzle transaction へ保存します。両方を atomic に確定する契約が、現在状態と監査記録の片落ちを防ぎます。
+      use case は、ドメインが作った typed event を event store へ渡します。すべての mutation は画面が読んだ <code>expectedVersion</code> を渡し、projection の version による条件付き更新で、同じ予約への古い操作を拒否します。これに対し SQLite の <code>BEGIN IMMEDIATE</code> は、担当獣医師の重複検査から projection・監査 event の保存までの writer transaction を直列化します。version は同じ予約の競合、<code>BEGIN IMMEDIATE</code> は異なる予約間のスケジュール競合を主に守る、別の責務です。
     </p>
     <p>
       診察結果の記録では <code>ExaminationCompletionStore</code> が <code>ExamResultRecorded</code> と <code>AppointmentExaminationCompleted</code> を受け取ります。診察結果 projection、<code>AwaitingPayment</code> の予約 projection、2件の監査 event を1つの transaction で保存し、同じ <code>InExamination</code> を読んだ並行操作は条件付き更新で片方だけを確定します。
@@ -166,7 +154,13 @@ export const StartExaminationUseCase = {
       現在状態は各 event store が同じ transaction で更新する projection から読みます。監査履歴から現在状態を復元しません。監査行の再生や圧縮も行わず、履歴は管理者向けの監査 query だけに使います。
     </p>
     <p>
-      監査用の1メソッド port は <code>EventHistoryReader.list(admin: Admin): ResultAsync&lt;readonly SanitizedAuditRecord[], RepositoryError&gt;</code> です。Admin capability を受け取る reader 境界で SQLite の保存行を Zod 検証し、許可した event ID、aggregate ID、event name、実行者、時刻、業務上安全な値だけを <code>SanitizedAuditRecord</code> へ写して Admin 画面へ届けます。この出力契約により、監査画面の props は表示を許可した情報だけで構成されます。
+      監査は <code>domain_events</code>、<code>domain_event_payloads</code>、<code>domain_event_sensitive_payloads</code> の3テーブルに分けます。最初のテーブルは event ID、aggregate、event name、実行者、発生時刻、分類の metadata を持ちます。後の二つは Regular と Sensitive の state/payload を分けます。各 event は必ずどちらか一方の payload table に対応し、trigger が二重保存・更新・削除を拒否します。
+    </p>
+    <p>
+      来院理由、受付メモ、PII、診療情報、settlement 内訳を含む業務 event の aggregate state と event payload を、省略せず <code>domain_event_sensitive_payloads</code> へ保存します。Admin capability を受け取る <code>EventHistoryReader.list(admin: Admin)</code> が返す通常一覧は metadata と Regular payload だけです。Sensitive payload は Admin が明示的に開示したときだけ返し、同じ <code>BEGIN IMMEDIATE</code> transaction で <code>audit.sensitive-payload-viewed</code> を Regular event として追加します。機微情報の閲覧自体を監査し、閲覧記録が保存できなければ値も開示しません。
+    </p>
+    <p>
+      この分離はアプリ内の閲覧境界であり、<strong>SQLite ファイル自体の at-rest encryption は対象外</strong>です。ディスク暗号化とファイルアクセス制御は別途必要です。
     </p>
     <p>
       ユーザー、飼い主、ペットの削除は現在の projection を物理削除します。削除 event と過去の監査行は保持されるため、この操作は個人情報の完全消去を意味しません。利用目的と保持期間は型で決められないため、人が別途レビューする制約として残ります。
@@ -178,7 +172,7 @@ export const StartExaminationUseCase = {
   <section>
     <h2 id="final-verify">コマンドで検証する</h2>
     <p>
-      package テストは temp file SQLite への migration、初期管理者とログイン、3ロールの認可、予約から会計・フォロー・監査までの業務フロー、projection と監査行の atomicity、PII の非表示を確認します。
+      package テストは temp file SQLite への migration、初期管理者とログイン、3ロールの認可、予約カレンダーと受付ボード、重複制御、前受金から差額精算・返金までの業務フロー、projection と監査行の atomicity、PII・自由記述の機微テーブルへの保存、Admin の明示開示と閲覧 event を確認します。
     </p>
     <CodeBlock
       language="shell"

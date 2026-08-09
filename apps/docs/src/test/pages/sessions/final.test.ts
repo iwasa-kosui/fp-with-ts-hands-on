@@ -25,7 +25,7 @@ describe("Final application", () => {
     expect(page).toContain("StartExaminationUseCase");
     expect(page).toContain("ResultAsync");
     expect(page).toContain("resolveById");
-    expect(page).toContain("examinationStartedStore.store(event)");
+    expect(page).toContain("persistDomainEvent(tx, event)");
     expect(page).toContain("Drizzle");
     expect(page).toContain("transaction");
     expect(page).toContain("clinic.sqlite");
@@ -37,6 +37,11 @@ describe("Final application", () => {
     expect(page).toContain(
       "Scheduled → CheckedIn → InExamination → AwaitingPayment → Paid",
     );
+    expect(page).toContain("予約カレンダー");
+    expect(page).toContain("受付ボード");
+    expect(page).toContain("担当獣医師の重複");
+    expect(page).toContain("前受金");
+    expect(page).toContain("差額精算");
     expect(page).toContain("ExaminationCompletionStore");
     expect(page).toContain("AppointmentExaminationCompleted");
     expect(page).toContain("監査履歴から現在状態を復元しません");
@@ -44,7 +49,10 @@ describe("Final application", () => {
     expect(page).toContain("Node v25.4.0");
     expect(page).toContain("Node.js 20 ではローカル実行していません");
     expect(page).toContain("Admin capability");
-    expect(page).toContain("SanitizedAuditRecord");
+    expect(page).toContain("domain_event_sensitive_payloads");
+    expect(page).toContain("機微情報の閲覧自体を監査");
+    expect(page).not.toContain("SanitizedAuditRecord");
+    expect(page).not.toContain("PII の非表示");
     expect(page).toContain("dist/app.js");
     expect(page).toContain("NODE_ENV を指定せず");
     expect(page).toContain("isProduction: true");

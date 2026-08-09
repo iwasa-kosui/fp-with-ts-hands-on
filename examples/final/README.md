@@ -1,6 +1,6 @@
 # Final: 動物病院の完成アプリ
 
-`examples/final` は、予約を不正な状態へ戻す、用途の異なる ID を取り違える、現在状態だけ更新されて監査記録が残らない、PII が表示やログへ混じるといった業務事故を防ぐ完成アプリです。Hono、Inertia、React、Drizzle、file SQLite を一つの package で動かします。
+`examples/final` は、予約を不正な状態へ戻す、用途の異なる ID を取り違える、現在状態だけ更新されて監査記録が残らない、機微情報が不要な画面やログへ混じるといった業務事故を防ぐ完成アプリです。Hono、Inertia、React、Drizzle、file SQLite を一つの package で動かします。
 
 ## セットアップと実行
 
@@ -33,7 +33,9 @@ pnpm --filter @fp-with-ts/clinic-final exec node dist/index.js
 - `Receptionist`: 飼い主・ペット管理、予約、受付、会計、キャンセルを担当します。
 - `Veterinarian`: 診察開始、検査結果登録、電話フォロー依頼を担当します。
 
-予約は `Scheduled → CheckedIn → InExamination → AwaitingPayment → Paid` と進みます。診察結果を記録すると `AwaitingPayment` へ遷移し、診察結果の再送信を止めて、受付・管理者にだけ会計操作を表示します。電話フォローは、会計済み予約、要フォローの検査結果、一致する pet ID を検証して対象を作ります。
+予約業務は、日・週表示の `/appointments` **予約カレンダー**と、来院後の進行を縦に追う `/reception` **受付ボード**に分けています。一般診療、再診、予防接種、検査・処置は固定診療メニューと時間を持ちます。担当獣医師未定の予約は許可し、担当を決めた `Scheduled` / `CheckedIn` だけ、同じ担当獣医師の重複を拒否します。時間帯は半開区間 `[start, end)` なので、一方の終了時刻と次の開始時刻が同じ予約は重複しません。
+
+来院状態は `Scheduled → CheckedIn → InExamination → AwaitingPayment → Paid` と進みます。これとは別軸に settlement state の `NoPayment` / `DepositReceived` / `Settled` / `DepositRefunded` を持ちます。予防接種の `Scheduled` / `CheckedIn` だけ一度の前受金を記録でき、診察後の最終金額に応じて追加支払い、返金、差額なしをサーバーが差額精算します。前受済みのキャンセルは全額返金とキャンセルを同じ transaction で確定します。電話フォローは、会計済み予約、要フォローの検査結果、一致する pet ID を検証して対象を作ります。
 
 ## コードの責務
 
@@ -44,7 +46,11 @@ pnpm --filter @fp-with-ts/clinic-final exec node dist/index.js
 - `src/app.ts`: SQLite を明示的に受け取る factory、依存関係、middleware、route を一つの Hono app へ構成
 - `src/server.ts`: 既定の `clinic.sqlite`、migration directory、Vite の production flag を選び、server entry の app を構成
 
-command use case は `AppointmentByIdResolver.resolveById` のような用途ごとの1メソッド port から現在状態を読み、ドメインが作った typed event を `ExaminationStartedStore.store` のような event store へ渡します。event store は event から projection の insert/update/delete と監査行の insert を組み立て、Drizzle transaction で両方を atomic に保存します。監査用の1メソッド port は `EventHistoryReader.list(admin: Admin): ResultAsync<readonly SanitizedAuditRecord[], RepositoryError>` です。Admin capability を受け取る reader 境界で保存行を Zod 検証し、許可した項目だけを `SanitizedAuditRecord` へ写して Admin の一覧画面へ届けます。
+command use case は `AppointmentByIdResolver.resolveById` のような用途ごとの1メソッド port から現在状態を読み、ドメインが作った typed event を `AppointmentEventStore.store` へ渡します。すべての mutation は画面が読んだ `expectedVersion` を渡し、projection の version による条件付き更新で古い操作を `StaleAppointmentVersion` として拒否します。これは同じ予約の更新競合を検出する責務です。一方 SQLite の `BEGIN IMMEDIATE` は、担当獣医師の重複検査から projection・監査 event の保存までの writer transaction を直列化し、異なる予約間のスケジュール競合を防ぐ責務です。
+
+監査は3テーブルに分けます。`domain_events` は event ID、aggregate、event name、実行者、発生時刻、分類の metadata、`domain_event_payloads` は Regular 分類の state/payload、`domain_event_sensitive_payloads` は Sensitive 分類の state/payload を保存します。来院理由、受付メモ、PII、診療情報、settlement 内訳を含む業務 event の aggregate state と event payload は機微テーブルへ完全に保存します。event は必ずどちらか一方の payload table に対応し、trigger が二重保存・更新・削除を拒否します。
+
+`EventHistoryReader.list(admin: Admin)` は通常一覧へ metadata と Regular payload だけを返します。Sensitive payload は Admin が画面で明示的に開示したときだけ返し、同じ `BEGIN IMMEDIATE` transaction で `audit.sensitive-payload-viewed` を Regular 監査 event として追加します。機微情報の閲覧自体を監査し、閲覧記録が保存できない場合は値も開示しません。この分離はアプリ内の閲覧境界であり、**SQLite ファイル自体の at-rest encryption は対象外**です。ディスク暗号化とファイルアクセス制御は別途必要です。
 
 診察結果の記録では `ExaminationCompletionStore` が `ExamResultRecorded` と `AppointmentExaminationCompleted` を受け取り、診察結果 projection、`AwaitingPayment` の予約 projection、2件の監査 event を1つの transaction で保存します。同じ `InExamination` を読んだ並行操作は条件付き更新で競合し、片方だけが確定します。
 
@@ -70,4 +76,4 @@ pnpm typecheck
 pnpm build
 ```
 
-テストは temp file SQLite への migration、初期管理者、ログイン、3ロールの認可、予約から会計・フォロー・監査までの業務フロー、projection と監査行の atomicity、PII の非表示を確認します。
+テストは temp file SQLite への migration、初期管理者、ログイン、3ロールの認可、予約カレンダーと受付ボード、重複制御、前受金から差額精算・返金までの業務フロー、projection と監査行の atomicity、PII・自由記述の機微テーブルへの保存、Admin の明示開示と閲覧 event を確認します。
