@@ -945,7 +945,7 @@ describe("clinic workflow routes", () => {
     }
   });
 
-+  test("maps only allowlisted appointment errors to Japanese text without reflecting query or repository details", async () => {
+  test("maps only allowlisted appointment errors to Japanese text without reflecting query or repository details", async () => {
     const harness = createHarness();
     const adminCookie = await setup(harness);
     const { owner, pet } = await createOwnerAndPet(harness, adminCookie);

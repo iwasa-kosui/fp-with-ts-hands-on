@@ -10,6 +10,8 @@ import AppointmentNew, {
 import AppointmentShow from "../../src/adaptor/primary/web/pages/Appointments/Show.js";
 import AppointmentEdit from "../../src/adaptor/primary/web/pages/Appointments/Edit.js";
 import WalkInNew from "../../src/adaptor/primary/web/pages/Reception/WalkIn.js";
+import AppointmentCalendar from "../../src/adaptor/primary/web/components/AppointmentCalendar.js";
+import { ReceptionRow } from "../../src/adaptor/primary/web/components/ReceptionRow.js";
 import { suggestedDurationAfterServiceChange } from "../../src/adaptor/primary/web/components/AppointmentForm.js";
 import Dashboard from "../../src/adaptor/primary/web/pages/Dashboard.js";
 import EventsIndex, {
@@ -24,9 +26,14 @@ import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
 import { AppointmentVersion } from "../../src/domain/appointment/appointmentVersion.js";
+import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
+import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
+import { SettlementAdjustmentAmount } from "../../src/domain/appointment/settlementAdjustmentAmount.js";
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
 import { PetId } from "../../src/domain/pet/petId.js";
 import { UserId } from "../../src/domain/user/userId.js";
+import type { AppointmentCalendarItem } from "../../src/useCase/query/appointmentCalendarReader.js";
+import type { ReceptionBoardRow } from "../../src/useCase/query/receptionBoardReader.js";
 
 const adminId = UserId.schema.parse(
   "76000000-0000-4000-8000-000000000001",
@@ -34,6 +41,9 @@ const adminId = UserId.schema.parse(
 
 const renderPublicPage = (page: ReactElement): string =>
   renderToString(page);
+
+const visibleText = (html: string): string =>
+  html.replaceAll("<!-- -->", "").replaceAll(/<[^>]*>/g, "");
 
 const ownerId = OwnerId.schema.parse("73000000-0000-4000-8000-000000000001");
 const petId = PetId.schema.parse("74000000-0000-4000-8000-000000000001");
@@ -193,12 +203,217 @@ describe("Operator Console shell", () => {
 
   test("keeps internal appointment and role codes out of visible Japanese operator text", () => {
     const roles = ["Admin", "Receptionist", "Veterinarian"] as const;
+    const roleNames = ["管理者ユーザー", "受付ユーザー", "獣医師ユーザー"] as const;
     const users = roles.map((role, index) => ({
       userId: UserId.schema.parse(`76000000-0000-4000-8000-00000000000${index + 2}`),
       role,
       email: `${role.toLowerCase()}@example.test`,
-      name: `${role} user`,
+      name: roleNames[index],
     }));
+    const calendarAppointments: readonly AppointmentCalendarItem[] = [
+      {
+        appointmentId: AppointmentId.schema.parse("75000000-0000-4000-8000-000000000011"),
+        startsAt: Timestamp.schema.parse("2026-08-10T00:00:00.000Z"),
+        endsAt: Timestamp.schema.parse("2026-08-10T00:15:00.000Z"),
+        durationMinutes: 15,
+        petName: "むぎ1",
+        serviceCode: "GeneralConsultation",
+        bookingKind: "Reserved",
+        assignedVeterinarianId: null,
+        assignedVeterinarianName: null,
+        appointmentStatus: "Scheduled",
+        settlementStatus: "NoPayment",
+      },
+      {
+        appointmentId: AppointmentId.schema.parse("75000000-0000-4000-8000-000000000012"),
+        startsAt: Timestamp.schema.parse("2026-08-10T00:20:00.000Z"),
+        endsAt: Timestamp.schema.parse("2026-08-10T00:35:00.000Z"),
+        durationMinutes: 15,
+        petName: "むぎ2",
+        serviceCode: "Vaccination",
+        bookingKind: "WalkIn",
+        assignedVeterinarianId: null,
+        assignedVeterinarianName: null,
+        appointmentStatus: "CheckedIn",
+        settlementStatus: "DepositReceived",
+      },
+      {
+        appointmentId: AppointmentId.schema.parse("75000000-0000-4000-8000-000000000013"),
+        startsAt: Timestamp.schema.parse("2026-08-10T00:40:00.000Z"),
+        endsAt: Timestamp.schema.parse("2026-08-10T00:55:00.000Z"),
+        durationMinutes: 15,
+        petName: "むぎ3",
+        serviceCode: "FollowUpVisit",
+        bookingKind: "Reserved",
+        assignedVeterinarianId: null,
+        assignedVeterinarianName: null,
+        appointmentStatus: "InExamination",
+        settlementStatus: "NoPayment",
+      },
+      {
+        appointmentId: AppointmentId.schema.parse("75000000-0000-4000-8000-000000000014"),
+        startsAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
+        endsAt: Timestamp.schema.parse("2026-08-10T01:15:00.000Z"),
+        durationMinutes: 15,
+        petName: "むぎ4",
+        serviceCode: "Vaccination",
+        bookingKind: "Reserved",
+        assignedVeterinarianId: null,
+        assignedVeterinarianName: null,
+        appointmentStatus: "AwaitingPayment",
+        settlementStatus: "DepositReceived",
+      },
+      {
+        appointmentId: AppointmentId.schema.parse("75000000-0000-4000-8000-000000000015"),
+        startsAt: Timestamp.schema.parse("2026-08-10T01:20:00.000Z"),
+        endsAt: Timestamp.schema.parse("2026-08-10T01:35:00.000Z"),
+        durationMinutes: 15,
+        petName: "むぎ5",
+        serviceCode: "ExaminationOrProcedure",
+        bookingKind: "Reserved",
+        assignedVeterinarianId: null,
+        assignedVeterinarianName: null,
+        appointmentStatus: "Paid",
+        settlementStatus: "Settled",
+      },
+      {
+        appointmentId: AppointmentId.schema.parse("75000000-0000-4000-8000-000000000016"),
+        startsAt: Timestamp.schema.parse("2026-08-10T01:40:00.000Z"),
+        endsAt: Timestamp.schema.parse("2026-08-10T01:55:00.000Z"),
+        durationMinutes: 15,
+        petName: "むぎ6",
+        serviceCode: "Vaccination",
+        bookingKind: "WalkIn",
+        assignedVeterinarianId: null,
+        assignedVeterinarianName: null,
+        appointmentStatus: "Canceled",
+        settlementStatus: "DepositRefunded",
+      },
+    ];
+    const receptionRows: readonly ReceptionBoardRow[] = calendarAppointments.map(
+      (item, index) => ({
+        appointmentId: item.appointmentId,
+        version: AppointmentVersion.schema.parse(index + 1),
+        bookingKind: item.bookingKind,
+        scheduledAt: item.startsAt,
+        checkedInAt: item.appointmentStatus === "Scheduled"
+          ? null
+          : Timestamp.schema.parse("2026-08-10T00:05:00.000Z"),
+        waitingMinutes: item.appointmentStatus === "Scheduled" ? null : 5,
+        ownerName: `飼い主${index + 1}`,
+        petName: item.petName,
+        receptionNote: null,
+        serviceCode: item.serviceCode,
+        assignedVeterinarianName: null,
+        appointmentStatus: item.appointmentStatus,
+        settlementStatus: item.settlementStatus,
+        primaryAction: "OpenDetails",
+      }),
+    );
+    const showHtml = [
+      renderPublicPage(
+        <AppointmentShow
+          actions={noAppointmentActions}
+          appointment={{ ...appointmentBase, kind: "Scheduled" }}
+          auth={{ user: { userId: adminId, role: "Receptionist" } }}
+          errors={{}}
+          flash={{}}
+          veterinarianId={null}
+        />,
+      ),
+      renderPublicPage(
+        <AppointmentShow
+          actions={noAppointmentActions}
+          appointment={{
+            ...appointmentBase,
+            kind: "Scheduled",
+            serviceCode: "Vaccination",
+            settlement: {
+              kind: "DepositReceived",
+              depositAmount: PaymentAmount.schema.parse(8000),
+              receivedAt: Timestamp.schema.parse("2026-08-10T00:10:00.000Z"),
+            },
+          }}
+          auth={{ user: { userId: adminId, role: "Receptionist" } }}
+          errors={{}}
+          flash={{}}
+          veterinarianId={null}
+        />,
+      ),
+      renderPublicPage(
+        <AppointmentShow
+          actions={noAppointmentActions}
+          appointment={{
+            ...appointmentBase,
+            kind: "Paid",
+            assignedVeterinarianId: "77000000-0000-4000-8000-000000000001",
+            assignedVeterinarianName: "佐藤 獣医師",
+            veterinarianName: "佐藤 獣医師",
+            checkedInAt: Timestamp.schema.parse("2026-08-10T00:05:00.000Z"),
+            examinationStartedAt: Timestamp.schema.parse("2026-08-10T00:10:00.000Z"),
+            examId: "71000000-0000-4000-8000-000000000030",
+            examinationCompletedAt: Timestamp.schema.parse("2026-08-10T00:20:00.000Z"),
+            diagnosis: "接種可能",
+            treatment: "ワクチン接種",
+            settlement: {
+              kind: "Settled",
+              finalAmount: PaymentAmount.schema.parse(5000),
+              depositAmount: SettlementAdjustmentAmount.schema.parse(8000),
+              additionalPaymentAmount: SettlementAdjustmentAmount.schema.parse(0),
+              refundAmount: SettlementAdjustmentAmount.schema.parse(3000),
+              settledAt: Timestamp.schema.parse("2026-08-10T00:30:00.000Z"),
+            },
+          }}
+          auth={{ user: { userId: adminId, role: "Receptionist" } }}
+          errors={{}}
+          flash={{}}
+          veterinarianId={null}
+        />,
+      ),
+      renderPublicPage(
+        <AppointmentShow
+          actions={noAppointmentActions}
+          appointment={{
+            ...appointmentBase,
+            kind: "Canceled",
+            serviceCode: "Vaccination",
+            cancellationReason: CancellationReason.schema.parse("飼い主都合"),
+            canceledAt: Timestamp.schema.parse("2026-08-10T00:15:00.000Z"),
+            settlement: {
+              kind: "DepositRefunded",
+              depositAmount: PaymentAmount.schema.parse(6000),
+              refundedAt: Timestamp.schema.parse("2026-08-10T00:15:00.000Z"),
+            },
+          }}
+          auth={{ user: { userId: adminId, role: "Receptionist" } }}
+          errors={{}}
+          flash={{}}
+          veterinarianId={null}
+        />,
+      ),
+    ].join("\n");
+    const calendarHtml = renderPublicPage(
+      <AppointmentCalendar
+        appointments={calendarAppointments}
+        date="2026-08-10"
+        selectedVeterinarianId={null}
+        veterinarians={[]}
+        view="day"
+      />,
+    );
+    const receptionHtml = receptionRows
+      .map((row) => renderPublicPage(<ReceptionRow row={row} />))
+      .join("\n");
+    const formHtml = renderPublicPage(
+      <AppointmentNew
+        auth={{ user: { userId: adminId, role: "Receptionist" } }}
+        errors={{}}
+        flash={{}}
+        owners={[{ ownerId, name: "山田 花子" }]}
+        pets={[{ ownerId, petId, name: "むぎ" }]}
+        veterinarians={[]}
+      />,
+    );
     const html = [
       ...roles.map((role) => renderToString(
         <Layout title="予約詳細" user={{ userId: adminId, role }}>
@@ -222,19 +437,62 @@ describe("Operator Console shell", () => {
           user={null}
         />,
       ),
+      showHtml,
+      calendarHtml,
+      receptionHtml,
+      formHtml,
     ].join("\n");
+    const operatorText = visibleText(html);
+    const calendarText = visibleText(calendarHtml);
+    const receptionText = visibleText(receptionHtml);
+    const appointmentDetailText = visibleText(showHtml);
+
+    expect(calendarAppointments.map(({ appointmentStatus }) => appointmentStatus)).toEqual([
+      "Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Paid", "Canceled",
+    ]);
+    expect(new Set(calendarAppointments.map(({ serviceCode }) => serviceCode))).toEqual(new Set([
+      "GeneralConsultation", "FollowUpVisit", "Vaccination", "ExaminationOrProcedure",
+    ]));
+    expect(new Set(calendarAppointments.map(({ bookingKind }) => bookingKind))).toEqual(
+      new Set(["Reserved", "WalkIn"]),
+    );
+    expect(new Set(calendarAppointments.map(({ settlementStatus }) => settlementStatus))).toEqual(
+      new Set(["NoPayment", "DepositReceived", "Settled", "DepositRefunded"]),
+    );
+    expect(receptionRows.map(({ appointmentStatus }) => appointmentStatus)).toEqual([
+      "Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Paid", "Canceled",
+    ]);
 
     for (const internalCode of [
       "Scheduled", "CheckedIn", "InExamination", "AwaitingPayment",
       "Paid", "Canceled", "Admin", "Receptionist", "Veterinarian",
       "GeneralConsultation", "FollowUpVisit", "Vaccination",
-      "ExaminationOrProcedure", "Reserved", "WalkIn",
+      "ExaminationOrProcedure", "Reserved", "WalkIn", "NoPayment",
+      "DepositReceived", "Settled", "DepositRefunded",
     ]) {
-      expect(html).not.toContain(`>${internalCode}<`);
+      expect(operatorText).not.toContain(internalCode);
     }
     for (const label of ["管理者", "受付", "獣医師"]) {
-      expect(html).toContain(label);
+      expect(operatorText).toContain(label);
     }
+    for (const label of [
+      "予約済み", "受付済み", "診察中", "会計待ち", "会計済み", "キャンセル",
+      "一般診療", "再診", "予防接種", "検査・処置", "予約", "飛び込み",
+      "未精算", "前受金受領済み", "精算済み", "前受金返金済み",
+    ]) {
+      expect(calendarText).toContain(label);
+    }
+    for (const label of ["未受付", "診察待ち", "診察中", "会計待ち", "会計済み", "キャンセル"]) {
+      expect(receptionText).toContain(label);
+    }
+    for (const label of [
+      "前受金 8000 円受領済み", "3000 円返金して精算済み", "前受金 6000 円返金済み",
+    ]) {
+      expect(appointmentDetailText).toContain(label);
+    }
+    expect(formHtml).toContain('value="GeneralConsultation"');
+    expect(formHtml).toContain('value="Vaccination"');
+    expect(html).toContain('value="Admin"');
   });
 
   test("does not render a dashboard booking action without a server-projected capability", () => {
