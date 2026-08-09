@@ -103,6 +103,15 @@ const appendOnlyTriggerNames = [
   "domain_events_append_only_update",
 ] as const;
 
+const aee8145AppendOnlyTriggerTargets = [
+  ["domain_events", "UPDATE"],
+  ["domain_events", "DELETE"],
+  ["domain_event_payloads", "UPDATE"],
+  ["domain_event_payloads", "DELETE"],
+  ["domain_event_sensitive_payloads", "UPDATE"],
+  ["domain_event_sensitive_payloads", "DELETE"],
+] as const;
+
 const expectAppendOnlyTriggers = (db: ReturnType<typeof createSqliteDatabase>): void => {
   expect(db.all(sql.raw(`
     SELECT name FROM sqlite_master
@@ -119,6 +128,22 @@ const restoreBase0004AppliedDatabase = (
     db.run(sql.raw(`DROP TRIGGER IF EXISTS ${triggerName}`));
   }
   db.run(sql.raw("DELETE FROM __drizzle_migrations WHERE created_at > 1786546800000"));
+};
+
+const restoreAee8145AppliedDatabase = (
+  db: ReturnType<typeof createSqliteDatabase>,
+): void => {
+  restoreBase0004AppliedDatabase(db);
+  for (const [tableName, operation] of aee8145AppendOnlyTriggerTargets) {
+    const triggerName = `${tableName}_append_only_${operation.toLowerCase()}`;
+    db.run(sql.raw(`
+      CREATE TRIGGER ${triggerName}
+      BEFORE ${operation} ON ${tableName}
+      BEGIN
+        SELECT RAISE(ABORT, '${tableName} is append-only');
+      END
+    `));
+  }
 };
 
 const restoreLegacyAuditSchema = (db: ReturnType<typeof createSqliteDatabase>): void => {
@@ -140,6 +165,69 @@ const restoreLegacyAuditSchema = (db: ReturnType<typeof createSqliteDatabase>): 
     )
   `));
   db.run(sql.raw("DELETE FROM __drizzle_migrations WHERE created_at > 1786460400000"));
+};
+
+const auditTablesSnapshot = (db: ReturnType<typeof createSqliteDatabase>) => ({
+  metadata: db.select().from(domainEventsTable).all(),
+  regular: db.select().from(domainEventPayloadsTable).all(),
+  sensitive: db.select().from(domainEventSensitivePayloadsTable).all(),
+});
+
+const insertAppendOnlyAuditFixture = (db: ReturnType<typeof createSqliteDatabase>) => {
+  const regularEventId = "15000000-0000-4000-8000-000000000001";
+  const sensitiveEventId = "15000000-0000-4000-8000-000000000002";
+  db.insert(domainEventsTable).values([
+    {
+      eventId: regularEventId,
+      aggregateId: ids.appointment,
+      aggregateName: "Appointment",
+      eventName: "audit.regular-fixture",
+      occurredAt: "2026-08-08T00:01:00.000Z",
+      actorUserId: ids.actor,
+      payloadSensitivity: "Regular",
+    },
+    {
+      eventId: sensitiveEventId,
+      aggregateId: ids.owner,
+      aggregateName: "Owner",
+      eventName: "owner.updated",
+      occurredAt: "2026-08-08T00:02:00.000Z",
+      actorUserId: ids.actor,
+      payloadSensitivity: "Sensitive",
+    },
+  ]).run();
+  db.insert(domainEventPayloadsTable).values({
+    eventId: regularEventId,
+    aggregateState: { kind: "Regular" },
+    eventPayload: { fact: "regular fact" },
+  }).run();
+  db.insert(domainEventSensitivePayloadsTable).values({
+    eventId: sensitiveEventId,
+    aggregateState: { email: "owner@example.test" },
+    eventPayload: { reason: "private reason" },
+  }).run();
+  return { regularEventId, sensitiveEventId };
+};
+
+const expectAuditRowsAppendOnly = (
+  db: ReturnType<typeof createSqliteDatabase>,
+  eventIds: ReturnType<typeof insertAppendOnlyAuditFixture>,
+  before: ReturnType<typeof auditTablesSnapshot>,
+): void => {
+  const mutations = [
+    sql`UPDATE domain_events SET payload_sensitivity = ${"Sensitive"} WHERE event_id = ${eventIds.regularEventId}`,
+    sql`DELETE FROM domain_events WHERE event_id = ${eventIds.regularEventId}`,
+    sql`UPDATE domain_event_payloads SET event_id = ${eventIds.sensitiveEventId} WHERE event_id = ${eventIds.regularEventId}`,
+    sql`UPDATE domain_event_payloads SET event_payload = ${JSON.stringify({ fact: "changed" })} WHERE event_id = ${eventIds.regularEventId}`,
+    sql`DELETE FROM domain_event_payloads WHERE event_id = ${eventIds.regularEventId}`,
+    sql`UPDATE domain_event_sensitive_payloads SET event_id = ${eventIds.regularEventId} WHERE event_id = ${eventIds.sensitiveEventId}`,
+    sql`UPDATE domain_event_sensitive_payloads SET event_payload = ${JSON.stringify({ reason: "changed" })} WHERE event_id = ${eventIds.sensitiveEventId}`,
+    sql`DELETE FROM domain_event_sensitive_payloads WHERE event_id = ${eventIds.sensitiveEventId}`,
+  ];
+  for (const mutation of mutations) {
+    expect(() => db.run(mutation)).toThrow();
+  }
+  expect(auditTablesSnapshot(db)).toEqual(before);
 };
 
 describe("SQLite event stores", () => {
@@ -347,43 +435,8 @@ describe("SQLite event stores", () => {
       WHERE type = 'trigger' AND name LIKE '%_append_only_%'
     `))).toEqual([]);
 
-    const regularEventId = "15000000-0000-4000-8000-000000000001";
-    const sensitiveEventId = "15000000-0000-4000-8000-000000000002";
-    db.insert(domainEventsTable).values([
-      {
-        eventId: regularEventId,
-        aggregateId: ids.appointment,
-        aggregateName: "Appointment",
-        eventName: "audit.regular-fixture",
-        occurredAt: "2026-08-08T00:01:00.000Z",
-        actorUserId: ids.actor,
-        payloadSensitivity: "Regular",
-      },
-      {
-        eventId: sensitiveEventId,
-        aggregateId: ids.owner,
-        aggregateName: "Owner",
-        eventName: "owner.updated",
-        occurredAt: "2026-08-08T00:02:00.000Z",
-        actorUserId: ids.actor,
-        payloadSensitivity: "Sensitive",
-      },
-    ]).run();
-    db.insert(domainEventPayloadsTable).values({
-      eventId: regularEventId,
-      aggregateState: { kind: "Regular" },
-      eventPayload: { fact: "regular fact" },
-    }).run();
-    db.insert(domainEventSensitivePayloadsTable).values({
-      eventId: sensitiveEventId,
-      aggregateState: { email: "owner@example.test" },
-      eventPayload: { reason: "private reason" },
-    }).run();
-    const before = {
-      metadata: db.select().from(domainEventsTable).all(),
-      regular: db.select().from(domainEventPayloadsTable).all(),
-      sensitive: db.select().from(domainEventSensitivePayloadsTable).all(),
-    };
+    const eventIds = insertAppendOnlyAuditFixture(db);
+    const before = auditTablesSnapshot(db);
 
     migrateDatabase(db);
     migrateDatabase(db);
@@ -393,31 +446,33 @@ describe("SQLite event stores", () => {
       )),
     ).toEqual([{ created_at: 1786633200000 }]);
     expectAppendOnlyTriggers(db);
-    expect({
-      metadata: db.select().from(domainEventsTable).all(),
-      regular: db.select().from(domainEventPayloadsTable).all(),
-      sensitive: db.select().from(domainEventSensitivePayloadsTable).all(),
-    }).toEqual(before);
+    expect(auditTablesSnapshot(db)).toEqual(before);
+    expectAuditRowsAppendOnly(db, eventIds, before);
+  });
 
-    const mutations = [
-      sql`UPDATE domain_events SET payload_sensitivity = ${"Sensitive"} WHERE event_id = ${regularEventId}`,
-      sql`DELETE FROM domain_events WHERE event_id = ${regularEventId}`,
-      sql`UPDATE domain_event_payloads SET event_id = ${sensitiveEventId} WHERE event_id = ${regularEventId}`,
-      sql`UPDATE domain_event_payloads SET event_payload = ${JSON.stringify({ fact: "changed" })} WHERE event_id = ${regularEventId}`,
-      sql`DELETE FROM domain_event_payloads WHERE event_id = ${regularEventId}`,
-      sql`UPDATE domain_event_sensitive_payloads SET event_id = ${regularEventId} WHERE event_id = ${sensitiveEventId}`,
-      sql`UPDATE domain_event_sensitive_payloads SET event_payload = ${JSON.stringify({ reason: "changed" })} WHERE event_id = ${sensitiveEventId}`,
-      sql`DELETE FROM domain_event_sensitive_payloads WHERE event_id = ${sensitiveEventId}`,
-    ];
-    for (const mutation of mutations) {
-      expect(() => db.run(mutation)).toThrow();
-    }
+  test("0005 advances an aee8145 database that already has append-only triggers", () => {
+    const db = createSqliteDatabase(":memory:");
+    restoreAee8145AppliedDatabase(db);
+    expect(
+      db.all(sql.raw(
+        "SELECT created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 1",
+      )),
+    ).toEqual([{ created_at: 1786546800000 }]);
+    expectAppendOnlyTriggers(db);
+    const eventIds = insertAppendOnlyAuditFixture(db);
+    const before = auditTablesSnapshot(db);
 
-    expect({
-      metadata: db.select().from(domainEventsTable).all(),
-      regular: db.select().from(domainEventPayloadsTable).all(),
-      sensitive: db.select().from(domainEventSensitivePayloadsTable).all(),
-    }).toEqual(before);
+    migrateDatabase(db);
+    migrateDatabase(db);
+
+    expect(
+      db.all(sql.raw(
+        "SELECT created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 1",
+      )),
+    ).toEqual([{ created_at: 1786633200000 }]);
+    expectAppendOnlyTriggers(db);
+    expect(auditTablesSnapshot(db)).toEqual(before);
+    expectAuditRowsAppendOnly(db, eventIds, before);
   });
 
   test("unknown event names are sensitive and audit serialization refuses duck typing and non-JSON values", () => {
