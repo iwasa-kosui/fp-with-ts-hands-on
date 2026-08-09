@@ -4,7 +4,9 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
 import Layout from "../../src/adaptor/primary/web/pages/Layout.js";
-import AppointmentNew from "../../src/adaptor/primary/web/pages/Appointments/New.js";
+import AppointmentNew, {
+  toAppointmentTimestamp,
+} from "../../src/adaptor/primary/web/pages/Appointments/New.js";
 import AppointmentShow from "../../src/adaptor/primary/web/pages/Appointments/Show.js";
 import Dashboard from "../../src/adaptor/primary/web/pages/Dashboard.js";
 import EventsIndex from "../../src/adaptor/primary/web/pages/Events/Index.js";
@@ -187,7 +189,24 @@ describe("Operator Console shell", () => {
 
     expect(html).toContain('aria-label="予約登録"');
     expect(html).toContain('href="/appointments"');
+    expect(html).toContain('name="scheduledAt"');
+    expect(html).toContain('type="datetime-local"');
     expect(html).toContain('aria-describedby="reason-error"');
+  });
+
+  test("converts a picked local appointment time to the timestamp accepted by booking", () => {
+    const timestamp = toAppointmentTimestamp("2026-08-10T12:34");
+    const roundTrip = new Date(timestamp);
+
+    expect(Timestamp.schema.safeParse(timestamp).success).toBe(true);
+    expect([
+      roundTrip.getFullYear(),
+      roundTrip.getMonth() + 1,
+      roundTrip.getDate(),
+      roundTrip.getHours(),
+      roundTrip.getMinutes(),
+    ]).toEqual([2026, 8, 10, 12, 34]);
+    expect(toAppointmentTimestamp("")).toBe("");
   });
 
   test("renders only the server-authorized state workflow actions", () => {

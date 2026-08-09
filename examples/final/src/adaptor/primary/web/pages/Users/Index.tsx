@@ -51,18 +51,20 @@ export default function UsersIndex({ auth, errors, users }: UsersIndexProps) {
                 <td>{user.name}</td>
                 <td>{user.email}</td>
                 <td>{user.role}</td>
-                <td className="actions">
-                  <Link className={buttonClassName("secondary")} href={`/users/${user.userId}/edit`}>編集</Link>
-                  <button
-                    className={buttonClassName("danger")}
-                    disabled={
-                      deletion.processing || auth.user?.userId === user.userId
-                    }
-                    onClick={() => remove(user)}
-                    type="button"
-                  >
-                    削除
-                  </button>
+                <td>
+                  <div className="table-actions">
+                    <Link className={buttonClassName("secondary")} href={`/users/${user.userId}/edit`}>編集</Link>
+                    <button
+                      className={buttonClassName("danger")}
+                      disabled={
+                        deletion.processing || auth.user?.userId === user.userId
+                      }
+                      onClick={() => remove(user)}
+                      type="button"
+                    >
+                      削除
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

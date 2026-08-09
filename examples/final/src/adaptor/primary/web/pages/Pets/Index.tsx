@@ -51,16 +51,18 @@ export default function PetsIndex({ auth, errors, pets }: PetsIndexProps) {
                 <td><Link href={`/pets/${pet.petId}`}>{pet.name}</Link></td>
                 <td>{pet.species}</td>
                 <td>{pet.ownerId}</td>
-                <td className="actions">
-                  <Link className={buttonClassName("secondary")} href={`/pets/${pet.petId}`}>編集</Link>
-                  <button
-                    className={buttonClassName("danger")}
-                    disabled={deletion.processing}
-                    onClick={() => remove(pet)}
-                    type="button"
-                  >
-                    削除
-                  </button>
+                <td>
+                  <div className="table-actions">
+                    <Link className={buttonClassName("secondary")} href={`/pets/${pet.petId}`}>編集</Link>
+                    <button
+                      className={buttonClassName("danger")}
+                      disabled={deletion.processing}
+                      onClick={() => remove(pet)}
+                      type="button"
+                    >
+                      削除
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

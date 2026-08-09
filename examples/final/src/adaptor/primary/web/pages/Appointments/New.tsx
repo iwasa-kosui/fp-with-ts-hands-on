@@ -17,11 +17,23 @@ type Props = SharedPageProps &
     pets: readonly AppointmentPetOption[];
   }>;
 
+export const toAppointmentTimestamp = (localDateTime: string): string => {
+  if (localDateTime === "") return "";
+  const timestamp = new Date(localDateTime);
+  return Number.isNaN(timestamp.valueOf())
+    ? localDateTime
+    : timestamp.toISOString();
+};
+
 export default function AppointmentNew({ auth, errors, owners, pets }: Props) {
   const form = useForm({ ownerId: "", petId: "", scheduledAt: "", reason: "" });
   const availablePets = pets.filter((pet) => pet.ownerId === form.data.ownerId);
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
+    form.transform((data) => ({
+      ...data,
+      scheduledAt: toAppointmentTimestamp(data.scheduledAt),
+    }));
     form.post("/appointments", { forceFormData: true });
   };
 
@@ -79,7 +91,7 @@ export default function AppointmentNew({ auth, errors, owners, pets }: Props) {
           <FormField
             {...(errors.scheduledAt === undefined ? {} : { error: errors.scheduledAt })}
             field="scheduledAt"
-            label="予約日時（ISO 8601）"
+            label="予約日時"
           >
             <input
               aria-describedby={errors.scheduledAt === undefined ? undefined : "scheduledAt-error"}
@@ -87,8 +99,8 @@ export default function AppointmentNew({ auth, errors, owners, pets }: Props) {
               id="scheduledAt"
               name="scheduledAt"
               onChange={(event) => form.setData("scheduledAt", event.target.value)}
-              placeholder="2026-08-10T03:00:00.000Z"
-              type="text"
+              step="60"
+              type="datetime-local"
               value={form.data.scheduledAt}
             />
           </FormField>

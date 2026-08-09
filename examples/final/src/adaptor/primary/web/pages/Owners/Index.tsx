@@ -51,16 +51,18 @@ export default function OwnersIndex({ auth, errors, owners }: OwnersIndexProps) 
                 <td><Link href={`/owners/${owner.ownerId}`}>{owner.name}</Link></td>
                 <td>{owner.email}</td>
                 <td>{owner.phone}</td>
-                <td className="actions">
-                  <Link className={buttonClassName("secondary")} href={`/owners/${owner.ownerId}`}>編集</Link>
-                  <button
-                    className={buttonClassName("danger")}
-                    disabled={deletion.processing}
-                    onClick={() => remove(owner)}
-                    type="button"
-                  >
-                    削除
-                  </button>
+                <td>
+                  <div className="table-actions">
+                    <Link className={buttonClassName("secondary")} href={`/owners/${owner.ownerId}`}>編集</Link>
+                    <button
+                      className={buttonClassName("danger")}
+                      disabled={deletion.processing}
+                      onClick={() => remove(owner)}
+                      type="button"
+                    >
+                      削除
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

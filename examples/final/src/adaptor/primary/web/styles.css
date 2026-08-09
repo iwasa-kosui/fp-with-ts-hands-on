@@ -195,6 +195,7 @@ body {
 
 .button,
 button {
+  box-sizing: border-box;
   min-height: 40px;
   padding: 0 12px;
   border: 1px solid transparent;
@@ -202,6 +203,15 @@ button {
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.25;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .button--primary,
@@ -309,10 +319,17 @@ td {
   text-align: left;
 }
 
-.actions {
+.table-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.table-actions .button {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 13px;
 }
 
 .notice {
@@ -402,11 +419,14 @@ td {
 }
 
 .inline-alert {
-  padding: 12px 16px;
-  border-left: 4px solid var(--info);
-  border-radius: 8px;
-  color: var(--info);
-  background: var(--info-soft);
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  background: var(--surface-subtle);
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .empty-state {
