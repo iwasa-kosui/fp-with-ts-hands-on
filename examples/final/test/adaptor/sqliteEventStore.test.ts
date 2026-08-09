@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { sql } from "drizzle-orm";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Worker } from "node:worker_threads";
@@ -59,6 +59,12 @@ import { createUserUpdated } from "../../src/domain/user/userEvent.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
 import { Sensitive } from "../../src/domain/shared/sensitive.js";
+import {
+  observeWorkerExit,
+  shutdownWorker,
+  waitForWorkerMessage,
+  type WorkerExitOutcome,
+} from "./sqliteWorkerTestSupport.js";
 
 const ids = {
   actor: UserId.schema.parse("00000000-0000-4000-8000-000000000001"),
@@ -90,39 +96,38 @@ const sqliteLockWorkerSource = String.raw`
   const Database = require("better-sqlite3");
   const { parentPort, workerData } = require("node:worker_threads");
 
-  const database = new Database(workerData.databasePath);
-  const releaseSignal = new Int32Array(workerData.releaseSignal);
-  database.pragma("foreign_keys = ON");
-  database.pragma("busy_timeout = 5000");
-  database.exec("BEGIN IMMEDIATE");
-  database.prepare("INSERT INTO appointments (appointment_id, status, owner_id, pet_id, scheduled_at, duration_minutes, service_code, booking_kind, assigned_veterinarian_id, reception_note, settlement_status, deposit_amount, version, state) VALUES (@appointmentId, @status, @ownerId, @petId, @scheduledAt, @durationMinutes, @serviceCode, @bookingKind, @assignedVeterinarianId, @receptionNote, @settlementStatus, @depositAmount, @version, @state)").run(workerData.appointment);
-  database.prepare("INSERT INTO domain_events (event_id, aggregate_id, aggregate_name, event_name, occurred_at, actor_user_id, payload_sensitivity) VALUES (@eventId, @aggregateId, @aggregateName, @eventName, @occurredAt, @actorUserId, @payloadSensitivity)").run(workerData.eventMetadata);
-  database.prepare("INSERT INTO domain_event_sensitive_payloads (event_id, aggregate_state, event_payload) VALUES (@eventId, @aggregateState, @eventPayload)").run(workerData.sensitivePayload);
+  void (async () => {
+    let database;
+    let transactionOpen = false;
+    try {
+      database = new Database(workerData.databasePath);
+      const releaseSignal = new Int32Array(workerData.releaseSignal);
+      database.pragma("foreign_keys = ON");
+      database.pragma("busy_timeout = 5000");
+      database.exec("BEGIN IMMEDIATE");
+      transactionOpen = true;
+      database.prepare("INSERT INTO appointments (appointment_id, status, owner_id, pet_id, scheduled_at, duration_minutes, service_code, booking_kind, assigned_veterinarian_id, reception_note, settlement_status, deposit_amount, version, state) VALUES (@appointmentId, @status, @ownerId, @petId, @scheduledAt, @durationMinutes, @serviceCode, @bookingKind, @assignedVeterinarianId, @receptionNote, @settlementStatus, @depositAmount, @version, @state)").run(workerData.appointment);
+      database.prepare("INSERT INTO domain_events (event_id, aggregate_id, aggregate_name, event_name, occurred_at, actor_user_id, payload_sensitivity) VALUES (@eventId, @aggregateId, @aggregateName, @eventName, @occurredAt, @actorUserId, @payloadSensitivity)").run(workerData.eventMetadata);
+      database.prepare("INSERT INTO domain_event_sensitive_payloads (event_id, aggregate_state, event_payload) VALUES (@eventId, @aggregateState, @eventPayload)").run(workerData.sensitivePayload);
 
-  parentPort.postMessage("locked");
-  Atomics.wait(releaseSignal, 0, 0);
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 300);
-  database.exec("COMMIT");
-  parentPort.postMessage("committed");
-  database.close();
+      parentPort.postMessage("locked");
+      Atomics.wait(releaseSignal, 0, 0);
+      await new Promise((resolve) => setImmediate(resolve));
+      database.exec("COMMIT");
+      transactionOpen = false;
+      parentPort.postMessage("committed");
+    } finally {
+      if (database !== undefined) {
+        try {
+          if (transactionOpen && database.inTransaction) database.exec("ROLLBACK");
+        } finally {
+          database.close();
+        }
+      }
+      parentPort.postMessage("closed");
+    }
+  })();
 `;
-
-const waitForWorkerMessage = (
-  worker: Worker,
-  expectedMessage: "locked" | "committed",
-): Promise<void> => new Promise((resolve, reject) => {
-  const onMessage = (message: unknown): void => {
-    if (message !== expectedMessage) return;
-    worker.off("error", onError);
-    resolve();
-  };
-  const onError = (error: Error): void => {
-    worker.off("message", onMessage);
-    reject(error);
-  };
-  worker.on("message", onMessage);
-  worker.once("error", onError);
-});
 
 const user = (name: string): Admin => ({
   kind: "Admin",
@@ -844,10 +849,15 @@ describe("SQLite event stores", () => {
   test("waits on a real SQLite write lock and rechecks overlap before persisting the second booking", async () => {
     const directory = mkdtempSync(join(tmpdir(), "clinic-final-overlap-"));
     const databasePath = join(directory, "clinic.sqlite");
+    let firstDb: ReturnType<typeof createSqliteDatabase> | undefined;
+    let secondDb: ReturnType<typeof createSqliteDatabase> | undefined;
+    let worker: Worker | undefined;
+    let releaseSignal: Int32Array | undefined;
+    let observedExit: Promise<WorkerExitOutcome> | undefined;
     try {
-      const firstDb = createSqliteDatabase(databasePath);
+      firstDb = createSqliteDatabase(databasePath);
       migrateDatabase(firstDb);
-      const secondDb = createSqliteDatabase(databasePath);
+      secondDb = createSqliteDatabase(databasePath);
       const secondStore = createAppointmentEventStore(secondDb);
       const booked = (appointmentId: AppointmentId, sequence: number) =>
         Appointment.book(eventContext(sequence))({
@@ -869,8 +879,8 @@ describe("SQLite event stores", () => {
       const firstRecord = toEventRecord(firstBooked);
       const firstState = firstBooked.aggregateState;
       const releaseSignalBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
-      const releaseSignal = new Int32Array(releaseSignalBuffer);
-      const worker = new Worker(sqliteLockWorkerSource, {
+      releaseSignal = new Int32Array(releaseSignalBuffer);
+      worker = new Worker(sqliteLockWorkerSource, {
         eval: true,
         workerData: {
           databasePath,
@@ -902,23 +912,21 @@ describe("SQLite event stores", () => {
           },
         },
       });
-      const locked = waitForWorkerMessage(worker, "locked");
-      const committed = waitForWorkerMessage(worker, "committed");
-      await locked;
+      observedExit = observeWorkerExit(worker, 2_000);
+      await waitForWorkerMessage(worker, "locked", 1_000);
 
-      const waitStartedAt = performance.now();
+      const secondResult = secondStore.store(secondBooked);
       Atomics.store(releaseSignal, 0, 1);
       Atomics.notify(releaseSignal, 0);
-      const second = await secondStore.store(secondBooked);
-      const waitDurationMilliseconds = performance.now() - waitStartedAt;
-      await committed;
+      const second = await secondResult;
+      const exit = await observedExit;
 
       expect(second._unsafeUnwrapErr()).toEqual({
         kind: "VeterinarianScheduleConflict",
         appointmentId: ids.otherAppointment,
         conflictingAppointmentId: ids.appointment,
       });
-      expect(waitDurationMilliseconds).toBeGreaterThanOrEqual(200);
+      expect(exit).toEqual({ kind: "Exited", code: 0 });
       expect(firstDb.select().from(appointmentsTable).all()).toEqual([
         expect.objectContaining({ appointmentId: ids.appointment }),
       ]);
@@ -936,8 +944,27 @@ describe("SQLite event stores", () => {
       expect(firstDb.select().from(domainEventsTable).all().filter(({ aggregateId }) => aggregateId === ids.otherAppointment)).toHaveLength(0);
       expect(firstDb.select().from(domainEventSensitivePayloadsTable).all().filter(({ eventId }) => eventId === secondBooked.eventId)).toHaveLength(0);
     } finally {
-      rmSync(directory, { recursive: true, force: true });
+      try {
+        if (worker !== undefined && releaseSignal !== undefined && observedExit !== undefined) {
+          const cleanupReleaseSignal = releaseSignal;
+          await shutdownWorker(worker, () => {
+            Atomics.store(cleanupReleaseSignal, 0, 1);
+            Atomics.notify(cleanupReleaseSignal, 0);
+          }, observedExit, 1_000);
+        }
+      } finally {
+        try {
+          secondDb?.$client.close();
+        } finally {
+          try {
+            firstDb?.$client.close();
+          } finally {
+            rmSync(directory, { recursive: true, force: true });
+          }
+        }
+      }
     }
+    expect(existsSync(directory)).toBe(false);
   });
 
   test("rejects a transition whose previous version does not match the current projection", async () => {

@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 
 import { sqliteSchema } from "./schema.js";
 
-export type SqliteDatabase = BetterSQLite3Database<typeof sqliteSchema>;
+export type SqliteDatabase = BetterSQLite3Database<typeof sqliteSchema> & Readonly<{
+  $client: Database.Database;
+}>;
 
 const migrationsFolder = fileURLToPath(new URL("../../../../drizzle", import.meta.url));
 
