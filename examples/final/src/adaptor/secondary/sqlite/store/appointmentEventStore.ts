@@ -6,6 +6,7 @@ import type { Appointment } from "../../../../domain/appointment/appointment.js"
 import type { AppointmentEvent } from "../../../../domain/appointment/appointmentEvent.js";
 import type { AppointmentStoreError } from "../../../../domain/appointment/appointmentStores.js";
 import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
+import { AppointmentVersion } from "../../../../domain/appointment/appointmentVersion.js";
 import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type { SqliteDatabase } from "../db.js";
 import { persistDomainEvent } from "../eventPersistence.js";
@@ -23,7 +24,14 @@ const projectionState = (state: Appointment): Readonly<Record<string, unknown>> 
     ownerId: state.ownerId,
     petId: state.petId,
     scheduledAt: state.scheduledAt,
-    reason: state.reason.unwrap(),
+    durationMinutes: state.durationMinutes,
+    serviceCode: state.serviceCode,
+    bookingKind: state.bookingKind,
+    assignedVeterinarianId: state.assignedVeterinarianId,
+    visitReason: state.visitReason.unwrap(),
+    receptionNote: state.receptionNote?.unwrap() ?? null,
+    settlement: state.settlement,
+    version: state.version,
   };
   switch (state.kind) {
     case "Scheduled":
@@ -34,14 +42,12 @@ const projectionState = (state: Appointment): Readonly<Record<string, unknown>> 
       return {
         ...base,
         checkedInAt: state.checkedInAt,
-        veterinarianId: state.veterinarianId,
         examinationStartedAt: state.examinationStartedAt,
       };
     case "AwaitingPayment":
       return {
         ...base,
         checkedInAt: state.checkedInAt,
-        veterinarianId: state.veterinarianId,
         examinationStartedAt: state.examinationStartedAt,
         examId: state.examId,
         examinationCompletedAt: state.examinationCompletedAt,
@@ -50,24 +56,46 @@ const projectionState = (state: Appointment): Readonly<Record<string, unknown>> 
       return {
         ...base,
         checkedInAt: state.checkedInAt,
-        veterinarianId: state.veterinarianId,
         examinationStartedAt: state.examinationStartedAt,
         examId: state.examId,
         examinationCompletedAt: state.examinationCompletedAt,
         diagnosis: state.diagnosis.unwrap(),
         treatment: state.treatment.unwrap(),
-        amount: state.amount,
-        paidAt: state.paidAt,
       };
     case "Canceled":
-      return { ...base, canceledAt: state.canceledAt };
+      return {
+        ...base,
+        cancellationReason: state.cancellationReason.unwrap(),
+        canceledAt: state.canceledAt,
+      };
     default:
       return assertNever(state);
   }
 };
-const AppointmentConflictSchema = z.object({
-  kind: z.literal("AppointmentConflict"),
+const StaleAppointmentVersionSchema = z.object({
+  kind: z.literal("StaleAppointmentVersion"),
   appointmentId: AppointmentId.schema,
+  expectedVersion: AppointmentVersion.schema,
+});
+
+const depositAmountOf = (state: Appointment): number | null =>
+  state.settlement.kind === "NoPayment" ? null : state.settlement.depositAmount;
+
+const toAppointmentValues = (state: Appointment) => ({
+  appointmentId: state.appointmentId,
+  status: state.kind,
+  ownerId: state.ownerId,
+  petId: state.petId,
+  scheduledAt: state.scheduledAt,
+  durationMinutes: state.durationMinutes,
+  serviceCode: state.serviceCode,
+  bookingKind: state.bookingKind,
+  assignedVeterinarianId: state.assignedVeterinarianId,
+  receptionNote: state.receptionNote?.unwrap() ?? null,
+  settlementStatus: state.settlement.kind,
+  depositAmount: depositAmountOf(state),
+  version: state.version,
+  state: projectionState(state),
 });
 
 export const createAppointmentEventStore = (db: SqliteDatabase) => ({
@@ -77,13 +105,10 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
         db.transaction((tx) => {
           events.forEach((event) => {
             const state = event.aggregateState;
-            const values = {
-              appointmentId: state.appointmentId,
-              status: state.kind,
-              ownerId: state.ownerId,
-              petId: state.petId,
-              state: projectionState(state),
-            };
+            const values = toAppointmentValues(state);
+            const expectedVersion = state.version === 1
+              ? state.version
+              : AppointmentVersion.schema.parse(state.version - 1);
             const changes = (() => {
               switch (event.kind) {
                 case "AppointmentBooked":
@@ -97,6 +122,7 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
                     .where(and(
                       eq(appointmentsTable.appointmentId, state.appointmentId),
                       eq(appointmentsTable.status, "Scheduled"),
+                      eq(appointmentsTable.version, expectedVersion),
                     ))
                     .run().changes;
                 case "ExaminationStarted":
@@ -105,6 +131,7 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
                     .where(and(
                       eq(appointmentsTable.appointmentId, state.appointmentId),
                       eq(appointmentsTable.status, "CheckedIn"),
+                      eq(appointmentsTable.version, expectedVersion),
                     ))
                     .run().changes;
                 case "PaymentRecorded":
@@ -113,6 +140,7 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
                     .where(and(
                       eq(appointmentsTable.appointmentId, state.appointmentId),
                       eq(appointmentsTable.status, "AwaitingPayment"),
+                      eq(appointmentsTable.version, expectedVersion),
                     ))
                     .run().changes;
                 case "AppointmentCanceled":
@@ -124,6 +152,7 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
                         eq(appointmentsTable.status, "Scheduled"),
                         eq(appointmentsTable.status, "CheckedIn"),
                       ),
+                      eq(appointmentsTable.version, expectedVersion),
                     ))
                     .run().changes;
                 default:
@@ -132,8 +161,9 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
             })();
             if (changes !== 1) {
               throw {
-                kind: "AppointmentConflict",
+                kind: "StaleAppointmentVersion",
                 appointmentId: event.aggregateId,
+                expectedVersion,
               } as const;
             }
             persistDomainEvent(tx, event);
@@ -141,9 +171,9 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
         }),
       ),
       (cause): AppointmentStoreError => {
-        const conflict = AppointmentConflictSchema.safeParse(cause);
-        return conflict.success
-          ? conflict.data
+        const stale = StaleAppointmentVersionSchema.safeParse(cause);
+        return stale.success
+          ? stale.data
           : {
               kind: "RepositoryError",
               operation: "AppointmentEventStore.store",

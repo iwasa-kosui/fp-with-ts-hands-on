@@ -15,6 +15,7 @@ import {
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { AppointmentVersion } from "../../src/domain/appointment/appointmentVersion.js";
 import { createUserByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/userResolver.js";
 import { createFollowUpResolver } from "../../src/adaptor/secondary/sqlite/resolver/followUpResolver.js";
 import { createFollowUpEventStore } from "../../src/adaptor/secondary/sqlite/store/followUpEventStore.js";
@@ -472,8 +473,9 @@ describe("clinic workflow routes", () => {
       ...createApplicationDependencies(harness.database, { isProduction: false }),
       checkInAppointment: {
         run: () => errAsync({
-          kind: "AppointmentConflict" as const,
+          kind: "StaleAppointmentVersion" as const,
           appointmentId: conflictAppointmentId,
+          expectedVersion: AppointmentVersion.schema.parse(2),
         }),
       },
     });

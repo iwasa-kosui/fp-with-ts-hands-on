@@ -16,96 +16,123 @@ import type { AppointmentId } from "./appointmentId.js";
 import type { PaymentAmount } from "./paymentAmount.js";
 import type { VeterinarianId } from "./veterinarianId.js";
 import type { AppointmentReason } from "./appointmentReason.js";
+import { AppointmentDuration, type AppointmentDuration as AppointmentDurationValue } from "./appointmentDuration.js";
+import { AppointmentVersion, type AppointmentVersion as AppointmentVersionValue } from "./appointmentVersion.js";
+import type { BookingKind } from "./bookingKind.js";
 import type { CancellationReason } from "./cancellationReason.js";
 import type { Diagnosis } from "./diagnosis.js";
+import type { ReceptionNote } from "./receptionNote.js";
+import { ServiceCode, type ServiceCode as ServiceCodeValue } from "./serviceCode.js";
+import {
+  Settlement,
+  type DepositReceived,
+  type DepositRefunded,
+  type NoPayment,
+  type Settled,
+} from "./settlementState.js";
 import type { Treatment } from "./treatment.js";
 
-export type Scheduled = Readonly<{
+export type AppointmentBase = Readonly<{
+  appointmentId: AppointmentId;
+  petId: PetId;
+  ownerId: OwnerId;
+  scheduledAt: Timestamp;
+  durationMinutes: AppointmentDurationValue;
+  serviceCode: ServiceCodeValue;
+  bookingKind: BookingKind;
+  assignedVeterinarianId: VeterinarianId | null;
+  visitReason: AppointmentReason;
+  receptionNote: ReceptionNote | null;
+  settlement: NoPayment | DepositReceived;
+  version: AppointmentVersionValue;
+}>;
+
+export type Scheduled = AppointmentBase & Readonly<{
   kind: "Scheduled";
-  appointmentId: AppointmentId;
-  petId: PetId;
-  ownerId: OwnerId;
-  scheduledAt: Timestamp;
-  reason: AppointmentReason;
 }>;
 
-export type CheckedIn = Readonly<{
+export type CheckedIn = AppointmentBase & Readonly<{
   kind: "CheckedIn";
-  appointmentId: AppointmentId;
-  petId: PetId;
-  ownerId: OwnerId;
-  scheduledAt: Timestamp;
-  reason: AppointmentReason;
   checkedInAt: Timestamp;
 }>;
 
-export type InExamination = Readonly<{
+export type InExamination = Omit<AppointmentBase, "assignedVeterinarianId"> & Readonly<{
   kind: "InExamination";
-  appointmentId: AppointmentId;
-  petId: PetId;
-  ownerId: OwnerId;
-  scheduledAt: Timestamp;
-  reason: AppointmentReason;
   checkedInAt: Timestamp;
-  veterinarianId: VeterinarianId;
+  assignedVeterinarianId: VeterinarianId;
   examinationStartedAt: Timestamp;
 }>;
 
-export type AwaitingPayment = Readonly<{
+export type AwaitingPayment = Omit<AppointmentBase, "assignedVeterinarianId"> & Readonly<{
   kind: "AwaitingPayment";
-  appointmentId: AppointmentId;
-  petId: PetId;
-  ownerId: OwnerId;
-  scheduledAt: Timestamp;
-  reason: AppointmentReason;
   checkedInAt: Timestamp;
-  veterinarianId: VeterinarianId;
+  assignedVeterinarianId: VeterinarianId;
   examinationStartedAt: Timestamp;
   examId: ExamId;
   examinationCompletedAt: Timestamp;
 }>;
 
-export type Paid = Readonly<{
+export type Paid = Omit<AppointmentBase, "assignedVeterinarianId" | "settlement"> & Readonly<{
   kind: "Paid";
-  appointmentId: AppointmentId;
-  petId: PetId;
-  ownerId: OwnerId;
-  scheduledAt: Timestamp;
-  reason: AppointmentReason;
   checkedInAt: Timestamp;
-  veterinarianId: VeterinarianId;
+  assignedVeterinarianId: VeterinarianId;
   examinationStartedAt: Timestamp;
   examId: ExamId;
   examinationCompletedAt: Timestamp;
   diagnosis: Diagnosis;
   treatment: Treatment;
-  amount: PaymentAmount;
-  paidAt: Timestamp;
+  settlement: Settled;
 }>;
 
-export type Canceled = Readonly<{
+export type Canceled = Omit<AppointmentBase, "settlement"> & Readonly<{
   kind: "Canceled";
-  appointmentId: AppointmentId;
-  petId: PetId;
-  ownerId: OwnerId;
-  scheduledAt: Timestamp;
-  reason: CancellationReason;
+  settlement: NoPayment | DepositRefunded;
+  cancellationReason: CancellationReason;
   canceledAt: Timestamp;
 }>;
 
 export type Appointment =
   Scheduled | CheckedIn | InExamination | AwaitingPayment | Paid | Canceled;
-export type BookAppointmentInput = Readonly<Omit<Scheduled, "kind">>;
+type OperationalBookAppointmentInput = Readonly<Omit<Scheduled, "kind" | "version">>;
+type LegacyBookAppointmentInput = Readonly<{
+  appointmentId: AppointmentId;
+  petId: PetId;
+  ownerId: OwnerId;
+  scheduledAt: Timestamp;
+  reason: AppointmentReason;
+}>;
+export type BookAppointmentInput =
+  | OperationalBookAppointmentInput
+  | LegacyBookAppointmentInput;
 export type CompleteExaminationInput = Readonly<{ examId: ExamId }>;
-export type RecordPaymentInput = Readonly<
-  Pick<Paid, "diagnosis" | "treatment" | "amount">
->;
+export type RecordPaymentInput = Readonly<{
+  diagnosis: Diagnosis;
+  treatment: Treatment;
+  amount: PaymentAmount;
+}>;
 const book =
   (context: EventContext) =>
   (input: BookAppointmentInput): AppointmentBooked => {
     const aggregateState = {
       kind: "Scheduled",
-      ...input,
+      appointmentId: input.appointmentId,
+      petId: input.petId,
+      ownerId: input.ownerId,
+      scheduledAt: input.scheduledAt,
+      durationMinutes: "durationMinutes" in input
+        ? input.durationMinutes
+        : AppointmentDuration.schema.parse(30),
+      serviceCode: "serviceCode" in input
+        ? input.serviceCode
+        : ServiceCode.schema.parse("GeneralConsultation"),
+      bookingKind: "bookingKind" in input ? input.bookingKind : "Reserved",
+      assignedVeterinarianId: "assignedVeterinarianId" in input
+        ? input.assignedVeterinarianId
+        : null,
+      visitReason: "visitReason" in input ? input.visitReason : input.reason,
+      receptionNote: "receptionNote" in input ? input.receptionNote : null,
+      settlement: "settlement" in input ? input.settlement : { kind: "NoPayment" },
+      version: AppointmentVersion.schema.parse(1),
     } as const satisfies Scheduled;
 
     return AppointmentEvent.create(
@@ -118,6 +145,9 @@ const book =
     );
   };
 
+const nextVersion = (version: AppointmentVersionValue): AppointmentVersionValue =>
+  AppointmentVersion.schema.parse(version + 1);
+
 const checkIn =
   (context: EventContext) =>
   (scheduled: Scheduled): AppointmentCheckedIn => {
@@ -125,6 +155,7 @@ const checkIn =
       ...scheduled,
       kind: "CheckedIn",
       checkedInAt: context.occurredAt,
+      version: nextVersion(scheduled.version),
     } as const satisfies CheckedIn;
 
     return AppointmentEvent.create(
@@ -146,8 +177,9 @@ const startExamination =
     const aggregateState = {
       ...checkedIn,
       kind: "InExamination",
-      veterinarianId,
+      assignedVeterinarianId: veterinarianId,
       examinationStartedAt: context.occurredAt,
+      version: nextVersion(checkedIn.version),
     } as const satisfies InExamination;
 
     return AppointmentEvent.create(
@@ -168,9 +200,15 @@ const recordPayment =
   ): PaymentRecorded => {
     const aggregateState = {
       ...awaitingPayment,
-      ...input,
       kind: "Paid",
-      paidAt: context.occurredAt,
+      diagnosis: input.diagnosis,
+      treatment: input.treatment,
+      settlement: Settlement.settle(
+        awaitingPayment.settlement,
+        input.amount,
+        context.occurredAt,
+      ),
+      version: nextVersion(awaitingPayment.version),
     } as const satisfies Paid;
 
     return AppointmentEvent.create(
@@ -194,6 +232,7 @@ const completeExamination =
       kind: "AwaitingPayment",
       examId: input.examId,
       examinationCompletedAt: context.occurredAt,
+      version: nextVersion(examining.version),
     } as const satisfies AwaitingPayment;
 
     return AppointmentEvent.create(
@@ -213,13 +252,18 @@ const cancel =
     reason: CancellationReason,
   ): AppointmentCanceled => {
     const aggregateState = {
+      ...appointment,
       kind: "Canceled",
-      appointmentId: appointment.appointmentId,
-      petId: appointment.petId,
-      ownerId: appointment.ownerId,
-      scheduledAt: appointment.scheduledAt,
-      reason,
+      settlement: appointment.settlement.kind === "DepositReceived"
+        ? {
+            kind: "DepositRefunded",
+            depositAmount: appointment.settlement.depositAmount,
+            refundedAt: context.occurredAt,
+          }
+        : appointment.settlement,
+      cancellationReason: reason,
       canceledAt: context.occurredAt,
+      version: nextVersion(appointment.version),
     } as const satisfies Canceled;
 
     return AppointmentEvent.create(

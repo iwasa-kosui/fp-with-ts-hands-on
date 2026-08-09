@@ -33,6 +33,7 @@ import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { Appointment } from "../../src/domain/appointment/appointment.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
 import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
+import { AppointmentVersion } from "../../src/domain/appointment/appointmentVersion.js";
 import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
@@ -444,7 +445,7 @@ describe("SQLite event stores", () => {
       db.all(sql.raw(
         "SELECT created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 1",
       )),
-    ).toEqual([{ created_at: 1786633200000 }]);
+    ).toEqual([{ created_at: 1786719600000 }]);
     expectAppendOnlyTriggers(db);
     expect(auditTablesSnapshot(db)).toEqual(before);
     expectAuditRowsAppendOnly(db, eventIds, before);
@@ -469,7 +470,7 @@ describe("SQLite event stores", () => {
       db.all(sql.raw(
         "SELECT created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 1",
       )),
-    ).toEqual([{ created_at: 1786633200000 }]);
+    ).toEqual([{ created_at: 1786719600000 }]);
     expectAppendOnlyTriggers(db);
     expect(auditTablesSnapshot(db)).toEqual(before);
     expectAuditRowsAppendOnly(db, eventIds, before);
@@ -593,10 +594,21 @@ describe("SQLite event stores", () => {
     expect(await db.select().from(petsTable)).toHaveLength(1);
     expect(await db.select().from(appointmentsTable)).toHaveLength(1);
     const appointmentRow = db.select().from(appointmentsTable).get();
+    expect(appointmentRow).toMatchObject({
+      scheduledAt: "2026-08-10T01:00:00.000Z",
+      durationMinutes: 30,
+      serviceCode: "GeneralConsultation",
+      bookingKind: "Reserved",
+      assignedVeterinarianId: null,
+      receptionNote: null,
+      settlementStatus: "NoPayment",
+      depositAmount: null,
+      version: 1,
+    });
     expect(JSON.stringify(appointmentRow?.state)).toContain("persistent cough");
     const resolvedAppointment = await createAppointmentByIdResolver(db).resolveById(ids.appointment);
     expect(resolvedAppointment.isOk()).toBe(true);
-    expect(resolvedAppointment._unsafeUnwrap()?.reason.unwrap()).toBe("persistent cough");
+    expect(resolvedAppointment._unsafeUnwrap()?.visitReason.unwrap()).toBe("persistent cough");
     expect(JSON.stringify(resolvedAppointment._unsafeUnwrap())).not.toContain("persistent cough");
     expect(await db.select().from(examResultsTable)).toHaveLength(1);
     const metadata = await db.select().from(domainEventsTable);
@@ -676,11 +688,46 @@ describe("SQLite event stores", () => {
     expect(results.filter((result) => result.isOk())).toHaveLength(1);
     expect(results.filter((result) => result.isErr())).toHaveLength(1);
     expect(results.find((result) => result.isErr())?._unsafeUnwrapErr()).toMatchObject({
-      kind: "AppointmentConflict",
+      kind: "StaleAppointmentVersion",
       appointmentId: ids.appointment,
+      expectedVersion: 2,
     });
     expect(await db.select().from(appointmentsTable)).toHaveLength(1);
     expect(await db.select().from(domainEventsTable)).toHaveLength(3);
+  });
+
+  test("rejects a transition whose previous version does not match the current projection", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const store = createAppointmentEventStore(db);
+    const booked = Appointment.book(eventContext(44))({
+      appointmentId: ids.appointment,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
+      reason: AppointmentReason.schema.parse("private reason"),
+    });
+    (await store.store(booked))._unsafeUnwrap();
+    const impossibleNewerSnapshot = {
+      ...booked.aggregateState,
+      version: AppointmentVersion.schema.parse(2),
+    } as const;
+    const staleCheckIn = Appointment.checkIn(eventContext(45))(
+      impossibleNewerSnapshot,
+    );
+
+    const result = await store.store(staleCheckIn);
+
+    expect(result._unsafeUnwrapErr()).toEqual({
+      kind: "StaleAppointmentVersion",
+      appointmentId: ids.appointment,
+      expectedVersion: 2,
+    });
+    expect(db.select().from(appointmentsTable).get()).toMatchObject({
+      status: "Scheduled",
+      version: 1,
+    });
+    expect(db.select().from(domainEventsTable).all()).toHaveLength(1);
   });
 
   test("atomically records one examination completion from concurrent stale submissions", async () => {
@@ -732,8 +779,9 @@ describe("SQLite event stores", () => {
     expect(results.filter((result) => result.isOk())).toHaveLength(1);
     expect(results.filter((result) => result.isErr())).toHaveLength(1);
     expect(results.find((result) => result.isErr())?._unsafeUnwrapErr()).toMatchObject({
-      kind: "AppointmentConflict",
+      kind: "StaleAppointmentVersion",
       appointmentId: ids.appointment,
+      expectedVersion: 3,
     });
     expect(await db.select().from(examResultsTable)).toHaveLength(1);
     expect(
@@ -862,7 +910,10 @@ describe("SQLite event stores", () => {
       ),
     );
 
-    expect(result._unsafeUnwrapErr()).toMatchObject({ kind: "AppointmentConflict" });
+    expect(result._unsafeUnwrapErr()).toMatchObject({
+      kind: "StaleAppointmentVersion",
+      expectedVersion: 2,
+    });
     expect((await createAppointmentByIdResolver(db).resolveById(ids.appointment))._unsafeUnwrap()?.kind).toBe("CheckedIn");
     expect(await db.select().from(domainEventsTable)).toHaveLength(2);
   });

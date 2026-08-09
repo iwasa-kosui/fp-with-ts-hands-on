@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import type { AppointmentExaminationCompleted } from "../../../../domain/appointment/appointmentEvent.js";
 import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
+import { AppointmentVersion } from "../../../../domain/appointment/appointmentVersion.js";
 import type { AppointmentStoreError } from "../../../../domain/appointment/appointmentStores.js";
 import type { ExaminationCompletionStore } from "../../../../domain/examResult/examResultStores.js";
 import type { ExamResultRecorded } from "../../../../domain/examResult/examResultEvent.js";
@@ -14,9 +15,10 @@ import {
   examResultsTable,
 } from "../schema.js";
 
-const AppointmentConflictSchema = z.object({
-  kind: z.literal("AppointmentConflict"),
+const StaleAppointmentVersionSchema = z.object({
+  kind: z.literal("StaleAppointmentVersion"),
   appointmentId: AppointmentId.schema,
+  expectedVersion: AppointmentVersion.schema,
 });
 
 const ensureMatchingEvents = (
@@ -47,9 +49,21 @@ const toAppointmentValues = (event: AppointmentExaminationCompleted) => ({
   status: event.aggregateState.kind,
   ownerId: event.aggregateState.ownerId,
   petId: event.aggregateState.petId,
+  scheduledAt: event.aggregateState.scheduledAt,
+  durationMinutes: event.aggregateState.durationMinutes,
+  serviceCode: event.aggregateState.serviceCode,
+  bookingKind: event.aggregateState.bookingKind,
+  assignedVeterinarianId: event.aggregateState.assignedVeterinarianId,
+  receptionNote: event.aggregateState.receptionNote?.unwrap() ?? null,
+  settlementStatus: event.aggregateState.settlement.kind,
+  depositAmount: event.aggregateState.settlement.kind === "NoPayment"
+    ? null
+    : event.aggregateState.settlement.depositAmount,
+  version: event.aggregateState.version,
   state: {
     ...event.aggregateState,
-    reason: event.aggregateState.reason.unwrap(),
+    visitReason: event.aggregateState.visitReason.unwrap(),
+    receptionNote: event.aggregateState.receptionNote?.unwrap() ?? null,
   },
 });
 
@@ -61,6 +75,9 @@ export const createExaminationCompletionStore = (
       Promise.resolve().then(() => {
         ensureMatchingEvents(examResult, appointment);
         return db.transaction((tx) => {
+          const previousVersion = AppointmentVersion.schema.parse(
+            appointment.aggregateState.version - 1,
+          );
           const changes = tx
             .update(appointmentsTable)
             .set(toAppointmentValues(appointment))
@@ -71,13 +88,15 @@ export const createExaminationCompletionStore = (
                   appointment.aggregateId,
                 ),
                 eq(appointmentsTable.status, "InExamination"),
+                eq(appointmentsTable.version, previousVersion),
               ),
             )
             .run().changes;
           if (changes !== 1) {
             throw {
-              kind: "AppointmentConflict",
+              kind: "StaleAppointmentVersion",
               appointmentId: appointment.aggregateId,
+              expectedVersion: previousVersion,
             };
           }
 
@@ -89,9 +108,9 @@ export const createExaminationCompletionStore = (
         });
       }),
       (cause) => {
-        const conflict = AppointmentConflictSchema.safeParse(cause);
-        return conflict.success
-          ? conflict.data
+        const stale = StaleAppointmentVersionSchema.safeParse(cause);
+        return stale.success
+          ? stale.data
           : {
               kind: "RepositoryError",
               operation: "ExaminationCompletionStore.store",

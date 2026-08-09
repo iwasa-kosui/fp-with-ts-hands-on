@@ -14,6 +14,7 @@ import {
 import type { ExaminationStarted } from "../../src/domain/appointment/appointmentEvent.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
 import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
+import { AppointmentVersion } from "../../src/domain/appointment/appointmentVersion.js";
 import type { AppointmentByIdResolver } from "../../src/domain/appointment/appointmentResolver.js";
 import type { ExaminationStartedStore } from "../../src/domain/appointment/appointmentStores.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
@@ -79,13 +80,21 @@ const checkedIn = {
   petId: PetId.schema.parse("22222222-2222-4222-8222-222222222222"),
   ownerId: OwnerId.schema.parse("33333333-3333-4333-8333-333333333333"),
   scheduledAt: Timestamp.schema.parse("2026-08-30T06:00:00.000Z"),
-  reason: AppointmentReason.schema.parse("skin check"),
+  durationMinutes: 30,
+  serviceCode: "GeneralConsultation",
+  bookingKind: "Reserved",
+  assignedVeterinarianId: null,
+  visitReason: AppointmentReason.schema.parse("skin check"),
+  receptionNote: null,
+  settlement: { kind: "NoPayment" },
+  version: AppointmentVersion.schema.parse(2),
   checkedInAt: Timestamp.schema.parse("2026-08-30T06:20:00.000Z"),
 } as const satisfies CheckedIn;
 
 const scheduled = {
   ...checkedIn,
   kind: "Scheduled",
+  version: AppointmentVersion.schema.parse(1),
 } as const satisfies Scheduled;
 
 const repositoryError: RepositoryError = {
@@ -145,8 +154,9 @@ describe("StartExaminationUseCase", () => {
       appointment: {
         ...checkedIn,
         kind: "InExamination",
-        veterinarianId,
+        assignedVeterinarianId: veterinarianId,
         examinationStartedAt: startedAt,
+        version: AppointmentVersion.schema.parse(3),
       },
     });
   });

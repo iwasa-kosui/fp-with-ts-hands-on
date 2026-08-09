@@ -19,8 +19,8 @@ import { Appointment as AppointmentAggregate } from "../domain/appointment/appoi
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
 import type {
-  AppointmentConflict,
   AppointmentStoreError,
+  StaleAppointmentVersion,
 } from "../domain/appointment/appointmentStores.js";
 import { ExamResult } from "../domain/examResult/examResult.js";
 import type { ExamId } from "../domain/examResult/examId.js";
@@ -74,7 +74,7 @@ export type UseCaseError =
   | InvalidAppointmentState
   | ExamResultPetMismatch
   | IdentityGenerationFailed
-  | AppointmentConflict
+  | StaleAppointmentVersion
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type ExamIdGenerator = Readonly<{ generate: () => ExamId }>;
@@ -97,8 +97,8 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
 });
 const toStoreError = (
   error: AppointmentStoreError,
-): UseCaseRepositoryError | AppointmentConflict =>
-  error.kind === "AppointmentConflict" ? error : toRepositoryError(error);
+): UseCaseRepositoryError | StaleAppointmentVersion =>
+  error.kind === "StaleAppointmentVersion" ? error : toRepositoryError(error);
 const ensureExaminer = (user: User): Result<Examiner, UnauthorizedError> =>
   user.kind === "Admin" || user.kind === "Veterinarian"
     ? ok(user)
@@ -117,7 +117,7 @@ const ensureInExamination = (
 const ensureAssigned =
   (user: Examiner) =>
   (appointment: InExamination): Result<InExamination, UnauthorizedError> =>
-    user.kind === "Admin" || user.veterinarianId === appointment.veterinarianId
+    user.kind === "Admin" || user.veterinarianId === appointment.assignedVeterinarianId
       ? ok(appointment)
       : err({ kind: "Unauthorized", actorUserId: user.userId });
 const ensurePet =

@@ -67,6 +67,24 @@ export const appointmentsTable = sqliteTable("appointments", {
   }).notNull(),
   ownerId: text("owner_id").notNull(),
   petId: text("pet_id").notNull(),
+  scheduledAt: text("scheduled_at").notNull(),
+  durationMinutes: integer("duration_minutes").notNull(),
+  serviceCode: text("service_code", {
+    enum: [
+      "GeneralConsultation",
+      "FollowUpVisit",
+      "Vaccination",
+      "ExaminationOrProcedure",
+    ],
+  }).notNull(),
+  bookingKind: text("booking_kind", { enum: ["Reserved", "WalkIn"] }).notNull(),
+  assignedVeterinarianId: text("assigned_veterinarian_id"),
+  receptionNote: text("reception_note"),
+  settlementStatus: text("settlement_status", {
+    enum: ["NoPayment", "DepositReceived", "Settled", "DepositRefunded"],
+  }).notNull(),
+  depositAmount: integer("deposit_amount"),
+  version: integer("version").notNull(),
   state: text("state", { mode: "json" }).notNull(),
 });
 

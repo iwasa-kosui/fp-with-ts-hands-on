@@ -27,10 +27,12 @@ import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import type { Appointment } from "../../src/domain/appointment/appointment.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
 import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
+import { AppointmentVersion } from "../../src/domain/appointment/appointmentVersion.js";
 import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
 import { Diagnosis } from "../../src/domain/appointment/diagnosis.js";
 import type { AppointmentByPetIdResolver } from "../../src/domain/appointment/appointmentResolver.js";
 import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
+import { Settlement } from "../../src/domain/appointment/settlementState.js";
 import { Treatment } from "../../src/domain/appointment/treatment.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { Sensitive } from "../../src/domain/shared/sensitive.js";
@@ -144,8 +146,34 @@ const scheduled = {
   ownerId: ids.owner,
   petId: ids.pet,
   scheduledAt: now,
-  reason: AppointmentReason.schema.parse("checkup"),
+  durationMinutes: 30,
+  serviceCode: "GeneralConsultation",
+  bookingKind: "Reserved",
+  assignedVeterinarianId: null,
+  visitReason: AppointmentReason.schema.parse("checkup"),
+  receptionNote: null,
+  settlement: { kind: "NoPayment" },
+  version: AppointmentVersion.schema.parse(1),
 } as const satisfies Appointment;
+
+const appointmentRow = (state: Appointment) => ({
+  appointmentId: state.appointmentId,
+  ownerId: state.ownerId,
+  petId: state.petId,
+  status: state.kind,
+  scheduledAt: state.scheduledAt,
+  durationMinutes: state.durationMinutes,
+  serviceCode: state.serviceCode,
+  bookingKind: state.bookingKind,
+  assignedVeterinarianId: state.assignedVeterinarianId,
+  receptionNote: state.receptionNote?.unwrap() ?? null,
+  settlementStatus: state.settlement.kind,
+  depositAmount: state.settlement.kind === "NoPayment"
+    ? null
+    : state.settlement.depositAmount,
+  version: state.version,
+  state,
+});
 const otherOwner = {
   ...owner,
   ownerId: ids.otherOwner,
@@ -579,7 +607,7 @@ describe("owner and pet management use cases", () => {
       ...scheduled,
       kind: "Paid",
       checkedInAt: now,
-      veterinarianId: VeterinarianId.schema.parse(
+      assignedVeterinarianId: VeterinarianId.schema.parse(
         "86000000-0000-4000-8000-000000000001",
       ),
       examinationStartedAt: now,
@@ -587,8 +615,12 @@ describe("owner and pet management use cases", () => {
       examinationCompletedAt: now,
       diagnosis: Diagnosis.schema.parse("healthy"),
       treatment: Treatment.schema.parse("none"),
-      amount: PaymentAmount.schema.parse(1000),
-      paidAt: now,
+      settlement: Settlement.settle(
+        scheduled.settlement,
+        PaymentAmount.schema.parse(1000),
+        now,
+      ),
+      version: AppointmentVersion.schema.parse(5),
     } as const satisfies Appointment;
     const canceled = {
       ...scheduled,
@@ -596,7 +628,8 @@ describe("owner and pet management use cases", () => {
         "84000000-0000-4000-8000-000000000002",
       ),
       kind: "Canceled",
-      reason: CancellationReason.schema.parse("owner request"),
+      cancellationReason: CancellationReason.schema.parse("owner request"),
+      version: AppointmentVersion.schema.parse(2),
       canceledAt: now,
     } as const satisfies Appointment;
 
@@ -673,13 +706,7 @@ describe("owner and pet management use cases", () => {
       .run();
     db.insert(petsTable).values(petRow(pet)).run();
     db.insert(appointmentsTable)
-      .values({
-        appointmentId: scheduled.appointmentId,
-        ownerId: scheduled.ownerId,
-        petId: scheduled.petId,
-        status: scheduled.kind,
-        state: scheduled,
-      })
+      .values(appointmentRow(scheduled))
       .run();
 
     const stalePetDelete = await DeletePetUseCase.create({
@@ -918,18 +945,17 @@ describe("owner and pet management use cases", () => {
         .run();
     });
     petDb.insert(petsTable).values([pet, otherPet].map(petRow)).run();
+    const otherScheduled = {
+      ...scheduled,
+      appointmentId: AppointmentId.schema.parse(
+          "84000000-0000-4000-8000-000000000002",
+      ),
+      ownerId: ids.otherOwner,
+      petId: ids.otherPet,
+    } as const satisfies Appointment;
     petDb
       .insert(appointmentsTable)
-      .values({
-        ...scheduled,
-        appointmentId: AppointmentId.schema.parse(
-          "84000000-0000-4000-8000-000000000002",
-        ),
-        ownerId: ids.otherOwner,
-        petId: ids.otherPet,
-        status: "Scheduled",
-        state: { ...scheduled, ownerId: ids.otherOwner, petId: ids.otherPet },
-      })
+      .values(appointmentRow(otherScheduled))
       .run();
     const petResult = await createPetDeletedEventStore(petDb).store(
       Pet.delete(context(11))(pet),

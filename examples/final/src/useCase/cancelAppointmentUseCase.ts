@@ -18,7 +18,7 @@ import {
 } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
-import type { AppointmentCanceledStore, AppointmentConflict, AppointmentStoreError } from "../domain/appointment/appointmentStores.js";
+import type { AppointmentCanceledStore, AppointmentStoreError, StaleAppointmentVersion } from "../domain/appointment/appointmentStores.js";
 import type { CancellationReason } from "../domain/appointment/cancellationReason.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
@@ -54,7 +54,7 @@ export type UseCaseError =
   | AppointmentNotFound
   | InvalidAppointmentState
   | IdentityGenerationFailed
-  | AppointmentConflict
+  | StaleAppointmentVersion
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
@@ -74,8 +74,8 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
 });
 const toStoreError = (
   error: AppointmentStoreError,
-): UseCaseRepositoryError | AppointmentConflict =>
-  error.kind === "AppointmentConflict" ? error : toRepositoryError(error);
+): UseCaseRepositoryError | StaleAppointmentVersion =>
+  error.kind === "StaleAppointmentVersion" ? error : toRepositoryError(error);
 const ensureCancellable = (
   appointment: AppointmentState,
 ): Result<Scheduled | CheckedIn, InvalidAppointmentState> =>

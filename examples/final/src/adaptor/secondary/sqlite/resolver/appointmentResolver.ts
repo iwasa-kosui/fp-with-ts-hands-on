@@ -5,7 +5,10 @@ import { z } from "zod";
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import { Timestamp } from "../../../../domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
+import { AppointmentDuration } from "../../../../domain/appointment/appointmentDuration.js";
 import { AppointmentReason } from "../../../../domain/appointment/appointmentReason.js";
+import { AppointmentVersion } from "../../../../domain/appointment/appointmentVersion.js";
+import { BookingKind } from "../../../../domain/appointment/bookingKind.js";
 import { CancellationReason } from "../../../../domain/appointment/cancellationReason.js";
 import { Diagnosis } from "../../../../domain/appointment/diagnosis.js";
 import type {
@@ -14,6 +17,9 @@ import type {
   AppointmentListResolver,
 } from "../../../../domain/appointment/appointmentResolver.js";
 import { PaymentAmount } from "../../../../domain/appointment/paymentAmount.js";
+import { ReceptionNote } from "../../../../domain/appointment/receptionNote.js";
+import { ServiceCode } from "../../../../domain/appointment/serviceCode.js";
+import { SettlementAdjustmentAmount } from "../../../../domain/appointment/settlementAdjustmentAmount.js";
 import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js";
 import { Treatment } from "../../../../domain/appointment/treatment.js";
 import { ExamId } from "../../../../domain/examResult/examId.js";
@@ -27,27 +33,59 @@ const baseShape = {
   petId: PetId.schema,
   ownerId: OwnerId.schema,
   scheduledAt: Timestamp.schema,
-  reason: AppointmentReason.schema,
+  durationMinutes: AppointmentDuration.schema,
+  serviceCode: ServiceCode.schema,
+  bookingKind: BookingKind.schema,
+  assignedVeterinarianId: VeterinarianId.schema.nullable(),
+  visitReason: AppointmentReason.schema,
+  receptionNote: ReceptionNote.schema.nullable(),
+  version: AppointmentVersion.schema,
 };
+const NoPaymentSchema = z.object({ kind: z.literal("NoPayment") });
+const DepositReceivedSchema = z.object({
+  kind: z.literal("DepositReceived"),
+  depositAmount: PaymentAmount.schema,
+  receivedAt: Timestamp.schema,
+});
+const SettledSchema = z.object({
+  kind: z.literal("Settled"),
+  finalAmount: PaymentAmount.schema,
+  depositAmount: SettlementAdjustmentAmount.schema,
+  additionalPaymentAmount: SettlementAdjustmentAmount.schema,
+  refundAmount: SettlementAdjustmentAmount.schema,
+  settledAt: Timestamp.schema,
+});
+const DepositRefundedSchema = z.object({
+  kind: z.literal("DepositRefunded"),
+  depositAmount: PaymentAmount.schema,
+  refundedAt: Timestamp.schema,
+});
 const AppointmentSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("Scheduled"), ...baseShape }),
+  z.object({
+    kind: z.literal("Scheduled"),
+    ...baseShape,
+    settlement: z.union([NoPaymentSchema, DepositReceivedSchema]),
+  }),
   z.object({
     kind: z.literal("CheckedIn"),
     ...baseShape,
+    settlement: z.union([NoPaymentSchema, DepositReceivedSchema]),
     checkedInAt: Timestamp.schema,
   }),
   z.object({
     kind: z.literal("InExamination"),
     ...baseShape,
+    assignedVeterinarianId: VeterinarianId.schema,
+    settlement: z.union([NoPaymentSchema, DepositReceivedSchema]),
     checkedInAt: Timestamp.schema,
-    veterinarianId: VeterinarianId.schema,
     examinationStartedAt: Timestamp.schema,
   }),
   z.object({
     kind: z.literal("AwaitingPayment"),
     ...baseShape,
+    assignedVeterinarianId: VeterinarianId.schema,
+    settlement: z.union([NoPaymentSchema, DepositReceivedSchema]),
     checkedInAt: Timestamp.schema,
-    veterinarianId: VeterinarianId.schema,
     examinationStartedAt: Timestamp.schema,
     examId: ExamId.schema,
     examinationCompletedAt: Timestamp.schema,
@@ -55,23 +93,20 @@ const AppointmentSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("Paid"),
     ...baseShape,
+    assignedVeterinarianId: VeterinarianId.schema,
+    settlement: SettledSchema,
     checkedInAt: Timestamp.schema,
-    veterinarianId: VeterinarianId.schema,
     examinationStartedAt: Timestamp.schema,
     examId: ExamId.schema,
     examinationCompletedAt: Timestamp.schema,
     diagnosis: Diagnosis.schema,
     treatment: Treatment.schema,
-    amount: PaymentAmount.schema,
-    paidAt: Timestamp.schema,
   }),
   z.object({
     kind: z.literal("Canceled"),
-    appointmentId: AppointmentId.schema,
-    petId: PetId.schema,
-    ownerId: OwnerId.schema,
-    scheduledAt: Timestamp.schema,
-    reason: CancellationReason.schema,
+    ...baseShape,
+    settlement: z.union([NoPaymentSchema, DepositRefundedSchema]),
+    cancellationReason: CancellationReason.schema,
     canceledAt: Timestamp.schema,
   }),
 ]);
@@ -88,8 +123,27 @@ const AppointmentRowSchema = z.object({
   status: AppointmentStatusSchema,
   ownerId: OwnerId.schema,
   petId: PetId.schema,
+  scheduledAt: Timestamp.schema,
+  durationMinutes: AppointmentDuration.schema,
+  serviceCode: ServiceCode.schema,
+  bookingKind: BookingKind.schema,
+  assignedVeterinarianId: VeterinarianId.schema.nullable(),
+  receptionNote: z.string().nullable(),
+  settlementStatus: z.enum([
+    "NoPayment",
+    "DepositReceived",
+    "Settled",
+    "DepositRefunded",
+  ]),
+  depositAmount: z.number().int().nonnegative().nullable(),
+  version: AppointmentVersion.schema,
   state: AppointmentSchema,
 });
+
+const depositAmountOf = (state: z.infer<typeof AppointmentSchema>): number | null =>
+  state.settlement.kind === "NoPayment" ? null : state.settlement.depositAmount;
+const receptionNoteOf = (state: z.infer<typeof AppointmentSchema>): string | null =>
+  state.receptionNote?.unwrap() ?? null;
 
 export const parseAppointmentState = (state: unknown) =>
   AppointmentSchema.parse(state);
@@ -99,7 +153,16 @@ export const parseAppointmentRow = (raw: unknown) => {
     row.appointmentId !== row.state.appointmentId ||
     row.status !== row.state.kind ||
     row.ownerId !== row.state.ownerId ||
-    row.petId !== row.state.petId
+    row.petId !== row.state.petId ||
+    row.scheduledAt !== row.state.scheduledAt ||
+    row.durationMinutes !== row.state.durationMinutes ||
+    row.serviceCode !== row.state.serviceCode ||
+    row.bookingKind !== row.state.bookingKind ||
+    row.assignedVeterinarianId !== row.state.assignedVeterinarianId ||
+    row.receptionNote !== receptionNoteOf(row.state) ||
+    row.settlementStatus !== row.state.settlement.kind ||
+    row.depositAmount !== depositAmountOf(row.state) ||
+    row.version !== row.state.version
   ) {
     throw new TypeError("Corrupt appointment projection");
   }

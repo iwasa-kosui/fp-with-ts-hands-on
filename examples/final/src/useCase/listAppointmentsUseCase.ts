@@ -129,13 +129,13 @@ export const toAppointmentView =
         const veterinarian = users.find(
           (user) =>
             user.kind === "Veterinarian" &&
-            user.veterinarianId === appointment.veterinarianId,
+            user.veterinarianId === appointment.assignedVeterinarianId,
         );
         return {
           ...base,
           kind: appointment.kind,
           checkedInAt: appointment.checkedInAt,
-          veterinarianId: appointment.veterinarianId,
+          veterinarianId: appointment.assignedVeterinarianId,
           veterinarianName: veterinarian?.name,
           examinationStartedAt: appointment.examinationStartedAt,
         } as const satisfies InExaminationAppointmentView;
@@ -144,13 +144,13 @@ export const toAppointmentView =
         const veterinarian = users.find(
           (user) =>
             user.kind === "Veterinarian" &&
-            user.veterinarianId === appointment.veterinarianId,
+            user.veterinarianId === appointment.assignedVeterinarianId,
         );
         return {
           ...base,
           kind: appointment.kind,
           checkedInAt: appointment.checkedInAt,
-          veterinarianId: appointment.veterinarianId,
+          veterinarianId: appointment.assignedVeterinarianId,
           veterinarianName: veterinarian?.name,
           examinationStartedAt: appointment.examinationStartedAt,
           examId: appointment.examId,
@@ -161,19 +161,19 @@ export const toAppointmentView =
         const veterinarian = users.find(
           (user) =>
             user.kind === "Veterinarian" &&
-            user.veterinarianId === appointment.veterinarianId,
+            user.veterinarianId === appointment.assignedVeterinarianId,
         );
         return {
           ...base,
           kind: appointment.kind,
           checkedInAt: appointment.checkedInAt,
-          veterinarianId: appointment.veterinarianId,
+          veterinarianId: appointment.assignedVeterinarianId,
           veterinarianName: veterinarian?.name,
           examinationStartedAt: appointment.examinationStartedAt,
           examId: appointment.examId,
           examinationCompletedAt: appointment.examinationCompletedAt,
-          amount: appointment.amount,
-          paidAt: appointment.paidAt,
+          amount: appointment.settlement.finalAmount,
+          paidAt: appointment.settlement.settledAt,
         } as const satisfies PaidAppointmentView;
       }
       case "Canceled":

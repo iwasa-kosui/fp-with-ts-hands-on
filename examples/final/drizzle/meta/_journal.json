@@ -43,6 +43,13 @@
       "when": 1786633200000,
       "tag": "0005_audit_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1786719600000,
+      "tag": "0006_appointment_operations",
+      "breakpoints": true
     }
   ]
 }

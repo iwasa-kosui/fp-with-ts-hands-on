@@ -47,7 +47,14 @@ const scheduledState = (overrides: Readonly<Record<string, unknown>> = {}) => JS
   ownerId,
   petId,
   scheduledAt: "2026-08-10T01:00:00.000Z",
-  reason: "checkup",
+  durationMinutes: 30,
+  serviceCode: "GeneralConsultation",
+  bookingKind: "Reserved",
+  assignedVeterinarianId: null,
+  visitReason: "checkup",
+  receptionNote: null,
+  settlement: { kind: "NoPayment" },
+  version: 1,
   ...overrides,
 });
 
@@ -58,12 +65,22 @@ const insertAppointment = (
   rowPetId: string | null,
   state: string,
 ) => {
-  const ownerSql = rowOwnerId === null ? "NULL" : `'${rowOwnerId}'`;
-  const petSql = rowPetId === null ? "NULL" : `'${rowPetId}'`;
-  db.run(sql.raw(
-    "INSERT INTO appointments (appointment_id, status, owner_id, pet_id, state) " +
-    `VALUES ('${appointmentId}', '${status}', ${ownerSql}, ${petSql}, '${state}')`,
-  ));
+  const parsed = JSON.parse(state) as Readonly<Record<string, unknown>>;
+  const settlement = parsed.settlement as Readonly<Record<string, unknown>>;
+  db.run(sql`
+    INSERT INTO appointments (
+      appointment_id, status, owner_id, pet_id, scheduled_at,
+      duration_minutes, service_code, booking_kind,
+      assigned_veterinarian_id, reception_note, settlement_status,
+      deposit_amount, version, state
+    ) VALUES (
+      ${appointmentId}, ${status}, ${rowOwnerId}, ${rowPetId}, ${parsed.scheduledAt},
+      ${parsed.durationMinutes}, ${parsed.serviceCode}, ${parsed.bookingKind},
+      ${parsed.assignedVeterinarianId}, ${parsed.receptionNote}, ${settlement.kind},
+      ${settlement.kind === "NoPayment" ? null : settlement.depositAmount},
+      ${parsed.version}, ${state}
+    )
+  `);
 };
 
 const insertDomainEvent = (
@@ -144,16 +161,27 @@ describe("SQLite resolvers", () => {
       ownerId,
       petId,
       scheduledAt: "2026-08-10T01:00:00.000Z",
-      reason: "checkup",
+      durationMinutes: 30,
+      serviceCode: "GeneralConsultation",
+      bookingKind: "Reserved",
+      assignedVeterinarianId: "30000000-0000-4000-8000-000000000005",
+      visitReason: "checkup",
+      receptionNote: null,
+      settlement: {
+        kind: "Settled",
+        finalAmount: 4800,
+        depositAmount: 0,
+        additionalPaymentAmount: 4800,
+        refundAmount: 0,
+        settledAt: "2026-08-10T02:00:00.000Z",
+      },
+      version: 5,
       checkedInAt: "2026-08-10T01:10:00.000Z",
-      veterinarianId: "30000000-0000-4000-8000-000000000005",
       examinationStartedAt: "2026-08-10T01:20:00.000Z",
       examId,
       examinationCompletedAt: "2026-08-10T01:30:00.000Z",
       diagnosis: "diagnosis",
       treatment: "treatment",
-      amount: 4800,
-      paidAt: "2026-08-10T02:00:00.000Z",
     });
     insertAppointment(db, "Paid", ownerId, petId, paidState);
     const examState = JSON.stringify({
@@ -316,6 +344,26 @@ describe("SQLite resolvers", () => {
     expect(() => insertAppointment(db, "Scheduled", null, null, scheduledState())).toThrow();
   });
 
+  test("appointment operational projection columns are required by the fresh schema", () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+
+    expect(
+      db.all(sql.raw("PRAGMA table_info(appointments)"))
+        .map((column) => (column as { name: string }).name),
+    ).toEqual(expect.arrayContaining([
+      "scheduled_at",
+      "duration_minutes",
+      "service_code",
+      "booking_kind",
+      "assigned_veterinarian_id",
+      "reception_note",
+      "settlement_status",
+      "deposit_amount",
+      "version",
+    ]));
+  });
+
   test.each([
     ["Canceled", ownerId, petId, scheduledState()],
     ["Scheduled", "30000000-0000-4000-8000-000000000099", petId, scheduledState()],
@@ -333,6 +381,37 @@ describe("SQLite resolvers", () => {
 
       expect(result.isErr()).toBe(true);
       expect(result.isErr() && result.error.operation).toBe("AppointmentByIdResolver.resolveById");
+    },
+  );
+
+  test.each([
+    ["scheduled_at", "'2026-08-10T02:00:00.000Z'"],
+    ["duration_minutes", "45"],
+    ["service_code", "'Vaccination'"],
+    ["booking_kind", "'WalkIn'"],
+    ["assigned_veterinarian_id", "'30000000-0000-4000-8000-000000000005'"],
+    ["reception_note", "'different note'"],
+    ["settlement_status", "'DepositReceived'"],
+    ["deposit_amount", "200"],
+    ["version", "2"],
+  ])(
+    "rejects a %s projection value that disagrees with state JSON",
+    async (column, value) => {
+      const db = createSqliteDatabase(":memory:");
+      migrateDatabase(db);
+      insertAppointment(db, "Scheduled", ownerId, petId, scheduledState());
+      db.run(sql.raw(
+        `UPDATE appointments SET ${column} = ${value} WHERE appointment_id = '${appointmentId}'`,
+      ));
+
+      const result = await createAppointmentByIdResolver(db).resolveById(
+        AppointmentId.schema.parse(appointmentId),
+      );
+
+      expect(result.isErr()).toBe(true);
+      expect(result.isErr() && result.error.operation).toBe(
+        "AppointmentByIdResolver.resolveById",
+      );
     },
   );
 

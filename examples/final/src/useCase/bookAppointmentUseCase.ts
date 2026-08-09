@@ -16,7 +16,13 @@ import {
 } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import type { AppointmentReason } from "../domain/appointment/appointmentReason.js";
-import type { AppointmentBookedStore, AppointmentConflict, AppointmentStoreError } from "../domain/appointment/appointmentStores.js";
+import type { AppointmentBookedStore, AppointmentStoreError, StaleAppointmentVersion } from "../domain/appointment/appointmentStores.js";
+import { AppointmentDuration, type AppointmentDuration as AppointmentDurationValue } from "../domain/appointment/appointmentDuration.js";
+import type { BookingKind } from "../domain/appointment/bookingKind.js";
+import type { ReceptionNote } from "../domain/appointment/receptionNote.js";
+import { ServiceCode, type ServiceCode as ServiceCodeValue } from "../domain/appointment/serviceCode.js";
+import type { DepositReceived, NoPayment } from "../domain/appointment/settlementState.js";
+import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
 import type { Owner } from "../domain/owner/owner.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
 import type { OwnerByIdResolver } from "../domain/owner/ownerResolver.js";
@@ -34,6 +40,12 @@ export type UseCaseInput = Readonly<{
   petId: PetId;
   scheduledAt: Timestamp;
   reason: AppointmentReason;
+  durationMinutes?: AppointmentDurationValue;
+  serviceCode?: ServiceCodeValue;
+  bookingKind?: BookingKind;
+  assignedVeterinarianId?: VeterinarianId | null;
+  receptionNote?: ReceptionNote | null;
+  settlement?: NoPayment | DepositReceived;
 }>;
 export type UseCaseOk = Readonly<{ appointment: Scheduled }>;
 export type OwnerNotFound = Readonly<{
@@ -60,7 +72,7 @@ export type UseCaseError =
   | PetNotFound
   | PetOwnerMismatch
   | IdentityGenerationFailed
-  | AppointmentConflict
+  | StaleAppointmentVersion
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type AppointmentIdGenerator = Readonly<{
@@ -85,8 +97,8 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
 });
 const toStoreError = (
   error: AppointmentStoreError,
-): UseCaseRepositoryError | AppointmentConflict =>
-  error.kind === "AppointmentConflict" ? error : toRepositoryError(error);
+): UseCaseRepositoryError | StaleAppointmentVersion =>
+  error.kind === "StaleAppointmentVersion" ? error : toRepositoryError(error);
 const ensureOwner =
   (ownerId: OwnerId) =>
   (owner: Owner | undefined): Result<Owner, OwnerNotFound> =>
@@ -118,7 +130,13 @@ const createEvent = (dependencies: Dependencies, input: UseCaseInput) =>
         ownerId: input.ownerId,
         petId: input.petId,
         scheduledAt: input.scheduledAt,
-        reason: input.reason,
+        durationMinutes: input.durationMinutes ?? AppointmentDuration.schema.parse(30),
+        serviceCode: input.serviceCode ?? ServiceCode.schema.parse("GeneralConsultation"),
+        bookingKind: input.bookingKind ?? "Reserved",
+        assignedVeterinarianId: input.assignedVeterinarianId ?? null,
+        visitReason: input.reason,
+        receptionNote: input.receptionNote ?? null,
+        settlement: input.settlement ?? { kind: "NoPayment" },
       }),
     ),
     (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),

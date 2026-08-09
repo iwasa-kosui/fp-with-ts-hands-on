@@ -60,6 +60,154 @@ afterEach(() => {
 });
 
 describe("file SQLite application smoke", () => {
+  test("upgrades legacy Paid and Canceled appointment rows and audit states without inventing a canceled visit reason", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "clinic-final-appointment-upgrade-"));
+    temporaryDirectories.push(directory);
+    const databasePath = join(directory, "clinic.sqlite");
+    const database = createSqliteDatabase(databasePath);
+    migrateDatabase(database);
+
+    const columns = database
+      .all<{ name: string }>(sql.raw("PRAGMA table_info(appointments)"))
+      .map(({ name }) => name);
+    if (columns.includes("scheduled_at")) {
+      database.run(sql.raw("DROP TABLE appointments"));
+      database.run(sql.raw(`
+        CREATE TABLE appointments (
+          appointment_id text PRIMARY KEY NOT NULL,
+          status text NOT NULL,
+          owner_id text NOT NULL,
+          pet_id text NOT NULL,
+          state text NOT NULL
+        )
+      `));
+      database.run(sql.raw(
+        "DELETE FROM __drizzle_migrations WHERE created_at > 1786633200000",
+      ));
+    }
+
+    const paidAppointmentId = "79000000-0000-4000-8000-000000000001";
+    const canceledAppointmentId = "79000000-0000-4000-8000-000000000002";
+    const ownerId = "79000000-0000-4000-8000-000000000003";
+    const petId = "79000000-0000-4000-8000-000000000004";
+    const veterinarianId = "79000000-0000-4000-8000-000000000005";
+    const common = {
+      petId,
+      ownerId,
+      scheduledAt: "2026-08-10T01:00:00.000Z",
+    } as const;
+    const legacyPaid = {
+      kind: "Paid",
+      appointmentId: paidAppointmentId,
+      ...common,
+      reason: "legacy paid visit reason",
+      checkedInAt: "2026-08-10T01:00:00.000Z",
+      veterinarianId,
+      examinationStartedAt: "2026-08-10T01:10:00.000Z",
+      examId: "79000000-0000-4000-8000-000000000006",
+      examinationCompletedAt: "2026-08-10T01:20:00.000Z",
+      diagnosis: "legacy diagnosis",
+      treatment: "legacy treatment",
+      amount: 4800,
+      paidAt: "2026-08-10T01:30:00.000Z",
+    } as const;
+    const legacyCanceled = {
+      kind: "Canceled",
+      appointmentId: canceledAppointmentId,
+      ...common,
+      reason: "legacy cancellation reason",
+      canceledAt: "2026-08-09T01:30:00.000Z",
+    } as const;
+    for (const [status, state] of [
+      ["Paid", legacyPaid],
+      ["Canceled", legacyCanceled],
+    ] as const) {
+      database.run(sql`
+        INSERT INTO appointments (appointment_id, status, owner_id, pet_id, state)
+        VALUES (${state.appointmentId}, ${status}, ${ownerId}, ${petId}, ${JSON.stringify(state)})
+      `);
+    }
+    const legacyEventId = "79000000-0000-4000-8000-000000000007";
+    database.insert(domainEventsTable).values({
+      eventId: legacyEventId,
+      aggregateId: paidAppointmentId,
+      aggregateName: "Appointment",
+      eventName: "appointment.payment-recorded",
+      occurredAt: legacyPaid.paidAt,
+      actorUserId: "79000000-0000-4000-8000-000000000008",
+      payloadSensitivity: "Sensitive",
+    }).run();
+    database.insert(domainEventSensitivePayloadsTable).values({
+      eventId: legacyEventId,
+      aggregateState: legacyPaid,
+      eventPayload: { appointmentId: paidAppointmentId },
+    }).run();
+
+    migrateDatabase(database);
+    migrateDatabase(database);
+
+    const paid = (
+      await createAppointmentByIdResolver(database).resolveById(
+        AppointmentId.schema.parse(paidAppointmentId),
+      )
+    )._unsafeUnwrap();
+    expect(paid).toMatchObject({
+      kind: "Paid",
+      visitReason: expect.objectContaining({}),
+      serviceCode: "GeneralConsultation",
+      durationMinutes: 30,
+      bookingKind: "Reserved",
+      assignedVeterinarianId: veterinarianId,
+      receptionNote: null,
+      version: 1,
+      settlement: {
+        kind: "Settled",
+        finalAmount: 4800,
+        depositAmount: 0,
+        additionalPaymentAmount: 4800,
+        refundAmount: 0,
+        settledAt: legacyPaid.paidAt,
+      },
+    });
+    expect(paid).not.toHaveProperty("amount");
+    expect(paid).not.toHaveProperty("paidAt");
+
+    const canceled = (
+      await createAppointmentByIdResolver(database).resolveById(
+        AppointmentId.schema.parse(canceledAppointmentId),
+      )
+    )._unsafeUnwrap();
+    expect(canceled).toMatchObject({
+      kind: "Canceled",
+      cancellationReason: expect.objectContaining({}),
+      settlement: { kind: "NoPayment" },
+      version: 1,
+    });
+    expect(canceled?.kind === "Canceled" && canceled.visitReason.unwrap()).toBe(
+      "移行前データ（来院理由不明）",
+    );
+    expect(canceled?.kind === "Canceled" && canceled.cancellationReason.unwrap()).toBe(
+      "legacy cancellation reason",
+    );
+
+    const migratedAuditState = database
+      .select()
+      .from(domainEventSensitivePayloadsTable)
+      .get()?.aggregateState;
+    expect(migratedAuditState).toMatchObject({
+      kind: "Paid",
+      visitReason: "legacy paid visit reason",
+      version: 1,
+      settlement: {
+        kind: "Settled",
+        finalAmount: 4800,
+        additionalPaymentAmount: 4800,
+      },
+    });
+    expect(migratedAuditState).not.toHaveProperty("amount");
+    expect(migratedAuditState).not.toHaveProperty("paidAt");
+  });
+
   test("migrates a new file and persists first-admin setup through the real app", async () => {
     const directory = mkdtempSync(join(tmpdir(), "clinic-final-"));
     temporaryDirectories.push(directory);

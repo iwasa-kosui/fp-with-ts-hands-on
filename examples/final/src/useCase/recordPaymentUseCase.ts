@@ -20,7 +20,7 @@ import type { Diagnosis } from "../domain/appointment/diagnosis.js";
 import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
 import type { PaymentAmount } from "../domain/appointment/paymentAmount.js";
 import type { Treatment } from "../domain/appointment/treatment.js";
-import type { AppointmentConflict, AppointmentStoreError, PaymentRecordedStore } from "../domain/appointment/appointmentStores.js";
+import type { AppointmentStoreError, PaymentRecordedStore, StaleAppointmentVersion } from "../domain/appointment/appointmentStores.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";
@@ -57,7 +57,7 @@ export type UseCaseError =
   | AppointmentNotFound
   | InvalidAppointmentState
   | IdentityGenerationFailed
-  | AppointmentConflict
+  | StaleAppointmentVersion
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
@@ -77,8 +77,8 @@ const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
 });
 const toStoreError = (
   error: AppointmentStoreError,
-): UseCaseRepositoryError | AppointmentConflict =>
-  error.kind === "AppointmentConflict" ? error : toRepositoryError(error);
+): UseCaseRepositoryError | StaleAppointmentVersion =>
+  error.kind === "StaleAppointmentVersion" ? error : toRepositoryError(error);
 const ensureAwaitingPayment = (
   appointment: AppointmentState,
 ): Result<AwaitingPayment, InvalidAppointmentState> =>

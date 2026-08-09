@@ -10,7 +10,7 @@ import {
 } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
-import type { AppointmentConflict, ExaminationStartedStore } from "../domain/appointment/appointmentStores.js";
+import type { ExaminationStartedStore, StaleAppointmentVersion } from "../domain/appointment/appointmentStores.js";
 import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
@@ -42,7 +42,7 @@ export type UseCaseError =
   | UnauthorizedError
   | AppointmentNotFound
   | InvalidAppointmentState
-  | AppointmentConflict
+  | StaleAppointmentVersion
   | IdentityGenerationFailed
   | RepositoryError;
 

@@ -163,7 +163,16 @@ describe("appointment command use cases", () => {
       scheduledAt: times.scheduled,
       reason: AppointmentReason.schema.parse("persistent cough"),
     });
-    expect(booked._unsafeUnwrap().appointment.kind).toBe("Scheduled");
+    expect(booked._unsafeUnwrap().appointment).toMatchObject({
+      kind: "Scheduled",
+      serviceCode: "GeneralConsultation",
+      durationMinutes: 30,
+      bookingKind: "Reserved",
+      assignedVeterinarianId: null,
+      receptionNote: null,
+      settlement: { kind: "NoPayment" },
+      version: 1,
+    });
 
     const checkedIn = await CheckInAppointmentUseCase.create({
       userResolver,
@@ -172,7 +181,10 @@ describe("appointment command use cases", () => {
       clock,
       eventIdGenerator: eventIds,
     }).run({ actorUserId: ids.receptionist, appointmentId: ids.appointment });
-    expect(checkedIn._unsafeUnwrap().appointment.kind).toBe("CheckedIn");
+    expect(checkedIn._unsafeUnwrap().appointment).toMatchObject({
+      kind: "CheckedIn",
+      version: 2,
+    });
 
     const started = await StartExaminationUseCase.create({
       userResolver,
@@ -185,7 +197,11 @@ describe("appointment command use cases", () => {
       appointmentId: ids.appointment,
       veterinarianId: ids.veterinarian,
     });
-    expect(started._unsafeUnwrap().appointment.kind).toBe("InExamination");
+    expect(started._unsafeUnwrap().appointment).toMatchObject({
+      kind: "InExamination",
+      assignedVeterinarianId: ids.veterinarian,
+      version: 3,
+    });
 
     const exam = await RecordExamResultUseCase.create({
       userResolver,
@@ -215,6 +231,7 @@ describe("appointment command use cases", () => {
     expect(exam._unsafeUnwrap().appointment).toMatchObject({
       kind: "AwaitingPayment",
       examId: ids.exam,
+      version: 4,
     });
 
     const paid = await RecordPaymentUseCase.create({
@@ -231,7 +248,16 @@ describe("appointment command use cases", () => {
       amount: PaymentAmount.schema.parse(4800),
     });
 
-    expect(paid._unsafeUnwrap().appointment.kind).toBe("Paid");
+    expect(paid._unsafeUnwrap().appointment).toMatchObject({
+      kind: "Paid",
+      version: 5,
+      settlement: {
+        kind: "Settled",
+        depositAmount: 0,
+        additionalPaymentAmount: 4800,
+        refundAmount: 0,
+      },
+    });
     expect(appointmentEvents.map((event) => event.kind)).toEqual([
       "AppointmentBooked",
       "AppointmentCheckedIn",
@@ -532,8 +558,9 @@ describe("appointment command use cases", () => {
 
     expect([started, canceled].filter((result) => result.isOk())).toHaveLength(1);
     expect([started, canceled].find((result) => result.isErr())?._unsafeUnwrapErr()).toMatchObject({
-      kind: "AppointmentConflict",
+      kind: "StaleAppointmentVersion",
       appointmentId: ids.appointment,
+      expectedVersion: 2,
     });
     expect(await db.select().from(appointmentsTable)).toHaveLength(1);
     expect(await db.select().from(domainEventsTable)).toHaveLength(3);

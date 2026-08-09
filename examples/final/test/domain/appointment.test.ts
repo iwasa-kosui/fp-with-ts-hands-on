@@ -124,6 +124,50 @@ const rawPaymentInput = {
 Appointment.recordPayment(paymentContext)(awaitingPayment.aggregateState, rawPaymentInput);
 
 describe("appointment aggregate", () => {
+  test("carries operational fields and increments the version through the existing lifecycle", () => {
+    expect(booked.aggregateState).toMatchObject({
+      kind: "Scheduled",
+      serviceCode: "GeneralConsultation",
+      durationMinutes: 30,
+      bookingKind: "Reserved",
+      assignedVeterinarianId: null,
+      receptionNote: null,
+      settlement: { kind: "NoPayment" },
+      version: 1,
+    });
+    expect(checkedIn.aggregateState).toMatchObject({ version: 2 });
+    expect(examining.aggregateState).toMatchObject({
+      assignedVeterinarianId: veterinarianId,
+      version: 3,
+    });
+    expect(awaitingPayment.aggregateState).toMatchObject({ version: 4 });
+    expect(paid.aggregateState).toMatchObject({
+      version: 5,
+      settlement: {
+        kind: "Settled",
+        finalAmount: 4800,
+        depositAmount: 0,
+        additionalPaymentAmount: 4800,
+        refundAmount: 0,
+        settledAt: paymentContext.occurredAt,
+      },
+    });
+    expect(paid.aggregateState).not.toHaveProperty("amount");
+    expect(paid.aggregateState).not.toHaveProperty("paidAt");
+  });
+
+  test("keeps the visit reason separate from the cancellation reason", () => {
+    const canceled = Appointment.cancel(canceledContext)(booked.aggregateState, cancellationReason);
+
+    expect(canceled.aggregateState).toMatchObject({
+      kind: "Canceled",
+      visitReason,
+      cancellationReason,
+      settlement: { kind: "NoPayment" },
+      version: 2,
+    });
+  });
+
   test("settles a payment without a deposit as the additional payment", () => {
     expect(Settlement.settle(noPayment, PaymentAmount.schema.parse(5000), settledAt)).toMatchObject({
       kind: "Settled",
@@ -183,7 +227,14 @@ describe("appointment aggregate", () => {
         petId,
         ownerId,
         scheduledAt,
-        reason: visitReason,
+        durationMinutes: 30,
+        serviceCode: "GeneralConsultation",
+        bookingKind: "Reserved",
+        assignedVeterinarianId: null,
+        visitReason,
+        receptionNote: null,
+        settlement: noPayment,
+        version: 1,
       },
       eventName: "appointment.booked",
       eventPayload: { appointmentId },
@@ -204,7 +255,14 @@ describe("appointment aggregate", () => {
         petId,
         ownerId,
         scheduledAt,
-        reason: visitReason,
+        durationMinutes: 30,
+        serviceCode: "GeneralConsultation",
+        bookingKind: "Reserved",
+        assignedVeterinarianId: null,
+        visitReason,
+        receptionNote: null,
+        settlement: noPayment,
+        version: 2,
         checkedInAt: checkedInContext.occurredAt,
       },
       eventName: "appointment.checked-in",
@@ -226,9 +284,15 @@ describe("appointment aggregate", () => {
         petId,
         ownerId,
         scheduledAt,
-        reason: visitReason,
+        durationMinutes: 30,
+        serviceCode: "GeneralConsultation",
+        bookingKind: "Reserved",
+        assignedVeterinarianId: veterinarianId,
+        visitReason,
+        receptionNote: null,
+        settlement: noPayment,
+        version: 3,
         checkedInAt: checkedInContext.occurredAt,
-        veterinarianId,
         examinationStartedAt: examinationContext.occurredAt,
       },
       eventName: "appointment.examination-started",
@@ -250,9 +314,15 @@ describe("appointment aggregate", () => {
         petId,
         ownerId,
         scheduledAt,
-        reason: visitReason,
+        durationMinutes: 30,
+        serviceCode: "GeneralConsultation",
+        bookingKind: "Reserved",
+        assignedVeterinarianId: veterinarianId,
+        visitReason,
+        receptionNote: null,
+        settlement: noPayment,
+        version: 4,
         checkedInAt: checkedInContext.occurredAt,
-        veterinarianId,
         examinationStartedAt: examinationContext.occurredAt,
         examId,
         examinationCompletedAt: completionContext.occurredAt,
@@ -276,16 +346,27 @@ describe("appointment aggregate", () => {
         petId,
         ownerId,
         scheduledAt,
-        reason: visitReason,
+        durationMinutes: 30,
+        serviceCode: "GeneralConsultation",
+        bookingKind: "Reserved",
+        assignedVeterinarianId: veterinarianId,
+        visitReason,
+        receptionNote: null,
+        settlement: {
+          kind: "Settled",
+          finalAmount: paymentAmount,
+          depositAmount: 0,
+          additionalPaymentAmount: 4800,
+          refundAmount: 0,
+          settledAt: paymentContext.occurredAt,
+        },
+        version: 5,
         checkedInAt: checkedInContext.occurredAt,
-        veterinarianId,
         examinationStartedAt: examinationContext.occurredAt,
         examId,
         examinationCompletedAt: completionContext.occurredAt,
         diagnosis,
         treatment,
-        amount: paymentAmount,
-        paidAt: paymentContext.occurredAt,
       },
       eventName: "appointment.payment-recorded",
       eventPayload: { appointmentId },
@@ -308,7 +389,15 @@ describe("appointment aggregate", () => {
         petId,
         ownerId,
         scheduledAt,
-        reason: cancellationReason,
+        durationMinutes: 30,
+        serviceCode: "GeneralConsultation",
+        bookingKind: "Reserved",
+        assignedVeterinarianId: null,
+        visitReason,
+        receptionNote: null,
+        settlement: noPayment,
+        version: 2,
+        cancellationReason,
         canceledAt: canceledContext.occurredAt,
       },
       eventName: "appointment.canceled",

@@ -1,6 +1,7 @@
 import type { ResultAsync } from "neverthrow";
 import type { RepositoryError } from "../aggregate/repositoryError.js";
 import type { AppointmentId } from "./appointmentId.js";
+import type { AppointmentVersion } from "./appointmentVersion.js";
 import type {
   AppointmentBooked,
   AppointmentCanceled,
@@ -9,11 +10,12 @@ import type {
   PaymentRecorded,
 } from "./appointmentEvent.js";
 
-export type AppointmentConflict = Readonly<{
-  kind: "AppointmentConflict";
+export type StaleAppointmentVersion = Readonly<{
+  kind: "StaleAppointmentVersion";
   appointmentId: AppointmentId;
+  expectedVersion: AppointmentVersion;
 }>;
-export type AppointmentStoreError = RepositoryError | AppointmentConflict;
+export type AppointmentStoreError = RepositoryError | StaleAppointmentVersion;
 type AppointmentStore<TEvent> = Readonly<{
   store: (...events: readonly TEvent[]) => ResultAsync<void, AppointmentStoreError>;
 }>;
