@@ -132,29 +132,111 @@ SELECT CASE WHEN EXISTS (
 			END) AS `required_timestamp`
 			WHERE `required_timestamp`.`type` <> 'text'
 				OR length(`required_timestamp`.`value`) < 17
+				OR substr(`required_timestamp`.`value`, 1, 4)
+					NOT GLOB '[0-9][0-9][0-9][0-9]'
 				OR substr(`required_timestamp`.`value`, 5, 1) <> '-'
+				OR substr(`required_timestamp`.`value`, 6, 2)
+					NOT GLOB '[0-9][0-9]'
 				OR substr(`required_timestamp`.`value`, 8, 1) <> '-'
+				OR substr(`required_timestamp`.`value`, 9, 2)
+					NOT GLOB '[0-9][0-9]'
 				OR substr(`required_timestamp`.`value`, 11, 1) <> 'T'
-				OR substr(`required_timestamp`.`value`, 14, 1) <> ':'
+				OR date(substr(`required_timestamp`.`value`, 1, 10)) IS NULL
 				OR date(substr(`required_timestamp`.`value`, 1, 10))
 					<> substr(`required_timestamp`.`value`, 1, 10)
-				OR julianday(CASE
-					WHEN substr(`required_timestamp`.`value`, -5, 1) IN ('+', '-')
-						THEN substr(
-							`required_timestamp`.`value`,
-							1,
-							length(`required_timestamp`.`value`) - 5
-						) || substr(`required_timestamp`.`value`, -5, 3)
-							|| ':' || substr(`required_timestamp`.`value`, -2, 2)
-					ELSE `required_timestamp`.`value`
-				END) IS NULL
+				OR substr(`required_timestamp`.`value`, 12, 2)
+					NOT GLOB '[0-9][0-9]'
+				OR CAST(substr(`required_timestamp`.`value`, 12, 2) AS integer)
+					NOT BETWEEN 0 AND 23
+				OR substr(`required_timestamp`.`value`, 14, 1) <> ':'
+				OR substr(`required_timestamp`.`value`, 15, 2)
+					NOT GLOB '[0-9][0-9]'
+				OR CAST(substr(`required_timestamp`.`value`, 15, 2) AS integer)
+					NOT BETWEEN 0 AND 59
 				OR NOT (
-					substr(`required_timestamp`.`value`, -1, 1) = 'Z'
-					OR (
-						substr(`required_timestamp`.`value`, -6, 1) IN ('+', '-')
-						AND substr(`required_timestamp`.`value`, -3, 1) = ':'
+					(
+						length(`required_timestamp`.`value`) = 17
+						AND substr(`required_timestamp`.`value`, 17, 1) = 'Z'
 					)
-					OR substr(`required_timestamp`.`value`, -5, 1) IN ('+', '-')
+					OR (
+						length(`required_timestamp`.`value`) = 21
+						AND substr(`required_timestamp`.`value`, 17, 1) IN ('+', '-')
+						AND substr(`required_timestamp`.`value`, 18, 4)
+							GLOB '[0-9][0-9][0-9][0-9]'
+					)
+					OR (
+						length(`required_timestamp`.`value`) = 22
+						AND substr(`required_timestamp`.`value`, 17, 1) IN ('+', '-')
+						AND substr(`required_timestamp`.`value`, 18, 2)
+							GLOB '[0-9][0-9]'
+						AND substr(`required_timestamp`.`value`, 20, 1) = ':'
+						AND substr(`required_timestamp`.`value`, 21, 2)
+							GLOB '[0-9][0-9]'
+					)
+					OR (
+						substr(`required_timestamp`.`value`, 17, 1) = ':'
+						AND substr(`required_timestamp`.`value`, 18, 2)
+							GLOB '[0-9][0-9]'
+						AND CAST(substr(`required_timestamp`.`value`, 18, 2) AS integer)
+							BETWEEN 0 AND 59
+						AND (
+							(
+								length(`required_timestamp`.`value`) = 20
+								AND substr(`required_timestamp`.`value`, 20, 1) = 'Z'
+							)
+							OR (
+								length(`required_timestamp`.`value`) = 24
+								AND substr(`required_timestamp`.`value`, 20, 1) IN ('+', '-')
+								AND substr(`required_timestamp`.`value`, 21, 4)
+									GLOB '[0-9][0-9][0-9][0-9]'
+							)
+							OR (
+								length(`required_timestamp`.`value`) = 25
+								AND substr(`required_timestamp`.`value`, 20, 1) IN ('+', '-')
+								AND substr(`required_timestamp`.`value`, 21, 2)
+									GLOB '[0-9][0-9]'
+								AND substr(`required_timestamp`.`value`, 23, 1) = ':'
+								AND substr(`required_timestamp`.`value`, 24, 2)
+									GLOB '[0-9][0-9]'
+							)
+							OR (
+								substr(`required_timestamp`.`value`, 20, 1) = '.'
+								AND (
+									(
+										length(`required_timestamp`.`value`) >= 22
+										AND substr(`required_timestamp`.`value`, -1, 1) = 'Z'
+										AND substr(
+											`required_timestamp`.`value`, 21,
+											length(`required_timestamp`.`value`) - 21
+										) NOT GLOB '*[^0-9]*'
+									)
+									OR (
+										length(`required_timestamp`.`value`) >= 26
+										AND substr(`required_timestamp`.`value`, -5, 1) IN ('+', '-')
+										AND substr(`required_timestamp`.`value`, -4, 4)
+											GLOB '[0-9][0-9][0-9][0-9]'
+										AND substr(
+											`required_timestamp`.`value`, 21,
+											length(`required_timestamp`.`value`) - 25
+										) NOT GLOB '*[^0-9]*'
+									)
+									OR (
+										length(`required_timestamp`.`value`) >= 27
+										AND substr(`required_timestamp`.`value`, -6, 1) IN ('+', '-')
+										AND substr(`required_timestamp`.`value`, -5, 2)
+											GLOB '[0-9][0-9]'
+										AND substr(`required_timestamp`.`value`, -3, 1) = ':'
+										AND substr(`required_timestamp`.`value`, -2, 2)
+											GLOB '[0-9][0-9]'
+										AND substr(
+											`required_timestamp`.`value`, 21,
+											length(`required_timestamp`.`value`) - 26
+										) NOT GLOB '*[^0-9]*'
+									)
+								)
+							)
+						)
+					)
 				)
 		)
 		AND json_type(`state`, '$.reason') = 'text'

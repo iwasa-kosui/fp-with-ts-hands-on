@@ -303,7 +303,7 @@ describe("file SQLite application smoke", () => {
     "regular audit",
     "sensitive audit",
   ] as const)(
-    "rejects malformed legacy Canceled state in %s and rolls back schema, bodies, triggers, and journal",
+    "rejects a domain-invalid 24-hour legacy timestamp in %s and rolls back schema, bodies, triggers, and journal",
     (target) => {
       const directory = mkdtempSync(join(tmpdir(), "clinic-final-invalid-upgrade-"));
       temporaryDirectories.push(directory);
@@ -314,21 +314,23 @@ describe("file SQLite application smoke", () => {
       const appointmentId = "7a000000-0000-4000-8000-000000000001";
       const ownerId = "7a000000-0000-4000-8000-000000000002";
       const petId = "7a000000-0000-4000-8000-000000000003";
-      const invalidCanceledState = {
-        kind: "Canceled",
+      const invalidScheduledState = {
+        kind: "Scheduled",
         appointmentId,
         ownerId,
         petId,
-        scheduledAt: "2026-08-10T01:00:00.000Z",
-        canceledAt: "2026-08-09T01:30:00.000Z",
+        scheduledAt: "2026-08-10T24:00:00Z",
+        reason: "checkup",
       } as const;
+      expect(Timestamp.schema.safeParse(invalidScheduledState.scheduledAt).success)
+        .toBe(false);
 
       if (target === "projection") {
         database.run(sql`
           INSERT INTO appointments (appointment_id, status, owner_id, pet_id, state)
           VALUES (
-            ${appointmentId}, 'Canceled', ${ownerId}, ${petId},
-            ${JSON.stringify(invalidCanceledState)}
+            ${appointmentId}, 'Scheduled', ${ownerId}, ${petId},
+            ${JSON.stringify(invalidScheduledState)}
           )
         `);
       } else {
@@ -341,7 +343,7 @@ describe("file SQLite application smoke", () => {
             event_id, aggregate_id, aggregate_name, event_name, occurred_at,
             actor_user_id, payload_sensitivity
           ) VALUES (
-            ${eventId}, ${appointmentId}, 'Appointment', 'appointment.canceled',
+            ${eventId}, ${appointmentId}, 'Appointment', 'appointment.booked',
             '2026-08-09T01:30:00.000Z',
             '7a000000-0000-4000-8000-000000000006', ${sensitivity}
           )
@@ -353,7 +355,7 @@ describe("file SQLite application smoke", () => {
           INSERT INTO ${payloadTable} (event_id, aggregate_state, event_payload)
           VALUES (
             '${eventId}',
-            '${JSON.stringify(invalidCanceledState)}',
+            '${JSON.stringify(invalidScheduledState)}',
             '{ "privateBody": "must remain byte-for-byte unchanged" }'
           )
         `));
@@ -363,6 +365,81 @@ describe("file SQLite application smoke", () => {
 
       expect(() => migrateDatabase(database)).toThrow();
       expect(snapshotLegacyMigrationState(database)).toEqual(before);
+    },
+  );
+
+  test.each([
+    "2026-08-10T23:59:59.123+09:30",
+    "2028-02-29T01:02Z",
+    "2026-08-10T01:02:03+0930",
+  ])("accepts legacy timestamp %s exactly when the domain schema accepts it", async (scheduledAt) => {
+    const directory = mkdtempSync(join(tmpdir(), "clinic-final-valid-time-upgrade-"));
+    temporaryDirectories.push(directory);
+    const database = createSqliteDatabase(join(directory, "clinic.sqlite"));
+    migrateDatabase(database);
+    restoreLegacyAppointmentSchema(database);
+    const appointmentId = "7b000000-0000-4000-8000-000000000001";
+    const ownerId = "7b000000-0000-4000-8000-000000000002";
+    const petId = "7b000000-0000-4000-8000-000000000003";
+    expect(Timestamp.schema.safeParse(scheduledAt).success).toBe(true);
+    database.run(sql`
+      INSERT INTO appointments (appointment_id, status, owner_id, pet_id, state)
+      VALUES (
+        ${appointmentId}, 'Scheduled', ${ownerId}, ${petId},
+        ${JSON.stringify({
+          kind: "Scheduled",
+          appointmentId,
+          ownerId,
+          petId,
+          scheduledAt,
+          reason: "checkup",
+        })}
+      )
+    `);
+
+    migrateDatabase(database);
+
+    const restored = await createAppointmentByIdResolver(database).resolveById(
+      AppointmentId.schema.parse(appointmentId),
+    );
+    expect(restored._unsafeUnwrap()?.scheduledAt).toBe(scheduledAt);
+  });
+
+  test.each([
+    ["hour", "2026-08-10T24:00:00Z"],
+    ["minute", "2026-08-10T23:60:00Z"],
+    ["second", "2026-08-10T23:59:60Z"],
+    ["offset structure", "2026-08-10T23:59:59+9:00"],
+    ["calendar day", "2026-02-30T23:59:59Z"],
+    ["fraction without seconds", "2026-08-10T23:59.1Z"],
+  ] as const)(
+    "rejects a legacy timestamp with invalid %s when the domain schema rejects it",
+    (_boundary, scheduledAt) => {
+      const directory = mkdtempSync(join(tmpdir(), "clinic-final-invalid-time-upgrade-"));
+      temporaryDirectories.push(directory);
+      const database = createSqliteDatabase(join(directory, "clinic.sqlite"));
+      migrateDatabase(database);
+      restoreLegacyAppointmentSchema(database);
+      const appointmentId = "7c000000-0000-4000-8000-000000000001";
+      const ownerId = "7c000000-0000-4000-8000-000000000002";
+      const petId = "7c000000-0000-4000-8000-000000000003";
+      expect(Timestamp.schema.safeParse(scheduledAt).success).toBe(false);
+      database.run(sql`
+        INSERT INTO appointments (appointment_id, status, owner_id, pet_id, state)
+        VALUES (
+          ${appointmentId}, 'Scheduled', ${ownerId}, ${petId},
+          ${JSON.stringify({
+            kind: "Scheduled",
+            appointmentId,
+            ownerId,
+            petId,
+            scheduledAt,
+            reason: "checkup",
+          })}
+        )
+      `);
+
+      expect(() => migrateDatabase(database)).toThrow();
     },
   );
 
