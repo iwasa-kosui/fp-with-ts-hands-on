@@ -680,6 +680,10 @@ td {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .appointment-workspace {
+    grid-template-columns: 1fr;
+  }
+
   .app-sidebar {
     width: 72px;
     flex-basis: 72px;
