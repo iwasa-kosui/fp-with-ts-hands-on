@@ -1,0 +1,148 @@
+# Theme
+
+## Compact token summary
+
+- Framework: React 19 rendered through Hono + Inertia; Vite client/SSR builds.
+- Component library: none; all elements use native HTML and custom CSS.
+- CSS approach: one global `styles.css` file.
+- Font: `system-ui, sans-serif`; no explicit type scale.
+- Brand foreground: `#17312b`.
+- Brand/header: `#174f43`.
+- Canvas: `#f5f1e8`.
+- Surface: `#ffffff`.
+- Border: `#d7d0c4`.
+- Warning: border `#8b6b24`, background `#fff8dc`.
+- Error: `#a12622` / `#7d1c19`, background `#fff1f0`.
+- Radius: `0.25rem` and `0.5rem` only.
+- Shadow: none.
+- Main width: `min(52rem, calc(100% - 2rem))`.
+- Breakpoints: none.
+
+## Raw source: `examples/final/src/adaptor/primary/web/styles.css`
+
+```css
+:root {
+  color: #17312b;
+  background: #f5f1e8;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  color: white;
+  background: #174f43;
+}
+
+.brand {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+main {
+  width: min(52rem, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 3rem 0;
+}
+
+form {
+  display: grid;
+  gap: 1rem;
+  max-width: 30rem;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+input,
+select,
+button {
+  padding: 0.7rem;
+  font: inherit;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+th,
+td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #d7d0c4;
+  text-align: left;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.notice {
+  padding: 0.75rem;
+  border-left: 0.25rem solid #8b6b24;
+  background: #fff8dc;
+}
+
+.error {
+  margin: -0.5rem 0 0;
+  color: #a12622;
+}
+
+.error-summary {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #a12622;
+  border-radius: 0.25rem;
+  color: #7d1c19;
+  background: #fff1f0;
+}
+
+.error-summary p {
+  margin-top: 0;
+  font-weight: 700;
+}
+
+.error-summary ul {
+  margin-bottom: 0;
+}
+
+.counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 1rem;
+}
+
+.counts div {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: white;
+}
+
+.counts dd {
+  margin: 0.25rem 0 0;
+  font-size: 2rem;
+  font-weight: 700;
+}
+```
