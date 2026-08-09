@@ -51,6 +51,7 @@ describe("Operator Console shell", () => {
     expect(loginHtml).toContain('aria-describedby="email-error"');
     expect(loginHtml).toContain('aria-invalid="true"');
     expect(loginHtml).toContain('role="alert"');
+    expect(loginHtml).toContain('aria-live="polite"');
     expect(loginHtml).toContain('id="password-error"');
   });
 
@@ -91,6 +92,9 @@ describe("Operator Console shell", () => {
 
     expect(html).toContain('aria-label="アプリケーションサイドバー"');
     expect(html).toContain('aria-label="メインナビゲーション"');
+    expect(html).toContain('aria-controls="app-navigation"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('id="app-navigation"');
     expect(html).toContain('aria-current="page"');
     expect(html).toContain('title="ダッシュボード"');
     expect(html).toContain('href="/events"');

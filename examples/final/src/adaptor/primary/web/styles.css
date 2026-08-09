@@ -689,7 +689,7 @@ td {
     flex-basis: 72px;
   }
 
-  .app-sidebar__brand,
+  .app-sidebar__brand .brand span,
   .app-navigation__link span {
     position: absolute;
     width: 1px;
@@ -741,8 +741,9 @@ td {
     width: min(272px, calc(100vw - 48px));
     min-height: 100vh;
     transform: translateX(-100%);
-    transition: transform 150ms ease;
-    box-shadow: 12px 0 32px rgb(15 23 42 / 12%);
+    visibility: hidden;
+    transition: transform 150ms ease, visibility 0s linear 150ms;
+    box-shadow: 12px 0 32px var(--border-strong);
   }
 
   .navigation-toggle {
@@ -766,11 +767,14 @@ td {
     padding: 0;
     border: 0;
     border-radius: 0;
-    background: rgb(15 23 42 / 35%);
+    background: var(--text);
+    opacity: 0.35;
   }
 
   .app-shell--navigation-open .app-sidebar {
     transform: translateX(0);
+    visibility: visible;
+    transition-delay: 0s;
   }
 
   .app-shell--navigation-open .navigation-backdrop {
