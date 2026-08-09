@@ -1002,7 +1002,6 @@ describe("SQLite event stores", () => {
       assignedVeterinarianId,
       visitReason: AppointmentReason.schema.parse(`private reason ${sequence}`),
       receptionNote: null,
-      settlement: { kind: "NoPayment" },
     });
     const existing = bookAt(ids.appointment, "2026-08-10T10:00:00.000Z", ids.veterinarian, 46);
     (await store.store(existing))._unsafeUnwrap();
@@ -1059,7 +1058,6 @@ describe("SQLite event stores", () => {
       assignedVeterinarianId: ids.veterinarian,
       visitReason: AppointmentReason.schema.parse("existing private reason"),
       receptionNote: null,
-      settlement: { kind: "NoPayment" },
     });
     (await store.store(existing))._unsafeUnwrap();
     db.update(appointmentsTable).set({ status }).run();
@@ -1074,7 +1072,6 @@ describe("SQLite event stores", () => {
       assignedVeterinarianId: ids.veterinarian,
       visitReason: AppointmentReason.schema.parse("candidate private reason"),
       receptionNote: null,
-      settlement: { kind: "NoPayment" },
     });
 
     const result = await store.store(candidate);
@@ -1099,7 +1096,6 @@ describe("SQLite event stores", () => {
         assignedVeterinarianId: null,
         visitReason: AppointmentReason.schema.parse("target private reason"),
         receptionNote: null,
-        settlement: { kind: "NoPayment" },
       });
       const targetCheckedIn = Appointment.checkIn(eventContext(55))(target.aggregateState);
       const blocking = Appointment.book(eventContext(56))({
@@ -1113,7 +1109,6 @@ describe("SQLite event stores", () => {
         assignedVeterinarianId: ids.veterinarian,
         visitReason: AppointmentReason.schema.parse("blocking private reason"),
         receptionNote: null,
-        settlement: { kind: "NoPayment" },
       });
       (await store.store(target, targetCheckedIn, blocking))._unsafeUnwrap();
       if (blockingStatus === "CheckedIn") {
@@ -1186,7 +1181,6 @@ describe("SQLite event stores", () => {
           assignedVeterinarianId: ids.veterinarian,
           visitReason: AppointmentReason.schema.parse(`concurrent private reason ${sequence}`),
           receptionNote: null,
-          settlement: { kind: "NoPayment" },
         });
 
       const firstBooked = booked(ids.appointment, 54);

@@ -60,7 +60,7 @@ const AppointmentInputSchema = z.object({
     VeterinarianId.schema.nullable(),
   ),
   reason: AppointmentReason.schema,
-});
+}).strict();
 const UpdateAppointmentSchema = AppointmentInputSchema.extend({
   expectedVersion: z.coerce.number().pipe(AppointmentVersion.schema),
 });

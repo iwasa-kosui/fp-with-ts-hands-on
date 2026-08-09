@@ -51,3 +51,64 @@ test("reads only calendar-safe fields in a half-open range", async () => {
   })]);
   expect(JSON.stringify(result._unsafeUnwrap())).not.toContain("表示してはいけない");
 });
+
+test("compares offset timestamps as instants at both half-open range boundaries", async () => {
+  const database = createSqliteDatabase(":memory:");
+  migrateDatabase(database);
+  const ownerId = "83100000-0000-4000-8000-000000000001";
+  const petId = "83100000-0000-4000-8000-000000000002";
+  database.insert(ownersTable).values({
+    ownerId,
+    name: "飼い主",
+    email: "owner@example.test",
+    phone: "090-0000-0000",
+  }).run();
+  database.insert(petsTable).values({ petId, ownerId, name: "こむぎ", species: "Dog" }).run();
+
+  const base = {
+    status: "Scheduled" as const,
+    ownerId,
+    petId,
+    durationMinutes: 30,
+    serviceCode: "GeneralConsultation" as const,
+    bookingKind: "Reserved" as const,
+    assignedVeterinarianId: null,
+    receptionNote: null,
+    settlementStatus: "NoPayment" as const,
+    depositAmount: null,
+    version: 1,
+    state: { kind: "Scheduled" },
+  };
+  database.insert(appointmentsTable).values([
+    {
+      ...base,
+      appointmentId: "83100000-0000-4000-8000-000000000010",
+      scheduledAt: "2026-08-10T00:00:00+14:00",
+    },
+    {
+      ...base,
+      appointmentId: "83100000-0000-4000-8000-000000000011",
+      scheduledAt: "2026-08-09T01:00:00-14:00",
+    },
+    {
+      ...base,
+      appointmentId: "83100000-0000-4000-8000-000000000012",
+      scheduledAt: "2026-08-11T04:00:00+14:00",
+    },
+    {
+      ...base,
+      appointmentId: "83100000-0000-4000-8000-000000000013",
+      scheduledAt: "2026-08-10T15:00:00Z",
+    },
+  ]).run();
+
+  const result = await createAppointmentCalendarReader(database).list(actor, {
+    startsAt: Timestamp.schema.parse("2026-08-09T15:00:00Z"),
+    endsAt: Timestamp.schema.parse("2026-08-10T15:00:00Z"),
+  });
+
+  expect(result._unsafeUnwrap().map(({ appointmentId }) => appointmentId)).toEqual([
+    "83100000-0000-4000-8000-000000000011",
+    "83100000-0000-4000-8000-000000000012",
+  ]);
+});

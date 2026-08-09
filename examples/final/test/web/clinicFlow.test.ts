@@ -6,6 +6,7 @@ import { errAsync, okAsync } from "neverthrow";
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
 import {
   appointmentsTable,
+  domainEventPayloadsTable,
   domainEventSensitivePayloadsTable,
   domainEventsTable,
   examResultsTable,
@@ -179,6 +180,37 @@ const createOwnerAndPet = async (harness: Harness, cookie: string) => {
 };
 
 describe("clinic workflow routes", () => {
+  test("rejects a booking settlement field without writing an appointment or audit event", async () => {
+    const harness = createHarness();
+    const adminCookie = await setup(harness);
+    const { owner, pet } = await createOwnerAndPet(harness, adminCookie);
+    const snapshot = () => ({
+      appointments: harness.database.select().from(appointmentsTable).all(),
+      events: harness.database.select().from(domainEventsTable).all(),
+      regularPayloads: harness.database.select().from(domainEventPayloadsTable).all(),
+      sensitivePayloads: harness.database.select().from(domainEventSensitivePayloadsTable).all(),
+    });
+    const before = snapshot();
+
+    const response = await post(harness, "/appointments", {
+      ownerId: owner.ownerId,
+      petId: pet.petId,
+      scheduledAt: "2026-08-10T03:00:00.000Z",
+      serviceCode: "Vaccination",
+      durationMinutes: "15",
+      assignedVeterinarianId: "",
+      reason: "Vaccination visit",
+      settlement: "DepositReceived",
+    }, adminCookie);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      component: "Appointments/New",
+      props: { errors: { form: "入力内容を確認してください" } },
+    });
+    expect(snapshot()).toEqual(before);
+  });
+
   test("updates reception notes and refunds a prepaid vaccination cancellation", async () => {
     const harness = createHarness();
     const adminCookie = await setup(harness);

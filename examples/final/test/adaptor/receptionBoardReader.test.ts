@@ -42,6 +42,60 @@ describe("createReceptionBoardReader", () => {
     expect(JSON.stringify(rows)).not.toMatch(/認可済みの受付メモ|来院理由|診断|private@example|090-/);
   });
 
+  test("compares offset timestamps as instants at both half-open range boundaries", async () => {
+    const { database, ownerId, petId } = setup();
+    const base = {
+      status: "Scheduled" as const,
+      ownerId,
+      petId,
+      durationMinutes: 30,
+      serviceCode: "GeneralConsultation" as const,
+      bookingKind: "Reserved" as const,
+      assignedVeterinarianId: null,
+      receptionNote: null,
+      settlementStatus: "NoPayment" as const,
+      depositAmount: null,
+      version: 1,
+      state: { kind: "Scheduled", settlement: { kind: "NoPayment" } },
+    };
+    database.insert(appointmentsTable).values([
+      {
+        ...base,
+        appointmentId: "92100000-0000-4000-8000-000000000010",
+        scheduledAt: "2026-08-10T00:00:00+14:00",
+      },
+      {
+        ...base,
+        appointmentId: "92100000-0000-4000-8000-000000000011",
+        scheduledAt: "2026-08-09T01:00:00-14:00",
+      },
+      {
+        ...base,
+        appointmentId: "92100000-0000-4000-8000-000000000012",
+        scheduledAt: "2026-08-11T04:00:00+14:00",
+      },
+      {
+        ...base,
+        appointmentId: "92100000-0000-4000-8000-000000000013",
+        scheduledAt: "2026-08-10T15:00:00Z",
+      },
+    ]).run();
+
+    const result = await createReceptionBoardReader(database).list(
+      actor,
+      {
+        startsAt: at("2026-08-09T15:00:00Z"),
+        endsAt: at("2026-08-10T15:00:00Z"),
+      },
+      at("2026-08-10T14:30:00Z"),
+    );
+
+    expect(result._unsafeUnwrap().map(({ appointmentId }) => appointmentId)).toEqual([
+      "92100000-0000-4000-8000-000000000011",
+      "92100000-0000-4000-8000-000000000012",
+    ]);
+  });
+
   test("rejects a corrupt status projection whose required chronology is missing", async () => {
     const { database, ownerId, petId } = setup();
     database.insert(appointmentsTable).values({ appointmentId: "92000000-0000-4000-8000-000000000021", status: "InExamination", ownerId, petId, scheduledAt: "2026-08-09T01:00:00.000Z", durationMinutes: 30, serviceCode: "GeneralConsultation", bookingKind: "Reserved", assignedVeterinarianId: null, receptionNote: null, settlementStatus: "NoPayment", depositAmount: null, version: 1, state: { kind: "InExamination", checkedInAt: "2026-08-09T01:05:00.000Z", settlement: { kind: "NoPayment" } } }).run();

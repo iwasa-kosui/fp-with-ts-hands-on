@@ -368,6 +368,76 @@ describe("file SQLite application smoke", () => {
     },
   );
 
+  test("accepts a Vaccination deposit from a 0006 journal and keeps remigration idempotent", () => {
+    const database = createSqliteDatabase(":memory:");
+    migrateDatabase(database);
+    database.run(sql.raw(
+      "DELETE FROM __drizzle_migrations WHERE created_at = 1786806000000",
+    ));
+    const appointmentId = "7d400000-0000-4000-8000-000000000001";
+    const ownerId = "7d400000-0000-4000-8000-000000000002";
+    const petId = "7d400000-0000-4000-8000-000000000003";
+    const state = {
+      kind: "Scheduled",
+      appointmentId,
+      ownerId,
+      petId,
+      scheduledAt: "2026-08-10T01:00:00.000Z",
+      durationMinutes: 30,
+      serviceCode: "Vaccination",
+      bookingKind: "Reserved",
+      assignedVeterinarianId: null,
+      visitReason: "vaccination",
+      receptionNote: null,
+      settlement: {
+        kind: "DepositReceived",
+        depositAmount: 7000,
+        receivedAt: "2026-08-10T00:30:00.000Z",
+      },
+      version: 1,
+    } as const;
+    database.insert(appointmentsTable).values({
+      appointmentId,
+      status: "Scheduled",
+      ownerId,
+      petId,
+      scheduledAt: state.scheduledAt,
+      durationMinutes: state.durationMinutes,
+      serviceCode: state.serviceCode,
+      bookingKind: state.bookingKind,
+      assignedVeterinarianId: null,
+      receptionNote: null,
+      settlementStatus: state.settlement.kind,
+      depositAmount: state.settlement.depositAmount,
+      version: state.version,
+      state,
+    }).run();
+    const eventId = "7d400000-0000-4000-8000-000000000004";
+    database.insert(domainEventsTable).values({
+      eventId,
+      aggregateId: appointmentId,
+      aggregateName: "Appointment",
+      eventName: "appointment.deposit-received",
+      occurredAt: state.settlement.receivedAt,
+      actorUserId: "7d400000-0000-4000-8000-000000000005",
+      payloadSensitivity: "Regular",
+    }).run();
+    database.insert(domainEventPayloadsTable).values({
+      eventId,
+      aggregateState: state,
+      eventPayload: { appointmentId },
+    }).run();
+
+    migrateDatabase(database);
+    const afterFirstMigration = snapshotLegacyMigrationState(database);
+    migrateDatabase(database);
+
+    expect(snapshotLegacyMigrationState(database)).toEqual(afterFirstMigration);
+    expect(database.get<{ count: number }>(sql.raw(
+      "SELECT count(*) AS count FROM __drizzle_migrations WHERE created_at = 1786806000000",
+    ))).toEqual({ count: 1 });
+  });
+
   test.each([
     "2026-08-10T23:59:59.123+09:30",
     "2028-02-29T01:02Z",
@@ -512,6 +582,189 @@ describe("file SQLite application smoke", () => {
 
     expect(() => migrateDatabase(database)).toThrow();
   });
+
+  test.each([
+    ["null", null],
+    ["missing", undefined],
+    ["non-text", 42],
+  ] as const)(
+    "rejects and fully rolls back a DepositReceived projection with a %s serviceCode",
+    (_case, serviceCode) => {
+      const database = createSqliteDatabase(":memory:");
+      migrateDatabase(database);
+      database.run(sql.raw(
+        "DELETE FROM __drizzle_migrations WHERE created_at = 1786806000000",
+      ));
+      const appointmentId = "7d100000-0000-4000-8000-000000000001";
+      const ownerId = "7d100000-0000-4000-8000-000000000002";
+      const petId = "7d100000-0000-4000-8000-000000000003";
+      const state = {
+        kind: "Scheduled",
+        appointmentId,
+        ownerId,
+        petId,
+        scheduledAt: "2026-08-10T01:00:00.000Z",
+        durationMinutes: 30,
+        ...(serviceCode === undefined ? {} : { serviceCode }),
+        bookingKind: "Reserved",
+        assignedVeterinarianId: null,
+        visitReason: "checkup",
+        receptionNote: null,
+        settlement: {
+          kind: "DepositReceived",
+          depositAmount: 7000,
+          receivedAt: "2026-08-10T00:30:00.000Z",
+        },
+        version: 1,
+      };
+      database.insert(appointmentsTable).values({
+        appointmentId,
+        status: "Scheduled",
+        ownerId,
+        petId,
+        scheduledAt: state.scheduledAt,
+        durationMinutes: 30,
+        serviceCode: "Vaccination",
+        bookingKind: "Reserved",
+        assignedVeterinarianId: null,
+        receptionNote: null,
+        settlementStatus: "DepositReceived",
+        depositAmount: 7000,
+        version: 1,
+        state,
+      }).run();
+      const before = snapshotLegacyMigrationState(database);
+
+      expect(() => migrateDatabase(database)).toThrow();
+      expect(snapshotLegacyMigrationState(database)).toEqual(before);
+    },
+  );
+
+  test.each([
+    ["Regular", "null", null],
+    ["Sensitive", "missing", undefined],
+    ["Regular", "non-text", 42],
+  ] as const)(
+    "rejects and fully rolls back a %s audit DepositReceived state with a %s serviceCode",
+    (sensitivity, _case, serviceCode) => {
+      const database = createSqliteDatabase(":memory:");
+      migrateDatabase(database);
+      database.run(sql.raw(
+        "DELETE FROM __drizzle_migrations WHERE created_at = 1786806000000",
+      ));
+      const eventId = sensitivity === "Regular"
+        ? "7d200000-0000-4000-8000-000000000001"
+        : "7d200000-0000-4000-8000-000000000002";
+      const appointmentId = "7d200000-0000-4000-8000-000000000003";
+      const state = {
+        kind: "Scheduled",
+        appointmentId,
+        ownerId: "7d200000-0000-4000-8000-000000000004",
+        petId: "7d200000-0000-4000-8000-000000000005",
+        scheduledAt: "2026-08-10T01:00:00.000Z",
+        durationMinutes: 30,
+        ...(serviceCode === undefined ? {} : { serviceCode }),
+        bookingKind: "Reserved",
+        assignedVeterinarianId: null,
+        visitReason: "checkup",
+        receptionNote: null,
+        settlement: {
+          kind: "DepositReceived",
+          depositAmount: 7000,
+          receivedAt: "2026-08-10T00:30:00.000Z",
+        },
+        version: 1,
+      };
+      database.insert(domainEventsTable).values({
+        eventId,
+        aggregateId: appointmentId,
+        aggregateName: "Appointment",
+        eventName: "appointment.deposit-received",
+        occurredAt: "2026-08-10T00:30:00.000Z",
+        actorUserId: "7d200000-0000-4000-8000-000000000006",
+        payloadSensitivity: sensitivity,
+      }).run();
+      const payload = {
+        eventId,
+        aggregateState: state,
+        eventPayload: { appointmentId },
+      };
+      if (sensitivity === "Regular") {
+        database.insert(domainEventPayloadsTable).values(payload).run();
+      } else {
+        database.insert(domainEventSensitivePayloadsTable).values(payload).run();
+      }
+      const before = snapshotLegacyMigrationState(database);
+
+      expect(() => migrateDatabase(database)).toThrow();
+      expect(snapshotLegacyMigrationState(database)).toEqual(before);
+    },
+  );
+
+  test.each([
+    [
+      "Regular",
+      "GeneralConsultation",
+      {
+        kind: "DepositReceived",
+        depositAmount: 7000,
+        receivedAt: "2026-08-10T00:30:00.000Z",
+      },
+    ],
+    [
+      "Sensitive",
+      "Vaccination",
+      {
+        kind: "Settled",
+        finalAmount: 5000,
+        depositAmount: 1000,
+        additionalPaymentAmount: 9999,
+        refundAmount: 8888,
+        settledAt: "2026-08-10T02:00:00.000Z",
+      },
+    ],
+  ] as const)(
+    "rejects a cross-field-invalid current %s audit state",
+    (sensitivity, serviceCode, settlement) => {
+      const database = createSqliteDatabase(":memory:");
+      migrateDatabase(database);
+      database.run(sql.raw(
+        "DELETE FROM __drizzle_migrations WHERE created_at = 1786806000000",
+      ));
+      const eventId = sensitivity === "Regular"
+        ? "7d300000-0000-4000-8000-000000000001"
+        : "7d300000-0000-4000-8000-000000000002";
+      const appointmentId = "7d300000-0000-4000-8000-000000000003";
+      const state = {
+        kind: settlement.kind === "Settled" ? "Paid" : "Scheduled",
+        appointmentId,
+        ownerId: "7d300000-0000-4000-8000-000000000004",
+        petId: "7d300000-0000-4000-8000-000000000005",
+        scheduledAt: "2026-08-10T01:00:00.000Z",
+        serviceCode,
+        settlement,
+      };
+      database.insert(domainEventsTable).values({
+        eventId,
+        aggregateId: appointmentId,
+        aggregateName: "Appointment",
+        eventName: "appointment.test",
+        occurredAt: "2026-08-10T03:00:00.000Z",
+        actorUserId: "7d300000-0000-4000-8000-000000000006",
+        payloadSensitivity: sensitivity,
+      }).run();
+      const payload = { eventId, aggregateState: state, eventPayload: { appointmentId } };
+      if (sensitivity === "Regular") {
+        database.insert(domainEventPayloadsTable).values(payload).run();
+      } else {
+        database.insert(domainEventSensitivePayloadsTable).values(payload).run();
+      }
+      const before = snapshotLegacyMigrationState(database);
+
+      expect(() => migrateDatabase(database)).toThrow();
+      expect(snapshotLegacyMigrationState(database)).toEqual(before);
+    },
+  );
 
   test.each([
     ["Regular", "2026-08-10T12:00:00+99:99"],

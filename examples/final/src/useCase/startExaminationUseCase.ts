@@ -23,7 +23,7 @@ import type { User } from "../domain/user/user.js";
 import type { UserId } from "../domain/user/userId.js";
 import type {
   UserByIdResolver,
-  UserListResolver,
+  VeterinarianByIdResolver,
 } from "../domain/user/userResolver.js";
 import {
   ensureAppointmentFound,
@@ -67,7 +67,7 @@ export type UseCaseError =
 export type UseCaseOutput = ResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
-  userListResolver: UserListResolver;
+  veterinarianResolver: VeterinarianByIdResolver;
   appointmentResolver: AppointmentByIdResolver;
   examinationStartedStore: ExaminationStartedStore;
   clock: Clock;
@@ -94,10 +94,8 @@ const ensureVersion =
         });
 const ensureVeterinarianExists =
   (veterinarianId: VeterinarianId) =>
-  (users: readonly User[]): Result<void, VeterinarianNotFound> =>
-    users.some((user) =>
-      user.kind === "Veterinarian" && user.veterinarianId === veterinarianId
-    )
+  (resolved: VeterinarianId | undefined): Result<void, VeterinarianNotFound> =>
+    resolved === veterinarianId
       ? ok(undefined)
       : err({ kind: "VeterinarianNotFound", veterinarianId });
 
@@ -167,7 +165,7 @@ const run =
       .andThen((selection) =>
         selection.actor.kind === "Admin" &&
         selection.appointment.assignedVeterinarianId === null
-          ? dependencies.userListResolver.resolveAll()
+          ? dependencies.veterinarianResolver.resolveById(selection.veterinarianId)
             .andThen(ensureVeterinarianExists(selection.veterinarianId))
             .map(() => selection)
           : ok(selection))

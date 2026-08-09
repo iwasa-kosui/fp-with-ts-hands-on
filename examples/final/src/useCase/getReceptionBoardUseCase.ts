@@ -56,9 +56,11 @@ const toBoardRow = (actor: User) => (row: ReceptionBoardReaderRow): ReceptionBoa
   primaryAction: actionFor(actor, row),
 });
 
+const compareInstants = (left: string, right: string): number =>
+  Date.parse(left) - Date.parse(right);
 const ascending = (left: ReceptionBoardReaderRow, right: ReceptionBoardReaderRow): number =>
-  left.statusSortAt.localeCompare(right.statusSortAt) ||
-  left.scheduledAt.localeCompare(right.scheduledAt) ||
+  compareInstants(left.statusSortAt, right.statusSortAt) ||
+  compareInstants(left.scheduledAt, right.scheduledAt) ||
   left.appointmentId.localeCompare(right.appointmentId);
 const descending = (left: ReceptionBoardReaderRow, right: ReceptionBoardReaderRow): number =>
   -ascending(left, right);

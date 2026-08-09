@@ -29,7 +29,7 @@ import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
 import type {
   UserByIdResolver,
-  UserListResolver,
+  VeterinarianByIdResolver,
 } from "../../src/domain/user/userResolver.js";
 import { PasswordHash } from "../../src/domain/user/passwordHash.js";
 import {
@@ -112,8 +112,13 @@ const userResolverFor = (user: User | undefined): UserByIdResolver =>
     resolveById: () => okAsync(user),
   }) as const satisfies UserByIdResolver;
 
-const userListResolverFor = (users: readonly User[]): UserListResolver =>
-  ({ resolveAll: () => okAsync(users) }) as const satisfies UserListResolver;
+const veterinarianResolverFor = (
+  veterinarianIds: readonly VeterinarianId[],
+): VeterinarianByIdResolver => ({
+  resolveById: (candidate) => okAsync(
+    veterinarianIds.includes(candidate) ? candidate : undefined,
+  ),
+});
 
 const appointmentResolverFor = (
   appointment: Appointment | undefined,
@@ -137,7 +142,7 @@ const createDependencies = (
 ): Dependencies =>
   ({
     userResolver: userResolverFor(admin),
-    userListResolver: userListResolverFor([admin, veterinarian]),
+    veterinarianResolver: veterinarianResolverFor([veterinarianId]),
     appointmentResolver: appointmentResolverFor(checkedIn),
     examinationStartedStore: successfulStore([]),
     clock: { now: () => startedAt } as const satisfies Clock,
@@ -294,18 +299,15 @@ describe("StartExaminationUseCase", () => {
   });
 
   test.each([
-    ["unknown veterinarian", []],
-    ["non-veterinarian user", [receptionist]],
+    ["unknown veterinarian", otherVeterinarianId],
+    ["non-veterinarian user", VeterinarianId.schema.parse(receptionist.userId)],
   ] as const)("rejects an administrator-selected %s before producing side effects", async (
     _case,
-    users,
+    selectedId,
   ) => {
-    const selectedId = _case === "non-veterinarian user"
-      ? VeterinarianId.schema.parse(receptionist.userId)
-      : otherVeterinarianId;
     const calls = { clock: 0, eventId: 0, store: 0 };
     const result = await StartExaminationUseCase.create(createDependencies({
-      userListResolver: userListResolverFor(users),
+      veterinarianResolver: veterinarianResolverFor([]),
       clock: {
         now: () => {
           calls.clock += 1;
@@ -331,6 +333,21 @@ describe("StartExaminationUseCase", () => {
       veterinarianId: selectedId,
     });
     expect(calls).toEqual({ clock: 0, eventId: 0, store: 0 });
+  });
+
+  test("resolves only the administrator-selected veterinarian ID", async () => {
+    const requestedIds: VeterinarianId[] = [];
+    const result = await StartExaminationUseCase.create(createDependencies({
+      veterinarianResolver: {
+        resolveById: (candidate) => {
+          requestedIds.push(candidate);
+          return okAsync(candidate);
+        },
+      },
+    })).run(input);
+
+    expect(result.isOk()).toBe(true);
+    expect(requestedIds).toEqual([veterinarianId]);
   });
 
   test("rejects a stale version before reading the clock or generating an event ID", async () => {

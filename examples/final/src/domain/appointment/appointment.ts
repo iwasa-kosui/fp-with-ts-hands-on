@@ -101,8 +101,7 @@ export type Canceled = Omit<AppointmentBase, "settlement"> & Readonly<{
 export type Appointment =
   Scheduled | CheckedIn | InExamination | AwaitingPayment | Paid | Canceled;
 type OperationalBookAppointmentInput = Readonly<
-  Omit<Scheduled, "kind" | "version" | "settlement"> &
-  { settlement?: NoPayment }
+  Omit<Scheduled, "kind" | "version" | "settlement">
 >;
 type LegacyBookAppointmentInput = Readonly<{
   appointmentId: AppointmentId;

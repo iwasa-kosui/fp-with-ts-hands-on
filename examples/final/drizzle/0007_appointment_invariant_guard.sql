@@ -1,21 +1,22 @@
-CREATE VIEW `_0007_appointment_timestamps` AS
-WITH `_0007_appointment_states` (`source_id`, `state`) AS (
-	SELECT `appointment_id`, `state` FROM `appointments`
+CREATE VIEW `_0007_appointment_states` AS
+	SELECT 'Projection' AS `source_kind`, `appointment_id` AS `source_id`, `state`
+	FROM `appointments`
 	UNION ALL
-	SELECT `domain_events`.`event_id`, `domain_event_payloads`.`aggregate_state`
+	SELECT 'Regular', `domain_events`.`event_id`, `domain_event_payloads`.`aggregate_state`
 	FROM `domain_events`
 	INNER JOIN `domain_event_payloads`
 		ON `domain_event_payloads`.`event_id` = `domain_events`.`event_id`
 	WHERE `domain_events`.`aggregate_name` = 'Appointment'
 		AND `domain_event_payloads`.`aggregate_state` IS NOT NULL
 	UNION ALL
-	SELECT `domain_events`.`event_id`, `domain_event_sensitive_payloads`.`aggregate_state`
+	SELECT 'Sensitive', `domain_events`.`event_id`, `domain_event_sensitive_payloads`.`aggregate_state`
 	FROM `domain_events`
 	INNER JOIN `domain_event_sensitive_payloads`
 		ON `domain_event_sensitive_payloads`.`event_id` = `domain_events`.`event_id`
 	WHERE `domain_events`.`aggregate_name` = 'Appointment'
-		AND `domain_event_sensitive_payloads`.`aggregate_state` IS NOT NULL
-)
+		AND `domain_event_sensitive_payloads`.`aggregate_state` IS NOT NULL;
+--> statement-breakpoint
+CREATE VIEW `_0007_appointment_timestamps` AS
 SELECT
 	`_0007_appointment_states`.`source_id` AS `source_id`,
 	`timestamp`.`key` AS `field_name`,
@@ -64,26 +65,33 @@ SELECT CASE WHEN EXISTS (
 	WHERE json_valid(`state`) <> 1
 		OR json_type(`state`) IS NOT 'object'
 		OR json_type(`state`, '$.scheduledAt') IS NOT 'text'
-		OR json_extract(`state`, '$.scheduledAt') <> `scheduled_at`
+		OR json_extract(`state`, '$.scheduledAt') IS NOT `scheduled_at`
+		OR json_type(`state`, '$.serviceCode') IS NOT 'text'
+		OR json_extract(`state`, '$.serviceCode') IS NOT `service_code`
+		OR json_type(`state`, '$.settlement') IS NOT 'object'
+		OR json_type(`state`, '$.settlement.kind') IS NOT 'text'
+		OR json_extract(`state`, '$.settlement.kind') IS NOT `settlement_status`
+		OR CASE json_extract(`state`, '$.settlement.kind')
+			WHEN 'NoPayment' THEN `deposit_amount` IS NOT NULL
+			WHEN 'DepositReceived' THEN
+				json_extract(`state`, '$.settlement.depositAmount') IS NOT `deposit_amount`
+			WHEN 'Settled' THEN
+				json_extract(`state`, '$.settlement.depositAmount') IS NOT `deposit_amount`
+			WHEN 'DepositRefunded' THEN
+				json_extract(`state`, '$.settlement.depositAmount') IS NOT `deposit_amount`
+			ELSE 1
+		END
 )
 OR EXISTS (
 	SELECT 1
-	FROM (
-		SELECT `domain_events`.`aggregate_name`, `domain_event_payloads`.`aggregate_state`
-		FROM `domain_events`
-		INNER JOIN `domain_event_payloads`
-			ON `domain_event_payloads`.`event_id` = `domain_events`.`event_id`
-		UNION ALL
-		SELECT `domain_events`.`aggregate_name`, `domain_event_sensitive_payloads`.`aggregate_state`
-		FROM `domain_events`
-		INNER JOIN `domain_event_sensitive_payloads`
-			ON `domain_event_sensitive_payloads`.`event_id` = `domain_events`.`event_id`
-	) AS `audit_state`
-	WHERE `audit_state`.`aggregate_name` = 'Appointment'
-		AND `audit_state`.`aggregate_state` IS NOT NULL
-		AND (
-			json_valid(`audit_state`.`aggregate_state`) <> 1
-			OR json_type(`audit_state`.`aggregate_state`) IS NOT 'object'
+	FROM `_0007_appointment_states`
+	WHERE json_valid(`state`) <> 1
+		OR json_type(`state`) IS NOT 'object'
+		OR json_type(`state`, '$.serviceCode') IS NOT 'text'
+		OR json_type(`state`, '$.settlement') IS NOT 'object'
+		OR json_type(`state`, '$.settlement.kind') IS NOT 'text'
+		OR json_extract(`state`, '$.settlement.kind') NOT IN (
+			'NoPayment', 'DepositReceived', 'Settled', 'DepositRefunded'
 		)
 )
 OR EXISTS (
@@ -150,8 +158,8 @@ OR EXISTS (
 		)
 ) OR EXISTS (
 	SELECT 1
-	FROM `appointments`
-	WHERE json_extract(`state`, '$.serviceCode') <> 'Vaccination'
+	FROM `_0007_appointment_states`
+	WHERE json_extract(`state`, '$.serviceCode') IS NOT 'Vaccination'
 		AND (
 			json_extract(`state`, '$.settlement.kind') IN (
 				'DepositReceived', 'DepositRefunded'
@@ -163,7 +171,25 @@ OR EXISTS (
 		)
 ) OR EXISTS (
 	SELECT 1
-	FROM `appointments`
+	FROM `_0007_appointment_states`
+	WHERE json_extract(`state`, '$.settlement.kind') = 'DepositReceived'
+		AND (
+			json_type(`state`, '$.settlement.depositAmount') IS NOT 'integer'
+			OR json_extract(`state`, '$.settlement.depositAmount') <= 0
+			OR json_type(`state`, '$.settlement.receivedAt') IS NOT 'text'
+		)
+) OR EXISTS (
+	SELECT 1
+	FROM `_0007_appointment_states`
+	WHERE json_extract(`state`, '$.settlement.kind') = 'DepositRefunded'
+		AND (
+			json_type(`state`, '$.settlement.depositAmount') IS NOT 'integer'
+			OR json_extract(`state`, '$.settlement.depositAmount') <= 0
+			OR json_type(`state`, '$.settlement.refundedAt') IS NOT 'text'
+		)
+) OR EXISTS (
+	SELECT 1
+	FROM `_0007_appointment_states`
 	WHERE json_extract(`state`, '$.settlement.kind') = 'Settled'
 		AND (
 			json_type(`state`, '$.settlement.finalAmount') IS NOT 'integer'
@@ -192,3 +218,5 @@ OR EXISTS (
 DROP TABLE `_0007_appointment_validation`;
 --> statement-breakpoint
 DROP VIEW `_0007_appointment_timestamps`;
+--> statement-breakpoint
+DROP VIEW `_0007_appointment_states`;

@@ -42,6 +42,7 @@ import {
   createUserByEmailResolver,
   createUserByIdResolver,
   createUserListResolver,
+  createVeterinarianByIdResolver,
 } from "./adaptor/secondary/sqlite/resolver/userResolver.js";
 import { createSessionEventStore } from "./adaptor/secondary/sqlite/store/sessionEventStore.js";
 import { createInitialAdminSetupStore } from "./adaptor/secondary/sqlite/store/initialAdminSetupStore.js";
@@ -249,6 +250,7 @@ export const createApplicationDependencies = (
   const clinicPetListResolver = createPetListResolver(database);
   const clinicUserByIdResolver = createUserByIdResolver(database);
   const clinicUserListResolver = createUserListResolver(database);
+  const clinicVeterinarianByIdResolver = createVeterinarianByIdResolver(database);
   const followUpResolver = createFollowUpResolver(database);
   const followUpRequestReader = createFollowUpRequestReader(database);
   const eventHistoryReader = createEventHistoryReader(database);
@@ -482,7 +484,7 @@ export const createApplicationDependencies = (
     }),
     startExamination: StartExaminationUseCase.create({
       userResolver: clinicUserByIdResolver,
-      userListResolver: clinicUserListResolver,
+      veterinarianResolver: clinicVeterinarianByIdResolver,
       appointmentResolver: clinicAppointmentByIdResolver,
       examinationStartedStore: appointmentEventStore,
       clock,

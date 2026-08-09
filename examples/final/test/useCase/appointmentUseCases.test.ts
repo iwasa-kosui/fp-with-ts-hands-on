@@ -139,6 +139,11 @@ const userResolver = {
     okAsync(users.find((user) => user.userId === userId)),
 };
 const userListResolver = { resolveAll: () => okAsync(users) } as const;
+const veterinarianResolver = {
+  resolveById: (veterinarianId: VeterinarianId) => okAsync(
+    veterinarianId === ids.veterinarian ? veterinarianId : undefined,
+  ),
+} as const;
 const ownerResolver = {
   resolveById: (ownerId: OwnerId) =>
     okAsync(ownerId === owner.ownerId ? owner : undefined),
@@ -226,7 +231,6 @@ describe("appointment command use cases", () => {
       assignedVeterinarianId: null,
       visitReason: AppointmentReason.schema.parse("vaccination"),
       receptionNote: null,
-      settlement: { kind: "NoPayment" },
     }).aggregateState;
     let stored: AppointmentState | undefined;
     let generated = 0;
@@ -289,7 +293,6 @@ describe("appointment command use cases", () => {
       assignedVeterinarianId: null,
       visitReason: AppointmentReason.schema.parse("vaccination"),
       receptionNote: null,
-      settlement: { kind: "NoPayment" },
     }).aggregateState;
     const checkedIn = Appointment.checkIn({
       eventId: eventIdGenerator().generate(),
@@ -425,7 +428,7 @@ describe("appointment command use cases", () => {
 
     const started = await StartExaminationUseCase.create({
       userResolver,
-      userListResolver,
+      veterinarianResolver,
       appointmentResolver: { resolveById: () => okAsync(appointment) },
       examinationStartedStore: appointmentStore,
       clock,
@@ -801,7 +804,6 @@ describe("appointment command use cases", () => {
       assignedVeterinarianId: null,
       visitReason: AppointmentReason.schema.parse("vaccination"),
       receptionNote: null,
-      settlement: { kind: "NoPayment" },
     }).aggregateState;
     const nextEventContext = (sequence: number) => ({
       eventId: EventId.schema.parse(
@@ -901,7 +903,7 @@ describe("appointment command use cases", () => {
     }));
     await assertNoSideEffects(() => StartExaminationUseCase.create({
       userResolver,
-      userListResolver,
+      veterinarianResolver,
       appointmentResolver: { resolveById: () => okAsync(checkedIn) },
       examinationStartedStore: {
         store: () => {
@@ -1052,7 +1054,7 @@ describe("appointment command use cases", () => {
     const [started, canceled] = await Promise.all([
       StartExaminationUseCase.create({
         userResolver,
-        userListResolver,
+        veterinarianResolver,
         appointmentResolver: staleResolver,
         examinationStartedStore: store,
         clock,

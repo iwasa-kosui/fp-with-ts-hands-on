@@ -85,7 +85,6 @@ if (input.kind === "Probe") {
       assignedVeterinarianId: input.assignedVeterinarianId,
       visitReason: AppointmentReason.schema.parse("concurrent private reason 55"),
       receptionNote: null,
-      settlement: { kind: "NoPayment" },
     });
     const startedAt = performance.now();
     const result = await createAppointmentEventStore(db).store(booked);

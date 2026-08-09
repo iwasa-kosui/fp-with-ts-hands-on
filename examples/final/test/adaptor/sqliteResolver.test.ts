@@ -10,6 +10,7 @@ import { createFollowUpResolver } from "../../src/adaptor/secondary/sqlite/resol
 import {
   createUserByIdResolver,
   createUserListResolver,
+  createVeterinarianByIdResolver,
 } from "../../src/adaptor/secondary/sqlite/resolver/userResolver.js";
 import { createUserEventStore } from "../../src/adaptor/secondary/sqlite/store/userEventStore.js";
 import {
@@ -20,6 +21,7 @@ import {
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
 import { PasswordHash } from "../../src/domain/user/passwordHash.js";
 import { User } from "../../src/domain/user/user.js";
@@ -356,6 +358,39 @@ describe("SQLite resolvers", () => {
       kind: "RepositoryError",
       operation: "UserListResolver.resolveAll",
     });
+  });
+
+  test("resolves a veterinarian ID without reading invalid PII or credential columns", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const veterinarianId = VeterinarianId.schema.parse(
+      "20000000-0000-4000-8000-000000000020",
+    );
+    db.run(sql.raw(
+      "INSERT INTO users (user_id, role, email, name, password_hash, veterinarian_id) " +
+      "VALUES ('20000000-0000-4000-8000-000000000021', 'Veterinarian', 'invalid', '', 'invalid', " +
+      `'${veterinarianId}')`,
+    ));
+
+    const result = await createVeterinarianByIdResolver(db).resolveById(veterinarianId);
+
+    expect(result._unsafeUnwrap()).toBe(veterinarianId);
+  });
+
+  test("does not resolve a receptionist whose user ID is used as a veterinarian ID", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const receptionistId = VeterinarianId.schema.parse(
+      "20000000-0000-4000-8000-000000000022",
+    );
+    db.run(sql.raw(
+      "INSERT INTO users (user_id, role, email, name, password_hash, veterinarian_id) " +
+      `VALUES ('${receptionistId}', 'Receptionist', 'reception@example.test', '受付', '${passwordHash}', NULL)`,
+    ));
+
+    const result = await createVeterinarianByIdResolver(db).resolveById(receptionistId);
+
+    expect(result._unsafeUnwrap()).toBeUndefined();
   });
 
   test("rejects an unknown persisted user role", async () => {

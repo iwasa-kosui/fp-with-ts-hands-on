@@ -169,7 +169,6 @@ describe("appointment aggregate", () => {
       assignedVeterinarianId: null,
       visitReason,
       receptionNote: null,
-      settlement: noPayment,
     }).aggregateState;
     const amount = PaymentAmount.schema.parse(7000);
 
@@ -200,28 +199,25 @@ describe("appointment aggregate", () => {
     ).toMatchObject({ kind: "DepositNotAllowed" });
   });
 
-  test("does not allow an initial deposit to be injected while booking", () => {
-    const inputWithInjectedSettlement = {
-      appointmentId,
-      petId,
-      ownerId,
-      scheduledAt,
-      durationMinutes: AppointmentDuration.schema.parse(30),
-      serviceCode: ServiceCode.schema.parse("GeneralConsultation"),
-      bookingKind: "Reserved" as const,
-      assignedVeterinarianId: null,
-      visitReason,
-      receptionNote: null,
-      settlement: receivedDeposit(7000),
-    };
+  test("does not expose an initial settlement property on the booking input", () => {
+    if (false) {
+      Appointment.book(bookedContext)({
+        appointmentId,
+        petId,
+        ownerId,
+        scheduledAt,
+        durationMinutes: AppointmentDuration.schema.parse(30),
+        serviceCode: ServiceCode.schema.parse("GeneralConsultation"),
+        bookingKind: "Reserved",
+        assignedVeterinarianId: null,
+        visitReason,
+        receptionNote: null,
+        // @ts-expect-error Initial settlement is server-owned and is not booking input.
+        settlement: noPayment,
+      });
+    }
 
-    const event = Appointment.book(bookedContext)(
-      inputWithInjectedSettlement as unknown as Parameters<
-        ReturnType<typeof Appointment.book>
-      >[0],
-    );
-
-    expect(event.aggregateState.settlement).toEqual({ kind: "NoPayment" });
+    expect(booked.aggregateState.settlement).toEqual({ kind: "NoPayment" });
   });
 
   test.each([
@@ -354,7 +350,6 @@ describe("appointment aggregate", () => {
       assignedVeterinarianId: null,
       visitReason,
       receptionNote: null,
-      settlement: noPayment,
     }).aggregateState;
     const prepaid = Appointment.receiveDeposit(updatedContext)(
       vaccination,

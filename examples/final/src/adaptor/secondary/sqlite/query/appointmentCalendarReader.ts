@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lt } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
@@ -37,7 +37,9 @@ const toCalendarItem = (row: z.infer<typeof CalendarRowSchema>): AppointmentCale
 
 export const createAppointmentCalendarReader = (db: SqliteDatabase): AppointmentCalendarReader => ({
   list: (_actor, range) => ResultAsync.fromPromise(
-    Promise.resolve().then(() => db.select({
+    Promise.resolve().then(() => {
+      const scheduledInstant = sql<number>`julianday(${appointmentsTable.scheduledAt})`;
+      return db.select({
       appointmentId: appointmentsTable.appointmentId,
       startsAt: appointmentsTable.scheduledAt,
       durationMinutes: appointmentsTable.durationMinutes,
@@ -54,9 +56,11 @@ export const createAppointmentCalendarReader = (db: SqliteDatabase): Appointment
         eq(usersTable.veterinarianId, appointmentsTable.assignedVeterinarianId),
         eq(usersTable.role, "Veterinarian"),
       ))
-      .where(and(gte(appointmentsTable.scheduledAt, range.startsAt), lt(appointmentsTable.scheduledAt, range.endsAt)))
-      .orderBy(asc(appointmentsTable.scheduledAt), asc(petsTable.name))
-      .all().map((row) => CalendarRowSchema.parse(row)).map(toCalendarItem)),
+      .where(sql`${scheduledInstant} >= julianday(${range.startsAt})
+        AND ${scheduledInstant} < julianday(${range.endsAt})`)
+      .orderBy(asc(scheduledInstant), asc(petsTable.name))
+      .all().map((row) => CalendarRowSchema.parse(row)).map(toCalendarItem);
+    }),
     (cause): RepositoryError => ({ kind: "RepositoryError", operation: "AppointmentCalendarReader.list", cause }),
   ),
 });

@@ -1,4 +1,4 @@
-import { and, eq, gte, lt } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
@@ -96,7 +96,9 @@ const toReaderRow = (loadedAt: z.infer<typeof Timestamp.schema>) => (raw: unknow
 
 export const createReceptionBoardReader = (db: SqliteDatabase): ReceptionBoardReader => ({
   list: (_actor, range, loadedAt) => ResultAsync.fromPromise(
-    Promise.resolve().then(() => db.select({
+    Promise.resolve().then(() => {
+      const scheduledInstant = sql<number>`julianday(${appointmentsTable.scheduledAt})`;
+      return db.select({
       appointmentId: appointmentsTable.appointmentId,
       version: appointmentsTable.version,
       bookingKind: appointmentsTable.bookingKind,
@@ -114,9 +116,11 @@ export const createReceptionBoardReader = (db: SqliteDatabase): ReceptionBoardRe
       .innerJoin(ownersTable, eq(ownersTable.ownerId, appointmentsTable.ownerId))
       .innerJoin(petsTable, eq(petsTable.petId, appointmentsTable.petId))
       .leftJoin(usersTable, and(eq(usersTable.veterinarianId, appointmentsTable.assignedVeterinarianId), eq(usersTable.role, "Veterinarian")))
-      .where(and(gte(appointmentsTable.scheduledAt, range.startsAt), lt(appointmentsTable.scheduledAt, range.endsAt)))
+      .where(sql`${scheduledInstant} >= julianday(${range.startsAt})
+        AND ${scheduledInstant} < julianday(${range.endsAt})`)
       .all()
-      .map(toReaderRow(loadedAt))),
+      .map(toReaderRow(loadedAt));
+    }),
     (cause): RepositoryError => ({ kind: "RepositoryError", operation: "ReceptionBoardReader.list", cause }),
   ),
 });

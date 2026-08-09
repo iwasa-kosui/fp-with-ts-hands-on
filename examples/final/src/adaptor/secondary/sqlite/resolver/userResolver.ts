@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
@@ -7,6 +7,7 @@ import type {
   UserByEmailResolver,
   UserByIdResolver,
   UserListResolver,
+  VeterinarianByIdResolver,
 } from "../../../../domain/user/userResolver.js";
 import { PasswordHash } from "../../../../domain/user/passwordHash.js";
 import { UserEmail } from "../../../../domain/user/userEmail.js";
@@ -85,4 +86,24 @@ export const createUserListResolver = (db: SqliteDatabase): UserListResolver => 
       Promise.resolve().then(() => db.select().from(usersTable).all().map(parseRow)),
       repositoryError("UserListResolver.resolveAll"),
     ),
+});
+
+export const createVeterinarianByIdResolver = (
+  db: SqliteDatabase,
+): VeterinarianByIdResolver => ({
+  resolveById: (veterinarianId) => ResultAsync.fromPromise(
+    Promise.resolve().then(() => {
+      const row = db.select({ veterinarianId: usersTable.veterinarianId })
+        .from(usersTable)
+        .where(and(
+          eq(usersTable.veterinarianId, veterinarianId),
+          eq(usersTable.role, "Veterinarian"),
+        ))
+        .get();
+      return row === undefined
+        ? undefined
+        : VeterinarianId.schema.parse(row.veterinarianId);
+    }),
+    repositoryError("VeterinarianByIdResolver.resolveById"),
+  ),
 });
