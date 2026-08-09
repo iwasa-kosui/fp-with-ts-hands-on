@@ -20,8 +20,14 @@ import EventsIndex from "../../src/adaptor/primary/web/pages/Events/Index.js";
 import FollowUpsIndex from "../../src/adaptor/primary/web/pages/FollowUps/Index.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
+import { AppointmentVersion } from "../../src/domain/appointment/appointmentVersion.js";
+import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
+import { Diagnosis } from "../../src/domain/appointment/diagnosis.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
+import { SettlementAdjustmentAmount } from "../../src/domain/appointment/settlementAdjustmentAmount.js";
+import { Treatment } from "../../src/domain/appointment/treatment.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { OwnerId } from "../../src/domain/owner/ownerId.js";
@@ -39,6 +45,7 @@ const petId = PetId.schema.parse("74000000-0000-4000-8000-000000000001");
 const appointmentId = AppointmentId.schema.parse("75000000-0000-4000-8000-000000000001");
 const veterinarianId = VeterinarianId.schema.parse("77000000-0000-4000-8000-000000000001");
 const scheduledAt = Timestamp.schema.parse("2026-08-10T03:00:00.000Z");
+const visitReason = AppointmentReason.schema.parse("private visit reason");
 
 const renderPage = async <TProps extends object>(
   component: ComponentType<TProps>,
@@ -57,12 +64,21 @@ const scheduledView = {
   petId,
   petName: "Mugi",
   scheduledAt,
+  durationMinutes: 30 as const,
+  serviceCode: "GeneralConsultation" as const,
+  bookingKind: "Reserved" as const,
+  assignedVeterinarianId: null,
+  visitReason,
+  receptionNote: null,
+  settlement: { kind: "NoPayment" as const },
+  version: AppointmentVersion.schema.parse(1),
 };
 const checkedInAt = Timestamp.schema.parse("2026-08-10T03:10:00.000Z");
 const examinationStartedAt = Timestamp.schema.parse("2026-08-10T03:20:00.000Z");
 const paidAt = Timestamp.schema.parse("2026-08-10T04:00:00.000Z");
 const canceledAt = Timestamp.schema.parse("2026-08-09T03:00:00.000Z");
 const paymentAmount = PaymentAmount.schema.parse(12_500);
+const noSettlementAdjustment = SettlementAdjustmentAmount.schema.parse(0);
 
 const incompletePaidView = {
   ...scheduledView,
@@ -192,6 +208,7 @@ describe("clinic page SSR", () => {
       appointment: {
         ...scheduledView,
         kind: "InExamination",
+        assignedVeterinarianId: veterinarianId,
         checkedInAt: Timestamp.schema.parse("2026-08-09T01:30:00.000Z"),
         veterinarianId,
         veterinarianName: "Clinic Vet",
@@ -224,31 +241,48 @@ describe("clinic page SSR", () => {
       ...scheduledView,
       kind: "CheckedIn" as const,
       checkedInAt,
+      version: AppointmentVersion.schema.parse(2),
     } satisfies AppointmentPageView;
     const examiningView = {
       ...scheduledView,
       kind: "InExamination" as const,
+      assignedVeterinarianId: veterinarianId,
       checkedInAt,
       veterinarianId,
       veterinarianName: "Clinic Vet",
       examinationStartedAt,
+      version: AppointmentVersion.schema.parse(3),
     } satisfies AppointmentPageView;
     const awaitingPaymentView = {
       ...examiningView,
       kind: "AwaitingPayment" as const,
       examId: ExamId.schema.parse("71000000-0000-4000-8000-000000000030"),
       examinationCompletedAt: Timestamp.schema.parse("2026-08-09T02:30:00.000Z"),
+      version: AppointmentVersion.schema.parse(4),
     } satisfies AppointmentPageView;
     const paidView = {
       ...awaitingPaymentView,
       kind: "Paid" as const,
+      diagnosis: Diagnosis.schema.parse("private diagnosis"),
+      treatment: Treatment.schema.parse("private treatment"),
+      settlement: {
+        kind: "Settled" as const,
+        finalAmount: paymentAmount,
+        depositAmount: noSettlementAdjustment,
+        additionalPaymentAmount: SettlementAdjustmentAmount.schema.parse(paymentAmount),
+        refundAmount: noSettlementAdjustment,
+        settledAt: paidAt,
+      },
       amount: paymentAmount,
       paidAt,
+      version: AppointmentVersion.schema.parse(5),
     } satisfies AppointmentPageView;
     const canceledView = {
       ...scheduledView,
       kind: "Canceled" as const,
+      cancellationReason: CancellationReason.schema.parse("private cancellation"),
       canceledAt,
+      version: AppointmentVersion.schema.parse(2),
     } satisfies AppointmentPageView;
 
     const scheduled = await renderPage(AppointmentShow, {

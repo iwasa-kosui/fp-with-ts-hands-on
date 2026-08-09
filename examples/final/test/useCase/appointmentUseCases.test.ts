@@ -17,6 +17,7 @@ import {
   Appointment,
   type Appointment as AppointmentState,
 } from "../../src/domain/appointment/appointment.js";
+import { AppointmentDuration } from "../../src/domain/appointment/appointmentDuration.js";
 import type {
   AppointmentEvent,
   AppointmentExaminationCompleted,
@@ -26,6 +27,8 @@ import { AppointmentReason } from "../../src/domain/appointment/appointmentReaso
 import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
 import { Diagnosis } from "../../src/domain/appointment/diagnosis.js";
 import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
+import { ReceptionNote } from "../../src/domain/appointment/receptionNote.js";
+import { ServiceCode } from "../../src/domain/appointment/serviceCode.js";
 import { Treatment } from "../../src/domain/appointment/treatment.js";
 import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
 import { ExamId } from "../../src/domain/examResult/examId.js";
@@ -49,7 +52,10 @@ import { CancelAppointmentUseCase } from "../../src/useCase/cancelAppointmentUse
 import { CheckInAppointmentUseCase } from "../../src/useCase/checkInAppointmentUseCase.js";
 import { GetAppointmentUseCase } from "../../src/useCase/getAppointmentUseCase.js";
 import { GetDashboardUseCase } from "../../src/useCase/getDashboardUseCase.js";
-import { ListAppointmentsUseCase } from "../../src/useCase/listAppointmentsUseCase.js";
+import {
+  ListAppointmentsUseCase,
+  toAppointmentView,
+} from "../../src/useCase/listAppointmentsUseCase.js";
 import { RecordExamResultUseCase } from "../../src/useCase/recordExamResultUseCase.js";
 import { RecordPaymentUseCase } from "../../src/useCase/recordPaymentUseCase.js";
 import { StartExaminationUseCase } from "../../src/useCase/startExaminationUseCase.js";
@@ -568,6 +574,148 @@ describe("appointment command use cases", () => {
 });
 
 describe("appointment query use cases", () => {
+  test("projects every appointment variant with operational values, narrowed settlement, and version", () => {
+    const eventIds = eventIdGenerator();
+    const visitReason = AppointmentReason.schema.parse("private specialist visit");
+    const receptionNote = ReceptionNote.schema.parse("private reception note");
+    const depositAmount = PaymentAmount.schema.parse(1200);
+    const scheduled = Appointment.book({
+      eventId: eventIds.generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })({
+      appointmentId: ids.appointment,
+      ownerId: ids.owner,
+      petId: ids.pet,
+      scheduledAt: times.scheduled,
+      durationMinutes: AppointmentDuration.schema.parse(45),
+      serviceCode: ServiceCode.schema.parse("ExaminationOrProcedure"),
+      bookingKind: "WalkIn",
+      assignedVeterinarianId: ids.veterinarian,
+      visitReason,
+      receptionNote,
+      settlement: {
+        kind: "DepositReceived",
+        depositAmount,
+        receivedAt: times.now,
+      },
+    }).aggregateState;
+    const checkedIn = Appointment.checkIn({
+      eventId: eventIds.generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })(scheduled).aggregateState;
+    const examining = Appointment.startExamination({
+      eventId: eventIds.generate(),
+      occurredAt: times.now,
+      actorUserId: ids.veterinarianUser,
+    })(checkedIn, ids.veterinarian).aggregateState;
+    const awaitingPayment = Appointment.completeExamination({
+      eventId: eventIds.generate(),
+      occurredAt: times.now,
+      actorUserId: ids.veterinarianUser,
+    })(examining, { examId: ids.exam }).aggregateState;
+    const diagnosis = Diagnosis.schema.parse("private diagnosis");
+    const treatment = Treatment.schema.parse("private treatment");
+    const paid = Appointment.recordPayment({
+      eventId: eventIds.generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })(awaitingPayment, {
+      diagnosis,
+      treatment,
+      amount: PaymentAmount.schema.parse(4800),
+    }).aggregateState;
+    const cancellationReason = CancellationReason.schema.parse(
+      "private cancellation reason",
+    );
+    const canceled = Appointment.cancel({
+      eventId: eventIds.generate(),
+      occurredAt: times.now,
+      actorUserId: ids.receptionist,
+    })(checkedIn, cancellationReason).aggregateState;
+    const project = toAppointmentView([owner], [pet], users);
+    const common = {
+      appointmentId: ids.appointment,
+      ownerId: ids.owner,
+      petId: ids.pet,
+      scheduledAt: times.scheduled,
+      durationMinutes: 45,
+      serviceCode: "ExaminationOrProcedure",
+      bookingKind: "WalkIn",
+      visitReason,
+      receptionNote,
+    } as const;
+
+    expect(project(scheduled)).toMatchObject({
+      ...common,
+      kind: "Scheduled",
+      assignedVeterinarianId: ids.veterinarian,
+      settlement: {
+        kind: "DepositReceived",
+        depositAmount,
+        receivedAt: times.now,
+      },
+      version: 1,
+    });
+    expect(project(checkedIn)).toMatchObject({
+      ...common,
+      kind: "CheckedIn",
+      assignedVeterinarianId: ids.veterinarian,
+      settlement: { kind: "DepositReceived", depositAmount },
+      checkedInAt: times.now,
+      version: 2,
+    });
+    expect(project(examining)).toMatchObject({
+      ...common,
+      kind: "InExamination",
+      assignedVeterinarianId: ids.veterinarian,
+      settlement: { kind: "DepositReceived", depositAmount },
+      checkedInAt: times.now,
+      examinationStartedAt: times.now,
+      version: 3,
+    });
+    expect(project(awaitingPayment)).toMatchObject({
+      ...common,
+      kind: "AwaitingPayment",
+      assignedVeterinarianId: ids.veterinarian,
+      settlement: { kind: "DepositReceived", depositAmount },
+      examId: ids.exam,
+      version: 4,
+    });
+    expect(project(paid)).toMatchObject({
+      ...common,
+      kind: "Paid",
+      assignedVeterinarianId: ids.veterinarian,
+      diagnosis,
+      treatment,
+      settlement: {
+        kind: "Settled",
+        finalAmount: 4800,
+        depositAmount: 1200,
+        additionalPaymentAmount: 3600,
+        refundAmount: 0,
+        settledAt: times.now,
+      },
+      amount: 4800,
+      paidAt: times.now,
+      version: 5,
+    });
+    expect(project(canceled)).toMatchObject({
+      ...common,
+      kind: "Canceled",
+      assignedVeterinarianId: ids.veterinarian,
+      cancellationReason,
+      settlement: {
+        kind: "DepositRefunded",
+        depositAmount,
+        refundedAt: times.now,
+      },
+      canceledAt: times.now,
+      version: 3,
+    });
+  });
+
   test("retains terminal appointments and labels deleted owner, pet, and veterinarian records", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);

@@ -181,7 +181,7 @@ const insertAppendOnlyAuditFixture = (db: ReturnType<typeof createSqliteDatabase
     {
       eventId: regularEventId,
       aggregateId: ids.appointment,
-      aggregateName: "Appointment",
+      aggregateName: "AuditFixture",
       eventName: "audit.regular-fixture",
       occurredAt: "2026-08-08T00:01:00.000Z",
       actorUserId: ids.actor,
@@ -371,7 +371,7 @@ describe("SQLite event stores", () => {
           event_id, aggregate_id, aggregate_name, aggregate_state, event_name,
           event_payload, occurred_at, actor_user_id
         ) VALUES (
-          ${row.eventId}, ${ids.appointment}, ${"Appointment"},
+          ${row.eventId}, ${ids.owner}, ${"Owner"},
           ${row.aggregateState === null ? null : JSON.stringify(row.aggregateState)},
           ${"legacy.unknown"}, ${JSON.stringify(row.eventPayload)},
           ${"2026-08-08T00:01:00.000Z"}, ${ids.actor}

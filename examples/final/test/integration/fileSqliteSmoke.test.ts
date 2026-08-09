@@ -8,6 +8,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import {
   createSqliteDatabase,
   migrateDatabase,
+  type SqliteDatabase,
 } from "../../src/adaptor/secondary/sqlite/db.js";
 import {
   appointmentsTable,
@@ -53,6 +54,51 @@ const inertiaHeaders = {
   "X-Inertia-Version": "1",
 } as const;
 
+const restoreLegacyAppointmentSchema = (database: SqliteDatabase): void => {
+  const columns = database
+    .all<{ name: string }>(sql.raw("PRAGMA table_info(appointments)"))
+    .map(({ name }) => name);
+  if (!columns.includes("scheduled_at")) return;
+
+  database.run(sql.raw("DROP TABLE appointments"));
+  database.run(sql.raw(`
+    CREATE TABLE appointments (
+      appointment_id text PRIMARY KEY NOT NULL,
+      status text NOT NULL,
+      owner_id text NOT NULL,
+      pet_id text NOT NULL,
+      state text NOT NULL
+    )
+  `));
+  database.run(sql.raw(
+    "DELETE FROM __drizzle_migrations WHERE created_at > 1786633200000",
+  ));
+};
+
+const snapshotLegacyMigrationState = (database: SqliteDatabase) => ({
+  schema: database.all(sql.raw(`
+    SELECT type, name, tbl_name, sql
+    FROM sqlite_master
+    WHERE name NOT LIKE 'sqlite_%'
+    ORDER BY type, name
+  `)),
+  appointments: database.all(sql.raw(
+    "SELECT * FROM appointments ORDER BY appointment_id",
+  )),
+  events: database.all(sql.raw(
+    "SELECT * FROM domain_events ORDER BY event_id",
+  )),
+  regularPayloads: database.all(sql.raw(
+    "SELECT * FROM domain_event_payloads ORDER BY event_id",
+  )),
+  sensitivePayloads: database.all(sql.raw(
+    "SELECT * FROM domain_event_sensitive_payloads ORDER BY event_id",
+  )),
+  migrationJournal: database.all(sql.raw(
+    "SELECT * FROM __drizzle_migrations ORDER BY id",
+  )),
+});
+
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) {
     rmSync(directory, { force: true, recursive: true });
@@ -67,24 +113,7 @@ describe("file SQLite application smoke", () => {
     const database = createSqliteDatabase(databasePath);
     migrateDatabase(database);
 
-    const columns = database
-      .all<{ name: string }>(sql.raw("PRAGMA table_info(appointments)"))
-      .map(({ name }) => name);
-    if (columns.includes("scheduled_at")) {
-      database.run(sql.raw("DROP TABLE appointments"));
-      database.run(sql.raw(`
-        CREATE TABLE appointments (
-          appointment_id text PRIMARY KEY NOT NULL,
-          status text NOT NULL,
-          owner_id text NOT NULL,
-          pet_id text NOT NULL,
-          state text NOT NULL
-        )
-      `));
-      database.run(sql.raw(
-        "DELETE FROM __drizzle_migrations WHERE created_at > 1786633200000",
-      ));
-    }
+    restoreLegacyAppointmentSchema(database);
 
     const paidAppointmentId = "79000000-0000-4000-8000-000000000001";
     const canceledAppointmentId = "79000000-0000-4000-8000-000000000002";
@@ -142,6 +171,41 @@ describe("file SQLite application smoke", () => {
       aggregateState: legacyPaid,
       eventPayload: { appointmentId: paidAppointmentId },
     }).run();
+    const legacyRegularEventId = "79000000-0000-4000-8000-000000000009";
+    const regularEventPayload = '{ "appointmentId": "regular-payload-preserved" }';
+    database.run(sql`
+      INSERT INTO domain_events (
+        event_id, aggregate_id, aggregate_name, event_name, occurred_at,
+        actor_user_id, payload_sensitivity
+      ) VALUES (
+        ${legacyRegularEventId}, ${canceledAppointmentId}, 'Appointment',
+        'appointment.canceled', ${legacyCanceled.canceledAt},
+        '79000000-0000-4000-8000-000000000008', 'Regular'
+      )
+    `);
+    database.run(sql`
+      INSERT INTO domain_event_payloads (event_id, aggregate_state, event_payload)
+      VALUES (
+        ${legacyRegularEventId}, ${JSON.stringify(legacyCanceled)},
+        ${regularEventPayload}
+      )
+    `);
+    const auditMetadataBefore = database.all(sql.raw(`
+      SELECT * FROM domain_events
+      WHERE event_id IN (
+        '79000000-0000-4000-8000-000000000007',
+        '79000000-0000-4000-8000-000000000009'
+      )
+      ORDER BY event_id
+    `));
+    const regularEventPayloadBefore = database.get(sql.raw(`
+      SELECT event_payload FROM domain_event_payloads
+      WHERE event_id = '79000000-0000-4000-8000-000000000009'
+    `));
+    const sensitiveEventPayloadBefore = database.get(sql.raw(`
+      SELECT event_payload FROM domain_event_sensitive_payloads
+      WHERE event_id = '79000000-0000-4000-8000-000000000007'
+    `));
 
     migrateDatabase(database);
     migrateDatabase(database);
@@ -206,7 +270,101 @@ describe("file SQLite application smoke", () => {
     });
     expect(migratedAuditState).not.toHaveProperty("amount");
     expect(migratedAuditState).not.toHaveProperty("paidAt");
+    expect(database.all(sql.raw(`
+      SELECT * FROM domain_events
+      WHERE event_id IN (
+        '79000000-0000-4000-8000-000000000007',
+        '79000000-0000-4000-8000-000000000009'
+      )
+      ORDER BY event_id
+    `))).toEqual(auditMetadataBefore);
+    expect(database.get(sql.raw(`
+      SELECT event_payload FROM domain_event_payloads
+      WHERE event_id = '79000000-0000-4000-8000-000000000009'
+    `))).toEqual(regularEventPayloadBefore);
+    expect(database.get(sql.raw(`
+      SELECT event_payload FROM domain_event_sensitive_payloads
+      WHERE event_id = '79000000-0000-4000-8000-000000000007'
+    `))).toEqual(sensitiveEventPayloadBefore);
+    expect(database
+      .select()
+      .from(domainEventPayloadsTable)
+      .get()?.aggregateState).toMatchObject({
+        kind: "Canceled",
+        visitReason: "移行前データ（来院理由不明）",
+        cancellationReason: "legacy cancellation reason",
+        settlement: { kind: "NoPayment" },
+        version: 1,
+      });
   });
+
+  test.each([
+    "projection",
+    "regular audit",
+    "sensitive audit",
+  ] as const)(
+    "rejects malformed legacy Canceled state in %s and rolls back schema, bodies, triggers, and journal",
+    (target) => {
+      const directory = mkdtempSync(join(tmpdir(), "clinic-final-invalid-upgrade-"));
+      temporaryDirectories.push(directory);
+      const database = createSqliteDatabase(join(directory, "clinic.sqlite"));
+      migrateDatabase(database);
+      restoreLegacyAppointmentSchema(database);
+
+      const appointmentId = "7a000000-0000-4000-8000-000000000001";
+      const ownerId = "7a000000-0000-4000-8000-000000000002";
+      const petId = "7a000000-0000-4000-8000-000000000003";
+      const invalidCanceledState = {
+        kind: "Canceled",
+        appointmentId,
+        ownerId,
+        petId,
+        scheduledAt: "2026-08-10T01:00:00.000Z",
+        canceledAt: "2026-08-09T01:30:00.000Z",
+      } as const;
+
+      if (target === "projection") {
+        database.run(sql`
+          INSERT INTO appointments (appointment_id, status, owner_id, pet_id, state)
+          VALUES (
+            ${appointmentId}, 'Canceled', ${ownerId}, ${petId},
+            ${JSON.stringify(invalidCanceledState)}
+          )
+        `);
+      } else {
+        const eventId = target === "regular audit"
+          ? "7a000000-0000-4000-8000-000000000004"
+          : "7a000000-0000-4000-8000-000000000005";
+        const sensitivity = target === "regular audit" ? "Regular" : "Sensitive";
+        database.run(sql`
+          INSERT INTO domain_events (
+            event_id, aggregate_id, aggregate_name, event_name, occurred_at,
+            actor_user_id, payload_sensitivity
+          ) VALUES (
+            ${eventId}, ${appointmentId}, 'Appointment', 'appointment.canceled',
+            '2026-08-09T01:30:00.000Z',
+            '7a000000-0000-4000-8000-000000000006', ${sensitivity}
+          )
+        `);
+        const payloadTable = target === "regular audit"
+          ? "domain_event_payloads"
+          : "domain_event_sensitive_payloads";
+        database.run(sql.raw(`
+          INSERT INTO ${payloadTable} (event_id, aggregate_state, event_payload)
+          VALUES (
+            '${eventId}',
+            '${JSON.stringify(invalidCanceledState)}',
+            '{ "privateBody": "must remain byte-for-byte unchanged" }'
+          )
+        `));
+      }
+
+      const before = snapshotLegacyMigrationState(database);
+
+      expect(() => migrateDatabase(database)).toThrow();
+      expect(snapshotLegacyMigrationState(database)).toEqual(before);
+    },
+  );
 
   test("migrates a new file and persists first-admin setup through the real app", async () => {
     const directory = mkdtempSync(join(tmpdir(), "clinic-final-"));
