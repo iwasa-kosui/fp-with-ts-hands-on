@@ -5,3 +5,5 @@ export const appointmentStates = [
 ] as const;
 
 export type AppointmentState = (typeof appointmentStates)[number];
+
+export const isTerminalState = (state: string): boolean => state === "Paid";

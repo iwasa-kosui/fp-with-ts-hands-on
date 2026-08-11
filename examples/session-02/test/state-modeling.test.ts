@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { appointmentStates, type AppointmentState } from "../src/state-vocabulary.js";
+import {
+  appointmentStates,
+  isTerminalState,
+  type AppointmentState,
+} from "../src/state-vocabulary.js";
 
 describe("Session 02 state vocabulary", () => {
   it("来院で使う状態語彙を固定する", () => {
@@ -8,5 +12,10 @@ describe("Session 02 state vocabulary", () => {
 
     expect(appointmentStates).toEqual(["Scheduled", "CheckedIn", "InExamination"]);
     expect(state).toBe("CheckedIn");
+  });
+
+  it("会計済みだけを終端状態として扱う", () => {
+    expect(isTerminalState("Paid")).toBe(true);
+    expect(isTerminalState("InExamination")).toBe(false);
   });
 });

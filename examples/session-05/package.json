@@ -5,9 +5,9 @@
   "scripts": {
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "typecheck:exercise": "tsc --noEmit -p tsconfig.exercises.json",
+    "typecheck:exercise": "tsc --noEmit -p tsconfig.exercise.json",
     "test": "vitest run",
-    "exercise": "vitest run --config vitest.exercises.config.ts"
+    "exercise": "pnpm run typecheck:exercise && vitest run --config vitest.exercises.config.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
