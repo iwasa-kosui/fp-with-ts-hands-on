@@ -8,6 +8,15 @@
     "binding": "ASSETS",
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash",
-    "run_worker_first": ["/healthz", "/module-00", "/module-00/"]
+    "run_worker_first": [
+      "/healthz",
+      "/module-00",
+      "/module-00/",
+      "/sessions/01-state-modeling/",
+      "/sessions/02-boundary-and-ids/",
+      "/sessions/03-result-errors/",
+      "/sessions/04-agent-review/",
+      "/sessions/05-mini-integration/"
+    ]
   }
 }
