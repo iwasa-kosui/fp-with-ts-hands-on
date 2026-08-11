@@ -6,34 +6,22 @@ const viewports = [
 ] as const;
 
 for (const viewport of viewports) {
-  test(`session tables and definition lists are readable on ${viewport.name}`, async ({
+  test(`Session 00 の検証範囲は ${viewport.name} でも読みやすい`, async ({
     page,
   }) => {
     await page.setViewportSize(viewport);
     await page.goto("/sessions/00-onboarding/");
 
-    const table = page.locator("#function-and-value table");
-    const tableHeading = table.locator("thead th").first();
-    const definitions = page.locator("#people dl");
+    const verification = page.locator("#onboarding-verification");
+    const definitions = verification.locator("dl");
     const firstTerm = definitions.locator("dt").first();
 
-    await expect(table).toBeVisible();
+    await expect(verification.getByRole("heading", { name: "開始状態を確認する" })).toBeVisible();
     await expect(definitions).toBeVisible();
-
-    const tableStyle = await table.evaluate((element) => {
-      const style = getComputedStyle(element);
-      return {
-        borderTopWidth: style.borderTopWidth,
-        width: element.getBoundingClientRect().width,
-        parentWidth: element.parentElement?.getBoundingClientRect().width ?? 0,
-      };
-    });
-    expect(tableStyle.borderTopWidth).toBe("2px");
-    expect(tableStyle.width).toBeLessThanOrEqual(tableStyle.parentWidth + 1);
-    await expect(tableHeading).toHaveCSS(
-      "background-color",
-      "rgb(188, 235, 215)",
-    );
+    await expect(definitions.locator("dt")).toHaveCount(3);
+    await expect(definitions).toContainText("型で守ること");
+    await expect(definitions).toContainText("統合テストで守ること");
+    await expect(definitions).toContainText("人がレビューすること");
 
     const definitionStyle = await definitions.evaluate((element) => {
       const style = getComputedStyle(element);
