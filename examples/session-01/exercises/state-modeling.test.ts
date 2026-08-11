@@ -1,7 +1,8 @@
 import { expect, it } from "vitest";
 
-import { visitLifecycle } from "../src/visit-lifecycle.js";
+import { isTerminalState } from "../src/state-vocabulary.js";
 
 it("会計済みの来院を終端状態として扱う", () => {
-  expect(visitLifecycle.terminalStates).toEqual(["Paid"]);
+  expect(isTerminalState("Paid")).toBe(true);
+  expect(isTerminalState("InExamination")).toBe(false);
 });
