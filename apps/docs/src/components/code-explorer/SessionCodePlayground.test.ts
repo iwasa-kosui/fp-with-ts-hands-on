@@ -53,8 +53,11 @@ describe("SessionCodePlayground", () => {
     );
     expect(document.body.textContent).toContain("読み取り専用の参照実装を読みます");
     expect(document.body.textContent).not.toContain("ブラウザ内で編集して実行できます");
+    expect(document.querySelector('nav[aria-label="教材ファイル"]')).toBeNull();
     expect(document.querySelector('[data-action="reset"]')).toBeNull();
     expect(document.querySelector('[data-action="run"]')).toBeNull();
+    expect(document.querySelector('[data-action="stop"]')).toBeNull();
+    expect(document.querySelector('[aria-label="実行結果"]')).toBeNull();
     expect(
       [...document.querySelectorAll("[data-code-guide]")].map((guide) =>
         guide.getAttribute("data-guide-path"),
