@@ -11,9 +11,12 @@ export type FollowUpRequested = Readonly<{
     appointmentId: AppointmentId;
     petId: PetId;
   }>;
-  occurredAt?: Timestamp;
-  actorUserId?: UserId;
+  occurredAt: Timestamp;
+  actorUserId: UserId;
 }>;
 
-export type UnsafeFollowUpRequested = FollowUpRequested &
+export type UnsafeFollowUpRequested = Omit<
+  FollowUpRequested,
+  "occurredAt" | "actorUserId"
+> &
   Readonly<{ ownerContact: OwnerContact }>;

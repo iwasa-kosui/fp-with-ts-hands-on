@@ -1,4 +1,4 @@
-import { okAsync } from "neverthrow";
+import { errAsync, okAsync } from "neverthrow";
 import { describe, expect, it } from "vitest";
 
 import { Appointment } from "../src/domain/appointment.js";
@@ -8,7 +8,12 @@ import { PetId } from "../src/domain/petId.js";
 import { Timestamp } from "../src/domain/timestamp.js";
 import { VeterinarianId } from "../src/domain/veterinarianId.js";
 import type { AppointmentResolver } from "../src/domain/appointmentResolver.js";
-import type { ExaminationStartedStore } from "../src/domain/appointmentStores.js";
+import type {
+  AppointmentConflict,
+  AppointmentStoreError,
+  ExaminationStartedStore,
+} from "../src/domain/appointmentStores.js";
+import type { RepositoryError } from "../src/domain/repositoryError.js";
 import { StartExaminationUseCase } from "../src/useCase/startExaminationUseCase.js";
 
 const rawInput = {
@@ -27,6 +32,15 @@ const checkedIn = Appointment.checkIn(
   scheduled,
   Timestamp.schema.parse("2026-08-30T06:10:00.000Z"),
 );
+const repositoryError: RepositoryError = {
+  kind: "RepositoryError",
+  operation: "test",
+  cause: new Error("repository unavailable"),
+};
+const appointmentConflict: AppointmentConflict = {
+  kind: "AppointmentConflict",
+  appointmentId,
+};
 
 describe("StartExaminationUseCase", () => {
   it("予約を解決してから成功イベントを一つの store port へ渡す", async () => {
@@ -80,5 +94,46 @@ describe("StartExaminationUseCase", () => {
 
     expect(result.isErr() && result.error.kind).toBe("InvalidAppointmentState");
     expect(storedEvents).toEqual([]);
+  });
+
+  it("resolver の RepositoryError を同じ typed value のまま返す", async () => {
+    let storeCalls = 0;
+    const useCase = StartExaminationUseCase.create({
+      appointmentResolver: {
+        resolveById: () => errAsync(repositoryError),
+      } as const satisfies AppointmentResolver,
+      examinationStartedStore: {
+        store: () => {
+          storeCalls += 1;
+          return okAsync(undefined);
+        },
+      } as const satisfies ExaminationStartedStore,
+    });
+
+    const result = await useCase.run(rawInput);
+
+    expect(result._unsafeUnwrapErr()).toBe(repositoryError);
+    expect(storeCalls).toBe(0);
+  });
+
+  it.each([
+    { name: "AppointmentConflict", error: appointmentConflict },
+    { name: "RepositoryError", error: repositoryError },
+  ] as const satisfies readonly Readonly<{
+    name: string;
+    error: AppointmentStoreError;
+  }>[])("store の $name を同じ typed value のまま返す", async ({ error }) => {
+    const useCase = StartExaminationUseCase.create({
+      appointmentResolver: {
+        resolveById: () => okAsync(checkedIn),
+      } as const satisfies AppointmentResolver,
+      examinationStartedStore: {
+        store: () => errAsync(error),
+      } as const satisfies ExaminationStartedStore,
+    });
+
+    const result = await useCase.run(rawInput);
+
+    expect(result._unsafeUnwrapErr()).toBe(error);
   });
 });

@@ -4,10 +4,7 @@ import type { Appointment } from "../appointment.js";
 import type { AppointmentId } from "../appointmentId.js";
 import type { OwnerContact } from "../ownerContact.js";
 import type { PetId } from "../petId.js";
-import type {
-  FollowUpRequested,
-  UnsafeFollowUpRequested,
-} from "./followUpRequested.js";
+import type { UnsafeFollowUpRequested } from "./followUpRequested.js";
 
 export type FollowUpCandidate = Readonly<{
   appointment: Appointment;
@@ -19,7 +16,7 @@ export type FollowUpTarget = Readonly<{
   appointmentId: AppointmentId;
   petId: PetId;
   ownerContact: OwnerContact;
-  event: FollowUpRequested;
+  event: UnsafeFollowUpRequested;
 }>;
 
 const hasAppointmentId = (

@@ -75,17 +75,34 @@ const users = [
 
 const createHarness = (requestedAppointmentIds: readonly AppointmentId[] = []) => {
   const storedEvents: FollowUpRequested[] = [];
+  const calls = {
+    userResolver: 0,
+    followUpResolver: 0,
+    claimReader: 0,
+    store: 0,
+  };
   const useCase = RequestFollowUpUseCase.create({
     userResolver: {
-      resolveById: (userId) =>
-        okAsync(users.find((user) => user.userId === userId)),
+      resolveById: (userId) => {
+        calls.userResolver += 1;
+        return okAsync(users.find((user) => user.userId === userId));
+      },
     },
-    followUpResolver: { resolveCandidates: () => okAsync([candidate]) },
+    followUpResolver: {
+      resolveCandidates: () => {
+        calls.followUpResolver += 1;
+        return okAsync([candidate]);
+      },
+    },
     followUpRequestReader: {
-      listRequestedAppointmentIds: () => okAsync(requestedAppointmentIds),
+      listRequestedAppointmentIds: () => {
+        calls.claimReader += 1;
+        return okAsync(requestedAppointmentIds);
+      },
     },
     followUpRequestedStore: {
       store: (...events) => {
+        calls.store += 1;
         storedEvents.push(...events);
         return okAsync(undefined);
       },
@@ -93,7 +110,7 @@ const createHarness = (requestedAppointmentIds: readonly AppointmentId[] = []) =
     clock: { now: () => requestedAt },
   });
 
-  return { useCase, storedEvents };
+  return { useCase, storedEvents, calls };
 };
 
 describe("safe follow-up", () => {
@@ -120,6 +137,7 @@ describe("safe follow-up", () => {
       kind: "FollowUpRequested",
       aggregateId: appointmentId,
       eventPayload: { appointmentId, petId },
+      occurredAt: requestedAt,
       actorUserId: receptionistId,
     });
     expect(storedEvents[0]).not.toHaveProperty("ownerContact");
@@ -127,13 +145,19 @@ describe("safe follow-up", () => {
   });
 
   it("権限のない獣医師からの依頼は event を保存しない", async () => {
-    const { useCase, storedEvents } = createHarness();
+    const { useCase, storedEvents, calls } = createHarness();
 
     const result = await useCase.run({
       actorUserId: veterinarianUserId,
       appointmentIds: [appointmentId],
     });
 
+    expect(calls).toEqual({
+      userResolver: 1,
+      followUpResolver: 0,
+      claimReader: 0,
+      store: 0,
+    });
     expect(result.isErr() && result.error.kind).toBe("Unauthorized");
     expect(storedEvents).toEqual([]);
   });
