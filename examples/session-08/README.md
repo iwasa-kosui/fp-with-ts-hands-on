@@ -1,13 +1,22 @@
-# Session 08: 意味の違う値を分ける
+# Session 08: PII を出力境界で守る
 
-開始状態です。Schema を通っても ID、日時、金額はすべて primitive のままでは取り違えられます。この回では用途別の brand で `AppointmentId`、`PetId`、`OwnerId`、`VeterinarianId`、`Timestamp`、`PaymentAmount` を表します。次の Session 09 で、値の意味とは別に PII の出力を隠します。
+## 開始状態
+
+値の意味は区別できても、飼い主の電話番号が JSON やログへ露出します。
+
+## この回で変える関数
+
+`OwnerContact.parse` を編集し、電話番号を直接の文字列ではなく秘匿値として保持します。
 
 ## 検証
 
 ```bash
-pnpm --filter @fp-with-ts/clinic-session-08 typecheck
 pnpm --filter @fp-with-ts/clinic-session-08 test
-pnpm --filter @fp-with-ts/clinic-session-08 exercise
+pnpm exercise:08
 ```
 
-通常テストは ID の取り違えを型で防ぎ、不正な日時と金額を拒否することを確認します。演習は PII を文字列化したときの保護がまだないため意図的に失敗します。
+通常テストは branded value を確認し、演習は PII を隠せないため意図的に失敗します。
+
+## 次の snapshot
+
+Session 09 で、予期可能な業務上の失敗を値として返します。

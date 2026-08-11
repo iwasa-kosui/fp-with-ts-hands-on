@@ -68,6 +68,7 @@ const sessionWorkspaces = {
       "exercises/input-boundary.test.ts",
       "test/cancellation.test.ts",
       "src/domain/appointment.ts",
+      "src/domain/startExaminationInput.ts",
     ],
   },
   "07-meaningful-values": {
@@ -77,6 +78,8 @@ const sessionWorkspaces = {
       "exercises/value-meaning.test.ts",
       "test/start-examination-input.test.ts",
       "src/domain/appointment.ts",
+      "src/domain/ownerId.ts",
+      "src/domain/petId.ts",
       "src/domain/shared/schemaResult.ts",
       "src/domain/startExaminationInput.ts",
     ],
@@ -92,6 +95,7 @@ const sessionWorkspaces = {
       "src/domain/paymentAmount.ts",
       "src/domain/petId.ts",
       "src/domain/timestamp.ts",
+      "src/domain/ownerContact.ts",
     ],
   },
   "09-typed-failures": {
@@ -106,6 +110,7 @@ const sessionWorkspaces = {
       "src/domain/ownerId.ts",
       "src/domain/petId.ts",
       "src/domain/shared/sensitive.ts",
+      "src/domain/startExaminationErrors.ts",
     ],
   },
   "10-success-events": {
@@ -136,6 +141,9 @@ const sessionWorkspaces = {
       "src/domain/petId.ts",
       "src/domain/timestamp.ts",
       "src/domain/veterinarianId.ts",
+      "src/domain/appointmentResolver.ts",
+      "src/domain/appointmentStores.ts",
+      "src/useCase/startExaminationUseCase.ts",
     ],
   },
   "12-atomicity-and-conflicts": {
@@ -158,6 +166,7 @@ const sessionWorkspaces = {
       "src/domain/timestamp.ts",
       "src/domain/veterinarianId.ts",
       "src/useCase/startExaminationUseCase.ts",
+      "src/adaptor/inMemoryAppointmentEventStore.ts",
     ],
   },
   "13-safe-follow-up": {

@@ -22,6 +22,22 @@ const expectedSnapshots = {
 } as const;
 
 const exerciseEditTargets = {
+  "06-input-boundary": ["src/domain/startExaminationInput.ts"],
+  "07-meaningful-values": [
+    "src/domain/ownerId.ts",
+    "src/domain/petId.ts",
+  ],
+  "08-pii-output": ["src/domain/ownerContact.ts"],
+  "09-typed-failures": ["src/domain/startExaminationErrors.ts"],
+  "10-success-events": ["src/domain/appointment.ts"],
+  "11-use-case-ports": [
+    "src/domain/appointmentResolver.ts",
+    "src/domain/appointmentStores.ts",
+    "src/useCase/startExaminationUseCase.ts",
+  ],
+  "12-atomicity-and-conflicts": [
+    "src/adaptor/inMemoryAppointmentEventStore.ts",
+  ],
   "13-safe-follow-up": [
     "src/domain/followUp/collectFollowUpTargets.ts",
     "src/useCase/requestFollowUpUseCase.ts",
@@ -66,11 +82,14 @@ const requiredVisibleFiles = {
     "exercises/input-boundary.test.ts",
     "test/cancellation.test.ts",
     "src/domain/appointment.ts",
+    "src/domain/startExaminationInput.ts",
   ],
   "07-meaningful-values": [
     "exercises/value-meaning.test.ts",
     "test/start-examination-input.test.ts",
     "src/domain/appointment.ts",
+    "src/domain/ownerId.ts",
+    "src/domain/petId.ts",
     "src/domain/shared/schemaResult.ts",
     "src/domain/startExaminationInput.ts",
   ],
@@ -82,6 +101,7 @@ const requiredVisibleFiles = {
     "src/domain/paymentAmount.ts",
     "src/domain/petId.ts",
     "src/domain/timestamp.ts",
+    "src/domain/ownerContact.ts",
   ],
   "09-typed-failures": [
     "exercises/typed-failures.test.ts",
@@ -92,6 +112,7 @@ const requiredVisibleFiles = {
     "src/domain/ownerId.ts",
     "src/domain/petId.ts",
     "src/domain/shared/sensitive.ts",
+    "src/domain/startExaminationErrors.ts",
   ],
   "10-success-events": [
     "exercises/success-events.test.ts",
@@ -114,6 +135,9 @@ const requiredVisibleFiles = {
     "src/domain/petId.ts",
     "src/domain/timestamp.ts",
     "src/domain/veterinarianId.ts",
+    "src/domain/appointmentResolver.ts",
+    "src/domain/appointmentStores.ts",
+    "src/useCase/startExaminationUseCase.ts",
   ],
   "12-atomicity-and-conflicts": [
     "exercises/atomicity-and-conflicts.test.ts",
@@ -132,6 +156,7 @@ const requiredVisibleFiles = {
     "src/domain/timestamp.ts",
     "src/domain/veterinarianId.ts",
     "src/useCase/startExaminationUseCase.ts",
+    "src/adaptor/inMemoryAppointmentEventStore.ts",
   ],
   "13-safe-follow-up": [
     "exercises/safe-follow-up.test.ts",
@@ -246,14 +271,9 @@ describe("session code workspaces", () => {
     }
   });
 
-  it("keeps later exercise source absent from incremental snapshots", () => {
+  it("keeps only later-session sources absent from incremental snapshots", () => {
     expect(projectFilesFor("02-state-vocabulary")["src/domain/appointment.ts"]).toBeUndefined();
-    expect(projectFilesFor("06-input-boundary")["src/domain/startExaminationInput.ts"]).toBeUndefined();
     expect(projectFilesFor("07-meaningful-values")["src/domain/appointmentId.ts"]).toBeUndefined();
-    expect(projectFilesFor("08-pii-output")["src/domain/ownerContact.ts"]).toBeUndefined();
-    expect(projectFilesFor("09-typed-failures")["src/domain/appointmentExaminationStarted.ts"]).toBeUndefined();
-    expect(projectFilesFor("10-success-events")["src/useCase/startExaminationUseCase.ts"]).toBeUndefined();
-    expect(projectFilesFor("11-use-case-ports")["src/adaptor/inMemoryAppointmentEventStore.ts"]).toBeUndefined();
     expect(projectFilesFor("12-atomicity-and-conflicts")["src/domain/followUp/collectFollowUpTargets.ts"]).toBeUndefined();
   });
 

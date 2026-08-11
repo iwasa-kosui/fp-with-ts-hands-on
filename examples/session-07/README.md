@@ -1,13 +1,22 @@
-# Session 07: 外部入力を検証する
+# Session 07: 意味の違う値を分ける
 
-開始状態です。`unknown` の外部入力は TypeScript の注釈だけでは信用せず、Schema で一方向に変換します。この回では `schemaResult` と `StartExaminationInput.parse` を追加します。次の Session 08 で、同じ `string` でも ID の意味を区別します。
+## 開始状態
+
+外部入力は検証できますが、ペット ID と飼い主 ID はどちらも `string` で取り違えられます。
+
+## この回で変える関数
+
+`OwnerId.parse` と `PetId.parse` を使い、用途別の ID を作ります。
 
 ## 検証
 
 ```bash
-pnpm --filter @fp-with-ts/clinic-session-07 typecheck
 pnpm --filter @fp-with-ts/clinic-session-07 test
-pnpm --filter @fp-with-ts/clinic-session-07 exercise
+pnpm exercise:07
 ```
 
-通常テストは不正な UUID と日時を `SchemaValidationError` として拒否することを確認します。演習は ID の意味をまだ区別できないため意図的に失敗します。
+通常テストは境界入力を確認し、演習は PII の出力保護がまだないため意図的に失敗します。
+
+## 次の snapshot
+
+Session 08 で連絡先を `Sensitive` として出力境界から守ります。

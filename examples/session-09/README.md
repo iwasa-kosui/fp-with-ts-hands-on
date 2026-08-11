@@ -1,13 +1,22 @@
-# Session 09: PII を出力境界で守る
+# Session 09: 予期可能な失敗を値にする
 
-開始状態です。brand は値の意味を守りますが、出力時の秘匿性は守りません。この回では `Sensitive.of` と `OwnerContact.parse` を追加し、電話番号を JSON、文字列、Node inspect から隠します。次の Session 10 で、検証以外の予期可能な失敗を値として区別します。
+## 開始状態
+
+PII は守れますが、見つからない予約を呼び出し側が判断できる失敗理由で返せません。
+
+## この回で変える関数
+
+`ensureFound` を編集し、未解決の予約を `AppointmentNotFound` の `Result` にします。
 
 ## 検証
 
 ```bash
-pnpm --filter @fp-with-ts/clinic-session-09 typecheck
 pnpm --filter @fp-with-ts/clinic-session-09 test
-pnpm --filter @fp-with-ts/clinic-session-09 exercise
+pnpm exercise:09
 ```
 
-通常テストは PII が出力に現れず、`PetId` を `OwnerId` に取り違えられないことを確認します。演習は、見つからない予約を `undefined` ではなく `AppointmentNotFound` として返す guard がまだないため、意図的に失敗します。
+通常テストは連絡先の非露出を確認し、演習は未解決予約をまだ typed error にできないため意図的に失敗します。
+
+## 次の snapshot
+
+Session 10 で、成功した状態変更だけをイベントにします。

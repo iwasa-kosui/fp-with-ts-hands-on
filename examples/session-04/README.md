@@ -1,24 +1,22 @@
-# Session 04: 診察開始を状態遷移として閉じる
+# Session 04: 会計待ちを表す
 
-## 事故
+## 開始状態
 
-予約済みのまま診察を開始できると、受付という業務上の確認を飛ばします。また、状態を追加したとき表示が抜けても気付きにくくなります。
+診察開始の遷移は閉じましたが、診察完了と支払い済みの間にある業務状態がありません。
 
-## 守る不変条件
+## この回で変える関数
 
-`startExamination` が受け取れるのは `CheckedIn` だけです。表示は既知の全状態を扱います。
+`completeExamination` と `recordPayment` により、`AwaitingPayment` を経由する会計フローを追加します。
 
-## 採用する技法と限界
-
-遷移元を関数引数で絞り、`assertNever` を使って表示の分岐漏れを型検査します。これは会計完了までの順序や入力値の正しさを検証するものではありません。
-
-## 検証と振り返り
+## 検証
 
 ```bash
-pnpm --filter @fp-with-ts/clinic-session-04 typecheck
 pnpm --filter @fp-with-ts/clinic-session-04 test
-pnpm --filter @fp-with-ts/clinic-session-04 exercise
-pnpm --filter @fp-with-ts/clinic-session-04 typecheck:exercise
+pnpm exercise:04
 ```
 
-通常の検証は成功します。演習は会計待ちの契約がまだないため意図的に失敗します。自分の業務で、前提状態を確認せずに実行できてしまう操作を一つ探してください。
+通常テストは会計待ちを確認し、演習はキャンセル状態がまだないため意図的に失敗します。
+
+## 次の snapshot
+
+Session 05 でキャンセルと終端状態を分けます。
