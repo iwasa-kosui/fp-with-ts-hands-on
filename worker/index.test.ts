@@ -56,7 +56,7 @@ describe("worker request handler", () => {
     });
     const { env, fetch } = createAssets(assetResponse);
     const request = new Request(
-      "https://example.test/sessions/01-state-modeling/?source=worker-test",
+      "https://example.test/sessions/01-invariants/?source=worker-test",
       { headers: { "x-request": "original" } },
     );
 

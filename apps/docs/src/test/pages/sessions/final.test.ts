@@ -1,59 +1,43 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import FinalPage from "../../../pages/sessions/final.astro";
+import { createAstroContainer } from "../../render-astro";
 
-const readPage = (slug: string): string =>
-  readFileSync(
-    new URL("../../../pages/sessions/" + slug + ".astro", import.meta.url),
-    "utf8",
-  );
+const readFinal = (): string =>
+  readFileSync(resolve("src/pages/sessions/final.astro"), "utf8");
 
 describe("Final application", () => {
-  it("documents the runnable clinic flow and the safeguards behind it", () => {
-    const page = readPage("final");
+  it("routes from incidents to code before explaining framework composition", () => {
+    const page = readFinal();
+    const state = page.indexOf("appointment.ts");
+    const boundary = page.indexOf("schemaResult.ts");
+    const decision = page.indexOf("startExaminationUseCase.ts");
+    const persistence = page.indexOf("appointmentEventStore.ts");
+    const framework = page.indexOf("Hono");
 
-    expect(page).toContain("examples/final");
-    expect(page).toContain('id="final-structure"');
-    expect(page).toContain('id="final-flow"');
-    expect(page).toContain('id="final-operations"');
-    expect(page).toContain('id="final-persistence"');
-    expect(page).toContain('id="final-verify"');
-    expect(page).toContain("domain");
-    expect(page).toContain("adaptor/primary");
-    expect(page).toContain("adaptor/secondary");
-    expect(page).toContain("useCase");
-    expect(page).toContain("app.ts");
-    expect(page).toContain("StartExaminationUseCase");
-    expect(page).toContain("ResultAsync");
-    expect(page).toContain("resolveById");
-    expect(page).toContain("examinationStartedStore.store(event)");
-    expect(page).toContain("Drizzle");
-    expect(page).toContain("transaction");
-    expect(page).toContain("clinic.sqlite");
-    expect(page).toContain("/setup");
-    expect(page).toContain("/login");
-    expect(page).toContain("Admin");
-    expect(page).toContain("Receptionist");
-    expect(page).toContain("Veterinarian");
-    expect(page).toContain(
-      "Scheduled → CheckedIn → InExamination → AwaitingPayment → Paid",
-    );
-    expect(page).toContain("ExaminationCompletionStore");
-    expect(page).toContain("AppointmentExaminationCompleted");
-    expect(page).toContain("監査履歴から現在状態を復元しません");
-    expect(page).toContain("EventHistoryReader");
-    expect(page).toContain("Node v25.4.0");
-    expect(page).toContain("Node.js 20 ではローカル実行していません");
-    expect(page).toContain("Admin capability");
-    expect(page).toContain("SanitizedAuditRecord");
-    expect(page).toContain("dist/app.js");
-    expect(page).toContain("NODE_ENV を指定せず");
-    expect(page).toContain("isProduction: true");
-    expect(page).toContain("IdentityGenerationFailed");
-    expect(page).toContain("pnpm --filter @fp-with-ts/clinic-final dev");
-    expect(page).toContain("pnpm --filter @fp-with-ts/clinic-final build");
-    expect(page).toContain(
-      "pnpm --filter @fp-with-ts/clinic-final typecheck",
-    );
-    expect(page).toContain("pnpm --filter @fp-with-ts/clinic-final test");
+    expect(Math.min(state, boundary, decision, persistence)).toBeGreaterThan(-1);
+    expect(Math.max(state, boundary, decision, persistence)).toBeLessThan(framework);
+    expect(page).toContain("SessionLayout");
+    expect(page).toContain("sessionBySlug");
+    expect(page).toContain("CommandBlock");
+    expect(page).toContain("SessionCodePlayground");
+  });
+
+  it("renders the four incident routes and leaves one next improvement", async () => {
+    const container = await createAstroContainer();
+    const html = await container.renderToString(FinalPage, { partial: false });
+    const document = new DOMParser().parseFromString(html, "text/html");
+
+    expect(document.querySelectorAll("#incident-routes li")).toHaveLength(4);
+    expect(html).toContain("状態の事故");
+    expect(html).toContain("境界の事故");
+    expect(html).toContain("判断の事故");
+    expect(html).toContain("永続化の事故");
+    expect(html).toContain("Hono");
+    expect(html).toContain("Inertia");
+    expect(html).toContain("Drizzle");
+    expect(html).toContain("pnpm --filter @fp-with-ts/clinic-final test");
+    expect(document.querySelector("#final-reflection textarea")).not.toBeNull();
   });
 });

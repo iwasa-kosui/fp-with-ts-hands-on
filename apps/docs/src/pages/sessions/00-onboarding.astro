@@ -1,5 +1,6 @@
 ---
-import SessionCodeOverview from "../../components/code-explorer/SessionCodeOverview.astro";
+import CommandBlock from "../../components/CommandBlock.astro";
+import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
 import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessionBySlug } from "../../sessions/catalog";
 
@@ -9,225 +10,63 @@ if (session === undefined) throw new Error("Unknown session: 00-onboarding");
 
 <SessionLayout session={session}>
   <ol slot="toc">
-    <li><a href="#onboarding">着任初日のオンボーディング</a></li>
-    <li><a href="#domain-and-application">この病院とアプリケーションを知る</a></li>
-    <li><a href="#visit-and-code">来院とコードの対応を知る</a></li>
-    <li><a href="#design-overview">先人のコードを眺める</a></li>
-    <li><a href="#handoff">明日の開発に備える</a></li>
+    <li><a href="#incident">引き継いだ事故を読む</a></li>
+    <li><a href="#learning-loop">事故から始める進め方</a></li>
+    <li><a href="#onboarding-technique">観察の役割と限界</a></li>
+    <li><a href="#code-playground">先人のコードを読む</a></li>
+    <li><a href="#onboarding-verification">開始状態を確認する</a></li>
+    <li><a href="#onboarding-reflection">最初の問いを残す</a></li>
   </ol>
 
-  <section id="onboarding">
-    <h2>着任初日のオンボーディング</h2>
-    <div class="onboarding-story" role="group" aria-label="先人の獣医から新任エンジニアへの引き継ぎ">
-      <div class="onboarding-story__line onboarding-story__line--veterinarian">
-        <p class="onboarding-story__speaker">先人の獣医</p>
-        <p class="onboarding-story__bubble">この動物病院のシステムは、診療の合間にすべてバイブコーディングで作りました！</p>
-      </div>
-      <div class="onboarding-story__line onboarding-story__line--director">
-        <p class="onboarding-story__speaker">院長</p>
-        <p class="onboarding-story__bubble">その偉大な獣医さんが退職してしまいました。システムのことを詳しく知る人がいません……</p>
-      </div>
-      <div class="onboarding-story__line onboarding-story__line--director">
-        <p class="onboarding-story__speaker">院長</p>
-        <p class="onboarding-story__bubble">そこで採用されたエンジニアが、あなたです。まずは病院の仕事と先人のコードを知るところから始めてください</p>
-      </div>
-    </div>
+  <section id="incident">
+    <h2>引き継いだ事故を読む</h2>
+    <p data-actor="院長"><strong>登場人物:</strong> 院長から、退職した先人の獣医が診療の合間に作った予約管理システムを引き継ぎます。</p>
+    <p><strong>事故:</strong> 会計済みの来院を診察中へ戻せるうえ、飼い主の PII を含む値が運用ログへそのまま出ます。</p>
+    <p><strong>最初に守ること:</strong> 終わった来院を通常フローへ戻さず、PII を不要な出力へ露出させない。</p>
+    <CommandBlock phase="red" command="pnpm exercise:00" expected="会計済みの来院が診察中へ戻る事故を再現するため、意図的に失敗します。" />
+    <h3>事故を読むファイル</h3>
+    <ul>
+      <li><code>examples/session-00/exercises/incident.test.ts</code></li>
+      <li><code>examples/session-00/src/appointment.ts</code></li>
+      <li><code>examples/session-00/src/logger.ts</code></li>
+    </ul>
   </section>
 
-  <section id="domain-and-application">
-    <h2>この病院とアプリケーションを知る</h2>
-
-    <section id="hospital-role">
-      <h3>動物病院の役割</h3>
-      <p>
-        飼い主が安心して来院でき、病院スタッフが予約から会計までを一貫して扱えるようにするアプリです。
-      </p>
-      <p>
-        完成形を一度に作るのではなく、システム障害を防ぐためのルールを見つけ、小さな改善と確認を繰り返します。まず、誰のどんな困りごとを守るのかを確かめます。
-      </p>
-    </section>
-
-    <section id="visit-flow">
-      <h3>1回の来院の流れ</h3>
-      <p>
-        飼い主と病院スタッフは、来院の前後で次の仕事をつなげます。通常の再診手順はこのオンボーディングでは扱いません。
-      </p>
-      <ol>
-        <li>
-          <strong>予約</strong>
-          <p>飼い主が来院の予定を伝え、病院が受け入れる準備をします。</p>
-        </li>
-        <li>
-          <strong>受付</strong>
-          <p>来院した飼い主と動物を確認し、診療につなげます。</p>
-        </li>
-        <li>
-          <strong>診察と記録</strong>
-          <p>獣医師が診察し、診療の内容を一貫した記録として残します。</p>
-        </li>
-        <li>
-          <strong>会計と完了</strong>
-          <p>確定した診療内容をもとに会計し、来院の記録を完了させます。</p>
-        </li>
-      </ol>
-
-      <section id="people">
-        <h4>登場人物</h4>
-        <dl>
-          <dt>飼い主</dt>
-          <dd>来院を予約し、動物とともに診療を受けます。</dd>
-          <dt>受付スタッフ</dt>
-          <dd>来院を受け付け、診療へつなげます。</dd>
-          <dt>獣医師</dt>
-          <dd>動物を診察し、診療内容を記録します。</dd>
-          <dt>会計担当</dt>
-          <dd>確定した診療内容をもとに会計を行います。</dd>
-        </dl>
-      </section>
-    </section>
-
-    <section id="function-and-value">
-      <h3>提供する機能と価値</h3>
-      <p>各機能が、誰にどんな価値を届けるかを確認します。</p>
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">機能</th>
-            <th scope="col">届ける相手</th>
-            <th scope="col">価値</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row">予約・受付</th>
-            <td>受付スタッフ、飼い主</td>
-            <td>来院を迷わず正しく受け入れられる。</td>
-          </tr>
-          <tr>
-            <th scope="row">診察・カルテ</th>
-            <td>獣医師、病院スタッフ</td>
-            <td>診療の記録を一貫して扱える。</td>
-          </tr>
-          <tr>
-            <th scope="row">会計</th>
-            <td>会計担当、飼い主</td>
-            <td>確定した来院記録と会計を誤って壊さない。</td>
-          </tr>
-          <tr>
-            <th scope="row">フォロー連絡、連絡先の管理、申し送り</th>
-            <td>病院スタッフ、飼い主</td>
-            <td>必要な連絡を安全に引き継げる。</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-  </section>
-
-  <section id="visit-and-code">
-    <h2>来院とコードの対応を知る</h2>
-    <p>アプリでは、業務で起きた出来事ごとに、来院記録を次の状態へ進めます。</p>
-    <ol id="visit-state-transitions" class="visit-timeline" aria-label="来院の状態遷移">
-      <li class="visit-timeline__step">
-        <span class="visit-timeline__index" aria-hidden="true">1</span>
-        <div>
-          <h4>予約を受け付ける</h4>
-          <p class="visit-timeline__actor">飼い主</p>
-          <p class="visit-timeline__transition">
-            <span class="visit-timeline__state">
-              <span class="visit-timeline__state-name">来院記録なし</span>
-            </span>
-            <span class="sr-only">から</span><span aria-hidden="true">→</span>
-            <span class="visit-timeline__state">
-              <span class="visit-timeline__state-name">予約済み</span><code>scheduled</code>
-            </span>
-          </p>
-          <p class="visit-timeline__record">予約日時を残す</p>
-        </div>
-      </li>
-      <li class="visit-timeline__step">
-        <span class="visit-timeline__index" aria-hidden="true">2</span>
-        <div>
-          <h4>来院を確認する</h4>
-          <p class="visit-timeline__actor">受付スタッフ</p>
-          <p class="visit-timeline__transition">
-            <span class="visit-timeline__state">
-              <span class="visit-timeline__state-name">予約済み</span><code>scheduled</code>
-            </span>
-            <span class="sr-only">から</span><span aria-hidden="true">→</span>
-            <span class="visit-timeline__state">
-              <span class="visit-timeline__state-name">受付済み</span><code>checked-in</code>
-            </span>
-          </p>
-          <p class="visit-timeline__record">受付時刻を残す</p>
-        </div>
-      </li>
-      <li class="visit-timeline__step">
-        <span class="visit-timeline__index" aria-hidden="true">3</span>
-        <div>
-          <h4>診察を開始する</h4>
-          <p class="visit-timeline__actor">獣医師</p>
-          <p class="visit-timeline__transition">
-            <span class="visit-timeline__state">
-              <span class="visit-timeline__state-name">受付済み</span><code>checked-in</code>
-            </span>
-            <span class="sr-only">から</span><span aria-hidden="true">→</span>
-            <span class="visit-timeline__state">
-              <span class="visit-timeline__state-name">診察中</span><code>in-examination</code>
-            </span>
-          </p>
-          <p class="visit-timeline__record">担当獣医師と診察開始時刻を残す</p>
-        </div>
-      </li>
-      <li class="visit-timeline__step">
-        <span class="visit-timeline__index" aria-hidden="true">4</span>
-        <div>
-          <h4>会計を確定する</h4>
-          <p class="visit-timeline__actor">会計担当</p>
-          <p class="visit-timeline__transition">
-            <span class="visit-timeline__state">
-              <span class="visit-timeline__state-name">診察中</span><code>in-examination</code>
-            </span>
-            <span class="sr-only">から</span><span aria-hidden="true">→</span>
-            <span class="visit-timeline__state">
-              <span class="visit-timeline__state-name">会計済み・来院完了</span><code>paid</code>
-            </span>
-          </p>
-          <p class="visit-timeline__record">診断、処置、請求金額、会計時刻を残す</p>
-        </div>
-      </li>
+  <section id="learning-loop">
+    <h2>事故から始める進め方</h2>
+    <p>この教材は完成形を写す講座ではありません。各回で次の小さなループを繰り返します。</p>
+    <ol>
+      <li>登場人物と事故を確認する。</li>
+      <li>守る不変条件を業務の言葉で書く。</li>
+      <li>RED を観察し、作業を最大2関数に絞る。</li>
+      <li>事故に合う技法と、その技法の限界を確認する。</li>
+      <li>GREEN の後、型・統合テスト・人のレビューを分けて確認する。</li>
+      <li>未解決のリスクから次の一歩を決める。</li>
     </ol>
-    <aside class="visit-timeline__branch" aria-labelledby="cancellation-branch-title">
-      <h4 id="cancellation-branch-title">キャンセルの分岐</h4>
-      <p class="visit-timeline__actor">飼い主または病院</p>
-      <p>予約済みまたは受付済みからだけキャンセルでき、キャンセル（<code>canceled</code>）へ進みます。</p>
-      <p>キャンセル理由、キャンセル時刻、任意の再診希望日を残します。</p>
-    </aside>
-    <aside class="visit-timeline__terminal" aria-label="終端状態のルール">
-      <strong>守るルール:</strong> Paid と Canceled は終端状態です。会計済みの来院を診察中へ戻す業務は存在しません。再診は新しい予約として扱い、このオンボーディングでは扱いません。
-    </aside>
-
-    <h3>業務とコードの対応</h3>
-    <table>
-      <thead><tr><th scope="col">業務上の概念</th><th scope="col">コード</th></tr></thead>
-      <tbody>
-        <tr><th scope="row">来院記録</th><td><code>LegacyAppointment</code></td></tr>
-        <tr><th scope="row">予約を受け付ける</th><td><code>bookAppointment</code></td></tr>
-        <tr><th scope="row">状態を更新する</th><td><code>updateStatus</code></td></tr>
-        <tr><th scope="row">運用ログ</th><td><code>logger.info</code></td></tr>
-      </tbody>
-    </table>
+    <p>Session 00 では legacy を直しません。事故を再現できることが、次の変更を安全に始めるための作業です。</p>
   </section>
 
-  <SessionCodeOverview />
+  <section id="onboarding-technique">
+    <h2>観察の役割と限界</h2>
+    <p><strong>使う技法:</strong> 事故再現テストと legacy の読解で、変更前の問題を観察可能にします。</p>
+    <p><strong>この技法の限界:</strong> 観察だけでは事故を防げません。次回から一つの不変条件に対して必要な手段を選びます。</p>
+  </section>
 
-  <section id="handoff">
-    <h2>明日の開発に備える</h2>
-    <p class="onboarding-decision">
-      しかし、まだ問題は顕在化していません。迂闊にリファクタリングすれば、既存仕様を壊してしまうかもしれません。今日は業務、仕様、設計の理解に留め、明日から実際の開発に着手しましょう。
-    </p>
-    <h3>完了条件</h3>
-    <p>アプリケーションが支える業務と、既存設計で後から確認すべき5つの場所を説明できることです。</p>
-    <h3>次のセッションへ</h3>
-    <p>最初に扱う要求を確認し、状態と状態固有のデータを TypeScript の型で表します。</p>
+  <SessionCodePlayground slug={session.slug} />
+
+  <section id="onboarding-verification">
+    <h2>開始状態を確認する</h2>
+    <CommandBlock phase="green" command="pnpm --filter @fp-with-ts/clinic-session-00 test" expected="通常の予約から会計までのフローは成功し、事故用 exercise と区別できます。" />
+    <dl>
+      <dt>型で守ること</dt><dd>legacy の string status ではまだ守れていない、と説明できること。</dd>
+      <dt>統合テストで守ること</dt><dd>通常フローと事故再現を別コマンドで観察すること。</dd>
+      <dt>人がレビューすること</dt><dd>終端状態、PII の閲覧者、ログの用途を病院スタッフへ確認すること。</dd>
+    </dl>
+  </section>
+
+  <section id="onboarding-reflection">
+    <h2>最初の問いを残す</h2>
+    <p>事故を止めるため、まず一文で固定すべき業務ルールは何ですか。</p>
+    <p><a href="/sessions/01-invariants/">次へ: 守るべき不変条件を固定する</a></p>
   </section>
 </SessionLayout>

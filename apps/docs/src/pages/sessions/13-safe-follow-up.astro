@@ -1,0 +1,17 @@
+---
+import CommandBlock from "../../components/CommandBlock.astro";
+import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+const session = sessionBySlug("13-safe-follow-up");
+if (session === undefined) throw new Error("Unknown session: 13-safe-follow-up");
+---
+<SessionLayout session={session}>
+  <ol slot="toc"><li><a href="#incident">事故と不変条件</a></li><li><a href="#work">2関数の作業</a></li><li><a href="#code-playground">ブラウザで試す</a></li><li><a href="#technique">技法と限界</a></li><li><a href="#verification">検証</a></li><li><a href="#reflection">振り返り</a></li></ol>
+  <section id="incident"><h2>連絡対象、認可、監査を分ける</h2><p data-actor="受付スタッフと獣医師"><strong>登場人物:</strong> 権限のない獣医師が電話 follow-up を依頼し、対象収集時に電話番号入り event が作られ、同じ飼い主へ重複依頼されました。</p><p><strong>事故:</strong> 対象抽出が認可前に event を作り、PII と重複 claim を安全な境界の外へ出しました。</p><p><strong>守る不変条件:</strong> PII を含む連絡対象を監査 event に入れず、許可されない操作者へ返さない。</p></section>
+  <section id="work"><h2>対象収集と依頼を分ける</h2><CommandBlock phase="red" command="pnpm exercise:13" expected="target、認可、重複 claim、PII 非露出の契約が未実装で失敗します。" /><h3>先に読むファイル</h3><ul><li><code>examples/session-13/exercises/safe-follow-up.test.ts</code></li><li><code>examples/session-13/src/domain/followUp/collectFollowUpTargets.ts</code></li><li><code>examples/session-13/src/useCase/requestFollowUpUseCase.ts</code></li></ul><h3>作業範囲（最大2関数）</h3><p><code>collectFollowUpTargets</code> と <code>RequestFollowUpUseCase.run</code> の2関数だけを変更します。</p></section>
+  <SessionCodePlayground slug={session.slug} />
+  <section id="technique"><h2>純粋な target 収集と認可 use case</h2><p><strong>使う技法:</strong> target は識別子と read-model の連絡先を返し、use case が role、既存 claim を確認して識別子だけの <code>FollowUpRequested</code> を保存します。</p><p><strong>この技法の限界:</strong> この snapshot は SQLite、HTTP、通知送信、PII の保持期間を実装しません。</p><CommandBlock phase="green" command="pnpm exercise:13" expected="許可された依頼だけが重複なく、PII を含まない event として保存されます。" /></section>
+  <section id="verification"><h2>3つの範囲で確かめる</h2><dl><dt>型で守ること</dt><dd>target と event の形を分け、event payload を識別子だけにします。</dd><dt>統合テストで守ること</dt><dd><code>pnpm --filter @fp-with-ts/clinic-session-13 test</code> と不正 role、重複 claim、PII 非露出を確認します。</dd><dt>人がレビューすること</dt><dd>連絡先を見られる role、利用目的、保持期間、実際の通知手順を確認します。</dd></dl></section>
+  <section id="reflection"><h2>振り返り</h2><p>対象抽出、意思決定、監査、PII 表示が一つの関数に混ざっている業務はありますか。</p><p><a href="/sessions/final/">次へ: 完成例を事故から読む</a></p></section>
+</SessionLayout>

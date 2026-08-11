@@ -1,0 +1,17 @@
+---
+import CommandBlock from "../../components/CommandBlock.astro";
+import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+const session = sessionBySlug("06-input-boundary");
+if (session === undefined) throw new Error("Unknown session: 06-input-boundary");
+---
+<SessionLayout session={session}>
+  <ol slot="toc"><li><a href="#incident">事故と不変条件</a></li><li><a href="#work">2関数の作業</a></li><li><a href="#code-playground">ブラウザで試す</a></li><li><a href="#technique">技法と限界</a></li><li><a href="#verification">検証</a></li><li><a href="#reflection">振り返り</a></li></ol>
+  <section id="incident"><h2>壊れた外部入力を domain の手前で止める</h2><p data-actor="API 利用者"><strong>登場人物:</strong> API 利用者が不正な獣医師 UUID と日時を送り、注釈だけを信用した処理が値を受け入れました。</p><p><strong>事故:</strong> HTTP 由来の unknown を TypeScript の型注釈だけで安全とみなしました。</p><p><strong>守る不変条件:</strong> 外部入力は検証に成功した値だけを domain へ渡す。</p></section>
+  <section id="work"><h2>unknown を一方向に変換する</h2><CommandBlock phase="red" command="pnpm exercise:06" expected="不正 UUID が診察開始へ到達するため失敗します。" /><h3>先に読むファイル</h3><ul><li><code>examples/session-06/exercises/input-boundary.test.ts</code></li><li><code>examples/session-06/src/domain/appointment.ts</code></li></ul><h3>作業範囲（最大2関数）</h3><p><code>schemaResult</code> と <code>StartExaminationInput.parse</code> の2関数だけを追加し、unknown を検証済み入力へ変換します。</p></section>
+  <SessionCodePlayground slug={session.slug} />
+  <section id="technique"><h2>Zod を入力境界に置く</h2><p><strong>使う技法:</strong> Zod schema と <code>schemaResult</code> により、unknown を成功値または <code>SchemaValidationError</code> へ変換します。</p><p><strong>この技法の限界:</strong> schema は ID 同士の意味の違い、予約の現在状態、操作者の権限を保証しません。</p><CommandBlock phase="green" command="pnpm exercise:06" expected="不正 UUID と日時を domain の手前で拒否します。" /></section>
+  <section id="verification"><h2>3つの範囲で確かめる</h2><dl><dt>型で守ること</dt><dd>parse 後の値だけを後続関数へ渡す入口を表します。</dd><dt>統合テストで守ること</dt><dd><code>pnpm --filter @fp-with-ts/clinic-session-06 test</code> と不正値ケースで実行時検証を確認します。</dd><dt>人がレビューすること</dt><dd>どの外部入口で parse が必須か、許容形式が業務要求と一致するかを確認します。</dd></dl></section>
+  <section id="reflection"><h2>振り返り</h2><p>unknown のまま業務ロジックへ届いている外部入力はどこですか。</p><p><a href="/sessions/07-meaningful-values/">次へ: 値の意味を分ける</a></p></section>
+</SessionLayout>

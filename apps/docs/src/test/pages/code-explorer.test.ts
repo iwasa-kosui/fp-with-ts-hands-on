@@ -44,9 +44,7 @@ describe("code explorer preview page", () => {
     expect(document.body.textContent).toContain(
       "先人が残したコードを手がかりに、今後向き合う設計上の課題を見渡します。",
     );
-    expect(document.body.textContent).toContain(
-      "src/appointment.ts",
-    );
+    expect(html).toContain("src/appointment.ts");
     expect(
       document.querySelector('[data-action="run"]')?.textContent,
     ).toContain("実行");

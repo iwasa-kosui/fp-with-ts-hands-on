@@ -5,11 +5,19 @@ describe("session catalog", () => {
   it("keeps the sessions and final example in workshop order", () => {
     expect(sessions.map(({ slug }) => slug)).toEqual([
       "00-onboarding",
-      "01-state-modeling",
-      "02-boundary-and-ids",
-      "03-result-errors",
-      "04-agent-review",
-      "05-mini-integration",
+      "01-invariants",
+      "02-state-vocabulary",
+      "03-state-transitions",
+      "04-awaiting-payment",
+      "05-cancellation",
+      "06-input-boundary",
+      "07-meaningful-values",
+      "08-pii-output",
+      "09-typed-failures",
+      "10-success-events",
+      "11-use-case-ports",
+      "12-atomicity-and-conflicts",
+      "13-safe-follow-up",
       "final",
     ]);
   });
@@ -20,21 +28,21 @@ describe("session catalog", () => {
   });
 
   it("resolves paths and neighbors", () => {
-    const session = sessionBySlug("01-state-modeling");
+    const session = sessionBySlug("01-invariants");
     expect(session).toBeDefined();
     expect(session === undefined ? undefined : sessionPath(session)).toBe(
-      "/sessions/01-state-modeling/",
+      "/sessions/01-invariants/",
     );
-    expect(sessionNeighbors("01-state-modeling")).toEqual({
+    expect(sessionNeighbors("01-invariants")).toEqual({
       previous: sessions[0],
       next: sessions[2],
     });
-    expect(sessionNeighbors("05-mini-integration")).toEqual({
-      previous: sessions[4],
-      next: sessions[6],
+    expect(sessionNeighbors("13-safe-follow-up")).toEqual({
+      previous: sessions[12],
+      next: sessions[14],
     });
     expect(sessionNeighbors("final")).toEqual({
-      previous: sessions[5],
+      previous: sessions[13],
     });
   });
 });

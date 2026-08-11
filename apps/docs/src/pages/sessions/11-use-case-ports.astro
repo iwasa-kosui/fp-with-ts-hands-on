@@ -1,0 +1,17 @@
+---
+import CommandBlock from "../../components/CommandBlock.astro";
+import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+const session = sessionBySlug("11-use-case-ports");
+if (session === undefined) throw new Error("Unknown session: 11-use-case-ports");
+---
+<SessionLayout session={session}>
+  <ol slot="toc"><li><a href="#incident">事故と不変条件</a></li><li><a href="#work">2関数の作業</a></li><li><a href="#code-playground">ブラウザで試す</a></li><li><a href="#technique">技法と限界</a></li><li><a href="#verification">検証</a></li><li><a href="#reflection">振り返り</a></li></ol>
+  <section id="incident"><h2>HTTP や DB に埋もれた判断を取り出す</h2><p data-actor="保守担当"><strong>登場人物:</strong> 保守担当は controller 内の読み込み、状態判断、保存のどこで失敗したか追えません。</p><p><strong>事故:</strong> 副作用と業務判断が一続きで、失敗後に store が呼ばれたか確かめられません。</p><p><strong>守る不変条件:</strong> 入力検証、解決、状態確認に成功したときだけ、一つの store port へ event を渡す。</p></section>
+  <section id="work"><h2>用途の狭い port を合成する</h2><CommandBlock phase="red" command="pnpm exercise:11" expected="resolver と store を合成する use case がなく失敗します。" /><h3>先に読むファイル</h3><ul><li><code>examples/session-11/exercises/use-case-ports.test.ts</code></li><li><code>examples/session-11/src/domain/appointmentResolver.ts</code></li><li><code>examples/session-11/src/domain/appointmentStores.ts</code></li></ul><h3>作業範囲（最大2関数）</h3><p><code>StartExaminationUseCase.run</code> と <code>StartExaminationUseCase.create</code> の2関数だけを実装します。</p></section>
+  <SessionCodePlayground slug={session.slug} />
+  <section id="technique"><h2>ResultAsync と one-method port</h2><p><strong>使う技法:</strong> resolver、guard、event、store を <code>ResultAsync</code> で順に合成し、依存を用途別 port として注入します。</p><p><strong>この技法の限界:</strong> store 内部の原子性、stale state、HTTP の認可までは守りません。</p><CommandBlock phase="green" command="pnpm exercise:11" expected="resolve の後、成功時だけ store が一度呼ばれます。" /></section>
+  <section id="verification"><h2>3つの範囲で確かめる</h2><dl><dt>型で守ること</dt><dd>use case の依存、入力、成功、予期可能な失敗を明示します。</dd><dt>統合テストで守ること</dt><dd><code>pnpm --filter @fp-with-ts/clinic-session-11 test</code> と port の呼出順・失敗時の非保存を確認します。</dd><dt>人がレビューすること</dt><dd>業務判断の順番と、どの失敗を retry・表示・運用通知するかを確認します。</dd></dl></section>
+  <section id="reflection"><h2>振り返り</h2><p>controller や repository に埋もれて単独検証できない業務判断は何ですか。</p><p><a href="/sessions/12-atomicity-and-conflicts/">次へ: 原子性と競合を守る</a></p></section>
+</SessionLayout>

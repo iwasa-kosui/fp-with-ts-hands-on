@@ -12,8 +12,7 @@ describe("static site contract", () => {
       .filter((slug): slug is string => slug !== undefined)
       .sort();
 
-    expect(slugs).toHaveLength(7);
-    expect(sessions).toHaveLength(7);
+    expect(slugs).toHaveLength(sessions.length);
     expect(slugs).toEqual(sessions.map(({ slug }) => slug).slice().sort());
   });
 

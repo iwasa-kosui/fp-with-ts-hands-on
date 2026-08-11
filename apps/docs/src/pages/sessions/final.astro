@@ -1,5 +1,5 @@
 ---
-import CodeBlock from "../../components/CodeBlock.astro";
+import CommandBlock from "../../components/CommandBlock.astro";
 import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
 import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessionBySlug } from "../../sessions/catalog";
@@ -10,193 +10,57 @@ if (session === undefined) throw new Error("Unknown session: final");
 
 <SessionLayout session={session}>
   <ol slot="toc">
-    <li><a href="#final-structure">事故を防ぐ構成を確認する</a></li>
-    <li><a href="#final-operations">起動して業務フローを試す</a></li>
-    <li><a href="#final-flow">診察開始の ResultAsync を追う</a></li>
-    <li><a href="#final-persistence">保存と監査の契約を確認する</a></li>
-    <li><a href="#code-playground">ブラウザで読む</a></li>
-    <li><a href="#final-verify">コマンドで検証する</a></li>
+    <li><a href="#final-incidents">事故から4つの経路を選ぶ</a></li>
+    <li><a href="#final-composition">framework は最後に読む</a></li>
+    <li><a href="#code-playground">参照実装を読む</a></li>
+    <li><a href="#final-verification">統合を検証する</a></li>
+    <li><a href="#final-reflection">次の改善を決める</a></li>
   </ol>
 
-  <section>
-    <h2 id="final-structure">事故を防ぐ構成を確認する</h2>
-    <p>
-      予約が終端状態から戻る、入力や ID を取り違える、現在状態だけ更新されて監査記録が残らない、PII
-      が不要な画面へ混じる。<code>examples/final</code> は、これまでのセッションで観察した業務事故への対策を、Hono・Inertia・React・Drizzle・SQLite
-      で動く一つの完成アプリへ接続したものです。
-    </p>
+  <section id="final-incidents">
+    <h2>事故から4つの経路を選ぶ</h2>
+    <p data-actor="保守担当"><strong>登場人物:</strong> 保守担当は、次の事故を減らすために完成例のどこから読むかを決めます。</p>
+    <p><strong>守る不変条件:</strong> 事故に対応する防御層を選び、異なる責務を一つの型や framework に任せない。</p>
+    <p><code>examples/final</code> は全セッションの答えを一括導入する雛形ではありません。いま減らしたい事故に対応する経路から読み始めます。</p>
+    <ol id="incident-routes">
+      <li><strong>状態の事故:</strong> 終端状態から戻る、診察完了と支払完了が混ざるなら <code>src/domain/appointment/appointment.ts</code> の状態と純粋遷移を読む。</li>
+      <li><strong>境界の事故:</strong> unknown や用途の違う ID が混ざるなら <code>src/domain/shared/schemaResult.ts</code> と value object を読む。</li>
+      <li><strong>判断の事故:</strong> 未発見・不正状態・権限不足や副作用の順番が曖昧なら <code>src/useCase/startExaminationUseCase.ts</code> の <code>ResultAsync</code> を読む。</li>
+      <li><strong>永続化の事故:</strong> projection と監査 event が片落ちするなら <code>src/adaptor/secondary/sqlite/store/appointmentEventStore.ts</code> の transaction と競合を読む。</li>
+    </ol>
+    <p>どの経路でも、型で守る範囲、統合テストで守る範囲、人がレビューする残余リスクを分けて読みます。</p>
+    <p><strong>使う技法:</strong> 事故別の code route で、最初に読む場所と最大2関数の改善候補を絞ります。</p>
+    <p><strong>この技法の限界:</strong> route は設計判断の入口であり、完成例の構成を移植すれば業務要求が満たされるとは限りません。</p>
+  </section>
+
+  <section id="final-composition">
+    <h2>framework は最後に読む</h2>
+    <p>domain と use case と store の判断を確認した後で、<code>src/app.ts</code> を composition root として読みます。</p>
     <dl>
-      <dt><code>src/domain</code></dt>
-      <dd>判別共用体の状態、branded ID、<code>Sensitive</code>、純粋な遷移、typed domain event を置きます。</dd>
-      <dt><code>src/useCase</code></dt>
-      <dd>用途ごとの one-method resolver/read port と event store を <code>ResultAsync</code> で合成します。</dd>
-      <dt><code>src/adaptor/primary</code></dt>
-      <dd>HTTP、認証 cookie、Inertia props、React page を扱います。</dd>
-      <dt><code>src/adaptor/secondary</code></dt>
-      <dd>Drizzle/SQLite、パスワードハッシュ、セッショントークンを扱います。</dd>
-      <dt><code>src/app.ts</code></dt>
-      <dd>SQLite を明示的に受け取る factory、依存関係、middleware、route を一つの Hono app に構成します。</dd>
-      <dt><code>src/server.ts</code></dt>
-      <dd>既定の file SQLite と migration directory を選び、production server entry の app を構成します。</dd>
+      <dt>Hono</dt><dd>HTTP route、認証 middleware、use case の結果と response の対応を受け持ちます。</dd>
+      <dt>Inertia / React</dt><dd>認可済みの props と操作を画面へ渡します。PII は allowlist の read model だけから表示します。</dd>
+      <dt>Drizzle / SQLite</dt><dd>projection と監査 event を同じ transaction で確定し、条件付き更新の競合を typed error へ変換します。</dd>
     </dl>
-    <p>
-      状態遷移関数が作るのは、操作後の projection を持つ typed event です。次は <code
-        >examples/final/src/domain/appointment/appointment.ts</code
-      > の実際の診察開始部分です。引数の <code>CheckedIn</code> が有効な遷移元を限定し、成功した操作だけを <code>ExaminationStarted</code>
-      として表します。
-    </p>
-    <CodeBlock
-      language="typescript"
-      label="appointment.ts の診察開始"
-      code={`const startExamination =
-  (context: EventContext) =>
-  (
-    checkedIn: CheckedIn,
-    veterinarianId: VeterinarianId,
-  ): ExaminationStarted => {
-    const aggregateState = {
-      ...checkedIn,
-      kind: "InExamination",
-      veterinarianId,
-      examinationStartedAt: context.occurredAt,
-    } as const satisfies InExamination;
-
-    return AppointmentEvent.create(
-      context,
-      aggregateState.appointmentId,
-      aggregateState,
-      "ExaminationStarted",
-      "appointment.examination-started",
-      { appointmentId: aggregateState.appointmentId, veterinarianId },
-    );
-  };`}
-    />
-    <p>
-      この型は無効な呼び出しを減らしますが、永続化した現在状態の競合や利用者の権限まで単独では守りません。それらは use case、resolver、event store、route のテストで確認します。
-    </p>
-  </section>
-
-  <section>
-    <h2 id="final-operations">起動して業務フローを試す</h2>
-    <p>
-      Node.js 20 以上と pnpm を用意します。手元では Node v25.4.0 で検証しており、Node.js 20 ではローカル実行していません（サポート対象は Node.js 20 以上です）。リポジトリルートで依存関係を入れ、final package の dev server を起動します。
-    </p>
-    <CodeBlock
-      language="shell"
-      label="セットアップと開発起動"
-      code={`pnpm install
-pnpm --filter @fp-with-ts/clinic-final dev`}
-    />
-    <p>
-      起動時に Drizzle migration が適用され、既定で <code>examples/final/clinic.sqlite</code> という file SQLite を使います。初回アクセスで
-      <code>/setup</code> から最初の <code>Admin</code> を登録します。初期設定後は <code>/login</code> からログインします。
-    </p>
-    <ul>
-      <li><code>Admin</code>: ユーザー管理と監査履歴の確認</li>
-      <li><code>Receptionist</code>: 飼い主・ペット・予約の登録、受付、会計、キャンセル</li>
-      <li><code>Veterinarian</code>: 診察開始、検査結果登録、電話フォロー依頼</li>
-    </ul>
-    <p>
-      予約は <code>Scheduled → CheckedIn → InExamination → AwaitingPayment → Paid</code> と進みます。診察結果を記録すると会計待ちへ遷移し、獣医師には結果の再登録を出さず、受付・管理者にだけ会計操作を表示します。キャンセル、電話フォロー、管理者の監査一覧も同じ app から操作できます。
-    </p>
-    <CodeBlock
-      language="shell"
-      label="migration と production build"
-      code={`pnpm --filter @fp-with-ts/clinic-final db:migrate
-pnpm --filter @fp-with-ts/clinic-final db:generate
-pnpm --filter @fp-with-ts/clinic-final build
-pnpm --filter @fp-with-ts/clinic-final exec node dist/index.js`}
-    />
-    <p>
-      <code>db:migrate</code> は現在の migration を file SQLite へ適用し、<code>db:generate</code> は schema 変更時の SQL を生成します。<code>build</code> は
-      常に port 3000 で Node server を起動する <code>dist/index.js</code>、ソケットを開かずに明示した SQLite へ接続できる app factory の <code>dist/app.js</code>、<code>dist/static/client.js</code>、<code>dist/static/styles.css</code> を作ります。server entry は Vite の production mode を <code>isProduction: true</code> として構成するため、<code>NODE_ENV を指定せず</code>実行しても production asset と Secure cookie を使います。<code>dist/app.js</code> の factory を直接使う場合は <code>isProduction</code> を必ず指定します。built smoke は <code>:memory:</code> SQLite、migration directory、<code>isProduction: true</code> を渡し、production shell と Secure session cookie を <code>app.request</code> で確認します。
-    </p>
-  </section>
-
-  <section>
-    <h2 id="final-flow">診察開始の ResultAsync を追う</h2>
-    <p>
-      <code>examples/final/src/useCase/startExaminationUseCase.ts</code> の <code>StartExaminationUseCase</code> は、実行者、予約、対象の獣医師を用途別 ID で受け取ります。<code>UserByIdResolver.resolveById</code>
-      で権限を確認した後、<code>AppointmentByIdResolver.resolveById</code> で予約を読み、予期可能な失敗を <code>ResultAsync</code> の値として返します。
-    </p>
-    <CodeBlock
-      language="typescript"
-      label="StartExaminationUseCase の実際の pipeline"
-      code={`const run =
-  ({
-    userResolver,
-    appointmentResolver,
-    examinationStartedStore,
-    clock,
-    eventIdGenerator,
-  }: Dependencies) =>
-  (input: UseCaseInput): UseCaseOutput =>
-    userResolver
-      .resolveById(input.actorUserId)
-      .andThen(ensureUserFound(input.actorUserId))
-      .andThen(ensureCanStartExamination(input.veterinarianId))
-      .andThen(() => appointmentResolver.resolveById(input.appointmentId))
-      .andThen(ensureAppointmentFound(input.appointmentId))
-      .andThen(ensureCheckedIn)
-      .andThen(createEvent({ clock, eventIdGenerator }, input))
-      .andThrough((event) => examinationStartedStore.store(event))
-      .map((event) => ({ appointment: event.aggregateState }));
-
-export const StartExaminationUseCase = {
-  create: (dependencies: Dependencies): StartExaminationUseCase => ({
-    run: run(dependencies),
-  }),
-} as const;`}
-    />
-    <p>
-      この curry した <code>run(dependencies)(input)</code> 形状により、clock、event ID generator、resolver、store をテストで固定できます。<code>createEvent</code> は generator、clock、純粋遷移の同期例外を <code>ResultAsync.fromPromise</code> で <code>IdentityGenerationFailed</code> に変換し、store を呼びません。一方で DB の一意性競合は型だけでは止められないため、store が競合を <code>AppointmentConflict</code> として返すテストも必要です。
-    </p>
-  </section>
-
-  <section>
-    <h2 id="final-persistence">保存と監査の契約を確認する</h2>
-    <p>
-      use case は、ドメインが作った typed event を <code>ExaminationStartedStore.store(event)</code> のように event store へ渡します。secondary adaptor の event store は event が持つ状態から projection
-      の insert/update/delete を組み立て、同じ event の監査行とともに1つの Drizzle transaction へ保存します。両方を atomic に確定する契約が、現在状態と監査記録の片落ちを防ぎます。
-    </p>
-    <p>
-      診察結果の記録では <code>ExaminationCompletionStore</code> が <code>ExamResultRecorded</code> と <code>AppointmentExaminationCompleted</code> を受け取ります。診察結果 projection、<code>AwaitingPayment</code> の予約 projection、2件の監査 event を1つの transaction で保存し、同じ <code>InExamination</code> を読んだ並行操作は条件付き更新で片方だけを確定します。
-    </p>
-    <p>
-      現在状態は各 event store が同じ transaction で更新する projection から読みます。監査履歴から現在状態を復元しません。監査行の再生や圧縮も行わず、履歴は管理者向けの監査 query だけに使います。
-    </p>
-    <p>
-      監査用の1メソッド port は <code>EventHistoryReader.list(admin: Admin): ResultAsync&lt;readonly SanitizedAuditRecord[], RepositoryError&gt;</code> です。Admin capability を受け取る reader 境界で SQLite の保存行を Zod 検証し、許可した event ID、aggregate ID、event name、実行者、時刻、業務上安全な値だけを <code>SanitizedAuditRecord</code> へ写して Admin 画面へ届けます。この出力契約により、監査画面の props は表示を許可した情報だけで構成されます。
-    </p>
-    <p>
-      ユーザー、飼い主、ペットの削除は現在の projection を物理削除します。削除 event と過去の監査行は保持されるため、この操作は個人情報の完全消去を意味しません。利用目的と保持期間は型で決められないため、人が別途レビューする制約として残ります。
-    </p>
+    <p>framework は業務不変条件を決めません。各 adapter が domain と use case の契約を破らないかを統合テストで確かめます。</p>
   </section>
 
   <SessionCodePlayground slug={session.slug} />
 
-  <section>
-    <h2 id="final-verify">コマンドで検証する</h2>
-    <p>
-      package テストは temp file SQLite への migration、初期管理者とログイン、3ロールの認可、予約から会計・フォロー・監査までの業務フロー、projection と監査行の atomicity、PII の非表示を確認します。
-    </p>
-    <CodeBlock
-      language="shell"
-      label="final package の検証"
-      code={`pnpm --filter @fp-with-ts/clinic-final typecheck
-pnpm --filter @fp-with-ts/clinic-final test
-pnpm --filter @fp-with-ts/clinic-final build`}
-    />
-    <p>リポジトリ全体の通常テスト、型検査、build はルートで実行します。</p>
-    <CodeBlock
-      language="shell"
-      label="workspace 全体の検証"
-      code={`pnpm test
-pnpm typecheck
-pnpm build`}
-    />
-    <p>
-      この完成アプリは、すべての技法を一度に導入する雛形ではありません。各対策がどの事故を減らし、どの制約をテストと人のレビューに残すかを確認するための参照実装です。
-    </p>
+  <section id="final-verification">
+    <h2>統合を検証する</h2>
+    <CommandBlock phase="green" command="pnpm --filter @fp-with-ts/clinic-final test" expected="認証・認可、予約から会計、follow-up、監査、原子性、PII 非露出の統合契約が成功します。" />
+    <p>続けて <code>pnpm --filter @fp-with-ts/clinic-final typecheck</code> と <code>pnpm --filter @fp-with-ts/clinic-final build</code> を実行します。</p>
+    <dl>
+      <dt>型で守ること</dt><dd>状態、branded value、Result、typed event、用途別 port の接続を守ります。</dd>
+      <dt>統合テストで守ること</dt><dd>Hono から SQLite までの認可、transaction、競合、出力を実行時に守ります。</dd>
+      <dt>人がレビューすること</dt><dd>保持期間、監査の閲覧範囲、例外業務、運用時の再試行と削除方針を判断します。</dd>
+    </dl>
+  </section>
+
+  <section id="final-reflection">
+    <h2>次の改善を決める</h2>
+    <label for="next-improvement">自分の業務で減らす事故と、最初に変更する最大2関数を書いてください。</label>
+    <textarea id="next-improvement" name="next-improvement" rows="5"></textarea>
+    <p>構成全体を移植せず、事故に対応する一経路だけを選び、同じ RED / GREEN と3つの検証範囲で確かめます。</p>
   </section>
 </SessionLayout>

@@ -5,7 +5,7 @@ import { createAstroContainer } from "../../test/render-astro";
 
 const cases = [
   {
-    slug: "01-state-modeling",
+    slug: "01-invariants",
     initialFile: "exercises/state-modeling.test.ts",
     description: "状態別の要求と作成対象を開始 snapshot で確認します。",
   },

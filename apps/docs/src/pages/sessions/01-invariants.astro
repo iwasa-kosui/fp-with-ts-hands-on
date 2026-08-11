@@ -1,0 +1,64 @@
+---
+import CommandBlock from "../../components/CommandBlock.astro";
+import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+
+const session = sessionBySlug("01-invariants");
+if (session === undefined) throw new Error("Unknown session: 01-invariants");
+---
+
+<SessionLayout session={session}>
+  <ol slot="toc">
+    <li><a href="#incident">事故を業務の言葉へ戻す</a></li>
+    <li><a href="#work">要求を固定する</a></li>
+    <li><a href="#code-playground">ブラウザで読む</a></li>
+    <li><a href="#technique">characterization test の役割</a></li>
+    <li><a href="#verification">3つの範囲で確かめる</a></li>
+    <li><a href="#reflection">振り返る</a></li>
+  </ol>
+
+  <section id="incident">
+    <h2>事故を業務の言葉へ戻す</h2>
+    <p data-actor="院長"><strong>登場人物:</strong> 院長は、会計を終えた来院が再び診察中になった事故の説明を求めています。</p>
+    <p><strong>事故:</strong> 任意の status 更新により、終わった来院を通常フローへ戻せました。</p>
+    <p><strong>守る不変条件:</strong> 会計済みの来院から診察を開始しない。</p>
+  </section>
+
+  <section id="work">
+    <h2>要求を固定する</h2>
+    <CommandBlock phase="red" command="pnpm exercise:01" expected="AwaitingPayment を含む状態一覧が要求として固定されておらず失敗します。" />
+    <h3>先に読むファイル</h3>
+    <ul>
+      <li><code>examples/session-01/exercises/state-modeling.test.ts</code></li>
+      <li><code>examples/session-01/src/visit-lifecycle.ts</code></li>
+      <li><code>examples/session-01/test/incident-requirements.test.ts</code></li>
+    </ul>
+    <h3>作業範囲（最大2関数）</h3>
+    <p>この回で編集する関数は0です。<code>visitLifecycle.states</code> の要求を確認し、事故の説明と状態一覧が一致するように固定します。</p>
+  </section>
+
+  <SessionCodePlayground slug={session.slug} />
+
+  <section id="technique">
+    <h2>characterization test の役割</h2>
+    <p><strong>使う技法:</strong> characterization test で、変更前に守る業務語彙を観察可能な期待値へ置きます。</p>
+    <p><strong>この技法の限界:</strong> テストに要求を書くだけでは、任意の文字列更新や不正な遷移を実装上は止められません。</p>
+    <CommandBlock phase="green" command="pnpm exercise:01" expected="状態一覧が事故から導いた要求と一致します。" />
+  </section>
+
+  <section id="verification">
+    <h2>3つの範囲で確かめる</h2>
+    <dl>
+      <dt>型で守ること</dt><dd>この段階ではまだ守らず、次回の状態語彙に委ねます。</dd>
+      <dt>統合テストで守ること</dt><dd><code>pnpm --filter @fp-with-ts/clinic-session-01 test</code> で通常フローと要求スナップショットを確認します。</dd>
+      <dt>人がレビューすること</dt><dd>「会計済みから開始しない」が事故を防ぐ業務ルールとして十分かを院長と確認します。</dd>
+    </dl>
+  </section>
+
+  <section id="reflection">
+    <h2>振り返り</h2>
+    <p>自分の業務で、事故の説明を技法名ではなく一文の不変条件へ直すとどうなりますか。</p>
+    <p><a href="/sessions/02-state-vocabulary/">次へ: 状態の語彙を固定する</a></p>
+  </section>
+</SessionLayout>

@@ -1,0 +1,17 @@
+---
+import CommandBlock from "../../components/CommandBlock.astro";
+import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+const session = sessionBySlug("04-awaiting-payment");
+if (session === undefined) throw new Error("Unknown session: 04-awaiting-payment");
+---
+<SessionLayout session={session}>
+  <ol slot="toc"><li><a href="#incident">事故と不変条件</a></li><li><a href="#work">2関数の作業</a></li><li><a href="#code-playground">ブラウザで試す</a></li><li><a href="#technique">技法と限界</a></li><li><a href="#verification">検証</a></li><li><a href="#reflection">振り返り</a></li></ol>
+  <section id="incident"><h2>診察途中の会計を止める</h2><p data-actor="会計担当"><strong>登場人物:</strong> 会計担当が診察中の来院へ支払いを記録し、診断と処置の確定前に請求を完了しました。</p><p><strong>事故:</strong> InExamination から直接 Paid へ進めると、診察完了の情報が残りません。</p><p><strong>守る不変条件:</strong> 診察完了と支払完了を混同しない。</p></section>
+  <section id="work"><h2>会計待ちを挟む</h2><CommandBlock phase="red" command="pnpm exercise:04" expected="AwaitingPayment と診察完了操作がなく失敗します。" /><h3>先に読むファイル</h3><ul><li><code>examples/session-04/exercises/awaiting-payment.test.ts</code></li><li><code>examples/session-04/src/domain/appointment.ts</code></li></ul><h3>作業範囲（最大2関数）</h3><p><code>Appointment.completeExamination</code> と <code>Appointment.recordPayment</code> だけを変更します。</p></section>
+  <SessionCodePlayground slug={session.slug} />
+  <section id="technique"><h2>中間状態で異なる完了を分ける</h2><p><strong>使う技法:</strong> <code>AwaitingPayment</code> を加え、<code>InExamination → AwaitingPayment → Paid</code> を2つの純粋関数へ分けます。</p><p><strong>この技法の限界:</strong> 金額の妥当性や外部入力、同時会計は状態型だけでは守れません。</p><CommandBlock phase="green" command="pnpm exercise:04" expected="診察完了後だけ会計待ちへ進み、会計待ちからだけ支払いを記録できます。" /></section>
+  <section id="verification"><h2>3つの範囲で確かめる</h2><dl><dt>型で守ること</dt><dd>InExamination を recordPayment へ直接渡せないようにします。</dd><dt>統合テストで守ること</dt><dd><code>pnpm --filter @fp-with-ts/clinic-session-04 test</code> で既存の診察開始を確認します。</dd><dt>人がレビューすること</dt><dd>診察完了に必要な情報と支払い確定の責任者を確認します。</dd></dl></section>
+  <section id="reflection"><h2>振り返り</h2><p>一つの「完了」に混ざっている別々の業務完了はありませんか。</p><p><a href="/sessions/05-cancellation/">次へ: 終端状態を分ける</a></p></section>
+</SessionLayout>

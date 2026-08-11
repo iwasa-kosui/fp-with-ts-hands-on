@@ -1,0 +1,17 @@
+---
+import CommandBlock from "../../components/CommandBlock.astro";
+import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+const session = sessionBySlug("03-state-transitions");
+if (session === undefined) throw new Error("Unknown session: 03-state-transitions");
+---
+<SessionLayout session={session}>
+  <ol slot="toc"><li><a href="#incident">事故と不変条件</a></li><li><a href="#work">2関数の作業</a></li><li><a href="#code-playground">ブラウザで試す</a></li><li><a href="#technique">技法と限界</a></li><li><a href="#verification">検証</a></li><li><a href="#reflection">振り返り</a></li></ol>
+  <section id="incident"><h2>受付を飛ばした診察開始を止める</h2><p data-actor="獣医師"><strong>登場人物:</strong> 獣医師が予約済みの動物を受付確認なしで診察中へ進め、別の動物と取り違えました。</p><p><strong>事故:</strong> 任意状態から診察開始でき、状態追加時には表示分岐も抜けます。</p><p><strong>守る不変条件:</strong> 診察開始は CheckedIn からだけ行う。</p></section>
+  <section id="work"><h2>遷移元と網羅性を閉じる</h2><CommandBlock phase="red" command="pnpm exercise:03" expected="startExamination がなく、受付済みだけを受ける契約を満たしません。" /><h3>先に読むファイル</h3><ul><li><code>examples/session-03/exercises/state-transitions.test.ts</code></li><li><code>examples/session-03/src/domain/appointment.ts</code></li></ul><h3>作業範囲（最大2関数）</h3><p><code>Appointment.startExamination</code> と <code>display</code> だけを変更し、遷移元と表示の網羅性を閉じます。</p></section>
+  <SessionCodePlayground slug={session.slug} />
+  <section id="technique"><h2>判別共用体と純粋な遷移</h2><p><strong>使う技法:</strong> <code>kind</code> の判別共用体と CheckedIn に狭めた純粋関数、<code>assertNever</code> を使います。</p><p><strong>この技法の限界:</strong> 外部入力の正しさ、会計完了までの順序、永続化競合は守りません。</p><CommandBlock phase="green" command="pnpm exercise:03" expected="CheckedIn だけが InExamination へ進みます。" /></section>
+  <section id="verification"><h2>3つの範囲で確かめる</h2><dl><dt>型で守ること</dt><dd>Scheduled や Paid を診察開始へ渡せず、状態追加時の表示漏れを検出します。</dd><dt>統合テストで守ること</dt><dd><code>pnpm --filter @fp-with-ts/clinic-session-03 test</code> で状態固有データを確認します。</dd><dt>人がレビューすること</dt><dd>受付を飛ばせる例外業務が本当に存在しないかを確認します。</dd></dl></section>
+  <section id="reflection"><h2>振り返り</h2><p>前提状態を確認せず実行できる操作を一つ挙げると何ですか。</p><p><a href="/sessions/04-awaiting-payment/">次へ: 診察と会計を分ける</a></p></section>
+</SessionLayout>

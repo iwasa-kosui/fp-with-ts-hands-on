@@ -34,11 +34,11 @@ describe("SessionLayout", () => {
     });
 
     expect(html).toContain("SESSION 01");
-    expect(html).toContain("状態遷移を型にする");
+    expect(html).toContain("守るべき不変条件を固定する");
     expect(html).toContain('aria-label="ページ内目次"');
     expect(html).toContain('<section id="mission"><h2>ミッション</h2></section>');
     expect(html).toContain('/sessions/00-onboarding/');
-    expect(html).toContain('/sessions/02-boundary-and-ids/');
+    expect(html).toContain('/sessions/02-state-vocabulary/');
   });
 
   it("renders phase semantics, exact command text, expected result, and a copy island", async () => {

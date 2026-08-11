@@ -1,0 +1,17 @@
+---
+import CommandBlock from "../../components/CommandBlock.astro";
+import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+const session = sessionBySlug("05-cancellation");
+if (session === undefined) throw new Error("Unknown session: 05-cancellation");
+---
+<SessionLayout session={session}>
+  <ol slot="toc"><li><a href="#incident">事故と不変条件</a></li><li><a href="#work">2関数の作業</a></li><li><a href="#code-playground">ブラウザで試す</a></li><li><a href="#technique">技法と限界</a></li><li><a href="#verification">検証</a></li><li><a href="#reflection">振り返り</a></li></ol>
+  <section id="incident"><h2>診療中や会計済みの取消を止める</h2><p data-actor="受付スタッフ"><strong>登場人物:</strong> 受付スタッフが診療中の来院を通常キャンセルし、処置の中断判断を飛ばしました。</p><p><strong>事故:</strong> 終わった状態や診療中の状態を通常フローへ戻せました。</p><p><strong>守る不変条件:</strong> Scheduled または CheckedIn だけを取消でき、Paid と Canceled を終端にする。</p></section>
+  <section id="work"><h2>取消と終端を表す</h2><CommandBlock phase="red" command="pnpm exercise:05" expected="取消可能な状態と終端判定が不足して失敗します。" /><h3>先に読むファイル</h3><ul><li><code>examples/session-05/exercises/cancellation.test.ts</code></li><li><code>examples/session-05/src/domain/appointment.ts</code></li></ul><h3>作業範囲（最大2関数）</h3><p><code>Appointment.cancel</code> と <code>Appointment.isTerminal</code> だけを変更します。</p></section>
+  <SessionCodePlayground slug={session.slug} />
+  <section id="technique"><h2>union の引数と type guard</h2><p><strong>使う技法:</strong> cancel の引数を <code>Scheduled | CheckedIn</code> に絞り、終端を type guard で表します。</p><p><strong>この技法の限界:</strong> キャンセル理由の内容、外部入力、取消後の返金業務は保証しません。</p><CommandBlock phase="green" command="pnpm exercise:05" expected="許可された状態だけを取消でき、終端状態を判定できます。" /></section>
+  <section id="verification"><h2>3つの範囲で確かめる</h2><dl><dt>型で守ること</dt><dd>InExamination と Paid を通常 cancel へ渡せないようにします。</dd><dt>統合テストで守ること</dt><dd><code>pnpm --filter @fp-with-ts/clinic-session-05 test</code> で会計待ちまでの進行を確認します。</dd><dt>人がレビューすること</dt><dd>診療中断、返金、再診を通常キャンセルと分ける必要を確認します。</dd></dl></section>
+  <section id="reflection"><h2>振り返り</h2><p>終了後に通常フローへ戻してはいけない状態は何ですか。</p><p><a href="/sessions/06-input-boundary/">次へ: 外部入力を検証する</a></p></section>
+</SessionLayout>
