@@ -21,6 +21,13 @@ const expectedSnapshots = {
   final: "final",
 } as const;
 
+const exerciseEditTargets = {
+  "13-safe-follow-up": [
+    "src/domain/followUp/collectFollowUpTargets.ts",
+    "src/useCase/requestFollowUpUseCase.ts",
+  ],
+} as const;
+
 const requiredVisibleFiles = {
   "00-onboarding": [
     "exercises/incident.test.ts",
@@ -136,13 +143,23 @@ const requiredVisibleFiles = {
     "src/domain/appointmentResolver.ts",
     "src/domain/appointmentStores.ts",
     "src/domain/domainEvent.ts",
+    "src/domain/examId.ts",
+    "src/domain/followUp/collectFollowUpTargets.ts",
+    "src/domain/followUp/followUpRequested.ts",
+    "src/domain/ownerContact.ts",
     "src/domain/ownerId.ts",
+    "src/domain/paymentAmount.ts",
     "src/domain/petId.ts",
     "src/domain/repositoryError.ts",
+    "src/domain/shared/schemaResult.ts",
+    "src/domain/shared/sensitive.ts",
     "src/domain/startExaminationErrors.ts",
     "src/domain/startExaminationInput.ts",
     "src/domain/timestamp.ts",
+    "src/domain/user/user.ts",
+    "src/domain/user/userId.ts",
     "src/domain/veterinarianId.ts",
+    "src/useCase/requestFollowUpUseCase.ts",
     "src/useCase/startExaminationUseCase.ts",
   ],
   final: [
@@ -172,6 +189,14 @@ describe("session code workspaces", () => {
       snapshot: "session-12",
       initialFile: "exercises/atomicity-and-conflicts.test.ts",
     });
+  });
+
+  it("shows every declared edit target for each exercise", () => {
+    for (const [slug, editTargets] of Object.entries(exerciseEditTargets)) {
+      expect(sessionWorkspaceFor(slug).visibleFiles).toEqual(
+        expect.arrayContaining([...editTargets]),
+      );
+    }
   });
 
   it("maps every catalog entry to its self-contained example snapshot", () => {
