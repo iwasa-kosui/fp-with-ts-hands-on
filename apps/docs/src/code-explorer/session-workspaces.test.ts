@@ -22,13 +22,19 @@ const expectedSnapshots = {
 } as const;
 
 const exerciseEditTargets = {
+  "02-state-vocabulary": ["src/domain/appointment.ts"],
   "06-input-boundary": ["src/domain/startExaminationInput.ts"],
   "07-meaningful-values": [
     "src/domain/ownerId.ts",
     "src/domain/petId.ts",
   ],
-  "08-pii-output": ["src/domain/ownerContact.ts"],
-  "09-typed-failures": ["src/domain/startExaminationErrors.ts"],
+  "08-pii-output": [
+    "src/domain/ownerContact.ts",
+    "src/domain/shared/sensitive.ts",
+  ],
+  "09-typed-failures": [
+    "src/domain/startExaminationErrors.ts",
+  ],
   "10-success-events": ["src/domain/appointment.ts"],
   "11-use-case-ports": [
     "src/domain/appointmentResolver.ts",
@@ -61,6 +67,7 @@ const requiredVisibleFiles = {
   "02-state-vocabulary": [
     "exercises/state-vocabulary.test.ts",
     "test/state-modeling.test.ts",
+    "src/domain/appointment.ts",
     "src/state-vocabulary.ts",
   ],
   "03-state-transitions": [
@@ -103,6 +110,7 @@ const requiredVisibleFiles = {
     "src/domain/petId.ts",
     "src/domain/timestamp.ts",
     "src/domain/ownerContact.ts",
+    "src/domain/shared/sensitive.ts",
   ],
   "09-typed-failures": [
     "exercises/typed-failures.test.ts",
@@ -273,6 +281,7 @@ describe("session code workspaces", () => {
           : `@fp-with-ts/clinic-${session.snapshot}`,
       );
       expect(packageJson.devDependencies?.tsx).toBe("4.23.9");
+      expect(packageJson.devDependencies?.typescript).toBe("^5.6.0");
       expect(tsconfig.extends).toBe("./tsconfig.base.json");
       expect(projectFiles["tsconfig.base.json"]).toEqual(expect.any(String));
       expect(projectFiles["vitest.config.ts"]).toEqual(expect.any(String));
@@ -295,8 +304,23 @@ describe("session code workspaces", () => {
     }
   });
 
+  it("mounts each dedicated exercise TypeScript config used by the CLI", () => {
+    for (const slug of [
+      "02-state-vocabulary",
+      "03-state-transitions",
+      "04-awaiting-payment",
+      "05-cancellation",
+      "06-input-boundary",
+      "07-meaningful-values",
+      "08-pii-output",
+    ] as const) {
+      expect(projectFilesFor(slug)["tsconfig.exercise.json"], slug).toEqual(
+        expect.any(String),
+      );
+    }
+  });
+
   it("keeps only later-session sources absent from incremental snapshots", () => {
-    expect(projectFilesFor("02-state-vocabulary")["src/domain/appointment.ts"]).toBeUndefined();
     expect(projectFilesFor("07-meaningful-values")["src/domain/appointmentId.ts"]).toBeUndefined();
     expect(projectFilesFor("12-atomicity-and-conflicts")["src/domain/followUp/collectFollowUpTargets.ts"]).toBeUndefined();
   });

@@ -27,7 +27,7 @@ if (session === undefined) throw new Error("Unknown session: 01-invariants");
 
   <section id="work">
     <h2>要求を固定する</h2>
-    <CommandBlock phase="red" command="pnpm exercise:01" expected="AwaitingPayment を含む状態一覧が要求として固定されておらず失敗します。" />
+    <CommandBlock phase="red" command="pnpm exercise:01" expected="会計済みの来院を終端状態として扱う述語がまだなく、失敗します。" />
     <h3>先に読むファイル</h3>
     <ul>
       <li><code>examples/session-01/exercises/state-modeling.test.ts</code></li>
@@ -35,7 +35,7 @@ if (session === undefined) throw new Error("Unknown session: 01-invariants");
       <li><code>examples/session-01/test/incident-requirements.test.ts</code></li>
     </ul>
     <h3>作業範囲（最大2関数）</h3>
-    <p>この回で編集する関数は0です。<code>visitLifecycle.states</code> の要求を確認し、事故の説明と状態一覧が一致するように固定します。</p>
+    <p>この回で編集する関数は0です。会計済みを終端とみなす述語の要求を確認します。green の答えは Session 02 で提供されます。</p>
   </section>
 
   <SessionCodePlayground slug={session.slug} />
@@ -44,7 +44,7 @@ if (session === undefined) throw new Error("Unknown session: 01-invariants");
     <h2>characterization test の役割</h2>
     <p><strong>使う技法:</strong> characterization test で、変更前に守る業務語彙を観察可能な期待値へ置きます。</p>
     <p><strong>この技法の限界:</strong> テストに要求を書くだけでは、任意の文字列更新や不正な遷移を実装上は止められません。</p>
-    <CommandBlock phase="green" command="pnpm exercise:01" expected="状態一覧が事故から導いた要求と一致します。" />
+    <CommandBlock phase="green" command="pnpm exercise:01" expected="会計済みを終端状態として扱う述語が、事故から導いた要求と一致します。" />
   </section>
 
   <section id="verification">

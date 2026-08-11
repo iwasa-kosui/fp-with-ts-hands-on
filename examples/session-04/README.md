@@ -15,7 +15,7 @@ pnpm --filter @fp-with-ts/clinic-session-04 test
 pnpm exercise:04
 ```
 
-通常テストは会計待ちを確認し、演習はキャンセル状態がまだないため意図的に失敗します。
+通常テストは会計待ちを確認し、演習は `AwaitingPayment` への遷移がまだないため意図的に失敗します。
 
 ## 次の snapshot
 

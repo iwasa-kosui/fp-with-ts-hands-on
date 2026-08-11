@@ -77,4 +77,20 @@ describe("incremental session artifacts", () => {
     expect(page).toContain("StartExaminationInput.parse</code> の1関数だけ");
     expect(page).not.toContain("schemaResult</code> と <code>StartExaminationInput.parse</code> の2関数");
   });
+
+  it("explains each early RED with the contract the next snapshot supplies", () => {
+    const session01 = readRepositoryFile(
+      "apps/docs/src/pages/sessions/01-invariants.astro",
+    );
+    const session03 = readRepositoryFile("examples/session-03/README.md");
+    const session04 = readRepositoryFile("examples/session-04/README.md");
+
+    expect(session01).toContain("会計済みの来院を終端状態として扱う");
+    expect(session01).toContain("Session 02 で提供されます");
+    expect(session01).not.toContain("AwaitingPayment を含む状態一覧");
+    expect(session03).toContain("`startExamination` がまだないため");
+    expect(session03).not.toContain("会計待ちがまだないため");
+    expect(session04).toContain("`AwaitingPayment` への遷移がまだないため");
+    expect(session04).not.toContain("キャンセル状態がまだないため");
+  });
 });

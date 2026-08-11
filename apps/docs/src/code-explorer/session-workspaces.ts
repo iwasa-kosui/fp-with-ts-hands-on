@@ -31,6 +31,7 @@ const sessionWorkspaces = {
     visibleFiles: [
       "exercises/state-vocabulary.test.ts",
       "test/state-modeling.test.ts",
+      "src/domain/appointment.ts",
       "src/state-vocabulary.ts",
     ],
   },
@@ -97,6 +98,7 @@ const sessionWorkspaces = {
       "src/domain/petId.ts",
       "src/domain/timestamp.ts",
       "src/domain/ownerContact.ts",
+      "src/domain/shared/sensitive.ts",
     ],
   },
   "09-typed-failures": {

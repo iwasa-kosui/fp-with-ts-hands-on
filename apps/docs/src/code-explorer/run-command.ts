@@ -1,3 +1,5 @@
+import type { ProjectFiles } from "./types";
+
 export type RunCommand = Readonly<{ command: string; args: readonly string[] }>;
 export type RunMode = "test" | "entrypoint";
 
@@ -39,3 +41,15 @@ export const runCommandFor = (path: string): RunCommand | undefined => {
     ? { command: "npx", args: ["--no-install", "tsx", path] }
     : undefined;
 };
+
+export const exerciseTypecheckCommandFor = (
+  path: string,
+  files: ProjectFiles,
+): RunCommand | undefined =>
+  /^exercises\/.+\.test\.ts$/.test(path) &&
+  files["tsconfig.exercise.json"] !== undefined
+    ? {
+        command: "npx",
+        args: ["--no-install", "tsc", "--noEmit", "-p", "tsconfig.exercise.json"],
+      }
+    : undefined;

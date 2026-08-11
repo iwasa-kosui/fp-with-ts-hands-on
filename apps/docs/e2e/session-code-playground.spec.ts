@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const routes = [
+const incrementalRoutes = [
   "/sessions/00-onboarding/",
   "/sessions/01-invariants/",
   "/sessions/02-state-vocabulary/",
@@ -15,15 +15,16 @@ const routes = [
   "/sessions/11-use-case-ports/",
   "/sessions/12-atomicity-and-conflicts/",
   "/sessions/13-safe-follow-up/",
-  "/sessions/final/",
 ] as const;
+
+const finalRoute = "/sessions/final/";
 
 const viewports = [
   { name: "mobile", width: 390, height: 844 },
   { name: "desktop", width: 1440, height: 1200 },
 ] as const;
 
-for (const route of routes) {
+for (const route of incrementalRoutes) {
   for (const viewport of viewports) {
     test(`${route} keeps the playground usable on ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize(viewport);
@@ -60,4 +61,28 @@ for (const route of routes) {
       expect(pageWidths.scrollWidth).toBeLessThanOrEqual(pageWidths.clientWidth + 1);
     });
   }
+}
+
+for (const viewport of viewports) {
+  test(`${finalRoute} keeps the reference tour read-only on ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto(finalRoute);
+
+    const playground = page.locator(".session-code-playground");
+    const editor = playground.getByRole("region", { name: /コードエディタ:/ });
+    await expect(playground).toBeVisible();
+    await expect(editor.locator(".monaco-editor")).toBeVisible();
+    await expect(playground.locator("[data-code-guide]")).toHaveCount(5);
+    await expect(playground.locator('[data-guide-path="src/domain/appointment/appointment.ts"]')).toBeVisible();
+    await expect(playground.locator('[data-guide-path="src/domain/shared/schemaResult.ts"]')).toBeVisible();
+    await expect(playground.locator('[data-guide-path="src/useCase/startExaminationUseCase.ts"]')).toBeVisible();
+    await expect(playground.locator('[data-guide-path="src/adaptor/secondary/sqlite/store/appointmentEventStore.ts"]')).toBeVisible();
+    await expect(playground.locator('[data-guide-path="src/adaptor/primary/web/routes/appointmentRoutes.ts"]')).toBeVisible();
+    await expect(editor.locator("textarea")).toHaveAttribute("readonly", "");
+    await expect(playground.locator(".code-explorer__file-tree")).toHaveCount(0);
+    await expect(playground.locator('[data-action="run"]')).toHaveCount(0);
+    await expect(playground.locator('[data-action="reset"]')).toHaveCount(0);
+    await expect(playground.locator('[data-action="stop"]')).toHaveCount(0);
+    await expect(playground.locator('[aria-label="実行結果"]')).toHaveCount(0);
+  });
 }

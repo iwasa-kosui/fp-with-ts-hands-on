@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { runCommandFor } from "./run-command";
+import { projectFilesFor } from "./project-files";
+import {
+  exerciseTypecheckCommandFor,
+  runCommandFor,
+  type RunCommand,
+} from "./run-command";
 import {
   buildFileSystemTree,
   createCodeRunner,
@@ -121,6 +126,147 @@ describe("single-file execution", () => {
       args: ["--no-install", "tsx", "src/clinic/appointment.ts"],
     });
     expect(runCommandFor("package.json")).toBeUndefined();
+  });
+
+  it("selects only the trusted dedicated exercise typecheck command", () => {
+    expect(
+      exerciseTypecheckCommandFor("exercises/value-meaning.test.ts", {
+        "tsconfig.exercise.json": "{}",
+      }),
+    ).toEqual({
+      command: "npx",
+      args: ["--no-install", "tsc", "--noEmit", "-p", "tsconfig.exercise.json"],
+    });
+    expect(
+      exerciseTypecheckCommandFor("exercises/value-meaning.test.ts", {}),
+    ).toBeUndefined();
+    expect(
+      exerciseTypecheckCommandFor("test/value-meaning.test.ts", {
+        "tsconfig.exercise.json": "{}",
+      }),
+    ).toBeUndefined();
+  });
+
+  it("stops before Vitest when an exercise typecheck fails", async () => {
+    const executed: RunCommand[] = [];
+    const output: string[] = [];
+    const runtime: Runtime = {
+      mount: async () => undefined,
+      install: async () => 0,
+      writeFiles: async () => undefined,
+      execute: async (command, onOutput) => {
+        executed.push(command);
+        onOutput("exercise type error\\n");
+        return command.args.includes("tsc") ? 2 : 0;
+      },
+      readTypeFiles: async () => ({}),
+    };
+
+    await expect(
+      createCodeRunner(async () => runtime).run(
+        {
+          filePath: "exercises/value-meaning.test.ts",
+          files: {
+            "exercises/value-meaning.test.ts": "",
+            "tsconfig.exercise.json": "{}",
+          },
+        },
+        (update) => {
+          if (update.kind === "output") output.push(update.chunk);
+        },
+      ),
+    ).resolves.toEqual({ exitCode: 2 });
+
+    expect(executed).toEqual([
+      {
+        command: "npx",
+        args: ["--no-install", "tsc", "--noEmit", "-p", "tsconfig.exercise.json"],
+      },
+    ]);
+    expect(output.join("")).toBe("exercise type error\\n");
+  });
+
+  it("runs Vitest after a dedicated exercise typecheck succeeds", async () => {
+    const executed: RunCommand[] = [];
+    const runtime: Runtime = {
+      mount: async () => undefined,
+      install: async () => 0,
+      writeFiles: async () => undefined,
+      execute: async (command) => {
+        executed.push(command);
+        return 0;
+      },
+      readTypeFiles: async () => ({}),
+    };
+
+    await expect(
+      createCodeRunner(async () => runtime).run(
+        {
+          filePath: "exercises/value-meaning.test.ts",
+          files: {
+            "exercises/value-meaning.test.ts": "",
+            "tsconfig.exercise.json": "{}",
+          },
+        },
+        () => undefined,
+      ),
+    ).resolves.toEqual({ exitCode: 0 });
+
+    expect(executed).toEqual([
+      {
+        command: "npx",
+        args: ["--no-install", "tsc", "--noEmit", "-p", "tsconfig.exercise.json"],
+      },
+      {
+        command: "npx",
+        args: [
+          "--no-install",
+          "vitest",
+          "run",
+          "--config",
+          "vitest.exercises.config.ts",
+          "exercises/value-meaning.test.ts",
+          "--reporter=verbose",
+        ],
+      },
+    ]);
+  });
+
+  it("reports Session 07's expected type red before trying to run Vitest", async () => {
+    const executed: RunCommand[] = [];
+    const output: string[] = [];
+    const files = projectFilesFor("07-meaningful-values");
+    const runtime: Runtime = {
+      mount: async () => undefined,
+      install: async () => 0,
+      writeFiles: async () => undefined,
+      execute: async (command, onOutput) => {
+        executed.push(command);
+        onOutput("value-meaning.test.ts(9,3): error TS2578: Unused '@ts-expect-error' directive.\\n");
+        return 2;
+      },
+      readTypeFiles: async () => ({}),
+    };
+
+    await expect(
+      createCodeRunner(async () => runtime).run(
+        { filePath: "exercises/value-meaning.test.ts", files },
+        (update) => {
+          if (update.kind === "output") output.push(update.chunk);
+        },
+      ),
+    ).resolves.toEqual({ exitCode: 2 });
+
+    expect(files["tsconfig.exercise.json"]).toEqual(expect.any(String));
+    expect(executed).toHaveLength(1);
+    expect(executed[0]?.args).toEqual([
+      "--no-install",
+      "tsc",
+      "--noEmit",
+      "-p",
+      "tsconfig.exercise.json",
+    ]);
+    expect(output.join("")).toContain("TS2578");
   });
 
   it("installs once and writes the latest edits before each run", async () => {

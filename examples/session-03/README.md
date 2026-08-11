@@ -15,7 +15,7 @@ pnpm --filter @fp-with-ts/clinic-session-03 test
 pnpm exercise:03
 ```
 
-通常テストは状態固有の情報を確認し、演習は会計待ちがまだないため意図的に失敗します。
+通常テストは状態固有の情報を確認し、演習は `startExamination` がまだないため意図的に失敗します。
 
 ## 次の snapshot
 

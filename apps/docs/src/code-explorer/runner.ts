@@ -1,6 +1,10 @@
 import type { FileSystemTree, WebContainer } from "@webcontainer/api";
 import type { ProjectFiles } from "./types";
-import { runCommandFor, type RunCommand } from "./run-command";
+import {
+  exerciseTypecheckCommandFor,
+  runCommandFor,
+  type RunCommand,
+} from "./run-command";
 
 export type RunnerPhase = "booting" | "mounting" | "installing" | "running";
 export type RunnerUpdate =
@@ -145,6 +149,21 @@ export const createCodeRunner = (
       await runtime.writeFiles(request.files);
       throwIfAborted();
       onUpdate({ kind: "phase", phase: "running" });
+      const exerciseTypecheck = exerciseTypecheckCommandFor(
+        request.filePath,
+        request.files,
+      );
+      if (exerciseTypecheck !== undefined) {
+        const typecheckExitCode = await runtime.execute(
+          exerciseTypecheck,
+          (chunk) => {
+            onUpdate({ kind: "output", chunk });
+          },
+          request.signal,
+        );
+        throwIfAborted();
+        if (typecheckExitCode !== 0) return { exitCode: typecheckExitCode };
+      }
       const exitCode = await runtime.execute(command, (chunk) => {
         onUpdate({ kind: "output", chunk });
       }, request.signal);
