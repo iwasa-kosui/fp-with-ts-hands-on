@@ -29,10 +29,7 @@ const OwnerFormSchema = z.object({
   email: OwnerEmail.schema,
   phone: OwnerPhone.schema,
 });
-const OwnerDetailErrorSchema = z.enum([
-  "owner-has-pets",
-  "owner-deletion-conflict",
-]);
+const OwnerDetailErrorSchema = z.enum(["owner-has-pets"]);
 
 type OwnerRouteDependencies = Readonly<{
   listOwners: ListOwnersUseCase;
@@ -171,10 +168,6 @@ const ownerDetailErrors = (rawError: string | undefined): FieldErrors => {
       return {
         form:
           "ペットが登録されている飼い主は削除できません。先にペットを確認してください。",
-      };
-    case "owner-deletion-conflict":
-      return {
-        form: "飼い主を削除できませんでした。最新の状態を確認してください。",
       };
     default:
       return assertNever(code);
@@ -321,11 +314,6 @@ export const registerOwnerRoutes = (
             case "OwnerHasPets":
               return context.redirect(
                 `/owners/${ownerId.value}?error=owner-has-pets`,
-                303,
-              );
-            case "OwnerDeletionConflict":
-              return context.redirect(
-                `/owners/${ownerId.value}?error=owner-deletion-conflict`,
                 303,
               );
             case "IdentityGenerationFailed":

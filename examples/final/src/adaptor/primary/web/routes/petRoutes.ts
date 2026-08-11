@@ -34,10 +34,7 @@ const CreatePetFormSchema = z.object({
   ...PetProfileShape,
 });
 const UpdatePetFormSchema = z.object(PetProfileShape);
-const PetDetailErrorSchema = z.enum([
-  "pet-has-active-appointment",
-  "pet-deletion-conflict",
-]);
+const PetDetailErrorSchema = z.enum(["pet-has-active-appointment"]);
 
 type PetRouteDependencies = Readonly<{
   listPets: ListPetsUseCase;
@@ -222,10 +219,6 @@ const petDetailErrors = (rawError: string | undefined): FieldErrors => {
         form:
           "進行中の予約があるペットは削除できません。先に予約を確認してください。",
       };
-    case "pet-deletion-conflict":
-      return {
-        form: "ペットを削除できませんでした。最新の状態を確認してください。",
-      };
     default:
       return assertNever(code);
   }
@@ -383,11 +376,6 @@ export const registerPetRoutes = (
             case "PetHasActiveAppointment":
               return context.redirect(
                 `/pets/${petId.value}?error=pet-has-active-appointment`,
-                303,
-              );
-            case "PetDeletionConflict":
-              return context.redirect(
-                `/pets/${petId.value}?error=pet-deletion-conflict`,
                 303,
               );
             case "IdentityGenerationFailed":
