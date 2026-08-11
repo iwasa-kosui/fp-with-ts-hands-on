@@ -68,6 +68,7 @@ const sessionWorkspaces = {
       "exercises/input-boundary.test.ts",
       "test/cancellation.test.ts",
       "src/domain/appointment.ts",
+      "src/domain/shared/schemaResult.ts",
       "src/domain/startExaminationInput.ts",
     ],
   },

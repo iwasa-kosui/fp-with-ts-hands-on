@@ -6,7 +6,7 @@
 
 ## この回で変える関数
 
-`OwnerId.parse` と `PetId.parse` を使い、用途別の ID を作ります。
+`OwnerIdSchema` と `PetIdSchema` に用途別の brand を付けます。既存の `OwnerId.parse` と `PetId.parse` はその schema を公開する入口です。
 
 ## 検証
 
@@ -15,7 +15,7 @@ pnpm --filter @fp-with-ts/clinic-session-07 test
 pnpm exercise:07
 ```
 
-通常テストは境界入力を確認し、演習は PII の出力保護がまだないため意図的に失敗します。
+通常テストは境界入力を確認します。演習は Pet ID を Owner ID として代入でき、`unused @ts-expect-error` になるため意図的に失敗します。
 
 ## 次の snapshot
 

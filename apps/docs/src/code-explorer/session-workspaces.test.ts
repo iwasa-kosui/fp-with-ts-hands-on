@@ -82,6 +82,7 @@ const requiredVisibleFiles = {
     "exercises/input-boundary.test.ts",
     "test/cancellation.test.ts",
     "src/domain/appointment.ts",
+    "src/domain/shared/schemaResult.ts",
     "src/domain/startExaminationInput.ts",
   ],
   "07-meaningful-values": [
@@ -221,6 +222,29 @@ describe("session code workspaces", () => {
       expect(sessionWorkspaceFor(slug).visibleFiles).toEqual(
         expect.arrayContaining([...editTargets]),
       );
+    }
+  });
+
+  it("provides Session 06 source imports as direct workspace dependencies", () => {
+    const workspace = sessionWorkspaceFor("06-input-boundary");
+    const projectFiles = projectFilesFor("06-input-boundary");
+    const packageJson = JSON.parse(projectFiles["package.json"]!) as {
+      dependencies?: Record<string, string>;
+    };
+    const source = [
+      projectFiles["src/domain/shared/schemaResult.ts"],
+      projectFiles["src/domain/startExaminationInput.ts"],
+    ].join("\n");
+    const packageImports = [...source.matchAll(/from\s+["']([^./][^"']*)["']/g)].map(
+      ([, specifier]) => specifier,
+    );
+
+    expect(workspace.visibleFiles).toEqual(
+      expect.arrayContaining(["src/domain/shared/schemaResult.ts"]),
+    );
+    expect(packageImports).toEqual(expect.arrayContaining(["neverthrow", "zod"]));
+    for (const specifier of packageImports) {
+      expect(packageJson.dependencies?.[specifier]).toEqual(expect.any(String));
     }
   });
 

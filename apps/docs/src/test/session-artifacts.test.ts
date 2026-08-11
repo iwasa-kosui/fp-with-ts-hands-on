@@ -50,4 +50,19 @@ describe("incremental session artifacts", () => {
     expect(readme).toContain("read-only の比較");
     expect(readme).toContain("source-compatible ではありません");
   });
+
+  it("directs Session 07 participants to the existing owner and pet brand schemas", () => {
+    const readme = readRepositoryFile("examples/session-07/README.md");
+    const page = readRepositoryFile(
+      "apps/docs/src/pages/sessions/07-meaningful-values.astro",
+    );
+
+    expect(readme).toContain("unused @ts-expect-error");
+    expect(readme).toContain("PetId");
+    expect(readme).not.toContain("演習は PII の出力保護");
+    expect(page).toContain("OwnerIdSchema");
+    expect(page).toContain("PetIdSchema");
+    expect(page).toContain("unused `@ts-expect-error`");
+    expect(page).not.toContain("AppointmentId.parse");
+  });
 });

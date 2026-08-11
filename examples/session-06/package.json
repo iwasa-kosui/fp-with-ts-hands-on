@@ -9,5 +9,9 @@
     "test": "vitest run",
     "exercise": "pnpm run typecheck:exercise && vitest run --config vitest.exercises.config.ts"
   },
+  "dependencies": {
+    "neverthrow": "^8.2.0",
+    "zod": "^3.25.0"
+  },
   "devDependencies": { "vitest": "^2.1.0" }
 }

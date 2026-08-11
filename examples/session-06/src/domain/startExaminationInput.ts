@@ -1,22 +1,24 @@
-export type SchemaValidationError = Readonly<{
-  kind: "SchemaValidationError";
-  issues: readonly string[];
-}>;
+import { ok, type Result } from "neverthrow";
+import { z } from "zod";
 
-export type StartExaminationInput = Readonly<{
-  appointmentId: string;
-  veterinarianId: string;
-  startedAt: string;
-}>;
+import type { SchemaValidationError } from "./shared/schemaResult.js";
 
-export type StartExaminationInputResult = Readonly<{
-  isErr: () => boolean;
-  _unsafeUnwrapErr: () => SchemaValidationError;
-}>;
+const StartExaminationInputSchema = z
+  .object({
+    appointmentId: z.string().uuid(),
+    veterinarianId: z.string().uuid(),
+    startedAt: z.string().datetime({ offset: true }),
+  })
+  .readonly();
+
+export type StartExaminationInput = z.output<typeof StartExaminationInputSchema>;
+
+export type StartExaminationInputResult = Result<
+  StartExaminationInput,
+  SchemaValidationError
+>;
 
 export const StartExaminationInput = {
-  parse: (_raw: unknown): StartExaminationInputResult => ({
-    isErr: () => false,
-    _unsafeUnwrapErr: () => ({ kind: "SchemaValidationError", issues: [] }),
-  }),
+  parse: (_raw: unknown): StartExaminationInputResult =>
+    ok({ appointmentId: "", veterinarianId: "", startedAt: "" }),
 } as const;
