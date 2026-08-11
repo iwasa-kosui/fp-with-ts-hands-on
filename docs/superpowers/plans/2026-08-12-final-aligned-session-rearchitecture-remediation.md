@@ -131,6 +131,52 @@
 
   Run worker tests, docs guidance tests, `pnpm --filter @fp-with-ts/docs build`, root `pnpm typecheck`, `pnpm test`, `pnpm build`, and the visual suite. Commit only deployed-route and Final-contract coherence changes.
 
+### Task 12: Close browser exercise, starter, and guidance contracts
+
+**Files:**
+- Modify: `apps/docs/src/code-explorer/project-files.ts`, `apps/docs/src/code-explorer/run-command.ts`, runner and Code Explorer tests, and any browser-runtime command fixture.
+- Modify: `apps/docs/e2e/session-code-playground.spec.ts`.
+- Create/Modify: `examples/session-02/src/domain/appointment.ts`, its exercise/workspace entries and focused tests.
+- Modify: `examples/session-07/exercises/value-meaning.test.ts`; create an automated Session 08 compatibility test for the same public prior-exercise contract.
+- Create/Modify: Sessions 08–09 local `Sensitive`/guard starter sources, visible-file contracts, and focused exercises/tests.
+- Modify: `apps/docs/src/pages/sessions/01-invariants.astro`, `examples/session-03/README.md`, `examples/session-04/README.md`, and source-contract tests.
+- Test: docs runner, workspace, page, E2E, and Session 02/07/08/09 exercise/next-snapshot tests; root quality gates.
+
+**Interfaces:**
+- Consumes: current package `typecheck:exercise` scripts and the browser workspace file mount.
+- Produces: the browser executes the same typecheck-then-Vitest exercise contract as CLI; every declared participant edit target exists and is visible; Session 07 exercise compiles against Session 08 after correct value construction; Final browser assertions validate read-only navigation rather than mutable controls.
+
+- [ ] **Step 1: Add failing runner, workspace, compatibility, E2E, and guidance tests.**
+
+  - Add a browser-runner contract whose unbranded Session 07 workspace reports the expected unused-`@ts-expect-error` TypeScript failure before running Vitest, and whose branded equivalent continues to Vitest.
+  - Add tests requiring `tsconfig.exercise.json` for snapshots with type-level exercises to be mounted in browser projects.
+  - Add exact Session 02, 08, and 09 workspace target assertions for local `Appointment`, `Sensitive`, and both guard functions.
+  - Add a Session 08 test that compiles/runs the Session 07 value-meaning contract using the Session 08 public constructors and branded appointment input, so unrelated `AppointmentId`/`Timestamp` changes cannot break the prior exercise.
+  - Split Final from incremental routes in Playwright: `00`–`13` require editable Monaco, run/reset/output; Final requires five named guide paths, a read-only editor, and no file tree/run/reset/stop/output.
+  - Add source-contract assertions for the actual RED reasons in Session 01, Session 03, and Session 04 guides.
+
+- [ ] **Step 2: Run the new tests and record precise RED causes.**
+
+  Confirm the browser runner currently skips tsc, Session 02 fails through `TS2307`, Session 07 fails against Session 08 with unrelated raw-string errors, Final E2E asks for mutable controls, and each stale guide string disagrees with the current exercise. Do not accept missing-import failures as a pedagogical RED.
+
+- [ ] **Step 3: Make browser and CLI exercise execution equivalent.**
+
+  Mount `tsconfig.exercise.json` in each relevant project and execute its dedicated exercise typecheck before the existing Vitest exercise command. Return the TypeScript diagnostics to the browser result without invoking Vitest after a typecheck failure. Preserve the existing Vitest-only flow for runtime-only exercises. Do not execute arbitrary user shell strings.
+
+- [ ] **Step 4: Add existing, visible starter targets and preserve next-snapshot compatibility.**
+
+  - Create Session 02 `src/domain/appointment.ts` as a safe incomplete starter with the exact `Appointment.book`/`checkIn` public surface that the page asks the participant to edit. Its exercise must fail on the declared transition contract, not `TS2307`; expose it in the Session 02 workspace.
+  - Rewrite Session 07 exercise fixtures using Session 08-compatible public constructors for appointment ID and timestamp, while retaining only the PetId-versus-OwnerId type error in the starter. Lock this contract in Session 08.
+  - Add Session 08 `Sensitive.of` and Session 09 `ensureCheckedIn` as local safe incomplete stubs, expose both alongside the existing direct targets, and make their exercises fail on their named PII/valid-state contract rather than missing modules.
+
+- [ ] **Step 5: Synchronize public guidance.**
+
+  Change Session 01 page RED text to the terminal-state predicate and say the green answer is supplied in Session 02, not by editing zero functions locally. Change Session 03 and 04 README RED explanations to their actual missing `startExamination` and `AwaitingPayment` transition contracts. Keep edit targets and page instructions exactly aligned with visible files.
+
+- [ ] **Step 6: Verify and commit.**
+
+  Run all `exercise:00`–`:13` commands and confirm intended nonzero starter exits; run prior/next compatibility tests; run docs tests, `pnpm --filter @fp-with-ts/docs test:visual`, root `pnpm typecheck`, `pnpm test`, and `pnpm build`. Confirm Final E2E is read-only while 00–13 retain controls. Self-review for no Final leakage, no raw PII, and no source absence. Commit only this contract repair.
+
 ## Plan Review
 
 - Exercise-chain requirements from the final audit map to Task 9; local editability, model leak, README correction, and endpoint clarification map to Task 10; production Worker reachability and the PRD contradiction map to Task 11.
