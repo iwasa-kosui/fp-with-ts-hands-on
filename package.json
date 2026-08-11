@@ -17,6 +17,8 @@
     "exercise:06": "pnpm --filter @fp-with-ts/clinic-session-06 exercise",
     "exercise:07": "pnpm --filter @fp-with-ts/clinic-session-07 exercise",
     "exercise:08": "pnpm --filter @fp-with-ts/clinic-session-08 exercise",
+    "exercise:09": "pnpm --filter @fp-with-ts/clinic-session-09 exercise",
+    "exercise:10": "pnpm --filter @fp-with-ts/clinic-session-10 exercise",
     "typecheck": "pnpm --filter './examples/*' typecheck && pnpm --filter @fp-with-ts/docs typecheck && tsc -p worker/tsconfig.json --noEmit",
     "preview": "pnpm --filter @fp-with-ts/docs preview",
     "cf:dev": "pnpm build && wrangler dev",

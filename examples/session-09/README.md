@@ -7,6 +7,7 @@
 ```bash
 pnpm --filter @fp-with-ts/clinic-session-09 typecheck
 pnpm --filter @fp-with-ts/clinic-session-09 test
+pnpm --filter @fp-with-ts/clinic-session-09 exercise
 ```
 
-通常テストは PII が出力に現れず、`PetId` を `OwnerId` に取り違えられないことを確認します。
+通常テストは PII が出力に現れず、`PetId` を `OwnerId` に取り違えられないことを確認します。演習は、見つからない予約を `undefined` ではなく `AppointmentNotFound` として返す guard がまだないため、意図的に失敗します。
