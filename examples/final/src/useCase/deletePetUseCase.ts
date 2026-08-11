@@ -33,10 +33,6 @@ export type PetHasActiveAppointment = Readonly<{
   kind: "PetHasActiveAppointment";
   petId: PetId;
 }>;
-export type PetDeletionConflict = Readonly<{
-  kind: "PetDeletionConflict";
-  petId: PetId;
-}>;
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
@@ -48,7 +44,6 @@ export type UseCaseError =
   | UnauthorizedError
   | PetNotFound
   | PetHasActiveAppointment
-  | PetDeletionConflict
   | IdentityGenerationFailed
   | UseCaseRepositoryError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
@@ -73,7 +68,6 @@ const toStoreError = (
 ):
   | PetNotFound
   | PetHasActiveAppointment
-  | PetDeletionConflict
   | UseCaseRepositoryError =>
   error.kind === "RepositoryError" ? toRepositoryError(error) : error;
 const ensurePet =

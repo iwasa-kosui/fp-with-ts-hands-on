@@ -14,17 +14,10 @@ export type PetNotFoundStoreError = Readonly<{
   kind: "PetNotFound";
   petId: PetId;
 }>;
-export type PetDeletionConflictStoreError = Readonly<{
-  kind: "PetDeletionConflict";
-  petId: PetId;
-}>;
 export type PetDeletedStoreError =
   | PetHasActiveAppointmentStoreError
   | PetNotFoundStoreError
-  | PetDeletionConflictStoreError
   | RepositoryError;
 export type PetDeletedStore = Readonly<{
-  store: (
-    ...events: readonly PetDeleted[]
-  ) => ResultAsync<void, PetDeletedStoreError>;
+  store: (event: PetDeleted) => ResultAsync<void, PetDeletedStoreError>;
 }>;

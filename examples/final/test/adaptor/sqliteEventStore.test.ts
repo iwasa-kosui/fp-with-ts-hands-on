@@ -17,7 +17,10 @@ import { createExamResultEventStore } from "../../src/adaptor/secondary/sqlite/s
 import { createExaminationCompletionStore } from "../../src/adaptor/secondary/sqlite/store/examinationCompletionStore.js";
 import { createFollowUpEventStore } from "../../src/adaptor/secondary/sqlite/store/followUpEventStore.js";
 import { createOwnerEventStore } from "../../src/adaptor/secondary/sqlite/store/ownerEventStore.js";
-import { createPetEventStore } from "../../src/adaptor/secondary/sqlite/store/petEventStore.js";
+import {
+  createPetDeletedEventStore,
+  createPetEventStore,
+} from "../../src/adaptor/secondary/sqlite/store/petEventStore.js";
 import { createSessionEventStore } from "../../src/adaptor/secondary/sqlite/store/sessionEventStore.js";
 import { createUserEventStore } from "../../src/adaptor/secondary/sqlite/store/userEventStore.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
@@ -597,7 +600,9 @@ describe("SQLite event stores", () => {
     const store = createPetEventStore(db);
     await store.store(Pet.create(eventContext(21))(pet));
 
-    const result = await store.store(Pet.delete(eventContext(22))(pet));
+    const result = await createPetDeletedEventStore(db).store(
+      Pet.delete(eventContext(22))(pet),
+    );
 
     expect(result.isOk()).toBe(true);
     expect(await db.select().from(petsTable)).toHaveLength(0);
@@ -660,7 +665,7 @@ describe("SQLite event stores", () => {
       db.select().from(appointmentsTable).get()?.status,
     ).toBe("AwaitingPayment");
 
-    const result = await petStore.store(staleDeletion);
+    const result = await createPetDeletedEventStore(db).store(staleDeletion);
 
     expect(result.isErr() && result.error).toEqual({
       kind: "PetHasActiveAppointment",

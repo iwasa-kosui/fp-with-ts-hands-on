@@ -32,28 +32,6 @@ export default defineConfig(({ mode }) => {
     };
   }
 
-  if (mode === "app-artifact") {
-    return {
-      plugins: [inertiaPlugin, react()],
-      ssr: {
-        external: ["better-sqlite3"],
-        noExternal: true,
-        target: "node",
-      },
-      build: {
-        copyPublicDir: false,
-        emptyOutDir: false,
-        minify: true,
-        outDir: "./dist",
-        ssr: "./src/app.ts",
-        rollupOptions: {
-          external: [...builtinModules, /^node:/, "better-sqlite3"],
-          output: { entryFileNames: "app.js" },
-        },
-      },
-    };
-  }
-
   return {
     plugins: [
       inertiaPlugin,

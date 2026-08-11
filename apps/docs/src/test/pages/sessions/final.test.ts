@@ -45,7 +45,6 @@ describe("Final application", () => {
     expect(page).toContain("Node.js 20 ではローカル実行していません");
     expect(page).toContain("Admin capability");
     expect(page).toContain("SanitizedAuditRecord");
-    expect(page).toContain("dist/app.js");
     expect(page).toContain("NODE_ENV を指定せず");
     expect(page).toContain("isProduction: true");
     expect(page).toContain("IdentityGenerationFailed");

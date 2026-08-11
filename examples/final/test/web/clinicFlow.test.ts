@@ -49,15 +49,15 @@ const createHarness = () => {
   let currentTime = Timestamp.schema.parse("2026-08-09T01:30:00.000Z");
   const database = createSqliteDatabase(":memory:");
   migrateDatabase(database);
-  const app = createApp(
-    createApplicationDependencies(database, {
-      clock: { now: () => currentTime },
-      isProduction: false,
-    }),
-  );
+  const dependencies = createApplicationDependencies(database, {
+    clock: { now: () => currentTime },
+    isProduction: false,
+  });
+  const app = createApp(dependencies);
   return {
     app,
     database,
+    dependencies,
     setTime: (value: string) => {
       currentTime = Timestamp.schema.parse(value);
     },
@@ -469,7 +469,7 @@ describe("clinic workflow routes", () => {
 
     const conflictAppointmentId = AppointmentId.schema.parse(appointment.appointmentId);
     const authoritativeConflictApp = createApp({
-      ...createApplicationDependencies(harness.database, { isProduction: false }),
+      ...harness.dependencies,
       checkInAppointment: {
         run: () => errAsync({
           kind: "AppointmentConflict" as const,
@@ -624,7 +624,7 @@ describe("clinic workflow routes", () => {
       clock: { now: () => Timestamp.schema.parse("2026-08-09T03:30:00.000Z") },
     });
     const staleApp = createApp({
-      ...createApplicationDependencies(harness.database, { isProduction: false }),
+      ...harness.dependencies,
       requestFollowUp: staleRequestFollowUp,
     });
     const stale = await staleApp.request("/follow-ups/request", {

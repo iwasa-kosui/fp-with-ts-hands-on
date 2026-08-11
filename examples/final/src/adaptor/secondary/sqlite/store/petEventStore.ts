@@ -1,5 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
-import { err, errAsync, ok, ResultAsync } from "neverthrow";
+import { err, ok, ResultAsync } from "neverthrow";
 
 import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import type {
@@ -8,7 +8,6 @@ import type {
   PetUpdated,
 } from "../../../../domain/pet/petEvent.js";
 import type {
-  PetDeletionConflictStoreError,
   PetDeletedStore,
   PetHasActiveAppointmentStoreError,
   PetNotFoundStoreError,
@@ -18,7 +17,6 @@ import { toEventRecord } from "../eventRecord.js";
 import { appointmentsTable, domainEventsTable, petsTable } from "../schema.js";
 
 type PetProjectionEvent = PetCreated | PetUpdated;
-type PetEvent = PetProjectionEvent | PetDeleted;
 const activeStatuses = [
   "Scheduled",
   "CheckedIn",
@@ -81,86 +79,41 @@ const petHasActiveAppointment = (
 const petNotFound = (
   petId: PetDeleted["aggregateId"],
 ): PetNotFoundStoreError => ({ kind: "PetNotFound", petId });
-const petDeletionConflict = (
-  petId: PetDeleted["aggregateId"],
-): PetDeletionConflictStoreError => ({
-  kind: "PetDeletionConflict",
-  petId,
-});
-
 export const createPetDeletedEventStore = (
   db: SqliteDatabase,
 ): PetDeletedStore => ({
-  store: (...events) =>
+  store: (event) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() =>
         db.transaction((tx) => {
-          const petIds = events.map(({ aggregateId }) => aggregateId);
-          const duplicatePetId = petIds.find(
-            (petId, index) => petIds.indexOf(petId) !== index,
-          );
-          if (duplicatePetId !== undefined) {
-            return err(petDeletionConflict(duplicatePetId));
-          }
-
-          const livePetIds =
-            petIds.length === 0
-              ? []
-              : tx
-                  .select({ petId: petsTable.petId })
-                  .from(petsTable)
-                  .where(inArray(petsTable.petId, petIds))
-                  .all()
-                  .map(({ petId }) => petId);
-          const livePetIdSet = new Set(livePetIds);
-          const missingPet = events.find(
-            ({ aggregateId }) => !livePetIdSet.has(aggregateId),
-          );
-          if (missingPet !== undefined) {
-            return err(petNotFound(missingPet.aggregateId));
-          }
-
-          const blockingAppointment =
-            petIds.length === 0
-              ? undefined
-              : tx
-                  .select({ petId: appointmentsTable.petId })
-                  .from(appointmentsTable)
-                  .where(
-                    and(
-                      inArray(appointmentsTable.petId, petIds),
-                      inArray(appointmentsTable.status, activeStatuses),
-                    ),
-                  )
-                  .get();
+          const blockingAppointment = tx
+            .select({ petId: appointmentsTable.petId })
+            .from(appointmentsTable)
+            .where(
+              and(
+                eq(appointmentsTable.petId, event.aggregateId),
+                inArray(appointmentsTable.status, activeStatuses),
+              ),
+            )
+            .get();
           if (blockingAppointment !== undefined) {
-            const blockedEvent = events.find(
-              ({ aggregateId }) => aggregateId === blockingAppointment.petId,
-            );
-            if (blockedEvent !== undefined) {
-              return err(petHasActiveAppointment(blockedEvent.aggregateId));
-            }
+            return err(petHasActiveAppointment(event.aggregateId));
           }
 
-          events.forEach((event) => {
-            const result = tx
-              .delete(petsTable)
-              .where(eq(petsTable.petId, event.aggregateId))
-              .run();
-            if (result.changes !== 1) {
-              throw new TypeError(
-                "Pet deletion preflight and affected rows diverged",
-              );
-            }
-            tx.insert(domainEventsTable)
-              .values(
-                toEventRecord(event, undefined, {
-                  petId: event.aggregateId,
-                  ownerId: event.eventPayload.ownerId,
-                }),
-              )
-              .run();
-          });
+          const result = tx
+            .delete(petsTable)
+            .where(eq(petsTable.petId, event.aggregateId))
+            .run();
+          if (result.changes !== 1) return err(petNotFound(event.aggregateId));
+
+          tx.insert(domainEventsTable)
+            .values(
+              toEventRecord(event, undefined, {
+                petId: event.aggregateId,
+                ownerId: event.eventPayload.ownerId,
+              }),
+            )
+            .run();
           return ok(undefined);
         }),
       ),
@@ -168,38 +121,4 @@ export const createPetDeletedEventStore = (
     ).andThen((result) => result),
 });
 
-const mixedEventKindsError = (): RepositoryError => ({
-  kind: "RepositoryError",
-  operation: "PetEventStore.store",
-  cause: new TypeError(
-    "Pet deletion events require an isolated guarded transaction",
-  ),
-});
-
-export const createPetEventStore = (db: SqliteDatabase) => {
-  const projectionStore = createPetProjectionEventStore(db);
-  const deletionStore = createPetDeletedEventStore(db);
-
-  function store(
-    ...events: readonly PetProjectionEvent[]
-  ): ReturnType<typeof projectionStore.store>;
-  function store(
-    ...events: readonly PetDeleted[]
-  ): ReturnType<typeof deletionStore.store>;
-  function store(...events: readonly PetEvent[]) {
-    const deletionEvents = events.filter(
-      (event) => event.kind === "PetDeleted",
-    );
-    const projectionEvents = events.filter(
-      (event) => event.kind !== "PetDeleted",
-    );
-    if (deletionEvents.length > 0 && projectionEvents.length > 0) {
-      return errAsync(mixedEventKindsError());
-    }
-    return deletionEvents.length > 0
-      ? deletionStore.store(...deletionEvents)
-      : projectionStore.store(...projectionEvents);
-  }
-
-  return { store } as const;
-};
+export const createPetEventStore = createPetProjectionEventStore;

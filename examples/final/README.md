@@ -20,7 +20,7 @@ pnpm --filter @fp-with-ts/clinic-final db:generate
 
 初回アクセスは `/setup` へ進み、最初の `Admin` を登録します。以後は `/login` からログインします。初期登録は installation marker、Admin、session、対応する2件の監査行を1つの transaction で確定します。
 
-production build は次で作成します。このコマンドは、常に port 3000 で Node server を起動する `dist/index.js`、ソケットを開かずに明示した SQLite へ接続できる app factory の `dist/app.js`、`dist/static/client.js`、`dist/static/styles.css` を作ります。server entry は Vite の production mode を `isProduction: true` として構成するため、`NODE_ENV` を指定せず `node dist/index.js` を実行しても production asset と Secure cookie を使います。`dist/app.js` の factory を直接使う場合は `isProduction` を必ず指定します。built smoke は `:memory:` SQLite、migration directory、`isProduction: true` を渡し、production shell と Secure session cookie を `app.request` で確認します。
+production build は、常に port 3000 で Node server を起動する `dist/index.js`、`dist/static/client.js`、`dist/static/styles.css` を作ります。server entry は Vite の production mode を `isProduction: true` として構成するため、`NODE_ENV` を指定せず `node dist/index.js` を実行しても production asset と Secure cookie を使います。
 
 ```bash
 pnpm --filter @fp-with-ts/clinic-final build

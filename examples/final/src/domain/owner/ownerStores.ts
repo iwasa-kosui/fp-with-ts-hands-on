@@ -14,17 +14,10 @@ export type OwnerNotFoundStoreError = Readonly<{
   kind: "OwnerNotFound";
   ownerId: OwnerId;
 }>;
-export type OwnerDeletionConflictStoreError = Readonly<{
-  kind: "OwnerDeletionConflict";
-  ownerId: OwnerId;
-}>;
 export type OwnerDeletedStoreError =
   | OwnerHasPetsStoreError
   | OwnerNotFoundStoreError
-  | OwnerDeletionConflictStoreError
   | RepositoryError;
 export type OwnerDeletedStore = Readonly<{
-  store: (
-    ...events: readonly OwnerDeleted[]
-  ) => ResultAsync<void, OwnerDeletedStoreError>;
+  store: (event: OwnerDeleted) => ResultAsync<void, OwnerDeletedStoreError>;
 }>;

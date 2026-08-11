@@ -11,8 +11,6 @@ import {
   usersTable,
 } from "../../src/adaptor/secondary/sqlite/schema.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
-import { OwnerId } from "../../src/domain/owner/ownerId.js";
-import { PetId } from "../../src/domain/pet/petId.js";
 import {
   createApp,
   createApplicationDependencies,
@@ -665,126 +663,6 @@ describe("management route boundary", () => {
         },
       },
     });
-  });
-
-  test("turns an owner deletion race conflict into a safe detail-page error", async () => {
-    const harness = createHarness();
-    const adminCookie = await setUp(harness);
-    const ownerCreate = await postForm(
-      harness,
-      "/owners",
-      {
-        name: "Race Owner",
-        email: "race.owner@example.test",
-        phone: "090-9876-5432",
-      },
-      adminCookie,
-    );
-    expect(ownerCreate.status).toBe(302);
-    const owner = harness.database.select().from(ownersTable).get();
-    expect(owner).toBeDefined();
-    if (owner === undefined) return;
-
-    const conflictApp = createApp({
-      ...harness.dependencies,
-      deleteOwner: {
-        run: () =>
-          errAsync({
-            kind: "OwnerDeletionConflict",
-            ownerId: OwnerId.schema.parse(owner.ownerId),
-          } as const),
-      },
-    });
-    const response = await postForm(
-      { app: conflictApp },
-      `/owners/${owner.ownerId}/delete`,
-      {},
-      adminCookie,
-    );
-
-    expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe(
-      `/owners/${owner.ownerId}?error=owner-deletion-conflict`,
-    );
-    const pageResponse = await conflictApp.request(
-      `/owners/${owner.ownerId}?error=owner-deletion-conflict`,
-      { headers: { ...inertiaHeaders, Cookie: adminCookie } },
-    );
-    const page = await pageResponse.json();
-    expect(page).toMatchObject({
-      component: "Owners/Form",
-      props: {
-        errors: {
-          form: "飼い主を削除できませんでした。最新の状態を確認してください。",
-        },
-      },
-    });
-    expect(page.props.errors.form).not.toContain(owner.ownerId);
-    expect(page.props.errors.form).not.toContain(owner.email);
-  });
-
-  test("turns a pet deletion race conflict into a safe detail-page error", async () => {
-    const harness = createHarness();
-    const adminCookie = await setUp(harness);
-    await postForm(
-      harness,
-      "/owners",
-      {
-        name: "Race Pet Owner",
-        email: "race.pet.owner@example.test",
-        phone: "090-1111-2222",
-      },
-      adminCookie,
-    );
-    const owner = harness.database.select().from(ownersTable).get();
-    expect(owner).toBeDefined();
-    if (owner === undefined) return;
-    await postForm(
-      harness,
-      "/pets",
-      { ownerId: owner.ownerId, name: "Race Pet", species: "Dog" },
-      adminCookie,
-    );
-    const pet = harness.database.select().from(petsTable).get();
-    expect(pet).toBeDefined();
-    if (pet === undefined) return;
-
-    const conflictApp = createApp({
-      ...harness.dependencies,
-      deletePet: {
-        run: () =>
-          errAsync({
-            kind: "PetDeletionConflict",
-            petId: PetId.schema.parse(pet.petId),
-          } as const),
-      },
-    });
-    const response = await postForm(
-      { app: conflictApp },
-      `/pets/${pet.petId}/delete`,
-      {},
-      adminCookie,
-    );
-
-    expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe(
-      `/pets/${pet.petId}?error=pet-deletion-conflict`,
-    );
-    const pageResponse = await conflictApp.request(
-      `/pets/${pet.petId}?error=pet-deletion-conflict`,
-      { headers: { ...inertiaHeaders, Cookie: adminCookie } },
-    );
-    const page = await pageResponse.json();
-    expect(page).toMatchObject({
-      component: "Pets/Form",
-      props: {
-        errors: {
-          form: "ペットを削除できませんでした。最新の状態を確認してください。",
-        },
-      },
-    });
-    expect(page.props.errors.form).not.toContain(pet.petId);
-    expect(page.props.errors.form).not.toContain(pet.name);
   });
 
   test("Veterinarian cannot discover management routes", async () => {
