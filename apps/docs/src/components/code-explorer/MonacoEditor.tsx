@@ -240,7 +240,11 @@ export const MonacoEditor = (props: EditorProps) => {
   const sourceLines = value.split("\n");
 
   return (
-    <div className="code-explorer__monaco">
+    <div
+      className="code-explorer__monaco"
+      role="region"
+      aria-label={`コードエディタ: ${path}`}
+    >
       {ready ? null : (
         <pre aria-label={`コード: ${path}`}>
           <code>
@@ -268,7 +272,7 @@ export const MonacoEditor = (props: EditorProps) => {
           </code>
         </pre>
       )}
-      <div ref={editorHost} aria-label={`コードエディタ: ${path}`} />
+      <div ref={editorHost} />
     </div>
   );
 };

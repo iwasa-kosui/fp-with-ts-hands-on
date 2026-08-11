@@ -177,6 +177,11 @@ describe("MonacoEditor", () => {
         onChange={() => undefined}
       />,
     );
+    expect(html).toContain('role="region"');
+    expect(html).toContain(
+      'aria-label="コードエディタ: src/clinic/appointment.ts"',
+    );
+    expect(html).toContain('aria-label="コード: src/clinic/appointment.ts"');
     expect(html).toContain("src/clinic/appointment.ts");
     expect(html).toContain("export const kind");
   });

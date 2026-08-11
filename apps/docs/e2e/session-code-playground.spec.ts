@@ -30,8 +30,12 @@ for (const route of routes) {
       await page.goto(route);
 
       const playground = page.locator(".session-code-playground");
+      const editor = playground.getByRole("region", {
+        name: /コードエディタ:/,
+      });
       await expect(playground).toBeVisible();
-      await expect(playground.locator(".code-explorer__monaco")).toBeVisible();
+      await expect(editor).toBeVisible();
+      await expect(editor.locator(".monaco-editor")).toBeVisible();
       await expect(playground.locator('[data-action="reset"]')).toBeVisible();
       await expect(playground.locator('[data-action="run"]')).toBeVisible();
       await expect(playground.locator('[aria-label="実行結果"]')).toBeVisible();
