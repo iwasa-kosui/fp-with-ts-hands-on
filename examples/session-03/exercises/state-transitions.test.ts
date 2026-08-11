@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 
-import { Appointment } from "../src/domain/appointment.js";
+import { Appointment, type Scheduled } from "../src/domain/appointment.js";
 
 it("受付済みの来院だけを診察中へ進められる", () => {
   const scheduled = Appointment.book({
@@ -17,4 +17,15 @@ it("受付済みの来院だけを診察中へ進められる", () => {
   );
 
   expect(examining.kind).toBe("InExamination");
+
+  if (false) {
+    const notCheckedIn: Scheduled = scheduled;
+
+    // @ts-expect-error Scheduled からは診察を開始できません。
+    Appointment.startExamination(
+      notCheckedIn,
+      "vet-1",
+      "2026-08-30T06:30:00.000Z",
+    );
+  }
 });

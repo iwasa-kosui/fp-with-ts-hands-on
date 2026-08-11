@@ -5,6 +5,7 @@
   "scripts": {
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
+    "typecheck:exercise": "tsc --noEmit -p tsconfig.exercises.json",
     "test": "vitest run",
     "exercise": "vitest run --config vitest.exercises.config.ts"
   },

@@ -21,4 +21,9 @@ it("診察を完了した来院だけを会計待ちへ進められる", () => {
   });
 
   expect(completed.kind).toBe("AwaitingPayment");
+
+  if (false) {
+    // @ts-expect-error 会計待ち前に会計できません。
+    Appointment.recordPayment(examining, { amount: 4_800 }, "2026-08-30T07:00:00.000Z");
+  }
 });
