@@ -1,24 +1,28 @@
-# Session 11: 成功した変更をイベントにする
+# Session 11: use case で副作用を合成する
 
-解答済みのスナップショットです。Session 10 の型付き失敗を保ったまま、診察開始に成功したときだけ、状態変更を表すイベントを純粋に組み立てます。次の Session 12 で、このイベントを非同期の use case と保存へつなげます。
+開始状態です。診察開始の成功イベントは純粋に作れますが、予約の読み込みと保存を HTTP や DB から切り離して合成する use case はまだありません。次の Session 12 が、この回の解答済み snapshot です。
 
 ## 事故
 
-成功した操作と失敗した操作を同じ「記録」として扱うと、何が実際に変更されたのかを追跡できません。
+読み込み、業務判断、保存を controller や repository に埋め込むと、失敗時にどこまで処理されたかを確認できず、保存を伴わない業務判断のテストも難しくなります。
 
 ## 守る不変条件
 
-`AppointmentExaminationStarted` は、`CheckedIn` から `InExamination` への成功した遷移だけを表します。失敗は `StartExaminationError` として返すだけで、イベントにはしません。
+外部入力を検証してから予約を一度解決し、存在と `CheckedIn` を確認した成功時だけイベントを作り、一つの `ExaminationStartedStore` へ渡します。途中の失敗では store を呼びません。
 
-## 採用する技法と限界
+## この回で変える関数
 
-イベントは変更後の `aggregateState`、安定した `eventName`、必要な ID の payload を持つ純粋な値です。これは読み込み、保存、非同期処理、競合の防止、認可を扱いません。
+- `StartExaminationUseCase.run`
+- `StartExaminationUseCase.create`
 
-## 検証と振り返り
+`AppointmentResolver` と `ExaminationStartedStore` は用途を一つに絞った port とします。`ResultAsync` による合成は、store 内部の原子性や stale state の競合までは守りません。
+
+## 検証と次の snapshot
 
 ```bash
 pnpm --filter @fp-with-ts/clinic-session-11 typecheck
 pnpm --filter @fp-with-ts/clinic-session-11 test
+pnpm --filter @fp-with-ts/clinic-session-11 exercise
 ```
 
-通常テストは、診察開始で `InExamination` を持つ成功イベントだけを組み立てることを確認します。自分の業務で、状態変更に成功した事実として残すべきものを一つ探してください。
+通常テストは純粋な成功イベントまでを確認します。演習は非同期 port を合成する use case がないため意図的に失敗します。Session 12 では同じ契約が通常テストとして成功します。
