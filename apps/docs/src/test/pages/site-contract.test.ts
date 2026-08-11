@@ -1,9 +1,15 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { sessions } from "../../sessions/catalog";
 import NotFoundPage from "../../pages/404.astro";
 import { createAstroContainer } from "../render-astro";
 
 const pageSessions = import.meta.glob("../../pages/sessions/*.astro", { eager: true });
+const staticBuildVerifier = readFileSync(
+  resolve(process.cwd(), "scripts/verify-static-build.mjs"),
+  "utf8",
+);
 
 describe("static site contract", () => {
   it("has one authored page for every catalog session", () => {
@@ -14,6 +20,19 @@ describe("static site contract", () => {
 
     expect(slugs).toHaveLength(sessions.length);
     expect(slugs).toEqual(sessions.map(({ slug }) => slug).slice().sort());
+  });
+
+  it("requires exactly the current catalog sessions from the static build", () => {
+    const requiredSessionSlugs = [
+      ...staticBuildVerifier.matchAll(/sessions\/([^/]+)\/index\.html/g),
+    ]
+      .map((match) => match[1])
+      .filter((slug): slug is string => slug !== undefined)
+      .sort();
+
+    expect(requiredSessionSlugs).toEqual(
+      sessions.map(({ slug }) => slug).slice().sort(),
+    );
   });
 
   it("renders a real not-found page", async () => {
