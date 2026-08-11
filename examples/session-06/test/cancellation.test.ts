@@ -7,12 +7,21 @@ describe("Session 06 cancellation", () => {
     const checkedIn = Appointment.checkIn(scheduled, "2026-08-30T06:20:00.000Z");
     const canceled = Appointment.cancel(checkedIn, { reason: "owner-request", now: "2026-08-29T10:00:00.000Z" });
     const examining = Appointment.startExamination(checkedIn, "vet-1", "2026-08-30T06:30:00.000Z");
+    const paid = Appointment.recordPayment(
+      Appointment.completeExamination(examining, {
+        examId: "exam-1",
+        now: "2026-08-30T06:50:00.000Z",
+      }),
+      { amount: 4_800 },
+      "2026-08-30T07:00:00.000Z",
+    );
 
     if (false) {
       // @ts-expect-error 診察中はキャンセルできません。
       Appointment.cancel(examining, { reason: "owner-request", now: "2026-08-30T06:35:00.000Z" });
     }
     expect(Appointment.isTerminal(scheduled)).toBe(false);
+    expect(Appointment.isTerminal(paid)).toBe(true);
     expect(Appointment.isTerminal(canceled)).toBe(true);
   });
 });

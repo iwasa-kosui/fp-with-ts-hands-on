@@ -1,24 +1,22 @@
-# Session 06: 状態モデルの次に入力境界を置く
+# Session 06: キャンセルと終端状態
 
 ## 事故
 
-状態遷移を型で閉じても、外部 API やフォームから不正な ID・時刻・状態が `string` として入れば、モデルへ不正な入力を渡せます。
+診察中や会計済みの来院をキャンセルできると、処置や会計を取り消すための別の業務判断を見落とします。終わった来院を通常フローへ戻すことも防ぐ必要があります。
 
 ## 守る不変条件
 
-状態モデルへ渡す前に、信頼できない入力の形と値を検証します。この snapshot は、その必要性を演習として明示するだけで、まだ入力検証を実装しません。
+キャンセルできるのは `Scheduled` または `CheckedIn` だけです。`Paid` と `Canceled` は終端状態として扱います。
 
 ## 採用する技法と限界
 
-状態 union と遷移関数は内部状態の順序を守りますが、外部入力を安全にする技法ではありません。次の session で境界の検証を追加します。
+`cancel` の引数を許可された状態の union に絞り、`isTerminal` を `Paid | Canceled` へ絞り込む type guard にします。これはキャンセル理由の妥当性や、外部から来る入力値の検証までは保証しません。
 
 ## 検証と振り返り
 
 ```bash
 pnpm --filter @fp-with-ts/clinic-session-06 typecheck
 pnpm --filter @fp-with-ts/clinic-session-06 test
-pnpm --filter @fp-with-ts/clinic-session-06 exercise
-pnpm --filter @fp-with-ts/clinic-session-06 typecheck:exercise
 ```
 
-通常の検証は成功します。演習は入力境界が未実装のため意図的に失敗します。自分のシステムで、最初に検証すべき外部入力を一つ選んでください。
+通常テストでは、受付済みのキャンセル、診察中のコンパイル時拒否、`Paid` と `Canceled` の終端判定を確認します。自分の業務で、終了後に戻してはいけない状態を一つ探してください。
