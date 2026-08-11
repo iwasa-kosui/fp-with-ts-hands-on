@@ -207,6 +207,7 @@ export const CodeExplorer = ({
                 <button
                   type="button"
                   data-code-guide={guide.id}
+                  data-guide-path={guide.path}
                   aria-pressed={guide.id === selectedGuideId}
                   onClick={() => selectGuide(guide)}
                 >

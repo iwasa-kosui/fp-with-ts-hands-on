@@ -23,7 +23,7 @@ if (session === undefined) throw new Error("Unknown session: final");
     <p><code>examples/final</code> は全セッションの答えを一括導入する雛形ではありません。読み取り専用の参照ツアーとして、Session 13 で確認した不変条件を事故に対応する経路と比較し、選んだ手段を説明します。</p>
     <ol id="incident-routes">
       <li><strong>状態の事故:</strong> 終端状態から戻る、診察完了と支払完了が混ざるなら <code>src/domain/appointment/appointment.ts</code> の状態と純粋遷移を読む。</li>
-      <li><strong>境界の事故:</strong> unknown や用途の違う ID が混ざるなら <code>src/domain/shared/schemaResult.ts</code> と value object を読む。</li>
+      <li><strong>境界の事故:</strong> unknown や用途の違う ID が混ざるなら <code>src/domain/shared/schemaResult.ts</code> と、HTTP 入力を検証する <code>src/adaptor/primary/web/routes/appointmentRoutes.ts</code> を読む。</li>
       <li><strong>判断の事故:</strong> 未発見・不正状態・権限不足や副作用の順番が曖昧なら <code>src/useCase/startExaminationUseCase.ts</code> の <code>ResultAsync</code> を読む。</li>
       <li><strong>永続化の事故:</strong> projection と監査 event が片落ちするなら <code>src/adaptor/secondary/sqlite/store/appointmentEventStore.ts</code> の transaction と競合を読む。</li>
     </ol>

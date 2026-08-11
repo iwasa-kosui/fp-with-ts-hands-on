@@ -20,6 +20,14 @@ const finalReferenceGuides = [
     highlights: [{ startLineNumber: 1, endLineNumber: 1 }],
   },
   {
+    id: "final-reference-boundary",
+    title: "境界の事故から schema と入力を読む",
+    currentDesign: "schemaResult が unknown を型付き Result へ変え、appointmentRoutes が HTTP 入力を schema で検証しています。",
+    futureRisk: "境界を通らない入力や、用途の異なる値が use case へ渡らないことを確認します。",
+    path: "src/domain/shared/schemaResult.ts",
+    highlights: [{ startLineNumber: 1, endLineNumber: 1 }],
+  },
+  {
     id: "final-reference-use-case",
     title: "判断の事故から use case を読む",
     currentDesign: "認可、状態遷移、成功 event の保存を ResultAsync で順に合成しています。",
@@ -33,6 +41,14 @@ const finalReferenceGuides = [
     currentDesign: "projection と監査 event を同じ transaction で確定しています。",
     futureRisk: "競合や部分成功を、adapter が domain の契約を壊さず扱えるかを確認します。",
     path: "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
+    highlights: [{ startLineNumber: 1, endLineNumber: 1 }],
+  },
+  {
+    id: "final-reference-web",
+    title: "web の入力境界から adapter を読む",
+    currentDesign: "appointmentRoutes が HTTP 入力、認可済み actor、use case の結果を web の応答へ対応付けています。",
+    futureRisk: "adapter が業務不変条件を決めず、検証済みの値と型付き失敗だけを境界の内側へ渡すことを確認します。",
+    path: "src/adaptor/primary/web/routes/appointmentRoutes.ts",
     highlights: [{ startLineNumber: 1, endLineNumber: 1 }],
   },
 ] as const satisfies readonly CodeGuide[];

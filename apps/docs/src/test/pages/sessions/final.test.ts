@@ -37,6 +37,7 @@ describe("Final application", () => {
     expect(html).toContain("Hono");
     expect(html).toContain("Inertia");
     expect(html).toContain("Drizzle");
+    expect(html).toContain("src/adaptor/primary/web/routes/appointmentRoutes.ts");
     expect(html).toContain("読み取り専用の参照ツアー");
     expect(html).toContain("Session 13 で green にした演習");
     expect(html).not.toContain("pnpm --filter @fp-with-ts/clinic-final test");

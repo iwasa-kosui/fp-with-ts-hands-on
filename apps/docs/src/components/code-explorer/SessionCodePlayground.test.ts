@@ -3,6 +3,14 @@ import { Window } from "happy-dom";
 import SessionCodePlayground from "./SessionCodePlayground.astro";
 import { createAstroContainer } from "../../test/render-astro";
 
+const finalGuidePaths = [
+  "src/domain/appointment/appointment.ts",
+  "src/domain/shared/schemaResult.ts",
+  "src/useCase/startExaminationUseCase.ts",
+  "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
+  "src/adaptor/primary/web/routes/appointmentRoutes.ts",
+] as const;
+
 const cases = [
   {
     slug: "01-invariants",
@@ -47,6 +55,12 @@ describe("SessionCodePlayground", () => {
     expect(document.body.textContent).not.toContain("ブラウザ内で編集して実行できます");
     expect(document.querySelector('[data-action="reset"]')).toBeNull();
     expect(document.querySelector('[data-action="run"]')).toBeNull();
-    expect(html).toContain("final-reference-route");
+    expect(
+      [...document.querySelectorAll("[data-code-guide]")].map((guide) =>
+        guide.getAttribute("data-guide-path"),
+      ),
+    ).toEqual(finalGuidePaths);
+    expect(html).toContain("final-reference-boundary");
+    expect(html).toContain("final-reference-web");
   });
 });
