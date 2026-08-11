@@ -272,7 +272,7 @@ export const MonacoEditor = (props: EditorProps) => {
           </code>
         </pre>
       )}
-      <div ref={editorHost} />
+      <div ref={editorHost} className="code-explorer__monaco-host" />
     </div>
   );
 };

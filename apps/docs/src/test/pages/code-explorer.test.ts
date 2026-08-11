@@ -45,12 +45,8 @@ describe("code explorer preview page", () => {
       "先人が残したコードを手がかりに、今後向き合う設計上の課題を見渡します。",
     );
     expect(html).toContain("src/appointment.ts");
-    expect(
-      document.querySelector('[data-action="run"]')?.textContent,
-    ).toContain("実行");
-    expect(
-      document.querySelector('[data-action="reset"]')?.textContent,
-    ).toContain("リセット");
+    expect(document.querySelector('[data-action="run"]')).not.toBeNull();
+    expect(document.querySelector('[data-action="reset"]')).not.toBeNull();
     expect(
       document.querySelector('[data-code-explorer="00-onboarding"]'),
     ).not.toBeNull();

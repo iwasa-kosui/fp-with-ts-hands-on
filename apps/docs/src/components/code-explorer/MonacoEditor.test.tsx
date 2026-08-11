@@ -182,6 +182,7 @@ describe("MonacoEditor", () => {
       'aria-label="コードエディタ: src/clinic/appointment.ts"',
     );
     expect(html).toContain('aria-label="コード: src/clinic/appointment.ts"');
+    expect(html).toContain('class="code-explorer__monaco-host"');
     expect(html).toContain("src/clinic/appointment.ts");
     expect(html).toContain("export const kind");
   });

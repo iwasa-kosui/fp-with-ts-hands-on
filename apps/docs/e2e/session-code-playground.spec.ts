@@ -35,9 +35,18 @@ for (const route of routes) {
       });
       await expect(playground).toBeVisible();
       await expect(editor).toBeVisible();
-      await expect(editor.locator(".monaco-editor")).toBeVisible();
+      const monacoEditor = editor.locator(".monaco-editor");
+      await expect(monacoEditor).toBeVisible();
+      const editorHeight = await monacoEditor.evaluate(
+        (element) => element.getBoundingClientRect().height,
+      );
+      expect(editorHeight).toBeGreaterThan(200);
       await expect(playground.locator('[data-action="reset"]')).toBeVisible();
       await expect(playground.locator('[data-action="run"]')).toBeVisible();
+      await expect(
+        playground.getByRole("button", { name: "選択中のファイルをリセット" }),
+      ).toBeVisible();
+      await expect(playground.getByRole("button", { name: "実行" })).toBeVisible();
       await expect(playground.locator('[aria-label="実行結果"]')).toBeVisible();
       const widths = await playground.evaluate((element) => ({
         clientWidth: element.clientWidth,
