@@ -65,4 +65,16 @@ describe("incremental session artifacts", () => {
     expect(page).toContain("unused `@ts-expect-error`");
     expect(page).not.toContain("AppointmentId.parse");
   });
+
+  it("keeps Session 06 editing scope to parse and presents schemaResult as support", () => {
+    const page = readRepositoryFile(
+      "apps/docs/src/pages/sessions/06-input-boundary.astro",
+    );
+
+    expect(page).toContain("src/domain/shared/schemaResult.ts");
+    expect(page).toContain("src/domain/startExaminationInput.ts");
+    expect(page).toContain("提供済みの支援");
+    expect(page).toContain("StartExaminationInput.parse</code> の1関数だけ");
+    expect(page).not.toContain("schemaResult</code> と <code>StartExaminationInput.parse</code> の2関数");
+  });
 });
