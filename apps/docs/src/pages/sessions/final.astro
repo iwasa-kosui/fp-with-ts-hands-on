@@ -1,5 +1,4 @@
 ---
-import CommandBlock from "../../components/CommandBlock.astro";
 import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
 import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessionBySlug } from "../../sessions/catalog";
@@ -13,7 +12,7 @@ if (session === undefined) throw new Error("Unknown session: final");
     <li><a href="#final-incidents">事故から4つの経路を選ぶ</a></li>
     <li><a href="#final-composition">framework は最後に読む</a></li>
     <li><a href="#code-playground">参照実装を読む</a></li>
-    <li><a href="#final-verification">統合を検証する</a></li>
+    <li><a href="#final-verification">参照した契約を説明する</a></li>
     <li><a href="#final-reflection">次の改善を決める</a></li>
   </ol>
 
@@ -21,7 +20,7 @@ if (session === undefined) throw new Error("Unknown session: final");
     <h2>事故から4つの経路を選ぶ</h2>
     <p data-actor="保守担当"><strong>登場人物:</strong> 保守担当は、次の事故を減らすために完成例のどこから読むかを決めます。</p>
     <p><strong>守る不変条件:</strong> 事故に対応する防御層を選び、異なる責務を一つの型や framework に任せない。</p>
-    <p><code>examples/final</code> は全セッションの答えを一括導入する雛形ではありません。いま減らしたい事故に対応する経路から読み始めます。</p>
+    <p><code>examples/final</code> は全セッションの答えを一括導入する雛形ではありません。読み取り専用の参照ツアーとして、Session 13 で確認した不変条件を事故に対応する経路と比較し、選んだ手段を説明します。</p>
     <ol id="incident-routes">
       <li><strong>状態の事故:</strong> 終端状態から戻る、診察完了と支払完了が混ざるなら <code>src/domain/appointment/appointment.ts</code> の状態と純粋遷移を読む。</li>
       <li><strong>境界の事故:</strong> unknown や用途の違う ID が混ざるなら <code>src/domain/shared/schemaResult.ts</code> と value object を読む。</li>
@@ -47,9 +46,8 @@ if (session === undefined) throw new Error("Unknown session: final");
   <SessionCodePlayground slug={session.slug} />
 
   <section id="final-verification">
-    <h2>統合を検証する</h2>
-    <CommandBlock phase="green" command="pnpm --filter @fp-with-ts/clinic-final test" expected="認証・認可、予約から会計、follow-up、監査、原子性、PII 非露出の統合契約が成功します。" />
-    <p>続けて <code>pnpm --filter @fp-with-ts/clinic-final typecheck</code> と <code>pnpm --filter @fp-with-ts/clinic-final build</code> を実行します。</p>
+    <h2>参照した契約を説明する</h2>
+    <p>Final ではコードを編集したり、テストを完了判定に使ったりしません。Session 13 で green にした演習の不変条件を、ここでは完成例の domain、use case、store、web の経路と比較して説明します。</p>
     <dl>
       <dt>型で守ること</dt><dd>状態、branded value、Result、typed event、用途別 port の接続を守ります。</dd>
       <dt>統合テストで守ること</dt><dd>Hono から SQLite までの認可、transaction、競合、出力を実行時に守ります。</dd>

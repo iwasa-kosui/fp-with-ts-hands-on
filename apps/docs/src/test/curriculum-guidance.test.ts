@@ -10,6 +10,10 @@ const facilitatorGuide = readRepositoryDocument("docs/event/facilitator-guide.md
 const participantSetup = readRepositoryDocument("docs/event/participant-setup.md");
 const troubleshooting = readRepositoryDocument("docs/event/troubleshooting.md");
 const agentsGuide = readRepositoryDocument("AGENTS.md");
+const session13Page = readRepositoryDocument(
+  "apps/docs/src/pages/sessions/13-safe-follow-up.astro",
+);
+const finalPage = readRepositoryDocument("apps/docs/src/pages/sessions/final.astro");
 
 describe("curriculum guidance", () => {
   it("keeps the PRD aligned with the 00–13 plus Final curriculum", () => {
@@ -37,5 +41,13 @@ describe("curriculum guidance", () => {
     expect(agentsGuide).toContain("examples/session-13");
     expect(agentsGuide).toContain("examples/final");
     expect(agentsGuide).not.toContain("packages/clinic-example");
+  });
+
+  it("keeps the hands-on assessment in Session 13 and Final read-only", () => {
+    expect(prd).toContain("Session 13 の演習");
+    expect(prd).toContain("Final は読み取り専用の参照ツアー");
+    expect(prd).not.toContain("最終演習");
+    expect(session13Page).toContain("この Session 内で演習を green にします");
+    expect(finalPage).toContain("読み取り専用の参照ツアー");
   });
 });

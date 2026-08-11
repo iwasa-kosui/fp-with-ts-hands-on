@@ -1,5 +1,6 @@
 ---
 import { CodeExplorer } from "./CodeExplorer";
+import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesFor } from "../../code-explorer/project-files";
 import { sessionWorkspaceFor } from "../../code-explorer/session-workspaces";
 import "../../styles/code-playground.css";
@@ -9,13 +10,46 @@ type Props = Readonly<{ slug: string }>;
 const { slug } = Astro.props;
 const workspace = sessionWorkspaceFor(slug);
 const projectFiles = projectFilesFor(slug);
+const finalReferenceGuides = [
+  {
+    id: "final-reference-route",
+    title: "状態の事故から domain を読む",
+    currentDesign: "状態と遷移を appointment aggregate の判別共用体に閉じています。",
+    futureRisk: "業務上の状態遷移と例外を、この経路だけで十分に説明できるかを確認します。",
+    path: "src/domain/appointment/appointment.ts",
+    highlights: [{ startLineNumber: 1, endLineNumber: 1 }],
+  },
+  {
+    id: "final-reference-use-case",
+    title: "判断の事故から use case を読む",
+    currentDesign: "認可、状態遷移、成功 event の保存を ResultAsync で順に合成しています。",
+    futureRisk: "失敗を event にせず、外部 I/O の失敗を型付きで返せているかを確認します。",
+    path: "src/useCase/startExaminationUseCase.ts",
+    highlights: [{ startLineNumber: 1, endLineNumber: 1 }],
+  },
+  {
+    id: "final-reference-store",
+    title: "永続化の事故から store を読む",
+    currentDesign: "projection と監査 event を同じ transaction で確定しています。",
+    futureRisk: "競合や部分成功を、adapter が domain の契約を壊さず扱えるかを確認します。",
+    path: "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
+    highlights: [{ startLineNumber: 1, endLineNumber: 1 }],
+  },
+] as const satisfies readonly CodeGuide[];
+const isFinalReference = slug === "final";
 ---
 
 <section class="session-code-playground code-playground" aria-labelledby="code-playground">
-  <h2 id="code-playground">ブラウザで試す</h2>
-  <p>このセッションの開始 snapshot を、ブラウザ内で編集して実行できます。</p>
-  <p>編集内容はこのブラウザ内だけに保持されます。実行できない場合は、ページ内の <code>pnpm</code> 手順を使います。</p>
+  <h2 id="code-playground">{isFinalReference ? "参照実装を読む" : "ブラウザで試す"}</h2>
+  {isFinalReference ? (
+    <p>読み取り専用の参照実装を読みます。事故ごとの経路を切り替え、Session 13 で green にした不変条件と比較してください。</p>
+  ) : (
+    <>
+      <p>このセッションの開始 snapshot を、ブラウザ内で編集して実行できます。</p>
+      <p>編集内容はこのブラウザ内だけに保持されます。実行できない場合は、ページ内の <code>pnpm</code> 手順を使います。</p>
+    </>
+  )}
   <div data-code-explorer={workspace.slug}>
-    <CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} />
+    <CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} guides={isFinalReference ? finalReferenceGuides : undefined} />
   </div>
 </section>

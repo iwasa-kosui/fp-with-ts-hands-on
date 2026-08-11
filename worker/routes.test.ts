@@ -11,6 +11,14 @@ const legacySessionRedirects = [
   "/sessions/05-mini-integration/",
 ] as const;
 
+const deployedWorkerFirstPaths = [
+  "/module-00",
+  "/module-00/",
+  "/sessions/00-break-the-app/",
+  "/sessions/00-read-the-incident/",
+  ...legacySessionRedirects,
+] as const;
+
 describe("resolveWorkerRoute", () => {
   it("keeps health checks in the worker", () => {
     expect(resolveWorkerRoute("/healthz")).toEqual({ kind: "health" });
@@ -53,13 +61,13 @@ describe("resolveWorkerRoute", () => {
     expect(resolveWorkerRoute(pathname)).toEqual({ kind: "redirect", location });
   });
 
-  it("runs the worker before deployed assets for every former session path", () => {
+  it("runs the worker before deployed assets for every legacy redirect path", () => {
     const config = JSON.parse(
       readFileSync(resolve("../../wrangler.jsonc"), "utf8"),
     ) as { assets?: { run_worker_first?: string[] } };
 
     expect(config.assets?.run_worker_first).toEqual(
-      expect.arrayContaining(legacySessionRedirects),
+      expect.arrayContaining(deployedWorkerFirstPaths),
     );
   });
 });

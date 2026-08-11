@@ -9,12 +9,6 @@ const cases = [
     initialFile: "exercises/state-modeling.test.ts",
     description: "状態別の要求と作成対象を開始 snapshot で確認します。",
   },
-  {
-    slug: "final",
-    initialFile: "test/useCase/startExaminationUseCase.test.ts",
-    description:
-      "業務フローを Hono・Inertia・SQLite へ接続した完成アプリを確認します。",
-  },
 ] as const;
 
 describe("SessionCodePlayground", () => {
@@ -37,4 +31,22 @@ describe("SessionCodePlayground", () => {
       expect(document.querySelector('astro-island[client="load"]')).not.toBeNull();
     });
   }
+
+  it("renders Final as a read-only source tour without mutable controls", async () => {
+    const container = await createAstroContainer();
+    const html = await container.renderToString(SessionCodePlayground, {
+      props: { slug: "final" },
+    });
+    const window = new Window();
+    const document = new window.DOMParser().parseFromString(html, "text/html");
+
+    expect(document.querySelector("h2#code-playground")?.textContent).toContain(
+      "参照実装を読む",
+    );
+    expect(document.body.textContent).toContain("読み取り専用の参照実装を読みます");
+    expect(document.body.textContent).not.toContain("ブラウザ内で編集して実行できます");
+    expect(document.querySelector('[data-action="reset"]')).toBeNull();
+    expect(document.querySelector('[data-action="run"]')).toBeNull();
+    expect(html).toContain("final-reference-route");
+  });
 });

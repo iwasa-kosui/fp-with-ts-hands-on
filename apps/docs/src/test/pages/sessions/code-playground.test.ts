@@ -27,10 +27,14 @@ describe("session code playgrounds", () => {
       const workspace = sessionWorkspaceFor(session.slug);
 
       expect(document.querySelector("article h2#code-playground")?.textContent).toBe(
-        "ブラウザで試す",
+        session.sequence === "Final" ? "参照実装を読む" : "ブラウザで試す",
       );
       expect(document.querySelector(`[data-code-explorer="${session.slug}"]`)).not.toBeNull();
-      expect(document.body.textContent).toContain(workspace.initialFile);
+      expect(document.body.textContent).toContain(
+        session.sequence === "Final"
+          ? "src/domain/appointment/appointment.ts"
+          : workspace.initialFile,
+      );
       expect(
         document.querySelectorAll(
           'nav[aria-label="ページ内目次"] a[href="#code-playground"]',
@@ -48,6 +52,11 @@ describe("session code playgrounds", () => {
         expect(document.querySelector("article [data-actor]")).not.toBeNull();
         expect(document.querySelectorAll("#verification dt")).toHaveLength(3);
         expect(document.querySelector('a[rel="next"]')).not.toBeNull();
+      }
+
+      if (session.sequence === "Final") {
+        expect(document.querySelector('[data-action="reset"]')).toBeNull();
+        expect(document.querySelector('[data-action="run"]')).toBeNull();
       }
     });
   }

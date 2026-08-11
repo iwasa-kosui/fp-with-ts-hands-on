@@ -20,11 +20,11 @@ describe("Final application", () => {
     expect(Math.max(state, boundary, decision, persistence)).toBeLessThan(framework);
     expect(page).toContain("SessionLayout");
     expect(page).toContain("sessionBySlug");
-    expect(page).toContain("CommandBlock");
+    expect(page).not.toContain("CommandBlock");
     expect(page).toContain("SessionCodePlayground");
   });
 
-  it("renders the four incident routes and leaves one next improvement", async () => {
+  it("renders the four incident routes as a read-only comparison", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(FinalPage, { partial: false });
     const document = new DOMParser().parseFromString(html, "text/html");
@@ -37,7 +37,9 @@ describe("Final application", () => {
     expect(html).toContain("Hono");
     expect(html).toContain("Inertia");
     expect(html).toContain("Drizzle");
-    expect(html).toContain("pnpm --filter @fp-with-ts/clinic-final test");
+    expect(html).toContain("読み取り専用の参照ツアー");
+    expect(html).toContain("Session 13 で green にした演習");
+    expect(html).not.toContain("pnpm --filter @fp-with-ts/clinic-final test");
     expect(document.querySelector("#final-reflection textarea")).not.toBeNull();
   });
 });
