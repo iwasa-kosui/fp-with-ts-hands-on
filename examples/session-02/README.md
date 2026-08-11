@@ -2,11 +2,11 @@
 
 ## 開始状態
 
-状態名が任意の文字列で、チーム内の業務用語が揺れています。
+Scheduled の予約値は作れますが、CheckedIn への受付遷移はまだ安全に表現できません。
 
 ## この回で変える関数
 
-状態の語彙と、`Paid` が終端であることを表す小さな判定を追加します。遷移はまだ閉じません。
+`Appointment.book` は提供済みの setup です。`Appointment.checkIn` の1関数だけを編集し、Scheduled から CheckedIn を作ります。
 
 ## 検証
 
@@ -15,7 +15,7 @@ pnpm --filter @fp-with-ts/clinic-session-02 test
 pnpm exercise:02
 ```
 
-通常テストは語彙を確認し、演習は状態ごとの情報をまだ表せないため意図的に失敗します。
+通常テストは状態語彙と終端状態の要求を確認し、演習は `checkIn` が CheckedIn 遷移をまだ返せないため意図的に失敗します。
 
 ## 次の snapshot
 

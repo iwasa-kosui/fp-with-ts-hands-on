@@ -27,7 +27,8 @@ const sessionWorkspaces = {
   },
   "02-state-vocabulary": {
     initialFile: "exercises/state-vocabulary.test.ts",
-    description: "状態名の語彙と、次に表す状態ごとの情報を確認します。",
+    description:
+      "提供済みの予約値を CheckedIn へ遷移する Appointment.checkIn の1関数を確認します。",
     visibleFiles: [
       "exercises/state-vocabulary.test.ts",
       "test/state-modeling.test.ts",

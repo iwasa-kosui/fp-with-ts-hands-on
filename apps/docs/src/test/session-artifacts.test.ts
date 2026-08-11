@@ -87,10 +87,30 @@ describe("incremental session artifacts", () => {
 
     expect(session01).toContain("会計済みの来院を終端状態として扱う");
     expect(session01).toContain("Session 02 で提供されます");
+    expect(session01).toContain(
+      'phase="green" command="pnpm --filter @fp-with-ts/clinic-session-02 test -- state-modeling.test.ts"',
+    );
     expect(session01).not.toContain("AwaitingPayment を含む状態一覧");
     expect(session03).toContain("`startExamination` がまだないため");
     expect(session03).not.toContain("会計待ちがまだないため");
     expect(session04).toContain("`AwaitingPayment` への遷移がまだないため");
     expect(session04).not.toContain("キャンセル状態がまだないため");
+  });
+
+  it("limits Session 02 participant work to the missing check-in transition", () => {
+    const page = readRepositoryFile(
+      "apps/docs/src/pages/sessions/02-state-vocabulary.astro",
+    );
+    const readme = readRepositoryFile("examples/session-02/README.md");
+    const exercise = readRepositoryFile(
+      "examples/session-02/exercises/state-vocabulary.test.ts",
+    );
+
+    expect(page).toContain("<code>Appointment.book</code> は提供済み");
+    expect(page).toContain("<code>Appointment.checkIn</code> の1関数だけ");
+    expect(page).toContain("提供済みの予約を CheckedIn へ遷移する checkIn がまだなく");
+    expect(readme).toContain("`Appointment.book` は提供済み");
+    expect(readme).toContain("`Appointment.checkIn` の1関数だけ");
+    expect(exercise).toContain("Scheduled を CheckedIn へ遷移");
   });
 });

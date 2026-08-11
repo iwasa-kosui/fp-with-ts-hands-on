@@ -430,9 +430,13 @@ const readExternalTypeFiles = async (runtime: WebContainer): Promise<ProjectFile
   };
 
   await Promise.all(
-    ["node_modules/zod", "node_modules/vitest", "node_modules/@vitest"].map(
-      visitIfPresent,
-    ),
+    [
+      "node_modules/zod",
+      "node_modules/vitest",
+      "node_modules/@vitest",
+      "node_modules/@types/node",
+      "node_modules/undici-types",
+    ].map(visitIfPresent),
   );
   return files;
 };

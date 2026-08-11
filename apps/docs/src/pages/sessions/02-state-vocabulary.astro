@@ -9,7 +9,7 @@ if (session === undefined) throw new Error("Unknown session: 02-state-vocabulary
 ---
 
 <SessionLayout session={session}>
-  <ol slot="toc"><li><a href="#incident">事故と不変条件</a></li><li><a href="#work">2関数の作業</a></li><li><a href="#code-playground">ブラウザで試す</a></li><li><a href="#technique">技法と限界</a></li><li><a href="#verification">検証</a></li><li><a href="#reflection">振り返り</a></li></ol>
+  <ol slot="toc"><li><a href="#incident">事故と不変条件</a></li><li><a href="#work">受付遷移の作業</a></li><li><a href="#code-playground">ブラウザで試す</a></li><li><a href="#technique">技法と限界</a></li><li><a href="#verification">検証</a></li><li><a href="#reflection">振り返り</a></li></ol>
   <section id="incident">
     <h2>状態名の揺れによる事故を止める</h2>
     <p data-actor="受付スタッフ"><strong>登場人物:</strong> 受付スタッフは「受付済み」が複数の文字列で記録され、一覧と詳細で表示が食い違うことに困っています。</p>
@@ -17,19 +17,19 @@ if (session === undefined) throw new Error("Unknown session: 02-state-vocabulary
     <p><strong>守る不変条件:</strong> 来院状態を Scheduled、CheckedIn、InExamination の共通語彙で呼ぶ。</p>
   </section>
   <section id="work">
-    <h2>語彙から値を作る2関数</h2>
-    <CommandBlock phase="red" command="pnpm exercise:02" expected="状態固有データと受付操作がまだ表現されず失敗します。" />
+    <h2>語彙から受付の値を作る</h2>
+    <CommandBlock phase="red" command="pnpm exercise:02" expected="提供済みの予約を CheckedIn へ遷移する checkIn がまだなく、失敗します。" />
     <h3>先に読むファイル</h3>
     <ul><li><code>examples/session-02/exercises/state-vocabulary.test.ts</code></li><li><code>examples/session-02/src/domain/appointment.ts</code></li><li><code>examples/session-02/src/state-vocabulary.ts</code></li></ul>
     <h3>作業範囲（最大2関数）</h3>
-    <p><code>Appointment.book</code> と <code>Appointment.checkIn</code> だけを作り、Scheduled と CheckedIn の語彙を値へ結び付けます。</p>
+    <p><code>Appointment.book</code> は提供済みの setup です。<code>Appointment.checkIn</code> の1関数だけを編集し、Scheduled を CheckedIn へ遷移させます。</p>
   </section>
   <SessionCodePlayground slug={session.slug} />
   <section id="technique">
     <h2>文字列リテラルと小さな constructor</h2>
-    <p><strong>使う技法:</strong> 状態語彙を文字列リテラルとして一箇所に固定し、2関数から同じ名前を返します。</p>
+    <p><strong>使う技法:</strong> 状態語彙を文字列リテラルとして一箇所に固定し、提供済みの予約値から受付値を作ります。</p>
     <p><strong>この技法の限界:</strong> 語彙の固定だけでは、診察開始の遷移元や状態固有データの欠落をすべて防げません。</p>
-    <CommandBlock phase="green" command="pnpm exercise:02" expected="予約と受付が共通の状態語彙と必要情報を使います。" />
+    <CommandBlock phase="green" command="pnpm exercise:02" expected="予約からの受付遷移が、共通の状態語彙と必要情報を使います。" />
   </section>
   <section id="verification"><h2>3つの範囲で確かめる</h2><dl><dt>型で守ること</dt><dd>定義外の状態名と、受付時刻を欠いた CheckedIn を拒否します。</dd><dt>統合テストで守ること</dt><dd><code>pnpm --filter @fp-with-ts/clinic-session-02 test</code> で既存の状態語彙を確認します。</dd><dt>人がレビューすること</dt><dd>業務で使う語彙とコードの英語名が同じ意味かを確認します。</dd></dl></section>
   <section id="reflection"><h2>振り返り</h2><p>自分のコードで同じ状態に複数の名前が付いている箇所はどこですか。</p><p><a href="/sessions/03-state-transitions/">次へ: 状態遷移を型で閉じる</a></p></section>

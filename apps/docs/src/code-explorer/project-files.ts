@@ -82,6 +82,7 @@ const buildProjectFiles = (snapshot: ExampleSnapshot): ProjectFiles => {
         ...packageJson,
         devDependencies: {
           ...packageJson.devDependencies,
+          "@types/node": "^22.20.1",
           tsx: "4.23.9",
           typescript: "^5.6.0",
         },

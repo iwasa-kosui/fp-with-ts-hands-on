@@ -6,7 +6,7 @@ import type {
   Scheduled,
 } from "../src/domain/appointment.js";
 
-it("状態ごとに必要な情報を型で表現できる", async () => {
+it("Scheduled を CheckedIn へ遷移し、受付時刻を保持できる", async () => {
   const scheduled: Scheduled = {
     kind: "Scheduled",
     appointmentId: "appointment-1",

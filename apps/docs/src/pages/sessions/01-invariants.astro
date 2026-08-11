@@ -44,7 +44,7 @@ if (session === undefined) throw new Error("Unknown session: 01-invariants");
     <h2>characterization test の役割</h2>
     <p><strong>使う技法:</strong> characterization test で、変更前に守る業務語彙を観察可能な期待値へ置きます。</p>
     <p><strong>この技法の限界:</strong> テストに要求を書くだけでは、任意の文字列更新や不正な遷移を実装上は止められません。</p>
-    <CommandBlock phase="green" command="pnpm exercise:01" expected="会計済みを終端状態として扱う述語が、事故から導いた要求と一致します。" />
+    <CommandBlock phase="green" command="pnpm --filter @fp-with-ts/clinic-session-02 test -- state-modeling.test.ts" expected="Session 02 が提供する終端状態の述語が、事故から導いた要求と一致します。" />
   </section>
 
   <section id="verification">

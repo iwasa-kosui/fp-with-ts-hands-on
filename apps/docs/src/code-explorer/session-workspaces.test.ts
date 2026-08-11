@@ -225,6 +225,12 @@ describe("session code workspaces", () => {
     });
   });
 
+  it("describes Session 02 as the one-function check-in transition", () => {
+    expect(sessionWorkspaceFor("02-state-vocabulary").description).toContain(
+      "Appointment.checkIn の1関数",
+    );
+  });
+
   it("shows every declared edit target for each exercise", () => {
     for (const [slug, editTargets] of Object.entries(exerciseEditTargets)) {
       expect(sessionWorkspaceFor(slug).visibleFiles).toEqual(
@@ -282,6 +288,7 @@ describe("session code workspaces", () => {
       );
       expect(packageJson.devDependencies?.tsx).toBe("4.23.9");
       expect(packageJson.devDependencies?.typescript).toBe("^5.6.0");
+      expect(packageJson.devDependencies?.["@types/node"]).toBe("^22.20.1");
       expect(tsconfig.extends).toBe("./tsconfig.base.json");
       expect(projectFiles["tsconfig.base.json"]).toEqual(expect.any(String));
       expect(projectFiles["vitest.config.ts"]).toEqual(expect.any(String));
@@ -318,6 +325,19 @@ describe("session code workspaces", () => {
         expect.any(String),
       );
     }
+  });
+
+  it("prepares Session 08 to resolve node:util before its PII exercise runs", () => {
+    const files = projectFilesFor("08-pii-output");
+    const packageJson = JSON.parse(files["package.json"]!) as {
+      devDependencies?: Record<string, string>;
+    };
+
+    expect(packageJson.devDependencies?.["@types/node"]).toBe("^22.20.1");
+    expect(files["exercises/pii-redaction.test.ts"]).toContain(
+      'from "node:util"',
+    );
+    expect(files["tsconfig.exercise.json"]).toEqual(expect.any(String));
   });
 
   it("keeps only later-session sources absent from incremental snapshots", () => {

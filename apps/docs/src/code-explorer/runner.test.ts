@@ -269,6 +269,45 @@ describe("single-file execution", () => {
     expect(output.join("")).toContain("TS2578");
   });
 
+  it("reaches Session 08's PII assertion after its Node-aware typecheck", async () => {
+    const executed: RunCommand[] = [];
+    const output: string[] = [];
+    const files = projectFilesFor("08-pii-output");
+    const packageJson = JSON.parse(files["package.json"]!) as {
+      devDependencies?: Record<string, string>;
+    };
+    const runtime: Runtime = {
+      mount: async () => undefined,
+      install: async () => 0,
+      writeFiles: async () => undefined,
+      execute: async (command, onOutput) => {
+        executed.push(command);
+        if (command.args.includes("vitest")) {
+          onOutput("expected PII output to be redacted\\n");
+          return 1;
+        }
+        return 0;
+      },
+      readTypeFiles: async () => ({}),
+    };
+
+    await expect(
+      createCodeRunner(async () => runtime).run(
+        { filePath: "exercises/pii-redaction.test.ts", files },
+        (update) => {
+          if (update.kind === "output") output.push(update.chunk);
+        },
+      ),
+    ).resolves.toEqual({ exitCode: 1 });
+
+    expect(packageJson.devDependencies?.["@types/node"]).toBe("^22.20.1");
+    expect(executed).toHaveLength(2);
+    expect(executed[0]?.args).toContain("tsc");
+    expect(executed[1]?.args).toContain("vitest");
+    expect(output.join("")).toContain("PII output to be redacted");
+    expect(output.join("")).not.toContain("TS2307");
+  });
+
   it("installs once and writes the latest edits before each run", async () => {
     const runtime = createInMemoryRuntime();
     const runner = createCodeRunner(async () => runtime);
@@ -669,6 +708,15 @@ describe("single-file execution", () => {
         entry("package.json", "file"),
         entry("index.d.ts", "file"),
       ],
+      "node_modules/@types": [entry("node", "directory")],
+      "node_modules/@types/node": [
+        entry("package.json", "file"),
+        entry("util.d.ts", "file"),
+      ],
+      "node_modules/undici-types": [
+        entry("package.json", "file"),
+        entry("index.d.ts", "file"),
+      ],
     };
     const typeSources: Record<string, string> = {
       "node_modules/zod/package.json": "{\"types\":\"./index.d.cts\"}",
@@ -678,6 +726,10 @@ describe("single-file execution", () => {
       "node_modules/vitest/index.d.ts": "vitest types",
       "node_modules/@vitest/expect/package.json": "expect package",
       "node_modules/@vitest/expect/index.d.ts": "expect types",
+      "node_modules/@types/node/package.json": "{\"types\":\"./index.d.ts\"}",
+      "node_modules/@types/node/util.d.ts": "declare module \"node:util\" {}",
+      "node_modules/undici-types/package.json": "{\"types\":\"./index.d.ts\"}",
+      "node_modules/undici-types/index.d.ts": "export interface Dispatcher {}",
     };
     const mounted: unknown[] = [];
     const written = new Map<string, string>();
@@ -757,6 +809,10 @@ describe("single-file execution", () => {
           "file:///node_modules/vitest/index.d.ts": "vitest types",
           "file:///node_modules/@vitest/expect/package.json": "expect package",
           "file:///node_modules/@vitest/expect/index.d.ts": "expect types",
+          "file:///node_modules/@types/node/package.json": "{\"types\":\"./index.d.ts\"}",
+          "file:///node_modules/@types/node/util.d.ts": "declare module \"node:util\" {}",
+          "file:///node_modules/undici-types/package.json": "{\"types\":\"./index.d.ts\"}",
+          "file:///node_modules/undici-types/index.d.ts": "export interface Dispatcher {}",
         },
       },
     ]);
