@@ -78,7 +78,9 @@ for (const viewport of viewports) {
     await expect(playground.locator('[data-guide-path="src/useCase/startExaminationUseCase.ts"]')).toBeVisible();
     await expect(playground.locator('[data-guide-path="src/adaptor/secondary/sqlite/store/appointmentEventStore.ts"]')).toBeVisible();
     await expect(playground.locator('[data-guide-path="src/adaptor/primary/web/routes/appointmentRoutes.ts"]')).toBeVisible();
-    await expect(editor.locator("textarea")).toHaveAttribute("readonly", "");
+    const readOnlyTextArea = editor.locator("textarea");
+    await expect(readOnlyTextArea).toHaveAttribute("readonly");
+    await expect(readOnlyTextArea).toHaveJSProperty("readOnly", true);
     await expect(playground.locator(".code-explorer__file-tree")).toHaveCount(0);
     await expect(playground.locator('[data-action="run"]')).toHaveCount(0);
     await expect(playground.locator('[data-action="reset"]')).toHaveCount(0);
