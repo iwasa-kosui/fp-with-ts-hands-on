@@ -9,10 +9,9 @@
 ## リポジトリ構成
 
 - `apps/docs/`: 参加者向けの公開ドキュメントサイト。
-- `packages/clinic-example/src/legacy/`: 事故を再現する、意図的に壊れやすい実装。
-- `packages/clinic-example/src/clinic/`: 関数型ドメインモデリングの worked example。
-- `packages/clinic-example/test/`: 常に成功すべき通常テスト。
-- `packages/clinic-example/exercises/`: 失敗と改善を体験する演習テスト。
+- `examples/session-00/`: 事故を再現する、意図的に壊れやすい legacy の開始 snapshot。
+- `examples/session-01/`〜`examples/session-13/`: 前の回の解答を開始状態にした、自己完結の学習 snapshot。`test/` は通常の健全性を、`exercises/` は意図した赤いテストを置く。
+- `examples/final/`: 状態、境界、失敗、成功 event、原子的保存、認可・安全な出力を統合した参照実装。演習のコピー先ではない。
 - `worker/`: ヘルスチェック、旧 URL のリダイレクト、静的アセットの委譲。
 - `docs/event/`: 当日のセットアップ、進行、トラブル対応。
 - `docs/design/`: 参考モックアップ。公開サイト本体ではない。
@@ -22,7 +21,7 @@
 - 技法の説明からではなく、業務上の要求または事故から始める。
 - 不変条件、採用する技法、その技法の限界、検証、振り返りを対応させる。
 - 参加者が編集する範囲は、原則として 2 関数以内に保つ。
-- `legacy` を先回りして直さない。worked example、演習、説明を同期し、意図した問題と改善の対応を維持する。
+- Session 00 の legacy を先回りして直さない。次の snapshot、演習、説明を同期し、意図した問題と改善の対応を維持する。
 - 通常テストで確認する健全性と、教材で意図的に失敗させる演習を区別する。
 - 関係のない再設計や、現在必要のない将来向け抽象化を混ぜない。
 
@@ -37,7 +36,7 @@
 
 ## TypeScriptの設計方針
 
-`packages/clinic-example` では、現在の教材方針として次を維持する。
+`examples/session-*` と `examples/final` では、現在の教材方針として次を維持する。
 
 - `Readonly` なデータ
 - 判別共用体による状態とエラー
@@ -48,12 +47,12 @@
 - PII をログから保護する `Sensitive`
 - 相対 import の `.js` suffix
 
-`ExaminationStarted` は、現在の診察開始ユースケースでは成功時だけ記録する契約に限定する。失敗を業務イベントとして扱う要件を追加する場合は、仕様、説明、テストをまとめて変更する。
+診察開始の typed event は成功時だけ記録する契約に限定する。失敗を業務イベントとして扱う要件を追加する場合は、仕様、説明、テストをまとめて変更する。
 
 ## 検証
 
 - 通常の健全性確認は `pnpm test` とし、成功を期待する。
 - TypeScript または教材ロジックを変更した場合は、変更したパッケージのテストに加え、`pnpm typecheck` と `pnpm test` を実行する。
 - 全体に影響する変更では、CI と同じ `pnpm typecheck`、`pnpm test`、`pnpm build` を実行する。
-- 演習では、現在の worked example の `pnpm exercise:00` は事故の再現として意図的に失敗し、`pnpm exercise:01` から `pnpm exercise:05` は成功を期待する。starter または演習途中では説明と期待する失敗理由を照合する。
+- 演習は `pnpm exercise:00` から `pnpm exercise:13` まであり、各 snapshot の未実装契約を意図的に失敗として示す。通常テストと、対応する参加者ページ・README の失敗理由を照合する。`examples/final` は参照実装であり演習対象にしない。
 - 実施していない検証は完了扱いにせず、未実施の理由と期待結果を報告する。
