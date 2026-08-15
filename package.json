@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "pnpm --filter @fp-with-ts/docs dev",
     "build": "pnpm --filter @fp-with-ts/docs build",
-    "test": "pnpm --filter './examples/session-*' test && pnpm --filter @fp-with-ts/docs test",
+    "test": "pnpm --filter './examples/session-*' test && pnpm --filter @fp-with-ts/docs test && pnpm test:worker",
+    "test:worker": "pnpm --filter @fp-with-ts/docs exec vitest run ../../worker",
     "exercise:01": "pnpm --filter @fp-with-ts/clinic-session-01 exercise",
     "exercise:02": "pnpm --filter @fp-with-ts/clinic-session-02 exercise",
     "exercise:03": "pnpm --filter @fp-with-ts/clinic-session-03 exercise",
