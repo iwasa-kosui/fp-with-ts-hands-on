@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** PR #36 の設計を、5つの開始スナップショットと到達点、catalog 駆動の参加者サイト、班内相互レビューを含む運営文書として実装する。
+**Goal:** PR #36 の設計を、最新化した PRD、5つの開始スナップショットと到達点、catalog 駆動の参加者サイト、班内相互レビューを含む運営文書として実装する。
 
 **Architecture:** `examples/session-00`〜`session-05` を「素朴な開始点 → 次スナップショットの解答」という連鎖に再構築し、各演習の回帰テストを次スナップショットへ持ち越す。`apps/docs` は `catalog.ts` を時間・演習範囲・判断・相互レビューの唯一の真実とし、静的な Astro コンポーネントと構造テストから各セッションを組み立てる。`examples/final` は凍結し、当日の到達点とは分離する。
 
@@ -26,6 +26,7 @@
 - Content Collections、MDX、外部 CMS、新しいサーバー実行基盤、参加者コードの永続化、特定エージェント製品への依存は導入しない。
 - 旧 `/sessions/04-agent-review/` と `/sessions/05-mini-integration/` は `/sessions/04-effects-and-events/` へ恒久リダイレクトする。
 - 会場ディスプレイは未確認である。運営文書は外部ディスプレイを第一案、ラップトップを島の中央へ置き 1 ファイル 20 行以内を映す方法を退避案として併記し、確認済みとは書かない。
+- `docs/prd/prd-001.md` は過去の構成を保存する資料ではなく、今回の再設計後の正式な要件とする。章全体を監査し、旧6セッション、独立エージェントレビュー、ミニ総合演習、最大2関数、旧時間配分、旧演習コマンド、旧到達点に依存する記述を残さない。
 - 各実装フェーズは task review を通過してから controller が push する。push 境界は Plan、P0、P1、P2、P3、P4 の 6 回とする。
 
 ---
@@ -39,7 +40,7 @@
 
 **Interfaces:**
 - Consumes: PR #36 の設計 §0、§1、§3、§7.1、§7.2。
-- Produces: P1〜P3 が従う正式な PRD-06、PRD-13、PRD-14 と、実在パスを指す作業ガイド。
+- Produces: P1〜P3 が従う最新の PRD 全文、正式な PRD-06、PRD-13、PRD-14 と、実在パスを指す作業ガイド。
 
 - [ ] **Step 1: PRD の旧制約を列挙する**
 
@@ -66,9 +67,26 @@ PRD-13: コード編集を行うモジュールでは、参加者が (a) 守る�
 PRD-14: コード編集を行うモジュールでは、班内の相互レビューを1回行う。TA が班から1〜2名の差分をピックアップし、班の全員が同じ画面を見て、不変条件が型で守られているか実行時の分岐で守られているかを判定する。参加者へ投げる問いをあらかじめ定義しておく。
 ```
 
-PRD の学習ループは「不変条件を依頼文に落とす」「生成差分を型とテストに照らしてレビューする」を含め、モジュール表は S0〜S4 と Final に同期する。PRD-01〜05、PRD-07〜12 と `AIエージェントは主目的にしない` の原則は維持する。
+PRD の学習ループは「不変条件を依頼文に落とす」「生成差分を型とテストに照らしてレビューする」を含め、モジュール表は S0〜S4 と Final に同期する。PRD-01〜05、PRD-07〜12 は番号を機械的に温存するのではなく、再設計後も有効な意図を維持したうえで文面・判定方法を更新する。`AIエージェントは主目的にしない` の原則は維持する。
 
-- [ ] **Step 3: AGENTS.md 2 本の実在パスと教材制約を直す**
+- [ ] **Step 3: PRD 全章を再設計後の実体へ同期する**
+
+`docs/prd/prd-001.md` のエグゼクティブサマリー、対象参加者、行動変容、ゴール/非ゴール、体験設計、プロダクト要件、品質要件、成功指標、計測計画、制約、リスク、リリース判定、プロダクト原則を PR #36 の設計と章ごとに照合する。次を正規の契約として本文へ反映する。
+
+```text
+教材セッション: S0 15分 / S1 30分 / S2 30分 / S3 35分 / S4 35分 / Final 5分
+時間総額: セッション150分 + 固定枠30分 = 180分
+予約状態: Scheduled / CheckedIn / InExamination / Paid / Canceled
+演習コマンド: pnpm exercise:01 〜 pnpm exercise:04
+到達点: examples/session-05（単一集約の ResultAsync pipeline）
+参照実装: examples/final（当日は5分の講師ツアー、参加者は環境構築しない）
+共通手順: 言語化 → 委譲 → 個人検証 → 班内相互レビュー
+相互レビュー: S1/S2 7分、S3/S4 8分、原則2名の差分を比較、時間超過時のみ1名へ落とす
+```
+
+独立した「エージェントレビュー」と「ミニ総合演習」はモジュール表から削除し、前者の成果物は全4演習の ADV/相互レビューへ移したと明記する。成功指標の目標割合など再設計と無関係な数値は根拠なく変えず、判定方法だけが旧構成に依存する場合は新成果物（不変条件、依頼文、型で守れなかった残り、レビュー観点シート）へ更新する。
+
+- [ ] **Step 4: AGENTS.md 2 本の実在パスと教材制約を直す**
 
 ルート側は `packages/clinic-example/**` を `examples/session-0N/**` へ置換し、教材不変条件へ次を追加する。
 
@@ -79,18 +97,18 @@ PRD の学習ループは「不変条件を依頼文に落とす」「生成差�
 
 docs 側は `modules` 語彙と実在しない `src/pages/modules` / `src/modules/catalog.ts` を `sessions`、`src/pages/sessions`、`src/sessions/catalog.ts` へ置換し、トップページ保護と視覚検証ルールは維持する。
 
-- [ ] **Step 4: 文書整合性を検証する**
+- [ ] **Step 5: 文書整合性を検証する**
 
 Run:
 
 ```bash
-rg -n '最大2関数|最大 2 関数|packages/clinic-example|src/pages/modules|src/modules/catalog' docs/prd/prd-001.md AGENTS.md apps/docs/AGENTS.md
+rg -n '最大2関数|最大 2 関数|packages/clinic-example|src/pages/modules|src/modules/catalog|04-agent-review|05-mini-integration|exercise:00|exercise:05' docs/prd/prd-001.md AGENTS.md apps/docs/AGENTS.md
 pnpm test
 ```
 
 Expected: `rg` は 0 件、`pnpm test` は成功。既存テスト件数を報告へ記録する。
 
-- [ ] **Step 5: P0 を commit する**
+- [ ] **Step 6: P0 を commit する**
 
 ```bash
 git add AGENTS.md apps/docs/AGENTS.md docs/prd/prd-001.md
