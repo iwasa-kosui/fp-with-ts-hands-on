@@ -184,7 +184,7 @@ describe("Step 4: 状態追加時に表示分岐を見直す", () => {
 
 `compileTypeFixture` は TypeScript compiler API で `exercises/type-fixtures/*.ts` を no-emit compile し、診断メッセージを返す test helper とする。fixture 内に `@ts-expect-error` を置くことで、starter では unused directive の診断により Vitest assertion が赤になり、解答 snapshot では診断 0 件になる。exercise 自体は通常 `pnpm typecheck` を壊さない。
 
-`session-01/src/domain/appointment/appointment.ts` は 5 状態 union を完成形で配布し、`transitions.ts` は `Appointment` 引数・`throw`・`as Appointment` を使う素朴版、`statusLabel.ts` は `default: return "不明"` を使う素朴版にする。
+`session-01/src/domain/appointment/appointment.ts` は 5 状態 union を完成形で配布し、`transitions.ts` は `Appointment` 引数・`throw`・`as Appointment` を使う素朴版、`statusLabel.ts` は `default: return "不明"` を使う素朴版にする。starter は RED を成立させる教材 fixture なので exercise より先に実在させ、その後に exercise の assertion failure を確認してから次 snapshot の解答を実装する。
 
 Run: `pnpm exercise:01`
 
@@ -195,12 +195,16 @@ Expected: モジュール解決ではなく Step 1〜4 の assertion が意図�
 解答 API は次とする。
 
 ```ts
-startExamination: (appointment: CheckedIn, veterinarianId: string) => InExamination
-cancel: (appointment: Scheduled | CheckedIn, reason: CancellationReason) => Canceled
-checkIn: (appointment: Scheduled) => CheckedIn
-recordPayment: (appointment: InExamination, amount: number) => Paid
+type RecordPaymentInput = Readonly<{ diagnosis: string; treatment: string; amount: number }>
+
+checkIn: (appointment: Scheduled, checkedInAt: string) => CheckedIn
+startExamination: (appointment: CheckedIn, veterinarianId: string, examinationStartedAt: string) => InExamination
+recordPayment: (appointment: InExamination, input: RecordPaymentInput, paidAt: string) => Paid
+cancel: (appointment: Scheduled | CheckedIn, reason: CancellationReason, canceledAt: string) => Canceled
 toStatusLabel: (appointment: Appointment) => string // default を持たず assertNever
 ```
+
+遷移は純粋関数とし、解答内で `Date` や `crypto` を呼ばない。時刻は呼び出し側が文字列で渡し、`Paid` の診断・処置・金額は `RecordPaymentInput` でまとめて渡す。`CancellationReason` は S1 では必須引数であることを示す `string` alias とし、S2 で外部入力境界と PII の扱いを加える。
 
 戻り値は `as const satisfies <State>` とし、`as Appointment` は使わない。S1 exercise を `session-02/test/regression/state-modeling.test.ts` へ持ち越して通常 test として成功させる。
 
