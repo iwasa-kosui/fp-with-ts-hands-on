@@ -70,6 +70,32 @@ describe("event document contract", () => {
       })),
     );
 
+    const fixedSlots = [
+      ...guide.matchAll(
+        /^\| (\d+:\d+-\d+:\d+) \| \d+:\d+-\d+:\d+ \| (\d+)分 \|/gm,
+      ),
+    ].map(([, clock, minutes]) => ({
+      clock: clockRange(clock ?? ""),
+      minutes: Number(minutes),
+    }));
+    const sessionMinutes = timetable.reduce((total, row) => total + row.minutes, 0);
+    const fixedMinutes = fixedSlots.reduce((total, row) => total + row.minutes, 0);
+
+    expect(sessionMinutes).toBe(150);
+    expect(fixedSlots).toHaveLength(3);
+    expect(
+      fixedSlots.map(({ clock, minutes }) => ({
+        elapsed: clock.end - clock.start,
+        declared: minutes,
+      })),
+    ).toEqual([
+      { elapsed: 10, declared: 10 },
+      { elapsed: 10, declared: 10 },
+      { elapsed: 10, declared: 10 },
+    ]);
+    expect(fixedMinutes).toBe(30);
+    expect(sessionMinutes + fixedMinutes).toBe(180);
+
     const breakdown = [
       ...guide.matchAll(
         /^\| (S\d+|Final) \| `([^`]+)` \| (\d+)分 \| (\d+)分 \| (\d+)分 \| (\d+)分 \| (\d+)分 \|$/gm,

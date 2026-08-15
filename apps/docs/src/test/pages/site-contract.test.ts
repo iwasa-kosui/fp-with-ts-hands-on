@@ -4,6 +4,11 @@ import NotFoundPage from "../../pages/404.astro";
 import { createAstroContainer } from "../render-astro";
 
 const pageSessions = import.meta.glob("../../pages/sessions/*.astro", { eager: true });
+const publicPageSources = import.meta.glob<string>("../../pages/**/*.astro", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+});
 
 describe("static site contract", () => {
   it("publishes exactly the six catalog session routes", () => {
@@ -13,6 +18,12 @@ describe("static site contract", () => {
       .sort();
 
     expect(slugs).toEqual(sessions.map(({ slug }) => slug).sort());
+  });
+
+  it("does not publish the retired payment-pending state", () => {
+    for (const [path, source] of Object.entries(publicPageSources)) {
+      expect(source, path).not.toMatch(/会計待ち|AwaitingPayment/);
+    }
   });
 
   it("renders a real not-found page", async () => {

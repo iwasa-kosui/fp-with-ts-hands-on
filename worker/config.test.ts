@@ -115,30 +115,64 @@ const stripTrailingCommas = (source: string): string => {
 const parseJsonc = <T>(source: string): T =>
   JSON.parse(stripTrailingCommas(stripJsonComments(source))) as T;
 
-const retiredCurriculumRedirects = [
-  "/sessions/04-agent-review",
-  "/sessions/04-agent-review/",
-  "/sessions/05-mini-integration",
-  "/sessions/05-mini-integration/",
+const workerFirstRedirects = [
+  { pathname: "/module-00", location: "/sessions/00-onboarding/" },
+  { pathname: "/module-00/", location: "/sessions/00-onboarding/" },
+  {
+    pathname: "/sessions/00-break-the-app/",
+    location: "/sessions/00-onboarding/",
+  },
+  {
+    pathname: "/sessions/00-read-the-incident/",
+    location: "/sessions/00-onboarding/",
+  },
+  {
+    pathname: "/sessions/04-agent-review",
+    location: "/sessions/04-effects-and-events/",
+  },
+  {
+    pathname: "/sessions/04-agent-review/",
+    location: "/sessions/04-effects-and-events/",
+  },
+  {
+    pathname: "/sessions/05-mini-integration",
+    location: "/sessions/04-effects-and-events/",
+  },
+  {
+    pathname: "/sessions/05-mini-integration/",
+    location: "/sessions/04-effects-and-events/",
+  },
 ] as const;
 
 const repositoryRoot = resolve(process.cwd(), "../..");
 
 describe("Worker deployment configuration", () => {
-  it.each(retiredCurriculumRedirects)(
-    "sends %s through the Worker before static assets",
-    async (pathname) => {
+  it.each(workerFirstRedirects)(
+    "sends $pathname through the Worker before static assets",
+    async ({ pathname, location }) => {
       const config = parseJsonc<WranglerConfig>(
         await readFile(`${repositoryRoot}/wrangler.jsonc`, "utf8"),
       );
 
       expect(resolveWorkerRoute(pathname)).toEqual({
         kind: "redirect",
-        location: "/sessions/04-effects-and-events/",
+        location,
       });
       expect(config.assets?.run_worker_first).toContain(pathname);
     },
   );
+
+  it("keeps the exact Worker-first route set aligned with routing behavior", async () => {
+    const config = parseJsonc<WranglerConfig>(
+      await readFile(`${repositoryRoot}/wrangler.jsonc`, "utf8"),
+    );
+
+    expect(resolveWorkerRoute("/healthz")).toEqual({ kind: "health" });
+    expect(config.assets?.run_worker_first).toEqual([
+      "/healthz",
+      ...workerFirstRedirects.map(({ pathname }) => pathname),
+    ]);
+  });
 
   it("runs Worker tests explicitly from the root test command used by CI", async () => {
     const rootPackage = JSON.parse(

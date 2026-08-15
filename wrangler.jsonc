@@ -12,6 +12,8 @@
       "/healthz",
       "/module-00",
       "/module-00/",
+      "/sessions/00-break-the-app/",
+      "/sessions/00-read-the-incident/",
       "/sessions/04-agent-review",
       "/sessions/04-agent-review/",
       "/sessions/05-mini-integration",

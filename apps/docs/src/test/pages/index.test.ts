@@ -35,5 +35,11 @@ describe("home page", () => {
     expect(document.querySelector("#sessions")?.textContent).not.toContain(
       "事故を再現",
     );
+    expect(
+      [...document.querySelectorAll(".status-flow span")].map((status) =>
+        status.textContent?.trim(),
+      ),
+    ).toEqual(["予約済み", "受付済み", "診察中", "支払済み"]);
+    expect(document.body.textContent).not.toMatch(/会計待ち|AwaitingPayment/);
   });
 });

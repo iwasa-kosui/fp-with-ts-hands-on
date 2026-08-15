@@ -24,13 +24,14 @@
 | コマンド | 結果 | 実測 |
 | --- | --- | ---: |
 | `pnpm typecheck` | 成功。session-00〜05、docs、Worker。Astro 69 files、0 errors / 0 warnings / 0 hints | 7.21秒 |
-| `pnpm test` | 成功。session通常テスト50件、docs実行134件、明示的なWorker実行25件 | 13.95秒 |
+| `pnpm test` | 成功。session通常テスト50件、docs実行140件、明示的なWorker実行30件 | 19.27秒 |
 | `pnpm build` | 成功。Astro 69 files、0 diagnostics、8 HTML / 8 routes | 29.30秒 |
-| `pnpm --filter @fp-with-ts/docs test:visual` | 28/28成功。home desktop/mobileを含む | 10.78秒 |
-| Worker focused 3 files | 25/25成功（config 5、routes 10、HTTP handler 10） | Vitest 0.39秒 |
-| event document contract | 5/5成功。6 sessionの150分、固定30分、ADV、review、運営文書を照合 | 1.45秒 |
+| `pnpm --filter @fp-with-ts/docs build` | 成功。Astro 69 files、0 diagnostics、8 HTML / 8 routes | 28.71秒 |
+| `pnpm --filter @fp-with-ts/docs test:visual` | 28/28成功。更新したhome desktop/mobileを含む | 10.71秒 |
+| Worker focused 3 files | 30/30成功（config 10、routes 10、HTTP handler 10） | targeted 6 files / 39 testsで1.88秒 |
+| event document contract | 5/5成功。6 sessionの150分、固定3枠30分、合計180分、ADV、review、運営文書を照合 | targeted実行内9ms |
 
-`pnpm test` のdocs実行は現行Vitest設定によりWorker 25件を含み、rootの `test:worker` が同じ25件を明示的に再実行する。実行回数は209件、重複を除く契約は184件である。明示経路は、docs側のtest対象を将来整理してもCIの `pnpm test` からWorker契約が外れないために残す。
+`pnpm test` のdocs実行は現行Vitest設定によりWorker 30件を含み、rootの `test:worker` が同じ30件を明示的に再実行する。実行回数は220件、重複を除く契約は190件である。明示経路は、docs側のtest対象を将来整理してもCIの `pnpm test` からWorker契約が外れないために残す。
 
 buildでは既知のVite chunk-size warningが出たが、Astro diagnosticsと静的route検証は成功した。視覚検証の最初のsandbox内実行は `0.0.0.0:4321` のlistenが `EPERM` になったため、同じコマンドをローカルserver起動権限付きで再実行し、28件すべての成功を確認した。
 
@@ -43,14 +44,19 @@ buildでは既知のVite chunk-size warningが出たが、Astro diagnosticsと�
 
 `wrangler.jsonc` にslash有無の4 URLを追加し、既存の `/healthz`、`/module-00`、`/module-00/` は維持した。rootへ `test:worker` を追加し、CIが実行する `pnpm test` から呼び出した。同じconfig testを含むfocused実行は3 files / 25 testsでGREENになった。JSONCは新しい依存を追加せず、文字列内の記号を壊さないcomment/trailing-comma処理を通して読んでいる。
 
+post-auditでは、Worker内に実装済みだった旧Session 00の2 redirectが `run_worker_first` にないことを、全redirect routeのdata-driven契約でREDにした。health、module-00のslash有無、旧Session 00の2 URL、旧Session 04/05の4 URLからなる正確なWorker-first集合を検査し、設定へ不足2 URLを追加した。focused Worker実行は3 files / 30 testsでGREENになり、既存health/module経路も維持した。
+
 ローカルWrangler（`127.0.0.1:8787`）のHTTP smokeは次の通り。redirectは追従していない。
 
 | Path | Status | Location |
 | --- | ---: | --- |
+| 旧Session 00（break-the-app） | 308 | `/sessions/00-onboarding/` |
+| 旧Session 00（read-the-incident） | 308 | `/sessions/00-onboarding/` |
 | 旧Session 04（slashなし） | 308 | `/sessions/04-effects-and-events/` |
 | 旧Session 04（slashあり） | 308 | `/sessions/04-effects-and-events/` |
 | 旧Session 05（slashなし） | 308 | `/sessions/04-effects-and-events/` |
 | 旧Session 05（slashあり） | 308 | `/sessions/04-effects-and-events/` |
+| `/sessions/00-onboarding/` | 200 | なし |
 | `/sessions/04-effects-and-events/` | 200 | なし |
 
 ## 4演習の意図したRED
@@ -95,13 +101,13 @@ session-05はS1〜S4の全回帰に加え、in-memory storeの原子性を含め
 - build verifierは `index.html`、`404.html`、catalogの6 sessionだけ、合計8 HTML / 8 routeを確認した。
 - 廃止したSession 04/05のAstro pageとbuild HTMLは存在しない。旧URL文字列はWorkerの恒久redirect、対応test、運営文書の否定契約にだけ残る。
 - standalone Code Explorer pageは存在せず、公開page、README、PRD、event docsに同routeへのリンクはない。
-- 正規PRDは5状態だけを採用し、追加の会計待ち状態を導入していない。
-- `git diff --check` は成功した。P4では教材本文、catalog、演習実装、runner、isolation header、homeを再設計していない。
+- 正規PRDは5状態だけを採用している。homeの主経路は `予約済み → 受付済み → 診察中 → 支払済み` とし、公開Astro page全体でPRD-15が禁止する追加状態の日英名称がないことを構造testで確認した。
+- `git diff --check` は成功した。P4では教材本文、catalog、演習実装、runner、isolation headerを再設計していない。post-auditのhome変更は状態チップ1語だけである。
 - P2最終commit `7ee44fd` から、runner、Code Explorer component、Astro isolation header、public header、E2Eに差分がないことを確認した。
 
 ## 視覚検証とS4ブラウザsmoke
 
-最終HEADでvisual/E2Eをfresh実行し、28/28成功した。home desktop/mobileのapproved screenshot、全6 sessionのmobile/desktop horizontal overflow、S0のtable/dl、S1〜S4 playgroundの可視性を含む。
+最終HEADでvisual/E2Eをfresh実行し、28/28成功した。homeの状態チップ変更で生じたdesktop 125 pixels / mobile 143 pixelsのactual/diffを目視し、文字以外の差分がないことを確認して、この2 baselineだけを更新した。CSSとE2E構造は変更していない。全6 sessionのmobile/desktop horizontal overflow、S0のtable/dl、S1〜S4 playgroundの可視性も含む。
 
 S4の実WebContainer実行はP2で取得した次の証拠を再利用した。上記の通り、P2以降にrunner/header/component/E2Eの差分がないためである。
 
