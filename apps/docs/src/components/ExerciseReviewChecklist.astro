@@ -1,0 +1,21 @@
+---
+import {
+  businessReflectionQuestion,
+  commonReviewChecks,
+  reviewCompletionArtifacts,
+} from "../sessions/catalog";
+---
+
+<div class="exercise-review-checklist">
+  <h3>全演習共通のレビュー観点</h3>
+  <ol>
+    {commonReviewChecks.map((check) => <li>{check}</li>)}
+  </ol>
+  <h3>完了条件</h3>
+  <p>次の3つを成果物として残します。</p>
+  <ul>
+    {reviewCompletionArtifacts.map((artifact) => <li>{artifact}</li>)}
+  </ul>
+  <h3>自分の業務へ持ち帰る問い</h3>
+  <p>{businessReflectionQuestion}</p>
+</div>

@@ -6,7 +6,9 @@ import { describe, expect, it } from "vitest";
 import { sessions } from "../../sessions/catalog";
 
 const repoRoot = resolve(process.cwd(), "../..");
-const exerciseSessions = sessions.filter((session) => session.kind === "exercise");
+const exerciseSessions = sessions.filter(
+  (session) => session.kind === "exercise",
+);
 const nextSnapshot = {
   "session-01": "session-02",
   "session-02": "session-03",
@@ -83,39 +85,53 @@ describe("session catalog references", () => {
     for (const session of sessions) {
       for (const referencedPath of [
         ...(session.steps ?? []).flatMap(({ targets }) => targets),
-        ...(session.steps ?? []).map(({ solution }) => solution.path),
+        ...(session.steps ?? []).flatMap(({ solutions }) =>
+          solutions.map(({ path }) => path),
+        ),
         ...(session.finalReferences ?? []),
       ]) {
-        await expect(access(resolve(repoRoot, referencedPath))).resolves.toBeUndefined();
+        await expect(
+          access(resolve(repoRoot, referencedPath)),
+        ).resolves.toBeUndefined();
       }
 
       if (session.kind !== "exercise") continue;
-      for (const { solution } of session.steps) {
-        expect(solution.path).toMatch(
-          new RegExp(`^examples/${nextSnapshot[session.snapshot]}/src/`),
-        );
-        const source = await readFile(resolve(repoRoot, solution.path), "utf8");
-        const sourceFile = ts.createSourceFile(
-          solution.path,
-          source,
-          ts.ScriptTarget.Latest,
-          true,
-        );
-        const declaration = sourceFile.statements.find((statement) =>
-          declaredNames(statement).includes(solution.symbol),
-        );
-        expect(declaration, `${solution.path}: ${solution.symbol}`).toBeDefined();
-        if (declaration === undefined) continue;
+      for (const { solutions } of session.steps) {
+        for (const solution of solutions) {
+          expect(solution.path).toMatch(
+            new RegExp(`^examples/${nextSnapshot[session.snapshot]}/src/`),
+          );
+          const source = await readFile(
+            resolve(repoRoot, solution.path),
+            "utf8",
+          );
+          const sourceFile = ts.createSourceFile(
+            solution.path,
+            source,
+            ts.ScriptTarget.Latest,
+            true,
+          );
+          const declaration = sourceFile.statements.find((statement) =>
+            declaredNames(statement).includes(solution.symbol),
+          );
+          expect(
+            declaration,
+            `${solution.path}: ${solution.symbol}`,
+          ).toBeDefined();
+          if (declaration === undefined) continue;
 
-        const [start, end] = solution.lines;
-        expect(start).toBeGreaterThanOrEqual(1);
-        expect(end).toBeGreaterThanOrEqual(start);
-        const declarationStart = sourceFile.getLineAndCharacterOfPosition(
-          declaration.getStart(sourceFile),
-        ).line + 1;
-        const declarationEnd = sourceFile.getLineAndCharacterOfPosition(declaration.end).line + 1;
-        expect(start).toBeLessThanOrEqual(declarationStart);
-        expect(end).toBeGreaterThanOrEqual(declarationEnd);
+          const [start, end] = solution.lines;
+          expect(start).toBeGreaterThanOrEqual(1);
+          expect(end).toBeGreaterThanOrEqual(start);
+          const declarationStart =
+            sourceFile.getLineAndCharacterOfPosition(
+              declaration.getStart(sourceFile),
+            ).line + 1;
+          const declarationEnd =
+            sourceFile.getLineAndCharacterOfPosition(declaration.end).line + 1;
+          expect(start).toBeLessThanOrEqual(declarationStart);
+          expect(end).toBeGreaterThanOrEqual(declarationEnd);
+        }
       }
     }
   });
@@ -125,6 +141,21 @@ describe("session catalog references", () => {
       await expect(
         access(resolve(repoRoot, `examples/${snapshot}/package.json`)),
       ).resolves.toBeUndefined();
+    }
+  });
+
+  it("labels starter assertions outside catalog steps as regression checks", async () => {
+    const files = [
+      "examples/session-02/exercises/boundary-and-ids.test.ts",
+      "examples/session-03/test/regression/boundary-and-ids.test.ts",
+      "examples/session-03/exercises/result-errors.test.ts",
+    ];
+    for (const file of files) {
+      const source = await readFile(resolve(repoRoot, file), "utf8");
+      expect(source).not.toMatch(
+        /describe\("Step [34]: (schema|異なる種類|失敗後)/,
+      );
+      expect(source).toContain('describe("回帰条件:');
     }
   });
 
@@ -206,7 +237,8 @@ describe("session catalog references", () => {
           {
             id: "s4-result-async",
             group: "Step 3: 非同期保存後もイベントが pipeline に残る",
-            assertion: "保存成功時は store の void ではなく aggregateState を返す",
+            assertion:
+              "保存成功時は store の void ではなく aggregateState を返す",
           },
           {
             id: "s4-propagate-store-failure",
@@ -220,17 +252,17 @@ describe("session catalog references", () => {
     const exercises = expectedExercises.map((expected) => {
       const session = sessions.find(({ slug }) => slug === expected.slug);
       expect(session?.kind).toBe("exercise");
-      if (session?.kind !== "exercise") throw new Error(`${expected.slug} is not an exercise`);
+      if (session?.kind !== "exercise")
+        throw new Error(`${expected.slug} is not an exercise`);
       return { expected, session };
     });
     const reports = await Promise.all(
       exercises.map(({ session }) => runExercise(session.snapshot)),
     );
 
-    for (const [{ expected, session }, report] of exercises.map((exercise, index) => [
-      exercise,
-      reports[index],
-    ] as const)) {
+    for (const [{ expected, session }, report] of exercises.map(
+      (exercise, index) => [exercise, reports[index]] as const,
+    )) {
       expect(session.steps.map(({ id }) => id)).toEqual(
         expected.steps.map(({ id }) => id),
       );
@@ -245,13 +277,17 @@ describe("session catalog references", () => {
           group: ancestorTitles.at(-1),
           assertion: title,
         })),
-      ).toEqual(expected.steps.map(({ group, assertion }) => ({ group, assertion })));
+      ).toEqual(
+        expected.steps.map(({ group, assertion }) => ({ group, assertion })),
+      );
       for (const { failureMessages } of failingAssertions) {
         expect(failureMessages).toBeDefined();
         expect(failureMessages.length).toBeGreaterThan(0);
-        expect(failureMessages.every((message) => message.startsWith("AssertionError:"))).toBe(
-          true,
-        );
+        expect(
+          failureMessages.every((message) =>
+            message.startsWith("AssertionError:"),
+          ),
+        ).toBe(true);
       }
     }
   }, 30_000);

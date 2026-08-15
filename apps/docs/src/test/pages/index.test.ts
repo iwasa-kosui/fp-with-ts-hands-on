@@ -18,6 +18,10 @@ describe("home page", () => {
     expect(document.querySelector(".landing-hero__grid > .landing-eyebrow")).not.toBeNull();
     expect(document.querySelector(".copy-panel .landing-lead")).toBeNull();
     expect(document.querySelector(".landing-hero__grid > .landing-lead")).not.toBeNull();
+    expect(document.querySelector(".landing-lead")?.textContent).toContain(
+      "1モジュール・最大4ステップ・3つの設計判断・差分予算",
+    );
+    expect(document.querySelector(".landing-lead")?.textContent).not.toContain("1〜2関数");
     const sessionLink = document.querySelector<HTMLAnchorElement>(
       'a[href="/sessions/00-onboarding/"]',
     );

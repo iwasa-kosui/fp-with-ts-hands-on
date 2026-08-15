@@ -106,6 +106,27 @@ describe("session catalog invariants", () => {
     }
   });
 
+  it("11. gives every step one or more truthful solution snippets", () => {
+    for (const session of exerciseSessions) {
+      for (const step of session.steps) {
+        const solutions: unknown = Reflect.get(step, "solutions");
+        expect(solutions, `${session.slug}: ${step.id}`).toEqual(expect.any(Array));
+        if (!Array.isArray(solutions)) continue;
+        expect(solutions.length, `${session.slug}: ${step.id}`).toBeGreaterThanOrEqual(1);
+      }
+    }
+
+    const injectContext = sessions[4].steps.find(({ id }) => id === "s4-inject-context")!;
+    expect(Reflect.get(injectContext, "solutions")).toEqual([
+      expect.objectContaining({
+        path: "examples/session-05/src/useCase/dependencies.ts",
+      }),
+      expect.objectContaining({
+        path: "examples/session-05/src/useCase/startExamination.ts",
+      }),
+    ]);
+  });
+
   it("14. gives peer review data to exercise sessions only", () => {
     for (const rawSession of sessions) {
       const session: SessionSummary = rawSession;
@@ -126,7 +147,6 @@ describe("session catalog invariants", () => {
     }
   });
 });
-
 describe("session catalog navigation", () => {
   it("resolves paths and neighbors from the six-session catalog", () => {
     const session = sessionBySlug("01-state-modeling");

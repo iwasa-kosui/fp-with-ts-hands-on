@@ -10,11 +10,13 @@ export type ExerciseStep = Readonly<{
   id: string;
   goal: string;
   targets: readonly string[];
-  solution: Readonly<{
-    path: string;
-    symbol: string;
-    lines: readonly [number, number];
-  }>;
+  solutions: readonly [SolutionReference, ...SolutionReference[]];
+}>;
+
+export type SolutionReference = Readonly<{
+  path: string;
+  symbol: string;
+  lines: readonly [number, number];
 }>;
 
 export type Decision = Readonly<{
@@ -77,6 +79,44 @@ export const peerReviewQuestions = [
   "自分の差分と違うところを1つ挙げてください。どちらが良いかは言わなくてよいです。",
 ] as const;
 
+export const peerReviewPromises = [
+  "見るのは差分であって人ではありません。発言は「この差分は」で始めます。",
+  "良し悪しを判定しません。",
+  "4回で班の全員が最低1回は当たるよう公平に配分します。選ばれることは評価ではありません。",
+  "本人は弁明しません。読み上げるのは依頼文の1文だけです。",
+  "TAは「よくできた実装」を選びません。選定基準を参加者にも開示します。",
+] as const;
+
+export const commonReviewChecks = [
+  "`as` によるキャストが入っていないか全文検索する。",
+  "`git diff --stat` でモジュール外のファイルが変更されていないか確認する。",
+  "不変条件を型で守っているか、実行時の `if` で守っているか判定する。",
+  "相互レビューの末尾1分で、型で守れなかった残りを記録する。",
+] as const;
+
+export const reviewCompletionArtifacts = [
+  "守る不変条件の1文",
+  "依頼文",
+  "型で守れなかった残り",
+] as const;
+
+export const businessReflectionQuestion =
+  "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。";
+
+export const finalAggregateTour = {
+  label: "1業務集約 → 7業務集約",
+  path: "examples/final/src/app.ts",
+  aggregates: [
+    "予約",
+    "検査結果",
+    "フォローアップ",
+    "飼い主",
+    "ペット",
+    "セッション",
+    "ユーザー",
+  ],
+} as const;
+
 export const sessions = [
   {
     slug: "00-onboarding",
@@ -117,41 +157,41 @@ export const sessions = [
         id: "s1-narrow-start",
         goal: "会計済み・キャンセル済みの来院は診察を開始できないようにする。",
         targets: ["examples/session-01/src/domain/appointment/transitions.ts"],
-        solution: {
+        solutions: [{
           path: "examples/session-02/src/domain/appointment/transitions.ts",
           symbol: "startExamination",
           lines: [14, 24],
-        },
+        }],
       },
       {
         id: "s1-require-cancel-reason",
         goal: "キャンセルには必ず理由を残す。",
         targets: ["examples/session-01/src/domain/appointment/transitions.ts"],
-        solution: {
+        solutions: [{
           path: "examples/session-02/src/domain/appointment/transitions.ts",
           symbol: "cancel",
           lines: [33, 46],
-        },
+        }],
       },
       {
         id: "s1-align-transitions",
         goal: "残る遷移も許可された遷移元だけを受け取る規約へ揃える。",
         targets: ["examples/session-01/src/domain/appointment/transitions.ts"],
-        solution: {
+        solutions: [{
           path: "examples/session-02/src/domain/appointment/transitions.ts",
           symbol: "checkIn",
           lines: [11, 31],
-        },
+        }],
       },
       {
         id: "s1-exhaustive-label",
         goal: "状態を追加したら表示名の分岐をコンパイルエラーにする。",
         targets: ["examples/session-01/src/domain/appointment/statusLabel.ts"],
-        solution: {
+        solutions: [{
           path: "examples/session-02/src/domain/appointment/statusLabel.ts",
           symbol: "toStatusLabel",
           lines: [3, 22],
-        },
+        }],
       },
     ],
     decisions: [
@@ -200,21 +240,21 @@ export const sessions = [
         id: "s2-parse-exam-result",
         goal: "形の違う検査JSONはドメイン型にならないようにする。",
         targets: ["examples/session-02/src/boundary/examResult.ts"],
-        solution: {
+        solutions: [{
           path: "examples/session-03/src/boundary/examResult.ts",
           symbol: "parseExamResult",
           lines: [7, 16],
-        },
+        }],
       },
       {
         id: "s2-protect-contact",
         goal: "電話番号とメールは既定でログに出ないようにする。",
         targets: ["examples/session-02/src/boundary/ownerContact.ts"],
-        solution: {
+        solutions: [{
           path: "examples/session-03/src/boundary/ownerContact.ts",
           symbol: "OwnerContactSchema",
           lines: [6, 16],
-        },
+        }],
       },
     ],
     decisions: [
@@ -266,31 +306,31 @@ export const sessions = [
         id: "s3-invalid-state",
         goal: "受付済みでない状態を型付きの失敗として返す。",
         targets: ["examples/session-03/src/useCase/errors.ts"],
-        solution: {
+        solutions: [{
           path: "examples/session-04/src/useCase/errors.ts",
           symbol: "ensureCheckedIn",
           lines: [31, 36],
-        },
+        }],
       },
       {
         id: "s3-not-found",
         goal: "予約が見つからない失敗を型付きの値として返す。",
         targets: ["examples/session-03/src/useCase/errors.ts"],
-        solution: {
+        solutions: [{
           path: "examples/session-04/src/useCase/errors.ts",
           symbol: "ensureAppointmentFound",
           lines: [23, 29],
-        },
+        }],
       },
       {
         id: "s3-result-pipeline",
         goal: "失敗理由をandThenのパイプラインで運ぶ。",
         targets: ["examples/session-03/src/useCase/startExamination.ts"],
-        solution: {
+        solutions: [{
           path: "examples/session-04/src/useCase/startExamination.ts",
           symbol: "startExamination",
           lines: [22, 40],
-        },
+        }],
       },
     ],
     decisions: [
@@ -343,21 +383,28 @@ export const sessions = [
           "examples/session-04/src/useCase/dependencies.ts",
           "examples/session-04/src/useCase/startExamination.ts",
         ],
-        solution: {
-          path: "examples/session-05/src/useCase/startExamination.ts",
-          symbol: "startExamination",
-          lines: [20, 43],
-        },
+        solutions: [
+          {
+            path: "examples/session-05/src/useCase/dependencies.ts",
+            symbol: "Dependencies",
+            lines: [18, 23],
+          },
+          {
+            path: "examples/session-05/src/useCase/startExamination.ts",
+            symbol: "startExamination",
+            lines: [20, 43],
+          },
+        ],
       },
       {
         id: "s4-atomic-store",
         goal: "状態と監査記録を1回の保存で残す。",
         targets: ["examples/session-04/src/useCase/dependencies.ts"],
-        solution: {
+        solutions: [{
           path: "examples/session-05/src/useCase/dependencies.ts",
           symbol: "ExaminationStartedStore",
           lines: [10, 23],
-        },
+        }],
       },
       {
         id: "s4-result-async",
@@ -366,11 +413,11 @@ export const sessions = [
           "examples/session-04/src/useCase/errors.ts",
           "examples/session-04/src/useCase/startExamination.ts",
         ],
-        solution: {
+        solutions: [{
           path: "examples/session-05/src/useCase/startExamination.ts",
           symbol: "startExamination",
           lines: [20, 43],
-        },
+        }],
       },
       {
         id: "s4-propagate-store-failure",
@@ -379,11 +426,11 @@ export const sessions = [
           "examples/session-04/src/useCase/errors.ts",
           "examples/session-04/src/useCase/startExamination.ts",
         ],
-        solution: {
+        solutions: [{
           path: "examples/session-05/src/useCase/startExamination.ts",
           symbol: "startExamination",
           lines: [20, 43],
-        },
+        }],
       },
     ],
     decisions: [
@@ -426,7 +473,10 @@ export const sessions = [
     incident: "当日の局所的な改善を、実運用を想定した構成へどう接続するかを確認する。",
     steps: [],
     decisions: [],
-    finalReferences: ["examples/final/src/useCase/startExaminationUseCase.ts"],
+    finalReferences: [
+      "examples/final/src/useCase/startExaminationUseCase.ts",
+      finalAggregateTour.path,
+    ],
   },
 ] as const satisfies readonly SessionSummary[];
 

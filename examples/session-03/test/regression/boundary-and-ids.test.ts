@@ -30,13 +30,13 @@ describe("Step 2: 電話番号とメールはログへ出ない", () => {
   });
 });
 
-describe("Step 3: schema とドメイン型がずれない", () => {
+describe("回帰条件: schema とドメイン型がずれない", () => {
   it("schema が返す値をそのまま OwnerContact として使える", () => {
     expectTypeOf(parseOwnerContact(VALID_CONTACT)._unsafeUnwrap()).toMatchTypeOf<OwnerContact>();
   });
 });
 
-describe("Step 4: 異なる種類の ID はコンパイルで止まる", () => {
+describe("回帰条件: 異なる種類の ID はコンパイルで止まる", () => {
   it("OwnerId を PetId の位置へ渡せない", () => {
     expect(compileTypeFixture("s2-owner-id-is-not-pet-id.ts")).toEqual([]);
   });

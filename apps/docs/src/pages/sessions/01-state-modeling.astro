@@ -14,7 +14,6 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
     guides={guides}
     narrative={{
       requirement: "Scheduled / CheckedIn / InExamination / Paid / Canceled の5状態と、許可した遷移だけをコードへ移す。キャンセル理由は必ず残す。",
-      accident: "会計済みの来院が診察中へ戻され、会計が二度行われた。",
       legacy: "Appointment 全体を受ける遷移関数、throw、as Appointment、default 分岐を読みます。",
       technique: "判別共用体、遷移元を限定した純粋関数、as const satisfies、assertNever。",
       limitation: "外部 JSON から捏造された状態は、このモジュールの型だけでは検証できません。",

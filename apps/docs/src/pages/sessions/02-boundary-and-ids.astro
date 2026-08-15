@@ -14,7 +14,6 @@ if (session === undefined) throw new Error("Unknown session: 02-boundary-and-ids
     guides={guides}
     narrative={{
       requirement: "外部 JSON を検証し、用途の異なる ID を区別し、飼い主の氏名・メール・電話番号をログから守る。",
-      accident: "petId と ownerId の取り違えで他の患者へ検査結果が付き、平文の PII がログへ流出した。",
       legacy: "raw: any、手書きの境界型、平文 string の連絡先を読み、入力・ID・出力の3境界を分けます。",
       technique: "unknown + Zod、用途別 branded type、z.infer、Sensitive。",
       limitation: "Sensitive.unwrap 後の文字列と、永続化から復元した ID の正しさは別の境界で扱います。",

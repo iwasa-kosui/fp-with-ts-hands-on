@@ -18,7 +18,7 @@ describe("SessionCodePlayground", () => {
       const window = new Window();
       const document = new window.DOMParser().parseFromString(html, "text/html");
 
-      expect(document.querySelector("h2#code-playground")?.textContent).toContain(
+      expect(document.querySelector("h3#code-playground")?.textContent).toContain(
         "ブラウザで試す",
       );
       expect(

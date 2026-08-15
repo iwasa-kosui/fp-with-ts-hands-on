@@ -14,7 +14,6 @@ if (session === undefined) throw new Error("Unknown session: 04-effects-and-even
     guides={guides}
     narrative={{
       requirement: "誰がいつ診察を開始したかを決定的なイベントとして作り、状態と監査記録を1回の非同期保存で残す。",
-      accident: "DateとrandomUUIDでテストが揺れ、stateStoreとeventLogのdual-writeで状態だけが残った。",
       legacy: "直接生成する時刻・ID、Promise + try/catch、2つの書き込み口を読みます。",
       technique: "Clock / EventIdGenerator、具体的な ExaminationStarted、single store(event)、ResultAsync と andThrough。",
       limitation: "in-memory の原子性は実装上の約束であり、本番永続化では transaction が必要です。",

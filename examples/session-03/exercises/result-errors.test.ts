@@ -60,7 +60,7 @@ describe("Step 3: andThen pipeline が失敗理由を運ぶ", () => {
   });
 });
 
-describe("Step 4: 失敗後は遷移も保存もしない", () => {
+describe("回帰条件: 失敗後は遷移も保存もしない", () => {
   it("状態不正なら transition と store の呼出回数は 0 のまま", () => {
     let transitionCalls = 0;
     let saveCalls = 0;

@@ -2,14 +2,15 @@
 import type { CodeGuide } from "../code-explorer/code-guide";
 import type { SessionSummary } from "../sessions/catalog";
 import CommandBlock from "./CommandBlock.astro";
+import ExerciseReviewChecklist from "./ExerciseReviewChecklist.astro";
 import PeerReviewPanel from "./PeerReviewPanel.astro";
+import PeerReviewPromises from "./PeerReviewPromises.astro";
 import StepSolution from "./StepSolution.astro";
 import SessionCodeOverview from "./code-explorer/SessionCodeOverview.astro";
 import SessionCodePlayground from "./code-explorer/SessionCodePlayground.astro";
 
 type Narrative = Readonly<{
   requirement: string;
-  accident: string;
   legacy: string;
   technique: string;
   limitation: string;
@@ -40,9 +41,9 @@ const promisesHref =
 ---
 
 <section id="incident">
-  <h2 id="incident">何が起きたか</h2>
+  <h2>何が起きたか</h2>
   <p><strong>要求:</strong> {narrative.requirement}</p>
-  <p><strong>事故:</strong> {narrative.accident}</p>
+  <p><strong>事故:</strong> {session.incident}</p>
   <h3>今回守ること</h3>
   <ul class="decision-list">
     {session.decisions.map(({ invariant }) => <li>{invariant}</li>)}
@@ -51,7 +52,7 @@ const promisesHref =
 </section>
 
 <section id="legacy">
-  <h2 id="legacy">配布コードを読む</h2>
+  <h2>配布コードを読む</h2>
   <p>{narrative.legacy}</p>
   <p>
     編集範囲は <code>{session.exerciseModule.dir}</code>、予算は最大
@@ -61,7 +62,7 @@ const promisesHref =
 </section>
 
 <section id="red">
-  <h2 id="red">失敗を再現する</h2>
+  <h2>失敗を再現する</h2>
   <p>開始スナップショットの失敗は module-not-found ではなく、業務の言葉を持つ assertion です。</p>
   <CommandBlock
     phase="red"
@@ -75,7 +76,7 @@ const promisesHref =
 </section>
 
 <section id="refactor">
-  <h2 id="refactor">型で閉じる</h2>
+  <h2>型で閉じる</h2>
   <h3>ADV: 言語化 → 委譲 → 個人検証</h3>
   <ol class="adv-flow">
     <li><strong>言語化（{session.adv.articulate}分）</strong>: 守る不変条件を1文で書く。</li>
@@ -101,7 +102,7 @@ const promisesHref =
             <p><strong>解答側:</strong> 下の StepSolution で ResultAsync と andThrough の終端を読む。</p>
           </div>
         ) : null}
-        <StepSolution step={step} solution={step.solution} />
+        <StepSolution step={step} />
       </div>
     ))
   }
@@ -114,7 +115,8 @@ const promisesHref =
 </section>
 
 <section id="review">
-  <h2 id="review">レビューと持ち帰り</h2>
+  <h2>レビューと持ち帰り</h2>
+  <ExerciseReviewChecklist />
   <h3>設計判断を差分へ照らす</h3>
   <div class="decision-list">
     {session.decisions.map((decision) => (
@@ -129,16 +131,7 @@ const promisesHref =
 
   {
     session.slug === "01-state-modeling" ? (
-      <section id="peer-review-promises" class="peer-review-promises">
-        <h3>相互レビューの進行上の約束事</h3>
-        <ol>
-          <li>見るのは人の評価ではなく、今回の不変条件と差分の対応です。</li>
-          <li>TA は模範解答ではなく、判断の違いが見える1〜2名の差分を選びます。</li>
-          <li>4回を通じて班の全員が参加できるよう、同じ人だけを選びません。</li>
-          <li>本人は弁明せず、最初に依頼文の1文だけを読みます。</li>
-          <li>良し悪しを決めず、型で守れた範囲と残った壊れ方を言葉にします。</li>
-        </ol>
-      </section>
+      <PeerReviewPromises id="peer-review-promises" />
     ) : null
   }
   <PeerReviewPanel peerReview={session.peerReview} promisesHref={promisesHref} />

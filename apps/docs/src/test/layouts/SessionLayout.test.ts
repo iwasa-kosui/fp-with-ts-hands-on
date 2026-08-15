@@ -19,7 +19,7 @@ describe("SessionLayout", () => {
       props: { session },
       slots: {
         default: markHTMLString(
-          expected.map((id) => `<section><h2 id="${id}">${id}</h2></section>`).join(""),
+          expected.map((id) => `<section id="${id}"><h2>${id}</h2></section>`).join(""),
         ),
       },
     });
@@ -34,7 +34,7 @@ describe("SessionLayout", () => {
     expect(desktopLinks.map(({ hash }) => hash)).toEqual(expected.map((id) => `#${id}`));
     expect(mobileLinks.map(({ hash }) => hash)).toEqual(expected.map((id) => `#${id}`));
     for (const { hash } of desktopLinks) {
-      expect(document.querySelectorAll(`article h2${hash}`)).toHaveLength(1);
+      expect(document.querySelectorAll(hash)).toHaveLength(1);
     }
     expect(document.querySelector("h1")?.textContent).toBe(session.title);
   });

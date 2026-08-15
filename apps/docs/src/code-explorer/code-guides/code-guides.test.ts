@@ -20,7 +20,15 @@ const expectedFragments: Readonly<Record<string, readonly string[]>> = {
   "hidden-nondeterminism": ["new Date()", "crypto.randomUUID()"],
   "dual-write": ["stateStore.save", "eventLog.append"],
   "final-use-case-pipeline": [".andThrough"],
-  "final-error-union": ['kind: "AppointmentNotFound"'],
+  "final-seven-aggregates": [
+    "createSessionEventStore",
+    "createUserEventStore",
+    "createOwnerEventStore",
+    "createPetEventStore",
+    "createAppointmentEventStore",
+    "createExaminationCompletionStore",
+    "createFollowUpEventStore",
+  ],
   "final-transaction-store": ["db.transaction"],
 };
 
@@ -39,7 +47,9 @@ describe("session code guides", () => {
       const guides = guideModules[`./${session.slug}.ts`]?.default;
       expect(guides, session.slug).toEqual(expect.any(Array));
       expect(guides!.length).toBeGreaterThanOrEqual(2);
-      expect(guides!.length).toBeLessThanOrEqual(session.slug === "00-onboarding" ? 5 : 3);
+      expect(guides!.length).toBeLessThanOrEqual(
+        session.slug === "00-onboarding" ? 5 : 3,
+      );
       const files = projectFilesFor(session.slug);
 
       for (const guide of guides!) {
@@ -49,18 +59,23 @@ describe("session code guides", () => {
         expect(files[guide.path], `${session.slug}: ${guide.path}`).toEqual(
           expect.any(String),
         );
-        expect(sessionWorkspaceVisibleFiles(session.slug)).toContain(guide.path);
+        expect(sessionWorkspaceVisibleFiles(session.slug)).toContain(
+          guide.path,
+        );
         const lines = files[guide.path]!.split("\n");
         const highlightedSource = guide.highlights
           .map(({ startLineNumber, endLineNumber }) =>
             lines.slice(startLineNumber - 1, endLineNumber).join("\n"),
           )
           .join("\n");
-        expect(expectedFragments[guide.id], `${session.slug}: ${guide.id}`).toEqual(
-          expect.any(Array),
-        );
+        expect(
+          expectedFragments[guide.id],
+          `${session.slug}: ${guide.id}`,
+        ).toEqual(expect.any(Array));
         for (const fragment of expectedFragments[guide.id]!) {
-          expect(highlightedSource, `${session.slug}: ${guide.id}`).toContain(fragment);
+          expect(highlightedSource, `${session.slug}: ${guide.id}`).toContain(
+            fragment,
+          );
         }
         for (const highlight of guide.highlights) {
           expect(highlight.startLineNumber).toBeGreaterThanOrEqual(1);
@@ -76,13 +91,28 @@ describe("session code guides", () => {
           ).not.toBe("");
         }
       }
+
+      if (session.slug === "final") {
+        const aggregateGuide = guides!.find(
+          ({ id }) => id === "final-seven-aggregates",
+        );
+        expect(aggregateGuide?.title).toBe(
+          "1業務集約から7業務集約へ広がる配線",
+        );
+        expect(aggregateGuide?.path).toBe("src/app.ts");
+      }
     }
   });
 });
 
 const sessionWorkspaceVisibleFiles = (slug: string): readonly string[] => {
   const workspaces = import.meta.glob<
-    Readonly<{ sessionWorkspaceFor: (slug: string) => Readonly<{ visibleFiles: readonly string[] }> }>
+    Readonly<{
+      sessionWorkspaceFor: (
+        slug: string,
+      ) => Readonly<{ visibleFiles: readonly string[] }>;
+    }>
   >("../session-workspaces.ts", { eager: true });
-  return workspaces["../session-workspaces.ts"]!.sessionWorkspaceFor(slug).visibleFiles;
+  return workspaces["../session-workspaces.ts"]!.sessionWorkspaceFor(slug)
+    .visibleFiles;
 };

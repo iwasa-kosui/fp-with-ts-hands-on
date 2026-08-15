@@ -28,6 +28,18 @@ const snapshots = [
   ]),
 ];
 
+const nextSnapshotFor = (snapshot: ExampleSnapshot): ExampleSnapshot => {
+  const next = {
+    "session-01": "session-02",
+    "session-02": "session-03",
+    "session-03": "session-04",
+    "session-04": "session-05",
+  } as const;
+  const result = next[snapshot as keyof typeof next];
+  if (result === undefined) throw new Error(`No solution snapshot for ${snapshot}`);
+  return result;
+};
+
 const relativeToSnapshot = (snapshot: ExampleSnapshot, repoPath: string): string => {
   const prefix = `examples/${snapshot}/`;
   expect(repoPath.startsWith(prefix), `${repoPath} must start with ${prefix}`).toBe(true);
@@ -104,18 +116,18 @@ describe("session code workspaces", () => {
     }
   });
 
-  it("mounts starter source rather than the next snapshot's solution", () => {
+  it("mounts starter source rather than the next snapshot's solution for every target", () => {
     for (const session of sessions.filter(({ kind }) => kind === "exercise")) {
       const starterFiles = projectFilesFor(session.slug);
+      const solutionSnapshot = nextSnapshotFor(session.snapshot);
+      const solutionFiles = projectFilesForSnapshot(solutionSnapshot);
       for (const step of session.steps) {
-        const target = relativeToSnapshot(session.snapshot, step.targets[0]!);
-        const solutionSnapshot = step.solution.path.split("/")[1] as ExampleSnapshot;
-        const solutionPath = relativeToSnapshot(solutionSnapshot, step.solution.path);
-        const solutionFiles = projectFilesForSnapshot(solutionSnapshot);
-
-        expect(starterFiles[target]).toEqual(expect.any(String));
-        expect(solutionFiles[solutionPath]).toEqual(expect.any(String));
-        expect(starterFiles[target]).not.toBe(solutionFiles[solutionPath]);
+        for (const targetPath of step.targets) {
+          const target = relativeToSnapshot(session.snapshot, targetPath);
+          expect(starterFiles[target]).toEqual(expect.any(String));
+          expect(solutionFiles[target]).toEqual(expect.any(String));
+          expect(starterFiles[target]).not.toBe(solutionFiles[target]);
+        }
       }
     }
   });

@@ -2,7 +2,7 @@
 import guides from "../../code-explorer/code-guides/final";
 import SessionCodeOverview from "../../components/code-explorer/SessionCodeOverview.astro";
 import SessionLayout from "../../layouts/SessionLayout.astro";
-import { sessionBySlug } from "../../sessions/catalog";
+import { finalAggregateTour, sessionBySlug } from "../../sessions/catalog";
 
 const session = sessionBySlug("final");
 if (session === undefined) throw new Error("Unknown session: final");
@@ -10,7 +10,7 @@ if (session === undefined) throw new Error("Unknown session: final");
 
 <SessionLayout session={session}>
   <section id="incident">
-    <h2 id="incident">何が起きたか</h2>
+    <h2>何が起きたか</h2>
     <p>
       S4 の到達点 <code>examples/session-05</code> は、単一集約の ResultAsync pipeline
       です。最後の5分は講師が、同じ判断が大きな参照実装でどこへ広がるかを案内します。
@@ -19,7 +19,7 @@ if (session === undefined) throw new Error("Unknown session: final");
   </section>
 
   <section id="legacy">
-    <h2 id="legacy">配布コードを読む</h2>
+    <h2>配布コードを読む</h2>
     <p>
       最初に <code>examples/final/src/useCase/startExaminationUseCase.ts</code>
       を開き、S4 と同じ <code>andThen</code> / <code>andThrough</code> の形を確認します。
@@ -28,12 +28,15 @@ if (session === undefined) throw new Error("Unknown session: final");
   </section>
 
   <section id="review">
-    <h2 id="review">レビューと持ち帰り</h2>
+    <h2>レビューと持ち帰り</h2>
     <h3>今日の到達点から final までの3差分</h3>
     <ol class="final-differences">
       <li>
-        <strong>1集約 → 7集約</strong><br />
-        <code>examples/final/src/useCase/errors.ts</code> から、失敗 union と権限の広がりを読む。
+        <strong>{finalAggregateTour.label}</strong><br />
+        <code>{finalAggregateTour.path}</code> の composition root から、次の7集約を接続する配線を読む。
+        <ul>
+          {finalAggregateTour.aggregates.map((aggregate) => <li>{aggregate}</li>)}
+        </ul>
       </li>
       <li>
         <strong>in-memory → SQLite</strong><br />

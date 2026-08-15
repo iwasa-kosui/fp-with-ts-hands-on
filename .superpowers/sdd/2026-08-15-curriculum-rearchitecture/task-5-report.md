@@ -122,19 +122,19 @@ route object だけでなく HTTP response の status/location と、redirect �
 
 ## visual inspection
 
-Session 0、1、4、Final を mobile/desktop の計 8 画像で目視した。目次、Session 0 の table/dl、code guide、可変 step と decision、playground、Final の 3 差分はいずれも clipping、重なり、水平 overflow なし。home の visual snapshot は既存画像と一致した。
+Session 0、1、4、Final を mobile/desktop の計 8 画像で目視した。目次、Session 0 の table/dl、code guide、可変 step と decision、playground、Final の 3 差分はいずれも clipping、重なり、水平 overflow なし。review round 1 では許可された home 本文変更を反映するため、desktop/mobile の2 baselineだけを更新した。
 
 ## 最終検証
 
-- `pnpm --filter @fp-with-ts/docs test`: 117/117
+- `pnpm --filter @fp-with-ts/docs test`: review round 1 後は 122/122
 - `pnpm --filter @fp-with-ts/docs build`: Astro check 0 diagnostics、8 HTML、8 allowed routes
 - Worker focused tests: 20/20
 - `pnpm typecheck`: 成功
-- `pnpm test`: 成功（docs 117/117 を含む）
+- `pnpm test`: 成功（docs 122/122 を含む）
 - `pnpm build`: 成功（8 HTML）
 - `pnpm --filter @fp-with-ts/docs test:visual`: 28/28
 - 最終説明文修正後の targeted: 11/11
-- 最終説明文修正後の docs test/build: 117/117、0 diagnostics、8 HTML
+- review round 1 後の docs test/build: 122/122、0 diagnostics、8 HTML
 - `git diff --check`: 成功
 
 ## 削除・保護範囲
@@ -148,13 +148,53 @@ Session 0、1、4、Final を mobile/desktop の計 8 画像で目視した。�
 
 変更していないもの:
 
-- `examples/**`
+- `examples/**` の実装と挙動（review round 1 で S2/S3 の開始時 GREEN テスト名だけ変更）
 - root `package.json` / lockfile
 - PRD（Task 4 で更新済みの正規 PRD に従い、追加変更は不要と判断）
 - `docs/event/**`
-- home page / home CSS / home E2E / screenshot
+- home CSS / home E2E 構造（review round 1 で本文と対応する2 screenshotだけ変更）
 
-既知の監査事項として home index の「1〜2関数」という既存表現は今回の禁止範囲にあるため変更していない。
+review round 1 の controller decision により、home index の旧「1〜2関数」を新 PRD の演習制約へ合わせた。
+
+## Review round 1
+
+2 reviewer の Important と再発防止を、controller が許可した公開整合性の最小変更として追加実装した。
+
+### RED
+
+- exercise page が wrapper の `Narrative.accident` を再記述し、catalog incident と一致しない3ページをrender assertionで検出した。
+- 全4 exercise に共通4観点、3成果物の完了条件、PRD-08の業務振り返りがないことをrender assertionで検出した。
+- 全6ページで section と h2 が同じ id を持つことを、全 id 一意性とTOC target件数のassertionで検出した。
+- S0/S1の約束事が別文言で、設計の断定形5点を満たさないことをrender assertionで検出した。
+- `steps[].solution` が単数で、S4 step 1 の `dependencies.ts` が解答にないことをcatalog assertionで検出した。
+- homeの旧「1〜2関数」、Finalの根拠が読めない「1集約→7集約」、playground内h2を公開構造assertionで検出した。
+- S2/S3の開始時GREEN assertionに `Step 3` / `Step 4` が残ることを実ソースassertionで検出した。
+
+すべて欠落または不整合を表すassertion failureであり、import/module errorではない。
+
+### GREEN と実装判断
+
+- `session.incident` を直接描画し、wrapperから事故文を削除した。
+- 共通metadata/componentから、設計 §1.3/6.2 の共通4観点、3成果物、PRD-08の問いを全exerciseへ表示した。
+- S0/S1は同じ `peerReviewPromises` と `PeerReviewPromises.astro` を使い、S2以降はS1の正規anchorへリンクした。5点は「人ではなく差分」「良し悪しを判定しない」「4回で全員最低1回・公平配分・選出は評価でない」「本人は弁明しない」「TAはよくできた実装を選ばない」の断定形である。
+- anchorはsectionだけに置き、全id一意・各TOC targetが1件になるようにした。
+- 解答参照を非空の `solutions` 配列へ一般化し、1stepのdetails内へpath付きで宣言順に表示した。S4 step 1 は `dependencies.ts`、`startExamination.ts` の2snippetをこの順で持つ。plan/designも複数参照契約へ同期した。
+- workspaceのstarter/solution混入検査は全 `targets` を走査する。
+- home本文を「1モジュール・最大4ステップ・3つの設計判断・差分予算」へ更新した。home CSSとE2E構造は変更していない。
+- Finalは `examples/final/src/app.ts` を根拠に、予約・検査結果・フォローアップ・飼い主・ペット・セッション・ユーザーの7業務集約をcatalog/page/guideで同じdataから表示した。
+- playground見出しをh3へ下げ、S2/S3の補助GREEN assertionは「回帰条件」へ改名した。演習件数、RED、挙動は変更していない。
+
+### Review round 1 の検証
+
+- targeted: 10 files、58/58
+- docs full: 21 files、122/122
+- docs build: 0 errors、0 warnings、0 hints、8 HTML / 8 routes
+- root `pnpm typecheck`: 成功（全session、docs、Worker）
+- root `pnpm test`: 成功（全example通常テスト、docs 122/122）
+- root `pnpm build`: 成功（8 HTML）
+- visual/E2E: 28/28
+- home visual: 初回は許可本文の文字差だけでdesktop 4013 pixels、mobileは高さ5379px→5405px（+26px）。actual/diff目視でoverflow・重なりなしを確認し、desktop/mobileの2 baselineだけを更新した。他 screenshot、home CSS、home E2E構造は変更していない。
+- S4実Chromium: `crossOriginIsolated === true`、mobile/desktopのS0/S1/S4/Finalで水平overflowなし。49 packagesをinstallし、`workspace` cwdで意図した4 AssertionError、module-not-found/fixture failureなし。
 
 ## NEEDS_CONTEXT
 

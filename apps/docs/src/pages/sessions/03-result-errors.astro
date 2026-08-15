@@ -14,7 +14,6 @@ if (session === undefined) throw new Error("Unknown session: 03-result-errors");
     guides={guides}
     narrative={{
       requirement: "診察開始に失敗した理由を、受付画面が文言ではなく型付きの値として扱えるようにする。",
-      accident: "例外メッセージを変えたところ、予約なしが404ではなく500になり、受付が理由を追えなくなった。",
       legacy: "throw、try/catch、文言依存、誤ったエラー写像を読みます。この回の主題は同期 Result であり、Domain Event ではありません。",
       technique: "kind を持つ error union、Result、ok / err、andThen の同期パイプライン、fake port。",
       limitation: "予期できる失敗と予期できない例外の線引きや利用者向け文言は、人の判断とレビューに残ります。",

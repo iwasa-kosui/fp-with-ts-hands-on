@@ -4,6 +4,27 @@ import { renderSessionPage } from "./session-test-helpers";
 
 const exercises = sessions.filter((session) => session.kind === "exercise");
 
+const commonReviewChecks = [
+  "`as` によるキャストが入っていないか全文検索する。",
+  "`git diff --stat` でモジュール外のファイルが変更されていないか確認する。",
+  "不変条件を型で守っているか、実行時の `if` で守っているか判定する。",
+  "相互レビューの末尾1分で、型で守れなかった残りを記録する。",
+] as const;
+
+const completionArtifacts = [
+  "守る不変条件の1文",
+  "依頼文",
+  "型で守れなかった残り",
+] as const;
+
+const reviewPromises = [
+  "見るのは差分であって人ではありません。発言は「この差分は」で始めます。",
+  "良し悪しを判定しません。",
+  "4回で班の全員が最低1回は当たるよう公平に配分します。選ばれることは評価ではありません。",
+  "本人は弁明しません。読み上げるのは依頼文の1文だけです。",
+  "TAは「よくできた実装」を選びません。選定基準を参加者にも開示します。",
+] as const;
+
 describe("exercise session contract", () => {
   for (const session of exercises) {
     it(`renders every catalog value for ${session.slug}`, async () => {
@@ -18,6 +39,7 @@ describe("exercise session contract", () => {
       expect(red[0]?.textContent).toContain(session.exerciseCommand);
       expect(green[0]?.textContent).toContain(session.exerciseCommand);
       expect(text).toContain(session.exerciseModule.dir);
+      expect(text).toContain(session.incident);
       expect(document.querySelectorAll("details.step-solution")).toHaveLength(
         session.steps.length,
       );
@@ -27,20 +49,71 @@ describe("exercise session contract", () => {
         expect(text).toContain(decision.invariant);
         expect(text).toContain(decision.notByType);
       }
-      for (const reference of session.finalReferences) expect(text).toContain(reference);
+      for (const reference of session.finalReferences)
+        expect(text).toContain(reference);
       for (const question of session.peerReview.questions) {
         expect(reviewText).toContain(question);
       }
-      expect(document.querySelectorAll(".session-code-playground")).toHaveLength(1);
+      for (const check of commonReviewChecks)
+        expect(reviewText).toContain(check);
+      for (const artifact of completionArtifacts)
+        expect(reviewText).toContain(artifact);
+      expect(reviewText).toContain(
+        "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。",
+      );
+      expect(
+        document.querySelectorAll(".session-code-playground"),
+      ).toHaveLength(1);
     });
   }
 
   it("renders playgrounds on the four exercises only", async () => {
     for (const session of sessions) {
       const document = await renderSessionPage(session);
-      expect(document.querySelectorAll(".session-code-playground")).toHaveLength(
-        session.kind === "exercise" ? 1 : 0,
-      );
+      expect(
+        document.querySelectorAll(".session-code-playground"),
+      ).toHaveLength(session.kind === "exercise" ? 1 : 0);
     }
+  });
+
+  it("shares the canonical five review promises between S0 and S1 and links later sessions", async () => {
+    const onboarding = await renderSessionPage(sessions[0]);
+    const firstExercise = await renderSessionPage(exercises[0]);
+
+    for (const promise of reviewPromises) {
+      expect(onboarding.body.textContent).toContain(promise);
+      expect(firstExercise.body.textContent).toContain(promise);
+    }
+    for (const session of exercises.slice(1)) {
+      const document = await renderSessionPage(session);
+      expect(
+        document.querySelector<HTMLAnchorElement>(
+          'a[href="/sessions/01-state-modeling/#peer-review-promises"]',
+        ),
+      ).not.toBeNull();
+      for (const promise of reviewPromises)
+        expect(document.body.textContent).not.toContain(promise);
+    }
+  });
+
+  it("pins the Final seven-aggregate tour to the composition root", async () => {
+    const finalSession = sessions.find(({ slug }) => slug === "final")!;
+    const document = await renderSessionPage(finalSession);
+    const text = document.body.textContent ?? "";
+
+    expect(text).toContain("1業務集約 → 7業務集約");
+    expect(text).toContain("examples/final/src/app.ts");
+    for (const aggregate of [
+      "予約",
+      "検査結果",
+      "フォローアップ",
+      "飼い主",
+      "ペット",
+      "セッション",
+      "ユーザー",
+    ]) {
+      expect(text).toContain(aggregate);
+    }
+    expect(finalSession.finalReferences).toContain("examples/final/src/app.ts");
   });
 });

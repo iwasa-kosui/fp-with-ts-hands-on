@@ -1,6 +1,7 @@
 ---
 import guides from "../../code-explorer/code-guides/00-onboarding";
 import SessionCodeOverview from "../../components/code-explorer/SessionCodeOverview.astro";
+import PeerReviewPromises from "../../components/PeerReviewPromises.astro";
 import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessionBySlug } from "../../sessions/catalog";
 
@@ -10,7 +11,7 @@ if (session === undefined) throw new Error("Unknown session: 00-onboarding");
 
 <SessionLayout session={session}>
   <section id="incident">
-    <h2 id="incident">何が起きたか</h2>
+    <h2>何が起きたか</h2>
     <p>
       新任エンジニアとして、先人の獣医が診療の合間に作った WAN NYAN CLINIC
       の予約システムを引き継ぎます。最初の15分は修正せず、業務事故とコードの対応を読みます。
@@ -40,7 +41,7 @@ if (session === undefined) throw new Error("Unknown session: 00-onboarding");
   </section>
 
   <section id="legacy">
-    <h2 id="legacy">配布コードを読む</h2>
+    <h2>配布コードを読む</h2>
     <p>対象は <code>examples/session-00/src/legacy/appointment.ts</code> です。次の5箇所を順に確認します。</p>
     <ol>
       <li><code>status: string</code> で状態と遷移が開いている。</li>
@@ -63,18 +64,11 @@ if (session === undefined) throw new Error("Unknown session: 00-onboarding");
   </section>
 
   <section id="review">
-    <h2 id="review">レビューと持ち帰り</h2>
+    <h2>レビューと持ち帰り</h2>
     <p>
       班で「最初に直すならどの事故か」を共有します。S1〜S4 の各演習後には7〜8分、TAが選ぶ1〜2名の差分を全員で見ます。
     </p>
-    <h3>相互レビューの予告</h3>
-    <ul>
-      <li>人を評価せず、不変条件と差分の対応を見る。</li>
-      <li>模範解答を決めず、型で守った箇所と実行時分岐を見比べる。</li>
-      <li>本人は依頼文の1文だけを読み、班のメンバーが差分を読む。</li>
-      <li>型で守れなかった残りを毎回1行で持ち帰る。</li>
-      <li>実装が途中でも、同じ到達ステップの差分を対象にできる。</li>
-    </ul>
+    <PeerReviewPromises id="peer-review-preview" heading="相互レビューの予告" />
     <p>事故を直す最初の演習では、Paid / Canceled から診察中へ戻れない5状態のモデルを扱います。</p>
   </section>
 </SessionLayout>
