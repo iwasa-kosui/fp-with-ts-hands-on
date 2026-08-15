@@ -12,7 +12,7 @@
 
 ## リリース判断の要約
 
-- 自動ゲートは成功した。通常の型検査・テスト・build、28件の視覚/E2E検証、4演習の意図したRED、次snapshotのGREEN連鎖、差分予算、Final凍結を確認した。
+- 自動ゲートは成功した。通常の型検査・テスト・build、Final参照実装の型検査・184件のテスト・client/SSR build、28件の視覚/E2E検証、4演習の意図したRED、次snapshotのGREEN連鎖、差分予算、Final凍結を確認した。
 - 旧Session 04/05の4 URLは、ローカルWranglerでredirect追従を無効にして、すべて `308` と正しい `Location` を返した。新Session 04は `200` を返した。
 - post-auditでS4の解答適用契約を修正し、catalogを3ファイル・72実効行へ較正した。S1〜S4はいずれも絶対上限5ファイル・実効80行以内である。
 - [30日後フォローアップ運用手順](./follow-up-30-days.md)にPRDの4設問、担当、D+30送付、回答導線、匿名集計を定義した。設問と送付方法は準備済みである。実送付は開催後のため未実施である。
@@ -30,16 +30,19 @@
 
 | コマンド | 結果 | 実測 |
 | --- | --- | ---: |
-| `pnpm typecheck` | 成功。session-00〜05、docs、Worker。Astro 70 files、0 errors / 0 warnings / 0 hints | review fix再実行 7.2秒 |
-| `pnpm test` | 成功。session通常テスト51件、docs実行146件、明示的なWorker実行30件 | review fix再実行 15.0秒 |
-| `pnpm --filter @fp-with-ts/docs test` | 24 files / 146 tests成功。event 7件と、docs側で収集されるWorker 30件を含む | review fix再実行 7.1秒 |
-| `pnpm build` | 成功。Astro 70 files、0 diagnostics、8 HTML / 8 routes | review fix再実行 29.3秒 |
-| `pnpm --filter @fp-with-ts/docs build` | 成功。Astro 70 files、0 diagnostics、8 HTML / 8 routes | review fix再実行 28.7秒 |
+| `pnpm typecheck` | 成功。session-00〜05、Final、docs、Worker。Astro 71 files、0 errors / 0 warnings / 0 hints | 10.94秒 |
+| `pnpm test` | 成功。session通常テスト51件、Final 184件、docs実行153件、明示的なWorker実行30件 | 18.06秒 |
+| `pnpm --filter @fp-with-ts/docs test` | 25 files / 153 tests成功。event 8件、root CI coverage 6件、docs側で収集されるWorker 30件を含む | root実行内 |
+| `pnpm build` | 成功。Final client 589 modules / SSR 318 modules、Astro 71 files、8 HTML / 8 routes | 32.67秒 |
+| `pnpm --filter @fp-with-ts/clinic-final typecheck` | 成功 | 4.04秒 |
+| `pnpm --filter @fp-with-ts/clinic-final test` | 22 files / 184 tests成功 | 4.04秒 |
+| `pnpm --filter @fp-with-ts/clinic-final build` | client 589 modules / SSR 318 modules成功 | 3.76秒 |
 | `pnpm --filter @fp-with-ts/docs test:visual` | 28/28成功。更新したhome desktop/mobileを含む | 10.71秒 |
 | Worker focused 3 files | 30/30成功（config 10、routes 10、HTTP handler 10） | targeted 6 files / 39 testsで1.88秒 |
-| event document contract | 7/7成功。6 sessionの150分、固定3枠30分、合計180分、ADV、review、フォローアップ送付母集団を含む運営文書を照合 | review fix targeted再実行 11ms |
+| root CI coverage contract | 6/6成功。rootの3ゲートでFinalを各1回実行し、Deploy/Previewがroot commandを呼ぶことを照合 | targeted実行4ms |
+| event document contract | 8/8成功。6 sessionの150分、固定3枠30分、合計180分、ADV、review、フォローアップ送付母集団、解答detailsを含む運営文書を照合 | targeted実行13ms |
 
-`pnpm test` のdocs実行は現行Vitest設定によりWorker 30件を含み、rootの `test:worker` が同じ30件を明示的に再実行する。fresh summaryのsession内訳 `1 + 2 + 4 + 9 + 14 + 21 = 51` とdocs 146件、明示Worker 30件から、実行回数を `51 + 146 + 30 = 227`、重複を除く契約を `51 + 146 = 197` と自動計算して記録した。明示経路は、docs側のtest対象を将来整理してもCIの `pnpm test` からWorker契約が外れないために残す。
+`pnpm test` のdocs実行は現行Vitest設定によりWorker 30件を含み、rootの `test:worker` が同じ30件を明示的に再実行する。fresh summaryのsession内訳 `1 + 2 + 4 + 9 + 14 + 21 = 51`、Final 184件、docs 153件、明示Worker 30件から、実行回数を `51 + 184 + 153 + 30 = 418`、重複を除く契約を `51 + 184 + 153 = 388` と計算した。明示経路は、docs側のtest対象を将来整理してもCIの `pnpm test` からWorker契約が外れないために残す。
 
 buildでは既知のVite chunk-size warningが出たが、Astro diagnosticsと静的route検証は成功した。視覚検証の最初のsandbox内実行は `0.0.0.0:4321` のlistenが `EPERM` になったため、同じコマンドをローカルserver起動権限付きで再実行し、28件すべての成功を確認した。
 
@@ -103,6 +106,8 @@ session-05はS1〜S4の全回帰に加え、in-memory storeの原子性、内部
 | S4 | 3 | 72 | 5 files / 80 lines |
 
 `git diff --exit-code b8492ba3895adecf5cb1593a79008c90908f4090 -- examples/final` は差分0で成功した。`examples/final/**` は凍結されている。
+
+Finalを凍結したまま検証対象へ戻すため、rootの `typecheck`、`test`、`build` は実package名 `@fp-with-ts/clinic-final` の対応scriptを各1回だけ明示実行する。session-00〜05、docs、Workerの既存経路は維持した。Deploy/Preview workflowはいずれもrootの3 commandを呼ぶためYAML変更は不要だった。package名、対応script、1回だけの実行、workflow委譲はroot CI coverage contract 6件で固定した。
 
 ## post-audit: S4解答適用とエラー境界
 

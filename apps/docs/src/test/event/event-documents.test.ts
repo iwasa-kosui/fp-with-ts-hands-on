@@ -298,6 +298,17 @@ describe("event document contract", () => {
     }
   });
 
+  it("describes the solution details fallback used by each exercise page", async () => {
+    for (const name of ["facilitator-guide.md", "troubleshooting.md"]) {
+      const document = await readEventDocument(name);
+
+      expect(document, name).toMatch(
+        /S1〜S3[^。]*「ステップごとの解答」[^。]*`details`/,
+      );
+      expect(document, name).toMatch(/S4[^。]*後続step[^。]*完成ファイル/);
+    }
+  });
+
   it("rejects stale curriculum terms in every event markdown document", async () => {
     const names = (await readdir(eventDocumentsDirectory))
       .filter((name) => name.endsWith(".md"))

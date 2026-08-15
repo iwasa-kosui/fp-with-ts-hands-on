@@ -92,7 +92,7 @@ git restore --source=HEAD -- path/to/file
 2. ページを再読み込みする。
 3. ブラウザの開発者ツールにSharedArrayBuffer、cross-origin isolation、WebContainerのエラーがないか確認する。
 4. 起動や依存取得が止まる場合は、主線であるローカル clone へ戻る。
-5. エージェントを使わない場合は、ページの「ステップごとの解答」を1件ずつ開く。
+5. エージェントを使わない場合、S1〜S3はページの「ステップごとの解答」の `details` を1件ずつ開く。S4は「完成ファイルの解答例」の `details` を開き、後続stepを含む完成ファイルを全targetへ反映してから同じexerciseを実行する。1stepずつの個別GREENは約束しない。
 
 Playgroundのために新しいAPIキーを用意する必要はありません。Finalは講師ツアーなのでPlayground操作も不要です。
 
