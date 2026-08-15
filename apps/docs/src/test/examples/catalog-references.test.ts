@@ -17,12 +17,19 @@ const nextSnapshot = {
 type ExerciseResult = Readonly<{
   assertionResults: readonly Readonly<{
     ancestorTitles: readonly string[];
+    failureMessages: readonly string[];
     status: string;
     title: string;
   }>[];
 }>;
 
-const runSession02Exercise = async (): Promise<readonly ExerciseResult[]> =>
+type ExerciseReport = Readonly<{
+  success: boolean;
+  numFailedTests: number;
+  testResults: readonly ExerciseResult[];
+}>;
+
+const runSession02Exercise = async (): Promise<ExerciseReport> =>
   new Promise((resolveResult, reject) => {
     execFile(
       "pnpm",
@@ -44,7 +51,7 @@ const runSession02Exercise = async (): Promise<readonly ExerciseResult[]> =>
         }
         try {
           const [json] = stdout.split("\n", 1);
-          resolveResult((JSON.parse(json) as { testResults: ExerciseResult[] }).testResults);
+          resolveResult(JSON.parse(json) as ExerciseReport);
         } catch (cause) {
           reject(cause);
         }
@@ -129,13 +136,6 @@ describe("session catalog references", () => {
     const expected = [
       {
         id: "s2-parse-exam-result",
-        goal: "形の違う検査JSONはドメイン型にならないようにする。",
-        targets: ["examples/session-02/src/boundary/examResult.ts"],
-        solution: {
-          path: "examples/session-03/src/boundary/examResult.ts",
-          symbol: "parseExamResult",
-          lines: [7, 16],
-        },
         exercise: {
           group: "Step 1: 形の違う検査 JSON はドメイン型にならない",
           assertion: "petId がない JSON は err になる",
@@ -143,13 +143,6 @@ describe("session catalog references", () => {
       },
       {
         id: "s2-protect-contact",
-        goal: "電話番号とメールは既定でログに出ないようにする。",
-        targets: ["examples/session-02/src/boundary/ownerContact.ts"],
-        solution: {
-          path: "examples/session-03/src/boundary/ownerContact.ts",
-          symbol: "OwnerContactSchema",
-          lines: [6, 16],
-        },
         exercise: {
           group: "Step 2: 電話番号とメールはログへ出ない",
           assertion: "JSON と util.inspect のどちらも値をマスクする",
@@ -157,14 +150,25 @@ describe("session catalog references", () => {
       },
     ] as const;
 
-    expect(session.steps).toEqual(
-      expected.map(({ exercise: _exercise, ...step }) => step),
-    );
-    const failingAssertions = (await runSession02Exercise())
+    expect(session.steps.map(({ id }) => id)).toEqual(expected.map(({ id }) => id));
+    const exerciseResult = await runSession02Exercise();
+    expect(exerciseResult.success).toBe(false);
+    expect(exerciseResult.numFailedTests).toBe(2);
+    const failingAssertions = exerciseResult.testResults
       .flatMap(({ assertionResults }) => assertionResults)
-      .filter(({ status }) => status === "failed")
-      .map(({ ancestorTitles, title }) => ({ group: ancestorTitles.at(-1), assertion: title }));
-    expect(failingAssertions).toEqual(expected.map(({ exercise }) => exercise));
+      .filter(({ status }) => status === "failed");
+    expect(failingAssertions).toHaveLength(2);
+    expect(
+      failingAssertions.map(({ ancestorTitles, title }) => ({
+        group: ancestorTitles.at(-1),
+        assertion: title,
+      })),
+    ).toEqual(expected.map(({ exercise }) => exercise));
+    for (const { failureMessages } of failingAssertions) {
+      expect(failureMessages).toBeDefined();
+      expect(failureMessages.length).toBeGreaterThan(0);
+      expect(failureMessages.every((message) => message.startsWith("AssertionError:"))).toBe(true);
+    }
   }, 10_000);
 
   it("keeps the S3 no-effects step scoped to the implementation changed for GREEN", () => {

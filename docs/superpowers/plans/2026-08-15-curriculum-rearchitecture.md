@@ -540,11 +540,11 @@ git commit -m "feat: セッションcatalogと共通ページ基盤を再構築"
 
 - [ ] **Step 1: 新しいページ構造テストを先に書く**
 
-`session-structure.test.ts` は kind ごとの章順、TOC 2 組、対応する h2、catalog title の h1 を全 session で検証する。`session-exercise.test.ts` は red/green command、module dir、4 step goal と 4 details、decision invariant/notByType、final references、peer-review 3 問を catalog から検証する。旧 literal 完全一致テストは新テストが RED になった後に削除する。
+`session-structure.test.ts` は kind ごとの章順、TOC 2 組、対応する h2、catalog title の h1 を全 session で検証する。`session-exercise.test.ts` は red/green command、module dir、catalog の `steps` 全件の goal と `steps.length` 件の details、decision invariant/notByType、final references、peer-review 3 問を catalog から検証する。旧 literal 完全一致テストは新テストが RED になった後に削除する。
 
 - [ ] **Step 2: S0〜S4 と Final の本文を実装する**
 
-各ページは設計 §4 の事故、要求、4 step、3 decision、時間内訳、fallback、固有レビュー観点を反映する。S1 の review 章には約束事 5 点を全文、S2〜S4 は S1 の id へリンクする。Final は「1集約→7集約」「in-memory→SQLite」「単体→全域検証」の 3 差分と最初に読む final file を示す。
+各ページは設計 §4 の事故、要求、時間内訳、fallback、固有レビュー観点を反映する。exercise page は catalog の `steps`（1〜4件）と `decisions`（1〜3件）を全件描画する。S1 の review 章には約束事 5 点を全文、S2〜S4 は S1 の id へリンクする。Final は「1集約→7集約」「in-memory→SQLite」「単体→全域検証」の 3 差分と最初に読む final file を示す。
 
 - [ ] **Step 3: Code Explorer を catalog と P1 snapshots へ同期する**
 
@@ -601,7 +601,7 @@ Controller gate: Task 4 と Task 5 の task review 承認後に `git push origin
 
 - [ ] **Step 2: facilitator guide を 180 分の新進行へ更新する**
 
-0:25/0:55/1:25/2:10 の checkpoint、S2 の step 4→3 の降格、S4 の step 3 demo 化、相互レビューは落とさず 2 人目枠を落とす順序を明記する。TA の巡回は詰まり発見と review 対象選定の両方を目的とする。
+0:25/0:55/1:25/2:10 の checkpoint、S2 は catalog の `steps` の末尾から講師デモへ降格すること、S4 の step 3 demo 化、相互レビューは落とさず 2 人目枠を落とす順序を明記する。TA の巡回は詰まり発見と review 対象選定の両方を目的とする。
 
 - [ ] **Step 3: peer-review card を作る**
 
@@ -660,7 +660,7 @@ pnpm exercise:03
 pnpm exercise:04
 ```
 
-Expected: 各コマンドは開始 snapshot として non-zero。ただし module resolution/type setup error ではなく、4 step に対応する業務名の assertion failure になる。各 step の fail/pass 数を記録する。
+Expected: 各コマンドは開始 snapshot として non-zero。各 session で catalog の `steps.length` 件（1〜4件）に対応する業務名の assertion が `AssertionError` として失敗し、module resolution/type setup error や予期しない例外はない。exercise に含まれる全testの fail/pass 数を分けて記録する。
 
 - [ ] **Step 3: 次 snapshot の GREEN 連鎖を確認する**
 
@@ -687,7 +687,7 @@ Expected: S1〜S4 が 5 files/80 effective lines 以下、final diff 0。
 rehearsal 文書に次を `未確認（現地/人間のリハーサルが必要）` として残す。
 
 ```text
-- エージェントなし参加者が delegate 8〜10分で4 stepを完了できるか
+- エージェントなし参加者が delegate 8〜10分で catalog の `steps`（1〜4件）を完了できるか
 - 5人班で peer review 7分版が回るか、問い1で沈黙しないか
 - S2 teach 7分で参加者が delegate を開始できるか
 - 班数分の外部 display、HDMI、USB-C adapter、電源があるか

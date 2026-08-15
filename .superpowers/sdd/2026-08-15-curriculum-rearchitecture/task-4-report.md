@@ -21,7 +21,7 @@
 
 4件とも上限5ファイル・80実効行以内であり、catalog の `fileBudget` / `lineBudget` には実測値そのものを記録した。S1/S3/S4 は4 steps、S2 は2 steps、全exerciseは3 decisions、`pickCount: 2`、7/7/8/8分の peer review、同じ正式文言の3問を持つ。`session-05` は `ExampleSnapshot` に残し、`sessions` 配列には含めていない。
 
-Task 4 plan と設計 §6.3 のcatalog契約は `1 <= steps <= 4` である。設計 §4.2 のS2 4-step想定に対し、現starterの `pnpm exercise:02` はStep 1/2だけがRED、Step 3/4は開始時点からGREENだった。存在しない独立RED→GREENを表示しないため、S2 catalogは実在する2つの参加者変更単位へ縮約した。参照テストはexerciseを実行し、この2件の失敗test group/assertionとcatalogのgoal/target/solutionを1対1で照合する。
+Task 4 plan と設計 §6.3 のcatalog契約は `1 <= steps <= 4` である。設計 §4.2 のS2 4-step想定に対し、現starterの `pnpm exercise:02` はStep 1/2だけがRED、Step 3/4は開始時点からGREENだった。存在しない独立RED→GREENを表示しないため、S2 catalogは実在する2つの参加者変更単位へ縮約した。参照テストはexerciseをJSON reporterで実行し、top-level `success === false`、failed test 2件、各 `failureMessages` が非空かつ全て `AssertionError:` で始まることを検査する。さらにstable step idと、この2件の失敗test group/assertionを1対1で照合する。goal/target/solution/rangeは二重記述せず、catalog本体と汎用AST参照検査を正とする。
 
 ## solution/reference 契約
 
@@ -48,7 +48,7 @@ Task 4 plan と設計 §6.3 のcatalog契約は `1 <= steps <= 4` である。�
 - Code Explorerには新slug `04-effects-and-events` のworkspace aliasを追加した。旧slugのworkspaceは既存ページ用に維持する。
 - `site-contract.test.ts` はcatalogの新6件と、本文移行前の旧7 static page集合を別々に固定する。
 
-Task 5で6ページを新slugの薄いwrapperへ移した後、上記の旧slug alias、手書きTOC互換、S0表示時間互換、旧workspace、旧route集合のassertionを削除する。Task 5 planの「4 step goal / 4 details」はliteral 4件ではなく、catalogのtruthfulな `steps.length`（S2は2件）へ同期する。
+Task 5で6ページを新slugの薄いwrapperへ移した後、上記の旧slug alias、手書きTOC互換、S0表示時間互換、旧workspace、旧route集合のassertionを削除する。正規planのTask 5、P3 fallback、P4 rehearsalは、literal 4 step/detailsではなくcatalogのtruthfulな `steps.length` / 1〜4 stepsへ直接同期した。P1の4 `describe` 契約や、4 exercises / 4 review roundsなど正しい4件要件は変更していない。
 
 ## TDD と検証
 
@@ -60,6 +60,7 @@ REDを確認した対象:
 - dynamic route wrapperの実在・marker契約
 - review修正では、次snapshotの `src/**` 外を指すsolutionを拒否する参照契約
 - review fix round 2では、S2のcatalog 4件と実際にREDになるassertion 2件の不一致、およびS3 step 4の余分なtarget
+- review fix round 3では、exercise失敗数だけが一致する偽陽性（top-level successや失敗種別を捨てるhelper）
 
 最終確認:
 
