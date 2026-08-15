@@ -53,7 +53,18 @@ describe("S3 Step 2 regression: AppointmentNotFound を値として返す", () =
   });
 });
 
-describe("S3 Step 3 regression: andThen pipeline が成功値を運ぶ", () => {
+describe("S3 Step 3 regression: andThen pipeline が失敗理由を運ぶ", () => {
+  it("予約なしを InvalidAppointmentState に潰さず後続処理を呼ばない", async () => {
+    const observer = { contextCalls: 0, storeCalls: 0 };
+    const result = await startExamination(createDependencies(undefined, observer))(input);
+
+    expect(result.isErr() && result.error).toEqual({
+      kind: "AppointmentNotFound",
+      appointmentId,
+    });
+    expect(observer).toEqual({ contextCalls: 0, storeCalls: 0 });
+  });
+
   it("CheckedIn を InExamination へ遷移して保存する", async () => {
     const observer = { contextCalls: 0, storeCalls: 0 };
     const result = await startExamination(createDependencies(checkedIn, observer))(input);

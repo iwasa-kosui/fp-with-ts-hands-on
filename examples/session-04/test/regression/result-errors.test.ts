@@ -55,7 +55,18 @@ describe("Step 2 regression: AppointmentNotFound を値として返す", () => {
   });
 });
 
-describe("Step 3 regression: andThen pipeline が成功値を運ぶ", () => {
+describe("Step 3 regression: andThen pipeline が失敗理由を運ぶ", () => {
+  it("予約なしを InvalidAppointmentState に潰さず後続処理を呼ばない", () => {
+    const observer = { transitionCalls: 0, saveCalls: 0 };
+    const result = startExamination(createDependencies(undefined, observer))(input);
+
+    expect(result.isErr() && result.error).toEqual({
+      kind: "AppointmentNotFound",
+      appointmentId,
+    });
+    expect(observer).toEqual({ transitionCalls: 0, saveCalls: 0 });
+  });
+
   it("CheckedIn を InExamination へ遷移して保存する", () => {
     const observer = { transitionCalls: 0, saveCalls: 0 };
     const result = startExamination(createDependencies(checkedIn, observer))(input);
