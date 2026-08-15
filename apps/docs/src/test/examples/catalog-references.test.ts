@@ -1,3 +1,4 @@
+import { execFile } from "node:child_process";
 import { access, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import ts from "typescript";
@@ -12,6 +13,44 @@ const nextSnapshot = {
   "session-03": "session-04",
   "session-04": "session-05",
 } as const;
+
+type ExerciseResult = Readonly<{
+  assertionResults: readonly Readonly<{
+    ancestorTitles: readonly string[];
+    status: string;
+    title: string;
+  }>[];
+}>;
+
+const runSession02Exercise = async (): Promise<readonly ExerciseResult[]> =>
+  new Promise((resolveResult, reject) => {
+    execFile(
+      "pnpm",
+      [
+        "--filter",
+        "@fp-with-ts/clinic-session-02",
+        "exec",
+        "vitest",
+        "run",
+        "--config",
+        "vitest.exercises.config.ts",
+        "--reporter=json",
+      ],
+      { cwd: repoRoot, maxBuffer: 2_000_000 },
+      (error, stdout) => {
+        if (error === null) {
+          reject(new Error("session-02 exercise unexpectedly passed"));
+          return;
+        }
+        try {
+          const [json] = stdout.split("\n", 1);
+          resolveResult((JSON.parse(json) as { testResults: ExerciseResult[] }).testResults);
+        } catch (cause) {
+          reject(cause);
+        }
+      },
+    );
+  });
 
 const declaredNames = (statement: ts.Statement): readonly string[] => {
   if (
@@ -80,5 +119,59 @@ describe("session catalog references", () => {
         access(resolve(repoRoot, `examples/${snapshot}/package.json`)),
       ).resolves.toBeUndefined();
     }
+  });
+
+  it("maps S2 catalog steps one-to-one to assertions that are RED in the starter", async () => {
+    const session = sessions.find(({ slug }) => slug === "02-boundary-and-ids");
+    expect(session?.kind).toBe("exercise");
+    if (session?.kind !== "exercise") return;
+
+    const expected = [
+      {
+        id: "s2-parse-exam-result",
+        goal: "形の違う検査JSONはドメイン型にならないようにする。",
+        targets: ["examples/session-02/src/boundary/examResult.ts"],
+        solution: {
+          path: "examples/session-03/src/boundary/examResult.ts",
+          symbol: "parseExamResult",
+          lines: [7, 16],
+        },
+        exercise: {
+          group: "Step 1: 形の違う検査 JSON はドメイン型にならない",
+          assertion: "petId がない JSON は err になる",
+        },
+      },
+      {
+        id: "s2-protect-contact",
+        goal: "電話番号とメールは既定でログに出ないようにする。",
+        targets: ["examples/session-02/src/boundary/ownerContact.ts"],
+        solution: {
+          path: "examples/session-03/src/boundary/ownerContact.ts",
+          symbol: "OwnerContactSchema",
+          lines: [6, 16],
+        },
+        exercise: {
+          group: "Step 2: 電話番号とメールはログへ出ない",
+          assertion: "JSON と util.inspect のどちらも値をマスクする",
+        },
+      },
+    ] as const;
+
+    expect(session.steps).toEqual(
+      expected.map(({ exercise: _exercise, ...step }) => step),
+    );
+    const failingAssertions = (await runSession02Exercise())
+      .flatMap(({ assertionResults }) => assertionResults)
+      .filter(({ status }) => status === "failed")
+      .map(({ ancestorTitles, title }) => ({ group: ancestorTitles.at(-1), assertion: title }));
+    expect(failingAssertions).toEqual(expected.map(({ exercise }) => exercise));
+  }, 10_000);
+
+  it("keeps the S3 no-effects step scoped to the implementation changed for GREEN", () => {
+    const session = sessions.find(({ slug }) => slug === "03-result-errors");
+    const step = session?.steps.find(({ id }) => id === "s3-no-effects-after-failure");
+    expect(step?.targets).toEqual([
+      "examples/session-03/src/useCase/startExamination.ts",
+    ]);
   });
 });

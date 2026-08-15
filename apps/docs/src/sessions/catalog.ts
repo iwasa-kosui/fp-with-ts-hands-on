@@ -216,29 +216,6 @@ export const sessions = [
           lines: [6, 16],
         },
       },
-      {
-        id: "s2-infer-types",
-        goal: "手書きの型とschemaがずれないようにする。",
-        targets: [
-          "examples/session-02/src/boundary/examResult.ts",
-          "examples/session-02/src/boundary/ownerContact.ts",
-        ],
-        solution: {
-          path: "examples/session-03/src/boundary/examResult.ts",
-          symbol: "ExamResult",
-          lines: [7, 16],
-        },
-      },
-      {
-        id: "s2-distinguish-ids",
-        goal: "検査結果のIDは用途別schemaでparseし、取り違えを止める。",
-        targets: ["examples/session-02/src/boundary/examResult.ts"],
-        solution: {
-          path: "examples/session-03/src/boundary/examResult.ts",
-          symbol: "ExamResultSchema",
-          lines: [7, 12],
-        },
-      },
     ],
     decisions: [
       {
@@ -318,10 +295,7 @@ export const sessions = [
       {
         id: "s3-no-effects-after-failure",
         goal: "失敗したら遷移と保存へ進まないパイプラインにする。",
-        targets: [
-          "examples/session-03/src/useCase/dependencies.ts",
-          "examples/session-03/src/useCase/startExamination.ts",
-        ],
+        targets: ["examples/session-03/src/useCase/startExamination.ts"],
         solution: {
           path: "examples/session-04/src/useCase/startExamination.ts",
           symbol: "startExamination",
