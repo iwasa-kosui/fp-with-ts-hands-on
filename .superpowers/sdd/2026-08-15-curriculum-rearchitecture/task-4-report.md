@@ -24,7 +24,8 @@
 ## solution/reference 契約
 
 - `targets`、`solution.path`、`finalReferences` は repo-root relative に統一した。
-- 全パスの実在、1-based inclusive range、range内の `solution.symbol` を実ソースで検査する。
+- 各 `solution.path` は次 snapshot の `src/**` に限定した。TypeScript ASTで `solution.symbol` に対応するtop-level宣言を探し、1-based inclusive rangeが宣言全体を含むことを検査する。文字列が偶然range内に現れるだけでは通らない。
+- reviewで判明した regression test / harness への3参照を実装宣言へ修正した。S2のID stepは `ExamResultSchema` による用途別IDのparseへ再分割し、S3の失敗後の停止とS4の保存失敗は、それぞれ次snapshotの `startExamination` パイプラインへ対応させた。S4の import-only `EventContext` 参照も `startExamination` 宣言へ修正した。
 - `StepSolution` は実ファイルの指定行だけを `<details><pre><code>` に描画する。開始行0、逆順、範囲外、空sliceは明示エラーにする。
 - `PeerReviewPanel` は「N分・1〜2名」、3問、約束事へのリンクを描画する。S1は `#peer-review-promises`、S2以降は `/sessions/01-state-modeling/#peer-review-promises` を渡せる。
 
@@ -55,6 +56,7 @@ REDを確認した対象:
 - 未実装の `StepSolution` / `PeerReviewPanel` と、そのrendered HTML・エラー契約
 - authored TOCしか持たない旧 `SessionLayout` に対する章定義駆動TOC契約
 - dynamic route wrapperの実在・marker契約
+- review修正では、次snapshotの `src/**` 外を指すsolutionを拒否する参照契約
 
 最終確認:
 

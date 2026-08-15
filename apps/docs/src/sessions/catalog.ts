@@ -202,7 +202,7 @@ export const sessions = [
         targets: ["examples/session-02/src/boundary/examResult.ts"],
         solution: {
           path: "examples/session-03/src/boundary/examResult.ts",
-          symbol: "ExamResultSchema",
+          symbol: "parseExamResult",
           lines: [7, 16],
         },
       },
@@ -231,12 +231,12 @@ export const sessions = [
       },
       {
         id: "s2-distinguish-ids",
-        goal: "異なる種類のIDはコンパイルで取り違えを止める。",
-        targets: ["examples/session-02/src/boundary/boundary.test-types.ts"],
+        goal: "検査結果のIDは用途別schemaでparseし、取り違えを止める。",
+        targets: ["examples/session-02/src/boundary/examResult.ts"],
         solution: {
-          path: "examples/session-03/test/regression/type-fixtures/s2-owner-id-is-not-pet-id.ts",
-          symbol: "acceptPetId",
-          lines: [5, 9],
+          path: "examples/session-03/src/boundary/examResult.ts",
+          symbol: "ExamResultSchema",
+          lines: [7, 12],
         },
       },
     ],
@@ -317,15 +317,15 @@ export const sessions = [
       },
       {
         id: "s3-no-effects-after-failure",
-        goal: "失敗したら遷移も保存も行わないことを固定する。",
+        goal: "失敗したら遷移と保存へ進まないパイプラインにする。",
         targets: [
           "examples/session-03/src/useCase/dependencies.ts",
           "examples/session-03/src/useCase/startExamination.ts",
         ],
         solution: {
-          path: "examples/session-04/test/regression/result-errors.test.ts",
-          symbol: "createDependencies",
-          lines: [79, 107],
+          path: "examples/session-04/src/useCase/startExamination.ts",
+          symbol: "startExamination",
+          lines: [22, 40],
         },
       },
     ],
@@ -381,8 +381,8 @@ export const sessions = [
         ],
         solution: {
           path: "examples/session-05/src/useCase/startExamination.ts",
-          symbol: "EventContext",
-          lines: [20, 41],
+          symbol: "startExamination",
+          lines: [20, 43],
         },
       },
       {
@@ -409,13 +409,16 @@ export const sessions = [
         },
       },
       {
-        id: "s4-no-partial-write",
-        goal: "保存失敗時は状態も記録も残らないことを固定する。",
-        targets: ["examples/session-04/src/useCase/startExamination.ts"],
+        id: "s4-propagate-store-failure",
+        goal: "保存失敗をRepositoryErrorとしてパイプラインに残す。",
+        targets: [
+          "examples/session-04/src/useCase/errors.ts",
+          "examples/session-04/src/useCase/startExamination.ts",
+        ],
         solution: {
-          path: "examples/session-05/test/regression/effects-and-events.test.ts",
-          symbol: "createHarness",
-          lines: [69, 110],
+          path: "examples/session-05/src/useCase/startExamination.ts",
+          symbol: "startExamination",
+          lines: [20, 43],
         },
       },
     ],

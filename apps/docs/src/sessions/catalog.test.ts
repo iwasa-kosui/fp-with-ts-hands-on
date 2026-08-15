@@ -52,12 +52,14 @@ describe("session catalog invariants", () => {
     expect(sessions.reduce((sum, { durationMinutes }) => sum + durationMinutes, 0)).toBe(150);
   });
 
-  it("5. gives commands and modules to exercise sessions only", () => {
+  it("5. gives every exercise-only metadata field to exercise sessions only", () => {
     for (const rawSession of sessions) {
       const session: SessionSummary = rawSession;
-      expect(
-        session.exerciseCommand !== undefined && session.exerciseModule !== undefined,
-      ).toBe(session.kind === "exercise");
+      const isExercise = session.kind === "exercise";
+      expect(session.adv !== undefined).toBe(isExercise);
+      expect(session.peerReview !== undefined).toBe(isExercise);
+      expect(session.exerciseCommand !== undefined).toBe(isExercise);
+      expect(session.exerciseModule !== undefined).toBe(isExercise);
     }
   });
 
