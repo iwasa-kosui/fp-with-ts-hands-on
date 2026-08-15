@@ -37,9 +37,7 @@ export type BookAppointmentInput = Readonly<{
 
 const appointments = new Map<string, LegacyAppointment>();
 
-export const bookAppointment = (
-  input: BookAppointmentInput,
-): LegacyAppointment => {
+export const bookAppointment = (input: BookAppointmentInput): LegacyAppointment => {
   const appointment: LegacyAppointment = { ...input, status: "scheduled" };
   appointments.set(appointment.id, appointment);
   logger.info("appointment booked", appointment);
@@ -53,7 +51,7 @@ export const updateStatus = (
 ): LegacyAppointment => {
   const current = appointments.get(id);
   if (current === undefined) throw new Error(`Appointment not found: ${id}`);
-  const updated: LegacyAppointment = { ...current, ...extra, status: newStatus };
+  const updated = { ...current, ...extra, status: newStatus };
   appointments.set(id, updated);
   logger.info("appointment status updated", updated);
   return updated;

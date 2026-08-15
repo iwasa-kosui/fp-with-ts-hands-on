@@ -1,28 +1,35 @@
-import { expect, it } from "vitest";
+import { inspect } from "node:util";
+import { describe, expect, expectTypeOf, it } from "vitest";
 
-const rawExamResult = {
-  examId: "77777777-7777-4777-8777-777777777777",
-  petId: "22222222-2222-4222-8222-222222222222",
-  collectedAt: "2026-08-30T06:50:00.000Z",
-  needsFollowUp: true,
-  items: ["skin scraping"],
-};
-const rawOwnerContact = {
-  ownerName: "Owner A",
-  ownerEmail: "owner@example.test",
-  ownerPhone: "090-0000-0000",
-};
+import { parseExamResult } from "../src/boundary/examResult.js";
+import { parseOwnerContact, type OwnerContact } from "../src/boundary/ownerContact.js";
+import { compileTypeFixture } from "./compileTypeFixture.js";
+import { clinicFixture } from "../../fixtures/clinic.js";
 
-it("外部検査 payload を検証し、連絡先はログで伏せる", async () => {
-  const [{ ExamResult }, { OwnerContact }] = await Promise.all([
-    import("../src/boundary/exam-result.js"),
-    import("../src/boundary/owner-contact.js"),
-  ]);
-  const exam = ExamResult.safeParse(rawExamResult);
-  const contact = OwnerContact.safeParse(rawOwnerContact);
+const { examId: EXAM_ID, ownerContact: VALID_CONTACT } = clinicFixture;
 
-  expect(exam.success).toBe(true);
-  expect(contact.success).toBe(true);
-  expect(JSON.stringify(contact.success ? contact.data : null)).toContain("[REDACTED]");
-  expect(JSON.stringify(contact.success ? contact.data : null)).not.toContain("owner@example.test");
+describe("Step 1: 形の違う検査 JSON はドメイン型にならない", () => {
+  it("petId がない JSON は err になる", () => {
+    expect(parseExamResult({ examId: EXAM_ID, items: [] }).isErr()).toBe(true);
+  });
+});
+
+describe("Step 2: 電話番号とメールはログへ出ない", () => {
+  it("JSON と util.inspect のどちらも値をマスクする", () => {
+    const contact = parseOwnerContact(VALID_CONTACT)._unsafeUnwrap();
+    expect(JSON.stringify(contact)).not.toContain("090-0000-0000");
+    expect(inspect(contact)).toContain("[REDACTED]");
+  });
+});
+
+describe("Step 3: schema とドメイン型がずれない", () => {
+  it("schema が返す値をそのまま OwnerContact として使える", () => {
+    expectTypeOf(parseOwnerContact(VALID_CONTACT)._unsafeUnwrap()).toMatchTypeOf<OwnerContact>();
+  });
+});
+
+describe("Step 4: 異なる種類の ID はコンパイルで止まる", () => {
+  it("OwnerId を PetId の位置へ渡せない", () => {
+    expect(compileTypeFixture("s2-owner-id-is-not-pet-id.ts")).toEqual([]);
+  });
 });

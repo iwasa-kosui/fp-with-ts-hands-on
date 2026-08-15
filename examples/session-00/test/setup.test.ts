@@ -5,7 +5,7 @@ import {
   resetLegacyStore,
   updateStatus,
   type BookAppointmentInput,
-} from "../src/appointment.js";
+} from "../src/legacy/appointment.js";
 
 const appointmentInput = {
   id: "11111111-1111-4111-8111-111111111111",

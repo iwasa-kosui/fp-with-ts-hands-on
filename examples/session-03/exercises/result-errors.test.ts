@@ -36,8 +36,11 @@ it("成功した診察開始だけを domain event に残す", async () => {
     { createInMemoryAppointmentRepository },
     { createInMemoryDomainEventStore },
   ] = await Promise.all([
+    // @ts-expect-error -- Task 3 で static starter import へ置換する暫定境界
     import("../src/application/start-examination.js"),
+    // @ts-expect-error -- Task 3 で static starter import へ置換する暫定境界
     import("../src/infrastructure/in-memory-appointment-repository.js"),
+    // @ts-expect-error -- Task 3 で static starter import へ置換する暫定境界
     import("../src/infrastructure/in-memory-domain-event-store.js"),
   ]);
   const repository = createInMemoryAppointmentRepository([checkedIn]);
