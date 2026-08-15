@@ -10,7 +10,7 @@ const expectedMeasurements = new Map([
   ["01-state-modeling", { files: 2, lines: 35 }],
   ["02-boundary-and-ids", { files: 2, lines: 24 }],
   ["03-result-errors", { files: 3, lines: 77 }],
-  ["04-effects-and-events", { files: 3, lines: 35 }],
+  ["04-effects-and-events", { files: 3, lines: 72 }],
 ] as const);
 
 describe("exercise diff budgets", () => {

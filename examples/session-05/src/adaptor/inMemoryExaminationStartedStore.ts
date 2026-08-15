@@ -50,7 +50,11 @@ export const createInMemoryExaminationStartedStore = (
           appointments = nextAppointments;
           events = nextEvents;
         })(),
-        (cause) => ({ kind: "RepositoryError", cause }),
+        (cause) => ({
+          kind: "RepositoryFailure",
+          operation: "ExaminationStartedStore.store",
+          cause,
+        }),
       );
     },
   };

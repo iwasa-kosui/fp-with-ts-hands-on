@@ -323,32 +323,32 @@ pipeline は `ok/err` と `andThen` で合成し、予期可能失敗に `throw`
 
 - [ ] **Step 3: S4 の RED を書く**
 
-`session-04/src/useCase/startExamination.ts` は Task 3 Step 2 の同期 pipeline に直接 `Date` / `randomUUID` と `store` + `eventLog` の dual-write を加えた素朴版とする。`dependencies.ts` は分離した 2 write port を持つ。
+`session-04/src/useCase/startExamination.ts` は Task 3 Step 2 の同期 `startExamination` pipeline をそのまま残し、S4 用に別名の `startExaminationWithEffects` を配布する。この弱い効果付き経路だけが `Date` / `randomUUID` と `stateStore` + `eventLog` の dual-write を持つ。`dependencies.ts` は S3 の `Dependencies` を残したうえで、分離した2 write portを持つ `EffectsDependencies` を追加する。`Appointment.startExamination(context)(checkedIn, veterinarianId)` companion は `session-04` のドメインへあらかじめ配布し、`session-05` と同一にする。
 
 exercise は次の 4 `describe` に分ける。
 
 ```ts
 describe("Step 1: 同じ clock と ID generator なら同じイベントになる", () => {
   it("固定 context から同じ eventId と occurredAt を返す", async () => {
-    const result = await startExamination(fixedDependencies)(VALID_INPUT);
+    const result = await startExaminationWithEffects(fixedDependencies)(VALID_INPUT);
     expect(result._unsafeUnwrap()).toMatchObject(FIXED_IN_EXAMINATION);
   });
 });
 describe("Step 2: 状態と監査記録は1回の保存で残る", () => {
   it("store(event) を1回だけ呼ぶ", async () => {
-    await startExamination(recordingDependencies)(VALID_INPUT);
+    await startExaminationWithEffects(recordingDependencies)(VALID_INPUT);
     expect(recordedEvents).toHaveLength(1);
   });
 });
 describe("Step 3: 非同期保存後もイベントが pipeline に残る", () => {
   it("保存成功時は store の void ではなく aggregateState を返す", async () => {
-    const result = await startExamination(recordingDependencies)(VALID_INPUT);
+    const result = await startExaminationWithEffects(recordingDependencies)(VALID_INPUT);
     expect(result._unsafeUnwrap().kind).toBe("InExamination");
   });
 });
 describe("Step 4: 保存失敗時は状態も記録も残らない", () => {
   it("RepositoryError を返し in-memory state を変更しない", async () => {
-    const result = await startExamination(failingDependencies)(VALID_INPUT);
+    const result = await startExaminationWithEffects(failingDependencies)(VALID_INPUT);
     expect(result._unsafeUnwrapErr().kind).toBe("RepositoryError");
     expect(storedStates).toEqual([]);
     expect(recordedEvents).toEqual([]);
@@ -362,20 +362,36 @@ Expected: 決定性、dual-write、戻り値、保存失敗の assertion が意�
 
 - [ ] **Step 4: session-05 に非同期の到達点を実装する**
 
-主要 interface は次とする。
+主要な型と、用途を分けた2 APIは次とする。
 
 ```ts
 type Clock = Readonly<{ now: () => string }>;
 type EventIdGenerator = Readonly<{ generate: () => EventId }>;
 type EventContext = Readonly<{ eventId: EventId; occurredAt: string }>;
 type ExaminationStartedStore = Readonly<{
-  store: (event: ExaminationStarted) => ResultAsync<void, RepositoryError>;
+  store: (event: ExaminationStarted) => ResultAsync<void, RepositoryFailure>;
+}>;
+type EffectsDependencies = Readonly<{
+  resolver: AppointmentResolver;
+  store: ExaminationStartedStore;
+}> & EventContextDependencies;
+type RepositoryFailure = Readonly<{
+  kind: "RepositoryFailure";
+  operation: "ExaminationStartedStore.store";
+  cause: unknown;
+}>;
+type RepositoryError = Readonly<{
+  kind: "RepositoryError";
+  operation: "ExaminationStartedStore.store";
 }>;
 startExamination: (deps: Dependencies) =>
-  (input: StartExaminationInput) => ResultAsync<InExamination, StartExaminationError>;
+  (input: StartExaminationInput) => Result<InExamination, StartExaminationError>;
+startExaminationWithEffects: (deps: EffectsDependencies) =>
+  (input: StartExaminationWithEffectsInput) =>
+    ResultAsync<InExamination, StartExaminationWithEffectsError>;
 ```
 
-`Appointment.startExamination(context)(checkedIn, veterinarianId)` は具体 `ExaminationStarted` を作る純粋な curry 関数にする。use case は `andThen(...).andThen(...).andThrough(store.store).map(event => event.aggregateState)` の 1 pipeline とし、保存は `andThrough` を使う。in-memory adapter だけが `ResultAsync.fromPromise` で例外を `RepositoryError` へ閉じる。
+`Appointment.startExamination(context)(checkedIn, veterinarianId)` は具体 `ExaminationStarted` を作る純粋な curry 関数にする。`startExaminationWithEffects` は `andThen(...).andThen(...).andThrough(storeExaminationStarted(store)).map(event => event.aggregateState)` の1 pipelineとし、保存は `andThrough` を使う。in-memory adapterだけが `ResultAsync.fromPromise` で例外を `cause` 付きの内部 `RepositoryFailure` へ閉じる。use case境界の `mapErr` は必ず新しい、`cause` を持たないplain objectの `RepositoryError` を作り、生の例外とPIIを公開しない。
 
 S4 exercise を `session-05/test/regression/effects-and-events.test.ts` へ持ち越し、S1〜S4 の全回帰テストを `session-05/test/regression/` で成功させる。`session-05` は `exercises/` と `exercise` script を持たない。
 
@@ -482,7 +498,7 @@ session は次の 6 件だけにする。
 final reference 5
 ```
 
-S1〜S4 の `exerciseModule` は順に `src/domain/appointment`、`src/boundary`、`src/useCase`、`src/useCase`。budget は実測値を catalog に書き、上限 5/80 を超えない。`session-05` は `ExampleSnapshot` union に残すが sessions 配列に入れない。
+S1〜S4 の `exerciseModule` は順に `src/domain/appointment`、`src/boundary`、`src/useCase`、`src/useCase`。budget は実測値を catalog に書き、上限 5/80 を超えない。実装後の実測値は S1=2ファイル/35行、S2=2/24、S3=3/77、S4=3/72 である。`session-05` は `ExampleSnapshot` union に残すが sessions 配列に入れない。
 
 starterで実際に `AssertionError` となる参加者stepは S1=4件、S2=2件、S3=3件、S4=4件であり、catalog の `steps.length` をこの実測へ一致させる。開始時点からGREENのexercise assertionはparticipant stepとして数えない。
 
@@ -492,7 +508,14 @@ starter の module と次 snapshot の同一 module を比較し、コメント�
 
 - [ ] **Step 4: StepSolution と PeerReviewPanel を RED→GREEN で実装する**
 
-`StepSolution` は非空の `solutions` の各 path と line range から実ソースを切り出し、1ステップの `<details>` 内へ path を明示して宣言順に描画する。S4 step 1 は `dependencies.ts` の1〜23行と `startExamination.ts` の1〜43行を示し、新規import、Clock / EventIdGenerator / ExaminationStartedStore / Dependencies、EventContext、実装関数までを欠かさない。S4 step 3/4 は `errors.ts` の16〜24行も示し、RepositoryError宣言とStartExaminationError unionを含める。`PeerReviewPanel` は `N分・1〜2名`、3 問、S1 の約束事へのリンクを静的 HTML として描画する。新しい client island や依存を追加しない。
+`StepSolution` は非空の `solutions` の各 path と line range から実ソースを切り出し、1ステップの `<details>` 内へ path を明示して宣言順に描画する。S4は最終pipelineをstep 1から先見せせず、実在するtop-level宣言を次の単位で段階表示する。
+
+- step 1: `EventContextDependencies` と `createEventContext`
+- step 2: `ExaminationStartedStore` と `EffectsDependencies`
+- step 3: `startExaminationWithEffects`
+- step 4: `RepositoryFailure`、`RepositoryError`、`StartExaminationWithEffectsError`、`toRepositoryError`、`storeExaminationStarted`
+
+snippetは参加者が手で適用する段階表示である。別の自動契約では、S4全targetの次snapshot同一相対pathをfull fileとして一時複製したsession-04へoverlayし、typecheck、通常回帰、同じexerciseをすべてGREENにする。`PeerReviewPanel` は `N分・1〜2名`、3 問、S1 の約束事へのリンクを静的 HTML として描画する。新しい client island や依存を追加しない。
 
 - [ ] **Step 5: 動的 route の技術 spike を行う**
 

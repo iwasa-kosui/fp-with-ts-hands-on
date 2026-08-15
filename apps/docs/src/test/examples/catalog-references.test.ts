@@ -171,67 +171,60 @@ describe("session catalog references", () => {
     }
   });
 
-  it("keeps the S4 fallback snippets sufficient for context injection and repository failures", async () => {
+  it("keeps S4 snippets incremental and scoped to exact top-level declarations", async () => {
     const s4 = sessions.find(({ slug }) => slug === "04-effects-and-events");
     expect(s4?.kind).toBe("exercise");
     if (s4?.kind !== "exercise") throw new Error("S4 exercise is missing");
 
-    const injectContext = s4.steps.find(({ id }) => id === "s4-inject-context");
-    expect(injectContext).toBeDefined();
-    if (injectContext === undefined) throw new Error("S4 step 1 is missing");
+    const expectedSymbols: ReadonlyMap<string, readonly string[]> = new Map([
+      ["s4-inject-context", ["EventContextDependencies", "createEventContext"]],
+      ["s4-atomic-store", ["ExaminationStartedStore", "EffectsDependencies"]],
+      ["s4-result-async", ["startExaminationWithEffects"]],
+      [
+        "s4-propagate-store-failure",
+        [
+          "RepositoryFailure",
+          "RepositoryError",
+          "StartExaminationWithEffectsError",
+          "toRepositoryError",
+          "storeExaminationStarted",
+        ],
+      ],
+    ]);
 
-    const dependencies = injectContext.solutions.find(
-      ({ path }) => path === "examples/session-05/src/useCase/dependencies.ts",
-    );
-    const startExamination = injectContext.solutions.find(
-      ({ path }) => path === "examples/session-05/src/useCase/startExamination.ts",
-    );
-    expect(dependencies).toBeDefined();
-    expect(startExamination).toBeDefined();
-    if (dependencies === undefined || startExamination === undefined) {
-      throw new Error("S4 step 1 solution snippets are missing");
-    }
-
-    const dependencySnippet = await readSolutionSlice(dependencies);
-    for (const requiredSource of [
-      'import type { ResultAsync } from "neverthrow";',
-      'import type { Clock } from "../domain/aggregate/clock.js";',
-      'import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";',
-      'import type { RepositoryError } from "./errors.js";',
-      "export type ExaminationStartedStore",
-      "export type Dependencies",
-    ]) {
-      expect(dependencySnippet).toContain(requiredSource);
-    }
-
-    const startSnippet = await readSolutionSlice(startExamination);
-    for (const requiredSource of [
-      'import { okAsync, type ResultAsync } from "neverthrow";',
-      'import type { EventContext } from "../domain/aggregate/eventContext.js";',
-      'import { Appointment } from "../domain/appointment/transitions.js";',
-      'import type { Dependencies } from "./dependencies.js";',
-      "export type StartExaminationInput",
-      "export const startExamination",
-      "satisfies EventContext",
-    ]) {
-      expect(startSnippet).toContain(requiredSource);
-    }
-
-    for (const stepId of ["s4-result-async", "s4-propagate-store-failure"]) {
-      const step = s4.steps.find(({ id }) => id === stepId);
-      expect(step).toBeDefined();
-      if (step === undefined) throw new Error(`${stepId} is missing`);
-      const errors = step.solutions.find(
-        ({ path }) => path === "examples/session-05/src/useCase/errors.ts",
+    for (const step of s4.steps) {
+      expect(step.solutions.map(({ symbol }) => symbol), step.id).toEqual(
+        expectedSymbols.get(step.id),
       );
-      expect(errors, `${stepId}: errors.ts solution`).toBeDefined();
-      if (errors === undefined) continue;
-      const errorsSnippet = await readSolutionSlice(errors);
-      expect(errorsSnippet).toContain("export type RepositoryError");
-      expect(errorsSnippet).toMatch(
-        /export type StartExaminationError =[\s\S]*\| RepositoryError;/,
-      );
+      for (const solution of step.solutions) {
+        const source = await readFile(resolve(repoRoot, solution.path), "utf8");
+        const sourceFile = ts.createSourceFile(
+          solution.path,
+          source,
+          ts.ScriptTarget.Latest,
+          true,
+        );
+        const declaration = sourceFile.statements.find((statement) =>
+          declaredNames(statement).includes(solution.symbol),
+        );
+        expect(declaration, `${solution.path}: ${solution.symbol}`).toBeDefined();
+        if (declaration === undefined) continue;
+        expect(solution.lines).toEqual([
+          sourceFile.getLineAndCharacterOfPosition(
+            declaration.getStart(sourceFile),
+          ).line + 1,
+          sourceFile.getLineAndCharacterOfPosition(declaration.end).line + 1,
+        ]);
+      }
     }
+
+    const stepOne = s4.steps[0];
+    const stepOneSource = (
+      await Promise.all(stepOne.solutions.map(readSolutionSlice))
+    ).join("\n");
+    expect(stepOneSource).not.toContain("startExaminationWithEffects");
+    expect(stepOneSource).not.toContain("andThrough");
+    expect(stepOneSource).not.toContain("ExaminationStartedStore");
   });
 
   it("labels starter assertions outside catalog steps as regression checks", async () => {

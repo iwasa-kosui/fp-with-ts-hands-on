@@ -1,3 +1,5 @@
+import type { EventContext } from "../aggregate/eventContext.js";
+import type { VeterinarianId } from "../ids/veterinarianId.js";
 import type {
   CancellationReason,
   Canceled,
@@ -7,7 +9,7 @@ import type {
   RecordPaymentInput,
   Scheduled,
 } from "./appointment.js";
-import type { VeterinarianId } from "../ids/veterinarianId.js";
+import type { ExaminationStarted } from "./examinationStarted.js";
 
 export const checkIn = (appointment: Scheduled, checkedInAt: string): CheckedIn =>
   ({ ...appointment, kind: "CheckedIn", checkedInAt }) as const satisfies CheckedIn;
@@ -45,3 +47,23 @@ export const cancel = (
     reason,
     canceledAt,
   }) as const satisfies Canceled;
+
+export const Appointment = {
+  startExamination:
+    (context: EventContext) =>
+    (appointment: CheckedIn, veterinarianId: VeterinarianId): ExaminationStarted => {
+      const aggregateState = startExamination(
+        appointment,
+        veterinarianId,
+        context.occurredAt,
+      );
+
+      return {
+        kind: "ExaminationStarted",
+        eventId: context.eventId,
+        occurredAt: context.occurredAt,
+        appointmentId: aggregateState.appointmentId,
+        aggregateState,
+      } as const satisfies ExaminationStarted;
+    },
+} as const;

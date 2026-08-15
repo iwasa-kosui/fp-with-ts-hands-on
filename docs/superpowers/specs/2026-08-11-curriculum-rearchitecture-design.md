@@ -428,7 +428,7 @@ A4 片面1枚の「レビュー観点シート」を各参加者へ配る（印�
 | 14 | `map` / `andThen` / `mapErr` による合成 | 演習 | S3 | S3 のステップ3 |
 | 15 | **`ResultAsync` と `andThrough`** | **演習**（初版: お土産） | S4 | **移動。§2.3 に詳細な判断。** 実アプリとの距離を最も縮める1手 |
 | 16 | `reduce` + `andThen` による traverse | お土産 | final | 現行 session-05 が15分でこれを課して破綻した。180分では入らない（判断点が「全件検証の all-or-nothing」1つに対し、`reduce` の型注釈の難所が大きすぎる） |
-| 17 | エラー型の合成と写像 | **読む**（初版: お土産） | S4 | **移動。** S4 で port が非同期になると `RepositoryError`（`cause: unknown` 付き）が現れる。`mapErr` で `cause` を落として外に出さないことは、PII 事故の続きとして5行の配布コードを読めば伝わる。演習にはしない（判断点が S4 の3枠を超える） |
+| 17 | エラー型の合成と写像 | **演習**（初版: お土産） | S4 | **移動。** adapterの `RepositoryFailure` は診断用 `cause: unknown` を保持し、use case境界の `mapErr` は新しいcauseなし `RepositoryError` を作る。Step 4で公開JSONの生例外・PII非露出まで検証する |
 | 18 | 例外を `Result` に閉じ込める | **読む**（初版: お土産） | S4 | **移動。** 非同期 port を入れると `ResultAsync.fromPromise` が自然に現れる。配布する in-memory port の中に1箇所置き、読ませる |
 | 19 | 1メソッド port | 演習 | S4 | S4 の主題の半分 |
 | 20 | 非決定性の注入（Clock / IdGenerator） | 演習 | S4 | 「テストが日によって落ちる」事故の解 |
@@ -444,13 +444,13 @@ A4 片面1枚の「レビュー観点シート」を各参加者へ配る（印�
 | 30 | union を保つ型レベル変換 | お土産 | final | 初級〜中級には難度が高すぎる |
 | 31 | フェイク port によるユースケーステスト | **演習**（初版: 読む） | S3 / S4 | **移動。** 初版の理由は「書かせる時間はない」。ADV ループの検証フェーズの成果物「検証可能なチェックリスト」（`prd-001.md:190`）を、文章ではなく実行できる形で残す唯一の手段。フェイクは1メソッド port なので3〜6行で書ける |
 
-集計は**演習19、読む4、お土産8**（合計31）である。初版は演習16／読む4／お土産11であった。
+集計は**演習20、読む3、お土産8**（合計31）である。初版は演習16／読む4／お土産11であった。
 
-内訳の検算は次の通りである。演習は #1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 19, 20, 24, 25, 31 の19件。読むは #3, 17, 18, 21 の4件。お土産は #16, 22, 23, 26, 27, 28, 29, 30 の8件。19 + 4 + 8 = 31 ✓
+内訳の検算は次の通りである。演習は #1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 19, 20, 24, 25, 31 の20件。読むは #3, 18, 21 の3件。お土産は #16, 22, 23, 26, 27, 28, 29, 30 の8件。20 + 3 + 8 = 31 ✓
 
 ### 2.3 `ResultAsync`（#15）を演習へ移す判断
 
-**結論は、移すことである。** S4 の第3ステップとして、配布済みの同期 `Result` パイプラインを非同期へ持ち上げる。
+**結論は、移すことである。** S4 の第3ステップとして、配布済みの同期 `Result` パイプラインを維持したまま、別名の効果付き経路を `ResultAsync` で組み立てる。
 
 **価値**が高い。`examples/final` の30ユースケースはすべて `ResultAsync` である。ここを渡らないと「final は別世界」で終わる。お土産の4差分のうち最大の差分がこれであった。
 
@@ -466,7 +466,7 @@ A4 片面1枚の「レビュー観点シート」を各参加者へ配る（印�
 
 **リスク**については、S4 の最終ステップに置いたため、押した場合は講師デモ3分へ切り替えて5分を回収できる（分離可能な設計にしてある）。
 
-**`ResultAsync` を入れても入れないもの**がある。`ResultAsync.fromPromise` による例外の閉じ込め（#18）と、`mapErr` によるエラー写像（#17）は「読む」に留める。判断点3の上限を守るためである。
+**`ResultAsync` を入れても演習targetへ入れないもの**がある。`ResultAsync.fromPromise` による例外の閉じ込め（#18）はsession-05 adapterで読む。一方、`mapErr` による内部失敗から公開エラーへの写像（#17）は、PII境界を構造型だけで隠さないためS4 Step 4で演習・検証する。
 
 ### 2.4 到達点を上げる原資（何を削ったか）
 
@@ -824,9 +824,9 @@ try { ... } catch (error) {
 
 **事故**は2件ある。1件目は**テストが日によって落ちる**というものである。`new Date().toISOString()` と `crypto.randomUUID()` がユースケースの中にあり、期待値を固定できなくなっていた。2件目は**記録のない状態変更**である。保存が「状態を保存」と「記録を追加」の2回に分かれており、間で失敗すると状態だけ変わって記録が残らない予約が生まれた（dual-write）。
 
-**演習モジュール**は `examples/session-04/src/useCase/` である。`startExamination.ts` はユースケース本体であり、S3 の解答（同期 `Result`）に非決定性と dual-write を加えた素朴版で配布して演習対象とする。`dependencies.ts` は `Dependencies` の型であり、素朴版（`store` と `eventLog` の2つ）で配布して演習対象とする。`startExamination.fake.test.ts` は決定性と原子性を固定するテストであり、1本配布して1本を参加者が書く（ステップ4）。
+**演習モジュール**は `examples/session-04/src/useCase/` である。`startExamination.ts` はS3解答の同期 `startExamination` を変更せず残し、S4用の弱い `startExaminationWithEffects` を同居させる。非決定性とdual-writeは後者だけにある。`dependencies.ts` もS3の `Dependencies` を残し、分離した `stateStore` と `eventLog` を持つ `EffectsDependencies` を追加する。参加者はS3の公開APIと回帰を壊さず、S4の効果付き経路だけを改善する。
 
-モジュール外（**配布済みで変更しない**）には、`src/domain/aggregate/{clock,eventIdGenerator,eventContext}.ts`、`src/domain/appointment/examinationStarted.ts`（5フィールドの具体イベント）、`src/adaptor/inMemoryAppointmentStore.ts`（非同期であり `ResultAsync.fromPromise` を1箇所含む。#18 を読む素材）、`src/main.ts`（合成ルート。#21 を読む素材）がある。
+モジュール外（**配布済みで変更しない**）には、`src/domain/aggregate/{clock,eventIdGenerator,eventContext}.ts`、`src/domain/appointment/examinationStarted.ts`（aggregate stateを含む具体イベント）、`src/domain/appointment/transitions.ts` がある。`transitions.ts` の `Appointment.startExamination(context)(checkedIn, veterinarianId)` companionはsession-04とsession-05で同一にし、participant module外の差分を0にする。到達点の `session-05/src/adaptor/inMemoryExaminationStartedStore.ts` は解答側だけのadapterであり、演習targetには含めない。
 
 ```ts
 // examples/session-04/src/useCase/startExamination.ts（配布される素朴版・抜粋）
@@ -844,19 +844,19 @@ try { ... } catch (error) {
 
 なぜ事故るかというと、非決定性がドメイン側にあるためテストが決定的にならず、書き込みが2回に分かれているため片方だけ成功した中間状態が観測できてしまうからである。
 
-**ステップは4件である。** まずステップ1で「テストが日によって落ちない」ようにする。`Dependencies` に `clock` と `eventIdGenerator` を足し、`EventContext` を組んで純粋な `Appointment.startExamination(context)(checkedIn, veterinarianId)` を呼ぶ（推定18行）。次にステップ2で「記録のない状態変更が起きない」ようにする。`Dependencies` の `store` と `eventLog` を1つの `ExaminationStartedStore` に畳み、保存を `store.store(event)` 1回にする（推定12行）。続くステップ3では「保存が非同期でもパイプラインが1本のまま」であるようにする。戻り値を `ResultAsync<InExamination, StartExaminationError>` へ持ち上げ、保存を **`andThrough`** で通す（推定20行）。最後にステップ4で「保存が失敗したら何も残らないことを固定する」。保存が失敗するフェイク store と固定 `clock` を渡すテストを1本書く（推定15行）。
+**ステップは4件である。** まずステップ1で「テストが日によって落ちない」ようにする。`EventContextDependencies` と `createEventContext` を追加し、配布済みの純粋な `Appointment.startExamination(context)(checkedIn, veterinarianId)` へ固定contextを渡す。次にステップ2で「記録のない状態変更が起きない」ようにする。`ExaminationStartedStore` と `EffectsDependencies` を追加し、書き込み口を `store(event)` 1回へ畳む。続くステップ3では、S3の同期 `startExamination` を変えずに、`ResultAsync` と **`andThrough`** を使う `startExaminationWithEffects` を完成させる。最後にステップ4で、adapterの内部 `RepositoryFailure` をuse case境界でcauseなしの公開 `RepositoryError` へ写像する。失敗するfake storeで保存0回と公開JSONのPII・生例外非露出を固定する。
 
-**差分予算**は3ファイル・65行である（上限は5ファイル・80行）。ステップの推定行の合計は 18 + 12 + 20 + 15 = 65行であり、予算と一致する。5本中で最も厚い。
+**差分予算**の実測は3ファイル・72実効行である（上限は5ファイル・80行）。S3同期APIとS4効果付きAPIを同じ3ファイルで分離し、companionを事前配布することで上限内に収める。
 
 **判断点は3件である。** 判断点1は「ドメイン関数は決定的である」を守る。型では、非決定性を1メソッド port（`Clock` / `EventIdGenerator`）として引数に出すことで表す。型で守れない残りは、port を注入し忘れて直接 `Date` を呼ぶ経路であり、これは型では塞げないため lint やレビュー観点になる。判断点2は「状態と記録は同時に残るか、どちらも残らない」を守る。型では、書き込み口を `store(event)` の1つに絞り、`event.aggregateState` を同梱することで表す。型で守れない残りは、in-memory では「同時」を実装で保証しているだけであることであり、本当の原子性は transaction が要る（final の #25 / #26 へ繋がる）。判断点3は「保存は値を汚さずに通る」を守る。型では `andThrough`（`andThen` ではない）で表す。型で守れない残りは、`andThrough` を `andThen` に変えても型が通る場合がある（戻り値型が一致すると気づけない）ことであり、**レビュー観点として明示する**。
 
-**到達する型とパターン**は、1メソッド port、非決定性の注入、`(context) => (state) => Event` のカリー化、最小の型付きドメインイベント、dual-write の解消、**`ResultAsync` と `andThrough`** である。合成ルート（#21）、`ResultAsync.fromPromise` による例外の閉じ込め（#18）、`mapErr` によるエラー写像（#17）は配布コード中で読む。
+**到達する型とパターン**は、1メソッド port、非決定性の注入、`(context) => (state) => Event` のカリー化、最小の型付きドメインイベント、dual-write の解消、**`ResultAsync` と `andThrough`** である。`ResultAsync.fromPromise` による例外の閉じ込めはadapterで、`mapErr` による内部失敗から公開エラーへの安全な写像はuse caseで実装し、テストで確認する。
 
 **`examples/final` の対応ファイル**は `src/domain/aggregate/clock.ts`、`src/domain/aggregate/eventIdGenerator.ts`、`src/domain/aggregate/eventContext.ts`、`src/domain/aggregate/aggregateStore.ts`、`src/domain/appointment/appointmentStores.ts`、`src/useCase/startExaminationUseCase.ts`（**当日の成果物とほぼ同じ形になる**）、`src/app.ts` である。
 
-**GREEN の判定**は `pnpm exercise:04` が緑になることである。判定条件は、(a) 偽 `clock` と偽 `eventIdGenerator` を渡すと結果が完全に決定的であること、(b) 保存を失敗させるフェイクを渡すと状態も記録も残らないこと、(c) 保存成功時の戻り値が `store` の戻り値ではなく `event.aggregateState` であること（`andThrough` を `andThen` にすると落ちる）である。
+**GREEN の判定**は `pnpm exercise:04` が緑になることである。判定条件は、(a) 偽 `clock` と偽 `eventIdGenerator` を渡すと結果が完全に決定的であること、(b) 保存を失敗させるフェイクを渡すと状態も記録も残らないこと、(c) 保存成功時の戻り値が `store` の戻り値ではなく `event.aggregateState` であること（`andThrough` を `andThen` にすると落ちる）、(d) 公開エラーが `cause`、生の `Error`、飼い主名・メールアドレス・電話番号を含まないことである。S3同期 `startExamination` の回帰も同時にGREENでなければならない。
 
-**エージェント非保持者のフォールバック**として、ステップ1から3の解答宣言を `examples/session-05/src/useCase/` から切り出す。ステップ3（`ResultAsync` 化）は**行数は少ないが読み替えが多い**ため、`<details>` に「変更前 → 変更後」の並置を置く（このセッションだけ提示形式を変える）。
+**エージェント非保持者のフォールバック**として、step 1は `EventContextDependencies` / `createEventContext`、step 2は `ExaminationStartedStore` / `EffectsDependencies`、step 3は `startExaminationWithEffects`、step 4は内部・公開エラー型 / `toRepositoryError` / `storeExaminationStarted` のtop-level宣言を `examples/session-05/src/useCase/` から正確に切り出す。snippetは人が段階適用するための表示であり、実行可能性の自動契約は別に持つ。自動契約は全S4 targetの次snapshot同一相対pathをfull fileで一時複製したsession-04へoverlayし、typecheck・通常回帰・同じexerciseをすべてGREENにする。人が15分で適用できるかだけは現地リハーサルで確認する。
 
 **押した場合の切り替え**として、ステップ3を講師デモ3分に切り替え、5分を相互レビューと Final ツアーへ返す。**ステップ3は分離可能に設計してある。** ステップ2までで `pnpm exercise:04` の基本ケースは緑になり、非同期ケースだけが赤で残る形にテストを分割する。**第4版で切り替えの順序を明示する。** 削る順は (1) ステップ3を講師デモ化する、(2) 相互レビューの2人目の枠2分を落として6分版にする、(3) Final ツアーを4分に詰める、である。**相互レビューそのものは最後まで落とさない。** 4回の反復が習慣化の条件であり、最終回を落とすと反復が3回になるうえ、レビュー観点シートの4行目が空のままになる（§1.5）。
 
@@ -1116,7 +1116,7 @@ export type ExampleSnapshot =
 8. `incident` と `decisions[].{invariant,byType,notByType}` が空文字でない。
 9. `exerciseModule.fileBudget <= 5` かつ `exerciseModule.lineBudget <= 80` である。
 10. `steps[].targets` の全パスが `exerciseModule.dir` 配下である。
-11. `steps[].solutions[].path` / `targets[]` / `finalReferences[]` が実ファイルとして存在し、各 `solution.symbol` が `solution.path` の `solution.lines` 範囲内に現れる。`solutions` は非空であり、各 `targets[]` のsnapshot-relative pathには次snapshotの同一相対pathを持つ `solution` が最低1件対応する。S4 step 1の解答範囲は必要な新規importと宣言を含み、S4 step 3/4は `errors.ts` のRepositoryErrorを含むStartExaminationError unionを提示する。
+11. `steps[].solutions[].path` / `targets[]` / `finalReferences[]` が実ファイルとして存在し、各 `solution.symbol` が `solution.path` の `solution.lines` 範囲内に現れる。`solutions` は非空であり、各 `targets[]` のsnapshot-relative pathには次snapshotの同一相対pathを持つ `solution` が最低1件対応する。S4の各solution rangeは実在するtop-level宣言と完全一致する。step 1はcontext依存と生成、step 2はstore/effects依存、step 3は効果付きpipeline、step 4は内部失敗・公開エラー・安全な写像だけを段階提示し、step 1から最終pipeline全体を先見せしない。
 12. `snapshot` に対応する `examples/<snapshot>/package.json` が存在する。
 13. （§5.4）実際の差分が `fileBudget` / `lineBudget` に収まる。
 14. **（第4版）** `kind === "exercise"` であることと `peerReview !== undefined` であることが同値である。
@@ -1143,7 +1143,7 @@ export type ExampleSnapshot =
 - `src/code-explorer/session-workspaces.ts` は、新 slug に合わせて定義し直す。ビルド時の3不変条件検査（slug 存在・initialFile ∈ visibleFiles・visibleFiles ⊆ projectFiles）は維持し、**`steps[].targets ⊆ visibleFiles` を4つ目として追加する**（第2版。欠陥 #14 の恒久対策）。
 - `scripts/verify-static-build.mjs` は、必須 HTML リストのハードコードをやめて catalog から導出する。「余分な HTML の禁止」検査は維持する。
 - `src/layouts/SessionLayout.astro` は、章定義から TOC を自動生成し、`kind` で章構成を分岐する。TOC を desktop / mobile の2箇所に描画する現行方式は維持する。
-- **（新規）`src/components/StepSolution.astro`** は、非空の `steps[].solutions` を受け取り、次スナップショットの実ソースから各行範囲を切り出し、path を明示して1つの `<details>` 内へ宣言順に表示する。各targetには同一相対pathの解答を対応させる。S4 step 1では `dependencies.ts` 1〜23行と `startExamination.ts` 1〜43行を提示し、新規importと必要宣言をstarter側にあるものとして省略しない。S4 step 3/4では `errors.ts` 16〜24行を加え、RepositoryErrorをStartExaminationErrorへ含める差分を提示する。エージェント非保持者向けフォールバックの実体である（第2版）。
+- **（新規）`src/components/StepSolution.astro`** は、非空の `steps[].solutions` を受け取り、次スナップショットの実ソースから各行範囲を切り出し、path を明示して1つの `<details>` 内へ宣言順に表示する。各targetには同一相対pathの解答を対応させる。S4はstep 1に `EventContextDependencies` / `createEventContext`、step 2に `ExaminationStartedStore` / `EffectsDependencies`、step 3に `startExaminationWithEffects`、step 4に `RepositoryFailure` / `RepositoryError` / `StartExaminationWithEffectsError` / `toRepositoryError` / `storeExaminationStarted` を、それぞれ実top-level宣言と完全一致する範囲で提示する。これは人が段階適用するためのフォールバックであり、全targetのfull-file overlayを実行する自動適用契約とは役割を分ける。
 - **（新規・第4版）`src/components/PeerReviewPanel.astro`** は、`peerReview` を受け取り、`#review` 章に「班内相互レビュー（N分・1〜2名）」の小節と3つの問いを描画する。**新しい島（island）は要らない静的コンポーネント**であり、`CommandBlock` と同程度の規模である。約束事5点は S1 のページに本文として置き、S2 以降はこのコンポーネントから S1 の該当 id へリンクする。
 
 #### 捨てる
@@ -1164,7 +1164,7 @@ export type ExampleSnapshot =
 1. `src/sessions/catalog.test.ts` は §6.3 の不変条件1から12と**14から16（第4版で追加した `peerReview` の3件）**を検証する。レンダリングしない純ロジックであり、文言依存はない。
 2. `src/test/pages/session-structure.test.ts`（全セッションをパラメタライズドで回す）は、章 id の並びが `kind` ごとの規定骨格と一致すること、TOC リンクが章数×2 で href が一意であること、各 href に対応する `article h2#id` がちょうど1つあること、`h1` が catalog の `title` と一致することを検証する。文言依存は catalog 由来のみである。
 3. `src/test/pages/session-exercise.test.ts`（`kind === "exercise"` のみ）は、red と green の `CommandBlock` が `exerciseCommand` と一致して両方あること、**`exerciseModule.dir` が本文に現れること**、**`steps` の4件すべての `goal` が本文に現れ `<details>` が4つあること**、**`decisions` の `invariant` と `notByType` が本文に現れること**、`finalReferences` の各パスが本文に現れること、**（第4版）`peerReview.questions` の3件がすべて `#review` 章の本文に現れること**を検証する。文言依存は catalog 由来のみである。**問いをページから消せない**ようにするための追加である。
-4. `src/test/examples/catalog-references.test.ts` は、`steps[].targets` / `steps[].solutions[].path` / `finalReferences[]` が実ファイルであり、各 `solution.symbol` が該当行範囲に含まれること、各targetに次snapshotの同一相対pathのsolutionがあることを検証する。S4は必要なimport・port宣言・EventContext・RepositoryError unionが提示範囲に入ることも実ソースで検証する。文言依存はない（実ソース照合である）。
+4. `src/test/examples/catalog-references.test.ts` は、`steps[].targets` / `steps[].solutions[].path` / `finalReferences[]` が実ファイルであり、各 `solution.symbol` のrangeが実top-level宣言と完全一致すること、各targetに次snapshotの同一相対pathのsolutionがあることを検証する。S4は4 stepの宣言集合を固定し、step 1が `startExaminationWithEffects` やstore/pipeline全体を先見せしないことも実ソースで検証する。`s4-fallback-overlay.test.ts` は全S4 targetの次snapshot同一相対pathをfull fileで一時複製へoverlayし、typecheck・通常回帰・同じexerciseを実行する。文言依存はない（実ソース照合である）。
 5. **`src/test/examples/exercise-budget.test.ts`（新設）** は §5.4 の差分予算を検証する。文言依存はない（実ソース照合である）。
 6. `src/code-explorer/session-workspaces.test.ts`（既存を更新）は、全 slug の snapshot 対応、visibleFiles の実在と重複なし、`steps[].targets ⊆ visibleFiles`、**次スナップショットの解答ファイルが projectFiles に含まれないこと**を検証する。文言依存はない。
 7. `src/code-explorer/code-guides/*.test.ts`（既存の `onboarding-guides.test.ts` を一般化する）は、各ガイドの強調行範囲を実ソースから切り出し、期待するコード断片を含むことを検証する。文言依存は教材ソース由来である。
@@ -1534,11 +1534,11 @@ export type ExampleSnapshot =
 
 ### 10.4 本設計で確認していないこと（推測を含む箇所）
 
-- **差分予算の 80行 / 5ファイル、および各セッションの推定差分行数（S1 50 / S2 52 / S3 55 / S4 65）は実装前の見積もりであり、実測していない。** §5.4 のテストを P1 の最初に通し、実測値で catalog の予算値を確定する。
+- **差分予算は自動実測済みである。** starter と次snapshotの同一moduleを比較し、空行・コメントだけの行を除いた結果は S1=2ファイル/35行、S2=2/24、S3=3/77、S4=3/72 で、すべて絶対上限5ファイル/80行以内である。人がこの差分を時間内に適用できるかは未確認である。
 - **演習14〜17分という時間見積もりは実施実績のない推定値である。** 現行教材の実測（exercise:01 で 114 行を30分・完走せず）からの外挿であり、リハーサル（P4）での計測が必須である。**特にエージェントなし条件は一度も検証していない。**
 - **`ResultAsync` 化ステップの所要時間（推定5〜7分）は最も不確かである。** neverthrow の `andThen` が同期・非同期の両方を受けるため差分が小さいという性質に依存しており、実際に書いて確かめていない。
 - `import.meta.glob` による `.astro` の eager import と動的コンポーネント描画（§6.1）は、Astro 4 のドキュメント上は可能と読めるが**本設計では実機検証していない**。§10.3 の論点2 の技術検証項目とする。
-- **ステップ解答を次スナップショットの実ソースから行範囲で切り出す方式（§1.4 / §6.4）は、`StepSolution.astro` として実装し、実ソース照合で検証する。** 行範囲が実装の変更でずれる問題は各 `solutions[].symbol` の存在検査で検出する。さらに各targetと次snapshotの同一相対pathを対応させ、S4では新規import・必要宣言・RepositoryError unionの具体断片も検証する。複数宣言が必要なステップは非空配列へ複数の参照を持ち、path を明示して順に表示する。
+- **ステップ解答の段階表示とfull-file適用は自動検証済みである。** `StepSolution.astro` は次snapshotの実top-level宣言と完全一致するrangeをpath付きで順に表示する。各targetは次snapshotの同一相対pathへ対応し、S4 step 1は最終pipelineを先見せしない。別のoverlay testは全targetのfull fileを一時複製へ適用し、typecheck・通常回帰・exerciseのGREENを確認する。未確認なのは人が時間内に手で適用できるかだけである。
 - 会場のネットワーク帯域・参加人数・貸与端末の有無は、リポジトリ内の全文書に記述がなく未確認である。§10.1 の緩和策は「事前 install 済み」を前提にしている。
 - **（第4版）会場の映像設備は未確認である。** 班ごとの外部ディスプレイ（24インチ程度、HDMI 入力）が使えるか、台数が班数を満たすか、USB-C 変換アダプタと電源の口数が足りるかは、リポジトリ内の全文書に記述がない。**§1.6 の第一案はこの設備を前提にしている。** 確認できないまま当日を迎えると第二案（ラップトップを島の中央へ）になり、5人が同時に読める行数が減るため、TA はピックアップ対象を1ファイル・20行以内に絞る必要がある。**P3 の最初に会場へ確認する**（§10.3 の論点12）。班数は参加人数に依存し、参加人数も未確認である。
 - **（第4版）相互レビューの7分版・8分版の進行は一度も実測していない。** 0:00–0:30（差分を映す）、2:00–4:00（問い1・2を回す）などの各枠の所要は、5人班・初対面・オフラインという条件での推定である。**特に「問い1に対して2名を指名して2分」は楽観的である可能性が高い。** リハーサル（P4）で実測する。回らない場合の退避は2人目の枠2分を落とすこと（§1.6）だが、**それを採ると相互レビューの本命である「判断の割れの対比」が失われる**ので、先に他の枠（0:00–1:00 の映す・読み上げる枠）を詰める。

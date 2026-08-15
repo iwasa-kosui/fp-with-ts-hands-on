@@ -123,9 +123,11 @@ describe("session catalog invariants", () => {
     expect(Reflect.get(injectContext, "solutions")).toEqual([
       expect.objectContaining({
         path: "examples/session-05/src/useCase/dependencies.ts",
+        symbol: "EventContextDependencies",
       }),
       expect.objectContaining({
         path: "examples/session-05/src/useCase/startExamination.ts",
+        symbol: "createEventContext",
       }),
     ]);
   });

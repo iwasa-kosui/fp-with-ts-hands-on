@@ -97,7 +97,15 @@ const createHarness = (failStore = false) => {
         store: (event: ExaminationStarted) => {
           storeCalls += 1;
           if (failStore) {
-            return errAsync({ kind: "RepositoryError" as const, cause: "write failed" });
+            return errAsync({
+              kind: "RepositoryFailure",
+              operation: "ExaminationStartedStore.store",
+              cause: "write failed",
+            } as const satisfies Readonly<{
+              kind: "RepositoryFailure";
+              operation: "ExaminationStartedStore.store";
+              cause: unknown;
+            }>);
           }
           storedStates.push(event.aggregateState);
           recordedEvents.push(event);

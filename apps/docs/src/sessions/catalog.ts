@@ -380,12 +380,12 @@ export const sessions = [
     exerciseModule: {
       dir: "examples/session-04/src/useCase",
       fileBudget: 3,
-      lineBudget: 35,
+      lineBudget: 72,
     },
     steps: [
       {
         id: "s4-inject-context",
-        goal: "同じclockとID generatorなら同じイベントを作る。",
+        goal: "ClockとID generatorからEventContextを1回生成する。",
         targets: [
           "examples/session-04/src/useCase/dependencies.ts",
           "examples/session-04/src/useCase/startExamination.ts",
@@ -393,13 +393,13 @@ export const sessions = [
         solutions: [
           {
             path: "examples/session-05/src/useCase/dependencies.ts",
-            symbol: "Dependencies",
-            lines: [1, 23],
+            symbol: "EventContextDependencies",
+            lines: [31, 34],
           },
           {
             path: "examples/session-05/src/useCase/startExamination.ts",
-            symbol: "startExamination",
-            lines: [1, 43],
+            symbol: "createEventContext",
+            lines: [55, 60],
           },
         ],
       },
@@ -407,35 +407,32 @@ export const sessions = [
         id: "s4-atomic-store",
         goal: "状態と監査記録を1回の保存で残す。",
         targets: ["examples/session-04/src/useCase/dependencies.ts"],
-        solutions: [{
-          path: "examples/session-05/src/useCase/dependencies.ts",
-          symbol: "ExaminationStartedStore",
-          lines: [10, 23],
-        }],
+        solutions: [
+          {
+            path: "examples/session-05/src/useCase/dependencies.ts",
+            symbol: "ExaminationStartedStore",
+            lines: [36, 38],
+          },
+          {
+            path: "examples/session-05/src/useCase/dependencies.ts",
+            symbol: "EffectsDependencies",
+            lines: [40, 43],
+          },
+        ],
       },
       {
         id: "s4-result-async",
         goal: "非同期保存後もイベントをパイプラインに残す。",
-        targets: [
-          "examples/session-04/src/useCase/errors.ts",
-          "examples/session-04/src/useCase/startExamination.ts",
-        ],
-        solutions: [
-          {
-            path: "examples/session-05/src/useCase/errors.ts",
-            symbol: "StartExaminationError",
-            lines: [16, 24],
-          },
-          {
-            path: "examples/session-05/src/useCase/startExamination.ts",
-            symbol: "startExamination",
-            lines: [20, 43],
-          },
-        ],
+        targets: ["examples/session-04/src/useCase/startExamination.ts"],
+        solutions: [{
+          path: "examples/session-05/src/useCase/startExamination.ts",
+          symbol: "startExaminationWithEffects",
+          lines: [67, 86],
+        }],
       },
       {
         id: "s4-propagate-store-failure",
-        goal: "保存失敗をRepositoryErrorとしてパイプラインに残す。",
+        goal: "内部causeを公開エラーから除いて保存失敗を返す。",
         targets: [
           "examples/session-04/src/useCase/errors.ts",
           "examples/session-04/src/useCase/startExamination.ts",
@@ -443,13 +440,28 @@ export const sessions = [
         solutions: [
           {
             path: "examples/session-05/src/useCase/errors.ts",
-            symbol: "StartExaminationError",
-            lines: [16, 24],
+            symbol: "RepositoryFailure",
+            lines: [16, 20],
+          },
+          {
+            path: "examples/session-05/src/useCase/errors.ts",
+            symbol: "RepositoryError",
+            lines: [22, 25],
+          },
+          {
+            path: "examples/session-05/src/useCase/errors.ts",
+            symbol: "StartExaminationWithEffectsError",
+            lines: [28, 28],
+          },
+          {
+            path: "examples/session-05/src/useCase/errors.ts",
+            symbol: "toRepositoryError",
+            lines: [30, 35],
           },
           {
             path: "examples/session-05/src/useCase/startExamination.ts",
-            symbol: "startExamination",
-            lines: [20, 43],
+            symbol: "storeExaminationStarted",
+            lines: [62, 65],
           },
         ],
       },

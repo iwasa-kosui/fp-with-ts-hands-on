@@ -13,15 +13,26 @@ export type InvalidAppointmentState = Readonly<{
   actual: Appointment["kind"];
 }>;
 
-export type RepositoryError = Readonly<{
-  kind: "RepositoryError";
+export type RepositoryFailure = Readonly<{
+  kind: "RepositoryFailure";
+  operation: "ExaminationStartedStore.store";
   cause: unknown;
 }>;
 
-export type StartExaminationError =
-  | AppointmentNotFound
-  | InvalidAppointmentState
-  | RepositoryError;
+export type RepositoryError = Readonly<{
+  kind: "RepositoryError";
+  operation: "ExaminationStartedStore.store";
+}>;
+
+export type StartExaminationError = AppointmentNotFound | InvalidAppointmentState;
+export type StartExaminationWithEffectsError = StartExaminationError | RepositoryError;
+
+export const toRepositoryError = (
+  failure: RepositoryFailure,
+): RepositoryError => ({
+  kind: "RepositoryError",
+  operation: failure.operation,
+});
 
 export const ensureAppointmentFound = (
   appointment: Appointment | undefined,
