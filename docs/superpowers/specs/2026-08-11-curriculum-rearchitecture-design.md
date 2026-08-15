@@ -1033,7 +1033,7 @@ export type ExerciseStep = Readonly<{
   id: string;                     // "s1-narrow-argument"
   goal: string;                   // 業務の言葉で1文
   targets: readonly string[];     // 触るファイル（すべて module.dir 配下）
-  solutions: readonly [SolutionReference, ...SolutionReference[]];
+  solutions: readonly [SolutionReference, ...SolutionReference[]]; // targetsごとに次snapshotの同一相対pathを1件以上含む
 }>;
 
 /** 参加者が下す設計判断。1演習3件まで。PRD-04 / PRD-05 に対応。 */
@@ -1116,7 +1116,7 @@ export type ExampleSnapshot =
 8. `incident` と `decisions[].{invariant,byType,notByType}` が空文字でない。
 9. `exerciseModule.fileBudget <= 5` かつ `exerciseModule.lineBudget <= 80` である。
 10. `steps[].targets` の全パスが `exerciseModule.dir` 配下である。
-11. `steps[].solutions[].path` / `targets[]` / `finalReferences[]` が実ファイルとして存在し、各 `solution.symbol` が `solution.path` の `solution.lines` 範囲内に現れる。`solutions` は非空である。
+11. `steps[].solutions[].path` / `targets[]` / `finalReferences[]` が実ファイルとして存在し、各 `solution.symbol` が `solution.path` の `solution.lines` 範囲内に現れる。`solutions` は非空であり、各 `targets[]` のsnapshot-relative pathには次snapshotの同一相対pathを持つ `solution` が最低1件対応する。S4 step 1の解答範囲は必要な新規importと宣言を含み、S4 step 3/4は `errors.ts` のRepositoryErrorを含むStartExaminationError unionを提示する。
 12. `snapshot` に対応する `examples/<snapshot>/package.json` が存在する。
 13. （§5.4）実際の差分が `fileBudget` / `lineBudget` に収まる。
 14. **（第4版）** `kind === "exercise"` であることと `peerReview !== undefined` であることが同値である。
@@ -1143,7 +1143,7 @@ export type ExampleSnapshot =
 - `src/code-explorer/session-workspaces.ts` は、新 slug に合わせて定義し直す。ビルド時の3不変条件検査（slug 存在・initialFile ∈ visibleFiles・visibleFiles ⊆ projectFiles）は維持し、**`steps[].targets ⊆ visibleFiles` を4つ目として追加する**（第2版。欠陥 #14 の恒久対策）。
 - `scripts/verify-static-build.mjs` は、必須 HTML リストのハードコードをやめて catalog から導出する。「余分な HTML の禁止」検査は維持する。
 - `src/layouts/SessionLayout.astro` は、章定義から TOC を自動生成し、`kind` で章構成を分岐する。TOC を desktop / mobile の2箇所に描画する現行方式は維持する。
-- **（新規）`src/components/StepSolution.astro`** は、非空の `steps[].solutions` を受け取り、次スナップショットの実ソースから各行範囲を切り出し、path を明示して1つの `<details>` 内へ宣言順に表示する。エージェント非保持者向けフォールバックの実体である（第2版）。
+- **（新規）`src/components/StepSolution.astro`** は、非空の `steps[].solutions` を受け取り、次スナップショットの実ソースから各行範囲を切り出し、path を明示して1つの `<details>` 内へ宣言順に表示する。各targetには同一相対pathの解答を対応させる。S4 step 1では `dependencies.ts` 1〜23行と `startExamination.ts` 1〜43行を提示し、新規importと必要宣言をstarter側にあるものとして省略しない。S4 step 3/4では `errors.ts` 16〜24行を加え、RepositoryErrorをStartExaminationErrorへ含める差分を提示する。エージェント非保持者向けフォールバックの実体である（第2版）。
 - **（新規・第4版）`src/components/PeerReviewPanel.astro`** は、`peerReview` を受け取り、`#review` 章に「班内相互レビュー（N分・1〜2名）」の小節と3つの問いを描画する。**新しい島（island）は要らない静的コンポーネント**であり、`CommandBlock` と同程度の規模である。約束事5点は S1 のページに本文として置き、S2 以降はこのコンポーネントから S1 の該当 id へリンクする。
 
 #### 捨てる
@@ -1164,7 +1164,7 @@ export type ExampleSnapshot =
 1. `src/sessions/catalog.test.ts` は §6.3 の不変条件1から12と**14から16（第4版で追加した `peerReview` の3件）**を検証する。レンダリングしない純ロジックであり、文言依存はない。
 2. `src/test/pages/session-structure.test.ts`（全セッションをパラメタライズドで回す）は、章 id の並びが `kind` ごとの規定骨格と一致すること、TOC リンクが章数×2 で href が一意であること、各 href に対応する `article h2#id` がちょうど1つあること、`h1` が catalog の `title` と一致することを検証する。文言依存は catalog 由来のみである。
 3. `src/test/pages/session-exercise.test.ts`（`kind === "exercise"` のみ）は、red と green の `CommandBlock` が `exerciseCommand` と一致して両方あること、**`exerciseModule.dir` が本文に現れること**、**`steps` の4件すべての `goal` が本文に現れ `<details>` が4つあること**、**`decisions` の `invariant` と `notByType` が本文に現れること**、`finalReferences` の各パスが本文に現れること、**（第4版）`peerReview.questions` の3件がすべて `#review` 章の本文に現れること**を検証する。文言依存は catalog 由来のみである。**問いをページから消せない**ようにするための追加である。
-4. `src/test/examples/catalog-references.test.ts` は、`steps[].targets` / `steps[].solutions[].path` / `finalReferences[]` が実ファイルであり、各 `solution.symbol` が該当行範囲に含まれることを検証する。文言依存はない（実ソース照合である）。
+4. `src/test/examples/catalog-references.test.ts` は、`steps[].targets` / `steps[].solutions[].path` / `finalReferences[]` が実ファイルであり、各 `solution.symbol` が該当行範囲に含まれること、各targetに次snapshotの同一相対pathのsolutionがあることを検証する。S4は必要なimport・port宣言・EventContext・RepositoryError unionが提示範囲に入ることも実ソースで検証する。文言依存はない（実ソース照合である）。
 5. **`src/test/examples/exercise-budget.test.ts`（新設）** は §5.4 の差分予算を検証する。文言依存はない（実ソース照合である）。
 6. `src/code-explorer/session-workspaces.test.ts`（既存を更新）は、全 slug の snapshot 対応、visibleFiles の実在と重複なし、`steps[].targets ⊆ visibleFiles`、**次スナップショットの解答ファイルが projectFiles に含まれないこと**を検証する。文言依存はない。
 7. `src/code-explorer/code-guides/*.test.ts`（既存の `onboarding-guides.test.ts` を一般化する）は、各ガイドの強調行範囲を実ソースから切り出し、期待するコード断片を含むことを検証する。文言依存は教材ソース由来である。
@@ -1536,7 +1536,7 @@ export type ExampleSnapshot =
 - **演習14〜17分という時間見積もりは実施実績のない推定値である。** 現行教材の実測（exercise:01 で 114 行を30分・完走せず）からの外挿であり、リハーサル（P4）での計測が必須である。**特にエージェントなし条件は一度も検証していない。**
 - **`ResultAsync` 化ステップの所要時間（推定5〜7分）は最も不確かである。** neverthrow の `andThen` が同期・非同期の両方を受けるため差分が小さいという性質に依存しており、実際に書いて確かめていない。
 - `import.meta.glob` による `.astro` の eager import と動的コンポーネント描画（§6.1）は、Astro 4 のドキュメント上は可能と読めるが**本設計では実機検証していない**。§10.3 の論点2 の技術検証項目とする。
-- **ステップ解答を次スナップショットの実ソースから行範囲で切り出す方式（§1.4 / §6.4）は、`StepSolution.astro` として実装し、実ソース照合で検証する。** 行範囲が実装の変更でずれる問題は各 `solutions[].symbol` の存在検査で検出する。複数宣言が必要なステップは非空配列へ複数の参照を持ち、path を明示して順に表示する。
+- **ステップ解答を次スナップショットの実ソースから行範囲で切り出す方式（§1.4 / §6.4）は、`StepSolution.astro` として実装し、実ソース照合で検証する。** 行範囲が実装の変更でずれる問題は各 `solutions[].symbol` の存在検査で検出する。さらに各targetと次snapshotの同一相対pathを対応させ、S4では新規import・必要宣言・RepositoryError unionの具体断片も検証する。複数宣言が必要なステップは非空配列へ複数の参照を持ち、path を明示して順に表示する。
 - 会場のネットワーク帯域・参加人数・貸与端末の有無は、リポジトリ内の全文書に記述がなく未確認である。§10.1 の緩和策は「事前 install 済み」を前提にしている。
 - **（第4版）会場の映像設備は未確認である。** 班ごとの外部ディスプレイ（24インチ程度、HDMI 入力）が使えるか、台数が班数を満たすか、USB-C 変換アダプタと電源の口数が足りるかは、リポジトリ内の全文書に記述がない。**§1.6 の第一案はこの設備を前提にしている。** 確認できないまま当日を迎えると第二案（ラップトップを島の中央へ）になり、5人が同時に読める行数が減るため、TA はピックアップ対象を1ファイル・20行以内に絞る必要がある。**P3 の最初に会場へ確認する**（§10.3 の論点12）。班数は参加人数に依存し、参加人数も未確認である。
 - **（第4版）相互レビューの7分版・8分版の進行は一度も実測していない。** 0:00–0:30（差分を映す）、2:00–4:00（問い1・2を回す）などの各枠の所要は、5人班・初対面・オフラインという条件での推定である。**特に「問い1に対して2名を指名して2分」は楽観的である可能性が高い。** リハーサル（P4）で実測する。回らない場合の退避は2人目の枠2分を落とすこと（§1.6）だが、**それを採ると相互レビューの本命である「判断の割れの対比」が失われる**ので、先に他の枠（0:00–1:00 の映す・読み上げる枠）を詰める。

@@ -463,7 +463,7 @@ Controller gate: Task 2 と Task 3 の task review 承認後に `git push origin
 
 `SessionSummary` は `kind`、`timeBreakdown`、exercise のみの `adv` / `peerReview` / `exerciseCommand` / `exerciseModule`、最大 4 `steps`、最大 3 `decisions`、`finalReferences` を持つ。`PeerReview` は `minutes`、`pickCount: 1 | 2`、3 問の `questions` を持つ。
 
-テストは設計 §6.3 の 16 件を固定する。特に合計 150 分、exercise と optional fields の同値、`peerReview.minutes === timeBreakdown.review`、3 問、全参照ファイルと非空の `solutions[].symbol` の実在を literal ではなくデータから検証する。1ステップが複数ファイルの宣言を必要とする場合は、解答参照も複数件を順序付きで持つ。
+テストは設計 §6.3 の 16 件を固定する。特に合計 150 分、exercise と optional fields の同値、`peerReview.minutes === timeBreakdown.review`、3 問、全参照ファイルと非空の `solutions[].symbol` の実在を literal ではなくデータから検証する。各 `targets[]` は次snapshotの同一相対pathを持つ `solutions[]` に最低1件対応させ、1ステップが複数ファイルの宣言を必要とする場合は、解答参照も複数件を順序付きで持つ。
 
 Run: `pnpm --filter @fp-with-ts/docs exec vitest run src/sessions/catalog.test.ts`
 
@@ -492,7 +492,7 @@ starter の module と次 snapshot の同一 module を比較し、コメント�
 
 - [ ] **Step 4: StepSolution と PeerReviewPanel を RED→GREEN で実装する**
 
-`StepSolution` は非空の `solutions` の各 path と line range から実ソースを切り出し、1ステップの `<details>` 内へ path を明示して宣言順に描画する。S4 step 1 は `dependencies.ts` と `startExamination.ts` の両方を示し、非エージェント参加者が単独で開いても必要な宣言を欠かさない。`PeerReviewPanel` は `N分・1〜2名`、3 問、S1 の約束事へのリンクを静的 HTML として描画する。新しい client island や依存を追加しない。
+`StepSolution` は非空の `solutions` の各 path と line range から実ソースを切り出し、1ステップの `<details>` 内へ path を明示して宣言順に描画する。S4 step 1 は `dependencies.ts` の1〜23行と `startExamination.ts` の1〜43行を示し、新規import、Clock / EventIdGenerator / ExaminationStartedStore / Dependencies、EventContext、実装関数までを欠かさない。S4 step 3/4 は `errors.ts` の16〜24行も示し、RepositoryError宣言とStartExaminationError unionを含める。`PeerReviewPanel` は `N分・1〜2名`、3 問、S1 の約束事へのリンクを静的 HTML として描画する。新しい client island や依存を追加しない。
 
 - [ ] **Step 5: 動的 route の技術 spike を行う**
 

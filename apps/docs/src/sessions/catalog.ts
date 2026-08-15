@@ -387,12 +387,12 @@ export const sessions = [
           {
             path: "examples/session-05/src/useCase/dependencies.ts",
             symbol: "Dependencies",
-            lines: [18, 23],
+            lines: [1, 23],
           },
           {
             path: "examples/session-05/src/useCase/startExamination.ts",
             symbol: "startExamination",
-            lines: [20, 43],
+            lines: [1, 43],
           },
         ],
       },
@@ -413,11 +413,18 @@ export const sessions = [
           "examples/session-04/src/useCase/errors.ts",
           "examples/session-04/src/useCase/startExamination.ts",
         ],
-        solutions: [{
-          path: "examples/session-05/src/useCase/startExamination.ts",
-          symbol: "startExamination",
-          lines: [20, 43],
-        }],
+        solutions: [
+          {
+            path: "examples/session-05/src/useCase/errors.ts",
+            symbol: "StartExaminationError",
+            lines: [16, 24],
+          },
+          {
+            path: "examples/session-05/src/useCase/startExamination.ts",
+            symbol: "startExamination",
+            lines: [20, 43],
+          },
+        ],
       },
       {
         id: "s4-propagate-store-failure",
@@ -426,11 +433,18 @@ export const sessions = [
           "examples/session-04/src/useCase/errors.ts",
           "examples/session-04/src/useCase/startExamination.ts",
         ],
-        solutions: [{
-          path: "examples/session-05/src/useCase/startExamination.ts",
-          symbol: "startExamination",
-          lines: [20, 43],
-        }],
+        solutions: [
+          {
+            path: "examples/session-05/src/useCase/errors.ts",
+            symbol: "StartExaminationError",
+            lines: [16, 24],
+          },
+          {
+            path: "examples/session-05/src/useCase/startExamination.ts",
+            symbol: "startExamination",
+            lines: [20, 43],
+          },
+        ],
       },
     ],
     decisions: [

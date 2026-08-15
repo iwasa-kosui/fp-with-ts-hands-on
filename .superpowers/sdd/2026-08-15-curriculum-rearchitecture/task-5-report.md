@@ -196,6 +196,33 @@ review round 1 の controller decision により、home index の旧「1〜2関�
 - home visual: 初回は許可本文の文字差だけでdesktop 4013 pixels、mobileは高さ5379px→5405px（+26px）。actual/diff目視でoverflow・重なりなしを確認し、desktop/mobileの2 baselineだけを更新した。他 screenshot、home CSS、home E2E構造は変更していない。
 - S4実Chromium: `crossOriginIsolated === true`、mobile/desktopのS0/S1/S4/Finalで水平overflowなし。49 packagesをinstallし、`workspace` cwdで意図した4 AssertionError、module-not-found/fixture failureなし。
 
+## Review round 2
+
+残っていた S4 の非エージェント参加者向け fallback を、各targetの差分を解答snippetから再現できる契約へ修正した。
+
+### RED
+
+- 全catalog stepの `targets[]` と次snapshotの `solutions[]` を同一相対pathで対応させる検査により、S4 step 3 の `errors.ts` 解答欠落を検出した。
+- S4 step 1 の実snippet検査により、`dependencies.ts` が `Dependencies` 本体だけを切り出し、ResultAsync、Clock、EventIdGenerator、RepositoryErrorのimportとExaminationStartedStore宣言を欠くことを検出した。
+- `catalog-references.test.ts` は6件中2件が意図したassertion failureとなり、import/module errorは発生しなかった。
+
+### GREEN と実装判断
+
+- S4 step 1 の `dependencies.ts` を1〜23行、`startExamination.ts` を1〜43行へ拡張した。必要な新規import、Clock / EventIdGenerator / ExaminationStartedStore / Dependencies、EventContext、StartExaminationInput、startExamination実装を一緒に提示する。
+- S4 step 3/4 の解答へ `errors.ts` 16〜24行を追加し、RepositoryError宣言とRepositoryErrorを含むStartExaminationError unionを提示する。既存targetsは実REDと一致するため削除せず、両stepで `errors.ts` と `startExamination.ts` を覆う。
+- 全13 stepの各targetが次snapshotの同一相対pathを持つsolutionに最低1件対応する回帰テストを追加した。S4は一般対応検査に加え、必要なimport・宣言・unionを実際の切り出し結果から具体的に検査する。
+- StepSolutionのpath表示、runner、isolation header、home、examples実装は変更していない。plan/designを同じ対応・行範囲契約へ同期した。
+
+### Review round 2 の検証
+
+- RED対象の単体GREEN: `catalog-references.test.ts` 6/6
+- targeted catalog/AST/pages: 4 files、36/36
+- docs full: 21 files、124/124
+- docs typecheck: 0 errors、0 warnings、0 hints
+- docs build: 0 errors、0 warnings、0 hints、8 HTML / 8 routes
+- `git diff --check`: 成功
+- runner/header/homeに変更がないため、controller指示どおりS4 browser smokeとvisualは再実行していない。round 1のS4実Chromium（`crossOriginIsolated === true`、意図した4 AssertionError、module/fixture errorなし）とvisual 28/28を影響外の証拠として再利用した。
+
 ## NEEDS_CONTEXT
 
 なし。brief の Astro no-op 判断は controller の明示承認を得て、実行基盤バグの最小修正へ更新した。
