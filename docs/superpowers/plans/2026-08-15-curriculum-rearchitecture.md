@@ -484,6 +484,8 @@ final reference 5
 
 S1〜S4 の `exerciseModule` は順に `src/domain/appointment`、`src/boundary`、`src/useCase`、`src/useCase`。budget は実測値を catalog に書き、上限 5/80 を超えない。`session-05` は `ExampleSnapshot` union に残すが sessions 配列に入れない。
 
+starterで実際に `AssertionError` となる参加者stepは S1=4件、S2=2件、S3=3件、S4=4件であり、catalog の `steps.length` をこの実測へ一致させる。開始時点からGREENのexercise assertionはparticipant stepとして数えない。
+
 - [ ] **Step 3: 差分予算テストを RED→GREEN で実装する**
 
 starter の module と次 snapshot の同一 module を比較し、コメント・空行を除く追加＋変更行と変更ファイル数を数える。`steps[].targets` が module 配下、step ≤4、decision ≤3 も同じテストで固定する。S1=50、S2=52、S3=55、S4=65 は推定値として比較し、実測値を report と catalog へ記録する。実測が上限を超えた場合は implementation を縮め、上限を無断で緩めない。
@@ -660,7 +662,7 @@ pnpm exercise:03
 pnpm exercise:04
 ```
 
-Expected: 各コマンドは開始 snapshot として non-zero。各 session で catalog の `steps.length` 件（1〜4件）に対応する業務名の assertion が `AssertionError` として失敗し、module resolution/type setup error や予期しない例外はない。exercise に含まれる全testの fail/pass 数を分けて記録する。
+Expected: 各コマンドは開始 snapshot として non-zero。各 session で catalog の `steps.length` 件（S1=4、S2=2、S3=3、S4=4）に対応する業務名の assertion が `AssertionError` として失敗し、module resolution/type setup error や予期しない例外はない。exercise に含まれる全testの fail/pass 数を分けて記録する。
 
 - [ ] **Step 3: 次 snapshot の GREEN 連鎖を確認する**
 

@@ -19,9 +19,11 @@
 | S3 | `examples/session-03/src/useCase` | 3 | 77 |
 | S4 | `examples/session-04/src/useCase` | 3 | 35 |
 
-4件とも上限5ファイル・80実効行以内であり、catalog の `fileBudget` / `lineBudget` には実測値そのものを記録した。S1/S3/S4 は4 steps、S2 は2 steps、全exerciseは3 decisions、`pickCount: 2`、7/7/8/8分の peer review、同じ正式文言の3問を持つ。`session-05` は `ExampleSnapshot` に残し、`sessions` 配列には含めていない。
+4件とも上限5ファイル・80実効行以内であり、catalog の `fileBudget` / `lineBudget` には実測値そのものを記録した。実際にREDとなるparticipant stepsはS1=4、S2=2、S3=3、S4=4である。全exerciseは3 decisions、`pickCount: 2`、7/7/8/8分の peer review、同じ正式文言の3問を持つ。`session-05` は `ExampleSnapshot` に残し、`sessions` 配列には含めていない。
 
-Task 4 plan と設計 §6.3 のcatalog契約は `1 <= steps <= 4` である。設計 §4.2 のS2 4-step想定に対し、現starterの `pnpm exercise:02` はStep 1/2だけがRED、Step 3/4は開始時点からGREENだった。存在しない独立RED→GREENを表示しないため、S2 catalogは実在する2つの参加者変更単位へ縮約した。参照テストはexerciseをJSON reporterで実行し、top-level `success === false`、failed test 2件、各 `failureMessages` が非空かつ全て `AssertionError:` で始まることを検査する。さらにstable step idと、この2件の失敗test group/assertionを1対1で照合する。goal/target/solution/rangeは二重記述せず、catalog本体と汎用AST参照検査を正とする。
+Task 4 plan と設計 §6.3 のcatalog契約は `1 <= steps <= 4` である。現starterではS2のStep 3/4とS3のStep 4が開始時点からGREENだったため、存在しない独立RED→GREENを表示せず、catalogを上記の実測件数へ縮約した。S3 Step 4の意図は既存decision「失敗経路では後続の処理を行わない」と、fake portで副作用を検査する `notByType` に保持した。
+
+参照テストはS1〜S4のexerciseをJSON reporterで並列に各1回だけ実行し、top-level `success === false`、failed test数が各 `steps.length` と一致すること、各 `failureMessages` が非空かつ全て `AssertionError:` で始まることを検査する。さらにstable step idと失敗test group/assertionを1対1で照合する。goal/target/solution/rangeは二重記述せず、catalog本体と汎用AST参照検査を正とする。
 
 ## solution/reference 契約
 
@@ -61,10 +63,11 @@ REDを確認した対象:
 - review修正では、次snapshotの `src/**` 外を指すsolutionを拒否する参照契約
 - review fix round 2では、S2のcatalog 4件と実際にREDになるassertion 2件の不一致、およびS3 step 4の余分なtarget
 - review fix round 3では、exercise失敗数だけが一致する偽陽性（top-level successや失敗種別を捨てるhelper）
+- review fix round 4では、S3のcatalog 4件と実際にREDになるassertion 3件の不一致
 
 最終確認:
 
-- `pnpm --filter @fp-with-ts/docs test`: 25 files / 108 tests passed
+- `pnpm --filter @fp-with-ts/docs test`: 25 files / 107 tests passed
 - `pnpm --filter @fp-with-ts/docs build`: passed、10 HTML / 10 internal routes verified
 - `pnpm typecheck`: passed（docsは0 errors / 0 warnings / 0 hints）
 - `pnpm test`: passed（全session snapshotとdocs）

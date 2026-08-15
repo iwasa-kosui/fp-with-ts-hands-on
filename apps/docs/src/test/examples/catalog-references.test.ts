@@ -29,13 +29,13 @@ type ExerciseReport = Readonly<{
   testResults: readonly ExerciseResult[];
 }>;
 
-const runSession02Exercise = async (): Promise<ExerciseReport> =>
+const runExercise = async (snapshot: string): Promise<ExerciseReport> =>
   new Promise((resolveResult, reject) => {
     execFile(
       "pnpm",
       [
         "--filter",
-        "@fp-with-ts/clinic-session-02",
+        `@fp-with-ts/clinic-${snapshot}`,
         "exec",
         "vitest",
         "run",
@@ -46,7 +46,7 @@ const runSession02Exercise = async (): Promise<ExerciseReport> =>
       { cwd: repoRoot, maxBuffer: 2_000_000 },
       (error, stdout) => {
         if (error === null) {
-          reject(new Error("session-02 exercise unexpectedly passed"));
+          reject(new Error(`${snapshot} exercise unexpectedly passed`));
           return;
         }
         try {
@@ -128,54 +128,131 @@ describe("session catalog references", () => {
     }
   });
 
-  it("maps S2 catalog steps one-to-one to assertions that are RED in the starter", async () => {
-    const session = sessions.find(({ slug }) => slug === "02-boundary-and-ids");
-    expect(session?.kind).toBe("exercise");
-    if (session?.kind !== "exercise") return;
-
-    const expected = [
+  it("maps every catalog step one-to-one to an AssertionError RED in its starter", async () => {
+    const expectedExercises = [
       {
-        id: "s2-parse-exam-result",
-        exercise: {
-          group: "Step 1: 形の違う検査 JSON はドメイン型にならない",
-          assertion: "petId がない JSON は err になる",
-        },
+        slug: "01-state-modeling",
+        steps: [
+          {
+            id: "s1-narrow-start",
+            group: "Step 1: 会計済みの来院は診察を開始できない",
+            assertion: "Paid を渡す呼び出しはコンパイルできない",
+          },
+          {
+            id: "s1-require-cancel-reason",
+            group: "Step 2: キャンセルには必ず理由を残す",
+            assertion: "reason を省いた呼び出しはコンパイルできない",
+          },
+          {
+            id: "s1-align-transitions",
+            group: "Step 3: 全遷移の入口を状態型で絞る",
+            assertion: "許可されない遷移元はコンパイルできない",
+          },
+          {
+            id: "s1-exhaustive-label",
+            group: "Step 4: 状態追加時に表示分岐を見直す",
+            assertion: "6つ目の状態を足すと status label がコンパイルできない",
+          },
+        ],
       },
       {
-        id: "s2-protect-contact",
-        exercise: {
-          group: "Step 2: 電話番号とメールはログへ出ない",
-          assertion: "JSON と util.inspect のどちらも値をマスクする",
-        },
+        slug: "02-boundary-and-ids",
+        steps: [
+          {
+            id: "s2-parse-exam-result",
+            group: "Step 1: 形の違う検査 JSON はドメイン型にならない",
+            assertion: "petId がない JSON は err になる",
+          },
+          {
+            id: "s2-protect-contact",
+            group: "Step 2: 電話番号とメールはログへ出ない",
+            assertion: "JSON と util.inspect のどちらも値をマスクする",
+          },
+        ],
+      },
+      {
+        slug: "03-result-errors",
+        steps: [
+          {
+            id: "s3-invalid-state",
+            group: "Step 1: InvalidAppointmentState を値として返す",
+            assertion: "CheckedIn でない予約でも例外を投げない",
+          },
+          {
+            id: "s3-not-found",
+            group: "Step 2: AppointmentNotFound を値として返す",
+            assertion: "予約が見つからなくても例外を投げない",
+          },
+          {
+            id: "s3-result-pipeline",
+            group: "Step 3: andThen pipeline が失敗理由を運ぶ",
+            assertion: "予約なしを InvalidAppointmentState に潰さない",
+          },
+        ],
+      },
+      {
+        slug: "04-effects-and-events",
+        steps: [
+          {
+            id: "s4-inject-context",
+            group: "Step 1: 同じ clock と ID generator なら同じイベントになる",
+            assertion: "固定 context から同じ eventId と occurredAt を返す",
+          },
+          {
+            id: "s4-atomic-store",
+            group: "Step 2: 状態と監査記録は1回の保存で残る",
+            assertion: "store(event) を1回だけ呼ぶ",
+          },
+          {
+            id: "s4-result-async",
+            group: "Step 3: 非同期保存後もイベントが pipeline に残る",
+            assertion: "保存成功時は store の void ではなく aggregateState を返す",
+          },
+          {
+            id: "s4-propagate-store-failure",
+            group: "Step 4: 保存失敗時は状態も記録も残らない",
+            assertion: "RepositoryError を返し in-memory state を変更しない",
+          },
+        ],
       },
     ] as const;
 
-    expect(session.steps.map(({ id }) => id)).toEqual(expected.map(({ id }) => id));
-    const exerciseResult = await runSession02Exercise();
-    expect(exerciseResult.success).toBe(false);
-    expect(exerciseResult.numFailedTests).toBe(2);
-    const failingAssertions = exerciseResult.testResults
-      .flatMap(({ assertionResults }) => assertionResults)
-      .filter(({ status }) => status === "failed");
-    expect(failingAssertions).toHaveLength(2);
-    expect(
-      failingAssertions.map(({ ancestorTitles, title }) => ({
-        group: ancestorTitles.at(-1),
-        assertion: title,
-      })),
-    ).toEqual(expected.map(({ exercise }) => exercise));
-    for (const { failureMessages } of failingAssertions) {
-      expect(failureMessages).toBeDefined();
-      expect(failureMessages.length).toBeGreaterThan(0);
-      expect(failureMessages.every((message) => message.startsWith("AssertionError:"))).toBe(true);
-    }
-  }, 10_000);
+    const exercises = expectedExercises.map((expected) => {
+      const session = sessions.find(({ slug }) => slug === expected.slug);
+      expect(session?.kind).toBe("exercise");
+      if (session?.kind !== "exercise") throw new Error(`${expected.slug} is not an exercise`);
+      return { expected, session };
+    });
+    const reports = await Promise.all(
+      exercises.map(({ session }) => runExercise(session.snapshot)),
+    );
 
-  it("keeps the S3 no-effects step scoped to the implementation changed for GREEN", () => {
-    const session = sessions.find(({ slug }) => slug === "03-result-errors");
-    const step = session?.steps.find(({ id }) => id === "s3-no-effects-after-failure");
-    expect(step?.targets).toEqual([
-      "examples/session-03/src/useCase/startExamination.ts",
-    ]);
-  });
+    for (const [{ expected, session }, report] of exercises.map((exercise, index) => [
+      exercise,
+      reports[index],
+    ] as const)) {
+      expect(session.steps.map(({ id }) => id)).toEqual(
+        expected.steps.map(({ id }) => id),
+      );
+      expect(report.success).toBe(false);
+      expect(report.numFailedTests).toBe(session.steps.length);
+      const failingAssertions = report.testResults
+        .flatMap(({ assertionResults }) => assertionResults)
+        .filter(({ status }) => status === "failed");
+      expect(failingAssertions).toHaveLength(session.steps.length);
+      expect(
+        failingAssertions.map(({ ancestorTitles, title }) => ({
+          group: ancestorTitles.at(-1),
+          assertion: title,
+        })),
+      ).toEqual(expected.steps.map(({ group, assertion }) => ({ group, assertion })));
+      for (const { failureMessages } of failingAssertions) {
+        expect(failureMessages).toBeDefined();
+        expect(failureMessages.length).toBeGreaterThan(0);
+        expect(failureMessages.every((message) => message.startsWith("AssertionError:"))).toBe(
+          true,
+        );
+      }
+    }
+  }, 30_000);
 });

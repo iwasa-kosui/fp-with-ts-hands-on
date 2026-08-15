@@ -292,16 +292,6 @@ export const sessions = [
           lines: [22, 40],
         },
       },
-      {
-        id: "s3-no-effects-after-failure",
-        goal: "失敗したら遷移と保存へ進まないパイプラインにする。",
-        targets: ["examples/session-03/src/useCase/startExamination.ts"],
-        solution: {
-          path: "examples/session-04/src/useCase/startExamination.ts",
-          symbol: "startExamination",
-          lines: [22, 40],
-        },
-      },
     ],
     decisions: [
       {
