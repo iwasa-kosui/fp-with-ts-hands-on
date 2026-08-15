@@ -30,15 +30,16 @@
 
 | コマンド | 結果 | 実測 |
 | --- | --- | ---: |
-| `pnpm typecheck` | 成功。session-00〜05、docs、Worker。Astro 70 files、0 errors / 0 warnings / 0 hints | post-audit再実行 7.2秒 |
-| `pnpm test` | 成功。session通常テスト51件、docs実行146件、明示的なWorker実行30件 | review round 1再実行 約15秒 |
-| `pnpm build` | 成功。Astro 70 files、0 diagnostics、8 HTML / 8 routes | review round 1再実行 約29秒 |
-| `pnpm --filter @fp-with-ts/docs build` | 成功。Astro 70 files、0 diagnostics、8 HTML / 8 routes | review round 1再実行 約29秒 |
+| `pnpm typecheck` | 成功。session-00〜05、docs、Worker。Astro 70 files、0 errors / 0 warnings / 0 hints | review fix再実行 7.2秒 |
+| `pnpm test` | 成功。session通常テスト51件、docs実行146件、明示的なWorker実行30件 | review fix再実行 15.0秒 |
+| `pnpm --filter @fp-with-ts/docs test` | 24 files / 146 tests成功。event 7件と、docs側で収集されるWorker 30件を含む | review fix再実行 7.1秒 |
+| `pnpm build` | 成功。Astro 70 files、0 diagnostics、8 HTML / 8 routes | review fix再実行 29.3秒 |
+| `pnpm --filter @fp-with-ts/docs build` | 成功。Astro 70 files、0 diagnostics、8 HTML / 8 routes | review fix再実行 28.7秒 |
 | `pnpm --filter @fp-with-ts/docs test:visual` | 28/28成功。更新したhome desktop/mobileを含む | 10.71秒 |
 | Worker focused 3 files | 30/30成功（config 10、routes 10、HTTP handler 10） | targeted 6 files / 39 testsで1.88秒 |
-| event document contract | 5/5成功。6 sessionの150分、固定3枠30分、合計180分、ADV、review、運営文書を照合 | targeted実行内9ms |
+| event document contract | 7/7成功。6 sessionの150分、固定3枠30分、合計180分、ADV、review、フォローアップ送付母集団を含む運営文書を照合 | review fix targeted再実行 11ms |
 
-`pnpm test` のdocs実行は現行Vitest設定によりWorker 30件を含み、rootの `test:worker` が同じ30件を明示的に再実行する。実行回数は227件、重複を除く契約は197件である。明示経路は、docs側のtest対象を将来整理してもCIの `pnpm test` からWorker契約が外れないために残す。
+`pnpm test` のdocs実行は現行Vitest設定によりWorker 30件を含み、rootの `test:worker` が同じ30件を明示的に再実行する。fresh summaryのsession内訳 `1 + 2 + 4 + 9 + 14 + 21 = 51` とdocs 146件、明示Worker 30件から、実行回数を `51 + 146 + 30 = 227`、重複を除く契約を `51 + 146 = 197` と自動計算して記録した。明示経路は、docs側のtest対象を将来整理してもCIの `pnpm test` からWorker契約が外れないために残す。
 
 buildでは既知のVite chunk-size warningが出たが、Astro diagnosticsと静的route検証は成功した。視覚検証の最初のsandbox内実行は `0.0.0.0:4321` のlistenが `EPERM` になったため、同じコマンドをローカルserver起動権限付きで再実行し、28件すべての成功を確認した。
 
@@ -122,13 +123,13 @@ review round 1では、Step 4のfake storeへ飼い主名・email・電話番号
 - standalone Code Explorer pageは存在せず、公開page、README、PRD、event docsに同routeへのリンクはない。
 - 正規PRDは5状態だけを採用している。homeの主経路は `予約済み → 受付済み → 診察中 → 支払済み` とし、公開Astro page全体でPRD-15が禁止する追加状態の日英名称がないことを構造testで確認した。
 - `git diff --check` は成功した。P4では教材本文、catalog、演習実装、runner、isolation headerを再設計していない。post-auditのhome変更は状態チップ1語だけである。
-- P2最終commit `7ee44fd` から、runner、Code Explorer component、Astro isolation header、public header、E2Eに差分がないことを確認した。
+- P2最終commit `7ee44fd` からS4ブラウザ証拠を支えるrunner `runner.ts`、header設定 `astro.config.ts` / `_headers`、component `CodeExplorer.tsx` / `SessionCodePlayground.astro`、E2E spec `session-code-playground.spec.ts` に差分がないことを確認した。E2E全体の差分0は主張しない。homeのdesktop/mobile baseline 2枚はpost-auditで更新済みであり、このS4証拠の再利用判定から明示的に除外する。
 
 ## 視覚検証とS4ブラウザsmoke
 
 post-audit前の最終HEADでvisual/E2Eをfresh実行し、28/28成功した。homeの状態チップ変更で生じたdesktop 125 pixels / mobile 143 pixelsのactual/diffを目視し、文字以外の差分がないことを確認して、この2 baselineだけを更新した。post-auditではS4本文の説明だけを同期し、CSS、layout、E2E構造を変更していないためvisualは再実行せず、docsの構造test 146件とbuild 8 routesをfresh実行した。
 
-S4の実WebContainer実行はP2で取得した次の証拠を再利用した。上記の通り、P2以降にrunner/header/component/E2Eの差分がないためである。
+S4の実WebContainer実行はP2で取得した次の証拠を再利用した。上記の通り、P2以降にrunner、isolation header、Code Explorer/Playground component、session-playground E2E specの差分がないためである。
 
 - `crossOriginIsolated === true`
 - 49 packagesを18秒でinstall

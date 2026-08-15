@@ -278,6 +278,18 @@ describe("event document contract", () => {
     ]) {
       expect(followUp).toContain(value);
     }
+    const delivery = followUp.match(
+      /## 送付方法と回答導線\n\n([\s\S]*?)\n\n## 設問/,
+    )?.[1] ?? "";
+    expect(delivery).toContain("当日参加が確認された登録者");
+    expect(delivery).toMatch(/出席済み[\s\S]*当日参加リスト/);
+    expect(delivery).toMatch(
+      /filterできない[\s\S]*受付記録[\s\S]*当日参加者だけ[\s\S]*BCC/,
+    );
+    expect(delivery).toMatch(/抽出したPII[\s\S]*リポジトリ[\s\S]*D\+35[\s\S]*削除/);
+    expect(delivery).not.toContain("参加登録者全員を宛先");
+    expect(followUp).toMatch(/送付母集団[\s\S]*当日の全参加者/);
+    expect(followUp).toMatch(/欠席登録者[\s\S]*成功指標の分子へ加え/);
     expect(guide).toContain("./follow-up-30-days.md");
     expect(rehearsal).toContain("./follow-up-30-days.md");
     for (const document of [guide, rehearsal]) {
