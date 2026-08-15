@@ -8,6 +8,7 @@
     "exercise": "vitest run --config vitest.exercises.config.ts"
   },
   "dependencies": {
+    "neverthrow": "^8.2.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {

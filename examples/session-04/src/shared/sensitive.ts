@@ -1,7 +1,10 @@
+import { inspect } from "node:util";
+
 export type Sensitive<T> = Readonly<{
   unwrap: () => T;
   toJSON: () => string;
   toString: () => string;
+  [inspect.custom]: () => string;
 }>;
 
 export const Sensitive = {
@@ -9,5 +12,6 @@ export const Sensitive = {
     unwrap: () => value,
     toJSON: () => "[REDACTED]",
     toString: () => "[REDACTED]",
+    [inspect.custom]: () => "[REDACTED]",
   }),
 } as const;

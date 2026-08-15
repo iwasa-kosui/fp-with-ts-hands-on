@@ -6,15 +6,13 @@
   "description": "関数型ドメインモデリングハンズオン with TypeScript のサンプルコードとドキュメントサイト",
   "scripts": {
     "dev": "pnpm --filter @fp-with-ts/docs dev",
-    "build": "pnpm --filter './examples/*' build && pnpm --filter @fp-with-ts/docs build",
-    "test": "pnpm --filter './examples/*' test && pnpm --filter @fp-with-ts/docs test",
-    "exercise:00": "pnpm --filter @fp-with-ts/clinic-session-00 exercise",
+    "build": "pnpm --filter @fp-with-ts/docs build",
+    "test": "pnpm --filter './examples/session-*' test && pnpm --filter @fp-with-ts/docs test",
     "exercise:01": "pnpm --filter @fp-with-ts/clinic-session-01 exercise",
     "exercise:02": "pnpm --filter @fp-with-ts/clinic-session-02 exercise",
     "exercise:03": "pnpm --filter @fp-with-ts/clinic-session-03 exercise",
     "exercise:04": "pnpm --filter @fp-with-ts/clinic-session-04 exercise",
-    "exercise:05": "pnpm --filter @fp-with-ts/clinic-session-05 exercise",
-    "typecheck": "pnpm --filter './examples/*' typecheck && pnpm --filter @fp-with-ts/docs typecheck && tsc -p worker/tsconfig.json --noEmit",
+    "typecheck": "pnpm --filter './examples/session-*' typecheck && pnpm --filter @fp-with-ts/docs typecheck && tsc -p worker/tsconfig.json --noEmit",
     "preview": "pnpm --filter @fp-with-ts/docs preview",
     "cf:dev": "pnpm build && wrangler dev",
     "cf:deploy": "pnpm build && wrangler deploy"
