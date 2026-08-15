@@ -286,6 +286,9 @@ git commit -m "feat: 状態と境界の演習スナップショットを再構�
 - Rewrite: `examples/session-05/**`
 - Modify: `package.json`
 - Modify: `pnpm-lock.yaml`
+- Phase-gate sync: `apps/docs/src/code-explorer/{session-workspaces,onboarding-guides}.ts`
+- Phase-gate sync: `apps/docs/src/code-explorer/{session-workspaces,onboarding-guides}.test.ts`
+- Phase-gate sync: `apps/docs/src/test/pages/code-explorer.test.ts`
 
 **Interfaces:**
 - Consumes: Task 2 の appointment、ID、boundary、`Sensitive`、`schemaResult` と回帰テスト。
@@ -393,7 +396,21 @@ root script は次の意味にする。
 
 `exercise:00` と `exercise:05` を削除し、root `test` / `typecheck` / `build` から `examples/final` を除外する。
 
-- [ ] **Step 6: P1 全体を検証する**
+- [ ] **Step 6: P1 で移動した snapshot path を現行 Code Explorer へ最小同期する**
+
+P1 は単独で通常検証を成功させて push する。catalog やページ構造の P2 改稿は先取りせず、現行 Code Explorer の手書き参照だけを実在ファイルへ追従させる。
+
+- S0: `src/{appointment,logger}.ts` → `src/legacy/{appointment,logger}.ts`
+- S1: 旧単一ファイル群 → `src/domain/appointment/{appointment,transitions,statusLabel}.ts` と `test/transitions.test.ts`
+- S2: `src/domain/appointment.ts` → `src/domain/appointment/appointment.ts`、通常テスト → `test/regression/state-modeling.test.ts`
+
+onboarding guide の path と行 anchor、standalone preview の期待値も同じ移動へ同期する。catalog schema、slug、ページ本文、動的 route、CSS、Worker は変更しない。
+
+Run: `pnpm --filter @fp-with-ts/docs test`
+
+Expected: 旧 snapshot path による ENOENT / visible-files failure がなくなり、docs の通常テストが全成功する。
+
+- [ ] **Step 7: P1 全体を検証する**
 
 Run:
 
@@ -407,11 +424,13 @@ pnpm --filter @fp-with-ts/clinic-session-05 test
 
 Expected: 通常検証は全成功。4 exercise は開始スナップショットとして意図した RED。`examples/final` の diff は 0 件。
 
-- [ ] **Step 7: P1 を commit する**
+- [ ] **Step 8: P1 を commit する**
 
 ```bash
 git add examples/session-03 examples/session-04 examples/session-05 package.json pnpm-lock.yaml
 git commit -m "feat: Resultと副作用の演習スナップショットを再構築"
+git add apps/docs/src/code-explorer apps/docs/src/test/pages/code-explorer.test.ts
+git commit -m "fix: Code Explorerを新しいsnapshot配置へ同期"
 ```
 
 Controller gate: Task 2 と Task 3 の task review 承認後に `git push origin main-a5cflu`。
