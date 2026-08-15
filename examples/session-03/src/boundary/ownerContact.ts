@@ -5,7 +5,7 @@ import { Sensitive } from "../shared/sensitive.js";
 
 export const OwnerContactSchema = z
   .object({
-    ownerName: z.string().min(1),
+    ownerName: z.string().min(1).brand<"OwnerName">().transform(Sensitive.of),
     ownerEmail: z.string().email().brand<"OwnerEmail">().transform(Sensitive.of),
     ownerPhone: z.string().min(1).brand<"OwnerPhone">().transform(Sensitive.of),
   })
