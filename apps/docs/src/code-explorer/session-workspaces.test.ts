@@ -15,41 +15,42 @@ const expectedSnapshots = {
 
 const requiredVisibleFiles = {
   "00-onboarding": [
-    "src/appointment.ts",
-    "src/logger.ts",
+    "src/legacy/appointment.ts",
+    "src/legacy/logger.ts",
   ],
   "01-state-modeling": [
     "exercises/state-modeling.test.ts",
-    "test/incident-requirements.test.ts",
-    "src/appointment.ts",
-    "src/visit-lifecycle.ts",
+    "test/transitions.test.ts",
+    "src/domain/appointment/appointment.ts",
+    "src/domain/appointment/transitions.ts",
+    "src/domain/appointment/statusLabel.ts",
   ],
   "02-boundary-and-ids": [
     "exercises/boundary-and-ids.test.ts",
-    "test/state-modeling.test.ts",
-    "src/domain/appointment.ts",
+    "test/regression/state-modeling.test.ts",
+    "src/domain/appointment/appointment.ts",
   ],
   "03-result-errors": [
     "exercises/result-errors.test.ts",
-    "src/boundary/exam-result.ts",
-    "src/boundary/owner-contact.ts",
-    "src/domain/appointment.ts",
-    "test/boundary-and-ids.test.ts",
+    "src/boundary/examResult.ts",
+    "src/boundary/ownerContact.ts",
+    "src/domain/appointment/appointment.ts",
+    "src/domain/ids/appointmentId.ts",
+    "src/useCase/startExamination.ts",
+    "test/regression/boundary-and-ids.test.ts",
   ],
   "04-agent-review": [
-    "exercises/agent-review.test.ts",
-    "src/application/start-examination.ts",
-    "src/infrastructure/in-memory-appointment-repository.ts",
-    "src/infrastructure/in-memory-domain-event-store.ts",
-    "src/review/agent-review.ts",
-    "test/result-errors.test.ts",
+    "exercises/effects-and-events.test.ts",
+    "src/domain/aggregate/eventContext.ts",
+    "src/domain/appointment/examinationStarted.ts",
+    "src/useCase/startExamination.ts",
+    "test/regression/result-errors.test.ts",
   ],
   "05-mini-integration": [
-    "exercises/follow-up.test.ts",
-    "src/application/start-examination.ts",
-    "src/infrastructure/in-memory-appointment-gateway.ts",
-    "src/review/agent-review.ts",
-    "test/start-examination.test.ts",
+    "src/adaptor/inMemoryExaminationStartedStore.ts",
+    "src/useCase/startExamination.ts",
+    "test/in-memory-store.test.ts",
+    "test/regression/effects-and-events.test.ts",
   ],
   final: [
     "test/useCase/startExaminationUseCase.test.ts",
@@ -109,14 +110,33 @@ describe("session code workspaces", () => {
     }
   });
 
-  it("keeps later exercise source absent while providing the editable Session 04 review starter", () => {
-    expect(projectFilesFor("01-state-modeling")["src/domain/appointment.ts"]).toBeUndefined();
-    expect(projectFilesFor("02-boundary-and-ids")["src/boundary/exam-result.ts"]).toBeUndefined();
-    expect(projectFilesFor("03-result-errors")["src/application/start-examination.ts"]).toBeUndefined();
-    expect(projectFilesFor("04-agent-review")["src/review/agent-review.ts"]).toEqual(
-      expect.any(String),
-    );
-    expect(projectFilesFor("05-mini-integration")["src/application/collect-follow-up-targets.ts"]).toBeUndefined();
+  it("provides each snapshot's current exercise and solution-chain files", () => {
+    expect(
+      projectFilesFor("01-state-modeling")[
+        "src/domain/appointment/transitions.ts"
+      ],
+    ).toEqual(expect.any(String));
+    expect(
+      projectFilesFor("02-boundary-and-ids")["src/boundary/examResult.ts"],
+    ).toEqual(expect.any(String));
+    expect(
+      projectFilesFor("03-result-errors")["src/useCase/startExamination.ts"],
+    ).toEqual(expect.any(String));
+    expect(
+      projectFilesFor("04-agent-review")[
+        "exercises/effects-and-events.test.ts"
+      ],
+    ).toEqual(expect.any(String));
+    expect(
+      projectFilesFor("05-mini-integration")[
+        "src/useCase/startExamination.ts"
+      ],
+    ).toEqual(expect.any(String));
+    expect(
+      Object.keys(projectFilesFor("05-mini-integration")).some((path) =>
+        path.startsWith("exercises/"),
+      ),
+    ).toBe(false);
   });
 
   it("rejects unknown session slugs before rendering", () => {

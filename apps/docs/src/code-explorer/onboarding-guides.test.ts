@@ -4,12 +4,15 @@ import { describe, expect, it } from "vitest";
 import { onboardingGuides } from "./onboarding-guides";
 
 const sources = {
-  "src/appointment.ts": readFileSync(
-    resolve(process.cwd(), "../../examples/session-00/src/appointment.ts"),
+  "src/legacy/appointment.ts": readFileSync(
+    resolve(
+      process.cwd(),
+      "../../examples/session-00/src/legacy/appointment.ts",
+    ),
     "utf8",
   ),
-  "src/logger.ts": readFileSync(
-    resolve(process.cwd(), "../../examples/session-00/src/logger.ts"),
+  "src/legacy/logger.ts": readFileSync(
+    resolve(process.cwd(), "../../examples/session-00/src/legacy/logger.ts"),
     "utf8",
   ),
 } as const;

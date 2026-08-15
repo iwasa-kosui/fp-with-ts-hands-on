@@ -32,12 +32,12 @@ const pages = [
   {
     slug: "04-agent-review",
     Page: AgentReviewPage,
-    initialFile: "exercises/agent-review.test.ts",
+    initialFile: "exercises/effects-and-events.test.ts",
   },
   {
     slug: "05-mini-integration",
     Page: MiniIntegrationPage,
-    initialFile: "exercises/follow-up.test.ts",
+    initialFile: "test/regression/effects-and-events.test.ts",
   },
   {
     slug: "final",
