@@ -19,7 +19,6 @@ export type RepositoryError = Readonly<{
 }>;
 
 export type StartExaminationError = AppointmentNotFound | InvalidAppointmentState;
-export type EffectsStartExaminationError = StartExaminationError | RepositoryError;
 
 export const ensureAppointmentFound = (
   appointment: Appointment | undefined,

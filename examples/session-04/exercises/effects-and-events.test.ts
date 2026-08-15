@@ -9,7 +9,7 @@ import { AppointmentId } from "../src/domain/ids/appointmentId.js";
 import { OwnerId } from "../src/domain/ids/ownerId.js";
 import { PetId } from "../src/domain/ids/petId.js";
 import { VeterinarianId } from "../src/domain/ids/veterinarianId.js";
-import { startExamination } from "../src/useCase/startExamination.js";
+import { startExaminationWithEffects as startExamination } from "../src/useCase/startExamination.js";
 import { clinicFixture } from "../../fixtures/clinic.js";
 
 const FIXED_EVENT_ID = EventId.parse("55555555-5555-4555-8555-555555555555");

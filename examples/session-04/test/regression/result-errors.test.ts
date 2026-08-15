@@ -10,8 +10,8 @@ import {
   ensureAppointmentFound,
   ensureCheckedIn,
 } from "../../src/useCase/errors.js";
-import type { ResultDependencies } from "../../src/useCase/resultDependencies.js";
-import { startExamination } from "../../src/useCase/startExaminationResult.js";
+import type { Dependencies } from "../../src/useCase/dependencies.js";
+import { startExamination } from "../../src/useCase/startExamination.js";
 import { clinicFixture } from "../../../fixtures/clinic.js";
 
 const appointmentId = AppointmentId.parse(clinicFixture.appointmentId);
@@ -89,7 +89,7 @@ describe("Step 4 regression: 失敗後は遷移も保存もしない", () => {
 const createDependencies = (
   resolved: Appointment | undefined,
   observer: { transitionCalls: number; saveCalls: number },
-): ResultDependencies => ({
+): Dependencies => ({
   resolver: { resolveById: () => resolved },
   transition: (appointment, nextVeterinarianId, examinationStartedAt) => {
     observer.transitionCalls += 1;

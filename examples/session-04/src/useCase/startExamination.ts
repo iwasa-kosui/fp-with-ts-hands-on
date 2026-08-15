@@ -1,25 +1,51 @@
 import { err, ok, type Result } from "neverthrow";
 
+import type { InExamination } from "../domain/appointment/appointment.js";
 import type { ExaminationStarted } from "../domain/appointment/examinationStarted.js";
 import { EventId } from "../domain/aggregate/eventId.js";
 import type { AppointmentId } from "../domain/ids/appointmentId.js";
 import type { VeterinarianId } from "../domain/ids/veterinarianId.js";
-import type { Dependencies } from "./dependencies.js";
-import type { EffectsStartExaminationError } from "./errors.js";
-import { startExamination as startExaminationResult } from "./startExaminationResult.js";
+import type { Dependencies, EffectsDependencies } from "./dependencies.js";
+import {
+  ensureAppointmentFound,
+  ensureCheckedIn,
+  type RepositoryError,
+  type StartExaminationError,
+} from "./errors.js";
 
 export type StartExaminationInput = Readonly<{
   appointmentId: AppointmentId;
   veterinarianId: VeterinarianId;
+  examinationStartedAt: string;
 }>;
 
 export const startExamination =
   (deps: Dependencies) =>
+  (input: StartExaminationInput): Result<InExamination, StartExaminationError> =>
+    ensureAppointmentFound(
+      deps.resolver.resolveById(input.appointmentId),
+      input.appointmentId,
+    )
+      .andThen(ensureCheckedIn)
+      .map((appointment) =>
+        deps.transition(
+          appointment,
+          input.veterinarianId,
+          input.examinationStartedAt,
+        ),
+      )
+      .map((appointment) => {
+        deps.store.save(appointment);
+        return appointment;
+      });
+
+export const startExaminationWithEffects =
+  (deps: EffectsDependencies) =>
   async (
-    input: StartExaminationInput,
-  ): Promise<Result<void, EffectsStartExaminationError>> => {
+    input: Omit<StartExaminationInput, "examinationStartedAt">,
+  ): Promise<Result<void, StartExaminationError | RepositoryError>> => {
     const occurredAt = new Date().toISOString();
-    const result = startExaminationResult({
+    const result = startExamination({
       resolver: deps.resolver,
       transition: deps.transition,
       store: { save: () => undefined },
