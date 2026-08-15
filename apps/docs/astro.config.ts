@@ -12,8 +12,5 @@ export default defineConfig({
   output: "static",
   outDir: "./dist",
   trailingSlash: "always",
-  vite: {
-    server: { headers: isolationHeaders },
-    preview: { headers: isolationHeaders },
-  },
+  server: { headers: isolationHeaders },
 });

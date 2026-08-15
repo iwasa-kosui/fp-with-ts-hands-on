@@ -430,24 +430,8 @@ export const sessions = [
   },
 ] as const satisfies readonly SessionSummary[];
 
-const legacySessionAliases: Readonly<Record<string, SessionSummary>> = {
-  "04-agent-review": {
-    ...sessions[4],
-    slug: "04-agent-review",
-    title: "エージェントレビューを設計する",
-    durationMinutes: 20,
-  },
-  "05-mini-integration": {
-    ...sessions[4],
-    slug: "05-mini-integration",
-    snapshot: "session-05",
-    title: "ミニ総合演習",
-    durationMinutes: 15,
-  },
-};
-
 export const sessionBySlug = (slug: string): SessionSummary | undefined =>
-  sessions.find((session) => session.slug === slug) ?? legacySessionAliases[slug];
+  sessions.find((session) => session.slug === slug);
 
 export const sessionPath = (session: SessionSummary): string =>
   `/sessions/${session.slug}/`;

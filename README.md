@@ -16,7 +16,9 @@ pnpm dev
 
 ## 演習の構成
 
-各セッションは `examples/session-00` から `examples/session-05` に分かれています。前のセッションで扱った改善を引き継ぎながら、次の業務上の問題を扱います。`examples/final` には、全セッションの改善を統合した完成例があります。
+公開教材は、事故と配布コードを読む S0、手を動かす S1〜S4、5分間の講師ツアー Final で構成します。各開始スナップショットは `examples/session-00` から `examples/session-04` にあり、前の回の改善を引き継ぎます。
+
+`examples/session-05` は S1〜S4 の全解答と全回帰テストが GREEN になった到達点スナップショットです。公開セッションではなく、S4 の解答と回帰確認に使います。`examples/final` は、当日の局所的な改善を複数集約と SQLite へ広げた参照実装です。
 
 通常テストは、セットアップと各スナップショットが健全であることを確認するために実行します。
 
@@ -24,13 +26,16 @@ pnpm dev
 pnpm test
 ```
 
-演習テストは、各セッションで扱う問題を再現するためのものです。セッション 00 は、次のコマンドから始めて意図した失敗を確認してください。
+演習テストは、S1〜S4 で扱う業務事故を再現します。
 
 ```bash
-pnpm exercise:00
+pnpm exercise:01
+pnpm exercise:02
+pnpm exercise:03
+pnpm exercise:04
 ```
 
-セッション 01 から 05 では、対応する `pnpm exercise:01` から `pnpm exercise:05` を実行します。開始時は演習対象の source file が意図的にないため、assertion の前に import error で失敗します。これは想定どおりの開始状態です。サイトの手順に沿って file を作成・実装してから、同じ `pnpm exercise:NN` をもう一度実行し、演習の assertion を確認してください。
+開始時の RED は、module-not-found や import error ではなく、業務語彙を含む assertion failure です。サイトの手順に沿って既存モジュールを小さく改善し、同じ `pnpm exercise:NN` をもう一度実行して GREEN を確認します。S0 と `session-05` に exercise command はありません。各演習の最後には、班で不変条件と差分を照らす相互レビューを行います。
 
 ## 当日の流れ
 
@@ -39,5 +44,6 @@ pnpm exercise:00
 3. Discriminated Union で状態遷移を閉じる
 4. 新たに発覚した外部入力事故と PII ログ漏えいを、Zod と Branded Type で守る
 5. 失敗理由を Result 型で返し、成功した状態変更をドメインイベントとして記録する
-6. AI エージェントに次の追加要求を頼む前提でレビューする
-7. 電話フォロー対象のミニ総合演習で、既存設計を横断して使う
+6. 時刻・ID・永続化を外から渡し、状態とイベントを1回の保存へまとめる
+7. 各演習で班内相互レビューを行い、型で守れなかった残りを持ち帰る
+8. Final は環境構築や DB 操作をせず、講師が参照実装の3差分を案内する

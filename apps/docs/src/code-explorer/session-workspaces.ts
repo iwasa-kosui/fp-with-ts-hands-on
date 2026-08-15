@@ -28,11 +28,13 @@ const sessionWorkspaces = {
       "exercises/boundary-and-ids.test.ts",
       "test/regression/state-modeling.test.ts",
       "src/domain/appointment/appointment.ts",
+      "src/boundary/examResult.ts",
+      "src/boundary/ownerContact.ts",
     ],
   },
   "03-result-errors": {
     initialFile: "exercises/result-errors.test.ts",
-    description: "Result と成功イベントの要求を開始 snapshot で確認します。",
+    description: "同期 Result と失敗理由の要求を開始 snapshot で確認します。",
     visibleFiles: [
       "exercises/result-errors.test.ts",
       "test/regression/boundary-and-ids.test.ts",
@@ -48,25 +50,8 @@ const sessionWorkspaces = {
       "src/domain/ids/petId.ts",
       "src/domain/ids/veterinarianId.ts",
       "src/shared/sensitive.ts",
-      "src/useCase/startExamination.ts",
-    ],
-  },
-  "04-agent-review": {
-    initialFile: "exercises/effects-and-events.test.ts",
-    description: "横断レビューの要求と既存設計を開始 snapshot で確認します。",
-    visibleFiles: [
-      "exercises/effects-and-events.test.ts",
-      "test/regression/result-errors.test.ts",
-      "src/domain/aggregate/clock.ts",
-      "src/domain/aggregate/eventContext.ts",
-      "src/domain/aggregate/eventId.ts",
-      "src/domain/aggregate/eventIdGenerator.ts",
-      "src/domain/appointment/examinationStarted.ts",
-      "src/useCase/dependencies.ts",
       "src/useCase/errors.ts",
       "src/useCase/startExamination.ts",
-      "src/shared/schemaResult.ts",
-      "src/shared/sensitive.ts",
     ],
   },
   "04-effects-and-events": {
@@ -87,32 +72,13 @@ const sessionWorkspaces = {
       "src/shared/sensitive.ts",
     ],
   },
-  "05-mini-integration": {
-    initialFile: "test/regression/effects-and-events.test.ts",
-    description: "電話フォロー要求と既存の設計判断を開始 snapshot で確認します。",
-    visibleFiles: [
-      "test/regression/effects-and-events.test.ts",
-      "test/regression/result-errors.test.ts",
-      "test/regression/boundary-and-ids.test.ts",
-      "test/regression/state-modeling.test.ts",
-      "test/in-memory-store.test.ts",
-      "src/adaptor/inMemoryExaminationStartedStore.ts",
-      "src/domain/aggregate/eventContext.ts",
-      "src/domain/appointment/examinationStarted.ts",
-      "src/useCase/dependencies.ts",
-      "src/useCase/errors.ts",
-      "src/useCase/startExamination.ts",
-      "src/shared/schemaResult.ts",
-      "src/shared/sensitive.ts",
-    ],
-  },
   final: {
-    initialFile: "test/useCase/startExaminationUseCase.test.ts",
+    initialFile: "src/useCase/startExaminationUseCase.ts",
     description:
       "業務フローを Hono・Inertia・SQLite へ接続した完成アプリを確認します。",
     visibleFiles: [
-      "test/useCase/startExaminationUseCase.test.ts",
-      "test/web/clinicFlow.test.ts",
+      "src/useCase/startExaminationUseCase.ts",
+      "src/useCase/errors.ts",
       "src/app.ts",
       "src/domain/appointment/appointment.ts",
       "src/domain/appointment/appointmentEvent.ts",
@@ -120,7 +86,7 @@ const sessionWorkspaces = {
       "src/domain/appointment/appointmentStores.ts",
       "src/domain/shared/schemaResult.ts",
       "src/domain/shared/sensitive.ts",
-      "src/useCase/startExaminationUseCase.ts",
+      "src/domain/followUp/collectFollowUpTargets.ts",
       "src/adaptor/primary/web/routes/appointmentRoutes.ts",
       "src/adaptor/secondary/sqlite/resolver/appointmentResolver.ts",
       "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
@@ -146,6 +112,15 @@ export const sessionWorkspaceFor = (slug: string): SessionWorkspace => {
   if (missingFiles.length > 0) {
     throw new Error(
       `Missing project files for session ${slug}: ${missingFiles.join(", ")}`,
+    );
+  }
+  const missingTargets = session.steps
+    .flatMap(({ targets }) => targets)
+    .map((path) => path.replace(`examples/${session.snapshot}/`, ""))
+    .filter((path) => !visibleFiles.includes(path));
+  if (missingTargets.length > 0) {
+    throw new Error(
+      `Missing exercise targets for session ${slug}: ${missingTargets.join(", ")}`,
     );
   }
 

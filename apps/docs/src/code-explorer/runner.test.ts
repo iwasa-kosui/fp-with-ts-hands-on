@@ -91,6 +91,96 @@ describe("single-file execution", () => {
     ).toThrow(/collision/i);
   });
 
+  it("mounts parent fixtures outside the project tree and preserves them on writes", async () => {
+    const mounted: unknown[] = [];
+    const mkdir = vi.fn(async () => undefined);
+    const writeFile = vi.fn(async () => undefined);
+    const spawn = vi.fn(async () => ({
+      exit: Promise.resolve(0),
+      output: new ReadableStream<string>({
+        start(controller) {
+          controller.close();
+        },
+      }),
+      kill: vi.fn(),
+    }));
+    webContainerMock.boot.mockReset();
+    webContainerMock.boot.mockResolvedValue({
+      workdir: "/home/workshop",
+      mount: async (tree: unknown, options: unknown) => {
+        mounted.push([tree, options]);
+      },
+      spawn,
+      fs: {
+        mkdir,
+        writeFile,
+        readdir: async () => [],
+        readFile: async () => "",
+      },
+    });
+    const traversalRunner = createWebContainerRunner();
+    await expect(
+      traversalRunner.run(
+        {
+          filePath: "src/main.ts",
+          files: {
+            "src/main.ts": "console.log('unsafe')",
+            "../secrets.txt": "must not escape",
+          },
+        },
+        () => undefined,
+      ),
+    ).rejects.toThrow("Unsupported external project path: ../secrets.txt");
+
+    const runner = createWebContainerRunner();
+
+    await runner.run(
+      {
+        filePath: "src/main.ts",
+        files: {
+          "src/main.ts": "console.log('first')",
+          "../fixtures/clinic.ts": "export const clinicFixture = 'first';",
+        },
+      },
+      () => undefined,
+    );
+    await runner.run(
+      {
+        filePath: "src/main.ts",
+        files: {
+          "src/main.ts": "console.log('second')",
+          "../fixtures/clinic.ts": "export const clinicFixture = 'second';",
+        },
+      },
+      () => undefined,
+    );
+
+    expect(mounted).toEqual([
+      [{
+        src: {
+          directory: {
+            "main.ts": { file: { contents: "console.log('first')" } },
+          },
+        },
+      }, { mountPoint: "workspace" }],
+    ]);
+    expect(mkdir).toHaveBeenCalledWith("workspace", { recursive: true });
+    expect(mkdir).toHaveBeenCalledWith("fixtures", { recursive: true });
+    expect(writeFile).toHaveBeenCalledWith(
+      "fixtures/clinic.ts",
+      "export const clinicFixture = 'second';",
+    );
+    expect(writeFile).toHaveBeenCalledWith(
+      "workspace/src/main.ts",
+      "console.log('second')",
+    );
+    expect(spawn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Array),
+      expect.objectContaining({ cwd: "workspace" }),
+    );
+  });
+
   it("selects one fixed command by file kind", () => {
     expect(runCommandFor("exercises/02-boundary-and-ids.test.ts")).toEqual({
       command: "npx",
@@ -300,6 +390,7 @@ describe("single-file execution", () => {
       mount: async () => undefined,
       spawn,
       fs: {
+        mkdir: async () => undefined,
         writeFile: async () => undefined,
         readdir: async () => [],
         readFile: async () => "",
@@ -379,6 +470,7 @@ describe("single-file execution", () => {
       mount: async () => undefined,
       spawn,
       fs: {
+        mkdir: async () => undefined,
         writeFile: async () => undefined,
         readdir: async () => [],
         readFile: async () => "",
@@ -450,6 +542,7 @@ describe("single-file execution", () => {
       mount: async () => undefined,
       spawn,
       fs: {
+        mkdir: async () => undefined,
         writeFile: async () => undefined,
         readdir: async () => [],
         readFile: async () => "",
@@ -481,7 +574,7 @@ describe("single-file execution", () => {
       async (
         command: string,
         _args: readonly string[],
-        _options: Readonly<{ env: Readonly<Record<string, string>> }>,
+        _options: Readonly<{ cwd: string; env: Readonly<Record<string, string>> }>,
       ) => {
         if (command === "npm") {
           return {
@@ -511,37 +604,38 @@ describe("single-file execution", () => {
       isDirectory: () => kind === "directory",
     });
     const directoryEntries: Record<string, ReturnType<typeof entry>[]> = {
-      "node_modules/zod": [
+      "workspace/node_modules/zod": [
         entry("package.json", "file"),
         entry("index.d.cts", "file"),
         entry("index.d.mts", "file"),
         entry("index.js", "file"),
       ],
-      "node_modules/vitest": [entry("package.json", "file"), entry("index.d.ts", "file")],
-      "node_modules/@vitest": [entry("expect", "directory")],
-      "node_modules/@vitest/expect": [
+      "workspace/node_modules/vitest": [entry("package.json", "file"), entry("index.d.ts", "file")],
+      "workspace/node_modules/@vitest": [entry("expect", "directory")],
+      "workspace/node_modules/@vitest/expect": [
         entry("package.json", "file"),
         entry("index.d.ts", "file"),
       ],
     };
     const typeSources: Record<string, string> = {
-      "node_modules/zod/package.json": "{\"types\":\"./index.d.cts\"}",
-      "node_modules/zod/index.d.cts": "zod commonjs types",
-      "node_modules/zod/index.d.mts": "zod module types",
-      "node_modules/vitest/package.json": "vitest package",
-      "node_modules/vitest/index.d.ts": "vitest types",
-      "node_modules/@vitest/expect/package.json": "expect package",
-      "node_modules/@vitest/expect/index.d.ts": "expect types",
+      "workspace/node_modules/zod/package.json": "{\"types\":\"./index.d.cts\"}",
+      "workspace/node_modules/zod/index.d.cts": "zod commonjs types",
+      "workspace/node_modules/zod/index.d.mts": "zod module types",
+      "workspace/node_modules/vitest/package.json": "vitest package",
+      "workspace/node_modules/vitest/index.d.ts": "vitest types",
+      "workspace/node_modules/@vitest/expect/package.json": "expect package",
+      "workspace/node_modules/@vitest/expect/index.d.ts": "expect types",
     };
     const mounted: unknown[] = [];
     const written = new Map<string, string>();
     webContainerMock.boot.mockReset();
     webContainerMock.boot.mockResolvedValue({
-      mount: async (tree: unknown) => {
-        mounted.push(tree);
+      mount: async (tree: unknown, options: unknown) => {
+        mounted.push([tree, options]);
       },
       spawn,
       fs: {
+        mkdir: async () => undefined,
         writeFile: async (path: string, source: string) => {
           written.set(path, source);
         },
@@ -578,23 +672,23 @@ describe("single-file execution", () => {
 
     expect(webContainerMock.boot).toHaveBeenCalledTimes(1);
     expect(mounted).toEqual([
-      {
+      [{
         src: { directory: { "main.ts": { file: { contents: "console.log('first')" } } } },
         "package.json": { file: { contents: "{}" } },
-      },
+      }, { mountPoint: "workspace" }],
     ]);
-    expect(written.get("src/main.ts")).toBe("console.log('second')");
+    expect(written.get("workspace/src/main.ts")).toBe("console.log('second')");
     expect(spawn).toHaveBeenNthCalledWith(
       1,
       "npm",
       ["install", "--no-progress", "--no-audit", "--no-fund"],
-      { env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" } },
+      { cwd: "workspace", env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" } },
     );
     expect(spawn).toHaveBeenNthCalledWith(
       2,
       "npx",
       ["--no-install", "tsx", "src/main.ts"],
-      { env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" } },
+      { cwd: "workspace", env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" } },
     );
     expect(spawn).toHaveBeenCalledTimes(3);
     expect(outputText()).toBe(
@@ -629,18 +723,18 @@ describe("single-file execution", () => {
       isDirectory: () => kind === "directory",
     });
     const directoryEntries: Record<string, ReturnType<typeof entry>[]> = {
-      "node_modules/vitest": [entry("package.json", "file"), entry("index.d.ts", "file")],
-      "node_modules/@vitest": [entry("expect", "directory")],
-      "node_modules/@vitest/expect": [
+      "workspace/node_modules/vitest": [entry("package.json", "file"), entry("index.d.ts", "file")],
+      "workspace/node_modules/@vitest": [entry("expect", "directory")],
+      "workspace/node_modules/@vitest/expect": [
         entry("package.json", "file"),
         entry("index.d.ts", "file"),
       ],
     };
     const typeSources: Record<string, string> = {
-      "node_modules/vitest/package.json": "vitest package",
-      "node_modules/vitest/index.d.ts": "vitest types",
-      "node_modules/@vitest/expect/package.json": "expect package",
-      "node_modules/@vitest/expect/index.d.ts": "expect types",
+      "workspace/node_modules/vitest/package.json": "vitest package",
+      "workspace/node_modules/vitest/index.d.ts": "vitest types",
+      "workspace/node_modules/@vitest/expect/package.json": "expect package",
+      "workspace/node_modules/@vitest/expect/index.d.ts": "expect types",
     };
     const spawn = vi.fn(async () => ({
       exit: Promise.resolve(0),
@@ -652,9 +746,10 @@ describe("single-file execution", () => {
       mount: async () => undefined,
       spawn,
       fs: {
+        mkdir: async () => undefined,
         writeFile: async () => undefined,
         readdir: async (path: string) => {
-          if (path === "node_modules/zod") {
+          if (path === "workspace/node_modules/zod") {
             throw new Error(
               "ENOENT: no such file or directory, scandir '/home/example/node_modules/zod'",
             );
@@ -701,7 +796,7 @@ describe("single-file execution", () => {
         "exercises/incident.test.ts",
         "--reporter=verbose",
       ],
-      { env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" } },
+      { cwd: "workspace", env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" } },
     );
   });
 });

@@ -1,0 +1,25 @@
+---
+import ExerciseSessionContent from "../../components/ExerciseSessionContent.astro";
+import guides from "../../code-explorer/code-guides/04-effects-and-events";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+
+const session = sessionBySlug("04-effects-and-events");
+if (session === undefined) throw new Error("Unknown session: 04-effects-and-events");
+---
+
+<SessionLayout session={session}>
+  <ExerciseSessionContent
+    session={session}
+    guides={guides}
+    narrative={{
+      requirement: "誰がいつ診察を開始したかを決定的なイベントとして作り、状態と監査記録を1回の非同期保存で残す。",
+      accident: "DateとrandomUUIDでテストが揺れ、stateStoreとeventLogのdual-writeで状態だけが残った。",
+      legacy: "直接生成する時刻・ID、Promise + try/catch、2つの書き込み口を読みます。",
+      technique: "Clock / EventIdGenerator、具体的な ExaminationStarted、single store(event)、ResultAsync と andThrough。",
+      limitation: "in-memory の原子性は実装上の約束であり、本番永続化では transaction が必要です。",
+      reviewFocus: "保存を andThen で値ごと置き換えず、andThrough 後も event.aggregateState が残るか。",
+      fallback: "ステップ3は開始側の同期コードと解答側の ResultAsync を並べて講師デモに切り替えられます。2人目の比較を短縮しても相互レビュー自体は残します。",
+    }}
+  />
+</SessionLayout>

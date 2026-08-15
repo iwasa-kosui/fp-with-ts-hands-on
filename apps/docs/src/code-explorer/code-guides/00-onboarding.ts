@@ -1,6 +1,6 @@
-import type { CodeGuide } from "./code-guide";
+import type { CodeGuide } from "../code-guide";
 
-export const onboardingGuides = [
+export default [
   {
     id: "string-status",
     title: "状態を任意の文字列で表している",
@@ -9,7 +9,7 @@ export const onboardingGuides = [
     path: "src/legacy/appointment.ts",
     highlights: [
       { startLineNumber: 22, endLineNumber: 22 },
-      { startLineNumber: 49, endLineNumber: 52 },
+      { startLineNumber: 47, endLineNumber: 54 },
     ],
   },
   {
@@ -27,7 +27,6 @@ export const onboardingGuides = [
     futureRisk: "同じ実行時形式の ID を TypeScript が区別できません。",
     path: "src/legacy/appointment.ts",
     highlights: [
-      { startLineNumber: 4, endLineNumber: 4 },
       { startLineNumber: 12, endLineNumber: 19 },
       { startLineNumber: 26, endLineNumber: 33 },
     ],
@@ -38,7 +37,7 @@ export const onboardingGuides = [
     currentDesign: "予約が見つからない場合に例外を送出します。",
     futureRisk: "呼び出し側が扱う失敗の種類を関数の型から判断できません。",
     path: "src/legacy/appointment.ts",
-    highlights: [{ startLineNumber: 53, endLineNumber: 53 }],
+    highlights: [{ startLineNumber: 52, endLineNumber: 54 }],
   },
   {
     id: "raw-pii-log",
@@ -47,8 +46,8 @@ export const onboardingGuides = [
     futureRisk: "ログへ出してよい情報の境界が値や型に表れていません。",
     path: "src/legacy/appointment.ts",
     highlights: [
-      { startLineNumber: 18, endLineNumber: 19 },
-      { startLineNumber: 43, endLineNumber: 43 },
+      { startLineNumber: 16, endLineNumber: 19 },
+      { startLineNumber: 40, endLineNumber: 44 },
     ],
   },
 ] as const satisfies readonly CodeGuide[];

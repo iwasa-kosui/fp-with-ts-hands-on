@@ -1,20 +1,28 @@
 import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
+
+const catalogSource = await readFile(
+  new URL("../src/sessions/catalog.ts", import.meta.url),
+  "utf8",
+);
+const catalogModule = ts.transpileModule(catalogSource, {
+  compilerOptions: {
+    module: ts.ModuleKind.ESNext,
+    target: ts.ScriptTarget.ES2022,
+  },
+}).outputText;
+const { sessions } = await import(
+  `data:text/javascript;base64,${Buffer.from(catalogModule).toString("base64")}`
+);
 
 const distUrl = new URL("../dist/", import.meta.url);
 const distPath = fileURLToPath(distUrl);
 const requiredHtmlFiles = [
   "index.html",
   "404.html",
-  "code-explorer/index.html",
-  "sessions/00-onboarding/index.html",
-  "sessions/01-state-modeling/index.html",
-  "sessions/02-boundary-and-ids/index.html",
-  "sessions/03-result-errors/index.html",
-  "sessions/04-agent-review/index.html",
-  "sessions/05-mini-integration/index.html",
-  "sessions/final/index.html",
+  ...sessions.map(({ slug }) => `sessions/${slug}/index.html`),
 ];
 
 const missingHtmlFiles = [];
@@ -35,7 +43,6 @@ const sessionPaths = requiredHtmlFiles
   .map((htmlFile) => `/${htmlFile.replace(/index\.html$/, "")}`);
 const allowedPaths = new Set([
   "/",
-  "/code-explorer/",
   "/module-00/",
   ...sessionPaths,
 ]);

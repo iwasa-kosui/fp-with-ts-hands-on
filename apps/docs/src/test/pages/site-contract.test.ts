@@ -6,29 +6,13 @@ import { createAstroContainer } from "../render-astro";
 const pageSessions = import.meta.glob("../../pages/sessions/*.astro", { eager: true });
 
 describe("static site contract", () => {
-  it("keeps the authored legacy routes until Task 5 replaces them with six wrappers", () => {
+  it("publishes exactly the six catalog session routes", () => {
     const slugs = Object.keys(pageSessions)
       .map((path) => path.split("/").at(-1)?.replace(/\.astro$/, ""))
       .filter((slug): slug is string => slug !== undefined)
       .sort();
 
-    expect(slugs).toEqual([
-      "00-onboarding",
-      "01-state-modeling",
-      "02-boundary-and-ids",
-      "03-result-errors",
-      "04-agent-review",
-      "05-mini-integration",
-      "final",
-    ]);
-    expect(sessions.map(({ slug }) => slug)).toEqual([
-      "00-onboarding",
-      "01-state-modeling",
-      "02-boundary-and-ids",
-      "03-result-errors",
-      "04-effects-and-events",
-      "final",
-    ]);
+    expect(slugs).toEqual(sessions.map(({ slug }) => slug).sort());
   });
 
   it("renders a real not-found page", async () => {

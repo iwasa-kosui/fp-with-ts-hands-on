@@ -50,6 +50,26 @@ describe("worker request handler", () => {
     },
   );
 
+  it.each([
+    "/sessions/04-agent-review",
+    "/sessions/04-agent-review/",
+    "/sessions/05-mini-integration",
+    "/sessions/05-mini-integration/",
+  ])("redirects the retired curriculum path %s without calling assets", async (pathname) => {
+    const { env, fetch } = createAssets(new Response("asset"));
+
+    const response = await handleRequest(
+      new Request(`https://example.test${pathname}`),
+      env,
+    );
+
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe(
+      "https://example.test/sessions/04-effects-and-events/",
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("returns the exact asset response for the original request", async () => {
     const assetResponse = new Response("asset", {
       headers: { "x-asset": "original" },

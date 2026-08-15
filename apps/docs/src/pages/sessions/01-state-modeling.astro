@@ -1,7 +1,6 @@
 ---
-import CodeBlock from "../../components/CodeBlock.astro";
-import CommandBlock from "../../components/CommandBlock.astro";
-import SessionCodePlayground from "../../components/code-explorer/SessionCodePlayground.astro";
+import ExerciseSessionContent from "../../components/ExerciseSessionContent.astro";
+import guides from "../../code-explorer/code-guides/01-state-modeling";
 import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessionBySlug } from "../../sessions/catalog";
 
@@ -10,171 +9,17 @@ if (session === undefined) throw new Error("Unknown session: 01-state-modeling")
 ---
 
 <SessionLayout session={session}>
-  <ol slot="toc">
-    <li><a href="#requirement-and-transitions">要求と状態遷移を整理する</a></li>
-    <li><a href="#read-the-failure">失敗から作成対象を読む</a></li>
-    <li><a href="#code-playground">ブラウザで試す</a></li>
-    <li><a href="#close-state-and-data">状態とデータを同時に閉じる</a></li>
-    <li><a href="#review-and-boundary">レビューと次の境界へ</a></li>
-  </ol>
-
-  <section>
-    <h2 id="requirement-and-transitions">要求と状態遷移を整理する</h2>
-    <p>予約の状態と、キャンセル後に必要な業務情報を見直します。</p>
-    <p>
-      <strong>要求:</strong>
-      キャンセル理由と再診希望を、間違った状態に付けられないようにする。
-    </p>
-    <p>
-      キャンセル理由、キャンセル時刻、再診希望日は、すべての予約に付く optional field
-      ではありません。<code>Canceled</code> という状態だけが持つ業務情報です。
-    </p>
-    <p>
-      キャンセルは <code>Scheduled</code> または <code>CheckedIn</code>
-      から行えます。診察を開始した後や会計済みの予約はキャンセルへ遷移させません。
-    </p>
-    <p>
-      状態を文字列で上書きする代わりに、<code>kind</code>
-      で区別した union の次の値を返します。
-    </p>
-    <p>
-      <strong>守る不変条件:</strong> Scheduled -&gt; CheckedIn -&gt; InExamination -&gt; Paid
-      の進行を許可し、Scheduled または CheckedIn から Canceled へキャンセルできる。Paid と
-      Canceled は終端にする。
-    </p>
-    <p>
-      今回のミッションは、状態ごとのデータを discriminated union に閉じる source
-      を作成し、2つの遷移関数を実装して要求を受け止めることです。
-    </p>
-  </section>
-
-  <section>
-    <h2 id="read-the-failure">失敗から作成対象を読む</h2>
-    <p>
-      まず演習テストを実行し、不正な状態遷移と <code>Canceled</code>
-      に必要な情報を期待値から確認します。
-    </p>
-    <CommandBlock
-      phase="red"
-      command="pnpm exercise:01"
-      expected="examples/session-01 には型付き状態モデルがまだないため、診察開始と理由付きキャンセルを要求するテストが失敗します。"
-    />
-
-    <h3>先に読むファイル</h3>
-    <dl>
-      <dt><code>examples/session-01/src/appointment.ts</code></dt>
-      <dd>
-        string status と optional fields を使う legacy 実装を読み、型に表現されていない状態と情報を確認します。
-      </dd>
-      <dt><code>examples/session-01/test/incident-requirements.test.ts</code></dt>
-      <dd>5つの来院状態、2つの終端状態、キャンセルに必要な情報を要求として確認します。</dd>
-      <dt><code>examples/session-01/exercises/state-modeling.test.ts</code></dt>
-      <dd>診察開始と理由付きキャンセルという実行時要件を、期待値から確認します。</dd>
-    </dl>
-
-    <h3>新しく作成する source</h3>
-    <dl>
-      <dt><code>examples/session-01/src/domain/appointment.ts</code></dt>
-      <dd>
-        RED の契約に従ってこのファイルを作成し、<code>Appointment.startExamination</code> と <code
-          >Appointment.cancelWithReason</code
-        > の2つの遷移関数を実装します。
-      </dd>
-    </dl>
-  </section>
-
-  <SessionCodePlayground slug={session.slug} />
-
-  <section>
-    <h2 id="close-state-and-data">状態とデータを同時に閉じる</h2>
-    <CodeBlock
-      language="typescript"
-      label="Appointment の状態ごとの形"
-      code={`type Appointment =
-  | Readonly<{ kind: "Scheduled"; appointmentId: string }>
-  | Readonly<{ kind: "CheckedIn"; appointmentId: string }>
-  | Readonly<{ kind: "InExamination"; appointmentId: string }>
-  | Readonly<{ kind: "Paid"; appointmentId: string }>
-  | Readonly<{
-      kind: "Canceled";
-      appointmentId: string;
-      reason: string;
-      canceledAt: string;
-      followUpRequestedAt?: string;
-    }>;`}
-    />
-
-    <h3>使う技法: Discriminated Union</h3>
-    <p>
-      <code>kind</code>
-      ごとに必要なデータを型で分けると、状態固有の必須情報が明確になり、不正な状態と属性の組み合わせを表現できなくなります。
-    </p>
-    <p>
-      <strong>この技法の限界:</strong> 外部の <code>unknown</code> 入力の検証と PII
-      の実行時保護は、この型だけでは担保できません。
-    </p>
-
-    <h3>生成時の防止と遷移時の拒否</h3>
-    <p>
-      union は、<code>Canceled</code> に必要な情報が欠けた値や、別の状態にキャンセル情報を付けた値の生成を型で防ぎます。純粋な遷移関数の引数を遷移元の型へ絞り、許可しない状態から呼び出せないようにします。
-    </p>
-
-    <CommandBlock
-      phase="green"
-      command="pnpm exercise:01"
-      expected="同じ演習テストが成功し、診察開始と理由・再診希望付きキャンセルの契約を満たします。"
-    />
-    <p>
-      続いて追加の回帰確認として <code
-        >pnpm --filter @fp-with-ts/clinic-session-01 test</code
-      > を実行し、開始 snapshot の既存動作も保たれていることを確認します。
-    </p>
-  </section>
-
-  <section>
-    <h2 id="review-and-boundary">レビューと次の境界へ</h2>
-    <h3>レビュー観点</h3>
-    <ul>
-      <li><code>kind</code> の分岐が CheckedIn 以外からの診察開始を許していない。</li>
-      <li>Paid と Canceled を終端状態として扱っている。</li>
-      <li>
-        Canceled にだけキャンセル理由を表す <code>reason</code>、<code
-          >canceledAt</code
-        >、任意の <code>followUpRequestedAt</code> が存在する。
-      </li>
-    </ul>
-
-    <h3>完了条件</h3>
-    <ul>
-      <li>不正な遷移を状態の型と遷移関数の引数で止める理由を説明できる。</li>
-      <li>
-        Scheduled または CheckedIn
-        からだけキャンセルでき、理由、時刻、任意の再診希望を Canceled
-        以外へ付けられないことを説明できる。
-      </li>
-    </ul>
-
-    <h3>業務への転用</h3>
-    <p>
-      状態とデータを同時に閉じるため、後続の use case
-      は許可された状態だけを前提にできます。
-    </p>
-
-    <h3>振り返り</h3>
-    <p>
-      不正な状態の生成と不正な遷移は、判別共用体と遷移関数の引数でそれぞれどう防げますか。
-    </p>
-
-    <h3>代替進行</h3>
-    <p>
-      実装できない場合は、提示済みの <code>Appointment</code> union
-      を使い、2関数だけを遷移元の型へ絞ります。
-    </p>
-
-    <h3>次のセッションへ</h3>
-    <p>
-      domain 内部の状態を閉じた次は、外部から来る <code>unknown</code>、用途の異なる ID、PII
-      をそれぞれ適切な境界で守ります。
-    </p>
-  </section>
+  <ExerciseSessionContent
+    session={session}
+    guides={guides}
+    narrative={{
+      requirement: "Scheduled / CheckedIn / InExamination / Paid / Canceled の5状態と、許可した遷移だけをコードへ移す。キャンセル理由は必ず残す。",
+      accident: "会計済みの来院が診察中へ戻され、会計が二度行われた。",
+      legacy: "Appointment 全体を受ける遷移関数、throw、as Appointment、default 分岐を読みます。",
+      technique: "判別共用体、遷移元を限定した純粋関数、as const satisfies、assertNever。",
+      limitation: "外部 JSON から捏造された状態は、このモジュールの型だけでは検証できません。",
+      reviewFocus: "toStatusLabel の default が消え、6つ目の状態を足すとコンパイルエラーになるか。",
+      fallback: "次スナップショットの解答をステップ単位で開き、まず遷移関数の引数型、その後に網羅分岐を写します。相互レビューは省きません。",
+    }}
+  />
 </SessionLayout>
