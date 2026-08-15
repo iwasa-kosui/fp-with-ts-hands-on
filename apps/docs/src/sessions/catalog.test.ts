@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  commonReviewChecksFor,
+  reviewDiffStatCommand,
+  reviewStatusCommand,
   sessionBySlug,
   sessionNeighbors,
   sessionPath,
@@ -144,6 +147,16 @@ describe("session catalog invariants", () => {
     for (const session of exerciseSessions) {
       expect(session.peerReview.questions).toEqual(expectedPeerReviewQuestions);
       expect(session.peerReview.questions.every((question) => question.trim() !== "")).toBe(true);
+    }
+  });
+
+  it("17. scopes the four common review checks to each current snapshot", () => {
+    for (const session of exerciseSessions) {
+      const checks = commonReviewChecksFor(session.snapshot);
+      expect(checks).toHaveLength(4);
+      expect(checks[1]).toContain(reviewDiffStatCommand(session.snapshot));
+      expect(checks[1]).toContain(reviewStatusCommand);
+      expect(checks[1]).not.toContain("`git diff --stat`");
     }
   });
 });

@@ -228,6 +228,64 @@ describe("event document contract", () => {
     expect(sheet).toContain(businessReflectionQuestion);
   });
 
+  it("keeps every event handoff scoped to the current catalog snapshot", async () => {
+    const expectedCommands = exerciseSessions.map(
+      (session) => `git diff --stat -- examples/${session.snapshot}`,
+    );
+    const handoffDocuments = [
+      "facilitator-guide.md",
+      "participant-setup.md",
+      "peer-review-card.md",
+      "review-sheet.md",
+    ];
+
+    for (const name of handoffDocuments) {
+      const document = await readEventDocument(name);
+      expect(
+        uniqueMatches(document, /(git diff --stat -- examples\/session-\d+)/g).sort(),
+        name,
+      ).toEqual([...expectedCommands].sort());
+      expect(document, name).toContain("git status --short");
+      expect(document, name).toContain("前のセッションの未commit差分");
+      expect(document, name).toContain("reset、stash、commit");
+    }
+
+    for (const name of (await readdir(eventDocumentsDirectory)).filter((value) =>
+      value.endsWith(".md"))) {
+      expect(await readEventDocument(name), name).not.toContain("`git diff --stat`");
+    }
+  });
+
+  it("prepares the PRD 30-day follow-up without claiming it was sent", async () => {
+    const prd = await readFile(`${repositoryRoot}/docs/prd/prd-001.md`, "utf8");
+    const followUp = await readEventDocument("follow-up-30-days.md");
+    const guide = await readEventDocument("facilitator-guide.md");
+    const rehearsal = await readEventDocument("rehearsal-2026-08-15.md");
+    const measurementPlan = prd.match(/### 30日後\n\n([\s\S]*?)\n\n## /)?.[1] ?? "";
+    const prdQuestions = [...measurementPlan.matchAll(/^- (.+)$/gm)].map(([, value]) => value);
+
+    expect(prdQuestions).toHaveLength(4);
+    for (const question of prdQuestions) expect(followUp).toContain(question);
+    for (const value of [
+      "主催者",
+      "運営責任者",
+      "D+30",
+      "回答締切",
+      "参加募集に使ったイベント管理サービス",
+      "一斉連絡",
+      "未回答者",
+      "PII",
+    ]) {
+      expect(followUp).toContain(value);
+    }
+    expect(guide).toContain("./follow-up-30-days.md");
+    expect(rehearsal).toContain("./follow-up-30-days.md");
+    for (const document of [guide, rehearsal]) {
+      expect(document).toContain("設問と送付方法は準備済み");
+      expect(document).toContain("実送付は開催後のため未実施");
+    }
+  });
+
   it("rejects stale curriculum terms in every event markdown document", async () => {
     const names = (await readdir(eventDocumentsDirectory))
       .filter((name) => name.endsWith(".md"))

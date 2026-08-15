@@ -87,12 +87,19 @@ export const peerReviewPromises = [
   "TAは「よくできた実装」を選びません。選定基準を参加者にも開示します。",
 ] as const;
 
-export const commonReviewChecks = [
+export const reviewDiffStatCommand = (snapshot: ExampleSnapshot): string =>
+  `git diff --stat -- examples/${snapshot}`;
+
+export const reviewStatusCommand = "git status --short";
+
+export const commonReviewChecksFor = (
+  snapshot: ExampleSnapshot,
+): readonly [string, string, string, string] => [
   "`as` によるキャストが入っていないか全文検索する。",
-  "`git diff --stat` でモジュール外のファイルが変更されていないか確認する。",
+  `\`${reviewDiffStatCommand(snapshot)}\` で今回のsnapshotだけを確認し、\`${reviewStatusCommand}\` でリポジトリ全体の想定外pathを確認する。`,
   "不変条件を型で守っているか、実行時の `if` で守っているか判定する。",
   "相互レビューの末尾1分で、型で守れなかった残りを記録する。",
-] as const;
+];
 
 export const reviewCompletionArtifacts = [
   "守る不変条件の1文",

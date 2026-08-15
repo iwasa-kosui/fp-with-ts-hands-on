@@ -116,7 +116,7 @@ const promisesHref =
 
 <section id="review">
   <h2>レビューと持ち帰り</h2>
-  <ExerciseReviewChecklist />
+  <ExerciseReviewChecklist snapshot={session.snapshot} />
   <h3>設計判断を差分へ照らす</h3>
   <div class="decision-list">
     {session.decisions.map((decision) => (

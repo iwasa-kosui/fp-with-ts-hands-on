@@ -4,13 +4,6 @@ import { renderSessionPage } from "./session-test-helpers";
 
 const exercises = sessions.filter((session) => session.kind === "exercise");
 
-const commonReviewChecks = [
-  "`as` によるキャストが入っていないか全文検索する。",
-  "`git diff --stat` でモジュール外のファイルが変更されていないか確認する。",
-  "不変条件を型で守っているか、実行時の `if` で守っているか判定する。",
-  "相互レビューの末尾1分で、型で守れなかった残りを記録する。",
-] as const;
-
 const completionArtifacts = [
   "守る不変条件の1文",
   "依頼文",
@@ -54,8 +47,16 @@ describe("exercise session contract", () => {
       for (const question of session.peerReview.questions) {
         expect(reviewText).toContain(question);
       }
-      for (const check of commonReviewChecks)
-        expect(reviewText).toContain(check);
+      const reviewChecks = document.querySelectorAll(
+        ".exercise-review-checklist > ol > li",
+      );
+      const scopedDiffCommand = `git diff --stat -- examples/${session.snapshot}`;
+      expect(reviewChecks).toHaveLength(4);
+      expect(reviewText.match(new RegExp(scopedDiffCommand, "g"))).toHaveLength(1);
+      expect(reviewText).toContain("git status --short");
+      expect(reviewText).not.toMatch(/git diff --stat(?! -- examples\/)/);
+      expect(reviewText).toContain("前のセッションの未commit差分");
+      expect(reviewText).toContain("reset、stash、commit");
       for (const artifact of completionArtifacts)
         expect(reviewText).toContain(artifact);
       expect(reviewText).toContain(

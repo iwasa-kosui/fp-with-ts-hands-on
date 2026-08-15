@@ -71,8 +71,10 @@ module-not-found、import error、設定エラー、予期しない例外は意�
 
 ```bash
 git status --short
-git diff --stat
+git diff --stat -- examples/session-0N
 ```
+
+`session-0N` は現在のセッションページに表示された開始snapshot（S1なら `session-01`）へ置き換えます。scoped diffは現在の演習だけ、statusはリポジトリ全体の想定外pathを確認するために使います。
 
 自分が残したい変更を消さないよう、戻す前にTAとパスを確認します。追跡済みで、今回不要な変更だけを戻す場合は明示したパスに限定します。
 
