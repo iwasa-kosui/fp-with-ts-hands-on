@@ -1,8 +1,12 @@
 import { spawn } from "node:child_process";
 import { cp, copyFile, mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { describe, expect, it } from "vitest";
-import { sessions } from "../../sessions/catalog";
+import {
+  type ExerciseStep,
+  type SolutionReference,
+  sessions,
+} from "../../sessions/catalog";
 
 type CommandResult = Readonly<{
   label: string;
@@ -10,11 +14,44 @@ type CommandResult = Readonly<{
   output: string;
 }>;
 
+type ResolvedCatalogPath = Readonly<{
+  absolutePath: string;
+  relativePath: string;
+}>;
+
 const repoRoot = resolve(process.cwd(), "../..");
 const starterRoot = resolve(repoRoot, "examples/session-04");
 const solutionRoot = resolve(repoRoot, "examples/session-05");
 
+const solutionsFor = (
+  steps: readonly ExerciseStep[],
+): readonly SolutionReference[] =>
+  steps.flatMap(({ solutions }) => solutions);
+
 describe("S4 full-file fallback overlay", () => {
+  it.each([
+    {
+      label: "target",
+      catalogRoot: starterRoot,
+      destinationRoot: resolve(repoRoot, "examples/.s4-overlay-security"),
+      catalogPath: "examples/session-04/../outside",
+    },
+    {
+      label: "solution",
+      catalogRoot: solutionRoot,
+      destinationRoot: solutionRoot,
+      catalogPath: "examples/session-05/../outside",
+    },
+  ])("$label のpath traversalをroot外へ解決しない", ({
+    catalogRoot,
+    destinationRoot,
+    catalogPath,
+  }) => {
+    expect(() =>
+      resolveCatalogPath(catalogRoot, destinationRoot, catalogPath),
+    ).toThrow("catalog path escapes root");
+  });
+
   it("catalog targetsだけを次snapshotで置換すると型検査・回帰・exerciseがすべてGREENになる", async () => {
     const overlayRoot = await mkdtemp(resolve(repoRoot, "examples/.s4-overlay-"));
 
@@ -30,16 +67,27 @@ describe("S4 full-file fallback overlay", () => {
       if (s4?.kind !== "exercise") return;
 
       const targets = [...new Set(s4.steps.flatMap(({ targets }) => targets))];
-      const solutionPaths = new Set(
-        s4.steps.flatMap(({ solutions }) => solutions.map(({ path }) => path)),
+      const completedSolutions = solutionsFor(s4.steps).filter(
+        ({ presentation }) => presentation === "completed-file",
       );
+      const solutionPaths = new Set(completedSolutions.map(({ path }) => path));
+      const expectedSolutionPaths = targets.map((target) => {
+        const { relativePath } = resolveCatalogPath(starterRoot, solutionRoot, target);
+        return `examples/session-05/${relativePath}`;
+      });
+      expect([...solutionPaths].sort()).toEqual([...new Set(expectedSolutionPaths)].sort());
 
       for (const target of targets) {
-        const relativePath = target.slice("examples/session-04/".length);
-        const solutionPath = `examples/session-05/${relativePath}`;
+        const destination = resolveCatalogPath(starterRoot, overlayRoot, target);
+        const solutionPath = `examples/session-05/${destination.relativePath}`;
         expect(solutionPaths, target).toContain(solutionPath);
-        await mkdir(resolve(overlayRoot, relativePath, ".."), { recursive: true });
-        await copyFile(resolve(solutionRoot, relativePath), resolve(overlayRoot, relativePath));
+        const solution = completedSolutions.find(({ path }) => path === solutionPath);
+        expect(solution, target).toBeDefined();
+        if (solution === undefined) continue;
+        const source = resolveCatalogPath(solutionRoot, solutionRoot, solution.path);
+        expect(source.relativePath).toBe(destination.relativePath);
+        await mkdir(dirname(destination.absolutePath), { recursive: true });
+        await copyFile(source.absolutePath, destination.absolutePath);
       }
 
       const results = await Promise.all([
@@ -76,6 +124,34 @@ describe("S4 full-file fallback overlay", () => {
     }
   }, 30_000);
 });
+
+const resolveCatalogPath = (
+  catalogRoot: string,
+  destinationRoot: string,
+  catalogPath: string,
+): ResolvedCatalogPath => {
+  if (isAbsolute(catalogPath)) {
+    throw new Error(`catalog path escapes root: ${catalogPath}`);
+  }
+  const relativePath = relative(catalogRoot, resolve(repoRoot, catalogPath));
+  assertPathInsideRoot(relativePath, catalogPath);
+  const absolutePath = resolve(destinationRoot, relativePath);
+  assertPathInsideRoot(relative(destinationRoot, absolutePath), catalogPath);
+  return {
+    absolutePath,
+    relativePath,
+  };
+};
+
+const assertPathInsideRoot = (relativePath: string, catalogPath: string): void => {
+  if (
+    isAbsolute(relativePath) ||
+    relativePath === ".." ||
+    relativePath.startsWith(`..${sep}`)
+  ) {
+    throw new Error(`catalog path escapes root: ${catalogPath}`);
+  }
+};
 
 const run = (
   label: string,

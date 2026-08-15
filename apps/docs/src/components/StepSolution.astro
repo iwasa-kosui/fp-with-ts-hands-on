@@ -8,6 +8,13 @@ type Props = Readonly<{
 }>;
 
 const { step } = Astro.props;
+const presentations = new Set(
+  step.solutions.map(({ presentation }) => presentation ?? "excerpt"),
+);
+if (presentations.size !== 1) {
+  throw new Error(`StepSolution: 1ステップ内の表示形式を統一してください: ${step.id}`);
+}
+const presentation = presentations.values().next().value ?? "excerpt";
 const snippets = await Promise.all(
   step.solutions.map(async (solution) => {
     const [start, end] = solution.lines;
@@ -32,8 +39,15 @@ const snippets = await Promise.all(
 );
 ---
 
-<details class="step-solution">
+<details class="step-solution" data-presentation={presentation}>
   <summary>{step.goal}</summary>
+  {
+    presentation === "completed-file" ? (
+      <p class="step-solution__completed-file-note">
+        この完成例は後続stepを含む。表示された全target fileを反映後、同じexerciseをGREENにする。
+      </p>
+    ) : null
+  }
   {
     snippets.map(({ solution, code }) => (
       <section class="step-solution__snippet">

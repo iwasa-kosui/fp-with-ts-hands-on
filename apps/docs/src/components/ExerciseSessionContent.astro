@@ -92,14 +92,14 @@ const promisesHref =
   </div>
   <p><strong>採用する手段:</strong> {narrative.technique}</p>
   <p><strong>この手段の限界:</strong> {narrative.limitation}</p>
-  <h3>ステップごとの解答</h3>
+  <h3>{session.slug === "04-effects-and-events" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
   {
     session.steps.map((step) => (
       <div class="solution-step">
         {session.slug === "04-effects-and-events" && step.id === "s4-result-async" ? (
           <div class="before-after" aria-label="同期版と非同期版の見比べ方">
             <p><strong>開始側:</strong> 同期 Result と Promise + try/catch の境界を先に読む。</p>
-            <p><strong>解答側:</strong> 下の StepSolution で ResultAsync と andThrough の終端を読む。</p>
+            <p><strong>完成例:</strong> 下の全target fileには、ResultAsync と andThroughに加えて後続stepも含まれる。</p>
           </div>
         ) : null}
         <StepSolution step={step} />

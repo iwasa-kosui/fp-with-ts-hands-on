@@ -17,6 +17,7 @@ export type SolutionReference = Readonly<{
   path: string;
   symbol: string;
   lines: readonly [number, number];
+  presentation?: "excerpt" | "completed-file";
 }>;
 
 export type Decision = Readonly<{
@@ -394,12 +395,14 @@ export const sessions = [
           {
             path: "examples/session-05/src/useCase/dependencies.ts",
             symbol: "EventContextDependencies",
-            lines: [31, 34],
+            lines: [1, 43],
+            presentation: "completed-file",
           },
           {
             path: "examples/session-05/src/useCase/startExamination.ts",
             symbol: "createEventContext",
-            lines: [55, 60],
+            lines: [1, 86],
+            presentation: "completed-file",
           },
         ],
       },
@@ -411,12 +414,8 @@ export const sessions = [
           {
             path: "examples/session-05/src/useCase/dependencies.ts",
             symbol: "ExaminationStartedStore",
-            lines: [36, 38],
-          },
-          {
-            path: "examples/session-05/src/useCase/dependencies.ts",
-            symbol: "EffectsDependencies",
-            lines: [40, 43],
+            lines: [1, 43],
+            presentation: "completed-file",
           },
         ],
       },
@@ -427,7 +426,8 @@ export const sessions = [
         solutions: [{
           path: "examples/session-05/src/useCase/startExamination.ts",
           symbol: "startExaminationWithEffects",
-          lines: [67, 86],
+          lines: [1, 86],
+          presentation: "completed-file",
         }],
       },
       {
@@ -441,27 +441,14 @@ export const sessions = [
           {
             path: "examples/session-05/src/useCase/errors.ts",
             symbol: "RepositoryFailure",
-            lines: [16, 20],
-          },
-          {
-            path: "examples/session-05/src/useCase/errors.ts",
-            symbol: "RepositoryError",
-            lines: [22, 25],
-          },
-          {
-            path: "examples/session-05/src/useCase/errors.ts",
-            symbol: "StartExaminationWithEffectsError",
-            lines: [28, 28],
-          },
-          {
-            path: "examples/session-05/src/useCase/errors.ts",
-            symbol: "toRepositoryError",
-            lines: [30, 35],
+            lines: [1, 50],
+            presentation: "completed-file",
           },
           {
             path: "examples/session-05/src/useCase/startExamination.ts",
             symbol: "storeExaminationStarted",
-            lines: [62, 65],
+            lines: [1, 86],
+            presentation: "completed-file",
           },
         ],
       },

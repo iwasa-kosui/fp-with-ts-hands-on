@@ -28,6 +28,10 @@ describe("StepSolution", () => {
       document.querySelector("details.step-solution summary")?.textContent,
     ).toContain(firstStep.goal);
     expect(
+      document.querySelector("details.step-solution")?.getAttribute("data-presentation"),
+    ).toBe("excerpt");
+    expect(document.querySelector(".step-solution__completed-file-note")).toBeNull();
+    expect(
       document.querySelector("details.step-solution h4 code")?.textContent,
     ).toBe(solution.path);
     expect(
@@ -57,7 +61,7 @@ describe("StepSolution", () => {
     },
   );
 
-  it("renders every solution snippet in declared order with an explicit path", async () => {
+  it("labels the S4 fallback as completed files that include later steps", async () => {
     const step = sessions[4].steps.find(
       ({ id }) => id === "s4-inject-context",
     )!;
@@ -72,6 +76,20 @@ describe("StepSolution", () => {
         ({ textContent }) => textContent,
       ),
     ).toEqual(step.solutions.map(({ path }) => path));
+    expect(
+      document.querySelector("details.step-solution")?.getAttribute("data-presentation"),
+    ).toBe("completed-file");
+    expect(
+      document.querySelector(".step-solution__completed-file-note")?.textContent,
+    ).toContain(
+      "この完成例は後続stepを含む。表示された全target fileを反映後、同じexerciseをGREENにする",
+    );
+
+    const firstSolution = step.solutions[0];
+    const source = await readFile(resolve(repoRoot, firstSolution.path), "utf8");
+    expect(
+      document.querySelector("details.step-solution pre code")?.textContent,
+    ).toBe(source.endsWith("\n") ? source.slice(0, -1) : source);
   });
 });
 

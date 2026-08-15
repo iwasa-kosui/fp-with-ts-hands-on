@@ -109,13 +109,19 @@ describe("session catalog invariants", () => {
     }
   });
 
-  it("11. gives every step one or more truthful solution snippets", () => {
+  it("11. defaults to excerpt solutions and marks every S4 solution as a completed file", () => {
     for (const session of exerciseSessions) {
       for (const step of session.steps) {
         const solutions: unknown = Reflect.get(step, "solutions");
         expect(solutions, `${session.slug}: ${step.id}`).toEqual(expect.any(Array));
         if (!Array.isArray(solutions)) continue;
         expect(solutions.length, `${session.slug}: ${step.id}`).toBeGreaterThanOrEqual(1);
+        for (const solution of solutions) {
+          const presentation = Reflect.get(solution, "presentation") ?? "excerpt";
+          expect(presentation, `${session.slug}: ${step.id}`).toBe(
+            session.slug === "04-effects-and-events" ? "completed-file" : "excerpt",
+          );
+        }
       }
     }
 

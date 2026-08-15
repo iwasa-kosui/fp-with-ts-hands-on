@@ -31,14 +31,14 @@
 | コマンド | 結果 | 実測 |
 | --- | --- | ---: |
 | `pnpm typecheck` | 成功。session-00〜05、docs、Worker。Astro 70 files、0 errors / 0 warnings / 0 hints | post-audit再実行 7.2秒 |
-| `pnpm test` | 成功。session通常テスト51件、docs実行144件、明示的なWorker実行30件 | post-audit再実行 約12秒 |
-| `pnpm build` | 成功。Astro 70 files、0 diagnostics、8 HTML / 8 routes | post-audit再実行 約28秒 |
-| `pnpm --filter @fp-with-ts/docs build` | 成功。Astro 70 files、0 diagnostics、8 HTML / 8 routes | post-audit再実行 約24秒 |
+| `pnpm test` | 成功。session通常テスト51件、docs実行146件、明示的なWorker実行30件 | review round 1再実行 約15秒 |
+| `pnpm build` | 成功。Astro 70 files、0 diagnostics、8 HTML / 8 routes | review round 1再実行 約29秒 |
+| `pnpm --filter @fp-with-ts/docs build` | 成功。Astro 70 files、0 diagnostics、8 HTML / 8 routes | review round 1再実行 約29秒 |
 | `pnpm --filter @fp-with-ts/docs test:visual` | 28/28成功。更新したhome desktop/mobileを含む | 10.71秒 |
 | Worker focused 3 files | 30/30成功（config 10、routes 10、HTTP handler 10） | targeted 6 files / 39 testsで1.88秒 |
 | event document contract | 5/5成功。6 sessionの150分、固定3枠30分、合計180分、ADV、review、運営文書を照合 | targeted実行内9ms |
 
-`pnpm test` のdocs実行は現行Vitest設定によりWorker 30件を含み、rootの `test:worker` が同じ30件を明示的に再実行する。実行回数は225件、重複を除く契約は195件である。明示経路は、docs側のtest対象を将来整理してもCIの `pnpm test` からWorker契約が外れないために残す。
+`pnpm test` のdocs実行は現行Vitest設定によりWorker 30件を含み、rootの `test:worker` が同じ30件を明示的に再実行する。実行回数は227件、重複を除く契約は197件である。明示経路は、docs側のtest対象を将来整理してもCIの `pnpm test` からWorker契約が外れないために残す。
 
 buildでは既知のVite chunk-size warningが出たが、Astro diagnosticsと静的route検証は成功した。視覚検証の最初のsandbox内実行は `0.0.0.0:4321` のlistenが `EPERM` になったため、同じコマンドをローカルserver起動権限付きで再実行し、28件すべての成功を確認した。
 
@@ -111,7 +111,9 @@ session-04へcompanionを事前配布し、session-05をS3同期 `startExaminati
 
 adapterはcause付きの内部 `RepositoryFailure` を返し、use case境界の `mapErr` はcauseなしの新しい `RepositoryError` plain objectを作る。到達点テストは、内部causeが元の `Error` と同一であることと、公開エラーJSONに `cause`、生の例外文言、ownerName、email、phoneがないことを固定した。
 
-StepSolutionは人が段階適用するために実top-level宣言だけをstep 1〜4へ分割して表示する。full-file overlayは自動実行可能性を検査する別契約である。未確認なのは、エージェントを使わない参加者が15分の演習枠で手動適用できるかであり、現地リハーサルに残す。
+StepSolutionはS4の各targetについて、importと後続stepを含む次snapshotの完成ファイルを表示する。「表示された全target fileを反映後、同じexerciseをGREENにする」と明示し、1stepずつの個別GREENは約束しない。表示するcompleted-file集合とoverlay対象集合は完全一致し、target/solutionのpath traversal拒否、全target overlay後のtypecheck・通常回帰・exercise GREENを自動検証した。未確認なのは、エージェントを使わない参加者が8〜10分で全targetを反映できるかであり、現地リハーサルに残す。
+
+review round 1では、Step 4のfake storeへ飼い主名・email・電話番号・固有error message・stackを含む内部causeを渡した。公開エラーはexact `{ kind: "RepositoryError", operation: "ExaminationStartedStore.store" }` で、`cause` propertyとPII・message・stackがJSONへ出ないことを同じparticipant assertionで固定した。`toRepositoryError` が内部failureをspreadする危険mutationでは到達点testが1件REDとなり、安全なplain object生成へ戻すとGREENになった。adapter内部causeは参照同一性を `toBe` で確認した。
 
 ## 公開route・旧語・変更境界の監査
 
@@ -124,7 +126,7 @@ StepSolutionは人が段階適用するために実top-level宣言だけをstep 
 
 ## 視覚検証とS4ブラウザsmoke
 
-post-audit前の最終HEADでvisual/E2Eをfresh実行し、28/28成功した。homeの状態チップ変更で生じたdesktop 125 pixels / mobile 143 pixelsのactual/diffを目視し、文字以外の差分がないことを確認して、この2 baselineだけを更新した。post-auditではS4本文の説明だけを同期し、CSS、layout、E2E構造を変更していないためvisualは再実行せず、docsの構造test 144件とbuild 8 routesをfresh実行した。
+post-audit前の最終HEADでvisual/E2Eをfresh実行し、28/28成功した。homeの状態チップ変更で生じたdesktop 125 pixels / mobile 143 pixelsのactual/diffを目視し、文字以外の差分がないことを確認して、この2 baselineだけを更新した。post-auditではS4本文の説明だけを同期し、CSS、layout、E2E構造を変更していないためvisualは再実行せず、docsの構造test 146件とbuild 8 routesをfresh実行した。
 
 S4の実WebContainer実行はP2で取得した次の証拠を再利用した。上記の通り、P2以降にrunner/header/component/E2Eの差分がないためである。
 
@@ -138,7 +140,7 @@ P4ではローカルWranglerのredirect smokeを最終HEADで新規実行した�
 
 ## 未確認（現地・人間のリハーサルが必要）
 
-- エージェントを使わない参加者が、段階表示されたtop-level宣言を使い、delegate 8〜10分を含む15分の演習枠でcatalogの1〜4ステップを完了できるか。
+- エージェントを使わない参加者が、S4の全target完成ファイルをdelegate 8〜10分で反映できるか。
 - 5人班でpeer review 7分版が回るか。問い1で沈黙が起きないか。8分版を含め、原則2名を比較できるか。
 - S2のteach 7分で、参加者がdelegateを開始できるか。
 - 班数分の外部display、HDMI、USB-C adapter、電源があるか。班数と参加人数も未確認である。

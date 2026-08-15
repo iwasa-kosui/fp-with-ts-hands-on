@@ -28,6 +28,14 @@ const checkedIn = {
 } as const satisfies CheckedIn;
 
 const input = { appointmentId, veterinarianId } as const;
+const diagnosticCause = {
+  ownerName: "Owner Secret",
+  email: "owner-secret@example.test",
+  phone: "090-9999-9999",
+  message: "S4 storage unavailable for Owner Secret",
+  stack: "S4DiagnosticError: storage unavailable\n    at ExaminationStartedStore.store",
+  error: new Error("S4 storage unavailable for Owner Secret"),
+} as const;
 
 describe("Step 1: 同じ clock と ID generator なら同じイベントになる", () => {
   it("固定 context から同じ eventId と occurredAt を返す", async () => {
@@ -69,18 +77,30 @@ describe("Step 3: 非同期保存後もイベントが pipeline に残る", () =
 });
 
 describe("Step 4: 保存失敗時は状態も記録も残らない", () => {
-  it("RepositoryError を返し in-memory state を変更しない", async () => {
-    const harness = createHarness(true);
+  it("cause と PII のない RepositoryError を返し in-memory state を変更しない", async () => {
+    const harness = createHarness(diagnosticCause);
 
     const result = await startExamination(harness.dependencies)(input);
+    const publicError = result.isErr() ? result.error : undefined;
 
-    expect(result.isErr() && result.error.kind).toBe("RepositoryError");
+    expect(publicError).toEqual({
+      kind: "RepositoryError",
+      operation: "ExaminationStartedStore.store",
+    });
+    expect(Object.hasOwn(publicError ?? {}, "cause")).toBe(false);
+    const serialized = JSON.stringify(publicError);
+    expect(serialized).not.toContain('"cause"');
+    expect(serialized).not.toContain(diagnosticCause.ownerName);
+    expect(serialized).not.toContain(diagnosticCause.email);
+    expect(serialized).not.toContain(diagnosticCause.phone);
+    expect(serialized).not.toContain(diagnosticCause.error.message);
+    expect(serialized).not.toContain(diagnosticCause.stack);
     expect(harness.storedStates).toEqual([]);
     expect(harness.recordedEvents).toEqual([]);
   });
 });
 
-const createHarness = (failStore = false) => {
+const createHarness = (failureCause?: unknown) => {
   const storedStates: Array<Appointment> = [];
   const recordedEvents: Array<ExaminationStarted> = [];
   let storeCalls = 0;
@@ -96,11 +116,11 @@ const createHarness = (failStore = false) => {
       store: {
         store: (event: ExaminationStarted) => {
           storeCalls += 1;
-          if (failStore) {
+          if (failureCause !== undefined) {
             return errAsync({
               kind: "RepositoryFailure",
               operation: "ExaminationStartedStore.store",
-              cause: "write failed",
+              cause: failureCause,
             } as const satisfies Readonly<{
               kind: "RepositoryFailure";
               operation: "ExaminationStartedStore.store";

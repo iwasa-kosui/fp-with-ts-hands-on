@@ -508,14 +508,9 @@ starter の module と次 snapshot の同一 module を比較し、コメント�
 
 - [ ] **Step 4: StepSolution と PeerReviewPanel を RED→GREEN で実装する**
 
-`StepSolution` は非空の `solutions` の各 path と line range から実ソースを切り出し、1ステップの `<details>` 内へ path を明示して宣言順に描画する。S4は最終pipelineをstep 1から先見せせず、実在するtop-level宣言を次の単位で段階表示する。
+`StepSolution` は非空の `solutions` の各pathとline rangeから実ソースを切り出し、1ステップの `<details>` 内へpathを明示して描画する。`SolutionReference.presentation` は省略時を `excerpt` とし、S1〜S3の既存のtop-level宣言抜粋を維持する。S4は全solutionを `completed-file` とし、各stepの全targetに対応する次snapshot同一相対pathを、importを含む1行目から実ファイル末尾まで表示する。完成ファイルは後続stepを含むため、StepSolutionは「表示された全target fileを反映後、同じexerciseをGREENにする」と明示し、1stepずつの個別GREENを約束しない。
 
-- step 1: `EventContextDependencies` と `createEventContext`
-- step 2: `ExaminationStartedStore` と `EffectsDependencies`
-- step 3: `startExaminationWithEffects`
-- step 4: `RepositoryFailure`、`RepositoryError`、`StartExaminationWithEffectsError`、`toRepositoryError`、`storeExaminationStarted`
-
-snippetは参加者が手で適用する段階表示である。別の自動契約では、S4全targetの次snapshot同一相対pathをfull fileとして一時複製したsession-04へoverlayし、typecheck、通常回帰、同じexerciseをすべてGREENにする。`PeerReviewPanel` は `N分・1〜2名`、3 問、S1 の約束事へのリンクを静的 HTML として描画する。新しい client island や依存を追加しない。
+自動契約は、S4のcompleted-file solution集合とoverlay対象集合が完全一致することを検査する。catalog pathは `path.relative` / `isAbsolute` でsolution rootとoverlay rootの外へ出ないようにし、全target fileを一時複製したsession-04へoverlayしてtypecheck、通常回帰、同じexerciseをすべてGREENにする。`PeerReviewPanel` は `N分・1〜2名`、3問、S1の約束事へのリンクを静的HTMLとして描画する。新しいclient islandや依存を追加しない。
 
 - [ ] **Step 5: 動的 route の技術 spike を行う**
 
@@ -712,7 +707,7 @@ Expected: S1〜S4 が 5 files/80 effective lines 以下、final diff 0。
 rehearsal 文書に次を `未確認（現地/人間のリハーサルが必要）` として残す。
 
 ```text
-- エージェントなし参加者が delegate 8〜10分で catalog の `steps`（1〜4件）を完了できるか
+- エージェントなし参加者がS1〜S3の抜粋、S4の全target完成ファイルをdelegate 8〜10分で反映できるか
 - 5人班で peer review 7分版が回るか、問い1で沈黙しないか
 - S2 teach 7分で参加者が delegate を開始できるか
 - 班数分の外部 display、HDMI、USB-C adapter、電源があるか

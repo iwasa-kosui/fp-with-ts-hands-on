@@ -856,7 +856,7 @@ try { ... } catch (error) {
 
 **GREEN の判定**は `pnpm exercise:04` が緑になることである。判定条件は、(a) 偽 `clock` と偽 `eventIdGenerator` を渡すと結果が完全に決定的であること、(b) 保存を失敗させるフェイクを渡すと状態も記録も残らないこと、(c) 保存成功時の戻り値が `store` の戻り値ではなく `event.aggregateState` であること（`andThrough` を `andThen` にすると落ちる）、(d) 公開エラーが `cause`、生の `Error`、飼い主名・メールアドレス・電話番号を含まないことである。S3同期 `startExamination` の回帰も同時にGREENでなければならない。
 
-**エージェント非保持者のフォールバック**として、step 1は `EventContextDependencies` / `createEventContext`、step 2は `ExaminationStartedStore` / `EffectsDependencies`、step 3は `startExaminationWithEffects`、step 4は内部・公開エラー型 / `toRepositoryError` / `storeExaminationStarted` のtop-level宣言を `examples/session-05/src/useCase/` から正確に切り出す。snippetは人が段階適用するための表示であり、実行可能性の自動契約は別に持つ。自動契約は全S4 targetの次snapshot同一相対pathをfull fileで一時複製したsession-04へoverlayし、typecheck・通常回帰・同じexerciseをすべてGREENにする。人が15分で適用できるかだけは現地リハーサルで確認する。
+**エージェント非保持者のフォールバック**として、S4の各stepはtargetごとに `examples/session-05/src/useCase/` の完成ファイルを1行目から末尾まで表示する。完成ファイルはimportと後続stepを含むため、1stepずつ反映すれば個別にGREENになるとは説明しない。参加者は表示された全target fileを反映した後、同じexerciseをGREENにする。自動契約はcompleted-file solution集合とoverlay対象集合の完全一致、catalog pathのsolution/overlay root外へのtraversal拒否、全target overlay後のtypecheck・通常回帰・exercise GREENを確認する。人が8〜10分で反映できるかだけは現地リハーサルで確認する。
 
 **押した場合の切り替え**として、ステップ3を講師デモ3分に切り替え、5分を相互レビューと Final ツアーへ返す。**ステップ3は分離可能に設計してある。** ステップ2までで `pnpm exercise:04` の基本ケースは緑になり、非同期ケースだけが赤で残る形にテストを分割する。**第4版で切り替えの順序を明示する。** 削る順は (1) ステップ3を講師デモ化する、(2) 相互レビューの2人目の枠2分を落として6分版にする、(3) Final ツアーを4分に詰める、である。**相互レビューそのものは最後まで落とさない。** 4回の反復が習慣化の条件であり、最終回を落とすと反復が3回になるうえ、レビュー観点シートの4行目が空のままになる（§1.5）。
 
@@ -1116,7 +1116,7 @@ export type ExampleSnapshot =
 8. `incident` と `decisions[].{invariant,byType,notByType}` が空文字でない。
 9. `exerciseModule.fileBudget <= 5` かつ `exerciseModule.lineBudget <= 80` である。
 10. `steps[].targets` の全パスが `exerciseModule.dir` 配下である。
-11. `steps[].solutions[].path` / `targets[]` / `finalReferences[]` が実ファイルとして存在し、各 `solution.symbol` が `solution.path` の `solution.lines` 範囲内に現れる。`solutions` は非空であり、各 `targets[]` のsnapshot-relative pathには次snapshotの同一相対pathを持つ `solution` が最低1件対応する。S4の各solution rangeは実在するtop-level宣言と完全一致する。step 1はcontext依存と生成、step 2はstore/effects依存、step 3は効果付きpipeline、step 4は内部失敗・公開エラー・安全な写像だけを段階提示し、step 1から最終pipeline全体を先見せしない。
+11. `steps[].solutions[].path` / `targets[]` / `finalReferences[]` が実ファイルとして存在し、各 `solution.symbol` が `solution.path` の `solution.lines` 範囲内に現れる。`solutions` は非空であり、各 `targets[]` のsnapshot-relative pathには次snapshotの同一相対pathを持つ `solution` が最低1件対応する。`presentation` の省略時は `excerpt` で、S1〜S3は従来の抜粋を維持する。S4は各targetと1対1の `completed-file` で、rangeはimportを含む1行目から実ファイル末尾までとする。
 12. `snapshot` に対応する `examples/<snapshot>/package.json` が存在する。
 13. （§5.4）実際の差分が `fileBudget` / `lineBudget` に収まる。
 14. **（第4版）** `kind === "exercise"` であることと `peerReview !== undefined` であることが同値である。
@@ -1143,7 +1143,7 @@ export type ExampleSnapshot =
 - `src/code-explorer/session-workspaces.ts` は、新 slug に合わせて定義し直す。ビルド時の3不変条件検査（slug 存在・initialFile ∈ visibleFiles・visibleFiles ⊆ projectFiles）は維持し、**`steps[].targets ⊆ visibleFiles` を4つ目として追加する**（第2版。欠陥 #14 の恒久対策）。
 - `scripts/verify-static-build.mjs` は、必須 HTML リストのハードコードをやめて catalog から導出する。「余分な HTML の禁止」検査は維持する。
 - `src/layouts/SessionLayout.astro` は、章定義から TOC を自動生成し、`kind` で章構成を分岐する。TOC を desktop / mobile の2箇所に描画する現行方式は維持する。
-- **（新規）`src/components/StepSolution.astro`** は、非空の `steps[].solutions` を受け取り、次スナップショットの実ソースから各行範囲を切り出し、path を明示して1つの `<details>` 内へ宣言順に表示する。各targetには同一相対pathの解答を対応させる。S4はstep 1に `EventContextDependencies` / `createEventContext`、step 2に `ExaminationStartedStore` / `EffectsDependencies`、step 3に `startExaminationWithEffects`、step 4に `RepositoryFailure` / `RepositoryError` / `StartExaminationWithEffectsError` / `toRepositoryError` / `storeExaminationStarted` を、それぞれ実top-level宣言と完全一致する範囲で提示する。これは人が段階適用するためのフォールバックであり、全targetのfull-file overlayを実行する自動適用契約とは役割を分ける。
+- **（新規）`src/components/StepSolution.astro`** は、非空の `steps[].solutions` を受け取り、次スナップショットの実ソースから各行範囲を切り出し、pathを明示して1つの `<details>` 内へ表示する。省略時の `excerpt` はS1〜S3のtop-level宣言抜粋を保つ。S4の `completed-file` は各targetの次snapshot同一相対pathを1行目から末尾まで表示し、「この完成例は後続stepを含む。表示された全target fileを反映後、同じexerciseをGREENにする」と明示する。
 - **（新規・第4版）`src/components/PeerReviewPanel.astro`** は、`peerReview` を受け取り、`#review` 章に「班内相互レビュー（N分・1〜2名）」の小節と3つの問いを描画する。**新しい島（island）は要らない静的コンポーネント**であり、`CommandBlock` と同程度の規模である。約束事5点は S1 のページに本文として置き、S2 以降はこのコンポーネントから S1 の該当 id へリンクする。
 
 #### 捨てる
@@ -1164,7 +1164,7 @@ export type ExampleSnapshot =
 1. `src/sessions/catalog.test.ts` は §6.3 の不変条件1から12と**14から16（第4版で追加した `peerReview` の3件）**を検証する。レンダリングしない純ロジックであり、文言依存はない。
 2. `src/test/pages/session-structure.test.ts`（全セッションをパラメタライズドで回す）は、章 id の並びが `kind` ごとの規定骨格と一致すること、TOC リンクが章数×2 で href が一意であること、各 href に対応する `article h2#id` がちょうど1つあること、`h1` が catalog の `title` と一致することを検証する。文言依存は catalog 由来のみである。
 3. `src/test/pages/session-exercise.test.ts`（`kind === "exercise"` のみ）は、red と green の `CommandBlock` が `exerciseCommand` と一致して両方あること、**`exerciseModule.dir` が本文に現れること**、**`steps` の4件すべての `goal` が本文に現れ `<details>` が4つあること**、**`decisions` の `invariant` と `notByType` が本文に現れること**、`finalReferences` の各パスが本文に現れること、**（第4版）`peerReview.questions` の3件がすべて `#review` 章の本文に現れること**を検証する。文言依存は catalog 由来のみである。**問いをページから消せない**ようにするための追加である。
-4. `src/test/examples/catalog-references.test.ts` は、`steps[].targets` / `steps[].solutions[].path` / `finalReferences[]` が実ファイルであり、各 `solution.symbol` のrangeが実top-level宣言と完全一致すること、各targetに次snapshotの同一相対pathのsolutionがあることを検証する。S4は4 stepの宣言集合を固定し、step 1が `startExaminationWithEffects` やstore/pipeline全体を先見せしないことも実ソースで検証する。`s4-fallback-overlay.test.ts` は全S4 targetの次snapshot同一相対pathをfull fileで一時複製へoverlayし、typecheck・通常回帰・同じexerciseを実行する。文言依存はない（実ソース照合である）。
+4. `src/test/examples/catalog-references.test.ts` は、`steps[].targets` / `steps[].solutions[].path` / `finalReferences[]` が実ファイルであり、各 `solution.symbol` がrange内にあること、各targetに次snapshotの同一相対pathのsolutionがあることを検証する。S1〜S3は既定の `excerpt`、S4は各targetと1対1の `completed-file` かつ1行目から実行末尾までであることを実ソースで検証する。`s4-fallback-overlay.test.ts` はcompleted-file集合とoverlay対象集合の完全一致、target/solutionのpath traversal拒否、全targetを一時複製へoverlayした後のtypecheck・通常回帰・同じexerciseを検証する。
 5. **`src/test/examples/exercise-budget.test.ts`（新設）** は §5.4 の差分予算を検証する。文言依存はない（実ソース照合である）。
 6. `src/code-explorer/session-workspaces.test.ts`（既存を更新）は、全 slug の snapshot 対応、visibleFiles の実在と重複なし、`steps[].targets ⊆ visibleFiles`、**次スナップショットの解答ファイルが projectFiles に含まれないこと**を検証する。文言依存はない。
 7. `src/code-explorer/code-guides/*.test.ts`（既存の `onboarding-guides.test.ts` を一般化する）は、各ガイドの強調行範囲を実ソースから切り出し、期待するコード断片を含むことを検証する。文言依存は教材ソース由来である。
@@ -1242,7 +1242,7 @@ export type ExampleSnapshot =
 
 エージェントを推奨する場合の追記である。**§0.1 の暫定前提が確定してから書く。**
 
-**L12 の直後**（「データベース、Docker、外部サービスの API キーは必要ありません。」の後）に、次を追記する: 「**コーディングエージェント（任意）**: 普段お使いのコーディングエージェント（エディタ組み込みのもので構いません）があれば、当日そのまま使えます。**必須ではありません。**エージェントを使わない場合も、演習はステップごとの解答を見ながら同じ時間内に完了できるように作ってあります。当日このリポジトリで新しく API キーを発行する必要はありません。」
+**L12 の直後**（「データベース、Docker、外部サービスの API キーは必要ありません。」の後）に、次を追記する: 「**コーディングエージェント（任意）**: 普段お使いのコーディングエージェント（エディタ組み込みのもので構いません）があれば、当日そのまま使えます。**必須ではありません。**エージェントを使わない場合、S1〜S3はステップ抜粋、S4はimportと後続stepを含む全target完成ファイルを利用できます。S4は全targetを反映後に同じexerciseで確認します。当日このリポジトリで新しく API キーを発行する必要はありません。」
 
 **「必要なもの」リスト**の末尾に「（任意）普段使っているコーディングエージェント」を追加する。
 
@@ -1460,7 +1460,7 @@ export type ExampleSnapshot =
 
 **teach を4分削ったことで、参加者が予備知識なしに委譲フェーズへ入る**（第4版で新規）。緩和策は、削るのを「罠の予告」に限定し、技法そのものの説明は残すことである（§3.5）。**それでもこれは失敗の量が増える設計であり、賭けている仮説（講義で先回りするより、書いて見比べて気づくほうが記憶に残る）は検証していない**（§10.4）。リハーサル（P4）で teach 短縮版を通し、委譲フェーズの開始時点で参加者が手を止めていないかを確認する。**S2 が最も危ない**（3技法・teach 7分）。溢れる場合の退避は、S2 の teach を8分へ戻し、相互レビューを7分から6分（1名版）へ落とすことである。**この退避を採ると S2 の相互レビューだけ1名になる**ため、選定基準1（型で守った差分と `if` で守った差分の対）が使えなくなる。優先度としては相互レビューの2名を守るほうを上に置く。
 
-**エージェントあり／なしで所要時間が大きく割れる**（第2版で新規）。班内で待ち時間が生じ、TA が両方を同時に見られなくなる。緩和策は3つある。(a) ステップ単位の解答提示で「なし」の下限を保証する。(b) **検証の後段を班内相互レビューにして、早く終わった参加者が他人の差分をレビューする役に回る設計にする**（レビューの練習になるので無駄にならない。**第4版でこの緩和策が独立枠として実体化した**。第2版では「検証フェーズを班内共有にする」という方針表明にとどまっていた）。(c) TA は「なし」の参加者を優先して巡回する。
+**エージェントあり／なしで所要時間が大きく割れる**（第2版で新規）。班内で待ち時間が生じ、TA が両方を同時に見られなくなる。緩和策は3つある。(a) S1〜S3のステップ抜粋とS4の全target完成ファイルで「なし」の下限を保証する。(b) **検証の後段を班内相互レビューにして、早く終わった参加者が他人の差分をレビューする役に回る設計にする**（レビューの練習になるので無駄にならない。**第4版でこの緩和策が独立枠として実体化した**。第2版では「検証フェーズを班内共有にする」という方針表明にとどまっていた）。(c) TA は「なし」の参加者を優先して巡回する。
 
 **相互レビューが7〜8分で回らない**（第4版で新規）。次のセッションの brief が押し出される。原因は3つ考えられる。差分を画面に出すまでの手間（ケーブル接続、エディタの表示調整）、問い1で沈黙が起きて時間を食うこと、議論が盛り上がって止まらないことである。緩和策は3つある。(a) **0:00–0:30 の「差分を映す」枠を明示的に確保してある**（§1.6）。TA は委譲フェーズの終盤にピックアップ対象を本人へ伝え、画面を出す準備をさせる。(b) 沈黙対策として TA は**挙手を待たず指名する**（進行に「TA が2名を指名する。挙手を待たない」と書いてある）。(c) 打ち切り対策として、TA は 6:00（8分版は 7:00）に必ず「では、型で守れていない残りは何ですか」へ移る。**時計はカードに印刷した進行表で管理する。**
 
@@ -1536,9 +1536,9 @@ export type ExampleSnapshot =
 
 - **差分予算は自動実測済みである。** starter と次snapshotの同一moduleを比較し、空行・コメントだけの行を除いた結果は S1=2ファイル/35行、S2=2/24、S3=3/77、S4=3/72 で、すべて絶対上限5ファイル/80行以内である。人がこの差分を時間内に適用できるかは未確認である。
 - **演習14〜17分という時間見積もりは実施実績のない推定値である。** 現行教材の実測（exercise:01 で 114 行を30分・完走せず）からの外挿であり、リハーサル（P4）での計測が必須である。**特にエージェントなし条件は一度も検証していない。**
-- **`ResultAsync` 化ステップの所要時間（推定5〜7分）は最も不確かである。** neverthrow の `andThen` が同期・非同期の両方を受けるため差分が小さいという性質に依存しており、実際に書いて確かめていない。
+- **`ResultAsync` 化とcompleted-file fallbackのコードは自動overlay検証済みだが、人手の所要時間は未計測である。** Step 3の推定5〜7分と、エージェントなしで全target完成ファイルを反映する委譲8〜10分は、現地リハーサルで測る。
 - `import.meta.glob` による `.astro` の eager import と動的コンポーネント描画（§6.1）は、Astro 4 のドキュメント上は可能と読めるが**本設計では実機検証していない**。§10.3 の論点2 の技術検証項目とする。
-- **ステップ解答の段階表示とfull-file適用は自動検証済みである。** `StepSolution.astro` は次snapshotの実top-level宣言と完全一致するrangeをpath付きで順に表示する。各targetは次snapshotの同一相対pathへ対応し、S4 step 1は最終pipelineを先見せしない。別のoverlay testは全targetのfull fileを一時複製へ適用し、typecheck・通常回帰・exerciseのGREENを確認する。未確認なのは人が時間内に手で適用できるかだけである。
+- **S4完成ファイル表示とfull-file適用は自動検証済みである。** `StepSolution.astro` は各targetの次snapshot同一相対pathをimport込みの全rangeで表示し、後続stepを含むことを明示する。overlay testは表示集合と対象集合の一致、root外pathの拒否、全target適用後のtypecheck・通常回帰・exercise GREENを確認する。未確認なのは人が8〜10分で反映できるかだけである。
 - 会場のネットワーク帯域・参加人数・貸与端末の有無は、リポジトリ内の全文書に記述がなく未確認である。§10.1 の緩和策は「事前 install 済み」を前提にしている。
 - **（第4版）会場の映像設備は未確認である。** 班ごとの外部ディスプレイ（24インチ程度、HDMI 入力）が使えるか、台数が班数を満たすか、USB-C 変換アダプタと電源の口数が足りるかは、リポジトリ内の全文書に記述がない。**§1.6 の第一案はこの設備を前提にしている。** 確認できないまま当日を迎えると第二案（ラップトップを島の中央へ）になり、5人が同時に読める行数が減るため、TA はピックアップ対象を1ファイル・20行以内に絞る必要がある。**P3 の最初に会場へ確認する**（§10.3 の論点12）。班数は参加人数に依存し、参加人数も未確認である。
 - **（第4版）相互レビューの7分版・8分版の進行は一度も実測していない。** 0:00–0:30（差分を映す）、2:00–4:00（問い1・2を回す）などの各枠の所要は、5人班・初対面・オフラインという条件での推定である。**特に「問い1に対して2名を指名して2分」は楽観的である可能性が高い。** リハーサル（P4）で実測する。回らない場合の退避は2人目の枠2分を落とすこと（§1.6）だが、**それを採ると相互レビューの本命である「判断の割れの対比」が失われる**ので、先に他の枠（0:00–1:00 の映す・読み上げる枠）を詰める。

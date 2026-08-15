@@ -18,7 +18,7 @@ if (session === undefined) throw new Error("Unknown session: 04-effects-and-even
       technique: "S3 の同期 startExamination を保ち、効果付きの startExaminationWithEffects だけを Clock / EventIdGenerator、single store(event)、ResultAsync と andThrough で組み立てます。adapter の診断エラーは mapErr で cause のない公開エラーへ変換します。",
       limitation: "in-memory の原子性は実装上の約束であり、本番永続化では transaction が必要です。",
       reviewFocus: "保存を andThen で値ごと置き換えず、andThrough 後も event.aggregateState が残るか。",
-      fallback: "各ステップの解答欄は、参加者が手で適用するための top-level 宣言だけを順に示します。自動検証では全targetの次snapshot同一相対pathを丸ごと重ねて typecheck・通常回帰・exercise が通ることを確認していますが、人が15分で適用できるかは現地リハーサルで確認します。ステップ3は講師デモに切り替えても相互レビュー自体は残します。",
+      fallback: "各解答欄はimportと後続stepを含む完成ファイルをtargetごとに示します。表示された全target fileを反映した後に同じexerciseをGREENにする方式で、1stepずつの個別GREENは約束しません。自動overlayではtypecheck・通常回帰・exerciseを確認済みですが、人が8〜10分で反映できるかは現地リハーサルで確認します。ステップ3は講師デモに切り替えても相互レビュー自体は残します。",
     }}
   />
 </SessionLayout>

@@ -53,11 +53,11 @@ describe("in-memory ExaminationStarted store", () => {
 
     const result = await adapter.store.store(event);
 
-    expect(result.isErr() && result.error).toEqual({
+    expect(result.isErr() && result.error).toMatchObject({
       kind: "RepositoryFailure",
       operation: "ExaminationStartedStore.store",
-      cause: diagnosticCause,
     });
+    expect(result.isErr() ? result.error.cause : undefined).toBe(diagnosticCause);
     expect(adapter.appointments()).toEqual([checkedIn]);
     expect(adapter.events()).toEqual([]);
   });
@@ -67,8 +67,10 @@ describe("in-memory ExaminationStarted store", () => {
       ownerName: "Owner Secret",
       email: "owner-secret@example.test",
       phone: "090-9999-9999",
-      error: new Error("storage unavailable"),
-    };
+      message: "S4 storage unavailable for Owner Secret",
+      stack: "S4DiagnosticError: storage unavailable\n    at ExaminationStartedStore.store",
+      error: new Error("S4 storage unavailable for Owner Secret"),
+    } as const;
     const adapter = createInMemoryExaminationStartedStore([checkedIn], {
       beforeCommit: () => Promise.reject(privateDetails),
     });
@@ -83,12 +85,15 @@ describe("in-memory ExaminationStarted store", () => {
       kind: "RepositoryError",
       operation: "ExaminationStartedStore.store",
     });
-    const serialized = JSON.stringify(result.isErr() ? result.error : undefined);
+    const publicError = result.isErr() ? result.error : undefined;
+    expect(Object.hasOwn(publicError ?? {}, "cause")).toBe(false);
+    const serialized = JSON.stringify(publicError);
+    expect(serialized).not.toContain('"cause"');
     expect(serialized).not.toContain(privateDetails.ownerName);
     expect(serialized).not.toContain(privateDetails.email);
     expect(serialized).not.toContain(privateDetails.phone);
-    expect(serialized).not.toContain('"error"');
-    expect(serialized).not.toContain("storage unavailable");
+    expect(serialized).not.toContain(privateDetails.error.message);
+    expect(serialized).not.toContain(privateDetails.stack);
     expect(adapter.appointments()).toEqual([checkedIn]);
     expect(adapter.events()).toEqual([]);
   });

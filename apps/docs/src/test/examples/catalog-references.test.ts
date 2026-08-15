@@ -3,7 +3,11 @@ import { access, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { sessions } from "../../sessions/catalog";
+import {
+  type ExerciseStep,
+  type SolutionReference,
+  sessions,
+} from "../../sessions/catalog";
 
 const repoRoot = resolve(process.cwd(), "../..");
 const exerciseSessions = sessions.filter(
@@ -15,6 +19,11 @@ const nextSnapshot = {
   "session-03": "session-04",
   "session-04": "session-05",
 } as const;
+
+const solutionsFor = (
+  steps: readonly ExerciseStep[],
+): readonly SolutionReference[] =>
+  steps.flatMap(({ solutions }) => solutions);
 
 type ExerciseResult = Readonly<{
   assertionResults: readonly Readonly<{
@@ -77,18 +86,6 @@ const declaredNames = (statement: ts.Statement): readonly string[] => {
     );
   }
   return [];
-};
-
-const readSolutionSlice = async (solution: {
-  readonly path: string;
-  readonly lines: readonly [number, number];
-}): Promise<string> => {
-  const source = await readFile(resolve(repoRoot, solution.path), "utf8");
-  const [start, end] = solution.lines;
-  return source
-    .split("\n")
-    .slice(start - 1, end)
-    .join("\n");
 };
 
 describe("session catalog references", () => {
@@ -171,60 +168,32 @@ describe("session catalog references", () => {
     }
   });
 
-  it("keeps S4 snippets incremental and scoped to exact top-level declarations", async () => {
+  it("keeps S1-S3 as excerpt defaults and presents every S4 target as a completed file", async () => {
+    for (const session of exerciseSessions.slice(0, 3)) {
+      for (const solution of solutionsFor(session.steps)) {
+        expect(solution.presentation ?? "excerpt").toBe("excerpt");
+      }
+    }
+
     const s4 = sessions.find(({ slug }) => slug === "04-effects-and-events");
     expect(s4?.kind).toBe("exercise");
     if (s4?.kind !== "exercise") throw new Error("S4 exercise is missing");
 
-    const expectedSymbols: ReadonlyMap<string, readonly string[]> = new Map([
-      ["s4-inject-context", ["EventContextDependencies", "createEventContext"]],
-      ["s4-atomic-store", ["ExaminationStartedStore", "EffectsDependencies"]],
-      ["s4-result-async", ["startExaminationWithEffects"]],
-      [
-        "s4-propagate-store-failure",
-        [
-          "RepositoryFailure",
-          "RepositoryError",
-          "StartExaminationWithEffectsError",
-          "toRepositoryError",
-          "storeExaminationStarted",
-        ],
-      ],
-    ]);
-
-    for (const step of s4.steps) {
-      expect(step.solutions.map(({ symbol }) => symbol), step.id).toEqual(
-        expectedSymbols.get(step.id),
+    const s4Steps: readonly ExerciseStep[] = s4.steps;
+    for (const step of s4Steps) {
+      const expectedPaths = step.targets.map((target) =>
+        target.replace("examples/session-04/", "examples/session-05/"),
       );
+      expect(step.solutions.map(({ path }) => path), step.id).toEqual(expectedPaths);
       for (const solution of step.solutions) {
         const source = await readFile(resolve(repoRoot, solution.path), "utf8");
-        const sourceFile = ts.createSourceFile(
-          solution.path,
-          source,
-          ts.ScriptTarget.Latest,
-          true,
-        );
-        const declaration = sourceFile.statements.find((statement) =>
-          declaredNames(statement).includes(solution.symbol),
-        );
-        expect(declaration, `${solution.path}: ${solution.symbol}`).toBeDefined();
-        if (declaration === undefined) continue;
-        expect(solution.lines).toEqual([
-          sourceFile.getLineAndCharacterOfPosition(
-            declaration.getStart(sourceFile),
-          ).line + 1,
-          sourceFile.getLineAndCharacterOfPosition(declaration.end).line + 1,
-        ]);
+        const lineCount = source.endsWith("\n")
+          ? source.split("\n").length - 1
+          : source.split("\n").length;
+        expect(solution.presentation, solution.path).toBe("completed-file");
+        expect(solution.lines, solution.path).toEqual([1, lineCount]);
       }
     }
-
-    const stepOne = s4.steps[0];
-    const stepOneSource = (
-      await Promise.all(stepOne.solutions.map(readSolutionSlice))
-    ).join("\n");
-    expect(stepOneSource).not.toContain("startExaminationWithEffects");
-    expect(stepOneSource).not.toContain("andThrough");
-    expect(stepOneSource).not.toContain("ExaminationStartedStore");
   });
 
   it("labels starter assertions outside catalog steps as regression checks", async () => {
@@ -326,7 +295,7 @@ describe("session catalog references", () => {
           {
             id: "s4-propagate-store-failure",
             group: "Step 4: 保存失敗時は状態も記録も残らない",
-            assertion: "RepositoryError を返し in-memory state を変更しない",
+            assertion: "cause と PII のない RepositoryError を返し in-memory state を変更しない",
           },
         ],
       },
