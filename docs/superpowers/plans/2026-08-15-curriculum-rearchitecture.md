@@ -289,6 +289,7 @@ git commit -m "feat: 状態と境界の演習スナップショットを再構�
 - Phase-gate sync: `apps/docs/src/code-explorer/{session-workspaces,onboarding-guides}.ts`
 - Phase-gate sync: `apps/docs/src/code-explorer/{session-workspaces,onboarding-guides}.test.ts`
 - Phase-gate sync: `apps/docs/src/test/pages/code-explorer.test.ts`
+- Phase-gate sync: `apps/docs/src/test/pages/sessions/code-playground.test.ts`
 
 **Interfaces:**
 - Consumes: Task 2 の appointment、ID、boundary、`Sensitive`、`schemaResult` と回帰テスト。
@@ -403,8 +404,11 @@ P1 は単独で通常検証を成功させて push する。catalog やページ
 - S0: `src/{appointment,logger}.ts` → `src/legacy/{appointment,logger}.ts`
 - S1: 旧単一ファイル群 → `src/domain/appointment/{appointment,transitions,statusLabel}.ts` と `test/transitions.test.ts`
 - S2: `src/domain/appointment.ts` → `src/domain/appointment/appointment.ts`、通常テスト → `test/regression/state-modeling.test.ts`
+- S3: kebab-case の boundary / flat な domain / 直下 test → camelCase boundary / `domain/{appointment,ids}` / `test/regression` と `src/useCase/startExamination.ts`
+- S4: 旧 `application` / `ports` / `infrastructure` / agent-review → `useCase` / aggregate event / `effects-and-events` exercise。初期表示は `exercises/effects-and-events.test.ts`
+- S5: follow-up exercise と旧 gateway / ports → `useCase` / `adaptor/inMemoryExaminationStartedStore.ts` / 全回帰。初期表示は `test/regression/effects-and-events.test.ts`
 
-onboarding guide の path と行 anchor、standalone preview の期待値も同じ移動へ同期する。catalog schema、slug、ページ本文、動的 route、CSS、Worker は変更しない。
+onboarding guide の path と行 anchor、standalone preview、S4/S5 playground の初期ファイル期待値も同じ移動へ同期する。`project-files.ts` の glob、catalog schema、slug、ページ本文、動的 route、CSS、Worker は変更しない。
 
 Run: `pnpm --filter @fp-with-ts/docs test`
 
@@ -429,7 +433,7 @@ Expected: 通常検証は全成功。4 exercise は開始スナップショッ�
 ```bash
 git add examples/session-03 examples/session-04 examples/session-05 package.json pnpm-lock.yaml
 git commit -m "feat: Resultと副作用の演習スナップショットを再構築"
-git add apps/docs/src/code-explorer apps/docs/src/test/pages/code-explorer.test.ts
+git add apps/docs/src/code-explorer apps/docs/src/test/pages/code-explorer.test.ts apps/docs/src/test/pages/sessions/code-playground.test.ts
 git commit -m "fix: Code Explorerを新しいsnapshot配置へ同期"
 ```
 
