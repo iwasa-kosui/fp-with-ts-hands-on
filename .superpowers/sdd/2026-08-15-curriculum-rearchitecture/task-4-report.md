@@ -1,0 +1,70 @@
+# Task 4 report: catalog 契約・差分予算・共通ページ基盤
+
+## 結果
+
+- `sessions` を `00-onboarding`、S1〜S4、`final` の6件へ更新した。
+- 設計 §6.3 の16不変条件を、catalog、実ファイル参照、差分予算の3テストへ分離して固定した。
+- `StepSolution` と `PeerReviewPanel` を静的 Astro コンポーネントとして追加した。
+- `SessionLayout` に kind 別の章定義を追加し、同じ定義から desktop/mobile のTOCを生成するようにした。
+- 動的 route は技術的には描画できたが、現行 static page と共存した状態では catalog 由来の6 routeを生成できないため採用しなかった。P2 は手書き6 routeの薄いwrapperで進める。
+
+## catalog と差分予算
+
+差分予算テストは、starter と次 snapshot の同じモジュールをファイル名で対応させ、行単位のLCSで解答側の追加・変更行を数える。空行とコメントのみの行は除外する。削除だけのファイルは参加者が追加・変更するファイルとして数えない。
+
+| Session | module | files | effective lines |
+| --- | --- | ---: | ---: |
+| S1 | `examples/session-01/src/domain/appointment` | 2 | 35 |
+| S2 | `examples/session-02/src/boundary` | 2 | 24 |
+| S3 | `examples/session-03/src/useCase` | 3 | 77 |
+| S4 | `examples/session-04/src/useCase` | 3 | 35 |
+
+4件とも上限5ファイル・80実効行以内であり、catalog の `fileBudget` / `lineBudget` には実測値そのものを記録した。S1〜S4 は4 steps、3 decisions、`pickCount: 2`、7/7/8/8分の peer review、同じ正式文言の3問を持つ。`session-05` は `ExampleSnapshot` に残し、`sessions` 配列には含めていない。
+
+## solution/reference 契約
+
+- `targets`、`solution.path`、`finalReferences` は repo-root relative に統一した。
+- 全パスの実在、1-based inclusive range、range内の `solution.symbol` を実ソースで検査する。
+- `StepSolution` は実ファイルの指定行だけを `<details><pre><code>` に描画する。開始行0、逆順、範囲外、空sliceは明示エラーにする。
+- `PeerReviewPanel` は「N分・1〜2名」、3問、約束事へのリンクを描画する。S1は `#peer-review-promises`、S2以降は `/sessions/01-state-modeling/#peer-review-promises` を渡せる。
+
+## dynamic route spike
+
+`[slug].astro`、`getStaticPaths(sessions)`、eager `import.meta.glob`、6 content componentを一時作成し、wrapperだけが持つ `data-route-origin="catalog-dynamic"` と各content markerで検査した。component render testでは6件すべてを描画でき、既存 static pageにはwrapper markerがないことも確認できた。
+
+一方、実buildでは既存 static pageとslugが重なる `00`〜`03` は動的 routeから生成されず、`final` は後からstatic pageに上書きされた。markerがbuild outputに残ったのは新規slug `04-effects-and-events` だけだった。さらに現行 verifier はこのHTMLを unexpected fileとして拒否した。
+
+したがって、Astro 4での技術経路自体は成立するが、Task 4単独では既存本文・literal tests・verifierを維持したままtruthfulな6 route生成を証明できない。spike の route、content、testは削除した。Task 5では本文移行と同時に、catalog slugに対応する手書き6 routeを薄いwrapperとして確定する。
+
+## Task 5までの一時互換
+
+既存ページと既存テストを壊さないため、次を最小互換として残した。
+
+- `sessionBySlug` は旧 `04-agent-review` / `05-mini-integration` を `sessions` 配列外のaliasとして解決する。
+- `SessionLayout` は旧ページが `toc` slotを渡す間だけ、その手書きTOC、旧route順の前後ナビゲーション、S0の旧表示時間を使う。新API利用時はcatalog kindの章定義を使う。
+- Code Explorerには新slug `04-effects-and-events` のworkspace aliasを追加した。旧slugのworkspaceは既存ページ用に維持する。
+- `site-contract.test.ts` はcatalogの新6件と、本文移行前の旧7 static page集合を別々に固定する。
+
+Task 5で6ページを新slugの薄いwrapperへ移した後、上記の旧slug alias、手書きTOC互換、S0表示時間互換、旧workspace、旧route集合のassertionを削除する。
+
+## TDD と検証
+
+REDを確認した対象:
+
+- 旧schemaに対するcatalog 16契約、参照契約、差分予算契約
+- 未実装の `StepSolution` / `PeerReviewPanel` と、そのrendered HTML・エラー契約
+- authored TOCしか持たない旧 `SessionLayout` に対する章定義駆動TOC契約
+- dynamic route wrapperの実在・marker契約
+
+最終確認:
+
+- `pnpm --filter @fp-with-ts/docs test`: 25 files / 106 tests passed
+- `pnpm --filter @fp-with-ts/docs build`: passed、10 HTML / 10 internal routes verified
+- `pnpm typecheck`: passed（docsは0 errors / 0 warnings / 0 hints）
+- `pnpm test`: passed（全session snapshotとdocs）
+- `pnpm build`: passed
+- `git diff --check`: passed
+- `examples/**`、`examples/final/**`、`worker/**`、`README.md`、`docs/event/**` の変更: 0
+- 新依存、Content Collections、MDXの追加: なし
+
+CSSと公開ページ本文は変更しておらず、新しい章定義TOCはTask 5のwrapperから使う基盤であるため、このtaskでは視覚差分確認を追加していない。

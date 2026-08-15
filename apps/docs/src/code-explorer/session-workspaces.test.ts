@@ -8,6 +8,7 @@ const expectedSnapshots = {
   "01-state-modeling": "session-01",
   "02-boundary-and-ids": "session-02",
   "03-result-errors": "session-03",
+  "04-effects-and-events": "session-04",
   "04-agent-review": "session-04",
   "05-mini-integration": "session-05",
   final: "final",
@@ -40,6 +41,13 @@ const requiredVisibleFiles = {
     "test/regression/boundary-and-ids.test.ts",
   ],
   "04-agent-review": [
+    "exercises/effects-and-events.test.ts",
+    "src/domain/aggregate/eventContext.ts",
+    "src/domain/appointment/examinationStarted.ts",
+    "src/useCase/startExamination.ts",
+    "test/regression/result-errors.test.ts",
+  ],
+  "04-effects-and-events": [
     "exercises/effects-and-events.test.ts",
     "src/domain/aggregate/eventContext.ts",
     "src/domain/appointment/examinationStarted.ts",
