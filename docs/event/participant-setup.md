@@ -59,6 +59,15 @@ pnpm dev
 
 編集する演習は S1〜S4 の4本です。
 
+| セッション | コマンド |
+| --- | --- |
+| S1 | `pnpm exercise:01` |
+| S2 | `pnpm exercise:02` |
+| S3 | `pnpm exercise:03` |
+| S4 | `pnpm exercise:04` |
+
+4本を続けて確認したい場合は、次を順に実行します。
+
 ```bash
 pnpm exercise:01
 pnpm exercise:02
