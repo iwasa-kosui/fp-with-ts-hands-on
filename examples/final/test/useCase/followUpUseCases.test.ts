@@ -1,4 +1,4 @@
-import { errAsync, okAsync } from "neverthrow";
+import { okAsync, ResultAsync } from "neverthrow";
 import { describe, expect, test } from "vitest";
 import { sql } from "drizzle-orm";
 
@@ -274,18 +274,15 @@ describe("follow-up use cases", () => {
     expect(batches[0]).toHaveLength(1);
   });
 
-  test("returns a repository error when the single batch store fails", async () => {
-    const result = await RequestFollowUpUseCase.create({
+  test("rejects when the single batch store fails", async () => {
+    const infrastructureError = new Error("private cause");
+    const result = RequestFollowUpUseCase.create({
       userResolver,
       followUpRequestReader: noFollowUpRequests,
       followUpResolver: { resolveCandidates: () => okAsync([candidate]) },
       followUpRequestedStore: {
         store: () =>
-          errAsync({
-            kind: "RepositoryError",
-            operation: "batch",
-            cause: new Error("private cause"),
-          }),
+          ResultAsync.fromSafePromise(Promise.reject(infrastructureError)),
       },
       eventIdGenerator: { generate: () => ids.followUpEvent },
       clock: { now: () => followUpAt },
@@ -294,10 +291,7 @@ describe("follow-up use cases", () => {
       appointmentIds: [ids.appointment],
     });
 
-    expect(result.isErr() && result.error).toEqual({
-      kind: "RepositoryError",
-      operation: "batch",
-    });
+    await expect(result).rejects.toBe(infrastructureError);
   });
 
   test("returns an early typed conflict without resolving or storing an existing request", async () => {
@@ -346,7 +340,7 @@ describe("follow-up use cases", () => {
       },
       examResult: { ...candidate.examResult, examId: ids.otherExam },
     } as const satisfies FollowUpCandidate;
-    const result = await RequestFollowUpUseCase.create({
+    const result = RequestFollowUpUseCase.create({
       userResolver,
       followUpRequestReader: noFollowUpRequests,
       followUpResolver: {
@@ -360,7 +354,7 @@ describe("follow-up use cases", () => {
       appointmentIds: [ids.appointment, ids.otherAppointment],
     });
 
-    expect(result.isErr() && result.error.kind).toBe("RepositoryError");
+    await expect(result).rejects.toThrow();
     expect(
       (await createEventHistoryReader(db).list(users[0]))._unsafeUnwrap(),
     ).toEqual([]);

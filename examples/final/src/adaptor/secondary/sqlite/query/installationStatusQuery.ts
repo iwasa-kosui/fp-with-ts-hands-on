@@ -1,7 +1,6 @@
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
-import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import type {
   InstallationStatus,
   InstallationStatusQuery,
@@ -26,7 +25,7 @@ export const createInstallationStatusQuery = (
   db: SqliteDatabase,
 ): InstallationStatusQuery => ({
   get: () =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         toStatus(
           InstallationRowsSchema.parse(
@@ -34,10 +33,5 @@ export const createInstallationStatusQuery = (
           ),
         ),
       ),
-      (cause): RepositoryError => ({
-        kind: "RepositoryError",
-        operation: "InstallationStatusQuery.get",
-        cause,
-      }),
     ),
 });

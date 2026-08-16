@@ -2,10 +2,7 @@ import type { Hono } from "hono";
 
 import type { ListEventsUseCase } from "../../../../useCase/listEventsUseCase.js";
 import { withSharedProps } from "../middleware/sharedProps.js";
-import {
-  assertNever,
-  respondToUseCaseError,
-} from "../middleware/useCaseResponse.js";
+import { respondToUseCaseError } from "../middleware/useCaseResponse.js";
 import type { WebEnvironment } from "../pageProps.js";
 
 type EventRouteDependencies = Readonly<{
@@ -29,16 +26,7 @@ export const registerEventRoutes = (
             "Events/Index",
             withSharedProps(context, { events }),
           ),
-        (error) => {
-          switch (error.kind) {
-            case "Unauthorized":
-              return respondToUseCaseError(context, { kind: "Unauthorized" });
-            case "RepositoryError":
-              return respondToUseCaseError(context, { kind: "RepositoryError" });
-            default:
-              return assertNever(error);
-          }
-        },
+        () => respondToUseCaseError(context, { kind: "Unauthorized" }),
       );
   });
 };

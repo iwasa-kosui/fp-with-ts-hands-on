@@ -100,16 +100,9 @@ const authorize = async (
   const result = await dependencies.listUsers.run({
     actorUserId: actor.user.userId,
   });
-  return result.mapErr((error) => {
-    switch (error.kind) {
-      case "Unauthorized":
-        return respondToUseCaseError(context, { kind: "Unauthorized" });
-      case "RepositoryError":
-        return respondToUseCaseError(context, { kind: "RepositoryError" });
-      default:
-        return assertNever(error);
-    }
-  });
+  return result.mapErr(() =>
+    respondToUseCaseError(context, { kind: "Unauthorized" }),
+  );
 };
 
 const parseUserId = (
@@ -215,9 +208,8 @@ export const registerUserRoutes = (
               });
             case "PasswordHashingFailed":
             case "IdentityGenerationFailed":
-            case "RepositoryError":
               return respondToUseCaseError(context, {
-                kind: "RepositoryError",
+                kind: "InternalServerError",
               });
             default:
               return assertNever(error);
@@ -278,9 +270,8 @@ export const registerUserRoutes = (
                 role: "最後の管理者は管理者以外の役割に変更できません。",
               });
             case "IdentityGenerationFailed":
-            case "RepositoryError":
               return respondToUseCaseError(context, {
-                kind: "RepositoryError",
+                kind: "InternalServerError",
               });
             default:
               return assertNever(error);
@@ -324,9 +315,8 @@ export const registerUserRoutes = (
               return respondToUseCaseError(context, { kind: "NotFound" });
             case "PasswordHashingFailed":
             case "IdentityGenerationFailed":
-            case "RepositoryError":
               return respondToUseCaseError(context, {
-                kind: "RepositoryError",
+                kind: "InternalServerError",
               });
             default:
               return assertNever(error);
@@ -369,9 +359,8 @@ export const registerUserRoutes = (
                 303,
               );
             case "IdentityGenerationFailed":
-            case "RepositoryError":
               return respondToUseCaseError(context, {
-                kind: "RepositoryError",
+                kind: "InternalServerError",
               });
             default:
               return assertNever(error);

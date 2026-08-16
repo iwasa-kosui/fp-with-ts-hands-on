@@ -8,7 +8,6 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
 import { assertNever } from "../domain/shared/assertNever.js";
 import { Permission } from "../domain/user/permission.js";
@@ -51,16 +50,11 @@ export type PasswordHashingFailed = Readonly<{ kind: "PasswordHashingFailed" }>;
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
   | Unauthorized
   | UserEmailAlreadyExists
   | PasswordHashingFailed
-  | IdentityGenerationFailed
-  | UseCaseRepositoryError;
+  | IdentityGenerationFailed;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type UserIdGenerator = Readonly<{ generate: () => UserId }>;
 export type VeterinarianIdGenerator = Readonly<{
@@ -80,10 +74,6 @@ export type CreateUserUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
 const ensureUser =
   (actorUserId: UserId) =>
   (user: UserState | undefined): Result<UserState, Unauthorized> =>
@@ -151,20 +141,20 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userByIdResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
+
       .andThen(ensureUser(input.actorUserId))
       .andThen(ensureAdmin)
       .andThen(() =>
         dependencies.userByEmailResolver
           .resolveByEmail(input.email)
-          .mapErr(toRepositoryError),
+          ,
       )
       .andThen(ensureEmailAvailable)
       .andThen(() => hashPassword(dependencies.passwordHasher, input.password))
       .andThen((passwordHash) => createState(dependencies, input, passwordHash))
       .andThen(createEvent(dependencies, input.actorUserId))
       .andThrough((event) =>
-        dependencies.userCreatedStore.store(event).mapErr(toRepositoryError),
+        dependencies.userCreatedStore.store(event),
       )
       .map((event) => ({ user: toUserView(event.aggregateState) }));
 

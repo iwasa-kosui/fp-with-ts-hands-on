@@ -9,7 +9,6 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import {
   collectFollowUpTargets,
@@ -37,17 +36,12 @@ export type FollowUpTargetNotFound = Readonly<{
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | CollectFollowUpTargetsError
   | FollowUpTargetNotFound
   | FollowUpRequestConflict
-  | IdentityGenerationFailed
-  | UseCaseRepositoryError;
+  | IdentityGenerationFailed;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -61,14 +55,6 @@ export type RequestFollowUpUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
-const toStoreError = (
-  error: FollowUpStoreError,
-): UseCaseRepositoryError | FollowUpRequestConflict =>
-  error.kind === "FollowUpRequestConflict" ? error : toRepositoryError(error);
 const uniqueIds = (ids: readonly AppointmentId[]): readonly AppointmentId[] =>
   ids.reduce<readonly AppointmentId[]>(
     (unique, id) => (unique.includes(id) ? unique : [...unique, id]),
@@ -134,19 +120,19 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
+
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() =>
         dependencies.followUpRequestReader
           .listRequestedAppointmentIds()
-          .mapErr(toRepositoryError),
+          ,
       )
       .andThen(ensureNotRequested(input.appointmentIds))
       .andThen(() =>
         dependencies.followUpResolver
           .resolveCandidates()
-          .mapErr(toRepositoryError),
+          ,
       )
       .andThen(collectFollowUpTargets)
       .andThen(selectTargets(input.appointmentIds))
@@ -154,10 +140,7 @@ const run =
       .andThen((events) =>
         events.length === 0
           ? okAsync(events)
-          : dependencies.followUpRequestedStore
-              .store(...events)
-              .mapErr(toStoreError)
-              .map(() => events),
+          : dependencies.followUpRequestedStore.store(...events).map(() => events),
       )
       .map((events) => ({
         appointmentIds: events.map((event) => event.aggregateId),

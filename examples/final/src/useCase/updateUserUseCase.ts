@@ -8,7 +8,6 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
 import { assertNever } from "../domain/shared/assertNever.js";
 import { Permission } from "../domain/user/permission.js";
@@ -50,17 +49,12 @@ export type CannotDowngradeLastAdmin = Readonly<{
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
   | Unauthorized
   | UserNotFound
   | UserEmailAlreadyExists
   | CannotDowngradeLastAdmin
-  | IdentityGenerationFailed
-  | UseCaseRepositoryError;
+  | IdentityGenerationFailed;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type VeterinarianIdGenerator = Readonly<{
   generate: () => VeterinarianId;
@@ -77,14 +71,6 @@ export type UpdateUserUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
-const toStoreError = (
-  error: UserUpdatedStoreError,
-): CannotDowngradeLastAdmin | UseCaseRepositoryError =>
-  error.kind === "CannotDowngradeLastAdmin" ? error : toRepositoryError(error);
 const ensureActor =
   (actorUserId: UserId) =>
   (user: User | undefined): Result<User, Unauthorized> =>
@@ -153,26 +139,26 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userByIdResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
+
       .andThen(ensureActor(input.actorUserId))
       .andThen(ensureAdmin)
       .andThen(() =>
         dependencies.userByIdResolver
           .resolveById(input.targetUserId)
-          .mapErr(toRepositoryError),
+          ,
       )
       .andThen(ensureTarget(input.targetUserId))
       .andThen((target) =>
         dependencies.userByEmailResolver
           .resolveByEmail(input.email)
-          .mapErr(toRepositoryError)
+
           .andThen(ensureEmailAvailable(target.userId))
           .map(() => target),
       )
       .andThen(updateState(dependencies, input))
       .andThen(createEvent(dependencies, input.actorUserId))
       .andThrough((event) =>
-        dependencies.userUpdatedStore.store(event).mapErr(toStoreError),
+        dependencies.userUpdatedStore.store(event),
       )
       .map((event) => ({ user: toUserView(event.aggregateState) }));
 

@@ -1,6 +1,5 @@
 import type { ResultAsync } from "neverthrow";
 
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
 import type { Pet } from "../domain/pet/pet.js";
 import type { PetId } from "../domain/pet/petId.js";
@@ -20,11 +19,7 @@ export type PetView = Readonly<{
 }>;
 export type UseCaseInput = Readonly<{ actorUserId: UserId }>;
 export type UseCaseOk = Readonly<{ pets: readonly PetView[] }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
-export type UseCaseError = UnauthorizedError | UseCaseRepositoryError;
+export type UseCaseError = UnauthorizedError;
 export type UseCaseOutput = ResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -34,10 +29,6 @@ export type ListPetsUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
 const toView = (pet: Pet): PetView => ({
   petId: pet.petId,
   ownerId: pet.ownerId,
@@ -49,11 +40,11 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
+
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() =>
-        dependencies.petResolver.resolveAll().mapErr(toRepositoryError),
+        dependencies.petResolver.resolveAll(),
       )
       .map((pets) => ({ pets: pets.map(toView) }));
 

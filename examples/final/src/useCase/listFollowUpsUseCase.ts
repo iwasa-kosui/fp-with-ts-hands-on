@@ -1,6 +1,5 @@
 import type { ResultAsync } from "neverthrow";
 
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import {
   collectFollowUpTargets,
@@ -25,12 +24,8 @@ export type FollowUpView = Readonly<{
 }>;
 export type UseCaseInput = Readonly<{ actorUserId: UserId }>;
 export type UseCaseOk = Readonly<{ followUps: readonly FollowUpView[] }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
-  UnauthorizedError | CollectFollowUpTargetsError | UseCaseRepositoryError;
+  UnauthorizedError | CollectFollowUpTargetsError;
 export type UseCaseOutput = ResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -41,10 +36,6 @@ export type ListFollowUpsUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
 const wasRequested = (
   requestedAppointmentIds: readonly AppointmentId[],
   appointmentId: AppointmentId,
@@ -54,12 +45,12 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
+
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(() =>
         dependencies.followUpResolver
           .resolveCandidates()
-          .mapErr(toRepositoryError),
+          ,
       )
       .andThen((candidates) =>
         collectFollowUpTargets(candidates).map((targets) => ({
@@ -70,7 +61,7 @@ const run =
       .andThen(({ candidates, targets }) =>
         dependencies.followUpRequestReader
           .listRequestedAppointmentIds()
-          .mapErr(toRepositoryError)
+
           .map((requestedAppointmentIds) => ({
             candidates,
             targets,

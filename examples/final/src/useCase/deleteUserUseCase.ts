@@ -8,7 +8,6 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import { Permission } from "../domain/user/permission.js";
 import {
   User,
@@ -40,17 +39,12 @@ export type CannotDeleteLastAdmin = Readonly<{ kind: "CannotDeleteLastAdmin" }>;
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
   | Unauthorized
   | UserNotFound
   | CannotDeleteSelf
   | CannotDeleteLastAdmin
-  | IdentityGenerationFailed
-  | UseCaseRepositoryError;
+  | IdentityGenerationFailed;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userByIdResolver: UserByIdResolver;
@@ -63,14 +57,6 @@ export type DeleteUserUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
-const toStoreError = (
-  error: UserDeletedStoreError,
-): CannotDeleteLastAdmin | UseCaseRepositoryError =>
-  error.kind === "CannotDeleteLastAdmin" ? error : toRepositoryError(error);
 const ensureActor =
   (actorUserId: UserId) =>
   (user: UserState | undefined): Result<UserState, Unauthorized> =>
@@ -113,25 +99,25 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userByIdResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
+
       .andThen(ensureActor(input.actorUserId))
       .andThen(ensureAdmin)
       .andThen(() =>
         dependencies.userByIdResolver
           .resolveById(input.targetUserId)
-          .mapErr(toRepositoryError),
+          ,
       )
       .andThen(ensureTarget(input.targetUserId))
       .andThen(ensureNotSelf(input.actorUserId))
       .andThen((target) =>
         dependencies.userListResolver
           .resolveAll()
-          .mapErr(toRepositoryError)
+
           .andThen((users) => ensureNotLastAdmin(users)(target)),
       )
       .andThen(createEvent(dependencies, input.actorUserId))
       .andThrough((event) =>
-        dependencies.userDeletedStore.store(event).mapErr(toStoreError),
+        dependencies.userDeletedStore.store(event),
       )
       .map((event) => ({ userId: event.aggregateId }));
 

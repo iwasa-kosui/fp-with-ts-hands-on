@@ -242,10 +242,7 @@ describe("SQLite resolvers", () => {
       `VALUES ('20000000-0000-4000-8000-000000000010', 'Superuser', 'root@example.test', 'Root', '${passwordHash}', NULL)`,
     ));
 
-    const result = await createUserListResolver(db).resolveAll();
-
-    expect(result.isErr()).toBe(true);
-    expect(result.isErr() && result.error.operation).toBe("UserListResolver.resolveAll");
+    await expect(createUserListResolver(db).resolveAll()).rejects.toThrow();
   });
 
   test("follow-up requested state comes only from the claim projection", async () => {
@@ -275,12 +272,9 @@ describe("SQLite resolvers", () => {
     migrateDatabase(db);
     db.insert(followUpRequestClaimsTable).values({ appointmentId: "not-an-appointment-id" }).run();
 
-    const result = await createFollowUpRequestReader(db).listRequestedAppointmentIds();
-
-    expect(result.isErr()).toBe(true);
-    expect(result.isErr() && result.error.operation).toBe(
-      "FollowUpRequestReader.listRequestedAppointmentIds",
-    );
+    await expect(
+      createFollowUpRequestReader(db).listRequestedAppointmentIds(),
+    ).rejects.toThrow();
   });
 
   test.each([
@@ -296,9 +290,7 @@ describe("SQLite resolvers", () => {
       `VALUES ('20000000-0000-4000-8000-000000000012', '${role}', 'role@example.test', 'Role', '${passwordHash}', ${veterinarianSql})`,
     ));
 
-    const result = await createUserListResolver(db).resolveAll();
-
-    expect(result.isErr()).toBe(true);
+    await expect(createUserListResolver(db).resolveAll()).rejects.toThrow();
   });
 
   test("appointment owner and pet identifiers are required by the fresh schema", () => {
@@ -319,12 +311,11 @@ describe("SQLite resolvers", () => {
       migrateDatabase(db);
       insertAppointment(db, status, rowOwnerId, rowPetId, state);
 
-      const result = await createAppointmentByIdResolver(db).resolveById(
-        AppointmentId.schema.parse(appointmentId),
-      );
-
-      expect(result.isErr()).toBe(true);
-      expect(result.isErr() && result.error.operation).toBe("AppointmentByIdResolver.resolveById");
+      await expect(
+        createAppointmentByIdResolver(db).resolveById(
+          AppointmentId.schema.parse(appointmentId),
+        ),
+      ).rejects.toThrow();
     },
   );
 
@@ -348,10 +339,9 @@ describe("SQLite resolvers", () => {
       `INSERT INTO exam_results (exam_id, pet_id, state) VALUES ('${examId}', '${petId}', '${state}')`,
     ));
 
-    const result = await createExamResultByIdResolver(db).resolveById(ExamId.schema.parse(examId));
-
-    expect(result.isErr()).toBe(true);
-    expect(result.isErr() && result.error.operation).toBe("ExamResultByIdResolver.resolveById");
+    await expect(
+      createExamResultByIdResolver(db).resolveById(ExamId.schema.parse(examId)),
+    ).rejects.toThrow();
   });
 
   test.each([
@@ -364,12 +354,7 @@ describe("SQLite resolvers", () => {
     migrateDatabase(db);
     insertDomainEvent(db, overrides);
 
-    const result = await createEventHistoryReader(db).list(auditAdmin);
-
-    expect(result.isErr()).toBe(true);
-    expect(result.isErr() && result.error.operation).toBe(
-      "EventHistoryReader.list",
-    );
+    await expect(createEventHistoryReader(db).list(auditAdmin)).rejects.toThrow();
   });
 
   test.each([
@@ -396,11 +381,6 @@ describe("SQLite resolvers", () => {
     migrateDatabase(db);
     insertFollowUpEvent(db, overrides);
 
-    const result = await createEventHistoryReader(db).list(auditAdmin);
-
-    expect(result.isErr()).toBe(true);
-    expect(result.isErr() && result.error.operation).toBe(
-      "EventHistoryReader.list",
-    );
+    await expect(createEventHistoryReader(db).list(auditAdmin)).rejects.toThrow();
   });
 });

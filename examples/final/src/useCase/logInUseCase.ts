@@ -8,7 +8,6 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import {
   Timestamp,
   type Timestamp as TimestampValue,
@@ -45,15 +44,10 @@ export type PasswordVerificationFailed = Readonly<{
   kind: "PasswordVerificationFailed";
 }>;
 export type SessionCreationFailed = Readonly<{ kind: "SessionCreationFailed" }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
   | InvalidCredentials
   | PasswordVerificationFailed
-  | SessionCreationFailed
-  | UseCaseRepositoryError;
+  | SessionCreationFailed;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 
 export type SessionIdGenerator = Readonly<{ generate: () => SessionId }>;
@@ -71,10 +65,6 @@ export type LogInUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
 const ensureVerified =
   (user: User | undefined) =>
   (verified: boolean): Result<User, InvalidCredentials> =>
@@ -140,7 +130,7 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveByEmail(input.email)
-      .mapErr(toRepositoryError)
+
       .andThen(
         verifyPassword(
           dependencies.passwordHasher,
@@ -150,7 +140,7 @@ const run =
       )
       .andThen((user) => generateSession(dependencies, user.userId))
       .andThrough(({ event }) =>
-        dependencies.sessionCreatedStore.store(event).mapErr(toRepositoryError),
+        dependencies.sessionCreatedStore.store(event),
       )
       .map(({ event, token }) => ({
         userId: event.aggregateState.userId,

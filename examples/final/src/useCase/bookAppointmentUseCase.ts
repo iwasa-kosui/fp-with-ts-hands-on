@@ -8,7 +8,6 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { Timestamp } from "../domain/aggregate/timestamp.js";
 import {
   Appointment,
@@ -50,18 +49,13 @@ export type PetOwnerMismatch = Readonly<{
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | OwnerNotFound
   | PetNotFound
   | PetOwnerMismatch
   | IdentityGenerationFailed
-  | AppointmentConflict
-  | UseCaseRepositoryError;
+  | AppointmentConflict;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type AppointmentIdGenerator = Readonly<{
   generate: () => AppointmentId;
@@ -79,14 +73,6 @@ export type BookAppointmentUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
-const toStoreError = (
-  error: AppointmentStoreError,
-): UseCaseRepositoryError | AppointmentConflict =>
-  error.kind === "AppointmentConflict" ? error : toRepositoryError(error);
 const ensureOwner =
   (ownerId: OwnerId) =>
   (owner: Owner | undefined): Result<Owner, OwnerNotFound> =>
@@ -128,27 +114,25 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
+
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() =>
         dependencies.ownerResolver
           .resolveById(input.ownerId)
-          .mapErr(toRepositoryError),
+          ,
       )
       .andThen(ensureOwner(input.ownerId))
       .andThen(() =>
         dependencies.petResolver
           .resolveById(input.petId)
-          .mapErr(toRepositoryError),
+          ,
       )
       .andThen(ensurePet(input.petId))
       .andThen(ensurePetOwner(input.ownerId))
       .andThen(() => createEvent(dependencies, input))
       .andThrough((event) =>
-        dependencies.appointmentBookedStore
-          .store(event)
-          .mapErr(toStoreError),
+        dependencies.appointmentBookedStore.store(event),
       )
       .map((event) => ({ appointment: event.aggregateState }));
 

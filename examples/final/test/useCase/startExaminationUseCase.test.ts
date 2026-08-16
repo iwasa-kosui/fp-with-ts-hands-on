@@ -1,10 +1,9 @@
-import { errAsync, okAsync, type ResultAsync } from "neverthrow";
+import { okAsync, ResultAsync } from "neverthrow";
 import { describe, expect, test } from "vitest";
 
 import type { Clock } from "../../src/domain/aggregate/clock.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import type { EventIdGenerator } from "../../src/domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../../src/domain/aggregate/repositoryError.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import {
   type Appointment,
@@ -88,11 +87,7 @@ const scheduled = {
   kind: "Scheduled",
 } as const satisfies Scheduled;
 
-const repositoryError: RepositoryError = {
-  kind: "RepositoryError",
-  operation: "test",
-  cause: new Error("database unavailable"),
-};
+const infrastructureError = new Error("database unavailable");
 
 const userResolverFor = (user: User | undefined): UserByIdResolver =>
   ({
@@ -229,12 +224,13 @@ describe("StartExaminationUseCase", () => {
     expect(appointmentResolverCalled).toBe(false);
   });
 
-  test("returns a user resolver RepositoryError without resolving the appointment", async () => {
+  test("rejects a user resolver failure without resolving the appointment", async () => {
     let appointmentResolverCalled = false;
     const useCase = StartExaminationUseCase.create(
       createDependencies({
         userResolver: {
-          resolveById: () => errAsync(repositoryError),
+          resolveById: () =>
+            ResultAsync.fromSafePromise(Promise.reject(infrastructureError)),
         } as const satisfies UserByIdResolver,
         appointmentResolver: {
           resolveById: () => {
@@ -245,44 +241,39 @@ describe("StartExaminationUseCase", () => {
       }),
     );
 
-    const result = await useCase.run(input);
-
-    expect(result.isErr() && result.error).toBe(repositoryError);
+    await expect(useCase.run(input)).rejects.toBe(infrastructureError);
     expect(appointmentResolverCalled).toBe(false);
   });
 
-  test("returns an appointment resolver RepositoryError without storing", async () => {
+  test("rejects an appointment resolver failure without storing", async () => {
     const storedEvents: ExaminationStarted[] = [];
     const useCase = StartExaminationUseCase.create(
       createDependencies({
         appointmentResolver: {
-          resolveById: () => errAsync(repositoryError),
+          resolveById: () =>
+            ResultAsync.fromSafePromise(Promise.reject(infrastructureError)),
         } as const satisfies AppointmentByIdResolver,
         examinationStartedStore: successfulStore(storedEvents),
       }),
     );
 
-    const result = await useCase.run(input);
-
-    expect(result.isErr() && result.error).toBe(repositoryError);
+    await expect(useCase.run(input)).rejects.toBe(infrastructureError);
     expect(storedEvents).toHaveLength(0);
   });
 
-  test("returns a store RepositoryError after producing the event", async () => {
+  test("rejects a store failure after producing the event", async () => {
     const receivedEvents: ExaminationStarted[] = [];
     const failingStore = {
-      store: (...events: readonly ExaminationStarted[]): ResultAsync<void, RepositoryError> => {
+      store: (...events: readonly ExaminationStarted[]) => {
         receivedEvents.push(...events);
-        return errAsync(repositoryError);
+        return ResultAsync.fromSafePromise(Promise.reject(infrastructureError));
       },
     } as const satisfies ExaminationStartedStore;
     const useCase = StartExaminationUseCase.create(
       createDependencies({ examinationStartedStore: failingStore }),
     );
 
-    const result = await useCase.run(input);
-
-    expect(result.isErr() && result.error).toBe(repositoryError);
+    await expect(useCase.run(input)).rejects.toBe(infrastructureError);
     expect(receivedEvents).toHaveLength(1);
     expect(receivedEvents[0]?.kind).toBe("ExaminationStarted");
   });

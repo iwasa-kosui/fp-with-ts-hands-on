@@ -424,12 +424,12 @@ describe("SQLite event stores", () => {
       eventId: started.eventId,
     })(started.aggregateState, { examId: ids.exam });
 
-    const result = await createExaminationCompletionStore(db).store(
+    const result = createExaminationCompletionStore(db).store(
       examResult,
       completion,
     );
 
-    expect(result.isErr()).toBe(true);
+    await expect(result).rejects.toThrow();
     expect(await db.select().from(examResultsTable)).toHaveLength(0);
     expect(
       (await createAppointmentByIdResolver(db).resolveById(ids.appointment))
@@ -469,12 +469,12 @@ describe("SQLite event stores", () => {
       { examId: ids.exam },
     );
 
-    const result = await createExaminationCompletionStore(db).store(
-      mismatchedExamResult,
-      completion,
-    );
-
-    expect(result.isErr() && result.error.kind).toBe("RepositoryError");
+    await expect(
+      createExaminationCompletionStore(db).store(
+        mismatchedExamResult,
+        completion,
+      ),
+    ).rejects.toThrow("Mismatched examination completion events");
     expect(await db.select().from(examResultsTable)).toHaveLength(0);
     expect(
       (await createAppointmentByIdResolver(db).resolveById(ids.appointment))

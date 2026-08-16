@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { errAsync } from "neverthrow";
+import { ResultAsync } from "neverthrow";
 import { describe, expect, test } from "vitest";
 
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
@@ -109,7 +109,7 @@ describe("Hono/Inertia authentication boundary", () => {
     expect(claimedSetup.headers.get("location")).toBe("/login");
   });
 
-  test("maps installation-status query failures safely and exposes no user-list policy dependency", async () => {
+  test("handles a rejected installation-status query safely and exposes no user-list policy dependency", async () => {
     const database = createSqliteDatabase(":memory:");
     migrateDatabase(database);
     const composed = createApplicationDependencies(database, {
@@ -120,11 +120,9 @@ describe("Hono/Inertia authentication boundary", () => {
       ...composed,
       installationStatusQuery: {
         get: () =>
-          errAsync({
-            kind: "RepositoryError",
-            operation: "InstallationStatusQuery.get",
-            cause: new Error("private database cause"),
-          }),
+          ResultAsync.fromSafePromise(
+            Promise.reject(new Error("private database cause")),
+          ),
       },
     });
 

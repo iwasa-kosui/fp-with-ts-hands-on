@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
-import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import { Timestamp } from "../../../../domain/aggregate/timestamp.js";
 import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
 import { AppointmentReason } from "../../../../domain/appointment/appointmentReason.js";
@@ -105,19 +104,11 @@ export const parseAppointmentRow = (raw: unknown) => {
   }
   return row.state;
 };
-const repositoryError =
-  (operation: string) =>
-  (cause: unknown): RepositoryError => ({
-    kind: "RepositoryError",
-    operation,
-    cause,
-  });
-
 export const createAppointmentByIdResolver = (
   db: SqliteDatabase,
 ): AppointmentByIdResolver => ({
   resolveById: (appointmentId) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() => {
         const row = db
           .select()
@@ -126,7 +117,6 @@ export const createAppointmentByIdResolver = (
           .get();
         return row === undefined ? undefined : parseAppointmentRow(row);
       }),
-      repositoryError("AppointmentByIdResolver.resolveById"),
     ),
 });
 
@@ -134,7 +124,7 @@ export const createAppointmentByPetIdResolver = (
   db: SqliteDatabase,
 ): AppointmentByPetIdResolver => ({
   resolveByPetId: (petId) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         db
           .select()
@@ -143,7 +133,6 @@ export const createAppointmentByPetIdResolver = (
           .all()
           .map(parseAppointmentRow),
       ),
-      repositoryError("AppointmentByPetIdResolver.resolveByPetId"),
     ),
 });
 
@@ -151,10 +140,9 @@ export const createAppointmentListResolver = (
   db: SqliteDatabase,
 ): AppointmentListResolver => ({
   resolveAll: () =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         db.select().from(appointmentsTable).all().map(parseAppointmentRow),
       ),
-      repositoryError("AppointmentListResolver.resolveAll"),
     ),
 });

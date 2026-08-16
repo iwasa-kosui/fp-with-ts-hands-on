@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
-import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import type {
   UserByEmailResolver,
   UserByIdResolver,
@@ -51,38 +50,29 @@ const parseRow = (row: typeof usersTable.$inferSelect): User => {
   }
 };
 
-const repositoryError = (operation: string) => (cause: unknown): RepositoryError => ({
-  kind: "RepositoryError",
-  operation,
-  cause,
-});
-
 export const createUserByIdResolver = (db: SqliteDatabase): UserByIdResolver => ({
   resolveById: (userId) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() => {
         const row = db.select().from(usersTable).where(eq(usersTable.userId, userId)).get();
         return row === undefined ? undefined : parseRow(row);
       }),
-      repositoryError("UserByIdResolver.resolveById"),
     ),
 });
 
 export const createUserByEmailResolver = (db: SqliteDatabase): UserByEmailResolver => ({
   resolveByEmail: (email) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() => {
         const row = db.select().from(usersTable).where(eq(usersTable.email, email.unwrap())).get();
         return row === undefined ? undefined : parseRow(row);
       }),
-      repositoryError("UserByEmailResolver.resolveByEmail"),
     ),
 });
 
 export const createUserListResolver = (db: SqliteDatabase): UserListResolver => ({
   resolveAll: () =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() => db.select().from(usersTable).all().map(parseRow)),
-      repositoryError("UserListResolver.resolveAll"),
     ),
 });

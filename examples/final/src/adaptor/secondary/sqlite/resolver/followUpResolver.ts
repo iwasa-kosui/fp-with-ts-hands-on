@@ -1,7 +1,6 @@
 import { eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 
-import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import type { FollowUpResolver } from "../../../../domain/followUp/followUpResolver.js";
 import { Owner } from "../../../../domain/owner/owner.js";
 import type { SqliteDatabase } from "../db.js";
@@ -11,7 +10,7 @@ import { parseExamResultRow } from "./examResultResolver.js";
 
 export const createFollowUpResolver = (db: SqliteDatabase): FollowUpResolver => ({
   resolveCandidates: () =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() => {
         const rows = db.select({
           appointment: appointmentsTable,
@@ -29,11 +28,6 @@ export const createFollowUpResolver = (db: SqliteDatabase): FollowUpResolver => 
           owner: Owner.schema.parse(row.owner),
           examResult: parseExamResultRow(row.examResult),
         }));
-      }),
-      (cause): RepositoryError => ({
-        kind: "RepositoryError",
-        operation: "FollowUpResolver.resolveCandidates",
-        cause,
       }),
     ),
 });

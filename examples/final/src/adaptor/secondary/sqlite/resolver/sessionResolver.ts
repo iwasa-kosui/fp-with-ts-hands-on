@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
-import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import { Timestamp } from "../../../../domain/aggregate/timestamp.js";
 import type {
   SessionByIdResolver,
@@ -23,20 +22,13 @@ const SessionRowSchema = z.object({
 });
 
 const parseRow = (row: typeof sessionsTable.$inferSelect) => SessionRowSchema.parse(row);
-const repositoryError = (operation: string) => (cause: unknown): RepositoryError => ({
-  kind: "RepositoryError",
-  operation,
-  cause,
-});
-
 export const createSessionByIdResolver = (db: SqliteDatabase): SessionByIdResolver => ({
   resolveById: (sessionId) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() => {
         const row = db.select().from(sessionsTable).where(eq(sessionsTable.sessionId, sessionId)).get();
         return row === undefined ? undefined : parseRow(row);
       }),
-      repositoryError("SessionByIdResolver.resolveById"),
     ),
 });
 
@@ -44,12 +36,11 @@ export const createSessionByTokenHashResolver = (
   db: SqliteDatabase,
 ): SessionByTokenHashResolver => ({
   resolveByTokenHash: (tokenHash) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() => {
         const row = db.select().from(sessionsTable).where(eq(sessionsTable.tokenHash, tokenHash.unwrap())).get();
         return row === undefined ? undefined : parseRow(row);
       }),
-      repositoryError("SessionByTokenHashResolver.resolveByTokenHash"),
     ),
 });
 
@@ -57,10 +48,9 @@ export const createSessionByUserIdResolver = (
   db: SqliteDatabase,
 ): SessionByUserIdResolver => ({
   resolveByUserId: (userId) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         db.select().from(sessionsTable).where(eq(sessionsTable.userId, userId)).all().map(parseRow),
       ),
-      repositoryError("SessionByUserIdResolver.resolveByUserId"),
     ),
 });

@@ -5,10 +5,7 @@ import type { InstallationStatusQuery } from "../../../../useCase/query/installa
 import type { WebEnvironment } from "../pageProps.js";
 import { toAppointmentPageView } from "./appointmentRoutes.js";
 import { withSharedProps } from "../middleware/sharedProps.js";
-import {
-  assertNever,
-  respondToUseCaseError,
-} from "../middleware/useCaseResponse.js";
+import { respondToUseCaseError } from "../middleware/useCaseResponse.js";
 
 type DashboardRouteDependencies = Readonly<{
   installationStatusQuery: InstallationStatusQuery;
@@ -24,7 +21,7 @@ export const registerDashboardRoutes = (
     if (actor === undefined) {
       const installation = await dependencies.installationStatusQuery.get();
       if (installation.isErr()) {
-        return respondToUseCaseError(context, { kind: "RepositoryError" });
+        return respondToUseCaseError(context, { kind: "InternalServerError" });
       }
       return context.redirect(
         installation.value.kind === "InitialSetupAvailable"
@@ -54,20 +51,8 @@ export const registerDashboardRoutes = (
               ),
             }),
           ),
-        (error) => {
-          switch (error.kind) {
-            case "Unauthorized":
-              return respondToUseCaseError(context, {
-                kind: "Unauthenticated",
-              });
-            case "RepositoryError":
-              return respondToUseCaseError(context, {
-                kind: "RepositoryError",
-              });
-            default:
-              return assertNever(error);
-          }
-        },
+        () =>
+          respondToUseCaseError(context, { kind: "Unauthenticated" }),
       );
   });
 };

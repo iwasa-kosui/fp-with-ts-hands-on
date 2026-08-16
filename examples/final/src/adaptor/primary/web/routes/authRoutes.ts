@@ -74,7 +74,7 @@ export const registerAuthRoutes = (
   app.get("/setup", async (context) => {
     const installation = await getInstallationStatus(dependencies);
     if (installation.isErr()) {
-      return respondToUseCaseError(context, { kind: "RepositoryError" });
+      return respondToUseCaseError(context, { kind: "InternalServerError" });
     }
     if (installation.value.kind === "Installed") {
       return context.redirect(
@@ -87,7 +87,7 @@ export const registerAuthRoutes = (
   app.post("/setup", async (context) => {
     const installation = await getInstallationStatus(dependencies);
     if (installation.isErr()) {
-      return respondToUseCaseError(context, { kind: "RepositoryError" });
+      return respondToUseCaseError(context, { kind: "InternalServerError" });
     }
     if (installation.value.kind === "Installed") {
       return context.redirect("/login");
@@ -122,9 +122,8 @@ export const registerAuthRoutes = (
           case "PasswordHashingFailed":
           case "IdentityGenerationFailed":
           case "SessionCreationFailed":
-          case "RepositoryError":
             return respondToUseCaseError(context, {
-              kind: "RepositoryError",
+              kind: "InternalServerError",
             });
           default:
             return assertNever(error);
@@ -136,7 +135,7 @@ export const registerAuthRoutes = (
   app.get("/login", async (context) => {
     const installation = await getInstallationStatus(dependencies);
     if (installation.isErr()) {
-      return respondToUseCaseError(context, { kind: "RepositoryError" });
+      return respondToUseCaseError(context, { kind: "InternalServerError" });
     }
     if (installation.value.kind === "InitialSetupAvailable") {
       return context.redirect("/setup");
@@ -150,7 +149,7 @@ export const registerAuthRoutes = (
   app.post("/login", async (context) => {
     const installation = await getInstallationStatus(dependencies);
     if (installation.isErr()) {
-      return respondToUseCaseError(context, { kind: "RepositoryError" });
+      return respondToUseCaseError(context, { kind: "InternalServerError" });
     }
     if (installation.value.kind === "InitialSetupAvailable") {
       return context.redirect("/setup");
@@ -193,9 +192,8 @@ export const registerAuthRoutes = (
             );
           case "PasswordVerificationFailed":
           case "SessionCreationFailed":
-          case "RepositoryError":
             return respondToUseCaseError(context, {
-              kind: "RepositoryError",
+              kind: "InternalServerError",
             });
           default:
             return assertNever(error);
@@ -209,7 +207,7 @@ export const registerAuthRoutes = (
     if (actor === undefined) {
       const installation = await getInstallationStatus(dependencies);
       if (installation.isErr()) {
-        return respondToUseCaseError(context, { kind: "RepositoryError" });
+        return respondToUseCaseError(context, { kind: "InternalServerError" });
       }
       return context.redirect(
         installation.value.kind === "InitialSetupAvailable"
@@ -238,9 +236,8 @@ export const registerAuthRoutes = (
                 kind: "Unauthorized",
               });
             case "SessionInvalidationFailed":
-            case "RepositoryError":
               return respondToUseCaseError(context, {
-                kind: "RepositoryError",
+                kind: "InternalServerError",
               });
             default:
               return assertNever(error);
