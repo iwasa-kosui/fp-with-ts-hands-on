@@ -192,19 +192,23 @@ export const createUserEventStore = (db: SqliteDatabase) => {
       (event) => event.kind !== "UserDeleted",
     );
 
-    if (deletionEvents.length > 0 && projectionEvents.length > 0) {
-      throw new TypeError(
-        "User deletion events require an isolated guarded transaction",
-      );
-    }
-
-    return deletionEvents.length > 0
-      ? deletionStore
-          .store(...deletionEvents)
-          .mapErr((error): AnyUserStoreError => error)
-      : projectionStore
-          .store(...projectionEvents)
-          .mapErr((error): AnyUserStoreError => error);
+    return ResultAsync.fromSafePromise(
+      Promise.resolve().then(() => {
+        if (deletionEvents.length > 0 && projectionEvents.length > 0) {
+          throw new TypeError(
+            "User deletion events require an isolated guarded transaction",
+          );
+        }
+      }),
+    ).andThen(() =>
+      deletionEvents.length > 0
+        ? deletionStore
+            .store(...deletionEvents)
+            .mapErr((error): AnyUserStoreError => error)
+        : projectionStore
+            .store(...projectionEvents)
+            .mapErr((error): AnyUserStoreError => error),
+    );
   }
 
   return { store } as const;

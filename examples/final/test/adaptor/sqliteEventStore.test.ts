@@ -532,6 +532,21 @@ describe("SQLite event stores", () => {
     expect(await db.select().from(domainEventsTable)).toHaveLength(0);
   });
 
+  test("rejects mixed user deletion and projection events instead of throwing synchronously", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const created = User.create(eventContext(32))(user("Mixed events"));
+    const deleted = User.delete(eventContext(33))(created.aggregateState);
+    const store = createUserEventStore(db);
+    const storeInvalidInput = store.store as unknown as (
+      ...events: readonly [typeof created, typeof deleted]
+    ) => PromiseLike<unknown>;
+
+    await expect(storeInvalidInput(created, deleted)).rejects.toThrow(
+      "User deletion events require an isolated guarded transaction",
+    );
+  });
+
   test("authoritatively accepts only one of two stale last-Admin downgrades", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);

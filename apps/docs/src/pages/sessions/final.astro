@@ -166,7 +166,7 @@ export const StartExaminationUseCase = {
       現在状態は各 event store が同じ transaction で更新する projection から読みます。監査履歴から現在状態を復元しません。監査行の再生や圧縮も行わず、履歴は管理者向けの監査 query だけに使います。
     </p>
     <p>
-      監査用の1メソッド port は <code>EventHistoryReader.list(admin: Admin): ResultAsync&lt;readonly SanitizedAuditRecord[], never&gt;</code> です。Admin capability を受け取る reader 境界で SQLite の保存行を Zod 検証し、許可した event ID、aggregate ID、event name、実行者、時刻、業務上安全な値だけを <code>SanitizedAuditRecord</code> へ写して Admin 画面へ届けます。競合など利用者が判断できる業務上の失敗だけを <code>Err</code> にし、SQLite の障害・一意制約違反・保存済みデータの破損は例外として Hono の共通エラー境界まで伝播させます。この出力契約により、監査画面の props は表示を許可した情報だけで構成されます。
+      監査用の1メソッド port は <code>EventHistoryReader.list(admin: Admin): ResultAsync&lt;readonly SanitizedAuditRecord[], never&gt;</code> です。Admin capability を受け取る reader 境界で SQLite の保存行を Zod 検証し、許可した event ID、aggregate ID、event name、実行者、時刻、業務上安全な値だけを <code>SanitizedAuditRecord</code> へ写して Admin 画面へ届けます。利用者が判断できる明示的な業務競合だけを <code>Err</code> にし、<code>follow_up_request_claims.appointment_id</code> の競合は <code>FollowUpRequestConflict</code> として返します。それ以外の未知の SQLite 制約違反、保存済みデータの破損、SQLite 障害は rejection として Hono の共通エラー境界へ伝播し、opaque な 500 応答になります。この出力契約により、監査画面の props は表示を許可した情報だけで構成されます。
     </p>
     <p>
       ユーザー、飼い主、ペットの削除は現在の projection を物理削除します。削除 event と過去の監査行は保持されるため、この操作は個人情報の完全消去を意味しません。利用目的と保持期間は型で決められないため、人が別途レビューする制約として残ります。
