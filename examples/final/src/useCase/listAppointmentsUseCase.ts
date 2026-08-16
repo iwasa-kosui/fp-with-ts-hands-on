@@ -1,4 +1,4 @@
-import type { ResultAsync } from "neverthrow";
+import { ok, safeTry, type ResultAsync } from "neverthrow";
 
 import type { Timestamp } from "../domain/aggregate/timestamp.js";
 import type { Appointment } from "../domain/appointment/appointment.js";
@@ -93,6 +93,13 @@ export type ListAppointmentsUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
+type AppointmentSources = Readonly<{
+  appointments: readonly Appointment[];
+  owners: readonly Owner[];
+  pets: readonly Pet[];
+  users: readonly User[];
+}>;
+
 export const toAppointmentView =
   (owners: readonly Owner[], pets: readonly Pet[], users: readonly User[]) =>
   (appointment: Appointment): AppointmentView => {
@@ -177,39 +184,33 @@ export const toAppointmentView =
         return assertNever(appointment);
     }
   };
+
+const loadSources =
+  (dependencies: Dependencies) =>
+  (input: UseCaseInput): ResultAsync<AppointmentSources, UnauthorizedError> =>
+    safeTry<AppointmentSources, UnauthorizedError>(async function* () {
+      const actor = yield* dependencies.userResolver.resolveById(input.actorUserId);
+      yield* ensureUserFound(input.actorUserId)(actor);
+      const appointments = yield* dependencies.appointmentListResolver.resolveAll();
+      const owners = yield* dependencies.ownerListResolver.resolveAll();
+      const pets = yield* dependencies.petListResolver.resolveAll();
+      const users = yield* dependencies.userListResolver.resolveAll();
+      return ok({ appointments, owners, pets, users });
+    });
+
+const toAppointments = ({
+  appointments,
+  owners,
+  pets,
+  users,
+}: AppointmentSources): UseCaseOk => ({
+  appointments: appointments.map(toAppointmentView(owners, pets, users)),
+});
+
 const run =
   (dependencies: Dependencies) =>
   (input: UseCaseInput): UseCaseOutput =>
-    dependencies.userResolver
-      .resolveById(input.actorUserId)
-
-      .andThen(ensureUserFound(input.actorUserId))
-      .andThen(() =>
-        dependencies.appointmentListResolver
-          .resolveAll()
-          ,
-      )
-      .andThen((appointments) =>
-        dependencies.ownerListResolver
-          .resolveAll()
-
-          .map((owners) => ({ appointments, owners })),
-      )
-      .andThen(({ appointments, owners }) =>
-        dependencies.petListResolver
-          .resolveAll()
-
-          .map((pets) => ({ appointments, owners, pets })),
-      )
-      .andThen(({ appointments, owners, pets }) =>
-        dependencies.userListResolver
-          .resolveAll()
-
-          .map((users) => ({ appointments, owners, pets, users })),
-      )
-      .map(({ appointments, owners, pets, users }) => ({
-        appointments: appointments.map(toAppointmentView(owners, pets, users)),
-      }));
+    loadSources(dependencies)(input).map(toAppointments);
 
 export const ListAppointmentsUseCase = {
   create: (dependencies: Dependencies): ListAppointmentsUseCase => ({
