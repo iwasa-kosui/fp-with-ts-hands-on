@@ -67,9 +67,9 @@ describe("in-memory ExaminationStarted store", () => {
       ownerName: "Owner Secret",
       email: "owner-secret@example.test",
       phone: "090-9999-9999",
-      message: "S4 storage unavailable for Owner Secret",
+      message: "S5 storage unavailable for Owner Secret",
       stack: "S4DiagnosticError: storage unavailable\n    at ExaminationStartedStore.store",
-      error: new Error("S4 storage unavailable for Owner Secret"),
+      error: new Error("S5 storage unavailable for Owner Secret"),
     } as const;
     const adapter = createInMemoryExaminationStartedStore([checkedIn], {
       beforeCommit: () => Promise.reject(privateDetails),

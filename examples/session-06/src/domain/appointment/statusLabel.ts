@@ -1,6 +1,10 @@
 import type { Appointment } from "./appointment.js";
 
-export const toStatusLabel = (appointment: Readonly<{ kind: string }>): string => {
+const assertNever = (value: never): never => {
+  throw new Error(`Unknown appointment status: ${JSON.stringify(value)}`);
+};
+
+export const toStatusLabel = (appointment: Appointment): string => {
   switch (appointment.kind) {
     case "Scheduled":
       return "予約済み";
@@ -13,8 +17,6 @@ export const toStatusLabel = (appointment: Readonly<{ kind: string }>): string =
     case "Canceled":
       return "キャンセル";
     default:
-      return "不明";
+      return assertNever(appointment);
   }
 };
-
-export type StatusLabelAppointment = Appointment;

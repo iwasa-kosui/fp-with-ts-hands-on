@@ -38,6 +38,6 @@ describe("回帰条件: schema とドメイン型がずれない", () => {
 
 describe("回帰条件: 異なる種類の ID はコンパイルで止まる", () => {
   it("OwnerId を PetId の位置へ渡せない", () => {
-    expect(compileTypeFixture("s2-owner-id-is-not-pet-id.ts")).toEqual([]);
+    expect(compileTypeFixture("s3-owner-id-is-not-pet-id.ts")).toEqual([]);
   });
 });

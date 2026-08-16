@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "exercise": "vitest run --config vitest.exercises.config.ts"
   },
   "dependencies": {
     "neverthrow": "^8.2.0",

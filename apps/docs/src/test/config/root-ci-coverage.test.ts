@@ -52,6 +52,28 @@ describe("root CI coverage", () => {
     );
   });
 
+  it("exposes only S2 through S5 as participant exercise commands", async () => {
+    const rootPackage = await readPackage("package.json");
+
+    expect(
+      Object.keys(rootPackage.scripts)
+        .filter((script) => /^exercise:\d{2}$/.test(script))
+        .sort(),
+    ).toEqual(["exercise:02", "exercise:03", "exercise:04", "exercise:05"]);
+    expect(rootPackage.scripts["exercise:02"]).toBe(
+      "pnpm --filter @fp-with-ts/clinic-session-02 exercise",
+    );
+    expect(rootPackage.scripts["exercise:03"]).toBe(
+      "pnpm --filter @fp-with-ts/clinic-session-03 exercise",
+    );
+    expect(rootPackage.scripts["exercise:04"]).toBe(
+      "pnpm --filter @fp-with-ts/clinic-session-04 exercise",
+    );
+    expect(rootPackage.scripts["exercise:05"]).toBe(
+      "pnpm --filter @fp-with-ts/clinic-session-05 exercise",
+    );
+  });
+
   it.each(["deploy.yml", "preview.yml"])(
     "%s delegates all release gates to root scripts",
     async (workflowName) => {

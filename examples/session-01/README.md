@@ -1,12 +1,5 @@
-# Session 01: 状態を型にする
+# Session 01: ワークフロー・カード
 
-このディレクトリは Session 01 の開始スナップショットです。解答は `examples/session-02/src` にあります。
+S1 はコード演習ではありません。15分の班ワークで、現行業務で起きうる事故、守るべき不変条件、次に小さく確かめる変更をワークフロー・カードに整理します。
 
-会計済み・キャンセル済みの来院を戻せず、キャンセルには理由を残すという不変条件を、`src/domain/appointment/` で型にします。
-
-```bash
-pnpm --filter @fp-with-ts/clinic-session-01 test
-pnpm --filter @fp-with-ts/clinic-session-01 exercise
-```
-
-`pnpm exercise` は4つの業務上の不変条件について、意図した assertion failure で始まります。
+実装は Session 02 から始めます。S1 には参加者向け実行コマンドを設けません。

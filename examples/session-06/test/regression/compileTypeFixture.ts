@@ -3,28 +3,19 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
-const projectDirectory = path.resolve(directory, "..");
+const projectDirectory = path.resolve(directory, "..", "..");
 const configPath = path.join(projectDirectory, "tsconfig.json");
-const exhaustiveFixture = "s1-status-exhaustive.ts";
+const exhaustiveFixture = "s2-status-exhaustive.ts";
 
 const printWithSixthAppointmentState = (fileName: string, source: string): string => {
   const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true);
   const transformed = ts.transform(sourceFile, [
     (context) => {
       const visit: ts.Visitor = (node) => {
-        if (
-          ts.isTypeAliasDeclaration(node) &&
-          node.name.text === "Appointment" &&
-          ts.isUnionTypeNode(node.type)
-        ) {
+        if (ts.isTypeAliasDeclaration(node) && node.name.text === "Appointment" && ts.isUnionTypeNode(node.type)) {
           const deferred = ts.factory.createTypeReferenceNode("Readonly", [
             ts.factory.createTypeLiteralNode([
-              ts.factory.createPropertySignature(
-                undefined,
-                "kind",
-                undefined,
-                ts.factory.createLiteralTypeNode(ts.factory.createStringLiteral("Deferred")),
-              ),
+              ts.factory.createPropertySignature(undefined, "kind", undefined, ts.factory.createLiteralTypeNode(ts.factory.createStringLiteral("Deferred"))),
             ]),
           ]);
           return ts.factory.updateTypeAliasDeclaration(
@@ -32,10 +23,7 @@ const printWithSixthAppointmentState = (fileName: string, source: string): strin
             node.modifiers,
             node.name,
             node.typeParameters,
-            ts.factory.updateUnionTypeNode(
-              node.type,
-              ts.factory.createNodeArray([...node.type.types, deferred]),
-            ),
+            ts.factory.updateUnionTypeNode(node.type, ts.factory.createNodeArray([...node.type.types, deferred])),
           );
         }
         return ts.visitEachChild(node, visit, context);
@@ -58,7 +46,6 @@ const printWithExpectedExhaustivenessError = (fileName: string, source: string):
         if (ts.isDefaultClause(node) && node.statements.length > 0) {
           const first = node.statements[0];
           if (first === undefined) return node;
-          const rest = node.statements.slice(1);
           return ts.factory.updateDefaultClause(node, [
             ts.addSyntheticLeadingComment(
               first,
@@ -66,7 +53,7 @@ const printWithExpectedExhaustivenessError = (fileName: string, source: string):
               " @ts-expect-error A new appointment state must make this branch fail to compile.",
               true,
             ),
-            ...rest,
+            ...node.statements.slice(1),
           ]);
         }
         return ts.visitEachChild(node, visit, context);
@@ -95,12 +82,8 @@ export const compileTypeFixture = (fixtureName: string): ReadonlyArray<string> =
     const source = readFile(fileName);
     if (source === undefined) return source;
     if (fileName === fixturePath) return source.replace("// @ts-nocheck\n", "");
-    if (verifiesExhaustiveness && fileName === appointmentPath) {
-      return printWithSixthAppointmentState(fileName, source);
-    }
-    if (verifiesExhaustiveness && fileName === statusLabelPath) {
-      return printWithExpectedExhaustivenessError(fileName, source);
-    }
+    if (verifiesExhaustiveness && fileName === appointmentPath) return printWithSixthAppointmentState(fileName, source);
+    if (verifiesExhaustiveness && fileName === statusLabelPath) return printWithExpectedExhaustivenessError(fileName, source);
     return source;
   };
 
