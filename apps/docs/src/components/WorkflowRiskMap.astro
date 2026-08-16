@@ -3,16 +3,19 @@ import { sessions, type ExerciseSessionSummary } from "../sessions/catalog";
 
 type Props = Readonly<{
   currentSession?: ExerciseSessionSummary;
+  placement: "opening" | "review";
 }>;
 
-const { currentSession } = Astro.props;
+const { currentSession, placement } = Astro.props;
 const workflowSessions = sessions.filter((session) => session.kind === "exercise");
+const placementLabel = placement === "opening" ? "開始時" : "レビュー時";
 ---
 
 <aside
   class="workflow-risk-map"
+  data-placement={placement}
   data-current-focus={currentSession?.workflowFocus}
-  aria-label="S2からS5の共通ワークフロー・リスクマップ"
+  aria-label={`S2からS5の共通ワークフロー・リスクマップ（${placementLabel}）`}
 >
   <h3>共通ワークフロー・リスクマップ</h3>
   <p>同じ診察開始カードを、未解決リスクごとに小さく実装していきます。</p>

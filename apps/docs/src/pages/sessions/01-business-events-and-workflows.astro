@@ -31,7 +31,7 @@ if (session === undefined) {
     <h3>後半8分: 講師回答例と未解決リスクを比べる</h3>
     <p>違いを正誤にせず、どの欄に判断が足りなかったか、どのリスクを先に実装するかを比較します。</p>
     <WorkflowCard variant="answer" />
-    <WorkflowRiskMap />
+    <WorkflowRiskMap placement="opening" />
   </section>
 
   <section id="review">
@@ -39,5 +39,6 @@ if (session === undefined) {
     <p><strong>今回そろえたこと:</strong> {session.workflowRisks.resolvedFromPrevious}</p>
     <p><strong>次に残す問い:</strong> {session.workflowRisks.remainingForNext}</p>
     <p>班で、最初に減らしたい未解決リスクを一つ選び、その理由を一文で共有します。</p>
+    <WorkflowRiskMap placement="review" />
   </section>
 </SessionLayout>

@@ -72,7 +72,7 @@ const promisesHref =
     {session.decisions.map(({ invariant }) => <li>{invariant}</li>)}
   </ul>
   <p>今回の変更は <code>{session.exerciseModule.dir}</code> の1モジュールだけに閉じます。</p>
-  <WorkflowRiskMap currentSession={exerciseSession} />
+  <WorkflowRiskMap currentSession={exerciseSession} placement="opening" />
 </section>
 
 <section id="legacy">
@@ -168,4 +168,5 @@ const promisesHref =
   </ul>
   <h3>完走できないとき</h3>
   <p>{narrative.fallback}</p>
+  <WorkflowRiskMap currentSession={exerciseSession} placement="review" />
 </section>

@@ -71,15 +71,31 @@ describe("exercise session contract", () => {
   it("connects every exercise to the shared workflow risk map and causal narrative", async () => {
     for (const session of exercises) {
       const document = await renderSessionPage(session);
-      const riskMap = document.querySelector<HTMLElement>(".workflow-risk-map");
-      const currentRisk = riskMap?.querySelector<HTMLElement>(
-        `[data-session-sequence="${session.sequence}"]`,
-      );
+      const riskMaps = [
+        ...document.querySelectorAll<HTMLElement>(".workflow-risk-map"),
+      ];
 
-      expect(riskMap?.dataset.currentFocus).toBe(session.workflowFocus);
-      expect(currentRisk?.getAttribute("aria-current")).toBe("step");
-      expect(currentRisk?.textContent).toContain(session.workflowRisks.resolvedFromPrevious);
-      expect(currentRisk?.textContent).toContain(session.workflowRisks.remainingForNext);
+      expect(riskMaps).toHaveLength(2);
+      expect(riskMaps.map(({ dataset }) => dataset.placement)).toEqual([
+        "opening",
+        "review",
+      ]);
+      expect(new Set(riskMaps.map((map) => map.getAttribute("aria-label"))).size).toBe(2);
+      expect(document.querySelectorAll("#incident .workflow-risk-map")).toHaveLength(1);
+      expect(document.querySelectorAll("#review .workflow-risk-map")).toHaveLength(1);
+      expect(riskMaps[1]?.querySelector("ol")?.textContent).toBe(
+        riskMaps[0]?.querySelector("ol")?.textContent,
+      );
+      for (const riskMap of riskMaps) {
+        const currentRisk = riskMap.querySelector<HTMLElement>(
+          `[data-session-sequence="${session.sequence}"]`,
+        );
+
+        expect(riskMap.dataset.currentFocus).toBe(session.workflowFocus);
+        expect(currentRisk?.getAttribute("aria-current")).toBe("step");
+        expect(currentRisk?.textContent).toContain(session.workflowRisks.resolvedFromPrevious);
+        expect(currentRisk?.textContent).toContain(session.workflowRisks.remainingForNext);
+      }
       expect(
         [...document.querySelectorAll<HTMLElement>("[data-causal-stage]")].map(
           (stage) => stage.dataset.causalStage,
@@ -185,8 +201,24 @@ describe("exercise session contract", () => {
     const finalSession = sessions.find(({ slug }) => slug === "final")!;
     const document = await renderSessionPage(finalSession);
     const text = document.body.textContent ?? "";
+    const riskMaps = [
+      ...document.querySelectorAll<HTMLElement>(".workflow-risk-map"),
+    ];
 
-    expect(document.querySelector(".workflow-risk-map")).not.toBeNull();
+    expect(riskMaps).toHaveLength(2);
+    expect(riskMaps.map(({ dataset }) => dataset.placement)).toEqual([
+      "opening",
+      "review",
+    ]);
+    expect(new Set(riskMaps.map((map) => map.getAttribute("aria-label"))).size).toBe(2);
+    expect(document.querySelectorAll("#legacy .workflow-risk-map")).toHaveLength(1);
+    expect(document.querySelectorAll("#review .workflow-risk-map")).toHaveLength(1);
+    expect(riskMaps[1]?.querySelector("ol")?.textContent).toBe(
+      riskMaps[0]?.querySelector("ol")?.textContent,
+    );
+    expect(
+      riskMaps.map((map) => map.querySelectorAll("[data-session-sequence]").length),
+    ).toEqual([4, 4]);
     for (const boundary of [
       "1分目: 入力境界",
       "2分目: 業務上の失敗",

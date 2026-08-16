@@ -60,6 +60,7 @@ describe("S0 observation contract", () => {
     }
     expect(document.querySelector(".session-code-overview")).toBeNull();
     expect(document.querySelector("[data-code-explorer]")).toBeNull();
+    expect(document.querySelectorAll(".workflow-risk-map")).toHaveLength(0);
     expect(document.body.textContent).not.toContain("配布コード");
 
     for (const term of forbiddenSolutionTerms) {

@@ -65,7 +65,23 @@ describe("session page structure", () => {
     expect(text).toContain("講師回答例");
     expect(text).toContain("ラボ結果の到着");
     expect(text).toContain("別のtrigger");
-    expect(document.querySelector(".workflow-risk-map")).not.toBeNull();
+    const riskMaps = [
+      ...document.querySelectorAll<HTMLElement>(".workflow-risk-map"),
+    ];
+    expect(riskMaps).toHaveLength(2);
+    expect(riskMaps.map(({ dataset }) => dataset.placement)).toEqual([
+      "opening",
+      "review",
+    ]);
+    expect(new Set(riskMaps.map((map) => map.getAttribute("aria-label"))).size).toBe(2);
+    expect(document.querySelectorAll("#workflow .workflow-risk-map")).toHaveLength(1);
+    expect(document.querySelectorAll("#review .workflow-risk-map")).toHaveLength(1);
+    expect(riskMaps[1]?.querySelector("ol")?.textContent).toBe(
+      riskMaps[0]?.querySelector("ol")?.textContent,
+    );
+    expect(
+      riskMaps.map((map) => map.querySelectorAll("[data-session-sequence]").length),
+    ).toEqual([4, 4]);
     expect(document.querySelector("[data-code-explorer]")).toBeNull();
     expect(document.querySelector(".command-block")).toBeNull();
     expect(document.querySelector("details.step-solution")).toBeNull();

@@ -18,7 +18,7 @@ if (session === undefined) throw new Error("Unknown session: final");
 
   <section id="legacy">
     <h2>共通ワークフローから参照実装へ進む</h2>
-    <WorkflowRiskMap />
+    <WorkflowRiskMap placement="opening" />
   </section>
 
   <section id="review">
@@ -48,5 +48,6 @@ if (session === undefined) throw new Error("Unknown session: final");
     <p>
       自習では、ラボ結果到着やフォローアップ依頼など別のtriggerから始まるワークフローを1つ選び、同じ5項目を辿ってください。見つからない境界が、次に試す小さな改善候補です。
     </p>
+    <WorkflowRiskMap placement="review" />
   </section>
 </SessionLayout>
