@@ -19,10 +19,7 @@ import type {
   UserByIdResolver,
   UserListResolver,
 } from "../domain/user/userResolver.js";
-import type {
-  UserDeletedStore,
-  UserDeletedStoreError,
-} from "../domain/user/userStores.js";
+import type { UserDeletedStore } from "../domain/user/userStores.js";
 
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;

@@ -107,8 +107,7 @@ const run =
       )
       .andThrough((event) =>
         dependencies.userPasswordResetStore
-          .store(event)
-          ,
+          .store(event),
       )
       .map((event) => ({ user: toUserView(event.aggregateState) }));
 

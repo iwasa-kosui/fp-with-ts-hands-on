@@ -147,6 +147,33 @@ describe("Hono/Inertia authentication boundary", () => {
     expect(serializedDependencies).not.toContain("userListResolver");
   });
 
+  test("keeps rejected session resolution behind Hono's opaque error boundary", async () => {
+    const database = createSqliteDatabase(":memory:");
+    migrateDatabase(database);
+    const composed = createApplicationDependencies(database, {
+      clock,
+      isProduction: false,
+    });
+    const privateCause = new Error("private session persistence cause");
+    const app = createApp({
+      ...composed,
+      sessionByTokenHashResolver: {
+        resolveByTokenHash: () =>
+          ResultAsync.fromSafePromise(Promise.reject(privateCause)),
+      },
+    });
+
+    const response = await app.request("/setup", {
+      headers: {
+        ...inertiaHeaders,
+        Cookie: `clinic_session=${"a".repeat(64)}`,
+      },
+    });
+
+    expect(response.status).toBe(500);
+    expect(await response.text()).not.toContain(privateCause.message);
+  });
+
   test("directs an empty installation to setup and makes setup unavailable after the first Admin", async () => {
     const harness = createHarness();
 

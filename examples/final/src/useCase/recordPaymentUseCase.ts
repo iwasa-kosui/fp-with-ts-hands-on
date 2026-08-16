@@ -19,7 +19,7 @@ import type { Diagnosis } from "../domain/appointment/diagnosis.js";
 import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
 import type { PaymentAmount } from "../domain/appointment/paymentAmount.js";
 import type { Treatment } from "../domain/appointment/treatment.js";
-import type { AppointmentConflict, AppointmentStoreError, PaymentRecordedStore } from "../domain/appointment/appointmentStores.js";
+import type { AppointmentConflict, PaymentRecordedStore } from "../domain/appointment/appointmentStores.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";

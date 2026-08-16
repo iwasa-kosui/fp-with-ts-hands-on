@@ -15,7 +15,7 @@ import {
 } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import type { AppointmentReason } from "../domain/appointment/appointmentReason.js";
-import type { AppointmentBookedStore, AppointmentConflict, AppointmentStoreError } from "../domain/appointment/appointmentStores.js";
+import type { AppointmentBookedStore, AppointmentConflict } from "../domain/appointment/appointmentStores.js";
 import type { Owner } from "../domain/owner/owner.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
 import type { OwnerByIdResolver } from "../domain/owner/ownerResolver.js";

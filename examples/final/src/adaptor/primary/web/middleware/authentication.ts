@@ -5,6 +5,7 @@ import type { Context, MiddlewareHandler } from "hono";
 import { z } from "zod";
 
 import type { Clock } from "../../../../domain/aggregate/clock.js";
+import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type { SessionByTokenHashResolver } from "../../../../domain/session/sessionResolver.js";
 import { SessionTokenHash } from "../../../../domain/session/sessionTokenHash.js";
 import type { UserByIdResolver } from "../../../../domain/user/userResolver.js";
@@ -86,12 +87,9 @@ export const createAuthenticationMiddleware = (
       return;
     }
 
-    const sessionResult = await dependencies.sessionResolver
-      .resolveByTokenHash(tokenHash.data);
-    if (sessionResult.isErr()) {
-      return context.text("Internal Server Error", 500);
-    }
-    const session = sessionResult.value;
+    const session = (await dependencies.sessionResolver
+      .resolveByTokenHash(tokenHash.data))
+      .match((value) => value, assertNever);
     if (
       session === undefined ||
       Date.parse(session.expiresAt) <= Date.parse(dependencies.clock.now())
@@ -101,18 +99,14 @@ export const createAuthenticationMiddleware = (
       return;
     }
 
-    const userResult = await dependencies.userResolver.resolveById(
-      session.userId,
-    );
-    if (userResult.isErr()) {
-      return context.text("Internal Server Error", 500);
-    }
-    if (userResult.value === undefined) {
+    const user = (await dependencies.userResolver.resolveById(session.userId))
+      .match((value) => value, assertNever);
+    if (user === undefined) {
       clearSessionCookie(context, dependencies.isProduction);
       await next();
       return;
     }
 
-    context.set("actor", { user: userResult.value, session });
+    context.set("actor", { user, session });
     await next();
   };

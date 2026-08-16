@@ -17,10 +17,7 @@ import type {
 import { Appointment as AppointmentAggregate } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
-import type {
-  AppointmentConflict,
-  AppointmentStoreError,
-} from "../domain/appointment/appointmentStores.js";
+import type { AppointmentConflict } from "../domain/appointment/appointmentStores.js";
 import { ExamResult } from "../domain/examResult/examResult.js";
 import type { ExamId } from "../domain/examResult/examId.js";
 import type { ExamResultItem } from "../domain/examResult/examResultItem.js";

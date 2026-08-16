@@ -16,10 +16,7 @@ import type { AppointmentByPetIdResolver } from "../domain/appointment/appointme
 import { Pet } from "../domain/pet/pet.js";
 import type { PetId } from "../domain/pet/petId.js";
 import type { PetByIdResolver } from "../domain/pet/petResolver.js";
-import type {
-  PetDeletedStore,
-  PetDeletedStoreError,
-} from "../domain/pet/petStores.js";
+import type { PetDeletedStore } from "../domain/pet/petStores.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";

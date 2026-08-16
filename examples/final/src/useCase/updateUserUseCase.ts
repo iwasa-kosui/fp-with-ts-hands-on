@@ -20,10 +20,7 @@ import type {
   UserByEmailResolver,
   UserByIdResolver,
 } from "../domain/user/userResolver.js";
-import type {
-  UserUpdatedStore,
-  UserUpdatedStoreError,
-} from "../domain/user/userStores.js";
+import type { UserUpdatedStore } from "../domain/user/userStores.js";
 import { toUserView, type UserView } from "./userView.js";
 
 export type { UserView } from "./userView.js";

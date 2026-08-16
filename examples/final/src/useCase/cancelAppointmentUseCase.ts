@@ -17,7 +17,7 @@ import {
 } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
-import type { AppointmentCanceledStore, AppointmentConflict, AppointmentStoreError } from "../domain/appointment/appointmentStores.js";
+import type { AppointmentCanceledStore, AppointmentConflict } from "../domain/appointment/appointmentStores.js";
 import type { CancellationReason } from "../domain/appointment/cancellationReason.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
