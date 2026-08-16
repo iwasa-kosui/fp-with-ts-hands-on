@@ -1,19 +1,27 @@
 ---
 import type { CodeGuide } from "../code-explorer/code-guide";
-import type { SessionSummary } from "../sessions/catalog";
+import {
+  sessionPath,
+  sessions,
+  type ExerciseSessionSummary,
+  type SessionSummary,
+} from "../sessions/catalog";
 import CommandBlock from "./CommandBlock.astro";
 import ExerciseReviewChecklist from "./ExerciseReviewChecklist.astro";
 import PeerReviewPanel from "./PeerReviewPanel.astro";
 import PeerReviewPromises from "./PeerReviewPromises.astro";
 import StepSolution from "./StepSolution.astro";
+import WorkflowRiskMap from "./WorkflowRiskMap.astro";
 import SessionCodeOverview from "./code-explorer/SessionCodeOverview.astro";
 import SessionCodePlayground from "./code-explorer/SessionCodePlayground.astro";
 
 type Narrative = Readonly<{
   requirement: string;
-  legacy: string;
-  technique: string;
+  currentRisk: string;
+  design: string;
   limitation: string;
+  nextQuestion: string;
+  legacy: string;
   reviewFocus: string;
   fallback: string;
 }>;
@@ -34,21 +42,37 @@ if (
 ) {
   throw new Error(`ExerciseSessionContent requires exercise metadata: ${session.slug}`);
 }
+const exerciseSession: ExerciseSessionSummary = session;
+const promisesSession = sessions.find(
+  (candidate) =>
+    candidate.kind === "exercise" && candidate.peerReviewPromises === "inline",
+);
+if (promisesSession === undefined) {
+  throw new Error("ExerciseSessionContent requires one inline peer-review promise session");
+}
 const promisesHref =
-  session.slug === "01-state-modeling"
+  exerciseSession.peerReviewPromises === "inline"
     ? "#peer-review-promises"
-    : "/sessions/01-state-modeling/#peer-review-promises";
+    : `${sessionPath(promisesSession)}#peer-review-promises`;
 ---
 
 <section id="incident">
   <h2>何が起きたか</h2>
   <p><strong>要求:</strong> {narrative.requirement}</p>
   <p><strong>事故:</strong> {session.incident}</p>
+  <ol class="decision-list" aria-label="要求から次の問いまでの因果関係">
+    <li class="decision-card" data-causal-stage="requirement"><strong>要求:</strong> {narrative.requirement}</li>
+    <li class="decision-card" data-causal-stage="current-risk"><strong>現行リスク:</strong> {narrative.currentRisk}</li>
+    <li class="decision-card" data-causal-stage="design"><strong>今回の設計:</strong> {narrative.design}</li>
+    <li class="decision-card" data-causal-stage="limitation"><strong>限界:</strong> {narrative.limitation}</li>
+    <li class="decision-card" data-causal-stage="next-question"><strong>次へ残す問い:</strong> {narrative.nextQuestion}</li>
+  </ol>
   <h3>今回守ること</h3>
   <ul class="decision-list">
     {session.decisions.map(({ invariant }) => <li>{invariant}</li>)}
   </ul>
   <p>今回の変更は <code>{session.exerciseModule.dir}</code> の1モジュールだけに閉じます。</p>
+  <WorkflowRiskMap currentSession={exerciseSession} />
 </section>
 
 <section id="legacy">
@@ -90,18 +114,20 @@ const promisesHref =
 検証: ${session.exerciseCommand} が緑になること。
 禁止: as によるキャスト。モジュール外のファイルの変更。`}</code></pre>
   </div>
-  <p><strong>採用する手段:</strong> {narrative.technique}</p>
+  <p><strong>採用する手段:</strong> {narrative.design}</p>
   <p><strong>この手段の限界:</strong> {narrative.limitation}</p>
-  <h3>{session.slug === "04-effects-and-events" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
+  <h3 data-solution-heading>{exerciseSession.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
+  {
+    exerciseSession.solutionPresentation === "completed-file" ? (
+      <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
+        <p><strong>開始側:</strong> 予期できる業務 Result と、保存が reject する技術的な例外経路を分けて読む。</p>
+        <p><strong>完成例:</strong> 下の全target fileには、後続stepを含む完成状態が表示される。</p>
+      </div>
+    ) : null
+  }
   {
     session.steps.map((step) => (
       <div class="solution-step">
-        {session.slug === "04-effects-and-events" && step.id === "s4-result-async" ? (
-          <div class="before-after" aria-label="同期版と非同期版の見比べ方">
-            <p><strong>開始側:</strong> 同期 Result と Promise + try/catch の境界を先に読む。</p>
-            <p><strong>完成例:</strong> 下の全target fileには、ResultAsync と andThroughに加えて後続stepも含まれる。</p>
-          </div>
-        ) : null}
         <StepSolution step={step} />
       </div>
     ))
@@ -130,7 +156,7 @@ const promisesHref =
   <p><strong>この回の固有観点:</strong> {narrative.reviewFocus}</p>
 
   {
-    session.slug === "01-state-modeling" ? (
+    exerciseSession.peerReviewPromises === "inline" ? (
       <PeerReviewPromises id="peer-review-promises" />
     ) : null
   }

@@ -1,0 +1,43 @@
+---
+import WorkflowCard from "../../components/WorkflowCard.astro";
+import WorkflowRiskMap from "../../components/WorkflowRiskMap.astro";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+
+const session = sessionBySlug("01-business-events-and-workflows");
+if (session === undefined) {
+  throw new Error("Unknown session: 01-business-events-and-workflows");
+}
+---
+
+<SessionLayout session={session}>
+  <section id="incident">
+    <h2>何が起きたか</h2>
+    <p><strong>要求:</strong> 診察開始の判断、入力、結果、記録先を、班の全員が同じ一枚で説明できるようにする。</p>
+    <p><strong>現行リスク:</strong> {session.incident}</p>
+    <p>
+      この15分はコードを書きません。診察開始を一つの業務ワークフローとして描き、後続セッションで実装する範囲を揃えます。
+    </p>
+  </section>
+
+  <section id="workflow">
+    <h2>ワークフローを描く</h2>
+    <h3>前半7分: 空欄カードを班で埋める</h3>
+    <p>
+      まず各欄を個人で読み、班で一つの答えにまとめます。実装方法ではなく、現場から見た入力と判断、結果を業務の言葉で書きます。
+    </p>
+    <WorkflowCard variant="blank" />
+
+    <h3>後半8分: 講師回答例と未解決リスクを比べる</h3>
+    <p>違いを正誤にせず、どの欄に判断が足りなかったか、どのリスクを先に実装するかを比較します。</p>
+    <WorkflowCard variant="answer" />
+    <WorkflowRiskMap />
+  </section>
+
+  <section id="review">
+    <h2>レビューと持ち帰り</h2>
+    <p><strong>今回そろえたこと:</strong> {session.workflowRisks.resolvedFromPrevious}</p>
+    <p><strong>次に残す問い:</strong> {session.workflowRisks.remainingForNext}</p>
+    <p>班で、最初に減らしたい未解決リスクを一つ選び、その理由を一文で共有します。</p>
+  </section>
+</SessionLayout>

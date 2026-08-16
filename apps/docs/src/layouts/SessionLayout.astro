@@ -26,7 +26,13 @@ const chapters =
         { id: "refactor", label: "型で閉じる" } as const,
         reviewChapter,
       ]
-    : [...commonChapters, reviewChapter];
+    : session.kind === "workshop"
+      ? [
+          { id: "incident", label: "何が起きたか" } as const,
+          { id: "workflow", label: "ワークフローを描く" } as const,
+          reviewChapter,
+        ]
+      : [...commonChapters, reviewChapter];
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>

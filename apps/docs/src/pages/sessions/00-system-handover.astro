@@ -1,0 +1,61 @@
+---
+import guides from "../../code-explorer/code-guides/00-onboarding";
+import SessionCodeOverview from "../../components/code-explorer/SessionCodeOverview.astro";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+
+const session = sessionBySlug("00-system-handover");
+if (session === undefined) throw new Error("Unknown session: 00-system-handover");
+---
+
+<SessionLayout session={session}>
+  <section id="incident">
+    <h2>現行業務と起きている事故</h2>
+    <p>
+      新任エンジニアとして WAN NYAN CLINIC の予約システムを引き継ぎます。この10分は修正案を出さず、
+      現場の担当者、日々の操作、実際に起きた事故を同じ事実として読みます。
+    </p>
+    <h3>現行業務</h3>
+    <dl>
+      <dt>受付</dt>
+      <dd>予約を確認し、来院を受け付け、診察室へ案内し、会計までの状態を更新する。</dd>
+      <dt>獣医師</dt>
+      <dd>受付済みの予約から診察を開始し、担当者と開始時刻をカルテへ残す。</dd>
+      <dt>飼い主</dt>
+      <dd>予約と連絡先を預け、受付から失敗理由や次の案内を受け取る。</dd>
+    </dl>
+    <h3>起きている事故</h3>
+    <article class="incident-report">
+      <h4>事故報告1: 二重請求</h4>
+      <p>会計済みの予約が診察中へ戻され、同じ来院に対して会計が二度行われました。</p>
+    </article>
+    <article class="incident-report">
+      <h4>事故報告2: 連絡先の流出</h4>
+      <p>調査用の予約ログへ、飼い主の氏名・メールアドレス・電話番号がそのまま記録されました。</p>
+    </article>
+  </section>
+
+  <section id="legacy">
+    <h2>既存システムを読む</h2>
+    <p>
+      既存システムでは、予約一覧から状態を直接更新し、同じ予約データをカルテ、会計、ログが参照しています。
+      事故報告と画面・保存先・ログのつながりだけを確認します。
+    </p>
+    <table>
+      <thead><tr><th>現場の操作</th><th>既存システムの動き</th><th>確認する事故</th></tr></thead>
+      <tbody>
+        <tr><th>診察開始</th><td>予約IDと更新先の状態を受け取り、予約を更新する。</td><td>会計後でも診察中へ戻せる。</td></tr>
+        <tr><th>予約の調査</th><td>予約全体を調査ログへ記録する。</td><td>業務に不要な連絡先まで残る。</td></tr>
+      </tbody>
+    </table>
+    <SessionCodeOverview slug={session.slug} guides={guides} />
+  </section>
+
+  <section id="review">
+    <h2>レビューと持ち帰り</h2>
+    <p>
+      班で「誰の、どの操作で、何が起き、どこへ記録されたか」を1件ずつ共有します。
+      次のセッションでは、診察開始について判断と記録の全体像を一枚に揃えます。
+    </p>
+  </section>
+</SessionLayout>

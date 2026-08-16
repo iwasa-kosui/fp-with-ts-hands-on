@@ -3,11 +3,32 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import PeerReviewPanel from "../../components/PeerReviewPanel.astro";
 import StepSolution from "../../components/StepSolution.astro";
-import { sessions } from "../../sessions/catalog";
+import { sessionPath, sessions } from "../../sessions/catalog";
 import { createAstroContainer } from "../render-astro";
 
 const repoRoot = resolve(process.cwd(), "../..");
-const firstStep = sessions[1].steps[0];
+const exercises = sessions.filter((session) => session.kind === "exercise");
+const promisesSession = exercises.find(
+  ({ peerReviewPromises }) => peerReviewPromises === "inline",
+);
+const completedFileSession = exercises.find(
+  ({ solutionPresentation }) => solutionPresentation === "completed-file",
+);
+const referencePromisesSession = exercises.find(
+  ({ peerReviewPromises }) => peerReviewPromises === "reference",
+);
+if (
+  promisesSession === undefined ||
+  completedFileSession === undefined ||
+  referencePromisesSession === undefined
+) {
+  throw new Error("Exercise presentation metadata is incomplete");
+}
+const firstStep = promisesSession.steps[0];
+const completedFileStep = completedFileSession.steps[0];
+if (firstStep === undefined || completedFileStep === undefined) {
+  throw new Error("Exercise steps are missing");
+}
 
 describe("StepSolution", () => {
   it("renders the exact source slice and goal inside details", async () => {
@@ -61,13 +82,10 @@ describe("StepSolution", () => {
     },
   );
 
-  it("labels the S4 fallback as completed files that include later steps", async () => {
-    const step = sessions[4].steps.find(
-      ({ id }) => id === "s4-inject-context",
-    )!;
+  it("labels the completed-file fallback as including later steps", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(StepSolution, {
-      props: { step },
+      props: { step: completedFileStep },
     });
     const document = new DOMParser().parseFromString(html, "text/html");
 
@@ -75,7 +93,7 @@ describe("StepSolution", () => {
       [...document.querySelectorAll(".step-solution__snippet > h4 > code")].map(
         ({ textContent }) => textContent,
       ),
-    ).toEqual(step.solutions.map(({ path }) => path));
+    ).toEqual(completedFileStep.solutions.map(({ path }) => path));
     expect(
       document.querySelector("details.step-solution")?.getAttribute("data-presentation"),
     ).toBe("completed-file");
@@ -85,7 +103,7 @@ describe("StepSolution", () => {
       "この完成例は後続stepを含む。表示された全target fileを反映後、同じexerciseをGREENにする",
     );
 
-    const firstSolution = step.solutions[0];
+    const firstSolution = completedFileStep.solutions[0];
     const source = await readFile(resolve(repoRoot, firstSolution.path), "utf8");
     expect(
       document.querySelector("details.step-solution pre code")?.textContent,
@@ -96,7 +114,7 @@ describe("StepSolution", () => {
 describe("PeerReviewPanel", () => {
   it("renders the duration, fallback headcount, three questions, and local promises link", async () => {
     const container = await createAstroContainer();
-    const peerReview = sessions[1].peerReview;
+    const peerReview = promisesSession.peerReview;
     const html = await container.renderToString(PeerReviewPanel, {
       props: { peerReview, promisesHref: "#peer-review-promises" },
     });
@@ -113,15 +131,16 @@ describe("PeerReviewPanel", () => {
     );
   });
 
-  it("links later sessions back to the S1 promises", async () => {
+  it("links later sessions back to the first peer-review promises", async () => {
     const container = await createAstroContainer();
+    const promisesHref = `${sessionPath(promisesSession)}#peer-review-promises`;
     const html = await container.renderToString(PeerReviewPanel, {
       props: {
-        peerReview: sessions[2].peerReview,
-        promisesHref: "/sessions/01-state-modeling/#peer-review-promises",
+        peerReview: referencePromisesSession.peerReview,
+        promisesHref,
       },
     });
 
-    expect(html).toContain("/sessions/01-state-modeling/#peer-review-promises");
+    expect(html).toContain(promisesHref);
   });
 });

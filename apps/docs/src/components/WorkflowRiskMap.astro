@@ -1,0 +1,38 @@
+---
+import { sessions, type ExerciseSessionSummary } from "../sessions/catalog";
+
+type Props = Readonly<{
+  currentSession?: ExerciseSessionSummary;
+}>;
+
+const { currentSession } = Astro.props;
+const workflowSessions = sessions.filter((session) => session.kind === "exercise");
+---
+
+<aside
+  class="workflow-risk-map"
+  data-current-focus={currentSession?.workflowFocus}
+  aria-label="S2からS5の共通ワークフロー・リスクマップ"
+>
+  <h3>共通ワークフロー・リスクマップ</h3>
+  <p>同じ診察開始カードを、未解決リスクごとに小さく実装していきます。</p>
+  <ol class="decision-list">
+    {
+      workflowSessions.map((session) => {
+        const isCurrent = session.slug === currentSession?.slug;
+        return (
+          <li
+            class="decision-card"
+            data-session-sequence={session.sequence}
+            data-workflow-focus={session.workflowFocus}
+            aria-current={isCurrent ? "step" : undefined}
+          >
+            <strong>SESSION {session.sequence}: {session.workflowFocus}</strong>
+            <p><strong>解決するリスク:</strong> {session.workflowRisks.resolvedFromPrevious}</p>
+            <p><strong>まだ解かないリスク:</strong> {session.workflowRisks.remainingForNext}</p>
+          </li>
+        );
+      })
+    }
+  </ol>
+</aside>

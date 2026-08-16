@@ -1,0 +1,26 @@
+---
+import ExerciseSessionContent from "../../components/ExerciseSessionContent.astro";
+import guides from "../../code-explorer/code-guides/03-result-errors";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+
+const session = sessionBySlug("04-workflow-errors");
+if (session === undefined) throw new Error("Unknown session: 04-workflow-errors");
+---
+
+<SessionLayout session={session}>
+  <ExerciseSessionContent
+    session={session}
+    guides={guides}
+    narrative={{
+      requirement: "診察開始の予期できる業務失敗を、受付画面が文言ではなく型付きの値として扱えるようにする。",
+      currentRisk: "throw、undefined、例外メッセージへの依存が混在し、受付が失敗理由で分岐できず、失敗後の処理も止めにくい。",
+      design: "expected failures欄を、kindを持つ業務エラーの判別共用体とResult、成功経路だけを続けるandThenで実装する。",
+      limitation: "どの失敗を利用者が選べる業務失敗とするか、画面でどの文言を示すかは、人の判断とレビューに残る。",
+      nextQuestion: "成功時の出力イベントと保存をどう結び、保存障害のような技術的異常をどの外側へ伝えるか。",
+      legacy: "throw、try/catch、文言依存、誤ったエラー写像を読みます。この回は予期できる業務失敗をResultとして扱います。",
+      reviewFocus: "Resultを返すguardをmapで入れ子にせずandThenで接続し、業務失敗の後に遷移・保存しないか。",
+      fallback: "同じ形の2つのguardを解答から写し、最後にstartExaminationのtry/catchをandThenへ置き換えます。",
+    }}
+  />
+</SessionLayout>

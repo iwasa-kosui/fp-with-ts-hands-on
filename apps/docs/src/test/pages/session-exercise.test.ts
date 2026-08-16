@@ -68,6 +68,83 @@ describe("exercise session contract", () => {
     });
   }
 
+  it("connects every exercise to the shared workflow risk map and causal narrative", async () => {
+    for (const session of exercises) {
+      const document = await renderSessionPage(session);
+      const riskMap = document.querySelector<HTMLElement>(".workflow-risk-map");
+      const currentRisk = riskMap?.querySelector<HTMLElement>(
+        `[data-session-sequence="${session.sequence}"]`,
+      );
+
+      expect(riskMap?.dataset.currentFocus).toBe(session.workflowFocus);
+      expect(currentRisk?.getAttribute("aria-current")).toBe("step");
+      expect(currentRisk?.textContent).toContain(session.workflowRisks.resolvedFromPrevious);
+      expect(currentRisk?.textContent).toContain(session.workflowRisks.remainingForNext);
+      expect(
+        [...document.querySelectorAll<HTMLElement>("[data-causal-stage]")].map(
+          (stage) => stage.dataset.causalStage,
+        ),
+      ).toEqual([
+        "requirement",
+        "current-risk",
+        "design",
+        "limitation",
+        "next-question",
+      ]);
+    }
+  });
+
+  it("teaches business Result separately from the technical exception path", async () => {
+    const businessFailureSession = exercises.find(
+      ({ workflowFocus }) => workflowFocus === "expected failures",
+    )!;
+    const effectsSession = exercises.find(
+      ({ workflowFocus }) => workflowFocus === "output event/side effects",
+    )!;
+    const businessFailureDocument = await renderSessionPage(businessFailureSession);
+    const effectsDocument = await renderSessionPage(effectsSession);
+    const businessFailureText = businessFailureDocument.body.textContent ?? "";
+    const effectsText = effectsDocument.body.textContent ?? "";
+
+    expect(businessFailureText).toContain("予期できる業務失敗");
+    expect(businessFailureText).toContain("Result");
+    expect(effectsText).toContain("業務 Result");
+    expect(effectsText).toContain("技術的な例外");
+    expect(effectsText).toContain("reject");
+  });
+
+  it("uses catalog presentation metadata for answers and peer-review promises", async () => {
+    const promisesSession = exercises.find(
+      ({ peerReviewPromises }) => peerReviewPromises === "inline",
+    )!;
+
+    for (const session of exercises) {
+      const document = await renderSessionPage(session);
+      const heading = document.querySelector("[data-solution-heading]");
+      const expectedHeading =
+        session.solutionPresentation === "completed-file"
+          ? "完成ファイルの解答例"
+          : "ステップごとの解答";
+      const promises = document.querySelector("#peer-review-promises");
+      const promisesLink = document.querySelector<HTMLAnchorElement>(
+        ".peer-review-panel a",
+      );
+
+      expect(heading?.textContent).toContain(expectedHeading);
+      if (session.solutionPresentation === "completed-file") {
+        expect(document.querySelector(".before-after")).not.toBeNull();
+      } else {
+        expect(document.querySelector(".before-after")).toBeNull();
+      }
+      expect(promises === null).toBe(session.peerReviewPromises !== "inline");
+      expect(promisesLink?.getAttribute("href")).toBe(
+        session.peerReviewPromises === "inline"
+          ? "#peer-review-promises"
+          : `/sessions/${promisesSession.slug}/#peer-review-promises`,
+      );
+    }
+  });
+
   it("renders playgrounds on the four exercises only", async () => {
     for (const session of sessions) {
       const document = await renderSessionPage(session);
@@ -80,14 +157,19 @@ describe("exercise session contract", () => {
   it("introduces the canonical five review promises in S2 and links later exercises", async () => {
     const onboarding = await renderSessionPage(sessions[0]);
     const workshop = await renderSessionPage(sessions[1]);
-    const firstExercise = await renderSessionPage(exercises[0]);
+    const promisesSession = exercises.find(
+      ({ peerReviewPromises }) => peerReviewPromises === "inline",
+    )!;
+    const firstExercise = await renderSessionPage(promisesSession);
 
     for (const promise of reviewPromises) {
       expect(onboarding.body.textContent).not.toContain(promise);
       expect(workshop.body.textContent).not.toContain(promise);
       expect(firstExercise.body.textContent).toContain(promise);
     }
-    for (const session of exercises.slice(1)) {
+    for (const session of exercises.filter(
+      ({ peerReviewPromises }) => peerReviewPromises === "reference",
+    )) {
       const document = await renderSessionPage(session);
       expect(
         document.querySelector<HTMLAnchorElement>(
