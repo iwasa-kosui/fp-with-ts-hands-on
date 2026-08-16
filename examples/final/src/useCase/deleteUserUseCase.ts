@@ -99,20 +99,16 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userByIdResolver
       .resolveById(input.actorUserId)
-
       .andThen(ensureActor(input.actorUserId))
       .andThen(ensureAdmin)
       .andThen(() =>
-        dependencies.userByIdResolver
-          .resolveById(input.targetUserId)
-          ,
+        dependencies.userByIdResolver.resolveById(input.targetUserId),
       )
       .andThen(ensureTarget(input.targetUserId))
       .andThen(ensureNotSelf(input.actorUserId))
       .andThen((target) =>
         dependencies.userListResolver
           .resolveAll()
-
           .andThen((users) => ensureNotLastAdmin(users)(target)),
       )
       .andThen(createEvent(dependencies, input.actorUserId))

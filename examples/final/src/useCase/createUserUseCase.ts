@@ -141,13 +141,10 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userByIdResolver
       .resolveById(input.actorUserId)
-
       .andThen(ensureUser(input.actorUserId))
       .andThen(ensureAdmin)
       .andThen(() =>
-        dependencies.userByEmailResolver
-          .resolveByEmail(input.email)
-          ,
+        dependencies.userByEmailResolver.resolveByEmail(input.email),
       )
       .andThen(ensureEmailAvailable)
       .andThen(() => hashPassword(dependencies.passwordHasher, input.password))

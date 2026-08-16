@@ -130,7 +130,6 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveByEmail(input.email)
-
       .andThen(
         verifyPassword(
           dependencies.passwordHasher,

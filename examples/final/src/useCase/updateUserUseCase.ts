@@ -139,19 +139,15 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userByIdResolver
       .resolveById(input.actorUserId)
-
       .andThen(ensureActor(input.actorUserId))
       .andThen(ensureAdmin)
       .andThen(() =>
-        dependencies.userByIdResolver
-          .resolveById(input.targetUserId)
-          ,
+        dependencies.userByIdResolver.resolveById(input.targetUserId),
       )
       .andThen(ensureTarget(input.targetUserId))
       .andThen((target) =>
         dependencies.userByEmailResolver
           .resolveByEmail(input.email)
-
           .andThen(ensureEmailAvailable(target.userId))
           .map(() => target),
       )

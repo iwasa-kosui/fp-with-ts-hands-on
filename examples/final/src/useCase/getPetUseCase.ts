@@ -46,13 +46,10 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() =>
-        dependencies.petResolver
-          .resolveById(input.petId)
-          ,
+        dependencies.petResolver.resolveById(input.petId),
       )
       .andThen(ensurePet(input.petId))
       .map((pet) => ({ pet: toView(pet) }));

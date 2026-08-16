@@ -1,9 +1,10 @@
-import type { ResultAsync } from "neverthrow";
+import { ok, safeTry, type ResultAsync } from "neverthrow";
 
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import {
   collectFollowUpTargets,
   type CollectFollowUpTargetsError,
+  type FollowUpTarget,
 } from "../domain/followUp/collectFollowUpTargets.js";
 import type { FollowUpCandidate } from "../domain/followUp/followUpCandidate.js";
 import type { FollowUpResolver } from "../domain/followUp/followUpResolver.js";
@@ -36,55 +37,52 @@ export type ListFollowUpsUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
+type FollowUpSources = Readonly<{
+  candidates: readonly FollowUpCandidate[];
+  targets: readonly FollowUpTarget[];
+  requestedAppointmentIds: readonly AppointmentId[];
+}>;
+
 const wasRequested = (
   requestedAppointmentIds: readonly AppointmentId[],
   appointmentId: AppointmentId,
 ): boolean => requestedAppointmentIds.includes(appointmentId);
+const loadSources =
+  (dependencies: Dependencies) =>
+  (input: UseCaseInput): ResultAsync<FollowUpSources, UseCaseError> =>
+    safeTry<FollowUpSources, UseCaseError>(async function* () {
+      const actor = yield* dependencies.userResolver.resolveById(input.actorUserId);
+      yield* ensureUserFound(input.actorUserId)(actor);
+      const candidates = yield* dependencies.followUpResolver.resolveCandidates();
+      const targets = yield* collectFollowUpTargets(candidates);
+      const requestedAppointmentIds =
+        yield* dependencies.followUpRequestReader.listRequestedAppointmentIds();
+      return ok({ candidates, targets, requestedAppointmentIds });
+    });
+
+const toFollowUps = ({
+  candidates,
+  targets,
+  requestedAppointmentIds,
+}: FollowUpSources): UseCaseOk => ({
+  followUps: targets.map((target) => {
+    const candidate: FollowUpCandidate | undefined = candidates.find(
+      (item) => item.appointment.appointmentId === target.appointmentId,
+    );
+    return {
+      appointmentId: target.appointmentId,
+      petId: target.petId,
+      ownerName: candidate?.owner.name,
+      ownerPhone: target.ownerPhone,
+      requested: wasRequested(requestedAppointmentIds, target.appointmentId),
+    };
+  }),
+});
+
 const run =
   (dependencies: Dependencies) =>
   (input: UseCaseInput): UseCaseOutput =>
-    dependencies.userResolver
-      .resolveById(input.actorUserId)
-
-      .andThen(ensureUserFound(input.actorUserId))
-      .andThen(() =>
-        dependencies.followUpResolver
-          .resolveCandidates()
-          ,
-      )
-      .andThen((candidates) =>
-        collectFollowUpTargets(candidates).map((targets) => ({
-          candidates,
-          targets,
-        })),
-      )
-      .andThen(({ candidates, targets }) =>
-        dependencies.followUpRequestReader
-          .listRequestedAppointmentIds()
-
-          .map((requestedAppointmentIds) => ({
-            candidates,
-            targets,
-            requestedAppointmentIds,
-          })),
-      )
-      .map(({ candidates, targets, requestedAppointmentIds }) => ({
-        followUps: targets.map((target) => {
-          const candidate: FollowUpCandidate | undefined = candidates.find(
-            (item) => item.appointment.appointmentId === target.appointmentId,
-          );
-          return {
-            appointmentId: target.appointmentId,
-            petId: target.petId,
-            ownerName: candidate?.owner.name,
-            ownerPhone: target.ownerPhone,
-            requested: wasRequested(
-              requestedAppointmentIds,
-              target.appointmentId,
-            ),
-          };
-        }),
-      }));
+    loadSources(dependencies)(input).map(toFollowUps);
 
 export const ListFollowUpsUseCase = {
   create: (dependencies: Dependencies): ListFollowUpsUseCase => ({

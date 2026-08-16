@@ -79,7 +79,6 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.sessionResolver
       .resolveById(input.sessionId)
-
       .andThen(ensureSession(input.sessionId))
       .andThen(ensureOwnedBy(input.actorUserId))
       .andThen(createDeletionEvent(dependencies, input.actorUserId))

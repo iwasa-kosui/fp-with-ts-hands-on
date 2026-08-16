@@ -94,13 +94,10 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-
       .andThen(ensureActor(input.actorUserId))
       .andThen(ensureAdmin)
       .andThen(() =>
-        dependencies.userResolver
-          .resolveById(input.targetUserId)
-          ,
+        dependencies.userResolver.resolveById(input.targetUserId),
       )
       .andThen(ensureTarget(input.targetUserId))
       .andThen((user) =>

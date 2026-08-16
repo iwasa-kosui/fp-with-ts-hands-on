@@ -329,6 +329,40 @@ describe("follow-up use cases", () => {
     expect(storeCalls).toBe(0);
   });
 
+  test("rejects a requested-ID reader failure before resolving candidates or storing", async () => {
+    const infrastructureError = new Error("private cause");
+    let resolverCalls = 0;
+    let storeCalls = 0;
+    const result = RequestFollowUpUseCase.create({
+      userResolver,
+      followUpRequestReader: {
+        listRequestedAppointmentIds: () =>
+          ResultAsync.fromSafePromise(Promise.reject(infrastructureError)),
+      },
+      followUpResolver: {
+        resolveCandidates: () => {
+          resolverCalls += 1;
+          return okAsync([candidate]);
+        },
+      },
+      followUpRequestedStore: {
+        store: () => {
+          storeCalls += 1;
+          return okAsync(undefined);
+        },
+      },
+      eventIdGenerator: { generate: () => ids.followUpEvent },
+      clock: { now: () => followUpAt },
+    }).run({
+      actorUserId: ids.receptionist,
+      appointmentIds: [ids.appointment],
+    });
+
+    await expect(result).rejects.toBe(infrastructureError);
+    expect(resolverCalls).toBe(0);
+    expect(storeCalls).toBe(0);
+  });
+
   test("rolls back the whole SQLite batch when a later follow-up insert fails", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);

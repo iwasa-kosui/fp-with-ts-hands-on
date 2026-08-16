@@ -75,19 +75,15 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() =>
-        dependencies.ownerResolver
-          .resolveById(input.ownerId)
-          ,
+        dependencies.ownerResolver.resolveById(input.ownerId),
       )
       .andThen(ensureOwner(input.ownerId))
       .andThen((owner) =>
         dependencies.petResolver
           .resolveByOwnerId(input.ownerId)
-
           .andThen(ensureNoPets(input.ownerId))
           .map(() => owner),
       )

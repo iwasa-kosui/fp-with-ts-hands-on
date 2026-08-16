@@ -31,7 +31,6 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureAdmin)
       .andThen((admin) =>

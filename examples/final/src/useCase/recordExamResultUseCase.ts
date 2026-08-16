@@ -151,13 +151,11 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureExaminer)
       .andThen((user) =>
         dependencies.appointmentResolver
           .resolveById(input.appointmentId)
-
           .andThen(ensureAppointmentFound(input.appointmentId))
           .andThen(ensureInExamination)
           .andThen(ensureAssigned(user)),

@@ -91,13 +91,10 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() =>
-        dependencies.appointmentResolver
-          .resolveById(input.appointmentId)
-          ,
+        dependencies.appointmentResolver.resolveById(input.appointmentId),
       )
       .andThen(ensureAppointmentFound(input.appointmentId))
       .andThen(ensureCancellable)
