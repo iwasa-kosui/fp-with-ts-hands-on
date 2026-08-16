@@ -18,6 +18,15 @@ const workflowFields = [
   "side effects",
 ] as const;
 
+const workflowPrompts = [
+  "何が起きたことで始まるか",
+  "誰が何を依頼するか",
+  "開始前に何が成り立っているか",
+  "どのような失敗が予想されるか",
+  "成功したとき何が起きたと記録するか",
+  "どこへ何を保存・通知するか",
+] as const;
+
 describe("session page structure", () => {
   it.each(sessionCases)("renders catalog chapters and both TOCs for $name", async ({ session }) => {
     const document = await renderSessionPage(session);
@@ -86,5 +95,40 @@ describe("session page structure", () => {
     expect(document.querySelector(".command-block")).toBeNull();
     expect(document.querySelector("details.step-solution")).toBeNull();
     expect(text).not.toContain("pnpm exercise:");
+  });
+
+  it("shows the exact 3+4+6+2 S1 timing", async () => {
+    const session = sessions.find(({ kind }) => kind === "workshop")!;
+    const document = await renderSessionPage(session);
+
+    expect(document.querySelector("#incident h2")?.textContent).toContain(
+      "ブリーフィング3分",
+    );
+    expect(
+      [...document.querySelectorAll("#workflow > h3")].map(({ textContent }) =>
+        textContent?.trim(),
+      ),
+    ).toEqual([
+      "説明4分: 6つの欄の書き方を確認する",
+      "カード作成6分: 空欄を班で埋める",
+    ]);
+    expect(document.querySelector("#review h2")?.textContent).toContain(
+      "レビュー2分",
+    );
+  });
+
+  it("uses six clear Japanese prompts on both S1 workflow cards", async () => {
+    const session = sessions.find(({ kind }) => kind === "workshop")!;
+    const document = await renderSessionPage(session);
+    const blankCard = document.querySelector('.workflow-card[data-variant="blank"]')!;
+    const answerCard = document.querySelector('.workflow-card[data-variant="answer"]')!;
+
+    for (const card of [blankCard, answerCard]) {
+      expect(
+        [...card.querySelectorAll("[data-workflow-field] h5")].map(
+          ({ textContent }) => textContent?.trim(),
+        ),
+      ).toEqual(workflowPrompts);
+    }
   });
 });

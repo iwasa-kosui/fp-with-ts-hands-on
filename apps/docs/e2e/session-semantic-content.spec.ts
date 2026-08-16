@@ -23,17 +23,20 @@ for (const session of sessions) {
 }
 
 for (const viewport of viewports) {
-  test(`onboarding table and definition list are readable on ${viewport.name}`, async ({ page }) => {
+  test(`S0 current-system tables and role definitions are readable on ${viewport.name}`, async ({ page }) => {
     await page.setViewportSize(viewport);
-    await page.goto("/sessions/00-onboarding/");
+    await page.goto("/sessions/00-system-handover/");
 
-    const table = page.locator("#legacy table");
+    const table = page.locator("#legacy table").first();
     const tableHeading = table.locator("thead th").first();
     const definitions = page.locator("#incident dl");
     const firstTerm = definitions.locator("dt").first();
 
     await expect(table).toBeVisible();
     await expect(definitions).toBeVisible();
+    await expect(page.locator("#legacy table")).toHaveCount(2);
+    await expect(definitions.locator("dt")).toHaveText(["受付", "獣医師", "飼い主"]);
+    await expect(page.locator("#legacy")).toContainText("調査ログ");
 
     const tableStyle = await table.evaluate((element) => {
       const style = getComputedStyle(element);
@@ -64,6 +67,5 @@ for (const viewport of viewports) {
       columns: viewport.definitionColumns,
     });
     await expect(firstTerm).toHaveCSS("background-color", "rgb(255, 242, 159)");
-
   });
 }

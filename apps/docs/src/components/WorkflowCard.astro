@@ -9,32 +9,32 @@ const { variant } = Astro.props;
 const fields = [
   {
     id: "trigger",
-    label: "trigger",
+    prompt: "何が起きたことで始まるか",
     answer: "受付スタッフまたは獣医師が、受付済みの予約に対して診察開始を依頼する。",
   },
   {
     id: "input",
-    label: "input",
+    prompt: "誰が何を依頼するか",
     answer: "予約IDと担当する獣医師ID。開始時刻と記録IDは実行時に一度だけ決める。",
   },
   {
     id: "current state",
-    label: "current state",
+    prompt: "開始前に何が成り立っているか",
     answer: "対象の予約が受付済みで、来院時刻が記録されている。",
   },
   {
     id: "expected failures",
-    label: "expected failures",
+    prompt: "どのような失敗が予想されるか",
     answer: "予約が見つからない、または予約が受付済みではない。",
   },
   {
     id: "output event",
-    label: "output event",
+    prompt: "成功したとき何が起きたと記録するか",
     answer: "誰がいつ診察を開始し、予約が診察中になったかを表す ExaminationStarted。",
   },
   {
     id: "side effects",
-    label: "side effects",
+    prompt: "どこへ何を保存・通知するか",
     answer: "診察中になった予約状態と監査記録を、同じ保存境界へ一緒に渡す。",
   },
 ] as const;
@@ -50,11 +50,16 @@ const fields = [
     {
       fields.map((field) => (
         <article class="decision-card" data-workflow-field={field.id}>
-          <h5>{field.label}</h5>
+          <h5>{field.prompt}</h5>
           {variant === "blank" ? (
             <label>
               <span>班の答え</span>
-              <textarea name={field.id} rows="2" placeholder="ここに書き込む"></textarea>
+              <textarea
+                name={field.id}
+                rows="2"
+                placeholder="ここに書き込む"
+                aria-label={field.prompt}
+              ></textarea>
             </label>
           ) : (
             <p>{field.answer}</p>

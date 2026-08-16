@@ -186,6 +186,7 @@ describe("event document contract", () => {
   it("keeps the root README aligned with the current public curriculum", async () => {
     const readme = await readFile(`${repositoryRoot}/README.md`, "utf8");
     const overview = readme.match(/## 演習の構成\n\n([\s\S]*?)\n\n## 当日の流れ/)?.[1] ?? "";
+    const dayFlow = readme.match(/## 当日の流れ\n\n([\s\S]*)/)?.[1] ?? "";
     const orientation = sessions.find((session) => session.kind === "orientation");
     const workshop = sessions.find((session) => session.kind === "workshop");
     const expectedCommands = exerciseSessions.map((session) => session.exerciseCommand).sort();
@@ -198,6 +199,27 @@ describe("event document contract", () => {
     expect(uniqueMatches(overview, /(pnpm exercise:\d{2})/g).sort()).toEqual(expectedCommands);
     expect(overview).toMatch(/S2〜S5[^。]*各starter[^。]*RED/);
     expect(overview).not.toMatch(/S1[^。]*(?:starter|開始時)[^。]*RED/);
+    expect(dayFlow).toContain("Final は環境構築や DB 操作をせず、講師が参照実装の5つの境界を案内する");
+    expect(dayFlow).not.toContain("3差分");
+  });
+
+  it("keeps the non-code S1 worksheet aligned with the six workflow prompts", async () => {
+    const readme = await readFile(
+      `${repositoryRoot}/examples/session-01/README.md`,
+      "utf8",
+    );
+
+    expect(readme).toContain("3+4+6+2=15分");
+    for (const prompt of [
+      "何が起きたことで始まるか",
+      "誰が何を依頼するか",
+      "開始前に何が成り立っているか",
+      "どのような失敗が予想されるか",
+      "成功したとき何が起きたと記録するか",
+      "どこへ何を保存・通知するか",
+    ]) {
+      expect(readme).toContain(prompt);
+    }
   });
 
   it("keeps review durations, questions, and promises aligned with the catalog", async () => {

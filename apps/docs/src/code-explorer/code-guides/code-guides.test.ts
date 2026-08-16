@@ -98,9 +98,14 @@ describe("session code guides", () => {
       }
 
       if (session.slug === "final") {
+        const useCaseGuide = guides!.find(
+          ({ id }) => id === "final-use-case-pipeline",
+        );
         const aggregateGuide = guides!.find(
           ({ id }) => id === "final-seven-aggregates",
         );
+        expect(useCaseGuide?.currentDesign).toContain("当日の S5 と同じ形");
+        expect(useCaseGuide?.currentDesign).not.toContain("当日の S4");
         expect(aggregateGuide?.title).toBe(
           "1業務集約から7業務集約へ広がる配線",
         );
