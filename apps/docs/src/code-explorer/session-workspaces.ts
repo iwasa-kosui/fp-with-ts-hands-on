@@ -4,21 +4,21 @@ import type { SessionWorkspace } from "./types";
 
 const sessionWorkspaces = {
   "00-onboarding": {
-    initialFile: "src/appointment.ts",
+    initialFile: "src/legacy/appointment.ts",
     description:
       "先人が残したコードを手がかりに、今後向き合う設計上の課題を見渡します。",
-    visibleFiles: ["src/appointment.ts", "src/logger.ts"],
+    visibleFiles: ["src/legacy/appointment.ts", "src/legacy/logger.ts"],
   },
   "01-state-modeling": {
     initialFile: "exercises/state-modeling.test.ts",
     description: "状態別の要求と作成対象を開始 snapshot で確認します。",
     visibleFiles: [
       "exercises/state-modeling.test.ts",
-      "test/incident-requirements.test.ts",
+      "test/transitions.test.ts",
       "test/setup.test.ts",
-      "src/appointment.ts",
-      "src/logger.ts",
-      "src/visit-lifecycle.ts",
+      "src/domain/appointment/appointment.ts",
+      "src/domain/appointment/transitions.ts",
+      "src/domain/appointment/statusLabel.ts",
     ],
   },
   "02-boundary-and-ids": {
@@ -26,68 +26,59 @@ const sessionWorkspaces = {
     description: "入力・ID・PII の境界を開始 snapshot で確認します。",
     visibleFiles: [
       "exercises/boundary-and-ids.test.ts",
-      "test/state-modeling.test.ts",
-      "src/domain/appointment.ts",
+      "test/regression/state-modeling.test.ts",
+      "src/domain/appointment/appointment.ts",
+      "src/boundary/examResult.ts",
+      "src/boundary/ownerContact.ts",
     ],
   },
   "03-result-errors": {
     initialFile: "exercises/result-errors.test.ts",
-    description: "Result と成功イベントの要求を開始 snapshot で確認します。",
+    description: "同期 Result と失敗理由の要求を開始 snapshot で確認します。",
     visibleFiles: [
       "exercises/result-errors.test.ts",
-      "test/boundary-and-ids.test.ts",
-      "test/state-modeling.test.ts",
-      "src/boundary/exam-result.ts",
-      "src/boundary/owner-contact.ts",
-      "src/domain/appointment.ts",
-      "src/domain/appointment-id.ts",
-      "src/domain/exam-id.ts",
-      "src/domain/owner-id.ts",
-      "src/domain/pet-id.ts",
-      "src/domain/veterinarian-id.ts",
+      "test/regression/boundary-and-ids.test.ts",
+      "test/regression/state-modeling.test.ts",
+      "src/boundary/examResult.ts",
+      "src/boundary/ownerContact.ts",
+      "src/domain/appointment/appointment.ts",
+      "src/domain/appointment/transitions.ts",
+      "src/domain/appointment/statusLabel.ts",
+      "src/domain/ids/appointmentId.ts",
+      "src/domain/ids/examId.ts",
+      "src/domain/ids/ownerId.ts",
+      "src/domain/ids/petId.ts",
+      "src/domain/ids/veterinarianId.ts",
       "src/shared/sensitive.ts",
+      "src/useCase/errors.ts",
+      "src/useCase/startExamination.ts",
     ],
   },
-  "04-agent-review": {
-    initialFile: "exercises/agent-review.test.ts",
-    description: "横断レビューの要求と既存設計を開始 snapshot で確認します。",
+  "04-effects-and-events": {
+    initialFile: "exercises/effects-and-events.test.ts",
+    description: "副作用とイベントの要求を開始 snapshot で確認します。",
     visibleFiles: [
-      "exercises/agent-review.test.ts",
-      "test/result-errors.test.ts",
-      "src/application/start-examination.ts",
-      "src/application/start-examination-error.ts",
-      "src/infrastructure/in-memory-appointment-repository.ts",
-      "src/infrastructure/in-memory-domain-event-store.ts",
-      "src/ports/appointment-repository.ts",
-      "src/ports/domain-event-store.ts",
-      "src/review/agent-review.ts",
-      "src/shared/schema-result.ts",
-      "src/shared/sensitive.ts",
-    ],
-  },
-  "05-mini-integration": {
-    initialFile: "exercises/follow-up.test.ts",
-    description: "電話フォロー要求と既存の設計判断を開始 snapshot で確認します。",
-    visibleFiles: [
-      "exercises/follow-up.test.ts",
-      "test/start-examination.test.ts",
-      "test/fixtures.ts",
-      "src/application/start-examination.ts",
-      "src/infrastructure/in-memory-appointment-gateway.ts",
-      "src/ports/appointment-resolver.ts",
-      "src/ports/appointment-store.ts",
-      "src/review/agent-review.ts",
-      "src/shared/schema-result.ts",
+      "exercises/effects-and-events.test.ts",
+      "test/regression/result-errors.test.ts",
+      "src/domain/aggregate/clock.ts",
+      "src/domain/aggregate/eventContext.ts",
+      "src/domain/aggregate/eventId.ts",
+      "src/domain/aggregate/eventIdGenerator.ts",
+      "src/domain/appointment/examinationStarted.ts",
+      "src/useCase/dependencies.ts",
+      "src/useCase/errors.ts",
+      "src/useCase/startExamination.ts",
+      "src/shared/schemaResult.ts",
       "src/shared/sensitive.ts",
     ],
   },
   final: {
-    initialFile: "test/useCase/startExaminationUseCase.test.ts",
+    initialFile: "src/useCase/startExaminationUseCase.ts",
     description:
       "業務フローを Hono・Inertia・SQLite へ接続した完成アプリを確認します。",
     visibleFiles: [
-      "test/useCase/startExaminationUseCase.test.ts",
-      "test/web/clinicFlow.test.ts",
+      "src/useCase/startExaminationUseCase.ts",
+      "src/useCase/errors.ts",
       "src/app.ts",
       "src/domain/appointment/appointment.ts",
       "src/domain/appointment/appointmentEvent.ts",
@@ -95,7 +86,7 @@ const sessionWorkspaces = {
       "src/domain/appointment/appointmentStores.ts",
       "src/domain/shared/schemaResult.ts",
       "src/domain/shared/sensitive.ts",
-      "src/useCase/startExaminationUseCase.ts",
+      "src/domain/followUp/collectFollowUpTargets.ts",
       "src/adaptor/primary/web/routes/appointmentRoutes.ts",
       "src/adaptor/secondary/sqlite/resolver/appointmentResolver.ts",
       "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
@@ -121,6 +112,15 @@ export const sessionWorkspaceFor = (slug: string): SessionWorkspace => {
   if (missingFiles.length > 0) {
     throw new Error(
       `Missing project files for session ${slug}: ${missingFiles.join(", ")}`,
+    );
+  }
+  const missingTargets = session.steps
+    .flatMap(({ targets }) => targets)
+    .map((path) => path.replace(`examples/${session.snapshot}/`, ""))
+    .filter((path) => !visibleFiles.includes(path));
+  if (missingTargets.length > 0) {
+    throw new Error(
+      `Missing exercise targets for session ${slug}: ${missingTargets.join(", ")}`,
     );
   }
 

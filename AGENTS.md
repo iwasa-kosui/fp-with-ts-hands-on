@@ -9,10 +9,10 @@
 ## リポジトリ構成
 
 - `apps/docs/`: 参加者向けの公開ドキュメントサイト。
-- `packages/clinic-example/src/legacy/`: 事故を再現する、意図的に壊れやすい実装。
-- `packages/clinic-example/src/clinic/`: 関数型ドメインモデリングの worked example。
-- `packages/clinic-example/test/`: 常に成功すべき通常テスト。
-- `packages/clinic-example/exercises/`: 失敗と改善を体験する演習テスト。
+- `examples/session-00/`: 事故を再現する、意図的に壊れやすい実装。
+- `examples/session-01/` から `examples/session-05/`: 関数型ドメインモデリングを段階的に改善する worked example。
+- `examples/session-00/test/` から `examples/session-05/test/`: 常に成功すべき通常テスト。
+- `examples/session-00/exercises/` から `examples/session-05/exercises/`: 失敗と改善を体験する演習テスト。
 - `worker/`: ヘルスチェック、旧 URL のリダイレクト、静的アセットの委譲。
 - `docs/event/`: 当日のセットアップ、進行、トラブル対応。
 - `docs/design/`: 参考モックアップ。公開サイト本体ではない。
@@ -21,7 +21,8 @@
 
 - 技法の説明からではなく、業務上の要求または事故から始める。
 - 不変条件、採用する技法、その技法の限界、検証、振り返りを対応させる。
-- 参加者が編集する範囲は、原則として 2 関数以内に保つ。
+- 参加者が編集する範囲は、1演習につき1モジュール（1ディレクトリ）に閉じる。進行は最大4ステップ、設計判断は最大3件、解答差分は最大5ファイル・実効80行に保つ。
+- 各演習は「不変条件の言語化 → 依頼文への変換と委譲 → 各参加者による個人検証」の3手順を持ち、3つの成果物が残る形にする。個人検証後、差分のレビューは個人で閉じず、班内相互レビューを1回持つ。S1・S2 は7分、S3・S4 は8分を確保し、原則として2名の差分を比較する。2名を選べない場合のみ、1名の差分を選ぶ。
 - `legacy` を先回りして直さない。worked example、演習、説明を同期し、意図した問題と改善の対応を維持する。
 - 通常テストで確認する健全性と、教材で意図的に失敗させる演習を区別する。
 - 関係のない再設計や、現在必要のない将来向け抽象化を混ぜない。
@@ -37,7 +38,7 @@
 
 ## TypeScriptの設計方針
 
-`packages/clinic-example` では、現在の教材方針として次を維持する。
+`examples/session-00/` から `examples/session-05/` では、現在の教材方針として次を維持する。
 
 - `Readonly` なデータ
 - 判別共用体による状態とエラー
@@ -55,5 +56,5 @@
 - 通常の健全性確認は `pnpm test` とし、成功を期待する。
 - TypeScript または教材ロジックを変更した場合は、変更したパッケージのテストに加え、`pnpm typecheck` と `pnpm test` を実行する。
 - 全体に影響する変更では、CI と同じ `pnpm typecheck`、`pnpm test`、`pnpm build` を実行する。
-- 演習では、現在の worked example の `pnpm exercise:00` は事故の再現として意図的に失敗し、`pnpm exercise:01` から `pnpm exercise:05` は成功を期待する。starter または演習途中では説明と期待する失敗理由を照合する。
+- 演習では、`pnpm exercise:01` から `pnpm exercise:04` が S1〜S4 の開始スナップショットにおける業務名の assertion failure を確認する。S0 と到達点スナップショットには演習コマンドを設けない。通常テストでは次の解答スナップショットに持ち越した回帰を確認し、`examples/session-05` で S1〜S4 の全回帰が成功することを確認する。
 - 実施していない検証は完了扱いにせず、未実施の理由と期待結果を報告する。

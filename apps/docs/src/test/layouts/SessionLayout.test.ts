@@ -5,40 +5,51 @@ import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessions } from "../../sessions/catalog";
 import { createAstroContainer } from "../render-astro";
 
+const exerciseChapters = ["incident", "legacy", "red", "refactor", "review"];
+const shortChapters = ["incident", "legacy", "review"];
+
 describe("SessionLayout", () => {
+  it.each([
+    { session: sessions[0], expected: shortChapters },
+    { session: sessions[1], expected: exerciseChapters },
+    { session: sessions[5], expected: shortChapters },
+  ])("drives both TOCs from the $session.kind chapter definition", async ({ session, expected }) => {
+    const container = await createAstroContainer();
+    const html = await container.renderToString(SessionLayout, {
+      props: { session },
+      slots: {
+        default: markHTMLString(
+          expected.map((id) => `<section id="${id}"><h2>${id}</h2></section>`).join(""),
+        ),
+      },
+    });
+    const document = new DOMParser().parseFromString(html, "text/html");
+    const desktopLinks = [
+      ...document.querySelectorAll<HTMLAnchorElement>(".case-file__toc--desktop a"),
+    ];
+    const mobileLinks = [
+      ...document.querySelectorAll<HTMLAnchorElement>(".case-file__toc--mobile a"),
+    ];
+
+    expect(desktopLinks.map(({ hash }) => hash)).toEqual(expected.map((id) => `#${id}`));
+    expect(mobileLinks.map(({ hash }) => hash)).toEqual(expected.map((id) => `#${id}`));
+    for (const { hash } of desktopLinks) {
+      expect(document.querySelectorAll(hash)).toHaveLength(1);
+    }
+    expect(document.querySelector("h1")?.textContent).toBe(session.title);
+  });
+
   it("keeps the mobile table of contents initially closed", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(SessionLayout, {
       props: { session: sessions[1] },
-      slots: { toc: "ミッション", default: "本文" },
+      slots: { default: "本文" },
     });
     const document = new DOMParser().parseFromString(html, "text/html");
     const mobileToc = document.querySelector("details.case-file__toc--mobile");
-    const desktopNavigation = document.querySelector(".case-file__toc--desktop nav");
 
-    expect(mobileToc).not.toBeNull();
     expect(mobileToc?.hasAttribute("open")).toBe(false);
     expect(mobileToc?.querySelector("summary")?.textContent).toContain("目次");
-    expect(mobileToc?.querySelector("nav")?.textContent).toContain("ミッション");
-    expect(desktopNavigation?.textContent).toContain("ミッション");
-  });
-
-  it("renders the case file hero, authored toc, body, and session navigation", async () => {
-    const container = await createAstroContainer();
-    const html = await container.renderToString(SessionLayout, {
-      props: { session: sessions[1] },
-      slots: {
-        toc: markHTMLString('<ol><li><a href="#mission">ミッション</a></li></ol>'),
-        default: markHTMLString('<section id="mission"><h2>ミッション</h2></section>'),
-      },
-    });
-
-    expect(html).toContain("SESSION 01");
-    expect(html).toContain("状態遷移を型にする");
-    expect(html).toContain('aria-label="ページ内目次"');
-    expect(html).toContain('<section id="mission"><h2>ミッション</h2></section>');
-    expect(html).toContain('/sessions/00-onboarding/');
-    expect(html).toContain('/sessions/02-boundary-and-ids/');
   });
 
   it("renders phase semantics, exact command text, expected result, and a copy island", async () => {
@@ -56,6 +67,6 @@ describe("SessionLayout", () => {
     expect(html).toContain("失敗を確認する");
     expect(html).toContain("pnpm test -- --runInBand");
     expect(html).toContain("型エラーで失敗する");
-    expect(html).toContain("client=\"idle\"");
+    expect(html).toContain('client="idle"');
   });
 });

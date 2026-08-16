@@ -320,63 +320,135 @@
   background: var(--case-lemon);
 }
 
-.requirement-dialogue {
+.exercise-steps,
+.adv-flow,
+.reference-list,
+.final-differences {
   display: grid;
   gap: 0.75rem;
-  margin-block: 1.5rem;
+  padding-inline-start: 1.5rem;
 }
 
-.requirement-dialogue__line {
-  display: grid;
-  gap: 0.25rem;
-  max-width: 100%;
+.exercise-steps li,
+.adv-flow li,
+.final-differences li {
+  padding: 0.75rem;
+  border-inline-start: 0.35rem solid var(--case-mint);
+  background: color-mix(in srgb, var(--case-mint) 28%, var(--case-paper));
 }
 
-.requirement-dialogue__line--receptionist {
-  justify-items: end;
+.adv-flow li:nth-child(2) {
+  border-inline-start-color: var(--case-lemon);
 }
 
-.requirement-dialogue__speaker {
-  margin: 0;
-  font-weight: 700;
+.adv-flow li:nth-child(3) {
+  border-inline-start-color: var(--case-coral);
 }
 
-.requirement-dialogue__bubble {
-  position: relative;
-  max-width: min(100%, 34rem);
-  margin: 0;
-  padding: 0.75rem 1rem;
-  border: 2px solid var(--case-line);
-  border-radius: 1rem;
-  background: var(--case-lemon);
-}
-
-.requirement-dialogue__bubble::after {
-  position: absolute;
-  bottom: -0.5rem;
-  left: 1rem;
-  width: 0;
-  height: 0;
-  border: 0.5rem solid transparent;
-  border-top-color: var(--case-line);
-  border-bottom: 0;
-  content: "";
-}
-
-.requirement-dialogue__line--receptionist .requirement-dialogue__bubble {
-  background: var(--case-mint);
-}
-
-.requirement-dialogue__line--receptionist .requirement-dialogue__bubble::after {
-  right: 1rem;
-  left: auto;
-}
-
-.requirement-prompt {
+.delegation-prompt,
+.before-after,
+.incident-report,
+.peer-review-promises,
+.peer-review-panel {
+  min-width: 0;
   margin-block: 1.5rem;
   padding: 1rem;
-  border-inline-start: 0.35rem solid var(--case-coral);
+  border: 2px solid var(--case-line);
+  background: var(--case-paper);
+}
+
+.delegation-prompt pre,
+.step-solution pre {
+  max-width: 100%;
+  margin: 0;
+  padding: 1rem;
+  overflow-x: auto;
+  background: var(--case-ink);
+  color: var(--case-paper);
+  line-height: 1.6;
+}
+
+.delegation-prompt code,
+.step-solution code {
+  overflow-wrap: normal;
+  white-space: pre;
+}
+
+.solution-step + .solution-step {
+  margin-top: 1rem;
+}
+
+.step-solution__snippet h4 {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--case-line);
+  overflow-wrap: anywhere;
+}
+
+.step-solution__snippet h4 code {
+  white-space: normal;
+}
+
+.exercise-review-checklist {
+  margin-block: 1.5rem;
+  padding: 1rem;
+  border-inline-start: 0.6rem solid var(--case-lemon);
+  background: color-mix(in srgb, var(--case-lemon) 28%, var(--case-paper));
+}
+
+.before-after {
+  display: grid;
+  gap: 0.75rem;
+  border-inline-start: 0.6rem solid var(--case-coral);
+}
+
+.before-after p {
+  margin: 0;
+}
+
+.step-solution {
+  min-width: 0;
+  border: 2px solid var(--case-line);
+  background: var(--case-paper);
+}
+
+.step-solution summary {
+  padding: 0.8rem 1rem;
   background: var(--case-lemon);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.decision-list {
+  display: grid;
+  gap: 1rem;
+  padding: 0;
+  list-style-position: inside;
+}
+
+.decision-card {
+  min-width: 0;
+  padding: 1rem;
+  border-inline-start: 0.6rem solid var(--case-mint);
+  background: color-mix(in srgb, var(--case-mint) 24%, var(--case-paper));
+}
+
+.decision-card h4,
+.decision-card p {
+  margin-block: 0;
+}
+
+.decision-card p + p {
+  margin-top: 0.5rem;
+}
+
+.peer-review-panel {
+  border-inline-start: 0.6rem solid var(--case-coral);
+  background: color-mix(in srgb, var(--case-lemon) 35%, var(--case-paper));
+}
+
+.peer-review-panel h3 {
+  margin-top: 0;
 }
 
 .visit-timeline {

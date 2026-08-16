@@ -159,9 +159,11 @@ const runProcess = async (
   command: RunCommand,
   onOutput: (chunk: string) => void,
   signal?: AbortSignal,
+  cwd?: string,
 ): Promise<number> => {
   signal?.throwIfAborted();
   const process = await runtime.spawn(command.command, [...command.args], {
+    cwd,
     env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" },
   });
   const stopProcess = () => {
@@ -374,6 +376,8 @@ const createPlainTextOutputNormalizer = (
   };
 };
 
+const runtimeProjectDirectory = "workspace";
+
 const readExternalTypeFiles = async (runtime: WebContainer): Promise<ProjectFiles> => {
   const files: Record<string, string> = {};
 
@@ -396,7 +400,8 @@ const readExternalTypeFiles = async (runtime: WebContainer): Promise<ProjectFile
           entry.isFile() &&
           (/\.d\.[cm]?ts$/.test(entry.name) || entry.name === "package.json")
         ) {
-          files[`file:///${path}`] = await runtime.fs.readFile(path, "utf8");
+          const projectPath = path.replace(`${runtimeProjectDirectory}/`, "");
+          files[`file:///${projectPath}`] = await runtime.fs.readFile(path, "utf8");
         }
       }),
     );
@@ -412,14 +417,56 @@ const readExternalTypeFiles = async (runtime: WebContainer): Promise<ProjectFile
 
   await Promise.all(
     ["node_modules/zod", "node_modules/vitest", "node_modules/@vitest"].map(
-      visitIfPresent,
+      (directory) => visitIfPresent(`${runtimeProjectDirectory}/${directory}`),
     ),
   );
   return files;
 };
 
+const splitProjectFiles = (
+  files: ProjectFiles,
+): Readonly<{ internal: ProjectFiles; parent: ProjectFiles }> => {
+  const internal: Record<string, string> = {};
+  const parent: Record<string, string> = {};
+  for (const [path, source] of Object.entries(files)) {
+    if (!path.startsWith("../")) {
+      internal[path] = source;
+      continue;
+    }
+
+    const parentPath = path.slice(3);
+    const segments = parentPath.split("/");
+    if (
+      !parentPath.startsWith("fixtures/") ||
+      segments.some((segment) => segment === "" || segment === "." || segment === "..")
+    ) {
+      throw new Error(`Unsupported external project path: ${path}`);
+    }
+    parent[parentPath] = source;
+  }
+  return { internal, parent };
+};
+
+const writeParentFiles = async (
+  runtime: WebContainer,
+  files: ProjectFiles,
+): Promise<void> => {
+  for (const [path, source] of Object.entries(files)) {
+    const directory = path.slice(0, path.lastIndexOf("/"));
+    await runtime.fs.mkdir(directory, { recursive: true });
+    await runtime.fs.writeFile(path, source);
+  }
+};
+
 const adaptWebContainer = (runtime: WebContainer): Runtime => ({
-  mount: async (files) => runtime.mount(buildFileSystemTree(files)),
+  mount: async (files) => {
+    const { internal, parent } = splitProjectFiles(files);
+    await runtime.fs.mkdir(runtimeProjectDirectory, { recursive: true });
+    await runtime.mount(buildFileSystemTree(internal), {
+      mountPoint: runtimeProjectDirectory,
+    });
+    await writeParentFiles(runtime, parent);
+  },
   install: async (onOutput, signal) =>
     runProcess(
       runtime,
@@ -429,14 +476,19 @@ const adaptWebContainer = (runtime: WebContainer): Runtime => ({
       },
       onOutput,
       signal,
+      runtimeProjectDirectory,
     ),
   writeFiles: async (files) => {
+    const { internal, parent } = splitProjectFiles(files);
     await Promise.all(
-      Object.entries(files).map(([path, source]) => runtime.fs.writeFile(path, source)),
+      Object.entries(internal).map(([path, source]) =>
+        runtime.fs.writeFile(`${runtimeProjectDirectory}/${path}`, source),
+      ),
     );
+    await writeParentFiles(runtime, parent);
   },
   execute: async (command, onOutput, signal) =>
-    runProcess(runtime, command, onOutput, signal),
+    runProcess(runtime, command, onOutput, signal, runtimeProjectDirectory),
   readTypeFiles: async () => readExternalTypeFiles(runtime),
 });
 

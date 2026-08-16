@@ -18,6 +18,10 @@ describe("home page", () => {
     expect(document.querySelector(".landing-hero__grid > .landing-eyebrow")).not.toBeNull();
     expect(document.querySelector(".copy-panel .landing-lead")).toBeNull();
     expect(document.querySelector(".landing-hero__grid > .landing-lead")).not.toBeNull();
+    expect(document.querySelector(".landing-lead")?.textContent).toContain(
+      "1モジュール・最大4ステップ・3つの設計判断・差分予算",
+    );
+    expect(document.querySelector(".landing-lead")?.textContent).not.toContain("1〜2関数");
     const sessionLink = document.querySelector<HTMLAnchorElement>(
       'a[href="/sessions/00-onboarding/"]',
     );
@@ -31,5 +35,11 @@ describe("home page", () => {
     expect(document.querySelector("#sessions")?.textContent).not.toContain(
       "事故を再現",
     );
+    expect(
+      [...document.querySelectorAll(".status-flow span")].map((status) =>
+        status.textContent?.trim(),
+      ),
+    ).toEqual(["予約済み", "受付済み", "診察中", "支払済み"]);
+    expect(document.body.textContent).not.toMatch(/会計待ち|AwaitingPayment/);
   });
 });

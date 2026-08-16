@@ -1,141 +1,179 @@
+import path from "node:path";
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { sessions } from "../sessions/catalog";
+import {
+  sessions,
+  type ExampleSnapshot,
+} from "../sessions/catalog";
+import * as projectFilesModule from "./project-files";
 import { projectFilesFor } from "./project-files";
 import { sessionWorkspaceFor } from "./session-workspaces";
+import type { ProjectFiles } from "./types";
 
-const expectedSnapshots = {
-  "00-onboarding": "session-00",
-  "01-state-modeling": "session-01",
-  "02-boundary-and-ids": "session-02",
-  "03-result-errors": "session-03",
-  "04-agent-review": "session-04",
-  "05-mini-integration": "session-05",
-  final: "final",
-} as const;
+type SnapshotLoader = (snapshot: ExampleSnapshot) => ProjectFiles;
 
-const requiredVisibleFiles = {
-  "00-onboarding": [
-    "src/appointment.ts",
-    "src/logger.ts",
-  ],
-  "01-state-modeling": [
-    "exercises/state-modeling.test.ts",
-    "test/incident-requirements.test.ts",
-    "src/appointment.ts",
-    "src/visit-lifecycle.ts",
-  ],
-  "02-boundary-and-ids": [
-    "exercises/boundary-and-ids.test.ts",
-    "test/state-modeling.test.ts",
-    "src/domain/appointment.ts",
-  ],
-  "03-result-errors": [
-    "exercises/result-errors.test.ts",
-    "src/boundary/exam-result.ts",
-    "src/boundary/owner-contact.ts",
-    "src/domain/appointment.ts",
-    "test/boundary-and-ids.test.ts",
-  ],
-  "04-agent-review": [
-    "exercises/agent-review.test.ts",
-    "src/application/start-examination.ts",
-    "src/infrastructure/in-memory-appointment-repository.ts",
-    "src/infrastructure/in-memory-domain-event-store.ts",
-    "src/review/agent-review.ts",
-    "test/result-errors.test.ts",
-  ],
-  "05-mini-integration": [
-    "exercises/follow-up.test.ts",
-    "src/application/start-examination.ts",
-    "src/infrastructure/in-memory-appointment-gateway.ts",
-    "src/review/agent-review.ts",
-    "test/start-examination.test.ts",
-  ],
-  final: [
-    "test/useCase/startExaminationUseCase.test.ts",
-    "test/web/clinicFlow.test.ts",
-    "src/app.ts",
-    "src/domain/appointment/appointment.ts",
-    "src/domain/appointment/appointmentResolver.ts",
-    "src/domain/appointment/appointmentStores.ts",
-    "src/useCase/startExaminationUseCase.ts",
-    "src/adaptor/primary/web/routes/appointmentRoutes.ts",
-    "src/adaptor/secondary/sqlite/resolver/appointmentResolver.ts",
-    "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
-  ],
-} as const;
+const projectFilesForSnapshot = (snapshot: ExampleSnapshot): ProjectFiles => {
+  const candidate: unknown = Reflect.get(
+    projectFilesModule,
+    "projectFilesForSnapshot",
+  );
+  expect(candidate, "projectFilesForSnapshot export").toEqual(expect.any(Function));
+  return (candidate as SnapshotLoader)(snapshot);
+};
+
+const snapshots = [
+  ...new Set<ExampleSnapshot>([
+    ...sessions.map(({ snapshot }) => snapshot),
+    "session-05",
+  ]),
+];
+
+const nextSnapshotFor = (snapshot: ExampleSnapshot): ExampleSnapshot => {
+  const next = {
+    "session-01": "session-02",
+    "session-02": "session-03",
+    "session-03": "session-04",
+    "session-04": "session-05",
+  } as const;
+  const result = next[snapshot as keyof typeof next];
+  if (result === undefined) throw new Error(`No solution snapshot for ${snapshot}`);
+  return result;
+};
+
+const relativeToSnapshot = (snapshot: ExampleSnapshot, repoPath: string): string => {
+  const prefix = `examples/${snapshot}/`;
+  expect(repoPath.startsWith(prefix), `${repoPath} must start with ${prefix}`).toBe(true);
+  return repoPath.slice(prefix.length);
+};
+
+const importClosure = (
+  files: ProjectFiles,
+  entrypoint: string,
+): ReadonlySet<string> => {
+  const sourceByAbsolutePath = new Map(
+    Object.entries(files).map(([file, source]) => [
+      path.posix.normalize(`/workspace/${file}`),
+      source,
+    ]),
+  );
+  const visited = new Set<string>();
+
+  const visit = (absoluteFile: string): void => {
+    if (visited.has(absoluteFile)) return;
+    const source = sourceByAbsolutePath.get(absoluteFile);
+    expect(source, `missing project source: ${absoluteFile}`).toEqual(expect.any(String));
+    visited.add(absoluteFile);
+
+    for (const imported of ts.preProcessFile(source!).importedFiles) {
+      const specifier = imported.fileName;
+      if (!specifier.startsWith(".")) continue;
+      const unresolved = path.posix.resolve(path.posix.dirname(absoluteFile), specifier);
+      const candidates = [
+        unresolved,
+        unresolved.replace(/\.js$/, ".ts"),
+        `${unresolved}.ts`,
+        path.posix.join(unresolved, "index.ts"),
+      ];
+      const resolved = candidates.find((candidate) => sourceByAbsolutePath.has(candidate));
+      expect(
+        resolved,
+        `unresolved relative import: ${absoluteFile}:${specifier}`,
+      ).toEqual(expect.any(String));
+      visit(resolved!);
+    }
+  };
+
+  visit(path.posix.resolve("/workspace", entrypoint));
+  return visited;
+};
 
 describe("session code workspaces", () => {
-  it("maps every catalog entry to its self-contained example snapshot", () => {
+  it("maps the six catalog slugs to their starter snapshots", () => {
     for (const session of sessions) {
-      expect(session.snapshot).toBe(expectedSnapshots[session.slug]);
       expect(sessionWorkspaceFor(session.slug).snapshot).toBe(session.snapshot);
     }
   });
 
-  it("mounts a runnable manifest, local TypeScript config, and real visible files", () => {
+  it("keeps initial and target files visible without duplicates", () => {
     for (const session of sessions) {
       const workspace = sessionWorkspaceFor(session.slug);
-      const projectFiles = projectFilesFor(session.slug);
-      const packageJson = JSON.parse(projectFiles["package.json"]!) as {
-        name: string;
-        devDependencies?: Record<string, string>;
-      };
-      const tsconfig = JSON.parse(projectFiles["tsconfig.json"]!) as {
-        extends: string;
-      };
+      const files = projectFilesFor(session.slug);
 
-      expect(packageJson.name).toBe(
-        session.snapshot === "final"
-          ? "@fp-with-ts/clinic-final"
-          : `@fp-with-ts/clinic-${session.snapshot}`,
-      );
-      expect(packageJson.devDependencies?.tsx).toBe("4.23.9");
-      expect(tsconfig.extends).toBe("./tsconfig.base.json");
-      expect(projectFiles["tsconfig.base.json"]).toEqual(expect.any(String));
-      expect(projectFiles["vitest.config.ts"]).toEqual(expect.any(String));
-      expect(workspace.visibleFiles).toEqual(
-        expect.arrayContaining([...requiredVisibleFiles[session.slug]]),
-      );
       expect(workspace.visibleFiles).toContain(workspace.initialFile);
-      expect(new Set(workspace.visibleFiles).size).toBe(
-        workspace.visibleFiles.length,
-      );
-      for (const path of workspace.visibleFiles) {
-        expect(projectFiles[path], `${session.slug}: ${path}`).toEqual(
+      expect(new Set(workspace.visibleFiles).size).toBe(workspace.visibleFiles.length);
+      for (const visibleFile of workspace.visibleFiles) {
+        expect(files[visibleFile], `${session.slug}: ${visibleFile}`).toEqual(
           expect.any(String),
         );
+      }
+      for (const step of session.steps) {
+        for (const target of step.targets) {
+          expect(workspace.visibleFiles).toContain(
+            relativeToSnapshot(session.snapshot, target),
+          );
+        }
       }
     }
   });
 
-  it("keeps later exercise source absent while providing the editable Session 04 review starter", () => {
-    expect(projectFilesFor("01-state-modeling")["src/domain/appointment.ts"]).toBeUndefined();
-    expect(projectFilesFor("02-boundary-and-ids")["src/boundary/exam-result.ts"]).toBeUndefined();
-    expect(projectFilesFor("03-result-errors")["src/application/start-examination.ts"]).toBeUndefined();
-    expect(projectFilesFor("04-agent-review")["src/review/agent-review.ts"]).toEqual(
-      expect.any(String),
-    );
-    expect(projectFilesFor("05-mini-integration")["src/application/collect-follow-up-targets.ts"]).toBeUndefined();
+  it("mounts starter source rather than the next snapshot's solution for every target", () => {
+    for (const session of sessions.filter(({ kind }) => kind === "exercise")) {
+      const starterFiles = projectFilesFor(session.slug);
+      const solutionSnapshot = nextSnapshotFor(session.snapshot);
+      const solutionFiles = projectFilesForSnapshot(solutionSnapshot);
+      for (const step of session.steps) {
+        for (const targetPath of step.targets) {
+          const target = relativeToSnapshot(session.snapshot, targetPath);
+          expect(starterFiles[target]).toEqual(expect.any(String));
+          expect(solutionFiles[target]).toEqual(expect.any(String));
+          expect(starterFiles[target]).not.toBe(solutionFiles[target]);
+        }
+      }
+    }
   });
 
-  it("rejects unknown session slugs before rendering", () => {
+  it("builds project-file maps for every snapshot including session-05", () => {
+    expect(snapshots).toEqual([
+      "session-00",
+      "session-01",
+      "session-02",
+      "session-03",
+      "session-04",
+      "final",
+      "session-05",
+    ]);
+    for (const snapshot of snapshots) {
+      const files = projectFilesForSnapshot(snapshot);
+      expect(files["package.json"]).toEqual(expect.any(String));
+      expect(files["tsconfig.json"]).toEqual(expect.any(String));
+      expect(files["vitest.config.ts"]).toEqual(expect.any(String));
+    }
+  });
+
+  it.each([
+    {
+      snapshot: "session-04" as const,
+      entrypoint: "exercises/effects-and-events.test.ts",
+    },
+    {
+      snapshot: "session-05" as const,
+      entrypoint: "test/regression/effects-and-events.test.ts",
+    },
+  ])(
+    "resolves the $snapshot transitive relative import closure through the shared clinic fixture",
+    ({ snapshot, entrypoint }) => {
+      const closure = importClosure(projectFilesForSnapshot(snapshot), entrypoint);
+
+      expect(closure).toContain("/fixtures/clinic.ts");
+    },
+  );
+
+  it("rejects unknown public session slugs", () => {
     expect(() => sessionWorkspaceFor("not-a-session")).toThrow(
       "Unknown session workspace: not-a-session",
     );
     expect(() => projectFilesFor("not-a-session")).toThrow(
       "Unknown session project: not-a-session",
     );
-  });
-
-  it("returns visible files that cannot corrupt a later workspace result", () => {
-    const firstWorkspace = sessionWorkspaceFor("00-onboarding");
-    expect(() => {
-      (firstWorkspace.visibleFiles as string[]).push("src/unexpected.ts");
-    }).toThrow();
-
-    expect(
-      sessionWorkspaceFor("00-onboarding").visibleFiles,
-    ).not.toContain("src/unexpected.ts");
   });
 });

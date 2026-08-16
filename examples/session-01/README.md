@@ -1,12 +1,12 @@
-# Session 01: 要求の固定
+# Session 01: 状態を型にする
 
-Session 00 で、`string` の状態と optional な項目による legacy 実装が、会計済みの来院を診察中へ戻せる事故を起こすことを分析しました。
+このディレクトリは Session 01 の開始スナップショットです。解答は `examples/session-02/src` にあります。
 
-この Session では、来院の状態、終端状態、キャンセルに必要な情報を要求として固定します。状態モデリングはまだ実装していないため、legacy 実装は意図的に unsafe のままです。
+会計済み・キャンセル済みの来院を戻せず、キャンセルには理由を残すという不変条件を、`src/domain/appointment/` で型にします。
 
 ```bash
 pnpm --filter @fp-with-ts/clinic-session-01 test
 pnpm --filter @fp-with-ts/clinic-session-01 exercise
 ```
 
-`pnpm test` は legacy の通常フローと要求スナップショットを確認して成功します。`pnpm exercise` は Session 01 で実装する型付き状態モデルの API を要求するため、意図的に失敗します。
+`pnpm exercise` は4つの業務上の不変条件について、意図した assertion failure で始まります。

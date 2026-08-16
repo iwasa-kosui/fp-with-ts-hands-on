@@ -1,0 +1,30 @@
+---
+import {
+  businessReflectionQuestion,
+  commonReviewChecksFor,
+  reviewCompletionArtifacts,
+  type ExampleSnapshot,
+} from "../sessions/catalog";
+
+type Props = Readonly<{ snapshot: ExampleSnapshot }>;
+
+const { snapshot } = Astro.props;
+const commonReviewChecks = commonReviewChecksFor(snapshot);
+---
+
+<div class="exercise-review-checklist">
+  <h3>全演習共通のレビュー観点</h3>
+  <ol>
+    {commonReviewChecks.map((check) => <li>{check}</li>)}
+  </ol>
+  <p>
+    前のセッションの未commit差分は残したままで構いません。現在のレビューには上のsnapshot限定コマンドだけを使います。記録後は次のセッションでpathを切り替え、作業を消すための reset、stash、commit は要求しません。
+  </p>
+  <h3>完了条件</h3>
+  <p>次の3つを成果物として残します。</p>
+  <ul>
+    {reviewCompletionArtifacts.map((artifact) => <li>{artifact}</li>)}
+  </ul>
+  <h3>自分の業務へ持ち帰る問い</h3>
+  <p>{businessReflectionQuestion}</p>
+</div>

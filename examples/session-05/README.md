@@ -1,11 +1,10 @@
-# Session 05: レビューで見つけた境界と保存の問題を閉じる
+# Session 05: 当日の到達点
 
-Session 04 の状態遷移、境界検証、用途別 UUID、`Result`、domain event を引き継ぎます。レビューで見つかった state と event の dual-write を `save(state, events)` にまとめ、event ID と時刻を branded type として検証します。`Sensitive` は JSON、文字列、Node.js の `inspect` で連絡先をマスクします。
+S1〜S4 の解答と回帰テストを統合したスナップショットです。S3 の同期 `startExamination` は `Result` の契約を維持し、S4 の `startExaminationWithEffects` は `ResultAsync` と `andThrough` で効果を接続します。`Clock` と `EventIdGenerator` で非決定値を外へ出し、状態と監査記録を `store(event)` 1回で保存します。
+
+adapter は診断用の `RepositoryFailure` と `cause` を保持しますが、use case 境界の `mapErr` は新しい `RepositoryError` を作ります。公開エラーへ生の例外や個人情報を出しません。
 
 ```bash
 pnpm --filter @fp-with-ts/clinic-session-05 typecheck
 pnpm --filter @fp-with-ts/clinic-session-05 test
-pnpm --filter @fp-with-ts/clinic-session-05 exercise
 ```
-
-`typecheck` と `test` は成功します。`exercise` は電話フォロー対象の抽出 source がまだ存在しないため、意図的に失敗します。次の演習では、検査結果と予約の pet ID が一致する候補だけを集め、連絡先を公開せずにフォローイベントを組み立てます。

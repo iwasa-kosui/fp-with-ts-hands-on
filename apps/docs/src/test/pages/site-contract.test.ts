@@ -4,17 +4,26 @@ import NotFoundPage from "../../pages/404.astro";
 import { createAstroContainer } from "../render-astro";
 
 const pageSessions = import.meta.glob("../../pages/sessions/*.astro", { eager: true });
+const publicPageSources = import.meta.glob<string>("../../pages/**/*.astro", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+});
 
 describe("static site contract", () => {
-  it("has one authored page for every catalog session", () => {
+  it("publishes exactly the six catalog session routes", () => {
     const slugs = Object.keys(pageSessions)
       .map((path) => path.split("/").at(-1)?.replace(/\.astro$/, ""))
       .filter((slug): slug is string => slug !== undefined)
       .sort();
 
-    expect(slugs).toHaveLength(7);
-    expect(sessions).toHaveLength(7);
-    expect(slugs).toEqual(sessions.map(({ slug }) => slug).slice().sort());
+    expect(slugs).toEqual(sessions.map(({ slug }) => slug).sort());
+  });
+
+  it("does not publish the retired payment-pending state", () => {
+    for (const [path, source] of Object.entries(publicPageSources)) {
+      expect(source, path).not.toMatch(/会計待ち|AwaitingPayment/);
+    }
   });
 
   it("renders a real not-found page", async () => {

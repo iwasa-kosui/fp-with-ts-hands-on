@@ -10,6 +10,13 @@ const onboardingRedirects = new Set([
   "/sessions/00-read-the-incident/",
 ]);
 
+const retiredCurriculumRedirects = new Set([
+  "/sessions/04-agent-review",
+  "/sessions/04-agent-review/",
+  "/sessions/05-mini-integration",
+  "/sessions/05-mini-integration/",
+]);
+
 export const resolveWorkerRoute = (pathname: string): WorkerRoute => {
   if (pathname === "/healthz") return { kind: "health" };
 
@@ -17,6 +24,13 @@ export const resolveWorkerRoute = (pathname: string): WorkerRoute => {
     return {
       kind: "redirect",
       location: "/sessions/00-onboarding/",
+    };
+  }
+
+  if (retiredCurriculumRedirects.has(pathname)) {
+    return {
+      kind: "redirect",
+      location: "/sessions/04-effects-and-events/",
     };
   }
 

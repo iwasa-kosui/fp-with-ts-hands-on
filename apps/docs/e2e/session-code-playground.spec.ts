@@ -1,13 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { sessions } from "../src/sessions/catalog";
 
-const routes = [
-  "/sessions/01-state-modeling/",
-  "/sessions/02-boundary-and-ids/",
-  "/sessions/03-result-errors/",
-  "/sessions/04-agent-review/",
-  "/sessions/05-mini-integration/",
-  "/sessions/final/",
-] as const;
+const exerciseSessions = sessions.filter(({ kind }) => kind === "exercise");
 
 const viewports = [
   { name: "mobile", width: 390, height: 844 },
@@ -29,7 +23,7 @@ for (const viewport of viewports) {
       name: "状態固有の情報が optional field に広がっている",
     });
     const guideDetail = overview.locator(".code-explorer__guide-detail");
-    const editor = overview.getByLabel("コードエディタ: src/appointment.ts");
+    const editor = overview.getByLabel("コードエディタ: src/legacy/appointment.ts");
 
     await expect(overview).toBeVisible();
     await expect(overview.getByRole("list", { name: "設計課題" })).toBeVisible();
@@ -82,13 +76,15 @@ for (const viewport of viewports) {
   });
 }
 
-for (const route of routes) {
+for (const session of exerciseSessions) {
+  const route = `/sessions/${session.slug}/`;
   for (const viewport of viewports) {
     test(`${route} keeps the playground usable on ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize(viewport);
       await page.goto(route);
 
       const playground = page.locator(".session-code-playground");
+      expect(await page.evaluate(() => globalThis.crossOriginIsolated)).toBe(true);
       await expect(playground).toBeVisible();
       await expect(playground.locator('[aria-label^="コードエディタ:"]')).toBeVisible();
       await expect(playground.locator('[data-action="reset"]')).toBeVisible();

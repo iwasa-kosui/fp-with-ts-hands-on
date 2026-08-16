@@ -1,20 +1,35 @@
 import { expect, test } from "@playwright/test";
+import { sessions } from "../src/sessions/catalog";
 
 const viewports = [
   { name: "mobile", width: 390, height: 844, definitionColumns: 1 },
   { name: "desktop", width: 1440, height: 1200, definitionColumns: 2 },
 ] as const;
 
+for (const session of sessions) {
+  for (const viewport of viewports) {
+    test(`${session.slug} has no horizontal overflow on ${viewport.name}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.goto(`/sessions/${session.slug}/`);
+
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(session.title);
+      const pageWidths = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      expect(pageWidths.scrollWidth).toBeLessThanOrEqual(pageWidths.clientWidth + 1);
+    });
+  }
+}
+
 for (const viewport of viewports) {
-  test(`session tables and definition lists are readable on ${viewport.name}`, async ({
-    page,
-  }) => {
+  test(`onboarding table and definition list are readable on ${viewport.name}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await page.goto("/sessions/00-onboarding/");
 
-    const table = page.locator("#function-and-value table");
+    const table = page.locator("#legacy table");
     const tableHeading = table.locator("thead th").first();
-    const definitions = page.locator("#people dl");
+    const definitions = page.locator("#incident dl");
     const firstTerm = definitions.locator("dt").first();
 
     await expect(table).toBeVisible();
@@ -50,12 +65,5 @@ for (const viewport of viewports) {
     });
     await expect(firstTerm).toHaveCSS("background-color", "rgb(255, 242, 159)");
 
-    const pageWidths = await page.evaluate(() => ({
-      clientWidth: document.documentElement.clientWidth,
-      scrollWidth: document.documentElement.scrollWidth,
-    }));
-    expect(pageWidths.scrollWidth).toBeLessThanOrEqual(
-      pageWidths.clientWidth + 1,
-    );
   });
 }

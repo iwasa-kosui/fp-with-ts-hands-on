@@ -35,7 +35,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
             <div class="copy-panel">
               <h1 id="page-title">ようこそ<br />WAN NYAN<br /><span class="rainbow-word" aria-label="OSへ！！"><span>O</span><span>S</span><span>へ</span><span>！</span><span>！</span></span></h1>
             </div>
-            <p class="landing-lead">関数型ドメインモデリングを学ぶ教材です。動物病院の予約・カルテ管理システムを題材に、既存コードを全面刷新せず、1〜2関数の局所変更から変更容易性を高めます。</p>
+            <p class="landing-lead">関数型ドメインモデリングを学ぶ教材です。動物病院の予約・カルテ管理システムを題材に、1モジュール・最大4ステップ・3つの設計判断・差分予算の中で、局所的な改善を進めます。</p>
 
             <div class="system-window" aria-label="動物病院の予約・カルテシステム画面">
               <div class="system-window__top">
@@ -58,7 +58,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
                     <article class="appointment-card"><span class="pet-icon" aria-hidden="true">🐇</span><span class="time">10:10</span><strong>もも / 再診</strong><p>診察中。体重と食欲メモをカルテに反映。</p></article>
                   </div>
                   <div class="chart-card" aria-label="カルテ詳細">
-                    <div class="chart-patient"><span class="big-pet" aria-hidden="true">🐈</span><h3>カルテ #AC-2408</h3><p>ミケ / 3歳 / メス避妊済み。主訴は耳まわりのかゆみと皮膚の赤み。</p><div class="status-flow" aria-label="状態遷移"><span>予約済み</span><span>受付済み</span><span>診察中</span><span>会計待ち</span></div></div>
+                    <div class="chart-patient"><span class="big-pet" aria-hidden="true">🐈</span><h3>カルテ #AC-2408</h3><p>ミケ / 3歳 / メス避妊済み。主訴は耳まわりのかゆみと皮膚の赤み。</p><div class="status-flow" aria-label="状態遷移"><span>予約済み</span><span>受付済み</span><span>診察中</span><span>支払済み</span></div></div>
                     <table class="chart-table" aria-label="カルテ項目"><tbody><tr class="is-alert"><th scope="row">注意</th><td>アレルギー歴: ペニシリン系は要確認</td></tr><tr><th scope="row">バイタル</th><td>体重 4.2kg / 体温 38.4℃ / 食欲あり</td></tr><tr><th scope="row">検査</th><td>皮膚スタンプ検査を実施予定</td></tr><tr><th scope="row">処方</th><td>外用薬 7日分。再診は 2週間後</td></tr><tr><th scope="row">会計</th><td>診察料 + 検査料で見積り作成</td></tr></tbody></table>
                   </div>
                 </section>

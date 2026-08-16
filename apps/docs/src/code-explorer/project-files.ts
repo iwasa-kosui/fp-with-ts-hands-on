@@ -1,32 +1,23 @@
 import tsconfigBaseSource from "../../../../tsconfig.base.json?raw";
+import clinicFixtureSource from "../../../../examples/fixtures/clinic.ts?raw";
 import {
+  sessions,
   sessionBySlug,
   type ExampleSnapshot,
 } from "../sessions/catalog";
 import type { ProjectFiles } from "./types";
 
 const rawProjectFiles = import.meta.glob(
-  [
-    "../../../../examples/session-00/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
-    "../../../../examples/session-01/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
-    "../../../../examples/session-02/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
-    "../../../../examples/session-03/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
-    "../../../../examples/session-04/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
-    "../../../../examples/session-05/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
-    "../../../../examples/final/{package.json,tsconfig.json,vitest.config.ts,src/**/*.ts,test/**/*.ts}",
-  ],
+  "../../../../examples/{session-*,final}/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
   { eager: true, query: "?raw", import: "default" },
 ) as Record<string, string>;
 
 const snapshots = [
-  "session-00",
-  "session-01",
-  "session-02",
-  "session-03",
-  "session-04",
-  "session-05",
-  "final",
-] as const satisfies readonly ExampleSnapshot[];
+  ...new Set<ExampleSnapshot>([
+    ...sessions.map(({ snapshot }) => snapshot),
+    "session-05",
+  ]),
+] as const;
 
 const requiredRuntimeFiles = [
   "package.json",
@@ -61,6 +52,7 @@ const buildProjectFiles = (snapshot: ExampleSnapshot): ProjectFiles => {
 
   return Object.freeze({
     ...files,
+    "../fixtures/clinic.ts": clinicFixtureSource,
     "package.json": JSON.stringify(
       {
         ...packageJson,
@@ -82,10 +74,14 @@ const projectFilesBySnapshot = Object.fromEntries(
   snapshots.map((snapshot) => [snapshot, buildProjectFiles(snapshot)]),
 ) as Readonly<Record<ExampleSnapshot, ProjectFiles>>;
 
+export const projectFilesForSnapshot = (
+  snapshot: ExampleSnapshot,
+): ProjectFiles => projectFilesBySnapshot[snapshot];
+
 export const projectFilesFor = (slug: string): ProjectFiles => {
   const session = sessionBySlug(slug);
   if (session === undefined) {
     throw new Error(`Unknown session project: ${slug}`);
   }
-  return projectFilesBySnapshot[session.snapshot];
+  return projectFilesForSnapshot(session.snapshot);
 };

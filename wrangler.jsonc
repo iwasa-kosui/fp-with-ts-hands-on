@@ -8,6 +8,16 @@
     "binding": "ASSETS",
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash",
-    "run_worker_first": ["/healthz", "/module-00", "/module-00/"]
+    "run_worker_first": [
+      "/healthz",
+      "/module-00",
+      "/module-00/",
+      "/sessions/00-break-the-app/",
+      "/sessions/00-read-the-incident/",
+      "/sessions/04-agent-review",
+      "/sessions/04-agent-review/",
+      "/sessions/05-mini-integration",
+      "/sessions/05-mini-integration/"
+    ]
   }
 }
