@@ -174,6 +174,30 @@ describe("Hono/Inertia authentication boundary", () => {
     expect(await response.text()).not.toContain(privateCause.message);
   });
 
+  test("keeps rejected user resolution behind Hono's opaque error boundary", async () => {
+    const harness = createHarness();
+    const cookie = await setUp(harness);
+    const composed = createApplicationDependencies(harness.database, {
+      clock,
+      isProduction: false,
+    });
+    const privateCause = new Error("private user persistence cause");
+    const app = createApp({
+      ...composed,
+      authenticatedUserByIdResolver: {
+        resolveById: () =>
+          ResultAsync.fromSafePromise(Promise.reject(privateCause)),
+      },
+    });
+
+    const response = await app.request("/", {
+      headers: { ...inertiaHeaders, Cookie: cookie },
+    });
+
+    expect(response.status).toBe(500);
+    expect(await response.text()).not.toContain(privateCause.message);
+  });
+
   test("directs an empty installation to setup and makes setup unavailable after the first Admin", async () => {
     const harness = createHarness();
 
