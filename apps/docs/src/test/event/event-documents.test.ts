@@ -183,6 +183,23 @@ describe("event document contract", () => {
     ).toEqual(expectedRows.map(({ command }) => command.replace("pnpm ", "")).sort());
   });
 
+  it("keeps the root README aligned with the current public curriculum", async () => {
+    const readme = await readFile(`${repositoryRoot}/README.md`, "utf8");
+    const overview = readme.match(/## 演習の構成\n\n([\s\S]*?)\n\n## 当日の流れ/)?.[1] ?? "";
+    const orientation = sessions.find((session) => session.kind === "orientation");
+    const workshop = sessions.find((session) => session.kind === "workshop");
+    const expectedCommands = exerciseSessions.map((session) => session.exerciseCommand).sort();
+
+    expect(overview).toContain(`S0 は${orientation?.durationMinutes}分のオリエンテーション`);
+    expect(overview).toContain(`S1 は${workshop?.durationMinutes}分の班ワーク`);
+    expect(overview).toMatch(/S1[^。]*(?:コード編集|exercise command)[^。]*行いません/);
+    expect(overview).toContain("S2〜S5 は各30分のコード演習");
+    expect(overview).toContain("`examples/session-06` は非公開の到達点スナップショット");
+    expect(uniqueMatches(overview, /(pnpm exercise:\d{2})/g).sort()).toEqual(expectedCommands);
+    expect(overview).toMatch(/S2〜S5[^。]*各starter[^。]*RED/);
+    expect(overview).not.toMatch(/S1[^。]*(?:starter|開始時)[^。]*RED/);
+  });
+
   it("keeps review durations, questions, and promises aligned with the catalog", async () => {
     const card = await readEventDocument("peer-review-card.md");
     const reviewMinutes = [...card.matchAll(/^\| (S\d+) \| (\d+)分 \|/gm)].map(
