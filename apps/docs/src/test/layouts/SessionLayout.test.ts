@@ -7,13 +7,41 @@ import { createAstroContainer } from "../render-astro";
 
 const exerciseChapters = ["incident", "legacy", "red", "refactor", "review"];
 const shortChapters = ["incident", "legacy", "review"];
+const workshopChapters = ["incident", "workflow", "review"];
+const orientation = sessions.find(({ kind }) => kind === "orientation")!;
+const workshop = sessions.find(({ kind }) => kind === "workshop")!;
+const exercise = sessions.find(({ kind }) => kind === "exercise")!;
+const reference = sessions.find(({ kind }) => kind === "reference")!;
 
 describe("SessionLayout", () => {
   it.each([
-    { session: sessions[0], expected: shortChapters },
-    { session: sessions[1], expected: exerciseChapters },
-    { session: sessions[5], expected: shortChapters },
-  ])("drives both TOCs from the $session.kind chapter definition", async ({ session, expected }) => {
+    {
+      session: orientation,
+      expected: shortChapters,
+      labels: ["現行業務と事故", "画面・保存・ログ", "レビューと持ち帰り"],
+    },
+    {
+      session: workshop,
+      expected: workshopChapters,
+      labels: ["何が起きたか", "ワークフローを描く", "レビューと持ち帰り"],
+    },
+    {
+      session: exercise,
+      expected: exerciseChapters,
+      labels: [
+        "何が起きたか",
+        "配布コードを読む",
+        "失敗を再現する",
+        "型で閉じる",
+        "レビューと持ち帰り",
+      ],
+    },
+    {
+      session: reference,
+      expected: shortChapters,
+      labels: ["何が起きたか", "配布コードを読む", "レビューと持ち帰り"],
+    },
+  ])("drives both TOCs from the $session.kind chapter definition", async ({ session, expected, labels }) => {
     const container = await createAstroContainer();
     const html = await container.renderToString(SessionLayout, {
       props: { session },
@@ -33,6 +61,8 @@ describe("SessionLayout", () => {
 
     expect(desktopLinks.map(({ hash }) => hash)).toEqual(expected.map((id) => `#${id}`));
     expect(mobileLinks.map(({ hash }) => hash)).toEqual(expected.map((id) => `#${id}`));
+    expect(desktopLinks.map(({ textContent }) => textContent)).toEqual(labels);
+    expect(mobileLinks.map(({ textContent }) => textContent)).toEqual(labels);
     for (const { hash } of desktopLinks) {
       expect(document.querySelectorAll(hash)).toHaveLength(1);
     }

@@ -11,10 +11,10 @@ export default [
     id: "final-use-case-pipeline",
     title: "最初に読む ResultAsync パイプライン",
     currentDesign:
-      "当日の S4 と同じ形を、認可と永続化を含む use case へ広げています。",
+      "当日の S5 と同じ形を、認可と永続化を含む use case へ広げています。",
     futureRisk: "全体から読むと概念が多いため、まず run の1本へ絞ります。",
     path: "src/useCase/startExaminationUseCase.ts",
-    highlights: [{ startLineNumber: 83, endLineNumber: 105 }],
+    highlights: [{ startLineNumber: 83, endLineNumber: 99 }],
   },
   {
     id: "final-seven-aggregates",

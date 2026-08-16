@@ -134,30 +134,14 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.20.1)(happy-dom@15.11.7)(lightningcss@1.33.0)(terser@5.49.1)
 
-  examples/session-01:
-    devDependencies:
-      vitest:
-        specifier: ^2.1.0
-        version: 2.1.9(@types/node@22.20.1)(happy-dom@15.11.7)(lightningcss@1.33.0)(terser@5.49.1)
-
   examples/session-02:
-    dependencies:
-      zod:
-        specifier: ^3.25.0
-        version: 3.25.76
     devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.1
       vitest:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.20.1)(happy-dom@15.11.7)(lightningcss@1.33.0)(terser@5.49.1)
 
   examples/session-03:
     dependencies:
-      neverthrow:
-        specifier: ^8.2.0
-        version: 8.2.0
       zod:
         specifier: ^3.25.0
         version: 3.25.76
@@ -186,6 +170,22 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(happy-dom@15.11.7)(lightningcss@1.33.0)(terser@5.49.1)
 
   examples/session-05:
+    dependencies:
+      neverthrow:
+        specifier: ^8.2.0
+        version: 8.2.0
+      zod:
+        specifier: ^3.25.0
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.20.1)(happy-dom@15.11.7)(lightningcss@1.33.0)(terser@5.49.1)
+
+  examples/session-06:
     dependencies:
       neverthrow:
         specifier: ^8.2.0

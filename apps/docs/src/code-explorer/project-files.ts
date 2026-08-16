@@ -3,9 +3,11 @@ import clinicFixtureSource from "../../../../examples/fixtures/clinic.ts?raw";
 import {
   sessions,
   sessionBySlug,
-  type ExampleSnapshot,
+  type PublicCodeExplorerSnapshot,
 } from "../sessions/catalog";
 import type { ProjectFiles } from "./types";
+
+type ProjectSnapshot = PublicCodeExplorerSnapshot | "session-06";
 
 const rawProjectFiles = import.meta.glob(
   "../../../../examples/{session-*,final}/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
@@ -13,9 +15,11 @@ const rawProjectFiles = import.meta.glob(
 ) as Record<string, string>;
 
 const snapshots = [
-  ...new Set<ExampleSnapshot>([
-    ...sessions.map(({ snapshot }) => snapshot),
-    "session-05",
+  ...new Set<ProjectSnapshot>([
+    ...sessions.flatMap(({ snapshot }) =>
+      snapshot === undefined ? [] : [snapshot],
+    ),
+    "session-06",
   ]),
 ] as const;
 
@@ -25,7 +29,7 @@ const requiredRuntimeFiles = [
   "vitest.config.ts",
 ] as const;
 
-const buildProjectFiles = (snapshot: ExampleSnapshot): ProjectFiles => {
+const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
   const prefix = `../../../../examples/${snapshot}/`;
   const files = Object.fromEntries(
     Object.entries(rawProjectFiles)
@@ -72,15 +76,15 @@ const buildProjectFiles = (snapshot: ExampleSnapshot): ProjectFiles => {
 
 const projectFilesBySnapshot = Object.fromEntries(
   snapshots.map((snapshot) => [snapshot, buildProjectFiles(snapshot)]),
-) as Readonly<Record<ExampleSnapshot, ProjectFiles>>;
+) as Readonly<Record<ProjectSnapshot, ProjectFiles>>;
 
 export const projectFilesForSnapshot = (
-  snapshot: ExampleSnapshot,
+  snapshot: ProjectSnapshot,
 ): ProjectFiles => projectFilesBySnapshot[snapshot];
 
 export const projectFilesFor = (slug: string): ProjectFiles => {
   const session = sessionBySlug(slug);
-  if (session === undefined) {
+  if (session === undefined || session.snapshot === undefined) {
     throw new Error(`Unknown session project: ${slug}`);
   }
   return projectFilesForSnapshot(session.snapshot);

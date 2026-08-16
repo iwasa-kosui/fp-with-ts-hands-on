@@ -82,17 +82,13 @@ describe("event document contract", () => {
     const fixedMinutes = fixedSlots.reduce((total, row) => total + row.minutes, 0);
 
     expect(sessionMinutes).toBe(150);
-    expect(fixedSlots).toHaveLength(3);
+    expect(fixedSlots).toHaveLength(1);
     expect(
       fixedSlots.map(({ clock, minutes }) => ({
         elapsed: clock.end - clock.start,
         declared: minutes,
       })),
-    ).toEqual([
-      { elapsed: 10, declared: 10 },
-      { elapsed: 10, declared: 10 },
-      { elapsed: 10, declared: 10 },
-    ]);
+    ).toEqual([{ elapsed: 30, declared: 30 }]);
     expect(fixedMinutes).toBe(30);
     expect(sessionMinutes + fixedMinutes).toBe(180);
 
@@ -185,6 +181,45 @@ describe("event document contract", () => {
         .filter((script) => /^exercise:\d{2}$/.test(script))
         .sort(),
     ).toEqual(expectedRows.map(({ command }) => command.replace("pnpm ", "")).sort());
+  });
+
+  it("keeps the root README aligned with the current public curriculum", async () => {
+    const readme = await readFile(`${repositoryRoot}/README.md`, "utf8");
+    const overview = readme.match(/## 演習の構成\n\n([\s\S]*?)\n\n## 当日の流れ/)?.[1] ?? "";
+    const dayFlow = readme.match(/## 当日の流れ\n\n([\s\S]*)/)?.[1] ?? "";
+    const orientation = sessions.find((session) => session.kind === "orientation");
+    const workshop = sessions.find((session) => session.kind === "workshop");
+    const expectedCommands = exerciseSessions.map((session) => session.exerciseCommand).sort();
+
+    expect(overview).toContain(`S0 は${orientation?.durationMinutes}分のオリエンテーション`);
+    expect(overview).toContain(`S1 は${workshop?.durationMinutes}分の班ワーク`);
+    expect(overview).toMatch(/S1[^。]*(?:コード編集|exercise command)[^。]*行いません/);
+    expect(overview).toContain("S2〜S5 は各30分のコード演習");
+    expect(overview).toContain("`examples/session-06` は非公開の到達点スナップショット");
+    expect(uniqueMatches(overview, /(pnpm exercise:\d{2})/g).sort()).toEqual(expectedCommands);
+    expect(overview).toMatch(/S2〜S5[^。]*各starter[^。]*RED/);
+    expect(overview).not.toMatch(/S1[^。]*(?:starter|開始時)[^。]*RED/);
+    expect(dayFlow).toContain("Final は環境構築や DB 操作をせず、講師が参照実装の5つの境界を案内する");
+    expect(dayFlow).not.toContain("3差分");
+  });
+
+  it("keeps the non-code S1 worksheet aligned with the six workflow prompts", async () => {
+    const readme = await readFile(
+      `${repositoryRoot}/examples/session-01/README.md`,
+      "utf8",
+    );
+
+    expect(readme).toContain("3+4+6+2=15分");
+    for (const prompt of [
+      "何が起きたことで始まるか",
+      "誰が何を依頼するか",
+      "開始前に何が成り立っているか",
+      "どのような失敗が予想されるか",
+      "成功したとき何が起きたと記録するか",
+      "どこへ何を保存・通知するか",
+    ]) {
+      expect(readme).toContain(prompt);
+    }
   });
 
   it("keeps review durations, questions, and promises aligned with the catalog", async () => {
@@ -303,9 +338,9 @@ describe("event document contract", () => {
       const document = await readEventDocument(name);
 
       expect(document, name).toMatch(
-        /S1〜S3[^。]*「ステップごとの解答」[^。]*`details`/,
+        /S2〜S4[^。]*「ステップごとの解答」[^。]*`details`/,
       );
-      expect(document, name).toMatch(/S4[^。]*後続step[^。]*完成ファイル/);
+      expect(document, name).toMatch(/S5[^。]*後続step[^。]*完成ファイル/);
     }
   });
 
@@ -316,7 +351,7 @@ describe("event document contract", () => {
     const staleTerms = [
       /04-agent-review/,
       /05-mini-integration/,
-      /exercise:0[05]/,
+      /exercise:0(?:0|1|[6-9])/,
       /ミニ総合演習/,
       /collectFollowUpTargets/,
       /\/code-explorer\//,

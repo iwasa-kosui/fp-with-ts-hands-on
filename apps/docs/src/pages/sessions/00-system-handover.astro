@@ -1,0 +1,70 @@
+---
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+
+const session = sessionBySlug("00-system-handover");
+if (session === undefined) throw new Error("Unknown session: 00-system-handover");
+---
+
+<SessionLayout session={session}>
+  <section id="incident">
+    <h2>現行業務と起きている事故</h2>
+    <p>
+      新任エンジニアとして WAN NYAN CLINIC の予約システムを引き継ぎます。この10分は修正案を出さず、
+      現場の担当者、日々の操作、実際に起きた事故を同じ事実として読みます。
+    </p>
+    <h3>現行業務</h3>
+    <dl>
+      <dt>受付</dt>
+      <dd>予約を確認し、来院を受け付け、診察室へ案内し、会計までの状態を更新する。</dd>
+      <dt>獣医師</dt>
+      <dd>受付済みの予約から診察を開始し、担当者と開始時刻をカルテへ残す。</dd>
+      <dt>飼い主</dt>
+      <dd>予約と連絡先を預け、受付から失敗理由や次の案内を受け取る。</dd>
+    </dl>
+    <h3>起きている事故</h3>
+    <article class="incident-report">
+      <h4>事故報告1: 二重請求</h4>
+      <p>会計済みの予約が診察中へ戻され、同じ来院に対して会計が二度行われました。</p>
+    </article>
+    <article class="incident-report">
+      <h4>事故報告2: 連絡先の流出</h4>
+      <p>調査用の予約ログへ、飼い主の氏名・メールアドレス・電話番号がそのまま記録されました。</p>
+    </article>
+  </section>
+
+  <section id="legacy">
+    <h2>既存システムの画面・保存・ログ</h2>
+    <p>
+      現在の画面で行っている操作と、保存・記録しているデータを確認します。ここでも修正案は出さず、
+      事故報告と現在の動きがどこでつながるかを観察します。
+    </p>
+    <h3>現在の操作</h3>
+    <table>
+      <thead><tr><th>担当</th><th>画面で行う操作</th><th>現在の記録</th></tr></thead>
+      <tbody>
+        <tr><th>受付</th><td>予約検索、来院受付、診察室への案内、会計完了を入力する。</td><td>予約の現在状態と操作時刻を更新する。</td></tr>
+        <tr><th>獣医師</th><td>受付済みの予約から診察開始し、診療内容を入力する。</td><td>担当者、開始時刻、診療内容を残す。</td></tr>
+        <tr><th>会計担当</th><td>診察料、検査料、処方料を確認して会計を完了する。</td><td>請求額と会計時刻を残す。</td></tr>
+      </tbody>
+    </table>
+    <h3>現在保存・記録しているデータ</h3>
+    <table>
+      <thead><tr><th>保存・記録先</th><th>現在入っているデータ</th><th>事故報告との対応</th></tr></thead>
+      <tbody>
+        <tr><th>予約データ</th><td>予約ID、患者、飼い主、担当者、現在状態、各操作の時刻。</td><td>会計後の予約も診察中へ更新され、二重請求につながった。</td></tr>
+        <tr><th>カルテ</th><td>診察開始時刻、診療内容、検査、処方。</td><td>会計後に戻った診察の記録も追加された。</td></tr>
+        <tr><th>会計データ</th><td>診察料、検査料、処方料、請求額、会計時刻。</td><td>同じ来院に2回目の請求が作られた。</td></tr>
+        <tr><th>調査ログ</th><td>予約データ全体と、飼い主の氏名・メールアドレス・電話番号。</td><td>調査時に不要な連絡先がログへ残り、連絡先の流出につながった。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="review">
+    <h2>レビューと持ち帰り</h2>
+    <p>
+      班で「誰の、どの操作で、何が起き、どこへ記録されたか」を1件ずつ共有します。
+      次のセッションへ、確認できた事実と、まだ確認できていないことを持ち越します。
+    </p>
+  </section>
+</SessionLayout>

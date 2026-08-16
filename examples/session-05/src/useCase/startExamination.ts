@@ -1,22 +1,14 @@
-import { okAsync, type Result, type ResultAsync } from "neverthrow";
+import { err, ok, type Result } from "neverthrow";
 
-import type { EventContext } from "../domain/aggregate/eventContext.js";
-import type { Appointment as AppointmentState, InExamination } from "../domain/appointment/appointment.js";
+import type { InExamination } from "../domain/appointment/appointment.js";
 import type { ExaminationStarted } from "../domain/appointment/examinationStarted.js";
-import { Appointment } from "../domain/appointment/transitions.js";
+import { EventId } from "../domain/aggregate/eventId.js";
 import type { AppointmentId } from "../domain/ids/appointmentId.js";
 import type { VeterinarianId } from "../domain/ids/veterinarianId.js";
-import type {
-  Dependencies,
-  EffectsDependencies,
-  EventContextDependencies,
-  ExaminationStartedStore,
-} from "./dependencies.js";
+import type { Dependencies, EffectsDependencies } from "./dependencies.js";
 import {
   ensureAppointmentFound,
   ensureCheckedIn,
-  toRepositoryError,
-  type RepositoryError,
   type StartExaminationError,
   type StartExaminationWithEffectsError,
 } from "./errors.js";
@@ -26,11 +18,6 @@ export type StartExaminationInput = Readonly<{
   veterinarianId: VeterinarianId;
   examinationStartedAt: string;
 }>;
-
-export type StartExaminationWithEffectsInput = Omit<
-  StartExaminationInput,
-  "examinationStartedAt"
->;
 
 export const startExamination =
   (deps: Dependencies) =>
@@ -52,35 +39,31 @@ export const startExamination =
         return appointment;
       });
 
-export const createEventContext = (
-  deps: EventContextDependencies,
-): EventContext => ({
-  eventId: deps.eventIdGenerator.generate(),
-  occurredAt: deps.clock.now(),
-});
-
-export const storeExaminationStarted =
-  (store: ExaminationStartedStore) =>
-  (event: ExaminationStarted): ResultAsync<void, RepositoryError> =>
-    store.store(event).mapErr(toRepositoryError);
-
 export const startExaminationWithEffects =
   (deps: EffectsDependencies) =>
-  (
-    input: StartExaminationWithEffectsInput,
-  ): ResultAsync<InExamination, StartExaminationWithEffectsError> =>
-    okAsync<AppointmentState | undefined, StartExaminationWithEffectsError>(
-      deps.resolver.resolveById(input.appointmentId),
-    )
-      .andThen((appointment) =>
-        ensureAppointmentFound(appointment, input.appointmentId),
-      )
-      .andThen(ensureCheckedIn)
-      .map((appointment) =>
-        Appointment.startExamination(createEventContext(deps))(
-          appointment,
-          input.veterinarianId,
-        ),
-      )
-      .andThrough(storeExaminationStarted(deps.store))
-      .map((event) => event.aggregateState);
+  async (
+    input: Omit<StartExaminationInput, "examinationStartedAt">,
+  ): Promise<Result<void, StartExaminationWithEffectsError>> => {
+    const occurredAt = new Date().toISOString();
+    const result = startExamination({
+      resolver: deps.resolver,
+      transition: deps.transition,
+      store: { save: () => undefined },
+    })({ ...input, examinationStartedAt: occurredAt });
+
+    if (result.isErr()) {
+      return err(result.error);
+    }
+
+    const event = {
+      kind: "ExaminationStarted",
+      eventId: EventId.parse(crypto.randomUUID()),
+      occurredAt,
+      appointmentId: result.value.appointmentId,
+      aggregateState: result.value,
+    } as const satisfies ExaminationStarted;
+
+    await deps.stateStore.save(event.aggregateState);
+    await deps.eventLog.append(event);
+    return ok(undefined);
+  };

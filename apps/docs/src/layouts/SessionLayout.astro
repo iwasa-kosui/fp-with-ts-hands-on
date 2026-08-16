@@ -18,6 +18,10 @@ const commonChapters = [
   { id: "legacy", label: "配布コードを読む" },
 ] as const;
 const reviewChapter = { id: "review", label: "レビューと持ち帰り" } as const;
+const orientationChapters = [
+  { id: "incident", label: "現行業務と事故" },
+  { id: "legacy", label: "画面・保存・ログ" },
+] as const;
 const chapters =
   session.kind === "exercise"
     ? [
@@ -26,7 +30,15 @@ const chapters =
         { id: "refactor", label: "型で閉じる" } as const,
         reviewChapter,
       ]
-    : [...commonChapters, reviewChapter];
+    : session.kind === "workshop"
+      ? [
+          { id: "incident", label: "何が起きたか" } as const,
+          { id: "workflow", label: "ワークフローを描く" } as const,
+          reviewChapter,
+        ]
+      : session.kind === "orientation"
+        ? [...orientationChapters, reviewChapter]
+        : [...commonChapters, reviewChapter];
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>

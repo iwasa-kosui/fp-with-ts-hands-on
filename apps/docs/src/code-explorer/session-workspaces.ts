@@ -3,15 +3,15 @@ import { projectFilesFor } from "./project-files";
 import type { SessionWorkspace } from "./types";
 
 const sessionWorkspaces = {
-  "00-onboarding": {
+  "00-system-handover": {
     initialFile: "src/legacy/appointment.ts",
     description:
       "先人が残したコードを手がかりに、今後向き合う設計上の課題を見渡します。",
     visibleFiles: ["src/legacy/appointment.ts", "src/legacy/logger.ts"],
   },
-  "01-state-modeling": {
+  "02-state-transitions": {
     initialFile: "exercises/state-modeling.test.ts",
-    description: "状態別の要求と作成対象を開始 snapshot で確認します。",
+    description: "current state の要求と作成対象を開始 snapshot で確認します。",
     visibleFiles: [
       "exercises/state-modeling.test.ts",
       "test/transitions.test.ts",
@@ -21,9 +21,9 @@ const sessionWorkspaces = {
       "src/domain/appointment/statusLabel.ts",
     ],
   },
-  "02-boundary-and-ids": {
+  "03-boundaries-and-semantic-values": {
     initialFile: "exercises/boundary-and-ids.test.ts",
-    description: "入力・ID・PII の境界を開始 snapshot で確認します。",
+    description: "input の検証、ID、PII の境界を開始 snapshot で確認します。",
     visibleFiles: [
       "exercises/boundary-and-ids.test.ts",
       "test/regression/state-modeling.test.ts",
@@ -32,9 +32,9 @@ const sessionWorkspaces = {
       "src/boundary/ownerContact.ts",
     ],
   },
-  "03-result-errors": {
+  "04-workflow-errors": {
     initialFile: "exercises/result-errors.test.ts",
-    description: "同期 Result と失敗理由の要求を開始 snapshot で確認します。",
+    description: "expected failures と Result の要求を開始 snapshot で確認します。",
     visibleFiles: [
       "exercises/result-errors.test.ts",
       "test/regression/boundary-and-ids.test.ts",
@@ -54,9 +54,9 @@ const sessionWorkspaces = {
       "src/useCase/startExamination.ts",
     ],
   },
-  "04-effects-and-events": {
+  "05-effects-and-consistency": {
     initialFile: "exercises/effects-and-events.test.ts",
-    description: "副作用とイベントの要求を開始 snapshot で確認します。",
+    description: "output event と side effects の要求を開始 snapshot で確認します。",
     visibleFiles: [
       "exercises/effects-and-events.test.ts",
       "test/regression/result-errors.test.ts",
@@ -97,7 +97,11 @@ const sessionWorkspaces = {
 export const sessionWorkspaceFor = (slug: string): SessionWorkspace => {
   const session = sessionBySlug(slug);
   const workspace = sessionWorkspaces[slug as keyof typeof sessionWorkspaces];
-  if (session === undefined || workspace === undefined) {
+  if (
+    session === undefined ||
+    session.kind === "workshop" ||
+    workspace === undefined
+  ) {
     throw new Error(`Unknown session workspace: ${slug}`);
   }
 

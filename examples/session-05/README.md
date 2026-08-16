@@ -1,10 +1,11 @@
-# Session 05: 当日の到達点
+# Session 05: 副作用を外に出す
 
-S1〜S4 の解答と回帰テストを統合したスナップショットです。S3 の同期 `startExamination` は `Result` の契約を維持し、S4 の `startExaminationWithEffects` は `ResultAsync` と `andThrough` で効果を接続します。`Clock` と `EventIdGenerator` で非決定値を外へ出し、状態と監査記録を `store(event)` 1回で保存します。
-
-adapter は診断用の `RepositoryFailure` と `cause` を保持しますが、use case 境界の `mapErr` は新しい `RepositoryError` を作ります。公開エラーへ生の例外や個人情報を出しません。
+このディレクトリは Session 05 の開始スナップショットです。S4 の同期 `startExamination` と `Result` の回帰契約を保ったまま、S5 用の `startExaminationWithEffects` に残した非決定値と dual-write を観察します。`Appointment.startExamination(context)(checkedIn, veterinarianId)` はドメイン側へ配布済みで、演習では `src/useCase` だけを編集します。解答は `examples/session-06/src/useCase` にあります。
 
 ```bash
 pnpm --filter @fp-with-ts/clinic-session-05 typecheck
 pnpm --filter @fp-with-ts/clinic-session-05 test
+pnpm --filter @fp-with-ts/clinic-session-05 exercise
 ```
+
+`typecheck` と `test` は成功します。`exercise` は `startExaminationWithEffects` にある `Date` / `randomUUID` の直接呼び出しと、状態・監査記録の2回書き込みを4件の業務名付き assertion failure として再現します。S4 の `startExamination` は変更せず、S5 の効果付き経路だけを改善します。

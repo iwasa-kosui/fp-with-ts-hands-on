@@ -7,10 +7,10 @@ type Measurement = Readonly<{ files: number; lines: number }>;
 
 const repoRoot = resolve(process.cwd(), "../..");
 const expectedMeasurements = new Map([
-  ["01-state-modeling", { files: 2, lines: 35 }],
-  ["02-boundary-and-ids", { files: 2, lines: 24 }],
-  ["03-result-errors", { files: 3, lines: 77 }],
-  ["04-effects-and-events", { files: 3, lines: 72 }],
+  ["02-state-transitions", { files: 2, lines: 35 }],
+  ["03-boundaries-and-semantic-values", { files: 2, lines: 24 }],
+  ["04-workflow-errors", { files: 3, lines: 76 }],
+  ["05-effects-and-consistency", { files: 3, lines: 55 }],
 ] as const);
 
 describe("exercise diff budgets", () => {
@@ -18,10 +18,8 @@ describe("exercise diff budgets", () => {
     const exercises = sessions.filter((session) => session.kind === "exercise");
     expect(exercises).toHaveLength(4);
 
-    for (const [index, session] of exercises.entries()) {
-      const nextSnapshot = index === exercises.length - 1 ? "session-05" : exercises[index + 1]?.snapshot;
-      expect(nextSnapshot).toBeDefined();
-      if (nextSnapshot === undefined) continue;
+    for (const session of exercises) {
+      const nextSnapshot = session.solutionSnapshot;
 
       const modulePath = session.exerciseModule.dir.replace(`examples/${session.snapshot}/`, "");
       const actual = await measureDiff(
@@ -37,6 +35,12 @@ describe("exercise diff budgets", () => {
       expect(actual.lines, diagnostic).toBeLessThanOrEqual(80);
       expect(session.steps.length, diagnostic).toBeLessThanOrEqual(4);
       expect(session.decisions.length, diagnostic).toBeLessThanOrEqual(3);
+      for (const step of session.steps) {
+        expect(
+          new Set(step.solutions.map(({ symbol }) => symbol)).size,
+          `${session.slug}: ${step.id}`,
+        ).toBeLessThanOrEqual(2);
+      }
       for (const target of session.steps.flatMap(({ targets }) => targets)) {
         expect(target.startsWith(`${session.exerciseModule.dir}/`), diagnostic).toBe(true);
       }

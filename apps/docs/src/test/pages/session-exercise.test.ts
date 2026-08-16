@@ -68,6 +68,99 @@ describe("exercise session contract", () => {
     });
   }
 
+  it("connects every exercise to the shared workflow risk map and causal narrative", async () => {
+    for (const session of exercises) {
+      const document = await renderSessionPage(session);
+      const riskMaps = [
+        ...document.querySelectorAll<HTMLElement>(".workflow-risk-map"),
+      ];
+
+      expect(riskMaps).toHaveLength(2);
+      expect(riskMaps.map(({ dataset }) => dataset.placement)).toEqual([
+        "opening",
+        "review",
+      ]);
+      expect(new Set(riskMaps.map((map) => map.getAttribute("aria-label"))).size).toBe(2);
+      expect(document.querySelectorAll("#incident .workflow-risk-map")).toHaveLength(1);
+      expect(document.querySelectorAll("#review .workflow-risk-map")).toHaveLength(1);
+      expect(riskMaps[1]?.querySelector("ol")?.textContent).toBe(
+        riskMaps[0]?.querySelector("ol")?.textContent,
+      );
+      for (const riskMap of riskMaps) {
+        const currentRisk = riskMap.querySelector<HTMLElement>(
+          `[data-session-sequence="${session.sequence}"]`,
+        );
+
+        expect(riskMap.dataset.currentFocus).toBe(session.workflowFocus);
+        expect(currentRisk?.getAttribute("aria-current")).toBe("step");
+        expect(currentRisk?.textContent).toContain(session.workflowRisks.resolvedFromPrevious);
+        expect(currentRisk?.textContent).toContain(session.workflowRisks.remainingForNext);
+      }
+      expect(
+        [...document.querySelectorAll<HTMLElement>("[data-causal-stage]")].map(
+          (stage) => stage.dataset.causalStage,
+        ),
+      ).toEqual([
+        "requirement",
+        "current-risk",
+        "design",
+        "limitation",
+        "next-question",
+      ]);
+    }
+  });
+
+  it("teaches business Result separately from the technical exception path", async () => {
+    const businessFailureSession = exercises.find(
+      ({ workflowFocus }) => workflowFocus === "expected failures",
+    )!;
+    const effectsSession = exercises.find(
+      ({ workflowFocus }) => workflowFocus === "output event/side effects",
+    )!;
+    const businessFailureDocument = await renderSessionPage(businessFailureSession);
+    const effectsDocument = await renderSessionPage(effectsSession);
+    const businessFailureText = businessFailureDocument.body.textContent ?? "";
+    const effectsText = effectsDocument.body.textContent ?? "";
+
+    expect(businessFailureText).toContain("予期できる業務失敗");
+    expect(businessFailureText).toContain("Result");
+    expect(effectsText).toContain("業務 Result");
+    expect(effectsText).toContain("技術的な例外");
+    expect(effectsText).toContain("reject");
+  });
+
+  it("uses catalog presentation metadata for answers and peer-review promises", async () => {
+    const promisesSession = exercises.find(
+      ({ peerReviewPromises }) => peerReviewPromises === "inline",
+    )!;
+
+    for (const session of exercises) {
+      const document = await renderSessionPage(session);
+      const heading = document.querySelector("[data-solution-heading]");
+      const expectedHeading =
+        session.solutionPresentation === "completed-file"
+          ? "完成ファイルの解答例"
+          : "ステップごとの解答";
+      const promises = document.querySelector("#peer-review-promises");
+      const promisesLink = document.querySelector<HTMLAnchorElement>(
+        ".peer-review-panel a",
+      );
+
+      expect(heading?.textContent).toContain(expectedHeading);
+      if (session.solutionPresentation === "completed-file") {
+        expect(document.querySelector(".before-after")).not.toBeNull();
+      } else {
+        expect(document.querySelector(".before-after")).toBeNull();
+      }
+      expect(promises === null).toBe(session.peerReviewPromises !== "inline");
+      expect(promisesLink?.getAttribute("href")).toBe(
+        session.peerReviewPromises === "inline"
+          ? "#peer-review-promises"
+          : `/sessions/${promisesSession.slug}/#peer-review-promises`,
+      );
+    }
+  });
+
   it("renders playgrounds on the four exercises only", async () => {
     for (const session of sessions) {
       const document = await renderSessionPage(session);
@@ -77,19 +170,26 @@ describe("exercise session contract", () => {
     }
   });
 
-  it("shares the canonical five review promises between S0 and S1 and links later sessions", async () => {
+  it("introduces the canonical five review promises in S2 and links later exercises", async () => {
     const onboarding = await renderSessionPage(sessions[0]);
-    const firstExercise = await renderSessionPage(exercises[0]);
+    const workshop = await renderSessionPage(sessions[1]);
+    const promisesSession = exercises.find(
+      ({ peerReviewPromises }) => peerReviewPromises === "inline",
+    )!;
+    const firstExercise = await renderSessionPage(promisesSession);
 
     for (const promise of reviewPromises) {
-      expect(onboarding.body.textContent).toContain(promise);
+      expect(onboarding.body.textContent).not.toContain(promise);
+      expect(workshop.body.textContent).not.toContain(promise);
       expect(firstExercise.body.textContent).toContain(promise);
     }
-    for (const session of exercises.slice(1)) {
+    for (const session of exercises.filter(
+      ({ peerReviewPromises }) => peerReviewPromises === "reference",
+    )) {
       const document = await renderSessionPage(session);
       expect(
         document.querySelector<HTMLAnchorElement>(
-          'a[href="/sessions/01-state-modeling/#peer-review-promises"]',
+          'a[href="/sessions/02-state-transitions/#peer-review-promises"]',
         ),
       ).not.toBeNull();
       for (const promise of reviewPromises)
@@ -97,24 +197,40 @@ describe("exercise session contract", () => {
     }
   });
 
-  it("pins the Final seven-aggregate tour to the composition root", async () => {
+  it("uses the workflow map to trace five boundaries in Final", async () => {
     const finalSession = sessions.find(({ slug }) => slug === "final")!;
     const document = await renderSessionPage(finalSession);
     const text = document.body.textContent ?? "";
+    const riskMaps = [
+      ...document.querySelectorAll<HTMLElement>(".workflow-risk-map"),
+    ];
 
-    expect(text).toContain("1業務集約 → 7業務集約");
-    expect(text).toContain("examples/final/src/app.ts");
-    for (const aggregate of [
-      "予約",
-      "検査結果",
-      "フォローアップ",
-      "飼い主",
-      "ペット",
-      "セッション",
-      "ユーザー",
+    expect(riskMaps).toHaveLength(2);
+    expect(riskMaps.map(({ dataset }) => dataset.placement)).toEqual([
+      "opening",
+      "review",
+    ]);
+    expect(new Set(riskMaps.map((map) => map.getAttribute("aria-label"))).size).toBe(2);
+    expect(document.querySelectorAll("#legacy .workflow-risk-map")).toHaveLength(1);
+    expect(document.querySelectorAll("#review .workflow-risk-map")).toHaveLength(1);
+    expect(riskMaps[1]?.querySelector("ol")?.textContent).toBe(
+      riskMaps[0]?.querySelector("ol")?.textContent,
+    );
+    expect(
+      riskMaps.map((map) => map.querySelectorAll("[data-session-sequence]").length),
+    ).toEqual([4, 4]);
+    for (const boundary of [
+      "1分目: 入力境界",
+      "2分目: 業務上の失敗",
+      "3分目: 出力イベント",
+      "4分目: 副作用",
+      "5分目: 例外境界",
     ]) {
-      expect(text).toContain(aggregate);
+      expect(text).toContain(boundary);
     }
+    expect(text).toContain("src/useCase/startExaminationUseCase.ts");
+    expect(text).toContain("src/adaptor/secondary/sqlite/store/appointmentEventStore.ts");
+    expect(text).toContain("SQLite障害や破損データが業務 Result に入らず");
     expect(finalSession.finalReferences).toContain("examples/final/src/app.ts");
   });
 });

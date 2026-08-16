@@ -116,31 +116,51 @@ const parseJsonc = <T>(source: string): T =>
   JSON.parse(stripTrailingCommas(stripJsonComments(source))) as T;
 
 const workerFirstRedirects = [
-  { pathname: "/module-00", location: "/sessions/00-onboarding/" },
-  { pathname: "/module-00/", location: "/sessions/00-onboarding/" },
+  { pathname: "/module-00", location: "/sessions/00-system-handover/" },
+  { pathname: "/module-00/", location: "/sessions/00-system-handover/" },
   {
     pathname: "/sessions/00-break-the-app/",
-    location: "/sessions/00-onboarding/",
+    location: "/sessions/00-system-handover/",
   },
   {
     pathname: "/sessions/00-read-the-incident/",
-    location: "/sessions/00-onboarding/",
+    location: "/sessions/00-system-handover/",
+  },
+  {
+    pathname: "/sessions/00-onboarding/",
+    location: "/sessions/00-system-handover/",
+  },
+  {
+    pathname: "/sessions/01-state-modeling/",
+    location: "/sessions/02-state-transitions/",
+  },
+  {
+    pathname: "/sessions/02-boundary-and-ids/",
+    location: "/sessions/03-boundaries-and-semantic-values/",
+  },
+  {
+    pathname: "/sessions/03-result-errors/",
+    location: "/sessions/04-workflow-errors/",
+  },
+  {
+    pathname: "/sessions/04-effects-and-events/",
+    location: "/sessions/05-effects-and-consistency/",
   },
   {
     pathname: "/sessions/04-agent-review",
-    location: "/sessions/04-effects-and-events/",
+    location: "/sessions/05-effects-and-consistency/",
   },
   {
     pathname: "/sessions/04-agent-review/",
-    location: "/sessions/04-effects-and-events/",
+    location: "/sessions/05-effects-and-consistency/",
   },
   {
     pathname: "/sessions/05-mini-integration",
-    location: "/sessions/04-effects-and-events/",
+    location: "/sessions/05-effects-and-consistency/",
   },
   {
     pathname: "/sessions/05-mini-integration/",
-    location: "/sessions/04-effects-and-events/",
+    location: "/sessions/05-effects-and-consistency/",
   },
 ] as const;
 

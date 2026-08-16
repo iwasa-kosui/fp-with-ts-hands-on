@@ -1,20 +1,19 @@
 import type {
   CancellationReason,
-  Canceled,
   CheckedIn,
   InExamination,
   Paid,
   RecordPaymentInput,
   Scheduled,
+  Canceled,
 } from "./appointment.js";
-import type { VeterinarianId } from "../ids/veterinarianId.js";
 
 export const checkIn = (appointment: Scheduled, checkedInAt: string): CheckedIn =>
   ({ ...appointment, kind: "CheckedIn", checkedInAt }) as const satisfies CheckedIn;
 
 export const startExamination = (
   appointment: CheckedIn,
-  veterinarianId: VeterinarianId,
+  veterinarianId: string,
   examinationStartedAt: string,
 ): InExamination =>
   ({

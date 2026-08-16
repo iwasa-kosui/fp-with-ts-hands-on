@@ -1,0 +1,28 @@
+---
+import ExerciseSessionContent from "../../components/ExerciseSessionContent.astro";
+import guides from "../../code-explorer/code-guides/03-boundaries-and-semantic-values";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+
+const session = sessionBySlug("03-boundaries-and-semantic-values");
+if (session === undefined) {
+  throw new Error("Unknown session: 03-boundaries-and-semantic-values");
+}
+---
+
+<SessionLayout session={session}>
+  <ExerciseSessionContent
+    session={session}
+    guides={guides}
+    narrative={{
+      requirement: "外部JSONを検証し、用途の異なるIDを区別し、飼い主の氏名・メール・電話番号をログから守る。",
+      currentRisk: "ラボから届く値をそのまま信頼し、同じstringのIDを取り違え、予約全体のログからPIIを漏らせる。",
+      design: "input欄を、unknownから始めるZod境界、用途別Branded Type、既定で伏せるSensitiveで実装する。",
+      limitation: "Sensitiveをunwrapした後の文字列と、永続化から復元したIDの正しさは、別の利用境界で守る必要がある。",
+      nextQuestion: "診察開始を続けられない条件を、呼び出し側が業務判断できる形でどう返すか。",
+      legacy: "raw: any、手書きの境界型、平文stringの連絡先を読み、入力・ID・出力の3境界を分けます。",
+      reviewFocus: "unwrapを呼ぶ場所が限定され、JSON.stringifyとutil.inspectの両方でPIIが伏せられるか。",
+      fallback: "現在の2ステップを順に開き、まず不正JSONをerrにし、次に連絡先3項目をSensitiveにします。相互レビューの約束事はS2のリンク先を確認します。",
+    }}
+  />
+</SessionLayout>

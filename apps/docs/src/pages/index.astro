@@ -21,7 +21,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           <a href="#system">TOP</a>
           <a href="#features">FEATURES</a>
           <a href="#problems">PROBLEMS</a>
-          <a href="/sessions/00-onboarding/">SESSION 00</a>
+          <a href="/sessions/00-system-handover/">SESSION 00</a>
         </nav>
       </header>
 
@@ -91,12 +91,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <section class="landing-section" id="problems" aria-labelledby="problems-title">
           <div class="section-head"><h2 id="problems-title">ところが、問題が増えてきた</h2><p>便利になった分だけ、要求も増えました。小さな改修を重ねるうちに、どの状態で何ができるのか、どの情報を外へ出してよいのかが分かりにくくなっています。</p></div>
           <div class="timeline" aria-label="WAN NYAN OS に起きている問題">
-            <article class="time-stop is-active"><time>Problem 00</time><strong>🐢 会計済みが診察中へ戻る</strong><span>再診対応の改修後、閉じたはずの来院が診察室へ戻れるようになった。</span></article>
-            <article class="time-stop"><time>Problem 01</time><strong>🐕 キャンセル理由が残らない</strong><span>理由や再診希望日が、必要な状態にだけ結びついていない。</span></article>
-            <article class="time-stop"><time>Problem 02</time><strong>🐾 ID を取り違える</strong><span>外部検査 payload の petId と ownerId を間違えても気づきにくい。</span></article>
-            <article class="time-stop"><time>Problem 03</time><strong>🎫 連絡先がログに出る</strong><span>調査のためのログが、飼い主の個人情報まで含んでしまう。</span></article>
-            <article class="time-stop"><time>Problem 04</time><strong>🧪 失敗理由が UI に出せない</strong><span>throw と undefined が混ざり、スタッフに理由を説明しづらい。</span></article>
-            <article class="time-stop"><time>Problem 05</time><strong>📜 変更を後から追えない</strong><span>いつ誰が診察開始したのか、事故調査でたどりにくい。</span></article>
+            <article class="time-stop is-active"><time>Current / S0</time><strong>🐢 現状と事故を対応付ける</strong><span>業務、画面操作、保存先、ログを読み、二重請求とPII流出がどこで起きたかを確認する。</span></article>
+            <article class="time-stop"><time>Workflow / S1</time><strong>🐕 診察開始の全体を描く</strong><span>ビジネスイベントから、入力、現在状態、失敗、出力イベント、副作用を一枚のカードへ並べる。</span></article>
+            <article class="time-stop"><time>Risk / S2</time><strong>🐇 許可されない状態遷移</strong><span>会計済みやキャンセル済みから診察を開始できる未解決リスクを、状態と遷移の型で防ぐ。</span></article>
+            <article class="time-stop"><time>Risk / S3</time><strong>🐦 外部入力と意味のある値</strong><span>外部JSON、用途の違うID、飼い主の連絡先を信頼境界で安全な値へ変える。</span></article>
+            <article class="time-stop"><time>Risk / S4</time><strong>🐹 ワークフローの予期できる失敗</strong><span>throw と undefined に埋もれた業務上の失敗を、呼び出し側が扱える結果へ変える。</span></article>
+            <article class="time-stop"><time>Risk / S5</time><strong>🐢 出力イベントと副作用</strong><span>状態と監査記録を同じ整合性境界で保存し、保存障害は外側の例外境界へ伝える。</span></article>
             <article class="time-stop"><time>Help wanted</time><strong>🐈 急募！どうにかしてくれるエンジニア</strong><span>便利な WAN NYAN OS を、変更に強いシステムへ立て直したい。</span></article>
           </div>
         </section>
@@ -104,7 +104,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <section class="landing-section start-panel" id="sessions" aria-labelledby="start-title">
           <div class="section-head"><h2 id="start-title">新任エンジニアとして着任する</h2><p>あなたの最初の仕事は、動物病院の業務と先人のコードを理解することです。問題が顕在化する前に書き換えず、後から確認すべき設計課題の場所を把握します。</p></div>
           <div class="reading-row">
-            <article class="doc-pane"><h3>オンボーディング: 退職した先人のコードを引き継ぐ</h3><p>退職した先人からシステムを引き継ぎ、業務、アプリケーション、5つの設計課題を概観します。</p><div class="callout"><span class="legend-icon" aria-hidden="true">🐢</span><div><strong>セッションページへ</strong><p><a href="/sessions/00-onboarding/">目次付きの Session 00 ページを開く</a></p></div></div></article>
+            <article class="doc-pane"><h3>Session 00: 業務とシステムを引き継ぐ</h3><p>現行業務、画面操作、保存・ログと事故を対応付け、以後のワークフロー設計で確認する場所を揃えます。</p><div class="callout"><span class="legend-icon" aria-hidden="true">🐢</span><div><strong>セッションページへ</strong><p><a href="/sessions/00-system-handover/">目次付きの Session 00 ページを開く</a></p></div></div></article>
             <pre class="help-wanted-code" aria-label="WAN NYAN CLINIC のエンジニア募集"><code>WAN NYAN CLINIC / Engineering Help Wanted
 
 困っていること:
@@ -115,7 +115,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 - 変更履歴を後から追いづらい
 
 最初の仕事:
-/sessions/00-onboarding/ を開いて、業務と先人のコードを理解する</code></pre>
+/sessions/00-system-handover/ を開いて、業務と先人のコードを理解する</code></pre>
           </div>
         </section>
         <footer class="landing-footer">fp-with-ts-hands-on / Animal Clinic Domain</footer>

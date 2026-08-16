@@ -1,8 +1,7 @@
 ---
-import guides from "../../code-explorer/code-guides/final";
-import SessionCodeOverview from "../../components/code-explorer/SessionCodeOverview.astro";
+import WorkflowRiskMap from "../../components/WorkflowRiskMap.astro";
 import SessionLayout from "../../layouts/SessionLayout.astro";
-import { finalAggregateTour, sessionBySlug } from "../../sessions/catalog";
+import { sessionBySlug } from "../../sessions/catalog";
 
 const session = sessionBySlug("final");
 if (session === undefined) throw new Error("Unknown session: final");
@@ -12,45 +11,43 @@ if (session === undefined) throw new Error("Unknown session: final");
   <section id="incident">
     <h2>何が起きたか</h2>
     <p>
-      S4 の到達点 <code>examples/session-05</code> は、単一集約の ResultAsync pipeline
-      です。最後の5分は講師が、同じ判断が大きな参照実装でどこへ広がるかを案内します。
+      S5 の到達点 <code>examples/session-06</code> では、診察開始の入力、業務上の失敗、出力イベント、保存、例外経路を分けました。最後の5分は、同じ境界が参照実装でも保たれているかを確認します。
     </p>
-    <p><strong>今回守ること:</strong> 新しい演習を増やさず、今日の局所的な改善と参照実装の距離を3つの差分に絞ります。</p>
+    <p><strong>今回守ること:</strong> 技術要素の数ではなく、業務ワークフローの5つの境界を説明できることを完成条件にします。</p>
   </section>
 
   <section id="legacy">
-    <h2>配布コードを読む</h2>
-    <p>
-      最初に <code>examples/final/src/useCase/startExaminationUseCase.ts</code>
-      を開き、S4 と同じ <code>andThen</code> / <code>andThrough</code> の形を確認します。
-    </p>
-    <SessionCodeOverview slug={session.slug} guides={guides} />
+    <h2>共通ワークフローから参照実装へ進む</h2>
+    <WorkflowRiskMap placement="opening" />
   </section>
 
   <section id="review">
-    <h2>レビューと持ち帰り</h2>
-    <h3>今日の到達点から final までの3差分</h3>
-    <ol class="final-differences">
+    <h2>5分で境界を確認する</h2>
+    <ol class="decision-list">
       <li>
-        <strong>{finalAggregateTour.label}</strong><br />
-        <code>{finalAggregateTour.path}</code> の composition root から、次の7集約を接続する配線を読む。
-        <ul>
-          {finalAggregateTour.aggregates.map((aggregate) => <li>{aggregate}</li>)}
-        </ul>
+        <strong>1分目: 入力境界</strong><br />
+        <code>examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts</code> で診察開始のHTTP入力を検証し、ユースケース入力へ変換する箇所を探します。
       </li>
       <li>
-        <strong>in-memory → SQLite</strong><br />
-        <code>examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts</code>
-        から、状態とイベントを同じ transaction で残す境界を読む。
+        <strong>2分目: 業務上の失敗</strong><br />
+        <code>examples/final/src/useCase/startExaminationUseCase.ts</code> で、予約なし・状態不正・予約競合が型付きの <code>Err</code> として残ることを確認します。
       </li>
       <li>
-        <strong>単体 → 全域検証</strong><br />
-        <code>examples/final/src/domain/followUp/collectFollowUpTargets.ts</code>
-        から、複数候補を all-or-nothing で検証する流れを読む。
+        <strong>3分目: 出力イベント</strong><br />
+        <code>examples/final/src/useCase/startExaminationUseCase.ts</code> で業務検証に成功した経路だけがイベント生成へ進むことを辿り、<code>examples/final/src/domain/appointment/appointment.ts</code> の <code>startExamination</code> が <code>ExaminationStarted</code> を作ることを確認します。
+      </li>
+      <li>
+        <strong>4分目: 副作用</strong><br />
+        <code>examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts</code> で、予約状態と監査用イベントを同じ保存境界へ渡すことを確認します。
+      </li>
+      <li>
+        <strong>5分目: 例外境界</strong><br />
+        SQLite障害や破損データが業務 <code>Result</code> に入らず、<code>examples/final/src/app.ts</code> の共通境界で安全に記録され、詳細を含まない500応答になることを確認します。
       </li>
     </ol>
     <p>
-      自習では、今日守れなかった残りのうち1つを選び、上の対応ファイルでどの境界へ移ったかを追ってください。
+      自習では、ラボ結果到着やフォローアップ依頼など別のtriggerから始まるワークフローを1つ選び、同じ5項目を辿ってください。見つからない境界が、次に試す小さな改善候補です。
     </p>
+    <WorkflowRiskMap placement="review" />
   </section>
 </SessionLayout>

@@ -35,20 +35,25 @@ const expectedFragments: Readonly<Record<string, readonly string[]>> = {
 const guideModules = import.meta.glob<GuideModule>("./*.ts", { eager: true });
 
 describe("session code guides", () => {
-  it("provides source-backed guides for every public session", () => {
+  it("provides source-backed guides for every public Code Explorer session", () => {
+    const codeExplorerSessions = sessions.filter(
+      ({ kind }) => kind !== "workshop",
+    );
     const guideSlugs = Object.keys(guideModules)
       .filter((file) => !file.endsWith(".test.ts"))
       .map((file) => file.replace(/^\.\//, "").replace(/\.ts$/, ""))
       .sort();
 
-    expect(guideSlugs).toEqual(sessions.map(({ slug }) => slug).sort());
+    expect(guideSlugs).toEqual(
+      codeExplorerSessions.map(({ slug }) => slug).sort(),
+    );
 
-    for (const session of sessions) {
+    for (const session of codeExplorerSessions) {
       const guides = guideModules[`./${session.slug}.ts`]?.default;
       expect(guides, session.slug).toEqual(expect.any(Array));
       expect(guides!.length).toBeGreaterThanOrEqual(2);
       expect(guides!.length).toBeLessThanOrEqual(
-        session.slug === "00-onboarding" ? 5 : 3,
+        session.slug === "00-system-handover" ? 5 : 3,
       );
       const files = projectFilesFor(session.slug);
 
@@ -93,9 +98,14 @@ describe("session code guides", () => {
       }
 
       if (session.slug === "final") {
+        const useCaseGuide = guides!.find(
+          ({ id }) => id === "final-use-case-pipeline",
+        );
         const aggregateGuide = guides!.find(
           ({ id }) => id === "final-seven-aggregates",
         );
+        expect(useCaseGuide?.currentDesign).toContain("当日の S5 と同じ形");
+        expect(useCaseGuide?.currentDesign).not.toContain("当日の S4");
         expect(aggregateGuide?.title).toBe(
           "1業務集約から7業務集約へ広がる配線",
         );
