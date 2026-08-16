@@ -289,9 +289,7 @@ describe("SQLite event stores", () => {
       name: UserName.schema.parse("After"),
     });
 
-    const result = await store.store(updated);
-
-    expect(result.isErr()).toBe(true);
+    await expect(store.store(updated)).rejects.toThrow();
     expect((await db.select().from(usersTable))[0]?.name).toBe("Before");
     expect(await db.select().from(domainEventsTable)).toHaveLength(1);
   });
@@ -529,9 +527,7 @@ describe("SQLite event stores", () => {
       email: duplicateEmail,
     });
 
-    const result = await createUserEventStore(db).store(first, second);
-
-    expect(result.isErr()).toBe(true);
+    await expect(createUserEventStore(db).store(first, second)).rejects.toThrow();
     expect(await db.select().from(usersTable)).toHaveLength(0);
     expect(await db.select().from(domainEventsTable)).toHaveLength(0);
   });

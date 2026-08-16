@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { sql } from "drizzle-orm";
+import { z } from "zod";
 
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
 import { createAppointmentByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/appointmentResolver.js";
@@ -220,7 +221,7 @@ describe("SQLite resolvers", () => {
     );
   });
 
-  test("maps a corrupt SQLite row to RepositoryError", async () => {
+  test("rejects a corrupt SQLite row instead of modeling it as a use-case error", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
     db.run(sql.raw(
@@ -228,13 +229,9 @@ describe("SQLite resolvers", () => {
       "VALUES ('not-a-uuid', 'Admin', 'not-an-email', 'Broken', 'not-a-password-hash', NULL)",
     ));
 
-    const result = await createUserListResolver(db).resolveAll();
-
-    expect(result.isErr()).toBe(true);
-    expect(result.isErr() && result.error).toMatchObject({
-      kind: "RepositoryError",
-      operation: "UserListResolver.resolveAll",
-    });
+    await expect(createUserListResolver(db).resolveAll()).rejects.toBeInstanceOf(
+      z.ZodError,
+    );
   });
 
   test("rejects an unknown persisted user role", async () => {
