@@ -27,7 +27,7 @@ import type { Admin, Receptionist } from "../../src/domain/user/user.js";
 import { UserEmail } from "../../src/domain/user/userEmail.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
-import type { SanitizedAuditRecord } from "../../src/useCase/query/eventHistoryReader.js";
+import type { SanitizedAuditRecord } from "../../src/domain/audit/eventHistoryReader.js";
 
 const passwordHash = `scrypt$${"A".repeat(22)}==$${"B".repeat(86)}==`;
 const auditAdmin = {

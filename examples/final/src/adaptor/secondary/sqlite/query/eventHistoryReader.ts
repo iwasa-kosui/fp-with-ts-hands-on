@@ -5,7 +5,7 @@ import type {
   EventHistoryReader,
   SanitizedAuditRecord,
   SanitizedAuditValue,
-} from "../../../../useCase/query/eventHistoryReader.js";
+} from "../../../../domain/audit/eventHistoryReader.js";
 import type { SqliteDatabase } from "../db.js";
 import { domainEventsTable } from "../schema.js";
 import {

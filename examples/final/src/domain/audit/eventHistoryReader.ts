@@ -1,9 +1,9 @@
 import type { ResultAsync } from "neverthrow";
 
-import type { EventId } from "../../domain/aggregate/eventId.js";
-import type { Timestamp } from "../../domain/aggregate/timestamp.js";
-import type { Admin } from "../../domain/user/user.js";
-import type { UserId } from "../../domain/user/userId.js";
+import type { EventId } from "../aggregate/eventId.js";
+import type { Timestamp } from "../aggregate/timestamp.js";
+import type { Admin } from "../user/user.js";
+import type { UserId } from "../user/userId.js";
 
 export type SanitizedAuditValue = string | number | boolean | null;
 export type SanitizedAuditRecord = Readonly<{

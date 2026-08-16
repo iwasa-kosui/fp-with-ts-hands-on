@@ -1,5 +1,5 @@
 import type { EventView } from "../../../../../useCase/listEventsUseCase.js";
-import type { SanitizedAuditValue } from "../../../../../useCase/query/eventHistoryReader.js";
+import type { SanitizedAuditValue } from "../../../../../domain/audit/eventHistoryReader.js";
 import { DataTable } from "../../components/DataTable.js";
 import { EmptyState, InlineAlert } from "../../components/Surface.js";
 import type { SharedPageProps } from "../../pageProps.js";

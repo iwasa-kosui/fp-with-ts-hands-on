@@ -7,6 +7,7 @@ import {
   type FollowUpTarget,
 } from "../domain/followUp/collectFollowUpTargets.js";
 import type { FollowUpCandidate } from "../domain/followUp/followUpCandidate.js";
+import type { FollowUpRequestReader } from "../domain/followUp/followUpRequestReader.js";
 import type { FollowUpResolver } from "../domain/followUp/followUpResolver.js";
 import type { OwnerName } from "../domain/owner/ownerName.js";
 import type { OwnerPhone } from "../domain/owner/ownerPhone.js";
@@ -14,7 +15,6 @@ import type { PetId } from "../domain/pet/petId.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
-import type { FollowUpRequestReader } from "./query/followUpRequestReader.js";
 
 export type FollowUpView = Readonly<{
   appointmentId: AppointmentId;

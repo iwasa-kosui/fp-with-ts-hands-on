@@ -1,7 +1,7 @@
 import type { ResultAsync } from "neverthrow";
 
-import type { SessionCreated } from "../../domain/session/sessionEvent.js";
-import type { UserCreated } from "../../domain/user/userEvent.js";
+import type { SessionCreated } from "../session/sessionEvent.js";
+import type { UserCreated } from "../user/userEvent.js";
 
 export type InitialAdminAlreadyExists = Readonly<{
   kind: "InitialAdminAlreadyExists";

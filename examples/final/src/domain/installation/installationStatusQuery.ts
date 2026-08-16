@@ -1,6 +1,5 @@
 import type { ResultAsync } from "neverthrow";
 
-
 export type InstallationStatus =
   | Readonly<{ kind: "InitialSetupAvailable" }>
   | Readonly<{ kind: "Installed" }>;

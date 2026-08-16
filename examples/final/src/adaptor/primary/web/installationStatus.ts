@@ -1,7 +1,7 @@
 import type {
   InstallationStatus,
   InstallationStatusQuery,
-} from "../../../useCase/query/installationStatusQuery.js";
+} from "../../../domain/installation/installationStatusQuery.js";
 import { assertNever } from "./middleware/useCaseResponse.js";
 
 export const resolveInstallationStatus = (

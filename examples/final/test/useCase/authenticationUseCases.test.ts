@@ -48,7 +48,7 @@ import {
   SetUpInitialAdminUseCase,
   type Dependencies as SetUpDependencies,
 } from "../../src/useCase/setUpInitialAdminUseCase.js";
-import type { InitialAdminSetupStore } from "../../src/useCase/persistence/initialAdminSetupStore.js";
+import type { InitialAdminSetupStore } from "../../src/domain/installation/initialAdminSetupStore.js";
 
 const userId = UserId.schema.parse("10000000-0000-4000-8000-000000000001");
 const otherUserId = UserId.schema.parse("10000000-0000-4000-8000-000000000005");

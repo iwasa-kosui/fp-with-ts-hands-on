@@ -35,7 +35,7 @@ import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
 import { ListEventsUseCase } from "../../src/useCase/listEventsUseCase.js";
 import { ListFollowUpsUseCase } from "../../src/useCase/listFollowUpsUseCase.js";
-import type { SanitizedAuditRecord } from "../../src/useCase/query/eventHistoryReader.js";
+import type { SanitizedAuditRecord } from "../../src/domain/audit/eventHistoryReader.js";
 import { RequestFollowUpUseCase } from "../../src/useCase/requestFollowUpUseCase.js";
 
 const ids = {

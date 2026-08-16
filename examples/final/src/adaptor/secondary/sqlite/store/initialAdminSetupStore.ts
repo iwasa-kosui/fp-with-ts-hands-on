@@ -5,7 +5,7 @@ import type { UserCreated } from "../../../../domain/user/userEvent.js";
 import type {
   InitialAdminAlreadyExists,
   InitialAdminSetupStore,
-} from "../../../../useCase/persistence/initialAdminSetupStore.js";
+} from "../../../../domain/installation/initialAdminSetupStore.js";
 import type { SqliteDatabase } from "../db.js";
 import { toEventRecord } from "../eventRecord.js";
 import {

@@ -1,6 +1,6 @@
 import type { ResultAsync } from "neverthrow";
 
-import type { AppointmentId } from "../../domain/appointment/appointmentId.js";
+import type { AppointmentId } from "../appointment/appointmentId.js";
 
 export type FollowUpRequestReader = Readonly<{
   listRequestedAppointmentIds: () => ResultAsync<

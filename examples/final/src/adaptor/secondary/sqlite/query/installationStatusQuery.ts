@@ -4,7 +4,7 @@ import { z } from "zod";
 import type {
   InstallationStatus,
   InstallationStatusQuery,
-} from "../../../../useCase/query/installationStatusQuery.js";
+} from "../../../../domain/installation/installationStatusQuery.js";
 import type { SqliteDatabase } from "../db.js";
 import { installationTable } from "../schema.js";
 

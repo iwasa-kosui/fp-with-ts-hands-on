@@ -12,7 +12,7 @@ import type { SetUpInitialAdminUseCase } from "../../../../useCase/setUpInitialA
 import type {
   InstallationStatus,
   InstallationStatusQuery,
-} from "../../../../useCase/query/installationStatusQuery.js";
+} from "../../../../domain/installation/installationStatusQuery.js";
 import { resolveInstallationStatus } from "../installationStatus.js";
 import type { WebEnvironment } from "../pageProps.js";
 import {

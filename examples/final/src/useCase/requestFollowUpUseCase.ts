@@ -17,6 +17,7 @@ import {
   type FollowUpTarget,
 } from "../domain/followUp/collectFollowUpTargets.js";
 import { FollowUpRequested } from "../domain/followUp/followUpRequested.js";
+import type { FollowUpRequestReader } from "../domain/followUp/followUpRequestReader.js";
 import type { FollowUpResolver } from "../domain/followUp/followUpResolver.js";
 import type {
   FollowUpRequestConflict,
@@ -26,7 +27,6 @@ import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
-import type { FollowUpRequestReader } from "./query/followUpRequestReader.js";
 
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;

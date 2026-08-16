@@ -3,11 +3,11 @@ import { err, ok, type Result, type ResultAsync } from "neverthrow";
 import type { User, Admin } from "../domain/user/user.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
-import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 import type {
   EventHistoryReader,
   SanitizedAuditRecord,
-} from "./query/eventHistoryReader.js";
+} from "../domain/audit/eventHistoryReader.js";
+import { ensureUserFound, type UnauthorizedError } from "./errors.js";
 
 export type EventView = SanitizedAuditRecord;
 export type UseCaseInput = Readonly<{ actorUserId: UserId }>;

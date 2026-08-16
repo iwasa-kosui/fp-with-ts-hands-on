@@ -25,7 +25,7 @@ import type {
 import type {
   InitialAdminAlreadyExists,
   InitialAdminSetupStore,
-} from "./persistence/initialAdminSetupStore.js";
+} from "../domain/installation/initialAdminSetupStore.js";
 
 const sessionDurationMs = 8 * 60 * 60 * 1_000;
 
@@ -42,7 +42,7 @@ export type UseCaseOk = Readonly<{
   sessionToken: SessionTokenPlaintext;
 }>;
 
-export type { InitialAdminAlreadyExists } from "./persistence/initialAdminSetupStore.js";
+export type { InitialAdminAlreadyExists } from "../domain/installation/initialAdminSetupStore.js";
 export type PasswordHashingFailed = Readonly<{ kind: "PasswordHashingFailed" }>;
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";

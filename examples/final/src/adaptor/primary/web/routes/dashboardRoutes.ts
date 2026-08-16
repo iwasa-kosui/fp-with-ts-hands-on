@@ -1,7 +1,7 @@
 import type { Hono } from "hono";
 
 import type { GetDashboardUseCase } from "../../../../useCase/getDashboardUseCase.js";
-import type { InstallationStatusQuery } from "../../../../useCase/query/installationStatusQuery.js";
+import type { InstallationStatusQuery } from "../../../../domain/installation/installationStatusQuery.js";
 import { resolveInstallationStatus } from "../installationStatus.js";
 import type { WebEnvironment } from "../pageProps.js";
 import { toAppointmentPageView } from "./appointmentRoutes.js";
