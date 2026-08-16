@@ -34,7 +34,7 @@ if (session === undefined) throw new Error("Unknown session: final");
       </li>
       <li>
         <strong>3分目: 出力イベント</strong><br />
-        <code>examples/final/src/domain/appointment/appointmentEvent.ts</code> で、成功時だけ <code>ExaminationStarted</code> が作られることを確認します。
+        <code>examples/final/src/useCase/startExaminationUseCase.ts</code> で業務検証に成功した経路だけがイベント生成へ進むことを辿り、<code>examples/final/src/domain/appointment/appointment.ts</code> の <code>startExamination</code> が <code>ExaminationStarted</code> を作ることを確認します。
       </li>
       <li>
         <strong>4分目: 副作用</strong><br />
