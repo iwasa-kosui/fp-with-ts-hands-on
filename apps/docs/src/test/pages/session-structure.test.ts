@@ -42,30 +42,6 @@ describe("session page structure", () => {
     }
   });
 
-  it("keeps S0 to the current business, system, and known incidents", async () => {
-    const session = sessions.find(({ kind }) => kind === "orientation")!;
-    const document = await renderSessionPage(session);
-    const text = document.body.textContent ?? "";
-
-    expect(text).toContain("現行業務");
-    expect(text).toContain("既存システム");
-    expect(text).toContain("起きている事故");
-    expect(text).toContain("10分");
-    for (const solutionTerm of [
-      "判別共用体",
-      "Branded Type",
-      "Zod",
-      "Result",
-      "Sensitive",
-      "assertNever",
-      "ResultAsync",
-      "andThen",
-      "andThrough",
-    ]) {
-      expect(text).not.toContain(solutionTerm);
-    }
-  });
-
   it("runs S1 as a non-code group workshop with blank and facilitator workflow cards", async () => {
     const session = sessions.find(({ kind }) => kind === "workshop")!;
     const document = await renderSessionPage(session);

@@ -206,7 +206,7 @@ export const sessions = [
       remainingForNext: "診察開始を一つの業務ワークフローとして定義し、設計対象の全体像を描く。",
     },
     animal: { name: "DOG", type: "dog", avatar: "🐕" },
-    summary: "WAN NYAN CLINIC の業務とアプリケーション、先人のコードに残る設計課題を概観します。",
+    summary: "WAN NYAN CLINIC の現行業務、画面操作、保存・ログと、現在起きている事故を確認します。",
     incident: "会計済みの予約が診察中へ戻り、予約ログから飼い主のPIIが流出した。",
     steps: [],
     decisions: [],

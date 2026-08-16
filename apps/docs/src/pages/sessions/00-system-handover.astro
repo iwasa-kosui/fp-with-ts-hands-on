@@ -1,6 +1,4 @@
 ---
-import guides from "../../code-explorer/code-guides/00-onboarding";
-import SessionCodeOverview from "../../components/code-explorer/SessionCodeOverview.astro";
 import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessionBySlug } from "../../sessions/catalog";
 
@@ -36,26 +34,37 @@ if (session === undefined) throw new Error("Unknown session: 00-system-handover"
   </section>
 
   <section id="legacy">
-    <h2>既存システムを読む</h2>
+    <h2>既存システムの画面・保存・ログ</h2>
     <p>
-      既存システムでは、予約一覧から状態を直接更新し、同じ予約データをカルテ、会計、ログが参照しています。
-      事故報告と画面・保存先・ログのつながりだけを確認します。
+      現在の画面で行っている操作と、保存・記録しているデータを確認します。ここでも修正案は出さず、
+      事故報告と現在の動きがどこでつながるかを観察します。
     </p>
+    <h3>現在の操作</h3>
     <table>
-      <thead><tr><th>現場の操作</th><th>既存システムの動き</th><th>確認する事故</th></tr></thead>
+      <thead><tr><th>担当</th><th>画面で行う操作</th><th>現在の記録</th></tr></thead>
       <tbody>
-        <tr><th>診察開始</th><td>予約IDと更新先の状態を受け取り、予約を更新する。</td><td>会計後でも診察中へ戻せる。</td></tr>
-        <tr><th>予約の調査</th><td>予約全体を調査ログへ記録する。</td><td>業務に不要な連絡先まで残る。</td></tr>
+        <tr><th>受付</th><td>予約検索、来院受付、診察室への案内、会計完了を入力する。</td><td>予約の現在状態と操作時刻を更新する。</td></tr>
+        <tr><th>獣医師</th><td>受付済みの予約から診察開始し、診療内容を入力する。</td><td>担当者、開始時刻、診療内容を残す。</td></tr>
+        <tr><th>会計担当</th><td>診察料、検査料、処方料を確認して会計を完了する。</td><td>請求額と会計時刻を残す。</td></tr>
       </tbody>
     </table>
-    <SessionCodeOverview slug={session.slug} guides={guides} />
+    <h3>現在保存・記録しているデータ</h3>
+    <table>
+      <thead><tr><th>保存・記録先</th><th>現在入っているデータ</th><th>事故報告との対応</th></tr></thead>
+      <tbody>
+        <tr><th>予約データ</th><td>予約ID、患者、飼い主、担当者、現在状態、各操作の時刻。</td><td>会計後の予約も診察中へ更新され、二重請求につながった。</td></tr>
+        <tr><th>カルテ</th><td>診察開始時刻、診療内容、検査、処方。</td><td>会計後に戻った診察の記録も追加された。</td></tr>
+        <tr><th>会計データ</th><td>診察料、検査料、処方料、請求額、会計時刻。</td><td>同じ来院に2回目の請求が作られた。</td></tr>
+        <tr><th>調査ログ</th><td>予約データ全体と、飼い主の氏名・メールアドレス・電話番号。</td><td>調査時に不要な連絡先がログへ残り、連絡先の流出につながった。</td></tr>
+      </tbody>
+    </table>
   </section>
 
   <section id="review">
     <h2>レビューと持ち帰り</h2>
     <p>
       班で「誰の、どの操作で、何が起き、どこへ記録されたか」を1件ずつ共有します。
-      次のセッションでは、診察開始について判断と記録の全体像を一枚に揃えます。
+      次のセッションへ、確認できた事実と、まだ確認できていないことを持ち越します。
     </p>
   </section>
 </SessionLayout>
