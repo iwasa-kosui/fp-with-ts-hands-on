@@ -23,11 +23,11 @@ describe("home page", () => {
     );
     expect(document.querySelector(".landing-lead")?.textContent).not.toContain("1〜2関数");
     const sessionLink = document.querySelector<HTMLAnchorElement>(
-      'a[href="/sessions/00-onboarding/"]',
+      'a[href="/sessions/00-system-handover/"]',
     );
     expect(sessionLink).not.toBeNull();
     expect(document.body.textContent).toContain(
-      "オンボーディング: 退職した先人のコードを引き継ぐ",
+      "業務とシステムを引き継ぐ",
     );
     expect(document.querySelector("#sessions")?.textContent).toContain(
       "業務と先人のコードを理解する",

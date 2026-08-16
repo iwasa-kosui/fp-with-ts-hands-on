@@ -3,6 +3,7 @@ import { renderSessionPage, sessionCases } from "./session-test-helpers";
 
 const chapterIds = {
   orientation: ["incident", "legacy", "review"],
+  workshop: ["incident", "workflow", "review"],
   exercise: ["incident", "legacy", "red", "refactor", "review"],
   reference: ["incident", "legacy", "review"],
 } as const;

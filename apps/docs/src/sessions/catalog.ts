@@ -1,4 +1,20 @@
-export type SessionKind = "orientation" | "exercise" | "reference";
+export type SessionKind = "orientation" | "workshop" | "exercise" | "reference";
+
+export type SolutionPresentation = "excerpt" | "completed-file";
+
+export type WorkflowFocus =
+  | "現状"
+  | "全体"
+  | "current state"
+  | "input"
+  | "expected failures"
+  | "output event/side effects"
+  | "境界確認";
+
+export type WorkflowRisks = Readonly<{
+  resolvedFromPrevious: string;
+  remainingForNext: string;
+}>;
 
 export type ExerciseModule = Readonly<{
   dir: string;
@@ -17,7 +33,7 @@ export type SolutionReference = Readonly<{
   path: string;
   symbol: string;
   lines: readonly [number, number];
-  presentation?: "excerpt" | "completed-file";
+  presentation?: SolutionPresentation;
 }>;
 
 export type Decision = Readonly<{
@@ -45,14 +61,14 @@ export type PeerReview = Readonly<{
   questions: readonly string[];
 }>;
 
-export type SessionSummary = Readonly<{
+type SessionSummaryBase = Readonly<{
   slug: string;
-  snapshot: ExampleSnapshot;
-  sequence: "00" | "01" | "02" | "03" | "04" | "Final";
-  kind: SessionKind;
+  sequence: "00" | "01" | "02" | "03" | "04" | "05" | "Final";
   title: string;
   durationMinutes: number;
   timeBreakdown: TimeBreakdown;
+  workflowFocus: WorkflowFocus;
+  workflowRisks: WorkflowRisks;
   adv?: AdvBreakdown;
   peerReview?: PeerReview;
   animal: Readonly<{ name: string; type: string; avatar: string }>;
@@ -60,10 +76,54 @@ export type SessionSummary = Readonly<{
   incident: string;
   exerciseCommand?: string;
   exerciseModule?: ExerciseModule;
+  solutionSnapshot?: ExampleSnapshot;
+  solutionPresentation?: SolutionPresentation;
+  peerReviewPromises?: "inline" | "reference";
   steps: readonly ExerciseStep[];
   decisions: readonly Decision[];
   finalReferences: readonly string[];
 }>;
+
+export type ExerciseSessionSummary = SessionSummaryBase & Readonly<{
+  kind: "exercise";
+  snapshot: PublicCodeExplorerSnapshot;
+  adv: AdvBreakdown;
+  peerReview: PeerReview;
+  exerciseCommand: string;
+  exerciseModule: ExerciseModule;
+  solutionSnapshot: ExampleSnapshot;
+  solutionPresentation: SolutionPresentation;
+  peerReviewPromises: "inline" | "reference";
+}>;
+
+type NonExerciseMetadata = Readonly<{
+  adv?: never;
+  peerReview?: never;
+  exerciseCommand?: never;
+  exerciseModule?: never;
+  solutionSnapshot?: never;
+  solutionPresentation?: never;
+  peerReviewPromises?: never;
+}>;
+
+type SnapshotSessionSummary = SessionSummaryBase &
+  NonExerciseMetadata &
+  Readonly<{
+    kind: "orientation" | "reference";
+    snapshot: PublicCodeExplorerSnapshot;
+  }>;
+
+type WorkshopSessionSummary = SessionSummaryBase &
+  NonExerciseMetadata &
+  Readonly<{
+    kind: "workshop";
+    snapshot?: never;
+  }>;
+
+export type SessionSummary =
+  | ExerciseSessionSummary
+  | SnapshotSessionSummary
+  | WorkshopSessionSummary;
 
 export type ExampleSnapshot =
   | "session-00"
@@ -72,7 +132,13 @@ export type ExampleSnapshot =
   | "session-03"
   | "session-04"
   | "session-05"
+  | "session-06"
   | "final";
+
+export type PublicCodeExplorerSnapshot = Exclude<
+  ExampleSnapshot,
+  "session-01" | "session-06"
+>;
 
 export const peerReviewQuestions = [
   "この差分は、不変条件を型で守っていますか、実行時の `if` で守っていますか。守っている行を1行、画面上で指してください。",
@@ -127,13 +193,18 @@ export const finalAggregateTour = {
 
 export const sessions = [
   {
-    slug: "00-onboarding",
+    slug: "00-system-handover",
     snapshot: "session-00",
     sequence: "00",
     kind: "orientation",
-    title: "オンボーディング: 退職した先人のコードを引き継ぐ",
-    durationMinutes: 15,
-    timeBreakdown: { brief: 7, teach: 5, exercise: 0, review: 3 },
+    title: "業務とシステムを引き継ぐ",
+    durationMinutes: 10,
+    timeBreakdown: { brief: 4, teach: 3, exercise: 0, review: 3 },
+    workflowFocus: "現状",
+    workflowRisks: {
+      resolvedFromPrevious: "引き継いだ業務・操作・保存先・ログと、現在起きている事故を対応付けた。",
+      remainingForNext: "診察開始を一つの業務ワークフローとして定義し、設計対象の全体像を描く。",
+    },
     animal: { name: "DOG", type: "dog", avatar: "🐕" },
     summary: "WAN NYAN CLINIC の業務とアプリケーション、先人のコードに残る設計課題を概観します。",
     incident: "会計済みの予約が診察中へ戻り、予約ログから飼い主のPIIが流出した。",
@@ -142,61 +213,89 @@ export const sessions = [
     finalReferences: [],
   },
   {
-    slug: "01-state-modeling",
-    snapshot: "session-01",
+    slug: "01-business-events-and-workflows",
+    snapshot: undefined,
     sequence: "01",
+    kind: "workshop",
+    title: "ビジネスイベントからワークフローを描く",
+    durationMinutes: 15,
+    timeBreakdown: { brief: 3, teach: 4, exercise: 6, review: 2 },
+    workflowFocus: "全体",
+    workflowRisks: {
+      resolvedFromPrevious: "診察開始のtrigger・input・current state・expected failures・output event・side effectsを一枚の地図にした。",
+      remainingForNext: "許可されない状態遷移と、状態ごとに欠けた情報をモデルで防ぐ。",
+    },
+    animal: { name: "CAT", type: "cat", avatar: "🐈" },
+    summary: "診察開始を業務ワークフローとして班で描き、以後の設計対象を揃えます。",
+    incident: "診察開始に必要な判断と記録がコードの各所へ散らばり、変更時に確認すべき境界が見えない。",
+    steps: [],
+    decisions: [],
+    finalReferences: [],
+  },
+  {
+    slug: "02-state-transitions",
+    snapshot: "session-02",
+    sequence: "02",
     kind: "exercise",
-    title: "状態を型にする",
+    title: "予約の状態と遷移をモデル化する",
     durationMinutes: 30,
     timeBreakdown: { brief: 4, teach: 6, exercise: 13, review: 7 },
+    workflowFocus: "current state",
+    workflowRisks: {
+      resolvedFromPrevious: "許可されない状態遷移と、状態ごとに欠けた情報を型で防いだ。",
+      remainingForNext: "外部から届く値、失敗の表現、保存の整合性をまだ扱う必要がある。",
+    },
     adv: { articulate: 2, delegate: 9, verify: 2 },
     peerReview: { minutes: 7, pickCount: 2, questions: peerReviewQuestions },
+    solutionSnapshot: "session-03",
+    solutionPresentation: "excerpt",
+    peerReviewPromises: "inline",
     animal: { name: "RABBIT", type: "rabbit", avatar: "🐇" },
     summary: "予約の5状態と許可された遷移を型へ移し、終端状態からの逆行を防ぎます。",
     incident: "会計済みの来院が診察中へ戻され、会計が二度行われた。",
-    exerciseCommand: "pnpm exercise:01",
+    exerciseCommand: "pnpm exercise:02",
     exerciseModule: {
-      dir: "examples/session-01/src/domain/appointment",
+      dir: "examples/session-02/src/domain/appointment",
       fileBudget: 2,
       lineBudget: 35,
     },
     steps: [
       {
-        id: "s1-narrow-start",
+        id: "s2-narrow-start",
         goal: "会計済み・キャンセル済みの来院は診察を開始できないようにする。",
-        targets: ["examples/session-01/src/domain/appointment/transitions.ts"],
+        targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
         solutions: [{
-          path: "examples/session-02/src/domain/appointment/transitions.ts",
+          path: "examples/session-03/src/domain/appointment/transitions.ts",
           symbol: "startExamination",
           lines: [14, 24],
         }],
       },
       {
-        id: "s1-require-cancel-reason",
+        id: "s2-require-cancel-reason",
         goal: "キャンセルには必ず理由を残す。",
-        targets: ["examples/session-01/src/domain/appointment/transitions.ts"],
+        targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
         solutions: [{
-          path: "examples/session-02/src/domain/appointment/transitions.ts",
+          path: "examples/session-03/src/domain/appointment/transitions.ts",
           symbol: "cancel",
           lines: [33, 46],
         }],
       },
       {
-        id: "s1-align-transitions",
+        id: "s2-align-transitions",
         goal: "残る遷移も許可された遷移元だけを受け取る規約へ揃える。",
-        targets: ["examples/session-01/src/domain/appointment/transitions.ts"],
+        targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
         solutions: [{
-          path: "examples/session-02/src/domain/appointment/transitions.ts",
+          path: "examples/session-03/src/domain/appointment/transitions.ts",
           symbol: "checkIn",
           lines: [11, 31],
         }],
       },
       {
-        id: "s1-exhaustive-label",
+        id: "s2-exhaustive-label",
         goal: "状態を追加したら表示名の分岐をコンパイルエラーにする。",
-        targets: ["examples/session-01/src/domain/appointment/statusLabel.ts"],
+        targets: ["examples/session-02/src/domain/appointment/statusLabel.ts"],
         solutions: [{
-          path: "examples/session-02/src/domain/appointment/statusLabel.ts",
+          path: "examples/session-03/src/domain/appointment/statusLabel.ts",
           symbol: "toStatusLabel",
           lines: [3, 22],
         }],
@@ -225,41 +324,49 @@ export const sessions = [
     ],
   },
   {
-    slug: "02-boundary-and-ids",
-    snapshot: "session-02",
-    sequence: "02",
+    slug: "03-boundaries-and-semantic-values",
+    snapshot: "session-03",
+    sequence: "03",
     kind: "exercise",
-    title: "値を型にする（境界・ID・PII）",
+    title: "外部境界と意味のある値を設計する",
     durationMinutes: 30,
     timeBreakdown: { brief: 4, teach: 7, exercise: 12, review: 7 },
+    workflowFocus: "input",
+    workflowRisks: {
+      resolvedFromPrevious: "外部入力を信頼境界で検証し、識別子と公開してよい情報を区別した。",
+      remainingForNext: "ワークフローの業務失敗と副作用の整合性をまだ扱う必要がある。",
+    },
     adv: { articulate: 2, delegate: 8, verify: 2 },
     peerReview: { minutes: 7, pickCount: 2, questions: peerReviewQuestions },
+    solutionSnapshot: "session-04",
+    solutionPresentation: "excerpt",
+    peerReviewPromises: "reference",
     animal: { name: "BIRD", type: "bird", avatar: "🐦" },
     summary: "外部JSON、用途別ID、飼い主の連絡先を境界で安全な値へ変換します。",
     incident: "ラボのID取り違えで他の患者へ検査結果が付き、連絡先がログへ流出した。",
-    exerciseCommand: "pnpm exercise:02",
+    exerciseCommand: "pnpm exercise:03",
     exerciseModule: {
-      dir: "examples/session-02/src/boundary",
+      dir: "examples/session-03/src/boundary",
       fileBudget: 2,
       lineBudget: 24,
     },
     steps: [
       {
-        id: "s2-parse-exam-result",
+        id: "s3-parse-exam-result",
         goal: "形の違う検査JSONはドメイン型にならないようにする。",
-        targets: ["examples/session-02/src/boundary/examResult.ts"],
+        targets: ["examples/session-03/src/boundary/examResult.ts"],
         solutions: [{
-          path: "examples/session-03/src/boundary/examResult.ts",
+          path: "examples/session-04/src/boundary/examResult.ts",
           symbol: "parseExamResult",
           lines: [7, 16],
         }],
       },
       {
-        id: "s2-protect-contact",
+        id: "s3-protect-contact",
         goal: "電話番号とメールは既定でログに出ないようにする。",
-        targets: ["examples/session-02/src/boundary/ownerContact.ts"],
+        targets: ["examples/session-03/src/boundary/ownerContact.ts"],
         solutions: [{
-          path: "examples/session-03/src/boundary/ownerContact.ts",
+          path: "examples/session-04/src/boundary/ownerContact.ts",
           symbol: "OwnerContactSchema",
           lines: [6, 16],
         }],
@@ -291,51 +398,59 @@ export const sessions = [
     ],
   },
   {
-    slug: "03-result-errors",
-    snapshot: "session-03",
-    sequence: "03",
+    slug: "04-workflow-errors",
+    snapshot: "session-04",
+    sequence: "04",
     kind: "exercise",
-    title: "失敗を値にする",
-    durationMinutes: 35,
-    timeBreakdown: { brief: 5, teach: 7, exercise: 15, review: 8 },
+    title: "失敗をワークフローの結果として扱う",
+    durationMinutes: 30,
+    timeBreakdown: { brief: 4, teach: 3, exercise: 15, review: 8 },
+    workflowFocus: "expected failures",
+    workflowRisks: {
+      resolvedFromPrevious: "予期できる業務上の失敗を戻り値に現し、成功経路だけを続けるようにした。",
+      remainingForNext: "非決定値、永続化、監査記録、例外を扱う外側の境界が残っている。",
+    },
     adv: { articulate: 2, delegate: 10, verify: 3 },
     peerReview: { minutes: 8, pickCount: 2, questions: peerReviewQuestions },
+    solutionSnapshot: "session-05",
+    solutionPresentation: "excerpt",
+    peerReviewPromises: "reference",
     animal: { name: "HAMSTER", type: "hamster", avatar: "🐹" },
     summary: "診察開始の予期できる失敗を、呼び出し側が扱える値として返します。",
     incident: "例外メッセージの変更で画面の分岐が壊れ、受付が失敗理由を追えなくなった。",
-    exerciseCommand: "pnpm exercise:03",
+    exerciseCommand: "pnpm exercise:04",
     exerciseModule: {
-      dir: "examples/session-03/src/useCase",
+      dir: "examples/session-04/src/useCase",
       fileBudget: 3,
       lineBudget: 77,
     },
     steps: [
       {
-        id: "s3-invalid-state",
+        id: "s4-invalid-state",
         goal: "受付済みでない状態を型付きの失敗として返す。",
-        targets: ["examples/session-03/src/useCase/errors.ts"],
+        targets: ["examples/session-04/src/useCase/errors.ts"],
         solutions: [{
-          path: "examples/session-04/src/useCase/errors.ts",
+          path: "examples/session-05/src/useCase/errors.ts",
           symbol: "ensureCheckedIn",
           lines: [31, 36],
         }],
       },
       {
-        id: "s3-not-found",
+        id: "s4-not-found",
         goal: "予約が見つからない失敗を型付きの値として返す。",
-        targets: ["examples/session-03/src/useCase/errors.ts"],
+        targets: ["examples/session-04/src/useCase/errors.ts"],
         solutions: [{
-          path: "examples/session-04/src/useCase/errors.ts",
+          path: "examples/session-05/src/useCase/errors.ts",
           symbol: "ensureAppointmentFound",
           lines: [23, 29],
         }],
       },
       {
-        id: "s3-result-pipeline",
+        id: "s4-result-pipeline",
         goal: "失敗理由をandThenのパイプラインで運ぶ。",
-        targets: ["examples/session-03/src/useCase/startExamination.ts"],
+        targets: ["examples/session-04/src/useCase/startExamination.ts"],
         solutions: [{
-          path: "examples/session-04/src/useCase/startExamination.ts",
+          path: "examples/session-05/src/useCase/startExamination.ts",
           symbol: "startExamination",
           lines: [22, 40],
         }],
@@ -365,41 +480,49 @@ export const sessions = [
     ],
   },
   {
-    slug: "04-effects-and-events",
-    snapshot: "session-04",
-    sequence: "04",
+    slug: "05-effects-and-consistency",
+    snapshot: "session-05",
+    sequence: "05",
     kind: "exercise",
-    title: "副作用を外に出す",
-    durationMinutes: 35,
-    timeBreakdown: { brief: 5, teach: 7, exercise: 15, review: 8 },
+    title: "副作用と整合性境界を設計する",
+    durationMinutes: 30,
+    timeBreakdown: { brief: 4, teach: 3, exercise: 15, review: 8 },
+    workflowFocus: "output event/side effects",
+    workflowRisks: {
+      resolvedFromPrevious: "成功したワークフローの状態と監査を同じ整合性境界で保存し、保存障害を業務結果へ偽装しない形にした。",
+      remainingForNext: "実運用で必要な永続化transactionと、次に着手する小さな改善候補が残っている。",
+    },
     adv: { articulate: 2, delegate: 10, verify: 3 },
     peerReview: { minutes: 8, pickCount: 2, questions: peerReviewQuestions },
+    solutionSnapshot: "session-06",
+    solutionPresentation: "completed-file",
+    peerReviewPromises: "reference",
     animal: { name: "TURTLE", type: "turtle", avatar: "🐢" },
     summary: "非決定性と保存をportへ出し、状態と監査記録を一度に保存します。",
     incident: "非決定的な値でテストが揺れ、状態だけ保存され監査記録が残らない予約が生まれた。",
-    exerciseCommand: "pnpm exercise:04",
+    exerciseCommand: "pnpm exercise:05",
     exerciseModule: {
-      dir: "examples/session-04/src/useCase",
+      dir: "examples/session-05/src/useCase",
       fileBudget: 3,
       lineBudget: 72,
     },
     steps: [
       {
-        id: "s4-inject-context",
+        id: "s5-inject-context",
         goal: "ClockとID generatorからEventContextを1回生成する。",
         targets: [
-          "examples/session-04/src/useCase/dependencies.ts",
-          "examples/session-04/src/useCase/startExamination.ts",
+          "examples/session-05/src/useCase/dependencies.ts",
+          "examples/session-05/src/useCase/startExamination.ts",
         ],
         solutions: [
           {
-            path: "examples/session-05/src/useCase/dependencies.ts",
+            path: "examples/session-06/src/useCase/dependencies.ts",
             symbol: "EventContextDependencies",
             lines: [1, 43],
             presentation: "completed-file",
           },
           {
-            path: "examples/session-05/src/useCase/startExamination.ts",
+            path: "examples/session-06/src/useCase/startExamination.ts",
             symbol: "createEventContext",
             lines: [1, 86],
             presentation: "completed-file",
@@ -407,12 +530,12 @@ export const sessions = [
         ],
       },
       {
-        id: "s4-atomic-store",
+        id: "s5-atomic-store",
         goal: "状態と監査記録を1回の保存で残す。",
-        targets: ["examples/session-04/src/useCase/dependencies.ts"],
+        targets: ["examples/session-05/src/useCase/dependencies.ts"],
         solutions: [
           {
-            path: "examples/session-05/src/useCase/dependencies.ts",
+            path: "examples/session-06/src/useCase/dependencies.ts",
             symbol: "ExaminationStartedStore",
             lines: [1, 43],
             presentation: "completed-file",
@@ -420,32 +543,32 @@ export const sessions = [
         ],
       },
       {
-        id: "s4-result-async",
+        id: "s5-result-async",
         goal: "非同期保存後もイベントをパイプラインに残す。",
-        targets: ["examples/session-04/src/useCase/startExamination.ts"],
+        targets: ["examples/session-05/src/useCase/startExamination.ts"],
         solutions: [{
-          path: "examples/session-05/src/useCase/startExamination.ts",
+          path: "examples/session-06/src/useCase/startExamination.ts",
           symbol: "startExaminationWithEffects",
           lines: [1, 86],
           presentation: "completed-file",
         }],
       },
       {
-        id: "s4-propagate-store-failure",
-        goal: "内部causeを公開エラーから除いて保存失敗を返す。",
+        id: "s5-propagate-store-failure",
+        goal: "保存失敗を業務Resultへ変換せず、例外として外側の境界へ伝播する。",
         targets: [
-          "examples/session-04/src/useCase/errors.ts",
-          "examples/session-04/src/useCase/startExamination.ts",
+          "examples/session-05/src/useCase/errors.ts",
+          "examples/session-05/src/useCase/startExamination.ts",
         ],
         solutions: [
           {
-            path: "examples/session-05/src/useCase/errors.ts",
+            path: "examples/session-06/src/useCase/errors.ts",
             symbol: "RepositoryFailure",
             lines: [1, 50],
             presentation: "completed-file",
           },
           {
-            path: "examples/session-05/src/useCase/startExamination.ts",
+            path: "examples/session-06/src/useCase/startExamination.ts",
             symbol: "storeExaminationStarted",
             lines: [1, 86],
             presentation: "completed-file",
@@ -465,9 +588,9 @@ export const sessions = [
         notByType: "永続化での原子性は実装側のtransactionで保証する必要がある。",
       },
       {
-        invariant: "保存はパイプラインの値を上書きしない。",
-        byType: "ResultAsyncのandThroughで保存を通す。",
-        notByType: "戻り値型が一致するとandThenでも型が通る場合がありテストが必要になる。",
+        invariant: "保存障害を、利用側が選べる業務上の失敗へ偽装しない。",
+        byType: "業務ResultとPromiseのrejectを分け、保存の例外を外側の境界へ伝播する。",
+        notByType: "最上位境界でのログ記録と500応答、診断情報やPIIの非公開は結合テストで守る。",
       },
     ],
     finalReferences: [
@@ -485,9 +608,14 @@ export const sessions = [
     snapshot: "final",
     sequence: "Final",
     kind: "reference",
-    title: "参照実装ツアー",
+    title: "参照実装で境界をたどる",
     durationMinutes: 5,
     timeBreakdown: { brief: 0, teach: 4, exercise: 0, review: 1 },
+    workflowFocus: "境界確認",
+    workflowRisks: {
+      resolvedFromPrevious: "入力境界・業務ワークフロー・出力と保存・例外境界を参照実装の対応箇所で確認した。",
+      remainingForNext: "自分の業務で見直す境界と、最初に試す小さな改善を選ぶ。",
+    },
     animal: { name: "Mugi", type: "cat", avatar: "🐈" },
     summary: "当日の到達点を、より大きな参照実装へ接続します。",
     incident: "当日の局所的な改善を、実運用を想定した構成へどう接続するかを確認する。",

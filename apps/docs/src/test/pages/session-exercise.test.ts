@@ -77,19 +77,21 @@ describe("exercise session contract", () => {
     }
   });
 
-  it("shares the canonical five review promises between S0 and S1 and links later sessions", async () => {
+  it("introduces the canonical five review promises in S2 and links later exercises", async () => {
     const onboarding = await renderSessionPage(sessions[0]);
+    const workshop = await renderSessionPage(sessions[1]);
     const firstExercise = await renderSessionPage(exercises[0]);
 
     for (const promise of reviewPromises) {
-      expect(onboarding.body.textContent).toContain(promise);
+      expect(onboarding.body.textContent).not.toContain(promise);
+      expect(workshop.body.textContent).not.toContain(promise);
       expect(firstExercise.body.textContent).toContain(promise);
     }
     for (const session of exercises.slice(1)) {
       const document = await renderSessionPage(session);
       expect(
         document.querySelector<HTMLAnchorElement>(
-          'a[href="/sessions/01-state-modeling/#peer-review-promises"]',
+          'a[href="/sessions/02-state-transitions/#peer-review-promises"]',
         ),
       ).not.toBeNull();
       for (const promise of reviewPromises)

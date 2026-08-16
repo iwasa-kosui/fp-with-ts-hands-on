@@ -11,7 +11,7 @@ const publicPageSources = import.meta.glob<string>("../../pages/**/*.astro", {
 });
 
 describe("static site contract", () => {
-  it("publishes exactly the six catalog session routes", () => {
+  it("publishes exactly the seven catalog session routes", () => {
     const slugs = Object.keys(pageSessions)
       .map((path) => path.split("/").at(-1)?.replace(/\.astro$/, ""))
       .filter((slug): slug is string => slug !== undefined)
@@ -34,7 +34,7 @@ describe("static site contract", () => {
 
     expect(html).toContain("ページが見つかりません");
     expect(html).toContain('href="/"');
-    expect(html).toContain('href="/sessions/00-onboarding/"');
+    expect(html).toContain('href="/sessions/00-system-handover/"');
     expect(scripts).toHaveLength(1);
     expect(scripts[0]?.textContent).toContain('document.querySelector("h1")');
     expect(document.querySelector("script[src], astro-island")).toBeNull();
