@@ -18,7 +18,7 @@ describe("SessionCodeOverview", () => {
   it("renders the supplied session guides as a read-only h3 overview", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(SessionCodeOverview, {
-      props: { slug: "01-state-modeling", guides },
+      props: { slug: "02-state-transitions", guides },
     });
     const document = new DOMParser().parseFromString(html, "text/html");
 
@@ -26,7 +26,7 @@ describe("SessionCodeOverview", () => {
     expect(document.querySelector("h2")).toBeNull();
     expect(document.querySelector('[data-code-overview]')).not.toBeNull();
     expect(
-      document.querySelector('[data-code-explorer="01-state-modeling"]'),
+      document.querySelector('[data-code-explorer="02-state-transitions"]'),
     ).not.toBeNull();
     expect(document.body.textContent).toContain("遷移元が広すぎる");
     expect(document.querySelector('[data-action="run"]')).toBeNull();
