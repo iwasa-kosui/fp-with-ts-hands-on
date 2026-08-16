@@ -1,6 +1,5 @@
 import { err, ok, type Result, type ResultAsync } from "neverthrow";
 
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import { Permission } from "../domain/user/permission.js";
 import type { Admin, User } from "../domain/user/user.js";
 import type { UserId } from "../domain/user/userId.js";
@@ -17,11 +16,7 @@ export type Unauthorized = Readonly<{
   kind: "Unauthorized";
   actorUserId: UserId;
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
-export type UseCaseError = Unauthorized | UseCaseRepositoryError;
+export type UseCaseError = Unauthorized;
 export type UseCaseOutput = ResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userByIdResolver: UserByIdResolver;
@@ -31,10 +26,6 @@ export type ListUsersUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
 const ensureActor =
   (actorUserId: UserId) =>
   (user: User | undefined): Result<User, Unauthorized> =>
@@ -48,11 +39,10 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userByIdResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
       .andThen(ensureActor(input.actorUserId))
       .andThen(ensureAdmin)
       .andThen(() =>
-        dependencies.userListResolver.resolveAll().mapErr(toRepositoryError),
+        dependencies.userListResolver.resolveAll(),
       )
       .map((users) => ({ users: users.map(toUserView) }));
 

@@ -215,13 +215,8 @@ export const createAppointmentEventStore = (db: SqliteDatabase) => ({
       ),
       (cause): AppointmentStoreError => {
         const conflict = AppointmentConflictSchema.safeParse(cause);
-        return conflict.success
-          ? conflict.data
-          : {
-              kind: "RepositoryError",
-              operation: "AppointmentEventStore.store",
-              cause,
-            };
+        if (conflict.success) return conflict.data;
+        throw cause;
       },
     ),
 } as const);

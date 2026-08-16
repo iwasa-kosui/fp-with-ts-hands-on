@@ -289,9 +289,7 @@ describe("SQLite event stores", () => {
       name: UserName.schema.parse("After"),
     });
 
-    const result = await store.store(updated);
-
-    expect(result.isErr()).toBe(true);
+    await expect(store.store(updated)).rejects.toThrow();
     expect((await db.select().from(usersTable))[0]?.name).toBe("Before");
     expect(await db.select().from(domainEventsTable)).toHaveLength(1);
   });
@@ -426,12 +424,12 @@ describe("SQLite event stores", () => {
       eventId: started.eventId,
     })(started.aggregateState, { examId: ids.exam });
 
-    const result = await createExaminationCompletionStore(db).store(
+    const result = createExaminationCompletionStore(db).store(
       examResult,
       completion,
     );
 
-    expect(result.isErr()).toBe(true);
+    await expect(result).rejects.toThrow();
     expect(await db.select().from(examResultsTable)).toHaveLength(0);
     expect(
       (await createAppointmentByIdResolver(db).resolveById(ids.appointment))
@@ -471,12 +469,12 @@ describe("SQLite event stores", () => {
       { examId: ids.exam },
     );
 
-    const result = await createExaminationCompletionStore(db).store(
-      mismatchedExamResult,
-      completion,
-    );
-
-    expect(result.isErr() && result.error.kind).toBe("RepositoryError");
+    await expect(
+      createExaminationCompletionStore(db).store(
+        mismatchedExamResult,
+        completion,
+      ),
+    ).rejects.toThrow("Mismatched examination completion events");
     expect(await db.select().from(examResultsTable)).toHaveLength(0);
     expect(
       (await createAppointmentByIdResolver(db).resolveById(ids.appointment))
@@ -529,11 +527,24 @@ describe("SQLite event stores", () => {
       email: duplicateEmail,
     });
 
-    const result = await createUserEventStore(db).store(first, second);
-
-    expect(result.isErr()).toBe(true);
+    await expect(createUserEventStore(db).store(first, second)).rejects.toThrow();
     expect(await db.select().from(usersTable)).toHaveLength(0);
     expect(await db.select().from(domainEventsTable)).toHaveLength(0);
+  });
+
+  test("rejects mixed user deletion and projection events instead of throwing synchronously", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const created = User.create(eventContext(32))(user("Mixed events"));
+    const deleted = User.delete(eventContext(33))(created.aggregateState);
+    const store = createUserEventStore(db);
+    const storeInvalidInput = store.store as unknown as (
+      ...events: readonly [typeof created, typeof deleted]
+    ) => PromiseLike<unknown>;
+
+    await expect(storeInvalidInput(created, deleted)).rejects.toThrow(
+      "User deletion events require an isolated guarded transaction",
+    );
   });
 
   test("authoritatively accepts only one of two stale last-Admin downgrades", async () => {

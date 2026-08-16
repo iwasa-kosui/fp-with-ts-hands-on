@@ -13,7 +13,7 @@ export type UnauthenticatedError = Readonly<{
 export type UnauthorizedError = Readonly<{ kind: "Unauthorized" }>;
 export type NotFoundError = Readonly<{ kind: "NotFound" }>;
 export type ConflictError = Readonly<{ kind: "Conflict" }>;
-export type RepositoryFailure = Readonly<{ kind: "RepositoryError" }>;
+export type InternalServerError = Readonly<{ kind: "InternalServerError" }>;
 
 export type WebUseCaseError =
   | ValidationError
@@ -21,7 +21,7 @@ export type WebUseCaseError =
   | UnauthorizedError
   | NotFoundError
   | ConflictError
-  | RepositoryFailure;
+  | InternalServerError;
 
 export const assertNever = (_value: never): never => {
   throw new TypeError("Unhandled web error");
@@ -65,7 +65,7 @@ export const respondToUseCaseError = (
       return context.text("Not Found", 404);
     case "Conflict":
       return context.text("Conflict", 409);
-    case "RepositoryError":
+    case "InternalServerError":
       return context.text("Internal Server Error", 500);
     default:
       return assertNever(error);

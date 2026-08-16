@@ -1,5 +1,4 @@
 import type { ResultAsync } from "neverthrow";
-import type { RepositoryError } from "../aggregate/repositoryError.js";
 import type { AppointmentId } from "./appointmentId.js";
 import type {
   AppointmentBooked,
@@ -13,7 +12,7 @@ export type AppointmentConflict = Readonly<{
   kind: "AppointmentConflict";
   appointmentId: AppointmentId;
 }>;
-export type AppointmentStoreError = RepositoryError | AppointmentConflict;
+export type AppointmentStoreError = AppointmentConflict;
 type AppointmentStore<TEvent> = Readonly<{
   store: (...events: readonly TEvent[]) => ResultAsync<void, AppointmentStoreError>;
 }>;

@@ -46,13 +46,8 @@ export const createFollowUpEventStore = (db: SqliteDatabase) => ({
       ),
       (cause): FollowUpStoreError => {
         const conflict = FollowUpRequestConflictSchema.safeParse(cause);
-        return conflict.success
-          ? conflict.data
-          : {
-              kind: "RepositoryError",
-              operation: "FollowUpEventStore.store",
-              cause,
-            };
+        if (conflict.success) return conflict.data;
+        throw cause;
       },
     ),
 } as const);

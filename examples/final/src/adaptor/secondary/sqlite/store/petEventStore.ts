@@ -1,7 +1,6 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { err, ok, ResultAsync } from "neverthrow";
 
-import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import type {
   PetCreated,
   PetDeleted,
@@ -24,18 +23,10 @@ const activeStatuses = [
   "AwaitingPayment",
 ] as const;
 
-const repositoryError =
-  (operation: string) =>
-  (cause: unknown): RepositoryError => ({
-    kind: "RepositoryError",
-    operation,
-    cause,
-  });
-
 const createPetProjectionEventStore = (db: SqliteDatabase) =>
   ({
     store: (...events: readonly PetProjectionEvent[]) =>
-      ResultAsync.fromPromise(
+      ResultAsync.fromSafePromise(
         Promise.resolve().then(() =>
           db.transaction((tx) => {
             events.forEach((event) => {
@@ -66,7 +57,6 @@ const createPetProjectionEventStore = (db: SqliteDatabase) =>
             });
           }),
         ),
-        repositoryError("PetEventStore.store"),
       ),
   }) as const;
 
@@ -83,7 +73,7 @@ export const createPetDeletedEventStore = (
   db: SqliteDatabase,
 ): PetDeletedStore => ({
   store: (event) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         db.transaction((tx) => {
           const blockingAppointment = tx
@@ -117,7 +107,6 @@ export const createPetDeletedEventStore = (
           return ok(undefined);
         }),
       ),
-      repositoryError("PetDeletedEventStore.store"),
     ).andThen((result) => result),
 });
 

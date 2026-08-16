@@ -1,7 +1,6 @@
 import { eq } from "drizzle-orm";
 import { err, ok, ResultAsync } from "neverthrow";
 
-import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import type {
   OwnerCreated,
   OwnerDeleted,
@@ -18,18 +17,10 @@ import { domainEventsTable, ownersTable, petsTable } from "../schema.js";
 
 type OwnerProjectionEvent = OwnerCreated | OwnerUpdated;
 
-const repositoryError =
-  (operation: string) =>
-  (cause: unknown): RepositoryError => ({
-    kind: "RepositoryError",
-    operation,
-    cause,
-  });
-
 const createOwnerProjectionEventStore = (db: SqliteDatabase) =>
   ({
     store: (...events: readonly OwnerProjectionEvent[]) =>
-      ResultAsync.fromPromise(
+      ResultAsync.fromSafePromise(
         Promise.resolve().then(() =>
           db.transaction((tx) => {
             events.forEach((event) => {
@@ -59,7 +50,6 @@ const createOwnerProjectionEventStore = (db: SqliteDatabase) =>
             });
           }),
         ),
-        repositoryError("OwnerEventStore.store"),
       ),
   }) as const;
 
@@ -76,7 +66,7 @@ export const createOwnerDeletedEventStore = (
   db: SqliteDatabase,
 ): OwnerDeletedStore => ({
   store: (event) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         db.transaction((tx) => {
           const blockingPet = tx
@@ -102,7 +92,6 @@ export const createOwnerDeletedEventStore = (
           return ok(undefined);
         }),
       ),
-      repositoryError("OwnerDeletedEventStore.store"),
     ).andThen((result) => result),
 });
 

@@ -96,7 +96,7 @@ import { DeleteUserUseCase, type DeleteUserUseCase as DeleteUser } from "./useCa
 import { GetOwnerUseCase, type GetOwnerUseCase as GetOwner } from "./useCase/getOwnerUseCase.js";
 import { GetPetUseCase, type GetPetUseCase as GetPet } from "./useCase/getPetUseCase.js";
 import { GetAppointmentUseCase, type GetAppointmentUseCase as GetAppointment } from "./useCase/getAppointmentUseCase.js";
-import type { InstallationStatusQuery } from "./useCase/query/installationStatusQuery.js";
+import type { InstallationStatusQuery } from "./domain/installation/installationStatusQuery.js";
 import { GetDashboardUseCase, type GetDashboardUseCase as GetDashboard } from "./useCase/getDashboardUseCase.js";
 import { ListOwnersUseCase, type ListOwnersUseCase as ListOwners } from "./useCase/listOwnersUseCase.js";
 import { ListPetsUseCase, type ListPetsUseCase as ListPets } from "./useCase/listPetsUseCase.js";

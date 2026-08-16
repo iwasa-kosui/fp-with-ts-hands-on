@@ -274,14 +274,7 @@ const renderAppointment = async (
       actorUserId: actor.value.user.userId,
     });
     if (veterinarians.isErr()) {
-      switch (veterinarians.error.kind) {
-        case "Unauthorized":
-          return respondToUseCaseError(context, { kind: "Unauthorized" });
-        case "RepositoryError":
-          return respondToUseCaseError(context, { kind: "RepositoryError" });
-        default:
-          return assertNever(veterinarians.error);
-      }
+      return respondToUseCaseError(context, { kind: "Unauthorized" });
     }
     veterinarianOptions = veterinarians.value.users
       .filter((user) => user.kind === "Veterinarian")
@@ -313,8 +306,6 @@ const renderAppointment = async (
             return respondToUseCaseError(context, { kind: "Unauthorized" });
           case "AppointmentNotFound":
             return respondToUseCaseError(context, { kind: "NotFound" });
-          case "RepositoryError":
-            return respondToUseCaseError(context, { kind: "RepositoryError" });
           default:
             return assertNever(error);
         }
@@ -340,14 +331,7 @@ const loadBookingOptions = async (
     actorUserId: actor.value.user.userId,
   });
   if (owners.isErr()) {
-    switch (owners.error.kind) {
-      case "Unauthorized":
-        return err(respondToUseCaseError(context, { kind: "Unauthorized" }));
-      case "RepositoryError":
-        return err(respondToUseCaseError(context, { kind: "RepositoryError" }));
-      default:
-        return assertNever(owners.error);
-    }
+    return err(respondToUseCaseError(context, { kind: "Unauthorized" }));
   }
   const pets = await dependencies.listPets.run({
     actorUserId: actor.value.user.userId,
@@ -364,16 +348,7 @@ const loadBookingOptions = async (
         name: pet.name.unwrap(),
       })),
     }))
-    .mapErr((error) => {
-      switch (error.kind) {
-        case "Unauthorized":
-          return respondToUseCaseError(context, { kind: "Unauthorized" });
-        case "RepositoryError":
-          return respondToUseCaseError(context, { kind: "RepositoryError" });
-        default:
-          return assertNever(error);
-      }
-    });
+    .mapErr(() => respondToUseCaseError(context, { kind: "Unauthorized" }));
 };
 
 const renderBooking = async (
@@ -398,8 +373,8 @@ const invalidState = (
   context: Context<WebEnvironment>,
   appointmentId: AppointmentIdType,
 ): Response => context.redirect(`${detailUrl(appointmentId)}?error=invalid-state`, 303);
-const repositoryFailure = (context: Context<WebEnvironment>): Response =>
-  respondToUseCaseError(context, { kind: "RepositoryError" });
+const internalServerError = (context: Context<WebEnvironment>): Response =>
+  respondToUseCaseError(context, { kind: "InternalServerError" });
 
 export const registerAppointmentRoutes = (
   app: Hono<WebEnvironment>,
@@ -418,16 +393,7 @@ export const registerAppointmentRoutes = (
               appointments: appointments.map(toAppointmentPageView),
             }),
           ),
-        (error) => {
-          switch (error.kind) {
-            case "Unauthorized":
-              return respondToUseCaseError(context, { kind: "Unauthorized" });
-            case "RepositoryError":
-              return repositoryFailure(context);
-            default:
-              return assertNever(error);
-          }
-        },
+        () => respondToUseCaseError(context, { kind: "Unauthorized" }),
       );
   });
 
@@ -465,8 +431,7 @@ export const registerAppointmentRoutes = (
             case "AppointmentConflict":
               return context.redirect(`${detailUrl(error.appointmentId)}?error=appointment-conflict`, 303);
             case "IdentityGenerationFailed":
-            case "RepositoryError":
-              return repositoryFailure(context);
+              return internalServerError(context);
             default:
               return assertNever(error);
           }
@@ -508,8 +473,7 @@ export const registerAppointmentRoutes = (
             case "AppointmentConflict":
               return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
             case "IdentityGenerationFailed":
-            case "RepositoryError":
-              return repositoryFailure(context);
+              return internalServerError(context);
             default:
               return assertNever(error);
           }
@@ -550,8 +514,7 @@ export const registerAppointmentRoutes = (
             case "AppointmentConflict":
               return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
             case "IdentityGenerationFailed":
-            case "RepositoryError":
-              return repositoryFailure(context);
+              return internalServerError(context);
             default:
               return assertNever(error);
           }
@@ -592,8 +555,7 @@ export const registerAppointmentRoutes = (
             case "AppointmentConflict":
               return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
             case "IdentityGenerationFailed":
-            case "RepositoryError":
-              return repositoryFailure(context);
+              return internalServerError(context);
             default:
               return assertNever(error);
           }
@@ -625,8 +587,7 @@ export const registerAppointmentRoutes = (
             case "AppointmentConflict":
               return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
             case "IdentityGenerationFailed":
-            case "RepositoryError":
-              return repositoryFailure(context);
+              return internalServerError(context);
             default:
               return assertNever(error);
           }
@@ -658,8 +619,7 @@ export const registerAppointmentRoutes = (
             case "AppointmentConflict":
               return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
             case "IdentityGenerationFailed":
-            case "RepositoryError":
-              return repositoryFailure(context);
+              return internalServerError(context);
             default:
               return assertNever(error);
           }

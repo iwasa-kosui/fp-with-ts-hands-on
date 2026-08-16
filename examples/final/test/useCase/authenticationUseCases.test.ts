@@ -1,11 +1,10 @@
-import { errAsync, okAsync } from "neverthrow";
+import { errAsync, okAsync, ResultAsync } from "neverthrow";
 import { describe, expect, test } from "vitest";
 
 import { scryptPasswordHasher } from "../../src/adaptor/secondary/authentication/scryptPasswordHasher.js";
 import type { Clock } from "../../src/domain/aggregate/clock.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import type { EventIdGenerator } from "../../src/domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../../src/domain/aggregate/repositoryError.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import type { Session } from "../../src/domain/session/session.js";
 import type {
@@ -49,7 +48,7 @@ import {
   SetUpInitialAdminUseCase,
   type Dependencies as SetUpDependencies,
 } from "../../src/useCase/setUpInitialAdminUseCase.js";
-import type { InitialAdminSetupStore } from "../../src/useCase/persistence/initialAdminSetupStore.js";
+import type { InitialAdminSetupStore } from "../../src/domain/installation/initialAdminSetupStore.js";
 
 const userId = UserId.schema.parse("10000000-0000-4000-8000-000000000001");
 const otherUserId = UserId.schema.parse("10000000-0000-4000-8000-000000000005");
@@ -73,11 +72,7 @@ const token = {
   plaintext: SessionTokenPlaintext.schema.parse("a".repeat(64)),
   hash: SessionTokenHash.schema.parse("a".repeat(64)),
 } as const;
-const repositoryError = {
-  kind: "RepositoryError",
-  operation: "test resolver",
-  cause: new Error("row contains admin@example.test"),
-} as const satisfies RepositoryError;
+const infrastructureError = new Error("row contains admin@example.test");
 
 const eventIdGenerator = (): EventIdGenerator => {
   let index = 0;
@@ -354,13 +349,16 @@ describe("LogInUseCase", () => {
     });
   });
 
-  test("returns typed redacted errors for resolver and password verification failures", async () => {
+  test("rejects resolver failures and redacts password verification failures", async () => {
     const failingResolver = {
-      resolveById: () => errAsync(repositoryError),
-      resolveByEmail: () => errAsync(repositoryError),
-      resolveAll: () => errAsync(repositoryError),
+      resolveById: () =>
+        ResultAsync.fromSafePromise(Promise.reject(infrastructureError)),
+      resolveByEmail: () =>
+        ResultAsync.fromSafePromise(Promise.reject(infrastructureError)),
+      resolveAll: () =>
+        ResultAsync.fromSafePromise(Promise.reject(infrastructureError)),
     } as const satisfies UserResolverFixture;
-    const resolverResult = await LogInUseCase.create({
+    const resolverResult = LogInUseCase.create({
       userResolver: failingResolver,
       sessionCreatedStore: createdSessionStore([]),
       passwordHasher: scryptPasswordHasher,
@@ -370,10 +368,7 @@ describe("LogInUseCase", () => {
       eventIdGenerator: eventIdGenerator(),
       sessionIdGenerator: { generate: () => sessionId },
     }).run({ email, password });
-    expect(resolverResult.isErr() && resolverResult.error).toEqual({
-      kind: "RepositoryError",
-      operation: "test resolver",
-    });
+    await expect(resolverResult).rejects.toBe(infrastructureError);
 
     const passwordHash = await scryptPasswordHasher.hash(password);
     const admin = {

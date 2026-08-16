@@ -6,7 +6,6 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import {
   Timestamp,
   type Timestamp as TimestampValue,
@@ -26,7 +25,7 @@ import type {
 import type {
   InitialAdminAlreadyExists,
   InitialAdminSetupStore,
-} from "./persistence/initialAdminSetupStore.js";
+} from "../domain/installation/initialAdminSetupStore.js";
 
 const sessionDurationMs = 8 * 60 * 60 * 1_000;
 
@@ -43,23 +42,18 @@ export type UseCaseOk = Readonly<{
   sessionToken: SessionTokenPlaintext;
 }>;
 
-export type { InitialAdminAlreadyExists } from "./persistence/initialAdminSetupStore.js";
+export type { InitialAdminAlreadyExists } from "../domain/installation/initialAdminSetupStore.js";
 export type PasswordHashingFailed = Readonly<{ kind: "PasswordHashingFailed" }>;
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
 export type SessionCreationFailed = Readonly<{ kind: "SessionCreationFailed" }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 
 export type UseCaseError =
   | InitialAdminAlreadyExists
   | PasswordHashingFailed
   | IdentityGenerationFailed
-  | SessionCreationFailed
-  | UseCaseRepositoryError;
+  | SessionCreationFailed;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 
 export type UserIdGenerator = Readonly<{ generate: () => UserId }>;
@@ -79,10 +73,6 @@ export type SetUpInitialAdminUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
 
 const hashPassword = (
   passwordHasher: PasswordHasher,
@@ -167,13 +157,7 @@ const run =
         ),
       )
       .andThrough(({ userEvent, sessionResult }) =>
-        dependencies.initialAdminSetupStore
-          .store(userEvent, sessionResult.event)
-          .mapErr((error) =>
-            error.kind === "RepositoryError"
-              ? toRepositoryError(error)
-              : error,
-          ),
+        dependencies.initialAdminSetupStore.store(userEvent, sessionResult.event),
       )
       .map(({ sessionResult }) => ({
         userId: sessionResult.event.aggregateState.userId,

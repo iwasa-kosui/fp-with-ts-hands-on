@@ -96,16 +96,9 @@ const authorize = async (
   const result = await dependencies.listPets.run({
     actorUserId: actor.user.userId,
   });
-  return result.mapErr((error) => {
-    switch (error.kind) {
-      case "Unauthorized":
-        return respondToUseCaseError(context, { kind: "Unauthorized" });
-      case "RepositoryError":
-        return respondToUseCaseError(context, { kind: "RepositoryError" });
-      default:
-        return assertNever(error);
-    }
-  });
+  return result.mapErr(() =>
+    respondToUseCaseError(context, { kind: "Unauthorized" }),
+  );
 };
 
 const parsePetId = (
@@ -138,16 +131,7 @@ const loadOwnerOptions = async (
         name: owner.name.unwrap(),
       })),
     )
-    .mapErr((error) => {
-      switch (error.kind) {
-        case "Unauthorized":
-          return respondToUseCaseError(context, { kind: "Unauthorized" });
-        case "RepositoryError":
-          return respondToUseCaseError(context, { kind: "RepositoryError" });
-        default:
-          return assertNever(error);
-      }
-    });
+    .mapErr(() => respondToUseCaseError(context, { kind: "Unauthorized" }));
 };
 
 const renderCreate = (
@@ -200,8 +184,6 @@ const loadPet = async (
             return respondToUseCaseError(context, { kind: "Unauthorized" });
           case "PetNotFound":
             return respondToUseCaseError(context, { kind: "NotFound" });
-          case "RepositoryError":
-            return respondToUseCaseError(context, { kind: "RepositoryError" });
           default:
             return assertNever(error);
         }
@@ -285,9 +267,8 @@ export const registerPetRoutes = (
               );
             }
             case "IdentityGenerationFailed":
-            case "RepositoryError":
               return respondToUseCaseError(context, {
-                kind: "RepositoryError",
+                kind: "InternalServerError",
               });
             default:
               return assertNever(error);
@@ -342,9 +323,8 @@ export const registerPetRoutes = (
             case "PetNotFound":
               return respondToUseCaseError(context, { kind: "NotFound" });
             case "IdentityGenerationFailed":
-            case "RepositoryError":
               return respondToUseCaseError(context, {
-                kind: "RepositoryError",
+                kind: "InternalServerError",
               });
             default:
               return assertNever(error);
@@ -379,9 +359,8 @@ export const registerPetRoutes = (
                 303,
               );
             case "IdentityGenerationFailed":
-            case "RepositoryError":
               return respondToUseCaseError(context, {
-                kind: "RepositoryError",
+                kind: "InternalServerError",
               });
             default:
               return assertNever(error);

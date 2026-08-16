@@ -8,7 +8,6 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { Owner } from "../domain/owner/owner.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
 import type { OwnerByIdResolver } from "../domain/owner/ownerResolver.js";
@@ -42,15 +41,10 @@ export type OwnerNotFound = Readonly<{
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | OwnerNotFound
-  | IdentityGenerationFailed
-  | UseCaseRepositoryError;
+  | IdentityGenerationFailed;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type PetIdGenerator = Readonly<{ generate: () => PetId }>;
 export type Dependencies = Readonly<{
@@ -65,10 +59,6 @@ export type CreatePetUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
 const ensureOwner =
   (ownerId: OwnerId) =>
   (owner: Owner | undefined): Result<Owner, OwnerNotFound> =>
@@ -100,18 +90,15 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() =>
-        dependencies.ownerResolver
-          .resolveById(input.ownerId)
-          .mapErr(toRepositoryError),
+        dependencies.ownerResolver.resolveById(input.ownerId),
       )
       .andThen(ensureOwner(input.ownerId))
       .andThen(() => createEvent(dependencies, input))
       .andThrough((event) =>
-        dependencies.petCreatedStore.store(event).mapErr(toRepositoryError),
+        dependencies.petCreatedStore.store(event),
       )
       .map((event) => ({ pet: toView(event.aggregateState) }));
 

@@ -2,14 +2,18 @@ import { createHash } from "node:crypto";
 
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { Context, MiddlewareHandler } from "hono";
+import { err, ok, safeTry, type Result, type ResultAsync } from "neverthrow";
 import { z } from "zod";
 
 import type { Clock } from "../../../../domain/aggregate/clock.js";
+import { assertNever } from "../../../../domain/shared/assertNever.js";
+import type { Session } from "../../../../domain/session/session.js";
 import type { SessionByTokenHashResolver } from "../../../../domain/session/sessionResolver.js";
 import { SessionTokenHash } from "../../../../domain/session/sessionTokenHash.js";
+import type { User } from "../../../../domain/user/user.js";
 import type { UserByIdResolver } from "../../../../domain/user/userResolver.js";
 import type { UseCaseOk as SessionResult } from "../../../../useCase/logInUseCase.js";
-import type { WebEnvironment } from "../pageProps.js";
+import type { AuthenticatedActor, WebEnvironment } from "../pageProps.js";
 
 export const sessionCookieName = "clinic_session";
 
@@ -61,58 +65,112 @@ const tokenHashFrom = (token: string) =>
     createHash("sha256").update(token).digest("hex"),
   );
 
+type AuthenticationFailure =
+  | Readonly<{ kind: "SessionCookieMissing" }>
+  | Readonly<{ kind: "SessionCookieInvalid" }>
+  | Readonly<{ kind: "SessionUnavailable" }>
+  | Readonly<{ kind: "UserUnavailable" }>;
+
+type AuthenticationOutcome =
+  | Readonly<{ kind: "Unauthenticated" }>
+  | Readonly<{ kind: "ClearSessionCookie" }>
+  | Readonly<{ kind: "Authenticated"; actor: AuthenticatedActor }>;
+
+const parseSessionCookie = (
+  rawToken: string | undefined,
+): Result<SessionTokenHash, AuthenticationFailure> => {
+  if (rawToken === undefined) {
+    return err({ kind: "SessionCookieMissing" });
+  }
+
+  const token = SessionTokenSchema.safeParse(rawToken);
+  if (!token.success) {
+    return err({ kind: "SessionCookieInvalid" });
+  }
+
+  const tokenHash = tokenHashFrom(token.data);
+  return tokenHash.success
+    ? ok(tokenHash.data)
+    : err({ kind: "SessionCookieInvalid" });
+};
+
+const ensureActiveSession =
+  (clock: Clock) =>
+  (session: Session | undefined): Result<Session, AuthenticationFailure> =>
+    session === undefined ||
+    Date.parse(session.expiresAt) <= Date.parse(clock.now())
+      ? err({ kind: "SessionUnavailable" })
+      : ok(session);
+
+const ensureUser = (
+  user: User | undefined,
+): Result<User, AuthenticationFailure> =>
+  user === undefined ? err({ kind: "UserUnavailable" }) : ok(user);
+
+const resolveActor =
+  (dependencies: AuthenticationDependencies) =>
+  (rawToken: string | undefined): ResultAsync<
+    AuthenticatedActor,
+    AuthenticationFailure
+  > =>
+    safeTry<AuthenticatedActor, AuthenticationFailure>(async function* () {
+      const tokenHash = yield* parseSessionCookie(rawToken);
+      const session = yield* dependencies.sessionResolver.resolveByTokenHash(
+        tokenHash,
+      );
+      const activeSession = yield* ensureActiveSession(dependencies.clock)(
+        session,
+      );
+      const user = yield* dependencies.userResolver.resolveById(
+        activeSession.userId,
+      );
+      const authenticatedUser = yield* ensureUser(user);
+      return ok({ user: authenticatedUser, session: activeSession });
+    });
+
+const toUnauthenticatedOutcome = (
+  failure: AuthenticationFailure,
+): AuthenticationOutcome =>
+  failure.kind === "SessionCookieMissing"
+    ? { kind: "Unauthenticated" }
+    : { kind: "ClearSessionCookie" };
+
+const resolveAuthenticationOutcome =
+  (dependencies: AuthenticationDependencies) =>
+  (rawToken: string | undefined): Promise<AuthenticationOutcome> =>
+    resolveActor(dependencies)(rawToken).match(
+      (actor) => ({ kind: "Authenticated", actor }),
+      toUnauthenticatedOutcome,
+    );
+
+const applyAuthenticationOutcome = (
+  context: Context<WebEnvironment>,
+  isProduction: boolean,
+  outcome: AuthenticationOutcome,
+): void => {
+  switch (outcome.kind) {
+    case "Unauthenticated":
+      context.set("actor", undefined);
+      return;
+    case "ClearSessionCookie":
+      context.set("actor", undefined);
+      clearSessionCookie(context, isProduction);
+      return;
+    case "Authenticated":
+      context.set("actor", outcome.actor);
+      return;
+    default:
+      assertNever(outcome);
+  }
+};
+
 export const createAuthenticationMiddleware = (
   dependencies: AuthenticationDependencies,
 ): MiddlewareHandler<WebEnvironment> =>
   async (context, next) => {
-    context.set("actor", undefined);
-    const rawToken = getCookie(context, sessionCookieName);
-    if (rawToken === undefined) {
-      await next();
-      return;
-    }
-
-    const token = SessionTokenSchema.safeParse(rawToken);
-    if (!token.success) {
-      clearSessionCookie(context, dependencies.isProduction);
-      await next();
-      return;
-    }
-
-    const tokenHash = tokenHashFrom(token.data);
-    if (!tokenHash.success) {
-      clearSessionCookie(context, dependencies.isProduction);
-      await next();
-      return;
-    }
-
-    const sessionResult = await dependencies.sessionResolver
-      .resolveByTokenHash(tokenHash.data);
-    if (sessionResult.isErr()) {
-      return context.text("Internal Server Error", 500);
-    }
-    const session = sessionResult.value;
-    if (
-      session === undefined ||
-      Date.parse(session.expiresAt) <= Date.parse(dependencies.clock.now())
-    ) {
-      clearSessionCookie(context, dependencies.isProduction);
-      await next();
-      return;
-    }
-
-    const userResult = await dependencies.userResolver.resolveById(
-      session.userId,
+    const outcome = await resolveAuthenticationOutcome(dependencies)(
+      getCookie(context, sessionCookieName),
     );
-    if (userResult.isErr()) {
-      return context.text("Internal Server Error", 500);
-    }
-    if (userResult.value === undefined) {
-      clearSessionCookie(context, dependencies.isProduction);
-      await next();
-      return;
-    }
-
-    context.set("actor", { user: userResult.value, session });
+    applyAuthenticationOutcome(context, dependencies.isProduction, outcome);
     await next();
   };

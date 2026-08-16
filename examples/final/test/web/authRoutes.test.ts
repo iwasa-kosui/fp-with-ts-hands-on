@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { errAsync } from "neverthrow";
+import { ResultAsync } from "neverthrow";
 import { describe, expect, test } from "vitest";
 
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
@@ -109,31 +109,93 @@ describe("Hono/Inertia authentication boundary", () => {
     expect(claimedSetup.headers.get("location")).toBe("/login");
   });
 
-  test("maps installation-status query failures safely and exposes no user-list policy dependency", async () => {
+  test("keeps rejected installation-status queries behind Hono's opaque error boundary", async () => {
     const database = createSqliteDatabase(":memory:");
     migrateDatabase(database);
     const composed = createApplicationDependencies(database, {
       clock,
       isProduction: false,
     });
+    const privateCause = new Error("private database cause");
     const app = createApp({
       ...composed,
       installationStatusQuery: {
         get: () =>
-          errAsync({
-            kind: "RepositoryError",
-            operation: "InstallationStatusQuery.get",
-            cause: new Error("private database cause"),
-          }),
+          ResultAsync.fromSafePromise(
+            Promise.reject(privateCause),
+          ),
       },
     });
 
-    const response = await app.request("/", { headers: inertiaHeaders });
+    const responses = await Promise.all([
+      app.request("/", { headers: inertiaHeaders }),
+      app.request("/setup", { headers: inertiaHeaders }),
+      formRequest(app, "/setup", credentials),
+      app.request("/login", { headers: inertiaHeaders }),
+      formRequest(app, "/login", {
+        email: credentials.email,
+        password: credentials.password,
+      }),
+      formRequest(app, "/logout", {}),
+    ]);
     const serializedDependencies = JSON.stringify(Object.keys(composed));
 
-    expect(response.status).toBe(500);
-    expect(await response.text()).not.toContain("private database cause");
+    for (const response of responses) {
+      expect(response.status).toBe(500);
+      expect(await response.text()).not.toContain(privateCause.message);
+    }
     expect(serializedDependencies).not.toContain("userListResolver");
+  });
+
+  test("keeps rejected session resolution behind Hono's opaque error boundary", async () => {
+    const database = createSqliteDatabase(":memory:");
+    migrateDatabase(database);
+    const composed = createApplicationDependencies(database, {
+      clock,
+      isProduction: false,
+    });
+    const privateCause = new Error("private session persistence cause");
+    const app = createApp({
+      ...composed,
+      sessionByTokenHashResolver: {
+        resolveByTokenHash: () =>
+          ResultAsync.fromSafePromise(Promise.reject(privateCause)),
+      },
+    });
+
+    const response = await app.request("/setup", {
+      headers: {
+        ...inertiaHeaders,
+        Cookie: `clinic_session=${"a".repeat(64)}`,
+      },
+    });
+
+    expect(response.status).toBe(500);
+    expect(await response.text()).not.toContain(privateCause.message);
+  });
+
+  test("keeps rejected user resolution behind Hono's opaque error boundary", async () => {
+    const harness = createHarness();
+    const cookie = await setUp(harness);
+    const composed = createApplicationDependencies(harness.database, {
+      clock,
+      isProduction: false,
+    });
+    const privateCause = new Error("private user persistence cause");
+    const app = createApp({
+      ...composed,
+      authenticatedUserByIdResolver: {
+        resolveById: () =>
+          ResultAsync.fromSafePromise(Promise.reject(privateCause)),
+      },
+    });
+
+    const response = await app.request("/", {
+      headers: { ...inertiaHeaders, Cookie: cookie },
+    });
+
+    expect(response.status).toBe(500);
+    expect(await response.text()).not.toContain(privateCause.message);
   });
 
   test("directs an empty installation to setup and makes setup unavailable after the first Admin", async () => {

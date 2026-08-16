@@ -1,12 +1,11 @@
 import { err, ok, ResultAsync } from "neverthrow";
 
-import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import type { SessionCreated } from "../../../../domain/session/sessionEvent.js";
 import type { UserCreated } from "../../../../domain/user/userEvent.js";
 import type {
   InitialAdminAlreadyExists,
   InitialAdminSetupStore,
-} from "../../../../useCase/persistence/initialAdminSetupStore.js";
+} from "../../../../domain/installation/initialAdminSetupStore.js";
 import type { SqliteDatabase } from "../db.js";
 import { toEventRecord } from "../eventRecord.js";
 import {
@@ -42,7 +41,7 @@ export const createInitialAdminSetupStore = (
   db: SqliteDatabase,
 ): InitialAdminSetupStore => ({
   store: (userEvent, sessionEvent) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         db.transaction((tx) => {
           const claim = tx
@@ -93,10 +92,5 @@ export const createInitialAdminSetupStore = (
           return ok(undefined);
         }),
       ),
-      (cause): RepositoryError => ({
-        kind: "RepositoryError",
-        operation: "InitialAdminSetupStore.store",
-        cause,
-      }),
     ).andThen((result) => result),
 });

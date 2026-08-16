@@ -1,5 +1,4 @@
 import type { AggregateStore } from "../aggregate/aggregateStore.js";
-import type { RepositoryError } from "../aggregate/repositoryError.js";
 import type { ResultAsync } from "neverthrow";
 import type { PetId } from "./petId.js";
 import type { PetCreated, PetDeleted, PetUpdated } from "./petEvent.js";
@@ -16,8 +15,7 @@ export type PetNotFoundStoreError = Readonly<{
 }>;
 export type PetDeletedStoreError =
   | PetHasActiveAppointmentStoreError
-  | PetNotFoundStoreError
-  | RepositoryError;
+  | PetNotFoundStoreError;
 export type PetDeletedStore = Readonly<{
   store: (event: PetDeleted) => ResultAsync<void, PetDeletedStoreError>;
 }>;

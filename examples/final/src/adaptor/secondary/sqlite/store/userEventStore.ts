@@ -1,7 +1,6 @@
 import { eq } from "drizzle-orm";
-import { err, errAsync, ok, ResultAsync } from "neverthrow";
+import { err, ok, ResultAsync } from "neverthrow";
 
-import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type {
   UserCreated,
@@ -46,7 +45,7 @@ const safeState = (state: Exclude<UserEvent["aggregateState"], undefined>) => ({
 const createUserProjectionEventStore = (db: SqliteDatabase) =>
   ({
     store: (...events: readonly UserEvent[]) =>
-      ResultAsync.fromPromise(
+      ResultAsync.fromSafePromise(
         Promise.resolve().then(() =>
           db.transaction((tx) => {
             const adminIds = new Set(
@@ -110,11 +109,6 @@ const createUserProjectionEventStore = (db: SqliteDatabase) =>
             return ok(undefined);
           }),
         ),
-        (cause): RepositoryError => ({
-          kind: "RepositoryError",
-          operation: "UserEventStore.store",
-          cause,
-        }),
       ).andThen((result) => result),
   }) as const;
 
@@ -131,7 +125,7 @@ export const createUserDeletedEventStore = (
   db: SqliteDatabase,
 ): UserDeletedStore => ({
   store: (...events) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         db.transaction((tx) => {
           const adminIds = tx
@@ -169,20 +163,7 @@ export const createUserDeletedEventStore = (
           return ok(undefined);
         }),
       ),
-      (cause): RepositoryError => ({
-        kind: "RepositoryError",
-        operation: "UserDeletedEventStore.store",
-        cause,
-      }),
     ).andThen((result) => result),
-});
-
-const mixedEventKindsError = (): RepositoryError => ({
-  kind: "RepositoryError",
-  operation: "UserEventStore.store",
-  cause: new TypeError(
-    "User deletion events require an isolated guarded transaction",
-  ),
 });
 
 export const createUserEventStore = (db: SqliteDatabase) => {
@@ -191,13 +172,13 @@ export const createUserEventStore = (db: SqliteDatabase) => {
 
   function store(
     ...events: readonly UserCreated[]
-  ): ResultAsync<void, RepositoryError>;
+  ): ResultAsync<void, never>;
   function store(
     ...events: readonly UserUpdated[]
   ): ResultAsync<void, UserUpdatedStoreError>;
   function store(
     ...events: readonly UserPasswordReset[]
-  ): ResultAsync<void, RepositoryError>;
+  ): ResultAsync<void, never>;
   function store(
     ...events: readonly UserDeleted[]
   ): ReturnType<typeof deletionStore.store>;
@@ -211,17 +192,23 @@ export const createUserEventStore = (db: SqliteDatabase) => {
       (event) => event.kind !== "UserDeleted",
     );
 
-    if (deletionEvents.length > 0 && projectionEvents.length > 0) {
-      return errAsync(mixedEventKindsError());
-    }
-
-    return deletionEvents.length > 0
-      ? deletionStore
-          .store(...deletionEvents)
-          .mapErr((error): AnyUserStoreError => error)
-      : projectionStore
-          .store(...projectionEvents)
-          .mapErr((error): AnyUserStoreError => error);
+    return ResultAsync.fromSafePromise(
+      Promise.resolve().then(() => {
+        if (deletionEvents.length > 0 && projectionEvents.length > 0) {
+          throw new TypeError(
+            "User deletion events require an isolated guarded transaction",
+          );
+        }
+      }),
+    ).andThen(() =>
+      deletionEvents.length > 0
+        ? deletionStore
+            .store(...deletionEvents)
+            .mapErr((error): AnyUserStoreError => error)
+        : projectionStore
+            .store(...projectionEvents)
+            .mapErr((error): AnyUserStoreError => error),
+    );
   }
 
   return { store } as const;
