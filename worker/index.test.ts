@@ -44,7 +44,37 @@ describe("worker request handler", () => {
 
       expect(response.status).toBe(308);
       expect(response.headers.get("location")).toBe(
-        "https://example.test/sessions/00-onboarding/",
+        "https://example.test/sessions/00-system-handover/",
+      );
+      expect(fetch).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    ["/sessions/00-onboarding/", "/sessions/00-system-handover/"],
+    ["/sessions/01-state-modeling/", "/sessions/02-state-transitions/"],
+    [
+      "/sessions/02-boundary-and-ids/",
+      "/sessions/03-boundaries-and-semantic-values/",
+    ],
+    ["/sessions/03-result-errors/", "/sessions/04-workflow-errors/"],
+    [
+      "/sessions/04-effects-and-events/",
+      "/sessions/05-effects-and-consistency/",
+    ],
+  ])(
+    "redirects the previous canonical path %s permanently to %s",
+    async (pathname, location) => {
+      const { env, fetch } = createAssets(new Response("asset"));
+
+      const response = await handleRequest(
+        new Request(`https://example.test${pathname}`),
+        env,
+      );
+
+      expect(response.status).toBe(308);
+      expect(response.headers.get("location")).toBe(
+        `https://example.test${location}`,
       );
       expect(fetch).not.toHaveBeenCalled();
     },
@@ -65,7 +95,7 @@ describe("worker request handler", () => {
 
     expect(response.status).toBe(308);
     expect(response.headers.get("location")).toBe(
-      "https://example.test/sessions/04-effects-and-events/",
+      "https://example.test/sessions/05-effects-and-consistency/",
     );
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -76,7 +106,7 @@ describe("worker request handler", () => {
     });
     const { env, fetch } = createAssets(assetResponse);
     const request = new Request(
-      "https://example.test/sessions/01-state-modeling/?source=worker-test",
+      "https://example.test/sessions/01-business-events-and-workflows/?source=worker-test",
       { headers: { "x-request": "original" } },
     );
 

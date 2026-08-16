@@ -82,17 +82,13 @@ describe("event document contract", () => {
     const fixedMinutes = fixedSlots.reduce((total, row) => total + row.minutes, 0);
 
     expect(sessionMinutes).toBe(150);
-    expect(fixedSlots).toHaveLength(3);
+    expect(fixedSlots).toHaveLength(1);
     expect(
       fixedSlots.map(({ clock, minutes }) => ({
         elapsed: clock.end - clock.start,
         declared: minutes,
       })),
-    ).toEqual([
-      { elapsed: 10, declared: 10 },
-      { elapsed: 10, declared: 10 },
-      { elapsed: 10, declared: 10 },
-    ]);
+    ).toEqual([{ elapsed: 30, declared: 30 }]);
     expect(fixedMinutes).toBe(30);
     expect(sessionMinutes + fixedMinutes).toBe(180);
 
@@ -303,9 +299,9 @@ describe("event document contract", () => {
       const document = await readEventDocument(name);
 
       expect(document, name).toMatch(
-        /S1〜S3[^。]*「ステップごとの解答」[^。]*`details`/,
+        /S2〜S4[^。]*「ステップごとの解答」[^。]*`details`/,
       );
-      expect(document, name).toMatch(/S4[^。]*後続step[^。]*完成ファイル/);
+      expect(document, name).toMatch(/S5[^。]*後続step[^。]*完成ファイル/);
     }
   });
 
@@ -316,7 +312,7 @@ describe("event document contract", () => {
     const staleTerms = [
       /04-agent-review/,
       /05-mini-integration/,
-      /exercise:0[05]/,
+      /exercise:0(?:0|1|[6-9])/,
       /ミニ総合演習/,
       /collectFollowUpTargets/,
       /\/code-explorer\//,

@@ -16,10 +16,29 @@ describe("resolveWorkerRoute", () => {
     (pathname) => {
       expect(resolveWorkerRoute(pathname)).toEqual({
         kind: "redirect",
-        location: "/sessions/00-onboarding/",
+        location: "/sessions/00-system-handover/",
       });
     },
   );
+
+  it.each([
+    ["/sessions/00-onboarding/", "/sessions/00-system-handover/"],
+    ["/sessions/01-state-modeling/", "/sessions/02-state-transitions/"],
+    [
+      "/sessions/02-boundary-and-ids/",
+      "/sessions/03-boundaries-and-semantic-values/",
+    ],
+    ["/sessions/03-result-errors/", "/sessions/04-workflow-errors/"],
+    [
+      "/sessions/04-effects-and-events/",
+      "/sessions/05-effects-and-consistency/",
+    ],
+  ])("redirects the previous canonical path %s to %s", (pathname, location) => {
+    expect(resolveWorkerRoute(pathname)).toEqual({
+      kind: "redirect",
+      location,
+    });
+  });
 
   it.each([
     "/sessions/04-agent-review",
@@ -29,12 +48,12 @@ describe("resolveWorkerRoute", () => {
   ])("redirects the retired curriculum path %s", (pathname) => {
     expect(resolveWorkerRoute(pathname)).toEqual({
       kind: "redirect",
-      location: "/sessions/04-effects-and-events/",
+      location: "/sessions/05-effects-and-consistency/",
     });
   });
 
   it("delegates static pages to assets", () => {
-    expect(resolveWorkerRoute("/sessions/01-state-modeling/")).toEqual({
+    expect(resolveWorkerRoute("/sessions/01-business-events-and-workflows/")).toEqual({
       kind: "asset",
     });
   });
