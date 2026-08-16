@@ -2,6 +2,7 @@ import type { Hono } from "hono";
 
 import type { GetDashboardUseCase } from "../../../../useCase/getDashboardUseCase.js";
 import type { InstallationStatusQuery } from "../../../../useCase/query/installationStatusQuery.js";
+import { resolveInstallationStatus } from "../installationStatus.js";
 import type { WebEnvironment } from "../pageProps.js";
 import { toAppointmentPageView } from "./appointmentRoutes.js";
 import { withSharedProps } from "../middleware/sharedProps.js";
@@ -19,12 +20,11 @@ export const registerDashboardRoutes = (
   app.get("/", async (context) => {
     const actor = context.get("actor");
     if (actor === undefined) {
-      const installation = await dependencies.installationStatusQuery.get();
-      if (installation.isErr()) {
-        return respondToUseCaseError(context, { kind: "InternalServerError" });
-      }
+      const installation = await resolveInstallationStatus(
+        dependencies.installationStatusQuery,
+      );
       return context.redirect(
-        installation.value.kind === "InitialSetupAvailable"
+        installation.kind === "InitialSetupAvailable"
           ? "/setup"
           : "/login",
       );

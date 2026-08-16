@@ -109,28 +109,41 @@ describe("Hono/Inertia authentication boundary", () => {
     expect(claimedSetup.headers.get("location")).toBe("/login");
   });
 
-  test("handles a rejected installation-status query safely and exposes no user-list policy dependency", async () => {
+  test("keeps rejected installation-status queries behind Hono's opaque error boundary", async () => {
     const database = createSqliteDatabase(":memory:");
     migrateDatabase(database);
     const composed = createApplicationDependencies(database, {
       clock,
       isProduction: false,
     });
+    const privateCause = new Error("private database cause");
     const app = createApp({
       ...composed,
       installationStatusQuery: {
         get: () =>
           ResultAsync.fromSafePromise(
-            Promise.reject(new Error("private database cause")),
+            Promise.reject(privateCause),
           ),
       },
     });
 
-    const response = await app.request("/", { headers: inertiaHeaders });
+    const responses = await Promise.all([
+      app.request("/", { headers: inertiaHeaders }),
+      app.request("/setup", { headers: inertiaHeaders }),
+      formRequest(app, "/setup", credentials),
+      app.request("/login", { headers: inertiaHeaders }),
+      formRequest(app, "/login", {
+        email: credentials.email,
+        password: credentials.password,
+      }),
+      formRequest(app, "/logout", {}),
+    ]);
     const serializedDependencies = JSON.stringify(Object.keys(composed));
 
-    expect(response.status).toBe(500);
-    expect(await response.text()).not.toContain("private database cause");
+    for (const response of responses) {
+      expect(response.status).toBe(500);
+      expect(await response.text()).not.toContain(privateCause.message);
+    }
     expect(serializedDependencies).not.toContain("userListResolver");
   });
 
