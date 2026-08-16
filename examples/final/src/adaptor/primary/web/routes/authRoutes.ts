@@ -9,7 +9,11 @@ import type { Clock } from "../../../../domain/aggregate/clock.js";
 import type { LogInUseCase } from "../../../../useCase/logInUseCase.js";
 import type { LogOutUseCase } from "../../../../useCase/logOutUseCase.js";
 import type { SetUpInitialAdminUseCase } from "../../../../useCase/setUpInitialAdminUseCase.js";
-import type { InstallationStatusQuery } from "../../../../useCase/query/installationStatusQuery.js";
+import type {
+  InstallationStatus,
+  InstallationStatusQuery,
+} from "../../../../domain/installation/installationStatusQuery.js";
+import { resolveInstallationStatus } from "../installationStatus.js";
 import type { WebEnvironment } from "../pageProps.js";
 import {
   clearSessionCookie,
@@ -64,158 +68,182 @@ const parseForm = <TOutput, TInput>(
         } as const satisfies ValidationError);
   });
 
-const getInstallationStatus = (dependencies: AuthRouteDependencies) =>
-  dependencies.installationStatusQuery.get();
+const respondToSetupPage = (
+  context: Context<WebEnvironment>,
+  installation: InstallationStatus,
+): Response => {
+  switch (installation.kind) {
+    case "Installed":
+      return context.redirect(
+        context.get("actor") === undefined ? "/login" : "/",
+      );
+    case "InitialSetupAvailable":
+      return context.render("Setup", withSharedProps(context, {}));
+    default:
+      return assertNever(installation);
+  }
+};
+
+const respondToLoginPage = (
+  context: Context<WebEnvironment>,
+  installation: InstallationStatus,
+): Response => {
+  switch (installation.kind) {
+    case "InitialSetupAvailable":
+      return context.redirect("/setup");
+    case "Installed":
+      return context.get("actor") === undefined
+        ? context.render("Login", withSharedProps(context, {}))
+        : context.redirect("/");
+    default:
+      return assertNever(installation);
+  }
+};
 
 export const registerAuthRoutes = (
   app: Hono<WebEnvironment>,
   dependencies: AuthRouteDependencies,
 ): void => {
   app.get("/setup", async (context) => {
-    const installation = await getInstallationStatus(dependencies);
-    if (installation.isErr()) {
-      return respondToUseCaseError(context, { kind: "RepositoryError" });
-    }
-    if (installation.value.kind === "Installed") {
-      return context.redirect(
-        context.get("actor") === undefined ? "/login" : "/",
-      );
-    }
-    return context.render("Setup", withSharedProps(context, {}));
+    const installation = await resolveInstallationStatus(
+      dependencies.installationStatusQuery,
+    );
+    return respondToSetupPage(context, installation);
   });
 
   app.post("/setup", async (context) => {
-    const installation = await getInstallationStatus(dependencies);
-    if (installation.isErr()) {
-      return respondToUseCaseError(context, { kind: "RepositoryError" });
-    }
-    if (installation.value.kind === "Installed") {
-      return context.redirect("/login");
-    }
-
-    const parsed = await parseForm(context, SetupFormSchema);
-    if (parsed.isErr()) {
-      return respondToUseCaseError(context, parsed.error, {
-        validation: (errors) =>
-          context.render(
-            "Setup",
-            withSharedProps(context, { errors }),
-            { url: "/setup" },
-          ),
-      });
+    const installation = await resolveInstallationStatus(
+      dependencies.installationStatusQuery,
+    );
+    switch (installation.kind) {
+      case "Installed":
+        return context.redirect("/login");
+      case "InitialSetupAvailable":
+        break;
+      default:
+        return assertNever(installation);
     }
 
-    return dependencies.setUpInitialAdmin.run(parsed.value).match(
-      (session) => {
-        setSessionCookie(
-          context,
-          session,
-          dependencies.clock,
-          dependencies.isProduction,
-        );
-        return context.redirect("/");
-      },
-      (error) => {
-        switch (error.kind) {
-          case "InitialAdminAlreadyExists":
-            return context.redirect("/login");
-          case "PasswordHashingFailed":
-          case "IdentityGenerationFailed":
-          case "SessionCreationFailed":
-          case "RepositoryError":
-            return respondToUseCaseError(context, {
-              kind: "RepositoryError",
-            });
-          default:
-            return assertNever(error);
-        }
-      },
+    return parseForm(context, SetupFormSchema).match(
+      (input) =>
+        dependencies.setUpInitialAdmin.run(input).match(
+          (session) => {
+            setSessionCookie(
+              context,
+              session,
+              dependencies.clock,
+              dependencies.isProduction,
+            );
+            return context.redirect("/");
+          },
+          (error) => {
+            switch (error.kind) {
+              case "InitialAdminAlreadyExists":
+                return context.redirect("/login");
+              case "PasswordHashingFailed":
+              case "IdentityGenerationFailed":
+              case "SessionCreationFailed":
+                return respondToUseCaseError(context, {
+                  kind: "InternalServerError",
+                });
+              default:
+                return assertNever(error);
+            }
+          },
+        ),
+      (error) =>
+        respondToUseCaseError(context, error, {
+          validation: (errors) =>
+            context.render(
+              "Setup",
+              withSharedProps(context, { errors }),
+              { url: "/setup" },
+            ),
+        }),
     );
   });
 
   app.get("/login", async (context) => {
-    const installation = await getInstallationStatus(dependencies);
-    if (installation.isErr()) {
-      return respondToUseCaseError(context, { kind: "RepositoryError" });
-    }
-    if (installation.value.kind === "InitialSetupAvailable") {
-      return context.redirect("/setup");
-    }
-    if (context.get("actor") !== undefined) {
-      return context.redirect("/");
-    }
-    return context.render("Login", withSharedProps(context, {}));
+    const installation = await resolveInstallationStatus(
+      dependencies.installationStatusQuery,
+    );
+    return respondToLoginPage(context, installation);
   });
 
   app.post("/login", async (context) => {
-    const installation = await getInstallationStatus(dependencies);
-    if (installation.isErr()) {
-      return respondToUseCaseError(context, { kind: "RepositoryError" });
-    }
-    if (installation.value.kind === "InitialSetupAvailable") {
-      return context.redirect("/setup");
-    }
-
-    const parsed = await parseForm(context, LoginFormSchema);
-    if (parsed.isErr()) {
-      return respondToUseCaseError(context, parsed.error, {
-        validation: (errors) =>
-          context.render(
-            "Login",
-            withSharedProps(context, { errors }),
-            { url: "/login" },
-          ),
-      });
+    const installation = await resolveInstallationStatus(
+      dependencies.installationStatusQuery,
+    );
+    switch (installation.kind) {
+      case "InitialSetupAvailable":
+        return context.redirect("/setup");
+      case "Installed":
+        break;
+      default:
+        return assertNever(installation);
     }
 
-    return dependencies.logIn.run(parsed.value).match(
-      (session) => {
-        setSessionCookie(
-          context,
-          session,
-          dependencies.clock,
-          dependencies.isProduction,
-        );
-        return context.redirect("/");
-      },
-      (error) => {
-        switch (error.kind) {
-          case "InvalidCredentials":
-            return context.render(
-              "Login",
-              withSharedProps(context, {
-                errors: {
-                  credentials:
-                    "メールアドレスまたはパスワードが正しくありません",
-                },
-              }),
-              { url: "/login" },
+    return parseForm(context, LoginFormSchema).match(
+      (input) =>
+        dependencies.logIn.run(input).match(
+          (session) => {
+            setSessionCookie(
+              context,
+              session,
+              dependencies.clock,
+              dependencies.isProduction,
             );
-          case "PasswordVerificationFailed":
-          case "SessionCreationFailed":
-          case "RepositoryError":
-            return respondToUseCaseError(context, {
-              kind: "RepositoryError",
-            });
-          default:
-            return assertNever(error);
-        }
-      },
+            return context.redirect("/");
+          },
+          (error) => {
+            switch (error.kind) {
+              case "InvalidCredentials":
+                return context.render(
+                  "Login",
+                  withSharedProps(context, {
+                    errors: {
+                      credentials:
+                        "メールアドレスまたはパスワードが正しくありません",
+                    },
+                  }),
+                  { url: "/login" },
+                );
+              case "PasswordVerificationFailed":
+              case "SessionCreationFailed":
+                return respondToUseCaseError(context, {
+                  kind: "InternalServerError",
+                });
+              default:
+                return assertNever(error);
+            }
+          },
+        ),
+      (error) =>
+        respondToUseCaseError(context, error, {
+          validation: (errors) =>
+            context.render(
+              "Login",
+              withSharedProps(context, { errors }),
+              { url: "/login" },
+            ),
+        }),
     );
   });
 
   app.post("/logout", async (context) => {
     const actor = context.get("actor");
     if (actor === undefined) {
-      const installation = await getInstallationStatus(dependencies);
-      if (installation.isErr()) {
-        return respondToUseCaseError(context, { kind: "RepositoryError" });
-      }
-      return context.redirect(
-        installation.value.kind === "InitialSetupAvailable"
-          ? "/setup"
-          : "/login",
+      const installation = await resolveInstallationStatus(
+        dependencies.installationStatusQuery,
       );
+      switch (installation.kind) {
+        case "InitialSetupAvailable":
+          return context.redirect("/setup");
+        case "Installed":
+          return context.redirect("/login");
+        default:
+          return assertNever(installation);
+      }
     }
 
     return dependencies.logOut
@@ -238,9 +266,8 @@ export const registerAuthRoutes = (
                 kind: "Unauthorized",
               });
             case "SessionInvalidationFailed":
-            case "RepositoryError":
               return respondToUseCaseError(context, {
-                kind: "RepositoryError",
+                kind: "InternalServerError",
               });
             default:
               return assertNever(error);

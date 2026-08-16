@@ -1,4 +1,4 @@
-import { okAsync } from "neverthrow";
+import { okAsync, ResultAsync } from "neverthrow";
 import { describe, expect, test } from "vitest";
 
 import {
@@ -541,6 +541,144 @@ describe("appointment command use cases", () => {
 });
 
 describe("appointment query use cases", () => {
+  test("short-circuits dashboard reads for unauthorized actors and rejected user resolution", async () => {
+    let appointmentListCalls = 0;
+    const useCase = GetDashboardUseCase.create({
+      userResolver: { resolveById: () => okAsync(undefined) },
+      appointmentListResolver: {
+        resolveAll: () => {
+          appointmentListCalls += 1;
+          return okAsync([]);
+        },
+      },
+      ownerListResolver: { resolveAll: () => okAsync([]) },
+      petListResolver: { resolveAll: () => okAsync([]) },
+      userListResolver: { resolveAll: () => okAsync([]) },
+    });
+
+    const unauthorized = await useCase.run({ actorUserId: ids.receptionist });
+
+    expect(unauthorized).toMatchObject({
+      error: { kind: "Unauthorized", actorUserId: ids.receptionist },
+    });
+    expect(appointmentListCalls).toBe(0);
+
+    const rejection = new Error("user resolver rejected");
+    const rejectedUseCase = GetDashboardUseCase.create({
+      userResolver: {
+        resolveById: () => ResultAsync.fromSafePromise(Promise.reject(rejection)),
+      },
+      appointmentListResolver: {
+        resolveAll: () => {
+          appointmentListCalls += 1;
+          return okAsync([]);
+        },
+      },
+      ownerListResolver: { resolveAll: () => okAsync([]) },
+      petListResolver: { resolveAll: () => okAsync([]) },
+      userListResolver: { resolveAll: () => okAsync([]) },
+    });
+
+    await expect(
+      rejectedUseCase.run({ actorUserId: ids.receptionist }),
+    ).rejects.toBe(rejection);
+    expect(appointmentListCalls).toBe(0);
+  });
+
+  test("short-circuits appointment-list reads for unauthorized actors and rejected user resolution", async () => {
+    let appointmentListCalls = 0;
+    const useCase = ListAppointmentsUseCase.create({
+      userResolver: { resolveById: () => okAsync(undefined) },
+      appointmentListResolver: {
+        resolveAll: () => {
+          appointmentListCalls += 1;
+          return okAsync([]);
+        },
+      },
+      ownerListResolver: { resolveAll: () => okAsync([]) },
+      petListResolver: { resolveAll: () => okAsync([]) },
+      userListResolver: { resolveAll: () => okAsync([]) },
+    });
+
+    const unauthorized = await useCase.run({ actorUserId: ids.receptionist });
+
+    expect(unauthorized).toMatchObject({
+      error: { kind: "Unauthorized", actorUserId: ids.receptionist },
+    });
+    expect(appointmentListCalls).toBe(0);
+
+    const rejection = new Error("user resolver rejected");
+    const rejectedUseCase = ListAppointmentsUseCase.create({
+      userResolver: {
+        resolveById: () => ResultAsync.fromSafePromise(Promise.reject(rejection)),
+      },
+      appointmentListResolver: {
+        resolveAll: () => {
+          appointmentListCalls += 1;
+          return okAsync([]);
+        },
+      },
+      ownerListResolver: { resolveAll: () => okAsync([]) },
+      petListResolver: { resolveAll: () => okAsync([]) },
+      userListResolver: { resolveAll: () => okAsync([]) },
+    });
+
+    await expect(
+      rejectedUseCase.run({ actorUserId: ids.receptionist }),
+    ).rejects.toBe(rejection);
+    expect(appointmentListCalls).toBe(0);
+  });
+
+  test("short-circuits appointment-detail reads for missing appointments and rejected resolution", async () => {
+    let ownerCalls = 0;
+    const useCase = GetAppointmentUseCase.create({
+      userResolver,
+      appointmentResolver: { resolveById: () => okAsync(undefined) },
+      ownerResolver: {
+        resolveById: () => {
+          ownerCalls += 1;
+          return okAsync(undefined);
+        },
+      },
+      petResolver,
+      veterinarianResolver: { resolveAll: () => okAsync(users) },
+    });
+
+    const missing = await useCase.run({
+      actorUserId: ids.receptionist,
+      appointmentId: ids.appointment,
+    });
+
+    expect(missing).toMatchObject({
+      error: { kind: "AppointmentNotFound", appointmentId: ids.appointment },
+    });
+    expect(ownerCalls).toBe(0);
+
+    const rejection = new Error("appointment resolver rejected");
+    const rejectedUseCase = GetAppointmentUseCase.create({
+      userResolver,
+      appointmentResolver: {
+        resolveById: () => ResultAsync.fromSafePromise(Promise.reject(rejection)),
+      },
+      ownerResolver: {
+        resolveById: () => {
+          ownerCalls += 1;
+          return okAsync(undefined);
+        },
+      },
+      petResolver,
+      veterinarianResolver: { resolveAll: () => okAsync(users) },
+    });
+
+    await expect(
+      rejectedUseCase.run({
+        actorUserId: ids.receptionist,
+        appointmentId: ids.appointment,
+      }),
+    ).rejects.toBe(rejection);
+    expect(ownerCalls).toBe(0);
+  });
+
   test("retains terminal appointments and labels deleted owner, pet, and veterinarian records", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);

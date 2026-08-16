@@ -2,7 +2,6 @@ import { ResultAsync, type ResultAsync as UseResultAsync } from "neverthrow";
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import { Owner } from "../domain/owner/owner.js";
 import type { OwnerEmail } from "../domain/owner/ownerEmail.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
@@ -30,12 +29,8 @@ export type UseCaseOk = Readonly<{ owner: OwnerView }>;
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
-  UnauthorizedError | IdentityGenerationFailed | UseCaseRepositoryError;
+  UnauthorizedError | IdentityGenerationFailed;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type OwnerIdGenerator = Readonly<{ generate: () => OwnerId }>;
 export type Dependencies = Readonly<{
@@ -49,10 +44,6 @@ export type CreateOwnerUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
 const toView = (owner: Owner): OwnerView => ({
   ownerId: owner.ownerId,
   name: owner.name,
@@ -81,12 +72,11 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() => createEvent(dependencies, input))
       .andThrough((event) =>
-        dependencies.ownerCreatedStore.store(event).mapErr(toRepositoryError),
+        dependencies.ownerCreatedStore.store(event),
       )
       .map((event) => ({ owner: toView(event.aggregateState) }));
 

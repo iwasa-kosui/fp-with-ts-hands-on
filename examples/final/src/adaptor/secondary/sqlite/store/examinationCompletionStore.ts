@@ -135,13 +135,8 @@ export const createExaminationCompletionStore = (
       }),
       (cause) => {
         const conflict = AppointmentConflictSchema.safeParse(cause);
-        return conflict.success
-          ? conflict.data
-          : {
-              kind: "RepositoryError",
-              operation: "ExaminationCompletionStore.store",
-              cause,
-            };
+        if (conflict.success) return conflict.data;
+        throw cause;
       },
     ),
 });

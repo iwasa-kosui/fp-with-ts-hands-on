@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
-import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import { ExamResult } from "../../../../domain/examResult/examResult.js";
 import type {
   ExamResultByIdResolver,
@@ -27,20 +26,13 @@ export const parseExamResultRow = (raw: unknown) => {
   }
   return state;
 };
-const repositoryError = (operation: string) => (cause: unknown): RepositoryError => ({
-  kind: "RepositoryError",
-  operation,
-  cause,
-});
-
 export const createExamResultByIdResolver = (db: SqliteDatabase): ExamResultByIdResolver => ({
   resolveById: (examId) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() => {
         const row = db.select().from(examResultsTable).where(eq(examResultsTable.examId, examId)).get();
         return row === undefined ? undefined : parseExamResultRow(row);
       }),
-      repositoryError("ExamResultByIdResolver.resolveById"),
     ),
 });
 
@@ -48,13 +40,12 @@ export const createExamResultByPetIdResolver = (
   db: SqliteDatabase,
 ): ExamResultByPetIdResolver => ({
   resolveByPetId: (petId) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         db.select().from(examResultsTable)
           .where(eq(examResultsTable.petId, petId))
           .all()
           .map(parseExamResultRow),
       ),
-      repositoryError("ExamResultByPetIdResolver.resolveByPetId"),
     ),
 });

@@ -190,12 +190,9 @@ describe("file SQLite application smoke", () => {
       expiresAt: Timestamp.schema.parse("2026-08-09T13:00:00.000Z"),
     });
 
-    const result = await createInitialAdminSetupStore(database).store(
-      userEvent,
-      sessionEvent,
-    );
-
-    expect(result.isErr() && result.error.kind).toBe("RepositoryError");
+    await expect(
+      createInitialAdminSetupStore(database).store(userEvent, sessionEvent),
+    ).rejects.toThrow();
     const secondConnection = createSqliteDatabase(databasePath);
     expect(secondConnection.select({ value: count() }).from(installationTable).get()).toEqual({
       value: 0,

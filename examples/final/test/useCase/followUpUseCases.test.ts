@@ -1,4 +1,4 @@
-import { errAsync, okAsync } from "neverthrow";
+import { okAsync, ResultAsync } from "neverthrow";
 import { describe, expect, test } from "vitest";
 import { sql } from "drizzle-orm";
 
@@ -35,7 +35,7 @@ import { UserId } from "../../src/domain/user/userId.js";
 import { UserName } from "../../src/domain/user/userName.js";
 import { ListEventsUseCase } from "../../src/useCase/listEventsUseCase.js";
 import { ListFollowUpsUseCase } from "../../src/useCase/listFollowUpsUseCase.js";
-import type { SanitizedAuditRecord } from "../../src/useCase/query/eventHistoryReader.js";
+import type { SanitizedAuditRecord } from "../../src/domain/audit/eventHistoryReader.js";
 import { RequestFollowUpUseCase } from "../../src/useCase/requestFollowUpUseCase.js";
 
 const ids = {
@@ -274,18 +274,15 @@ describe("follow-up use cases", () => {
     expect(batches[0]).toHaveLength(1);
   });
 
-  test("returns a repository error when the single batch store fails", async () => {
-    const result = await RequestFollowUpUseCase.create({
+  test("rejects when the single batch store fails", async () => {
+    const infrastructureError = new Error("private cause");
+    const result = RequestFollowUpUseCase.create({
       userResolver,
       followUpRequestReader: noFollowUpRequests,
       followUpResolver: { resolveCandidates: () => okAsync([candidate]) },
       followUpRequestedStore: {
         store: () =>
-          errAsync({
-            kind: "RepositoryError",
-            operation: "batch",
-            cause: new Error("private cause"),
-          }),
+          ResultAsync.fromSafePromise(Promise.reject(infrastructureError)),
       },
       eventIdGenerator: { generate: () => ids.followUpEvent },
       clock: { now: () => followUpAt },
@@ -294,10 +291,7 @@ describe("follow-up use cases", () => {
       appointmentIds: [ids.appointment],
     });
 
-    expect(result.isErr() && result.error).toEqual({
-      kind: "RepositoryError",
-      operation: "batch",
-    });
+    await expect(result).rejects.toBe(infrastructureError);
   });
 
   test("returns an early typed conflict without resolving or storing an existing request", async () => {
@@ -335,6 +329,40 @@ describe("follow-up use cases", () => {
     expect(storeCalls).toBe(0);
   });
 
+  test("rejects a requested-ID reader failure before resolving candidates or storing", async () => {
+    const infrastructureError = new Error("private cause");
+    let resolverCalls = 0;
+    let storeCalls = 0;
+    const result = RequestFollowUpUseCase.create({
+      userResolver,
+      followUpRequestReader: {
+        listRequestedAppointmentIds: () =>
+          ResultAsync.fromSafePromise(Promise.reject(infrastructureError)),
+      },
+      followUpResolver: {
+        resolveCandidates: () => {
+          resolverCalls += 1;
+          return okAsync([candidate]);
+        },
+      },
+      followUpRequestedStore: {
+        store: () => {
+          storeCalls += 1;
+          return okAsync(undefined);
+        },
+      },
+      eventIdGenerator: { generate: () => ids.followUpEvent },
+      clock: { now: () => followUpAt },
+    }).run({
+      actorUserId: ids.receptionist,
+      appointmentIds: [ids.appointment],
+    });
+
+    await expect(result).rejects.toBe(infrastructureError);
+    expect(resolverCalls).toBe(0);
+    expect(storeCalls).toBe(0);
+  });
+
   test("rolls back the whole SQLite batch when a later follow-up insert fails", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);
@@ -346,7 +374,7 @@ describe("follow-up use cases", () => {
       },
       examResult: { ...candidate.examResult, examId: ids.otherExam },
     } as const satisfies FollowUpCandidate;
-    const result = await RequestFollowUpUseCase.create({
+    const result = RequestFollowUpUseCase.create({
       userResolver,
       followUpRequestReader: noFollowUpRequests,
       followUpResolver: {
@@ -360,7 +388,7 @@ describe("follow-up use cases", () => {
       appointmentIds: [ids.appointment, ids.otherAppointment],
     });
 
-    expect(result.isErr() && result.error.kind).toBe("RepositoryError");
+    await expect(result).rejects.toThrow();
     expect(
       (await createEventHistoryReader(db).list(users[0]))._unsafeUnwrap(),
     ).toEqual([]);

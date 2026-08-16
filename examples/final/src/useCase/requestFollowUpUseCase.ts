@@ -3,13 +3,13 @@ import {
   ok,
   ResultAsync,
   okAsync,
+  safeTry,
   type Result,
   type ResultAsync as UseResultAsync,
 } from "neverthrow";
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import {
   collectFollowUpTargets,
@@ -17,13 +17,16 @@ import {
   type FollowUpTarget,
 } from "../domain/followUp/collectFollowUpTargets.js";
 import { FollowUpRequested } from "../domain/followUp/followUpRequested.js";
+import type { FollowUpRequestReader } from "../domain/followUp/followUpRequestReader.js";
 import type { FollowUpResolver } from "../domain/followUp/followUpResolver.js";
-import type { FollowUpRequestConflict, FollowUpRequestedStore, FollowUpStoreError } from "../domain/followUp/followUpStores.js";
+import type {
+  FollowUpRequestConflict,
+  FollowUpRequestedStore,
+} from "../domain/followUp/followUpStores.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
-import type { FollowUpRequestReader } from "./query/followUpRequestReader.js";
 
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;
@@ -37,17 +40,12 @@ export type FollowUpTargetNotFound = Readonly<{
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | CollectFollowUpTargetsError
   | FollowUpTargetNotFound
   | FollowUpRequestConflict
-  | IdentityGenerationFailed
-  | UseCaseRepositoryError;
+  | IdentityGenerationFailed;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -61,14 +59,6 @@ export type RequestFollowUpUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
-const toStoreError = (
-  error: FollowUpStoreError,
-): UseCaseRepositoryError | FollowUpRequestConflict =>
-  error.kind === "FollowUpRequestConflict" ? error : toRepositoryError(error);
 const uniqueIds = (ids: readonly AppointmentId[]): readonly AppointmentId[] =>
   ids.reduce<readonly AppointmentId[]>(
     (unique, id) => (unique.includes(id) ? unique : [...unique, id]),
@@ -129,36 +119,37 @@ const createFreshEvents =
       ),
       (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
+const persistEvents =
+  (dependencies: Dependencies) =>
+  (events: readonly FollowUpRequested[]) =>
+    events.length === 0
+      ? okAsync(events)
+      : dependencies.followUpRequestedStore.store(...events).map(() => events);
+const collectEvents =
+  (dependencies: Dependencies) =>
+  (input: UseCaseInput): ResultAsync<
+    readonly FollowUpRequested[],
+    UseCaseError
+  > =>
+    safeTry<readonly FollowUpRequested[], UseCaseError>(async function* () {
+      const resolvedActor =
+        yield* dependencies.userResolver.resolveById(input.actorUserId);
+      const actor = yield* ensureUserFound(input.actorUserId)(resolvedActor);
+      yield* ensureCanManageClinic(actor);
+      const requestedAppointmentIds =
+        yield* dependencies.followUpRequestReader.listRequestedAppointmentIds();
+      yield* ensureNotRequested(input.appointmentIds)(requestedAppointmentIds);
+      const candidates = yield* dependencies.followUpResolver.resolveCandidates();
+      const targets = yield* collectFollowUpTargets(candidates);
+      const selectedTargets = yield* selectTargets(input.appointmentIds)(targets);
+      const events = yield* createFreshEvents(dependencies, input)(selectedTargets);
+      const persistedEvents = yield* persistEvents(dependencies)(events);
+      return ok(persistedEvents);
+    });
 const run =
   (dependencies: Dependencies) =>
   (input: UseCaseInput): UseCaseOutput =>
-    dependencies.userResolver
-      .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
-      .andThen(ensureUserFound(input.actorUserId))
-      .andThen(ensureCanManageClinic)
-      .andThen(() =>
-        dependencies.followUpRequestReader
-          .listRequestedAppointmentIds()
-          .mapErr(toRepositoryError),
-      )
-      .andThen(ensureNotRequested(input.appointmentIds))
-      .andThen(() =>
-        dependencies.followUpResolver
-          .resolveCandidates()
-          .mapErr(toRepositoryError),
-      )
-      .andThen(collectFollowUpTargets)
-      .andThen(selectTargets(input.appointmentIds))
-      .andThen(createFreshEvents(dependencies, input))
-      .andThen((events) =>
-        events.length === 0
-          ? okAsync(events)
-          : dependencies.followUpRequestedStore
-              .store(...events)
-              .mapErr(toStoreError)
-              .map(() => events),
-      )
+    collectEvents(dependencies)(input)
       .map((events) => ({
         appointmentIds: events.map((event) => event.aggregateId),
       }));

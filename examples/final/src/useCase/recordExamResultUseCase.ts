@@ -8,7 +8,6 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { Timestamp } from "../domain/aggregate/timestamp.js";
 import type {
   Appointment,
@@ -18,10 +17,7 @@ import type {
 import { Appointment as AppointmentAggregate } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/appointment/appointmentId.js";
 import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
-import type {
-  AppointmentConflict,
-  AppointmentStoreError,
-} from "../domain/appointment/appointmentStores.js";
+import type { AppointmentConflict } from "../domain/appointment/appointmentStores.js";
 import { ExamResult } from "../domain/examResult/examResult.js";
 import type { ExamId } from "../domain/examResult/examId.js";
 import type { ExamResultItem } from "../domain/examResult/examResultItem.js";
@@ -64,18 +60,13 @@ export type ExamResultPetMismatch = Readonly<{
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | AppointmentNotFound
   | InvalidAppointmentState
   | ExamResultPetMismatch
   | IdentityGenerationFailed
-  | AppointmentConflict
-  | UseCaseRepositoryError;
+  | AppointmentConflict;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type ExamIdGenerator = Readonly<{ generate: () => ExamId }>;
 export type Dependencies = Readonly<{
@@ -91,14 +82,6 @@ export type RecordExamResultUseCase = Readonly<{
 }>;
 
 type Examiner = Extract<User, { kind: "Admin" | "Veterinarian" }>;
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
-const toStoreError = (
-  error: AppointmentStoreError,
-): UseCaseRepositoryError | AppointmentConflict =>
-  error.kind === "AppointmentConflict" ? error : toRepositoryError(error);
 const ensureExaminer = (user: User): Result<Examiner, UnauthorizedError> =>
   user.kind === "Admin" || user.kind === "Veterinarian"
     ? ok(user)
@@ -165,13 +148,11 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureExaminer)
       .andThen((user) =>
         dependencies.appointmentResolver
           .resolveById(input.appointmentId)
-          .mapErr(toRepositoryError)
           .andThen(ensureAppointmentFound(input.appointmentId))
           .andThen(ensureInExamination)
           .andThen(ensureAssigned(user)),
@@ -179,9 +160,10 @@ const run =
       .andThen(ensurePet(input))
       .andThen((appointment) => createEvents(dependencies, input, appointment))
       .andThrough(({ examResult, appointmentCompleted }) =>
-        dependencies.examinationCompletionStore
-          .store(examResult, appointmentCompleted)
-          .mapErr(toStoreError),
+        dependencies.examinationCompletionStore.store(
+          examResult,
+          appointmentCompleted,
+        ),
       )
       .map(({ examResult, appointmentCompleted }) => ({
         examResult: examResult.aggregateState,

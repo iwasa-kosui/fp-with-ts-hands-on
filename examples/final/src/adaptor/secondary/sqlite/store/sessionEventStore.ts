@@ -1,7 +1,6 @@
 import { eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 
-import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type { SessionCreated, SessionDeleted } from "../../../../domain/session/sessionEvent.js";
 import type { SqliteDatabase } from "../db.js";
@@ -12,7 +11,7 @@ type SessionEvent = SessionCreated | SessionDeleted;
 
 export const createSessionEventStore = (db: SqliteDatabase) => ({
   store: (...events: readonly SessionEvent[]) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         db.transaction((tx) => {
           events.forEach((event) => {
@@ -57,10 +56,5 @@ export const createSessionEventStore = (db: SqliteDatabase) => ({
           });
         }),
       ),
-      (cause): RepositoryError => ({
-        kind: "RepositoryError",
-        operation: "SessionEventStore.store",
-        cause,
-      }),
     ),
 } as const);

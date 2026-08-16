@@ -1,11 +1,10 @@
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
-import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import type {
   InstallationStatus,
   InstallationStatusQuery,
-} from "../../../../useCase/query/installationStatusQuery.js";
+} from "../../../../domain/installation/installationStatusQuery.js";
 import type { SqliteDatabase } from "../db.js";
 import { installationTable } from "../schema.js";
 
@@ -26,7 +25,7 @@ export const createInstallationStatusQuery = (
   db: SqliteDatabase,
 ): InstallationStatusQuery => ({
   get: () =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         toStatus(
           InstallationRowsSchema.parse(
@@ -34,10 +33,5 @@ export const createInstallationStatusQuery = (
           ),
         ),
       ),
-      (cause): RepositoryError => ({
-        kind: "RepositoryError",
-        operation: "InstallationStatusQuery.get",
-        cause,
-      }),
     ),
 });

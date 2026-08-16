@@ -8,7 +8,6 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import {
   Session,
   type Session as SessionState,
@@ -34,15 +33,10 @@ export type Unauthorized = Readonly<{
 export type SessionInvalidationFailed = Readonly<{
   kind: "SessionInvalidationFailed";
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
   | SessionNotFound
   | Unauthorized
-  | SessionInvalidationFailed
-  | UseCaseRepositoryError;
+  | SessionInvalidationFailed;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   sessionResolver: SessionByIdResolver;
@@ -54,10 +48,6 @@ export type LogOutUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
 const ensureSession =
   (sessionId: SessionId) =>
   (session: SessionState | undefined): Result<SessionState, SessionNotFound> =>
@@ -89,12 +79,11 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.sessionResolver
       .resolveById(input.sessionId)
-      .mapErr(toRepositoryError)
       .andThen(ensureSession(input.sessionId))
       .andThen(ensureOwnedBy(input.actorUserId))
       .andThen(createDeletionEvent(dependencies, input.actorUserId))
       .andThrough((event) =>
-        dependencies.sessionDeletedStore.store(event).mapErr(toRepositoryError),
+        dependencies.sessionDeletedStore.store(event),
       )
       .map((event) => ({ sessionId: event.aggregateId }));
 

@@ -8,7 +8,6 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import {
   Appointment,
   type Appointment as AppointmentState,
@@ -20,7 +19,7 @@ import type { Diagnosis } from "../domain/appointment/diagnosis.js";
 import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
 import type { PaymentAmount } from "../domain/appointment/paymentAmount.js";
 import type { Treatment } from "../domain/appointment/treatment.js";
-import type { AppointmentConflict, AppointmentStoreError, PaymentRecordedStore } from "../domain/appointment/appointmentStores.js";
+import type { AppointmentConflict, PaymentRecordedStore } from "../domain/appointment/appointmentStores.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";
@@ -48,17 +47,12 @@ export type InvalidAppointmentState = Readonly<{
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | AppointmentNotFound
   | InvalidAppointmentState
   | IdentityGenerationFailed
-  | AppointmentConflict
-  | UseCaseRepositoryError;
+  | AppointmentConflict;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -71,14 +65,6 @@ export type RecordPaymentUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
-const toStoreError = (
-  error: AppointmentStoreError,
-): UseCaseRepositoryError | AppointmentConflict =>
-  error.kind === "AppointmentConflict" ? error : toRepositoryError(error);
 const ensureAwaitingPayment = (
   appointment: AppointmentState,
 ): Result<AwaitingPayment, InvalidAppointmentState> =>
@@ -112,21 +98,16 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() =>
-        dependencies.appointmentResolver
-          .resolveById(input.appointmentId)
-          .mapErr(toRepositoryError),
+        dependencies.appointmentResolver.resolveById(input.appointmentId),
       )
       .andThen(ensureAppointmentFound(input.appointmentId))
       .andThen(ensureAwaitingPayment)
       .andThen(createEvent(dependencies, input))
       .andThrough((event) =>
-        dependencies.paymentRecordedStore
-          .store(event)
-          .mapErr(toStoreError),
+        dependencies.paymentRecordedStore.store(event),
       )
       .map((event) => ({ appointment: event.aggregateState }));
 

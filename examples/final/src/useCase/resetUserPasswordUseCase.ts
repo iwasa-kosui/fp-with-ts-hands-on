@@ -8,7 +8,6 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import { Permission } from "../domain/user/permission.js";
 import {
   User,
@@ -40,16 +39,11 @@ export type PasswordHashingFailed = Readonly<{ kind: "PasswordHashingFailed" }>;
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
   | Unauthorized
   | UserNotFound
   | PasswordHashingFailed
-  | IdentityGenerationFailed
-  | UseCaseRepositoryError;
+  | IdentityGenerationFailed;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -62,10 +56,6 @@ export type ResetUserPasswordUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
 const ensureActor =
   (actorUserId: UserId) =>
   (user: UserState | undefined): Result<UserState, Unauthorized> =>
@@ -104,13 +94,10 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
       .andThen(ensureActor(input.actorUserId))
       .andThen(ensureAdmin)
       .andThen(() =>
-        dependencies.userResolver
-          .resolveById(input.targetUserId)
-          .mapErr(toRepositoryError),
+        dependencies.userResolver.resolveById(input.targetUserId),
       )
       .andThen(ensureTarget(input.targetUserId))
       .andThen((user) =>
@@ -120,8 +107,7 @@ const run =
       )
       .andThrough((event) =>
         dependencies.userPasswordResetStore
-          .store(event)
-          .mapErr(toRepositoryError),
+          .store(event),
       )
       .map((event) => ({ user: toUserView(event.aggregateState) }));
 

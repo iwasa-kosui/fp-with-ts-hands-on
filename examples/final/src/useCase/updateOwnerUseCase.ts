@@ -8,7 +8,6 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import { Owner, type OwnerProfile } from "../domain/owner/owner.js";
 import type { OwnerEmail } from "../domain/owner/ownerEmail.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
@@ -42,15 +41,10 @@ export type OwnerNotFound = Readonly<{
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | OwnerNotFound
-  | IdentityGenerationFailed
-  | UseCaseRepositoryError;
+  | IdentityGenerationFailed;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -63,10 +57,6 @@ export type UpdateOwnerUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
 const ensureOwner =
   (ownerId: OwnerId) =>
   (owner: Owner | undefined): Result<Owner, OwnerNotFound> =>
@@ -98,18 +88,15 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() =>
-        dependencies.ownerResolver
-          .resolveById(input.ownerId)
-          .mapErr(toRepositoryError),
+        dependencies.ownerResolver.resolveById(input.ownerId),
       )
       .andThen(ensureOwner(input.ownerId))
       .andThen(createEvent(dependencies, input))
       .andThrough((event) =>
-        dependencies.ownerUpdatedStore.store(event).mapErr(toRepositoryError),
+        dependencies.ownerUpdatedStore.store(event),
       )
       .map((event) => ({ owner: toView(event.aggregateState) }));
 

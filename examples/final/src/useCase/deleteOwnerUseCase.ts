@@ -8,14 +8,10 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import { Owner } from "../domain/owner/owner.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
 import type { OwnerByIdResolver } from "../domain/owner/ownerResolver.js";
-import type {
-  OwnerDeletedStore,
-  OwnerDeletedStoreError,
-} from "../domain/owner/ownerStores.js";
+import type { OwnerDeletedStore } from "../domain/owner/ownerStores.js";
 import type { Pet } from "../domain/pet/pet.js";
 import type { PetByOwnerIdResolver } from "../domain/pet/petResolver.js";
 import type { UserId } from "../domain/user/userId.js";
@@ -33,16 +29,11 @@ export type OwnerHasPets = Readonly<{ kind: "OwnerHasPets"; ownerId: OwnerId }>;
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | OwnerNotFound
   | OwnerHasPets
-  | IdentityGenerationFailed
-  | UseCaseRepositoryError;
+  | IdentityGenerationFailed;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -56,17 +47,6 @@ export type DeleteOwnerUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
-const toStoreError = (
-  error: OwnerDeletedStoreError,
-):
-  | OwnerNotFound
-  | OwnerHasPets
-  | UseCaseRepositoryError =>
-  error.kind === "RepositoryError" ? toRepositoryError(error) : error;
 const ensureOwner =
   (ownerId: OwnerId) =>
   (owner: Owner | undefined): Result<Owner, OwnerNotFound> =>
@@ -92,25 +72,21 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() =>
-        dependencies.ownerResolver
-          .resolveById(input.ownerId)
-          .mapErr(toRepositoryError),
+        dependencies.ownerResolver.resolveById(input.ownerId),
       )
       .andThen(ensureOwner(input.ownerId))
       .andThen((owner) =>
         dependencies.petResolver
           .resolveByOwnerId(input.ownerId)
-          .mapErr(toRepositoryError)
           .andThen(ensureNoPets(input.ownerId))
           .map(() => owner),
       )
       .andThen(createEvent(dependencies, input))
       .andThrough((event) =>
-        dependencies.ownerDeletedStore.store(event).mapErr(toStoreError),
+        dependencies.ownerDeletedStore.store(event),
       )
       .map((event) => ({ ownerId: event.aggregateId }));
 

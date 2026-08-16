@@ -1,5 +1,4 @@
 import type { AggregateStore } from "../aggregate/aggregateStore.js";
-import type { RepositoryError } from "../aggregate/repositoryError.js";
 import type { ResultAsync } from "neverthrow";
 import type {
   UserCreated,
@@ -13,8 +12,7 @@ export type UserPasswordResetStore = AggregateStore<UserPasswordReset>;
 export type CannotDowngradeLastAdminStoreError = Readonly<{
   kind: "CannotDowngradeLastAdmin";
 }>;
-export type UserUpdatedStoreError =
-  CannotDowngradeLastAdminStoreError | RepositoryError;
+export type UserUpdatedStoreError = CannotDowngradeLastAdminStoreError;
 export type UserUpdatedStore = Readonly<{
   store: (
     ...events: readonly UserUpdated[]
@@ -23,8 +21,7 @@ export type UserUpdatedStore = Readonly<{
 export type CannotDeleteLastAdminStoreError = Readonly<{
   kind: "CannotDeleteLastAdmin";
 }>;
-export type UserDeletedStoreError =
-  CannotDeleteLastAdminStoreError | RepositoryError;
+export type UserDeletedStoreError = CannotDeleteLastAdminStoreError;
 export type UserDeletedStore = Readonly<{
   store: (
     ...events: readonly UserDeleted[]

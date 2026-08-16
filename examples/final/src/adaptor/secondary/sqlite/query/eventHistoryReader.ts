@@ -1,12 +1,11 @@
 import { asc } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 
-import type { RepositoryError } from "../../../../domain/aggregate/repositoryError.js";
 import type {
   EventHistoryReader,
   SanitizedAuditRecord,
   SanitizedAuditValue,
-} from "../../../../useCase/query/eventHistoryReader.js";
+} from "../../../../domain/audit/eventHistoryReader.js";
 import type { SqliteDatabase } from "../db.js";
 import { domainEventsTable } from "../schema.js";
 import {
@@ -75,7 +74,7 @@ export const createEventHistoryReader = (
   db: SqliteDatabase,
 ): EventHistoryReader => ({
   list: (_admin) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         db
           .select()
@@ -85,10 +84,5 @@ export const createEventHistoryReader = (
           .map(parsePersistedEventRow)
           .map(toSanitizedAuditRecord),
       ),
-      (cause): RepositoryError => ({
-        kind: "RepositoryError",
-        operation: "EventHistoryReader.list",
-        cause,
-      }),
     ),
 });

@@ -191,12 +191,9 @@ describe("SQLite initial Admin setup store", () => {
       eventId: duplicateEventId,
     } as const;
 
-    const result = await createInitialAdminSetupStore(db).store(
-      fixture.userEvent,
-      sessionEvent,
-    );
-
-    expect(result.isErr() && result.error.kind).toBe("RepositoryError");
+    await expect(
+      createInitialAdminSetupStore(db).store(fixture.userEvent, sessionEvent),
+    ).rejects.toThrow();
     expect(db.select().from(installationTable).all()).toEqual([]);
     expect(db.select().from(usersTable).all()).toEqual([]);
     expect(db.select().from(sessionsTable).all()).toEqual([]);

@@ -8,7 +8,6 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
 import { Pet } from "../domain/pet/pet.js";
 import type { PetId } from "../domain/pet/petId.js";
@@ -38,15 +37,10 @@ export type PetNotFound = Readonly<{ kind: "PetNotFound"; petId: PetId }>;
 export type IdentityGenerationFailed = Readonly<{
   kind: "IdentityGenerationFailed";
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | PetNotFound
-  | IdentityGenerationFailed
-  | UseCaseRepositoryError;
+  | IdentityGenerationFailed;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -59,10 +53,6 @@ export type UpdatePetUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
 const ensurePet =
   (petId: PetId) =>
   (pet: Pet | undefined): Result<Pet, PetNotFound> =>
@@ -90,18 +80,15 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() =>
-        dependencies.petResolver
-          .resolveById(input.petId)
-          .mapErr(toRepositoryError),
+        dependencies.petResolver.resolveById(input.petId),
       )
       .andThen(ensurePet(input.petId))
       .andThen(createEvent(dependencies, input))
       .andThrough((event) =>
-        dependencies.petUpdatedStore.store(event).mapErr(toRepositoryError),
+        dependencies.petUpdatedStore.store(event),
       )
       .map((event) => ({ pet: toView(event.aggregateState) }));
 

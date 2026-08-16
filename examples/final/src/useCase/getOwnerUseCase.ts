@@ -1,6 +1,5 @@
 import { err, ok, type Result, type ResultAsync } from "neverthrow";
 
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import type { Owner } from "../domain/owner/owner.js";
 import type { OwnerId } from "../domain/owner/ownerId.js";
 import type { OwnerEmail } from "../domain/owner/ownerEmail.js";
@@ -24,12 +23,8 @@ export type OwnerNotFound = Readonly<{
   kind: "OwnerNotFound";
   ownerId: OwnerId;
 }>;
-export type UseCaseRepositoryError = Readonly<{
-  kind: "RepositoryError";
-  operation: string;
-}>;
 export type UseCaseError =
-  UnauthorizedError | OwnerNotFound | UseCaseRepositoryError;
+  UnauthorizedError | OwnerNotFound;
 export type UseCaseOutput = ResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -39,10 +34,6 @@ export type GetOwnerUseCase = Readonly<{
   run: (input: UseCaseInput) => UseCaseOutput;
 }>;
 
-const toRepositoryError = (error: RepositoryError): UseCaseRepositoryError => ({
-  kind: "RepositoryError",
-  operation: error.operation,
-});
 const ensureOwner =
   (ownerId: OwnerId) =>
   (owner: Owner | undefined): Result<Owner, OwnerNotFound> =>
@@ -58,13 +49,10 @@ const run =
   (input: UseCaseInput): UseCaseOutput =>
     dependencies.userResolver
       .resolveById(input.actorUserId)
-      .mapErr(toRepositoryError)
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() =>
-        dependencies.ownerResolver
-          .resolveById(input.ownerId)
-          .mapErr(toRepositoryError),
+        dependencies.ownerResolver.resolveById(input.ownerId),
       )
       .andThen(ensureOwner(input.ownerId))
       .map((owner) => ({ owner: toView(owner) }));

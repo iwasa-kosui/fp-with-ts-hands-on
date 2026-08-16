@@ -2,7 +2,6 @@ import { ResultAsync } from "neverthrow";
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { RepositoryError } from "../domain/aggregate/repositoryError.js";
 import {
   Appointment,
   type CheckedIn,
@@ -43,8 +42,7 @@ export type UseCaseError =
   | AppointmentNotFound
   | InvalidAppointmentState
   | AppointmentConflict
-  | IdentityGenerationFailed
-  | RepositoryError;
+  | IdentityGenerationFailed;
 
 export type UseCaseOutput = ResultAsync<UseCaseOk, UseCaseError>;
 

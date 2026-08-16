@@ -101,8 +101,7 @@ const loadFollowUps = async (
           case "Unauthorized":
             return respondToUseCaseError(context, { kind: "Unauthorized" });
           case "ExamResultPetMismatch":
-          case "RepositoryError":
-            return respondToUseCaseError(context, { kind: "RepositoryError" });
+            return respondToUseCaseError(context, { kind: "InternalServerError" });
           default:
             return assertNever(error);
         }
@@ -168,8 +167,7 @@ export const registerFollowUpRoutes = (
               return context.redirect("/follow-ups?error=request-conflict", 303);
             case "ExamResultPetMismatch":
             case "IdentityGenerationFailed":
-            case "RepositoryError":
-              return respondToUseCaseError(context, { kind: "RepositoryError" });
+              return respondToUseCaseError(context, { kind: "InternalServerError" });
             default:
               return assertNever(error);
           }
