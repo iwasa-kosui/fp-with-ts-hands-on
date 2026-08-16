@@ -35,7 +35,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
             <div class="copy-panel">
               <h1 id="page-title">ようこそ<br />WAN NYAN<br /><span class="rainbow-word" aria-label="OSへ！！"><span>O</span><span>S</span><span>へ</span><span>！</span><span>！</span></span></h1>
             </div>
-            <p class="landing-lead">関数型ドメインモデリングを学ぶ教材です。動物病院の予約・カルテ管理システムを題材に、1モジュール・最大4ステップ・3つの設計判断・差分予算の中で、局所的な改善を進めます。</p>
+            <p class="landing-lead">動物病院の予約・カルテ管理システムを題材に、既存の業務コードを小さく改善するハンズオンです。関数型ドメインモデリングを使い、変更は1モジュール、最大4ステップ、3つの設計判断、差分予算の範囲に限定します。</p>
 
             <div class="system-window" aria-label="動物病院の予約・カルテシステム画面">
               <div class="system-window__top">
@@ -66,7 +66,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
                 <aside class="dashboard-notices" aria-label="待合と通知">
                   <section class="mini-widget"><h3>待合室</h3><div class="queue-row"><span>🐶</span><strong>ポチ</strong><em>あと 1</em></div><div class="queue-row"><span>🐱</span><strong>ミケ</strong><em>問診済</em></div><div class="queue-row"><span>🐰</span><strong>もも</strong><em>診察中</em></div></section>
                   <section class="mini-widget"><h3>検査結果</h3><p>ポチのワクチン前チェックは異常なし。ミケは皮膚検査待ち。</p></section>
-                  <section class="mini-widget"><h3>追加要求</h3><p>検査後に電話フォローが必要な患者を抽出したい。連絡先ログ漏えいも同時に疑う。</p></section>
+                  <section class="mini-widget"><h3>追加要求</h3><p>検査後に電話でフォローが必要な患者を抽出したい。連絡先がログに漏れている可能性もある。</p></section>
                   <section class="mini-widget"><h3>会計</h3><p>ポチはワクチン会計準備中。ミケは検査内容確定後に見積り更新。</p></section>
                 </aside>
               </div>
@@ -76,7 +76,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         </section>
 
         <section class="landing-section" id="features" aria-labelledby="features-title">
-          <div class="section-head"><h2 id="features-title">WAN NYAN OSで<span class="mobile-title-break"></span>できること</h2><p>最初は便利でした。予約から会計までがつながり、スタッフは画面を切り替えながら動物たちの来院をさばけるようになりました。</p></div>
+          <div class="section-head"><h2 id="features-title">WAN NYAN OSで<span class="mobile-title-break"></span>できること</h2><p>最初は便利でした。予約から会計までがつながり、スタッフは画面を切り替えながら動物たちの来院に対応できるようになりました。</p></div>
           <div class="feature-splats" aria-label="機能一覧">
             <article class="splat-card"><span class="icon" aria-hidden="true">📅</span><strong>予約管理</strong><span>来院予定、問診、受付状況をひとつの画面で確認。</span></article>
             <article class="splat-card"><span class="icon" aria-hidden="true">🩺</span><strong>カルテ</strong><span>診察メモ、バイタル、処方、注意事項を記録。</span></article>
@@ -91,9 +91,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <section class="landing-section" id="problems" aria-labelledby="problems-title">
           <div class="section-head"><h2 id="problems-title">ところが、問題が増えてきた</h2><p>便利になった分だけ、要求も増えました。小さな改修を重ねるうちに、どの状態で何ができるのか、どの情報を外へ出してよいのかが分かりにくくなっています。</p></div>
           <div class="timeline" aria-label="WAN NYAN OS に起きている問題">
-            <article class="time-stop is-active"><time>Current / S0</time><strong>🐢 現状と事故を対応付ける</strong><span>業務、画面操作、保存先、ログを読み、二重請求とPII流出がどこで起きたかを確認する。</span></article>
+            <article class="time-stop is-active"><time>Current / S0</time><strong>🐢 現状と事故を対応付ける</strong><span>業務の流れ、画面操作、保存先、ログを確認し、二重請求と個人情報の流出がどこで起きたかを確かめる。</span></article>
             <article class="time-stop"><time>Workflow / S1</time><strong>🐕 診察開始の全体を描く</strong><span>ビジネスイベントから、入力、現在状態、失敗、出力イベント、副作用を一枚のカードへ並べる。</span></article>
-            <article class="time-stop"><time>Risk / S2</time><strong>🐇 許可されない状態遷移</strong><span>会計済みやキャンセル済みから診察を開始できる未解決リスクを、状態と遷移の型で防ぐ。</span></article>
+            <article class="time-stop"><time>Risk / S2</time><strong>🐇 許可されない状態遷移</strong><span>会計済み・キャンセル済みの予約でも診察を開始できてしまうリスクを、状態と遷移の型で防ぐ。</span></article>
             <article class="time-stop"><time>Risk / S3</time><strong>🐦 外部入力と意味のある値</strong><span>外部JSON、用途の違うID、飼い主の連絡先を信頼境界で安全な値へ変える。</span></article>
             <article class="time-stop"><time>Risk / S4</time><strong>🐹 ワークフローの予期できる失敗</strong><span>throw と undefined に埋もれた業務上の失敗を、呼び出し側が扱える結果へ変える。</span></article>
             <article class="time-stop"><time>Risk / S5</time><strong>🐢 出力イベントと副作用</strong><span>状態と監査記録を同じ整合性境界で保存し、保存障害は外側の例外境界へ伝える。</span></article>
@@ -102,9 +102,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         </section>
 
         <section class="landing-section start-panel" id="sessions" aria-labelledby="start-title">
-          <div class="section-head"><h2 id="start-title">新任エンジニアとして着任する</h2><p>あなたの最初の仕事は、動物病院の業務と先人のコードを理解することです。問題が顕在化する前に書き換えず、後から確認すべき設計課題の場所を把握します。</p></div>
+          <div class="section-head"><h2 id="start-title">新任エンジニアとして着任する</h2><p>最初の仕事は、動物病院の業務と以前の担当者が残したコードを理解することです。問題が明らかになる前に書き換えず、後から確認すべき設計課題の場所を把握します。</p></div>
           <div class="reading-row">
-            <article class="doc-pane"><h3>Session 00: 業務とシステムを引き継ぐ</h3><p>現行業務、画面操作、保存・ログと事故を対応付け、以後のワークフロー設計で確認する場所を揃えます。</p><div class="callout"><span class="legend-icon" aria-hidden="true">🐢</span><div><strong>セッションページへ</strong><p><a href="/sessions/00-system-handover/">目次付きの Session 00 ページを開く</a></p></div></div></article>
+            <article class="doc-pane"><h3>Session 00: 業務とシステムを引き継ぐ</h3><p>現行業務、画面操作、保存・ログと事故を対応付け、以後のワークフロー設計で確認する場所をそろえます。</p><div class="callout"><span class="legend-icon" aria-hidden="true">🐢</span><div><strong>セッションページへ</strong><p><a href="/sessions/00-system-handover/">目次付きの Session 00 ページを開く</a></p></div></div></article>
             <pre class="help-wanted-code" aria-label="WAN NYAN CLINIC のエンジニア募集"><code>WAN NYAN CLINIC / Engineering Help Wanted
 
 困っていること:

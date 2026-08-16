@@ -71,7 +71,7 @@ const promisesHref =
   <ul class="decision-list">
     {session.decisions.map(({ invariant }) => <li>{invariant}</li>)}
   </ul>
-  <p>今回の変更は <code>{session.exerciseModule.dir}</code> の1モジュールだけに閉じます。</p>
+  <p>今回の変更は <code>{session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
   <WorkflowRiskMap currentSession={exerciseSession} placement="opening" />
 </section>
 
@@ -79,7 +79,7 @@ const promisesHref =
   <h2>配布コードを読む</h2>
   <p>{narrative.legacy}</p>
   <p>
-    編集範囲は <code>{session.exerciseModule.dir}</code>、予算は最大
+    編集範囲は <code>{session.exerciseModule.dir}</code>、変更予算は最大
     {session.exerciseModule.fileBudget}ファイル・実効{session.exerciseModule.lineBudget}行です。
   </p>
   <SessionCodeOverview slug={session.slug} guides={guides} />
@@ -87,7 +87,7 @@ const promisesHref =
 
 <section id="red">
   <h2>失敗を再現する</h2>
-  <p>開始スナップショットの失敗は module-not-found ではなく、業務の言葉を持つ assertion です。</p>
+  <p>開始時点のコード一式で起きる失敗は、モジュールが見つからないエラーではありません。業務名を示した assertion が失敗します。</p>
   <CommandBlock
     phase="red"
     command={session.exerciseCommand}
@@ -101,7 +101,7 @@ const promisesHref =
 
 <section id="refactor">
   <h2>型で閉じる</h2>
-  <h3>ADV: 言語化 → 委譲 → 個人検証</h3>
+  <h3>進め方: 言語化 → 委譲 → 個人検証</h3>
   <ol class="adv-flow">
     <li><strong>言語化（{session.adv.articulate}分）</strong>: 守る不変条件を1文で書く。</li>
     <li><strong>委譲（{session.adv.delegate}分）</strong>: 依頼文へ変換し、モジュール内だけを変更する。</li>
@@ -120,8 +120,8 @@ const promisesHref =
   {
     exerciseSession.solutionPresentation === "completed-file" ? (
       <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
-        <p><strong>開始側:</strong> 予期できる業務 Result と、保存が reject する技術的な例外経路を分けて読む。</p>
-        <p><strong>完成例:</strong> 下の全target fileには、後続stepを含む完成状態が表示される。</p>
+        <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読む。</p>
+        <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示される。</p>
       </div>
     ) : null
   }
@@ -136,20 +136,20 @@ const promisesHref =
   <CommandBlock
     phase="green"
     command={session.exerciseCommand}
-    expected="同じ業務名の assertion が成功し、通常テストと型検査も保たれます。"
+    expected="同じ業務名を持つ assertion が成功します。通常テストと型検査は、別途 pnpm test と pnpm typecheck で確認します。"
   />
 </section>
 
 <section id="review">
   <h2>レビューと持ち帰り</h2>
   <ExerciseReviewChecklist snapshot={session.snapshot} />
-  <h3>設計判断を差分へ照らす</h3>
+  <h3>設計判断と差分を照らし合わせる</h3>
   <div class="decision-list">
     {session.decisions.map((decision) => (
       <article class="decision-card">
         <h4>{decision.invariant}</h4>
         <p><strong>型で表す:</strong> {decision.byType}</p>
-        <p><strong>型で守れない残り:</strong> {decision.notByType}</p>
+        <p><strong>型だけでは守れないこと:</strong> {decision.notByType}</p>
       </article>
     ))}
   </div>
@@ -166,7 +166,7 @@ const promisesHref =
   <ul class="reference-list">
     {session.finalReferences.map((reference) => <li><code>{reference}</code></li>)}
   </ul>
-  <h3>完走できないとき</h3>
+  <h3>演習を完了できないとき</h3>
   <p>{narrative.fallback}</p>
   <WorkflowRiskMap currentSession={exerciseSession} placement="review" />
 </section>

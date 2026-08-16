@@ -15,7 +15,7 @@ const fields = [
   {
     id: "input",
     prompt: "誰が何を依頼するか",
-    answer: "予約IDと担当する獣医師ID。開始時刻と記録IDは実行時に一度だけ決める。",
+    answer: "依頼には、予約IDと担当する獣医師IDを指定する。開始時刻と記録IDは実行時に一度だけ決める。",
   },
   {
     id: "current state",
@@ -30,12 +30,12 @@ const fields = [
   {
     id: "output event",
     prompt: "成功したとき何が起きたと記録するか",
-    answer: "誰がいつ診察を開始し、予約が診察中になったかを表す ExaminationStarted。",
+    answer: "誰がいつ診察を開始し、予約が診察中になったかを表すイベント ExaminationStarted を作成する。",
   },
   {
     id: "side effects",
     prompt: "どこへ何を保存・通知するか",
-    answer: "診察中になった予約状態と監査記録を、同じ保存境界へ一緒に渡す。",
+    answer: "診察中になった予約状態と監査記録を、同じ保存境界にまとめて渡す。",
   },
 ] as const;
 ---
@@ -72,7 +72,7 @@ const fields = [
     variant === "answer" ? (
       <p class="before-after">
         <strong>ワークフローを分ける:</strong>
-        ラボ結果の到着は診察開始の途中処理ではなく、別のtriggerから始まる別ワークフローです。
+        検査結果の到着は診察開始の途中処理ではなく、別のきっかけから始まるワークフローです。
       </p>
     ) : null
   }

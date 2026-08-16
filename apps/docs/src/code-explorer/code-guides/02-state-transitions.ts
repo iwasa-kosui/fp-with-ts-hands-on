@@ -3,9 +3,9 @@ import type { CodeGuide } from "../code-guide";
 export default [
   {
     id: "wide-transition-input",
-    title: "current state の入口が Appointment 全体に開いている",
+    title: "current state を受け取る関数が Appointment 全体を受け入れている",
     currentDesign: "current state を型で絞らず、実行時の requireKind と throw に頼っています。",
-    futureRisk: "禁止したい状態も呼び出し位置ではコンパイルでき、as で結果を押し通せます。",
+    futureRisk: "禁止したい状態でも呼び出し側のコードはコンパイルが通り、as で結果を押し通せます。",
     path: "src/domain/appointment/transitions.ts",
     highlights: [
       { startLineNumber: 7, endLineNumber: 15 },

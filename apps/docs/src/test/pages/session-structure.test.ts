@@ -72,8 +72,8 @@ describe("session page structure", () => {
       ),
     ).toEqual(workflowFields);
     expect(text).toContain("講師回答例");
-    expect(text).toContain("ラボ結果の到着");
-    expect(text).toContain("別のtrigger");
+    expect(text).toContain("検査結果の到着");
+    expect(text).toContain("別のきっかけ");
     const riskMaps = [
       ...document.querySelectorAll<HTMLElement>(".workflow-risk-map"),
     ];

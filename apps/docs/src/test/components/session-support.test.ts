@@ -100,7 +100,7 @@ describe("StepSolution", () => {
     expect(
       document.querySelector(".step-solution__completed-file-note")?.textContent,
     ).toContain(
-      "この完成例は後続stepを含む。表示された全target fileを反映後、同じexerciseをGREENにする",
+      "この完成例には後続 step を含みます。表示されたすべての target file を反映した後、同じ exercise を GREEN にします。",
     );
 
     const firstSolution = completedFileStep.solutions[0];

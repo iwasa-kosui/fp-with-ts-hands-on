@@ -141,7 +141,7 @@ export type PublicCodeExplorerSnapshot = Exclude<
 >;
 
 export const peerReviewQuestions = [
-  "この差分は、不変条件を型で守っていますか、実行時の `if` で守っていますか。守っている行を1行、画面上で指してください。",
+  "この差分では、不変条件を型で守っていますか。それとも実行時の `if` で守っていますか。該当する行を1行、画面上で示してください。",
   "この状態を壊すコードを1行書くとしたら、どう書きますか。それはコンパイルを通りますか。",
   "自分の差分と違うところを1つ挙げてください。どちらが良いかは言わなくてよいです。",
 ] as const;
@@ -149,7 +149,7 @@ export const peerReviewQuestions = [
 export const peerReviewPromises = [
   "見るのは差分であって人ではありません。発言は「この差分は」で始めます。",
   "良し悪しを判定しません。",
-  "4回で班の全員が最低1回は当たるよう公平に配分します。選ばれることは評価ではありません。",
+  "4回のレビューで、班員全員が少なくとも1回は選ばれるよう公平に配分します。選ばれることは評価ではありません。",
   "本人は弁明しません。読み上げるのは依頼文の1文だけです。",
   "TAは「よくできた実装」を選びません。選定基準を参加者にも開示します。",
 ] as const;
@@ -162,8 +162,8 @@ export const reviewStatusCommand = "git status --short";
 export const commonReviewChecksFor = (
   snapshot: ExampleSnapshot,
 ): readonly [string, string, string, string] => [
-  "`as` によるキャストが入っていないか全文検索する。",
-  `\`${reviewDiffStatCommand(snapshot)}\` で今回のsnapshotだけを確認し、\`${reviewStatusCommand}\` でリポジトリ全体の想定外pathを確認する。`,
+  "`as` によるキャストが入っていないか全文検索して確認する。",
+  `\`${reviewDiffStatCommand(snapshot)}\` で今回の snapshot だけを確認し、\`${reviewStatusCommand}\` でリポジトリ全体の想定外の path を確認する。`,
   "不変条件を型で守っているか、実行時の `if` で守っているか判定する。",
   "相互レビューの末尾1分で、型で守れなかった残りを記録する。",
 ];
@@ -207,7 +207,7 @@ export const sessions = [
     },
     animal: { name: "DOG", type: "dog", avatar: "🐕" },
     summary: "WAN NYAN CLINIC の現行業務、画面操作、保存・ログと、現在起きている事故を確認します。",
-    incident: "会計済みの予約が診察中へ戻り、予約ログから飼い主のPIIが流出した。",
+    incident: "会計済みの予約が診察中へ戻り、予約ログから飼い主の個人情報が流出した。",
     steps: [],
     decisions: [],
     finalReferences: [],
@@ -282,7 +282,7 @@ export const sessions = [
       },
       {
         id: "s2-align-transitions",
-        goal: "残る遷移も許可された遷移元だけを受け取る規約へ揃える。",
+        goal: "残りの遷移も、許可された遷移元だけを受け取る規約にそろえる。",
         targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
         solutions: [{
           path: "examples/session-03/src/domain/appointment/transitions.ts",
@@ -310,7 +310,7 @@ export const sessions = [
       {
         invariant: "状態ごとの必須情報を欠かさない。",
         byType: "状態別の判別共用体と satisfies で戻り値を検査する。",
-        notByType: "外部JSONからの復元には別途境界での検証が必要になる。",
+        notByType: "外部 JSON からの復元には、別途境界での検証が必要になる。",
       },
       {
         invariant: "状態を増やしたらすべての分岐を見直す。",
@@ -342,8 +342,8 @@ export const sessions = [
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
     animal: { name: "BIRD", type: "bird", avatar: "🐦" },
-    summary: "外部JSON、用途別ID、飼い主の連絡先を境界で安全な値へ変換します。",
-    incident: "ラボのID取り違えで他の患者へ検査結果が付き、連絡先がログへ流出した。",
+    summary: "外部 JSON、用途別 ID、飼い主の連絡先を境界で安全な値へ変換します。",
+    incident: "検査機関の ID を取り違え、他の患者に検査結果が付き、連絡先がログへ流出した。",
     exerciseCommand: "pnpm exercise:03",
     exerciseModule: {
       dir: "examples/session-03/src/boundary",
@@ -353,7 +353,7 @@ export const sessions = [
     steps: [
       {
         id: "s3-parse-exam-result",
-        goal: "形の違う検査JSONはドメイン型にならないようにする。",
+        goal: "形式が異なる検査結果の JSON は、ドメイン型にならないようにする。",
         targets: ["examples/session-03/src/boundary/examResult.ts"],
         solutions: [{
           path: "examples/session-04/src/boundary/examResult.ts",
@@ -374,9 +374,9 @@ export const sessions = [
     ],
     decisions: [
       {
-        invariant: "外部入力は境界を通ってからドメイン型になる。",
+        invariant: "外部入力は、境界で検証してからドメイン型になる。",
         byType: "unknownをschemaでparseし、Resultとして返す。",
-        notByType: "境界を迂回してオブジェクトを直接作る経路は運用で閉じる必要がある。",
+        notByType: "境界を迂回してオブジェクトを直接作る経路は、運用上のルールで防ぐ必要がある。",
       },
       {
         invariant: "用途の異なるIDを取り違えない。",
@@ -384,7 +384,7 @@ export const sessions = [
         notByType: "永続化上は同じTEXTなので復元時に再度parseする必要がある。",
       },
       {
-        invariant: "PIIは既定でマスクし、値を剥がす場所を限定する。",
+        invariant: "個人情報は既定でマスクし、値を取り出す場所を限定する。",
         byType: "Sensitiveで包み、unwrapの呼び出し箇所を明示する。",
         notByType: "unwrap後の文字列の扱いは型では守れない。",
       },
@@ -498,8 +498,8 @@ export const sessions = [
     solutionPresentation: "completed-file",
     peerReviewPromises: "reference",
     animal: { name: "TURTLE", type: "turtle", avatar: "🐢" },
-    summary: "非決定性と保存をportへ出し、状態と監査記録を一度に保存します。",
-    incident: "非決定的な値でテストが揺れ、状態だけ保存され監査記録が残らない予約が生まれた。",
+    summary: "時刻や ID など実行のたびに変わる値と保存を port に切り出し、状態と監査記録を一度に保存します。",
+    incident: "実行のたびに変わる値でテスト結果が安定せず、状態だけ保存され監査記録が残らない予約が生まれた。",
     exerciseCommand: "pnpm exercise:05",
     exerciseModule: {
       dir: "examples/session-05/src/useCase",
@@ -509,7 +509,7 @@ export const sessions = [
     steps: [
       {
         id: "s5-inject-context",
-        goal: "ClockとID generatorからEventContextを1回生成する。",
+        goal: "Clock と ID generator を使って EventContext を一度だけ生成する。",
         targets: [
           "examples/session-05/src/useCase/dependencies.ts",
           "examples/session-05/src/useCase/startExamination.ts",
@@ -544,7 +544,7 @@ export const sessions = [
       },
       {
         id: "s5-result-async",
-        goal: "非同期保存後もイベントをパイプラインに残す。",
+        goal: "非同期で保存しても、イベントを結果として返す。",
         targets: ["examples/session-05/src/useCase/startExamination.ts"],
         solutions: [{
           path: "examples/session-06/src/useCase/startExamination.ts",
@@ -580,17 +580,17 @@ export const sessions = [
       {
         invariant: "ドメイン関数は同じ入力から同じ結果を返す。",
         byType: "ClockとEventIdGeneratorを1メソッドportとして注入する。",
-        notByType: "portを迂回してDateやrandomUUIDを直接呼ぶことはレビューで防ぐ。",
+        notByType: "port を迂回して Date や randomUUID を直接呼ぶことは、レビューで検出する。",
       },
       {
         invariant: "状態と監査記録は同時に残るか、どちらも残らない。",
         byType: "イベントにaggregateStateを含め、書き込み口をstore(event)へ絞る。",
-        notByType: "永続化での原子性は実装側のtransactionで保証する必要がある。",
+        notByType: "永続化での原子性は、実装側の transaction で保証する必要がある。",
       },
       {
-        invariant: "保存障害を、利用側が選べる業務上の失敗へ偽装しない。",
+        invariant: "保存障害を、呼び出し側が選択できる業務上の失敗へ偽装しない。",
         byType: "業務ResultとPromiseのrejectを分け、保存の例外を外側の境界へ伝播する。",
-        notByType: "最上位境界でのログ記録と500応答、診断情報やPIIの非公開は結合テストで守る。",
+        notByType: "最上位境界でのログ記録と500応答、診断情報や個人情報の非公開は結合テストで守る。",
       },
     ],
     finalReferences: [

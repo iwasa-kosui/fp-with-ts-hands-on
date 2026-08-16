@@ -14,8 +14,8 @@ export default [
   },
   {
     id: "optional-state-data",
-    title: "状態固有の情報が optional field に広がっている",
-    currentDesign: "診察、会計、キャンセルの情報が1つの optional field 群に同居しています。",
+    title: "状態固有の情報が複数の optional field に分散している",
+    currentDesign: "診察、会計、キャンセルの情報が、一つの型にある複数の optional field として定義されています。",
     futureRisk: "どの状態で何が必須なのかを型から判断できません。",
     path: "src/legacy/appointment.ts",
     highlights: [{ startLineNumber: 3, endLineNumber: 10 }],
@@ -24,7 +24,7 @@ export default [
     id: "plain-string-ids",
     title: "用途の異なる ID がすべて string である",
     currentDesign: "予約、動物、飼い主、獣医師の ID が同じ string です。",
-    futureRisk: "同じ実行時形式の ID を TypeScript が区別できません。",
+    futureRisk: "実行時には同じ形式の ID を TypeScript が区別できません。",
     path: "src/legacy/appointment.ts",
     highlights: [
       { startLineNumber: 12, endLineNumber: 19 },
@@ -33,9 +33,9 @@ export default [
   },
   {
     id: "throw-not-found",
-    title: "予期可能な失敗を throw している",
+    title: "予期できる失敗を throw している",
     currentDesign: "予約が見つからない場合に例外を送出します。",
-    futureRisk: "呼び出し側が扱う失敗の種類を関数の型から判断できません。",
+    futureRisk: "呼び出し側が扱える失敗の種類を関数の型から判断できません。",
     path: "src/legacy/appointment.ts",
     highlights: [{ startLineNumber: 52, endLineNumber: 54 }],
   },
