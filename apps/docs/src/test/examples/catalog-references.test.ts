@@ -306,8 +306,8 @@ describe("session catalog references", () => {
           },
           {
             id: "s5-propagate-store-failure",
-            group: "Step 4: 保存失敗時は状態も記録も残らない",
-            assertion: "cause と PII のない RepositoryError を返し in-memory state を変更しない",
+            group: "Step 4: 業務失敗とインフラ例外を別の経路で返す",
+            assertion: "業務競合は Result、保存障害と破損データは reject で返す",
           },
         ],
       },

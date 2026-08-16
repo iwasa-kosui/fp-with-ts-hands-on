@@ -1,4 +1,4 @@
-import { okAsync, type Result, type ResultAsync } from "neverthrow";
+import { ResultAsync, type Result } from "neverthrow";
 
 import type { EventContext } from "../domain/aggregate/eventContext.js";
 import type { Appointment as AppointmentState, InExamination } from "../domain/appointment/appointment.js";
@@ -10,13 +10,10 @@ import type {
   Dependencies,
   EffectsDependencies,
   EventContextDependencies,
-  ExaminationStartedStore,
 } from "./dependencies.js";
 import {
   ensureAppointmentFound,
   ensureCheckedIn,
-  toRepositoryError,
-  type RepositoryError,
   type StartExaminationError,
   type StartExaminationWithEffectsError,
 } from "./errors.js";
@@ -59,18 +56,16 @@ export const createEventContext = (
   occurredAt: deps.clock.now(),
 });
 
-export const storeExaminationStarted =
-  (store: ExaminationStartedStore) =>
-  (event: ExaminationStarted): ResultAsync<void, RepositoryError> =>
-    store.store(event).mapErr(toRepositoryError);
-
 export const startExaminationWithEffects =
   (deps: EffectsDependencies) =>
   (
     input: StartExaminationWithEffectsInput,
   ): ResultAsync<InExamination, StartExaminationWithEffectsError> =>
-    okAsync<AppointmentState | undefined, StartExaminationWithEffectsError>(
-      deps.resolver.resolveById(input.appointmentId),
+    // ラボ結果到着は別の trigger から始まるため、この診察開始 workflow へ接続しません。
+    ResultAsync.fromSafePromise<AppointmentState | undefined>(
+      Promise.resolve().then(() =>
+        deps.resolver.resolveById(input.appointmentId),
+      ),
     )
       .andThen((appointment) =>
         ensureAppointmentFound(appointment, input.appointmentId),
@@ -82,5 +77,5 @@ export const startExaminationWithEffects =
           input.veterinarianId,
         ),
       )
-      .andThrough(storeExaminationStarted(deps.store))
+      .andThrough((event) => deps.store.store(event))
       .map((event) => event.aggregateState);

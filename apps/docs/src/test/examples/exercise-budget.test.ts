@@ -9,8 +9,8 @@ const repoRoot = resolve(process.cwd(), "../..");
 const expectedMeasurements = new Map([
   ["02-state-transitions", { files: 2, lines: 35 }],
   ["03-boundaries-and-semantic-values", { files: 2, lines: 24 }],
-  ["04-workflow-errors", { files: 3, lines: 77 }],
-  ["05-effects-and-consistency", { files: 3, lines: 72 }],
+  ["04-workflow-errors", { files: 3, lines: 76 }],
+  ["05-effects-and-consistency", { files: 3, lines: 55 }],
 ] as const);
 
 describe("exercise diff budgets", () => {

@@ -41,7 +41,7 @@ describe("in-memory ExaminationStarted store", () => {
     expect(adapter.events()).toHaveLength(1);
   });
 
-  it("adapter 内部では保存失敗の cause を RepositoryFailure に保持する", async () => {
+  it("保存失敗を Result に変換せず同じ例外で reject する", async () => {
     const diagnosticCause = new Error("storage unavailable");
     const adapter = createInMemoryExaminationStartedStore([checkedIn], {
       beforeCommit: () => Promise.reject(diagnosticCause),
@@ -51,18 +51,12 @@ describe("in-memory ExaminationStarted store", () => {
       occurredAt: "2026-08-30T06:30:00.000Z",
     })(checkedIn, veterinarianId);
 
-    const result = await adapter.store.store(event);
-
-    expect(result.isErr() && result.error).toMatchObject({
-      kind: "RepositoryFailure",
-      operation: "ExaminationStartedStore.store",
-    });
-    expect(result.isErr() ? result.error.cause : undefined).toBe(diagnosticCause);
+    await expect(adapter.store.store(event)).rejects.toBe(diagnosticCause);
     expect(adapter.appointments()).toEqual([checkedIn]);
     expect(adapter.events()).toEqual([]);
   });
 
-  it("公開エラーから cause と PII を除き、commit 前の値を保つ", async () => {
+  it("use case も保存例外を捕捉せず、commit 前の値を保つ", async () => {
     const privateDetails = {
       ownerName: "Owner Secret",
       email: "owner-secret@example.test",
@@ -74,26 +68,14 @@ describe("in-memory ExaminationStarted store", () => {
     const adapter = createInMemoryExaminationStartedStore([checkedIn], {
       beforeCommit: () => Promise.reject(privateDetails),
     });
-    const result = await startExaminationWithEffects({
-      resolver: adapter.resolver,
-      store: adapter.store,
-      clock: { now: () => "2026-08-30T06:30:00.000Z" },
-      eventIdGenerator: { generate: () => eventId },
-    })(input);
-
-    expect(result.isErr() && result.error).toEqual({
-      kind: "RepositoryError",
-      operation: "ExaminationStartedStore.store",
-    });
-    const publicError = result.isErr() ? result.error : undefined;
-    expect(Object.hasOwn(publicError ?? {}, "cause")).toBe(false);
-    const serialized = JSON.stringify(publicError);
-    expect(serialized).not.toContain('"cause"');
-    expect(serialized).not.toContain(privateDetails.ownerName);
-    expect(serialized).not.toContain(privateDetails.email);
-    expect(serialized).not.toContain(privateDetails.phone);
-    expect(serialized).not.toContain(privateDetails.error.message);
-    expect(serialized).not.toContain(privateDetails.stack);
+    await expect(
+      startExaminationWithEffects({
+        resolver: adapter.resolver,
+        store: adapter.store,
+        clock: { now: () => "2026-08-30T06:30:00.000Z" },
+        eventIdGenerator: { generate: () => eventId },
+      })(input),
+    ).rejects.toBe(privateDetails);
     expect(adapter.appointments()).toEqual([checkedIn]);
     expect(adapter.events()).toEqual([]);
   });

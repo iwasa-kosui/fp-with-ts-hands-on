@@ -9,8 +9,8 @@ import type { Dependencies, EffectsDependencies } from "./dependencies.js";
 import {
   ensureAppointmentFound,
   ensureCheckedIn,
-  type RepositoryError,
   type StartExaminationError,
+  type StartExaminationWithEffectsError,
 } from "./errors.js";
 
 export type StartExaminationInput = Readonly<{
@@ -43,7 +43,7 @@ export const startExaminationWithEffects =
   (deps: EffectsDependencies) =>
   async (
     input: Omit<StartExaminationInput, "examinationStartedAt">,
-  ): Promise<Result<void, StartExaminationError | RepositoryError>> => {
+  ): Promise<Result<void, StartExaminationWithEffectsError>> => {
     const occurredAt = new Date().toISOString();
     const result = startExamination({
       resolver: deps.resolver,
@@ -63,11 +63,7 @@ export const startExaminationWithEffects =
       aggregateState: result.value,
     } as const satisfies ExaminationStarted;
 
-    try {
-      await deps.stateStore.save(event.aggregateState);
-      await deps.eventLog.append(event);
-      return ok(undefined);
-    } catch (cause) {
-      return err({ kind: "RepositoryError", cause });
-    }
+    await deps.stateStore.save(event.aggregateState);
+    await deps.eventLog.append(event);
+    return ok(undefined);
   };

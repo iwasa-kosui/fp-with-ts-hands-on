@@ -40,7 +40,7 @@ export const createInMemoryExaminationStartedStore = (
   const store: ExaminationStartedStore = {
     store: (event) => {
       storeCalls += 1;
-      return ResultAsync.fromPromise(
+      return ResultAsync.fromSafePromise(
         (async () => {
           await options.beforeCommit?.(event);
           const nextAppointments = new Map(appointments);
@@ -50,11 +50,6 @@ export const createInMemoryExaminationStartedStore = (
           appointments = nextAppointments;
           events = nextEvents;
         })(),
-        (cause) => ({
-          kind: "RepositoryFailure",
-          operation: "ExaminationStartedStore.store",
-          cause,
-        }),
       );
     },
   };

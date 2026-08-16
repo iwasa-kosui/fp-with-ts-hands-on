@@ -181,24 +181,24 @@ describe("exercise session contract", () => {
     }
   });
 
-  it("pins the Final seven-aggregate tour to the composition root", async () => {
+  it("uses the workflow map to trace five boundaries in Final", async () => {
     const finalSession = sessions.find(({ slug }) => slug === "final")!;
     const document = await renderSessionPage(finalSession);
     const text = document.body.textContent ?? "";
 
-    expect(text).toContain("1業務集約 → 7業務集約");
-    expect(text).toContain("examples/final/src/app.ts");
-    for (const aggregate of [
-      "予約",
-      "検査結果",
-      "フォローアップ",
-      "飼い主",
-      "ペット",
-      "セッション",
-      "ユーザー",
+    expect(document.querySelector(".workflow-risk-map")).not.toBeNull();
+    for (const boundary of [
+      "1分目: 入力境界",
+      "2分目: 業務上の失敗",
+      "3分目: 出力イベント",
+      "4分目: 副作用",
+      "5分目: 例外境界",
     ]) {
-      expect(text).toContain(aggregate);
+      expect(text).toContain(boundary);
     }
+    expect(text).toContain("src/useCase/startExaminationUseCase.ts");
+    expect(text).toContain("src/adaptor/secondary/sqlite/store/appointmentEventStore.ts");
+    expect(text).toContain("SQLite障害や破損データが業務 Result に入らず");
     expect(finalSession.finalReferences).toContain("examples/final/src/app.ts");
   });
 });

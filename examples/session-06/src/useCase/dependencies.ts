@@ -6,7 +6,7 @@ import type { Appointment, CheckedIn, InExamination } from "../domain/appointmen
 import type { ExaminationStarted } from "../domain/appointment/examinationStarted.js";
 import type { AppointmentId } from "../domain/ids/appointmentId.js";
 import type { VeterinarianId } from "../domain/ids/veterinarianId.js";
-import type { RepositoryFailure } from "./errors.js";
+import type { AppointmentConflict } from "./errors.js";
 
 export type AppointmentResolver = Readonly<{
   resolveById: (appointmentId: AppointmentId) => Appointment | undefined;
@@ -34,7 +34,7 @@ export type EventContextDependencies = Readonly<{
 }>;
 
 export type ExaminationStartedStore = Readonly<{
-  store: (event: ExaminationStarted) => ResultAsync<void, RepositoryFailure>;
+  store: (event: ExaminationStarted) => ResultAsync<void, AppointmentConflict>;
 }>;
 
 export type EffectsDependencies = Readonly<{

@@ -422,7 +422,7 @@ export const sessions = [
     exerciseModule: {
       dir: "examples/session-04/src/useCase",
       fileBudget: 3,
-      lineBudget: 77,
+      lineBudget: 76,
     },
     steps: [
       {
@@ -504,7 +504,7 @@ export const sessions = [
     exerciseModule: {
       dir: "examples/session-05/src/useCase",
       fileBudget: 3,
-      lineBudget: 72,
+      lineBudget: 55,
     },
     steps: [
       {
@@ -524,7 +524,7 @@ export const sessions = [
           {
             path: "examples/session-06/src/useCase/startExamination.ts",
             symbol: "createEventContext",
-            lines: [1, 86],
+            lines: [1, 81],
             presentation: "completed-file",
           },
         ],
@@ -549,7 +549,7 @@ export const sessions = [
         solutions: [{
           path: "examples/session-06/src/useCase/startExamination.ts",
           symbol: "startExaminationWithEffects",
-          lines: [1, 86],
+          lines: [1, 81],
           presentation: "completed-file",
         }],
       },
@@ -563,14 +563,14 @@ export const sessions = [
         solutions: [
           {
             path: "examples/session-06/src/useCase/errors.ts",
-            symbol: "RepositoryFailure",
-            lines: [1, 50],
+            symbol: "AppointmentConflict",
+            lines: [1, 39],
             presentation: "completed-file",
           },
           {
             path: "examples/session-06/src/useCase/startExamination.ts",
-            symbol: "storeExaminationStarted",
-            lines: [1, 86],
+            symbol: "startExaminationWithEffects",
+            lines: [1, 81],
             presentation: "completed-file",
           },
         ],

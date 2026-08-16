@@ -1,5 +1,6 @@
-import { errAsync, okAsync } from "neverthrow";
+import { errAsync, okAsync, ResultAsync } from "neverthrow";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import type { Appointment, CheckedIn } from "../../src/domain/appointment/appointment.js";
 import type { ExaminationStarted } from "../../src/domain/appointment/examinationStarted.js";
@@ -66,35 +67,88 @@ describe("Step 3: 非同期保存後もイベントが pipeline に残る", () =
   });
 });
 
-describe("Step 4: 保存失敗時は状態も記録も残らない", () => {
-  it("RepositoryError を返し in-memory state を変更しない", async () => {
-    const harness = createHarness(true);
+describe("Step 4: 業務失敗とインフラ例外を別の経路で返す", () => {
+  it("業務競合は Result、保存障害と破損データは reject で返す", async () => {
+    const conflict = createHarness({ kind: "conflict" });
+    const storeFailureCause = new Error("write failed");
+    const storeFailure = createHarness({
+      kind: "store-failure",
+      cause: storeFailureCause,
+    });
+    const corruptData = createHarness({ kind: "corrupt-data" });
 
-    const result = await startExaminationWithEffects(harness.dependencies)(input);
+    const [conflictOutcome, storeFailureOutcome, corruptDataOutcome] =
+      await Promise.allSettled([
+        startExaminationWithEffects(conflict.dependencies)(input),
+        startExaminationWithEffects(storeFailure.dependencies)(input),
+        Promise.resolve().then(() =>
+          startExaminationWithEffects(corruptData.dependencies)(input),
+        ),
+      ]);
 
-    expect(result.isErr() && result.error.kind).toBe("RepositoryError");
-    expect(harness.storedStates).toEqual([]);
-    expect(harness.recordedEvents).toEqual([]);
+    expect({
+      conflict:
+        conflictOutcome.status === "fulfilled" && conflictOutcome.value.isErr()
+          ? conflictOutcome.value.error
+          : conflictOutcome.status,
+      storeFailure:
+        storeFailureOutcome.status === "rejected"
+          ? storeFailureOutcome.reason
+          : storeFailureOutcome.status,
+      corruptData:
+        corruptDataOutcome.status === "rejected" &&
+        corruptDataOutcome.reason instanceof z.ZodError,
+      storedStates: [
+        ...conflict.storedStates,
+        ...storeFailure.storedStates,
+        ...corruptData.storedStates,
+      ],
+      recordedEvents: [
+        ...conflict.recordedEvents,
+        ...storeFailure.recordedEvents,
+        ...corruptData.recordedEvents,
+      ],
+    }).toEqual({
+      conflict: { kind: "AppointmentConflict", appointmentId },
+      storeFailure: storeFailureCause,
+      corruptData: true,
+      storedStates: [],
+      recordedEvents: [],
+    });
   });
 });
 
-const createHarness = (failStore = false) => {
+type HarnessOutcome =
+  | Readonly<{ kind: "success" }>
+  | Readonly<{ kind: "conflict" }>
+  | Readonly<{ kind: "store-failure"; cause: unknown }>
+  | Readonly<{ kind: "corrupt-data" }>;
+
+const createHarness = (
+  outcome: HarnessOutcome = { kind: "success" },
+) => {
   const storedStates: Array<Appointment> = [];
   const recordedEvents: Array<ExaminationStarted> = [];
   let storeCalls = 0;
   const dependencies: EffectsDependencies = {
-    resolver: { resolveById: () => checkedIn },
+    resolver: {
+      resolveById: () => {
+        if (outcome.kind === "corrupt-data") {
+          z.literal("CheckedIn").parse("corrupt persisted appointment");
+        }
+        return checkedIn;
+      },
+    },
     clock: { now: () => FIXED_OCCURRED_AT },
     eventIdGenerator: { generate: () => FIXED_EVENT_ID },
     store: {
       store: (event) => {
         storeCalls += 1;
-        if (failStore) {
-          return errAsync({
-            kind: "RepositoryFailure",
-            operation: "ExaminationStartedStore.store",
-            cause: "write failed",
-          });
+        if (outcome.kind === "conflict") {
+          return errAsync({ kind: "AppointmentConflict", appointmentId });
+        }
+        if (outcome.kind === "store-failure") {
+          return ResultAsync.fromSafePromise(Promise.reject(outcome.cause));
         }
         storedStates.push(event.aggregateState);
         recordedEvents.push(event);

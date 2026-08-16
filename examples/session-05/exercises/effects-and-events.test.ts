@@ -1,5 +1,6 @@
-import { errAsync, okAsync } from "neverthrow";
+import { errAsync, okAsync, ResultAsync } from "neverthrow";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import type { ExaminationStarted } from "../src/domain/appointment/examinationStarted.js";
 import { startExamination as transitionToInExamination } from "../src/domain/appointment/transitions.js";
@@ -76,31 +77,63 @@ describe("Step 3: 非同期保存後もイベントが pipeline に残る", () =
   });
 });
 
-describe("Step 4: 保存失敗時は状態も記録も残らない", () => {
-  it("cause と PII のない RepositoryError を返し in-memory state を変更しない", async () => {
-    const harness = createHarness(diagnosticCause);
-
-    const result = await startExamination(harness.dependencies)(input);
-    const publicError = result.isErr() ? result.error : undefined;
-
-    expect(publicError).toEqual({
-      kind: "RepositoryError",
-      operation: "ExaminationStartedStore.store",
+describe("Step 4: 業務失敗とインフラ例外を別の経路で返す", () => {
+  it("業務競合は Result、保存障害と破損データは reject で返す", async () => {
+    const conflict = createHarness({ kind: "conflict" });
+    const storeFailure = createHarness({
+      kind: "store-failure",
+      cause: diagnosticCause,
     });
-    expect(Object.hasOwn(publicError ?? {}, "cause")).toBe(false);
-    const serialized = JSON.stringify(publicError);
-    expect(serialized).not.toContain('"cause"');
-    expect(serialized).not.toContain(diagnosticCause.ownerName);
-    expect(serialized).not.toContain(diagnosticCause.email);
-    expect(serialized).not.toContain(diagnosticCause.phone);
-    expect(serialized).not.toContain(diagnosticCause.error.message);
-    expect(serialized).not.toContain(diagnosticCause.stack);
-    expect(harness.storedStates).toEqual([]);
-    expect(harness.recordedEvents).toEqual([]);
+    const corruptData = createHarness({ kind: "corrupt-data" });
+
+    const [conflictOutcome, storeFailureOutcome, corruptDataOutcome] =
+      await Promise.allSettled([
+        startExamination(conflict.dependencies)(input),
+        startExamination(storeFailure.dependencies)(input),
+        startExamination(corruptData.dependencies)(input),
+      ]);
+
+    expect({
+      conflict:
+        conflictOutcome.status === "fulfilled" && conflictOutcome.value.isErr()
+          ? conflictOutcome.value.error
+          : conflictOutcome.status,
+      storeFailure:
+        storeFailureOutcome.status === "rejected"
+          ? storeFailureOutcome.reason
+          : storeFailureOutcome.status,
+      corruptData:
+        corruptDataOutcome.status === "rejected" &&
+        corruptDataOutcome.reason instanceof z.ZodError,
+      storedStates: [
+        ...conflict.storedStates,
+        ...storeFailure.storedStates,
+        ...corruptData.storedStates,
+      ],
+      recordedEvents: [
+        ...conflict.recordedEvents,
+        ...storeFailure.recordedEvents,
+        ...corruptData.recordedEvents,
+      ],
+    }).toEqual({
+      conflict: { kind: "AppointmentConflict", appointmentId },
+      storeFailure: diagnosticCause,
+      corruptData: true,
+      storedStates: [],
+      recordedEvents: [],
+    });
   });
 });
 
-const createHarness = (failureCause?: unknown) => {
+type HarnessOutcome =
+  | Readonly<{ kind: "success" }>
+  | Readonly<{ kind: "conflict" }>
+  | Readonly<{ kind: "store-failure"; cause: unknown }>
+  | Readonly<{ kind: "corrupt-data" }>;
+
+const createHarness = (
+  outcome: HarnessOutcome = { kind: "success" },
+) => {
   const storedStates: Array<Appointment> = [];
   const recordedEvents: Array<ExaminationStarted> = [];
   let storeCalls = 0;
@@ -109,23 +142,28 @@ const createHarness = (failureCause?: unknown) => {
 
   return {
     dependencies: {
-      resolver: { resolveById: () => checkedIn },
+      resolver: {
+        resolveById: () => {
+          if (outcome.kind === "corrupt-data") {
+            z.literal("CheckedIn").parse("corrupt persisted appointment");
+          }
+          return checkedIn;
+        },
+      },
       transition: transitionToInExamination,
       clock: { now: () => FIXED_OCCURRED_AT },
       eventIdGenerator: { generate: () => FIXED_EVENT_ID },
       store: {
         store: (event: ExaminationStarted) => {
           storeCalls += 1;
-          if (failureCause !== undefined) {
+          if (outcome.kind === "conflict") {
             return errAsync({
-              kind: "RepositoryFailure",
-              operation: "ExaminationStartedStore.store",
-              cause: failureCause,
-            } as const satisfies Readonly<{
-              kind: "RepositoryFailure";
-              operation: "ExaminationStartedStore.store";
-              cause: unknown;
-            }>);
+              kind: "AppointmentConflict",
+              appointmentId,
+            } as const);
+          }
+          if (outcome.kind === "store-failure") {
+            return ResultAsync.fromSafePromise(Promise.reject(outcome.cause));
           }
           storedStates.push(event.aggregateState);
           recordedEvents.push(event);
