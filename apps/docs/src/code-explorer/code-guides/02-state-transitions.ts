@@ -3,8 +3,8 @@ import type { CodeGuide } from "../code-guide";
 export default [
   {
     id: "wide-transition-input",
-    title: "遷移元が Appointment 全体に開いている",
-    currentDesign: "遷移関数が状態を絞らず、実行時の requireKind と throw に頼っています。",
+    title: "current state の入口が Appointment 全体に開いている",
+    currentDesign: "current state を型で絞らず、実行時の requireKind と throw に頼っています。",
     futureRisk: "禁止したい状態も呼び出し位置ではコンパイルでき、as で結果を押し通せます。",
     path: "src/domain/appointment/transitions.ts",
     highlights: [
@@ -14,8 +14,8 @@ export default [
   },
   {
     id: "non-exhaustive-label",
-    title: "表示分岐が未知の状態を見逃す",
-    currentDesign: "kind を string として受け、default で不明を返します。",
+    title: "current state の表示分岐が未知の状態を見逃す",
+    currentDesign: "current state の kind を string として受け、default で不明を返します。",
     futureRisk: "状態を追加しても見直すべき分岐をコンパイラが知らせません。",
     path: "src/domain/appointment/statusLabel.ts",
     highlights: [{ startLineNumber: 3, endLineNumber: 17 }],

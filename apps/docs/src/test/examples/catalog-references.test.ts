@@ -14,10 +14,10 @@ const exerciseSessions = sessions.filter(
   (session) => session.kind === "exercise",
 );
 const nextSnapshot = {
-  "session-01": "session-02",
   "session-02": "session-03",
   "session-03": "session-04",
   "session-04": "session-05",
+  "session-05": "session-06",
 } as const;
 
 const solutionsFor = (
@@ -145,10 +145,20 @@ describe("session catalog references", () => {
     }
   });
 
-  it("12. resolves a package for every catalog snapshot", async () => {
-    for (const { snapshot } of sessions) {
+  it("12. resolves packages for public snapshots without requiring one for S1", async () => {
+    const s1 = sessions.find(
+      ({ slug }) => slug === "01-business-events-and-workflows",
+    );
+    expect(s1?.kind).toBe("workshop");
+    expect(s1?.snapshot).toBeUndefined();
+    await expect(
+      access(resolve(repoRoot, "examples/session-01/package.json")),
+    ).rejects.toMatchObject({ code: "ENOENT" });
+
+    for (const session of sessions) {
+      if (session.snapshot === undefined) continue;
       await expect(
-        access(resolve(repoRoot, `examples/${snapshot}/package.json`)),
+        access(resolve(repoRoot, `examples/${session.snapshot}/package.json`)),
       ).resolves.toBeUndefined();
     }
   });
@@ -168,21 +178,23 @@ describe("session catalog references", () => {
     }
   });
 
-  it("keeps S1-S3 as excerpt defaults and presents every S4 target as a completed file", async () => {
+  it("keeps S2-S4 as excerpt defaults and presents every S5 target from session-06 as a completed file", async () => {
     for (const session of exerciseSessions.slice(0, 3)) {
       for (const solution of solutionsFor(session.steps)) {
         expect(solution.presentation ?? "excerpt").toBe("excerpt");
       }
     }
 
-    const s4 = sessions.find(({ slug }) => slug === "04-effects-and-events");
-    expect(s4?.kind).toBe("exercise");
-    if (s4?.kind !== "exercise") throw new Error("S4 exercise is missing");
+    const s5 = sessions.find(
+      ({ slug }) => slug === "05-effects-and-consistency",
+    );
+    expect(s5?.kind).toBe("exercise");
+    if (s5?.kind !== "exercise") throw new Error("S5 exercise is missing");
 
-    const s4Steps: readonly ExerciseStep[] = s4.steps;
-    for (const step of s4Steps) {
+    const s5Steps: readonly ExerciseStep[] = s5.steps;
+    for (const step of s5Steps) {
       const expectedPaths = step.targets.map((target) =>
-        target.replace("examples/session-04/", "examples/session-05/"),
+        target.replace("examples/session-05/", "examples/session-06/"),
       );
       expect(step.solutions.map(({ path }) => path), step.id).toEqual(expectedPaths);
       for (const solution of step.solutions) {
@@ -198,9 +210,9 @@ describe("session catalog references", () => {
 
   it("labels starter assertions outside catalog steps as regression checks", async () => {
     const files = [
-      "examples/session-02/exercises/boundary-and-ids.test.ts",
-      "examples/session-03/test/regression/boundary-and-ids.test.ts",
-      "examples/session-03/exercises/result-errors.test.ts",
+      "examples/session-03/exercises/boundary-and-ids.test.ts",
+      "examples/session-04/test/regression/boundary-and-ids.test.ts",
+      "examples/session-04/exercises/result-errors.test.ts",
     ];
     for (const file of files) {
       const source = await readFile(resolve(repoRoot, file), "utf8");
@@ -214,86 +226,86 @@ describe("session catalog references", () => {
   it("maps every catalog step one-to-one to an AssertionError RED in its starter", async () => {
     const expectedExercises = [
       {
-        slug: "01-state-modeling",
+        slug: "02-state-transitions",
         steps: [
           {
-            id: "s1-narrow-start",
+            id: "s2-narrow-start",
             group: "Step 1: 会計済みの来院は診察を開始できない",
             assertion: "Paid を渡す呼び出しはコンパイルできない",
           },
           {
-            id: "s1-require-cancel-reason",
+            id: "s2-require-cancel-reason",
             group: "Step 2: キャンセルには必ず理由を残す",
             assertion: "reason を省いた呼び出しはコンパイルできない",
           },
           {
-            id: "s1-align-transitions",
+            id: "s2-align-transitions",
             group: "Step 3: 全遷移の入口を状態型で絞る",
             assertion: "許可されない遷移元はコンパイルできない",
           },
           {
-            id: "s1-exhaustive-label",
+            id: "s2-exhaustive-label",
             group: "Step 4: 状態追加時に表示分岐を見直す",
             assertion: "6つ目の状態を足すと status label がコンパイルできない",
           },
         ],
       },
       {
-        slug: "02-boundary-and-ids",
+        slug: "03-boundaries-and-semantic-values",
         steps: [
           {
-            id: "s2-parse-exam-result",
+            id: "s3-parse-exam-result",
             group: "Step 1: 形の違う検査 JSON はドメイン型にならない",
             assertion: "petId がない JSON は err になる",
           },
           {
-            id: "s2-protect-contact",
+            id: "s3-protect-contact",
             group: "Step 2: 電話番号とメールはログへ出ない",
             assertion: "JSON と util.inspect のどちらも値をマスクする",
           },
         ],
       },
       {
-        slug: "03-result-errors",
+        slug: "04-workflow-errors",
         steps: [
           {
-            id: "s3-invalid-state",
+            id: "s4-invalid-state",
             group: "Step 1: InvalidAppointmentState を値として返す",
             assertion: "CheckedIn でない予約でも例外を投げない",
           },
           {
-            id: "s3-not-found",
+            id: "s4-not-found",
             group: "Step 2: AppointmentNotFound を値として返す",
             assertion: "予約が見つからなくても例外を投げない",
           },
           {
-            id: "s3-result-pipeline",
+            id: "s4-result-pipeline",
             group: "Step 3: andThen pipeline が失敗理由を運ぶ",
             assertion: "予約なしを InvalidAppointmentState に潰さない",
           },
         ],
       },
       {
-        slug: "04-effects-and-events",
+        slug: "05-effects-and-consistency",
         steps: [
           {
-            id: "s4-inject-context",
+            id: "s5-inject-context",
             group: "Step 1: 同じ clock と ID generator なら同じイベントになる",
             assertion: "固定 context から同じ eventId と occurredAt を返す",
           },
           {
-            id: "s4-atomic-store",
+            id: "s5-atomic-store",
             group: "Step 2: 状態と監査記録は1回の保存で残る",
             assertion: "store(event) を1回だけ呼ぶ",
           },
           {
-            id: "s4-result-async",
+            id: "s5-result-async",
             group: "Step 3: 非同期保存後もイベントが pipeline に残る",
             assertion:
               "保存成功時は store の void ではなく aggregateState を返す",
           },
           {
-            id: "s4-propagate-store-failure",
+            id: "s5-propagate-store-failure",
             group: "Step 4: 保存失敗時は状態も記録も残らない",
             assertion: "cause と PII のない RepositoryError を返し in-memory state を変更しない",
           },
