@@ -14,6 +14,7 @@ import { clinicFixture } from "../../fixtures/clinic.js";
 const appointmentId = AppointmentId.parse(clinicFixture.appointmentId);
 const veterinarianId = VeterinarianId.parse(clinicFixture.veterinarianId);
 const eventId = EventId.parse("55555555-5555-4555-8555-555555555555");
+const conflictingEventId = EventId.parse("66666666-6666-4666-8666-666666666666");
 const checkedIn = {
   kind: "CheckedIn",
   appointmentId,
@@ -54,6 +55,29 @@ describe("in-memory ExaminationStarted store", () => {
     await expect(adapter.store.store(event)).rejects.toBe(diagnosticCause);
     expect(adapter.appointments()).toEqual([checkedIn]);
     expect(adapter.events()).toEqual([]);
+  });
+
+  it("開始済み予約への2件目を業務競合として返し監査イベントを追加しない", async () => {
+    const adapter = createInMemoryExaminationStartedStore([checkedIn]);
+    const firstEvent = Appointment.startExamination({
+      eventId,
+      occurredAt: "2026-08-30T06:30:00.000Z",
+    })(checkedIn, veterinarianId);
+    const conflictingEvent = Appointment.startExamination({
+      eventId: conflictingEventId,
+      occurredAt: "2026-08-30T06:31:00.000Z",
+    })(checkedIn, veterinarianId);
+
+    const firstResult = await adapter.store.store(firstEvent);
+    const conflictResult = await adapter.store.store(conflictingEvent);
+
+    expect(firstResult.isOk()).toBe(true);
+    expect(conflictResult._unsafeUnwrapErr()).toEqual({
+      kind: "AppointmentConflict",
+      appointmentId,
+    });
+    expect(adapter.appointments()).toEqual([firstEvent.aggregateState]);
+    expect(adapter.events()).toEqual([firstEvent]);
   });
 
   it("use case も保存例外を捕捉せず、commit 前の値を保つ", async () => {

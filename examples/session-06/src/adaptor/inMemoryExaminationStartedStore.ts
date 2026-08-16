@@ -1,4 +1,4 @@
-import { ResultAsync } from "neverthrow";
+import { err, ok, ResultAsync } from "neverthrow";
 
 import type { Appointment } from "../domain/appointment/appointment.js";
 import type { ExaminationStarted } from "../domain/appointment/examinationStarted.js";
@@ -43,14 +43,27 @@ export const createInMemoryExaminationStartedStore = (
       return ResultAsync.fromSafePromise(
         (async () => {
           await options.beforeCommit?.(event);
+          const currentAppointment = appointments.get(event.appointmentId);
+          if (currentAppointment === undefined) {
+            throw new Error(`Appointment missing at commit: ${event.appointmentId}`);
+          }
+          if (currentAppointment.kind !== "CheckedIn") {
+            return err({
+              kind: "AppointmentConflict",
+              appointmentId: event.appointmentId,
+            } as const);
+          }
+
           const nextAppointments = new Map(appointments);
           nextAppointments.set(event.appointmentId, event.aggregateState);
           const nextEvents = [...events, event];
 
           appointments = nextAppointments;
           events = nextEvents;
+
+          return ok(undefined);
         })(),
-      );
+      ).andThen((result) => result);
     },
   };
 
