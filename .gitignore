@@ -4,3 +4,4 @@ dist/
 .dev.vars
 tmp/
 .superdesign/tmp/
+.astro/
