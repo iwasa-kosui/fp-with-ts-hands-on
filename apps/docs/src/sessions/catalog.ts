@@ -4,7 +4,7 @@ export type SolutionPresentation = "excerpt" | "completed-file";
 
 export type WorkflowFocus =
   | "現状"
-  | "全体"
+  | "ドメインイベント"
   | "current state"
   | "input"
   | "expected failures"
@@ -220,14 +220,14 @@ export const sessions = [
     title: "ビジネスイベントからワークフローを描く",
     durationMinutes: 15,
     timeBreakdown: { brief: 3, teach: 4, exercise: 6, review: 2 },
-    workflowFocus: "全体",
+    workflowFocus: "ドメインイベント",
     workflowRisks: {
-      resolvedFromPrevious: "診察開始のtrigger・input・current state・expected failures・output event・side effectsを一枚の地図にした。",
-      remainingForNext: "許可されない状態遷移と、状態ごとに欠けた情報をモデルで防ぐ。",
+      resolvedFromPrevious: "来院から会計までの業務をドメインイベントとして拾い、時系列に並べて、診察開始のワークフロー境界を班で引いた。",
+      remainingForNext: "引いた境界の中で、予約がどの状態なら診察を開始できるかをまだ決めていない。",
     },
     animal: { name: "CAT", type: "cat", avatar: "🐈" },
-    summary: "診察開始を業務ワークフローとして班で描き、以後の設計対象を揃えます。",
-    incident: "診察開始に必要な判断と記録がコードの各所へ散らばり、変更時に確認すべき境界が見えない。",
+    summary: "動物病院の一日を描いた散文からドメインイベントを拾い、診察開始のワークフロー境界を班で引きます。",
+    incident: "業務全体のどこからどこまでが診察開始のワークフローなのか、担当者ごとに認識が揃っていない。",
     steps: [],
     decisions: [],
     finalReferences: [],

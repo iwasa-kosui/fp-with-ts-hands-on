@@ -113,7 +113,7 @@ describe("session catalog invariants", () => {
   it("3. connects every session to the workflow and its risk handoff", () => {
     expect(sessions.map(({ workflowFocus }) => workflowFocus)).toEqual([
       "現状",
-      "全体",
+      "ドメインイベント",
       "current state",
       "input",
       "expected failures",
