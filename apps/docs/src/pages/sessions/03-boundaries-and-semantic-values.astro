@@ -42,38 +42,40 @@ export const parseExamResult = schemaResult(ExamResultSchema);`,
   {
     name: "用途別 Branded Type",
     definition:
-      "同じ文字列形式でも用途の違う ID を、別の型として扱います。zod の brand を付けると、その schema を通った値だけがその型になります。",
+      "同じ文字列形式でも用途の違う ID を、別の型として扱います。zod の brand を付けると、互いに代入できない型ができます。",
     before: {
-      sources: ["examples/session-03/src/boundary/examResult.ts"],
-      code: `export type ExamResult = Readonly<{
-  examId: ExamId;
-  petId: PetId;
-}>;
-
-export const parseExamResult = (raw: any): Result<ExamResult> =>
-  ok({
-    examId: raw.examId,
-    petId: raw.petId,
-  });`,
+      sources: ["examples/session-03/src/domain/appointment/appointment.ts"],
+      code: `export type Scheduled = Readonly<{
+  kind: "Scheduled";
+  appointmentId: string;
+  petId: string;
+  ownerId: string;
+  scheduledAt: string;
+  reason: string;
+}>;`,
     },
     after: {
       sources: [
-        "examples/session-04/src/domain/ids/examId.ts",
-        "examples/session-04/src/boundary/examResult.ts",
+        "examples/session-04/src/domain/ids/petId.ts",
+        "examples/session-04/src/domain/appointment/appointment.ts",
       ],
-      code: `// domain/ids/examId.ts
-const schema = z.string().uuid().brand<"ExamId">();
+      code: `// domain/ids/petId.ts
+const schema = z.string().uuid().brand<"PetId">();
 
-export type ExamId = z.infer<typeof schema>;
-export const ExamId = { schema, parse: schema.parse } as const;
+export type PetId = z.infer<typeof schema>;
+export const PetId = { schema, parse: schema.parse } as const;
 
-// boundary/examResult.ts
-export const ExamResultSchema = z.object({
-  examId: ExamId.schema,
-  petId: PetId.schema,
-}).readonly();`,
+// domain/appointment/appointment.ts
+export type Scheduled = Readonly<{
+  kind: "Scheduled";
+  appointmentId: AppointmentId;
+  petId: PetId;
+  ownerId: OwnerId;
+  scheduledAt: string;
+  reason: string;
+}>;`,
     },
-    why: "brand を付けない string のままだと、検査結果の ID と患畜の ID を入れ替えて渡してもコンパイルが通ります。brand を付けると両者に代入互換がなくなり、取り違えがコンパイルエラーになります。ただし before のように any から代入すると、型が分かれていても検査は働きません。ID を作る経路を ExamId.schema へ一本化して初めて、「用途の異なるIDを取り違えない」が型で守られます。",
+    why: "before では appointmentId も petId も ownerId も string です。3つを取り違えて代入しても、引数の順番を入れ替えても、コンパイルは通ります。今回の事故そのものである ID の取り違えを、型は何も止めません。after では3つが別の型になり、互いに代入できなくなるため、取り違えはコンパイルエラーになります。ここで区別しているのは値の形式ではなく用途です。3つとも実体は同じ UUID の文字列なので、z.string().uuid() の検査をいくら重ねても区別はできません。",
   },
   {
     name: "Sensitive による既定のマスク",
