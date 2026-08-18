@@ -18,7 +18,7 @@ const placementLabel = placement === "opening" ? "開始時" : "レビュー時"
   aria-label={`S2からS5の共通ワークフロー・リスクマップ（${placementLabel}）`}
 >
   <h3>共通ワークフロー・リスクマップ</h3>
-  <p>同じ診察開始カードを、未解決リスクごとに小さく実装していきます。</p>
+  <p>同じ診察開始のワークフローを、未解決のリスクごとに小さく実装していきます。</p>
   <ol class="decision-list">
     {
       workflowSessions.map((session) => {
@@ -32,7 +32,7 @@ const placementLabel = placement === "opening" ? "開始時" : "レビュー時"
           >
             <strong>SESSION {session.sequence}: {session.workflowFocus}</strong>
             <p><strong>解決するリスク:</strong> {session.workflowRisks.resolvedFromPrevious}</p>
-            <p><strong>まだ解かないリスク:</strong> {session.workflowRisks.remainingForNext}</p>
+            <p><strong>今回扱わないリスク:</strong> {session.workflowRisks.remainingForNext}</p>
           </li>
         );
       })

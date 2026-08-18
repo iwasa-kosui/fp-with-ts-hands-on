@@ -11,9 +11,9 @@ export default [
   },
   {
     id: "dual-write",
-    title: "side effects が2つの保存処理へ分かれている",
+    title: "side effects が2つの保存処理に分かれている",
     currentDesign: "side effects として stateStore.save と eventLog.append を順番に await しています。",
-    futureRisk: "片方だけ成功すると、記録のない状態変更が残ります。",
+    futureRisk: "片方だけ成功すると、監査記録を伴わない状態変更が残ります。",
     path: "src/useCase/startExamination.ts",
     highlights: [{ startLineNumber: 66, endLineNumber: 69 }],
   },

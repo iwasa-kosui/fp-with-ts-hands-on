@@ -38,7 +38,11 @@ const chapters =
         ]
       : session.kind === "orientation"
         ? [...orientationChapters, reviewChapter]
-        : [...commonChapters, reviewChapter];
+        : [
+            { id: "incident", label: "5つの境界を確認する" } as const,
+            { id: "legacy", label: "参照実装をたどる" } as const,
+            reviewChapter,
+          ];
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>

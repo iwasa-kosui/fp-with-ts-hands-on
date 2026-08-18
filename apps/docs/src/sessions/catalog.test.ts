@@ -12,7 +12,7 @@ import {
 
 const exerciseSessions = sessions.filter((session) => session.kind === "exercise");
 const expectedPeerReviewQuestions = [
-  "この差分は、不変条件を型で守っていますか、実行時の `if` で守っていますか。守っている行を1行、画面上で指してください。",
+  "この差分では、不変条件を型で守っていますか。それとも実行時の `if` で守っていますか。該当する行を1行、画面上で示してください。",
   "この状態を壊すコードを1行書くとしたら、どう書きますか。それはコンパイルを通りますか。",
   "自分の差分と違うところを1つ挙げてください。どちらが良いかは言わなくてよいです。",
 ] as const;

@@ -37,7 +37,7 @@ const timing = session.timeBreakdown;
 
   <section id="review">
     <h2>レビュー{timing.review}分: 講師回答例と未解決リスクを比べる</h2>
-    <p>違いを正誤にせず、どの欄に判断が足りなかったか、どのリスクを先に実装するかを比較します。</p>
+    <p>違いを正誤で判断せず、どの欄に判断が足りなかったか、どのリスクを先に実装するかを比べます。</p>
     <WorkflowCard variant="answer" />
     <p><strong>今回そろえたこと:</strong> {session.workflowRisks.resolvedFromPrevious}</p>
     <p><strong>次に残す問い:</strong> {session.workflowRisks.remainingForNext}</p>

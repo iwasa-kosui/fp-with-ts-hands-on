@@ -107,7 +107,7 @@ describe("session code guides", () => {
         expect(useCaseGuide?.currentDesign).toContain("当日の S5 と同じ形");
         expect(useCaseGuide?.currentDesign).not.toContain("当日の S4");
         expect(aggregateGuide?.title).toBe(
-          "1業務集約から7業務集約へ広がる配線",
+          "1業務集約から7つの集約へ広がる配線",
         );
         expect(aggregateGuide?.path).toBe("src/app.ts");
       }

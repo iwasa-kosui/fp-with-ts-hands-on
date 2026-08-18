@@ -39,7 +39,7 @@ describe("SessionLayout", () => {
     {
       session: reference,
       expected: shortChapters,
-      labels: ["何が起きたか", "配布コードを読む", "レビューと持ち帰り"],
+      labels: ["5つの境界を確認する", "参照実装をたどる", "レビューと持ち帰り"],
     },
   ])("drives both TOCs from the $session.kind chapter definition", async ({ session, expected, labels }) => {
     const container = await createAstroContainer();
