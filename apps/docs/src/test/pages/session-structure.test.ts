@@ -9,6 +9,18 @@ const chapterIds = {
   reference: ["incident", "legacy", "review"],
 } as const;
 
+const teachingSlugs: ReadonlySet<string> = new Set([
+  "03-boundaries-and-semantic-values",
+]);
+
+const withTeachChapter = (
+  ids: readonly string[],
+  slug: string,
+): readonly string[] =>
+  teachingSlugs.has(slug)
+    ? ids.flatMap((id) => (id === "red" ? ["teach", id] : [id]))
+    : ids;
+
 const workflowFields = [
   "trigger",
   "input",
@@ -30,7 +42,7 @@ const workflowPrompts = [
 describe("session page structure", () => {
   it.each(sessionCases)("renders catalog chapters and both TOCs for $name", async ({ session }) => {
     const document = await renderSessionPage(session);
-    const expectedIds = chapterIds[session.kind];
+    const expectedIds = withTeachChapter(chapterIds[session.kind], session.slug);
     const directSections = [
       ...document.querySelectorAll<HTMLElement>("article.case-file__content > section"),
     ];
