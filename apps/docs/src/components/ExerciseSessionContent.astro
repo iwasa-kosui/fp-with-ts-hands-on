@@ -1,4 +1,5 @@
 ---
+import { Code } from "astro:components";
 import type { CodeGuide } from "../code-explorer/code-guide";
 import {
   sessionPath,
@@ -118,7 +119,7 @@ const promisesHref =
                   <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
                 ))}
               </figcaption>
-              <pre><code class="language-ts">{topic.before.code}</code></pre>
+              <Code code={topic.before.code} lang="ts" />
             </figure>
             <figure class="code-block">
               <figcaption>
@@ -127,7 +128,7 @@ const promisesHref =
                   <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
                 ))}
               </figcaption>
-              <pre><code class="language-ts">{topic.after.code}</code></pre>
+              <Code code={topic.after.code} lang="ts" />
             </figure>
           </div>
           <p class="teaching-topic__why"><strong>なぜこの型か:</strong> {topic.why}</p>

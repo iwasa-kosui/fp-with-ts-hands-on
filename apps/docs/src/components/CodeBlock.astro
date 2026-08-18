@@ -1,14 +1,16 @@
 ---
+import { Code } from "astro:components";
+
 interface Props {
   code: string;
-  language?: string;
+  language?: "shell" | "plaintext";
   label?: string;
 }
 
-const { code, language = "text", label } = Astro.props;
+const { code, language = "plaintext", label } = Astro.props;
 ---
 
 <figure class="code-block">
   {label === undefined ? null : <figcaption>{label}</figcaption>}
-  <pre><code class={`language-${language}`}>{code}</code></pre>
+  <Code code={code} lang={language} />
 </figure>
