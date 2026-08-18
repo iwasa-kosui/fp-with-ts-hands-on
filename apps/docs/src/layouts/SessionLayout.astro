@@ -4,14 +4,16 @@ import {
   sessionPath,
   type SessionSummary,
 } from "../sessions/catalog";
+import type { TeachingTopic } from "../sessions/teaching";
 import "../styles/sessions.css";
 import BaseLayout from "./BaseLayout.astro";
 
 type Props = Readonly<{
   session: SessionSummary;
+  teaching?: readonly TeachingTopic[];
 }>;
 
-const { session } = Astro.props;
+const { session, teaching = [] } = Astro.props;
 const { previous, next } = sessionNeighbors(session.slug);
 const commonChapters = [
   { id: "incident", label: "何が起きたか" },
@@ -22,10 +24,13 @@ const orientationChapters = [
   { id: "incident", label: "現行業務と事故" },
   { id: "legacy", label: "画面・保存・ログ" },
 ] as const;
+const teachChapters =
+  teaching.length === 0 ? [] : [{ id: "teach", label: "使う型を知る" } as const];
 const chapters =
   session.kind === "exercise"
     ? [
         ...commonChapters,
+        ...teachChapters,
         { id: "red", label: "失敗を再現する" } as const,
         { id: "refactor", label: "型で閉じる" } as const,
         reviewChapter,
