@@ -16,7 +16,7 @@ pnpm dev
 
 ## 演習の構成
 
-公開教材は、現行業務とシステムを読む S0、診察開始のワークフローを描く S1、コードを改善する S2〜S5、講師ツアーの Final で構成します。S0 は10分のオリエンテーションです。S1 は15分の班ワークで、紙面またはページ上のワークフロー・カードを作ります。S1 ではコード編集や exercise command を行いません。S2〜S5 は各30分のコード演習で、各starterは業務語彙を含む assertion failure による RED から始まります。Final は5分です。
+公開教材は、現行業務とシステムを読む S0、診察開始のワークフローを描く S1、コードを改善する S2〜S5、講師ツアーの Final で構成します。S0 は10分のオリエンテーションです。S1 は15分の班ワークで、散文からドメインイベントを拾い、Excalidraw 上でワークフロー境界を描きます。S1 ではコード編集や exercise command を行いません。S2〜S5 は各30分のコード演習で、各starterは業務語彙を含む assertion failure による RED から始まります。Final は5分です。
 
 S0 の観察対象は `examples/session-00`、S1 のカードは `examples/session-01/README.md` にあります。S2〜S5 の開始スナップショットは `examples/session-02`〜`examples/session-05` で、前の回の改善を引き継ぎます。`examples/session-06` は非公開の到達点スナップショットで、S2〜S5 の全解答と全回帰テストが GREEN になった状態です。`examples/final` は、当日の局所的な改善を複数集約と SQLite へ広げた参照実装です。
 
@@ -40,7 +40,7 @@ pnpm exercise:05
 ## 当日の流れ
 
 1. S0 で壊れやすい動物病院アプリの現行業務、操作、保存先、ログを読む
-2. S1 で trigger、input、current state、expected failures、output event、side effects をワークフロー・カードへ整理する
+2. S1 で散文からドメインイベントを拾い、コマンドとアクターを添えて、診察開始のワークフロー境界を Excalidraw で引く
 3. S2 で Discriminated Union を使い、状態遷移を閉じる
 4. S3 で外部入力事故と PII ログ漏えいを、Zod と Branded Type で守る
 5. S4 で失敗理由を同期 Result の型付きの値として返し、呼び出し側へ運ぶ
