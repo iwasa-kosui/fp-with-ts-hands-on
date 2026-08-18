@@ -16,7 +16,7 @@
 - `pnpm test`、`pnpm typecheck`、`pnpm build` は通常の健全性確認で、成功を期待します。
 - S2〜S5 の開始スナップショットでは、`pnpm exercise:02`〜`pnpm exercise:05` が業務語彙を持つ `AssertionError` で意図的に失敗します。module-not-found、import error、設定エラーは意図した RED ではありません。
 - 参加者が対象モジュールを直した後は、同じ exercise コマンドの成功を期待します。
-- S0 は現状理解、S1 は紙面またはページ上のワークフローカードを使う班ワークです。どちらにも exercise コマンドはありません。
+- S0 は現状理解、S1 は Excalidraw 上でドメインイベントを拾う班ワークです。どちらにも exercise コマンドはありません。
 - S4 は同期 `Result` と `andThen`、S5 は副作用・イベント、`ResultAsync`、`andThrough`、1回の `store(event)` を扱います。
 
 参加者ステップは S2=4件、S3=2件、S4=3件、S5=4件です。開始時の RED 数と同じではない出力や予期しない例外を見たら、先に環境または差分範囲を切り分けます。
@@ -56,7 +56,7 @@
 | Final | `reference` | 0分 | 4分 | 0分 | 1分 | 5分 |
 
 - S0 の `brief` は業務説明、`teach` はガイド付き読解、`review` は班内共有です。相互レビューではありません。4+3+0+3=10分です。
-- S1 の `exercise` は紙面またはページ上のワークフローカードを班で埋める6分です。コード編集や exercise コマンドは行いません。3+4+6+2=15分です。
+- S1 の `exercise` は、散文から拾ったドメインイベントを Excalidraw 上で時系列に並べ、診察開始のワークフロー境界を班で引く6分です。コード編集や exercise コマンドは行いません。3+4+6+2=15分です。
 - S2〜S5 の `brief` は事故と RED、`teach` は技法の解説、`exercise` は ADV、`review` は班内相互レビューと末尾の記録です。それぞれ 4+6+13+7=30分、4+7+12+7=30分、4+3+15+8=30分、4+3+15+8=30分です。
 - Final の `teach` は講師ツアー、`review` は次の学習先の案内です。参加者レビューではありません。0+4+0+1=5分です。
 
@@ -82,7 +82,17 @@ S2〜S5 は次の順序を崩しません。
 5. 対象モジュールだけを変更し、同じコマンド、型、現在snapshot限定の差分、リポジトリ全体の状態で個人検証する。
 6. TA が選んだ1〜2名の差分を班で相互レビューし、全員がレビュー観点シートへ1行書く。
 
-S0 では現状を読み、S1 では紙面またはページ上のワークフローカードへ trigger・input・current state・expected failures・output event・side effects を班で記入します。どちらも修正と exercise 実行を行いません。Final は講師が `examples/final/src/useCase/startExaminationUseCase.ts` を入口に5分で案内するだけです。参加者へ `examples/final` のセットアップ、編集、Playground 操作を求めません。
+S0 では現状を読み、S1 では散文からドメインイベントを拾い、コマンドとアクターを添えて、診察開始のワークフロー境界を Excalidraw 上で班が引きます。どちらも修正と exercise 実行を行いません。Final は講師が `examples/final/src/useCase/startExaminationUseCase.ts` を入口に5分で案内するだけです。参加者へ `examples/final` のセットアップ、編集、Playground 操作を求めません。
+
+## S1 の Excalidraw 運用
+
+S1 の班ワークはページ上ではなく Excalidraw で行います。班数分のリンクを事前に用意する案は採りません。リンクが外部に残り続けるためです。TA は S1 のブリーフィング3分の間に次を終えます。
+
+1. excalidraw.com でテンプレート `docs/event/session-01-event-storming.excalidraw` を開く。
+2. 画面右上から Live collaboration を開始する。
+3. 発行されたリンクを班へ共有する。
+
+参加者が散文を読み終える前にリンクを配り終える想定です。テンプレートには講師実演1件が置かれたドメインイベント、時系列の軸、記入例1組、手順4段を含みます。
 
 ## セッション間の差分基準と引き継ぎ
 
@@ -105,11 +115,11 @@ S0 では現状を読み、S1 では紙面またはページ上のワークフ�
 
 - 2件の事故（二重請求、PII流出）と legacy の該当行を対応づけられるか確認する。
 - 実装を先回りして直さず、S1で診察開始を一つの業務ワークフローとして描くことを共有する。
-- 紙面またはページ上のワークフローカードを班で開き、6欄を埋める準備をする。
+- TA が Excalidraw のテンプレートを開き、Live collaboration を開始する準備をする。
 
 ### 0:25 — S1 を終えて S2 へ進む
 
-- trigger・input・current state・expected failures・output event・side effects の6欄が診察開始の言葉で埋まっているか確認する。
+- 散文から拾ったドメインイベントの時系列と、診察開始のワークフロー境界が Excalidraw 上に描けているか確認する。
 - S2以降はカードの未解決リスクを1回に1つずつ実装することを共有する。
 - [相互レビュー進行カード](./peer-review-card.md)の約束事5点を読み上げる。4回で全員を最低1回選ぶ計画をTAが記録欄へ立てる。
 
