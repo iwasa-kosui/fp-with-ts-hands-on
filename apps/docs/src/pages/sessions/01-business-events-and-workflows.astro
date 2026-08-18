@@ -1,6 +1,4 @@
 ---
-import WorkflowCard from "../../components/WorkflowCard.astro";
-import WorkflowRiskMap from "../../components/WorkflowRiskMap.astro";
 import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessionBySlug } from "../../sessions/catalog";
 
@@ -9,39 +7,137 @@ if (session === undefined) {
   throw new Error("Unknown session: 01-business-events-and-workflows");
 }
 const timing = session.timeBreakdown;
+
+type DomainEvent = Readonly<{
+  id: string;
+  name: string;
+  actor: string;
+  command: string;
+  inStartExamination: boolean;
+}>;
+
+// 時系列の順序は配列の並び順で表す。散文から実際に拾えるイベントだけを並べている。
+const domainEvents: readonly DomainEvent[] = [
+  {
+    id: "checked-in",
+    name: "来院が受け付けられた",
+    actor: "受付スタッフ",
+    command: "来院を受け付ける",
+    inStartExamination: false,
+  },
+  {
+    id: "intake-recorded",
+    name: "問診と体重が記録された",
+    actor: "動物看護師",
+    command: "問診と体重測定を行う",
+    inStartExamination: false,
+  },
+  {
+    id: "examination-started",
+    name: "診察が開始された",
+    actor: "獣医師",
+    command: "診察を始める",
+    inStartExamination: true,
+  },
+  {
+    id: "findings-recorded",
+    name: "所見が記録された",
+    actor: "獣医師",
+    command: "所見を記録する",
+    inStartExamination: false,
+  },
+  {
+    id: "billing-completed",
+    name: "会計が完了した",
+    actor: "受付スタッフ",
+    command: "会計を行う",
+    inStartExamination: false,
+  },
+] as const;
+
+const teacherDemoEvent = domainEvents[0];
+
+const excalidrawTemplatePath = "docs/event/session-01-event-storming.excalidraw";
+const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/${excalidrawTemplatePath}`;
 ---
 
 <SessionLayout session={session}>
   <section id="incident">
-    <h2>ブリーフィング{timing.brief}分: 診察開始という出来事を揃える</h2>
-    <p><strong>要求:</strong> 診察開始の判断、入力、結果、記録先を、班の全員が同じ一枚で説明できるようにする。</p>
-    <p><strong>現行リスク:</strong> {session.incident}</p>
+    <h2>ブリーフィング{timing.brief}分: 動物病院の一日を読む</h2>
     <p>
-      この15分はコードを書きません。診察開始を一つの業務ワークフローとして描き、後続セッションで実装する範囲を揃えます。
+      この15分はコードを書きません。次の文章から業務上起きた出来事を拾い、診察開始という一つのワークフローの境界を班で引けるようになることが目標です。
     </p>
+    <div class="incident-report">
+      <p>
+        よく晴れた朝、開院してすぐの時間帯に、飼い主が数日前から元気のない柴犬を連れて来院しました。受付スタッフは前日に電話で受けていた予約を確認し、飼い主に問診票を渡して来院を受け付けました。待合室にはほかの飼い主と猫もいて、少し賑やかな雰囲気でした。しばらく待ってもらったあと、動物看護師が診察室前で飼い主を呼び、問診票の内容を確認しながら体重を測り、来院時の症状や直近の食欲、排せつの様子について丁寧に聞き取り、いつもより落ち着かない足取りだったことも合わせて記録しました。続いて担当の獣医師が診察室へ犬を呼び入れ、診察を始めました。獣医師は聴診と触診を行い、看護師が記録した体重の変化も参考にしながら、飼い主に自宅での様子をさらに詳しく尋ねました。今回は追加の検査までは必要ないと判断し、診察を終えると、獣医師は所見と自宅での過ごし方の注意点をカルテに書き留め、飼い主にも口頭で分かりやすく説明しました。獣医師は次の患者の準備のため看護師に一声かけ、診察室を出ました。診察が終わると、受付スタッフが会計を担当しました。診察料と処方した薬の代金を項目ごとに計算し、内訳を示しながら飼い主に伝えて支払いを受け取りました。受付スタッフは会計が済んだことを記録しました。飼い主は処方された薬を受け取り、家での飲ませ方をもう一度確認してから、笑顔で動物病院をあとにしました。受付スタッフは待合室の様子を見渡し、次に呼ぶ飼い主の準備に取りかかりました。
+      </p>
+    </div>
   </section>
 
   <section id="workflow">
     <h2>ワークフローを描く</h2>
-    <h3>説明{timing.teach}分: 6つの欄の書き方を確認する</h3>
-    <p>
-      講師と一緒に、開始のきっかけ、依頼、開始前の状態、予想される失敗、成功時の記録、保存・通知の順に読みます。
-      実装方法ではなく、現場から見た入力と判断、結果を業務の言葉で書きます。
-    </p>
-    <WorkflowRiskMap placement="opening" />
 
-    <h3>カード作成{timing.exercise}分: 空欄を班で埋める</h3>
-    <p>まず各欄を個人で考え、班で一つの答えにまとめます。</p>
-    <WorkflowCard variant="blank" />
+    <h3>説明{timing.teach}分: 語彙とドメインイベントの拾い方を確認する</h3>
+    <p>扱う語彙は3つです。ポリシー、読み取りモデル、外部システム、集約は扱いません。</p>
+    <dl>
+      <dt>ドメインイベント</dt>
+      <dd>業務上起きた出来事。過去形で書きます。</dd>
+      <dt>コマンド</dt>
+      <dd>誰かが出した依頼。ドメインイベントを引き起こします。</dd>
+      <dt>ワークフロー</dt>
+      <dd>一つの依頼を受けてドメインイベントを出すまでのひとかたまり。</dd>
+    </dl>
+    <p>手順は次の4段です。班ワーク中もこのページで参照できます。</p>
+    <ol class="exercise-steps">
+      <li>起きた出来事を過去形で書き出す</li>
+      <li>時間の順に並べる</li>
+      <li>それぞれの出来事が、誰の何の依頼で起きたかを添える</li>
+      <li>一つの依頼から記録までのひとかたまりを囲み、名前を付ける</li>
+    </ol>
+    <p>講師は文章からドメインイベントを1件だけ拾い、Excalidraw に置いて見せます。</p>
+    <article
+      class="decision-card"
+      data-domain-event-id={teacherDemoEvent.id}
+      data-in-start-examination={teacherDemoEvent.inStartExamination ? "true" : "false"}
+    >
+      <h4>講師実演: {teacherDemoEvent.name}</h4>
+      <p><strong>誰の依頼か:</strong> {teacherDemoEvent.actor}</p>
+      <p><strong>コマンド:</strong> {teacherDemoEvent.command}</p>
+    </article>
+
+    <h3>班ワーク{timing.exercise}分: 残りのドメインイベントを拾い、境界を引く</h3>
+    <p>
+      残りのドメインイベントを文章から拾って時系列に並べ、各イベントに誰の何の依頼で起きたかを添えます。そのうえで、診察開始という一つの依頼から記録までのひとかたまりを囲み、名前を付けます。
+    </p>
+    <p>
+      班ワークは次の Excalidraw テンプレートで行います。TA が excalidraw.com でテンプレートを開いて Live collaboration を開始し、班へリンクを配ります。
+    </p>
+    <p>
+      <a href={excalidrawTemplateUrl}><code>{excalidrawTemplatePath}</code></a>
+    </p>
   </section>
 
   <section id="review">
-    <h2>レビュー{timing.review}分: 講師回答例と未解決リスクを比べる</h2>
-    <p>違いを正誤で判断せず、どの欄に判断が足りなかったか、どのリスクを先に実装するかを比べます。</p>
-    <WorkflowCard variant="answer" />
-    <p><strong>今回そろえたこと:</strong> {session.workflowRisks.resolvedFromPrevious}</p>
-    <p><strong>次に残す問い:</strong> {session.workflowRisks.remainingForNext}</p>
-    <p>班で、最初に減らしたい未解決リスクを一つ選び、その理由を一文で共有します。</p>
-    <WorkflowRiskMap placement="review" />
+    <h2>レビュー{timing.review}分: 講師回答例と粒度の違いを比べる</h2>
+    <p>班の結果と次の講師回答例を見比べます。境界内はドメインイベント名の下に示します。</p>
+    <ol class="decision-list">
+      {
+        domainEvents.map((event) => (
+          <li
+            class="decision-card"
+            data-domain-event-id={event.id}
+            data-in-start-examination={event.inStartExamination ? "true" : "false"}
+          >
+            <h4>{event.name}</h4>
+            <p><strong>誰の依頼か:</strong> {event.actor}</p>
+            <p><strong>コマンド:</strong> {event.command}</p>
+            {event.inStartExamination ? <p><strong>診察開始ワークフローの境界内</strong></p> : null}
+          </li>
+        ))
+      }
+    </ol>
+    <p>
+      正誤ではなく粒度の違いを一つ選んで班で共有します。一つのドメインイベントをさらに細かく分けているか、逆に複数の出来事を一つにまとめているかを比べる観点が手がかりになります。
+    </p>
   </section>
 </SessionLayout>

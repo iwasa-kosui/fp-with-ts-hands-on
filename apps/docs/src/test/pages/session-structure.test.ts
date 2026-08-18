@@ -9,24 +9,6 @@ const chapterIds = {
   reference: ["incident", "legacy", "review"],
 } as const;
 
-const workflowFields = [
-  "trigger",
-  "input",
-  "current state",
-  "expected failures",
-  "output event",
-  "side effects",
-] as const;
-
-const workflowPrompts = [
-  "何が起きたことで始まるか",
-  "誰が何を依頼するか",
-  "開始前に何が成り立っているか",
-  "どのような失敗が予想されるか",
-  "成功したとき何が起きたと記録するか",
-  "どこへ何を保存・通知するか",
-] as const;
-
 describe("session page structure", () => {
   it.each(sessionCases)("renders catalog chapters and both TOCs for $name", async ({ session }) => {
     const document = await renderSessionPage(session);
@@ -51,50 +33,36 @@ describe("session page structure", () => {
     }
   });
 
-  it("runs S1 as a non-code group workshop with blank and facilitator workflow cards", async () => {
+  it("runs S1 as an event-storming workshop without workflow cards or code exercise traces", async () => {
     const session = sessions.find(({ kind }) => kind === "workshop")!;
     const document = await renderSessionPage(session);
     const text = document.body.textContent ?? "";
-    const blankCard = document.querySelector('.workflow-card[data-variant="blank"]');
-    const answerCard = document.querySelector('.workflow-card[data-variant="answer"]');
 
     expect(text).toContain("15分");
-    expect(blankCard).not.toBeNull();
-    expect(answerCard).not.toBeNull();
-    expect(
-      [...blankCard!.querySelectorAll<HTMLElement>("[data-workflow-field]")].map(
-        (field) => field.dataset.workflowField,
-      ),
-    ).toEqual(workflowFields);
-    expect(
-      [...answerCard!.querySelectorAll<HTMLElement>("[data-workflow-field]")].map(
-        (field) => field.dataset.workflowField,
-      ),
-    ).toEqual(workflowFields);
-    expect(text).toContain("講師回答例");
-    expect(text).toContain("検査結果の到着");
-    expect(text).toContain("別のきっかけ");
-    const riskMaps = [
-      ...document.querySelectorAll<HTMLElement>(".workflow-risk-map"),
-    ];
-    expect(riskMaps).toHaveLength(2);
-    expect(riskMaps.map(({ dataset }) => dataset.placement)).toEqual([
-      "opening",
-      "review",
-    ]);
-    expect(new Set(riskMaps.map((map) => map.getAttribute("aria-label"))).size).toBe(2);
-    expect(document.querySelectorAll("#workflow .workflow-risk-map")).toHaveLength(1);
-    expect(document.querySelectorAll("#review .workflow-risk-map")).toHaveLength(1);
-    expect(riskMaps[1]?.querySelector("ol")?.textContent).toBe(
-      riskMaps[0]?.querySelector("ol")?.textContent,
-    );
-    expect(
-      riskMaps.map((map) => map.querySelectorAll("[data-session-sequence]").length),
-    ).toEqual([4, 4]);
+    expect(document.querySelector(".workflow-card")).toBeNull();
+    expect(document.querySelector(".workflow-risk-map")).toBeNull();
     expect(document.querySelector("[data-code-explorer]")).toBeNull();
     expect(document.querySelector(".command-block")).toBeNull();
     expect(document.querySelector("details.step-solution")).toBeNull();
     expect(text).not.toContain("pnpm exercise:");
+    expect(text).toContain("講師回答例");
+
+    const events = [
+      ...document.querySelectorAll<HTMLElement>("[data-domain-event-id]"),
+    ];
+    expect(events.length).toBeGreaterThanOrEqual(5);
+    const boundaryEvents = events.filter(
+      (event) => event.dataset.inStartExamination === "true",
+    );
+    expect(boundaryEvents).toHaveLength(1);
+
+    const reviewEvents = [
+      ...document.querySelectorAll<HTMLElement>(
+        "#review [data-domain-event-id]",
+      ),
+    ];
+    expect(reviewEvents).toHaveLength(5);
+    expect(new Set(reviewEvents.map((event) => event.dataset.domainEventId)).size).toBe(5);
   });
 
   it("shows the exact 3+4+6+2 S1 timing", async () => {
@@ -109,26 +77,34 @@ describe("session page structure", () => {
         textContent?.trim(),
       ),
     ).toEqual([
-      "説明4分: 6つの欄の書き方を確認する",
-      "カード作成6分: 空欄を班で埋める",
+      "説明4分: 語彙とドメインイベントの拾い方を確認する",
+      "班ワーク6分: 残りのドメインイベントを拾い、境界を引く",
     ]);
     expect(document.querySelector("#review h2")?.textContent).toContain(
       "レビュー2分",
     );
   });
 
-  it("uses six clear Japanese prompts on both S1 workflow cards", async () => {
+  it("presents the event-storming vocabulary, the four-step procedure, and the Excalidraw template link on S1", async () => {
     const session = sessions.find(({ kind }) => kind === "workshop")!;
     const document = await renderSessionPage(session);
-    const blankCard = document.querySelector('.workflow-card[data-variant="blank"]')!;
-    const answerCard = document.querySelector('.workflow-card[data-variant="answer"]')!;
+    const workflowSection = document.querySelector("#workflow")!;
+    const text = workflowSection.textContent ?? "";
 
-    for (const card of [blankCard, answerCard]) {
-      expect(
-        [...card.querySelectorAll("[data-workflow-field] h5")].map(
-          ({ textContent }) => textContent?.trim(),
-        ),
-      ).toEqual(workflowPrompts);
+    for (const term of ["ドメインイベント", "コマンド", "ワークフロー"]) {
+      expect(text).toContain(term);
     }
+    for (const step of [
+      "起きた出来事を過去形で書き出す",
+      "時間の順に並べる",
+      "それぞれの出来事が、誰の何の依頼で起きたかを添える",
+      "一つの依頼から記録までのひとかたまりを囲み、名前を付ける",
+    ]) {
+      expect(text).toContain(step);
+    }
+    const templateLink = workflowSection.querySelector<HTMLAnchorElement>(
+      'a[href*="docs/event/session-01-event-storming.excalidraw"]',
+    );
+    expect(templateLink).not.toBeNull();
   });
 });
