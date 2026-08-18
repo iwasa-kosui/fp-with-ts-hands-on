@@ -102,14 +102,18 @@ const promisesHref =
             <figure class="code-block">
               <figcaption>
                 before:
-                {topic.before.sources.map((source) => <code>{source}</code>)}
+                {topic.before.sources.map((source, index) => (
+                  <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                ))}
               </figcaption>
               <pre><code class="language-ts">{topic.before.code}</code></pre>
             </figure>
             <figure class="code-block">
               <figcaption>
                 after:
-                {topic.after.sources.map((source) => <code>{source}</code>)}
+                {topic.after.sources.map((source, index) => (
+                  <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                ))}
               </figcaption>
               <pre><code class="language-ts">{topic.after.code}</code></pre>
             </figure>

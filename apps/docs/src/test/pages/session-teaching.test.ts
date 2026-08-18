@@ -62,7 +62,14 @@ describe("S3 teaching section", () => {
 
       for (const figure of figures) {
         const { sources, lines } = readFigure(figure);
+        const caption = figure.querySelector("figcaption")?.textContent ?? "";
         expect(sources.length).toBeGreaterThan(0);
+        for (const [index, source] of sources.entries()) {
+          const next = sources[index + 1];
+          if (next !== undefined) {
+            expect(caption).not.toContain(`${source}${next}`);
+          }
+        }
         expect(lines.length).toBeGreaterThan(0);
         const bodies = sources.map(readSource);
         for (const line of lines) {
