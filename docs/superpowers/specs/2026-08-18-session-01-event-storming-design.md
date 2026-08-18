@@ -67,7 +67,9 @@ S2〜S5 で使う型名（`ExaminationStarted`、`StartExaminationCommand` な�
 
 ## 講師回答例のデータ
 
-`WorkflowCard.astro` に配列としてハードコードされている現行の回答例を、独立モジュール `apps/docs/src/sessions/workflow-model.ts` へ移します。S2〜S5 から識別子を指定して該当箇所だけを引用できるようにするためです。
+`WorkflowCard.astro` に配列としてハードコードされている現行の回答例を、S1 ページ（`apps/docs/src/pages/sessions/01-business-events-and-workflows.astro`）の frontmatter へ直接書きます。独立モジュールへの切り出しは行いません。
+
+切り出しの目的だった「S2〜S5 からの引用」は、S2〜S5 の再構成と同じく本設計の範囲外です。現時点で S1 の回答例を参照する消費者は S1 ページ1つだけであり、消費者が2つになった時点で切り出せば足ります。
 
 ```ts
 type DomainEvent = Readonly<{
@@ -82,8 +84,6 @@ type DomainEvent = Readonly<{
 時系列の順序は配列の並び順で表します。イベントに時刻を持たせません。散文が語る一日は特定の日付を指しておらず、順序だけが意味を持つためです。
 
 `inStartExamination` が真のイベント列が、班が引くべき境界の答えにあたります。
-
-S2〜S5 の再構成では、各回が扱うイベントの識別子を指定して S1 の回答例を引用します。文言を各セッションへコピーしないので、回答例を直したときにセッション間でずれません。この再構成は別 Issue として扱い、本設計の範囲外です。
 
 ## Excalidraw テンプレートと当日運用
 
@@ -117,7 +117,6 @@ S1 ページには手順・散文・講師回答例だけを置きます。参�
 
 新規に作るものは次のとおりです。
 
-- `apps/docs/src/sessions/workflow-model.ts`
 - `docs/event/session-01-event-storming.excalidraw`
 - 散文。S1 でしか使わないため、S1 ページ内に直接書きます
 
