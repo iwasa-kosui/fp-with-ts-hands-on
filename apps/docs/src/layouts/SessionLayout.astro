@@ -4,13 +4,13 @@ import {
   sessionPath,
   type SessionSummary,
 } from "../sessions/catalog";
-import type { TeachingTopic } from "../sessions/teaching";
 import "../styles/sessions.css";
 import BaseLayout from "./BaseLayout.astro";
 
 type Props = Readonly<{
   session: SessionSummary;
-  teaching?: readonly TeachingTopic[];
+  // 目次の章立てに使うのは有無だけで、トピックの中身は参照しない。
+  teaching?: readonly unknown[];
 }>;
 
 const { session, teaching = [] } = Astro.props;

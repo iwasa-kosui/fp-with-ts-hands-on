@@ -1,6 +1,5 @@
 ---
 import type { CodeGuide } from "../code-explorer/code-guide";
-import type { TeachingTopic } from "../sessions/teaching";
 import {
   sessionPath,
   sessions,
@@ -25,6 +24,19 @@ type Narrative = Readonly<{
   legacy: string;
   reviewFocus: string;
   fallback: string;
+}>;
+
+type TeachingCode = Readonly<{
+  sources: readonly [string, ...string[]];
+  code: string;
+}>;
+
+type TeachingTopic = Readonly<{
+  name: string;
+  definition: string;
+  before: TeachingCode;
+  after: TeachingCode;
+  why: string;
 }>;
 
 type Props = Readonly<{

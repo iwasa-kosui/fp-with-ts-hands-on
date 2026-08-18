@@ -3,14 +3,13 @@ import ExerciseSessionContent from "../../components/ExerciseSessionContent.astr
 import guides from "../../code-explorer/code-guides/03-boundaries-and-semantic-values";
 import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessionBySlug } from "../../sessions/catalog";
-import type { TeachingTopic } from "../../sessions/teaching";
 
 const session = sessionBySlug("03-boundaries-and-semantic-values");
 if (session === undefined) {
   throw new Error("Unknown session: 03-boundaries-and-semantic-values");
 }
 
-const teaching: readonly TeachingTopic[] = [
+const teaching = [
   {
     name: "schema による境界検証と Result",
     definition:
@@ -114,7 +113,7 @@ export const OwnerContactSchema = z
     },
     why: "平文の string で持つと、JSON.stringify も console.log も個人情報が出る経路になり、出さないことをレビューで守り続けることになります。Sensitive で包むと既定が伏せる側になり、値を出すには unwrap を書く必要が生じます。unwrap を検索すれば、個人情報が平文になる箇所を数えられます。これが「個人情報は既定でマスクし、値を取り出す場所を限定する」の型での表し方です。",
   },
-];
+] as const;
 ---
 
 <SessionLayout session={session} teaching={teaching}>
