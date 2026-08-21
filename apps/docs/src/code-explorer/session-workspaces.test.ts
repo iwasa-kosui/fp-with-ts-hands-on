@@ -26,7 +26,7 @@ const snapshots = [
     ...sessions.flatMap(({ snapshot }) =>
       snapshot === undefined ? [] : [snapshot],
     ),
-    "session-06",
+    "session-07",
   ]),
 ];
 
@@ -36,6 +36,7 @@ const nextSnapshotFor = (snapshot: ExampleSnapshot): ExampleSnapshot => {
     "session-03": "session-04",
     "session-04": "session-05",
     "session-05": "session-06",
+    "session-06": "session-07",
   } as const;
   const result = next[snapshot as keyof typeof next];
   if (result === undefined) throw new Error(`No solution snapshot for ${snapshot}`);
@@ -90,7 +91,7 @@ const importClosure = (
 };
 
 describe("session code workspaces", () => {
-  it("maps S0, S2-S5, and Final to their snapshots without an S1 workspace", () => {
+  it("maps S0, S2-S6, and Final to their snapshots without an S1 workspace", () => {
     for (const session of sessions) {
       if (session.kind === "workshop") continue;
       expect(sessionWorkspaceFor(session.slug).snapshot).toBe(session.snapshot);
@@ -143,15 +144,16 @@ describe("session code workspaces", () => {
     }
   });
 
-  it("builds project-file maps for public snapshots and the private S5 solution", () => {
+  it("builds project-file maps for public snapshots and the private S6 solution", () => {
     expect(snapshots).toEqual([
       "session-00",
       "session-02",
       "session-03",
       "session-04",
       "session-05",
-      "final",
       "session-06",
+      "final",
+      "session-07",
     ]);
     for (const snapshot of snapshots) {
       const files = projectFilesForSnapshot(snapshot);
@@ -163,11 +165,11 @@ describe("session code workspaces", () => {
 
   it.each([
     {
-      snapshot: "session-05" as const,
+      snapshot: "session-06" as const,
       entrypoint: "exercises/effects-and-events.test.ts",
     },
     {
-      snapshot: "session-06" as const,
+      snapshot: "session-07" as const,
       entrypoint: "test/regression/effects-and-events.test.ts",
     },
   ])(

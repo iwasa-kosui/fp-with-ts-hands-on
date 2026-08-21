@@ -52,14 +52,14 @@ describe("root CI coverage", () => {
     );
   });
 
-  it("exposes only S2 through S5 as participant exercise commands", async () => {
+  it("exposes only S2 through S6 as participant exercise commands", async () => {
     const rootPackage = await readPackage("package.json");
 
     expect(
       Object.keys(rootPackage.scripts)
         .filter((script) => /^exercise:\d{2}$/.test(script))
         .sort(),
-    ).toEqual(["exercise:02", "exercise:03", "exercise:04", "exercise:05"]);
+    ).toEqual(["exercise:02", "exercise:03", "exercise:04", "exercise:05", "exercise:06"]);
     expect(rootPackage.scripts["exercise:02"]).toBe(
       "pnpm --filter @fp-with-ts/clinic-session-02 exercise",
     );
@@ -71,6 +71,9 @@ describe("root CI coverage", () => {
     );
     expect(rootPackage.scripts["exercise:05"]).toBe(
       "pnpm --filter @fp-with-ts/clinic-session-05 exercise",
+    );
+    expect(rootPackage.scripts["exercise:06"]).toBe(
+      "pnpm --filter @fp-with-ts/clinic-session-06 exercise",
     );
   });
 

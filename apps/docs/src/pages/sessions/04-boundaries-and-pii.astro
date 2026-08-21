@@ -1,0 +1,102 @@
+---
+import ExerciseSessionContent from "../../components/ExerciseSessionContent.astro";
+import guides from "../../code-explorer/code-guides/04-boundaries-and-pii";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+
+const session = sessionBySlug("04-boundaries-and-pii");
+if (session === undefined) {
+  throw new Error("Unknown session: 04-boundaries-and-pii");
+}
+
+const teaching = [
+  {
+    name: "schema による境界検証と Result",
+    definition:
+      "外から届く unknown を schema へ通し、通った値だけをドメイン型として扱います。通らなければ、失敗を戻り値の Result で返します。",
+    before: {
+      sources: ["examples/session-04/src/boundary/examResult.ts"],
+      code: `export const ExamResult = {
+  parse: (raw: any): Result<ExamResult> =>
+    ok({
+      examId: raw.examId,
+      petId: raw.petId,
+      items: raw.items ?? [],
+      needsFollowUp: !!raw.needsFollowUp,
+    }),
+} as const;`,
+    },
+    after: {
+      sources: ["examples/session-05/src/boundary/examResult.ts"],
+      code: `const ExamResultSchema = z.object({
+  examId: ExamId.schema,
+  petId: PetId.schema,
+  items: z.array(z.string().min(1)).readonly(),
+  needsFollowUp: z.boolean().default(false),
+}).readonly();
+
+export type ExamResult = z.infer<typeof ExamResultSchema>;
+
+export const ExamResult = {
+  schema: ExamResultSchema,
+  parse: schemaResult(ExamResultSchema),
+} as const;`,
+    },
+    why: "before は raw を any で受けるため、検証を1行も書かなくても型検査が通ります。after は unknown を schema へ通すので、検証を書かない限り値を取り出せません。これで「外部入力は、境界で検証してからドメイン型になる」を型で守れます。前の回で作った ExamId.schema と PetId.schema をここへ埋め込むと、識別子を作る経路が境界の1か所に集まります。parse は失敗しうる処理なので、失敗は例外ではなく戻り値の Result に現します。この回は失敗が戻り値に出るところまでを扱い、Result の分岐と合成は S5 で扱います。",
+  },
+  {
+    name: "Sensitive による既定のマスク",
+    definition:
+      "個人情報を包む型です。toJSON と toString を [REDACTED] にし、中身を取り出せるのは unwrap を呼んだ場所だけにします。",
+    before: {
+      sources: ["examples/session-04/src/boundary/ownerContact.ts"],
+      code: `export type OwnerContact = Readonly<{
+  ownerName: string;
+  ownerEmail: string;
+  ownerPhone: string;
+}>;`,
+    },
+    after: {
+      sources: [
+        "examples/session-05/src/shared/sensitive.ts",
+        "examples/session-05/src/boundary/ownerContact.ts",
+      ],
+      code: `export const Sensitive = {
+  of: <T>(value: T): Sensitive<T> => ({
+    unwrap: () => value,
+    toJSON: () => "[REDACTED]",
+    toString: () => "[REDACTED]",
+    [inspect.custom]: () => "[REDACTED]",
+  }),
+} as const;
+
+const OwnerContactSchema = z
+  .object({
+    ownerName: z.string().min(1).brand<"OwnerName">().transform(Sensitive.of),
+    ownerEmail: z.string().email().brand<"OwnerEmail">().transform(Sensitive.of),
+    ownerPhone: z.string().min(1).brand<"OwnerPhone">().transform(Sensitive.of),
+  })
+  .readonly();`,
+    },
+    why: "平文の string で持つと、JSON.stringify も console.log も個人情報が出る経路になり、出さないことをレビューで守り続けることになります。Sensitive で包むと既定が伏せる側になり、値を出すには unwrap を書く必要が生じます。unwrap を検索すれば、個人情報が平文になる箇所を数えられます。1行に brand と transform が並んでいますが、2つは別の目的です。brand は OwnerEmail を OwnerPhone の位置へ渡せなくするための区別で、ログ出力には影響しません。ログ漏えいを止めているのは Sensitive.of のほうです。",
+  },
+] as const;
+---
+
+<SessionLayout session={session} teaching={teaching}>
+  <ExerciseSessionContent
+    session={session}
+    guides={guides}
+    teaching={teaching}
+    narrative={{
+      requirement: "外部から届く JSON を検証してからドメイン型にする。飼い主の氏名・メールアドレス・電話番号はログから守る。",
+      currentRisk: "検査機関から届く値をそのまま信頼すると、形の違う JSON がドメインへ入り、予約全体のログから個人情報を漏らせる。",
+      design: "input 欄は、unknown から受け取る Zod の入力境界と、既定で伏せる Sensitive で実装する。",
+      limitation: "Sensitive を unwrap した後の文字列の扱いは、型では守れない。",
+      nextQuestion: "診察開始を続けられない条件を、呼び出し側が業務判断できる形でどう返すか。",
+      legacy: "raw: any で受ける parse と、平文の string で持つ連絡先を読み、入力と出力の境界を分けます。",
+      reviewFocus: "unwrap を呼ぶ場所を限定し、JSON.stringify と util.inspect のどちらでも個人情報が伏せられるか。",
+      fallback: "現在の2ステップを順に開き、まず不正な JSON を Err として返します。次に連絡先3項目を Sensitive にします。相互レビューの約束事はS2のリンク先を確認します。",
+    }}
+  />
+</SessionLayout>

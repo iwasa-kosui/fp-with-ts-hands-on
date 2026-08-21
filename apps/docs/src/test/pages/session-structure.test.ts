@@ -10,7 +10,8 @@ const chapterIds = {
 } as const;
 
 const teachingSlugs: ReadonlySet<string> = new Set([
-  "03-boundaries-and-semantic-values",
+  "03-semantic-identifiers",
+  "04-boundaries-and-pii",
 ]);
 
 const withTeachChapter = (
@@ -102,7 +103,7 @@ describe("session page structure", () => {
     );
     expect(
       riskMaps.map((map) => map.querySelectorAll("[data-session-sequence]").length),
-    ).toEqual([4, 4]);
+    ).toEqual([5, 5]);
     expect(document.querySelector("[data-code-explorer]")).toBeNull();
     expect(document.querySelector(".command-block")).toBeNull();
     expect(document.querySelector("details.step-solution")).toBeNull();

@@ -29,9 +29,12 @@ const readFigure = (figure: Element): RenderedCode => ({
   lines: quotedLines(figure.querySelector("pre code")?.textContent ?? ""),
 });
 
-describe("S3 teaching section", () => {
-  const session = sessionBySlug("03-boundaries-and-semantic-values")!;
+const teachingSessions = [
+  sessionBySlug("03-semantic-identifiers")!,
+  sessionBySlug("04-boundaries-and-pii")!,
+];
 
+describe.each(teachingSessions)("$slug teaching section", (session) => {
   it("shows the teach minutes and one topic per catalog decision", async () => {
     const document = await renderSessionPage(session);
     const teach = document.querySelector("#teach");
@@ -83,12 +86,16 @@ describe("S3 teaching section", () => {
       }
     }
   });
+});
 
-  it("defers the Result branching to S4", async () => {
+describe("S4 teaching section", () => {
+  const session = sessionBySlug("04-boundaries-and-pii")!;
+
+  it("defers the Result branching to S5", async () => {
     const document = await renderSessionPage(session);
     const teach = document.querySelector("#teach")?.textContent ?? "";
 
-    expect(teach).toContain("S4");
+    expect(teach).toContain("S5");
     expect(teach).not.toContain("andThen(");
     expect(teach).not.toContain("isOk");
     expect(teach).not.toContain("isErr");
