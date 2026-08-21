@@ -51,10 +51,12 @@ describe("session page structure", () => {
       ...document.querySelectorAll<HTMLElement>("[data-domain-event-id]"),
     ];
     expect(events.length).toBeGreaterThanOrEqual(5);
-    const boundaryEvents = events.filter(
-      (event) => event.dataset.inStartExamination === "true",
+    expect(events.every((event) => event.dataset.aggregate !== undefined)).toBe(true);
+
+    const teacherDemoCard = document.querySelector<HTMLElement>(
+      "#workflow [data-domain-event-id]",
     );
-    expect(boundaryEvents).toHaveLength(1);
+    expect(teacherDemoCard?.dataset.aggregate).toBe("予約");
 
     const reviewEvents = [
       ...document.querySelectorAll<HTMLElement>(
@@ -91,14 +93,14 @@ describe("session page structure", () => {
     const workflowSection = document.querySelector("#workflow")!;
     const text = workflowSection.textContent ?? "";
 
-    for (const term of ["ドメインイベント", "コマンド", "ワークフロー"]) {
+    for (const term of ["ドメインイベント", "コマンド", "ワークフロー", "集約"]) {
       expect(text).toContain(term);
     }
     for (const step of [
       "起きた出来事を過去形で書き出す",
       "時間の順に並べる",
       "それぞれの出来事が、誰の何の依頼で起きたかを添える",
-      "一つの依頼から記録までのひとかたまりを囲み、名前を付ける",
+      "同じ集約を変えるドメインイベントをまとめて囲み、集約に名前を付ける",
     ]) {
       expect(text).toContain(step);
     }
@@ -106,5 +108,34 @@ describe("session page structure", () => {
       'a[href*="docs/event/session-01-event-storming.excalidraw"]',
     );
     expect(templateLink).not.toBeNull();
+  });
+
+  it("groups the S1 review examples by aggregate and connects the reservation aggregate to S2", async () => {
+    const session = sessions.find(({ kind }) => kind === "workshop")!;
+    const document = await renderSessionPage(session);
+    const reviewSection = document.querySelector("#review")!;
+
+    const groups = [
+      ...reviewSection.querySelectorAll<HTMLElement>(".aggregate-group"),
+    ];
+    expect(groups.map((group) => group.dataset.aggregate)).toEqual([
+      "予約",
+      "カルテ",
+      "会計",
+    ]);
+
+    for (const group of groups) {
+      const cards = [
+        ...group.querySelectorAll<HTMLElement>("[data-domain-event-id]"),
+      ];
+      expect(cards.length).toBeGreaterThan(0);
+      for (const card of cards) {
+        expect(card.dataset.aggregate).toBe(group.dataset.aggregate);
+      }
+    }
+
+    const reviewText = reviewSection.textContent ?? "";
+    expect(reviewText).toContain("予約");
+    expect(reviewText).toContain("診察を始める");
   });
 });
