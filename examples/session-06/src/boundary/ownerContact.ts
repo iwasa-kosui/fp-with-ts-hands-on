@@ -3,7 +3,7 @@ import { z } from "zod";
 import { schemaResult } from "../shared/schemaResult.js";
 import { Sensitive } from "../shared/sensitive.js";
 
-export const OwnerContactSchema = z
+const OwnerContactSchema = z
   .object({
     ownerName: z.string().min(1).brand<"OwnerName">().transform(Sensitive.of),
     ownerEmail: z.string().email().brand<"OwnerEmail">().transform(Sensitive.of),
@@ -13,4 +13,7 @@ export const OwnerContactSchema = z
 
 export type OwnerContact = z.infer<typeof OwnerContactSchema>;
 
-export const parseOwnerContact = schemaResult(OwnerContactSchema);
+export const OwnerContact = {
+  schema: OwnerContactSchema,
+  parse: schemaResult(OwnerContactSchema),
+} as const;

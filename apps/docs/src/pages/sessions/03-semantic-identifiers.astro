@@ -1,0 +1,109 @@
+---
+import ExerciseSessionContent from "../../components/ExerciseSessionContent.astro";
+import guides from "../../code-explorer/code-guides/03-semantic-identifiers";
+import SessionLayout from "../../layouts/SessionLayout.astro";
+import { sessionBySlug } from "../../sessions/catalog";
+
+const session = sessionBySlug("03-semantic-identifiers");
+if (session === undefined) {
+  throw new Error("Unknown session: 03-semantic-identifiers");
+}
+
+const teaching = [
+  {
+    name: "用途別 Branded Type",
+    definition:
+      "同じ文字列形式でも用途の違う識別子を、別の型として扱います。zod の brand を付けると、互いに代入できない型ができます。",
+    before: {
+      sources: ["examples/session-03/src/domain/ids/petId.ts"],
+      code: `const schema = z.string().uuid();
+
+export type PetId = z.infer<typeof schema>;
+export const PetId = { schema, parse: schema.parse } as const;`,
+    },
+    after: {
+      sources: ["examples/session-04/src/domain/ids/petId.ts"],
+      code: `const schema = z.string().uuid().brand<"PetId">();
+
+export type PetId = z.infer<typeof schema>;
+export const PetId = { schema, parse: schema.parse } as const;`,
+    },
+    why: "before の PetId は string の別名です。名前は付いていますが、OwnerId も ExamId も同じ string なので、互いに代入できます。after では brand が付いた別の型になり、代入すると型検査で止まります。ここで区別しているのは値の形式ではなく用途です。3つとも実体は同じ UUID の文字列なので、z.string().uuid() の検査をいくら重ねても区別はできません。配布済みの ExamId が同じ書き方をしているので、手本として読んでから残りを揃えます。",
+  },
+  {
+    name: "識別子を状態と遷移へ通す",
+    definition:
+      "識別子の型を作っただけでは、事故は止まりません。予約の5状態と、状態を変える関数の引数の両方で、その型を使い切ります。",
+    before: {
+      sources: ["examples/session-03/src/domain/appointment/appointment.ts"],
+      code: `export type Scheduled = Readonly<{
+  kind: "Scheduled";
+  appointmentId: string;
+  petId: string;
+  ownerId: string;
+  scheduledAt: string;
+  reason: string;
+}>;`,
+    },
+    after: {
+      sources: [
+        "examples/session-04/src/domain/appointment/appointment.ts",
+        "examples/session-04/src/domain/appointment/transitions.ts",
+      ],
+      code: `export type Scheduled = Readonly<{
+  kind: "Scheduled";
+  appointmentId: AppointmentId;
+  petId: PetId;
+  ownerId: OwnerId;
+  scheduledAt: string;
+  reason: string;
+}>;
+
+export const startExamination = (
+  appointment: CheckedIn,
+  veterinarianId: VeterinarianId,
+  examinationStartedAt: string,
+): InExamination =>`,
+    },
+    why: "before では appointmentId も petId も ownerId も string です。3つを取り違えて代入しても、引数の順番を入れ替えても、コンパイルは通ります。今回の事故そのものである識別子の取り違えを、型は何も止めません。after では3つが別の型になり、互いに代入できなくなります。遷移関数の veterinarianId も同じで、引数の型を string のままにすると、予約の識別子を担当獣医師として渡す呼び出しが通ってしまいます。状態の型と関数の引数の両方を揃えて、初めて取り違えが止まります。",
+  },
+  {
+    name: "@ts-expect-error による型テスト",
+    definition:
+      "通ってはいけないコードを書き、その行がコンパイルエラーになることを検査します。エラーが出なくなると、逆にこの行が「使われていない抑制」として失敗します。",
+    before: {
+      sources: ["examples/session-03/src/domain/domain.test-types.ts"],
+      code: `export {};`,
+    },
+    after: {
+      sources: ["examples/session-04/src/domain/domain.test-types.ts"],
+      code: `const acceptPetId = (_petId: PetId): void => undefined;
+
+// @ts-expect-error 飼い主の識別子を、ペットの識別子として渡せません。
+acceptPetId(scheduled.ownerId);
+
+// @ts-expect-error 予約の識別子を、担当獣医師の識別子として渡せません。
+startExamination(checkedIn, scheduled.appointmentId, "2026-08-30T06:30:00.000Z");`,
+    },
+    why: "通常のテストは、書いたコードが動くことを確かめます。型で守った制約は、そもそも書けないことが結果なので、実行して確かめられません。@ts-expect-error は、次の行にエラーが出ることを期待する指示です。守れているうちは通り、誰かが型を緩めてエラーが出なくなると「使われていない抑制」として失敗します。型で守ったつもりの箇所を、後から壊されたときに気付ける形にしておきます。",
+  },
+] as const;
+---
+
+<SessionLayout session={session} teaching={teaching}>
+  <ExerciseSessionContent
+    session={session}
+    guides={guides}
+    teaching={teaching}
+    narrative={{
+      requirement: "予約・ペット・飼い主・担当獣医師の識別子を、取り違えられない形で扱う。",
+      currentRisk: "4種類の識別子がすべて同じ UUID の文字列なので、ラボから届いた検査結果を別の患者へ結び付けても、コードのどこも異常を検出しない。",
+      design: "ワークフローが受け取る値を、用途ごとの Branded Type で実装する。状態の型と遷移関数の引数の両方で使い切る。",
+      limitation: "永続化から復元した値が正しい識別子かどうかは、境界での parse で改めて確かめる必要がある。",
+      nextQuestion: "外部から届く JSON が、そもそも期待した形をしているかをどこで確かめるか。",
+      legacy: "配布済みの ExamId と、素の string のままの PetId・OwnerId を読み比べ、予約の5状態が識別子をどう持っているかを確認します。",
+      reviewFocus: "識別子の型を作るだけで終わらず、状態の型と遷移関数の引数の両方へ通し切れているか。",
+      fallback: "現在の3ステップを順に開き、まず PetId と OwnerId に brand を付けます。次に予約の5状態と遷移へ通し、最後に取り違えが止まることを型テストで確かめます。相互レビューの約束事はS2のリンク先を確認します。",
+    }}
+  />
+</SessionLayout>

@@ -6,11 +6,11 @@ import { AppointmentId } from "../../src/domain/ids/appointmentId.js";
 import { OwnerId } from "../../src/domain/ids/ownerId.js";
 import { PetId } from "../../src/domain/ids/petId.js";
 import { VeterinarianId } from "../../src/domain/ids/veterinarianId.js";
-import type { Dependencies } from "../../src/useCase/dependencies.js";
 import {
   ensureAppointmentFound,
   ensureCheckedIn,
 } from "../../src/useCase/errors.js";
+import type { Dependencies } from "../../src/useCase/dependencies.js";
 import { startExamination } from "../../src/useCase/startExamination.js";
 import { clinicFixture } from "../../../fixtures/clinic.js";
 
@@ -35,7 +35,7 @@ const input = {
   examinationStartedAt: "2026-08-30T06:30:00.000Z",
 } as const;
 
-describe("S4 Step 1 regression: InvalidAppointmentState を値として返す", () => {
+describe("Step 1 regression: InvalidAppointmentState を値として返す", () => {
   it("CheckedIn でない予約を kind で識別できる", () => {
     const result = ensureCheckedIn(scheduled);
     expect(result.isErr() && result.error).toEqual({
@@ -45,7 +45,7 @@ describe("S4 Step 1 regression: InvalidAppointmentState を値として返す", 
   });
 });
 
-describe("S4 Step 2 regression: AppointmentNotFound を値として返す", () => {
+describe("Step 2 regression: AppointmentNotFound を値として返す", () => {
   it("見つからない appointmentId をエラーへ残す", () => {
     const result = ensureAppointmentFound(undefined, appointmentId);
     expect(result.isErr() && result.error).toEqual({
@@ -55,7 +55,7 @@ describe("S4 Step 2 regression: AppointmentNotFound を値として返す", () =
   });
 });
 
-describe("S4 Step 3 regression: andThen pipeline が失敗理由を運ぶ", () => {
+describe("Step 3 regression: andThen pipeline が失敗理由を運ぶ", () => {
   it("予約なしを InvalidAppointmentState に潰さず後続処理を呼ばない", () => {
     const observer = { transitionCalls: 0, saveCalls: 0 };
     const result = startExamination(createDependencies(undefined, observer))(input);
@@ -76,7 +76,7 @@ describe("S4 Step 3 regression: andThen pipeline が失敗理由を運ぶ", () =
   });
 });
 
-describe("S4 Step 4 regression: 失敗後は遷移も保存もしない", () => {
+describe("Step 4 regression: 失敗後は遷移も保存もしない", () => {
   it("状態不正なら transition と store の呼出回数は 0 のまま", () => {
     const observer = { transitionCalls: 0, saveCalls: 0 };
     const result = startExamination(createDependencies(scheduled, observer))(input);

@@ -202,9 +202,13 @@
   margin: 1rem 0;
 }
 
-.code-block figcaption {
+/* base.css は濃色の見出し帯を前提に淡い文字色を指定しており、後から読み込まれる。
+   背景を淡色へ差し替えるここでは、文字色も合わせて戻す必要がある。
+   .case-file を前置して詳細度で上回る。 */
+.case-file .code-block figcaption {
   padding: 0.45rem 0.75rem;
   background: var(--case-lemon);
+  color: var(--case-ink);
   font-weight: 700;
 }
 
@@ -404,6 +408,40 @@
 
 .before-after p {
   margin: 0;
+}
+
+.teaching-topic {
+  min-width: 0;
+  margin-block: 1.5rem;
+  padding: 1rem;
+  border: 2px solid var(--case-line);
+  background: var(--case-paper);
+}
+
+.teaching-topic h3 {
+  margin-block-start: 0;
+}
+
+.teaching-topic__diff {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.teaching-topic__diff .code-block {
+  margin: 0;
+}
+
+/* base.css の flex と space-between では、参照元が2ファイルのとき
+   パスが左右へ離れて区切りの読点から切り離される。 */
+.case-file .teaching-topic figcaption {
+  display: block;
+}
+
+.teaching-topic__why {
+  margin-block-end: 0;
+  padding-inline-start: 0.75rem;
+  border-inline-start: 0.35rem solid var(--case-coral);
 }
 
 .step-solution {

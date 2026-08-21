@@ -10,9 +10,9 @@
 
 - `apps/docs/`: 参加者向けの公開ドキュメントサイト。
 - `examples/session-00/`: 事故を再現する、意図的に壊れやすい実装。
-- `examples/session-01/` から `examples/session-05/`: 関数型ドメインモデリングを段階的に改善する worked example。
-- `examples/session-00/test/` から `examples/session-05/test/`: 常に成功すべき通常テスト。
-- `examples/session-00/exercises/` から `examples/session-05/exercises/`: 失敗と改善を体験する演習テスト。
+- `examples/session-01/` から `examples/session-07/`: 関数型ドメインモデリングを段階的に改善する worked example。
+- `examples/session-00/test/` から `examples/session-07/test/`: 常に成功すべき通常テスト。
+- `examples/session-00/exercises/` から `examples/session-06/exercises/`: 失敗と改善を体験する演習テスト。
 - `worker/`: ヘルスチェック、旧 URL のリダイレクト、静的アセットの委譲。
 - `docs/event/`: 当日のセットアップ、進行、トラブル対応。
 - `docs/design/`: 参考モックアップ。公開サイト本体ではない。
@@ -38,7 +38,7 @@
 
 ## TypeScriptの設計方針
 
-`examples/session-00/` から `examples/session-05/` では、現在の教材方針として次を維持する。
+`examples/session-00/` から `examples/session-07/` では、現在の教材方針として次を維持する。
 
 - `Readonly` なデータ
 - 判別共用体による状態とエラー
@@ -56,5 +56,5 @@
 - 通常の健全性確認は `pnpm test` とし、成功を期待する。
 - TypeScript または教材ロジックを変更した場合は、変更したパッケージのテストに加え、`pnpm typecheck` と `pnpm test` を実行する。
 - 全体に影響する変更では、CI と同じ `pnpm typecheck`、`pnpm test`、`pnpm build` を実行する。
-- 演習では、`pnpm exercise:01` から `pnpm exercise:04` が S1〜S4 の開始スナップショットにおける業務名の assertion failure を確認する。S0 と到達点スナップショットには演習コマンドを設けない。通常テストでは次の解答スナップショットに持ち越した回帰を確認し、`examples/session-05` で S1〜S4 の全回帰が成功することを確認する。
+- 演習では、`pnpm exercise:02` から `pnpm exercise:06` が S2〜S6 の開始スナップショットにおける業務名の assertion failure を確認する。S0、S1、到達点スナップショットには演習コマンドを設けない。通常テストでは次の解答スナップショットに持ち越した回帰を確認し、`examples/session-07` で S2〜S6 の全回帰が成功することを確認する。
 - 実施していない検証は完了扱いにせず、未実施の理由と期待結果を報告する。

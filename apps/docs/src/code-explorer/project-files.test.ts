@@ -8,8 +8,9 @@ const projectSnapshots = [
   "session-03",
   "session-04",
   "session-05",
-  "final",
   "session-06",
+  "final",
+  "session-07",
 ] as const satisfies readonly ExampleSnapshot[];
 
 describe("Code Explorer project files", () => {
@@ -21,7 +22,7 @@ describe("Code Explorer project files", () => {
     ).toEqual(projectSnapshots.slice(0, -1));
   });
 
-  it("builds runtime files for public snapshots and the private S5 solution", () => {
+  it("builds runtime files for public snapshots and the private S6 solution", () => {
     for (const snapshot of projectSnapshots) {
       const files = projectFilesForSnapshot(snapshot);
       expect(files["package.json"], snapshot).toEqual(expect.any(String));

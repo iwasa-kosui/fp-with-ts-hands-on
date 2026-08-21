@@ -9,10 +9,12 @@ export type ExamResult = Readonly<{
   needsFollowUp: boolean;
 }>;
 
-export const parseExamResult = (raw: any): Result<ExamResult> =>
-  ok({
-    examId: raw.examId,
-    petId: raw.petId,
-    items: raw.items ?? [],
-    needsFollowUp: !!raw.needsFollowUp,
-  });
+export const ExamResult = {
+  parse: (raw: any): Result<ExamResult> =>
+    ok({
+      examId: raw.examId,
+      petId: raw.petId,
+      items: raw.items ?? [],
+      needsFollowUp: !!raw.needsFollowUp,
+    }),
+} as const;

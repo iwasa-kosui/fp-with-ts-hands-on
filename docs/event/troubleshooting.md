@@ -52,18 +52,19 @@ pnpm test
 
 ## exercise が赤い
 
-S2〜S5の開始スナップショットは、業務の言葉で命名された assertion failure から始まります。これは意図したREDです。S1はExcalidrawを使う班ワークで、exerciseコマンドはありません。
+S2〜S6の開始スナップショットは、業務の言葉で命名された assertion failure から始まります。これは意図したREDです。S1はExcalidrawを使う班ワークで、exerciseコマンドはありません。
 
 | セッション | 参加者ステップ | 意図した開始時の見え方 |
 | --- | ---: | --- |
 | S2 | 4件 | 状態遷移と網羅性の assertion が失敗する |
-| S3 | 2件 | 外部JSONとPIIマスクの assertion が失敗する |
-| S4 | 3件 | 予約なし、状態不正、同期Result pipeline の assertion が失敗する |
-| S5 | 4件 | 決定性、single store、ResultAsync、保存失敗の assertion が失敗する |
+| S3 | 3件 | 識別子の取り違えと、型テスト不足の assertion が失敗する |
+| S4 | 2件 | 外部JSONとPIIマスクの assertion が失敗する |
+| S5 | 3件 | 予約なし、状態不正、同期Result pipeline の assertion が失敗する |
+| S6 | 4件 | 決定性、single store、ResultAsync、保存失敗の assertion が失敗する |
 
 module-not-found、import error、設定エラー、予期しない例外は意図したREDではありません。エラーの最初の行だけでなく、`Caused by` とスタックの先頭までTAへ見せてください。
 
-対象モジュールを変更した後は、同じexerciseコマンドが成功することを確認します。S0、S1、到達点 `examples/session-06`、Finalにはexerciseコマンドはありません。
+対象モジュールを変更した後は、同じexerciseコマンドが成功することを確認します。S0、S1、到達点 `examples/session-07`、Finalにはexerciseコマンドはありません。
 
 ## エージェントがモジュール外を変更した
 
@@ -92,7 +93,7 @@ git restore --source=HEAD -- path/to/file
 2. ページを再読み込みする。
 3. ブラウザの開発者ツールにSharedArrayBuffer、cross-origin isolation、WebContainerのエラーがないか確認する。
 4. 起動や依存取得が止まる場合は、主線であるローカル clone へ戻る。
-5. エージェントを使わない場合、S2〜S4はページの「ステップごとの解答」の `details` を1件ずつ開く。S5は「完成ファイルの解答例」の `details` を開き、後続stepを含む完成ファイルを全targetへ反映してから同じexerciseを実行する。1stepずつの個別GREENは約束しない。
+5. エージェントを使わない場合、S2〜S5はページの「ステップごとの解答」の `details` を1件ずつ開く。S6は「完成ファイルの解答例」の `details` を開き、後続stepを含む完成ファイルを全targetへ反映してから同じexerciseを実行する。1stepずつの個別GREENは約束しない。
 
 Playgroundのために新しいAPIキーを用意する必要はありません。Finalは講師ツアーなのでPlayground操作も不要です。
 
@@ -114,4 +115,4 @@ pnpm dev -- --port 5174
 
 ## 相互レビューが時間内に終わらない
 
-レビュー自体と最後のシート記入1分は残します。2人目の比較枠2分を落とし、S2・S3は1名の5分版、S4・S5は1名の6分版へ切り替えます。次の回では未選出者を優先し、4回で全員を最低1回選べるよう記録欄を調整します。
+レビュー自体と最後のシート記入1分は残します。2人目の比較枠2分を落とし、S2・S3・S4は1名の5分版、S5・S6は1名の6分版へ切り替えます。次の回では未選出者を優先し、5回で全員を最低1回選べるよう記録欄を調整します。

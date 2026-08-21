@@ -8,15 +8,16 @@ type Measurement = Readonly<{ files: number; lines: number }>;
 const repoRoot = resolve(process.cwd(), "../..");
 const expectedMeasurements = new Map([
   ["02-state-transitions", { files: 2, lines: 35 }],
-  ["03-boundaries-and-semantic-values", { files: 2, lines: 24 }],
-  ["04-workflow-errors", { files: 3, lines: 76 }],
-  ["05-effects-and-consistency", { files: 3, lines: 55 }],
+  ["03-semantic-identifiers", { files: 5, lines: 34 }],
+  ["04-boundaries-and-pii", { files: 2, lines: 26 }],
+  ["05-workflow-errors", { files: 3, lines: 76 }],
+  ["06-effects-and-consistency", { files: 3, lines: 55 }],
 ] as const);
 
 describe("exercise diff budgets", () => {
   it("13. records measured module diffs within the five-file and 80-line limits", async () => {
     const exercises = sessions.filter((session) => session.kind === "exercise");
-    expect(exercises).toHaveLength(4);
+    expect(exercises).toHaveLength(5);
 
     for (const session of exercises) {
       const nextSnapshot = session.solutionSnapshot;

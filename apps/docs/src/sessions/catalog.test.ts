@@ -58,27 +58,35 @@ describe("session catalog invariants", () => {
       },
       {
         sequence: "03",
-        title: "外部境界と意味のある値を設計する",
-        path: "/sessions/03-boundaries-and-semantic-values/",
+        title: "用途の異なる識別子を型で区別する",
+        path: "/sessions/03-semantic-identifiers/",
         durationMinutes: 30,
         kind: "exercise",
         exerciseCommand: "pnpm exercise:03",
       },
       {
         sequence: "04",
-        title: "失敗をワークフローの結果として扱う",
-        path: "/sessions/04-workflow-errors/",
+        title: "外部入力を境界で検証し個人情報を守る",
+        path: "/sessions/04-boundaries-and-pii/",
         durationMinutes: 30,
         kind: "exercise",
         exerciseCommand: "pnpm exercise:04",
       },
       {
         sequence: "05",
-        title: "副作用と整合性境界を設計する",
-        path: "/sessions/05-effects-and-consistency/",
+        title: "失敗をワークフローの結果として扱う",
+        path: "/sessions/05-workflow-errors/",
         durationMinutes: 30,
         kind: "exercise",
         exerciseCommand: "pnpm exercise:05",
+      },
+      {
+        sequence: "06",
+        title: "副作用と整合性境界を設計する",
+        path: "/sessions/06-effects-and-consistency/",
+        durationMinutes: 30,
+        kind: "exercise",
+        exerciseCommand: "pnpm exercise:06",
       },
       {
         sequence: "Final",
@@ -106,6 +114,7 @@ describe("session catalog invariants", () => {
       "session-03",
       "session-04",
       "session-05",
+      "session-06",
       "final",
     ]);
   });
@@ -115,6 +124,7 @@ describe("session catalog invariants", () => {
       "現状",
       "ドメインイベント",
       "current state",
+      "値の意味",
       "input",
       "expected failures",
       "output event/side effects",
@@ -138,7 +148,7 @@ describe("session catalog invariants", () => {
   });
 
   it("5. makes each ADV breakdown add up to exercise time", () => {
-    expect(exerciseSessions).toHaveLength(4);
+    expect(exerciseSessions).toHaveLength(5);
     for (const session of exerciseSessions) {
       expect(Object.values(session.adv).reduce((sum, value) => sum + value, 0)).toBe(
         session.timeBreakdown.exercise,
@@ -146,8 +156,8 @@ describe("session catalog invariants", () => {
     }
   });
 
-  it("6. reserves exactly 150 minutes for catalog sessions", () => {
-    expect(sessions.reduce((sum, { durationMinutes }) => sum + durationMinutes, 0)).toBe(150);
+  it("6. reserves exactly 180 minutes for catalog sessions", () => {
+    expect(sessions.reduce((sum, { durationMinutes }) => sum + durationMinutes, 0)).toBe(180);
   });
 
   it("7. gives every exercise-only metadata field to exercise sessions only", () => {
@@ -194,6 +204,12 @@ describe("session catalog invariants", () => {
       {
         snapshot: "session-05",
         solutionSnapshot: "session-06",
+        solutionPresentation: "excerpt",
+        peerReviewPromises: "reference",
+      },
+      {
+        snapshot: "session-06",
+        solutionSnapshot: "session-07",
         solutionPresentation: "completed-file",
         peerReviewPromises: "reference",
       },
@@ -262,16 +278,16 @@ describe("session catalog invariants", () => {
       }
     }
 
-    const injectContext = exerciseSessions[3].steps.find(
-      ({ id }) => id === "s5-inject-context",
+    const injectContext = exerciseSessions[4].steps.find(
+      ({ id }) => id === "s6-inject-context",
     )!;
     expect(Reflect.get(injectContext, "solutions")).toEqual([
       expect.objectContaining({
-        path: "examples/session-06/src/useCase/dependencies.ts",
+        path: "examples/session-07/src/useCase/dependencies.ts",
         symbol: "EventContextDependencies",
       }),
       expect.objectContaining({
-        path: "examples/session-06/src/useCase/startExamination.ts",
+        path: "examples/session-07/src/useCase/startExamination.ts",
         symbol: "createEventContext",
       }),
     ]);
@@ -308,7 +324,7 @@ describe("session catalog invariants", () => {
   });
 });
 describe("session catalog navigation", () => {
-  it("resolves paths and neighbors from the seven-session catalog", () => {
+  it("resolves paths and neighbors from the eight-session catalog", () => {
     const session = sessionBySlug("01-business-events-and-workflows");
     expect(session).toBeDefined();
     expect(session === undefined ? undefined : sessionPath(session)).toBe(
@@ -318,6 +334,6 @@ describe("session catalog navigation", () => {
       previous: sessions[0],
       next: sessions[2],
     });
-    expect(sessionNeighbors("final")).toEqual({ previous: sessions[5] });
+    expect(sessionNeighbors("final")).toEqual({ previous: sessions[6] });
   });
 });

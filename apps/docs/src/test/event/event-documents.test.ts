@@ -81,7 +81,7 @@ describe("event document contract", () => {
     const sessionMinutes = timetable.reduce((total, row) => total + row.minutes, 0);
     const fixedMinutes = fixedSlots.reduce((total, row) => total + row.minutes, 0);
 
-    expect(sessionMinutes).toBe(150);
+    expect(sessionMinutes).toBe(180);
     expect(fixedSlots).toHaveLength(1);
     expect(
       fixedSlots.map(({ clock, minutes }) => ({
@@ -90,7 +90,7 @@ describe("event document contract", () => {
       })),
     ).toEqual([{ elapsed: 30, declared: 30 }]);
     expect(fixedMinutes).toBe(30);
-    expect(sessionMinutes + fixedMinutes).toBe(180);
+    expect(sessionMinutes + fixedMinutes).toBe(210);
 
     const breakdown = [
       ...guide.matchAll(
@@ -194,10 +194,10 @@ describe("event document contract", () => {
     expect(overview).toContain(`S0 は${orientation?.durationMinutes}分のオリエンテーション`);
     expect(overview).toContain(`S1 は${workshop?.durationMinutes}分の班ワーク`);
     expect(overview).toMatch(/S1[^。]*(?:コード編集|exercise command)[^。]*行いません/);
-    expect(overview).toContain("S2〜S5 は各30分のコード演習");
-    expect(overview).toContain("`examples/session-06` は非公開の到達点スナップショット");
+    expect(overview).toContain("S2〜S6 は各30分のコード演習");
+    expect(overview).toContain("`examples/session-07` は非公開の到達点スナップショット");
     expect(uniqueMatches(overview, /(pnpm exercise:\d{2})/g).sort()).toEqual(expectedCommands);
-    expect(overview).toMatch(/S2〜S5[^。]*各starter[^。]*RED/);
+    expect(overview).toMatch(/S2〜S6[^。]*各starter[^。]*RED/);
     expect(overview).not.toMatch(/S1[^。]*(?:starter|開始時)[^。]*RED/);
     expect(dayFlow).toContain("Final は環境構築や DB 操作をせず、講師が参照実装の5つの境界を案内する");
     expect(dayFlow).not.toContain("3差分");
@@ -345,9 +345,9 @@ describe("event document contract", () => {
       const document = await readEventDocument(name);
 
       expect(document, name).toMatch(
-        /S2〜S4[^。]*「ステップごとの解答」[^。]*`details`/,
+        /S2〜S5[^。]*「ステップごとの解答」[^。]*`details`/,
       );
-      expect(document, name).toMatch(/S5[^。]*後続step[^。]*完成ファイル/);
+      expect(document, name).toMatch(/S6[^。]*後続step[^。]*完成ファイル/);
     }
   });
 
@@ -358,7 +358,7 @@ describe("event document contract", () => {
     const staleTerms = [
       /04-agent-review/,
       /05-mini-integration/,
-      /exercise:0(?:0|1|[6-9])/,
+      /exercise:0(?:0|1|[7-9])/,
       /ミニ総合演習/,
       /collectFollowUpTargets/,
       /\/code-explorer\//,
