@@ -203,22 +203,29 @@ describe("event document contract", () => {
     expect(dayFlow).not.toContain("3差分");
   });
 
-  it("keeps the non-code S1 worksheet aligned with the six workflow prompts", async () => {
+  it("keeps the non-code S1 worksheet aligned with the event storming vocabulary and steps", async () => {
     const readme = await readFile(
       `${repositoryRoot}/examples/session-01/README.md`,
       "utf8",
     );
 
     expect(readme).toContain("3+4+6+2=15分");
-    for (const prompt of [
+    for (const vocabulary of ["ドメインイベント", "コマンド", "ワークフロー"]) {
+      expect(readme).toContain(vocabulary);
+    }
+    for (const step of [
+      "起きた出来事を過去形で書き出す",
+      "時間の順に並べる",
+      "それぞれの出来事が、誰の何の依頼で起きたかを添える",
+      "同じ集約を変えるドメインイベントをまとめ、集約に名前を付ける",
+    ]) {
+      expect(readme).toContain(step);
+    }
+    for (const removedPrompt of [
       "何が起きたことで始まるか",
-      "誰が何を依頼するか",
-      "開始前に何が成り立っているか",
-      "どのような失敗が予想されるか",
-      "成功したとき何が起きたと記録するか",
       "どこへ何を保存・通知するか",
     ]) {
-      expect(readme).toContain(prompt);
+      expect(readme).not.toContain(removedPrompt);
     }
   });
 
