@@ -1,4 +1,5 @@
 ---
+import { Code } from "astro:components";
 import type { CodeGuide } from "../code-explorer/code-guide";
 import {
   sessionPath,
@@ -26,13 +27,27 @@ type Narrative = Readonly<{
   fallback: string;
 }>;
 
+type TeachingCode = Readonly<{
+  sources: readonly [string, ...string[]];
+  code: string;
+}>;
+
+type TeachingTopic = Readonly<{
+  name: string;
+  definition: string;
+  before: TeachingCode;
+  after: TeachingCode;
+  why: string;
+}>;
+
 type Props = Readonly<{
   session: SessionSummary;
   guides: readonly CodeGuide[];
   narrative: Narrative;
+  teaching?: readonly TeachingTopic[];
 }>;
 
-const { session, guides, narrative } = Astro.props;
+const { session, guides, narrative, teaching = [] } = Astro.props;
 if (
   session.kind !== "exercise" ||
   session.exerciseCommand === undefined ||
@@ -84,6 +99,44 @@ const promisesHref =
   </p>
   <SessionCodeOverview slug={session.slug} guides={guides} />
 </section>
+
+{
+  teaching.length === 0 ? null : (
+    <section id="teach">
+      <h2>使う型を知る（{session.timeBreakdown.teach}分）</h2>
+      <p>
+        この回で守る不変条件を、どの型で表すかを先に確認します。配布コードの書き方を before、次のスナップショットの書き方を after として並べます。
+      </p>
+      {teaching.map((topic) => (
+        <article class="teaching-topic">
+          <h3>{topic.name}</h3>
+          <p>{topic.definition}</p>
+          <div class="teaching-topic__diff">
+            <figure class="code-block">
+              <figcaption>
+                before:
+                {topic.before.sources.map((source, index) => (
+                  <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                ))}
+              </figcaption>
+              <Code code={topic.before.code} lang="ts" />
+            </figure>
+            <figure class="code-block">
+              <figcaption>
+                after:
+                {topic.after.sources.map((source, index) => (
+                  <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                ))}
+              </figcaption>
+              <Code code={topic.after.code} lang="ts" />
+            </figure>
+          </div>
+          <p class="teaching-topic__why"><strong>なぜこの型か:</strong> {topic.why}</p>
+        </article>
+      ))}
+    </section>
+  )
+}
 
 <section id="red">
   <h2>失敗を再現する</h2>

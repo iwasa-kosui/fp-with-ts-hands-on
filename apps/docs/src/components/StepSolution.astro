@@ -1,4 +1,5 @@
 ---
+import { Code } from "astro:components";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { ExerciseStep } from "../sessions/catalog";
@@ -52,7 +53,7 @@ const snippets = await Promise.all(
     snippets.map(({ solution, code }) => (
       <section class="step-solution__snippet">
         <h4><code>{solution.path}</code></h4>
-        <pre><code>{code}</code></pre>
+        <Code code={code} lang="ts" />
       </section>
     ))
   }

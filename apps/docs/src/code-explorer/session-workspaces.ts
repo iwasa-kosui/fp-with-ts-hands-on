@@ -21,18 +21,33 @@ const sessionWorkspaces = {
       "src/domain/appointment/statusLabel.ts",
     ],
   },
-  "03-boundaries-and-semantic-values": {
-    initialFile: "exercises/boundary-and-ids.test.ts",
-    description: "input の検証、ID、PII の境界を開始 snapshot で確認します。",
+  "03-semantic-identifiers": {
+    initialFile: "exercises/semantic-identifiers.test.ts",
+    description: "識別子の用途と、それを使う予約の状態を開始 snapshot で確認します。",
     visibleFiles: [
-      "exercises/boundary-and-ids.test.ts",
+      "exercises/semantic-identifiers.test.ts",
+      "test/regression/state-modeling.test.ts",
+      "src/domain/ids/examId.ts",
+      "src/domain/ids/petId.ts",
+      "src/domain/ids/ownerId.ts",
+      "src/domain/appointment/appointment.ts",
+      "src/domain/appointment/transitions.ts",
+      "src/domain/domain.test-types.ts",
+    ],
+  },
+  "04-boundaries-and-pii": {
+    initialFile: "exercises/boundary-and-pii.test.ts",
+    description: "input の検証と PII の境界を開始 snapshot で確認します。",
+    visibleFiles: [
+      "exercises/boundary-and-pii.test.ts",
+      "test/regression/semantic-identifiers.test.ts",
       "test/regression/state-modeling.test.ts",
       "src/domain/appointment/appointment.ts",
       "src/boundary/examResult.ts",
       "src/boundary/ownerContact.ts",
     ],
   },
-  "04-workflow-errors": {
+  "05-workflow-errors": {
     initialFile: "exercises/result-errors.test.ts",
     description: "expected failures と Result の要求を開始 snapshot で確認します。",
     visibleFiles: [
@@ -54,7 +69,7 @@ const sessionWorkspaces = {
       "src/useCase/startExamination.ts",
     ],
   },
-  "05-effects-and-consistency": {
+  "06-effects-and-consistency": {
     initialFile: "exercises/effects-and-events.test.ts",
     description: "output event と side effects の要求を開始 snapshot で確認します。",
     visibleFiles: [

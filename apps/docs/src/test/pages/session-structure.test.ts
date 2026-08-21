@@ -9,6 +9,19 @@ const chapterIds = {
   reference: ["incident", "legacy", "review"],
 } as const;
 
+const teachingSlugs: ReadonlySet<string> = new Set([
+  "03-semantic-identifiers",
+  "04-boundaries-and-pii",
+]);
+
+const withTeachChapter = (
+  ids: readonly string[],
+  slug: string,
+): readonly string[] =>
+  teachingSlugs.has(slug)
+    ? ids.flatMap((id) => (id === "red" ? ["teach", id] : [id]))
+    : ids;
+
 const workflowFields = [
   "trigger",
   "input",
@@ -30,7 +43,7 @@ const workflowPrompts = [
 describe("session page structure", () => {
   it.each(sessionCases)("renders catalog chapters and both TOCs for $name", async ({ session }) => {
     const document = await renderSessionPage(session);
-    const expectedIds = chapterIds[session.kind];
+    const expectedIds = withTeachChapter(chapterIds[session.kind], session.slug);
     const directSections = [
       ...document.querySelectorAll<HTMLElement>("article.case-file__content > section"),
     ];
@@ -90,7 +103,7 @@ describe("session page structure", () => {
     );
     expect(
       riskMaps.map((map) => map.querySelectorAll("[data-session-sequence]").length),
-    ).toEqual([4, 4]);
+    ).toEqual([5, 5]);
     expect(document.querySelector("[data-code-explorer]")).toBeNull();
     expect(document.querySelector(".command-block")).toBeNull();
     expect(document.querySelector("details.step-solution")).toBeNull();

@@ -7,7 +7,7 @@ import {
 } from "../sessions/catalog";
 import type { ProjectFiles } from "./types";
 
-type ProjectSnapshot = PublicCodeExplorerSnapshot | "session-06";
+type ProjectSnapshot = PublicCodeExplorerSnapshot | "session-07";
 
 const rawProjectFiles = import.meta.glob(
   "../../../../examples/{session-*,final}/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
@@ -19,7 +19,7 @@ const snapshots = [
     ...sessions.flatMap(({ snapshot }) =>
       snapshot === undefined ? [] : [snapshot],
     ),
-    "session-06",
+    "session-07",
   ]),
 ] as const;
 

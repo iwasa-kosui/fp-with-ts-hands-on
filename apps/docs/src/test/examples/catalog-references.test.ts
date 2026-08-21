@@ -18,6 +18,7 @@ const nextSnapshot = {
   "session-03": "session-04",
   "session-04": "session-05",
   "session-05": "session-06",
+  "session-06": "session-07",
 } as const;
 
 const solutionsFor = (
@@ -90,7 +91,7 @@ const declaredNames = (statement: ts.Statement): readonly string[] => {
 
 describe("session catalog references", () => {
   it("11. resolves targets, solutions, symbols, line ranges, and final references", async () => {
-    expect(exerciseSessions).toHaveLength(4);
+    expect(exerciseSessions).toHaveLength(5);
     for (const session of sessions) {
       for (const referencedPath of [
         ...(session.steps ?? []).flatMap(({ targets }) => targets),
@@ -178,23 +179,23 @@ describe("session catalog references", () => {
     }
   });
 
-  it("keeps S2-S4 as excerpt defaults and presents every S5 target from session-06 as a completed file", async () => {
-    for (const session of exerciseSessions.slice(0, 3)) {
+  it("keeps S2-S5 as excerpt defaults and presents every S6 target from session-07 as a completed file", async () => {
+    for (const session of exerciseSessions.slice(0, 4)) {
       for (const solution of solutionsFor(session.steps)) {
         expect(solution.presentation ?? "excerpt").toBe("excerpt");
       }
     }
 
-    const s5 = sessions.find(
-      ({ slug }) => slug === "05-effects-and-consistency",
+    const s6 = sessions.find(
+      ({ slug }) => slug === "06-effects-and-consistency",
     );
-    expect(s5?.kind).toBe("exercise");
-    if (s5?.kind !== "exercise") throw new Error("S5 exercise is missing");
+    expect(s6?.kind).toBe("exercise");
+    if (s6?.kind !== "exercise") throw new Error("S6 exercise is missing");
 
-    const s5Steps: readonly ExerciseStep[] = s5.steps;
-    for (const step of s5Steps) {
+    const s6Steps: readonly ExerciseStep[] = s6.steps;
+    for (const step of s6Steps) {
       const expectedPaths = step.targets.map((target) =>
-        target.replace("examples/session-05/", "examples/session-06/"),
+        target.replace("examples/session-06/", "examples/session-07/"),
       );
       expect(step.solutions.map(({ path }) => path), step.id).toEqual(expectedPaths);
       for (const solution of step.solutions) {
@@ -210,9 +211,10 @@ describe("session catalog references", () => {
 
   it("labels starter assertions outside catalog steps as regression checks", async () => {
     const files = [
-      "examples/session-03/exercises/boundary-and-ids.test.ts",
-      "examples/session-04/test/regression/boundary-and-ids.test.ts",
-      "examples/session-04/exercises/result-errors.test.ts",
+      "examples/session-03/exercises/semantic-identifiers.test.ts",
+      "examples/session-04/exercises/boundary-and-pii.test.ts",
+      "examples/session-05/test/regression/boundary-and-ids.test.ts",
+      "examples/session-05/exercises/result-errors.test.ts",
     ];
     for (const file of files) {
       const source = await readFile(resolve(repoRoot, file), "utf8");
@@ -251,61 +253,81 @@ describe("session catalog references", () => {
         ],
       },
       {
-        slug: "03-boundaries-and-semantic-values",
+        slug: "03-semantic-identifiers",
         steps: [
           {
-            id: "s3-parse-exam-result",
+            id: "s3-brand-domain-ids",
+            group: "Step 1: 用途の違う識別子は互いに代入できない",
+            assertion: "OwnerId を PetId の位置へ渡せない",
+          },
+          {
+            id: "s3-apply-ids-to-appointment",
+            group: "Step 2: 予約はどの状態でも用途別の識別子を持つ",
+            assertion: "飼い主の識別子でペットの識別子を置き換えられない",
+          },
+          {
+            id: "s3-reject-id-swap",
+            group: "Step 3: 取り違えが止まることを型テストで確かめる",
+            assertion: "通ってはいけない代入の検査が2件以上あり、そのすべてが実際に止まる",
+          },
+        ],
+      },
+      {
+        slug: "04-boundaries-and-pii",
+        steps: [
+          {
+            id: "s4-parse-exam-result",
             group: "Step 1: 形の違う検査 JSON はドメイン型にならない",
             assertion: "petId がない JSON は err になる",
           },
           {
-            id: "s3-protect-contact",
+            id: "s4-protect-contact",
             group: "Step 2: 電話番号とメールはログへ出ない",
             assertion: "JSON と util.inspect のどちらも値をマスクする",
           },
         ],
       },
       {
-        slug: "04-workflow-errors",
+        slug: "05-workflow-errors",
         steps: [
           {
-            id: "s4-invalid-state",
+            id: "s5-invalid-state",
             group: "Step 1: InvalidAppointmentState を値として返す",
             assertion: "CheckedIn でない予約でも例外を投げない",
           },
           {
-            id: "s4-not-found",
+            id: "s5-not-found",
             group: "Step 2: AppointmentNotFound を値として返す",
             assertion: "予約が見つからなくても例外を投げない",
           },
           {
-            id: "s4-result-pipeline",
+            id: "s5-result-pipeline",
             group: "Step 3: andThen pipeline が失敗理由を運ぶ",
             assertion: "予約なしを InvalidAppointmentState に潰さない",
           },
         ],
       },
       {
-        slug: "05-effects-and-consistency",
+        slug: "06-effects-and-consistency",
         steps: [
           {
-            id: "s5-inject-context",
+            id: "s6-inject-context",
             group: "Step 1: 同じ clock と ID generator なら同じイベントになる",
             assertion: "固定 context から同じ eventId と occurredAt を返す",
           },
           {
-            id: "s5-atomic-store",
+            id: "s6-atomic-store",
             group: "Step 2: 状態と監査記録は1回の保存で残る",
             assertion: "store(event) を1回だけ呼ぶ",
           },
           {
-            id: "s5-result-async",
+            id: "s6-result-async",
             group: "Step 3: 非同期保存後もイベントが pipeline に残る",
             assertion:
               "保存成功時は store の void ではなく aggregateState を返す",
           },
           {
-            id: "s5-propagate-store-failure",
+            id: "s6-propagate-store-failure",
             group: "Step 4: 業務失敗とインフラ例外を別の経路で返す",
             assertion: "業務競合は Result、保存障害と破損データは reject で返す",
           },
@@ -354,5 +376,5 @@ describe("session catalog references", () => {
         ).toBe(true);
       }
     }
-  }, 30_000);
+  }, 60_000);
 });

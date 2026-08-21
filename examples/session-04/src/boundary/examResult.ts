@@ -1,16 +1,20 @@
-import { z } from "zod";
+import type { ExamId } from "../domain/ids/examId.js";
+import type { PetId } from "../domain/ids/petId.js";
+import { ok, type Result } from "../shared/schemaResult.js";
 
-import { ExamId } from "../domain/ids/examId.js";
-import { PetId } from "../domain/ids/petId.js";
-import { schemaResult } from "../shared/schemaResult.js";
+export type ExamResult = Readonly<{
+  examId: ExamId;
+  petId: PetId;
+  items: ReadonlyArray<string>;
+  needsFollowUp: boolean;
+}>;
 
-export const ExamResultSchema = z.object({
-  examId: ExamId.schema,
-  petId: PetId.schema,
-  items: z.array(z.string().min(1)).readonly(),
-  needsFollowUp: z.boolean().default(false),
-}).readonly();
-
-export type ExamResult = z.infer<typeof ExamResultSchema>;
-
-export const parseExamResult = schemaResult(ExamResultSchema);
+export const ExamResult = {
+  parse: (raw: any): Result<ExamResult> =>
+    ok({
+      examId: raw.examId,
+      petId: raw.petId,
+      items: raw.items ?? [],
+      needsFollowUp: !!raw.needsFollowUp,
+    }),
+} as const;

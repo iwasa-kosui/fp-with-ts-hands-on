@@ -13,7 +13,7 @@ const completionArtifacts = [
 const reviewPromises = [
   "見るのは差分であって人ではありません。発言は「この差分は」で始めます。",
   "良し悪しを判定しません。",
-  "4回のレビューで、班員全員が少なくとも1回は選ばれるよう公平に配分します。選ばれることは評価ではありません。",
+  "5回のレビューで、班員全員が少なくとも1回は選ばれるよう公平に配分します。選ばれることは評価ではありません。",
   "本人は弁明しません。読み上げるのは依頼文の1文だけです。",
   "TAは「よくできた実装」を選びません。選定基準を参加者にも開示します。",
 ] as const;
@@ -218,7 +218,7 @@ describe("exercise session contract", () => {
     );
     expect(
       riskMaps.map((map) => map.querySelectorAll("[data-session-sequence]").length),
-    ).toEqual([4, 4]);
+    ).toEqual([5, 5]);
     for (const boundary of [
       "1分目: 入力境界",
       "2分目: 業務上の失敗",
