@@ -33,9 +33,9 @@ const diagnosticCause = {
   ownerName: "Owner Secret",
   email: "owner-secret@example.test",
   phone: "090-9999-9999",
-  message: "S5 storage unavailable for Owner Secret",
+  message: "S6 storage unavailable for Owner Secret",
   stack: "S4DiagnosticError: storage unavailable\n    at ExaminationStartedStore.store",
-  error: new Error("S5 storage unavailable for Owner Secret"),
+  error: new Error("S6 storage unavailable for Owner Secret"),
 } as const;
 
 describe("Step 1: 同じ clock と ID generator なら同じイベントになる", () => {

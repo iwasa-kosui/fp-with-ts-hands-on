@@ -4,5 +4,11 @@
     "types": ["node", "vitest/globals"],
     "outDir": "dist"
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "vitest.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "exercises/**/*.ts",
+    "vitest.config.ts",
+    "vitest.exercises.config.ts"
+  ]
 }

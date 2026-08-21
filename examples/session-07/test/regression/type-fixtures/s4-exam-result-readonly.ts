@@ -1,7 +1,7 @@
-import { parseExamResult } from "../../../src/boundary/examResult.js";
+import { ExamResult } from "../../../src/boundary/examResult.js";
 import { clinicFixture } from "../../../../fixtures/clinic.js";
 
-const examResult = parseExamResult({
+const examResult = ExamResult.parse({
   examId: clinicFixture.examId,
   petId: clinicFixture.petId,
   items: ["skin scraping"],

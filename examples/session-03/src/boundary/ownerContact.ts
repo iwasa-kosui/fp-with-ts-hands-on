@@ -6,9 +6,11 @@ export type OwnerContact = Readonly<{
   ownerPhone: string;
 }>;
 
-export const parseOwnerContact = (raw: any): Result<OwnerContact> =>
-  ok({
-    ownerName: raw.ownerName,
-    ownerEmail: raw.ownerEmail,
-    ownerPhone: raw.ownerPhone,
-  });
+export const OwnerContact = {
+  parse: (raw: any): Result<OwnerContact> =>
+    ok({
+      ownerName: raw.ownerName,
+      ownerEmail: raw.ownerEmail,
+      ownerPhone: raw.ownerPhone,
+    }),
+} as const;
