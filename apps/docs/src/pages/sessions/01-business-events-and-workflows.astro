@@ -13,7 +13,7 @@ type DomainEvent = Readonly<{
   name: string;
   actor: string;
   command: string;
-  inStartExamination: boolean;
+  aggregate: string;
 }>;
 
 // 時系列の順序は配列の並び順で表す。散文から実際に拾えるイベントだけを並べている。
@@ -23,39 +23,50 @@ const domainEvents: readonly DomainEvent[] = [
     name: "来院が受け付けられた",
     actor: "受付スタッフ",
     command: "来院を受け付ける",
-    inStartExamination: false,
+    aggregate: "予約",
   },
   {
     id: "intake-recorded",
     name: "問診と体重が記録された",
     actor: "動物看護師",
     command: "問診と体重測定を行う",
-    inStartExamination: false,
+    aggregate: "カルテ",
   },
   {
     id: "examination-started",
     name: "診察が開始された",
     actor: "獣医師",
     command: "診察を始める",
-    inStartExamination: true,
+    aggregate: "予約",
   },
   {
     id: "findings-recorded",
     name: "所見が記録された",
     actor: "獣医師",
     command: "所見を記録する",
-    inStartExamination: false,
+    aggregate: "カルテ",
   },
   {
     id: "billing-completed",
     name: "会計が完了した",
     actor: "受付スタッフ",
     command: "会計を行う",
-    inStartExamination: false,
+    aggregate: "会計",
   },
 ] as const;
 
 const teacherDemoEvent = domainEvents[0];
+
+// 集約ごとにイベントをまとめる。並び順は集約が最初に現れた順で、時系列の情報は各イベントの order に残す。
+const domainEventsWithOrder = domainEvents.map((event, index) => ({
+  ...event,
+  order: index + 1,
+}));
+const aggregateNames = [...new Set(domainEventsWithOrder.map((event) => event.aggregate))];
+const aggregateGroups = aggregateNames.map((aggregate) => ({
+  aggregate,
+  events: domainEventsWithOrder.filter((event) => event.aggregate === aggregate),
+}));
 
 const excalidrawTemplatePath = "docs/event/session-01-event-storming.excalidraw";
 const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/${excalidrawTemplatePath}`;
@@ -65,7 +76,7 @@ const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-o
   <section id="incident">
     <h2>ブリーフィング{timing.brief}分: 動物病院の一日を読む</h2>
     <p>
-      この15分はコードを書きません。次の文章から業務上起きた出来事を拾い、診察開始という一つのワークフローの境界を班で引けるようになることが目標です。
+      この15分はコードを書きません。次の文章から業務上起きた出来事を拾い、集約ごとの境界を班で引けるようになることが目標です。
     </p>
     <div class="incident-report">
       <p>
@@ -87,7 +98,7 @@ const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-o
     <h2>ワークフローを描く</h2>
 
     <h3>説明{timing.teach}分: 語彙とドメインイベントの拾い方を確認する</h3>
-    <p>扱う語彙は3つです。ポリシー、読み取りモデル、外部システム、集約は扱いません。</p>
+    <p>扱う語彙は4つです。ポリシー、読み取りモデル、外部システムは扱いません。</p>
     <dl>
       <dt>ドメインイベント</dt>
       <dd>業務上起きた出来事。過去形で書きます。</dd>
@@ -95,28 +106,31 @@ const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-o
       <dd>誰かが出した依頼。ドメインイベントを引き起こします。</dd>
       <dt>ワークフロー</dt>
       <dd>一つの依頼を受けてドメインイベントを出すまでのひとかたまり。</dd>
+      <dt>集約</dt>
+      <dd>コマンドを受けて状態を変え、ドメインイベントを出すひとまとまり。中は一貫性を保ちながら一緒に変わります。</dd>
     </dl>
     <p>手順は次の4段です。班ワーク中もこのページで参照できます。</p>
     <ol class="exercise-steps">
       <li>起きた出来事を過去形で書き出す</li>
       <li>時間の順に並べる</li>
       <li>それぞれの出来事が、誰の何の依頼で起きたかを添える</li>
-      <li>一つの依頼から記録までのひとかたまりを囲み、名前を付ける</li>
+      <li>同じ集約を変えるドメインイベントをまとめて囲み、集約に名前を付ける</li>
     </ol>
-    <p>講師は文章からドメインイベントを1件だけ拾い、Excalidraw に置いて見せます。</p>
+    <p>講師は文章からドメインイベントを1件だけ拾い、コマンドとアクター、集約を添えて Excalidraw に置いて見せます。</p>
     <article
       class="decision-card"
       data-domain-event-id={teacherDemoEvent.id}
-      data-in-start-examination={teacherDemoEvent.inStartExamination ? "true" : "false"}
+      data-aggregate={teacherDemoEvent.aggregate}
     >
       <h4>講師実演: {teacherDemoEvent.name}</h4>
       <p><strong>誰の依頼か:</strong> {teacherDemoEvent.actor}</p>
       <p><strong>コマンド:</strong> {teacherDemoEvent.command}</p>
+      <p><strong>集約:</strong> {teacherDemoEvent.aggregate}</p>
     </article>
 
     <h3>班ワーク{timing.exercise}分: 残りのドメインイベントを拾い、境界を引く</h3>
     <p>
-      残りのドメインイベントを文章から拾って時系列に並べ、各イベントに誰の何の依頼で起きたかを添えます。そのうえで、診察開始という一つの依頼から記録までのひとかたまりを囲み、名前を付けます。
+      残りのドメインイベントを文章から拾って時系列に並べ、各イベントに誰の何の依頼で起きたかを添えます。そのうえで、同じ集約を変えるドメインイベントをまとめて囲み、集約に名前を付けます。
     </p>
     <p>
       班ワークは次の Excalidraw テンプレートで行います。TA が excalidraw.com でテンプレートを開いて Live collaboration を開始し、班へリンクを配ります。
@@ -128,23 +142,35 @@ const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-o
 
   <section id="review">
     <h2>レビュー{timing.review}分: 講師回答例と粒度の違いを比べる</h2>
-    <p>班の結果と次の講師回答例を見比べます。境界内はドメインイベント名の下に示します。</p>
-    <ol class="decision-list">
+    <p>
+      班の結果と次の講師回答例を見比べます。集約ごとにドメインイベントをまとめてあります。カード上部の数字は時系列の順序です。
+    </p>
+    <div class="aggregate-groups">
       {
-        domainEvents.map((event) => (
-          <li
-            class="decision-card"
-            data-domain-event-id={event.id}
-            data-in-start-examination={event.inStartExamination ? "true" : "false"}
-          >
-            <h4>{event.name}</h4>
-            <p><strong>誰の依頼か:</strong> {event.actor}</p>
-            <p><strong>コマンド:</strong> {event.command}</p>
-            {event.inStartExamination ? <p><strong>診察開始ワークフローの境界内</strong></p> : null}
-          </li>
+        aggregateGroups.map((group) => (
+          <section class="aggregate-group" data-aggregate={group.aggregate}>
+            <h3>集約: {group.aggregate}</h3>
+            <ol class="decision-list">
+              {group.events.map((event) => (
+                <li
+                  class="decision-card"
+                  data-domain-event-id={event.id}
+                  data-aggregate={event.aggregate}
+                >
+                  <p class="event-order">{event.order}件目</p>
+                  <h4>{event.name}</h4>
+                  <p><strong>誰の依頼か:</strong> {event.actor}</p>
+                  <p><strong>コマンド:</strong> {event.command}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
         ))
       }
-    </ol>
+    </div>
+    <p>
+      予約集約の中で、S2 からは「診察を始める」という依頼を詳しく見ていきます。
+    </p>
     <p>
       正誤ではなく粒度の違いを一つ選んで班で共有します。一つのドメインイベントをさらに細かく分けているか、逆に複数の出来事を一つにまとめているかを比べる観点が手がかりになります。
     </p>
