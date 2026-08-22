@@ -13,7 +13,7 @@ const teaching = [
   {
     name: "schema による境界検証と Result",
     definition:
-      "外から届く unknown を schema へ通し、通った値だけをドメイン型として扱います。通らなければ、失敗を戻り値の Result で返します。",
+      "外から届く unknown 型の値を schema でバリデーションし、正しい値だけをドメイン型として扱います。バリデーションに失敗した場合、エラーを Result で返します。",
     before: {
       sources: ["examples/session-04/src/boundary/examResult.ts"],
       code: `export const ExamResult = {
@@ -42,12 +42,12 @@ export const ExamResult = {
   parse: schemaResult(ExamResultSchema),
 } as const;`,
     },
-    why: "before は raw を any で受けるため、検証を1行も書かなくても型検査が通ります。after は unknown を schema へ通すので、検証を書かない限り値を取り出せません。これで「外部入力は、境界で検証してからドメイン型になる」を型で守れます。前の回で作った ExamId.schema と PetId.schema をここへ埋め込むと、識別子を作る経路が境界の1か所に集まります。parse は失敗しうる処理なので、失敗は例外ではなく戻り値の Result に現します。この回は失敗が戻り値に出るところまでを扱い、Result の分岐と合成は S5 で扱います。",
+    why: "before は raw を any で受けるため、検証を行わなくても型検査が通ってしまいます。after は unknown を schema でパースするので、検証を通さない限り値を取り出せません。これで「外部入力は、境界で検証してからドメイン型にする」ことを型で守れます。前の回で作った ExamId.schema と PetId.schema をここへ埋め込むと、識別子を作る経路が境界の1か所に集まります。parse は失敗しうる処理なので、失敗は例外ではなく戻り値の Result に現します。この回は失敗が戻り値に出るところまでを扱い、Result の分岐と合成は S5 で扱います。",
   },
   {
     name: "Sensitive による既定のマスク",
     definition:
-      "個人情報を包む型です。toJSON と toString を [REDACTED] にし、中身を取り出せるのは unwrap を呼んだ場所だけにします。",
+      "個人情報を wrap する型です。toJSON と toString をオーバーライドし [REDACTED] を返すようにします。中身を取り出すためには unwrap を呼び出す必要があります。",
     before: {
       sources: ["examples/session-04/src/boundary/ownerContact.ts"],
       code: `export type OwnerContact = Readonly<{
@@ -78,7 +78,7 @@ const OwnerContactSchema = z
   })
   .readonly();`,
     },
-    why: "平文の string で持つと、JSON.stringify も console.log も個人情報が出る経路になり、出さないことをレビューで守り続けることになります。Sensitive で包むと既定が伏せる側になり、値を出すには unwrap を書く必要が生じます。unwrap を検索すれば、個人情報が平文になる箇所を数えられます。1行に brand と transform が並んでいますが、2つは別の目的です。brand は OwnerEmail を OwnerPhone の位置へ渡せなくするための区別で、ログ出力には影響しません。ログ漏えいを止めているのは Sensitive.of のほうです。",
+    why: "個人情報を平文の string で持つと、JSON.stringify や console.log で簡単に個人情報がログに出てしまうことになります。これをレビューで守り続けることは困難でしょう。Sensitive で wrap するとデフォルトで値が表示されないようになり、値を取り出すには unwrap を明示的に呼び出さなければなりません。unwrap で検索すれば、個人情報が平文として取り出されている箇所を簡単に調べることができます。1行に brand と transform が並んでいますが、2つは別の目的です。brand は OwnerEmail を OwnerPhone などの他の値と取り違えないようにするための仕組み（Branded Type）で、ログ出力には影響しません。ログへの漏えいを防いでいるのは Sensitive.of のほうです。",
   },
 ] as const;
 ---
@@ -89,14 +89,14 @@ const OwnerContactSchema = z
     guides={guides}
     teaching={teaching}
     narrative={{
-      requirement: "外部から届く JSON を検証してからドメイン型にする。飼い主の氏名・メールアドレス・電話番号はログから守る。",
-      currentRisk: "検査機関から届く値をそのまま信頼すると、形の違う JSON がドメインへ入り、予約全体のログから個人情報を漏らせる。",
-      design: "input 欄は、unknown から受け取る Zod の入力境界と、既定で伏せる Sensitive で実装する。",
+      requirement: "外部から入力される JSON が想定とは異なる場合、エラーにする。また、個人情報はデフォルトでログには出力されないようにする。",
+      currentRisk: "検査機関から届く値をそのまま信頼してしまうと、想定している型とは違う形のデータがドメインに入り込んでしまう可能性がある。また、個人情報などを適切に検出できず、うっかりログなどに載ってしまう可能性がある。",
+      design: "外部から入力される JSON は、必ず検証してからドメイン型に変換する。個人情報は、デフォルトでログに出力されないような形に変換して取り扱う。",
       limitation: "Sensitive を unwrap した後の文字列の扱いは、型では守れない。",
-      nextQuestion: "診察開始を続けられない条件を、呼び出し側が業務判断できる形でどう返すか。",
-      legacy: "raw: any で受ける parse と、平文の string で持つ連絡先を読み、入力と出力の境界を分けます。",
-      reviewFocus: "unwrap を呼ぶ場所を限定し、JSON.stringify と util.inspect のどちらでも個人情報が伏せられるか。",
-      fallback: "現在の2ステップを順に開き、まず不正な JSON を Err として返します。次に連絡先3項目を Sensitive にします。相互レビューの約束事はS2のリンク先を確認します。",
+      nextQuestion: "診察を開始できない異常系のケースが発生した場合、そのことを呼び出し元にどのように返すか。呼び出し元で適切なハンドリングができる形にする。",
+      legacy: "raw: any 型の値を受け取る parse や、連絡先を平文の string で保持する実装を確認します。これを改善して、入力と出力の境界を明確にしましょう。",
+      reviewFocus: "unwrap を呼ぶ場所を限定し、それ以外の場所では JSON.stringify と util.inspect のどちらの場合でも個人情報が伏せられるか。",
+      fallback: "現在の2ステップを順に開き、まず不正な JSON を Err として返します。次に連絡先の3項目を Sensitive にします。相互レビューの約束事はS2のリンク先を確認します。",
     }}
   />
 </SessionLayout>

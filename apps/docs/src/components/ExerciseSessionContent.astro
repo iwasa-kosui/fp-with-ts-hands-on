@@ -77,12 +77,12 @@ const promisesHref =
   <p><strong>事故:</strong> {session.incident}</p>
   <ol class="decision-list" aria-label="要求から次の問いまでの因果関係">
     <li class="decision-card" data-causal-stage="requirement"><strong>要求:</strong> {narrative.requirement}</li>
-    <li class="decision-card" data-causal-stage="current-risk"><strong>現行リスク:</strong> {narrative.currentRisk}</li>
-    <li class="decision-card" data-causal-stage="design"><strong>今回の設計:</strong> {narrative.design}</li>
+    <li class="decision-card" data-causal-stage="current-risk"><strong>現在のリスク:</strong> {narrative.currentRisk}</li>
+    <li class="decision-card" data-causal-stage="design"><strong>目指す設計:</strong> {narrative.design}</li>
     <li class="decision-card" data-causal-stage="limitation"><strong>限界:</strong> {narrative.limitation}</li>
-    <li class="decision-card" data-causal-stage="next-question"><strong>次へ残す問い:</strong> {narrative.nextQuestion}</li>
+    <li class="decision-card" data-causal-stage="next-question"><strong>次のセッションへの問い:</strong> {narrative.nextQuestion}</li>
   </ol>
-  <h3>今回守ること</h3>
+  <h3>このセッションで守ること</h3>
   <ul class="decision-list">
     {session.decisions.map(({ invariant }) => <li>{invariant}</li>)}
   </ul>
@@ -94,8 +94,8 @@ const promisesHref =
   <h2>配布コードを読む</h2>
   <p>{narrative.legacy}</p>
   <p>
-    編集範囲は <code>{session.exerciseModule.dir}</code>、変更予算は最大
-    {session.exerciseModule.fileBudget}ファイル・実効{session.exerciseModule.lineBudget}行です。
+    編集する範囲は <code>{session.exerciseModule.dir}</code>、変更するファイル数は最大
+    {session.exerciseModule.fileBudget}ファイル・約{session.exerciseModule.lineBudget}行です。
   </p>
   <SessionCodeOverview slug={session.slug} guides={guides} />
 </section>
@@ -103,9 +103,9 @@ const promisesHref =
 {
   teaching.length === 0 ? null : (
     <section id="teach">
-      <h2>使う型を知る（{session.timeBreakdown.teach}分）</h2>
+      <h2>事前知識（{session.timeBreakdown.teach}分）</h2>
       <p>
-        この回で守る不変条件を、どの型で表すかを先に確認します。配布コードの書き方を before、次のスナップショットの書き方を after として並べます。
+        この回で利用する型について確認します。配布コードの書き方を before、次のスナップショットの書き方を after として並べています。
       </p>
       {teaching.map((topic) => (
         <article class="teaching-topic">
@@ -131,7 +131,7 @@ const promisesHref =
               <Code code={topic.after.code} lang="ts" />
             </figure>
           </div>
-          <p class="teaching-topic__why"><strong>なぜこの型か:</strong> {topic.why}</p>
+          <p class="teaching-topic__why"><strong>なぜこの型を使うのか:</strong> {topic.why}</p>
         </article>
       ))}
     </section>
@@ -154,17 +154,17 @@ const promisesHref =
 
 <section id="refactor">
   <h2>型で閉じる</h2>
-  <h3>進め方: 言語化 → 委譲 → 個人検証</h3>
+  <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
   <ol class="adv-flow">
-    <li><strong>言語化（{session.adv.articulate}分）</strong>: 守る不変条件を1文で書く。</li>
-    <li><strong>委譲（{session.adv.delegate}分）</strong>: 依頼文へ変換し、モジュール内だけを変更する。</li>
-    <li><strong>個人検証（{session.adv.verify}分）</strong>: 型、テスト、差分範囲を確認する。</li>
+    <li><strong>言語化（{session.adv.articulate}分）</strong>: 守るべき不変条件を1文で書く。</li>
+    <li><strong>依頼（{session.adv.delegate}分）</strong>: 不変条件をもとにプロンプトを作成し、Agent に依頼する</li>
+    <li><strong>検証（{session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
   </ol>
   <div class="delegation-prompt">
-    <h3>穴を埋めて使う依頼文</h3>
+    <h3>プロンプトのテンプレート</h3>
     <pre><code>{`${session.exerciseModule.dir}/ の中だけを変更してください。
-守る不変条件: ____________
-検証: ${session.exerciseCommand} が緑になること。
+不変条件: ____________
+検証: ${session.exerciseCommand} を全てパスすること。
 禁止: as によるキャスト。モジュール外のファイルの変更。`}</code></pre>
   </div>
   <p><strong>採用する手段:</strong> {narrative.design}</p>
@@ -194,7 +194,7 @@ const promisesHref =
 </section>
 
 <section id="review">
-  <h2>レビューと持ち帰り</h2>
+  <h2>レビュー観点と振り返り</h2>
   <ExerciseReviewChecklist snapshot={session.snapshot} />
   <h3>設計判断と差分を照らし合わせる</h3>
   <div class="decision-list">
