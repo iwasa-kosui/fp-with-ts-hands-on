@@ -62,13 +62,18 @@ const domainEventsWithOrder = domainEvents.map((event, index) => ({
   ...event,
   order: index + 1,
 }));
-const aggregateNames = [...new Set(domainEventsWithOrder.map((event) => event.aggregate))];
+const aggregateNames = [
+  ...new Set(domainEventsWithOrder.map((event) => event.aggregate)),
+];
 const aggregateGroups = aggregateNames.map((aggregate) => ({
   aggregate,
-  events: domainEventsWithOrder.filter((event) => event.aggregate === aggregate),
+  events: domainEventsWithOrder.filter(
+    (event) => event.aggregate === aggregate,
+  ),
 }));
 
-const excalidrawTemplatePath = "docs/event/session-01-event-storming.excalidraw";
+const excalidrawTemplatePath =
+  "docs/event/session-01-event-storming.excalidraw";
 const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/${excalidrawTemplatePath}`;
 ---
 
@@ -80,13 +85,13 @@ const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-o
     </p>
     <div class="incident-report">
       <p>
-        よく晴れた朝、開院してすぐの時間帯に、飼い主が数日前から元気のない柴犬を連れて来院しました。受付スタッフは前日に電話で受けていた予約を確認し、飼い主に問診票を渡して来院を受け付けました。待合室にはほかの飼い主と猫もいて、少し賑やかな雰囲気でした。
+        よく晴れた朝、開院してすぐの時間帯に、飼い主が数日前から元気のない柴犬を連れて来院しました。受付スタッフは前日に電話で受けていた予約を確認し、飼い主に問診票を渡して受付を行いました。待合室にはほかの飼い主と猫もいて、少し賑やかな雰囲気でした。
       </p>
       <p>
-        しばらく待ってもらったあと、動物看護師が診察室前で飼い主を呼び、問診票の内容を確認しながら体重を測り、来院時の症状や直近の食欲、排せつの様子について丁寧に聞き取り、いつもより落ち着かない足取りだったことも合わせて記録しました。
+        しばらく待ってもらったあと、動物看護師が診察室前に飼い主を呼び、問診票の内容を確認しながら体重を測り、来院時の症状や直近の食欲、排せつの様子について丁寧に聞き取りました。動物看護師は、柴犬がいつもより落ち着かない足取りだったことも合わせて記録しました。
       </p>
       <p>
-        続いて担当の獣医師が診察室へ犬を呼び入れ、診察を始めました。獣医師は聴診と触診を行い、看護師が記録した体重の変化も参考にしながら、飼い主に自宅での様子をさらに詳しく尋ねました。今回は追加の検査までは必要ないと判断し、診察を終えると、獣医師は所見と自宅での過ごし方の注意点をカルテに書き留め、飼い主にも口頭で分かりやすく説明しました。獣医師は次の患者の準備のため看護師に一声かけ、診察室を出ました。
+        続いて担当の獣医師が診察室へ飼い主と犬を呼び入れ、診察を始めました。獣医師は聴診と触診を行い、看護師が記録した体重の変化も参考にしながら、飼い主に自宅での様子をさらに詳しく尋ねました。今回は追加の検査は必要ないと判断し、診察を終えます。獣医師は所見と自宅での過ごし方の注意点をカルテに書き留め、飼い主にも口頭で分かりやすく説明しました。獣医師は次の患者の準備のため看護師に一声かけ、診察室を出ました。
       </p>
       <p>
         診察が終わると、受付スタッフが会計を担当しました。診察料と処方した薬の代金を項目ごとに計算し、内訳を示しながら飼い主に伝えて支払いを受け取りました。受付スタッフは会計が済んだことを記録しました。飼い主は処方された薬を受け取り、家での飲ませ方をもう一度確認してから、笑顔で動物病院をあとにしました。受付スタッフは待合室の様子を見渡し、次に呼ぶ飼い主の準備に取りかかりました。
@@ -97,17 +102,23 @@ const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-o
   <section id="workflow">
     <h2>ワークフローを描く</h2>
 
-    <h3>説明{timing.teach}分: 語彙とドメインイベントの拾い方を確認する</h3>
-    <p>扱う語彙は4つです。ポリシー、読み取りモデル、外部システムは扱いません。</p>
+    <h3>説明{timing.teach}分: 語彙の確認・ドメインイベントの見つけ方</h3>
+    <p>今回はポリシー、読み取りモデル、外部システムは扱いません。</p>
     <dl>
       <dt>ドメインイベント</dt>
-      <dd>業務上起きた出来事。過去形で書きます。</dd>
+      <dd>業務上起きた出来事。CheckedIn Eventのように過去形で表します。</dd>
       <dt>コマンド</dt>
-      <dd>誰かが出した依頼。ドメインイベントを引き起こします。</dd>
+      <dd>
+        誰かが出した依頼。コマンドが起点となり、ドメインイベントが発生します。
+      </dd>
       <dt>ワークフロー</dt>
-      <dd>一つの依頼を受けてドメインイベントを出すまでのひとかたまり。</dd>
+      <dd>
+        一つの依頼を受けてドメインイベントを出すまでのひとかたまりの処理。
+      </dd>
       <dt>集約</dt>
-      <dd>コマンドを受けて状態を変え、ドメインイベントを出すひとまとまり。中は一貫性を保ちながら一緒に変わります。</dd>
+      <dd>
+        コマンドを受けて状態を変更し、ドメインイベントを発生させるまでのひとまとまり。中は一貫性を保ちながら一緒に変わります。
+      </dd>
     </dl>
     <p>手順は次の4段です。班ワーク中もこのページで参照できます。</p>
     <ol class="exercise-steps">
@@ -116,7 +127,10 @@ const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-o
       <li>それぞれの出来事が、誰の何の依頼で起きたかを添える</li>
       <li>同じ集約を変えるドメインイベントをまとめ、集約に名前を付ける</li>
     </ol>
-    <p>講師は文章からドメインイベントを1件だけ拾い、コマンドとアクター、集約を添えて Excalidraw に置いて見せます。</p>
+    <p>
+      講師は文章からドメインイベントを1件だけ拾い、コマンドとアクター、集約を添えて
+      Excalidraw に置いて見せます。
+    </p>
     <article
       class="decision-card"
       data-domain-event-id={teacherDemoEvent.id}
@@ -128,12 +142,15 @@ const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-o
       <p><strong>集約:</strong> {teacherDemoEvent.aggregate}</p>
     </article>
 
-    <h3>班ワーク{timing.exercise}分: 残りのドメインイベントを拾い、境界を引く</h3>
+    <h3>
+      班ワーク{timing.exercise}分: 残りのドメインイベントを拾い、境界を引く
+    </h3>
     <p>
       残りのドメインイベントを文章から拾って時系列に並べ、各イベントに誰の何の依頼で起きたかを添えます。そのうえで、同じ集約を変えるドメインイベントをまとめて囲み、集約に名前を付けます。
     </p>
     <p>
-      班ワークは次の Excalidraw テンプレートで行います。TA が excalidraw.com でテンプレートを開いて Live collaboration を開始し、班へリンクを配ります。
+      班ワークは次の Excalidraw テンプレートで行います。TA が excalidraw.com
+      でテンプレートを開いて Live collaboration を開始し、班へリンクを配ります。
     </p>
     <p>
       <a href={excalidrawTemplateUrl}><code>{excalidrawTemplatePath}</code></a>
@@ -159,8 +176,12 @@ const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-o
                 >
                   <p class="event-order">{event.order}件目</p>
                   <h4>{event.name}</h4>
-                  <p><strong>誰の依頼か:</strong> {event.actor}</p>
-                  <p><strong>コマンド:</strong> {event.command}</p>
+                  <p>
+                    <strong>誰の依頼か:</strong> {event.actor}
+                  </p>
+                  <p>
+                    <strong>コマンド:</strong> {event.command}
+                  </p>
                 </li>
               ))}
             </ol>
@@ -172,7 +193,8 @@ const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-o
       予約集約の中で、S2 からは「診察を始める」という依頼を詳しく見ていきます。
     </p>
     <p>
-      正誤ではなく粒度の違いを一つ選んで班で共有します。一つのドメインイベントをさらに細かく分けているか、逆に複数の出来事を一つにまとめているかを比べる観点が手がかりになります。
+      ドメインイベントの粒度に着目して班で共有してみましょう（正誤は気にする必要はありません）。
+      一つのドメインイベントをさらに細かく分けているか、逆に複数の出来事を一つにまとめているか、などの観点で比べてみましょう。
     </p>
   </section>
 </SessionLayout>
