@@ -5,7 +5,7 @@ import { renderSessionPage, sessionCases } from "./session-test-helpers";
 const chapterIds = {
   orientation: ["incident", "legacy", "review"],
   workshop: ["incident", "workflow", "review"],
-  exercise: ["incident", "legacy", "red", "refactor", "review"],
+  exercise: ["incident", "legacy", "refactor", "review"],
   reference: ["incident", "legacy", "review"],
 } as const;
 
@@ -19,7 +19,7 @@ const withTeachChapter = (
   slug: string,
 ): readonly string[] =>
   teachingSlugs.has(slug)
-    ? ids.flatMap((id) => (id === "red" ? ["teach", id] : [id]))
+    ? ids.flatMap((id) => (id === "refactor" ? ["teach", id] : [id]))
     : ids;
 
 describe("session page structure", () => {

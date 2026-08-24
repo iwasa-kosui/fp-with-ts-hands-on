@@ -471,6 +471,7 @@
   background: color-mix(in srgb, var(--case-mint) 24%, var(--case-paper));
 }
 
+.decision-card h3,
 .decision-card h4,
 .decision-card p {
   margin-block: 0;
@@ -478,6 +479,10 @@
 
 .decision-card p + p {
   margin-top: 0.5rem;
+}
+
+.workflow-risk-map[data-view="focused"] .decision-list {
+  list-style: none;
 }
 
 .aggregate-groups {

@@ -68,12 +68,14 @@ describe("exercise session contract", () => {
     });
   }
 
-  it("connects every exercise to the shared workflow risk map and causal narrative", async () => {
+  it("keeps the opening focused and returns to the full workflow in the review", async () => {
     for (const session of exercises) {
       const document = await renderSessionPage(session);
       const riskMaps = [
         ...document.querySelectorAll<HTMLElement>(".workflow-risk-map"),
       ];
+      const opening = document.querySelector("#incident")!;
+      const review = document.querySelector("#review")!;
 
       expect(riskMaps).toHaveLength(2);
       expect(riskMaps.map(({ dataset }) => dataset.placement)).toEqual([
@@ -81,32 +83,50 @@ describe("exercise session contract", () => {
         "review",
       ]);
       expect(new Set(riskMaps.map((map) => map.getAttribute("aria-label"))).size).toBe(2);
-      expect(document.querySelectorAll("#incident .workflow-risk-map")).toHaveLength(1);
-      expect(document.querySelectorAll("#review .workflow-risk-map")).toHaveLength(1);
-      expect(riskMaps[1]?.querySelector("ol")?.textContent).toBe(
-        riskMaps[0]?.querySelector("ol")?.textContent,
+      expect(opening.querySelectorAll(".workflow-risk-map")).toHaveLength(1);
+      expect(review.querySelectorAll(".workflow-risk-map")).toHaveLength(1);
+      expect(riskMaps[0]?.querySelectorAll("[data-session-sequence]")).toHaveLength(1);
+      expect(riskMaps[1]?.querySelectorAll("[data-session-sequence]")).toHaveLength(
+        exercises.length,
       );
-      for (const riskMap of riskMaps) {
-        const currentRisk = riskMap.querySelector<HTMLElement>(
-          `[data-session-sequence="${session.sequence}"]`,
-        );
+      expect(opening.textContent).not.toContain(session.incident);
+      expect(review.textContent).toContain(session.incident);
+      const openingFocus = riskMaps[0]?.querySelector<HTMLElement>(
+        `[data-session-sequence="${session.sequence}"]`,
+      );
+      const reviewFocus = riskMaps[1]?.querySelector<HTMLElement>(
+        `[data-session-sequence="${session.sequence}"]`,
+      );
 
-        expect(riskMap.dataset.currentFocus).toBe(session.workflowFocus);
-        expect(currentRisk?.getAttribute("aria-current")).toBe("step");
-        expect(currentRisk?.textContent).toContain(session.workflowRisks.resolvedFromPrevious);
-        expect(currentRisk?.textContent).toContain(session.workflowRisks.remainingForNext);
-      }
+      expect(riskMaps.map(({ dataset }) => dataset.currentFocus)).toEqual([
+        session.workflowFocus,
+        session.workflowFocus,
+      ]);
+      expect(openingFocus?.getAttribute("aria-current")).toBe("step");
+      expect(openingFocus?.textContent).toContain(session.summary);
+      expect(reviewFocus?.getAttribute("aria-current")).toBe("step");
+      expect(reviewFocus?.textContent).toContain(session.workflowRisks.resolvedFromPrevious);
+      expect(reviewFocus?.textContent).toContain(session.workflowRisks.remainingForNext);
       expect(
-        [...document.querySelectorAll<HTMLElement>("[data-causal-stage]")].map(
-          (stage) => stage.dataset.causalStage,
+        [...opening.querySelectorAll<HTMLElement>("[data-story-stage]")].map(
+          (stage) => stage.dataset.storyStage,
         ),
       ).toEqual([
-        "requirement",
-        "current-risk",
-        "design",
-        "limitation",
-        "next-question",
+        "use-case",
+        "pitfall",
+        "goal",
       ]);
+    }
+  });
+
+  it("reproduces RED in the same chapter immediately after reading the distributed code", async () => {
+    for (const session of exercises) {
+      const document = await renderSessionPage(session);
+      const legacy = document.querySelector("#legacy")!;
+
+      expect(document.querySelector("#red")).toBeNull();
+      expect(legacy.querySelector("[data-code-explorer]")).not.toBeNull();
+      expect(legacy.querySelectorAll('[data-phase="red"]')).toHaveLength(1);
     }
   });
 

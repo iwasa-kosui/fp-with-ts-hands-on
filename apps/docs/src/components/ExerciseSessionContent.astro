@@ -72,16 +72,21 @@ const promisesHref =
 ---
 
 <section id="incident">
-  <h2>何が起きたか</h2>
-  <p><strong>要求:</strong> {narrative.requirement}</p>
-  <p><strong>事故:</strong> {session.incident}</p>
-  <ol class="decision-list" aria-label="要求から次の問いまでの因果関係">
-    <li class="decision-card" data-causal-stage="requirement"><strong>要求:</strong> {narrative.requirement}</li>
-    <li class="decision-card" data-causal-stage="current-risk"><strong>現在のリスク:</strong> {narrative.currentRisk}</li>
-    <li class="decision-card" data-causal-stage="design"><strong>目指す設計:</strong> {narrative.design}</li>
-    <li class="decision-card" data-causal-stage="limitation"><strong>限界:</strong> {narrative.limitation}</li>
-    <li class="decision-card" data-causal-stage="next-question"><strong>次のセッションへの問い:</strong> {narrative.nextQuestion}</li>
-  </ol>
+  <h2>今回つくるもの</h2>
+  <div class="decision-list" aria-label="追加する機能から今回のゴールまで">
+    <article class="decision-card" data-story-stage="use-case">
+      <h3>追加したい機能</h3>
+      <p>{narrative.requirement}</p>
+    </article>
+    <article class="decision-card" data-story-stage="pitfall">
+      <h3>素朴な実装の落とし穴</h3>
+      <p>{narrative.currentRisk}</p>
+    </article>
+    <article class="decision-card" data-story-stage="goal">
+      <h3>このセッションのゴール</h3>
+      <p>{narrative.design}</p>
+    </article>
+  </div>
   <h3>このセッションで守ること</h3>
   <ul class="decision-list">
     {session.decisions.map(({ invariant }) => <li>{invariant}</li>)}
@@ -91,13 +96,24 @@ const promisesHref =
 </section>
 
 <section id="legacy">
-  <h2>配布コードを読む</h2>
+  <h2>コードを読み、失敗を再現する</h2>
   <p>{narrative.legacy}</p>
   <p>
     編集する範囲は <code>{session.exerciseModule.dir}</code>、変更するファイル数は最大
     {session.exerciseModule.fileBudget}ファイル・約{session.exerciseModule.lineBudget}行です。
   </p>
   <SessionCodeOverview slug={session.slug} guides={guides} />
+  <h3>見つけた問題を RED で確かめる</h3>
+  <p>配布コードで見つけた問題が、業務名を持つ assertion の失敗として現れることを確認します。</p>
+  <CommandBlock
+    phase="red"
+    command={session.exerciseCommand}
+    expected={`${session.steps.length}件の参加者ステップが、業務上の未解決条件として失敗します。`}
+  />
+  <h3>今回のステップ</h3>
+  <ol class="exercise-steps">
+    {session.steps.map((step) => <li><strong>{step.goal}</strong></li>)}
+  </ol>
 </section>
 
 {
@@ -138,20 +154,6 @@ const promisesHref =
   )
 }
 
-<section id="red">
-  <h2>失敗を再現する</h2>
-  <p>開始時点のコード一式で起きる失敗は、モジュールが見つからないエラーではありません。業務名を示した assertion が失敗します。</p>
-  <CommandBlock
-    phase="red"
-    command={session.exerciseCommand}
-    expected={`${session.steps.length}件の参加者ステップが、業務上の未解決条件として失敗します。`}
-  />
-  <h3>今回のステップ</h3>
-  <ol class="exercise-steps">
-    {session.steps.map((step) => <li><strong>{step.goal}</strong></li>)}
-  </ol>
-</section>
-
 <section id="refactor">
   <h2>演習</h2>
   <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
@@ -167,8 +169,8 @@ const promisesHref =
 検証: ${session.exerciseCommand} を全てパスすること。
 禁止: as によるキャスト。モジュール外のファイルの変更。`}</code></pre>
   </div>
-  <p><strong>採用する手段:</strong> {narrative.design}</p>
-  <p><strong>この手段の限界:</strong> {narrative.limitation}</p>
+  <h3>この演習で解決しないこと</h3>
+  <p>{narrative.limitation}</p>
   <h3 data-solution-heading>{exerciseSession.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
   {
     exerciseSession.solutionPresentation === "completed-file" ? (
@@ -195,6 +197,9 @@ const promisesHref =
 
 <section id="review">
   <h2>レビュー観点と振り返り</h2>
+  <h3>改善前の事故と照らし合わせる</h3>
+  <p><strong>背景にある事故:</strong> {session.incident}</p>
+  <p><strong>この回の固有観点:</strong> {narrative.reviewFocus}</p>
   <ExerciseReviewChecklist snapshot={session.snapshot} />
   <h3>設計判断と差分を照らし合わせる</h3>
   <div class="decision-list">
@@ -206,8 +211,6 @@ const promisesHref =
       </article>
     ))}
   </div>
-  <p><strong>この回の固有観点:</strong> {narrative.reviewFocus}</p>
-
   {
     exerciseSession.peerReviewPromises === "inline" ? (
       <PeerReviewPromises id="peer-review-promises" />
@@ -221,5 +224,7 @@ const promisesHref =
   </ul>
   <h3>演習を完了できないとき</h3>
   <p>{narrative.fallback}</p>
+  <h3>次のセッションへの問い</h3>
+  <p>{narrative.nextQuestion}</p>
   <WorkflowRiskMap currentSession={exerciseSession} placement="review" />
 </section>
