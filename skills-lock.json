@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "meiseki": {
+      "source": "bamboo-nova/meiseki",
+      "sourceType": "github",
+      "skillPath": "skills/meiseki/SKILL.md",
+      "computedHash": "d8c3312c64ef95e62e14b2a1fdad089c12814b6c2441d12d9a089e3380d5985d"
+    }
+  }
+}
