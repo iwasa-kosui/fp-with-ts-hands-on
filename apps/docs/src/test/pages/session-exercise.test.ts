@@ -107,14 +107,18 @@ describe("exercise session contract", () => {
       expect(reviewFocus?.getAttribute("aria-current")).toBe("step");
       expect(reviewFocus?.textContent).toContain(session.workflowRisks.resolvedFromPrevious);
       expect(reviewFocus?.textContent).toContain(session.workflowRisks.remainingForNext);
-      expect(
-        [...opening.querySelectorAll<HTMLElement>("[data-story-stage]")].map(
-          (stage) => stage.dataset.storyStage,
-        ),
-      ).toEqual([
+      const storyStages = [
+        ...opening.querySelectorAll<HTMLElement>("[data-story-stage]"),
+      ];
+      expect(storyStages.map((stage) => stage.dataset.storyStage)).toEqual([
         "use-case",
         "pitfall",
         "goal",
+      ]);
+      expect(storyStages.map(({ tagName }) => tagName)).toEqual([
+        "H3",
+        "H3",
+        "H3",
       ]);
     }
   });
@@ -128,6 +132,35 @@ describe("exercise session contract", () => {
       expect(legacy.querySelector("[data-code-explorer]")).not.toBeNull();
       expect(legacy.querySelectorAll('[data-phase="red"]')).toHaveLength(1);
     }
+  });
+
+  it("shows the S2 pitfall as a concrete TypeScript example before the goal", async () => {
+    const session = exercises.find(({ sequence }) => sequence === "02")!;
+    const document = await renderSessionPage(session);
+    const opening = document.querySelector("#incident")!;
+    const pitfallHeading = opening.querySelector<HTMLElement>(
+      '[data-story-stage="pitfall"]',
+    )!;
+    const goalHeading = opening.querySelector<HTMLElement>(
+      '[data-story-stage="goal"]',
+    )!;
+    const example = opening.querySelector<HTMLElement>("[data-pitfall-code]");
+    const exampleText = example?.textContent ?? "";
+
+    expect(example?.tagName).toBe("FIGURE");
+    expect(example?.querySelector("pre code")).not.toBeNull();
+    expect(exampleText).toContain(
+      "examples/session-02/src/domain/appointment/transitions.ts",
+    );
+    expect(exampleText).toContain("startExamination");
+    expect(exampleText).toContain("appointment: Appointment");
+    expect(exampleText).toContain("paidAppointment");
+    expect(
+      pitfallHeading.compareDocumentPosition(example!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
+    expect(
+      example!.compareDocumentPosition(goalHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
   });
 
   it("uses catalog presentation metadata for answers and peer-review promises", async () => {

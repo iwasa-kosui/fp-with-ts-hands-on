@@ -19,6 +19,7 @@ import SessionCodePlayground from "./code-explorer/SessionCodePlayground.astro";
 type Narrative = Readonly<{
   requirement: string;
   currentRisk: string;
+  pitfallCode?: TeachingCode;
   design: string;
   limitation: string;
   nextQuestion: string;
@@ -73,20 +74,25 @@ const promisesHref =
 
 <section id="incident">
   <h2>今回つくるもの</h2>
-  <div class="decision-list" aria-label="追加する機能から今回のゴールまで">
-    <article class="decision-card" data-story-stage="use-case">
-      <h3>追加したい機能</h3>
-      <p>{narrative.requirement}</p>
-    </article>
-    <article class="decision-card" data-story-stage="pitfall">
-      <h3>素朴な実装の落とし穴</h3>
-      <p>{narrative.currentRisk}</p>
-    </article>
-    <article class="decision-card" data-story-stage="goal">
-      <h3>このセッションのゴール</h3>
-      <p>{narrative.design}</p>
-    </article>
-  </div>
+  <h3 data-story-stage="use-case">追加したい機能</h3>
+  <p>{narrative.requirement}</p>
+  <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
+  <p>{narrative.currentRisk}</p>
+  {
+    narrative.pitfallCode === undefined ? null : (
+      <figure class="code-block pitfall-code" data-pitfall-code>
+        <figcaption>
+          配布コードをもとにした例:
+          {narrative.pitfallCode.sources.map((source, index) => (
+            <Fragment>{index === 0 ? " " : "、"}<code>{source}</code></Fragment>
+          ))}
+        </figcaption>
+        <Code code={narrative.pitfallCode.code} lang="ts" />
+      </figure>
+    )
+  }
+  <h3 data-story-stage="goal">このセッションのゴール</h3>
+  <p>{narrative.design}</p>
   <h3>このセッションで守ること</h3>
   <ul class="decision-list">
     {session.decisions.map(({ invariant }) => <li>{invariant}</li>)}

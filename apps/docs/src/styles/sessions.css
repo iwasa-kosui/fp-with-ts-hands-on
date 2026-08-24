@@ -432,10 +432,15 @@
   margin: 0;
 }
 
-/* base.css の flex と space-between では、参照元が2ファイルのとき
-   パスが左右へ離れて区切りの読点から切り離される。 */
-.case-file .teaching-topic figcaption {
+/* base.css の flex と space-between では、参照元のパスが左右へ離れ、
+   モバイルではキャプションの外へはみ出す。 */
+.case-file :is(.teaching-topic, .pitfall-code) figcaption {
   display: block;
+}
+
+.case-file .pitfall-code figcaption code {
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .teaching-topic__why {
@@ -471,7 +476,6 @@
   background: color-mix(in srgb, var(--case-mint) 24%, var(--case-paper));
 }
 
-.decision-card h3,
 .decision-card h4,
 .decision-card p {
   margin-block: 0;

@@ -14,7 +14,32 @@ if (session === undefined) throw new Error("Unknown session: 02-state-transition
     guides={guides}
     narrative={{
       requirement: "予約を「診察中にする」、「キャンセルする」といった状態変更の機能を追加します。",
-      currentRisk: "Appointment 全体を受け取る関数で kind を書き換えるだけでは、キャンセル済みや会計済みの予約も「やっぱり診察中に戻そう」と変更できます。コンパイラはこの逆行を検知しません。キャンセル理由を optional にすると、理由のないキャンセルも作れてしまいます。",
+      currentRisk: "配布コードの startExamination は、引数に Appointment 全体を受け取ります。そのため、Paid を渡してもコンパイルできます。実行時に requireKind が例外を投げるまで、状態の誤りに気づけません。cancel も理由を undefined で受け取れるため、コンパイラでは理由の欠落を止められません。",
+      pitfallCode: {
+        sources: ["examples/session-02/src/domain/appointment/transitions.ts"],
+        code: `export const startExamination = (
+  appointment: Appointment,
+  veterinarianId: string,
+  examinationStartedAt: string,
+): Appointment => {
+  requireKind(appointment, ["CheckedIn"]);
+  return ({
+    ...appointment,
+    kind: "InExamination",
+    veterinarianId,
+    examinationStartedAt,
+  }) as Appointment;
+};
+
+declare const paidAppointment: Paid;
+
+// Paid を渡してもコンパイルできる
+startExamination(
+  paidAppointment,
+  "vet-001",
+  "2026-08-30T10:00:00+09:00",
+);`,
+      },
       design: "Scheduled | CheckedIn | InExamination | Paid | Canceled の判別共用体を、遷移関数と分岐でも一貫して使います。状態の変更は、許可した遷移元だけを受け取る純粋関数にします。分岐では網羅チェックを行い、状態を追加したときの見直し漏れもコンパイラで検知します。",
       limitation: "この型が守れるのは、TypeScript が検査できる値だけです。外部から届く未検証の値や、型アサーションで作った値は防げません。",
       nextQuestion: "外部入力をどこで検証し、同じ文字列形式のIDや公開してよい情報をどう区別するか。",
