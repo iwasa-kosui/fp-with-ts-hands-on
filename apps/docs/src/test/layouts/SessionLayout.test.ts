@@ -5,7 +5,7 @@ import SessionLayout from "../../layouts/SessionLayout.astro";
 import { sessions } from "../../sessions/catalog";
 import { createAstroContainer } from "../render-astro";
 
-const exerciseChapters = ["incident", "legacy", "red", "refactor", "review"];
+const exerciseChapters = ["incident", "legacy", "refactor", "review"];
 const shortChapters = ["incident", "legacy", "review"];
 const workshopChapters = ["incident", "workflow", "review"];
 const orientation = sessions.find(({ kind }) => kind === "orientation")!;
@@ -29,9 +29,8 @@ describe("SessionLayout", () => {
       session: exercise,
       expected: exerciseChapters,
       labels: [
-        "何が起きたか",
-        "配布コードを読む",
-        "失敗を再現する",
+        "今回つくるもの",
+        "コードを読み、失敗を再現する",
         "型で閉じる",
         "レビューと持ち帰り",
       ],

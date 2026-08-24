@@ -16,8 +16,8 @@ type Props = Readonly<{
 const { session, teaching = [] } = Astro.props;
 const { previous, next } = sessionNeighbors(session.slug);
 const commonChapters = [
-  { id: "incident", label: "何が起きたか" },
-  { id: "legacy", label: "配布コードを読む" },
+  { id: "incident", label: "今回つくるもの" },
+  { id: "legacy", label: "コードを読み、失敗を再現する" },
 ] as const;
 const reviewChapter = { id: "review", label: "レビューと持ち帰り" } as const;
 const orientationChapters = [
@@ -31,7 +31,6 @@ const chapters =
     ? [
         ...commonChapters,
         ...teachChapters,
-        { id: "red", label: "失敗を再現する" } as const,
         { id: "refactor", label: "型で閉じる" } as const,
         reviewChapter,
       ]

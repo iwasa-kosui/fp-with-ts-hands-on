@@ -69,3 +69,21 @@ for (const viewport of viewports) {
     await expect(firstTerm).toHaveCSS("background-color", "rgb(255, 242, 159)");
   });
 }
+
+test("S2 pitfall source path stays inside its caption on mobile", async ({ page }) => {
+  await page.setViewportSize(viewports[0]);
+  await page.goto("/sessions/02-state-transitions/");
+
+  const caption = page.locator("[data-pitfall-code] figcaption");
+  await expect(caption).toBeVisible();
+  const bounds = await caption.evaluate((element) => {
+    const captionRect = element.getBoundingClientRect();
+    const sourceRect = element.querySelector("code")!.getBoundingClientRect();
+    return {
+      captionRight: captionRect.right,
+      sourceRight: sourceRect.right,
+    };
+  });
+
+  expect(bounds.sourceRight).toBeLessThanOrEqual(bounds.captionRight + 1);
+});

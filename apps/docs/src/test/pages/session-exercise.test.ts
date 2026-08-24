@@ -68,12 +68,14 @@ describe("exercise session contract", () => {
     });
   }
 
-  it("connects every exercise to the shared workflow risk map and causal narrative", async () => {
+  it("keeps the opening focused and returns to the full workflow in the review", async () => {
     for (const session of exercises) {
       const document = await renderSessionPage(session);
       const riskMaps = [
         ...document.querySelectorAll<HTMLElement>(".workflow-risk-map"),
       ];
+      const opening = document.querySelector("#incident")!;
+      const review = document.querySelector("#review")!;
 
       expect(riskMaps).toHaveLength(2);
       expect(riskMaps.map(({ dataset }) => dataset.placement)).toEqual([
@@ -81,33 +83,84 @@ describe("exercise session contract", () => {
         "review",
       ]);
       expect(new Set(riskMaps.map((map) => map.getAttribute("aria-label"))).size).toBe(2);
-      expect(document.querySelectorAll("#incident .workflow-risk-map")).toHaveLength(1);
-      expect(document.querySelectorAll("#review .workflow-risk-map")).toHaveLength(1);
-      expect(riskMaps[1]?.querySelector("ol")?.textContent).toBe(
-        riskMaps[0]?.querySelector("ol")?.textContent,
+      expect(opening.querySelectorAll(".workflow-risk-map")).toHaveLength(1);
+      expect(review.querySelectorAll(".workflow-risk-map")).toHaveLength(1);
+      expect(riskMaps[0]?.querySelectorAll("[data-session-sequence]")).toHaveLength(1);
+      expect(riskMaps[1]?.querySelectorAll("[data-session-sequence]")).toHaveLength(
+        exercises.length,
       );
-      for (const riskMap of riskMaps) {
-        const currentRisk = riskMap.querySelector<HTMLElement>(
-          `[data-session-sequence="${session.sequence}"]`,
-        );
+      expect(opening.textContent).not.toContain(session.incident);
+      expect(review.textContent).toContain(session.incident);
+      const openingFocus = riskMaps[0]?.querySelector<HTMLElement>(
+        `[data-session-sequence="${session.sequence}"]`,
+      );
+      const reviewFocus = riskMaps[1]?.querySelector<HTMLElement>(
+        `[data-session-sequence="${session.sequence}"]`,
+      );
 
-        expect(riskMap.dataset.currentFocus).toBe(session.workflowFocus);
-        expect(currentRisk?.getAttribute("aria-current")).toBe("step");
-        expect(currentRisk?.textContent).toContain(session.workflowRisks.resolvedFromPrevious);
-        expect(currentRisk?.textContent).toContain(session.workflowRisks.remainingForNext);
-      }
-      expect(
-        [...document.querySelectorAll<HTMLElement>("[data-causal-stage]")].map(
-          (stage) => stage.dataset.causalStage,
-        ),
-      ).toEqual([
-        "requirement",
-        "current-risk",
-        "design",
-        "limitation",
-        "next-question",
+      expect(riskMaps.map(({ dataset }) => dataset.currentFocus)).toEqual([
+        session.workflowFocus,
+        session.workflowFocus,
+      ]);
+      expect(openingFocus?.getAttribute("aria-current")).toBe("step");
+      expect(openingFocus?.textContent).toContain(session.summary);
+      expect(reviewFocus?.getAttribute("aria-current")).toBe("step");
+      expect(reviewFocus?.textContent).toContain(session.workflowRisks.resolvedFromPrevious);
+      expect(reviewFocus?.textContent).toContain(session.workflowRisks.remainingForNext);
+      const storyStages = [
+        ...opening.querySelectorAll<HTMLElement>("[data-story-stage]"),
+      ];
+      expect(storyStages.map((stage) => stage.dataset.storyStage)).toEqual([
+        "use-case",
+        "pitfall",
+        "goal",
+      ]);
+      expect(storyStages.map(({ tagName }) => tagName)).toEqual([
+        "H3",
+        "H3",
+        "H3",
       ]);
     }
+  });
+
+  it("reproduces RED in the same chapter immediately after reading the distributed code", async () => {
+    for (const session of exercises) {
+      const document = await renderSessionPage(session);
+      const legacy = document.querySelector("#legacy")!;
+
+      expect(document.querySelector("#red")).toBeNull();
+      expect(legacy.querySelector("[data-code-explorer]")).not.toBeNull();
+      expect(legacy.querySelectorAll('[data-phase="red"]')).toHaveLength(1);
+    }
+  });
+
+  it("shows the S2 pitfall as a concrete TypeScript example before the goal", async () => {
+    const session = exercises.find(({ sequence }) => sequence === "02")!;
+    const document = await renderSessionPage(session);
+    const opening = document.querySelector("#incident")!;
+    const pitfallHeading = opening.querySelector<HTMLElement>(
+      '[data-story-stage="pitfall"]',
+    )!;
+    const goalHeading = opening.querySelector<HTMLElement>(
+      '[data-story-stage="goal"]',
+    )!;
+    const example = opening.querySelector<HTMLElement>("[data-pitfall-code]");
+    const exampleText = example?.textContent ?? "";
+
+    expect(example?.tagName).toBe("FIGURE");
+    expect(example?.querySelector("pre code")).not.toBeNull();
+    expect(exampleText).toContain(
+      "examples/session-02/src/domain/appointment/transitions.ts",
+    );
+    expect(exampleText).toContain("startExamination");
+    expect(exampleText).toContain("appointment: Appointment");
+    expect(exampleText).toContain("paidAppointment");
+    expect(
+      pitfallHeading.compareDocumentPosition(example!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
+    expect(
+      example!.compareDocumentPosition(goalHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
   });
 
   it("uses catalog presentation metadata for answers and peer-review promises", async () => {
