@@ -13,14 +13,14 @@ if (session === undefined) throw new Error("Unknown session: 02-state-transition
     session={session}
     guides={guides}
     narrative={{
-      requirement: "会計済み・キャンセル済みの予約を診察中へ戻さず、状態ごとに必要な情報を欠かさない。",
-      currentRisk: "任意の状態へ更新でき、状態固有の情報も省略できるため、二重請求につながる予約を作れてしまう。",
-      design: "current state 欄は、状態ごとに形を分ける型（判別共用体）、許可した遷移元だけを受け取る純粋関数、網羅的な分岐で実装する。",
-      limitation: "外部から届く未検証の値や、型アサーションで捏造された値は、このモジュールの状態表現だけでは防げない。",
+      requirement: "会計済み・キャンセル済みの予約を診察中に戻してはいけない。また、各状態ごとに必要十分な情報を持つ",
+      currentRisk: "予約を任意の状態に更新できてしまう。また各状態で本来必要な情報も省略できてしまうため、二重請求につながる予約を作れてしまう。",
+      design: "予約モデルは、状態ごとに型を分けて定義する（判別共用体）。また、状態の変更は状態遷移として捉え、純粋関数で表現する。この関数は、型を利用して事前に許可した遷移のみを許容する形にする。複数の状態を扱う場合は網羅チェックを行い、状態の抜け漏れがないようにする。",
+      limitation: "外部から入力される未検証の値や、型アサーションで無理やり型付けされた値は、このモジュールの状態表現だけでは防げない。",
       nextQuestion: "外部入力をどこで検証し、同じ文字列形式のIDや公開してよい情報をどう区別するか。",
-      legacy: "Appointment 全体を受ける遷移関数、throw、as Appointment、default 分岐を読み、current state 欄を壊す経路を探します。",
-      reviewFocus: "toStatusLabel の default が消え、6つ目の状態を足すとコンパイルエラーになるか。",
-      fallback: "解答スナップショットをステップ単位で開き、まず遷移関数の引数型、その後に網羅分岐を写します。相互レビューは省きません。",
+      legacy: "Appointment 全体を受ける遷移関数、throw、as Appointment、default 分岐など、current state 欄を壊す処理を探します。",
+      reviewFocus: "toStatusLabel の default が消え、新しい状態を足すとコンパイルエラーになるか。",
+      fallback: "解答スナップショットをステップ単位で開き、まず遷移関数の引数型、その後に網羅分岐をコピペします。相互レビューは行いましょう。",
     }}
   />
 </SessionLayout>
