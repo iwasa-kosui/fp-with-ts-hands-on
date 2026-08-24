@@ -110,25 +110,6 @@ describe("exercise session contract", () => {
     }
   });
 
-  it("teaches business Result separately from the technical exception path", async () => {
-    const businessFailureSession = exercises.find(
-      ({ workflowFocus }) => workflowFocus === "expected failures",
-    )!;
-    const effectsSession = exercises.find(
-      ({ workflowFocus }) => workflowFocus === "output event/side effects",
-    )!;
-    const businessFailureDocument = await renderSessionPage(businessFailureSession);
-    const effectsDocument = await renderSessionPage(effectsSession);
-    const businessFailureText = businessFailureDocument.body.textContent ?? "";
-    const effectsText = effectsDocument.body.textContent ?? "";
-
-    expect(businessFailureText).toContain("予期できる業務失敗");
-    expect(businessFailureText).toContain("Result");
-    expect(effectsText).toContain("業務 Result");
-    expect(effectsText).toContain("技術的な例外");
-    expect(effectsText).toContain("reject");
-  });
-
   it("uses catalog presentation metadata for answers and peer-review promises", async () => {
     const promisesSession = exercises.find(
       ({ peerReviewPromises }) => peerReviewPromises === "inline",

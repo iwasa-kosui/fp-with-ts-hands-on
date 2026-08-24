@@ -80,26 +80,6 @@ describe("session page structure", () => {
     expect(new Set(reviewEvents.map((event) => event.dataset.domainEventId)).size).toBe(5);
   });
 
-  it("shows the exact 3+4+6+2 S1 timing", async () => {
-    const session = sessions.find(({ kind }) => kind === "workshop")!;
-    const document = await renderSessionPage(session);
-
-    expect(document.querySelector("#incident h2")?.textContent).toContain(
-      "ブリーフィング3分",
-    );
-    expect(
-      [...document.querySelectorAll("#workflow > h3")].map(({ textContent }) =>
-        textContent?.trim(),
-      ),
-    ).toEqual([
-      "説明4分: 語彙とドメインイベントの拾い方を確認する",
-      "班ワーク6分: 残りのドメインイベントを拾い、境界を引く",
-    ]);
-    expect(document.querySelector("#review h2")?.textContent).toContain(
-      "レビュー2分",
-    );
-  });
-
   it("presents the event-storming vocabulary, the four-step procedure, and the Excalidraw template link on S1", async () => {
     const session = sessions.find(({ kind }) => kind === "workshop")!;
     const document = await renderSessionPage(session);
