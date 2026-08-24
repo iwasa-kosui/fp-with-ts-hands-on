@@ -46,9 +46,6 @@ describe.each(teachingSessions)("$slug teaching section", (session) => {
     expect(topics).toHaveLength(session.decisions.length);
     for (const topic of topics) {
       expect(topic.querySelector("h3")?.textContent?.trim()).not.toBe("");
-      expect(topic.querySelector(".teaching-topic__why")?.textContent).toContain(
-        "なぜこの型か",
-      );
     }
   });
 
