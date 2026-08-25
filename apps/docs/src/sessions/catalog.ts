@@ -344,8 +344,8 @@ export const sessions = [
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
     animal: { name: "HEDGEHOG", type: "hedgehog", avatar: "🦔" },
-    summary: "予約・ペット・飼い主・担当獣医師の識別子を、互いに代入できない別々の型にします。",
-    incident: "ラボの ID を取り違え、他の患者へ検査結果が付いた。",
+    summary: "予約・検査・ペット・飼い主・担当獣医師の識別子を、用途ごとに区別して扱います。",
+    incident: "検査結果の登録で OwnerId を PetId の位置へ渡し、対象のペットに結果を結び付けられなかった。",
     exerciseCommand: "pnpm exercise:03",
     exerciseModule: {
       dir: "examples/session-03/src/domain",
@@ -395,7 +395,7 @@ export const sessions = [
       },
       {
         id: "s3-reject-id-swap",
-        goal: "取り違えたコードがコンパイルできないことを、型テストで自分で確かめる。",
+        goal: "OwnerId を PetId の位置へ渡すコードがコンパイルできないことを、型テストで自分で確かめる。",
         targets: ["examples/session-03/src/domain/domain.test-types.ts"],
         solutions: [{
           path: "examples/session-04/src/domain/domain.test-types.ts",
@@ -413,7 +413,7 @@ export const sessions = [
       {
         invariant: "予約はどの状態でも用途別の識別子を持つ。",
         byType: "5状態と遷移関数の引数で、同じ識別子の型を使う。",
-        notByType: "同じ型を別の業務的な意味で使い回すことは型では検出できない。",
+        notByType: "同じ PetId 型の別のペットを選ぶ誤りは、型だけでは検出できない。",
       },
       {
         invariant: "取り違えたコードはコンパイルできない。",
