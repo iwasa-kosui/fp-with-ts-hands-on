@@ -163,6 +163,38 @@ describe("exercise session contract", () => {
     ).not.toBe(0);
   });
 
+  it("places the S2 exhaustiveness example in teaching before the exercise", async () => {
+    const session = exercises.find(({ sequence }) => sequence === "02")!;
+    const document = await renderSessionPage(session);
+    const teach = document.querySelector("#teach")!;
+    const refactor = document.querySelector("#refactor")!;
+    const example = teach.querySelector("[data-teaching-example] pre code")
+      ?.textContent ?? "";
+
+    expect(example).toContain('case "NoShow": の実装を忘れると');
+    expect(example).toContain("return assertNever(appointment)");
+    expect(
+      teach.compareDocumentPosition(refactor) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
+    expect(refactor.querySelector("[data-exhaustiveness-note]")).toBeNull();
+  });
+
+  it("contrasts an untagged object Union with S2 discriminant narrowing", async () => {
+    const session = exercises.find(({ sequence }) => sequence === "02")!;
+    const document = await renderSessionPage(session);
+    const firstTopic = document.querySelector("#teach .teaching-topic")!;
+    const topicText = firstTopic.textContent ?? "";
+    const examples = [...firstTopic.querySelectorAll("pre code")].map(
+      (code) => code.textContent ?? "",
+    );
+
+    expect(topicText).toContain("判別フィールドを持たないオブジェクトのUnion");
+    expect(topicText).toContain("共通のkind");
+    expect(examples[0]).toContain('"examinationStartedAt" in appointment');
+    expect(examples[1]).toContain("switch (appointment.kind)");
+    expect(examples.join("\n")).not.toContain("type AppointmentKind");
+  });
+
   it("uses catalog presentation metadata for answers and peer-review promises", async () => {
     const promisesSession = exercises.find(
       ({ peerReviewPromises }) => peerReviewPromises === "inline",
