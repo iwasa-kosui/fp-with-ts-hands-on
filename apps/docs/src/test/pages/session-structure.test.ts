@@ -10,6 +10,7 @@ const chapterIds = {
 } as const;
 
 const teachingSlugs: ReadonlySet<string> = new Set([
+  "02-state-transitions",
   "03-semantic-identifiers",
   "04-boundaries-and-pii",
 ]);

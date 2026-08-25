@@ -19,7 +19,7 @@ import SessionCodePlayground from "./code-explorer/SessionCodePlayground.astro";
 type Narrative = Readonly<{
   requirement: string;
   currentRisk: string;
-  pitfallCode?: TeachingCode;
+  pitfallCode?: SourcedCode;
   design: string;
   limitation: string;
   nextQuestion: string;
@@ -28,8 +28,14 @@ type Narrative = Readonly<{
   fallback: string;
 }>;
 
-type TeachingCode = Readonly<{
+type SourcedCode = Readonly<{
   sources: readonly [string, ...string[]];
+  code: string;
+}>;
+
+type TeachingCode = Readonly<{
+  sources?: readonly [string, ...string[]];
+  caption?: string;
   code: string;
 }>;
 
@@ -38,6 +44,10 @@ type TeachingTopic = Readonly<{
   definition: string;
   before: TeachingCode;
   after: TeachingCode;
+  example?: Readonly<{
+    caption: string;
+    code: string;
+  }>;
   why: string;
 }>;
 
@@ -137,22 +147,42 @@ const promisesHref =
             <figure class="code-block">
               <figcaption>
                 before:
-                {topic.before.sources.map((source, index) => (
-                  <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
-                ))}
+                {
+                  topic.before.caption === undefined ? (
+                    topic.before.sources?.map((source, index) => (
+                      <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                    ))
+                  ) : (
+                    <span>{topic.before.caption}</span>
+                  )
+                }
               </figcaption>
               <Code code={topic.before.code} lang="ts" />
             </figure>
             <figure class="code-block">
               <figcaption>
                 after:
-                {topic.after.sources.map((source, index) => (
-                  <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
-                ))}
+                {
+                  topic.after.caption === undefined ? (
+                    topic.after.sources?.map((source, index) => (
+                      <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                    ))
+                  ) : (
+                    <span>{topic.after.caption}</span>
+                  )
+                }
               </figcaption>
               <Code code={topic.after.code} lang="ts" />
             </figure>
           </div>
+          {
+            topic.example === undefined ? null : (
+              <figure class="code-block" data-teaching-example>
+                <figcaption>{topic.example.caption}</figcaption>
+                <Code code={topic.example.code} lang="ts" />
+              </figure>
+            )
+          }
           <p class="teaching-topic__why"><strong>なぜこの型を使うのか:</strong> {topic.why}</p>
         </article>
       ))}
@@ -193,7 +223,6 @@ const promisesHref =
       </div>
     ))
   }
-  <slot name="solution-note" />
   <SessionCodePlayground slug={session.slug} />
   <CommandBlock
     phase="green"

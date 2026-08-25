@@ -1,5 +1,4 @@
 ---
-import { Code } from "astro:components";
 import ExerciseSessionContent from "../../components/ExerciseSessionContent.astro";
 import guides from "../../code-explorer/code-guides/02-state-transitions";
 import SessionLayout from "../../layouts/SessionLayout.astro";
@@ -27,12 +26,128 @@ switch (appointment.kind) {
     // 割り当てることはできません
     return assertNever(appointment);
 }`;
+
+const teaching = [
+  {
+    name: "Unionは候補をまとめ、Discriminated Unionは状態と情報を結びつける",
+    definition:
+      "Unionは、値が複数の型のうち、いずれか1つであることを表します。Discriminated Unionは、各オブジェクトが共通の判別フィールドを持ち、その値がオブジェクトごとに異なるリテラル型になっているUnionです。TypeScriptの特別な構文ではなく、Unionを状態の表現に使うためのパターンです。",
+    before: {
+      caption: "普通のUnion（説明用の簡略例）",
+      code: `type AppointmentKind =
+  | "Scheduled"
+  | "CheckedIn";
+
+const kind: AppointmentKind = "Scheduled";`,
+    },
+    after: {
+      caption: "Discriminated Union（説明用の簡略例）",
+      code: `type Scheduled = Readonly<{
+  kind: "Scheduled";
+  scheduledAt: string;
+}>;
+
+type CheckedIn = Readonly<{
+  kind: "CheckedIn";
+  scheduledAt: string;
+  checkedInAt: string;
+}>;
+
+type Appointment = Scheduled | CheckedIn;`,
+    },
+    why: "AppointmentKind は状態名の候補だけを表します。状態ごとに必要な情報が違う場合は、状態名だけでは足りません。Discriminated Unionでは、各オブジェクトが共通の kind を持ち、その値を Scheduled や CheckedIn のようなリテラル型にします。これにより、CheckedIn には checkedInAt が必須であることまで型で表せます。普通のUnionが不適切なわけではありません。候補だけを表すなら普通のUnion、状態と必須情報を結びつけるならDiscriminated Unionを使います。",
+  },
+  {
+    name: "遷移関数の引数型で、受け取れる状態を限定する",
+    definition:
+      "Discriminated Unionから特定の状態型を選び、遷移関数の引数に指定します。許可していない状態は、関数を呼び出す時点でコンパイルエラーになります。",
+    before: {
+      sources: ["examples/session-02/src/domain/appointment/transitions.ts"],
+      code: `export const startExamination = (
+  appointment: Appointment,
+  veterinarianId: string,
+  examinationStartedAt: string,
+): Appointment => {
+  requireKind(appointment, ["CheckedIn"]);
+  return ({ ...appointment, kind: "InExamination", veterinarianId, examinationStartedAt }) as Appointment;
+};`,
+    },
+    after: {
+      sources: ["examples/session-03/src/domain/appointment/transitions.ts"],
+      code: `export const startExamination = (
+  appointment: CheckedIn,
+  veterinarianId: string,
+  examinationStartedAt: string,
+): InExamination =>
+  ({
+    ...appointment,
+    kind: "InExamination",
+    veterinarianId,
+    examinationStartedAt,
+  }) as const satisfies InExamination;`,
+    },
+    why: "before は Appointment 全体を受け取るため、Paid や Canceled も渡せます。状態の誤りが分かるのは、実行時に requireKind が例外を投げたときです。after は CheckedIn だけを受け取り、InExamination を返します。会計済みやキャンセル済みの予約を渡すと、コードを実行する前の型検査で止まります。Discriminated Unionが状態の候補を定義し、関数の引数型が許可された遷移を定義します。",
+  },
+  {
+    name: "assertNeverは未処理の状態をコンパイルエラーにする",
+    definition:
+      "kindで分岐してAppointmentの全状態を処理すると、default内のappointmentはnever型になります。assertNeverはnever型だけを受け取るため、未処理の状態が残っていないことを型検査で確かめられます。",
+    before: {
+      sources: ["examples/session-02/src/domain/appointment/statusLabel.ts"],
+      code: `export const toStatusLabel = (appointment: Readonly<{ kind: string }>): string => {
+  switch (appointment.kind) {
+    case "Scheduled":
+      return "予約済み";
+    case "CheckedIn":
+      return "来院済み";
+    case "InExamination":
+      return "診察中";
+    case "Paid":
+      return "会計済み";
+    case "Canceled":
+      return "キャンセル";
+    default:
+      return "不明";
+  }
+};`,
+    },
+    after: {
+      sources: ["examples/session-03/src/domain/appointment/statusLabel.ts"],
+      code: `const assertNever = (value: never): never => {
+  throw new Error(\`Unknown appointment status: \${JSON.stringify(value)}\`);
+};
+
+export const toStatusLabel = (appointment: Appointment): string => {
+  switch (appointment.kind) {
+    case "Scheduled":
+      return "予約済み";
+    case "CheckedIn":
+      return "来院済み";
+    case "InExamination":
+      return "診察中";
+    case "Paid":
+      return "会計済み";
+    case "Canceled":
+      return "キャンセル";
+    default:
+      return assertNever(appointment);
+  }
+};`,
+    },
+    example: {
+      caption: "NoShowを追加したのに、表示名の分岐を追加し忘れた例",
+      code: missingNoShowCase,
+    },
+    why: "before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after で現在の全状態を処理すると、default内のappointmentはneverになります。AppointmentにNoShowを追加し、caseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverへ渡せないため、コンパイルエラーになります。同じ網羅性チェックを使う分岐でも修正漏れがエラーになるので、新しい状態の影響箇所をコンパイラが示します。",
+  },
+] as const;
 ---
 
-<SessionLayout session={session}>
+<SessionLayout session={session} teaching={teaching}>
   <ExerciseSessionContent
     session={session}
     guides={guides}
+    teaching={teaching}
     narrative={{
       requirement: "予約を「診察中にする」、「キャンセルする」といった状態変更の機能を追加します。",
       currentRisk: "配布コードの startExamination は、引数に Appointment 全体を受け取ります。そのため、Paid を渡してもコンパイルできます。実行時に requireKind が例外を投げるまで、状態の誤りに気づけません。cancel も理由を undefined で受け取れるため、コンパイラでは理由の欠落を止められません。",
@@ -68,31 +183,5 @@ startExamination(
       reviewFocus: "toStatusLabel の default が assertNever を呼び、新しい状態を足すとコンパイルエラーになるか。",
       fallback: "解答スナップショットをステップ単位で開き、まず遷移関数の引数型、その後に網羅分岐をコピペします。相互レビューは行いましょう。",
     }}
-  >
-    <article slot="solution-note" class="teaching-topic" data-exhaustiveness-note>
-      <h4>💡 コラム: assertNeverによる網羅性チェックの仕組み</h4>
-      <p>
-        <code>Appointment.kind</code> は、判別共用体で現在の状態を見分けるための値です。<code>switch</code>
-        で <code>Scheduled</code> や <code>CheckedIn</code> などの全状態を処理すると、未処理の状態は残りません。TypeScriptは、どの
-        <code>case</code> にも該当せず <code>default</code> へ進む <code>appointment</code>
-        を「絶対にあり得ない値」を表す <code>never</code> 型と推論します。
-      </p>
-      <p>
-        <code>assertNever</code> は、<code>never</code> 型だけを引数に取る関数です。全状態を処理できていれば、<code>default</code>
-        内の <code>appointment</code> は <code>never</code> です。このため、<code>assertNever(appointment)</code>
-        は型検査を通過します。
-      </p>
-      <figure class="code-block">
-        <figcaption><code>NoShow</code> を追加したものの、表示名の分岐を追加し忘れた例</figcaption>
-        <Code code={missingNoShowCase} lang="ts" />
-      </figure>
-      <p class="teaching-topic__why">
-        <strong>なぜ安全網になるのか:</strong> <code>Appointment</code> に <code>NoShow</code>
-        を追加したあと、<code>switch</code> に <code>case "NoShow"</code> を足し忘れたとします。このとき、<code>default</code>
-        内の <code>appointment</code> は <code>never</code> ではなく <code>NoShow</code> です。<code>NoShow</code> は
-        <code>assertNever</code>
-        に渡せないため、コンパイルエラーになります。同じ網羅性チェックを使うほかの分岐でも、修正漏れがあればエラーになります。新しい状態の影響箇所をコンパイラが示すため、変更時の見落としを減らせます。
-      </p>
-    </article>
-  </ExerciseSessionContent>
+  />
 </SessionLayout>
