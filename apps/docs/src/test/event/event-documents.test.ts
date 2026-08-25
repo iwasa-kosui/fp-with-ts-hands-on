@@ -252,7 +252,7 @@ describe("event document contract", () => {
     const promiseSection = card.match(
       /### 進行上の約束事\n\n([\s\S]*?)\n\n## /,
     )?.[1] ?? "";
-    expect(peerReviewPromises).toHaveLength(5);
+    expect(peerReviewPromises).toHaveLength(3);
     expect([...promiseSection.matchAll(/^\d+\. (.+)$/gm)].map(([, value]) => value)).toEqual(
       [...peerReviewPromises],
     );

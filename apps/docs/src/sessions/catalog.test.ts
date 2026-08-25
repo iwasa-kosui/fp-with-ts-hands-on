@@ -12,9 +12,9 @@ import {
 
 const exerciseSessions = sessions.filter((session) => session.kind === "exercise");
 const expectedPeerReviewQuestions = [
-  "この差分では、不変条件を型で守っていますか。それとも実行時の `if` で守っていますか。該当する行を1行、画面上で示してください。",
-  "この状態を壊すコードを1行書くとしたら、どう書きますか。それはコンパイルを通りますか。",
-  "自分の差分と違うところを1つ挙げてください。どちらが良いかは言わなくてよいです。",
+  "不変条件を型と実行時の `if` のどちらで守っていますか。該当する行を示してください。",
+  "この状態を壊すコードは、コンパイルを通りますか。",
+  "自分の差分との違いを1つ挙げてください。優劣は決めません。",
 ] as const;
 
 describe("session catalog invariants", () => {
@@ -119,24 +119,7 @@ describe("session catalog invariants", () => {
     ]);
   });
 
-  it("3. connects every session to the workflow and its risk handoff", () => {
-    expect(sessions.map(({ workflowFocus }) => workflowFocus)).toEqual([
-      "現状",
-      "ドメインイベント",
-      "current state",
-      "値の意味",
-      "input",
-      "expected failures",
-      "output event/side effects",
-      "境界確認",
-    ]);
-    for (const session of sessions) {
-      expect(session.workflowRisks.resolvedFromPrevious.trim()).not.toBe("");
-      expect(session.workflowRisks.remainingForNext.trim()).not.toBe("");
-    }
-  });
-
-  it("4. makes each time breakdown add up to its duration", () => {
+  it("3. makes each time breakdown add up to its duration", () => {
     for (const rawSession of sessions) {
       const session: SessionSummary = rawSession;
       expect(session.timeBreakdown).toBeDefined();
@@ -147,7 +130,7 @@ describe("session catalog invariants", () => {
     }
   });
 
-  it("5. makes each ADV breakdown add up to exercise time", () => {
+  it("4. makes each ADV breakdown add up to exercise time", () => {
     expect(exerciseSessions).toHaveLength(5);
     for (const session of exerciseSessions) {
       expect(Object.values(session.adv).reduce((sum, value) => sum + value, 0)).toBe(
@@ -156,11 +139,11 @@ describe("session catalog invariants", () => {
     }
   });
 
-  it("6. reserves exactly 180 minutes for catalog sessions", () => {
+  it("5. reserves exactly 180 minutes for catalog sessions", () => {
     expect(sessions.reduce((sum, { durationMinutes }) => sum + durationMinutes, 0)).toBe(180);
   });
 
-  it("7. gives every exercise-only metadata field to exercise sessions only", () => {
+  it("6. gives every exercise-only metadata field to exercise sessions only", () => {
     for (const rawSession of sessions) {
       const session: SessionSummary = rawSession;
       const isExercise = session.kind === "exercise";
@@ -174,7 +157,7 @@ describe("session catalog invariants", () => {
     }
   });
 
-  it("8. identifies each exercise solution without relying on its slug", () => {
+  it("7. identifies each exercise solution without relying on its slug", () => {
     expect(
       exerciseSessions.map((session) => ({
         snapshot: session.snapshot,
@@ -216,7 +199,7 @@ describe("session catalog invariants", () => {
     ]);
   });
 
-  it("9. gives every exercise one to four steps and one to three decisions", () => {
+  it("8. gives every exercise one to four steps and one to three decisions", () => {
     for (const session of exerciseSessions) {
       expect(session.steps.length).toBeGreaterThanOrEqual(1);
       expect(session.steps.length).toBeLessThanOrEqual(4);
@@ -225,7 +208,7 @@ describe("session catalog invariants", () => {
     }
   });
 
-  it("10. keeps exercise-only work fields off non-exercise sessions", () => {
+  it("9. keeps exercise-only work fields off non-exercise sessions", () => {
     for (const rawSession of sessions.filter(({ kind }) => kind !== "exercise")) {
       const session: SessionSummary = rawSession;
       expect(session.steps ?? []).toHaveLength(0);
@@ -234,24 +217,24 @@ describe("session catalog invariants", () => {
     }
   });
 
-  it("11. describes incidents and every design decision", () => {
+  it("10. describes incidents and every design decision", () => {
     for (const rawSession of sessions) {
       const session: SessionSummary = rawSession;
       expect(session.incident?.trim()).not.toBe("");
       for (const decision of session.decisions ?? []) {
-        expect([decision.invariant, decision.byType, decision.notByType].every(Boolean)).toBe(true);
+        expect(decision.invariant.trim()).not.toBe("");
       }
     }
   });
 
-  it("12. caps every exercise budget at five files and 80 effective lines", () => {
+  it("11. caps every exercise budget at five files and 80 effective lines", () => {
     for (const session of exerciseSessions) {
       expect(session.exerciseModule.fileBudget).toBeLessThanOrEqual(5);
       expect(session.exerciseModule.lineBudget).toBeLessThanOrEqual(80);
     }
   });
 
-  it("13. keeps every step target inside its exercise module", () => {
+  it("12. keeps every step target inside its exercise module", () => {
     for (const session of exerciseSessions) {
       for (const target of session.steps.flatMap(({ targets }) => targets)) {
         expect(target.startsWith(`${session.exerciseModule.dir}/`)).toBe(true);
@@ -259,7 +242,7 @@ describe("session catalog invariants", () => {
     }
   });
 
-  it("14. keeps each step solution aligned with the exercise presentation metadata", () => {
+  it("13. keeps each step solution aligned with the exercise presentation metadata", () => {
     for (const session of exerciseSessions) {
       for (const step of session.steps) {
         const solutions: unknown = Reflect.get(step, "solutions");
@@ -293,30 +276,30 @@ describe("session catalog invariants", () => {
     ]);
   });
 
-  it("15. gives peer review data to exercise sessions only", () => {
+  it("14. gives peer review data to exercise sessions only", () => {
     for (const rawSession of sessions) {
       const session: SessionSummary = rawSession;
       expect(session.peerReview !== undefined).toBe(session.kind === "exercise");
     }
   });
 
-  it("16. keeps peer review minutes equal to the review time", () => {
+  it("15. keeps peer review minutes equal to the review time", () => {
     for (const session of exerciseSessions) {
       expect(session.peerReview.minutes).toBe(session.timeBreakdown.review);
     }
   });
 
-  it("17. uses the same three formal peer review questions in every exercise", () => {
+  it("16. uses the same three formal peer review questions in every exercise", () => {
     for (const session of exerciseSessions) {
       expect(session.peerReview.questions).toEqual(expectedPeerReviewQuestions);
       expect(session.peerReview.questions.every((question) => question.trim() !== "")).toBe(true);
     }
   });
 
-  it("18. scopes the four common review checks to each current snapshot", () => {
+  it("17. scopes the three common review checks to each current snapshot", () => {
     for (const session of exerciseSessions) {
       const checks = commonReviewChecksFor(session.snapshot);
-      expect(checks).toHaveLength(4);
+      expect(checks).toHaveLength(3);
       expect(checks[1]).toContain(reviewDiffStatCommand(session.snapshot));
       expect(checks[1]).toContain(reviewStatusCommand);
       expect(checks[1]).not.toContain("`git diff --stat`");

@@ -6,7 +6,7 @@ const chapterIds = {
   orientation: ["incident", "legacy", "review"],
   workshop: ["incident", "workflow", "review"],
   exercise: ["incident", "legacy", "refactor", "review"],
-  reference: ["incident", "legacy", "review"],
+  reference: ["incident", "review"],
 } as const;
 
 const teachingSlugs: ReadonlySet<string> = new Set([

@@ -483,10 +483,6 @@
   margin-top: 0.5rem;
 }
 
-.workflow-risk-map[data-view="focused"] .decision-list {
-  list-style: none;
-}
-
 .aggregate-groups {
   display: grid;
   gap: 1.5rem;
