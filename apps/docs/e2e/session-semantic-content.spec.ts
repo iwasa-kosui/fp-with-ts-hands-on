@@ -87,3 +87,42 @@ test("S2 pitfall source path stays inside its caption on mobile", async ({ page 
 
   expect(bounds.sourceRight).toBeLessThanOrEqual(bounds.captionRight + 1);
 });
+
+test("S2 teaching explanation clears the preceding code shadow on mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize(viewports[0]);
+  await page.goto("/sessions/02-state-transitions/");
+
+  const firstTopic = page.locator(".teaching-topic").first();
+  const lastCodeBlock = firstTopic
+    .locator(".teaching-topic__diff .code-block")
+    .last();
+  const explanation = firstTopic.locator(".teaching-topic__why");
+
+  await expect(lastCodeBlock).toBeVisible();
+  await expect(explanation).toBeVisible();
+  const gap = await firstTopic.evaluate((topic) => {
+    const codeRect = topic
+      .querySelector(".teaching-topic__diff .code-block:last-child")!
+      .getBoundingClientRect();
+    const explanationRect = topic
+      .querySelector(".teaching-topic__why")!
+      .getBoundingClientRect();
+    return explanationRect.top - codeRect.bottom;
+  });
+
+  expect(gap).toBeGreaterThanOrEqual(10);
+});
+
+test("S2 teaching explanation has no left accent line on mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize(viewports[0]);
+  await page.goto("/sessions/02-state-transitions/");
+
+  const explanation = page.locator(".teaching-topic__why").first();
+  await expect(explanation).toBeVisible();
+  await expect(explanation).toHaveCSS("border-left-width", "0px");
+  await expect(explanation).toHaveCSS("padding-left", "0px");
+});
