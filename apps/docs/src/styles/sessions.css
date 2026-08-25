@@ -444,9 +444,7 @@
 }
 
 .teaching-topic__why {
-  margin-block-end: 0;
-  padding-inline-start: 0.75rem;
-  border-inline-start: 0.35rem solid var(--case-coral);
+  margin-block: 1rem 0;
 }
 
 .step-solution {
