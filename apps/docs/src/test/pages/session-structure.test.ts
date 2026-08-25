@@ -13,6 +13,7 @@ const teachingSlugs: ReadonlySet<string> = new Set([
   "02-state-transitions",
   "03-semantic-identifiers",
   "04-boundaries-and-pii",
+  "05-workflow-errors",
 ]);
 
 const withTeachChapter = (

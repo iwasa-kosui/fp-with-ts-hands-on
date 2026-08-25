@@ -6,17 +6,77 @@ import { sessionBySlug } from "../../sessions/catalog";
 
 const session = sessionBySlug("05-workflow-errors");
 if (session === undefined) throw new Error("Unknown session: 05-workflow-errors");
+
+const teaching = [
+  {
+    name: "matchは成功と失敗を分ける。失敗のkindはswitchで網羅する",
+    definition:
+      "Result.matchは成功時と失敗時の処理を分けます。失敗側のコールバックはエラーのUnion全体を受け取るため、AppointmentNotFoundとInvalidAppointmentStateはerror.kindで分岐します。",
+    before: {
+      caption: "成功と失敗だけを分けた例",
+      code: `const message = result.match(
+  () => "診察を開始しました",
+  () => "診察を開始できません",
+);`,
+    },
+    after: {
+      caption: "失敗理由まで網羅した例",
+      code: `const assertNever = (error: never): never => {
+  throw new Error(\`Unhandled error: \${JSON.stringify(error)}\`);
+};
+
+const message = result.match(
+  () => "診察を開始しました",
+  (error) => {
+    switch (error.kind) {
+      case "AppointmentNotFound":
+        return "予約が見つかりません";
+      case "InvalidAppointmentState":
+        return "受付済みの予約だけ診察を開始できます";
+      default:
+        return assertNever(error);
+    }
+  },
+);`,
+    },
+    example: {
+      caption: "AppointmentConflictを追加し、呼び出し側のcaseを足し忘れた例",
+      code: `type AppointmentConflict = Readonly<{
+  kind: "AppointmentConflict";
+}>;
+
+type StartExaminationError =
+  | AppointmentNotFound
+  | InvalidAppointmentState
+  | AppointmentConflict;
+
+const toErrorMessage = (error: StartExaminationError): string => {
+  switch (error.kind) {
+    case "AppointmentNotFound":
+      return "予約が見つかりません";
+    case "InvalidAppointmentState":
+      return "受付済みの予約だけ診察を開始できます";
+    default:
+      // errorはAppointmentConflictなので、neverへ渡せない。
+      return assertNever(error);
+  }
+};`,
+    },
+    why: "matchの2つのコールバックは、成功か失敗かを扱います。失敗側でkindをswitchし、default節でneverだけを受け取るassertNeverを呼ぶと、現在のエラーをすべて処理したことを型検査で確認できます。エラーの種類を追加してcaseを足し忘れると、default節に新しい型が残るためコンパイルエラーになります。",
+  },
+] as const;
 ---
 
-<SessionLayout session={session}>
+<SessionLayout session={session} teaching={teaching}>
   <ExerciseSessionContent
     session={session}
     guides={guides}
+    teaching={teaching}
     narrative={{
       requirement: "診察を開始する際の予期できる業務エラーを、曖昧なエラーコードではなく、型付きの値として扱えるようにする。",
-      currentRisk: "throw、undefined、例外メッセージへの依存が混在しているため、フロントエンドの受付画面でエラー理由の分岐がうまくできない。また、エラー発生後の処理も止めにくい。。",
-      design: "expected failures 欄は、kind を持つ業務エラーの判別共用体と、成功か失敗かを値で返す Result で実装する。andThen で処理を繋げることで、成功した場合のみ処理を継続するようにする。",
-      limitation: "どのエラーを業務エラーとして扱うか、フロントエンドの画面でどのような表示するかは、人の判断とレビューが必要になる。",
+      currentRisk: "throw、undefined、例外メッセージへの依存が混在しているため、フロントエンドの受付画面でエラー理由を分岐できない。また、エラー発生後の処理も止めにくい。",
+      design: "expected failures 欄は、kind を持つ業務エラーの判別共用体と、成功か失敗かを値で返す Result で実装する。andThen で成功時だけ処理をつなぎ、呼び出し側ではmatchの失敗側でerror.kindを網羅的に処理する。",
+      limitation: "どのエラーを業務エラーとして扱うか、フロントエンドの画面でどのように表示するかは、人の判断とレビューが必要になる。",
       nextQuestion: "処理が成功した場合、出力される業務イベントの保存とデータの保存をどのように整合させるか。データベースエラーのようなインフラ由来のエラーをどの境界まで伝えるか。",
       legacy: "throw や try/catch の利用、エラーメッセージに依存した判定、間違ったエラーのマッピングが行われているコードを読みます。この回では予期できる業務エラーをResultとして扱います。",
       reviewFocus: "Result を返す guard は map で入れ子にせずに、andThen で処理を繋げられているか。業務エラーが発生した場合、以降の処理やデータの保存などが適切にスキップされているか。",
