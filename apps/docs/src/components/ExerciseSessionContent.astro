@@ -80,6 +80,37 @@ const promisesHref =
   exerciseSession.peerReviewPromises === "inline"
     ? "#peer-review-promises"
     : `${sessionPath(promisesSession)}#peer-review-promises`;
+const delegationPrompt = `次の変更を実装してください。
+
+業務背景:
+${session.incident}
+
+依頼:
+${exerciseSession.delegationPrompt.request}
+
+守る不変条件: [言語化フェーズで書いた1文]
+
+着手前に判断すること:
+${exerciseSession.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
+
+まず配布コードと失敗しているテストを読み、上の判断と変更方針を短く説明してください。説明のあとで実装に進んでください。設計手段は既存コードに合うものを選び、選んだ理由も示してください。
+
+受け入れ条件:
+${session.steps.map((step) => `- ${step.goal}`).join("\n")}
+
+変更範囲:
+- ${session.exerciseModule.dir}/ のみ
+- 最大 ${session.exerciseModule.fileBudget} ファイル・約 ${session.exerciseModule.lineBudget} 行
+- 範囲外の変更が必要に見えた場合は、変更せず理由を報告する
+- 型エラーを \`as\` によるキャストで回避しない
+
+検証:
+- ${session.exerciseCommand} を実行し、すべての assertion が成功すること
+
+完了時の報告:
+- 変更したファイルと判断理由
+- 検証コマンドの結果
+- 型だけでは守れず、テストまたはレビューに残した点`;
 ---
 
 <section id="incident">
@@ -195,15 +226,13 @@ const promisesHref =
   <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
   <ol class="adv-flow">
     <li><strong>言語化（{session.adv.articulate}分）</strong>: 守るべき不変条件を1文で書く。</li>
-    <li><strong>依頼（{session.adv.delegate}分）</strong>: 不変条件をもとにプロンプトを作成し、Agent に依頼する</li>
+    <li><strong>依頼（{session.adv.delegate}分）</strong>: 不変条件と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
     <li><strong>検証（{session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
   </ol>
   <div class="delegation-prompt">
     <h3>プロンプトのテンプレート</h3>
-    <pre><code>{`${session.exerciseModule.dir}/ の中だけを変更してください。
-不変条件: ____________
-検証: ${session.exerciseCommand} を全てパスすること。
-禁止: as によるキャスト。モジュール外のファイルの変更。`}</code></pre>
+    <p>角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。技法名や完成形を先に指定する必要はありません。</p>
+    <pre><code>{delegationPrompt}</code></pre>
   </div>
   <h3>この演習で解決しないこと</h3>
   <p>{narrative.limitation}</p>

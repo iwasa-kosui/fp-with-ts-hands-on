@@ -18,6 +18,33 @@ const reviewPromises = [
   "TAは「よくできた実装」を選びません。選定基準を参加者にも開示します。",
 ] as const;
 
+const delegationDecisionsBySlug = {
+  "02-state-transitions": [
+    "どの状態からどの状態への遷移を許可するか",
+    "各状態で必須にする情報は何か",
+    "状態追加時の分岐漏れをどこで検出するか",
+  ],
+  "03-semantic-identifiers": [
+    "どの識別子を別の用途として扱うか",
+    "用途の区別をどの状態や関数まで伝えるか",
+    "取り違えをコンパイルエラーとしてどう残すか",
+  ],
+  "04-boundaries-and-pii": [
+    "外部入力を信頼済みの値へ変える境界はどこか",
+    "連絡先を取り出してよい処理はどこか",
+  ],
+  "05-workflow-errors": [
+    "何を予期できる業務上の失敗として扱うか",
+    "呼び出し側が分岐に使う安定した情報は何か",
+    "失敗後に実行してはいけない処理は何か",
+  ],
+  "06-effects-and-consistency": [
+    "実行ごとに変わる値をいつ生成するか",
+    "どの状態と記録を同時に保存するか",
+    "保存障害をどの境界まで伝えるか",
+  ],
+} as const;
+
 describe("exercise session contract", () => {
   for (const session of exercises) {
     it(`renders every catalog value for ${session.slug}`, async () => {
@@ -132,6 +159,33 @@ describe("exercise session contract", () => {
       expect(legacy.querySelector("[data-code-explorer]")).not.toBeNull();
       expect(legacy.querySelectorAll('[data-phase="red"]')).toHaveLength(1);
     }
+  });
+
+  it("turns each exercise brief into a practical prompt without deciding the design for the participant", async () => {
+    const renderedPrompts = new Set<string>();
+
+    for (const session of exercises) {
+      const document = await renderSessionPage(session);
+      const prompt = document.querySelector(".delegation-prompt pre code")
+        ?.textContent ?? "";
+
+      expect(prompt).toContain("業務背景:");
+      expect(prompt).toContain(session.incident);
+      expect(prompt).toContain("守る不変条件: [");
+      expect(prompt).toContain("着手前に判断すること:");
+      for (const decision of delegationDecisionsBySlug[session.slug]) {
+        expect(prompt).toContain(`${decision}: [`);
+      }
+      expect(prompt).toContain("受け入れ条件:");
+      for (const step of session.steps) expect(prompt).toContain(step.goal);
+      expect(prompt).toContain(session.exerciseModule.dir);
+      expect(prompt).toContain(session.exerciseCommand);
+      expect(prompt).toContain("変更したファイルと判断理由");
+      expect(prompt).toContain("型だけでは守れず、テストまたはレビューに残した点");
+      renderedPrompts.add(prompt);
+    }
+
+    expect(renderedPrompts.size).toBe(exercises.length);
   });
 
   it("shows the S2 pitfall as a concrete TypeScript example before the goal", async () => {
