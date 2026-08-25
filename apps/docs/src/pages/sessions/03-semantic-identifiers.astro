@@ -28,7 +28,7 @@ export const PetId = { schema, parse: schema.parse } as const;`,
 export type PetId = z.infer<typeof schema>;
 export const PetId = { schema, parse: schema.parse } as const;`,
     },
-    why: "before の PetId は string の別名です。名前は付いていますが、OwnerId も ExamId も同じ string なので、互いに代入できます。after では brand が付いた別の型になり、代入すると型検査で止まります。ここで区別しているのは値の形式ではなく用途です。3つとも実体は同じ UUID の文字列なので、z.string().uuid() のバリデーションでは区別はできません。配布済みの ExamId が同じ書き方をしているので、お手本として読んでから残りも修正しましょう。",
+    why: "開始時点にある5種類の識別子のうち、AppointmentId、ExamId、VeterinarianId にはすでに brand があります。PetId と OwnerId には brand がなく、どちらも string として扱われるため互いに代入できます。演習では、この2種類にも brand を付けて型検査で区別できるようにします。ここで区別しているのは値の形式ではなく用途です。どちらも実体は UUID の文字列なので、z.string().uuid() のバリデーションだけでは区別できません。配布済みの3種類をお手本として読んでから修正しましょう。",
   },
   {
     name: "識別子をドメインモデルと状態遷移で利用する",
@@ -65,7 +65,7 @@ export const startExamination = (
   examinationStartedAt: string,
 ): InExamination =>`,
     },
-    why: "before では appointmentId も petId も ownerId も string です。3つを取り違えて代入したり、引数の順番を入れ替えたりしても、コンパイルは通ってしまいます。after では3つがそれぞれ別の型になり、互いに代入ができなくなります。遷移関数の veterinarianId も同じで、引数の型を string のままにすると、間違えて予約の識別子を担当獣医師の識別子として渡しても型検査で検出できません。状態の型と関数の引数の両方で Branded Types を利用することで、取り違えを防止することができます。",
+    why: "before の予約状態では、appointmentId、petId、ownerId をすべて string として保持しており、既存の用途別の型を使っていません。そのため、OwnerId を PetId の位置へ渡してもコンパイルは通ります。after では3つのフィールドにそれぞれの識別子型を使い、互いに代入できないようにします。遷移関数の veterinarianId も同じです。状態の型と関数の引数の両方で用途別の型を使うと、異なる用途の識別子を渡す誤りを型検査で止められます。",
   },
   {
     name: "@ts-expect-error による型テスト",
@@ -96,12 +96,12 @@ startExamination(checkedIn, scheduled.appointmentId, "2026-08-30T06:30:00.000Z")
     guides={guides}
     teaching={teaching}
     narrative={{
-      requirement: "予約・ペット・飼い主・担当獣医師の識別子を、取り違えられない形で扱う。",
-      currentRisk: "4種類の識別子がすべて同じ UUID の文字列なので、ラボから届いた検査結果を別の患者へ結び付けてもコンパイルエラーにならない。",
+      requirement: "予約・検査・ペット・飼い主・担当獣医師の識別子を、用途ごとに区別して扱う。",
+      currentRisk: "開始スナップショットにある5種類の識別子のうち、PetId と OwnerId だけはどちらも素の UUID 文字列です。検査結果を登録するときに OwnerId を PetId の位置へ渡しても、型検査では止まりません。",
       design: "ワークフローが受け取る型を用途ごとの Branded Type で定義し、予約の状態を表す型・状態遷移関数の両方で利用する。",
-      limitation: "データベースなどの永続化層から取り出した値が正しい識別子かどうかは、境界で parse して確かめる必要がある。",
+      limitation: "異なる用途の識別子は区別できますが、同じ PetId 型の別のペットを選ぶ誤りは型だけでは検出できない。",
       nextQuestion: "外部から入力される JSON が期待した形になっているかをどこで確かめるか。",
-      legacy: "配布済みの ExamId と、素の string のままの PetId・OwnerId を読み比べ、予約の各状態が識別子をどのように定義しているかを確認します。",
+      legacy: "branded 済みの AppointmentId・ExamId・VeterinarianId と、素の string のままの PetId・OwnerId を読み比べ、予約の各状態が識別子をどのように定義しているかを確認します。",
       reviewFocus: "識別子の型を、状態の型と状態遷移関数の引数の両方で利用できているか",
       fallback: "現在の3ステップを順に開き、まず PetId と OwnerId に brand をコピペします。次に予約の各状態を表す型と状態遷移関数にも反映し、取り違えがコンパイルエラーになることを型テストで確かめます。相互レビューの約束事はS2のリンク先を確認します。",
     }}
