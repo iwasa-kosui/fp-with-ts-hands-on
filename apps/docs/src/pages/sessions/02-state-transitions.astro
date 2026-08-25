@@ -194,10 +194,10 @@ startExamination(
   "2026-08-30T10:00:00+09:00",
 );`,
       },
-      design: "Scheduled | CheckedIn | InExamination | Paid | Canceled の判別共用体を、遷移関数と分岐でも一貫して使います。状態の変更は、許可した遷移元だけを受け取る純粋関数にします。分岐では網羅チェックを行い、状態を追加したときの見直し漏れもコンパイラで検知します。",
+      design: "Scheduled | CheckedIn | InExamination | Paid | Canceled の判別共用体を、遷移関数と分岐でも一貫して使います。状態の変更は、許可した遷移元だけを受け取る純粋関数にします。分岐では網羅チェックを行い、状態を追加したときの未対応の分岐をコンパイルエラーにします。",
       limitation: "この型が守れるのは、TypeScript が検査できる値だけです。外部から届く未検証の値や、型アサーションで作った値は防げません。",
       nextQuestion: "外部入力をどこで検証し、同じ文字列形式のIDや公開してよい情報をどう区別するか。",
-      legacy: "Appointment 全体を受け取る遷移関数、throw、as Appointment、default 分岐を探します。これらは、許可されていない状態遷移や分岐の見直し漏れを、コンパイラで止められない箇所です。",
+      legacy: "Appointment 全体を受け取る遷移関数、throw、as Appointment、default 分岐を探します。これらは、許可されていない状態遷移や、状態追加時の未対応の分岐をコンパイラで止められない箇所です。",
       reviewFocus: "toStatusLabel の default が assertNever を呼び、新しい状態を足すとコンパイルエラーになるか。",
       fallback: "解答スナップショットをステップ単位で開き、まず遷移関数の引数型、その後に網羅分岐をコピペします。相互レビューは行いましょう。",
     }}

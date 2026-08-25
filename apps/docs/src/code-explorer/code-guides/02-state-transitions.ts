@@ -16,7 +16,7 @@ export default [
     id: "non-exhaustive-label",
     title: "current state の表示分岐が未知の状態を見逃す",
     currentDesign: "current state の kind を string として受け、default で不明を返します。",
-    futureRisk: "状態を追加しても見直すべき分岐をコンパイラが知らせません。",
+    futureRisk: "状態を追加しても、未対応の分岐がコンパイルエラーになりません。",
     path: "src/domain/appointment/statusLabel.ts",
     highlights: [{ startLineNumber: 3, endLineNumber: 17 }],
   },

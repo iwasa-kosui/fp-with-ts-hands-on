@@ -20,7 +20,7 @@ describe("Step 3: 全遷移の入口を状態型で絞る", () => {
   });
 });
 
-describe("Step 4: 状態追加時に表示分岐を見直す", () => {
+describe("Step 4: 状態追加時に未対応の分岐をコンパイルエラーにする", () => {
   it("6つ目の状態を足すと status label がコンパイルできない", () => {
     expect(compileTypeFixture("s2-status-exhaustive.ts")).toEqual([]);
   });

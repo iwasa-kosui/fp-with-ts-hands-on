@@ -15,7 +15,7 @@ describe("S2 regression: 予約状態を型で制約する", () => {
     expect(compileTypeFixture("s2-transition-sources.ts")).toEqual([]);
   });
 
-  it("6つ目の状態を足すと status label の分岐を見直せる", () => {
+  it("6つ目の状態を足すと status label がコンパイルできない", () => {
     expect(compileTypeFixture("s2-status-exhaustive.ts")).toEqual([]);
   });
 });

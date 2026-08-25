@@ -253,7 +253,7 @@ export const sessions = [
     solutionPresentation: "excerpt",
     peerReviewPromises: "inline",
     animal: { name: "RABBIT", type: "rabbit", avatar: "🐇" },
-    summary: "予約の5状態と許可された遷移を型へ移し、終端状態からの逆行を防ぎます。",
+    summary: "予約の5状態を判別共用体で表し、許可されていない状態遷移を型で拒否します。",
     incident: "会計済みの来院が診察中へ戻され、会計が二度行われた。",
     exerciseCommand: "pnpm exercise:02",
     exerciseModule: {
@@ -305,8 +305,8 @@ export const sessions = [
     ],
     decisions: [
       {
-        invariant: "終端状態から以前の状態へ戻らない。",
-        byType: "遷移元を関数の引数型で限定し、逆行遷移の関数を作らない。",
+        invariant: "許可されていない状態遷移を型で拒否する。",
+        byType: "各遷移関数の引数型を、許可された遷移元だけに限定する。",
         notByType: "呼び出し側が型アサーションで状態を捏造することは型だけでは防げない。",
       },
       {
@@ -315,7 +315,7 @@ export const sessions = [
         notByType: "外部 JSON からの復元には、別途境界での検証が必要になる。",
       },
       {
-        invariant: "状態を増やしたらすべての分岐を見直す。",
+        invariant: "状態を追加したとき、未対応の分岐をコンパイルエラーにする。",
         byType: "assertNever で switch の網羅性を検査する。",
         notByType: "「不明」を返す default 分岐へ戻せば検査を回避できるため、レビューも必要になる。",
       },
