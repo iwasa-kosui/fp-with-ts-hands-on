@@ -29,33 +29,51 @@ switch (appointment.kind) {
 
 const teaching = [
   {
-    name: "Unionは候補をまとめ、Discriminated Unionは状態と情報を結びつける",
+    name: "Discriminated Unionは共通のkindで型を絞り込める",
     definition:
-      "Unionは、値が複数の型のうち、いずれか1つであることを表します。Discriminated Unionは、各オブジェクトが共通の判別フィールドを持ち、その値がオブジェクトごとに異なるリテラル型になっているUnionです。TypeScriptの特別な構文ではなく、Unionを状態の表現に使うためのパターンです。",
+      "Unionは、値が複数の型のうち、いずれか1つであることを表します。判別フィールドを持たないオブジェクトのUnionでは、固有のプロパティがあるかどうかを調べて型を絞り込みます。Discriminated Unionは、すべてのオブジェクト型に共通の判別フィールドを置き、型ごとに異なるリテラル値を割り当てたUnionです。",
     before: {
-      caption: "普通のUnion（説明用の簡略例）",
-      code: `type AppointmentKind =
-  | "Scheduled"
-  | "CheckedIn";
+      caption: "判別フィールドを持たないオブジェクトのUnion",
+      code: `type Appointment =
+  | Readonly<{ scheduledAt: string }>
+  | Readonly<{ scheduledAt: string; checkedInAt: string }>
+  | Readonly<{
+      scheduledAt: string;
+      checkedInAt: string;
+      examinationStartedAt: string;
+    }>;
 
-const kind: AppointmentKind = "Scheduled";`,
+const toStatusLabel = (appointment: Appointment): string => {
+  if ("examinationStartedAt" in appointment) return "診察中";
+  if ("checkedInAt" in appointment) return "来院済み";
+  return "予約済み";
+};`,
     },
     after: {
-      caption: "Discriminated Union（説明用の簡略例）",
-      code: `type Scheduled = Readonly<{
-  kind: "Scheduled";
-  scheduledAt: string;
-}>;
+      caption: "kindを持つDiscriminated Union",
+      code: `type Appointment =
+  | Readonly<{ kind: "Scheduled"; scheduledAt: string }>
+  | Readonly<{
+      kind: "CheckedIn";
+      scheduledAt: string;
+      checkedInAt: string;
+    }>
+  | Readonly<{
+      kind: "InExamination";
+      scheduledAt: string;
+      checkedInAt: string;
+      examinationStartedAt: string;
+    }>;
 
-type CheckedIn = Readonly<{
-  kind: "CheckedIn";
-  scheduledAt: string;
-  checkedInAt: string;
-}>;
-
-type Appointment = Scheduled | CheckedIn;`,
+const toStatusLabel = (appointment: Appointment): string => {
+  switch (appointment.kind) {
+    case "Scheduled": return "予約済み";
+    case "CheckedIn": return "来院済み";
+    case "InExamination": return "診察中";
+  }
+};`,
     },
-    why: "AppointmentKind は状態名の候補だけを表します。状態ごとに必要な情報が違う場合は、状態名だけでは足りません。Discriminated Unionでは、各オブジェクトが共通の kind を持ち、その値を Scheduled や CheckedIn のようなリテラル型にします。これにより、CheckedIn には checkedInAt が必須であることまで型で表せます。普通のUnionが不適切なわけではありません。候補だけを表すなら普通のUnion、状態と必須情報を結びつけるならDiscriminated Unionを使います。",
+    why: "判別フィールドがない例では、checkedInAtやexaminationStartedAtの有無と、判定する順序に依存します。InExaminationにもcheckedInAtがあるため、先にcheckedInAtを調べると誤判定します。状態が増えるほど条件は複雑になります。共通のkindがあれば、switchでkindの値を確認するだけで各型へ絞り込めます。状態固有の必須情報を持てること自体は、どちらのUnionでも同じです。違いは、どの型かを判別する共通フィールドがあるかどうかです。",
   },
   {
     name: "遷移関数の引数型で、受け取れる状態を限定する",

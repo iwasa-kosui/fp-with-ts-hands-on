@@ -179,6 +179,22 @@ describe("exercise session contract", () => {
     expect(refactor.querySelector("[data-exhaustiveness-note]")).toBeNull();
   });
 
+  it("contrasts an untagged object Union with S2 discriminant narrowing", async () => {
+    const session = exercises.find(({ sequence }) => sequence === "02")!;
+    const document = await renderSessionPage(session);
+    const firstTopic = document.querySelector("#teach .teaching-topic")!;
+    const topicText = firstTopic.textContent ?? "";
+    const examples = [...firstTopic.querySelectorAll("pre code")].map(
+      (code) => code.textContent ?? "",
+    );
+
+    expect(topicText).toContain("判別フィールドを持たないオブジェクトのUnion");
+    expect(topicText).toContain("共通のkind");
+    expect(examples[0]).toContain('"examinationStartedAt" in appointment');
+    expect(examples[1]).toContain("switch (appointment.kind)");
+    expect(examples.join("\n")).not.toContain("type AppointmentKind");
+  });
+
   it("uses catalog presentation metadata for answers and peer-review promises", async () => {
     const promisesSession = exercises.find(
       ({ peerReviewPromises }) => peerReviewPromises === "inline",
