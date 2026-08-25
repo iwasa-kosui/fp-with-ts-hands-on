@@ -132,4 +132,25 @@ describe("session page structure", () => {
     expect(reviewText).toContain("予約");
     expect(reviewText).toContain("診察を始める");
   });
+
+  it("keeps the S2 transition and exhaustiveness claims aligned across the page", async () => {
+    const session = sessions.find(({ slug }) => slug === "02-state-transitions")!;
+    const document = await renderSessionPage(session);
+    const summary = document.querySelector(".case-file__summary")?.textContent ?? "";
+    const opening = document.querySelector("#incident")!;
+    const invariants = [
+      ...opening.querySelectorAll<HTMLElement>(".decision-list li"),
+    ].map(({ textContent }) => textContent ?? "");
+    const refactor = document.querySelector("#refactor")?.textContent ?? "";
+
+    expect(summary).toContain("許可されていない状態遷移を型で拒否");
+    expect(invariants).toContain("許可されていない状態遷移を型で拒否する。");
+    expect(invariants).toContain(
+      "状態を追加したとき、未対応の分岐をコンパイルエラーにする。",
+    );
+    expect(refactor).toContain("型アサーションで作った値は防げません");
+    expect(document.body.textContent).not.toContain(
+      "状態を増やしたらすべての分岐を見直す",
+    );
+  });
 });

@@ -247,7 +247,7 @@ describe("session catalog references", () => {
           },
           {
             id: "s2-exhaustive-label",
-            group: "Step 4: 状態追加時に表示分岐を見直す",
+            group: "Step 4: 状態追加時に未対応の分岐をコンパイルエラーにする",
             assertion: "6つ目の状態を足すと status label がコンパイルできない",
           },
         ],
