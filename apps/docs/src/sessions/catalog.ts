@@ -574,6 +574,7 @@ export const sessions = [
     finalReferences: [
       "examples/final/src/useCase/errors.ts",
       "examples/final/src/useCase/startExaminationUseCase.ts",
+      "examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts",
       "examples/final/src/adaptor/primary/web/middleware/useCaseResponse.ts",
     ],
   },

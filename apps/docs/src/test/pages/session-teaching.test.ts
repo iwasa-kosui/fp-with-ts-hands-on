@@ -98,3 +98,31 @@ describe("S4 teaching section", () => {
     expect(teach).not.toContain("isErr");
   });
 });
+
+describe("S5 teaching section", () => {
+  const session = sessionBySlug("05-workflow-errors")!;
+
+  it("separates Result branching from exhaustive error-kind handling", async () => {
+    const document = await renderSessionPage(session);
+    const teach = document.querySelector("#teach");
+    const text = teach?.textContent ?? "";
+    const [matchOnly = "", exhaustive = "", addedError = ""] = [
+      ...(teach?.querySelectorAll("pre code") ?? []),
+    ].map(({ textContent }) => textContent ?? "");
+
+    expect(text).toContain("matchは成功と失敗を分ける");
+    expect(matchOnly).toContain(".match(");
+    expect(matchOnly).not.toContain("switch (error.kind)");
+    expect(exhaustive).toContain(".match(");
+    expect(exhaustive).toContain("switch (error.kind)");
+    expect(exhaustive).toContain('case "AppointmentNotFound"');
+    expect(exhaustive).toContain('case "InvalidAppointmentState"');
+    expect(exhaustive).toContain("return assertNever(error)");
+    expect(addedError).toContain('kind: "AppointmentConflict"');
+    expect(addedError).toContain("return assertNever(error)");
+    expect(text).toContain("コンパイルエラー");
+    expect(session.finalReferences).toContain(
+      "examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts",
+    );
+  });
+});
