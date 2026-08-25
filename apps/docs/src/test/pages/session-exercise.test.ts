@@ -163,6 +163,28 @@ describe("exercise session contract", () => {
     ).not.toBe(0);
   });
 
+  it("explains how assertNever reports an unhandled S2 state", async () => {
+    const session = exercises.find(({ sequence }) => sequence === "02")!;
+    const document = await renderSessionPage(session);
+    const refactor = document.querySelector("#refactor")!;
+    const solutions = [...refactor.querySelectorAll("details.step-solution")];
+    const note = refactor.querySelector<HTMLElement>("[data-exhaustiveness-note]");
+    const noteText = note?.textContent ?? "";
+    const example = note?.querySelector("pre code")?.textContent ?? "";
+
+    expect(note?.querySelector("h4")?.textContent).toContain(
+      "assertNeverによる網羅性チェックの仕組み",
+    );
+    expect(noteText).toContain("Appointment.kind");
+    expect(noteText).toContain("never");
+    expect(noteText).toContain("コンパイルエラー");
+    expect(example).toContain('case "NoShow": の実装を忘れると');
+    expect(example).toContain("return assertNever(appointment)");
+    expect(
+      solutions.at(-1)!.compareDocumentPosition(note!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
+  });
+
   it("uses catalog presentation metadata for answers and peer-review promises", async () => {
     const promisesSession = exercises.find(
       ({ peerReviewPromises }) => peerReviewPromises === "inline",

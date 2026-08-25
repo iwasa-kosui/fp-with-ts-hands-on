@@ -1,4 +1,5 @@
 ---
+import { Code } from "astro:components";
 import ExerciseSessionContent from "../../components/ExerciseSessionContent.astro";
 import guides from "../../code-explorer/code-guides/02-state-transitions";
 import SessionLayout from "../../layouts/SessionLayout.astro";
@@ -6,6 +7,26 @@ import { sessionBySlug } from "../../sessions/catalog";
 
 const session = sessionBySlug("02-state-transitions");
 if (session === undefined) throw new Error("Unknown session: 02-state-transitions");
+
+const missingNoShowCase = `// もし後から Appointment に "NoShow"（無断キャンセル）を追加した場合...
+switch (appointment.kind) {
+  case "Scheduled":
+    return "予約済み";
+  case "CheckedIn":
+    return "来院済み";
+  case "InExamination":
+    return "診察中";
+  case "Paid":
+    return "会計済み";
+  case "Canceled":
+    return "キャンセル";
+  // ❌ case "NoShow": の実装を忘れると...
+  default:
+    // ここで appointment は NoShow 型と推論される
+    // エラー: 型 'NoShow' の引数を型 'never' のパラメーターに
+    // 割り当てることはできません
+    return assertNever(appointment);
+}`;
 ---
 
 <SessionLayout session={session}>
@@ -44,8 +65,32 @@ startExamination(
       limitation: "この型が守れるのは、TypeScript が検査できる値だけです。外部から届く未検証の値や、型アサーションで作った値は防げません。",
       nextQuestion: "外部入力をどこで検証し、同じ文字列形式のIDや公開してよい情報をどう区別するか。",
       legacy: "Appointment 全体を受け取る遷移関数、throw、as Appointment、default 分岐を探します。これらは、許可されていない状態遷移や分岐の見直し漏れを、コンパイラで止められない箇所です。",
-      reviewFocus: "toStatusLabel の default が消え、新しい状態を足すとコンパイルエラーになるか。",
+      reviewFocus: "toStatusLabel の default が assertNever を呼び、新しい状態を足すとコンパイルエラーになるか。",
       fallback: "解答スナップショットをステップ単位で開き、まず遷移関数の引数型、その後に網羅分岐をコピペします。相互レビューは行いましょう。",
     }}
-  />
+  >
+    <article slot="solution-note" class="teaching-topic" data-exhaustiveness-note>
+      <h4>💡 コラム: assertNeverによる網羅性チェックの仕組み</h4>
+      <p>
+        <code>Appointment.kind</code> は、判別共用体の各状態を見分けるための値です。<code>switch</code>
+        で <code>Scheduled</code>、<code>CheckedIn</code> など、現在定義されている状態をすべて処理すると、<code>default</code>
+        に到達できる値は残りません。そのためTypeScriptは、<code>default</code> 内の <code>appointment</code>
+        を「絶対にあり得ない値」を表す <code>never</code> 型と推論します。
+      </p>
+      <p>
+        <code>assertNever</code> は、<code>never</code> 型の値しか受け取れない関数です。すべての状態を処理できている間は、<code>default</code>
+        の <code>appointment</code> も <code>never</code> なので、型検査を通過します。
+      </p>
+      <figure class="code-block">
+        <figcaption>新しい状態を追加し、表示名の実装を忘れた例</figcaption>
+        <Code code={missingNoShowCase} lang="ts" />
+      </figure>
+      <p class="teaching-topic__why">
+        <strong>なぜ安全網になるのか:</strong> <code>NoShow</code> を <code>Appointment</code>
+        に追加したのに分岐を足し忘れると、<code>default</code> に残る値は <code>never</code> ではなく <code>NoShow</code>
+        になります。<code>NoShow</code> は <code>assertNever</code>
+        に渡せないため、その場でコンパイルエラーになります。網羅チェックを置いたすべての分岐で修正漏れがエラーとして現れるので、新しい状態の影響箇所をコンパイラに探してもらえます。
+      </p>
+    </article>
+  </ExerciseSessionContent>
 </SessionLayout>

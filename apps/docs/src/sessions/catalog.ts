@@ -317,7 +317,7 @@ export const sessions = [
       {
         invariant: "状態を増やしたらすべての分岐を見直す。",
         byType: "assertNever で switch の網羅性を検査する。",
-        notByType: "default を書き戻せば検査を回避できるためレビューが必要になる。",
+        notByType: "「不明」を返す default 分岐へ戻せば検査を回避できるため、レビューも必要になる。",
       },
     ],
     finalReferences: [
