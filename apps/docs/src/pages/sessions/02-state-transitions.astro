@@ -72,24 +72,26 @@ startExamination(
     <article slot="solution-note" class="teaching-topic" data-exhaustiveness-note>
       <h4>💡 コラム: assertNeverによる網羅性チェックの仕組み</h4>
       <p>
-        <code>Appointment.kind</code> は、判別共用体の各状態を見分けるための値です。<code>switch</code>
-        で <code>Scheduled</code>、<code>CheckedIn</code> など、現在定義されている状態をすべて処理すると、<code>default</code>
-        に到達できる値は残りません。そのためTypeScriptは、<code>default</code> 内の <code>appointment</code>
+        <code>Appointment.kind</code> は、判別共用体で現在の状態を見分けるための値です。<code>switch</code>
+        で <code>Scheduled</code> や <code>CheckedIn</code> などの全状態を処理すると、未処理の状態は残りません。TypeScriptは、どの
+        <code>case</code> にも該当せず <code>default</code> へ進む <code>appointment</code>
         を「絶対にあり得ない値」を表す <code>never</code> 型と推論します。
       </p>
       <p>
-        <code>assertNever</code> は、<code>never</code> 型の値しか受け取れない関数です。すべての状態を処理できている間は、<code>default</code>
-        の <code>appointment</code> も <code>never</code> なので、型検査を通過します。
+        <code>assertNever</code> は、<code>never</code> 型だけを引数に取る関数です。全状態を処理できていれば、<code>default</code>
+        内の <code>appointment</code> は <code>never</code> です。このため、<code>assertNever(appointment)</code>
+        は型検査を通過します。
       </p>
       <figure class="code-block">
-        <figcaption>新しい状態を追加し、表示名の実装を忘れた例</figcaption>
+        <figcaption><code>NoShow</code> を追加したものの、表示名の分岐を追加し忘れた例</figcaption>
         <Code code={missingNoShowCase} lang="ts" />
       </figure>
       <p class="teaching-topic__why">
-        <strong>なぜ安全網になるのか:</strong> <code>NoShow</code> を <code>Appointment</code>
-        に追加したのに分岐を足し忘れると、<code>default</code> に残る値は <code>never</code> ではなく <code>NoShow</code>
-        になります。<code>NoShow</code> は <code>assertNever</code>
-        に渡せないため、その場でコンパイルエラーになります。網羅チェックを置いたすべての分岐で修正漏れがエラーとして現れるので、新しい状態の影響箇所をコンパイラに探してもらえます。
+        <strong>なぜ安全網になるのか:</strong> <code>Appointment</code> に <code>NoShow</code>
+        を追加したあと、<code>switch</code> に <code>case "NoShow"</code> を足し忘れたとします。このとき、<code>default</code>
+        内の <code>appointment</code> は <code>never</code> ではなく <code>NoShow</code> です。<code>NoShow</code> は
+        <code>assertNever</code>
+        に渡せないため、コンパイルエラーになります。同じ網羅性チェックを使うほかの分岐でも、修正漏れがあればエラーになります。新しい状態の影響箇所をコンパイラが示すため、変更時の見落としを減らせます。
       </p>
     </article>
   </ExerciseSessionContent>
