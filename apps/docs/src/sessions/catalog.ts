@@ -676,9 +676,9 @@ export const sessions = [
     ],
     decisions: [
       {
-        invariant: "ドメイン関数は同じ入力から同じ結果を返す。",
-        byType: "ClockとEventIdGeneratorを1メソッドportとして注入する。",
-        notByType: "port を迂回して Date や randomUUID を直接呼ぶことは、レビューで検出する。",
+        invariant: "時刻とイベント ID は1回のワークフロー実行で一度だけ生成し、同じ実行コンテキストから状態と監査記録を作る。",
+        byType: "Clock と EventIdGenerator を1メソッド port として注入し、ワークフローで EventContext を一度だけ作って純粋な状態遷移へ渡す。",
+        notByType: "ワークフローが port を1回だけ呼ぶことと、Date や randomUUID を直接呼ばないことは、テストとレビューで確認する。",
       },
       {
         invariant: "状態と監査記録は同時に残るか、どちらも残らない。",

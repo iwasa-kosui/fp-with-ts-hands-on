@@ -20,7 +20,7 @@ if (session === undefined) {
       currentRisk:
         "時刻と ID を処理中に直接作り、状態と監査記録を別々に保存するため、テスト結果が安定せず、片方だけが残り得る。",
       design:
-        "業務イベントと side effects 欄は、注入した実行コンテキスト、ExaminationStarted、単一の store で実装する。予約が存在しない・予約の状態が不正・予約が競合しているケースは Result のエラーを返す。データベース起因のエラーやデータが破損しているエラーは業務エラーには変換せず、Promise の reject として外側の境界へ伝える。",
+        "Clock と EventIdGenerator を port として注入し、副作用を調整するワークフローで EventContext を一度だけ生成する。純粋な状態遷移にはその EventContext を渡し、状態と監査記録を表す ExaminationStarted を単一の store へ保存する。予約が存在しない・予約の状態が不正・予約が競合しているケースは Result のエラーを返す。データベース起因のエラーやデータが破損しているエラーは業務エラーには変換せず、Promise の reject として外側の境界へ伝える。",
       limitation:
         "in-memory の一括保存は契約の形を示す。本番の永続化層でアトミック性を守るには、transaction と結合テストが必要になる。",
       nextQuestion:
