@@ -123,11 +123,33 @@ export type PublicCodeExplorerSnapshot = Exclude<
   "session-01" | "session-07"
 >;
 
-export const peerReviewQuestions = [
-  "不変条件を型と実行時の `if` のどちらで守っていますか。該当する行を示してください。",
-  "この状態を壊すコードは、コンパイルを通りますか。",
-  "自分の差分との違いを1つ挙げてください。優劣は決めません。",
-] as const;
+export const peerReviewQuestionsBySequence = {
+  "02": [
+    "`startExamination` は `CheckedIn` だけを受け取り、会計済み・キャンセル済みを型で拒否しますか。",
+    "`Canceled` の `reason` など、状態ごとの必須情報を省略できない型ですか。",
+    "状態を追加したとき、`assertNever` によって未対応の分岐がコンパイルエラーになりますか。",
+  ],
+  "03": [
+    "`PetId` と `OwnerId` を取り違えたコードは、型テストでコンパイルエラーになりますか。",
+    "予約の全状態で、識別子が用途別の型になっていますか。",
+    "状態遷移の引数に `string` が残らず、用途別の識別子を受け取っていますか。",
+  ],
+  "04": [
+    "外部 JSON は、Zod の検証に成功したときだけ `ExamResult` になりますか。",
+    "氏名・電話番号・メールは、`JSON.stringify` と `util.inspect` のどちらでも既定でマスクされますか。",
+    "`OwnerContact` の各項目は、平文の `string` ではなく `Sensitive` になっていますか。",
+  ],
+  "05": [
+    "予約なしと状態不正は、異なる `kind` を持つ `Err` になっていますか。",
+    "`andThen` は、成功したときだけ次の検証と状態遷移へ進みますか。",
+    "業務エラーの後に、状態の保存が実行されない構造になっていますか。",
+  ],
+  "06": [
+    "時刻とイベント ID は実行ごとに一度だけ生成され、同じ `EventContext` に入りますか。",
+    "状態と監査記録は、1つのイベントとして同じ `store` に渡されますか。",
+    "業務上の競合だけを `Result` で返し、保存障害は reject のまま伝播しますか。",
+  ],
+} as const;
 
 export const peerReviewPromises = [
   "人ではなく差分を見ます。「この差分は」で話し始め、優劣をつけません。",
@@ -211,7 +233,11 @@ export const sessions = [
     durationMinutes: 30,
     timeBreakdown: { brief: 4, teach: 6, exercise: 13, review: 7 },
     adv: { articulate: 2, delegate: 9, verify: 2 },
-    peerReview: { minutes: 7, pickCount: 2, questions: peerReviewQuestions },
+    peerReview: {
+      minutes: 7,
+      pickCount: 2,
+      questions: peerReviewQuestionsBySequence["02"],
+    },
     solutionSnapshot: "session-03",
     solutionPresentation: "excerpt",
     peerReviewPromises: "inline",
@@ -291,7 +317,11 @@ export const sessions = [
     durationMinutes: 30,
     timeBreakdown: { brief: 4, teach: 6, exercise: 13, review: 7 },
     adv: { articulate: 2, delegate: 9, verify: 2 },
-    peerReview: { minutes: 7, pickCount: 2, questions: peerReviewQuestions },
+    peerReview: {
+      minutes: 7,
+      pickCount: 2,
+      questions: peerReviewQuestionsBySequence["03"],
+    },
     solutionSnapshot: "session-04",
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
@@ -382,7 +412,11 @@ export const sessions = [
     durationMinutes: 30,
     timeBreakdown: { brief: 4, teach: 7, exercise: 12, review: 7 },
     adv: { articulate: 2, delegate: 8, verify: 2 },
-    peerReview: { minutes: 7, pickCount: 2, questions: peerReviewQuestions },
+    peerReview: {
+      minutes: 7,
+      pickCount: 2,
+      questions: peerReviewQuestionsBySequence["04"],
+    },
     solutionSnapshot: "session-05",
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
@@ -441,7 +475,11 @@ export const sessions = [
     durationMinutes: 30,
     timeBreakdown: { brief: 4, teach: 3, exercise: 15, review: 8 },
     adv: { articulate: 2, delegate: 10, verify: 3 },
-    peerReview: { minutes: 8, pickCount: 2, questions: peerReviewQuestions },
+    peerReview: {
+      minutes: 8,
+      pickCount: 2,
+      questions: peerReviewQuestionsBySequence["05"],
+    },
     solutionSnapshot: "session-06",
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
@@ -513,7 +551,11 @@ export const sessions = [
     durationMinutes: 30,
     timeBreakdown: { brief: 4, teach: 3, exercise: 15, review: 8 },
     adv: { articulate: 2, delegate: 10, verify: 3 },
-    peerReview: { minutes: 8, pickCount: 2, questions: peerReviewQuestions },
+    peerReview: {
+      minutes: 8,
+      pickCount: 2,
+      questions: peerReviewQuestionsBySequence["06"],
+    },
     solutionSnapshot: "session-07",
     solutionPresentation: "completed-file",
     peerReviewPromises: "reference",

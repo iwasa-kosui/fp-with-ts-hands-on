@@ -22,7 +22,6 @@ type Narrative = Readonly<{
   design: string;
   limitation: string;
   legacy: string;
-  reviewFocus: string;
   fallback: string;
 }>;
 
@@ -232,7 +231,6 @@ const promisesHref =
 
 <section id="review">
   <h2>レビューと持ち帰り</h2>
-  <p><strong>この回で確認すること:</strong> {narrative.reviewFocus}</p>
   <ExerciseReviewChecklist snapshot={session.snapshot} />
   {
     exerciseSession.peerReviewPromises === "inline" ? (

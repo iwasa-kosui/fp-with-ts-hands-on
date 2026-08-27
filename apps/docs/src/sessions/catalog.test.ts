@@ -11,11 +11,6 @@ import {
 } from "./catalog";
 
 const exerciseSessions = sessions.filter((session) => session.kind === "exercise");
-const expectedPeerReviewQuestions = [
-  "不変条件を型と実行時の `if` のどちらで守っていますか。該当する行を示してください。",
-  "この状態を壊すコードは、コンパイルを通りますか。",
-  "自分の差分との違いを1つ挙げてください。優劣は決めません。",
-] as const;
 
 describe("session catalog invariants", () => {
   it("1. keeps the canonical workflow curriculum in workshop order", () => {
@@ -289,11 +284,17 @@ describe("session catalog invariants", () => {
     }
   });
 
-  it("16. uses the same three formal peer review questions in every exercise", () => {
+  it("16. gives each exercise three session-specific peer review questions", () => {
+    const questionSets = exerciseSessions.map((session) => session.peerReview.questions);
+
     for (const session of exerciseSessions) {
-      expect(session.peerReview.questions).toEqual(expectedPeerReviewQuestions);
+      expect(session.peerReview.questions).toHaveLength(3);
       expect(session.peerReview.questions.every((question) => question.trim() !== "")).toBe(true);
     }
+
+    expect(new Set(questionSets.map((questions) => JSON.stringify(questions)))).toHaveLength(
+      exerciseSessions.length,
+    );
   });
 
   it("17. scopes the three common review checks to each current snapshot", () => {

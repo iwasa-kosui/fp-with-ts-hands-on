@@ -99,8 +99,6 @@ const OwnerContactSchema = z
         "Sensitive を unwrap した後の文字列の扱いは、型では守れない。",
       legacy:
         "raw: any 型の値を受け取る parse や、連絡先を平文の string で保持する実装を確認します。これを改善して、入力と出力の境界を明確にしましょう。",
-      reviewFocus:
-        "unwrap を呼ぶ場所を限定し、それ以外の場所では JSON.stringify と util.inspect のどちらの場合でも個人情報が伏せられるか。",
       fallback:
         "現在の2ステップを順に開き、まず不正な JSON を Err として返します。次に連絡先の3項目を Sensitive にします。相互レビューの約束事はS2のリンク先を確認します。",
     }}

@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import {
   businessReflectionQuestion,
   peerReviewPromises,
-  peerReviewQuestions,
   reviewCompletionArtifacts,
   sessions,
 } from "../../sessions/catalog";
@@ -242,12 +241,16 @@ describe("event document contract", () => {
       })),
     );
 
-    const questionSection = card.match(
-      /### 参加者へ投げる3つの問い\n\n([\s\S]*?)\n\n(?:問い1|###)/,
-    )?.[1] ?? "";
-    expect([...questionSection.matchAll(/^\d+\. (.+)$/gm)].map(([, value]) => value)).toEqual(
-      [...peerReviewQuestions],
-    );
+    for (const session of exerciseSessions) {
+      const label = sessionLabel(session.sequence);
+      const questionSection = card.match(
+        new RegExp(`#### ${label}:[^\\n]*\\n\\n([\\s\\S]*?)(?=\\n\\n#### |\\n\\n### )`),
+      )?.[1] ?? "";
+      expect(
+        [...questionSection.matchAll(/^\d+\. (.+)$/gm)].map(([, value]) => value),
+        label,
+      ).toEqual([...session.peerReview.questions]);
+    }
 
     const promiseSection = card.match(
       /### 進行上の約束事\n\n([\s\S]*?)\n\n## /,

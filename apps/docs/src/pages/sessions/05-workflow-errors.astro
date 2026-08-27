@@ -78,7 +78,6 @@ const toErrorMessage = (error: StartExaminationError): string => {
       design: "expected failures 欄は、kind を持つ業務エラーの判別共用体と、成功か失敗かを値で返す Result で実装する。andThen で成功時だけ処理をつなぎ、呼び出し側ではmatchの失敗側でerror.kindを網羅的に処理する。",
       limitation: "どのエラーを業務エラーとして扱うか、フロントエンドの画面でどのように表示するかは、人の判断とレビューが必要になる。",
       legacy: "throw や try/catch の利用、エラーメッセージに依存した判定、間違ったエラーのマッピングが行われているコードを読みます。この回では予期できる業務エラーをResultとして扱います。",
-      reviewFocus: "guard を andThen でつなぎ、業務エラー後の処理を止めているか。",
       fallback: "同じ形の2つのguardを解答からコピペします。次に startExamination の try/catch を andThen に置き換えます。",
     }}
   />
