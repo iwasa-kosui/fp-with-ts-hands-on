@@ -2,21 +2,6 @@ export type SessionKind = "orientation" | "workshop" | "exercise" | "reference";
 
 export type SolutionPresentation = "excerpt" | "completed-file";
 
-export type WorkflowFocus =
-  | "現状"
-  | "ドメインイベント"
-  | "current state"
-  | "値の意味"
-  | "input"
-  | "expected failures"
-  | "output event/side effects"
-  | "境界確認";
-
-export type WorkflowRisks = Readonly<{
-  resolvedFromPrevious: string;
-  remainingForNext: string;
-}>;
-
 export type ExerciseModule = Readonly<{
   dir: string;
   fileBudget: number;
@@ -39,8 +24,6 @@ export type SolutionReference = Readonly<{
 
 export type Decision = Readonly<{
   invariant: string;
-  byType: string;
-  notByType: string;
 }>;
 
 export type AdvBreakdown = Readonly<{
@@ -73,8 +56,6 @@ type SessionSummaryBase = Readonly<{
   title: string;
   durationMinutes: number;
   timeBreakdown: TimeBreakdown;
-  workflowFocus: WorkflowFocus;
-  workflowRisks: WorkflowRisks;
   adv?: AdvBreakdown;
   delegationPrompt?: DelegationPrompt;
   peerReview?: PeerReview;
@@ -150,18 +131,38 @@ export type PublicCodeExplorerSnapshot = Exclude<
   "session-01" | "session-07"
 >;
 
-export const peerReviewQuestions = [
-  "この差分では、不変条件を型で守っていますか。それとも実行時の `if` で守っていますか。該当する行を1行、画面上で示してください。",
-  "この状態を壊すコードを1行書くとしたら、どう書きますか。それはコンパイルを通りますか。",
-  "自分の差分と違うところを1つ挙げてください。どちらが良いかは言わなくてよいです。",
-] as const;
+export const peerReviewQuestionsBySequence = {
+  "02": [
+    "`startExamination` は `CheckedIn` だけを受け取り、会計済み・キャンセル済みを型で拒否しますか。",
+    "`Canceled` の `reason` など、状態ごとの必須情報を省略できない型ですか。",
+    "状態を追加したとき、`assertNever` によって未対応の分岐がコンパイルエラーになりますか。",
+  ],
+  "03": [
+    "`PetId` と `OwnerId` を取り違えたコードは、型テストでコンパイルエラーになりますか。",
+    "予約の全状態で、識別子が用途別の型になっていますか。",
+    "状態遷移の引数に `string` が残らず、用途別の識別子を受け取っていますか。",
+  ],
+  "04": [
+    "外部 JSON は、Zod の検証に成功したときだけ `ExamResult` になりますか。",
+    "氏名・電話番号・メールは、`JSON.stringify` と `util.inspect` のどちらでも既定でマスクされますか。",
+    "`OwnerContact` の各項目は、平文の `string` ではなく `Sensitive` になっていますか。",
+  ],
+  "05": [
+    "予約なしと状態不正は、異なる `kind` を持つ `Err` になっていますか。",
+    "`andThen` は、成功したときだけ次の検証と状態遷移へ進みますか。",
+    "業務エラーの後に、状態の保存が実行されない構造になっていますか。",
+  ],
+  "06": [
+    "時刻とイベント ID は実行ごとに一度だけ生成され、同じ `EventContext` に入りますか。",
+    "状態と監査記録は、1つのイベントとして同じ `store` に渡されますか。",
+    "業務上の競合だけを `Result` で返し、保存障害は reject のまま伝播しますか。",
+  ],
+} as const;
 
 export const peerReviewPromises = [
-  "見るのは差分であって人ではありません。発言は「この差分は」で始めます。",
-  "良し悪しを判定しません。",
-  "5回のレビューで、班員全員が少なくとも1回は選ばれるよう公平に配分します。選ばれることは評価ではありません。",
-  "本人は弁明しません。読み上げるのは依頼文の1文だけです。",
-  "TAは「よくできた実装」を選びません。選定基準を参加者にも開示します。",
+  "人ではなく差分を見ます。「この差分は」で話し始め、優劣をつけません。",
+  "本人は依頼文の1文だけを読み上げ、弁明しません。",
+  "TAは選定基準を共有し、5回で班員全員を少なくとも1回選びます。選出は評価ではありません。",
 ] as const;
 
 export const reviewDiffStatCommand = (snapshot: ExampleSnapshot): string =>
@@ -171,11 +172,10 @@ export const reviewStatusCommand = "git status --short";
 
 export const commonReviewChecksFor = (
   snapshot: ExampleSnapshot,
-): readonly [string, string, string, string] => [
+): readonly [string, string, string] => [
   "`as` によるキャストが入っていないか全文検索して確認する。",
-  `\`${reviewDiffStatCommand(snapshot)}\` で今回の snapshot だけを確認し、\`${reviewStatusCommand}\` でリポジトリ全体の想定外の path を確認する。`,
-  "不変条件を型で守っているか、実行時の `if` で守っているか判定する。",
-  "相互レビューの末尾1分で、型で守れなかった残りを記録する。",
+  `\`${reviewDiffStatCommand(snapshot)}\` で今回の snapshot だけを確認する。\`${reviewStatusCommand}\` で想定外の path がないか確認する。`,
+  "不変条件を型で守っているか、実行時の `if` で守っているかを判定し、型で守れなかった残りを記録する。",
 ];
 
 export const reviewCompletionArtifacts = [
@@ -210,11 +210,6 @@ export const sessions = [
     title: "業務とシステムを引き継ぐ",
     durationMinutes: 10,
     timeBreakdown: { brief: 4, teach: 3, exercise: 0, review: 3 },
-    workflowFocus: "現状",
-    workflowRisks: {
-      resolvedFromPrevious: "引き継いだ業務・操作・保存先・ログと、現在起きている事故を対応付けた。",
-      remainingForNext: "診察開始を一つの業務ワークフローとして定義し、設計対象の全体像を描く。",
-    },
     animal: { name: "DOG", type: "dog", avatar: "🐕" },
     summary: "WAN NYAN CLINIC の現行業務、画面操作、保存・ログと、現在起きている事故を確認します。",
     incident: "会計済みの予約が診察中へ戻り、予約ログから飼い主の個人情報が流出した。",
@@ -230,11 +225,6 @@ export const sessions = [
     title: "ビジネスイベントからワークフローを描く",
     durationMinutes: 15,
     timeBreakdown: { brief: 3, teach: 4, exercise: 6, review: 2 },
-    workflowFocus: "ドメインイベント",
-    workflowRisks: {
-      resolvedFromPrevious: "来院から会計までの業務をドメインイベントとして拾い、時系列に並べて、集約ごとの境界を班で引いた。",
-      remainingForNext: "予約集約の中で、予約がどの状態なら診察を開始できるかをまだ決めていない。",
-    },
     animal: { name: "CAT", type: "cat", avatar: "🐈" },
     summary: "動物病院の一日を描いた散文からドメインイベントを拾い、集約の境界を班で引きます。",
     incident: "業務全体のどこからどこまでが診察開始のワークフローなのか、担当者ごとに認識が揃っていない。",
@@ -250,13 +240,12 @@ export const sessions = [
     title: "予約の状態と遷移をモデル化する",
     durationMinutes: 30,
     timeBreakdown: { brief: 4, teach: 6, exercise: 13, review: 7 },
-    workflowFocus: "current state",
-    workflowRisks: {
-      resolvedFromPrevious: "許可されない状態遷移と、状態ごとに欠けた情報を型で防いだ。",
-      remainingForNext: "外部から届く値、失敗の表現、保存の整合性をまだ扱う必要がある。",
-    },
     adv: { articulate: 2, delegate: 9, verify: 2 },
-    peerReview: { minutes: 7, pickCount: 2, questions: peerReviewQuestions },
+    peerReview: {
+      minutes: 7,
+      pickCount: 2,
+      questions: peerReviewQuestionsBySequence["02"],
+    },
     solutionSnapshot: "session-03",
     solutionPresentation: "excerpt",
     peerReviewPromises: "inline",
@@ -323,18 +312,12 @@ export const sessions = [
     decisions: [
       {
         invariant: "許可されていない状態遷移を型で拒否する。",
-        byType: "各遷移関数の引数型を、許可された遷移元だけに限定する。",
-        notByType: "呼び出し側が型アサーションで状態を捏造することは型だけでは防げない。",
       },
       {
         invariant: "状態ごとの必須情報を欠かさない。",
-        byType: "状態別の判別共用体と satisfies で戻り値を検査する。",
-        notByType: "外部 JSON からの復元には、別途境界での検証が必要になる。",
       },
       {
         invariant: "状態を追加したとき、未対応の分岐をコンパイルエラーにする。",
-        byType: "assertNever で switch の網羅性を検査する。",
-        notByType: "「不明」を返す default 分岐へ戻せば検査を回避できるため、レビューも必要になる。",
       },
     ],
     finalReferences: [
@@ -350,13 +333,12 @@ export const sessions = [
     title: "用途の異なる識別子を型で区別する",
     durationMinutes: 30,
     timeBreakdown: { brief: 4, teach: 6, exercise: 13, review: 7 },
-    workflowFocus: "値の意味",
-    workflowRisks: {
-      resolvedFromPrevious: "同じ形式で表された識別子を用途ごとに別の型へ分け、取り違えをコンパイルで止めた。",
-      remainingForNext: "外部から届く値の検証と、個人情報の守り方をまだ扱う必要がある。",
-    },
     adv: { articulate: 2, delegate: 9, verify: 2 },
-    peerReview: { minutes: 7, pickCount: 2, questions: peerReviewQuestions },
+    peerReview: {
+      minutes: 7,
+      pickCount: 2,
+      questions: peerReviewQuestionsBySequence["03"],
+    },
     solutionSnapshot: "session-04",
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
@@ -433,18 +415,12 @@ export const sessions = [
     decisions: [
       {
         invariant: "用途の異なる識別子を取り違えない。",
-        byType: "用途別のbranded typeで区別する。",
-        notByType: "永続化上は同じTEXTなので復元時に再度parseする必要がある。",
       },
       {
         invariant: "予約はどの状態でも用途別の識別子を持つ。",
-        byType: "5状態と遷移関数の引数で、同じ識別子の型を使う。",
-        notByType: "同じ PetId 型の別のペットを選ぶ誤りは、型だけでは検出できない。",
       },
       {
         invariant: "取り違えたコードはコンパイルできない。",
-        byType: "@ts-expect-errorの型テストで、通ってはいけない代入を検査する。",
-        notByType: "型テストを書かなかった箇所が守られているかは分からない。",
       },
     ],
     finalReferences: [
@@ -461,13 +437,12 @@ export const sessions = [
     title: "外部入力を境界で検証し個人情報を守る",
     durationMinutes: 30,
     timeBreakdown: { brief: 4, teach: 7, exercise: 12, review: 7 },
-    workflowFocus: "input",
-    workflowRisks: {
-      resolvedFromPrevious: "外部入力を信頼境界で検証し、公開してよい情報とそうでない情報を区別した。",
-      remainingForNext: "ワークフローの業務失敗と副作用の整合性をまだ扱う必要がある。",
-    },
     adv: { articulate: 2, delegate: 8, verify: 2 },
-    peerReview: { minutes: 7, pickCount: 2, questions: peerReviewQuestions },
+    peerReview: {
+      minutes: 7,
+      pickCount: 2,
+      questions: peerReviewQuestionsBySequence["04"],
+    },
     solutionSnapshot: "session-05",
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
@@ -513,13 +488,9 @@ export const sessions = [
     decisions: [
       {
         invariant: "外部入力は、境界で検証してからドメイン型になる。",
-        byType: "unknownをschemaでparseし、Resultとして返す。",
-        notByType: "境界を迂回してオブジェクトを直接作る経路は、運用上のルールで防ぐ必要がある。",
       },
       {
         invariant: "個人情報は既定でマスクし、値を取り出す場所を限定する。",
-        byType: "Sensitiveで包み、unwrapの呼び出し箇所を明示する。",
-        notByType: "unwrap後の文字列の扱いは型では守れない。",
       },
     ],
     finalReferences: [
@@ -537,13 +508,12 @@ export const sessions = [
     title: "失敗をワークフローの結果として扱う",
     durationMinutes: 30,
     timeBreakdown: { brief: 4, teach: 3, exercise: 15, review: 8 },
-    workflowFocus: "expected failures",
-    workflowRisks: {
-      resolvedFromPrevious: "予期できる業務上の失敗を戻り値に現し、成功経路だけを続けるようにした。",
-      remainingForNext: "非決定値、永続化、監査記録、例外を扱う外側の境界が残っている。",
-    },
     adv: { articulate: 2, delegate: 10, verify: 3 },
-    peerReview: { minutes: 8, pickCount: 2, questions: peerReviewQuestions },
+    peerReview: {
+      minutes: 8,
+      pickCount: 2,
+      questions: peerReviewQuestionsBySequence["05"],
+    },
     solutionSnapshot: "session-06",
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
@@ -600,18 +570,12 @@ export const sessions = [
     decisions: [
       {
         invariant: "予期できる失敗は戻り値に現れる。",
-        byType: "Resultとkindを持つエラーの判別共用体で表す。",
-        notByType: "どこまでを予期できる失敗とするかは人が決める必要がある。",
       },
       {
         invariant: "呼び出し側は文言ではなく失敗のkindで分岐する。",
-        byType: "エラーunionと網羅的な分岐で表す。",
-        notByType: "利用者向け文言や翻訳の正しさはレビュー対象になる。",
       },
       {
         invariant: "失敗経路では後続の処理を行わない。",
-        byType: "ResultのandThenで成功経路だけを接続する。",
-        notByType: "副作用が実際に呼ばれないことはフェイクportを使うテストで守る。",
       },
     ],
     finalReferences: [
@@ -629,13 +593,12 @@ export const sessions = [
     title: "副作用と整合性境界を設計する",
     durationMinutes: 30,
     timeBreakdown: { brief: 4, teach: 3, exercise: 15, review: 8 },
-    workflowFocus: "output event/side effects",
-    workflowRisks: {
-      resolvedFromPrevious: "成功したワークフローの状態と監査を同じ整合性境界で保存し、保存障害を業務結果へ偽装しない形にした。",
-      remainingForNext: "実運用で必要な永続化transactionと、次に着手する小さな改善候補が残っている。",
-    },
     adv: { articulate: 2, delegate: 10, verify: 3 },
-    peerReview: { minutes: 8, pickCount: 2, questions: peerReviewQuestions },
+    peerReview: {
+      minutes: 8,
+      pickCount: 2,
+      questions: peerReviewQuestionsBySequence["06"],
+    },
     solutionSnapshot: "session-07",
     solutionPresentation: "completed-file",
     peerReviewPromises: "reference",
@@ -730,18 +693,12 @@ export const sessions = [
     decisions: [
       {
         invariant: "時刻とイベント ID は1回のワークフロー実行で一度だけ生成し、同じ実行コンテキストから状態と監査記録を作る。",
-        byType: "Clock と EventIdGenerator を1メソッド port として注入し、ワークフローで EventContext を一度だけ作って純粋な状態遷移へ渡す。",
-        notByType: "ワークフローが port を1回だけ呼ぶことと、Date や randomUUID を直接呼ばないことは、テストとレビューで確認する。",
       },
       {
         invariant: "状態と監査記録は同時に残るか、どちらも残らない。",
-        byType: "イベントにaggregateStateを含め、書き込み口をstore(event)へ絞る。",
-        notByType: "永続化での原子性は、実装側の transaction で保証する必要がある。",
       },
       {
         invariant: "保存障害を、呼び出し側が選択できる業務上の失敗へ偽装しない。",
-        byType: "業務ResultとPromiseのrejectを分け、保存の例外を外側の境界へ伝播する。",
-        notByType: "最上位境界でのログ記録と500応答、診断情報や個人情報の非公開は結合テストで守る。",
       },
     ],
     finalReferences: [
@@ -762,11 +719,6 @@ export const sessions = [
     title: "参照実装で境界をたどる",
     durationMinutes: 5,
     timeBreakdown: { brief: 0, teach: 4, exercise: 0, review: 1 },
-    workflowFocus: "境界確認",
-    workflowRisks: {
-      resolvedFromPrevious: "入力境界・業務ワークフロー・出力と保存・例外境界を参照実装の対応箇所で確認した。",
-      remainingForNext: "自分の業務で見直す境界と、最初に試す小さな改善を選ぶ。",
-    },
     animal: { name: "Mugi", type: "cat", avatar: "🐈" },
     summary: "当日の到達点を、より大きな参照実装へ接続します。",
     incident: "当日の局所的な改善を、実運用を想定した構成へどう接続するかを確認する。",

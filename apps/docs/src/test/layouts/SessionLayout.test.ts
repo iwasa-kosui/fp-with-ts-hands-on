@@ -7,6 +7,7 @@ import { createAstroContainer } from "../render-astro";
 
 const exerciseChapters = ["incident", "legacy", "refactor", "review"];
 const shortChapters = ["incident", "legacy", "review"];
+const referenceChapters = ["incident", "review"];
 const workshopChapters = ["incident", "workflow", "review"];
 const orientation = sessions.find(({ kind }) => kind === "orientation")!;
 const workshop = sessions.find(({ kind }) => kind === "workshop")!;
@@ -37,8 +38,8 @@ describe("SessionLayout", () => {
     },
     {
       session: reference,
-      expected: shortChapters,
-      labels: ["5つの境界を確認する", "参照実装をたどる", "レビューと持ち帰り"],
+      expected: referenceChapters,
+      labels: ["5つの境界を確認する", "レビューと持ち帰り"],
     },
   ])("drives both TOCs from the $session.kind chapter definition", async ({ session, expected, labels }) => {
     const container = await createAstroContainer();

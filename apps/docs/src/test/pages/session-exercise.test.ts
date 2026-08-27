@@ -11,11 +11,9 @@ const completionArtifacts = [
 ] as const;
 
 const reviewPromises = [
-  "見るのは差分であって人ではありません。発言は「この差分は」で始めます。",
-  "良し悪しを判定しません。",
-  "5回のレビューで、班員全員が少なくとも1回は選ばれるよう公平に配分します。選ばれることは評価ではありません。",
-  "本人は弁明しません。読み上げるのは依頼文の1文だけです。",
-  "TAは「よくできた実装」を選びません。選定基準を参加者にも開示します。",
+  "人ではなく差分を見ます。「この差分は」で話し始め、優劣をつけません。",
+  "本人は依頼文の1文だけを読み上げ、弁明しません。",
+  "TAは選定基準を共有し、5回で班員全員を少なくとも1回選びます。選出は評価ではありません。",
 ] as const;
 
 const delegationDecisionsBySlug = {
@@ -59,7 +57,6 @@ describe("exercise session contract", () => {
       expect(red[0]?.textContent).toContain(session.exerciseCommand);
       expect(green[0]?.textContent).toContain(session.exerciseCommand);
       expect(text).toContain(session.exerciseModule.dir);
-      expect(text).toContain(session.incident);
       expect(document.querySelectorAll("details.step-solution")).toHaveLength(
         session.steps.length,
       );
@@ -67,10 +64,7 @@ describe("exercise session contract", () => {
       for (const step of session.steps) expect(text).toContain(step.goal);
       for (const decision of session.decisions) {
         expect(text).toContain(decision.invariant);
-        expect(text).toContain(decision.notByType);
       }
-      for (const reference of session.finalReferences)
-        expect(text).toContain(reference);
       for (const question of session.peerReview.questions) {
         expect(reviewText).toContain(question);
       }
@@ -78,7 +72,7 @@ describe("exercise session contract", () => {
         ".exercise-review-checklist > ol > li",
       );
       const scopedDiffCommand = `git diff --stat -- examples/${session.snapshot}`;
-      expect(reviewChecks).toHaveLength(4);
+      expect(reviewChecks).toHaveLength(3);
       expect(reviewText.match(new RegExp(scopedDiffCommand, "g"))).toHaveLength(1);
       expect(reviewText).toContain("git status --short");
       expect(reviewText).not.toMatch(/git diff --stat(?! -- examples\/)/);
@@ -95,45 +89,19 @@ describe("exercise session contract", () => {
     });
   }
 
-  it("keeps the opening focused and returns to the full workflow in the review", async () => {
+  it("keeps the opening story and limits the review to verification and peer review", async () => {
     for (const session of exercises) {
       const document = await renderSessionPage(session);
-      const riskMaps = [
-        ...document.querySelectorAll<HTMLElement>(".workflow-risk-map"),
-      ];
       const opening = document.querySelector("#incident")!;
       const review = document.querySelector("#review")!;
 
-      expect(riskMaps).toHaveLength(2);
-      expect(riskMaps.map(({ dataset }) => dataset.placement)).toEqual([
-        "opening",
-        "review",
-      ]);
-      expect(new Set(riskMaps.map((map) => map.getAttribute("aria-label"))).size).toBe(2);
-      expect(opening.querySelectorAll(".workflow-risk-map")).toHaveLength(1);
-      expect(review.querySelectorAll(".workflow-risk-map")).toHaveLength(1);
-      expect(riskMaps[0]?.querySelectorAll("[data-session-sequence]")).toHaveLength(1);
-      expect(riskMaps[1]?.querySelectorAll("[data-session-sequence]")).toHaveLength(
-        exercises.length,
-      );
+      expect(document.querySelectorAll(".workflow-risk-map")).toHaveLength(0);
       expect(opening.textContent).not.toContain(session.incident);
-      expect(review.textContent).toContain(session.incident);
-      const openingFocus = riskMaps[0]?.querySelector<HTMLElement>(
-        `[data-session-sequence="${session.sequence}"]`,
-      );
-      const reviewFocus = riskMaps[1]?.querySelector<HTMLElement>(
-        `[data-session-sequence="${session.sequence}"]`,
-      );
-
-      expect(riskMaps.map(({ dataset }) => dataset.currentFocus)).toEqual([
-        session.workflowFocus,
-        session.workflowFocus,
-      ]);
-      expect(openingFocus?.getAttribute("aria-current")).toBe("step");
-      expect(openingFocus?.textContent).toContain(session.summary);
-      expect(reviewFocus?.getAttribute("aria-current")).toBe("step");
-      expect(reviewFocus?.textContent).toContain(session.workflowRisks.resolvedFromPrevious);
-      expect(reviewFocus?.textContent).toContain(session.workflowRisks.remainingForNext);
+      expect(review.textContent).not.toContain(session.incident);
+      expect(review.querySelectorAll(".decision-card")).toHaveLength(0);
+      expect(review.querySelectorAll(".reference-list")).toHaveLength(0);
+      expect(review.querySelector(".exercise-review-checklist")).not.toBeNull();
+      expect(review.querySelector(".peer-review-panel")).not.toBeNull();
       const storyStages = [
         ...opening.querySelectorAll<HTMLElement>("[data-story-stage]"),
       ];
@@ -290,7 +258,7 @@ describe("exercise session contract", () => {
     }
   });
 
-  it("introduces the canonical five review promises in S2 and links later exercises", async () => {
+  it("introduces the review promises in S2 and links later exercises", async () => {
     const onboarding = await renderSessionPage(sessions[0]);
     const workshop = await renderSessionPage(sessions[1]);
     const promisesSession = exercises.find(
@@ -317,28 +285,14 @@ describe("exercise session contract", () => {
     }
   });
 
-  it("uses the workflow map to trace five boundaries in Final", async () => {
+  it("traces five boundaries in Final without repeating the workflow map", async () => {
     const finalSession = sessions.find(({ slug }) => slug === "final")!;
     const document = await renderSessionPage(finalSession);
     const text = document.body.textContent ?? "";
-    const riskMaps = [
-      ...document.querySelectorAll<HTMLElement>(".workflow-risk-map"),
-    ];
 
-    expect(riskMaps).toHaveLength(2);
-    expect(riskMaps.map(({ dataset }) => dataset.placement)).toEqual([
-      "opening",
-      "review",
-    ]);
-    expect(new Set(riskMaps.map((map) => map.getAttribute("aria-label"))).size).toBe(2);
-    expect(document.querySelectorAll("#legacy .workflow-risk-map")).toHaveLength(1);
-    expect(document.querySelectorAll("#review .workflow-risk-map")).toHaveLength(1);
-    expect(riskMaps[1]?.querySelector("ol")?.textContent).toBe(
-      riskMaps[0]?.querySelector("ol")?.textContent,
-    );
-    expect(
-      riskMaps.map((map) => map.querySelectorAll("[data-session-sequence]").length),
-    ).toEqual([5, 5]);
+    expect(document.querySelectorAll(".workflow-risk-map")).toHaveLength(0);
+    expect(document.querySelector("#legacy")).toBeNull();
+    expect(document.querySelector('a[href="#legacy"]')).toBeNull();
     for (const boundary of [
       "1分目: 入力境界",
       "2分目: 業務上の失敗",

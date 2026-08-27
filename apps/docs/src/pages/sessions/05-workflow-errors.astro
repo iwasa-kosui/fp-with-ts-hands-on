@@ -77,9 +77,7 @@ const toErrorMessage = (error: StartExaminationError): string => {
       currentRisk: "throw、undefined、例外メッセージへの依存が混在しているため、フロントエンドの受付画面でエラー理由を分岐できない。また、エラー発生後の処理も止めにくい。",
       design: "expected failures 欄は、kind を持つ業務エラーの判別共用体と、成功か失敗かを値で返す Result で実装する。andThen で成功時だけ処理をつなぎ、呼び出し側ではmatchの失敗側でerror.kindを網羅的に処理する。",
       limitation: "どのエラーを業務エラーとして扱うか、フロントエンドの画面でどのように表示するかは、人の判断とレビューが必要になる。",
-      nextQuestion: "処理が成功した場合、出力される業務イベントの保存とデータの保存をどのように整合させるか。データベースエラーのようなインフラ由来のエラーをどの境界まで伝えるか。",
       legacy: "throw や try/catch の利用、エラーメッセージに依存した判定、間違ったエラーのマッピングが行われているコードを読みます。この回では予期できる業務エラーをResultとして扱います。",
-      reviewFocus: "Result を返す guard は map で入れ子にせずに、andThen で処理を繋げられているか。業務エラーが発生した場合、以降の処理やデータの保存などが適切にスキップされているか。",
       fallback: "同じ形の2つのguardを解答からコピペします。次に startExamination の try/catch を andThen に置き換えます。",
     }}
   />

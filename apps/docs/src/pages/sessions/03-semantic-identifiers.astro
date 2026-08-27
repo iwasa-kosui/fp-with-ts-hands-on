@@ -100,9 +100,7 @@ startExamination(checkedIn, scheduled.appointmentId, "2026-08-30T06:30:00.000Z")
       currentRisk: "開始スナップショットにある5種類の識別子のうち、PetId と OwnerId だけはどちらも素の UUID 文字列です。検査結果を登録するときに OwnerId を PetId の位置へ渡しても、型検査では止まりません。",
       design: "ワークフローが受け取る型を用途ごとの Branded Type で定義し、予約の状態を表す型・状態遷移関数の両方で利用する。",
       limitation: "異なる用途の識別子は区別できますが、同じ PetId 型の別のペットを選ぶ誤りは型だけでは検出できない。",
-      nextQuestion: "外部から入力される JSON が期待した形になっているかをどこで確かめるか。",
       legacy: "branded 済みの AppointmentId・ExamId・VeterinarianId と、素の string のままの PetId・OwnerId を読み比べ、予約の各状態が識別子をどのように定義しているかを確認します。",
-      reviewFocus: "識別子の型を、状態の型と状態遷移関数の引数の両方で利用できているか",
       fallback: "現在の3ステップを順に開き、まず PetId と OwnerId に brand をコピペします。次に予約の各状態を表す型と状態遷移関数にも反映し、取り違えがコンパイルエラーになることを型テストで確かめます。相互レビューの約束事はS2のリンク先を確認します。",
     }}
   />

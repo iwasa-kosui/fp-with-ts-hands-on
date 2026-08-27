@@ -13,18 +13,14 @@ const commonReviewChecks = commonReviewChecksFor(snapshot);
 ---
 
 <div class="exercise-review-checklist">
-  <h3>全演習共通のレビュー観点</h3>
+  <h3>個人で確認する</h3>
   <ol>
     {commonReviewChecks.map((check) => <li>{check}</li>)}
   </ol>
   <p>
-    前のセッションの未commit差分は残したままで構いません。現在のレビューでは、上の snapshot 限定コマンドだけを使います。記録後は次のセッションで path を切り替えます。作業を消すための reset、stash、commit は要求しません。
+    前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。
   </p>
-  <h3>完了条件</h3>
-  <p>次の3つを成果物として残します。</p>
-  <ul>
-    {reviewCompletionArtifacts.map((artifact) => <li>{artifact}</li>)}
-  </ul>
-  <h3>自分の業務へ持ち帰る問い</h3>
+  <p><strong>残すもの:</strong> {reviewCompletionArtifacts.join("、")}</p>
+  <h3>業務へ持ち帰る</h3>
   <p>{businessReflectionQuestion}</p>
 </div>

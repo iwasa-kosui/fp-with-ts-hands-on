@@ -12,7 +12,6 @@ import ExerciseReviewChecklist from "./ExerciseReviewChecklist.astro";
 import PeerReviewPanel from "./PeerReviewPanel.astro";
 import PeerReviewPromises from "./PeerReviewPromises.astro";
 import StepSolution from "./StepSolution.astro";
-import WorkflowRiskMap from "./WorkflowRiskMap.astro";
 import SessionCodeOverview from "./code-explorer/SessionCodeOverview.astro";
 import SessionCodePlayground from "./code-explorer/SessionCodePlayground.astro";
 
@@ -22,9 +21,7 @@ type Narrative = Readonly<{
   pitfallCode?: SourcedCode;
   design: string;
   limitation: string;
-  nextQuestion: string;
   legacy: string;
-  reviewFocus: string;
   fallback: string;
 }>;
 
@@ -139,7 +136,6 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
     {session.decisions.map(({ invariant }) => <li>{invariant}</li>)}
   </ul>
   <p>今回の変更は <code>{session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
-  <WorkflowRiskMap currentSession={exerciseSession} placement="opening" />
 </section>
 
 <section id="legacy">
@@ -258,38 +254,17 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
     command={session.exerciseCommand}
     expected="assertionが成功することを確認する"
   />
+  <h3>演習を完了できないとき</h3>
+  <p>{narrative.fallback}</p>
 </section>
 
 <section id="review">
-  <h2>レビュー観点と振り返り</h2>
-  <h3>改善前の事故と照らし合わせる</h3>
-  <p><strong>背景にある事故:</strong> {session.incident}</p>
-  <p><strong>この回の固有観点:</strong> {narrative.reviewFocus}</p>
+  <h2>レビューと持ち帰り</h2>
   <ExerciseReviewChecklist snapshot={session.snapshot} />
-  <h3>設計判断と差分を照らし合わせる</h3>
-  <div class="decision-list">
-    {session.decisions.map((decision) => (
-      <article class="decision-card">
-        <h4>{decision.invariant}</h4>
-        <p><strong>型で表す:</strong> {decision.byType}</p>
-        <p><strong>型だけでは守れないこと:</strong> {decision.notByType}</p>
-      </article>
-    ))}
-  </div>
   {
     exerciseSession.peerReviewPromises === "inline" ? (
       <PeerReviewPromises id="peer-review-promises" />
     ) : null
   }
   <PeerReviewPanel peerReview={session.peerReview} promisesHref={promisesHref} />
-
-  <h3>参照実装との接続</h3>
-  <ul class="reference-list">
-    {session.finalReferences.map((reference) => <li><code>{reference}</code></li>)}
-  </ul>
-  <h3>演習を完了できないとき</h3>
-  <p>{narrative.fallback}</p>
-  <h3>次のセッションへの問い</h3>
-  <p>{narrative.nextQuestion}</p>
-  <WorkflowRiskMap currentSession={exerciseSession} placement="review" />
 </section>
