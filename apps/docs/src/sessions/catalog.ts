@@ -49,6 +49,11 @@ export type AdvBreakdown = Readonly<{
   verify: number;
 }>;
 
+export type DelegationPrompt = Readonly<{
+  request: string;
+  decisions: readonly [string, ...string[]];
+}>;
+
 export type TimeBreakdown = Readonly<{
   brief: number;
   teach: number;
@@ -71,6 +76,7 @@ type SessionSummaryBase = Readonly<{
   workflowFocus: WorkflowFocus;
   workflowRisks: WorkflowRisks;
   adv?: AdvBreakdown;
+  delegationPrompt?: DelegationPrompt;
   peerReview?: PeerReview;
   animal: Readonly<{ name: string; type: string; avatar: string }>;
   summary: string;
@@ -89,6 +95,7 @@ export type ExerciseSessionSummary = SessionSummaryBase & Readonly<{
   kind: "exercise";
   snapshot: PublicCodeExplorerSnapshot;
   adv: AdvBreakdown;
+  delegationPrompt: DelegationPrompt;
   peerReview: PeerReview;
   exerciseCommand: string;
   exerciseModule: ExerciseModule;
@@ -99,6 +106,7 @@ export type ExerciseSessionSummary = SessionSummaryBase & Readonly<{
 
 type NonExerciseMetadata = Readonly<{
   adv?: never;
+  delegationPrompt?: never;
   peerReview?: never;
   exerciseCommand?: never;
   exerciseModule?: never;
@@ -261,6 +269,15 @@ export const sessions = [
       fileBudget: 2,
       lineBudget: 35,
     },
+    delegationPrompt: {
+      request:
+        "予約状態の変更処理を、業務で許された遷移と各状態に必要な情報がコードから読み取れる形に改善してください。",
+      decisions: [
+        "どの状態からどの状態への遷移を許可するか",
+        "各状態で必須にする情報は何か",
+        "状態追加時の分岐漏れをどこで検出するか",
+      ],
+    },
     steps: [
       {
         id: "s2-narrow-start",
@@ -351,6 +368,15 @@ export const sessions = [
       dir: "examples/session-03/src/domain",
       fileBudget: 5,
       lineBudget: 34,
+    },
+    delegationPrompt: {
+      request:
+        "検査結果や予約で扱う識別子を改善してください。同じ文字列形式でも、用途を取り違えたコードはコンパイルを通らない状態を目指します。",
+      decisions: [
+        "どの識別子を別の用途として扱うか",
+        "用途の区別をどの状態や関数まで伝えるか",
+        "取り違えをコンパイルエラーとしてどう残すか",
+      ],
     },
     steps: [
       {
@@ -454,6 +480,14 @@ export const sessions = [
       fileBudget: 2,
       lineBudget: 26,
     },
+    delegationPrompt: {
+      request:
+        "検査機関の JSON と飼い主の連絡先を別のリスクとして扱ってください。未検証の入力がドメインへ入らず、連絡先が既定で公開されない形に改善してください。",
+      decisions: [
+        "外部入力を信頼済みの値へ変える境界はどこか",
+        "連絡先を取り出してよい処理はどこか",
+      ],
+    },
     steps: [
       {
         id: "s4-parse-exam-result",
@@ -521,6 +555,15 @@ export const sessions = [
       dir: "examples/session-05/src/useCase",
       fileBudget: 3,
       lineBudget: 76,
+    },
+    delegationPrompt: {
+      request:
+        "診察開始で起こりうる業務上の失敗を、呼び出し側が判断できる形に改善してください。表示文言には依存せず、失敗後の処理を続けない設計にしてください。",
+      decisions: [
+        "何を予期できる業務上の失敗として扱うか",
+        "呼び出し側が分岐に使う安定した情報は何か",
+        "失敗後に実行してはいけない処理は何か",
+      ],
     },
     steps: [
       {
@@ -604,6 +647,15 @@ export const sessions = [
       dir: "examples/session-06/src/useCase",
       fileBudget: 3,
       lineBudget: 55,
+    },
+    delegationPrompt: {
+      request:
+        "診察開始で作る状態と監査記録に、1回の実行で生成した値を使ってください。保存時に片方だけが残らない形へ改善してください。",
+      decisions: [
+        "実行ごとに変わる値をいつ生成するか",
+        "どの状態と記録を同時に保存するか",
+        "保存障害をどの境界まで伝えるか",
+      ],
     },
     steps: [
       {
