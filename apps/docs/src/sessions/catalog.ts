@@ -61,6 +61,7 @@ type SessionSummaryBase = Readonly<{
   peerReview?: PeerReview;
   animal: Readonly<{ name: string; type: string; avatar: string }>;
   summary: string;
+  episode: readonly [string, string, string];
   incident: string;
   exerciseCommand?: string;
   exerciseModule?: ExerciseModule;
@@ -212,6 +213,11 @@ export const sessions = [
     timeBreakdown: { brief: 4, teach: 3, exercise: 0, review: 3 },
     animal: { name: "DOG", type: "dog", avatar: "🐕" },
     summary: "WAN NYAN CLINIC の現行業務、画面操作、保存・ログと、現在起きている事故を確認します。",
+    episode: [
+      "新人エンジニアの初出勤を歓迎するように、犬が観葉植物を倒し、プリンターは事故報告を吐き続けていました。",
+      "会計済みの予約は「診察中」へ戻り、請求書は2枚。ログには飼い主の電話番号まで律儀にそろっています。",
+      "引き継ぎ資料を開く前に、二重請求と個人情報流出の再現条件だけは確認できました。",
+    ],
     incident: "会計済みの予約が診察中へ戻り、予約ログから飼い主の個人情報が流出した。",
     steps: [],
     decisions: [],
@@ -227,6 +233,11 @@ export const sessions = [
     timeBreakdown: { brief: 3, teach: 4, exercise: 6, review: 2 },
     animal: { name: "CAT", type: "cat", avatar: "🐈" },
     summary: "動物病院の一日を描いた散文からドメインイベントを拾い、集約の境界を班で引きます。",
+    episode: [
+      "開院3分で、柴犬は問診票を踏み、猫は棚へ登り、受付の電話は2本同時に鳴りました。",
+      "受付、看護師、獣医師、会計担当は仕事をこなしますが、同じ一日を全員が別の言葉で説明します。",
+      "システム改修の前に、人間同士の仕様が同期していないことが判明しました。",
+    ],
     incident: "業務全体のどこからどこまでが診察開始のワークフローなのか、担当者ごとに認識が揃っていない。",
     steps: [],
     decisions: [],
@@ -251,6 +262,11 @@ export const sessions = [
     peerReviewPromises: "inline",
     animal: { name: "RABBIT", type: "rabbit", avatar: "🐇" },
     summary: "予約の5状態を判別共用体で表し、許可されていない状態遷移を型で拒否します。",
+    episode: [
+      "会計を終えたウサギは帰ったはずなのに、画面の中では診察室へ戻ってきました。",
+      "受付画面は止めるどころか、2枚目の請求書まで手際よく用意します。",
+      "業務ルールを覚えていたのは人間だけで、コードは何でも通す親切設計でした。",
+    ],
     incident: "会計済みの来院が診察中へ戻され、会計が二度行われた。",
     exerciseCommand: "pnpm exercise:02",
     exerciseModule: {
@@ -344,6 +360,11 @@ export const sessions = [
     peerReviewPromises: "reference",
     animal: { name: "HEDGEHOG", type: "hedgehog", avatar: "🦔" },
     summary: "予約・検査・ペット・飼い主・担当獣医師の識別子を、用途ごとに区別して扱います。",
+    episode: [
+      "ハリネズミの検査結果が見つからず、受付から検査機関へ、検査機関から開発者へと電話が回りました。",
+      "結果は届いていました。ただし、PetId の欄には OwnerId が入り、システムは「どちらも UUID です」と平然と保存済みです。",
+      "文字列として正しいことと、業務として正しいことは、今日も別件でした。",
+    ],
     incident: "検査結果の登録で OwnerId を PetId の位置へ渡し、対象のペットに結果を結び付けられなかった。",
     exerciseCommand: "pnpm exercise:03",
     exerciseModule: {
@@ -448,6 +469,11 @@ export const sessions = [
     peerReviewPromises: "reference",
     animal: { name: "BIRD", type: "bird", avatar: "🐦" },
     summary: "外部 JSON と飼い主の連絡先を、境界で安全な値へ変換します。",
+    episode: [
+      "小鳥の検査結果は、項目が欠け、余計な値が増え、「要経過観察」だけが妙に元気な JSON でした。",
+      "システムは全部受け入れたうえ、調査ログへ飼い主の電話番号まで丁寧に転載します。",
+      "入力には寛大で、個人情報にはおしゃべり。それが現在の境界です。",
+    ],
     incident: "検査機関から届いた JSON をそのまま信頼し、調査用のログへ飼い主の連絡先が流出した。",
     exerciseCommand: "pnpm exercise:04",
     exerciseModule: {
@@ -519,6 +545,11 @@ export const sessions = [
     peerReviewPromises: "reference",
     animal: { name: "HAMSTER", type: "hamster", avatar: "🐹" },
     summary: "診察開始の予期できる失敗を、呼び出し側が扱える値として返します。",
+    episode: [
+      "ハムスターの診察開始ボタンを押すと、受付画面は「処理に失敗しました」とだけ言い残して沈黙しました。",
+      "予約なし、受付前、あるいは画面の気分なのか。後ろでは犬が吠え、列だけが伸びます。",
+      "理由を捨てた例外は、忙しい現場に推理ゲームまで追加してくれます。",
+    ],
     incident: "例外メッセージの変更で画面の分岐が壊れ、受付が失敗理由を追えなくなった。",
     exerciseCommand: "pnpm exercise:05",
     exerciseModule: {
@@ -604,6 +635,11 @@ export const sessions = [
     peerReviewPromises: "reference",
     animal: { name: "TURTLE", type: "turtle", avatar: "🐢" },
     summary: "時刻や ID など実行のたびに変わる値と保存を port に切り出し、状態と監査記録を一度に保存します。",
+    episode: [
+      "カメの診察を開始すると、予約状態だけが先に更新され、監査記録はどこにも残りませんでした。",
+      "再現テストでは時刻とイベント ID が毎回変わり、失敗の証拠まで落ち着きがありません。",
+      "状態更新は即決、記録保存は自由行動。原因究明だけが残業します。",
+    ],
     incident: "実行のたびに変わる値でテスト結果が安定せず、状態だけ保存され監査記録が残らない予約が生まれた。",
     exerciseCommand: "pnpm exercise:06",
     exerciseModule: {
@@ -721,6 +757,11 @@ export const sessions = [
     timeBreakdown: { brief: 0, teach: 4, exercise: 0, review: 1 },
     animal: { name: "Mugi", type: "cat", avatar: "🐈" },
     summary: "当日の到達点を、より大きな参照実装へ接続します。",
+    episode: [
+      "ここまで直した頃、猫のムギはとっくに帰宅し、開発者だけが参照実装の前に残っていました。",
+      "入力、失敗、イベント、保存、例外を順に追うと、さっきまでの事故がそれぞれ決まった場所で待っています。",
+      "完成形と呼んでも、事故が消えたわけではありません。置き場所と担当が決まっただけです。",
+    ],
     incident: "当日の局所的な改善を、実運用を想定した構成へどう接続するかを確認する。",
     steps: [],
     decisions: [],
