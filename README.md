@@ -10,7 +10,20 @@ pnpm test
 pnpm dev
 ```
 
-`pnpm dev` のあと、表示された localhost URL を開いてください。
+`pnpm dev` は参加者向け教材サイトを起動します。表示された localhost URL を開いてください。
+
+各セッションのサーバーサイドアプリケーションは、別のターミナルで `pnpm demo:00` から `pnpm demo:07` のいずれかを実行すると起動します。すべて同じ `http://localhost:3000` を使うため、一度に一つだけ起動してください。画面の「デモを初期状態へ戻す」で同じ予約済みfixtureへ戻せます。未実装の「電話フォローを依頼する」を選ぶと、トップページへ戻り「この機能は未実装です」と表示します。
+
+| セッション | デモコマンド |
+| --- | --- |
+| S0 | `pnpm demo:00` |
+| S1 | `pnpm demo:01` |
+| S2 | `pnpm demo:02` |
+| S3 | `pnpm demo:03` |
+| S4 | `pnpm demo:04` |
+| S5 | `pnpm demo:05` |
+| S6 | `pnpm demo:06` |
+| S7 | `pnpm demo:07` |
 
 当日前の確認には [参加者向けセットアップ](docs/event/participant-setup.md) を使ってください。進行側の準備は [ファシリテーターガイド](docs/event/facilitator-guide.md)、詰まったときの切り分けは [トラブルシューティング](docs/event/troubleshooting.md) にまとめています。
 
