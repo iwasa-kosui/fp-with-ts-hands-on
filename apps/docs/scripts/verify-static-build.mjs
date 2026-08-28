@@ -1,28 +1,21 @@
 import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import ts from "typescript";
 
-const catalogSource = await readFile(
-  new URL("../src/sessions/catalog.ts", import.meta.url),
-  "utf8",
+const sessionPages = await readdir(
+  new URL("../src/pages/sessions/", import.meta.url),
+  { withFileTypes: true },
 );
-const catalogModule = ts.transpileModule(catalogSource, {
-  compilerOptions: {
-    module: ts.ModuleKind.ESNext,
-    target: ts.ScriptTarget.ES2022,
-  },
-}).outputText;
-const { sessions } = await import(
-  `data:text/javascript;base64,${Buffer.from(catalogModule).toString("base64")}`
-);
+const sessionSlugs = sessionPages
+  .filter((entry) => entry.isFile() && entry.name.endsWith(".astro"))
+  .map((entry) => entry.name.replace(/\.astro$/, ""));
 
 const distUrl = new URL("../dist/", import.meta.url);
 const distPath = fileURLToPath(distUrl);
 const requiredHtmlFiles = [
   "index.html",
   "404.html",
-  ...sessions.map(({ slug }) => `sessions/${slug}/index.html`),
+  ...sessionSlugs.map((slug) => `sessions/${slug}/index.html`),
 ];
 
 const missingHtmlFiles = [];

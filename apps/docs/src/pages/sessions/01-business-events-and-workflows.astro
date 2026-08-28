@@ -1,11 +1,29 @@
 ---
-import SessionLayout from "../../layouts/SessionLayout.astro";
-import { sessionBySlug } from "../../sessions/catalog";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import type { SessionSummary } from "../../sessions/types";
+import "../../styles/sessions.css";
 
-const session = sessionBySlug("01-business-events-and-workflows");
-if (session === undefined) {
-  throw new Error("Unknown session: 01-business-events-and-workflows");
-}
+export const session: SessionSummary = {
+  slug: "01-business-events-and-workflows",
+  snapshot: undefined,
+  sequence: "01",
+  kind: "workshop",
+  title: "ビジネスイベントからワークフローを描く",
+  durationMinutes: 15,
+  timeBreakdown: { brief: 3, teach: 4, exercise: 6, review: 2 },
+  animal: { name: "CAT", type: "cat", avatar: "🐈" },
+  summary: "動物病院の一日を描いた散文からドメインイベントを拾い、集約の境界を班で引きます。",
+  episode: [
+    "開院3分で、柴犬は問診票を踏み、猫は棚へ登り、受付の電話は2本同時に鳴りました。",
+    "受付、看護師、獣医師、会計担当は仕事をこなしますが、同じ一日を全員が別の言葉で説明します。",
+    "システム改修の前に、人間同士の仕様が同期していないことが判明しました。",
+  ],
+  incident: "業務全体のどこからどこまでが診察開始のワークフローなのか、担当者ごとに認識が揃っていない。",
+  steps: [],
+  decisions: [],
+  finalReferences: [],
+};
+
 const timing = session.timeBreakdown;
 
 type DomainEvent = Readonly<{
@@ -75,9 +93,54 @@ const aggregateGroups = aggregateNames.map((aggregate) => ({
 const excalidrawTemplatePath =
   "docs/event/session-01-event-storming.excalidraw";
 const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/${excalidrawTemplatePath}`;
+const chapters = [
+  { id: "incident", label: "何が起きたか" },
+  { id: "workflow", label: "ワークフローを描く" },
+  { id: "review", label: "レビューと持ち帰り" },
+] as const;
+export const navigation = ({
+  previous: {
+    href: "/sessions/00-system-handover/",
+    title: "業務とシステムを引き継ぐ",
+  },
+  next: {
+    href: "/sessions/02-state-transitions/",
+    title: "予約の状態と遷移をモデル化する",
+  },
+} as const);
 ---
 
-<SessionLayout session={session}>
+<BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
+  <div class="case-file">
+    <header class="case-file__site-header">
+      <a href="/">WAN NYAN CLINIC</a>
+    </header>
+    <main>
+      <section class="case-file__hero" aria-labelledby="session-title">
+        <p class="case-file__eyebrow">SESSION {session.sequence} · {session.durationMinutes}分</p>
+        <h1 id="session-title">{session.title}</h1>
+        <p class="case-file__summary">
+          <span aria-hidden="true">{session.animal.avatar}</span>
+          {session.summary}
+        </p>
+        <aside class="case-file__episode" aria-label="動物病院のひと幕">
+          <p class="case-file__episode-label">動物病院のひと幕</p>
+          {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+        </aside>
+      </section>
+      <div class="case-file__body">
+        <aside class="case-file__toc case-file__toc--desktop">
+          <nav aria-label="ページ内目次">
+            <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
+          </nav>
+        </aside>
+        <details class="case-file__toc case-file__toc--mobile">
+          <summary>目次</summary>
+          <nav aria-label="ページ内目次">
+            <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
+          </nav>
+        </details>
+        <article class="case-file__content">
   <section id="incident">
     <h2>ブリーフィング{timing.brief}分: 動物病院の一日を読む</h2>
     <p>
@@ -197,4 +260,20 @@ const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-o
       一つのドメインイベントをさらに細かく分けているか、逆に複数の出来事を一つにまとめているか、などの観点で比べてみましょう。
     </p>
   </section>
-</SessionLayout>
+        </article>
+      </div>
+      <nav class="case-file__session-nav" aria-label="前後のセッション">
+        {
+          navigation.previous === undefined ? null : (
+            <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
+          )
+        }
+        {
+          navigation.next === undefined ? null : (
+            <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
+          )
+        }
+      </nav>
+    </main>
+  </div>
+</BaseLayout>

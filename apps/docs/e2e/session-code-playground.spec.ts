@@ -1,7 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { sessions } from "../src/sessions/catalog";
 
-const exerciseSessions = sessions.filter(({ kind }) => kind === "exercise");
+const exerciseSlugs = [
+  "02-state-transitions",
+  "03-semantic-identifiers",
+  "04-boundaries-and-pii",
+  "05-workflow-errors",
+  "06-effects-and-consistency",
+] as const;
 
 const viewports = [
   { name: "mobile", width: 390, height: 844 },
@@ -50,8 +55,8 @@ for (const viewport of viewports) {
   });
 }
 
-for (const session of exerciseSessions) {
-  const route = `/sessions/${session.slug}/`;
+for (const slug of exerciseSlugs) {
+  const route = `/sessions/${slug}/`;
   for (const viewport of viewports) {
     test(`${route} keeps the playground usable on ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize(viewport);
