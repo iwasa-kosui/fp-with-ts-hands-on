@@ -64,6 +64,7 @@ type InMemoryRuntime = TerminalRuntime &
   Readonly<{
     mounted: Record<string, string>;
     workspaceFiles: Map<string, string | Uint8Array>;
+    directories: Set<string>;
     processes: ControlledProcess[];
     emitPath: (path: string) => void;
     installCount: () => number;
@@ -71,10 +72,14 @@ type InMemoryRuntime = TerminalRuntime &
   }>;
 
 const createInMemoryRuntime = (
-  options: Readonly<{ installExitCode?: number }> = {},
+  options: Readonly<{
+    installExitCode?: number;
+    install?: (signal: AbortSignal) => Promise<number>;
+  }> = {},
 ): InMemoryRuntime => {
   const mounted: Record<string, string> = {};
   const workspaceFiles = new Map<string, string | Uint8Array>();
+  const directories = new Set<string>();
   const processes: ControlledProcess[] = [];
   const stopWatching = vi.fn();
   let watcher: ((path: string) => void) | undefined;
@@ -83,6 +88,7 @@ const createInMemoryRuntime = (
   return {
     mounted,
     workspaceFiles,
+    directories,
     processes,
     stopWatching,
     installCount: () => installs,
@@ -93,8 +99,9 @@ const createInMemoryRuntime = (
         if (!path.startsWith("../")) workspaceFiles.set(path, contents);
       }
     },
-    install: async () => {
+    install: async (signal) => {
       installs += 1;
+      if (options.install !== undefined) return options.install(signal);
       return options.installExitCode ?? 0;
     },
     readTypeFiles: async () => ({
@@ -104,9 +111,29 @@ const createInMemoryRuntime = (
       watcher = onPath;
       return stopWatching;
     },
-    readWorkspaceFile: async (path) => {
+    readWorkspaceEntry: async (path) => {
       const contents = workspaceFiles.get(path);
-      if (contents !== undefined) return contents;
+      if (contents !== undefined) return { kind: "file", contents };
+      const prefix = `${path}/`;
+      const children = new Map<string, "file" | "directory">();
+      for (const filePath of workspaceFiles.keys()) {
+        if (!filePath.startsWith(prefix)) continue;
+        const relativePath = filePath.slice(prefix.length);
+        const name = relativePath.split("/")[0]!;
+        children.set(name, relativePath.includes("/") ? "directory" : "file");
+      }
+      for (const directoryPath of directories) {
+        if (!directoryPath.startsWith(prefix)) continue;
+        const relativePath = directoryPath.slice(prefix.length);
+        const name = relativePath.split("/")[0]!;
+        children.set(name, "directory");
+      }
+      if (directories.has(path) || children.size > 0) {
+        return {
+          kind: "directory",
+          entries: [...children].map(([name, kind]) => ({ name, kind })),
+        };
+      }
       throw Object.assign(new Error(`ENOENT: ${path}`), { code: "ENOENT" });
     },
     writeWorkspaceFile: async (path, contents) => {
@@ -147,6 +174,7 @@ const requestFor = (
   },
   visibleFiles: ["src/main.ts"],
   size: { cols: 80, rows: 24 },
+  signal: new AbortController().signal,
   onPhase: (phase) => updates.phases.push(phase),
   onOutput: (chunk) => updates.output.push(chunk),
   onTypeFiles: (files) => updates.typeFiles.push({ ...files }),
@@ -298,6 +326,9 @@ describe("terminal runner", () => {
       ".cache/result.json": "cache",
       ".vite/result.json": "cache",
       ".astro/result.json": "cache",
+      ".env": "SECRET=not-projected",
+      ".git/config": "git metadata",
+      "src/.draft.ts": "draft",
       "dist/index.js": "build",
       "coverage/index.html": "coverage",
       "src/invalid.txt": new Uint8Array([0xff]),
@@ -312,6 +343,66 @@ describe("terminal runner", () => {
 
     expect(updates.changes).toEqual([]);
     await session.dispose();
+  });
+
+  it("removes projected files that become binary and reconciles directory changes", async () => {
+    const runtime = createInMemoryRuntime();
+    const updates = createUpdates();
+    const session = await createTerminalRunner(async () => runtime).start(
+      requestFor(updates),
+    );
+
+    runtime.workspaceFiles.set("src/main.ts", new Uint8Array([0xff]));
+    runtime.emitPath("src/main.ts");
+    runtime.workspaceFiles.set("src/generated/one.txt", "one");
+    runtime.workspaceFiles.set("src/generated/nested/two.txt", "two");
+    runtime.emitPath("src/generated");
+    await nextTask();
+
+    runtime.workspaceFiles.delete("src/generated/one.txt");
+    runtime.workspaceFiles.delete("src/generated/nested/two.txt");
+    runtime.emitPath("src/generated");
+    await nextTask();
+
+    expect(updates.changes).toEqual([
+      { kind: "delete", path: "src/main.ts" },
+      { kind: "write", path: "src/generated/one.txt", contents: "one" },
+      {
+        kind: "write",
+        path: "src/generated/nested/two.txt",
+        contents: "two",
+      },
+      { kind: "delete", path: "src/generated/one.txt" },
+      { kind: "delete", path: "src/generated/nested/two.txt" },
+    ]);
+    expect(updates.output).toEqual([]);
+    await session.dispose();
+  });
+
+  it("aborts an installation in progress and disposes its runtime", async () => {
+    let installationStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      installationStarted = resolve;
+    });
+    const runtime = createInMemoryRuntime({
+      install: async (signal) => {
+        installationStarted();
+        return new Promise<number>((resolve) => {
+          signal.addEventListener("abort", () => resolve(143), { once: true });
+        });
+      },
+    });
+    const controller = new AbortController();
+    const starting = createTerminalRunner(async () => runtime).start(
+      requestFor(createUpdates(), { signal: controller.signal }),
+    );
+    await started;
+
+    controller.abort();
+
+    await expect(starting).rejects.toMatchObject({ name: "AbortError" });
+    expect(runtime.processes).toHaveLength(0);
+    expect(runtime.dispose).toHaveBeenCalledOnce();
   });
 
   it("disposes a failed install and can start again with a new runtime", async () => {

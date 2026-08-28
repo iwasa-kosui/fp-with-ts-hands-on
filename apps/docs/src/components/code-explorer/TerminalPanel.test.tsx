@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
@@ -54,13 +54,17 @@ const defaultProps = (): TerminalPanelProps => ({
   onStateChange: vi.fn(),
 });
 
-const renderPanel = async (props: Partial<TerminalPanelProps> = {}) => {
+const renderPanel = async (
+  props: Partial<TerminalPanelProps> = {},
+  strict = false,
+) => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
   roots.push(root);
   await act(async () => {
-    root.render(<TerminalPanel {...defaultProps()} {...props} />);
+    const panel = <TerminalPanel {...defaultProps()} {...props} />;
+    root.render(strict ? <StrictMode>{panel}</StrictMode> : panel);
   });
   return host;
 };
@@ -141,6 +145,7 @@ describe("TerminalPanel", () => {
     expect(request?.files).toEqual(files);
     expect(request?.visibleFiles).toEqual(["src/main.ts"]);
     expect(request?.size).toEqual({ cols: 80, rows: 24 });
+    expect(request?.signal.aborted).toBe(false);
     expect(states).toContain("preparing");
     expect(states.at(-1)).toBe("ready");
     expect(onTypeFiles).toHaveBeenCalledWith({
@@ -249,5 +254,51 @@ describe("TerminalPanel", () => {
     expect(view.dispose).toHaveBeenCalledOnce();
     expect(session.dispose).toHaveBeenCalledOnce();
     expect(onSessionChange).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it("boots normally after the StrictMode setup-cleanup probe", async () => {
+    const session = createSession();
+    const view = createView();
+    const host = await renderPanel(
+      {
+        runnerFactory: () => ({ start: async () => session }),
+        loadTerminalView: async () => view,
+      },
+      true,
+    );
+
+    await clickAction(host, "start-terminal");
+
+    expect(view.open).toHaveBeenCalledOnce();
+    expect(session.dispose).not.toHaveBeenCalled();
+    expect(host.querySelector('[data-state="ready"]')).not.toBeNull();
+  });
+
+  it("aborts startup and disposes its view when unmounted during installation", async () => {
+    const view = createView();
+    let request: TerminalStartRequest | undefined;
+    const host = await renderPanel({
+      runnerFactory: () => ({
+        start: async (nextRequest) => {
+          request = nextRequest;
+          return new Promise<TerminalSession>((_resolve, reject) => {
+            nextRequest.signal.addEventListener(
+              "abort",
+              () => reject(nextRequest.signal.reason),
+              { once: true },
+            );
+          });
+        },
+      }),
+      loadTerminalView: async () => view,
+    });
+    await clickAction(host, "start-terminal");
+
+    const root = roots.pop()!;
+    await act(async () => root.unmount());
+    await act(async () => undefined);
+
+    expect(request?.signal.aborted).toBe(true);
+    expect(view.dispose).toHaveBeenCalledOnce();
   });
 });

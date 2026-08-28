@@ -123,29 +123,43 @@ export const TerminalPanel = ({
   const pendingExitCode = useRef<number>();
   const mounted = useRef(true);
   const starting = useRef(false);
+  const startupAbort = useRef<AbortController>();
+  const attemptGeneration = useRef(0);
+  const onTypeFilesRef = useRef(onTypeFiles);
+  const onWorkspaceChangeRef = useRef(onWorkspaceChange);
+  const onSessionChangeRef = useRef(onSessionChange);
+  const onStateChangeRef = useRef(onStateChange);
 
-  const transition = useCallback(
-    (nextState: PanelState) => {
-      if (!mounted.current) return;
-      setState(nextState);
-      onStateChange(nextState.kind);
-    },
-    [onStateChange],
-  );
+  onTypeFilesRef.current = onTypeFiles;
+  onWorkspaceChangeRef.current = onWorkspaceChange;
+  onSessionChangeRef.current = onSessionChange;
+  onStateChangeRef.current = onStateChange;
+
+  const transition = useCallback((nextState: PanelState) => {
+    if (!mounted.current) return;
+    setState(nextState);
+    onStateChangeRef.current(nextState.kind);
+  }, []);
 
   useEffect(() => {
-    onStateChange("unstarted");
+    mounted.current = true;
+    onStateChangeRef.current("unstarted");
     return () => {
       mounted.current = false;
+      attemptGeneration.current += 1;
+      startupAbort.current?.abort();
+      startupAbort.current = undefined;
       inputSubscription.current?.dispose();
       resizeObserver.current?.disconnect();
-      terminalView.current?.dispose();
+      const view = terminalView.current;
+      terminalView.current = undefined;
+      view?.dispose();
       const session = terminalSession.current;
       terminalSession.current = undefined;
-      onSessionChange(undefined);
+      onSessionChangeRef.current(undefined);
       if (session !== undefined) void session.dispose();
     };
-  }, [onSessionChange, onStateChange]);
+  }, []);
 
   useEffect(() => {
     if (
@@ -185,6 +199,13 @@ export const TerminalPanel = ({
     }
 
     starting.current = true;
+    const controller = new AbortController();
+    startupAbort.current = controller;
+    const attempt = ++attemptGeneration.current;
+    const isActiveAttempt = () =>
+      mounted.current &&
+      attemptGeneration.current === attempt &&
+      !controller.signal.aborted;
     pendingOutput.current = [];
     pendingExitCode.current = undefined;
     transition({ kind: "preparing", phase: "booting" });
@@ -192,7 +213,7 @@ export const TerminalPanel = ({
     let view: TerminalView | undefined;
     try {
       view = await loadTerminalView();
-      if (!mounted.current) {
+      if (!isActiveAttempt()) {
         view.dispose();
         return;
       }
@@ -202,17 +223,26 @@ export const TerminalPanel = ({
         files,
         visibleFiles,
         size: initialTerminalSize,
-        onPhase: (phase) => transition({ kind: "preparing", phase }),
+        signal: controller.signal,
+        onPhase: (phase) => {
+          if (isActiveAttempt()) transition({ kind: "preparing", phase });
+        },
         onOutput: (chunk) => {
+          if (!isActiveAttempt()) return;
           if (terminalOpened.current) {
             terminalView.current?.write(chunk);
           } else {
             pendingOutput.current.push(chunk);
           }
         },
-        onTypeFiles,
-        onWorkspaceChange,
+        onTypeFiles: (nextFiles) => {
+          if (isActiveAttempt()) onTypeFilesRef.current(nextFiles);
+        },
+        onWorkspaceChange: (change) => {
+          if (isActiveAttempt()) onWorkspaceChangeRef.current(change);
+        },
         onExit: (exitCode) => {
+          if (!isActiveAttempt()) return;
           if (terminalSession.current === undefined) {
             pendingExitCode.current = exitCode;
             return;
@@ -220,13 +250,14 @@ export const TerminalPanel = ({
           transition({ kind: "exited", exitCode, restarting: false });
         },
       });
-      if (!mounted.current) {
+      if (!isActiveAttempt()) {
         await session.dispose();
+        if (terminalView.current === view) terminalView.current = undefined;
         view.dispose();
         return;
       }
       terminalSession.current = session;
-      onSessionChange(session);
+      onSessionChangeRef.current(session);
       const exitCode = pendingExitCode.current;
       pendingExitCode.current = undefined;
       transition(
@@ -235,18 +266,22 @@ export const TerminalPanel = ({
           : { kind: "exited", exitCode, restarting: false },
       );
     } catch (error: unknown) {
-      view?.dispose();
-      if (terminalView.current === view) terminalView.current = undefined;
-      transition({ kind: "failed", message: messageFrom(error) });
+      if (view !== undefined && terminalView.current === view) {
+        terminalView.current = undefined;
+        view.dispose();
+      }
+      if (isActiveAttempt()) {
+        transition({ kind: "failed", message: messageFrom(error) });
+      }
     } finally {
-      starting.current = false;
+      if (attemptGeneration.current === attempt) {
+        starting.current = false;
+        startupAbort.current = undefined;
+      }
     }
   }, [
     files,
     loadTerminalView,
-    onSessionChange,
-    onTypeFiles,
-    onWorkspaceChange,
     runnerFactory,
     supportsRuntime,
     transition,
@@ -267,7 +302,7 @@ export const TerminalPanel = ({
     } catch (error: unknown) {
       await session.dispose();
       terminalSession.current = undefined;
-      onSessionChange(undefined);
+      onSessionChangeRef.current(undefined);
       inputSubscription.current?.dispose();
       resizeObserver.current?.disconnect();
       view.dispose();
@@ -275,7 +310,7 @@ export const TerminalPanel = ({
       terminalOpened.current = false;
       transition({ kind: "failed", message: messageFrom(error) });
     }
-  }, [onSessionChange, state, transition]);
+  }, [state, transition]);
 
   const showsTerminal = state.kind === "ready" || state.kind === "exited";
 
@@ -314,11 +349,14 @@ export const TerminalPanel = ({
       ) : null}
       {showsTerminal ? (
         <div className="code-explorer__terminal-shell">
-          <div
-            ref={terminalHost}
-            className="code-explorer__terminal-screen"
-            aria-label="コード実行ターミナル"
-          />
+          <div className="code-explorer__terminal-viewport">
+            <div
+              ref={terminalHost}
+              className="code-explorer__terminal-screen"
+              role="region"
+              aria-label="コード実行ターミナル"
+            />
+          </div>
           {state.kind === "exited" ? (
             <div className="code-explorer__terminal-exit" aria-live="polite">
               <p>シェルが終了しました（終了コード {state.exitCode}）。</p>

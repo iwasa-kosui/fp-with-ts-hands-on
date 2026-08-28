@@ -21,6 +21,37 @@ type EditorRuntime = EditorResources & {
 
 export const modelUriFor = (path: string): string => `file:///${path}`;
 
+const languageForPath = (path: string): string => {
+  const extension = path.toLowerCase().split(".").at(-1);
+  switch (extension) {
+    case "ts":
+    case "tsx":
+    case "mts":
+    case "cts":
+      return "typescript";
+    case "js":
+    case "jsx":
+    case "mjs":
+    case "cjs":
+      return "javascript";
+    case "json":
+      return "json";
+    case "md":
+    case "markdown":
+      return "markdown";
+    case "css":
+      return "css";
+    case "html":
+    case "htm":
+      return "html";
+    case "yaml":
+    case "yml":
+      return "yaml";
+    default:
+      return "plaintext";
+  }
+};
+
 const configureTypeScript = (monaco: MonacoApi): void => {
   monaco.typescript.typescriptDefaults.setCompilerOptions({
     allowNonTsExtensions: true,
@@ -35,16 +66,21 @@ const ensureProjectModels = (
   runtime: EditorResources,
   files: EditorProps["files"],
 ): void => {
-  for (const [path, source] of Object.entries(files)) {
-    if (!path.endsWith(".ts")) continue;
+  const currentPaths = new Set(Object.keys(files));
+  for (const [path, model] of runtime.models) {
+    if (currentPaths.has(path)) continue;
+    runtime.models.delete(path);
+    if (runtime.ownedModels.delete(model)) model.dispose();
+  }
 
+  for (const [path, source] of Object.entries(files)) {
     let model = runtime.models.get(path);
     if (model === undefined) {
       const uri = runtime.monaco.Uri.parse(modelUriFor(path));
       const existingModel = runtime.monaco.editor.getModel(uri);
       model =
         existingModel ??
-        runtime.monaco.editor.createModel(source, "typescript", uri);
+        runtime.monaco.editor.createModel(source, languageForPath(path), uri);
       runtime.models.set(path, model);
       if (existingModel === null) runtime.ownedModels.add(model);
     }

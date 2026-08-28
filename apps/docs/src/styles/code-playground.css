@@ -314,11 +314,16 @@
   overflow: hidden;
 }
 
+.code-playground .code-explorer__terminal-viewport {
+  min-width: 0;
+  padding: 0.5rem;
+  background: var(--playground-code);
+}
+
 .code-playground .code-explorer__terminal-screen {
   width: 100%;
   height: clamp(18rem, 34vh, 24rem);
   min-width: 0;
-  padding: 0.5rem;
   overflow: hidden;
   background: var(--playground-code);
 }

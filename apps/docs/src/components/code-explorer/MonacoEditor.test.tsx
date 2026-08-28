@@ -43,6 +43,7 @@ const monacoState = vi.hoisted(() => {
   }>;
 
   const models = new Map<string, FakeModel>();
+  const modelLanguages = new Map<string, string>();
   const decorationCollections: Array<{
     decorations: readonly FakeDecoration[];
     clear: ReturnType<typeof vi.fn>;
@@ -88,9 +89,10 @@ const monacoState = vi.hoisted(() => {
       Uri: { parse: (uri: string) => uri },
       editor: {
         getModel: (uri: string) => models.get(uri) ?? null,
-        createModel: (source: string, _language: string, uri: string) => {
+        createModel: (source: string, language: string, uri: string) => {
           const model = new FakeModel(source);
           models.set(uri, model);
+          modelLanguages.set(uri, language);
           return model;
         },
         create: createEditor,
@@ -106,8 +108,10 @@ const monacoState = vi.hoisted(() => {
     createEditor,
     decorationCollections,
     modelFor: (path: string) => models.get(`file:///${path}`),
+    languageFor: (path: string) => modelLanguages.get(`file:///${path}`),
     reset: () => {
       models.clear();
+      modelLanguages.clear();
       decorationCollections.splice(0);
       currentModel = null;
     },
@@ -327,5 +331,47 @@ describe("MonacoEditor", () => {
     await mounted.unmount();
 
     expect(currentDecorations.clear).toHaveBeenCalledTimes(1);
+  });
+
+  it("creates editable models for projected text files and disposes removed models", async () => {
+    const initialProps: ComponentProps<typeof MonacoEditor> = {
+      path: "src/first.ts",
+      value: projectFiles["src/first.ts"],
+      files: projectFiles,
+      typeFiles: {},
+      disabled: false,
+      readOnly: false,
+      highlights: [],
+      onChange: () => undefined,
+    };
+    const mounted = await renderHydratedEditor(initialProps);
+    const projectedFiles = {
+      ...projectFiles,
+      "README.md": "# Notes",
+      "config.json": '{"enabled":true}',
+      "src/view.tsx": "export const View = () => <main />;",
+      "notes.txt": "remember this",
+    };
+
+    await mounted.rerender({
+      ...initialProps,
+      path: "README.md",
+      value: projectedFiles["README.md"],
+      files: projectedFiles,
+    });
+
+    expect(monacoState.editor.getModel()).toBe(monacoState.modelFor("README.md"));
+    expect(monacoState.languageFor("README.md")).toBe("markdown");
+    expect(monacoState.languageFor("config.json")).toBe("json");
+    expect(monacoState.languageFor("src/view.tsx")).toBe("typescript");
+    expect(monacoState.languageFor("notes.txt")).toBe("plaintext");
+
+    const removedModel = monacoState.modelFor("README.md")!;
+    await mounted.rerender(initialProps);
+
+    expect(monacoState.editor.getModel()).toBe(
+      monacoState.modelFor("src/first.ts"),
+    );
+    expect(removedModel.dispose).toHaveBeenCalledOnce();
   });
 });

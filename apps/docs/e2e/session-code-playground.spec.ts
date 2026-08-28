@@ -107,7 +107,7 @@ test("/sessions/02-state-transitions/ gives the editor most horizontal space on 
 });
 
 test("/sessions/02-state-transitions/ runs arbitrary commands and reflects created files", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(150_000);
   await page.setViewportSize({ width: 1440, height: 1200 });
   await page.goto("/sessions/02-state-transitions/");
 
@@ -127,24 +127,91 @@ test("/sessions/02-state-transitions/ runs arbitrary commands and reflects creat
 
   const terminalInput = terminal.locator(".xterm-helper-textarea");
   await terminalInput.focus();
-  await page.keyboard.type("echo __CODEX_TERMINAL_READY__");
+  await page.keyboard.type("echo __CODEX_TERMINAL_4'2'__");
   await page.keyboard.press("Enter");
-  await expect(terminal).toContainText("__CODEX_TERMINAL_READY__", {
+  await expect(terminal).toContainText("__CODEX_TERMINAL_42__", {
     timeout: 10_000,
   });
 
   await terminalInput.focus();
   await page.keyboard.type(
-    "printf 'export const created = true;\\n' > src/created.ts",
+    "echo 'created from terminal' > src/created.txt && echo __FILE_4'2'__",
   );
   await page.keyboard.press("Enter");
+  await expect(terminal).toContainText("__FILE_42__", { timeout: 10_000 });
+
   await terminalInput.focus();
-  await page.keyboard.type("ls src/created.ts");
+  await page.keyboard.type("ls src/created.txt && echo __LIST_4'2'__");
   await page.keyboard.press("Enter");
-  await expect(terminal).toContainText("src/created.ts", { timeout: 10_000 });
+  await expect(terminal).toContainText("__LIST_42__", { timeout: 10_000 });
+  const createdFile = playground.locator('[data-path="src/created.txt"]');
+  await expect(createdFile).toBeVisible({ timeout: 10_000 });
+  await createdFile.click();
   await expect(
-    playground.locator('[data-path="src/created.ts"]'),
-  ).toBeVisible({ timeout: 10_000 });
+    playground.locator('[aria-label="コードエディタ: src/created.txt"]'),
+  ).toBeVisible();
+
+  const editorInput = playground.getByRole("textbox", {
+    name: "Editor content",
+  });
+  await editorInput.focus();
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.type("edited-from-monaco");
+
+  await terminalInput.focus();
+  await page.keyboard.type("cat src/created.txt && echo __CAT_4'2'__");
+  await page.keyboard.press("Enter");
+  await expect(terminal).toContainText("edited-from-monaco", {
+    timeout: 10_000,
+  });
+  await expect(terminal).toContainText("__CAT_42__", { timeout: 10_000 });
+
+  await terminalInput.focus();
+  await page.keyboard.type(
+    "echo terminal-updated > src/created.txt && echo __UPDATE_4'2'__",
+  );
+  await page.keyboard.press("Enter");
+  await expect(terminal).toContainText("__UPDATE_42__", { timeout: 10_000 });
+  await expect(playground.locator(".code-explorer__monaco .view-lines")).toContainText(
+    "terminal-updated",
+    { timeout: 10_000 },
+  );
+
+  await terminalInput.focus();
+  await page.keyboard.type("rm src/created.txt && echo __DELETE_4'2'__");
+  await page.keyboard.press("Enter");
+  await expect(terminal).toContainText("__DELETE_42__", { timeout: 10_000 });
+  await expect(createdFile).toHaveCount(0, { timeout: 10_000 });
+
+  await terminalInput.focus();
+  await page.keyboard.type("pnpm exercise:02");
+  await page.keyboard.press("Enter");
+  await expect(terminal).toContainText(/Tests\s+4 failed/, {
+    timeout: 30_000,
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const terminalLayout = await terminal.evaluate((element) => {
+    const screen = element.querySelector<HTMLElement>(".xterm-screen");
+    if (screen === null) throw new Error("xterm screen is missing");
+    return {
+      hostWidth: element.clientWidth,
+      hostHeight: element.clientHeight,
+      screenWidth: screen.getBoundingClientRect().width,
+      screenHeight: screen.getBoundingClientRect().height,
+    };
+  });
+  expect(terminalLayout.screenWidth).toBeLessThanOrEqual(
+    terminalLayout.hostWidth + 1,
+  );
+  expect(terminalLayout.screenHeight).toBeLessThanOrEqual(
+    terminalLayout.hostHeight + 1,
+  );
+  const pageWidths = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(pageWidths.scrollWidth).toBeLessThanOrEqual(pageWidths.clientWidth + 1);
 });
 
 for (const session of exerciseSessions) {

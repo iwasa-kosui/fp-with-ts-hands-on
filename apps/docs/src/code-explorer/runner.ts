@@ -16,6 +16,7 @@ export type TerminalStartRequest = Readonly<{
   files: ProjectFiles;
   visibleFiles: readonly string[];
   size: TerminalSize;
+  signal: AbortSignal;
   onPhase: (phase: TerminalPhase) => void;
   onOutput: (chunk: string) => void;
   onTypeFiles: (files: ProjectFiles) => void;
@@ -45,14 +46,24 @@ export type TerminalRuntimeProcess = Readonly<{
 
 export type TerminalRuntime = Readonly<{
   mount: (files: ProjectFiles) => Promise<void>;
-  install: () => Promise<number>;
+  install: (signal: AbortSignal) => Promise<number>;
   readTypeFiles: () => Promise<ProjectFiles>;
   watchWorkspace: (onPath: (path: string) => void) => () => void;
-  readWorkspaceFile: (path: string) => Promise<string | Uint8Array>;
+  readWorkspaceEntry: (path: string) => Promise<WorkspaceEntry>;
   writeWorkspaceFile: (path: string, contents: string) => Promise<void>;
   spawnShell: (size: TerminalSize) => Promise<TerminalRuntimeProcess>;
   dispose: () => void | Promise<void>;
 }>;
+
+export type WorkspaceEntry =
+  | Readonly<{ kind: "file"; contents: string | Uint8Array }>
+  | Readonly<{
+      kind: "directory";
+      entries: readonly Readonly<{
+        name: string;
+        kind: "file" | "directory";
+      }>[];
+    }>;
 
 export const buildFileSystemTree = (files: ProjectFiles): FileSystemTree => {
   const tree: FileSystemTree = {};
@@ -128,10 +139,15 @@ const normalizeWorkspacePath = (path: string): string | undefined => {
   return relativePath;
 };
 
-const isIgnoredWorkspacePath = (path: string): boolean => {
+const isIgnoredWorkspacePath = (
+  path: string,
+  initialVisiblePaths: ReadonlySet<string>,
+): boolean => {
   const segments = path.split("/");
   return (
     segments.some((segment) => ignoredDirectories.has(segment)) ||
+    (segments.some((segment) => segment.startsWith(".")) &&
+      !initialVisiblePaths.has(path)) ||
     segments.at(-1) === "package-lock.json"
   );
 };
@@ -146,6 +162,13 @@ const decodeTextFile = (contents: string | Uint8Array): string | undefined => {
   } catch {
     return undefined;
   }
+};
+
+const abortError = (): DOMException =>
+  new DOMException("Terminal startup was aborted", "AbortError");
+
+const throwIfAborted = (signal: AbortSignal): void => {
+  if (signal.aborted) throw signal.reason ?? abortError();
 };
 
 type ActiveShell = Readonly<{
@@ -193,11 +216,23 @@ export const createTerminalRunner = (
       const process = await runtime.spawnShell(size);
       const generation = ++shellGeneration;
       const writer = process.input.getWriter();
-      const outputDone = process.output.pipeTo(
-        new WritableStream<string>({
-          write: (chunk) => request.onOutput(chunk),
-        }),
-      );
+      const outputDone = process.output
+        .pipeTo(
+          new WritableStream<string>({
+            write: (chunk) => {
+              if (!disposed && !request.signal.aborted) {
+                request.onOutput(chunk);
+              }
+            },
+          }),
+        )
+        .catch((error: unknown) => {
+          if (!disposed && !request.signal.aborted) {
+            request.onOutput(
+              `\r\n[ターミナルエラー] ${errorMessage(error)}\r\n`,
+            );
+          }
+        });
       const shell = { generation, process, writer, outputDone };
       activeShell = shell;
       void process.exit
@@ -211,44 +246,86 @@ export const createTerminalRunner = (
           }
         })
         .catch((error: unknown) => {
-          if (!disposed) {
+          if (!disposed && !request.signal.aborted) {
             request.onOutput(`\r\n[ターミナルエラー] ${errorMessage(error)}\r\n`);
+            if (activeShell?.generation === generation) request.onExit(1);
           }
         });
+    };
+
+    const removeProjectedPath = (path: string) => {
+      for (const projectedPath of [...projectedFiles.keys()]) {
+        if (
+          projectedPath !== path &&
+          !projectedPath.startsWith(`${path}/`)
+        ) {
+          continue;
+        }
+        projectedFiles.delete(projectedPath);
+        request.onWorkspaceChange({ kind: "delete", path: projectedPath });
+      }
     };
 
     const synchronizePath = async (rawPath: string) => {
       if (runtime === undefined || disposed) return;
       const path = normalizeWorkspacePath(rawPath);
-      if (path === undefined || isIgnoredWorkspacePath(path)) return;
+      if (
+        path === undefined ||
+        isIgnoredWorkspacePath(path, initialVisiblePaths)
+      ) {
+        return;
+      }
       if (initialProjectPaths.has(path) && !initialVisiblePaths.has(path)) {
         return;
       }
 
       try {
-        const contents = decodeTextFile(await runtime.readWorkspaceFile(path));
-        if (contents === undefined || projectedFiles.get(path) === contents) {
+        const entry = await runtime.readWorkspaceEntry(path);
+        if (disposed || request.signal.aborted) return;
+        if (entry.kind === "directory") {
+          const currentChildren = new Set(
+            entry.entries.map(({ name }) => `${path}/${name}`),
+          );
+          for (const projectedPath of [...projectedFiles.keys()]) {
+            if (!projectedPath.startsWith(`${path}/`)) continue;
+            const relativePath = projectedPath.slice(path.length + 1);
+            const immediateChild = `${path}/${relativePath.split("/")[0]}`;
+            if (!currentChildren.has(immediateChild)) {
+              removeProjectedPath(immediateChild);
+            }
+          }
+          for (const child of entry.entries) {
+            await synchronizePath(`${path}/${child.name}`);
+          }
           return;
         }
+        const contents = decodeTextFile(entry.contents);
+        if (contents === undefined) {
+          removeProjectedPath(path);
+          return;
+        }
+        if (projectedFiles.get(path) === contents) return;
         projectedFiles.set(path, contents);
         request.onWorkspaceChange({ kind: "write", path, contents });
       } catch (error: unknown) {
         if (!isMissingPathError(error)) throw error;
-        if (!projectedFiles.has(path)) return;
-        projectedFiles.delete(path);
-        request.onWorkspaceChange({ kind: "delete", path });
+        removeProjectedPath(path);
       }
     };
 
     try {
+      throwIfAborted(request.signal);
       request.onPhase("booting");
       runtime = await loadRuntime();
+      throwIfAborted(request.signal);
 
       request.onPhase("mounting");
       await runtime.mount(request.files);
+      throwIfAborted(request.signal);
 
       request.onPhase("installing");
-      const installExitCode = await runtime.install();
+      const installExitCode = await runtime.install(request.signal);
+      throwIfAborted(request.signal);
       if (installExitCode !== 0) {
         throw new Error(
           `Dependency installation failed with exit code ${installExitCode}`,
@@ -257,6 +334,7 @@ export const createTerminalRunner = (
 
       request.onPhase("collecting-types");
       request.onTypeFiles(await runtime.readTypeFiles());
+      throwIfAborted(request.signal);
 
       stopWatching = runtime.watchWorkspace((path) => {
         fileEventQueue = fileEventQueue
@@ -272,6 +350,7 @@ export const createTerminalRunner = (
 
       request.onPhase("starting-shell");
       await spawnShell(request.size);
+      throwIfAborted(request.signal);
 
       return {
         writeInput: async (data) => {
@@ -297,8 +376,8 @@ export const createTerminalRunner = (
           disposed = true;
           stopWatching?.();
           stopWatching = undefined;
-          await fileEventQueue;
           await stopShell();
+          await fileEventQueue;
           await runtime?.dispose();
           runtime = undefined;
         },
@@ -394,7 +473,10 @@ const writeParentFiles = async (
   }
 };
 
-const runInstallation = async (runtime: WebContainer): Promise<number> => {
+const runInstallation = async (
+  runtime: WebContainer,
+  signal: AbortSignal,
+): Promise<number> => {
   const process = await runtime.spawn(
     "npm",
     ["install", "--no-progress", "--no-audit", "--no-fund"],
@@ -403,9 +485,16 @@ const runInstallation = async (runtime: WebContainer): Promise<number> => {
       env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" },
     },
   );
-  const output = process.output.pipeTo(new WritableStream<string>());
-  const [exitCode] = await Promise.all([process.exit, output]);
-  return exitCode;
+  const stop = () => process.kill();
+  signal.addEventListener("abort", stop, { once: true });
+  if (signal.aborted) stop();
+  try {
+    const output = process.output.pipeTo(new WritableStream<string>());
+    const [exitCode] = await Promise.all([process.exit, output]);
+    return exitCode;
+  } finally {
+    signal.removeEventListener("abort", stop);
+  }
 };
 
 const adaptWebContainer = (runtime: WebContainer): TerminalRuntime => ({
@@ -417,7 +506,7 @@ const adaptWebContainer = (runtime: WebContainer): TerminalRuntime => ({
     });
     await writeParentFiles(runtime, parent);
   },
-  install: async () => runInstallation(runtime),
+  install: async (signal) => runInstallation(runtime, signal),
   readTypeFiles: async () => readExternalTypeFiles(runtime),
   watchWorkspace: (onPath) => {
     const watcher = runtime.fs.watch(
@@ -433,8 +522,28 @@ const adaptWebContainer = (runtime: WebContainer): TerminalRuntime => ({
     );
     return () => watcher.close();
   },
-  readWorkspaceFile: async (path) =>
-    runtime.fs.readFile(`${runtimeProjectDirectory}/${path}`),
+  readWorkspaceEntry: async (path) => {
+    const runtimePath = `${runtimeProjectDirectory}/${path}`;
+    try {
+      return { kind: "file", contents: await runtime.fs.readFile(runtimePath) };
+    } catch (fileError: unknown) {
+      if (isMissingPathError(fileError)) throw fileError;
+      try {
+        const entries = await runtime.fs.readdir(runtimePath, {
+          withFileTypes: true,
+        });
+        return {
+          kind: "directory",
+          entries: entries.map((entry) => ({
+            name: entry.name,
+            kind: entry.isDirectory() ? "directory" : "file",
+          })),
+        };
+      } catch {
+        throw fileError;
+      }
+    }
+  },
   writeWorkspaceFile: async (path, contents) => {
     await runtime.fs.writeFile(`${runtimeProjectDirectory}/${path}`, contents);
   },
