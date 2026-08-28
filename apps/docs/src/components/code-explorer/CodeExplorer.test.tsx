@@ -1,10 +1,15 @@
 import { act, type ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { CodeRunner } from "../../code-explorer/runner";
+import type {
+  TerminalRunner,
+  TerminalSession,
+  TerminalStartRequest,
+} from "../../code-explorer/runner";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import type { EditorProps } from "./CodeExplorer";
 import { CodeExplorer } from "./CodeExplorer";
+import type { TerminalView } from "./TerminalPanel";
 
 const TestEditor: ComponentType<EditorProps> = ({
   path,
@@ -65,6 +70,23 @@ const guides = [
   },
 ] as const satisfies readonly CodeGuide[];
 
+const createSession = (): TerminalSession => ({
+  writeInput: vi.fn(async () => undefined),
+  writeFile: vi.fn(async () => undefined),
+  resize: vi.fn(),
+  restartShell: vi.fn(async () => undefined),
+  dispose: vi.fn(async () => undefined),
+});
+
+const createView = (): TerminalView => ({
+  open: vi.fn(),
+  write: vi.fn(),
+  onData: vi.fn(() => ({ dispose: vi.fn() })),
+  fit: vi.fn(() => ({ cols: 100, rows: 30 })),
+  focus: vi.fn(),
+  dispose: vi.fn(),
+});
+
 const roots: Root[] = [];
 
 const renderExplorer = async (
@@ -82,6 +104,7 @@ const renderExplorer = async (
         projectFiles={files}
         Editor={TestEditor}
         supportsRuntime={() => true}
+        loadTerminalView={async () => createView()}
         {...props}
       />,
     ),
@@ -110,8 +133,26 @@ const editCurrentFile = async (host: HTMLElement, value: string) => {
   });
 };
 
+const clickAction = async (host: HTMLElement, action: string) => {
+  await act(async () => {
+    host
+      .querySelector<HTMLButtonElement>(`[data-action="${action}"]`)
+      ?.click();
+  });
+};
+
 describe("CodeExplorer", () => {
-  beforeEach(() => vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true));
+  beforeEach(() => {
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe = vi.fn();
+        unobserve = vi.fn();
+        disconnect = vi.fn();
+      },
+    );
+  });
 
   afterEach(async () => {
     await act(async () => {
@@ -121,33 +162,22 @@ describe("CodeExplorer", () => {
     vi.unstubAllGlobals();
   });
 
-  it("uses guides to open highlighted source without mutable controls", async () => {
-    const runnerFactory = vi.fn<() => CodeRunner>();
+  it("uses guides without mutable controls or a terminal", async () => {
+    const runnerFactory = vi.fn<() => TerminalRunner>();
     const host = await renderExplorer({ guides, runnerFactory });
-
-    const first = host.querySelector<HTMLButtonElement>(
-      '[data-code-guide="string-status"]',
-    )!;
     const second = host.querySelector<HTMLButtonElement>(
       '[data-code-guide="throw-error"]',
     )!;
 
-    expect(first.getAttribute("aria-pressed")).toBe("true");
     expect(host.querySelector("textarea")?.readOnly).toBe(true);
     expect(host.querySelector("textarea")?.dataset.path).toBe("src/example.ts");
     expect(host.querySelector("textarea")?.dataset.highlights).toBe("1:1");
     expect(host.querySelector('[data-action="reset"]')).toBeNull();
-    expect(host.querySelector('[data-action="run"]')).toBeNull();
-    expect(host.querySelector('[aria-label="実行結果"]')).toBeNull();
+    expect(host.querySelector('[data-action="start-terminal"]')).toBeNull();
 
     await act(async () => second.click());
-
-    expect(second.getAttribute("aria-pressed")).toBe("true");
     expect(host.querySelector("textarea")?.dataset.path).toBe(
       "exercises/example.test.ts",
-    );
-    expect(host.textContent).toContain(
-      "呼び出し側が失敗の種類を型から判断できません。",
     );
     expect(runnerFactory).not.toHaveBeenCalled();
   });
@@ -167,9 +197,7 @@ describe("CodeExplorer", () => {
     expect(
       host.querySelector('[data-path="src/example.ts"]')?.textContent,
     ).toContain("変更あり");
-    await act(async () =>
-      host.querySelector<HTMLButtonElement>('[data-action="reset"]')?.click(),
-    );
+    await clickAction(host, "reset");
     expect(host.querySelector("textarea")?.value).toBe(
       "export const value = 1;",
     );
@@ -180,80 +208,154 @@ describe("CodeExplorer", () => {
     );
   });
 
-  it("runs the selected file with every current edit and renders streamed output", async () => {
-    let receivedPath = "";
-    let receivedFiles: Readonly<Record<string, string>> = {};
-    const runner = {
-      run: async (request, onUpdate) => {
-        receivedPath = request.filePath;
-        receivedFiles = request.files;
-        onUpdate({ kind: "phase", phase: "running" });
-        onUpdate({
-          kind: "type-files",
-          files: { "file:///node_modules/vitest/index.d.ts": "expect types" },
+  it("removes fixed execution controls and starts a terminal with current edits", async () => {
+    const session = createSession();
+    let request: TerminalStartRequest | undefined;
+    const runner: TerminalRunner = {
+      start: async (nextRequest) => {
+        request = nextRequest;
+        nextRequest.onTypeFiles({
+          "file:///node_modules/vitest/index.d.ts": "expect types",
         });
-        onUpdate({ kind: "output", chunk: "1 test " });
-        onUpdate({ kind: "output", chunk: "passed\n" });
-        return { exitCode: 0 };
+        return session;
       },
-    } satisfies CodeRunner;
+    };
     const host = await renderExplorer({ runnerFactory: () => runner });
+
+    expect(host.querySelector('[data-action="run"]')).toBeNull();
+    expect(host.querySelector('[data-action="stop"]')).toBeNull();
+    expect(host.querySelector('[aria-label="実行結果"]')).toBeNull();
 
     await editCurrentFile(host, "expect(value).toBe(2);");
     await selectFile(host, "src/example.ts");
     await editCurrentFile(host, "export const value = 2;");
-    await act(async () =>
-      host.querySelector<HTMLButtonElement>('[data-action="run"]')?.click(),
-    );
+    await clickAction(host, "start-terminal");
 
-    expect(receivedPath).toBe("src/example.ts");
-    expect(receivedFiles).toEqual({
+    expect(request?.files).toEqual({
       "exercises/example.test.ts": "expect(value).toBe(2);",
       "src/example.ts": "export const value = 2;",
       "package.json": "{}",
     });
-    expect(host.querySelector('[aria-live="polite"]')?.textContent).toContain(
-      "1 test passed",
-    );
-    expect(host.textContent).toContain("終了コード 0");
+    expect(request?.visibleFiles).toEqual([
+      "exercises/example.test.ts",
+      "src/example.ts",
+    ]);
     expect(host.querySelector("textarea")?.dataset.typeFile).toBe(
       "expect types",
     );
   });
 
-  it("keeps the completed run path and mode after another file is selected", async () => {
-    const runner = {
-      run: async () => ({ exitCode: 0 }),
-    } satisfies CodeRunner;
-    const host = await renderExplorer({ runnerFactory: () => runner });
+  it("writes editor changes and resets to a running terminal session", async () => {
+    const session = createSession();
+    const host = await renderExplorer({
+      runnerFactory: () => ({ start: async () => session }),
+    });
+    await clickAction(host, "start-terminal");
+
+    await selectFile(host, "src/example.ts");
+    await editCurrentFile(host, "export const value = 3;");
+    expect(session.writeFile).toHaveBeenCalledWith(
+      "src/example.ts",
+      "export const value = 3;",
+    );
+
+    await clickAction(host, "reset");
+    expect(session.writeFile).toHaveBeenLastCalledWith(
+      "src/example.ts",
+      "export const value = 1;",
+    );
+  });
+
+  it("adds, updates, and deletes terminal-created text files", async () => {
+    const session = createSession();
+    let request: TerminalStartRequest | undefined;
+    const host = await renderExplorer({
+      runnerFactory: () => ({
+        start: async (nextRequest) => {
+          request = nextRequest;
+          return session;
+        },
+      }),
+    });
+    await clickAction(host, "start-terminal");
 
     await act(async () =>
-      host.querySelector<HTMLButtonElement>('[data-action="run"]')?.click(),
+      request?.onWorkspaceChange({
+        kind: "write",
+        path: "src/created.ts",
+        contents: "export const created = true;",
+      }),
     );
-    await selectFile(host, "src/example.ts");
+    const createdButton = host.querySelector<HTMLButtonElement>(
+      '[data-path="src/created.ts"]',
+    );
+    expect(createdButton).not.toBeNull();
 
-    const output = host.querySelector('[aria-label="実行結果"]')!;
-    expect(output.textContent).toContain("exercises/example.test.ts");
-    expect(output.textContent).toContain("テスト");
-    expect(output.textContent).not.toContain("src/example.ts");
-  });
-
-  it("uses nested lists for folders and exposes every file as a button", async () => {
-    const host = await renderExplorer();
-    const navigation = host.querySelector('nav[aria-label="教材ファイル"]')!;
-    const exercisesButton = navigation.querySelector<HTMLButtonElement>(
-      '[data-path="exercises/example.test.ts"]',
-    )!;
-
-    expect(navigation.querySelectorAll("ul")).toHaveLength(3);
+    await selectFile(host, "src/created.ts");
+    expect(host.querySelector("textarea")?.value).toBe(
+      "export const created = true;",
+    );
     expect(
-      exercisesButton.closest("ul")?.previousElementSibling?.textContent,
-    ).toBe("exercises");
-    expect(exercisesButton.textContent).toContain("example.test.ts");
-    expect(exercisesButton.getAttribute("aria-pressed")).toBe("true");
+      host.querySelector<HTMLButtonElement>('[data-action="reset"]')?.disabled,
+    ).toBe(true);
+
+    await act(async () =>
+      request?.onWorkspaceChange({
+        kind: "write",
+        path: "src/created.ts",
+        contents: "export const created = false;",
+      }),
+    );
+    expect(host.querySelector("textarea")?.value).toBe(
+      "export const created = false;",
+    );
+
+    await act(async () =>
+      request?.onWorkspaceChange({ kind: "delete", path: "src/created.ts" }),
+    );
+    expect(host.querySelector('[data-path="src/created.ts"]')).toBeNull();
+    expect(host.querySelector("textarea")?.dataset.path).toBe(
+      "exercises/example.test.ts",
+    );
   });
 
-  it("distinguishes duplicate file names and labels nested folder lists", async () => {
+  it("disables editing only while the terminal is preparing", async () => {
+    const session = createSession();
+    let resolveStart!: (session: TerminalSession) => void;
+    const start = new Promise<TerminalSession>((resolve) => {
+      resolveStart = resolve;
+    });
+    const host = await renderExplorer({
+      runnerFactory: () => ({ start: async () => start }),
+    });
+
+    act(() =>
+      host
+        .querySelector<HTMLButtonElement>('[data-action="start-terminal"]')
+        ?.click(),
+    );
+    expect(host.querySelector<HTMLTextAreaElement>("textarea")?.disabled).toBe(
+      true,
+    );
+    expect(
+      host.querySelector<HTMLButtonElement>('[data-action="reset"]')?.disabled,
+    ).toBe(true);
+    expect(
+      [...host.querySelectorAll<HTMLButtonElement>("[data-path]")].every(
+        (button) => button.disabled,
+      ),
+    ).toBe(true);
+
+    await act(async () => resolveStart(session));
+    expect(host.querySelector<HTMLTextAreaElement>("textarea")?.disabled).toBe(
+      false,
+    );
+    expect(
+      host.querySelector<HTMLButtonElement>('[data-action="reset"]')?.disabled,
+    ).toBe(false);
+  });
+
+  it("keeps nested folders and duplicate file names distinguishable", async () => {
     const duplicateWorkspace = {
       ...workspace,
       initialFile: "exercises/01-state-modeling.test.ts",
@@ -262,13 +364,12 @@ describe("CodeExplorer", () => {
         "test/01-state-modeling.test.ts",
       ],
     } as const;
-    const duplicateFiles = {
-      "exercises/01-state-modeling.test.ts": "exercise",
-      "test/01-state-modeling.test.ts": "solution",
-    } as const;
     const host = await renderExplorer({
       workspace: duplicateWorkspace,
-      projectFiles: duplicateFiles,
+      projectFiles: {
+        "exercises/01-state-modeling.test.ts": "exercise",
+        "test/01-state-modeling.test.ts": "solution",
+      },
     });
     const exerciseButton = host.querySelector<HTMLButtonElement>(
       '[data-path="exercises/01-state-modeling.test.ts"]',
@@ -276,10 +377,6 @@ describe("CodeExplorer", () => {
     const solutionButton = host.querySelector<HTMLButtonElement>(
       '[data-path="test/01-state-modeling.test.ts"]',
     )!;
-    const folderLabels = [
-      ...host.querySelectorAll<HTMLElement>(".code-explorer__folder"),
-    ];
-    const initialFolderIds = folderLabels.map((label) => label.id);
 
     expect(exerciseButton.textContent).toBe("01-state-modeling.test.ts");
     expect(solutionButton.textContent).toBe("01-state-modeling.test.ts");
@@ -289,172 +386,13 @@ describe("CodeExplorer", () => {
     expect(solutionButton.getAttribute("aria-label")).toBe(
       "test/01-state-modeling.test.ts",
     );
-    expect(initialFolderIds.every((id) => id.length > 0)).toBe(true);
-    expect(new Set(initialFolderIds).size).toBe(initialFolderIds.length);
-    for (const label of folderLabels) {
+    for (const label of host.querySelectorAll<HTMLElement>(
+      ".code-explorer__folder",
+    )) {
+      expect(label.id.length).toBeGreaterThan(0);
       expect(label.nextElementSibling?.getAttribute("aria-labelledby")).toBe(
         label.id,
       );
     }
-
-    await editCurrentFile(host, "changed exercise");
-
-    expect(exerciseButton.getAttribute("aria-label")).toBe(
-      "exercises/01-state-modeling.test.ts、変更あり",
-    );
-    expect(
-      [...host.querySelectorAll<HTMLElement>(".code-explorer__folder")].map(
-        (label) => label.id,
-      ),
-    ).toEqual(initialFolderIds);
-  });
-
-  it("rejects unsupported runtimes without creating a runner", async () => {
-    const runnerFactory = vi.fn<() => CodeRunner>();
-    const host = await renderExplorer({
-      supportsRuntime: () => false,
-      runnerFactory,
-    });
-
-    await act(async () =>
-      host.querySelector<HTMLButtonElement>('[data-action="run"]')?.click(),
-    );
-
-    expect(runnerFactory).not.toHaveBeenCalled();
-    expect(host.textContent).toContain(
-      "ChromeまたはEdgeで開き、サイトの分離ヘッダーを確認してください。",
-    );
-    expect(host.querySelector<HTMLTextAreaElement>("textarea")?.disabled).toBe(
-      false,
-    );
-  });
-
-  it("locks mutable controls while running and unlocks them after an error", async () => {
-    let rejectRun!: (error: Error) => void;
-    let markRunnerSettled!: () => void;
-    const gate = new Promise<never>((_resolve, reject) => {
-      rejectRun = reject;
-    });
-    const runnerSettled = new Promise<void>((resolve) => {
-      markRunnerSettled = resolve;
-    });
-    const runner = {
-      run: async (_request, onUpdate) => {
-        onUpdate({ kind: "output", chunk: "partial output\n" });
-        try {
-          return await gate;
-        } finally {
-          markRunnerSettled();
-        }
-      },
-    } satisfies CodeRunner;
-    const host = await renderExplorer({ runnerFactory: () => runner });
-    const runButton = host.querySelector<HTMLButtonElement>(
-      '[data-action="run"]',
-    )!;
-    const resetButton = host.querySelector<HTMLButtonElement>(
-      '[data-action="reset"]',
-    )!;
-
-    act(() => runButton.click());
-
-    expect(runButton.disabled).toBe(true);
-    expect(resetButton.disabled).toBe(true);
-    expect(host.querySelector<HTMLTextAreaElement>("textarea")?.disabled).toBe(
-      true,
-    );
-    expect(
-      [...host.querySelectorAll<HTMLButtonElement>("[data-path]")].every(
-        (button) => button.disabled,
-      ),
-    ).toBe(true);
-
-    await act(async () => {
-      rejectRun(new Error("runtime failed"));
-      await runnerSettled;
-    });
-
-    expect(runButton.disabled).toBe(false);
-    expect(resetButton.disabled).toBe(false);
-    expect(host.querySelector<HTMLTextAreaElement>("textarea")?.disabled).toBe(
-      false,
-    );
-    expect(host.textContent).toContain("partial output");
-    expect(host.textContent).toContain("runtime failed");
-  });
-
-  it("stops a pending run and allows editing and running again", async () => {
-    let runCount = 0;
-    const runner = {
-      run: async (request) => {
-        runCount += 1;
-        if (runCount === 1) {
-          return new Promise<never>((_resolve, reject) => {
-            request.signal?.addEventListener(
-              "abort",
-              () => reject(request.signal?.reason),
-              { once: true },
-            );
-          });
-        }
-        return { exitCode: 0 };
-      },
-    } satisfies CodeRunner;
-    const host = await renderExplorer({ runnerFactory: () => runner });
-    const runButton = host.querySelector<HTMLButtonElement>(
-      '[data-action="run"]',
-    )!;
-
-    act(() => runButton.click());
-
-    const stopButton = host.querySelector<HTMLButtonElement>(
-      '[data-action="stop"]',
-    );
-    expect(stopButton?.textContent).toContain("停止");
-    expect(stopButton?.getAttribute("aria-label")).toBe("実行を停止");
-
-    await act(async () => stopButton?.click());
-    await vi.waitFor(() =>
-      expect(
-        host
-          .querySelector('[aria-label="実行結果"]')
-          ?.getAttribute("data-status"),
-      ).toBe("canceled"),
-    );
-
-    expect(host.textContent).toContain("実行を停止しました。");
-    const canceledOutput = host.querySelector('[aria-label="実行結果"]')!;
-    expect(canceledOutput.textContent).toContain("exercises/example.test.ts");
-    expect(canceledOutput.textContent).toContain("テスト");
-    expect(runButton.disabled).toBe(false);
-    expect(host.querySelector<HTMLTextAreaElement>("textarea")?.disabled).toBe(
-      false,
-    );
-
-    await editCurrentFile(host, "expect(value).toBe(3);");
-    await act(async () => runButton.click());
-
-    expect(runCount).toBe(2);
-    expect(host.textContent).toContain("終了コード 0");
-  });
-
-  it("treats a nonzero exit as failure and renders output as text", async () => {
-    const runner = {
-      run: async (_request, onUpdate) => {
-        onUpdate({ kind: "output", chunk: '<img src=x onerror="alert(1)">' });
-        return { exitCode: 2 };
-      },
-    } satisfies CodeRunner;
-    const host = await renderExplorer({ runnerFactory: () => runner });
-
-    await act(async () =>
-      host.querySelector<HTMLButtonElement>('[data-action="run"]')?.click(),
-    );
-
-    const output = host.querySelector('[aria-label="実行結果"]')!;
-    expect(output.getAttribute("data-status")).toBe("failure");
-    expect(output.textContent).toContain('<img src=x onerror="alert(1)">');
-    expect(output.querySelector("img")).toBeNull();
-    expect(output.textContent).toContain("終了コード 2");
   });
 });

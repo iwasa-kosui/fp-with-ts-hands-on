@@ -115,6 +115,22 @@ describe("Code Explorer project files", () => {
     }
   });
 
+  it("adds the documented session command to each exercise workspace", () => {
+    for (const sequence of ["02", "03", "04", "05", "06"] as const) {
+      const packageJson = JSON.parse(
+        projectFilesForSnapshot(`session-${sequence}`)["package.json"]!,
+      ) as {
+        scripts: Record<string, string>;
+        devDependencies: Record<string, string>;
+      };
+
+      expect(packageJson.scripts[`exercise:${sequence}`]).toBe(
+        "pnpm exercise",
+      );
+      expect(packageJson.devDependencies.typescript).toBe("5.9.3");
+    }
+  });
+
   it("provides every file exposed by an exercise page workspace", () => {
     expect(exercisePages).toHaveLength(5);
 
