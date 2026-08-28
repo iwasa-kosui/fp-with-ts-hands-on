@@ -31,6 +31,22 @@ describe("Code Explorer project files", () => {
     }
   });
 
+  it("adds the documented session command to each exercise workspace", () => {
+    for (const sequence of ["02", "03", "04", "05", "06"] as const) {
+      const packageJson = JSON.parse(
+        projectFilesForSnapshot(`session-${sequence}`)["package.json"]!,
+      ) as {
+        scripts: Record<string, string>;
+        devDependencies: Record<string, string>;
+      };
+
+      expect(packageJson.scripts[`exercise:${sequence}`]).toBe(
+        "pnpm exercise",
+      );
+      expect(packageJson.devDependencies.typescript).toBe("5.9.3");
+    }
+  });
+
   it("rejects the S1 workshop instead of creating a fake workspace", () => {
     expect(() => projectFilesFor("01-business-events-and-workflows")).toThrow(
       "Unknown session project: 01-business-events-and-workflows",

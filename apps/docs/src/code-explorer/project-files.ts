@@ -47,12 +47,14 @@ const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
 
   const packageJson = JSON.parse(files["package.json"]!) as {
     devDependencies?: Record<string, string>;
+    scripts?: Record<string, string>;
     [key: string]: unknown;
   };
   const tsconfig = JSON.parse(files["tsconfig.json"]!) as {
     extends?: string;
     [key: string]: unknown;
   };
+  const exerciseSequence = /^session-(0[2-6])$/.exec(snapshot)?.[1];
 
   return Object.freeze({
     ...files,
@@ -60,7 +62,18 @@ const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
     "package.json": JSON.stringify(
       {
         ...packageJson,
-        devDependencies: { ...packageJson.devDependencies, tsx: "4.23.9" },
+        scripts:
+          exerciseSequence === undefined
+            ? packageJson.scripts
+            : {
+                ...packageJson.scripts,
+                [`exercise:${exerciseSequence}`]: "pnpm exercise",
+              },
+        devDependencies: {
+          ...packageJson.devDependencies,
+          tsx: "4.23.9",
+          typescript: "5.9.3",
+        },
       },
       null,
       2,
