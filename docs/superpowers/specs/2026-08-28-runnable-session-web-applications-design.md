@@ -147,6 +147,7 @@ POST /appointments/:appointmentId/start-examination
 POST /appointments/:appointmentId/exam-results
 POST /appointments/:appointmentId/payment
 POST /appointments/:appointmentId/cancel
+POST /follow-ups/request
 POST /demo/reset
 ```
 
@@ -184,6 +185,7 @@ export type AppointmentActions = Readonly<{
   recordExamResult: ActionAvailability;
   recordPayment: ActionAvailability;
   cancel: ActionAvailability;
+  requestFollowUp: ActionAvailability;
 }>;
 ```
 
@@ -217,10 +219,15 @@ sequenceDiagram
 ```ts
 type Notice =
   | Readonly<{ kind: "FeatureNotImplemented" }>
+  | Readonly<{ kind: "InvalidAppointmentState" }>
+  | Readonly<{ kind: "AppointmentNotFound" }>
+  | Readonly<{ kind: "AppointmentConflict" }>
   | null;
 ```
 
 query parameterの文字列をダイアログ本文として表示しません。本文はReact側で固定します。ダイアログを閉じた後はInertiaの `router.replace("/")` でnoticeを取り除き、再読み込みで同じダイアログが開き続けないようにします。
+
+全セッションで電話フォロー依頼を `NotImplemented` として表示し、`POST /follow-ups/request` からこの経路を確認できるようにします。Finalでは既存の電話フォロー業務をそのまま利用します。
 
 GETの未実装ページからトップへ戻す場合は302を使えます。POSTなど状態を変更する可能性がある操作は、後続リクエストをGETに固定するため303を返します。
 
