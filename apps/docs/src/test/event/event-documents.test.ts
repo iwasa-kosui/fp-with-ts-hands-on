@@ -301,16 +301,20 @@ describe("event document contract", () => {
     }
   });
 
-  it("prepares the PRD 30-day follow-up without claiming it was sent", async () => {
-    const prd = await readFile(`${repositoryRoot}/docs/prd/prd-001.md`, "utf8");
+  it("prepares the 30-day follow-up without claiming it was sent", async () => {
     const followUp = await readEventDocument("follow-up-30-days.md");
     const guide = await readEventDocument("facilitator-guide.md");
     const rehearsal = await readEventDocument("rehearsal-2026-08-15.md");
-    const measurementPlan = prd.match(/### 30日後\n\n([\s\S]*?)\n\n## /)?.[1] ?? "";
-    const prdQuestions = [...measurementPlan.matchAll(/^- (.+)$/gm)].map(([, value]) => value);
+    const questionHeadings = [...followUp.matchAll(/^### \d+\. (.+)$/gm)].map(
+      ([, value]) => value,
+    );
 
-    expect(prdQuestions).toHaveLength(4);
-    for (const question of prdQuestions) expect(followUp).toContain(question);
+    expect(questionHeadings).toEqual([
+      "実践した行動",
+      "対象・手段・判断・効果",
+      "実践できなかった障壁",
+      "次に試す行動",
+    ]);
     for (const value of [
       "主催者",
       "運営責任者",
