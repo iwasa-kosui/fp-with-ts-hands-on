@@ -6,13 +6,6 @@ import guides from "../../code-explorer/code-guides/05-workflow-errors";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import type { SessionWorkspace } from "../../code-explorer/types";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import {
-  businessReflectionQuestion,
-  commonReviewChecksFor,
-  reviewCompletionArtifacts,
-  sessionNeighbors,
-  sessionPath,
-} from "../../sessions/catalog";
 import { loadSolutionSnippets } from "../../sessions/solution-snippets";
 import type {
   ExerciseSessionSummary,
@@ -229,7 +222,6 @@ const solutionSteps = await Promise.all(
     snippets: await loadSolutionSnippets(step),
   })),
 );
-const { previous, next } = sessionNeighbors(session.slug);
 const chapters = [
   { id: "incident", label: "今回つくるもの" },
   { id: "legacy", label: "コードを読み、失敗を再現する" },
@@ -237,8 +229,30 @@ const chapters = [
   { id: "refactor", label: "型で閉じる" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
-const commonReviewChecks = commonReviewChecksFor(session.snapshot);
-const promisesHref = "/sessions/02-state-transitions/#peer-review-promises";
+const commonReviewChecks = [
+  "`as` によるキャストが入っていないか全文検索して確認する。",
+  "`git diff --stat -- examples/session-05` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。",
+  "不変条件を型で守っているか、実行時の `if` で守っているかを判定し、型で守れなかった残りを記録する。",
+] as const;
+const reviewCompletionArtifacts = [
+  "守る不変条件の1文",
+  "依頼文",
+  "型で守れなかった残り",
+] as const;
+const businessReflectionQuestion =
+  "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。";
+export const promisesHref =
+  "/sessions/02-state-transitions/#peer-review-promises";
+export const navigation = ({
+  previous: {
+    href: "/sessions/04-boundaries-and-pii/",
+    title: "外部入力を境界で検証し個人情報を守る",
+  },
+  next: {
+    href: "/sessions/06-effects-and-consistency/",
+    title: "副作用と整合性境界を設計する",
+  },
+} as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
 const delegationPrompt = `次の変更を実装してください。
 
@@ -431,8 +445,8 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         </article>
       </div>
       <nav class="case-file__session-nav" aria-label="前後のセッション">
-        {previous === undefined ? null : <a rel="prev" href={sessionPath(previous)}>前へ: {previous.title}</a>}
-        {next === undefined ? null : <a rel="next" href={sessionPath(next)}>次へ: {next.title}</a>}
+        <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
+        <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
       </nav>
     </main>
   </div>
