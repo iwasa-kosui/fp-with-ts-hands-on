@@ -1,11 +1,11 @@
 import { useForm } from "@inertiajs/react";
 
 import type { VeterinarianId } from "../../../../../domain/appointment/veterinarianId.js";
-import { buttonClassName } from "../../components/Button.js";
+import { buttonClassName } from "@fp-with-ts/clinic-web";
 import { appointmentPresentation } from "../../components/appointmentPresentation.js";
-import { ErrorSummary, FieldError } from "../../components/FormErrors.js";
-import { InlineAlert, Card } from "../../components/Surface.js";
-import { StatusBadge } from "../../components/StatusBadge.js";
+import { ErrorSummary, FieldError } from "@fp-with-ts/clinic-web";
+import { InlineAlert, Card } from "@fp-with-ts/clinic-web";
+import { StatusBadge } from "@fp-with-ts/clinic-web";
 import type { SharedPageProps } from "../../pageProps.js";
 import type {
   AppointmentActions,

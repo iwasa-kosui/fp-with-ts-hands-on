@@ -1,7 +1,7 @@
 import { Link } from "@inertiajs/react";
 import { useState, type ReactElement, type ReactNode } from "react";
 
-import type { AuthenticatedUserView } from "../pageProps.js";
+import type { ClinicUserView } from "../contracts.js";
 import { Icon, type IconName } from "./Icon.js";
 
 export type NavigationKey =
@@ -17,7 +17,7 @@ type AppShellProps = Readonly<{
   activeNavigation?: NavigationKey | undefined;
   children: ReactNode;
   title: string;
-  user?: AuthenticatedUserView | null | undefined;
+  user?: ClinicUserView | null | undefined;
 }>;
 
 type NavigationItem = Readonly<{
@@ -25,7 +25,7 @@ type NavigationItem = Readonly<{
   icon: IconName;
   key: NavigationKey;
   label: string;
-  roles: readonly AuthenticatedUserView["role"][];
+  roles: readonly ClinicUserView["role"][];
 }>;
 
 const navigationItems: readonly NavigationItem[] = [

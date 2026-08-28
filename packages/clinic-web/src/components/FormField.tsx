@@ -2,7 +2,7 @@ import type { PropsWithChildren, ReactElement } from "react";
 
 import { FieldError } from "./FormErrors.js";
 
-type FormFieldProps = PropsWithChildren<
+export type FormFieldProps = PropsWithChildren<
   Readonly<{
     description?: string;
     error?: string;

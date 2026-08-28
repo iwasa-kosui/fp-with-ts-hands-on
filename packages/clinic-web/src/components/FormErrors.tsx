@@ -1,4 +1,4 @@
-import type { FieldErrors } from "../pageProps.js";
+type FieldErrors = Readonly<Record<string, string>>;
 
 export const ErrorSummary = ({ errors }: Readonly<{ errors: FieldErrors }>) => {
   const entries = Object.entries(errors);

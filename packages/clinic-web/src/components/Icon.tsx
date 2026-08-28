@@ -27,7 +27,9 @@ const paths: Readonly<Record<IconName, ReactElement>> = {
   users: <path d="M16 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1m14-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />,
 };
 
-export const Icon = ({ name }: Readonly<{ name: IconName }>): ReactElement => (
+export type IconProps = Readonly<{ name: IconName }>;
+
+export const Icon = ({ name }: IconProps): ReactElement => (
   <svg
     aria-hidden="true"
     className="icon"

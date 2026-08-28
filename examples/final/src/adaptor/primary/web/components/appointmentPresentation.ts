@@ -1,5 +1,5 @@
 import type { AppointmentPageView } from "../routes/appointmentRoutes.js";
-import type { StatusTone } from "./StatusBadge.js";
+import type { StatusTone } from "@fp-with-ts/clinic-web";
 
 export type AppointmentPresentation = Readonly<{
   canonical: string;

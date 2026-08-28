@@ -225,7 +225,7 @@ type Notice =
   | null;
 ```
 
-query parameterの文字列をダイアログ本文として表示しません。本文はReact側で固定します。ダイアログを閉じた後はInertiaの `router.replace("/")` でnoticeを取り除き、再読み込みで同じダイアログが開き続けないようにします。
+query parameterの文字列をダイアログ本文として表示しません。本文はReact側で固定します。ダイアログを閉じた後はInertiaの `router.visit("/", { replace: true })` でnoticeを取り除き、再読み込みで同じダイアログが開き続けないようにします。
 
 全セッションで電話フォロー依頼を `NotImplemented` として表示し、`POST /follow-ups/request` からこの経路を確認できるようにします。Finalでは既存の電話フォロー業務をそのまま利用します。
 

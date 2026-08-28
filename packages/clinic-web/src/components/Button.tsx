@@ -5,7 +5,7 @@ export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 export const buttonClassName = (variant: ButtonVariant = "primary"): string =>
   `button button--${variant}`;
 
-type ButtonProps = Readonly<
+export type ButtonProps = Readonly<
   ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }
 >;
 

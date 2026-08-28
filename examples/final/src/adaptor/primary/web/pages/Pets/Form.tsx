@@ -6,10 +6,10 @@ import type {
   PetPageView,
 } from "../../routes/petRoutes.js";
 import type { SharedPageProps } from "../../pageProps.js";
-import { ErrorSummary, FieldError } from "../../components/FormErrors.js";
-import { buttonClassName } from "../../components/Button.js";
-import { FormField } from "../../components/FormField.js";
-import { Card } from "../../components/Surface.js";
+import { ErrorSummary, FieldError } from "@fp-with-ts/clinic-web";
+import { buttonClassName } from "@fp-with-ts/clinic-web";
+import { FormField } from "@fp-with-ts/clinic-web";
+import { Card } from "@fp-with-ts/clinic-web";
 import Layout from "../Layout.js";
 
 type PetFormProps = SharedPageProps &

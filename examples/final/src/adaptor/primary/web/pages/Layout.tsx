@@ -3,8 +3,8 @@ import type { PropsWithChildren, ReactNode } from "react";
 import {
   AppShell,
   type NavigationKey,
-} from "../components/AppShell.js";
-import { PageHeader } from "../components/PageHeader.js";
+} from "@fp-with-ts/clinic-web";
+import { PageHeader } from "@fp-with-ts/clinic-web";
 import type { AuthenticatedUserView } from "../pageProps.js";
 
 type LayoutProps = PropsWithChildren<

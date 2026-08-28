@@ -1,6 +1,6 @@
 import type { PropsWithChildren, ReactElement } from "react";
 
-type SurfaceProps = PropsWithChildren<Readonly<{ className?: string }>>;
+export type SurfaceProps = PropsWithChildren<Readonly<{ className?: string }>>;
 
 const classNames = (base: string, className: string | undefined): string =>
   [base, className].filter(Boolean).join(" ");
