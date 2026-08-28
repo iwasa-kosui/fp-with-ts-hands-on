@@ -8,8 +8,8 @@ export default [
     futureRisk: "業務で使う状態と許可する遷移を型から判断できません。",
     path: "src/legacy/appointment.ts",
     highlights: [
-      { startLineNumber: 22, endLineNumber: 22 },
-      { startLineNumber: 47, endLineNumber: 54 },
+      { startLineNumber: 26, endLineNumber: 26 },
+      { startLineNumber: 51, endLineNumber: 60 },
     ],
   },
   {
@@ -18,7 +18,7 @@ export default [
     currentDesign: "診察、会計、キャンセルの情報が、一つの型にある複数の optional field として定義されています。",
     futureRisk: "どの状態で何が必須なのかを型から判断できません。",
     path: "src/legacy/appointment.ts",
-    highlights: [{ startLineNumber: 3, endLineNumber: 10 }],
+    highlights: [{ startLineNumber: 3, endLineNumber: 14 }],
   },
   {
     id: "plain-string-ids",
@@ -27,8 +27,8 @@ export default [
     futureRisk: "実行時には同じ形式の ID を TypeScript が区別できません。",
     path: "src/legacy/appointment.ts",
     highlights: [
-      { startLineNumber: 12, endLineNumber: 19 },
-      { startLineNumber: 26, endLineNumber: 33 },
+      { startLineNumber: 16, endLineNumber: 23 },
+      { startLineNumber: 30, endLineNumber: 37 },
     ],
   },
   {
@@ -37,7 +37,7 @@ export default [
     currentDesign: "予約が見つからない場合に例外を送出します。",
     futureRisk: "呼び出し側が扱える失敗の種類を関数の型から判断できません。",
     path: "src/legacy/appointment.ts",
-    highlights: [{ startLineNumber: 52, endLineNumber: 54 }],
+    highlights: [{ startLineNumber: 56, endLineNumber: 57 }],
   },
   {
     id: "raw-pii-log",
@@ -46,8 +46,8 @@ export default [
     futureRisk: "ログへ出してよい情報の境界が値や型に表れていません。",
     path: "src/legacy/appointment.ts",
     highlights: [
-      { startLineNumber: 16, endLineNumber: 19 },
-      { startLineNumber: 40, endLineNumber: 44 },
+      { startLineNumber: 21, endLineNumber: 23 },
+      { startLineNumber: 44, endLineNumber: 47 },
     ],
   },
 ] as const satisfies readonly CodeGuide[];

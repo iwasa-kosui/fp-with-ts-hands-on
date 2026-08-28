@@ -11,7 +11,7 @@ export default [
   },
   {
     id: "plain-string-appointment-ids",
-    title: "予約の5状態が識別子を string で持っている",
+    title: "予約の6状態が識別子を string で持っている",
     currentDesign: "appointmentId・petId・ownerId が3つとも string で宣言されています。",
     futureRisk: "OwnerId を petId の位置へ渡すなど、用途の異なる識別子を入れても検出できません。",
     path: "src/domain/appointment/appointment.ts",

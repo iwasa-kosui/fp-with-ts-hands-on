@@ -8,8 +8,8 @@ export default [
     futureRisk: "禁止したい状態でも呼び出し側のコードはコンパイルが通り、as で結果を押し通せます。",
     path: "src/domain/appointment/transitions.ts",
     highlights: [
-      { startLineNumber: 7, endLineNumber: 15 },
-      { startLineNumber: 18, endLineNumber: 24 },
+      { startLineNumber: 8, endLineNumber: 17 },
+      { startLineNumber: 19, endLineNumber: 49 },
     ],
   },
   {
@@ -18,6 +18,6 @@ export default [
     currentDesign: "current state の kind を string として受け、default で不明を返します。",
     futureRisk: "状態を追加しても、未対応の分岐がコンパイルエラーになりません。",
     path: "src/domain/appointment/statusLabel.ts",
-    highlights: [{ startLineNumber: 3, endLineNumber: 17 }],
+    highlights: [{ startLineNumber: 3, endLineNumber: 20 }],
   },
 ] as const satisfies readonly CodeGuide[];

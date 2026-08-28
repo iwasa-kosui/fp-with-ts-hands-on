@@ -8,6 +8,8 @@ export const toStatusLabel = (appointment: Readonly<{ kind: string }>): string =
       return "来院済み";
     case "InExamination":
       return "診察中";
+    case "AwaitingPayment":
+      return "会計待ち";
     case "Paid":
       return "会計済み";
     case "Canceled":

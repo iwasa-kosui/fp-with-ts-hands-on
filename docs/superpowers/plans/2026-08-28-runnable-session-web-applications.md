@@ -237,14 +237,18 @@ git commit -m "feat(session-01): 業務イベント分析用の独立アプリ�
 
 **Interfaces:**
 - Produces: `AwaitingPayment`, `CompleteExaminationInput`
-- Produces: `completeExamination(InExamination, ExamId, string): AwaitingPayment`
+- Produces: `completeExamination(InExamination, CompleteExaminationInput, string): AwaitingPayment`
 - Changes: `recordPayment` consumes `AwaitingPayment`
 
 - [ ] **Step 1: Add failing runtime and compile fixtures**
 
 ```ts
 it("診察結果の記録後だけ会計できる", () => {
-  const awaiting = completeExamination(examining, clinicFixture.examId, completedAt);
+  const awaiting = completeExamination(
+    examining,
+    { examId: clinicFixture.examId },
+    completedAt,
+  );
   expect(awaiting.kind).toBe("AwaitingPayment");
   expect(recordPayment(awaiting, payment, paidAt).kind).toBe("Paid");
 });

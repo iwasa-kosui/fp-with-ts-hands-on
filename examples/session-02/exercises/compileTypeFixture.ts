@@ -7,7 +7,7 @@ const projectDirectory = path.resolve(directory, "..");
 const configPath = path.join(projectDirectory, "tsconfig.json");
 const exhaustiveFixture = "s2-status-exhaustive.ts";
 
-const printWithSixthAppointmentState = (fileName: string, source: string): string => {
+const printWithSeventhAppointmentState = (fileName: string, source: string): string => {
   const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true);
   const transformed = ts.transform(sourceFile, [
     (context) => {
@@ -96,7 +96,7 @@ export const compileTypeFixture = (fixtureName: string): ReadonlyArray<string> =
     if (source === undefined) return source;
     if (fileName === fixturePath) return source.replace("// @ts-nocheck\n", "");
     if (verifiesExhaustiveness && fileName === appointmentPath) {
-      return printWithSixthAppointmentState(fileName, source);
+      return printWithSeventhAppointmentState(fileName, source);
     }
     if (verifiesExhaustiveness && fileName === statusLabelPath) {
       return printWithExpectedExhaustivenessError(fileName, source);

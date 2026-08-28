@@ -134,7 +134,7 @@ export type PublicCodeExplorerSnapshot = Exclude<
 export const peerReviewQuestionsBySequence = {
   "02": [
     "`startExamination` は `CheckedIn` だけを受け取り、会計済み・キャンセル済みを型で拒否しますか。",
-    "`Canceled` の `reason` など、状態ごとの必須情報を省略できない型ですか。",
+    "`recordPayment` は `AwaitingPayment` だけを受け取り、診察結果の記録前には会計できない型ですか。",
     "状態を追加したとき、`assertNever` によって未対応の分岐がコンパイルエラーになりますか。",
   ],
   "03": [
@@ -250,8 +250,8 @@ export const sessions = [
     solutionPresentation: "excerpt",
     peerReviewPromises: "inline",
     animal: { name: "RABBIT", type: "rabbit", avatar: "🐇" },
-    summary: "予約の5状態を判別共用体で表し、許可されていない状態遷移を型で拒否します。",
-    incident: "会計済みの来院が診察中へ戻され、会計が二度行われた。",
+    summary: "予約の6状態を判別共用体で表し、許可されていない状態遷移を型で拒否します。",
+    incident: "診察結果を記録していない予約が会計され、さらに会計済みの来院が診察中へ戻された。",
     exerciseCommand: "pnpm exercise:02",
     exerciseModule: {
       dir: "examples/session-02/src/domain/appointment",
@@ -275,7 +275,7 @@ export const sessions = [
         solutions: [{
           path: "examples/session-03/src/domain/appointment/transitions.ts",
           symbol: "startExamination",
-          lines: [14, 24],
+          lines: [16, 26],
         }],
       },
       {
@@ -285,17 +285,17 @@ export const sessions = [
         solutions: [{
           path: "examples/session-03/src/domain/appointment/transitions.ts",
           symbol: "cancel",
-          lines: [33, 46],
+          lines: [47, 60],
         }],
       },
       {
         id: "s2-align-transitions",
-        goal: "残りの遷移も、許可された遷移元だけを受け取る規約にそろえる。",
+        goal: "診察結果の記録前には会計できないようにし、残りの遷移も許可された遷移元だけを受け取る規約にそろえる。",
         targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
         solutions: [{
           path: "examples/session-03/src/domain/appointment/transitions.ts",
           symbol: "checkIn",
-          lines: [11, 31],
+          lines: [13, 45],
         }],
       },
       {
@@ -305,13 +305,13 @@ export const sessions = [
         solutions: [{
           path: "examples/session-03/src/domain/appointment/statusLabel.ts",
           symbol: "toStatusLabel",
-          lines: [3, 22],
+          lines: [3, 24],
         }],
       },
     ],
     decisions: [
       {
-        invariant: "許可されていない状態遷移を型で拒否する。",
+        invariant: "診察結果を記録するまで会計できず、許可されていない状態遷移を型で拒否する。",
       },
       {
         invariant: "状態ごとの必須情報を欠かさない。",
@@ -383,7 +383,7 @@ export const sessions = [
       },
       {
         id: "s3-apply-ids-to-appointment",
-        goal: "予約の5状態と遷移が受け取る識別子を、用途別の型へ置き換える。",
+        goal: "予約の6状態と遷移が受け取る識別子を、用途別の型へ置き換える。",
         targets: [
           "examples/session-03/src/domain/appointment/appointment.ts",
           "examples/session-03/src/domain/appointment/transitions.ts",
@@ -397,7 +397,7 @@ export const sessions = [
           {
             path: "examples/session-04/src/domain/appointment/transitions.ts",
             symbol: "startExamination",
-            lines: [10, 25],
+            lines: [17, 27],
           },
         ],
       },

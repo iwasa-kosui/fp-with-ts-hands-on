@@ -31,6 +31,20 @@ export type InExamination = Readonly<{
   examinationStartedAt: string;
 }>;
 
+export type AwaitingPayment = Readonly<{
+  kind: "AwaitingPayment";
+  appointmentId: string;
+  petId: string;
+  ownerId: string;
+  scheduledAt: string;
+  reason: string;
+  checkedInAt: string;
+  veterinarianId: string;
+  examinationStartedAt: string;
+  examId: string;
+  examinationCompletedAt: string;
+}>;
+
 export type Paid = Readonly<{
   kind: "Paid";
   appointmentId: string;
@@ -41,6 +55,8 @@ export type Paid = Readonly<{
   checkedInAt: string;
   veterinarianId: string;
   examinationStartedAt: string;
+  examId: string;
+  examinationCompletedAt: string;
   diagnosis: string;
   treatment: string;
   amount: number;
@@ -57,7 +73,15 @@ export type Canceled = Readonly<{
   canceledAt: string;
 }>;
 
-export type Appointment = Scheduled | CheckedIn | InExamination | Paid | Canceled;
+export type Appointment =
+  | Scheduled
+  | CheckedIn
+  | InExamination
+  | AwaitingPayment
+  | Paid
+  | Canceled;
+
+export type CompleteExaminationInput = Readonly<{ examId: string }>;
 
 export type RecordPaymentInput = Readonly<{
   diagnosis: string;

@@ -2,7 +2,7 @@
 
 このディレクトリは Session 02 の開始スナップショットです。解答は `examples/session-03/src` にあります。
 
-会計済み・キャンセル済みの来院を戻せず、キャンセルには理由を残すという不変条件を、`src/domain/appointment/` で型にします。
+会計済み・キャンセル済みの来院を戻せず、診察結果の記録前には会計できず、キャンセルには理由を残すという不変条件を、`src/domain/appointment/` で型にします。
 
 ```bash
 pnpm --filter @fp-with-ts/clinic-session-02 test
