@@ -4,6 +4,7 @@ import type { Context, Hono } from "hono";
 import { clinicFixture } from "../../../fixtures/clinic.js";
 import type { AppointmentStore } from "../adaptor/inMemoryAppointmentStore.js";
 import { ExamResult } from "../boundary/examResult.js";
+import { EventId } from "../domain/aggregate/eventId.js";
 import type { Appointment, Scheduled } from "../domain/appointment/appointment.js";
 import {
   cancel,
@@ -21,6 +22,7 @@ import { toPageProps } from "./appointmentView.js";
 
 const ids = {
   appointmentId: AppointmentId.parse(clinicFixture.appointmentId),
+  eventId: EventId.parse("55555555-5555-4555-8555-555555555555"),
   ownerId: OwnerId.parse(clinicFixture.ownerId),
   petId: PetId.parse(clinicFixture.petId),
   veterinarianId: VeterinarianId.parse(clinicFixture.veterinarianId),
@@ -73,12 +75,16 @@ export const registerClinicRoutes = (app: Hono, store: AppointmentStore): void =
   });
 
   app.post("/appointments/:appointmentId/start-examination", async (context) => {
-    const result = await startExaminationWithEffects({
+    const dependencies = {
       resolver: store,
       transition: transitionToInExamination,
       stateStore: store.stateStore,
       eventLog: store.eventLog,
-    })({
+      clock: { now: () => "2026-08-30T06:30:00.000Z" },
+      eventIdGenerator: { generate: () => ids.eventId },
+      store: store.atomicStore,
+    };
+    const result = await startExaminationWithEffects(dependencies)({
       appointmentId: AppointmentId.parse(context.req.param("appointmentId")),
       veterinarianId: ids.veterinarianId,
     });

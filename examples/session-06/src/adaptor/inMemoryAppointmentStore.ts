@@ -1,9 +1,17 @@
+import { err, ok, ResultAsync } from "neverthrow";
+
 import type { Appointment, InExamination, Scheduled } from "../domain/appointment/appointment.js";
 import type { ExaminationStarted } from "../domain/appointment/examinationStarted.js";
 import type { AppointmentId } from "../domain/ids/appointmentId.js";
 import type { AppointmentResolver } from "../useCase/dependencies.js";
+import type { AppointmentConflict } from "../useCase/errors.js";
 
 export type AppointmentStore = AppointmentResolver & Readonly<{
+  atomicStore: Readonly<{
+    store: (
+      event: ExaminationStarted,
+    ) => ResultAsync<void, AppointmentConflict>;
+  }>;
   eventLog: Readonly<{ append: (event: ExaminationStarted) => Promise<void> }>;
   find: (appointmentId: string) => Appointment | undefined;
   reset: () => Scheduled;
@@ -41,6 +49,25 @@ export const createInMemoryAppointmentStore = (
         if (options.failEventLog === true) throw new Error("Event log unavailable");
         events = [...events, event];
       },
+    },
+    atomicStore: {
+      store: (event) => ResultAsync.fromSafePromise(
+        (async () => {
+          if (options.failEventLog === true) {
+            throw new Error("Event store unavailable");
+          }
+          const current = find(event.appointmentId);
+          if (current === undefined || current.kind !== "CheckedIn") {
+            return err({
+              kind: "AppointmentConflict",
+              appointmentId: event.appointmentId,
+            } as const);
+          }
+          appointment = event.aggregateState;
+          events = [...events, event];
+          return ok(undefined);
+        })(),
+      ).andThen((result) => result),
     },
   };
 };
