@@ -1,11 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { runCommandFor } from "./run-command";
 import {
   buildFileSystemTree,
-  createCodeRunner,
-  createWebContainerRunner,
-  type RunnerUpdate,
-  type Runtime,
+  createTerminalRunner,
+  createWebContainerTerminalRunner,
+  type TerminalPhase,
+  type TerminalRuntime,
+  type TerminalRuntimeProcess,
+  type TerminalStartRequest,
+  type WorkspaceChange,
 } from "./runner";
 
 const webContainerMock = vi.hoisted(() => ({
@@ -16,49 +18,175 @@ vi.mock("@webcontainer/api", () => ({
   WebContainer: { boot: webContainerMock.boot },
 }));
 
-const createInMemoryRuntime = (): Runtime &
+type ControlledProcess = TerminalRuntimeProcess &
   Readonly<{
-    files: Map<string, string>;
-    installCount: number;
-    executedFiles: readonly string[];
-    executedSources: readonly (string | undefined)[];
-  }> => {
-  const files = new Map<string, string>();
-  const executedFiles: string[] = [];
-  const executedSources: (string | undefined)[] = [];
-  let installCount = 0;
+    inputs: readonly string[];
+    emit: (chunk: string) => void;
+    finish: (exitCode: number) => void;
+  }>;
+
+const createControlledProcess = (): ControlledProcess => {
+  const inputs: string[] = [];
+  let outputController!: ReadableStreamDefaultController<string>;
+  let resolveExit!: (exitCode: number) => void;
+  let finished = false;
+  const exit = new Promise<number>((resolve) => {
+    resolveExit = resolve;
+  });
+  const finish = (exitCode: number) => {
+    if (finished) return;
+    finished = true;
+    outputController.close();
+    resolveExit(exitCode);
+  };
+
   return {
-    files,
-    executedFiles,
-    executedSources,
-    get installCount() {
-      return installCount;
-    },
-    mount: async (mounted) => {
-      for (const [path, source] of Object.entries(mounted)) files.set(`/${path}`, source);
-    },
-    install: async (onOutput) => {
-      installCount += 1;
-      onOutput("installed\n");
-      return 0;
-    },
-    writeFiles: async (edited) => {
-      for (const [path, source] of Object.entries(edited)) files.set(`/${path}`, source);
-    },
-    execute: async (command, onOutput) => {
-      const selected = [...command.args].reverse().find((arg) => arg.endsWith(".ts"));
-      if (selected !== undefined) {
-        executedFiles.push(selected);
-        executedSources.push(files.get(`/${selected}`));
-      }
-      onOutput("ok\n");
-      return 0;
-    },
-    readTypeFiles: async () => ({}),
+    inputs,
+    input: new WritableStream<string>({
+      write: (chunk) => {
+        inputs.push(chunk);
+      },
+    }),
+    output: new ReadableStream<string>({
+      start: (controller) => {
+        outputController = controller;
+      },
+    }),
+    exit,
+    kill: vi.fn(() => finish(143)),
+    resize: vi.fn(),
+    emit: (chunk) => outputController.enqueue(chunk),
+    finish,
   };
 };
 
-describe("single-file execution", () => {
+type InMemoryRuntime = TerminalRuntime &
+  Readonly<{
+    mounted: Record<string, string>;
+    workspaceFiles: Map<string, string | Uint8Array>;
+    directories: Set<string>;
+    processes: ControlledProcess[];
+    emitPath: (path: string) => void;
+    installCount: () => number;
+    stopWatching: ReturnType<typeof vi.fn>;
+  }>;
+
+const createInMemoryRuntime = (
+  options: Readonly<{
+    installExitCode?: number;
+    install?: (signal: AbortSignal) => Promise<number>;
+  }> = {},
+): InMemoryRuntime => {
+  const mounted: Record<string, string> = {};
+  const workspaceFiles = new Map<string, string | Uint8Array>();
+  const directories = new Set<string>();
+  const processes: ControlledProcess[] = [];
+  const stopWatching = vi.fn();
+  let watcher: ((path: string) => void) | undefined;
+  let installs = 0;
+
+  return {
+    mounted,
+    workspaceFiles,
+    directories,
+    processes,
+    stopWatching,
+    installCount: () => installs,
+    emitPath: (path) => watcher?.(path),
+    mount: async (files) => {
+      Object.assign(mounted, files);
+      for (const [path, contents] of Object.entries(files)) {
+        if (!path.startsWith("../")) workspaceFiles.set(path, contents);
+      }
+    },
+    install: async (signal) => {
+      installs += 1;
+      if (options.install !== undefined) return options.install(signal);
+      return options.installExitCode ?? 0;
+    },
+    readTypeFiles: async () => ({
+      "file:///node_modules/vitest/index.d.ts": "vitest types",
+    }),
+    watchWorkspace: (onPath) => {
+      watcher = onPath;
+      return stopWatching;
+    },
+    readWorkspaceEntry: async (path) => {
+      const contents = workspaceFiles.get(path);
+      if (contents !== undefined) return { kind: "file", contents };
+      const prefix = `${path}/`;
+      const children = new Map<string, "file" | "directory">();
+      for (const filePath of workspaceFiles.keys()) {
+        if (!filePath.startsWith(prefix)) continue;
+        const relativePath = filePath.slice(prefix.length);
+        const name = relativePath.split("/")[0]!;
+        children.set(name, relativePath.includes("/") ? "directory" : "file");
+      }
+      for (const directoryPath of directories) {
+        if (!directoryPath.startsWith(prefix)) continue;
+        const relativePath = directoryPath.slice(prefix.length);
+        const name = relativePath.split("/")[0]!;
+        children.set(name, "directory");
+      }
+      if (directories.has(path) || children.size > 0) {
+        return {
+          kind: "directory",
+          entries: [...children].map(([name, kind]) => ({ name, kind })),
+        };
+      }
+      throw Object.assign(new Error(`ENOENT: ${path}`), { code: "ENOENT" });
+    },
+    writeWorkspaceFile: async (path, contents) => {
+      workspaceFiles.set(path, contents);
+    },
+    spawnShell: async () => {
+      const process = createControlledProcess();
+      processes.push(process);
+      return process;
+    },
+    dispose: vi.fn(),
+  };
+};
+
+type Updates = Readonly<{
+  phases: TerminalPhase[];
+  output: string[];
+  typeFiles: Record<string, string>[];
+  changes: WorkspaceChange[];
+  exits: number[];
+}>;
+
+const createUpdates = (): Updates => ({
+  phases: [],
+  output: [],
+  typeFiles: [],
+  changes: [],
+  exits: [],
+});
+
+const requestFor = (
+  updates: Updates,
+  overrides: Partial<TerminalStartRequest> = {},
+): TerminalStartRequest => ({
+  files: {
+    "src/main.ts": "edited main",
+    "package.json": "{}",
+  },
+  visibleFiles: ["src/main.ts"],
+  size: { cols: 80, rows: 24 },
+  signal: new AbortController().signal,
+  onPhase: (phase) => updates.phases.push(phase),
+  onOutput: (chunk) => updates.output.push(chunk),
+  onTypeFiles: (files) => updates.typeFiles.push({ ...files }),
+  onWorkspaceChange: (change) => updates.changes.push(change),
+  onExit: (exitCode) => updates.exits.push(exitCode),
+  ...overrides,
+});
+
+const nextTask = async () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+describe("terminal runner", () => {
   it("builds a nested WebContainer filesystem tree from flat paths", () => {
     expect(
       buildFileSystemTree({
@@ -82,7 +210,9 @@ describe("single-file execution", () => {
   });
 
   it("rejects empty path segments and file-directory collisions", () => {
-    expect(() => buildFileSystemTree({ "src//main.ts": "" })).toThrow(/empty path segment/i);
+    expect(() => buildFileSystemTree({ "src//main.ts": "" })).toThrow(
+      /empty path segment/i,
+    );
     expect(() =>
       buildFileSystemTree({ src: "file", "src/main.ts": "nested" }),
     ).toThrow(/collision/i);
@@ -91,712 +221,342 @@ describe("single-file execution", () => {
     ).toThrow(/collision/i);
   });
 
-  it("mounts parent fixtures outside the project tree and preserves them on writes", async () => {
+  it("starts one persistent shell and forwards raw terminal I/O and resize", async () => {
+    const runtime = createInMemoryRuntime();
+    const updates = createUpdates();
+    const session = await createTerminalRunner(async () => runtime).start(
+      requestFor(updates),
+    );
+
+    expect(updates.phases).toEqual([
+      "booting",
+      "mounting",
+      "installing",
+      "collecting-types",
+      "starting-shell",
+    ]);
+    expect(runtime.mounted["src/main.ts"]).toBe("edited main");
+    expect(updates.typeFiles).toEqual([
+      { "file:///node_modules/vitest/index.d.ts": "vitest types" },
+    ]);
+    expect(runtime.processes).toHaveLength(1);
+
+    runtime.processes[0]!.emit("\x1b[31mfailed\x1b[0m\r\n");
+    await session.writeInput("pnpm test\r");
+    session.resize({ cols: 120, rows: 40 });
+    await nextTask();
+
+    expect(updates.output).toEqual(["\x1b[31mfailed\x1b[0m\r\n"]);
+    expect(runtime.processes[0]!.inputs).toEqual(["pnpm test\r"]);
+    expect(runtime.processes[0]!.resize).toHaveBeenCalledWith({
+      cols: 120,
+      rows: 40,
+    });
+
+    runtime.processes[0]!.finish(0);
+    await nextTask();
+    expect(updates.exits).toEqual([0]);
+
+    await session.restartShell({ cols: 100, rows: 30 });
+    expect(runtime.processes).toHaveLength(2);
+    await session.writeInput("pwd\r");
+    expect(runtime.processes[1]!.inputs).toEqual(["pwd\r"]);
+
+    await session.dispose();
+    expect(runtime.stopWatching).toHaveBeenCalledOnce();
+    expect(runtime.processes[1]!.kill).toHaveBeenCalledOnce();
+    expect(runtime.dispose).toHaveBeenCalledOnce();
+  });
+
+  it("writes editor changes into the shared workspace", async () => {
+    const runtime = createInMemoryRuntime();
+    const session = await createTerminalRunner(async () => runtime).start(
+      requestFor(createUpdates()),
+    );
+
+    await session.writeFile("src/main.ts", "saved from editor");
+
+    expect(runtime.workspaceFiles.get("src/main.ts")).toBe(
+      "saved from editor",
+    );
+    await session.dispose();
+  });
+
+  it("projects visible edits, new UTF-8 files, and deletions", async () => {
+    const runtime = createInMemoryRuntime();
+    const updates = createUpdates();
+    const session = await createTerminalRunner(async () => runtime).start(
+      requestFor(updates),
+    );
+
+    runtime.workspaceFiles.set("src/main.ts", "changed in terminal");
+    runtime.emitPath("src/main.ts");
+    runtime.workspaceFiles.set("src/created.ts", "export const created = true;\n");
+    runtime.emitPath("src/created.ts");
+    await nextTask();
+
+    runtime.emitPath("src/created.ts");
+    await nextTask();
+    runtime.workspaceFiles.delete("src/created.ts");
+    runtime.emitPath("src/created.ts");
+    await nextTask();
+
+    expect(updates.changes).toEqual([
+      { kind: "write", path: "src/main.ts", contents: "changed in terminal" },
+      {
+        kind: "write",
+        path: "src/created.ts",
+        contents: "export const created = true;\n",
+      },
+      { kind: "delete", path: "src/created.ts" },
+    ]);
+    await session.dispose();
+  });
+
+  it("does not project hidden, generated, cached, or binary files", async () => {
+    const runtime = createInMemoryRuntime();
+    const updates = createUpdates();
+    const session = await createTerminalRunner(async () => runtime).start(
+      requestFor(updates),
+    );
+    const ignoredFiles: Readonly<Record<string, string | Uint8Array>> = {
+      "package.json": "changed but initially hidden",
+      "package-lock.json": "{}",
+      "node_modules/zod/index.js": "module",
+      ".cache/result.json": "cache",
+      ".vite/result.json": "cache",
+      ".astro/result.json": "cache",
+      ".env": "SECRET=not-projected",
+      ".git/config": "git metadata",
+      "src/.draft.ts": "draft",
+      "dist/index.js": "build",
+      "coverage/index.html": "coverage",
+      "src/invalid.txt": new Uint8Array([0xff]),
+      "src/binary.txt": "before\0after",
+    };
+
+    for (const [path, contents] of Object.entries(ignoredFiles)) {
+      runtime.workspaceFiles.set(path, contents);
+      runtime.emitPath(path);
+    }
+    await nextTask();
+
+    expect(updates.changes).toEqual([]);
+    await session.dispose();
+  });
+
+  it("removes projected files that become binary and reconciles directory changes", async () => {
+    const runtime = createInMemoryRuntime();
+    const updates = createUpdates();
+    const session = await createTerminalRunner(async () => runtime).start(
+      requestFor(updates),
+    );
+
+    runtime.workspaceFiles.set("src/main.ts", new Uint8Array([0xff]));
+    runtime.emitPath("src/main.ts");
+    runtime.workspaceFiles.set("src/generated/one.txt", "one");
+    runtime.workspaceFiles.set("src/generated/nested/two.txt", "two");
+    runtime.emitPath("src/generated");
+    await nextTask();
+
+    runtime.workspaceFiles.delete("src/generated/one.txt");
+    runtime.workspaceFiles.delete("src/generated/nested/two.txt");
+    runtime.emitPath("src/generated");
+    await nextTask();
+
+    expect(updates.changes).toEqual([
+      { kind: "delete", path: "src/main.ts" },
+      { kind: "write", path: "src/generated/one.txt", contents: "one" },
+      {
+        kind: "write",
+        path: "src/generated/nested/two.txt",
+        contents: "two",
+      },
+      { kind: "delete", path: "src/generated/one.txt" },
+      { kind: "delete", path: "src/generated/nested/two.txt" },
+    ]);
+    expect(updates.output).toEqual([]);
+    await session.dispose();
+  });
+
+  it("aborts an installation in progress and disposes its runtime", async () => {
+    let installationStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      installationStarted = resolve;
+    });
+    const runtime = createInMemoryRuntime({
+      install: async (signal) => {
+        installationStarted();
+        return new Promise<number>((resolve) => {
+          signal.addEventListener("abort", () => resolve(143), { once: true });
+        });
+      },
+    });
+    const controller = new AbortController();
+    const starting = createTerminalRunner(async () => runtime).start(
+      requestFor(createUpdates(), { signal: controller.signal }),
+    );
+    await started;
+
+    controller.abort();
+
+    await expect(starting).rejects.toMatchObject({ name: "AbortError" });
+    expect(runtime.processes).toHaveLength(0);
+    expect(runtime.dispose).toHaveBeenCalledOnce();
+  });
+
+  it("disposes a failed install and can start again with a new runtime", async () => {
+    const failedRuntime = createInMemoryRuntime({ installExitCode: 1 });
+    const recoveredRuntime = createInMemoryRuntime();
+    const runtimes = [failedRuntime, recoveredRuntime];
+    const runner = createTerminalRunner(async () => runtimes.shift()!);
+
+    await expect(runner.start(requestFor(createUpdates()))).rejects.toThrow(
+      "Dependency installation failed with exit code 1",
+    );
+    expect(failedRuntime.dispose).toHaveBeenCalledOnce();
+
+    const recovered = await runner.start(requestFor(createUpdates()));
+    expect(recoveredRuntime.processes).toHaveLength(1);
+    await recovered.dispose();
+  });
+});
+
+describe("WebContainer terminal adapter", () => {
+  it("decodes byte filenames emitted by the WebContainer watcher", async () => {
+    let watchListener:
+      | ((event: "rename" | "change", filename: string | Uint8Array) => void)
+      | undefined;
+    const shell = createControlledProcess();
+    const install = createControlledProcess();
+    install.finish(0);
+    webContainerMock.boot.mockReset();
+    webContainerMock.boot.mockResolvedValue({
+      mount: vi.fn(),
+      spawn: vi.fn(async (command: string) =>
+        command === "npm" ? install : shell,
+      ),
+      teardown: vi.fn(),
+      fs: {
+        mkdir: vi.fn(async () => undefined),
+        writeFile: vi.fn(async () => undefined),
+        readdir: async () => [],
+        readFile: async (path: string) => {
+          if (path === "workspace/src/created.ts") return "created";
+          throw Object.assign(new Error(`ENOENT: ${path}`), { code: "ENOENT" });
+        },
+        watch: vi.fn(
+          (
+            _path: string,
+            _options: unknown,
+            listener: typeof watchListener,
+          ) => {
+            watchListener = listener;
+            return { close: vi.fn() };
+          },
+        ),
+      },
+    });
+    const updates = createUpdates();
+    const session = await createWebContainerTerminalRunner().start(
+      requestFor(updates),
+    );
+
+    watchListener?.(
+      "rename",
+      new TextEncoder().encode("src/created.ts"),
+    );
+    await nextTask();
+
+    expect(updates.changes).toEqual([
+      { kind: "write", path: "src/created.ts", contents: "created" },
+    ]);
+    await session.dispose();
+  });
+
+  it("mounts parent fixtures outside the project and starts jsh in the workspace", async () => {
     const mounted: unknown[] = [];
     const mkdir = vi.fn(async () => undefined);
     const writeFile = vi.fn(async () => undefined);
-    const spawn = vi.fn(async () => ({
-      exit: Promise.resolve(0),
-      output: new ReadableStream<string>({
-        start(controller) {
-          controller.close();
-        },
-      }),
-      kill: vi.fn(),
-    }));
+    const watcherClose = vi.fn();
+    const teardown = vi.fn();
+    const shell = createControlledProcess();
+    const emptyProcess = () => {
+      const process = createControlledProcess();
+      process.finish(0);
+      return process;
+    };
+    const spawn = vi.fn(async (command: string) =>
+      command === "npm" ? emptyProcess() : shell,
+    );
     webContainerMock.boot.mockReset();
     webContainerMock.boot.mockResolvedValue({
-      workdir: "/home/workshop",
       mount: async (tree: unknown, options: unknown) => {
         mounted.push([tree, options]);
       },
       spawn,
+      teardown,
       fs: {
         mkdir,
         writeFile,
         readdir: async () => [],
         readFile: async () => "",
+        watch: vi.fn(() => ({ close: watcherClose })),
       },
     });
-    const traversalRunner = createWebContainerRunner();
-    await expect(
-      traversalRunner.run(
-        {
-          filePath: "src/main.ts",
-          files: {
-            "src/main.ts": "console.log('unsafe')",
-            "../secrets.txt": "must not escape",
-          },
-        },
-        () => undefined,
-      ),
-    ).rejects.toThrow("Unsupported external project path: ../secrets.txt");
-
-    const runner = createWebContainerRunner();
-
-    await runner.run(
-      {
-        filePath: "src/main.ts",
+    const runner = createWebContainerTerminalRunner();
+    const updates = createUpdates();
+    const session = await runner.start(
+      requestFor(updates, {
         files: {
-          "src/main.ts": "console.log('first')",
-          "../fixtures/clinic.ts": "export const clinicFixture = 'first';",
+          "src/main.ts": "main",
+          "../fixtures/clinic.ts": "fixture",
         },
-      },
-      () => undefined,
-    );
-    await runner.run(
-      {
-        filePath: "src/main.ts",
-        files: {
-          "src/main.ts": "console.log('second')",
-          "../fixtures/clinic.ts": "export const clinicFixture = 'second';",
-        },
-      },
-      () => undefined,
+        size: { cols: 90, rows: 28 },
+      }),
     );
 
     expect(mounted).toEqual([
-      [{
-        src: {
-          directory: {
-            "main.ts": { file: { contents: "console.log('first')" } },
-          },
-        },
-      }, { mountPoint: "workspace" }],
-    ]);
-    expect(mkdir).toHaveBeenCalledWith("workspace", { recursive: true });
-    expect(mkdir).toHaveBeenCalledWith("fixtures", { recursive: true });
-    expect(writeFile).toHaveBeenCalledWith(
-      "fixtures/clinic.ts",
-      "export const clinicFixture = 'second';",
-    );
-    expect(writeFile).toHaveBeenCalledWith(
-      "workspace/src/main.ts",
-      "console.log('second')",
-    );
-    expect(spawn).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.any(Array),
-      expect.objectContaining({ cwd: "workspace" }),
-    );
-  });
-
-  it("selects one fixed command by file kind", () => {
-    expect(runCommandFor("exercises/02-boundary-and-ids.test.ts")).toEqual({
-      command: "npx",
-      args: [
-        "--no-install",
-        "vitest",
-        "run",
-        "--config",
-        "vitest.exercises.config.ts",
-        "exercises/02-boundary-and-ids.test.ts",
-        "--reporter=verbose",
-      ],
-    });
-    expect(runCommandFor("test/02-boundary-and-ids.test.ts")).toEqual({
-      command: "npx",
-      args: [
-        "--no-install",
-        "vitest",
-        "run",
-        "--config",
-        "vitest.config.ts",
-        "test/02-boundary-and-ids.test.ts",
-        "--reporter=verbose",
-      ],
-    });
-    expect(runCommandFor("src/clinic/appointment.ts")).toEqual({
-      command: "npx",
-      args: ["--no-install", "tsx", "src/clinic/appointment.ts"],
-    });
-    expect(runCommandFor("package.json")).toBeUndefined();
-  });
-
-  it("installs once and writes the latest edits before each run", async () => {
-    const runtime = createInMemoryRuntime();
-    const runner = createCodeRunner(async () => runtime);
-    const updates: string[] = [];
-
-    await runner.run(
-      {
-        filePath: "src/main.ts",
-        files: { "src/main.ts": "console.log('first')", "package.json": "{}" },
-      },
-      (update) => {
-        if (update.kind === "phase") updates.push(update.phase);
-      },
-    );
-    await runner.run(
-      {
-        filePath: "src/main.ts",
-        files: { "src/main.ts": "console.log('second')", "package.json": "{}" },
-      },
-      () => undefined,
-    );
-
-    expect(runtime.installCount).toBe(1);
-    expect(runtime.files.get("/src/main.ts")).toBe("console.log('second')");
-    expect(runtime.executedFiles).toEqual(["src/main.ts", "src/main.ts"]);
-    expect(runtime.executedSources).toEqual([
-      "console.log('first')",
-      "console.log('second')",
-    ]);
-    expect(updates).toEqual(["booting", "mounting", "installing", "running"]);
-  });
-
-  it("retries boot after loading the runtime fails", async () => {
-    const runtime = createInMemoryRuntime();
-    let loadCount = 0;
-    const runner = createCodeRunner(async () => {
-      loadCount += 1;
-      if (loadCount === 1) throw new Error("boot failed");
-      return runtime;
-    });
-    const request = { filePath: "src/main.ts", files: { "src/main.ts": "" } };
-
-    await expect(runner.run(request, () => undefined)).rejects.toThrow("boot failed");
-    await expect(runner.run(request, () => undefined)).resolves.toEqual({ exitCode: 0 });
-
-    expect(loadCount).toBe(2);
-    expect(runtime.executedFiles).toEqual(["src/main.ts"]);
-  });
-
-  it("retries mount on the retained runtime without booting again", async () => {
-    let loadCount = 0;
-    let mountCount = 0;
-    const phases: string[] = [];
-    const runtime: Runtime = {
-      mount: async () => {
-        mountCount += 1;
-        if (mountCount === 1) throw new Error("mount failed");
-      },
-      install: async () => 0,
-      writeFiles: async () => undefined,
-      execute: async () => 0,
-      readTypeFiles: async () => ({}),
-    };
-    const runner = createCodeRunner(async () => {
-      loadCount += 1;
-      return runtime;
-    });
-    const request = { filePath: "src/main.ts", files: { "src/main.ts": "" } };
-    const onUpdate = (update: RunnerUpdate) => {
-      if (update.kind === "phase") phases.push(update.phase);
-    };
-
-    await expect(runner.run(request, onUpdate)).rejects.toThrow("mount failed");
-    await expect(runner.run(request, onUpdate)).resolves.toEqual({ exitCode: 0 });
-
-    expect(loadCount).toBe(1);
-    expect(mountCount).toBe(2);
-    expect(phases).toEqual(["booting", "mounting", "mounting", "installing", "running"]);
-  });
-
-  it("retries a failed install without executing the selected file", async () => {
-    let installCount = 0;
-    const executedFiles: string[] = [];
-    const runtime: Runtime = {
-      mount: async () => undefined,
-      install: async () => {
-        installCount += 1;
-        return installCount === 1 ? 1 : 0;
-      },
-      writeFiles: async () => undefined,
-      execute: async (command) => {
-        const selected = [...command.args].reverse().find((arg) => arg.endsWith(".ts"));
-        if (selected !== undefined) executedFiles.push(selected);
-        return 0;
-      },
-      readTypeFiles: async () => ({}),
-    };
-    const runner = createCodeRunner(async () => runtime);
-    const request = { filePath: "src/main.ts", files: { "src/main.ts": "" } };
-
-    await expect(runner.run(request, () => undefined)).rejects.toThrow(
-      "Dependency installation failed with exit code 1",
-    );
-    expect(executedFiles).toEqual([]);
-
-    await expect(runner.run(request, () => undefined)).resolves.toEqual({ exitCode: 0 });
-    expect(installCount).toBe(2);
-    expect(executedFiles).toEqual(["src/main.ts"]);
-  });
-
-  it("retries declaration collection without reinstalling dependencies", async () => {
-    let installCount = 0;
-    let typeReadCount = 0;
-    let executeCount = 0;
-    const runtime: Runtime = {
-      mount: async () => undefined,
-      install: async () => {
-        installCount += 1;
-        return 0;
-      },
-      writeFiles: async () => undefined,
-      execute: async () => {
-        executeCount += 1;
-        return 0;
-      },
-      readTypeFiles: async () => {
-        typeReadCount += 1;
-        if (typeReadCount === 1) throw new Error("type read failed");
-        return { "file:///node_modules/zod/index.d.cts": "zod types" };
-      },
-    };
-    const runner = createCodeRunner(async () => runtime);
-    const request = { filePath: "src/main.ts", files: { "src/main.ts": "" } };
-    const updates: RunnerUpdate[] = [];
-
-    await expect(runner.run(request, () => undefined)).rejects.toThrow("type read failed");
-    await expect(runner.run(request, (update) => updates.push(update))).resolves.toEqual({
-      exitCode: 0,
-    });
-
-    expect(installCount).toBe(1);
-    expect(typeReadCount).toBe(2);
-    expect(executeCount).toBe(1);
-    expect(updates.filter((update) => update.kind === "type-files")).toEqual([
-      {
-        kind: "type-files",
-        files: { "file:///node_modules/zod/index.d.cts": "zod types" },
-      },
-    ]);
-  });
-
-  it("waits for a killed WebContainer process to exit before cancellation settles", async () => {
-    const emptyOutput = () =>
-      new ReadableStream<string>({
-        start(controller) {
-          controller.close();
-        },
-      });
-    let resolveExecution!: (exitCode: number) => void;
-    const executionExit = new Promise<number>((resolve) => {
-      resolveExecution = resolve;
-    });
-    const kill = vi.fn();
-    const spawn = vi.fn(async (command: string) =>
-      command === "npm"
-        ? { exit: Promise.resolve(0), output: emptyOutput(), kill: vi.fn() }
-        : {
-            exit: executionExit,
-            output: new ReadableStream<string>({ start: () => undefined }),
-            kill,
-          },
-    );
-    webContainerMock.boot.mockReset();
-    webContainerMock.boot.mockResolvedValue({
-      mount: async () => undefined,
-      spawn,
-      fs: {
-        mkdir: async () => undefined,
-        writeFile: async () => undefined,
-        readdir: async () => [],
-        readFile: async () => "",
-      },
-    });
-    const runner = createWebContainerRunner();
-    const controller = new AbortController();
-    const running = runner.run(
-      {
-        filePath: "src/main.ts",
-        files: { "src/main.ts": "await new Promise(() => undefined);" },
-        signal: controller.signal,
-      },
-      () => undefined,
-    );
-    let runSettled = false;
-    void running.then(
-      () => {
-        runSettled = true;
-      },
-      () => {
-        runSettled = true;
-      },
-    );
-
-    await vi.waitFor(() => expect(spawn).toHaveBeenCalledTimes(2));
-    controller.abort();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    expect(kill).toHaveBeenCalledOnce();
-    expect(runSettled).toBe(false);
-
-    resolveExecution(143);
-    await expect(running).rejects.toMatchObject({ name: "AbortError" });
-  });
-
-  it("waits for process exit when abort happens while spawn is pending", async () => {
-    const emptyOutput = () =>
-      new ReadableStream<string>({
-        start(controller) {
-          controller.close();
-        },
-      });
-    let resolveSpawn!: (process: {
-      exit: Promise<number>;
-      output: ReadableStream<string>;
-      kill: () => void;
-    }) => void;
-    const pendingSpawn = new Promise<{
-      exit: Promise<number>;
-      output: ReadableStream<string>;
-      kill: () => void;
-    }>((resolve) => {
-      resolveSpawn = resolve;
-    });
-    let rejectExecution!: (error: Error) => void;
-    const executionExit = new Promise<number>((_resolve, reject) => {
-      rejectExecution = reject;
-    });
-    const kill = vi.fn();
-    let outputAccessed = false;
-    const executionProcess = {
-      exit: executionExit,
-      get output() {
-        outputAccessed = true;
-        return new ReadableStream<string>({ start: () => undefined });
-      },
-      kill,
-    };
-    const spawn = vi.fn(async (command: string) =>
-      command === "npm"
-        ? { exit: Promise.resolve(0), output: emptyOutput(), kill: vi.fn() }
-        : pendingSpawn,
-    );
-    webContainerMock.boot.mockReset();
-    webContainerMock.boot.mockResolvedValue({
-      mount: async () => undefined,
-      spawn,
-      fs: {
-        mkdir: async () => undefined,
-        writeFile: async () => undefined,
-        readdir: async () => [],
-        readFile: async () => "",
-      },
-    });
-    const runner = createWebContainerRunner();
-    const controller = new AbortController();
-    const running = runner.run(
-      {
-        filePath: "src/main.ts",
-        files: { "src/main.ts": "await new Promise(() => undefined);" },
-        signal: controller.signal,
-      },
-      () => undefined,
-    );
-    let runSettled = false;
-    void running.then(
-      () => {
-        runSettled = true;
-      },
-      () => {
-        runSettled = true;
-      },
-    );
-
-    await vi.waitFor(() => expect(spawn).toHaveBeenCalledTimes(2));
-    controller.abort();
-    resolveSpawn(executionProcess);
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    expect(kill).toHaveBeenCalledOnce();
-    expect(outputAccessed).toBe(false);
-    expect(runSettled).toBe(false);
-
-    rejectExecution(new Error("process terminated"));
-    await expect(running).rejects.toMatchObject({ name: "AbortError" });
-  });
-
-  it.each([
-    {
-      name: "bare carriage return overwrites from column zero across chunks",
-      chunks: ["abcdef", "\r", "XY\n"],
-      expected: "XYcdef\n",
-    },
-    {
-      name: "CSI 1K erases through the cursor without shifting the suffix",
-      chunks: ["abcdef\x1b[3G", "\x1b[1KXY\n"],
-      expected: "  XYef\n",
-    },
-    {
-      name: "CSI 2K clears the line without resetting the cursor column",
-      chunks: ["abcdef\x1b[3G", "\x1b[2KXY\n"],
-      expected: "  XY\n",
-    },
-  ])("normalizes terminal cursor semantics: $name", async ({ chunks, expected }) => {
-    const outputStream = (streamChunks: readonly string[]) =>
-      new ReadableStream<string>({
-        start(controller) {
-          for (const chunk of streamChunks) controller.enqueue(chunk);
-          controller.close();
-        },
-      });
-    const spawn = vi.fn(async (command: string) => ({
-      exit: Promise.resolve(0),
-      output: outputStream(command === "npm" ? [] : chunks),
-    }));
-    webContainerMock.boot.mockReset();
-    webContainerMock.boot.mockResolvedValue({
-      mount: async () => undefined,
-      spawn,
-      fs: {
-        mkdir: async () => undefined,
-        writeFile: async () => undefined,
-        readdir: async () => [],
-        readFile: async () => "",
-      },
-    });
-    const runner = createWebContainerRunner();
-    const output: string[] = [];
-
-    await runner.run(
-      { filePath: "src/main.ts", files: { "src/main.ts": "" } },
-      (update) => {
-        if (update.kind === "output") output.push(update.chunk);
-      },
-    );
-
-    expect(output.join("")).toBe(expected);
-  });
-
-  it("adapts WebContainer lazily and streams normalized install and run output", async () => {
-    const outputStream = (chunks: readonly string[]) =>
-      new ReadableStream<string>({
-        start(controller) {
-          for (const chunk of chunks) controller.enqueue(chunk);
-          controller.close();
-        },
-      });
-    let executionCount = 0;
-    const spawn = vi.fn(
-      async (
-        command: string,
-        _args: readonly string[],
-        _options: Readonly<{ cwd: string; env: Readonly<Record<string, string>> }>,
-      ) => {
-        if (command === "npm") {
-          return {
-            exit: Promise.resolve(0),
-            output: outputStream([
-              "working",
-              "\r⠋\x1b[1",
-              "G\x1b[0Kinstalled\r",
-              "\n",
-            ]),
-          };
-        }
-        executionCount += 1;
-        return {
-          exit: Promise.resolve(0),
-          output: outputStream(
-            executionCount === 1
-              ? ["\x1b[3", "2m1 test passed\r", "\n\x1b[?2", "5h"]
-              : ["✓ 日本", "語\nordinary trailing text"],
-          ),
-        };
-      },
-    );
-    const entry = (name: string, kind: "file" | "directory") => ({
-      name,
-      isFile: () => kind === "file",
-      isDirectory: () => kind === "directory",
-    });
-    const directoryEntries: Record<string, ReturnType<typeof entry>[]> = {
-      "workspace/node_modules/zod": [
-        entry("package.json", "file"),
-        entry("index.d.cts", "file"),
-        entry("index.d.mts", "file"),
-        entry("index.js", "file"),
-      ],
-      "workspace/node_modules/vitest": [entry("package.json", "file"), entry("index.d.ts", "file")],
-      "workspace/node_modules/@vitest": [entry("expect", "directory")],
-      "workspace/node_modules/@vitest/expect": [
-        entry("package.json", "file"),
-        entry("index.d.ts", "file"),
-      ],
-    };
-    const typeSources: Record<string, string> = {
-      "workspace/node_modules/zod/package.json": "{\"types\":\"./index.d.cts\"}",
-      "workspace/node_modules/zod/index.d.cts": "zod commonjs types",
-      "workspace/node_modules/zod/index.d.mts": "zod module types",
-      "workspace/node_modules/vitest/package.json": "vitest package",
-      "workspace/node_modules/vitest/index.d.ts": "vitest types",
-      "workspace/node_modules/@vitest/expect/package.json": "expect package",
-      "workspace/node_modules/@vitest/expect/index.d.ts": "expect types",
-    };
-    const mounted: unknown[] = [];
-    const written = new Map<string, string>();
-    webContainerMock.boot.mockReset();
-    webContainerMock.boot.mockResolvedValue({
-      mount: async (tree: unknown, options: unknown) => {
-        mounted.push([tree, options]);
-      },
-      spawn,
-      fs: {
-        mkdir: async () => undefined,
-        writeFile: async (path: string, source: string) => {
-          written.set(path, source);
-        },
-        readdir: async (path: string) => directoryEntries[path] ?? [],
-        readFile: async (path: string) => typeSources[path],
-      },
-    });
-    const runner = createWebContainerRunner();
-    const updates: RunnerUpdate[] = [];
-    const outputText = () =>
-      updates
-        .filter((update) => update.kind === "output")
-        .map((update) => update.chunk)
-        .join("");
-
-    expect(webContainerMock.boot).not.toHaveBeenCalled();
-    await runner.run(
-      {
-        filePath: "src/main.ts",
-        files: { "src/main.ts": "console.log('first')", "package.json": "{}" },
-      },
-      (update) => updates.push(update),
-    );
-    expect(outputText()).toBe("installed\n1 test passed\n");
-    expect(outputText()).not.toMatch(/[\u001b\u009b\r]/);
-
-    await runner.run(
-      {
-        filePath: "src/main.ts",
-        files: { "src/main.ts": "console.log('second')", "package.json": "{}" },
-      },
-      (update) => updates.push(update),
-    );
-
-    expect(webContainerMock.boot).toHaveBeenCalledTimes(1);
-    expect(mounted).toEqual([
-      [{
-        src: { directory: { "main.ts": { file: { contents: "console.log('first')" } } } },
-        "package.json": { file: { contents: "{}" } },
-      }, { mountPoint: "workspace" }],
-    ]);
-    expect(written.get("workspace/src/main.ts")).toBe("console.log('second')");
-    expect(spawn).toHaveBeenNthCalledWith(
-      1,
-      "npm",
-      ["install", "--no-progress", "--no-audit", "--no-fund"],
-      { cwd: "workspace", env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" } },
-    );
-    expect(spawn).toHaveBeenNthCalledWith(
-      2,
-      "npx",
-      ["--no-install", "tsx", "src/main.ts"],
-      { cwd: "workspace", env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" } },
-    );
-    expect(spawn).toHaveBeenCalledTimes(3);
-    expect(outputText()).toBe(
-      "installed\n1 test passed\n✓ 日本語\nordinary trailing text",
-    );
-    expect(updates.filter((update) => update.kind === "type-files")).toEqual([
-      {
-        kind: "type-files",
-        files: {
-          "file:///node_modules/zod/package.json": "{\"types\":\"./index.d.cts\"}",
-          "file:///node_modules/zod/index.d.cts": "zod commonjs types",
-          "file:///node_modules/zod/index.d.mts": "zod module types",
-          "file:///node_modules/vitest/package.json": "vitest package",
-          "file:///node_modules/vitest/index.d.ts": "vitest types",
-          "file:///node_modules/@vitest/expect/package.json": "expect package",
-          "file:///node_modules/@vitest/expect/index.d.ts": "expect types",
-        },
-      },
-    ]);
-  });
-
-  it("runs a project when Zod is not installed", async () => {
-    const emptyOutput = () =>
-      new ReadableStream<string>({
-        start(controller) {
-          controller.close();
-        },
-      });
-    const entry = (name: string, kind: "file" | "directory") => ({
-      name,
-      isFile: () => kind === "file",
-      isDirectory: () => kind === "directory",
-    });
-    const directoryEntries: Record<string, ReturnType<typeof entry>[]> = {
-      "workspace/node_modules/vitest": [entry("package.json", "file"), entry("index.d.ts", "file")],
-      "workspace/node_modules/@vitest": [entry("expect", "directory")],
-      "workspace/node_modules/@vitest/expect": [
-        entry("package.json", "file"),
-        entry("index.d.ts", "file"),
-      ],
-    };
-    const typeSources: Record<string, string> = {
-      "workspace/node_modules/vitest/package.json": "vitest package",
-      "workspace/node_modules/vitest/index.d.ts": "vitest types",
-      "workspace/node_modules/@vitest/expect/package.json": "expect package",
-      "workspace/node_modules/@vitest/expect/index.d.ts": "expect types",
-    };
-    const spawn = vi.fn(async () => ({
-      exit: Promise.resolve(0),
-      output: emptyOutput(),
-      kill: vi.fn(),
-    }));
-    webContainerMock.boot.mockReset();
-    webContainerMock.boot.mockResolvedValue({
-      mount: async () => undefined,
-      spawn,
-      fs: {
-        mkdir: async () => undefined,
-        writeFile: async () => undefined,
-        readdir: async (path: string) => {
-          if (path === "workspace/node_modules/zod") {
-            throw new Error(
-              "ENOENT: no such file or directory, scandir '/home/example/node_modules/zod'",
-            );
-          }
-          return directoryEntries[path] ?? [];
-        },
-        readFile: async (path: string) => typeSources[path],
-      },
-    });
-    const updates: RunnerUpdate[] = [];
-
-    await expect(
-      createWebContainerRunner().run(
-        {
-          filePath: "exercises/incident.test.ts",
-          files: {
-            "exercises/incident.test.ts": "",
-            "package.json": "{}",
-          },
-        },
-        (update) => updates.push(update),
-      ),
-    ).resolves.toEqual({ exitCode: 0 });
-
-    expect(updates.filter((update) => update.kind === "type-files")).toEqual([
-      {
-        kind: "type-files",
-        files: {
-          "file:///node_modules/vitest/package.json": "vitest package",
-          "file:///node_modules/vitest/index.d.ts": "vitest types",
-          "file:///node_modules/@vitest/expect/package.json": "expect package",
-          "file:///node_modules/@vitest/expect/index.d.ts": "expect types",
-        },
-      },
-    ]);
-    expect(spawn).toHaveBeenLastCalledWith(
-      "npx",
       [
-        "--no-install",
-        "vitest",
-        "run",
-        "--config",
-        "vitest.exercises.config.ts",
-        "exercises/incident.test.ts",
-        "--reporter=verbose",
+        {
+          src: { directory: { "main.ts": { file: { contents: "main" } } } },
+        },
+        { mountPoint: "workspace" },
       ],
-      { cwd: "workspace", env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" } },
-    );
+    ]);
+    expect(mkdir).toHaveBeenCalledWith("fixtures", { recursive: true });
+    expect(writeFile).toHaveBeenCalledWith("fixtures/clinic.ts", "fixture");
+    expect(spawn).toHaveBeenLastCalledWith("jsh", [], {
+      cwd: "workspace",
+      terminal: { cols: 90, rows: 28 },
+    });
+
+    await session.dispose();
+    expect(watcherClose).toHaveBeenCalledOnce();
+    expect(teardown).toHaveBeenCalledOnce();
+  });
+
+  it("rejects parent paths outside fixtures", async () => {
+    webContainerMock.boot.mockReset();
+    webContainerMock.boot.mockResolvedValue({
+      mount: vi.fn(),
+      spawn: vi.fn(),
+      teardown: vi.fn(),
+      fs: {
+        mkdir: vi.fn(),
+        writeFile: vi.fn(),
+        readdir: async () => [],
+        readFile: async () => "",
+        watch: vi.fn(() => ({ close: vi.fn() })),
+      },
+    });
+
+    await expect(
+      createWebContainerTerminalRunner().start(
+        requestFor(createUpdates(), {
+          files: { "src/main.ts": "main", "../private.txt": "escape" },
+        }),
+      ),
+    ).rejects.toThrow("Unsupported external project path: ../private.txt");
   });
 });

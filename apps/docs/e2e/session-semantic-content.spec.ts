@@ -1,5 +1,30 @@
 import { expect, test } from "@playwright/test";
-import { sessions } from "../src/sessions/catalog";
+
+const sessions = [
+  { slug: "00-system-handover", title: "業務とシステムを引き継ぐ" },
+  {
+    slug: "01-business-events-and-workflows",
+    title: "ビジネスイベントからワークフローを描く",
+  },
+  { slug: "02-state-transitions", title: "予約の状態と遷移をモデル化する" },
+  {
+    slug: "03-semantic-identifiers",
+    title: "用途の異なる識別子を型で区別する",
+  },
+  {
+    slug: "04-boundaries-and-pii",
+    title: "外部入力を境界で検証し個人情報を守る",
+  },
+  {
+    slug: "05-workflow-errors",
+    title: "失敗をワークフローの結果として扱う",
+  },
+  {
+    slug: "06-effects-and-consistency",
+    title: "副作用と整合性境界を設計する",
+  },
+  { slug: "final", title: "参照実装で境界をたどる" },
+] as const;
 
 const viewports = [
   { name: "mobile", width: 390, height: 844, definitionColumns: 1 },
@@ -12,7 +37,9 @@ for (const session of sessions) {
       await page.setViewportSize(viewport);
       await page.goto(`/sessions/${session.slug}/`);
 
-      await expect(page.getByRole("heading", { level: 1 })).toHaveText(session.title);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+        session.title,
+      );
       const pageWidths = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,

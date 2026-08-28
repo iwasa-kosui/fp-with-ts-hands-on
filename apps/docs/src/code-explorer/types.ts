@@ -1,10 +1,12 @@
-import type { ExampleSnapshot } from "../sessions/catalog";
+import type { ExampleSnapshot } from "../sessions/types";
 
 export type ProjectFiles = Readonly<Record<string, string>>;
 
-export type SessionWorkspace = Readonly<{
+export type SessionWorkspace<
+  Snapshot extends ExampleSnapshot = ExampleSnapshot,
+> = Readonly<{
   slug: string;
-  snapshot: ExampleSnapshot;
+  snapshot: Snapshot;
   description: string;
   initialFile: string;
   visibleFiles: readonly string[];

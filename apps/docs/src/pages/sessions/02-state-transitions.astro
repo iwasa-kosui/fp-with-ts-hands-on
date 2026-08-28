@@ -1,11 +1,158 @@
 ---
-import ExerciseSessionContent from "../../components/ExerciseSessionContent.astro";
-import guides from "../../code-explorer/code-guides/02-state-transitions";
-import SessionLayout from "../../layouts/SessionLayout.astro";
-import { sessionBySlug } from "../../sessions/catalog";
+import { Code } from "astro:components";
+import CommandBlock from "../../components/CommandBlock.astro";
+import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
+import type { CodeGuide } from "../../code-explorer/code-guide";
+import { projectFilesForSnapshot } from "../../code-explorer/project-files";
+import type { SessionWorkspace } from "../../code-explorer/types";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { loadSolutionSnippets } from "../../sessions/solution-snippets";
+import type {
+  ExerciseSessionSummary,
+  SessionSummary,
+} from "../../sessions/types";
+import "../../styles/code-playground.css";
+import "../../styles/sessions.css";
 
-const session = sessionBySlug("02-state-transitions");
-if (session === undefined) throw new Error("Unknown session: 02-state-transitions");
+type TeachingCode = Readonly<{
+  sources?: readonly [string, ...string[]];
+  caption?: string;
+  code: string;
+}>;
+
+type TeachingTopic = Readonly<{
+  name: string;
+  definition: string;
+  before: TeachingCode;
+  after: TeachingCode;
+  example?: Readonly<{ caption: string; code: string }>;
+  why: string;
+}>;
+
+export const session: SessionSummary = {
+  slug: "02-state-transitions",
+  snapshot: "session-02",
+  sequence: "02",
+  kind: "exercise",
+  title: "予約の状態と遷移をモデル化する",
+  durationMinutes: 30,
+  timeBreakdown: { brief: 4, teach: 6, exercise: 13, review: 7 },
+  adv: { articulate: 2, delegate: 9, verify: 2 },
+  peerReview: {
+    minutes: 7,
+    pickCount: 2,
+    questions: [
+      "`startExamination` は `CheckedIn` だけを受け取り、会計済み・キャンセル済みを型で拒否しますか。",
+      "`recordPayment` は `AwaitingPayment` だけを受け取り、診察結果の記録前には会計できない型ですか。",
+      "状態を追加したとき、`assertNever` によって未対応の分岐がコンパイルエラーになりますか。",
+    ],
+  },
+  solutionSnapshot: "session-03",
+  solutionPresentation: "excerpt",
+  peerReviewPromises: "inline",
+  animal: { name: "RABBIT", type: "rabbit", avatar: "🐇" },
+  summary: "予約の6状態を判別共用体で表し、許可されていない状態遷移を型で拒否します。",
+  episode: [
+    "会計を終えたウサギは帰ったはずなのに、画面の中では診察室へ戻ってきました。",
+    "受付画面は止めるどころか、2枚目の請求書まで手際よく用意します。",
+    "業務ルールを覚えていたのは人間だけで、コードは何でも通す親切設計でした。",
+  ],
+  incident: "診察結果を記録していない予約が会計され、さらに会計済みの来院が診察中へ戻された。",
+  exerciseCommand: "pnpm exercise:02",
+  exerciseModule: {
+    dir: "examples/session-02/src/domain/appointment",
+    fileBudget: 2,
+    lineBudget: 35,
+  },
+  delegationPrompt: {
+    request:
+      "予約状態の変更処理を、業務で許された遷移と各状態に必要な情報がコードから読み取れる形に改善してください。",
+    decisions: [
+      "どの状態からどの状態への遷移を許可するか",
+      "各状態で必須にする情報は何か",
+      "状態追加時の分岐漏れをどこで検出するか",
+    ],
+  },
+  steps: [
+    {
+      id: "s2-narrow-start",
+      goal: "会計済み・キャンセル済みの来院は診察を開始できないようにする。",
+      targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
+      solutions: [{
+        path: "examples/session-03/src/domain/appointment/transitions.ts",
+        symbol: "startExamination",
+        lines: [16, 26],
+      }],
+    },
+    {
+      id: "s2-require-cancel-reason",
+      goal: "キャンセルには必ず理由を残す。",
+      targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
+      solutions: [{
+        path: "examples/session-03/src/domain/appointment/transitions.ts",
+        symbol: "cancel",
+        lines: [47, 60],
+      }],
+    },
+    {
+      id: "s2-align-transitions",
+      goal: "診察結果の記録前には会計できないようにし、残りの遷移も許可された遷移元だけを受け取る規約にそろえる。",
+      targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
+      solutions: [{
+        path: "examples/session-03/src/domain/appointment/transitions.ts",
+        symbol: "checkIn",
+        lines: [13, 45],
+      }],
+    },
+    {
+      id: "s2-exhaustive-label",
+      goal: "状態を追加したら表示名の分岐をコンパイルエラーにする。",
+      targets: ["examples/session-02/src/domain/appointment/statusLabel.ts"],
+      solutions: [{
+        path: "examples/session-03/src/domain/appointment/statusLabel.ts",
+        symbol: "toStatusLabel",
+        lines: [3, 24],
+      }],
+    },
+  ],
+  decisions: [
+    {
+      invariant: "診察結果を記録するまで会計できず、許可されていない状態遷移を型で拒否する。",
+    },
+    {
+      invariant: "状態ごとの必須情報を欠かさない。",
+    },
+    {
+      invariant: "状態を追加したとき、未対応の分岐をコンパイルエラーにする。",
+    },
+  ],
+  finalReferences: [
+    "examples/final/src/domain/appointment/appointment.ts",
+    "examples/final/src/domain/shared/assertNever.ts",
+  ],
+};
+
+export const guides = ([
+  {
+    id: "wide-transition-input",
+    title: "current state を受け取る関数が Appointment 全体を受け入れている",
+    currentDesign: "current state を型で絞らず、実行時の requireKind と throw に頼っています。",
+    futureRisk: "禁止したい状態でも呼び出し側のコードはコンパイルが通り、as で結果を押し通せます。",
+    path: "src/domain/appointment/transitions.ts",
+    highlights: [
+      { startLineNumber: 8, endLineNumber: 17 },
+      { startLineNumber: 19, endLineNumber: 49 },
+    ],
+  },
+  {
+    id: "non-exhaustive-label",
+    title: "current state の表示分岐が未知の状態を見逃す",
+    currentDesign: "current state の kind を string として受け、default で不明を返します。",
+    futureRisk: "状態を追加しても、未対応の分岐がコンパイルエラーになりません。",
+    path: "src/domain/appointment/statusLabel.ts",
+    highlights: [{ startLineNumber: 3, endLineNumber: 20 }],
+  },
+] as const) satisfies readonly CodeGuide[];
 
 const missingNoShowCase = `// もし後から Appointment に "NoShow"（無断キャンセル）を追加した場合...
 switch (appointment.kind) {
@@ -29,7 +176,7 @@ switch (appointment.kind) {
     return assertNever(appointment);
 }`;
 
-const teaching = [
+const teaching: readonly TeachingTopic[] = [
   {
     name: "Discriminated Unionは共通のkindで型を絞り込める",
     definition:
@@ -188,20 +335,14 @@ export const toStatusLabel = (appointment: Appointment): string => {
     },
     why: "before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after で現在の全状態を処理すると、default内のappointmentはneverになります。AppointmentにNoShowを追加し、caseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverへ渡せないため、コンパイルエラーになります。同じ網羅性チェックを使う分岐でも修正漏れがエラーになるので、新しい状態の影響箇所をコンパイラが示します。",
   },
-] as const;
----
+];
 
-<SessionLayout session={session} teaching={teaching}>
-  <ExerciseSessionContent
-    session={session}
-    guides={guides}
-    teaching={teaching}
-    narrative={{
-      requirement: "予約を「診察中にする」、「診察結果を記録する」、「会計する」、「キャンセルする」といった状態変更の機能を追加します。",
-      currentRisk: "配布コードの遷移関数は、引数に Appointment 全体を受け取ります。そのため、Paid を startExamination へ渡すことも、診察結果を記録していない InExamination を recordPayment へ渡すこともコンパイルできます。実行時に requireKind が例外を投げるまで、状態の誤りに気づけません。cancel も理由を undefined で受け取れるため、コンパイラでは理由の欠落を止められません。",
-      pitfallCode: {
-        sources: ["examples/session-02/src/domain/appointment/transitions.ts"],
-        code: `export const startExamination = (
+const narrative = {
+  requirement: "予約を「診察中にする」、「診察結果を記録する」、「会計する」、「キャンセルする」といった状態変更の機能を追加します。",
+  currentRisk: "配布コードの遷移関数は、引数に Appointment 全体を受け取ります。そのため、Paid を startExamination へ渡すことも、診察結果を記録していない InExamination を recordPayment へ渡すこともコンパイルできます。実行時に requireKind が例外を投げるまで、状態の誤りに気づけません。cancel も理由を undefined で受け取れるため、コンパイラでは理由の欠落を止められません。",
+  pitfallCode: {
+    sources: ["examples/session-02/src/domain/appointment/transitions.ts"],
+    code: `export const startExamination = (
   appointment: Appointment,
   veterinarianId: string,
   examinationStartedAt: string,
@@ -232,11 +373,312 @@ recordPayment(
   { diagnosis: "皮膚炎", treatment: "軟膏", amount: 4800 },
   "2026-08-30T10:30:00+09:00",
 );`,
-      },
-      design: "Scheduled | CheckedIn | InExamination | AwaitingPayment | Paid | Canceled の判別共用体を、遷移関数と分岐でも一貫して使います。completeExamination は InExamination だけを受け取り、recordPayment は AwaitingPayment だけを受け取る純粋関数にします。分岐では網羅チェックを行い、状態を追加したときの未対応の分岐をコンパイルエラーにします。",
-      limitation: "この型が守れるのは、TypeScript が検査できる値だけです。外部から届く未検証の値や、型アサーションで作った値は防げません。",
-      legacy: "Appointment 全体を受け取る遷移関数、throw、as Appointment、default 分岐を探します。これらは、許可されていない状態遷移や、状態追加時の未対応の分岐をコンパイラで止められない箇所です。",
-      fallback: "解答スナップショットをステップ単位で開き、まず遷移関数の引数型、その後に網羅分岐をコピペします。相互レビューは行いましょう。",
-    }}
-  />
-</SessionLayout>
+  },
+  design: "Scheduled | CheckedIn | InExamination | AwaitingPayment | Paid | Canceled の判別共用体を、遷移関数と分岐でも一貫して使います。completeExamination は InExamination だけを受け取り、recordPayment は AwaitingPayment だけを受け取る純粋関数にします。分岐では網羅チェックを行い、状態を追加したときの未対応の分岐をコンパイルエラーにします。",
+  limitation: "この型が守れるのは、TypeScript が検査できる値だけです。外部から届く未検証の値や、型アサーションで作った値は防げません。",
+  legacy: "Appointment 全体を受け取る遷移関数、throw、as Appointment、default 分岐を探します。これらは、許可されていない状態遷移や、状態追加時の未対応の分岐をコンパイラで止められない箇所です。",
+  fallback: "解答スナップショットをステップ単位で開き、まず遷移関数の引数型、その後に網羅分岐をコピペします。相互レビューは行いましょう。",
+} as const;
+
+const exerciseSession: ExerciseSessionSummary = session;
+
+export const workspace = ({
+  slug: session.slug,
+  snapshot: session.snapshot,
+  initialFile: "exercises/state-modeling.test.ts",
+  description: "current state の要求と作成対象を開始 snapshot で確認します。",
+  visibleFiles: [
+    "exercises/state-modeling.test.ts",
+    "test/transitions.test.ts",
+    "test/setup.test.ts",
+    "src/domain/appointment/appointment.ts",
+    "src/domain/appointment/transitions.ts",
+    "src/domain/appointment/statusLabel.ts",
+  ],
+} as const) satisfies SessionWorkspace;
+
+const projectFiles = projectFilesForSnapshot(session.snapshot);
+const solutionSteps = await Promise.all(
+  session.steps.map(async (step) => ({
+    step,
+    presentation: step.solutions[0].presentation ?? "excerpt",
+    snippets: await loadSolutionSnippets(step),
+  })),
+);
+const chapters = [
+  { id: "incident", label: "今回つくるもの" },
+  { id: "legacy", label: "コードを読み、失敗を再現する" },
+  { id: "teach", label: "使う型を知る" },
+  { id: "refactor", label: "型で閉じる" },
+  { id: "review", label: "レビューと持ち帰り" },
+] as const;
+const commonReviewChecks = [
+  "`as` によるキャストが入っていないか全文検索して確認する。",
+  "`git diff --stat -- examples/session-02` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。",
+  "不変条件を型で守っているか、実行時の `if` で守っているかを判定し、型で守れなかった残りを記録する。",
+] as const;
+const reviewCompletionArtifacts = [
+  "守る不変条件の1文",
+  "依頼文",
+  "型で守れなかった残り",
+] as const;
+const businessReflectionQuestion =
+  "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。";
+const peerReviewPromises = [
+  "人ではなく差分を見ます。「この差分は」で話し始め、優劣をつけません。",
+  "本人は依頼文の1文だけを読み上げ、弁明しません。",
+  "TAは選定基準を共有し、5回で班員全員を少なくとも1回選びます。選出は評価ではありません。",
+] as const;
+export const promisesHref = "#peer-review-promises";
+export const navigation = ({
+  previous: {
+    href: "/sessions/01-business-events-and-workflows/",
+    title: "ビジネスイベントからワークフローを描く",
+  },
+  next: {
+    href: "/sessions/03-semantic-identifiers/",
+    title: "用途の異なる識別子を型で区別する",
+  },
+} as const);
+const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
+const delegationPrompt = `次の変更を実装してください。
+
+業務背景:
+${session.incident}
+
+依頼:
+${exerciseSession.delegationPrompt.request}
+
+守る不変条件: [言語化フェーズで書いた1文]
+
+着手前に判断すること:
+${exerciseSession.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
+
+まず配布コードと失敗しているテストを読み、上の判断と変更方針を短く説明してください。説明のあとで実装に進んでください。設計手段は既存コードに合うものを選び、選んだ理由も示してください。
+
+受け入れ条件:
+${session.steps.map((step) => `- ${step.goal}`).join("\n")}
+
+変更範囲:
+- ${session.exerciseModule.dir}/ のみ
+- 最大 ${session.exerciseModule.fileBudget} ファイル・約 ${session.exerciseModule.lineBudget} 行
+- 範囲外の変更が必要に見えた場合は、変更せず理由を報告する
+- 型エラーを \`as\` によるキャストで回避しない
+
+検証:
+- ${session.exerciseCommand} を実行し、すべての assertion が成功すること
+
+完了時の報告:
+- 変更したファイルと判断理由
+- 検証コマンドの結果
+- 型だけでは守れず、テストまたはレビューに残した点`;
+---
+
+<BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
+  <div class="case-file">
+    <header class="case-file__site-header">
+      <a href="/">WAN NYAN CLINIC</a>
+    </header>
+    <main>
+      <section class="case-file__hero" aria-labelledby="session-title">
+        <p class="case-file__eyebrow">SESSION {session.sequence} · {session.durationMinutes}分</p>
+        <h1 id="session-title">{session.title}</h1>
+        <p class="case-file__summary">
+          <span aria-hidden="true">{session.animal.avatar}</span>
+          {session.summary}
+        </p>
+        <aside class="case-file__episode" aria-label="動物病院のひと幕">
+          <p class="case-file__episode-label">動物病院のひと幕</p>
+          {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+        </aside>
+      </section>
+      <div class="case-file__body">
+        <aside class="case-file__toc case-file__toc--desktop">
+          <nav aria-label="ページ内目次">
+            <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
+          </nav>
+        </aside>
+        <details class="case-file__toc case-file__toc--mobile">
+          <summary>目次</summary>
+          <nav aria-label="ページ内目次">
+            <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
+          </nav>
+        </details>
+        <article class="case-file__content">
+          <section id="incident">
+            <h2>今回つくるもの</h2>
+            <h3 data-story-stage="use-case">追加したい機能</h3>
+            <p>{narrative.requirement}</p>
+            <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
+            <p>{narrative.currentRisk}</p>
+            <figure class="code-block pitfall-code" data-pitfall-code>
+              <figcaption>
+                配布コードをもとにした例:
+                {narrative.pitfallCode.sources.map((source, index) => (
+                  <Fragment>{index === 0 ? " " : "、"}<code>{source}</code></Fragment>
+                ))}
+              </figcaption>
+              <Code code={narrative.pitfallCode.code} lang="ts" />
+            </figure>
+            <h3 data-story-stage="goal">このセッションのゴール</h3>
+            <p>{narrative.design}</p>
+            <h3>このセッションで守ること</h3>
+            <ul class="decision-list">
+              {session.decisions.map(({ invariant }) => <li>{invariant}</li>)}
+            </ul>
+            <p>今回の変更は <code>{session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
+          </section>
+
+          <section id="legacy">
+            <h2>コードを読み、失敗を再現する</h2>
+            <p>{narrative.legacy}</p>
+            <p>
+              編集する範囲は <code>{session.exerciseModule.dir}</code>、変更するファイル数は最大
+              {session.exerciseModule.fileBudget}ファイル・約{session.exerciseModule.lineBudget}行です。
+            </p>
+            <section class="session-code-overview code-playground" aria-labelledby={`code-overview-${session.slug}`}>
+              <h3 id={`code-overview-${session.slug}`}>配布コードの設計課題</h3>
+              <p>ここでは修正せず、今回の事故につながる設計課題の場所を確認します。</p>
+              <div data-code-explorer={workspace.slug} data-code-overview>
+                <CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} guides={guides} />
+              </div>
+            </section>
+            <h3>見つけた問題を RED で確かめる</h3>
+            <p>配布コードで見つけた問題が、業務名を持つ assertion の失敗として現れることを確認します。</p>
+            <CommandBlock
+              phase="red"
+              command={session.exerciseCommand}
+              expected={`${session.steps.length}件の参加者ステップが、業務上の未解決条件として失敗します。`}
+            />
+            <h3>今回のステップ</h3>
+            <ol class="exercise-steps">
+              {session.steps.map((step) => <li><strong>{step.goal}</strong></li>)}
+            </ol>
+          </section>
+
+          <section id="teach">
+            <h2>事前知識（{session.timeBreakdown.teach}分）</h2>
+            <p>
+              この回で利用する型について確認します。配布コードの書き方を before、次のスナップショットの書き方を after として並べています。
+            </p>
+            {teaching.map((topic) => (
+              <article class="teaching-topic">
+                <h3>{topic.name}</h3>
+                <p>{topic.definition}</p>
+                <div class="teaching-topic__diff">
+                  <figure class="code-block">
+                    <figcaption>
+                      before:
+                      {topic.before.caption === undefined ? (
+                        topic.before.sources?.map((source, index) => (
+                          <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                        ))
+                      ) : <span>{topic.before.caption}</span>}
+                    </figcaption>
+                    <Code code={topic.before.code} lang="ts" />
+                  </figure>
+                  <figure class="code-block">
+                    <figcaption>
+                      after:
+                      {topic.after.caption === undefined ? (
+                        topic.after.sources?.map((source, index) => (
+                          <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                        ))
+                      ) : <span>{topic.after.caption}</span>}
+                    </figcaption>
+                    <Code code={topic.after.code} lang="ts" />
+                  </figure>
+                </div>
+                {topic.example === undefined ? null : (
+                  <figure class="code-block" data-teaching-example>
+                    <figcaption>{topic.example.caption}</figcaption>
+                    <Code code={topic.example.code} lang="ts" />
+                  </figure>
+                )}
+                <p class="teaching-topic__why">{topic.why}</p>
+              </article>
+            ))}
+          </section>
+
+          <section id="refactor">
+            <h2>演習</h2>
+            <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
+            <ol class="adv-flow">
+              <li><strong>言語化（{session.adv.articulate}分）</strong>: 守るべき不変条件を1文で書く。</li>
+              <li><strong>依頼（{session.adv.delegate}分）</strong>: 不変条件と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
+              <li><strong>検証（{session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
+            </ol>
+            <div class="delegation-prompt">
+              <h3>プロンプトのテンプレート</h3>
+              <p>角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。技法名や完成形を先に指定する必要はありません。</p>
+              <pre><code>{delegationPrompt}</code></pre>
+            </div>
+            <h3>この演習で解決しないこと</h3>
+            <p>{narrative.limitation}</p>
+            <h3 data-solution-heading>{exerciseSession.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
+            {exerciseSession.solutionPresentation === "completed-file" ? (
+              <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
+                <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読む。</p>
+                <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示される。</p>
+              </div>
+            ) : null}
+            {solutionSteps.map(({ step, presentation, snippets }) => (
+              <div class="solution-step">
+                <details class="step-solution" data-presentation={presentation}>
+                  <summary>{step.goal}</summary>
+                  {presentation === "completed-file" ? (
+                    <p class="step-solution__completed-file-note">
+                      この完成例には後続 step を含みます。表示されたすべての target file を反映した後、同じ exercise を GREEN にします。
+                    </p>
+                  ) : null}
+                  {snippets.map(({ solution, code }) => (
+                    <section class="step-solution__snippet">
+                      <h4><code>{solution.path}</code></h4>
+                      <Code code={code} lang="ts" />
+                    </section>
+                  ))}
+                </details>
+              </div>
+            ))}
+            <section class="session-code-playground code-playground" aria-labelledby="code-playground">
+              <h3 id="code-playground">ブラウザで試す</h3>
+              <p>このセッションの開始時点のコード一式を編集して、ターミナルから任意のコマンドで確認できます。</p>
+              <p>編集内容とコマンドはこのブラウザ内だけに保持されます。ターミナルを利用できない場合は、ページ内の <code>pnpm</code> 手順を使います。</p>
+              <div data-code-explorer={workspace.slug}>
+                <CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} />
+              </div>
+            </section>
+            <CommandBlock phase="green" command={session.exerciseCommand} expected="assertionが成功することを確認する" />
+            <h3>演習を完了できないとき</h3>
+            <p>{narrative.fallback}</p>
+          </section>
+
+          <section id="review">
+            <h2>レビューと持ち帰り</h2>
+            <div class="exercise-review-checklist">
+              <h3>個人で確認する</h3>
+              <ol>{commonReviewChecks.map((check) => <li>{check}</li>)}</ol>
+              <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>
+              <p><strong>残すもの:</strong> {reviewCompletionArtifacts.join("、")}</p>
+              <h3>業務へ持ち帰る</h3>
+              <p>{businessReflectionQuestion}</p>
+            </div>
+            <section id="peer-review-promises" class="peer-review-promises">
+              <h3>相互レビューの進行上の約束事</h3>
+              <ol>{peerReviewPromises.map((promise) => <li>{promise}</li>)}</ol>
+            </section>
+            <section class="peer-review-panel">
+              <h3>班内相互レビュー（{session.peerReview.minutes}分・{headcount}）</h3>
+              <p><a href={promisesHref}>進行上の約束事を確認する</a></p>
+              <ol>{session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
+            </section>
+          </section>
+        </article>
+      </div>
+      <nav class="case-file__session-nav" aria-label="前後のセッション">
+        <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
+        <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
+      </nav>
+    </main>
+  </div>
+</BaseLayout>

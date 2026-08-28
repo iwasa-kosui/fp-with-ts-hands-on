@@ -1,13 +1,9 @@
 import tsconfigBaseSource from "../../../../tsconfig.base.json?raw";
 import clinicFixtureSource from "../../../../examples/fixtures/clinic.ts?raw";
-import {
-  sessions,
-  sessionBySlug,
-  type PublicCodeExplorerSnapshot,
-} from "../sessions/catalog";
+import type { ExampleSnapshot } from "../sessions/types";
 import type { ProjectFiles } from "./types";
 
-type ProjectSnapshot = PublicCodeExplorerSnapshot | "session-07";
+type ProjectSnapshot = Exclude<ExampleSnapshot, "session-01">;
 
 const rawProjectFiles = import.meta.glob(
   "../../../../examples/{session-*,final}/{package.json,tsconfig.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,test/**/*.ts}",
@@ -15,13 +11,15 @@ const rawProjectFiles = import.meta.glob(
 ) as Record<string, string>;
 
 const snapshots = [
-  ...new Set<ProjectSnapshot>([
-    ...sessions.flatMap(({ snapshot }) =>
-      snapshot === undefined ? [] : [snapshot],
-    ),
-    "session-07",
-  ]),
-] as const;
+  "session-00",
+  "session-02",
+  "session-03",
+  "session-04",
+  "session-05",
+  "session-06",
+  "final",
+  "session-07",
+] as const satisfies readonly ProjectSnapshot[];
 
 const requiredRuntimeFiles = [
   "package.json",
@@ -47,12 +45,14 @@ const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
 
   const packageJson = JSON.parse(files["package.json"]!) as {
     devDependencies?: Record<string, string>;
+    scripts?: Record<string, string>;
     [key: string]: unknown;
   };
   const tsconfig = JSON.parse(files["tsconfig.json"]!) as {
     extends?: string;
     [key: string]: unknown;
   };
+  const exerciseSequence = /^session-(0[2-6])$/.exec(snapshot)?.[1];
 
   return Object.freeze({
     ...files,
@@ -60,7 +60,18 @@ const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
     "package.json": JSON.stringify(
       {
         ...packageJson,
-        devDependencies: { ...packageJson.devDependencies, tsx: "4.23.9" },
+        scripts:
+          exerciseSequence === undefined
+            ? packageJson.scripts
+            : {
+                ...packageJson.scripts,
+                [`exercise:${exerciseSequence}`]: "pnpm exercise",
+              },
+        devDependencies: {
+          ...packageJson.devDependencies,
+          tsx: "4.23.9",
+          typescript: "5.9.3",
+        },
       },
       null,
       2,
@@ -81,11 +92,3 @@ const projectFilesBySnapshot = Object.fromEntries(
 export const projectFilesForSnapshot = (
   snapshot: ProjectSnapshot,
 ): ProjectFiles => projectFilesBySnapshot[snapshot];
-
-export const projectFilesFor = (slug: string): ProjectFiles => {
-  const session = sessionBySlug(slug);
-  if (session === undefined || session.snapshot === undefined) {
-    throw new Error(`Unknown session project: ${slug}`);
-  }
-  return projectFilesForSnapshot(session.snapshot);
-};
