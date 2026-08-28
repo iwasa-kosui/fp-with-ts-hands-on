@@ -20,12 +20,5 @@ const { title, description, bodyClass } = Astro.props;
   </head>
   <body class={bodyClass}>
     <slot />
-    <script is:inline>
-      const heading = document.querySelector("h1");
-      if (heading instanceof HTMLElement) {
-        heading.tabIndex = -1;
-        heading.focus();
-      }
-    </script>
   </body>
 </html>

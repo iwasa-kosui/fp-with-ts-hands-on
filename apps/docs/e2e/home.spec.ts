@@ -35,3 +35,9 @@ test("home hero omits the decorative dog badge", async ({ page }) => {
 
   await expect(page.locator(".floating-pet--dog")).toHaveCount(0);
 });
+
+test("home page does not force focus on initial load", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.locator("body")).toBeFocused();
+});
