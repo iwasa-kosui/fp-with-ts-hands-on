@@ -35,8 +35,7 @@ describe("static site contract", () => {
     expect(html).toContain("ページが見つかりません");
     expect(html).toContain('href="/"');
     expect(html).toContain('href="/sessions/00-system-handover/"');
-    expect(scripts).toHaveLength(1);
-    expect(scripts[0]?.textContent).toContain('document.querySelector("h1")');
+    expect(scripts).toHaveLength(0);
     expect(document.querySelector("script[src], astro-island")).toBeNull();
   });
 });
