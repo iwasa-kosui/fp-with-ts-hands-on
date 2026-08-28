@@ -2,7 +2,7 @@
 import { Code } from "astro:components";
 import CommandBlock from "../../components/CommandBlock.astro";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
-import guides from "../../code-explorer/code-guides/02-state-transitions";
+import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import type { SessionWorkspace } from "../../code-explorer/types";
 import BaseLayout from "../../layouts/BaseLayout.astro";
@@ -126,6 +126,28 @@ export const session: SessionSummary = {
     "examples/final/src/domain/shared/assertNever.ts",
   ],
 };
+
+export const guides = ([
+  {
+    id: "wide-transition-input",
+    title: "current state を受け取る関数が Appointment 全体を受け入れている",
+    currentDesign: "current state を型で絞らず、実行時の requireKind と throw に頼っています。",
+    futureRisk: "禁止したい状態でも呼び出し側のコードはコンパイルが通り、as で結果を押し通せます。",
+    path: "src/domain/appointment/transitions.ts",
+    highlights: [
+      { startLineNumber: 7, endLineNumber: 15 },
+      { startLineNumber: 18, endLineNumber: 24 },
+    ],
+  },
+  {
+    id: "non-exhaustive-label",
+    title: "current state の表示分岐が未知の状態を見逃す",
+    currentDesign: "current state の kind を string として受け、default で不明を返します。",
+    futureRisk: "状態を追加しても、未対応の分岐がコンパイルエラーになりません。",
+    path: "src/domain/appointment/statusLabel.ts",
+    highlights: [{ startLineNumber: 3, endLineNumber: 17 }],
+  },
+] as const) satisfies readonly CodeGuide[];
 
 const missingNoShowCase = `// もし後から Appointment に "NoShow"（無断キャンセル）を追加した場合...
 switch (appointment.kind) {

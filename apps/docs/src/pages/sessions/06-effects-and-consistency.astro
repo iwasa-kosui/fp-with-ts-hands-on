@@ -2,7 +2,7 @@
 import { Code } from "astro:components";
 import CommandBlock from "../../components/CommandBlock.astro";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
-import guides from "../../code-explorer/code-guides/06-effects-and-consistency";
+import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import type { SessionWorkspace } from "../../code-explorer/types";
 import BaseLayout from "../../layouts/BaseLayout.astro";
@@ -145,6 +145,25 @@ export const session: SessionSummary = {
   ],
 };
 
+export const guides = ([
+  {
+    id: "hidden-nondeterminism",
+    title: "output event の時刻と ID をユースケース内で生成している",
+    currentDesign: "Date と randomUUID を直接呼び、同じ入力でも output event が変わります。",
+    futureRisk: "期待値を固定できず、テストが実行時刻に依存します。",
+    path: "src/useCase/startExamination.ts",
+    highlights: [{ startLineNumber: 42, endLineNumber: 64 }],
+  },
+  {
+    id: "dual-write",
+    title: "side effects が2つの保存処理に分かれている",
+    currentDesign: "side effects として stateStore.save と eventLog.append を順番に await しています。",
+    futureRisk: "片方だけ成功すると、監査記録を伴わない状態変更が残ります。",
+    path: "src/useCase/startExamination.ts",
+    highlights: [{ startLineNumber: 66, endLineNumber: 69 }],
+  },
+] as const) satisfies readonly CodeGuide[];
+
 const narrative = {
   requirement: "誰がいつ診察を開始したかを業務イベントとし、予約状態と監査記録を一つの保存境界へ渡す。",
   currentRisk: "時刻と ID を処理中に直接作り、状態と監査記録を別々に保存するため、テスト結果が安定せず、片方だけが残り得る。",
@@ -256,7 +275,10 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
       <section class="case-file__hero" aria-labelledby="session-title">
         <p class="case-file__eyebrow">SESSION {session.sequence} · {session.durationMinutes}分</p>
         <h1 id="session-title">{session.title}</h1>
-        <p class="case-file__summary"><span aria-hidden="true">{session.animal.avatar}</span>{session.summary}</p>
+        <p class="case-file__summary">
+          <span aria-hidden="true">{session.animal.avatar}</span>
+          {session.summary}
+        </p>
       </section>
       <div class="case-file__body">
         <aside class="case-file__toc case-file__toc--desktop">

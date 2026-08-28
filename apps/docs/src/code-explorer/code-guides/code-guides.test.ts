@@ -4,9 +4,9 @@ import type { CodeGuide } from "../code-guide";
 import { projectFilesForSnapshot } from "../project-files";
 import type { SessionWorkspace } from "../types";
 
-type GuideModule = Readonly<{ default: readonly CodeGuide[] }>;
 type PageModule = Readonly<{
   session: SessionSummary;
+  guides?: readonly CodeGuide[];
   workspace?: SessionWorkspace;
 }>;
 
@@ -40,11 +40,18 @@ const expectedFragments: Readonly<Record<string, readonly string[]>> = {
   "final-transaction-store": ["db.transaction"],
 };
 
-const guideModules = import.meta.glob<GuideModule>("./*.ts", { eager: true });
 const pageModules = import.meta.glob<PageModule>(
   "../../pages/sessions/*.astro",
   { eager: true },
 );
+const pageSources = import.meta.glob<string>("../../pages/sessions/*.astro", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+});
+const legacyGuideModules = Object.keys(
+  import.meta.glob("./*.ts", { eager: true }),
+).filter((file) => !file.endsWith("code-guides.test.ts"));
 const sessions = Object.values(pageModules).map(({ session }) => session);
 
 describe("session code guides", () => {
@@ -54,17 +61,25 @@ describe("session code guides", () => {
         ? []
         : [{ session, snapshot: session.snapshot }],
     );
-    const guideSlugs = Object.keys(guideModules)
-      .filter((file) => !file.endsWith(".test.ts"))
-      .map((file) => file.replace(/^\.\//, "").replace(/\.ts$/, ""))
+    const guideSlugs = codeExplorerSessions
+      .map(({ session }) => session.slug)
+      .sort();
+    const exportedGuideSlugs = Object.entries(pageModules)
+      .flatMap(([path, { guides }]) =>
+        guides === undefined
+          ? []
+          : [path.replace(/^\.\.\/\.\.\/pages\/sessions\//, "").replace(/\.astro$/, "")],
+      )
       .sort();
 
-    expect(guideSlugs).toEqual(
-      codeExplorerSessions.map(({ session }) => session.slug).sort(),
-    );
+    expect(legacyGuideModules).toEqual([]);
+    expect(exportedGuideSlugs).toEqual(guideSlugs);
 
     for (const { session, snapshot } of codeExplorerSessions) {
-      const guides = guideModules[`./${session.slug}.ts`]?.default;
+      const pagePath = `../../pages/sessions/${session.slug}.astro`;
+      const guides = pageModules[pagePath]?.guides;
+
+      expect(pageSources[pagePath]).not.toContain("code-explorer/code-guides/");
       expect(guides, session.slug).toEqual(expect.any(Array));
       expect(guides!.length).toBeGreaterThanOrEqual(2);
       expect(guides!.length).toBeLessThanOrEqual(

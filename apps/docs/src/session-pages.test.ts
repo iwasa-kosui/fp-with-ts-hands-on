@@ -359,6 +359,14 @@ describe("session pages", () => {
     });
   }
 
+  for (const slug of exerciseSlugs.slice(1)) {
+    it(`${slug} preserves the hero avatar whitespace emitted by S2`, () => {
+      expect(sourceFor(slug)).toContain(
+        `<p class="case-file__summary">\n          <span aria-hidden="true">{session.animal.avatar}</span>\n          {session.summary}\n        </p>`,
+      );
+    });
+  }
+
   it("S2 owns the inline peer-review promises", () => {
     const source = sourceFor("02-state-transitions");
 
