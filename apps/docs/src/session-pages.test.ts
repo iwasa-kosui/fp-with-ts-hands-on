@@ -31,4 +31,19 @@ describe("session pages", () => {
       );
     });
   }
+
+  for (const slug of [
+    "02-state-transitions",
+    "03-semantic-identifiers",
+    "04-boundaries-and-pii",
+    "05-workflow-errors",
+    "06-effects-and-consistency",
+  ]) {
+    it(`${slug} owns exercise HTML and Code Explorer settings`, () => {
+      const source = pageSources[`./pages/sessions/${slug}.astro`];
+      expect(source).not.toContain("ExerciseSessionContent");
+      expect(source).not.toContain("SessionLayout");
+      expect(source).toContain("export const workspace");
+    });
+  }
 });

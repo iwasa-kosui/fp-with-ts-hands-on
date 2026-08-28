@@ -1,8 +1,25 @@
 ---
-import ExerciseSessionContent from "../../components/ExerciseSessionContent.astro";
+import { Code } from "astro:components";
+import CommandBlock from "../../components/CommandBlock.astro";
+import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 import guides from "../../code-explorer/code-guides/06-effects-and-consistency";
-import SessionLayout from "../../layouts/SessionLayout.astro";
-import type { SessionSummary } from "../../sessions/types";
+import { projectFilesForSnapshot } from "../../code-explorer/project-files";
+import type { SessionWorkspace } from "../../code-explorer/types";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import {
+  businessReflectionQuestion,
+  commonReviewChecksFor,
+  reviewCompletionArtifacts,
+  sessionNeighbors,
+  sessionPath,
+} from "../../sessions/catalog";
+import { loadSolutionSnippets } from "../../sessions/solution-snippets";
+import type {
+  ExerciseSessionSummary,
+  SessionSummary,
+} from "../../sessions/types";
+import "../../styles/code-playground.css";
+import "../../styles/sessions.css";
 
 export const session: SessionSummary = {
   slug: "06-effects-and-consistency",
@@ -134,38 +151,227 @@ export const session: SessionSummary = {
     "examples/final/src/app.ts",
   ],
 };
+
+const narrative = {
+  requirement: "誰がいつ診察を開始したかを業務イベントとし、予約状態と監査記録を一つの保存境界へ渡す。",
+  currentRisk: "時刻と ID を処理中に直接作り、状態と監査記録を別々に保存するため、テスト結果が安定せず、片方だけが残り得る。",
+  design: "Clock と EventIdGenerator を port として注入し、副作用を調整するワークフローで EventContext を一度だけ生成する。純粋な状態遷移にはその EventContext を渡し、状態と監査記録を表す ExaminationStarted を単一の store へ保存する。予約が存在しない・予約の状態が不正・予約が競合しているケースは Result のエラーを返す。データベース起因のエラーやデータが破損しているエラーは業務エラーには変換せず、Promise の reject として外側の境界へ伝える。",
+  limitation: "in-memory の一括保存は契約の形を示す。本番の永続化層でアトミック性を守るには、transaction と結合テストが必要になる。",
+  legacy: "直接時刻を参照したりIDを生成したりしている処理、状態の保存と監査記録の保存がアトミックになっていない実装を読んでみましょう。例えば監査記録の保存だけが失敗した場合、状態の保存のみが実行され、不整合な状況が発生してしまいます。また、用意された単一の store に業務競合が届かない箇所を探します。",
+  fallback: "各解答欄には、import と後続 step を含む完成ファイルを target ごとに示します。表示されたすべての target file を反映した後、同じ exercise の検査がパスすることを確認します。各 step を個別にパスすることは想定していません。講師のデモへ切り替えた場合でも、相互レビューは実施しましょう。",
+} as const;
+
+const exerciseSession: ExerciseSessionSummary = session;
+
+export const workspace = ({
+  slug: session.slug,
+  snapshot: session.snapshot,
+  initialFile: "exercises/effects-and-events.test.ts",
+  description: "output event と side effects の要求を開始 snapshot で確認します。",
+  visibleFiles: [
+    "exercises/effects-and-events.test.ts",
+    "test/regression/result-errors.test.ts",
+    "src/domain/aggregate/clock.ts",
+    "src/domain/aggregate/eventContext.ts",
+    "src/domain/aggregate/eventId.ts",
+    "src/domain/aggregate/eventIdGenerator.ts",
+    "src/domain/appointment/examinationStarted.ts",
+    "src/useCase/dependencies.ts",
+    "src/useCase/errors.ts",
+    "src/useCase/startExamination.ts",
+    "src/shared/schemaResult.ts",
+    "src/shared/sensitive.ts",
+  ],
+} as const) satisfies SessionWorkspace;
+
+const projectFiles = projectFilesForSnapshot(session.snapshot);
+const solutionSteps = await Promise.all(
+  session.steps.map(async (step) => ({
+    step,
+    presentation: step.solutions[0].presentation ?? "excerpt",
+    snippets: await loadSolutionSnippets(step),
+  })),
+);
+const { previous, next } = sessionNeighbors(session.slug);
+const chapters = [
+  { id: "incident", label: "今回つくるもの" },
+  { id: "legacy", label: "コードを読み、失敗を再現する" },
+  { id: "refactor", label: "型で閉じる" },
+  { id: "review", label: "レビューと持ち帰り" },
+] as const;
+const commonReviewChecks = commonReviewChecksFor(session.snapshot);
+const promisesHref = "/sessions/02-state-transitions/#peer-review-promises";
+const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
+const delegationPrompt = `次の変更を実装してください。
+
+業務背景:
+${session.incident}
+
+依頼:
+${exerciseSession.delegationPrompt.request}
+
+守る不変条件: [言語化フェーズで書いた1文]
+
+着手前に判断すること:
+${exerciseSession.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
+
+まず配布コードと失敗しているテストを読み、上の判断と変更方針を短く説明してください。説明のあとで実装に進んでください。設計手段は既存コードに合うものを選び、選んだ理由も示してください。
+
+受け入れ条件:
+${session.steps.map((step) => `- ${step.goal}`).join("\n")}
+
+変更範囲:
+- ${session.exerciseModule.dir}/ のみ
+- 最大 ${session.exerciseModule.fileBudget} ファイル・約 ${session.exerciseModule.lineBudget} 行
+- 範囲外の変更が必要に見えた場合は、変更せず理由を報告する
+- 型エラーを \`as\` によるキャストで回避しない
+
+検証:
+- ${session.exerciseCommand} を実行し、すべての assertion が成功すること
+
+完了時の報告:
+- 変更したファイルと判断理由
+- 検証コマンドの結果
+- 型だけでは守れず、テストまたはレビューに残した点`;
 ---
 
-<SessionLayout session={session}>
-  <ExerciseSessionContent
-    session={session}
-    guides={guides}
-    narrative={{
-      requirement:
-        "誰がいつ診察を開始したかを業務イベントとし、予約状態と監査記録を一つの保存境界へ渡す。",
-      currentRisk:
-        "時刻と ID を処理中に直接作り、状態と監査記録を別々に保存するため、テスト結果が安定せず、片方だけが残り得る。",
-      design:
-        "Clock と EventIdGenerator を port として注入し、副作用を調整するワークフローで EventContext を一度だけ生成する。純粋な状態遷移にはその EventContext を渡し、状態と監査記録を表す ExaminationStarted を単一の store へ保存する。予約が存在しない・予約の状態が不正・予約が競合しているケースは Result のエラーを返す。データベース起因のエラーやデータが破損しているエラーは業務エラーには変換せず、Promise の reject として外側の境界へ伝える。",
-      limitation:
-        "in-memory の一括保存は契約の形を示す。本番の永続化層でアトミック性を守るには、transaction と結合テストが必要になる。",
-      legacy:
-        "直接時刻を参照したりIDを生成したりしている処理、状態の保存と監査記録の保存がアトミックになっていない実装を読んでみましょう。例えば監査記録の保存だけが失敗した場合、状態の保存のみが実行され、不整合な状況が発生してしまいます。また、用意された単一の store に業務競合が届かない箇所を探します。",
-      fallback:
-        "各解答欄には、import と後続 step を含む完成ファイルを target ごとに示します。表示されたすべての target file を反映した後、同じ exercise の検査がパスすることを確認します。各 step を個別にパスすることは想定していません。講師のデモへ切り替えた場合でも、相互レビューは実施しましょう。",
-    }}
-  />
-  <aside class="failure-boundary" aria-label="業務エラーとインフラ例外の区別">
-    <h2>2つの失敗経路を見分ける</h2>
-    <ul class="decision-list">
-      <li>
-        <strong>業務上のエラー:</strong> 予約が存在しない・予約の状態が不正・予約が競合しているケースは、呼び出し元で次の対応を選択する余地があるため、
-        <code>Result</code> の <code>Err</code> で返します。
-      </li>
-      <li>
-        <strong>運用上の異常:</strong> データベース起因のエラーやデータが破損しているエラーは呼び出し元でも解決できません。境界の外側で安全に記録し、エラーの詳細を含まない形で
-        HTTP 500 のレスポンスに変換します。
-      </li>
-    </ul>
-  </aside>
-</SessionLayout>
+<BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
+  <div class="case-file">
+    <header class="case-file__site-header"><a href="/">WAN NYAN CLINIC</a></header>
+    <main>
+      <section class="case-file__hero" aria-labelledby="session-title">
+        <p class="case-file__eyebrow">SESSION {session.sequence} · {session.durationMinutes}分</p>
+        <h1 id="session-title">{session.title}</h1>
+        <p class="case-file__summary"><span aria-hidden="true">{session.animal.avatar}</span>{session.summary}</p>
+      </section>
+      <div class="case-file__body">
+        <aside class="case-file__toc case-file__toc--desktop">
+          <nav aria-label="ページ内目次"><ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol></nav>
+        </aside>
+        <details class="case-file__toc case-file__toc--mobile">
+          <summary>目次</summary>
+          <nav aria-label="ページ内目次"><ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol></nav>
+        </details>
+        <article class="case-file__content">
+          <section id="incident">
+            <h2>今回つくるもの</h2>
+            <h3 data-story-stage="use-case">追加したい機能</h3>
+            <p>{narrative.requirement}</p>
+            <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
+            <p>{narrative.currentRisk}</p>
+            <h3 data-story-stage="goal">このセッションのゴール</h3>
+            <p>{narrative.design}</p>
+            <h3>このセッションで守ること</h3>
+            <ul class="decision-list">{session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
+            <p>今回の変更は <code>{session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
+          </section>
+
+          <section id="legacy">
+            <h2>コードを読み、失敗を再現する</h2>
+            <p>{narrative.legacy}</p>
+            <p>
+              編集する範囲は <code>{session.exerciseModule.dir}</code>、変更するファイル数は最大
+              {session.exerciseModule.fileBudget}ファイル・約{session.exerciseModule.lineBudget}行です。
+            </p>
+            <section class="session-code-overview code-playground" aria-labelledby={`code-overview-${session.slug}`}>
+              <h3 id={`code-overview-${session.slug}`}>配布コードの設計課題</h3>
+              <p>ここでは修正せず、今回の事故につながる設計課題の場所を確認します。</p>
+              <div data-code-explorer={workspace.slug} data-code-overview>
+                <CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} guides={guides} />
+              </div>
+            </section>
+            <h3>見つけた問題を RED で確かめる</h3>
+            <p>配布コードで見つけた問題が、業務名を持つ assertion の失敗として現れることを確認します。</p>
+            <CommandBlock phase="red" command={session.exerciseCommand} expected={`${session.steps.length}件の参加者ステップが、業務上の未解決条件として失敗します。`} />
+            <h3>今回のステップ</h3>
+            <ol class="exercise-steps">{session.steps.map((step) => <li><strong>{step.goal}</strong></li>)}</ol>
+          </section>
+
+          <section id="refactor">
+            <h2>演習</h2>
+            <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
+            <ol class="adv-flow">
+              <li><strong>言語化（{session.adv.articulate}分）</strong>: 守るべき不変条件を1文で書く。</li>
+              <li><strong>依頼（{session.adv.delegate}分）</strong>: 不変条件と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
+              <li><strong>検証（{session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
+            </ol>
+            <div class="delegation-prompt">
+              <h3>プロンプトのテンプレート</h3>
+              <p>角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。技法名や完成形を先に指定する必要はありません。</p>
+              <pre><code>{delegationPrompt}</code></pre>
+            </div>
+            <h3>この演習で解決しないこと</h3>
+            <p>{narrative.limitation}</p>
+            <h3 data-solution-heading>{exerciseSession.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
+            {exerciseSession.solutionPresentation === "completed-file" ? (
+              <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
+                <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読む。</p>
+                <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示される。</p>
+              </div>
+            ) : null}
+            {solutionSteps.map(({ step, presentation, snippets }) => (
+              <div class="solution-step">
+                <details class="step-solution" data-presentation={presentation}>
+                  <summary>{step.goal}</summary>
+                  {presentation === "completed-file" ? (
+                    <p class="step-solution__completed-file-note">この完成例には後続 step を含みます。表示されたすべての target file を反映した後、同じ exercise を GREEN にします。</p>
+                  ) : null}
+                  {snippets.map(({ solution, code }) => (
+                    <section class="step-solution__snippet">
+                      <h4><code>{solution.path}</code></h4>
+                      <Code code={code} lang="ts" />
+                    </section>
+                  ))}
+                </details>
+              </div>
+            ))}
+            <section class="session-code-playground code-playground" aria-labelledby="code-playground">
+              <h3 id="code-playground">ブラウザで試す</h3>
+              <p>このセッションの開始時点のコード一式を、ブラウザ内で編集して実行できます。</p>
+              <p>編集内容はこのブラウザ内だけに保持されます。実行できない場合は、ページ内の <code>pnpm</code> 手順を使います。</p>
+              <div data-code-explorer={workspace.slug}><CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} /></div>
+            </section>
+            <CommandBlock phase="green" command={session.exerciseCommand} expected="assertionが成功することを確認する" />
+            <h3>演習を完了できないとき</h3>
+            <p>{narrative.fallback}</p>
+          </section>
+
+          <section id="review">
+            <h2>レビューと持ち帰り</h2>
+            <div class="exercise-review-checklist">
+              <h3>個人で確認する</h3>
+              <ol>{commonReviewChecks.map((check) => <li>{check}</li>)}</ol>
+              <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>
+              <p><strong>残すもの:</strong> {reviewCompletionArtifacts.join("、")}</p>
+              <h3>業務へ持ち帰る</h3>
+              <p>{businessReflectionQuestion}</p>
+            </div>
+            <section class="peer-review-panel">
+              <h3>班内相互レビュー（{session.peerReview.minutes}分・{headcount}）</h3>
+              <p><a href={promisesHref}>進行上の約束事を確認する</a></p>
+              <ol>{session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
+            </section>
+          </section>
+
+          <aside class="failure-boundary" aria-label="業務エラーとインフラ例外の区別">
+            <h2>2つの失敗経路を見分ける</h2>
+            <ul class="decision-list">
+              <li>
+                <strong>業務上のエラー:</strong> 予約が存在しない・予約の状態が不正・予約が競合しているケースは、呼び出し元で次の対応を選択する余地があるため、
+                <code>Result</code> の <code>Err</code> で返します。
+              </li>
+              <li>
+                <strong>運用上の異常:</strong> データベース起因のエラーやデータが破損しているエラーは呼び出し元でも解決できません。境界の外側で安全に記録し、エラーの詳細を含まない形で
+                HTTP 500 のレスポンスに変換します。
+              </li>
+            </ul>
+          </aside>
+        </article>
+      </div>
+      <nav class="case-file__session-nav" aria-label="前後のセッション">
+        {previous === undefined ? null : <a rel="prev" href={sessionPath(previous)}>前へ: {previous.title}</a>}
+        {next === undefined ? null : <a rel="next" href={sessionPath(next)}>次へ: {next.title}</a>}
+      </nav>
+    </main>
+  </div>
+</BaseLayout>
