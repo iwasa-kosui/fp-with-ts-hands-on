@@ -2,12 +2,83 @@
 import ExerciseSessionContent from "../../components/ExerciseSessionContent.astro";
 import guides from "../../code-explorer/code-guides/04-boundaries-and-pii";
 import SessionLayout from "../../layouts/SessionLayout.astro";
-import { sessionBySlug } from "../../sessions/catalog";
+import type { SessionSummary } from "../../sessions/types";
 
-const session = sessionBySlug("04-boundaries-and-pii");
-if (session === undefined) {
-  throw new Error("Unknown session: 04-boundaries-and-pii");
-}
+export const session: SessionSummary = {
+  slug: "04-boundaries-and-pii",
+  snapshot: "session-04",
+  sequence: "04",
+  kind: "exercise",
+  title: "外部入力を境界で検証し個人情報を守る",
+  durationMinutes: 30,
+  timeBreakdown: { brief: 4, teach: 7, exercise: 12, review: 7 },
+  adv: { articulate: 2, delegate: 8, verify: 2 },
+  peerReview: {
+    minutes: 7,
+    pickCount: 2,
+    questions: [
+      "外部 JSON は、Zod の検証に成功したときだけ `ExamResult` になりますか。",
+      "氏名・電話番号・メールは、`JSON.stringify` と `util.inspect` のどちらでも既定でマスクされますか。",
+      "`OwnerContact` の各項目は、平文の `string` ではなく `Sensitive` になっていますか。",
+    ],
+  },
+  solutionSnapshot: "session-05",
+  solutionPresentation: "excerpt",
+  peerReviewPromises: "reference",
+  animal: { name: "BIRD", type: "bird", avatar: "🐦" },
+  summary: "外部 JSON と飼い主の連絡先を、境界で安全な値へ変換します。",
+  incident: "検査機関から届いた JSON をそのまま信頼し、調査用のログへ飼い主の連絡先が流出した。",
+  exerciseCommand: "pnpm exercise:04",
+  exerciseModule: {
+    dir: "examples/session-04/src/boundary",
+    fileBudget: 2,
+    lineBudget: 26,
+  },
+  delegationPrompt: {
+    request:
+      "検査機関の JSON と飼い主の連絡先を別のリスクとして扱ってください。未検証の入力がドメインへ入らず、連絡先が既定で公開されない形に改善してください。",
+    decisions: [
+      "外部入力を信頼済みの値へ変える境界はどこか",
+      "連絡先を取り出してよい処理はどこか",
+    ],
+  },
+  steps: [
+    {
+      id: "s4-parse-exam-result",
+      goal: "形式が異なる検査結果の JSON は、ドメイン型にならないようにする。",
+      targets: ["examples/session-04/src/boundary/examResult.ts"],
+      solutions: [{
+        path: "examples/session-05/src/boundary/examResult.ts",
+        symbol: "ExamResult",
+        lines: [7, 19],
+      }],
+    },
+    {
+      id: "s4-protect-contact",
+      goal: "電話番号とメールは既定でログに出ないようにする。",
+      targets: ["examples/session-04/src/boundary/ownerContact.ts"],
+      solutions: [{
+        path: "examples/session-05/src/boundary/ownerContact.ts",
+        symbol: "OwnerContact",
+        lines: [6, 19],
+      }],
+    },
+  ],
+  decisions: [
+    {
+      invariant: "外部入力は、境界で検証してからドメイン型になる。",
+    },
+    {
+      invariant: "個人情報は既定でマスクし、値を取り出す場所を限定する。",
+    },
+  ],
+  finalReferences: [
+    "examples/final/src/domain/shared/schemaResult.ts",
+    "examples/final/src/domain/shared/sensitive.ts",
+    "examples/final/src/domain/owner/ownerPhone.ts",
+    "examples/final/src/domain/examResult/examResult.ts",
+  ],
+};
 
 const teaching = [
   {

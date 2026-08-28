@@ -1,9 +1,22 @@
 ---
 import SessionLayout from "../../layouts/SessionLayout.astro";
-import { sessionBySlug } from "../../sessions/catalog";
+import type { SessionSummary } from "../../sessions/types";
 
-const session = sessionBySlug("00-system-handover");
-if (session === undefined) throw new Error("Unknown session: 00-system-handover");
+export const session: SessionSummary = {
+  slug: "00-system-handover",
+  snapshot: "session-00",
+  sequence: "00",
+  kind: "orientation",
+  title: "業務とシステムを引き継ぐ",
+  durationMinutes: 10,
+  timeBreakdown: { brief: 4, teach: 3, exercise: 0, review: 3 },
+  animal: { name: "DOG", type: "dog", avatar: "🐕" },
+  summary: "WAN NYAN CLINIC の現行業務、画面操作、保存・ログと、現在起きている事故を確認します。",
+  incident: "会計済みの予約が診察中へ戻り、予約ログから飼い主の個人情報が流出した。",
+  steps: [],
+  decisions: [],
+  finalReferences: [],
+};
 ---
 
 <SessionLayout session={session}>

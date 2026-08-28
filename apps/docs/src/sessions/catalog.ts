@@ -1,135 +1,21 @@
-export type SessionKind = "orientation" | "workshop" | "exercise" | "reference";
+import type { ExampleSnapshot, SessionSummary } from "./types";
 
-export type SolutionPresentation = "excerpt" | "completed-file";
-
-export type ExerciseModule = Readonly<{
-  dir: string;
-  fileBudget: number;
-  lineBudget: number;
-}>;
-
-export type ExerciseStep = Readonly<{
-  id: string;
-  goal: string;
-  targets: readonly string[];
-  solutions: readonly [SolutionReference, ...SolutionReference[]];
-}>;
-
-export type SolutionReference = Readonly<{
-  path: string;
-  symbol: string;
-  lines: readonly [number, number];
-  presentation?: SolutionPresentation;
-}>;
-
-export type Decision = Readonly<{
-  invariant: string;
-}>;
-
-export type AdvBreakdown = Readonly<{
-  articulate: number;
-  delegate: number;
-  verify: number;
-}>;
-
-export type DelegationPrompt = Readonly<{
-  request: string;
-  decisions: readonly [string, ...string[]];
-}>;
-
-export type TimeBreakdown = Readonly<{
-  brief: number;
-  teach: number;
-  exercise: number;
-  review: number;
-}>;
-
-export type PeerReview = Readonly<{
-  minutes: number;
-  pickCount: 1 | 2;
-  questions: readonly string[];
-}>;
-
-type SessionSummaryBase = Readonly<{
-  slug: string;
-  sequence: "00" | "01" | "02" | "03" | "04" | "05" | "06" | "Final";
-  title: string;
-  durationMinutes: number;
-  timeBreakdown: TimeBreakdown;
-  adv?: AdvBreakdown;
-  delegationPrompt?: DelegationPrompt;
-  peerReview?: PeerReview;
-  animal: Readonly<{ name: string; type: string; avatar: string }>;
-  summary: string;
-  incident: string;
-  exerciseCommand?: string;
-  exerciseModule?: ExerciseModule;
-  solutionSnapshot?: ExampleSnapshot;
-  solutionPresentation?: SolutionPresentation;
-  peerReviewPromises?: "inline" | "reference";
-  steps: readonly ExerciseStep[];
-  decisions: readonly Decision[];
-  finalReferences: readonly string[];
-}>;
-
-export type ExerciseSessionSummary = SessionSummaryBase & Readonly<{
-  kind: "exercise";
-  snapshot: PublicCodeExplorerSnapshot;
-  adv: AdvBreakdown;
-  delegationPrompt: DelegationPrompt;
-  peerReview: PeerReview;
-  exerciseCommand: string;
-  exerciseModule: ExerciseModule;
-  solutionSnapshot: ExampleSnapshot;
-  solutionPresentation: SolutionPresentation;
-  peerReviewPromises: "inline" | "reference";
-}>;
-
-type NonExerciseMetadata = Readonly<{
-  adv?: never;
-  delegationPrompt?: never;
-  peerReview?: never;
-  exerciseCommand?: never;
-  exerciseModule?: never;
-  solutionSnapshot?: never;
-  solutionPresentation?: never;
-  peerReviewPromises?: never;
-}>;
-
-type SnapshotSessionSummary = SessionSummaryBase &
-  NonExerciseMetadata &
-  Readonly<{
-    kind: "orientation" | "reference";
-    snapshot: PublicCodeExplorerSnapshot;
-  }>;
-
-type WorkshopSessionSummary = SessionSummaryBase &
-  NonExerciseMetadata &
-  Readonly<{
-    kind: "workshop";
-    snapshot?: never;
-  }>;
-
-export type SessionSummary =
-  | ExerciseSessionSummary
-  | SnapshotSessionSummary
-  | WorkshopSessionSummary;
-
-export type ExampleSnapshot =
-  | "session-00"
-  | "session-01"
-  | "session-02"
-  | "session-03"
-  | "session-04"
-  | "session-05"
-  | "session-06"
-  | "session-07"
-  | "final";
-
-export type PublicCodeExplorerSnapshot = Exclude<
+export type {
+  AdvBreakdown,
+  Decision,
+  DelegationPrompt,
   ExampleSnapshot,
-  "session-01" | "session-07"
->;
+  ExerciseModule,
+  ExerciseSessionSummary,
+  ExerciseStep,
+  PeerReview,
+  PublicCodeExplorerSnapshot,
+  SessionKind,
+  SessionSummary,
+  SolutionPresentation,
+  SolutionReference,
+  TimeBreakdown,
+} from "./types";
 
 export const peerReviewQuestionsBySequence = {
   "02": [
@@ -211,8 +97,10 @@ export const sessions = [
     durationMinutes: 10,
     timeBreakdown: { brief: 4, teach: 3, exercise: 0, review: 3 },
     animal: { name: "DOG", type: "dog", avatar: "🐕" },
-    summary: "WAN NYAN CLINIC の現行業務、画面操作、保存・ログと、現在起きている事故を確認します。",
-    incident: "会計済みの予約が診察中へ戻り、予約ログから飼い主の個人情報が流出した。",
+    summary:
+      "WAN NYAN CLINIC の現行業務、画面操作、保存・ログと、現在起きている事故を確認します。",
+    incident:
+      "会計済みの予約が診察中へ戻り、予約ログから飼い主の個人情報が流出した。",
     steps: [],
     decisions: [],
     finalReferences: [],
@@ -226,8 +114,10 @@ export const sessions = [
     durationMinutes: 15,
     timeBreakdown: { brief: 3, teach: 4, exercise: 6, review: 2 },
     animal: { name: "CAT", type: "cat", avatar: "🐈" },
-    summary: "動物病院の一日を描いた散文からドメインイベントを拾い、集約の境界を班で引きます。",
-    incident: "業務全体のどこからどこまでが診察開始のワークフローなのか、担当者ごとに認識が揃っていない。",
+    summary:
+      "動物病院の一日を描いた散文からドメインイベントを拾い、集約の境界を班で引きます。",
+    incident:
+      "業務全体のどこからどこまでが診察開始のワークフローなのか、担当者ごとに認識が揃っていない。",
     steps: [],
     decisions: [],
     finalReferences: [],
@@ -250,7 +140,8 @@ export const sessions = [
     solutionPresentation: "excerpt",
     peerReviewPromises: "inline",
     animal: { name: "RABBIT", type: "rabbit", avatar: "🐇" },
-    summary: "予約の5状態を判別共用体で表し、許可されていない状態遷移を型で拒否します。",
+    summary:
+      "予約の5状態を判別共用体で表し、許可されていない状態遷移を型で拒否します。",
     incident: "会計済みの来院が診察中へ戻され、会計が二度行われた。",
     exerciseCommand: "pnpm exercise:02",
     exerciseModule: {
@@ -272,41 +163,49 @@ export const sessions = [
         id: "s2-narrow-start",
         goal: "会計済み・キャンセル済みの来院は診察を開始できないようにする。",
         targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
-        solutions: [{
-          path: "examples/session-03/src/domain/appointment/transitions.ts",
-          symbol: "startExamination",
-          lines: [14, 24],
-        }],
+        solutions: [
+          {
+            path: "examples/session-03/src/domain/appointment/transitions.ts",
+            symbol: "startExamination",
+            lines: [14, 24],
+          },
+        ],
       },
       {
         id: "s2-require-cancel-reason",
         goal: "キャンセルには必ず理由を残す。",
         targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
-        solutions: [{
-          path: "examples/session-03/src/domain/appointment/transitions.ts",
-          symbol: "cancel",
-          lines: [33, 46],
-        }],
+        solutions: [
+          {
+            path: "examples/session-03/src/domain/appointment/transitions.ts",
+            symbol: "cancel",
+            lines: [33, 46],
+          },
+        ],
       },
       {
         id: "s2-align-transitions",
         goal: "残りの遷移も、許可された遷移元だけを受け取る規約にそろえる。",
         targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
-        solutions: [{
-          path: "examples/session-03/src/domain/appointment/transitions.ts",
-          symbol: "checkIn",
-          lines: [11, 31],
-        }],
+        solutions: [
+          {
+            path: "examples/session-03/src/domain/appointment/transitions.ts",
+            symbol: "checkIn",
+            lines: [11, 31],
+          },
+        ],
       },
       {
         id: "s2-exhaustive-label",
         goal: "状態を追加したら表示名の分岐をコンパイルエラーにする。",
         targets: ["examples/session-02/src/domain/appointment/statusLabel.ts"],
-        solutions: [{
-          path: "examples/session-03/src/domain/appointment/statusLabel.ts",
-          symbol: "toStatusLabel",
-          lines: [3, 22],
-        }],
+        solutions: [
+          {
+            path: "examples/session-03/src/domain/appointment/statusLabel.ts",
+            symbol: "toStatusLabel",
+            lines: [3, 22],
+          },
+        ],
       },
     ],
     decisions: [
@@ -343,8 +242,10 @@ export const sessions = [
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
     animal: { name: "HEDGEHOG", type: "hedgehog", avatar: "🦔" },
-    summary: "予約・検査・ペット・飼い主・担当獣医師の識別子を、用途ごとに区別して扱います。",
-    incident: "検査結果の登録で OwnerId を PetId の位置へ渡し、対象のペットに結果を結び付けられなかった。",
+    summary:
+      "予約・検査・ペット・飼い主・担当獣医師の識別子を、用途ごとに区別して扱います。",
+    incident:
+      "検査結果の登録で OwnerId を PetId の位置へ渡し、対象のペットに結果を結び付けられなかった。",
     exerciseCommand: "pnpm exercise:03",
     exerciseModule: {
       dir: "examples/session-03/src/domain",
@@ -405,11 +306,13 @@ export const sessions = [
         id: "s3-reject-id-swap",
         goal: "OwnerId を PetId の位置へ渡すコードがコンパイルできないことを、型テストで自分で確かめる。",
         targets: ["examples/session-03/src/domain/domain.test-types.ts"],
-        solutions: [{
-          path: "examples/session-04/src/domain/domain.test-types.ts",
-          symbol: "acceptPetId",
-          lines: [1, 15],
-        }],
+        solutions: [
+          {
+            path: "examples/session-04/src/domain/domain.test-types.ts",
+            symbol: "acceptPetId",
+            lines: [1, 15],
+          },
+        ],
       },
     ],
     decisions: [
@@ -448,7 +351,8 @@ export const sessions = [
     peerReviewPromises: "reference",
     animal: { name: "BIRD", type: "bird", avatar: "🐦" },
     summary: "外部 JSON と飼い主の連絡先を、境界で安全な値へ変換します。",
-    incident: "検査機関から届いた JSON をそのまま信頼し、調査用のログへ飼い主の連絡先が流出した。",
+    incident:
+      "検査機関から届いた JSON をそのまま信頼し、調査用のログへ飼い主の連絡先が流出した。",
     exerciseCommand: "pnpm exercise:04",
     exerciseModule: {
       dir: "examples/session-04/src/boundary",
@@ -468,21 +372,25 @@ export const sessions = [
         id: "s4-parse-exam-result",
         goal: "形式が異なる検査結果の JSON は、ドメイン型にならないようにする。",
         targets: ["examples/session-04/src/boundary/examResult.ts"],
-        solutions: [{
-          path: "examples/session-05/src/boundary/examResult.ts",
-          symbol: "ExamResult",
-          lines: [7, 19],
-        }],
+        solutions: [
+          {
+            path: "examples/session-05/src/boundary/examResult.ts",
+            symbol: "ExamResult",
+            lines: [7, 19],
+          },
+        ],
       },
       {
         id: "s4-protect-contact",
         goal: "電話番号とメールは既定でログに出ないようにする。",
         targets: ["examples/session-04/src/boundary/ownerContact.ts"],
-        solutions: [{
-          path: "examples/session-05/src/boundary/ownerContact.ts",
-          symbol: "OwnerContact",
-          lines: [6, 19],
-        }],
+        solutions: [
+          {
+            path: "examples/session-05/src/boundary/ownerContact.ts",
+            symbol: "OwnerContact",
+            lines: [6, 19],
+          },
+        ],
       },
     ],
     decisions: [
@@ -519,7 +427,8 @@ export const sessions = [
     peerReviewPromises: "reference",
     animal: { name: "HAMSTER", type: "hamster", avatar: "🐹" },
     summary: "診察開始の予期できる失敗を、呼び出し側が扱える値として返します。",
-    incident: "例外メッセージの変更で画面の分岐が壊れ、受付が失敗理由を追えなくなった。",
+    incident:
+      "例外メッセージの変更で画面の分岐が壊れ、受付が失敗理由を追えなくなった。",
     exerciseCommand: "pnpm exercise:05",
     exerciseModule: {
       dir: "examples/session-05/src/useCase",
@@ -540,31 +449,37 @@ export const sessions = [
         id: "s5-invalid-state",
         goal: "受付済みでない状態を型付きの失敗として返す。",
         targets: ["examples/session-05/src/useCase/errors.ts"],
-        solutions: [{
-          path: "examples/session-06/src/useCase/errors.ts",
-          symbol: "ensureCheckedIn",
-          lines: [31, 36],
-        }],
+        solutions: [
+          {
+            path: "examples/session-06/src/useCase/errors.ts",
+            symbol: "ensureCheckedIn",
+            lines: [31, 36],
+          },
+        ],
       },
       {
         id: "s5-not-found",
         goal: "予約が見つからない失敗を型付きの値として返す。",
         targets: ["examples/session-05/src/useCase/errors.ts"],
-        solutions: [{
-          path: "examples/session-06/src/useCase/errors.ts",
-          symbol: "ensureAppointmentFound",
-          lines: [23, 29],
-        }],
+        solutions: [
+          {
+            path: "examples/session-06/src/useCase/errors.ts",
+            symbol: "ensureAppointmentFound",
+            lines: [23, 29],
+          },
+        ],
       },
       {
         id: "s5-result-pipeline",
         goal: "失敗理由をandThenのパイプラインで運ぶ。",
         targets: ["examples/session-05/src/useCase/startExamination.ts"],
-        solutions: [{
-          path: "examples/session-06/src/useCase/startExamination.ts",
-          symbol: "startExamination",
-          lines: [22, 40],
-        }],
+        solutions: [
+          {
+            path: "examples/session-06/src/useCase/startExamination.ts",
+            symbol: "startExamination",
+            lines: [22, 40],
+          },
+        ],
       },
     ],
     decisions: [
@@ -603,8 +518,10 @@ export const sessions = [
     solutionPresentation: "completed-file",
     peerReviewPromises: "reference",
     animal: { name: "TURTLE", type: "turtle", avatar: "🐢" },
-    summary: "時刻や ID など実行のたびに変わる値と保存を port に切り出し、状態と監査記録を一度に保存します。",
-    incident: "実行のたびに変わる値でテスト結果が安定せず、状態だけ保存され監査記録が残らない予約が生まれた。",
+    summary:
+      "時刻や ID など実行のたびに変わる値と保存を port に切り出し、状態と監査記録を一度に保存します。",
+    incident:
+      "実行のたびに変わる値でテスト結果が安定せず、状態だけ保存され監査記録が残らない予約が生まれた。",
     exerciseCommand: "pnpm exercise:06",
     exerciseModule: {
       dir: "examples/session-06/src/useCase",
@@ -660,12 +577,14 @@ export const sessions = [
         id: "s6-result-async",
         goal: "非同期で保存しても、イベントを結果として返す。",
         targets: ["examples/session-06/src/useCase/startExamination.ts"],
-        solutions: [{
-          path: "examples/session-07/src/useCase/startExamination.ts",
-          symbol: "startExaminationWithEffects",
-          lines: [1, 81],
-          presentation: "completed-file",
-        }],
+        solutions: [
+          {
+            path: "examples/session-07/src/useCase/startExamination.ts",
+            symbol: "startExaminationWithEffects",
+            lines: [1, 81],
+            presentation: "completed-file",
+          },
+        ],
       },
       {
         id: "s6-propagate-store-failure",
@@ -692,13 +611,15 @@ export const sessions = [
     ],
     decisions: [
       {
-        invariant: "時刻とイベント ID は1回のワークフロー実行で一度だけ生成し、同じ実行コンテキストから状態と監査記録を作る。",
+        invariant:
+          "時刻とイベント ID は1回のワークフロー実行で一度だけ生成し、同じ実行コンテキストから状態と監査記録を作る。",
       },
       {
         invariant: "状態と監査記録は同時に残るか、どちらも残らない。",
       },
       {
-        invariant: "保存障害を、呼び出し側が選択できる業務上の失敗へ偽装しない。",
+        invariant:
+          "保存障害を、呼び出し側が選択できる業務上の失敗へ偽装しない。",
       },
     ],
     finalReferences: [
@@ -721,7 +642,8 @@ export const sessions = [
     timeBreakdown: { brief: 0, teach: 4, exercise: 0, review: 1 },
     animal: { name: "Mugi", type: "cat", avatar: "🐈" },
     summary: "当日の到達点を、より大きな参照実装へ接続します。",
-    incident: "当日の局所的な改善を、実運用を想定した構成へどう接続するかを確認する。",
+    incident:
+      "当日の局所的な改善を、実運用を想定した構成へどう接続するかを確認する。",
     steps: [],
     decisions: [],
     finalReferences: [

@@ -2,12 +2,138 @@
 import ExerciseSessionContent from "../../components/ExerciseSessionContent.astro";
 import guides from "../../code-explorer/code-guides/06-effects-and-consistency";
 import SessionLayout from "../../layouts/SessionLayout.astro";
-import { sessionBySlug } from "../../sessions/catalog";
+import type { SessionSummary } from "../../sessions/types";
 
-const session = sessionBySlug("06-effects-and-consistency");
-if (session === undefined) {
-  throw new Error("Unknown session: 06-effects-and-consistency");
-}
+export const session: SessionSummary = {
+  slug: "06-effects-and-consistency",
+  snapshot: "session-06",
+  sequence: "06",
+  kind: "exercise",
+  title: "副作用と整合性境界を設計する",
+  durationMinutes: 30,
+  timeBreakdown: { brief: 4, teach: 3, exercise: 15, review: 8 },
+  adv: { articulate: 2, delegate: 10, verify: 3 },
+  peerReview: {
+    minutes: 8,
+    pickCount: 2,
+    questions: [
+      "時刻とイベント ID は実行ごとに一度だけ生成され、同じ `EventContext` に入りますか。",
+      "状態と監査記録は、1つのイベントとして同じ `store` に渡されますか。",
+      "業務上の競合だけを `Result` で返し、保存障害は reject のまま伝播しますか。",
+    ],
+  },
+  solutionSnapshot: "session-07",
+  solutionPresentation: "completed-file",
+  peerReviewPromises: "reference",
+  animal: { name: "TURTLE", type: "turtle", avatar: "🐢" },
+  summary: "時刻や ID など実行のたびに変わる値と保存を port に切り出し、状態と監査記録を一度に保存します。",
+  incident: "実行のたびに変わる値でテスト結果が安定せず、状態だけ保存され監査記録が残らない予約が生まれた。",
+  exerciseCommand: "pnpm exercise:06",
+  exerciseModule: {
+    dir: "examples/session-06/src/useCase",
+    fileBudget: 3,
+    lineBudget: 55,
+  },
+  delegationPrompt: {
+    request:
+      "診察開始で作る状態と監査記録に、1回の実行で生成した値を使ってください。保存時に片方だけが残らない形へ改善してください。",
+    decisions: [
+      "実行ごとに変わる値をいつ生成するか",
+      "どの状態と記録を同時に保存するか",
+      "保存障害をどの境界まで伝えるか",
+    ],
+  },
+  steps: [
+    {
+      id: "s6-inject-context",
+      goal: "Clock と ID generator を使って EventContext を一度だけ生成する。",
+      targets: [
+        "examples/session-06/src/useCase/dependencies.ts",
+        "examples/session-06/src/useCase/startExamination.ts",
+      ],
+      solutions: [
+        {
+          path: "examples/session-07/src/useCase/dependencies.ts",
+          symbol: "EventContextDependencies",
+          lines: [1, 43],
+          presentation: "completed-file",
+        },
+        {
+          path: "examples/session-07/src/useCase/startExamination.ts",
+          symbol: "createEventContext",
+          lines: [1, 81],
+          presentation: "completed-file",
+        },
+      ],
+    },
+    {
+      id: "s6-atomic-store",
+      goal: "状態と監査記録を1回の保存で残す。",
+      targets: ["examples/session-06/src/useCase/dependencies.ts"],
+      solutions: [
+        {
+          path: "examples/session-07/src/useCase/dependencies.ts",
+          symbol: "ExaminationStartedStore",
+          lines: [1, 43],
+          presentation: "completed-file",
+        },
+      ],
+    },
+    {
+      id: "s6-result-async",
+      goal: "非同期で保存しても、イベントを結果として返す。",
+      targets: ["examples/session-06/src/useCase/startExamination.ts"],
+      solutions: [{
+        path: "examples/session-07/src/useCase/startExamination.ts",
+        symbol: "startExaminationWithEffects",
+        lines: [1, 81],
+        presentation: "completed-file",
+      }],
+    },
+    {
+      id: "s6-propagate-store-failure",
+      goal: "保存失敗を業務Resultへ変換せず、例外として外側の境界へ伝播する。",
+      targets: [
+        "examples/session-06/src/useCase/errors.ts",
+        "examples/session-06/src/useCase/startExamination.ts",
+      ],
+      solutions: [
+        {
+          path: "examples/session-07/src/useCase/errors.ts",
+          symbol: "AppointmentConflict",
+          lines: [1, 39],
+          presentation: "completed-file",
+        },
+        {
+          path: "examples/session-07/src/useCase/startExamination.ts",
+          symbol: "startExaminationWithEffects",
+          lines: [1, 81],
+          presentation: "completed-file",
+        },
+      ],
+    },
+  ],
+  decisions: [
+    {
+      invariant: "時刻とイベント ID は1回のワークフロー実行で一度だけ生成し、同じ実行コンテキストから状態と監査記録を作る。",
+    },
+    {
+      invariant: "状態と監査記録は同時に残るか、どちらも残らない。",
+    },
+    {
+      invariant: "保存障害を、呼び出し側が選択できる業務上の失敗へ偽装しない。",
+    },
+  ],
+  finalReferences: [
+    "examples/final/src/domain/aggregate/clock.ts",
+    "examples/final/src/domain/aggregate/eventIdGenerator.ts",
+    "examples/final/src/domain/aggregate/eventContext.ts",
+    "examples/final/src/domain/aggregate/aggregateStore.ts",
+    "examples/final/src/domain/appointment/appointmentStores.ts",
+    "examples/final/src/useCase/startExaminationUseCase.ts",
+    "examples/final/src/app.ts",
+  ],
+};
 ---
 
 <SessionLayout session={session}>

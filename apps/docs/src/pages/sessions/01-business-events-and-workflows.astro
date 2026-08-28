@@ -1,11 +1,23 @@
 ---
 import SessionLayout from "../../layouts/SessionLayout.astro";
-import { sessionBySlug } from "../../sessions/catalog";
+import type { SessionSummary } from "../../sessions/types";
 
-const session = sessionBySlug("01-business-events-and-workflows");
-if (session === undefined) {
-  throw new Error("Unknown session: 01-business-events-and-workflows");
-}
+export const session: SessionSummary = {
+  slug: "01-business-events-and-workflows",
+  snapshot: undefined,
+  sequence: "01",
+  kind: "workshop",
+  title: "ビジネスイベントからワークフローを描く",
+  durationMinutes: 15,
+  timeBreakdown: { brief: 3, teach: 4, exercise: 6, review: 2 },
+  animal: { name: "CAT", type: "cat", avatar: "🐈" },
+  summary: "動物病院の一日を描いた散文からドメインイベントを拾い、集約の境界を班で引きます。",
+  incident: "業務全体のどこからどこまでが診察開始のワークフローなのか、担当者ごとに認識が揃っていない。",
+  steps: [],
+  decisions: [],
+  finalReferences: [],
+};
+
 const timing = session.timeBreakdown;
 
 type DomainEvent = Readonly<{

@@ -1,9 +1,39 @@
 ---
 import SessionLayout from "../../layouts/SessionLayout.astro";
-import { sessionBySlug } from "../../sessions/catalog";
+import type { SessionSummary } from "../../sessions/types";
 
-const session = sessionBySlug("final");
-if (session === undefined) throw new Error("Unknown session: final");
+export const finalAggregateTour = {
+  label: "1業務集約 → 7業務集約",
+  path: "examples/final/src/app.ts",
+  aggregates: [
+    "予約",
+    "検査結果",
+    "フォローアップ",
+    "飼い主",
+    "ペット",
+    "セッション",
+    "ユーザー",
+  ],
+};
+
+export const session: SessionSummary = {
+  slug: "final",
+  snapshot: "final",
+  sequence: "Final",
+  kind: "reference",
+  title: "参照実装で境界をたどる",
+  durationMinutes: 5,
+  timeBreakdown: { brief: 0, teach: 4, exercise: 0, review: 1 },
+  animal: { name: "Mugi", type: "cat", avatar: "🐈" },
+  summary: "当日の到達点を、より大きな参照実装へ接続します。",
+  incident: "当日の局所的な改善を、実運用を想定した構成へどう接続するかを確認する。",
+  steps: [],
+  decisions: [],
+  finalReferences: [
+    "examples/final/src/useCase/startExaminationUseCase.ts",
+    finalAggregateTour.path,
+  ],
+};
 ---
 
 <SessionLayout session={session}>

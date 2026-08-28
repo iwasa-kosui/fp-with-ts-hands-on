@@ -2,12 +2,116 @@
 import ExerciseSessionContent from "../../components/ExerciseSessionContent.astro";
 import guides from "../../code-explorer/code-guides/03-semantic-identifiers";
 import SessionLayout from "../../layouts/SessionLayout.astro";
-import { sessionBySlug } from "../../sessions/catalog";
+import type { SessionSummary } from "../../sessions/types";
 
-const session = sessionBySlug("03-semantic-identifiers");
-if (session === undefined) {
-  throw new Error("Unknown session: 03-semantic-identifiers");
-}
+export const session: SessionSummary = {
+  slug: "03-semantic-identifiers",
+  snapshot: "session-03",
+  sequence: "03",
+  kind: "exercise",
+  title: "用途の異なる識別子を型で区別する",
+  durationMinutes: 30,
+  timeBreakdown: { brief: 4, teach: 6, exercise: 13, review: 7 },
+  adv: { articulate: 2, delegate: 9, verify: 2 },
+  peerReview: {
+    minutes: 7,
+    pickCount: 2,
+    questions: [
+      "`PetId` と `OwnerId` を取り違えたコードは、型テストでコンパイルエラーになりますか。",
+      "予約の全状態で、識別子が用途別の型になっていますか。",
+      "状態遷移の引数に `string` が残らず、用途別の識別子を受け取っていますか。",
+    ],
+  },
+  solutionSnapshot: "session-04",
+  solutionPresentation: "excerpt",
+  peerReviewPromises: "reference",
+  animal: { name: "HEDGEHOG", type: "hedgehog", avatar: "🦔" },
+  summary: "予約・検査・ペット・飼い主・担当獣医師の識別子を、用途ごとに区別して扱います。",
+  incident: "検査結果の登録で OwnerId を PetId の位置へ渡し、対象のペットに結果を結び付けられなかった。",
+  exerciseCommand: "pnpm exercise:03",
+  exerciseModule: {
+    dir: "examples/session-03/src/domain",
+    fileBudget: 5,
+    lineBudget: 34,
+  },
+  delegationPrompt: {
+    request:
+      "検査結果や予約で扱う識別子を改善してください。同じ文字列形式でも、用途を取り違えたコードはコンパイルを通らない状態を目指します。",
+    decisions: [
+      "どの識別子を別の用途として扱うか",
+      "用途の区別をどの状態や関数まで伝えるか",
+      "取り違えをコンパイルエラーとしてどう残すか",
+    ],
+  },
+  steps: [
+    {
+      id: "s3-brand-domain-ids",
+      goal: "ペットと飼い主の識別子を、配布済みの ExamId と同じ規約で別々の型にする。",
+      targets: [
+        "examples/session-03/src/domain/ids/petId.ts",
+        "examples/session-03/src/domain/ids/ownerId.ts",
+      ],
+      solutions: [
+        {
+          path: "examples/session-04/src/domain/ids/petId.ts",
+          symbol: "PetId",
+          lines: [3, 6],
+        },
+        {
+          path: "examples/session-04/src/domain/ids/ownerId.ts",
+          symbol: "OwnerId",
+          lines: [3, 6],
+        },
+      ],
+    },
+    {
+      id: "s3-apply-ids-to-appointment",
+      goal: "予約の5状態と遷移が受け取る識別子を、用途別の型へ置き換える。",
+      targets: [
+        "examples/session-03/src/domain/appointment/appointment.ts",
+        "examples/session-03/src/domain/appointment/transitions.ts",
+      ],
+      solutions: [
+        {
+          path: "examples/session-04/src/domain/appointment/appointment.ts",
+          symbol: "Scheduled",
+          lines: [1, 15],
+        },
+        {
+          path: "examples/session-04/src/domain/appointment/transitions.ts",
+          symbol: "startExamination",
+          lines: [10, 25],
+        },
+      ],
+    },
+    {
+      id: "s3-reject-id-swap",
+      goal: "OwnerId を PetId の位置へ渡すコードがコンパイルできないことを、型テストで自分で確かめる。",
+      targets: ["examples/session-03/src/domain/domain.test-types.ts"],
+      solutions: [{
+        path: "examples/session-04/src/domain/domain.test-types.ts",
+        symbol: "acceptPetId",
+        lines: [1, 15],
+      }],
+    },
+  ],
+  decisions: [
+    {
+      invariant: "用途の異なる識別子を取り違えない。",
+    },
+    {
+      invariant: "予約はどの状態でも用途別の識別子を持つ。",
+    },
+    {
+      invariant: "取り違えたコードはコンパイルできない。",
+    },
+  ],
+  finalReferences: [
+    "examples/final/src/domain/appointment/appointmentId.ts",
+    "examples/final/src/domain/pet/petId.ts",
+    "examples/final/src/domain/owner/ownerId.ts",
+  ],
+};
 
 const teaching = [
   {

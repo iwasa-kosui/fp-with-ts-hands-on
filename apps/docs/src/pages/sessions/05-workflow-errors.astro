@@ -2,10 +2,97 @@
 import ExerciseSessionContent from "../../components/ExerciseSessionContent.astro";
 import guides from "../../code-explorer/code-guides/05-workflow-errors";
 import SessionLayout from "../../layouts/SessionLayout.astro";
-import { sessionBySlug } from "../../sessions/catalog";
+import type { SessionSummary } from "../../sessions/types";
 
-const session = sessionBySlug("05-workflow-errors");
-if (session === undefined) throw new Error("Unknown session: 05-workflow-errors");
+export const session: SessionSummary = {
+  slug: "05-workflow-errors",
+  snapshot: "session-05",
+  sequence: "05",
+  kind: "exercise",
+  title: "失敗をワークフローの結果として扱う",
+  durationMinutes: 30,
+  timeBreakdown: { brief: 4, teach: 3, exercise: 15, review: 8 },
+  adv: { articulate: 2, delegate: 10, verify: 3 },
+  peerReview: {
+    minutes: 8,
+    pickCount: 2,
+    questions: [
+      "予約なしと状態不正は、異なる `kind` を持つ `Err` になっていますか。",
+      "`andThen` は、成功したときだけ次の検証と状態遷移へ進みますか。",
+      "業務エラーの後に、状態の保存が実行されない構造になっていますか。",
+    ],
+  },
+  solutionSnapshot: "session-06",
+  solutionPresentation: "excerpt",
+  peerReviewPromises: "reference",
+  animal: { name: "HAMSTER", type: "hamster", avatar: "🐹" },
+  summary: "診察開始の予期できる失敗を、呼び出し側が扱える値として返します。",
+  incident: "例外メッセージの変更で画面の分岐が壊れ、受付が失敗理由を追えなくなった。",
+  exerciseCommand: "pnpm exercise:05",
+  exerciseModule: {
+    dir: "examples/session-05/src/useCase",
+    fileBudget: 3,
+    lineBudget: 76,
+  },
+  delegationPrompt: {
+    request:
+      "診察開始で起こりうる業務上の失敗を、呼び出し側が判断できる形に改善してください。表示文言には依存せず、失敗後の処理を続けない設計にしてください。",
+    decisions: [
+      "何を予期できる業務上の失敗として扱うか",
+      "呼び出し側が分岐に使う安定した情報は何か",
+      "失敗後に実行してはいけない処理は何か",
+    ],
+  },
+  steps: [
+    {
+      id: "s5-invalid-state",
+      goal: "受付済みでない状態を型付きの失敗として返す。",
+      targets: ["examples/session-05/src/useCase/errors.ts"],
+      solutions: [{
+        path: "examples/session-06/src/useCase/errors.ts",
+        symbol: "ensureCheckedIn",
+        lines: [31, 36],
+      }],
+    },
+    {
+      id: "s5-not-found",
+      goal: "予約が見つからない失敗を型付きの値として返す。",
+      targets: ["examples/session-05/src/useCase/errors.ts"],
+      solutions: [{
+        path: "examples/session-06/src/useCase/errors.ts",
+        symbol: "ensureAppointmentFound",
+        lines: [23, 29],
+      }],
+    },
+    {
+      id: "s5-result-pipeline",
+      goal: "失敗理由をandThenのパイプラインで運ぶ。",
+      targets: ["examples/session-05/src/useCase/startExamination.ts"],
+      solutions: [{
+        path: "examples/session-06/src/useCase/startExamination.ts",
+        symbol: "startExamination",
+        lines: [22, 40],
+      }],
+    },
+  ],
+  decisions: [
+    {
+      invariant: "予期できる失敗は戻り値に現れる。",
+    },
+    {
+      invariant: "呼び出し側は文言ではなく失敗のkindで分岐する。",
+    },
+    {
+      invariant: "失敗経路では後続の処理を行わない。",
+    },
+  ],
+  finalReferences: [
+    "examples/final/src/useCase/errors.ts",
+    "examples/final/src/useCase/startExaminationUseCase.ts",
+    "examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts",
+    "examples/final/src/adaptor/primary/web/middleware/useCaseResponse.ts",
+  ],
+};
 
 const teaching = [
   {

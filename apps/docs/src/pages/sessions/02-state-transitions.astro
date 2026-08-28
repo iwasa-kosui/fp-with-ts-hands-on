@@ -2,10 +2,105 @@
 import ExerciseSessionContent from "../../components/ExerciseSessionContent.astro";
 import guides from "../../code-explorer/code-guides/02-state-transitions";
 import SessionLayout from "../../layouts/SessionLayout.astro";
-import { sessionBySlug } from "../../sessions/catalog";
+import type { SessionSummary } from "../../sessions/types";
 
-const session = sessionBySlug("02-state-transitions");
-if (session === undefined) throw new Error("Unknown session: 02-state-transitions");
+export const session: SessionSummary = {
+  slug: "02-state-transitions",
+  snapshot: "session-02",
+  sequence: "02",
+  kind: "exercise",
+  title: "予約の状態と遷移をモデル化する",
+  durationMinutes: 30,
+  timeBreakdown: { brief: 4, teach: 6, exercise: 13, review: 7 },
+  adv: { articulate: 2, delegate: 9, verify: 2 },
+  peerReview: {
+    minutes: 7,
+    pickCount: 2,
+    questions: [
+      "`startExamination` は `CheckedIn` だけを受け取り、会計済み・キャンセル済みを型で拒否しますか。",
+      "`Canceled` の `reason` など、状態ごとの必須情報を省略できない型ですか。",
+      "状態を追加したとき、`assertNever` によって未対応の分岐がコンパイルエラーになりますか。",
+    ],
+  },
+  solutionSnapshot: "session-03",
+  solutionPresentation: "excerpt",
+  peerReviewPromises: "inline",
+  animal: { name: "RABBIT", type: "rabbit", avatar: "🐇" },
+  summary: "予約の5状態を判別共用体で表し、許可されていない状態遷移を型で拒否します。",
+  incident: "会計済みの来院が診察中へ戻され、会計が二度行われた。",
+  exerciseCommand: "pnpm exercise:02",
+  exerciseModule: {
+    dir: "examples/session-02/src/domain/appointment",
+    fileBudget: 2,
+    lineBudget: 35,
+  },
+  delegationPrompt: {
+    request:
+      "予約状態の変更処理を、業務で許された遷移と各状態に必要な情報がコードから読み取れる形に改善してください。",
+    decisions: [
+      "どの状態からどの状態への遷移を許可するか",
+      "各状態で必須にする情報は何か",
+      "状態追加時の分岐漏れをどこで検出するか",
+    ],
+  },
+  steps: [
+    {
+      id: "s2-narrow-start",
+      goal: "会計済み・キャンセル済みの来院は診察を開始できないようにする。",
+      targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
+      solutions: [{
+        path: "examples/session-03/src/domain/appointment/transitions.ts",
+        symbol: "startExamination",
+        lines: [14, 24],
+      }],
+    },
+    {
+      id: "s2-require-cancel-reason",
+      goal: "キャンセルには必ず理由を残す。",
+      targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
+      solutions: [{
+        path: "examples/session-03/src/domain/appointment/transitions.ts",
+        symbol: "cancel",
+        lines: [33, 46],
+      }],
+    },
+    {
+      id: "s2-align-transitions",
+      goal: "残りの遷移も、許可された遷移元だけを受け取る規約にそろえる。",
+      targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
+      solutions: [{
+        path: "examples/session-03/src/domain/appointment/transitions.ts",
+        symbol: "checkIn",
+        lines: [11, 31],
+      }],
+    },
+    {
+      id: "s2-exhaustive-label",
+      goal: "状態を追加したら表示名の分岐をコンパイルエラーにする。",
+      targets: ["examples/session-02/src/domain/appointment/statusLabel.ts"],
+      solutions: [{
+        path: "examples/session-03/src/domain/appointment/statusLabel.ts",
+        symbol: "toStatusLabel",
+        lines: [3, 22],
+      }],
+    },
+  ],
+  decisions: [
+    {
+      invariant: "許可されていない状態遷移を型で拒否する。",
+    },
+    {
+      invariant: "状態ごとの必須情報を欠かさない。",
+    },
+    {
+      invariant: "状態を追加したとき、未対応の分岐をコンパイルエラーにする。",
+    },
+  ],
+  finalReferences: [
+    "examples/final/src/domain/appointment/appointment.ts",
+    "examples/final/src/domain/shared/assertNever.ts",
+  ],
+};
 
 const missingNoShowCase = `// もし後から Appointment に "NoShow"（無断キャンセル）を追加した場合...
 switch (appointment.kind) {
