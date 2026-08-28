@@ -1,14 +1,19 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["vitest/globals"],
+    "types": ["vitest/globals", "node", "vite/client"],
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "outDir": "dist"
   },
   "include": [
     "src/**/*.ts",
+    "src/**/*.tsx",
     "test/**/*.ts",
+    "test/**/*.tsx",
     "exercises/**/*.ts",
     "vitest.config.ts",
-    "vitest.exercises.config.ts"
+    "vitest.exercises.config.ts",
+    "vite.config.ts"
   ]
 }

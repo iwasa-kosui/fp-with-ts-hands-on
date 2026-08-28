@@ -3,7 +3,7 @@ import type { Context } from "hono";
 import { describe, expect, it } from "vitest";
 
 import { createClinicRootView } from "../src/server.js";
-import { createClinicViteConfig } from "../src/vite.js";
+import { createClinicViteConfig } from "../src/viteConfig.js";
 
 const page: PageObject = {
   component: "ClinicDashboard",
