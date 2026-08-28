@@ -1,5 +1,12 @@
 export type SessionKind = "orientation" | "workshop" | "exercise" | "reference";
 
+export type SessionLink = Readonly<{ href: string; title: string }>;
+
+export type SessionNavigation = Readonly<{
+  previous: SessionLink | undefined;
+  next: SessionLink | undefined;
+}>;
+
 export type SolutionPresentation = "excerpt" | "completed-file";
 
 export type ExerciseModule = Readonly<{

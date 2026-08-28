@@ -93,7 +93,7 @@ const chapters = [
   { id: "workflow", label: "ワークフローを描く" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
-const navigation = {
+export const navigation = ({
   previous: {
     href: "/sessions/00-system-handover/",
     title: "業務とシステムを引き継ぐ",
@@ -102,7 +102,7 @@ const navigation = {
     href: "/sessions/02-state-transitions/",
     title: "予約の状態と遷移をモデル化する",
   },
-} as const;
+} as const);
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>

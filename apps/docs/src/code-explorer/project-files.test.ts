@@ -1,10 +1,13 @@
+import path from "node:path";
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import type {
+  ExampleSnapshot,
   ExerciseSessionSummary,
   PublicCodeExplorerSnapshot,
 } from "../sessions/types";
 import { projectFilesForSnapshot } from "./project-files";
-import type { SessionWorkspace } from "./types";
+import type { ProjectFiles, SessionWorkspace } from "./types";
 
 type ExercisePageModule = Readonly<{
   session?: ExerciseSessionSummary;
@@ -31,6 +34,65 @@ const projectSnapshots = [
   "final",
   "session-07",
 ] as const;
+
+const relativeToSnapshot = (
+  snapshot: ExampleSnapshot,
+  repoPath: string,
+): string => {
+  const prefix = `examples/${snapshot}/`;
+  expect(repoPath.startsWith(prefix), `${repoPath} must start with ${prefix}`).toBe(
+    true,
+  );
+  return repoPath.slice(prefix.length);
+};
+
+const importClosure = (
+  files: ProjectFiles,
+  entrypoint: string,
+): ReadonlySet<string> => {
+  const sourceByAbsolutePath = new Map(
+    Object.entries(files).map(([file, source]) => [
+      path.posix.normalize(`/workspace/${file}`),
+      source,
+    ]),
+  );
+  const visited = new Set<string>();
+
+  const visit = (absoluteFile: string): void => {
+    if (visited.has(absoluteFile)) return;
+    const source = sourceByAbsolutePath.get(absoluteFile);
+    expect(source, `missing project source: ${absoluteFile}`).toEqual(
+      expect.any(String),
+    );
+    visited.add(absoluteFile);
+
+    for (const imported of ts.preProcessFile(source!).importedFiles) {
+      const specifier = imported.fileName;
+      if (!specifier.startsWith(".")) continue;
+      const unresolved = path.posix.resolve(
+        path.posix.dirname(absoluteFile),
+        specifier,
+      );
+      const candidates = [
+        unresolved,
+        unresolved.replace(/\.js$/, ".ts"),
+        `${unresolved}.ts`,
+        path.posix.join(unresolved, "index.ts"),
+      ];
+      const resolved = candidates.find((candidate) =>
+        sourceByAbsolutePath.has(candidate),
+      );
+      expect(
+        resolved,
+        `unresolved relative import: ${absoluteFile}:${specifier}`,
+      ).toEqual(expect.any(String));
+      visit(resolved!);
+    }
+  };
+
+  visit(path.posix.resolve("/workspace", entrypoint));
+  return visited;
+};
 
 describe("Code Explorer project files", () => {
   it("builds runtime files for page-owned workspaces and supporting snapshots", () => {
@@ -72,4 +134,50 @@ describe("Code Explorer project files", () => {
       }
     }
   });
+
+  it("keeps every exercise target different between starter and solution snapshots", () => {
+    for (const { session, workspace } of exercisePages) {
+      const starterFiles = projectFilesForSnapshot(workspace.snapshot);
+      const solutionSnapshot = session.solutionSnapshot;
+      expect(solutionSnapshot, session.slug).not.toBe("session-01");
+      if (solutionSnapshot === "session-01") continue;
+      const solutionFiles = projectFilesForSnapshot(solutionSnapshot);
+
+      for (const step of session.steps) {
+        for (const targetPath of step.targets) {
+          const target = relativeToSnapshot(session.snapshot, targetPath);
+          expect(starterFiles[target], `${session.slug}: ${target}`).toEqual(
+            expect.any(String),
+          );
+          expect(solutionFiles[target], `${solutionSnapshot}: ${target}`).toEqual(
+            expect.any(String),
+          );
+          expect(starterFiles[target], `${session.slug}: ${target}`).not.toBe(
+            solutionFiles[target],
+          );
+        }
+      }
+    }
+  });
+
+  it.each([
+    {
+      snapshot: "session-06" as const,
+      entrypoint: "exercises/effects-and-events.test.ts",
+    },
+    {
+      snapshot: "session-07" as const,
+      entrypoint: "test/regression/effects-and-events.test.ts",
+    },
+  ])(
+    "resolves the $snapshot relative-import closure through the shared clinic fixture",
+    ({ snapshot, entrypoint }) => {
+      const closure = importClosure(
+        projectFilesForSnapshot(snapshot),
+        entrypoint,
+      );
+
+      expect(closure).toContain("/fixtures/clinic.ts");
+    },
+  );
 });

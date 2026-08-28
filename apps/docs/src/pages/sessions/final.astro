@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import type { SessionSummary } from "../../sessions/types";
+import type { SessionNavigation, SessionSummary } from "../../sessions/types";
 import "../../styles/sessions.css";
 
 export const finalAggregateTour = {
@@ -40,16 +40,13 @@ const chapters = [
   { id: "incident", label: "5つの境界を確認する" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
-const navigation: Readonly<{
-  previous: Readonly<{ href: string; title: string }> | undefined;
-  next: Readonly<{ href: string; title: string }> | undefined;
-}> = {
+export const navigation = ({
   previous: {
     href: "/sessions/06-effects-and-consistency/",
     title: "副作用と整合性境界を設計する",
   },
   next: undefined,
-} as const;
+} as SessionNavigation);
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>

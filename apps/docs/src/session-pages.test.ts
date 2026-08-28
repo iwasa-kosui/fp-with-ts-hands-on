@@ -1,12 +1,9 @@
+import { readdir, readFile } from "node:fs/promises";
+import { extname, join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import { projectFilesForSnapshot } from "./code-explorer/project-files";
 import type { SessionWorkspace } from "./code-explorer/types";
-import type { SessionSummary } from "./sessions/types";
-
-type SessionNavigation = Readonly<{
-  previous: Readonly<{ href: string; title: string }>;
-  next: Readonly<{ href: string; title: string }>;
-}>;
+import type { SessionNavigation, SessionSummary } from "./sessions/types";
 
 type PageModule = Readonly<{
   session?: SessionSummary;
@@ -26,11 +23,25 @@ const pageSources = import.meta.glob<string>("./pages/sessions/*.astro", {
 const catalogModules = import.meta.glob("./sessions/catalog.ts", {
   eager: true,
 });
-const sourceModules = import.meta.glob<string>("./**/*.{ts,tsx,astro}", {
-  eager: true,
-  query: "?raw",
-  import: "default",
-});
+
+const docsRoot = process.cwd();
+const currentTest = join(docsRoot, "src", "session-pages.test.ts");
+const sourceRoots = ["src", "e2e", "scripts"] as const;
+const sourceExtensions = new Set([".ts", ".tsx", ".astro", ".mjs"]);
+
+const collectSourceFiles = async (directory: string): Promise<string[]> => {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const nestedFiles = await Promise.all(
+    entries.map((entry) => {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) return collectSourceFiles(path);
+      return entry.isFile() && sourceExtensions.has(extname(entry.name))
+        ? [path]
+        : [];
+    }),
+  );
+  return nestedFiles.flat();
+};
 
 const exerciseSlugs = [
   "02-state-transitions",
@@ -240,11 +251,25 @@ describe("session pages", () => {
     expect(catalogModules).toEqual({});
   });
 
-  it("has no central session catalog references", () => {
-    for (const [path, source] of Object.entries(sourceModules)) {
-      if (path.endsWith("session-pages.test.ts")) continue;
-      expect(source, path).not.toContain("sessions/catalog");
+  it("has no central session catalog references anywhere in docs sources", async () => {
+    const files = (
+      await Promise.all(
+        sourceRoots.map((directory) =>
+          collectSourceFiles(join(docsRoot, directory)),
+        ),
+      )
+    ).flat();
+    const references: string[] = [];
+
+    for (const path of files) {
+      if (path === currentTest) continue;
+      const source = await readFile(path, "utf8");
+      if (source.includes("sessions/catalog")) {
+        references.push(relative(docsRoot, path));
+      }
     }
+
+    expect(references).toEqual([]);
   });
 
   it("keeps each session metadata object with its Astro page", () => {

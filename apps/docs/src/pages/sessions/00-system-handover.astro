@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import type { SessionSummary } from "../../sessions/types";
+import type { SessionNavigation, SessionSummary } from "../../sessions/types";
 import "../../styles/sessions.css";
 
 export const session: SessionSummary = {
@@ -24,16 +24,13 @@ const chapters = [
   { id: "legacy", label: "画面・保存・ログ" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
-const navigation: Readonly<{
-  previous: Readonly<{ href: string; title: string }> | undefined;
-  next: Readonly<{ href: string; title: string }> | undefined;
-}> = {
+export const navigation = ({
   previous: undefined,
   next: {
     href: "/sessions/01-business-events-and-workflows/",
     title: "ビジネスイベントからワークフローを描く",
   },
-} as const;
+} as SessionNavigation);
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
