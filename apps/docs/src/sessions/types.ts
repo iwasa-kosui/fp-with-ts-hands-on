@@ -68,6 +68,7 @@ type SessionSummaryBase = Readonly<{
   peerReview?: PeerReview;
   animal: Readonly<{ name: string; type: string; avatar: string }>;
   summary: string;
+  episode: readonly [string, string, string];
   incident: string;
   exerciseCommand?: string;
   exerciseModule?: ExerciseModule;

@@ -13,6 +13,11 @@ export const session: SessionSummary = {
   timeBreakdown: { brief: 3, teach: 4, exercise: 6, review: 2 },
   animal: { name: "CAT", type: "cat", avatar: "🐈" },
   summary: "動物病院の一日を描いた散文からドメインイベントを拾い、集約の境界を班で引きます。",
+  episode: [
+    "開院3分で、柴犬は問診票を踏み、猫は棚へ登り、受付の電話は2本同時に鳴りました。",
+    "受付、看護師、獣医師、会計担当は仕事をこなしますが、同じ一日を全員が別の言葉で説明します。",
+    "システム改修の前に、人間同士の仕様が同期していないことが判明しました。",
+  ],
   incident: "業務全体のどこからどこまでが診察開始のワークフローなのか、担当者ごとに認識が揃っていない。",
   steps: [],
   decisions: [],
@@ -118,6 +123,10 @@ export const navigation = ({
           <span aria-hidden="true">{session.animal.avatar}</span>
           {session.summary}
         </p>
+        <aside class="case-file__episode" aria-label="動物病院のひと幕">
+          <p class="case-file__episode-label">動物病院のひと幕</p>
+          {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+        </aside>
       </section>
       <div class="case-file__body">
         <aside class="case-file__toc case-file__toc--desktop">

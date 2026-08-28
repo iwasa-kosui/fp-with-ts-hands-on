@@ -52,6 +52,11 @@ export const session: SessionSummary = {
   peerReviewPromises: "reference",
   animal: { name: "HAMSTER", type: "hamster", avatar: "🐹" },
   summary: "診察開始の予期できる失敗を、呼び出し側が扱える値として返します。",
+  episode: [
+    "ハムスターの診察開始ボタンを押すと、受付画面は「処理に失敗しました」とだけ言い残して沈黙しました。",
+    "予約なし、受付前、あるいは画面の気分なのか。後ろでは犬が吠え、列だけが伸びます。",
+    "理由を捨てた例外は、忙しい現場に推理ゲームまで追加してくれます。",
+  ],
   incident: "例外メッセージの変更で画面の分岐が壊れ、受付が失敗理由を追えなくなった。",
   exerciseCommand: "pnpm exercise:05",
   exerciseModule: {
@@ -320,6 +325,10 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
           <span aria-hidden="true">{session.animal.avatar}</span>
           {session.summary}
         </p>
+        <aside class="case-file__episode" aria-label="動物病院のひと幕">
+          <p class="case-file__episode-label">動物病院のひと幕</p>
+          {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+        </aside>
       </section>
       <div class="case-file__body">
         <aside class="case-file__toc case-file__toc--desktop">

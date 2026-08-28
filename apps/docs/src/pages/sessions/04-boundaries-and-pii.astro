@@ -52,6 +52,11 @@ export const session: SessionSummary = {
   peerReviewPromises: "reference",
   animal: { name: "BIRD", type: "bird", avatar: "🐦" },
   summary: "外部 JSON と飼い主の連絡先を、境界で安全な値へ変換します。",
+  episode: [
+    "小鳥の検査結果は、項目が欠け、余計な値が増え、「要経過観察」だけが妙に元気な JSON でした。",
+    "システムは全部受け入れたうえ、調査ログへ飼い主の電話番号まで丁寧に転載します。",
+    "入力には寛大で、個人情報にはおしゃべり。それが現在の境界です。",
+  ],
   incident: "検査機関から届いた JSON をそのまま信頼し、調査用のログへ飼い主の連絡先が流出した。",
   exerciseCommand: "pnpm exercise:04",
   exerciseModule: {
@@ -307,6 +312,10 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
           <span aria-hidden="true">{session.animal.avatar}</span>
           {session.summary}
         </p>
+        <aside class="case-file__episode" aria-label="動物病院のひと幕">
+          <p class="case-file__episode-label">動物病院のひと幕</p>
+          {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+        </aside>
       </section>
       <div class="case-file__body">
         <aside class="case-file__toc case-file__toc--desktop">

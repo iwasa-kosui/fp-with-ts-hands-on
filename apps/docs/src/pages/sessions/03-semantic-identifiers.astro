@@ -52,6 +52,11 @@ export const session: SessionSummary = {
   peerReviewPromises: "reference",
   animal: { name: "HEDGEHOG", type: "hedgehog", avatar: "🦔" },
   summary: "予約・検査・ペット・飼い主・担当獣医師の識別子を、用途ごとに区別して扱います。",
+  episode: [
+    "ハリネズミの検査結果が見つからず、受付から検査機関へ、検査機関から開発者へと電話が回りました。",
+    "結果は届いていました。ただし、PetId の欄には OwnerId が入り、システムは「どちらも UUID です」と平然と保存済みです。",
+    "文字列として正しいことと、業務として正しいことは、今日も別件でした。",
+  ],
   incident: "検査結果の登録で OwnerId を PetId の位置へ渡し、対象のペットに結果を結び付けられなかった。",
   exerciseCommand: "pnpm exercise:03",
   exerciseModule: {
@@ -357,6 +362,10 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
           <span aria-hidden="true">{session.animal.avatar}</span>
           {session.summary}
         </p>
+        <aside class="case-file__episode" aria-label="動物病院のひと幕">
+          <p class="case-file__episode-label">動物病院のひと幕</p>
+          {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+        </aside>
       </section>
       <div class="case-file__body">
         <aside class="case-file__toc case-file__toc--desktop">

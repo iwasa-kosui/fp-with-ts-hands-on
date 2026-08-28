@@ -8,6 +8,11 @@ type PageModule = Readonly<{
 const pageModules = import.meta.glob<PageModule>("./pages/sessions/*.astro", {
   eager: true,
 });
+const pageSources = import.meta.glob<string>("./pages/sessions/*.astro", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+});
 const pages = Object.entries(pageModules)
   .sort(([left], [right]) => left.localeCompare(right))
   .map(([path, page]) => ({ path, ...page }));
@@ -97,6 +102,49 @@ const expectedCurriculum = [
     snapshot: "final",
     timeBreakdown: { brief: 0, teach: 4, exercise: 0, review: 1 },
   },
+] as const;
+
+const expectedEpisodes = [
+  [
+    "新人エンジニアの初出勤を歓迎するように、犬が観葉植物を倒し、プリンターは事故報告を吐き続けていました。",
+    "会計済みの予約は「診察中」へ戻り、請求書は2枚。ログには飼い主の電話番号まで律儀にそろっています。",
+    "引き継ぎ資料を開く前に、二重請求と個人情報流出の再現条件だけは確認できました。",
+  ],
+  [
+    "開院3分で、柴犬は問診票を踏み、猫は棚へ登り、受付の電話は2本同時に鳴りました。",
+    "受付、看護師、獣医師、会計担当は仕事をこなしますが、同じ一日を全員が別の言葉で説明します。",
+    "システム改修の前に、人間同士の仕様が同期していないことが判明しました。",
+  ],
+  [
+    "会計を終えたウサギは帰ったはずなのに、画面の中では診察室へ戻ってきました。",
+    "受付画面は止めるどころか、2枚目の請求書まで手際よく用意します。",
+    "業務ルールを覚えていたのは人間だけで、コードは何でも通す親切設計でした。",
+  ],
+  [
+    "ハリネズミの検査結果が見つからず、受付から検査機関へ、検査機関から開発者へと電話が回りました。",
+    "結果は届いていました。ただし、PetId の欄には OwnerId が入り、システムは「どちらも UUID です」と平然と保存済みです。",
+    "文字列として正しいことと、業務として正しいことは、今日も別件でした。",
+  ],
+  [
+    "小鳥の検査結果は、項目が欠け、余計な値が増え、「要経過観察」だけが妙に元気な JSON でした。",
+    "システムは全部受け入れたうえ、調査ログへ飼い主の電話番号まで丁寧に転載します。",
+    "入力には寛大で、個人情報にはおしゃべり。それが現在の境界です。",
+  ],
+  [
+    "ハムスターの診察開始ボタンを押すと、受付画面は「処理に失敗しました」とだけ言い残して沈黙しました。",
+    "予約なし、受付前、あるいは画面の気分なのか。後ろでは犬が吠え、列だけが伸びます。",
+    "理由を捨てた例外は、忙しい現場に推理ゲームまで追加してくれます。",
+  ],
+  [
+    "カメの診察を開始すると、予約状態だけが先に更新され、監査記録はどこにも残りませんでした。",
+    "再現テストでは時刻とイベント ID が毎回変わり、失敗の証拠まで落ち着きがありません。",
+    "状態更新は即決、記録保存は自由行動。原因究明だけが残業します。",
+  ],
+  [
+    "ここまで直した頃、猫のムギはとっくに帰宅し、開発者だけが参照実装の前に残っていました。",
+    "入力、失敗、イベント、保存、例外を順に追うと、さっきまでの事故がそれぞれ決まった場所で待っています。",
+    "完成形と呼んでも、事故が消えたわけではありません。置き場所と担当が決まっただけです。",
+  ],
 ] as const;
 
 const expectedExercises = [
@@ -300,6 +348,21 @@ describe("page-owned session contracts", () => {
     ).toEqual(expectedCurriculum);
     expect(new Set(sessions.map(({ slug }) => slug)).size).toBe(8);
     expect(new Set(sessions.map(({ sequence }) => sequence)).size).toBe(8);
+  });
+
+  it("keeps each three-line episode in its page metadata and hero", () => {
+    expect(
+      sessions.map((session) =>
+        "episode" in session ? session.episode : undefined,
+      ),
+    ).toEqual(expectedEpisodes);
+
+    for (const { path } of pages) {
+      const source = pageSources[path] ?? "";
+      expect(source, path).toContain('class="case-file__episode"');
+      expect(source, path).toContain('class="case-file__episode-label"');
+      expect(source, path).toContain("session.episode.map");
+    }
   });
 
   it("keeps the 180-minute schedule and each time allocation consistent", () => {

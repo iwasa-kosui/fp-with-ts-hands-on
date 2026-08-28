@@ -57,6 +57,11 @@ export const session: SessionSummary = {
   timeBreakdown: { brief: 0, teach: 4, exercise: 0, review: 1 },
   animal: { name: "Mugi", type: "cat", avatar: "🐈" },
   summary: "当日の到達点を、より大きな参照実装へ接続します。",
+  episode: [
+    "ここまで直した頃、猫のムギはとっくに帰宅し、開発者だけが参照実装の前に残っていました。",
+    "入力、失敗、イベント、保存、例外を順に追うと、さっきまでの事故がそれぞれ決まった場所で待っています。",
+    "完成形と呼んでも、事故が消えたわけではありません。置き場所と担当が決まっただけです。",
+  ],
   incident: "当日の局所的な改善を、実運用を想定した構成へどう接続するかを確認する。",
   steps: [],
   decisions: [],
@@ -92,6 +97,10 @@ export const navigation = ({
           <span aria-hidden="true">{session.animal.avatar}</span>
           {session.summary}
         </p>
+        <aside class="case-file__episode" aria-label="動物病院のひと幕">
+          <p class="case-file__episode-label">動物病院のひと幕</p>
+          {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+        </aside>
       </section>
       <div class="case-file__body">
         <aside class="case-file__toc case-file__toc--desktop">

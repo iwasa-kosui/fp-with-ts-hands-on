@@ -52,6 +52,11 @@ export const session: SessionSummary = {
   peerReviewPromises: "inline",
   animal: { name: "RABBIT", type: "rabbit", avatar: "🐇" },
   summary: "予約の5状態を判別共用体で表し、許可されていない状態遷移を型で拒否します。",
+  episode: [
+    "会計を終えたウサギは帰ったはずなのに、画面の中では診察室へ戻ってきました。",
+    "受付画面は止めるどころか、2枚目の請求書まで手際よく用意します。",
+    "業務ルールを覚えていたのは人間だけで、コードは何でも通す親切設計でした。",
+  ],
   incident: "会計済みの来院が診察中へ戻され、会計が二度行われた。",
   exerciseCommand: "pnpm exercise:02",
   exerciseModule: {
@@ -443,6 +448,10 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
           <span aria-hidden="true">{session.animal.avatar}</span>
           {session.summary}
         </p>
+        <aside class="case-file__episode" aria-label="動物病院のひと幕">
+          <p class="case-file__episode-label">動物病院のひと幕</p>
+          {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+        </aside>
       </section>
       <div class="case-file__body">
         <aside class="case-file__toc case-file__toc--desktop">
