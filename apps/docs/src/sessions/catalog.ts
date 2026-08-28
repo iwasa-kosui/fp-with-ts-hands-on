@@ -61,6 +61,7 @@ type SessionSummaryBase = Readonly<{
   peerReview?: PeerReview;
   animal: Readonly<{ name: string; type: string; avatar: string }>;
   summary: string;
+  episode: readonly [string, string, string];
   incident: string;
   exerciseCommand?: string;
   exerciseModule?: ExerciseModule;
@@ -212,6 +213,11 @@ export const sessions = [
     timeBreakdown: { brief: 4, teach: 3, exercise: 0, review: 3 },
     animal: { name: "DOG", type: "dog", avatar: "🐕" },
     summary: "WAN NYAN CLINIC の現行業務、画面操作、保存・ログと、現在起きている事故を確認します。",
+    episode: [
+      "WAN NYAN CLINIC に出勤した新人エンジニアの机に、前夜の事故報告が2件置かれていました。",
+      "会計済みの犬がもう一度「診察中」へ戻され、同じ来院に二度目の請求が作られています。",
+      "調査ログには飼い主の連絡先まで残っており、まず現場とコードを結び付ける必要があります。",
+    ],
     incident: "会計済みの予約が診察中へ戻り、予約ログから飼い主の個人情報が流出した。",
     steps: [],
     decisions: [],
@@ -227,6 +233,11 @@ export const sessions = [
     timeBreakdown: { brief: 3, teach: 4, exercise: 6, review: 2 },
     animal: { name: "CAT", type: "cat", avatar: "🐈" },
     summary: "動物病院の一日を描いた散文からドメインイベントを拾い、集約の境界を班で引きます。",
+    episode: [
+      "朝一番、元気のない柴犬を連れた飼い主が受付を訪れました。",
+      "受付スタッフ、動物看護師、獣医師は、それぞれの仕事を終えるたびに記録を残します。",
+      "その一日の出来事を時間順に並べると、診察を始めるワークフローの境界が見えてきます。",
+    ],
     incident: "業務全体のどこからどこまでが診察開始のワークフローなのか、担当者ごとに認識が揃っていない。",
     steps: [],
     decisions: [],
@@ -251,6 +262,11 @@ export const sessions = [
     peerReviewPromises: "inline",
     animal: { name: "RABBIT", type: "rabbit", avatar: "🐇" },
     summary: "予約の5状態を判別共用体で表し、許可されていない状態遷移を型で拒否します。",
+    episode: [
+      "会計を終えたウサギが、システム上では再び「診察中」になっていました。",
+      "受付画面はその操作を止めず、翌日、同じ来院に二度目の請求が作られました。",
+      "どの状態から診察を始めてよいのか、業務の決まりを型で表します。",
+    ],
     incident: "会計済みの来院が診察中へ戻され、会計が二度行われた。",
     exerciseCommand: "pnpm exercise:02",
     exerciseModule: {
@@ -344,6 +360,11 @@ export const sessions = [
     peerReviewPromises: "reference",
     animal: { name: "HEDGEHOG", type: "hedgehog", avatar: "🦔" },
     summary: "予約・検査・ペット・飼い主・担当獣医師の識別子を、用途ごとに区別して扱います。",
+    episode: [
+      "ハリネズミの検査結果が届いたのに、カルテにはいつまでたっても表示されません。",
+      "調べると、ペット ID を入れる場所へ飼い主 ID が渡されていました。",
+      "値がどちらも同じ UUID だったため、システムは取り違えに気付けませんでした。",
+    ],
     incident: "検査結果の登録で OwnerId を PetId の位置へ渡し、対象のペットに結果を結び付けられなかった。",
     exerciseCommand: "pnpm exercise:03",
     exerciseModule: {
@@ -448,6 +469,11 @@ export const sessions = [
     peerReviewPromises: "reference",
     animal: { name: "BIRD", type: "bird", avatar: "🐦" },
     summary: "外部 JSON と飼い主の連絡先を、境界で安全な値へ変換します。",
+    episode: [
+      "小鳥の検査結果が、外部の検査機関から JSON で届きました。",
+      "項目が欠けたデータをそのまま取り込み、調査ログには飼い主の電話番号まで記録されています。",
+      "外から入る値と外へ出る情報を、どの境界で守るかを考えます。",
+    ],
     incident: "検査機関から届いた JSON をそのまま信頼し、調査用のログへ飼い主の連絡先が流出した。",
     exerciseCommand: "pnpm exercise:04",
     exerciseModule: {
@@ -519,6 +545,11 @@ export const sessions = [
     peerReviewPromises: "reference",
     animal: { name: "HAMSTER", type: "hamster", avatar: "🐹" },
     summary: "診察開始の予期できる失敗を、呼び出し側が扱える値として返します。",
+    episode: [
+      "ハムスターの診察を始めようとすると、受付画面に「処理に失敗しました」とだけ表示されました。",
+      "予約がないのか、まだ受付前なのか、スタッフには判断できません。",
+      "次の案内を選べるように、失敗理由をワークフローの結果として返します。",
+    ],
     incident: "例外メッセージの変更で画面の分岐が壊れ、受付が失敗理由を追えなくなった。",
     exerciseCommand: "pnpm exercise:05",
     exerciseModule: {
@@ -604,6 +635,11 @@ export const sessions = [
     peerReviewPromises: "reference",
     animal: { name: "TURTLE", type: "turtle", avatar: "🐢" },
     summary: "時刻や ID など実行のたびに変わる値と保存を port に切り出し、状態と監査記録を一度に保存します。",
+    episode: [
+      "カメの診察を開始した直後、予約は「診察中」になったのに監査記録だけが残りませんでした。",
+      "再現テストでは、実行するたびに時刻とイベント ID が変わり、原因の切り分けも進みません。",
+      "状態と記録を一緒に扱い、変化する値を処理の外から渡せる形にします。",
+    ],
     incident: "実行のたびに変わる値でテスト結果が安定せず、状態だけ保存され監査記録が残らない予約が生まれた。",
     exerciseCommand: "pnpm exercise:06",
     exerciseModule: {
@@ -721,6 +757,11 @@ export const sessions = [
     timeBreakdown: { brief: 0, teach: 4, exercise: 0, review: 1 },
     animal: { name: "Mugi", type: "cat", avatar: "🐈" },
     summary: "当日の到達点を、より大きな参照実装へ接続します。",
+    episode: [
+      "一連の事故を減らしたあと、猫のムギの診察開始を参照実装でもう一度たどります。",
+      "入力、業務上の失敗、イベント、保存、例外は、それぞれ別の境界で扱われています。",
+      "小さく直してきた設計が、大きなアプリケーションでもつながるかを確かめます。",
+    ],
     incident: "当日の局所的な改善を、実運用を想定した構成へどう接続するかを確認する。",
     steps: [],
     decisions: [],

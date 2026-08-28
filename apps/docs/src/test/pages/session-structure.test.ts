@@ -25,6 +25,24 @@ const withTeachChapter = (
     : ids;
 
 describe("session page structure", () => {
+  it.each(sessionCases)(
+    "opens $name with a three-line animal-clinic episode",
+    async ({ session }) => {
+      const document = await renderSessionPage(session);
+      const episode = document.querySelector(".case-file__episode");
+      const lines = [
+        ...(episode?.querySelectorAll<HTMLElement>("[data-episode-line]") ?? []),
+      ];
+
+      expect(episode).not.toBeNull();
+      expect(document.querySelector(".case-file__hero")?.lastElementChild).toBe(episode);
+      expect(lines).toHaveLength(3);
+      expect(
+        lines.every(({ textContent }) => (textContent?.trim().length ?? 0) > 0),
+      ).toBe(true);
+    },
+  );
+
   it.each(sessionCases)("renders catalog chapters and both TOCs for $name", async ({ session }) => {
     const document = await renderSessionPage(session);
     const expectedIds = withTeachChapter(chapterIds[session.kind], session.slug);
