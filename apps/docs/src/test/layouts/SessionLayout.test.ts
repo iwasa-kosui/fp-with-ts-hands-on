@@ -82,6 +82,18 @@ describe("SessionLayout", () => {
     expect(mobileToc?.querySelector("summary")?.textContent).toContain("目次");
   });
 
+  it("shows only the animal icon and session summary in the hero summary", async () => {
+    const container = await createAstroContainer();
+    const html = await container.renderToString(SessionLayout, {
+      props: { session: workshop },
+      slots: { default: "本文" },
+    });
+    const document = new DOMParser().parseFromString(html, "text/html");
+    const summary = document.querySelector(".case-file__summary");
+
+    expect(summary?.textContent?.replace(/\s+/g, "")).toBe(`🐈${workshop.summary}`);
+  });
+
   it("renders phase semantics, exact command text, expected result, and a copy island", async () => {
     const container = await createAstroContainer();
     const html = await container.renderToString(CommandBlock, {
