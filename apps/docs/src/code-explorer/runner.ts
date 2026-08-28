@@ -424,7 +424,11 @@ const adaptWebContainer = (runtime: WebContainer): TerminalRuntime => ({
       runtimeProjectDirectory,
       { recursive: true },
       (_event, filename) => {
-        if (filename !== null) onPath(String(filename));
+        const path =
+          typeof filename === "string"
+            ? filename
+            : new TextDecoder().decode(filename);
+        onPath(path);
       },
     );
     return () => watcher.close();

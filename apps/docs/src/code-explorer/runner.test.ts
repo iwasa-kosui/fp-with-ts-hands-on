@@ -332,6 +332,57 @@ describe("terminal runner", () => {
 });
 
 describe("WebContainer terminal adapter", () => {
+  it("decodes byte filenames emitted by the WebContainer watcher", async () => {
+    let watchListener:
+      | ((event: "rename" | "change", filename: string | Uint8Array) => void)
+      | undefined;
+    const shell = createControlledProcess();
+    const install = createControlledProcess();
+    install.finish(0);
+    webContainerMock.boot.mockReset();
+    webContainerMock.boot.mockResolvedValue({
+      mount: vi.fn(),
+      spawn: vi.fn(async (command: string) =>
+        command === "npm" ? install : shell,
+      ),
+      teardown: vi.fn(),
+      fs: {
+        mkdir: vi.fn(async () => undefined),
+        writeFile: vi.fn(async () => undefined),
+        readdir: async () => [],
+        readFile: async (path: string) => {
+          if (path === "workspace/src/created.ts") return "created";
+          throw Object.assign(new Error(`ENOENT: ${path}`), { code: "ENOENT" });
+        },
+        watch: vi.fn(
+          (
+            _path: string,
+            _options: unknown,
+            listener: typeof watchListener,
+          ) => {
+            watchListener = listener;
+            return { close: vi.fn() };
+          },
+        ),
+      },
+    });
+    const updates = createUpdates();
+    const session = await createWebContainerTerminalRunner().start(
+      requestFor(updates),
+    );
+
+    watchListener?.(
+      "rename",
+      new TextEncoder().encode("src/created.ts"),
+    );
+    await nextTask();
+
+    expect(updates.changes).toEqual([
+      { kind: "write", path: "src/created.ts", contents: "created" },
+    ]);
+    await session.dispose();
+  });
+
   it("mounts parent fixtures outside the project and starts jsh in the workspace", async () => {
     const mounted: unknown[] = [];
     const mkdir = vi.fn(async () => undefined);
