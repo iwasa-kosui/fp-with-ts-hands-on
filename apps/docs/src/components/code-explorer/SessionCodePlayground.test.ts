@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Window } from "happy-dom";
 import { sessionWorkspaceFor } from "../../code-explorer/session-workspaces";
 import { sessions } from "../../sessions/catalog";
-import { createAstroContainer } from "../../test/render-astro";
+import { createAstroContainer } from "./test-support/render-astro";
 import SessionCodePlayground from "./SessionCodePlayground.astro";
 
 const exerciseSessions = sessions.filter(({ kind }) => kind === "exercise");
