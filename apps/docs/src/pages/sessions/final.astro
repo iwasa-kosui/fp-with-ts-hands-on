@@ -1,6 +1,7 @@
 ---
-import SessionLayout from "../../layouts/SessionLayout.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
 import type { SessionSummary } from "../../sessions/types";
+import "../../styles/sessions.css";
 
 export const finalAggregateTour = {
   label: "1業務集約 → 7業務集約",
@@ -34,9 +35,50 @@ export const session: SessionSummary = {
     finalAggregateTour.path,
   ],
 };
+
+const chapters = [
+  { id: "incident", label: "5つの境界を確認する" },
+  { id: "review", label: "レビューと持ち帰り" },
+] as const;
+const navigation: Readonly<{
+  previous: Readonly<{ href: string; title: string }> | undefined;
+  next: Readonly<{ href: string; title: string }> | undefined;
+}> = {
+  previous: {
+    href: "/sessions/06-effects-and-consistency/",
+    title: "副作用と整合性境界を設計する",
+  },
+  next: undefined,
+} as const;
 ---
 
-<SessionLayout session={session}>
+<BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
+  <div class="case-file">
+    <header class="case-file__site-header">
+      <a href="/">WAN NYAN CLINIC</a>
+    </header>
+    <main>
+      <section class="case-file__hero" aria-labelledby="session-title">
+        <p class="case-file__eyebrow">SESSION {session.sequence} · {session.durationMinutes}分</p>
+        <h1 id="session-title">{session.title}</h1>
+        <p class="case-file__summary">
+          <span aria-hidden="true">{session.animal.avatar}</span>
+          {session.summary}
+        </p>
+      </section>
+      <div class="case-file__body">
+        <aside class="case-file__toc case-file__toc--desktop">
+          <nav aria-label="ページ内目次">
+            <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
+          </nav>
+        </aside>
+        <details class="case-file__toc case-file__toc--mobile">
+          <summary>目次</summary>
+          <nav aria-label="ページ内目次">
+            <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
+          </nav>
+        </details>
+        <article class="case-file__content">
   <section id="incident">
     <h2>何が起きたか</h2>
     <p>
@@ -73,4 +115,20 @@ export const session: SessionSummary = {
       自習では、検査結果の到着やフォローアップ依頼など、別のきっかけから始まるワークフローを1つ選び、同じ5項目を辿ってください。境界が見つからない箇所は、次に試す小さな改善候補です。
     </p>
   </section>
-</SessionLayout>
+        </article>
+      </div>
+      <nav class="case-file__session-nav" aria-label="前後のセッション">
+        {
+          navigation.previous === undefined ? null : (
+            <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
+          )
+        }
+        {
+          navigation.next === undefined ? null : (
+            <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
+          )
+        }
+      </nav>
+    </main>
+  </div>
+</BaseLayout>
