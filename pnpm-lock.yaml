@@ -339,9 +339,30 @@ importers:
 
   examples/session-05:
     dependencies:
+      '@fp-with-ts/clinic-web':
+        specifier: workspace:*
+        version: link:../../packages/clinic-web
+      '@hono/inertia':
+        specifier: ^0.7.0
+        version: 0.7.0(hono@4.13.1)(vite@6.4.3(@types/node@22.20.1)(lightningcss@1.33.0)(terser@5.49.1)(tsx@4.23.11)(yaml@2.9.0))
+      '@hono/node-server':
+        specifier: ^2.1.0
+        version: 2.1.0(hono@4.13.1)
+      '@inertiajs/react':
+        specifier: ^3.6.1
+        version: 3.6.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      hono:
+        specifier: ^4.12.8
+        version: 4.13.1
       neverthrow:
         specifier: ^8.2.0
         version: 8.2.0
+      react:
+        specifier: ^19.2.4
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.2.4
+        version: 19.2.8(react@19.2.8)
       zod:
         specifier: ^3.25.0
         version: 3.25.76
@@ -349,6 +370,15 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.4(@types/react@19.2.18)
+      vite:
+        specifier: ^6.1.1
+        version: 6.4.3(@types/node@22.20.1)(lightningcss@1.33.0)(terser@5.49.1)(tsx@4.23.11)(yaml@2.9.0)
       vitest:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.20.1)(happy-dom@15.11.7)(lightningcss@1.33.0)(terser@5.49.1)
