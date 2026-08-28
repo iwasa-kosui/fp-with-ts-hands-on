@@ -18,8 +18,7 @@
 
 セッションの追加、改名、移動では、次をまとめて同期する。
 
-- `src/sessions/catalog.ts`: 表示順、slug、前後ナビゲーション上の役割。
-- `src/pages/sessions/*.astro` と対応するページテスト。
+- `src/pages/sessions/*.astro`: frontmatter、本文、前後ナビゲーションと対応するページテスト。
 - `scripts/verify-static-build.mjs` の必須 HTML、内部リンク、前後ナビゲーション。
 - 旧 URL を維持する場合は、`../../worker/routes.ts` とそのテスト。
 

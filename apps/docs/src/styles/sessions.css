@@ -60,6 +60,28 @@
   line-height: 1.8;
 }
 
+.case-file__episode {
+  max-width: 70ch;
+  margin-top: 2rem;
+  padding: 1rem 1.25rem;
+  border: 2px solid var(--case-line);
+  border-inline-start: 0.6rem solid var(--case-coral);
+  background: color-mix(in srgb, var(--case-lemon) 28%, var(--case-paper));
+  line-height: 1.7;
+}
+
+.case-file__episode-label {
+  font-weight: 800;
+}
+
+.case-file__episode p {
+  margin: 0;
+}
+
+.case-file__episode p + p {
+  margin-top: 0.35rem;
+}
+
 .case-file__body {
   display: grid;
   width: min(100% - 2rem, 90rem);

@@ -25,6 +25,7 @@ import {
   type TerminalPanelStateKind,
   type TerminalView,
 } from "./TerminalPanel";
+import "@xterm/xterm/css/xterm.css";
 
 export type EditorProps = Readonly<{
   path: string;

@@ -1,12 +1,120 @@
 ---
-import SessionLayout from "../../layouts/SessionLayout.astro";
-import { sessionBySlug } from "../../sessions/catalog";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import type { CodeGuide } from "../../code-explorer/code-guide";
+import type { SessionNavigation, SessionSummary } from "../../sessions/types";
+import "../../styles/sessions.css";
 
-const session = sessionBySlug("final");
-if (session === undefined) throw new Error("Unknown session: final");
+export const finalAggregateTour = {
+  label: "1業務集約 → 7業務集約",
+  path: "examples/final/src/app.ts",
+  aggregates: [
+    "予約",
+    "検査結果",
+    "フォローアップ",
+    "飼い主",
+    "ペット",
+    "セッション",
+    "ユーザー",
+  ],
+};
+
+export const guides = ([
+  {
+    id: "final-use-case-pipeline",
+    title: "最初に読む ResultAsync パイプライン",
+    currentDesign:
+      "当日の S5 と同じ形を、認可と永続化を含む use case へ広げています。",
+    futureRisk: "全体から読むと概念が多いため、まず run の処理だけを追います。",
+    path: "src/useCase/startExaminationUseCase.ts",
+    highlights: [{ startLineNumber: 83, endLineNumber: 99 }],
+  },
+  {
+    id: "final-seven-aggregates",
+    title: "1業務集約から7つの集約へ広がる配線",
+    currentDesign: `${finalAggregateTour.aggregates.join("・")}の7つの集約を composition root で配線しています。`,
+    futureRisk:
+      "個別ファイルから読み始めると集約どうしの接続が見えないため、composition root から辿ります。",
+    path: finalAggregateTour.path.replace("examples/final/", ""),
+    highlights: [{ startLineNumber: 202, endLineNumber: 244 }],
+  },
+  {
+    id: "final-transaction-store",
+    title: "in-memory から SQLite transaction へ広がる",
+    currentDesign: "状態更新とイベント追加を1つの transaction で行います。",
+    futureRisk: "単純な dual-write へ戻すと、状態と監査記録が分離します。",
+    path: "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
+    highlights: [{ startLineNumber: 140, endLineNumber: 153 }],
+  },
+] as const) satisfies readonly CodeGuide[];
+
+export const session: SessionSummary = {
+  slug: "final",
+  snapshot: "final",
+  sequence: "Final",
+  kind: "reference",
+  title: "参照実装で境界をたどる",
+  durationMinutes: 5,
+  timeBreakdown: { brief: 0, teach: 4, exercise: 0, review: 1 },
+  animal: { name: "Mugi", type: "cat", avatar: "🐈" },
+  summary: "当日の到達点を、より大きな参照実装へ接続します。",
+  episode: [
+    "ここまで直した頃、猫のムギはとっくに帰宅し、開発者だけが参照実装の前に残っていました。",
+    "入力、失敗、イベント、保存、例外を順に追うと、さっきまでの事故がそれぞれ決まった場所で待っています。",
+    "完成形と呼んでも、事故が消えたわけではありません。置き場所と担当が決まっただけです。",
+  ],
+  incident: "当日の局所的な改善を、実運用を想定した構成へどう接続するかを確認する。",
+  steps: [],
+  decisions: [],
+  finalReferences: [
+    "examples/final/src/useCase/startExaminationUseCase.ts",
+    finalAggregateTour.path,
+  ],
+};
+
+const chapters = [
+  { id: "incident", label: "5つの境界を確認する" },
+  { id: "review", label: "レビューと持ち帰り" },
+] as const;
+export const navigation = ({
+  previous: {
+    href: "/sessions/06-effects-and-consistency/",
+    title: "副作用と整合性境界を設計する",
+  },
+  next: undefined,
+} as SessionNavigation);
 ---
 
-<SessionLayout session={session}>
+<BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
+  <div class="case-file">
+    <header class="case-file__site-header">
+      <a href="/">WAN NYAN CLINIC</a>
+    </header>
+    <main>
+      <section class="case-file__hero" aria-labelledby="session-title">
+        <p class="case-file__eyebrow">SESSION {session.sequence} · {session.durationMinutes}分</p>
+        <h1 id="session-title">{session.title}</h1>
+        <p class="case-file__summary">
+          <span aria-hidden="true">{session.animal.avatar}</span>
+          {session.summary}
+        </p>
+        <aside class="case-file__episode" aria-label="動物病院のひと幕">
+          <p class="case-file__episode-label">動物病院のひと幕</p>
+          {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+        </aside>
+      </section>
+      <div class="case-file__body">
+        <aside class="case-file__toc case-file__toc--desktop">
+          <nav aria-label="ページ内目次">
+            <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
+          </nav>
+        </aside>
+        <details class="case-file__toc case-file__toc--mobile">
+          <summary>目次</summary>
+          <nav aria-label="ページ内目次">
+            <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
+          </nav>
+        </details>
+        <article class="case-file__content">
   <section id="incident">
     <h2>何が起きたか</h2>
     <p>
@@ -43,4 +151,20 @@ if (session === undefined) throw new Error("Unknown session: final");
       自習では、検査結果の到着やフォローアップ依頼など、別のきっかけから始まるワークフローを1つ選び、同じ5項目を辿ってください。境界が見つからない箇所は、次に試す小さな改善候補です。
     </p>
   </section>
-</SessionLayout>
+        </article>
+      </div>
+      <nav class="case-file__session-nav" aria-label="前後のセッション">
+        {
+          navigation.previous === undefined ? null : (
+            <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
+          )
+        }
+        {
+          navigation.next === undefined ? null : (
+            <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
+          )
+        }
+      </nav>
+    </main>
+  </div>
+</BaseLayout>
