@@ -62,6 +62,7 @@
 
 .case-file__body {
   display: grid;
+  width: min(100% - 2rem, 90rem);
   gap: 2rem;
   align-items: start;
   padding-block: 1rem 4rem;
@@ -635,9 +636,24 @@
 
 @media (min-width: 768px) {
   .case-file__body {
-    grid-template-columns: minmax(12rem, 17rem) minmax(0, 70ch);
-    justify-content: center;
-    gap: clamp(2rem, 5vw, 5rem);
+    grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
+    gap: clamp(2rem, 4vw, 4rem);
+  }
+
+  .case-file__content {
+    width: 100%;
+  }
+
+  .case-file__content > section {
+    width: min(100%, 70ch);
+  }
+
+  .case-file__content > #refactor {
+    width: 100%;
+  }
+
+  .case-file__content > #refactor > :not(.session-code-playground) {
+    max-width: 70ch;
   }
 
   .case-file__toc--desktop {
