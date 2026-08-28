@@ -96,6 +96,55 @@ test("/sessions/02-state-transitions/ gives the editor most horizontal space on 
   expect.soft(layout.editorWidth / layout.treeWidth).toBeGreaterThanOrEqual(2.8);
   expect.soft(layout.treeFontSize).toBeLessThanOrEqual(14);
   expect.soft(layout.nestedFileHeight).toBeLessThanOrEqual(20);
+
+  const startTerminal = playground.getByRole("button", {
+    name: "ターミナルを起動",
+  });
+  const startButtonHeight = await startTerminal.evaluate(
+    (element) => element.getBoundingClientRect().height,
+  );
+  expect.soft(startButtonHeight).toBeGreaterThanOrEqual(40);
+});
+
+test("/sessions/02-state-transitions/ runs arbitrary commands and reflects created files", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1440, height: 1200 });
+  await page.goto("/sessions/02-state-transitions/");
+
+  const playground = page.locator(".session-code-playground");
+  await expect(
+    playground.getByRole("textbox", { name: "Editor content" }),
+  ).toBeAttached();
+  await playground
+    .getByRole("button", { name: "ターミナルを起動" })
+    .click();
+  await expect(playground.locator(".code-explorer__terminal")).not.toHaveAttribute(
+    "data-state",
+    "unstarted",
+  );
+  const terminal = playground.locator('[aria-label="コード実行ターミナル"]');
+  await expect(terminal).toBeVisible({ timeout: 90_000 });
+
+  const terminalInput = terminal.locator(".xterm-helper-textarea");
+  await terminalInput.focus();
+  await page.keyboard.type("echo __CODEX_TERMINAL_READY__");
+  await page.keyboard.press("Enter");
+  await expect(terminal).toContainText("__CODEX_TERMINAL_READY__", {
+    timeout: 10_000,
+  });
+
+  await terminalInput.focus();
+  await page.keyboard.type(
+    "printf 'export const created = true;\\n' > src/created.ts",
+  );
+  await page.keyboard.press("Enter");
+  await terminalInput.focus();
+  await page.keyboard.type("ls src/created.ts");
+  await page.keyboard.press("Enter");
+  await expect(terminal).toContainText("src/created.ts", { timeout: 10_000 });
+  await expect(
+    playground.locator('[data-path="src/created.ts"]'),
+  ).toBeVisible({ timeout: 10_000 });
 });
 
 for (const session of exerciseSessions) {
@@ -110,8 +159,12 @@ for (const session of exerciseSessions) {
       await expect(playground).toBeVisible();
       await expect(playground.locator('[aria-label^="コードエディタ:"]')).toBeVisible();
       await expect(playground.locator('[data-action="reset"]')).toBeVisible();
-      await expect(playground.locator('[data-action="run"]')).toBeVisible();
-      await expect(playground.locator('[aria-label="実行結果"]')).toBeVisible();
+      await expect(playground.locator('[data-action="run"]')).toHaveCount(0);
+      await expect(playground.locator('[data-action="stop"]')).toHaveCount(0);
+      await expect(playground.locator('[aria-label="実行結果"]')).toHaveCount(0);
+      await expect(
+        playground.getByRole("button", { name: "ターミナルを起動" }),
+      ).toBeVisible();
       const widths = await playground.evaluate((element) => ({
         clientWidth: element.clientWidth,
         scrollWidth: element.scrollWidth,

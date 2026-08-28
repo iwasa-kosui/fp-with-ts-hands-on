@@ -236,7 +236,14 @@
   background: var(--playground-surface);
 }
 
-.code-playground .code-explorer__actions button {
+.code-playground .code-explorer__actions > p {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--playground-danger);
+  font-weight: 900;
+}
+
+.code-playground :is(.code-explorer__actions, .code-explorer__terminal) button {
   min-height: 2.75rem;
   padding: 0.45rem 0.8rem;
   border: 0.1875rem solid var(--playground-text);
@@ -247,56 +254,82 @@
   cursor: pointer;
 }
 
-.code-playground .code-explorer__actions [data-action="run"] {
-  background: var(--playground-highlight);
+.code-playground .code-explorer__empty {
+  min-height: 32rem;
+  margin: 0;
+  padding: 1rem;
+  background: var(--playground-code);
+  color: var(--playground-surface);
 }
 
-.code-playground .code-explorer__output {
+.code-playground .code-explorer__terminal {
   width: 100%;
   min-width: 0;
-  margin-top: 1rem;
-  padding: 1rem;
+  margin-top: 0.75rem;
   overflow: hidden;
   border: 0.1875rem solid var(--playground-text);
   border-radius: var(--radius);
   background: var(--playground-surface);
 }
 
-.code-playground .code-explorer__output > p {
-  margin-bottom: 0.5rem;
-  font-weight: 950;
-}
-
-.code-playground .code-explorer__output pre {
-  max-height: 22rem;
-  margin: 0;
-  padding: 0.75rem;
-  overflow: auto;
-  border-radius: 0.375rem;
-  background: var(--playground-code);
-  color: var(--playground-surface);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  overscroll-behavior: contain;
-}
-
-.code-playground .code-explorer__output--working {
+.code-playground .code-explorer__terminal[data-state="preparing"] {
   border-color: var(--playground-primary);
 }
 
-.code-playground .code-explorer__output--success {
-  border-color: var(--playground-highlight);
-  border-left-width: 0.75rem;
-}
-
-.code-playground .code-explorer__output--failure {
+.code-playground .code-explorer__terminal[data-state="failed"] {
   border-color: var(--playground-danger);
   border-left-width: 0.75rem;
 }
 
-.code-playground .code-explorer__output--canceled {
-  border-color: var(--playground-primary);
-  border-left-width: 0.75rem;
+.code-playground :is(
+  .code-explorer__terminal-prompt,
+  .code-explorer__terminal-status,
+  .code-explorer__terminal-exit
+) {
+  padding: 0.75rem;
+}
+
+.code-playground .code-explorer__terminal-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.code-playground :is(
+  .code-explorer__terminal-prompt,
+  .code-explorer__terminal-status,
+  .code-explorer__terminal-exit
+) p {
+  margin: 0;
+  font-weight: 850;
+}
+
+.code-playground .code-explorer__terminal-status button {
+  margin-top: 0.75rem;
+}
+
+.code-playground .code-explorer__terminal-shell {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.code-playground .code-explorer__terminal-screen {
+  width: 100%;
+  height: clamp(18rem, 34vh, 24rem);
+  min-width: 0;
+  padding: 0.5rem;
+  overflow: hidden;
+  background: var(--playground-code);
+}
+
+.code-playground .code-explorer__terminal-exit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 0.1875rem solid var(--playground-text);
+  background: var(--playground-lemon);
 }
 
 .code-playground :is(a, button):focus-visible {
@@ -329,5 +362,15 @@
 
   .code-playground .code-explorer__actions button {
     flex: 1 1 12rem;
+  }
+
+  .code-playground .code-explorer__terminal-prompt,
+  .code-playground .code-explorer__terminal-exit {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .code-playground .code-explorer__terminal-screen {
+    height: 15rem;
   }
 }

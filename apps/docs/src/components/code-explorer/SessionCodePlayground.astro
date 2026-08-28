@@ -14,8 +14,8 @@ const projectFiles = projectFilesFor(slug);
 
 <section class="session-code-playground code-playground" aria-labelledby="code-playground">
   <h3 id="code-playground">ブラウザで試す</h3>
-  <p>このセッションの開始時点のコード一式を、ブラウザ内で編集して実行できます。</p>
-  <p>編集内容はこのブラウザ内だけに保持されます。実行できない場合は、ページ内の <code>pnpm</code> 手順を使います。</p>
+  <p>このセッションの開始時点のコード一式を編集して、ターミナルから任意のコマンドで確認できます。</p>
+  <p>編集内容とコマンドはこのブラウザ内だけに保持されます。ターミナルを利用できない場合は、ページ内の <code>pnpm</code> 手順を使います。</p>
   <div data-code-explorer={workspace.slug}>
     <CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} />
   </div>

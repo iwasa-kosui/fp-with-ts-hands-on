@@ -29,6 +29,9 @@ describe("SessionCodePlayground", () => {
       ).not.toBeNull();
       expect(document.body.textContent).toContain(workspace.initialFile);
       expect(document.body.textContent).toContain(workspace.description);
+      expect(document.body.textContent).toContain(
+        "ターミナルから任意のコマンドで確認できます。",
+      );
       expect(document.querySelector('astro-island[client="load"]')).not.toBeNull();
     });
   }
