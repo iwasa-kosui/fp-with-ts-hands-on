@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { sessions, type ExerciseStep } from "./catalog";
+import { session } from "../pages/sessions/02-state-transitions.astro";
+import type { ExerciseStep } from "./types";
 import { loadSolutionSnippets } from "./solution-snippets";
 
-const step = sessions
-  .find(({ slug }) => slug === "02-state-transitions")
-  ?.steps.at(0);
+const step = session.steps.at(0);
 
 if (step === undefined) {
   throw new Error("S2 の解答ステップが見つかりません");

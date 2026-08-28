@@ -1,5 +1,5 @@
 import type { CodeGuide } from "../code-guide";
-import { finalAggregateTour } from "../../sessions/catalog";
+import { finalAggregateTour } from "../../pages/sessions/final.astro";
 
 const compositionRootPath = finalAggregateTour.path.replace(
   "examples/final/",

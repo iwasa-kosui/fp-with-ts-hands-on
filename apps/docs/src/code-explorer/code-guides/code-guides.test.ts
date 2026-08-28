@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { sessions } from "../../sessions/catalog";
+import type { SessionSummary } from "../../sessions/types";
 import type { CodeGuide } from "../code-guide";
-import { projectFilesFor } from "../project-files";
+import { projectFilesForSnapshot } from "../project-files";
+import type { SessionWorkspace } from "../types";
 
 type GuideModule = Readonly<{ default: readonly CodeGuide[] }>;
+type PageModule = Readonly<{
+  session: SessionSummary;
+  workspace?: SessionWorkspace;
+}>;
 
 const expectedFragments: Readonly<Record<string, readonly string[]>> = {
   "string-status": ["status: string"],
@@ -36,11 +41,18 @@ const expectedFragments: Readonly<Record<string, readonly string[]>> = {
 };
 
 const guideModules = import.meta.glob<GuideModule>("./*.ts", { eager: true });
+const pageModules = import.meta.glob<PageModule>(
+  "../../pages/sessions/*.astro",
+  { eager: true },
+);
+const sessions = Object.values(pageModules).map(({ session }) => session);
 
 describe("session code guides", () => {
   it("provides source-backed guides for every public Code Explorer session", () => {
-    const codeExplorerSessions = sessions.filter(
-      ({ kind }) => kind !== "workshop",
+    const codeExplorerSessions = sessions.flatMap((session) =>
+      session.snapshot === undefined
+        ? []
+        : [{ session, snapshot: session.snapshot }],
     );
     const guideSlugs = Object.keys(guideModules)
       .filter((file) => !file.endsWith(".test.ts"))
@@ -48,17 +60,20 @@ describe("session code guides", () => {
       .sort();
 
     expect(guideSlugs).toEqual(
-      codeExplorerSessions.map(({ slug }) => slug).sort(),
+      codeExplorerSessions.map(({ session }) => session.slug).sort(),
     );
 
-    for (const session of codeExplorerSessions) {
+    for (const { session, snapshot } of codeExplorerSessions) {
       const guides = guideModules[`./${session.slug}.ts`]?.default;
       expect(guides, session.slug).toEqual(expect.any(Array));
       expect(guides!.length).toBeGreaterThanOrEqual(2);
       expect(guides!.length).toBeLessThanOrEqual(
         session.slug === "00-system-handover" ? 5 : 3,
       );
-      const files = projectFilesFor(session.slug);
+      const files = projectFilesForSnapshot(snapshot);
+      const workspace = pageModules[
+        `../../pages/sessions/${session.slug}.astro`
+      ]?.workspace;
 
       for (const guide of guides!) {
         expect(guide.title).not.toBe("");
@@ -67,9 +82,9 @@ describe("session code guides", () => {
         expect(files[guide.path], `${session.slug}: ${guide.path}`).toEqual(
           expect.any(String),
         );
-        expect(sessionWorkspaceVisibleFiles(session.slug)).toContain(
-          guide.path,
-        );
+        if (workspace !== undefined) {
+          expect(workspace.visibleFiles).toContain(guide.path);
+        }
         const lines = files[guide.path]!.split("\n");
         const highlightedSource = guide.highlights
           .map(({ startLineNumber, endLineNumber }) =>
@@ -117,15 +132,3 @@ describe("session code guides", () => {
     }
   });
 });
-
-const sessionWorkspaceVisibleFiles = (slug: string): readonly string[] => {
-  const workspaces = import.meta.glob<
-    Readonly<{
-      sessionWorkspaceFor: (
-        slug: string,
-      ) => Readonly<{ visibleFiles: readonly string[] }>;
-    }>
-  >("../session-workspaces.ts", { eager: true });
-  return workspaces["../session-workspaces.ts"]!.sessionWorkspaceFor(slug)
-    .visibleFiles;
-};

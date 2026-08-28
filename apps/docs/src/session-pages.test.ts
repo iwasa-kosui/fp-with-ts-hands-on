@@ -23,6 +23,14 @@ const pageSources = import.meta.glob<string>("./pages/sessions/*.astro", {
   query: "?raw",
   import: "default",
 });
+const catalogModules = import.meta.glob("./sessions/catalog.ts", {
+  eager: true,
+});
+const sourceModules = import.meta.glob<string>("./**/*.{ts,tsx,astro}", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+});
 
 const exerciseSlugs = [
   "02-state-transitions",
@@ -228,6 +236,17 @@ const sourceFor = (slug: ExerciseSlug): string =>
   pageSources[`./pages/sessions/${slug}.astro`] ?? "";
 
 describe("session pages", () => {
+  it("has no central session catalog module", () => {
+    expect(catalogModules).toEqual({});
+  });
+
+  it("has no central session catalog references", () => {
+    for (const [path, source] of Object.entries(sourceModules)) {
+      if (path.endsWith("session-pages.test.ts")) continue;
+      expect(source, path).not.toContain("sessions/catalog");
+    }
+  });
+
   it("keeps each session metadata object with its Astro page", () => {
     const sessions = Object.values(pageModules).map(({ session }) => session);
 
