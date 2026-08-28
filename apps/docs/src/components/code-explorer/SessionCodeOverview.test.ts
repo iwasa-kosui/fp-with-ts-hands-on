@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CodeGuide } from "../../code-explorer/code-guide";
-import { createAstroContainer } from "../../test/render-astro";
+import { createAstroContainer } from "./test-support/render-astro";
 import SessionCodeOverview from "./SessionCodeOverview.astro";
 
 const guides = [
