@@ -174,11 +174,51 @@ for (const slug of exerciseSlugs) {
       const playground = failureFlow.locator(".code-explorer");
       expect(await page.evaluate(() => globalThis.crossOriginIsolated)).toBe(true);
       await expect(failureFlow.locator("[data-code-guide-card]")).not.toHaveCount(0);
+      await expect(failureFlow.locator(".exercise-failures")).toHaveCount(1);
       await expect(failureFlow.locator(".command-block")).toHaveCount(1);
       await expect(playground).toHaveCount(1);
       await expect(
         failureFlow.getByRole("textbox", { name: "Editor content" }),
       ).toBeAttached();
+      await expect(
+        failureFlow.getByText("ブラウザ内の変更はローカルへ反映されません。", {
+          exact: true,
+        }),
+      ).toHaveCount(1);
+      expect(
+        await failureFlow.evaluate((element) => {
+          const guide = element.querySelector("[data-code-guide-card]");
+          const failures = element.querySelector(".exercise-failures");
+          const command = element.querySelector(".command-block");
+          const note = Array.from(element.querySelectorAll("p")).find(
+            (paragraph) =>
+              paragraph.textContent?.trim() ===
+              "ブラウザ内の変更はローカルへ反映されません。",
+          );
+          const explorer = element.querySelector(".code-explorer");
+          if (
+            guide === null ||
+            failures === null ||
+            command === null ||
+            note === undefined ||
+            explorer === null
+          ) {
+            throw new Error("failure-flow order markers are incomplete");
+          }
+
+          const precedes = (before: Element, after: Element) =>
+            (before.compareDocumentPosition(after) &
+              Node.DOCUMENT_POSITION_FOLLOWING) !==
+            0;
+
+          return (
+            precedes(guide, failures) &&
+            precedes(failures, command) &&
+            precedes(command, note) &&
+            precedes(note, explorer)
+          );
+        }),
+      ).toBe(true);
       await expect(page.locator("#refactor .session-code-playground")).toHaveCount(0);
       await expect(playground).toBeVisible();
       await expect(playground.locator('[aria-label^="コードエディタ:"]')).toBeVisible();
