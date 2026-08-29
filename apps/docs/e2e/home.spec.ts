@@ -41,3 +41,14 @@ test("home page does not force focus on initial load", async ({ page }) => {
 
   await expect(page.locator("body")).toBeFocused();
 });
+
+test("home START SESSION CTA opens the session directory", async ({ page }) => {
+  await page.goto("/");
+
+  const cta = page.getByRole("link", { name: "START SESSION" });
+  await expect(cta).toHaveAttribute("href", "/sessions/");
+  await cta.click();
+
+  await expect(page).toHaveURL(/\/sessions\/$/);
+  await expect(page.getByRole("heading", { level: 1, name: "セッション一覧" })).toBeVisible();
+});
