@@ -58,15 +58,13 @@ test("S1 maps appointment cancellation into a single-aggregate event-output work
   await expect(diagram).toContainText("AppointmentCanceled");
   await expect(diagram).toContainText("Appointment");
   await expect(diagram).toContainText(".cancel");
-  await expect(diagram).toContainText("ポリシー");
+  await expect(diagram).toContainText("業務ルール");
   await expect(diagram).toContainText("集約");
   await expect(diagram).toContainText("実行者を取得する");
   await expect(diagram).toContainText("予約を取得する");
-  await expect(diagram.locator("[data-eventstorming-policy]")).toHaveCount(1);
+  await expect(diagram.locator("[data-eventstorming-policy]")).toHaveCount(0);
   await expect(diagram.locator("[data-eventstorming-aggregate]")).toHaveCount(1);
-  await expect(
-    diagram.locator('[data-mapping="policy-to-business-check"]'),
-  ).toHaveCount(1);
+  await expect(diagram.locator("[data-business-rules]")).toHaveCount(1);
   await expect(
     diagram.locator('[data-mapping="aggregate-to-domain-decision"]'),
   ).toHaveCount(1);
@@ -95,6 +93,8 @@ test("S1 explains ROP and persistence boundaries from customer and engineer view
   const main = page.locator("main");
   await expect(main).toContainText("一部だけ処理された");
   await expect(main).toContainText("データベースのAPIから切り離せる");
+  await expect(main).toContainText("出来事に反応して次のコマンドを発行する");
+  await expect(main).toContainText("この例ではポリシーを置きません");
   await expect(main.getByText("顧客にとって", { exact: true })).toHaveCount(2);
   await expect(main.getByText("技術者にとって", { exact: true })).toHaveCount(2);
 });

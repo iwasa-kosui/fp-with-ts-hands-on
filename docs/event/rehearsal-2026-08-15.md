@@ -12,7 +12,7 @@
 - 内容時間は S0 10分 + S1 15分 + S2〜S6 各30分 + Final 5分 = 180分である。
 - 16:25-16:55の固定休憩30分を加え、開催時間は15:00-18:30の210分である。
 - S0は現行業務、画面操作、保存・ログと事故を対応付ける。
-- S1ではExcalidrawを使い、事前配置された「予約がキャンセルされた」からアクター、コマンド、ポリシーを逆算します。講師はROP基本図で3か所の失敗への切替を示し、別の成功経路図でポリシーを条件確認へ、`Appointment`集約を`Appointment.cancel`へ対応させ、入力側のResolverと出力側のEvent Storeを確認します。実行可能な演習ではありません。
+- S1ではExcalidrawを使い、事前配置された「予約がキャンセルされた」からアクター、コマンド、業務ルールを逆算します。講師はROP基本図で3か所の失敗への切替を示し、別の成功経路図で`Appointment`集約を`Appointment.cancel`へ対応させ、入力側のResolverと出力側のEvent Storeを確認します。後続コマンドのない題材へEventStormingのポリシーは置きません。実行可能な演習ではありません。
 - S2〜S6は同じ `startExamination` を題材に、current state、識別子、input、expected failures、output event / side effectsを順に実装する。
 - 公開する演習コマンドは `pnpm exercise:02`〜`pnpm exercise:06` の5本である。
 
@@ -67,7 +67,7 @@ S0、S1、到達点 `examples/session-07`、Finalにはexercise scriptを設け�
 ## 未確認（現地・人間のリハーサルが必要）
 
 - S1の15分で、班が一つの成功イベントからアクター、コマンド、業務条件を4分で逆算できるか。
-- Event、Actor、Command、Hotspotの4種類を参加者が扱い、講師が後からポリシーと`Appointment`集約を別カードで加える進行で混乱しないか。
+- Event、Actor、Command、Hotspotの4種類を参加者が扱い、講師が後から`Appointment`集約を加え、ポリシーを置かない理由を説明する進行で混乱しないか。
 - ExcalidrawのLive collaborationをS1開始前に班ごとに立ち上げられるか。
 - 会場のネットワークでExcalidrawの共同編集が実用速度で動くか。動かない場合の代替として紙の付箋を用意するかどうか。
 - エージェントを使わない参加者が、S6の全target完成ファイルを委譲時間内に反映できるか。

@@ -14,40 +14,31 @@
       <text x="24" y="38" class="dmmf-comparison__lane-title">1. EventStormingで業務を発見する</text>
       <rect x="20" y="54" width="1080" height="180" rx="14" class="dmmf-comparison__lane"></rect>
 
-      <g class="dmmf-comparison__node dmmf-comparison__node--actor" transform="translate(35 96)">
-        <rect width="110" height="92" rx="7"></rect>
-        <text x="55" y="30" text-anchor="middle" class="dmmf-comparison__node-kind">アクター</text>
-        <text x="55" y="61" text-anchor="middle" class="dmmf-comparison__node-label">受付担当者</text>
+      <g class="dmmf-comparison__node dmmf-comparison__node--actor" transform="translate(60 96)">
+        <rect width="140" height="92" rx="7"></rect>
+        <text x="70" y="30" text-anchor="middle" class="dmmf-comparison__node-kind">アクター</text>
+        <text x="70" y="61" text-anchor="middle" class="dmmf-comparison__node-label">受付担当者</text>
       </g>
-      <path d="M 145 142 H 169" class="dmmf-comparison__arrow"></path>
+      <path d="M 200 142 H 249" class="dmmf-comparison__arrow"></path>
 
-      <g class="dmmf-comparison__node dmmf-comparison__node--command" transform="translate(170 96)">
-        <rect width="180" height="92" rx="7"></rect>
-        <text x="90" y="30" text-anchor="middle" class="dmmf-comparison__node-kind">コマンド</text>
-        <text x="90" y="61" text-anchor="middle" class="dmmf-comparison__node-label">予約をキャンセルする</text>
+      <g class="dmmf-comparison__node dmmf-comparison__node--command" transform="translate(250 96)">
+        <rect width="230" height="92" rx="7"></rect>
+        <text x="115" y="30" text-anchor="middle" class="dmmf-comparison__node-kind">コマンド</text>
+        <text x="115" y="61" text-anchor="middle" class="dmmf-comparison__node-label">予約をキャンセルする</text>
       </g>
-      <path d="M 350 142 H 374" class="dmmf-comparison__arrow"></path>
+      <path d="M 480 142 H 539" class="dmmf-comparison__arrow"></path>
 
-      <g data-eventstorming-policy class="dmmf-comparison__node dmmf-comparison__node--policy" transform="translate(375 82)">
-        <rect width="220" height="120" rx="7"></rect>
-        <text x="110" y="28" text-anchor="middle" class="dmmf-comparison__node-kind">ポリシー</text>
-        <text x="110" y="55" text-anchor="middle" class="dmmf-comparison__node-label">予約を管理できるか</text>
-        <text x="110" y="79" text-anchor="middle" class="dmmf-comparison__node-label">キャンセル可能か</text>
-        <text x="110" y="103" text-anchor="middle" class="dmmf-comparison__node-label">理由があるか</text>
+      <g data-eventstorming-aggregate class="dmmf-comparison__node dmmf-comparison__node--aggregate" transform="translate(540 96)">
+        <rect width="190" height="92" rx="7"></rect>
+        <text x="95" y="30" text-anchor="middle" class="dmmf-comparison__node-kind">集約</text>
+        <text x="95" y="61" text-anchor="middle" class="dmmf-comparison__code">Appointment</text>
       </g>
-      <path d="M 595 142 H 619" class="dmmf-comparison__arrow"></path>
+      <path d="M 730 142 H 789" class="dmmf-comparison__arrow"></path>
 
-      <g data-eventstorming-aggregate class="dmmf-comparison__node dmmf-comparison__node--aggregate" transform="translate(620 96)">
-        <rect width="160" height="92" rx="7"></rect>
-        <text x="80" y="30" text-anchor="middle" class="dmmf-comparison__node-kind">集約</text>
-        <text x="80" y="61" text-anchor="middle" class="dmmf-comparison__code">Appointment</text>
-      </g>
-      <path d="M 780 142 H 804" class="dmmf-comparison__arrow"></path>
-
-      <g class="dmmf-comparison__node dmmf-comparison__node--event" transform="translate(805 96)">
-        <rect width="275" height="92" rx="7"></rect>
-        <text x="137" y="30" text-anchor="middle" class="dmmf-comparison__node-kind">ドメインイベント</text>
-        <text x="137" y="61" text-anchor="middle" class="dmmf-comparison__code">AppointmentCanceled</text>
+      <g class="dmmf-comparison__node dmmf-comparison__node--event" transform="translate(790 96)">
+        <rect width="270" height="92" rx="7"></rect>
+        <text x="135" y="30" text-anchor="middle" class="dmmf-comparison__node-kind">ドメインイベント</text>
+        <text x="135" y="61" text-anchor="middle" class="dmmf-comparison__code">AppointmentCanceled</text>
       </g>
 
       <text x="24" y="282" class="dmmf-comparison__lane-title">2. 業務ワークフローへ写す</text>
@@ -55,10 +46,9 @@
       <rect x="195" y="300" width="715" height="210" rx="14" class="dmmf-comparison__core"></rect>
       <rect x="925" y="300" width="175" height="210" rx="14" class="dmmf-comparison__boundary"></rect>
 
-      <path data-mapping="command-to-workflow-input" d="M 260 188 V 270 H 250 V 354" class="dmmf-comparison__mapping"></path>
-      <path data-mapping="policy-to-business-check" d="M 485 202 V 282 H 415 V 354" class="dmmf-comparison__mapping"></path>
-      <path data-mapping="aggregate-to-domain-decision" d="M 700 188 V 270 H 640 V 354" class="dmmf-comparison__mapping"></path>
-      <path data-mapping="event-to-workflow-output" d="M 942 188 V 282 H 830 V 344" class="dmmf-comparison__mapping"></path>
+      <path data-mapping="command-to-workflow-input" d="M 365 188 V 270 H 250 V 354" class="dmmf-comparison__mapping"></path>
+      <path data-mapping="aggregate-to-domain-decision" d="M 635 188 V 270 H 640 V 354" class="dmmf-comparison__mapping"></path>
+      <path data-mapping="event-to-workflow-output" d="M 925 188 V 282 H 830 V 344" class="dmmf-comparison__mapping"></path>
 
       <text x="100" y="330" text-anchor="middle" class="dmmf-comparison__area-label">入力側</text>
       <text x="552" y="330" text-anchor="middle" class="dmmf-comparison__area-label">業務ワークフロー</text>
@@ -84,10 +74,11 @@
       </g>
       <path d="M 295 396 H 319" class="dmmf-comparison__arrow dmmf-comparison__arrow--success"></path>
 
-      <g class="dmmf-comparison__node dmmf-comparison__node--check" transform="translate(320 354)">
+      <g data-business-rules class="dmmf-comparison__node dmmf-comparison__node--check" transform="translate(320 354)">
         <rect width="190" height="84" rx="8"></rect>
-        <text x="95" y="34" text-anchor="middle" class="dmmf-comparison__node-kind">権限・存在・状態</text>
-        <text x="95" y="59" text-anchor="middle" class="dmmf-comparison__node-label">理由を確認する</text>
+        <text x="95" y="24" text-anchor="middle" class="dmmf-comparison__node-kind">業務ルール</text>
+        <text x="95" y="49" text-anchor="middle" class="dmmf-comparison__node-label">権限・存在・状態</text>
+        <text x="95" y="69" text-anchor="middle" class="dmmf-comparison__node-label">理由を確認する</text>
       </g>
       <path d="M 510 396 H 549" class="dmmf-comparison__arrow dmmf-comparison__arrow--success"></path>
 
@@ -114,7 +105,7 @@
     </svg>
   </div>
   <figcaption>
-    ポリシーは条件確認へ、集約はAppointment.cancelへ写します。集約はワークフロー内部で使うドメインモデルであり、ワークフロー全体と同じものではありません。
+    コマンド、集約、イベントをワークフローの入力、ドメイン判断、成功出力へ写します。権限や状態の条件は、EventStormingのポリシーではなくワークフロー内の業務ルールとして扱います。
   </figcaption>
 </figure>
 
@@ -191,10 +182,6 @@
   .dmmf-comparison__node--decision rect,
   .dmmf-comparison__node--check rect {
     fill: #bcebd7;
-  }
-
-  .dmmf-comparison__node--policy rect {
-    fill: #e5dbff;
   }
 
   .dmmf-comparison__node--event rect,
