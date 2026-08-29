@@ -1,9 +1,12 @@
-import { readFile } from "node:fs/promises";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
-import { createApp } from "../../src/app.js";
+import { createDatabaseBackedApp } from "../../src/app.js";
 
 const inertiaHeaders = {
   Accept: "application/json",
@@ -11,7 +14,9 @@ const inertiaHeaders = {
   "X-Inertia-Version": "1",
 } as const;
 
-type App = ReturnType<typeof createApp>;
+type App = ReturnType<typeof createDatabaseBackedApp>;
+
+const directories: string[] = [];
 
 const post = (app: App, path: string) =>
   app.request(path, { method: "POST", headers: inertiaHeaders });
@@ -26,10 +31,24 @@ describe("Session 01 Web application", () => {
   let app: App;
 
   beforeEach(() => {
-    app = createApp();
+    const directory = mkdtempSync(join(tmpdir(), "clinic-session-01-web-"));
+    directories.push(directory);
+    app = createDatabaseBackedApp({
+      databasePath: join(directory, "clinic.sqlite"),
+      migrationsFolder: fileURLToPath(
+        new URL("../../drizzle", import.meta.url),
+      ),
+      isProduction: false,
+    });
   });
 
-  it("独立したHono appとしてlegacy workflowを表示する", async () => {
+  afterEach(() => {
+    for (const directory of directories.splice(0)) {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("独立したHono appとしてSQLite workflowを表示する", async () => {
     expect(await page(app)).toMatchObject({
       component: "ClinicDashboard",
       props: {
@@ -53,7 +72,7 @@ describe("Session 01 Web application", () => {
   });
 
   it("Session 00の実装をimportしない", async () => {
-    const source = await readFile(
+    const source = readFileSync(
       new URL("../../src/web/routes.ts", import.meta.url),
       "utf8",
     );
