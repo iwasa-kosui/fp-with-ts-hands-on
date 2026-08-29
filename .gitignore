@@ -5,3 +5,4 @@ dist/
 tmp/
 .superdesign/tmp/
 .astro/
+test-results/
