@@ -146,6 +146,24 @@ export const guides = ([
   },
 ] as const) satisfies readonly CodeGuide[];
 
+const resultOperationSignatures = `// 実装は省略し、各処理の入出力だけを示す
+declare const ensureAppointmentFound: (
+  appointment: Appointment | undefined,
+  appointmentId: AppointmentId,
+) => Result<Appointment, AppointmentNotFound>;
+
+declare const ensureCheckedIn: (
+  appointment: Appointment,
+) => Result<CheckedIn, InvalidAppointmentState>;
+
+declare const transitionToInExamination: (
+  appointment: CheckedIn,
+) => InExamination;
+
+declare const toErrorKind: (
+  error: AppointmentNotFound | InvalidAppointmentState,
+) => "AppointmentNotFound" | "InvalidAppointmentState";`;
+
 const teaching: readonly TeachingTopic[] = [
   {
     name: "neverthrow の Result<T, E> は成功と失敗を値で表す",
@@ -184,40 +202,45 @@ const ensureAppointmentFound = (
       "map は Ok の成功値、mapErr は Err の失敗理由だけを変換します。andThen は Ok のときだけ、次の Result を返す処理へ進みます。3つとも反対側の値には触れません。",
     before: {
       caption: "成功と失敗を明示的に分岐する書き方",
-      code: `const found = ensureAppointmentFound(appointment, appointmentId);
+      code: `${resultOperationSignatures}
 
-if (found.isErr()) {
-  return err(found.error);
-}
+const startExamination = (
+  appointment: Appointment | undefined,
+  appointmentId: AppointmentId,
+): Result<
+  InExamination,
+  "AppointmentNotFound" | "InvalidAppointmentState"
+> => {
+  const found = ensureAppointmentFound(appointment, appointmentId);
 
-return ensureCheckedIn(found.value);`,
+  if (found.isErr()) {
+    return err(toErrorKind(found.error));
+  }
+
+  const checkedIn = ensureCheckedIn(found.value);
+
+  if (checkedIn.isErr()) {
+    return err(toErrorKind(checkedIn.error));
+  }
+
+  return ok(transitionToInExamination(checkedIn.value));
+};`,
     },
     after: {
       caption: "関数の型を確認し、成功経路を上から読む書き方",
-      code: `// 実装は省略し、各処理の入出力だけを示す
-declare const ensureAppointmentFound: (
+      code: `${resultOperationSignatures}
+
+const startExamination = (
   appointment: Appointment | undefined,
   appointmentId: AppointmentId,
-) => Result<Appointment, AppointmentNotFound>;
-
-declare const ensureCheckedIn: (
-  appointment: Appointment,
-) => Result<CheckedIn, InvalidAppointmentState>;
-
-declare const transitionToInExamination: (
-  appointment: CheckedIn,
-) => InExamination;
-
-declare const toErrorKind: (
-  error: AppointmentNotFound | InvalidAppointmentState,
-) => "AppointmentNotFound" | "InvalidAppointmentState";
-
-const result = ensureAppointmentFound(appointment, appointmentId)
-  .andThen(ensureCheckedIn)
-  .map(transitionToInExamination)
-  .mapErr(toErrorKind);
-// Result<InExamination,
-//   "AppointmentNotFound" | "InvalidAppointmentState">`,
+): Result<
+  InExamination,
+  "AppointmentNotFound" | "InvalidAppointmentState"
+> =>
+  ensureAppointmentFound(appointment, appointmentId)
+    .andThen(ensureCheckedIn)
+    .map(transitionToInExamination)
+    .mapErr(toErrorKind);`,
     },
     why: "map のコールバックは通常の成功値を返し、mapErr のコールバックは失敗理由を別の形へ変換します。mapErr を呼んでも Err は Ok にならないため、再試行や復旧ではありません。andThen のコールバックは次の Result を返します。前の処理が Err なら呼ばれないので、検証に失敗した後の状態遷移や保存を実行せずに済みます。明示的な分岐と動作は同じですが、処理が増えても成功経路を上から順に読めます。",
   },
