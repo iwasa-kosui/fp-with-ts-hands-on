@@ -143,10 +143,6 @@ export const navigation = ({
             </blockquote>
             <p>この条件は、コマンドを受けたワークフローが確認する業務ルールとしてまとめます。</p>
 
-            <h3>ポリシーを置かない理由</h3>
-            <p>
-              EventStormingのポリシーは、出来事に反応して次のコマンドを発行する要素です。この例は<code>AppointmentCanceled</code>で終わり、そこから起動する次のコマンドを扱わないため、この例ではポリシーを置きません。
-            </p>
             <h3>業務ルール、集約、ワークフローを区別する</h3>
             <p>
               業務ワークフローはResolverから実行者と予約を受け取り、権限や存在を確認します。<code>Appointment</code>集約は、キャンセルできる状態と理由の不変条件を守り、<code>Appointment.cancel</code>から成功イベントを返します。

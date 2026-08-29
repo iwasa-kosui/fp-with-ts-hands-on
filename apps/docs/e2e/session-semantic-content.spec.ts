@@ -93,8 +93,6 @@ test("S1 explains ROP and persistence boundaries from customer and engineer view
   const main = page.locator("main");
   await expect(main).toContainText("一部だけ処理された");
   await expect(main).toContainText("データベースのAPIから切り離せる");
-  await expect(main).toContainText("出来事に反応して次のコマンドを発行する");
-  await expect(main).toContainText("この例ではポリシーを置きません");
   await expect(main.getByText("顧客にとって", { exact: true })).toHaveCount(2);
   await expect(main.getByText("技術者にとって", { exact: true })).toHaveCount(2);
 });

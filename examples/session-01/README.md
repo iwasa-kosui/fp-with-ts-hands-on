@@ -29,8 +29,6 @@ S1は15分の班ワークです。コードは編集しません。「予約が�
 - 成功出力は`AppointmentCanceled`です。
 - 失敗出力は`Unauthorized`、`AppointmentNotFound`、`InvalidAppointmentState`、`AppointmentConflict`など、理由を区別できるエラーです。
 
-EventStormingのポリシーは、出来事に反応して次のコマンドを発行する要素です。この例は`AppointmentCanceled`で終わり、後続コマンドを扱わないため、ポリシーは置きません。
-
 User ResolverとAppointment Resolverによる現在状態の取得は入力側へ置きます。`AppointmentCanceled`を受け取るEvent Storeは出力側へ置きます。中心の業務ワークフローはデータベースへ接続せず、入力からイベントか型付きエラーを返します。
 
 ROPを使うと、顧客にとっては途中で条件に違反した依頼がキャンセルや保存へ進まず、「一部だけ処理された」を防げます。技術者にとっては失敗を共通の出口へ流せるため、条件追加とテストケースの対応が明確になります。
