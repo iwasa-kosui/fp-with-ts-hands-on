@@ -1,5 +1,12 @@
 import { createApp } from "./app.js";
+import {
+  createSqliteDatabase,
+  migrateDatabase,
+} from "./adaptor/secondary/sqlite/db.js";
 
-const app = createApp(import.meta.env.PROD);
+const database = createSqliteDatabase(":memory:");
+migrateDatabase(database);
+
+const app = createApp(database, import.meta.env.PROD);
 
 export default app;
