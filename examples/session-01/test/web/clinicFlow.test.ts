@@ -43,6 +43,7 @@ describe("Session 01 Web application", () => {
   });
 
   afterEach(() => {
+    app.close();
     for (const directory of directories.splice(0)) {
       rmSync(directory, { recursive: true, force: true });
     }

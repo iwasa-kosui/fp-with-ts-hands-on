@@ -8,7 +8,10 @@ import { fileURLToPath } from "node:url";
 
 import { sqliteSchema } from "./schema.js";
 
-export type SqliteDatabase = BetterSQLite3Database<typeof sqliteSchema>;
+export type SqliteDatabase = BetterSQLite3Database<typeof sqliteSchema> &
+  Readonly<{
+    close: () => void;
+  }>;
 
 const defaultMigrationsFolder = fileURLToPath(
   new URL(
@@ -21,7 +24,9 @@ export const createSqliteDatabase = (path: string): SqliteDatabase => {
   const client = new Database(path);
   client.pragma("foreign_keys = ON");
 
-  return drizzle(client, { schema: sqliteSchema });
+  return Object.assign(drizzle(client, { schema: sqliteSchema }), {
+    close: () => client.close(),
+  });
 };
 
 export const migrateDatabase = (

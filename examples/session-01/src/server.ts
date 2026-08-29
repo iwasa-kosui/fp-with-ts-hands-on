@@ -15,4 +15,9 @@ const app = createDatabaseBackedApp({
   isProduction: import.meta.env.PROD,
 });
 
+if (import.meta.env.PROD) {
+  process.once("SIGINT", () => app.close());
+  process.once("SIGTERM", () => app.close());
+}
+
 export default app;

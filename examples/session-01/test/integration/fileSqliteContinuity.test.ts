@@ -37,24 +37,36 @@ test("ファイルSQLiteは診察開始の状態と監査を再起動後も保�
   const appointmentUrl = `/appointments/${clinicFixture.appointmentId}`;
 
   const first = createDatabaseBackedApp(options);
-  expect((await post(first, `${appointmentUrl}/check-in`)).status).toBe(303);
-  expect(
-    (await post(first, `${appointmentUrl}/start-examination`)).status,
-  ).toBe(303);
+  try {
+    expect((await post(first, `${appointmentUrl}/check-in`)).status).toBe(303);
+    expect(
+      (await post(first, `${appointmentUrl}/start-examination`)).status,
+    ).toBe(303);
+  } finally {
+    first.close();
+  }
 
   const database = new Database(options.databasePath, { readonly: true });
-  const appointment = database
-    .prepare("SELECT state FROM appointments WHERE appointment_id = ?")
-    .get(clinicFixture.appointmentId) as Readonly<{ state: string }>;
-  const audit = database
-    .prepare(
-      "SELECT event_name, payload FROM audit_logs WHERE event_name = ? ORDER BY rowid DESC LIMIT 1",
-    )
-    .get("examination.started") as Readonly<{
+  let appointment: Readonly<{ state: string }>;
+  let audit: Readonly<{
     event_name: string;
     payload: string;
   }>;
-  database.close();
+  try {
+    appointment = database
+      .prepare("SELECT state FROM appointments WHERE appointment_id = ?")
+      .get(clinicFixture.appointmentId) as Readonly<{ state: string }>;
+    audit = database
+      .prepare(
+        "SELECT event_name, payload FROM audit_logs WHERE event_name = ? ORDER BY rowid DESC LIMIT 1",
+      )
+      .get("examination.started") as Readonly<{
+      event_name: string;
+      payload: string;
+    }>;
+  } finally {
+    database.close();
+  }
 
   expect(JSON.parse(appointment.state).status).toBe("in-examination");
   expect(audit.event_name).toBe("examination.started");
@@ -64,18 +76,27 @@ test("ファイルSQLiteは診察開始の状態と監査を再起動後も保�
   });
 
   const second = createDatabaseBackedApp(options);
-  const restartedDatabase = new Database(options.databasePath, {
-    readonly: true,
-  });
-  const restartedAppointment = restartedDatabase
-    .prepare("SELECT state FROM appointments WHERE appointment_id = ?")
-    .get(clinicFixture.appointmentId) as Readonly<{ state: string }>;
-  const restartedAudit = restartedDatabase
-    .prepare(
-      "SELECT event_name FROM audit_logs WHERE event_name = ? ORDER BY rowid DESC LIMIT 1",
-    )
-    .get("examination.started") as Readonly<{ event_name: string }>;
-  restartedDatabase.close();
+  let restartedAppointment: Readonly<{ state: string }>;
+  let restartedAudit: Readonly<{ event_name: string }>;
+  try {
+    const restartedDatabase = new Database(options.databasePath, {
+      readonly: true,
+    });
+    try {
+      restartedAppointment = restartedDatabase
+        .prepare("SELECT state FROM appointments WHERE appointment_id = ?")
+        .get(clinicFixture.appointmentId) as Readonly<{ state: string }>;
+      restartedAudit = restartedDatabase
+        .prepare(
+          "SELECT event_name FROM audit_logs WHERE event_name = ? ORDER BY rowid DESC LIMIT 1",
+        )
+        .get("examination.started") as Readonly<{ event_name: string }>;
+    } finally {
+      restartedDatabase.close();
+    }
+  } finally {
+    second.close();
+  }
 
   expect(second).toBeDefined();
   expect(JSON.parse(restartedAppointment.state).status).toBe("in-examination");

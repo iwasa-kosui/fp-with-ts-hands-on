@@ -16,6 +16,11 @@ type DatabaseBackedAppOptions = Readonly<{
   isProduction: boolean;
 }>;
 
+export type DatabaseBackedApp = Hono &
+  Readonly<{
+    close: () => void;
+  }>;
+
 const createApp = (database: SqliteDatabase, isProduction = false): Hono => {
   const repository = createAppointmentRepository(database);
   repository.seedIfEmpty(initialAppointment);
@@ -35,9 +40,16 @@ export const createDatabaseBackedApp = ({
   databasePath,
   migrationsFolder,
   isProduction,
-}: DatabaseBackedAppOptions): Hono => {
+}: DatabaseBackedAppOptions): DatabaseBackedApp => {
   const database = createSqliteDatabase(databasePath);
-  migrateDatabase(database, migrationsFolder);
 
-  return createApp(database, isProduction);
+  try {
+    migrateDatabase(database, migrationsFolder);
+    return Object.assign(createApp(database, isProduction), {
+      close: () => database.close(),
+    });
+  } catch (error) {
+    database.close();
+    throw error;
+  }
 };
