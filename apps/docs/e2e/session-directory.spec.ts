@@ -24,3 +24,21 @@ test("session directory lists every session in curriculum order", async ({ page 
     await expect(link.getByRole("heading", { name: expected.title })).toBeVisible();
   }
 });
+
+test("desktop session directory keeps its approved appearance", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1200 });
+  await page.goto("/sessions/");
+  await expect(page).toHaveScreenshot("session-directory-desktop.png", {
+    animations: "disabled",
+    fullPage: true,
+  });
+});
+
+test("mobile session directory keeps its approved appearance", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/sessions/");
+  await expect(page).toHaveScreenshot("session-directory-mobile.png", {
+    animations: "disabled",
+    fullPage: true,
+  });
+});
