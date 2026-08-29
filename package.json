@@ -16,7 +16,7 @@
     "demo:07": "pnpm --filter @fp-with-ts/clinic-session-07 dev",
     "build": "pnpm --filter @fp-with-ts/clinic-web build && pnpm --filter './examples/session-*' build && pnpm --filter @fp-with-ts/clinic-final build && pnpm --filter @fp-with-ts/docs build",
     "test": "pnpm --filter @fp-with-ts/clinic-web test && pnpm --filter './examples/session-*' test && pnpm --filter @fp-with-ts/clinic-final test && pnpm --filter @fp-with-ts/docs test && pnpm test:worker",
-    "test:worker": "pnpm --filter @fp-with-ts/docs exec vitest run ../../worker",
+    "test:worker": "pnpm --filter @fp-with-ts/docs exec vitest run --config vitest.worker.config.ts",
     "exercise:02": "pnpm --filter @fp-with-ts/clinic-session-02 exercise",
     "exercise:03": "pnpm --filter @fp-with-ts/clinic-session-03 exercise",
     "exercise:04": "pnpm --filter @fp-with-ts/clinic-session-04 exercise",

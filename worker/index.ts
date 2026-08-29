@@ -8,15 +8,19 @@ export const handleRequest = async (
   request: Request,
   env: AssetsEnv,
 ): Promise<Response> => {
-  const route = resolveWorkerRoute(new URL(request.url).pathname);
+  const requestUrl = new URL(request.url);
+  const route = resolveWorkerRoute(requestUrl.pathname);
 
   switch (route.kind) {
     case "health":
       return new Response("ok", {
         headers: { "content-type": "text/plain; charset=utf-8" },
       });
-    case "redirect":
-      return Response.redirect(new URL(route.location, request.url), 308);
+    case "redirect": {
+      const location = new URL(route.location, requestUrl);
+      location.search = requestUrl.search;
+      return Response.redirect(location, 308);
+    }
     case "asset":
       return env.ASSETS.fetch(request);
   }
