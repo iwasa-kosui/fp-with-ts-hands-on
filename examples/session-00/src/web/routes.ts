@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { notImplemented } from "@fp-with-ts/clinic-web/server";
+import Database from "better-sqlite3";
 import type { Context, Hono } from "hono";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
@@ -62,6 +63,10 @@ const updateAppointment = (
 };
 
 const redirectToRoot = (context: Context) => context.redirect("/", 303);
+
+const isAuditEventIdConflict = (error: unknown): boolean =>
+  error instanceof Database.SqliteError &&
+  error.code === "SQLITE_CONSTRAINT_PRIMARYKEY";
 
 export const registerClinicRoutes = (
   app: Hono,
@@ -227,8 +232,11 @@ export const registerClinicRoutes = (
         appointmentId: clinicFixture.appointmentId,
         veterinarianId: clinicFixture.veterinarianId,
       });
-    } catch {
-      return context.redirect("/?notice=conflict", 303);
+    } catch (error) {
+      if (isAuditEventIdConflict(error)) {
+        return context.redirect("/?notice=conflict", 303);
+      }
+      throw error;
     }
 
     return redirectToRoot(context);

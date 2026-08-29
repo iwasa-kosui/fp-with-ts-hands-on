@@ -5,6 +5,7 @@ import {
   createSqliteDatabase,
   migrateDatabase,
 } from "../../src/adaptor/secondary/sqlite/db.js";
+import { appointmentsTable } from "../../src/adaptor/secondary/sqlite/schema.js";
 import { createApp } from "../../src/app.js";
 
 const inertiaHeaders = {
@@ -27,12 +28,14 @@ const page = async (app: App) => {
   return response.json();
 };
 
-const createTestApp = (): App => {
+const createTestSystem = () => {
   const database = createSqliteDatabase(":memory:");
   migrateDatabase(database);
 
-  return createApp(database);
+  return { app: createApp(database), database };
 };
+
+const createTestApp = (): App => createTestSystem().app;
 
 describe("Session 00 Web application", () => {
   let app: App;
@@ -149,10 +152,23 @@ describe("Session 00 Web application", () => {
     expect(inspection.appointmentJson).toContain(
       '\"status\": \"in-examination\"',
     );
-    expect(inspection.auditLogJson).toContain('\"status\": \"scheduled\"');
+    const auditLogs = JSON.parse(inspection.auditLogJson) as Array<{
+      payload: { status: string };
+    }>;
+    expect(auditLogs.at(-1)?.payload.status).toBe("scheduled");
     expect(inspection.warnings).toContain(
       "予約statusに対応する最新の監査記録がありません",
     );
+  });
+
+  it("監査失敗routeの予期しない予約検索失敗を500境界へ渡す", async () => {
+    const system = createTestSystem();
+    system.database.delete(appointmentsTable).run();
+
+    const response = await post(system.app, "/demo/incidents/audit-failure");
+
+    expect(response.status).toBe(500);
+    expect(await response.text()).toBe("Internal Server Error");
   });
 
   it("監査payloadに飼い主の連絡先を表示してしまう", async () => {

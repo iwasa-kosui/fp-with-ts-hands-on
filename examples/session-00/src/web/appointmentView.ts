@@ -53,7 +53,7 @@ const incidentScenarios: readonly IncidentScenario[] = [
   },
   {
     title: "診察開始を繰り返す",
-    description: "処理内で生成される時刻と監査event IDの違いを表示します。",
+    description: "処理内で直接生成される時刻と監査event IDを表示します。",
     action: {
       kind: "Available",
       href: "/demo/incidents/repeat-start-examination",
@@ -77,7 +77,7 @@ const inspectionWarnings = (
 ): readonly string[] => {
   const warnings: string[] = [];
 
-  if (!(appointment.status in statusKinds)) {
+  if (!Object.hasOwn(statusKinds, appointment.status)) {
     warnings.push("未知の予約statusが保存されています");
   }
   if (appointment.ownerId === appointment.petId) {
