@@ -28,4 +28,3 @@ startExamination(checkedIn, veterinarianId, clinicFixture.scheduledAt);
 
 // @ts-expect-error AppointmentIdをVeterinarianIdとして使えません。
 startExamination(checkedIn, scheduled.appointmentId, clinicFixture.scheduledAt);
-

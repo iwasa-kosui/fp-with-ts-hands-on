@@ -13,4 +13,3 @@ acceptAppointmentId(veterinarianId);
 
 // @ts-expect-error AppointmentIdをVeterinarianIdとして使えません。
 acceptVeterinarianId(appointmentId);
-

@@ -35,4 +35,3 @@ describe("S4 regression: 診察開始の外部入力を検証する", () => {
     ).toBe(true);
   });
 });
-
