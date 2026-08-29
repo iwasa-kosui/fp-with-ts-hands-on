@@ -1,4 +1,7 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
@@ -141,12 +144,24 @@ const exportsSymbol = (source: string, symbol: string): boolean =>
 const assertAcyclicRelativeImports = async (files: URL[], sessionUrl: URL): Promise<void> => {
   const fileUrls = new Set(files.map((file) => file.href));
   const graph = new Map<string, string[]>();
+  const sessionSourceRoot = new URL("src/", sessionUrl).pathname;
 
   for (const file of files) {
     const source = await readFile(file, "utf8");
     const imports = relativeJavaScriptImports(source).map((specifier) =>
       resolvesRelativeJavaScriptImport(specifier, file),
     );
+    const escapedSessionSourceImports = imports.filter(
+      (target) =>
+        !target.pathname.startsWith(sessionSourceRoot) && /\/session-\d{2}\/src\//.test(target.pathname),
+    );
+    if (escapedSessionSourceImports.length > 0) {
+      throw new Error(
+        `Relative import escapes session source root from ${file.pathname}: ${escapedSessionSourceImports
+          .map((target) => target.pathname)
+          .join(", ")}`,
+      );
+    }
     const escapedDomainImports = imports.filter(
       (target) =>
         target.pathname.startsWith(new URL("src/domain/", sessionUrl).pathname) &&
@@ -226,6 +241,28 @@ describe("runnable session package contract", () => {
     for (const command of ["build", "test", "typecheck"]) {
       expect(packageJson.scripts?.[command], command).toContain("./examples/session-*");
       expect(packageJson.scripts?.[command], command).toContain("@fp-with-ts/clinic-web");
+    }
+  });
+
+  it("rejects a relative import that escapes to another session source", async () => {
+    const fixtureDirectory = await mkdtemp(join(tmpdir(), "session-import-contract-"));
+    const sessionUrl = `${pathToFileURL(join(fixtureDirectory, "session-03")).href}/`;
+    const sourcePath = join(
+      fixtureDirectory,
+      "session-03/src/domain/appointment/crossSessionImport.ts",
+    );
+    await mkdir(join(fixtureDirectory, "session-03/src/domain/appointment"), { recursive: true });
+    await writeFile(
+      sourcePath,
+      'import "../../../../session-04/src/domain/appointment/appointment.js";\n',
+    );
+
+    try {
+      await expect(
+        assertAcyclicRelativeImports([pathToFileURL(sourcePath)], new URL(sessionUrl)),
+      ).rejects.toThrow("escapes session source root");
+    } finally {
+      await rm(fixtureDirectory, { recursive: true, force: true });
     }
   });
 
