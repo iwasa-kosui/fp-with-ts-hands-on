@@ -42,11 +42,19 @@ export const createClinicRootView = (
   isProduction: boolean,
   developmentClientSource = "/src/web/client.tsx",
 ): RootView =>
-  (page) =>
-    `<!DOCTYPE html>${renderToStaticMarkup(
+  async (page, context) => {
+    const html = `<!DOCTYPE html>${renderToStaticMarkup(
       <Document
         developmentClientSource={developmentClientSource}
         isProduction={isProduction}
         page={page}
       />,
     )}`;
+    const vite = context.env?.vite;
+
+    if (isProduction || vite === undefined) {
+      return html;
+    }
+
+    return vite.transformIndexHtml(context.req.url, html);
+  };
