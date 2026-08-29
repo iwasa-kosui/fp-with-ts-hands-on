@@ -7,7 +7,10 @@ import { sqliteSchema } from "./schema.js";
 
 export type SqliteDatabase = BetterSQLite3Database<typeof sqliteSchema>;
 
-const migrationsFolder = fileURLToPath(new URL("../../../../drizzle", import.meta.url));
+const migrationsFolder = fileURLToPath(new URL(
+  import.meta.env.PROD ? "./drizzle" : "../../../../drizzle",
+  import.meta.url,
+));
 
 export const createSqliteDatabase = (path: string): SqliteDatabase => {
   const client = new Database(path);
