@@ -17,10 +17,12 @@ type ExercisePageModule = Readonly<{
   workspace?: SessionWorkspace<PublicCodeExplorerSnapshot>;
 }>;
 
-const pageModules = import.meta.glob<ExercisePageModule>(
+const pageModules = import.meta.glob<ExercisePageModule>([
   "../pages/sessions/*.astro",
-  { eager: true },
-);
+  "!../pages/sessions/index.astro",
+], {
+  eager: true,
+});
 const exercisePages = Object.values(pageModules)
   .flatMap(({ session, workspace }) =>
     session === undefined || workspace === undefined
