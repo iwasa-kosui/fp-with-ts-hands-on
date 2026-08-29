@@ -365,6 +365,16 @@ describe("page-owned session contracts", () => {
     }
   });
 
+  it("describes the Session 00 SQLite incident baseline without a legacy path", () => {
+    const source = pageSources["./pages/sessions/00-system-handover.astro"];
+
+    expect(source).toContain("SQLite");
+    expect(source).toContain("状態保存");
+    expect(source).toContain("監査記録");
+    expect(source).toContain("個人情報");
+    expect(source).not.toContain("src/legacy");
+  });
+
   it("keeps the 180-minute schedule and each time allocation consistent", () => {
     expect(
       sessions.reduce((sum, { durationMinutes }) => sum + durationMinutes, 0),

@@ -13,9 +13,12 @@ type PageModule = Readonly<{
 const expectedFragments: Readonly<Record<string, readonly string[]>> = {
   "string-status": ["status: string"],
   "optional-state-data": ["veterinarianId?: string"],
-  "plain-string-ids": ["ownerId: string"],
-  "throw-not-found": ["throw new Error"],
-  "raw-pii-log": ["logger.info"],
+  "plain-string-ids": ["ownerId: string", "petId: string"],
+  "session-00-unvalidated-exam-json": ["raw: any"],
+  "session-00-raw-pii-audit": ["payload: appointment"],
+  "session-00-message-mapped-errors": ["catch", "error.message.includes"],
+  "session-00-hidden-nondeterminism": ["new Date()", "randomUUID()"],
+  "session-00-dual-write": ["store.save", "store.appendAudit"],
   "wide-transition-input": ["appointment: Appointment", "as Appointment"],
   "non-exhaustive-label": ["default:"],
   "untyped-pet-id": ["z.string().uuid()", "export type PetId"],
@@ -83,7 +86,7 @@ describe("session code guides", () => {
       expect(guides, session.slug).toEqual(expect.any(Array));
       expect(guides!.length).toBeGreaterThanOrEqual(2);
       expect(guides!.length).toBeLessThanOrEqual(
-        session.slug === "00-system-handover" ? 5 : 3,
+        session.slug === "00-system-handover" ? 8 : 3,
       );
       const files = projectFilesForSnapshot(snapshot);
       const workspace = pageModules[
@@ -143,6 +146,20 @@ describe("session code guides", () => {
           "1業務集約から7つの集約へ広がる配線",
         );
         expect(aggregateGuide?.path).toBe("src/app.ts");
+      }
+
+      if (session.slug === "00-system-handover") {
+        expect(guides!.map(({ id }) => id)).toEqual([
+          "string-status",
+          "optional-state-data",
+          "plain-string-ids",
+          "session-00-unvalidated-exam-json",
+          "session-00-raw-pii-audit",
+          "session-00-message-mapped-errors",
+          "session-00-hidden-nondeterminism",
+          "session-00-dual-write",
+        ]);
+        expect(new Set(guides!.map(({ id }) => id)).size).toBe(8);
       }
     }
   });

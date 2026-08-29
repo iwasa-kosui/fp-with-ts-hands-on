@@ -13,7 +13,7 @@ export const session: SessionSummary = {
   durationMinutes: 10,
   timeBreakdown: { brief: 4, teach: 3, exercise: 0, review: 3 },
   animal: { name: "DOG", type: "dog", avatar: "🐕" },
-  summary: "WAN NYAN CLINIC の現行業務、画面操作、保存・ログと、現在起きている事故を確認します。",
+  summary: "WAN NYAN CLINIC の現行業務、SQLite の状態保存と監査記録、現在起きている事故を確認します。",
   episode: [
     "新人エンジニアの初出勤を歓迎するように、犬が観葉植物を倒し、プリンターは事故報告を吐き続けていました。",
     "会計済みの予約は「診察中」へ戻り、請求書は2枚。ログには飼い主の電話番号まで律儀にそろっています。",
@@ -31,55 +31,76 @@ export const guides = ([
     title: "状態を任意の文字列で表している",
     currentDesign: "status と更新先の状態を string で受け取っています。",
     futureRisk: "業務で使う状態と許可する遷移を型から判断できません。",
-    path: "src/legacy/appointment.ts",
-    highlights: [
-      { startLineNumber: 26, endLineNumber: 26 },
-      { startLineNumber: 51, endLineNumber: 60 },
-    ],
+    path: "src/domain/appointment/appointment.ts",
+    highlights: [{ startLineNumber: 11, endLineNumber: 11 }],
   },
   {
     id: "optional-state-data",
     title: "状態固有の情報が複数の optional field に分散している",
     currentDesign: "診察、会計、キャンセルの情報が、一つの型にある複数の optional field として定義されています。",
     futureRisk: "どの状態で何が必須なのかを型から判断できません。",
-    path: "src/legacy/appointment.ts",
-    highlights: [{ startLineNumber: 3, endLineNumber: 14 }],
+    path: "src/domain/appointment/appointment.ts",
+    highlights: [{ startLineNumber: 13, endLineNumber: 13 }],
   },
   {
     id: "plain-string-ids",
     title: "用途の異なる ID がすべて string である",
     currentDesign: "予約、動物、飼い主、獣医師の ID が同じ string です。",
     futureRisk: "実行時には同じ形式の ID を TypeScript が区別できません。",
-    path: "src/legacy/appointment.ts",
+    path: "src/domain/appointment/appointment.ts",
     highlights: [
-      { startLineNumber: 16, endLineNumber: 23 },
-      { startLineNumber: 30, endLineNumber: 37 },
+      { startLineNumber: 3, endLineNumber: 3 },
+      { startLineNumber: 5, endLineNumber: 5 },
     ],
   },
   {
-    id: "throw-not-found",
-    title: "予期できる失敗を throw している",
-    currentDesign: "予約が見つからない場合に例外を送出します。",
-    futureRisk: "呼び出し側が扱える失敗の種類を関数の型から判断できません。",
-    path: "src/legacy/appointment.ts",
-    highlights: [{ startLineNumber: 56, endLineNumber: 57 }],
+    id: "session-00-unvalidated-exam-json",
+    title: "外部の診察結果を any のまま受け取っている",
+    currentDesign: "診察結果の parse は raw: any をそのまま返します。",
+    futureRisk: "壊れた JSON や用途の違う ID が、検証されずに状態保存へ入ります。",
+    path: "src/boundary/examResult.ts",
+    highlights: [{ startLineNumber: 4, endLineNumber: 4 }],
   },
   {
-    id: "raw-pii-log",
-    title: "個人情報を含む値をそのままログへ渡している",
-    currentDesign: "連絡先を含む予約オブジェクトを logger.info へ渡しています。",
-    futureRisk: "ログへ出してよい情報の境界が値や型に表れていません。",
-    path: "src/legacy/appointment.ts",
+    id: "session-00-raw-pii-audit",
+    title: "個人情報を監査記録の payload に残している",
+    currentDesign: "予約全体を監査記録の payload として SQLite へ保存します。",
+    futureRisk: "氏名、メールアドレス、電話番号を含む個人情報が監査記録から読めます。",
+    path: "src/adaptor/secondary/sqlite/appointmentStore.ts",
+    highlights: [{ startLineNumber: 67, endLineNumber: 67 }],
+  },
+  {
+    id: "session-00-message-mapped-errors",
+    title: "失敗理由を例外メッセージで判定している",
+    currentDesign: "catch した例外の message を部分一致で調べ、状態不正として画面へ戻します。",
+    futureRisk: "予約なしと別の失敗を型で区別できず、表示と対応を誤ります。",
+    path: "src/web/routes.ts",
+    highlights: [{ startLineNumber: 209, endLineNumber: 211 }],
+  },
+  {
+    id: "session-00-hidden-nondeterminism",
+    title: "時刻と監査 ID を処理の中で直接生成している",
+    currentDesign: "診察開始の処理が現在時刻と UUID を直接生成します。",
+    futureRisk: "同じ操作でも記録が毎回変わり、テストと事故調査の比較が安定しません。",
+    path: "src/useCase/startExamination.ts",
     highlights: [
-      { startLineNumber: 21, endLineNumber: 23 },
-      { startLineNumber: 44, endLineNumber: 47 },
+      { startLineNumber: 24, endLineNumber: 24 },
+      { startLineNumber: 42, endLineNumber: 42 },
     ],
+  },
+  {
+    id: "session-00-dual-write",
+    title: "状態保存と監査記録を別々に保存している",
+    currentDesign: "予約を保存した後で、監査記録を別の呼び出しで追記します。",
+    futureRisk: "監査追記が失敗すると、監査記録を伴わない状態保存だけが残ります。",
+    path: "src/useCase/startExamination.ts",
+    highlights: [{ startLineNumber: 30, endLineNumber: 31 }],
   },
 ] as const) satisfies readonly CodeGuide[];
 
 const chapters = [
   { id: "incident", label: "現行業務と事故" },
-  { id: "legacy", label: "画面・保存・ログ" },
+  { id: "system", label: "SQLite の状態・監査" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
 export const navigation = ({
@@ -139,20 +160,44 @@ export const navigation = ({
     </dl>
     <h3>起きている事故</h3>
     <article class="incident-report">
-      <h4>事故報告1: 二重請求</h4>
+      <h4>事故報告1: 状態</h4>
       <p>会計済みの予約が診察中に戻され、同じ来院に対して会計が二度行われました。</p>
     </article>
     <article class="incident-report">
-      <h4>事故報告2: 連絡先の流出</h4>
-      <p>調査用の予約ログへ、飼い主の氏名・メールアドレス・電話番号がそのまま記録されました。</p>
+      <h4>事故報告2: ID</h4>
+      <p>飼い主 ID が患者 ID として保存され、別の飼い主の情報を結び付ける可能性があります。</p>
+    </article>
+    <article class="incident-report">
+      <h4>事故報告3: 入力</h4>
+      <p>壊れた診察結果 JSON を検証せずに保存し、患者 ID と検査項目が不正なまま残りました。</p>
+    </article>
+    <article class="incident-report">
+      <h4>事故報告4: 個人情報</h4>
+      <p>監査記録に、飼い主の氏名・メールアドレス・電話番号がそのまま保存されました。</p>
+    </article>
+    <article class="incident-report">
+      <h4>事故報告5: 失敗</h4>
+      <p>予約なしの例外をメッセージで判定し、状態不正として表示しました。</p>
+    </article>
+    <article class="incident-report">
+      <h4>事故報告6: 非決定値</h4>
+      <p>同じ診察開始でも時刻と監査 ID が毎回変わり、記録を比較できません。</p>
+    </article>
+    <article class="incident-report">
+      <h4>事故報告7: 二重保存</h4>
+      <p>状態保存の後に監査記録を追記するため、監査だけ失敗しても状態だけが残ります。</p>
+    </article>
+    <article class="incident-report">
+      <h4>事故報告8: 永続 JSON</h4>
+      <p>SQLite に保存した予約と監査記録の JSON は、起動し直した後も残り、事故の結果を引き継ぎます。</p>
     </article>
   </section>
 
-  <section id="legacy">
-    <h2>既存システムの画面・保存・ログ</h2>
+  <section id="system">
+    <h2>SQLite の状態保存と監査記録</h2>
     <p>
-      現在の画面で行っている操作と、保存・記録しているデータを確認します。ここでも修正案は出さず、
-      事故報告と現在の動きがどこで結び付くかを確認します。
+      現在の画面で行う操作は SQLite に保存されます。サーバーを起動し直しても状態保存と監査記録は残り、
+      「デモを初期状態へ戻す」を実行したときだけ初期状態へ戻ります。ここでも修正はせず、事故報告と現在の動きがどこで結び付くかを確認します。
     </p>
     <h3>現在の操作</h3>
     <table>
@@ -163,14 +208,13 @@ export const navigation = ({
         <tr><th>会計担当</th><td>診察料、検査料、処方料を確認して会計をする。</td><td>請求額と会計をした時刻を残す。</td></tr>
       </tbody>
     </table>
-    <h3>現在保存・記録しているデータ</h3>
+    <h3>DB inspection で読む状態保存と監査記録</h3>
     <table>
       <thead><tr><th>保存・記録先</th><th>現在保存されているデータ</th><th>事故報告との対応</th></tr></thead>
       <tbody>
-        <tr><th>予約データ</th><td>予約ID、患者、飼い主、担当者、現在状態、各操作の時刻。</td><td>会計後の予約の状態が「診察中」に更新され、二重請求につながった。</td></tr>
-        <tr><th>カルテ</th><td>診察開始時刻、診療内容、検査、処方。</td><td>「会計後」の状態になった予約にも関わらず、診療内容が更新されてしまった</td></tr>
-        <tr><th>会計データ</th><td>診察料、検査料、処方料、請求額、会計時刻。</td><td>1度の来院に、請求が2回行われた。</td></tr>
-        <tr><th>調査ログ</th><td>予約データ全体（飼い主の氏名・メールアドレス・電話番号などの個人情報を含む）</td><td>調査には必要のない連絡先までログに残ってしまい、連絡先情報の流出につながった。</td></tr>
+        <tr><th>状態保存 JSON</th><td>予約 ID、患者 ID、飼い主 ID、現在状態、各操作の時刻。</td><td>未知の状態や ID の取り違え、不正な診察結果が SQLite に残る。</td></tr>
+        <tr><th>監査記録 JSON</th><td>イベント ID、イベント名、時刻、予約全体の payload。</td><td>payload に個人情報が含まれ、状態保存と一致しない記録が残り得る。</td></tr>
+        <tr><th>警告</th><td>未知の状態、ID の一致、状態保存と最新の監査記録の不一致、個人情報の有無。</td><td>事故再現を実行した後に、どの JSON を確認するかを示す。</td></tr>
       </tbody>
     </table>
   </section>
@@ -178,8 +222,8 @@ export const navigation = ({
   <section id="review">
     <h2>レビューと持ち帰り</h2>
     <p>
-      班で「誰が、どの操作をし、何が起き、どこに記録されたか」を1件ずつ共有します。
-      次のセッションへ、確認できた事実と、まだ確認できていないことを持ち越します。
+      班で「誰が、どの操作をし、何が起き、SQLite のどの JSON に残ったか」を1件ずつ共有します。
+      Session 00 では事故を修正しません。Session 02 から Session 07 で、状態、ID、入力と個人情報、失敗、非決定値、状態保存と監査記録の整合性を順に改善する理由を確認します。
     </p>
   </section>
         </article>
