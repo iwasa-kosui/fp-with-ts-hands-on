@@ -1,6 +1,7 @@
 ---
 import { Code } from "astro:components";
 import CommandBlock from "../../components/CommandBlock.astro";
+import StartExaminationWorkflow from "../../components/StartExaminationWorkflow.astro";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
@@ -34,7 +35,7 @@ export const session: SessionSummary = {
   snapshot: "session-04",
   sequence: "04",
   kind: "exercise",
-  title: "外部入力を境界で検証し個人情報を守る",
+  title: "診察開始の入力を境界で検証する",
   durationMinutes: 30,
   timeBreakdown: { brief: 4, teach: 7, exercise: 12, review: 7 },
   adv: { articulate: 2, delegate: 8, verify: 2 },
@@ -42,27 +43,27 @@ export const session: SessionSummary = {
     minutes: 7,
     pickCount: 2,
     questions: [
-      "外部 JSON は、Zod の検証に成功したときだけ `ExamResult` になりますか。",
-      "氏名・電話番号・メールは、`JSON.stringify` と `util.inspect` のどちらでも既定でマスクされますか。",
-      "`OwnerContact` の各項目は、平文の `string` ではなく `Sensitive` になっていますか。",
+      "不正な予約IDまたは獣医師IDを含む入力は、`StartExaminationInput` になりませんか。",
+      "`parse` は外部入力を `unknown` として受け取っていますか。",
+      "検証に成功した場合だけ、`AppointmentId` と `VeterinarianId` をワークフローへ渡せますか。",
     ],
   },
   solutionSnapshot: "session-05",
   solutionPresentation: "excerpt",
   peerReviewPromises: "reference",
   animal: { name: "BIRD", type: "bird", avatar: "🐦" },
-  summary: "外部 JSON と飼い主の連絡先を、境界で安全な値へ変換します。",
+  summary: "HTTPから届く予約IDと担当獣医師IDを検査し、型付きの診察開始入力へ変換します。",
   episode: [
-    "小鳥の検査結果は、項目が欠け、余計な値が増え、「要経過観察」だけが妙に元気な JSON でした。",
-    "システムは全部受け入れたうえ、調査ログへ飼い主の電話番号まで丁寧に転載します。",
-    "入力には寛大で、個人情報にはおしゃべり。それが現在の境界です。",
+    "診察開始のHTTPリクエストには、予約IDと担当獣医師IDが文字列で届きます。",
+    "不正なUUIDでも、検査しなければ型付きの入力として処理へ渡ってしまいます。",
+    "外部の値を受け取る場所で検査し、成功した値だけをワークフローへ渡します。",
   ],
-  incident: "検査機関から届いた JSON をそのまま信頼し、調査用のログへ飼い主の連絡先が流出した。",
+  incident: "HTTPから届いた不正なIDを検査せず、診察開始の入力として扱った。",
   exerciseCommand: "pnpm exercise:04",
   exerciseModule: {
     dir: "examples/session-04/src/boundary",
-    fileBudget: 2,
-    lineBudget: 26,
+    fileBudget: 1,
+    lineBudget: 18,
   },
   delegationPrompt: {
     request:
@@ -262,7 +263,7 @@ export const promisesHref =
 export const navigation = ({
   previous: {
     href: "/sessions/03-semantic-identifiers/",
-    title: "用途の異なる識別子を型で区別する",
+    title: "診察開始の識別子を型で区別する",
   },
   next: {
     href: "/sessions/05-workflow-errors/",
@@ -330,6 +331,8 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <p class="case-file__episode-label">動物病院のひと幕</p>
               {session.episode.map((line) => <p data-episode-line>{line}</p>)}
             </aside>
+            <StartExaminationWorkflow focus="boundary" />
+            <p>外部の文字列を検査し、S3で区別した2種類のIDを持つ入力へ変換します。</p>
             <h3 data-story-stage="use-case">追加したい機能</h3>
             <p>{narrative.requirement}</p>
             <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>

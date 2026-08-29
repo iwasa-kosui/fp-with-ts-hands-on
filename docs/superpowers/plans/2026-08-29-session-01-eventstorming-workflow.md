@@ -68,7 +68,7 @@ Expected: S1、S3、S4の既存メタデータとの差分でFAILします。
 HTTP input → typed input → load → business decision → domain event → save
 ```
 
-各段には `data-workflow-step`、強調対象には `aria-current="step"` を付けます。S2はbusiness decision、S3はtyped input、S4はHTTP inputとtyped input、S5はloadとbusiness decision、S6はload、domain event、saveを強調します。
+各段には `data-workflow-step`、強調対象には `data-highlighted="true"` と読み上げ用の「今回の対象」を付けます。S2はbusiness decision、S3はtyped input、S4はHTTP inputとtyped input、S5はloadとbusiness decision、S6はload、domain event、saveを強調します。
 
 各ページの「今回つくるもの」に図を置き、今回扱う範囲を1文で説明します。
 

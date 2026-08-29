@@ -1,6 +1,7 @@
 ---
 import { Code } from "astro:components";
 import CommandBlock from "../../components/CommandBlock.astro";
+import StartExaminationWorkflow from "../../components/StartExaminationWorkflow.astro";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
@@ -34,7 +35,7 @@ export const session: SessionSummary = {
   snapshot: "session-03",
   sequence: "03",
   kind: "exercise",
-  title: "用途の異なる識別子を型で区別する",
+  title: "診察開始の識別子を型で区別する",
   durationMinutes: 30,
   timeBreakdown: { brief: 4, teach: 6, exercise: 13, review: 7 },
   adv: { articulate: 2, delegate: 9, verify: 2 },
@@ -42,22 +43,22 @@ export const session: SessionSummary = {
     minutes: 7,
     pickCount: 2,
     questions: [
-      "`PetId` と `OwnerId` を取り違えたコードは、型テストでコンパイルエラーになりますか。",
-      "予約の全状態で、識別子が用途別の型になっていますか。",
-      "状態遷移の引数に `string` が残らず、用途別の識別子を受け取っていますか。",
+      "`AppointmentId` と `VeterinarianId` を取り違えたコードは、型テストでコンパイルエラーになりますか。",
+      "予約の全状態で、`appointmentId` が `AppointmentId` になっていますか。",
+      "`startExamination` は、担当獣医師を `VeterinarianId` として受け取っていますか。",
     ],
   },
   solutionSnapshot: "session-04",
   solutionPresentation: "excerpt",
   peerReviewPromises: "reference",
   animal: { name: "HEDGEHOG", type: "hedgehog", avatar: "🦔" },
-  summary: "予約・検査・ペット・飼い主・担当獣医師の識別子を、用途ごとに区別して扱います。",
+  summary: "診察開始で使う予約IDと担当獣医師IDを、取り違えられない型にします。",
   episode: [
-    "ハリネズミの検査結果が見つからず、受付から検査機関へ、検査機関から開発者へと電話が回りました。",
-    "結果は届いていました。ただし、PetId の欄には OwnerId が入り、システムは「どちらも UUID です」と平然と保存済みです。",
-    "文字列として正しいことと、業務として正しいことは、今日も別件でした。",
+    "診察開始の入力で、予約IDと担当獣医師IDが入れ替わっていました。",
+    "どちらもUUIDなので、文字列の検査だけでは取り違えを止められません。",
+    "予約を選ぶ値と担当者を選ぶ値を、型で区別する必要があります。",
   ],
-  incident: "検査結果の登録で OwnerId を PetId の位置へ渡し、対象のペットに結果を結び付けられなかった。",
+  incident: "診察開始で AppointmentId と VeterinarianId を取り違えても、型検査が通った。",
   exerciseCommand: "pnpm exercise:03",
   exerciseModule: {
     dir: "examples/session-03/src/domain",
@@ -317,7 +318,7 @@ export const navigation = ({
   },
   next: {
     href: "/sessions/04-boundaries-and-pii/",
-    title: "外部入力を境界で検証し個人情報を守る",
+    title: "診察開始の入力を境界で検証する",
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
@@ -381,6 +382,8 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <p class="case-file__episode-label">動物病院のひと幕</p>
               {session.episode.map((line) => <p data-episode-line>{line}</p>)}
             </aside>
+            <StartExaminationWorkflow focus="identifiers" />
+            <p>S1で「どの予約を、どの獣医師が開始するか」と決めた入力を、用途別の型で表します。</p>
             <h3 data-story-stage="use-case">追加したい機能</h3>
             <p>{narrative.requirement}</p>
             <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>

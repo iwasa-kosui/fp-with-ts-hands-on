@@ -41,12 +41,12 @@ const expectedCurriculum = [
   {
     slug: "01-business-events-and-workflows",
     sequence: "01",
-    title: "ビジネスイベントからワークフローを描く",
+    title: "EventStormingから診察開始を定義する",
     durationMinutes: 15,
     kind: "workshop",
     exerciseCommand: undefined,
     snapshot: undefined,
-    timeBreakdown: { brief: 3, teach: 4, exercise: 6, review: 2 },
+    timeBreakdown: { brief: 3, teach: 5.5, exercise: 4, review: 2.5 },
   },
   {
     slug: "02-state-transitions",
@@ -61,7 +61,7 @@ const expectedCurriculum = [
   {
     slug: "03-semantic-identifiers",
     sequence: "03",
-    title: "用途の異なる識別子を型で区別する",
+    title: "診察開始の識別子を型で区別する",
     durationMinutes: 30,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:03",
@@ -71,7 +71,7 @@ const expectedCurriculum = [
   {
     slug: "04-boundaries-and-pii",
     sequence: "04",
-    title: "外部入力を境界で検証し個人情報を守る",
+    title: "診察開始の入力を境界で検証する",
     durationMinutes: 30,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:04",
@@ -117,9 +117,9 @@ const expectedEpisodes = [
     "引き継ぎ資料を開く前に、二重請求と個人情報流出の再現条件だけは確認できました。",
   ],
   [
-    "開院3分で、柴犬は問診票を踏み、猫は棚へ登り、受付の電話は2本同時に鳴りました。",
-    "受付、看護師、獣医師、会計担当は仕事をこなしますが、同じ一日を全員が別の言葉で説明します。",
-    "システム改修の前に、人間同士の仕様が同期していないことが判明しました。",
+    "会計済みの予約で診察開始を実行すると、予約は診察中へ戻りました。",
+    "誰が開始を依頼し、どの状態なら受け付けてよいかを担当者に聞くと、答えが揃いません。",
+    "実装へ進む前に、診察開始の依頼と事前条件を業務の言葉で決めます。",
   ],
   [
     "会計を終えたウサギは帰ったはずなのに、画面の中では診察室へ戻ってきました。",
@@ -127,14 +127,14 @@ const expectedEpisodes = [
     "業務ルールを覚えていたのは人間だけで、コードは何でも通す親切設計でした。",
   ],
   [
-    "ハリネズミの検査結果が見つからず、受付から検査機関へ、検査機関から開発者へと電話が回りました。",
-    "結果は届いていました。ただし、PetId の欄には OwnerId が入り、システムは「どちらも UUID です」と平然と保存済みです。",
-    "文字列として正しいことと、業務として正しいことは、今日も別件でした。",
+    "診察開始の入力で、予約IDと担当獣医師IDが入れ替わっていました。",
+    "どちらもUUIDなので、文字列の検査だけでは取り違えを止められません。",
+    "予約を選ぶ値と担当者を選ぶ値を、型で区別する必要があります。",
   ],
   [
-    "小鳥の検査結果は、項目が欠け、余計な値が増え、「要経過観察」だけが妙に元気な JSON でした。",
-    "システムは全部受け入れたうえ、調査ログへ飼い主の電話番号まで丁寧に転載します。",
-    "入力には寛大で、個人情報にはおしゃべり。それが現在の境界です。",
+    "診察開始のHTTPリクエストには、予約IDと担当獣医師IDが文字列で届きます。",
+    "不正なUUIDでも、検査しなければ型付きの入力として処理へ渡ってしまいます。",
+    "外部の値を受け取る場所で検査し、成功した値だけをワークフローへ渡します。",
   ],
   [
     "別の端末で受付情報が更新された後、古い画面に残っていたハムスターの診察開始ボタンを押すと、500エラーだけを返して止まりました。",
@@ -190,9 +190,9 @@ const expectedExercises = [
       minutes: 7,
       pickCount: 2,
       questions: [
-        "`PetId` と `OwnerId` を取り違えたコードは、型テストでコンパイルエラーになりますか。",
-        "予約の全状態で、識別子が用途別の型になっていますか。",
-        "状態遷移の引数に `string` が残らず、用途別の識別子を受け取っていますか。",
+        "`AppointmentId` と `VeterinarianId` を取り違えたコードは、型テストでコンパイルエラーになりますか。",
+        "予約の全状態で、`appointmentId` が `AppointmentId` になっていますか。",
+        "`startExamination` は、担当獣医師を `VeterinarianId` として受け取っていますか。",
       ],
     },
   },
@@ -201,8 +201,8 @@ const expectedExercises = [
     adv: { articulate: 2, delegate: 8, verify: 2 },
     exerciseModule: {
       dir: "examples/session-04/src/boundary",
-      fileBudget: 2,
-      lineBudget: 26,
+      fileBudget: 1,
+      lineBudget: 18,
     },
     solutionSnapshot: "session-05",
     solutionPresentation: "excerpt",
@@ -211,9 +211,9 @@ const expectedExercises = [
       minutes: 7,
       pickCount: 2,
       questions: [
-        "外部 JSON は、Zod の検証に成功したときだけ `ExamResult` になりますか。",
-        "氏名・電話番号・メールは、`JSON.stringify` と `util.inspect` のどちらでも既定でマスクされますか。",
-        "`OwnerContact` の各項目は、平文の `string` ではなく `Sensitive` になっていますか。",
+        "不正な予約IDまたは獣医師IDを含む入力は、`StartExaminationInput` になりませんか。",
+        "`parse` は外部入力を `unknown` として受け取っていますか。",
+        "検証に成功した場合だけ、`AppointmentId` と `VeterinarianId` をワークフローへ渡せますか。",
       ],
     },
   },
@@ -266,7 +266,7 @@ const expectedNavigation = [
     previous: undefined,
     next: {
       href: "/sessions/01-business-events-and-workflows/",
-      title: "ビジネスイベントからワークフローを描く",
+      title: "EventStormingから診察開始を定義する",
     },
   },
   {
@@ -282,11 +282,11 @@ const expectedNavigation = [
   {
     previous: {
       href: "/sessions/01-business-events-and-workflows/",
-      title: "ビジネスイベントからワークフローを描く",
+      title: "EventStormingから診察開始を定義する",
     },
     next: {
       href: "/sessions/03-semantic-identifiers/",
-      title: "用途の異なる識別子を型で区別する",
+      title: "診察開始の識別子を型で区別する",
     },
   },
   {
@@ -296,13 +296,13 @@ const expectedNavigation = [
     },
     next: {
       href: "/sessions/04-boundaries-and-pii/",
-      title: "外部入力を境界で検証し個人情報を守る",
+      title: "診察開始の入力を境界で検証する",
     },
   },
   {
     previous: {
       href: "/sessions/03-semantic-identifiers/",
-      title: "用途の異なる識別子を型で区別する",
+      title: "診察開始の識別子を型で区別する",
     },
     next: {
       href: "/sessions/05-workflow-errors/",
@@ -312,7 +312,7 @@ const expectedNavigation = [
   {
     previous: {
       href: "/sessions/04-boundaries-and-pii/",
-      title: "外部入力を境界で検証し個人情報を守る",
+      title: "診察開始の入力を境界で検証する",
     },
     next: {
       href: "/sessions/06-effects-and-consistency/",
