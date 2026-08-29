@@ -79,11 +79,11 @@ const exerciseContracts = {
     navigation: {
       previous: {
         href: "/sessions/01-business-events-and-workflows/",
-        title: "ビジネスイベントからワークフローを描く",
+        title: "EventStormingから診察開始を定義する",
       },
       next: {
         href: "/sessions/03-semantic-identifiers/",
-        title: "用途の異なる識別子を型で区別する",
+        title: "診察開始の識別子を型で区別する",
       },
     },
   },
@@ -112,7 +112,7 @@ const exerciseContracts = {
       },
       next: {
         href: "/sessions/04-boundaries-and-pii/",
-        title: "外部入力を境界で検証し個人情報を守る",
+        title: "診察開始の入力を境界で検証する",
       },
     },
   },
@@ -134,7 +134,7 @@ const exerciseContracts = {
     navigation: {
       previous: {
         href: "/sessions/03-semantic-identifiers/",
-        title: "用途の異なる識別子を型で区別する",
+        title: "診察開始の識別子を型で区別する",
       },
       next: {
         href: "/sessions/05-workflow-errors/",
@@ -172,7 +172,7 @@ const exerciseContracts = {
     navigation: {
       previous: {
         href: "/sessions/04-boundaries-and-pii/",
-        title: "外部入力を境界で検証し個人情報を守る",
+        title: "診察開始の入力を境界で検証する",
       },
       next: {
         href: "/sessions/06-effects-and-consistency/",

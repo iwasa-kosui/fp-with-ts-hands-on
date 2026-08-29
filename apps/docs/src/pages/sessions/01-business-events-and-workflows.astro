@@ -1,4 +1,5 @@
 ---
+import StartExaminationWorkflow from "../../components/StartExaminationWorkflow.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import type { SessionSummary } from "../../sessions/types";
 import "../../styles/sessions.css";
@@ -24,80 +25,31 @@ export const session: SessionSummary = {
   finalReferences: [],
 };
 
-const timing = session.timeBreakdown;
-
-type DomainEvent = Readonly<{
-  id: string;
-  name: string;
-  actor: string;
-  command: string;
-  aggregate: string;
-}>;
-
-// 時系列の順序は配列の並び順で表す。散文から実際に拾えるイベントだけを並べている。
-const domainEvents: readonly DomainEvent[] = [
-  {
-    id: "checked-in",
-    name: "来院が受け付けられた",
-    actor: "受付スタッフ",
-    command: "来院を受け付ける",
-    aggregate: "予約",
-  },
-  {
-    id: "intake-recorded",
-    name: "問診と体重が記録された",
-    actor: "動物看護師",
-    command: "問診と体重測定を行う",
-    aggregate: "カルテ",
-  },
-  {
-    id: "examination-started",
-    name: "診察が開始された",
-    actor: "獣医師",
-    command: "診察を始める",
-    aggregate: "予約",
-  },
-  {
-    id: "findings-recorded",
-    name: "所見が記録された",
-    actor: "獣医師",
-    command: "所見を記録する",
-    aggregate: "カルテ",
-  },
-  {
-    id: "billing-completed",
-    name: "会計が完了した",
-    actor: "受付スタッフ",
-    command: "会計を行う",
-    aggregate: "会計",
-  },
+const domainEvents = [
+  { id: "checked-in", name: "来院が受け付けられた" },
+  { id: "examination-started", name: "診察が開始された" },
+  { id: "examination-completed", name: "診察が完了した" },
+  { id: "billing-completed", name: "会計が完了した" },
 ] as const;
 
-const teacherDemoEvent = domainEvents[0];
+const notation = [
+  { name: "ドメインイベント", description: "業務で起きたことを過去形で書きます。" },
+  { name: "アクター", description: "コマンドを出す人や役割を書きます。" },
+  { name: "コマンド", description: "何をしてほしいかを命令形で書きます。" },
+  { name: "Hotspot", description: "答えが揃わないことや、決める必要があることを書きます。" },
+] as const;
 
-// 集約ごとにイベントをまとめる。並び順は集約が最初に現れた順で、時系列の情報は各イベントの order に残す。
-const domainEventsWithOrder = domainEvents.map((event, index) => ({
-  ...event,
-  order: index + 1,
-}));
-const aggregateNames = [
-  ...new Set(domainEventsWithOrder.map((event) => event.aggregate)),
-];
-const aggregateGroups = aggregateNames.map((aggregate) => ({
-  aggregate,
-  events: domainEventsWithOrder.filter(
-    (event) => event.aggregate === aggregate,
-  ),
-}));
+const excalidrawTemplatePath = "docs/event/session-01-event-storming.excalidraw";
+const excalidrawTemplateUrl =
+  `https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/${excalidrawTemplatePath}`;
 
-const excalidrawTemplatePath =
-  "docs/event/session-01-event-storming.excalidraw";
-const excalidrawTemplateUrl = `https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/${excalidrawTemplatePath}`;
 const chapters = [
-  { id: "incident", label: "何が起きたか" },
-  { id: "workflow", label: "ワークフローを描く" },
-  { id: "review", label: "レビューと持ち帰り" },
+  { id: "incident", label: "事故と4つの出来事" },
+  { id: "workshop", label: "班ワーク" },
+  { id: "workflow", label: "ワークフローへ整理" },
+  { id: "handoff", label: "S2〜S6への接続" },
 ] as const;
+
 export const navigation = ({
   previous: {
     href: "/sessions/00-system-handover/",
@@ -136,143 +88,128 @@ export const navigation = ({
             <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
           </nav>
         </details>
+
         <article class="case-file__content">
-  <section id="incident">
-    <h2>ブリーフィング{timing.brief}分: 動物病院の一日を読む</h2>
-    <aside class="case-file__episode" aria-label="動物病院のひと幕">
-      <p class="case-file__episode-label">動物病院のひと幕</p>
-      {session.episode.map((line) => <p data-episode-line>{line}</p>)}
-    </aside>
-    <p>
-      この15分はコードを書きません。次の文章から業務上起きた出来事を拾い、集約ごとの境界を班で引けるようになることが目標です。
-    </p>
-    <div class="incident-report">
-      <p>
-        よく晴れた朝、開院してすぐの時間帯に、飼い主が数日前から元気のない柴犬を連れて来院しました。受付スタッフは前日に電話で受けていた予約を確認し、飼い主に問診票を渡して受付を行いました。待合室にはほかの飼い主と猫もいて、少し賑やかな雰囲気でした。
-      </p>
-      <p>
-        しばらく待ってもらったあと、動物看護師が診察室前に飼い主を呼び、問診票の内容を確認しながら体重を測り、来院時の症状や直近の食欲、排せつの様子について丁寧に聞き取りました。動物看護師は、柴犬がいつもより落ち着かない足取りだったことも合わせて記録しました。
-      </p>
-      <p>
-        続いて担当の獣医師が診察室へ飼い主と犬を呼び入れ、診察を始めました。獣医師は聴診と触診を行い、看護師が記録した体重の変化も参考にしながら、飼い主に自宅での様子をさらに詳しく尋ねました。今回は追加の検査は必要ないと判断し、診察を終えます。獣医師は所見と自宅での過ごし方の注意点をカルテに書き留め、飼い主にも口頭で分かりやすく説明しました。獣医師は次の患者の準備のため看護師に一声かけ、診察室を出ました。
-      </p>
-      <p>
-        診察が終わると、受付スタッフが会計を担当しました。診察料と処方した薬の代金を項目ごとに計算し、内訳を示しながら飼い主に伝えて支払いを受け取りました。受付スタッフは会計が済んだことを記録しました。飼い主は処方された薬を受け取り、家での飲ませ方をもう一度確認してから、笑顔で動物病院をあとにしました。受付スタッフは待合室の様子を見渡し、次に呼ぶ飼い主の準備に取りかかりました。
-      </p>
-    </div>
-  </section>
-
-  <section id="workflow">
-    <h2>ワークフローを描く</h2>
-
-    <h3>説明{timing.teach}分: 語彙の確認・ドメインイベントの見つけ方</h3>
-    <p>今回はポリシー、読み取りモデル、外部システムは扱いません。</p>
-    <dl>
-      <dt>ドメインイベント</dt>
-      <dd>業務上起きた出来事。CheckedIn Eventのように過去形で表します。</dd>
-      <dt>コマンド</dt>
-      <dd>
-        誰かが出した依頼。コマンドが起点となり、ドメインイベントが発生します。
-      </dd>
-      <dt>ワークフロー</dt>
-      <dd>
-        一つの依頼を受けてドメインイベントを出すまでのひとかたまりの処理。
-      </dd>
-      <dt>集約</dt>
-      <dd>
-        コマンドを受けて状態を変更し、ドメインイベントを発生させるまでのひとまとまり。中は一貫性を保ちながら一緒に変わります。
-      </dd>
-    </dl>
-    <p>手順は次の4段です。班ワーク中もこのページで参照できます。</p>
-    <ol class="exercise-steps">
-      <li>起きた出来事を過去形で書き出す</li>
-      <li>時間の順に並べる</li>
-      <li>それぞれの出来事が、誰の何の依頼で起きたかを添える</li>
-      <li>同じ集約を変えるドメインイベントをまとめ、集約に名前を付ける</li>
-    </ol>
-    <p>
-      講師は文章からドメインイベントを1件だけ拾い、コマンドとアクター、集約を添えて
-      Excalidraw に置いて見せます。
-    </p>
-    <article
-      class="decision-card"
-      data-domain-event-id={teacherDemoEvent.id}
-      data-aggregate={teacherDemoEvent.aggregate}
-    >
-      <h4>講師実演: {teacherDemoEvent.name}</h4>
-      <p><strong>誰の依頼か:</strong> {teacherDemoEvent.actor}</p>
-      <p><strong>コマンド:</strong> {teacherDemoEvent.command}</p>
-      <p><strong>集約:</strong> {teacherDemoEvent.aggregate}</p>
-    </article>
-
-    <h3>
-      班ワーク{timing.exercise}分: 残りのドメインイベントを拾い、境界を引く
-    </h3>
-    <p>
-      残りのドメインイベントを文章から拾って時系列に並べ、各イベントに誰の何の依頼で起きたかを添えます。そのうえで、同じ集約を変えるドメインイベントをまとめて囲み、集約に名前を付けます。
-    </p>
-    <p>
-      班ワークは次の Excalidraw テンプレートで行います。TA が excalidraw.com
-      でテンプレートを開いて Live collaboration を開始し、班へリンクを配ります。
-    </p>
-    <p>
-      <a href={excalidrawTemplateUrl}><code>{excalidrawTemplatePath}</code></a>
-    </p>
-  </section>
-
-  <section id="review">
-    <h2>レビュー{timing.review}分: 講師回答例と粒度の違いを比べる</h2>
-    <p>
-      班の結果と次の講師回答例を見比べます。集約ごとにドメインイベントをまとめてあります。カード上部の数字は時系列の順序です。
-    </p>
-    <div class="aggregate-groups">
-      {
-        aggregateGroups.map((group) => (
-          <section class="aggregate-group" data-aggregate={group.aggregate}>
-            <h3>集約: {group.aggregate}</h3>
-            <ol class="decision-list">
-              {group.events.map((event) => (
-                <li
-                  class="decision-card"
-                  data-domain-event-id={event.id}
-                  data-aggregate={event.aggregate}
-                >
-                  <p class="event-order">{event.order}件目</p>
-                  <h4>{event.name}</h4>
-                  <p>
-                    <strong>誰の依頼か:</strong> {event.actor}
-                  </p>
-                  <p>
-                    <strong>コマンド:</strong> {event.command}
-                  </p>
-                </li>
-              ))}
+          <section id="incident">
+            <h2>0:00〜1:30　事故と4つの出来事を確認する</h2>
+            <aside class="case-file__episode" aria-label="動物病院のひと幕">
+              <p class="case-file__episode-label">動物病院のひと幕</p>
+              {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+            </aside>
+            <p>
+              S0では、会計済みの予約でも診察開始を実行できました。何を直すか決める前に、同じ予約で起きる出来事を時間順に確認します。
+            </p>
+            <ol class="eventstorming-timeline" aria-label="事前配置するドメインイベント">
+              {
+                domainEvents.map((event) => (
+                  <li data-domain-event-id={event.id}>
+                    <span>ドメインイベント</span>
+                    <strong>{event.name}</strong>
+                  </li>
+                ))
+              }
             </ol>
+            <p>この4枚は講師が事前に配置します。参加者は文章からイベントを書き写しません。</p>
           </section>
-        ))
-      }
-    </div>
-    <p>
-      予約集約の中で、S2 からは「診察を始める」という依頼を詳しく見ていきます。
-    </p>
-    <p>
-      ドメインイベントの粒度に着目して班で共有してみましょう（正誤は気にする必要はありません）。
-      一つのドメインイベントをさらに細かく分けているか、逆に複数の出来事を一つにまとめているか、などの観点で比べてみましょう。
-    </p>
-  </section>
+
+          <section id="workshop">
+            <h2>1:30〜9:00　診察開始の依頼と事前条件を決める</h2>
+
+            <h3>1:30〜3:00　使う付箋を確認する</h3>
+            <dl>
+              {notation.map((item) => <Fragment><dt>{item.name}</dt><dd>{item.description}</dd></Fragment>)}
+            </dl>
+            <p>ポリシー、読み取りモデル、外部システムは扱いません。集約は班ワークの後に講師が説明します。</p>
+
+            <h3>3:00〜7:00　「診察が開始された」から逆算する</h3>
+            <p>班で次の3問を順に話します。</p>
+            <ol class="exercise-steps">
+              <li>この出来事は、誰が、どんな依頼を出したために起きましたか。</li>
+              <li>その依頼を受け付ける前に、予約がどうなっている必要がありますか。</li>
+              <li>会計済みとキャンセル済みの場合はどうなりますか。</li>
+            </ol>
+            <div class="eventstorming-focus" aria-label="班で完成させる診察開始の並び">
+              <div class="eventstorming-note eventstorming-note--actor">
+                <span>アクター</span>
+                <strong>班で決める</strong>
+              </div>
+              <span aria-hidden="true">→</span>
+              <div class="eventstorming-note eventstorming-note--command">
+                <span>コマンド</span>
+                <strong>診察を始める</strong>
+              </div>
+              <span aria-hidden="true">→</span>
+              <div class="eventstorming-note eventstorming-note--event">
+                <span>ドメインイベント</span>
+                <strong>診察が開始された</strong>
+              </div>
+            </div>
+            <p>
+              アクターは獣医師を正解として配りません。獣医師、看護師、受付など、班で答えが異なる場合は責任が決まっていないことをHotspotとして残します。
+            </p>
+            <blockquote>
+              <p>受付を済ませた予約だけ、診察を始められます。</p>
+            </blockquote>
+
+            <h3>7:00〜9:00　班の答えを比べ、予約集約を加える</h3>
+            <p>
+              講師は1〜2班の答えを比べます。アクターの正解を一つに決めるのではなく、責任の認識が揃っているかを確認します。
+            </p>
+            <p>
+              事前条件を確認した後、講師がコマンドとイベントの間に「予約」を置きます。予約は、診察を開始できる状態かを判断し、状態を一貫させる単位です。
+            </p>
+            <p>参加者に集約名を当てさせたり、一日の全イベントを集約ごとに分類させたりしません。</p>
+
+            <aside class="decision-card">
+              <h3>班の分担</h3>
+              <p>
+                5人班では、1人が付箋を操作し、1人が事故とイベント列を読み上げ、3人がアクター、コマンド、事前条件の案を出します。人数が少ない場合は役割を兼ねます。
+              </p>
+            </aside>
+          </section>
+
+          <section id="workflow">
+            <h2>9:00〜12:30　入力、業務判断、出力へ整理する</h2>
+            <p>同じ付箋を、次の3つへ読み替えます。</p>
+            <dl>
+              <dt>入力</dt>
+              <dd>どの予約を、どの獣医師が開始するか。</dd>
+              <dt>業務判断</dt>
+              <dd>予約が受付済みなら診察中へ変更する。</dd>
+              <dt>出力</dt>
+              <dd>診察が開始されたというドメインイベント。</dd>
+            </dl>
+            <StartExaminationWorkflow focus="overview" />
+            <p>
+              予約の読み込みとイベントの保存は、受付済みかどうかを判断する処理の外に置きます。時刻とイベントIDも外から受け取ります。
+            </p>
+          </section>
+
+          <section id="handoff">
+            <h2>12:30〜15:00　S2〜S6で実装する部分を確認する</h2>
+            <ol class="exercise-steps">
+              <li><strong>S2:</strong> 受付済みだけを受け取る状態型と状態遷移</li>
+              <li><strong>S3:</strong> 予約IDと獣医師IDの区別</li>
+              <li><strong>S4:</strong> HTTPから来た値の検査と型付き入力への変換</li>
+              <li><strong>S5:</strong> 予約なしと状態不正をResultで返す処理</li>
+              <li><strong>S6:</strong> 時刻、イベントID、読み込み、保存の分離</li>
+            </ol>
+            <h3>S1で残す成果物</h3>
+            <ol>
+              <li>アクター、コマンド、予約、ドメインイベントを並べた図</li>
+              <li>「受付を済ませた予約だけ、診察を始められる」という事前条件</li>
+              <li>入力、業務判断、出力、読み込み、保存を分けた <code>startExamination</code> の構成図</li>
+            </ol>
+            <p>
+              班ワークは <a href={excalidrawTemplateUrl}><code>{excalidrawTemplatePath}</code></a> を使います。TAが開始前にボードを開きます。
+            </p>
+          </section>
         </article>
       </div>
+
       <nav class="case-file__session-nav" aria-label="前後のセッション">
-        {
-          navigation.previous === undefined ? null : (
-            <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
-          )
-        }
-        {
-          navigation.next === undefined ? null : (
-            <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
-          )
-        }
+        <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
+        <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
       </nav>
     </main>
   </div>
