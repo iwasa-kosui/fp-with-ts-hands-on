@@ -6,7 +6,10 @@ import type {
   ExerciseSessionSummary,
   PublicCodeExplorerSnapshot,
 } from "../sessions/types";
-import { projectFilesForSnapshot } from "./project-files";
+import {
+  browserPackageJsonFor,
+  projectFilesForSnapshot,
+} from "./project-files";
 import type { ProjectFiles, SessionWorkspace } from "./types";
 
 type ExercisePageModule = Readonly<{
@@ -129,6 +132,49 @@ describe("Code Explorer project files", () => {
       );
       expect(packageJson.devDependencies.typescript).toBe("5.9.3");
     }
+  });
+
+  it("omits workspace-only dependencies from browser workspaces", () => {
+    for (const snapshot of projectSnapshots) {
+      const packageJson = JSON.parse(
+        projectFilesForSnapshot(snapshot)["package.json"]!,
+      ) as { dependencies?: Record<string, string> };
+
+      expect(
+        Object.values(packageJson.dependencies ?? {}).some((version) =>
+          version.startsWith("workspace:"),
+        ),
+        snapshot,
+      ).toBe(false);
+    }
+  });
+
+  it("removes workspace protocols from every installable dependency section", () => {
+    expect(
+      browserPackageJsonFor({
+        dependencies: {
+          "local-runtime": "workspace:*",
+          runtime: "^1.0.0",
+        },
+        devDependencies: {
+          "local-tool": "workspace:^",
+          tool: "^2.0.0",
+        },
+        optionalDependencies: {
+          "local-optional": "workspace:~",
+          optional: "^3.0.0",
+        },
+        peerDependencies: {
+          "local-peer": "workspace:*",
+          peer: "^4.0.0",
+        },
+      }),
+    ).toEqual({
+      dependencies: { runtime: "^1.0.0" },
+      devDependencies: { tool: "^2.0.0" },
+      optionalDependencies: { optional: "^3.0.0" },
+      peerDependencies: { peer: "^4.0.0" },
+    });
   });
 
   it("provides every file exposed by an exercise page workspace", () => {
