@@ -13,6 +13,7 @@ import {
 } from "../../src/useCase/errors.js";
 import { startExamination } from "../../src/useCase/startExamination.js";
 import { clinicFixture } from "../../../fixtures/clinic.js";
+import { compileWithAdditionalStartExaminationError } from "./compileTypeFixture.js";
 
 const appointmentId = AppointmentId.parse(clinicFixture.appointmentId);
 const veterinarianId = VeterinarianId.parse(clinicFixture.veterinarianId);
@@ -74,9 +75,7 @@ describe("S5 Step 3 regression: andThen pipeline が失敗理由を運ぶ", () =
     expect(result.isOk() && result.value.kind).toBe("InExamination");
     expect(observer).toEqual({ transitionCalls: 1, saveCalls: 1 });
   });
-});
 
-describe("S5 Step 4 regression: 失敗後は遷移も保存もしない", () => {
   it("状態不正なら transition と store の呼出回数は 0 のまま", () => {
     const observer = { transitionCalls: 0, saveCalls: 0 };
     const result = startExamination(createDependencies(scheduled, observer))(input);
@@ -84,11 +83,31 @@ describe("S5 Step 4 regression: 失敗後は遷移も保存もしない", () => 
     expect(result.isErr() && result.error.kind).toBe("InvalidAppointmentState");
     expect(observer).toEqual({ transitionCalls: 0, saveCalls: 0 });
   });
+
+  it("保存障害を業務エラーへ変換せず例外として伝える", () => {
+    const saveError = new Error("database unavailable");
+    const observer = { transitionCalls: 0, saveCalls: 0, saveError };
+
+    expect(() => startExamination(createDependencies(checkedIn, observer))(input))
+      .toThrow(saveError);
+    expect(observer.transitionCalls).toBe(1);
+    expect(observer.saveCalls).toBe(1);
+  });
+});
+
+describe("S5 Step 4 regression: Web側が業務エラーを漏れなく処理する", () => {
+  it("業務エラーを追加すると未対応の分岐がコンパイルエラーになる", () => {
+    expect(compileWithAdditionalStartExaminationError()).toEqual([]);
+  });
 });
 
 const createDependencies = (
   resolved: Appointment | undefined,
-  observer: { transitionCalls: number; saveCalls: number },
+  observer: {
+    transitionCalls: number;
+    saveCalls: number;
+    saveError?: Error;
+  },
 ): Dependencies => ({
   resolver: { resolveById: () => resolved },
   transition: (appointment, nextVeterinarianId, examinationStartedAt) => {
@@ -102,6 +121,9 @@ const createDependencies = (
   store: {
     save: () => {
       observer.saveCalls += 1;
+      if (observer.saveError !== undefined) {
+        throw observer.saveError;
+      }
     },
   },
 });

@@ -36,7 +36,7 @@ describe("Session 05 Web application", () => {
     app = createApp();
   });
 
-  it("Resultを返す診察開始use caseを通って会計済みまで進む", async () => {
+  it("例外ベースの診察開始use caseを通って会計済みまで進む", async () => {
     expect(await page(app)).toMatchObject({
       props: { sessionLabel: "Session 05", appointment: { kind: "Scheduled" } },
     });
@@ -50,15 +50,20 @@ describe("Session 05 Web application", () => {
     });
   });
 
-  it("starterの粗い失敗変換をallowlist済みnoticeへ変換する", async () => {
+  it("古い画面から送られた状態不正をcatchし損ねて500になる", async () => {
     const invalidState = await post(app, `${appointmentUrl}/start-examination`);
+
+    expect(invalidState.status).toBe(500);
+    expect(await invalidState.text()).toBe("Internal Server Error");
+  });
+
+  it("starterが例外メッセージで予約なしだけをnoticeへ変換する", async () => {
     const missing = await post(
       app,
       "/appointments/99999999-9999-4999-8999-999999999999/start-examination",
     );
 
-    expect(invalidState.headers.get("location")).toBe("/?notice=invalid-state");
-    expect(missing.headers.get("location")).toBe("/?notice=invalid-state");
+    expect(missing.headers.get("location")).toBe("/?notice=not-found");
   });
 
   it("不正な検査入力を拒否し、未実装操作とresetを扱う", async () => {

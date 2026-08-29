@@ -157,7 +157,7 @@ export const guides = ([
     currentDesign: "Date と randomUUID を直接呼び、同じ入力でも output event が変わります。",
     futureRisk: "期待値を固定できず、テストが実行時刻に依存します。",
     path: "src/useCase/startExamination.ts",
-    highlights: [{ startLineNumber: 42, endLineNumber: 64 }],
+    highlights: [{ startLineNumber: 45, endLineNumber: 67 }],
   },
   {
     id: "dual-write",
@@ -165,7 +165,7 @@ export const guides = ([
     currentDesign: "side effects として stateStore.save と eventLog.append を順番に await しています。",
     futureRisk: "片方だけ成功すると、監査記録を伴わない状態変更が残ります。",
     path: "src/useCase/startExamination.ts",
-    highlights: [{ startLineNumber: 66, endLineNumber: 69 }],
+    highlights: [{ startLineNumber: 69, endLineNumber: 70 }],
   },
 ] as const) satisfies readonly CodeGuide[];
 

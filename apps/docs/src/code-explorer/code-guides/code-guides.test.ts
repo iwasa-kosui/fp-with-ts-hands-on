@@ -24,7 +24,7 @@ const expectedFragments: Readonly<Record<string, readonly string[]>> = {
   "unvalidated-exam-json": ["raw: any", "examId: raw.examId"],
   "plain-contact-pii": ["ownerEmail: string", "raw: any"],
   "throws-known-errors": ["throw new Error"],
-  "catch-collapses-errors": ["try {", "catch {"],
+  "catch-misses-state-error": ["error.message.includes", "throw error"],
   "hidden-nondeterminism": ["new Date()", "crypto.randomUUID()"],
   "dual-write": ["stateStore.save", "eventLog.append"],
   "final-use-case-pipeline": [".andThrough"],

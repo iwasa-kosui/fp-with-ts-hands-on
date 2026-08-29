@@ -1,16 +1,19 @@
-import { err, ok, type Result } from "neverthrow";
-
-import type { InExamination } from "../domain/appointment/appointment.js";
+import { err, ok } from "neverthrow";
 import type { ExaminationStarted } from "../domain/appointment/examinationStarted.js";
 import { EventId } from "../domain/aggregate/eventId.js";
+import type { EffectsDependencies } from "./dependencies.js";
+import type { StartExaminationWithEffectsError } from "./errors.js";
+
+import type { Result } from "neverthrow";
+
+import type { InExamination } from "../domain/appointment/appointment.js";
 import type { AppointmentId } from "../domain/ids/appointmentId.js";
 import type { VeterinarianId } from "../domain/ids/veterinarianId.js";
-import type { Dependencies, EffectsDependencies } from "./dependencies.js";
+import type { Dependencies } from "./dependencies.js";
 import {
   ensureAppointmentFound,
   ensureCheckedIn,
   type StartExaminationError,
-  type StartExaminationWithEffectsError,
 } from "./errors.js";
 
 export type StartExaminationInput = Readonly<{

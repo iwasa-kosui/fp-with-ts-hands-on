@@ -47,6 +47,15 @@ describe("Session 06 Web application", () => {
     expect(response.headers.get("location")).toBe("/?notice=invalid-state");
   });
 
+  it("予約なしを専用noticeへ変換する", async () => {
+    const response = await post(
+      app,
+      "/appointments/99999999-9999-4999-8999-999999999999/start-examination",
+    );
+
+    expect(response.headers.get("location")).toBe("/?notice=not-found");
+  });
+
   it("2回目の保存失敗で状態だけ残る事故を再現する", async () => {
     app = createApp({ failEventLog: true });
     await post(app, `${appointmentUrl}/check-in`);

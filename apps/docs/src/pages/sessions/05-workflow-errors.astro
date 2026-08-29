@@ -43,8 +43,8 @@ export const session: SessionSummary = {
     pickCount: 2,
     questions: [
       "予約なしと状態不正は、異なる `kind` を持つ `Err` になっていますか。",
-      "`andThen` は、成功したときだけ次の検証と状態遷移へ進みますか。",
-      "業務エラーの後に、状態の保存が実行されない構造になっていますか。",
+      "`andThen` は、失敗後の状態遷移と保存を実行しない構造になっていますか。",
+      "Web側は業務エラーを `kind` で網羅し、未対応の種類を型エラーにできますか。",
     ],
   },
   solutionSnapshot: "session-06",
@@ -53,16 +53,16 @@ export const session: SessionSummary = {
   animal: { name: "HAMSTER", type: "hamster", avatar: "🐹" },
   summary: "診察開始の予期できる失敗を、呼び出し側が扱える値として返します。",
   episode: [
-    "ハムスターの診察開始ボタンを押すと、受付画面は「処理に失敗しました」とだけ言い残して沈黙しました。",
-    "予約なし、受付前、あるいは画面の気分なのか。後ろでは犬が吠え、列だけが伸びます。",
-    "理由を捨てた例外は、忙しい現場に推理ゲームまで追加してくれます。",
+    "別の端末で受付情報が更新された後、古い画面に残っていたハムスターの診察開始ボタンを押すと、500エラーだけを返して止まりました。",
+    "予約なしは専用表示になるのに、受付前の予約は想定外扱いです。後ろでは犬が吠え、列だけが伸びます。",
+    "新しい例外を投げた側は、呼び出し側のcatch漏れを型から確かめられませんでした。",
   ],
-  incident: "例外メッセージの変更で画面の分岐が壊れ、受付が失敗理由を追えなくなった。",
+  incident: "診察開始で状態不正の例外が追加されたが、Web側にcatch分岐を足し忘れ、古い画面から送られた受付前の予約だけ500になった。",
   exerciseCommand: "pnpm exercise:05",
   exerciseModule: {
-    dir: "examples/session-05/src/useCase",
+    dir: "examples/session-05/src",
     fileBudget: 3,
-    lineBudget: 76,
+    lineBudget: 80,
   },
   delegationPrompt: {
     request:
@@ -71,6 +71,7 @@ export const session: SessionSummary = {
       "何を予期できる業務上の失敗として扱うか",
       "呼び出し側が分岐に使う安定した情報は何か",
       "失敗後に実行してはいけない処理は何か",
+      "Resultへ変換せず外側へ伝える異常は何か",
     ],
   },
   steps: [
@@ -81,7 +82,7 @@ export const session: SessionSummary = {
       solutions: [{
         path: "examples/session-06/src/useCase/errors.ts",
         symbol: "ensureCheckedIn",
-        lines: [31, 36],
+        lines: [1, 31],
       }],
     },
     {
@@ -91,17 +92,27 @@ export const session: SessionSummary = {
       solutions: [{
         path: "examples/session-06/src/useCase/errors.ts",
         symbol: "ensureAppointmentFound",
-        lines: [23, 29],
+        lines: [1, 31],
       }],
     },
     {
       id: "s5-result-pipeline",
-      goal: "失敗理由をandThenのパイプラインで運ぶ。",
+      goal: "失敗理由をandThenで運び、失敗後の遷移と保存を実行しない。",
       targets: ["examples/session-05/src/useCase/startExamination.ts"],
       solutions: [{
         path: "examples/session-06/src/useCase/startExamination.ts",
         symbol: "startExamination",
-        lines: [22, 40],
+        lines: [7, 43],
+      }],
+    },
+    {
+      id: "s5-exhaustive-web-handler",
+      goal: "Web側で業務エラーのkindを網羅し、それぞれ専用noticeへ変換する。",
+      targets: ["examples/session-05/src/web/routes.ts"],
+      solutions: [{
+        path: "examples/session-06/src/web/routes.ts",
+        symbol: "toStartExaminationNoticeCode",
+        lines: [23, 42],
       }],
     },
   ],
@@ -127,42 +138,21 @@ export const session: SessionSummary = {
 export const guides = ([
   {
     id: "throws-known-errors",
-    title: "expected failures を例外メッセージとして扱っている",
-    currentDesign: "expected failures の union を宣言していても、guard の本体は throw します。",
-    futureRisk: "呼び出し側が kind ではなく文言へ依存します。",
+    title: "起こりうる業務エラーが戻り値の型に現れない",
+    currentDesign: "guard は成功値だけを返す型ですが、予約なしと状態不正では Error をthrowします。",
+    futureRisk: "呼び出し側は実装を読まないと、どの例外を処理すべきか判断できません。",
     path: "src/useCase/errors.ts",
-    highlights: [
-      { startLineNumber: 18, endLineNumber: 27 },
-      { startLineNumber: 29, endLineNumber: 37 },
-    ],
+    highlights: [{ startLineNumber: 4, endLineNumber: 23 }],
   },
   {
-    id: "catch-collapses-errors",
-    title: "catch が expected failures を1種類にまとめてしまう",
-    currentDesign: "not found と invalid state を try/catch で同じエラーに変換しています。",
-    futureRisk: "予約なしまで InvalidAppointmentState として返り、受付が理由を判別できません。",
-    path: "src/useCase/startExamination.ts",
-    highlights: [{ startLineNumber: 15, endLineNumber: 40 }],
+    id: "catch-misses-state-error",
+    title: "Web側が予約なしだけを文言でcatchしている",
+    currentDesign: "例外メッセージにwas not foundが含まれる場合だけnoticeへ変換し、それ以外は500になります。",
+    futureRisk: "例外の種類を追加しても呼び出し側に型エラーが出ず、今回のような処理漏れが残ります。",
+    path: "src/web/routes.ts",
+    highlights: [{ startLineNumber: 76, endLineNumber: 94 }],
   },
 ] as const) satisfies readonly CodeGuide[];
-
-const resultOperationSignatures = `// 実装は省略し、各処理の入出力だけを示す
-declare const ensureAppointmentFound: (
-  appointment: Appointment | undefined,
-  appointmentId: AppointmentId,
-) => Result<Appointment, AppointmentNotFound>;
-
-declare const ensureCheckedIn: (
-  appointment: Appointment,
-) => Result<CheckedIn, InvalidAppointmentState>;
-
-declare const transitionToInExamination: (
-  appointment: CheckedIn,
-) => InExamination;
-
-declare const toErrorKind: (
-  error: AppointmentNotFound | InvalidAppointmentState,
-) => "AppointmentNotFound" | "InvalidAppointmentState";`;
 
 const teaching: readonly TeachingTopic[] = [
   {
@@ -197,82 +187,101 @@ const ensureAppointmentFound = (
     why: "例外では、関数の型から失敗理由を読み取れません。Result の E に業務エラーを置くと、呼び出し側は実行前から起こりうる失敗を把握し、表示や次の操作を選べます。err は例外を投げず、失敗理由を値として返します。ただし、保存障害など呼び出し側で業務上の対応を選べない異常まで Result に入れるわけではありません。",
   },
   {
-    name: "map、mapErr、andThen は片方の経路だけを進める",
+    name: "andThen と map は成功した経路だけを進める",
     definition:
-      "map は Ok の成功値、mapErr は Err の失敗理由だけを変換します。andThen は Ok のときだけ、次の Result を返す処理へ進みます。3つとも反対側の値には触れません。",
+      "andThen は Ok のときだけ次の Result を返す処理へ進み、map は Ok の成功値だけを変換します。Err になった後のコールバックは呼ばれません。",
     before: {
-      caption: "成功と失敗を明示的に分岐する書き方",
-      code: `${resultOperationSignatures}
+      caption: "途中で何がthrowされるか型から分からないワークフロー",
+      code: `const startExamination =
+  (deps: Dependencies) =>
+  (input: StartExaminationInput): InExamination => {
+    const found = ensureAppointmentFound(
+      deps.resolver.resolveById(input.appointmentId),
+      input.appointmentId,
+    );
+    const checkedIn = ensureCheckedIn(found);
+    const next = deps.transition(
+      checkedIn,
+      input.veterinarianId,
+      input.examinationStartedAt,
+    );
 
-const startExamination = (
-  appointment: Appointment | undefined,
-  appointmentId: AppointmentId,
-): Result<
-  InExamination,
-  "AppointmentNotFound" | "InvalidAppointmentState"
-> => {
-  const found = ensureAppointmentFound(appointment, appointmentId);
-
-  if (found.isErr()) {
-    return err(toErrorKind(found.error));
-  }
-
-  const checkedIn = ensureCheckedIn(found.value);
-
-  if (checkedIn.isErr()) {
-    return err(toErrorKind(checkedIn.error));
-  }
-
-  return ok(transitionToInExamination(checkedIn.value));
-};`,
+    deps.store.save(next);
+    return next;
+  };`,
     },
     after: {
-      caption: "関数の型を確認し、成功経路を上から読む書き方",
-      code: `${resultOperationSignatures}
-
-const startExamination = (
-  appointment: Appointment | undefined,
-  appointmentId: AppointmentId,
-): Result<
-  InExamination,
-  "AppointmentNotFound" | "InvalidAppointmentState"
-> =>
-  ensureAppointmentFound(appointment, appointmentId)
-    .andThen(ensureCheckedIn)
-    .map(transitionToInExamination)
-    .mapErr(toErrorKind);`,
+      caption: "Result の型と処理順を同時に読めるワークフロー",
+      code: `const startExamination =
+  (deps: Dependencies) =>
+  (input: StartExaminationInput): Result<
+    InExamination,
+    StartExaminationError
+  > =>
+    ensureAppointmentFound(
+      deps.resolver.resolveById(input.appointmentId),
+      input.appointmentId,
+    )
+      .andThen(ensureCheckedIn)
+      .map((appointment) =>
+        deps.transition(
+          appointment,
+          input.veterinarianId,
+          input.examinationStartedAt,
+        ),
+      )
+      .map((appointment) => {
+        deps.store.save(appointment);
+        return appointment;
+      });`,
     },
-    why: "map のコールバックは通常の成功値を返し、mapErr のコールバックは失敗理由を別の形へ変換します。mapErr を呼んでも Err は Ok にならないため、再試行や復旧ではありません。andThen のコールバックは次の Result を返します。前の処理が Err なら呼ばれないので、検証に失敗した後の状態遷移や保存を実行せずに済みます。明示的な分岐と動作は同じですが、処理が増えても成功経路を上から順に読めます。",
+    why: "before は実行時には例外で処理が止まりますが、どの行が何をthrowするかは型に現れません。after は予約なしと状態不正を Err として運び、その時点で後続の andThen と map を呼びません。そのため、状態遷移と保存が成功側にしかないことをコードの形で確認できます。保存障害など map 内で発生する予期しない例外は捕捉しないため、業務エラーへ偽装されません。",
   },
   {
-    name: "matchは成功と失敗を分ける。失敗のkindはswitchで網羅する",
+    name: "match と switch で呼び出し側の処理漏れを型エラーにする",
     definition:
-      "Result.matchは成功時と失敗時の処理を分けます。失敗側のコールバックはエラーのUnion全体を受け取るため、AppointmentNotFoundとInvalidAppointmentStateはerror.kindで分岐します。",
+      "Result.match は成功時と失敗時の処理を分けます。失敗側は StartExaminationError 全体を受け取り、error.kind の switch で各 notice へ変換します。",
     before: {
-      caption: "成功と失敗だけを分けた例",
-      code: `const message = result.match(
-  () => "診察を開始しました",
-  () => "診察を開始できません",
-);`,
+      caption: "予約なしだけを例外メッセージで処理する呼び出し側",
+      code: `try {
+  startExamination(dependencies)(input);
+  return context.redirect("/", 303);
+} catch (error) {
+  if (
+    error instanceof Error &&
+    error.message.includes("was not found")
+  ) {
+    return context.redirect("/?notice=not-found", 303);
+  }
+
+  // 状態不正の例外はここへ到達し、500になる。
+  throw error;
+}`,
     },
     after: {
-      caption: "失敗理由まで網羅した例",
+      caption: "業務エラーのkindを網羅してnoticeへ変換する呼び出し側",
       code: `const assertNever = (error: never): never => {
   throw new Error(\`Unhandled error: \${JSON.stringify(error)}\`);
 };
 
-const message = result.match(
-  () => "診察を開始しました",
-  (error) => {
-    switch (error.kind) {
-      case "AppointmentNotFound":
-        return "予約が見つかりません";
-      case "InvalidAppointmentState":
-        return "受付済みの予約だけ診察を開始できます";
-      default:
-        return assertNever(error);
-    }
-  },
+const toNoticeCode = (error: StartExaminationError) => {
+  switch (error.kind) {
+    case "AppointmentNotFound":
+      return "not-found";
+    case "InvalidAppointmentState":
+      return "invalid-state";
+    default:
+      return assertNever(error);
+  }
+};
+
+return result.match(
+  () => context.redirect("/", 303),
+  (error) =>
+    context.redirect(
+      \`/?notice=\${toNoticeCode(error)}\`,
+      303,
+    ),
 );`,
     },
     example: {
@@ -286,19 +295,19 @@ type StartExaminationError =
   | InvalidAppointmentState
   | AppointmentConflict;
 
-const toErrorMessage = (error: StartExaminationError): string => {
+const toNoticeCode = (error: StartExaminationError): string => {
   switch (error.kind) {
     case "AppointmentNotFound":
-      return "予約が見つかりません";
+      return "not-found";
     case "InvalidAppointmentState":
-      return "受付済みの予約だけ診察を開始できます";
+      return "invalid-state";
     default:
       // errorはAppointmentConflictなので、neverへ渡せない。
       return assertNever(error);
   }
 };`,
     },
-    why: "matchの2つのコールバックは、成功か失敗かを扱います。失敗側でkindをswitchし、default節でneverだけを受け取るassertNeverを呼ぶと、現在のエラーをすべて処理したことを型検査で確認できます。エラーの種類を追加してcaseを足し忘れると、default節に新しい型が残るためコンパイルエラーになります。",
+    why: "before では InvalidAppointmentState が追加されても catch に型エラーが出ないため、受付前の予約だけ500になりました。after は match の失敗側で union 全体を受け取り、default 節から never 専用の assertNever を呼びます。エラーの種類を追加して case を足し忘れると新しい型が default 節に残り、コンパイルエラーになります。技術的な例外は Result に入れていないため、この switch では捕捉せず外側の例外境界へ伝えます。",
   },
 ];
 
@@ -325,12 +334,12 @@ const startExamination = (
 } as const;
 
 const narrative = {
-  requirement: "診察を開始する際の予期できる業務エラーを、曖昧なエラーコードではなく、型付きの値として扱えるようにする。",
-  currentRisk: "throw、undefined、例外メッセージへの依存が混在しているため、フロントエンドの受付画面でエラー理由を分岐できない。また、エラー発生後の処理も止めにくい。",
-  design: "expected failures 欄は、kind を持つ業務エラーの判別共用体と、成功か失敗かを値で返す Result で実装する。andThen で成功時だけ処理をつなぎ、呼び出し側ではmatchの失敗側でerror.kindを網羅的に処理する。",
-  limitation: "どのエラーを業務エラーとして扱うか、フロントエンドの画面でどのように表示するかは、人の判断とレビューが必要になる。",
-  legacy: "throw や try/catch の利用、エラーメッセージに依存した判定、間違ったエラーのマッピングが行われているコードを読みます。この回では予期できる業務エラーをResultとして扱います。",
-  fallback: "同じ形の2つのguardを解答からコピペします。次に startExamination の try/catch を andThen に置き換えます。",
+  requirement: "診察開始で予期できる業務エラーを型付きの値として返し、Web側が失敗理由ごとに受付の次の操作を選べるようにする。",
+  currentRisk: "ユースケースは成功値だけを返す型のまま複数の Error をthrowします。Web側は予約なしの文言だけをcatchしているため、後から追加された状態不正を処理できず500にしています。",
+  design: "予約なしと状態不正を kind を持つ判別共用体にし、Result で返す。andThen で失敗後の遷移と保存を止め、Web側はmatchとswitchで業務エラーを網羅してnoticeへ変換する。",
+  limitation: "どの失敗を業務エラーとして扱うか、画面でどのnoticeへ変換するかは、人の判断とレビューが必要になる。保存障害など予期しない異常はResultへ変換せず、外側の例外境界へ伝える。",
+  legacy: "成功値しか現れない関数シグネチャ、複数箇所のthrow、例外メッセージに依存したcatchを読みます。受付前の予約だけ500になる処理漏れを、演習テストで再現します。",
+  fallback: "2つのguardと startExamination は解答例を反映します。最後にWebルートをmatchとswitchへ置き換え、2種類のnoticeを確認します。",
 } as const;
 
 const exerciseSession: ExerciseSessionSummary = session;
@@ -339,7 +348,7 @@ export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
   initialFile: "exercises/result-errors.test.ts",
-  description: "expected failures と Result の要求を開始 snapshot で確認します。",
+  description: "例外の種類が型に現れず、Web側にcatch漏れがある開始 snapshot を確認します。",
   visibleFiles: [
     "exercises/result-errors.test.ts",
     "test/regression/boundary-and-ids.test.ts",
@@ -357,6 +366,7 @@ export const workspace = ({
     "src/shared/sensitive.ts",
     "src/useCase/errors.ts",
     "src/useCase/startExamination.ts",
+    "src/web/routes.ts",
   ],
 } as const) satisfies SessionWorkspace;
 
@@ -482,7 +492,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <p>{narrative.design}</p>
             <h3>このセッションで守ること</h3>
             <ul class="decision-list">{session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
-            <p>今回の変更は <code>{session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
+            <p>今回の変更は <code>{session.exerciseModule.dir}</code> 内の3ファイルに限定します。</p>
           </section>
 
           <section id="legacy">

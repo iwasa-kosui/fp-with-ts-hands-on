@@ -13,11 +13,6 @@ export type InvalidAppointmentState = Readonly<{
   actual: Appointment["kind"];
 }>;
 
-export type AppointmentConflict = Readonly<{
-  kind: "AppointmentConflict";
-  appointmentId: AppointmentId;
-}>;
-
 export type StartExaminationError = AppointmentNotFound | InvalidAppointmentState;
 
 export const ensureAppointmentFound = (
@@ -34,6 +29,11 @@ export const ensureCheckedIn = (
   appointment.kind === "CheckedIn"
     ? ok(appointment)
     : err({ kind: "InvalidAppointmentState", actual: appointment.kind });
+
+export type AppointmentConflict = Readonly<{
+  kind: "AppointmentConflict";
+  appointmentId: AppointmentId;
+}>;
 
 export type StartExaminationWithEffectsError =
   | StartExaminationError

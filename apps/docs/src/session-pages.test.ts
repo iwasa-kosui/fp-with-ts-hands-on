@@ -148,7 +148,7 @@ const exerciseContracts = {
       snapshot: "session-05",
       initialFile: "exercises/result-errors.test.ts",
       description:
-        "expected failures と Result の要求を開始 snapshot で確認します。",
+        "例外の種類が型に現れず、Web側にcatch漏れがある開始 snapshot を確認します。",
       visibleFiles: [
         "exercises/result-errors.test.ts",
         "test/regression/boundary-and-ids.test.ts",
@@ -166,6 +166,7 @@ const exerciseContracts = {
         "src/shared/sensitive.ts",
         "src/useCase/errors.ts",
         "src/useCase/startExamination.ts",
+        "src/web/routes.ts",
       ],
     },
     navigation: {

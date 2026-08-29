@@ -9,6 +9,6 @@ pnpm --filter @fp-with-ts/clinic-session-05 test
 pnpm --filter @fp-with-ts/clinic-session-05 exercise
 ```
 
-デモは `http://localhost:3000` で起動し、診察開始routeがこのsnapshotの `Result` を固定noticeへ変換します。
+デモは `http://localhost:3000` で起動します。診察開始routeは複数の例外を投げますが、Web側は予約なしだけを文言でcatchするため、状態不正は500になります。
 
 S4 の解答を保ったまま、次の演習では予期可能な失敗を Result として利用側へ返します。
