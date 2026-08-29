@@ -100,7 +100,9 @@ describe("Step 3 regression: andThen pipeline が失敗理由を運ぶ", () => {
 
 describe("Step 4 regression: Web側が業務エラーを漏れなく処理する", () => {
   it("業務エラーを追加すると未対応の分岐がコンパイルエラーになる", () => {
-    expect(compileWithAdditionalStartExaminationError()).toEqual([]);
+    expect(compileWithAdditionalStartExaminationError()).toEqual([
+      expect.stringContaining("AppointmentUnavailable"),
+    ]);
   });
 });
 

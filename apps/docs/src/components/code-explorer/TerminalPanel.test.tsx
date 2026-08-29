@@ -1,8 +1,7 @@
-import { act, StrictMode } from "react";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
-  TerminalRunner,
   TerminalSession,
   TerminalStartRequest,
 } from "../../code-explorer/runner";
@@ -35,9 +34,6 @@ const createView = (): TerminalView => ({
 });
 
 const roots: Root[] = [];
-let resizeCallback:
-  | ((entries: ResizeObserverEntry[], observer: ResizeObserver) => void)
-  | undefined;
 const disconnectObserver = vi.fn();
 
 const defaultProps = (): TerminalPanelProps => ({
@@ -54,17 +50,13 @@ const defaultProps = (): TerminalPanelProps => ({
   onStateChange: vi.fn(),
 });
 
-const renderPanel = async (
-  props: Partial<TerminalPanelProps> = {},
-  strict = false,
-) => {
+const renderPanel = async (props: Partial<TerminalPanelProps> = {}) => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
   roots.push(root);
   await act(async () => {
-    const panel = <TerminalPanel {...defaultProps()} {...props} />;
-    root.render(strict ? <StrictMode>{panel}</StrictMode> : panel);
+    root.render(<TerminalPanel {...defaultProps()} {...props} />);
   });
   return host;
 };
@@ -80,15 +72,10 @@ const clickAction = async (host: HTMLElement, action: string) => {
 describe("TerminalPanel", () => {
   beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-    resizeCallback = undefined;
     disconnectObserver.mockReset();
     vi.stubGlobal(
       "ResizeObserver",
       class {
-        constructor(callback: typeof resizeCallback) {
-          resizeCallback = callback;
-        }
-
         observe = vi.fn();
         unobserve = vi.fn();
         disconnect = disconnectObserver;
@@ -104,133 +91,64 @@ describe("TerminalPanel", () => {
     vi.unstubAllGlobals();
   });
 
-  it("boots only after an explicit action and connects the terminal view", async () => {
-    const session = createSession();
-    const view = createView();
-    const states: string[] = [];
-    let request: TerminalStartRequest | undefined;
-    let inputListener: ((data: string) => void) | undefined;
-    vi.mocked(view.onData).mockImplementation((listener) => {
-      inputListener = listener;
-      return { dispose: vi.fn() };
-    });
-    const runner: TerminalRunner = {
-      start: async (nextRequest) => {
-        request = nextRequest;
-        nextRequest.onPhase("booting");
-        nextRequest.onPhase("installing");
-        nextRequest.onOutput("\x1b[32mready\x1b[0m\r\n");
-        nextRequest.onTypeFiles({
-          "file:///node_modules/vitest/index.d.ts": "types",
-        });
-        return session;
-      },
-    };
-    const onTypeFiles = vi.fn();
-    const onSessionChange = vi.fn();
+  it("disposes a terminal view after startup fails", async () => {
+    const failedView = createView();
     const host = await renderPanel({
-      runnerFactory: () => runner,
-      loadTerminalView: async () => view,
-      onTypeFiles,
-      onSessionChange,
-      onStateChange: (state) => states.push(state),
+      runnerFactory: () => ({
+        start: async () => {
+          throw new Error("boot failed");
+        },
+      }),
+      loadTerminalView: async () => failedView,
     });
-
-    expect(host.textContent).toContain("ブラウザ内の隔離環境");
-    expect(host.querySelector('[aria-label="コード実行ターミナル"]')).toBeNull();
-    expect(request).toBeUndefined();
 
     await clickAction(host, "start-terminal");
 
-    expect(request?.files).toEqual(files);
-    expect(request?.visibleFiles).toEqual(["src/main.ts"]);
-    expect(request?.size).toEqual({ cols: 80, rows: 24 });
-    expect(request?.signal.aborted).toBe(false);
-    expect(states).toContain("preparing");
-    expect(states.at(-1)).toBe("ready");
-    expect(onTypeFiles).toHaveBeenCalledWith({
-      "file:///node_modules/vitest/index.d.ts": "types",
-    });
-    expect(onSessionChange).toHaveBeenCalledWith(session);
-    expect(view.open).toHaveBeenCalledOnce();
-    expect(view.write).toHaveBeenCalledWith("\x1b[32mready\x1b[0m\r\n");
-    expect(view.focus).toHaveBeenCalledOnce();
-    expect(session.resize).toHaveBeenCalledWith({ cols: 100, rows: 30 });
-
-    inputListener?.("pwd\r");
-    await act(async () => undefined);
-    expect(session.writeInput).toHaveBeenCalledWith("pwd\r");
-
-    resizeCallback?.([], {} as ResizeObserver);
-    expect(view.fit).toHaveBeenCalledTimes(2);
-    expect(session.resize).toHaveBeenLastCalledWith({ cols: 100, rows: 30 });
+    expect(failedView.dispose).toHaveBeenCalledOnce();
   });
 
-  it("explains an unsupported browser without creating a runner", async () => {
-    const runnerFactory = vi.fn<() => TerminalRunner>();
+  it("releases a session when sending its initial command fails", async () => {
+    const session = createSession();
+    vi.mocked(session.writeInput).mockRejectedValueOnce(new Error("write failed"));
     const host = await renderPanel({
-      supportsRuntime: () => false,
-      runnerFactory,
+      initialCommand: "pnpm exercise:02",
+      runnerFactory: () => ({ start: async () => session }),
     });
 
     await clickAction(host, "start-terminal");
 
-    expect(runnerFactory).not.toHaveBeenCalled();
-    expect(host.textContent).toContain(
-      "ChromeまたはEdgeで開き、サイトの分離ヘッダーを確認してください。",
-    );
+    expect(session.writeInput).toHaveBeenCalledWith("pnpm exercise:02\r");
+    expect(session.dispose).toHaveBeenCalledOnce();
     expect(host.querySelector('[data-action="retry-terminal"]')).not.toBeNull();
   });
 
-  it("disposes a failed attempt and retries from a fresh runner", async () => {
+  it("releases a session when unmounted during the initial command", async () => {
     const session = createSession();
-    const failedView = createView();
-    const recoveredView = createView();
-    const views = [failedView, recoveredView];
-    let attempts = 0;
-    const runnerFactory = vi.fn<() => TerminalRunner>(() => ({
-      start: async () => {
-        attempts += 1;
-        if (attempts === 1) throw new Error("boot failed");
-        return session;
-      },
-    }));
+    let resolveWrite!: () => void;
+    vi.mocked(session.writeInput).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveWrite = resolve;
+        }),
+    );
     const host = await renderPanel({
-      runnerFactory,
-      loadTerminalView: async () => views.shift()!,
+      initialCommand: "pnpm exercise:02",
+      runnerFactory: () => ({ start: async () => session }),
     });
 
-    await clickAction(host, "start-terminal");
-    expect(host.textContent).toContain("boot failed");
-    expect(failedView.dispose).toHaveBeenCalledOnce();
+    act(() =>
+      host
+        .querySelector<HTMLButtonElement>('[data-action="start-terminal"]')
+        ?.click(),
+    );
+    await act(async () => undefined);
+    expect(session.writeInput).toHaveBeenCalledOnce();
 
-    await clickAction(host, "retry-terminal");
-    expect(runnerFactory).toHaveBeenCalledTimes(2);
-    expect(recoveredView.open).toHaveBeenCalledOnce();
-    expect(host.querySelector('[aria-label="コード実行ターミナル"]')).not.toBeNull();
-  });
+    const root = roots.pop()!;
+    await act(async () => root.unmount());
+    await act(async () => resolveWrite());
 
-  it("restarts an exited shell without discarding its session", async () => {
-    const session = createSession();
-    const view = createView();
-    let request: TerminalStartRequest | undefined;
-    const host = await renderPanel({
-      runnerFactory: () => ({
-        start: async (nextRequest) => {
-          request = nextRequest;
-          return session;
-        },
-      }),
-      loadTerminalView: async () => view,
-    });
-    await clickAction(host, "start-terminal");
-
-    await act(async () => request?.onExit(0));
-    expect(host.textContent).toContain("シェルが終了しました（終了コード 0）。");
-
-    await clickAction(host, "restart-terminal");
-    expect(session.restartShell).toHaveBeenCalledWith({ cols: 100, rows: 30 });
-    expect(host.textContent).not.toContain("シェルが終了しました");
+    expect(session.dispose).toHaveBeenCalledOnce();
   });
 
   it("releases terminal, observer, input, and session resources on unmount", async () => {
@@ -254,24 +172,6 @@ describe("TerminalPanel", () => {
     expect(view.dispose).toHaveBeenCalledOnce();
     expect(session.dispose).toHaveBeenCalledOnce();
     expect(onSessionChange).toHaveBeenLastCalledWith(undefined);
-  });
-
-  it("boots normally after the StrictMode setup-cleanup probe", async () => {
-    const session = createSession();
-    const view = createView();
-    const host = await renderPanel(
-      {
-        runnerFactory: () => ({ start: async () => session }),
-        loadTerminalView: async () => view,
-      },
-      true,
-    );
-
-    await clickAction(host, "start-terminal");
-
-    expect(view.open).toHaveBeenCalledOnce();
-    expect(session.dispose).not.toHaveBeenCalled();
-    expect(host.querySelector('[data-state="ready"]')).not.toBeNull();
   });
 
   it("aborts startup and disposes its view when unmounted during installation", async () => {

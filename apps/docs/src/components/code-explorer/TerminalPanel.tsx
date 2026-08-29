@@ -30,6 +30,7 @@ export type TerminalPanelStateKind =
 export type TerminalPanelProps = Readonly<{
   files: ProjectFiles;
   visibleFiles: readonly string[];
+  initialCommand?: string;
   runnerFactory?: () => TerminalRunner;
   supportsRuntime?: () => boolean;
   loadTerminalView?: () => Promise<TerminalView>;
@@ -37,6 +38,7 @@ export type TerminalPanelProps = Readonly<{
   onWorkspaceChange: (change: WorkspaceChange) => void;
   onSessionChange: (session: TerminalSession | undefined) => void;
   onStateChange: (state: TerminalPanelStateKind) => void;
+  waitForPendingFileWrites?: () => Promise<void>;
 }>;
 
 type PanelState =
@@ -63,6 +65,8 @@ const messageFrom = (error: unknown): string =>
 
 const defaultSupportsRuntime = (): boolean =>
   globalThis.crossOriginIsolated === true && typeof WebAssembly !== "undefined";
+
+const noPendingFileWrites = async (): Promise<void> => undefined;
 
 export const createXtermView = async (): Promise<TerminalView> => {
   const [{ Terminal }, { FitAddon }] = await Promise.all([
@@ -104,6 +108,7 @@ const defaultRunnerFactory = (): TerminalRunner =>
 export const TerminalPanel = ({
   files,
   visibleFiles,
+  initialCommand,
   runnerFactory = defaultRunnerFactory,
   supportsRuntime = defaultSupportsRuntime,
   loadTerminalView = createXtermView,
@@ -111,6 +116,7 @@ export const TerminalPanel = ({
   onWorkspaceChange,
   onSessionChange,
   onStateChange,
+  waitForPendingFileWrites = noPendingFileWrites,
 }: TerminalPanelProps) => {
   const [state, setState] = useState<PanelState>({ kind: "unstarted" });
   const terminalHost = useRef<HTMLDivElement>(null);
@@ -129,11 +135,13 @@ export const TerminalPanel = ({
   const onWorkspaceChangeRef = useRef(onWorkspaceChange);
   const onSessionChangeRef = useRef(onSessionChange);
   const onStateChangeRef = useRef(onStateChange);
+  const waitForPendingFileWritesRef = useRef(waitForPendingFileWrites);
 
   onTypeFilesRef.current = onTypeFiles;
   onWorkspaceChangeRef.current = onWorkspaceChange;
   onSessionChangeRef.current = onSessionChange;
   onStateChangeRef.current = onStateChange;
+  waitForPendingFileWritesRef.current = waitForPendingFileWrites;
 
   const transition = useCallback((nextState: PanelState) => {
     if (!mounted.current) return;
@@ -178,7 +186,10 @@ export const TerminalPanel = ({
     terminalOpened.current = true;
     for (const chunk of pendingOutput.current.splice(0)) view.write(chunk);
     inputSubscription.current = view.onData((data) => {
-      void session.writeInput(data).catch(() => undefined);
+      void waitForPendingFileWritesRef
+        .current()
+        .then(() => session.writeInput(data))
+        .catch(() => undefined);
     });
     const fit = () => session.resize(view.fit());
     fit();
@@ -211,6 +222,7 @@ export const TerminalPanel = ({
     transition({ kind: "preparing", phase: "booting" });
 
     let view: TerminalView | undefined;
+    let session: TerminalSession | undefined;
     try {
       view = await loadTerminalView();
       if (!isActiveAttempt()) {
@@ -219,7 +231,7 @@ export const TerminalPanel = ({
       }
       terminalView.current = view;
       const runner = runnerFactory();
-      const session = await runner.start({
+      session = await runner.start({
         files,
         visibleFiles,
         size: initialTerminalSize,
@@ -256,8 +268,16 @@ export const TerminalPanel = ({
         view.dispose();
         return;
       }
+      if (initialCommand !== undefined) {
+        await session.writeInput(`${initialCommand}\r`);
+        if (!isActiveAttempt()) {
+          await session.dispose();
+          return;
+        }
+      }
       terminalSession.current = session;
       onSessionChangeRef.current(session);
+      session = undefined;
       const exitCode = pendingExitCode.current;
       pendingExitCode.current = undefined;
       transition(
@@ -266,6 +286,7 @@ export const TerminalPanel = ({
           : { kind: "exited", exitCode, restarting: false },
       );
     } catch (error: unknown) {
+      await session?.dispose();
       if (view !== undefined && terminalView.current === view) {
         terminalView.current = undefined;
         view.dispose();
@@ -281,6 +302,7 @@ export const TerminalPanel = ({
     }
   }, [
     files,
+    initialCommand,
     loadTerminalView,
     runnerFactory,
     supportsRuntime,
@@ -318,15 +340,19 @@ export const TerminalPanel = ({
     <section className="code-explorer__terminal" data-state={state.kind}>
       {state.kind === "unstarted" ? (
         <div className="code-explorer__terminal-prompt">
-          <p>
-            コマンドはブラウザ内の隔離環境で実行され、ローカルPCのファイルにはアクセスしません。
-          </p>
+          {initialCommand === undefined ? (
+            <p>
+              コマンドはブラウザ内の隔離環境で実行され、ローカルPCのファイルにはアクセスしません。
+            </p>
+          ) : null}
           <button
             type="button"
             data-action="start-terminal"
             onClick={() => void startTerminal()}
           >
-            ターミナルを起動
+            {initialCommand === undefined
+              ? "ターミナルを起動"
+              : "修正前の失敗を確認"}
           </button>
         </div>
       ) : null}

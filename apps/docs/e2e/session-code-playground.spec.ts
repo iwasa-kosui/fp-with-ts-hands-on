@@ -1,4 +1,6 @@
+import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
+import { withSuccessMarker } from "./success-marker-command";
 
 const exerciseSlugs = [
   "02-state-transitions",
@@ -20,7 +22,7 @@ for (const viewport of viewports) {
 
     const content = page.locator(".case-file__content");
     const currentBusiness = page.locator("#incident");
-    const currentSystem = page.locator("#legacy");
+    const currentSystem = page.locator("#system");
 
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "業務とシステムを引き継ぐ",
@@ -30,10 +32,10 @@ for (const viewport of viewports) {
     await expect(currentBusiness).toContainText("獣医師");
     await expect(currentBusiness).toContainText("飼い主");
     await expect(currentSystem.locator("table")).toHaveCount(2);
-    await expect(currentSystem).toContainText("予約データ");
-    await expect(currentSystem).toContainText("カルテ");
-    await expect(currentSystem).toContainText("会計データ");
-    await expect(currentSystem).toContainText("調査ログ");
+    await expect(currentSystem).toContainText("現在の操作");
+    await expect(currentSystem).toContainText("会計担当");
+    await expect(currentSystem).toContainText("現在の予約内容");
+    await expect(currentSystem).toContainText("不整合の警告");
     await expect(content.locator(".session-code-overview")).toHaveCount(0);
     await expect(content.locator("[data-code-explorer]")).toHaveCount(0);
     await expect(content.locator(".session-code-playground")).toHaveCount(0);
@@ -55,177 +57,225 @@ for (const viewport of viewports) {
   });
 }
 
-test("/sessions/02-state-transitions/ places the guided overview above a full-width editor", async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 1200 });
-  await page.goto("/sessions/02-state-transitions/");
-
-  const overview = page.locator("[data-code-overview]");
-  await expect(overview.locator('[aria-label^="コードエディタ:"]')).toBeVisible();
-
-  const layout = await overview.evaluate((element) => {
-    const workspace = element.querySelector<HTMLElement>(
-      ".code-explorer__workspace",
-    );
-    const guides = element.querySelector<HTMLElement>(
-      ".code-explorer__guides",
-    );
-    const editor = element.querySelector<HTMLElement>(
-      ".code-explorer__editor",
-    );
-    if (workspace === null || guides === null || editor === null) {
-      throw new Error("guided overview layout is incomplete");
-    }
-
-    const workspaceRect = workspace.getBoundingClientRect();
-    const guidesRect = guides.getBoundingClientRect();
-    const editorRect = editor.getBoundingClientRect();
-    return {
-      workspaceWidth: workspaceRect.width,
-      guidesBottom: guidesRect.bottom,
-      editorTop: editorRect.top,
-      editorWidth: editorRect.width,
-    };
-  });
-
-  expect(layout.editorTop).toBeGreaterThanOrEqual(layout.guidesBottom);
-  expect(layout.editorWidth).toBeGreaterThanOrEqual(layout.workspaceWidth - 1);
-});
-
-test("/sessions/02-state-transitions/ presents guided choices in one row", async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 1200 });
-  await page.goto("/sessions/02-state-transitions/");
-
-  const choices = page.locator(
-    "[data-code-overview] .code-explorer__guides > li",
-  );
-  await expect(choices).toHaveCount(2);
-  const first = await choices.nth(0).boundingBox();
-  const second = await choices.nth(1).boundingBox();
-  if (first === null || second === null) {
-    throw new Error("guided choices are not visible");
-  }
-
-  expect(second.x).toBeGreaterThan(first.x + first.width - 1);
-  expect(second.y).toBeCloseTo(first.y, 0);
-});
-
-test("/sessions/02-state-transitions/ runs arbitrary commands and reflects created files", async ({ page }) => {
+test("/sessions/02-state-transitions/ runs the failure flow before accepting the solution", async ({ page }) => {
   test.setTimeout(150_000);
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.setViewportSize({ width: 1440, height: 1200 });
   await page.goto("/sessions/02-state-transitions/");
 
-  const playground = page.locator(".session-code-playground");
+  const transitionsSolution = await readFile(
+    new URL(
+      "../../../examples/session-03/src/domain/appointment/transitions.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const statusLabelSolution = await readFile(
+    new URL(
+      "../../../examples/session-03/src/domain/appointment/statusLabel.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const playground = page.locator("#legacy");
   await expect(
     playground.getByRole("textbox", { name: "Editor content" }),
   ).toBeAttached();
   await playground
-    .getByRole("button", { name: "ターミナルを起動" })
+    .getByRole("button", { name: "修正前の失敗を確認" })
     .click();
-  await expect(playground.locator(".code-explorer__terminal")).not.toHaveAttribute(
-    "data-state",
-    "unstarted",
-  );
   const terminal = playground.locator('[aria-label="コード実行ターミナル"]');
+  const runTerminalCommand = async (command: string) => {
+    const input = terminal.locator(".xterm-helper-textarea");
+    await input.pressSequentially(command);
+    await input.press("Enter");
+  };
   await expect(terminal).toBeVisible({ timeout: 90_000 });
-
-  const terminalInput = terminal.locator(".xterm-helper-textarea");
-  await terminalInput.focus();
-  await page.keyboard.type("echo __CODEX_TERMINAL_4'2'__");
-  await page.keyboard.press("Enter");
-  await expect(terminal).toContainText("__CODEX_TERMINAL_42__", {
-    timeout: 10_000,
-  });
-
-  await terminalInput.focus();
-  await page.keyboard.type(
-    "echo 'created from terminal' > src/created.txt && echo __FILE_4'2'__",
+  await expect(terminal).toContainText(
+    "要件未達: 会計済みの来院から診察を開始できない型にしてください。",
+    {
+      timeout: 30_000,
+    },
   );
-  await page.keyboard.press("Enter");
-  await expect(terminal).toContainText("__FILE_42__", { timeout: 10_000 });
 
-  await terminalInput.focus();
-  await page.keyboard.type("ls src/created.txt && echo __LIST_4'2'__");
-  await page.keyboard.press("Enter");
-  await expect(terminal).toContainText("__LIST_42__", { timeout: 10_000 });
-  const createdFile = playground.locator('[data-path="src/created.txt"]');
-  await expect(createdFile).toBeVisible({ timeout: 10_000 });
-  await createdFile.click();
-  await expect(
-    playground.locator('[aria-label="コードエディタ: src/created.txt"]'),
-  ).toBeVisible();
+  const editor = playground.getByRole("textbox", { name: "Editor content" });
+  const pasteIntoEditor = async (source: string) => {
+    await editor.press("ControlOrMeta+A");
+    await page.evaluate(
+      async (nextSource) => navigator.clipboard.writeText(nextSource),
+      source,
+    );
+    await editor.press("ControlOrMeta+V");
+  };
+  const selectFile = async (path: string, expectedSource: string) => {
+    await playground.locator(`[data-path="${path}"]`).click();
+    await expect(
+      playground.locator(`[aria-label="コードエディタ: ${path}"]`),
+    ).toBeVisible();
+    await expect(playground.locator(".code-explorer__monaco .view-lines")).toContainText(
+      expectedSource,
+    );
+  };
 
-  const editorInput = playground.getByRole("textbox", {
-    name: "Editor content",
-  });
-  await editorInput.focus();
-  await page.keyboard.press("ControlOrMeta+A");
-  await page.keyboard.type("edited-from-monaco");
-
-  await terminalInput.focus();
-  await page.keyboard.type("cat src/created.txt && echo __CAT_4'2'__");
-  await page.keyboard.press("Enter");
-  await expect(terminal).toContainText("edited-from-monaco", {
-    timeout: 10_000,
-  });
-  await expect(terminal).toContainText("__CAT_42__", { timeout: 10_000 });
-
-  await terminalInput.focus();
-  await page.keyboard.type(
-    "echo terminal-updated > src/created.txt && echo __UPDATE_4'2'__",
-  );
-  await page.keyboard.press("Enter");
-  await expect(terminal).toContainText("__UPDATE_42__", { timeout: 10_000 });
+  await selectFile("src/domain/appointment/transitions.ts", "requireKind");
+  await pasteIntoEditor(transitionsSolution);
   await expect(playground.locator(".code-explorer__monaco .view-lines")).toContainText(
-    "terminal-updated",
-    { timeout: 10_000 },
+    "as const satisfies Canceled;",
+  );
+  await expect(
+    playground.locator('[data-path="src/domain/appointment/transitions.ts"]'),
+  ).toHaveAttribute(
+    "aria-label",
+    "src/domain/appointment/transitions.ts、変更あり",
   );
 
-  await terminalInput.focus();
-  await page.keyboard.type("rm src/created.txt && echo __DELETE_4'2'__");
-  await page.keyboard.press("Enter");
-  await expect(terminal).toContainText("__DELETE_42__", { timeout: 10_000 });
-  await expect(createdFile).toHaveCount(0, { timeout: 10_000 });
+  await selectFile("src/domain/appointment/statusLabel.ts", "toStatusLabel");
+  await pasteIntoEditor(statusLabelSolution);
+  await expect(playground.locator(".code-explorer__monaco .view-lines")).toContainText(
+    "return assertNever(appointment);",
+  );
+  await expect(
+    playground.locator('[data-path="src/domain/appointment/statusLabel.ts"]'),
+  ).toHaveAttribute(
+    "aria-label",
+    "src/domain/appointment/statusLabel.ts、変更あり",
+  );
 
-  await terminalInput.focus();
-  await page.keyboard.type("pnpm exercise:02");
-  await page.keyboard.press("Enter");
-  await expect(terminal).toContainText(/Tests\s+4 failed/, {
+  const typecheck = withSuccessMarker(
+    "pnpm exercise:02",
+    ["TYPECHECK_", "PASSED"],
+  );
+  await runTerminalCommand(typecheck.command);
+  await expect(terminal).toContainText(typecheck.marker, {
     timeout: 30_000,
   });
 
-  await page.setViewportSize({ width: 390, height: 844 });
-  const terminalLayout = await terminal.evaluate((element) => {
-    const screen = element.querySelector<HTMLElement>(".xterm-screen");
-    if (screen === null) throw new Error("xterm screen is missing");
-    return {
-      hostWidth: element.clientWidth,
-      hostHeight: element.clientHeight,
-      screenWidth: screen.getBoundingClientRect().width,
-      screenHeight: screen.getBoundingClientRect().height,
-    };
-  });
-  expect(terminalLayout.screenWidth).toBeLessThanOrEqual(
-    terminalLayout.hostWidth + 1,
+  await playground.locator('[data-action="reset"]').click();
+  await expect(playground.locator(".code-explorer__monaco .view-lines")).toContainText(
+    'return "不明";',
   );
-  expect(terminalLayout.screenHeight).toBeLessThanOrEqual(
-    terminalLayout.hostHeight + 1,
+  await expect(
+    playground.locator('[data-path="src/domain/appointment/statusLabel.ts"]'),
+  ).toHaveAttribute("aria-label", "src/domain/appointment/statusLabel.ts");
+  const resetReadback = withSuccessMarker(
+    `node -e "const source = require('node:fs').readFileSync('src/domain/appointment/statusLabel.ts', 'utf8'); if (!source.includes('return \\\"不明\\\";')) process.exit(1)"`,
+    ["RESET_CONTENT_", "SYNCED"],
   );
-  const pageWidths = await page.evaluate(() => ({
-    clientWidth: document.documentElement.clientWidth,
-    scrollWidth: document.documentElement.scrollWidth,
-  }));
-  expect(pageWidths.scrollWidth).toBeLessThanOrEqual(pageWidths.clientWidth + 1);
+  await runTerminalCommand(resetReadback.command);
+  await expect(terminal).toContainText(resetReadback.marker);
+
+  const terminalFilePath = "src/terminal-note.ts";
+  await runTerminalCommand(
+    `node -e "require('node:fs').writeFileSync('${terminalFilePath}', 'export const terminalValue = 1;')"`,
+  );
+  const terminalFile = playground.locator(`[data-path="${terminalFilePath}"]`);
+  await expect(terminalFile).toBeVisible();
+  await terminalFile.click();
+  await expect(playground.locator(".code-explorer__monaco .view-lines")).toContainText(
+    "terminalValue = 1",
+  );
+
+  await runTerminalCommand(
+    `node -e "require('node:fs').writeFileSync('${terminalFilePath}', 'export const terminalValue = 2;')"`,
+  );
+  await expect(playground.locator(".code-explorer__monaco .view-lines")).toContainText(
+    "terminalValue = 2",
+  );
+
+  await runTerminalCommand(
+    `node -e "require('node:fs').rmSync('${terminalFilePath}')"`,
+  );
+  await expect(terminalFile).toHaveCount(0);
+  await expect(
+    playground.locator(`[aria-label="コードエディタ: ${terminalFilePath}"]`),
+  ).toHaveCount(0);
+  await expect(
+    playground.locator('[aria-label="コードエディタ: exercises/state-modeling.test.ts"]'),
+  ).toBeVisible();
+  await expect(
+    playground.locator('[data-path="exercises/state-modeling.test.ts"]'),
+  ).toHaveAttribute("aria-pressed", "true");
+});
+
+test("/sessions/02-state-transitions/ stacks design guide cards in one column on desktop", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1200 });
+  await page.goto("/sessions/02-state-transitions/");
+
+  const cards = page.locator("#legacy .code-guide-cards > [data-code-guide-card]");
+  await expect(cards).toHaveCount(2);
+  const positions = await cards.evaluateAll((elements) =>
+    elements.map((element) => {
+      const { left, top, width, height } = element.getBoundingClientRect();
+      return { left, top, width, height };
+    }),
+  );
+  const [first, second] = positions;
+  if (first === undefined || second === undefined) {
+    throw new Error("S2 design guide cards are missing");
+  }
+
+  expect(second.top).toBeGreaterThan(first.top + first.height);
+  expect(second.left).toBe(first.left);
+  expect(second.width).toBe(first.width);
 });
 
 for (const slug of exerciseSlugs) {
   const route = `/sessions/${slug}/`;
   for (const viewport of viewports) {
-    test(`${route} keeps the playground usable on ${viewport.name}`, async ({ page }) => {
+    test(`${route} keeps its single failure-flow playground usable on ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize(viewport);
       await page.goto(route);
 
-      const playground = page.locator(".session-code-playground");
+      const failureFlow = page.locator("#legacy");
+      const playground = failureFlow.locator(".code-explorer");
       expect(await page.evaluate(() => globalThis.crossOriginIsolated)).toBe(true);
+      await expect(failureFlow.locator("[data-code-guide-card]")).not.toHaveCount(0);
+      await expect(failureFlow.locator(".exercise-failures")).toHaveCount(1);
+      await expect(failureFlow.locator(".command-block")).toHaveCount(1);
+      await expect(playground).toHaveCount(1);
+      await expect(
+        failureFlow.getByRole("textbox", { name: "Editor content" }),
+      ).toBeAttached();
+      await expect(
+        failureFlow.getByText("ブラウザ内の変更はローカルへ反映されません。", {
+          exact: true,
+        }),
+      ).toHaveCount(1);
+      expect(
+        await failureFlow.evaluate((element) => {
+          const guide = element.querySelector("[data-code-guide-card]");
+          const failures = element.querySelector(".exercise-failures");
+          const command = element.querySelector(".command-block");
+          const note = Array.from(element.querySelectorAll("p")).find(
+            (paragraph) =>
+              paragraph.textContent?.trim() ===
+              "ブラウザ内の変更はローカルへ反映されません。",
+          );
+          const explorer = element.querySelector(".code-explorer");
+          if (
+            guide === null ||
+            failures === null ||
+            command === null ||
+            note === undefined ||
+            explorer === null
+          ) {
+            throw new Error("failure-flow order markers are incomplete");
+          }
+
+          const precedes = (before: Element, after: Element) =>
+            (before.compareDocumentPosition(after) &
+              Node.DOCUMENT_POSITION_FOLLOWING) !==
+            0;
+
+          return (
+            precedes(guide, failures) &&
+            precedes(failures, command) &&
+            precedes(command, note) &&
+            precedes(note, explorer)
+          );
+        }),
+      ).toBe(true);
+      await expect(page.locator("#refactor .session-code-playground")).toHaveCount(0);
       await expect(playground).toBeVisible();
       await expect(playground.locator('[aria-label^="コードエディタ:"]')).toBeVisible();
       await expect(playground.locator('[data-action="reset"]')).toBeVisible();
@@ -233,7 +283,7 @@ for (const slug of exerciseSlugs) {
       await expect(playground.locator('[data-action="stop"]')).toHaveCount(0);
       await expect(playground.locator('[aria-label="実行結果"]')).toHaveCount(0);
       await expect(
-        playground.getByRole("button", { name: "ターミナルを起動" }),
+        playground.getByRole("button", { name: "修正前の失敗を確認" }),
       ).toBeVisible();
       const widths = await playground.evaluate((element) => ({
         clientWidth: element.clientWidth,

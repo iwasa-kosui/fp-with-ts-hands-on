@@ -23,6 +23,13 @@ import type { StartExaminationError } from "../useCase/errors.js";
 
 type StartExaminationNoticeCode = "not-found" | "invalid-state";
 
+export const startExaminationNoticeCodes: Readonly<
+  Record<StartExaminationError["kind"], StartExaminationNoticeCode>
+> = {
+  AppointmentNotFound: "not-found",
+  InvalidAppointmentState: "invalid-state",
+};
+
 const assertNever = (error: never): never => {
   throw new Error(`Unhandled start examination error: ${JSON.stringify(error)}`);
 };
@@ -32,9 +39,9 @@ const toStartExaminationNoticeCode = (
 ): StartExaminationNoticeCode => {
   switch (error.kind) {
     case "AppointmentNotFound":
-      return "not-found";
+      return startExaminationNoticeCodes.AppointmentNotFound;
     case "InvalidAppointmentState":
-      return "invalid-state";
+      return startExaminationNoticeCodes.InvalidAppointmentState;
     default:
       return assertNever(error);
   }

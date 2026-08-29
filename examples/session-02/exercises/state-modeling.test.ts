@@ -1,27 +1,42 @@
-import { describe, expect, it } from "vitest";
+import { describe, expectTypeOf, it } from "vitest";
 
-import { compileTypeFixture } from "./compileTypeFixture.js";
+import type {
+  CheckedIn,
+  InExamination,
+  Paid,
+} from "../src/domain/appointment/appointment.js";
+import { toStatusLabel } from "../src/domain/appointment/statusLabel.js";
+import {
+  cancel,
+  checkIn,
+  recordPayment,
+  startExamination,
+} from "../src/domain/appointment/transitions.js";
 
-describe("Step 1: 会計済みの来院は診察を開始できない", () => {
-  it("Paid を渡す呼び出しはコンパイルできない", () => {
-    expect(compileTypeFixture("s2-paid-cannot-start.ts")).toEqual([]);
+describe("Step 1", () => {
+  it("会計済みの来院から診察を開始できない", () => {
+    expectTypeOf<Paid>().not.toMatchTypeOf<Parameters<typeof startExamination>[0]>(); // 要件: 会計済みの来院から診察を開始できない型にしてください。
   });
 });
 
-describe("Step 2: キャンセルには必ず理由を残す", () => {
-  it("reason を省いた呼び出しはコンパイルできない", () => {
-    expect(compileTypeFixture("s2-cancel-requires-reason.ts")).toEqual([]);
+describe("Step 2", () => {
+  it("キャンセルには必ず理由を残す", () => {
+    expectTypeOf<undefined>().not.toMatchTypeOf<Parameters<typeof cancel>[1]>(); // 要件: キャンセル理由を省略できない型にしてください。
   });
 });
 
-describe("Step 3: 全遷移の入口を状態型で絞る", () => {
-  it("許可されない遷移元はコンパイルできない", () => {
-    expect(compileTypeFixture("s2-transition-sources.ts")).toEqual([]);
+describe("Step 3", () => {
+  it("来院済みの予約を再度来院済みにできない", () => {
+    expectTypeOf<CheckedIn>().not.toMatchTypeOf<Parameters<typeof checkIn>[0]>(); // 要件: 来院済みの予約を再度来院済みにできない型にしてください。
+  });
+
+  it("診察結果を記録する前に会計できない", () => {
+    expectTypeOf<InExamination>().not.toMatchTypeOf<Parameters<typeof recordPayment>[0]>(); // 要件: 診察結果を記録する前に会計できない型にしてください。
   });
 });
 
-describe("Step 4: 状態追加時に未対応の分岐をコンパイルエラーにする", () => {
-  it("7つ目の状態を足すと status label がコンパイルできない", () => {
-    expect(compileTypeFixture("s2-status-exhaustive.ts")).toEqual([]);
+describe("Step 4", () => {
+  it("未定義の予約状態を表示対象にできない", () => {
+    expectTypeOf<Readonly<{ kind: "Deferred" }>>().not.toMatchTypeOf<Parameters<typeof toStatusLabel>[0]>(); // 要件: 未定義の予約状態には表示名を付けられない型にしてください。
   });
 });

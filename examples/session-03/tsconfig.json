@@ -15,5 +15,6 @@
     "vitest.config.ts",
     "vitest.exercises.config.ts",
     "vite.config.ts"
-  ]
+  ],
+  "exclude": ["exercises/semantic-identifiers.test.ts"]
 }

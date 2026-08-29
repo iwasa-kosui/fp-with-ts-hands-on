@@ -1,38 +1,25 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 
+import { startExamination } from "../src/domain/appointment/transitions.js";
 import { AppointmentId } from "../src/domain/ids/appointmentId.js";
-import { compileProjectFile, compileTypeFixture } from "./compileTypeFixture.js";
+import type { AppointmentId as AppointmentIdValue } from "../src/domain/ids/appointmentId.js";
+import type { VeterinarianId } from "../src/domain/ids/veterinarianId.js";
 
-const directory = path.dirname(fileURLToPath(import.meta.url));
-const testTypesRelativePath = "src/domain/domain.test-types.ts";
-const testTypesSource = (): string =>
-  readFileSync(path.resolve(directory, "..", testTypesRelativePath), "utf8");
-
-describe("Step 1: 用途の違う識別子は互いに代入できない", () => {
-  it("AppointmentIdとVeterinarianIdを取り違えられない", () => {
-    expect(
-      compileTypeFixture("s3-appointment-id-is-not-veterinarian-id.ts"),
-    ).toEqual([]);
+describe("Step 1", () => {
+  it("AppointmentId を VeterinarianId の用途へ渡せない", () => {
+    expectTypeOf<AppointmentIdValue>().not.toMatchTypeOf<VeterinarianId>(); // 要件: AppointmentId を VeterinarianId の用途へ渡せない型にしてください。
   });
 });
 
-describe("Step 2: 診察開始まで用途別の識別子を伝える", () => {
-  it("予約状態とstartExaminationが用途別の識別子を要求する", () => {
-    expect(
-      compileTypeFixture("s3-start-examination-requires-typed-ids.ts"),
-    ).toEqual([]);
+describe("Step 2", () => {
+  it("診察開始には VeterinarianId が必要", () => {
+    expectTypeOf<AppointmentIdValue>().not.toMatchTypeOf<Parameters<typeof startExamination>[1]>(); // 要件: 診察開始の担当獣医師に AppointmentId を渡せない型にしてください。
   });
 });
 
-describe("Step 3: 取り違えが止まることを型テストで確かめる", () => {
-  it("通ってはいけない代入の検査が2件以上あり、そのすべてが実際に止まる", () => {
-    expect(
-      (testTypesSource().match(/@ts-expect-error/g) ?? []).length,
-    ).toBeGreaterThanOrEqual(2);
-    expect(compileProjectFile(testTypesRelativePath)).toEqual([]);
+describe("Step 3", () => {
+  it("VeterinarianId を AppointmentId の用途へ渡せない", () => {
+    expectTypeOf<VeterinarianId>().not.toMatchTypeOf<AppointmentIdValue>(); // 要件: VeterinarianId を AppointmentId の用途へ渡せない型にしてください。
   });
 });
 
