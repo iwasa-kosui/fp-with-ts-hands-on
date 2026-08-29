@@ -77,6 +77,7 @@ export const session: SessionSummary = {
     {
       id: "s3-brand-domain-ids",
       goal: "ペットと飼い主の識別子を、配布済みの ExamId と同じ規約で別々の型にする。",
+      startingFailure: "ペットと飼い主の識別子を取り違えても、型検査が通る。",
       targets: [
         "examples/session-03/src/domain/ids/petId.ts",
         "examples/session-03/src/domain/ids/ownerId.ts",
@@ -97,6 +98,7 @@ export const session: SessionSummary = {
     {
       id: "s3-apply-ids-to-appointment",
       goal: "予約の6状態と遷移が受け取る識別子を、用途別の型へ置き換える。",
+      startingFailure: "予約の状態や遷移が、用途を区別しない識別子を受け取る。",
       targets: [
         "examples/session-03/src/domain/appointment/appointment.ts",
         "examples/session-03/src/domain/appointment/transitions.ts",
@@ -117,6 +119,7 @@ export const session: SessionSummary = {
     {
       id: "s3-reject-id-swap",
       goal: "OwnerId を PetId の位置へ渡すコードがコンパイルできないことを、型テストで自分で確かめる。",
+      startingFailure: "識別子の取り違えを確かめる型テストがない。",
       targets: ["examples/session-03/src/domain/domain.test-types.ts"],
       solutions: [{
         path: "examples/session-04/src/domain/domain.test-types.ts",
@@ -403,11 +406,12 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 <CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} guides={guides} />
               </div>
             </section>
-            <h3>見つけた問題を RED で確かめる</h3>
-            <p>配布コードで見つけた問題が、業務名を持つ assertion の失敗として現れることを確認します。</p>
-            <CommandBlock phase="red" command={session.exerciseCommand} expected={`${session.steps.length}件の参加者ステップが、業務上の未解決条件として失敗します。`} />
-            <h3>今回のステップ</h3>
-            <ol class="exercise-steps">{session.steps.map((step) => <li><strong>{step.goal}</strong></li>)}</ol>
+            <h3>修正前の失敗を確認する</h3>
+            <p>修正前は、次の{session.steps.length}件に対応する演習テストが失敗します。</p>
+            <ul class="exercise-failures" aria-label="修正前に確認する問題">
+              {session.steps.map((step) => <li>{step.startingFailure}</li>)}
+            </ul>
+            <CommandBlock phase="red" command={session.exerciseCommand} expected={`${session.steps.length}件の演習テストが失敗します。`} />
           </section>
 
           <section id="teach">
@@ -492,7 +496,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <p>編集内容とコマンドはこのブラウザ内だけに保持されます。ターミナルを利用できない場合は、ページ内の <code>pnpm</code> 手順を使います。</p>
               <div data-code-explorer={workspace.slug}><CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} /></div>
             </section>
-            <CommandBlock phase="green" command={session.exerciseCommand} expected="assertionが成功することを確認する" />
+            <CommandBlock phase="green" command={session.exerciseCommand} expected="演習テストがすべて成功します。" />
             <h3>演習を完了できないとき</h3>
             <p>{narrative.fallback}</p>
           </section>
