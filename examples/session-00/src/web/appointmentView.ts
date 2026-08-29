@@ -14,6 +14,14 @@ const statusKinds: Readonly<Record<string, string>> = {
   canceled: "Canceled",
 };
 
+const toStatusKind = (status: string): string => {
+  const kind = Object.hasOwn(statusKinds, status)
+    ? statusKinds[status]
+    : undefined;
+
+  return kind ?? status;
+};
+
 const incidentScenarios: readonly IncidentScenario[] = [
   {
     title: "未知の状態を保存",
@@ -117,7 +125,7 @@ export const toPageProps = (
     learningFocus: "型で守られていない業務事故を観察する",
     appointment: {
       appointmentId: appointment.appointmentId,
-      kind: statusKinds[appointment.status] ?? appointment.status,
+      kind: toStatusKind(appointment.status),
       ownerName: appointment.ownerName,
       petName: appointment.petName,
       scheduledAt: appointment.scheduledAt,

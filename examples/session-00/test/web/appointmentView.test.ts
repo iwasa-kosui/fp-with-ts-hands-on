@@ -57,13 +57,18 @@ describe("Session 00 appointment view", () => {
     },
   );
 
-  it("Object prototype由来の名前も未知statusとして警告する", () => {
-    const current = { ...appointment, status: "toString" };
+  it.each(["toString", "__proto__"] as const)(
+    "Object prototype由来の名前 %s も文字列のまま未知statusとして表示する",
+    (status) => {
+      const current = { ...appointment, status };
 
-    const props = toPageProps(current, [auditLogFor(current)], undefined);
+      const props = toPageProps(current, [auditLogFor(current)], undefined);
 
-    expect(props.incidentLab?.inspection.warnings).toContain(
-      "未知の予約statusが保存されています",
-    );
-  });
+      expect(props.appointment.kind).toBe(status);
+      expect(props.appointment.statusLabel).toBe(status);
+      expect(props.incidentLab?.inspection.warnings).toContain(
+        "未知の予約statusが保存されています",
+      );
+    },
+  );
 });

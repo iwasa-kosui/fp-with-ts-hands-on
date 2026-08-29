@@ -9,5 +9,10 @@ const statusLabels: Record<string, string> = {
   canceled: "キャンセル",
 };
 
-export const toStatusLabel = (appointment: Appointment): string =>
-  statusLabels[appointment.status] ?? appointment.status;
+export const toStatusLabel = (appointment: Appointment): string => {
+  const label = Object.hasOwn(statusLabels, appointment.status)
+    ? statusLabels[appointment.status]
+    : undefined;
+
+  return label ?? appointment.status;
+};
