@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
+import { withSuccessMarker } from "./success-marker-command";
 
 const exerciseSlugs = [
   "02-state-transitions",
@@ -140,8 +141,12 @@ test("/sessions/02-state-transitions/ runs the failure flow before accepting the
     "src/domain/appointment/statusLabel.ts、変更あり",
   );
 
-  await runTerminalCommand("pnpm exercise:02 && echo TYPECHECK_PASSED");
-  await expect(terminal).toContainText("TYPECHECK_PASSED", {
+  const typecheck = withSuccessMarker(
+    "pnpm exercise:02",
+    ["TYPECHECK_", "PASSED"],
+  );
+  await runTerminalCommand(typecheck.command);
+  await expect(terminal).toContainText(typecheck.marker, {
     timeout: 30_000,
   });
 
@@ -152,10 +157,12 @@ test("/sessions/02-state-transitions/ runs the failure flow before accepting the
   await expect(
     playground.locator('[data-path="src/domain/appointment/statusLabel.ts"]'),
   ).toHaveAttribute("aria-label", "src/domain/appointment/statusLabel.ts");
-  await runTerminalCommand(
-    `node -e "console.log(require('node:fs').readFileSync('src/domain/appointment/statusLabel.ts', 'utf8').includes('return \\\"不明\\\";') ? 'RESET_CONTENT_SYNCED' : 'RESET_CONTENT_STALE')"`,
+  const resetReadback = withSuccessMarker(
+    `node -e "const source = require('node:fs').readFileSync('src/domain/appointment/statusLabel.ts', 'utf8'); if (!source.includes('return \\\"不明\\\";')) process.exit(1)"`,
+    ["RESET_CONTENT_", "SYNCED"],
   );
-  await expect(terminal).toContainText("RESET_CONTENT_SYNCED");
+  await runTerminalCommand(resetReadback.command);
+  await expect(terminal).toContainText(resetReadback.marker);
 
   const terminalFilePath = "src/terminal-note.ts";
   await runTerminalCommand(
