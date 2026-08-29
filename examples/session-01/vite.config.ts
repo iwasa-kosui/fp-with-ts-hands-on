@@ -17,6 +17,7 @@ const copyDrizzleMigrations = (): Plugin => ({
 
 const clinicViteConfig = createClinicViteConfig({
   external: ["better-sqlite3"],
+  shutdownTimeoutMs: 10_000,
 });
 
 export default defineConfig(async (environment) => {

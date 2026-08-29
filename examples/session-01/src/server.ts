@@ -15,4 +15,6 @@ const app = createDatabaseBackedApp({
   isProduction: import.meta.env.PROD,
 });
 
+process.once("exit", app.close);
+
 export default app;

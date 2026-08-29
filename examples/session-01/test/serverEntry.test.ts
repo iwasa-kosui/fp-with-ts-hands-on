@@ -14,20 +14,43 @@ vi.mock("@hono/node-server", () => ({
 
 import { serve } from "@hono/node-server";
 
-test("server entryの評価はViteへHTTP lifecycleを委譲する", async () => {
+test("server entryはHTTP起動をViteへ委譲しprocess終了時にappを閉じる", async () => {
   const processOnce = vi.spyOn(process, "once");
+  const processOn = vi.spyOn(process, "on");
+  processOnce.mockImplementation((() => process) as typeof process.once);
 
-  await import("../src/server.js");
+  try {
+    await import("../src/server.js");
 
-  expect(serve).not.toHaveBeenCalled();
-  expect(processOnce).not.toHaveBeenCalled();
+    expect(serve).not.toHaveBeenCalled();
+    expect(
+      processOnce.mock.calls.some(
+        ([event]) => event === "SIGINT" || event === "SIGTERM",
+      ),
+    ).toBe(false);
+    expect(
+      processOn.mock.calls.some(
+        ([event]) => event === "SIGINT" || event === "SIGTERM",
+      ),
+    ).toBe(false);
 
-  const source = readFileSync(
-    new URL("../src/server.ts", import.meta.url),
-    "utf8",
-  );
-  expect(source).not.toContain("@hono/node-server");
-  expect(source).not.toContain("process.once");
+    const closeOnExit = processOnce.mock.calls.find(
+      ([event]) => event === "exit",
+    )?.[1] as NodeJS.ExitListener | undefined;
+    expect(closeOnExit).toBeDefined();
+    closeOnExit?.(0);
+    expect(app.close).toHaveBeenCalledOnce();
 
-  processOnce.mockRestore();
+    const source = readFileSync(
+      new URL("../src/server.ts", import.meta.url),
+      "utf8",
+    );
+    expect(source).not.toContain("@hono/node-server");
+    expect(source).not.toMatch(
+      /process\.(?:on|once|addListener)\(["']SIG(?:INT|TERM)/,
+    );
+  } finally {
+    processOn.mockRestore();
+    processOnce.mockRestore();
+  }
 });
