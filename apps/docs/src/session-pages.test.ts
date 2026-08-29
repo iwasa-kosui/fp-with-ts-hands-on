@@ -10,6 +10,21 @@ type PageModule = Readonly<{
   workspace?: SessionWorkspace;
   navigation?: SessionNavigation;
   promisesHref?: string;
+  eventStormingScenario?: Readonly<{
+    lanes: readonly Readonly<{ id: string; label: string }>[];
+    events: readonly Readonly<{
+      id: string;
+      laneId: string;
+      minute: number;
+      actor?: string;
+      command: string;
+      aggregate: string;
+    }>[];
+    hotspots: readonly Readonly<{
+      id: string;
+      relatedEventIds: readonly string[];
+    }>[];
+  }>;
 }>;
 
 const pageModules = import.meta.glob<PageModule>([
@@ -381,6 +396,78 @@ describe("session pages", () => {
     );
     expect(source).toContain('id="peer-review-promises"');
     for (const promise of peerReviewPromises) expect(source).toContain(promise);
+  });
+
+  it("S1 gives participants parallel work and an unresolved decision to discover", () => {
+    const scenario = pageModules[
+      "./pages/sessions/01-business-events-and-workflows.astro"
+    ]?.eventStormingScenario;
+
+    expect(scenario).toBeDefined();
+    if (scenario === undefined) return;
+
+    expect(scenario.lanes).toHaveLength(2);
+    expect(new Set(scenario.events.map(({ laneId }) => laneId))).toEqual(
+      new Set(scenario.lanes.map(({ id }) => id)),
+    );
+    expect(
+      scenario.events.some((event, _index, events) =>
+        events.some(
+          (candidate) =>
+            candidate.minute === event.minute &&
+            candidate.laneId !== event.laneId,
+        ),
+      ),
+    ).toBe(true);
+    expect(scenario.events.every(({ command, aggregate }) =>
+      command !== "" && aggregate !== ""
+    )).toBe(true);
+    expect(scenario.events.some(({ actor }) => actor === undefined)).toBe(true);
+    expect(
+      scenario.events.find(({ id }) => id === "mugi-examination-held")?.actor,
+    ).toBeUndefined();
+    expect(
+      scenario.events.find(({ id }) => id === "sora-examination-started")
+        ?.actor,
+    ).toBe("獣医師");
+    expect(scenario.hotspots).not.toHaveLength(0);
+
+    const eventIds = new Set(scenario.events.map(({ id }) => id));
+    for (const hotspot of scenario.hotspots) {
+      expect(hotspot.relatedEventIds.length).toBeGreaterThanOrEqual(2);
+      expect(
+        hotspot.relatedEventIds.every((eventId) => eventIds.has(eventId)),
+      ).toBe(true);
+      expect(
+        hotspot.relatedEventIds.some(
+          (eventId) =>
+            scenario.events.find((event) => event.id === eventId)?.actor ===
+            undefined,
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it("S1 keeps commands scoped to one patient lane", () => {
+    const scenario = pageModules[
+      "./pages/sessions/01-business-events-and-workflows.astro"
+    ]?.eventStormingScenario;
+
+    expect(scenario).toBeDefined();
+    if (scenario === undefined) return;
+
+    for (const event of scenario.events) {
+      const simultaneousEvents = scenario.events.filter(
+        (candidate) =>
+          candidate.minute === event.minute &&
+          candidate.laneId !== event.laneId,
+      );
+      expect(
+        simultaneousEvents.every(
+          (candidate) => candidate.command !== event.command,
+        ),
+      ).toBe(true);
+    }
   });
 
   for (const slug of exerciseSlugs.slice(1)) {

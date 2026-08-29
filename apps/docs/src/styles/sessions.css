@@ -542,6 +542,10 @@
   gap: 1.5rem;
 }
 
+.workflow-lanes {
+  align-items: start;
+}
+
 .aggregate-group h3 {
   margin-block-end: 0.75rem;
 }
@@ -688,6 +692,10 @@
 }
 
 @media (min-width: 768px) {
+  .workflow-lanes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .case-file__body {
     grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
     gap: clamp(2rem, 4vw, 4rem);

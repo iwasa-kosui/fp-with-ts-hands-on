@@ -126,6 +126,36 @@ for (const viewport of viewports) {
   });
 }
 
+for (const viewport of viewports) {
+  test(`S1 shows parallel patient lanes on ${viewport.name}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.goto("/sessions/01-business-events-and-workflows/");
+
+    const lanes = page.locator("[data-workflow-lanes] [data-lane]");
+    await expect(lanes).toHaveCount(2);
+    const [first, second] = await lanes.evaluateAll((elements) =>
+      elements.map((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          left: rect.left,
+        };
+      }),
+    );
+
+    if (viewport.name === "desktop") {
+      expect(Math.abs(first.top - second.top)).toBeLessThanOrEqual(1);
+      expect(first.right).toBeLessThanOrEqual(second.left);
+    } else {
+      expect(first.bottom).toBeLessThanOrEqual(second.top);
+    }
+  });
+}
+
 test("S2 pitfall source path stays inside its caption on mobile", async ({ page }) => {
   await page.setViewportSize(viewports[0]);
   await page.goto("/sessions/02-state-transitions/");

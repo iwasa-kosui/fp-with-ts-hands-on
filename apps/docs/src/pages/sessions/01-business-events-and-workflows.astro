@@ -12,13 +12,13 @@ export const session: SessionSummary = {
   durationMinutes: 15,
   timeBreakdown: { brief: 3, teach: 4, exercise: 6, review: 2 },
   animal: { name: "CAT", type: "cat", avatar: "🐈" },
-  summary: "動物病院の一日を描いた散文からドメインイベントを拾い、集約の境界を班で引きます。",
+  summary: "予約患者と急患が並行して動く記録からドメインイベントを拾い、集約の境界と未解決の問いを班で見つけます。",
   episode: [
-    "開院3分で、柴犬は問診票を踏み、猫は棚へ登り、受付の電話は2本同時に鳴りました。",
-    "受付、看護師、獣医師、会計担当は仕事をこなしますが、同じ一日を全員が別の言葉で説明します。",
-    "システム改修の前に、人間同士の仕様が同期していないことが判明しました。",
+    "予約の柴犬ムギが受付を終えた直後、呼吸の荒い猫ソラが予約なしで運び込まれました。",
+    "受付は来院順、看護師は緊急度、獣医師は診察準備の状況を見て、それぞれ別の順番を想定しています。",
+    "急患を先に診る判断が、2頭の予約とカルテのどこまでを変えるのか、誰も同じ図を持っていません。",
   ],
-  incident: "業務全体のどこからどこまでが診察開始のワークフローなのか、担当者ごとに認識が揃っていない。",
+  incident: "予約患者と急患の処理が並行し、急患優先後に予約患者の保留を記録して受付へ伝える責任について、担当者の認識が揃っていない。",
   steps: [],
   decisions: [],
   finalReferences: [],
@@ -28,67 +28,125 @@ const timing = session.timeBreakdown;
 
 type DomainEvent = Readonly<{
   id: string;
+  laneId: string;
+  minute: number;
   name: string;
-  actor: string;
+  actor?: string;
   command: string;
   aggregate: string;
 }>;
 
-// 時系列の順序は配列の並び順で表す。散文から実際に拾えるイベントだけを並べている。
-const domainEvents: readonly DomainEvent[] = [
-  {
-    id: "checked-in",
-    name: "来院が受け付けられた",
-    actor: "受付スタッフ",
-    command: "来院を受け付ける",
-    aggregate: "予約",
-  },
-  {
-    id: "intake-recorded",
-    name: "問診と体重が記録された",
-    actor: "動物看護師",
-    command: "問診と体重測定を行う",
-    aggregate: "カルテ",
-  },
-  {
-    id: "examination-started",
-    name: "診察が開始された",
-    actor: "獣医師",
-    command: "診察を始める",
-    aggregate: "予約",
-  },
-  {
-    id: "findings-recorded",
-    name: "所見が記録された",
-    actor: "獣医師",
-    command: "所見を記録する",
-    aggregate: "カルテ",
-  },
-  {
-    id: "billing-completed",
-    name: "会計が完了した",
-    actor: "受付スタッフ",
-    command: "会計を行う",
-    aggregate: "会計",
-  },
-] as const;
+export const eventStormingScenario = ({
+  lanes: [
+    { id: "scheduled", label: "予約患者: 柴犬ムギ" },
+    { id: "emergency", label: "急患: 猫ソラ" },
+  ],
+  events: [
+    {
+      id: "mugi-checked-in",
+      laneId: "scheduled",
+      minute: 0,
+      name: "ムギの来院が受け付けられた",
+      actor: "受付スタッフ",
+      command: "予約患者の来院を受け付ける",
+      aggregate: "予約",
+    },
+    {
+      id: "mugi-intake-recorded",
+      laneId: "scheduled",
+      minute: 4,
+      name: "ムギの問診と体重が記録された",
+      actor: "動物看護師",
+      command: "問診と体重測定を行う",
+      aggregate: "カルテ",
+    },
+    {
+      id: "sora-walk-in-accepted",
+      laneId: "emergency",
+      minute: 4,
+      name: "ソラの救急来院が受け付けられた",
+      actor: "受付スタッフ",
+      command: "予約なしの急患を受け付ける",
+      aggregate: "予約",
+    },
+    {
+      id: "sora-urgency-recorded",
+      laneId: "emergency",
+      minute: 6,
+      name: "ソラの緊急度が記録された",
+      actor: "動物看護師",
+      command: "急患の状態を確認する",
+      aggregate: "カルテ",
+    },
+    {
+      id: "mugi-examination-held",
+      laneId: "scheduled",
+      minute: 8,
+      name: "ムギの診察開始が保留された",
+      command: "予約患者の診察を保留する",
+      aggregate: "予約",
+    },
+    {
+      id: "sora-examination-started",
+      laneId: "emergency",
+      minute: 8,
+      name: "ソラの診察が開始された",
+      actor: "獣医師",
+      command: "急患の診察を始める",
+      aggregate: "予約",
+    },
+    {
+      id: "mugi-examination-started",
+      laneId: "scheduled",
+      minute: 20,
+      name: "ムギの診察が開始された",
+      actor: "獣医師",
+      command: "予約患者の診察を始める",
+      aggregate: "予約",
+    },
+  ] satisfies readonly DomainEvent[],
+  hotspots: [
+    {
+      id: "examination-priority-owner",
+      prompt: "獣医師が急患優先を決めたあと、ムギの診察保留を誰が予約へ記録し、受付へ伝えるのか。",
+      relatedEventIds: [
+        "sora-urgency-recorded",
+        "mugi-examination-held",
+        "sora-examination-started",
+      ],
+    },
+  ],
+} as const);
+
+const domainEvents = eventStormingScenario.events;
+const laneById = new Map<string, Readonly<{ id: string; label: string }>>(
+  eventStormingScenario.lanes.map((lane) => [lane.id, lane]),
+);
 
 const teacherDemoEvent = domainEvents[0];
 
-// 集約ごとにイベントをまとめる。並び順は集約が最初に現れた順で、時系列の情報は各イベントの order に残す。
-const domainEventsWithOrder = domainEvents.map((event, index) => ({
-  ...event,
-  order: index + 1,
+// 集約の型だけでなく対象の患者も区別し、別々の一貫性単位を1つに混ぜない。
+const workflowLanes = eventStormingScenario.lanes.map((lane) => ({
+  ...lane,
+  events: domainEvents.filter((event) => event.laneId === lane.id),
 }));
-const aggregateNames = [
-  ...new Set(domainEventsWithOrder.map((event) => event.aggregate)),
-];
-const aggregateGroups = aggregateNames.map((aggregate) => ({
-  aggregate,
-  events: domainEventsWithOrder.filter(
-    (event) => event.aggregate === aggregate,
+const aggregateKeys = [
+  ...new Set(
+    domainEvents.map(
+      (event) => `${event.laneId}:${event.aggregate}`,
+    ),
   ),
-}));
+];
+const aggregateGroups = aggregateKeys.map((key) => {
+  const [laneId, aggregate] = key.split(":");
+  return {
+    aggregate,
+    laneLabel: laneById.get(laneId)?.label ?? laneId,
+    events: domainEvents.filter(
+      (event) => event.laneId === laneId && event.aggregate === aggregate,
+    ),
+  };
+});
 
 const excalidrawTemplatePath =
   "docs/event/session-01-event-storming.excalidraw";
@@ -144,20 +202,20 @@ export const navigation = ({
       {session.episode.map((line) => <p data-episode-line>{line}</p>)}
     </aside>
     <p>
-      この15分はコードを書きません。次の文章から業務上起きた出来事を拾い、集約ごとの境界を班で引けるようになることが目標です。
+      この15分はコードを書きません。担当者ごとの記録を1枚の時間軸へ合わせ、並行する仕事と集約の境界、まだ決められていない点を班で見つけることが目標です。
     </p>
     <div class="incident-report">
+      <h3>受付スタッフの記録</h3>
       <p>
-        よく晴れた朝、開院してすぐの時間帯に、飼い主が数日前から元気のない柴犬を連れて来院しました。受付スタッフは前日に電話で受けていた予約を確認し、飼い主に問診票を渡して受付を行いました。待合室にはほかの飼い主と猫もいて、少し賑やかな雰囲気でした。
+        9:00、受付スタッフは予約どおりに来院した柴犬ムギの受付を済ませました。9:04、呼吸の荒い猫ソラが予約なしで運び込まれたため、救急来院として受け付け、ムギの飼い主には診察が遅れるかもしれないと伝えました。
       </p>
+      <h3>動物看護師の記録</h3>
       <p>
-        しばらく待ってもらったあと、動物看護師が診察室前に飼い主を呼び、問診票の内容を確認しながら体重を測り、来院時の症状や直近の食欲、排せつの様子について丁寧に聞き取りました。動物看護師は、柴犬がいつもより落ち着かない足取りだったことも合わせて記録しました。
+        動物看護師は9:04までムギの問診と体重測定を行っていました。ソラの到着後に呼吸と意識を確認し、9:06に緊急度が高いと記録して獣医師へ伝えました。ムギの診察順を変えるかどうかは、獣医師が決めるものだと考えていました。
       </p>
+      <h3>獣医師の記録</h3>
       <p>
-        続いて担当の獣医師が診察室へ飼い主と犬を呼び入れ、診察を始めました。獣医師は聴診と触診を行い、看護師が記録した体重の変化も参考にしながら、飼い主に自宅での様子をさらに詳しく尋ねました。今回は追加の検査は必要ないと判断し、診察を終えます。獣医師は所見と自宅での過ごし方の注意点をカルテに書き留め、飼い主にも口頭で分かりやすく説明しました。獣医師は次の患者の準備のため看護師に一声かけ、診察室を出ました。
-      </p>
-      <p>
-        診察が終わると、受付スタッフが会計を担当しました。診察料と処方した薬の代金を項目ごとに計算し、内訳を示しながら飼い主に伝えて支払いを受け取りました。受付スタッフは会計が済んだことを記録しました。飼い主は処方された薬を受け取り、家での飲ませ方をもう一度確認してから、笑顔で動物病院をあとにしました。受付スタッフは待合室の様子を見渡し、次に呼ぶ飼い主の準備に取りかかりました。
+        獣医師はムギの診察を始める準備をしていましたが、9:08にソラを先に診ると判断し、ソラの診察を始めました。ムギは診察開始を保留する必要がありましたが、誰が予約へ記録して受付へ伝えるかは確認しませんでした。ソラの容体が落ち着いたあと、9:20にムギの診察を始めました。
       </p>
     </div>
   </section>
@@ -180,15 +238,18 @@ export const navigation = ({
       </dd>
       <dt>集約</dt>
       <dd>
-        コマンドを受けて状態を変更し、ドメインイベントを発生させるまでのひとまとまり。中は一貫性を保ちながら一緒に変わります。
+        状態を一貫させたい業務上のまとまり。どのイベントが同じ対象を変更するかを手掛かりに境界を考えます。
       </dd>
     </dl>
+    <p>
+      責任者や更新範囲を決められない箇所には「?」を置きます。今回はポリシーとして解決せず、認識が揃っていない場所を見つけるところまで扱います。
+    </p>
     <p>手順は次の4段です。班ワーク中もこのページで参照できます。</p>
     <ol class="exercise-steps">
       <li>起きた出来事を過去形で書き出す</li>
-      <li>時間の順に並べる</li>
+      <li>患者ごとの列に分け、同じ時刻の出来事を並べる</li>
       <li>それぞれの出来事が、誰の何の依頼で起きたかを添える</li>
-      <li>同じ集約を変えるドメインイベントをまとめ、集約に名前を付ける</li>
+      <li>一貫性を保ちたい対象ごとにイベントを囲み、集約名と未解決の問いを付ける</li>
     </ol>
     <p>
       講師は文章からドメインイベントを1件だけ拾い、コマンドとアクター、集約を添えて
@@ -200,7 +261,8 @@ export const navigation = ({
       data-aggregate={teacherDemoEvent.aggregate}
     >
       <h4>講師実演: {teacherDemoEvent.name}</h4>
-      <p><strong>誰の依頼か:</strong> {teacherDemoEvent.actor}</p>
+      <p><strong>対象:</strong> {laneById.get(teacherDemoEvent.laneId)?.label}</p>
+      <p><strong>誰の依頼か:</strong> {teacherDemoEvent.actor ?? "未確認（?）"}</p>
       <p><strong>コマンド:</strong> {teacherDemoEvent.command}</p>
       <p><strong>集約:</strong> {teacherDemoEvent.aggregate}</p>
     </article>
@@ -209,7 +271,7 @@ export const navigation = ({
       班ワーク{timing.exercise}分: 残りのドメインイベントを拾い、境界を引く
     </h3>
     <p>
-      残りのドメインイベントを文章から拾って時系列に並べ、各イベントに誰の何の依頼で起きたかを添えます。そのうえで、同じ集約を変えるドメインイベントをまとめて囲み、集約に名前を付けます。
+      残りのドメインイベントを担当者の記録から拾い、ムギとソラの列へ置きます。同じ時刻に別の列で起きたイベントを横に並べ、誰の何の依頼で起きたかを添えます。そのうえで、一貫性を保ちたい対象ごとに囲み、集約名を付けます。2つの列へ影響する判断には「?」を置いてください。
     </p>
     <p>
       班ワークは次の Excalidraw テンプレートで行います。TA が excalidraw.com
@@ -223,13 +285,36 @@ export const navigation = ({
   <section id="review">
     <h2>レビュー{timing.review}分: 講師回答例と粒度の違いを比べる</h2>
     <p>
-      班の結果と次の講師回答例を見比べます。集約ごとにドメインイベントをまとめてあります。カード上部の数字は時系列の順序です。
+      まず患者ごとの列を見比べます。同じ「4分後」と「8分後」に、別の患者について出来事が起きています。カード上部の数字は来院受付からの経過時間です。
+    </p>
+    <div class="aggregate-groups workflow-lanes" data-workflow-lanes>
+      {
+        workflowLanes.map((lane) => (
+          <section class="aggregate-group" data-lane={lane.id}>
+            <h3>{lane.label}</h3>
+            <ol class="decision-list">
+              {lane.events.map((event) => (
+                <li class="decision-card" data-domain-event-id={event.id}>
+                  <p class="event-order">{event.minute}分後</p>
+                  <h4>{event.name}</h4>
+                  <p><strong>誰の依頼か:</strong> {event.actor ?? "未確認（?）"}</p>
+                  <p><strong>コマンド:</strong> {event.command}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ))
+      }
+    </div>
+    <h3>集約ごとにまとめ直す</h3>
+    <p>
+      時系列を保ったまま、一貫性を保ちたい業務対象ごとにイベントをまとめ直します。同じ「予約」でも、ムギとソラは別々の集約です。
     </p>
     <div class="aggregate-groups">
       {
         aggregateGroups.map((group) => (
           <section class="aggregate-group" data-aggregate={group.aggregate}>
-            <h3>集約: {group.aggregate}</h3>
+            <h4>集約: {group.aggregate} / {group.laneLabel}</h4>
             <ol class="decision-list">
               {group.events.map((event) => (
                 <li
@@ -237,10 +322,10 @@ export const navigation = ({
                   data-domain-event-id={event.id}
                   data-aggregate={event.aggregate}
                 >
-                  <p class="event-order">{event.order}件目</p>
+                  <p class="event-order">{event.minute}分後</p>
                   <h4>{event.name}</h4>
                   <p>
-                    <strong>誰の依頼か:</strong> {event.actor}
+                    <strong>誰の依頼か:</strong> {event.actor ?? "未確認（?）"}
                   </p>
                   <p>
                     <strong>コマンド:</strong> {event.command}
@@ -252,8 +337,12 @@ export const navigation = ({
         ))
       }
     </div>
+    <aside class="decision-card" aria-label="未解決の問い">
+      <h3>「?」として残す問い</h3>
+      {eventStormingScenario.hotspots.map((hotspot) => <p>{hotspot.prompt}</p>)}
+    </aside>
     <p>
-      予約集約の中で、S2 からは「診察を始める」という依頼を詳しく見ていきます。
+      ソラの診察開始は獣医師が依頼できます。一方、ムギの診察保留を誰が予約へ記録し、受付へ伝えるかは決まっていません。保留だけが伝わらないと、受付と診察室で順番が食い違います。S2 からは予約集約の「診察を始める」という依頼を詳しく見ていきます。
     </p>
     <p>
       ドメインイベントの粒度に着目して班で共有してみましょう（正誤は気にする必要はありません）。
