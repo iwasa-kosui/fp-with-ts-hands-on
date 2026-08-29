@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from "node:util";
+
 import type { ClinicPageProps, IncidentScenario } from "@fp-with-ts/clinic-web";
 import { noticeFromCode } from "@fp-with-ts/clinic-web/server";
 
@@ -94,8 +96,8 @@ const inspectionWarnings = (
 
   const latestAudit = auditLogs.at(-1);
   if (
-    latestAudit !== undefined &&
-    latestAudit.payload.status !== appointment.status
+    latestAudit === undefined ||
+    !isDeepStrictEqual(latestAudit.payload, appointment)
   ) {
     warnings.push("予約statusに対応する最新の監査記録がありません");
   }

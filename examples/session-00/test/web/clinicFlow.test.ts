@@ -150,7 +150,18 @@ describe("Session 00 Web application", () => {
     expect(repeatedLogs[1]?.occurredAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
-  it("監査失敗を固定noticeへ変換して予約更新だけを残す", async () => {
+  it("診察開始の繰り返し後も監査失敗による予約JSONの不一致を警告する", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-30T07:00:00.000Z"));
+    await post(app, "/demo/reset");
+    const repeatResponse = post(
+      app,
+      "/demo/incidents/repeat-start-examination",
+    );
+    await vi.advanceTimersByTimeAsync(10);
+    expect((await repeatResponse).status).toBe(303);
+    await vi.advanceTimersByTimeAsync(10);
+
     const response = await post(app, "/demo/incidents/audit-failure");
 
     expect(response.status).toBe(303);
@@ -158,13 +169,20 @@ describe("Session 00 Web application", () => {
     expect(await response.text()).not.toContain("UNIQUE constraint failed");
 
     const inspection = (await page(app)).props.incidentLab.inspection;
-    expect(inspection.appointmentJson).toContain(
-      '\"status\": \"in-examination\"',
-    );
+    const currentAppointment = JSON.parse(inspection.appointmentJson) as {
+      examinationStartedAt: string;
+      status: string;
+    };
     const auditLogs = JSON.parse(inspection.auditLogJson) as Array<{
-      payload: { status: string };
+      payload: { examinationStartedAt: string; status: string };
     }>;
-    expect(auditLogs.at(-1)?.payload.status).toBe("scheduled");
+    const latestAuditAppointment = auditLogs.at(-1)?.payload;
+
+    expect(currentAppointment.status).toBe("in-examination");
+    expect(latestAuditAppointment?.status).toBe("in-examination");
+    expect(currentAppointment.examinationStartedAt).not.toBe(
+      latestAuditAppointment?.examinationStartedAt,
+    );
     expect(inspection.warnings).toContain(
       "予約statusに対応する最新の監査記録がありません",
     );

@@ -71,4 +71,12 @@ describe("Session 00 appointment view", () => {
       );
     },
   );
+
+  it("監査が1件もない予約を監査欠落として警告する", () => {
+    const props = toPageProps(appointment, [], undefined);
+
+    expect(props.incidentLab?.inspection.warnings).toContain(
+      "予約statusに対応する最新の監査記録がありません",
+    );
+  });
 });
