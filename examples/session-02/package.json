@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "vite --port 3000",
     "build": "vite build --mode client && vite build",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "exercise": "node exercises/run-exercise-checks.mjs"
@@ -14,14 +16,18 @@
     "@hono/inertia": "^0.7.0",
     "@hono/node-server": "^2.1.0",
     "@inertiajs/react": "^3.6.1",
+    "better-sqlite3": "^11.9.1",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.12.8",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "drizzle-kit": "^0.31.10",
     "vite": "^6.1.1",
     "vitest": "^2.1.0"
   }
