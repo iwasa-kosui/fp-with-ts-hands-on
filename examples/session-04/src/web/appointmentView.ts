@@ -5,8 +5,8 @@ import type {
 } from "@fp-with-ts/clinic-web";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
-import type { Appointment } from "../domain/appointment/appointment.js";
-import { toStatusLabel } from "../domain/appointment/statusLabel.js";
+import type { Appointment } from "../domain/appointment/index.js";
+import { toStatusLabel } from "../domain/appointment/index.js";
 
 const hidden = { kind: "Hidden" } as const;
 const available = (

@@ -1,5 +1,5 @@
-import type { Appointment, InExamination } from "../domain/appointment/appointment.js";
-import type { AppointmentId } from "../domain/ids/appointmentId.js";
+import type { Appointment, InExamination } from "../domain/appointment/index.js";
+import type { AppointmentId } from "../domain/appointment/index.js";
 
 export type AppointmentResolver = Readonly<{
   resolveById: (appointmentId: AppointmentId) => Appointment | undefined;

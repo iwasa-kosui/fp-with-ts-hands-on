@@ -1,5 +1,4 @@
-import { AppointmentId } from "./ids/appointmentId.js";
-import { VeterinarianId } from "./ids/veterinarianId.js";
+import { AppointmentId, VeterinarianId } from "./appointment/index.js";
 import { clinicFixture } from "../../../fixtures/clinic.js";
 
 const appointmentId = AppointmentId.parse(clinicFixture.appointmentId);

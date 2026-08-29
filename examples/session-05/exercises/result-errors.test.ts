@@ -6,11 +6,11 @@ import type {
   Appointment,
   CheckedIn,
   Scheduled,
-} from "../src/domain/appointment/appointment.js";
-import { AppointmentId } from "../src/domain/ids/appointmentId.js";
-import { OwnerId } from "../src/domain/ids/ownerId.js";
-import { PetId } from "../src/domain/ids/petId.js";
-import { VeterinarianId } from "../src/domain/ids/veterinarianId.js";
+} from "../src/domain/appointment/index.js";
+import { AppointmentId } from "../src/domain/appointment/index.js";
+import { OwnerId } from "../src/domain/owner/index.js";
+import { PetId } from "../src/domain/pet/index.js";
+import { VeterinarianId } from "../src/domain/appointment/index.js";
 import type { Dependencies } from "../src/useCase/dependencies.js";
 import {
   ensureAppointmentFound,

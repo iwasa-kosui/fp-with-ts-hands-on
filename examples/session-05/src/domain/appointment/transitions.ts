@@ -9,7 +9,7 @@ import type {
   RecordPaymentInput,
   Scheduled,
 } from "./appointment.js";
-import type { VeterinarianId } from "../ids/veterinarianId.js";
+import type { VeterinarianId } from "./veterinarianId.js";
 
 export const checkIn = (appointment: Scheduled, checkedInAt: string): CheckedIn =>
   ({ ...appointment, kind: "CheckedIn", checkedInAt }) as const satisfies CheckedIn;

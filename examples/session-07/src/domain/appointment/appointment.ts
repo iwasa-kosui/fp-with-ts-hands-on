@@ -1,8 +1,8 @@
-import type { AppointmentId } from "../ids/appointmentId.js";
-import type { ExamId } from "../ids/examId.js";
-import type { OwnerId } from "../ids/ownerId.js";
-import type { PetId } from "../ids/petId.js";
-import type { VeterinarianId } from "../ids/veterinarianId.js";
+import type { AppointmentId } from "./appointmentId.js";
+import type { VeterinarianId } from "./veterinarianId.js";
+import type { ExamId } from "../examResult/index.js";
+import type { OwnerId } from "../owner/index.js";
+import type { PetId } from "../pet/index.js";
 
 export type CancellationReason = string;
 

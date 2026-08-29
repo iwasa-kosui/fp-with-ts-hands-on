@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { AppointmentId } from "../../src/domain/ids/appointmentId.js";
+import { AppointmentId } from "../../src/domain/appointment/index.js";
 import { compileTypeFixture } from "./compileTypeFixture.js";
 
 describe("S3 regression: 診察開始の識別子を取り違えない", () => {

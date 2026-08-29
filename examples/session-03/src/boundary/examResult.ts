@@ -1,5 +1,5 @@
-import type { ExamId } from "../domain/ids/examId.js";
-import type { PetId } from "../domain/ids/petId.js";
+import type { ExamId } from "../domain/examResult/index.js";
+import type { PetId } from "../domain/pet/index.js";
 import { ok, type Result } from "../shared/schemaResult.js";
 
 export type ExamResult = Readonly<{

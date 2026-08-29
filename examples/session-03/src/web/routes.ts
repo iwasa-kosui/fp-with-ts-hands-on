@@ -3,19 +3,19 @@ import type { Hono } from "hono";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
 import type { AppointmentStore } from "../adaptor/inMemoryAppointmentStore.js";
-import type { Appointment, Scheduled } from "../domain/appointment/appointment.js";
+import type { Appointment, Scheduled } from "../domain/appointment/index.js";
 import {
   cancel,
   checkIn,
   completeExamination,
   recordPayment,
   startExamination,
-} from "../domain/appointment/transitions.js";
-import { AppointmentId } from "../domain/ids/appointmentId.js";
-import { ExamId } from "../domain/ids/examId.js";
-import { OwnerId } from "../domain/ids/ownerId.js";
-import { PetId } from "../domain/ids/petId.js";
-import { VeterinarianId } from "../domain/ids/veterinarianId.js";
+} from "../domain/appointment/index.js";
+import { AppointmentId } from "../domain/appointment/index.js";
+import { ExamId } from "../domain/examResult/index.js";
+import { OwnerId } from "../domain/owner/index.js";
+import { PetId } from "../domain/pet/index.js";
+import { VeterinarianId } from "../domain/appointment/index.js";
 import { toPageProps } from "./appointmentView.js";
 
 const ids = {

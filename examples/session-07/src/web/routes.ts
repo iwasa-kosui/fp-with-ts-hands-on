@@ -6,16 +6,16 @@ import type { InMemoryExaminationStartedStore } from "../adaptor/inMemoryExamina
 import { ExamResult } from "../boundary/examResult.js";
 import { StartExaminationInput } from "../boundary/startExaminationInput.js";
 import { EventId } from "../domain/aggregate/eventId.js";
-import type { Appointment, Scheduled } from "../domain/appointment/appointment.js";
+import type { Appointment, Scheduled } from "../domain/appointment/index.js";
 import {
   cancel,
   checkIn,
   completeExamination,
   recordPayment,
-} from "../domain/appointment/transitions.js";
-import { AppointmentId } from "../domain/ids/appointmentId.js";
-import { OwnerId } from "../domain/ids/ownerId.js";
-import { PetId } from "../domain/ids/petId.js";
+} from "../domain/appointment/index.js";
+import { AppointmentId } from "../domain/appointment/index.js";
+import { OwnerId } from "../domain/owner/index.js";
+import { PetId } from "../domain/pet/index.js";
 import type {
   StartExaminationError,
   StartExaminationWithEffectsError,

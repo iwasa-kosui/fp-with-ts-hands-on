@@ -1,8 +1,8 @@
 import { err, ok, ResultAsync } from "neverthrow";
 
-import type { Appointment } from "../domain/appointment/appointment.js";
-import type { ExaminationStarted } from "../domain/appointment/examinationStarted.js";
-import type { AppointmentId } from "../domain/ids/appointmentId.js";
+import type { Appointment } from "../domain/appointment/index.js";
+import type { ExaminationStarted } from "../domain/appointment/index.js";
+import type { AppointmentId } from "../domain/appointment/index.js";
 import type {
   AppointmentResolver,
   ExaminationStartedStore,

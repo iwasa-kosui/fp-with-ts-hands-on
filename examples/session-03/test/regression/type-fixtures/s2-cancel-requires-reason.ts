@@ -1,6 +1,6 @@
 // @ts-nocheck
-import type { Scheduled } from "../../../src/domain/appointment/appointment.js";
-import { cancel } from "../../../src/domain/appointment/transitions.js";
+import type { Scheduled } from "../../../src/domain/appointment/index.js";
+import { cancel } from "../../../src/domain/appointment/index.js";
 import { clinicFixture } from "../../../../fixtures/clinic.js";
 
 declare const scheduled: Scheduled;

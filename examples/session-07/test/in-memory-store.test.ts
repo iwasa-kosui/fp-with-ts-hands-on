@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { createInMemoryExaminationStartedStore } from "../src/adaptor/inMemoryExaminationStartedStore.js";
 import { EventId } from "../src/domain/aggregate/eventId.js";
-import type { CheckedIn } from "../src/domain/appointment/appointment.js";
-import { Appointment } from "../src/domain/appointment/transitions.js";
-import { AppointmentId } from "../src/domain/ids/appointmentId.js";
-import { OwnerId } from "../src/domain/ids/ownerId.js";
-import { PetId } from "../src/domain/ids/petId.js";
-import { VeterinarianId } from "../src/domain/ids/veterinarianId.js";
+import type { CheckedIn } from "../src/domain/appointment/index.js";
+import { Appointment } from "../src/domain/appointment/index.js";
+import { AppointmentId } from "../src/domain/appointment/index.js";
+import { OwnerId } from "../src/domain/owner/index.js";
+import { PetId } from "../src/domain/pet/index.js";
+import { VeterinarianId } from "../src/domain/appointment/index.js";
 import { startExaminationWithEffects } from "../src/useCase/startExamination.js";
 import { clinicFixture } from "../../fixtures/clinic.js";
 

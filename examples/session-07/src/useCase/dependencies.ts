@@ -2,9 +2,9 @@ import type { ResultAsync } from "neverthrow";
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { Appointment, InExamination } from "../domain/appointment/appointment.js";
-import type { ExaminationStarted } from "../domain/appointment/examinationStarted.js";
-import type { AppointmentId } from "../domain/ids/appointmentId.js";
+import type { Appointment, InExamination } from "../domain/appointment/index.js";
+import type { ExaminationStarted } from "../domain/appointment/index.js";
+import type { AppointmentId } from "../domain/appointment/index.js";
 import type { AppointmentConflict } from "./errors.js";
 
 export type AppointmentResolver = Readonly<{

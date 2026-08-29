@@ -5,16 +5,16 @@ import { clinicFixture } from "../../../fixtures/clinic.js";
 import type { AppointmentStore } from "../adaptor/inMemoryAppointmentStore.js";
 import { ExamResult } from "../boundary/examResult.js";
 import { StartExaminationInput } from "../boundary/startExaminationInput.js";
-import type { Appointment, Scheduled } from "../domain/appointment/appointment.js";
+import type { Appointment, Scheduled } from "../domain/appointment/index.js";
 import {
   cancel,
   checkIn,
   completeExamination,
   recordPayment,
-} from "../domain/appointment/transitions.js";
-import { AppointmentId } from "../domain/ids/appointmentId.js";
-import { OwnerId } from "../domain/ids/ownerId.js";
-import { PetId } from "../domain/ids/petId.js";
+} from "../domain/appointment/index.js";
+import { AppointmentId } from "../domain/appointment/index.js";
+import { OwnerId } from "../domain/owner/index.js";
+import { PetId } from "../domain/pet/index.js";
 import { startExamination } from "../useCase/startExamination.js";
 import { toPageProps } from "./appointmentView.js";
 

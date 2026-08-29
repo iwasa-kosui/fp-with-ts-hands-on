@@ -1,7 +1,7 @@
-import type { InExamination } from "../domain/appointment/appointment.js";
-import { startExamination as transitionToInExamination } from "../domain/appointment/transitions.js";
-import type { AppointmentId } from "../domain/ids/appointmentId.js";
-import type { VeterinarianId } from "../domain/ids/veterinarianId.js";
+import type { InExamination } from "../domain/appointment/index.js";
+import { startExamination as transitionToInExamination } from "../domain/appointment/index.js";
+import type { AppointmentId } from "../domain/appointment/index.js";
+import type { VeterinarianId } from "../domain/appointment/index.js";
 import type { Dependencies } from "./dependencies.js";
 import { ensureAppointmentFound, ensureCheckedIn } from "./errors.js";
 

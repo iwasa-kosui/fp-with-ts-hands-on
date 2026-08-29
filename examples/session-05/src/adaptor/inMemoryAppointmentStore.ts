@@ -1,5 +1,5 @@
-import type { Appointment, Scheduled } from "../domain/appointment/appointment.js";
-import type { AppointmentId } from "../domain/ids/appointmentId.js";
+import type { Appointment, Scheduled } from "../domain/appointment/index.js";
+import type { AppointmentId } from "../domain/appointment/index.js";
 import type { AppointmentResolver } from "../useCase/dependencies.js";
 
 export type AppointmentStore = AppointmentResolver & Readonly<{

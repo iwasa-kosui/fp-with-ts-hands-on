@@ -1,5 +1,5 @@
-import type { Appointment, CheckedIn } from "../domain/appointment/appointment.js";
-import type { AppointmentId } from "../domain/ids/appointmentId.js";
+import type { Appointment, CheckedIn } from "../domain/appointment/index.js";
+import type { AppointmentId } from "../domain/appointment/index.js";
 
 export const ensureAppointmentFound = (
   appointment: Appointment | undefined,

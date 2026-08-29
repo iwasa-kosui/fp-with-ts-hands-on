@@ -1,4 +1,4 @@
-import type { Appointment, Scheduled } from "../domain/appointment/appointment.js";
+import type { Appointment, Scheduled } from "../domain/appointment/index.js";
 
 export type AppointmentStore = Readonly<{
   find: (appointmentId: string) => Appointment | undefined;
