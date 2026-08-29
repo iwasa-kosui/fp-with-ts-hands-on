@@ -18,7 +18,7 @@ const expectedFragments: Readonly<Record<string, readonly string[]>> = {
   "session-00-raw-pii-audit": ["payload: appointment"],
   "session-00-message-mapped-errors": ["catch", "error.message.includes"],
   "session-00-hidden-nondeterminism": ["new Date()", "randomUUID()"],
-  "session-00-dual-write": ["store.save", "store.appendAudit"],
+  "session-00-dual-write": ["repository.save", "repository.appendAudit"],
   "wide-transition-input": ["appointment: Appointment", "as Appointment"],
   "non-exhaustive-label": ["default:"],
   "untyped-pet-id": ["z.string().uuid()", "export type PetId"],
@@ -43,20 +43,20 @@ const expectedFragments: Readonly<Record<string, readonly string[]>> = {
   "final-transaction-store": ["db.transaction"],
 };
 
-const pageModules = import.meta.glob<PageModule>([
-  "../../pages/sessions/*.astro",
-  "!../../pages/sessions/index.astro",
-], {
-  eager: true,
-});
-const pageSources = import.meta.glob<string>([
-  "../../pages/sessions/*.astro",
-  "!../../pages/sessions/index.astro",
-], {
-  eager: true,
-  query: "?raw",
-  import: "default",
-});
+const pageModules = import.meta.glob<PageModule>(
+  ["../../pages/sessions/*.astro", "!../../pages/sessions/index.astro"],
+  {
+    eager: true,
+  },
+);
+const pageSources = import.meta.glob<string>(
+  ["../../pages/sessions/*.astro", "!../../pages/sessions/index.astro"],
+  {
+    eager: true,
+    query: "?raw",
+    import: "default",
+  },
+);
 const legacyGuideModules = Object.keys(
   import.meta.glob("./*.ts", { eager: true }),
 ).filter((file) => !file.endsWith("code-guides.test.ts"));
@@ -76,7 +76,11 @@ describe("session code guides", () => {
       .flatMap(([path, { guides }]) =>
         guides === undefined
           ? []
-          : [path.replace(/^\.\.\/\.\.\/pages\/sessions\//, "").replace(/\.astro$/, "")],
+          : [
+              path
+                .replace(/^\.\.\/\.\.\/pages\/sessions\//, "")
+                .replace(/\.astro$/, ""),
+            ],
       )
       .sort();
 
@@ -94,9 +98,8 @@ describe("session code guides", () => {
         session.slug === "00-system-handover" ? 8 : 3,
       );
       const files = projectFilesForSnapshot(snapshot);
-      const workspace = pageModules[
-        `../../pages/sessions/${session.slug}.astro`
-      ]?.workspace;
+      const workspace =
+        pageModules[`../../pages/sessions/${session.slug}.astro`]?.workspace;
 
       for (const guide of guides!) {
         expect(guide.title).not.toBe("");
@@ -170,7 +173,7 @@ describe("session code guides", () => {
         ]);
         expect(new Set(guides!.map(({ id }) => id)).size).toBe(8);
         expect(messageMappedErrorsGuide?.highlights).toEqual([
-          { startLineNumber: 209, endLineNumber: 210 },
+          { startLineNumber: 212, endLineNumber: 213 },
         ]);
       }
     }

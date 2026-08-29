@@ -21,7 +21,7 @@ type AuditEvent = Readonly<{
   appointment: Appointment;
 }>;
 
-export type AppointmentStore = Readonly<{
+export type AppointmentRepository = Readonly<{
   find: (appointmentId: string) => Appointment | undefined;
   save: (appointment: Appointment) => void;
   appendAudit: (event: AuditEvent) => void;
@@ -46,7 +46,9 @@ const toInitialAuditLog = (appointment: Appointment): AuditLog => ({
   occurredAt: appointment.scheduledAt,
 });
 
-export const createAppointmentStore = (db: SqliteDatabase): AppointmentStore => {
+export const createAppointmentRepository = (
+  db: SqliteDatabase,
+): AppointmentRepository => {
   const save = (appointment: Appointment): void => {
     const row = toAppointmentRow(appointment);
 
@@ -73,30 +75,40 @@ export const createAppointmentStore = (db: SqliteDatabase): AppointmentStore => 
     db.transaction((transaction) => {
       transaction.delete(auditLogsTable).run();
       transaction.delete(appointmentsTable).run();
-      transaction.insert(appointmentsTable).values(toAppointmentRow(initialAppointment)).run();
-      transaction.insert(auditLogsTable).values(toInitialAuditLog(initialAppointment)).run();
+      transaction
+        .insert(appointmentsTable)
+        .values(toAppointmentRow(initialAppointment))
+        .run();
+      transaction
+        .insert(auditLogsTable)
+        .values(toInitialAuditLog(initialAppointment))
+        .run();
     });
   };
 
   return {
     find: (appointmentId) => {
-      const row = db.select({ state: appointmentsTable.state })
+      const row = db
+        .select({ state: appointmentsTable.state })
         .from(appointmentsTable)
         .where(sql`${appointmentsTable.appointmentId} = ${appointmentId}`)
         .get();
 
-      return row === undefined ? undefined : row.state as Appointment;
+      return row === undefined ? undefined : (row.state as Appointment);
     },
     save,
     appendAudit,
-    listAuditLogs: () => db.select()
-      .from(auditLogsTable)
-      .orderBy(sql`rowid`)
-      .all()
-      .map((log) => ({ ...log, payload: log.payload as Appointment })),
+    listAuditLogs: () =>
+      db
+        .select()
+        .from(auditLogsTable)
+        .orderBy(sql`rowid`)
+        .all()
+        .map((log) => ({ ...log, payload: log.payload as Appointment })),
     reset,
     seedIfEmpty: (initialAppointment) => {
-      const appointment = db.select({ appointmentId: appointmentsTable.appointmentId })
+      const appointment = db
+        .select({ appointmentId: appointmentsTable.appointmentId })
         .from(appointmentsTable)
         .get();
 

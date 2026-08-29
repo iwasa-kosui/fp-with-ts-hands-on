@@ -2,7 +2,7 @@ import { createClinicRootView } from "@fp-with-ts/clinic-web/server";
 import { inertia } from "@hono/inertia";
 import { Hono } from "hono";
 
-import { createAppointmentStore } from "./adaptor/secondary/sqlite/appointmentStore.js";
+import { createAppointmentRepository } from "./adaptor/secondary/sqlite/appointmentRepository.js";
 import {
   createSqliteDatabase,
   migrateDatabase,
@@ -20,8 +20,8 @@ export const createApp = (
   database: SqliteDatabase,
   isProduction = false,
 ): Hono => {
-  const store = createAppointmentStore(database);
-  store.seedIfEmpty(initialAppointment);
+  const repository = createAppointmentRepository(database);
+  repository.seedIfEmpty(initialAppointment);
   const app = new Hono();
 
   app.use(
@@ -31,7 +31,7 @@ export const createApp = (
       rootView: createClinicRootView(isProduction),
     }),
   );
-  registerClinicRoutes(app, store);
+  registerClinicRoutes(app, repository);
   app.onError((_error, context) => context.text("Internal Server Error", 500));
 
   return app;

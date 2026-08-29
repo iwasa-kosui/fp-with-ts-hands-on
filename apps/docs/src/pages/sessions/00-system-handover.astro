@@ -66,8 +66,8 @@ export const guides = ([
     title: "個人情報を監査記録の payload に残している",
     currentDesign: "予約全体を監査記録の payload として SQLite へ保存します。",
     futureRisk: "氏名、メールアドレス、電話番号を含む個人情報が監査記録から読めます。",
-    path: "src/adaptor/secondary/sqlite/appointmentStore.ts",
-    highlights: [{ startLineNumber: 67, endLineNumber: 67 }],
+    path: "src/adaptor/secondary/sqlite/appointmentRepository.ts",
+    highlights: [{ startLineNumber: 69, endLineNumber: 69 }],
   },
   {
     id: "session-00-message-mapped-errors",
@@ -75,7 +75,7 @@ export const guides = ([
     currentDesign: "catch した例外の message を部分一致で調べ、状態不正として画面へ戻します。",
     futureRisk: "予約なしと別の失敗を型で区別できず、表示と対応を誤ります。",
     path: "src/web/routes.ts",
-    highlights: [{ startLineNumber: 209, endLineNumber: 210 }],
+    highlights: [{ startLineNumber: 212, endLineNumber: 213 }],
   },
   {
     id: "session-00-hidden-nondeterminism",
@@ -84,17 +84,17 @@ export const guides = ([
     futureRisk: "同じ操作でも記録が毎回変わり、テストと事故調査の比較が安定しません。",
     path: "src/useCase/startExamination.ts",
     highlights: [
-      { startLineNumber: 24, endLineNumber: 24 },
-      { startLineNumber: 42, endLineNumber: 42 },
+      { startLineNumber: 26, endLineNumber: 26 },
+      { startLineNumber: 46, endLineNumber: 46 },
     ],
   },
   {
     id: "session-00-dual-write",
     title: "状態保存と監査記録を別々に保存している",
-    currentDesign: "予約を保存した後で、監査記録を別の呼び出しで追記します。",
+    currentDesign: "予約を保存した後で、監査記録を別の repository 呼び出しで追記します。",
     futureRisk: "監査追記が失敗すると、監査記録を伴わない状態保存だけが残ります。",
     path: "src/useCase/startExamination.ts",
-    highlights: [{ startLineNumber: 30, endLineNumber: 31 }],
+    highlights: [{ startLineNumber: 32, endLineNumber: 33 }],
   },
 ] as const) satisfies readonly CodeGuide[];
 

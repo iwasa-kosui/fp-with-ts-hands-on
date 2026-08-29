@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from "node:util";
 import type { ClinicPageProps, IncidentScenario } from "@fp-with-ts/clinic-web";
 import { noticeFromCode } from "@fp-with-ts/clinic-web/server";
 
-import type { AuditLog } from "../adaptor/secondary/sqlite/appointmentStore.js";
+import type { AuditLog } from "../adaptor/secondary/sqlite/appointmentRepository.js";
 import type { Appointment } from "../domain/appointment/appointment.js";
 import { toStatusLabel } from "../domain/appointment/statusLabel.js";
 

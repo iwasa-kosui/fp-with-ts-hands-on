@@ -5,7 +5,7 @@ import Database from "better-sqlite3";
 import type { Context, Hono } from "hono";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
-import type { AppointmentStore } from "../adaptor/secondary/sqlite/appointmentStore.js";
+import type { AppointmentRepository } from "../adaptor/secondary/sqlite/appointmentRepository.js";
 import { ExamResult } from "../boundary/examResult.js";
 import {
   bookAppointment,
@@ -30,10 +30,10 @@ export const initialAppointment: Appointment = bookAppointment({
 });
 
 const appointmentOrThrow = (
-  store: AppointmentStore,
+  repository: AppointmentRepository,
   appointmentId: string,
 ): Appointment => {
-  const appointment = store.find(appointmentId);
+  const appointment = repository.find(appointmentId);
   if (appointment === undefined) {
     throw new Error(`Appointment not found: ${appointmentId}`);
   }
@@ -41,18 +41,18 @@ const appointmentOrThrow = (
 };
 
 const updateAppointment = (
-  store: AppointmentStore,
+  repository: AppointmentRepository,
   appointmentId: string,
   status: string,
   eventName: string,
   occurredAt: string,
   extra?: AppointmentExtra,
 ): Appointment => {
-  const appointment = appointmentOrThrow(store, appointmentId);
+  const appointment = appointmentOrThrow(repository, appointmentId);
   const updated = updateStatus(appointment, status, extra);
 
-  store.save(updated);
-  store.appendAudit({
+  repository.save(updated);
+  repository.appendAudit({
     eventId: randomUUID(),
     eventName,
     occurredAt,
@@ -70,15 +70,18 @@ const isAuditEventIdConflict = (error: unknown): boolean =>
 
 export const registerClinicRoutes = (
   app: Hono,
-  store: AppointmentStore,
+  repository: AppointmentRepository,
 ): void => {
   app.get("/", (context) => {
-    const appointment = appointmentOrThrow(store, clinicFixture.appointmentId);
+    const appointment = appointmentOrThrow(
+      repository,
+      clinicFixture.appointmentId,
+    );
     return context.render(
       "ClinicDashboard",
       toPageProps(
         appointment,
-        store.listAuditLogs(),
+        repository.listAuditLogs(),
         context.req.query("notice"),
       ),
     );
@@ -86,7 +89,7 @@ export const registerClinicRoutes = (
 
   app.post("/appointments/:appointmentId/check-in", (context) => {
     updateAppointment(
-      store,
+      repository,
       context.req.param("appointmentId"),
       "checked-in",
       "appointment.checked-in",
@@ -97,7 +100,7 @@ export const registerClinicRoutes = (
   });
 
   app.post("/appointments/:appointmentId/start-examination", (context) => {
-    startExamination(store)({
+    startExamination(repository)({
       appointmentId: context.req.param("appointmentId"),
       veterinarianId: clinicFixture.veterinarianId,
     });
@@ -116,7 +119,7 @@ export const registerClinicRoutes = (
     const examResult = ExamResult.parse(raw);
 
     updateAppointment(
-      store,
+      repository,
       context.req.param("appointmentId"),
       "awaiting-payment",
       "examination.result-recorded",
@@ -128,7 +131,7 @@ export const registerClinicRoutes = (
 
   app.post("/appointments/:appointmentId/payment", (context) => {
     updateAppointment(
-      store,
+      repository,
       context.req.param("appointmentId"),
       "paid",
       "payment.recorded",
@@ -143,7 +146,7 @@ export const registerClinicRoutes = (
 
   app.post("/appointments/:appointmentId/cancel", (context) => {
     updateAppointment(
-      store,
+      repository,
       context.req.param("appointmentId"),
       "canceled",
       "appointment.canceled",
@@ -157,7 +160,7 @@ export const registerClinicRoutes = (
 
   app.post("/demo/incidents/unknown-status", (context) => {
     updateAppointment(
-      store,
+      repository,
       clinicFixture.appointmentId,
       "waiting-for-magic",
       "appointment.status-updated",
@@ -168,7 +171,7 @@ export const registerClinicRoutes = (
 
   app.post("/demo/incidents/swap-identifiers", (context) => {
     updateAppointment(
-      store,
+      repository,
       clinicFixture.appointmentId,
       "scheduled",
       "appointment.identifiers-updated",
@@ -190,7 +193,7 @@ export const registerClinicRoutes = (
     const examResult = ExamResult.parse(raw);
 
     updateAppointment(
-      store,
+      repository,
       clinicFixture.appointmentId,
       "awaiting-payment",
       "examination.result-recorded",
@@ -202,7 +205,7 @@ export const registerClinicRoutes = (
 
   app.post("/demo/incidents/missing-appointment", (context) => {
     try {
-      startExamination(store)({
+      startExamination(repository)({
         appointmentId: "55555555-5555-4555-8555-555555555555",
         veterinarianId: clinicFixture.veterinarianId,
       });
@@ -221,19 +224,19 @@ export const registerClinicRoutes = (
       appointmentId: clinicFixture.appointmentId,
       veterinarianId: clinicFixture.veterinarianId,
     };
-    const first = startExamination(store)(input);
+    const first = startExamination(repository)(input);
     if (first.examinationStartedAt === undefined) {
       throw new Error("Examination start did not set a timestamp");
     }
 
     await waitForClockAfter(first.examinationStartedAt);
-    startExamination(store)(input);
+    startExamination(repository)(input);
     return redirectToRoot(context);
   });
 
   app.post("/demo/incidents/audit-failure", (context) => {
     try {
-      startExaminationWithAuditFailure(store)({
+      startExaminationWithAuditFailure(repository)({
         appointmentId: clinicFixture.appointmentId,
         veterinarianId: clinicFixture.veterinarianId,
       });
@@ -248,7 +251,7 @@ export const registerClinicRoutes = (
   });
 
   app.post("/demo/reset", (context) => {
-    store.reset(initialAppointment);
+    repository.reset(initialAppointment);
     return redirectToRoot(context);
   });
 };
