@@ -5,6 +5,6 @@ export default getViteConfig({
   test: {
     environment: "happy-dom",
     globals: true,
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: ["../../worker/**/*.test.ts"],
   },
 });

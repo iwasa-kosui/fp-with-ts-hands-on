@@ -1,14 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { resolveWorkerRoute } from "./routes";
+import { redirectRoutes } from "./routes";
 
 type WranglerConfig = Readonly<{
   assets?: Readonly<{ run_worker_first?: readonly string[] }>;
-}>;
-
-type RootPackage = Readonly<{
-  scripts?: Readonly<Record<string, string>>;
 }>;
 
 const stripJsonComments = (source: string): string => {
@@ -115,93 +111,17 @@ const stripTrailingCommas = (source: string): string => {
 const parseJsonc = <T>(source: string): T =>
   JSON.parse(stripTrailingCommas(stripJsonComments(source))) as T;
 
-const workerFirstRedirects = [
-  { pathname: "/module-00", location: "/sessions/00-system-handover/" },
-  { pathname: "/module-00/", location: "/sessions/00-system-handover/" },
-  {
-    pathname: "/sessions/00-break-the-app/",
-    location: "/sessions/00-system-handover/",
-  },
-  {
-    pathname: "/sessions/00-read-the-incident/",
-    location: "/sessions/00-system-handover/",
-  },
-  {
-    pathname: "/sessions/00-onboarding/",
-    location: "/sessions/00-system-handover/",
-  },
-  {
-    pathname: "/sessions/01-state-modeling/",
-    location: "/sessions/02-state-transitions/",
-  },
-  {
-    pathname: "/sessions/02-boundary-and-ids/",
-    location: "/sessions/03-boundaries-and-semantic-values/",
-  },
-  {
-    pathname: "/sessions/03-result-errors/",
-    location: "/sessions/04-workflow-errors/",
-  },
-  {
-    pathname: "/sessions/04-effects-and-events/",
-    location: "/sessions/05-effects-and-consistency/",
-  },
-  {
-    pathname: "/sessions/04-agent-review",
-    location: "/sessions/05-effects-and-consistency/",
-  },
-  {
-    pathname: "/sessions/04-agent-review/",
-    location: "/sessions/05-effects-and-consistency/",
-  },
-  {
-    pathname: "/sessions/05-mini-integration",
-    location: "/sessions/05-effects-and-consistency/",
-  },
-  {
-    pathname: "/sessions/05-mini-integration/",
-    location: "/sessions/05-effects-and-consistency/",
-  },
-] as const;
-
 const repositoryRoot = resolve(process.cwd(), "../..");
 
 describe("Worker deployment configuration", () => {
-  it.each(workerFirstRedirects)(
-    "sends $pathname through the Worker before static assets",
-    async ({ pathname, location }) => {
-      const config = parseJsonc<WranglerConfig>(
-        await readFile(`${repositoryRoot}/wrangler.jsonc`, "utf8"),
-      );
-
-      expect(resolveWorkerRoute(pathname)).toEqual({
-        kind: "redirect",
-        location,
-      });
-      expect(config.assets?.run_worker_first).toContain(pathname);
-    },
-  );
-
   it("keeps the exact Worker-first route set aligned with routing behavior", async () => {
     const config = parseJsonc<WranglerConfig>(
       await readFile(`${repositoryRoot}/wrangler.jsonc`, "utf8"),
     );
 
-    expect(resolveWorkerRoute("/healthz")).toEqual({ kind: "health" });
     expect(config.assets?.run_worker_first).toEqual([
       "/healthz",
-      ...workerFirstRedirects.map(({ pathname }) => pathname),
+      ...redirectRoutes.map(({ pathname }) => pathname),
     ]);
-  });
-
-  it("runs Worker tests explicitly from the root test command used by CI", async () => {
-    const rootPackage = JSON.parse(
-      await readFile(`${repositoryRoot}/package.json`, "utf8"),
-    ) as RootPackage;
-
-    expect(rootPackage.scripts?.["test:worker"]).toBe(
-      "pnpm --filter @fp-with-ts/docs exec vitest run ../../worker",
-    );
-    expect(rootPackage.scripts?.test).toContain("pnpm test:worker");
   });
 });

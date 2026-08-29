@@ -30,4 +30,4 @@
 
 - ページを変更したときは、`pnpm --filter @fp-with-ts/docs test` と `pnpm --filter @fp-with-ts/docs build` を実行する。
 - CSS とレスポンシブ UI を変更したときは、ページ変更時の検証に加えて、対象範囲を覆う視覚テストと実画面確認を行う。
-- Worker ルーティングを変更したときは、`pnpm --filter @fp-with-ts/docs exec vitest run ../../worker/routes.test.ts` と `pnpm typecheck` を実行する。
+- Worker ルーティングを変更したときは、`pnpm test:worker` と `pnpm typecheck` を実行する。
