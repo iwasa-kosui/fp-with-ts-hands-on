@@ -3,6 +3,25 @@ import { cpSync } from "node:fs";
 import { createClinicViteConfig } from "@fp-with-ts/clinic-web/vite";
 import { defineConfig, type Plugin } from "vite";
 
+import { closeEnvironmentOwnedApp } from "./src/serverLifecycle.js";
+
+const serverEntryUrl = new URL("./src/server.ts", import.meta.url).href;
+
+const closeDatabaseInDevelopment = (): Plugin => ({
+  name: "session-01:close-database",
+  apply: "serve",
+  configureServer: (server) => {
+    server.httpServer?.once("close", () => {
+      closeEnvironmentOwnedApp(serverEntryUrl);
+    });
+  },
+  handleHotUpdate: ({ modules }) => {
+    if (modules.some((module) => Boolean(module.ssrModule))) {
+      closeEnvironmentOwnedApp(serverEntryUrl);
+    }
+  },
+});
+
 const copyDrizzleMigrations = (): Plugin => ({
   name: "copy-drizzle-migrations",
   apply: "build",
@@ -32,6 +51,10 @@ export default defineConfig(async (environment) => {
 
   return {
     ...config,
-    plugins: [...plugins, copyDrizzleMigrations()],
+    plugins: [
+      closeDatabaseInDevelopment(),
+      ...plugins,
+      copyDrizzleMigrations(),
+    ],
   };
 });
