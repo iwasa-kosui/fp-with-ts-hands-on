@@ -216,12 +216,17 @@ export const registerClinicRoutes = (
     return redirectToRoot(context);
   });
 
-  app.post("/demo/incidents/repeat-start-examination", (context) => {
+  app.post("/demo/incidents/repeat-start-examination", async (context) => {
     const input = {
       appointmentId: clinicFixture.appointmentId,
       veterinarianId: clinicFixture.veterinarianId,
     };
-    startExamination(store)(input);
+    const first = startExamination(store)(input);
+    if (first.examinationStartedAt === undefined) {
+      throw new Error("Examination start did not set a timestamp");
+    }
+
+    await waitForClockAfter(first.examinationStartedAt);
     startExamination(store)(input);
     return redirectToRoot(context);
   });
@@ -246,4 +251,18 @@ export const registerClinicRoutes = (
     store.reset(initialAppointment);
     return redirectToRoot(context);
   });
+};
+
+const waitForClockAfter = async (timestamp: string): Promise<void> => {
+  const timestampInMilliseconds = Date.parse(timestamp);
+
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    if (Date.now() > timestampInMilliseconds) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 10));
+  }
+
+  throw new Error(`Clock did not advance after ${timestamp}`);
 };

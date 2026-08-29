@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
 import {
@@ -42,6 +42,10 @@ describe("Session 00 Web application", () => {
 
   beforeEach(() => {
     app = createTestApp();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("未改善の通常操作が会計済みを診察中へ戻してしまう", async () => {
@@ -124,21 +128,26 @@ describe("Session 00 Web application", () => {
   });
 
   it("診察開始を繰り返すたびにDateとUUIDを処理内で生成してしまう", async () => {
-    expect(
-      (await post(app, "/demo/incidents/repeat-start-examination")).status,
-    ).toBe(303);
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-30T07:00:00.000Z"));
+    const response = post(app, "/demo/incidents/repeat-start-examination");
+
+    await vi.advanceTimersByTimeAsync(10);
+    expect((await response).status).toBe(303);
 
     const auditLogs = JSON.parse(
       (await page(app)).props.incidentLab.inspection.auditLogJson,
-    );
-    const examinationLogs = auditLogs.filter(
-      (log: { eventName: string }) => log.eventName === "examination.started",
-    );
+    ) as Array<{ eventId: string; eventName: string; occurredAt: string }>;
+    const repeatedLogs = auditLogs.slice(-2);
 
-    expect(examinationLogs).toHaveLength(2);
-    expect(examinationLogs[0].eventId).not.toBe(examinationLogs[1].eventId);
-    expect(examinationLogs[0].occurredAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-    expect(examinationLogs[1].occurredAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(repeatedLogs.map(({ eventName }) => eventName)).toEqual([
+      "examination.started",
+      "examination.started",
+    ]);
+    expect(repeatedLogs[0]?.eventId).not.toBe(repeatedLogs[1]?.eventId);
+    expect(repeatedLogs[0]?.occurredAt).not.toBe(repeatedLogs[1]?.occurredAt);
+    expect(repeatedLogs[0]?.occurredAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(repeatedLogs[1]?.occurredAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it("監査失敗を固定noticeへ変換して予約更新だけを残す", async () => {
