@@ -95,6 +95,8 @@ test("home START SESSION CTA keeps readable contrast on hover and keyboard focus
   });
   expect(contrastRatio(hoverColors.foreground, hoverColors.background)).toBeGreaterThanOrEqual(4.5);
 
+  await page.mouse.move(0, 0);
+  expect(await cta.evaluate((element) => element.matches(":hover"))).toBe(false);
   await page.locator("body").focus();
   for (let attempts = 0; attempts < 10; attempts += 1) {
     if (await cta.evaluate((element) => document.activeElement === element)) {
