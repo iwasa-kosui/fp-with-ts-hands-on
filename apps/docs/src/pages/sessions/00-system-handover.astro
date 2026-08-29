@@ -104,10 +104,6 @@ export const navigation = ({
           <span aria-hidden="true">{session.animal.avatar}</span>
           {session.summary}
         </p>
-        <aside class="case-file__episode" aria-label="動物病院のひと幕">
-          <p class="case-file__episode-label">動物病院のひと幕</p>
-          {session.episode.map((line) => <p data-episode-line>{line}</p>)}
-        </aside>
       </section>
       <div class="case-file__body">
         <aside class="case-file__toc case-file__toc--desktop">
@@ -124,6 +120,10 @@ export const navigation = ({
         <article class="case-file__content">
   <section id="incident">
     <h2>現行業務と起きている事故</h2>
+    <aside class="case-file__episode" aria-label="動物病院のひと幕">
+      <p class="case-file__episode-label">動物病院のひと幕</p>
+      {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+    </aside>
     <p>
       新任エンジニアとして WAN NYAN CLINIC の予約システムを引き継ぎます。この10分は修正案を出さず、
       現場の担当者、日々の操作、実際に起きた事故を、同じ事実に基づいて読み解きます。

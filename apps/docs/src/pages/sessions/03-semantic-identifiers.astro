@@ -362,10 +362,6 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
           <span aria-hidden="true">{session.animal.avatar}</span>
           {session.summary}
         </p>
-        <aside class="case-file__episode" aria-label="動物病院のひと幕">
-          <p class="case-file__episode-label">動物病院のひと幕</p>
-          {session.episode.map((line) => <p data-episode-line>{line}</p>)}
-        </aside>
       </section>
       <div class="case-file__body">
         <aside class="case-file__toc case-file__toc--desktop">
@@ -378,6 +374,10 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         <article class="case-file__content">
           <section id="incident">
             <h2>今回つくるもの</h2>
+            <aside class="case-file__episode" aria-label="動物病院のひと幕">
+              <p class="case-file__episode-label">動物病院のひと幕</p>
+              {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+            </aside>
             <h3 data-story-stage="use-case">追加したい機能</h3>
             <p>{narrative.requirement}</p>
             <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>

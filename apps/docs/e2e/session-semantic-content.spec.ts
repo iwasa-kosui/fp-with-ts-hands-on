@@ -26,6 +26,35 @@ const sessions = [
   { slug: "final", title: "参照実装で境界をたどる" },
 ] as const;
 
+for (const session of sessions) {
+  test(`${session.slug} introduces its episode after the first section heading`, async ({
+    page,
+  }) => {
+    await page.goto(`/sessions/${session.slug}/`);
+
+    await expect(
+      page.locator(".case-file__hero .case-file__episode"),
+    ).toHaveCount(0);
+
+    const firstSectionChildren = await page
+      .locator(".case-file__content > section")
+      .first()
+      .evaluate((section) =>
+        Array.from(section.children)
+          .slice(0, 2)
+          .map((element) => ({
+            tagName: element.tagName,
+            isEpisode: element.classList.contains("case-file__episode"),
+          })),
+      );
+
+    expect(firstSectionChildren).toEqual([
+      { tagName: "H2", isEpisode: false },
+      { tagName: "ASIDE", isEpisode: true },
+    ]);
+  });
+}
+
 const viewports = [
   { name: "mobile", width: 390, height: 844, definitionColumns: 1 },
   { name: "desktop", width: 1440, height: 1200, definitionColumns: 2 },
