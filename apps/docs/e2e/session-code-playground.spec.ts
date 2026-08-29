@@ -137,6 +137,42 @@ test("/sessions/02-state-transitions/ runs the failure flow before accepting the
   await expect(terminal).toContainText(/Tests\s+4 passed/, {
     timeout: 30_000,
   });
+
+  await playground.locator('[data-action="reset"]').click();
+  await expect(playground.locator(".code-explorer__monaco .view-lines")).toContainText(
+    'return "不明";',
+  );
+  await expect(
+    playground.locator('[data-path="src/domain/appointment/statusLabel.ts"]'),
+  ).toHaveAttribute("aria-label", "src/domain/appointment/statusLabel.ts");
+
+  const runTerminalCommand = async (command: string) => {
+    const input = terminal.locator(".xterm-helper-textarea");
+    await input.pressSequentially(command);
+    await input.press("Enter");
+  };
+  const terminalFilePath = "src/terminal-note.ts";
+  await runTerminalCommand(
+    `node -e "require('node:fs').writeFileSync('${terminalFilePath}', 'export const terminalValue = 1;')"`,
+  );
+  const terminalFile = playground.locator(`[data-path="${terminalFilePath}"]`);
+  await expect(terminalFile).toBeVisible();
+  await terminalFile.click();
+  await expect(playground.locator(".code-explorer__monaco .view-lines")).toContainText(
+    "terminalValue = 1",
+  );
+
+  await runTerminalCommand(
+    `node -e "require('node:fs').writeFileSync('${terminalFilePath}', 'export const terminalValue = 2;')"`,
+  );
+  await expect(playground.locator(".code-explorer__monaco .view-lines")).toContainText(
+    "terminalValue = 2",
+  );
+
+  await runTerminalCommand(
+    `node -e "require('node:fs').rmSync('${terminalFilePath}')"`,
+  );
+  await expect(terminalFile).toHaveCount(0);
 });
 
 for (const slug of exerciseSlugs) {
