@@ -1,5 +1,6 @@
 ---
 import { Code } from "astro:components";
+import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
 import StartExaminationWorkflow from "../../components/StartExaminationWorkflow.astro";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
@@ -318,26 +319,24 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <p>今回の変更は <code>{session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
           </section>
 
-          <section id="legacy">
+          <section id="legacy" class="code-playground">
             <h2>コードを読み、失敗を再現する</h2>
             <p>{narrative.legacy}</p>
             <p>
               編集する範囲は <code>{session.exerciseModule.dir}</code>、変更するファイル数は最大
               {session.exerciseModule.fileBudget}ファイル・約{session.exerciseModule.lineBudget}行です。
             </p>
-            <section class="session-code-overview code-playground" aria-labelledby={`code-overview-${session.slug}`}>
-              <h3 id={`code-overview-${session.slug}`}>配布コードの設計課題</h3>
-              <p>ここでは修正せず、今回の事故につながる設計課題の場所を確認します。</p>
-              <div data-code-explorer={workspace.slug} data-code-overview>
-                <CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} guides={guides} />
-              </div>
-            </section>
+            <CodeGuideCards guides={guides} projectFiles={projectFiles} />
             <h3>修正前の失敗を確認する</h3>
             <p>修正前は、次の{session.steps.length}件に対応する演習テストが失敗します。</p>
             <ul class="exercise-failures" aria-label="修正前に確認する問題">
               {session.steps.map((step) => <li>{step.startingFailure}</li>)}
             </ul>
             <CommandBlock phase="red" command={session.exerciseCommand} expected={`${session.steps.length}件の演習テストが失敗します。`} />
+            <p>ブラウザ内の変更はローカルへ反映されません。</p>
+            <div data-code-explorer={workspace.slug}>
+              <CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} />
+            </div>
           </section>
 
           <section id="refactor">
@@ -367,7 +366,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 <details class="step-solution" data-presentation={presentation}>
                   <summary>{step.goal}</summary>
                   {presentation === "completed-file" ? (
-                    <p class="step-solution__completed-file-note">この完成例には後続 step を含みます。表示されたすべての target file を反映した後、同じ exercise を GREEN にします。</p>
+                    <p class="step-solution__completed-file-note">この完成例には後続 step を含みます。すべての target file を反映してから検証します。</p>
                   ) : null}
                   {snippets.map(({ solution, code }) => (
                     <section class="step-solution__snippet">
@@ -378,12 +377,6 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 </details>
               </div>
             ))}
-            <section class="session-code-playground code-playground" aria-labelledby="code-playground">
-              <h3 id="code-playground">ブラウザで試す</h3>
-              <p>このセッションの開始時点のコード一式を編集して、ターミナルから任意のコマンドで確認できます。</p>
-              <p>編集内容とコマンドはこのブラウザ内だけに保持されます。ターミナルを利用できない場合は、ページ内の <code>pnpm</code> 手順を使います。</p>
-              <div data-code-explorer={workspace.slug}><CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} /></div>
-            </section>
             <CommandBlock phase="green" command={session.exerciseCommand} expected="演習テストがすべて成功します。" />
             <h3>演習を完了できないとき</h3>
             <p>{narrative.fallback}</p>

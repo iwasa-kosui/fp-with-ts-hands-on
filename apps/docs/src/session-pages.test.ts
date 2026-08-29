@@ -349,22 +349,6 @@ describe("session pages", () => {
       }
     });
 
-    it(`${slug} renders overview guides separately from the playground`, () => {
-      const codeExplorerTags =
-        sourceFor(slug).match(/<CodeExplorer[\s\S]*?\/>/g) ?? [];
-
-      expect(codeExplorerTags).toHaveLength(2);
-      expect(
-        codeExplorerTags.filter((tag) => tag.includes("guides={guides}")),
-      ).toHaveLength(1);
-      expect(
-        codeExplorerTags.filter((tag) => !tag.includes("guides={guides}")),
-      ).toHaveLength(1);
-      for (const tag of codeExplorerTags) {
-        expect(tag).toContain("workspace={workspace}");
-        expect(tag).toContain("projectFiles={projectFiles}");
-      }
-    });
   }
 
   for (const slug of exerciseSlugs.slice(1)) {

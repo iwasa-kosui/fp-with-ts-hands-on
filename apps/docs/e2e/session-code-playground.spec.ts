@@ -20,7 +20,7 @@ for (const viewport of viewports) {
 
     const content = page.locator(".case-file__content");
     const currentBusiness = page.locator("#incident");
-    const currentSystem = page.locator("#legacy");
+    const currentSystem = page.locator("#system");
 
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "業務とシステムを引き継ぐ",
@@ -30,10 +30,10 @@ for (const viewport of viewports) {
     await expect(currentBusiness).toContainText("獣医師");
     await expect(currentBusiness).toContainText("飼い主");
     await expect(currentSystem.locator("table")).toHaveCount(2);
-    await expect(currentSystem).toContainText("予約データ");
-    await expect(currentSystem).toContainText("カルテ");
-    await expect(currentSystem).toContainText("会計データ");
-    await expect(currentSystem).toContainText("調査ログ");
+    await expect(currentSystem).toContainText("現在の操作");
+    await expect(currentSystem).toContainText("会計担当");
+    await expect(currentSystem).toContainText("現在の予約内容");
+    await expect(currentSystem).toContainText("不整合の警告");
     await expect(content.locator(".session-code-overview")).toHaveCount(0);
     await expect(content.locator("[data-code-explorer]")).toHaveCount(0);
     await expect(content.locator(".session-code-playground")).toHaveCount(0);
@@ -55,66 +55,12 @@ for (const viewport of viewports) {
   });
 }
 
-test("/sessions/02-state-transitions/ places the guided overview above a full-width editor", async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 1200 });
-  await page.goto("/sessions/02-state-transitions/");
-
-  const overview = page.locator("[data-code-overview]");
-  await expect(overview.locator('[aria-label^="コードエディタ:"]')).toBeVisible();
-
-  const layout = await overview.evaluate((element) => {
-    const workspace = element.querySelector<HTMLElement>(
-      ".code-explorer__workspace",
-    );
-    const guides = element.querySelector<HTMLElement>(
-      ".code-explorer__guides",
-    );
-    const editor = element.querySelector<HTMLElement>(
-      ".code-explorer__editor",
-    );
-    if (workspace === null || guides === null || editor === null) {
-      throw new Error("guided overview layout is incomplete");
-    }
-
-    const workspaceRect = workspace.getBoundingClientRect();
-    const guidesRect = guides.getBoundingClientRect();
-    const editorRect = editor.getBoundingClientRect();
-    return {
-      workspaceWidth: workspaceRect.width,
-      guidesBottom: guidesRect.bottom,
-      editorTop: editorRect.top,
-      editorWidth: editorRect.width,
-    };
-  });
-
-  expect(layout.editorTop).toBeGreaterThanOrEqual(layout.guidesBottom);
-  expect(layout.editorWidth).toBeGreaterThanOrEqual(layout.workspaceWidth - 1);
-});
-
-test("/sessions/02-state-transitions/ presents guided choices in one row", async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 1200 });
-  await page.goto("/sessions/02-state-transitions/");
-
-  const choices = page.locator(
-    "[data-code-overview] .code-explorer__guides > li",
-  );
-  await expect(choices).toHaveCount(2);
-  const first = await choices.nth(0).boundingBox();
-  const second = await choices.nth(1).boundingBox();
-  if (first === null || second === null) {
-    throw new Error("guided choices are not visible");
-  }
-
-  expect(second.x).toBeGreaterThan(first.x + first.width - 1);
-  expect(second.y).toBeCloseTo(first.y, 0);
-});
-
 test("/sessions/02-state-transitions/ runs arbitrary commands and reflects created files", async ({ page }) => {
   test.setTimeout(150_000);
   await page.setViewportSize({ width: 1440, height: 1200 });
   await page.goto("/sessions/02-state-transitions/");
 
-  const playground = page.locator(".session-code-playground");
+  const playground = page.locator("#legacy");
   await expect(
     playground.getByRole("textbox", { name: "Editor content" }),
   ).toBeAttached();
@@ -220,12 +166,20 @@ test("/sessions/02-state-transitions/ runs arbitrary commands and reflects creat
 for (const slug of exerciseSlugs) {
   const route = `/sessions/${slug}/`;
   for (const viewport of viewports) {
-    test(`${route} keeps the playground usable on ${viewport.name}`, async ({ page }) => {
+    test(`${route} keeps its single failure-flow playground usable on ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize(viewport);
       await page.goto(route);
 
-      const playground = page.locator(".session-code-playground");
+      const failureFlow = page.locator("#legacy");
+      const playground = failureFlow.locator(".code-explorer");
       expect(await page.evaluate(() => globalThis.crossOriginIsolated)).toBe(true);
+      await expect(failureFlow.locator("[data-code-guide-card]")).not.toHaveCount(0);
+      await expect(failureFlow.locator(".command-block")).toHaveCount(1);
+      await expect(playground).toHaveCount(1);
+      await expect(
+        failureFlow.getByRole("textbox", { name: "Editor content" }),
+      ).toBeAttached();
+      await expect(page.locator("#refactor .session-code-playground")).toHaveCount(0);
       await expect(playground).toBeVisible();
       await expect(playground.locator('[aria-label^="コードエディタ:"]')).toBeVisible();
       await expect(playground.locator('[data-action="reset"]')).toBeVisible();

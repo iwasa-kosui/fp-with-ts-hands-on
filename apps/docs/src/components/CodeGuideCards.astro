@@ -1,0 +1,95 @@
+---
+import { Code } from "astro:components";
+import type { CodeGuide } from "../code-explorer/code-guide";
+import type { ProjectFiles } from "../code-explorer/types";
+
+interface Props {
+  guides: readonly CodeGuide[];
+  projectFiles: ProjectFiles;
+}
+
+const { guides, projectFiles } = Astro.props;
+const cards = guides.map((guide) => {
+  const source = projectFiles[guide.path];
+  if (source === undefined) {
+    throw new Error(`Guide source not found: ${guide.path}`);
+  }
+
+  return {
+    guide,
+    excerpts: guide.highlights.map(({ startLineNumber, endLineNumber }) => ({
+      startLineNumber,
+      endLineNumber,
+      source: source.split("\n").slice(startLineNumber - 1, endLineNumber).join("\n"),
+    })),
+  };
+});
+---
+
+<ol class="code-guide-cards" aria-label="配布コードの設計課題">
+  {
+    cards.map(({ guide, excerpts }) => (
+      <li data-code-guide-card={guide.id}>
+        <h4>{guide.title}</h4>
+        {excerpts.map(({ startLineNumber, endLineNumber, source }) => (
+          <figure>
+            <figcaption>{guide.path}:{startLineNumber}-{endLineNumber}</figcaption>
+            <Code code={source} lang="ts" />
+          </figure>
+        ))}
+        <p>{guide.currentDesign} {guide.futureRisk}</p>
+      </li>
+    ))
+  }
+</ol>
+
+<style>
+  .code-guide-cards {
+    display: grid;
+    gap: 1rem;
+    margin: 1.25rem 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .code-guide-cards > li {
+    min-width: 0;
+    padding: 1rem;
+    border: 0.1875rem solid var(--playground-border);
+    background: var(--playground-surface);
+  }
+
+  h4 {
+    margin: 0 0 0.75rem;
+  }
+
+  figure {
+    min-width: 0;
+    margin: 0.75rem 0;
+  }
+
+  figcaption {
+    padding: 0.4rem 0.6rem;
+    background: var(--playground-highlight);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+
+  figure :global(pre) {
+    min-width: 0;
+    margin: 0;
+    overflow-x: auto;
+    border: 0.125rem solid var(--playground-border);
+  }
+
+  li > p {
+    margin: 0.75rem 0 0;
+  }
+
+  @media (min-width: 48rem) {
+    .code-guide-cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>
