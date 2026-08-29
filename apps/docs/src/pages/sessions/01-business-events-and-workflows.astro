@@ -31,11 +31,11 @@ const domainEvents = [
 ] as const;
 
 const notation = [
-  { name: "ドメインイベント", description: "業務で起きたことを過去形で書きます。" },
-  { name: "アクター", description: "コマンドを出す人や役割を書きます。" },
-  { name: "コマンド", description: "何をしてほしいかを命令形で書きます。" },
-  { name: "集約", description: "状態の整合性を守るドメインモデルを書きます。" },
-  { name: "Hotspot", description: "答えが揃わないことや、決める必要があることを書きます。" },
+  { name: "ドメインイベント", description: "業務で起きた出来事(イベント)を書いてください。ドメインイベントは過去形（〇〇された）で表現します。" },
+  { name: "コマンド", description: "ドメインイベントが発生する起点となる指示や操作を書いてください" },
+  { name: "アクター", description: "コマンドを発する人、あるいは役割を書いてください" },
+  { name: "集約", description: "状態の整合性を守るドメインモデルを書いてください。" },
+  { name: "Hotspot", description: "答えが揃わなかった点や、今後決める必要があることを書いてください。" },
 ] as const;
 
 const excalidrawTemplatePath = "docs/event/session-01-event-storming.excalidraw";
@@ -94,7 +94,7 @@ export const navigation = ({
               <p class="case-file__episode-label">動物病院のひと幕</p>
               {session.episode.map((line) => <p data-episode-line>{line}</p>)}
             </aside>
-            <p>画面やテーブルから考え始めず、成功したとき業務で何が起きるのかを先に置きます。</p>
+            <p>画面やデータベース設計から考えるのではなく、実際にあるべき業務の流れから考え始めます。</p>
             <ol class="eventstorming-timeline" aria-label="事前配置するドメインイベント">
               {
                 domainEvents.map((event) => (
@@ -115,9 +115,9 @@ export const navigation = ({
             <dl>
               {notation.map((item) => <Fragment><dt>{item.name}</dt><dd>{item.description}</dd></Fragment>)}
             </dl>
-            <p>班で次の3問を順に話します。</p>
+            <p>班で次の3問を順に話しましょう。</p>
             <ol class="exercise-steps">
-              <li>誰が、何を依頼したためにこの出来事が起きましたか。</li>
+              <li>この出来事は、誰が、何を依頼したことによって発生しましたか。</li>
               <li>その実行者には、予約を管理する権限がありますか。</li>
               <li>予約の状態とキャンセル理由は、どんな条件を満たす必要がありますか。</li>
             </ol>
@@ -139,7 +139,7 @@ export const navigation = ({
             </div>
             <p>診察直前のキャンセルを認めるかなど、答えが揃わない点は無理に決めずHotspotとして残します。</p>
             <blockquote>
-              <p>予約を管理できる担当者が、診察開始前の予約だけを、理由を残してキャンセルできます。</p>
+              <p>予約を管理する担当者が、診察開始前の予約だけを、キャンセルできます。キャンセルする際には、キャンセル理由を記入する必要があります。</p>
             </blockquote>
             <p>この条件は、コマンドを受けたワークフローが確認する業務ルールとしてまとめます。</p>
 
@@ -151,15 +151,20 @@ export const navigation = ({
           </section>
 
           <section id="workflow">
-            <h2>ROPと永続化境界へ写す</h2>
+            <h2>Railway Oriented Programming と永続化層</h2>
 
-            <h3>まずROPの二本のレールを読む</h3>
+            <h3>2本のレールを考える</h3>
             <p>
-              各工程は、成功した値だけを次の成功処理へ渡します。予想できる失敗が起きた工程で下のレールへ切り替わり、それ以降の成功処理は実行しません。
+              Railway Oriented Programming（ROR）は、処理のパイプラインを鉄道のレールと分岐に見立てた考え方です。
+              レールは2本存在し、一方は処理に成功した場合のルート、他方は失敗した場合のルートを表します。
+
+              <br/>
+
+              各工程では、何かの処理を行い、成功すればその出力を次の処理へ渡します。失敗が起きた場合は下のレールへ移ります。図からも分かる通り、一度失敗のレールに移動すれば、以降の処理はスキップされます。
             </p>
             <RailwayOrientedProgramming />
 
-            <h3>なぜROPでつなぐのか</h3>
+            <h3>なぜROPを利用するのか</h3>
             <p>
               それぞれの処理で発生する失敗を同じフローで扱い、その失敗を網羅的に検証することで、変更箇所とテスト観点を追いやすくなります。これにより、「キャンセル先の予約が存在しない」、「キャンセルする権限がない」などさまざまな理由で止まっても、それを適切にハンドリングでき、全体の処理のうち一部だけ処理されて不整合が発生することを防げます。
             </p>
@@ -188,7 +193,7 @@ export const navigation = ({
             <aside class="decision-card">
               <h3>このハンズオンでEvent Storeを選ぶ理由</h3>
               <p>
-                これはDMMF一般の必須条件ではなく、このハンズオンの設計判断です。業務ワークフローの成功出力と保存の入力を、同じドメインイベントでつなぎます。
+                これはDMMF一般の必須条件ではなく、このハンズオンの設計判断です。業務ワークフローの成功の場合の出力を、そのままEvent Storeに保存します。
               </p>
             </aside>
 
