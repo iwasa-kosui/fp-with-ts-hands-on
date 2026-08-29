@@ -1,12 +1,11 @@
-import { createApp } from "./app.js";
-import {
-  createSqliteDatabase,
-  migrateDatabase,
-} from "./adaptor/secondary/sqlite/db.js";
+import { fileURLToPath } from "node:url";
 
-const database = createSqliteDatabase(":memory:");
-migrateDatabase(database);
+import { createDatabaseBackedApp } from "./app.js";
 
-const app = createApp(database, import.meta.env.PROD);
+const app = createDatabaseBackedApp({
+  databasePath: fileURLToPath(new URL("../clinic.sqlite", import.meta.url)),
+  migrationsFolder: fileURLToPath(new URL("../drizzle", import.meta.url)),
+  isProduction: import.meta.env.PROD,
+});
 
 export default app;
