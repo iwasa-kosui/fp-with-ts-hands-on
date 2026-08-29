@@ -70,6 +70,10 @@
   min-width: 0;
 }
 
+.code-playground [data-code-overview] .code-explorer__workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .code-playground .code-explorer__workspace nav {
   min-width: 0;
   max-height: 38rem;
@@ -353,6 +357,19 @@
 .code-playground button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+@media (min-width: 40rem) {
+  .code-playground [data-code-overview] .code-explorer__guides {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    max-height: none;
+  }
+
+  .code-playground [data-code-overview] .code-explorer__guides li + li {
+    margin-top: 0;
+  }
 }
 
 @media (max-width: 63.99rem) {
