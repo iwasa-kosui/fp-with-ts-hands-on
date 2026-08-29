@@ -4,16 +4,16 @@ const sessions = [
   { slug: "00-system-handover", title: "業務とシステムを引き継ぐ" },
   {
     slug: "01-business-events-and-workflows",
-    title: "ビジネスイベントからワークフローを描く",
+    title: "EventStormingとROPで予約キャンセルを設計する",
   },
   { slug: "02-state-transitions", title: "予約の状態と遷移をモデル化する" },
   {
     slug: "03-semantic-identifiers",
-    title: "用途の異なる識別子を型で区別する",
+    title: "診察開始の識別子を型で区別する",
   },
   {
     slug: "04-boundaries-and-pii",
-    title: "外部入力を境界で検証し個人情報を守る",
+    title: "診察開始の入力を境界で検証する",
   },
   {
     slug: "05-workflow-errors",
@@ -33,6 +33,100 @@ const exerciseSessions = [
   { slug: "05-workflow-errors", problemCount: 4, failureCount: 6 },
   { slug: "06-effects-and-consistency", problemCount: 4, failureCount: 4 },
 ] as const;
+
+test("S1 shows ROP as two rails with three failure switches", async ({ page }) => {
+  await page.goto("/sessions/01-business-events-and-workflows/");
+
+  const diagram = page.locator(".rop-basics__diagram");
+  await expect(diagram).toContainText("成功レール");
+  await expect(diagram).toContainText("失敗レール");
+  await expect(diagram.locator("[data-rop-switch]")).toHaveCount(3);
+  await expect(diagram).toContainText("入力を検査する");
+  await expect(diagram).toContainText("対象を取得する");
+  await expect(diagram).toContainText("業務条件を");
+  await expect(diagram).toContainText("結果を作る");
+  await expect(diagram).not.toContainText(/Result|andThen|map|DB|メール|HTTP/);
+});
+
+test("S1 maps appointment cancellation into a single-aggregate event-output workflow", async ({
+  page,
+}) => {
+  await page.goto("/sessions/01-business-events-and-workflows/");
+
+  const diagram = page.locator(".dmmf-comparison__diagram");
+  await expect(diagram).toContainText("予約をキャンセルする");
+  await expect(diagram).toContainText("AppointmentCanceled");
+  await expect(diagram).toContainText("Appointment");
+  await expect(diagram).toContainText(".cancel");
+  await expect(diagram).toContainText("業務ルール");
+  await expect(diagram).toContainText("集約");
+  await expect(diagram).toContainText("実行者を取得する");
+  await expect(diagram).toContainText("予約を取得する");
+  await expect(diagram.locator("[data-eventstorming-policy]")).toHaveCount(0);
+  await expect(diagram.locator("[data-eventstorming-aggregate]")).toHaveCount(1);
+  await expect(diagram.locator("[data-business-rules]")).toHaveCount(1);
+  await expect(
+    diagram.locator('[data-mapping="aggregate-to-domain-decision"]'),
+  ).toHaveCount(1);
+  await expect(diagram.locator("[data-domain-decision]")).toHaveCount(1);
+  await expect(diagram.locator("[data-workflow-switch]")).toHaveCount(0);
+  await expect(diagram.locator("[data-store-switch]")).toHaveCount(0);
+  await expect(diagram.locator('[data-flow="success-event-to-store"]')).toHaveCount(1);
+  await expect(diagram).not.toContainText(
+    /ExamResultRecorded|AppointmentExaminationCompleted|Queue|Unauthorized|AppointmentNotFound|InvalidAppointmentState|AppointmentConflict/,
+  );
+  await expect(page.locator("main")).not.toContainText(
+    "S2〜S6で実装する部分を確認する",
+  );
+});
+
+test("S1 explains ROP and persistence boundary outcomes", async ({
+  page,
+}) => {
+  await page.goto("/sessions/01-business-events-and-workflows/");
+
+  const headings = await page.locator("main h2, main h3").allTextContents();
+  expect(headings.some((heading) => /^\d{1,2}:\d{2}/.test(heading.trim()))).toBe(
+    false,
+  );
+
+  const main = page.locator("main");
+  const ropRationale = main
+    .getByRole("heading", { level: 3, name: "なぜROPでつなぐのか" })
+    .locator("xpath=following-sibling::*[1][self::p]");
+  await expect(ropRationale).toHaveCount(1);
+  await expect(main).toContainText("一部だけ処理されて不整合");
+  await expect(main).toContainText("データベースのAPIから切り離して値だけでテストでき");
+  await expect(main.locator("#workflow dl")).toHaveCount(1);
+  await expect(main.getByText("顧客にとって", { exact: true })).toHaveCount(0);
+  await expect(main.getByText("技術者にとって", { exact: true })).toHaveCount(0);
+});
+
+for (const width of [390, 1440]) {
+  test(`S1 diagrams stay inside the page at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 1200 });
+    await page.goto("/sessions/01-business-events-and-workflows/");
+
+    const pageWidths = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    expect(pageWidths.scrollWidth).toBeLessThanOrEqual(pageWidths.clientWidth + 1);
+
+    if (width === 390) {
+      for (const selector of [
+        ".rop-basics__viewport",
+        ".dmmf-comparison__viewport",
+      ]) {
+        const dimensions = await page.locator(selector).evaluate((element) => ({
+          clientWidth: element.clientWidth,
+          scrollWidth: element.scrollWidth,
+        }));
+        expect(dimensions.scrollWidth).toBeGreaterThan(dimensions.clientWidth);
+      }
+    }
+  });
+}
 
 for (const session of exerciseSessions) {
   test(`${session.slug} explains each initial exercise failure before the command`, async ({

@@ -41,12 +41,12 @@ const expectedCurriculum = [
   {
     slug: "01-business-events-and-workflows",
     sequence: "01",
-    title: "EventStormingから診察開始を定義する",
+    title: "EventStormingとROPで予約キャンセルを設計する",
     durationMinutes: 15,
     kind: "workshop",
     exerciseCommand: undefined,
     snapshot: undefined,
-    timeBreakdown: { brief: 3, teach: 5.5, exercise: 4, review: 2.5 },
+    timeBreakdown: { brief: 2, teach: 7, exercise: 4, review: 2 },
   },
   {
     slug: "02-state-transitions",
@@ -117,9 +117,9 @@ const expectedEpisodes = [
     "引き継ぎ資料を開く前に、二重請求と個人情報流出の再現条件だけは確認できました。",
   ],
   [
-    "会計済みの予約で診察開始を実行すると、予約は診察中へ戻りました。",
-    "誰が開始を依頼し、どの状態なら受け付けてよいかを担当者に聞くと、答えが揃いません。",
-    "実装へ進む前に、診察開始の依頼と事前条件を業務の言葉で決めます。",
+    "会計済みの予約を、受付担当者が誤ってキャンセルできました。",
+    "理由のないキャンセルが保存され、どの条件を確認したか説明できません。",
+    "実装へ進む前に、依頼、業務ルール、集約、成功時に起きる出来事を決めます。",
   ],
   [
     "会計を終えたウサギは帰ったはずなのに、画面の中では診察室へ戻ってきました。",
@@ -266,7 +266,7 @@ const expectedNavigation = [
     previous: undefined,
     next: {
       href: "/sessions/01-business-events-and-workflows/",
-      title: "EventStormingから診察開始を定義する",
+      title: "EventStormingとROPで予約キャンセルを設計する",
     },
   },
   {
@@ -282,7 +282,7 @@ const expectedNavigation = [
   {
     previous: {
       href: "/sessions/01-business-events-and-workflows/",
-      title: "EventStormingから診察開始を定義する",
+      title: "EventStormingとROPで予約キャンセルを設計する",
     },
     next: {
       href: "/sessions/03-semantic-identifiers/",

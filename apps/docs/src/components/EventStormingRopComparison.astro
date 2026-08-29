@@ -1,0 +1,277 @@
+<figure class="dmmf-comparison">
+  <div class="dmmf-comparison__viewport">
+    <svg
+      class="dmmf-comparison__diagram"
+      viewBox="0 0 1120 550"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <marker id="dmmf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" class="dmmf-comparison__arrow-head"></path>
+        </marker>
+      </defs>
+
+      <text x="24" y="38" class="dmmf-comparison__lane-title">1. EventStormingで業務を発見する</text>
+      <rect x="20" y="54" width="1080" height="180" rx="14" class="dmmf-comparison__lane"></rect>
+
+      <g class="dmmf-comparison__node dmmf-comparison__node--actor" transform="translate(60 96)">
+        <rect width="140" height="92" rx="7"></rect>
+        <text x="70" y="30" text-anchor="middle" class="dmmf-comparison__node-kind">アクター</text>
+        <text x="70" y="61" text-anchor="middle" class="dmmf-comparison__node-label">受付担当者</text>
+      </g>
+      <path d="M 200 142 H 249" class="dmmf-comparison__arrow"></path>
+
+      <g class="dmmf-comparison__node dmmf-comparison__node--command" transform="translate(250 96)">
+        <rect width="230" height="92" rx="7"></rect>
+        <text x="115" y="30" text-anchor="middle" class="dmmf-comparison__node-kind">コマンド</text>
+        <text x="115" y="61" text-anchor="middle" class="dmmf-comparison__node-label">予約をキャンセルする</text>
+      </g>
+      <path d="M 480 142 H 539" class="dmmf-comparison__arrow"></path>
+
+      <g data-eventstorming-aggregate class="dmmf-comparison__node dmmf-comparison__node--aggregate" transform="translate(540 96)">
+        <rect width="190" height="92" rx="7"></rect>
+        <text x="95" y="30" text-anchor="middle" class="dmmf-comparison__node-kind">集約</text>
+        <text x="95" y="61" text-anchor="middle" class="dmmf-comparison__code">Appointment</text>
+      </g>
+      <path d="M 730 142 H 789" class="dmmf-comparison__arrow"></path>
+
+      <g class="dmmf-comparison__node dmmf-comparison__node--event" transform="translate(790 96)">
+        <rect width="270" height="92" rx="7"></rect>
+        <text x="135" y="30" text-anchor="middle" class="dmmf-comparison__node-kind">ドメインイベント</text>
+        <text x="135" y="61" text-anchor="middle" class="dmmf-comparison__code">AppointmentCanceled</text>
+      </g>
+
+      <text x="24" y="282" class="dmmf-comparison__lane-title">2. 業務ワークフローへ写す</text>
+      <rect x="20" y="300" width="160" height="210" rx="14" class="dmmf-comparison__boundary"></rect>
+      <rect x="195" y="300" width="715" height="210" rx="14" class="dmmf-comparison__core"></rect>
+      <rect x="925" y="300" width="175" height="210" rx="14" class="dmmf-comparison__boundary"></rect>
+
+      <path data-mapping="command-to-workflow-input" d="M 365 188 V 270 H 250 V 354" class="dmmf-comparison__mapping"></path>
+      <path data-mapping="aggregate-to-domain-decision" d="M 635 188 V 270 H 640 V 354" class="dmmf-comparison__mapping"></path>
+      <path data-mapping="event-to-workflow-output" d="M 925 188 V 282 H 830 V 344" class="dmmf-comparison__mapping"></path>
+
+      <text x="100" y="330" text-anchor="middle" class="dmmf-comparison__area-label">入力側</text>
+      <text x="552" y="330" text-anchor="middle" class="dmmf-comparison__area-label">業務ワークフロー</text>
+      <text x="1012" y="330" text-anchor="middle" class="dmmf-comparison__area-label">出力側</text>
+
+      <g class="dmmf-comparison__resolver" transform="translate(31 340)">
+        <rect width="138" height="72" rx="8"></rect>
+        <text x="69" y="30" text-anchor="middle" class="dmmf-comparison__code dmmf-comparison__code--small">User Resolver</text>
+        <text x="69" y="53" text-anchor="middle" class="dmmf-comparison__flow-label">実行者を取得する</text>
+      </g>
+      <g class="dmmf-comparison__resolver" transform="translate(31 426)">
+        <rect width="138" height="72" rx="8"></rect>
+        <text x="69" y="30" text-anchor="middle" class="dmmf-comparison__code dmmf-comparison__code--small">Appointment Resolver</text>
+        <text x="69" y="53" text-anchor="middle" class="dmmf-comparison__flow-label">予約を取得する</text>
+      </g>
+      <path d="M 169 376 H 190 V 396 H 205" class="dmmf-comparison__arrow"></path>
+      <path d="M 169 462 H 190 V 396 H 205" class="dmmf-comparison__arrow"></path>
+
+      <g class="dmmf-comparison__node dmmf-comparison__node--input" transform="translate(205 354)">
+        <rect width="90" height="84" rx="8"></rect>
+        <text x="45" y="34" text-anchor="middle" class="dmmf-comparison__node-kind">入力</text>
+        <text x="45" y="59" text-anchor="middle" class="dmmf-comparison__flow-label">Command</text>
+      </g>
+      <path d="M 295 396 H 319" class="dmmf-comparison__arrow dmmf-comparison__arrow--success"></path>
+
+      <g data-business-rules class="dmmf-comparison__node dmmf-comparison__node--check" transform="translate(320 354)">
+        <rect width="190" height="84" rx="8"></rect>
+        <text x="95" y="24" text-anchor="middle" class="dmmf-comparison__node-kind">業務ルール</text>
+        <text x="95" y="49" text-anchor="middle" class="dmmf-comparison__node-label">権限・存在・状態</text>
+        <text x="95" y="69" text-anchor="middle" class="dmmf-comparison__node-label">理由を確認する</text>
+      </g>
+      <path d="M 510 396 H 549" class="dmmf-comparison__arrow dmmf-comparison__arrow--success"></path>
+
+      <g data-domain-decision="appointment" class="dmmf-comparison__node dmmf-comparison__node--decision" transform="translate(550 354)">
+        <rect width="180" height="84" rx="8"></rect>
+        <text x="90" y="35" text-anchor="middle" class="dmmf-comparison__code dmmf-comparison__code--small">Appointment</text>
+        <text x="90" y="59" text-anchor="middle" class="dmmf-comparison__code dmmf-comparison__code--small">.cancel</text>
+      </g>
+      <path d="M 730 396 H 764" class="dmmf-comparison__arrow dmmf-comparison__arrow--success"></path>
+
+      <g class="dmmf-comparison__node dmmf-comparison__node--success" transform="translate(765 344)">
+        <rect width="130" height="104" rx="8"></rect>
+        <text x="65" y="28" text-anchor="middle" class="dmmf-comparison__node-kind">Domain Event</text>
+        <text x="65" y="58" text-anchor="middle" class="dmmf-comparison__code dmmf-comparison__code--small">Appointment</text>
+        <text x="65" y="76" text-anchor="middle" class="dmmf-comparison__code dmmf-comparison__code--small">Canceled</text>
+      </g>
+      <path data-flow="success-event-to-store" d="M 895 396 H 944" class="dmmf-comparison__arrow dmmf-comparison__arrow--success"></path>
+
+      <g class="dmmf-comparison__store" transform="translate(945 357)">
+        <rect width="135" height="78" rx="8"></rect>
+        <text x="67" y="35" text-anchor="middle" class="dmmf-comparison__node-kind">Event Store</text>
+        <text x="67" y="58" text-anchor="middle" class="dmmf-comparison__flow-label">イベントを追記</text>
+      </g>
+    </svg>
+  </div>
+  <figcaption>
+    コマンド、集約、イベントをワークフローの入力、ドメイン判断、成功出力へ写します。権限や状態の条件は、ワークフロー内の業務ルールとして扱います。
+  </figcaption>
+</figure>
+
+<style>
+  .dmmf-comparison {
+    margin: 1.5rem 0;
+  }
+
+  .dmmf-comparison__viewport {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 2px solid var(--case-line);
+    background: #fffdf7;
+    scrollbar-gutter: stable;
+  }
+
+  .dmmf-comparison__diagram {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    font-family: inherit;
+  }
+
+  .dmmf-comparison figcaption {
+    margin-top: 0.65rem;
+    color: color-mix(in srgb, var(--case-ink) 78%, var(--case-paper));
+    font-size: 0.9rem;
+  }
+
+  .dmmf-comparison__lane,
+  .dmmf-comparison__core {
+    fill: #f5f9f7;
+    stroke: #2c493e;
+    stroke-width: 2;
+  }
+
+  .dmmf-comparison__boundary {
+    fill: #e9f7f1;
+    stroke: #2c493e;
+    stroke-dasharray: 8 6;
+    stroke-width: 2;
+  }
+
+  .dmmf-comparison__lane-title {
+    fill: #16251f;
+    font-size: 20px;
+    font-weight: 800;
+  }
+
+  .dmmf-comparison__area-label {
+    fill: #16251f;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .dmmf-comparison__node rect,
+  .dmmf-comparison__resolver rect,
+  .dmmf-comparison__store rect {
+    stroke: #2c493e;
+    stroke-width: 2;
+  }
+
+  .dmmf-comparison__node--actor rect {
+    fill: #ffec99;
+  }
+
+  .dmmf-comparison__node--command rect,
+  .dmmf-comparison__node--input rect {
+    fill: #a5d8ff;
+  }
+
+  .dmmf-comparison__node--aggregate rect,
+  .dmmf-comparison__node--decision rect,
+  .dmmf-comparison__node--check rect {
+    fill: #bcebd7;
+  }
+
+  .dmmf-comparison__node--event rect,
+  .dmmf-comparison__node--success rect {
+    fill: #ffd8a8;
+  }
+
+  .dmmf-comparison__resolver rect,
+  .dmmf-comparison__store rect {
+    fill: #fff29f;
+  }
+
+  .dmmf-comparison__node-kind {
+    fill: #16251f;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+  }
+
+  .dmmf-comparison__node-label,
+  .dmmf-comparison__code,
+  .dmmf-comparison__flow-label {
+    fill: #16251f;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .dmmf-comparison__code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 13px;
+  }
+
+  .dmmf-comparison__code--small {
+    font-size: 10.5px;
+  }
+
+  .dmmf-comparison__flow-label {
+    font-size: 11px;
+  }
+
+  .dmmf-comparison__arrow,
+  .dmmf-comparison__mapping {
+    fill: none;
+    stroke: #2c493e;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 3;
+  }
+
+  .dmmf-comparison__arrow {
+    marker-end: url(#dmmf-arrow);
+  }
+
+  .dmmf-comparison__mapping {
+    stroke: #526c62;
+    stroke-dasharray: 6 7;
+    stroke-width: 2;
+  }
+
+  .dmmf-comparison__arrow--success {
+    stroke: #137333;
+  }
+
+  .dmmf-comparison__arrow-head {
+    fill: context-stroke;
+  }
+
+  @media (min-width: 1024px) {
+    .dmmf-comparison {
+      width: min(70rem, calc(100vw - 22rem));
+    }
+  }
+
+  @media (max-width: 767px) {
+    .dmmf-comparison__diagram {
+      min-width: 58rem;
+    }
+
+    .dmmf-comparison__viewport::after {
+      display: block;
+      position: sticky;
+      right: 0;
+      width: max-content;
+      margin: -0.25rem 0 0 auto;
+      padding: 0.25rem 0.5rem;
+      background: var(--case-line);
+      color: var(--case-paper);
+      content: "横にスクロール";
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+  }
+</style>

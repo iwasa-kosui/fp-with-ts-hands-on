@@ -1,5 +1,6 @@
 ---
-import StartExaminationWorkflow from "../../components/StartExaminationWorkflow.astro";
+import EventStormingRopComparison from "../../components/EventStormingRopComparison.astro";
+import RailwayOrientedProgramming from "../../components/RailwayOrientedProgramming.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import type { SessionSummary } from "../../sessions/types";
 import "../../styles/sessions.css";
@@ -9,33 +10,31 @@ export const session: SessionSummary = {
   snapshot: undefined,
   sequence: "01",
   kind: "workshop",
-  title: "EventStormingから診察開始を定義する",
+  title: "EventStormingとROPで予約キャンセルを設計する",
   durationMinutes: 15,
-  timeBreakdown: { brief: 3, teach: 5.5, exercise: 4, review: 2.5 },
+  timeBreakdown: { brief: 2, teach: 7, exercise: 4, review: 2 },
   animal: { name: "CAT", type: "cat", avatar: "🐈" },
-  summary: "診察開始の出来事から依頼と事前条件を逆算し、ワークフローの入出力と境界を整理します。",
+  summary: "予約がキャンセルされた出来事からコマンドと業務ルールを逆算し、集約、ROP、イベント出力、永続化境界へ写します。",
   episode: [
-    "会計済みの予約で診察開始を実行すると、予約は診察中へ戻りました。",
-    "誰が開始を依頼し、どの状態なら受け付けてよいかを担当者に聞くと、答えが揃いません。",
-    "実装へ進む前に、診察開始の依頼と事前条件を業務の言葉で決めます。",
+    "会計済みの予約を、受付担当者が誤ってキャンセルできました。",
+    "理由のないキャンセルが保存され、どの条件を確認したか説明できません。",
+    "実装へ進む前に、依頼、業務ルール、集約、成功時に起きる出来事を決めます。",
   ],
-  incident: "会計済みの予約でも診察を開始でき、診察開始の事前条件が決まっていない。",
+  incident: "予約キャンセルで、実行者、予約の存在、現在状態、理由を一貫して確認できていない。",
   steps: [],
   decisions: [],
   finalReferences: [],
 };
 
 const domainEvents = [
-  { id: "checked-in", name: "来院が受け付けられた" },
-  { id: "examination-started", name: "診察が開始された" },
-  { id: "examination-completed", name: "診察が完了した" },
-  { id: "billing-completed", name: "会計が完了した" },
+  { id: "appointment-canceled", name: "予約がキャンセルされた" },
 ] as const;
 
 const notation = [
   { name: "ドメインイベント", description: "業務で起きたことを過去形で書きます。" },
   { name: "アクター", description: "コマンドを出す人や役割を書きます。" },
   { name: "コマンド", description: "何をしてほしいかを命令形で書きます。" },
+  { name: "集約", description: "状態の整合性を守るドメインモデルを書きます。" },
   { name: "Hotspot", description: "答えが揃わないことや、決める必要があることを書きます。" },
 ] as const;
 
@@ -44,10 +43,9 @@ const excalidrawTemplateUrl =
   `https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/${excalidrawTemplatePath}`;
 
 const chapters = [
-  { id: "incident", label: "事故と4つの出来事" },
-  { id: "workshop", label: "班ワーク" },
-  { id: "workflow", label: "ワークフローへ整理" },
-  { id: "handoff", label: "S2〜S6への接続" },
+  { id: "incident", label: "一つの出来事" },
+  { id: "workshop", label: "コマンドと条件" },
+  { id: "workflow", label: "ROPと永続化境界" },
 ] as const;
 
 export const navigation = ({
@@ -91,14 +89,12 @@ export const navigation = ({
 
         <article class="case-file__content">
           <section id="incident">
-            <h2>0:00〜1:30　事故と4つの出来事を確認する</h2>
+            <h2>起きた出来事から業務を始める</h2>
             <aside class="case-file__episode" aria-label="動物病院のひと幕">
               <p class="case-file__episode-label">動物病院のひと幕</p>
               {session.episode.map((line) => <p data-episode-line>{line}</p>)}
             </aside>
-            <p>
-              S0では、会計済みの予約でも診察開始を実行できました。何を直すか決める前に、同じ予約で起きる出来事を時間順に確認します。
-            </p>
+            <p>画面やテーブルから考え始めず、成功したとき業務で何が起きるのかを先に置きます。</p>
             <ol class="eventstorming-timeline" aria-label="事前配置するドメインイベント">
               {
                 domainEvents.map((event) => (
@@ -109,96 +105,98 @@ export const navigation = ({
                 ))
               }
             </ol>
-            <p>この4枚は講師が事前に配置します。参加者は文章からイベントを書き写しません。</p>
+            <p>この出来事から、原因となるコマンドと、成功に必要だった条件を逆算します。</p>
           </section>
 
           <section id="workshop">
-            <h2>1:30〜9:00　診察開始の依頼と事前条件を決める</h2>
+            <h2>コマンド、業務ルール、集約を見つける</h2>
 
-            <h3>1:30〜3:00　使う付箋を確認する</h3>
+            <h3>コマンドと条件を逆算する</h3>
             <dl>
               {notation.map((item) => <Fragment><dt>{item.name}</dt><dd>{item.description}</dd></Fragment>)}
             </dl>
-            <p>ポリシー、読み取りモデル、外部システムは扱いません。集約は班ワークの後に講師が説明します。</p>
-
-            <h3>3:00〜7:00　「診察が開始された」から逆算する</h3>
             <p>班で次の3問を順に話します。</p>
             <ol class="exercise-steps">
-              <li>この出来事は、誰が、どんな依頼を出したために起きましたか。</li>
-              <li>その依頼を受け付ける前に、予約がどうなっている必要がありますか。</li>
-              <li>会計済みとキャンセル済みの場合はどうなりますか。</li>
+              <li>誰が、何を依頼したためにこの出来事が起きましたか。</li>
+              <li>その実行者には、予約を管理する権限がありますか。</li>
+              <li>予約の状態とキャンセル理由は、どんな条件を満たす必要がありますか。</li>
             </ol>
-            <div class="eventstorming-focus" aria-label="班で完成させる診察開始の並び">
+            <div class="eventstorming-focus" aria-label="班で完成させる予約キャンセルの並び">
               <div class="eventstorming-note eventstorming-note--actor">
                 <span>アクター</span>
-                <strong>班で決める</strong>
+                <strong>受付担当者</strong>
               </div>
               <span aria-hidden="true">→</span>
               <div class="eventstorming-note eventstorming-note--command">
                 <span>コマンド</span>
-                <strong>診察を始める</strong>
+                <strong>予約をキャンセルする</strong>
               </div>
               <span aria-hidden="true">→</span>
               <div class="eventstorming-note eventstorming-note--event">
-                <span>ドメインイベント</span>
-                <strong>診察が開始された</strong>
+                <span>成功時の出来事</span>
+                <strong>予約がキャンセルされた</strong>
               </div>
             </div>
-            <p>
-              アクターは獣医師を正解として配りません。獣医師、看護師、受付など、班で答えが異なる場合は責任が決まっていないことをHotspotとして残します。
-            </p>
+            <p>診察直前のキャンセルを認めるかなど、答えが揃わない点は無理に決めずHotspotとして残します。</p>
             <blockquote>
-              <p>受付を済ませた予約だけ、診察を始められます。</p>
+              <p>予約を管理できる担当者が、診察開始前の予約だけを、理由を残してキャンセルできます。</p>
             </blockquote>
+            <p>この条件は、コマンドを受けたワークフローが確認する業務ルールとしてまとめます。</p>
 
-            <h3>7:00〜9:00　班の答えを比べ、予約集約を加える</h3>
+            <h3>業務ルール、集約、ワークフローを区別する</h3>
             <p>
-              講師は1〜2班の答えを比べます。アクターの正解を一つに決めるのではなく、責任の認識が揃っているかを確認します。
+              業務ワークフローはResolverから実行者と予約を受け取り、権限や存在を確認します。<code>Appointment</code>集約は、キャンセルできる状態と理由の不変条件を守り、<code>Appointment.cancel</code>から成功イベントを返します。
             </p>
-            <p>
-              事前条件を確認した後、講師がコマンドとイベントの間に「予約」を置きます。予約は、診察を開始できる状態かを判断し、状態を一貫させる単位です。
-            </p>
-            <p>参加者に集約名を当てさせたり、一日の全イベントを集約ごとに分類させたりしません。</p>
-
-            <aside class="decision-card">
-              <h3>班の分担</h3>
-              <p>
-                5人班では、1人が付箋を操作し、1人が事故とイベント列を読み上げ、3人がアクター、コマンド、事前条件の案を出します。人数が少ない場合は役割を兼ねます。
-              </p>
-            </aside>
+            <p>この例で使う集約は一つですが、集約とワークフローが対応するわけではありません。集約は状態の整合性を守るドメインモデル、ワークフローは入出力と失敗を含めて業務判断を調整する関数です。</p>
           </section>
 
           <section id="workflow">
-            <h2>9:00〜12:30　入力、業務判断、出力へ整理する</h2>
-            <p>同じ付箋を、次の3つへ読み替えます。</p>
+            <h2>ROPと永続化境界へ写す</h2>
+
+            <h3>まずROPの二本のレールを読む</h3>
+            <p>
+              各工程は、成功した値だけを次の成功処理へ渡します。予想できる失敗が起きた工程で下のレールへ切り替わり、それ以降の成功処理は実行しません。
+            </p>
+            <RailwayOrientedProgramming />
+
+            <h3>なぜROPでつなぐのか</h3>
+            <p>
+              それぞれの処理で発生する失敗を同じフローで扱い、その失敗を網羅的に検証することで、変更箇所とテスト観点を追いやすくなります。これにより、「キャンセル先の予約が存在しない」、「キャンセルする権限がない」などさまざまな理由で止まっても、それを適切にハンドリングでき、全体の処理のうち一部だけ処理されて不整合が発生することを防げます。
+            </p>
+
+            <h3>EventStormingを業務ワークフローへ写す</h3>
+            <p>
+              コマンドはワークフローの入力へ、集約は<code>Appointment.cancel</code>へ、ドメインイベントは成功出力へ対応させます。権限や状態の条件は、これらとは別にワークフロー内の業務ルールとして表します。
+            </p>
             <dl>
               <dt>入力</dt>
-              <dd>どの予約を、どの獣医師が開始するか。</dd>
+              <dd>予約キャンセルのコマンドと、Resolverから取得した実行者・予約の現在状態。</dd>
               <dt>業務判断</dt>
-              <dd>予約が受付済みなら診察中へ変更する。</dd>
-              <dt>出力</dt>
-              <dd>診察が開始されたというドメインイベント。</dd>
+              <dd>業務ルールとして実行者の権限と予約の存在を確認し、状態と理由の不変条件を守る集約の<code>Appointment.cancel</code>を実行する。</dd>
+              <dt>成功時の出力</dt>
+              <dd><code>AppointmentCanceled</code>。</dd>
             </dl>
-            <StartExaminationWorkflow focus="overview" />
-            <p>
-              予約の読み込みとイベントの保存は、受付済みかどうかを判断する処理の外に置きます。時刻とイベントIDも外から受け取ります。
-            </p>
-          </section>
+            <EventStormingRopComparison />
 
-          <section id="handoff">
-            <h2>12:30〜15:00　S2〜S6で実装する部分を確認する</h2>
-            <ol class="exercise-steps">
-              <li><strong>S2:</strong> 受付済みだけを受け取る状態型と状態遷移</li>
-              <li><strong>S3:</strong> 予約IDと獣医師IDの区別</li>
-              <li><strong>S4:</strong> HTTPから来た値の検査と型付き入力への変換</li>
-              <li><strong>S5:</strong> 予約なしと状態不正をResultで返す処理</li>
-              <li><strong>S6:</strong> 時刻、イベントID、読み込み、保存の分離</li>
-            </ol>
+            <h3>なぜ永続化をワークフローの両端へ置くのか</h3>
+            <p>
+              入力側のUser ResolverとAppointment Resolverが実行者と予約の現在状態を取得し、中心の業務ワークフローへ値として渡します。ワークフローはデータベースへ接続せずに業務ルールを評価し、条件を通過したときだけ<code>AppointmentCanceled</code>を返します。出力側のEvent Storeはそのイベントを追記し、失敗時はイベントが返らないため保存も起きません。
+            </p>
+            <p>
+              この境界により、不正なキャンセルや途中状態が保存されず、誰がいつどの予約をキャンセルしたかを業務上の出来事として追えます。同時に、業務ルールをデータベースのAPIから切り離して値だけでテストでき、読み方や保存先が変わってもResolverとEvent Storeを差し替えるだけで中心の判断を保てます。Web向けの現在状態が必要なら、保存後のイベントからレスポンスへ変換します。
+            </p>
+            <aside class="decision-card">
+              <h3>このハンズオンでEvent Storeを選ぶ理由</h3>
+              <p>
+                これはDMMF一般の必須条件ではなく、このハンズオンの設計判断です。業務ワークフローの成功出力と保存の入力を、同じドメインイベントでつなぎます。
+              </p>
+            </aside>
+
             <h3>S1で残す成果物</h3>
             <ol>
-              <li>アクター、コマンド、予約、ドメインイベントを並べた図</li>
-              <li>「受付を済ませた予約だけ、診察を始められる」という事前条件</li>
-              <li>入力、業務判断、出力、読み込み、保存を分けた <code>startExamination</code> の構成図</li>
+              <li>アクター、コマンド、<code>Appointment</code>集約、<code>AppointmentCanceled</code>を順に並べた図</li>
+              <li>権限、予約の存在、現在状態、理由の条件とHotspot</li>
+              <li>3か所で失敗へ切り替わるROP基本図と、ResolverとEvent Storeを外側へ置いた業務ワークフロー図</li>
             </ol>
             <p>
               班ワークは <a href={excalidrawTemplateUrl}><code>{excalidrawTemplatePath}</code></a> を使います。TAが開始前にボードを開きます。

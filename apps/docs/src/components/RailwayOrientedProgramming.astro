@@ -1,0 +1,160 @@
+<figure class="rop-basics">
+  <div class="rop-basics__viewport">
+    <svg
+      class="rop-basics__diagram"
+      viewBox="0 0 960 320"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <marker id="rop-success-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" class="rop-basics__success-head"></path>
+        </marker>
+        <marker id="rop-failure-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" class="rop-basics__failure-head"></path>
+        </marker>
+      </defs>
+
+      <text x="28" y="152" class="rop-basics__endpoint">Input</text>
+      <text x="874" y="152" class="rop-basics__endpoint">Output</text>
+      <text x="88" y="72" class="rop-basics__success-label">成功レール</text>
+      <text x="88" y="266" class="rop-basics__failure-label">失敗レール</text>
+
+      <path d="M 82 118 H 886" class="rop-basics__success-rail"></path>
+      <path d="M 82 236 H 886" class="rop-basics__failure-rail"></path>
+
+      <g class="rop-basics__stage" transform="translate(132 78)">
+        <rect width="128" height="80" rx="10"></rect>
+        <text x="64" y="47" text-anchor="middle">入力を検査する</text>
+      </g>
+      <g class="rop-basics__stage" transform="translate(324 78)">
+        <rect width="128" height="80" rx="10"></rect>
+        <text x="64" y="47" text-anchor="middle">対象を取得する</text>
+      </g>
+      <g class="rop-basics__stage" transform="translate(516 78)">
+        <rect width="128" height="80" rx="10"></rect>
+        <text x="64" y="38" text-anchor="middle">業務条件を</text>
+        <text x="64" y="59" text-anchor="middle">確認する</text>
+      </g>
+      <g class="rop-basics__stage" transform="translate(708 78)">
+        <rect width="128" height="80" rx="10"></rect>
+        <text x="64" y="47" text-anchor="middle">結果を作る</text>
+      </g>
+
+      <path data-rop-switch="validation" d="M 246 118 C 270 118, 258 236, 300 236" class="rop-basics__switch"></path>
+      <path data-rop-switch="resolution" d="M 438 118 C 462 118, 450 236, 492 236" class="rop-basics__switch"></path>
+      <path data-rop-switch="business-rule" d="M 630 118 C 654 118, 642 236, 684 236" class="rop-basics__switch"></path>
+    </svg>
+  </div>
+  <figcaption>
+    各工程は成功なら上を進み、予想できる失敗なら下へ切り替わります。一度失敗すると、後続の成功処理は飛ばします。
+  </figcaption>
+</figure>
+
+<style>
+  .rop-basics {
+    margin: 1.5rem 0;
+  }
+
+  .rop-basics__viewport {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 2px solid var(--case-line);
+    background:
+      linear-gradient(90deg, rgb(255 255 255 / 0%) 0%, rgb(255 255 255 / 72%) 48%, rgb(255 255 255 / 0%) 100%),
+      #fffdf7;
+    scrollbar-gutter: stable;
+  }
+
+  .rop-basics__diagram {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    font-family: inherit;
+  }
+
+  .rop-basics figcaption {
+    margin-top: 0.65rem;
+    color: color-mix(in srgb, var(--case-ink) 78%, var(--case-paper));
+    font-size: 0.9rem;
+  }
+
+  .rop-basics__success-rail,
+  .rop-basics__failure-rail,
+  .rop-basics__switch {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 5;
+  }
+
+  .rop-basics__success-rail {
+    stroke: #137333;
+    marker-end: url(#rop-success-arrow);
+  }
+
+  .rop-basics__failure-rail,
+  .rop-basics__switch {
+    stroke: #b42318;
+    marker-end: url(#rop-failure-arrow);
+  }
+
+  .rop-basics__success-head {
+    fill: #137333;
+  }
+
+  .rop-basics__failure-head {
+    fill: #b42318;
+  }
+
+  .rop-basics__stage rect {
+    fill: #fffdf7;
+    stroke: #2c493e;
+    stroke-width: 2;
+  }
+
+  .rop-basics__stage text,
+  .rop-basics__endpoint {
+    fill: #16251f;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .rop-basics__endpoint {
+    font-size: 17px;
+  }
+
+  .rop-basics__success-label,
+  .rop-basics__failure-label {
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .rop-basics__success-label {
+    fill: #137333;
+  }
+
+  .rop-basics__failure-label {
+    fill: #b42318;
+  }
+
+  @media (max-width: 767px) {
+    .rop-basics__diagram {
+      min-width: 46rem;
+    }
+
+    .rop-basics__viewport::after {
+      display: block;
+      position: sticky;
+      right: 0;
+      width: max-content;
+      margin: -0.25rem 0 0 auto;
+      padding: 0.25rem 0.5rem;
+      background: var(--case-line);
+      color: var(--case-paper);
+      content: "横にスクロール";
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+  }
+</style>
