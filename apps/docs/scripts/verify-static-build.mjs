@@ -20,6 +20,7 @@ const distPath = fileURLToPath(distUrl);
 const requiredHtmlFiles = [
   "index.html",
   "404.html",
+  "setup/index.html",
   "sessions/index.html",
   ...sessionSlugs.map((slug) => `sessions/${slug}/index.html`),
 ];
@@ -43,6 +44,7 @@ const sessionPaths = requiredHtmlFiles
 const allowedPaths = new Set([
   "/",
   "/module-00/",
+  "/setup/",
   ...sessionPaths,
 ]);
 const htmlFiles = [];

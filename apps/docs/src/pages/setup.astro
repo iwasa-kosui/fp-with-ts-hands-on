@@ -1,0 +1,70 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+import { CopyButton } from "../components/CopyButton";
+import "../styles/sessions.css";
+import "../styles/setup.css";
+
+const cloneCommand =
+  "git clone https://github.com/iwasa-kosui/fp-with-ts-hands-on.git";
+---
+
+<BaseLayout
+  title="事前準備 | FP with TypeScript"
+  description="FP with TypeScriptハンズオンへ参加する前に済ませる2つの準備"
+>
+  <div class="case-file setup-page">
+    <header class="case-file__site-header">
+      <a href="/">WAN NYAN CLINIC</a>
+    </header>
+
+    <main class="setup-page__main">
+      <header class="setup-page__hero">
+        <p class="case-file__eyebrow">BEFORE THE EVENT</p>
+        <h1>事前準備</h1>
+        <p>イベント当日までに、次の2つを済ませてください。</p>
+      </header>
+
+      <ol class="setup-page__steps" aria-label="事前準備の手順">
+        <li class="setup-step setup-step--discord">
+          <span class="setup-step__number" aria-hidden="true">01</span>
+          <div>
+            <p class="setup-step__label">連絡先を確認する</p>
+            <h2>Discordサーバーに参加する</h2>
+            <p>当日の案内や質問はDiscordで共有します。参加できることを事前に確認してください。</p>
+            <a
+              class="setup-step__action"
+              href="https://discord.gg/Mq3GVSvRG"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Discordサーバーに参加する
+              <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+        </li>
+
+        <li class="setup-step setup-step--repository">
+          <span class="setup-step__number" aria-hidden="true">02</span>
+          <div>
+            <p class="setup-step__label">教材を手元に置く</p>
+            <h2>リポジトリをcloneする</h2>
+            <p>作業する場所で、次のコマンドを実行してください。</p>
+            <div class="setup-step__command">
+              <div class="setup-step__command-header">
+                <span>Terminal</span>
+                <CopyButton client:idle value={cloneCommand} />
+              </div>
+              <CodeBlock code={cloneCommand} language="shell" />
+            </div>
+          </div>
+        </li>
+      </ol>
+
+      <footer class="setup-page__next">
+        <p>2つとも終わったら準備完了です。</p>
+        <a href="/sessions/">セッション一覧を見る</a>
+      </footer>
+    </main>
+  </div>
+</BaseLayout>
