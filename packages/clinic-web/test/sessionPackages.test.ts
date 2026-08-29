@@ -205,6 +205,89 @@ const assertAcyclicRelativeImports = async (files: URL[], sessionUrl: URL): Prom
 const readJson = async (url: URL): Promise<PackageJson> =>
   JSON.parse(await readFile(url, "utf8")) as PackageJson;
 
+const isReexportOnlyIndex = (source: string): boolean =>
+  source
+    .replace(
+      /export\s+(?:type\s+)?(?:\*\s*(?:as\s+\w+\s*)?|\{[\s\S]*?\})\s+from\s+["'][^"']+["']\s*;?/g,
+      "",
+    )
+    .trim() === "";
+
+const assertFinalPublicApiContract = async (finalUrl: URL): Promise<void> => {
+  for (const concept of finalPublicApis) {
+    const conceptUrl = new URL(`src/domain/${concept}/`, finalUrl);
+    const indexUrl = new URL("index.ts", conceptUrl);
+    expect((await stat(indexUrl)).isFile(), `final ${concept} public API`).toBe(true);
+
+    const indexSource = await readFile(indexUrl, "utf8");
+    expect(isReexportOnlyIndex(indexSource), `${indexUrl.pathname} must only re-export`).toBe(true);
+
+    const implementationFiles = (await readdir(conceptUrl, { withFileTypes: true }))
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".ts") && entry.name !== "index.ts")
+      .map((entry) => entry.name)
+      .sort();
+    for (const file of implementationFiles) {
+      expect(indexSource, `${indexUrl.pathname} must export ${file}`).toMatch(
+        new RegExp(`from ["']\\./${file.replace(/\.ts$/, ".js")}["']`),
+      );
+    }
+  }
+
+  const files = await collectSessionTypeScriptFiles(finalUrl);
+  for (const file of files) {
+      const source = await readFile(file, "utf8");
+      const fileConcept = conceptForFile(file, finalUrl);
+      for (const specifier of relativeJavaScriptImports(source)) {
+        const target = resolvesRelativeJavaScriptImport(specifier, file);
+        const targetConcept = conceptForFile(target, finalUrl);
+        if (targetConcept === undefined) continue;
+
+        const targetIndex = new URL(`src/domain/${targetConcept}/index.ts`, finalUrl);
+        if (fileConcept === targetConcept) {
+          expect(target.href, `${file.pathname} must not import its own concept index`).not.toBe(
+            targetIndex.href,
+          );
+          continue;
+        }
+        expect(
+          target.href,
+          `${file.pathname} must use ${targetConcept}'s public API outside that concept`,
+        ).toBe(targetIndex.href);
+      }
+  }
+};
+
+const writeFinalPublicApiFixture = async (
+  directory: string,
+  options: Readonly<{ localExport?: boolean; ownIndexImport?: boolean }> = {},
+): Promise<URL> => {
+  const finalDirectory = join(directory, "final");
+  for (const concept of finalPublicApis) {
+    const conceptDirectory = join(finalDirectory, "src", "domain", concept);
+    await mkdir(conceptDirectory, { recursive: true });
+    await writeFile(join(conceptDirectory, `${concept}.ts`), `export const fixture = "${concept}";\n`);
+
+    const indexLines = [
+      "export {",
+      "  fixture,",
+      `} from \"./${concept}.js\";`,
+    ];
+    if (options.ownIndexImport && concept === "appointment") {
+      await writeFile(
+        join(conceptDirectory, "implementation.ts"),
+        'import "./index.js";\nexport const implementation = true;\n',
+      );
+      indexLines.push('export * from "./implementation.js";');
+    }
+    if (options.localExport && concept === "appointment") {
+      indexLines.push("export const leaked = true;");
+    }
+    await writeFile(join(conceptDirectory, "index.ts"), `${indexLines.join("\n")}\n`);
+  }
+
+  return new URL(`${pathToFileURL(finalDirectory).href}/`);
+};
+
 describe("runnable session package contract", () => {
   it("discovers all eight sessions with runnable package scripts", async () => {
     const examplesUrl = new URL("examples/", rootUrl);
@@ -330,42 +413,38 @@ describe("runnable session package contract", () => {
 
   it("exposes Final domain concepts only through re-export public APIs", async () => {
     const finalUrl = new URL("examples/final/", rootUrl);
+    await assertFinalPublicApiContract(finalUrl);
+  });
 
-    for (const concept of finalPublicApis) {
-      const conceptUrl = new URL(`src/domain/${concept}/`, finalUrl);
-      const indexUrl = new URL("index.ts", conceptUrl);
-      expect((await stat(indexUrl)).isFile(), `final ${concept} public API`).toBe(true);
-
-      const indexSource = await readFile(indexUrl, "utf8");
-      for (const line of indexSource.split("\n").filter((line) => line.trim() !== "")) {
-        expect(line.trim(), `${indexUrl.pathname} must only re-export`).toMatch(/^export\s/);
-      }
-
-      const implementationFiles = (await readdir(conceptUrl, { withFileTypes: true }))
-        .filter((entry) => entry.isFile() && entry.name.endsWith(".ts") && entry.name !== "index.ts")
-        .map((entry) => entry.name)
-        .sort();
-      for (const file of implementationFiles) {
-        expect(indexSource, `${indexUrl.pathname} must export ${file}`).toMatch(
-          new RegExp(`from ["']\\./${file.replace(/\.ts$/, ".js")}["']`),
-        );
-      }
+  it("rejects Final public API barrels that define local exports", async () => {
+    const fixtureDirectory = await mkdtemp(join(tmpdir(), "final-public-api-contract-"));
+    try {
+      const finalUrl = await writeFinalPublicApiFixture(fixtureDirectory, { localExport: true });
+      await expect(assertFinalPublicApiContract(finalUrl)).rejects.toThrow("must only re-export");
+    } finally {
+      await rm(fixtureDirectory, { recursive: true, force: true });
     }
+  });
 
-    const files = await collectSessionTypeScriptFiles(finalUrl);
-    for (const file of files) {
-      const source = await readFile(file, "utf8");
-      const fileConcept = conceptForFile(file, finalUrl);
-      for (const specifier of relativeJavaScriptImports(source)) {
-        const target = resolvesRelativeJavaScriptImport(specifier, file);
-        const targetConcept = conceptForFile(target, finalUrl);
-        if (targetConcept === undefined || fileConcept === targetConcept) continue;
+  it("rejects Final implementations that import their own concept index", async () => {
+    const fixtureDirectory = await mkdtemp(join(tmpdir(), "final-public-api-contract-"));
+    try {
+      const finalUrl = await writeFinalPublicApiFixture(fixtureDirectory, { ownIndexImport: true });
+      await expect(assertFinalPublicApiContract(finalUrl)).rejects.toThrow(
+        "must not import its own concept index",
+      );
+    } finally {
+      await rm(fixtureDirectory, { recursive: true, force: true });
+    }
+  });
 
-        expect(
-          target.href,
-          `${file.pathname} must use ${targetConcept}'s public API outside that concept`,
-        ).toBe(new URL(`src/domain/${targetConcept}/index.ts`, finalUrl).href);
-      }
+  it("accepts multiline Final re-export statements", async () => {
+    const fixtureDirectory = await mkdtemp(join(tmpdir(), "final-public-api-contract-"));
+    try {
+      const finalUrl = await writeFinalPublicApiFixture(fixtureDirectory);
+      await expect(assertFinalPublicApiContract(finalUrl)).resolves.toBeUndefined();
+    } finally {
+      await rm(fixtureDirectory, { recursive: true, force: true });
     }
   });
 });
