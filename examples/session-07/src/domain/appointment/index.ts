@@ -1,6 +1,3 @@
-import type { Appointment as AppointmentState } from "./appointment.js";
-import { Appointment as appointmentTransitions } from "./transitions.js";
-
 export type {
   AwaitingPayment,
   Canceled,
@@ -12,7 +9,7 @@ export type {
   RecordPaymentInput,
   Scheduled,
 } from "./appointment.js";
-export type Appointment = AppointmentState;
+export { Appointment } from "./appointmentApi.js";
 export * from "./appointmentId.js";
 export type { ExaminationStarted } from "./examinationStarted.js";
 export * from "./statusLabel.js";
@@ -23,5 +20,4 @@ export {
   recordPayment,
   startExamination,
 } from "./transitions.js";
-export const Appointment = appointmentTransitions;
 export * from "./veterinarianId.js";

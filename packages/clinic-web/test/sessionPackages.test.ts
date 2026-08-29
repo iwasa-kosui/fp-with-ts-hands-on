@@ -23,6 +23,56 @@ const publicApiPaths = [
   "domain/pet/index.ts",
   "domain/examResult/index.ts",
 ] as const;
+const ownedConcepts = ["appointment", "owner", "pet", "examResult"] as const;
+type OwnedConcept = (typeof ownedConcepts)[number];
+type PublicExportRequirement = Readonly<{
+  concept: OwnedConcept;
+  module: string;
+  symbol: string;
+  typeOnly?: boolean;
+  sessions?: ReadonlyArray<(typeof sessionsWithSemanticIds)[number]>;
+}>;
+
+const requiredPublicExports: ReadonlyArray<PublicExportRequirement> = [
+  {
+    concept: "appointment",
+    module: "appointment",
+    symbol: "Appointment",
+    typeOnly: true,
+    sessions: ["03", "04", "05"],
+  },
+  {
+    concept: "appointment",
+    module: "appointmentApi",
+    symbol: "Appointment",
+    typeOnly: true,
+    sessions: ["06", "07"],
+  },
+  { concept: "appointment", module: "appointmentId", symbol: "AppointmentId" },
+  { concept: "appointment", module: "veterinarianId", symbol: "VeterinarianId" },
+  { concept: "appointment", module: "statusLabel", symbol: "toStatusLabel" },
+  { concept: "appointment", module: "transitions", symbol: "checkIn" },
+  { concept: "appointment", module: "transitions", symbol: "startExamination" },
+  { concept: "appointment", module: "transitions", symbol: "completeExamination" },
+  { concept: "appointment", module: "transitions", symbol: "recordPayment" },
+  { concept: "appointment", module: "transitions", symbol: "cancel" },
+  {
+    concept: "appointment",
+    module: "appointmentApi",
+    symbol: "Appointment",
+    sessions: ["06", "07"],
+  },
+  {
+    concept: "appointment",
+    module: "examinationStarted",
+    symbol: "ExaminationStarted",
+    typeOnly: true,
+    sessions: ["06", "07"],
+  },
+  { concept: "owner", module: "ownerId", symbol: "OwnerId" },
+  { concept: "pet", module: "petId", symbol: "PetId" },
+  { concept: "examResult", module: "examId", symbol: "ExamId" },
+];
 
 const collectTypeScriptFiles = async (directoryUrl: URL): Promise<URL[]> => {
   const entries = await readdir(directoryUrl, { withFileTypes: true });
@@ -53,21 +103,66 @@ const collectSessionTypeScriptFiles = async (sessionUrl: URL): Promise<URL[]> =>
   return files.flat();
 };
 
-const relativeJavaScriptImports = (source: string): string[] =>
-  [...source.matchAll(/(?:import|export)\s+(?:type\s+)?(?:[^"']*?\s+from\s+)?["'](\.[^"']+\.js)["']/g)].map(
-    (match) => match[1],
+const relativeJavaScriptImports = (source: string): string[] => [
+  ...new Set([
+    ...source.matchAll(/(?:import|export)\s+(?:type\s+)?(?:[^"']*?\s+from\s+)?["'](\.[^"']+\.js)["']/g),
+    ...source.matchAll(/\bimport\(\s*["'](\.[^"']+\.js)["']\s*\)/g),
+  ].map((match) => match[1])),
+];
+
+const resolvesRelativeJavaScriptImport = (specifier: string, file: URL): URL =>
+  new URL(specifier.replace(/\.js$/, ".ts"), file);
+
+const conceptForFile = (file: URL, sessionUrl: URL): OwnedConcept | undefined =>
+  ownedConcepts.find((concept) =>
+    file.pathname.startsWith(new URL(`src/domain/${concept}/`, sessionUrl).pathname),
   );
 
-const assertAcyclicRelativeImports = async (files: URL[]): Promise<void> => {
+const reexportsSymbol = (source: string, requirement: PublicExportRequirement): boolean => {
+  const modulePath = `./${requirement.module}.js`;
+  const escapedModulePath = modulePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapedSymbol = requirement.symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const exportAll = new RegExp(`export\\s+\\*\\s+from\\s+["']${escapedModulePath}["']`);
+  if (exportAll.test(source)) return true;
+
+  const exportClause = requirement.typeOnly
+    ? "export\\s+(?:type\\s+)?"
+    : "export\\s+(?!type\\s)";
+  return new RegExp(
+    `${exportClause}\\{[^}]*\\b${escapedSymbol}\\b[^}]*\\}\\s+from\\s+["']${escapedModulePath}["']`,
+  ).test(source);
+};
+
+const exportsSymbol = (source: string, symbol: string): boolean =>
+  new RegExp(
+    `export\\s+(?:type\\s+)?(?:const|function|class|interface|type)\\s+${symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+  ).test(source);
+
+const assertAcyclicRelativeImports = async (files: URL[], sessionUrl: URL): Promise<void> => {
   const fileUrls = new Set(files.map((file) => file.href));
   const graph = new Map<string, string[]>();
 
   for (const file of files) {
     const source = await readFile(file, "utf8");
+    const imports = relativeJavaScriptImports(source).map((specifier) =>
+      resolvesRelativeJavaScriptImport(specifier, file),
+    );
+    const escapedDomainImports = imports.filter(
+      (target) =>
+        target.pathname.startsWith(new URL("src/domain/", sessionUrl).pathname) &&
+        !fileUrls.has(target.href),
+    );
+    if (escapedDomainImports.length > 0) {
+      throw new Error(
+        `Relative domain import escapes session graph from ${file.pathname}: ${escapedDomainImports
+          .map((target) => target.pathname)
+          .join(", ")}`,
+      );
+    }
     graph.set(
       file.href,
-      relativeJavaScriptImports(source)
-        .map((specifier) => new URL(specifier.replace(/\.js$/, ".ts"), file).href)
+      imports
+        .map((target) => target.href)
         .filter((target) => fileUrls.has(target)),
     );
   }
@@ -142,16 +237,56 @@ describe("runnable session package contract", () => {
       });
 
       for (const path of [...ownedIdentifierPaths, ...publicApiPaths]) {
-        await expect(stat(new URL(`src/${path}`, sessionUrl))).resolves.toMatchObject({
-          isFile: expect.any(Function),
-        });
+        expect((await stat(new URL(`src/${path}`, sessionUrl))).isFile(), path).toBe(true);
       }
 
       const files = await collectSessionTypeScriptFiles(sessionUrl);
       for (const file of files) {
-        await expect(readFile(file, "utf8")).resolves.not.toContain("/domain/ids/");
+        const source = await readFile(file, "utf8");
+        expect(source, file.pathname).not.toContain("/domain/ids/");
+
+        const fileConcept = conceptForFile(file, sessionUrl);
+        for (const specifier of relativeJavaScriptImports(source)) {
+          const target = resolvesRelativeJavaScriptImport(specifier, file);
+          const targetConcept = conceptForFile(target, sessionUrl);
+          if (targetConcept === undefined) continue;
+
+          const targetIndex = new URL(`src/domain/${targetConcept}/index.ts`, sessionUrl);
+          if (fileConcept === targetConcept) {
+            expect(target.href, `${file.pathname} must not import its own concept index`).not.toBe(
+              targetIndex.href,
+            );
+          } else {
+            expect(target.href, `${file.pathname} must use ${targetConcept}'s public API`).toBe(
+              targetIndex.href,
+            );
+          }
+        }
       }
-      await assertAcyclicRelativeImports(files);
+      await assertAcyclicRelativeImports(files, sessionUrl);
+
+      for (const concept of ownedConcepts) {
+        const indexSource = await readFile(new URL(`src/domain/${concept}/index.ts`, sessionUrl), "utf8");
+        expect(indexSource, `${session} ${concept} index must only re-export`).not.toMatch(/^\s*import\s/m);
+        expect(indexSource, `${session} ${concept} index must not define exports`).not.toMatch(
+          /^\s*export\s+(?:const|let|class|function|type\s+\w+\s*=)/m,
+        );
+
+        for (const requirement of requiredPublicExports) {
+          if (requirement.concept !== concept) continue;
+          if (requirement.sessions !== undefined && !requirement.sessions.includes(session)) continue;
+          const implementationSource = await readFile(
+            new URL(`src/domain/${concept}/${requirement.module}.ts`, sessionUrl),
+            "utf8",
+          );
+          expect(exportsSymbol(implementationSource, requirement.symbol), `${session} ${requirement.module}`).toBe(
+            true,
+          );
+          expect(reexportsSymbol(indexSource, requirement), `${session} ${concept} ${requirement.symbol}`).toBe(
+            true,
+          );
+        }
+      }
     }
   });
 });
