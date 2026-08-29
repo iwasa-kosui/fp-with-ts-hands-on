@@ -173,6 +173,15 @@ test("/sessions/02-state-transitions/ runs the failure flow before accepting the
     `node -e "require('node:fs').rmSync('${terminalFilePath}')"`,
   );
   await expect(terminalFile).toHaveCount(0);
+  await expect(
+    playground.locator(`[aria-label="コードエディタ: ${terminalFilePath}"]`),
+  ).toHaveCount(0);
+  await expect(
+    playground.locator('[aria-label="コードエディタ: exercises/state-modeling.test.ts"]'),
+  ).toBeVisible();
+  await expect(
+    playground.locator('[data-path="exercises/state-modeling.test.ts"]'),
+  ).toHaveAttribute("aria-pressed", "true");
 });
 
 for (const slug of exerciseSlugs) {
