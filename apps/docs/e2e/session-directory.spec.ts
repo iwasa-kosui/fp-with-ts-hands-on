@@ -2,10 +2,19 @@ import { expect, test } from "@playwright/test";
 
 const expectedSessions = [
   { title: "業務とシステムを引き継ぐ", href: "/sessions/00-system-handover/" },
-  { title: "ビジネスイベントからワークフローを描く", href: "/sessions/01-business-events-and-workflows/" },
+  {
+    title: "EventStormingから診察開始を定義する",
+    href: "/sessions/01-business-events-and-workflows/",
+  },
   { title: "予約の状態と遷移をモデル化する", href: "/sessions/02-state-transitions/" },
-  { title: "用途の異なる識別子を型で区別する", href: "/sessions/03-semantic-identifiers/" },
-  { title: "外部入力を境界で検証し個人情報を守る", href: "/sessions/04-boundaries-and-pii/" },
+  {
+    title: "診察開始の識別子を型で区別する",
+    href: "/sessions/03-semantic-identifiers/",
+  },
+  {
+    title: "診察開始の入力を境界で検証する",
+    href: "/sessions/04-boundaries-and-pii/",
+  },
   { title: "失敗をワークフローの結果として扱う", href: "/sessions/05-workflow-errors/" },
   { title: "副作用と整合性境界を設計する", href: "/sessions/06-effects-and-consistency/" },
   { title: "参照実装で境界をたどる", href: "/sessions/final/" },

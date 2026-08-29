@@ -9,11 +9,11 @@ const sessions = [
   { slug: "02-state-transitions", title: "予約の状態と遷移をモデル化する" },
   {
     slug: "03-semantic-identifiers",
-    title: "用途の異なる識別子を型で区別する",
+    title: "診察開始の識別子を型で区別する",
   },
   {
     slug: "04-boundaries-and-pii",
-    title: "外部入力を境界で検証し個人情報を守る",
+    title: "診察開始の入力を境界で検証する",
   },
   {
     slug: "05-workflow-errors",
