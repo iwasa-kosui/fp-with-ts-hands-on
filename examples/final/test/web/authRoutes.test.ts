@@ -257,7 +257,7 @@ describe("Hono/Inertia authentication boundary", () => {
     expect(html).not.toContain(credentials.password);
   });
 
-  test("passes development HTML through Vite so React Refresh is initialized", async () => {
+  test("passes development HTML through Vite once so React Refresh is initialized", async () => {
     const { app } = createHarness();
     const reactRefreshPreamble =
       '<script type="module">window.$RefreshReg$ = () => {};</script>';
@@ -271,7 +271,7 @@ describe("Hono/Inertia authentication boundary", () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain(reactRefreshPreamble);
+    expect(html.split(reactRefreshPreamble)).toHaveLength(2);
   });
 
   test("renders production assets from the validated composition setting", async () => {
