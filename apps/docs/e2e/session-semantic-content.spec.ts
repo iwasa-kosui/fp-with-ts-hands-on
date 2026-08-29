@@ -58,8 +58,17 @@ test("S1 maps appointment cancellation into a single-aggregate event-output work
   await expect(diagram).toContainText("AppointmentCanceled");
   await expect(diagram).toContainText("Appointment");
   await expect(diagram).toContainText(".cancel");
+  await expect(diagram).toContainText("ポリシー");
+  await expect(diagram).toContainText("集約");
+  await expect(diagram).toContainText("実行者を取得する");
+  await expect(diagram).toContainText("予約を取得する");
+  await expect(diagram.locator("[data-eventstorming-policy]")).toHaveCount(1);
+  await expect(diagram.locator("[data-eventstorming-aggregate]")).toHaveCount(1);
   await expect(
-    diagram.locator('[data-mapping="conditions-to-business-check"]'),
+    diagram.locator('[data-mapping="policy-to-business-check"]'),
+  ).toHaveCount(1);
+  await expect(
+    diagram.locator('[data-mapping="aggregate-to-domain-decision"]'),
   ).toHaveCount(1);
   await expect(diagram.locator("[data-domain-decision]")).toHaveCount(1);
   await expect(diagram.locator("[data-workflow-switch]")).toHaveCount(0);

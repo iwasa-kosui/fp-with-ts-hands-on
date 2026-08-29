@@ -14,11 +14,11 @@ export const session: SessionSummary = {
   durationMinutes: 15,
   timeBreakdown: { brief: 2, teach: 7, exercise: 4, review: 2 },
   animal: { name: "CAT", type: "cat", avatar: "🐈" },
-  summary: "予約がキャンセルされた出来事からコマンドと条件を逆算し、複数の失敗を持つROP、イベント出力、永続化境界へ写します。",
+  summary: "予約がキャンセルされた出来事からコマンドとポリシーを逆算し、集約、ROP、イベント出力、永続化境界へ写します。",
   episode: [
     "会計済みの予約を、受付担当者が誤ってキャンセルできました。",
     "理由のないキャンセルが保存され、どの条件を確認したか説明できません。",
-    "実装へ進む前に、依頼、業務条件、成功時に起きる出来事を決めます。",
+    "実装へ進む前に、依頼、ポリシー、集約、成功時に起きる出来事を決めます。",
   ],
   incident: "予約キャンセルで、実行者、予約の存在、現在状態、理由を一貫して確認できていない。",
   steps: [],
@@ -34,6 +34,8 @@ const notation = [
   { name: "ドメインイベント", description: "業務で起きたことを過去形で書きます。" },
   { name: "アクター", description: "コマンドを出す人や役割を書きます。" },
   { name: "コマンド", description: "何をしてほしいかを命令形で書きます。" },
+  { name: "ポリシー", description: "コマンドを実行してよい業務条件を書きます。" },
+  { name: "集約", description: "状態の整合性を守るドメインモデルを書きます。" },
   { name: "Hotspot", description: "答えが揃わないことや、決める必要があることを書きます。" },
 ] as const;
 
@@ -108,7 +110,7 @@ export const navigation = ({
           </section>
 
           <section id="workshop">
-            <h2>コマンド、条件、ドメインモデルを見つける</h2>
+            <h2>コマンド、ポリシー、集約を見つける</h2>
 
             <h3>コマンドと条件を逆算する</h3>
             <dl>
@@ -140,10 +142,11 @@ export const navigation = ({
             <blockquote>
               <p>予約を管理できる担当者が、診察開始前の予約だけを、理由を残してキャンセルできます。</p>
             </blockquote>
+            <p>この条件のまとまりをポリシーとして置き、状態の整合性を守る<code>Appointment</code>集約とは分けて表します。</p>
 
-            <h3>集約とワークフローを区別する</h3>
+            <h3>ポリシー、集約、ワークフローを区別する</h3>
             <p>
-              <code>Appointment</code>集約は、キャンセルできる状態と、理由を持つキャンセル後の状態を守ります。業務ワークフローはResolverから実行者と予約を受け取り、認可と存在を確認してから、<code>Appointment.cancel</code>を呼びます。
+              ポリシーは、誰がどの予約をどんな条件でキャンセルできるかを表します。<code>Appointment</code>集約は、キャンセルできる状態と、理由を持つキャンセル後の状態を守ります。業務ワークフローはResolverから実行者と予約を受け取り、ポリシーを確認してから、<code>Appointment.cancel</code>を呼びます。
             </p>
             <p>この例で使う集約は一つですが、集約とワークフローが対応するわけではありません。集約は状態の整合性を守るドメインモデル、ワークフローは入出力と失敗を含めて業務判断を調整する関数です。</p>
           </section>
@@ -171,13 +174,13 @@ export const navigation = ({
 
             <h3>EventStormingを業務ワークフローへ写す</h3>
             <p>
-              コマンドはワークフローの入力へ、業務条件は内部の判断へ、ドメインイベントは成功出力へ対応させます。<code>Appointment</code>は、その判断で使う一つの集約です。
+              コマンドはワークフローの入力へ、ポリシーは内部の条件確認へ、集約は<code>Appointment.cancel</code>へ、ドメインイベントは成功出力へ対応させます。
             </p>
             <dl>
               <dt>入力</dt>
               <dd>予約キャンセルのコマンドと、Resolverから取得した実行者・予約の現在状態。</dd>
               <dt>業務判断</dt>
-              <dd>実行者の権限、予約の存在、キャンセル可能な状態、理由を確認してから、<code>Appointment.cancel</code>を実行する。</dd>
+              <dd>ポリシーとして実行者の権限、予約の存在、キャンセル可能な状態、理由を確認し、集約の<code>Appointment.cancel</code>を実行する。</dd>
               <dt>成功時の出力</dt>
               <dd><code>AppointmentCanceled</code>。</dd>
             </dl>
@@ -209,7 +212,7 @@ export const navigation = ({
 
             <h3>S1で残す成果物</h3>
             <ol>
-              <li>アクター、コマンド、<code>AppointmentCanceled</code>を並べた図</li>
+              <li>アクター、コマンド、ポリシー、<code>Appointment</code>集約、<code>AppointmentCanceled</code>を分けて並べた図</li>
               <li>権限、予約の存在、現在状態、理由の条件とHotspot</li>
               <li>3か所で失敗へ切り替わるROP基本図と、ResolverとEvent Storeを外側へ置いた業務ワークフロー図</li>
             </ol>
