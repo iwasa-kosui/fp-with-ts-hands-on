@@ -22,10 +22,18 @@ const defaultMigrationsFolder = fileURLToPath(
 
 export const createSqliteDatabase = (path: string): SqliteDatabase => {
   const client = new Database(path);
+  let closed = false;
   client.pragma("foreign_keys = ON");
 
   return Object.assign(drizzle(client, { schema: sqliteSchema }), {
-    close: () => client.close(),
+    close: () => {
+      if (closed) {
+        return;
+      }
+
+      closed = true;
+      client.close();
+    },
   });
 };
 
