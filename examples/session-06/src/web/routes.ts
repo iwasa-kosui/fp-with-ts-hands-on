@@ -11,7 +11,6 @@ import {
   checkIn,
   completeExamination,
   recordPayment,
-  startExamination as transitionToInExamination,
 } from "../domain/appointment/transitions.js";
 import { AppointmentId } from "../domain/ids/appointmentId.js";
 import { OwnerId } from "../domain/ids/ownerId.js";
@@ -109,7 +108,6 @@ export const registerClinicRoutes = (app: Hono, store: AppointmentStore): void =
   app.post("/appointments/:appointmentId/start-examination", async (context) => {
     const dependencies = {
       resolver: store,
-      transition: transitionToInExamination,
       stateStore: store.stateStore,
       eventLog: store.eventLog,
       clock: { now: () => "2026-08-30T06:30:00.000Z" },

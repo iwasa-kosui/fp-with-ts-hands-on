@@ -1,4 +1,5 @@
 import type { InExamination } from "../domain/appointment/appointment.js";
+import { startExamination as transitionToInExamination } from "../domain/appointment/transitions.js";
 import type { AppointmentId } from "../domain/ids/appointmentId.js";
 import type { VeterinarianId } from "../domain/ids/veterinarianId.js";
 import type { Dependencies } from "./dependencies.js";
@@ -18,7 +19,7 @@ export const startExamination =
       input.appointmentId,
     );
     const checkedIn = ensureCheckedIn(appointment);
-    const next = deps.transition(
+    const next = transitionToInExamination(
       checkedIn,
       input.veterinarianId,
       input.examinationStartedAt,

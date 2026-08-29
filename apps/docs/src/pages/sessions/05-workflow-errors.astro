@@ -102,7 +102,7 @@ export const session: SessionSummary = {
       solutions: [{
         path: "examples/session-06/src/useCase/startExamination.ts",
         symbol: "startExamination",
-        lines: [7, 43],
+        lines: [7, 44],
       }],
     },
     {
@@ -112,7 +112,7 @@ export const session: SessionSummary = {
       solutions: [{
         path: "examples/session-06/src/web/routes.ts",
         symbol: "toStartExaminationNoticeCode",
-        lines: [23, 42],
+        lines: [22, 41],
       }],
     },
   ],
@@ -189,10 +189,14 @@ const ensureAppointmentFound = (
   {
     name: "andThen と map は成功した経路だけを進める",
     definition:
-      "andThen は Ok のときだけ次の Result を返す処理へ進み、map は Ok の成功値だけを変換します。Err になった後のコールバックは呼ばれません。",
+      "andThen は Ok のときだけ次の Result を返す処理へ進み、map は Ok の成功値だけを変換します。Err になった後のコールバックは呼ばれません。状態遷移は外部依存ではなくドメインの純粋関数なので、ユースケースから直接呼びます。",
     before: {
       caption: "途中で何がthrowされるか型から分からないワークフロー",
-      code: `const startExamination =
+      code: `import {
+  startExamination as transitionToInExamination,
+} from "../domain/appointment/transitions.js";
+
+const startExamination =
   (deps: Dependencies) =>
   (input: StartExaminationInput): InExamination => {
     const found = ensureAppointmentFound(
@@ -200,7 +204,7 @@ const ensureAppointmentFound = (
       input.appointmentId,
     );
     const checkedIn = ensureCheckedIn(found);
-    const next = deps.transition(
+    const next = transitionToInExamination(
       checkedIn,
       input.veterinarianId,
       input.examinationStartedAt,
@@ -212,7 +216,44 @@ const ensureAppointmentFound = (
     },
     after: {
       caption: "Result の型と処理順を同時に読めるワークフロー",
-      code: `const startExamination =
+      code: `import type { Result } from "neverthrow";
+
+import type { Appointment } from "../domain/appointment/appointment.js";
+import {
+  startExamination as transitionToInExamination,
+} from "../domain/appointment/transitions.js";
+import type { AppointmentId } from "../domain/ids/appointmentId.js";
+import type { OwnerId } from "../domain/ids/ownerId.js";
+import type { PetId } from "../domain/ids/petId.js";
+import type { VeterinarianId } from "../domain/ids/veterinarianId.js";
+
+type InExamination = Readonly<{
+  kind: "InExamination";
+  appointmentId: AppointmentId;
+  petId: PetId;
+  ownerId: OwnerId;
+  scheduledAt: string;
+  reason: string;
+  checkedInAt: string;
+  veterinarianId: VeterinarianId;
+  examinationStartedAt: string;
+}>;
+
+type AppointmentNotFound = Readonly<{
+  kind: "AppointmentNotFound";
+  appointmentId: AppointmentId;
+}>;
+
+type InvalidAppointmentState = Readonly<{
+  kind: "InvalidAppointmentState";
+  actual: Appointment["kind"];
+}>;
+
+type StartExaminationError =
+  | AppointmentNotFound
+  | InvalidAppointmentState;
+
+const startExamination =
   (deps: Dependencies) =>
   (input: StartExaminationInput): Result<
     InExamination,
@@ -224,7 +265,7 @@ const ensureAppointmentFound = (
     )
       .andThen(ensureCheckedIn)
       .map((appointment) =>
-        deps.transition(
+        transitionToInExamination(
           appointment,
           input.veterinarianId,
           input.examinationStartedAt,
@@ -235,7 +276,7 @@ const ensureAppointmentFound = (
         return appointment;
       });`,
     },
-    why: "before は実行時には例外で処理が止まりますが、どの行が何をthrowするかは型に現れません。after は予約なしと状態不正を Err として運び、その時点で後続の andThen と map を呼びません。そのため、状態遷移と保存が成功側にしかないことをコードの形で確認できます。保存障害など map 内で発生する予期しない例外は捕捉しないため、業務エラーへ偽装されません。",
+    why: "before は実行時には例外で処理が止まりますが、どの行が何をthrowするかは型に現れません。after は成功時に InExamination のどの情報が得られるかと、予約なし・状態不正のどちらで失敗するかを定義から確認できます。Err になった時点で後続の andThen と map は呼ばれません。resolver と store は外部境界として deps から受け取りますが、状態遷移はドメイン知識なので直接呼びます。保存障害など map 内で発生する予期しない例外は捕捉せず、業務エラーへ偽装しません。",
   },
   {
     name: "match と switch で呼び出し側の処理漏れを型エラーにする",
@@ -318,6 +359,10 @@ const safeTryColumn = {
   caption: "safeTryでErrを早期returnし、Okの値を取り出す",
   code: `import { ok, safeTry, type Result } from "neverthrow";
 
+import {
+  startExamination as transitionToInExamination,
+} from "../domain/appointment/transitions.js";
+
 const startExamination = (
   appointment: Appointment | undefined,
   appointmentId: AppointmentId,
@@ -336,7 +381,7 @@ const startExamination = (
 const narrative = {
   requirement: "診察開始で予期できる業務エラーを型付きの値として返し、Web側が失敗理由ごとに受付の次の操作を選べるようにする。",
   currentRisk: "ユースケースは成功値だけを返す型のまま複数の Error をthrowします。Web側は予約なしの文言だけをcatchしているため、後から追加された状態不正を処理できず500にしています。",
-  design: "予約なしと状態不正を kind を持つ判別共用体にし、Result で返す。andThen で失敗後の遷移と保存を止め、Web側はmatchとswitchで業務エラーを網羅してnoticeへ変換する。",
+  design: "予約なしと状態不正を kind を持つ判別共用体にし、Result で返す。andThen で失敗後の遷移と保存を止める。状態遷移はドメイン関数を直接呼び、外部境界のresolverとstoreだけを依存として受け取る。Web側はmatchとswitchで業務エラーを網羅してnoticeへ変換する。",
   limitation: "どの失敗を業務エラーとして扱うか、画面でどのnoticeへ変換するかは、人の判断とレビューが必要になる。保存障害など予期しない異常はResultへ変換せず、外側の例外境界へ伝える。",
   legacy: "成功値しか現れない関数シグネチャ、複数箇所のthrow、例外メッセージに依存したcatchを読みます。受付前の予約だけ500になる処理漏れを、演習テストで再現します。",
   fallback: "2つのguardと startExamination は解答例を反映します。最後にWebルートをmatchとswitchへ置き換え、2種類のnoticeを確認します。",

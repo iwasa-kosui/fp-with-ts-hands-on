@@ -3,7 +3,7 @@ import { ResultAsync, type Result } from "neverthrow";
 import type { EventContext } from "../domain/aggregate/eventContext.js";
 import type { Appointment as AppointmentState, InExamination } from "../domain/appointment/appointment.js";
 import type { ExaminationStarted } from "../domain/appointment/examinationStarted.js";
-import { Appointment } from "../domain/appointment/transitions.js";
+import { Appointment, startExamination as transitionToInExamination } from "../domain/appointment/transitions.js";
 import type { AppointmentId } from "../domain/ids/appointmentId.js";
 import type { VeterinarianId } from "../domain/ids/veterinarianId.js";
 import type {
@@ -38,7 +38,7 @@ export const startExamination =
     )
       .andThen(ensureCheckedIn)
       .map((appointment) =>
-        deps.transition(
+        transitionToInExamination(
           appointment,
           input.veterinarianId,
           input.examinationStartedAt,

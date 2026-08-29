@@ -8,7 +8,6 @@ import type {
   CheckedIn,
   Scheduled,
 } from "../src/domain/appointment/appointment.js";
-import { startExamination as transitionToInExamination } from "../src/domain/appointment/transitions.js";
 import { AppointmentId } from "../src/domain/ids/appointmentId.js";
 import { OwnerId } from "../src/domain/ids/ownerId.js";
 import { PetId } from "../src/domain/ids/petId.js";
@@ -64,13 +63,9 @@ describe("Step 2: AppointmentNotFound を値として返す", () => {
 });
 
 describe("Step 3: andThen pipeline が失敗理由を運ぶ", () => {
-  it("予約なしを保持し、遷移も保存も実行しない", () => {
-    let transitionCalls = 0;
+  it("予約なしを保持し、保存しない", () => {
     let saveCalls = 0;
     const deps = createDependencies(undefined, {
-      onTransition: () => {
-        transitionCalls += 1;
-      },
       onSave: () => {
         saveCalls += 1;
       },
@@ -78,17 +73,12 @@ describe("Step 3: andThen pipeline が失敗理由を運ぶ", () => {
     const result = startExamination(deps)(input);
 
     expect(result).toEqual(err({ kind: "AppointmentNotFound", appointmentId }));
-    expect(transitionCalls).toBe(0);
     expect(saveCalls).toBe(0);
   });
 
-  it("状態不正の後も遷移と保存を実行しない", () => {
-    let transitionCalls = 0;
+  it("状態不正の後も保存しない", () => {
     let saveCalls = 0;
     const deps = createDependencies(scheduled, {
-      onTransition: () => {
-        transitionCalls += 1;
-      },
       onSave: () => {
         saveCalls += 1;
       },
@@ -99,7 +89,6 @@ describe("Step 3: andThen pipeline が失敗理由を運ぶ", () => {
       kind: "InvalidAppointmentState",
       actual: "Scheduled",
     }));
-    expect(transitionCalls).toBe(0);
     expect(saveCalls).toBe(0);
   });
 
@@ -142,19 +131,10 @@ describe("Step 4: 呼び出し側が業務エラーを漏れなく処理する",
 const createDependencies = (
   resolved: Appointment | undefined,
   observer: Readonly<{
-    onTransition?: () => void;
     onSave?: () => void;
   }> = {},
 ): Dependencies => ({
   resolver: { resolveById: () => resolved },
-  transition: (appointment, nextVeterinarianId, examinationStartedAt) => {
-    observer.onTransition?.();
-    return transitionToInExamination(
-      appointment,
-      nextVeterinarianId,
-      examinationStartedAt,
-    );
-  },
   store: {
     save: () => {
       observer.onSave?.();

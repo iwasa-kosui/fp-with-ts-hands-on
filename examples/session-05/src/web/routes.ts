@@ -10,7 +10,6 @@ import {
   checkIn,
   completeExamination,
   recordPayment,
-  startExamination as transitionToInExamination,
 } from "../domain/appointment/transitions.js";
 import { AppointmentId } from "../domain/ids/appointmentId.js";
 import { OwnerId } from "../domain/ids/ownerId.js";
@@ -78,7 +77,6 @@ export const registerClinicRoutes = (app: Hono, store: AppointmentStore): void =
       startExamination({
         resolver: store,
         store,
-        transition: transitionToInExamination,
       })({
         appointmentId: AppointmentId.parse(rawAppointmentId),
         veterinarianId: ids.veterinarianId,

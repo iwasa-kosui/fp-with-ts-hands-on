@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import type { ExaminationStarted } from "../src/domain/appointment/examinationStarted.js";
-import { startExamination as transitionToInExamination } from "../src/domain/appointment/transitions.js";
 import type { Appointment, CheckedIn } from "../src/domain/appointment/appointment.js";
 import { EventId } from "../src/domain/aggregate/eventId.js";
 import { AppointmentId } from "../src/domain/ids/appointmentId.js";
@@ -150,7 +149,6 @@ const createHarness = (
           return checkedIn;
         },
       },
-      transition: transitionToInExamination,
       clock: { now: () => FIXED_OCCURRED_AT },
       eventIdGenerator: { generate: () => FIXED_EVENT_ID },
       store: {

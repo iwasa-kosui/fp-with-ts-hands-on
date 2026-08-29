@@ -7,6 +7,7 @@ import type { StartExaminationWithEffectsError } from "./errors.js";
 import type { Result } from "neverthrow";
 
 import type { InExamination } from "../domain/appointment/appointment.js";
+import { startExamination as transitionToInExamination } from "../domain/appointment/transitions.js";
 import type { AppointmentId } from "../domain/ids/appointmentId.js";
 import type { VeterinarianId } from "../domain/ids/veterinarianId.js";
 import type { Dependencies } from "./dependencies.js";
@@ -31,7 +32,7 @@ export const startExamination =
     )
       .andThen(ensureCheckedIn)
       .map((appointment) =>
-        deps.transition(
+        transitionToInExamination(
           appointment,
           input.veterinarianId,
           input.examinationStartedAt,
@@ -50,7 +51,6 @@ export const startExaminationWithEffects =
     const occurredAt = new Date().toISOString();
     const result = startExamination({
       resolver: deps.resolver,
-      transition: deps.transition,
       store: { save: () => undefined },
     })({ ...input, examinationStartedAt: occurredAt });
 
