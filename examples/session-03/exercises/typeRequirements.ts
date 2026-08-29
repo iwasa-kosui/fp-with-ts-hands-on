@@ -36,10 +36,17 @@ export const assertInvalidIdentifierAssignmentsAreRejected = (): void => {
   );
   const expectedErrorCount = (source.match(/@ts-expect-error/g) ?? []).length;
   const requirement = "不正な識別子の取り違えを少なくとも2か所で止める";
+  const diagnostics = compileProjectFile(testTypesRelativePath);
 
   if (expectedErrorCount < 2) {
-    throw new Error(`型で守れていません: ${requirement}\n型検査が2件未満です`);
+    const compilerDiagnostics =
+      diagnostics.length === 0
+        ? "compiler diagnostics: ありません"
+        : `compiler diagnostics:\n${diagnostics.join("\n")}`;
+    throw new Error(
+      `型で守れていません: ${requirement}\n${compilerDiagnostics}\n型検査が2件未満です: ${expectedErrorCount}件`,
+    );
   }
 
-  assertTypeRequirement(requirement, compileProjectFile(testTypesRelativePath));
+  assertTypeRequirement(requirement, diagnostics);
 };
