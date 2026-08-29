@@ -63,5 +63,5 @@ export const createClinicRootView = (
       return html;
     }
 
-    return vite.transformIndexHtml(context.req.url, html);
+    return vite.transformIndexHtml(context.req.path, html);
   };
