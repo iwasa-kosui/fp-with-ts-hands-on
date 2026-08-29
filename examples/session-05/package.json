@@ -7,7 +7,7 @@
     "build": "vite build --mode client && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "exercise": "vitest run --config vitest.exercises.config.ts"
+    "exercise": "node exercises/run-exercise-checks.mjs"
   },
   "dependencies": {
     "@fp-with-ts/clinic-web": "workspace:*",

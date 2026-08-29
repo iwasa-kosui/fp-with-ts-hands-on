@@ -387,6 +387,7 @@ recordPayment(
 } as const;
 
 const exerciseSession: ExerciseSessionSummary = session;
+const initialExerciseFailureCount = 5;
 
 export const workspace = ({
   slug: session.slug,
@@ -546,14 +547,14 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             </p>
             <CodeGuideCards guides={guides} projectFiles={projectFiles} />
             <h3>修正前の失敗を確認する</h3>
-            <p>修正前は、次の{session.steps.length}件に対応する演習テストが失敗します。</p>
+            <p>修正前は、次の{session.steps.length}件を確かめる{initialExerciseFailureCount}個の型検査が失敗します。</p>
             <ul class="exercise-failures" aria-label="修正前に確認する問題">
               {session.steps.map((step) => <li>{step.startingFailure}</li>)}
             </ul>
             <CommandBlock
               phase="red"
               command={session.exerciseCommand}
-              expected={`${session.steps.length}件の演習テストが失敗します。`}
+              expected={`${initialExerciseFailureCount}個の型検査が失敗します。`}
             />
             <p>ブラウザ内の変更はローカルへ反映されません。</p>
             <div data-code-explorer={workspace.slug}>

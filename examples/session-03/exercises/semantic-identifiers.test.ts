@@ -1,27 +1,25 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 
+import { startExamination } from "../src/domain/appointment/transitions.js";
 import { AppointmentId } from "../src/domain/ids/appointmentId.js";
-import {
-  assertAppointmentAndVeterinarianIdsCannotBeMixed,
-  assertInvalidIdentifierAssignmentsAreRejected,
-  assertStartExaminationRequiresPurposeSpecificIds,
-} from "./typeRequirements.js";
+import type { AppointmentId as AppointmentIdValue } from "../src/domain/ids/appointmentId.js";
+import type { VeterinarianId } from "../src/domain/ids/veterinarianId.js";
 
 describe("Step 1", () => {
-  it("予約と獣医師の識別子を取り違えられない", () => {
-    assertAppointmentAndVeterinarianIdsCannotBeMixed();
+  it("AppointmentId を VeterinarianId の用途へ渡せない", () => {
+    expectTypeOf<AppointmentIdValue>().not.toMatchTypeOf<VeterinarianId>(); // 要件: AppointmentId を VeterinarianId の用途へ渡せない型にしてください。
   });
 });
 
 describe("Step 2", () => {
-  it("診察開始には予約と獣医師それぞれの識別子が必要", () => {
-    assertStartExaminationRequiresPurposeSpecificIds();
+  it("診察開始には VeterinarianId が必要", () => {
+    expectTypeOf<AppointmentIdValue>().not.toMatchTypeOf<Parameters<typeof startExamination>[1]>(); // 要件: 診察開始の担当獣医師に AppointmentId を渡せない型にしてください。
   });
 });
 
 describe("Step 3", () => {
-  it("不正な識別子の取り違えを少なくとも2か所で止める", () => {
-    assertInvalidIdentifierAssignmentsAreRejected();
+  it("VeterinarianId を AppointmentId の用途へ渡せない", () => {
+    expectTypeOf<VeterinarianId>().not.toMatchTypeOf<AppointmentIdValue>(); // 要件: VeterinarianId を AppointmentId の用途へ渡せない型にしてください。
   });
 });
 

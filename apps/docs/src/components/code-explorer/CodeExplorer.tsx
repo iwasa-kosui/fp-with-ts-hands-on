@@ -89,6 +89,7 @@ export const CodeExplorer = ({
     useState<TerminalPanelStateKind>("unstarted");
   const [syncError, setSyncError] = useState<string>();
   const terminalSession = useRef<TerminalSession>();
+  const pendingFileWrites = useRef<Promise<void>>(Promise.resolve());
   const selectedPath = workspaceState.selectedPath;
   const isPreparing = terminalState === "preparing";
   const dirtyPaths = useMemo(
@@ -105,10 +106,19 @@ export const CodeExplorer = ({
     const session = terminalSession.current;
     if (session === undefined) return;
     setSyncError(undefined);
-    void session.writeFile(path, contents).catch((error: unknown) => {
+    const nextWrite = pendingFileWrites.current
+      .catch(() => undefined)
+      .then(() => session.writeFile(path, contents));
+    pendingFileWrites.current = nextWrite;
+    void nextWrite.catch((error: unknown) => {
       setSyncError(messageFrom(error));
     });
   }, []);
+
+  const waitForPendingFileWrites = useCallback(
+    () => pendingFileWrites.current,
+    [],
+  );
 
   const resetSelectedFile = () => {
     if (selectedPath === undefined) return;
@@ -239,6 +249,7 @@ export const CodeExplorer = ({
           onWorkspaceChange={handleWorkspaceChange}
           onSessionChange={handleSessionChange}
           onStateChange={handleTerminalState}
+          waitForPendingFileWrites={waitForPendingFileWrites}
         />
       )}
     </section>

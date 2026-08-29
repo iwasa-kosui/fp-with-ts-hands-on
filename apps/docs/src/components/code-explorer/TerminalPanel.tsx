@@ -38,6 +38,7 @@ export type TerminalPanelProps = Readonly<{
   onWorkspaceChange: (change: WorkspaceChange) => void;
   onSessionChange: (session: TerminalSession | undefined) => void;
   onStateChange: (state: TerminalPanelStateKind) => void;
+  waitForPendingFileWrites?: () => Promise<void>;
 }>;
 
 type PanelState =
@@ -64,6 +65,8 @@ const messageFrom = (error: unknown): string =>
 
 const defaultSupportsRuntime = (): boolean =>
   globalThis.crossOriginIsolated === true && typeof WebAssembly !== "undefined";
+
+const noPendingFileWrites = async (): Promise<void> => undefined;
 
 export const createXtermView = async (): Promise<TerminalView> => {
   const [{ Terminal }, { FitAddon }] = await Promise.all([
@@ -113,6 +116,7 @@ export const TerminalPanel = ({
   onWorkspaceChange,
   onSessionChange,
   onStateChange,
+  waitForPendingFileWrites = noPendingFileWrites,
 }: TerminalPanelProps) => {
   const [state, setState] = useState<PanelState>({ kind: "unstarted" });
   const terminalHost = useRef<HTMLDivElement>(null);
@@ -131,11 +135,13 @@ export const TerminalPanel = ({
   const onWorkspaceChangeRef = useRef(onWorkspaceChange);
   const onSessionChangeRef = useRef(onSessionChange);
   const onStateChangeRef = useRef(onStateChange);
+  const waitForPendingFileWritesRef = useRef(waitForPendingFileWrites);
 
   onTypeFilesRef.current = onTypeFiles;
   onWorkspaceChangeRef.current = onWorkspaceChange;
   onSessionChangeRef.current = onSessionChange;
   onStateChangeRef.current = onStateChange;
+  waitForPendingFileWritesRef.current = waitForPendingFileWrites;
 
   const transition = useCallback((nextState: PanelState) => {
     if (!mounted.current) return;
@@ -180,7 +186,10 @@ export const TerminalPanel = ({
     terminalOpened.current = true;
     for (const chunk of pendingOutput.current.splice(0)) view.write(chunk);
     inputSubscription.current = view.onData((data) => {
-      void session.writeInput(data).catch(() => undefined);
+      void waitForPendingFileWritesRef
+        .current()
+        .then(() => session.writeInput(data))
+        .catch(() => undefined);
     });
     const fit = () => session.resize(view.fit());
     fit();

@@ -84,10 +84,18 @@ test("/sessions/02-state-transitions/ runs the failure flow before accepting the
     .getByRole("button", { name: "修正前の失敗を確認" })
     .click();
   const terminal = playground.locator('[aria-label="コード実行ターミナル"]');
+  const runTerminalCommand = async (command: string) => {
+    const input = terminal.locator(".xterm-helper-textarea");
+    await input.pressSequentially(command);
+    await input.press("Enter");
+  };
   await expect(terminal).toBeVisible({ timeout: 90_000 });
-  await expect(terminal).toContainText(/Tests\s+4 failed/, {
-    timeout: 30_000,
-  });
+  await expect(terminal).toContainText(
+    "要件未達: 会計済みの来院から診察を開始できない型にしてください。",
+    {
+      timeout: 30_000,
+    },
+  );
 
   const editor = playground.getByRole("textbox", { name: "Editor content" });
   const pasteIntoEditor = async (source: string) => {
@@ -132,9 +140,8 @@ test("/sessions/02-state-transitions/ runs the failure flow before accepting the
     "src/domain/appointment/statusLabel.ts、変更あり",
   );
 
-  await terminal.locator(".xterm-helper-textarea").pressSequentially("pnpm exercise:02");
-  await terminal.locator(".xterm-helper-textarea").press("Enter");
-  await expect(terminal).toContainText(/Tests\s+4 passed/, {
+  await runTerminalCommand("pnpm exercise:02 && echo TYPECHECK_PASSED");
+  await expect(terminal).toContainText("TYPECHECK_PASSED", {
     timeout: 30_000,
   });
 
@@ -145,12 +152,11 @@ test("/sessions/02-state-transitions/ runs the failure flow before accepting the
   await expect(
     playground.locator('[data-path="src/domain/appointment/statusLabel.ts"]'),
   ).toHaveAttribute("aria-label", "src/domain/appointment/statusLabel.ts");
+  await runTerminalCommand(
+    `node -e "console.log(require('node:fs').readFileSync('src/domain/appointment/statusLabel.ts', 'utf8').includes('return \\\"不明\\\";') ? 'RESET_CONTENT_SYNCED' : 'RESET_CONTENT_STALE')"`,
+  );
+  await expect(terminal).toContainText("RESET_CONTENT_SYNCED");
 
-  const runTerminalCommand = async (command: string) => {
-    const input = terminal.locator(".xterm-helper-textarea");
-    await input.pressSequentially(command);
-    await input.press("Enter");
-  };
   const terminalFilePath = "src/terminal-note.ts";
   await runTerminalCommand(
     `node -e "require('node:fs').writeFileSync('${terminalFilePath}', 'export const terminalValue = 1;')"`,
