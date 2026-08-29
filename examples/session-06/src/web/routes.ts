@@ -4,6 +4,7 @@ import type { Context, Hono } from "hono";
 import { clinicFixture } from "../../../fixtures/clinic.js";
 import type { AppointmentStore } from "../adaptor/inMemoryAppointmentStore.js";
 import { ExamResult } from "../boundary/examResult.js";
+import { StartExaminationInput } from "../boundary/startExaminationInput.js";
 import { EventId } from "../domain/aggregate/eventId.js";
 import type { Appointment, Scheduled } from "../domain/appointment/appointment.js";
 import {
@@ -15,7 +16,6 @@ import {
 import { AppointmentId } from "../domain/ids/appointmentId.js";
 import { OwnerId } from "../domain/ids/ownerId.js";
 import { PetId } from "../domain/ids/petId.js";
-import { VeterinarianId } from "../domain/ids/veterinarianId.js";
 import type { StartExaminationWithEffectsError } from "../useCase/errors.js";
 import { startExaminationWithEffects } from "../useCase/startExamination.js";
 import { toPageProps } from "./appointmentView.js";
@@ -56,7 +56,6 @@ const ids = {
   eventId: EventId.parse("55555555-5555-4555-8555-555555555555"),
   ownerId: OwnerId.parse(clinicFixture.ownerId),
   petId: PetId.parse(clinicFixture.petId),
-  veterinarianId: VeterinarianId.parse(clinicFixture.veterinarianId),
 };
 
 const appointmentOrThrow = (store: AppointmentStore, appointmentId: string): Appointment => {
@@ -106,6 +105,10 @@ export const registerClinicRoutes = (app: Hono, store: AppointmentStore): void =
   });
 
   app.post("/appointments/:appointmentId/start-examination", async (context) => {
+    const input = StartExaminationInput.parse({
+      appointmentId: context.req.param("appointmentId"),
+      veterinarianId: clinicFixture.veterinarianId,
+    })._unsafeUnwrap();
     const dependencies = {
       resolver: store,
       stateStore: store.stateStore,
@@ -115,8 +118,7 @@ export const registerClinicRoutes = (app: Hono, store: AppointmentStore): void =
       store: store.atomicStore,
     };
     const result = await startExaminationWithEffects(dependencies)({
-      appointmentId: AppointmentId.parse(context.req.param("appointmentId")),
-      veterinarianId: ids.veterinarianId,
+      ...input,
     });
     return result.match(
       () => context.redirect("/", 303),

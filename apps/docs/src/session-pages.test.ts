@@ -119,15 +119,16 @@ const exerciseContracts = {
     workspace: {
       slug: "04-boundaries-and-pii",
       snapshot: "session-04",
-      initialFile: "exercises/boundary-and-pii.test.ts",
-      description: "input の検証と PII の境界を開始 snapshot で確認します。",
+      initialFile: "exercises/start-examination-input.test.ts",
+      description: "HTTP入力を診察開始の型付き入力へ変換する境界を確認します。",
       visibleFiles: [
-        "exercises/boundary-and-pii.test.ts",
+        "exercises/start-examination-input.test.ts",
         "test/regression/semantic-identifiers.test.ts",
         "test/regression/state-modeling.test.ts",
-        "src/domain/appointment/appointment.ts",
-        "src/boundary/examResult.ts",
-        "src/boundary/ownerContact.ts",
+        "src/domain/ids/appointmentId.ts",
+        "src/domain/ids/veterinarianId.ts",
+        "src/boundary/startExaminationInput.ts",
+        "src/shared/schemaResult.ts",
       ],
     },
     navigation: {

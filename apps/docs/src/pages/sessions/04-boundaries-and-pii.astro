@@ -67,68 +67,60 @@ export const session: SessionSummary = {
   },
   delegationPrompt: {
     request:
-      "検査機関の JSON と飼い主の連絡先を別のリスクとして扱ってください。未検証の入力がドメインへ入らず、連絡先が既定で公開されない形に改善してください。",
+      "HTTPから届く診察開始の入力を改善してください。不正な予約IDや担当獣医師IDが、型付き入力としてワークフローへ渡らない状態を目指します。",
     decisions: [
-      "外部入力を信頼済みの値へ変える境界はどこか",
-      "連絡先を取り出してよい処理はどこか",
+      "外部入力をunknownとして受け取る場所はどこか",
+      "S3で作った2種類のschemaをどう組み合わせるか",
     ],
   },
   steps: [
     {
-      id: "s4-parse-exam-result",
-      goal: "形式が異なる検査結果の JSON は、ドメイン型にならないようにする。",
-      startingFailure: "項目が欠けた検査結果でも、正しい検査結果として扱える。",
-      targets: ["examples/session-04/src/boundary/examResult.ts"],
+      id: "s4-reject-invalid-appointment-id",
+      goal: "不正な予約IDを含むHTTP入力は、StartExaminationInputにならないようにする。",
+      startingFailure: "不正な予約IDでも、診察開始の入力として扱える。",
+      targets: ["examples/session-04/src/boundary/startExaminationInput.ts"],
       solutions: [{
-        path: "examples/session-05/src/boundary/examResult.ts",
-        symbol: "ExamResult",
-        lines: [7, 19],
+        path: "examples/session-05/src/boundary/startExaminationInput.ts",
+        symbol: "StartExaminationInput",
+        lines: [6, 18],
       }],
     },
     {
-      id: "s4-protect-contact",
-      goal: "電話番号とメールは既定でログに出ないようにする。",
-      startingFailure: "氏名・メール・電話番号がログにそのまま出る。",
-      targets: ["examples/session-04/src/boundary/ownerContact.ts"],
+      id: "s4-reject-invalid-veterinarian-id",
+      goal: "不正な担当獣医師IDを含むHTTP入力は、StartExaminationInputにならないようにする。",
+      startingFailure: "不正な担当獣医師IDでも、診察開始の入力として扱える。",
+      targets: ["examples/session-04/src/boundary/startExaminationInput.ts"],
       solutions: [{
-        path: "examples/session-05/src/boundary/ownerContact.ts",
-        symbol: "OwnerContact",
-        lines: [6, 19],
+        path: "examples/session-05/src/boundary/startExaminationInput.ts",
+        symbol: "StartExaminationInput",
+        lines: [6, 18],
       }],
     },
   ],
   decisions: [
     {
-      invariant: "外部入力は、境界で検証してからドメイン型になる。",
+      invariant: "外部入力はunknownとして受け取り、境界で検証してから型付き入力になる。",
     },
     {
-      invariant: "個人情報は既定でマスクし、値を取り出す場所を限定する。",
+      invariant: "予約IDと担当獣医師IDの両方が正しい場合だけ、startExaminationへ渡す。",
     },
   ],
   finalReferences: [
     "examples/final/src/domain/shared/schemaResult.ts",
-    "examples/final/src/domain/shared/sensitive.ts",
-    "examples/final/src/domain/owner/ownerPhone.ts",
-    "examples/final/src/domain/examResult/examResult.ts",
+    "examples/final/src/domain/appointment/appointmentId.ts",
+    "examples/final/src/domain/appointment/veterinarianId.ts",
+    "examples/final/src/useCase/startExaminationUseCase.ts",
   ],
 };
 
 export const guides = ([
   {
-    id: "unvalidated-exam-json",
-    title: "入力された検査 JSON を any のままドメイン型へ入れている",
-    currentDesign: "入力値の形式を検証せず、手書きの ExamResult へ詰め替えています。",
-    futureRisk: "petId の欠落が境界を通過し、後続の処理で初めて壊れます。",
-    path: "src/boundary/examResult.ts",
-    highlights: [{ startLineNumber: 5, endLineNumber: 20 }],
-  },
-  {
-    id: "plain-contact-pii",
-    title: "input から連絡先を文字列のまま返している",
-    currentDesign: "ownerName・email・phone を any からそのままコピーしています。",
-    futureRisk: "JSON化やログ出力で個人情報がそのまま露出します。",
-    path: "src/boundary/ownerContact.ts",
-    highlights: [{ startLineNumber: 3, endLineNumber: 16 }],
+    id: "unvalidated-start-examination-input",
+    title: "HTTP入力をanyのまま診察開始の入力へ入れている",
+    currentDesign: "予約IDと担当獣医師IDを検証せず、手書きのStartExaminationInputへコピーしています。",
+    futureRisk: "不正なUUIDが境界を通過し、予約の読み込みや業務判断まで進みます。",
+    path: "src/boundary/startExaminationInput.ts",
+    highlights: [{ startLineNumber: 1, endLineNumber: 15 }],
   },
 ] as const) satisfies readonly CodeGuide[];
 
@@ -138,34 +130,47 @@ const teaching: readonly TeachingTopic[] = [
     definition:
       "外から届く unknown 型の値を schema でバリデーションし、正しい値だけをドメイン型として扱います。バリデーションに失敗した場合、エラーを Result で返します。",
     before: {
-      sources: ["examples/session-04/src/boundary/examResult.ts"],
-      code: `export const ExamResult = {
-  parse: (raw: any): Result<ExamResult> =>
+      sources: ["examples/session-04/src/boundary/startExaminationInput.ts"],
+      code: `export const StartExaminationInput = {
+  parse: (raw: any): Result<StartExaminationInput> =>
     ok({
-      examId: raw.examId,
-      petId: raw.petId,
-      items: raw.items ?? [],
-      needsFollowUp: !!raw.needsFollowUp,
+      appointmentId: raw.appointmentId,
+      veterinarianId: raw.veterinarianId,
     }),
 } as const;`,
     },
     after: {
-      sources: ["examples/session-05/src/boundary/examResult.ts"],
-      code: `const ExamResultSchema = z.object({
-  examId: ExamId.schema,
-  petId: PetId.schema,
-  items: z.array(z.string().min(1)).readonly(),
-  needsFollowUp: z.boolean().default(false),
+      sources: ["examples/session-05/src/boundary/startExaminationInput.ts"],
+      code: `const schema = z.object({
+  appointmentId: AppointmentId.schema,
+  veterinarianId: VeterinarianId.schema,
 }).readonly();
 
-export type ExamResult = z.infer<typeof ExamResultSchema>;
+export type StartExaminationInput = z.infer<typeof schema>;
 
-export const ExamResult = {
-  schema: ExamResultSchema,
-  parse: schemaResult(ExamResultSchema),
+export const StartExaminationInput = {
+  schema,
+  parse: schemaResult(schema),
 } as const;`,
     },
-    why: "before は raw を any で受けるため、検証を行わなくても型検査が通ってしまいます。after は unknown を schema でパースするので、検証を通さない限り値を取り出せません。これで「外部入力は、境界で検証してからドメイン型にする」ことを型で守れます。前の回で作った ExamId.schema と PetId.schema をここへ埋め込むと、識別子を作る経路が境界の1か所に集まります。parse は失敗しうる処理なので、失敗は例外ではなく戻り値の Result に現します。この回は失敗が戻り値に出るところまでを扱い、Result の分岐と合成は S5 で扱います。",
+    why: "beforeはrawをanyで受けるため、検証しなくても型検査が通ります。afterはS3で作った2種類のschemaを組み合わせ、unknownを検証します。両方のIDが正しい場合だけ型付き入力を返し、失敗はResultに現します。Resultの分岐と合成はS5で扱います。",
+  },
+];
+
+const supplementary: readonly TeachingTopic[] = [
+  {
+    name: "ExamResultの外部JSONもschemaで検証する",
+    definition:
+      "検査機関から届くexamId、petId、items、needsFollowUpを、ExamResultとして扱う前に検証します。",
+    before: {
+      sources: ["examples/session-04/src/boundary/examResult.ts"],
+      code: `parse: (raw: any): Result<ExamResult> => ok(raw)`,
+    },
+    after: {
+      sources: ["examples/session-05/src/boundary/examResult.ts"],
+      code: `parse: schemaResult(ExamResultSchema)`,
+    },
+    why: "項目の欠落や不正な識別子を境界で止める考え方は、StartExaminationInputと同じです。",
   },
   {
     name: "Sensitive を実装して、デフォルトで情報がログに出力されないようにする",
@@ -206,12 +211,12 @@ const OwnerContactSchema = z
 ];
 
 const narrative = {
-  requirement: "外部から入力される JSON が想定とは異なる場合、エラーにする。また、個人情報はデフォルトでログには出力されないようにする。",
-  currentRisk: "検査機関から届く値をそのまま信頼してしまうと、想定している型とは違う形のデータがドメインに入り込んでしまう可能性がある。また、個人情報などを適切に検出できず、うっかりログなどに載ってしまう可能性がある。",
-  design: "外部から入力される JSON は、必ず検証してからドメイン型に変換する。個人情報は、デフォルトでログに出力されないような形に変換して取り扱う。",
-  limitation: "Sensitive を unwrap した後の文字列の扱いは、型では守れない。",
-  legacy: "raw: any 型の値を受け取る parse や、連絡先を平文の string で保持する実装を確認します。これを改善して、入力と出力の境界を明確にしましょう。",
-  fallback: "現在の2ステップを順に開き、まず不正な JSON を Err として返します。次に連絡先の3項目を Sensitive にします。相互レビューの約束事はS2のリンク先を確認します。",
+  requirement: "HTTPから届く予約IDと担当獣医師IDを検証し、正しい値だけをstartExaminationへ渡す。",
+  currentRisk: "rawをanyで受け取って手書きの型へコピーしているため、不正なUUIDでもStartExaminationInputとして扱えます。",
+  design: "外部入力をunknownとして受け取り、AppointmentId.schemaとVeterinarianId.schemaの両方を通った場合だけ型付き入力へ変換する。",
+  limitation: "schemaは値の形式と用途を検証しますが、その予約が存在するか、受付済みかは判断しません。これらはS5で扱います。",
+  legacy: "raw: anyを受け取るstartExaminationInput.tsを読み、不正な2種類のIDが境界を通ることを確認します。",
+  fallback: "startExaminationInput.tsの手書き型をz.inferへ変え、AppointmentId.schemaとVeterinarianId.schemaを持つobject schemaを作ります。parseにはschemaResultを使います。相互レビューの約束事はS2のリンク先を確認します。",
 } as const;
 
 const exerciseSession: ExerciseSessionSummary = session;
@@ -219,15 +224,16 @@ const exerciseSession: ExerciseSessionSummary = session;
 export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
-  initialFile: "exercises/boundary-and-pii.test.ts",
-  description: "input の検証と PII の境界を開始 snapshot で確認します。",
+  initialFile: "exercises/start-examination-input.test.ts",
+  description: "HTTP入力を診察開始の型付き入力へ変換する境界を確認します。",
   visibleFiles: [
-    "exercises/boundary-and-pii.test.ts",
+    "exercises/start-examination-input.test.ts",
     "test/regression/semantic-identifiers.test.ts",
     "test/regression/state-modeling.test.ts",
-    "src/domain/appointment/appointment.ts",
-    "src/boundary/examResult.ts",
-    "src/boundary/ownerContact.ts",
+    "src/domain/ids/appointmentId.ts",
+    "src/domain/ids/veterinarianId.ts",
+    "src/boundary/startExaminationInput.ts",
+    "src/shared/schemaResult.ts",
   ],
 } as const) satisfies SessionWorkspace;
 
@@ -402,6 +408,20 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 <p class="teaching-topic__why">{topic.why}</p>
               </article>
             ))}
+            <aside class="decision-card">
+              <h3>時間外の補足: 検査結果とPII</h3>
+              <p>
+                <code>ExamResult</code> のschemaと、連絡先を既定で伏せる
+                <code>Sensitive</code> は、時間内のexerciseとレビューには含めません。必要な場合だけ次を開きます。
+              </p>
+              {supplementary.map((topic) => (
+                <details>
+                  <summary>{topic.name}</summary>
+                  <p>{topic.definition}</p>
+                  <p>{topic.why}</p>
+                </details>
+              ))}
+            </aside>
           </section>
 
           <section id="refactor">

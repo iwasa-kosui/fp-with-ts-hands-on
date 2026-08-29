@@ -4,6 +4,7 @@ import type { Context, Hono } from "hono";
 import { clinicFixture } from "../../../fixtures/clinic.js";
 import type { InMemoryExaminationStartedStore } from "../adaptor/inMemoryExaminationStartedStore.js";
 import { ExamResult } from "../boundary/examResult.js";
+import { StartExaminationInput } from "../boundary/startExaminationInput.js";
 import { EventId } from "../domain/aggregate/eventId.js";
 import type { Appointment, Scheduled } from "../domain/appointment/appointment.js";
 import {
@@ -15,7 +16,6 @@ import {
 import { AppointmentId } from "../domain/ids/appointmentId.js";
 import { OwnerId } from "../domain/ids/ownerId.js";
 import { PetId } from "../domain/ids/petId.js";
-import { VeterinarianId } from "../domain/ids/veterinarianId.js";
 import type {
   StartExaminationError,
   StartExaminationWithEffectsError,
@@ -58,7 +58,6 @@ const ids = {
   eventId: EventId.parse("55555555-5555-4555-8555-555555555555"),
   ownerId: OwnerId.parse(clinicFixture.ownerId),
   petId: PetId.parse(clinicFixture.petId),
-  veterinarianId: VeterinarianId.parse(clinicFixture.veterinarianId),
 };
 
 const appointmentOrThrow = (
@@ -116,14 +115,17 @@ export const registerClinicRoutes = (
   });
 
   app.post("/appointments/:appointmentId/start-examination", async (context) => {
+    const input = StartExaminationInput.parse({
+      appointmentId: context.req.param("appointmentId"),
+      veterinarianId: clinicFixture.veterinarianId,
+    })._unsafeUnwrap();
     const result = await startExaminationWithEffects({
       resolver: adapter.resolver,
       store: adapter.store,
       clock: { now: () => "2026-08-30T06:30:00.000Z" },
       eventIdGenerator: { generate: () => ids.eventId },
     })({
-      appointmentId: AppointmentId.parse(context.req.param("appointmentId")),
-      veterinarianId: ids.veterinarianId,
+      ...input,
     });
     return result.match(
       () => context.redirect("/", 303),
