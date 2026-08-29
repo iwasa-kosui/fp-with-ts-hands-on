@@ -279,6 +279,28 @@ const toErrorMessage = (error: StartExaminationError): string => {
   },
 ];
 
+const safeTryColumn = {
+  title: "中間値に名前を付ける safeTry",
+  introduction:
+    "andThen のチェーンでは値を次の処理へ直接渡します。途中の成功値を複数使う場合や、名前を付けながら上から読みたい場合は safeTry も選べます。",
+  caption: "safeTryでErrを早期returnし、Okの値を取り出す",
+  code: `import { ok, safeTry, type Result } from "neverthrow";
+
+const startExamination = (
+  appointment: Appointment | undefined,
+  appointmentId: AppointmentId,
+): Result<InExamination, StartExaminationError> =>
+  safeTry(function* () {
+    const found = yield* ensureAppointmentFound(
+      appointment,
+      appointmentId,
+    );
+    const checkedIn = yield* ensureCheckedIn(found);
+
+    return ok(transitionToInExamination(checkedIn));
+  });`,
+} as const;
+
 const narrative = {
   requirement: "診察を開始する際の予期できる業務エラーを、曖昧なエラーコードではなく、型付きの値として扱えるようにする。",
   currentRisk: "throw、undefined、例外メッセージへの依存が混在しているため、フロントエンドの受付画面でエラー理由を分岐できない。また、エラー発生後の処理も止めにくい。",
@@ -497,6 +519,23 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 <p class="teaching-topic__why">{topic.why}</p>
               </article>
             ))}
+            <aside class="teaching-column" aria-labelledby="safe-try-column-title">
+              <p class="teaching-column__label">OPTIONAL / コラム</p>
+              <h3 id="safe-try-column-title">{safeTryColumn.title}</h3>
+              <p>{safeTryColumn.introduction}</p>
+              <figure class="code-block">
+                <figcaption>{safeTryColumn.caption}</figcaption>
+                <Code code={safeTryColumn.code} lang="ts" />
+              </figure>
+              <p>
+                <code>yield*</code> した Result が <code>Err</code> なら、その場で処理を止めて <code>safeTry</code> 全体から同じ失敗を返します。
+                <code>Ok</code> なら成功値を取り出して次の行へ進みます。
+              </p>
+              <p>
+                <code>safeTry</code> は Result の失敗を伝える仕組みであり、<code>throw</code> された例外を捕捉する <code>try/catch</code> ではありません。
+                ResultAsync を扱う場合は <code>async function*</code> を渡せます。
+              </p>
+            </aside>
           </section>
 
           <section id="refactor">

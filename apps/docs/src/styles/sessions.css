@@ -457,7 +457,7 @@
 
 /* base.css の flex と space-between では、参照元のパスが左右へ離れ、
    モバイルではキャプションの外へはみ出す。 */
-.case-file :is(.teaching-topic, .pitfall-code) figcaption {
+.case-file :is(.teaching-topic, .teaching-column, .pitfall-code) figcaption {
   display: block;
 }
 
@@ -468,6 +468,37 @@
 
 .teaching-topic__why {
   margin-block: 1rem 0;
+}
+
+.teaching-column {
+  min-width: 0;
+  margin-block: 1.5rem 0;
+  padding: 1rem;
+  border: 2px solid var(--case-line);
+  border-inline-start: 0.6rem solid var(--case-mint);
+  background: color-mix(in srgb, var(--case-mint) 28%, var(--case-paper));
+}
+
+.teaching-column h3 {
+  margin-block-start: 0;
+}
+
+.teaching-column__label {
+  display: inline-block;
+  margin: 0 0 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--case-lemon);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.teaching-column .code-block {
+  margin-inline: 0;
+}
+
+.teaching-column > :last-child {
+  margin-block-end: 0;
 }
 
 .step-solution {
