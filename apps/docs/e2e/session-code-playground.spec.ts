@@ -184,6 +184,28 @@ test("/sessions/02-state-transitions/ runs the failure flow before accepting the
   ).toHaveAttribute("aria-pressed", "true");
 });
 
+test("/sessions/02-state-transitions/ stacks design guide cards in one column on desktop", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1200 });
+  await page.goto("/sessions/02-state-transitions/");
+
+  const cards = page.locator("#legacy .code-guide-cards > [data-code-guide-card]");
+  await expect(cards).toHaveCount(2);
+  const positions = await cards.evaluateAll((elements) =>
+    elements.map((element) => {
+      const { left, top, width, height } = element.getBoundingClientRect();
+      return { left, top, width, height };
+    }),
+  );
+  const [first, second] = positions;
+  if (first === undefined || second === undefined) {
+    throw new Error("S2 design guide cards are missing");
+  }
+
+  expect(second.top).toBeGreaterThan(first.top + first.height);
+  expect(second.left).toBe(first.left);
+  expect(second.width).toBe(first.width);
+});
+
 for (const slug of exerciseSlugs) {
   const route = `/sessions/${slug}/`;
   for (const viewport of viewports) {
