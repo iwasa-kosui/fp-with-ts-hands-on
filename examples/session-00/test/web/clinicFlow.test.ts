@@ -89,7 +89,7 @@ describe("Session 00 Web application", () => {
     expect(inspection.appointmentJson).toContain(
       '\"status\": \"waiting-for-magic\"',
     );
-    expect(inspection.warnings).toContain("未知の予約statusが保存されています");
+    expect(inspection.warnings).toContain("想定外の予約状態が保存されています");
   });
 
   it("事故routeからowner IDをpet IDとして保存して警告する", async () => {
@@ -102,7 +102,7 @@ describe("Session 00 Web application", () => {
     expect(inspection.appointmentJson).toContain(
       `\"petId\": \"${clinicFixture.ownerId}\"`,
     );
-    expect(inspection.warnings).toContain("ownerIdとpetIdが同じ値です");
+    expect(inspection.warnings).toContain("飼い主 ID と動物 ID が同じ値です");
   });
 
   it("名前だけの入力境界から不正な検査結果を保存してしまう", async () => {
@@ -154,7 +154,7 @@ describe("Session 00 Web application", () => {
     expect(auditLogJson).toContain(clinicFixture.ownerContact.ownerEmail);
     expect(auditLogJson).toContain(clinicFixture.ownerContact.ownerPhone);
     expect(firstPage.props.incidentLab.inspection.warnings).toContain(
-      "監査payloadに飼い主の連絡先が含まれています",
+      "予約の変更履歴に飼い主の連絡先が含まれています",
     );
   });
 

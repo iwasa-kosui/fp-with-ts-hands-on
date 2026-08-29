@@ -67,7 +67,7 @@ describe("Session 00 appointment view", () => {
       expect(props.appointment.kind).toBe(status);
       expect(props.appointment.statusLabel).toBe(status);
       expect(props.incidentLab?.inspection.warnings).toContain(
-        "未知の予約statusが保存されています",
+        "想定外の予約状態が保存されています",
       );
     },
   );
@@ -76,7 +76,7 @@ describe("Session 00 appointment view", () => {
     const props = toPageProps(appointment, [], undefined);
 
     expect(props.incidentLab?.inspection.warnings).toContain(
-      "予約statusに対応する最新の監査記録がありません",
+      "現在の予約内容に対応する変更履歴がありません",
     );
   });
 });
