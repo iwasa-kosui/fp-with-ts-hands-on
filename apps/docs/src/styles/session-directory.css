@@ -15,10 +15,27 @@
   line-height: 1.1;
 }
 
-.session-directory__hero > p:last-child {
+.session-directory__hero > h1 + p {
   margin: 1.25rem 0 0;
   font-size: 1.1rem;
   line-height: 1.8;
+}
+
+.session-directory__setup-link {
+  display: inline-block;
+  margin-top: 1.25rem;
+  padding: 0.65rem 0.9rem;
+  border: 2px solid var(--case-line);
+  background: var(--case-lemon);
+  color: var(--case-ink);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.session-directory__setup-link:hover,
+.session-directory__setup-link:focus-visible {
+  outline: 3px solid var(--case-coral);
+  outline-offset: 3px;
 }
 
 .session-directory__list {
