@@ -1,144 +1,247 @@
-import type { ClinicPageProps } from "@fp-with-ts/clinic-web";
-import {
-  noticeFromCode,
-  notImplemented,
-} from "@fp-with-ts/clinic-web/server";
-import type { Hono } from "hono";
+import { randomUUID } from "node:crypto";
+
+import { notImplemented } from "@fp-with-ts/clinic-web/server";
+import type { Context, Hono } from "hono";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
+import type { AppointmentRepository } from "../adaptor/secondary/sqlite/appointmentRepository.js";
+import { ExamResult } from "../boundary/examResult.js";
 import {
   bookAppointment,
-  findAppointment,
-  resetLegacyStore,
   updateStatus,
-  type LegacyAppointment,
-} from "../legacy/appointment.js";
+  type Appointment,
+  type AppointmentExtra,
+} from "../domain/appointment/appointment.js";
+import { startExamination } from "../useCase/startExamination.js";
+import { toPageProps } from "./appointmentView.js";
 
-const statusPresentation: Readonly<
-  Record<string, Readonly<{ kind: string; label: string }>>
-> = {
-  scheduled: { kind: "Scheduled", label: "予約済み" },
-  "checked-in": { kind: "CheckedIn", label: "受付済み" },
-  "in-examination": { kind: "InExamination", label: "診察中" },
-  "awaiting-payment": { kind: "AwaitingPayment", label: "会計待ち" },
-  paid: { kind: "Paid", label: "会計済み" },
-  canceled: { kind: "Canceled", label: "キャンセル済み" },
-};
+export const initialAppointment: Appointment = bookAppointment({
+  appointmentId: clinicFixture.appointmentId,
+  petId: clinicFixture.petId,
+  petName: "Mugi",
+  ownerId: clinicFixture.ownerId,
+  ...clinicFixture.ownerContact,
+  scheduledAt: clinicFixture.scheduledAt,
+  reason: "skin check",
+});
 
-const seedAppointment = (): LegacyAppointment => {
-  resetLegacyStore();
-  return bookAppointment({
-    id: clinicFixture.appointmentId,
-    petId: clinicFixture.petId,
-    petName: "Mugi",
-    ownerId: clinicFixture.ownerId,
-    ...clinicFixture.ownerContact,
-    scheduledAt: clinicFixture.scheduledAt,
-    reason: "skin check",
-  });
-};
-
-const appointmentOrThrow = (id: string): LegacyAppointment => {
-  const appointment = findAppointment(id);
+const appointmentOrThrow = (
+  repository: AppointmentRepository,
+  appointmentId: string,
+): Appointment => {
+  const appointment = repository.find(appointmentId);
   if (appointment === undefined) {
-    throw new Error(`Appointment not found: ${id}`);
+    throw new Error(`Appointment not found: ${appointmentId}`);
   }
   return appointment;
 };
 
-const toPageProps = (
-  appointment: LegacyAppointment,
-  noticeCode: string | undefined,
-): ClinicPageProps => {
-  const presentation = statusPresentation[appointment.status] ?? {
-    kind: appointment.status,
-    label: appointment.status,
-  };
-  const action = (path: string) =>
-    ({ kind: "Available", href: path, method: "post" }) as const;
-  const appointmentUrl = `/appointments/${appointment.id}`;
+const updateAppointment = (
+  repository: AppointmentRepository,
+  appointmentId: string,
+  status: string,
+  eventName: string,
+  occurredAt: string,
+  extra?: AppointmentExtra,
+): Appointment => {
+  const appointment = appointmentOrThrow(repository, appointmentId);
+  const updated = updateStatus(appointment, status, extra);
 
-  return {
-    sessionLabel: "Session 00",
-    learningFocus: "型で守られていない業務事故を観察する",
-    appointment: {
-      appointmentId: appointment.id,
-      kind: presentation.kind,
-      ownerName: appointment.ownerName,
-      petName: appointment.petName,
-      scheduledAt: appointment.scheduledAt,
-      statusLabel: presentation.label,
-    },
-    actions: {
-      checkIn: action(`${appointmentUrl}/check-in`),
-      startExamination: action(`${appointmentUrl}/start-examination`),
-      recordExamResult: action(`${appointmentUrl}/exam-results`),
-      recordPayment: action(`${appointmentUrl}/payment`),
-      cancel: action(`${appointmentUrl}/cancel`),
-      requestFollowUp: {
-        kind: "NotImplemented",
-        href: "/follow-ups/request",
-        method: "post",
-      },
-    },
-    notice: noticeFromCode(noticeCode),
-  };
+  repository.save(updated);
+  repository.appendAudit({
+    eventId: randomUUID(),
+    eventName,
+    occurredAt,
+    appointment: updated,
+  });
+
+  return updated;
 };
 
-export const registerClinicRoutes = (app: Hono): void => {
+const redirectToRoot = (context: Context) => context.redirect("/", 303);
+
+export const registerClinicRoutes = (
+  app: Hono,
+  repository: AppointmentRepository,
+): void => {
   app.get("/", (context) => {
-    const appointment = appointmentOrThrow(clinicFixture.appointmentId);
+    const appointment = appointmentOrThrow(
+      repository,
+      clinicFixture.appointmentId,
+    );
     return context.render(
       "ClinicDashboard",
-      toPageProps(appointment, context.req.query("notice")),
+      toPageProps(
+        appointment,
+        repository.listAuditLogs(),
+        context.req.query("notice"),
+      ),
     );
   });
 
   app.post("/appointments/:appointmentId/check-in", (context) => {
-    updateStatus(context.req.param("appointmentId"), "checked-in", {
-      checkedInAt: clinicFixture.checkedInAt,
-    });
-    return context.redirect("/", 303);
+    updateAppointment(
+      repository,
+      context.req.param("appointmentId"),
+      "checked-in",
+      "appointment.checked-in",
+      clinicFixture.checkedInAt,
+      { checkedInAt: clinicFixture.checkedInAt },
+    );
+    return redirectToRoot(context);
   });
 
   app.post("/appointments/:appointmentId/start-examination", (context) => {
-    updateStatus(context.req.param("appointmentId"), "in-examination", {
+    startExamination(repository)({
+      appointmentId: context.req.param("appointmentId"),
       veterinarianId: clinicFixture.veterinarianId,
     });
-    return context.redirect("/", 303);
+    return redirectToRoot(context);
   });
 
   app.post("/appointments/:appointmentId/exam-results", (context) => {
-    updateStatus(context.req.param("appointmentId"), "awaiting-payment", {
+    const raw = {
+      petId: clinicFixture.petId,
       examId: clinicFixture.examId,
       examinationCompletedAt: "2026-08-30T07:00:00.000Z",
       diagnosis: "dermatitis",
       treatment: "ointment",
-    });
-    return context.redirect("/", 303);
+      items: ["skin observation"],
+    };
+    const examResult = ExamResult.parse(raw);
+
+    updateAppointment(
+      repository,
+      context.req.param("appointmentId"),
+      "awaiting-payment",
+      "examination.result-recorded",
+      raw.examinationCompletedAt,
+      examResult,
+    );
+    return redirectToRoot(context);
   });
 
   app.post("/appointments/:appointmentId/payment", (context) => {
-    updateStatus(context.req.param("appointmentId"), "paid", {
-      amount: 4800,
-      paidAt: "2026-08-30T07:10:00.000Z",
-    });
-    return context.redirect("/", 303);
+    updateAppointment(
+      repository,
+      context.req.param("appointmentId"),
+      "paid",
+      "payment.recorded",
+      "2026-08-30T07:10:00.000Z",
+      {
+        amount: 4800,
+        paidAt: "2026-08-30T07:10:00.000Z",
+      },
+    );
+    return redirectToRoot(context);
   });
 
   app.post("/appointments/:appointmentId/cancel", (context) => {
-    updateStatus(context.req.param("appointmentId"), "canceled", {
-      cancelReason: "owner request",
-    });
-    return context.redirect("/", 303);
+    updateAppointment(
+      repository,
+      context.req.param("appointmentId"),
+      "canceled",
+      "appointment.canceled",
+      new Date().toISOString(),
+      { cancelReason: "owner request" },
+    );
+    return redirectToRoot(context);
   });
 
   app.post("/follow-ups/request", notImplemented);
 
+  app.post("/demo/incidents/unknown-status", (context) => {
+    updateAppointment(
+      repository,
+      clinicFixture.appointmentId,
+      "waiting-for-magic",
+      "appointment.status-updated",
+      new Date().toISOString(),
+    );
+    return redirectToRoot(context);
+  });
+
+  app.post("/demo/incidents/swap-identifiers", (context) => {
+    updateAppointment(
+      repository,
+      clinicFixture.appointmentId,
+      "scheduled",
+      "appointment.identifiers-updated",
+      new Date().toISOString(),
+      { petId: clinicFixture.ownerId },
+    );
+    return redirectToRoot(context);
+  });
+
+  app.post("/demo/incidents/malformed-exam-result", (context) => {
+    const raw = {
+      petId: "not-a-pet-id",
+      examId: clinicFixture.examId,
+      examinationCompletedAt: "2026-08-30T07:00:00.000Z",
+      diagnosis: "dermatitis",
+      treatment: "ointment",
+      items: "not-an-array",
+    };
+    const examResult = ExamResult.parse(raw);
+
+    updateAppointment(
+      repository,
+      clinicFixture.appointmentId,
+      "awaiting-payment",
+      "examination.result-recorded",
+      raw.examinationCompletedAt,
+      examResult,
+    );
+    return redirectToRoot(context);
+  });
+
+  app.post("/demo/incidents/missing-appointment", (context) => {
+    try {
+      startExamination(repository)({
+        appointmentId: "55555555-5555-4555-8555-555555555555",
+        veterinarianId: clinicFixture.veterinarianId,
+      });
+    } catch (error: any) {
+      if (error.message.includes("Appointment not found")) {
+        return context.redirect("/?notice=invalid-state", 303);
+      }
+      throw error;
+    }
+
+    return redirectToRoot(context);
+  });
+
+  app.post("/demo/incidents/repeat-start-examination", async (context) => {
+    const input = {
+      appointmentId: clinicFixture.appointmentId,
+      veterinarianId: clinicFixture.veterinarianId,
+    };
+    const first = startExamination(repository)(input);
+    if (first.examinationStartedAt === undefined) {
+      throw new Error("Examination start did not set a timestamp");
+    }
+
+    await waitForClockAfter(first.examinationStartedAt);
+    startExamination(repository)(input);
+    return redirectToRoot(context);
+  });
+
   app.post("/demo/reset", (context) => {
-    seedAppointment();
-    return context.redirect("/", 303);
+    repository.reset(initialAppointment);
+    return redirectToRoot(context);
   });
 };
 
-export const resetDemo = (): LegacyAppointment => seedAppointment();
+const waitForClockAfter = async (timestamp: string): Promise<void> => {
+  const timestampInMilliseconds = Date.parse(timestamp);
+
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    if (Date.now() > timestampInMilliseconds) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 10));
+  }
+
+  throw new Error(`Clock did not advance after ${timestamp}`);
+};

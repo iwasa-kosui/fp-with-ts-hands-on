@@ -5,6 +5,7 @@ import type {
   ActionAvailability,
   AppointmentActions,
   ClinicPageProps,
+  IncidentLab,
   Notice,
 } from "./contracts.js";
 
@@ -81,9 +82,52 @@ const NoticeDialog = ({ notice }: Readonly<{ notice: Notice }>): ReactElement | 
     </dialog>
   );
 
+const IncidentLabPanel = ({
+  incidentLab,
+}: Readonly<{
+  incidentLab: IncidentLab;
+}>): ReactElement => (
+  <section
+    className="surface-card clinic-incident-lab"
+    aria-labelledby="incident-lab-heading"
+  >
+    <h2 id="incident-lab-heading">事故再現</h2>
+    <div className="clinic-incident-lab__scenarios">
+      {incidentLab.scenarios.map((scenario) => (
+        <article className="clinic-incident-scenario" key={scenario.title}>
+          <div>
+            <h3>{scenario.title}</h3>
+            <p>{scenario.description}</p>
+          </div>
+          <ActionButton action={scenario.action} label="実行する" />
+        </article>
+      ))}
+    </div>
+    <div className="clinic-database-inspection">
+      <section aria-labelledby="database-appointment-heading">
+        <h3 id="database-appointment-heading">DBに保存された予約</h3>
+        <pre>{incidentLab.inspection.appointmentJson}</pre>
+      </section>
+      <section aria-labelledby="database-audit-log-heading">
+        <h3 id="database-audit-log-heading">DBに保存された監査ログ</h3>
+        <pre>{incidentLab.inspection.auditLogJson}</pre>
+      </section>
+      <section aria-labelledby="database-warnings-heading">
+        <h3 id="database-warnings-heading">不整合の警告</h3>
+        <ul>
+          {incidentLab.inspection.warnings.map((warning) => (
+            <li key={warning}>{warning}</li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  </section>
+);
+
 export const ClinicDashboard = ({
   actions,
   appointment,
+  incidentLab,
   learningFocus,
   notice,
   sessionLabel,
@@ -136,6 +180,8 @@ export const ClinicDashboard = ({
         ))}
       </div>
     </section>
+
+    {incidentLab === undefined ? null : <IncidentLabPanel incidentLab={incidentLab} />}
 
     <NoticeDialog notice={notice} />
   </main>

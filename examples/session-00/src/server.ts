@@ -1,5 +1,18 @@
-import { createApp } from "./app.js";
+import { fileURLToPath } from "node:url";
 
-const app = createApp(import.meta.env.PROD);
+import { createDatabaseBackedApp } from "./app.js";
+
+const databasePath = import.meta.env.PROD
+  ? fileURLToPath(new URL("./clinic.sqlite", import.meta.url))
+  : fileURLToPath(new URL("../clinic.sqlite", import.meta.url));
+const migrationsFolder = import.meta.env.PROD
+  ? fileURLToPath(new URL("./drizzle", import.meta.url))
+  : fileURLToPath(new URL("../drizzle", import.meta.url));
+
+const app = createDatabaseBackedApp({
+  databasePath,
+  migrationsFolder,
+  isProduction: import.meta.env.PROD,
+});
 
 export default app;

@@ -74,4 +74,47 @@ describe("ClinicDashboard", () => {
 
     expect(html).toContain("現在の予約状態ではこの操作を実行できません");
   });
+
+  it("事故再現用propsがあるとシナリオとDB検査結果を表示する", () => {
+    const html = renderToStaticMarkup(
+      <ClinicDashboard
+        {...props}
+        incidentLab={{
+          scenarios: [
+            {
+              title: "未知の状態を保存する",
+              description: "statusへ定義されていない文字列を保存します。",
+              action: {
+                kind: "Available",
+                href: "/demo/incidents/unknown-status",
+                method: "post",
+              },
+            },
+          ],
+          inspection: {
+            appointmentJson: '{"status":"waiting-for-magic"}',
+            auditLogJson: '[{"eventName":"appointment.updated"}]',
+            warnings: ["未知の状態が保存されています"],
+          },
+        }}
+      />,
+    );
+
+    expect(html).toContain("事故再現");
+    expect(html).toContain("未知の状態を保存する");
+    expect(html).toContain("statusへ定義されていない文字列を保存します。");
+    expect(html).toContain("実行する");
+    expect(html).toContain("DBに保存された予約");
+    expect(html).toContain("{&quot;status&quot;:&quot;waiting-for-magic&quot;}");
+    expect(html).toContain("DBに保存された監査ログ");
+    expect(html).toContain("[{&quot;eventName&quot;:&quot;appointment.updated&quot;}]");
+    expect(html).toContain("未知の状態が保存されています");
+  });
+
+  it("事故再現用propsがないと事故再現とDB検査結果を表示しない", () => {
+    const html = renderToStaticMarkup(<ClinicDashboard {...props} />);
+
+    expect(html).not.toContain("事故再現");
+    expect(html).not.toContain("DBに保存された予約");
+  });
 });

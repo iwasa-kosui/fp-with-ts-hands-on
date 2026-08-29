@@ -21,6 +21,12 @@ describe("createClinicRootView", () => {
     const html = await rootView(page, context);
 
     expect(html).toContain('<html lang="ja">');
+    expect(html).toContain(
+      'import { injectIntoGlobalHook } from "/@react-refresh";',
+    );
+    expect(html).toContain("injectIntoGlobalHook(window);");
+    expect(html).toContain("window.$RefreshReg$ = () => {};");
+    expect(html).toContain("window.$RefreshSig$ = () => (type) => type;");
     expect(html).toContain('src="/src/web/client.tsx"');
     expect(html).toContain('data-page="app"');
     expect(html).not.toContain('/static/styles.css');
@@ -52,6 +58,7 @@ describe("createClinicRootView", () => {
 
     expect(html).toContain('src="/static/client.js"');
     expect(html).toContain('href="/static/styles.css"');
+    expect(html).not.toContain("/@react-refresh");
   });
 });
 
@@ -77,5 +84,22 @@ describe("createClinicViteConfig", () => {
         entryFileNames: "static/client.js",
       },
     });
+  });
+
+  it("server buildで指定したnative dependencyをexternalにする", async () => {
+    const config = createClinicViteConfig({ external: ["better-sqlite3"] });
+    expect(config).toBeTypeOf("function");
+    if (typeof config !== "function") {
+      throw new TypeError("config must be a function");
+    }
+
+    const resolved = await config({
+      command: "build",
+      isPreview: false,
+      isSsrBuild: true,
+      mode: "server",
+    });
+
+    expect(resolved.ssr?.external).toEqual(["better-sqlite3"]);
   });
 });

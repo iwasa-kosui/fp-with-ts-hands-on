@@ -13,9 +13,12 @@ type PageModule = Readonly<{
 const expectedFragments: Readonly<Record<string, readonly string[]>> = {
   "string-status": ["status: string"],
   "optional-state-data": ["veterinarianId?: string"],
-  "plain-string-ids": ["ownerId: string"],
-  "throw-not-found": ["throw new Error"],
-  "raw-pii-log": ["logger.info"],
+  "plain-string-ids": ["ownerId: string", "petId: string"],
+  "session-00-unvalidated-exam-json": ["raw: any"],
+  "session-00-raw-pii-audit": ["payload: appointment"],
+  "session-00-message-mapped-errors": ["catch", "error.message.includes"],
+  "session-00-hidden-nondeterminism": ["new Date()", "randomUUID()"],
+  "session-00-dual-write": ["repository.save", "repository.appendAudit"],
   "wide-transition-input": ["appointment: Appointment", "as Appointment"],
   "non-exhaustive-label": ["default:"],
   "untyped-pet-id": ["z.string().uuid()", "export type PetId"],
@@ -40,20 +43,20 @@ const expectedFragments: Readonly<Record<string, readonly string[]>> = {
   "final-transaction-store": ["db.transaction"],
 };
 
-const pageModules = import.meta.glob<PageModule>([
-  "../../pages/sessions/*.astro",
-  "!../../pages/sessions/index.astro",
-], {
-  eager: true,
-});
-const pageSources = import.meta.glob<string>([
-  "../../pages/sessions/*.astro",
-  "!../../pages/sessions/index.astro",
-], {
-  eager: true,
-  query: "?raw",
-  import: "default",
-});
+const pageModules = import.meta.glob<PageModule>(
+  ["../../pages/sessions/*.astro", "!../../pages/sessions/index.astro"],
+  {
+    eager: true,
+  },
+);
+const pageSources = import.meta.glob<string>(
+  ["../../pages/sessions/*.astro", "!../../pages/sessions/index.astro"],
+  {
+    eager: true,
+    query: "?raw",
+    import: "default",
+  },
+);
 const legacyGuideModules = Object.keys(
   import.meta.glob("./*.ts", { eager: true }),
 ).filter((file) => !file.endsWith("code-guides.test.ts"));
@@ -73,7 +76,11 @@ describe("session code guides", () => {
       .flatMap(([path, { guides }]) =>
         guides === undefined
           ? []
-          : [path.replace(/^\.\.\/\.\.\/pages\/sessions\//, "").replace(/\.astro$/, "")],
+          : [
+              path
+                .replace(/^\.\.\/\.\.\/pages\/sessions\//, "")
+                .replace(/\.astro$/, ""),
+            ],
       )
       .sort();
 
@@ -88,12 +95,11 @@ describe("session code guides", () => {
       expect(guides, session.slug).toEqual(expect.any(Array));
       expect(guides!.length).toBeGreaterThanOrEqual(2);
       expect(guides!.length).toBeLessThanOrEqual(
-        session.slug === "00-system-handover" ? 5 : 3,
+        session.slug === "00-system-handover" ? 8 : 3,
       );
       const files = projectFilesForSnapshot(snapshot);
-      const workspace = pageModules[
-        `../../pages/sessions/${session.slug}.astro`
-      ]?.workspace;
+      const workspace =
+        pageModules[`../../pages/sessions/${session.slug}.astro`]?.workspace;
 
       for (const guide of guides!) {
         expect(guide.title).not.toBe("");
@@ -148,6 +154,27 @@ describe("session code guides", () => {
           "1業務集約から7つの集約へ広がる配線",
         );
         expect(aggregateGuide?.path).toBe("src/app.ts");
+      }
+
+      if (session.slug === "00-system-handover") {
+        const messageMappedErrorsGuide = guides!.find(
+          ({ id }) => id === "session-00-message-mapped-errors",
+        );
+
+        expect(guides!.map(({ id }) => id)).toEqual([
+          "string-status",
+          "optional-state-data",
+          "plain-string-ids",
+          "session-00-unvalidated-exam-json",
+          "session-00-raw-pii-audit",
+          "session-00-message-mapped-errors",
+          "session-00-hidden-nondeterminism",
+          "session-00-dual-write",
+        ]);
+        expect(new Set(guides!.map(({ id }) => id)).size).toBe(8);
+        expect(messageMappedErrorsGuide?.highlights).toEqual([
+          { startLineNumber: 204, endLineNumber: 205 },
+        ]);
       }
     }
   });

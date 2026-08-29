@@ -32,5 +32,8 @@ export type {
   ClinicAppointmentView,
   ClinicPageProps,
   ClinicUserView,
+  DatabaseInspection,
+  IncidentLab,
+  IncidentScenario,
   Notice,
 } from "./contracts.js";
