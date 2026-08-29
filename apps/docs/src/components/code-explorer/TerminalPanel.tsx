@@ -30,6 +30,7 @@ export type TerminalPanelStateKind =
 export type TerminalPanelProps = Readonly<{
   files: ProjectFiles;
   visibleFiles: readonly string[];
+  initialCommand?: string;
   runnerFactory?: () => TerminalRunner;
   supportsRuntime?: () => boolean;
   loadTerminalView?: () => Promise<TerminalView>;
@@ -104,6 +105,7 @@ const defaultRunnerFactory = (): TerminalRunner =>
 export const TerminalPanel = ({
   files,
   visibleFiles,
+  initialCommand,
   runnerFactory = defaultRunnerFactory,
   supportsRuntime = defaultSupportsRuntime,
   loadTerminalView = createXtermView,
@@ -211,6 +213,7 @@ export const TerminalPanel = ({
     transition({ kind: "preparing", phase: "booting" });
 
     let view: TerminalView | undefined;
+    let session: TerminalSession | undefined;
     try {
       view = await loadTerminalView();
       if (!isActiveAttempt()) {
@@ -219,7 +222,7 @@ export const TerminalPanel = ({
       }
       terminalView.current = view;
       const runner = runnerFactory();
-      const session = await runner.start({
+      session = await runner.start({
         files,
         visibleFiles,
         size: initialTerminalSize,
@@ -256,8 +259,12 @@ export const TerminalPanel = ({
         view.dispose();
         return;
       }
+      if (initialCommand !== undefined) {
+        await session.writeInput(`${initialCommand}\r`);
+      }
       terminalSession.current = session;
       onSessionChangeRef.current(session);
+      session = undefined;
       const exitCode = pendingExitCode.current;
       pendingExitCode.current = undefined;
       transition(
@@ -266,6 +273,7 @@ export const TerminalPanel = ({
           : { kind: "exited", exitCode, restarting: false },
       );
     } catch (error: unknown) {
+      await session?.dispose();
       if (view !== undefined && terminalView.current === view) {
         terminalView.current = undefined;
         view.dispose();
@@ -281,6 +289,7 @@ export const TerminalPanel = ({
     }
   }, [
     files,
+    initialCommand,
     loadTerminalView,
     runnerFactory,
     supportsRuntime,
@@ -318,15 +327,19 @@ export const TerminalPanel = ({
     <section className="code-explorer__terminal" data-state={state.kind}>
       {state.kind === "unstarted" ? (
         <div className="code-explorer__terminal-prompt">
-          <p>
-            コマンドはブラウザ内の隔離環境で実行され、ローカルPCのファイルにはアクセスしません。
-          </p>
+          {initialCommand === undefined ? (
+            <p>
+              コマンドはブラウザ内の隔離環境で実行され、ローカルPCのファイルにはアクセスしません。
+            </p>
+          ) : null}
           <button
             type="button"
             data-action="start-terminal"
             onClick={() => void startTerminal()}
           >
-            ターミナルを起動
+            {initialCommand === undefined
+              ? "ターミナルを起動"
+              : "修正前の失敗を確認"}
           </button>
         </div>
       ) : null}

@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
 const exerciseSlugs = [
@@ -55,112 +56,87 @@ for (const viewport of viewports) {
   });
 }
 
-test("/sessions/02-state-transitions/ runs arbitrary commands and reflects created files", async ({ page }) => {
+test("/sessions/02-state-transitions/ runs the failure flow before accepting the solution", async ({ page }) => {
   test.setTimeout(150_000);
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.setViewportSize({ width: 1440, height: 1200 });
   await page.goto("/sessions/02-state-transitions/");
 
+  const transitionsSolution = await readFile(
+    new URL(
+      "../../../examples/session-03/src/domain/appointment/transitions.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const statusLabelSolution = await readFile(
+    new URL(
+      "../../../examples/session-03/src/domain/appointment/statusLabel.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
   const playground = page.locator("#legacy");
   await expect(
     playground.getByRole("textbox", { name: "Editor content" }),
   ).toBeAttached();
   await playground
-    .getByRole("button", { name: "ターミナルを起動" })
+    .getByRole("button", { name: "修正前の失敗を確認" })
     .click();
-  await expect(playground.locator(".code-explorer__terminal")).not.toHaveAttribute(
-    "data-state",
-    "unstarted",
-  );
   const terminal = playground.locator('[aria-label="コード実行ターミナル"]');
   await expect(terminal).toBeVisible({ timeout: 90_000 });
-
-  const terminalInput = terminal.locator(".xterm-helper-textarea");
-  await terminalInput.focus();
-  await page.keyboard.type("echo __CODEX_TERMINAL_4'2'__");
-  await page.keyboard.press("Enter");
-  await expect(terminal).toContainText("__CODEX_TERMINAL_42__", {
-    timeout: 10_000,
-  });
-
-  await terminalInput.focus();
-  await page.keyboard.type(
-    "echo 'created from terminal' > src/created.txt && echo __FILE_4'2'__",
-  );
-  await page.keyboard.press("Enter");
-  await expect(terminal).toContainText("__FILE_42__", { timeout: 10_000 });
-
-  await terminalInput.focus();
-  await page.keyboard.type("ls src/created.txt && echo __LIST_4'2'__");
-  await page.keyboard.press("Enter");
-  await expect(terminal).toContainText("__LIST_42__", { timeout: 10_000 });
-  const createdFile = playground.locator('[data-path="src/created.txt"]');
-  await expect(createdFile).toBeVisible({ timeout: 10_000 });
-  await createdFile.click();
-  await expect(
-    playground.locator('[aria-label="コードエディタ: src/created.txt"]'),
-  ).toBeVisible();
-
-  const editorInput = playground.getByRole("textbox", {
-    name: "Editor content",
-  });
-  await editorInput.focus();
-  await page.keyboard.press("ControlOrMeta+A");
-  await page.keyboard.type("edited-from-monaco");
-
-  await terminalInput.focus();
-  await page.keyboard.type("cat src/created.txt && echo __CAT_4'2'__");
-  await page.keyboard.press("Enter");
-  await expect(terminal).toContainText("edited-from-monaco", {
-    timeout: 10_000,
-  });
-  await expect(terminal).toContainText("__CAT_42__", { timeout: 10_000 });
-
-  await terminalInput.focus();
-  await page.keyboard.type(
-    "echo terminal-updated > src/created.txt && echo __UPDATE_4'2'__",
-  );
-  await page.keyboard.press("Enter");
-  await expect(terminal).toContainText("__UPDATE_42__", { timeout: 10_000 });
-  await expect(playground.locator(".code-explorer__monaco .view-lines")).toContainText(
-    "terminal-updated",
-    { timeout: 10_000 },
-  );
-
-  await terminalInput.focus();
-  await page.keyboard.type("rm src/created.txt && echo __DELETE_4'2'__");
-  await page.keyboard.press("Enter");
-  await expect(terminal).toContainText("__DELETE_42__", { timeout: 10_000 });
-  await expect(createdFile).toHaveCount(0, { timeout: 10_000 });
-
-  await terminalInput.focus();
-  await page.keyboard.type("pnpm exercise:02");
-  await page.keyboard.press("Enter");
   await expect(terminal).toContainText(/Tests\s+4 failed/, {
     timeout: 30_000,
   });
 
-  await page.setViewportSize({ width: 390, height: 844 });
-  const terminalLayout = await terminal.evaluate((element) => {
-    const screen = element.querySelector<HTMLElement>(".xterm-screen");
-    if (screen === null) throw new Error("xterm screen is missing");
-    return {
-      hostWidth: element.clientWidth,
-      hostHeight: element.clientHeight,
-      screenWidth: screen.getBoundingClientRect().width,
-      screenHeight: screen.getBoundingClientRect().height,
-    };
+  const editor = playground.getByRole("textbox", { name: "Editor content" });
+  const pasteIntoEditor = async (source: string) => {
+    await editor.press("ControlOrMeta+A");
+    await page.evaluate(
+      async (nextSource) => navigator.clipboard.writeText(nextSource),
+      source,
+    );
+    await editor.press("ControlOrMeta+V");
+  };
+  const selectFile = async (path: string, expectedSource: string) => {
+    await playground.locator(`[data-path="${path}"]`).click();
+    await expect(
+      playground.locator(`[aria-label="コードエディタ: ${path}"]`),
+    ).toBeVisible();
+    await expect(playground.locator(".code-explorer__monaco .view-lines")).toContainText(
+      expectedSource,
+    );
+  };
+
+  await selectFile("src/domain/appointment/transitions.ts", "requireKind");
+  await pasteIntoEditor(transitionsSolution);
+  await expect(playground.locator(".code-explorer__monaco .view-lines")).toContainText(
+    "as const satisfies Canceled;",
+  );
+  await expect(
+    playground.locator('[data-path="src/domain/appointment/transitions.ts"]'),
+  ).toHaveAttribute(
+    "aria-label",
+    "src/domain/appointment/transitions.ts、変更あり",
+  );
+
+  await selectFile("src/domain/appointment/statusLabel.ts", "toStatusLabel");
+  await pasteIntoEditor(statusLabelSolution);
+  await expect(playground.locator(".code-explorer__monaco .view-lines")).toContainText(
+    "return assertNever(appointment);",
+  );
+  await expect(
+    playground.locator('[data-path="src/domain/appointment/statusLabel.ts"]'),
+  ).toHaveAttribute(
+    "aria-label",
+    "src/domain/appointment/statusLabel.ts、変更あり",
+  );
+
+  await terminal.locator(".xterm-helper-textarea").pressSequentially("pnpm exercise:02");
+  await terminal.locator(".xterm-helper-textarea").press("Enter");
+  await expect(terminal).toContainText(/Tests\s+4 passed/, {
+    timeout: 30_000,
   });
-  expect(terminalLayout.screenWidth).toBeLessThanOrEqual(
-    terminalLayout.hostWidth + 1,
-  );
-  expect(terminalLayout.screenHeight).toBeLessThanOrEqual(
-    terminalLayout.hostHeight + 1,
-  );
-  const pageWidths = await page.evaluate(() => ({
-    clientWidth: document.documentElement.clientWidth,
-    scrollWidth: document.documentElement.scrollWidth,
-  }));
-  expect(pageWidths.scrollWidth).toBeLessThanOrEqual(pageWidths.clientWidth + 1);
 });
 
 for (const slug of exerciseSlugs) {
@@ -227,7 +203,7 @@ for (const slug of exerciseSlugs) {
       await expect(playground.locator('[data-action="stop"]')).toHaveCount(0);
       await expect(playground.locator('[aria-label="実行結果"]')).toHaveCount(0);
       await expect(
-        playground.getByRole("button", { name: "ターミナルを起動" }),
+        playground.getByRole("button", { name: "修正前の失敗を確認" }),
       ).toBeVisible();
       const widths = await playground.evaluate((element) => ({
         clientWidth: element.clientWidth,

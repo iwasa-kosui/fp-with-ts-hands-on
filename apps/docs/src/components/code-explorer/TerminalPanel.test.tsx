@@ -210,6 +210,21 @@ describe("TerminalPanel", () => {
     expect(host.querySelector('[aria-label="コード実行ターミナル"]')).not.toBeNull();
   });
 
+  it("releases a session when sending its initial command fails", async () => {
+    const session = createSession();
+    vi.mocked(session.writeInput).mockRejectedValueOnce(new Error("write failed"));
+    const host = await renderPanel({
+      initialCommand: "pnpm exercise:02",
+      runnerFactory: () => ({ start: async () => session }),
+    });
+
+    await clickAction(host, "start-terminal");
+
+    expect(session.writeInput).toHaveBeenCalledWith("pnpm exercise:02\r");
+    expect(session.dispose).toHaveBeenCalledOnce();
+    expect(host.querySelector('[data-action="retry-terminal"]')).not.toBeNull();
+  });
+
   it("restarts an exited shell without discarding its session", async () => {
     const session = createSession();
     const view = createView();

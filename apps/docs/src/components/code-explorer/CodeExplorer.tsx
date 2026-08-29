@@ -41,6 +41,7 @@ export type EditorProps = Readonly<{
 export type CodeExplorerProps = Readonly<{
   workspace: SessionWorkspace;
   projectFiles: ProjectFiles;
+  initialCommand?: string;
   guides?: readonly CodeGuide[];
   Editor?: ComponentType<EditorProps>;
   runnerFactory?: () => TerminalRunner;
@@ -58,6 +59,7 @@ const messageFrom = (error: unknown): string =>
 export const CodeExplorer = ({
   workspace,
   projectFiles,
+  initialCommand,
   guides,
   Editor = MonacoEditor,
   runnerFactory,
@@ -229,6 +231,7 @@ export const CodeExplorer = ({
         <TerminalPanel
           files={workspaceState.contents}
           visibleFiles={workspaceState.visiblePaths}
+          initialCommand={initialCommand}
           runnerFactory={runnerFactory}
           supportsRuntime={supportsRuntime}
           loadTerminalView={loadTerminalView}

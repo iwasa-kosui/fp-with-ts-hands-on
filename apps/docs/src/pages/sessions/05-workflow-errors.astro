@@ -565,7 +565,12 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <CommandBlock phase="red" command={session.exerciseCommand} expected={`${initialExerciseFailureCount}件の演習テストが失敗します。`} />
             <p>ブラウザ内の変更はローカルへ反映されません。</p>
             <div data-code-explorer={workspace.slug}>
-              <CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} />
+              <CodeExplorer
+                client:load
+                workspace={workspace}
+                projectFiles={projectFiles}
+                initialCommand={session.exerciseCommand}
+              />
             </div>
           </section>
 
