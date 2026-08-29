@@ -40,11 +40,16 @@ const expectedFragments: Readonly<Record<string, readonly string[]>> = {
   "final-transaction-store": ["db.transaction"],
 };
 
-const pageModules = import.meta.glob<PageModule>(
+const pageModules = import.meta.glob<PageModule>([
   "../../pages/sessions/*.astro",
-  { eager: true },
-);
-const pageSources = import.meta.glob<string>("../../pages/sessions/*.astro", {
+  "!../../pages/sessions/index.astro",
+], {
+  eager: true,
+});
+const pageSources = import.meta.glob<string>([
+  "../../pages/sessions/*.astro",
+  "!../../pages/sessions/index.astro",
+], {
   eager: true,
   query: "?raw",
   import: "default",

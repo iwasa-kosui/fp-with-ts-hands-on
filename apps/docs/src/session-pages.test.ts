@@ -12,10 +12,16 @@ type PageModule = Readonly<{
   promisesHref?: string;
 }>;
 
-const pageModules = import.meta.glob<PageModule>("./pages/sessions/*.astro", {
+const pageModules = import.meta.glob<PageModule>([
+  "./pages/sessions/*.astro",
+  "!./pages/sessions/index.astro",
+], {
   eager: true,
 });
-const pageSources = import.meta.glob<string>("./pages/sessions/*.astro", {
+const pageSources = import.meta.glob<string>([
+  "./pages/sessions/*.astro",
+  "!./pages/sessions/index.astro",
+], {
   eager: true,
   query: "?raw",
   import: "default",
