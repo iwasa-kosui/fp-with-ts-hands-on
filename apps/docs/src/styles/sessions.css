@@ -554,6 +554,133 @@
   opacity: 0.6;
 }
 
+.eventstorming-timeline {
+  display: grid;
+  gap: 0.8rem;
+  margin: 1.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.eventstorming-timeline li,
+.eventstorming-note {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.8rem;
+  border: 2px solid #e8590c;
+  background: #ffd8a8;
+}
+
+.eventstorming-timeline li span,
+.eventstorming-note span {
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.eventstorming-focus {
+  display: grid;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.5rem 0;
+}
+
+.eventstorming-focus > span {
+  justify-self: center;
+  font-weight: 800;
+}
+
+.eventstorming-note--actor {
+  border-color: #f08c00;
+  background: #ffec99;
+}
+
+.eventstorming-note--command {
+  border-color: #1971c2;
+  background: #a5d8ff;
+}
+
+@media (min-width: 768px) {
+  .eventstorming-timeline {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .eventstorming-focus {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+}
+
+.start-workflow {
+  margin: 1.5rem 0;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 2px solid var(--case-line);
+  background: color-mix(in srgb, var(--case-mint) 28%, var(--case-paper));
+}
+
+.start-workflow__eyebrow {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.start-workflow h3 {
+  margin: 0.25rem 0 1rem;
+}
+
+.start-workflow__steps {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.start-workflow__step {
+  position: relative;
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--case-line);
+  background: var(--case-paper);
+}
+
+.start-workflow__step:not(:last-child)::after {
+  position: absolute;
+  bottom: -0.9rem;
+  left: 50%;
+  content: "↓";
+  font-weight: 800;
+  transform: translateX(-50%);
+}
+
+.start-workflow__step--highlighted {
+  border-width: 3px;
+  border-color: var(--case-coral);
+  background: color-mix(in srgb, var(--case-lemon) 55%, var(--case-paper));
+}
+
+.start-workflow__step span:not(.sr-only) {
+  color: color-mix(in srgb, var(--case-ink) 72%, var(--case-paper));
+  font-size: 0.88rem;
+}
+
+.start-workflow__boundary-note {
+  margin: 1rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--case-line);
+}
+
+.start-workflow .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .peer-review-panel {
   border-inline-start: 0.6rem solid var(--case-coral);
   background: color-mix(in srgb, var(--case-lemon) 35%, var(--case-paper));

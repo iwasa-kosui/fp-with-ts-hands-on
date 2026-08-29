@@ -1,8 +1,8 @@
-# Session 04: 外部入力を境界で検証する
+# Session 04: 診察開始の入力を境界で検証する
 
-このディレクトリは Session 04 の開始スナップショットです。解答は `examples/session-05/src` にあります。
+このディレクトリはSession 04の開始スナップショットです。解答は `examples/session-05/src` にあります。
 
-S3 の解答を保ったまま、`src/boundary/` で外部 JSON を検証し、飼い主の連絡先をログから守ります。
+S3で区別したAppointmentIdとVeterinarianIdを、HTTPの文字列から作る境界を実装します。変更対象は `src/boundary/startExaminationInput.ts` の1ファイルです。
 
 ```bash
 pnpm demo:04
@@ -11,6 +11,10 @@ pnpm --filter @fp-with-ts/clinic-session-04 test
 pnpm --filter @fp-with-ts/clinic-session-04 exercise
 ```
 
-デモは `http://localhost:3000` で起動し、画面から送った検査JSONを現在の `ExamResult.parse` へ渡します。
+デモは `http://localhost:3000` で起動します。診察開始routeは、path parameterの予約IDと外部から届く担当獣医師IDを `StartExaminationInput.parse` へ渡します。
 
-`typecheck` と `test` は S2 と S3 の回帰を確認します。`exercise` は境界の業務上の不変条件で意図的に失敗します。
+`typecheck` と `test` はS2とS3の回帰を確認します。`exercise` は、不正な予約IDと不正な担当獣医師IDを拒否できない2件で意図的に失敗します。
+
+## 時間外の補足
+
+`src/boundary/examResult.ts` と `src/boundary/ownerContact.ts` は時間内の変更対象ではありません。検査結果のschemaとPIIのマスキングを比較したい場合は、解答側のsession-05と読み比べます。

@@ -11,4 +11,4 @@ pnpm --filter @fp-with-ts/clinic-session-05 exercise
 
 デモは `http://localhost:3000` で起動します。診察開始routeは複数の例外を投げますが、Web側は予約なしだけを文言でcatchするため、状態不正は500になります。
 
-S4 の解答を保ったまま、次の演習では予期可能な失敗を Result として利用側へ返します。
+S4の解答として、診察開始routeは `StartExaminationInput.parse` を通った予約IDと担当獣医師IDだけをユースケースへ渡します。そのうえで、次の演習では予約なしと状態不正をResultとして利用側へ返します。

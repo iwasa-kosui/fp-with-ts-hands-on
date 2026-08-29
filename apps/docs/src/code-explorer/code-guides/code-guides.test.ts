@@ -22,8 +22,18 @@ const expectedFragments: Readonly<Record<string, readonly string[]>> = {
   "wide-transition-input": ["appointment: Appointment", "as Appointment"],
   "non-exhaustive-label": ["default:"],
   "untyped-pet-id": ["z.string().uuid()", "export type PetId"],
+  "untyped-start-examination-id": [
+    "z.string().uuid()",
+    "export type AppointmentId",
+  ],
+  "plain-string-start-examination": ["appointmentId: string"],
   "plain-string-appointment-ids": ["appointmentId: string", "petId: string"],
   "empty-domain-type-tests": ["export {};"],
+  "http-start-examination-input": [
+    "StartExaminationInput.parse",
+    'context.req.param("appointmentId")',
+  ],
+  "unvalidated-start-examination-input": ["raw: any", "raw.appointmentId"],
   "unvalidated-exam-json": ["raw: any", "examId: raw.examId"],
   "plain-contact-pii": ["ownerEmail: string", "raw: any"],
   "throws-known-errors": ["throw new Error"],

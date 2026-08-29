@@ -1,6 +1,7 @@
 ---
 import { Code } from "astro:components";
 import CommandBlock from "../../components/CommandBlock.astro";
+import StartExaminationWorkflow from "../../components/StartExaminationWorkflow.astro";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
@@ -437,11 +438,11 @@ export const promisesHref = "#peer-review-promises";
 export const navigation = ({
   previous: {
     href: "/sessions/01-business-events-and-workflows/",
-    title: "ビジネスイベントからワークフローを描く",
+    title: "EventStormingから診察開始を定義する",
   },
   next: {
     href: "/sessions/03-semantic-identifiers/",
-    title: "用途の異なる識別子を型で区別する",
+    title: "診察開始の識別子を型で区別する",
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
@@ -511,6 +512,8 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <p class="case-file__episode-label">動物病院のひと幕</p>
               {session.episode.map((line) => <p data-episode-line>{line}</p>)}
             </aside>
+            <StartExaminationWorkflow focus="state" />
+            <p>S1で決めた「受付済みだけが診察を開始できる」という業務判断を、状態型と遷移で表します。</p>
             <h3 data-story-stage="use-case">追加したい機能</h3>
             <p>{narrative.requirement}</p>
             <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>

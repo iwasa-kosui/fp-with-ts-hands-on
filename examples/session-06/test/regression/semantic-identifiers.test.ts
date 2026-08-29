@@ -1,18 +1,22 @@
 import { describe, expect, it } from "vitest";
 
+import { AppointmentId } from "../../src/domain/ids/appointmentId.js";
 import { compileTypeFixture } from "./compileTypeFixture.js";
-import { PetId } from "../../src/domain/ids/petId.js";
 
-describe("S3 regression: 用途の違う識別子を取り違えない", () => {
-  it("OwnerId を PetId の位置へ渡せない", () => {
-    expect(compileTypeFixture("s3-owner-id-is-not-pet-id.ts")).toEqual([]);
+describe("S3 regression: 診察開始の識別子を取り違えない", () => {
+  it("AppointmentIdとVeterinarianIdを相互に代入できない", () => {
+    expect(
+      compileTypeFixture("s3-appointment-id-is-not-veterinarian-id.ts"),
+    ).toEqual([]);
   });
 
-  it("予約の状態と遷移が用途別の識別子を要求する", () => {
-    expect(compileTypeFixture("s3-appointment-requires-typed-ids.ts")).toEqual([]);
+  it("予約状態とstartExaminationが用途別の識別子を要求する", () => {
+    expect(
+      compileTypeFixture("s3-start-examination-requires-typed-ids.ts"),
+    ).toEqual([]);
   });
 
-  it("UUID でない文字列から PetId を作れない", () => {
-    expect(() => PetId.parse("not-a-uuid")).toThrow();
+  it("UUIDでない文字列からAppointmentIdを作れない", () => {
+    expect(() => AppointmentId.parse("not-a-uuid")).toThrow();
   });
 });

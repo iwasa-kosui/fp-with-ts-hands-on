@@ -79,11 +79,11 @@ const exerciseContracts = {
     navigation: {
       previous: {
         href: "/sessions/01-business-events-and-workflows/",
-        title: "ビジネスイベントからワークフローを描く",
+        title: "EventStormingから診察開始を定義する",
       },
       next: {
         href: "/sessions/03-semantic-identifiers/",
-        title: "用途の異なる識別子を型で区別する",
+        title: "診察開始の識別子を型で区別する",
       },
     },
   },
@@ -93,13 +93,12 @@ const exerciseContracts = {
       snapshot: "session-03",
       initialFile: "exercises/semantic-identifiers.test.ts",
       description:
-        "識別子の用途と、それを使う予約の状態を開始 snapshot で確認します。",
+        "診察開始で使う予約IDと獣医師IDを、開始snapshotで確認します。",
       visibleFiles: [
         "exercises/semantic-identifiers.test.ts",
         "test/regression/state-modeling.test.ts",
-        "src/domain/ids/examId.ts",
-        "src/domain/ids/petId.ts",
-        "src/domain/ids/ownerId.ts",
+        "src/domain/ids/appointmentId.ts",
+        "src/domain/ids/veterinarianId.ts",
         "src/domain/appointment/appointment.ts",
         "src/domain/appointment/transitions.ts",
         "src/domain/domain.test-types.ts",
@@ -112,7 +111,7 @@ const exerciseContracts = {
       },
       next: {
         href: "/sessions/04-boundaries-and-pii/",
-        title: "外部入力を境界で検証し個人情報を守る",
+        title: "診察開始の入力を境界で検証する",
       },
     },
   },
@@ -120,21 +119,23 @@ const exerciseContracts = {
     workspace: {
       slug: "04-boundaries-and-pii",
       snapshot: "session-04",
-      initialFile: "exercises/boundary-and-pii.test.ts",
-      description: "input の検証と PII の境界を開始 snapshot で確認します。",
+      initialFile: "exercises/start-examination-input.test.ts",
+      description: "HTTP入力を診察開始の型付き入力へ変換する境界を確認します。",
       visibleFiles: [
-        "exercises/boundary-and-pii.test.ts",
+        "exercises/start-examination-input.test.ts",
         "test/regression/semantic-identifiers.test.ts",
         "test/regression/state-modeling.test.ts",
-        "src/domain/appointment/appointment.ts",
-        "src/boundary/examResult.ts",
-        "src/boundary/ownerContact.ts",
+        "src/domain/ids/appointmentId.ts",
+        "src/domain/ids/veterinarianId.ts",
+        "src/boundary/startExaminationInput.ts",
+        "src/shared/schemaResult.ts",
+        "src/web/routes.ts",
       ],
     },
     navigation: {
       previous: {
         href: "/sessions/03-semantic-identifiers/",
-        title: "用途の異なる識別子を型で区別する",
+        title: "診察開始の識別子を型で区別する",
       },
       next: {
         href: "/sessions/05-workflow-errors/",
@@ -172,7 +173,7 @@ const exerciseContracts = {
     navigation: {
       previous: {
         href: "/sessions/04-boundaries-and-pii/",
-        title: "外部入力を境界で検証し個人情報を守る",
+        title: "診察開始の入力を境界で検証する",
       },
       next: {
         href: "/sessions/06-effects-and-consistency/",
