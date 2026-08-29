@@ -79,7 +79,7 @@ const exerciseContracts = {
     navigation: {
       previous: {
         href: "/sessions/01-business-events-and-workflows/",
-        title: "EventStormingから診察開始を定義する",
+        title: "EventStormingとROPで予約キャンセルを設計する",
       },
       next: {
         href: "/sessions/03-semantic-identifiers/",

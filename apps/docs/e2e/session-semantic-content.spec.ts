@@ -4,7 +4,7 @@ const sessions = [
   { slug: "00-system-handover", title: "業務とシステムを引き継ぐ" },
   {
     slug: "01-business-events-and-workflows",
-    title: "EventStormingから診察開始を定義する",
+    title: "EventStormingとROPで予約キャンセルを設計する",
   },
   { slug: "02-state-transitions", title: "予約の状態と遷移をモデル化する" },
   {
@@ -34,74 +34,87 @@ const exerciseSessions = [
   { slug: "06-effects-and-consistency", problemCount: 4, failureCount: 4 },
 ] as const;
 
-test("S1 compares EventStorming with an event-output ROP workflow", async ({
+test("S1 shows ROP as two rails with three failure switches", async ({ page }) => {
+  await page.goto("/sessions/01-business-events-and-workflows/");
+
+  const diagram = page.locator(".rop-basics__diagram");
+  await expect(diagram).toContainText("成功レール");
+  await expect(diagram).toContainText("失敗レール");
+  await expect(diagram.locator("[data-rop-switch]")).toHaveCount(3);
+  await expect(diagram).toContainText("入力を検査する");
+  await expect(diagram).toContainText("対象を取得する");
+  await expect(diagram).toContainText("業務条件を");
+  await expect(diagram).toContainText("結果を作る");
+  await expect(diagram).not.toContainText(/Result|andThen|map|DB|メール|HTTP/);
+});
+
+test("S1 maps appointment cancellation into a single-aggregate event-output workflow", async ({
   page,
 }) => {
   await page.goto("/sessions/01-business-events-and-workflows/");
 
-  const comparison = page.getByRole("figure", {
-    name: "EventStormingとROPのワークフロー比較",
-  });
-  const diagram = comparison.getByRole("img", {
-    name: "EventStormingとROPのワークフロー比較",
-  });
-
-  await expect(comparison).toBeVisible();
-  await expect(diagram).toContainText("EventStormingで発見した流れ");
-  await expect(diagram).toContainText("ROPとして実装する流れ");
-  await expect(diagram).toContainText("Appointment.startExamination");
-  await expect(diagram).toContainText("ExaminationStarted");
-  await expect(diagram).toContainText("StartExaminationError");
+  const diagram = page.locator(".dmmf-comparison__diagram");
+  await expect(diagram).toContainText("予約をキャンセルする");
+  await expect(diagram).toContainText("AppointmentCanceled");
+  await expect(diagram).toContainText("Appointment");
+  await expect(diagram).toContainText(".cancel");
   await expect(
-    diagram.getByText("Appointment Resolver", { exact: true }),
+    diagram.locator('[data-mapping="conditions-to-business-check"]'),
   ).toHaveCount(1);
-  await expect(diagram.getByText("Event Store", { exact: true })).toHaveCount(
-    1,
+  await expect(diagram.locator("[data-domain-decision]")).toHaveCount(1);
+  await expect(diagram.locator("[data-workflow-switch]")).toHaveCount(0);
+  await expect(diagram.locator("[data-store-switch]")).toHaveCount(0);
+  await expect(diagram.locator('[data-flow="success-event-to-store"]')).toHaveCount(1);
+  await expect(diagram).not.toContainText(
+    /ExamResultRecorded|AppointmentExaminationCompleted|Queue|Unauthorized|AppointmentNotFound|InvalidAppointmentState|AppointmentConflict/,
   );
-  await expect(
-    page.getByRole("heading", {
-      name: "S2〜S6で実装する部分を確認する",
-    }),
-  ).toHaveCount(0);
-});
-
-test("S1 comparison keeps the full diagram reachable inside its mobile scroll region", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/sessions/01-business-events-and-workflows/");
-
-  const viewport = page.getByRole("region", {
-    name: "EventStormingとROPの比較図。必要に応じて横にスクロールできます",
-  });
-  const dimensions = await viewport.evaluate((element) => ({
-    clientWidth: element.clientWidth,
-    overflowX: getComputedStyle(element).overflowX,
-    scrollWidth: element.scrollWidth,
-  }));
-
-  expect(dimensions.overflowX).toBe("auto");
-  expect(dimensions.scrollWidth).toBeGreaterThan(dimensions.clientWidth);
-});
-
-test("S1 comparison fits without horizontal scrolling on desktop", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1440, height: 1200 });
-  await page.goto("/sessions/01-business-events-and-workflows/");
-
-  const viewport = page.getByRole("region", {
-    name: "EventStormingとROPの比較図。必要に応じて横にスクロールできます",
-  });
-  const dimensions = await viewport.evaluate((element) => ({
-    clientWidth: element.clientWidth,
-    scrollWidth: element.scrollWidth,
-  }));
-
-  expect(dimensions.scrollWidth).toBeLessThanOrEqual(
-    dimensions.clientWidth + 1,
+  await expect(page.locator("main")).not.toContainText(
+    "S2〜S6で実装する部分を確認する",
   );
 });
+
+test("S1 explains ROP and persistence boundaries from customer and engineer viewpoints", async ({
+  page,
+}) => {
+  await page.goto("/sessions/01-business-events-and-workflows/");
+
+  const headings = await page.locator("main h2, main h3").allTextContents();
+  expect(headings.some((heading) => /^\d{1,2}:\d{2}/.test(heading.trim()))).toBe(
+    false,
+  );
+
+  const main = page.locator("main");
+  await expect(main).toContainText("一部だけ処理された");
+  await expect(main).toContainText("データベースのAPIから切り離せる");
+  await expect(main.getByText("顧客にとって", { exact: true })).toHaveCount(2);
+  await expect(main.getByText("技術者にとって", { exact: true })).toHaveCount(2);
+});
+
+for (const width of [390, 1440]) {
+  test(`S1 diagrams stay inside the page at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 1200 });
+    await page.goto("/sessions/01-business-events-and-workflows/");
+
+    const pageWidths = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    expect(pageWidths.scrollWidth).toBeLessThanOrEqual(pageWidths.clientWidth + 1);
+
+    if (width === 390) {
+      for (const selector of [
+        ".rop-basics__viewport",
+        ".dmmf-comparison__viewport",
+      ]) {
+        const dimensions = await page.locator(selector).evaluate((element) => ({
+          clientWidth: element.clientWidth,
+          scrollWidth: element.scrollWidth,
+        }));
+        expect(dimensions.scrollWidth).toBeGreaterThan(dimensions.clientWidth);
+      }
+    }
+  });
+}
 
 for (const session of exerciseSessions) {
   test(`${session.slug} explains each initial exercise failure before the command`, async ({
