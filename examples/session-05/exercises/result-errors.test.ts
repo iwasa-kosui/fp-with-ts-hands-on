@@ -2,7 +2,6 @@ import { err } from "neverthrow";
 import { describe, expect, it } from "vitest";
 
 import { createApp } from "../src/app.js";
-import { compileWithAdditionalStartExaminationError } from "../test/regression/compileTypeFixture.js";
 import type {
   Appointment,
   CheckedIn,
@@ -19,6 +18,7 @@ import {
 } from "../src/useCase/errors.js";
 import { startExamination } from "../src/useCase/startExamination.js";
 import { clinicFixture } from "../../fixtures/clinic.js";
+import { assertAllStartExaminationErrorsAreHandled } from "./typeRequirements.js";
 
 const appointmentId = AppointmentId.parse(clinicFixture.appointmentId);
 const veterinarianId = VeterinarianId.parse(clinicFixture.veterinarianId);
@@ -124,7 +124,7 @@ describe("Step 4: 呼び出し側が業務エラーを漏れなく処理する",
   });
 
   it("業務エラーを追加すると未対応の分岐を型エラーにする", () => {
-    expect(compileWithAdditionalStartExaminationError()).toEqual([]);
+    assertAllStartExaminationErrorsAreHandled();
   });
 });
 

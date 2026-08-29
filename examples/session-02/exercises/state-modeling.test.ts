@@ -1,27 +1,32 @@
-import { describe, expect, it } from "vitest";
+import { describe, it } from "vitest";
 
-import { compileTypeFixture } from "./compileTypeFixture.js";
+import {
+  assertCannotCancelWithoutReason,
+  assertCannotStartExaminationFromPaid,
+  assertOnlyAllowedStatesCanStartTransitions,
+  assertStatusLabelHandlesNewAppointmentState,
+} from "./typeRequirements.js";
 
-describe("Step 1: 会計済みの来院は診察を開始できない", () => {
-  it("Paid を渡す呼び出しはコンパイルできない", () => {
-    expect(compileTypeFixture("s2-paid-cannot-start.ts")).toEqual([]);
+describe("Step 1", () => {
+  it("会計済みの来院から診察を開始できない", () => {
+    assertCannotStartExaminationFromPaid();
   });
 });
 
-describe("Step 2: キャンセルには必ず理由を残す", () => {
-  it("reason を省いた呼び出しはコンパイルできない", () => {
-    expect(compileTypeFixture("s2-cancel-requires-reason.ts")).toEqual([]);
+describe("Step 2", () => {
+  it("キャンセルには必ず理由を残す", () => {
+    assertCannotCancelWithoutReason();
   });
 });
 
-describe("Step 3: 全遷移の入口を状態型で絞る", () => {
-  it("許可されない遷移元はコンパイルできない", () => {
-    expect(compileTypeFixture("s2-transition-sources.ts")).toEqual([]);
+describe("Step 3", () => {
+  it("許可されない状態から遷移できない", () => {
+    assertOnlyAllowedStatesCanStartTransitions();
   });
 });
 
-describe("Step 4: 状態追加時に未対応の分岐をコンパイルエラーにする", () => {
-  it("7つ目の状態を足すと status label がコンパイルできない", () => {
-    expect(compileTypeFixture("s2-status-exhaustive.ts")).toEqual([]);
+describe("Step 4", () => {
+  it("新しい予約状態を未対応のままにできない", () => {
+    assertStatusLabelHandlesNewAppointmentState();
   });
 });
