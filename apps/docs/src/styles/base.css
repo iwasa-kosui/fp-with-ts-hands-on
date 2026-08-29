@@ -654,6 +654,17 @@ label {
   outline-offset: 0.1875rem;
 }
 
+.wan-nyan-home .landing-nav a.landing-nav__start:hover,
+.wan-nyan-home .landing-nav a.landing-nav__start:focus-visible {
+  background: var(--landing-blue);
+  color: #fff;
+}
+
+.wan-nyan-home .landing-nav a.landing-nav__start:focus-visible {
+  outline: 0.1875rem solid #b32063;
+  outline-offset: 0.1875rem;
+}
+
 .wan-nyan-home .landing-main {
   width: min(76.25rem, calc(100% - 2.25rem));
   margin: 0 auto;
