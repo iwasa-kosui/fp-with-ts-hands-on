@@ -417,6 +417,12 @@ importers:
       '@inertiajs/react':
         specifier: ^3.6.1
         version: 3.6.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      better-sqlite3:
+        specifier: ^11.9.1
+        version: 11.10.0
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@cloudflare/workers-types@5.20260804.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)
       hono:
         specifier: ^4.12.8
         version: 4.13.1
@@ -433,6 +439,9 @@ importers:
         specifier: ^3.25.0
         version: 3.25.76
     devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
@@ -442,6 +451,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.4(@types/react@19.2.18)
+      drizzle-kit:
+        specifier: ^0.31.10
+        version: 0.31.10
       vite:
         specifier: ^6.1.1
         version: 6.4.3(@types/node@22.20.1)(lightningcss@1.33.0)(terser@5.49.1)(tsx@4.23.11)(yaml@2.9.0)
