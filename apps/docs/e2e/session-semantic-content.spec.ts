@@ -80,7 +80,7 @@ test("S1 maps appointment cancellation into a single-aggregate event-output work
   );
 });
 
-test("S1 explains ROP and persistence boundaries from customer and engineer viewpoints", async ({
+test("S1 explains ROP and persistence boundary outcomes", async ({
   page,
 }) => {
   await page.goto("/sessions/01-business-events-and-workflows/");
@@ -91,10 +91,14 @@ test("S1 explains ROP and persistence boundaries from customer and engineer view
   );
 
   const main = page.locator("main");
-  await expect(main).toContainText("一部だけ処理された");
+  const ropRationale = main
+    .getByRole("heading", { level: 3, name: "なぜROPでつなぐのか" })
+    .locator("xpath=following-sibling::*[1][self::p]");
+  await expect(ropRationale).toHaveCount(1);
+  await expect(main).toContainText("一部だけ処理されて不整合");
   await expect(main).toContainText("データベースのAPIから切り離せる");
-  await expect(main.getByText("顧客にとって", { exact: true })).toHaveCount(2);
-  await expect(main.getByText("技術者にとって", { exact: true })).toHaveCount(2);
+  await expect(main.getByText("顧客にとって", { exact: true })).toHaveCount(1);
+  await expect(main.getByText("技術者にとって", { exact: true })).toHaveCount(1);
 });
 
 for (const width of [390, 1440]) {
