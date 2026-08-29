@@ -21,6 +21,12 @@ describe("createClinicRootView", () => {
     const html = await rootView(page, context);
 
     expect(html).toContain('<html lang="ja">');
+    expect(html).toContain(
+      'import { injectIntoGlobalHook } from "/@react-refresh";',
+    );
+    expect(html).toContain("injectIntoGlobalHook(window);");
+    expect(html).toContain("window.$RefreshReg$ = () => {};");
+    expect(html).toContain("window.$RefreshSig$ = () => (type) => type;");
     expect(html).toContain('src="/src/web/client.tsx"');
     expect(html).toContain('data-page="app"');
     expect(html).not.toContain('/static/styles.css');
@@ -33,6 +39,7 @@ describe("createClinicRootView", () => {
 
     expect(html).toContain('src="/static/client.js"');
     expect(html).toContain('href="/static/styles.css"');
+    expect(html).not.toContain("/@react-refresh");
   });
 });
 

@@ -2,6 +2,11 @@ import { serializePage, type PageObject, type RootView } from "@hono/inertia";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
+const reactRefreshPreamble = `import { injectIntoGlobalHook } from "/@react-refresh";
+injectIntoGlobalHook(window);
+window.$RefreshReg$ = () => {};
+window.$RefreshSig$ = () => (type) => type;`;
+
 const Document = ({
   developmentClientSource,
   isProduction,
@@ -23,7 +28,9 @@ const Document = ({
         <title>関数型どうぶつ病院</title>
         {isProduction ? (
           <link rel="stylesheet" href="/static/styles.css" />
-        ) : null}
+        ) : (
+          <script type="module">{reactRefreshPreamble}</script>
+        )}
         <script type="module" src={clientSource} />
       </head>
       <body>
