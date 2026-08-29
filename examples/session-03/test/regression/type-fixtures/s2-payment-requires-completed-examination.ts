@@ -4,13 +4,14 @@ import {
   completeExamination,
   recordPayment,
 } from "../../../src/domain/appointment/transitions.js";
+import { ExamId } from "../../../src/domain/ids/examId.js";
 import { clinicFixture } from "../../../../fixtures/clinic.js";
 
 declare const examining: InExamination;
 
 const awaitingPayment = completeExamination(
   examining,
-  { examId: clinicFixture.examId },
+  { examId: ExamId.parse(clinicFixture.examId) },
   clinicFixture.scheduledAt,
 );
 recordPayment(
