@@ -63,7 +63,7 @@ Session 06のS6開始状態では時刻とevent IDを処理内で生成し、予
 
 Session 07はclock、event ID generator、resolver、storeをportとして注入します。use caseは1回分のEventContextから`ExaminationStarted`を作り、状態とeventを1つのstore操作へ渡します。SQLite adapterはDrizzle transaction内で状態更新と監査追記を実行します。
 
-監査テーブルのevent ID重複を使って実際のINSERTを失敗させます。Session 06では状態だけが残り、Session 07ではtransactionがrollbackして開始前の状態と監査記録が保たれることをfile SQLiteで確認します。テスト専用の失敗分岐はruntimeへ追加しません。
+テストDBへ監査INSERTを拒否する一時的なSQLite triggerを置き、実際のINSERTを失敗させます。Session 06では状態だけが残り、Session 07ではtransactionがrollbackして開始前の状態と監査記録が保たれることをfile SQLiteで確認します。テスト専用の失敗分岐はruntimeへ追加しません。
 
 ## 横断テスト
 
