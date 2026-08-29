@@ -1,6 +1,6 @@
 import type { DomainEvent } from "../aggregate/domainEvent.js";
 import type { EventContext } from "../aggregate/eventContext.js";
-import type { PetId } from "../pet/petId.js";
+import type { PetId } from "../pet/index.js";
 import type { ExamId } from "./examId.js";
 import type { ExamResult } from "./examResult.js";
 

@@ -1,7 +1,7 @@
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
-import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
+import { AppointmentId } from "../../../../domain/appointment/index.js";
 import type { FollowUpRequested } from "../../../../domain/followUp/followUpRequested.js";
 import type { FollowUpStoreError } from "../../../../domain/followUp/followUpStores.js";
 import type { SqliteDatabase } from "../db.js";

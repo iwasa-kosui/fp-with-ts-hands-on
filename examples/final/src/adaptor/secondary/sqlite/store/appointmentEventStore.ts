@@ -2,10 +2,10 @@ import { and, eq, or } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
-import type { Appointment } from "../../../../domain/appointment/appointment.js";
-import type { AppointmentEvent } from "../../../../domain/appointment/appointmentEvent.js";
-import type { AppointmentStoreError } from "../../../../domain/appointment/appointmentStores.js";
-import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
+import type { Appointment } from "../../../../domain/appointment/index.js";
+import type { AppointmentEvent } from "../../../../domain/appointment/index.js";
+import type { AppointmentStoreError } from "../../../../domain/appointment/index.js";
+import { AppointmentId } from "../../../../domain/appointment/index.js";
 import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type { SqliteDatabase } from "../db.js";
 import { toEventRecord } from "../eventRecord.js";

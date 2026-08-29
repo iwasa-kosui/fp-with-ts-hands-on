@@ -81,17 +81,17 @@ export const session: SessionSummary = {
       goal: "予約IDと担当獣医師IDを、配布済みの識別子と同じ規約で別々の型にする。",
       startingFailure: "予約IDと担当獣医師IDを取り違えても、型検査が通る。",
       targets: [
-        "examples/session-03/src/domain/ids/appointmentId.ts",
-        "examples/session-03/src/domain/ids/veterinarianId.ts",
+        "examples/session-03/src/domain/appointment/appointmentId.ts",
+        "examples/session-03/src/domain/appointment/veterinarianId.ts",
       ],
       solutions: [
         {
-          path: "examples/session-04/src/domain/ids/appointmentId.ts",
+          path: "examples/session-04/src/domain/appointment/appointmentId.ts",
           symbol: "AppointmentId",
           lines: [3, 6],
         },
         {
-          path: "examples/session-04/src/domain/ids/veterinarianId.ts",
+          path: "examples/session-04/src/domain/appointment/veterinarianId.ts",
           symbol: "VeterinarianId",
           lines: [3, 6],
         },
@@ -153,7 +153,7 @@ export const guides = ([
     title: "予約IDと担当獣医師IDがUUID文字列のままになっている",
     currentDesign: "AppointmentIdとVeterinarianIdはuuid検査だけで、用途を表すbrandがありません。PetId、OwnerId、ExamIdにはbrandがあります。",
     futureRisk: "予約IDを担当獣医師IDの位置へ渡しても、どちらもstringなのでコンパイルは通ります。",
-    path: "src/domain/ids/appointmentId.ts",
+    path: "src/domain/appointment/appointmentId.ts",
     highlights: [{ startLineNumber: 3, endLineNumber: 6 }],
   },
   {
@@ -180,14 +180,14 @@ const teaching: readonly TeachingTopic[] = [
     definition:
       "同じ文字列形式でも、用途の違う識別子は別の型として扱います。zod の brand を付けると、互いに代入できない型ができます。",
     before: {
-      sources: ["examples/session-03/src/domain/ids/appointmentId.ts"],
+      sources: ["examples/session-03/src/domain/appointment/appointmentId.ts"],
       code: `const schema = z.string().uuid();
 
 export type AppointmentId = z.infer<typeof schema>;
 export const AppointmentId = { schema, parse: schema.parse } as const;`,
     },
     after: {
-      sources: ["examples/session-04/src/domain/ids/appointmentId.ts"],
+      sources: ["examples/session-04/src/domain/appointment/appointmentId.ts"],
       code: `const schema = z.string().uuid().brand<"AppointmentId">();
 
 export type AppointmentId = z.infer<typeof schema>;
@@ -277,8 +277,8 @@ export const workspace = ({
   visibleFiles: [
     "exercises/semantic-identifiers.test.ts",
     "test/regression/state-modeling.test.ts",
-    "src/domain/ids/appointmentId.ts",
-    "src/domain/ids/veterinarianId.ts",
+    "src/domain/appointment/appointmentId.ts",
+    "src/domain/appointment/veterinarianId.ts",
     "src/domain/appointment/appointment.ts",
     "src/domain/appointment/transitions.ts",
     "src/domain/domain.test-types.ts",

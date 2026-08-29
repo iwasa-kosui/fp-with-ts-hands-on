@@ -2,13 +2,13 @@ import { eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
-import { ExamResult } from "../../../../domain/examResult/examResult.js";
+import { ExamResult } from "../../../../domain/examResult/index.js";
 import type {
   ExamResultByIdResolver,
   ExamResultByPetIdResolver,
-} from "../../../../domain/examResult/examResultResolver.js";
-import { ExamId } from "../../../../domain/examResult/examId.js";
-import { PetId } from "../../../../domain/pet/petId.js";
+} from "../../../../domain/examResult/index.js";
+import { ExamId } from "../../../../domain/examResult/index.js";
+import { PetId } from "../../../../domain/pet/index.js";
 import type { SqliteDatabase } from "../db.js";
 import { examResultsTable } from "../schema.js";
 

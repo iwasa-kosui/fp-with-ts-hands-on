@@ -26,6 +26,7 @@ const publicApiPaths = [
   "domain/pet/index.ts",
   "domain/examResult/index.ts",
 ] as const;
+const finalPublicApis = ["appointment", "owner", "pet", "examResult"] as const;
 const ownedConcepts = ["appointment", "owner", "pet", "examResult"] as const;
 type OwnedConcept = (typeof ownedConcepts)[number];
 type PublicExportRequirement = Readonly<{
@@ -323,6 +324,47 @@ describe("runnable session package contract", () => {
             true,
           );
         }
+      }
+    }
+  });
+
+  it("exposes Final domain concepts only through re-export public APIs", async () => {
+    const finalUrl = new URL("examples/final/", rootUrl);
+
+    for (const concept of finalPublicApis) {
+      const conceptUrl = new URL(`src/domain/${concept}/`, finalUrl);
+      const indexUrl = new URL("index.ts", conceptUrl);
+      expect((await stat(indexUrl)).isFile(), `final ${concept} public API`).toBe(true);
+
+      const indexSource = await readFile(indexUrl, "utf8");
+      for (const line of indexSource.split("\n").filter((line) => line.trim() !== "")) {
+        expect(line.trim(), `${indexUrl.pathname} must only re-export`).toMatch(/^export\s/);
+      }
+
+      const implementationFiles = (await readdir(conceptUrl, { withFileTypes: true }))
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".ts") && entry.name !== "index.ts")
+        .map((entry) => entry.name)
+        .sort();
+      for (const file of implementationFiles) {
+        expect(indexSource, `${indexUrl.pathname} must export ${file}`).toMatch(
+          new RegExp(`from ["']\\./${file.replace(/\.ts$/, ".js")}["']`),
+        );
+      }
+    }
+
+    const files = await collectSessionTypeScriptFiles(finalUrl);
+    for (const file of files) {
+      const source = await readFile(file, "utf8");
+      const fileConcept = conceptForFile(file, finalUrl);
+      for (const specifier of relativeJavaScriptImports(source)) {
+        const target = resolvesRelativeJavaScriptImport(specifier, file);
+        const targetConcept = conceptForFile(target, finalUrl);
+        if (targetConcept === undefined || fileConcept === targetConcept) continue;
+
+        expect(
+          target.href,
+          `${file.pathname} must use ${targetConcept}'s public API outside that concept`,
+        ).toBe(new URL(`src/domain/${targetConcept}/index.ts`, finalUrl).href);
       }
     }
   });

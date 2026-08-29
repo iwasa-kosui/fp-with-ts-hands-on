@@ -10,7 +10,7 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { AppointmentId } from "../domain/appointment/appointmentId.js";
+import type { AppointmentId } from "../domain/appointment/index.js";
 import {
   collectFollowUpTargets,
   type CollectFollowUpTargetsError,

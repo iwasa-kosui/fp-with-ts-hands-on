@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { session } from "../pages/sessions/02-state-transitions.astro";
+import { session as session03 } from "../pages/sessions/03-semantic-identifiers.astro";
 import { session as session05 } from "../pages/sessions/05-workflow-errors.astro";
 import type { ExerciseStep } from "./types";
 import { loadSolutionSnippets } from "./solution-snippets";
@@ -51,5 +52,21 @@ describe("loadSolutionSnippets", () => {
     expect(webHandler?.[0]?.code).not.toContain("AppointmentConflict");
     expect(webHandler?.[0]?.code).not.toContain("StartExaminationWithEffectsNoticeCode");
     expect(webHandler?.[0]?.code).not.toContain('"conflict"');
+  });
+
+  it("loads Session 03 identifier solutions from their owning concept", async () => {
+    const [identifierStep] = session03.steps;
+    expect(identifierStep?.solutions.map(({ path }) => path)).toEqual([
+      "examples/session-04/src/domain/appointment/appointmentId.ts",
+      "examples/session-04/src/domain/appointment/veterinarianId.ts",
+    ]);
+
+    const snippets = await loadSolutionSnippets(identifierStep!);
+    expect(snippets.map(({ code }) => code)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("AppointmentId"),
+        expect.stringContaining("VeterinarianId"),
+      ]),
+    );
   });
 });

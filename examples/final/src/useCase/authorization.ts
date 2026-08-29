@@ -1,6 +1,6 @@
 import { err, ok, type Result } from "neverthrow";
 
-import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
+import type { VeterinarianId } from "../domain/appointment/index.js";
 import type { User } from "../domain/user/user.js";
 import type { UnauthorizedError } from "./errors.js";
 

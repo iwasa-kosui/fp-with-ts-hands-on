@@ -12,16 +12,16 @@ import type { Timestamp } from "../domain/aggregate/timestamp.js";
 import {
   Appointment,
   type Scheduled,
-} from "../domain/appointment/appointment.js";
-import type { AppointmentId } from "../domain/appointment/appointmentId.js";
-import type { AppointmentReason } from "../domain/appointment/appointmentReason.js";
-import type { AppointmentBookedStore, AppointmentConflict } from "../domain/appointment/appointmentStores.js";
-import type { Owner } from "../domain/owner/owner.js";
-import type { OwnerId } from "../domain/owner/ownerId.js";
-import type { OwnerByIdResolver } from "../domain/owner/ownerResolver.js";
-import type { Pet } from "../domain/pet/pet.js";
-import type { PetId } from "../domain/pet/petId.js";
-import type { PetByIdResolver } from "../domain/pet/petResolver.js";
+} from "../domain/appointment/index.js";
+import type { AppointmentId } from "../domain/appointment/index.js";
+import type { AppointmentReason } from "../domain/appointment/index.js";
+import type { AppointmentBookedStore, AppointmentConflict } from "../domain/appointment/index.js";
+import type { Owner } from "../domain/owner/index.js";
+import type { OwnerId } from "../domain/owner/index.js";
+import type { OwnerByIdResolver } from "../domain/owner/index.js";
+import type { Pet } from "../domain/pet/index.js";
+import type { PetId } from "../domain/pet/index.js";
+import type { PetByIdResolver } from "../domain/pet/index.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";

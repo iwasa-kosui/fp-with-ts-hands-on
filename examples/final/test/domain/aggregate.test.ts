@@ -5,7 +5,7 @@ import type { AggregateStore } from "../../src/domain/aggregate/aggregateStore.j
 import type { DomainEvent } from "../../src/domain/aggregate/domainEvent.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
-import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
+import { PaymentAmount } from "../../src/domain/appointment/index.js";
 import { Sensitive } from "../../src/domain/shared/sensitive.js";
 import { UserId } from "../../src/domain/user/userId.js";
 

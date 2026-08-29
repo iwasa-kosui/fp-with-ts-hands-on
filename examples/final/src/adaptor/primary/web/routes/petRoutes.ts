@@ -2,10 +2,10 @@ import type { Context, Hono } from "hono";
 import { err, ok, ResultAsync, type Result } from "neverthrow";
 import { z } from "zod";
 
-import { OwnerId, type OwnerId as OwnerIdType } from "../../../../domain/owner/ownerId.js";
-import { PetId, type PetId as PetIdType } from "../../../../domain/pet/petId.js";
-import { PetName } from "../../../../domain/pet/petName.js";
-import { PetSpecies } from "../../../../domain/pet/petSpecies.js";
+import { OwnerId, type OwnerId as OwnerIdType } from "../../../../domain/owner/index.js";
+import { PetId, type PetId as PetIdType } from "../../../../domain/pet/index.js";
+import { PetName } from "../../../../domain/pet/index.js";
+import { PetSpecies } from "../../../../domain/pet/index.js";
 import type { CreatePetUseCase } from "../../../../useCase/createPetUseCase.js";
 import type { DeletePetUseCase } from "../../../../useCase/deletePetUseCase.js";
 import type { GetPetUseCase } from "../../../../useCase/getPetUseCase.js";

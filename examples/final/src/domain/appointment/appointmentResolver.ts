@@ -2,7 +2,7 @@ import type { ResultAsync } from "neverthrow";
 
 import type { Appointment } from "./appointment.js";
 import type { AppointmentId } from "./appointmentId.js";
-import type { PetId } from "../pet/petId.js";
+import type { PetId } from "../pet/index.js";
 
 export type AppointmentByIdResolver = Readonly<{
   resolveById: (

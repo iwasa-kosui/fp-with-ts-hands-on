@@ -1,6 +1,6 @@
 import type { Timestamp } from "../aggregate/timestamp.js";
-import type { OwnerId } from "../owner/ownerId.js";
-import type { PetId } from "../pet/petId.js";
+import type { OwnerId } from "../owner/index.js";
+import type { PetId } from "../pet/index.js";
 import type { EventContext } from "../aggregate/eventContext.js";
 import {
   AppointmentEvent,
@@ -11,7 +11,7 @@ import {
   type ExaminationStarted,
   type PaymentRecorded,
 } from "./appointmentEvent.js";
-import type { ExamId } from "../examResult/examId.js";
+import type { ExamId } from "../examResult/index.js";
 import type { AppointmentId } from "./appointmentId.js";
 import type { PaymentAmount } from "./paymentAmount.js";
 import type { VeterinarianId } from "./veterinarianId.js";

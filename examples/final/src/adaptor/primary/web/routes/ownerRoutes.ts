@@ -2,10 +2,10 @@ import type { Context, Hono } from "hono";
 import { err, ok, ResultAsync, type Result } from "neverthrow";
 import { z } from "zod";
 
-import { OwnerEmail } from "../../../../domain/owner/ownerEmail.js";
-import { OwnerId, type OwnerId as OwnerIdType } from "../../../../domain/owner/ownerId.js";
-import { OwnerName } from "../../../../domain/owner/ownerName.js";
-import { OwnerPhone } from "../../../../domain/owner/ownerPhone.js";
+import { OwnerEmail } from "../../../../domain/owner/index.js";
+import { OwnerId, type OwnerId as OwnerIdType } from "../../../../domain/owner/index.js";
+import { OwnerName } from "../../../../domain/owner/index.js";
+import { OwnerPhone } from "../../../../domain/owner/index.js";
 import type { CreateOwnerUseCase } from "../../../../useCase/createOwnerUseCase.js";
 import type { DeleteOwnerUseCase } from "../../../../useCase/deleteOwnerUseCase.js";
 import type { GetOwnerUseCase } from "../../../../useCase/getOwnerUseCase.js";

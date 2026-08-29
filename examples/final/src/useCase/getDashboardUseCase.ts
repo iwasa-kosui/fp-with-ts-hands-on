@@ -1,11 +1,11 @@
 import { ok, safeTry, type ResultAsync } from "neverthrow";
 
-import { Appointment } from "../domain/appointment/appointment.js";
-import type { AppointmentListResolver } from "../domain/appointment/appointmentResolver.js";
-import type { Owner } from "../domain/owner/owner.js";
-import type { OwnerListResolver } from "../domain/owner/ownerResolver.js";
-import type { Pet } from "../domain/pet/pet.js";
-import type { PetListResolver } from "../domain/pet/petResolver.js";
+import { Appointment } from "../domain/appointment/index.js";
+import type { AppointmentListResolver } from "../domain/appointment/index.js";
+import type { Owner } from "../domain/owner/index.js";
+import type { OwnerListResolver } from "../domain/owner/index.js";
+import type { Pet } from "../domain/pet/index.js";
+import type { PetListResolver } from "../domain/pet/index.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { User } from "../domain/user/user.js";
 import type {

@@ -1,12 +1,12 @@
 import { eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 
-import { Pet } from "../../../../domain/pet/pet.js";
+import { Pet } from "../../../../domain/pet/index.js";
 import type {
   PetByIdResolver,
   PetByOwnerIdResolver,
   PetListResolver,
-} from "../../../../domain/pet/petResolver.js";
+} from "../../../../domain/pet/index.js";
 import type { SqliteDatabase } from "../db.js";
 import { petsTable } from "../schema.js";
 

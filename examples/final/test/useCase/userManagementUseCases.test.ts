@@ -23,7 +23,7 @@ import { EventId } from "../../src/domain/aggregate/eventId.js";
 import type { EventContext } from "../../src/domain/aggregate/eventContext.js";
 import type { EventIdGenerator } from "../../src/domain/aggregate/eventIdGenerator.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
-import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
+import { VeterinarianId } from "../../src/domain/appointment/index.js";
 import { Session } from "../../src/domain/session/session.js";
 import { SessionId } from "../../src/domain/session/sessionId.js";
 import { SessionTokenHash } from "../../src/domain/session/sessionTokenHash.js";

@@ -1,7 +1,7 @@
 import { err, ok, type Result } from "neverthrow";
 
-import type { AppointmentId } from "../appointment/appointmentId.js";
-import type { PetId } from "../pet/petId.js";
+import type { AppointmentId } from "../appointment/index.js";
+import type { PetId } from "../pet/index.js";
 import { FollowUpCandidate as FollowUpCandidateModel, type FollowUpCandidate as Candidate } from "./followUpCandidate.js";
 import { FollowUpTarget as FollowUpTargetModel, type FollowUpTarget as Target } from "./followUpTarget.js";
 

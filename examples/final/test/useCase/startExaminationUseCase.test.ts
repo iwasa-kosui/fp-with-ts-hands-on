@@ -9,15 +9,15 @@ import {
   type Appointment,
   type CheckedIn,
   type Scheduled,
-} from "../../src/domain/appointment/appointment.js";
-import type { ExaminationStarted } from "../../src/domain/appointment/appointmentEvent.js";
-import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
-import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
-import type { AppointmentByIdResolver } from "../../src/domain/appointment/appointmentResolver.js";
-import type { ExaminationStartedStore } from "../../src/domain/appointment/appointmentStores.js";
-import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
-import { OwnerId } from "../../src/domain/owner/ownerId.js";
-import { PetId } from "../../src/domain/pet/petId.js";
+} from "../../src/domain/appointment/index.js";
+import type { ExaminationStarted } from "../../src/domain/appointment/index.js";
+import { AppointmentId } from "../../src/domain/appointment/index.js";
+import { AppointmentReason } from "../../src/domain/appointment/index.js";
+import type { AppointmentByIdResolver } from "../../src/domain/appointment/index.js";
+import type { ExaminationStartedStore } from "../../src/domain/appointment/index.js";
+import { VeterinarianId } from "../../src/domain/appointment/index.js";
+import { OwnerId } from "../../src/domain/owner/index.js";
+import { PetId } from "../../src/domain/pet/index.js";
 import {
   type User,
   type Veterinarian,

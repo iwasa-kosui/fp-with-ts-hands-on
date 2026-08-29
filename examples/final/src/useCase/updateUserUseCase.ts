@@ -8,7 +8,7 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
+import type { VeterinarianId } from "../domain/appointment/index.js";
 import { assertNever } from "../domain/shared/assertNever.js";
 import { Permission } from "../domain/user/permission.js";
 import type { Admin, User } from "../domain/user/user.js";

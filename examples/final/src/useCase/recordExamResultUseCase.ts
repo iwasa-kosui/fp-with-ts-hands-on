@@ -13,16 +13,16 @@ import type {
   Appointment,
   AwaitingPayment,
   InExamination,
-} from "../domain/appointment/appointment.js";
-import { Appointment as AppointmentAggregate } from "../domain/appointment/appointment.js";
-import type { AppointmentId } from "../domain/appointment/appointmentId.js";
-import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
-import type { AppointmentConflict } from "../domain/appointment/appointmentStores.js";
-import { ExamResult } from "../domain/examResult/examResult.js";
-import type { ExamId } from "../domain/examResult/examId.js";
-import type { ExamResultItem } from "../domain/examResult/examResultItem.js";
-import type { ExaminationCompletionStore } from "../domain/examResult/examResultStores.js";
-import type { PetId } from "../domain/pet/petId.js";
+} from "../domain/appointment/index.js";
+import { Appointment as AppointmentAggregate } from "../domain/appointment/index.js";
+import type { AppointmentId } from "../domain/appointment/index.js";
+import type { AppointmentByIdResolver } from "../domain/appointment/index.js";
+import type { AppointmentConflict } from "../domain/appointment/index.js";
+import { ExamResult } from "../domain/examResult/index.js";
+import type { ExamId } from "../domain/examResult/index.js";
+import type { ExamResultItem } from "../domain/examResult/index.js";
+import type { ExaminationCompletionStore } from "../domain/examResult/index.js";
+import type { PetId } from "../domain/pet/index.js";
 import type { User } from "../domain/user/user.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";

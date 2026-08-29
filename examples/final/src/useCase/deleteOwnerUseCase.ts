@@ -8,12 +8,12 @@ import {
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import { Owner } from "../domain/owner/owner.js";
-import type { OwnerId } from "../domain/owner/ownerId.js";
-import type { OwnerByIdResolver } from "../domain/owner/ownerResolver.js";
-import type { OwnerDeletedStore } from "../domain/owner/ownerStores.js";
-import type { Pet } from "../domain/pet/pet.js";
-import type { PetByOwnerIdResolver } from "../domain/pet/petResolver.js";
+import { Owner } from "../domain/owner/index.js";
+import type { OwnerId } from "../domain/owner/index.js";
+import type { OwnerByIdResolver } from "../domain/owner/index.js";
+import type { OwnerDeletedStore } from "../domain/owner/index.js";
+import type { Pet } from "../domain/pet/index.js";
+import type { PetByOwnerIdResolver } from "../domain/pet/index.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";

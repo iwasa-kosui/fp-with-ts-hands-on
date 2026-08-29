@@ -1,11 +1,11 @@
 import type { ResultAsync } from "neverthrow";
 
-import type { OwnerId } from "../domain/owner/ownerId.js";
-import type { Pet } from "../domain/pet/pet.js";
-import type { PetId } from "../domain/pet/petId.js";
-import type { PetName } from "../domain/pet/petName.js";
-import type { PetSpecies } from "../domain/pet/petSpecies.js";
-import type { PetListResolver } from "../domain/pet/petResolver.js";
+import type { OwnerId } from "../domain/owner/index.js";
+import type { Pet } from "../domain/pet/index.js";
+import type { PetId } from "../domain/pet/index.js";
+import type { PetName } from "../domain/pet/index.js";
+import type { PetSpecies } from "../domain/pet/index.js";
+import type { PetListResolver } from "../domain/pet/index.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";

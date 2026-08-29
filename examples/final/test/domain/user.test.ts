@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import type { EventContext } from "../../src/domain/aggregate/eventContext.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
-import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
+import { VeterinarianId } from "../../src/domain/appointment/index.js";
 import { SessionTokenHash } from "../../src/domain/session/sessionTokenHash.js";
 import { SessionTokenPlaintext } from "../../src/domain/session/sessionTokenPlaintext.js";
 import { Permission } from "../../src/domain/user/permission.js";

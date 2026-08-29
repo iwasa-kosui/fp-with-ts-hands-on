@@ -1,7 +1,7 @@
 import type { DomainEvent } from "../aggregate/domainEvent.js";
 import type { EventContext } from "../aggregate/eventContext.js";
-import type { AppointmentId } from "../appointment/appointmentId.js";
-import type { PetId } from "../pet/petId.js";
+import type { AppointmentId } from "../appointment/index.js";
+import type { PetId } from "../pet/index.js";
 
 export type FollowUpRequested = DomainEvent<
   AppointmentId,

@@ -19,8 +19,8 @@ import {
 } from "../../src/adaptor/secondary/sqlite/schema.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
-import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
-import { ExamId } from "../../src/domain/examResult/examId.js";
+import { AppointmentId } from "../../src/domain/appointment/index.js";
+import { ExamId } from "../../src/domain/examResult/index.js";
 import { PasswordHash } from "../../src/domain/user/passwordHash.js";
 import { User } from "../../src/domain/user/user.js";
 import type { Admin, Receptionist } from "../../src/domain/user/user.js";

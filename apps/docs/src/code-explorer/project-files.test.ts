@@ -199,6 +199,33 @@ describe("Code Explorer project files", () => {
     }
   });
 
+  it("exposes semantic identifiers from their owning concepts", () => {
+    const expectedPaths = {
+      "03-semantic-identifiers": [
+        "src/domain/appointment/appointmentId.ts",
+        "src/domain/appointment/veterinarianId.ts",
+      ],
+      "04-boundaries-and-pii": [
+        "src/domain/appointment/appointmentId.ts",
+        "src/domain/appointment/veterinarianId.ts",
+      ],
+      "05-workflow-errors": [
+        "src/domain/appointment/appointmentId.ts",
+        "src/domain/appointment/veterinarianId.ts",
+        "src/domain/examResult/examId.ts",
+        "src/domain/owner/ownerId.ts",
+        "src/domain/pet/petId.ts",
+      ],
+    } as const;
+
+    for (const [slug, paths] of Object.entries(expectedPaths)) {
+      const workspace = exercisePages.find((page) => page.workspace.slug === slug)?.workspace;
+      expect(workspace, slug).toEqual(expect.any(Object));
+      expect(workspace!.visibleFiles).toEqual(expect.arrayContaining([...paths]));
+      expect(workspace!.visibleFiles.some((path) => path.startsWith("src/domain/ids/"))).toBe(false);
+    }
+  });
+
   it("keeps every exercise target different between starter and solution snapshots", () => {
     for (const { session, workspace } of exercisePages) {
       const starterFiles = projectFilesForSnapshot(workspace.snapshot);

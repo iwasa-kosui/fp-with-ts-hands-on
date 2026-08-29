@@ -5,12 +5,12 @@ import type {
   PetCreated,
   PetDeleted,
   PetUpdated,
-} from "../../../../domain/pet/petEvent.js";
+} from "../../../../domain/pet/index.js";
 import type {
   PetDeletedStore,
   PetHasActiveAppointmentStoreError,
   PetNotFoundStoreError,
-} from "../../../../domain/pet/petStores.js";
+} from "../../../../domain/pet/index.js";
 import type { SqliteDatabase } from "../db.js";
 import { toEventRecord } from "../eventRecord.js";
 import { appointmentsTable, domainEventsTable, petsTable } from "../schema.js";

@@ -1,6 +1,6 @@
-import type { AppointmentId } from "../appointment/appointmentId.js";
-import type { OwnerPhone } from "../owner/ownerPhone.js";
-import type { PetId } from "../pet/petId.js";
+import type { AppointmentId } from "../appointment/index.js";
+import type { OwnerPhone } from "../owner/index.js";
+import type { PetId } from "../pet/index.js";
 import type { FollowUpCandidate } from "./followUpCandidate.js";
 
 export type FollowUpTarget = Readonly<{

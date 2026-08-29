@@ -19,13 +19,13 @@ import Dashboard from "../../src/adaptor/primary/web/pages/Dashboard.js";
 import EventsIndex from "../../src/adaptor/primary/web/pages/Events/Index.js";
 import FollowUpsIndex from "../../src/adaptor/primary/web/pages/FollowUps/Index.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
-import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
-import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
-import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
-import { ExamId } from "../../src/domain/examResult/examId.js";
+import { AppointmentId } from "../../src/domain/appointment/index.js";
+import { VeterinarianId } from "../../src/domain/appointment/index.js";
+import { PaymentAmount } from "../../src/domain/appointment/index.js";
+import { ExamId } from "../../src/domain/examResult/index.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
-import { OwnerId } from "../../src/domain/owner/ownerId.js";
-import { PetId } from "../../src/domain/pet/petId.js";
+import { OwnerId } from "../../src/domain/owner/index.js";
+import { PetId } from "../../src/domain/pet/index.js";
 import { UserId } from "../../src/domain/user/userId.js";
 import {
   createApp,

@@ -2,7 +2,7 @@ import type { Context, Hono } from "hono";
 import { err, ok, ResultAsync, type Result } from "neverthrow";
 import { z } from "zod";
 
-import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
+import { AppointmentId } from "../../../../domain/appointment/index.js";
 import type {
   FollowUpView,
   ListFollowUpsUseCase,

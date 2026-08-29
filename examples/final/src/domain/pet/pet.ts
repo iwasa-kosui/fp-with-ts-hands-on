@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import type { EventContext } from "../aggregate/eventContext.js";
-import { OwnerId } from "../owner/ownerId.js";
+import { OwnerId } from "../owner/index.js";
 import { schemaResult } from "../shared/schemaResult.js";
 import {
   createPetCreated,
