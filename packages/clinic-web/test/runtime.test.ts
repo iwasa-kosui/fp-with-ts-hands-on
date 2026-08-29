@@ -59,4 +59,21 @@ describe("createClinicViteConfig", () => {
       },
     });
   });
+
+  it("server buildで指定したnative dependencyをexternalにする", async () => {
+    const config = createClinicViteConfig({ external: ["better-sqlite3"] });
+    expect(config).toBeTypeOf("function");
+    if (typeof config !== "function") {
+      throw new TypeError("config must be a function");
+    }
+
+    const resolved = await config({
+      command: "build",
+      isPreview: false,
+      isSsrBuild: true,
+      mode: "server",
+    });
+
+    expect(resolved.ssr?.external).toEqual(["better-sqlite3"]);
+  });
 });

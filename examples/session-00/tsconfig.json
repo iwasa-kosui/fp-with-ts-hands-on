@@ -14,6 +14,7 @@
     "exercises/**/*.ts",
     "vitest.config.ts",
     "vitest.exercises.config.ts",
-    "vite.config.ts"
+    "vite.config.ts",
+    "drizzle.config.ts"
   ]
 }
