@@ -26,8 +26,8 @@ const toStatusKind = (status: string): string => {
 
 const incidentScenarios: readonly IncidentScenario[] = [
   {
-    title: "未知の状態を保存",
-    description: "定義されていないwaiting-for-magicを予約statusへ保存します。",
+    title: "想定外の予約状態を保存",
+    description: "システムで定義していないwaiting-for-magicという予約状態を保存します。",
     action: {
       kind: "Available",
       href: "/demo/incidents/unknown-status",
@@ -36,7 +36,7 @@ const incidentScenarios: readonly IncidentScenario[] = [
   },
   {
     title: "IDを取り違えて保存",
-    description: "ownerIdをpetIdとして予約へ保存します。",
+    description: "飼い主 ID を動物 ID として予約へ保存します。",
     action: {
       kind: "Available",
       href: "/demo/incidents/swap-identifiers",
@@ -45,7 +45,7 @@ const incidentScenarios: readonly IncidentScenario[] = [
   },
   {
     title: "不正な診察結果を保存",
-    description: "petIdとitemsが不正な入力を検証せず予約へ保存します。",
+    description: "動物 ID と診察項目が不正な入力を、検査せず予約へ保存します。",
     action: {
       kind: "Available",
       href: "/demo/incidents/malformed-exam-result",
@@ -63,7 +63,7 @@ const incidentScenarios: readonly IncidentScenario[] = [
   },
   {
     title: "診察開始を繰り返す",
-    description: "処理内で直接生成される時刻と監査event IDを表示します。",
+    description: "診察開始のたびに別の時刻と履歴 ID が作られる様子を表示します。",
     action: {
       kind: "Available",
       href: "/demo/incidents/repeat-start-examination",
@@ -79,10 +79,10 @@ const inspectionWarnings = (
   const warnings: string[] = [];
 
   if (!Object.hasOwn(statusKinds, appointment.status)) {
-    warnings.push("未知の予約statusが保存されています");
+    warnings.push("想定外の予約状態が保存されています");
   }
   if (appointment.ownerId === appointment.petId) {
-    warnings.push("ownerIdとpetIdが同じ値です");
+    warnings.push("飼い主 ID と動物 ID が同じ値です");
   }
 
   const latestAudit = auditLogs.at(-1);
@@ -90,7 +90,7 @@ const inspectionWarnings = (
     latestAudit === undefined ||
     !isDeepStrictEqual(latestAudit.payload, appointment)
   ) {
-    warnings.push("予約statusに対応する最新の監査記録がありません");
+    warnings.push("現在の予約内容に対応する変更履歴がありません");
   }
   if (
     auditLogs.some(
@@ -98,7 +98,7 @@ const inspectionWarnings = (
         payload.ownerEmail !== undefined || payload.ownerPhone !== undefined,
     )
   ) {
-    warnings.push("監査payloadに飼い主の連絡先が含まれています");
+    warnings.push("予約の変更履歴に飼い主の連絡先が含まれています");
   }
 
   return warnings;

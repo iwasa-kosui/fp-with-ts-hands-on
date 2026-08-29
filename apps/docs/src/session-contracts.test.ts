@@ -375,8 +375,8 @@ describe("page-owned session contracts", () => {
     const source = pageSources["./pages/sessions/00-system-handover.astro"];
 
     expect(source).toContain("SQLite");
-    expect(source).toContain("状態保存");
-    expect(source).toContain("監査記録");
+    expect(source).toContain("現在の予約内容");
+    expect(source).toContain("予約の変更履歴");
     expect(source).toContain("個人情報");
     expect(source).not.toContain("src/legacy");
   });

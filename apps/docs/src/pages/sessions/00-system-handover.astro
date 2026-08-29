@@ -13,7 +13,7 @@ export const session: SessionSummary = {
   durationMinutes: 10,
   timeBreakdown: { brief: 4, teach: 3, exercise: 0, review: 3 },
   animal: { name: "DOG", type: "dog", avatar: "🐕" },
-  summary: "WAN NYAN CLINIC の現行業務、SQLite の状態保存と監査記録、現在起きている事故を確認します。",
+  summary: "WAN NYAN CLINIC の現行業務、SQLite に残る現在の予約内容と変更履歴、現在起きている事故を確認します。",
   episode: [
     "新人エンジニアの初出勤を歓迎するように、犬が観葉植物を倒し、プリンターは事故報告を吐き続けていました。",
     "会計済みの予約は「診察中」へ戻り、請求書は2枚。ログには飼い主の電話番号まで律儀にそろっています。",
@@ -57,15 +57,15 @@ export const guides = ([
     id: "session-00-unvalidated-exam-json",
     title: "外部の診察結果を any のまま受け取っている",
     currentDesign: "診察結果の parse は raw: any をそのまま返します。",
-    futureRisk: "壊れた JSON や用途の違う ID が、検証されずに状態保存へ入ります。",
+    futureRisk: "壊れた JSON や用途の違う ID が、検査されないまま予約データとして保存されます。",
     path: "src/boundary/examResult.ts",
     highlights: [{ startLineNumber: 4, endLineNumber: 4 }],
   },
   {
     id: "session-00-raw-pii-audit",
-    title: "個人情報を監査記録の payload に残している",
-    currentDesign: "予約全体を監査記録の payload として SQLite へ保存します。",
-    futureRisk: "氏名、メールアドレス、電話番号を含む個人情報が監査記録から読めます。",
+    title: "個人情報を予約の変更履歴に残している",
+    currentDesign: "操作後の予約内容を丸ごと変更履歴として SQLite へ保存します。",
+    futureRisk: "氏名、メールアドレス、電話番号を含む個人情報が変更履歴から読めます。",
     path: "src/adaptor/secondary/sqlite/appointmentRepository.ts",
     highlights: [{ startLineNumber: 69, endLineNumber: 69 }],
   },
@@ -79,7 +79,7 @@ export const guides = ([
   },
   {
     id: "session-00-hidden-nondeterminism",
-    title: "時刻と監査 ID を処理の中で直接生成している",
+    title: "時刻と履歴 ID を処理の中で直接生成している",
     currentDesign: "診察開始の処理が現在時刻と UUID を直接生成します。",
     futureRisk: "同じ操作でも記録が毎回変わり、テストと事故調査の比較が安定しません。",
     path: "src/useCase/startExamination.ts",
@@ -90,9 +90,9 @@ export const guides = ([
   },
   {
     id: "session-00-dual-write",
-    title: "状態保存と監査記録を別々に保存している",
-    currentDesign: "予約を保存した後で、監査記録を別の repository 呼び出しで追記します。",
-    futureRisk: "監査追記が失敗すると、監査記録を伴わない状態保存だけが残ります。",
+    title: "現在の予約内容と変更履歴を別々に保存している",
+    currentDesign: "予約を保存した後で、変更履歴を別の処理で追加します。",
+    futureRisk: "変更履歴の追加が失敗すると、予約だけが変更され、履歴が残りません。",
     path: "src/useCase/startExamination.ts",
     highlights: [{ startLineNumber: 29, endLineNumber: 30 }],
   },
@@ -100,7 +100,7 @@ export const guides = ([
 
 const chapters = [
   { id: "incident", label: "現行業務と事故" },
-  { id: "system", label: "SQLite の状態・監査" },
+  { id: "system", label: "SQLite に残る内容" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
 export const navigation = ({
@@ -166,26 +166,27 @@ export const navigation = ({
         その後、獣医師が同じ予約で「診察開始」を押すと、システムは操作を止めず、予約を診察中へ戻しました。
         受付は会計前の来院だと判断し、飼い主へ同じ金額をもう一度請求しました。
       </p>
-      <p>SQLite には、会計済みの監査記録と診察中の現在状態が、同じ予約に残りました。</p>
+      <p>SQLite には、「会計済み」にした変更履歴と、「診察中」になっている現在の予約内容が、同じ予約 ID に残りました。</p>
     </article>
     <article class="incident-report">
       <h4>事故を調べた担当者へ、飼い主の連絡先まで見せてしまった</h4>
       <p>
-        二重請求の経緯を確認するために監査記録を開くと、操作名や時刻だけでなく、予約全体が payload
-        として保存されていました。調査に不要な飼い主の氏名、メールアドレス、電話番号まで閲覧できる状態でした。
+        二重請求の経緯を確認するために予約の変更履歴を開くと、操作名や時刻だけでなく、
+        操作後の予約内容まで丸ごと保存されていました。調査に不要な飼い主の氏名、メールアドレス、電話番号も閲覧できる状態でした。
       </p>
-      <p>監査記録を増やすたびに、同じ個人情報を含む JSON が SQLite へ追加されます。</p>
+      <p>変更履歴が増えるたびに、同じ個人情報を含むデータが SQLite へ追加されます。</p>
     </article>
     <p>
-      この時点では原因を決めつけません。次の節で画面操作と SQLite の JSON を照らし合わせ、
-      状態更新と監査記録のどこに問題があるかを確認します。
+      この時点では原因を決めつけません。次の節で画面操作と SQLite に残った内容を照らし合わせ、
+      現在の予約内容と変更履歴のどこに問題があるかを確認します。
     </p>
   </section>
 
   <section id="system">
-    <h2>SQLite の状態保存と監査記録</h2>
+    <h2>画面操作の結果がデータベースにどう残るか</h2>
     <p>
-      現在の画面で行う操作は SQLite に保存されます。サーバーを起動し直しても状態保存と監査記録は残り、
+      画面で操作すると、現在の予約内容と、各操作を行った後の変更履歴が SQLite に保存されます。
+      サーバーを起動し直しても両方のデータは残り、
       「デモを初期状態へ戻す」を実行したときだけ初期状態へ戻ります。ここでも修正はせず、事故報告と現在の動きがどこで結び付くかを確認します。
     </p>
     <h3>現在の操作</h3>
@@ -197,13 +198,17 @@ export const navigation = ({
         <tr><th>会計担当</th><td>診察料、検査料、処方料を確認して会計をする。</td><td>請求額と会計をした時刻を残す。</td></tr>
       </tbody>
     </table>
-    <h3>DB inspection で読む状態保存と監査記録</h3>
+    <h3>現在の予約内容と変更履歴を見比べる</h3>
+    <p>
+      デモ画面では、SQLite から読み出したデータを JSON 形式で表示します。
+      JSON は、この画面でデータの内容を示す形式です。別の種類のデータを保存しているわけではありません。
+    </p>
     <table>
-      <thead><tr><th>保存・記録先</th><th>現在保存されているデータ</th><th>事故報告との対応</th></tr></thead>
+      <thead><tr><th>画面に表示されるもの</th><th>何が入っているか</th><th>何を確かめるか</th></tr></thead>
       <tbody>
-        <tr><th>状態保存 JSON</th><td>予約 ID、患者 ID、飼い主 ID、現在状態、各操作の時刻。</td><td>未知の状態や ID の取り違え、不正な診察結果が SQLite に残る。</td></tr>
-        <tr><th>監査記録 JSON</th><td>イベント ID、イベント名、時刻、予約全体の payload。</td><td>payload に個人情報が含まれ、状態保存と一致しない記録が残り得る。</td></tr>
-        <tr><th>警告</th><td>未知の状態、ID の一致、状態保存と最新の監査記録の不一致、個人情報の有無。</td><td>事故再現を実行した後に、どの JSON を確認するかを示す。</td></tr>
+        <tr><th>現在の予約内容</th><td>予約 ID、動物 ID、飼い主 ID、現在の状態、各操作の時刻。</td><td>想定外の状態や ID の取り違え、不正な診察結果が残っていないか。</td></tr>
+        <tr><th>予約の変更履歴</th><td>履歴 ID、操作名、時刻、その操作を終えた直後の予約内容。</td><td>現在の予約内容と食い違っていないか、不要な個人情報が含まれていないか。</td></tr>
+        <tr><th>不整合の警告</th><td>予約状態、ID、現在の予約内容と変更履歴の食い違い、個人情報の有無。</td><td>事故を再現した後、どのデータに問題が残ったか。</td></tr>
       </tbody>
     </table>
   </section>
@@ -211,8 +216,8 @@ export const navigation = ({
   <section id="review">
     <h2>レビューと持ち帰り</h2>
     <p>
-      班で「誰が、どの操作をし、何が起き、SQLite のどの JSON に残ったか」を1件ずつ共有します。
-      Session 00 では事故を修正しません。Session 02 から Session 07 で、状態、ID、入力と個人情報、失敗、非決定値、状態保存と監査記録の整合性を順に改善する理由を確認します。
+      班で「誰が、どの操作をし、何が起き、現在の予約内容と変更履歴にどう残ったか」を1件ずつ共有します。
+      Session 00 では事故を修正しません。Session 02 から Session 07 で、状態、ID、入力と個人情報、失敗、実行のたびに変わる値、予約内容と変更履歴の食い違いを順に改善する理由を確認します。
     </p>
   </section>
         </article>

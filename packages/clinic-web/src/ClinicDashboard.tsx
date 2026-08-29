@@ -105,11 +105,11 @@ const IncidentLabPanel = ({
     </div>
     <div className="clinic-database-inspection">
       <section aria-labelledby="database-appointment-heading">
-        <h3 id="database-appointment-heading">DBに保存された予約</h3>
+        <h3 id="database-appointment-heading">現在の予約内容</h3>
         <pre>{incidentLab.inspection.appointmentJson}</pre>
       </section>
       <section aria-labelledby="database-audit-log-heading">
-        <h3 id="database-audit-log-heading">DBに保存された監査ログ</h3>
+        <h3 id="database-audit-log-heading">予約の変更履歴</h3>
         <pre>{incidentLab.inspection.auditLogJson}</pre>
       </section>
       <section aria-labelledby="database-warnings-heading">
