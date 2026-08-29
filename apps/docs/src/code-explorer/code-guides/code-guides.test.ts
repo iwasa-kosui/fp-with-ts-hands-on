@@ -149,6 +149,10 @@ describe("session code guides", () => {
       }
 
       if (session.slug === "00-system-handover") {
+        const messageMappedErrorsGuide = guides!.find(
+          ({ id }) => id === "session-00-message-mapped-errors",
+        );
+
         expect(guides!.map(({ id }) => id)).toEqual([
           "string-status",
           "optional-state-data",
@@ -160,6 +164,9 @@ describe("session code guides", () => {
           "session-00-dual-write",
         ]);
         expect(new Set(guides!.map(({ id }) => id)).size).toBe(8);
+        expect(messageMappedErrorsGuide?.highlights).toEqual([
+          { startLineNumber: 209, endLineNumber: 210 },
+        ]);
       }
     }
   });
