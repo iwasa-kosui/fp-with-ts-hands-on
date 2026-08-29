@@ -58,7 +58,7 @@ S2〜S6の開始スナップショットは、業務の言葉で命名された 
 | --- | ---: | --- |
 | S2 | 4件 | 状態遷移と網羅性の assertion が失敗する |
 | S3 | 3件 | 識別子の取り違えと、型テスト不足の assertion が失敗する |
-| S4 | 2件 | 外部JSONとPIIマスクの assertion が失敗する |
+| S4 | 2件 | 不正な予約IDと担当獣医師IDを拒否する assertion が失敗する |
 | S5 | 3件 | 予約なし、状態不正、同期Result pipeline の assertion が失敗する |
 | S6 | 4件 | 決定性、single store、ResultAsync、保存失敗の assertion が失敗する |
 

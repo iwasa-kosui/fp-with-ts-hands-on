@@ -129,6 +129,7 @@ const exerciseContracts = {
         "src/domain/ids/veterinarianId.ts",
         "src/boundary/startExaminationInput.ts",
         "src/shared/schemaResult.ts",
+        "src/web/routes.ts",
       ],
     },
     navigation: {
