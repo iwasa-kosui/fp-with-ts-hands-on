@@ -22,6 +22,23 @@ export type AppointmentActions = Readonly<{
   requestFollowUp: ActionAvailability;
 }>;
 
+export type IncidentScenario = Readonly<{
+  title: string;
+  description: string;
+  action: Exclude<ActionAvailability, { kind: "Hidden" }>;
+}>;
+
+export type DatabaseInspection = Readonly<{
+  appointmentJson: string;
+  auditLogJson: string;
+  warnings: readonly string[];
+}>;
+
+export type IncidentLab = Readonly<{
+  scenarios: readonly IncidentScenario[];
+  inspection: DatabaseInspection;
+}>;
+
 export type ClinicAppointmentView = Readonly<{
   appointmentId: string;
   kind: string;
@@ -41,6 +58,7 @@ export type Notice =
 export type ClinicPageProps = Readonly<{
   actions: AppointmentActions;
   appointment: ClinicAppointmentView;
+  incidentLab?: IncidentLab;
   learningFocus: string;
   notice: Notice;
   sessionLabel: string;

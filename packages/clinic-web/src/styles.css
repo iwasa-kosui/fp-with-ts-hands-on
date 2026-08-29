@@ -939,6 +939,57 @@ td {
   opacity: 0.75;
 }
 
+.clinic-incident-lab {
+  display: grid;
+  gap: 24px;
+}
+
+.clinic-incident-lab h2,
+.clinic-incident-lab h3 {
+  margin: 0;
+}
+
+.clinic-incident-lab__scenarios,
+.clinic-database-inspection {
+  display: grid;
+  gap: 16px;
+}
+
+.clinic-incident-scenario {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+}
+
+.clinic-incident-scenario p {
+  margin: 6px 0 0;
+}
+
+.clinic-database-inspection section {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.clinic-database-inspection pre {
+  margin: 12px 0 0;
+  padding: 12px;
+  overflow-x: auto;
+  border-radius: 6px;
+  background: var(--surface-subtle);
+  font-size: 0.875rem;
+}
+
+.clinic-database-inspection ul {
+  margin: 12px 0 0;
+  padding-left: 20px;
+}
+
 .notice-dialog {
   width: min(440px, calc(100% - 32px));
   padding: 24px;
@@ -962,5 +1013,10 @@ td {
 
   .clinic-appointment__details {
     grid-template-columns: 1fr;
+  }
+
+  .clinic-incident-scenario {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
