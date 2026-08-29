@@ -1,9 +1,13 @@
 // @ts-nocheck
 import type { Scheduled } from "../../src/domain/appointment/appointment.js";
-import { checkIn, startExamination } from "../../src/domain/appointment/transitions.js";
+import {
+  checkIn,
+  startExamination,
+} from "../../src/domain/appointment/transitions.js";
 import { AppointmentId } from "../../src/domain/ids/appointmentId.js";
 import { OwnerId } from "../../src/domain/ids/ownerId.js";
 import { PetId } from "../../src/domain/ids/petId.js";
+import { VeterinarianId } from "../../src/domain/ids/veterinarianId.js";
 import { clinicFixture } from "../../../fixtures/clinic.js";
 
 const scheduled: Scheduled = {
@@ -15,10 +19,12 @@ const scheduled: Scheduled = {
   reason: "定期健診",
 };
 
-// @ts-expect-error 飼い主の識別子を、ペットの識別子として使えません。
-const swapped: Scheduled = { ...scheduled, petId: scheduled.ownerId };
+const acceptAppointmentId = (_id: AppointmentId): void => undefined;
+acceptAppointmentId(scheduled.appointmentId);
 
 const checkedIn = checkIn(scheduled, clinicFixture.checkedInAt);
+const veterinarianId = VeterinarianId.parse(clinicFixture.veterinarianId);
+startExamination(checkedIn, veterinarianId, clinicFixture.scheduledAt);
 
-// @ts-expect-error 予約の識別子を、担当獣医師の識別子として渡せません。
-const inExamination = startExamination(checkedIn, scheduled.appointmentId, clinicFixture.scheduledAt);
+// @ts-expect-error AppointmentIdをVeterinarianIdとして使えません。
+startExamination(checkedIn, scheduled.appointmentId, clinicFixture.scheduledAt);

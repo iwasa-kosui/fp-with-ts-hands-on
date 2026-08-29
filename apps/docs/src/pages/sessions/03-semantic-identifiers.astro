@@ -67,39 +67,39 @@ export const session: SessionSummary = {
   },
   delegationPrompt: {
     request:
-      "検査結果や予約で扱う識別子を改善してください。同じ文字列形式でも、用途を取り違えたコードはコンパイルを通らない状態を目指します。",
+      "診察開始で使う予約IDと担当獣医師IDを改善してください。同じUUID形式でも、用途を取り違えたコードはコンパイルを通らない状態を目指します。",
     decisions: [
-      "どの識別子を別の用途として扱うか",
-      "用途の区別をどの状態や関数まで伝えるか",
+      "AppointmentIdとVeterinarianIdをどの型として定義するか",
+      "用途の区別を予約状態とstartExaminationへどう伝えるか",
       "取り違えをコンパイルエラーとしてどう残すか",
     ],
   },
   steps: [
     {
-      id: "s3-brand-domain-ids",
-      goal: "ペットと飼い主の識別子を、配布済みの ExamId と同じ規約で別々の型にする。",
-      startingFailure: "ペットと飼い主の識別子を取り違えても、型検査が通る。",
+      id: "s3-brand-start-examination-ids",
+      goal: "予約IDと担当獣医師IDを、配布済みの識別子と同じ規約で別々の型にする。",
+      startingFailure: "予約IDと担当獣医師IDを取り違えても、型検査が通る。",
       targets: [
-        "examples/session-03/src/domain/ids/petId.ts",
-        "examples/session-03/src/domain/ids/ownerId.ts",
+        "examples/session-03/src/domain/ids/appointmentId.ts",
+        "examples/session-03/src/domain/ids/veterinarianId.ts",
       ],
       solutions: [
         {
-          path: "examples/session-04/src/domain/ids/petId.ts",
-          symbol: "PetId",
+          path: "examples/session-04/src/domain/ids/appointmentId.ts",
+          symbol: "AppointmentId",
           lines: [3, 6],
         },
         {
-          path: "examples/session-04/src/domain/ids/ownerId.ts",
-          symbol: "OwnerId",
+          path: "examples/session-04/src/domain/ids/veterinarianId.ts",
+          symbol: "VeterinarianId",
           lines: [3, 6],
         },
       ],
     },
     {
-      id: "s3-apply-ids-to-appointment",
-      goal: "予約の6状態と遷移が受け取る識別子を、用途別の型へ置き換える。",
-      startingFailure: "予約の状態や遷移が、用途を区別しない識別子を受け取る。",
+      id: "s3-apply-start-examination-ids",
+      goal: "予約の6状態とstartExaminationが、用途別の識別子を受け取るようにする。",
+      startingFailure: "予約状態とstartExaminationが、用途を区別しないstringを受け取る。",
       targets: [
         "examples/session-03/src/domain/appointment/appointment.ts",
         "examples/session-03/src/domain/appointment/transitions.ts",
@@ -119,50 +119,49 @@ export const session: SessionSummary = {
     },
     {
       id: "s3-reject-id-swap",
-      goal: "OwnerId を PetId の位置へ渡すコードがコンパイルできないことを、型テストで自分で確かめる。",
+      goal: "AppointmentIdとVeterinarianIdを入れ替えたコードがコンパイルできないことを、型テストで確かめる。",
       startingFailure: "識別子の取り違えを確かめる型テストがない。",
       targets: ["examples/session-03/src/domain/domain.test-types.ts"],
       solutions: [{
         path: "examples/session-04/src/domain/domain.test-types.ts",
-        symbol: "acceptPetId",
-        lines: [1, 15],
+        symbol: "acceptAppointmentId",
+        lines: [1, 14],
       }],
     },
   ],
   decisions: [
     {
-      invariant: "用途の異なる識別子を取り違えない。",
+      invariant: "AppointmentIdとVeterinarianIdを取り違えない。",
     },
     {
-      invariant: "予約はどの状態でも用途別の識別子を持つ。",
+      invariant: "予約はどの状態でもAppointmentIdを持つ。",
     },
     {
-      invariant: "取り違えたコードはコンパイルできない。",
+      invariant: "startExaminationはVeterinarianIdを受け取る。",
     },
   ],
   finalReferences: [
     "examples/final/src/domain/appointment/appointmentId.ts",
-    "examples/final/src/domain/pet/petId.ts",
-    "examples/final/src/domain/owner/ownerId.ts",
+    "examples/final/src/domain/appointment/veterinarianId.ts",
   ],
 };
 
 export const guides = ([
   {
-    id: "untyped-pet-id",
-    title: "ペットの識別子が素の文字列のままになっている",
-    currentDesign: "5種類の識別子のうち、AppointmentId・ExamId・VeterinarianId は branded 済みですが、PetId と OwnerId は uuid 検査だけで型が分かれていません。",
-    futureRisk: "OwnerId を PetId の位置へ渡しても、どちらも string なのでコンパイルは通ります。",
-    path: "src/domain/ids/petId.ts",
+    id: "untyped-start-examination-id",
+    title: "予約IDと担当獣医師IDがUUID文字列のままになっている",
+    currentDesign: "AppointmentIdとVeterinarianIdはuuid検査だけで、用途を表すbrandがありません。PetId、OwnerId、ExamIdにはbrandがあります。",
+    futureRisk: "予約IDを担当獣医師IDの位置へ渡しても、どちらもstringなのでコンパイルは通ります。",
+    path: "src/domain/ids/appointmentId.ts",
     highlights: [{ startLineNumber: 3, endLineNumber: 6 }],
   },
   {
-    id: "plain-string-appointment-ids",
-    title: "予約の6状態が識別子を string で持っている",
-    currentDesign: "appointmentId・petId・ownerId が3つとも string で宣言されています。",
-    futureRisk: "OwnerId を petId の位置へ渡すなど、用途の異なる識別子を入れても検出できません。",
+    id: "plain-string-start-examination",
+    title: "予約状態とstartExaminationがstringを受け取っている",
+    currentDesign: "予約のappointmentIdと、startExaminationのveterinarianIdがstringで宣言されています。",
+    futureRisk: "予約IDと担当獣医師IDを入れ替えても検出できません。",
     path: "src/domain/appointment/appointment.ts",
-    highlights: [{ startLineNumber: 3, endLineNumber: 10 }],
+    highlights: [{ startLineNumber: 8, endLineNumber: 14 }],
   },
   {
     id: "empty-domain-type-tests",
@@ -180,35 +179,41 @@ const teaching: readonly TeachingTopic[] = [
     definition:
       "同じ文字列形式でも、用途の違う識別子は別の型として扱います。zod の brand を付けると、互いに代入できない型ができます。",
     before: {
-      sources: ["examples/session-03/src/domain/ids/petId.ts"],
+      sources: ["examples/session-03/src/domain/ids/appointmentId.ts"],
       code: `const schema = z.string().uuid();
 
-export type PetId = z.infer<typeof schema>;
-export const PetId = { schema, parse: schema.parse } as const;`,
+export type AppointmentId = z.infer<typeof schema>;
+export const AppointmentId = { schema, parse: schema.parse } as const;`,
     },
     after: {
-      sources: ["examples/session-04/src/domain/ids/petId.ts"],
-      code: `const schema = z.string().uuid().brand<"PetId">();
+      sources: ["examples/session-04/src/domain/ids/appointmentId.ts"],
+      code: `const schema = z.string().uuid().brand<"AppointmentId">();
 
-export type PetId = z.infer<typeof schema>;
-export const PetId = { schema, parse: schema.parse } as const;`,
+export type AppointmentId = z.infer<typeof schema>;
+export const AppointmentId = { schema, parse: schema.parse } as const;`,
     },
-    why: "開始時点にある5種類の識別子のうち、AppointmentId、ExamId、VeterinarianId にはすでに brand があります。PetId と OwnerId には brand がなく、どちらも string として扱われるため互いに代入できます。演習では、この2種類にも brand を付けて型検査で区別できるようにします。ここで区別しているのは値の形式ではなく用途です。どちらも実体は UUID の文字列なので、z.string().uuid() のバリデーションだけでは区別できません。配布済みの3種類をお手本として読んでから修正しましょう。",
+    why: "AppointmentIdとVeterinarianIdは、どちらもUUID形式のstringです。uuid検査だけでは相互に代入できます。演習ではPetId、OwnerId、ExamIdの実装を手本にして、それぞれ別のbrandを付けます。区別するのは値の形式ではなく用途です。",
   },
   {
     name: "識別子をドメインモデルと状態遷移で利用する",
     definition:
       "予約の状態を表す型・状態遷移関数を、作成した Branded Type を利用する形に変更します。",
     before: {
-      sources: ["examples/session-03/src/domain/appointment/appointment.ts"],
+      sources: [
+        "examples/session-03/src/domain/appointment/appointment.ts",
+        "examples/session-03/src/domain/appointment/transitions.ts",
+      ],
       code: `export type Scheduled = Readonly<{
   kind: "Scheduled";
   appointmentId: string;
-  petId: string;
-  ownerId: string;
-  scheduledAt: string;
-  reason: string;
-}>;`,
+  // ...
+}>;
+
+export const startExamination = (
+  appointment: CheckedIn,
+  veterinarianId: string,
+  examinationStartedAt: string,
+): InExamination =>`,
     },
     after: {
       sources: [
@@ -218,10 +223,7 @@ export const PetId = { schema, parse: schema.parse } as const;`,
       code: `export type Scheduled = Readonly<{
   kind: "Scheduled";
   appointmentId: AppointmentId;
-  petId: PetId;
-  ownerId: OwnerId;
-  scheduledAt: string;
-  reason: string;
+  // ...
 }>;
 
 export const startExamination = (
@@ -230,7 +232,7 @@ export const startExamination = (
   examinationStartedAt: string,
 ): InExamination =>`,
     },
-    why: "before の予約状態では、appointmentId、petId、ownerId をすべて string として保持しており、既存の用途別の型を使っていません。そのため、OwnerId を PetId の位置へ渡してもコンパイルは通ります。after では3つのフィールドにそれぞれの識別子型を使い、互いに代入できないようにします。遷移関数の veterinarianId も同じです。状態の型と関数の引数の両方で用途別の型を使うと、異なる用途の識別子を渡す誤りを型検査で止められます。",
+    why: "識別子型を定義しただけでは、予約状態と遷移関数がstringを受け取るままです。予約の6状態にあるappointmentIdをAppointmentIdへ変え、startExaminationの引数とInExaminationのveterinarianIdをVeterinarianIdへ変えます。入力から状態遷移まで同じ型を使うと、取り違えを型検査で止められます。",
   },
   {
     name: "@ts-expect-error による型テスト",
@@ -242,25 +244,26 @@ export const startExamination = (
     },
     after: {
       sources: ["examples/session-04/src/domain/domain.test-types.ts"],
-      code: `const acceptPetId = (_petId: PetId): void => undefined;
+      code: `const acceptAppointmentId = (_id: AppointmentId): void => undefined;
+const acceptVeterinarianId = (_id: VeterinarianId): void => undefined;
 
-// @ts-expect-error 飼い主の識別子を、ペットの識別子として渡せません。
-acceptPetId(scheduled.ownerId);
+// @ts-expect-error VeterinarianIdをAppointmentIdとして使えません。
+acceptAppointmentId(veterinarianId);
 
-// @ts-expect-error 予約の識別子を、担当獣医師の識別子として渡せません。
-startExamination(checkedIn, scheduled.appointmentId, "2026-08-30T06:30:00.000Z");`,
+// @ts-expect-error AppointmentIdをVeterinarianIdとして使えません。
+acceptVeterinarianId(appointmentId);`,
     },
-    why: "通常のテストは実際に実行することで挙動が正しいか確認します。しかし、「間違えた値を渡すとコンパイルエラーが出ること」は通常の方法では確かめられません。@ts-expect-error は、次の行にエラーが出ることを期待する指示です。もし誰かが実装を変更して意図せずコンパイルエラーが出なくなってしまった場合、@ts-expect-error は「不要なエラー抑制を行なっている」ことになり、逆にコンパイルエラーとなります。型で守っている部分が後から壊れたときに気付ける形にしておきます。",
+    why: "実行時テストでは、間違えた値を渡すとコンパイルエラーになることを確かめられません。@ts-expect-errorは次の行に型エラーが必要だと宣言します。後から2つの識別子が同じ型へ戻ると、不要なエラー抑制として型検査が失敗します。",
   },
 ];
 
 const narrative = {
-  requirement: "予約・検査・ペット・飼い主・担当獣医師の識別子を、用途ごとに区別して扱う。",
-  currentRisk: "開始スナップショットにある5種類の識別子のうち、PetId と OwnerId だけはどちらも素の UUID 文字列です。検査結果を登録するときに OwnerId を PetId の位置へ渡しても、型検査では止まりません。",
-  design: "ワークフローが受け取る型を用途ごとの Branded Type で定義し、予約の状態を表す型・状態遷移関数の両方で利用する。",
-  limitation: "異なる用途の識別子は区別できますが、同じ PetId 型の別のペットを選ぶ誤りは型だけでは検出できない。",
-  legacy: "branded 済みの AppointmentId・ExamId・VeterinarianId と、素の string のままの PetId・OwnerId を読み比べ、予約の各状態が識別子をどのように定義しているかを確認します。",
-  fallback: "現在の3ステップを順に開き、まず PetId と OwnerId に brand をコピペします。次に予約の各状態を表す型と状態遷移関数にも反映し、取り違えがコンパイルエラーになることを型テストで確かめます。相互レビューの約束事はS2のリンク先を確認します。",
+  requirement: "診察開始の入力にある予約IDと担当獣医師IDを、用途ごとに区別して扱う。",
+  currentRisk: "AppointmentIdとVeterinarianIdは、どちらもUUID検査済みのstringです。startExaminationへ逆の順番で渡しても、型検査では止まりません。",
+  design: "2つの識別子を別々のBranded Typeで定義し、予約状態とstartExaminationまで同じ型を使う。",
+  limitation: "異なる用途は区別できますが、同じAppointmentId型を持つ別の予約を選ぶ誤りは型だけでは検出できない。",
+  legacy: "配布済みのPetId、OwnerId、ExamIdと、brandのないAppointmentId、VeterinarianIdを読み比べます。予約状態とstartExaminationにstringが残っている場所も確認します。",
+  fallback: "現在の3ステップを順に開き、まずAppointmentIdとVeterinarianIdに別々のbrandを付けます。次に予約状態とstartExaminationへ反映し、取り違えがコンパイルエラーになることを型テストで確かめます。相互レビューの約束事はS2のリンク先を確認します。",
 } as const;
 
 const exerciseSession: ExerciseSessionSummary = session;
@@ -269,13 +272,12 @@ export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
   initialFile: "exercises/semantic-identifiers.test.ts",
-  description: "識別子の用途と、それを使う予約の状態を開始 snapshot で確認します。",
+  description: "診察開始で使う予約IDと獣医師IDを、開始snapshotで確認します。",
   visibleFiles: [
     "exercises/semantic-identifiers.test.ts",
     "test/regression/state-modeling.test.ts",
-    "src/domain/ids/examId.ts",
-    "src/domain/ids/petId.ts",
-    "src/domain/ids/ownerId.ts",
+    "src/domain/ids/appointmentId.ts",
+    "src/domain/ids/veterinarianId.ts",
     "src/domain/appointment/appointment.ts",
     "src/domain/appointment/transitions.ts",
     "src/domain/domain.test-types.ts",

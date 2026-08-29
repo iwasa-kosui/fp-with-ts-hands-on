@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const schema = z.string().uuid().brand<"AppointmentId">();
+const schema = z.string().uuid();
 
 export type AppointmentId = z.infer<typeof schema>;
 export const AppointmentId = { schema, parse: schema.parse } as const;

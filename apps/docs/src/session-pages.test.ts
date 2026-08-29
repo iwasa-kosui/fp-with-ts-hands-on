@@ -93,13 +93,12 @@ const exerciseContracts = {
       snapshot: "session-03",
       initialFile: "exercises/semantic-identifiers.test.ts",
       description:
-        "識別子の用途と、それを使う予約の状態を開始 snapshot で確認します。",
+        "診察開始で使う予約IDと獣医師IDを、開始snapshotで確認します。",
       visibleFiles: [
         "exercises/semantic-identifiers.test.ts",
         "test/regression/state-modeling.test.ts",
-        "src/domain/ids/examId.ts",
-        "src/domain/ids/petId.ts",
-        "src/domain/ids/ownerId.ts",
+        "src/domain/ids/appointmentId.ts",
+        "src/domain/ids/veterinarianId.ts",
         "src/domain/appointment/appointment.ts",
         "src/domain/appointment/transitions.ts",
         "src/domain/domain.test-types.ts",
