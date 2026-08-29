@@ -10,7 +10,6 @@ import {
   checkIn,
   completeExamination,
   recordPayment,
-  startExamination as transitionToInExamination,
 } from "../domain/appointment/transitions.js";
 import { AppointmentId } from "../domain/ids/appointmentId.js";
 import { OwnerId } from "../domain/ids/ownerId.js";
@@ -74,22 +73,22 @@ export const registerClinicRoutes = (app: Hono, store: AppointmentStore): void =
 
   app.post("/appointments/:appointmentId/start-examination", (context) => {
     const rawAppointmentId = context.req.param("appointmentId");
-    const result = startExamination({
-      resolver: store,
-      store,
-      transition: transitionToInExamination,
-    })({
-      appointmentId: AppointmentId.parse(rawAppointmentId),
-      veterinarianId: ids.veterinarianId,
-      examinationStartedAt: "2026-08-30T06:30:00.000Z",
-    });
-    if (result.isErr()) {
-      const code = result.error.kind === "AppointmentNotFound"
-        ? "not-found"
-        : "invalid-state";
-      return context.redirect(`/?notice=${code}`, 303);
+    try {
+      startExamination({
+        resolver: store,
+        store,
+      })({
+        appointmentId: AppointmentId.parse(rawAppointmentId),
+        veterinarianId: ids.veterinarianId,
+        examinationStartedAt: "2026-08-30T06:30:00.000Z",
+      });
+      return context.redirect("/", 303);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("was not found")) {
+        return context.redirect("/?notice=not-found", 303);
+      }
+      throw error;
     }
-    return context.redirect("/", 303);
   });
 
   app.post("/appointments/:appointmentId/exam-results", async (context) => {

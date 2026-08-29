@@ -55,6 +55,15 @@ describe("Session 07 Web application", () => {
     expect(response.headers.get("location")).toBe("/?notice=invalid-state");
   });
 
+  it("予約なしを専用noticeへ変換する", async () => {
+    const response = await post(
+      app,
+      "/appointments/99999999-9999-4999-8999-999999999999/start-examination",
+    );
+
+    expect(response.headers.get("location")).toBe("/?notice=not-found");
+  });
+
   it("原子的な保存の失敗時には状態もイベントも残さない", async () => {
     app = createApp({ failStore: true });
     await post(app, `${appointmentUrl}/check-in`);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { session } from "../pages/sessions/02-state-transitions.astro";
+import { session as session05 } from "../pages/sessions/05-workflow-errors.astro";
 import type { ExerciseStep } from "./types";
 import { loadSolutionSnippets } from "./solution-snippets";
 
@@ -32,5 +33,23 @@ describe("loadSolutionSnippets", () => {
     await expect(loadSolutionSnippets(invalidStep)).rejects.toThrow(
       "指定行がソースの範囲外です",
     );
+  });
+
+  it("keeps Session 05 solution excerpts self-contained", async () => {
+    const snippets = await Promise.all(
+      session05.steps.map((sessionStep) => loadSolutionSnippets(sessionStep)),
+    );
+    const [invalidState, notFound, pipeline, webHandler] = snippets;
+
+    expect(invalidState?.[0]?.code).toContain("type StartExaminationError");
+    expect(invalidState?.[0]?.code).toContain("type Result");
+    expect(notFound?.[0]?.code).toContain("type AppointmentNotFound");
+    expect(pipeline?.[0]?.code).toContain("import type { Result }");
+    expect(pipeline?.[0]?.code).toContain("type StartExaminationError");
+    expect(webHandler?.[0]?.code).toContain("import type { StartExaminationError }");
+    expect(webHandler?.[0]?.code).toContain("return assertNever(error)");
+    expect(webHandler?.[0]?.code).not.toContain("AppointmentConflict");
+    expect(webHandler?.[0]?.code).not.toContain("StartExaminationWithEffectsNoticeCode");
+    expect(webHandler?.[0]?.code).not.toContain('"conflict"');
   });
 });

@@ -27,11 +27,11 @@ const sessions = [
 ] as const;
 
 const exerciseSessions = [
-  { slug: "02-state-transitions", failureCount: 4 },
-  { slug: "03-semantic-identifiers", failureCount: 3 },
-  { slug: "04-boundaries-and-pii", failureCount: 2 },
-  { slug: "05-workflow-errors", failureCount: 3 },
-  { slug: "06-effects-and-consistency", failureCount: 4 },
+  { slug: "02-state-transitions", problemCount: 4, failureCount: 4 },
+  { slug: "03-semantic-identifiers", problemCount: 3, failureCount: 3 },
+  { slug: "04-boundaries-and-pii", problemCount: 2, failureCount: 2 },
+  { slug: "05-workflow-errors", problemCount: 4, failureCount: 6 },
+  { slug: "06-effects-and-consistency", problemCount: 4, failureCount: 4 },
 ] as const;
 
 for (const session of exerciseSessions) {
@@ -53,7 +53,7 @@ for (const session of exerciseSessions) {
     await expect(heading).toBeVisible();
     await expect(failures).toBeVisible();
     await expect(failures.getByRole("listitem")).toHaveCount(
-      session.failureCount,
+      session.problemCount,
     );
     await expect(command).toContainText(
       `${session.failureCount}件の演習テストが失敗します。`,
