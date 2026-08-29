@@ -27,6 +27,38 @@ const requiredRuntimeFiles = [
   "vitest.config.ts",
 ] as const;
 
+type PackageJson = {
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+  scripts?: Record<string, string>;
+  [key: string]: unknown;
+};
+
+const withoutWorkspaceDependencies = (
+  dependencies: Record<string, string> | undefined,
+): Record<string, string> | undefined =>
+  dependencies === undefined
+    ? undefined
+    : Object.fromEntries(
+        Object.entries(dependencies).filter(
+          ([, version]) => !version.startsWith("workspace:"),
+        ),
+      );
+
+export const browserPackageJsonFor = (
+  packageJson: PackageJson,
+): PackageJson => ({
+  ...packageJson,
+  dependencies: withoutWorkspaceDependencies(packageJson.dependencies),
+  devDependencies: withoutWorkspaceDependencies(packageJson.devDependencies),
+  optionalDependencies: withoutWorkspaceDependencies(
+    packageJson.optionalDependencies,
+  ),
+  peerDependencies: withoutWorkspaceDependencies(packageJson.peerDependencies),
+});
+
 const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
   const prefix = `../../../../examples/${snapshot}/`;
   const files = Object.fromEntries(
@@ -43,11 +75,9 @@ const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
     );
   }
 
-  const packageJson = JSON.parse(files["package.json"]!) as {
-    devDependencies?: Record<string, string>;
-    scripts?: Record<string, string>;
-    [key: string]: unknown;
-  };
+  const packageJson = browserPackageJsonFor(
+    JSON.parse(files["package.json"]!) as PackageJson,
+  );
   const tsconfig = JSON.parse(files["tsconfig.json"]!) as {
     extends?: string;
     [key: string]: unknown;

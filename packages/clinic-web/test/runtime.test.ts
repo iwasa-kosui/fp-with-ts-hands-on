@@ -32,6 +32,25 @@ describe("createClinicRootView", () => {
     expect(html).not.toContain('/static/styles.css');
   });
 
+  it("development HTMLをVite変換に通してReact Refreshを初期化する", async () => {
+    const reactRefreshPreamble =
+      '<script type="module">window.$RefreshReg$ = () => {};</script>';
+    const rootView = createClinicRootView(false, "/src/web/client.tsx");
+    const developmentContext = {
+      env: {
+        vite: {
+          transformIndexHtml: async (_url: string, html: string) =>
+            html.replace("</head>", `${reactRefreshPreamble}</head>`),
+        },
+      },
+      req: { url: "/" },
+    } as Context;
+
+    const html = await rootView(page, developmentContext);
+
+    expect(html).toContain(reactRefreshPreamble);
+  });
+
   it("production assetsを固定URLで参照する", async () => {
     const rootView = createClinicRootView(true, "/src/web/client.tsx");
 

@@ -7,7 +7,12 @@ const sessionPages = await readdir(
   { withFileTypes: true },
 );
 const sessionSlugs = sessionPages
-  .filter((entry) => entry.isFile() && entry.name.endsWith(".astro"))
+  .filter(
+    (entry) =>
+      entry.isFile() &&
+      entry.name.endsWith(".astro") &&
+      entry.name !== "index.astro",
+  )
   .map((entry) => entry.name.replace(/\.astro$/, ""));
 
 const distUrl = new URL("../dist/", import.meta.url);
@@ -15,6 +20,7 @@ const distPath = fileURLToPath(distUrl);
 const requiredHtmlFiles = [
   "index.html",
   "404.html",
+  "sessions/index.html",
   ...sessionSlugs.map((slug) => `sessions/${slug}/index.html`),
 ];
 

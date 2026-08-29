@@ -638,11 +638,29 @@ label {
   text-decoration: none;
 }
 
+.wan-nyan-home .landing-nav a.landing-nav__start {
+  border-color: var(--landing-ink);
+  background: var(--landing-blue);
+  color: #fff;
+  white-space: nowrap;
+}
+
 .wan-nyan-home .landing-nav a:hover,
 .wan-nyan-home .landing-nav a:focus-visible,
 .wan-nyan-home .callout a:hover,
 .wan-nyan-home .callout a:focus-visible {
   background: #fff0f7;
+  outline: 0.1875rem solid #b32063;
+  outline-offset: 0.1875rem;
+}
+
+.wan-nyan-home .landing-nav a.landing-nav__start:hover,
+.wan-nyan-home .landing-nav a.landing-nav__start:focus-visible {
+  background: var(--landing-blue);
+  color: #fff;
+}
+
+.wan-nyan-home .landing-nav a.landing-nav__start:focus-visible {
   outline: 0.1875rem solid #b32063;
   outline-offset: 0.1875rem;
 }
@@ -900,7 +918,8 @@ label {
 @media (max-width: 43.75rem) {
   .wan-nyan-home .landing-header { position: static; padding: 0.75rem 1.125rem; }
   .wan-nyan-home .landing-brand { white-space: normal; }
-  .wan-nyan-home .landing-nav { display: none; }
+  .wan-nyan-home .landing-nav { display: flex; }
+  .wan-nyan-home .landing-nav a:not(.landing-nav__start) { display: none; }
   .wan-nyan-home .landing-main { width: min(100% - 2.25rem, 76.25rem); }
   .wan-nyan-home .landing-main > section { padding: 2.125rem 0; }
   .wan-nyan-home .copy-panel { width: calc(100% - 0.75rem); padding: 1.375rem 1.25rem 1.625rem; border-radius: 0.5rem; }

@@ -6,7 +6,8 @@
     "dev": "vite --port 3000",
     "build": "vite build --mode client && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:visual": "playwright test"
   },
   "dependencies": {
     "@fp-with-ts/clinic-web": "workspace:*",
@@ -20,6 +21,7 @@
     "zod": "^3.25.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

@@ -1,0 +1,95 @@
+.session-directory__main {
+  width: min(100% - 2rem, 74rem);
+  margin-inline: auto;
+  padding-block: clamp(2.5rem, 7vw, 5rem);
+}
+
+.session-directory__hero {
+  max-width: 48rem;
+  margin-bottom: 2.5rem;
+}
+
+.session-directory__hero h1 {
+  margin: 0;
+  font-size: clamp(2.25rem, 7vw, 4.5rem);
+  line-height: 1.1;
+}
+
+.session-directory__hero > p:last-child {
+  margin: 1.25rem 0 0;
+  font-size: 1.1rem;
+  line-height: 1.8;
+}
+
+.session-directory__list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.session-directory__card {
+  display: grid;
+  height: 100%;
+  padding: 1.5rem;
+  border: 2px solid var(--case-line);
+  background: var(--case-paper);
+  box-shadow: 0.4rem 0.4rem 0 var(--case-mint);
+  color: var(--case-ink);
+  text-decoration: none;
+  transition: translate 150ms ease, box-shadow 150ms ease;
+}
+
+.session-directory__card:hover,
+.session-directory__card:focus-visible {
+  box-shadow: 0.65rem 0.65rem 0 var(--case-coral);
+  outline: 3px solid var(--case-line);
+  outline-offset: 3px;
+  translate: -0.2rem -0.2rem;
+}
+
+.session-directory__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.session-directory__animal {
+  margin-top: 1.5rem;
+  font-size: 2.5rem;
+}
+
+.session-directory__card h2 {
+  margin: 0.5rem 0 0;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  line-height: 1.3;
+}
+
+.session-directory__card p {
+  margin: 0.75rem 0 1.5rem;
+  line-height: 1.7;
+}
+
+.session-directory__open {
+  align-self: end;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+@media (min-width: 48rem) {
+  .session-directory__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-directory__card {
+    transition: none;
+  }
+}

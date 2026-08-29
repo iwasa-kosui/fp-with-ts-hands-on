@@ -55,60 +55,58 @@ for (const viewport of viewports) {
   });
 }
 
-test("/sessions/02-state-transitions/ gives the editor most horizontal space on desktop", async ({ page }) => {
+test("/sessions/02-state-transitions/ places the guided overview above a full-width editor", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1200 });
   await page.goto("/sessions/02-state-transitions/");
 
-  const playground = page.locator(".session-code-playground");
-  await expect(playground.locator('[aria-label^="コードエディタ:"]')).toBeVisible();
+  const overview = page.locator("[data-code-overview]");
+  await expect(overview.locator('[aria-label^="コードエディタ:"]')).toBeVisible();
 
-  const layout = await page.evaluate(() => {
-    const body = document.querySelector<HTMLElement>(".case-file__body");
-    const playgroundElement = document.querySelector<HTMLElement>(
-      ".session-code-playground",
+  const layout = await overview.evaluate((element) => {
+    const workspace = element.querySelector<HTMLElement>(
+      ".code-explorer__workspace",
     );
-    if (body === null || playgroundElement === null) {
-      throw new Error("Playground layout containers are missing");
-    }
-
-    const tree = playgroundElement.querySelector<HTMLElement>(
-      ".code-explorer__workspace nav",
+    const guides = element.querySelector<HTMLElement>(
+      ".code-explorer__guides",
     );
-    const editor = playgroundElement.querySelector<HTMLElement>(
+    const editor = element.querySelector<HTMLElement>(
       ".code-explorer__editor",
     );
-    const nestedFile = playgroundElement.querySelector<HTMLElement>(
-      '[data-path="exercises/state-modeling.test.ts"] > span:first-child',
-    );
-    if (tree === null || editor === null || nestedFile === null) {
-      throw new Error("Playground layout elements are missing");
+    if (workspace === null || guides === null || editor === null) {
+      throw new Error("guided overview layout is incomplete");
     }
 
+    const workspaceRect = workspace.getBoundingClientRect();
+    const guidesRect = guides.getBoundingClientRect();
+    const editorRect = editor.getBoundingClientRect();
     return {
-      bodyWidth: body.clientWidth,
-      playgroundWidth: playgroundElement.clientWidth,
-      treeWidth: tree.clientWidth,
-      editorWidth: editor.clientWidth,
-      treeFontSize: Number.parseFloat(getComputedStyle(tree).fontSize),
-      nestedFileHeight: nestedFile.getBoundingClientRect().height,
+      workspaceWidth: workspaceRect.width,
+      guidesBottom: guidesRect.bottom,
+      editorTop: editorRect.top,
+      editorWidth: editorRect.width,
     };
   });
 
-  expect.soft(layout.bodyWidth).toBeGreaterThanOrEqual(1280);
-  expect.soft(layout.playgroundWidth).toBeGreaterThanOrEqual(960);
-  expect.soft(layout.treeWidth).toBeLessThanOrEqual(240);
-  expect.soft(layout.editorWidth).toBeGreaterThanOrEqual(680);
-  expect.soft(layout.editorWidth / layout.treeWidth).toBeGreaterThanOrEqual(2.8);
-  expect.soft(layout.treeFontSize).toBeLessThanOrEqual(14);
-  expect.soft(layout.nestedFileHeight).toBeLessThanOrEqual(20);
+  expect(layout.editorTop).toBeGreaterThanOrEqual(layout.guidesBottom);
+  expect(layout.editorWidth).toBeGreaterThanOrEqual(layout.workspaceWidth - 1);
+});
 
-  const startTerminal = playground.getByRole("button", {
-    name: "ターミナルを起動",
-  });
-  const startButtonHeight = await startTerminal.evaluate(
-    (element) => element.getBoundingClientRect().height,
+test("/sessions/02-state-transitions/ presents guided choices in one row", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1200 });
+  await page.goto("/sessions/02-state-transitions/");
+
+  const choices = page.locator(
+    "[data-code-overview] .code-explorer__guides > li",
   );
-  expect.soft(startButtonHeight).toBeGreaterThanOrEqual(40);
+  await expect(choices).toHaveCount(2);
+  const first = await choices.nth(0).boundingBox();
+  const second = await choices.nth(1).boundingBox();
+  if (first === null || second === null) {
+    throw new Error("guided choices are not visible");
+  }
+
+  expect(second.x).toBeGreaterThan(first.x + first.width - 1);
+  expect(second.y).toBeCloseTo(first.y, 0);
 });
 
 test("/sessions/02-state-transitions/ runs arbitrary commands and reflects created files", async ({ page }) => {

@@ -5,10 +5,16 @@ type PageModule = Readonly<{
   navigation?: SessionNavigation;
 }>;
 
-const pageModules = import.meta.glob<PageModule>("./pages/sessions/*.astro", {
+const pageModules = import.meta.glob<PageModule>([
+  "./pages/sessions/*.astro",
+  "!./pages/sessions/index.astro",
+], {
   eager: true,
 });
-const pageSources = import.meta.glob<string>("./pages/sessions/*.astro", {
+const pageSources = import.meta.glob<string>([
+  "./pages/sessions/*.astro",
+  "!./pages/sessions/index.astro",
+], {
   eager: true,
   query: "?raw",
   import: "default",
@@ -80,7 +86,7 @@ const expectedCurriculum = [
     kind: "exercise",
     exerciseCommand: "pnpm exercise:05",
     snapshot: "session-05",
-    timeBreakdown: { brief: 4, teach: 3, exercise: 15, review: 8 },
+    timeBreakdown: { brief: 4, teach: 8, exercise: 10, review: 8 },
   },
   {
     slug: "06-effects-and-consistency",
@@ -213,7 +219,7 @@ const expectedExercises = [
   },
   {
     slug: "05-workflow-errors",
-    adv: { articulate: 2, delegate: 10, verify: 3 },
+    adv: { articulate: 2, delegate: 5, verify: 3 },
     exerciseModule: {
       dir: "examples/session-05/src/useCase",
       fileBudget: 3,

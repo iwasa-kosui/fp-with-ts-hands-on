@@ -1,0 +1,53 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import type { SessionSummary } from "../../sessions/types";
+import "../../styles/sessions.css";
+import "../../styles/session-directory.css";
+
+const sessions = Object.values(
+  import.meta.glob<SessionSummary>(["./*.astro", "!./index.astro"], {
+    eager: true,
+    import: "session",
+  }),
+).sort((left, right) => {
+  const order = (session: SessionSummary) =>
+    session.sequence === "Final"
+      ? Number.POSITIVE_INFINITY
+      : Number(session.sequence);
+  return order(left) - order(right);
+});
+---
+
+<BaseLayout
+  title="セッション一覧 | FP with TypeScript"
+  description="関数型ドメインモデリングをTypeScriptで学ぶ全セッションの一覧"
+>
+  <div class="case-file session-directory">
+    <header class="case-file__site-header">
+      <a href="/">WAN NYAN CLINIC</a>
+    </header>
+    <main class="session-directory__main">
+      <header class="session-directory__hero">
+        <p class="case-file__eyebrow">CURRICULUM</p>
+        <h1>セッション一覧</h1>
+        <p>Session 00から順番に、動物病院の業務とコードを確認していきます。</p>
+      </header>
+      <ol class="session-directory__list" aria-label="セッション一覧">
+        {sessions.map((session) => (
+          <li>
+            <a class="session-directory__card" href={`/sessions/${session.slug}/`}>
+              <span class="session-directory__meta">
+                <span>SESSION {session.sequence.toUpperCase()}</span>
+                <span>{session.durationMinutes}分</span>
+              </span>
+              <span class="session-directory__animal" aria-hidden="true">{session.animal.avatar}</span>
+              <h2>{session.title}</h2>
+              <p>{session.summary}</p>
+              <span class="session-directory__open">セッションを開く</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </main>
+  </div>
+</BaseLayout>

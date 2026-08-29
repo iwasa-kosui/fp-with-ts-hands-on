@@ -204,8 +204,18 @@ export const MonacoEditor = (props: EditorProps) => {
       registerExtraLibs(resources, current.typeFiles);
       const editor = monaco.editor.create(editorHost.current, {
         automaticLayout: true,
+        minimap: { enabled: false },
         model: resources.models.get(current.path) ?? null,
         readOnly: current.disabled || current.readOnly,
+        scrollBeyondLastColumn: 0,
+        scrollbar: {
+          alwaysConsumeMouseWheel: false,
+          horizontal: "visible",
+          horizontalHasArrows: true,
+          horizontalScrollbarSize: 16,
+          horizontalSliderSize: 16,
+        },
+        wordWrap: "off",
       });
       const nextRuntime: EditorRuntime = { ...resources, editor };
       runtime.current = nextRuntime;

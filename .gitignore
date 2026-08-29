@@ -5,6 +5,7 @@ dist/
 tmp/
 .superdesign/tmp/
 .astro/
+test-results/
 /examples/session-00/clinic.sqlite
 /examples/session-00/clinic.sqlite-shm
 /examples/session-00/clinic.sqlite-wal
