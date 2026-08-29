@@ -78,6 +78,7 @@ export const session: SessionSummary = {
     {
       id: "s5-invalid-state",
       goal: "受付済みでない状態を型付きの失敗として返す。",
+      startingFailure: "受付済みでない予約を、例外として処理している。",
       targets: ["examples/session-05/src/useCase/errors.ts"],
       solutions: [{
         path: "examples/session-06/src/useCase/errors.ts",
@@ -88,6 +89,7 @@ export const session: SessionSummary = {
     {
       id: "s5-not-found",
       goal: "予約が見つからない失敗を型付きの値として返す。",
+      startingFailure: "予約が見つからない場合も、例外として処理している。",
       targets: ["examples/session-05/src/useCase/errors.ts"],
       solutions: [{
         path: "examples/session-06/src/useCase/errors.ts",
@@ -98,6 +100,7 @@ export const session: SessionSummary = {
     {
       id: "s5-result-pipeline",
       goal: "失敗理由をandThenで運び、失敗後の遷移と保存を実行しない。",
+      startingFailure: "ユースケースが失敗理由をResultで運ばず、型から後続処理の条件を読めない。",
       targets: ["examples/session-05/src/useCase/startExamination.ts"],
       solutions: [{
         path: "examples/session-06/src/useCase/startExamination.ts",
@@ -108,6 +111,7 @@ export const session: SessionSummary = {
     {
       id: "s5-exhaustive-web-handler",
       goal: "Web側で業務エラーのkindを網羅し、それぞれ専用noticeへ変換する。",
+      startingFailure: "状態不正の例外をWeb側が処理せず、500エラーにする。",
       targets: ["examples/session-05/src/web/routes.ts"],
       solutions: [{
         path: "examples/session-06/src/web/routes.ts",
@@ -388,6 +392,7 @@ const narrative = {
 } as const;
 
 const exerciseSession: ExerciseSessionSummary = session;
+const initialExerciseFailureCount = 6;
 
 export const workspace = ({
   slug: session.slug,
@@ -554,11 +559,12 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 <CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} guides={guides} />
               </div>
             </section>
-            <h3>見つけた問題を RED で確かめる</h3>
-            <p>配布コードで見つけた問題が、業務名を持つ assertion の失敗として現れることを確認します。</p>
-            <CommandBlock phase="red" command={session.exerciseCommand} expected={`${session.steps.length}件の参加者ステップが、業務上の未解決条件として失敗します。`} />
-            <h3>今回のステップ</h3>
-            <ol class="exercise-steps">{session.steps.map((step) => <li><strong>{step.goal}</strong></li>)}</ol>
+            <h3>修正前の失敗を確認する</h3>
+            <p>修正前は、次の{session.steps.length}件に対応する演習テストが失敗します。</p>
+            <ul class="exercise-failures" aria-label="修正前に確認する問題">
+              {session.steps.map((step) => <li>{step.startingFailure}</li>)}
+            </ul>
+            <CommandBlock phase="red" command={session.exerciseCommand} expected={`${initialExerciseFailureCount}件の演習テストが失敗します。`} />
           </section>
 
           <section id="teach">
@@ -660,7 +666,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <p>編集内容とコマンドはこのブラウザ内だけに保持されます。ターミナルを利用できない場合は、ページ内の <code>pnpm</code> 手順を使います。</p>
               <div data-code-explorer={workspace.slug}><CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} /></div>
             </section>
-            <CommandBlock phase="green" command={session.exerciseCommand} expected="assertionが成功することを確認する" />
+            <CommandBlock phase="green" command={session.exerciseCommand} expected="演習テストがすべて成功します。" />
             <h3>演習を完了できないとき</h3>
             <p>{narrative.fallback}</p>
           </section>
