@@ -26,6 +26,63 @@ const sessions = [
   { slug: "final", title: "参照実装で境界をたどる" },
 ] as const;
 
+const exerciseSessions = [
+  { slug: "02-state-transitions", failureCount: 4 },
+  { slug: "03-semantic-identifiers", failureCount: 3 },
+  { slug: "04-boundaries-and-pii", failureCount: 2 },
+  { slug: "05-workflow-errors", failureCount: 3 },
+  { slug: "06-effects-and-consistency", failureCount: 4 },
+] as const;
+
+for (const session of exerciseSessions) {
+  test(`${session.slug} explains each initial exercise failure before the command`, async ({
+    page,
+  }) => {
+    await page.goto(`/sessions/${session.slug}/`);
+
+    const legacy = page.locator("#legacy");
+    const heading = legacy.getByRole("heading", {
+      level: 3,
+      name: "修正前の失敗を確認する",
+    });
+    const failures = legacy.getByRole("list", {
+      name: "修正前に確認する問題",
+    });
+    const command = legacy.locator('.command-block[data-phase="red"]');
+
+    await expect(heading).toBeVisible();
+    await expect(failures).toBeVisible();
+    await expect(failures.getByRole("listitem")).toHaveCount(
+      session.failureCount,
+    );
+    await expect(command).toContainText(
+      `${session.failureCount}件の演習テストが失敗します。`,
+    );
+
+    const order = await legacy.evaluate((element) => {
+      const headingElement = Array.from(element.querySelectorAll("h3")).find(
+        ({ textContent }) => textContent?.trim() === "修正前の失敗を確認する",
+      );
+      const failuresElement = element.querySelector(
+        '[aria-label="修正前に確認する問題"]',
+      );
+      const commandElement = element.querySelector(
+        '.command-block[data-phase="red"]',
+      );
+
+      return [headingElement, failuresElement, commandElement].map((child) =>
+        child === undefined || child === null
+          ? -1
+          : Array.from(element.children).indexOf(child),
+      );
+    });
+
+    expect(order.every((index) => index >= 0)).toBe(true);
+    expect(order[0]).toBeLessThan(order[1] ?? -1);
+    expect(order[1]).toBeLessThan(order[2] ?? -1);
+  });
+}
+
 for (const session of sessions) {
   test(`${session.slug} introduces its episode after the first section heading`, async ({
     page,

@@ -76,6 +76,7 @@ export const session: SessionSummary = {
     {
       id: "s4-parse-exam-result",
       goal: "形式が異なる検査結果の JSON は、ドメイン型にならないようにする。",
+      startingFailure: "項目が欠けた検査結果でも、正しい検査結果として扱える。",
       targets: ["examples/session-04/src/boundary/examResult.ts"],
       solutions: [{
         path: "examples/session-05/src/boundary/examResult.ts",
@@ -86,6 +87,7 @@ export const session: SessionSummary = {
     {
       id: "s4-protect-contact",
       goal: "電話番号とメールは既定でログに出ないようにする。",
+      startingFailure: "氏名・メール・電話番号がログにそのまま出る。",
       targets: ["examples/session-04/src/boundary/ownerContact.ts"],
       solutions: [{
         path: "examples/session-05/src/boundary/ownerContact.ts",
@@ -353,11 +355,12 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 <CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} guides={guides} />
               </div>
             </section>
-            <h3>見つけた問題を RED で確かめる</h3>
-            <p>配布コードで見つけた問題が、業務名を持つ assertion の失敗として現れることを確認します。</p>
-            <CommandBlock phase="red" command={session.exerciseCommand} expected={`${session.steps.length}件の参加者ステップが、業務上の未解決条件として失敗します。`} />
-            <h3>今回のステップ</h3>
-            <ol class="exercise-steps">{session.steps.map((step) => <li><strong>{step.goal}</strong></li>)}</ol>
+            <h3>修正前の失敗を確認する</h3>
+            <p>修正前は、次の{session.steps.length}件に対応する演習テストが失敗します。</p>
+            <ul class="exercise-failures" aria-label="修正前に確認する問題">
+              {session.steps.map((step) => <li>{step.startingFailure}</li>)}
+            </ul>
+            <CommandBlock phase="red" command={session.exerciseCommand} expected={`${session.steps.length}件の演習テストが失敗します。`} />
           </section>
 
           <section id="teach">
@@ -442,7 +445,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <p>編集内容とコマンドはこのブラウザ内だけに保持されます。ターミナルを利用できない場合は、ページ内の <code>pnpm</code> 手順を使います。</p>
               <div data-code-explorer={workspace.slug}><CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} /></div>
             </section>
-            <CommandBlock phase="green" command={session.exerciseCommand} expected="assertionが成功することを確認する" />
+            <CommandBlock phase="green" command={session.exerciseCommand} expected="演習テストがすべて成功します。" />
             <h3>演習を完了できないとき</h3>
             <p>{narrative.fallback}</p>
           </section>

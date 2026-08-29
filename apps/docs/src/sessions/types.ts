@@ -18,6 +18,7 @@ export type ExerciseModule = Readonly<{
 export type ExerciseStep = Readonly<{
   id: string;
   goal: string;
+  startingFailure: string;
   targets: readonly string[];
   solutions: readonly [SolutionReference, ...SolutionReference[]];
 }>;
