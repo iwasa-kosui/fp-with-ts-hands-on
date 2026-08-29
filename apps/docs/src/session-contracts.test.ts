@@ -80,7 +80,7 @@ const expectedCurriculum = [
     kind: "exercise",
     exerciseCommand: "pnpm exercise:05",
     snapshot: "session-05",
-    timeBreakdown: { brief: 4, teach: 3, exercise: 15, review: 8 },
+    timeBreakdown: { brief: 4, teach: 8, exercise: 10, review: 8 },
   },
   {
     slug: "06-effects-and-consistency",
@@ -213,7 +213,7 @@ const expectedExercises = [
   },
   {
     slug: "05-workflow-errors",
-    adv: { articulate: 2, delegate: 10, verify: 3 },
+    adv: { articulate: 2, delegate: 5, verify: 3 },
     exerciseModule: {
       dir: "examples/session-05/src/useCase",
       fileBudget: 3,

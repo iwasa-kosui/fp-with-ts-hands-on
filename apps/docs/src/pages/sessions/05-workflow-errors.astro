@@ -36,8 +36,8 @@ export const session: SessionSummary = {
   kind: "exercise",
   title: "失敗をワークフローの結果として扱う",
   durationMinutes: 30,
-  timeBreakdown: { brief: 4, teach: 3, exercise: 15, review: 8 },
-  adv: { articulate: 2, delegate: 10, verify: 3 },
+  timeBreakdown: { brief: 4, teach: 8, exercise: 10, review: 8 },
+  adv: { articulate: 2, delegate: 5, verify: 3 },
   peerReview: {
     minutes: 8,
     pickCount: 2,
@@ -146,7 +146,104 @@ export const guides = ([
   },
 ] as const) satisfies readonly CodeGuide[];
 
+const resultOperationSignatures = `// 実装は省略し、各処理の入出力だけを示す
+declare const ensureAppointmentFound: (
+  appointment: Appointment | undefined,
+  appointmentId: AppointmentId,
+) => Result<Appointment, AppointmentNotFound>;
+
+declare const ensureCheckedIn: (
+  appointment: Appointment,
+) => Result<CheckedIn, InvalidAppointmentState>;
+
+declare const transitionToInExamination: (
+  appointment: CheckedIn,
+) => InExamination;
+
+declare const toErrorKind: (
+  error: AppointmentNotFound | InvalidAppointmentState,
+) => "AppointmentNotFound" | "InvalidAppointmentState";`;
+
 const teaching: readonly TeachingTopic[] = [
+  {
+    name: "neverthrow の Result<T, E> は成功と失敗を値で表す",
+    definition:
+      "このプロジェクトでは neverthrow の Result を使います。Result<T, E> の T は成功値、E は呼び出し側が扱う業務上の失敗です。ok(value) は成功側の Ok、err(error) は失敗側の Err を作り、どちらも Result<T, E> として扱えます。",
+    before: {
+      caption: "見つからない場合に例外を投げる guard",
+      code: `const ensureAppointmentFound = (
+  appointment: Appointment | undefined,
+  appointmentId: AppointmentId,
+): Appointment => {
+  if (appointment === undefined) {
+    throw new Error(\`Appointment \${appointmentId} was not found\`);
+  }
+
+  return appointment;
+};`,
+    },
+    after: {
+      caption: "neverthrow で業務上の失敗を返す guard",
+      code: `import { err, ok, type Result } from "neverthrow";
+
+const ensureAppointmentFound = (
+  appointment: Appointment | undefined,
+  appointmentId: AppointmentId,
+): Result<Appointment, AppointmentNotFound> =>
+  appointment === undefined
+    ? err({ kind: "AppointmentNotFound", appointmentId })
+    : ok(appointment);`,
+    },
+    why: "例外では、関数の型から失敗理由を読み取れません。Result の E に業務エラーを置くと、呼び出し側は実行前から起こりうる失敗を把握し、表示や次の操作を選べます。err は例外を投げず、失敗理由を値として返します。ただし、保存障害など呼び出し側で業務上の対応を選べない異常まで Result に入れるわけではありません。",
+  },
+  {
+    name: "map、mapErr、andThen は片方の経路だけを進める",
+    definition:
+      "map は Ok の成功値、mapErr は Err の失敗理由だけを変換します。andThen は Ok のときだけ、次の Result を返す処理へ進みます。3つとも反対側の値には触れません。",
+    before: {
+      caption: "成功と失敗を明示的に分岐する書き方",
+      code: `${resultOperationSignatures}
+
+const startExamination = (
+  appointment: Appointment | undefined,
+  appointmentId: AppointmentId,
+): Result<
+  InExamination,
+  "AppointmentNotFound" | "InvalidAppointmentState"
+> => {
+  const found = ensureAppointmentFound(appointment, appointmentId);
+
+  if (found.isErr()) {
+    return err(toErrorKind(found.error));
+  }
+
+  const checkedIn = ensureCheckedIn(found.value);
+
+  if (checkedIn.isErr()) {
+    return err(toErrorKind(checkedIn.error));
+  }
+
+  return ok(transitionToInExamination(checkedIn.value));
+};`,
+    },
+    after: {
+      caption: "関数の型を確認し、成功経路を上から読む書き方",
+      code: `${resultOperationSignatures}
+
+const startExamination = (
+  appointment: Appointment | undefined,
+  appointmentId: AppointmentId,
+): Result<
+  InExamination,
+  "AppointmentNotFound" | "InvalidAppointmentState"
+> =>
+  ensureAppointmentFound(appointment, appointmentId)
+    .andThen(ensureCheckedIn)
+    .map(transitionToInExamination)
+    .mapErr(toErrorKind);`,
+    },
+    why: "map のコールバックは通常の成功値を返し、mapErr のコールバックは失敗理由を別の形へ変換します。mapErr を呼んでも Err は Ok にならないため、再試行や復旧ではありません。andThen のコールバックは次の Result を返します。前の処理が Err なら呼ばれないので、検証に失敗した後の状態遷移や保存を実行せずに済みます。明示的な分岐と動作は同じですが、処理が増えても成功経路を上から順に読めます。",
+  },
   {
     name: "matchは成功と失敗を分ける。失敗のkindはswitchで網羅する",
     definition:
@@ -204,6 +301,28 @@ const toErrorMessage = (error: StartExaminationError): string => {
     why: "matchの2つのコールバックは、成功か失敗かを扱います。失敗側でkindをswitchし、default節でneverだけを受け取るassertNeverを呼ぶと、現在のエラーをすべて処理したことを型検査で確認できます。エラーの種類を追加してcaseを足し忘れると、default節に新しい型が残るためコンパイルエラーになります。",
   },
 ];
+
+const safeTryColumn = {
+  title: "中間値に名前を付ける safeTry",
+  introduction:
+    "andThen のチェーンでは値を次の処理へ直接渡します。途中の成功値を複数使う場合や、名前を付けながら上から読みたい場合は safeTry も選べます。",
+  caption: "safeTryでErrを早期returnし、Okの値を取り出す",
+  code: `import { ok, safeTry, type Result } from "neverthrow";
+
+const startExamination = (
+  appointment: Appointment | undefined,
+  appointmentId: AppointmentId,
+): Result<InExamination, StartExaminationError> =>
+  safeTry(function* () {
+    const found = yield* ensureAppointmentFound(
+      appointment,
+      appointmentId,
+    );
+    const checkedIn = yield* ensureCheckedIn(found);
+
+    return ok(transitionToInExamination(checkedIn));
+  });`,
+} as const;
 
 const narrative = {
   requirement: "診察を開始する際の予期できる業務エラーを、曖昧なエラーコードではなく、型付きの値として扱えるようにする。",
@@ -345,6 +464,20 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <p>{narrative.requirement}</p>
             <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
             <p>{narrative.currentRisk}</p>
+            <article class="teaching-topic" aria-labelledby="result-or-exception">
+              <h3 id="result-or-exception">Result にする失敗を先に選ぶ</h3>
+              <p>
+                <code>throw</code> をすべて <code>Result</code> へ置き換えるわけではありません。判断基準は、呼び出し側が失敗理由を使って次の操作を選べるかどうかです。
+              </p>
+              <ul class="decision-list">
+                <li>
+                  <strong>業務上の失敗は Result:</strong> 予約が存在しない、受付済みではないなど、呼び出し側が表示ややり直しを選べる失敗は <code>Err</code> で返します。
+                </li>
+                <li>
+                  <strong>技術的な異常は例外または Promise の reject:</strong> データベースの停止や保存データの破損など、呼び出し側で業務上の対応を選べない異常は外側の例外境界へ伝えます。そこで安全に記録し、詳細を含まない500応答などへ変換します。
+                </li>
+              </ul>
+            </article>
             <h3 data-story-stage="goal">このセッションのゴール</h3>
             <p>{narrative.design}</p>
             <h3>このセッションで守ること</h3>
@@ -375,7 +508,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 
           <section id="teach">
             <h2>事前知識（{session.timeBreakdown.teach}分）</h2>
-            <p>この回で利用する型について確認します。配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
+            <p>先に決めた失敗の分類を前提に、この回で使う型と操作を確認します。配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
             {teaching.map((topic) => (
               <article class="teaching-topic">
                 <h3>{topic.name}</h3>
@@ -409,6 +542,23 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 <p class="teaching-topic__why">{topic.why}</p>
               </article>
             ))}
+            <aside class="teaching-column" aria-labelledby="safe-try-column-title">
+              <p class="teaching-column__label">OPTIONAL / コラム</p>
+              <h3 id="safe-try-column-title">{safeTryColumn.title}</h3>
+              <p>{safeTryColumn.introduction}</p>
+              <figure class="code-block">
+                <figcaption>{safeTryColumn.caption}</figcaption>
+                <Code code={safeTryColumn.code} lang="ts" />
+              </figure>
+              <p>
+                <code>yield*</code> した Result が <code>Err</code> なら、その場で処理を止めて <code>safeTry</code> 全体から同じ失敗を返します。
+                <code>Ok</code> なら成功値を取り出して次の行へ進みます。
+              </p>
+              <p>
+                <code>safeTry</code> は Result の失敗を伝える仕組みであり、<code>throw</code> された例外を捕捉する <code>try/catch</code> ではありません。
+                ResultAsync を扱う場合は <code>async function*</code> を渡せます。
+              </p>
+            </aside>
           </section>
 
           <section id="refactor">
