@@ -261,6 +261,10 @@ export const TerminalPanel = ({
       }
       if (initialCommand !== undefined) {
         await session.writeInput(`${initialCommand}\r`);
+        if (!isActiveAttempt()) {
+          await session.dispose();
+          return;
+        }
       }
       terminalSession.current = session;
       onSessionChangeRef.current(session);

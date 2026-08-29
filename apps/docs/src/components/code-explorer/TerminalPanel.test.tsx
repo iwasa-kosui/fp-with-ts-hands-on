@@ -225,6 +225,35 @@ describe("TerminalPanel", () => {
     expect(host.querySelector('[data-action="retry-terminal"]')).not.toBeNull();
   });
 
+  it("releases a session when unmounted during the initial command", async () => {
+    const session = createSession();
+    let resolveWrite!: () => void;
+    vi.mocked(session.writeInput).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveWrite = resolve;
+        }),
+    );
+    const host = await renderPanel({
+      initialCommand: "pnpm exercise:02",
+      runnerFactory: () => ({ start: async () => session }),
+    });
+
+    act(() =>
+      host
+        .querySelector<HTMLButtonElement>('[data-action="start-terminal"]')
+        ?.click(),
+    );
+    await act(async () => undefined);
+    expect(session.writeInput).toHaveBeenCalledOnce();
+
+    const root = roots.pop()!;
+    await act(async () => root.unmount());
+    await act(async () => resolveWrite());
+
+    expect(session.dispose).toHaveBeenCalledOnce();
+  });
+
   it("restarts an exited shell without discarding its session", async () => {
     const session = createSession();
     const view = createView();
