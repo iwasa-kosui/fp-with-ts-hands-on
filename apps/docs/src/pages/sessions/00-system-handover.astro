@@ -75,7 +75,7 @@ export const guides = ([
     currentDesign: "catch した例外の message を部分一致で調べ、状態不正として画面へ戻します。",
     futureRisk: "予約なしと別の失敗を型で区別できず、表示と対応を誤ります。",
     path: "src/web/routes.ts",
-    highlights: [{ startLineNumber: 212, endLineNumber: 213 }],
+    highlights: [{ startLineNumber: 204, endLineNumber: 205 }],
   },
   {
     id: "session-00-hidden-nondeterminism",
@@ -84,8 +84,8 @@ export const guides = ([
     futureRisk: "同じ操作でも記録が毎回変わり、テストと事故調査の比較が安定しません。",
     path: "src/useCase/startExamination.ts",
     highlights: [
-      { startLineNumber: 26, endLineNumber: 26 },
-      { startLineNumber: 46, endLineNumber: 46 },
+      { startLineNumber: 23, endLineNumber: 23 },
+      { startLineNumber: 31, endLineNumber: 31 },
     ],
   },
   {
@@ -94,7 +94,7 @@ export const guides = ([
     currentDesign: "予約を保存した後で、監査記録を別の repository 呼び出しで追記します。",
     futureRisk: "監査追記が失敗すると、監査記録を伴わない状態保存だけが残ります。",
     path: "src/useCase/startExamination.ts",
-    highlights: [{ startLineNumber: 32, endLineNumber: 33 }],
+    highlights: [{ startLineNumber: 29, endLineNumber: 30 }],
   },
 ] as const) satisfies readonly CodeGuide[];
 

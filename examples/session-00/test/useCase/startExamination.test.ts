@@ -6,10 +6,7 @@ import {
 } from "../../src/adaptor/secondary/sqlite/db.js";
 import { createAppointmentRepository } from "../../src/adaptor/secondary/sqlite/appointmentRepository.js";
 import type { Appointment } from "../../src/domain/appointment/appointment.js";
-import {
-  startExamination,
-  startExaminationWithAuditFailure,
-} from "../../src/useCase/startExamination.js";
+import { startExamination } from "../../src/useCase/startExamination.js";
 
 const initialAppointment = {
   appointmentId: "11111111-1111-4111-8111-111111111111",
@@ -51,15 +48,6 @@ describe("未改善の診察開始use case", () => {
     expect(eventIds[0]).not.toBe(eventIds[1]);
     expect(first.status).toBe("in-examination");
     expect(second.status).toBe("in-examination");
-  });
-
-  test("監査追記が失敗しても予約だけ診察中へ保存する", () => {
-    const repository = createRepository();
-    repository.reset(initialAppointment);
-
-    expect(() => startExaminationWithAuditFailure(repository)(input)).toThrow();
-    expect(repository.find(input.appointmentId)?.status).toBe("in-examination");
-    expect(repository.listAuditLogs()).toHaveLength(1);
   });
 
   test("存在しない予約では予約IDを含むErrorをthrowする", () => {

@@ -1,9 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import {
-  RESERVED_AUDIT_EVENT_ID,
-  type AppointmentRepository,
-} from "../adaptor/secondary/sqlite/appointmentRepository.js";
+import type { AppointmentRepository } from "../adaptor/secondary/sqlite/appointmentRepository.js";
 import {
   updateStatus,
   type Appointment,
@@ -14,8 +11,8 @@ type Input = Readonly<{
   veterinarianId: string;
 }>;
 
-const run =
-  (repository: AppointmentRepository, eventId: string) =>
+export const startExamination =
+  (repository: AppointmentRepository) =>
   (input: Input): Appointment => {
     const current = repository.find(input.appointmentId);
 
@@ -31,7 +28,7 @@ const run =
 
     repository.save(updated);
     repository.appendAudit({
-      eventId,
+      eventId: randomUUID(),
       eventName: "examination.started",
       occurredAt,
       appointment: updated,
@@ -39,13 +36,3 @@ const run =
 
     return updated;
   };
-
-export const startExamination =
-  (repository: AppointmentRepository) =>
-  (input: Input): Appointment =>
-    run(repository, randomUUID())(input);
-
-export const startExaminationWithAuditFailure =
-  (repository: AppointmentRepository) =>
-  (input: Input): Appointment =>
-    run(repository, RESERVED_AUDIT_EVENT_ID)(input);

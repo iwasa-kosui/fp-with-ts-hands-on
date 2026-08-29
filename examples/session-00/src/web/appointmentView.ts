@@ -70,15 +70,6 @@ const incidentScenarios: readonly IncidentScenario[] = [
       method: "post",
     },
   },
-  {
-    title: "監査追記だけを失敗",
-    description: "予約更新後に監査追記を失敗させ、不整合を残します。",
-    action: {
-      kind: "Available",
-      href: "/demo/incidents/audit-failure",
-      method: "post",
-    },
-  },
 ];
 
 const inspectionWarnings = (

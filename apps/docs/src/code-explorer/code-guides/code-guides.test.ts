@@ -173,7 +173,7 @@ describe("session code guides", () => {
         ]);
         expect(new Set(guides!.map(({ id }) => id)).size).toBe(8);
         expect(messageMappedErrorsGuide?.highlights).toEqual([
-          { startLineNumber: 212, endLineNumber: 213 },
+          { startLineNumber: 204, endLineNumber: 205 },
         ]);
       }
     }

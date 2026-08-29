@@ -5,7 +5,6 @@ import {
   createSqliteDatabase,
   migrateDatabase,
 } from "../../src/adaptor/secondary/sqlite/db.js";
-import { appointmentsTable } from "../../src/adaptor/secondary/sqlite/schema.js";
 import { createApp } from "../../src/app.js";
 
 const inertiaHeaders = {
@@ -28,14 +27,12 @@ const page = async (app: App) => {
   return response.json();
 };
 
-const createTestSystem = () => {
+const createTestApp = (): App => {
   const database = createSqliteDatabase(":memory:");
   migrateDatabase(database);
 
-  return { app: createApp(database), database };
+  return createApp(database);
 };
-
-const createTestApp = (): App => createTestSystem().app;
 
 describe("Session 00 Web application", () => {
   let app: App;
@@ -150,54 +147,6 @@ describe("Session 00 Web application", () => {
     expect(repeatedLogs[1]?.occurredAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
-  it("診察開始の繰り返し後も監査失敗による予約JSONの不一致を警告する", async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-08-30T07:00:00.000Z"));
-    await post(app, "/demo/reset");
-    const repeatResponse = post(
-      app,
-      "/demo/incidents/repeat-start-examination",
-    );
-    await vi.advanceTimersByTimeAsync(10);
-    expect((await repeatResponse).status).toBe(303);
-    await vi.advanceTimersByTimeAsync(10);
-
-    const response = await post(app, "/demo/incidents/audit-failure");
-
-    expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe("/?notice=conflict");
-    expect(await response.text()).not.toContain("UNIQUE constraint failed");
-
-    const inspection = (await page(app)).props.incidentLab.inspection;
-    const currentAppointment = JSON.parse(inspection.appointmentJson) as {
-      examinationStartedAt: string;
-      status: string;
-    };
-    const auditLogs = JSON.parse(inspection.auditLogJson) as Array<{
-      payload: { examinationStartedAt: string; status: string };
-    }>;
-    const latestAuditAppointment = auditLogs.at(-1)?.payload;
-
-    expect(currentAppointment.status).toBe("in-examination");
-    expect(latestAuditAppointment?.status).toBe("in-examination");
-    expect(currentAppointment.examinationStartedAt).not.toBe(
-      latestAuditAppointment?.examinationStartedAt,
-    );
-    expect(inspection.warnings).toContain(
-      "予約statusに対応する最新の監査記録がありません",
-    );
-  });
-
-  it("監査失敗routeの予期しない予約検索失敗を500境界へ渡す", async () => {
-    const system = createTestSystem();
-    system.database.delete(appointmentsTable).run();
-
-    const response = await post(system.app, "/demo/incidents/audit-failure");
-
-    expect(response.status).toBe(500);
-    expect(await response.text()).toBe("Internal Server Error");
-  });
-
   it("監査payloadに飼い主の連絡先を表示してしまう", async () => {
     const firstPage = await page(app);
     const auditLogJson = firstPage.props.incidentLab.inspection.auditLogJson;
@@ -209,7 +158,7 @@ describe("Session 00 Web application", () => {
     );
   });
 
-  it("6つの固定事故操作だけを表示する", async () => {
+  it("5つの固定事故操作だけを表示する", async () => {
     const scenarios = (await page(app)).props.incidentLab.scenarios;
 
     expect(
@@ -220,7 +169,6 @@ describe("Session 00 Web application", () => {
       "/demo/incidents/malformed-exam-result",
       "/demo/incidents/missing-appointment",
       "/demo/incidents/repeat-start-examination",
-      "/demo/incidents/audit-failure",
     ]);
     expect(
       scenarios.every(

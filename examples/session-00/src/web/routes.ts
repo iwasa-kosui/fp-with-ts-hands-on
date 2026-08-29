@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 
 import { notImplemented } from "@fp-with-ts/clinic-web/server";
-import Database from "better-sqlite3";
 import type { Context, Hono } from "hono";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
@@ -13,10 +12,7 @@ import {
   type Appointment,
   type AppointmentExtra,
 } from "../domain/appointment/appointment.js";
-import {
-  startExamination,
-  startExaminationWithAuditFailure,
-} from "../useCase/startExamination.js";
+import { startExamination } from "../useCase/startExamination.js";
 import { toPageProps } from "./appointmentView.js";
 
 export const initialAppointment: Appointment = bookAppointment({
@@ -63,10 +59,6 @@ const updateAppointment = (
 };
 
 const redirectToRoot = (context: Context) => context.redirect("/", 303);
-
-const isAuditEventIdConflict = (error: unknown): boolean =>
-  error instanceof Database.SqliteError &&
-  error.code === "SQLITE_CONSTRAINT_PRIMARYKEY";
 
 export const registerClinicRoutes = (
   app: Hono,
@@ -231,22 +223,6 @@ export const registerClinicRoutes = (
 
     await waitForClockAfter(first.examinationStartedAt);
     startExamination(repository)(input);
-    return redirectToRoot(context);
-  });
-
-  app.post("/demo/incidents/audit-failure", (context) => {
-    try {
-      startExaminationWithAuditFailure(repository)({
-        appointmentId: clinicFixture.appointmentId,
-        veterinarianId: clinicFixture.veterinarianId,
-      });
-    } catch (error) {
-      if (isAuditEventIdConflict(error)) {
-        return context.redirect("/?notice=conflict", 303);
-      }
-      throw error;
-    }
-
     return redirectToRoot(context);
   });
 

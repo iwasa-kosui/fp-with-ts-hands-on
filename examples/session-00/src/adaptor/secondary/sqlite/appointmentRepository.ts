@@ -4,7 +4,7 @@ import type { Appointment } from "../../../domain/appointment/appointment.js";
 import type { SqliteDatabase } from "./db.js";
 import { appointmentsTable, auditLogsTable } from "./schema.js";
 
-export const RESERVED_AUDIT_EVENT_ID = "00000000-0000-4000-8000-000000000000";
+export const INITIAL_AUDIT_EVENT_ID = "00000000-0000-4000-8000-000000000000";
 
 export type AuditLog = Readonly<{
   eventId: string;
@@ -39,7 +39,7 @@ const toAppointmentRow = (appointment: Appointment) => ({
 });
 
 const toInitialAuditLog = (appointment: Appointment): AuditLog => ({
-  eventId: RESERVED_AUDIT_EVENT_ID,
+  eventId: INITIAL_AUDIT_EVENT_ID,
   appointmentId: appointment.appointmentId,
   eventName: "appointment.seeded",
   payload: appointment,
