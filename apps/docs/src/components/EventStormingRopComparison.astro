@@ -1,0 +1,325 @@
+<figure
+  class="dmmf-comparison"
+  aria-label="EventStormingとROPのワークフロー比較"
+  aria-describedby="eventstorming-rop-comparison-caption"
+>
+  <div
+    class="dmmf-comparison__viewport"
+    role="region"
+    aria-label="EventStormingとROPの比較図。横にスクロールできます"
+    tabindex="0"
+  >
+    <svg
+      class="dmmf-comparison__diagram"
+      viewBox="0 0 960 620"
+      role="img"
+      aria-labelledby="eventstorming-rop-comparison-title eventstorming-rop-comparison-description"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <title id="eventstorming-rop-comparison-title">EventStormingとROPのワークフロー比較</title>
+      <desc id="eventstorming-rop-comparison-description">
+        EventStormingで見つけたアクター、コマンド、予約集約、ドメインイベントを、Appointment Resolverによる現在状態の読み出しとEvent Storeへの追記を境界に置いたROPへ対応させています。成功時はExaminationStartedを追記し、失敗時はStartExaminationErrorを返して保存しません。
+      </desc>
+
+      <defs>
+        <marker
+          id="dmmf-arrow"
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="8"
+          markerHeight="8"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" class="dmmf-comparison__arrow-head"></path>
+        </marker>
+      </defs>
+
+      <text x="24" y="40" class="dmmf-comparison__lane-title">
+        1. EventStormingで発見した流れ
+      </text>
+      <rect x="20" y="58" width="920" height="158" rx="14" class="dmmf-comparison__lane"></rect>
+
+      <g class="dmmf-comparison__node dmmf-comparison__node--actor">
+        <rect x="42" y="88" width="150" height="96" rx="6"></rect>
+        <text x="117" y="118" text-anchor="middle" class="dmmf-comparison__node-kind">アクター</text>
+        <text x="117" y="151" text-anchor="middle" class="dmmf-comparison__node-label">班で決める</text>
+      </g>
+      <path d="M 192 136 H 244" class="dmmf-comparison__arrow"></path>
+      <g class="dmmf-comparison__node dmmf-comparison__node--command">
+        <rect x="245" y="88" width="166" height="96" rx="6"></rect>
+        <text x="328" y="118" text-anchor="middle" class="dmmf-comparison__node-kind">コマンド</text>
+        <text x="328" y="151" text-anchor="middle" class="dmmf-comparison__node-label">診察を始める</text>
+      </g>
+      <path d="M 411 136 H 473" class="dmmf-comparison__arrow"></path>
+      <g class="dmmf-comparison__node dmmf-comparison__node--aggregate">
+        <rect x="474" y="88" width="166" height="96" rx="6"></rect>
+        <text x="557" y="118" text-anchor="middle" class="dmmf-comparison__node-kind">集約</text>
+        <text x="557" y="151" text-anchor="middle" class="dmmf-comparison__node-label">予約</text>
+      </g>
+      <path d="M 640 136 H 702" class="dmmf-comparison__arrow"></path>
+      <g class="dmmf-comparison__node dmmf-comparison__node--event">
+        <rect x="703" y="88" width="215" height="96" rx="6"></rect>
+        <text x="810" y="118" text-anchor="middle" class="dmmf-comparison__node-kind">ドメインイベント</text>
+        <text x="810" y="151" text-anchor="middle" class="dmmf-comparison__node-label">診察が開始された</text>
+      </g>
+
+      <path d="M 328 184 V 244 H 311 V 338" class="dmmf-comparison__mapping"></path>
+      <path d="M 557 184 V 244 H 508 V 338" class="dmmf-comparison__mapping"></path>
+      <path d="M 810 184 V 244 H 696 V 329" class="dmmf-comparison__mapping"></path>
+
+      <text x="24" y="270" class="dmmf-comparison__lane-title">
+        2. ROPとして実装する流れ
+      </text>
+      <rect x="20" y="292" width="174" height="274" rx="14" class="dmmf-comparison__boundary"></rect>
+      <rect x="210" y="292" width="558" height="274" rx="14" class="dmmf-comparison__core"></rect>
+      <rect x="784" y="292" width="156" height="274" rx="14" class="dmmf-comparison__boundary"></rect>
+
+      <text x="107" y="320" text-anchor="middle" class="dmmf-comparison__area-label">入力側の境界</text>
+      <text x="489" y="320" text-anchor="middle" class="dmmf-comparison__area-label">業務判断</text>
+      <text x="862" y="320" text-anchor="middle" class="dmmf-comparison__area-label">出力側の境界</text>
+
+      <g class="dmmf-comparison__store">
+        <rect x="32" y="367" width="150" height="90"></rect>
+        <ellipse cx="107" cy="367" rx="75" ry="15"></ellipse>
+        <ellipse cx="107" cy="457" rx="75" ry="15"></ellipse>
+        <text x="107" y="401" text-anchor="middle" class="dmmf-comparison__code">Appointment Resolver</text>
+        <text x="107" y="431" text-anchor="middle" class="dmmf-comparison__node-label">現在状態を読む</text>
+      </g>
+      <path d="M 182 411 H 229" class="dmmf-comparison__arrow"></path>
+      <text x="205" y="394" text-anchor="middle" class="dmmf-comparison__flow-label">取得</text>
+
+      <g class="dmmf-comparison__node dmmf-comparison__node--input">
+        <rect x="230" y="339" width="162" height="116" rx="8"></rect>
+        <text x="311" y="369" text-anchor="middle" class="dmmf-comparison__node-kind">入力</text>
+        <text x="311" y="398" text-anchor="middle" class="dmmf-comparison__node-label">Command</text>
+        <text x="311" y="424" text-anchor="middle" class="dmmf-comparison__node-label">+ 現在状態</text>
+      </g>
+      <path d="M 392 397 H 425" class="dmmf-comparison__arrow"></path>
+      <g class="dmmf-comparison__node dmmf-comparison__node--workflow">
+        <rect x="426" y="339" width="165" height="116" rx="8"></rect>
+        <text x="508" y="371" text-anchor="middle" class="dmmf-comparison__node-kind">Workflow</text>
+        <text x="508" y="401" text-anchor="middle" class="dmmf-comparison__code">startExamination</text>
+        <text x="508" y="428" text-anchor="middle" class="dmmf-comparison__node-label">DBへ接続しない</text>
+      </g>
+
+      <path d="M 591 397 H 616 V 371 H 630" class="dmmf-comparison__arrow dmmf-comparison__arrow--success"></path>
+      <text x="606" y="360" text-anchor="middle" class="dmmf-comparison__rail-label dmmf-comparison__rail-label--success">成功</text>
+      <g class="dmmf-comparison__node dmmf-comparison__node--success">
+        <rect x="631" y="330" width="130" height="82" rx="8"></rect>
+        <text x="696" y="357" text-anchor="middle" class="dmmf-comparison__node-kind">Domain Event</text>
+        <text x="696" y="386" text-anchor="middle" class="dmmf-comparison__code dmmf-comparison__code--compact">ExaminationStarted</text>
+      </g>
+
+      <path d="M 591 397 H 616 V 506 H 630" class="dmmf-comparison__arrow dmmf-comparison__arrow--failure"></path>
+      <text x="606" y="496" text-anchor="middle" class="dmmf-comparison__rail-label dmmf-comparison__rail-label--failure">失敗</text>
+      <g class="dmmf-comparison__node dmmf-comparison__node--failure">
+        <rect x="631" y="465" width="130" height="82" rx="8"></rect>
+        <text x="696" y="492" text-anchor="middle" class="dmmf-comparison__node-kind">Typed Error</text>
+        <text x="696" y="518" text-anchor="middle" class="dmmf-comparison__code dmmf-comparison__code--compact">StartExaminationError</text>
+        <text x="696" y="538" text-anchor="middle" class="dmmf-comparison__flow-label">保存しない</text>
+      </g>
+
+      <path d="M 761 371 H 811" class="dmmf-comparison__arrow dmmf-comparison__arrow--success"></path>
+      <g class="dmmf-comparison__store">
+        <rect x="812" y="367" width="108" height="90"></rect>
+        <ellipse cx="866" cy="367" rx="54" ry="15"></ellipse>
+        <ellipse cx="866" cy="457" rx="54" ry="15"></ellipse>
+        <text x="866" y="401" text-anchor="middle" class="dmmf-comparison__node-kind">Event Store</text>
+        <text x="866" y="431" text-anchor="middle" class="dmmf-comparison__node-label">追記する</text>
+      </g>
+
+      <text x="107" y="596" text-anchor="middle" class="dmmf-comparison__boundary-note">副作用を入口へ置く</text>
+      <text x="489" y="596" text-anchor="middle" class="dmmf-comparison__core-note">判断は入力から結果を作る</text>
+      <text x="862" y="596" text-anchor="middle" class="dmmf-comparison__boundary-note">副作用を出口へ置く</text>
+    </svg>
+  </div>
+  <figcaption id="eventstorming-rop-comparison-caption">
+    EventStormingで見つけたコマンド、集約、イベントを、そのままROPの入力、業務判断、成功出力へ対応させます。
+  </figcaption>
+</figure>
+
+<style>
+  .dmmf-comparison {
+    margin: 1.5rem 0;
+  }
+
+  .dmmf-comparison__viewport {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 2px solid var(--case-line);
+    background: #fffdf7;
+    scrollbar-gutter: stable;
+  }
+
+  .dmmf-comparison__viewport:focus-visible {
+    outline: 3px solid #1971c2;
+    outline-offset: 3px;
+  }
+
+  .dmmf-comparison__diagram {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    font-family: inherit;
+  }
+
+  .dmmf-comparison figcaption {
+    margin-top: 0.65rem;
+    color: color-mix(in srgb, var(--case-ink) 78%, var(--case-paper));
+    font-size: 0.9rem;
+  }
+
+  .dmmf-comparison__lane,
+  .dmmf-comparison__core {
+    fill: #f5f9f7;
+    stroke: #2c493e;
+    stroke-width: 2;
+  }
+
+  .dmmf-comparison__boundary {
+    fill: #e9f7f1;
+    stroke: #2c493e;
+    stroke-dasharray: 8 6;
+    stroke-width: 2;
+  }
+
+  .dmmf-comparison__lane-title {
+    fill: #16251f;
+    font-size: 21px;
+    font-weight: 800;
+  }
+
+  .dmmf-comparison__area-label,
+  .dmmf-comparison__boundary-note,
+  .dmmf-comparison__core-note {
+    fill: #16251f;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .dmmf-comparison__node rect,
+  .dmmf-comparison__store :is(rect, ellipse) {
+    stroke: #2c493e;
+    stroke-width: 2;
+  }
+
+  .dmmf-comparison__node--actor rect {
+    fill: #ffec99;
+  }
+
+  .dmmf-comparison__node--command rect,
+  .dmmf-comparison__node--input rect {
+    fill: #a5d8ff;
+  }
+
+  .dmmf-comparison__node--aggregate rect,
+  .dmmf-comparison__node--workflow rect {
+    fill: #bcebd7;
+  }
+
+  .dmmf-comparison__node--event rect,
+  .dmmf-comparison__node--success rect {
+    fill: #ffd8a8;
+  }
+
+  .dmmf-comparison__node--failure rect {
+    fill: #ffc9c9;
+  }
+
+  .dmmf-comparison__store :is(rect, ellipse) {
+    fill: #fff29f;
+  }
+
+  .dmmf-comparison__node-kind {
+    fill: #16251f;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .dmmf-comparison__node-label,
+  .dmmf-comparison__code,
+  .dmmf-comparison__flow-label {
+    fill: #16251f;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .dmmf-comparison__code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+  }
+
+  .dmmf-comparison__code--compact {
+    font-size: 10px;
+    letter-spacing: -0.02em;
+  }
+
+  .dmmf-comparison__flow-label {
+    font-size: 12px;
+  }
+
+  .dmmf-comparison__arrow,
+  .dmmf-comparison__mapping {
+    fill: none;
+    stroke: #2c493e;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 3;
+    marker-end: url(#dmmf-arrow);
+  }
+
+  .dmmf-comparison__mapping {
+    stroke: #526c62;
+    stroke-dasharray: 6 7;
+    stroke-width: 2;
+    marker-end: none;
+  }
+
+  .dmmf-comparison__arrow--success {
+    stroke: #137333;
+  }
+
+  .dmmf-comparison__arrow--failure {
+    stroke: #b42318;
+  }
+
+  .dmmf-comparison__arrow-head {
+    fill: context-stroke;
+  }
+
+  .dmmf-comparison__rail-label {
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .dmmf-comparison__rail-label--success {
+    fill: #137333;
+  }
+
+  .dmmf-comparison__rail-label--failure {
+    fill: #b42318;
+  }
+
+  @media (max-width: 767px) {
+    .dmmf-comparison__diagram {
+      min-width: 46rem;
+    }
+
+    .dmmf-comparison__viewport::after {
+      display: block;
+      position: sticky;
+      right: 0;
+      width: max-content;
+      margin: -0.25rem 0 0 auto;
+      padding: 0.25rem 0.5rem;
+      background: var(--case-line);
+      color: var(--case-paper);
+      content: "横にスクロール";
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+  }
+</style>

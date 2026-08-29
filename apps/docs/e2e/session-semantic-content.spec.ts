@@ -4,7 +4,7 @@ const sessions = [
   { slug: "00-system-handover", title: "業務とシステムを引き継ぐ" },
   {
     slug: "01-business-events-and-workflows",
-    title: "ビジネスイベントからワークフローを描く",
+    title: "EventStormingから診察開始を定義する",
   },
   { slug: "02-state-transitions", title: "予約の状態と遷移をモデル化する" },
   {
@@ -33,6 +33,36 @@ const exerciseSessions = [
   { slug: "05-workflow-errors", problemCount: 4, failureCount: 6 },
   { slug: "06-effects-and-consistency", problemCount: 4, failureCount: 4 },
 ] as const;
+
+test("S1 compares EventStorming with an event-output ROP workflow", async ({
+  page,
+}) => {
+  await page.goto("/sessions/01-business-events-and-workflows/");
+
+  const comparison = page.getByRole("figure", {
+    name: "EventStormingとROPのワークフロー比較",
+  });
+  const diagram = comparison.getByRole("img", {
+    name: "EventStormingとROPのワークフロー比較",
+  });
+
+  await expect(comparison).toBeVisible();
+  await expect(diagram).toContainText("EventStormingで発見した流れ");
+  await expect(diagram).toContainText("ROPとして実装する流れ");
+  await expect(diagram).toContainText("ExaminationStarted");
+  await expect(diagram).toContainText("StartExaminationError");
+  await expect(
+    diagram.getByText("Appointment Resolver", { exact: true }),
+  ).toHaveCount(1);
+  await expect(diagram.getByText("Event Store", { exact: true })).toHaveCount(
+    1,
+  );
+  await expect(
+    page.getByRole("heading", {
+      name: "S2〜S6で実装する部分を確認する",
+    }),
+  ).toHaveCount(0);
+});
 
 for (const session of exerciseSessions) {
   test(`${session.slug} explains each initial exercise failure before the command`, async ({

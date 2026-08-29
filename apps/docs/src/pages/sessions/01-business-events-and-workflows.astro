@@ -1,5 +1,5 @@
 ---
-import StartExaminationWorkflow from "../../components/StartExaminationWorkflow.astro";
+import EventStormingRopComparison from "../../components/EventStormingRopComparison.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import type { SessionSummary } from "../../sessions/types";
 import "../../styles/sessions.css";
@@ -13,7 +13,7 @@ export const session: SessionSummary = {
   durationMinutes: 15,
   timeBreakdown: { brief: 3, teach: 5.5, exercise: 4, review: 2.5 },
   animal: { name: "CAT", type: "cat", avatar: "🐈" },
-  summary: "診察開始の出来事から依頼と事前条件を逆算し、ワークフローの入出力と境界を整理します。",
+  summary: "診察開始の出来事から依頼と事前条件を逆算し、イベントを返すROPと永続化の境界へ写します。",
   episode: [
     "会計済みの予約で診察開始を実行すると、予約は診察中へ戻りました。",
     "誰が開始を依頼し、どの状態なら受け付けてよいかを担当者に聞くと、答えが揃いません。",
@@ -46,8 +46,7 @@ const excalidrawTemplateUrl =
 const chapters = [
   { id: "incident", label: "事故と4つの出来事" },
   { id: "workshop", label: "班ワーク" },
-  { id: "workflow", label: "ワークフローへ整理" },
-  { id: "handoff", label: "S2〜S6への接続" },
+  { id: "workflow", label: "EventStormingとROP" },
 ] as const;
 
 export const navigation = ({
@@ -169,36 +168,47 @@ export const navigation = ({
           </section>
 
           <section id="workflow">
-            <h2>9:00〜12:30　入力、業務判断、出力へ整理する</h2>
-            <p>同じ付箋を、次の3つへ読み替えます。</p>
+            <h2>9:00〜15:00　EventStormingをROPのワークフローへ写す</h2>
+            <p>
+              EventStormingで並べた付箋は、業務について合意した結果です。実装では、コマンドを入力、予約集約を業務判断、ドメインイベントを成功時の出力へ対応させます。
+            </p>
             <dl>
               <dt>入力</dt>
-              <dd>どの予約を、どの獣医師が開始するか。</dd>
+              <dd>診察開始のコマンドと、Resolverから取得した予約の現在状態。</dd>
               <dt>業務判断</dt>
-              <dd>予約が受付済みなら診察中へ変更する。</dd>
-              <dt>出力</dt>
-              <dd>診察が開始されたというドメインイベント。</dd>
+              <dd>受付済みなら診察開始を受け付け、それ以外なら理由の分かるエラーを返す。</dd>
+              <dt>成功時の出力</dt>
+              <dd>診察が開始されたという、新しいドメインイベント。</dd>
+              <dt>失敗時の出力</dt>
+              <dd>予約なしや状態不正を表す、型で区別されたエラー。</dd>
             </dl>
-            <StartExaminationWorkflow focus="overview" />
-            <p>
-              予約の読み込みとイベントの保存は、受付済みかどうかを判断する処理の外に置きます。時刻とイベントIDも外から受け取ります。
-            </p>
-          </section>
 
-          <section id="handoff">
-            <h2>12:30〜15:00　S2〜S6で実装する部分を確認する</h2>
-            <ol class="exercise-steps">
-              <li><strong>S2:</strong> 受付済みだけを受け取る状態型と状態遷移</li>
-              <li><strong>S3:</strong> 予約IDと獣医師IDの区別</li>
-              <li><strong>S4:</strong> HTTPから来た値の検査と型付き入力への変換</li>
-              <li><strong>S5:</strong> 予約なしと状態不正をResultで返す処理</li>
-              <li><strong>S6:</strong> 時刻、イベントID、読み込み、保存の分離</li>
-            </ol>
+            <EventStormingRopComparison />
+
+            <h3>永続化をワークフローの両端へ置く</h3>
+            <p>
+              入力側の境界では、Appointment Resolverから予約の現在状態を取得します。<code>startExamination</code> はデータベースへ接続せず、コマンドと現在状態を引数で受け取ります。
+            </p>
+            <p>
+              出力側の境界では、成功時に返された <code>ExaminationStarted</code> をEvent Storeへ追記します。<code>StartExaminationError</code> が返された場合は、新しい出来事が起きていないため保存しません。時刻とイベントIDも境界で取得し、業務判断へ値として渡します。
+            </p>
+
+            <h3>ワークフローは更新後の状態ではなくイベントを返す</h3>
+            <p>
+              ワークフローの成功は「予約を保存できる形へ変更した」ではなく、「診察が開始された」と表します。出力が業務イベントなら、EventStormingで合意した言葉と実装の契約が一致します。Event Storeはイベントを追記し、参照用の現在状態も同じトランザクションで更新します。
+            </p>
+            <aside class="decision-card">
+              <h3>このハンズオンでEvent Storeを選ぶ理由</h3>
+              <p>
+                Event StoreはDMMFに必須の永続化方式ではありません。このハンズオンでは、ワークフローが返すイベントを保存単位にし、業務判断と永続化を同じイベントでつなぐために採用します。
+              </p>
+            </aside>
+
             <h3>S1で残す成果物</h3>
             <ol>
               <li>アクター、コマンド、予約、ドメインイベントを並べた図</li>
               <li>「受付を済ませた予約だけ、診察を始められる」という事前条件</li>
-              <li>入力、業務判断、出力、読み込み、保存を分けた <code>startExamination</code> の構成図</li>
+              <li>Resolverを入口、Event Storeを出口に置き、成功イベントと型付きエラーへ分岐する <code>startExamination</code> の構成図</li>
             </ol>
             <p>
               班ワークは <a href={excalidrawTemplateUrl}><code>{excalidrawTemplatePath}</code></a> を使います。TAが開始前にボードを開きます。
