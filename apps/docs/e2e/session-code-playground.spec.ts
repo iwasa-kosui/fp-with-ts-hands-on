@@ -55,6 +55,60 @@ for (const viewport of viewports) {
   });
 }
 
+test("/sessions/02-state-transitions/ places the guided overview above a full-width editor", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1200 });
+  await page.goto("/sessions/02-state-transitions/");
+
+  const overview = page.locator("[data-code-overview]");
+  await expect(overview.locator('[aria-label^="コードエディタ:"]')).toBeVisible();
+
+  const layout = await overview.evaluate((element) => {
+    const workspace = element.querySelector<HTMLElement>(
+      ".code-explorer__workspace",
+    );
+    const guides = element.querySelector<HTMLElement>(
+      ".code-explorer__guides",
+    );
+    const editor = element.querySelector<HTMLElement>(
+      ".code-explorer__editor",
+    );
+    if (workspace === null || guides === null || editor === null) {
+      throw new Error("guided overview layout is incomplete");
+    }
+
+    const workspaceRect = workspace.getBoundingClientRect();
+    const guidesRect = guides.getBoundingClientRect();
+    const editorRect = editor.getBoundingClientRect();
+    return {
+      workspaceWidth: workspaceRect.width,
+      guidesBottom: guidesRect.bottom,
+      editorTop: editorRect.top,
+      editorWidth: editorRect.width,
+    };
+  });
+
+  expect(layout.editorTop).toBeGreaterThanOrEqual(layout.guidesBottom);
+  expect(layout.editorWidth).toBeGreaterThanOrEqual(layout.workspaceWidth - 1);
+});
+
+test("/sessions/02-state-transitions/ presents guided choices in one row", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1200 });
+  await page.goto("/sessions/02-state-transitions/");
+
+  const choices = page.locator(
+    "[data-code-overview] .code-explorer__guides > li",
+  );
+  await expect(choices).toHaveCount(2);
+  const first = await choices.nth(0).boundingBox();
+  const second = await choices.nth(1).boundingBox();
+  if (first === null || second === null) {
+    throw new Error("guided choices are not visible");
+  }
+
+  expect(second.x).toBeGreaterThan(first.x + first.width - 1);
+  expect(second.y).toBeCloseTo(first.y, 0);
+});
+
 test("/sessions/02-state-transitions/ runs arbitrary commands and reflects created files", async ({ page }) => {
   test.setTimeout(150_000);
   await page.setViewportSize({ width: 1440, height: 1200 });
