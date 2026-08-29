@@ -20,4 +20,3 @@ describe("S3 regression: 診察開始の識別子を取り違えない", () => {
     expect(() => AppointmentId.parse("not-a-uuid")).toThrow();
   });
 });
-
