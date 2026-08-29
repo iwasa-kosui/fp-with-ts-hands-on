@@ -28,13 +28,21 @@
   --playground-shadow: 0.375rem 0.375rem 0 var(--case-line);
 }
 
-.session-code-playground,
+.session-code-playground {
+  width: min(100%, 70ch);
+  min-width: 0;
+}
+
 .session-code-playground [data-code-explorer] {
   min-width: 0;
 }
 
-.session-code-playground > :not([data-code-explorer]) {
-  max-width: 70ch;
+.code-playground.session-code-playground .code-explorer__workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.code-playground.session-code-playground .code-explorer__workspace nav {
+  max-height: 18rem;
 }
 
 .code-playground [data-code-explorer] {

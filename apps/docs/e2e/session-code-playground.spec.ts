@@ -55,62 +55,6 @@ for (const viewport of viewports) {
   });
 }
 
-test("/sessions/02-state-transitions/ gives the editor most horizontal space on desktop", async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 1200 });
-  await page.goto("/sessions/02-state-transitions/");
-
-  const playground = page.locator(".session-code-playground");
-  await expect(playground.locator('[aria-label^="コードエディタ:"]')).toBeVisible();
-
-  const layout = await page.evaluate(() => {
-    const body = document.querySelector<HTMLElement>(".case-file__body");
-    const playgroundElement = document.querySelector<HTMLElement>(
-      ".session-code-playground",
-    );
-    if (body === null || playgroundElement === null) {
-      throw new Error("Playground layout containers are missing");
-    }
-
-    const tree = playgroundElement.querySelector<HTMLElement>(
-      ".code-explorer__workspace nav",
-    );
-    const editor = playgroundElement.querySelector<HTMLElement>(
-      ".code-explorer__editor",
-    );
-    const nestedFile = playgroundElement.querySelector<HTMLElement>(
-      '[data-path="exercises/state-modeling.test.ts"] > span:first-child',
-    );
-    if (tree === null || editor === null || nestedFile === null) {
-      throw new Error("Playground layout elements are missing");
-    }
-
-    return {
-      bodyWidth: body.clientWidth,
-      playgroundWidth: playgroundElement.clientWidth,
-      treeWidth: tree.clientWidth,
-      editorWidth: editor.clientWidth,
-      treeFontSize: Number.parseFloat(getComputedStyle(tree).fontSize),
-      nestedFileHeight: nestedFile.getBoundingClientRect().height,
-    };
-  });
-
-  expect.soft(layout.bodyWidth).toBeGreaterThanOrEqual(1280);
-  expect.soft(layout.playgroundWidth).toBeGreaterThanOrEqual(960);
-  expect.soft(layout.treeWidth).toBeLessThanOrEqual(240);
-  expect.soft(layout.editorWidth).toBeGreaterThanOrEqual(680);
-  expect.soft(layout.editorWidth / layout.treeWidth).toBeGreaterThanOrEqual(2.8);
-  expect.soft(layout.treeFontSize).toBeLessThanOrEqual(14);
-  expect.soft(layout.nestedFileHeight).toBeLessThanOrEqual(20);
-
-  const startTerminal = playground.getByRole("button", {
-    name: "ターミナルを起動",
-  });
-  const startButtonHeight = await startTerminal.evaluate(
-    (element) => element.getBoundingClientRect().height,
-  );
-  expect.soft(startButtonHeight).toBeGreaterThanOrEqual(40);
-});
-
 test("/sessions/02-state-transitions/ runs arbitrary commands and reflects created files", async ({ page }) => {
   test.setTimeout(150_000);
   await page.setViewportSize({ width: 1440, height: 1200 });
