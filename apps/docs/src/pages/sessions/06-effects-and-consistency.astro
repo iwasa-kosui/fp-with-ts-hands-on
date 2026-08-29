@@ -62,6 +62,7 @@ export const session: SessionSummary = {
     {
       id: "s6-inject-context",
       goal: "Clock と ID generator を使って EventContext を一度だけ生成する。",
+      startingFailure: "同じ条件で実行しても、時刻とイベント ID が毎回変わる。",
       targets: [
         "examples/session-06/src/useCase/dependencies.ts",
         "examples/session-06/src/useCase/startExamination.ts",
@@ -70,7 +71,7 @@ export const session: SessionSummary = {
         {
           path: "examples/session-07/src/useCase/dependencies.ts",
           symbol: "EventContextDependencies",
-          lines: [1, 43],
+          lines: [1, 35],
           presentation: "completed-file",
         },
         {
@@ -84,12 +85,13 @@ export const session: SessionSummary = {
     {
       id: "s6-atomic-store",
       goal: "状態と監査記録を1回の保存で残す。",
+      startingFailure: "状態と監査記録を別々に保存している。",
       targets: ["examples/session-06/src/useCase/dependencies.ts"],
       solutions: [
         {
           path: "examples/session-07/src/useCase/dependencies.ts",
           symbol: "ExaminationStartedStore",
-          lines: [1, 43],
+          lines: [1, 35],
           presentation: "completed-file",
         },
       ],
@@ -97,6 +99,7 @@ export const session: SessionSummary = {
     {
       id: "s6-result-async",
       goal: "非同期で保存しても、イベントを結果として返す。",
+      startingFailure: "保存後に、更新した予約の状態を受け取れない。",
       targets: ["examples/session-06/src/useCase/startExamination.ts"],
       solutions: [{
         path: "examples/session-07/src/useCase/startExamination.ts",
@@ -108,6 +111,7 @@ export const session: SessionSummary = {
     {
       id: "s6-propagate-store-failure",
       goal: "保存失敗を業務Resultへ変換せず、例外として外側の境界へ伝播する。",
+      startingFailure: "業務上の競合と、保存障害・破損データを区別して返せない。",
       targets: [
         "examples/session-06/src/useCase/errors.ts",
         "examples/session-06/src/useCase/startExamination.ts",
@@ -157,7 +161,7 @@ export const guides = ([
     currentDesign: "Date と randomUUID を直接呼び、同じ入力でも output event が変わります。",
     futureRisk: "期待値を固定できず、テストが実行時刻に依存します。",
     path: "src/useCase/startExamination.ts",
-    highlights: [{ startLineNumber: 42, endLineNumber: 64 }],
+    highlights: [{ startLineNumber: 45, endLineNumber: 67 }],
   },
   {
     id: "dual-write",
@@ -165,7 +169,7 @@ export const guides = ([
     currentDesign: "side effects として stateStore.save と eventLog.append を順番に await しています。",
     futureRisk: "片方だけ成功すると、監査記録を伴わない状態変更が残ります。",
     path: "src/useCase/startExamination.ts",
-    highlights: [{ startLineNumber: 66, endLineNumber: 69 }],
+    highlights: [{ startLineNumber: 69, endLineNumber: 70 }],
   },
 ] as const) satisfies readonly CodeGuide[];
 
@@ -325,11 +329,12 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 <CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} guides={guides} />
               </div>
             </section>
-            <h3>見つけた問題を RED で確かめる</h3>
-            <p>配布コードで見つけた問題が、業務名を持つ assertion の失敗として現れることを確認します。</p>
-            <CommandBlock phase="red" command={session.exerciseCommand} expected={`${session.steps.length}件の参加者ステップが、業務上の未解決条件として失敗します。`} />
-            <h3>今回のステップ</h3>
-            <ol class="exercise-steps">{session.steps.map((step) => <li><strong>{step.goal}</strong></li>)}</ol>
+            <h3>修正前の失敗を確認する</h3>
+            <p>修正前は、次の{session.steps.length}件に対応する演習テストが失敗します。</p>
+            <ul class="exercise-failures" aria-label="修正前に確認する問題">
+              {session.steps.map((step) => <li>{step.startingFailure}</li>)}
+            </ul>
+            <CommandBlock phase="red" command={session.exerciseCommand} expected={`${session.steps.length}件の演習テストが失敗します。`} />
           </section>
 
           <section id="refactor">
@@ -376,7 +381,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <p>編集内容とコマンドはこのブラウザ内だけに保持されます。ターミナルを利用できない場合は、ページ内の <code>pnpm</code> 手順を使います。</p>
               <div data-code-explorer={workspace.slug}><CodeExplorer client:load workspace={workspace} projectFiles={projectFiles} /></div>
             </section>
-            <CommandBlock phase="green" command={session.exerciseCommand} expected="assertionが成功することを確認する" />
+            <CommandBlock phase="green" command={session.exerciseCommand} expected="演習テストがすべて成功します。" />
             <h3>演習を完了できないとき</h3>
             <p>{narrative.fallback}</p>
           </section>

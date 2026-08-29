@@ -348,6 +348,7 @@
 }
 
 .exercise-steps,
+.exercise-failures,
 .adv-flow,
 .reference-list,
 .final-differences {
@@ -357,6 +358,7 @@
 }
 
 .exercise-steps li,
+.exercise-failures li,
 .adv-flow li,
 .final-differences li {
   padding: 0.75rem;

@@ -137,9 +137,9 @@ const expectedEpisodes = [
     "入力には寛大で、個人情報にはおしゃべり。それが現在の境界です。",
   ],
   [
-    "ハムスターの診察開始ボタンを押すと、受付画面は「処理に失敗しました」とだけ言い残して沈黙しました。",
-    "予約なし、受付前、あるいは画面の気分なのか。後ろでは犬が吠え、列だけが伸びます。",
-    "理由を捨てた例外は、忙しい現場に推理ゲームまで追加してくれます。",
+    "別の端末で受付情報が更新された後、古い画面に残っていたハムスターの診察開始ボタンを押すと、500エラーだけを返して止まりました。",
+    "予約なしは専用表示になるのに、受付前の予約は想定外扱いです。後ろでは犬が吠え、列だけが伸びます。",
+    "新しい例外を投げた側は、呼び出し側のcatch漏れを型から確かめられませんでした。",
   ],
   [
     "カメの診察を開始すると、予約状態だけが先に更新され、監査記録はどこにも残りませんでした。",
@@ -221,9 +221,9 @@ const expectedExercises = [
     slug: "05-workflow-errors",
     adv: { articulate: 2, delegate: 5, verify: 3 },
     exerciseModule: {
-      dir: "examples/session-05/src/useCase",
+      dir: "examples/session-05/src",
       fileBudget: 3,
-      lineBudget: 76,
+      lineBudget: 80,
     },
     solutionSnapshot: "session-06",
     solutionPresentation: "excerpt",
@@ -233,8 +233,8 @@ const expectedExercises = [
       pickCount: 2,
       questions: [
         "予約なしと状態不正は、異なる `kind` を持つ `Err` になっていますか。",
-        "`andThen` は、成功したときだけ次の検証と状態遷移へ進みますか。",
-        "業務エラーの後に、状態の保存が実行されない構造になっていますか。",
+        "`andThen` は、失敗後の状態遷移と保存を実行しない構造になっていますか。",
+        "Web側は業務エラーを `kind` で網羅し、未対応の種類を型エラーにできますか。",
       ],
     },
   },

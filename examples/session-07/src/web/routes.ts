@@ -16,8 +16,42 @@ import { AppointmentId } from "../domain/ids/appointmentId.js";
 import { OwnerId } from "../domain/ids/ownerId.js";
 import { PetId } from "../domain/ids/petId.js";
 import { VeterinarianId } from "../domain/ids/veterinarianId.js";
+import type {
+  StartExaminationError,
+  StartExaminationWithEffectsError,
+} from "../useCase/errors.js";
 import { startExaminationWithEffects } from "../useCase/startExamination.js";
 import { toPageProps } from "./appointmentView.js";
+
+type StartExaminationNoticeCode = "not-found" | "invalid-state";
+
+const assertNever = (error: never): never => {
+  throw new Error(`Unhandled start examination error: ${JSON.stringify(error)}`);
+};
+
+const toStartExaminationNoticeCode = (
+  error: StartExaminationError,
+): StartExaminationNoticeCode => {
+  switch (error.kind) {
+    case "AppointmentNotFound":
+      return "not-found";
+    case "InvalidAppointmentState":
+      return "invalid-state";
+    default:
+      return assertNever(error);
+  }
+};
+
+type StartExaminationWithEffectsNoticeCode =
+  | StartExaminationNoticeCode
+  | "conflict";
+
+const toStartExaminationWithEffectsNoticeCode = (
+  error: StartExaminationWithEffectsError,
+): StartExaminationWithEffectsNoticeCode =>
+  error.kind === "AppointmentConflict"
+    ? "conflict"
+    : toStartExaminationNoticeCode(error);
 
 const ids = {
   appointmentId: AppointmentId.parse(clinicFixture.appointmentId),
@@ -91,15 +125,14 @@ export const registerClinicRoutes = (
       appointmentId: AppointmentId.parse(context.req.param("appointmentId")),
       veterinarianId: ids.veterinarianId,
     });
-    if (result.isErr()) {
-      const code = result.error.kind === "AppointmentNotFound"
-        ? "not-found"
-        : result.error.kind === "AppointmentConflict"
-          ? "conflict"
-          : "invalid-state";
-      return context.redirect(`/?notice=${code}`, 303);
-    }
-    return context.redirect("/", 303);
+    return result.match(
+      () => context.redirect("/", 303),
+      (error) =>
+        context.redirect(
+          `/?notice=${toStartExaminationWithEffectsNoticeCode(error)}`,
+          303,
+        ),
+    );
   });
 
   app.post("/appointments/:appointmentId/exam-results", async (context) => {
