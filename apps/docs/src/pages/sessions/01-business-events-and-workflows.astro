@@ -172,6 +172,9 @@ export const navigation = ({
             <p>
               EventStormingで並べた付箋は、業務について合意した結果です。実装では、コマンドを入力、予約集約を業務判断、ドメインイベントを成功時の出力へ対応させます。
             </p>
+            <p>
+              ここでワークフローと呼ぶのは、コマンドと現在状態から業務結果を決める <code>Appointment.startExamination</code> です。ResolverとStoreを組み立てる外側のWeb向けユースケースとは分けて考えます。
+            </p>
             <dl>
               <dt>入力</dt>
               <dd>診察開始のコマンドと、Resolverから取得した予約の現在状態。</dd>
@@ -187,7 +190,7 @@ export const navigation = ({
 
             <h3>永続化をワークフローの両端へ置く</h3>
             <p>
-              入力側の境界では、Appointment Resolverから予約の現在状態を取得します。<code>startExamination</code> はデータベースへ接続せず、コマンドと現在状態を引数で受け取ります。
+              入力側の境界では、Appointment Resolverから予約の現在状態を取得します。<code>Appointment.startExamination</code> はデータベースへ接続せず、コマンドに含まれる値と現在状態を引数で受け取ります。
             </p>
             <p>
               出力側の境界では、成功時に返された <code>ExaminationStarted</code> をEvent Storeへ追記します。<code>StartExaminationError</code> が返された場合は、新しい出来事が起きていないため保存しません。時刻とイベントIDも境界で取得し、業務判断へ値として渡します。
@@ -196,6 +199,9 @@ export const navigation = ({
             <h3>ワークフローは更新後の状態ではなくイベントを返す</h3>
             <p>
               ワークフローの成功は「予約を保存できる形へ変更した」ではなく、「診察が開始された」と表します。出力が業務イベントなら、EventStormingで合意した言葉と実装の契約が一致します。Event Storeはイベントを追記し、参照用の現在状態も同じトランザクションで更新します。
+            </p>
+            <p>
+              外側のWeb向けユースケースは、保存後に <code>event.aggregateState</code> を現在状態として返せます。これはHTTPレスポンスに合わせた変換であり、中心の業務ワークフローがイベントを返す契約は変わりません。
             </p>
             <aside class="decision-card">
               <h3>このハンズオンでEvent Storeを選ぶ理由</h3>
@@ -208,7 +214,7 @@ export const navigation = ({
             <ol>
               <li>アクター、コマンド、予約、ドメインイベントを並べた図</li>
               <li>「受付を済ませた予約だけ、診察を始められる」という事前条件</li>
-              <li>Resolverを入口、Event Storeを出口に置き、成功イベントと型付きエラーへ分岐する <code>startExamination</code> の構成図</li>
+              <li>Resolverを入口、Event Storeを出口に置き、成功イベントと型付きエラーへ分岐する <code>Appointment.startExamination</code> の構成図</li>
             </ol>
             <p>
               班ワークは <a href={excalidrawTemplateUrl}><code>{excalidrawTemplatePath}</code></a> を使います。TAが開始前にボードを開きます。

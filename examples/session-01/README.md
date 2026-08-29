@@ -38,7 +38,7 @@ EventStormingで見つけた要素を次のように対応させます。
 - 予約集約は、現在状態から診察を開始できるか判断します。
 - 成功時は `ExaminationStarted`、失敗時は `StartExaminationError` を返します。
 
-Appointment Resolverによる現在状態の取得は入力側の境界へ置きます。成功イベントを受け取るEvent Storeは出力側の境界へ置きます。`startExamination` はデータベースへ接続せず、受け取った入力から結果を返します。
+Appointment Resolverによる現在状態の取得は入力側の境界へ置きます。成功イベントを受け取るEvent Storeは出力側の境界へ置きます。中心の業務ワークフローである `Appointment.startExamination` はデータベースへ接続せず、受け取った入力からイベントか型付きエラーを返します。外側のWeb向けユースケースはResolverとStoreを組み立て、保存後にイベントから現在状態を取り出してレスポンスへ使えます。
 
 Event StoreはDMMFに必須の永続化方式ではありません。このハンズオンでは、EventStormingで合意したイベントをワークフローと永続化の共通の契約にするために採用します。
 
@@ -46,6 +46,6 @@ Event StoreはDMMFに必須の永続化方式ではありません。このハ�
 
 1. アクター、コマンド、予約、ドメインイベントを並べたEventStormingの図
 2. 「受付を済ませた予約だけ、診察を始められる」という事前条件
-3. Resolverを入口、Event Storeを出口に置き、成功イベントと型付きエラーへ分岐する `startExamination` の構成図
+3. Resolverを入口、Event Storeを出口に置き、成功イベントと型付きエラーへ分岐する `Appointment.startExamination` の構成図
 
 班ワークには `docs/event/session-01-event-storming.excalidraw` を使います。TAがS1の開始前にボードを開きます。共同編集が30秒で復旧しない場合は、印刷したカードへ切り替えます。

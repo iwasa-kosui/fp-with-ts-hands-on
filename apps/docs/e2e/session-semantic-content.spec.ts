@@ -49,6 +49,7 @@ test("S1 compares EventStorming with an event-output ROP workflow", async ({
   await expect(comparison).toBeVisible();
   await expect(diagram).toContainText("EventStormingで発見した流れ");
   await expect(diagram).toContainText("ROPとして実装する流れ");
+  await expect(diagram).toContainText("Appointment.startExamination");
   await expect(diagram).toContainText("ExaminationStarted");
   await expect(diagram).toContainText("StartExaminationError");
   await expect(
@@ -62,6 +63,44 @@ test("S1 compares EventStorming with an event-output ROP workflow", async ({
       name: "S2〜S6で実装する部分を確認する",
     }),
   ).toHaveCount(0);
+});
+
+test("S1 comparison keeps the full diagram reachable inside its mobile scroll region", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/sessions/01-business-events-and-workflows/");
+
+  const viewport = page.getByRole("region", {
+    name: "EventStormingとROPの比較図。必要に応じて横にスクロールできます",
+  });
+  const dimensions = await viewport.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    overflowX: getComputedStyle(element).overflowX,
+    scrollWidth: element.scrollWidth,
+  }));
+
+  expect(dimensions.overflowX).toBe("auto");
+  expect(dimensions.scrollWidth).toBeGreaterThan(dimensions.clientWidth);
+});
+
+test("S1 comparison fits without horizontal scrolling on desktop", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1200 });
+  await page.goto("/sessions/01-business-events-and-workflows/");
+
+  const viewport = page.getByRole("region", {
+    name: "EventStormingとROPの比較図。必要に応じて横にスクロールできます",
+  });
+  const dimensions = await viewport.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(
+    dimensions.clientWidth + 1,
+  );
 });
 
 for (const session of exerciseSessions) {

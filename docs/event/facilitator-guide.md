@@ -85,7 +85,7 @@ S2〜S6 は次の順序を崩しません。
 5. 対象モジュールだけを変更し、同じコマンド、型、現在snapshot限定の差分、リポジトリ全体の状態で個人検証する。
 6. TA が選んだ1〜2名の差分を班で相互レビューし、全員がレビュー観点シートへ1行書く。
 
-S0では現状を読み、S1では事前配置したドメインイベントから診察開始のアクター、コマンド、事前条件を逆算します。事前条件が決まった後、講師が予約集約を加え、同じ付箋をROPの入力、業務判断、成功イベントへ対応させます。Appointment ResolverとEvent Storeはワークフローの外へ置きます。どちらも修正とexercise実行を行いません。Finalは講師が `examples/final/src/useCase/startExaminationUseCase.ts` を入口に5分で案内するだけです。参加者へ `examples/final` のセットアップ、編集、Playground操作を求めません。
+S0では現状を読み、S1では事前配置したドメインイベントから診察開始のアクター、コマンド、事前条件を逆算します。事前条件が決まった後、講師が予約集約を加え、同じ付箋をROPの入力、業務判断、成功イベントへ対応させます。中心の業務ワークフローはイベントを返す `Appointment.startExamination` です。Appointment ResolverとEvent Storeを組み立て、保存後の現在状態をWebへ返す外側のユースケースとは区別します。どちらも修正とexercise実行を行いません。Finalは講師が `examples/final/src/useCase/startExaminationUseCase.ts` を入口に5分で案内するだけです。参加者へ `examples/final` のセットアップ、編集、Playground操作を求めません。
 
 ## S1 の Excalidraw 運用
 
@@ -103,7 +103,7 @@ S1の班ワークはページ上ではなくExcalidrawで行います。TAはS1�
 2. 1:30〜3:00: 講師が4種類の付箋を説明します。集約はまだ説明しません。
 3. 3:00〜7:00: 参加者がアクター、コマンド、事前条件を逆算します。アクターの違いはHotspotへ残します。
 4. 7:00〜9:00: 講師が1〜2班を比較し、事前条件を確認してから予約集約を加えます。
-5. 9:00〜15:00: 講師がEventStormingとROPの比較図を示します。Appointment Resolverを入力側、Event Storeを出力側へ置き、成功イベントだけを保存する流れを確認します。
+5. 9:00〜15:00: 講師がEventStormingとROPの比較図を示します。Appointment Resolverを入力側、Event Storeを出力側へ置き、`Appointment.startExamination` が返した成功イベントだけを保存する流れを確認します。
 
 ## セッション間の差分基準と引き継ぎ
 

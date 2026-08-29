@@ -7,7 +7,7 @@
 Session 1では、業務の説明が曖昧な状態から次の順序で設計を進められることを示します。
 
 1. EventStormingで、誰の依頼によって何が起きるかを確かめます。
-2. `startExamination` を実行できる事前条件を業務の言葉で決めます。
+2. `Appointment.startExamination` を実行できる事前条件を業務の言葉で決めます。
 3. EventStormingの並びと、入力、業務判断、成功イベント、型付きエラーを返すROPを対応させます。
 4. Appointment Resolverによる読み込みとEvent Storeへの保存を、ワークフローの両端へ分けます。
 
@@ -72,14 +72,14 @@ S1は15分の班ワークです。コードは編集しません。参加者がS
 
 ### 9:00〜15:00: EventStormingをROPへ写す
 
-講師は同じ付箋を使い、EventStormingと `startExamination` をSVGで比較します。
+講師は同じ付箋を使い、EventStormingと `Appointment.startExamination` をSVGで比較します。
 
 - 入力: 診察開始のコマンドと予約の現在状態
 - 業務判断: 予約が受付済みなら診察開始を受け付ける
 - 成功時の出力: `ExaminationStarted`
 - 失敗時の出力: `StartExaminationError`
 
-Appointment Resolverによる現在状態の取得は入力側、Event Storeへの成功イベントの追記は出力側へ置きます。`startExamination` はデータベースへ接続しません。失敗時は新しい出来事が起きていないため保存しません。
+Appointment Resolverによる現在状態の取得は入力側、Event Storeへの成功イベントの追記は出力側へ置きます。中心の業務ワークフローである `Appointment.startExamination` はデータベースへ接続しません。失敗時は新しい出来事が起きていないため保存しません。外側のWeb向けユースケースはResolverとStoreを組み立て、保存後にイベントの `aggregateState` をレスポンスへ使えます。
 
 Event StoreはDomain Modeling Made Functionalに必須の永続化方式ではありません。このハンズオンでは、EventStormingで合意したイベントをワークフローと永続化の共通の契約にするために採用します。S2〜S6の実装項目はS1の参加者向けページに列挙しません。
 
@@ -131,7 +131,7 @@ TAはS1が始まる前に班のボードを開きます。Live collaborationの�
 
 1. アクター、コマンド、予約、ドメインイベントを並べたEventStormingの図
 2. 「受付を済ませた予約だけ、診察を始められる」という事前条件
-3. Resolverを入口、Event Storeを出口に置き、成功イベントと型付きエラーへ分岐する `startExamination` の構成図
+3. Resolverを入口、Event Storeを出口に置き、成功イベントと型付きエラーへ分岐する `Appointment.startExamination` の構成図
 
 講師はレビュー時に代表例を1枚保存します。S2〜S6のページでは、この構成図の対象部分を強調して再掲します。
 
@@ -162,7 +162,7 @@ type StartExaminationOutput = ResultAsync<
 >;
 ```
 
-この契約では、ワークフローの成功出力は `ExaminationStarted` です。Web境界でレスポンスが必要な場合は、保存後にイベントが持つ `InExamination` から組み立てます。
+この契約では、中心の業務ワークフローである `Appointment.startExamination` の成功出力は `ExaminationStarted` です。外側のWeb向けユースケースでレスポンスが必要な場合は、保存後にイベントが持つ `InExamination` から組み立てます。
 
 予約が存在しない場合は、読み込み結果を受けたユースケースが `AppointmentNotFound` を返します。受付済みでない場合は、事前条件の検査が `InvalidAppointmentState` を返します。保存時の業務競合は `AppointmentConflict` を返します。データベース停止などの技術的な異常は業務エラーへ変換せず、外側の例外処理へ渡します。
 

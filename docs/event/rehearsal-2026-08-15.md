@@ -12,7 +12,7 @@
 - 内容時間は S0 10分 + S1 15分 + S2〜S6 各30分 + Final 5分 = 180分である。
 - 16:25-16:55の固定休憩30分を加え、開催時間は15:00-18:30の210分である。
 - S0は現行業務、画面操作、保存・ログと事故を対応付ける。
-- S1ではExcalidrawを使い、事前配置された「診察が開始された」からアクター、コマンド、事前条件を逆算します。事前条件が決まった後に、講師がEventStormingとROPを比較し、Appointment ResolverとEvent Storeをワークフローの境界へ置きます。実行可能な演習ではありません。
+- S1ではExcalidrawを使い、事前配置された「診察が開始された」からアクター、コマンド、事前条件を逆算します。事前条件が決まった後に、講師がEventStormingとROPを比較し、イベントを返す `Appointment.startExamination` と、その両端でAppointment ResolverとEvent Storeを組み立てるWeb向けユースケースを区別します。実行可能な演習ではありません。
 - S2〜S6は同じ `startExamination` を題材に、current state、識別子、input、expected failures、output event / side effectsを順に実装する。
 - 公開する演習コマンドは `pnpm exercise:02`〜`pnpm exercise:06` の5本である。
 

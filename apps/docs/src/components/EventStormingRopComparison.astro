@@ -6,7 +6,7 @@
   <div
     class="dmmf-comparison__viewport"
     role="region"
-    aria-label="EventStormingとROPの比較図。横にスクロールできます"
+    aria-label="EventStormingとROPの比較図。必要に応じて横にスクロールできます"
     tabindex="0"
   >
     <svg
@@ -18,7 +18,7 @@
     >
       <title id="eventstorming-rop-comparison-title">EventStormingとROPのワークフロー比較</title>
       <desc id="eventstorming-rop-comparison-description">
-        EventStormingで見つけたアクター、コマンド、予約集約、ドメインイベントを、Appointment Resolverによる現在状態の読み出しとEvent Storeへの追記を境界に置いたROPへ対応させています。成功時はExaminationStartedを追記し、失敗時はStartExaminationErrorを返して保存しません。
+        EventStormingで見つけたアクター、コマンド、予約集約、ドメインイベントを、Appointment Resolverによる現在状態の読み出しとEvent Storeへの追記を境界に置いたROPへ対応させています。中心のAppointment.startExaminationは業務判断として成功時にExaminationStartedを返し、失敗時はStartExaminationErrorを返して保存しません。外側のWeb向けユースケースが読み出しと追記を組み立てます。
       </desc>
 
       <defs>
@@ -98,8 +98,8 @@
       <path d="M 392 397 H 425" class="dmmf-comparison__arrow"></path>
       <g class="dmmf-comparison__node dmmf-comparison__node--workflow">
         <rect x="426" y="339" width="165" height="116" rx="8"></rect>
-        <text x="508" y="371" text-anchor="middle" class="dmmf-comparison__node-kind">Workflow</text>
-        <text x="508" y="401" text-anchor="middle" class="dmmf-comparison__code">startExamination</text>
+        <text x="508" y="371" text-anchor="middle" class="dmmf-comparison__node-kind">業務ワークフロー</text>
+        <text x="508" y="401" text-anchor="middle" class="dmmf-comparison__code dmmf-comparison__code--workflow">Appointment.startExamination</text>
         <text x="508" y="428" text-anchor="middle" class="dmmf-comparison__node-label">DBへ接続しない</text>
       </g>
 
@@ -254,6 +254,11 @@
 
   .dmmf-comparison__code--compact {
     font-size: 10px;
+    letter-spacing: -0.02em;
+  }
+
+  .dmmf-comparison__code--workflow {
+    font-size: 9.5px;
     letter-spacing: -0.02em;
   }
 
