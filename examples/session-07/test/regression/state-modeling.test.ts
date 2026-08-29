@@ -15,7 +15,15 @@ describe("S2 regression: 予約状態を型で制約する", () => {
     expect(compileTypeFixture("s2-transition-sources.ts")).toEqual([]);
   });
 
-  it("6つ目の状態を足すと status label がコンパイルできない", () => {
+  it("7つ目の状態を足すと status label がコンパイルできない", () => {
     expect(compileTypeFixture("s2-status-exhaustive.ts")).toEqual([]);
+  });
+});
+
+describe("S2 regression: 診察結果を記録していない予約は会計できない", () => {
+  it("InExamination を直接渡す呼び出しはコンパイルできない", () => {
+    expect(
+      compileTypeFixture("s2-payment-requires-completed-examination.ts"),
+    ).toEqual([]);
   });
 });

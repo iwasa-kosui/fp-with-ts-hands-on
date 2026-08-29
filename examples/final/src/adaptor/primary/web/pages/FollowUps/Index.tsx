@@ -1,10 +1,10 @@
 import { useForm } from "@inertiajs/react";
 
-import { buttonClassName } from "../../components/Button.js";
-import { DataTable } from "../../components/DataTable.js";
-import { ErrorSummary } from "../../components/FormErrors.js";
-import { EmptyState, InlineAlert } from "../../components/Surface.js";
-import { StatusBadge } from "../../components/StatusBadge.js";
+import { buttonClassName } from "@fp-with-ts/clinic-web";
+import { DataTable } from "@fp-with-ts/clinic-web";
+import { ErrorSummary } from "@fp-with-ts/clinic-web";
+import { EmptyState, InlineAlert } from "@fp-with-ts/clinic-web";
+import { StatusBadge } from "@fp-with-ts/clinic-web";
 import type { SharedPageProps } from "../../pageProps.js";
 import type { FollowUpPageView } from "../../routes/followUpRoutes.js";
 import Layout from "../Layout.js";

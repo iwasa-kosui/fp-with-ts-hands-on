@@ -1,4 +1,5 @@
 import type { AppointmentId } from "../ids/appointmentId.js";
+import type { ExamId } from "../ids/examId.js";
 import type { OwnerId } from "../ids/ownerId.js";
 import type { PetId } from "../ids/petId.js";
 import type { VeterinarianId } from "../ids/veterinarianId.js";
@@ -36,6 +37,20 @@ export type InExamination = Readonly<{
   examinationStartedAt: string;
 }>;
 
+export type AwaitingPayment = Readonly<{
+  kind: "AwaitingPayment";
+  appointmentId: AppointmentId;
+  petId: PetId;
+  ownerId: OwnerId;
+  scheduledAt: string;
+  reason: string;
+  checkedInAt: string;
+  veterinarianId: VeterinarianId;
+  examinationStartedAt: string;
+  examId: ExamId;
+  examinationCompletedAt: string;
+}>;
+
 export type Paid = Readonly<{
   kind: "Paid";
   appointmentId: AppointmentId;
@@ -46,6 +61,8 @@ export type Paid = Readonly<{
   checkedInAt: string;
   veterinarianId: VeterinarianId;
   examinationStartedAt: string;
+  examId: ExamId;
+  examinationCompletedAt: string;
   diagnosis: string;
   treatment: string;
   amount: number;
@@ -62,7 +79,15 @@ export type Canceled = Readonly<{
   canceledAt: string;
 }>;
 
-export type Appointment = Scheduled | CheckedIn | InExamination | Paid | Canceled;
+export type Appointment =
+  | Scheduled
+  | CheckedIn
+  | InExamination
+  | AwaitingPayment
+  | Paid
+  | Canceled;
+
+export type CompleteExaminationInput = Readonly<{ examId: ExamId }>;
 
 export type RecordPaymentInput = Readonly<{
   diagnosis: string;

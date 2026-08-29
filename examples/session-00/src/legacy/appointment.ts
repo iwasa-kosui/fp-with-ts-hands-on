@@ -2,6 +2,10 @@ import { logger } from "./logger.js";
 
 export type LegacyStatusExtra = Readonly<{
   veterinarianId?: string;
+  checkedInAt?: string;
+  examId?: string;
+  examinationCompletedAt?: string;
+  paidAt?: string;
   diagnosis?: string;
   treatment?: string;
   amount?: number;
@@ -60,3 +64,7 @@ export const updateStatus = (
 export const resetLegacyStore = (): void => {
   appointments.clear();
 };
+
+export const findAppointment = (
+  id: string,
+): LegacyAppointment | undefined => appointments.get(id);

@@ -2,10 +2,10 @@ import { Link, useForm } from "@inertiajs/react";
 
 import type { PetPageView } from "../../routes/petRoutes.js";
 import type { SharedPageProps } from "../../pageProps.js";
-import { buttonClassName } from "../../components/Button.js";
-import { DataTable } from "../../components/DataTable.js";
-import { ErrorSummary } from "../../components/FormErrors.js";
-import { EmptyState, InlineAlert } from "../../components/Surface.js";
+import { buttonClassName } from "@fp-with-ts/clinic-web";
+import { DataTable } from "@fp-with-ts/clinic-web";
+import { ErrorSummary } from "@fp-with-ts/clinic-web";
+import { EmptyState, InlineAlert } from "@fp-with-ts/clinic-web";
 import Layout from "../Layout.js";
 
 type PetsIndexProps = SharedPageProps &

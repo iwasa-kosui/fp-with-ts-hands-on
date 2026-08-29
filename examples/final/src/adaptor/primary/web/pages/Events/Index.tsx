@@ -1,7 +1,7 @@
 import type { EventView } from "../../../../../useCase/listEventsUseCase.js";
 import type { SanitizedAuditValue } from "../../../../../domain/audit/eventHistoryReader.js";
-import { DataTable } from "../../components/DataTable.js";
-import { EmptyState, InlineAlert } from "../../components/Surface.js";
+import { DataTable } from "@fp-with-ts/clinic-web";
+import { EmptyState, InlineAlert } from "@fp-with-ts/clinic-web";
 import type { SharedPageProps } from "../../pageProps.js";
 import Layout from "../Layout.js";
 

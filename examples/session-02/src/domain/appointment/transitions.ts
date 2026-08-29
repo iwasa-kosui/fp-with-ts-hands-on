@@ -1,6 +1,7 @@
 import type {
   Appointment,
   CancellationReason,
+  CompleteExaminationInput,
   RecordPaymentInput,
 } from "./appointment.js";
 
@@ -24,12 +25,26 @@ export const startExamination = (
   return ({ ...appointment, kind: "InExamination", veterinarianId, examinationStartedAt }) as Appointment;
 };
 
+export const completeExamination = (
+  appointment: Appointment,
+  input: CompleteExaminationInput,
+  examinationCompletedAt: string,
+): Appointment => {
+  requireKind(appointment, ["InExamination"]);
+  return ({
+    ...appointment,
+    ...input,
+    kind: "AwaitingPayment",
+    examinationCompletedAt,
+  }) as Appointment;
+};
+
 export const recordPayment = (
   appointment: Appointment,
   input: RecordPaymentInput,
   paidAt: string,
 ): Appointment => {
-  requireKind(appointment, ["InExamination"]);
+  requireKind(appointment, ["AwaitingPayment"]);
   return ({ ...appointment, ...input, kind: "Paid", paidAt }) as Appointment;
 };
 

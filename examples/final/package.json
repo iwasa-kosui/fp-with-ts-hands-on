@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fp-with-ts/clinic-web": "workspace:*",
     "@standard-schema/spec": "^1.0.0",
     "@hono/inertia": "^0.7.0",
     "@hono/node-server": "^2.1.0",

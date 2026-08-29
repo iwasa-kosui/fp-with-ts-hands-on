@@ -37,7 +37,7 @@ jobs:
       - name: Test
         run: pnpm test
 
-      - name: Build
+      - name: Build docs and all demo applications
         run: pnpm build
 
       - name: Deploy to Cloudflare Workers

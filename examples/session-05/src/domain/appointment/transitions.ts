@@ -1,5 +1,7 @@
 import type {
+  AwaitingPayment,
   CancellationReason,
+  CompleteExaminationInput,
   Canceled,
   CheckedIn,
   InExamination,
@@ -24,8 +26,20 @@ export const startExamination = (
     examinationStartedAt,
   }) as const satisfies InExamination;
 
-export const recordPayment = (
+export const completeExamination = (
   appointment: InExamination,
+  input: CompleteExaminationInput,
+  examinationCompletedAt: string,
+): AwaitingPayment =>
+  ({
+    ...appointment,
+    ...input,
+    kind: "AwaitingPayment",
+    examinationCompletedAt,
+  }) as const satisfies AwaitingPayment;
+
+export const recordPayment = (
+  appointment: AwaitingPayment,
   input: RecordPaymentInput,
   paidAt: string,
 ): Paid =>

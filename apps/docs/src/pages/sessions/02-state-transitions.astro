@@ -43,7 +43,7 @@ export const session: SessionSummary = {
     pickCount: 2,
     questions: [
       "`startExamination` は `CheckedIn` だけを受け取り、会計済み・キャンセル済みを型で拒否しますか。",
-      "`Canceled` の `reason` など、状態ごとの必須情報を省略できない型ですか。",
+      "`recordPayment` は `AwaitingPayment` だけを受け取り、診察結果の記録前には会計できない型ですか。",
       "状態を追加したとき、`assertNever` によって未対応の分岐がコンパイルエラーになりますか。",
     ],
   },
@@ -51,13 +51,13 @@ export const session: SessionSummary = {
   solutionPresentation: "excerpt",
   peerReviewPromises: "inline",
   animal: { name: "RABBIT", type: "rabbit", avatar: "🐇" },
-  summary: "予約の5状態を判別共用体で表し、許可されていない状態遷移を型で拒否します。",
+  summary: "予約の6状態を判別共用体で表し、許可されていない状態遷移を型で拒否します。",
   episode: [
     "会計を終えたウサギは帰ったはずなのに、画面の中では診察室へ戻ってきました。",
     "受付画面は止めるどころか、2枚目の請求書まで手際よく用意します。",
     "業務ルールを覚えていたのは人間だけで、コードは何でも通す親切設計でした。",
   ],
-  incident: "会計済みの来院が診察中へ戻され、会計が二度行われた。",
+  incident: "診察結果を記録していない予約が会計され、さらに会計済みの来院が診察中へ戻された。",
   exerciseCommand: "pnpm exercise:02",
   exerciseModule: {
     dir: "examples/session-02/src/domain/appointment",
@@ -81,7 +81,7 @@ export const session: SessionSummary = {
       solutions: [{
         path: "examples/session-03/src/domain/appointment/transitions.ts",
         symbol: "startExamination",
-        lines: [14, 24],
+        lines: [16, 26],
       }],
     },
     {
@@ -91,17 +91,17 @@ export const session: SessionSummary = {
       solutions: [{
         path: "examples/session-03/src/domain/appointment/transitions.ts",
         symbol: "cancel",
-        lines: [33, 46],
+        lines: [47, 60],
       }],
     },
     {
       id: "s2-align-transitions",
-      goal: "残りの遷移も、許可された遷移元だけを受け取る規約にそろえる。",
+      goal: "診察結果の記録前には会計できないようにし、残りの遷移も許可された遷移元だけを受け取る規約にそろえる。",
       targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
       solutions: [{
         path: "examples/session-03/src/domain/appointment/transitions.ts",
         symbol: "checkIn",
-        lines: [11, 31],
+        lines: [13, 45],
       }],
     },
     {
@@ -111,13 +111,13 @@ export const session: SessionSummary = {
       solutions: [{
         path: "examples/session-03/src/domain/appointment/statusLabel.ts",
         symbol: "toStatusLabel",
-        lines: [3, 22],
+        lines: [3, 24],
       }],
     },
   ],
   decisions: [
     {
-      invariant: "許可されていない状態遷移を型で拒否する。",
+      invariant: "診察結果を記録するまで会計できず、許可されていない状態遷移を型で拒否する。",
     },
     {
       invariant: "状態ごとの必須情報を欠かさない。",
@@ -140,8 +140,8 @@ export const guides = ([
     futureRisk: "禁止したい状態でも呼び出し側のコードはコンパイルが通り、as で結果を押し通せます。",
     path: "src/domain/appointment/transitions.ts",
     highlights: [
-      { startLineNumber: 7, endLineNumber: 15 },
-      { startLineNumber: 18, endLineNumber: 24 },
+      { startLineNumber: 8, endLineNumber: 17 },
+      { startLineNumber: 19, endLineNumber: 49 },
     ],
   },
   {
@@ -150,7 +150,7 @@ export const guides = ([
     currentDesign: "current state の kind を string として受け、default で不明を返します。",
     futureRisk: "状態を追加しても、未対応の分岐がコンパイルエラーになりません。",
     path: "src/domain/appointment/statusLabel.ts",
-    highlights: [{ startLineNumber: 3, endLineNumber: 17 }],
+    highlights: [{ startLineNumber: 3, endLineNumber: 20 }],
   },
 ] as const) satisfies readonly CodeGuide[];
 
@@ -162,6 +162,8 @@ switch (appointment.kind) {
     return "来院済み";
   case "InExamination":
     return "診察中";
+  case "AwaitingPayment":
+    return "会計待ち";
   case "Paid":
     return "会計済み";
   case "Canceled":
@@ -235,6 +237,15 @@ const toStatusLabel = (appointment: Appointment): string => {
 ): Appointment => {
   requireKind(appointment, ["CheckedIn"]);
   return ({ ...appointment, kind: "InExamination", veterinarianId, examinationStartedAt }) as Appointment;
+};
+
+export const recordPayment = (
+  appointment: Appointment,
+  input: RecordPaymentInput,
+  paidAt: string,
+): Appointment => {
+  requireKind(appointment, ["AwaitingPayment"]);
+  return ({ ...appointment, ...input, kind: "Paid", paidAt }) as Appointment;
 };`,
     },
     after: {
@@ -249,9 +260,24 @@ const toStatusLabel = (appointment: Appointment): string => {
     kind: "InExamination",
     veterinarianId,
     examinationStartedAt,
-  }) as const satisfies InExamination;`,
+  }) as const satisfies InExamination;
+
+export const completeExamination = (
+  appointment: InExamination,
+  input: CompleteExaminationInput,
+  examinationCompletedAt: string,
+): AwaitingPayment =>
+  ({ ...appointment, ...input, kind: "AwaitingPayment", examinationCompletedAt })
+    as const satisfies AwaitingPayment;
+
+export const recordPayment = (
+  appointment: AwaitingPayment,
+  input: RecordPaymentInput,
+  paidAt: string,
+): Paid =>
+  ({ ...appointment, ...input, kind: "Paid", paidAt }) as const satisfies Paid;`,
     },
-    why: "before は Appointment 全体を受け取るため、Paid や Canceled も渡せます。状態の誤りが分かるのは、実行時に requireKind が例外を投げたときです。after は CheckedIn だけを受け取り、InExamination を返します。会計済みやキャンセル済みの予約を渡すと、コードを実行する前の型検査で止まります。Discriminated Unionが状態の候補を定義し、関数の引数型が許可された遷移を定義します。",
+    why: "before は Appointment 全体を受け取るため、startExamination へ Paid や Canceled を渡せ、recordPayment へ InExamination を渡せます。状態の誤りが分かるのは、実行時に requireKind が例外を投げたときです。after は遷移ごとに CheckedIn、InExamination、AwaitingPayment だけを受け取ります。会計済みの予約や診察結果を記録していない予約を誤った関数へ渡すと、コードを実行する前の型検査で止まります。Discriminated Unionが状態の候補を定義し、関数の引数型が許可された遷移を定義します。",
   },
   {
     name: "assertNeverは未処理の状態をコンパイルエラーにする",
@@ -267,6 +293,8 @@ const toStatusLabel = (appointment: Appointment): string => {
       return "来院済み";
     case "InExamination":
       return "診察中";
+    case "AwaitingPayment":
+      return "会計待ち";
     case "Paid":
       return "会計済み";
     case "Canceled":
@@ -290,6 +318,8 @@ export const toStatusLabel = (appointment: Appointment): string => {
       return "来院済み";
     case "InExamination":
       return "診察中";
+    case "AwaitingPayment":
+      return "会計待ち";
     case "Paid":
       return "会計済み";
     case "Canceled":
@@ -308,8 +338,8 @@ export const toStatusLabel = (appointment: Appointment): string => {
 ];
 
 const narrative = {
-  requirement: "予約を「診察中にする」、「キャンセルする」といった状態変更の機能を追加します。",
-  currentRisk: "配布コードの startExamination は、引数に Appointment 全体を受け取ります。そのため、Paid を渡してもコンパイルできます。実行時に requireKind が例外を投げるまで、状態の誤りに気づけません。cancel も理由を undefined で受け取れるため、コンパイラでは理由の欠落を止められません。",
+  requirement: "予約を「診察中にする」、「診察結果を記録する」、「会計する」、「キャンセルする」といった状態変更の機能を追加します。",
+  currentRisk: "配布コードの遷移関数は、引数に Appointment 全体を受け取ります。そのため、Paid を startExamination へ渡すことも、診察結果を記録していない InExamination を recordPayment へ渡すこともコンパイルできます。実行時に requireKind が例外を投げるまで、状態の誤りに気づけません。cancel も理由を undefined で受け取れるため、コンパイラでは理由の欠落を止められません。",
   pitfallCode: {
     sources: ["examples/session-02/src/domain/appointment/transitions.ts"],
     code: `export const startExamination = (
@@ -333,9 +363,18 @@ startExamination(
   paidAppointment,
   "vet-001",
   "2026-08-30T10:00:00+09:00",
+);
+
+declare const examining: InExamination;
+
+// 診察結果を記録していなくてもコンパイルできる
+recordPayment(
+  examining,
+  { diagnosis: "皮膚炎", treatment: "軟膏", amount: 4800 },
+  "2026-08-30T10:30:00+09:00",
 );`,
   },
-  design: "Scheduled | CheckedIn | InExamination | Paid | Canceled の判別共用体を、遷移関数と分岐でも一貫して使います。状態の変更は、許可した遷移元だけを受け取る純粋関数にします。分岐では網羅チェックを行い、状態を追加したときの未対応の分岐をコンパイルエラーにします。",
+  design: "Scheduled | CheckedIn | InExamination | AwaitingPayment | Paid | Canceled の判別共用体を、遷移関数と分岐でも一貫して使います。completeExamination は InExamination だけを受け取り、recordPayment は AwaitingPayment だけを受け取る純粋関数にします。分岐では網羅チェックを行い、状態を追加したときの未対応の分岐をコンパイルエラーにします。",
   limitation: "この型が守れるのは、TypeScript が検査できる値だけです。外部から届く未検証の値や、型アサーションで作った値は防げません。",
   legacy: "Appointment 全体を受け取る遷移関数、throw、as Appointment、default 分岐を探します。これらは、許可されていない状態遷移や、状態追加時の未対応の分岐をコンパイラで止められない箇所です。",
   fallback: "解答スナップショットをステップ単位で開き、まず遷移関数の引数型、その後に網羅分岐をコピペします。相互レビューは行いましょう。",

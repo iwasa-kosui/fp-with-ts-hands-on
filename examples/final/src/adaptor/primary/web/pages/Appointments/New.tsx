@@ -1,9 +1,9 @@
 import { Link, useForm } from "@inertiajs/react";
 
-import { buttonClassName } from "../../components/Button.js";
-import { ErrorSummary } from "../../components/FormErrors.js";
-import { FormField } from "../../components/FormField.js";
-import { Card } from "../../components/Surface.js";
+import { buttonClassName } from "@fp-with-ts/clinic-web";
+import { ErrorSummary } from "@fp-with-ts/clinic-web";
+import { FormField } from "@fp-with-ts/clinic-web";
+import { Card } from "@fp-with-ts/clinic-web";
 import type { SharedPageProps } from "../../pageProps.js";
 import type {
   AppointmentOwnerOption,

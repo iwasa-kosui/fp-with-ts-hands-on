@@ -1,10 +1,10 @@
 import { Link } from "@inertiajs/react";
 import type { AppointmentPageView } from "../routes/appointmentRoutes.js";
 import type { DashboardCounts } from "../../../../useCase/getDashboardUseCase.js";
-import { DataTable } from "../components/DataTable.js";
+import { DataTable } from "@fp-with-ts/clinic-web";
 import { appointmentPresentation } from "../components/appointmentPresentation.js";
-import { Card, EmptyState } from "../components/Surface.js";
-import { StatusBadge } from "../components/StatusBadge.js";
+import { Card, EmptyState } from "@fp-with-ts/clinic-web";
+import { StatusBadge } from "@fp-with-ts/clinic-web";
 import type { SharedPageProps } from "../pageProps.js";
 import Layout from "./Layout.js";
 

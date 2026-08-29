@@ -96,7 +96,7 @@ export const session: SessionSummary = {
     },
     {
       id: "s3-apply-ids-to-appointment",
-      goal: "予約の5状態と遷移が受け取る識別子を、用途別の型へ置き換える。",
+      goal: "予約の6状態と遷移が受け取る識別子を、用途別の型へ置き換える。",
       targets: [
         "examples/session-03/src/domain/appointment/appointment.ts",
         "examples/session-03/src/domain/appointment/transitions.ts",
@@ -110,7 +110,7 @@ export const session: SessionSummary = {
         {
           path: "examples/session-04/src/domain/appointment/transitions.ts",
           symbol: "startExamination",
-          lines: [10, 25],
+          lines: [17, 27],
         },
       ],
     },
@@ -154,7 +154,7 @@ export const guides = ([
   },
   {
     id: "plain-string-appointment-ids",
-    title: "予約の5状態が識別子を string で持っている",
+    title: "予約の6状態が識別子を string で持っている",
     currentDesign: "appointmentId・petId・ownerId が3つとも string で宣言されています。",
     futureRisk: "OwnerId を petId の位置へ渡すなど、用途の異なる識別子を入れても検出できません。",
     path: "src/domain/appointment/appointment.ts",

@@ -164,7 +164,7 @@ const expectedExercises = [
       pickCount: 2,
       questions: [
         "`startExamination` は `CheckedIn` だけを受け取り、会計済み・キャンセル済みを型で拒否しますか。",
-        "`Canceled` の `reason` など、状態ごとの必須情報を省略できない型ですか。",
+        "`recordPayment` は `AwaitingPayment` だけを受け取り、診察結果の記録前には会計できない型ですか。",
         "状態を追加したとき、`assertNever` によって未対応の分岐がコンパイルエラーになりますか。",
       ],
     },

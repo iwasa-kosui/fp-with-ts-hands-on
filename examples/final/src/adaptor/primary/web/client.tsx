@@ -4,7 +4,7 @@ import {
 } from "@inertiajs/react";
 import { createRoot } from "react-dom/client";
 
-import "./styles.css";
+import "@fp-with-ts/clinic-web/styles.css";
 
 const pages = import.meta.glob<{ default: ResolvedComponent }>(
   "./pages/**/*.tsx",

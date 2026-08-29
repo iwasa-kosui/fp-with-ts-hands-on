@@ -13,6 +13,8 @@ export type InMemoryExaminationStartedStore = Readonly<{
   store: ExaminationStartedStore;
   appointments: () => ReadonlyArray<Appointment>;
   events: () => ReadonlyArray<ExaminationStarted>;
+  replace: (appointment: Appointment) => void;
+  reset: (appointments: ReadonlyArray<Appointment>) => void;
   storeCalls: () => number;
 }>;
 
@@ -72,6 +74,21 @@ export const createInMemoryExaminationStartedStore = (
     store,
     appointments: () => [...appointments.values()],
     events: () => [...events],
+    replace: (appointment) => {
+      const nextAppointments = new Map(appointments);
+      nextAppointments.set(appointment.appointmentId, appointment);
+      appointments = nextAppointments;
+    },
+    reset: (nextAppointments) => {
+      appointments = new Map(
+        nextAppointments.map((appointment) => [
+          appointment.appointmentId,
+          appointment,
+        ]),
+      );
+      events = [];
+      storeCalls = 0;
+    },
     storeCalls: () => storeCalls,
   };
 };
