@@ -2,6 +2,8 @@
 
 関数型ドメインモデリングハンズオン with TypeScript の example とドキュメントサイトです。
 
+https://fp-with-ts-hands-on.kosui.workers.dev/
+
 ## セットアップ
 
 ```bash
