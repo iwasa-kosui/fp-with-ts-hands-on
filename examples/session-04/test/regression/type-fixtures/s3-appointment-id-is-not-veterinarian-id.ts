@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { AppointmentId } from "../../../src/domain/ids/appointmentId.js";
-import { VeterinarianId } from "../../../src/domain/ids/veterinarianId.js";
+import { AppointmentId } from "../../../src/domain/appointment/index.js";
+import { VeterinarianId } from "../../../src/domain/appointment/index.js";
 import { clinicFixture } from "../../../../fixtures/clinic.js";
 
 const appointmentId = AppointmentId.parse(clinicFixture.appointmentId);

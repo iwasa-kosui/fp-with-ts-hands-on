@@ -3,21 +3,21 @@ import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
 import { Timestamp } from "../../../../domain/aggregate/timestamp.js";
-import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
-import { AppointmentReason } from "../../../../domain/appointment/appointmentReason.js";
-import { CancellationReason } from "../../../../domain/appointment/cancellationReason.js";
-import { Diagnosis } from "../../../../domain/appointment/diagnosis.js";
+import { AppointmentId } from "../../../../domain/appointment/index.js";
+import { AppointmentReason } from "../../../../domain/appointment/index.js";
+import { CancellationReason } from "../../../../domain/appointment/index.js";
+import { Diagnosis } from "../../../../domain/appointment/index.js";
 import type {
   AppointmentByPetIdResolver,
   AppointmentByIdResolver,
   AppointmentListResolver,
-} from "../../../../domain/appointment/appointmentResolver.js";
-import { PaymentAmount } from "../../../../domain/appointment/paymentAmount.js";
-import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js";
-import { Treatment } from "../../../../domain/appointment/treatment.js";
-import { ExamId } from "../../../../domain/examResult/examId.js";
-import { OwnerId } from "../../../../domain/owner/ownerId.js";
-import { PetId } from "../../../../domain/pet/petId.js";
+} from "../../../../domain/appointment/index.js";
+import { PaymentAmount } from "../../../../domain/appointment/index.js";
+import { VeterinarianId } from "../../../../domain/appointment/index.js";
+import { Treatment } from "../../../../domain/appointment/index.js";
+import { ExamId } from "../../../../domain/examResult/index.js";
+import { OwnerId } from "../../../../domain/owner/index.js";
+import { PetId } from "../../../../domain/pet/index.js";
 import type { SqliteDatabase } from "../db.js";
 import { appointmentsTable } from "../schema.js";
 

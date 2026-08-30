@@ -1,5 +1,5 @@
 import type { ResultAsync } from "neverthrow";
-import type { AppointmentId } from "../appointment/appointmentId.js";
+import type { AppointmentId } from "../appointment/index.js";
 import type { FollowUpRequested } from "./followUpRequested.js";
 
 export type FollowUpRequestConflict = Readonly<{

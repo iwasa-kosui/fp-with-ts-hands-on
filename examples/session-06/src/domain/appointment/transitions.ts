@@ -1,5 +1,5 @@
 import type { EventContext } from "../aggregate/eventContext.js";
-import type { VeterinarianId } from "../ids/veterinarianId.js";
+import type { VeterinarianId } from "./veterinarianId.js";
 import type {
   AwaitingPayment,
   CancellationReason,

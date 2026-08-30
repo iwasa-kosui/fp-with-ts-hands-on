@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 
-import type { ExamResultEvent } from "../../../../domain/examResult/examResultEvent.js";
+import type { ExamResultEvent } from "../../../../domain/examResult/index.js";
 import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type { SqliteDatabase } from "../db.js";
 import { toEventRecord } from "../eventRecord.js";

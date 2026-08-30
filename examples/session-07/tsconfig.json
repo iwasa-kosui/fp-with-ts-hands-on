@@ -12,6 +12,7 @@
     "test/**/*.ts",
     "test/**/*.tsx",
     "vitest.config.ts",
-    "vite.config.ts"
+    "vite.config.ts",
+    "drizzle.config.ts"
   ]
 }

@@ -200,7 +200,7 @@ const ensureAppointmentFound = (
       caption: "途中で何がthrowされるか型から分からないワークフロー",
       code: `import {
   startExamination as transitionToInExamination,
-} from "../domain/appointment/transitions.js";
+} from "../domain/appointment/index.js";
 
 const startExamination =
   (deps: Dependencies) =>
@@ -224,14 +224,14 @@ const startExamination =
       caption: "Result の型と処理順を同時に読めるワークフロー",
       code: `import type { Result } from "neverthrow";
 
-import type { Appointment } from "../domain/appointment/appointment.js";
+import type { Appointment } from "../domain/appointment/index.js";
 import {
   startExamination as transitionToInExamination,
-} from "../domain/appointment/transitions.js";
-import type { AppointmentId } from "../domain/ids/appointmentId.js";
-import type { OwnerId } from "../domain/ids/ownerId.js";
-import type { PetId } from "../domain/ids/petId.js";
-import type { VeterinarianId } from "../domain/ids/veterinarianId.js";
+} from "../domain/appointment/index.js";
+import type { AppointmentId } from "../domain/appointment/index.js";
+import type { OwnerId } from "../domain/owner/index.js";
+import type { PetId } from "../domain/pet/index.js";
+import type { VeterinarianId } from "../domain/appointment/index.js";
 
 type InExamination = Readonly<{
   kind: "InExamination";
@@ -367,7 +367,7 @@ const safeTryColumn = {
 
 import {
   startExamination as transitionToInExamination,
-} from "../domain/appointment/transitions.js";
+} from "../domain/appointment/index.js";
 
 const startExamination = (
   appointment: Appointment | undefined,
@@ -410,11 +410,11 @@ export const workspace = ({
     "src/domain/appointment/appointment.ts",
     "src/domain/appointment/transitions.ts",
     "src/domain/appointment/statusLabel.ts",
-    "src/domain/ids/appointmentId.ts",
-    "src/domain/ids/examId.ts",
-    "src/domain/ids/ownerId.ts",
-    "src/domain/ids/petId.ts",
-    "src/domain/ids/veterinarianId.ts",
+    "src/domain/appointment/appointmentId.ts",
+    "src/domain/examResult/examId.ts",
+    "src/domain/owner/ownerId.ts",
+    "src/domain/pet/petId.ts",
+    "src/domain/appointment/veterinarianId.ts",
     "src/shared/sensitive.ts",
     "src/useCase/errors.ts",
     "src/useCase/startExamination.ts",

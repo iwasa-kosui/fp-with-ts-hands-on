@@ -19,4 +19,4 @@ pnpm --filter @fp-with-ts/clinic-session-03 exercise
 2. 予約状態と `startExamination` にstringが残っている
 3. 取り違えを止める型テストがない
 
-PetId、OwnerId、ExamIdをさらに比較したい場合は、時間外の補足として `src/domain/ids` の各ファイルを読みます。
+PetId、OwnerId、ExamIdをさらに比較したい場合は、時間外の補足として `src/domain/pet/petId.ts`、`src/domain/owner/ownerId.ts`、`src/domain/examResult/examId.ts` を読みます。

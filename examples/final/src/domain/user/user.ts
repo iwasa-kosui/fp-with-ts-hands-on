@@ -1,4 +1,4 @@
-import type { VeterinarianId } from "../appointment/veterinarianId.js";
+import type { VeterinarianId } from "../appointment/index.js";
 import type { EventContext } from "../aggregate/eventContext.js";
 import type { PasswordHash } from "./passwordHash.js";
 import {

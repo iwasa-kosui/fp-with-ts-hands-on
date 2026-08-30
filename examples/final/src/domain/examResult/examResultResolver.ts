@@ -1,6 +1,6 @@
 import type { ResultAsync } from "neverthrow";
 
-import type { PetId } from "../pet/petId.js";
+import type { PetId } from "../pet/index.js";
 import type { ExamId } from "./examId.js";
 import type { ExamResult } from "./examResult.js";
 

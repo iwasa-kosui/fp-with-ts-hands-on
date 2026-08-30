@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 
-import { Owner } from "../../../../domain/owner/owner.js";
-import type { OwnerByIdResolver, OwnerListResolver } from "../../../../domain/owner/ownerResolver.js";
+import { Owner } from "../../../../domain/owner/index.js";
+import type { OwnerByIdResolver, OwnerListResolver } from "../../../../domain/owner/index.js";
 import type { SqliteDatabase } from "../db.js";
 import { ownersTable } from "../schema.js";
 

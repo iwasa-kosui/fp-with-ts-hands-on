@@ -3,7 +3,7 @@ import type { EventContext } from "../aggregate/eventContext.js";
 import type { Appointment, AwaitingPayment, Canceled, CheckedIn, InExamination, Paid, Scheduled } from "./appointment.js";
 import type { AppointmentId } from "./appointmentId.js";
 import type { VeterinarianId } from "./veterinarianId.js";
-import type { ExamId } from "../examResult/examId.js";
+import type { ExamId } from "../examResult/index.js";
 
 type AppointmentDomainEvent<
   TAggregateState extends Appointment,

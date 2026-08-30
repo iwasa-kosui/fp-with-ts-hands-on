@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import type { EventContext } from "../aggregate/eventContext.js";
 import { Timestamp } from "../aggregate/timestamp.js";
-import { PetId } from "../pet/petId.js";
+import { PetId } from "../pet/index.js";
 import { schemaResult } from "../shared/schemaResult.js";
 import { ExamId } from "./examId.js";
 import { ExamResultItem } from "./examResultItem.js";

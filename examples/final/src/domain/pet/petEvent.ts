@@ -1,6 +1,6 @@
 import type { DomainEvent } from "../aggregate/domainEvent.js";
 import type { EventContext } from "../aggregate/eventContext.js";
-import type { OwnerId } from "../owner/ownerId.js";
+import type { OwnerId } from "../owner/index.js";
 import type { Pet } from "./pet.js";
 import type { PetId } from "./petId.js";
 

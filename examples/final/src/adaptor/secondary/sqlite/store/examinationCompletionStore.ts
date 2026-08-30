@@ -2,11 +2,11 @@ import { and, eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 
-import type { AppointmentExaminationCompleted } from "../../../../domain/appointment/appointmentEvent.js";
-import { AppointmentId } from "../../../../domain/appointment/appointmentId.js";
-import type { AppointmentStoreError } from "../../../../domain/appointment/appointmentStores.js";
-import type { ExaminationCompletionStore } from "../../../../domain/examResult/examResultStores.js";
-import type { ExamResultRecorded } from "../../../../domain/examResult/examResultEvent.js";
+import type { AppointmentExaminationCompleted } from "../../../../domain/appointment/index.js";
+import { AppointmentId } from "../../../../domain/appointment/index.js";
+import type { AppointmentStoreError } from "../../../../domain/appointment/index.js";
+import type { ExaminationCompletionStore } from "../../../../domain/examResult/index.js";
+import type { ExamResultRecorded } from "../../../../domain/examResult/index.js";
 import type { SqliteDatabase } from "../db.js";
 import { toEventRecord } from "../eventRecord.js";
 import {

@@ -13,13 +13,13 @@ import {
   type Appointment as AppointmentState,
   type AwaitingPayment,
   type Paid,
-} from "../domain/appointment/appointment.js";
-import type { AppointmentId } from "../domain/appointment/appointmentId.js";
-import type { Diagnosis } from "../domain/appointment/diagnosis.js";
-import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
-import type { PaymentAmount } from "../domain/appointment/paymentAmount.js";
-import type { Treatment } from "../domain/appointment/treatment.js";
-import type { AppointmentConflict, PaymentRecordedStore } from "../domain/appointment/appointmentStores.js";
+} from "../domain/appointment/index.js";
+import type { AppointmentId } from "../domain/appointment/index.js";
+import type { Diagnosis } from "../domain/appointment/index.js";
+import type { AppointmentByIdResolver } from "../domain/appointment/index.js";
+import type { PaymentAmount } from "../domain/appointment/index.js";
+import type { Treatment } from "../domain/appointment/index.js";
+import type { AppointmentConflict, PaymentRecordedStore } from "../domain/appointment/index.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";

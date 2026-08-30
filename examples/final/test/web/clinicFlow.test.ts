@@ -14,7 +14,7 @@ import {
 } from "../../src/adaptor/secondary/sqlite/schema.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
-import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
+import { AppointmentId } from "../../src/domain/appointment/index.js";
 import { createUserByIdResolver } from "../../src/adaptor/secondary/sqlite/resolver/userResolver.js";
 import { createFollowUpResolver } from "../../src/adaptor/secondary/sqlite/resolver/followUpResolver.js";
 import { createFollowUpEventStore } from "../../src/adaptor/secondary/sqlite/store/followUpEventStore.js";

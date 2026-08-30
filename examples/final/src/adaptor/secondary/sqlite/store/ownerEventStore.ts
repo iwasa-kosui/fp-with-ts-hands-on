@@ -5,12 +5,12 @@ import type {
   OwnerCreated,
   OwnerDeleted,
   OwnerUpdated,
-} from "../../../../domain/owner/ownerEvent.js";
+} from "../../../../domain/owner/index.js";
 import type {
   OwnerDeletedStore,
   OwnerHasPetsStoreError,
   OwnerNotFoundStoreError,
-} from "../../../../domain/owner/ownerStores.js";
+} from "../../../../domain/owner/index.js";
 import type { SqliteDatabase } from "../db.js";
 import { toEventRecord } from "../eventRecord.js";
 import { domainEventsTable, ownersTable, petsTable } from "../schema.js";

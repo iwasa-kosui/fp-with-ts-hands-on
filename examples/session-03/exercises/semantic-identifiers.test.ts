@@ -1,9 +1,9 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 
-import { startExamination } from "../src/domain/appointment/transitions.js";
-import { AppointmentId } from "../src/domain/ids/appointmentId.js";
-import type { AppointmentId as AppointmentIdValue } from "../src/domain/ids/appointmentId.js";
-import type { VeterinarianId } from "../src/domain/ids/veterinarianId.js";
+import { startExamination } from "../src/domain/appointment/index.js";
+import { AppointmentId } from "../src/domain/appointment/index.js";
+import type { AppointmentId as AppointmentIdValue } from "../src/domain/appointment/index.js";
+import type { VeterinarianId } from "../src/domain/appointment/index.js";
 
 describe("Step 1", () => {
   it("AppointmentId を VeterinarianId の用途へ渡せない", () => {

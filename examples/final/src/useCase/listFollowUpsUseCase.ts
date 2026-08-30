@@ -1,6 +1,6 @@
 import { ok, safeTry, type ResultAsync } from "neverthrow";
 
-import type { AppointmentId } from "../domain/appointment/appointmentId.js";
+import type { AppointmentId } from "../domain/appointment/index.js";
 import {
   collectFollowUpTargets,
   type CollectFollowUpTargetsError,
@@ -9,9 +9,9 @@ import {
 import type { FollowUpCandidate } from "../domain/followUp/followUpCandidate.js";
 import type { FollowUpRequestReader } from "../domain/followUp/followUpRequestReader.js";
 import type { FollowUpResolver } from "../domain/followUp/followUpResolver.js";
-import type { OwnerName } from "../domain/owner/ownerName.js";
-import type { OwnerPhone } from "../domain/owner/ownerPhone.js";
-import type { PetId } from "../domain/pet/petId.js";
+import type { OwnerName } from "../domain/owner/index.js";
+import type { OwnerPhone } from "../domain/owner/index.js";
+import type { PetId } from "../domain/pet/index.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";

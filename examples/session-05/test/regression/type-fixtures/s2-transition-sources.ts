@@ -1,6 +1,6 @@
 // @ts-nocheck
-import type { CheckedIn } from "../../../src/domain/appointment/appointment.js";
-import { checkIn } from "../../../src/domain/appointment/transitions.js";
+import type { CheckedIn } from "../../../src/domain/appointment/index.js";
+import { checkIn } from "../../../src/domain/appointment/index.js";
 import { clinicFixture } from "../../../../fixtures/clinic.js";
 
 declare const checkedIn: CheckedIn;

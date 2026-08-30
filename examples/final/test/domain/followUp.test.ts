@@ -3,22 +3,22 @@ import { describe, expect, test } from "vitest";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import type { EventContext } from "../../src/domain/aggregate/eventContext.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
-import { Appointment, type Appointment as AppointmentState } from "../../src/domain/appointment/appointment.js";
-import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
-import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
-import { Diagnosis } from "../../src/domain/appointment/diagnosis.js";
-import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
-import { Treatment } from "../../src/domain/appointment/treatment.js";
-import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
-import { ExamId } from "../../src/domain/examResult/examId.js";
-import { ExamResult, type ExamResult as ExamResultValue } from "../../src/domain/examResult/examResult.js";
+import { Appointment, type Appointment as AppointmentState } from "../../src/domain/appointment/index.js";
+import { AppointmentId } from "../../src/domain/appointment/index.js";
+import { AppointmentReason } from "../../src/domain/appointment/index.js";
+import { Diagnosis } from "../../src/domain/appointment/index.js";
+import { PaymentAmount } from "../../src/domain/appointment/index.js";
+import { Treatment } from "../../src/domain/appointment/index.js";
+import { VeterinarianId } from "../../src/domain/appointment/index.js";
+import { ExamId } from "../../src/domain/examResult/index.js";
+import { ExamResult, type ExamResult as ExamResultValue } from "../../src/domain/examResult/index.js";
 import {
   collectFollowUpTargets,
   type FollowUpCandidate,
 } from "../../src/domain/followUp/collectFollowUpTargets.js";
-import { Owner } from "../../src/domain/owner/owner.js";
-import { OwnerId } from "../../src/domain/owner/ownerId.js";
-import { PetId } from "../../src/domain/pet/petId.js";
+import { Owner } from "../../src/domain/owner/index.js";
+import { OwnerId } from "../../src/domain/owner/index.js";
+import { PetId } from "../../src/domain/pet/index.js";
 import { UserId } from "../../src/domain/user/userId.js";
 
 const appointmentId = AppointmentId.schema.parse("11111111-1111-4111-8111-111111111111");

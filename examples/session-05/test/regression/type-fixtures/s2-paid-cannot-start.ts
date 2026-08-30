@@ -1,6 +1,6 @@
 // @ts-nocheck
-import type { Paid } from "../../../src/domain/appointment/appointment.js";
-import { startExamination } from "../../../src/domain/appointment/transitions.js";
+import type { Paid } from "../../../src/domain/appointment/index.js";
+import { startExamination } from "../../../src/domain/appointment/index.js";
 import { clinicFixture } from "../../../../fixtures/clinic.js";
 
 declare const paid: Paid;

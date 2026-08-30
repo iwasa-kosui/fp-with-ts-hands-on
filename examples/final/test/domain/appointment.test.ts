@@ -3,22 +3,22 @@ import { describe, expect, test } from "vitest";
 import {
   Appointment,
   type Paid,
-} from "../../src/domain/appointment/appointment.js";
-import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
-import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
-import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
-import { Diagnosis } from "../../src/domain/appointment/diagnosis.js";
+} from "../../src/domain/appointment/index.js";
+import { AppointmentId } from "../../src/domain/appointment/index.js";
+import { AppointmentReason } from "../../src/domain/appointment/index.js";
+import { CancellationReason } from "../../src/domain/appointment/index.js";
+import { Diagnosis } from "../../src/domain/appointment/index.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import type { EventContext } from "../../src/domain/aggregate/eventContext.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
-import { OwnerId } from "../../src/domain/owner/ownerId.js";
-import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
-import { PetId } from "../../src/domain/pet/petId.js";
+import { OwnerId } from "../../src/domain/owner/index.js";
+import { PaymentAmount } from "../../src/domain/appointment/index.js";
+import { PetId } from "../../src/domain/pet/index.js";
 import { UserId } from "../../src/domain/user/userId.js";
-import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
-import { Treatment } from "../../src/domain/appointment/treatment.js";
-import { ExamId } from "../../src/domain/examResult/examId.js";
-import { ExamResultItem } from "../../src/domain/examResult/examResultItem.js";
+import { VeterinarianId } from "../../src/domain/appointment/index.js";
+import { Treatment } from "../../src/domain/appointment/index.js";
+import { ExamId } from "../../src/domain/examResult/index.js";
+import { ExamResultItem } from "../../src/domain/examResult/index.js";
 
 const appointmentId = AppointmentId.schema.parse(
   "11111111-1111-4111-8111-111111111111",

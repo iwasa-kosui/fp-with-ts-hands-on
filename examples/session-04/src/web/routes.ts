@@ -1,21 +1,26 @@
+import { randomUUID } from "node:crypto";
+
 import { noticeFromCode, notImplemented } from "@fp-with-ts/clinic-web/server";
 import type { Context, Hono } from "hono";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
-import type { AppointmentStore } from "../adaptor/inMemoryAppointmentStore.js";
+import type {
+  AppointmentRepository,
+  PersistenceContext,
+} from "../adaptor/secondary/sqlite/appointmentRepository.js";
 import { ExamResult } from "../boundary/examResult.js";
 import { StartExaminationInput } from "../boundary/startExaminationInput.js";
-import type { Appointment, Scheduled } from "../domain/appointment/appointment.js";
+import type { Appointment, Scheduled } from "../domain/appointment/index.js";
 import {
   cancel,
   checkIn,
   completeExamination,
   recordPayment,
   startExamination,
-} from "../domain/appointment/transitions.js";
-import { AppointmentId } from "../domain/ids/appointmentId.js";
-import { OwnerId } from "../domain/ids/ownerId.js";
-import { PetId } from "../domain/ids/petId.js";
+} from "../domain/appointment/index.js";
+import { AppointmentId } from "../domain/appointment/index.js";
+import { OwnerId } from "../domain/owner/index.js";
+import { PetId } from "../domain/pet/index.js";
 import { toPageProps } from "./appointmentView.js";
 
 const ids = {
@@ -25,10 +30,10 @@ const ids = {
 };
 
 const appointmentOrThrow = (
-  store: AppointmentStore,
+  repository: AppointmentRepository,
   appointmentId: string,
 ): Appointment => {
-  const appointment = store.find(appointmentId);
+  const appointment = repository.find(appointmentId);
   if (appointment === undefined) throw new Error("Appointment not found");
   return appointment;
 };
@@ -55,24 +60,49 @@ export const session04InitialAppointment: Scheduled = {
   reason: "skin check",
 };
 
+export const session04PersistenceContext: PersistenceContext = {
+  ownerContact: clinicFixture.ownerContact,
+};
+
+const saveAndAppendAudit = (
+  repository: AppointmentRepository,
+  appointment: Appointment,
+  eventName: string,
+  occurredAt: string,
+): void => {
+  repository.save(appointment);
+  repository.appendAudit({
+    eventId: randomUUID(),
+    eventName,
+    occurredAt,
+    appointment,
+    payload: {},
+  });
+};
+
 export const registerClinicRoutes = (
   app: Hono,
-  store: AppointmentStore,
+  repository: AppointmentRepository,
 ): void => {
   app.get("/", (context) =>
     context.render(
       "ClinicDashboard",
       toPageProps(
-        appointmentOrThrow(store, clinicFixture.appointmentId),
+        appointmentOrThrow(repository, clinicFixture.appointmentId),
         noticeFromCode(context.req.query("notice")),
       ),
     ),
   );
 
   app.post("/appointments/:appointmentId/check-in", (context) => {
-    const current = appointmentOrThrow(store, context.req.param("appointmentId"));
+    const current = appointmentOrThrow(repository, context.req.param("appointmentId"));
     if (current.kind !== "Scheduled") throw new Error("Invalid appointment state");
-    store.save(checkIn(current, clinicFixture.checkedInAt));
+    saveAndAppendAudit(
+      repository,
+      checkIn(current, clinicFixture.checkedInAt),
+      "AppointmentCheckedIn",
+      clinicFixture.checkedInAt,
+    );
     return context.redirect("/", 303);
   });
 
@@ -81,59 +111,73 @@ export const registerClinicRoutes = (
       appointmentId: context.req.param("appointmentId"),
       veterinarianId: clinicFixture.veterinarianId,
     })._unsafeUnwrap();
-    const current = appointmentOrThrow(store, input.appointmentId);
+    const current = appointmentOrThrow(repository, input.appointmentId);
     if (current.kind !== "CheckedIn") throw new Error("Invalid appointment state");
-    store.save(
+    saveAndAppendAudit(
+      repository,
       startExamination(
         current,
         input.veterinarianId,
         "2026-08-30T06:30:00.000Z",
       ),
+      "ExaminationStarted",
+      "2026-08-30T06:30:00.000Z",
     );
     return context.redirect("/", 303);
   });
 
   app.post("/appointments/:appointmentId/exam-results", async (context) => {
-    const current = appointmentOrThrow(store, context.req.param("appointmentId"));
+    const current = appointmentOrThrow(repository, context.req.param("appointmentId"));
     if (current.kind !== "InExamination") throw new Error("Invalid appointment state");
     const parsed = ExamResult.parse(await decodeExamPayload(context));
     if (parsed.isErr()) throw new Error("Invalid exam result");
     const examResult = parsed._unsafeUnwrap();
-    store.save(
+    saveAndAppendAudit(
+      repository,
       completeExamination(
         current,
         { examId: examResult.examId },
         "2026-08-30T07:00:00.000Z",
       ),
+      "ExaminationCompleted",
+      "2026-08-30T07:00:00.000Z",
     );
     return context.redirect("/", 303);
   });
 
   app.post("/appointments/:appointmentId/payment", (context) => {
-    const current = appointmentOrThrow(store, context.req.param("appointmentId"));
+    const current = appointmentOrThrow(repository, context.req.param("appointmentId"));
     if (current.kind !== "AwaitingPayment") throw new Error("Invalid appointment state");
-    store.save(
+    saveAndAppendAudit(
+      repository,
       recordPayment(
         current,
         { diagnosis: "dermatitis", treatment: "ointment", amount: 4800 },
         "2026-08-30T07:10:00.000Z",
       ),
+      "PaymentRecorded",
+      "2026-08-30T07:10:00.000Z",
     );
     return context.redirect("/", 303);
   });
 
   app.post("/appointments/:appointmentId/cancel", (context) => {
-    const current = appointmentOrThrow(store, context.req.param("appointmentId"));
+    const current = appointmentOrThrow(repository, context.req.param("appointmentId"));
     if (current.kind !== "Scheduled" && current.kind !== "CheckedIn") {
       throw new Error("Invalid appointment state");
     }
-    store.save(cancel(current, "owner request", "2026-08-30T05:50:00.000Z"));
+    saveAndAppendAudit(
+      repository,
+      cancel(current, "owner request", "2026-08-30T05:50:00.000Z"),
+      "AppointmentCanceled",
+      "2026-08-30T05:50:00.000Z",
+    );
     return context.redirect("/", 303);
   });
 
   app.post("/follow-ups/request", notImplemented);
   app.post("/demo/reset", (context) => {
-    store.reset();
+    repository.reset(session04InitialAppointment, session04PersistenceContext);
     return context.redirect("/", 303);
   });
 };

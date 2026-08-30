@@ -1,4 +1,4 @@
-import type { VeterinarianId } from "../domain/appointment/veterinarianId.js";
+import type { VeterinarianId } from "../domain/appointment/index.js";
 import { assertNever } from "../domain/shared/assertNever.js";
 import type { User } from "../domain/user/user.js";
 import type { UserEmail } from "../domain/user/userEmail.js";

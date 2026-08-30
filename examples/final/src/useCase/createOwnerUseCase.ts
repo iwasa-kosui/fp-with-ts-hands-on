@@ -2,12 +2,12 @@ import { ResultAsync, type ResultAsync as UseResultAsync } from "neverthrow";
 
 import type { Clock } from "../domain/aggregate/clock.js";
 import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
-import { Owner } from "../domain/owner/owner.js";
-import type { OwnerEmail } from "../domain/owner/ownerEmail.js";
-import type { OwnerId } from "../domain/owner/ownerId.js";
-import type { OwnerName } from "../domain/owner/ownerName.js";
-import type { OwnerPhone } from "../domain/owner/ownerPhone.js";
-import type { OwnerCreatedStore } from "../domain/owner/ownerStores.js";
+import { Owner } from "../domain/owner/index.js";
+import type { OwnerEmail } from "../domain/owner/index.js";
+import type { OwnerId } from "../domain/owner/index.js";
+import type { OwnerName } from "../domain/owner/index.js";
+import type { OwnerPhone } from "../domain/owner/index.js";
+import type { OwnerCreatedStore } from "../domain/owner/index.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";

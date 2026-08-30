@@ -11,7 +11,7 @@ import { PasswordHash } from "../../../../domain/user/passwordHash.js";
 import { UserEmail } from "../../../../domain/user/userEmail.js";
 import { UserId } from "../../../../domain/user/userId.js";
 import { UserName } from "../../../../domain/user/userName.js";
-import { VeterinarianId } from "../../../../domain/appointment/veterinarianId.js";
+import { VeterinarianId } from "../../../../domain/appointment/index.js";
 import type { User } from "../../../../domain/user/user.js";
 import { assertNever } from "../../../../domain/shared/assertNever.js";
 import type { SqliteDatabase } from "../db.js";

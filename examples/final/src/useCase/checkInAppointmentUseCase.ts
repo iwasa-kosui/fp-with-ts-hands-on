@@ -13,10 +13,10 @@ import {
   type Appointment as AppointmentState,
   type CheckedIn,
   type Scheduled,
-} from "../domain/appointment/appointment.js";
-import type { AppointmentId } from "../domain/appointment/appointmentId.js";
-import type { AppointmentByIdResolver } from "../domain/appointment/appointmentResolver.js";
-import type { AppointmentCheckedInStore, AppointmentConflict } from "../domain/appointment/appointmentStores.js";
+} from "../domain/appointment/index.js";
+import type { AppointmentId } from "../domain/appointment/index.js";
+import type { AppointmentByIdResolver } from "../domain/appointment/index.js";
+import type { AppointmentCheckedInStore, AppointmentConflict } from "../domain/appointment/index.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";

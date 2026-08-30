@@ -464,6 +464,33 @@ describe("page-owned session contracts", () => {
     ]);
   });
 
+  it("keeps semantic identifier exercise references with their owning concepts", () => {
+    const semanticIdentifiers = exerciseSessions.find(
+      ({ slug }) => slug === "03-semantic-identifiers",
+    );
+    const workflowErrors = exerciseSessions.find(
+      ({ slug }) => slug === "05-workflow-errors",
+    );
+
+    expect(semanticIdentifiers?.steps[0]?.targets).toEqual([
+      "examples/session-03/src/domain/appointment/appointmentId.ts",
+      "examples/session-03/src/domain/appointment/veterinarianId.ts",
+    ]);
+    expect(semanticIdentifiers?.steps[0]?.solutions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "examples/session-04/src/domain/appointment/appointmentId.ts",
+        }),
+        expect.objectContaining({
+          path: "examples/session-04/src/domain/appointment/veterinarianId.ts",
+        }),
+      ]),
+    );
+    expect(workflowErrors?.steps.flatMap(({ targets }) => targets)).not.toContain(
+      "examples/session-05/src/domain/ids/appointmentId.ts",
+    );
+  });
+
   it("keeps exercise-only fields off non-exercise pages", () => {
     for (const session of sessions.filter(({ kind }) => kind !== "exercise")) {
       expect(session.adv).toBeUndefined();

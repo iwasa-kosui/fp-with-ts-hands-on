@@ -16,29 +16,29 @@ import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
 import {
   Appointment,
   type Appointment as AppointmentState,
-} from "../../src/domain/appointment/appointment.js";
+} from "../../src/domain/appointment/index.js";
 import type {
   AppointmentEvent,
   AppointmentExaminationCompleted,
-} from "../../src/domain/appointment/appointmentEvent.js";
-import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
-import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
-import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
-import { Diagnosis } from "../../src/domain/appointment/diagnosis.js";
-import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
-import { Treatment } from "../../src/domain/appointment/treatment.js";
-import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
-import { ExamId } from "../../src/domain/examResult/examId.js";
-import { ExamResult } from "../../src/domain/examResult/examResult.js";
-import { ExamResultItem } from "../../src/domain/examResult/examResultItem.js";
-import type { ExamResultRecorded } from "../../src/domain/examResult/examResultEvent.js";
+} from "../../src/domain/appointment/index.js";
+import { AppointmentId } from "../../src/domain/appointment/index.js";
+import { AppointmentReason } from "../../src/domain/appointment/index.js";
+import { CancellationReason } from "../../src/domain/appointment/index.js";
+import { Diagnosis } from "../../src/domain/appointment/index.js";
+import { PaymentAmount } from "../../src/domain/appointment/index.js";
+import { Treatment } from "../../src/domain/appointment/index.js";
+import { VeterinarianId } from "../../src/domain/appointment/index.js";
+import { ExamId } from "../../src/domain/examResult/index.js";
+import { ExamResult } from "../../src/domain/examResult/index.js";
+import { ExamResultItem } from "../../src/domain/examResult/index.js";
+import type { ExamResultRecorded } from "../../src/domain/examResult/index.js";
 import {
   Owner,
   type Owner as OwnerState,
-} from "../../src/domain/owner/owner.js";
-import { OwnerId } from "../../src/domain/owner/ownerId.js";
-import { Pet, type Pet as PetState } from "../../src/domain/pet/pet.js";
-import { PetId } from "../../src/domain/pet/petId.js";
+} from "../../src/domain/owner/index.js";
+import { OwnerId } from "../../src/domain/owner/index.js";
+import { Pet, type Pet as PetState } from "../../src/domain/pet/index.js";
+import { PetId } from "../../src/domain/pet/index.js";
 import { PasswordHash } from "../../src/domain/user/passwordHash.js";
 import type { User } from "../../src/domain/user/user.js";
 import { UserEmail } from "../../src/domain/user/userEmail.js";

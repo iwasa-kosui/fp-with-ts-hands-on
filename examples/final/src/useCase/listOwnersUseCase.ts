@@ -1,11 +1,11 @@
 import type { ResultAsync } from "neverthrow";
 
-import type { Owner } from "../domain/owner/owner.js";
-import type { OwnerId } from "../domain/owner/ownerId.js";
-import type { OwnerEmail } from "../domain/owner/ownerEmail.js";
-import type { OwnerName } from "../domain/owner/ownerName.js";
-import type { OwnerPhone } from "../domain/owner/ownerPhone.js";
-import type { OwnerListResolver } from "../domain/owner/ownerResolver.js";
+import type { Owner } from "../domain/owner/index.js";
+import type { OwnerId } from "../domain/owner/index.js";
+import type { OwnerEmail } from "../domain/owner/index.js";
+import type { OwnerName } from "../domain/owner/index.js";
+import type { OwnerPhone } from "../domain/owner/index.js";
+import type { OwnerListResolver } from "../domain/owner/index.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";

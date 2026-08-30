@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 
 import type { FollowUpResolver } from "../../../../domain/followUp/followUpResolver.js";
-import { Owner } from "../../../../domain/owner/owner.js";
+import { Owner } from "../../../../domain/owner/index.js";
 import type { SqliteDatabase } from "../db.js";
 import { appointmentsTable, examResultsTable, ownersTable } from "../schema.js";
 import { parseAppointmentRow } from "./appointmentResolver.js";

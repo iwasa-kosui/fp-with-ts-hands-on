@@ -1,7 +1,11 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
-import { createApp } from "../../src/app.js";
+import { createDatabaseBackedApp } from "../../src/app.js";
 
 const inertiaHeaders = {
   Accept: "application/json",
@@ -9,7 +13,7 @@ const inertiaHeaders = {
   "X-Inertia-Version": "1",
 } as const;
 
-type App = ReturnType<typeof createApp>;
+type App = ReturnType<typeof createDatabaseBackedApp>;
 
 const post = (app: App, path: string, body?: unknown) =>
   body === undefined
@@ -28,9 +32,20 @@ const page = async (app: App) => {
 
 describe("Session 03 Web application", () => {
   let app: App;
+  let directory: string;
 
   beforeEach(() => {
-    app = createApp();
+    directory = mkdtempSync(join(tmpdir(), "clinic-session-03-web-"));
+    app = createDatabaseBackedApp({
+      databasePath: join(directory, "clinic.sqlite"),
+      migrationsFolder: fileURLToPath(new URL("../../drizzle", import.meta.url)),
+      isProduction: false,
+    });
+  });
+
+  afterEach(() => {
+    app.close();
+    rmSync(directory, { recursive: true, force: true });
   });
 
   it("型で絞った遷移をHono routeから最後まで呼び出す", async () => {

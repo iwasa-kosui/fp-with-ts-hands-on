@@ -1,6 +1,6 @@
-import type { Appointment } from "../appointment/appointment.js";
-import type { ExamResult } from "../examResult/examResult.js";
-import type { Owner } from "../owner/owner.js";
+import type { Appointment } from "../appointment/index.js";
+import type { ExamResult } from "../examResult/index.js";
+import type { Owner } from "../owner/index.js";
 
 export type FollowUpCandidate = Readonly<{
   appointment: Appointment;

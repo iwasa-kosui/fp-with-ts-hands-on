@@ -24,38 +24,38 @@ import type { Clock } from "../../src/domain/aggregate/clock.js";
 import { EventId } from "../../src/domain/aggregate/eventId.js";
 import type { EventIdGenerator } from "../../src/domain/aggregate/eventIdGenerator.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
-import type { Appointment } from "../../src/domain/appointment/appointment.js";
-import { AppointmentId } from "../../src/domain/appointment/appointmentId.js";
-import { AppointmentReason } from "../../src/domain/appointment/appointmentReason.js";
-import { CancellationReason } from "../../src/domain/appointment/cancellationReason.js";
-import { Diagnosis } from "../../src/domain/appointment/diagnosis.js";
-import type { AppointmentByPetIdResolver } from "../../src/domain/appointment/appointmentResolver.js";
-import { PaymentAmount } from "../../src/domain/appointment/paymentAmount.js";
-import { Treatment } from "../../src/domain/appointment/treatment.js";
-import { VeterinarianId } from "../../src/domain/appointment/veterinarianId.js";
+import type { Appointment } from "../../src/domain/appointment/index.js";
+import { AppointmentId } from "../../src/domain/appointment/index.js";
+import { AppointmentReason } from "../../src/domain/appointment/index.js";
+import { CancellationReason } from "../../src/domain/appointment/index.js";
+import { Diagnosis } from "../../src/domain/appointment/index.js";
+import type { AppointmentByPetIdResolver } from "../../src/domain/appointment/index.js";
+import { PaymentAmount } from "../../src/domain/appointment/index.js";
+import { Treatment } from "../../src/domain/appointment/index.js";
+import { VeterinarianId } from "../../src/domain/appointment/index.js";
 import { Sensitive } from "../../src/domain/shared/sensitive.js";
-import { ExamId } from "../../src/domain/examResult/examId.js";
+import { ExamId } from "../../src/domain/examResult/index.js";
 import {
   Owner,
   type Owner as OwnerState,
-} from "../../src/domain/owner/owner.js";
-import { OwnerEmail } from "../../src/domain/owner/ownerEmail.js";
-import { OwnerId } from "../../src/domain/owner/ownerId.js";
-import { OwnerName } from "../../src/domain/owner/ownerName.js";
-import { OwnerPhone } from "../../src/domain/owner/ownerPhone.js";
+} from "../../src/domain/owner/index.js";
+import { OwnerEmail } from "../../src/domain/owner/index.js";
+import { OwnerId } from "../../src/domain/owner/index.js";
+import { OwnerName } from "../../src/domain/owner/index.js";
+import { OwnerPhone } from "../../src/domain/owner/index.js";
 import type {
   OwnerByIdResolver,
   OwnerListResolver,
-} from "../../src/domain/owner/ownerResolver.js";
-import { Pet, type Pet as PetState } from "../../src/domain/pet/pet.js";
-import { PetId } from "../../src/domain/pet/petId.js";
-import { PetName } from "../../src/domain/pet/petName.js";
-import { PetSpecies } from "../../src/domain/pet/petSpecies.js";
+} from "../../src/domain/owner/index.js";
+import { Pet, type Pet as PetState } from "../../src/domain/pet/index.js";
+import { PetId } from "../../src/domain/pet/index.js";
+import { PetName } from "../../src/domain/pet/index.js";
+import { PetSpecies } from "../../src/domain/pet/index.js";
 import type {
   PetByIdResolver,
   PetByOwnerIdResolver,
   PetListResolver,
-} from "../../src/domain/pet/petResolver.js";
+} from "../../src/domain/pet/index.js";
 import { PasswordHash } from "../../src/domain/user/passwordHash.js";
 import type { User } from "../../src/domain/user/user.js";
 import { UserEmail } from "../../src/domain/user/userEmail.js";

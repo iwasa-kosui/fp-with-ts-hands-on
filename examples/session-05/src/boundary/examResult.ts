@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { ExamId } from "../domain/ids/examId.js";
-import { PetId } from "../domain/ids/petId.js";
+import { ExamId } from "../domain/examResult/index.js";
+import { PetId } from "../domain/pet/index.js";
 import { schemaResult } from "../shared/schemaResult.js";
 
 const ExamResultSchema = z.object({

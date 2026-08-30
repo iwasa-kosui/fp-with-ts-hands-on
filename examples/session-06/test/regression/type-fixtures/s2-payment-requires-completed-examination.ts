@@ -1,10 +1,10 @@
 // @ts-nocheck
-import type { InExamination } from "../../../src/domain/appointment/appointment.js";
+import type { InExamination } from "../../../src/domain/appointment/index.js";
 import {
   completeExamination,
   recordPayment,
-} from "../../../src/domain/appointment/transitions.js";
-import { ExamId } from "../../../src/domain/ids/examId.js";
+} from "../../../src/domain/appointment/index.js";
+import { ExamId } from "../../../src/domain/examResult/index.js";
 import { clinicFixture } from "../../../../fixtures/clinic.js";
 
 declare const examining: InExamination;

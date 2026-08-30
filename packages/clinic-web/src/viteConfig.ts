@@ -6,10 +6,11 @@ import { defineConfig, type UserConfigExport } from "vite";
 
 type ClinicViteConfigOptions = {
   external?: readonly string[];
+  shutdownTimeoutMs?: number;
 };
 
 export const createClinicViteConfig = (
-  { external = [] }: ClinicViteConfigOptions = {},
+  { external = [], shutdownTimeoutMs }: ClinicViteConfigOptions = {},
 ): UserConfigExport =>
   defineConfig(({ mode }) => {
     if (mode === "client") {
@@ -43,6 +44,7 @@ export const createClinicViteConfig = (
           entry: "./src/server.ts",
           external: [...external],
           minify: false,
+          shutdownTimeoutMs,
         }),
       ],
       ssr: {
