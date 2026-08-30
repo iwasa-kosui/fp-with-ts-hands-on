@@ -45,7 +45,8 @@ const excalidrawTemplateUrl =
 const chapters = [
   { id: "incident", label: "一つの出来事" },
   { id: "workshop", label: "コマンドと条件" },
-  { id: "workflow", label: "ROPとResolver／Store" },
+  { id: "rop", label: "ROPの失敗経路" },
+  { id: "io-boundaries", label: "I/Oの分離" },
 ] as const;
 
 export const navigation = ({
@@ -142,26 +143,17 @@ export const navigation = ({
               <p>予約を管理する担当者が、診察開始前の予約だけを、キャンセルできます。キャンセルする際には、キャンセル理由を記入する必要があります。</p>
             </blockquote>
             <p>この条件は、コマンドを受けたユースケースが確認する条件としてまとめます。</p>
-
-            <h3>ビジネスユースケース、ドメインモデル、ユースケースを区別する</h3>
-            <p>
-              「受付担当者が予約をキャンセルする」は、アクターが達成したいビジネスユースケースです。ソフトウェアのユースケースはResolverから実行者と予約を受け取り、権限と予約の存在を確認します。ドメインモデルの<code>Appointment</code>は、診察開始前であり理由が記入されている場合だけ、<code>Appointment.cancel</code>から成功イベントを返します。
-            </p>
-            <p>ビジネスユースケースは技術構成を含みません。ユースケースは入出力と失敗を扱うソフトウェアの処理、ドメインロジックは取得済みの値だけで状態を遷移させる純粋な処理です。一つの集約と一つのユースケースが常に対応するわけではありません。</p>
           </section>
 
-          <section id="workflow">
-            <h2>Railway Oriented Programming とResolver／Store</h2>
+          <section id="rop">
+            <h2>ROPで失敗の経路を設計する</h2>
+            <p>このセクションでは、EventStormingで見つけたコマンド、確認する条件、集約、ドメインイベントを、失敗を含むユースケースの流れへ写します。</p>
 
             <h3>2本のレールを考える</h3>
             <p>
-              Railway Oriented Programming（ROR）は、処理のパイプラインを鉄道のレールと分岐に見立てた考え方です。
-              レールは2本存在し、一方は処理に成功した場合のルート、他方は失敗した場合のルートを表します。
-
-              <br/>
-
-              各工程では、何かの処理を行い、成功すればその出力を次の処理へ渡します。失敗が起きた場合は下のレールへ移ります。図からも分かる通り、一度失敗のレールに移動すれば、以降の処理はスキップされます。
+              Railway Oriented Programmingは、処理の流れを成功と失敗の2本のレールで捉える考え方です。一方は処理に成功した場合の経路、もう一方は失敗した場合の経路を表します。
             </p>
+            <p>各工程が成功したら、その出力を次の工程へ渡します。失敗したら下のレールへ移り、後続の成功処理をスキップします。まずは図を左からたどり、どの条件で失敗のレールへ切り替わるかを確認してください。</p>
             <RailwayOrientedProgramming />
 
             <h3>なぜROPを利用するのか</h3>
@@ -171,36 +163,58 @@ export const navigation = ({
 
             <h3>EventStormingをユースケースへ写す</h3>
             <p>
-              コマンドはユースケースの入力へ、集約はドメインロジックの<code>Appointment.cancel</code>へ、ドメインイベントは成功出力へ対応させます。実行者の権限、予約の存在、現在状態、理由は、それぞれ確認する条件として明示します。
+              先ほどの付箋を、ユースケースの要素へ一つずつ対応させましょう。コマンドは入力へ、集約はドメインロジックの<code>Appointment.cancel</code>へ、ドメインイベントは成功出力へ写します。実行者の権限、予約の存在、現在状態、理由は、それぞれ確認する条件として明示します。
             </p>
             <dl>
               <dt>入力</dt>
-              <dd>予約キャンセルのコマンドと、Resolverから取得した実行者・予約の現在状態。</dd>
-              <dt>ユースケース</dt>
-              <dd>実行者の権限と予約の存在を確認し、診察開始前で理由が記入されている予約を<code>Appointment.cancel</code>へ渡す。</dd>
+              <dd>予約キャンセルのコマンドと、実行者・予約の現在状態。</dd>
+              <dt>ユースケースの確認</dt>
+              <dd>実行者に予約を管理する権限があり、対象の予約が存在することを確認する。</dd>
+              <dt>ドメインロジック</dt>
+              <dd><code>Appointment.cancel</code>が予約の現在状態とキャンセル理由を確認し、成功イベントを作る。</dd>
               <dt>成功時の出力</dt>
               <dd><code>AppointmentCanceled</code>。</dd>
             </dl>
-            <EventStormingRopComparison />
+          </section>
+
+          <section id="io-boundaries">
+            <h2>I/Oをドメインロジックの両端へ追い出す</h2>
+            <p>このセクションでは、前のセクションで組み立てたユースケースからデータの取得と記録を分け、中心のドメインロジックを副作用のないpureな関数として扱える構成を学びます。</p>
+
+            <h3>ビジネスユースケース、ドメインモデル、ユースケースを区別する</h3>
+            <p>
+              ビジネスユースケースとは、アクターが達成したい業務上の目的です。例えば「受付担当者が予約をキャンセルする」がこれにあたります。
+            </p>
+            <p>ソフトウェアのユースケースは、Resolverから実行者と対象の予約を受け取り、権限の有無と予約の存在を確認します。</p>
+            <p>診察開始前で、かつ理由が記入されている場合にのみ、ドメインモデルの<code>Appointment.cancel</code>は成功イベントを返します。一つの集約と一つのユースケースが常に対応するわけではありません。</p>
 
             <h3>なぜResolverとStoreをドメインロジックの外へ置くのか</h3>
             <p>
-              User ResolverとAppointment Resolverが実行者と予約の現在状態を取得し、ユースケースへ値として渡します。<code>Appointment.cancel</code>はデータベースへ接続せず、条件を満たしたときだけ<code>AppointmentCanceled</code>を返します。Event Storeは成功イベントを受け取った場合だけ追記します。
+              ResolverとStoreを外へ置く主な理由は、<code>Appointment.cancel</code>をpureに保つためです。データベースへの接続を含めず、入力された値だけで結果が決まるようにすると、業務ルールを値だけでテストできます。取得方法や記録先が変わっても、中心の判断を変更せずにResolverとStoreの実装を差し替えられます。
             </p>
+
+            <h3>入力側：Resolverの役割</h3>
             <p>
-              主な理由は、ドメインロジックをpureに保ち、値だけでテストできるようにすることです。その結果、不正なキャンセルや途中状態を記録せず、誰がいつどの予約をキャンセルしたかを出来事として追えます。取得方法や記録先が変わっても、ResolverとStoreの実装を差し替えられます。
+              User ResolverとAppointment Resolverは、実行者と予約の現在状態を取得し、ユースケースへ値として渡します。取得を入力側へ分けることで、<code>Appointment.cancel</code>をデータベースのAPIから切り離して値だけでテストできます。図では、Resolverから受け取った値が確認する条件を通り、ドメインロジックへ渡るところを指でたどってみてください。
             </p>
+
+            <h3>出力側：Storeの役割</h3>
+            <p>
+              <code>Appointment.cancel</code>は、条件を満たしたときだけ<code>AppointmentCanceled</code>を返します。Storeはその成功イベントを受け取り、Event Storeへ追記します。失敗した場合はStoreを呼ばないため、不正なキャンセルや途中状態を記録しません。誰がいつどの予約をキャンセルしたかは、追記された出来事から確認できます。
+            </p>
+            <EventStormingRopComparison />
             <p>
               S1の<code>startExamination</code>は、まだ<code>Repository</code>からの取得、状態の記録、監査記録、時刻とIDの生成を一つのユースケースで行います。S2以降でドメインロジックを分離し、後続セッションでResolverとStoreを明示的な依存へ変えます。
             </p>
             <aside class="decision-card">
               <h3>このハンズオンでEvent Storeを選ぶ理由</h3>
               <p>
-                これはDMMF一般の必須条件ではなく、このハンズオンの設計です。ユースケースの成功イベントを、そのままEvent Storeへ渡します。
+                これはDMMF一般の必須条件ではなく、このハンズオンの設計です。成功イベントをそのまま履歴として追記でき、受付担当者がいつどの予約をキャンセルしたかを後から確認できるため、ユースケースの出力先にEvent Storeを選びます。
               </p>
             </aside>
 
             <h3>S1で残す成果物</h3>
+            <p>最後に、ここまでの議論を次の3点として班のボードへ残しましょう。後続セッションでは、この図と条件を見ながらTypeScriptのコードへ落とし込みます。</p>
             <ol>
               <li>アクター、コマンド、<code>Appointment</code>集約、<code>AppointmentCanceled</code>を順に並べた図</li>
               <li>権限、予約の存在、現在状態、理由の条件とHotspot</li>

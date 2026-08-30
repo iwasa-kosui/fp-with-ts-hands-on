@@ -37,7 +37,7 @@ const exerciseSessions = [
 test("S1 shows ROP as two rails with three failure switches", async ({ page }) => {
   await page.goto("/sessions/01-business-events-and-workflows/");
 
-  const diagram = page.locator(".rop-basics__diagram");
+  const diagram = page.locator("#rop .rop-basics__diagram");
   await expect(diagram).toContainText("成功レール");
   await expect(diagram).toContainText("失敗レール");
   await expect(diagram.locator("[data-rop-switch]")).toHaveCount(3);
@@ -53,7 +53,9 @@ test("S1 maps appointment cancellation into a single-aggregate event-output work
 }) => {
   await page.goto("/sessions/01-business-events-and-workflows/");
 
-  const diagram = page.locator(".dmmf-comparison__diagram");
+  const diagram = page.locator(
+    "#io-boundaries .dmmf-comparison__diagram",
+  );
   await expect(diagram).toContainText("予約をキャンセルする");
   await expect(diagram).toContainText("AppointmentCanceled");
   await expect(diagram).toContainText("Appointment");
@@ -80,24 +82,58 @@ test("S1 maps appointment cancellation into a single-aggregate event-output work
   );
 });
 
-test("S1 explains ROP and persistence boundary outcomes", async ({
+test("S1 separates ROP and I/O into four top-level learning sections", async ({
   page,
 }) => {
   await page.goto("/sessions/01-business-events-and-workflows/");
 
-  const headings = await page.locator("main h2, main h3").allTextContents();
+  const main = page.locator("main");
+  const sectionHeadings = await main
+    .locator("article > section > h2")
+    .allTextContents();
+  expect(sectionHeadings).toEqual([
+    "起きた出来事から業務を始める",
+    "コマンド、確認する条件、集約を見つける",
+    "ROPで失敗の経路を設計する",
+    "I/Oをドメインロジックの両端へ追い出す",
+  ]);
+
+  const headings = await main.locator("h2, h3").allTextContents();
   expect(headings.some((heading) => /^\d{1,2}:\d{2}/.test(heading.trim()))).toBe(
     false,
   );
 
-  const main = page.locator("main");
-  const ropRationale = main
-    .getByRole("heading", { level: 3, name: "なぜROPでつなぐのか" })
-    .locator("xpath=following-sibling::*[1][self::p]");
-  await expect(ropRationale).toHaveCount(1);
-  await expect(main).toContainText("一部だけ処理されて不整合");
-  await expect(main).toContainText("データベースのAPIから切り離して値だけでテストでき");
-  await expect(main.locator("#workflow dl")).toHaveCount(1);
+  const rop = main.locator("#rop");
+  await expect(rop.locator(":scope > h2 + p")).toHaveCount(1);
+  await expect(rop).toContainText("一部だけ処理されて不整合");
+  await expect(rop.locator("dl")).toHaveCount(1);
+  await expect(rop.locator("dl dt")).toHaveText([
+    "入力",
+    "ユースケースの確認",
+    "ドメインロジック",
+    "成功時の出力",
+  ]);
+
+  const ioBoundaries = main.locator("#io-boundaries");
+  await expect(ioBoundaries.locator(":scope > h2 + p")).toHaveCount(1);
+  await expect(ioBoundaries).toContainText(
+    "データベースのAPIから切り離して値だけでテストでき",
+  );
+  await expect(ioBoundaries).toContainText("ビジネスユースケース");
+  await expect(ioBoundaries).toContainText("pure");
+  await expect(ioBoundaries).toContainText("Event Store");
+  await expect(ioBoundaries).toContainText(
+    "成功イベントをそのまま履歴として追記でき",
+  );
+  await expect(ioBoundaries.locator("h3")).toHaveText([
+    "ビジネスユースケース、ドメインモデル、ユースケースを区別する",
+    "なぜResolverとStoreをドメインロジックの外へ置くのか",
+    "入力側：Resolverの役割",
+    "出力側：Storeの役割",
+    "このハンズオンでEvent Storeを選ぶ理由",
+    "S1で残す成果物",
+  ]);
+
   await expect(main.getByText("顧客にとって", { exact: true })).toHaveCount(0);
   await expect(main.getByText("技術者にとって", { exact: true })).toHaveCount(0);
 });
