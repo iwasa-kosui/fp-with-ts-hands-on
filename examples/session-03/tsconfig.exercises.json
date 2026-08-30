@@ -4,6 +4,9 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["exercises/semantic-identifiers.test.ts"],
+  "include": [
+    "exercises/semantic-identifiers.test.ts",
+    "src/domain/domain.test-types.ts"
+  ],
   "exclude": []
 }
