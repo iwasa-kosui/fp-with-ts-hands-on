@@ -122,26 +122,28 @@ export const createAppointmentStore = (
   };
 
   const reset = (): Scheduled => {
-    try {
-      database.delete(auditLogsTable).run();
-      database.delete(appointmentsTable).run();
-    } catch (cause) {
-      throw new AppointmentPersistenceError("save-state", cause);
-    }
+    return database.transaction((transaction) => {
+      try {
+        transaction.delete(auditLogsTable).run();
+        transaction.delete(appointmentsTable).run();
+      } catch (cause) {
+        throw new AppointmentPersistenceError("save-state", cause);
+      }
 
-    saveState(database, initialAppointment);
-    try {
-      database.insert(auditLogsTable).values({
-        appointmentId: initialAppointment.appointmentId,
-        eventId: INITIAL_AUDIT_EVENT_ID,
-        eventName: "AppointmentSeeded",
-        occurredAt: initialAppointment.scheduledAt,
-        payload: { appointmentId: initialAppointment.appointmentId },
-      }).run();
-    } catch (cause) {
-      throw new AppointmentPersistenceError("append-audit", cause);
-    }
-    return initialAppointment;
+      saveState(transaction, initialAppointment);
+      try {
+        transaction.insert(auditLogsTable).values({
+          appointmentId: initialAppointment.appointmentId,
+          eventId: INITIAL_AUDIT_EVENT_ID,
+          eventName: "AppointmentSeeded",
+          occurredAt: initialAppointment.scheduledAt,
+          payload: { appointmentId: initialAppointment.appointmentId },
+        }).run();
+      } catch (cause) {
+        throw new AppointmentPersistenceError("append-audit", cause);
+      }
+      return initialAppointment;
+    });
   };
 
   const storeAtomically = (event: ExaminationStarted) =>

@@ -94,21 +94,28 @@ test("Session 03 does not add an audit event when a Paid appointment starts exam
   const app = createDatabaseBackedApp(options);
 
   try {
-    await post(app, `${appointmentUrl}/check-in`);
-    await post(app, `${appointmentUrl}/start-examination`);
-    await post(app, `${appointmentUrl}/exam-results`, {
+    expect((await post(app, `${appointmentUrl}/check-in`)).status).toBe(303);
+    expect((await post(app, `${appointmentUrl}/start-examination`)).status).toBe(303);
+    expect((await post(app, `${appointmentUrl}/exam-results`, {
       examId: clinicFixture.examId,
-    });
-    await post(app, `${appointmentUrl}/payment`);
+    })).status).toBe(303);
+    expect((await post(app, `${appointmentUrl}/payment`)).status).toBe(303);
 
-    const database = new Database(options.databasePath, { readonly: true });
-    const before = database
-      .prepare("SELECT state FROM appointments WHERE appointment_id = ?")
-      .get(clinicFixture.appointmentId) as Readonly<{ state: string }>;
-    const beforeAuditCount = database
-      .prepare("SELECT count(*) AS count FROM audit_logs")
-      .get() as Readonly<{ count: number }>;
-    database.close();
+    const beforeDatabase = new Database(options.databasePath, { readonly: true });
+    let beforeState!: unknown;
+    let beforeAuditCount!: number;
+    try {
+      const before = beforeDatabase
+        .prepare("SELECT state FROM appointments WHERE appointment_id = ?")
+        .get(clinicFixture.appointmentId) as Readonly<{ state: string }>;
+      beforeState = JSON.parse(before.state) as unknown;
+      expect(beforeState).toMatchObject({ kind: "Paid" });
+      beforeAuditCount = (beforeDatabase
+        .prepare("SELECT count(*) AS count FROM audit_logs")
+        .get() as Readonly<{ count: number }>).count;
+    } finally {
+      beforeDatabase.close();
+    }
 
     expect((await post(app, `${appointmentUrl}/start-examination`)).status).toBe(500);
 
@@ -121,8 +128,8 @@ test("Session 03 does not add an audit event when a Paid appointment starts exam
         .prepare("SELECT count(*) AS count FROM audit_logs")
         .get() as Readonly<{ count: number }>;
 
-      expect(JSON.parse(after.state)).toEqual(JSON.parse(before.state));
-      expect(afterAuditCount.count).toBe(beforeAuditCount.count);
+      expect(JSON.parse(after.state)).toEqual(beforeState);
+      expect(afterAuditCount.count).toBe(beforeAuditCount);
     } finally {
       afterDatabase.close();
     }

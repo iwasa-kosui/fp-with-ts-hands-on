@@ -1,7 +1,8 @@
+import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
@@ -319,6 +320,30 @@ const writeFinalPublicApiFixture = async (
 };
 
 describe("runnable session package contract", () => {
+  it("keeps local SQLite databases and journals outside Git", () => {
+    const databasePaths = [
+      "examples/session-01/clinic.sqlite",
+      "examples/session-02/clinic.sqlite",
+      "examples/session-03/clinic.sqlite",
+      "examples/session-04/clinic.sqlite",
+      "examples/session-04/clinic.sqlite-journal",
+      "examples/session-04/clinic.sqlite-wal",
+      "examples/session-04/clinic.sqlite-shm",
+      "examples/session-07/clinic.sqlite",
+      "examples/session-07/clinic.sqlite-journal",
+      "examples/session-07/clinic.sqlite-wal",
+      "examples/session-07/clinic.sqlite-shm",
+    ];
+    const result = spawnSync(
+      "git",
+      ["check-ignore", "--no-index", ...databasePaths],
+      { cwd: fileURLToPath(rootUrl), encoding: "utf8" },
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.stdout.trim().split("\n").filter(Boolean)).toEqual(databasePaths);
+  });
+
   it("discovers all eight sessions with runnable package scripts", async () => {
     const examplesUrl = new URL("examples/", rootUrl);
     const sessionDirectories = (await readdir(examplesUrl, { withFileTypes: true }))
@@ -466,6 +491,9 @@ describe("runnable session package contract", () => {
         expect((await stat(new URL(`src/${path}`, sessionUrl))).isFile(), path).toBe(true);
       }
 
+      const readmeSource = await readFile(new URL("README.md", sessionUrl), "utf8");
+      expect(readmeSource, `Session ${session} README guidance`).not.toContain("src/domain/ids");
+
       const files = await collectSessionTypeScriptFiles(sessionUrl);
       for (const file of files) {
         const source = await readFile(file, "utf8");
@@ -513,6 +541,19 @@ describe("runnable session package contract", () => {
           );
         }
       }
+    }
+  });
+
+  it("keeps Session 05 source free of the removed in-memory appointment store", async () => {
+    const sessionUrl = new URL("examples/session-05/", rootUrl);
+    await expect(
+      stat(new URL("src/adaptor/inMemoryAppointmentStore.d.ts", sessionUrl)),
+    ).rejects.toMatchObject({ code: "ENOENT" });
+
+    for (const file of await collectTypeScriptFiles(new URL("src/", sessionUrl))) {
+      expect(await readFile(file, "utf8"), file.pathname).not.toContain(
+        "inMemoryAppointmentStore",
+      );
     }
   });
 

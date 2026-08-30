@@ -2,7 +2,6 @@ import { noticeFromCode, notImplemented } from "@fp-with-ts/clinic-web/server";
 import type { Context, Hono } from "hono";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
-import type { AppointmentStore } from "../adaptor/inMemoryAppointmentStore.js";
 import { ExamResult } from "../boundary/examResult.js";
 import { StartExaminationInput } from "../boundary/startExaminationInput.js";
 import type { Appointment, Scheduled } from "../domain/appointment/index.js";
@@ -15,6 +14,7 @@ import {
 import { AppointmentId } from "../domain/appointment/index.js";
 import { OwnerId } from "../domain/owner/index.js";
 import { PetId } from "../domain/pet/index.js";
+import type { AppointmentStore } from "../useCase/dependencies.js";
 import { startExamination } from "../useCase/startExamination.js";
 import { toPageProps } from "./appointmentView.js";
 

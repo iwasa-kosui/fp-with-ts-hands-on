@@ -130,21 +130,30 @@ export const createAppointmentRepository = (
   };
 
   const reset = (initialAppointment: Scheduled): void => {
-    try {
-      database.delete(auditLogsTable).run();
-      database.delete(appointmentsTable).run();
-    } catch (cause) {
-      throw new AppointmentPersistenceError("save-state", cause);
-    }
+    database.transaction((transaction) => {
+      try {
+        transaction.delete(auditLogsTable).run();
+        transaction.delete(appointmentsTable).run();
+        transaction
+          .insert(appointmentsTable)
+          .values(toAppointmentRow(initialAppointment))
+          .run();
+      } catch (cause) {
+        throw new AppointmentPersistenceError("save-state", cause);
+      }
 
-    saveState(initialAppointment);
-    appendAudit(
-      INITIAL_AUDIT_EVENT_ID,
-      "AppointmentSeeded",
-      initialAppointment.scheduledAt,
-      { appointmentId: initialAppointment.appointmentId },
-      initialAppointment.appointmentId,
-    );
+      try {
+        transaction.insert(auditLogsTable).values({
+          appointmentId: initialAppointment.appointmentId,
+          eventId: INITIAL_AUDIT_EVENT_ID,
+          eventName: "AppointmentSeeded",
+          occurredAt: initialAppointment.scheduledAt,
+          payload: { appointmentId: initialAppointment.appointmentId },
+        }).run();
+      } catch (cause) {
+        throw new AppointmentPersistenceError("append-audit", cause);
+      }
+    });
   };
 
   return {

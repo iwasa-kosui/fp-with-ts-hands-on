@@ -102,18 +102,23 @@ export const createAppointmentRepository = (
     initialAppointment: Appointment,
     context: PersistenceContext,
   ): void => {
-    database.delete(auditLogsTable).run();
-    database.delete(appointmentsTable).run();
-    database
-      .insert(appointmentsTable)
-      .values(toAppointmentRow(initialAppointment, context.ownerContact))
-      .run();
-    appendAudit({
-      eventId: INITIAL_AUDIT_EVENT_ID,
-      eventName: "AppointmentSeeded",
-      occurredAt: initialAppointment.scheduledAt,
-      appointment: initialAppointment,
-      payload: {},
+    database.transaction((transaction) => {
+      transaction.delete(auditLogsTable).run();
+      transaction.delete(appointmentsTable).run();
+      transaction
+        .insert(appointmentsTable)
+        .values(toAppointmentRow(initialAppointment, context.ownerContact))
+        .run();
+      transaction.insert(auditLogsTable).values({
+        eventId: INITIAL_AUDIT_EVENT_ID,
+        appointmentId: initialAppointment.appointmentId,
+        eventName: "AppointmentSeeded",
+        occurredAt: initialAppointment.scheduledAt,
+        payload: {
+          appointment: initialAppointment,
+          ownerContact: context.ownerContact,
+        },
+      }).run();
     });
   };
 
