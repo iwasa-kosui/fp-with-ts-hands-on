@@ -1,10 +1,10 @@
 import { sql } from "drizzle-orm";
 import { err, ok, ResultAsync } from "neverthrow";
 
-import type {
+import {
   Appointment,
-  AppointmentId,
-  Scheduled,
+  type AppointmentId,
+  type Scheduled,
 } from "../../../domain/appointment/index.js";
 import type { ExaminationStarted } from "../../../domain/appointment/index.js";
 import type {
@@ -46,7 +46,11 @@ const toAuditRow = (event: ExaminationStarted) => ({
   eventId: event.eventId,
   eventName: event.kind,
   occurredAt: event.occurredAt,
-  payload: event,
+  payload: {
+    appointmentId: event.appointmentId,
+    examinationStartedAt: event.aggregateState.examinationStartedAt,
+    veterinarianId: event.aggregateState.veterinarianId,
+  },
 });
 
 export const createExaminationStartedStore = (
@@ -152,8 +156,13 @@ export const createExaminationStartedStore = (
         } as const);
       }
 
-      saveState(transaction, event.aggregateState);
-      appendAudit(transaction, event);
+      const committedEvent = Appointment.startExamination({
+        eventId: event.eventId,
+        occurredAt: event.occurredAt,
+      })(current, event.aggregateState.veterinarianId);
+
+      saveState(transaction, committedEvent.aggregateState);
+      appendAudit(transaction, committedEvent);
       return ok(undefined);
     });
 

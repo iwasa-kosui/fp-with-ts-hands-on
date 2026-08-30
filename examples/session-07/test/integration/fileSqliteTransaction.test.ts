@@ -76,10 +76,10 @@ const observe = (databasePath: string) => {
       .get(clinicFixture.appointmentId) as Readonly<{ state: string }>;
     const audits = database
       .prepare(
-        "SELECT event_id AS eventId, occurred_at AS occurredAt FROM audit_logs WHERE event_name = 'ExaminationStarted'",
+        "SELECT event_id AS eventId, occurred_at AS occurredAt, payload FROM audit_logs WHERE event_name = 'ExaminationStarted'",
       )
       .all() as ReadonlyArray<
-      Readonly<{ eventId: string; occurredAt: string }>
+      Readonly<{ eventId: string; occurredAt: string; payload: string }>
     >;
     const auditCount = database
       .prepare("SELECT count(*) AS count FROM audit_logs")
@@ -118,6 +118,42 @@ test("file SQLite persists the injected event ID and clock value", async () => {
     appointment: { kind: "InExamination" },
     audits: [{ eventId, occurredAt }],
   });
+});
+
+test("SQLite audit payload excludes appointment details that are not part of the audit DTO", async () => {
+  const options = createOptions();
+  const contactSentinel = "owner-contact: example@example.test";
+  const app = createDatabaseBackedApp(options);
+  app.close();
+
+  const database = createSqliteDatabase(options.databasePath);
+  try {
+    const store = createExaminationStartedStore(
+      database,
+      session07InitialAppointment,
+    );
+    const checkedIn = {
+      ...checkIn(session07InitialAppointment, clinicFixture.checkedInAt),
+      reason: contactSentinel,
+    };
+    store.save(checkedIn);
+    const event = Appointment.startExamination({ eventId, occurredAt })(
+      checkedIn,
+      VeterinarianId.parse(clinicFixture.veterinarianId),
+    );
+
+    expect((await store.store(event)).isOk()).toBe(true);
+  } finally {
+    database.close();
+  }
+
+  const audit = observe(options.databasePath).audits[0];
+  expect(audit === undefined ? undefined : JSON.parse(audit.payload)).toEqual({
+    appointmentId: clinicFixture.appointmentId,
+    examinationStartedAt: occurredAt,
+    veterinarianId: clinicFixture.veterinarianId,
+  });
+  expect(audit?.payload).not.toContain(contactSentinel);
 });
 
 test("SQLite audit failure returns 500 and rolls back the started state", async () => {
@@ -188,6 +224,45 @@ test("the SQLite store returns a business conflict after the current row has cha
   } finally {
     database.close();
   }
+});
+
+test("the SQLite store preserves the current CheckedIn fields when it commits a stale event", async () => {
+  const options = createOptions();
+  const seededApp = createDatabaseBackedApp(options);
+  seededApp.close();
+
+  const database = createSqliteDatabase(options.databasePath);
+  try {
+    const store = createExaminationStartedStore(
+      database,
+      session07InitialAppointment,
+    );
+    const staleCheckedIn = checkIn(
+      session07InitialAppointment,
+      "2026-08-30T06:00:00.000Z",
+    );
+    const staleEvent = Appointment.startExamination({ eventId, occurredAt })(
+      staleCheckedIn,
+      VeterinarianId.parse(clinicFixture.veterinarianId),
+    );
+    const currentCheckedIn = {
+      ...checkIn(session07InitialAppointment, "2026-08-30T06:15:00.000Z"),
+      reason: "updated reason from CheckedIn B",
+    };
+    store.save(currentCheckedIn);
+
+    expect((await store.store(staleEvent)).isOk()).toBe(true);
+  } finally {
+    database.close();
+  }
+
+  expect(observe(options.databasePath).appointment).toMatchObject({
+    checkedInAt: "2026-08-30T06:15:00.000Z",
+    examinationStartedAt: occurredAt,
+    kind: "InExamination",
+    reason: "updated reason from CheckedIn B",
+    veterinarianId: clinicFixture.veterinarianId,
+  });
 });
 
 test("corrupt persisted state rejects the effectful use case as a ZodError", async () => {
