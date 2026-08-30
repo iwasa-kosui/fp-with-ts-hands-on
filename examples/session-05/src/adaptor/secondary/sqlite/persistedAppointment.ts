@@ -63,7 +63,7 @@ const canceled = z.object({
   canceledAt: z.string(),
 });
 
-export const persistedAppointmentSchema = z.discriminatedUnion("kind", [
+const appointmentSchema = z.discriminatedUnion("kind", [
   scheduled,
   checkedIn,
   inExamination,
@@ -71,6 +71,20 @@ export const persistedAppointmentSchema = z.discriminatedUnion("kind", [
   paid,
   canceled,
 ]);
+
+const persistedJson = z.string().transform((state, context) => {
+  try {
+    return JSON.parse(state);
+  } catch {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Persisted appointment state is not valid JSON",
+    });
+    return z.NEVER;
+  }
+});
+
+export const persistedAppointmentSchema = persistedJson.pipe(appointmentSchema);
 
 export const parsePersistedAppointment = (state: unknown): Appointment =>
   persistedAppointmentSchema.parse(state);

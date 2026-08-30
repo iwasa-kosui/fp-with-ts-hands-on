@@ -49,7 +49,7 @@ const toAppointmentRow = (appointment: Appointment) => ({
   ownerId: appointment.ownerId,
   petId: appointment.petId,
   status: appointment.kind,
-  state: appointment,
+  state: JSON.stringify(appointment),
 });
 
 const toExaminationStartedAuditPayload = (
@@ -64,7 +64,7 @@ export const createAppointmentRepository = (
   database: SqliteDatabase,
 ): AppointmentRepository => {
   const find = (appointmentId: string): Appointment | undefined => {
-    let row: Readonly<{ state: unknown }> | undefined;
+    let row: Readonly<{ state: string }> | undefined;
     try {
       row = database
         .select({ state: appointmentsTable.state })

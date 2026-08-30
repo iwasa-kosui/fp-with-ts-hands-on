@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import Database from "better-sqlite3";
 import { afterEach, expect, test } from "vitest";
+import { ZodError } from "zod";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
 import { createDatabaseBackedApp } from "../../src/app.js";
@@ -109,6 +110,112 @@ test("file SQLite stores an examination audit payload without owner contact", as
     expect(serializedPayload).not.toContain(clinicFixture.ownerContact.ownerName);
     expect(serializedPayload).not.toContain(clinicFixture.ownerContact.ownerEmail);
     expect(serializedPayload).not.toContain(clinicFixture.ownerContact.ownerPhone);
+  } finally {
+    database.close();
+  }
+});
+
+test("file SQLite restart keeps the examination state and audit history", async () => {
+  const options = createOptions();
+  const appointmentUrl = `/appointments/${clinicFixture.appointmentId}`;
+  const first = createDatabaseBackedApp(options);
+
+  try {
+    expect((await post(first, `${appointmentUrl}/check-in`)).status).toBe(303);
+    expect((await post(first, `${appointmentUrl}/start-examination`)).status).toBe(
+      303,
+    );
+  } finally {
+    first.close();
+  }
+
+  const beforeRestart = observe(options.databasePath);
+  expect(JSON.parse(beforeRestart.state)).toMatchObject({ kind: "InExamination" });
+  expect(beforeRestart.auditCount).toBe(2);
+
+  const restarted = createDatabaseBackedApp(options);
+  try {
+    const response = await restarted.request("/", { headers: inertiaHeaders });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      props: { appointment: { kind: "InExamination" } },
+    });
+  } finally {
+    restarted.close();
+  }
+
+  expect(observe(options.databasePath)).toEqual(beforeRestart);
+});
+
+test("malformed persisted JSON is rejected as a ZodError", () => {
+  const options = createOptions();
+  const migrationDatabase = createSqliteDatabase(options.databasePath);
+  try {
+    migrateDatabase(migrationDatabase, options.migrationsFolder);
+  } finally {
+    migrationDatabase.close();
+  }
+
+  const seedDatabase = new Database(options.databasePath);
+  try {
+    seedDatabase
+      .prepare(
+        "INSERT INTO appointments (appointment_id, owner_id, pet_id, status, state) VALUES (?, ?, ?, ?, ?)",
+      )
+      .run(
+        clinicFixture.appointmentId,
+        clinicFixture.ownerId,
+        clinicFixture.petId,
+        "Scheduled",
+        "{",
+      );
+  } finally {
+    seedDatabase.close();
+  }
+
+  const database = createSqliteDatabase(options.databasePath);
+  try {
+    const repository = createAppointmentRepository(database);
+    expect(() =>
+      repository.resolveById(AppointmentId.parse(clinicFixture.appointmentId)),
+    ).toThrow(ZodError);
+  } finally {
+    database.close();
+  }
+});
+
+test("structurally invalid persisted JSON is rejected as a ZodError", () => {
+  const options = createOptions();
+  const migrationDatabase = createSqliteDatabase(options.databasePath);
+  try {
+    migrateDatabase(migrationDatabase, options.migrationsFolder);
+  } finally {
+    migrationDatabase.close();
+  }
+
+  const seedDatabase = new Database(options.databasePath);
+  try {
+    seedDatabase
+      .prepare(
+        "INSERT INTO appointments (appointment_id, owner_id, pet_id, status, state) VALUES (?, ?, ?, ?, ?)",
+      )
+      .run(
+        clinicFixture.appointmentId,
+        clinicFixture.ownerId,
+        clinicFixture.petId,
+        "Scheduled",
+        JSON.stringify({ kind: "Scheduled" }),
+      );
+  } finally {
+    seedDatabase.close();
+  }
+
+  const database = createSqliteDatabase(options.databasePath);
+  try {
+    const repository = createAppointmentRepository(database);
+    expect(() =>
+      repository.resolveById(AppointmentId.parse(clinicFixture.appointmentId)),
+    ).toThrow(ZodError);
   } finally {
     database.close();
   }
