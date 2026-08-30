@@ -111,8 +111,32 @@ const relativeJavaScriptImports = (source: string): string[] => [
   ...new Set([
     ...source.matchAll(/(?:import|export)\s+(?:type\s+)?(?:[^"']*?\s+from\s+)?["'](\.[^"']+\.js)["']/g),
     ...source.matchAll(/\bimport\(\s*["'](\.[^"']+\.js)["']\s*\)/g),
-  ].map((match) => match[1])),
+  ].map((match) => match[1]).filter((specifier): specifier is string => specifier !== undefined)),
 ];
+
+const moduleSpecifiers = (source: string): string[] => [
+  ...new Set([
+    ...source.matchAll(
+      /(?:import|export)\s+(?:type\s+)?(?:[^"']*?\s+from\s+)?["']([^"']+)["']/g,
+    ),
+    ...source.matchAll(/\bimport\(\s*["']([^"']+)["']\s*\)/g),
+  ].map((match) => match[1]).filter((specifier): specifier is string => specifier !== undefined)),
+];
+
+const assertNoCrossSessionSourceImports = async (sessionUrl: URL): Promise<void> => {
+  const sourceFiles = await collectTypeScriptFiles(new URL("src/", sessionUrl));
+
+  for (const file of sourceFiles) {
+    const prohibitedSpecifiers = moduleSpecifiers(await readFile(file, "utf8")).filter(
+      (specifier) => specifier.includes("../session-") || specifier.includes("examples/session-"),
+    );
+    if (prohibitedSpecifiers.length > 0) {
+      throw new Error(
+        `Session source must not import another session from ${file.pathname}: ${prohibitedSpecifiers.join(", ")}`,
+      );
+    }
+  }
+};
 
 const resolvesRelativeJavaScriptImport = (specifier: string, file: URL): URL =>
   new URL(specifier.replace(/\.js$/, ".ts"), file);
@@ -325,6 +349,48 @@ describe("runnable session package contract", () => {
     for (const command of ["build", "test", "typecheck"]) {
       expect(packageJson.scripts?.[command], command).toContain("./examples/session-*");
       expect(packageJson.scripts?.[command], command).toContain("@fp-with-ts/clinic-web");
+    }
+    expect(packageJson.scripts).toHaveProperty(
+      "test:continuity",
+      "pnpm --filter @fp-with-ts/start-examination-continuity test",
+    );
+    expect(packageJson.scripts).toHaveProperty(
+      "typecheck:continuity",
+      "pnpm --filter @fp-with-ts/start-examination-continuity typecheck",
+    );
+    expect(packageJson.scripts?.test).toContain("pnpm test:continuity");
+    expect(packageJson.scripts?.typecheck).toContain("pnpm typecheck:continuity");
+  });
+
+  it("rejects source imports from another session while allowing test-only continuity adapters", async () => {
+    const fixtureDirectory = await mkdtemp(join(tmpdir(), "session-source-import-contract-"));
+    const sessionUrl = new URL(`${pathToFileURL(join(fixtureDirectory, "session-03")).href}/`);
+    const sourceDirectory = join(fixtureDirectory, "session-03/src/domain/appointment");
+    await mkdir(sourceDirectory, { recursive: true });
+
+    try {
+      const relativeImport = new URL("relativeImport.ts", `${pathToFileURL(sourceDirectory).href}/`);
+      await writeFile(relativeImport, 'import "../../../../session-04/src/domain/appointment/appointment.js";\n');
+      await expect(assertNoCrossSessionSourceImports(sessionUrl)).rejects.toThrow(
+        "must not import another session",
+      );
+
+      await rm(relativeImport);
+      const absoluteImport = new URL("absoluteImport.ts", `${pathToFileURL(sourceDirectory).href}/`);
+      await writeFile(absoluteImport, 'import "/workspace/examples/session-04/src/domain/appointment/appointment.js";\n');
+      await expect(assertNoCrossSessionSourceImports(sessionUrl)).rejects.toThrow(
+        "must not import another session",
+      );
+    } finally {
+      await rm(fixtureDirectory, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps all session source trees independent", async () => {
+    for (const session of ["00", "01", "02", "03", "04", "05", "06", "07"]) {
+      await expect(
+        assertNoCrossSessionSourceImports(new URL(`examples/session-${session}/`, rootUrl)),
+      ).resolves.toBeUndefined();
     }
   });
 

@@ -1,0 +1,16 @@
+{
+  "name": "@fp-with-ts/start-examination-continuity",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.0.0",
+    "better-sqlite3": "^11.9.1",
+    "vite": "^6.1.1",
+    "vitest": "^2.1.0"
+  }
+}
