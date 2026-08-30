@@ -2,7 +2,6 @@
 import { Code } from "astro:components";
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
-import StartExaminationWorkflow from "../../components/StartExaminationWorkflow.astro";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
@@ -347,7 +346,6 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <p class="case-file__episode-label">動物病院のひと幕</p>
               {session.episode.map((line) => <p data-episode-line>{line}</p>)}
             </aside>
-            <StartExaminationWorkflow focus="boundary" />
             <p>外部の文字列を検査し、S3で区別した2種類のIDを持つ入力へ変換します。</p>
             <h3 data-story-stage="use-case">追加したい機能</h3>
             <p>{narrative.requirement}</p>
