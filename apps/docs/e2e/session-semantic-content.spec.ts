@@ -177,6 +177,49 @@ for (const session of exerciseSessions) {
   });
 }
 
+test("S3 shows the swapped identifiers before proving that typecheck misses them", async ({
+  page,
+}) => {
+  await page.goto("/sessions/03-semantic-identifiers/");
+
+  const legacy = page.locator("#legacy");
+  const swappedCode = legacy.locator(
+    '[data-code-guide-card="swapped-domain-identifiers"]',
+  );
+  const typecheck = legacy.locator('[data-typecheck-reproduction]');
+
+  await expect(swappedCode).toContainText(
+    "acceptAppointmentId(veterinarianId);",
+  );
+  await expect(swappedCode).toContainText(
+    "acceptVeterinarianId(appointmentId);",
+  );
+  await expect(typecheck).toContainText(
+    "pnpm --filter @fp-with-ts/clinic-session-03 typecheck",
+  );
+  await expect(typecheck).toContainText(
+    "取り違えた2行が残っていても、型検査は成功します。",
+  );
+
+  const swappedCodePrecedesTypecheck = await legacy.evaluate((element) => {
+    const swappedCodeElement = element.querySelector(
+      '[data-code-guide-card="swapped-domain-identifiers"]',
+    );
+    const typecheckElement = element.querySelector(
+      "[data-typecheck-reproduction]",
+    );
+
+    return swappedCodeElement !== null && typecheckElement !== null
+      ? Boolean(
+          swappedCodeElement.compareDocumentPosition(typecheckElement) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        )
+      : false;
+  });
+
+  expect(swappedCodePrecedesTypecheck).toBe(true);
+});
+
 for (const session of sessions) {
   test(`${session.slug} introduces its episode after the first section heading`, async ({
     page,

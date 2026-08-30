@@ -120,7 +120,7 @@ export const session: SessionSummary = {
     {
       id: "s3-reject-id-swap",
       goal: "AppointmentIdとVeterinarianIdを入れ替えたコードがコンパイルできないことを、型テストで確かめる。",
-      startingFailure: "識別子の取り違えを確かめる型テストがない。",
+      startingFailure: "取り違えた2行が、型エラーにならないままコンパイルされる。",
       targets: ["examples/session-03/src/domain/domain.test-types.ts"],
       solutions: [{
         path: "examples/session-04/src/domain/domain.test-types.ts",
@@ -148,6 +148,14 @@ export const session: SessionSummary = {
 
 export const guides = ([
   {
+    id: "swapped-domain-identifiers",
+    title: "予約IDと担当獣医師IDを逆の用途へ渡している",
+    currentDesign: "AppointmentIdを必要とする関数へVeterinarianIdを、VeterinarianIdを必要とする関数へAppointmentIdを渡しています。",
+    futureRisk: "どちらの型も実体はstringなので、この2行があっても型検査は成功します。",
+    path: "src/domain/domain.test-types.ts",
+    highlights: [{ startLineNumber: 4, endLineNumber: 10 }],
+  },
+  {
     id: "untyped-start-examination-id",
     title: "予約IDと担当獣医師IDがUUID文字列のままになっている",
     currentDesign: "AppointmentIdとVeterinarianIdはuuid検査だけで、用途を表すbrandがありません。PetId、OwnerId、ExamIdにはbrandがあります。",
@@ -162,14 +170,6 @@ export const guides = ([
     futureRisk: "予約IDと担当獣医師IDを入れ替えても検出できません。",
     path: "src/domain/appointment/appointment.ts",
     highlights: [{ startLineNumber: 8, endLineNumber: 14 }],
-  },
-  {
-    id: "empty-domain-type-tests",
-    title: "通ってはいけない代入を検査する型テストがない",
-    currentDesign: "domain.test-types.ts は空のままです。",
-    futureRisk: "型で守れているつもりの箇所が、実際には守れていないと気付けません。",
-    path: "src/domain/domain.test-types.ts",
-    highlights: [{ startLineNumber: 1, endLineNumber: 1 }],
   },
 ] as const) satisfies readonly CodeGuide[];
 
@@ -240,7 +240,11 @@ export const startExamination = (
       "わざとコンパイルエラーになるコードを書き、その行で確かにコンパイルエラーが発生することを検査します。もし誰かが実装を変更して意図せずコンパイルエラーが出なくなってしまった場合、@ts-expect-error は「不要なエラー抑制を行なっている」ことになり、逆にコンパイルエラーとなります。",
     before: {
       sources: ["examples/session-03/src/domain/domain.test-types.ts"],
-      code: `export {};`,
+      code: `const acceptAppointmentId = (_id: AppointmentId): void => undefined;
+const acceptVeterinarianId = (_id: VeterinarianId): void => undefined;
+
+acceptAppointmentId(veterinarianId);
+acceptVeterinarianId(appointmentId);`,
     },
     after: {
       sources: ["examples/session-04/src/domain/domain.test-types.ts"],
@@ -262,7 +266,7 @@ const narrative = {
   currentRisk: "AppointmentIdとVeterinarianIdは、どちらもUUID検査済みのstringです。startExaminationへ逆の順番で渡しても、型検査では止まりません。",
   design: "2つの識別子を別々のBranded Typeで定義し、予約状態とstartExaminationまで同じ型を使う。",
   limitation: "異なる用途は区別できますが、同じAppointmentId型を持つ別の予約を選ぶ誤りは型だけでは検出できない。",
-  legacy: "配布済みのPetId、OwnerId、ExamIdと、brandのないAppointmentId、VeterinarianIdを読み比べます。予約状態とstartExaminationにstringが残っている場所も確認します。",
+  legacy: "最初に、AppointmentIdとVeterinarianIdを実際に逆の用途へ渡しているコードを読みます。そのうえで、2つの識別子にbrandがなく、予約状態とstartExaminationにもstringが残っていることを確認します。",
   fallback: "現在の3ステップを順に開き、まずAppointmentIdとVeterinarianIdに別々のbrandを付けます。次に予約状態とstartExaminationへ反映し、取り違えがコンパイルエラーになることを型テストで確かめます。相互レビューの約束事はS2のリンク先を確認します。",
 } as const;
 
@@ -285,6 +289,8 @@ export const workspace = ({
 } as const) satisfies SessionWorkspace;
 
 const projectFiles = projectFilesForSnapshot(session.snapshot);
+const typecheckCommand =
+  "pnpm --filter @fp-with-ts/clinic-session-03 typecheck";
 const solutionSteps = await Promise.all(
   session.steps.map(async (step) => ({
     step,
@@ -404,6 +410,14 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               {session.exerciseModule.fileBudget}ファイル・約{session.exerciseModule.lineBudget}行です。
             </p>
             <CodeGuideCards guides={guides} projectFiles={projectFiles} />
+            <h3>取り違えたまま型検査する</h3>
+            <p><code>acceptAppointmentId</code> と <code>acceptVeterinarianId</code> の呼び出しは、渡す値が逆です。この状態で型検査を実行します。</p>
+            <figure class="code-block" data-typecheck-reproduction>
+              <figcaption>型検査コマンド</figcaption>
+              <Code code={typecheckCommand} lang="shell" />
+              <p><strong>期待結果:</strong> 取り違えた2行が残っていても、型検査は成功します。</p>
+            </figure>
+            <p>型検査が成功したこと自体が失敗の再現です。現在の <code>AppointmentId</code> と <code>VeterinarianId</code> は、どちらもUUID検査済みの <code>string</code> なので、TypeScriptには用途の違いが見えません。</p>
             <h3>修正前の失敗を確認する</h3>
             <p>修正前は、次の{session.steps.length}件に対応する演習テストが失敗します。</p>
             <ul class="exercise-failures" aria-label="修正前に確認する問題">

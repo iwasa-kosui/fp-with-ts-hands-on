@@ -28,7 +28,10 @@ const expectedFragments: Readonly<Record<string, readonly string[]>> = {
   ],
   "plain-string-start-examination": ["appointmentId: string"],
   "plain-string-appointment-ids": ["appointmentId: string", "petId: string"],
-  "empty-domain-type-tests": ["export {};"],
+  "swapped-domain-identifiers": [
+    "acceptAppointmentId(veterinarianId)",
+    "acceptVeterinarianId(appointmentId)",
+  ],
   "http-start-examination-input": [
     "StartExaminationInput.parse",
     'context.req.param("appointmentId")',
