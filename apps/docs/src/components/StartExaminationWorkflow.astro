@@ -69,9 +69,7 @@ const { focus } = Astro.props;
 const highlighted = new Set<StepId>(highlightedByFocus[focus]);
 ---
 
-<section class="start-workflow" aria-labelledby={`start-workflow-${focus}`}>
-  <p class="start-workflow__eyebrow">S1で決め、S2〜S6で実装する処理</p>
-  <h3 id={`start-workflow-${focus}`}><code>startExamination</code></h3>
+<div class="start-workflow">
   <ol class="start-workflow__steps">
     {
       steps.map((step) => {
@@ -93,4 +91,4 @@ const highlighted = new Set<StepId>(highlightedByFocus[focus]);
   <p class="start-workflow__boundary-note">
     読み込みと保存は境界に置き、業務判断には必要な値を引数で渡します。
   </p>
-</section>
+</div>

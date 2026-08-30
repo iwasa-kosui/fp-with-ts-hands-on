@@ -616,17 +616,6 @@
   background: color-mix(in srgb, var(--case-mint) 28%, var(--case-paper));
 }
 
-.start-workflow__eyebrow {
-  margin: 0;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-
-.start-workflow h3 {
-  margin: 0.25rem 0 1rem;
-}
-
 .start-workflow__steps {
   display: grid;
   gap: 0.75rem;
