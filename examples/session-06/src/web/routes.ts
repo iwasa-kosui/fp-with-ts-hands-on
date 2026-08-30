@@ -2,7 +2,7 @@ import { noticeFromCode, notImplemented } from "@fp-with-ts/clinic-web/server";
 import type { Context, Hono } from "hono";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
-import type { AppointmentStore } from "../adaptor/inMemoryAppointmentStore.js";
+import type { AppointmentStore } from "../adaptor/secondary/sqlite/appointmentStore.js";
 import { ExamResult } from "../boundary/examResult.js";
 import { StartExaminationInput } from "../boundary/startExaminationInput.js";
 import { EventId } from "../domain/aggregate/eventId.js";
@@ -122,7 +122,6 @@ export const registerClinicRoutes = (app: Hono, store: AppointmentStore): void =
       eventLog: store.eventLog,
       clock: { now: () => "2026-08-30T06:30:00.000Z" },
       eventIdGenerator: { generate: () => ids.eventId },
-      store: store.atomicStore,
     };
     const result = await startExaminationWithEffects(dependencies)({
       ...input,
