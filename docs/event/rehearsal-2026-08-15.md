@@ -1,4 +1,4 @@
-# DMMFワークフローカリキュラム 自動リハーサル記録
+# DMMFカリキュラム 自動リハーサル記録
 
 計画日: 2026-08-15
 
@@ -12,7 +12,7 @@
 - 内容時間は S0 10分 + S1 15分 + S2〜S6 各30分 + Final 5分 = 180分である。
 - 16:25-16:55の固定休憩30分を加え、開催時間は15:00-18:30の210分である。
 - S0は現行業務、画面操作、保存・ログと事故を対応付ける。
-- S1ではExcalidrawを使い、事前配置された「予約がキャンセルされた」からアクター、コマンド、業務ルールを逆算します。講師はROP基本図で3か所の失敗への切替を示し、別の成功経路図で`Appointment`集約を`Appointment.cancel`へ対応させ、入力側のResolverと出力側のEvent Storeを確認します。実行可能な演習ではありません。
+- S1ではExcalidrawを使い、事前配置された「予約がキャンセルされた」からアクター、コマンド、確認する条件を逆算します。講師はROP基本図で3か所の失敗への切替を示し、別のユースケース図で`Appointment`集約を`Appointment.cancel`へ対応させ、入力側のResolverと出力側のEvent Storeを確認します。実行可能な演習ではありません。
 - S2〜S6は同じ `startExamination` を題材に、current state、識別子、input、expected failures、output event / side effectsを順に実装する。
 - 公開する演習コマンドは `pnpm exercise:02`〜`pnpm exercise:06` の5本である。
 

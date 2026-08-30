@@ -46,7 +46,7 @@ export const session: SessionSummary = {
     questions: [
       "不正な予約IDまたは獣医師IDを含む入力は、`StartExaminationInput` になりませんか。",
       "`parse` は外部入力を `unknown` として受け取っていますか。",
-      "検証に成功した場合だけ、`AppointmentId` と `VeterinarianId` をワークフローへ渡せますか。",
+      "検証に成功した場合だけ、`AppointmentId` と `VeterinarianId` をユースケースへ渡せますか。",
     ],
   },
   solutionSnapshot: "session-05",
@@ -57,7 +57,7 @@ export const session: SessionSummary = {
   episode: [
     "診察開始のHTTPリクエストには、予約IDと担当獣医師IDが文字列で届きます。",
     "不正なUUIDでも、検査しなければ型付きの入力として処理へ渡ってしまいます。",
-    "外部の値を受け取る場所で検査し、成功した値だけをワークフローへ渡します。",
+    "外部の値を受け取る場所で検査し、成功した値だけをユースケースへ渡します。",
   ],
   incident: "HTTPから届いた不正なIDを検査せず、診察開始の入力として扱った。",
   exerciseCommand: "pnpm exercise:04",
@@ -68,7 +68,7 @@ export const session: SessionSummary = {
   },
   delegationPrompt: {
     request:
-      "HTTPから届く診察開始の入力を改善してください。不正な予約IDや担当獣医師IDが、型付き入力としてワークフローへ渡らない状態を目指します。",
+      "HTTPから届く診察開始の入力を改善してください。不正な予約IDや担当獣医師IDが、型付き入力としてユースケースへ渡らない状態を目指します。",
     decisions: [
       "外部入力をunknownとして受け取る場所はどこか",
       "S3で作った2種類のschemaをどう組み合わせるか",
@@ -119,7 +119,7 @@ export const guides = ([
     id: "http-start-examination-input",
     title: "診察開始のHTTP入力はrouteで組み立てている",
     currentDesign: "path parameterの予約IDと外部から渡された担当獣医師IDを、StartExaminationInput.parseへまとめて渡しています。",
-    futureRisk: "境界のparserが検証しなければ、不正な文字列が予約の読み込みと業務判断まで進みます。",
+    futureRisk: "境界のparserが検証しなければ、不正な文字列が予約の読み込みと状態確認まで進みます。",
     path: "src/web/routes.ts",
     highlights: [{ startLineNumber: 109, endLineNumber: 114 }],
   },
@@ -127,7 +127,7 @@ export const guides = ([
     id: "unvalidated-start-examination-input",
     title: "HTTP入力をanyのまま診察開始の入力へ入れている",
     currentDesign: "予約IDと担当獣医師IDを検証せず、手書きのStartExaminationInputへコピーしています。",
-    futureRisk: "不正なUUIDが境界を通過し、予約の読み込みや業務判断まで進みます。",
+    futureRisk: "不正なUUIDが境界を通過し、予約の読み込みや状態確認まで進みます。",
     path: "src/boundary/startExaminationInput.ts",
     highlights: [{ startLineNumber: 1, endLineNumber: 15 }],
   },
@@ -137,7 +137,7 @@ const teaching: readonly TeachingTopic[] = [
   {
     name: "schema による境界検証と Result",
     definition:
-      "外から届く unknown 型の値を schema でバリデーションし、正しい値だけをドメイン型として扱います。バリデーションに失敗した場合、エラーを Result で返します。",
+      "IDやEmailなどの小さなschemaをobject schemaへ組み合わせ、外から届く入力オブジェクト全体を一度だけparseします。正しい値だけをドメイン型として扱い、失敗はResultで返します。",
     before: {
       sources: ["examples/session-04/src/boundary/startExaminationInput.ts"],
       code: `export const StartExaminationInput = {
@@ -162,7 +162,7 @@ export const StartExaminationInput = {
   parse: schemaResult(schema),
 } as const;`,
     },
-    why: "beforeはrawをanyで受けるため、検証しなくても型検査が通ります。afterはS3で作った2種類のschemaを組み合わせ、unknownを検証します。両方のIDが正しい場合だけ型付き入力を返し、失敗はResultに現します。Resultの分岐と合成はS5で扱います。",
+    why: "beforeはrawをanyで受けるため、検証しなくても型検査が通ります。afterはS3で作ったIDごとのschemaをobject schemaへ組み合わせ、unknownの入力全体を一度だけ検証します。両方のIDが正しい場合だけ型付き入力を返し、失敗はResultに現れます。Resultの分岐と合成はS5で扱います。",
   },
 ];
 
@@ -222,7 +222,7 @@ const OwnerContactSchema = z
 const narrative = {
   requirement: "HTTPから届く予約IDと担当獣医師IDを検証し、正しい値だけをstartExaminationへ渡す。",
   currentRisk: "rawをanyで受け取って手書きの型へコピーしているため、不正なUUIDでもStartExaminationInputとして扱えます。",
-  design: "外部入力をunknownとして受け取り、AppointmentId.schemaとVeterinarianId.schemaの両方を通った場合だけ型付き入力へ変換する。",
+  design: "AppointmentId.schemaとVeterinarianId.schemaをobject schemaへ組み合わせ、unknownの入力全体を一度だけparseして型付き入力へ変換する。",
   limitation: "schemaは値の形式と用途を検証しますが、その予約が存在するか、受付済みかは判断しません。これらはS5で扱います。",
   legacy: "raw: anyを受け取るstartExaminationInput.tsを読み、不正な2種類のIDが境界を通ることを確認します。",
   fallback: "startExaminationInput.tsの手書き型をz.inferへ変え、AppointmentId.schemaとVeterinarianId.schemaを持つobject schemaを作ります。parseにはschemaResultを使います。相互レビューの約束事はS2のリンク先を確認します。",
@@ -265,12 +265,12 @@ const chapters = [
 const commonReviewChecks = [
   "`as` によるキャストが入っていないか全文検索して確認する。",
   "`git diff --stat -- examples/session-04` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。",
-  "不変条件を型で守っているか、実行時の `if` で守っているかを判定し、型で守れなかった残りを記録する。",
+  "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
 ] as const;
 const reviewCompletionArtifacts = [
-  "守る不変条件の1文",
-  "依頼文",
-  "型で守れなかった残り",
+  "境界で拒否する入力",
+  "Agentへの依頼文",
+  "型検査では確認できず、テストまたは実行時に確認すること",
 ] as const;
 const businessReflectionQuestion =
   "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。";
@@ -283,7 +283,7 @@ export const navigation = ({
   },
   next: {
     href: "/sessions/05-workflow-errors/",
-    title: "失敗をワークフローの結果として扱う",
+    title: "失敗をユースケースの結果として扱う",
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
@@ -295,7 +295,7 @@ ${session.incident}
 依頼:
 ${exerciseSession.delegationPrompt.request}
 
-守る不変条件: [言語化フェーズで書いた1文]
+境界で拒否する入力: [言語化フェーズで書いた1文]
 
 着手前に判断すること:
 ${exerciseSession.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
@@ -441,8 +441,8 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <h2>演習</h2>
             <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
             <ol class="adv-flow">
-              <li><strong>言語化（{session.adv.articulate}分）</strong>: 守るべき不変条件を1文で書く。</li>
-              <li><strong>依頼（{session.adv.delegate}分）</strong>: 不変条件と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
+              <li><strong>言語化（{session.adv.articulate}分）</strong>: 境界で拒否する入力を1文で書く。</li>
+              <li><strong>依頼（{session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
               <li><strong>検証（{session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
             </ol>
             <div class="delegation-prompt">

@@ -95,7 +95,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
             <article class="time-stop"><time>Workflow / S1</time><strong>🐕 診察開始の全体を描く</strong><span>ビジネスイベントから、入力、現在状態、失敗、出力イベント、副作用を一枚のカードへ並べる。</span></article>
             <article class="time-stop"><time>Risk / S2</time><strong>🐇 許可されない状態遷移</strong><span>会計済み・キャンセル済みの予約でも診察を開始できてしまうリスクを、状態と遷移の型で防ぐ。</span></article>
             <article class="time-stop"><time>Risk / S3</time><strong>🐦 外部入力と意味のある値</strong><span>外部JSON、用途の違うID、飼い主の連絡先を信頼境界で安全な値へ変える。</span></article>
-            <article class="time-stop"><time>Risk / S4</time><strong>🐹 ワークフローの予期できる失敗</strong><span>throw と undefined に埋もれた業務上の失敗を、呼び出し側が扱える結果へ変える。</span></article>
+            <article class="time-stop"><time>Risk / S5</time><strong>🐹 ユースケースの予期できる失敗</strong><span>throw と undefined に埋もれた業務上の失敗を、呼び出し側が扱える結果へ変える。</span></article>
             <article class="time-stop"><time>Risk / S5</time><strong>🐢 出力イベントと副作用</strong><span>状態と監査記録を同じ整合性境界で保存し、保存障害は外側の例外境界へ伝える。</span></article>
             <article class="time-stop"><time>Help wanted</time><strong>🐈 急募！どうにかしてくれるエンジニア</strong><span>便利な WAN NYAN OS を、変更に強いシステムへ立て直したい。</span></article>
           </div>
@@ -104,7 +104,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <section class="landing-section start-panel" id="sessions" aria-labelledby="start-title">
           <div class="section-head"><h2 id="start-title">新任エンジニアとして着任する</h2><p>最初の仕事は、動物病院の業務と以前の担当者が残したコードを理解することです。問題が明らかになる前に書き換えず、後から確認すべき設計課題の場所を把握します。</p></div>
           <div class="reading-row">
-            <article class="doc-pane"><h3>Session 00: 業務とシステムを引き継ぐ</h3><p>現行業務、画面操作、保存・ログと事故を対応付け、以後のワークフロー設計で確認する場所をそろえます。</p><div class="callout"><span class="legend-icon" aria-hidden="true">🐢</span><div><strong>セッションページへ</strong><p><a href="/sessions/00-system-handover/">目次付きの Session 00 ページを開く</a></p></div></div></article>
+            <article class="doc-pane"><h3>Session 00: 業務とシステムを引き継ぐ</h3><p>現行業務、画面操作、保存・ログと事故を対応付け、以後のユースケース設計で確認する場所をそろえます。</p><div class="callout"><span class="legend-icon" aria-hidden="true">🐢</span><div><strong>セッションページへ</strong><p><a href="/sessions/00-system-handover/">目次付きの Session 00 ページを開く</a></p></div></div></article>
             <pre class="help-wanted-code" aria-label="WAN NYAN CLINIC のエンジニア募集"><code>WAN NYAN CLINIC / Engineering Help Wanted
 
 困っていること:
