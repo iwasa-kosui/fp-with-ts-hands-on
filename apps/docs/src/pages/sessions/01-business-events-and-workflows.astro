@@ -14,11 +14,11 @@ export const session: SessionSummary = {
   durationMinutes: 15,
   timeBreakdown: { brief: 2, teach: 7, exercise: 4, review: 2 },
   animal: { name: "CAT", type: "cat", avatar: "🐈" },
-  summary: "予約がキャンセルされた出来事からコマンドと業務ルールを逆算し、集約、ROP、イベント出力、永続化境界へ写します。",
+  summary: "予約がキャンセルされた出来事からコマンドと確認する条件を逆算し、集約、ROP、イベント出力、ResolverとStoreへ写します。",
   episode: [
     "会計済みの予約を、受付担当者が誤ってキャンセルできました。",
-    "理由のないキャンセルが保存され、どの条件を確認したか説明できません。",
-    "実装へ進む前に、依頼、業務ルール、集約、成功時に起きる出来事を決めます。",
+    "理由のないキャンセルがStoreへ記録され、どの条件を確認したか説明できません。",
+    "実装へ進む前に、依頼、確認する条件、集約、成功時に起きる出来事を決めます。",
   ],
   incident: "予約キャンセルで、実行者、予約の存在、現在状態、理由を一貫して確認できていない。",
   steps: [],
@@ -45,7 +45,7 @@ const excalidrawTemplateUrl =
 const chapters = [
   { id: "incident", label: "一つの出来事" },
   { id: "workshop", label: "コマンドと条件" },
-  { id: "workflow", label: "ROPと永続化境界" },
+  { id: "workflow", label: "ROPとResolver／Store" },
 ] as const;
 
 export const navigation = ({
@@ -109,7 +109,7 @@ export const navigation = ({
           </section>
 
           <section id="workshop">
-            <h2>コマンド、業務ルール、集約を見つける</h2>
+            <h2>コマンド、確認する条件、集約を見つける</h2>
 
             <h3>コマンドと条件を逆算する</h3>
             <dl>
@@ -141,17 +141,17 @@ export const navigation = ({
             <blockquote>
               <p>予約を管理する担当者が、診察開始前の予約だけを、キャンセルできます。キャンセルする際には、キャンセル理由を記入する必要があります。</p>
             </blockquote>
-            <p>この条件は、コマンドを受けたワークフローが確認する業務ルールとしてまとめます。</p>
+            <p>この条件は、コマンドを受けたユースケースが確認する条件としてまとめます。</p>
 
-            <h3>業務ルール、集約、ワークフローを区別する</h3>
+            <h3>ビジネスユースケース、ドメインモデル、ユースケースを区別する</h3>
             <p>
-              業務ワークフローはResolverから実行者と予約を受け取り、権限や存在を確認します。<code>Appointment</code>集約は、キャンセルできる状態と理由の不変条件を守り、<code>Appointment.cancel</code>から成功イベントを返します。
+              「受付担当者が予約をキャンセルする」は、アクターが達成したいビジネスユースケースです。ソフトウェアのユースケースはResolverから実行者と予約を受け取り、権限と予約の存在を確認します。ドメインモデルの<code>Appointment</code>は、診察開始前であり理由が記入されている場合だけ、<code>Appointment.cancel</code>から成功イベントを返します。
             </p>
-            <p>この例で使う集約は一つですが、集約とワークフローが対応するわけではありません。集約は状態の整合性を守るドメインモデル、ワークフローは入出力と失敗を含めて業務判断を調整する関数です。</p>
+            <p>ビジネスユースケースは技術構成を含みません。ユースケースは入出力と失敗を扱うソフトウェアの処理、ドメインロジックは取得済みの値だけで状態を遷移させる純粋な処理です。一つの集約と一つのユースケースが常に対応するわけではありません。</p>
           </section>
 
           <section id="workflow">
-            <h2>Railway Oriented Programming と永続化層</h2>
+            <h2>Railway Oriented Programming とResolver／Store</h2>
 
             <h3>2本のレールを考える</h3>
             <p>
@@ -169,31 +169,34 @@ export const navigation = ({
               それぞれの処理で発生する失敗を同じフローで扱い、その失敗を網羅的に検証することで、変更箇所とテスト観点を追いやすくなります。これにより、「キャンセル先の予約が存在しない」、「キャンセルする権限がない」などさまざまな理由で止まっても、それを適切にハンドリングでき、全体の処理のうち一部だけ処理されて不整合が発生することを防げます。
             </p>
 
-            <h3>EventStormingを業務ワークフローへ写す</h3>
+            <h3>EventStormingをユースケースへ写す</h3>
             <p>
-              コマンドはワークフローの入力へ、集約は<code>Appointment.cancel</code>へ、ドメインイベントは成功出力へ対応させます。権限や状態の条件は、これらとは別にワークフロー内の業務ルールとして表します。
+              コマンドはユースケースの入力へ、集約はドメインロジックの<code>Appointment.cancel</code>へ、ドメインイベントは成功出力へ対応させます。実行者の権限、予約の存在、現在状態、理由は、それぞれ確認する条件として明示します。
             </p>
             <dl>
               <dt>入力</dt>
               <dd>予約キャンセルのコマンドと、Resolverから取得した実行者・予約の現在状態。</dd>
-              <dt>業務判断</dt>
-              <dd>業務ルールとして実行者の権限と予約の存在を確認し、状態と理由の不変条件を守る集約の<code>Appointment.cancel</code>を実行する。</dd>
+              <dt>ユースケース</dt>
+              <dd>実行者の権限と予約の存在を確認し、診察開始前で理由が記入されている予約を<code>Appointment.cancel</code>へ渡す。</dd>
               <dt>成功時の出力</dt>
               <dd><code>AppointmentCanceled</code>。</dd>
             </dl>
             <EventStormingRopComparison />
 
-            <h3>なぜ永続化をワークフローの両端へ置くのか</h3>
+            <h3>なぜResolverとStoreをドメインロジックの外へ置くのか</h3>
             <p>
-              入力側のUser ResolverとAppointment Resolverが実行者と予約の現在状態を取得し、中心の業務ワークフローへ値として渡します。ワークフローはデータベースへ接続せずに業務ルールを評価し、条件を通過したときだけ<code>AppointmentCanceled</code>を返します。出力側のEvent Storeはそのイベントを追記し、失敗時はイベントが返らないため保存も起きません。
+              User ResolverとAppointment Resolverが実行者と予約の現在状態を取得し、ユースケースへ値として渡します。<code>Appointment.cancel</code>はデータベースへ接続せず、条件を満たしたときだけ<code>AppointmentCanceled</code>を返します。Event Storeは成功イベントを受け取った場合だけ追記します。
             </p>
             <p>
-              この境界により、不正なキャンセルや途中状態が保存されず、誰がいつどの予約をキャンセルしたかを業務上の出来事として追えます。同時に、業務ルールをデータベースのAPIから切り離して値だけでテストでき、読み方や保存先が変わってもResolverとEvent Storeを差し替えるだけで中心の判断を保てます。Web向けの現在状態が必要なら、保存後のイベントからレスポンスへ変換します。
+              主な理由は、ドメインロジックをpureに保ち、値だけでテストできるようにすることです。その結果、不正なキャンセルや途中状態を記録せず、誰がいつどの予約をキャンセルしたかを出来事として追えます。取得方法や記録先が変わっても、ResolverとStoreの実装を差し替えられます。
+            </p>
+            <p>
+              S1の<code>startExamination</code>は、まだ<code>Repository</code>からの取得、状態の記録、監査記録、時刻とIDの生成を一つのユースケースで行います。S2以降でドメインロジックを分離し、後続セッションでResolverとStoreを明示的な依存へ変えます。
             </p>
             <aside class="decision-card">
               <h3>このハンズオンでEvent Storeを選ぶ理由</h3>
               <p>
-                これはDMMF一般の必須条件ではなく、このハンズオンの設計判断です。業務ワークフローの成功の場合の出力を、そのままEvent Storeに保存します。
+                これはDMMF一般の必須条件ではなく、このハンズオンの設計です。ユースケースの成功イベントを、そのままEvent Storeへ渡します。
               </p>
             </aside>
 
@@ -201,7 +204,7 @@ export const navigation = ({
             <ol>
               <li>アクター、コマンド、<code>Appointment</code>集約、<code>AppointmentCanceled</code>を順に並べた図</li>
               <li>権限、予約の存在、現在状態、理由の条件とHotspot</li>
-              <li>3か所で失敗へ切り替わるROP基本図と、ResolverとEvent Storeを外側へ置いた業務ワークフロー図</li>
+              <li>3か所で失敗へ切り替わるROP基本図と、ResolverとEvent Storeを外側へ置いたユースケース図</li>
             </ol>
             <p>
               班ワークは <a href={excalidrawTemplateUrl}><code>{excalidrawTemplatePath}</code></a> を使います。TAが開始前にボードを開きます。

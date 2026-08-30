@@ -15,7 +15,7 @@ const expectedSessions = [
     title: "診察開始の入力を境界で検証する",
     href: "/sessions/04-boundaries-and-pii/",
   },
-  { title: "失敗をワークフローの結果として扱う", href: "/sessions/05-workflow-errors/" },
+  { title: "失敗をユースケースの結果として扱う", href: "/sessions/05-workflow-errors/" },
   { title: "副作用と整合性境界を設計する", href: "/sessions/06-effects-and-consistency/" },
   { title: "参照実装で境界をたどる", href: "/sessions/final/" },
 ] as const;

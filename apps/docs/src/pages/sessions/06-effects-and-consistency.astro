@@ -136,7 +136,7 @@ export const session: SessionSummary = {
   ],
   decisions: [
     {
-      invariant: "時刻とイベント ID は1回のワークフロー実行で一度だけ生成し、同じ実行コンテキストから状態と監査記録を作る。",
+      invariant: "時刻とイベント ID は1回のユースケース実行で一度だけ生成し、同じ実行コンテキストから状態と監査記録を作る。",
     },
     {
       invariant: "状態と監査記録は同時に残るか、どちらも残らない。",
@@ -178,7 +178,7 @@ export const guides = ([
 const narrative = {
   requirement: "誰がいつ診察を開始したかを業務イベントとし、予約状態と監査記録を一つの保存境界へ渡す。",
   currentRisk: "時刻と ID を処理中に直接作り、状態と監査記録を別々に保存するため、テスト結果が安定せず、片方だけが残り得る。",
-  design: "Clock と EventIdGenerator を port として注入し、副作用を調整するワークフローで EventContext を一度だけ生成する。純粋な状態遷移にはその EventContext を渡し、状態と監査記録を表す ExaminationStarted を単一の store へ保存する。予約が存在しない・予約の状態が不正・予約が競合しているケースは Result のエラーを返す。データベース起因のエラーやデータが破損しているエラーは業務エラーには変換せず、Promise の reject として外側の境界へ伝える。",
+  design: "Clock と EventIdGenerator を port として注入し、副作用を調整するユースケースで EventContext を一度だけ生成する。純粋な状態遷移にはその EventContext を渡し、状態と監査記録を表す ExaminationStarted を単一の Store へ渡す。予約が存在しない・予約の状態が不正・予約が競合しているケースは Result のエラーを返す。データベース起因のエラーやデータが破損しているエラーは業務エラーには変換せず、Promise の reject として外側の境界へ伝える。",
   limitation: "in-memory の一括保存は契約の形を示す。本番の永続化層でアトミック性を守るには、transaction と結合テストが必要になる。",
   legacy: "直接時刻を参照したりIDを生成したりしている処理、状態の保存と監査記録の保存がアトミックになっていない実装を読んでみましょう。例えば監査記録の保存だけが失敗した場合、状態の保存のみが実行され、不整合な状況が発生してしまいます。また、用意された単一の store に業務競合が届かない箇所を探します。",
   fallback: "各解答欄には、import と後続 step を含む完成ファイルを target ごとに示します。表示されたすべての target file を反映した後、同じ exercise の検査がパスすることを確認します。各 step を個別にパスすることは想定していません。講師のデモへ切り替えた場合でも、相互レビューは実施しましょう。",
@@ -224,12 +224,12 @@ const chapters = [
 const commonReviewChecks = [
   "`as` によるキャストが入っていないか全文検索して確認する。",
   "`git diff --stat -- examples/session-06` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。",
-  "不変条件を型で守っているか、実行時の `if` で守っているかを判定し、型で守れなかった残りを記録する。",
+  "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
 ] as const;
 const reviewCompletionArtifacts = [
-  "守る不変条件の1文",
-  "依頼文",
-  "型で守れなかった残り",
+  "一緒に記録する必要がある値",
+  "Agentへの依頼文",
+  "型検査では確認できず、テストまたは実行時に確認すること",
 ] as const;
 const businessReflectionQuestion =
   "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。";
@@ -238,7 +238,7 @@ export const promisesHref =
 export const navigation = ({
   previous: {
     href: "/sessions/05-workflow-errors/",
-    title: "失敗をワークフローの結果として扱う",
+    title: "失敗をユースケースの結果として扱う",
   },
   next: {
     href: "/sessions/final/",
@@ -254,7 +254,7 @@ ${session.incident}
 依頼:
 ${exerciseSession.delegationPrompt.request}
 
-守る不変条件: [言語化フェーズで書いた1文]
+一緒に記録する必要がある値: [言語化フェーズで書いた1文]
 
 着手前に判断すること:
 ${exerciseSession.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
@@ -348,8 +348,8 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <h2>演習</h2>
             <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
             <ol class="adv-flow">
-              <li><strong>言語化（{session.adv.articulate}分）</strong>: 守るべき不変条件を1文で書く。</li>
-              <li><strong>依頼（{session.adv.delegate}分）</strong>: 不変条件と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
+              <li><strong>言語化（{session.adv.articulate}分）</strong>: 一緒に記録する必要がある値を1文で書く。</li>
+              <li><strong>依頼（{session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
               <li><strong>検証（{session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
             </ol>
             <div class="delegation-prompt">

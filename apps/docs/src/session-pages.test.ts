@@ -139,7 +139,7 @@ const exerciseContracts = {
       },
       next: {
         href: "/sessions/05-workflow-errors/",
-        title: "失敗をワークフローの結果として扱う",
+        title: "失敗をユースケースの結果として扱う",
       },
     },
   },
@@ -206,7 +206,7 @@ const exerciseContracts = {
     navigation: {
       previous: {
         href: "/sessions/05-workflow-errors/",
-        title: "失敗をワークフローの結果として扱う",
+        title: "失敗をユースケースの結果として扱う",
       },
       next: {
         href: "/sessions/final/",
@@ -235,17 +235,25 @@ const forbiddenExerciseDependencies = [
 const reviewText = [
   "`as` によるキャストが入っていないか全文検索して確認する。",
   "`git status --short` で想定外の path がないか確認する。",
-  "不変条件を型で守っているか、実行時の `if` で守っているかを判定し、型で守れなかった残りを記録する。",
-  "守る不変条件の1文",
-  "依頼文",
-  "型で守れなかった残り",
+  "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
+  "Agentへの依頼文",
+  "型検査では確認できず、テストまたは実行時に確認すること",
   "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。",
 ] as const;
 
+const reviewPromptFor = {
+  "02-state-transitions": "起きてはいけない状態遷移",
+  "03-semantic-identifiers": "取り違えてはいけない値",
+  "04-boundaries-and-pii": "境界で拒否する入力",
+  "05-workflow-errors": "失敗後に実行してはいけない処理",
+  "06-effects-and-consistency": "一緒に記録する必要がある値",
+} as const satisfies Record<ExerciseSlug, string>;
+
 const peerReviewPromises = [
   "人ではなく差分を見ます。「この差分は」で話し始め、優劣をつけません。",
-  "本人は依頼文の1文だけを読み上げ、弁明しません。",
-  "TAは選定基準を共有し、5回で班員全員を少なくとも1回選びます。選出は評価ではありません。",
+  "本人はAgentへの依頼文だけを読み上げ、弁明しません。",
+  "TAは、同じ課題に対して設計判断が異なる差分を選びます。完成度や技能による選出ではありません。",
+  "5回で班員全員を少なくとも1回選びます。",
 ] as const;
 
 const moduleFor = (slug: ExerciseSlug): PageModule =>
@@ -313,6 +321,7 @@ describe("session pages", () => {
       }
       expect(pageModule.navigation).toEqual(contract.navigation);
       for (const text of reviewText) expect(source).toContain(text);
+      expect(source).toContain(reviewPromptFor[slug]);
       expect(source).toContain(
         `\`git diff --stat -- examples/${contract.workspace.snapshot}\``,
       );

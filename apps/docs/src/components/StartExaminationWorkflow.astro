@@ -36,12 +36,12 @@ const steps: readonly Readonly<{
   },
   {
     id: "load",
-    label: "読み込み",
+    label: "Resolver",
     detail: "予約を取得する",
   },
   {
     id: "business-decision",
-    label: "業務判断",
+    label: "ドメインロジック",
     detail: "受付済みなら診察を開始する",
   },
   {
@@ -51,8 +51,8 @@ const steps: readonly Readonly<{
   },
   {
     id: "save",
-    label: "保存",
-    detail: "イベントを1回保存する",
+    label: "Store",
+    detail: "状態とイベントを記録する",
   },
 ] as const;
 
@@ -89,6 +89,6 @@ const highlighted = new Set<StepId>(highlightedByFocus[focus]);
     }
   </ol>
   <p class="start-workflow__boundary-note">
-    読み込みと保存は境界に置き、業務判断には必要な値を引数で渡します。
+    ResolverとStoreは外部I/Oを担当し、ドメインロジックには取得済みの値を渡します。
   </p>
 </div>

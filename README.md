@@ -49,15 +49,16 @@ pnpm exercise:05
 pnpm exercise:06
 ```
 
-開始時の RED は、module-not-found や import error ではありません。サイトの手順に沿って既存モジュールを小さく改善し、同じ `pnpm exercise:NN` をもう一度実行して GREEN を確認します。S0、S1、`session-07`、Final に exercise command はありません。各コード演習の最後には、班で不変条件と差分を照らす相互レビューを行います。
+開始時の RED は、module-not-found や import error ではありません。サイトの手順に沿って既存モジュールを小さく改善し、同じ `pnpm exercise:NN` をもう一度実行して GREEN を確認します。S0、S1、`session-07`、Final に exercise command はありません。各コード演習の最後には、その回で防ぐ問題と差分を照らす相互レビューを行います。
 
 ## 当日の流れ
 
 1. S0 で壊れやすい動物病院アプリの現行業務、操作、保存先、ログを読む
 2. S1 で散文からドメインイベントを拾い、コマンドとアクターを添えて、集約を Excalidraw で見つける
 3. S2 で Discriminated Union を使い、状態遷移を閉じる
-4. S3 で外部入力事故と PII ログ漏えいを、Zod と Branded Type で守る
-5. S4 で失敗理由を同期 Result の型付きの値として返し、呼び出し側へ運ぶ
-6. S5 で時刻・ID・永続化を外から渡し、状態とイベントを1回の保存へまとめる
-7. S2〜S6 の各コード演習で班内相互レビューを行い、型で守れなかった残りを持ち帰る
-8. Final は環境構築や DB 操作をせず、講師が参照実装の5つの境界を案内する
+4. S3 で AppointmentId と VeterinarianId を Branded Type で区別する
+5. S4 で外部入力を Zod で検証し、型付きの入力オブジェクトへ変換する
+6. S5 で失敗理由を同期 Result の型付きの値として返し、呼び出し側へ運ぶ
+7. S6 で時刻・ID・Storeを外から渡し、状態とイベントを一緒に記録する
+8. S2〜S6 の各コード演習で班内相互レビューを行い、型検査では確認できない点を持ち帰る
+9. Final は環境構築や DB 操作をせず、講師が参照実装の5つの境界を案内する

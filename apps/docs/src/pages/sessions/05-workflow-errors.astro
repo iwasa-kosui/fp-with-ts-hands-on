@@ -36,7 +36,7 @@ export const session: SessionSummary = {
   snapshot: "session-05",
   sequence: "05",
   kind: "exercise",
-  title: "失敗をワークフローの結果として扱う",
+  title: "失敗をユースケースの結果として扱う",
   durationMinutes: 30,
   timeBreakdown: { brief: 4, teach: 8, exercise: 10, review: 8 },
   adv: { articulate: 2, delegate: 5, verify: 3 },
@@ -197,7 +197,7 @@ const ensureAppointmentFound = (
     definition:
       "andThen は Ok のときだけ次の Result を返す処理へ進み、map は Ok の成功値だけを変換します。Err になった後のコールバックは呼ばれません。状態遷移は外部依存ではなくドメインの純粋関数なので、ユースケースから直接呼びます。",
     before: {
-      caption: "途中で何がthrowされるか型から分からないワークフロー",
+      caption: "途中で何がthrowされるか型から分からないユースケース",
       code: `import {
   startExamination as transitionToInExamination,
 } from "../domain/appointment/index.js";
@@ -221,7 +221,7 @@ const startExamination =
   };`,
     },
     after: {
-      caption: "Result の型と処理順を同時に読めるワークフロー",
+      caption: "Result の型と処理順を同時に読めるユースケース",
       code: `import type { Result } from "neverthrow";
 
 import type { Appointment } from "../domain/appointment/index.js";
@@ -387,7 +387,7 @@ const startExamination = (
 const narrative = {
   requirement: "診察開始で予期できる業務エラーを型付きの値として返し、Web側が失敗理由ごとに受付の次の操作を選べるようにする。",
   currentRisk: "ユースケースは成功値だけを返す型のまま複数の Error をthrowします。Web側は予約なしの文言だけをcatchしているため、後から追加された状態不正を処理できず500にしています。",
-  design: "予約なしと状態不正を kind を持つ判別共用体にし、Result で返す。andThen で失敗後の遷移と保存を止める。状態遷移はドメイン関数を直接呼び、外部境界のresolverとstoreだけを依存として受け取る。Web側はmatchとswitchで業務エラーを網羅してnoticeへ変換する。",
+  design: "予約なしと状態不正をkindを持つDiscriminated Unionにし、Resultで返す。andThenで失敗後の状態遷移とStore呼び出しを止める。状態遷移はドメイン関数を直接呼び、外部境界のResolverとStoreだけを依存として受け取る。Web側はmatchとswitchで予期できる失敗を網羅してnoticeへ変換する。",
   limitation: "どの失敗を業務エラーとして扱うか、画面でどのnoticeへ変換するかは、人の判断とレビューが必要になる。保存障害など予期しない異常はResultへ変換せず、外側の例外境界へ伝える。",
   legacy: "成功値しか現れない関数シグネチャ、複数箇所のthrow、例外メッセージに依存したcatchを読みます。受付前の予約だけ500になる処理漏れを、演習テストで再現します。",
   fallback: "2つのguardと startExamination は解答例を反映します。最後にWebルートをmatchとswitchへ置き換え、2種類のnoticeを確認します。",
@@ -440,12 +440,12 @@ const chapters = [
 const commonReviewChecks = [
   "`as` によるキャストが入っていないか全文検索して確認する。",
   "`git diff --stat -- examples/session-05` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。",
-  "不変条件を型で守っているか、実行時の `if` で守っているかを判定し、型で守れなかった残りを記録する。",
+  "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
 ] as const;
 const reviewCompletionArtifacts = [
-  "守る不変条件の1文",
-  "依頼文",
-  "型で守れなかった残り",
+  "失敗後に実行してはいけない処理",
+  "Agentへの依頼文",
+  "型検査では確認できず、テストまたは実行時に確認すること",
 ] as const;
 const businessReflectionQuestion =
   "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。";
@@ -470,7 +470,7 @@ ${session.incident}
 依頼:
 ${exerciseSession.delegationPrompt.request}
 
-守る不変条件: [言語化フェーズで書いた1文]
+失敗後に実行してはいけない処理: [言語化フェーズで書いた1文]
 
 着手前に判断すること:
 ${exerciseSession.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
@@ -633,8 +633,8 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <h2>演習</h2>
             <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
             <ol class="adv-flow">
-              <li><strong>言語化（{session.adv.articulate}分）</strong>: 守るべき不変条件を1文で書く。</li>
-              <li><strong>依頼（{session.adv.delegate}分）</strong>: 不変条件と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
+              <li><strong>言語化（{session.adv.articulate}分）</strong>: 失敗後に実行してはいけない処理を1文で書く。</li>
+              <li><strong>依頼（{session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
               <li><strong>検証（{session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
             </ol>
             <div class="delegation-prompt">

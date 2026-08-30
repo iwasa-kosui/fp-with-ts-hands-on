@@ -41,7 +41,7 @@
         <text x="135" y="61" text-anchor="middle" class="dmmf-comparison__code">AppointmentCanceled</text>
       </g>
 
-      <text x="24" y="282" class="dmmf-comparison__lane-title">2. 業務ワークフローへ写す</text>
+      <text x="24" y="282" class="dmmf-comparison__lane-title">2. ユースケースへ写す</text>
       <rect x="20" y="300" width="160" height="210" rx="14" class="dmmf-comparison__boundary"></rect>
       <rect x="195" y="300" width="715" height="210" rx="14" class="dmmf-comparison__core"></rect>
       <rect x="925" y="300" width="175" height="210" rx="14" class="dmmf-comparison__boundary"></rect>
@@ -51,7 +51,7 @@
       <path data-mapping="event-to-workflow-output" d="M 925 188 V 282 H 830 V 344" class="dmmf-comparison__mapping"></path>
 
       <text x="100" y="330" text-anchor="middle" class="dmmf-comparison__area-label">入力側</text>
-      <text x="552" y="330" text-anchor="middle" class="dmmf-comparison__area-label">業務ワークフロー</text>
+      <text x="552" y="330" text-anchor="middle" class="dmmf-comparison__area-label">ユースケース</text>
       <text x="1012" y="330" text-anchor="middle" class="dmmf-comparison__area-label">出力側</text>
 
       <g class="dmmf-comparison__resolver" transform="translate(31 340)">
@@ -76,7 +76,7 @@
 
       <g data-business-rules class="dmmf-comparison__node dmmf-comparison__node--check" transform="translate(320 354)">
         <rect width="190" height="84" rx="8"></rect>
-        <text x="95" y="24" text-anchor="middle" class="dmmf-comparison__node-kind">業務ルール</text>
+        <text x="95" y="24" text-anchor="middle" class="dmmf-comparison__node-kind">確認する条件</text>
         <text x="95" y="49" text-anchor="middle" class="dmmf-comparison__node-label">権限・存在・状態</text>
         <text x="95" y="69" text-anchor="middle" class="dmmf-comparison__node-label">理由を確認する</text>
       </g>
@@ -105,7 +105,7 @@
     </svg>
   </div>
   <figcaption>
-    コマンド、集約、イベントをワークフローの入力、ドメイン判断、成功出力へ写します。権限や状態の条件は、ワークフロー内の業務ルールとして扱います。
+    コマンドをユースケースの入力、集約をドメインロジック、イベントを成功出力へ写します。権限、存在、状態、理由は確認する条件として明示します。
   </figcaption>
 </figure>
 

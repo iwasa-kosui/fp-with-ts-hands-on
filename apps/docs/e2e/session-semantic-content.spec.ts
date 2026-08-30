@@ -17,7 +17,7 @@ const sessions = [
   },
   {
     slug: "05-workflow-errors",
-    title: "失敗をワークフローの結果として扱う",
+    title: "失敗をユースケースの結果として扱う",
   },
   {
     slug: "06-effects-and-consistency",
@@ -43,7 +43,7 @@ test("S1 shows ROP as two rails with three failure switches", async ({ page }) =
   await expect(diagram.locator("[data-rop-switch]")).toHaveCount(3);
   await expect(diagram).toContainText("入力を検査する");
   await expect(diagram).toContainText("対象を取得する");
-  await expect(diagram).toContainText("業務条件を");
+  await expect(diagram).toContainText("権限と状態を");
   await expect(diagram).toContainText("結果を作る");
   await expect(diagram).not.toContainText(/Result|andThen|map|DB|メール|HTTP/);
 });
@@ -58,7 +58,7 @@ test("S1 maps appointment cancellation into a single-aggregate event-output work
   await expect(diagram).toContainText("AppointmentCanceled");
   await expect(diagram).toContainText("Appointment");
   await expect(diagram).toContainText(".cancel");
-  await expect(diagram).toContainText("業務ルール");
+  await expect(diagram).toContainText("確認する条件");
   await expect(diagram).toContainText("集約");
   await expect(diagram).toContainText("実行者を取得する");
   await expect(diagram).toContainText("予約を取得する");
