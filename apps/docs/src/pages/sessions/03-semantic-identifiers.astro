@@ -303,12 +303,12 @@ const chapters = [
 const commonReviewChecks = [
   "`as` によるキャストが入っていないか全文検索して確認する。",
   "`git diff --stat -- examples/session-03` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。",
-  "不変条件を型で守っているか、実行時の `if` で守っているかを判定し、型で守れなかった残りを記録する。",
+  "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
 ] as const;
 const reviewCompletionArtifacts = [
-  "守る不変条件の1文",
-  "依頼文",
-  "型で守れなかった残り",
+  "取り違えてはいけない値",
+  "Agentへの依頼文",
+  "型検査では確認できず、テストまたは実行時に確認すること",
 ] as const;
 const businessReflectionQuestion =
   "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。";
@@ -333,7 +333,7 @@ ${session.incident}
 依頼:
 ${exerciseSession.delegationPrompt.request}
 
-守る不変条件: [言語化フェーズで書いた1文]
+取り違えてはいけない値: [言語化フェーズで書いた1文]
 
 着手前に判断すること:
 ${exerciseSession.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
@@ -465,8 +465,8 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <h2>演習</h2>
             <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
             <ol class="adv-flow">
-              <li><strong>言語化（{session.adv.articulate}分）</strong>: 守るべき不変条件を1文で書く。</li>
-              <li><strong>依頼（{session.adv.delegate}分）</strong>: 不変条件と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
+              <li><strong>言語化（{session.adv.articulate}分）</strong>: 取り違えてはいけない値を1文で書く。</li>
+              <li><strong>依頼（{session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
               <li><strong>検証（{session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
             </ol>
             <div class="delegation-prompt">

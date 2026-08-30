@@ -53,11 +53,11 @@ export const session: SessionSummary = {
   solutionPresentation: "excerpt",
   peerReviewPromises: "inline",
   animal: { name: "RABBIT", type: "rabbit", avatar: "🐇" },
-  summary: "予約の6状態を判別共用体で表し、許可されていない状態遷移を型で拒否します。",
+  summary: "予約の6状態をDiscriminated Unionで表し、許可されていない状態遷移を型で拒否します。",
   episode: [
     "会計を終えたウサギは帰ったはずなのに、画面の中では診察室へ戻ってきました。",
     "受付画面は止めるどころか、2枚目の請求書まで手際よく用意します。",
-    "業務ルールを覚えていたのは人間だけで、コードは何でも通す危ない設計でした。",
+    "許可された状態遷移を覚えていたのは人間だけで、コードは何でも通す危ない設計でした。",
   ],
   incident: "診察結果を記録していない予約が会計され、さらに会計済みの来院が診察中へ戻された。",
   exerciseCommand: "pnpm exercise:02",
@@ -380,7 +380,7 @@ recordPayment(
   "2026-08-30T10:30:00+09:00",
 );`,
   },
-  design: "Scheduled | CheckedIn | InExamination | AwaitingPayment | Paid | Canceled の判別共用体を、遷移関数と分岐でも一貫して使います。completeExamination は InExamination だけを受け取り、recordPayment は AwaitingPayment だけを受け取る純粋関数にします。分岐では網羅チェックを行い、状態を追加したときの未対応の分岐をコンパイルエラーにします。",
+  design: "Scheduled | CheckedIn | InExamination | AwaitingPayment | Paid | Canceled のDiscriminated Unionを、遷移関数と分岐でも一貫して使います。completeExamination は InExamination だけを受け取り、recordPayment は AwaitingPayment だけを受け取る純粋関数にします。分岐では網羅チェックを行い、状態を追加したときの未対応の分岐をコンパイルエラーにします。",
   limitation: "この型が守れるのは、TypeScript が検査できる値だけです。外部から届く未検証の値や、型アサーションで作った値は防げません。",
   legacy: "Appointment 全体を受け取る遷移関数、throw、as Appointment、default 分岐を探します。これらは、許可されていない状態遷移や、状態追加時の未対応の分岐をコンパイラで止められない箇所です。",
   fallback: "解答スナップショットをステップ単位で開き、まず遷移関数の引数型、その後に網羅分岐をコピペします。相互レビューは行いましょう。",
@@ -422,19 +422,20 @@ const chapters = [
 const commonReviewChecks = [
   "`as` によるキャストが入っていないか全文検索して確認する。",
   "`git diff --stat -- examples/session-02` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。",
-  "不変条件を型で守っているか、実行時の `if` で守っているかを判定し、型で守れなかった残りを記録する。",
+  "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
 ] as const;
 const reviewCompletionArtifacts = [
-  "守る不変条件の1文",
-  "依頼文",
-  "型で守れなかった残り",
+  "起きてはいけない状態遷移",
+  "Agentへの依頼文",
+  "型検査では確認できず、テストまたは実行時に確認すること",
 ] as const;
 const businessReflectionQuestion =
   "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。";
 const peerReviewPromises = [
   "人ではなく差分を見ます。「この差分は」で話し始め、優劣をつけません。",
-  "本人は依頼文の1文だけを読み上げ、弁明しません。",
-  "TAは選定基準を共有し、5回で班員全員を少なくとも1回選びます。選出は評価ではありません。",
+  "本人はAgentへの依頼文だけを読み上げ、弁明しません。",
+  "TAは、同じ課題に対して設計判断が異なる差分を選びます。完成度や技能による選出ではありません。",
+  "5回で班員全員を少なくとも1回選びます。",
 ] as const;
 export const promisesHref = "#peer-review-promises";
 export const navigation = ({
@@ -456,7 +457,7 @@ ${session.incident}
 依頼:
 ${exerciseSession.delegationPrompt.request}
 
-守る不変条件: [言語化フェーズで書いた1文]
+起きてはいけない状態遷移: [言語化フェーズで書いた1文]
 
 着手前に判断すること:
 ${exerciseSession.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
@@ -515,7 +516,8 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               {session.episode.map((line) => <p data-episode-line>{line}</p>)}
             </aside>
             <StartExaminationWorkflow focus="state" />
-            <p>S1で決めた「受付済みだけが診察を開始できる」という業務判断を、状態型と遷移で表します。</p>
+            <p>S1で確認した「受付済みだけが診察を開始できる」という条件を、状態型と遷移で表します。</p>
+            <p>このように、処理の前後を通して常に成立させる条件を、このセッションでは<strong>不変条件</strong>と呼びます。</p>
             <h3 data-story-stage="use-case">追加したい機能</h3>
             <p>{narrative.requirement}</p>
             <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
@@ -615,8 +617,8 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <h2>演習</h2>
             <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
             <ol class="adv-flow">
-              <li><strong>言語化（{session.adv.articulate}分）</strong>: 守るべき不変条件を1文で書く。</li>
-              <li><strong>依頼（{session.adv.delegate}分）</strong>: 不変条件と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
+              <li><strong>言語化（{session.adv.articulate}分）</strong>: 起きてはいけない状態遷移を1文で書く。</li>
+              <li><strong>依頼（{session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
               <li><strong>検証（{session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
             </ol>
             <div class="delegation-prompt">
