@@ -123,12 +123,18 @@ const moduleSpecifiers = (source: string): string[] => [
   ].map((match) => match[1]).filter((specifier): specifier is string => specifier !== undefined)),
 ];
 
+const isSnapshotPackageImport = (specifier: string): boolean =>
+  /^@fp-with-ts\/clinic-session-\d{2}(?:\/|$)/.test(specifier);
+
 const assertNoCrossSessionSourceImports = async (sessionUrl: URL): Promise<void> => {
   const sourceFiles = await collectTypeScriptFiles(new URL("src/", sessionUrl));
 
   for (const file of sourceFiles) {
     const prohibitedSpecifiers = moduleSpecifiers(await readFile(file, "utf8")).filter(
-      (specifier) => specifier.includes("../session-") || specifier.includes("examples/session-"),
+      (specifier) =>
+        specifier.includes("../session-") ||
+        specifier.includes("examples/session-") ||
+        isSnapshotPackageImport(specifier),
     );
     if (prohibitedSpecifiers.length > 0) {
       throw new Error(
@@ -376,6 +382,39 @@ describe("runnable session package contract", () => {
       );
 
       await rm(relativeImport);
+      const packageImport = new URL("packageImport.ts", `${pathToFileURL(sourceDirectory).href}/`);
+      await writeFile(
+        packageImport,
+        'import "@fp-with-ts/clinic-session-04/src/domain/appointment/appointment.js";\n',
+      );
+      await expect(assertNoCrossSessionSourceImports(sessionUrl)).rejects.toThrow(
+        "must not import another session",
+      );
+
+      await rm(packageImport);
+      const packageExport = new URL("packageExport.ts", `${pathToFileURL(sourceDirectory).href}/`);
+      await writeFile(
+        packageExport,
+        'export * from "@fp-with-ts/clinic-session-04/src/domain/appointment/appointment.js";\n',
+      );
+      await expect(assertNoCrossSessionSourceImports(sessionUrl)).rejects.toThrow(
+        "must not import another session",
+      );
+
+      await rm(packageExport);
+      const packageDynamicImport = new URL(
+        "packageDynamicImport.ts",
+        `${pathToFileURL(sourceDirectory).href}/`,
+      );
+      await writeFile(
+        packageDynamicImport,
+        'void import("@fp-with-ts/clinic-session-04/src/domain/appointment/appointment.js");\n',
+      );
+      await expect(assertNoCrossSessionSourceImports(sessionUrl)).rejects.toThrow(
+        "must not import another session",
+      );
+
+      await rm(packageDynamicImport);
       const absoluteImport = new URL("absoluteImport.ts", `${pathToFileURL(sourceDirectory).href}/`);
       await writeFile(absoluteImport, 'import "/workspace/examples/session-04/src/domain/appointment/appointment.js";\n');
       await expect(assertNoCrossSessionSourceImports(sessionUrl)).rejects.toThrow(
