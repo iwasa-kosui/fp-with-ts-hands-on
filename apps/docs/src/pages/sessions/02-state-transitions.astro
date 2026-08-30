@@ -57,7 +57,7 @@ export const session: SessionSummary = {
   episode: [
     "会計を終えたウサギは帰ったはずなのに、画面の中では診察室へ戻ってきました。",
     "受付画面は止めるどころか、2枚目の請求書まで手際よく用意します。",
-    "業務ルールを覚えていたのは人間だけで、コードは何でも通す親切設計でした。",
+    "業務ルールを覚えていたのは人間だけで、コードは何でも通す危ない設計でした。",
   ],
   incident: "診察結果を記録していない予約が会計され、さらに会計済みの来院が診察中へ戻された。",
   exerciseCommand: "pnpm exercise:02",
@@ -126,7 +126,7 @@ export const session: SessionSummary = {
       invariant: "診察結果を記録するまで会計できず、許可されていない状態遷移を型で拒否する。",
     },
     {
-      invariant: "状態ごとの必須情報を欠かさない。",
+      invariant: "各状態において必要な情報の抜け漏れを許さない。",
     },
     {
       invariant: "状態を追加したとき、未対応の分岐をコンパイルエラーにする。",
@@ -186,7 +186,7 @@ const teaching: readonly TeachingTopic[] = [
   {
     name: "Discriminated Unionは共通のkindで型を絞り込める",
     definition:
-      "Unionは、値が複数の型のうち、いずれか1つであることを表します。判別フィールドを持たないオブジェクトのUnionでは、固有のプロパティがあるかどうかを調べて型を絞り込みます。Discriminated Unionは、すべてのオブジェクト型に共通の判別フィールドを置き、型ごとに異なるリテラル値を割り当てたUnionです。",
+      "Unionは、値が複数の型のうち、いずれか1つであることを表します。判別フィールドを持たないオブジェクトのUnionでは、固有のプロパティがあるかどうかを調べて型を絞り込むしかありません。Discriminated Unionは、すべてのオブジェクト型に共通の判別フィールドを置き、型ごとに異なるリテラル値を割り当てたUnionです。",
     before: {
       caption: "判別フィールドを持たないオブジェクトのUnion",
       code: `type Appointment =
@@ -345,7 +345,7 @@ export const toStatusLabel = (appointment: Appointment): string => {
 
 const narrative = {
   requirement: "予約を「診察中にする」、「診察結果を記録する」、「会計する」、「キャンセルする」といった状態変更の機能を追加します。",
-  currentRisk: "配布コードの遷移関数は、引数に Appointment 全体を受け取ります。そのため、Paid を startExamination へ渡すことも、診察結果を記録していない InExamination を recordPayment へ渡すこともコンパイルできます。実行時に requireKind が例外を投げるまで、状態の誤りに気づけません。cancel も理由を undefined で受け取れるため、コンパイラでは理由の欠落を止められません。",
+  currentRisk: "配布コードの遷移関数は、引数に Appointment 全体を受け取ります。そのため、Paid を startExamination へ渡すことも、診察結果を記録していない InExamination を recordPayment へ渡すこともコンパイルできます。実行時に requireKind が例外を投げるまで、状態の誤りに気づけません。cancel もキャンセル理由を undefined で受け取れるため、コンパイラではキャンセル理由が抜けていることを検知できません。",
   pitfallCode: {
     sources: ["examples/session-02/src/domain/appointment/transitions.ts"],
     code: `export const startExamination = (
