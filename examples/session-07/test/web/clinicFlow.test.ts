@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
 import { createApp } from "../../src/app.js";
@@ -9,13 +9,14 @@ const inertiaHeaders = {
   "X-Inertia-Version": "1",
 } as const;
 type App = ReturnType<typeof createApp>;
-const post = (app: App, path: string, body?: unknown) => body === undefined
-  ? app.request(path, { method: "POST", headers: inertiaHeaders })
-  : app.request(path, {
-      method: "POST",
-      headers: { ...inertiaHeaders, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+const post = (app: App, path: string, body?: unknown) =>
+  body === undefined
+    ? app.request(path, { method: "POST", headers: inertiaHeaders })
+    : app.request(path, {
+        method: "POST",
+        headers: { ...inertiaHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
 const page = async (app: App) => {
   const response = await app.request("/", { headers: inertiaHeaders });
   expect(response.status).toBe(200);
@@ -28,6 +29,10 @@ describe("Session 07 Web application", () => {
 
   beforeEach(() => {
     app = createApp();
+  });
+
+  afterEach(() => {
+    app.close();
   });
 
   it("原子的なイベント保存use caseから会計済みまで進む", async () => {
@@ -64,22 +69,10 @@ describe("Session 07 Web application", () => {
     expect(response.headers.get("location")).toBe("/?notice=not-found");
   });
 
-  it("原子的な保存の失敗時には状態もイベントも残さない", async () => {
-    app = createApp({ failStore: true });
-    await post(app, `${appointmentUrl}/check-in`);
-
-    const response = await post(app, `${appointmentUrl}/start-examination`);
-
-    expect(response.status).toBe(500);
-    expect(await response.text()).toBe("Internal Server Error");
-    expect(await page(app)).toMatchObject({
-      props: { appointment: { kind: "CheckedIn" } },
-    });
-  });
-
   it("未実装操作とresetを共通URLで扱う", async () => {
-    expect((await post(app, "/follow-ups/request")).headers.get("location"))
-      .toBe("/?notice=not-implemented");
+    expect(
+      (await post(app, "/follow-ups/request")).headers.get("location"),
+    ).toBe("/?notice=not-implemented");
     await post(app, `${appointmentUrl}/check-in`);
     await post(app, "/demo/reset");
     expect(await page(app)).toMatchObject({

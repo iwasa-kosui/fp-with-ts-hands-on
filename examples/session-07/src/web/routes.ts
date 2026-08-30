@@ -2,10 +2,9 @@ import { noticeFromCode, notImplemented } from "@fp-with-ts/clinic-web/server";
 import type { Context, Hono } from "hono";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
-import type { InMemoryExaminationStartedStore } from "../adaptor/inMemoryExaminationStartedStore.js";
+import type { SqliteExaminationStartedStore } from "../adaptor/secondary/sqlite/examinationStartedStore.js";
 import { ExamResult } from "../boundary/examResult.js";
 import { StartExaminationInput } from "../boundary/startExaminationInput.js";
-import { EventId } from "../domain/aggregate/eventId.js";
 import type { Appointment, Scheduled } from "../domain/appointment/index.js";
 import {
   cancel,
@@ -21,12 +20,15 @@ import type {
   StartExaminationWithEffectsError,
 } from "../useCase/errors.js";
 import { startExaminationWithEffects } from "../useCase/startExamination.js";
+import type { EventContextDependencies } from "../useCase/dependencies.js";
 import { toPageProps } from "./appointmentView.js";
 
 type StartExaminationNoticeCode = "not-found" | "invalid-state";
 
 const assertNever = (error: never): never => {
-  throw new Error(`Unhandled start examination error: ${JSON.stringify(error)}`);
+  throw new Error(
+    `Unhandled start examination error: ${JSON.stringify(error)}`,
+  );
 };
 
 const toStartExaminationNoticeCode = (
@@ -43,8 +45,7 @@ const toStartExaminationNoticeCode = (
 };
 
 type StartExaminationWithEffectsNoticeCode =
-  | StartExaminationNoticeCode
-  | "conflict";
+  StartExaminationNoticeCode | "conflict";
 
 const toStartExaminationWithEffectsNoticeCode = (
   error: StartExaminationWithEffectsError,
@@ -55,18 +56,15 @@ const toStartExaminationWithEffectsNoticeCode = (
 
 const ids = {
   appointmentId: AppointmentId.parse(clinicFixture.appointmentId),
-  eventId: EventId.parse("55555555-5555-4555-8555-555555555555"),
   ownerId: OwnerId.parse(clinicFixture.ownerId),
   petId: PetId.parse(clinicFixture.petId),
 };
 
 const appointmentOrThrow = (
-  adapter: InMemoryExaminationStartedStore,
+  store: SqliteExaminationStartedStore,
   appointmentId: string,
 ): Appointment => {
-  const appointment = adapter.appointments().find(
-    (candidate) => candidate.appointmentId === appointmentId,
-  );
+  const appointment = store.find(appointmentId);
   if (appointment === undefined) throw new Error("Appointment not found");
   return appointment;
 };
@@ -76,11 +74,12 @@ const decodeExamPayload = async (context: Context) => {
   return {
     ...raw,
     items: typeof raw.items === "string" ? JSON.parse(raw.items) : raw.items,
-    needsFollowUp: raw.needsFollowUp === "true"
-      ? true
-      : raw.needsFollowUp === "false"
-        ? false
-        : raw.needsFollowUp,
+    needsFollowUp:
+      raw.needsFollowUp === "true"
+        ? true
+        : raw.needsFollowUp === "false"
+          ? false
+          : raw.needsFollowUp,
   };
 };
 
@@ -95,84 +94,106 @@ export const session07InitialAppointment: Scheduled = {
 
 export const registerClinicRoutes = (
   app: Hono,
-  adapter: InMemoryExaminationStartedStore,
+  store: SqliteExaminationStartedStore,
+  effects: EventContextDependencies,
 ): void => {
   app.get("/", (context) =>
     context.render(
       "ClinicDashboard",
       toPageProps(
-        appointmentOrThrow(adapter, clinicFixture.appointmentId),
+        appointmentOrThrow(store, clinicFixture.appointmentId),
         noticeFromCode(context.req.query("notice")),
       ),
     ),
   );
 
   app.post("/appointments/:appointmentId/check-in", (context) => {
-    const current = appointmentOrThrow(adapter, context.req.param("appointmentId"));
-    if (current.kind !== "Scheduled") throw new Error("Invalid appointment state");
-    adapter.replace(checkIn(current, clinicFixture.checkedInAt));
+    const current = appointmentOrThrow(
+      store,
+      context.req.param("appointmentId"),
+    );
+    if (current.kind !== "Scheduled")
+      throw new Error("Invalid appointment state");
+    store.save(checkIn(current, clinicFixture.checkedInAt));
     return context.redirect("/", 303);
   });
 
-  app.post("/appointments/:appointmentId/start-examination", async (context) => {
-    const input = StartExaminationInput.parse({
-      appointmentId: context.req.param("appointmentId"),
-      veterinarianId: clinicFixture.veterinarianId,
-    })._unsafeUnwrap();
-    const result = await startExaminationWithEffects({
-      resolver: adapter.resolver,
-      store: adapter.store,
-      clock: { now: () => "2026-08-30T06:30:00.000Z" },
-      eventIdGenerator: { generate: () => ids.eventId },
-    })({
-      ...input,
-    });
-    return result.match(
-      () => context.redirect("/", 303),
-      (error) =>
-        context.redirect(
-          `/?notice=${toStartExaminationWithEffectsNoticeCode(error)}`,
-          303,
-        ),
-    );
-  });
+  app.post(
+    "/appointments/:appointmentId/start-examination",
+    async (context) => {
+      const input = StartExaminationInput.parse({
+        appointmentId: context.req.param("appointmentId"),
+        veterinarianId: clinicFixture.veterinarianId,
+      })._unsafeUnwrap();
+      const result = await startExaminationWithEffects({
+        resolver: store,
+        store,
+        ...effects,
+      })({
+        ...input,
+      });
+      return result.match(
+        () => context.redirect("/", 303),
+        (error) =>
+          context.redirect(
+            `/?notice=${toStartExaminationWithEffectsNoticeCode(error)}`,
+            303,
+          ),
+      );
+    },
+  );
 
   app.post("/appointments/:appointmentId/exam-results", async (context) => {
-    const current = appointmentOrThrow(adapter, context.req.param("appointmentId"));
-    if (current.kind !== "InExamination") throw new Error("Invalid appointment state");
+    const current = appointmentOrThrow(
+      store,
+      context.req.param("appointmentId"),
+    );
+    if (current.kind !== "InExamination")
+      throw new Error("Invalid appointment state");
     const parsed = ExamResult.parse(await decodeExamPayload(context));
     if (parsed.isErr()) throw new Error("Invalid exam result");
-    adapter.replace(completeExamination(
-      current,
-      { examId: parsed._unsafeUnwrap().examId },
-      "2026-08-30T07:00:00.000Z",
-    ));
+    store.save(
+      completeExamination(
+        current,
+        { examId: parsed._unsafeUnwrap().examId },
+        "2026-08-30T07:00:00.000Z",
+      ),
+    );
     return context.redirect("/", 303);
   });
 
   app.post("/appointments/:appointmentId/payment", (context) => {
-    const current = appointmentOrThrow(adapter, context.req.param("appointmentId"));
-    if (current.kind !== "AwaitingPayment") throw new Error("Invalid appointment state");
-    adapter.replace(recordPayment(
-      current,
-      { diagnosis: "dermatitis", treatment: "ointment", amount: 4800 },
-      "2026-08-30T07:10:00.000Z",
-    ));
+    const current = appointmentOrThrow(
+      store,
+      context.req.param("appointmentId"),
+    );
+    if (current.kind !== "AwaitingPayment")
+      throw new Error("Invalid appointment state");
+    store.save(
+      recordPayment(
+        current,
+        { diagnosis: "dermatitis", treatment: "ointment", amount: 4800 },
+        "2026-08-30T07:10:00.000Z",
+      ),
+    );
     return context.redirect("/", 303);
   });
 
   app.post("/appointments/:appointmentId/cancel", (context) => {
-    const current = appointmentOrThrow(adapter, context.req.param("appointmentId"));
+    const current = appointmentOrThrow(
+      store,
+      context.req.param("appointmentId"),
+    );
     if (current.kind !== "Scheduled" && current.kind !== "CheckedIn") {
       throw new Error("Invalid appointment state");
     }
-    adapter.replace(cancel(current, "owner request", "2026-08-30T05:50:00.000Z"));
+    store.save(cancel(current, "owner request", "2026-08-30T05:50:00.000Z"));
     return context.redirect("/", 303);
   });
 
   app.post("/follow-ups/request", notImplemented);
   app.post("/demo/reset", (context) => {
-    adapter.reset([session07InitialAppointment]);
+    store.reset();
     return context.redirect("/", 303);
   });
 };
