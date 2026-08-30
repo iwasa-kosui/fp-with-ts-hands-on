@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 
 export type AuditLogObservation = Readonly<{
   appointmentId: string;
+  eventId: string;
   eventName: string;
   occurredAt: string;
   payload: unknown;
@@ -36,10 +37,11 @@ export const observeAppointment = (
 
     const auditLogs = database
       .prepare(
-        "SELECT appointment_id AS appointmentId, event_name AS eventName, occurred_at AS occurredAt, payload FROM audit_logs ORDER BY rowid",
+        "SELECT appointment_id AS appointmentId, event_id AS eventId, event_name AS eventName, occurred_at AS occurredAt, payload FROM audit_logs ORDER BY rowid",
       )
       .all() as ReadonlyArray<Readonly<{
         appointmentId: string;
+        eventId: string;
         eventName: string;
         occurredAt: string;
         payload: string;
@@ -49,6 +51,7 @@ export const observeAppointment = (
       state: parseJson(appointment.state, "appointments.state"),
       auditLogs: auditLogs.map((auditLog) => ({
         appointmentId: auditLog.appointmentId,
+        eventId: auditLog.eventId,
         eventName: auditLog.eventName,
         occurredAt: auditLog.occurredAt,
         payload: parseJson(auditLog.payload, "audit_logs.payload"),

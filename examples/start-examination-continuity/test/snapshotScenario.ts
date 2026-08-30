@@ -6,6 +6,10 @@ import { createDatabaseBackedApp as createSession02App } from "../../session-02/
 import { createDatabaseBackedApp as createSession03App } from "../../session-03/src/app.js";
 import { createDatabaseBackedApp as createSession04App } from "../../session-04/src/app.js";
 import { createDatabaseBackedApp as createSession05App } from "../../session-05/src/app.js";
+import { createDatabaseBackedApp as createSession06App } from "../../session-06/src/app.js";
+import { createDatabaseBackedApp as createSession07App } from "../../session-07/src/app.js";
+import type { Clock } from "../../session-07/src/domain/aggregate/clock.js";
+import type { EventIdGenerator } from "../../session-07/src/domain/aggregate/eventIdGenerator.js";
 
 type SnapshotState =
   | "Scheduled"
@@ -16,11 +20,30 @@ type SnapshotState =
   | "Canceled";
 
 export type SnapshotScenario = Readonly<{
-  name: "Session 00" | "Session 01" | "Session 02" | "Session 03" | "Session 04" | "Session 05";
-  createApp: (databasePath: string) => Readonly<{
-    request: (path: string, init?: RequestInit) => Promise<Response>;
-  }>;
+  name:
+    | "Session 00"
+    | "Session 01"
+    | "Session 02"
+    | "Session 03"
+    | "Session 04"
+    | "Session 05"
+    | "Session 06"
+    | "Session 07";
+  createApp: (databasePath: string) => SnapshotApp;
+  createAppWithEffects?: (
+    databasePath: string,
+    effects: SnapshotEffects,
+  ) => SnapshotApp;
   normalizeState: (state: unknown) => SnapshotState;
+}>;
+
+type SnapshotApp = Readonly<{
+  request: (path: string, init?: RequestInit) => Promise<Response>;
+}>;
+
+export type SnapshotEffects = Readonly<{
+  clock: Clock;
+  eventIdGenerator: EventIdGenerator;
 }>;
 
 type RuntimeApp = Readonly<{
@@ -32,6 +55,14 @@ type DatabaseBackedAppFactory = (options: Readonly<{
   databasePath: string;
   migrationsFolder: string;
   isProduction: boolean;
+}>) => RuntimeApp;
+
+type EffectfulDatabaseBackedAppFactory = (options: Readonly<{
+  clock: Clock;
+  databasePath: string;
+  eventIdGenerator: EventIdGenerator;
+  isProduction: boolean;
+  migrationsFolder: string;
 }>) => RuntimeApp;
 
 const snapshotStates = [
@@ -80,30 +111,48 @@ const stateFromStatus = (state: unknown): SnapshotState => {
 const migrationFolderFor = (session: string): string =>
   fileURLToPath(new URL(`../../session-${session}/drizzle`, import.meta.url));
 
+const toSnapshotApp = (runtimeApp: RuntimeApp): SnapshotApp => {
+  const app = {
+    request: async (path: string, init?: RequestInit): Promise<Response> =>
+      await runtimeApp.request(path, init),
+  };
+
+  return runtimeApp.close === undefined
+    ? app
+    : Object.assign(app, { close: runtimeApp.close });
+};
+
 const createScenario = (
   name: SnapshotScenario["name"],
   createDatabaseBackedApp: DatabaseBackedAppFactory,
   migrationsFolder: string,
   normalizeState: SnapshotScenario["normalizeState"],
-): SnapshotScenario => ({
-  name,
-  createApp: (databasePath) => {
-    const runtimeApp = createDatabaseBackedApp({
-      databasePath,
-      migrationsFolder,
-      isProduction: false,
-    });
-    const app = {
-      request: async (path: string, init?: RequestInit): Promise<Response> =>
-        await runtimeApp.request(path, init),
+  createEffectfulDatabaseBackedApp?: EffectfulDatabaseBackedAppFactory,
+): SnapshotScenario => {
+  const effectsAdapter = createEffectfulDatabaseBackedApp === undefined
+    ? {}
+    : {
+      createAppWithEffects: (databasePath: string, effects: SnapshotEffects) =>
+        toSnapshotApp(createEffectfulDatabaseBackedApp({
+          ...effects,
+          databasePath,
+          migrationsFolder,
+          isProduction: false,
+        })),
     };
 
-    return runtimeApp.close === undefined
-      ? app
-      : Object.assign(app, { close: runtimeApp.close });
-  },
-  normalizeState,
-});
+  return {
+    name,
+    createApp: (databasePath) =>
+      toSnapshotApp(createDatabaseBackedApp({
+        databasePath,
+        migrationsFolder,
+        isProduction: false,
+      })),
+    ...effectsAdapter,
+    normalizeState,
+  };
+};
 
 export const snapshotScenarios: readonly SnapshotScenario[] = [
   createScenario("Session 00", createSession00App, migrationFolderFor("00"), stateFromStatus),
@@ -112,4 +161,12 @@ export const snapshotScenarios: readonly SnapshotScenario[] = [
   createScenario("Session 03", createSession03App, migrationFolderFor("03"), stateFromKind),
   createScenario("Session 04", createSession04App, migrationFolderFor("04"), stateFromKind),
   createScenario("Session 05", createSession05App, migrationFolderFor("05"), stateFromKind),
+  createScenario("Session 06", createSession06App, migrationFolderFor("06"), stateFromKind),
+  createScenario(
+    "Session 07",
+    createSession07App,
+    migrationFolderFor("07"),
+    stateFromKind,
+    createSession07App,
+  ),
 ];
