@@ -7,15 +7,21 @@
 Node.js 20 以上と pnpm を使います。手元では Node v25.4.0 で検証しており、Node.js 20 ではローカル実行していません（サポート対象は Node.js 20 以上です）。リポジトリルートで依存関係を入れ、アプリを起動します。
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm --filter @fp-with-ts/clinic-final dev
 ```
 
-起動時に Drizzle migration が適用され、既定で `examples/final/clinic.sqlite` を使います。migration だけを適用する場合は、リポジトリルートで次を実行します。schema 変更時の SQL 生成には `db:generate` を使います。
+起動時に Drizzle migration が適用され、既定で `examples/final/clinic.sqlite` を使います。既存のmigrationだけを適用する場合は、リポジトリルートで次を実行します。
 
 ```bash
 pnpm --filter @fp-with-ts/clinic-final db:migrate
+```
+
+schemaを変更した場合はSQLを生成し、内容を確認してからmigrationを適用します。
+
+```bash
 pnpm --filter @fp-with-ts/clinic-final db:generate
+pnpm --filter @fp-with-ts/clinic-final db:migrate
 ```
 
 初回アクセスは `/setup` へ進み、最初の `Admin` を登録します。以後は `/login` からログインします。初期登録は installation marker、Admin、session、対応する2件の監査行を1つの transaction で確定します。

@@ -6,7 +6,7 @@
 pnpm demo:06
 pnpm --filter @fp-with-ts/clinic-session-06 typecheck
 pnpm --filter @fp-with-ts/clinic-session-06 test
-pnpm --filter @fp-with-ts/clinic-session-06 exercise
+pnpm exercise:06
 ```
 
 デモは `http://localhost:3000` で起動し、`startExaminationWithEffects` の非決定値と2回書き込みを実際のrouteから実行します。

@@ -40,8 +40,17 @@
   box-shadow: 0.45rem 0.45rem 0 var(--case-mint);
 }
 
+.setup-step > div,
+.setup-step__command {
+  min-width: 0;
+}
+
 .setup-step--repository {
   box-shadow: 0.45rem 0.45rem 0 var(--case-lemon);
+}
+
+.setup-step--verification {
+  box-shadow: 0.45rem 0.45rem 0 var(--case-coral);
 }
 
 .setup-step__number {
@@ -57,6 +66,10 @@
 
 .setup-step--repository .setup-step__number {
   background: var(--case-lemon);
+}
+
+.setup-step--verification .setup-step__number {
+  background: var(--case-coral);
 }
 
 .setup-step__label {
@@ -126,6 +139,11 @@
   border: 0;
 }
 
+.setup-step__command + p {
+  margin: 1.5rem 0 0;
+  line-height: 1.75;
+}
+
 .setup-page__next {
   display: flex;
   flex-wrap: wrap;
@@ -150,6 +168,10 @@
 @media (min-width: 52rem) {
   .setup-page__steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .setup-step--verification {
+    grid-column: 1 / -1;
   }
 }
 

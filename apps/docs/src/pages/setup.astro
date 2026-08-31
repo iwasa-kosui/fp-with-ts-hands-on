@@ -7,11 +7,15 @@ import "../styles/setup.css";
 
 const cloneCommand =
   "git clone https://github.com/iwasa-kosui/fp-with-ts-hands-on.git";
+const verificationCommand = `cd fp-with-ts-hands-on
+pnpm install --frozen-lockfile
+pnpm test
+pnpm dev`;
 ---
 
 <BaseLayout
   title="事前準備 | FP with TypeScript"
-  description="FP with TypeScriptハンズオンへ参加する前に済ませる2つの準備"
+  description="FP with TypeScriptハンズオンへ参加する前に済ませる3つの準備"
 >
   <div class="case-file setup-page">
     <header class="case-file__site-header">
@@ -22,7 +26,7 @@ const cloneCommand =
       <header class="setup-page__hero">
         <p class="case-file__eyebrow">BEFORE THE EVENT</p>
         <h1>事前準備</h1>
-        <p>イベント当日までに、次の2つを済ませてください。</p>
+        <p>イベント当日までに、次の3つを済ませてください。</p>
       </header>
 
       <ol class="setup-page__steps" aria-label="事前準備の手順">
@@ -59,10 +63,32 @@ const cloneCommand =
             </div>
           </div>
         </li>
+
+        <li class="setup-step setup-step--verification">
+          <span class="setup-step__number" aria-hidden="true">03</span>
+          <div>
+            <p class="setup-step__label">ローカル環境を確認する</p>
+            <h2>依存関係を入れて教材を起動する</h2>
+            <p>
+              Node.js 20以上、pnpm 9.12.0、Gitを用意し、cloneしたリポジトリで次のコマンドを実行してください。
+            </p>
+            <div class="setup-step__command">
+              <div class="setup-step__command-header">
+                <span>Terminal</span>
+                <CopyButton client:idle value={verificationCommand} />
+              </div>
+              <CodeBlock code={verificationCommand} language="shell" />
+            </div>
+            <p>
+              テストが成功したら、表示されたlocalhostのURLをChromeまたはEdgeで開きます。終了するときは
+              <code>Ctrl+C</code> を押してください。
+            </p>
+          </div>
+        </li>
       </ol>
 
       <footer class="setup-page__next">
-        <p>2つとも終わったら準備完了です。</p>
+        <p>3つとも終わったら準備完了です。</p>
         <a href="/sessions/">セッション一覧を見る</a>
       </footer>
     </main>

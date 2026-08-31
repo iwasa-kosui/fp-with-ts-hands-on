@@ -5,7 +5,7 @@
 ## 必要なもの
 
 - Node.js 20以上
-- pnpm
+- pnpm 9.12.0
 - Git
 - TypeScript を編集できるエディタ
 - デスクトップ版 Chrome または Edge の現行版
@@ -23,7 +23,7 @@ pnpm --version
 git --version
 ```
 
-Node.js は `v20` 以上であることを確認してください。pnpm と Git はバージョン番号が表示されれば準備できています。
+Node.js は `v20` 以上、pnpm は `9.12.0` であることを確認してください。Git はバージョン番号が表示されれば準備できています。
 
 ## リポジトリの取得
 
@@ -41,7 +41,7 @@ cd fp-with-ts-hands-on
 依存関係をインストールし、通常テストを実行します。
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm test
 ```
 
@@ -75,7 +75,7 @@ pnpm demo:NN
 | S5 | `pnpm exercise:05` |
 | S6 | `pnpm exercise:06` |
 
-4本を続けて確認したい場合は、次を順に実行します。
+5本を続けて確認したい場合は、次を順に実行します。
 
 ```bash
 pnpm exercise:02

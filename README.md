@@ -6,8 +6,10 @@ https://fp-with-ts-hands-on.kosui.workers.dev/
 
 ## セットアップ
 
+Node.js 20以上、pnpm 9.12.0、Gitを用意し、リポジトリルートで次を実行します。
+
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm test
 pnpm dev
 ```

@@ -7,9 +7,9 @@
 ```bash
 pnpm demo:02
 pnpm --filter @fp-with-ts/clinic-session-02 test
-pnpm --filter @fp-with-ts/clinic-session-02 exercise
+pnpm exercise:02
 ```
 
 デモは `http://localhost:3000` で起動します。画面操作はこのstarterの遷移関数を呼びます。
 
-`pnpm exercise` は4つの業務上の不変条件について、意図した assertion failure で始まります。
+`pnpm exercise:02` は5つの型要件について、意図した失敗で始まります。
