@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { sessionNavigationItems } from "./sessions/navigation";
 import type { SessionNavigation, SessionSummary } from "./sessions/types";
 type PageModule = Readonly<{
   session: SessionSummary;
@@ -354,6 +355,12 @@ describe("page-owned session contracts", () => {
     ).toEqual(expectedCurriculum);
     expect(new Set(sessions.map(({ slug }) => slug)).size).toBe(8);
     expect(new Set(sessions.map(({ sequence }) => sequence)).size).toBe(8);
+  });
+
+  it("keeps the session rail aligned with page-owned metadata", () => {
+    expect(sessionNavigationItems).toEqual(
+      sessions.map(({ slug, title }) => ({ slug, title })),
+    );
   });
 
   it("keeps each three-line episode in its page metadata and hero", () => {

@@ -31,7 +31,10 @@ const { currentSlug, chapters } = Astro.props;
 
   <div class="case-file__mobile-navigation">
     <details class="case-file__mobile-menu case-file__mobile-menu--curriculum" name="session-navigation">
-      <summary>セッション一覧</summary>
+      <summary>
+        <span aria-hidden="true">☰</span>
+        <span>セッション一覧</span>
+      </summary>
       <nav aria-label="セッション一覧">
         <ol>
           {
@@ -47,7 +50,10 @@ const { currentSlug, chapters } = Astro.props;
       </nav>
     </details>
     <details class="case-file__mobile-menu case-file__mobile-menu--outline" name="session-navigation">
-      <summary>このページ</summary>
+      <summary>
+        <span aria-hidden="true">☰</span>
+        <span>このページ</span>
+      </summary>
       <nav aria-label="ページ内目次">
         <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
       </nav>
@@ -65,3 +71,19 @@ const { currentSlug, chapters } = Astro.props;
     </nav>
   </aside>
 </div>
+
+<script>
+  const outlineLinks = document.querySelectorAll<HTMLAnchorElement>(
+    ".case-file__mobile-menu--outline a",
+  );
+
+  for (const link of outlineLinks) {
+    link.addEventListener("click", () => {
+      const menu = link.closest("details");
+
+      if (menu instanceof HTMLDetailsElement) {
+        menu.open = false;
+      }
+    });
+  }
+</script>

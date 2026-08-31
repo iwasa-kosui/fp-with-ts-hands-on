@@ -64,6 +64,7 @@ test("desktop shows the curriculum left of the article and the page outline righ
 
 test("mobile keeps the curriculum and page outline in separate menus", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/sessions/02-state-transitions/");
 
   const curriculumMenu = page.locator(".case-file__mobile-menu--curriculum");
@@ -79,7 +80,6 @@ test("mobile keeps the curriculum and page outline in separate menus", async ({ 
   await expect(curriculumMenu.getByRole("link")).toHaveText(sessionTitles);
   await expect(outlineMenu.getByRole("navigation", { name: "ページ内目次" })).toBeHidden();
 
-  await curriculumMenu.getByText("セッション一覧", { exact: true }).click();
   await outlineMenu.getByText("このページ", { exact: true }).click();
   await expect(curriculumMenu.getByRole("navigation", { name: "セッション一覧" })).toBeHidden();
   await expect(outlineMenu.getByRole("navigation", { name: "ページ内目次" })).toBeVisible();
@@ -87,6 +87,56 @@ test("mobile keeps the curriculum and page outline in separate menus", async ({ 
     "href",
     "#incident",
   );
+
+  await outlineMenu.getByRole("link", { name: "型で閉じる" }).click();
+  await expect(page).toHaveURL(/#refactor$/);
+  await expect(outlineMenu).not.toHaveAttribute("open", "");
+
+  const targetPosition = await page.evaluate(() => {
+    const navigationRect = document
+      .querySelector(".case-file__mobile-navigation")!
+      .getBoundingClientRect();
+    const targetRect = document
+      .querySelector("#refactor")!
+      .getBoundingClientRect();
+
+    return {
+      navigationBottom: navigationRect.bottom,
+      targetTop: targetRect.top,
+    };
+  });
+
+  expect(targetPosition.targetTop).toBeGreaterThanOrEqual(
+    targetPosition.navigationBottom,
+  );
+});
+
+test("short desktop viewports keep every session reachable inside the left rail", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1100, height: 600 });
+  await page.goto("/sessions/02-state-transitions/");
+
+  const curriculum = page.locator(".case-file__curriculum--desktop");
+  const railMetrics = await curriculum.evaluate((element) => {
+    const styles = getComputedStyle(element);
+
+    return {
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+      overflowY: styles.overflowY,
+    };
+  });
+
+  expect(railMetrics.clientHeight).toBeLessThanOrEqual(568);
+  expect(railMetrics.scrollHeight).toBeGreaterThan(railMetrics.clientHeight);
+  expect(railMetrics.overflowY).toBe("auto");
+
+  const lastSession = curriculum.getByRole("link", {
+    name: "参照実装で境界をたどる",
+  });
+  await lastSession.scrollIntoViewIfNeeded();
+  await expect(lastSession).toBeVisible();
 });
 
 test("session navigation keeps its approved desktop appearance", async ({ page }) => {

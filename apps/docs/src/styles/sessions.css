@@ -176,8 +176,7 @@
   display: none;
 }
 
-.case-file__mobile-menu summary::before {
-  content: "☰";
+.case-file__mobile-menu summary > [aria-hidden="true"] {
   font-size: 1.25rem;
   line-height: 1;
 }
@@ -849,6 +848,12 @@
   }
 }
 
+@media (max-width: 1099px) {
+  .case-file__content > section {
+    scroll-margin-top: 4rem;
+  }
+}
+
 @media (min-width: 1100px) {
   .case-file__body {
     grid-template-columns: minmax(11rem, 13rem) minmax(0, 1fr) minmax(11rem, 13rem);
@@ -860,6 +865,8 @@
     display: block;
     position: sticky;
     top: 1rem;
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
   }
 
   .case-file__mobile-navigation {
