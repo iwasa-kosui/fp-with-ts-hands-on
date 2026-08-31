@@ -70,10 +70,10 @@ export const session: SessionSummary = {
     request:
       "診察開始で起こりうる業務上の失敗を、呼び出し側が判断できる形に改善してください。表示文言には依存せず、失敗後の処理を続けない設計にしてください。",
     decisions: [
-      "何を予期できる業務上の失敗として扱うか",
+      "どの失敗に対して顧客や現場が別の操作を選ぶか",
       "呼び出し側が分岐に使う安定した情報は何か",
       "失敗後に実行してはいけない処理は何か",
-      "Resultへ変換せず外側へ伝える異常は何か",
+      "後続処理の前提を満たせず、Resultへ変換せず外側へ伝える異常は何か",
     ],
   },
   steps: [
@@ -124,7 +124,7 @@ export const session: SessionSummary = {
   ],
   decisions: [
     {
-      invariant: "予期できる失敗は戻り値に現れる。",
+      invariant: "顧客や現場が失敗理由に応じて操作を選ぶ必要がある失敗は、戻り値に現れる。",
     },
     {
       invariant: "呼び出し側は文言ではなく失敗のkindで分岐する。",
@@ -190,7 +190,7 @@ const ensureAppointmentFound = (
     ? err({ kind: "AppointmentNotFound", appointmentId })
     : ok(appointment);`,
     },
-    why: "例外では、関数の型から失敗理由を読み取れません。Result の E に業務エラーを置くと、呼び出し側は実行前から起こりうる失敗を把握し、表示や次の操作を選べます。err は例外を投げず、失敗理由を値として返します。ただし、保存障害など呼び出し側で業務上の対応を選べない異常まで Result に入れるわけではありません。",
+    why: "例外では、関数の型から失敗理由を読み取れません。Result の E に業務エラーを置くと、呼び出し側は実行前から起こりうる失敗を把握し、表示や次の操作を選べます。err は例外を投げず、失敗理由を値として返します。ただし、Result の E は発生しうるエラーの一覧ではありません。顧客や現場が失敗理由に応じて操作を選ぶ必要のない異常まで含めると、呼び出し側へ意味のない分岐を要求します。",
   },
   {
     name: "andThen と map は成功した経路だけを進める",
@@ -282,7 +282,7 @@ const startExamination =
         return appointment;
       });`,
     },
-    why: "before は実行時には例外で処理が止まりますが、どの行が何をthrowするかは型に現れません。after は成功時に InExamination のどの情報が得られるかと、予約なし・状態不正のどちらで失敗するかを定義から確認できます。Err になった時点で後続の andThen と map は呼ばれません。resolver と store は外部境界として deps から受け取りますが、状態遷移はドメイン知識なので直接呼びます。保存障害など map 内で発生する予期しない例外は捕捉せず、業務エラーへ偽装しません。",
+    why: "before は実行時には例外で処理が止まりますが、どの行が何をthrowするかは型に現れません。after は成功時に InExamination のどの情報が得られるかと、予約なし・状態不正のどちらで失敗するかを定義から確認できます。Err になった時点で後続の andThen と map は呼ばれません。resolver と store は外部境界として deps から受け取りますが、状態遷移はドメイン知識なので直接呼びます。store.save が投げる保存障害は、顧客や現場が理由別の操作を選ぶ業務結果ではないため、その時点で成功経路を中断して例外として伝播させます。",
   },
   {
     name: "match と switch で呼び出し側の処理漏れを型エラーにする",
@@ -354,7 +354,7 @@ const toNoticeCode = (error: StartExaminationError): string => {
   }
 };`,
     },
-    why: "before では InvalidAppointmentState が追加されても catch に型エラーが出ないため、受付前の予約だけ500になりました。after は match の失敗側で union 全体を受け取り、default 節から never 専用の assertNever を呼びます。エラーの種類を追加して case を足し忘れると新しい型が default 節に残り、コンパイルエラーになります。技術的な例外は Result に入れていないため、この switch では捕捉せず外側の例外境界へ伝えます。",
+    why: "before では InvalidAppointmentState が追加されても catch に型エラーが出ないため、受付前の予約だけ500になりました。after は match の失敗側で union 全体を受け取り、default 節から never 専用の assertNever を呼びます。エラーの種類を追加して case を足し忘れると新しい型が default 節に残り、コンパイルエラーになります。Result に含めていない例外は、この switch では捕捉せず外側の例外境界へ伝えます。",
   },
 ];
 
@@ -388,7 +388,7 @@ const narrative = {
   requirement: "診察開始で予期できる業務エラーを型付きの値として返し、Web側が失敗理由ごとに受付の次の操作を選べるようにする。",
   currentRisk: "ユースケースは成功値だけを返す型のまま複数の Error をthrowします。Web側は予約なしの文言だけをcatchしているため、後から追加された状態不正を処理できず500にしています。",
   design: "予約なしと状態不正をkindを持つDiscriminated Unionにし、Resultで返す。andThenで失敗後の状態遷移とStore呼び出しを止める。状態遷移はドメイン関数を直接呼び、外部境界のResolverとStoreだけを依存として受け取る。Web側はmatchとswitchで予期できる失敗を網羅してnoticeへ変換する。",
-  limitation: "どの失敗を業務エラーとして扱うか、画面でどのnoticeへ変換するかは、人の判断とレビューが必要になる。保存障害など予期しない異常はResultへ変換せず、外側の例外境界へ伝える。",
+  limitation: "どの失敗に固有の業務上の対応があるか、画面でどのnoticeへ変換するかは、人の判断とレビューが必要になる。顧客や現場が理由別の操作を選ばず、後続処理が前の処理の完了を前提とする異常はResultへ変換せず、外側の例外境界へ伝える。",
   legacy: "成功値しか現れない関数シグネチャ、複数箇所のthrow、例外メッセージに依存したcatchを読みます。受付前の予約だけ500になる処理漏れを、演習テストで再現します。",
   fallback: "2つのguardと startExamination は解答例を反映します。最後にWebルートをmatchとswitchへ置き換え、2種類のnoticeを確認します。",
 } as const;
@@ -522,16 +522,25 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <article class="teaching-topic" aria-labelledby="result-or-exception">
               <h3 id="result-or-exception">Result にする失敗を先に選ぶ</h3>
               <p>
-                <code>throw</code> をすべて <code>Result</code> へ置き換えるわけではありません。判断基準は、呼び出し側が失敗理由を使って次の操作を選べるかどうかです。
+                <code>Result&lt;T, E&gt;</code> の <code>E</code> は、発生しうるエラーの一覧ではありません。顧客や現場が失敗理由に応じて次の操作を選ぶ必要がある失敗だけを置きます。
+              </p>
+              <p>
+                判断するときは、失敗の発生場所ではなく、その失敗に固有の業務上の対応を一つ具体的に言えるかを確認します。
               </p>
               <ul class="decision-list">
                 <li>
-                  <strong>業務上の失敗は Result:</strong> 予約が存在しない、受付済みではないなど、呼び出し側が表示ややり直しを選べる失敗は <code>Err</code> で返します。
+                  <strong>失敗に固有の操作があるなら Result:</strong> 予約が存在しなければ予約を探し直し、受付済みでなければ先に受付するか画面を更新します。このような失敗は <code>Err</code> で返します。
                 </li>
                 <li>
-                  <strong>技術的な異常は例外または Promise の reject:</strong> データベースの停止や保存データの破損など、呼び出し側で業務上の対応を選べない異常は外側の例外境界へ伝えます。そこで安全に記録し、詳細を含まない500応答などへ変換します。
+                  <strong>選べる操作がなく、成功経路を続けてはいけないなら例外:</strong> 後続処理が、失敗した処理の出力や完了を前提としている場合は、その前提が成立しないまま処理を続けてはいけません。
                 </li>
               </ul>
+              <p>
+                たとえば、データベースへの保存が完了したか確認できないままキューへのイベント追加や外部サービスへの通知を送ると、保存されていない変更についてイベントや通知だけが届く可能性があります。そのため、保存処理で異常が起きた時点で成功経路を中断し、外側の例外境界で記録してエラー応答へ変換します。
+              </p>
+              <p>
+                <code>Err</code> も例外も成功経路を止めます。<code>Err</code> は呼び出し側へ戻して業務上の分岐に使い、例外は外側の例外境界で捕捉します。ログ記録、ロールバック、接続の解放は失敗時の処理なので実行します。
+              </p>
             </article>
             <h3 data-story-stage="goal">このセッションのゴール</h3>
             <p>{narrative.design}</p>
