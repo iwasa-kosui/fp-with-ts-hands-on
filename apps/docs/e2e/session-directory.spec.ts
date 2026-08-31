@@ -26,10 +26,8 @@ test("shows preparation as a dedicated section before sessions", async ({ page }
   const setup = page.getByRole("region", { name: "事前準備" });
   await expect(setup.getByRole("heading", { level: 2, name: "事前準備" })).toBeVisible();
   await expect(setup).toContainText("セッションを始める前に");
-  await expect(setup.getByRole("link", { name: "事前準備ページを開く" })).toHaveAttribute(
-    "href",
-    "/setup/",
-  );
+  const setupLink = setup.getByRole("link", { name: "事前準備ページを開く" });
+  await expect(setupLink).toHaveAttribute("href", "/setup/");
 
   const sessionList = page.getByRole("list", { name: "セッション一覧" });
   await expect(
@@ -40,6 +38,19 @@ test("shows preparation as a dedicated section before sessions", async ({ page }
       await sessionList.elementHandle(),
     ),
   ).resolves.toBe(true);
+});
+
+test("keeps the preparation action visually light", async ({ page }) => {
+  await page.goto("/sessions/");
+
+  const setupLink = page
+    .getByRole("region", { name: "事前準備" })
+    .getByRole("link", { name: "事前準備ページを開く" });
+  await expect(setupLink).toHaveCSS("background-color", "rgb(255, 253, 247)");
+  await expect(setupLink).toHaveCSS("color", "rgb(22, 37, 31)");
+
+  await setupLink.hover();
+  await expect(setupLink).toHaveCSS("background-color", "rgb(188, 235, 215)");
 });
 
 test("session directory lists every session in curriculum order", async ({ page }) => {

@@ -53,14 +53,16 @@
   gap: 0.6rem;
   margin-top: 1rem;
   padding: 0.65rem 0.9rem;
-  background: var(--case-line);
-  color: var(--case-paper);
+  border: 2px solid var(--case-line);
+  background: var(--case-paper);
+  color: var(--case-ink);
   font-weight: 800;
   text-decoration: none;
 }
 
 .session-directory__setup-link:hover,
 .session-directory__setup-link:focus-visible {
+  background: var(--case-mint);
   outline: 3px solid var(--case-coral);
   outline-offset: 3px;
 }
