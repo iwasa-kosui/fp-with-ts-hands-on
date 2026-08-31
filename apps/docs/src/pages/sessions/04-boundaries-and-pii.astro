@@ -2,6 +2,7 @@
 import { Code } from "astro:components";
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
+import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
@@ -331,15 +332,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
           {session.summary}
         </p>
       </section>
-      <div class="case-file__body">
-        <aside class="case-file__toc case-file__toc--desktop">
-          <nav aria-label="ページ内目次"><ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol></nav>
-        </aside>
-        <details class="case-file__toc case-file__toc--mobile">
-          <summary>目次</summary>
-          <nav aria-label="ページ内目次"><ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol></nav>
-        </details>
-        <article class="case-file__content">
+      <SessionPageNavigation currentSlug={session.slug} chapters={chapters}>
           <section id="incident">
             <h2>今回つくるもの</h2>
             <aside class="case-file__episode" aria-label="動物病院のひと幕">
@@ -494,8 +487,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <ol>{session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
             </section>
           </section>
-        </article>
-      </div>
+      </SessionPageNavigation>
       <nav class="case-file__session-nav" aria-label="前後のセッション">
         <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
         <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>

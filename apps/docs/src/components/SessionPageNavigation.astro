@@ -1,0 +1,89 @@
+---
+import { sessionNavigationItems } from "../sessions/navigation";
+
+type Chapter = Readonly<{ id: string; label: string }>;
+
+interface Props {
+  currentSlug: string;
+  chapters: readonly Chapter[];
+}
+
+const { currentSlug, chapters } = Astro.props;
+---
+
+<div class="case-file__body">
+  <aside class="case-file__toc case-file__curriculum case-file__curriculum--desktop">
+    <p class="case-file__rail-title">セッション一覧</p>
+    <nav aria-label="セッション一覧">
+      <ol>
+        {
+          sessionNavigationItems.map(({ slug, title }) => (
+            <li>
+              <a href={`/sessions/${slug}/`} aria-current={slug === currentSlug ? "page" : undefined}>
+                {title}
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+    </nav>
+  </aside>
+
+  <div class="case-file__mobile-navigation">
+    <details class="case-file__mobile-menu case-file__mobile-menu--curriculum" name="session-navigation">
+      <summary>
+        <span aria-hidden="true">☰</span>
+        <span>セッション一覧</span>
+      </summary>
+      <nav aria-label="セッション一覧">
+        <ol>
+          {
+            sessionNavigationItems.map(({ slug, title }) => (
+              <li>
+                <a href={`/sessions/${slug}/`} aria-current={slug === currentSlug ? "page" : undefined}>
+                  {title}
+                </a>
+              </li>
+            ))
+          }
+        </ol>
+      </nav>
+    </details>
+    <details class="case-file__mobile-menu case-file__mobile-menu--outline" name="session-navigation">
+      <summary>
+        <span aria-hidden="true">☰</span>
+        <span>このページ</span>
+      </summary>
+      <nav aria-label="ページ内目次">
+        <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
+      </nav>
+    </details>
+  </div>
+
+  <article class="case-file__content">
+    <slot />
+  </article>
+
+  <aside class="case-file__toc case-file__outline case-file__outline--desktop">
+    <p class="case-file__rail-title">このページ</p>
+    <nav aria-label="ページ内目次">
+      <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
+    </nav>
+  </aside>
+</div>
+
+<script>
+  const outlineLinks = document.querySelectorAll<HTMLAnchorElement>(
+    ".case-file__mobile-menu--outline a",
+  );
+
+  for (const link of outlineLinks) {
+    link.addEventListener("click", () => {
+      const menu = link.closest("details");
+
+      if (menu instanceof HTMLDetailsElement) {
+        menu.open = false;
+      }
+    });
+  }
+</script>
