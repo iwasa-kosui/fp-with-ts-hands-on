@@ -95,18 +95,20 @@
   background: var(--case-mint);
 }
 
-.case-file__toc--desktop {
+.case-file__curriculum--desktop,
+.case-file__outline--desktop {
   display: none;
-}
-
-.case-file__toc summary {
-  padding: 0.8rem 1rem;
-  cursor: pointer;
-  font-weight: 800;
 }
 
 .case-file__toc nav {
   padding: 0 1rem 1rem;
+}
+
+.case-file__rail-title {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border-block-end: 2px solid var(--case-line);
+  font-weight: 800;
 }
 
 .case-file__toc :is(ol, ul) {
@@ -119,11 +121,96 @@
 }
 
 .case-file__toc a,
+.case-file__mobile-menu a,
 .case-file__session-nav a,
 .case-file__content a {
   color: inherit;
   text-decoration-thickness: 0.12em;
   text-underline-offset: 0.2em;
+}
+
+.case-file__curriculum {
+  background: var(--case-paper);
+}
+
+.case-file__curriculum a {
+  display: block;
+  padding: 0.4rem 0.5rem;
+  border-inline-start: 0.25rem solid transparent;
+}
+
+.case-file__curriculum a[aria-current="page"] {
+  border-inline-start-color: var(--case-coral);
+  background: var(--case-lemon);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.case-file__mobile-navigation {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 2px solid var(--case-line);
+  background: var(--case-paper);
+}
+
+.case-file__mobile-menu + .case-file__mobile-menu {
+  border-inline-start: 2px solid var(--case-line);
+}
+
+.case-file__mobile-menu summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  font-weight: 800;
+  list-style: none;
+}
+
+.case-file__mobile-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.case-file__mobile-menu summary::before {
+  content: "☰";
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.case-file__mobile-menu[open] summary {
+  background: var(--case-lemon);
+}
+
+.case-file__mobile-menu nav {
+  position: absolute;
+  top: 100%;
+  right: -2px;
+  left: -2px;
+  max-height: min(70vh, 32rem);
+  padding: 1rem;
+  overflow-y: auto;
+  border: 2px solid var(--case-line);
+  background: var(--case-paper);
+  box-shadow: 0 0.4rem 0 rgb(22 37 31 / 18%);
+}
+
+.case-file__mobile-menu :is(ol, ul) {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.case-file__mobile-menu li + li {
+  margin-top: 0.55rem;
+}
+
+.case-file__mobile-menu--curriculum a[aria-current="page"] {
+  font-weight: 800;
+  text-decoration-thickness: 0.2em;
 }
 
 .case-file__content {
@@ -745,11 +832,6 @@
 }
 
 @media (min-width: 768px) {
-  .case-file__body {
-    grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
-    gap: clamp(2rem, 4vw, 4rem);
-  }
-
   .case-file__content {
     width: 100%;
   }
@@ -765,14 +847,22 @@
   .case-file__content > #refactor > :not(.session-code-playground) {
     max-width: 70ch;
   }
+}
 
-  .case-file__toc--desktop {
+@media (min-width: 1100px) {
+  .case-file__body {
+    grid-template-columns: minmax(11rem, 13rem) minmax(0, 1fr) minmax(11rem, 13rem);
+    gap: clamp(1.5rem, 2.5vw, 3rem);
+  }
+
+  .case-file__curriculum--desktop,
+  .case-file__outline--desktop {
     display: block;
     position: sticky;
     top: 1rem;
   }
 
-  .case-file__toc--mobile {
+  .case-file__mobile-navigation {
     display: none;
   }
 }

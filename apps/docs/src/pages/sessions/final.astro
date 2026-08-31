@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import type { CodeGuide } from "../../code-explorer/code-guide";
+import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
 import type { SessionNavigation, SessionSummary } from "../../sessions/types";
 import "../../styles/sessions.css";
 
@@ -98,19 +99,7 @@ export const navigation = ({
           {session.summary}
         </p>
       </section>
-      <div class="case-file__body">
-        <aside class="case-file__toc case-file__toc--desktop">
-          <nav aria-label="ページ内目次">
-            <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
-          </nav>
-        </aside>
-        <details class="case-file__toc case-file__toc--mobile">
-          <summary>目次</summary>
-          <nav aria-label="ページ内目次">
-            <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
-          </nav>
-        </details>
-        <article class="case-file__content">
+      <SessionPageNavigation currentSlug={session.slug} chapters={chapters}>
   <section id="incident">
     <h2>何が起きたか</h2>
     <aside class="case-file__episode" aria-label="動物病院のひと幕">
@@ -151,8 +140,7 @@ export const navigation = ({
       自習では、検査結果の到着やフォローアップ依頼など、別のきっかけから始まるユースケースを1つ選び、同じ5項目を辿ってください。境界が見つからない箇所は、次に試す小さな改善候補です。
     </p>
   </section>
-        </article>
-      </div>
+      </SessionPageNavigation>
       <nav class="case-file__session-nav" aria-label="前後のセッション">
         {
           navigation.previous === undefined ? null : (
