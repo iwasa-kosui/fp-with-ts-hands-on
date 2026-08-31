@@ -8,7 +8,7 @@ S1で決めた「どの予約を、どの獣医師が開始するか」という
 pnpm demo:03
 pnpm --filter @fp-with-ts/clinic-session-03 typecheck
 pnpm --filter @fp-with-ts/clinic-session-03 test
-pnpm --filter @fp-with-ts/clinic-session-03 exercise
+pnpm exercise:03
 ```
 
 デモは `http://localhost:3000` で起動します。

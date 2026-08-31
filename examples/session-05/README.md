@@ -6,7 +6,7 @@
 pnpm demo:05
 pnpm --filter @fp-with-ts/clinic-session-05 typecheck
 pnpm --filter @fp-with-ts/clinic-session-05 test
-pnpm --filter @fp-with-ts/clinic-session-05 exercise
+pnpm exercise:05
 ```
 
 デモは `http://localhost:3000` で起動します。診察開始routeは複数の例外を投げますが、Web側は予約なしだけを文言でcatchするため、状態不正は500になります。

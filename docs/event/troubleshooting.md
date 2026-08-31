@@ -4,15 +4,14 @@
 
 ## `pnpm: command not found`
 
-Node.js 20以上を確認してから、pnpm 9.12.0を有効にします。
+Node.js 20以上を確認してから、pnpm 9.12.0を導入します。
 
 ```bash
-corepack enable
-corepack prepare pnpm@9.12.0 --activate
+npm install --global pnpm@9.12.0
 pnpm --version
 ```
 
-会社の端末などでCorepackを使えない場合は、端末の管理者にpnpmの導入を依頼してください。
+グローバルパッケージをインストールできない端末では、端末の管理者にpnpm 9.12.0の導入を依頼してください。Node.js 25以降にはCorepackが同梱されないため、Corepackが使えることを前提にしません。
 
 ## Node.js version too old
 
@@ -30,7 +29,7 @@ pnpm --version
 ```bash
 pwd
 git status
-pnpm install
+pnpm install --frozen-lockfile
 ```
 
 権限、証明書、社内プロキシのエラーが含まれる場合は、端末の管理者へ相談してください。
@@ -43,9 +42,9 @@ pnpm install
 pnpm test
 ```
 
-1. `pnpm install` が成功している。
+1. `pnpm install --frozen-lockfile` が成功している。
 2. リポジトリのルートで実行している。
-3. Node.jsが20以上である。
+3. Node.jsが20以上か確認する。
 4. 出力がコードの assertion ではなく、環境やmodule解決のエラーになっていないか確認する。
 
 解決しなければ出力を保存して講師またはTAへ共有します。
@@ -53,6 +52,8 @@ pnpm test
 ## exercise が赤い
 
 S2〜S6の開始スナップショットは、業務の言葉で命名された assertion failure から始まります。これは意図したREDです。S1はExcalidrawを使う班ワークで、exerciseコマンドはありません。
+
+次の件数は失敗行数ではなく参加者ステップ数です。S2は4ステップですが、Step 3に2件の検査があるため、開始時には5件の型要件が表示されます。
 
 | セッション | 参加者ステップ | 意図した開始時の見え方 |
 | --- | ---: | --- |
@@ -75,7 +76,7 @@ git status --short
 git diff --stat -- examples/session-0N
 ```
 
-`session-0N` は現在のセッションページに表示された開始snapshot（S2なら `session-02`）へ置き換えます。scoped diffは現在の演習だけ、statusはリポジトリ全体の想定外pathを確認するために使います。
+`session-0N` は現在のセッションページに表示された開始snapshotへ置き換えます。S2では `session-02` です。scoped diffは現在の演習だけ、statusはリポジトリ全体の想定外pathを確認するために使います。
 
 自分が残したい変更を消さないよう、戻す前にTAとパスを確認します。追跡済みで、今回不要な変更だけを戻す場合は明示したパスに限定します。
 
@@ -108,7 +109,7 @@ Playgroundのために新しいAPIキーを用意する必要はありません�
 起動中のサーバーが分かる場合はそのターミナルで `Ctrl+C` を押します。分からない場合は別ポートを指定します。
 
 ```bash
-pnpm dev -- --port 5174
+pnpm dev --port 5174
 ```
 
 スマホ確認ではサーバーを `0.0.0.0` で待ち受け、実際のポートに対して `mobile-preview-url <port>` を実行します。明示的な依頼がない限り公開トンネルは使いません。

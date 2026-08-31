@@ -8,7 +8,7 @@ S3で区別したAppointmentIdとVeterinarianIdを、HTTPの文字列から作�
 pnpm demo:04
 pnpm --filter @fp-with-ts/clinic-session-04 typecheck
 pnpm --filter @fp-with-ts/clinic-session-04 test
-pnpm --filter @fp-with-ts/clinic-session-04 exercise
+pnpm exercise:04
 ```
 
 デモは `http://localhost:3000` で起動します。診察開始routeは、path parameterの予約IDと外部から届く担当獣医師IDを `StartExaminationInput.parse` へ渡します。
