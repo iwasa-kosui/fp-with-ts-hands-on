@@ -20,6 +20,28 @@ const expectedSessions = [
   { title: "参照実装で境界をたどる", href: "/sessions/final/" },
 ] as const;
 
+test("shows preparation as a dedicated section before sessions", async ({ page }) => {
+  await page.goto("/sessions/");
+
+  const setup = page.getByRole("region", { name: "事前準備" });
+  await expect(setup.getByRole("heading", { level: 2, name: "事前準備" })).toBeVisible();
+  await expect(setup).toContainText("セッションを始める前に");
+  await expect(setup.getByRole("link", { name: "事前準備ページを開く" })).toHaveAttribute(
+    "href",
+    "/setup/",
+  );
+
+  const sessionList = page.getByRole("list", { name: "セッション一覧" });
+  await expect(
+    setup.evaluate(
+      (setupElement, listElement) =>
+        (setupElement.compareDocumentPosition(listElement) & Node.DOCUMENT_POSITION_FOLLOWING) !==
+        0,
+      await sessionList.elementHandle(),
+    ),
+  ).resolves.toBe(true);
+});
+
 test("session directory lists every session in curriculum order", async ({ page }) => {
   await page.goto("/sessions/");
 
