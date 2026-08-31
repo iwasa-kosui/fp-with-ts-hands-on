@@ -48,6 +48,46 @@ test("S1 shows ROP as two rails with three failure switches", async ({ page }) =
   await expect(diagram).not.toContainText(/Result|andThen|map|DB|メール|HTTP/);
 });
 
+test("S1 ROP failure switches start at the stage edges", async ({ page }) => {
+  await page.goto("/sessions/01-business-events-and-workflows/");
+
+  const diagram = page.locator("#rop .rop-basics__diagram");
+  const startOffsets = await diagram.evaluate((diagram) => {
+    const stageRects = Array.from(
+      diagram.querySelectorAll<SVGRectElement>(".rop-basics__stage rect"),
+    ).slice(0, 3);
+    const switches = Array.from(
+      diagram.querySelectorAll<SVGPathElement>("[data-rop-switch]"),
+    );
+
+    if (stageRects.length !== switches.length) {
+      throw new Error("failure switches do not match their source stages");
+    }
+
+    return switches.map((switchPath, index) => {
+      const switchMatrix = switchPath.getScreenCTM();
+      const stageBounds = stageRects[index].getBoundingClientRect();
+
+      if (switchMatrix === null) {
+        throw new Error("failure switch transform is missing");
+      }
+
+      const start = switchPath.getPointAtLength(0).matrixTransform(switchMatrix);
+
+      return {
+        x: Math.abs(start.x - stageBounds.right),
+        y: Math.abs(start.y - (stageBounds.top + stageBounds.height / 2)),
+      };
+    });
+  });
+
+  expect(startOffsets).toHaveLength(3);
+  for (const offset of startOffsets) {
+    expect(offset.x).toBeLessThan(0.1);
+    expect(offset.y).toBeLessThan(0.1);
+  }
+});
+
 test("S1 ROP failure switches point diagonally into the failure rail", async ({
   page,
 }) => {
