@@ -12,6 +12,9 @@
         <marker id="rop-failure-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
           <path d="M 0 0 L 10 5 L 0 10 z" class="rop-basics__failure-head"></path>
         </marker>
+        <marker id="rop-failure-switch-arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" class="rop-basics__failure-head"></path>
+        </marker>
       </defs>
 
       <text x="28" y="152" class="rop-basics__endpoint">Input</text>
@@ -40,9 +43,9 @@
         <text x="64" y="47" text-anchor="middle">結果を作る</text>
       </g>
 
-      <path data-rop-switch="validation" d="M 246 118 C 270 118, 258 236, 300 236" class="rop-basics__switch"></path>
-      <path data-rop-switch="resolution" d="M 438 118 C 462 118, 450 236, 492 236" class="rop-basics__switch"></path>
-      <path data-rop-switch="business-rule" d="M 630 118 C 654 118, 642 236, 684 236" class="rop-basics__switch"></path>
+      <path data-rop-switch="validation" d="M 260 118 C 270 118, 290 208, 300 236" class="rop-basics__switch"></path>
+      <path data-rop-switch="resolution" d="M 452 118 C 462 118, 482 208, 492 236" class="rop-basics__switch"></path>
+      <path data-rop-switch="business-rule" d="M 644 118 C 654 118, 674 208, 684 236" class="rop-basics__switch"></path>
     </svg>
   </div>
   <figcaption>
@@ -96,7 +99,14 @@
   .rop-basics__failure-rail,
   .rop-basics__switch {
     stroke: #b42318;
+  }
+
+  .rop-basics__failure-rail {
     marker-end: url(#rop-failure-arrow);
+  }
+
+  .rop-basics__switch {
+    marker-end: url(#rop-failure-switch-arrow);
   }
 
   .rop-basics__success-head {

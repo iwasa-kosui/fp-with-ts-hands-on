@@ -48,6 +48,125 @@ test("S1 shows ROP as two rails with three failure switches", async ({ page }) =
   await expect(diagram).not.toContainText(/Result|andThen|map|DB|メール|HTTP/);
 });
 
+test("S1 ROP failure switches start at the stage edges", async ({ page }) => {
+  await page.goto("/sessions/01-business-events-and-workflows/");
+
+  const diagram = page.locator("#rop .rop-basics__diagram");
+  const startOffsets = await diagram.evaluate((diagram) => {
+    const stageRects = Array.from(
+      diagram.querySelectorAll<SVGRectElement>(".rop-basics__stage rect"),
+    ).slice(0, 3);
+    const switches = Array.from(
+      diagram.querySelectorAll<SVGPathElement>("[data-rop-switch]"),
+    );
+
+    if (stageRects.length !== switches.length) {
+      throw new Error("failure switches do not match their source stages");
+    }
+
+    return switches.map((switchPath, index) => {
+      const switchMatrix = switchPath.getScreenCTM();
+      const stageBounds = stageRects[index].getBoundingClientRect();
+
+      if (switchMatrix === null) {
+        throw new Error("failure switch transform is missing");
+      }
+
+      const start = switchPath.getPointAtLength(0).matrixTransform(switchMatrix);
+
+      return {
+        x: Math.abs(start.x - stageBounds.right),
+        y: Math.abs(start.y - (stageBounds.top + stageBounds.height / 2)),
+      };
+    });
+  });
+
+  expect(startOffsets).toHaveLength(3);
+  for (const offset of startOffsets) {
+    expect(offset.x).toBeLessThan(0.1);
+    expect(offset.y).toBeLessThan(0.1);
+  }
+});
+
+test("S1 ROP failure switches point diagonally into the failure rail", async ({
+  page,
+}) => {
+  await page.goto("/sessions/01-business-events-and-workflows/");
+
+  const diagram = page.locator("#rop .rop-basics__diagram");
+  await expect(diagram.locator("#rop-failure-switch-arrow")).toHaveCount(1);
+
+  const geometry = await diagram.evaluate((diagram) => {
+    const failureRail = diagram.querySelector<SVGPathElement>(
+      ".rop-basics__failure-rail",
+    );
+    const failureArrow = diagram.querySelector<SVGMarkerElement>(
+      "#rop-failure-switch-arrow",
+    );
+    const failureArrowHead = failureArrow?.querySelector<SVGPathElement>(
+      ".rop-basics__failure-head",
+    );
+    const switches = Array.from(
+      diagram.querySelectorAll<SVGPathElement>("[data-rop-switch]"),
+    );
+
+    if (
+      failureRail === null ||
+      failureArrow === null ||
+      failureArrowHead === undefined ||
+      failureArrowHead === null
+    ) {
+      throw new Error("failure rail or arrow marker is missing");
+    }
+
+    const railStart = failureRail.getPointAtLength(0);
+    const railEnd = failureRail.getPointAtLength(
+      failureRail.getTotalLength(),
+    );
+    const arrowHeadBounds = failureArrowHead.getBBox();
+
+    return {
+      arrowMarker: {
+        refX: failureArrow.refX.baseVal.value,
+        tipX: arrowHeadBounds.x + arrowHeadBounds.width,
+      },
+      rail: {
+        markerEnd: getComputedStyle(failureRail).markerEnd,
+        startX: railStart.x,
+        endX: railEnd.x,
+        y: railStart.y,
+      },
+      switches: switches.map((switchPath) => {
+        const length = switchPath.getTotalLength();
+        const beforeEnd = switchPath.getPointAtLength(length - 8);
+        const end = switchPath.getPointAtLength(length);
+
+        return {
+          deltaX: end.x - beforeEnd.x,
+          deltaY: end.y - beforeEnd.y,
+          endX: end.x,
+          distanceFromRail: Math.abs(end.y - railStart.y),
+          markerEnd: getComputedStyle(switchPath).markerEnd,
+        };
+      }),
+    };
+  });
+
+  expect(geometry.arrowMarker.refX).toBeCloseTo(geometry.arrowMarker.tipX);
+  expect(geometry.rail.markerEnd).toContain("#rop-failure-arrow");
+  expect(geometry.switches).toHaveLength(3);
+  for (const switchGeometry of geometry.switches) {
+    expect(switchGeometry.markerEnd).toContain("#rop-failure-switch-arrow");
+    expect(switchGeometry.distanceFromRail).toBeLessThan(0.1);
+    expect(switchGeometry.endX).toBeGreaterThan(geometry.rail.startX);
+    expect(switchGeometry.endX).toBeLessThan(geometry.rail.endX);
+    expect(switchGeometry.deltaX).toBeGreaterThan(0);
+    expect(switchGeometry.deltaY).toBeGreaterThan(
+      Math.abs(switchGeometry.deltaX),
+    );
+  }
+});
+
 test("S1 maps appointment cancellation into a single-aggregate event-output workflow", async ({
   page,
 }) => {
