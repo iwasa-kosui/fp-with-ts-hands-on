@@ -520,9 +520,13 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
             <p>{narrative.currentRisk}</p>
             <article class="teaching-topic" aria-labelledby="result-or-exception">
-              <h3 id="result-or-exception">Result にする失敗を先に選ぶ</h3>
+              <h3 id="result-or-exception">Result は成功と失敗を値で表す</h3>
               <p>
-                Resultで返すのは、失敗理由に応じて呼び出し側が次の対応を選べる業務エラーです。
+                <code>Result&lt;T, E&gt;</code> は、成功を表す <code>Ok</code> と失敗を表す <code>Err</code> のどちらかを返す型です。
+                <code>T</code> は成功値、<code>E</code> は失敗理由を表します。失敗を例外として投げず <code>Err</code> で返すと、呼び出し側は戻り値の型から成功時の値と失敗理由の両方を確認できます。
+              </p>
+              <p>
+                Result に含める失敗は、先に呼び出し側の対応から選びます。失敗理由に応じて呼び出し側が次の操作を選べる業務エラーを <code>E</code> として返します。
               </p>
               <p>
                 たとえば、予約が見つからなければ予約を探し直し、まだ受付されていなければ受付を先に行います。呼び出し側が理由ごとに異なる対応を選ぶ必要があるため、これらは <code>Err</code> で返します。

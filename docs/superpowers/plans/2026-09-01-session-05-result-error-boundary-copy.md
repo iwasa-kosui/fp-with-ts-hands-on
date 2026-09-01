@@ -14,6 +14,7 @@
 
 ## Global Constraints
 
+- 冒頭で `Result<T, E>` を成功を表す `Ok` と失敗を表す `Err` のどちらかを返す型として定義してから、Resultに含める失敗の判断基準を示します。
 - `Result<T, E>` の `E` は発生しうるエラーの一覧ではなく、顧客や現場が失敗理由に応じて操作を選ぶ必要がある失敗だけを表します。
 - エラーが業務処理とインフラのどちらで発生したかだけでは、Resultと例外を分類しません。
 - 予約なしでは予約を探し直し、受付前では受付を先に行うという、失敗ごとに異なる操作を示します。
@@ -37,17 +38,21 @@
 
 **Interfaces:**
 
-- Produces: Resultで返す業務エラーと、例外として外側へ伝えるシステムエラーを具体例で区別する教材文
+- Produces: Resultの概念を説明したうえで、Resultで返す業務エラーと例外として外側へ伝えるシステムエラーを具体例で区別する教材文
 
-- [ ] **Step 1: 冒頭の判断基準を原因分類から業務上の操作へ置き換える**
+- [ ] **Step 1: 冒頭でResultを定義してから業務上の操作による判断基準を示す**
 
 `apps/docs/src/pages/sessions/05-workflow-errors.astro` の `result-or-exception` articleを、次の内容へ置き換えます。
 
 ```astro
 <article class="teaching-topic" aria-labelledby="result-or-exception">
-  <h3 id="result-or-exception">Result にする失敗を先に選ぶ</h3>
+  <h3 id="result-or-exception">Result は成功と失敗を値で表す</h3>
   <p>
-    Resultで返すのは、失敗理由に応じて呼び出し側が次の対応を選べる業務エラーです。
+    <code>Result&lt;T, E&gt;</code> は、成功を表す <code>Ok</code> と失敗を表す <code>Err</code> のどちらかを返す型です。
+    <code>T</code> は成功値、<code>E</code> は失敗理由を表します。失敗を例外として投げず <code>Err</code> で返すと、呼び出し側は戻り値の型から成功時の値と失敗理由の両方を確認できます。
+  </p>
+  <p>
+    Result に含める失敗は、先に呼び出し側の対応から選びます。失敗理由に応じて呼び出し側が次の操作を選べる業務エラーを <code>E</code> として返します。
   </p>
   <p>
     たとえば、予約が見つからなければ予約を探し直し、まだ受付されていなければ受付を先に行います。呼び出し側が理由ごとに異なる対応を選ぶ必要があるため、これらは <code>Err</code> で返します。
@@ -137,7 +142,7 @@ Run:
 ```bash
 grep -nE "(上界|表化|織り込|達成目標|設計の天井|に倒れる|として乗る|硬化|の鍵|羅針盤|銀の弾丸|（[A-Za-z][^）]*）)" apps/docs/src/pages/sessions/05-workflow-errors.astro
 grep -nE "(である|であった|だった|ではない|だ)。" apps/docs/src/pages/sessions/05-workflow-errors.astro
-rg -n "Resultで返すのは|業務エラーです|システムエラーとして扱います|データベースへの保存中に接続が切れ|イベント追加や通知は実行せず|500などのエラー応答" apps/docs/src/pages/sessions/05-workflow-errors.astro
+rg -n "Result は成功と失敗を値で表す|成功を表す.*Ok.*失敗を表す.*Err|先に呼び出し側の対応から選びます|システムエラーとして扱います|データベースへの保存中に接続が切れ|イベント追加や通知は実行せず|500などのエラー応答" apps/docs/src/pages/sessions/05-workflow-errors.astro
 rg -n "成功経路|技術的な異常は例外|呼び出し側で業務上の対応を選べない異常" apps/docs/src/pages/sessions/05-workflow-errors.astro
 git diff --check
 git diff --stat
@@ -150,5 +155,5 @@ Expected: 必須文面の検索はすべて該当し、文体検査と旧説明�
 
 ```bash
 git add apps/docs/src/pages/sessions/05-workflow-errors.astro docs/superpowers/plans/2026-09-01-session-05-result-error-boundary-copy.md
-git commit -m "docs(session-05): Resultに含める失敗の判断基準を具体化"
+git commit -m "docs(session-05): Resultの定義を判断基準より先に説明"
 ```
