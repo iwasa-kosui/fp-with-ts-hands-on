@@ -414,14 +414,19 @@ test("S4 traces an invalid HTTP value into a rejected typed input", async ({
   await expect(concepts).toContainText(
     "同じUUID形式でもAppointmentIdとVeterinarianIdを型で区別",
   );
+  await expect(concepts).toContainText("実行時の文字列は変えません");
 
   const teaching = page.locator("#teach .teaching-topic");
   await expect(teaching).toContainText("AppointmentId.schema");
   await expect(teaching).toContainText("VeterinarianId.schema");
   await expect(teaching).toContainText("schemaResult(schema)");
   await expect(teaching).toContainText("raw: unknown");
-  await expect(page.locator("#teach [data-boundary-limit]")).toContainText(
+  const boundaryLimit = page.locator("#teach [data-boundary-limit]");
+  await expect(boundaryLimit).toContainText(
     "予約IDのUUIDがveterinarianIdへ入った場合、UUIDという形式は正しいためschemaを通ります",
+  );
+  await expect(boundaryLimit).toContainText(
+    "外部データが何を指すUUIDかを判定する仕組みではありません",
   );
 });
 
