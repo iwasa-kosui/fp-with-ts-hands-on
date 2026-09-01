@@ -12,7 +12,7 @@ const expectedSessions = [
     href: "/sessions/03-semantic-identifiers/",
   },
   {
-    title: "診察開始の入力を境界で検証する",
+    title: "入力を検証し、監査記録から個人情報を除く",
     href: "/sessions/04-boundaries-and-pii/",
   },
   { title: "失敗をユースケースの結果として扱う", href: "/sessions/05-workflow-errors/" },

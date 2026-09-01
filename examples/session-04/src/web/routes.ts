@@ -106,10 +106,11 @@ export const registerClinicRoutes = (
     return context.redirect("/", 303);
   });
 
-  app.post("/appointments/:appointmentId/start-examination", (context) => {
+  app.post("/appointments/:appointmentId/start-examination", async (context) => {
+    const body: unknown = await context.req.json();
     const input = StartExaminationInput.parse({
+      ...(typeof body === "object" && body !== null ? body : {}),
       appointmentId: context.req.param("appointmentId"),
-      veterinarianId: clinicFixture.veterinarianId,
     })._unsafeUnwrap();
     const current = appointmentOrThrow(repository, input.appointmentId);
     if (current.kind !== "CheckedIn") throw new Error("Invalid appointment state");

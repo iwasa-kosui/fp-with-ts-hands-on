@@ -7,6 +7,7 @@
     "build": "vite build --mode client && vite build",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:reset": "node --eval \"import('node:fs').then(({ rmSync }) => rmSync('clinic.sqlite', { force: true }))\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "exercise": "vitest run --config vitest.exercises.config.ts"

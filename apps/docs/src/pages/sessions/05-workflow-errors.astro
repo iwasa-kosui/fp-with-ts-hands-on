@@ -156,7 +156,7 @@ export const guides = ([
     currentDesign: "例外メッセージにwas not foundが含まれる場合だけnoticeへ変換し、それ以外は500になります。",
     futureRisk: "例外の種類を追加しても呼び出し側に型エラーが出ず、今回のような処理漏れが残ります。",
     path: "src/web/routes.ts",
-    highlights: [{ startLineNumber: 76, endLineNumber: 94 }],
+    highlights: [{ startLineNumber: 89, endLineNumber: 103 }],
   },
 ] as const) satisfies readonly CodeGuide[];
 
@@ -454,7 +454,7 @@ export const promisesHref =
 export const navigation = ({
   previous: {
     href: "/sessions/04-boundaries-and-pii/",
-    title: "診察開始の入力を境界で検証する",
+    title: "入力を検証し、監査記録から個人情報を除く",
   },
   next: {
     href: "/sessions/06-effects-and-consistency/",

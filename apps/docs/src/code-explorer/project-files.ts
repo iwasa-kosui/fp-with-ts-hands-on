@@ -6,7 +6,7 @@ import type { ProjectFiles } from "./types";
 type ProjectSnapshot = Exclude<ExampleSnapshot, "session-01">;
 
 const rawProjectFiles = import.meta.glob(
-  "../../../../examples/{session-*,final}/{package.json,tsconfig.json,tsconfig.exercises.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,exercises/**/*.mjs,test/**/*.ts}",
+  "../../../../examples/{session-*,final}/{package.json,tsconfig.json,tsconfig.exercises.json,vitest.config.ts,vitest.exercises.config.ts,drizzle/**/*.sql,src/**/*.ts,exercises/**/*.ts,exercises/**/*.mjs,test/**/*.ts}",
   { eager: true, query: "?raw", import: "default" },
 ) as Record<string, string>;
 

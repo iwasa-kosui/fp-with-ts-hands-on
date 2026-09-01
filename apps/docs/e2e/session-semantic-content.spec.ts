@@ -13,7 +13,7 @@ const sessions = [
   },
   {
     slug: "04-boundaries-and-pii",
-    title: "診察開始の入力を境界で検証する",
+    title: "入力を検証し、監査記録から個人情報を除く",
   },
   {
     slug: "05-workflow-errors",
@@ -29,7 +29,7 @@ const sessions = [
 const exerciseSessions = [
   { slug: "02-state-transitions", problemCount: 4, failureCount: 4 },
   { slug: "03-semantic-identifiers", problemCount: 3, failureCount: 3 },
-  { slug: "04-boundaries-and-pii", problemCount: 2, failureCount: 2 },
+  { slug: "04-boundaries-and-pii", problemCount: 3, failureCount: 6 },
   { slug: "05-workflow-errors", problemCount: 4, failureCount: 6 },
   { slug: "06-effects-and-consistency", problemCount: 4, failureCount: 4 },
 ] as const;
