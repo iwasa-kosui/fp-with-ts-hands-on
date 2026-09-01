@@ -63,8 +63,19 @@ const createOptions = (): DatabaseBackedAppOptions => {
   };
 };
 
-const post = (app: DatabaseBackedApp, path: string) =>
-  app.request(path, { method: "POST", headers: inertiaHeaders });
+const post = (
+  app: DatabaseBackedApp,
+  path: string,
+  body: unknown = path.endsWith("/start-examination")
+    ? { veterinarianId: clinicFixture.veterinarianId }
+    : undefined,
+) => body === undefined
+  ? app.request(path, { method: "POST", headers: inertiaHeaders })
+  : app.request(path, {
+      method: "POST",
+      headers: { ...inertiaHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
 
 const observe = (databasePath: string) => {
   const database = new Database(databasePath, { readonly: true });

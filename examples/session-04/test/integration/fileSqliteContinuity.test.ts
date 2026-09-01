@@ -17,8 +17,17 @@ const inertiaHeaders = {
   "X-Inertia-Version": "1",
 } as const;
 
-const post = (app: ReturnType<typeof createDatabaseBackedApp>, path: string) =>
-  app.request(path, { method: "POST", headers: inertiaHeaders });
+const post = (
+  app: ReturnType<typeof createDatabaseBackedApp>,
+  path: string,
+  body?: unknown,
+) => body === undefined
+  ? app.request(path, { method: "POST", headers: inertiaHeaders })
+  : app.request(path, {
+      method: "POST",
+      headers: { ...inertiaHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
 
 afterEach(() => {
   for (const directory of directories.splice(0)) {
@@ -39,9 +48,9 @@ test("file SQLite reopens the Session 04 examination state and leaking audit con
 
   try {
     expect((await post(first, `${appointmentUrl}/check-in`)).status).toBe(303);
-    expect((await post(first, `${appointmentUrl}/start-examination`)).status).toBe(
-      303,
-    );
+    expect((await post(first, `${appointmentUrl}/start-examination`, {
+      veterinarianId: "night-shift",
+    })).status).toBe(303);
   } finally {
     first.close();
   }
@@ -55,7 +64,10 @@ test("file SQLite reopens the Session 04 examination state and leaking audit con
       .prepare("SELECT event_name, payload FROM audit_logs ORDER BY rowid DESC LIMIT 1")
       .get() as Readonly<{ event_name: string; payload: string }>;
 
-    expect(JSON.parse(appointment.state)).toMatchObject({ kind: "InExamination" });
+    expect(JSON.parse(appointment.state)).toMatchObject({
+      kind: "InExamination",
+      veterinarianId: "night-shift",
+    });
     expect(audit.event_name).toBe("ExaminationStarted");
     expect(JSON.parse(audit.payload)).toMatchObject({
       appointment: { kind: "InExamination" },

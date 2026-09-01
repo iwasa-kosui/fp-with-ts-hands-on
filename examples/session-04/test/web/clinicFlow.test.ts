@@ -55,7 +55,9 @@ describe("Session 04 Web application", () => {
       props: { sessionLabel: "Session 04", appointment: { kind: "Scheduled" } },
     });
     await post(app, `${appointmentUrl}/check-in`);
-    await post(app, `${appointmentUrl}/start-examination`);
+    await post(app, `${appointmentUrl}/start-examination`, {
+      veterinarianId: clinicFixture.veterinarianId,
+    });
     await post(app, `${appointmentUrl}/exam-results`, {
       examId: clinicFixture.examId,
       petId: clinicFixture.petId,
@@ -72,7 +74,9 @@ describe("Session 04 Web application", () => {
   it("starterの未検証境界が不正な検査JSONを受け入れる問題を再現する", async () => {
     const appointmentUrl = `/appointments/${clinicFixture.appointmentId}`;
     await post(app, `${appointmentUrl}/check-in`);
-    await post(app, `${appointmentUrl}/start-examination`);
+    await post(app, `${appointmentUrl}/start-examination`, {
+      veterinarianId: clinicFixture.veterinarianId,
+    });
 
     const response = await post(app, `${appointmentUrl}/exam-results`, {
       examId: "not-a-uuid",

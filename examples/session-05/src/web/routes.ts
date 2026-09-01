@@ -70,10 +70,11 @@ export const registerClinicRoutes = (app: Hono, store: AppointmentStore): void =
     return context.redirect("/", 303);
   });
 
-  app.post("/appointments/:appointmentId/start-examination", (context) => {
+  app.post("/appointments/:appointmentId/start-examination", async (context) => {
+    const raw = await context.req.json<Readonly<{ veterinarianId?: unknown }>>();
     const input = StartExaminationInput.parse({
       appointmentId: context.req.param("appointmentId"),
-      veterinarianId: clinicFixture.veterinarianId,
+      veterinarianId: raw.veterinarianId,
     })._unsafeUnwrap();
     try {
       startExamination({

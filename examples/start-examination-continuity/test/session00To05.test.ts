@@ -24,7 +24,16 @@ const appointmentUrl = `/appointments/${clinicFixture.appointmentId}`;
 const post = (
   app: ReturnType<SnapshotScenario["createApp"]>,
   path: string,
-) => app.request(path, { method: "POST", headers: inertiaHeaders });
+  body: unknown = path.endsWith("/start-examination")
+    ? { veterinarianId: clinicFixture.veterinarianId }
+    : undefined,
+) => body === undefined
+  ? app.request(path, { method: "POST", headers: inertiaHeaders })
+  : app.request(path, {
+      method: "POST",
+      headers: { ...inertiaHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
 
 const createDatabasePath = (name: string): string => {
   const directory = mkdtempSync(join(tmpdir(), `start-examination-${name}-`));

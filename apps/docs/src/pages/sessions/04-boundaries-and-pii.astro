@@ -121,7 +121,7 @@ export const guides = ([
     currentDesign: "path parameterの予約IDとrequest bodyのveterinarianIdを、raw objectへまとめてStartExaminationInput.parseへ渡しています。",
     futureRisk: "bodyへnight-shiftが入っても、境界のparserが検査しなければStartExaminationInputとして処理されます。",
     path: "src/web/routes.ts",
-    highlights: [{ startLineNumber: 109, endLineNumber: 114 }],
+    highlights: [{ startLineNumber: 109, endLineNumber: 115 }],
   },
   {
     id: "unvalidated-start-examination-input",
@@ -161,6 +161,11 @@ export const StartExaminationInput = {
   schema,
   parse: schemaResult(schema),
 } as const;`,
+    },
+    example: {
+      caption: "schemaResultが返すparserの入力型",
+      code: `const parse: (raw: unknown) => Result<StartExaminationInput> =
+  schemaResult(schema);`,
     },
     why: "beforeはrawをanyで受け、返り値の型注釈だけで不正な値をStartExaminationInputにしています。afterはz.objectで2つのschemaを合成し、z.inferで成功後の型をschemaから導出します。schemaResultはunknownを受け取り、両方のparseに成功した場合だけ型付き入力を返します。Resultを使った後続処理の分岐と合成はS5で扱います。",
   },
@@ -382,7 +387,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <ol class="boundary-parse-flow" aria-label="外部入力から診察開始入力を作る流れ">
               <li><strong>HTTPのunknown</strong><span>routeの外側では、入力の正しさを仮定しません。</span></li>
               <li><strong>schemaでUUIDを検査</strong><span>2つのID schemaをz.objectでまとめてparseします。</span></li>
-              <li><strong>AppointmentId / VeterinarianId</strong><span>成功した値へ、それぞれ異なるbrandが付きます。</span></li>
+              <li><strong>AppointmentId / VeterinarianId</strong><span>成功結果は、異なるbrandを持つTypeScriptの型として推論されます。実行時の文字列に印は付きません。</span></li>
               <li><strong>StartExaminationInput</strong><span>正しい2つのIDがそろった場合だけ構築します。</span></li>
             </ol>
             <h3>このセッションで守ること</h3>
@@ -420,13 +425,13 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <p>この回でつなげる3つの考え方を確認します。</p>
             <dl class="boundary-concepts" data-boundary-concepts>
               <dt>Branded Type</dt>
-              <dd>同じUUID形式でもAppointmentIdとVeterinarianIdを型で区別します。parse成功後の取り違えをコンパイル時に防ぎます。</dd>
+              <dd>同じUUID形式でもAppointmentIdとVeterinarianIdを型で区別します。この区別はTypeScriptの型検査で使われ、実行時の文字列は変えません。</dd>
               <dt>Parse, don't validate</dt>
               <dd>真偽値だけを返してrawを使い続けず、parseの成功結果として型付きの値を返します。</dd>
               <dt>Always-Valid Domain Model</dt>
-              <dd>境界のparseに成功した値だけをStartExaminationInputにし、通常の処理へ不正な入力を持ち込みません。</dd>
+              <dd>境界のparseに成功した値だけをStartExaminationInputにし、schemaが表現する制約を満たさない入力を通常の処理へ持ち込みません。</dd>
             </dl>
-            <aside class="decision-card boundary-limit">
+            <aside class="decision-card boundary-limit" data-boundary-limit>
               <h3>この境界だけでは検出できない入力</h3>
               <p>
                 予約IDのUUIDが<code>veterinarianId</code>へ入った場合、UUIDという形式は正しいためschemaを通ります。

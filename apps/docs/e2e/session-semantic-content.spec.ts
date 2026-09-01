@@ -391,12 +391,12 @@ test("S4 traces an invalid HTTP value into a rejected typed input", async ({
     "POST /appointments/11111111-1111-4111-8111-111111111111/start-examination",
   );
   await expect(request).toContainText('"veterinarianId": "night-shift"');
-  await expect(results.locator('[data-boundary-result="current"]')).toContainText(
-    "Ok",
-  );
-  await expect(results.locator('[data-boundary-result="desired"]')).toContainText(
-    "StartExaminationInputを作らない",
-  );
+  const currentResult = results.locator('[data-boundary-result="current"]');
+  const desiredResult = results.locator('[data-boundary-result="desired"]');
+  await expect(currentResult).toContainText("Ok");
+  await expect(currentResult).toContainText('veterinarianId: "night-shift"');
+  await expect(desiredResult).toContainText("Err()");
+  await expect(desiredResult).toContainText("StartExaminationInputを作らない");
   await expect(parseFlow.getByRole("listitem")).toHaveCount(4);
   await expect(parseFlow.getByRole("listitem")).toContainText([
     "HTTPのunknown",
@@ -413,6 +413,15 @@ test("S4 traces an invalid HTTP value into a rejected typed input", async ({
   ]);
   await expect(concepts).toContainText(
     "同じUUID形式でもAppointmentIdとVeterinarianIdを型で区別",
+  );
+
+  const teaching = page.locator("#teach .teaching-topic");
+  await expect(teaching).toContainText("AppointmentId.schema");
+  await expect(teaching).toContainText("VeterinarianId.schema");
+  await expect(teaching).toContainText("schemaResult(schema)");
+  await expect(teaching).toContainText("raw: unknown");
+  await expect(page.locator("#teach [data-boundary-limit]")).toContainText(
+    "予約IDのUUIDがveterinarianIdへ入った場合、UUIDという形式は正しいためschemaを通ります",
   );
 });
 

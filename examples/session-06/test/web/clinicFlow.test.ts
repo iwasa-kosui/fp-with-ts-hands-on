@@ -9,7 +9,13 @@ const inertiaHeaders = {
   "X-Inertia-Version": "1",
 } as const;
 type App = ReturnType<typeof createApp>;
-const post = (app: App, path: string, body?: unknown) => body === undefined
+const post = (
+  app: App,
+  path: string,
+  body: unknown = path.endsWith("/start-examination")
+    ? { veterinarianId: clinicFixture.veterinarianId }
+    : undefined,
+) => body === undefined
   ? app.request(path, { method: "POST", headers: inertiaHeaders })
   : app.request(path, {
       method: "POST",
