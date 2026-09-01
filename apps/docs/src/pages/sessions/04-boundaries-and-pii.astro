@@ -55,9 +55,9 @@ export const session: SessionSummary = {
   animal: { name: "BIRD", type: "bird", avatar: "🐦" },
   summary: "HTTPから届く予約IDと担当獣医師IDを検査し、型付きの診察開始入力へ変換します。",
   episode: [
-    "診察開始のHTTPリクエストには、予約IDと担当獣医師IDが文字列で届きます。",
-    "不正なUUIDでも、検査しなければ型付きの入力として処理へ渡ってしまいます。",
-    "外部の値を受け取る場所で検査し、成功した値だけをユースケースへ渡します。",
+    "15時30分、受付担当者が診察開始画面で夜勤の獣医師を選びました。",
+    "フロントエンドの送信処理は、獣医師のUUIDではなく画面表示用の勤務区分「night-shift」をveterinarianIdへ入れました。",
+    "境界のparseは値を検査せずOkを返し、不正な値からStartExaminationInputを作りました。",
   ],
   incident: "HTTPから届いた不正なIDを検査せず、診察開始の入力として扱った。",
   exerciseCommand: "pnpm exercise:04",
@@ -118,16 +118,16 @@ export const guides = ([
   {
     id: "http-start-examination-input",
     title: "診察開始のHTTP入力はrouteで組み立てている",
-    currentDesign: "path parameterの予約IDと外部から渡された担当獣医師IDを、StartExaminationInput.parseへまとめて渡しています。",
-    futureRisk: "境界のparserが検証しなければ、不正な文字列が予約の読み込みと状態確認まで進みます。",
+    currentDesign: "path parameterの予約IDとrequest bodyのveterinarianIdを、raw objectへまとめてStartExaminationInput.parseへ渡しています。",
+    futureRisk: "bodyへnight-shiftが入っても、境界のparserが検査しなければStartExaminationInputとして処理されます。",
     path: "src/web/routes.ts",
     highlights: [{ startLineNumber: 109, endLineNumber: 114 }],
   },
   {
     id: "unvalidated-start-examination-input",
     title: "HTTP入力をanyのまま診察開始の入力へ入れている",
-    currentDesign: "予約IDと担当獣医師IDを検証せず、手書きのStartExaminationInputへコピーしています。",
-    futureRisk: "不正なUUIDが境界を通過し、予約の読み込みや状態確認まで進みます。",
+    currentDesign: "raw: anyから2項目をコピーし、検査せずに必ずokを返しています。",
+    futureRisk: "TypeScriptは返り値の型注釈を信頼するため、night-shiftもVeterinarianIdとして後続処理へ渡ります。",
     path: "src/boundary/startExaminationInput.ts",
     highlights: [{ startLineNumber: 1, endLineNumber: 15 }],
   },
@@ -135,9 +135,9 @@ export const guides = ([
 
 const teaching: readonly TeachingTopic[] = [
   {
-    name: "schema による境界検証と Result",
+    name: "schemaでunknownからbrand付き入力を作る",
     definition:
-      "IDやEmailなどの小さなschemaをobject schemaへ組み合わせ、外から届く入力オブジェクト全体を一度だけparseします。正しい値だけをドメイン型として扱い、失敗はResultで返します。",
+      "AppointmentId.schemaとVeterinarianId.schemaをobject schemaへ組み合わせ、外から届くunknownを一度だけparseします。成功時はbrand付きのStartExaminationInput、失敗時はErrを返します。",
     before: {
       sources: ["examples/session-04/src/boundary/startExaminationInput.ts"],
       code: `export const StartExaminationInput = {
@@ -162,7 +162,7 @@ export const StartExaminationInput = {
   parse: schemaResult(schema),
 } as const;`,
     },
-    why: "beforeはrawをanyで受けるため、検証しなくても型検査が通ります。afterはS3で作ったIDごとのschemaをobject schemaへ組み合わせ、unknownの入力全体を一度だけ検証します。両方のIDが正しい場合だけ型付き入力を返し、失敗はResultに現れます。Resultの分岐と合成はS5で扱います。",
+    why: "beforeはrawをanyで受け、返り値の型注釈だけで不正な値をStartExaminationInputにしています。afterはz.objectで2つのschemaを合成し、z.inferで成功後の型をschemaから導出します。schemaResultはunknownを受け取り、両方のparseに成功した場合だけ型付き入力を返します。Resultを使った後続処理の分岐と合成はS5で扱います。",
   },
 ];
 
@@ -215,18 +215,30 @@ const OwnerContactSchema = z
   })
   .readonly();`,
     },
-    why: "個人情報を平文の string で持つと、JSON.stringify や console.log で簡単に個人情報がログに出てしまうことになります。これをレビューで守り続けることは困難でしょう。Sensitive で wrap するとデフォルトで値が表示されないようになり、値を取り出すには unwrap を明示的に呼び出さなければなりません。unwrap で検索すれば、個人情報が平文として取り出されている箇所を簡単に調べることができます。1行に brand と transform が並んでいますが、2つは別の目的です。brand は OwnerEmail を OwnerPhone などの他の値と取り違えないようにするための仕組み（Branded Type）で、ログ出力には影響しません。ログへの漏えいを防いでいるのは Sensitive.of のほうです。",
+    why: "個人情報を平文の string で持つと、JSON.stringify や console.log で簡単に個人情報がログに出てしまうことになります。これをレビューで守り続けることは困難でしょう。Sensitive で wrap するとデフォルトで値が表示されないようになり、値を取り出すには unwrap を明示的に呼び出さなければなりません。unwrap で検索すれば、個人情報が平文として取り出されている箇所を簡単に調べることができます。1行に brand と transform が並んでいますが、2つは別の目的です。brand は OwnerEmail を OwnerPhone などの他の値と取り違えないためのBranded Typeで、ログ出力には影響しません。ログへの漏えいを防いでいるのは Sensitive.of のほうです。",
   },
 ];
 
 const narrative = {
   requirement: "HTTPから届く予約IDと担当獣医師IDを検証し、正しい値だけをstartExaminationへ渡す。",
-  currentRisk: "rawをanyで受け取って手書きの型へコピーしているため、不正なUUIDでもStartExaminationInputとして扱えます。",
-  design: "AppointmentId.schemaとVeterinarianId.schemaをobject schemaへ組み合わせ、unknownの入力全体を一度だけparseして型付き入力へ変換する。",
-  limitation: "schemaは値の形式と用途を検証しますが、その予約が存在するか、受付済みかは判断しません。これらはS5で扱います。",
-  legacy: "raw: anyを受け取るstartExaminationInput.tsを読み、不正な2種類のIDが境界を通ることを確認します。",
+  currentRisk: "raw: anyから値をコピーして必ずOkを返すため、night-shiftでもStartExaminationInputとして扱えます。",
+  design: "AppointmentId.schemaとVeterinarianId.schemaをobject schemaへ組み合わせ、unknownの入力全体をparseしてbrand付きの入力へ変換する。",
+  limitation: "schemaはUUIDの形式を検査しますが、そのUUIDが実在する予約や獣医師を指すかは判断しません。対象の取得と状態確認はS5で扱います。",
+  legacy: "routes.tsからparseへ渡すraw objectと、startExaminationInput.tsが必ずOkを返す実装を順に読み、night-shiftが型付き入力になる理由を確認します。",
   fallback: "startExaminationInput.tsの手書き型をz.inferへ変え、AppointmentId.schemaとVeterinarianId.schemaを持つobject schemaを作ります。parseにはschemaResultを使います。相互レビューの約束事はS2のリンク先を確認します。",
 } as const;
+
+const incidentRequest = `POST /appointments/11111111-1111-4111-8111-111111111111/start-examination
+Content-Type: application/json
+
+{
+  "veterinarianId": "night-shift"
+}`;
+
+const currentParseResult = `Ok({
+  appointmentId: "11111111-1111-4111-8111-111111111111",
+  veterinarianId: "night-shift",
+})`;
 
 const exerciseSession: ExerciseSessionSummary = session;
 
@@ -340,12 +352,39 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               {session.episode.map((line) => <p data-episode-line>{line}</p>)}
             </aside>
             <p>外部の文字列を検査し、S3で区別した2種類のIDを持つ入力へ変換します。</p>
+            <h3>実際に届いた入力</h3>
+            <p>
+              URLの予約IDはrouteが<code>appointmentId</code>へ入れます。request bodyには、
+              獣医師選択欄の表示用データが誤って入りました。
+            </p>
+            <figure class="code-block boundary-request" data-boundary-request>
+              <figcaption>フロントエンドが送信したHTTPリクエスト</figcaption>
+              <Code code={incidentRequest} lang="http" />
+            </figure>
+            <div class="boundary-results" data-boundary-results>
+              <article data-boundary-result="current">
+                <h4>現在のparse</h4>
+                <Code code={currentParseResult} lang="ts" />
+                <p>型注釈だけを信頼し、不正な値から型付き入力を作ります。</p>
+              </article>
+              <article data-boundary-result="desired">
+                <h4>修正後のparse</h4>
+                <p><code>Err()</code></p>
+                <p>UUIDではないため、StartExaminationInputを作らない結果にします。</p>
+              </article>
+            </div>
             <h3 data-story-stage="use-case">追加したい機能</h3>
             <p>{narrative.requirement}</p>
             <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
             <p>{narrative.currentRisk}</p>
             <h3 data-story-stage="goal">このセッションのゴール</h3>
             <p>{narrative.design}</p>
+            <ol class="boundary-parse-flow" aria-label="外部入力から診察開始入力を作る流れ">
+              <li><strong>HTTPのunknown</strong><span>routeの外側では、入力の正しさを仮定しません。</span></li>
+              <li><strong>schemaでUUIDを検査</strong><span>2つのID schemaをz.objectでまとめてparseします。</span></li>
+              <li><strong>AppointmentId / VeterinarianId</strong><span>成功した値へ、それぞれ異なるbrandが付きます。</span></li>
+              <li><strong>StartExaminationInput</strong><span>正しい2つのIDがそろった場合だけ構築します。</span></li>
+            </ol>
             <h3>このセッションで守ること</h3>
             <ul class="decision-list">{session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
             <p>今回の変更は <code>{session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
@@ -378,7 +417,25 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 
           <section id="teach">
             <h2>事前知識（{session.timeBreakdown.teach}分）</h2>
-            <p>この回で利用する型について確認します。配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
+            <p>この回でつなげる3つの考え方を確認します。</p>
+            <dl class="boundary-concepts" data-boundary-concepts>
+              <dt>Branded Type</dt>
+              <dd>同じUUID形式でもAppointmentIdとVeterinarianIdを型で区別します。parse成功後の取り違えをコンパイル時に防ぎます。</dd>
+              <dt>Parse, don't validate</dt>
+              <dd>真偽値だけを返してrawを使い続けず、parseの成功結果として型付きの値を返します。</dd>
+              <dt>Always-Valid Domain Model</dt>
+              <dd>境界のparseに成功した値だけをStartExaminationInputにし、通常の処理へ不正な入力を持ち込みません。</dd>
+            </dl>
+            <aside class="decision-card boundary-limit">
+              <h3>この境界だけでは検出できない入力</h3>
+              <p>
+                予約IDのUUIDが<code>veterinarianId</code>へ入った場合、UUIDという形式は正しいためschemaを通ります。
+                Branded Typeは、外部データが何を指すUUIDかを判定する仕組みではありません。
+                parse後のコードで、すでに区別されたIDを取り違えないための仕組みです。
+              </p>
+              <p>そのUUIDが実在する獣医師を指すか確かめるには、獣医師マスターの参照が必要です。この確認はS4の演習範囲には含めません。</p>
+            </aside>
+            <p>次に、配布コードの書き方をbefore、修正後の書き方をafterとして見比べます。</p>
             {teaching.map((topic) => (
               <article class="teaching-topic">
                 <h3>{topic.name}</h3>

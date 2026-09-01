@@ -375,6 +375,47 @@ test("S3 shows the swapped identifiers before proving that typecheck misses them
   expect(swappedCodePrecedesTypecheck).toBe(true);
 });
 
+test("S4 traces an invalid HTTP value into a rejected typed input", async ({
+  page,
+}) => {
+  await page.goto("/sessions/04-boundaries-and-pii/");
+
+  const incident = page.locator("#incident");
+  const request = incident.locator("[data-boundary-request]");
+  const results = incident.locator("[data-boundary-results]");
+  const parseFlow = incident.getByRole("list", {
+    name: "外部入力から診察開始入力を作る流れ",
+  });
+
+  await expect(request).toContainText(
+    "POST /appointments/11111111-1111-4111-8111-111111111111/start-examination",
+  );
+  await expect(request).toContainText('"veterinarianId": "night-shift"');
+  await expect(results.locator('[data-boundary-result="current"]')).toContainText(
+    "Ok",
+  );
+  await expect(results.locator('[data-boundary-result="desired"]')).toContainText(
+    "StartExaminationInputを作らない",
+  );
+  await expect(parseFlow.getByRole("listitem")).toHaveCount(4);
+  await expect(parseFlow.getByRole("listitem")).toContainText([
+    "HTTPのunknown",
+    "schemaでUUIDを検査",
+    "AppointmentId / VeterinarianId",
+    "StartExaminationInput",
+  ]);
+
+  const concepts = page.locator("#teach [data-boundary-concepts]");
+  await expect(concepts.locator("dt")).toHaveText([
+    "Branded Type",
+    "Parse, don't validate",
+    "Always-Valid Domain Model",
+  ]);
+  await expect(concepts).toContainText(
+    "同じUUID形式でもAppointmentIdとVeterinarianIdを型で区別",
+  );
+});
+
 for (const session of sessions) {
   test(`${session.slug} introduces its episode after the first section heading`, async ({
     page,
