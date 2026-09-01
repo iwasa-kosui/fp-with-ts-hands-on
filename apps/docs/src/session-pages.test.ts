@@ -111,7 +111,7 @@ const exerciseContracts = {
       },
       next: {
         href: "/sessions/04-boundaries-and-pii/",
-        title: "入力を検証し、監査記録から個人情報を除く",
+        title: "診察開始の入力を境界で検証する",
       },
     },
   },
@@ -120,17 +120,16 @@ const exerciseContracts = {
       slug: "04-boundaries-and-pii",
       snapshot: "session-04",
       initialFile: "exercises/start-examination-input.test.ts",
-      description: "診察開始要求の入口と、監査記録へ出すデータを確認します。",
+      description: "HTTP入力を診察開始の型付き入力へ変換する境界を確認します。",
       visibleFiles: [
         "exercises/start-examination-input.test.ts",
+        "test/regression/semantic-identifiers.test.ts",
+        "test/regression/state-modeling.test.ts",
         "src/domain/appointment/appointmentId.ts",
         "src/domain/appointment/veterinarianId.ts",
         "src/boundary/startExaminationInput.ts",
         "src/shared/schemaResult.ts",
         "src/web/routes.ts",
-        "src/adaptor/secondary/sqlite/appointmentRepository.ts",
-        "src/adaptor/secondary/sqlite/schema.ts",
-        "drizzle/0000_initial.sql",
       ],
     },
     navigation: {
@@ -174,7 +173,7 @@ const exerciseContracts = {
     navigation: {
       previous: {
         href: "/sessions/04-boundaries-and-pii/",
-        title: "入力を検証し、監査記録から個人情報を除く",
+        title: "診察開始の入力を境界で検証する",
       },
       next: {
         href: "/sessions/06-effects-and-consistency/",
@@ -245,7 +244,7 @@ const reviewText = [
 const reviewPromptFor = {
   "02-state-transitions": "起きてはいけない状態遷移",
   "03-semantic-identifiers": "取り違えてはいけない値",
-  "04-boundaries-and-pii": "境界で止める入力と保存する監査項目",
+  "04-boundaries-and-pii": "境界で拒否する入力",
   "05-workflow-errors": "失敗後に実行してはいけない処理",
   "06-effects-and-consistency": "一緒に記録する必要がある値",
 } as const satisfies Record<ExerciseSlug, string>;
@@ -406,13 +405,5 @@ describe("session pages", () => {
       'class="failure-boundary" aria-label="業務エラーとインフラ例外の区別"',
     );
     expect(source).toContain("2つの失敗経路を見分ける");
-  });
-
-  it("S4 explains how to recreate a database after rewriting its initial migration", () => {
-    const source = sourceFor("04-boundaries-and-pii");
-
-    expect(source).toContain("pnpm demo:reset:04\\npnpm demo:04");
-    expect(source).toContain("適用済みの <code>clinic.sqlite</code> へ修正後の初期schemaは再適用されません");
-    expect(source).toContain("削除したDBは復元されません");
   });
 });

@@ -17,17 +17,8 @@ const inertiaHeaders = {
   "X-Inertia-Version": "1",
 } as const;
 
-const post = (
-  app: ReturnType<typeof createDatabaseBackedApp>,
-  path: string,
-  body?: unknown,
-) => body === undefined
-  ? app.request(path, { method: "POST", headers: inertiaHeaders })
-  : app.request(path, {
-      method: "POST",
-      headers: { ...inertiaHeaders, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+const post = (app: ReturnType<typeof createDatabaseBackedApp>, path: string) =>
+  app.request(path, { method: "POST", headers: inertiaHeaders });
 
 afterEach(() => {
   for (const directory of directories.splice(0)) {
@@ -48,9 +39,9 @@ test("file SQLite reopens the Session 04 examination state and leaking audit con
 
   try {
     expect((await post(first, `${appointmentUrl}/check-in`)).status).toBe(303);
-    expect((await post(first, `${appointmentUrl}/start-examination`, {
-      veterinarianId: clinicFixture.veterinarianId,
-    })).status).toBe(303);
+    expect((await post(first, `${appointmentUrl}/start-examination`)).status).toBe(
+      303,
+    );
   } finally {
     first.close();
   }

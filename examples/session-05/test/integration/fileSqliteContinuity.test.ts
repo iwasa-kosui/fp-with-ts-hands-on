@@ -49,14 +49,7 @@ const createOptions = () => {
 const post = (
   app: ReturnType<typeof createDatabaseBackedApp>,
   path: string,
-  body?: unknown,
-) => body === undefined
-  ? app.request(path, { method: "POST", headers: inertiaHeaders })
-  : app.request(path, {
-      method: "POST",
-      headers: { ...inertiaHeaders, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+) => app.request(path, { method: "POST", headers: inertiaHeaders });
 
 const observe = (databasePath: string) => {
   const database = new Database(databasePath, { readonly: true });
@@ -87,9 +80,9 @@ test("file SQLite stores an examination audit payload without owner contact", as
 
   try {
     expect((await post(app, `${appointmentUrl}/check-in`)).status).toBe(303);
-    expect((await post(app, `${appointmentUrl}/start-examination`, {
-      veterinarianId: clinicFixture.veterinarianId,
-    })).status).toBe(303);
+    expect((await post(app, `${appointmentUrl}/start-examination`)).status).toBe(
+      303,
+    );
   } finally {
     app.close();
   }
@@ -129,9 +122,9 @@ test("file SQLite restart keeps the examination state and audit history", async 
 
   try {
     expect((await post(first, `${appointmentUrl}/check-in`)).status).toBe(303);
-    expect((await post(first, `${appointmentUrl}/start-examination`, {
-      veterinarianId: clinicFixture.veterinarianId,
-    })).status).toBe(303);
+    expect((await post(first, `${appointmentUrl}/start-examination`)).status).toBe(
+      303,
+    );
   } finally {
     first.close();
   }
@@ -228,7 +221,7 @@ test("structurally invalid persisted JSON is rejected as a ZodError", () => {
   }
 });
 
-test("invalid start-examination IDs return 422 without changing file SQLite", async () => {
+test("invalid start-examination IDs return 500 without changing file SQLite", async () => {
   const options = createOptions();
   const first = createDatabaseBackedApp(options);
   first.close();
@@ -239,37 +232,24 @@ test("invalid start-examination IDs return 422 without changing file SQLite", as
     const response = await post(
       invalidAppointmentApp,
       "/appointments/not-a-uuid/start-examination",
-      { veterinarianId: clinicFixture.veterinarianId },
     );
-    expect(response.status).toBe(422);
-    if (response.status === 422) {
-      expect(await response.json()).toEqual({
-        issues: expect.arrayContaining([
-          expect.objectContaining({ path: ["appointmentId"] }),
-        ]),
-      });
-    }
+    expect(response.status).toBe(500);
   } finally {
     invalidAppointmentApp.close();
   }
   expect(observe(options.databasePath)).toEqual(before);
 
+  const originalVeterinarianId = clinicFixture.veterinarianId;
   const invalidVeterinarianApp = createDatabaseBackedApp(options);
   try {
+    expect(Reflect.set(clinicFixture, "veterinarianId", "not-a-uuid")).toBe(true);
     const response = await post(
       invalidVeterinarianApp,
       `/appointments/${clinicFixture.appointmentId}/start-examination`,
-      { veterinarianId: "night-shift" },
     );
-    expect(response.status).toBe(422);
-    if (response.status === 422) {
-      expect(await response.json()).toEqual({
-        issues: expect.arrayContaining([
-          expect.objectContaining({ path: ["veterinarianId"] }),
-        ]),
-      });
-    }
+    expect(response.status).toBe(500);
   } finally {
+    Reflect.set(clinicFixture, "veterinarianId", originalVeterinarianId);
     invalidVeterinarianApp.close();
   }
   expect(observe(options.databasePath)).toEqual(before);

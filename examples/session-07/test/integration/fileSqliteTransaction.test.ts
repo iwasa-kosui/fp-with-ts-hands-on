@@ -65,14 +65,8 @@ const createOptions = (): DatabaseBackedAppOptions => {
   };
 };
 
-const post = (app: DatabaseBackedApp, path: string, body?: unknown) =>
-  body === undefined
-    ? app.request(path, { method: "POST", headers: inertiaHeaders })
-    : app.request(path, {
-        method: "POST",
-        headers: { ...inertiaHeaders, "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+const post = (app: DatabaseBackedApp, path: string) =>
+  app.request(path, { method: "POST", headers: inertiaHeaders });
 
 const observe = (databasePath: string) => {
   const database = new Database(databasePath, { readonly: true });
@@ -114,9 +108,7 @@ test("file SQLite persists the injected event ID and clock value", async () => {
     const appointmentUrl = `/appointments/${clinicFixture.appointmentId}`;
     expect((await post(app, `${appointmentUrl}/check-in`)).status).toBe(303);
     expect(
-      (await post(app, `${appointmentUrl}/start-examination`, {
-        veterinarianId: clinicFixture.veterinarianId,
-      })).status,
+      (await post(app, `${appointmentUrl}/start-examination`)).status,
     ).toBe(303);
   } finally {
     app.close();
@@ -188,9 +180,7 @@ test("SQLite audit failure returns 500 and rolls back the started state", async 
     const appointmentUrl = `/appointments/${clinicFixture.appointmentId}`;
     expect((await post(app, `${appointmentUrl}/check-in`)).status).toBe(303);
     expect(
-      (await post(app, `${appointmentUrl}/start-examination`, {
-        veterinarianId: clinicFixture.veterinarianId,
-      })).status,
+      (await post(app, `${appointmentUrl}/start-examination`)).status,
     ).toBe(500);
   } finally {
     app.close();

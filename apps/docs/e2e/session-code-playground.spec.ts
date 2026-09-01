@@ -197,29 +197,6 @@ test("/sessions/02-state-transitions/ runs the failure flow before accepting the
   ).toHaveAttribute("aria-pressed", "true");
 });
 
-test("/sessions/04-boundaries-and-pii/ runs its exercise without a native SQLite addon", async ({ page }) => {
-  test.setTimeout(150_000);
-  await page.setViewportSize({ width: 1440, height: 1200 });
-  await page.goto("/sessions/04-boundaries-and-pii/");
-
-  const playground = page.locator("#legacy");
-  await expect(
-    playground.getByRole("textbox", { name: "Editor content" }),
-  ).toBeAttached();
-  await playground
-    .getByRole("button", { name: "修正前の失敗を確認" })
-    .click();
-
-  const terminal = playground.locator('[aria-label="コード実行ターミナル"]');
-  await expect(terminal).toBeVisible({ timeout: 90_000 });
-  await expect(terminal).toContainText("6 failed | 1 passed", {
-    timeout: 30_000,
-  });
-  await expect(terminal).toContainText("不正な2項目を拒否し、両方のpathを残す");
-  await expect(terminal).not.toContainText("Cannot load native addon");
-  await expect(terminal).not.toContainText("Could not locate the bindings file");
-});
-
 test("/sessions/02-state-transitions/ stacks design guide cards in one column on desktop", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1200 });
   await page.goto("/sessions/02-state-transitions/");

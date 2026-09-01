@@ -177,9 +177,7 @@ const post = async (
     method: "POST",
     headers: {
       Accept: "application/json",
-      "Content-Type": "application/json",
       "X-Inertia": "true",
       "X-Inertia-Version": "1",
     },
-    body: JSON.stringify({ veterinarianId: clinicFixture.veterinarianId }),
   });

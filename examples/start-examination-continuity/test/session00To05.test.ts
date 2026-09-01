@@ -24,19 +24,7 @@ const appointmentUrl = `/appointments/${clinicFixture.appointmentId}`;
 const post = (
   app: ReturnType<SnapshotScenario["createApp"]>,
   path: string,
-  body?: unknown,
-) => {
-  const requestBody = body ?? (path.endsWith("/start-examination")
-    ? { veterinarianId: clinicFixture.veterinarianId }
-    : undefined);
-  return requestBody === undefined
-    ? app.request(path, { method: "POST", headers: inertiaHeaders })
-    : app.request(path, {
-        method: "POST",
-        headers: { ...inertiaHeaders, "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      });
-};
+) => app.request(path, { method: "POST", headers: inertiaHeaders });
 
 const createDatabasePath = (name: string): string => {
   const directory = mkdtempSync(join(tmpdir(), `start-examination-${name}-`));
@@ -143,7 +131,7 @@ test("Session 03 rejects examination start from Scheduled without changing SQLit
   expect(after).toEqual(before);
 });
 
-test("Session 05 returns 422 for invalid identifiers without changing SQLite", async () => {
+test("Session 05 rejects invalid appointment and veterinarian identifiers without changing SQLite", async () => {
   const scenario = scenarioFor("Session 05");
   const databasePath = createDatabasePath("session-05-invalid-identifiers");
   const seeded = scenario.createApp(databasePath);
@@ -152,24 +140,20 @@ test("Session 05 returns 422 for invalid identifiers without changing SQLite", a
   const invalidAppointmentApp = scenario.createApp(databasePath);
   const beforeInvalidAppointment = observeAppointment(databasePath, clinicFixture.appointmentId);
   try {
-    expect((await post(
-      invalidAppointmentApp,
-      "/appointments/not-a-uuid/start-examination",
-    )).status).toBe(422);
+    expect((await post(invalidAppointmentApp, "/appointments/not-a-uuid/start-examination")).status).toBe(500);
   } finally {
     closeIfSupported(invalidAppointmentApp);
   }
   expect(observeAppointment(databasePath, clinicFixture.appointmentId)).toEqual(beforeInvalidAppointment);
 
+  const originalVeterinarianId = clinicFixture.veterinarianId;
   const invalidVeterinarianApp = scenario.createApp(databasePath);
   const beforeInvalidVeterinarian = observeAppointment(databasePath, clinicFixture.appointmentId);
   try {
-    expect((await post(
-      invalidVeterinarianApp,
-      `${appointmentUrl}/start-examination`,
-      { veterinarianId: "night-shift" },
-    )).status).toBe(422);
+    expect(Reflect.set(clinicFixture, "veterinarianId", "not-a-uuid")).toBe(true);
+    expect((await post(invalidVeterinarianApp, `${appointmentUrl}/start-examination`)).status).toBe(500);
   } finally {
+    Reflect.set(clinicFixture, "veterinarianId", originalVeterinarianId);
     closeIfSupported(invalidVeterinarianApp);
   }
   expect(observeAppointment(databasePath, clinicFixture.appointmentId)).toEqual(beforeInvalidVeterinarian);

@@ -51,11 +51,7 @@ const toAuditRow = (event: ExaminationStarted) => ({
   eventId: event.eventId,
   eventName: event.kind,
   occurredAt: event.occurredAt,
-  payload: {
-    appointmentId: event.appointmentId,
-    examinationStartedAt: event.aggregateState.examinationStartedAt,
-    veterinarianId: event.aggregateState.veterinarianId,
-  },
+  payload: event,
 });
 
 export const createAppointmentStore = (

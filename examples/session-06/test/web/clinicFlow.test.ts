@@ -36,9 +36,7 @@ describe("Session 06 Web application", () => {
 
   it("非決定値と2回保存を含むuse caseを画面操作から実行する", async () => {
     await post(app, `${appointmentUrl}/check-in`);
-    expect((await post(app, `${appointmentUrl}/start-examination`, {
-      veterinarianId: clinicFixture.veterinarianId,
-    })).status).toBe(303);
+    expect((await post(app, `${appointmentUrl}/start-examination`)).status).toBe(303);
     expect(await page(app)).toMatchObject({
       props: {
         sessionLabel: "Session 06",
@@ -48,9 +46,7 @@ describe("Session 06 Web application", () => {
   });
 
   it("予期可能な状態エラーを固定noticeへ変換する", async () => {
-    const response = await post(app, `${appointmentUrl}/start-examination`, {
-      veterinarianId: clinicFixture.veterinarianId,
-    });
+    const response = await post(app, `${appointmentUrl}/start-examination`);
 
     expect(response.headers.get("location")).toBe("/?notice=invalid-state");
   });
@@ -59,22 +55,9 @@ describe("Session 06 Web application", () => {
     const response = await post(
       app,
       "/appointments/99999999-9999-4999-8999-999999999999/start-examination",
-      { veterinarianId: clinicFixture.veterinarianId },
     );
 
     expect(response.headers.get("location")).toBe("/?notice=not-found");
-  });
-
-  it("不正な獣医師IDを422で拒否して受付済みの状態を保つ", async () => {
-    await post(app, `${appointmentUrl}/check-in`);
-    const response = await post(app, `${appointmentUrl}/start-examination`, {
-      veterinarianId: "night-shift",
-    });
-
-    expect(response.status).toBe(422);
-    expect(await page(app)).toMatchObject({
-      props: { appointment: { kind: "CheckedIn" } },
-    });
   });
 
   it("未実装操作とresetを共通URLで扱う", async () => {

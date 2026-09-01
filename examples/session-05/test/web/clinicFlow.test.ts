@@ -56,9 +56,7 @@ describe("Session 05 Web application", () => {
       props: { sessionLabel: "Session 05", appointment: { kind: "Scheduled" } },
     });
     await post(app, `${appointmentUrl}/check-in`);
-    await post(app, `${appointmentUrl}/start-examination`, {
-      veterinarianId: clinicFixture.veterinarianId,
-    });
+    await post(app, `${appointmentUrl}/start-examination`);
     await post(app, `${appointmentUrl}/exam-results`, examPayload);
     await post(app, `${appointmentUrl}/payment`);
 
@@ -68,9 +66,7 @@ describe("Session 05 Web application", () => {
   });
 
   it("古い画面から送られた状態不正をcatchし損ねて500になる", async () => {
-    const invalidState = await post(app, `${appointmentUrl}/start-examination`, {
-      veterinarianId: clinicFixture.veterinarianId,
-    });
+    const invalidState = await post(app, `${appointmentUrl}/start-examination`);
 
     expect(invalidState.status).toBe(500);
     expect(await invalidState.text()).toBe("Internal Server Error");
@@ -80,7 +76,6 @@ describe("Session 05 Web application", () => {
     const missing = await post(
       app,
       "/appointments/99999999-9999-4999-8999-999999999999/start-examination",
-      { veterinarianId: clinicFixture.veterinarianId },
     );
 
     expect(missing.headers.get("location")).toBe("/?notice=not-found");
@@ -88,9 +83,7 @@ describe("Session 05 Web application", () => {
 
   it("不正な検査入力を拒否し、未実装操作とresetを扱う", async () => {
     await post(app, `${appointmentUrl}/check-in`);
-    await post(app, `${appointmentUrl}/start-examination`, {
-      veterinarianId: clinicFixture.veterinarianId,
-    });
+    await post(app, `${appointmentUrl}/start-examination`);
     expect((await post(app, `${appointmentUrl}/exam-results`, {
       ...examPayload,
       examId: "not-a-uuid",

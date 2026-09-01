@@ -30,19 +30,7 @@ const occurredAt = "2026-08-30T08:00:00.000Z";
 const post = (
   app: ReturnType<SnapshotScenario["createApp"]>,
   path: string,
-  body?: unknown,
-) => {
-  const requestBody = body ?? (path.endsWith("/start-examination")
-    ? { veterinarianId: clinicFixture.veterinarianId }
-    : undefined);
-  return requestBody === undefined
-    ? app.request(path, { method: "POST", headers: inertiaHeaders })
-    : app.request(path, {
-        method: "POST",
-        headers: { ...inertiaHeaders, "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      });
-};
+) => app.request(path, { method: "POST", headers: inertiaHeaders });
 
 const createDatabasePath = (name: string): string => {
   const directory = mkdtempSync(join(tmpdir(), `start-examination-${name}-`));

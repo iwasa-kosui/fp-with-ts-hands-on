@@ -11,7 +11,6 @@
     "demo:02": "pnpm --filter @fp-with-ts/clinic-session-02 dev",
     "demo:03": "pnpm --filter @fp-with-ts/clinic-session-03 dev",
     "demo:04": "pnpm --filter @fp-with-ts/clinic-session-04 dev",
-    "demo:reset:04": "pnpm --filter @fp-with-ts/clinic-session-04 db:reset",
     "demo:05": "pnpm --filter @fp-with-ts/clinic-session-05 dev",
     "demo:06": "pnpm --filter @fp-with-ts/clinic-session-06 dev",
     "demo:07": "pnpm --filter @fp-with-ts/clinic-session-07 dev",

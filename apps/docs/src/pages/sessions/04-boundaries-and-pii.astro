@@ -16,11 +16,19 @@ import type {
 import "../../styles/code-playground.css";
 import "../../styles/sessions.css";
 
+type TeachingCode = Readonly<{
+  sources?: readonly [string, ...string[]];
+  caption?: string;
+  code: string;
+}>;
+
 type TeachingTopic = Readonly<{
   name: string;
-  explanation: string;
-  code: string;
-  takeaway: string;
+  definition: string;
+  before: TeachingCode;
+  after: TeachingCode;
+  example?: Readonly<{ caption: string; code: string }>;
+  why: string;
 }>;
 
 export const session: SessionSummary = {
@@ -28,125 +36,78 @@ export const session: SessionSummary = {
   snapshot: "session-04",
   sequence: "04",
   kind: "exercise",
-  title: "入力を検証し、監査記録から個人情報を除く",
+  title: "診察開始の入力を境界で検証する",
   durationMinutes: 30,
-  timeBreakdown: { brief: 4, teach: 6, exercise: 15, review: 5 },
-  adv: { articulate: 3, delegate: 9, verify: 3 },
+  timeBreakdown: { brief: 4, teach: 7, exercise: 12, review: 7 },
+  adv: { articulate: 2, delegate: 8, verify: 2 },
   peerReview: {
-    minutes: 5,
+    minutes: 7,
     pickCount: 2,
     questions: [
-      "不正な2項目を同時に送ったとき、両方の検証問題とpathを確認できますか。",
-      "422を返す経路では、予約状態と監査記録が変更されませんか。",
-      "診察開始の監査データは3項目だけで、予約テーブルにも飼い主の連絡先が残りませんか。",
+      "不正な予約IDまたは獣医師IDを含む入力は、`StartExaminationInput` になりませんか。",
+      "`parse` は外部入力を `unknown` として受け取っていますか。",
+      "検証に成功した場合だけ、`AppointmentId` と `VeterinarianId` をユースケースへ渡せますか。",
     ],
   },
   solutionSnapshot: "session-05",
   solutionPresentation: "excerpt",
   peerReviewPromises: "reference",
   animal: { name: "BIRD", type: "bird", avatar: "🐦" },
-  summary: "外部入力は検証してから受け入れ、監査記録には必要な項目だけを保存します。",
+  summary: "HTTPから届く予約IDと担当獣医師IDを検査し、型付きの診察開始入力へ変換します。",
   episode: [
-    "2026年8月30日15時20分、猫のムギは受付を終え、診察開始を待っていました。",
-    "15時30分、勤務表連携から獣医師IDの代わりに「night-shift」が届きましたが、予約は診察中へ変わりました。",
-    "原因を追った監査記録には、不正な担当者IDと一緒に飼い主の氏名、メールアドレス、電話番号まで残っていました。",
+    "診察開始のHTTPリクエストには、予約IDと担当獣医師IDが文字列で届きます。",
+    "不正なUUIDでも、検査しなければ型付きの入力として処理へ渡ってしまいます。",
+    "外部の値を受け取る場所で検査し、成功した値だけをユースケースへ渡します。",
   ],
-  incident: "不正な獣医師IDで診察が始まり、調査用の監査記録には不要な飼い主の連絡先まで保存された。",
+  incident: "HTTPから届いた不正なIDを検査せず、診察開始の入力として扱った。",
   exerciseCommand: "pnpm exercise:04",
   exerciseModule: {
-    dir: "examples/session-04",
-    fileBudget: 5,
-    lineBudget: 80,
+    dir: "examples/session-04/src/boundary",
+    fileBudget: 1,
+    lineBudget: 18,
   },
   delegationPrompt: {
     request:
-      "診察開始要求の入口と監査記録への出口を改善してください。不正な入力では副作用を起こさず、正常な診察開始では必要な監査項目だけを保存します。",
+      "HTTPから届く診察開始の入力を改善してください。不正な予約IDや担当獣医師IDが、型付き入力としてユースケースへ渡らない状態を目指します。",
     decisions: [
-      "検証失敗時にどの問題を呼び出し側へ返すか",
-      "どの処理より前に422を返すか",
-      "診察開始の監査に必要な項目は何か",
+      "外部入力をunknownとして受け取る場所はどこか",
+      "S3で作った2種類のschemaをどう組み合わせるか",
     ],
   },
   steps: [
     {
-      id: "s4-validate-all-start-input",
-      goal: "不正な予約IDと獣医師IDを拒否し、両方の検証問題とpathを残す。",
-      startingFailure: "不正な2種類のIDを同時に送っても、型付き入力として受け入れてしまう。",
-      targets: [
-        "examples/session-04/src/boundary/startExaminationInput.ts",
-      ],
-      solutions: [
-        {
-          path: "examples/session-05/src/boundary/startExaminationInput.ts",
-          symbol: "StartExaminationInput",
-          lines: [1, 17],
-        },
-      ],
+      id: "s4-reject-invalid-appointment-id",
+      goal: "不正な予約IDを含むHTTP入力は、StartExaminationInputにならないようにする。",
+      startingFailure: "不正な予約IDでも、診察開始の入力として扱える。",
+      targets: ["examples/session-04/src/boundary/startExaminationInput.ts"],
+      solutions: [{
+        path: "examples/session-05/src/boundary/startExaminationInput.ts",
+        symbol: "StartExaminationInput",
+        lines: [6, 18],
+      }],
     },
     {
-      id: "s4-return-422-without-side-effects",
-      goal: "検証失敗では422を返し、予約状態と監査記録を変更しない。",
-      startingFailure: "不正な獣医師IDでも303を返し、予約状態と監査記録を変更してしまう。",
-      targets: ["examples/session-04/src/web/routes.ts"],
-      solutions: [
-        {
-          path: "examples/session-05/src/web/routes.ts",
-          symbol: "decodeStartExaminationPayload",
-          lines: [46, 52],
-        },
-        {
-          path: "examples/session-05/src/web/routes.ts",
-          symbol: "registerClinicRoutes",
-          lines: [81, 88],
-        },
-      ],
-    },
-    {
-      id: "s4-minimize-persisted-audit-data",
-      goal: "診察開始の監査データを3項目へ絞り、利用しない飼い主の連絡先を保存しない。",
-      startingFailure: "予約全体と飼い主の連絡先を監査記録と予約テーブルへ保存している。",
-      targets: [
-        "examples/session-04/src/adaptor/secondary/sqlite/appointmentRepository.ts",
-        "examples/session-04/src/adaptor/secondary/sqlite/schema.ts",
-        "examples/session-04/drizzle/0000_initial.sql",
-      ],
-      solutions: [
-        {
-          path: "examples/session-05/src/adaptor/secondary/sqlite/appointmentRepository.ts",
-          symbol: "ExaminationStartedAuditPayload",
-          lines: [23, 27],
-        },
-        {
-          path: "examples/session-05/src/adaptor/secondary/sqlite/appointmentRepository.ts",
-          symbol: "toExaminationStartedAuditPayload",
-          lines: [47, 61],
-        },
-        {
-          path: "examples/session-05/src/adaptor/secondary/sqlite/appointmentRepository.ts",
-          symbol: "reset",
-          lines: [145, 152],
-        },
-        {
-          path: "examples/session-05/src/adaptor/secondary/sqlite/schema.ts",
-          symbol: "appointmentsTable",
-          lines: [3, 12],
-        },
-      ],
+      id: "s4-reject-invalid-veterinarian-id",
+      goal: "不正な担当獣医師IDを含むHTTP入力は、StartExaminationInputにならないようにする。",
+      startingFailure: "不正な担当獣医師IDでも、診察開始の入力として扱える。",
+      targets: ["examples/session-04/src/boundary/startExaminationInput.ts"],
+      solutions: [{
+        path: "examples/session-05/src/boundary/startExaminationInput.ts",
+        symbol: "StartExaminationInput",
+        lines: [6, 18],
+      }],
     },
   ],
   decisions: [
     {
-      invariant: "外部の値はunknownとして受け取り、検証に成功するまでドメインの入力として扱わない。",
+      invariant: "外部入力はunknownとして受け取り、境界で検証してから型付き入力になる。",
     },
     {
-      invariant: "検証失敗は副作用より前に422へ変換し、項目ごとの問題を呼び出し側へ返す。",
-    },
-    {
-      invariant: "保存先へ渡すデータは、除外項目ではなく必要項目を列挙して組み立てる。",
+      invariant: "予約IDと担当獣医師IDの両方が正しい場合だけ、startExaminationへ渡す。",
     },
   ],
   finalReferences: [
-    "examples/final/src/shared/schemaResult.ts",
+    "examples/final/src/domain/shared/schemaResult.ts",
     "examples/final/src/domain/appointment/appointmentId.ts",
     "examples/final/src/domain/appointment/veterinarianId.ts",
     "examples/final/src/useCase/startExaminationUseCase.ts",
@@ -155,128 +116,116 @@ export const session: SessionSummary = {
 
 export const guides = ([
   {
-    id: "unvalidated-start-examination-input",
-    title: "① night-shiftを検証せず型付き入力へコピーしている",
-    currentDesign: "予約IDと獣医師IDを検証せず、型注釈だけを付けています。",
-    futureRisk: "実行時の文字列がUUIDでなくてもStartExaminationInputになります。",
-    path: "src/boundary/startExaminationInput.ts",
-    highlights: [{ startLineNumber: 1, endLineNumber: 15 }],
-  },
-  {
     id: "http-start-examination-input",
-    title: "② 検証結果を422へ分岐せずunsafeに取り出している",
-    currentDesign: "path parameterとHTTP本文をまとめた後、検証結果を422へ分岐せず取り出しています。",
-    futureRisk: "開始状態では不正な値を受け入れ、検証追加後は失敗を500へ変換してしまいます。",
+    title: "診察開始のHTTP入力はrouteで組み立てている",
+    currentDesign: "path parameterの予約IDと外部から渡された担当獣医師IDを、StartExaminationInput.parseへまとめて渡しています。",
+    futureRisk: "境界のparserが検証しなければ、不正な文字列が予約の読み込みと状態確認まで進みます。",
     path: "src/web/routes.ts",
     highlights: [{ startLineNumber: 109, endLineNumber: 114 }],
   },
   {
-    id: "overbroad-audit-payload",
-    title: "③ 予約全体と飼い主の連絡先を監査へコピーしている",
-    currentDesign: "すべての監査データへ予約全体とownerContactを追加しています。",
-    futureRisk: "診察開始の追跡に不要な個人情報まで、監査記録へ長期間残ります。",
-    path: "src/adaptor/secondary/sqlite/appointmentRepository.ts",
-    highlights: [{ startLineNumber: 86, endLineNumber: 96 }],
+    id: "unvalidated-start-examination-input",
+    title: "HTTP入力をanyのまま診察開始の入力へ入れている",
+    currentDesign: "予約IDと担当獣医師IDを検証せず、手書きのStartExaminationInputへコピーしています。",
+    futureRisk: "不正なUUIDが境界を通過し、予約の読み込みや状態確認まで進みます。",
+    path: "src/boundary/startExaminationInput.ts",
+    highlights: [{ startLineNumber: 1, endLineNumber: 15 }],
   },
 ] as const) satisfies readonly CodeGuide[];
 
 const teaching: readonly TeachingTopic[] = [
   {
-    name: "入口ではunknownから始める",
-    explanation:
-      "TypeScriptの型注釈は、HTTPから届いた実行時の値を検証しません。境界ではunknownとして受け取り、schemaの検証に成功した値だけを型付き入力として扱います。",
-    code: `unknown
-  → 検証
-      ├─ Err: ValidationIssue[]
-      └─ Ok: StartExaminationInput`,
-    takeaway: "入力の型は、検証を通過した事実を表します。",
-  },
-  {
-    name: "検証失敗は副作用より前で止める",
-    explanation:
-      "422を返すだけでは足りません。予約の読み込み、状態遷移、保存、監査追加のどれにも進んでいないことを、演習では要求前後のRepository、通常テストでは実ファイルSQLiteで確認します。",
-    code: `検証結果
-  ├─ Err → 422
-  │         予約状態: 変更なし
-  │         監査件数: 変更なし
-  └─ Ok  → 診察開始へ進む`,
-    takeaway: "失敗時に実行しない処理まで含めて、境界の契約にします。",
-  },
-  {
-    name: "出口では必要な項目を列挙する",
-    explanation:
-      "予約全体から個人情報だけを削ると、将来追加された項目が監査へ流れます。診察開始の追跡に必要な予約ID、獣医師ID、診察開始時刻を明示的に組み立てます。",
-    code: `type ExaminationStartedAuditPayload = Readonly<{
-  appointmentId: AppointmentId;
-  veterinarianId: VeterinarianId;
-  examinationStartedAt: string;
-}>;`,
-    takeaway: "許可する項目を先に決めると、ドメインモデルの拡張が監査データを勝手に広げません。",
+    name: "schema による境界検証と Result",
+    definition:
+      "IDやEmailなどの小さなschemaをobject schemaへ組み合わせ、外から届く入力オブジェクト全体を一度だけparseします。正しい値だけをドメイン型として扱い、失敗はResultで返します。",
+    before: {
+      sources: ["examples/session-04/src/boundary/startExaminationInput.ts"],
+      code: `export const StartExaminationInput = {
+  parse: (raw: any): Result<StartExaminationInput> =>
+    ok({
+      appointmentId: raw.appointmentId,
+      veterinarianId: raw.veterinarianId,
+    }),
+} as const;`,
+    },
+    after: {
+      sources: ["examples/session-05/src/boundary/startExaminationInput.ts"],
+      code: `const schema = z.object({
+  appointmentId: AppointmentId.schema,
+  veterinarianId: VeterinarianId.schema,
+}).readonly();
+
+export type StartExaminationInput = z.infer<typeof schema>;
+
+export const StartExaminationInput = {
+  schema,
+  parse: schemaResult(schema),
+} as const;`,
+    },
+    why: "beforeはrawをanyで受けるため、検証しなくても型検査が通ります。afterはS3で作ったIDごとのschemaをobject schemaへ組み合わせ、unknownの入力全体を一度だけ検証します。両方のIDが正しい場合だけ型付き入力を返し、失敗はResultに現れます。Resultの分岐と合成はS5で扱います。",
   },
 ];
 
-const invalidStartExaminationBody = `{
-  "veterinarianId": "night-shift"
-}`;
+const supplementary: readonly TeachingTopic[] = [
+  {
+    name: "ExamResultの外部JSONもschemaで検証する",
+    definition:
+      "検査機関から届くexamId、petId、items、needsFollowUpを、ExamResultとして扱う前に検証します。",
+    before: {
+      sources: ["examples/session-04/src/boundary/examResult.ts"],
+      code: `parse: (raw: any): Result<ExamResult> => ok(raw)`,
+    },
+    after: {
+      sources: ["examples/session-05/src/boundary/examResult.ts"],
+      code: `parse: schemaResult(ExamResultSchema)`,
+    },
+    why: "項目の欠落や不正な識別子を境界で止める考え方は、StartExaminationInputと同じです。",
+  },
+  {
+    name: "Sensitive を実装して、デフォルトで情報がログに出力されないようにする",
+    definition:
+      "個人情報を wrap する型です。toJSON と toString をオーバーライドし [REDACTED] を返すようにします。中身を取り出すためには unwrap を呼び出す必要があります。",
+    before: {
+      sources: ["examples/session-04/src/boundary/ownerContact.ts"],
+      code: `export type OwnerContact = Readonly<{
+  ownerName: string;
+  ownerEmail: string;
+  ownerPhone: string;
+}>;`,
+    },
+    after: {
+      sources: [
+        "examples/session-05/src/shared/sensitive.ts",
+        "examples/session-05/src/boundary/ownerContact.ts",
+      ],
+      code: `export const Sensitive = {
+  of: <T>(value: T): Sensitive<T> => ({
+    unwrap: () => value,
+    toJSON: () => "[REDACTED]",
+    toString: () => "[REDACTED]",
+    [inspect.custom]: () => "[REDACTED]",
+  }),
+} as const;
 
-const leakedAuditPayload = `{
-  "appointment": {
-    "kind": "InExamination",
-    "appointmentId": "11111111-1111-4111-8111-111111111111",
-    "petId": "22222222-2222-4222-8222-222222222222",
-    "ownerId": "33333333-3333-4333-8333-333333333333",
-    "scheduledAt": "2026-08-30T06:30:00.000Z",
-    "reason": "skin check",
-    "checkedInAt": "2026-08-30T06:20:00.000Z",
-    "veterinarianId": "night-shift",
-    "examinationStartedAt": "2026-08-30T06:30:00.000Z"
+const OwnerContactSchema = z
+  .object({
+    ownerName: z.string().min(1).brand<"OwnerName">().transform(Sensitive.of),
+    ownerEmail: z.string().email().brand<"OwnerEmail">().transform(Sensitive.of),
+    ownerPhone: z.string().min(1).brand<"OwnerPhone">().transform(Sensitive.of),
+  })
+  .readonly();`,
+    },
+    why: "個人情報を平文の string で持つと、JSON.stringify や console.log で簡単に個人情報がログに出てしまうことになります。これをレビューで守り続けることは困難でしょう。Sensitive で wrap するとデフォルトで値が表示されないようになり、値を取り出すには unwrap を明示的に呼び出さなければなりません。unwrap で検索すれば、個人情報が平文として取り出されている箇所を簡単に調べることができます。1行に brand と transform が並んでいますが、2つは別の目的です。brand は OwnerEmail を OwnerPhone などの他の値と取り違えないようにするための仕組み（Branded Type）で、ログ出力には影響しません。ログへの漏えいを防いでいるのは Sensitive.of のほうです。",
   },
-  "ownerContact": {
-    "ownerName": "Owner A",
-    "ownerEmail": "owner@example.test",
-    "ownerPhone": "090-0000-0000"
-  }
-}`;
-
-const incidentComparison = [
-  {
-    subject: "入力検証",
-    expected: "night-shiftを検証問題として拒否",
-    actual: "型付き入力として受理",
-  },
-  {
-    subject: "HTTP応答",
-    expected: "422で拒否",
-    actual: "303で成功扱い",
-  },
-  {
-    subject: "予約状態",
-    expected: "CheckedInのまま",
-    actual: "InExaminationへ変更",
-  },
-  {
-    subject: "不正要求の監査記録",
-    expected: "追加なし",
-    actual: "飼い主の連絡先を含めて1件追加",
-  },
-  {
-    subject: "正常時の監査データ",
-    expected: "予約ID、獣医師ID、診察開始時刻の3項目だけ",
-    actual: "予約全体と飼い主の連絡先",
-  },
-] as const;
+];
 
 const narrative = {
-  requirement:
-    "病院責任者は、不正な要求で予約を変更せず、診察開始の監査には予約ID、獣医師ID、診察開始時刻だけを残すよう求めています。",
-  design:
-    "入口ではunknownを検証して失敗を422へ変換し、出口では用途別の監査データを明示的に組み立てます。",
-  limitation:
-    "JSONとして読み取れないHTTP本文の正規化は扱いません。予約が存在しない場合と受付前の状態はSession 05、状態保存と監査追加の整合性や保存障害はSession 06で扱います。",
-  legacy:
-    "事故トレースの①入力、②停止位置、③保存内容に対応する配布コードを順に読みます。",
-  fallback:
-    "まず入力変換だけを直して検証問題を確認し、次にrouteの422分岐、最後に監査データの組み立てへ進みます。3段階を同時に変更せず、各段階で演習テストを実行します。",
+  requirement: "HTTPから届く予約IDと担当獣医師IDを検証し、正しい値だけをstartExaminationへ渡す。",
+  currentRisk: "rawをanyで受け取って手書きの型へコピーしているため、不正なUUIDでもStartExaminationInputとして扱えます。",
+  design: "AppointmentId.schemaとVeterinarianId.schemaをobject schemaへ組み合わせ、unknownの入力全体を一度だけparseして型付き入力へ変換する。",
+  limitation: "schemaは値の形式と用途を検証しますが、その予約が存在するか、受付済みかは判断しません。これらはS5で扱います。",
+  legacy: "raw: anyを受け取るstartExaminationInput.tsを読み、不正な2種類のIDが境界を通ることを確認します。",
+  fallback: "startExaminationInput.tsの手書き型をz.inferへ変え、AppointmentId.schemaとVeterinarianId.schemaを持つobject schemaを作ります。parseにはschemaResultを使います。相互レビューの約束事はS2のリンク先を確認します。",
 } as const;
 
 const exerciseSession: ExerciseSessionSummary = session;
@@ -285,17 +234,16 @@ export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
   initialFile: "exercises/start-examination-input.test.ts",
-  description: "診察開始要求の入口と、監査記録へ出すデータを確認します。",
+  description: "HTTP入力を診察開始の型付き入力へ変換する境界を確認します。",
   visibleFiles: [
     "exercises/start-examination-input.test.ts",
+    "test/regression/semantic-identifiers.test.ts",
+    "test/regression/state-modeling.test.ts",
     "src/domain/appointment/appointmentId.ts",
     "src/domain/appointment/veterinarianId.ts",
     "src/boundary/startExaminationInput.ts",
     "src/shared/schemaResult.ts",
     "src/web/routes.ts",
-    "src/adaptor/secondary/sqlite/appointmentRepository.ts",
-    "src/adaptor/secondary/sqlite/schema.ts",
-    "drizzle/0000_initial.sql",
   ],
 } as const) satisfies SessionWorkspace;
 
@@ -308,11 +256,11 @@ const solutionSteps = await Promise.all(
   })),
 );
 const chapters = [
-  { id: "incident", label: "事故を把握する" },
-  { id: "legacy", label: "失敗を再現する" },
-  { id: "teach", label: "境界の原則" },
-  { id: "refactor", label: "演習" },
-  { id: "review", label: "レビュー" },
+  { id: "incident", label: "今回つくるもの" },
+  { id: "legacy", label: "コードを読み、失敗を再現する" },
+  { id: "teach", label: "使う型を知る" },
+  { id: "refactor", label: "型で閉じる" },
+  { id: "review", label: "レビューと持ち帰り" },
 ] as const;
 const commonReviewChecks = [
   "`as` によるキャストが入っていないか全文検索して確認する。",
@@ -321,7 +269,6 @@ const commonReviewChecks = [
 ] as const;
 const reviewCompletionArtifacts = [
   "境界で拒否する入力",
-  "保存を許可する監査項目",
   "Agentへの依頼文",
   "型検査では確認できず、テストまたは実行時に確認すること",
 ] as const;
@@ -348,12 +295,12 @@ ${session.incident}
 依頼:
 ${exerciseSession.delegationPrompt.request}
 
-境界で止める入力と保存する監査項目: [言語化フェーズで書いた内容]
+境界で拒否する入力: [言語化フェーズで書いた1文]
 
 着手前に判断すること:
 ${exerciseSession.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
 
-まず配布コードと失敗しているテストを読み、上の判断と変更方針を短く説明してください。説明のあとで実装に進んでください。
+まず配布コードと失敗しているテストを読み、上の判断と変更方針を短く説明してください。説明のあとで実装に進んでください。設計手段は既存コードに合うものを選び、選んだ理由も示してください。
 
 受け入れ条件:
 ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
@@ -362,7 +309,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 - ${session.exerciseModule.dir}/ のみ
 - 最大 ${session.exerciseModule.fileBudget} ファイル・約 ${session.exerciseModule.lineBudget} 行
 - 範囲外の変更が必要に見えた場合は、変更せず理由を報告する
-- 型エラーを as によるキャストで回避しない
+- 型エラーを \`as\` によるキャストで回避しない
 
 検証:
 - ${session.exerciseCommand} を実行し、すべての assertion が成功すること
@@ -370,8 +317,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 完了時の報告:
 - 変更したファイルと判断理由
 - 検証コマンドの結果
-- 不正な要求の前後で確認した予約状態と監査件数
-- 正常な診察開始で保存した監査項目`;
+- 型だけでは守れず、テストまたはレビューに残した点`;
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
@@ -386,244 +332,162 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
           {session.summary}
         </p>
       </section>
-
       <SessionPageNavigation currentSlug={session.slug} chapters={chapters}>
-        <section id="incident">
-          <h2>事故を把握する</h2>
-          <aside class="case-file__episode" aria-label="動物病院のひと幕">
-            <p class="case-file__episode-label">動物病院のひと幕</p>
-            {session.episode.map((line) => <p data-episode-line>{line}</p>)}
-          </aside>
-
-          <h3 data-story-stage="use-case">病院責任者からの要求</h3>
-          <p>{narrative.requirement}</p>
-
-          <h3 data-story-stage="pitfall">リクエストから事故が起きるまで</h3>
-          <ol class="incident-trace" aria-label="不正な診察開始要求から監査記録までの事故トレース">
-            <li>
-              <h4>1. 到着した要求</h4>
-              <p class="incident-trace__request">
-                <code>POST /appointments/11111111-1111-4111-8111-111111111111/start-examination</code>
-              </p>
-              <figure>
-                <figcaption>HTTP本文</figcaption>
-                <Code code={invalidStartExaminationBody} lang="json" />
-              </figure>
-              <p><code>night-shift</code> はUUIDではありません。本来はここで不正な入力として扱う値です。</p>
-            </li>
-            <li>
-              <h4>2. ① 入力: 検証せず型付き入力へコピー</h4>
-              <p>
-                現在の <code>StartExaminationInput.parse</code> は値を調べず、常に成功を返します。
-                <code>night-shift</code> はそのまま <code>VeterinarianId</code> として診察開始処理へ渡ります。
-              </p>
-            </li>
-            <li>
-              <h4>3. ② 停止位置: 止まらず状態変更まで実行</h4>
-              <p>
-                ①で成功扱いになった入力をrouteがそのまま取り出すため、予約保存と監査追加まで進みます。
-                入力検証を直した後も、失敗を422へ変換する分岐がなければHTTP 500になります。
-              </p>
-              <dl class="incident-trace__facts">
-                <div>
-                  <dt>HTTP応答</dt>
-                  <dd><code>303 See Other</code></dd>
-                </div>
-                <div>
-                  <dt>予約状態</dt>
-                  <dd><code>CheckedIn</code> → <code>InExamination</code></dd>
-                </div>
-                <div>
-                  <dt>監査件数</dt>
-                  <dd>
-                    <code>2件 → 3件</code>
-                    <small>初期登録と受付の2件に、診察開始を1件追加</small>
-                  </dd>
-                </div>
-              </dl>
-            </li>
-            <li>
-              <h4>4. ③ 保存内容: 連絡先を含む監査記録を追加</h4>
-              <p>
-                追加された <code>ExaminationStarted</code> のpayloadです。診察開始の追跡には不要な飼い主の連絡先まで保存されます。
-              </p>
-              <figure>
-                <figcaption>実際に追加される監査payload</figcaption>
-                <Code code={leakedAuditPayload} lang="json" />
-              </figure>
-            </li>
-          </ol>
-
-          <h3>期待した結果と実際の結果</h3>
-          <div class="incident-comparison" tabindex="0">
-            <table aria-label="期待した結果と実際の結果">
-              <thead>
-                <tr>
-                  <th scope="col">観点</th>
-                  <th scope="col">期待した結果</th>
-                  <th scope="col">実際の結果</th>
-                </tr>
-              </thead>
-              <tbody>
-                {incidentComparison.map(({ subject, expected, actual }) => (
-                  <tr>
-                    <th scope="row">{subject}</th>
-                    <td data-label="期待した結果">{expected}</td>
-                    <td data-label="実際の結果">{actual}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <h3 data-story-stage="goal">このセッションのゴール</h3>
-          <p>{narrative.design}</p>
-          <ul class="decision-list">
-            {session.decisions.map(({ invariant }) => <li>{invariant}</li>)}
-          </ul>
-        </section>
-
-        <section id="legacy" class="code-playground">
-          <h2>失敗を再現する</h2>
-          <p>{narrative.legacy}</p>
-          <p>
-            編集範囲は <code>{session.exerciseModule.dir}</code>、最大
-            {session.exerciseModule.fileBudget}ファイル・約{session.exerciseModule.lineBudget}行です。
-          </p>
-          <p>
-            検証問題を保持する <code>src/shared/schemaResult.ts</code> は配布済みです。
-            このファイルは読みますが、演習では変更しません。
-          </p>
-          <p>
-            ブラウザ内でも同じ失敗を再現できるよう、演習テストはインメモリRepositoryで
-            HTTP前後の状態と監査記録を観測し、Drizzle schemaとmigration SQLも検査します。
-            実ファイルSQLiteの接続と再起動は通常テストで確認します。
-          </p>
-          <CodeGuideCards guides={guides} projectFiles={projectFiles} />
-
-          <h3>修正前の失敗を確認する</h3>
-          <ul class="exercise-failures" aria-label="修正前に確認する問題">
-            {session.steps.map((step) => <li>{step.startingFailure}</li>)}
-          </ul>
-          <CommandBlock phase="red" command={session.exerciseCommand} expected="6件の演習テストが失敗します。正常入力の1件だけ成功します。" />
-          <p>ブラウザ内の変更はローカルへ反映されません。</p>
-          <div data-code-explorer={workspace.slug}>
-            <CodeExplorer
-              client:load
-              workspace={workspace}
-              projectFiles={projectFiles}
-              initialCommand={session.exerciseCommand}
-            />
-          </div>
-        </section>
-
-        <section id="teach">
-          <h2>境界の原則（{session.timeBreakdown.teach}分）</h2>
-          <p>
-            完成コードを写す前に、入口で止める処理と出口で絞る処理を分けて確認します。
-            どちらも、境界を越えてよいデータを明示する設計です。
-          </p>
-          {teaching.map((topic) => (
-            <article class="teaching-topic">
-              <h3>{topic.name}</h3>
-              <p>{topic.explanation}</p>
-              <figure class="code-block">
-                <Code code={topic.code} lang={topic.code.includes("type ") ? "ts" : "text"} />
-              </figure>
-              <p class="teaching-topic__why">{topic.takeaway}</p>
-            </article>
-          ))}
-
-          <aside class="decision-card">
-            <h3>時間外の補足</h3>
-            <details>
-              <summary>検査結果のJSONへ同じ考え方を移す</summary>
-              <p>
-                <code>ExamResult</code> も外部から届く値です。診察開始入力の修正後に、項目の欠落、配列の要素、識別子を同じ順序で検証できます。
-              </p>
-            </details>
-            <details>
-              <summary>Sensitiveは追加の誤出力対策として使う</summary>
-              <p>
-                正当な理由で読み込んだ機密値を既定で伏せる対策です。今回のように不要な個人情報を収集または保存しない設計の代わりにはなりません。
-              </p>
-            </details>
-          </aside>
-        </section>
-
-        <section id="refactor">
-          <h2>演習</h2>
-          <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
-          <ol class="adv-flow">
-            <li><strong>言語化（{session.adv.articulate}分）</strong>: 境界で止める入力と、保存を許可する監査項目を書く。</li>
-            <li><strong>依頼（{session.adv.delegate}分）</strong>: 3つの判断を埋めてAgentへ依頼し、段階ごとに演習テストを実行する。</li>
-            <li><strong>検証（{session.adv.verify}分）</strong>: 422の前後と正常時の監査データをRepositoryで比較し、通常テストで実ファイルSQLiteも確認する。</li>
-          </ol>
-
-          <div class="delegation-prompt">
-            <h3>プロンプトのテンプレート</h3>
-            <p>角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。</p>
-            <pre><code>{delegationPrompt}</code></pre>
-          </div>
-
-          <h3>実装する順序</h3>
-          <ol>
-            {session.steps.map((step) => <li>{step.goal}</li>)}
-          </ol>
-
-          <h3>この演習で解決しないこと</h3>
-          <p>{narrative.limitation}</p>
-
-          <h3 data-solution-heading>ステップごとの解答</h3>
-          <p>
-            解答はSession 05の関連箇所だけを示します。Session 04にある既存の引数や型は残し、
-            5つのtarget file内で検証、422分岐、保存項目の絞り込みを行います。
-          </p>
-          {solutionSteps.map(({ step, presentation, snippets }) => (
-            <div class="solution-step">
-              <details class="step-solution" data-presentation={presentation}>
-                <summary>{step.goal}</summary>
-                {snippets.map(({ solution, code }) => (
-                  <section class="step-solution__snippet">
-                    <h4><code>{solution.path}</code></h4>
-                    <Code code={code} lang="ts" />
-                  </section>
-                ))}
-              </details>
-            </div>
-          ))}
-          <CommandBlock phase="green" command={session.exerciseCommand} expected="7件の演習テストがすべて成功します。" />
-          <h3>既にデモを起動していた場合</h3>
-          <p>
-            <code>drizzle/0000_initial.sql</code> はSession 04の開始スナップショットなので、
-            適用済みの <code>clinic.sqlite</code> へ修正後の初期schemaは再適用されません。
-            デモを停止し、次のコマンドでSession 04のローカルDBを作り直してから再起動します。
-            予約状態と監査記録は初期状態へ戻り、削除したDBは復元されません。
-          </p>
-          <CommandBlock phase="green" command="pnpm demo:reset:04\npnpm demo:04" expected="owner_contact列のない初期schemaでデモが起動します。" />
-
-          <h3>演習を完了できないとき</h3>
-          <p>{narrative.fallback}</p>
-        </section>
-
-        <section id="review">
-          <h2>レビューと持ち帰り</h2>
-          <div class="exercise-review-checklist">
-            <h3>個人で確認する</h3>
-            <ol>{commonReviewChecks.map((check) => <li>{check}</li>)}</ol>
-            <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>
-            <p><strong>残すもの:</strong> {reviewCompletionArtifacts.join("、")}</p>
-            <h3>業務へ持ち帰る</h3>
-            <p>{businessReflectionQuestion}</p>
-          </div>
-          <section class="peer-review-panel">
-            <h3>班内相互レビュー（{session.peerReview.minutes}分・{headcount}）</h3>
-            <p><a href={promisesHref}>進行上の約束事を確認する</a></p>
-            <ol>{session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
+          <section id="incident">
+            <h2>今回つくるもの</h2>
+            <aside class="case-file__episode" aria-label="動物病院のひと幕">
+              <p class="case-file__episode-label">動物病院のひと幕</p>
+              {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+            </aside>
+            <p>外部の文字列を検査し、S3で区別した2種類のIDを持つ入力へ変換します。</p>
+            <h3 data-story-stage="use-case">追加したい機能</h3>
+            <p>{narrative.requirement}</p>
+            <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
+            <p>{narrative.currentRisk}</p>
+            <h3 data-story-stage="goal">このセッションのゴール</h3>
+            <p>{narrative.design}</p>
+            <h3>このセッションで守ること</h3>
+            <ul class="decision-list">{session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
+            <p>今回の変更は <code>{session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
           </section>
-        </section>
-      </SessionPageNavigation>
 
+          <section id="legacy" class="code-playground">
+            <h2>コードを読み、失敗を再現する</h2>
+            <p>{narrative.legacy}</p>
+            <p>
+              編集する範囲は <code>{session.exerciseModule.dir}</code>、変更するファイル数は最大
+              {session.exerciseModule.fileBudget}ファイル・約{session.exerciseModule.lineBudget}行です。
+            </p>
+            <CodeGuideCards guides={guides} projectFiles={projectFiles} />
+            <h3>修正前の失敗を確認する</h3>
+            <p>修正前は、次の{session.steps.length}件に対応する演習テストが失敗します。</p>
+            <ul class="exercise-failures" aria-label="修正前に確認する問題">
+              {session.steps.map((step) => <li>{step.startingFailure}</li>)}
+            </ul>
+            <CommandBlock phase="red" command={session.exerciseCommand} expected={`${session.steps.length}件の演習テストが失敗します。`} />
+            <p>ブラウザ内の変更はローカルへ反映されません。</p>
+            <div data-code-explorer={workspace.slug}>
+              <CodeExplorer
+                client:load
+                workspace={workspace}
+                projectFiles={projectFiles}
+                initialCommand={session.exerciseCommand}
+              />
+            </div>
+          </section>
+
+          <section id="teach">
+            <h2>事前知識（{session.timeBreakdown.teach}分）</h2>
+            <p>この回で利用する型について確認します。配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
+            {teaching.map((topic) => (
+              <article class="teaching-topic">
+                <h3>{topic.name}</h3>
+                <p>{topic.definition}</p>
+                <div class="teaching-topic__diff">
+                  <figure class="code-block">
+                    <figcaption>
+                      before:
+                      {topic.before.caption === undefined ? topic.before.sources?.map((source, index) => (
+                        <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                      )) : <span>{topic.before.caption}</span>}
+                    </figcaption>
+                    <Code code={topic.before.code} lang="ts" />
+                  </figure>
+                  <figure class="code-block">
+                    <figcaption>
+                      after:
+                      {topic.after.caption === undefined ? topic.after.sources?.map((source, index) => (
+                        <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                      )) : <span>{topic.after.caption}</span>}
+                    </figcaption>
+                    <Code code={topic.after.code} lang="ts" />
+                  </figure>
+                </div>
+                {topic.example === undefined ? null : (
+                  <figure class="code-block" data-teaching-example>
+                    <figcaption>{topic.example.caption}</figcaption>
+                    <Code code={topic.example.code} lang="ts" />
+                  </figure>
+                )}
+                <p class="teaching-topic__why">{topic.why}</p>
+              </article>
+            ))}
+            <aside class="decision-card">
+              <h3>時間外の補足: 検査結果とPII</h3>
+              <p>
+                <code>ExamResult</code> のschemaと、連絡先を既定で伏せる
+                <code>Sensitive</code> は、時間内のexerciseとレビューには含めません。必要な場合だけ次を開きます。
+              </p>
+              {supplementary.map((topic) => (
+                <details>
+                  <summary>{topic.name}</summary>
+                  <p>{topic.definition}</p>
+                  <p>{topic.why}</p>
+                </details>
+              ))}
+            </aside>
+          </section>
+
+          <section id="refactor">
+            <h2>演習</h2>
+            <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
+            <ol class="adv-flow">
+              <li><strong>言語化（{session.adv.articulate}分）</strong>: 境界で拒否する入力を1文で書く。</li>
+              <li><strong>依頼（{session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
+              <li><strong>検証（{session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
+            </ol>
+            <div class="delegation-prompt">
+              <h3>プロンプトのテンプレート</h3>
+              <p>角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。技法名や完成形を先に指定する必要はありません。</p>
+              <pre><code>{delegationPrompt}</code></pre>
+            </div>
+            <h3>この演習で解決しないこと</h3>
+            <p>{narrative.limitation}</p>
+            <h3 data-solution-heading>{exerciseSession.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
+            {exerciseSession.solutionPresentation === "completed-file" ? (
+              <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
+                <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読む。</p>
+                <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示される。</p>
+              </div>
+            ) : null}
+            {solutionSteps.map(({ step, presentation, snippets }) => (
+              <div class="solution-step">
+                <details class="step-solution" data-presentation={presentation}>
+                  <summary>{step.goal}</summary>
+                  {presentation === "completed-file" ? (
+                    <p class="step-solution__completed-file-note">この完成例には後続 step を含みます。すべての target file を反映してから検証します。</p>
+                  ) : null}
+                  {snippets.map(({ solution, code }) => (
+                    <section class="step-solution__snippet">
+                      <h4><code>{solution.path}</code></h4>
+                      <Code code={code} lang="ts" />
+                    </section>
+                  ))}
+                </details>
+              </div>
+            ))}
+            <CommandBlock phase="green" command={session.exerciseCommand} expected="演習テストがすべて成功します。" />
+            <h3>演習を完了できないとき</h3>
+            <p>{narrative.fallback}</p>
+          </section>
+
+          <section id="review">
+            <h2>レビューと持ち帰り</h2>
+            <div class="exercise-review-checklist">
+              <h3>個人で確認する</h3>
+              <ol>{commonReviewChecks.map((check) => <li>{check}</li>)}</ol>
+              <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>
+              <p><strong>残すもの:</strong> {reviewCompletionArtifacts.join("、")}</p>
+              <h3>業務へ持ち帰る</h3>
+              <p>{businessReflectionQuestion}</p>
+            </div>
+            <section class="peer-review-panel">
+              <h3>班内相互レビュー（{session.peerReview.minutes}分・{headcount}）</h3>
+              <p><a href={promisesHref}>進行上の約束事を確認する</a></p>
+              <ol>{session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
+            </section>
+          </section>
+      </SessionPageNavigation>
       <nav class="case-file__session-nav" aria-label="前後のセッション">
         <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
         <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
@@ -631,179 +495,3 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
     </main>
   </div>
 </BaseLayout>
-
-<style>
-  .incident-trace {
-    display: grid;
-    gap: 1rem;
-    margin-block: 1.5rem;
-    padding: 0;
-    list-style: none;
-  }
-
-  .incident-trace > li {
-    min-width: 0;
-    padding: 1rem;
-    border: 2px solid var(--case-line);
-    border-inline-start: 0.6rem solid var(--case-coral);
-    background: var(--case-paper);
-  }
-
-  .incident-trace > li:nth-child(2) {
-    border-inline-start-color: var(--case-lemon);
-  }
-
-  .incident-trace > li:nth-child(3) {
-    border-inline-start-color: var(--case-mint);
-  }
-
-  .incident-trace h4,
-  .incident-trace figure,
-  .incident-trace__facts {
-    margin-block-start: 0;
-  }
-
-  .incident-trace figure {
-    min-width: 0;
-    margin-inline: 0;
-  }
-
-  .incident-trace figcaption {
-    padding: 0.45rem 0.75rem;
-    border: 2px solid var(--case-line);
-    border-block-end: 0;
-    background: var(--case-lemon);
-    font-weight: 800;
-  }
-
-  .incident-trace figure :global(pre) {
-    max-width: 100%;
-    margin: 0;
-    overflow-x: auto;
-    border: 2px solid var(--case-line);
-  }
-
-  .incident-trace__request {
-    padding: 0.75rem;
-    border: 2px solid var(--case-line);
-    background: color-mix(in srgb, var(--case-mint) 32%, var(--case-paper));
-    overflow-wrap: anywhere;
-  }
-
-  .incident-trace__request code {
-    white-space: normal;
-  }
-
-  .incident-trace__facts {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
-  }
-
-  .incident-trace__facts > div {
-    min-width: 0;
-    padding: 0.75rem;
-    border: 2px solid var(--case-line);
-    background: color-mix(in srgb, var(--case-mint) 32%, var(--case-paper));
-  }
-
-  .incident-trace__facts dt {
-    font-weight: 800;
-  }
-
-  .incident-trace__facts dd {
-    margin: 0.35rem 0 0;
-    overflow-wrap: anywhere;
-  }
-
-  .incident-trace__facts small {
-    display: block;
-    margin-block-start: 0.35rem;
-  }
-
-  .incident-comparison {
-    min-width: 0;
-    margin-block: 1.5rem;
-    overflow-x: auto;
-    border: 2px solid var(--case-line);
-    background: var(--case-paper);
-  }
-
-  .incident-comparison:focus-visible {
-    outline: 0.25rem solid var(--case-line);
-    outline-offset: 0.2rem;
-  }
-
-  .incident-comparison table {
-    width: 100%;
-    min-width: 42rem;
-    border-collapse: collapse;
-  }
-
-  .incident-comparison th,
-  .incident-comparison td {
-    padding: 0.75rem;
-    border: 1px solid var(--case-line);
-    text-align: start;
-    vertical-align: top;
-  }
-
-  .incident-comparison thead th {
-    background: var(--case-mint);
-  }
-
-  .incident-comparison tbody th {
-    background: color-mix(in srgb, var(--case-lemon) 45%, var(--case-paper));
-  }
-
-  @media (max-width: 40rem) {
-    .incident-trace__facts {
-      grid-template-columns: 1fr;
-    }
-
-    .incident-comparison table {
-      min-width: 0;
-    }
-
-    .incident-comparison thead {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
-    }
-
-    .incident-comparison tbody,
-    .incident-comparison tr,
-    .incident-comparison th,
-    .incident-comparison td {
-      display: block;
-      width: 100%;
-    }
-
-    .incident-comparison tbody tr + tr {
-      border-block-start: 2px solid var(--case-line);
-    }
-
-    .incident-comparison th,
-    .incident-comparison td {
-      border: 0;
-    }
-
-    .incident-comparison tbody th {
-      border-block-end: 1px solid var(--case-line);
-    }
-
-    .incident-comparison td::before {
-      display: block;
-      margin-block-end: 0.25rem;
-      content: attr(data-label);
-      font-weight: 800;
-    }
-
-    .incident-comparison td:last-child {
-      background: color-mix(in srgb, var(--case-coral) 18%, var(--case-paper));
-    }
-  }
-</style>

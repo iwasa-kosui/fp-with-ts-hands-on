@@ -43,14 +43,6 @@ const decodeExamPayload = async (context: Context) => {
   };
 };
 
-const decodeStartExaminationPayload = async (context: Context) => {
-  const body: unknown = await context.req.json();
-  return {
-    ...(typeof body === "object" && body !== null ? body : {}),
-    appointmentId: context.req.param("appointmentId"),
-  };
-};
-
 export const session05InitialAppointment: Scheduled = {
   kind: "Scheduled",
   appointmentId: ids.appointmentId,
@@ -78,14 +70,11 @@ export const registerClinicRoutes = (app: Hono, store: AppointmentStore): void =
     return context.redirect("/", 303);
   });
 
-  app.post("/appointments/:appointmentId/start-examination", async (context) => {
-    const parsed = StartExaminationInput.parse(
-      await decodeStartExaminationPayload(context),
-    );
-    if (parsed.isErr()) {
-      return context.json({ issues: parsed._unsafeUnwrapErr() }, 422);
-    }
-    const input = parsed._unsafeUnwrap();
+  app.post("/appointments/:appointmentId/start-examination", (context) => {
+    const input = StartExaminationInput.parse({
+      appointmentId: context.req.param("appointmentId"),
+      veterinarianId: clinicFixture.veterinarianId,
+    })._unsafeUnwrap();
     try {
       startExamination({
         resolver: store,

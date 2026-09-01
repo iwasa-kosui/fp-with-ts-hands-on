@@ -37,7 +37,6 @@ const expectedFragments: Readonly<Record<string, readonly string[]>> = {
     'context.req.param("appointmentId")',
   ],
   "unvalidated-start-examination-input": ["raw: any", "raw.appointmentId"],
-  "overbroad-audit-payload": ["appointment", "ownerContactFor", "ownerContact"],
   "unvalidated-exam-json": ["raw: any", "examId: raw.examId"],
   "plain-contact-pii": ["ownerEmail: string", "raw: any"],
   "throws-known-errors": ["throw new Error"],

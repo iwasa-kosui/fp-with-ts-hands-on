@@ -63,14 +63,8 @@ const createOptions = (): DatabaseBackedAppOptions => {
   };
 };
 
-const post = (app: DatabaseBackedApp, path: string, body?: unknown) =>
-  body === undefined
-    ? app.request(path, { method: "POST", headers: inertiaHeaders })
-    : app.request(path, {
-        method: "POST",
-        headers: { ...inertiaHeaders, "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+const post = (app: DatabaseBackedApp, path: string) =>
+  app.request(path, { method: "POST", headers: inertiaHeaders });
 
 const observe = (databasePath: string) => {
   const database = new Database(databasePath, { readonly: true });
@@ -81,18 +75,8 @@ const observe = (databasePath: string) => {
     const auditCount = database
       .prepare("SELECT count(*) AS count FROM audit_logs")
       .get() as Readonly<{ count: number }>;
-    const latestAudit = database
-      .prepare("SELECT event_name, payload FROM audit_logs ORDER BY rowid DESC LIMIT 1")
-      .get() as Readonly<{ event_name: string; payload: string }>;
 
-    return {
-      auditCount: auditCount.count,
-      latestAudit: {
-        eventName: latestAudit.event_name,
-        payload: JSON.parse(latestAudit.payload) as unknown,
-      },
-      state: appointment.state,
-    };
+    return { auditCount: auditCount.count, state: appointment.state };
   } finally {
     database.close();
   }
@@ -104,40 +88,12 @@ afterEach(() => {
   }
 });
 
-test("file SQLite keeps the examination audit payload on the Session 04 allowlist", async () => {
-  const options = createOptions();
-  const app = createDatabaseBackedApp(options);
-  try {
-    const appointmentUrl = `/appointments/${clinicFixture.appointmentId}`;
-    expect((await post(app, `${appointmentUrl}/check-in`)).status).toBe(303);
-    expect((await post(app, `${appointmentUrl}/start-examination`, {
-      veterinarianId: clinicFixture.veterinarianId,
-    })).status).toBe(303);
-  } finally {
-    app.close();
-  }
-
-  const persisted = observe(options.databasePath);
-  const state = JSON.parse(persisted.state) as Readonly<{
-    examinationStartedAt: string;
-  }>;
-  expect(persisted.latestAudit).toEqual({
-    eventName: "ExaminationStarted",
-    payload: {
-      appointmentId: clinicFixture.appointmentId,
-      examinationStartedAt: state.examinationStartedAt,
-      veterinarianId: clinicFixture.veterinarianId,
-    },
-  });
-});
-
 test("file SQLite maps an absent appointment to the not-found notice", async () => {
   const app = createDatabaseBackedApp(createOptions());
   try {
     const response = await post(
       app,
       "/appointments/99999999-9999-4999-8999-999999999999/start-examination",
-      { veterinarianId: clinicFixture.veterinarianId },
     );
 
     expect(response.status).toBe(303);
@@ -153,7 +109,6 @@ test("file SQLite maps a Scheduled appointment to the invalid-state notice", asy
     const response = await post(
       app,
       `/appointments/${clinicFixture.appointmentId}/start-examination`,
-      { veterinarianId: clinicFixture.veterinarianId },
     );
 
     expect(response.status).toBe(303);
@@ -187,9 +142,7 @@ test("SQLite audit failure leaves the started state without an examination audit
     const appointmentUrl = `/appointments/${clinicFixture.appointmentId}`;
     expect((await post(app, `${appointmentUrl}/check-in`)).status).toBe(303);
 
-    expect((await post(app, `${appointmentUrl}/start-examination`, {
-      veterinarianId: clinicFixture.veterinarianId,
-    })).status).toBe(500);
+    expect((await post(app, `${appointmentUrl}/start-examination`)).status).toBe(500);
   } finally {
     app.close();
   }

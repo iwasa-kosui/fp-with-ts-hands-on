@@ -72,12 +72,12 @@ const expectedCurriculum = [
   {
     slug: "04-boundaries-and-pii",
     sequence: "04",
-    title: "入力を検証し、監査記録から個人情報を除く",
+    title: "診察開始の入力を境界で検証する",
     durationMinutes: 30,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:04",
     snapshot: "session-04",
-    timeBreakdown: { brief: 4, teach: 6, exercise: 15, review: 5 },
+    timeBreakdown: { brief: 4, teach: 7, exercise: 12, review: 7 },
   },
   {
     slug: "05-workflow-errors",
@@ -133,9 +133,9 @@ const expectedEpisodes = [
     "予約を選ぶ値と担当者を選ぶ値を、型で区別する必要があります。",
   ],
   [
-    "2026年8月30日15時20分、猫のムギは受付を終え、診察開始を待っていました。",
-    "15時30分、勤務表連携から獣医師IDの代わりに「night-shift」が届きましたが、予約は診察中へ変わりました。",
-    "原因を追った監査記録には、不正な担当者IDと一緒に飼い主の氏名、メールアドレス、電話番号まで残っていました。",
+    "診察開始のHTTPリクエストには、予約IDと担当獣医師IDが文字列で届きます。",
+    "不正なUUIDでも、検査しなければ型付きの入力として処理へ渡ってしまいます。",
+    "外部の値を受け取る場所で検査し、成功した値だけをユースケースへ渡します。",
   ],
   [
     "別の端末で受付情報が更新された後、古い画面に残っていたハムスターの診察開始ボタンを押すと、500エラーだけを返して止まりました。",
@@ -199,22 +199,22 @@ const expectedExercises = [
   },
   {
     slug: "04-boundaries-and-pii",
-    adv: { articulate: 3, delegate: 9, verify: 3 },
+    adv: { articulate: 2, delegate: 8, verify: 2 },
     exerciseModule: {
-      dir: "examples/session-04",
-      fileBudget: 5,
-      lineBudget: 80,
+      dir: "examples/session-04/src/boundary",
+      fileBudget: 1,
+      lineBudget: 18,
     },
     solutionSnapshot: "session-05",
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
     peerReview: {
-      minutes: 5,
+      minutes: 7,
       pickCount: 2,
       questions: [
-        "不正な2項目を同時に送ったとき、両方の検証問題とpathを確認できますか。",
-        "422を返す経路では、予約状態と監査記録が変更されませんか。",
-        "診察開始の監査データは3項目だけで、予約テーブルにも飼い主の連絡先が残りませんか。",
+        "不正な予約IDまたは獣医師IDを含む入力は、`StartExaminationInput` になりませんか。",
+        "`parse` は外部入力を `unknown` として受け取っていますか。",
+        "検証に成功した場合だけ、`AppointmentId` と `VeterinarianId` をユースケースへ渡せますか。",
       ],
     },
   },
@@ -297,7 +297,7 @@ const expectedNavigation = [
     },
     next: {
       href: "/sessions/04-boundaries-and-pii/",
-      title: "入力を検証し、監査記録から個人情報を除く",
+      title: "診察開始の入力を境界で検証する",
     },
   },
   {
@@ -313,7 +313,7 @@ const expectedNavigation = [
   {
     previous: {
       href: "/sessions/04-boundaries-and-pii/",
-      title: "入力を検証し、監査記録から個人情報を除く",
+      title: "診察開始の入力を境界で検証する",
     },
     next: {
       href: "/sessions/06-effects-and-consistency/",
