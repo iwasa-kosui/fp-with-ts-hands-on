@@ -332,6 +332,92 @@ for (const session of exerciseSessions) {
   });
 }
 
+test("S4 shows the failed request and its side effects before code reading", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/sessions/04-boundaries-and-pii/");
+
+  const incident = page.locator("#incident");
+  const trace = incident.getByRole("list", {
+    name: "不正な診察開始要求から監査記録までの事故トレース",
+  });
+
+  await expect(trace.getByRole("listitem")).toHaveCount(4);
+  await expect(trace).toContainText(
+    "POST /appointments/11111111-1111-4111-8111-111111111111/start-examination",
+  );
+  await expect(trace).toContainText('"veterinarianId": "night-shift"');
+  await expect(trace).toContainText("CheckedIn");
+  await expect(trace).toContainText("InExamination");
+  await expect(trace).toContainText("303");
+  await expect(trace).toContainText("2件 → 3件");
+  await expect(trace).toContainText("owner@example.test");
+  await expect(trace).toContainText("090-0000-0000");
+
+  const comparison = incident.getByRole("table", {
+    name: "期待した結果と実際の結果",
+  });
+  await expect(comparison.getByRole("columnheader")).toHaveText([
+    "観点",
+    "期待した結果",
+    "実際の結果",
+  ]);
+  await expect(comparison.locator("tbody tr")).toHaveCount(5);
+  await expect(comparison).toContainText("422で拒否");
+  await expect(comparison).toContainText("CheckedInのまま");
+  await expect(comparison).toContainText("飼い主の連絡先を含めて1件追加");
+  await expect(comparison).toContainText("3項目だけ");
+  const actualResultsAreVisible = await comparison.evaluate((element) => {
+    const comparisonBounds = element.parentElement!.getBoundingClientRect();
+    return Array.from(element.querySelectorAll("tbody td:last-child")).every(
+      (cell) => {
+        const cellBounds = cell.getBoundingClientRect();
+        return (
+          cellBounds.left >= comparisonBounds.left &&
+          cellBounds.right <= comparisonBounds.right
+        );
+      },
+    );
+  });
+  expect(actualResultsAreVisible).toBe(true);
+
+  const comparisonRegion = incident.locator(".incident-comparison");
+  await comparisonRegion.focus();
+  await expect(comparisonRegion).toBeFocused();
+  await expect(comparisonRegion).toHaveCSS(
+    "outline-color",
+    "rgb(44, 73, 62)",
+  );
+
+  const guideCards = page.locator("#legacy [data-code-guide-card]");
+  await expect(guideCards).toHaveCount(3);
+  expect(
+    await guideCards.evaluateAll((cards) =>
+      cards.map((card) => card.getAttribute("data-code-guide-card")),
+    ),
+  ).toEqual([
+    "unvalidated-start-examination-input",
+    "http-start-examination-input",
+    "overbroad-audit-payload",
+  ]);
+  await expect(guideCards.locator("h4")).toHaveText([/①/, /②/, /③/]);
+
+  const incidentPrecedesCodeReading = await page.locator("main").evaluate(
+    (main) => {
+      const incidentSection = main.querySelector("#incident");
+      const legacySection = main.querySelector("#legacy");
+      return incidentSection !== null && legacySection !== null
+        ? Boolean(
+            incidentSection.compareDocumentPosition(legacySection)
+              & Node.DOCUMENT_POSITION_FOLLOWING,
+          )
+        : false;
+    },
+  );
+  expect(incidentPrecedesCodeReading).toBe(true);
+});
+
 test("S3 shows the swapped identifiers before proving that typecheck misses them", async ({
   page,
 }) => {

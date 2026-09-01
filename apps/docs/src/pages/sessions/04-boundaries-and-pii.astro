@@ -155,24 +155,24 @@ export const session: SessionSummary = {
 
 export const guides = ([
   {
-    id: "http-start-examination-input",
-    title: "HTTP本文を検証せず診察開始へ渡している",
-    currentDesign: "path parameterとHTTP本文をまとめた後、検証結果をunsafeに取り出しています。",
-    futureRisk: "不正な値を受け入れるか、検証を追加しても失敗を500へ変換してしまいます。",
-    path: "src/web/routes.ts",
-    highlights: [{ startLineNumber: 109, endLineNumber: 114 }],
-  },
-  {
     id: "unvalidated-start-examination-input",
-    title: "anyを手書きの型へコピーしている",
+    title: "① night-shiftを検証せず型付き入力へコピーしている",
     currentDesign: "予約IDと獣医師IDを検証せず、型注釈だけを付けています。",
     futureRisk: "実行時の文字列がUUIDでなくてもStartExaminationInputになります。",
     path: "src/boundary/startExaminationInput.ts",
     highlights: [{ startLineNumber: 1, endLineNumber: 15 }],
   },
   {
+    id: "http-start-examination-input",
+    title: "② 検証結果を422へ分岐せずunsafeに取り出している",
+    currentDesign: "path parameterとHTTP本文をまとめた後、検証結果を422へ分岐せず取り出しています。",
+    futureRisk: "開始状態では不正な値を受け入れ、検証追加後は失敗を500へ変換してしまいます。",
+    path: "src/web/routes.ts",
+    highlights: [{ startLineNumber: 109, endLineNumber: 114 }],
+  },
+  {
     id: "overbroad-audit-payload",
-    title: "予約全体と飼い主の連絡先を監査へコピーしている",
+    title: "③ 予約全体と飼い主の連絡先を監査へコピーしている",
     currentDesign: "すべての監査データへ予約全体とownerContactを追加しています。",
     futureRisk: "診察開始の追跡に不要な個人情報まで、監査記録へ長期間残ります。",
     path: "src/adaptor/secondary/sqlite/appointmentRepository.ts",
@@ -215,17 +215,66 @@ const teaching: readonly TeachingTopic[] = [
   },
 ];
 
+const invalidStartExaminationBody = `{
+  "veterinarianId": "night-shift"
+}`;
+
+const leakedAuditPayload = `{
+  "appointment": {
+    "kind": "InExamination",
+    "appointmentId": "11111111-1111-4111-8111-111111111111",
+    "petId": "22222222-2222-4222-8222-222222222222",
+    "ownerId": "33333333-3333-4333-8333-333333333333",
+    "scheduledAt": "2026-08-30T06:30:00.000Z",
+    "reason": "skin check",
+    "checkedInAt": "2026-08-30T06:20:00.000Z",
+    "veterinarianId": "night-shift",
+    "examinationStartedAt": "2026-08-30T06:30:00.000Z"
+  },
+  "ownerContact": {
+    "ownerName": "Owner A",
+    "ownerEmail": "owner@example.test",
+    "ownerPhone": "090-0000-0000"
+  }
+}`;
+
+const incidentComparison = [
+  {
+    subject: "入力検証",
+    expected: "night-shiftを検証問題として拒否",
+    actual: "型付き入力として受理",
+  },
+  {
+    subject: "HTTP応答",
+    expected: "422で拒否",
+    actual: "303で成功扱い",
+  },
+  {
+    subject: "予約状態",
+    expected: "CheckedInのまま",
+    actual: "InExaminationへ変更",
+  },
+  {
+    subject: "不正要求の監査記録",
+    expected: "追加なし",
+    actual: "飼い主の連絡先を含めて1件追加",
+  },
+  {
+    subject: "正常時の監査データ",
+    expected: "予約ID、獣医師ID、診察開始時刻の3項目だけ",
+    actual: "予約全体と飼い主の連絡先",
+  },
+] as const;
+
 const narrative = {
   requirement:
     "病院責任者は、不正な要求で予約を変更せず、診察開始の監査には予約ID、獣医師ID、診察開始時刻だけを残すよう求めています。",
-  currentRisk:
-    "入口ではanyを型付き入力へコピーし、出口では予約全体と飼い主の連絡先を監査へコピーしています。どちらも境界を越えるデータを制限できていません。",
   design:
     "入口ではunknownを検証して失敗を422へ変換し、出口では用途別の監査データを明示的に組み立てます。",
   limitation:
     "JSONとして読み取れないHTTP本文の正規化は扱いません。予約が存在しない場合と受付前の状態はSession 05、状態保存と監査追加の整合性や保存障害はSession 06で扱います。",
   legacy:
-    "診察開始route、入力変換、監査保存を順に読み、一つのHTTP要求がどこまで不正な値と個人情報を運ぶか確認します。",
+    "事故トレースの①入力、②停止位置、③保存内容に対応する配布コードを順に読みます。",
   fallback:
     "まず入力変換だけを直して検証問題を確認し、次にrouteの422分岐、最後に監査データの組み立てへ進みます。3段階を同時に変更せず、各段階で演習テストを実行します。",
 } as const;
@@ -349,11 +398,82 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
           <h3 data-story-stage="use-case">病院責任者からの要求</h3>
           <p>{narrative.requirement}</p>
 
-          <h3 data-story-stage="pitfall">現在の処理</h3>
-          <p>{narrative.currentRisk}</p>
-          <div class="before-after" aria-label="修正前の入力と監査の流れ">
-            <p><strong>入口:</strong> HTTP本文 → any → 型付き入力 → 状態変更</p>
-            <p><strong>出口:</strong> 予約全体 → 飼い主の連絡先を追加 → 監査記録</p>
+          <h3 data-story-stage="pitfall">リクエストから事故が起きるまで</h3>
+          <ol class="incident-trace" aria-label="不正な診察開始要求から監査記録までの事故トレース">
+            <li>
+              <h4>1. 到着した要求</h4>
+              <p class="incident-trace__request">
+                <code>POST /appointments/11111111-1111-4111-8111-111111111111/start-examination</code>
+              </p>
+              <figure>
+                <figcaption>HTTP本文</figcaption>
+                <Code code={invalidStartExaminationBody} lang="json" />
+              </figure>
+              <p><code>night-shift</code> はUUIDではありません。本来はここで不正な入力として扱う値です。</p>
+            </li>
+            <li>
+              <h4>2. ① 入力: 検証せず型付き入力へコピー</h4>
+              <p>
+                現在の <code>StartExaminationInput.parse</code> は値を調べず、常に成功を返します。
+                <code>night-shift</code> はそのまま <code>VeterinarianId</code> として診察開始処理へ渡ります。
+              </p>
+            </li>
+            <li>
+              <h4>3. ② 停止位置: 止まらず状態変更まで実行</h4>
+              <p>
+                ①で成功扱いになった入力をrouteがそのまま取り出すため、予約保存と監査追加まで進みます。
+                入力検証を直した後も、失敗を422へ変換する分岐がなければHTTP 500になります。
+              </p>
+              <dl class="incident-trace__facts">
+                <div>
+                  <dt>HTTP応答</dt>
+                  <dd><code>303 See Other</code></dd>
+                </div>
+                <div>
+                  <dt>予約状態</dt>
+                  <dd><code>CheckedIn</code> → <code>InExamination</code></dd>
+                </div>
+                <div>
+                  <dt>監査件数</dt>
+                  <dd>
+                    <code>2件 → 3件</code>
+                    <small>初期登録と受付の2件に、診察開始を1件追加</small>
+                  </dd>
+                </div>
+              </dl>
+            </li>
+            <li>
+              <h4>4. ③ 保存内容: 連絡先を含む監査記録を追加</h4>
+              <p>
+                追加された <code>ExaminationStarted</code> のpayloadです。診察開始の追跡には不要な飼い主の連絡先まで保存されます。
+              </p>
+              <figure>
+                <figcaption>実際に追加される監査payload</figcaption>
+                <Code code={leakedAuditPayload} lang="json" />
+              </figure>
+            </li>
+          </ol>
+
+          <h3>期待した結果と実際の結果</h3>
+          <div class="incident-comparison" tabindex="0">
+            <table aria-label="期待した結果と実際の結果">
+              <thead>
+                <tr>
+                  <th scope="col">観点</th>
+                  <th scope="col">期待した結果</th>
+                  <th scope="col">実際の結果</th>
+                </tr>
+              </thead>
+              <tbody>
+                {incidentComparison.map(({ subject, expected, actual }) => (
+                  <tr>
+                    <th scope="row">{subject}</th>
+                    <td data-label="期待した結果">{expected}</td>
+                    <td data-label="実際の結果">{actual}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           <h3 data-story-stage="goal">このセッションのゴール</h3>
@@ -511,3 +631,179 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
     </main>
   </div>
 </BaseLayout>
+
+<style>
+  .incident-trace {
+    display: grid;
+    gap: 1rem;
+    margin-block: 1.5rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .incident-trace > li {
+    min-width: 0;
+    padding: 1rem;
+    border: 2px solid var(--case-line);
+    border-inline-start: 0.6rem solid var(--case-coral);
+    background: var(--case-paper);
+  }
+
+  .incident-trace > li:nth-child(2) {
+    border-inline-start-color: var(--case-lemon);
+  }
+
+  .incident-trace > li:nth-child(3) {
+    border-inline-start-color: var(--case-mint);
+  }
+
+  .incident-trace h4,
+  .incident-trace figure,
+  .incident-trace__facts {
+    margin-block-start: 0;
+  }
+
+  .incident-trace figure {
+    min-width: 0;
+    margin-inline: 0;
+  }
+
+  .incident-trace figcaption {
+    padding: 0.45rem 0.75rem;
+    border: 2px solid var(--case-line);
+    border-block-end: 0;
+    background: var(--case-lemon);
+    font-weight: 800;
+  }
+
+  .incident-trace figure :global(pre) {
+    max-width: 100%;
+    margin: 0;
+    overflow-x: auto;
+    border: 2px solid var(--case-line);
+  }
+
+  .incident-trace__request {
+    padding: 0.75rem;
+    border: 2px solid var(--case-line);
+    background: color-mix(in srgb, var(--case-mint) 32%, var(--case-paper));
+    overflow-wrap: anywhere;
+  }
+
+  .incident-trace__request code {
+    white-space: normal;
+  }
+
+  .incident-trace__facts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .incident-trace__facts > div {
+    min-width: 0;
+    padding: 0.75rem;
+    border: 2px solid var(--case-line);
+    background: color-mix(in srgb, var(--case-mint) 32%, var(--case-paper));
+  }
+
+  .incident-trace__facts dt {
+    font-weight: 800;
+  }
+
+  .incident-trace__facts dd {
+    margin: 0.35rem 0 0;
+    overflow-wrap: anywhere;
+  }
+
+  .incident-trace__facts small {
+    display: block;
+    margin-block-start: 0.35rem;
+  }
+
+  .incident-comparison {
+    min-width: 0;
+    margin-block: 1.5rem;
+    overflow-x: auto;
+    border: 2px solid var(--case-line);
+    background: var(--case-paper);
+  }
+
+  .incident-comparison:focus-visible {
+    outline: 0.25rem solid var(--case-line);
+    outline-offset: 0.2rem;
+  }
+
+  .incident-comparison table {
+    width: 100%;
+    min-width: 42rem;
+    border-collapse: collapse;
+  }
+
+  .incident-comparison th,
+  .incident-comparison td {
+    padding: 0.75rem;
+    border: 1px solid var(--case-line);
+    text-align: start;
+    vertical-align: top;
+  }
+
+  .incident-comparison thead th {
+    background: var(--case-mint);
+  }
+
+  .incident-comparison tbody th {
+    background: color-mix(in srgb, var(--case-lemon) 45%, var(--case-paper));
+  }
+
+  @media (max-width: 40rem) {
+    .incident-trace__facts {
+      grid-template-columns: 1fr;
+    }
+
+    .incident-comparison table {
+      min-width: 0;
+    }
+
+    .incident-comparison thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .incident-comparison tbody,
+    .incident-comparison tr,
+    .incident-comparison th,
+    .incident-comparison td {
+      display: block;
+      width: 100%;
+    }
+
+    .incident-comparison tbody tr + tr {
+      border-block-start: 2px solid var(--case-line);
+    }
+
+    .incident-comparison th,
+    .incident-comparison td {
+      border: 0;
+    }
+
+    .incident-comparison tbody th {
+      border-block-end: 1px solid var(--case-line);
+    }
+
+    .incident-comparison td::before {
+      display: block;
+      margin-block-end: 0.25rem;
+      content: attr(data-label);
+      font-weight: 800;
+    }
+
+    .incident-comparison td:last-child {
+      background: color-mix(in srgb, var(--case-coral) 18%, var(--case-paper));
+    }
+  }
+</style>
