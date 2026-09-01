@@ -25,6 +25,7 @@ type TeachingCode = Readonly<{
 type TeachingTopic = Readonly<{
   name: string;
   definition: string;
+  guidance?: readonly string[];
   before: TeachingCode;
   after: TeachingCode;
   example?: Readonly<{ caption: string; code: string }>;
@@ -162,9 +163,16 @@ export const guides = ([
 
 const teaching: readonly TeachingTopic[] = [
   {
-    name: "neverthrow の Result<T, E> は成功と失敗を値で表す",
+    name: "Result は成功と失敗を値で表す",
     definition:
       "このプロジェクトでは neverthrow の Result を使います。Result<T, E> の T は成功値、E は呼び出し側が扱う業務上の失敗です。ok(value) は成功側の Ok、err(error) は失敗側の Err を作り、どちらも Result<T, E> として扱えます。",
+    guidance: [
+      "Result に含める失敗は、先に呼び出し側の対応から選びます。失敗理由に応じて呼び出し側が次の操作を選べる業務エラーを E として返します。",
+      "たとえば、予約が見つからなければ予約を探し直し、まだ受付されていなければ受付を先に行います。呼び出し側が理由ごとに異なる対応を選ぶ必要があるため、これらは Err で返します。",
+      "一方、呼び出し側に理由別の対応がなく、要求された処理を完了できない異常はシステムエラーとして扱います。このような異常はResultに変換せず、例外として外側へ伝えます。",
+      "たとえば、データベースへの保存中に接続が切れ、保存が完了したか確認できない場合です。データベースへの保存が完了したか確認できないままキューへのイベント追加や外部サービスへの通知を行うと、データベースには保存されていないのに、イベントや通知だけが送られる可能性があります。そのため、イベント追加や通知は実行せず、保存時の例外をそのまま外側へ伝えます。",
+      "外側の例外境界では、例外をログへ記録し、必要なロールバックや接続の解放を行ったうえで、500などのエラー応答へ変換します。",
+    ],
     before: {
       caption: "見つからない場合に例外を投げる guard",
       code: `const ensureAppointmentFound = (
@@ -190,7 +198,7 @@ const ensureAppointmentFound = (
     ? err({ kind: "AppointmentNotFound", appointmentId })
     : ok(appointment);`,
     },
-    why: "例外では、関数の型から失敗理由を読み取れません。Result の E に業務エラーを置くと、呼び出し側は実行前から起こりうる失敗を把握し、表示や次の操作を選べます。err は例外を投げず、失敗理由を値として返します。ただし、Result の E は発生しうるエラーの一覧ではありません。顧客や現場が失敗理由に応じて操作を選ぶ必要のない異常まで含めると、呼び出し側へ意味のない分岐を要求します。",
+    why: "例外では、関数の型から失敗理由を読み取れません。Result の E に業務エラーを置くと、呼び出し側は実行前から起こりうる失敗を把握し、表示や次の操作を選べます。err は例外を投げず、失敗理由を値として返します。",
   },
   {
     name: "andThen と map は成功した経路だけを進める",
@@ -519,28 +527,6 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <p>{narrative.requirement}</p>
             <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
             <p>{narrative.currentRisk}</p>
-            <article class="teaching-topic" aria-labelledby="result-or-exception">
-              <h3 id="result-or-exception">Result は成功と失敗を値で表す</h3>
-              <p>
-                <code>Result&lt;T, E&gt;</code> は、成功を表す <code>Ok</code> と失敗を表す <code>Err</code> のどちらかを返す型です。
-                <code>T</code> は成功値、<code>E</code> は失敗理由を表します。失敗を例外として投げず <code>Err</code> で返すと、呼び出し側は戻り値の型から成功時の値と失敗理由の両方を確認できます。
-              </p>
-              <p>
-                Result に含める失敗は、先に呼び出し側の対応から選びます。失敗理由に応じて呼び出し側が次の操作を選べる業務エラーを <code>E</code> として返します。
-              </p>
-              <p>
-                たとえば、予約が見つからなければ予約を探し直し、まだ受付されていなければ受付を先に行います。呼び出し側が理由ごとに異なる対応を選ぶ必要があるため、これらは <code>Err</code> で返します。
-              </p>
-              <p>
-                一方、呼び出し側に理由別の対応がなく、要求された処理を完了できない異常はシステムエラーとして扱います。このような異常はResultに変換せず、例外として外側へ伝えます。
-              </p>
-              <p>
-                たとえば、データベースへの保存中に接続が切れ、保存が完了したか確認できない場合です。データベースへの保存が完了したか確認できないままキューへのイベント追加や外部サービスへの通知を行うと、データベースには保存されていないのに、イベントや通知だけが送られる可能性があります。そのため、イベント追加や通知は実行せず、保存時の例外をそのまま外側へ伝えます。
-              </p>
-              <p>
-                外側の例外境界では、例外をログへ記録し、必要なロールバックや接続の解放を行ったうえで、500などのエラー応答へ変換します。
-              </p>
-            </article>
             <h3 data-story-stage="goal">このセッションのゴール</h3>
             <p>{narrative.design}</p>
             <h3>このセッションで守ること</h3>
@@ -575,11 +561,12 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 
           <section id="teach">
             <h2>事前知識（{session.timeBreakdown.teach}分）</h2>
-            <p>先に決めた失敗の分類を前提に、この回で使う型と操作を確認します。配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
+            <p>まずResultの意味とResultに含める失敗の基準を整理し、その後でこの回に使う操作を確認します。配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
             {teaching.map((topic) => (
               <article class="teaching-topic">
                 <h3>{topic.name}</h3>
                 <p>{topic.definition}</p>
+                {topic.guidance?.map((paragraph) => <p>{paragraph}</p>)}
                 <div class="teaching-topic__diff">
                   <figure class="code-block">
                     <figcaption>

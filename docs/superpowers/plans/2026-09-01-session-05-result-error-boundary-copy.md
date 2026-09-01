@@ -14,7 +14,7 @@
 
 ## Global Constraints
 
-- 冒頭で `Result<T, E>` を成功を表す `Ok` と失敗を表す `Err` のどちらかを返す型として定義してから、Resultに含める失敗の判断基準を示します。
+- 「事前知識」の冒頭で `Result<T, E>` を成功を表す `Ok` と失敗を表す `Err` のどちらかを返す型として定義してから、Resultに含める失敗の判断基準を示します。
 - `Result<T, E>` の `E` は発生しうるエラーの一覧ではなく、顧客や現場が失敗理由に応じて操作を選ぶ必要がある失敗だけを表します。
 - エラーが業務処理とインフラのどちらで発生したかだけでは、Resultと例外を分類しません。
 - 予約なしでは予約を探し直し、受付前では受付を先に行うという、失敗ごとに異なる操作を示します。
@@ -34,40 +34,32 @@
 
 - Modify: `apps/docs/src/pages/sessions/05-workflow-errors.astro:49-80`
 - Modify: `apps/docs/src/pages/sessions/05-workflow-errors.astro:160-393`
-- Modify: `apps/docs/src/pages/sessions/05-workflow-errors.astro:523-535`
+- Modify: `apps/docs/src/pages/sessions/05-workflow-errors.astro:20-30`
+- Modify: `apps/docs/src/pages/sessions/05-workflow-errors.astro:520-590`
 
 **Interfaces:**
 
 - Produces: Resultの概念を説明したうえで、Resultで返す業務エラーと例外として外側へ伝えるシステムエラーを具体例で区別する教材文
 
-- [ ] **Step 1: 冒頭でResultを定義してから業務上の操作による判断基準を示す**
+- [ ] **Step 1: Resultの定義と判断基準を事前知識の最初へ配置する**
 
-`apps/docs/src/pages/sessions/05-workflow-errors.astro` の `result-or-exception` articleを、次の内容へ置き換えます。
+「今回つくるもの」内の独立した `result-or-exception` articleは削除します。`teaching` の最初のtopicへResultの定義と失敗の判断基準を統合し、「事前知識」の冒頭で次の順序にします。以下は変更するプロパティの抜粋です。
 
-```astro
-<article class="teaching-topic" aria-labelledby="result-or-exception">
-  <h3 id="result-or-exception">Result は成功と失敗を値で表す</h3>
-  <p>
-    <code>Result&lt;T, E&gt;</code> は、成功を表す <code>Ok</code> と失敗を表す <code>Err</code> のどちらかを返す型です。
-    <code>T</code> は成功値、<code>E</code> は失敗理由を表します。失敗を例外として投げず <code>Err</code> で返すと、呼び出し側は戻り値の型から成功時の値と失敗理由の両方を確認できます。
-  </p>
-  <p>
-    Result に含める失敗は、先に呼び出し側の対応から選びます。失敗理由に応じて呼び出し側が次の操作を選べる業務エラーを <code>E</code> として返します。
-  </p>
-  <p>
-    たとえば、予約が見つからなければ予約を探し直し、まだ受付されていなければ受付を先に行います。呼び出し側が理由ごとに異なる対応を選ぶ必要があるため、これらは <code>Err</code> で返します。
-  </p>
-  <p>
-    一方、呼び出し側に理由別の対応がなく、要求された処理を完了できない異常はシステムエラーとして扱います。このような異常はResultに変換せず、例外として外側へ伝えます。
-  </p>
-  <p>
-    たとえば、データベースへの保存中に接続が切れ、保存が完了したか確認できない場合です。データベースへの保存が完了したか確認できないままキューへのイベント追加や外部サービスへの通知を行うと、データベースには保存されていないのに、イベントや通知だけが送られる可能性があります。そのため、イベント追加や通知は実行せず、保存時の例外をそのまま外側へ伝えます。
-  </p>
-  <p>
-    外側の例外境界では、例外をログへ記録し、必要なロールバックや接続の解放を行ったうえで、500などのエラー応答へ変換します。
-  </p>
-</article>
+```ts
+{
+  name: "Result は成功と失敗を値で表す",
+  definition: "このプロジェクトでは neverthrow の Result を使います。Result<T, E> の T は成功値、E は呼び出し側が扱う業務上の失敗です。ok(value) は成功側の Ok、err(error) は失敗側の Err を作り、どちらも Result<T, E> として扱えます。",
+  guidance: [
+    "Result に含める失敗は、先に呼び出し側の対応から選びます。失敗理由に応じて呼び出し側が次の操作を選べる業務エラーを E として返します。",
+    "たとえば、予約が見つからなければ予約を探し直し、まだ受付されていなければ受付を先に行います。呼び出し側が理由ごとに異なる対応を選ぶ必要があるため、これらは Err で返します。",
+    "一方、呼び出し側に理由別の対応がなく、要求された処理を完了できない異常はシステムエラーとして扱います。このような異常はResultに変換せず、例外として外側へ伝えます。",
+    "たとえば、データベースへの保存中に接続が切れ、保存が完了したか確認できない場合です。データベースへの保存が完了したか確認できないままキューへのイベント追加や外部サービスへの通知を行うと、データベースには保存されていないのに、イベントや通知だけが送られる可能性があります。そのため、イベント追加や通知は実行せず、保存時の例外をそのまま外側へ伝えます。",
+    "外側の例外境界では、例外をログへ記録し、必要なロールバックや接続の解放を行ったうえで、500などのエラー応答へ変換します。",
+  ],
+}
 ```
+
+`TeachingTopic` に任意の `guidance` を追加し、定義の直後、before/afterのコード例より前に各段落を表示します。「事前知識」の導入文も、Resultの意味と判断基準から確認する順序へ変更します。
 
 - [ ] **Step 2: ページ内の関連説明を同じ判断基準へ揃える**
 
@@ -155,5 +147,5 @@ Expected: 必須文面の検索はすべて該当し、文体検査と旧説明�
 
 ```bash
 git add apps/docs/src/pages/sessions/05-workflow-errors.astro docs/superpowers/plans/2026-09-01-session-05-result-error-boundary-copy.md
-git commit -m "docs(session-05): Resultの定義を判断基準より先に説明"
+git commit -m "docs(session-05): Resultの基礎説明を事前知識へ移して学習順を修正"
 ```
