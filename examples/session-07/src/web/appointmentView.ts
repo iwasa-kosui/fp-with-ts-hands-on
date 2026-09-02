@@ -35,7 +35,13 @@ const actionsFor = (appointment: Appointment): AppointmentActions => {
     case "Scheduled":
       return { ...actions, checkIn: available(`${url}/check-in`), cancel: available(`${url}/cancel`) };
     case "CheckedIn":
-      return { ...actions, startExamination: available(`${url}/start-examination`), cancel: available(`${url}/cancel`) };
+      return {
+        ...actions,
+        startExamination: available(`${url}/start-examination`, {
+          veterinarianId: clinicFixture.veterinarianId,
+        }),
+        cancel: available(`${url}/cancel`),
+      };
     case "InExamination":
       return {
         ...actions,

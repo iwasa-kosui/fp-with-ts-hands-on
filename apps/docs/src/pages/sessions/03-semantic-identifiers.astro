@@ -158,7 +158,7 @@ export const guides = ([
   },
   {
     id: "untyped-start-examination-id",
-    title: "予約IDと担当獣医師IDがUUID文字列のままになっている",
+    title: "UUIDを検査しても、型検査では予約IDと担当獣医師IDを区別できない",
     currentDesign: "AppointmentIdとVeterinarianIdはuuid検査だけで、用途を表すbrandがありません。PetId、OwnerId、ExamIdにはbrandがあります。",
     futureRisk: "予約IDを担当獣医師IDの位置へ渡しても、どちらもstringなのでコンパイルは通ります。",
     path: "src/domain/appointment/appointmentId.ts",

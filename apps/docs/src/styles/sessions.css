@@ -521,6 +521,87 @@
   margin: 0;
 }
 
+.boundary-request {
+  margin: 1.5rem 0;
+}
+
+.boundary-results {
+  display: grid;
+  gap: 0.75rem;
+  margin-block: 1.5rem;
+}
+
+.boundary-results article {
+  min-width: 0;
+  padding: 1rem;
+  border: 2px solid var(--case-line);
+  border-inline-start: 0.6rem solid var(--case-coral);
+  background: color-mix(in srgb, var(--case-coral) 12%, var(--case-paper));
+}
+
+.boundary-results article[data-boundary-result="desired"] {
+  border-inline-start-color: var(--case-mint);
+  background: color-mix(in srgb, var(--case-mint) 24%, var(--case-paper));
+}
+
+.boundary-results :is(h4, p) {
+  margin: 0;
+}
+
+.boundary-results p + p {
+  margin-top: 0.5rem;
+}
+
+.boundary-results code {
+  overflow-wrap: anywhere;
+}
+
+.boundary-parse-flow {
+  display: grid;
+  gap: 0.75rem;
+  margin-block: 1.5rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: boundary-stage;
+}
+
+.boundary-parse-flow li {
+  position: relative;
+  min-width: 0;
+  padding: 2.75rem 1rem 1rem;
+  border: 2px solid var(--case-line);
+  background: var(--case-paper);
+  counter-increment: boundary-stage;
+}
+
+.boundary-parse-flow li::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0.25rem 0.55rem;
+  background: var(--case-lemon);
+  content: counter(boundary-stage);
+  font-weight: 800;
+}
+
+.boundary-parse-flow strong,
+.boundary-parse-flow span {
+  display: block;
+}
+
+.boundary-parse-flow span {
+  margin-top: 0.4rem;
+  line-height: 1.6;
+}
+
+.boundary-limit {
+  margin-block: 1.5rem;
+}
+
+.boundary-limit h3 {
+  margin-block-start: 0;
+}
+
 .teaching-topic {
   min-width: 0;
   margin-block: 1.5rem;
@@ -692,6 +773,14 @@
 
   .eventstorming-focus {
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .boundary-results {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .boundary-parse-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

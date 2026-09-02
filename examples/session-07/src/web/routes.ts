@@ -121,9 +121,10 @@ export const registerClinicRoutes = (
   app.post(
     "/appointments/:appointmentId/start-examination",
     async (context) => {
+      const raw = await context.req.json<Readonly<{ veterinarianId?: unknown }>>();
       const input = StartExaminationInput.parse({
         appointmentId: context.req.param("appointmentId"),
-        veterinarianId: clinicFixture.veterinarianId,
+        veterinarianId: raw.veterinarianId,
       })._unsafeUnwrap();
       const result = await startExaminationWithEffects({
         resolver: store,

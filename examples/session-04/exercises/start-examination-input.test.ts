@@ -32,7 +32,7 @@ describe("Step 2: 不正なIDを境界で拒否する", () => {
     expect(
       StartExaminationInput.parse({
         appointmentId: clinicFixture.appointmentId,
-        veterinarianId: "invalid",
+        veterinarianId: "night-shift",
       }).isErr(),
     ).toBe(true);
   });

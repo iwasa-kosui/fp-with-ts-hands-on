@@ -132,11 +132,7 @@ const expectedEpisodes = [
     "どちらもUUIDなので、文字列の検査だけでは取り違えを止められません。",
     "予約を選ぶ値と担当者を選ぶ値を、型で区別する必要があります。",
   ],
-  [
-    "診察開始のHTTPリクエストには、予約IDと担当獣医師IDが文字列で届きます。",
-    "不正なUUIDでも、検査しなければ型付きの入力として処理へ渡ってしまいます。",
-    "外部の値を受け取る場所で検査し、成功した値だけをユースケースへ渡します。",
-  ],
+  undefined,
   [
     "別の端末で受付情報が更新された後、古い画面に残っていたハムスターの診察開始ボタンを押すと、500エラーだけを返して止まりました。",
     "予約なしは専用表示になるのに、受付前の予約は想定外扱いです。後ろでは犬が吠え、列だけが伸びます。",
@@ -366,9 +362,21 @@ describe("page-owned session contracts", () => {
   it("keeps each three-line episode in its page metadata and hero", () => {
     expect(
       sessions.map((session) =>
-        "episode" in session ? session.episode : undefined,
+        session.slug === "04-boundaries-and-pii"
+          ? undefined
+          : "episode" in session
+            ? session.episode
+            : undefined,
       ),
     ).toEqual(expectedEpisodes);
+
+    const boundaryEpisode = sessions.find(
+      ({ slug }) => slug === "04-boundaries-and-pii",
+    )?.episode;
+    expect(boundaryEpisode).toHaveLength(3);
+    expect(boundaryEpisode?.join("\n")).toContain("night-shift");
+    expect(boundaryEpisode?.join("\n")).toContain("veterinarianId");
+    expect(boundaryEpisode?.join("\n")).toContain("StartExaminationInput");
 
     for (const { path } of pages) {
       const source = pageSources[path] ?? "";

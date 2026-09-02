@@ -13,7 +13,13 @@ const inertiaHeaders = {
   "X-Inertia-Version": "1",
 } as const;
 type App = ReturnType<typeof createDatabaseBackedApp>;
-const post = (app: App, path: string, body?: unknown) => body === undefined
+const post = (
+  app: App,
+  path: string,
+  body: unknown = path.endsWith("/start-examination")
+    ? { veterinarianId: clinicFixture.veterinarianId }
+    : undefined,
+) => body === undefined
   ? app.request(path, { method: "POST", headers: inertiaHeaders })
   : app.request(path, {
       method: "POST",
@@ -70,6 +76,19 @@ describe("Session 05 Web application", () => {
 
     expect(invalidState.status).toBe(500);
     expect(await invalidState.text()).toBe("Internal Server Error");
+  });
+
+  it("UUIDではない獣医師IDを境界で拒否する", async () => {
+    await post(app, `${appointmentUrl}/check-in`);
+
+    const response = await post(app, `${appointmentUrl}/start-examination`, {
+      veterinarianId: "night-shift",
+    });
+
+    expect(response.status).toBe(500);
+    expect(await page(app)).toMatchObject({
+      props: { appointment: { kind: "CheckedIn" } },
+    });
   });
 
   it("starterが例外メッセージで予約なしだけをnoticeへ変換する", async () => {

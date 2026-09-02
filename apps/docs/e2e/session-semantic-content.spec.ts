@@ -375,6 +375,72 @@ test("S3 shows the swapped identifiers before proving that typecheck misses them
   expect(swappedCodePrecedesTypecheck).toBe(true);
 });
 
+test("S3 states why UUID-only identifiers are unsafe", async ({ page }) => {
+  await page.goto("/sessions/03-semantic-identifiers/");
+
+  const guide = page.locator(
+    '[data-code-guide-card="untyped-start-examination-id"]',
+  );
+  await expect(guide.getByRole("heading", { level: 4 })).toHaveText(
+    "UUIDを検査しても、型検査では予約IDと担当獣医師IDを区別できない",
+  );
+});
+
+test("S4 traces an invalid HTTP value into a rejected typed input", async ({
+  page,
+}) => {
+  await page.goto("/sessions/04-boundaries-and-pii/");
+
+  const incident = page.locator("#incident");
+  const request = incident.locator("[data-boundary-request]");
+  const results = incident.locator("[data-boundary-results]");
+  const parseFlow = incident.getByRole("list", {
+    name: "外部入力から診察開始入力を作る流れ",
+  });
+
+  await expect(request).toContainText(
+    "POST /appointments/11111111-1111-4111-8111-111111111111/start-examination",
+  );
+  await expect(request).toContainText('"veterinarianId": "night-shift"');
+  const currentResult = results.locator('[data-boundary-result="current"]');
+  const desiredResult = results.locator('[data-boundary-result="desired"]');
+  await expect(currentResult).toContainText("Ok");
+  await expect(currentResult).toContainText('veterinarianId: "night-shift"');
+  await expect(desiredResult).toContainText("Err()");
+  await expect(desiredResult).toContainText("StartExaminationInputを作らない");
+  await expect(parseFlow.getByRole("listitem")).toHaveCount(4);
+  await expect(parseFlow.getByRole("listitem")).toContainText([
+    "HTTPのunknown",
+    "schemaでUUIDを検査",
+    "AppointmentId / VeterinarianId",
+    "StartExaminationInput",
+  ]);
+
+  const concepts = page.locator("#teach [data-boundary-concepts]");
+  await expect(concepts.locator("dt")).toHaveText([
+    "Branded Type",
+    "Parse, don't validate",
+    "Always-Valid Domain Model",
+  ]);
+  await expect(concepts).toContainText(
+    "同じUUID形式でもAppointmentIdとVeterinarianIdを型で区別",
+  );
+  await expect(concepts).toContainText("実行時の文字列は変えません");
+
+  const teaching = page.locator("#teach .teaching-topic");
+  await expect(teaching).toContainText("AppointmentId.schema");
+  await expect(teaching).toContainText("VeterinarianId.schema");
+  await expect(teaching).toContainText("schemaResult(schema)");
+  await expect(teaching).toContainText("raw: unknown");
+  const boundaryLimit = page.locator("#teach [data-boundary-limit]");
+  await expect(boundaryLimit).toContainText(
+    "予約IDのUUIDがveterinarianIdへ入った場合、UUIDという形式は正しいためschemaを通ります",
+  );
+  await expect(boundaryLimit).toContainText(
+    "外部データが何を指すUUIDかを判定する仕組みではありません",
+  );
+});
+
 for (const session of sessions) {
   test(`${session.slug} introduces its episode after the first section heading`, async ({
     page,
