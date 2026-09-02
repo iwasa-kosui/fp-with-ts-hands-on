@@ -375,6 +375,17 @@ test("S3 shows the swapped identifiers before proving that typecheck misses them
   expect(swappedCodePrecedesTypecheck).toBe(true);
 });
 
+test("S3 states why UUID-only identifiers are unsafe", async ({ page }) => {
+  await page.goto("/sessions/03-semantic-identifiers/");
+
+  const guide = page.locator(
+    '[data-code-guide-card="untyped-start-examination-id"]',
+  );
+  await expect(guide.getByRole("heading", { level: 4 })).toHaveText(
+    "UUIDを検査しても、型検査では予約IDと担当獣医師IDを区別できない",
+  );
+});
+
 test("S4 traces an invalid HTTP value into a rejected typed input", async ({
   page,
 }) => {
