@@ -25,6 +25,7 @@ type TeachingCode = Readonly<{
 type TeachingTopic = Readonly<{
   name: string;
   definition: string;
+  guidance?: readonly string[];
   before: TeachingCode;
   after: TeachingCode;
   example?: Readonly<{ caption: string; code: string }>;
@@ -53,7 +54,7 @@ export const session: SessionSummary = {
   solutionPresentation: "excerpt",
   peerReviewPromises: "reference",
   animal: { name: "HAMSTER", type: "hamster", avatar: "🐹" },
-  summary: "診察開始の予期できる失敗を、呼び出し側が扱える値として返します。",
+  summary: "診察開始で顧客や現場が失敗理由に応じて操作を選ぶ失敗を、呼び出し側が扱える値として返します。",
   episode: [
     "別の端末で受付情報が更新された後、古い画面に残っていたハムスターの診察開始ボタンを押すと、500エラーだけを返して止まりました。",
     "予約なしは専用表示になるのに、受付前の予約は想定外扱いです。後ろでは犬が吠え、列だけが伸びます。",
@@ -70,10 +71,10 @@ export const session: SessionSummary = {
     request:
       "診察開始で起こりうる業務上の失敗を、呼び出し側が判断できる形に改善してください。表示文言には依存せず、失敗後の処理を続けない設計にしてください。",
     decisions: [
-      "何を予期できる業務上の失敗として扱うか",
+      "どの失敗に対して顧客や現場が別の操作を選ぶか",
       "呼び出し側が分岐に使う安定した情報は何か",
       "失敗後に実行してはいけない処理は何か",
-      "Resultへ変換せず外側へ伝える異常は何か",
+      "要求された処理を完了できず、Resultへ変換せず外側へ伝えるシステムエラーは何か",
     ],
   },
   steps: [
@@ -124,7 +125,7 @@ export const session: SessionSummary = {
   ],
   decisions: [
     {
-      invariant: "予期できる失敗は戻り値に現れる。",
+      invariant: "顧客や現場が失敗理由に応じて操作を選ぶ必要がある失敗は、戻り値に現れる。",
     },
     {
       invariant: "呼び出し側は文言ではなく失敗のkindで分岐する。",
@@ -162,9 +163,16 @@ export const guides = ([
 
 const teaching: readonly TeachingTopic[] = [
   {
-    name: "neverthrow の Result<T, E> は成功と失敗を値で表す",
+    name: "Result は成功と失敗を値で表す",
     definition:
       "このプロジェクトでは neverthrow の Result を使います。Result<T, E> の T は成功値、E は呼び出し側が扱う業務上の失敗です。ok(value) は成功側の Ok、err(error) は失敗側の Err を作り、どちらも Result<T, E> として扱えます。",
+    guidance: [
+      "Result に含める失敗は、先に呼び出し側の対応から選びます。失敗理由に応じて呼び出し側が次の操作を選べる業務エラーを E として返します。",
+      "たとえば、予約が見つからなければ予約を探し直し、まだ受付されていなければ受付を先に行います。呼び出し側が理由ごとに異なる対応を選ぶ必要があるため、これらは Err で返します。",
+      "一方、呼び出し側に理由別の対応がなく、要求された処理を完了できない異常はシステムエラーとして扱います。このような異常はResultに変換せず、例外として外側へ伝えます。",
+      "たとえば、データベースへの保存中に接続が切れ、保存が完了したか確認できない場合です。データベースへの保存が完了したか確認できないままキューへのイベント追加や外部サービスへの通知を行うと、データベースには保存されていないのに、イベントや通知だけが送られる可能性があります。そのため、イベント追加や通知は実行せず、保存時の例外をそのまま外側へ伝えます。",
+      "外側の例外境界では、例外をログへ記録し、必要なロールバックや接続の解放を行ったうえで、500などのエラー応答へ変換します。",
+    ],
     before: {
       caption: "見つからない場合に例外を投げる guard",
       code: `const ensureAppointmentFound = (
@@ -190,7 +198,7 @@ const ensureAppointmentFound = (
     ? err({ kind: "AppointmentNotFound", appointmentId })
     : ok(appointment);`,
     },
-    why: "例外では、関数の型から失敗理由を読み取れません。Result の E に業務エラーを置くと、呼び出し側は実行前から起こりうる失敗を把握し、表示や次の操作を選べます。err は例外を投げず、失敗理由を値として返します。ただし、保存障害など呼び出し側で業務上の対応を選べない異常まで Result に入れるわけではありません。",
+    why: "例外では、関数の型から失敗理由を読み取れません。Result の E に業務エラーを置くと、呼び出し側は実行前から起こりうる失敗を把握し、表示や次の操作を選べます。err は例外を投げず、失敗理由を値として返します。",
   },
   {
     name: "andThen と map は成功した経路だけを進める",
@@ -282,7 +290,7 @@ const startExamination =
         return appointment;
       });`,
     },
-    why: "before は実行時には例外で処理が止まりますが、どの行が何をthrowするかは型に現れません。after は成功時に InExamination のどの情報が得られるかと、予約なし・状態不正のどちらで失敗するかを定義から確認できます。Err になった時点で後続の andThen と map は呼ばれません。resolver と store は外部境界として deps から受け取りますが、状態遷移はドメイン知識なので直接呼びます。保存障害など map 内で発生する予期しない例外は捕捉せず、業務エラーへ偽装しません。",
+    why: "before は実行時には例外で処理が止まりますが、どの行が何をthrowするかは型に現れません。after は成功時に InExamination のどの情報が得られるかと、予約なし・状態不正のどちらで失敗するかを定義から確認できます。Err になった時点で後続の andThen と map は呼ばれません。resolver と store は外部境界として deps から受け取りますが、状態遷移はドメイン知識なので直接呼びます。store.save が投げる保存障害は、呼び出し側が理由別の対応を選ぶ業務エラーではなく、要求された保存処理を完了できないシステムエラーとして例外を伝播させます。",
   },
   {
     name: "match と switch で呼び出し側の処理漏れを型エラーにする",
@@ -354,7 +362,7 @@ const toNoticeCode = (error: StartExaminationError): string => {
   }
 };`,
     },
-    why: "before では InvalidAppointmentState が追加されても catch に型エラーが出ないため、受付前の予約だけ500になりました。after は match の失敗側で union 全体を受け取り、default 節から never 専用の assertNever を呼びます。エラーの種類を追加して case を足し忘れると新しい型が default 節に残り、コンパイルエラーになります。技術的な例外は Result に入れていないため、この switch では捕捉せず外側の例外境界へ伝えます。",
+    why: "before では InvalidAppointmentState が追加されても catch に型エラーが出ないため、受付前の予約だけ500になりました。after は match の失敗側で union 全体を受け取り、default 節から never 専用の assertNever を呼びます。エラーの種類を追加して case を足し忘れると新しい型が default 節に残り、コンパイルエラーになります。Result に含めていないシステムエラーは、この switch では捕捉せず外側の例外境界へ伝えます。",
   },
 ];
 
@@ -385,10 +393,10 @@ const startExamination = (
 } as const;
 
 const narrative = {
-  requirement: "診察開始で予期できる業務エラーを型付きの値として返し、Web側が失敗理由ごとに受付の次の操作を選べるようにする。",
+  requirement: "診察開始で顧客や現場が失敗理由に応じて操作を選ぶ失敗を型付きの値として返し、Web側が受付の次の操作を選べるようにする。",
   currentRisk: "ユースケースは成功値だけを返す型のまま複数の Error をthrowします。Web側は予約なしの文言だけをcatchしているため、後から追加された状態不正を処理できず500にしています。",
-  design: "予約なしと状態不正をkindを持つDiscriminated Unionにし、Resultで返す。andThenで失敗後の状態遷移とStore呼び出しを止める。状態遷移はドメイン関数を直接呼び、外部境界のResolverとStoreだけを依存として受け取る。Web側はmatchとswitchで予期できる失敗を網羅してnoticeへ変換する。",
-  limitation: "どの失敗を業務エラーとして扱うか、画面でどのnoticeへ変換するかは、人の判断とレビューが必要になる。保存障害など予期しない異常はResultへ変換せず、外側の例外境界へ伝える。",
+  design: "予約なしと状態不正をkindを持つDiscriminated Unionにし、Resultで返す。andThenで失敗後の状態遷移とStore呼び出しを止める。状態遷移はドメイン関数を直接呼び、外部境界のResolverとStoreだけを依存として受け取る。Web側はmatchとswitchでResultに含めた失敗を網羅してnoticeへ変換する。",
+  limitation: "どの失敗を業務エラーとして画面のnoticeへ変換するかは、人の判断とレビューが必要になる。呼び出し側に理由別の対応がなく、要求された処理を完了できないシステムエラーはResultへ変換せず、外側の例外境界へ伝える。",
   legacy: "成功値しか現れない関数シグネチャ、複数箇所のthrow、例外メッセージに依存したcatchを読みます。受付前の予約だけ500になる処理漏れを、演習テストで再現します。",
   fallback: "2つのguardと startExamination は解答例を反映します。最後にWebルートをmatchとswitchへ置き換え、2種類のnoticeを確認します。",
 } as const;
@@ -519,20 +527,6 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <p>{narrative.requirement}</p>
             <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
             <p>{narrative.currentRisk}</p>
-            <article class="teaching-topic" aria-labelledby="result-or-exception">
-              <h3 id="result-or-exception">Result にする失敗を先に選ぶ</h3>
-              <p>
-                <code>throw</code> をすべて <code>Result</code> へ置き換えるわけではありません。判断基準は、呼び出し側が失敗理由を使って次の操作を選べるかどうかです。
-              </p>
-              <ul class="decision-list">
-                <li>
-                  <strong>業務上の失敗は Result:</strong> 予約が存在しない、受付済みではないなど、呼び出し側が表示ややり直しを選べる失敗は <code>Err</code> で返します。
-                </li>
-                <li>
-                  <strong>技術的な異常は例外または Promise の reject:</strong> データベースの停止や保存データの破損など、呼び出し側で業務上の対応を選べない異常は外側の例外境界へ伝えます。そこで安全に記録し、詳細を含まない500応答などへ変換します。
-                </li>
-              </ul>
-            </article>
             <h3 data-story-stage="goal">このセッションのゴール</h3>
             <p>{narrative.design}</p>
             <h3>このセッションで守ること</h3>
@@ -567,11 +561,12 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 
           <section id="teach">
             <h2>事前知識（{session.timeBreakdown.teach}分）</h2>
-            <p>先に決めた失敗の分類を前提に、この回で使う型と操作を確認します。配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
+            <p>まずResultの意味とResultに含める失敗の基準を整理し、その後でこの回に使う操作を確認します。配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
             {teaching.map((topic) => (
               <article class="teaching-topic">
                 <h3>{topic.name}</h3>
                 <p>{topic.definition}</p>
+                {topic.guidance?.map((paragraph) => <p>{paragraph}</p>)}
                 <div class="teaching-topic__diff">
                   <figure class="code-block">
                     <figcaption>
@@ -637,8 +632,8 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <p>{narrative.limitation}</p>
             <h3 data-solution-heading>{exerciseSession.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
             {exerciseSession.solutionPresentation === "completed-file" ? (
-              <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
-                <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読む。</p>
+              <div class="before-after" aria-label="業務エラーとシステムエラーの見比べ方">
+                <p><strong>演習の開始時点:</strong> 業務エラーとして返す Result と、システムエラーとして外側へ伝える例外経路を分けて読む。</p>
                 <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示される。</p>
               </div>
             ) : null}
