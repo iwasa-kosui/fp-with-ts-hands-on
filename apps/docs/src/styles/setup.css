@@ -39,6 +39,8 @@
 
 .learning-guides {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 48rem;
   gap: 1.5rem;
   margin-bottom: 3rem;
 }
@@ -228,10 +230,6 @@
 }
 
 @media (min-width: 52rem) {
-  .learning-guides {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .setup-page__steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
