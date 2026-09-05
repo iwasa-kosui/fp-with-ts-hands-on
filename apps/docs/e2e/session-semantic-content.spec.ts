@@ -257,8 +257,8 @@ test("S1 separates ROP and I/O into four top-level learning sections", async ({
   await expect(main.getByText("技術者にとって", { exact: true })).toHaveCount(0);
 });
 
-for (const width of [390, 1440]) {
-  test(`S1 diagrams stay inside the page at ${width}px`, async ({ page }) => {
+for (const width of [390, 1024, 1440, 1920]) {
+  test(`S1 diagrams stay inside the content at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1200 });
     await page.goto("/sessions/01-business-events-and-workflows/");
 
@@ -267,6 +267,21 @@ for (const width of [390, 1440]) {
       scrollWidth: document.documentElement.scrollWidth,
     }));
     expect(pageWidths.scrollWidth).toBeLessThanOrEqual(pageWidths.clientWidth + 1);
+
+    for (const selector of [".rop-basics", ".dmmf-comparison"]) {
+      const bounds = await page.locator(selector).evaluate((figure) => {
+        const content = figure.parentElement!.getBoundingClientRect();
+        const diagram = figure.getBoundingClientRect();
+        return {
+          contentLeft: content.left,
+          contentRight: content.right,
+          diagramLeft: diagram.left,
+          diagramRight: diagram.right,
+        };
+      });
+      expect(bounds.diagramLeft).toBeGreaterThanOrEqual(bounds.contentLeft - 1);
+      expect(bounds.diagramRight).toBeLessThanOrEqual(bounds.contentRight + 1);
+    }
 
     if (width === 390) {
       for (const selector of [
