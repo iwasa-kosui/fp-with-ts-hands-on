@@ -4,12 +4,11 @@
 
 [教材サイト](https://fp-with-ts-hands-on.kosui.workers.dev/) から、使い方とセッションを確認できます。TypeScriptの基本文法を読み書きできる方を想定しています。
 
-## 学び方を選ぶ
+## はじめる
 
-- **ひとりで学ぶ**: [事前準備と個人学習の進め方](https://fp-with-ts-hands-on.kosui.workers.dev/setup/#self-study) を確認し、Session 00から順番に進めます。班ワークは自分の考えを図やメモに残し、相互レビューはページの問いと解答例を使って自分の差分を振り返ります。1回ずつ分けて取り組めます。
-- **ハンズオンで使う**: [ハンズオンの進め方](https://fp-with-ts-hands-on.kosui.workers.dev/setup/#workshop) を確認し、開催時間に合わせて扱うセッションを決めます。全体の目安は学習180分と休憩30分です。進行の詳細は [ファシリテーターガイド](docs/event/facilitator-guide.md) を使ってください。
+[事前準備](https://fp-with-ts-hands-on.kosui.workers.dev/setup/) を済ませ、[Session 00](https://fp-with-ts-hands-on.kosui.workers.dev/sessions/00-system-handover/) から進めます。演習や振り返りの手順は、各セッションで説明します。ハンズオンの進行役向けには [ファシリテーターガイド](docs/event/facilitator-guide.md) があります。
 
-Discordへの参加やコーディングエージェントの利用は、教材を使うための必須条件ではありません。2026年8月30日のイベントは終了していますが、教材は引き続き公開しています。
+2026年8月30日のイベントは終了していますが、教材は引き続き公開しています。
 
 ## セットアップ
 

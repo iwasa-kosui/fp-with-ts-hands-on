@@ -20,7 +20,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <nav class="landing-nav" aria-label="メインナビゲーション">
           <a href="#system">TOP</a>
           <a href="#features">題材</a>
-          <a href="#sessions">学び方</a>
+          <a href="/setup/">事前準備</a>
           <a class="landing-nav__start" href="/sessions/">START SESSION</a>
         </nav>
       </header>
@@ -36,10 +36,10 @@ import BaseLayout from "../layouts/BaseLayout.astro";
               <h1 id="page-title">ようこそ<br />WAN NYAN<br /><span class="rainbow-word" aria-label="OSへ！！"><span>O</span><span>S</span><span>へ</span><span>！</span><span>！</span></span></h1>
             </div>
             <div class="landing-intro">
-              <p class="landing-lead">動物病院の予約・カルテ管理システムを題材に、業務のルールを型と関数で表す教材です。既存のコードを少しずつ改善しながら、設計の理由を学びます。ひとりでも、勉強会やハンズオンでも、自分たちのペースで進められます。</p>
-              <div class="learning-actions" aria-label="学び方を選ぶ">
-                <a href="/setup/#self-study">ひとりで学ぶ <span aria-hidden="true">→</span></a>
-                <a href="/setup/#workshop">ハンズオンで使う <span aria-hidden="true">→</span></a>
+              <p class="landing-lead">動物病院の予約・カルテ管理システムを題材に、業務のルールを型と関数で表す教材です。既存のコードを少しずつ改善しながら、設計の理由を学びます。個人学習にもハンズオンにも使えます。</p>
+              <div class="learning-actions" aria-label="教材を始める">
+                <a href="/setup/">事前準備 <span aria-hidden="true">→</span></a>
+                <a href="/sessions/">セッション一覧 <span aria-hidden="true">→</span></a>
               </div>
             </div>
 
@@ -107,22 +107,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           </div>
         </section>
 
-        <section class="landing-section start-panel" id="sessions" aria-labelledby="start-title">
-          <div class="section-head"><h2 id="start-title">自分に合った進め方で学ぶ</h2><p>TypeScriptの基本文法を読み書きできる方が対象です。Session 00で業務を読み、01で設計を考え、02〜06でコードを改善します。Finalでは参照実装を読みます。</p></div>
-          <div class="reading-row">
-            <article class="doc-pane">
-              <h3>ひとりで、1回ずつ</h3>
-              <p>説明を読み、コードを動かし、問いに答えて振り返ります。行き詰まったら解答例と自分の差分を比べられます。班ワークもひとりで取り組めます。</p>
-              <p><a href="/setup/#self-study">個人学習の進め方を見る →</a></p>
-            </article>
-            <article class="doc-pane">
-              <h3>みんなで、設計を話しながら</h3>
-              <p>それぞれの考えや差分を持ち寄り、設計の理由を比べます。全編は学習180分と休憩30分が目安です。複数回の勉強会にも分けられます。</p>
-              <p><a href="/setup/#workshop">ハンズオンの進め方を見る →</a></p>
-            </article>
-          </div>
-          <p class="learning-next">準備ができたら、<a href="/sessions/00-system-handover/">Session 00から始める</a>。途中から再開する方は、<a href="/sessions/">セッション一覧</a>へ進んでください。</p>
-        </section>
         <footer class="landing-footer">
           <p>2026年8月30日のイベントは終了しました。この教材は、個人学習や別のハンズオンでも使えるように引き続き公開しています。</p>
           <a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on">教材のソースコード</a>
