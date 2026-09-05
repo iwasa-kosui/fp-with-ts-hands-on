@@ -181,7 +181,7 @@ const narrative = {
   design: "Clock と EventIdGenerator を port として注入し、副作用を調整するユースケースで EventContext を一度だけ生成する。純粋な状態遷移にはその EventContext を渡し、状態と監査記録を表す ExaminationStarted を単一の Store へ渡す。予約が存在しない・予約の状態が不正・予約が競合しているケースは Result のエラーを返す。データベース起因のエラーやデータが破損しているエラーは業務エラーには変換せず、Promise の reject として外側の境界へ伝える。",
   limitation: "in-memory の一括保存は契約の形を示す。本番の永続化層でアトミック性を守るには、transaction と結合テストが必要になる。",
   legacy: "直接時刻を参照したりIDを生成したりしている処理、状態の保存と監査記録の保存がアトミックになっていない実装を読んでみましょう。例えば監査記録の保存だけが失敗した場合、状態の保存のみが実行され、不整合な状況が発生してしまいます。また、用意された単一の store に業務競合が届かない箇所を探します。",
-  fallback: "各解答欄には、import と後続 step を含む完成ファイルを target ごとに示します。表示されたすべての target file を反映した後、同じ exercise の検査がパスすることを確認します。各 step を個別にパスすることは想定していません。講師のデモへ切り替えた場合でも、相互レビューは実施しましょう。",
+  fallback: "各解答欄には、import と後続 step を含む完成ファイルを target ごとに示します。表示されたすべての target file を反映した後、同じ exercise の検査がパスすることを確認します。各 step を個別にパスすることは想定していません。解答を使って進めた場合も、レビューの問いに答え、各依存を外から渡す理由を確認しましょう。",
 } as const;
 
 const exerciseSession: ExerciseSessionSummary = session;
@@ -338,6 +338,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
           <section id="refactor">
             <h2>演習</h2>
             <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
+            <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
             <ol class="adv-flow">
               <li><strong>言語化（{session.adv.articulate}分）</strong>: 一緒に記録する必要がある値を1文で書く。</li>
               <li><strong>依頼（{session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
@@ -389,7 +390,8 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <p>{businessReflectionQuestion}</p>
             </div>
             <section class="peer-review-panel">
-              <h3>班内相互レビュー（{session.peerReview.minutes}分・{headcount}）</h3>
+              <h3>設計を振り返る</h3>
+              <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは{session.peerReview.minutes}分・{headcount}を目安にしてください。</p>
               <p><a href={promisesHref}>進行上の約束事を確認する</a></p>
               <ol>{session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
             </section>

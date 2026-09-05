@@ -43,7 +43,7 @@ test("mobile home keeps its approved appearance", async ({ page }) => {
   });
 });
 
-test("home hero renders event metadata at a readable size", async ({ page }) => {
+test("home hero renders the learning topic at a readable size", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1200 });
   await page.goto("/");
 

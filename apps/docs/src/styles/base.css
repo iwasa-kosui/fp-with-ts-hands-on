@@ -761,10 +761,55 @@ label {
 }
 
 .wan-nyan-home .landing-lead {
-  grid-area: lead;
   max-width: 32.5rem;
   margin: 0;
   font-size: clamp(0.9375rem, 2vw, 1.125rem);
+}
+
+.wan-nyan-home .landing-intro {
+  grid-area: lead;
+  min-width: 0;
+}
+
+.wan-nyan-home .learning-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.wan-nyan-home .learning-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--landing-line);
+  border-radius: 0.5rem;
+  background: var(--landing-blue);
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.wan-nyan-home .learning-actions a + a {
+  background: var(--landing-paper);
+  color: var(--landing-ink);
+}
+
+.wan-nyan-home .learning-actions a:hover {
+  background: var(--landing-lemon);
+  color: var(--landing-ink);
+}
+
+.wan-nyan-home .learning-actions a:focus-visible {
+  outline: 3px solid #b32063;
+  outline-offset: 3px;
+}
+
+.wan-nyan-home .learning-next {
+  margin: 2rem 0 0;
+  font-weight: 750;
 }
 
 .wan-nyan-home .system-window {

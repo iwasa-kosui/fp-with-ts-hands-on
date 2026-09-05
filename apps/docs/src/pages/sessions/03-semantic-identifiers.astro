@@ -469,6 +469,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
           <section id="refactor">
             <h2>演習</h2>
             <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
+            <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
             <ol class="adv-flow">
               <li><strong>言語化（{session.adv.articulate}分）</strong>: 取り違えてはいけない値を1文で書く。</li>
               <li><strong>依頼（{session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
@@ -520,7 +521,8 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <p>{businessReflectionQuestion}</p>
             </div>
             <section class="peer-review-panel">
-              <h3>班内相互レビュー（{session.peerReview.minutes}分・{headcount}）</h3>
+              <h3>設計を振り返る</h3>
+              <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは{session.peerReview.minutes}分・{headcount}を目安にしてください。</p>
               <p><a href={promisesHref}>進行上の約束事を確認する</a></p>
               <ol>{session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
             </section>

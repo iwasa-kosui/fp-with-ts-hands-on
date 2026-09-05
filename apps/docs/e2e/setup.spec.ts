@@ -12,13 +12,8 @@ test("setup page presents the required preparations through local verification",
     .getByRole("listitem");
   await expect(steps).toHaveCount(3);
 
-  const discordLink = steps
-    .nth(0)
-    .getByRole("link", { name: "Discordサーバーに参加する" });
-  await expect(discordLink).toHaveAttribute(
-    "href",
-    "https://discord.gg/Mq3GVSvRG",
-  );
+  await expect(steps.nth(0)).toContainText("Node.js 20以上");
+  await expect(steps.nth(0)).toContainText("pnpm 9.12.0");
 
   await expect(steps.nth(1)).toContainText(
     "git clone https://github.com/iwasa-kosui/fp-with-ts-hands-on.git",
@@ -36,7 +31,7 @@ test("session directory links to the setup page", async ({ page }) => {
   await page.goto("/sessions/");
 
   await expect(
-    page.getByRole("link", { name: "事前準備を確認する" }),
+    page.getByRole("link", { name: "事前準備ページを開く" }),
   ).toHaveAttribute("href", "/setup/");
 });
 

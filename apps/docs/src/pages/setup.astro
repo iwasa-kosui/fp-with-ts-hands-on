@@ -15,7 +15,7 @@ pnpm dev`;
 
 <BaseLayout
   title="事前準備 | FP with TypeScript"
-  description="FP with TypeScriptハンズオンへ参加する前に済ませる3つの準備"
+  description="個人学習とハンズオン、それぞれの進め方と、TypeScriptの演習を始めるための環境準備を案内します。"
 >
   <div class="case-file setup-page">
     <header class="case-file__site-header">
@@ -24,27 +24,62 @@ pnpm dev`;
 
     <main class="setup-page__main">
       <header class="setup-page__hero">
-        <p class="case-file__eyebrow">BEFORE THE EVENT</p>
+        <p class="case-file__eyebrow">GETTING STARTED</p>
         <h1>事前準備</h1>
-        <p>イベント当日までに、次の3つを済ませてください。</p>
+        <p>ひとりでも、ハンズオンでも使える教材です。学び方を確認したら、ローカル環境を準備してSession 00へ進みましょう。</p>
       </header>
 
+      <nav class="setup-page__links" aria-label="準備ページの目次">
+        <a href="#self-study">ひとりで学ぶ</a>
+        <a href="#workshop">ハンズオンで使う</a>
+        <a href="#environment">環境を準備する</a>
+      </nav>
+
+      <div class="learning-guides">
+        <section id="self-study" class="learning-guide" aria-labelledby="self-study-title">
+          <p class="setup-step__label">自分のペースで</p>
+          <h2 id="self-study-title">ひとりで学ぶ</h2>
+          <ol>
+            <li>Session 00から順に読みます。各ページの時間は目安です。1回ずつ分けて進めても構いません。</li>
+            <li>Session 01の班ワークは、自分で問いの答えをメモし、テンプレートや紙に図を描きます。</li>
+            <li>Session 02〜06は、要求を読み、演習テストの失敗を確認してからコードを改善します。同じテストを再実行して、解決できたか確かめます。</li>
+            <li>「相互レビュー」は自分の振り返りに使います。ページの問いに答え、根拠になるコードと、型だけでは確認できないことを書き残します。行き詰まったら解答例と差分を比べます。</li>
+            <li>Finalはページの5項目に沿って参照実装を読みます。アプリの起動やDBの操作は不要です。</li>
+          </ol>
+          <p>各回の開始コードには、前の回の改善が取り込み済みです。次の回へ変更をコピーする必要はありません。中断するときは変更を手元に保存し、セッション名と途中のステップをメモしておきましょう。</p>
+          <a href="#environment">環境を準備する →</a>
+        </section>
+
+        <section id="workshop" class="learning-guide" aria-labelledby="workshop-title">
+          <p class="setup-step__label">勉強会や研修で</p>
+          <h2 id="workshop-title">ハンズオンで使う</h2>
+          <ol>
+            <li>進行役は、扱うセッションと質問先を決め、参加者へこの準備ページを共有します。特定のDiscordへの参加は必要ありません。</li>
+            <li>全編は学習180分と休憩30分が目安です。複数回に分ける場合も、各回に振り返りの時間を設けます。</li>
+            <li>短い回で一部を使う場合は、Session 00・01の業務と設計を共有してから、選んだ演習の開始コードを使います。必要な型の説明は前のページで確認できます。</li>
+            <li>Session 01は共同のボードで考えを整理し、Session 02〜06は互いの差分と設計の理由を比べます。Finalは進行役がページに沿って案内できます。</li>
+          </ol>
+          <p>開催時刻や班の人数を含む運営資料は、2026年8月30日のイベントで用意した進行例です。開催場所・人数・時間に合わせて調整してください。</p>
+          <ul>
+            <li><a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/docs/event/facilitator-guide.md">ファシリテーターガイド</a></li>
+            <li><a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/docs/event/peer-review-card.md">相互レビュー進行カード</a></li>
+            <li><a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/docs/event/review-sheet.md">レビュー観点シート</a></li>
+          </ul>
+          <a href="#environment">環境を準備する →</a>
+        </section>
+      </div>
+
+      <section id="environment" aria-labelledby="environment-title">
+      <h2 id="environment-title">環境を準備する</h2>
+      <p>説明を読むだけなら、このサイトをそのまま使えます。コードを編集する演習はローカル環境で進めます。TypeScriptの基本文法を読み書きできる方を想定しています。</p>
       <ol class="setup-page__steps" aria-label="事前準備の手順">
-        <li class="setup-step setup-step--discord">
+        <li class="setup-step">
           <span class="setup-step__number" aria-hidden="true">01</span>
           <div>
-            <p class="setup-step__label">連絡先を確認する</p>
-            <h2>Discordサーバーに参加する</h2>
-            <p>当日の案内や質問はDiscordで共有します。参加できることを事前に確認してください。</p>
-            <a
-              class="setup-step__action"
-              href="https://discord.gg/Mq3GVSvRG"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Discordサーバーに参加する
-              <span aria-hidden="true">↗</span>
-            </a>
+            <p class="setup-step__label">使うツールをそろえる</p>
+            <h2>Node.js・pnpm・Gitを用意する</h2>
+            <p>Node.js 20以上、pnpm 9.12.0、Git、TypeScriptを編集できるエディタを用意します。ブラウザはデスクトップ版ChromeまたはEdgeを使ってください。</p>
+            <p>コーディングエージェントは任意です。Dockerや外部サービスのAPIキーも必要ありません。</p>
           </div>
         </li>
 
@@ -86,9 +121,11 @@ pnpm dev`;
           </div>
         </li>
       </ol>
+      <p class="setup-page__help">通常の <code>pnpm test</code> は成功するのが正常です。Session 02〜06の <code>pnpm exercise:NN</code> は、開始時には業務上の問題を示すテストが意図的に失敗します。環境構築で困ったら、<a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/docs/event/troubleshooting.md">トラブルシューティング</a>を確認してください。</p>
+      </section>
 
       <footer class="setup-page__next">
-        <p>3つとも終わったら準備完了です。</p>
+        <p>準備ができたら、<a href="/sessions/00-system-handover/">Session 00から始めましょう</a>。</p>
         <a href="/sessions/">セッション一覧を見る</a>
       </footer>
     </main>

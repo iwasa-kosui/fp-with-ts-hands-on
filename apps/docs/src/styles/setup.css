@@ -29,6 +29,68 @@
   list-style: none;
 }
 
+.setup-page__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 2rem;
+  font-weight: 800;
+}
+
+.learning-guides {
+  display: grid;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.learning-guide {
+  min-width: 0;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border: 2px solid var(--case-line);
+  background: var(--case-paper);
+  box-shadow: 0.45rem 0.45rem 0 var(--case-mint);
+}
+
+.learning-guide + .learning-guide {
+  box-shadow: 0.45rem 0.45rem 0 var(--case-lemon);
+}
+
+.learning-guide h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+.learning-guide ol,
+.learning-guide ul {
+  padding-left: 1.5rem;
+}
+
+.learning-guide li + li {
+  margin-top: 0.75rem;
+}
+
+.learning-guide,
+#environment > p {
+  line-height: 1.8;
+}
+
+.learning-guide > a {
+  font-weight: 800;
+}
+
+.setup-page :is(section[id], a) {
+  scroll-margin-top: 1.5rem;
+}
+
+.setup-page a:focus-visible {
+  outline: 3px solid var(--case-ink);
+  outline-offset: 4px;
+}
+
+.setup-page__help {
+  margin-top: 2rem;
+}
+
 .setup-step {
   position: relative;
   display: grid;
@@ -166,6 +228,10 @@
 }
 
 @media (min-width: 52rem) {
+  .learning-guides {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .setup-page__steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
