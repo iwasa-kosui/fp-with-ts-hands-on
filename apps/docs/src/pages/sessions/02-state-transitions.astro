@@ -383,7 +383,7 @@ recordPayment(
   design: "Scheduled | CheckedIn | InExamination | AwaitingPayment | Paid | Canceled のDiscriminated Unionを、遷移関数と分岐でも一貫して使います。completeExamination は InExamination だけを受け取り、recordPayment は AwaitingPayment だけを受け取る純粋関数にします。分岐では網羅チェックを行い、状態を追加したときの未対応の分岐をコンパイルエラーにします。",
   limitation: "この型が守れるのは、TypeScript が検査できる値だけです。外部から届く未検証の値や、型アサーションで作った値は防げません。",
   legacy: "Appointment 全体を受け取る遷移関数、throw、as Appointment、default 分岐を探します。これらは、許可されていない状態遷移や、状態追加時の未対応の分岐をコンパイラで止められない箇所です。",
-  fallback: "解答スナップショットをステップ単位で開き、まず遷移関数の引数型、その後に網羅分岐をコピペします。相互レビューは行いましょう。",
+  fallback: "解答スナップショットをステップ単位で開き、まず遷移関数の引数型、その後に網羅分岐をコピペします。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。",
 } as const;
 
 const exerciseSession: ExerciseSessionSummary = session;
@@ -433,9 +433,9 @@ const businessReflectionQuestion =
   "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。";
 const peerReviewPromises = [
   "人ではなく差分を見ます。「この差分は」で話し始め、優劣をつけません。",
-  "本人はAgentへの依頼文だけを読み上げ、弁明しません。",
-  "TAは、同じ課題に対して設計判断が異なる差分を選びます。完成度や技能による選出ではありません。",
-  "5回で班員全員を少なくとも1回選びます。",
+  "本人は、実装メモまたはAgentへの依頼文を共有し、どの要求を満たそうとしたか説明します。",
+  "同じ課題に対して設計判断が異なる差分を選びます。進行役がいない場合は、参加者で順番を決めます。",
+  "複数回行う場合は、全員の差分を少なくとも一度確認できるようにします。",
 ] as const;
 export const promisesHref = "#peer-review-promises";
 export const navigation = ({
@@ -603,6 +603,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
           <section id="refactor">
             <h2>演習</h2>
             <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
+            <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
             <ol class="adv-flow">
               <li><strong>言語化（{session.adv.articulate}分）</strong>: 起きてはいけない状態遷移を1文で書く。</li>
               <li><strong>依頼（{session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
@@ -660,7 +661,8 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <ol>{peerReviewPromises.map((promise) => <li>{promise}</li>)}</ol>
             </section>
             <section class="peer-review-panel">
-              <h3>班内相互レビュー（{session.peerReview.minutes}分・{headcount}）</h3>
+              <h3>設計を振り返る</h3>
+              <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは{session.peerReview.minutes}分・{headcount}を目安にしてください。</p>
               <p><a href={promisesHref}>進行上の約束事を確認する</a></p>
               <ol>{session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
             </section>

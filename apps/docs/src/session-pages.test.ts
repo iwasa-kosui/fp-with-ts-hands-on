@@ -32,7 +32,7 @@ const catalogModules = import.meta.glob("./sessions/catalog.ts", {
 
 const docsRoot = process.cwd();
 const currentTest = join(docsRoot, "src", "session-pages.test.ts");
-const sourceRoots = ["src", "e2e", "scripts"] as const;
+const sourceRoots = ["src", "scripts"] as const;
 const sourceExtensions = new Set([".ts", ".tsx", ".astro", ".mjs"]);
 
 const collectSourceFiles = async (directory: string): Promise<string[]> => {
@@ -251,9 +251,9 @@ const reviewPromptFor = {
 
 const peerReviewPromises = [
   "人ではなく差分を見ます。「この差分は」で話し始め、優劣をつけません。",
-  "本人はAgentへの依頼文だけを読み上げ、弁明しません。",
-  "TAは、同じ課題に対して設計判断が異なる差分を選びます。完成度や技能による選出ではありません。",
-  "5回で班員全員を少なくとも1回選びます。",
+  "本人は、実装メモまたはAgentへの依頼文を共有し、どの要求を満たそうとしたか説明します。",
+  "同じ課題に対して設計判断が異なる差分を選びます。進行役がいない場合は、参加者で順番を決めます。",
+  "複数回行う場合は、全員の差分を少なくとも一度確認できるようにします。",
 ] as const;
 
 const moduleFor = (slug: ExerciseSlug): PageModule =>

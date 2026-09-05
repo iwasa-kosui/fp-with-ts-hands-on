@@ -24,7 +24,7 @@ export const guides = ([
     id: "final-use-case-pipeline",
     title: "最初に読む ResultAsync パイプライン",
     currentDesign:
-      "当日の S5 と同じ形を、認可と永続化を含む use case へ広げています。",
+      "Session 05 で学んだ形を、認可と永続化を含む use case へ広げています。",
     futureRisk: "全体から読むと概念が多いため、まず run の処理だけを追います。",
     path: "src/useCase/startExaminationUseCase.ts",
     highlights: [{ startLineNumber: 83, endLineNumber: 99 }],
@@ -57,13 +57,13 @@ export const session: SessionSummary = {
   durationMinutes: 5,
   timeBreakdown: { brief: 0, teach: 4, exercise: 0, review: 1 },
   animal: { name: "Mugi", type: "cat", avatar: "🐈" },
-  summary: "当日の到達点を、より大きな参照実装へ接続します。",
+  summary: "ここまでの学習内容を、より大きな参照実装へ接続します。",
   episode: [
     "ここまで直した頃、猫のムギはとっくに帰宅し、開発者だけが参照実装の前に残っていました。",
     "入力、失敗、イベント、保存、例外を順に追うと、さっきまでの事故がそれぞれ決まった場所で待っています。",
     "完成形と呼んでも、事故が消えたわけではありません。置き場所と担当が決まっただけです。",
   ],
-  incident: "当日の局所的な改善を、実運用を想定した構成へどう接続するかを確認する。",
+  incident: "各セッションで行った改善を、実運用を想定した構成へどう接続するかを確認する。",
   steps: [],
   decisions: [],
   finalReferences: [
@@ -107,32 +107,33 @@ export const navigation = ({
       {session.episode.map((line) => <p data-episode-line>{line}</p>)}
     </aside>
     <p>
-      S5 の到達点 <code>examples/session-07</code> では、診察開始の入力、業務上の失敗、出力イベント、保存、例外経路を分けました。最後の5分は、この5つの境界が参照実装でも保たれているかを確認します。
+      S2〜S6 の到達点 <code>examples/session-07</code> では、診察開始の入力、業務上の失敗、出力イベント、保存、例外経路を分けました。ここでは、この5つの境界が参照実装でも保たれているかを確認します。
     </p>
     <p><strong>今回の完了条件:</strong> 技術要素の数ではなく、ユースケースを構成する5つの境界を説明できることです。</p>
   </section>
 
   <section id="review">
-    <h2>5分で境界を確認する</h2>
+    <h2>5つの境界を確認する</h2>
+    <p>ひとりの場合は、次のファイルを順に開いて該当箇所を探します。ハンズオンでは進行役が5分を目安に案内します。参照実装の起動やDBの操作は必要ありません。</p>
     <ol class="decision-list">
       <li>
-        <strong>1分目: 入力境界</strong><br />
+        <strong>入力境界</strong><br />
         <code>examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts</code> で診察開始のHTTP入力を検証し、ユースケース入力へ変換する箇所を探します。
       </li>
       <li>
-        <strong>2分目: 業務上の失敗</strong><br />
+        <strong>業務上の失敗</strong><br />
         <code>examples/final/src/useCase/startExaminationUseCase.ts</code> で、予約なし・状態不正・予約競合が型付きの <code>Err</code> として残ることを確認します。
       </li>
       <li>
-        <strong>3分目: 出力イベント</strong><br />
+        <strong>出力イベント</strong><br />
         <code>examples/final/src/useCase/startExaminationUseCase.ts</code> で、業務検証に成功した経路だけがイベント生成へ進むことを確認します。次に、<code>examples/final/src/domain/appointment/appointment.ts</code> の <code>startExamination</code> が <code>ExaminationStarted</code> を作ることを確認します。
       </li>
       <li>
-        <strong>4分目: 副作用</strong><br />
+        <strong>副作用</strong><br />
         <code>examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts</code> で、予約状態と監査用イベントを同じ保存境界へ渡すことを確認します。
       </li>
       <li>
-        <strong>5分目: 例外境界</strong><br />
+        <strong>例外境界</strong><br />
         SQLite障害や破損データが業務 <code>Result</code> に入らず、<code>examples/final/src/app.ts</code> の共通境界で安全に記録され、詳細を含まない500応答になることを確認します。
       </li>
     </ol>

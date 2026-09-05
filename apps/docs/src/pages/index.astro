@@ -4,7 +4,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
 <BaseLayout
   title="FP with TypeScript"
-  description="関数型ドメインモデリングをTypeScriptで体験する動物病院ハンズオン"
+  description="動物病院の業務コードを改善しながら、TypeScriptで関数型ドメインモデリングを学ぶ教材。個人学習にも、勉強会やハンズオンにも使えます。"
 >
   <div id="app">
     <div class="home-page wan-nyan-home">
@@ -19,8 +19,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         </a>
         <nav class="landing-nav" aria-label="メインナビゲーション">
           <a href="#system">TOP</a>
-          <a href="#features">FEATURES</a>
-          <a href="#problems">PROBLEMS</a>
+          <a href="#features">題材</a>
+          <a href="/setup/">事前準備</a>
           <a class="landing-nav__start" href="/sessions/">START SESSION</a>
         </nav>
       </header>
@@ -31,11 +31,17 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           <span class="floating-pet floating-pet--rabbit" aria-hidden="true">🐇</span>
 
           <div class="landing-hero__grid">
-            <p class="landing-eyebrow">🐱 2026.08.30 / TS hands-on</p>
+            <p class="landing-eyebrow">🐱 TypeScriptで学ぶ関数型ドメインモデリング</p>
             <div class="copy-panel">
               <h1 id="page-title">ようこそ<br />WAN NYAN<br /><span class="rainbow-word" aria-label="OSへ！！"><span>O</span><span>S</span><span>へ</span><span>！</span><span>！</span></span></h1>
             </div>
-            <p class="landing-lead">動物病院の予約・カルテ管理システムを題材に、既存の業務コードを小さく改善するハンズオンです。関数型ドメインモデリングを使い、変更は1モジュール、最大4ステップ、3つの設計判断、差分予算の範囲に限定します。</p>
+            <div class="landing-intro">
+              <p class="landing-lead">動物病院の予約・カルテ管理システムを題材に、業務のルールを型と関数で表す教材です。既存のコードを少しずつ改善しながら、設計の理由を学びます。個人学習にもハンズオンにも使えます。</p>
+              <div class="learning-actions" aria-label="教材を始める">
+                <a href="/setup/">事前準備 <span aria-hidden="true">→</span></a>
+                <a href="/sessions/">セッション一覧 <span aria-hidden="true">→</span></a>
+              </div>
+            </div>
 
             <div class="system-window" aria-label="動物病院の予約・カルテシステム画面">
               <div class="system-window__top">
@@ -51,7 +57,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
                 </aside>
 
                 <section class="schedule-board" aria-labelledby="dashboard-title">
-                  <div class="board-head"><h2 id="dashboard-title">今日の診察</h2><span class="date-pill">08.30 Sun</span></div>
+                  <div class="board-head"><h2 id="dashboard-title">今日の診察</h2><span class="date-pill">画面例</span></div>
                   <div class="appointment-grid" aria-label="予約一覧">
                     <article class="appointment-card"><span class="pet-icon" aria-hidden="true">🐕</span><span class="time">09:20</span><strong>ポチ / ワクチン</strong><p>受付済み。診察室 1 へ案内待ち。体重測定済み。</p></article>
                     <article class="appointment-card"><span class="pet-icon" aria-hidden="true">🐈</span><span class="time">09:40</span><strong>ミケ / 皮膚相談</strong><p>予約済み。飼い主アプリから問診票が届いた。</p></article>
@@ -92,33 +98,23 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           <div class="section-head"><h2 id="problems-title">ところが、問題が増えてきた</h2><p>便利になった分だけ、要求も増えました。小さな改修を重ねるうちに、どの状態で何ができるのか、どの情報を外へ出してよいのかが分かりにくくなっています。</p></div>
           <div class="timeline" aria-label="WAN NYAN OS に起きている問題">
             <article class="time-stop is-active"><time>Current / S0</time><strong>🐢 現状と事故を対応付ける</strong><span>業務の流れ、画面操作、保存先、ログを確認し、二重請求と個人情報の流出がどこで起きたかを確かめる。</span></article>
-            <article class="time-stop"><time>Workflow / S1</time><strong>🐕 診察開始の全体を描く</strong><span>ビジネスイベントから、入力、現在状態、失敗、出力イベント、副作用を一枚のカードへ並べる。</span></article>
+            <article class="time-stop"><time>Workflow / S1</time><strong>🐕 予約キャンセルを設計する</strong><span>「予約がキャンセルされた」から依頼と条件を逆算し、集約とユースケースの流れを図にする。</span></article>
             <article class="time-stop"><time>Risk / S2</time><strong>🐇 許可されない状態遷移</strong><span>会計済み・キャンセル済みの予約でも診察を開始できてしまうリスクを、状態と遷移の型で防ぐ。</span></article>
-            <article class="time-stop"><time>Risk / S3</time><strong>🐦 外部入力と意味のある値</strong><span>外部JSON、用途の違うID、飼い主の連絡先を信頼境界で安全な値へ変える。</span></article>
+            <article class="time-stop"><time>Risk / S3</time><strong>🐦 識別子の取り違え</strong><span>予約IDと獣医師IDを異なる型で表し、用途の違うIDを渡す間違いを防ぐ。</span></article>
+            <article class="time-stop"><time>Risk / S4</time><strong>🐈 未検証の外部入力</strong><span>HTTPから受け取った値をZodで検証し、診察開始に必要な入力へ変換する。</span></article>
             <article class="time-stop"><time>Risk / S5</time><strong>🐹 ユースケースの予期できる失敗</strong><span>throw と undefined に埋もれた業務上の失敗を、呼び出し側が扱える結果へ変える。</span></article>
-            <article class="time-stop"><time>Risk / S5</time><strong>🐢 出力イベントと副作用</strong><span>状態と監査記録を同じ整合性境界で保存し、保存障害は外側の例外境界へ伝える。</span></article>
-            <article class="time-stop"><time>Help wanted</time><strong>🐈 急募！どうにかしてくれるエンジニア</strong><span>便利な WAN NYAN OS を、変更に強いシステムへ立て直したい。</span></article>
+            <article class="time-stop"><time>Risk / S6</time><strong>🐢 出力イベントと副作用</strong><span>時刻や保存処理を外から渡し、状態と監査記録を同じ整合性境界で保存する。</span></article>
           </div>
         </section>
 
-        <section class="landing-section start-panel" id="sessions" aria-labelledby="start-title">
-          <div class="section-head"><h2 id="start-title">新任エンジニアとして着任する</h2><p>最初の仕事は、動物病院の業務と以前の担当者が残したコードを理解することです。問題が明らかになる前に書き換えず、後から確認すべき設計課題の場所を把握します。</p></div>
-          <div class="reading-row">
-            <article class="doc-pane"><h3>Session 00: 業務とシステムを引き継ぐ</h3><p>現行業務、画面操作、保存・ログと事故を対応付け、以後のユースケース設計で確認する場所をそろえます。</p><div class="callout"><span class="legend-icon" aria-hidden="true">🐢</span><div><strong>セッションページへ</strong><p><a href="/sessions/00-system-handover/">目次付きの Session 00 ページを開く</a></p></div></div></article>
-            <pre class="help-wanted-code" aria-label="WAN NYAN CLINIC のエンジニア募集"><code>WAN NYAN CLINIC / Engineering Help Wanted
+        <div class="learning-actions landing-start">
+          <a href="/setup/">事前準備をする <span aria-hidden="true">→</span></a>
+        </div>
 
-困っていること:
-- 会計済みの来院が診察中へ戻る
-- キャンセル理由や再診希望日が扱いづらい
-- 外部検査結果の ID を取り違えそう
-- 飼い主の連絡先がログに出そう
-- 変更履歴を後から追いづらい
-
-最初の仕事:
-/sessions/00-system-handover/ を開いて、業務と先人のコードを理解する</code></pre>
-          </div>
-        </section>
-        <footer class="landing-footer">fp-with-ts-hands-on / Animal Clinic Domain</footer>
+        <footer class="landing-footer">
+          <p>2026年8月30日のイベントは終了しました。この教材は、個人学習や別のハンズオンでも使えるように引き続き公開しています。</p>
+          <a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on">教材のソースコード</a>
+        </footer>
       </main>
     </div>
   </div>

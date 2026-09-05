@@ -161,8 +161,7 @@ describe("session code guides", () => {
         const aggregateGuide = guides!.find(
           ({ id }) => id === "final-seven-aggregates",
         );
-        expect(useCaseGuide?.currentDesign).toContain("当日の S5 と同じ形");
-        expect(useCaseGuide?.currentDesign).not.toContain("当日の S4");
+        expect(useCaseGuide?.currentDesign).toContain("Session 05 で学んだ形");
         expect(aggregateGuide?.title).toBe(
           "1業務集約から7つの集約へ広がる配線",
         );

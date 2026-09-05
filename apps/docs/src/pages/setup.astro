@@ -15,7 +15,7 @@ pnpm dev`;
 
 <BaseLayout
   title="事前準備 | FP with TypeScript"
-  description="FP with TypeScriptハンズオンへ参加する前に済ませる3つの準備"
+  description="TypeScriptの演習を始めるために、ツールの準備から教材の起動までを案内します。"
 >
   <div class="case-file setup-page">
     <header class="case-file__site-header">
@@ -24,27 +24,21 @@ pnpm dev`;
 
     <main class="setup-page__main">
       <header class="setup-page__hero">
-        <p class="case-file__eyebrow">BEFORE THE EVENT</p>
+        <p class="case-file__eyebrow">GETTING STARTED</p>
         <h1>事前準備</h1>
-        <p>イベント当日までに、次の3つを済ませてください。</p>
+        <p>TypeScriptの基本文法を読み書きできる方に向けた教材です。説明を読むだけなら、<a href="/sessions/00-system-handover/">Session 00</a>へ進めます。</p>
       </header>
 
+      <section id="environment" aria-labelledby="environment-title">
+      <h2 id="environment-title">環境を準備する</h2>
+      <p>コードを編集する演習は、ローカル環境で進めます。</p>
       <ol class="setup-page__steps" aria-label="事前準備の手順">
-        <li class="setup-step setup-step--discord">
+        <li class="setup-step">
           <span class="setup-step__number" aria-hidden="true">01</span>
           <div>
-            <p class="setup-step__label">連絡先を確認する</p>
-            <h2>Discordサーバーに参加する</h2>
-            <p>当日の案内や質問はDiscordで共有します。参加できることを事前に確認してください。</p>
-            <a
-              class="setup-step__action"
-              href="https://discord.gg/Mq3GVSvRG"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Discordサーバーに参加する
-              <span aria-hidden="true">↗</span>
-            </a>
+            <p class="setup-step__label">使うツールをそろえる</p>
+            <h3>Node.js・pnpm・Gitを用意する</h3>
+            <p>Node.js 20以上、pnpm 9.12.0、Git、TypeScriptを編集できるエディタを用意します。ブラウザはデスクトップ版ChromeまたはEdgeを使ってください。</p>
           </div>
         </li>
 
@@ -52,7 +46,7 @@ pnpm dev`;
           <span class="setup-step__number" aria-hidden="true">02</span>
           <div>
             <p class="setup-step__label">教材を手元に置く</p>
-            <h2>リポジトリをcloneする</h2>
+            <h3>リポジトリをcloneする</h3>
             <p>作業する場所で、次のコマンドを実行してください。</p>
             <div class="setup-step__command">
               <div class="setup-step__command-header">
@@ -68,9 +62,9 @@ pnpm dev`;
           <span class="setup-step__number" aria-hidden="true">03</span>
           <div>
             <p class="setup-step__label">ローカル環境を確認する</p>
-            <h2>依存関係を入れて教材を起動する</h2>
+            <h3>依存関係を入れて教材を起動する</h3>
             <p>
-              Node.js 20以上、pnpm 9.12.0、Gitを用意し、cloneしたリポジトリで次のコマンドを実行してください。
+              続けて、次のコマンドを実行してください。
             </p>
             <div class="setup-step__command">
               <div class="setup-step__command-header">
@@ -86,9 +80,13 @@ pnpm dev`;
           </div>
         </li>
       </ol>
+      <p class="setup-page__help">環境構築で困ったら、<a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/docs/event/troubleshooting.md">トラブルシューティング</a>を確認してください。</p>
+      </section>
+
+      <p>ハンズオンを開催する方は、<a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/docs/event/facilitator-guide.md">ファシリテーターガイド</a>も参照できます。</p>
 
       <footer class="setup-page__next">
-        <p>3つとも終わったら準備完了です。</p>
+        <a class="setup-page__start" href="/sessions/00-system-handover/">Session 00から始める <span aria-hidden="true">→</span></a>
         <a href="/sessions/">セッション一覧を見る</a>
       </footer>
     </main>

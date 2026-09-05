@@ -104,13 +104,13 @@ export const navigation = ({
             <dl>
               {notation.map((item) => <Fragment><dt>{item.name}</dt><dd>{item.description}</dd></Fragment>)}
             </dl>
-            <p>班で次の3問を順に話しましょう。</p>
+            <p>次の3問の答えを書き出しましょう。ひとりの場合はメモに残し、複数人の場合は答えを持ち寄って確認します。</p>
             <ol class="exercise-steps">
               <li>この出来事は、誰が、何を依頼したことによって発生しましたか。</li>
               <li>その実行者には、予約を管理する権限がありますか。</li>
               <li>予約の状態とキャンセル理由は、どんな条件を満たす必要がありますか。</li>
             </ol>
-            <div class="eventstorming-focus" aria-label="班で完成させる予約キャンセルの並び">
+            <div class="eventstorming-focus" aria-label="予約キャンセルの並び">
               <div class="eventstorming-note eventstorming-note--actor">
                 <span>アクター</span>
                 <strong>受付担当者</strong>
@@ -202,14 +202,14 @@ export const navigation = ({
             </aside>
 
             <h3>S1で残す成果物</h3>
-            <p>最後に、ここまでの議論を次の3点として班のボードへ残しましょう。後続セッションでは、この図と条件を見ながらTypeScriptのコードへ落とし込みます。</p>
+            <p>最後に、ここまで考えた内容を次の3点として手元のメモや共有ボードへ残しましょう。後続セッションでは診察開始を題材に、業務の条件をTypeScriptで表す方法を学びます。</p>
             <ol>
               <li>アクター、コマンド、<code>Appointment</code>集約、<code>AppointmentCanceled</code>を順に並べた図</li>
               <li>権限、予約の存在、現在状態、理由の条件とHotspot</li>
               <li>3か所で失敗へ切り替わるROP基本図と、ResolverとEvent Storeを外側へ置いたユースケース図</li>
             </ol>
             <p>
-              班ワークは <a href={excalidrawTemplateUrl}><code>{excalidrawTemplatePath}</code></a> を使います。TAが開始前にボードを開きます。
+              Excalidrawを使う場合は、<a href={excalidrawTemplateUrl}>テンプレート</a>を保存して開きます。ローカルの <code>{excalidrawTemplatePath}</code> からも開けます。紙に図を描いても構いません。複数人で取り組む場合は、進行役がボードを用意して共有します。
             </p>
           </section>
 

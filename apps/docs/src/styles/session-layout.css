@@ -166,15 +166,40 @@
 }
 
 .case-file--session .case-file__session-nav {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   width: 100%;
+  gap: 1rem;
   padding: 1.5rem 0 0;
   margin-top: 2rem;
   border-top: 1px solid var(--case-divider);
-  font-size: 0.9rem;
+  font-size: clamp(1rem, 2vw, 1.125rem);
 }
 
 .case-file--session .case-file__session-nav a {
+  display: flex;
+  align-items: center;
+  min-height: 4.5rem;
+  padding: 1rem 1.25rem;
+  border: 2px solid var(--case-line);
+  border-radius: 0.65rem;
+  background: var(--case-cream);
   color: var(--case-blue);
+  font-weight: 800;
+  line-height: 1.6;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.case-file--session .case-file__session-nav a[rel="next"] {
+  background: var(--case-blue);
+  color: var(--case-paper);
+  box-shadow: 3px 4px 0 var(--case-line);
+}
+
+.case-file--session .case-file__session-nav a:hover {
+  background: var(--case-yellow);
+  color: var(--case-ink);
 }
 
 .case-file--session .case-file__rail-title {
