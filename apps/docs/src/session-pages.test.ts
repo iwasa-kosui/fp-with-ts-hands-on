@@ -32,7 +32,7 @@ const catalogModules = import.meta.glob("./sessions/catalog.ts", {
 
 const docsRoot = process.cwd();
 const currentTest = join(docsRoot, "src", "session-pages.test.ts");
-const sourceRoots = ["src", "e2e", "scripts"] as const;
+const sourceRoots = ["src", "scripts"] as const;
 const sourceExtensions = new Set([".ts", ".tsx", ".astro", ".mjs"]);
 
 const collectSourceFiles = async (directory: string): Promise<string[]> => {

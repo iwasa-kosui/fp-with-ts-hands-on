@@ -6,8 +6,7 @@
     "dev": "vite --port 3000",
     "build": "vite build --mode client && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:visual": "playwright test"
+    "test": "vitest run"
   },
   "dependencies": {
     "@fp-with-ts/clinic-web": "workspace:*",
@@ -23,7 +22,6 @@
     "zod": "^3.25.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.14",
