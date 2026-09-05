@@ -1,0 +1,50 @@
+---
+import { sessionNavigationItems } from "../sessions/navigation";
+
+interface Props {
+  currentSlug: string;
+  chapters: readonly Readonly<{ id: string; label: string }>[];
+}
+
+const { currentSlug, chapters } = Astro.props;
+---
+
+<nav class="case-file__curriculum" aria-label="セッション一覧">
+  <ol class="case-file__sessions">
+    {
+      sessionNavigationItems.map(({ slug, title }, index) => (
+        <li class:list={{ "is-current": slug === currentSlug }}>
+          <a
+            class="case-file__session-link"
+            href={`/sessions/${slug}/`}
+            aria-label={title}
+            aria-current={slug === currentSlug ? "page" : undefined}
+          >
+            <span class="case-file__session-number" aria-hidden="true">
+              {slug === "final" ? "Final" : slug.slice(0, 2)}
+            </span>
+            <span class="case-file__session-name">{title}</span>
+            {slug === currentSlug && (
+              <span class="case-file__current-label" aria-hidden="true">
+                現在地 · {index + 1} / {sessionNavigationItems.length}
+              </span>
+            )}
+          </a>
+          {slug === currentSlug && (
+            <nav class="case-file__chapter-navigation" aria-label="ページ内目次">
+              <ol>
+                {chapters.map(({ id, label }, chapterIndex) => (
+                  <li>
+                    <a href={`#${id}`} data-section={id} aria-current={chapterIndex === 0 ? "location" : undefined}>
+                      {label}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          )}
+        </li>
+      ))
+    }
+  </ol>
+</nav>

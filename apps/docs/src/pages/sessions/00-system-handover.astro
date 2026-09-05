@@ -114,12 +114,13 @@ export const navigation = ({
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
-  <div class="case-file">
+  <div class="case-file case-file--session">
     <header class="case-file__site-header">
-      <a href="/">WAN NYAN CLINIC</a>
+      <a href="/"><span class="case-file__brand-mark" aria-hidden="true">🐾</span>WAN NYAN CLINIC</a>
     </header>
     <main>
-      <section class="case-file__hero" aria-labelledby="session-title">
+      <SessionPageNavigation currentSlug={session.slug} chapters={chapters}>
+      <section slot="hero" class="case-file__hero" aria-labelledby="session-title">
         <p class="case-file__eyebrow">SESSION {session.sequence} · {session.durationMinutes}分</p>
         <h1 id="session-title">{session.title}</h1>
         <p class="case-file__summary">
@@ -127,7 +128,6 @@ export const navigation = ({
           {session.summary}
         </p>
       </section>
-      <SessionPageNavigation currentSlug={session.slug} chapters={chapters}>
   <section id="incident">
     <h2>現行業務と起きている事故</h2>
     <aside class="case-file__episode" aria-label="動物病院のひと幕">
@@ -209,8 +209,7 @@ export const navigation = ({
       Session 00 では事故を修正しません。Session 02 から Session 07 で、状態、ID、入力と個人情報、失敗、実行のたびに変わる値、予約内容と変更履歴の食い違いを順に改善する理由を確認します。
     </p>
   </section>
-      </SessionPageNavigation>
-      <nav class="case-file__session-nav" aria-label="前後のセッション">
+      <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         {
           navigation.previous === undefined ? null : (
             <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
@@ -222,6 +221,7 @@ export const navigation = ({
           )
         }
       </nav>
+      </SessionPageNavigation>
     </main>
   </div>
 </BaseLayout>

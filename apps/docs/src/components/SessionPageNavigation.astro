@@ -1,89 +1,132 @@
 ---
 import { sessionNavigationItems } from "../sessions/navigation";
-
-type Chapter = Readonly<{ id: string; label: string }>;
+import SessionCurriculum from "./SessionCurriculum.astro";
+import "../styles/session-layout.css";
 
 interface Props {
   currentSlug: string;
-  chapters: readonly Chapter[];
+  chapters: readonly Readonly<{ id: string; label: string }>[];
 }
 
 const { currentSlug, chapters } = Astro.props;
+const currentIndex = sessionNavigationItems.findIndex(({ slug }) => slug === currentSlug);
+const current = sessionNavigationItems[currentIndex];
+const position = `${currentIndex + 1} / ${sessionNavigationItems.length}`;
+const sequence = currentSlug === "final" ? "Final" : currentSlug.slice(0, 2);
 ---
 
-<div class="case-file__body">
-  <aside class="case-file__toc case-file__curriculum case-file__curriculum--desktop">
-    <p class="case-file__rail-title">セッション一覧</p>
-    <nav aria-label="セッション一覧">
-      <ol>
-        {
-          sessionNavigationItems.map(({ slug, title }) => (
-            <li>
-              <a href={`/sessions/${slug}/`} aria-current={slug === currentSlug ? "page" : undefined}>
-                {title}
-              </a>
-            </li>
-          ))
-        }
-      </ol>
-    </nav>
+<div class="case-file__body" data-session-navigation>
+  <aside class="case-file__curriculum--desktop" aria-label="全セッションと現在地">
+    <p class="case-file__rail-title">セッション一覧 <span>全{sessionNavigationItems.length}セッション</span></p>
+    <SessionCurriculum currentSlug={currentSlug} chapters={chapters} />
   </aside>
 
   <div class="case-file__mobile-navigation">
-    <details class="case-file__mobile-menu case-file__mobile-menu--curriculum" name="session-navigation">
+    <details class="case-file__mobile-menu case-file__mobile-menu--curriculum">
       <summary>
-        <span aria-hidden="true">☰</span>
-        <span>セッション一覧</span>
+        <span class="case-file__mobile-current">
+          <span>現在地 {position} · Session {sequence}</span>
+          <strong>{current?.title}</strong>
+        </span>
+        <span class="case-file__mobile-menu-label">目次 <span aria-hidden="true">⌄</span></span>
       </summary>
-      <nav aria-label="セッション一覧">
-        <ol>
-          {
-            sessionNavigationItems.map(({ slug, title }) => (
-              <li>
-                <a href={`/sessions/${slug}/`} aria-current={slug === currentSlug ? "page" : undefined}>
-                  {title}
-                </a>
-              </li>
-            ))
-          }
-        </ol>
-      </nav>
-    </details>
-    <details class="case-file__mobile-menu case-file__mobile-menu--outline" name="session-navigation">
-      <summary>
-        <span aria-hidden="true">☰</span>
-        <span>このページ</span>
-      </summary>
-      <nav aria-label="ページ内目次">
-        <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
-      </nav>
+      <div class="case-file__mobile-menu-content">
+        <SessionCurriculum currentSlug={currentSlug} chapters={chapters} />
+      </div>
     </details>
   </div>
 
-  <article class="case-file__content">
-    <slot />
-  </article>
-
-  <aside class="case-file__toc case-file__outline case-file__outline--desktop">
-    <p class="case-file__rail-title">このページ</p>
-    <nav aria-label="ページ内目次">
-      <ol>{chapters.map(({ id, label }) => <li><a href={`#${id}`}>{label}</a></li>)}</ol>
-    </nav>
-  </aside>
+  <div class="case-file__reading-pane">
+    <p class="case-file__location"><a href="/sessions/">セッション</a><span aria-hidden="true">/</span><strong>Session {sequence}</strong></p>
+    <div class="case-file__sheet">
+      <slot name="hero" />
+      <article class="case-file__content">
+        <slot />
+      </article>
+      <slot name="footer" />
+    </div>
+  </div>
 </div>
 
 <script>
-  const outlineLinks = document.querySelectorAll<HTMLAnchorElement>(
-    ".case-file__mobile-menu--outline a",
-  );
+  const root = document.querySelector<HTMLElement>("[data-session-navigation]");
 
-  for (const link of outlineLinks) {
-    link.addEventListener("click", () => {
-      const menu = link.closest("details");
+  if (root !== null) {
+    const menu = root.querySelector<HTMLDetailsElement>(".case-file__mobile-menu");
+    const summary = menu?.querySelector("summary");
+    const links = Array.from(root.querySelectorAll<HTMLAnchorElement>("[data-section]"));
+    const sections = Array.from(root.querySelectorAll<HTMLElement>(".case-file__content > section[id]"))
+      .filter(({ id }) => links.some((link) => link.dataset.section === id));
+    const rail = root.querySelector<HTMLElement>(".case-file__curriculum--desktop");
+    const currentSession = rail?.querySelector<HTMLElement>('[aria-current="page"]');
 
-      if (menu instanceof HTMLDetailsElement) {
+    const keepCurrentSessionVisible = () => {
+      if (!rail || !currentSession || rail.getClientRects().length === 0) return;
+      const railBounds = rail.getBoundingClientRect();
+      const currentBounds = currentSession.getBoundingClientRect();
+      const visibleTop = Math.max(0, railBounds.top) + 8;
+      const visibleBottom = Math.min(window.innerHeight, railBounds.bottom) - 8;
+      if (currentBounds.top < visibleTop || currentBounds.bottom > visibleBottom) {
+        const padding = Math.max(0, (visibleBottom - visibleTop - currentBounds.height) / 3);
+        rail.scrollTop += currentBounds.top - visibleTop - padding;
+      }
+    };
+
+    const closeMenu = () => {
+      if (menu?.open) {
         menu.open = false;
       }
+    };
+
+    menu?.querySelectorAll("[data-section]").forEach((link) => {
+      link.addEventListener("click", closeMenu);
     });
+    menu?.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeMenu();
+        summary?.focus({ preventScroll: true });
+      }
+    });
+
+    const updateLocation = () => {
+      const mobileBar = root.querySelector<HTMLElement>(".case-file__mobile-navigation");
+      const offset = mobileBar !== null && mobileBar.getClientRects().length > 0
+        ? mobileBar.offsetHeight + 24
+        : 24;
+      root.style.setProperty("--case-scroll-offset", `${offset}px`);
+      let currentSection = sections.at(0);
+      for (const section of sections) {
+        if (section.getBoundingClientRect().top <= offset + 1) currentSection = section;
+      }
+      if (window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2) {
+        currentSection = sections.at(-1);
+      }
+      for (const link of links) {
+        if (link.dataset.section === currentSection?.id) link.setAttribute("aria-current", "location");
+        else link.removeAttribute("aria-current");
+      }
+    };
+
+    let scheduled = false;
+    const scheduleLocationUpdate = () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        updateLocation();
+      });
+    };
+    window.addEventListener("scroll", scheduleLocationUpdate, { passive: true });
+    window.addEventListener("resize", () => {
+      scheduleLocationUpdate();
+      keepCurrentSessionVisible();
+    });
+    window.addEventListener("hashchange", scheduleLocationUpdate);
+    window.addEventListener("load", () => {
+      scheduleLocationUpdate();
+      keepCurrentSessionVisible();
+    });
+    scheduleLocationUpdate();
+    keepCurrentSessionVisible();
   }
 </script>
