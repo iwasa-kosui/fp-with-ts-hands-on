@@ -504,10 +504,11 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
-  <div class="case-file">
-    <header class="case-file__site-header"><a href="/">WAN NYAN CLINIC</a></header>
+  <div class="case-file case-file--session">
+    <header class="case-file__site-header"><a href="/"><span class="case-file__brand-mark" aria-hidden="true">🐾</span>WAN NYAN CLINIC</a></header>
     <main>
-      <section class="case-file__hero" aria-labelledby="session-title">
+      <SessionPageNavigation currentSlug={session.slug} chapters={chapters}>
+      <section slot="hero" class="case-file__hero" aria-labelledby="session-title">
         <p class="case-file__eyebrow">SESSION {session.sequence} · {session.durationMinutes}分</p>
         <h1 id="session-title">{session.title}</h1>
         <p class="case-file__summary">
@@ -515,7 +516,6 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
           {session.summary}
         </p>
       </section>
-      <SessionPageNavigation currentSlug={session.slug} chapters={chapters}>
           <section id="incident">
             <h2>今回つくるもの</h2>
             <aside class="case-file__episode" aria-label="動物病院のひと幕">
@@ -674,11 +674,11 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <ol>{session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
             </section>
           </section>
-      </SessionPageNavigation>
-      <nav class="case-file__session-nav" aria-label="前後のセッション">
+      <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
         <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
       </nav>
+      </SessionPageNavigation>
     </main>
   </div>
 </BaseLayout>

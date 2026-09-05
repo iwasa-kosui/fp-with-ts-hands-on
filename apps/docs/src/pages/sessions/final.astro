@@ -86,12 +86,13 @@ export const navigation = ({
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
-  <div class="case-file">
+  <div class="case-file case-file--session">
     <header class="case-file__site-header">
-      <a href="/">WAN NYAN CLINIC</a>
+      <a href="/"><span class="case-file__brand-mark" aria-hidden="true">🐾</span>WAN NYAN CLINIC</a>
     </header>
     <main>
-      <section class="case-file__hero" aria-labelledby="session-title">
+      <SessionPageNavigation currentSlug={session.slug} chapters={chapters}>
+      <section slot="hero" class="case-file__hero" aria-labelledby="session-title">
         <p class="case-file__eyebrow">SESSION {session.sequence} · {session.durationMinutes}分</p>
         <h1 id="session-title">{session.title}</h1>
         <p class="case-file__summary">
@@ -99,7 +100,6 @@ export const navigation = ({
           {session.summary}
         </p>
       </section>
-      <SessionPageNavigation currentSlug={session.slug} chapters={chapters}>
   <section id="incident">
     <h2>何が起きたか</h2>
     <aside class="case-file__episode" aria-label="動物病院のひと幕">
@@ -140,8 +140,7 @@ export const navigation = ({
       自習では、検査結果の到着やフォローアップ依頼など、別のきっかけから始まるユースケースを1つ選び、同じ5項目を辿ってください。境界が見つからない箇所は、次に試す小さな改善候補です。
     </p>
   </section>
-      </SessionPageNavigation>
-      <nav class="case-file__session-nav" aria-label="前後のセッション">
+      <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         {
           navigation.previous === undefined ? null : (
             <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
@@ -153,6 +152,7 @@ export const navigation = ({
           )
         }
       </nav>
+      </SessionPageNavigation>
     </main>
   </div>
 </BaseLayout>

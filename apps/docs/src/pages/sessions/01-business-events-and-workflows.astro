@@ -63,12 +63,13 @@ export const navigation = ({
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
-  <div class="case-file">
+  <div class="case-file case-file--session">
     <header class="case-file__site-header">
-      <a href="/">WAN NYAN CLINIC</a>
+      <a href="/"><span class="case-file__brand-mark" aria-hidden="true">🐾</span>WAN NYAN CLINIC</a>
     </header>
     <main>
-      <section class="case-file__hero" aria-labelledby="session-title">
+      <SessionPageNavigation currentSlug={session.slug} chapters={chapters}>
+      <section slot="hero" class="case-file__hero" aria-labelledby="session-title">
         <p class="case-file__eyebrow">SESSION {session.sequence} · {session.durationMinutes}分</p>
         <h1 id="session-title">{session.title}</h1>
         <p class="case-file__summary">
@@ -76,7 +77,6 @@ export const navigation = ({
           {session.summary}
         </p>
       </section>
-      <SessionPageNavigation currentSlug={session.slug} chapters={chapters}>
           <section id="incident">
             <h2>起きた出来事から業務を始める</h2>
             <aside class="case-file__episode" aria-label="動物病院のひと幕">
@@ -212,12 +212,12 @@ export const navigation = ({
               班ワークは <a href={excalidrawTemplateUrl}><code>{excalidrawTemplatePath}</code></a> を使います。TAが開始前にボードを開きます。
             </p>
           </section>
-      </SessionPageNavigation>
 
-      <nav class="case-file__session-nav" aria-label="前後のセッション">
+      <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
         <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
       </nav>
+      </SessionPageNavigation>
     </main>
   </div>
 </BaseLayout>
