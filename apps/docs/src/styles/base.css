@@ -807,6 +807,11 @@ label {
   outline-offset: 3px;
 }
 
+.wan-nyan-home .landing-start {
+  justify-content: center;
+  margin-top: 2.5rem;
+}
+
 .wan-nyan-home .system-window {
   grid-area: system;
   min-width: 0;
