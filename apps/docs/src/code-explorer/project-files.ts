@@ -1,5 +1,10 @@
 import tsconfigBaseSource from "../../../../tsconfig.base.json?raw";
 import clinicFixtureSource from "../../../../examples/fixtures/clinic.ts?raw";
+import clinicWebContractsSource from "../../../../packages/clinic-web/src/contracts.ts?raw";
+import clinicWebNoticeSource from "../../../../packages/clinic-web/src/notice.ts?raw";
+import clinicWebRootViewSource from "../../../../packages/clinic-web/src/rootView.tsx?raw";
+import clinicWebServerSource from "../../../../packages/clinic-web/src/server.ts?raw";
+import session05InMemoryAppSource from "./replacements/session-05-app.ts.txt?raw";
 import type { ExampleSnapshot } from "../sessions/types";
 import type { ProjectFiles } from "./types";
 
@@ -26,6 +31,35 @@ const requiredRuntimeFiles = [
   "tsconfig.json",
   "vitest.config.ts",
 ] as const;
+
+const clinicWebAlias = "@fp-with-ts/clinic-web/server";
+const clinicWebVendorServerPath = "vendor/clinic-web/server.ts";
+const clinicWebTypesAlias = "@fp-with-ts/clinic-web";
+const clinicWebVendorContractsPath = "vendor/clinic-web/contracts.ts";
+
+const session05VendorFiles = {
+  [clinicWebVendorContractsPath]: clinicWebContractsSource,
+  "vendor/clinic-web/notice.ts": clinicWebNoticeSource,
+  "vendor/clinic-web/rootView.tsx": clinicWebRootViewSource,
+  [clinicWebVendorServerPath]: clinicWebServerSource,
+} as const;
+
+const session05VitestExercisesConfigSource = `import { fileURLToPath } from "node:url";
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  resolve: {
+    alias: {
+      "${clinicWebAlias}": fileURLToPath(
+        new URL("./${clinicWebVendorServerPath}", import.meta.url),
+      ),
+    },
+  },
+  test: {
+    include: ["exercises/**/*.test.ts"],
+  },
+});
+`;
 
 type PackageJson = {
   dependencies?: Record<string, string>;
@@ -80,12 +114,21 @@ const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
   );
   const tsconfig = JSON.parse(files["tsconfig.json"]!) as {
     extends?: string;
+    compilerOptions?: Record<string, unknown>;
     [key: string]: unknown;
   };
   const exerciseSequence = /^session-(0[2-6])$/.exec(snapshot)?.[1];
+  const isSession05 = snapshot === "session-05";
 
   return Object.freeze({
     ...files,
+    ...(isSession05
+      ? {
+          ...session05VendorFiles,
+          "src/app.ts": session05InMemoryAppSource,
+          "vitest.exercises.config.ts": session05VitestExercisesConfigSource,
+        }
+      : {}),
     "../fixtures/clinic.ts": clinicFixtureSource,
     "package.json": JSON.stringify(
       {
@@ -107,7 +150,21 @@ const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
       2,
     ),
     "tsconfig.json": JSON.stringify(
-      { ...tsconfig, extends: "./tsconfig.base.json" },
+      {
+        ...tsconfig,
+        extends: "./tsconfig.base.json",
+        ...(isSession05
+          ? {
+              compilerOptions: {
+                ...tsconfig.compilerOptions,
+                paths: {
+                  [clinicWebAlias]: [`./${clinicWebVendorServerPath}`],
+                  [clinicWebTypesAlias]: [`./${clinicWebVendorContractsPath}`],
+                },
+              },
+            }
+          : {}),
+      },
       null,
       2,
     ),
