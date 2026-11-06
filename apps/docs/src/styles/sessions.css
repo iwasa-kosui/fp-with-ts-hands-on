@@ -687,6 +687,13 @@
   padding: 1rem;
 }
 
+.pitfall-heading {
+  margin-block: 1.25rem 0.5rem;
+  color: var(--color-primary);
+  font-size: 1.0625rem;
+  line-height: 1.25;
+}
+
 .decision-list {
   display: grid;
   gap: 1rem;
