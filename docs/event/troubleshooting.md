@@ -49,6 +49,8 @@ pnpm test
 
 解決しなければ出力を保存して講師またはTAへ共有します。
 
+S5 の Step 4 の解答を当てた後に `pnpm test` を実行すると、テスト「古い画面から送られた状態不正をcatchし損ねて500になる」が失敗します。このテストは解答前の500エラーを固定しているので、失敗は想定どおりです。S5 の解答の確認には `pnpm exercise:05` を使います。
+
 ## exercise が赤い
 
 S2〜S6の開始スナップショットは、業務の言葉で命名された assertion failure から始まります。これは意図したREDです。S1はデータとパイプラインを読む回で、exerciseコマンドはありません。
@@ -61,7 +63,7 @@ S2〜S6の開始スナップショットは、業務の言葉で命名された 
 | S3 | `pnpm exercise:02` | 1件 | S2 を終えた手元は1件、Playgroundは5件 | 表示名の分岐漏れの検査が失敗する |
 | S4 | `pnpm exercise:04` | 2件 | 2件 | 不正な予約IDと担当獣医師IDを拒否する assertion が失敗する |
 | S4 補助演習 | `pnpm exercise:03` | 3件（参加者が手元で進めるのは2件） | 3件 | 識別子の取り違えと、型テスト不足の要件未達が失敗する |
-| S5 | `pnpm exercise:05` | 4件 | 9件（型検査の要件未達3件と演習テストの失敗6件） | 予約なし、状態不正、同期Result pipeline、Web側の `kind` の網羅が失敗する |
+| S5 | `pnpm exercise:05` | 4件 | 8件（型検査の要件未達3件と演習テストの失敗5件） | 予約なし、状態不正、同期Result pipeline、Web側の `kind` の網羅が失敗する |
 | S6 | `pnpm exercise:06` | 4件 | 4件 | 決定性、single store、ResultAsync、保存失敗の assertion が失敗する |
 
 module-not-found、import error、設定エラー、予期しない例外は意図したREDではありません。エラーの最初の行だけでなく、`Caused by` とスタックの先頭までTAへ見せてください。

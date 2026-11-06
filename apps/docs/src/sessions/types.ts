@@ -25,6 +25,7 @@ export type ExerciseStep = Readonly<{
 
 export type SolutionReference = Readonly<{
   path: string;
+  sourcePath?: string;
   symbol: string;
   lines: readonly [number, number];
   presentation?: SolutionPresentation;

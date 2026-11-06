@@ -52,6 +52,9 @@ describe("loadSolutionSnippets", () => {
     expect(webHandler?.[0]?.code).not.toContain("AppointmentConflict");
     expect(webHandler?.[0]?.code).not.toContain("StartExaminationWithEffectsNoticeCode");
     expect(webHandler?.[0]?.code).not.toContain('"conflict"');
+    expect(webHandler?.[1]?.code).toContain("result.match");
+    expect(webHandler?.[1]?.code).toContain("toStartExaminationNoticeCode(error)");
+    expect(webHandler?.[1]?.code).not.toContain("try {");
   });
 
   it("loads supplementary exercise identifier solutions from their owning concept", async () => {

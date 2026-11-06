@@ -118,11 +118,19 @@ export const session: SessionSummary = {
       goal: "Web側で業務エラーのkindを網羅し、それぞれ専用noticeへ変換する。",
       startingFailure: "状態不正の例外をWeb側が処理せず、500エラーにする。",
       targets: ["examples/session-05/src/web/routes.ts"],
-      solutions: [{
-        path: "examples/session-06/src/web/routes.ts",
-        symbol: "toStartExaminationNoticeCode",
-        lines: [22, 48],
-      }],
+      solutions: [
+        {
+          path: "examples/session-06/src/web/routes.ts",
+          symbol: "toStartExaminationNoticeCode",
+          lines: [22, 48],
+        },
+        {
+          path: "examples/session-05/src/web/routes.ts",
+          sourcePath: "apps/docs/src/sessions/solutions/session-05-start-examination-handler.ts.txt",
+          symbol: "registerClinicRoutes",
+          lines: [1, 22],
+        },
+      ],
     },
   ],
   decisions: [
@@ -450,7 +458,7 @@ const narrative = {
 } as const;
 
 const exerciseSession: ExerciseSessionSummary = session;
-const initialExerciseFailureCount = 9;
+const initialExerciseFailureCount = 8;
 
 export const workspace = ({
   slug: session.slug,
@@ -595,7 +603,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <ul class="exercise-failures" aria-label="修正前に確認する問題">
               {session.steps.map((step) => <li>{step.startingFailure}</li>)}
             </ul>
-            <CommandBlock phase="red" command={session.exerciseCommand} expected={`型検査の要件未達3件と演習テストの失敗6件、合わせて${initialExerciseFailureCount}件の失敗が出ます。`} />
+            <CommandBlock phase="red" command={session.exerciseCommand} expected={`型検査の要件未達3件と演習テストの失敗5件、合わせて${initialExerciseFailureCount}件の失敗が出ます。`} />
             <p>ブラウザ内の変更はローカルへ反映されません。</p>
             <div data-code-explorer={workspace.slug}>
               <p>いまの Playground は、<code>pnpm exercise:05</code> を実行すると読み込みエラーで止まります。この Session は手元の clone で進めてください。</p>
