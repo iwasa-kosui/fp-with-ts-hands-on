@@ -27,7 +27,7 @@ S1は15分の回です。コードは編集しません。予約のデータか�
 - 成功出力は`AppointmentCanceled`です。
 - 失敗出力は`Unauthorized`、`AppointmentNotFound`、`InvalidAppointmentState`、`AppointmentConflict`など、理由を区別できるエラーです。
 
-User ResolverとAppointment Resolverによる現在状態の取得は入力側へ置きます。`AppointmentCanceled`を受け取るEvent Storeは出力側へ置きます。中心のパイプラインはデータベースへ接続せず、入力からイベントか型付きエラーを返します。
+User ResolverとAppointment Resolverによる現在状態の取得は入力側へ置きます。`AppointmentCanceled`を受け取るEvent Storeは出力側へ置きます。権限と状態の確認と結果の作成はデータベースへ接続せず、入力からイベントか型付きエラーを返します。
 
 ROPでは、それぞれの処理で発生する失敗を同じフローで扱い、その失敗を網羅的に検証することで、変更箇所とテスト観点を追いやすくします。これにより、予約なしや権限なしなどの理由で止まっても適切にハンドリングでき、一部だけ処理されて不整合が発生することを防げます。
 

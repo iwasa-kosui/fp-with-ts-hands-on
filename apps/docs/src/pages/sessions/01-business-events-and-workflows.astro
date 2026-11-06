@@ -133,7 +133,7 @@ export const navigation = ({
                   <th scope="row">権限と状態を確認する</th>
                   <td>実行者と予約のデータ</td>
                   <td>診察開始前の予約（<code>Scheduled</code>または<code>CheckedIn</code>）</td>
-                  <td>予約を管理する権限がない、または予約の診察が始まっている</td>
+                  <td>予約を管理する権限がない、または予約が診察開始前ではない</td>
                 </tr>
                 <tr>
                   <th scope="row">結果を作る</th>
@@ -144,6 +144,7 @@ export const navigation = ({
               </tbody>
             </table>
             <p>各工程の入力と出力をデータで示すと、どの工程で何を確かめるかを説明できます。</p>
+            <p><code>AppointmentCanceled</code>は、「予約がキャンセルされた」という業務上の出来事を表すデータです。このデータをイベントと呼びます。</p>
 
             <h3>診察開始も同じ形で読む</h3>
             <p>後続のセッションでは、診察開始を題材にします。診察開始の入力は、「どの予約を、どの獣医師が開始するか」です。確認する条件は、「受付済みだけが診察を開始できる」です。条件を満たすと、<code>kind</code>は<code>CheckedIn</code>から<code>InExamination</code>へ変わります。</p>
@@ -169,6 +170,7 @@ export const navigation = ({
           <section id="io-boundaries">
             <h2>I/Oをパイプラインの両端へ追い出す</h2>
             <p>このセクションでは、パイプラインからデータの取得と記録を分け、中心のドメインロジックを副作用のないpureな関数として扱える構成を学びます。</p>
+            <p>前の表の工程のうち、「対象を取得する」はデータベースを読むI/Oです。この工程はResolverが担います。記録はパイプラインの成功の後でStoreが担います。「入力を検査する」「権限と状態を確認する」「結果を作る」は、値だけで結果が決まります。</p>
 
             <h3>ビジネスユースケースとユースケースを区別する</h3>
             <p>
@@ -189,7 +191,7 @@ export const navigation = ({
 
             <h3>出力側：Storeの役割</h3>
             <p>
-              <code>Appointment.cancel</code>は、条件を満たしたときだけ<code>AppointmentCanceled</code>を返します。Storeはその成功イベントを受け取り、Event Storeへ追記します。失敗した場合はStoreを呼ばないため、不正なキャンセルや途中状態を記録しません。誰がいつどの予約をキャンセルしたかは、追記された出来事から確認できます。
+              <code>Appointment.cancel</code>は、確認を通った予約から<code>AppointmentCanceled</code>を作ります。Storeはその成功イベントを受け取り、Event Storeへ追記します。失敗した場合はStoreを呼ばないため、不正なキャンセルや途中状態を記録しません。誰がいつどの予約をキャンセルしたかは、追記された出来事から確認できます。
             </p>
             <CancelPipelineBoundaries />
             <p>
