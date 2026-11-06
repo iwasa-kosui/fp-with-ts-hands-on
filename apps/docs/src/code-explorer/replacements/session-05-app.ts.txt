@@ -1,0 +1,58 @@
+import { createClinicRootView } from "@fp-with-ts/clinic-web/server";
+import { inertia } from "@hono/inertia";
+import { Hono } from "hono";
+
+import type { Appointment } from "./domain/appointment/index.js";
+import type { AppointmentStore } from "./useCase/dependencies.js";
+import { registerClinicRoutes, session05InitialAppointment } from "./web/routes.js";
+
+type DatabaseBackedAppOptions = Readonly<{
+  databasePath: string;
+  migrationsFolder: string;
+  isProduction: boolean;
+}>;
+
+export type DatabaseBackedApp = Hono & Readonly<{ close: () => void }>;
+
+const createInMemoryStore = (): AppointmentStore => {
+  const appointments = new Map<string, Appointment>();
+  const find = (appointmentId: string): Appointment | undefined =>
+    appointments.get(appointmentId);
+  const reset = () => {
+    appointments.clear();
+    appointments.set(
+      session05InitialAppointment.appointmentId,
+      session05InitialAppointment,
+    );
+    return session05InitialAppointment;
+  };
+  reset();
+
+  return {
+    find,
+    resolveById: find,
+    reset,
+    save: (appointment) => {
+      appointments.set(appointment.appointmentId, appointment);
+    },
+  };
+};
+
+const createHonoApp = (isProduction: boolean): Hono => {
+  const app = new Hono();
+  const store = createInMemoryStore();
+
+  app.use("*", inertia({ version: "1", rootView: createClinicRootView(isProduction) }));
+  registerClinicRoutes(app, store);
+  app.onError((_error, context) => context.text("Internal Server Error", 500));
+  return app;
+};
+
+export const createApp = (isProduction = false): DatabaseBackedApp =>
+  Object.assign(createHonoApp(isProduction), {
+    close: () => {},
+  });
+
+export const createDatabaseBackedApp = ({
+  isProduction,
+}: DatabaseBackedAppOptions): DatabaseBackedApp => createApp(isProduction);

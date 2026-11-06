@@ -247,6 +247,44 @@ describe("Code Explorer project files", () => {
     }
   });
 
+  it("bundles the clinic-web server sources and an in-memory app into the session-05 workspace", () => {
+    const files = projectFilesForSnapshot("session-05");
+
+    for (const vendorFile of [
+      "vendor/clinic-web/server.ts",
+      "vendor/clinic-web/notice.ts",
+      "vendor/clinic-web/rootView.tsx",
+      "vendor/clinic-web/contracts.ts",
+    ]) {
+      expect(files[vendorFile], vendorFile).toEqual(expect.any(String));
+    }
+    expect(files["src/app.ts"]).toEqual(expect.any(String));
+    expect(files["src/app.ts"]).not.toContain("better-sqlite3");
+    expect(files["src/app.ts"]).not.toContain("adaptor/secondary/sqlite");
+    expect(files["src/app.ts"]).not.toContain("drizzle");
+    expect(files["vitest.exercises.config.ts"]).toContain(
+      "@fp-with-ts/clinic-web/server",
+    );
+    expect(
+      JSON.parse(files["tsconfig.json"]!).compilerOptions.paths,
+    ).toEqual({
+      "@fp-with-ts/clinic-web/server": ["./vendor/clinic-web/server.ts"],
+      "@fp-with-ts/clinic-web": ["./vendor/clinic-web/contracts.ts"],
+    });
+  });
+
+  it("keeps the clinic-web vendor sources out of other snapshots", () => {
+    for (const snapshot of projectSnapshots) {
+      if (snapshot === "session-05") continue;
+      const files = projectFilesForSnapshot(snapshot);
+
+      expect(
+        Object.keys(files).filter((file) => file.startsWith("vendor/clinic-web/")),
+        snapshot,
+      ).toEqual([]);
+    }
+  });
+
   it.each([
     {
       snapshot: "session-06" as const,
