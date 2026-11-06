@@ -7,7 +7,7 @@ export const sessionNavigationItems = [
   { slug: "00-system-handover", title: "業務とシステムを引き継ぐ" },
   {
     slug: "01-business-events-and-workflows",
-    title: "EventStormingとROPで予約キャンセルを設計する",
+    title: "データとパイプラインで予約キャンセルを設計する",
   },
   { slug: "02-state-transitions", title: "予約の状態と遷移をモデル化する" },
   {

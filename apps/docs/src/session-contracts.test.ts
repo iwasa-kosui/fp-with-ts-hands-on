@@ -43,7 +43,7 @@ const expectedCurriculum = [
   {
     slug: "01-business-events-and-workflows",
     sequence: "01",
-    title: "EventStormingとROPで予約キャンセルを設計する",
+    title: "データとパイプラインで予約キャンセルを設計する",
     durationMinutes: 15,
     kind: "workshop",
     exerciseCommand: undefined,
@@ -121,7 +121,7 @@ const expectedEpisodes = [
   [
     "会計済みの予約を、受付担当者が誤ってキャンセルできました。",
     "理由のないキャンセルがStoreへ記録され、どの条件を確認したか説明できません。",
-    "実装へ進む前に、依頼、確認する条件、集約、成功時に起きる出来事を決めます。",
+    "実装へ進む前に、予約のデータと、キャンセルでデータがどう変わるかを確かめます。",
   ],
   [
     "会計を終えたウサギは帰ったはずなのに、画面の中では診察室へ戻ってきました。",
@@ -263,7 +263,7 @@ const expectedNavigation = [
     previous: undefined,
     next: {
       href: "/sessions/01-business-events-and-workflows/",
-      title: "EventStormingとROPで予約キャンセルを設計する",
+      title: "データとパイプラインで予約キャンセルを設計する",
     },
   },
   {
@@ -279,7 +279,7 @@ const expectedNavigation = [
   {
     previous: {
       href: "/sessions/01-business-events-and-workflows/",
-      title: "EventStormingとROPで予約キャンセルを設計する",
+      title: "データとパイプラインで予約キャンセルを設計する",
     },
     next: {
       href: "/sessions/03-adt-and-exhaustiveness/",
