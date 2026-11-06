@@ -10,8 +10,13 @@ import type { SessionWorkspace } from "../../code-explorer/types";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { loadSolutionSnippets } from "../../sessions/solution-snippets";
 import type {
+  DelegationPrompt,
+  ExampleSnapshot,
+  ExerciseModule,
   ExerciseSessionSummary,
+  ExerciseStep,
   SessionSummary,
+  SolutionPresentation,
 } from "../../sessions/types";
 import "../../styles/code-playground.css";
 import "../../styles/sessions.css";
@@ -31,15 +36,25 @@ type TeachingTopic = Readonly<{
   why: string;
 }>;
 
+type SupplementaryExercise = Readonly<{
+  exerciseCommand: string;
+  exerciseModule: ExerciseModule;
+  solutionSnapshot: ExampleSnapshot;
+  solutionPresentation: SolutionPresentation;
+  incident: string;
+  delegationPrompt: DelegationPrompt;
+  steps: readonly ExerciseStep[];
+}>;
+
 export const session: SessionSummary = {
   slug: "04-boundaries-and-pii",
   snapshot: "session-04",
   sequence: "04",
   kind: "exercise",
   title: "診察開始の入力を境界で検証する",
-  durationMinutes: 30,
-  timeBreakdown: { brief: 4, teach: 7, exercise: 12, review: 7 },
-  adv: { articulate: 2, delegate: 8, verify: 2 },
+  durationMinutes: 35,
+  timeBreakdown: { brief: 3, teach: 10, exercise: 15, review: 7 },
+  adv: { articulate: 2, delegate: 11, verify: 2 },
   peerReview: {
     minutes: 7,
     pickCount: 2,
@@ -71,7 +86,7 @@ export const session: SessionSummary = {
       "HTTPから届く診察開始の入力を改善してください。不正な予約IDや担当獣医師IDが、型付き入力としてユースケースへ渡らない状態を目指します。",
     decisions: [
       "外部入力をunknownとして受け取る場所はどこか",
-      "S3で作った2種類のschemaをどう組み合わせるか",
+      "補助演習で区別した2種類のschemaをどう組み合わせるか",
     ],
   },
   steps: [
@@ -111,6 +126,82 @@ export const session: SessionSummary = {
     "examples/final/src/domain/appointment/appointmentId.ts",
     "examples/final/src/domain/appointment/veterinarianId.ts",
     "examples/final/src/useCase/startExaminationUseCase.ts",
+  ],
+};
+
+export const supplementaryExercise: SupplementaryExercise = {
+  exerciseCommand: "pnpm exercise:03",
+  exerciseModule: {
+    dir: "examples/session-03/src/domain",
+    fileBudget: 5,
+    lineBudget: 34,
+  },
+  solutionSnapshot: "session-04",
+  solutionPresentation: "excerpt",
+  incident: "診察開始で AppointmentId と VeterinarianId を取り違えても、型検査が通った。",
+  delegationPrompt: {
+    request:
+      "診察開始で使う予約IDと担当獣医師IDを改善してください。同じUUID形式でも、用途を取り違えたコードはコンパイルを通らない状態を目指します。",
+    decisions: [
+      "AppointmentIdとVeterinarianIdをどの型として定義するか",
+      "用途の区別を予約状態とstartExaminationへどう伝えるか",
+      "取り違えをコンパイルエラーとしてどう残すか",
+    ],
+  },
+  steps: [
+    {
+      id: "s3-brand-start-examination-ids",
+      goal: "予約IDと担当獣医師IDを、配布済みの識別子と同じ規約で別々の型にする。",
+      startingFailure: "予約IDと担当獣医師IDを取り違えても、型検査が通る。",
+      targets: [
+        "examples/session-03/src/domain/appointment/appointmentId.ts",
+        "examples/session-03/src/domain/appointment/veterinarianId.ts",
+      ],
+      solutions: [
+        {
+          path: "examples/session-04/src/domain/appointment/appointmentId.ts",
+          symbol: "AppointmentId",
+          lines: [3, 6],
+        },
+        {
+          path: "examples/session-04/src/domain/appointment/veterinarianId.ts",
+          symbol: "VeterinarianId",
+          lines: [3, 6],
+        },
+      ],
+    },
+    {
+      id: "s3-apply-start-examination-ids",
+      goal: "予約の6状態とstartExaminationが、用途別の識別子を受け取るようにする。",
+      startingFailure: "予約状態とstartExaminationが、用途を区別しないstringを受け取る。",
+      targets: [
+        "examples/session-03/src/domain/appointment/appointment.ts",
+        "examples/session-03/src/domain/appointment/transitions.ts",
+      ],
+      solutions: [
+        {
+          path: "examples/session-04/src/domain/appointment/appointment.ts",
+          symbol: "Scheduled",
+          lines: [1, 15],
+        },
+        {
+          path: "examples/session-04/src/domain/appointment/transitions.ts",
+          symbol: "startExamination",
+          lines: [17, 27],
+        },
+      ],
+    },
+    {
+      id: "s3-reject-id-swap",
+      goal: "AppointmentIdとVeterinarianIdを入れ替えたコードがコンパイルできないことを、型テストで確かめる。",
+      startingFailure: "取り違えた2行が、型エラーにならないままコンパイルされる。",
+      targets: ["examples/session-03/src/domain/domain.test-types.ts"],
+      solutions: [{
+        path: "examples/session-04/src/domain/domain.test-types.ts",
+        symbol: "acceptAppointmentId",
+        lines: [1, 14],
+      }],
+    },
   ],
 };
 
@@ -224,6 +315,134 @@ const OwnerContactSchema = z
   },
 ];
 
+const supplementaryExerciseTeaching: readonly TeachingTopic[] = [
+  {
+    name: "用途別の Branded Type",
+    definition:
+      "同じ文字列形式でも、用途の違う識別子は別の型として扱います。zod の brand を付けると、互いに代入できない型ができます。",
+    before: {
+      sources: ["examples/session-03/src/domain/appointment/appointmentId.ts"],
+      code: `const schema = z.string().uuid();
+
+export type AppointmentId = z.infer<typeof schema>;
+export const AppointmentId = { schema, parse: schema.parse } as const;`,
+    },
+    after: {
+      sources: ["examples/session-04/src/domain/appointment/appointmentId.ts"],
+      code: `const schema = z.string().uuid().brand<"AppointmentId">();
+
+export type AppointmentId = z.infer<typeof schema>;
+export const AppointmentId = { schema, parse: schema.parse } as const;`,
+    },
+    why: "AppointmentIdとVeterinarianIdは、どちらもUUID形式のstringです。uuid検査だけでは相互に代入できます。演習ではPetId、OwnerId、ExamIdの実装を手本にして、それぞれ別のbrandを付けます。区別するのは値の形式ではなく用途です。",
+  },
+  {
+    name: "識別子をドメインモデルと状態遷移で利用する",
+    definition:
+      "予約の状態を表す型・状態遷移関数を、作成した Branded Type を利用する形に変更します。",
+    before: {
+      sources: [
+        "examples/session-03/src/domain/appointment/appointment.ts",
+        "examples/session-03/src/domain/appointment/transitions.ts",
+      ],
+      code: `export type Scheduled = Readonly<{
+  kind: "Scheduled";
+  appointmentId: string;
+  // ...
+}>;
+
+export const startExamination = (
+  appointment: CheckedIn,
+  veterinarianId: string,
+  examinationStartedAt: string,
+): InExamination =>`,
+    },
+    after: {
+      sources: [
+        "examples/session-04/src/domain/appointment/appointment.ts",
+        "examples/session-04/src/domain/appointment/transitions.ts",
+      ],
+      code: `export type Scheduled = Readonly<{
+  kind: "Scheduled";
+  appointmentId: AppointmentId;
+  // ...
+}>;
+
+export const startExamination = (
+  appointment: CheckedIn,
+  veterinarianId: VeterinarianId,
+  examinationStartedAt: string,
+): InExamination =>`,
+    },
+    why: "識別子型を定義しただけでは、予約状態と遷移関数がstringを受け取るままです。予約の6状態にあるappointmentIdをAppointmentIdへ変え、startExaminationの引数とInExaminationのveterinarianIdをVeterinarianIdへ変えます。入力から状態遷移まで同じ型を使うと、取り違えを型検査で止められます。",
+  },
+  {
+    name: "@ts-expect-error による型テスト",
+    definition:
+      "わざとコンパイルエラーになるコードを書き、その行で確かにコンパイルエラーが発生することを検査します。もし誰かが実装を変更して意図せずコンパイルエラーが出なくなってしまった場合、@ts-expect-error は「不要なエラー抑制を行なっている」ことになり、逆にコンパイルエラーとなります。",
+    before: {
+      sources: ["examples/session-03/src/domain/domain.test-types.ts"],
+      code: `const acceptAppointmentId = (_id: AppointmentId): void => undefined;
+const acceptVeterinarianId = (_id: VeterinarianId): void => undefined;
+
+acceptAppointmentId(veterinarianId);
+acceptVeterinarianId(appointmentId);`,
+    },
+    after: {
+      sources: ["examples/session-04/src/domain/domain.test-types.ts"],
+      code: `const acceptAppointmentId = (_id: AppointmentId): void => undefined;
+const acceptVeterinarianId = (_id: VeterinarianId): void => undefined;
+
+// @ts-expect-error VeterinarianIdをAppointmentIdとして使えません。
+acceptAppointmentId(veterinarianId);
+
+// @ts-expect-error AppointmentIdをVeterinarianIdとして使えません。
+acceptVeterinarianId(appointmentId);`,
+    },
+    why: "実行時テストでは、間違えた値を渡すとコンパイルエラーになることを確かめられません。@ts-expect-errorは次の行に型エラーが必要だと宣言します。後から2つの識別子が同じ型へ戻ると、不要なエラー抑制として型検査が失敗します。",
+  },
+];
+
+const supplementaryExerciseTypecheckCommand =
+  "pnpm --filter @fp-with-ts/clinic-session-03 typecheck";
+const supplementaryExerciseSolutionSteps = await Promise.all(
+  supplementaryExercise.steps.map(async (step) => ({
+    step,
+    snippets: await loadSolutionSnippets(step),
+  })),
+);
+const supplementaryExercisePrompt = `次の変更を実装してください。
+
+業務背景:
+${supplementaryExercise.incident}
+
+依頼:
+${supplementaryExercise.delegationPrompt.request}
+
+取り違えてはいけない値: [言語化フェーズで書いた1文]
+
+着手前に判断すること:
+${supplementaryExercise.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
+
+まず配布コードと失敗しているテストを読み、上の判断と変更方針を短く説明してください。説明のあとで実装に進んでください。設計手段は既存コードに合うものを選び、選んだ理由も示してください。
+
+受け入れ条件:
+${supplementaryExercise.steps.map((step) => `- ${step.goal}`).join("\n")}
+
+変更範囲:
+- ${supplementaryExercise.exerciseModule.dir}/ のみ
+- 最大 ${supplementaryExercise.exerciseModule.fileBudget} ファイル・約 ${supplementaryExercise.exerciseModule.lineBudget} 行
+- 範囲外の変更が必要に見えた場合は、変更せず理由を報告する
+- 型エラーを \`as\` によるキャストで回避しない
+
+検証:
+- ${supplementaryExercise.exerciseCommand} を実行し、すべての assertion が成功すること
+
+完了時の報告:
+- 変更したファイルと判断理由
+- 検証コマンドの結果
+- 型だけでは守れず、テストまたはレビューに残した点`;
+
 const narrative = {
   requirement: "HTTPから届く予約IDと担当獣医師IDを検証し、正しい値だけをstartExaminationへ渡す。",
   currentRisk: "raw: anyから値をコピーして必ずOkを返すため、night-shiftでもStartExaminationInputとして扱えます。",
@@ -276,6 +495,7 @@ const chapters = [
   { id: "incident", label: "今回つくるもの" },
   { id: "legacy", label: "コードを読み、失敗を再現する" },
   { id: "teach", label: "使う型を知る" },
+  { id: "supplementary", label: "補助演習" },
   { id: "refactor", label: "型で閉じる" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
@@ -295,8 +515,8 @@ export const promisesHref =
   "/sessions/02-state-transitions/#peer-review-promises";
 export const navigation = ({
   previous: {
-    href: "/sessions/03-semantic-identifiers/",
-    title: "診察開始の識別子を型で区別する",
+    href: "/sessions/03-adt-and-exhaustiveness/",
+    title: "予約の状態の分岐漏れを型で検出する",
   },
   next: {
     href: "/sessions/05-workflow-errors/",
@@ -356,7 +576,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <p class="case-file__episode-label">動物病院のひと幕</p>
               {session.episode.map((line) => <p data-episode-line>{line}</p>)}
             </aside>
-            <p>外部の文字列を検査し、S3で区別した2種類のIDを持つ入力へ変換します。</p>
+            <p>外部の文字列を検査し、補助演習で区別した2種類のIDを持つ入力へ変換します。</p>
             <h3>実際に届いた入力</h3>
             <p>
               URLの予約IDはrouteが<code>appointmentId</code>へ入れます。request bodyには、
@@ -490,10 +710,92 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             </aside>
           </section>
 
+          <section id="supplementary">
+            <h2>補助演習（目安5分）</h2>
+            <p>補助演習は、手元のコードで実行します。このページの Playground は session-04 の snapshot なので、<code>{supplementaryExercise.exerciseCommand}</code> を実行できません。</p>
+            <p>先に <code>{supplementaryExercise.exerciseCommand}</code>、次に <code>{session.exerciseCommand}</code> の順に実行します。どちらもリポジトリのルートで実行するので、<code>cd</code> は要りません。</p>
+            <p>このページの開始コードには、補助演習の解答がすでに入っています。そのため、補助演習を飛ばしても、このページの演習は壊れません。目安は、補助演習が5分、このページの演習が10分です。</p>
+            <p>補助演習の編集範囲は <code>{supplementaryExercise.exerciseModule.dir}</code>、変更するファイル数は最大{supplementaryExercise.exerciseModule.fileBudget}ファイル・約{supplementaryExercise.exerciseModule.lineBudget}行です。</p>
+            <h3>取り違えたまま型検査する</h3>
+            <p><code>examples/session-03/src/domain/domain.test-types.ts</code> の <code>acceptAppointmentId</code> と <code>acceptVeterinarianId</code> の呼び出しは、渡す値が逆です。この状態で型検査を実行します。</p>
+            <figure class="code-block" data-typecheck-reproduction>
+              <figcaption>型検査コマンド</figcaption>
+              <Code code={supplementaryExerciseTypecheckCommand} lang="shell" />
+              <p><strong>期待結果:</strong> 取り違えた2行が残っていても、型検査は成功します。</p>
+            </figure>
+            <p>型検査が成功したこと自体が失敗の再現です。補助演習の開始時点の <code>AppointmentId</code> と <code>VeterinarianId</code> は、どちらもUUID検査済みの <code>string</code> なので、TypeScriptには用途の違いが見えません。</p>
+            <h3>修正前の失敗を確認する</h3>
+            <p>修正前は、次の{supplementaryExercise.steps.length}件に対応する演習テストが失敗します。</p>
+            <ul class="exercise-failures" aria-label="補助演習の修正前に確認する問題">
+              {supplementaryExercise.steps.map((step) => <li>{step.startingFailure}</li>)}
+            </ul>
+            <CommandBlock phase="red" command={supplementaryExercise.exerciseCommand} expected={`${supplementaryExercise.steps.length}件の演習テストが失敗します。`} />
+            <p>次に、補助演習の開始コードの書き方をbefore、解答の書き方をafterとして見比べます。</p>
+            {supplementaryExerciseTeaching.map((topic) => (
+              <article class="teaching-topic">
+                <h3>{topic.name}</h3>
+                <p>{topic.definition}</p>
+                <div class="teaching-topic__diff">
+                  <figure class="code-block">
+                    <figcaption>
+                      before:
+                      {topic.before.caption === undefined ? topic.before.sources?.map((source, index) => (
+                        <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                      )) : <span>{topic.before.caption}</span>}
+                    </figcaption>
+                    <Code code={topic.before.code} lang="ts" />
+                  </figure>
+                  <figure class="code-block">
+                    <figcaption>
+                      after:
+                      {topic.after.caption === undefined ? topic.after.sources?.map((source, index) => (
+                        <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                      )) : <span>{topic.after.caption}</span>}
+                    </figcaption>
+                    <Code code={topic.after.code} lang="ts" />
+                  </figure>
+                </div>
+                {topic.example === undefined ? null : (
+                  <figure class="code-block" data-teaching-example>
+                    <figcaption>{topic.example.caption}</figcaption>
+                    <Code code={topic.example.code} lang="ts" />
+                  </figure>
+                )}
+                <p class="teaching-topic__why">{topic.why}</p>
+              </article>
+            ))}
+            <p><strong>言語化</strong>: 取り違えてはいけない値を1文で書く。この1文を、次のテンプレートの「[言語化フェーズで書いた1文]」に入れます。</p>
+            <div class="delegation-prompt">
+              <h3>補助演習のプロンプトのテンプレート</h3>
+              <p>角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。Agentを使わない場合は、実装メモとして使います。</p>
+              <pre><code>{supplementaryExercisePrompt}</code></pre>
+            </div>
+            <h3>補助演習のステップごとの解答</h3>
+            {supplementaryExerciseSolutionSteps.map(({ step, snippets }) => (
+              <div class="solution-step">
+                <details class="step-solution" data-presentation={supplementaryExercise.solutionPresentation}>
+                  <summary>{step.goal}</summary>
+                  {snippets.map(({ solution, code }) => (
+                    <section class="step-solution__snippet">
+                      <h4><code>{solution.path}</code></h4>
+                      <Code code={code} lang="ts" />
+                    </section>
+                  ))}
+                </details>
+              </div>
+            ))}
+            <CommandBlock phase="green" command={supplementaryExercise.exerciseCommand} expected="演習テストがすべて成功します。" />
+            <h3>この演習で解決しないこと</h3>
+            <p>異なる用途は区別できますが、同じAppointmentId型を持つ別の予約を選ぶ誤りは型だけでは検出できない。</p>
+            <h3>演習を完了できないとき</h3>
+            <p>現在の3ステップを順に開き、まずAppointmentIdとVeterinarianIdに別々のbrandを付けます。次に予約状態とstartExaminationへ反映し、取り違えがコンパイルエラーになることを型テストで確かめます。</p>
+          </section>
+
           <section id="refactor">
             <h2>演習</h2>
             <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
             <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
+            <p>次の時間は補助演習の5分を含む合計です。補助演習を行った場合、依頼に使えるのは6分です。</p>
             <ol class="adv-flow">
               <li><strong>言語化（{session.adv.articulate}分）</strong>: 境界で拒否する入力を1文で書く。</li>
               <li><strong>依頼（{session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
