@@ -16,6 +16,22 @@ import type {
 import "../../styles/code-playground.css";
 import "../../styles/sessions.css";
 
+type TeachingCode = Readonly<{
+  sources?: readonly [string, ...string[]];
+  caption?: string;
+  code: string;
+}>;
+
+type TeachingTopic = Readonly<{
+  name: string;
+  definition: string;
+  guidance: readonly string[];
+  before: TeachingCode;
+  after: TeachingCode;
+  examples?: readonly TeachingCode[];
+  why: string;
+}>;
+
 export const session: SessionSummary = {
   slug: "06-effects-and-consistency",
   snapshot: "session-06",
@@ -215,9 +231,254 @@ const solutionSteps = await Promise.all(
     snippets: await loadSolutionSnippets(step),
   })),
 );
+const teaching: readonly TeachingTopic[] = [
+  {
+    name: "時刻と ID は port から受け取り、1回の実行で一度だけ作る",
+    definition: "port は、ユースケースが外側に求める処理を型で表した約束です。S5 で deps から受け取った resolver と store も port です。Clock は現在時刻を返す処理を、EventIdGenerator は新しいイベント ID を返す処理を表します。",
+    guidance: [
+      "new Date() と crypto.randomUUID() は、呼ぶたびに違う値を返します。同じ入力でも出力イベントが変わるので、テストは期待値を固定できません。",
+      "port にすると、テストは固定の値を渡せます。本番相当の実装は、Final の参照実装 examples/final/src/app.ts で確認できます。そこでは Clock の実装が new Date() を呼び、EventIdGenerator の実装が randomUUID() を呼びます。",
+      "値を作る回数も決めます。ユースケースは createEventContext を1回だけ呼び、できた EventContext を状態遷移へ渡します。状態遷移は、予約の examinationStartedAt とイベントの occurredAt を同じ値から作ります。",
+      "createEventContext を呼ぶ場所は、予約の確認の後です。予約が見つからないときや受付前のときは、map のコールバックが呼ばれないので、時刻もイベント ID も作りません。",
+    ],
+    before: {
+      sources: ["examples/session-06/src/useCase/startExamination.ts"],
+      code: `const occurredAt = new Date().toISOString();
+
+const event = {
+  kind: "ExaminationStarted",
+  eventId: EventId.parse(crypto.randomUUID()),
+  occurredAt,
+  appointmentId: result.value.appointmentId,
+  aggregateState: result.value,
+} as const satisfies ExaminationStarted;`,
+    },
+    after: {
+      sources: [
+        "examples/session-07/src/domain/aggregate/clock.ts",
+        "examples/session-07/src/domain/aggregate/eventIdGenerator.ts",
+        "examples/session-07/src/useCase/startExamination.ts",
+      ],
+      code: `export type Clock = Readonly<{
+  now: () => string;
+}>;
+
+export type EventIdGenerator = Readonly<{
+  generate: () => EventId;
+}>;
+
+export const createEventContext = (
+  deps: EventContextDependencies,
+): EventContext => ({
+  eventId: deps.eventIdGenerator.generate(),
+  occurredAt: deps.clock.now(),
+});
+
+.map((appointment) =>
+  Appointment.startExamination(createEventContext(deps))(
+    appointment,
+    input.veterinarianId,
+  ),
+)`,
+    },
+    why: "時刻と ID を引数で受け取ると、状態遷移は同じ入力から同じイベントを返す純粋関数のままです。実行ごとに変わる値を作る場所がユースケースの1か所に決まるので、テストは同じ実行を再現できます。",
+  },
+  {
+    name: "状態と監査記録は1回の保存で残す",
+    definition: "診察開始では、予約の状態の更新と監査記録の追加の2つの書き込みが起きます。この2つを別々の保存処理に分けると、途中で失敗したときに片方だけが残ります。",
+    guidance: [
+      "before は stateStore.save の後に eventLog.append を呼びます。append だけが失敗すると、予約は診察中になるのに、誰がいつ診察を開始したかの記録は残りません。順番を入れ替えても、今度は記録だけが残る可能性があります。",
+      "after は ExaminationStarted を store へ1回渡します。ExaminationStarted の aggregateState は保存後の予約の状態を持つので、1つの値が状態と監査記録の両方を表します。どう書き込むかは store の実装が決めます。",
+      "同時に残すことを実際に守るのは store の実装です。SQLite の実装は、saveState と appendAudit を1つの transaction の中で呼びます。appendAudit が例外を投げると transaction が取り消され、状態の更新も残りません。",
+      "store は transaction の中で現在の予約を読み直します。ユースケースが読んだ後に予約が変わっていて、現在の状態が CheckedIn でなければ、AppointmentConflict を返します。このとき store は saveState の前に返るので、何も書き込みません。",
+      "in-memory の実装は transaction を持ちません。新しい Map と配列を作ってから最後にまとめて置き換えることで、同じ約束を表します。",
+    ],
+    before: {
+      sources: [
+        "examples/session-06/src/useCase/dependencies.ts",
+        "examples/session-06/src/useCase/startExamination.ts",
+      ],
+      code: `export type EffectsDependencies = Readonly<{
+  resolver: AppointmentResolver;
+  stateStore: Readonly<{
+    save: (appointment: InExamination) => Promise<void>;
+  }>;
+  eventLog: Readonly<{
+    append: (event: ExaminationStarted) => Promise<void>;
+  }>;
+}>;
+
+await deps.stateStore.save(event.aggregateState);
+await deps.eventLog.append(event);`,
+    },
+    after: {
+      sources: [
+        "examples/session-07/src/useCase/dependencies.ts",
+        "examples/session-07/src/useCase/startExamination.ts",
+      ],
+      code: `export type ExaminationStartedStore = Readonly<{
+  store: (event: ExaminationStarted) => ResultAsync<void, AppointmentConflict>;
+}>;
+
+.andThrough((event) => deps.store.store(event))`,
+    },
+    examples: [
+      {
+        sources: ["examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts"],
+        code: `const storeAtomically = (event: ExaminationStarted) =>
+  database.transaction((transaction) => {
+    const current = findInTransaction(transaction, event.appointmentId);
+    if (current === undefined || current.kind !== "CheckedIn") {
+      return err({
+        kind: "AppointmentConflict",
+        appointmentId: event.appointmentId,
+      } as const);
+    }
+
+    const committedEvent = Appointment.startExamination({
+      eventId: event.eventId,
+      occurredAt: event.occurredAt,
+    })(current, event.aggregateState.veterinarianId);
+
+    saveState(transaction, committedEvent.aggregateState);
+    appendAudit(transaction, committedEvent);
+    return ok(undefined);
+  });`,
+      },
+      {
+        sources: ["examples/session-07/src/adaptor/inMemoryExaminationStartedStore.ts"],
+        code: `const currentAppointment = appointments.get(event.appointmentId);
+if (currentAppointment === undefined) {
+  throw new Error(\`Appointment missing at commit: \${event.appointmentId}\`);
+}
+if (currentAppointment.kind !== "CheckedIn") {
+  return err({
+    kind: "AppointmentConflict",
+    appointmentId: event.appointmentId,
+  } as const);
+}
+
+const nextAppointments = new Map(appointments);
+nextAppointments.set(event.appointmentId, event.aggregateState);
+const nextEvents = [...events, event];
+
+appointments = nextAppointments;
+events = nextEvents;
+
+return ok(undefined);`,
+      },
+    ],
+    why: "保存処理を1つにすると、ユースケースは片方だけ成功した場合の後始末を書かずに済みます。状態と監査記録をそろえる責任は store の実装に集まります。型だけでは transaction の有無を確かめられないので、examples/session-07/test/integration/fileSqliteTransaction.test.ts が監査記録の失敗時に状態が戻ることを確かめています。",
+  },
+  {
+    name: "ResultAsync と andThrough で非同期の保存をつなぐ",
+    definition: "ResultAsync<T, E> は、Promise<Result<T, E>> を包む neverthrow の型です。await を書かずに、S5 と同じ andThen と map をつなげられます。andThen のコールバックは、同期の Result も ResultAsync も返せます。",
+    guidance: [
+      "andThrough は、Ok の値を別の処理へ渡して実行し、その処理が Ok なら元の値を次へ渡します。その処理が Err を返したら、結果はその Err になります。",
+      "store の成功値は void です。andThen でつなぐと次へ渡る値が void になり、続く map でイベントから aggregateState を取り出せません。andThrough なら、保存の成功後もイベントが次へ渡ります。",
+      "andTee は使いません。andTee はコールバックの結果を見ないので、AppointmentConflict を結果に含められず、reject も握りつぶします。",
+    ],
+    before: {
+      sources: ["examples/session-06/src/useCase/startExamination.ts"],
+      code: `export const startExaminationWithEffects =
+  (deps: EffectsDependencies) =>
+  async (
+    input: Omit<StartExaminationInput, "examinationStartedAt">,
+  ): Promise<Result<void, StartExaminationWithEffectsError>> => {
+    const occurredAt = new Date().toISOString();
+    const result = startExamination({
+      resolver: deps.resolver,
+      store: { save: () => undefined },
+    })({ ...input, examinationStartedAt: occurredAt });
+
+    if (result.isErr()) {
+      return err(result.error);
+    }
+
+    const event = {
+      kind: "ExaminationStarted",
+      eventId: EventId.parse(crypto.randomUUID()),
+      occurredAt,
+      appointmentId: result.value.appointmentId,
+      aggregateState: result.value,
+    } as const satisfies ExaminationStarted;
+
+    await deps.stateStore.save(event.aggregateState);
+    await deps.eventLog.append(event);
+    return ok(undefined);
+  };`,
+    },
+    after: {
+      sources: ["examples/session-07/src/useCase/startExamination.ts"],
+      code: `export const startExaminationWithEffects =
+  (deps: EffectsDependencies) =>
+  (
+    input: StartExaminationWithEffectsInput,
+  ): ResultAsync<InExamination, StartExaminationWithEffectsError> =>
+    // ラボ結果到着は別の trigger から始まるため、この診察開始 workflow へ接続しません。
+    ResultAsync.fromSafePromise<AppointmentState | undefined>(
+      Promise.resolve().then(() =>
+        deps.resolver.resolveById(input.appointmentId),
+      ),
+    )
+      .andThen((appointment) =>
+        ensureAppointmentFound(appointment, input.appointmentId),
+      )
+      .andThen(ensureCheckedIn)
+      .map((appointment) =>
+        Appointment.startExamination(createEventContext(deps))(
+          appointment,
+          input.veterinarianId,
+        ),
+      )
+      .andThrough((event) => deps.store.store(event))
+      .map((event) => event.aggregateState);`,
+    },
+    examples: [
+      {
+        caption: "andThen でつなぐと、次へ渡る値が void になります（配布コードにはありません）",
+        code: `.andThen((event) => deps.store.store(event)) // 次へ渡る値は void
+.map((event) => event.aggregateState); // 型エラー`,
+      },
+    ],
+    why: "before は await の後に isErr で分岐し、成功時は ok(undefined) を返します。after は S5 と同じ順に読め、成功時は InExamination を、失敗時は業務エラーを返します。保存時の AppointmentConflict が結果の型に加わることも、型から確かめられます。",
+  },
+  {
+    name: "保存障害は Err へ変換せず、reject のまま伝える",
+    definition: "S5 で外側へ伝えたシステムエラーは、非同期の処理では Promise の reject になります。ResultAsync の E には業務エラーだけを書き、reject の理由は E に書きません。",
+    guidance: [
+      "AppointmentConflict と保存障害では、呼び出し側の対応が違います。競合なら、呼び出し側は最新の予約を確認して操作をやり直せます。データベースの障害や破損データには、呼び出し側が理由別に選べる対応がありません。",
+      "neverthrow の関数でこの2つの経路が分かれます。ResultAsync.fromPromise は、reject を第2引数の関数で Err へ変換します。ResultAsync.fromSafePromise は変換しないので、reject は reject のまま残ります。after は fromSafePromise を使います。",
+      "before のように fromPromise ですべての reject を AppointmentConflict へ変換すると、データベースの障害でも画面は競合として案内します。例外が外側の例外境界へ届かないので、障害はログに記録されません。",
+      "after は resolver の呼び出しを Promise.resolve().then(...) で包みます。resolver は同期の関数で、破損データを読むと ZodError を投げます。then の中で呼ぶと、この throw も reject になります。包まずに呼ぶと、ResultAsync を返す前に例外が呼び出し元へ飛びます。",
+      "reject は、S5 で確認した外側の例外境界が受け取ります。例外境界はログへ記録し、エラーの詳細を含まない 500 応答へ変換します。",
+    ],
+    before: {
+      caption: "すべての reject を業務エラーへ変換する書き方（配布コードにはありません）",
+      code: `ResultAsync.fromPromise(
+  deps.stateStore.save(event.aggregateState),
+  () =>
+    ({
+      kind: "AppointmentConflict",
+      appointmentId: event.appointmentId,
+    }) as const,
+);`,
+    },
+    after: {
+      sources: ["examples/session-07/src/useCase/startExamination.ts"],
+      code: `ResultAsync.fromSafePromise<AppointmentState | undefined>(
+  Promise.resolve().then(() =>
+    deps.resolver.resolveById(input.appointmentId),
+  ),
+)`,
+    },
+    why: "E に AppointmentConflict だけを書くと、呼び出し側は選べる対応だけを型から読み取れます。演習の Step 4 は、競合が Err になり、保存障害と破損データが reject になることをテストで確かめます。",
+  },
+];
 const chapters = [
   { id: "incident", label: "今回つくるもの" },
   { id: "legacy", label: "コードを読み、失敗を再現する" },
+  { id: "teach", label: "使う型を知る" },
   { id: "refactor", label: "型で閉じる" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
@@ -335,6 +596,64 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             </div>
           </section>
 
+          <section id="teach">
+            <h2>事前知識（{session.timeBreakdown.teach}分）</h2>
+            <p>S5 では、呼び出し側に理由別の対応がなく、要求された処理を完了できない異常をシステムエラーと呼び、Result へ変換せずに外側へ伝えました。S6 はこの続きです。保存が非同期になり、保存先が状態と監査記録の2か所になると、システムエラーが起きたときに何が残るかを設計しなければなりません。</p>
+            <p>次の4つのトピックは、演習の Step 1 から Step 4 に順に対応します。before は配布コードまたは避けたい書き方、after は次のスナップショットの書き方です。</p>
+            {teaching.map((topic) => (
+              <article class="teaching-topic">
+                <h3>{topic.name}</h3>
+                <p>{topic.definition}</p>
+                {topic.guidance.map((paragraph) => <p>{paragraph}</p>)}
+                <div class="teaching-topic__diff">
+                  <figure class="code-block">
+                    <figcaption>
+                      before:
+                      {topic.before.caption === undefined ? topic.before.sources?.map((source, index) => (
+                        <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                      )) : <span>{topic.before.caption}</span>}
+                    </figcaption>
+                    <Code code={topic.before.code} lang="ts" />
+                  </figure>
+                  <figure class="code-block">
+                    <figcaption>
+                      after:
+                      {topic.after.caption === undefined ? topic.after.sources?.map((source, index) => (
+                        <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                      )) : <span>{topic.after.caption}</span>}
+                    </figcaption>
+                    <Code code={topic.after.code} lang="ts" />
+                  </figure>
+                </div>
+                {topic.examples?.map((example) => (
+                  <figure class="code-block" data-teaching-example>
+                    <figcaption>
+                      {example.caption === undefined ? example.sources?.map((source, index) => (
+                        <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                      )) : <span>{example.caption}</span>}
+                    </figcaption>
+                    <Code code={example.code} lang="ts" />
+                  </figure>
+                ))}
+                <p class="teaching-topic__why">{topic.why}</p>
+              </article>
+            ))}
+          </section>
+
+          <aside class="failure-boundary" aria-label="業務エラーとインフラ例外の区別">
+            <h2>2つの失敗経路を見分ける</h2>
+            <ul class="decision-list">
+              <li>
+                <strong>業務エラー:</strong> 予約が存在しない・予約の状態が不正・予約が競合しているケースは、呼び出し元で次の対応を選択する余地があるため、
+                <code>Result</code> の <code>Err</code> で返します。
+              </li>
+              <li>
+                <strong>システムエラー:</strong> データベース起因のエラーやデータが破損しているエラーは呼び出し元でも解決できません。境界の外側で安全に記録し、エラーの詳細を含まない形で
+                HTTP 500 のレスポンスに変換します。
+              </li>
+            </ul>
+          </aside>
+
           <section id="refactor">
             <h2>演習</h2>
             <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
@@ -396,20 +715,6 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <ol>{session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
             </section>
           </section>
-
-          <aside class="failure-boundary" aria-label="業務エラーとインフラ例外の区別">
-            <h2>2つの失敗経路を見分ける</h2>
-            <ul class="decision-list">
-              <li>
-                <strong>業務上のエラー:</strong> 予約が存在しない・予約の状態が不正・予約が競合しているケースは、呼び出し元で次の対応を選択する余地があるため、
-                <code>Result</code> の <code>Err</code> で返します。
-              </li>
-              <li>
-                <strong>運用上の異常:</strong> データベース起因のエラーやデータが破損しているエラーは呼び出し元でも解決できません。境界の外側で安全に記録し、エラーの詳細を含まない形で
-                HTTP 500 のレスポンスに変換します。
-              </li>
-            </ul>
-          </aside>
       <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
         <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
