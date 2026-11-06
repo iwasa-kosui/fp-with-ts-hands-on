@@ -66,6 +66,8 @@ S2〜S6の開始スナップショットは、業務の言葉で命名された 
 
 module-not-found、import error、設定エラー、予期しない例外は意図したREDではありません。エラーの最初の行だけでなく、`Caused by` とスタックの先頭までTAへ見せてください。
 
+S5 の Playground は、現在 `@fp-with-ts/clinic-web/server` の読み込みエラーで止まります。環境の問題ではありません。S5 はローカル clone で進めてください。
+
 対象モジュールを変更した後は、同じexerciseコマンドが成功することを確認します。S0、S1、到達点 `examples/session-07`、Finalにはexerciseコマンドはありません。
 
 ## エージェントがモジュール外を変更した
