@@ -57,6 +57,15 @@ describe("loadSolutionSnippets", () => {
     expect(webHandler?.[1]?.code).not.toContain("try {");
   });
 
+  it("declares where each Session 05 solution is applied", () => {
+    for (const sessionStep of session05.steps) {
+      for (const solution of sessionStep.solutions) {
+        expect(solution.placement).toBeDefined();
+        expect(solution.placement?.startsWith("examples/session-05/")).toBe(true);
+      }
+    }
+  });
+
   it("loads supplementary exercise identifier solutions from their owning concept", async () => {
     const [identifierStep] = supplementaryExercise.steps;
     expect(identifierStep?.solutions.map(({ path }) => path)).toEqual([

@@ -29,6 +29,7 @@ export type SolutionReference = Readonly<{
   symbol: string;
   lines: readonly [number, number];
   presentation?: SolutionPresentation;
+  placement?: string;
 }>;
 
 export type Decision = Readonly<{
