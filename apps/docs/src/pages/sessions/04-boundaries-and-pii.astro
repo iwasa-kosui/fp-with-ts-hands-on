@@ -764,6 +764,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 <p class="teaching-topic__why">{topic.why}</p>
               </article>
             ))}
+            <p><strong>言語化</strong>: 取り違えてはいけない値を1文で書く。この1文を、次のテンプレートの「[言語化フェーズで書いた1文]」に入れます。</p>
             <div class="delegation-prompt">
               <h3>補助演習のプロンプトのテンプレート</h3>
               <p>角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。Agentを使わない場合は、実装メモとして使います。</p>
@@ -784,12 +785,17 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               </div>
             ))}
             <CommandBlock phase="green" command={supplementaryExercise.exerciseCommand} expected="演習テストがすべて成功します。" />
+            <h3>この演習で解決しないこと</h3>
+            <p>異なる用途は区別できますが、同じAppointmentId型を持つ別の予約を選ぶ誤りは型だけでは検出できない。</p>
+            <h3>演習を完了できないとき</h3>
+            <p>現在の3ステップを順に開き、まずAppointmentIdとVeterinarianIdに別々のbrandを付けます。次に予約状態とstartExaminationへ反映し、取り違えがコンパイルエラーになることを型テストで確かめます。</p>
           </section>
 
           <section id="refactor">
             <h2>演習</h2>
             <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
             <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
+            <p>次の時間は補助演習の5分を含む合計です。補助演習を行った場合、依頼に使えるのは6分です。</p>
             <ol class="adv-flow">
               <li><strong>言語化（{session.adv.articulate}分）</strong>: 境界で拒否する入力を1文で書く。</li>
               <li><strong>依頼（{session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>

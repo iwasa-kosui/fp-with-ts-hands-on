@@ -202,7 +202,7 @@ const narrative = {
   design: "Appointment の全状態を switch で処理し、default 分岐では never 型の値だけを受け取る assertNever へ appointment を渡します。状態を追加して case を足し忘れると、default に未処理の状態が残るため、コンパイルエラーになります。",
   limitation: "assertNever が止めるのはコンパイル時の分岐漏れです。型アサーションで偽った値が実行時に default へ届いた場合、assertNever は例外を投げます。",
   legacy: "kind を string で受ける toStatusLabel と、default で「不明」を返す分岐を探します。これらは、状態追加時の未対応の分岐をコンパイラで止められない箇所です。",
-  fallback: "解答スナップショットのステップを開き、toStatusLabel の引数型と網羅分岐をコピペします。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。相互レビューの約束事はS2のリンク先を確認します。",
+  fallback: "Session 02 が終わっていない場合は、先に Session 02 の解答を反映します。解答スナップショットのステップを開き、toStatusLabel の引数型と網羅分岐をコピペします。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。相互レビューの約束事はS2のリンク先を確認します。",
 } as const;
 
 const exerciseSession: ExerciseSessionSummary = session;
