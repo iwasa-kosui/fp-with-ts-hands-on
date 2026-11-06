@@ -23,6 +23,8 @@
     "exercise:04": "pnpm --filter @fp-with-ts/clinic-session-04 exercise",
     "exercise:05": "pnpm --filter @fp-with-ts/clinic-session-05 exercise",
     "exercise:06": "pnpm --filter @fp-with-ts/clinic-session-06 exercise",
+    "verify:urls": "node scripts/verify-urls.mjs",
+    "verify:exercises": "node scripts/verify-exercises.mjs",
     "typecheck": "pnpm --filter @fp-with-ts/clinic-web typecheck && pnpm --filter './examples/session-*' typecheck && pnpm typecheck:continuity && pnpm --filter @fp-with-ts/clinic-final typecheck && pnpm --filter @fp-with-ts/docs typecheck && tsc -p worker/tsconfig.json --noEmit",
     "typecheck:continuity": "pnpm --filter @fp-with-ts/start-examination-continuity typecheck",
     "preview": "pnpm --filter @fp-with-ts/docs preview",
