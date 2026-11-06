@@ -37,16 +37,15 @@ export const session: SessionSummary = {
   sequence: "02",
   kind: "exercise",
   title: "予約の状態と遷移をモデル化する",
-  durationMinutes: 30,
-  timeBreakdown: { brief: 4, teach: 6, exercise: 13, review: 7 },
-  adv: { articulate: 2, delegate: 9, verify: 2 },
+  durationMinutes: 20,
+  timeBreakdown: { brief: 3, teach: 6, exercise: 8, review: 3 },
+  adv: { articulate: 2, delegate: 4, verify: 2 },
   peerReview: {
-    minutes: 7,
+    minutes: 3,
     pickCount: 2,
     questions: [
       "`startExamination` は `CheckedIn` だけを受け取り、会計済み・キャンセル済みを型で拒否しますか。",
       "`recordPayment` は `AwaitingPayment` だけを受け取り、診察結果の記録前には会計できない型ですか。",
-      "状態を追加したとき、`assertNever` によって未対応の分岐がコンパイルエラーになりますか。",
     ],
   },
   solutionSnapshot: "session-03",
@@ -63,7 +62,7 @@ export const session: SessionSummary = {
   exerciseCommand: "pnpm exercise:02",
   exerciseModule: {
     dir: "examples/session-02/src/domain/appointment",
-    fileBudget: 2,
+    fileBudget: 1,
     lineBudget: 35,
   },
   delegationPrompt: {
@@ -72,7 +71,6 @@ export const session: SessionSummary = {
     decisions: [
       "どの状態からどの状態への遷移を許可するか",
       "各状態で必須にする情報は何か",
-      "状態追加時の分岐漏れをどこで検出するか",
     ],
   },
   steps: [
@@ -109,17 +107,6 @@ export const session: SessionSummary = {
         lines: [13, 45],
       }],
     },
-    {
-      id: "s2-exhaustive-label",
-      goal: "状態を追加したら表示名の分岐をコンパイルエラーにする。",
-      startingFailure: "状態を追加しても、表示名の分岐漏れを検出できない。",
-      targets: ["examples/session-02/src/domain/appointment/statusLabel.ts"],
-      solutions: [{
-        path: "examples/session-03/src/domain/appointment/statusLabel.ts",
-        symbol: "toStatusLabel",
-        lines: [3, 24],
-      }],
-    },
   ],
   decisions: [
     {
@@ -128,13 +115,9 @@ export const session: SessionSummary = {
     {
       invariant: "各状態において必要な情報の抜け漏れを許さない。",
     },
-    {
-      invariant: "状態を追加したとき、未対応の分岐をコンパイルエラーにする。",
-    },
   ],
   finalReferences: [
     "examples/final/src/domain/appointment/appointment.ts",
-    "examples/final/src/domain/shared/assertNever.ts",
   ],
 };
 
@@ -151,36 +134,14 @@ export const guides = ([
     ],
   },
   {
-    id: "non-exhaustive-label",
-    title: "current state の表示分岐が未知の状態を見逃す",
-    currentDesign: "current state の kind を string として受け、default で不明を返します。",
-    futureRisk: "状態を追加しても、未対応の分岐がコンパイルエラーになりません。",
-    path: "src/domain/appointment/statusLabel.ts",
-    highlights: [{ startLineNumber: 3, endLineNumber: 20 }],
+    id: "optional-cancellation-reason",
+    title: "cancel がキャンセル理由なしの呼び出しを受け入れている",
+    currentDesign: "cancel の reason が CancellationReason | undefined で、理由がなければ実行時に throw します。",
+    futureRisk: "理由を渡さない呼び出しもコンパイルが通り、キャンセル理由の欠落は実行して初めて分かります。",
+    path: "src/domain/appointment/transitions.ts",
+    highlights: [{ startLineNumber: 51, endLineNumber: 59 }],
   },
 ] as const) satisfies readonly CodeGuide[];
-
-const missingNoShowCase = `// もし後から Appointment に "NoShow"（無断キャンセル）を追加した場合...
-switch (appointment.kind) {
-  case "Scheduled":
-    return "予約済み";
-  case "CheckedIn":
-    return "来院済み";
-  case "InExamination":
-    return "診察中";
-  case "AwaitingPayment":
-    return "会計待ち";
-  case "Paid":
-    return "会計済み";
-  case "Canceled":
-    return "キャンセル";
-  // ❌ case "NoShow": の実装を忘れると...
-  default:
-    // ここで appointment は NoShow 型と推論される
-    // エラー: 型 'NoShow' の引数を型 'never' のパラメーターに
-    // 割り当てることはできません
-    return assertNever(appointment);
-}`;
 
 const teaching: readonly TeachingTopic[] = [
   {
@@ -285,62 +246,6 @@ export const recordPayment = (
     },
     why: "before は Appointment 全体を受け取るため、startExamination へ Paid や Canceled を渡せ、recordPayment へ InExamination を渡せます。状態の誤りが分かるのは、実行時に requireKind が例外を投げたときです。after は遷移ごとに CheckedIn、InExamination、AwaitingPayment だけを受け取ります。会計済みの予約や診察結果を記録していない予約を誤った関数へ渡すと、コードを実行する前の型検査で止まります。Discriminated Unionが状態の候補を定義し、関数の引数型が許可された遷移を定義します。",
   },
-  {
-    name: "assertNeverは未処理の状態をコンパイルエラーにする",
-    definition:
-      "kindで分岐してAppointmentの全状態を処理すると、default内のappointmentはnever型になります。assertNeverはnever型だけを受け取るため、未処理の状態が残っていないことを型検査で確かめられます。",
-    before: {
-      sources: ["examples/session-02/src/domain/appointment/statusLabel.ts"],
-      code: `export const toStatusLabel = (appointment: Readonly<{ kind: string }>): string => {
-  switch (appointment.kind) {
-    case "Scheduled":
-      return "予約済み";
-    case "CheckedIn":
-      return "来院済み";
-    case "InExamination":
-      return "診察中";
-    case "AwaitingPayment":
-      return "会計待ち";
-    case "Paid":
-      return "会計済み";
-    case "Canceled":
-      return "キャンセル";
-    default:
-      return "不明";
-  }
-};`,
-    },
-    after: {
-      sources: ["examples/session-03/src/domain/appointment/statusLabel.ts"],
-      code: `const assertNever = (value: never): never => {
-  throw new Error(\`Unknown appointment status: \${JSON.stringify(value)}\`);
-};
-
-export const toStatusLabel = (appointment: Appointment): string => {
-  switch (appointment.kind) {
-    case "Scheduled":
-      return "予約済み";
-    case "CheckedIn":
-      return "来院済み";
-    case "InExamination":
-      return "診察中";
-    case "AwaitingPayment":
-      return "会計待ち";
-    case "Paid":
-      return "会計済み";
-    case "Canceled":
-      return "キャンセル";
-    default:
-      return assertNever(appointment);
-  }
-};`,
-    },
-    example: {
-      caption: "NoShowを追加したのに、表示名の分岐を追加し忘れた例",
-      code: missingNoShowCase,
-    },
-    why: "before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after で現在の全状態を処理すると、default内のappointmentはneverになります。AppointmentにNoShowを追加し、caseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverへ渡せないため、コンパイルエラーになります。同じ網羅性チェックを使う分岐でも修正漏れがエラーになるので、新しい状態の影響箇所をコンパイラが示します。",
-  },
 ];
 
 const narrative = {
@@ -380,10 +285,10 @@ recordPayment(
   "2026-08-30T10:30:00+09:00",
 );`,
   },
-  design: "Scheduled | CheckedIn | InExamination | AwaitingPayment | Paid | Canceled のDiscriminated Unionを、遷移関数と分岐でも一貫して使います。completeExamination は InExamination だけを受け取り、recordPayment は AwaitingPayment だけを受け取る純粋関数にします。分岐では網羅チェックを行い、状態を追加したときの未対応の分岐をコンパイルエラーにします。",
+  design: "Scheduled | CheckedIn | InExamination | AwaitingPayment | Paid | Canceled のDiscriminated Unionを、遷移関数でも一貫して使います。completeExamination は InExamination だけを受け取り、recordPayment は AwaitingPayment だけを受け取る純粋関数にします。",
   limitation: "この型が守れるのは、TypeScript が検査できる値だけです。外部から届く未検証の値や、型アサーションで作った値は防げません。",
-  legacy: "Appointment 全体を受け取る遷移関数、throw、as Appointment、default 分岐を探します。これらは、許可されていない状態遷移や、状態追加時の未対応の分岐をコンパイラで止められない箇所です。",
-  fallback: "解答スナップショットをステップ単位で開き、まず遷移関数の引数型、その後に網羅分岐をコピペします。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。",
+  legacy: "Appointment 全体を受け取る遷移関数、throw、as Appointment を探します。これらは、許可されていない状態遷移をコンパイラで止められない箇所です。",
+  fallback: "解答スナップショットをステップ単位で開き、遷移関数の引数型をコピペします。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。",
 } as const;
 
 const exerciseSession: ExerciseSessionSummary = session;
@@ -400,7 +305,6 @@ export const workspace = ({
     "test/setup.test.ts",
     "src/domain/appointment/appointment.ts",
     "src/domain/appointment/transitions.ts",
-    "src/domain/appointment/statusLabel.ts",
   ],
 } as const) satisfies SessionWorkspace;
 
@@ -444,8 +348,8 @@ export const navigation = ({
     title: "データとパイプラインで予約キャンセルを設計する",
   },
   next: {
-    href: "/sessions/03-semantic-identifiers/",
-    title: "診察開始の識別子を型で区別する",
+    href: "/sessions/03-adt-and-exhaustiveness/",
+    title: "予約の状態の分岐漏れを型で検出する",
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
@@ -471,10 +375,11 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 - ${session.exerciseModule.dir}/ のみ
 - 最大 ${session.exerciseModule.fileBudget} ファイル・約 ${session.exerciseModule.lineBudget} 行
 - 範囲外の変更が必要に見えた場合は、変更せず理由を報告する
+- statusLabel.ts は次の Session で扱うため、変更しない
 - 型エラーを \`as\` によるキャストで回避しない
 
 検証:
-- ${session.exerciseCommand} を実行し、すべての assertion が成功すること
+- ${session.exerciseCommand} を実行し、分岐漏れの1個を除くすべての assertion が成功すること
 
 完了時の報告:
 - 変更したファイルと判断理由
@@ -536,14 +441,14 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             </p>
             <CodeGuideCards guides={guides} projectFiles={projectFiles} />
             <h3>修正前の失敗を確認する</h3>
-            <p>修正前は、次の{session.steps.length}件を確かめる{initialExerciseFailureCount}個の型検査が失敗します。</p>
+            <p>修正前は、{initialExerciseFailureCount}個の型検査が失敗します。このページの{session.steps.length}件のStepで、そのうち4個を直します。残る1個は、次のSessionで扱う分岐漏れの型検査です。直す問題は次の{session.steps.length}件です。</p>
             <ul class="exercise-failures" aria-label="修正前に確認する問題">
               {session.steps.map((step) => <li>{step.startingFailure}</li>)}
             </ul>
             <CommandBlock
               phase="red"
               command={session.exerciseCommand}
-              expected={`${initialExerciseFailureCount}個の型検査が失敗します。`}
+              expected={`${initialExerciseFailureCount}個の型検査が失敗します。このページの${session.steps.length}件のStepで4個を直し、残る1個は次のSessionで扱う分岐漏れの型検査です。`}
             />
             <p>ブラウザ内の変更はローカルへ反映されません。</p>
             <div data-code-explorer={workspace.slug}>
@@ -641,7 +546,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 </details>
               </div>
             ))}
-            <CommandBlock phase="green" command={session.exerciseCommand} expected="演習テストがすべて成功します。" />
+            <CommandBlock phase="green" command={session.exerciseCommand} expected="分岐漏れの型検査1個だけが失敗します。この1個はSession 03で直します。" />
             <h3>演習を完了できないとき</h3>
             <p>{narrative.fallback}</p>
           </section>

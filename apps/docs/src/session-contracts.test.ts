@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { supplementaryExercise } from "./pages/sessions/04-boundaries-and-pii.astro";
 import { sessionNavigationItems } from "./sessions/navigation";
 import type { SessionNavigation, SessionSummary } from "./sessions/types";
 type PageModule = Readonly<{
@@ -53,51 +54,51 @@ const expectedCurriculum = [
     slug: "02-state-transitions",
     sequence: "02",
     title: "予約の状態と遷移をモデル化する",
-    durationMinutes: 30,
+    durationMinutes: 20,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:02",
     snapshot: "session-02",
-    timeBreakdown: { brief: 4, teach: 6, exercise: 13, review: 7 },
+    timeBreakdown: { brief: 3, teach: 6, exercise: 8, review: 3 },
   },
   {
-    slug: "03-semantic-identifiers",
+    slug: "03-adt-and-exhaustiveness",
     sequence: "03",
-    title: "診察開始の識別子を型で区別する",
-    durationMinutes: 30,
+    title: "予約の状態の分岐漏れを型で検出する",
+    durationMinutes: 20,
     kind: "exercise",
-    exerciseCommand: "pnpm exercise:03",
-    snapshot: "session-03",
-    timeBreakdown: { brief: 4, teach: 6, exercise: 13, review: 7 },
+    exerciseCommand: "pnpm exercise:02",
+    snapshot: "session-02",
+    timeBreakdown: { brief: 3, teach: 7, exercise: 7, review: 3 },
   },
   {
     slug: "04-boundaries-and-pii",
     sequence: "04",
     title: "診察開始の入力を境界で検証する",
-    durationMinutes: 30,
+    durationMinutes: 35,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:04",
     snapshot: "session-04",
-    timeBreakdown: { brief: 4, teach: 7, exercise: 12, review: 7 },
+    timeBreakdown: { brief: 3, teach: 10, exercise: 15, review: 7 },
   },
   {
     slug: "05-workflow-errors",
     sequence: "05",
     title: "失敗をユースケースの結果として扱う",
-    durationMinutes: 30,
+    durationMinutes: 35,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:05",
     snapshot: "session-05",
-    timeBreakdown: { brief: 4, teach: 8, exercise: 10, review: 8 },
+    timeBreakdown: { brief: 4, teach: 13, exercise: 10, review: 8 },
   },
   {
     slug: "06-effects-and-consistency",
     sequence: "06",
     title: "副作用と整合性境界を設計する",
-    durationMinutes: 30,
+    durationMinutes: 40,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:06",
     snapshot: "session-06",
-    timeBreakdown: { brief: 4, teach: 3, exercise: 15, review: 8 },
+    timeBreakdown: { brief: 4, teach: 13, exercise: 15, review: 8 },
   },
   {
     slug: "final",
@@ -128,9 +129,9 @@ const expectedEpisodes = [
     "許可された状態遷移を覚えていたのは人間だけで、コードは何でも通す危ない設計でした。",
   ],
   [
-    "診察開始の入力で、予約IDと担当獣医師IDが入れ替わっていました。",
-    "どちらもUUIDなので、文字列の検査だけでは取り違えを止められません。",
-    "予約を選ぶ値と担当者を選ぶ値を、型で区別する必要があります。",
+    "無断キャンセルを表すNoShowの状態を足した翌朝、受付画面のハリネズミの予約に「不明」と表示されていました。",
+    "表示名の分岐にNoShowのcaseがなく、defaultが「不明」を返していても、型検査は成功しました。",
+    "状態を足したときは、直し忘れた分岐をコンパイラに見つけさせる必要があります。",
   ],
   undefined,
   [
@@ -153,49 +154,48 @@ const expectedEpisodes = [
 const expectedExercises = [
   {
     slug: "02-state-transitions",
-    adv: { articulate: 2, delegate: 9, verify: 2 },
+    adv: { articulate: 2, delegate: 4, verify: 2 },
     exerciseModule: {
       dir: "examples/session-02/src/domain/appointment",
-      fileBudget: 2,
+      fileBudget: 1,
       lineBudget: 35,
     },
     solutionSnapshot: "session-03",
     solutionPresentation: "excerpt",
     peerReviewPromises: "inline",
     peerReview: {
-      minutes: 7,
+      minutes: 3,
       pickCount: 2,
       questions: [
         "`startExamination` は `CheckedIn` だけを受け取り、会計済み・キャンセル済みを型で拒否しますか。",
         "`recordPayment` は `AwaitingPayment` だけを受け取り、診察結果の記録前には会計できない型ですか。",
-        "状態を追加したとき、`assertNever` によって未対応の分岐がコンパイルエラーになりますか。",
       ],
     },
   },
   {
-    slug: "03-semantic-identifiers",
-    adv: { articulate: 2, delegate: 9, verify: 2 },
+    slug: "03-adt-and-exhaustiveness",
+    adv: { articulate: 1, delegate: 5, verify: 1 },
     exerciseModule: {
-      dir: "examples/session-03/src/domain",
-      fileBudget: 5,
-      lineBudget: 34,
+      dir: "examples/session-02/src/domain/appointment",
+      fileBudget: 1,
+      lineBudget: 6,
     },
-    solutionSnapshot: "session-04",
+    solutionSnapshot: "session-03",
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
     peerReview: {
-      minutes: 7,
-      pickCount: 2,
+      minutes: 3,
+      pickCount: 1,
       questions: [
-        "`AppointmentId` と `VeterinarianId` を取り違えたコードは、型テストでコンパイルエラーになりますか。",
-        "予約の全状態で、`appointmentId` が `AppointmentId` になっていますか。",
-        "`startExamination` は、担当獣医師を `VeterinarianId` として受け取っていますか。",
+        "状態を追加したとき、`assertNever` によって未対応の分岐がコンパイルエラーになりますか。",
+        "`toStatusLabel` は `Readonly<{ kind: string }>` ではなく、`Appointment` を受け取っていますか。",
+        "`default` 分岐は固定の表示名を返さず、`assertNever` に `appointment` を渡していますか。",
       ],
     },
   },
   {
     slug: "04-boundaries-and-pii",
-    adv: { articulate: 2, delegate: 8, verify: 2 },
+    adv: { articulate: 2, delegate: 11, verify: 2 },
     exerciseModule: {
       dir: "examples/session-04/src/boundary",
       fileBudget: 1,
@@ -282,8 +282,8 @@ const expectedNavigation = [
       title: "データとパイプラインで予約キャンセルを設計する",
     },
     next: {
-      href: "/sessions/03-semantic-identifiers/",
-      title: "診察開始の識別子を型で区別する",
+      href: "/sessions/03-adt-and-exhaustiveness/",
+      title: "予約の状態の分岐漏れを型で検出する",
     },
   },
   {
@@ -298,8 +298,8 @@ const expectedNavigation = [
   },
   {
     previous: {
-      href: "/sessions/03-semantic-identifiers/",
-      title: "診察開始の識別子を型で区別する",
+      href: "/sessions/03-adt-and-exhaustiveness/",
+      title: "予約の状態の分岐漏れを型で検出する",
     },
     next: {
       href: "/sessions/05-workflow-errors/",
@@ -479,19 +479,18 @@ describe("page-owned session contracts", () => {
     ]);
   });
 
-  it("keeps semantic identifier exercise references with their owning concepts", () => {
-    const semanticIdentifiers = exerciseSessions.find(
-      ({ slug }) => slug === "03-semantic-identifiers",
-    );
+  it("keeps the semantic identifier supplementary exercise with its owning concepts", () => {
     const workflowErrors = exerciseSessions.find(
       ({ slug }) => slug === "05-workflow-errors",
     );
 
-    expect(semanticIdentifiers?.steps[0]?.targets).toEqual([
+    expect(supplementaryExercise.exerciseCommand).toBe("pnpm exercise:03");
+    expect(supplementaryExercise.solutionSnapshot).toBe("session-04");
+    expect(supplementaryExercise.steps[0]?.targets).toEqual([
       "examples/session-03/src/domain/appointment/appointmentId.ts",
       "examples/session-03/src/domain/appointment/veterinarianId.ts",
     ]);
-    expect(semanticIdentifiers?.steps[0]?.solutions).toEqual(
+    expect(supplementaryExercise.steps[0]?.solutions).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           path: "examples/session-04/src/domain/appointment/appointmentId.ts",
@@ -501,6 +500,18 @@ describe("page-owned session contracts", () => {
         }),
       ]),
     );
+    for (const step of supplementaryExercise.steps) {
+      for (const target of step.targets) {
+        expect(target).toMatch(
+          new RegExp(`^${supplementaryExercise.exerciseModule.dir}/`),
+        );
+      }
+      for (const solution of step.solutions) {
+        expect(solution.path).toMatch(
+          new RegExp(`^examples/${supplementaryExercise.solutionSnapshot}/`),
+        );
+      }
+    }
     expect(workflowErrors?.steps.flatMap(({ targets }) => targets)).not.toContain(
       "examples/session-05/src/domain/ids/appointmentId.ts",
     );

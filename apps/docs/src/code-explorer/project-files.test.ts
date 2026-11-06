@@ -104,7 +104,7 @@ describe("Code Explorer project files", () => {
     expect(projectSnapshots).toEqual([
       "session-00",
       "session-02",
-      "session-03",
+      "session-02",
       "session-04",
       "session-05",
       "session-06",
@@ -201,10 +201,6 @@ describe("Code Explorer project files", () => {
 
   it("exposes semantic identifiers from their owning concepts", () => {
     const expectedPaths = {
-      "03-semantic-identifiers": [
-        "src/domain/appointment/appointmentId.ts",
-        "src/domain/appointment/veterinarianId.ts",
-      ],
       "04-boundaries-and-pii": [
         "src/domain/appointment/appointmentId.ts",
         "src/domain/appointment/veterinarianId.ts",
