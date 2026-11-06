@@ -58,6 +58,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     command={props.session.exerciseCommand}
     expected={`${props.initialExerciseFailureCount}個の型検査が失敗します。このページの${props.session.steps.length}件のStepで4個を直し、残る1個は次のSessionで扱う分岐漏れの型検査です。`}
   />
+  <p>失敗した型検査は、出力の前半に「要件未達」の行で並びます。出力の末尾に <code>Tests 5 passed (5)</code> と出ても、演習は終わっていません。端末を上へスクロールして、先に並ぶ要件未達を見てください。</p>
   <p>ブラウザ内の変更はローカルへ反映されません。</p>
   <div data-code-explorer={props.workspace.slug}>
     <CodeExplorer
