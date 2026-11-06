@@ -89,6 +89,7 @@ export const session: SessionSummary = {
         path: "examples/session-06/src/useCase/errors.ts",
         symbol: "ensureCheckedIn",
         lines: [1, 31],
+        placement: "examples/session-05/src/useCase/errors.ts の全体を、このコードに置き換えます。",
       }],
     },
     {
@@ -100,6 +101,7 @@ export const session: SessionSummary = {
         path: "examples/session-06/src/useCase/errors.ts",
         symbol: "ensureAppointmentFound",
         lines: [1, 31],
+        placement: "examples/session-05/src/useCase/errors.ts の全体を、このコードに置き換えます。",
       }],
     },
     {
@@ -111,6 +113,7 @@ export const session: SessionSummary = {
         path: "examples/session-06/src/useCase/startExamination.ts",
         symbol: "startExamination",
         lines: [7, 44],
+        placement: "examples/session-05/src/useCase/startExamination.ts の全体を、このコードに置き換えます。",
       }],
     },
     {
@@ -118,11 +121,21 @@ export const session: SessionSummary = {
       goal: "Web側で業務エラーのkindを網羅し、それぞれ専用noticeへ変換する。",
       startingFailure: "状態不正の例外をWeb側が処理せず、500エラーにする。",
       targets: ["examples/session-05/src/web/routes.ts"],
-      solutions: [{
-        path: "examples/session-06/src/web/routes.ts",
-        symbol: "toStartExaminationNoticeCode",
-        lines: [22, 48],
-      }],
+      solutions: [
+        {
+          path: "examples/session-06/src/web/routes.ts",
+          symbol: "toStartExaminationNoticeCode",
+          lines: [22, 48],
+          placement: "examples/session-05/src/web/routes.ts の import 群の直後に、このコードを足します。",
+        },
+        {
+          path: "examples/session-05/src/web/routes.ts",
+          sourcePath: "apps/docs/src/sessions/solutions/session-05-start-examination-handler.ts.txt",
+          symbol: "registerClinicRoutes",
+          lines: [1, 22],
+          placement: "examples/session-05/src/web/routes.ts の start-examination の app.post 全体を、このコードに置き換えます。",
+        },
+      ],
     },
   ],
   decisions: [
@@ -450,7 +463,7 @@ const narrative = {
 } as const;
 
 const exerciseSession: ExerciseSessionSummary = session;
-const initialExerciseFailureCount = 9;
+const initialExerciseFailureCount = 8;
 
 export const workspace = ({
   slug: session.slug,
@@ -595,7 +608,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <ul class="exercise-failures" aria-label="修正前に確認する問題">
               {session.steps.map((step) => <li>{step.startingFailure}</li>)}
             </ul>
-            <CommandBlock phase="red" command={session.exerciseCommand} expected={`型検査の要件未達3件と演習テストの失敗6件、合わせて${initialExerciseFailureCount}件の失敗が出ます。`} />
+            <CommandBlock phase="red" command={session.exerciseCommand} expected={`型検査の要件未達3件と演習テストの失敗5件、合わせて${initialExerciseFailureCount}件の失敗が出ます。`} />
             <p>ブラウザ内の変更はローカルへ反映されません。</p>
             <div data-code-explorer={workspace.slug}>
               <CodeExplorer
@@ -726,6 +739,9 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                   {snippets.map(({ solution, code }) => (
                     <section class="step-solution__snippet">
                       <h4><code>{solution.path}</code></h4>
+                      {solution.placement !== undefined ? (
+                        <p class="step-solution__placement">{solution.placement}</p>
+                      ) : null}
                       <Code code={code} lang="ts" />
                     </section>
                   ))}

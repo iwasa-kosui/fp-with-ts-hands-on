@@ -505,6 +505,11 @@
   white-space: normal;
 }
 
+.step-solution__placement {
+  margin: 0;
+  padding: 0 1rem 0.75rem;
+}
+
 .exercise-review-checklist {
   margin-block: 1.5rem;
   padding: 1rem;

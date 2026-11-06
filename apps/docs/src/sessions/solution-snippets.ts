@@ -27,7 +27,7 @@ export const loadSolutionSnippets = async (
       }
 
       const source = await readFile(
-        resolve(process.cwd(), "../..", solution.path),
+        resolve(process.cwd(), "../..", solution.sourcePath ?? solution.path),
         "utf8",
       );
       const sourceLines = source.split("\n");
