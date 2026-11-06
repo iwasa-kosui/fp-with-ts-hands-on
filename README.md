@@ -8,7 +8,7 @@
 
 [事前準備](https://fp-with-ts-hands-on.kosui.workers.dev/setup/) を済ませ、[Session 00](https://fp-with-ts-hands-on.kosui.workers.dev/sessions/00-system-handover/) から進めます。演習や振り返りの手順は、各セッションで説明します。ハンズオンの進行役向けには [ファシリテーターガイド](docs/event/facilitator-guide.md) があります。
 
-2026年8月30日のイベントは終了していますが、教材は引き続き公開しています。
+2026年8月30日の第1回は終了しました。第2回は2026年11月7日に開催します。教材は引き続き公開しています。
 
 ## セットアップ
 
