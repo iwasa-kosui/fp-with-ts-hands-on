@@ -119,14 +119,7 @@ const missingNoShowCase = `// もし後から Appointment に "NoShow"（無断�
 switch (appointment.kind) {
   case "Scheduled":
     return "予約済み";
-  case "CheckedIn":
-    return "来院済み";
-  case "InExamination":
-    return "診察中";
-  case "AwaitingPayment":
-    return "会計待ち";
-  case "Paid":
-    return "会計済み";
+  // CheckedIn、InExamination、AwaitingPayment、Paid の case は省略
   case "Canceled":
     return "キャンセル";
   // ❌ case "NoShow": の実装を忘れると...
@@ -141,9 +134,9 @@ const teaching: readonly TeachingTopic[] = [
   {
     name: "never型は値が1つもない型である",
     definition:
-      "型は、その型に入る値の集合と見ることができます。\"Scheduled\" | \"CheckedIn\" は2個の値を持つ集合です。never型は値を1個も持たない型で、空集合に当たります。never型の変数へ代入できる値はありません。switchのcaseを通るたびに、コンパイラは処理済みの候補を型から取り除きます。候補が1個も残らなければ、残りの型はneverになります。",
+      "型は、その型に入る値の集合と見ることができます。\"Scheduled\" | \"CheckedIn\" は2個の値を持つ集合です。never型は値を1個も持たない型で、空集合に当たります。never型の変数へ代入できるのは、never型の式だけです。具体的な値は1個も代入できません。空集合はどの集合にも含まれるので、never型の式はどの型へも代入できます。switchのcaseを通るたびに、コンパイラは処理済みの候補を型から取り除きます。候補が1個も残らなければ、残りの型はneverになります。",
     before: {
-      caption: "候補が残っているので、neverへ代入できない",
+      caption: "候補が残っているので、statusをneverへ代入できない",
       code: `type Status = "Scheduled" | "CheckedIn";
 
 const toLabel = (status: Status): string => {
@@ -159,10 +152,8 @@ const toLabel = (status: Status): string => {
 };`,
     },
     after: {
-      caption: "候補が残っていないので、neverへ代入できる",
-      code: `type Status = "Scheduled" | "CheckedIn";
-
-const toLabel = (status: Status): string => {
+      caption: "候補が残っていないので、never型のstatusを代入できる",
+      code: `const toLabel = (status: Status): string => {
   switch (status) {
     case "Scheduled":
       return "予約済み";
@@ -178,13 +169,13 @@ const toLabel = (status: Status): string => {
     },
     example: {
       caption: "never型の性質",
-      code: `const status: never = "Scheduled"; // ❌ never型へ代入できる値はない
+      code: `const label: never = "Scheduled"; // ❌ never型へ代入できる具体的な値はない
 
 type OnlyScheduled = "Scheduled" | never; // "Scheduled" と同じ。空集合を足しても候補は増えない
 
-const toText = (value: never): string => value; // ✅ never型の値はどの型へも代入できる`,
+const toText = (value: never): string => value; // ✅ never型の式はどの型へも代入できる`,
     },
-    why: "default内の型がneverになることは、処理していない候補が残っていないことを表します。default内の型がneverにならないなら、処理していない候補が残っています。never型へ代入できるかどうかを調べると、分岐を網羅したかどうかをコンパイラに確かめさせられます。",
+    why: "default内の型がneverになることは、処理していない候補が残っていないことを表します。never型へ代入できるかどうかを調べると、分岐を網羅したかどうかをコンパイラに確かめさせられます。",
   },
   {
     name: "ADTは直積型と直和型で型を組み立てる",
@@ -201,14 +192,7 @@ const toText = (value: never): string => value; // ✅ never型の値はどの�
 }>;
 
 // 2 × 2 × 2 × 2 × 2 = 32通り
-// 会計済みかつキャンセル済みの予約も表せてしまう
-const impossible: AppointmentFlags = {
-  isCheckedIn: true,
-  isExaminationStarted: true,
-  isExaminationCompleted: true,
-  isPaid: true,
-  isCanceled: true,
-};`,
+// 会計済みかつキャンセル済みの予約も表せてしまう`,
     },
     after: {
       caption: "直和型で状態を列挙する",
@@ -216,14 +200,13 @@ const impossible: AppointmentFlags = {
 type Canceled = Readonly<{
   kind: "Canceled";
   appointmentId: string;
-  petId: string;
-  ownerId: string;
-  scheduledAt: string;
   reason: CancellationReason;
   canceledAt: string;
+  // 他の項目は省略
 }>;
 
-// Appointment は直和型。kind の候補は 1 + 1 + 1 + 1 + 1 + 1 = 6通り
+// Appointment は直和型。kind の候補は6通り
+// 各状態の値の個数を足したものが、Appointment の値の個数になる
 type Appointment =
   | Scheduled
   | CheckedIn
@@ -232,7 +215,7 @@ type Appointment =
   | Paid
   | Canceled;`,
     },
-    why: "フラグを足すたびに、直積型の組み合わせは2倍になります。5個のフラグは32通りの組み合わせを作り、型検査は「会計済みかつキャンセル済み」のような起きてはいけない組み合わせも受け入れます。直和型では、状態を1個足すと候補が1個増えるだけです。候補を列挙できるので、コンパイラは分岐がすべての候補を処理したかを確かめられます。never型は値が0個の型なので、直和型に足しても候補の数は変わりません。",
+    why: "フラグを足すたびに、直積型の組み合わせは2倍になり、起きてはいけない組み合わせも型検査を通ります。直和型では、状態を1個足すと候補が1個増えるだけです。候補を列挙できるので、コンパイラは分岐がすべての候補を処理したかを確かめられます。",
   },
   {
     name: "assertNeverは未処理の状態をコンパイルエラーにする",
@@ -244,14 +227,7 @@ type Appointment =
   switch (appointment.kind) {
     case "Scheduled":
       return "予約済み";
-    case "CheckedIn":
-      return "来院済み";
-    case "InExamination":
-      return "診察中";
-    case "AwaitingPayment":
-      return "会計待ち";
-    case "Paid":
-      return "会計済み";
+    // CheckedIn、InExamination、AwaitingPayment、Paid の case は省略
     case "Canceled":
       return "キャンセル";
     default:
@@ -269,14 +245,7 @@ export const toStatusLabel = (appointment: Appointment): string => {
   switch (appointment.kind) {
     case "Scheduled":
       return "予約済み";
-    case "CheckedIn":
-      return "来院済み";
-    case "InExamination":
-      return "診察中";
-    case "AwaitingPayment":
-      return "会計待ち";
-    case "Paid":
-      return "会計済み";
+    // CheckedIn、InExamination、AwaitingPayment、Paid の case は省略
     case "Canceled":
       return "キャンセル";
     default:
@@ -288,7 +257,7 @@ export const toStatusLabel = (appointment: Appointment): string => {
       caption: "NoShowを追加したのに、表示名の分岐を追加し忘れた例",
       code: missingNoShowCase,
     },
-    why: "before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after で現在の全状態を処理すると、default内のappointmentはneverになります。AppointmentにNoShowを追加し、caseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverへ渡せないため、コンパイルエラーになります。同じ網羅性チェックを使う分岐でも修正漏れがエラーになるので、新しい状態の影響箇所をコンパイラが示します。assertNeverの戻り値はnever型で、never型の値はどの型へも代入できるので、stringを返す関数のdefaultでそのままreturnできます。",
+    why: "before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after でNoShowのcaseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverへ渡せないため、コンパイルエラーになります。網羅性検証を使うすべての分岐で同じエラーが出るので、コンパイラが新しい状態の影響箇所を示します。assertNeverの戻り値はnever型なので、stringを返す関数のdefaultでそのままreturnできます。",
   },
 ];
 
