@@ -1,9 +1,10 @@
 ---
-import { Code } from "astro:components";
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
-import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
+// CSS chunk の分割と読み込み順を変換前と同じに保つ
+import "../../components/code-explorer/CodeExplorer";
+import Prose from "../../sessions/prose/03-adt-and-exhaustiveness.mdx";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import type { SessionWorkspace } from "../../code-explorer/types";
@@ -16,19 +17,10 @@ import type {
 import "../../styles/code-playground.css";
 import "../../styles/sessions.css";
 
-type TeachingCode = Readonly<{
-  sources?: readonly [string, ...string[]];
-  caption?: string;
-  code: string;
-}>;
-
-type TeachingTopic = Readonly<{
-  name: string;
-  definition: string;
-  before: TeachingCode;
-  after: TeachingCode;
-  example?: Readonly<{ caption: string; code: string }>;
-  why: string;
+type TeachingSnippets = Readonly<{
+  before: string;
+  after: string;
+  example?: string;
 }>;
 
 export const session: SessionSummary = {
@@ -130,14 +122,9 @@ switch (appointment.kind) {
     return assertNever(appointment);
 }`;
 
-const teaching: readonly TeachingTopic[] = [
+const teaching: readonly TeachingSnippets[] = [
   {
-    name: "never型は値が1つもない型である",
-    definition:
-      "型は、その型に入る値の集合と見ることができます。\"Scheduled\" | \"CheckedIn\" は2個の値を持つ集合です。never型は値を1個も持たない型で、空集合に当たります。never型の変数へ代入できるのは、never型の式だけです。具体的な値は1個も代入できません。空集合はどの集合にも含まれるので、never型の式はどの型へも代入できます。switchのcaseを通るたびに、コンパイラは処理済みの候補を型から取り除きます。候補が1個も残らなければ、残りの型はneverになります。",
-    before: {
-      caption: "候補が残っているので、statusをneverへ代入できない",
-      code: `type Status = "Scheduled" | "CheckedIn";
+    before: `type Status = "Scheduled" | "CheckedIn";
 
 const toLabel = (status: Status): string => {
   switch (status) {
@@ -150,10 +137,7 @@ const toLabel = (status: Status): string => {
     }
   }
 };`,
-    },
-    after: {
-      caption: "候補が残っていないので、never型のstatusを代入できる",
-      code: `const toLabel = (status: Status): string => {
+    after: `const toLabel = (status: Status): string => {
   switch (status) {
     case "Scheduled":
       return "予約済み";
@@ -166,24 +150,14 @@ const toLabel = (status: Status): string => {
     }
   }
 };`,
-    },
-    example: {
-      caption: "never型の性質",
-      code: `const label: never = "Scheduled"; // ❌ never型へ代入できる具体的な値はない
+    example: `const label: never = "Scheduled"; // ❌ never型へ代入できる具体的な値はない
 
 type OnlyScheduled = "Scheduled" | never; // "Scheduled" と同じ。空集合を足しても候補は増えない
 
 const toText = (value: never): string => value; // ✅ never型の式はどの型へも代入できる`,
-    },
-    why: "default内の型がneverになることは、処理していない候補が残っていないことを表します。never型へ代入できるかどうかを調べると、分岐を網羅したかどうかをコンパイラに確かめさせられます。",
   },
   {
-    name: "ADTは直積型と直和型で型を組み立てる",
-    definition:
-      "ADT（Algebraic Data Type、代数的データ型）は、直積型と直和型の2つの組み立て方で型を作る考え方です。直積型は、複数の項目をすべて持つ型で、TypeScriptではオブジェクト型で書きます。直和型は、複数の候補のどれか1つを表す型で、TypeScriptではDiscriminated Unionで書きます。直積型の値の組み合わせは各項目の個数の掛け算になり、直和型の値の個数は各候補の個数の足し算になります。",
-    before: {
-      caption: "直積型のフラグだけで状態を表す",
-      code: `type AppointmentFlags = Readonly<{
+    before: `type AppointmentFlags = Readonly<{
   isCheckedIn: boolean;
   isExaminationStarted: boolean;
   isExaminationCompleted: boolean;
@@ -193,10 +167,7 @@ const toText = (value: never): string => value; // ✅ never型の式はどの�
 
 // 2 × 2 × 2 × 2 × 2 = 32通り
 // 会計済みかつキャンセル済みの予約も表せてしまう`,
-    },
-    after: {
-      caption: "直和型で状態を列挙する",
-      code: `// 各状態は直積型。状態ごとに必要な項目をすべて持つ
+    after: `// 各状態は直積型。状態ごとに必要な項目をすべて持つ
 type Canceled = Readonly<{
   kind: "Canceled";
   appointmentId: string;
@@ -214,16 +185,9 @@ type Appointment =
   | AwaitingPayment
   | Paid
   | Canceled;`,
-    },
-    why: "フラグを足すたびに、直積型の組み合わせは2倍になり、起きてはいけない組み合わせも型検査を通ります。直和型では、状態を1個足すと候補が1個増えるだけです。候補を列挙できるので、コンパイラは分岐がすべての候補を処理したかを確かめられます。",
   },
   {
-    name: "assertNeverは未処理の状態をコンパイルエラーにする",
-    definition:
-      "kindで分岐してAppointmentの全状態を処理すると、default内のappointmentはnever型になります。assertNeverはnever型だけを受け取るため、未処理の状態が残っていないことを型検査で確かめられます。このように、直和型の全候補を処理したことをコンパイラに確かめさせることを網羅性検証と呼びます。",
-    before: {
-      sources: ["examples/session-02/src/domain/appointment/statusLabel.ts"],
-      code: `export const toStatusLabel = (appointment: Readonly<{ kind: string }>): string => {
+    before: `export const toStatusLabel = (appointment: Readonly<{ kind: string }>): string => {
   switch (appointment.kind) {
     case "Scheduled":
       return "予約済み";
@@ -234,10 +198,7 @@ type Appointment =
       return "不明";
   }
 };`,
-    },
-    after: {
-      sources: ["examples/session-03/src/domain/appointment/statusLabel.ts"],
-      code: `const assertNever = (value: never): never => {
+    after: `const assertNever = (value: never): never => {
   throw new Error(\`Unknown appointment status: \${JSON.stringify(value)}\`);
 };
 
@@ -252,23 +213,9 @@ export const toStatusLabel = (appointment: Appointment): string => {
       return assertNever(appointment);
   }
 };`,
-    },
-    example: {
-      caption: "NoShowを追加したのに、表示名の分岐を追加し忘れた例",
-      code: missingNoShowCase,
-    },
-    why: "before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after でNoShowのcaseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverへ渡せないため、コンパイルエラーになります。網羅性検証を使うすべての分岐で同じエラーが出るので、コンパイラが新しい状態の影響箇所を示します。assertNeverの戻り値はnever型なので、stringを返す関数のdefaultでそのままreturnできます。",
+    example: missingNoShowCase,
   },
 ];
-
-const narrative = {
-  requirement: "予約画面に表示する状態名を、Appointment の kind ごとに返します。後から状態が増えたときに、表示名の追加漏れを見つけられるようにします。",
-  currentRisk: "toStatusLabel は kind を string として受け取り、どの case にも当てはまらない値には default で「不明」を返します。Appointment に NoShow を追加して case を足し忘れても、型検査は成功し、画面には「不明」と表示されます。",
-  design: "Appointment は kind で区別できる直和型なので、状態の候補を列挙できます。Appointment の全状態を switch で処理すると、default に残る候補は0個になり、default の appointment は never 型になります。default では never 型の値だけを受け取る assertNever へ appointment を渡します。状態を追加して case を足し忘れると、default に候補が残るため、コンパイルエラーになります。",
-  limitation: "網羅性検証が止めるのはコンパイル時の分岐漏れです。表示名の文言が正しいかどうかは、型検査では確かめられません。型アサーションで偽った値が実行時に default へ届いた場合、assertNever は例外を投げます。",
-  legacy: "kind を string で受ける toStatusLabel と、default で「不明」を返す分岐を探します。これらは、状態追加時の未対応の分岐をコンパイラで止められない箇所です。",
-  fallback: "Session 02 が終わっていない場合は、先に Session 02 の解答を反映します。解答スナップショットのステップを開き、toStatusLabel の引数型と網羅分岐をコピペします。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。相互レビューの約束事はS2のリンク先を確認します。",
-} as const;
 
 const exerciseSession: ExerciseSessionSummary = session;
 const initialExerciseFailureCount = 5;
@@ -300,18 +247,6 @@ const chapters = [
   { id: "refactor", label: "型で閉じる" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
-const commonReviewChecks = [
-  "`as` によるキャストが入っていないか全文検索して確認する。",
-  "`git diff --stat -- examples/session-02` で今回の snapshot だけを確認する。Session 02 の変更が残っている場合は、今回の変更が statusLabel.ts だけであることを確かめる。`git status --short` で想定外の path がないか確認する。",
-  "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
-] as const;
-const reviewCompletionArtifacts = [
-  "未対応のまま残してはいけない分岐",
-  "Agentへの依頼文",
-  "型検査では確認できず、テストまたは実行時に確認すること",
-] as const;
-const businessReflectionQuestion =
-  "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。";
 export const promisesHref =
   "/sessions/02-state-transitions/#peer-review-promises";
 export const navigation = ({
@@ -371,149 +306,19 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
           {session.summary}
         </p>
       </section>
-          <section id="incident">
-            <h2>今回つくるもの</h2>
-            <aside class="case-file__episode" aria-label="動物病院のひと幕">
-              <p class="case-file__episode-label">動物病院のひと幕</p>
-              {session.episode.map((line) => <p data-episode-line>{line}</p>)}
-            </aside>
-            <p>Session 02 で定義した予約の6状態を、画面に表示する名前へ変換する分岐で扱います。never型とADT（代数的データ型）の考え方を使い、すべての状態を処理したことをコンパイラに確かめさせます。この確認を網羅性検証と呼びます。</p>
-            <h3 data-story-stage="use-case">追加したい機能</h3>
-            <p>{narrative.requirement}</p>
-            <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
-            <p>{narrative.currentRisk}</p>
-            <h3 data-story-stage="goal">このセッションのゴール</h3>
-            <p>{narrative.design}</p>
-            <h3>このセッションで守ること</h3>
-            <ul class="decision-list">{session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
-            <p>今回の変更は <code>{session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
-          </section>
-
-          <section id="legacy" class="code-playground">
-            <h2>コードを読み、失敗を再現する</h2>
-            <p>{narrative.legacy}</p>
-            <p>
-              編集する範囲は <code>{session.exerciseModule.dir}</code>、変更するファイル数は最大
-              {session.exerciseModule.fileBudget}ファイル・約{session.exerciseModule.lineBudget}行です。
-            </p>
-            <CodeGuideCards guides={guides} projectFiles={projectFiles} />
-            <h3>修正前の失敗を確認する</h3>
-            <p>このページの Playground は未編集の snapshot から起動するので、{initialExerciseFailureCount}個の型検査が失敗する状態から始まります。</p>
-            <p>Session 02 を終えた手元のコードでは、同じコマンドで失敗するのは、次の分岐漏れの型検査1個だけです。</p>
-            <ul class="exercise-failures" aria-label="修正前に確認する問題">
-              {session.steps.map((step) => <li>{step.startingFailure}</li>)}
-            </ul>
-            <CommandBlock phase="red" command={session.exerciseCommand} expected={`Playground では${initialExerciseFailureCount}個の型検査が失敗します。Session 02 を終えた手元のコードでは、分岐漏れの1個だけが失敗します。`} />
-            <p>ブラウザ内の変更はローカルへ反映されません。</p>
-            <div data-code-explorer={workspace.slug}>
-              <CodeExplorer
-                client:load
-                workspace={workspace}
-                projectFiles={projectFiles}
-                initialCommand={session.exerciseCommand}
-              />
-            </div>
-          </section>
-
-          <section id="teach">
-            <h2>事前知識（{session.timeBreakdown.teach}分）</h2>
-            <p>この回で利用する型の考え方を確認します。never型とADTは小さな例で示します。assertNeverは、配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
-            {teaching.map((topic) => (
-              <article class="teaching-topic">
-                <h3>{topic.name}</h3>
-                <p>{topic.definition}</p>
-                <div class="teaching-topic__diff">
-                  <figure class="code-block">
-                    <figcaption>
-                      before:
-                      {topic.before.caption === undefined ? topic.before.sources?.map((source, index) => (
-                        <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
-                      )) : <span>{topic.before.caption}</span>}
-                    </figcaption>
-                    <Code code={topic.before.code} lang="ts" />
-                  </figure>
-                  <figure class="code-block">
-                    <figcaption>
-                      after:
-                      {topic.after.caption === undefined ? topic.after.sources?.map((source, index) => (
-                        <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
-                      )) : <span>{topic.after.caption}</span>}
-                    </figcaption>
-                    <Code code={topic.after.code} lang="ts" />
-                  </figure>
-                </div>
-                {topic.example === undefined ? null : (
-                  <figure class="code-block" data-teaching-example>
-                    <figcaption>{topic.example.caption}</figcaption>
-                    <Code code={topic.example.code} lang="ts" />
-                  </figure>
-                )}
-                <p class="teaching-topic__why">{topic.why}</p>
-              </article>
-            ))}
-          </section>
-
-          <section id="refactor">
-            <h2>演習</h2>
-            <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
-            <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
-            <ol class="adv-flow">
-              <li><strong>言語化（{session.adv.articulate}分）</strong>: 未対応のまま残してはいけない分岐を1文で書く。</li>
-              <li><strong>依頼（{session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
-              <li><strong>検証（{session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
-            </ol>
-            <div class="delegation-prompt">
-              <h3>プロンプトのテンプレート</h3>
-              <p>角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。技法名や完成形を先に指定する必要はありません。</p>
-              <pre><code>{delegationPrompt}</code></pre>
-            </div>
-            <h3>この演習で解決しないこと</h3>
-            <p>{narrative.limitation}</p>
-            <h3 data-solution-heading>{exerciseSession.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
-            {exerciseSession.solutionPresentation === "completed-file" ? (
-              <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
-                <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読む。</p>
-                <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示される。</p>
-              </div>
-            ) : null}
-            {solutionSteps.map(({ step, presentation, snippets }) => (
-              <div class="solution-step">
-                <details class="step-solution" data-presentation={presentation}>
-                  <summary>{step.goal}</summary>
-                  {presentation === "completed-file" ? (
-                    <p class="step-solution__completed-file-note">この完成例には後続 step を含みます。すべての target file を反映してから検証します。</p>
-                  ) : null}
-                  {snippets.map(({ solution, code }) => (
-                    <section class="step-solution__snippet">
-                      <h4><code>{solution.path}</code></h4>
-                      <Code code={code} lang="ts" />
-                    </section>
-                  ))}
-                </details>
-              </div>
-            ))}
-            <CommandBlock phase="green" command={session.exerciseCommand} expected="Session 02 を終えた手元のコードで、演習テストがすべて成功します。" />
-            <h3>演習を完了できないとき</h3>
-            <p>{narrative.fallback}</p>
-          </section>
-
-          <section id="review">
-            <h2>レビューと持ち帰り</h2>
-            <div class="exercise-review-checklist">
-              <h3>個人で確認する</h3>
-              <ol>{commonReviewChecks.map((check) => <li>{check}</li>)}</ol>
-              <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>
-              <p><strong>残すもの:</strong> {reviewCompletionArtifacts.join("、")}</p>
-              <h3>業務へ持ち帰る</h3>
-              <p>{businessReflectionQuestion}</p>
-            </div>
-            <section class="peer-review-panel">
-              <h3>設計を振り返る</h3>
-              <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは{session.peerReview.minutes}分・{headcount}を目安にしてください。</p>
-              <p><a href={promisesHref}>進行上の約束事を確認する</a></p>
-              <ol>{session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
-            </section>
-          </section>
+      <Prose
+        components={{ CodeGuideCards, CommandBlock }}
+        session={session}
+        guides={guides}
+        workspace={workspace}
+        projectFiles={projectFiles}
+        solutionSteps={solutionSteps}
+        teaching={teaching}
+        delegationPrompt={delegationPrompt}
+        initialExerciseFailureCount={initialExerciseFailureCount}
+        headcount={headcount}
+        promisesHref={promisesHref}
+      />
       <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
         <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>

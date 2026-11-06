@@ -1,9 +1,10 @@
 ---
-import { Code } from "astro:components";
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
-import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
+// CSS chunk の分割と読み込み順を変換前と同じに保つ
+import "../../components/code-explorer/CodeExplorer";
+import Prose from "../../sessions/prose/04-boundaries-and-pii.mdx";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import type { SessionWorkspace } from "../../code-explorer/types";
@@ -21,19 +22,10 @@ import type {
 import "../../styles/code-playground.css";
 import "../../styles/sessions.css";
 
-type TeachingCode = Readonly<{
-  sources?: readonly [string, ...string[]];
-  caption?: string;
-  code: string;
-}>;
-
-type TeachingTopic = Readonly<{
-  name: string;
-  definition: string;
-  before: TeachingCode;
-  after: TeachingCode;
-  example?: Readonly<{ caption: string; code: string }>;
-  why: string;
+type TeachingSnippets = Readonly<{
+  before: string;
+  after: string;
+  example?: string;
 }>;
 
 type SupplementaryExercise = Readonly<{
@@ -238,21 +230,15 @@ export const PaymentAmount = {
 } as const;`,
 } as const);
 
-const teaching: readonly TeachingTopic[] = [
+const paymentAmountCaption = `実コード: ${paymentAmountQuote.source}`;
+
+const teaching: readonly TeachingSnippets[] = [
   {
-    name: "値の制約を型で表す",
-    definition:
-      "値のモデリングでは、業務で許す値の範囲を型の名前で表します。動物の重量を例にします。ここでは重量を0kg以上100kg以下とします。この例は説明用で、配布コードに重量の型はありません。",
-    before: {
-      caption: "重量をnumberのまま扱う（説明用の例）",
-      code: `type Checkup = Readonly<{ weightKg: number }>;
+    before: `type Checkup = Readonly<{ weightKg: number }>;
 
 const first: Checkup = { weightKg: -3 };
 const second: Checkup = { weightKg: 1200 };`,
-    },
-    after: {
-      caption: "重量をBranded Typeにする（説明用の例）",
-      code: `const schema = z.number().min(0).max(100).brand<"WeightKg">();
+    after: `const schema = z.number().min(0).max(100).brand<"WeightKg">();
 
 export type WeightKg = z.infer<typeof schema>;
 
@@ -260,25 +246,15 @@ type Checkup = Readonly<{ weightKg: WeightKg }>;
 
 // 型エラー: numberはWeightKgへ代入できない
 const first: Checkup = { weightKg: -3 };`,
-    },
-    why: "beforeのnumberは、-3も1200も受け取ります。numberのままでは、受け取った関数からはその値が検査済みか分かりません。範囲の確認を忘れると、不正な重量がそのまま後続の処理へ進みます。afterのWeightKgはnumberと区別されるので、検査を通っていないnumberを渡すと型エラーになります。Branded Typeの用途はIDの区別に限りません。重量や金額のように制約のある値にも、同じ書き方を使えます。",
   },
   {
-    name: "スマートコンストラクタで値の作り方を1つにする",
-    definition:
-      "スマートコンストラクタは、入力を検査し、制約を満たす場合だけ型付きの値を返す関数です。失敗の返し方には例外とResultがあります。ここではResultのErrで返します。",
-    before: {
-      caption: "検査を受け取る関数ごとに書く（説明用の例）",
-      code: `const recordWeight = (weightKg: number) => {
+    before: `const recordWeight = (weightKg: number) => {
   if (weightKg < 0 || weightKg > 100) {
     throw new Error("重量が範囲外です");
   }
   // 重量を受け取る関数ごとに、同じ検査が必要になる
 };`,
-    },
-    after: {
-      caption: "検査をparseへまとめる（説明用の例）",
-      code: `export const WeightKg = {
+    after: `export const WeightKg = {
   schema,
   parse: schemaResult(schema),
 } as const;
@@ -286,27 +262,17 @@ const first: Checkup = { weightKg: -3 };`,
 WeightKg.parse(4.2); // Ok
 WeightKg.parse(-3); // Err
 WeightKg.parse(1200); // Err`,
-    },
-    example: { caption: `実コード: ${paymentAmountQuote.source}`, code: paymentAmountQuote.code },
-    why: "schemaResultは、schemaからResultを返すparseを作る関数です。検査をparseへまとめると、範囲を変えるときの修正箇所は1か所で済みます。受け取る側はWeightKgを引数にするだけで、同じ検査を繰り返しません。finalのPaymentAmountも同じ作りです。1以上の整数だけをPaymentAmountとして返し、支払済みの予約のamountがこの型を持ちます。finalのbrandは文字列ではなくSymbolを使いますが、型を区別する役割は同じです。asを使うと検査を飛ばせるので、レビューではasが増えていないかを確かめます。",
+    example: paymentAmountQuote.code,
   },
   {
-    name: "schemaでunknownからbrand付き入力を作る",
-    definition:
-      "AppointmentId.schemaとVeterinarianId.schemaをobject schemaへ組み合わせ、外から届くunknownを一度だけparseします。成功時はbrand付きのStartExaminationInput、失敗時はErrを返します。",
-    before: {
-      sources: ["examples/session-04/src/boundary/startExaminationInput.ts"],
-      code: `export const StartExaminationInput = {
+    before: `export const StartExaminationInput = {
   parse: (raw: any): Result<StartExaminationInput> =>
     ok({
       appointmentId: raw.appointmentId,
       veterinarianId: raw.veterinarianId,
     }),
 } as const;`,
-    },
-    after: {
-      sources: ["examples/session-05/src/boundary/startExaminationInput.ts"],
-      code: `const schema = z.object({
+    after: `const schema = z.object({
   appointmentId: AppointmentId.schema,
   veterinarianId: VeterinarianId.schema,
 }).readonly();
@@ -317,100 +283,24 @@ export const StartExaminationInput = {
   schema,
   parse: schemaResult(schema),
 } as const;`,
-    },
-    example: {
-      caption: "schemaResultが返すparserの入力型",
-      code: `const parse: (raw: unknown) => Result<StartExaminationInput> =
+    example: `const parse: (raw: unknown) => Result<StartExaminationInput> =
   schemaResult(schema);`,
-    },
-    why: "beforeはrawをanyで受け、返り値の型注釈だけで不正な値をStartExaminationInputにしています。afterはz.objectで2つのschemaを合成し、z.inferで成功後の型をschemaから導出します。schemaResultはunknownを受け取り、両方のparseに成功した場合だけ型付き入力を返します。Resultを使った後続処理の分岐と合成はS5で扱います。",
   },
 ];
 
-const supplementary: readonly TeachingTopic[] = [
+const supplementaryExerciseTeaching: readonly TeachingSnippets[] = [
   {
-    name: "ExamResultの外部JSONもschemaで検証する",
-    definition:
-      "検査機関から届くexamId、petId、items、needsFollowUpを、ExamResultとして扱う前に検証します。",
-    before: {
-      sources: ["examples/session-04/src/boundary/examResult.ts"],
-      code: `parse: (raw: any): Result<ExamResult> => ok(raw)`,
-    },
-    after: {
-      sources: ["examples/session-05/src/boundary/examResult.ts"],
-      code: `parse: schemaResult(ExamResultSchema)`,
-    },
-    why: "項目の欠落や不正な識別子を境界で止める考え方は、StartExaminationInputと同じです。",
-  },
-  {
-    name: "Sensitive を実装して、デフォルトで情報がログに出力されないようにする",
-    definition:
-      "個人情報を wrap する型です。toJSON と toString をオーバーライドし [REDACTED] を返すようにします。中身を取り出すためには unwrap を呼び出す必要があります。",
-    before: {
-      sources: ["examples/session-04/src/boundary/ownerContact.ts"],
-      code: `export type OwnerContact = Readonly<{
-  ownerName: string;
-  ownerEmail: string;
-  ownerPhone: string;
-}>;`,
-    },
-    after: {
-      sources: [
-        "examples/session-05/src/shared/sensitive.ts",
-        "examples/session-05/src/boundary/ownerContact.ts",
-      ],
-      code: `export const Sensitive = {
-  of: <T>(value: T): Sensitive<T> => ({
-    unwrap: () => value,
-    toJSON: () => "[REDACTED]",
-    toString: () => "[REDACTED]",
-    [inspect.custom]: () => "[REDACTED]",
-  }),
-} as const;
-
-const OwnerContactSchema = z
-  .object({
-    ownerName: z.string().min(1).brand<"OwnerName">().transform(Sensitive.of),
-    ownerEmail: z.string().email().brand<"OwnerEmail">().transform(Sensitive.of),
-    ownerPhone: z.string().min(1).brand<"OwnerPhone">().transform(Sensitive.of),
-  })
-  .readonly();`,
-    },
-    why: "個人情報を平文の string で持つと、JSON.stringify や console.log で簡単に個人情報がログに出てしまうことになります。これをレビューで守り続けることは困難でしょう。Sensitive で wrap するとデフォルトで値が表示されないようになり、値を取り出すには unwrap を明示的に呼び出さなければなりません。unwrap で検索すれば、個人情報が平文として取り出されている箇所を簡単に調べることができます。1行に brand と transform が並んでいますが、2つは別の目的です。brand は OwnerEmail を OwnerPhone などの他の値と取り違えないためのBranded Typeで、ログ出力には影響しません。ログへの漏えいを防いでいるのは Sensitive.of のほうです。",
-  },
-];
-
-const supplementaryExerciseTeaching: readonly TeachingTopic[] = [
-  {
-    name: "用途別の Branded Type",
-    definition:
-      "同じ文字列形式でも、用途の違う識別子は別の型として扱います。zod の brand を付けると、互いに代入できない型ができます。",
-    before: {
-      sources: ["examples/session-03/src/domain/appointment/appointmentId.ts"],
-      code: `const schema = z.string().uuid();
+    before: `const schema = z.string().uuid();
 
 export type AppointmentId = z.infer<typeof schema>;
 export const AppointmentId = { schema, parse: schema.parse } as const;`,
-    },
-    after: {
-      sources: ["examples/session-04/src/domain/appointment/appointmentId.ts"],
-      code: `const schema = z.string().uuid().brand<"AppointmentId">();
+    after: `const schema = z.string().uuid().brand<"AppointmentId">();
 
 export type AppointmentId = z.infer<typeof schema>;
 export const AppointmentId = { schema, parse: schema.parse } as const;`,
-    },
-    why: "AppointmentIdとVeterinarianIdは、どちらもUUID形式のstringです。uuid検査だけでは相互に代入できます。演習ではPetId、OwnerId、ExamIdの実装を手本にして、それぞれ別のbrandを付けます。区別するのは値の形式ではなく用途です。",
   },
   {
-    name: "識別子をドメインモデルと状態遷移で利用する",
-    definition:
-      "予約の状態を表す型・状態遷移関数を、作成した Branded Type を利用する形に変更します。",
-    before: {
-      sources: [
-        "examples/session-03/src/domain/appointment/appointment.ts",
-        "examples/session-03/src/domain/appointment/transitions.ts",
-      ],
-      code: `export type Scheduled = Readonly<{
+    before: `export type Scheduled = Readonly<{
   kind: "Scheduled";
   appointmentId: string;
   // ...
@@ -421,13 +311,7 @@ export const startExamination = (
   veterinarianId: string,
   examinationStartedAt: string,
 ): InExamination =>`,
-    },
-    after: {
-      sources: [
-        "examples/session-04/src/domain/appointment/appointment.ts",
-        "examples/session-04/src/domain/appointment/transitions.ts",
-      ],
-      code: `export type Scheduled = Readonly<{
+    after: `export type Scheduled = Readonly<{
   kind: "Scheduled";
   appointmentId: AppointmentId;
   // ...
@@ -438,24 +322,14 @@ export const startExamination = (
   veterinarianId: VeterinarianId,
   examinationStartedAt: string,
 ): InExamination =>`,
-    },
-    why: "識別子型を定義しただけでは、予約状態と遷移関数がstringを受け取るままです。予約の6状態にあるappointmentIdをAppointmentIdへ変え、startExaminationの引数とInExaminationのveterinarianIdをVeterinarianIdへ変えます。入力から状態遷移まで同じ型を使うと、取り違えを型検査で止められます。",
   },
   {
-    name: "@ts-expect-error による型テスト",
-    definition:
-      "わざとコンパイルエラーになるコードを書き、その行で確かにコンパイルエラーが発生することを検査します。もし誰かが実装を変更して意図せずコンパイルエラーが出なくなってしまった場合、@ts-expect-error は「不要なエラー抑制を行なっている」ことになり、逆にコンパイルエラーとなります。",
-    before: {
-      sources: ["examples/session-03/src/domain/domain.test-types.ts"],
-      code: `const acceptAppointmentId = (_id: AppointmentId): void => undefined;
+    before: `const acceptAppointmentId = (_id: AppointmentId): void => undefined;
 const acceptVeterinarianId = (_id: VeterinarianId): void => undefined;
 
 acceptAppointmentId(veterinarianId);
 acceptVeterinarianId(appointmentId);`,
-    },
-    after: {
-      sources: ["examples/session-04/src/domain/domain.test-types.ts"],
-      code: `const acceptAppointmentId = (_id: AppointmentId): void => undefined;
+    after: `const acceptAppointmentId = (_id: AppointmentId): void => undefined;
 const acceptVeterinarianId = (_id: VeterinarianId): void => undefined;
 
 // @ts-expect-error VeterinarianIdをAppointmentIdとして使えません。
@@ -463,8 +337,6 @@ acceptAppointmentId(veterinarianId);
 
 // @ts-expect-error AppointmentIdをVeterinarianIdとして使えません。
 acceptVeterinarianId(appointmentId);`,
-    },
-    why: "実行時テストでは、間違えた値を渡すとコンパイルエラーになることを確かめられません。@ts-expect-errorは次の行に型エラーが必要だと宣言します。後から2つの識別子が同じ型へ戻ると、不要なエラー抑制として型検査が失敗します。",
   },
 ];
 
@@ -507,15 +379,6 @@ ${supplementaryExercise.steps.map((step) => `- ${step.goal}`).join("\n")}
 - 変更したファイルと判断理由
 - 検証コマンドの結果
 - 型だけでは守れず、テストまたはレビューに残した点`;
-
-const narrative = {
-  requirement: "HTTPから届く予約IDと担当獣医師IDを検証し、正しい値だけをstartExaminationへ渡す。",
-  currentRisk: "raw: anyから値をコピーして必ずOkを返すため、night-shiftでもStartExaminationInputとして扱えます。",
-  design: "AppointmentId.schemaとVeterinarianId.schemaをobject schemaへ組み合わせ、unknownの入力全体をparseしてbrand付きの入力へ変換する。",
-  limitation: "schemaはUUIDの形式を検査しますが、そのUUIDが実在する予約や獣医師を指すかは判断しません。対象の取得と状態確認はS5で扱います。",
-  legacy: "routes.tsからparseへ渡すraw objectと、startExaminationInput.tsが必ずOkを返す実装を順に読み、night-shiftが型付き入力になる理由を確認します。",
-  fallback: "startExaminationInput.tsの手書き型をz.inferへ変え、AppointmentId.schemaとVeterinarianId.schemaを持つobject schemaを作ります。parseにはschemaResultを使います。相互レビューの約束事はS2のリンク先を確認します。",
-} as const;
 
 const incidentRequest = `POST /appointments/11111111-1111-4111-8111-111111111111/start-examination
 Content-Type: application/json
@@ -564,18 +427,6 @@ const chapters = [
   { id: "refactor", label: "型で閉じる" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
-const commonReviewChecks = [
-  "`as` によるキャストが入っていないか全文検索して確認する。",
-  "`git diff --stat -- examples/session-04` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。",
-  "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
-] as const;
-const reviewCompletionArtifacts = [
-  "境界で拒否する入力",
-  "Agentへの依頼文",
-  "型検査では確認できず、テストまたは実行時に確認すること",
-] as const;
-const businessReflectionQuestion =
-  "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。";
 export const promisesHref =
   "/sessions/02-state-transitions/#peer-review-promises";
 export const navigation = ({
@@ -635,292 +486,26 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
           {session.summary}
         </p>
       </section>
-          <section id="incident">
-            <h2>今回つくるもの</h2>
-            <aside class="case-file__episode" aria-label="動物病院のひと幕">
-              <p class="case-file__episode-label">動物病院のひと幕</p>
-              {session.episode.map((line) => <p data-episode-line>{line}</p>)}
-            </aside>
-            <p>外部の文字列を検査し、値の制約を満たす2種類のIDを持つ入力へ変換します。</p>
-            <h3>実際に届いた入力</h3>
-            <p>
-              URLの予約IDはrouteが<code>appointmentId</code>へ入れます。request bodyには、
-              獣医師選択欄の表示用データが誤って入りました。
-            </p>
-            <figure class="code-block boundary-request" data-boundary-request>
-              <figcaption>フロントエンドが送信したHTTPリクエスト</figcaption>
-              <Code code={incidentRequest} lang="http" />
-            </figure>
-            <div class="boundary-results" data-boundary-results>
-              <article data-boundary-result="current">
-                <h4>現在のparse</h4>
-                <Code code={currentParseResult} lang="ts" />
-                <p>型注釈だけを信頼し、不正な値から型付き入力を作ります。</p>
-              </article>
-              <article data-boundary-result="desired">
-                <h4>修正後のparse</h4>
-                <p><code>Err()</code></p>
-                <p>UUIDではないため、StartExaminationInputを作らない結果にします。</p>
-              </article>
-            </div>
-            <h3 data-story-stage="use-case">追加したい機能</h3>
-            <p>{narrative.requirement}</p>
-            <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
-            <p>{narrative.currentRisk}</p>
-            <h3 data-story-stage="goal">このセッションのゴール</h3>
-            <p>{narrative.design}</p>
-            <ol class="boundary-parse-flow" aria-label="外部入力から診察開始入力を作る流れ">
-              <li><strong>HTTPのunknown</strong><span>routeの外側では、入力の正しさを仮定しません。</span></li>
-              <li><strong>schemaでUUIDを検査</strong><span>2つのID schemaをz.objectでまとめてparseします。</span></li>
-              <li><strong>AppointmentId / VeterinarianId</strong><span>成功結果は、異なるbrandを持つTypeScriptの型として推論されます。実行時の文字列に印は付きません。</span></li>
-              <li><strong>StartExaminationInput</strong><span>正しい2つのIDがそろった場合だけ構築します。</span></li>
-            </ol>
-            <h3>このセッションで守ること</h3>
-            <ul class="decision-list">{session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
-            <p>今回の変更は <code>{session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
-          </section>
-
-          <section id="legacy" class="code-playground">
-            <h2>コードを読み、失敗を再現する</h2>
-            <p>{narrative.legacy}</p>
-            <p>
-              編集する範囲は <code>{session.exerciseModule.dir}</code>、変更するファイル数は最大
-              {session.exerciseModule.fileBudget}ファイル・約{session.exerciseModule.lineBudget}行です。
-            </p>
-            <CodeGuideCards guides={guides} projectFiles={projectFiles} />
-            <h3>修正前の失敗を確認する</h3>
-            <p>修正前は、次の{session.steps.length}件に対応する演習テストが失敗します。</p>
-            <ul class="exercise-failures" aria-label="修正前に確認する問題">
-              {session.steps.map((step) => <li>{step.startingFailure}</li>)}
-            </ul>
-            <CommandBlock phase="red" command={session.exerciseCommand} expected={`${session.steps.length}件の演習テストが失敗します。`} />
-            <p>ブラウザ内の変更はローカルへ反映されません。</p>
-            <div data-code-explorer={workspace.slug}>
-              <CodeExplorer
-                client:load
-                workspace={workspace}
-                projectFiles={projectFiles}
-                initialCommand={session.exerciseCommand}
-              />
-            </div>
-          </section>
-
-          <section id="teach">
-            <h2>事前知識（{session.timeBreakdown.teach}分）</h2>
-            <p>この回でつなげる4つの考え方を確認します。</p>
-            <dl class="boundary-concepts" data-boundary-concepts>
-              <dt>Branded Type</dt>
-              <dd>値の制約や用途を型の名前で表します。重量や金額のような数値にも、IDのような文字列にも使えます。この区別はTypeScriptの型検査で使われ、実行時の値は変えません。</dd>
-              <dt>スマートコンストラクタ</dt>
-              <dd>入力を検査する関数を通った値だけを、その型として返します。制約を満たさない入力は、失敗として呼び出し側へ返します。</dd>
-              <dt>Parse, don't validate</dt>
-              <dd>真偽値だけを返してrawを使い続けず、parseの成功結果として型付きの値を返します。</dd>
-              <dt>Always-Valid Domain Model</dt>
-              <dd>境界のparseに成功した値だけをStartExaminationInputにし、schemaが表現する制約を満たさない入力を通常の処理へ持ち込みません。</dd>
-            </dl>
-            <p>まず重量の例で値のモデリングを確かめ、支払金額の実コードを読みます。そのあとで、配布コードの書き方をbefore、修正後の書き方をafterとして見比べます。</p>
-            {teaching.map((topic) => (
-              <article class="teaching-topic">
-                <h3>{topic.name}</h3>
-                <p>{topic.definition}</p>
-                <div class="teaching-topic__diff">
-                  <figure class="code-block">
-                    <figcaption>
-                      before:
-                      {topic.before.caption === undefined ? topic.before.sources?.map((source, index) => (
-                        <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
-                      )) : <span>{topic.before.caption}</span>}
-                    </figcaption>
-                    <Code code={topic.before.code} lang="ts" />
-                  </figure>
-                  <figure class="code-block">
-                    <figcaption>
-                      after:
-                      {topic.after.caption === undefined ? topic.after.sources?.map((source, index) => (
-                        <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
-                      )) : <span>{topic.after.caption}</span>}
-                    </figcaption>
-                    <Code code={topic.after.code} lang="ts" />
-                  </figure>
-                </div>
-                {topic.example === undefined ? null : (
-                  <figure class="code-block" data-teaching-example>
-                    <figcaption>{topic.example.caption}</figcaption>
-                    <Code code={topic.example.code} lang="ts" />
-                  </figure>
-                )}
-                <p class="teaching-topic__why">{topic.why}</p>
-              </article>
-            ))}
-            <aside class="decision-card boundary-limit" data-boundary-limit>
-              <h3>この境界だけでは検出できない入力</h3>
-              <p>
-                予約IDのUUIDが<code>veterinarianId</code>へ入った場合、UUIDという形式は正しいためschemaを通ります。Branded Typeは、外部データが何を指すUUIDかを判定する仕組みではありません。parseで確かめられるのは形式までです。
-              </p>
-              <p>そのUUIDが実在する獣医師を指すか確かめるには、獣医師マスターの参照が必要です。この確認はS4の演習範囲には含めません。</p>
-            </aside>
-            <aside class="decision-card">
-              <h3>時間外の補足: 検査結果とPII</h3>
-              <p>
-                <code>ExamResult</code> のschemaと、連絡先を既定で伏せる
-                <code>Sensitive</code> は、時間内のexerciseとレビューには含めません。必要な場合だけ次を開きます。
-              </p>
-              {supplementary.map((topic) => (
-                <details>
-                  <summary>{topic.name}</summary>
-                  <p>{topic.definition}</p>
-                  <p>{topic.why}</p>
-                </details>
-              ))}
-            </aside>
-          </section>
-
-          <section id="supplementary">
-            <h2>補助演習（目安5分）</h2>
-            <p>事前知識のWeightKgと同じbrandの付け方を、予約IDと担当獣医師IDで試します。Branded Typeの用途はIDの取り違えを防ぐことに限りません。ここでは配布コードの続きで試せるIDを題材にします。</p>
-            <p>補助演習は、手元のコードで実行します。このページの Playground は session-04 の snapshot なので、<code>{supplementaryExercise.exerciseCommand}</code> を実行できません。</p>
-            <p>先に <code>{supplementaryExercise.exerciseCommand}</code>、次に <code>{session.exerciseCommand}</code> の順に実行します。どちらもリポジトリのルートで実行するので、<code>cd</code> は要りません。</p>
-            <p>このページの開始コードには、補助演習の解答がすでに入っています。そのため、補助演習を飛ばしても、このページの演習は壊れません。目安は、補助演習が5分、このページの演習が10分です。</p>
-            <p>参加者が手元で進めるのはステップ1と2です。ステップ3の型テストは、講師が画面で見せます。</p>
-            <p>ステップ1と2を終えると、<code>examples/session-03/src/domain/domain.test-types.ts</code> の取り違えた2行が型エラーとして残り、<code>{supplementaryExercise.exerciseCommand}</code> は失敗のままです。この2行の型エラーは、用途の区別が効いていることを示します。ステップ3で <code>@ts-expect-error</code> を付けると、すべて成功します。手元で確かめたい場合は、解答のステップ3を開いて同じ変更を加えます。</p>
-            <p>補助演習の編集範囲は <code>{supplementaryExercise.exerciseModule.dir}</code>、変更するファイル数は最大{supplementaryExercise.exerciseModule.fileBudget}ファイル・約{supplementaryExercise.exerciseModule.lineBudget}行です。この上限はステップ3を含みます。手元で進めるステップ1と2は4ファイルです。</p>
-            <h3>取り違えたまま型検査する</h3>
-            <p><code>examples/session-03/src/domain/domain.test-types.ts</code> の <code>acceptAppointmentId</code> と <code>acceptVeterinarianId</code> の呼び出しは、渡す値が逆です。この状態で型検査を実行します。</p>
-            <figure class="code-block" data-typecheck-reproduction>
-              <figcaption>型検査コマンド</figcaption>
-              <Code code={supplementaryExerciseTypecheckCommand} lang="shell" />
-              <p><strong>期待結果:</strong> 取り違えた2行が残っていても、型検査は成功します。</p>
-            </figure>
-            <p>型検査が成功したこと自体が失敗の再現です。補助演習の開始時点の <code>AppointmentId</code> と <code>VeterinarianId</code> は、どちらもUUID検査済みの <code>string</code> なので、TypeScriptには用途の違いが見えません。</p>
-            <h3>修正前の失敗を確認する</h3>
-            <p>修正前は、次の{supplementaryExercise.steps.length}件に対応する演習テストが失敗します。</p>
-            <ul class="exercise-failures" aria-label="補助演習の修正前に確認する問題">
-              {supplementaryExercise.steps.map((step) => <li>{step.startingFailure}</li>)}
-            </ul>
-            <CommandBlock phase="red" command={supplementaryExercise.exerciseCommand} expected={`${supplementaryExercise.steps.length}件の演習テストが失敗します。`} />
-            <p>次に、補助演習の開始コードの書き方をbefore、解答の書き方をafterとして見比べます。</p>
-            {supplementaryExerciseTeaching.map((topic) => (
-              <article class="teaching-topic">
-                <h3>{topic.name}</h3>
-                <p>{topic.definition}</p>
-                <div class="teaching-topic__diff">
-                  <figure class="code-block">
-                    <figcaption>
-                      before:
-                      {topic.before.caption === undefined ? topic.before.sources?.map((source, index) => (
-                        <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
-                      )) : <span>{topic.before.caption}</span>}
-                    </figcaption>
-                    <Code code={topic.before.code} lang="ts" />
-                  </figure>
-                  <figure class="code-block">
-                    <figcaption>
-                      after:
-                      {topic.after.caption === undefined ? topic.after.sources?.map((source, index) => (
-                        <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
-                      )) : <span>{topic.after.caption}</span>}
-                    </figcaption>
-                    <Code code={topic.after.code} lang="ts" />
-                  </figure>
-                </div>
-                {topic.example === undefined ? null : (
-                  <figure class="code-block" data-teaching-example>
-                    <figcaption>{topic.example.caption}</figcaption>
-                    <Code code={topic.example.code} lang="ts" />
-                  </figure>
-                )}
-                <p class="teaching-topic__why">{topic.why}</p>
-              </article>
-            ))}
-            <p><strong>言語化</strong>: 取り違えてはいけない値を1文で書く。この1文を、次のテンプレートの「[言語化フェーズで書いた1文]」に入れます。</p>
-            <div class="delegation-prompt">
-              <h3>補助演習のプロンプトのテンプレート</h3>
-              <p>角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。Agentを使わない場合は、実装メモとして使います。</p>
-              <pre><code>{supplementaryExercisePrompt}</code></pre>
-            </div>
-            <h3>補助演習のステップごとの解答</h3>
-            {supplementaryExerciseSolutionSteps.map(({ step, snippets }) => (
-              <div class="solution-step">
-                <details class="step-solution" data-presentation={supplementaryExercise.solutionPresentation}>
-                  <summary>{step.goal}</summary>
-                  {snippets.map(({ solution, code }) => (
-                    <section class="step-solution__snippet">
-                      <h4><code>{solution.path}</code></h4>
-                      <Code code={code} lang="ts" />
-                    </section>
-                  ))}
-                </details>
-              </div>
-            ))}
-            <CommandBlock phase="green" command={supplementaryExercise.exerciseCommand} expected="ステップ3まで終えると、演習テストがすべて成功します。" />
-            <h3>この演習で解決しないこと</h3>
-            <p>異なる用途は区別できますが、同じAppointmentId型を持つ別の予約を選ぶ誤りは型だけでは検出できない。</p>
-            <h3>演習を完了できないとき</h3>
-            <p>現在の3ステップを順に開き、まずAppointmentIdとVeterinarianIdに別々のbrandを付けます。次に予約状態とstartExaminationへ反映し、取り違えがコンパイルエラーになることを型テストで確かめます。</p>
-          </section>
-
-          <section id="refactor">
-            <h2>演習</h2>
-            <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
-            <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
-            <p>次の時間は補助演習の5分を含む合計です。補助演習を行った場合、依頼に使えるのは6分です。</p>
-            <ol class="adv-flow">
-              <li><strong>言語化（{session.adv.articulate}分）</strong>: 境界で拒否する入力を1文で書く。</li>
-              <li><strong>依頼（{session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
-              <li><strong>検証（{session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
-            </ol>
-            <div class="delegation-prompt">
-              <h3>プロンプトのテンプレート</h3>
-              <p>角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。技法名や完成形を先に指定する必要はありません。</p>
-              <pre><code>{delegationPrompt}</code></pre>
-            </div>
-            <h3>この演習で解決しないこと</h3>
-            <p>{narrative.limitation}</p>
-            <h3 data-solution-heading>{exerciseSession.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
-            {exerciseSession.solutionPresentation === "completed-file" ? (
-              <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
-                <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読む。</p>
-                <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示される。</p>
-              </div>
-            ) : null}
-            {solutionSteps.map(({ step, presentation, snippets }) => (
-              <div class="solution-step">
-                <details class="step-solution" data-presentation={presentation}>
-                  <summary>{step.goal}</summary>
-                  {presentation === "completed-file" ? (
-                    <p class="step-solution__completed-file-note">この完成例には後続 step を含みます。すべての target file を反映してから検証します。</p>
-                  ) : null}
-                  {snippets.map(({ solution, code }) => (
-                    <section class="step-solution__snippet">
-                      <h4><code>{solution.path}</code></h4>
-                      <Code code={code} lang="ts" />
-                    </section>
-                  ))}
-                </details>
-              </div>
-            ))}
-            <CommandBlock phase="green" command={session.exerciseCommand} expected="演習テストがすべて成功します。" />
-            <h3>演習を完了できないとき</h3>
-            <p>{narrative.fallback}</p>
-          </section>
-
-          <section id="review">
-            <h2>レビューと持ち帰り</h2>
-            <div class="exercise-review-checklist">
-              <h3>個人で確認する</h3>
-              <ol>{commonReviewChecks.map((check) => <li>{check}</li>)}</ol>
-              <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>
-              <p><strong>残すもの:</strong> {reviewCompletionArtifacts.join("、")}</p>
-              <h3>業務へ持ち帰る</h3>
-              <p>{businessReflectionQuestion}</p>
-            </div>
-            <section class="peer-review-panel">
-              <h3>設計を振り返る</h3>
-              <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは{session.peerReview.minutes}分・{headcount}を目安にしてください。</p>
-              <p><a href={promisesHref}>進行上の約束事を確認する</a></p>
-              <ol>{session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
-            </section>
-          </section>
+      <Prose
+        components={{ CodeGuideCards, CommandBlock }}
+        session={session}
+        supplementaryExercise={supplementaryExercise}
+        guides={guides}
+        workspace={workspace}
+        projectFiles={projectFiles}
+        solutionSteps={solutionSteps}
+        incidentRequest={incidentRequest}
+        currentParseResult={currentParseResult}
+        paymentAmountCaption={paymentAmountCaption}
+        teaching={teaching}
+        supplementaryExerciseTeaching={supplementaryExerciseTeaching}
+        supplementaryExerciseTypecheckCommand={supplementaryExerciseTypecheckCommand}
+        supplementaryExerciseSolutionSteps={supplementaryExerciseSolutionSteps}
+        supplementaryExercisePrompt={supplementaryExercisePrompt}
+        delegationPrompt={delegationPrompt}
+        headcount={headcount}
+        promisesHref={promisesHref}
+      />
       <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
         <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
