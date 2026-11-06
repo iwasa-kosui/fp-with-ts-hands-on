@@ -501,6 +501,7 @@
 }
 
 .step-solution__snippet h4 code {
+  overflow-wrap: anywhere;
   white-space: normal;
 }
 
@@ -630,6 +631,7 @@
   display: block;
 }
 
+.case-file .code-block figcaption,
 .case-file .code-block figcaption code {
   overflow-wrap: anywhere;
   white-space: normal;
