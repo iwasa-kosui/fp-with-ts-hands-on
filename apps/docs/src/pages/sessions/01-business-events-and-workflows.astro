@@ -1,9 +1,11 @@
 ---
-import { Code } from "astro:components";
 import CancelPipelineBoundaries from "../../components/CancelPipelineBoundaries.astro";
 import RailwayOrientedProgramming from "../../components/RailwayOrientedProgramming.astro";
-import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
+import SessionDetailsBody from "../../components/SessionDetailsBody.astro";
+// この順序で sessions.css の <link> が session-layout.css より前に出る
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
+import Prose from "../../sessions/prose/01-business-events-and-workflows.mdx";
 import type { SessionSummary } from "../../sessions/types";
 import "../../styles/sessions.css";
 
@@ -82,164 +84,12 @@ export const navigation = ({
           {session.summary}
         </p>
       </section>
-          <section id="incident">
-            <h2>予約のデータから始める</h2>
-            <aside class="case-file__episode" aria-label="動物病院のひと幕">
-              <p class="case-file__episode-label">動物病院のひと幕</p>
-              {session.episode.map((line) => <p data-episode-line>{line}</p>)}
-            </aside>
-            <p>S0では、画面の操作がデータベースにどう残るかを読みました。S1でも、予約のデータから業務を考えます。S1の軸は、「データ構造があり、それをパイプライン（関数）で処理して業務フローを実現する」という考え方です。</p>
-
-            <h3>キャンセル前の予約</h3>
-            <p>次の値は、受け付けたばかりの予約です。<code>kind</code>は予約の現在の状態を表します。</p>
-            <Code code={scheduledAppointment} lang="ts" />
-
-            <h3>キャンセル後の予約</h3>
-            <p>受付担当者がこの予約をキャンセルすると、データは次の形になります。</p>
-            <Code code={canceledAppointment} lang="ts" />
-
-            <p>キャンセルという業務は、前のデータから後のデータを作る処理です。この処理を許す条件は次のとおりです。</p>
-            <blockquote>
-              <p>予約を管理する担当者が、診察開始前の予約だけを、キャンセルできます。キャンセルする際には、キャンセル理由を記入する必要があります。</p>
-            </blockquote>
-          </section>
-
-          <section id="pipeline">
-            <h2>キャンセルをパイプラインとして読む</h2>
-            <p>パイプラインは、データを受け取って次のデータを返す工程を順につないだものです。予約のキャンセルは次の4工程で読めます。</p>
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">工程</th>
-                  <th scope="col">受け取るデータ</th>
-                  <th scope="col">次へ渡すデータ</th>
-                  <th scope="col">止まる理由</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <th scope="row">入力を検査する</th>
-                  <td>予約ID、実行者ID、キャンセル理由</td>
-                  <td>検査済みの入力</td>
-                  <td>キャンセル理由が空である</td>
-                </tr>
-                <tr>
-                  <th scope="row">対象を取得する</th>
-                  <td>検査済みの入力</td>
-                  <td>実行者と予約のデータ</td>
-                  <td>実行者または予約が見つからない</td>
-                </tr>
-                <tr>
-                  <th scope="row">権限と状態を確認する</th>
-                  <td>実行者と予約のデータ</td>
-                  <td>診察開始前の予約（<code>Scheduled</code>または<code>CheckedIn</code>）</td>
-                  <td>予約を管理する権限がない、または予約が診察開始前ではない</td>
-                </tr>
-                <tr>
-                  <th scope="row">結果を作る</th>
-                  <td>診察開始前の予約とキャンセル理由</td>
-                  <td><code>Canceled</code>のデータを持つ<code>AppointmentCanceled</code></td>
-                  <td>なし</td>
-                </tr>
-              </tbody>
-            </table>
-            <p>各工程の入力と出力をデータで示すと、どの工程で何を確かめるかを説明できます。</p>
-            <p><code>AppointmentCanceled</code>は、「予約がキャンセルされた」という業務上の出来事を表すデータです。このデータをイベントと呼びます。</p>
-
-            <h3>診察開始も同じ形で読む</h3>
-            <p>後続のセッションでは、診察開始を題材にします。診察開始の入力は、「どの予約を、どの獣医師が開始するか」です。確認する条件は、「受付済みだけが診察を開始できる」です。条件を満たすと、<code>kind</code>は<code>CheckedIn</code>から<code>InExamination</code>へ変わります。</p>
-          </section>
-
-          <section id="rop">
-            <h2>ROPでパイプラインの失敗を扱う</h2>
-            <p>前の表の「止まる理由」が、パイプラインの失敗です。</p>
-
-            <h3>2本のレールを考える</h3>
-            <p>
-              Railway Oriented Programmingは、処理の流れを成功と失敗の2本のレールで捉える考え方です。一方は処理に成功した場合の経路、もう一方は失敗した場合の経路を表します。
-            </p>
-            <p>各工程が成功したら、その出力を次の工程へ渡します。失敗したら下のレールへ移り、後続の成功処理をスキップします。図の4工程は、前の表の4工程と同じです。図を左からたどり、どの条件で失敗のレールへ切り替わるかを確認してください。</p>
-            <RailwayOrientedProgramming />
-
-            <h3>なぜROPを利用するのか</h3>
-            <p>
-              それぞれの処理で発生する失敗を同じフローで扱い、その失敗を網羅的に検証することで、変更箇所とテスト観点を追いやすくなります。これにより、「キャンセル先の予約が存在しない」、「キャンセルする権限がない」などさまざまな理由で止まっても、それを適切にハンドリングでき、全体の処理のうち一部だけ処理されて不整合が発生することを防げます。
-            </p>
-          </section>
-
-          <section id="io-boundaries">
-            <h2>I/Oをパイプラインの両端へ追い出す</h2>
-            <p>このセクションでは、パイプラインからデータの取得と記録を分け、中心のドメインロジックを副作用のないpureな関数として扱える構成を学びます。</p>
-            <p>前の表の工程のうち、「対象を取得する」はデータベースを読むI/Oです。この工程はResolverが担います。記録はパイプラインの成功の後でStoreが担います。「入力を検査する」「権限と状態を確認する」「結果を作る」は、値だけで結果が決まります。</p>
-
-            <h3>ビジネスユースケースとユースケースを区別する</h3>
-            <p>
-              ビジネスユースケースとは、アクターが達成したい業務上の目的です。例えば「受付担当者が予約をキャンセルする」がこれにあたります。
-            </p>
-            <p>ソフトウェアのユースケースは、Resolverから実行者と対象の予約を受け取り、権限の有無、予約の存在、予約の現在の状態を確認します。</p>
-            <p><code>Appointment</code>は、予約のデータと業務ルールの置き場です。<code>Appointment.cancel</code>は、確認を通った診察開始前の予約とキャンセル理由を受け取り、成功イベントを返します。一つのデータと一つのユースケースが常に対応するわけではありません。同じ予約のデータを、キャンセルや診察開始など複数のユースケースが扱います。</p>
-
-            <h3>なぜResolverとStoreをドメインロジックの外へ置くのか</h3>
-            <p>
-              ResolverとStoreを外へ置く主な理由は、<code>Appointment.cancel</code>をpureに保つためです。データベースへの接続を含めず、入力された値だけで結果が決まるようにすると、業務ルールを値だけでテストできます。取得方法や記録先が変わっても、中心の判断を変更せずにResolverとStoreの実装を差し替えられます。
-            </p>
-
-            <h3>入力側：Resolverの役割</h3>
-            <p>
-              User ResolverとAppointment Resolverは、実行者と予約の現在状態を取得し、ユースケースへ値として渡します。取得を入力側へ分けることで、<code>Appointment.cancel</code>をデータベースのAPIから切り離して値だけでテストできます。図では、Resolverから受け取った値が確認する条件を通り、ドメインロジックへ渡るところを指でたどってみてください。
-            </p>
-
-            <h3>出力側：Storeの役割</h3>
-            <p>
-              <code>Appointment.cancel</code>は、確認を通った予約から<code>AppointmentCanceled</code>を作ります。Storeはその成功イベントを受け取り、Event Storeへ追記します。失敗した場合はStoreを呼ばないため、不正なキャンセルや途中状態を記録しません。誰がいつどの予約をキャンセルしたかは、追記された出来事から確認できます。
-            </p>
-            <CancelPipelineBoundaries />
-            <p>
-              S1の<code>startExamination</code>は、まだ<code>Repository</code>からの取得、状態の記録、監査記録、時刻とIDの生成を一つのユースケースで行います。S2以降でドメインロジックを分離し、後続セッションでResolverとStoreを明示的な依存へ変えます。
-            </p>
-            <aside class="decision-card">
-              <h3>このハンズオンでEvent Storeを選ぶ理由</h3>
-              <p>
-                これはDMMF一般の必須条件ではなく、このハンズオンの設計です。成功イベントをそのまま履歴として追記でき、受付担当者がいつどの予約をキャンセルしたかを後から確認できるため、ユースケースの出力先にEvent Storeを選びます。
-              </p>
-            </aside>
-          </section>
-
-          <section id="exercise">
-            <h2>データとパイプラインを読む</h2>
-            <p>次の3問の答えを考えましょう。コードは編集しません。ひとりの場合はメモに残し、複数人の場合は答えを持ち寄って確認します。</p>
-            <ol class="exercise-steps">
-              <li>キャンセル前とキャンセル後の予約のデータを見比べてください。変わる項目と変わらない項目は、それぞれどれですか。</li>
-              <li>会計済みの予約（<code>kind: "Paid"</code>）がパイプラインへ入ると、どの工程で止まりますか。後続の工程は動きますか。</li>
-              <li>キャンセル理由が空の依頼は、どの工程で止まりますか。そのキャンセルは記録されますか。</li>
-            </ol>
-            <details class="step-solution">
-              <summary>答えを確認する</summary>
-              <ol class="session-01-details-body">
-                <li><code>appointmentId</code>、<code>petId</code>、<code>ownerId</code>、<code>scheduledAt</code>は変わりません。<code>kind</code>は<code>Scheduled</code>から<code>Canceled</code>へ変わり、<code>canceledAt</code>が増えます。<code>reason</code>は来院理由からキャンセル理由へ変わります。</li>
-                <li>「権限と状態を確認する」で止まります。<code>Paid</code>は診察開始前の状態ではないからです。後続の「結果を作る」と記録は動きません。</li>
-                <li>「入力を検査する」で止まります。後続の工程へ進まないので、理由のないキャンセルは記録されません。</li>
-              </ol>
-            </details>
-
-            <h3>S1で持ち帰る内容</h3>
-            <ol>
-              <li>キャンセル前とキャンセル後の予約のデータ</li>
-              <li>権限、予約の存在、現在状態、理由の条件</li>
-              <li>3か所で失敗へ切り替わるROP基本図と、ResolverとEvent Storeを外側へ置いたユースケース図</li>
-            </ol>
-            <p>診察直前のキャンセルを認めるかなど、答えが揃わない点は無理に決めず、未決の問いとしてメモに残します。</p>
-
-            <details class="step-solution">
-              <summary>補足: ビジネスイベントとワークフローから考える方法</summary>
-              <div class="session-01-details-body">
-                <p>S1はデータから説明を始めました。これは説明の順序です。データベースの設計から業務を決めるという意味ではありません。</p>
-                <p>業務を発見する段階では、「データ構造よりも、ビジネスイベントとワークフローに注目する」という考え方もあります。イベントストーミングはその代表的な手法です。「予約がキャンセルされた」のような出来事を付箋に書き、そこから依頼と条件を逆算します。</p>
-                <p>イベントストーミングの付箋には「集約」があります。イベントストーミングの集約は、付箋の種類の呼び名です。DDDの集約は、整合性を保ちながらデータを更新する単位です。二つは同じものとは限らないので、「ドメインモデル=集約」とは読みません。Finalの「集約」はDDDの意味で使います。</p>
-              </div>
-            </details>
-          </section>
-
+      <Prose
+        components={{ CancelPipelineBoundaries, RailwayOrientedProgramming, SessionDetailsBody }}
+        session={session}
+        scheduledAppointment={scheduledAppointment}
+        canceledAppointment={canceledAppointment}
+      />
       <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
         <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
@@ -248,13 +98,3 @@ export const navigation = ({
     </main>
   </div>
 </BaseLayout>
-
-<style>
-  .session-01-details-body {
-    padding: 0.8rem 1rem 0.8rem 2rem;
-  }
-
-  div.session-01-details-body {
-    padding-left: 1rem;
-  }
-</style>

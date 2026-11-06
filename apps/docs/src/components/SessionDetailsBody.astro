@@ -1,0 +1,19 @@
+---
+interface Props {
+  as: "ol" | "div";
+}
+
+const { as: Tag } = Astro.props;
+---
+
+<Tag class="session-01-details-body"><slot /></Tag>
+
+<style>
+  .session-01-details-body {
+    padding: 0.8rem 1rem 0.8rem 2rem;
+  }
+
+  div.session-01-details-body {
+    padding-left: 1rem;
+  }
+</style>
