@@ -98,7 +98,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           <div class="section-head"><h2 id="problems-title">ところが、問題が増えてきた</h2><p>便利になった分だけ、要求も増えました。小さな改修を重ねるうちに、どの状態で何ができるのか、どの情報を外へ出してよいのかが分かりにくくなっています。</p></div>
           <div class="timeline" aria-label="WAN NYAN OS に起きている問題">
             <article class="time-stop is-active"><time>Current / S0</time><strong>🐢 現状と事故を対応付ける</strong><span>業務の流れ、画面操作、保存先、ログを確認し、二重請求と個人情報の流出がどこで起きたかを確かめる。</span></article>
-            <article class="time-stop"><time>Workflow / S1</time><strong>🐕 予約キャンセルを設計する</strong><span>「予約がキャンセルされた」から依頼と条件を逆算し、集約とユースケースの流れを図にする。</span></article>
+            <article class="time-stop"><time>Workflow / S1</time><strong>🐕 予約キャンセルを設計する</strong><span>予約のデータから始め、キャンセルをパイプラインとして読み、失敗の扱いとI/Oの分離を確かめる。</span></article>
             <article class="time-stop"><time>Risk / S2</time><strong>🐇 許可されない状態遷移</strong><span>会計済み・キャンセル済みの予約でも診察を開始できてしまうリスクを、状態と遷移の型で防ぐ。</span></article>
             <article class="time-stop"><time>Risk / S3</time><strong>🐦 識別子の取り違え</strong><span>予約IDと獣医師IDを異なる型で表し、用途の違うIDを渡す間違いを防ぐ。</span></article>
             <article class="time-stop"><time>Risk / S4</time><strong>🐈 未検証の外部入力</strong><span>HTTPから受け取った値をZodで検証し、診察開始に必要な入力へ変換する。</span></article>
