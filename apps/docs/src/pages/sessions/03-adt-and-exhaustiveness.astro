@@ -132,16 +132,112 @@ switch (appointment.kind) {
   // ❌ case "NoShow": の実装を忘れると...
   default:
     // ここで appointment は NoShow 型と推論される
-    // エラー: 型 'NoShow' の引数を型 'never' のパラメーターに
-    // 割り当てることはできません
+    // エラー: 型 'Readonly<{ kind: "NoShow"; ... }>' の引数を
+    // 型 'never' のパラメーターに割り当てることはできません
     return assertNever(appointment);
 }`;
 
 const teaching: readonly TeachingTopic[] = [
   {
+    name: "never型は値が1つもない型である",
+    definition:
+      "型は、その型に入る値の集合と見ることができます。\"Scheduled\" | \"CheckedIn\" は2個の値を持つ集合です。never型は値を1個も持たない型で、空集合に当たります。never型の変数へ代入できる値はありません。switchのcaseを通るたびに、コンパイラは処理済みの候補を型から取り除きます。候補が1個も残らなければ、残りの型はneverになります。",
+    before: {
+      caption: "候補が残っているので、neverへ代入できない",
+      code: `type Status = "Scheduled" | "CheckedIn";
+
+const toLabel = (status: Status): string => {
+  switch (status) {
+    case "Scheduled":
+      return "予約済み";
+    default: {
+      // status の型は "CheckedIn"。値が1個残っている
+      const rest: never = status; // ❌ コンパイルエラー
+      return rest;
+    }
+  }
+};`,
+    },
+    after: {
+      caption: "候補が残っていないので、neverへ代入できる",
+      code: `type Status = "Scheduled" | "CheckedIn";
+
+const toLabel = (status: Status): string => {
+  switch (status) {
+    case "Scheduled":
+      return "予約済み";
+    case "CheckedIn":
+      return "来院済み";
+    default: {
+      // status の型は never。値が1個も残っていない
+      const rest: never = status; // ✅ コンパイルが通る
+      return rest;
+    }
+  }
+};`,
+    },
+    example: {
+      caption: "never型の性質",
+      code: `const status: never = "Scheduled"; // ❌ never型へ代入できる値はない
+
+type OnlyScheduled = "Scheduled" | never; // "Scheduled" と同じ。空集合を足しても候補は増えない
+
+const toText = (value: never): string => value; // ✅ never型の値はどの型へも代入できる`,
+    },
+    why: "default内の型がneverになることは、処理していない候補が残っていないことを表します。default内の型がneverにならないなら、処理していない候補が残っています。never型へ代入できるかどうかを調べると、分岐を網羅したかどうかをコンパイラに確かめさせられます。",
+  },
+  {
+    name: "ADTは直積型と直和型で型を組み立てる",
+    definition:
+      "ADT（Algebraic Data Type、代数的データ型）は、直積型と直和型の2つの組み立て方で型を作る考え方です。直積型は、複数の項目をすべて持つ型で、TypeScriptではオブジェクト型で書きます。直和型は、複数の候補のどれか1つを表す型で、TypeScriptではDiscriminated Unionで書きます。直積型の値の組み合わせは各項目の個数の掛け算になり、直和型の値の個数は各候補の個数の足し算になります。",
+    before: {
+      caption: "直積型のフラグだけで状態を表す",
+      code: `type AppointmentFlags = Readonly<{
+  isCheckedIn: boolean;
+  isExaminationStarted: boolean;
+  isExaminationCompleted: boolean;
+  isPaid: boolean;
+  isCanceled: boolean;
+}>;
+
+// 2 × 2 × 2 × 2 × 2 = 32通り
+// 会計済みかつキャンセル済みの予約も表せてしまう
+const impossible: AppointmentFlags = {
+  isCheckedIn: true,
+  isExaminationStarted: true,
+  isExaminationCompleted: true,
+  isPaid: true,
+  isCanceled: true,
+};`,
+    },
+    after: {
+      caption: "直和型で状態を列挙する",
+      code: `// 各状態は直積型。状態ごとに必要な項目をすべて持つ
+type Canceled = Readonly<{
+  kind: "Canceled";
+  appointmentId: string;
+  petId: string;
+  ownerId: string;
+  scheduledAt: string;
+  reason: CancellationReason;
+  canceledAt: string;
+}>;
+
+// Appointment は直和型。kind の候補は 1 + 1 + 1 + 1 + 1 + 1 = 6通り
+type Appointment =
+  | Scheduled
+  | CheckedIn
+  | InExamination
+  | AwaitingPayment
+  | Paid
+  | Canceled;`,
+    },
+    why: "フラグを足すたびに、直積型の組み合わせは2倍になります。5個のフラグは32通りの組み合わせを作り、型検査は「会計済みかつキャンセル済み」のような起きてはいけない組み合わせも受け入れます。直和型では、状態を1個足すと候補が1個増えるだけです。候補を列挙できるので、コンパイラは分岐がすべての候補を処理したかを確かめられます。never型は値が0個の型なので、直和型に足しても候補の数は変わりません。",
+  },
+  {
     name: "assertNeverは未処理の状態をコンパイルエラーにする",
     definition:
-      "kindで分岐してAppointmentの全状態を処理すると、default内のappointmentはnever型になります。assertNeverはnever型だけを受け取るため、未処理の状態が残っていないことを型検査で確かめられます。",
+      "kindで分岐してAppointmentの全状態を処理すると、default内のappointmentはnever型になります。assertNeverはnever型だけを受け取るため、未処理の状態が残っていないことを型検査で確かめられます。このように、直和型の全候補を処理したことをコンパイラに確かめさせることを網羅性検証と呼びます。",
     before: {
       sources: ["examples/session-02/src/domain/appointment/statusLabel.ts"],
       code: `export const toStatusLabel = (appointment: Readonly<{ kind: string }>): string => {
@@ -192,15 +288,15 @@ export const toStatusLabel = (appointment: Appointment): string => {
       caption: "NoShowを追加したのに、表示名の分岐を追加し忘れた例",
       code: missingNoShowCase,
     },
-    why: "before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after で現在の全状態を処理すると、default内のappointmentはneverになります。AppointmentにNoShowを追加し、caseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverへ渡せないため、コンパイルエラーになります。同じ網羅性チェックを使う分岐でも修正漏れがエラーになるので、新しい状態の影響箇所をコンパイラが示します。",
+    why: "before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after で現在の全状態を処理すると、default内のappointmentはneverになります。AppointmentにNoShowを追加し、caseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverへ渡せないため、コンパイルエラーになります。同じ網羅性チェックを使う分岐でも修正漏れがエラーになるので、新しい状態の影響箇所をコンパイラが示します。assertNeverの戻り値はnever型で、never型の値はどの型へも代入できるので、stringを返す関数のdefaultでそのままreturnできます。",
   },
 ];
 
 const narrative = {
   requirement: "予約画面に表示する状態名を、Appointment の kind ごとに返します。後から状態が増えたときに、表示名の追加漏れを見つけられるようにします。",
   currentRisk: "toStatusLabel は kind を string として受け取り、どの case にも当てはまらない値には default で「不明」を返します。Appointment に NoShow を追加して case を足し忘れても、型検査は成功し、画面には「不明」と表示されます。",
-  design: "Appointment の全状態を switch で処理し、default 分岐では never 型の値だけを受け取る assertNever へ appointment を渡します。状態を追加して case を足し忘れると、default に未処理の状態が残るため、コンパイルエラーになります。",
-  limitation: "assertNever が止めるのはコンパイル時の分岐漏れです。型アサーションで偽った値が実行時に default へ届いた場合、assertNever は例外を投げます。",
+  design: "Appointment は kind で区別できる直和型なので、状態の候補を列挙できます。Appointment の全状態を switch で処理すると、default に残る候補は0個になり、default の appointment は never 型になります。default では never 型の値だけを受け取る assertNever へ appointment を渡します。状態を追加して case を足し忘れると、default に候補が残るため、コンパイルエラーになります。",
+  limitation: "網羅性検証が止めるのはコンパイル時の分岐漏れです。表示名の文言が正しいかどうかは、型検査では確かめられません。型アサーションで偽った値が実行時に default へ届いた場合、assertNever は例外を投げます。",
   legacy: "kind を string で受ける toStatusLabel と、default で「不明」を返す分岐を探します。これらは、状態追加時の未対応の分岐をコンパイラで止められない箇所です。",
   fallback: "Session 02 が終わっていない場合は、先に Session 02 の解答を反映します。解答スナップショットのステップを開き、toStatusLabel の引数型と網羅分岐をコピペします。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。相互レビューの約束事はS2のリンク先を確認します。",
 } as const;
@@ -312,7 +408,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <p class="case-file__episode-label">動物病院のひと幕</p>
               {session.episode.map((line) => <p data-episode-line>{line}</p>)}
             </aside>
-            <p>Session 02 で定義した予約の6状態を、画面に表示する名前へ変換する分岐で扱います。</p>
+            <p>Session 02 で定義した予約の6状態を、画面に表示する名前へ変換する分岐で扱います。never型とADT（代数的データ型）の考え方を使い、すべての状態を処理したことをコンパイラに確かめさせます。この確認を網羅性検証と呼びます。</p>
             <h3 data-story-stage="use-case">追加したい機能</h3>
             <p>{narrative.requirement}</p>
             <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
@@ -352,7 +448,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 
           <section id="teach">
             <h2>事前知識（{session.timeBreakdown.teach}分）</h2>
-            <p>この回で利用する型について確認します。配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
+            <p>この回で利用する型の考え方を確認します。never型とADTは小さな例で示します。assertNeverは、配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
             {teaching.map((topic) => (
               <article class="teaching-topic">
                 <h3>{topic.name}</h3>
