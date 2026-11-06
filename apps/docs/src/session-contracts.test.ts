@@ -1,5 +1,10 @@
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { supplementaryExercise } from "./pages/sessions/04-boundaries-and-pii.astro";
+import {
+  paymentAmountQuote,
+  supplementaryExercise,
+} from "./pages/sessions/04-boundaries-and-pii.astro";
 import { sessionNavigationItems } from "./sessions/navigation";
 import type { SessionNavigation, SessionSummary } from "./sessions/types";
 type PageModule = Readonly<{
@@ -515,6 +520,15 @@ describe("page-owned session contracts", () => {
     expect(workflowErrors?.steps.flatMap(({ targets }) => targets)).not.toContain(
       "examples/session-05/src/domain/ids/appointmentId.ts",
     );
+  });
+
+  it("quotes PaymentAmount verbatim from the final snapshot", async () => {
+    const source = await readFile(
+      resolve(process.cwd(), "../..", paymentAmountQuote.source),
+      "utf8",
+    );
+
+    expect(source).toContain(paymentAmountQuote.code);
   });
 
   it("keeps exercise-only fields off non-exercise pages", () => {
