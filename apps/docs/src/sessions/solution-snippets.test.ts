@@ -52,6 +52,18 @@ describe("loadSolutionSnippets", () => {
     expect(webHandler?.[0]?.code).not.toContain("AppointmentConflict");
     expect(webHandler?.[0]?.code).not.toContain("StartExaminationWithEffectsNoticeCode");
     expect(webHandler?.[0]?.code).not.toContain('"conflict"');
+    expect(webHandler?.[1]?.code).toContain("result.match");
+    expect(webHandler?.[1]?.code).toContain("toStartExaminationNoticeCode(error)");
+    expect(webHandler?.[1]?.code).not.toContain("try {");
+  });
+
+  it("declares where each Session 05 solution is applied", () => {
+    for (const sessionStep of session05.steps) {
+      for (const solution of sessionStep.solutions) {
+        expect(solution.placement).toBeDefined();
+        expect(solution.placement?.startsWith("examples/session-05/")).toBe(true);
+      }
+    }
   });
 
   it("loads supplementary exercise identifier solutions from their owning concept", async () => {

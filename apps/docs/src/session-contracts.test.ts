@@ -471,7 +471,11 @@ describe("page-owned session contracts", () => {
         }
         for (const solution of step.solutions) {
           expect(solution.path).toMatch(
-            new RegExp(`^examples/${session.solutionSnapshot}/`),
+            new RegExp(
+              solution.sourcePath === undefined
+                ? `^examples/${session.solutionSnapshot}/`
+                : `^${session.exerciseModule.dir}/`,
+            ),
           );
           expect(solution.presentation ?? "excerpt").toBe(
             session.solutionPresentation,

@@ -11,15 +11,50 @@ import {
   rmSync,
   symlinkSync,
   copyFileSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const BASELINE_COMMIT = "088c2ef";
-const ALLOWED_EXAMPLE_DIFFS = ["examples/session-01/README.md"];
+const ALLOWED_EXAMPLE_DIFFS = [
+  "examples/session-01/README.md",
+  "examples/session-05/exercises/result-errors.test.ts",
+];
 
 const STEP_1_TO_3_FILES = ["src/domain/appointment/transitions.ts"];
+
+const S5_PAGE = "apps/docs/src/pages/sessions/05-workflow-errors.astro";
+
+const S5_PAGE_SOLUTION = {
+  page: S5_PAGE,
+  wholeFiles: [
+    {
+      target: "src/useCase/errors.ts",
+      path: "examples/session-06/src/useCase/errors.ts",
+      lines: [1, 31],
+    },
+    {
+      target: "src/useCase/startExamination.ts",
+      path: "examples/session-06/src/useCase/startExamination.ts",
+      lines: [7, 44],
+    },
+  ],
+  routes: {
+    target: "src/web/routes.ts",
+    handler: {
+      path: "examples/session-05/src/web/routes.ts",
+      sourcePath: "apps/docs/src/sessions/solutions/session-05-start-examination-handler.ts.txt",
+      lines: [1, 22],
+      replaceLines: [73, 94],
+    },
+    insert: {
+      path: "examples/session-06/src/web/routes.ts",
+      lines: [22, 48],
+    },
+  },
+};
 
 const SCENARIOS = [
   { session: "02", name: "S2 開始", before: 5, overlay: null, after: null },
@@ -71,17 +106,24 @@ const SCENARIOS = [
     },
     after: 0,
   },
-  { session: "05", name: "S5 開始", before: 9, overlay: null, after: null },
+  { session: "05", name: "S5 開始", before: 8, overlay: null, after: null },
   {
     session: "05",
     name: "S5 回帰（session-06）",
-    before: 9,
+    before: 8,
     overlay: {
       regression: {
         session: "06",
         testFile: "test/regression/result-errors.test.ts",
       },
     },
+    after: 0,
+  },
+  {
+    session: "05",
+    name: "S5 解答（ページの解答）",
+    before: 8,
+    overlay: { pageSolution: S5_PAGE_SOLUTION },
     after: 0,
   },
   { session: "06", name: "S6 開始", before: 4, overlay: null, after: null },
@@ -274,6 +316,81 @@ const applyOverlay = (workDir, session, overlay) => {
   }
 };
 
+const readLines = (workDir, relativePath, [start, end]) => {
+  const path = join(workDir, relativePath);
+  if (!existsSync(path)) throw new Error(`解答の元ファイルが見つかりません: ${relativePath}`);
+  const lines = readFileSync(path, "utf8").split("\n");
+  if (end > lines.length) {
+    throw new Error(`指定行がソースの範囲外です: ${relativePath}:${start}-${end}`);
+  }
+  return lines.slice(start - 1, end);
+};
+
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const assertPageDeclares = (workDir, solution) => {
+  const pagePath = join(workDir, solution.page);
+  if (!existsSync(pagePath)) throw new Error(`ページが見つかりません: ${solution.page}`);
+  const page = readFileSync(pagePath, "utf8");
+  const { handler, insert } = solution.routes;
+  const declared = [
+    ...solution.wholeFiles,
+    { path: handler.path, sourcePath: handler.sourcePath, lines: handler.lines },
+    { path: insert.path, lines: insert.lines },
+  ];
+  for (const { path, sourcePath, lines } of declared) {
+    const [start, end] = lines;
+    const pattern = new RegExp(
+      `path: "${escapeRegExp(path)}",[^}]*?lines: \\[${start}, ${end}\\]`,
+    );
+    if (!pattern.test(page)) {
+      throw new Error(`ページの宣言と検証がずれています: ${path} lines: [${start}, ${end}]`);
+    }
+    if (sourcePath !== undefined && !page.includes(`"${sourcePath}"`)) {
+      throw new Error(`ページの宣言と検証がずれています: ${sourcePath}`);
+    }
+  }
+};
+
+const applyPageSolution = (workDir, session, solution) => {
+  const target = join(workDir, "examples", `session-${session}`);
+  const { routes } = solution;
+  const routesPath = join(target, routes.target);
+  const routeLines = readFileSync(routesPath, "utf8").split("\n");
+  const [replaceStart, replaceEnd] = routes.handler.replaceLines;
+  const handlerRange = routeLines.slice(replaceStart - 1, replaceEnd);
+  if (!(handlerRange[0] ?? "").trimStart().startsWith("app.post(")) {
+    throw new Error(
+      `${routes.target}:${replaceStart} が app.post( で始まりません: ${handlerRange[0] ?? "(なし)"}`,
+    );
+  }
+  if (!handlerRange.some((line) => line.includes("try {"))) {
+    throw new Error(`${routes.target}:${replaceStart}-${replaceEnd} に try { がありません`);
+  }
+  assertPageDeclares(workDir, solution);
+
+  for (const { target: file, path, lines } of solution.wholeFiles) {
+    writeFileSync(join(target, file), `${readLines(workDir, path, lines).join("\n")}\n`);
+  }
+
+  const handler = readLines(workDir, routes.handler.sourcePath, routes.handler.lines);
+  const replaced = [
+    ...routeLines.slice(0, replaceStart - 1),
+    ...handler,
+    ...routeLines.slice(replaceEnd),
+  ];
+  const importEnd = replaced.reduce(
+    (last, line, index) => (/^(import .*|\} from .*);$/.test(line) ? index : last),
+    -1,
+  );
+  if (importEnd < 0) throw new Error(`${routes.target} に import が見つかりません`);
+  const inserted = readLines(workDir, routes.insert.path, routes.insert.lines);
+  writeFileSync(
+    routesPath,
+    [...replaced.slice(0, importEnd + 1), ...inserted, ...replaced.slice(importEnd + 1)].join("\n"),
+  );
+};
+
 const runScenario = (workDir, scenario, sourceFiles) => {
   const { session, overlay } = scenario;
   const phases = [];
@@ -281,7 +398,11 @@ const runScenario = (workDir, scenario, sourceFiles) => {
     const start = runExercise(workDir, session);
     phases.push({ label: "開始", expected: scenario.before, outcome: start });
     if (overlay !== null) {
-      if (overlay.regression === undefined) applyOverlay(workDir, session, overlay);
+      if (overlay.pageSolution !== undefined) {
+        applyPageSolution(workDir, session, overlay.pageSolution);
+      } else if (overlay.regression === undefined) {
+        applyOverlay(workDir, session, overlay);
+      }
       const solved =
         overlay.regression === undefined
           ? runExercise(workDir, session)

@@ -1,0 +1,22 @@
+  app.post("/appointments/:appointmentId/start-examination", async (context) => {
+    const raw = await context.req.json<Readonly<{ veterinarianId?: unknown }>>();
+    const input = StartExaminationInput.parse({
+      appointmentId: context.req.param("appointmentId"),
+      veterinarianId: raw.veterinarianId,
+    })._unsafeUnwrap();
+    const result = startExamination({
+      resolver: store,
+      store,
+    })({
+      ...input,
+      examinationStartedAt: "2026-08-30T06:30:00.000Z",
+    });
+    return result.match(
+      () => context.redirect("/", 303),
+      (error) =>
+        context.redirect(
+          `/?notice=${toStartExaminationNoticeCode(error)}`,
+          303,
+        ),
+    );
+  });
