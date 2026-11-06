@@ -41,7 +41,7 @@ pnpm dev
 
 公開教材は、現行業務とシステムを読む S0、予約キャンセルの業務条件とユースケースを設計する S1、コードを改善する S2〜S6、参照実装を読む Final で構成します。S0 は10分、S1 は15分、S2 と S3 は各20分、S4 と S5 は各35分、S6 は40分、Final は5分が目安です。個人学習では時間を区切らず進められます。S1 はデータとパイプラインを読む回で、コード編集や演習コマンドの実行は行いません。S2〜S6の開始コードは、業務上の問題を示す assertion failure による RED から始まります。
 
-S0 の観察対象は `examples/session-00`、S1 のカードは `examples/session-01/README.md` にあります。S2 と S3 は `examples/session-02` を使います。S4 は `examples/session-04` を使い、補助演習で `examples/session-03` を使います。S5 は `examples/session-05`、S6 は `examples/session-06` を使います。どのスナップショットも前の回の改善を取り込み済みです。自分の変更を次のディレクトリへコピーする必要はありません。`examples/session-07` は独立した公開セッションを持たない到達点スナップショットで、S2〜S6 の全解答と全回帰テストが GREEN になった状態です。`examples/final` は、各演習の改善を複数集約と SQLite へ広げた参照実装です。
+S0 の観察対象は `examples/session-00`、S1 のカードは `examples/session-01/README.md` にあります。S2 と S3 は `examples/session-02` を使います。S4 は `examples/session-04` を使い、補助演習で `examples/session-03` を使います。S5 は `examples/session-05`、S6 は `examples/session-06` を使います。S3 を除き、どのスナップショットも前の回の改善を取り込み済みです。S3 は S2 の変更の上で進めます。自分の変更を次のディレクトリへコピーする必要はありません。`examples/session-07` は独立した公開セッションを持たない到達点スナップショットで、S2〜S6 の全解答と全回帰テストが GREEN になった状態です。`examples/final` は、各演習の改善を複数集約と SQLite へ広げた参照実装です。
 
 通常テストは、セットアップと各スナップショットが健全であることを確認するために実行します。
 
