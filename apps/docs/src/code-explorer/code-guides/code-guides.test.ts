@@ -20,18 +20,11 @@ const expectedFragments: Readonly<Record<string, readonly string[]>> = {
   "session-00-hidden-nondeterminism": ["new Date()", "randomUUID()"],
   "session-00-dual-write": ["repository.save", "repository.appendAudit"],
   "wide-transition-input": ["appointment: Appointment", "as Appointment"],
+  "string-kind-label": ["kind: string"],
   "non-exhaustive-label": ["default:"],
+  "optional-cancellation-reason": ["reason: CancellationReason | undefined"],
   "untyped-pet-id": ["z.string().uuid()", "export type PetId"],
-  "untyped-start-examination-id": [
-    "z.string().uuid()",
-    "export type AppointmentId",
-  ],
-  "plain-string-start-examination": ["appointmentId: string"],
   "plain-string-appointment-ids": ["appointmentId: string", "petId: string"],
-  "swapped-domain-identifiers": [
-    "acceptAppointmentId(veterinarianId)",
-    "acceptVeterinarianId(appointmentId)",
-  ],
   "http-start-examination-input": [
     "StartExaminationInput.parse",
     'context.req.param("appointmentId")',

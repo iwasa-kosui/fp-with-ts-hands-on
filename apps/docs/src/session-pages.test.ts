@@ -51,7 +51,7 @@ const collectSourceFiles = async (directory: string): Promise<string[]> => {
 
 const exerciseSlugs = [
   "02-state-transitions",
-  "03-semantic-identifiers",
+  "03-adt-and-exhaustiveness",
   "04-boundaries-and-pii",
   "05-workflow-errors",
   "06-effects-and-consistency",
@@ -73,7 +73,6 @@ const exerciseContracts = {
         "test/setup.test.ts",
         "src/domain/appointment/appointment.ts",
         "src/domain/appointment/transitions.ts",
-        "src/domain/appointment/statusLabel.ts",
       ],
     },
     navigation: {
@@ -82,26 +81,22 @@ const exerciseContracts = {
         title: "EventStormingとROPで予約キャンセルを設計する",
       },
       next: {
-        href: "/sessions/03-semantic-identifiers/",
-        title: "診察開始の識別子を型で区別する",
+        href: "/sessions/03-adt-and-exhaustiveness/",
+        title: "予約の状態の分岐漏れを型で検出する",
       },
     },
   },
-  "03-semantic-identifiers": {
+  "03-adt-and-exhaustiveness": {
     workspace: {
-      slug: "03-semantic-identifiers",
-      snapshot: "session-03",
-      initialFile: "exercises/semantic-identifiers.test.ts",
+      slug: "03-adt-and-exhaustiveness",
+      snapshot: "session-02",
+      initialFile: "exercises/state-modeling.test.ts",
       description:
-        "診察開始で使う予約IDと獣医師IDを、開始snapshotで確認します。",
+        "表示名の分岐と予約状態の定義を、開始 snapshot で確認します。",
       visibleFiles: [
-        "exercises/semantic-identifiers.test.ts",
-        "test/regression/state-modeling.test.ts",
-        "src/domain/appointment/appointmentId.ts",
-        "src/domain/appointment/veterinarianId.ts",
+        "exercises/state-modeling.test.ts",
         "src/domain/appointment/appointment.ts",
-        "src/domain/appointment/transitions.ts",
-        "src/domain/domain.test-types.ts",
+        "src/domain/appointment/statusLabel.ts",
       ],
     },
     navigation: {
@@ -134,8 +129,8 @@ const exerciseContracts = {
     },
     navigation: {
       previous: {
-        href: "/sessions/03-semantic-identifiers/",
-        title: "診察開始の識別子を型で区別する",
+        href: "/sessions/03-adt-and-exhaustiveness/",
+        title: "予約の状態の分岐漏れを型で検出する",
       },
       next: {
         href: "/sessions/05-workflow-errors/",
@@ -243,7 +238,7 @@ const reviewText = [
 
 const reviewPromptFor = {
   "02-state-transitions": "起きてはいけない状態遷移",
-  "03-semantic-identifiers": "取り違えてはいけない値",
+  "03-adt-and-exhaustiveness": "未対応のまま残してはいけない分岐",
   "04-boundaries-and-pii": "境界で拒否する入力",
   "05-workflow-errors": "失敗後に実行してはいけない処理",
   "06-effects-and-consistency": "一緒に記録する必要がある値",

@@ -11,8 +11,8 @@ export const sessionNavigationItems = [
   },
   { slug: "02-state-transitions", title: "予約の状態と遷移をモデル化する" },
   {
-    slug: "03-semantic-identifiers",
-    title: "診察開始の識別子を型で区別する",
+    slug: "03-adt-and-exhaustiveness",
+    title: "予約の状態の分岐漏れを型で検出する",
   },
   {
     slug: "04-boundaries-and-pii",
