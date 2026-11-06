@@ -1,10 +1,9 @@
 ---
-import { Code } from "astro:components";
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
 import RailwayOrientedProgramming from "../../components/RailwayOrientedProgramming.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
-import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
+import Prose from "../../sessions/prose/05-workflow-errors.mdx";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import type { SessionWorkspace } from "../../code-explorer/types";
@@ -13,25 +12,15 @@ import { loadSolutionSnippets } from "../../sessions/solution-snippets";
 import type {
   ExerciseSessionSummary,
   SessionSummary,
+  TeachingCode,
 } from "../../sessions/types";
 import "../../styles/code-playground.css";
 import "../../styles/sessions.css";
 
-type TeachingCode = Readonly<{
-  sources?: readonly [string, ...string[]];
-  caption?: string;
-  code: string;
-}>;
-
-type TeachingTopic = Readonly<{
-  name: string;
-  definition: string;
-  guidance?: readonly string[];
+type TeachingSnippets = Readonly<{
   before?: TeachingCode;
   after?: TeachingCode;
-  example?: Readonly<{ caption: string; code: string }>;
-  railComparison?: readonly Readonly<{ operation: string; rail: string; returns: string }>[];
-  why: string;
+  example?: TeachingCode;
 }>;
 
 export const session: SessionSummary = {
@@ -210,28 +199,14 @@ const startExamination =
     return ok(next);
   };`;
 
-const teaching: readonly TeachingTopic[] = [
+const teaching: readonly TeachingSnippets[] = [
   {
-    name: "isErr で書くと、工程ごとに同じ分岐が増える",
-    definition:
-      "throw をやめて失敗を値で返すと、呼び出し側は失敗を確かめてから次の工程へ進みます。Result は、成功値か失敗のどちらかを持つ値です。ensureAppointmentFound と ensureCheckedIn が Result を返すとして、診察開始を素直に書くと次のようになります。isErr() が true なら error に失敗が入り、false なら value に成功値が入ります。",
     example: {
       caption: "診察開始を isErr で書いた説明用の例（配布コードにはありません）",
       code: isErrUseCaseCode,
     },
-    why: "Go の if err != nil と同じ形です。失敗を型で読めるようになりましたが、工程が増えるたびに同じ if が増え、診察開始の処理順が分岐に埋もれます。この if は、図の切り替え線を1本ずつ手で書いていることに当たります。isErr が誤りというわけではなく、分岐が1回だけなら読みやすい書き方です。",
   },
   {
-    name: "neverthrow の Result で失敗を値として表す",
-    definition:
-      "前の例の Result、ok、err、isErr は neverthrow というライブラリが提供しています。Result<T, E> の T は成功値、E は呼び出し側が扱う業務エラーです。ok(value) は成功側の Ok、err(error) は失敗側の Err を作り、どちらも Result<T, E> として扱えます。",
-    guidance: [
-      "Result に含める失敗は、先に呼び出し側の対応から選びます。失敗理由に応じて呼び出し側が次の操作を選べる業務エラーを E として返します。",
-      "たとえば、予約が見つからなければ予約を探し直し、まだ受付されていなければ受付を先に行います。呼び出し側が理由ごとに異なる対応を選ぶ必要があるため、これらは Err で返します。",
-      "一方、呼び出し側に理由別の対応がなく、要求された処理を完了できない異常はシステムエラーとして扱います。このような異常はResultに変換せず、例外として外側へ伝えます。",
-      "たとえば、データベースへの保存中に接続が切れ、保存が完了したか確認できない場合です。データベースへの保存が完了したか確認できないままキューへのイベント追加や外部サービスへの通知を行うと、データベースには保存されていないのに、イベントや通知だけが送られる可能性があります。そのため、イベント追加や通知は実行せず、保存時の例外をそのまま外側へ伝えます。",
-      "外側の例外境界では、例外をログへ記録し、必要なロールバックや接続の解放を行ったうえで、500などのエラー応答へ変換します。",
-    ],
     before: {
       caption: "見つからない場合に例外を投げる guard",
       code: `const ensureAppointmentFound = (
@@ -280,12 +255,8 @@ const ensureCheckedIn = (
     ? ok(appointment)
     : err({ kind: "InvalidAppointmentState", actual: appointment.kind });`,
     },
-    why: "例外では、関数の型から失敗理由を読み取れません。Result の E に業務エラーを置くと、呼び出し側は実行前から起こりうる失敗を把握し、表示や次の操作を選べます。err は例外を投げず、失敗理由を値として返します。neverthrow の Result は、前の例の if を書かずに済む andThen と map も持っています。",
   },
   {
-    name: "andThen と map を ROP の図と見比べる",
-    definition:
-      "andThen は Ok のときだけ、Result を返す関数へ進みます。map は Ok のときだけ、素の値を返す関数で成功値を変換します。Err になった後は、どちらのコールバックも呼ばれません。",
     example: {
       caption: "andThen と map の小さな例",
       code: `import { err, ok, type Result } from "neverthrow";
@@ -298,24 +269,8 @@ ok(3).andThen(ensurePositive).map(double);  // Ok(6)
 ok(-1).andThen(ensurePositive).map(double); // Err("NotPositive")。double は呼ばれない
 ok(3).map(ensurePositive);                  // Ok(Ok(3))。Result が二重になる`,
     },
-    railComparison: [
-      {
-        operation: "andThen",
-        rail: "切り替え線のある工程。「対象を取得する」の後の「権限と状態を確認する」が該当し、Err を返すと失敗レールへ移ります。「対象を取得する」は最初の工程で前の値がないので、ensureAppointmentFound は andThen を使わずに直接呼びます。入力の検査は Session 04 の境界で済んでいます。",
-        returns: "Result",
-      },
-      {
-        operation: "map",
-        rail: "切り替え線のない工程。「結果を作る」が該当し、成功レールを進みます。",
-        returns: "素の値",
-      },
-    ],
-    why: "渡す関数が業務エラーを返しうるなら andThen、返さないなら map を選びます。Err になった後にコールバックが呼ばれないのは、図で失敗レールへ移った値が後続の工程を飛ばすことに当たります。",
   },
   {
-    name: "isErr の例を andThen と map で書き直す",
-    definition:
-      "同じ診察開始を andThen と map で書くと、if が消えて工程の順序だけが残ります。",
     before: {
       caption: "isErr で書いた診察開始（前の例と同じ）",
       code: isErrUseCaseCode,
@@ -351,12 +306,8 @@ const startExamination =
         return appointment;
       });`,
     },
-    why: "after は、戻り値の型と処理順を上から続けて読めます。Err になった時点で後続の andThen と map は呼ばれません。2つ目の map は値を変えません。保存してから同じ値を返すので、保存の後も InExamination が次へ渡ります。resolver と store は外部境界として deps から受け取りますが、状態遷移はドメイン知識なので直接呼びます。store.save が投げる保存障害は、呼び出し側が理由別の対応を選ぶ業務エラーではなく、要求された保存処理を完了できないシステムエラーとして例外を伝播させます。",
   },
   {
-    name: "match と switch で呼び出し側の処理漏れを型エラーにする",
-    definition:
-      "Result.match は成功時と失敗時の処理を分けます。失敗側は StartExaminationError 全体を受け取り、error.kind の switch で各 notice へ変換します。",
     before: {
       caption: "予約なしだけを例外メッセージで処理する呼び出し側",
       code: `try {
@@ -423,14 +374,10 @@ const toNoticeCode = (error: StartExaminationError): string => {
   }
 };`,
     },
-    why: "before では InvalidAppointmentState が追加されても catch に型エラーが出ないため、受付前の予約だけ500になりました。after は match の失敗側で union 全体を受け取り、default 節から never 専用の assertNever を呼びます。エラーの種類を追加して case を足し忘れると新しい型が default 節に残り、コンパイルエラーになります。Result に含めていないシステムエラーは、この switch では捕捉せず外側の例外境界へ伝えます。",
   },
 ];
 
 const safeTryColumn = {
-  title: "中間値に名前を付ける safeTry",
-  introduction:
-    "andThen のチェーンでは値を次の処理へ直接渡します。途中の成功値を複数使う場合や、名前を付けながら上から読みたい場合は safeTry も選べます。",
   caption: "safeTryでErrを早期returnし、Okの値を取り出す",
   code: `import { ok, safeTry, type Result } from "neverthrow";
 
@@ -451,15 +398,6 @@ const startExamination = (
 
     return ok(transitionToInExamination(checkedIn));
   });`,
-} as const;
-
-const narrative = {
-  requirement: "診察開始で顧客や現場が失敗理由に応じて操作を選ぶ失敗を型付きの値として返し、Web側が受付の次の操作を選べるようにする。",
-  currentRisk: "ユースケースは成功値だけを返す型のまま複数の Error をthrowします。Web側は予約なしの文言だけをcatchしているため、後から追加された状態不正を処理できず500にしています。",
-  design: "予約なしと状態不正をkindを持つDiscriminated Unionにし、Resultで返す。andThenで失敗後の状態遷移とStore呼び出しを止める。状態遷移はドメイン関数を直接呼び、外部境界のResolverとStoreだけを依存として受け取る。Web側はmatchとswitchでResultに含めた失敗を網羅してnoticeへ変換する。",
-  limitation: "どの失敗を業務エラーとして画面のnoticeへ変換するかは、人の判断とレビューが必要になる。呼び出し側に理由別の対応がなく、要求された処理を完了できないシステムエラーはResultへ変換せず、外側の例外境界へ伝える。",
-  legacy: "成功値しか現れない関数シグネチャ、複数箇所のthrow、例外メッセージに依存したcatchを読みます。受付前の予約だけ500になる処理漏れを、演習テストで再現します。",
-  fallback: "2つのguardと startExamination は解答例を反映します。最後にWebルートをmatchとswitchへ置き換え、2種類のnoticeを確認します。",
 } as const;
 
 const exerciseSession: ExerciseSessionSummary = session;
@@ -506,18 +444,6 @@ const chapters = [
   { id: "refactor", label: "型で閉じる" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
-const commonReviewChecks = [
-  "`as` によるキャストが入っていないか全文検索して確認する。",
-  "`git diff --stat -- examples/session-05` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。",
-  "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
-] as const;
-const reviewCompletionArtifacts = [
-  "失敗後に実行してはいけない処理",
-  "Agentへの依頼文",
-  "型検査では確認できず、テストまたは実行時に確認すること",
-] as const;
-const businessReflectionQuestion =
-  "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。";
 export const promisesHref =
   "/sessions/02-state-transitions/#peer-review-promises";
 export const navigation = ({
@@ -577,199 +503,20 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
           {session.summary}
         </p>
       </section>
-          <section id="incident">
-            <h2>今回つくるもの</h2>
-            <aside class="case-file__episode" aria-label="動物病院のひと幕">
-              <p class="case-file__episode-label">動物病院のひと幕</p>
-              {session.episode.map((line) => <p data-episode-line>{line}</p>)}
-            </aside>
-            <p>予約が見つからない場合と受付済みでない場合を、呼び出し側が処理できる業務エラーとして返します。</p>
-            <h3 data-story-stage="use-case">追加したい機能</h3>
-            <p>{narrative.requirement}</p>
-            <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
-            <p>{narrative.currentRisk}</p>
-            <h3 data-story-stage="goal">このセッションのゴール</h3>
-            <p>{narrative.design}</p>
-            <h3>このセッションで守ること</h3>
-            <ul class="decision-list">{session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
-            <p>今回の変更は <code>{session.exerciseModule.dir}</code> 内の3ファイルに限定します。</p>
-          </section>
-
-          <section id="legacy" class="code-playground">
-            <h2>コードを読み、失敗を再現する</h2>
-            <p>{narrative.legacy}</p>
-            <p>
-              編集する範囲は <code>{session.exerciseModule.dir}</code>、変更するファイル数は最大
-              {session.exerciseModule.fileBudget}ファイル・約{session.exerciseModule.lineBudget}行です。
-            </p>
-            <CodeGuideCards guides={guides} projectFiles={projectFiles} />
-            <h3>修正前の失敗を確認する</h3>
-            <p>修正前は、次の{session.steps.length}件に対応する演習テストが失敗します。</p>
-            <ul class="exercise-failures" aria-label="修正前に確認する問題">
-              {session.steps.map((step) => <li>{step.startingFailure}</li>)}
-            </ul>
-            <CommandBlock phase="red" command={session.exerciseCommand} expected={`型検査の要件未達3件と演習テストの失敗5件、合わせて${initialExerciseFailureCount}件の失敗が出ます。`} />
-            <p>ブラウザ内の変更はローカルへ反映されません。</p>
-            <div data-code-explorer={workspace.slug}>
-              <CodeExplorer
-                client:load
-                workspace={workspace}
-                projectFiles={projectFiles}
-                initialCommand={session.exerciseCommand}
-              />
-            </div>
-          </section>
-
-          <section id="teach">
-            <h2>事前知識（{session.timeBreakdown.teach}分）</h2>
-            <p>まずSession 01のROPの図を振り返り、失敗を値で返すコードをisErrで書いたときの煩雑さを確かめます。次にneverthrowのResultとResultに含める失敗の基準を整理し、andThenとmapを図と見比べます。</p>
-            <article class="teaching-topic" id="rop-recap">
-              <h3>ROPをおさらいする</h3>
-              <p>Session 01で、処理の流れを成功と失敗の2本のレールで捉えるRailway Oriented Programming（ROP）を学びました。各工程は、成功なら次の工程へ値を渡し、失敗なら下のレールへ移って後続の工程を飛ばします。</p>
-              <RailwayOrientedProgramming />
-              <p>この回の診察開始も同じ形です。図の工程と診察開始の処理は、次のように対応します。</p>
-              <table>
-                <thead>
-                  <tr><th>図の工程</th><th>診察開始の処理</th><th>失敗レールへ移る値</th></tr>
-                </thead>
-                <tbody>
-                  <tr><th>入力を検査する</th><td><code>StartExaminationInput.parse</code>。Session 04の境界で検査します</td><td>この回では扱いません</td></tr>
-                  <tr><th>対象を取得する</th><td><code>resolver.resolveById</code> と <code>ensureAppointmentFound</code></td><td><code>AppointmentNotFound</code></td></tr>
-                  <tr><th>権限と状態を確認する</th><td><code>ensureCheckedIn</code>（権限はこの回では扱いません）</td><td><code>InvalidAppointmentState</code></td></tr>
-                  <tr><th>結果を作る</th><td><code>transitionToInExamination</code> と <code>store.save</code></td><td>なし</td></tr>
-                </tbody>
-              </table>
-              <p>失敗レールを進むのは、呼び出し側が理由別の対応を選べる失敗です。この回では、この失敗を業務エラーと呼びます。一方、保存障害のように呼び出し側に理由別の対応がない異常はシステムエラーと呼びます。システムエラーは失敗レールへ載せず、例外として外側へ伝えます。</p>
-            </article>
-            {teaching.map((topic) => (
-              <article class="teaching-topic">
-                <h3>{topic.name}</h3>
-                <p>{topic.definition}</p>
-                {topic.guidance?.map((paragraph) => <p>{paragraph}</p>)}
-                {topic.before === undefined || topic.after === undefined ? null : (
-                  <div class="teaching-topic__diff">
-                    <figure class="code-block">
-                      <figcaption>
-                        before:
-                        {topic.before.caption === undefined ? topic.before.sources?.map((source, index) => (
-                          <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
-                        )) : <span>{topic.before.caption}</span>}
-                      </figcaption>
-                      <Code code={topic.before.code} lang="ts" />
-                    </figure>
-                    <figure class="code-block">
-                      <figcaption>
-                        after:
-                        {topic.after.caption === undefined ? topic.after.sources?.map((source, index) => (
-                          <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
-                        )) : <span>{topic.after.caption}</span>}
-                      </figcaption>
-                      <Code code={topic.after.code} lang="ts" />
-                    </figure>
-                  </div>
-                )}
-                {topic.example === undefined ? null : (
-                  <figure class="code-block" data-teaching-example>
-                    <figcaption>{topic.example.caption}</figcaption>
-                    <Code code={topic.example.code} lang="ts" />
-                  </figure>
-                )}
-                {topic.railComparison === undefined ? null : (
-                  <Fragment>
-                    <p><a href="#rop-recap">ROPの図</a>と見比べると、次のように対応します。</p>
-                    <ul class="decision-list">
-                      {topic.railComparison.map((row) => (
-                        <li><strong><code>{row.operation}</code>（渡す関数の戻り値: {row.returns}）:</strong> {row.rail}</li>
-                      ))}
-                    </ul>
-                  </Fragment>
-                )}
-                <p class="teaching-topic__why">{topic.why}</p>
-              </article>
-            ))}
-            <aside class="teaching-column" aria-labelledby="safe-try-column-title">
-              <p class="teaching-column__label">OPTIONAL / コラム</p>
-              <h3 id="safe-try-column-title">{safeTryColumn.title}</h3>
-              <p>{safeTryColumn.introduction}</p>
-              <figure class="code-block">
-                <figcaption>{safeTryColumn.caption}</figcaption>
-                <Code code={safeTryColumn.code} lang="ts" />
-              </figure>
-              <p>
-                <code>yield*</code> した Result が <code>Err</code> なら、その場で処理を止めて <code>safeTry</code> 全体から同じ失敗を返します。
-                <code>Ok</code> なら成功値を取り出して次の行へ進みます。
-              </p>
-              <p>
-                <code>safeTry</code> は Result の失敗を伝える仕組みであり、<code>throw</code> された例外を捕捉する <code>try/catch</code> ではありません。
-                ResultAsync を扱う場合は <code>async function*</code> を渡せます。
-              </p>
-            </aside>
-          </section>
-
-          <section id="refactor">
-            <h2>演習</h2>
-            <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
-            <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
-            <ol class="adv-flow">
-              <li><strong>言語化（{session.adv.articulate}分）</strong>: 失敗後に実行してはいけない処理を1文で書く。</li>
-              <li><strong>依頼（{session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
-              <li><strong>検証（{session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
-            </ol>
-            <div class="delegation-prompt">
-              <h3>プロンプトのテンプレート</h3>
-              <p>角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。技法名や完成形を先に指定する必要はありません。</p>
-              <pre><code>{delegationPrompt}</code></pre>
-            </div>
-            <h3>この演習で解決しないこと</h3>
-            <p>{narrative.limitation}</p>
-            <h3 data-solution-heading>{exerciseSession.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
-            {exerciseSession.solutionPresentation === "completed-file" ? (
-              <div class="before-after" aria-label="業務エラーとシステムエラーの見比べ方">
-                <p><strong>演習の開始時点:</strong> 業務エラーとして返す Result と、システムエラーとして外側へ伝える例外経路を分けて読む。</p>
-                <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示される。</p>
-              </div>
-            ) : null}
-            {solutionSteps.map(({ step, presentation, snippets }) => (
-              <div class="solution-step">
-                <details class="step-solution" data-presentation={presentation}>
-                  <summary>{step.goal}</summary>
-                  {presentation === "completed-file" ? (
-                    <p class="step-solution__completed-file-note">この完成例には後続 step を含みます。すべての target file を反映してから検証します。</p>
-                  ) : null}
-                  {snippets.map(({ solution, code }) => (
-                    <section class="step-solution__snippet">
-                      <h4><code>{solution.path}</code></h4>
-                      {solution.placement !== undefined ? (
-                        <p class="step-solution__placement">{solution.placement}</p>
-                      ) : null}
-                      <Code code={code} lang="ts" />
-                    </section>
-                  ))}
-                </details>
-              </div>
-            ))}
-            <CommandBlock phase="green" command={session.exerciseCommand} expected="演習テストがすべて成功します。" />
-            <h3>演習を完了できないとき</h3>
-            <p>{narrative.fallback}</p>
-          </section>
-
-          <section id="review">
-            <h2>レビューと持ち帰り</h2>
-            <div class="exercise-review-checklist">
-              <h3>個人で確認する</h3>
-              <ol>{commonReviewChecks.map((check) => <li>{check}</li>)}</ol>
-              <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>
-              <p><strong>残すもの:</strong> {reviewCompletionArtifacts.join("、")}</p>
-              <h3>業務へ持ち帰る</h3>
-              <p>{businessReflectionQuestion}</p>
-            </div>
-            <section class="peer-review-panel">
-              <h3>設計を振り返る</h3>
-              <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは{session.peerReview.minutes}分・{headcount}を目安にしてください。</p>
-              <p><a href={promisesHref}>進行上の約束事を確認する</a></p>
-              <ol>{session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
-            </section>
-          </section>
+      <Prose
+        components={{ CodeGuideCards, CommandBlock, RailwayOrientedProgramming }}
+        session={session}
+        guides={guides}
+        workspace={workspace}
+        projectFiles={projectFiles}
+        solutionSteps={solutionSteps}
+        teaching={teaching}
+        safeTryColumn={safeTryColumn}
+        initialExerciseFailureCount={initialExerciseFailureCount}
+        delegationPrompt={delegationPrompt}
+        headcount={headcount}
+        promisesHref={promisesHref}
+      />
       <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
         <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
