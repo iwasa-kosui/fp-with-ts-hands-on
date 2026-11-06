@@ -290,7 +290,7 @@ export const createEventContext = (
       "before は stateStore.save の後に eventLog.append を呼びます。append だけが失敗すると、予約は診察中になるのに、誰がいつ診察を開始したかの記録は残りません。順番を入れ替えても、今度は記録だけが残る可能性があります。",
       "after は ExaminationStarted を store へ1回渡します。ExaminationStarted の aggregateState は保存後の予約の状態を持つので、1つの値が状態と監査記録の両方を表します。どう書き込むかは store の実装が決めます。",
       "同時に残すことを実際に守るのは store の実装です。SQLite の実装は、saveState と appendAudit を1つの transaction の中で呼びます。appendAudit が例外を投げると transaction が取り消され、状態の更新も残りません。",
-      "store は transaction の中で現在の予約を読み直します。ユースケースが読んだ後に予約が変わっていて、現在の状態が CheckedIn でなければ、AppointmentConflict を返します。このとき store は saveState の前に返るので、何も書き込みません。",
+      "store は transaction の中で現在の予約を読み直します。SQLite の実装は、ユースケースが読んだ後に予約が変わっていて、予約が無いときや現在の状態が CheckedIn でないときに、AppointmentConflict を返します。このとき store は saveState の前に返るので、何も書き込みません。",
       "in-memory の実装は transaction を持ちません。新しい Map と配列を作ってから最後にまとめて置き換えることで、同じ約束を表します。",
     ],
     before: {
@@ -415,7 +415,6 @@ return ok(undefined);`,
   (
     input: StartExaminationWithEffectsInput,
   ): ResultAsync<InExamination, StartExaminationWithEffectsError> =>
-    // ラボ結果到着は別の trigger から始まるため、この診察開始 workflow へ接続しません。
     ResultAsync.fromSafePromise<AppointmentState | undefined>(
       Promise.resolve().then(() =>
         deps.resolver.resolveById(input.appointmentId),
@@ -441,7 +440,7 @@ return ok(undefined);`,
 .map((event) => event.aggregateState); // 型エラー`,
       },
     ],
-    why: "before は await の後に isErr で分岐し、成功時は ok(undefined) を返します。after は S5 と同じ順に読め、成功時は InExamination を、失敗時は業務エラーを返します。保存時の AppointmentConflict が結果の型に加わることも、型から確かめられます。",
+    why: "before は isErr で分岐してから await で保存を並べ、成功時は ok(undefined) を返します。before の型にも AppointmentConflict はありますが、保存処理が Promise<void> を返すので、before のコードは競合を返せません。after は S5 と同じ順に読め、store が返す AppointmentConflict をそのまま結果に含めます。成功時は InExamination を返します。",
   },
   {
     name: "保存障害は Err へ変換せず、reject のまま伝える",
@@ -451,7 +450,8 @@ return ok(undefined);`,
       "neverthrow の関数でこの2つの経路が分かれます。ResultAsync.fromPromise は、reject を第2引数の関数で Err へ変換します。ResultAsync.fromSafePromise は変換しないので、reject は reject のまま残ります。after は fromSafePromise を使います。",
       "before のように fromPromise ですべての reject を AppointmentConflict へ変換すると、データベースの障害でも画面は競合として案内します。例外が外側の例外境界へ届かないので、障害はログに記録されません。",
       "after は resolver の呼び出しを Promise.resolve().then(...) で包みます。resolver は同期の関数で、破損データを読むと ZodError を投げます。then の中で呼ぶと、この throw も reject になります。包まずに呼ぶと、ResultAsync を返す前に例外が呼び出し元へ飛びます。",
-      "reject は、S5 で確認した外側の例外境界が受け取ります。例外境界はログへ記録し、エラーの詳細を含まない 500 応答へ変換します。",
+      "store の実装も fromSafePromise を使います。transaction の中の throw は reject になり、そのまま andThrough を通り抜けます。",
+      "reject は、S5 で確認した外側の例外境界が受け取ります。例外境界は、エラーの詳細を含まない 500 応答へ変換します。本番ではここでログへも記録します。配布コードの app.onError は記録を省いています。",
     ],
     before: {
       caption: "すべての reject を業務エラーへ変換する書き方（配布コードにはありません）",
@@ -472,6 +472,15 @@ return ok(undefined);`,
   ),
 )`,
     },
+    examples: [
+      {
+        sources: ["examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts"],
+        code: `store: (event) =>
+  ResultAsync.fromSafePromise(
+    Promise.resolve().then(() => storeAtomically(event)),
+  ).andThen((result) => result),`,
+      },
+    ],
     why: "E に AppointmentConflict だけを書くと、呼び出し側は選べる対応だけを型から読み取れます。演習の Step 4 は、競合が Err になり、保存障害と破損データが reject になることをテストで確かめます。",
   },
 ];
@@ -648,7 +657,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 <code>Result</code> の <code>Err</code> で返します。
               </li>
               <li>
-                <strong>システムエラー:</strong> データベース起因のエラーやデータが破損しているエラーは呼び出し元でも解決できません。境界の外側で安全に記録し、エラーの詳細を含まない形で
+                <strong>システムエラー:</strong> データベース起因のエラーやデータが破損しているエラーは呼び出し元でも解決できません。外側の例外境界で安全に記録し、エラーの詳細を含まない形で
                 HTTP 500 のレスポンスに変換します。
               </li>
             </ul>
@@ -672,8 +681,8 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <p>{narrative.limitation}</p>
             <h3 data-solution-heading>{exerciseSession.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
             {exerciseSession.solutionPresentation === "completed-file" ? (
-              <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
-                <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読む。</p>
+              <div class="before-after" aria-label="業務エラーとシステムエラーの見比べ方">
+                <p><strong>演習の開始時点:</strong> 業務エラーとして返す Result と、保存処理が reject するシステムエラーの経路を分けて読む。</p>
                 <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示される。</p>
               </div>
             ) : null}
