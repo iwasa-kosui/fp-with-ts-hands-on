@@ -1,0 +1,51 @@
+---
+import { Code } from "astro:components";
+import type { TeachingCode } from "../sessions/types";
+
+interface Props {
+  name: string;
+  before?: TeachingCode;
+  after?: TeachingCode;
+  examples?: readonly TeachingCode[];
+}
+
+const { name, before, after, examples } = Astro.props;
+---
+
+<article class="teaching-topic">
+  <h3>{name}</h3>
+  <slot />
+  {before === undefined || after === undefined ? null : (
+    <div class="teaching-topic__diff">
+      <figure class="code-block">
+        <figcaption>
+          before:
+          {before.caption === undefined ? before.sources?.map((source, index) => (
+            <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+          )) : <span>{before.caption}</span>}
+        </figcaption>
+        <Code code={before.code} lang="ts" />
+      </figure>
+      <figure class="code-block">
+        <figcaption>
+          after:
+          {after.caption === undefined ? after.sources?.map((source, index) => (
+            <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+          )) : <span>{after.caption}</span>}
+        </figcaption>
+        <Code code={after.code} lang="ts" />
+      </figure>
+    </div>
+  )}
+  {examples?.map((example) => (
+    <figure class="code-block" data-teaching-example>
+      <figcaption>
+        {example.caption === undefined ? example.sources?.map((source, index) => (
+          <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+        )) : <span>{example.caption}</span>}
+      </figcaption>
+      <Code code={example.code} lang="ts" />
+    </figure>
+  ))}
+  <p class="teaching-topic__why"><slot name="why" /></p>
+</article>

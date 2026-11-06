@@ -18,7 +18,7 @@ const pageModules = import.meta.glob<PageModule>([
 ], {
   eager: true,
 });
-const pageSources = import.meta.glob<string>([
+const astroSources = import.meta.glob<string>([
   "./pages/sessions/*.astro",
   "!./pages/sessions/index.astro",
 ], {
@@ -26,6 +26,17 @@ const pageSources = import.meta.glob<string>([
   query: "?raw",
   import: "default",
 });
+const proseSources = import.meta.glob<string>("./sessions/prose/*.mdx", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+});
+const pageSources = Object.fromEntries(
+  Object.entries(astroSources).map(([path, source]) => {
+    const slug = path.replace(/^.*\//, "").replace(/\.astro$/, "");
+    return [path, `${source}\n${proseSources[`./sessions/prose/${slug}.mdx`] ?? ""}`];
+  }),
+);
 const catalogModules = import.meta.glob("./sessions/catalog.ts", {
   eager: true,
 });
@@ -33,7 +44,7 @@ const catalogModules = import.meta.glob("./sessions/catalog.ts", {
 const docsRoot = process.cwd();
 const currentTest = join(docsRoot, "src", "session-pages.test.ts");
 const sourceRoots = ["src", "scripts"] as const;
-const sourceExtensions = new Set([".ts", ".tsx", ".astro", ".mjs"]);
+const sourceExtensions = new Set([".ts", ".tsx", ".astro", ".mdx", ".mjs"]);
 
 const collectSourceFiles = async (directory: string): Promise<string[]> => {
   const entries = await readdir(directory, { withFileTypes: true });
