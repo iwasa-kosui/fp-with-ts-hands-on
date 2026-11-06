@@ -70,9 +70,7 @@ const stripInterTagWhitespace = (html) =>
     const previousName = /^<\/?([a-zA-Z][a-zA-Z0-9-]*)/.exec(previousTag);
     const removable =
       (previousName !== null && blockTags.has(previousName[1].toLowerCase())) ||
-      (nextTag !== null && blockTags.has(nextTag[1].toLowerCase())) ||
-      previousName === null ||
-      nextTag === null;
+      (nextTag !== null && blockTags.has(nextTag[1].toLowerCase()));
     return removable ? previousTag : `${previousTag} `;
   });
 
@@ -296,6 +294,11 @@ for (const key of [...beforeByKey.keys()].sort()) {
     const tokenize = extension === ".html" ? tokenizeHtml : tokenizeCode;
     report.push(...reportHunks(key, tokenize(beforeText), tokenize(afterText)));
   });
+}
+
+if (compared === 0) {
+  console.error("比較できるファイルが両方のディレクトリにありません");
+  process.exit(2);
 }
 
 if (report.length === 0) {
