@@ -78,7 +78,7 @@ const exerciseContracts = {
     navigation: {
       previous: {
         href: "/sessions/01-business-events-and-workflows/",
-        title: "EventStormingとROPで予約キャンセルを設計する",
+        title: "データとパイプラインで予約キャンセルを設計する",
       },
       next: {
         href: "/sessions/03-adt-and-exhaustiveness/",
