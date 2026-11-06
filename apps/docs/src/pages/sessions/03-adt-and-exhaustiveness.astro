@@ -32,266 +32,195 @@ type TeachingTopic = Readonly<{
 }>;
 
 export const session: SessionSummary = {
-  slug: "03-semantic-identifiers",
-  snapshot: "session-03",
+  slug: "03-adt-and-exhaustiveness",
+  snapshot: "session-02",
   sequence: "03",
   kind: "exercise",
-  title: "診察開始の識別子を型で区別する",
-  durationMinutes: 30,
-  timeBreakdown: { brief: 4, teach: 6, exercise: 13, review: 7 },
-  adv: { articulate: 2, delegate: 9, verify: 2 },
+  title: "予約の状態の分岐漏れを型で検出する",
+  durationMinutes: 20,
+  timeBreakdown: { brief: 3, teach: 7, exercise: 7, review: 3 },
+  adv: { articulate: 1, delegate: 5, verify: 1 },
   peerReview: {
-    minutes: 7,
-    pickCount: 2,
+    minutes: 3,
+    pickCount: 1,
     questions: [
-      "`AppointmentId` と `VeterinarianId` を取り違えたコードは、型テストでコンパイルエラーになりますか。",
-      "予約の全状態で、`appointmentId` が `AppointmentId` になっていますか。",
-      "`startExamination` は、担当獣医師を `VeterinarianId` として受け取っていますか。",
+      "状態を追加したとき、`assertNever` によって未対応の分岐がコンパイルエラーになりますか。",
+      "`toStatusLabel` は `Readonly<{ kind: string }>` ではなく、`Appointment` を受け取っていますか。",
+      "`default` 分岐は固定の表示名を返さず、`assertNever` に `appointment` を渡していますか。",
     ],
   },
-  solutionSnapshot: "session-04",
+  solutionSnapshot: "session-03",
   solutionPresentation: "excerpt",
   peerReviewPromises: "reference",
   animal: { name: "HEDGEHOG", type: "hedgehog", avatar: "🦔" },
-  summary: "診察開始で使う予約IDと担当獣医師IDを、取り違えられない型にします。",
+  summary: "予約の状態ごとの分岐を網羅し、状態を追加したときの未対応の分岐をコンパイルエラーにします。",
   episode: [
-    "診察開始の入力で、予約IDと担当獣医師IDが入れ替わっていました。",
-    "どちらもUUIDなので、文字列の検査だけでは取り違えを止められません。",
-    "予約を選ぶ値と担当者を選ぶ値を、型で区別する必要があります。",
+    "無断キャンセルを表すNoShowの状態を足した翌朝、受付画面のハリネズミの予約に「不明」と表示されていました。",
+    "表示名の分岐にNoShowのcaseがなく、defaultが「不明」を返していても、型検査は成功しました。",
+    "状態を足したときは、直し忘れた分岐をコンパイラに見つけさせる必要があります。",
   ],
-  incident: "診察開始で AppointmentId と VeterinarianId を取り違えても、型検査が通った。",
-  exerciseCommand: "pnpm exercise:03",
+  incident: "NoShowの状態を追加したとき、表示名の分岐が default で「不明」を返し、型検査では気づけなかった。",
+  exerciseCommand: "pnpm exercise:02",
   exerciseModule: {
-    dir: "examples/session-03/src/domain",
-    fileBudget: 5,
-    lineBudget: 34,
+    dir: "examples/session-02/src/domain/appointment",
+    fileBudget: 1,
+    lineBudget: 6,
   },
   delegationPrompt: {
     request:
-      "診察開始で使う予約IDと担当獣医師IDを改善してください。同じUUID形式でも、用途を取り違えたコードはコンパイルを通らない状態を目指します。",
+      "予約状態の表示名を返す分岐を改善してください。状態を追加したときに、未対応の分岐がコンパイルエラーになる状態を目指します。",
     decisions: [
-      "AppointmentIdとVeterinarianIdをどの型として定義するか",
-      "用途の区別を予約状態とstartExaminationへどう伝えるか",
-      "取り違えをコンパイルエラーとしてどう残すか",
+      "状態追加時の分岐漏れをどこで検出するか",
     ],
   },
   steps: [
     {
-      id: "s3-brand-start-examination-ids",
-      goal: "予約IDと担当獣医師IDを、配布済みの識別子と同じ規約で別々の型にする。",
-      startingFailure: "予約IDと担当獣医師IDを取り違えても、型検査が通る。",
-      targets: [
-        "examples/session-03/src/domain/appointment/appointmentId.ts",
-        "examples/session-03/src/domain/appointment/veterinarianId.ts",
-      ],
-      solutions: [
-        {
-          path: "examples/session-04/src/domain/appointment/appointmentId.ts",
-          symbol: "AppointmentId",
-          lines: [3, 6],
-        },
-        {
-          path: "examples/session-04/src/domain/appointment/veterinarianId.ts",
-          symbol: "VeterinarianId",
-          lines: [3, 6],
-        },
-      ],
-    },
-    {
-      id: "s3-apply-start-examination-ids",
-      goal: "予約の6状態とstartExaminationが、用途別の識別子を受け取るようにする。",
-      startingFailure: "予約状態とstartExaminationが、用途を区別しないstringを受け取る。",
-      targets: [
-        "examples/session-03/src/domain/appointment/appointment.ts",
-        "examples/session-03/src/domain/appointment/transitions.ts",
-      ],
-      solutions: [
-        {
-          path: "examples/session-04/src/domain/appointment/appointment.ts",
-          symbol: "Scheduled",
-          lines: [1, 15],
-        },
-        {
-          path: "examples/session-04/src/domain/appointment/transitions.ts",
-          symbol: "startExamination",
-          lines: [17, 27],
-        },
-      ],
-    },
-    {
-      id: "s3-reject-id-swap",
-      goal: "AppointmentIdとVeterinarianIdを入れ替えたコードがコンパイルできないことを、型テストで確かめる。",
-      startingFailure: "取り違えた2行が、型エラーにならないままコンパイルされる。",
-      targets: ["examples/session-03/src/domain/domain.test-types.ts"],
+      id: "s3-exhaustive-label",
+      goal: "状態を追加したら表示名の分岐をコンパイルエラーにする。",
+      startingFailure: "状態を追加しても、表示名の分岐漏れを検出できない。",
+      targets: ["examples/session-02/src/domain/appointment/statusLabel.ts"],
       solutions: [{
-        path: "examples/session-04/src/domain/domain.test-types.ts",
-        symbol: "acceptAppointmentId",
-        lines: [1, 14],
+        path: "examples/session-03/src/domain/appointment/statusLabel.ts",
+        symbol: "toStatusLabel",
+        lines: [3, 24],
       }],
     },
   ],
   decisions: [
     {
-      invariant: "AppointmentIdとVeterinarianIdを取り違えない。",
-    },
-    {
-      invariant: "予約はどの状態でもAppointmentIdを持つ。",
-    },
-    {
-      invariant: "startExaminationはVeterinarianIdを受け取る。",
+      invariant: "状態を追加したとき、未対応の分岐をコンパイルエラーにする。",
     },
   ],
   finalReferences: [
-    "examples/final/src/domain/appointment/appointmentId.ts",
-    "examples/final/src/domain/appointment/veterinarianId.ts",
+    "examples/final/src/domain/shared/assertNever.ts",
   ],
 };
 
 export const guides = ([
   {
-    id: "swapped-domain-identifiers",
-    title: "予約IDと担当獣医師IDを逆の用途へ渡している",
-    currentDesign: "AppointmentIdを必要とする関数へVeterinarianIdを、VeterinarianIdを必要とする関数へAppointmentIdを渡しています。",
-    futureRisk: "どちらの型も実体はstringなので、この2行があっても型検査は成功します。",
-    path: "src/domain/domain.test-types.ts",
-    highlights: [{ startLineNumber: 4, endLineNumber: 10 }],
+    id: "string-kind-label",
+    title: "表示名の関数が kind を string として受け取っている",
+    currentDesign: "toStatusLabel の引数が kind: string で、Appointment の状態に限られていません。",
+    futureRisk: "存在しない kind の値を渡しても、コンパイルが通ります。",
+    path: "src/domain/appointment/statusLabel.ts",
+    highlights: [{ startLineNumber: 3, endLineNumber: 3 }],
   },
   {
-    id: "untyped-start-examination-id",
-    title: "UUIDを検査しても、型検査では予約IDと担当獣医師IDを区別できない",
-    currentDesign: "AppointmentIdとVeterinarianIdはuuid検査だけで、用途を表すbrandがありません。PetId、OwnerId、ExamIdにはbrandがあります。",
-    futureRisk: "予約IDを担当獣医師IDの位置へ渡しても、どちらもstringなのでコンパイルは通ります。",
-    path: "src/domain/appointment/appointmentId.ts",
-    highlights: [{ startLineNumber: 3, endLineNumber: 6 }],
-  },
-  {
-    id: "plain-string-start-examination",
-    title: "予約状態とstartExaminationがstringを受け取っている",
-    currentDesign: "予約のappointmentIdと、startExaminationのveterinarianIdがstringで宣言されています。",
-    futureRisk: "予約IDと担当獣医師IDを入れ替えても検出できません。",
-    path: "src/domain/appointment/appointment.ts",
-    highlights: [{ startLineNumber: 8, endLineNumber: 14 }],
+    id: "non-exhaustive-label",
+    title: "表示名の分岐が未知の状態を見逃す",
+    currentDesign: "default で「不明」を返し、すべての状態を処理したかを型で確かめていません。",
+    futureRisk: "状態を追加しても、未対応の分岐がコンパイルエラーになりません。",
+    path: "src/domain/appointment/statusLabel.ts",
+    highlights: [{ startLineNumber: 4, endLineNumber: 19 }],
   },
 ] as const) satisfies readonly CodeGuide[];
 
+const missingNoShowCase = `// もし後から Appointment に "NoShow"（無断キャンセル）を追加した場合...
+switch (appointment.kind) {
+  case "Scheduled":
+    return "予約済み";
+  case "CheckedIn":
+    return "来院済み";
+  case "InExamination":
+    return "診察中";
+  case "AwaitingPayment":
+    return "会計待ち";
+  case "Paid":
+    return "会計済み";
+  case "Canceled":
+    return "キャンセル";
+  // ❌ case "NoShow": の実装を忘れると...
+  default:
+    // ここで appointment は NoShow 型と推論される
+    // エラー: 型 'NoShow' の引数を型 'never' のパラメーターに
+    // 割り当てることはできません
+    return assertNever(appointment);
+}`;
+
 const teaching: readonly TeachingTopic[] = [
   {
-    name: "用途別の Branded Type",
+    name: "assertNeverは未処理の状態をコンパイルエラーにする",
     definition:
-      "同じ文字列形式でも、用途の違う識別子は別の型として扱います。zod の brand を付けると、互いに代入できない型ができます。",
+      "kindで分岐してAppointmentの全状態を処理すると、default内のappointmentはnever型になります。assertNeverはnever型だけを受け取るため、未処理の状態が残っていないことを型検査で確かめられます。",
     before: {
-      sources: ["examples/session-03/src/domain/appointment/appointmentId.ts"],
-      code: `const schema = z.string().uuid();
-
-export type AppointmentId = z.infer<typeof schema>;
-export const AppointmentId = { schema, parse: schema.parse } as const;`,
+      sources: ["examples/session-02/src/domain/appointment/statusLabel.ts"],
+      code: `export const toStatusLabel = (appointment: Readonly<{ kind: string }>): string => {
+  switch (appointment.kind) {
+    case "Scheduled":
+      return "予約済み";
+    case "CheckedIn":
+      return "来院済み";
+    case "InExamination":
+      return "診察中";
+    case "AwaitingPayment":
+      return "会計待ち";
+    case "Paid":
+      return "会計済み";
+    case "Canceled":
+      return "キャンセル";
+    default:
+      return "不明";
+  }
+};`,
     },
     after: {
-      sources: ["examples/session-04/src/domain/appointment/appointmentId.ts"],
-      code: `const schema = z.string().uuid().brand<"AppointmentId">();
+      sources: ["examples/session-03/src/domain/appointment/statusLabel.ts"],
+      code: `const assertNever = (value: never): never => {
+  throw new Error(\`Unknown appointment status: \${JSON.stringify(value)}\`);
+};
 
-export type AppointmentId = z.infer<typeof schema>;
-export const AppointmentId = { schema, parse: schema.parse } as const;`,
+export const toStatusLabel = (appointment: Appointment): string => {
+  switch (appointment.kind) {
+    case "Scheduled":
+      return "予約済み";
+    case "CheckedIn":
+      return "来院済み";
+    case "InExamination":
+      return "診察中";
+    case "AwaitingPayment":
+      return "会計待ち";
+    case "Paid":
+      return "会計済み";
+    case "Canceled":
+      return "キャンセル";
+    default:
+      return assertNever(appointment);
+  }
+};`,
     },
-    why: "AppointmentIdとVeterinarianIdは、どちらもUUID形式のstringです。uuid検査だけでは相互に代入できます。演習ではPetId、OwnerId、ExamIdの実装を手本にして、それぞれ別のbrandを付けます。区別するのは値の形式ではなく用途です。",
-  },
-  {
-    name: "識別子をドメインモデルと状態遷移で利用する",
-    definition:
-      "予約の状態を表す型・状態遷移関数を、作成した Branded Type を利用する形に変更します。",
-    before: {
-      sources: [
-        "examples/session-03/src/domain/appointment/appointment.ts",
-        "examples/session-03/src/domain/appointment/transitions.ts",
-      ],
-      code: `export type Scheduled = Readonly<{
-  kind: "Scheduled";
-  appointmentId: string;
-  // ...
-}>;
-
-export const startExamination = (
-  appointment: CheckedIn,
-  veterinarianId: string,
-  examinationStartedAt: string,
-): InExamination =>`,
+    example: {
+      caption: "NoShowを追加したのに、表示名の分岐を追加し忘れた例",
+      code: missingNoShowCase,
     },
-    after: {
-      sources: [
-        "examples/session-04/src/domain/appointment/appointment.ts",
-        "examples/session-04/src/domain/appointment/transitions.ts",
-      ],
-      code: `export type Scheduled = Readonly<{
-  kind: "Scheduled";
-  appointmentId: AppointmentId;
-  // ...
-}>;
-
-export const startExamination = (
-  appointment: CheckedIn,
-  veterinarianId: VeterinarianId,
-  examinationStartedAt: string,
-): InExamination =>`,
-    },
-    why: "識別子型を定義しただけでは、予約状態と遷移関数がstringを受け取るままです。予約の6状態にあるappointmentIdをAppointmentIdへ変え、startExaminationの引数とInExaminationのveterinarianIdをVeterinarianIdへ変えます。入力から状態遷移まで同じ型を使うと、取り違えを型検査で止められます。",
-  },
-  {
-    name: "@ts-expect-error による型テスト",
-    definition:
-      "わざとコンパイルエラーになるコードを書き、その行で確かにコンパイルエラーが発生することを検査します。もし誰かが実装を変更して意図せずコンパイルエラーが出なくなってしまった場合、@ts-expect-error は「不要なエラー抑制を行なっている」ことになり、逆にコンパイルエラーとなります。",
-    before: {
-      sources: ["examples/session-03/src/domain/domain.test-types.ts"],
-      code: `const acceptAppointmentId = (_id: AppointmentId): void => undefined;
-const acceptVeterinarianId = (_id: VeterinarianId): void => undefined;
-
-acceptAppointmentId(veterinarianId);
-acceptVeterinarianId(appointmentId);`,
-    },
-    after: {
-      sources: ["examples/session-04/src/domain/domain.test-types.ts"],
-      code: `const acceptAppointmentId = (_id: AppointmentId): void => undefined;
-const acceptVeterinarianId = (_id: VeterinarianId): void => undefined;
-
-// @ts-expect-error VeterinarianIdをAppointmentIdとして使えません。
-acceptAppointmentId(veterinarianId);
-
-// @ts-expect-error AppointmentIdをVeterinarianIdとして使えません。
-acceptVeterinarianId(appointmentId);`,
-    },
-    why: "実行時テストでは、間違えた値を渡すとコンパイルエラーになることを確かめられません。@ts-expect-errorは次の行に型エラーが必要だと宣言します。後から2つの識別子が同じ型へ戻ると、不要なエラー抑制として型検査が失敗します。",
+    why: "before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after で現在の全状態を処理すると、default内のappointmentはneverになります。AppointmentにNoShowを追加し、caseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverへ渡せないため、コンパイルエラーになります。同じ網羅性チェックを使う分岐でも修正漏れがエラーになるので、新しい状態の影響箇所をコンパイラが示します。",
   },
 ];
 
 const narrative = {
-  requirement: "診察開始の入力にある予約IDと担当獣医師IDを、用途ごとに区別して扱う。",
-  currentRisk: "AppointmentIdとVeterinarianIdは、どちらもUUID検査済みのstringです。startExaminationへ逆の順番で渡しても、型検査では止まりません。",
-  design: "2つの識別子を別々のBranded Typeで定義し、予約状態とstartExaminationまで同じ型を使う。",
-  limitation: "異なる用途は区別できますが、同じAppointmentId型を持つ別の予約を選ぶ誤りは型だけでは検出できない。",
-  legacy: "最初に、AppointmentIdとVeterinarianIdを実際に逆の用途へ渡しているコードを読みます。そのうえで、2つの識別子にbrandがなく、予約状態とstartExaminationにもstringが残っていることを確認します。",
-  fallback: "現在の3ステップを順に開き、まずAppointmentIdとVeterinarianIdに別々のbrandを付けます。次に予約状態とstartExaminationへ反映し、取り違えがコンパイルエラーになることを型テストで確かめます。相互レビューの約束事はS2のリンク先を確認します。",
+  requirement: "予約画面に表示する状態名を、Appointment の kind ごとに返します。後から状態が増えたときに、表示名の追加漏れを見つけられるようにします。",
+  currentRisk: "toStatusLabel は kind を string として受け取り、どの case にも当てはまらない値には default で「不明」を返します。Appointment に NoShow を追加して case を足し忘れても、型検査は成功し、画面には「不明」と表示されます。",
+  design: "Appointment の全状態を switch で処理し、default 分岐では never 型の値だけを受け取る assertNever へ appointment を渡します。状態を追加して case を足し忘れると、default に未処理の状態が残るため、コンパイルエラーになります。",
+  limitation: "assertNever が止めるのはコンパイル時の分岐漏れです。型アサーションで偽った値が実行時に default へ届いた場合、assertNever は例外を投げます。",
+  legacy: "kind を string で受ける toStatusLabel と、default で「不明」を返す分岐を探します。これらは、状態追加時の未対応の分岐をコンパイラで止められない箇所です。",
+  fallback: "Session 02 が終わっていない場合は、先に Session 02 の解答を反映します。解答スナップショットのステップを開き、toStatusLabel の引数型と網羅分岐をコピペします。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。相互レビューの約束事はS2のリンク先を確認します。",
 } as const;
 
 const exerciseSession: ExerciseSessionSummary = session;
+const initialExerciseFailureCount = 5;
 
 export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
-  initialFile: "exercises/semantic-identifiers.test.ts",
-  description: "診察開始で使う予約IDと獣医師IDを、開始snapshotで確認します。",
+  initialFile: "exercises/state-modeling.test.ts",
+  description: "表示名の分岐と予約状態の定義を、開始 snapshot で確認します。",
   visibleFiles: [
-    "exercises/semantic-identifiers.test.ts",
-    "test/regression/state-modeling.test.ts",
-    "src/domain/appointment/appointmentId.ts",
-    "src/domain/appointment/veterinarianId.ts",
+    "exercises/state-modeling.test.ts",
     "src/domain/appointment/appointment.ts",
-    "src/domain/appointment/transitions.ts",
-    "src/domain/domain.test-types.ts",
+    "src/domain/appointment/statusLabel.ts",
   ],
 } as const) satisfies SessionWorkspace;
 
 const projectFiles = projectFilesForSnapshot(session.snapshot);
-const typecheckCommand =
-  "pnpm --filter @fp-with-ts/clinic-session-03 typecheck";
 const solutionSteps = await Promise.all(
   session.steps.map(async (step) => ({
     step,
@@ -308,11 +237,11 @@ const chapters = [
 ] as const;
 const commonReviewChecks = [
   "`as` によるキャストが入っていないか全文検索して確認する。",
-  "`git diff --stat -- examples/session-03` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。",
+  "`git diff --stat -- examples/session-02` で今回の snapshot だけを確認する。Session 02 の変更が残っている場合は、今回の変更が statusLabel.ts だけであることを確かめる。`git status --short` で想定外の path がないか確認する。",
   "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
 ] as const;
 const reviewCompletionArtifacts = [
-  "取り違えてはいけない値",
+  "未対応のまま残してはいけない分岐",
   "Agentへの依頼文",
   "型検査では確認できず、テストまたは実行時に確認すること",
 ] as const;
@@ -339,7 +268,7 @@ ${session.incident}
 依頼:
 ${exerciseSession.delegationPrompt.request}
 
-取り違えてはいけない値: [言語化フェーズで書いた1文]
+未対応のまま残してはいけない分岐: [言語化フェーズで書いた1文]
 
 着手前に判断すること:
 ${exerciseSession.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
@@ -383,7 +312,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <p class="case-file__episode-label">動物病院のひと幕</p>
               {session.episode.map((line) => <p data-episode-line>{line}</p>)}
             </aside>
-            <p>S1で「どの予約を、どの獣医師が開始するか」と決めた入力を、用途別の型で表します。</p>
+            <p>Session 02 で定義した予約の6状態を、画面に表示する名前へ変換する分岐で扱います。</p>
             <h3 data-story-stage="use-case">追加したい機能</h3>
             <p>{narrative.requirement}</p>
             <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
@@ -403,20 +332,13 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               {session.exerciseModule.fileBudget}ファイル・約{session.exerciseModule.lineBudget}行です。
             </p>
             <CodeGuideCards guides={guides} projectFiles={projectFiles} />
-            <h3>取り違えたまま型検査する</h3>
-            <p><code>acceptAppointmentId</code> と <code>acceptVeterinarianId</code> の呼び出しは、渡す値が逆です。この状態で型検査を実行します。</p>
-            <figure class="code-block" data-typecheck-reproduction>
-              <figcaption>型検査コマンド</figcaption>
-              <Code code={typecheckCommand} lang="shell" />
-              <p><strong>期待結果:</strong> 取り違えた2行が残っていても、型検査は成功します。</p>
-            </figure>
-            <p>型検査が成功したこと自体が失敗の再現です。現在の <code>AppointmentId</code> と <code>VeterinarianId</code> は、どちらもUUID検査済みの <code>string</code> なので、TypeScriptには用途の違いが見えません。</p>
             <h3>修正前の失敗を確認する</h3>
-            <p>修正前は、次の{session.steps.length}件に対応する演習テストが失敗します。</p>
+            <p>このページの Playground は未編集の snapshot から起動するので、{initialExerciseFailureCount}個の型検査が失敗する状態から始まります。</p>
+            <p>Session 02 を終えた手元のコードでは、同じコマンドで失敗するのは、次の分岐漏れの型検査1個だけです。</p>
             <ul class="exercise-failures" aria-label="修正前に確認する問題">
               {session.steps.map((step) => <li>{step.startingFailure}</li>)}
             </ul>
-            <CommandBlock phase="red" command={session.exerciseCommand} expected={`${session.steps.length}件の演習テストが失敗します。`} />
+            <CommandBlock phase="red" command={session.exerciseCommand} expected={`Playground では${initialExerciseFailureCount}個の型検査が失敗します。Session 02 を終えた手元のコードでは、分岐漏れの1個だけが失敗します。`} />
             <p>ブラウザ内の変更はローカルへ反映されません。</p>
             <div data-code-explorer={workspace.slug}>
               <CodeExplorer
@@ -471,7 +393,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
             <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
             <ol class="adv-flow">
-              <li><strong>言語化（{session.adv.articulate}分）</strong>: 取り違えてはいけない値を1文で書く。</li>
+              <li><strong>言語化（{session.adv.articulate}分）</strong>: 未対応のまま残してはいけない分岐を1文で書く。</li>
               <li><strong>依頼（{session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
               <li><strong>検証（{session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
             </ol>
@@ -505,7 +427,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 </details>
               </div>
             ))}
-            <CommandBlock phase="green" command={session.exerciseCommand} expected="演習テストがすべて成功します。" />
+            <CommandBlock phase="green" command={session.exerciseCommand} expected="Session 02 を終えた手元のコードで、演習テストがすべて成功します。" />
             <h3>演習を完了できないとき</h3>
             <p>{narrative.fallback}</p>
           </section>
