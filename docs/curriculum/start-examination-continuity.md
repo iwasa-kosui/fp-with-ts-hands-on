@@ -66,6 +66,17 @@
 | Session 07 | Session 06の全解答が入った非公開snapshotです。 | 変更しません。Finalとの比較に使います。 | 診察開始の入力、業務エラー、event、保存、技術的失敗の責任が分かれた状態です。 | Session 07自身のDB adapterがfile SQLite transactionで予約状態と監査記録を保存します。 |
 | Final | Session 07の診察開始に、認証、認可、actor、projection、他集約を加えた参照実装です。 | 変更しません。講師がSession 07との対応とFinal固有の拡張を案内します。 | Session 07と同じ業務結果と原子性を保ちます。認証や他集約は途中セッションへ戻しません。 | Final固有のschema、migration、DB adapter、Drizzle transactionを維持します。 |
 
+この表の Session の番号は snapshot の番号です。公開ページの S の番号とは一致しません。公開ページと snapshot の対応は次のとおりです。
+
+| ページ | 開始snapshot | 解答snapshot | 演習コマンド |
+| --- | --- | --- | --- |
+| S2 | session-02 | session-03 | `pnpm exercise:02` |
+| S3 | session-02 | session-03 | `pnpm exercise:02` |
+| S4 | session-04 | session-05 | `pnpm exercise:04` |
+| S4 補助演習 | session-03 | session-04 | `pnpm exercise:03` |
+| S5 | session-05 | session-06 | `pnpm exercise:05` |
+| S6 | session-06 | session-07 | `pnpm exercise:06` |
+
 ## 事故ごとの解消確認
 
 各事故で必要な確認だけを行います。すべてのsnapshotで同じassertionを繰り返しません。

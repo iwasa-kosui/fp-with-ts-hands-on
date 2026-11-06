@@ -70,7 +70,8 @@ pnpm demo:NN
 | セッション | コマンド |
 | --- | --- |
 | S2 | `pnpm exercise:02` |
-| S3 | `pnpm exercise:03` |
+| S3 | `pnpm exercise:02` |
+| S4 補助演習 | `pnpm exercise:03` |
 | S4 | `pnpm exercise:04` |
 | S5 | `pnpm exercise:05` |
 | S6 | `pnpm exercise:06` |
@@ -96,14 +97,15 @@ S0 は現状の業務・操作・保存先・ログを読む回、S1 は予約�
 | セッション | 差分確認 |
 | --- | --- |
 | S2 | `git diff --stat -- examples/session-02` |
-| S3 | `git diff --stat -- examples/session-03` |
+| S3 | `git diff --stat -- examples/session-02` |
+| S4 補助演習 | `git diff --stat -- examples/session-03` |
 | S4 | `git diff --stat -- examples/session-04` |
 | S5 | `git diff --stat -- examples/session-05` |
 | S6 | `git diff --stat -- examples/session-06` |
 
-各回で `git status --short` も実行し、表のpath以外に意図しない変更がないか確認します。前のセッションの未commit差分は次の回の差分確認に含まれません。
+各回で `git status --short` も実行し、表のpath以外に意図しない変更がないか確認します。前のセッションの未commit差分は次の回の差分確認に含まれません。S3 は例外です。S3 の差分確認には S2 の変更も含まれます。
 
-振り返りとシート記入が終わったら、変更はそのまま残し、次のセッションページとexerciseコマンドを開いて、表の差分確認pathだけを切り替えます。前のセッションの未commit差分を消すための reset、stash、commit は必要ありません。次の回の開始コードには前の回の改善が取り込み済みなので、自分の変更をコピーする必要もありません。
+振り返りとシート記入が終わったら、変更はそのまま残し、次のセッションページとexerciseコマンドを開いて、表の差分確認pathだけを切り替えます。S2 から S3 へ進むときは同じ `examples/session-02` を使うので、pathを切り替えません。前のセッションの未commit差分を消すための reset、stash、commit は必要ありません。S2 から S3 への移行を除き、次の回の開始コードには前の回の改善が取り込み済みなので、自分の変更をコピーする必要もありません。S3 は S2 の変更の上で進めます。
 
 ## エージェントを使わない場合
 
