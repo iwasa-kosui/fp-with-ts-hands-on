@@ -1,3 +1,4 @@
+import mdx from "@astrojs/mdx";
 import react from "@astrojs/react";
 import { defineConfig } from "astro/config";
 
@@ -8,7 +9,8 @@ export const isolationHeaders = {
 
 export default defineConfig({
   devToolbar: { enabled: false },
-  integrations: [react()],
+  integrations: [react(), mdx()],
+  markdown: { smartypants: false },
   output: "static",
   outDir: "./dist",
   trailingSlash: "always",

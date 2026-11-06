@@ -138,3 +138,9 @@ export type PublicCodeExplorerSnapshot = Exclude<
   ExampleSnapshot,
   "session-01" | "session-07"
 >;
+
+export type TeachingCode = Readonly<{
+  sources?: readonly [string, ...string[]];
+  caption?: string;
+  code: string;
+}>;
