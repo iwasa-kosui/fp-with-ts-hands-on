@@ -2,11 +2,44 @@ import { readdirSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const KNOWN_BROKEN_DESTINATIONS = [
-  "/sessions/03-boundaries-and-semantic-values/",
-  "/sessions/04-workflow-errors/",
-  "/sessions/05-effects-and-consistency/",
+const KNOWN_BROKEN_REDIRECTS = [
+  "/sessions/02-boundary-and-ids/",
+  "/sessions/03-result-errors/",
+  "/sessions/04-effects-and-events/",
+  "/sessions/04-agent-review",
+  "/sessions/04-agent-review/",
+  "/sessions/05-mini-integration",
+  "/sessions/05-mini-integration/",
 ];
+
+const BASELINE_PATHS = [
+  "/",
+  "/sessions/",
+  "/sessions/00-system-handover/",
+  "/sessions/01-business-events-and-workflows/",
+  "/sessions/02-state-transitions/",
+  "/sessions/03-semantic-identifiers/",
+  "/sessions/04-boundaries-and-pii/",
+  "/sessions/05-workflow-errors/",
+  "/sessions/06-effects-and-consistency/",
+  "/sessions/final/",
+  "/setup/",
+  "/module-00",
+  "/module-00/",
+  "/sessions/00-break-the-app/",
+  "/sessions/00-read-the-incident/",
+  "/sessions/00-onboarding/",
+  "/sessions/01-state-modeling/",
+  "/sessions/02-boundary-and-ids/",
+  "/sessions/03-result-errors/",
+  "/sessions/04-effects-and-events/",
+  "/sessions/04-agent-review",
+  "/sessions/04-agent-review/",
+  "/sessions/05-mini-integration",
+  "/sessions/05-mini-integration/",
+];
+
+const ALLOWED_DYNAMIC_ROUTES = [];
 
 const PAGE_EXTENSIONS = [".astro", ".md", ".mdx", ".html"];
 const EXCLUDED_PAGES = ["404"];
@@ -64,6 +97,7 @@ const collectPageFiles = (dir) =>
 const collectPages = () => {
   const pages = [];
   const skipped = [];
+  const disallowedDynamic = [];
   for (const file of collectPageFiles(pagesDir)) {
     const relativePath = relative(pagesDir, file).split(sep).join("/");
     const fileName = relativePath.split("/").at(-1);
@@ -77,7 +111,11 @@ const collectPages = () => {
     }
     const route = relativePath.slice(0, -extension.length);
     if (route.includes("[")) {
-      skipped.push({ source: relativePath, reason: "動的ルート" });
+      if (ALLOWED_DYNAMIC_ROUTES.includes(relativePath)) {
+        skipped.push({ source: relativePath, reason: "動的ルート" });
+      } else {
+        disallowedDynamic.push(relativePath);
+      }
       continue;
     }
     if (EXCLUDED_PAGES.includes(route)) continue;
@@ -89,7 +127,7 @@ const collectPages = () => {
     });
   }
   pages.sort((a, b) => a.pathname.localeCompare(b.pathname));
-  return { pages, skipped };
+  return { pages, skipped, disallowedDynamic };
 };
 
 const responseCache = new Map();
@@ -177,7 +215,7 @@ const checkRedirect = async ({ pathname, location }) => {
 
   const destination = await request(actualTarget);
   const destinationPath = actualTarget.pathname;
-  const known = KNOWN_BROKEN_DESTINATIONS.includes(destinationPath);
+  const known = KNOWN_BROKEN_REDIRECTS.includes(pathname);
   const shownLocation =
     actualTarget.origin === base.origin
       ? `${actualTarget.pathname}${actualTarget.search}`
@@ -187,9 +225,9 @@ const checkRedirect = async ({ pathname, location }) => {
   if (destination.status === 200) {
     if (known) {
       notes.push(
-        `${destinationPath} は 200 になりました。scripts/verify-urls.mjs の KNOWN_BROKEN_DESTINATIONS から消してください。`,
+        `${pathname} の宛先 ${destinationPath} は 200 になりました。scripts/verify-urls.mjs の KNOWN_BROKEN_REDIRECTS から ${pathname} を消してください。`,
       );
-      addRow(pathname, expectedText, `${prefix}200 (既知の定数に残っている)`, "NG");
+      addRow(pathname, expectedText, `${prefix}200 (KNOWN_BROKEN_REDIRECTS から消す)`, "NG");
       return;
     }
     addRow(pathname, expectedText, `${prefix}200`, "OK");
@@ -240,7 +278,7 @@ const printTable = (header, tableRows) => {
 
 const main = async () => {
   const redirectRoutes = await loadRedirectRoutes();
-  const { pages, skipped } = collectPages();
+  const { pages, skipped, disallowedDynamic } = collectPages();
 
   console.log(`対象: ${base.href}`);
   console.log(`ページ ${pages.length} 件、リダイレクト ${redirectRoutes.length} 件`);
@@ -248,6 +286,40 @@ const main = async () => {
     console.log(`対象外: apps/docs/src/pages/${item.source} (${item.reason})`);
   }
   console.log("");
+
+  for (const source of disallowedDynamic) {
+    addRow(
+      `apps/docs/src/pages/${source}`,
+      "動的ルートは ALLOWED_DYNAMIC_ROUTES に載せたものだけ",
+      "許可されていない動的ルート",
+      "NG",
+    );
+  }
+
+  const currentPaths = new Set([
+    ...pages.map((page) => page.pathname),
+    ...redirectRoutes.map((route) => route.pathname),
+  ]);
+  for (const path of BASELINE_PATHS) {
+    if (!currentPaths.has(path)) {
+      addRow(
+        path,
+        "ページかリダイレクトとして存在する",
+        "ページにもリダイレクトにもない",
+        "NG",
+      );
+    }
+  }
+
+  const redirectPaths = new Set(redirectRoutes.map((route) => route.pathname));
+  for (const path of KNOWN_BROKEN_REDIRECTS) {
+    if (!redirectPaths.has(path)) {
+      notes.push(
+        `${path} は redirectRoutes にありません。scripts/verify-urls.mjs の KNOWN_BROKEN_REDIRECTS から消してください。`,
+      );
+      addRow(path, "redirectRoutes に存在する", "redirectRoutes にない", "NG");
+    }
+  }
 
   for (const page of pages) await checkPage(page.pathname);
   await checkHealth();

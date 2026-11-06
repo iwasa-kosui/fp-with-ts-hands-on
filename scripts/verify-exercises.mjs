@@ -74,7 +74,7 @@ const SCENARIOS = [
   { session: "05", name: "S5 開始", before: 9, overlay: null, after: null },
   {
     session: "05",
-    name: "S5 全解答",
+    name: "S5 回帰（session-06）",
     before: 9,
     overlay: {
       regression: {
@@ -202,11 +202,19 @@ const countFailures = (output) => {
   return typeRequirements + typeDiagnostics + (failedTests === null ? 0 : Number(failedTests[1]));
 };
 
+const countPassed = (output) => {
+  const line = output.match(/^\s*Tests\s+(.*)$/m);
+  const passed = line === null ? null : line[1].match(/(\d+) passed/);
+  return passed === null ? 0 : Number(passed[1]);
+};
+
 const execute = (workDir, args) => {
   const result = run("pnpm", args, { cwd: workDir, timeout: EXERCISE_TIMEOUT_MS });
   const count = countFailures(result.output);
-  const readable = count > 0 || result.status === 0;
-  return { ...result, count, readable };
+  const passed = countPassed(result.output);
+  const noProjects = result.output.includes("No projects matched");
+  const readable = !noProjects && (count > 0 || result.status === 0);
+  return { ...result, count, passed, readable };
 };
 
 const runRegression = (workDir, { session, testFile }) =>
@@ -223,13 +231,15 @@ const runExercise = (workDir, session) => execute(workDir, [`exercise:${session}
 
 const describeRun = (outcome) =>
   outcome.readable
-    ? `${outcome.count}件/exit ${outcome.status}`
+    ? `${outcome.count}件/exit ${outcome.status}${outcome.count === 0 && outcome.passed === 0 ? "/成功テストなし" : ""}`
     : `件数を読めない/exit ${outcome.status}`;
 
 const matches = (outcome, expected) =>
+  outcome.status !== null &&
   outcome.readable &&
   outcome.count === expected &&
-  (outcome.status === 0) === (expected === 0);
+  (outcome.status === 0) === (expected === 0) &&
+  (expected !== 0 || outcome.passed > 0);
 
 const describeExpected = (expected) => `${expected}件/exit ${expected === 0 ? "0" : "≠0"}`;
 
@@ -293,8 +303,14 @@ const baselineCheck = () => {
   if (diff.status !== 0) {
     problems.push(`git diff に失敗しました (基準 ${BASELINE_COMMIT})\n${tail(diff.output)}`);
   } else {
-    const changed = diff.output
-      .split("\n")
+    const untracked = run("git", ["ls-files", "-o", "--exclude-standard", "--", "examples"], {
+      cwd: rootDir,
+      timeout: 60000,
+    });
+    if (untracked.status !== 0) {
+      problems.push(`git ls-files -o に失敗しました\n${tail(untracked.output)}`);
+    }
+    const changed = [...diff.output.split("\n"), ...untracked.output.split("\n")]
       .map((line) => line.trim())
       .filter((line) => line !== "" && !ALLOWED_EXAMPLE_DIFFS.includes(line));
     if (changed.length > 0) {
