@@ -26,31 +26,39 @@ export const redirectRoutes = [
   },
   {
     pathname: "/sessions/02-boundary-and-ids/",
-    location: "/sessions/03-boundaries-and-semantic-values/",
+    location: "/sessions/04-boundaries-and-pii/",
   },
   {
     pathname: "/sessions/03-result-errors/",
-    location: "/sessions/04-workflow-errors/",
+    location: "/sessions/05-workflow-errors/",
   },
   {
     pathname: "/sessions/04-effects-and-events/",
-    location: "/sessions/05-effects-and-consistency/",
+    location: "/sessions/06-effects-and-consistency/",
   },
   {
     pathname: "/sessions/04-agent-review",
-    location: "/sessions/05-effects-and-consistency/",
+    location: "/sessions/06-effects-and-consistency/",
   },
   {
     pathname: "/sessions/04-agent-review/",
-    location: "/sessions/05-effects-and-consistency/",
+    location: "/sessions/06-effects-and-consistency/",
   },
   {
     pathname: "/sessions/05-mini-integration",
-    location: "/sessions/05-effects-and-consistency/",
+    location: "/sessions/06-effects-and-consistency/",
   },
   {
     pathname: "/sessions/05-mini-integration/",
-    location: "/sessions/05-effects-and-consistency/",
+    location: "/sessions/06-effects-and-consistency/",
+  },
+  {
+    pathname: "/sessions/03-semantic-identifiers",
+    location: "/sessions/04-boundaries-and-pii/",
+  },
+  {
+    pathname: "/sessions/03-semantic-identifiers/",
+    location: "/sessions/04-boundaries-and-pii/",
   },
 ] as const satisfies readonly RedirectRoute[];
 

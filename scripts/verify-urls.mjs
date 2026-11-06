@@ -2,15 +2,7 @@ import { readdirSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const KNOWN_BROKEN_REDIRECTS = [
-  "/sessions/02-boundary-and-ids/",
-  "/sessions/03-result-errors/",
-  "/sessions/04-effects-and-events/",
-  "/sessions/04-agent-review",
-  "/sessions/04-agent-review/",
-  "/sessions/05-mini-integration",
-  "/sessions/05-mini-integration/",
-];
+const KNOWN_BROKEN_REDIRECTS = [];
 
 const BASELINE_PATHS = [
   "/",
@@ -18,6 +10,7 @@ const BASELINE_PATHS = [
   "/sessions/00-system-handover/",
   "/sessions/01-business-events-and-workflows/",
   "/sessions/02-state-transitions/",
+  "/sessions/03-adt-and-exhaustiveness/",
   "/sessions/03-semantic-identifiers/",
   "/sessions/04-boundaries-and-pii/",
   "/sessions/05-workflow-errors/",
@@ -37,6 +30,7 @@ const BASELINE_PATHS = [
   "/sessions/04-agent-review/",
   "/sessions/05-mini-integration",
   "/sessions/05-mini-integration/",
+  "/sessions/03-semantic-identifiers",
 ];
 
 const ALLOWED_DYNAMIC_ROUTES = [];
