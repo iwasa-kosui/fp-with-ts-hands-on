@@ -25,7 +25,7 @@ type TeachingCode = Readonly<{
 type TeachingTopic = Readonly<{
   name: string;
   definition: string;
-  before: TeachingCode;
+  pitfall: Readonly<{ href: string; label: string }>;
   after: TeachingCode;
   example?: Readonly<{ caption: string; code: string }>;
   why: string;
@@ -148,23 +148,7 @@ const teaching: readonly TeachingTopic[] = [
     name: "Discriminated Unionは共通のkindで型を絞り込める",
     definition:
       "Unionは、値が複数の型のうち、いずれか1つであることを表します。判別フィールドを持たないオブジェクトのUnionでは、固有のプロパティがあるかどうかを調べて型を絞り込むしかありません。Discriminated Unionは、すべてのオブジェクト型に共通の判別フィールドを置き、型ごとに異なるリテラル値を割り当てたUnionです。",
-    before: {
-      caption: "判別フィールドを持たないオブジェクトのUnion",
-      code: `type Appointment =
-  | Readonly<{ scheduledAt: string }>
-  | Readonly<{ scheduledAt: string; checkedInAt: string }>
-  | Readonly<{
-      scheduledAt: string;
-      checkedInAt: string;
-      examinationStartedAt: string;
-    }>;
-
-const toStatusLabel = (appointment: Appointment): string => {
-  if ("examinationStartedAt" in appointment) return "診察中";
-  if ("checkedInAt" in appointment) return "来院済み";
-  return "予約済み";
-};`,
-    },
+    pitfall: { href: "#pitfall-no-discriminant", label: "2. 状態を判別する項目がない" },
     after: {
       caption: "kindを持つDiscriminated Union",
       code: `type Appointment =
@@ -189,32 +173,13 @@ const toStatusLabel = (appointment: Appointment): string => {
   }
 };`,
     },
-    why: "判別フィールドがない例では、checkedInAtやexaminationStartedAtの有無と、判定する順序に依存します。InExaminationにもcheckedInAtがあるため、先にcheckedInAtを調べると誤判定します。状態が増えるほど条件は複雑になります。共通のkindがあれば、switchでkindの値を確認するだけで各型へ絞り込めます。状態固有の必須情報を持てること自体は、どちらのUnionでも同じです。違いは、どの型かを判別する共通フィールドがあるかどうかです。",
+    why: "判定の順序に依存しません。共通のkindがあれば、switchでkindの値を確認するだけで各型へ絞り込めます。状態固有の必須情報を持てること自体は、判別フィールドがないUnionでも同じです。違いは、どの型かを判別する共通フィールドがあるかどうかです。",
   },
   {
     name: "遷移関数の引数型で、受け取れる状態を限定する",
     definition:
       "Discriminated Unionから特定の状態型を選び、遷移関数の引数に指定します。許可していない状態は、関数を呼び出す時点でコンパイルエラーになります。",
-    before: {
-      sources: ["examples/session-02/src/domain/appointment/transitions.ts"],
-      code: `export const startExamination = (
-  appointment: Appointment,
-  veterinarianId: string,
-  examinationStartedAt: string,
-): Appointment => {
-  requireKind(appointment, ["CheckedIn"]);
-  return ({ ...appointment, kind: "InExamination", veterinarianId, examinationStartedAt }) as Appointment;
-};
-
-export const recordPayment = (
-  appointment: Appointment,
-  input: RecordPaymentInput,
-  paidAt: string,
-): Appointment => {
-  requireKind(appointment, ["AwaitingPayment"]);
-  return ({ ...appointment, ...input, kind: "Paid", paidAt }) as Appointment;
-};`,
-    },
+    pitfall: { href: "#pitfall-wide-input", label: "3. 遷移関数が Appointment 全体を受け取る" },
     after: {
       sources: ["examples/session-03/src/domain/appointment/transitions.ts"],
       code: `export const startExamination = (
@@ -244,13 +209,27 @@ export const recordPayment = (
 ): Paid =>
   ({ ...appointment, ...input, kind: "Paid", paidAt }) as const satisfies Paid;`,
     },
-    why: "before は Appointment 全体を受け取るため、startExamination へ Paid や Canceled を渡せ、recordPayment へ InExamination を渡せます。状態の誤りが分かるのは、実行時に requireKind が例外を投げたときです。after は遷移ごとに CheckedIn、InExamination、AwaitingPayment だけを受け取ります。会計済みの予約や診察結果を記録していない予約を誤った関数へ渡すと、コードを実行する前の型検査で止まります。Discriminated Unionが状態の候補を定義し、関数の引数型が許可された遷移を定義します。",
+    why: "遷移ごとに CheckedIn、InExamination、AwaitingPayment だけを受け取ります。会計済みの予約や診察結果を記録していない予約を誤った関数へ渡すと、コードを実行する前の型検査で止まります。Discriminated Unionが状態の候補を定義し、関数の引数型が許可された遷移を定義します。",
   },
 ];
 
 const narrative = {
   requirement: "予約を「診察中にする」、「診察結果を記録する」、「会計する」、「キャンセルする」といった状態変更の機能を追加します。",
-  currentRisk: "配布コードの遷移関数は、引数に Appointment 全体を受け取ります。そのため、Paid を startExamination へ渡すことも、診察結果を記録していない InExamination を recordPayment へ渡すこともコンパイルできます。実行時に requireKind が例外を投げるまで、状態の誤りに気づけません。cancel もキャンセル理由を undefined で受け取れるため、コンパイラではキャンセル理由が抜けていることを検知できません。",
+  currentRisk: "S2の配布コードは、すでに kind で6つの状態を分けています。しかし、遷移関数は引数に Appointment 全体を受け取ります。そのため、Paid を startExamination へ渡すことも、診察結果を記録していない InExamination を recordPayment へ渡すこともコンパイルできます。実行時に requireKind が例外を投げるまで、状態の誤りに気づけません。cancel もキャンセル理由を undefined で受け取れるため、コンパイラではキャンセル理由が抜けていることを検知できません。",
+  noDiscriminantCode: `type Appointment =
+  | Readonly<{ scheduledAt: string }>
+  | Readonly<{ scheduledAt: string; checkedInAt: string }>
+  | Readonly<{
+      scheduledAt: string;
+      checkedInAt: string;
+      examinationStartedAt: string;
+    }>;
+
+const toStatusLabel = (appointment: Appointment): string => {
+  if ("examinationStartedAt" in appointment) return "診察中";
+  if ("checkedInAt" in appointment) return "来院済み";
+  return "予約済み";
+};`,
   pitfallCode: {
     sources: ["examples/session-02/src/domain/appointment/transitions.ts"],
     code: `export const startExamination = (
@@ -259,12 +238,7 @@ const narrative = {
   examinationStartedAt: string,
 ): Appointment => {
   requireKind(appointment, ["CheckedIn"]);
-  return ({
-    ...appointment,
-    kind: "InExamination",
-    veterinarianId,
-    examinationStartedAt,
-  }) as Appointment;
+  return ({ ...appointment, kind: "InExamination", veterinarianId, examinationStartedAt }) as Appointment;
 };
 
 declare const paidAppointment: Paid;
@@ -283,6 +257,15 @@ recordPayment(
   examining,
   { diagnosis: "皮膚炎", treatment: "軟膏", amount: 4800 },
   "2026-08-30T10:30:00+09:00",
+);
+
+declare const checkedIn: CheckedIn;
+
+// キャンセル理由がなくてもコンパイルできる
+cancel(
+  checkedIn,
+  undefined,
+  "2026-08-30T09:00:00+09:00",
 );`,
   },
   design: "Scheduled | CheckedIn | InExamination | AwaitingPayment | Paid | Canceled のDiscriminated Unionを、遷移関数でも一貫して使います。completeExamination は InExamination だけを受け取り、recordPayment は AwaitingPayment だけを受け取る純粋関数にします。",
@@ -316,6 +299,55 @@ const solutionSteps = await Promise.all(
     snippets: await loadSolutionSnippets(step),
   })),
 );
+const distributedAppointmentSnippets = await loadSolutionSnippets({
+  solutions: [
+    {
+      path: "examples/session-00/src/domain/appointment/appointment.ts",
+      symbol: "Appointment",
+      lines: [1, 23],
+    },
+    {
+      path: "examples/session-00/src/domain/appointment/appointment.ts",
+      symbol: "updateStatus",
+      lines: [34, 38],
+    },
+  ],
+});
+const distributedAppointmentCode = distributedAppointmentSnippets
+  .map(({ code }) => code)
+  .join("\n\n");
+const javaStateCode = `sealed interface Appointment permits CheckedIn, InExamination {}
+
+record CheckedIn(String appointmentId, String checkedInAt)
+    implements Appointment {}
+
+record InExamination(String appointmentId, String checkedInAt, String veterinarianId)
+    implements Appointment {}
+
+static InExamination startExamination(CheckedIn appointment, String veterinarianId) {
+  return new InExamination(
+      appointment.appointmentId(), appointment.checkedInAt(), veterinarianId);
+}`;
+const rustStateCode = `struct CheckedIn { appointment_id: String, checked_in_at: String }
+
+struct InExamination {
+    appointment_id: String,
+    checked_in_at: String,
+    veterinarian_id: String,
+}
+
+enum Appointment {
+    CheckedIn(CheckedIn),
+    InExamination(InExamination),
+}
+
+fn start_examination(appointment: CheckedIn, veterinarian_id: String) -> InExamination {
+    InExamination {
+        appointment_id: appointment.appointment_id,
+        checked_in_at: appointment.checked_in_at,
+        veterinarian_id,
+    }
+}`;
 const chapters = [
   { id: "incident", label: "今回つくるもの" },
   { id: "legacy", label: "コードを読み、失敗を再現する" },
@@ -412,7 +444,23 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
             <p>このように、処理の前後を通して常に成立させる条件を、このセッションでは<strong>不変条件</strong>と呼びます。</p>
             <h3 data-story-stage="use-case">追加したい機能</h3>
             <p>{narrative.requirement}</p>
-            <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
+            <h3 id="naive-pitfalls" data-story-stage="pitfall">素朴な実装の落とし穴</h3>
+            <p>予約の状態の表し方には、段階ごとに次の3つの問題があります。</p>
+            <h4 id="pitfall-one-type" class="pitfall-heading">1. 1つの型に全状態の項目を詰め込む</h4>
+            <p>S0の配布コードの <code>Appointment</code> は、すべての状態の項目を1つの型に持ちます。S1の配布コードも、<code>items</code> を除いて同じ型です。</p>
+            <figure class="code-block">
+              <figcaption>配布コードの実物: <code>examples/session-00/src/domain/appointment/appointment.ts</code></figcaption>
+              <Code code={distributedAppointmentCode} lang="ts" />
+            </figure>
+            <p><code>status</code> は任意の文字列を受け取ります。診察や会計の項目は任意項目なので、<code>status</code> が <code>"paid"</code> なのに <code>paidAt</code> がない値もコンパイルできます。<code>updateStatus</code> は、どの状態からどの状態へも変更できます。</p>
+            <h4 id="pitfall-no-discriminant" class="pitfall-heading">2. 状態を判別する項目がない</h4>
+            <p>型を状態ごとに分けても、共通の判別フィールドがなければ、固有のプロパティの有無で状態を判定するしかありません。</p>
+            <figure class="code-block">
+              <figcaption>判別フィールドを持たないオブジェクトのUnion(説明用の例)</figcaption>
+              <Code code={narrative.noDiscriminantCode} lang="ts" />
+            </figure>
+            <p>この書き方は、<code>checkedInAt</code> や <code>examinationStartedAt</code> の有無と、判定する順序に依存します。<code>InExamination</code> にも <code>checkedInAt</code> があるため、先に <code>checkedInAt</code> を調べると誤判定します。状態が増えるほど条件は複雑になります。</p>
+            <h4 id="pitfall-wide-input" class="pitfall-heading">3. 遷移関数が Appointment 全体を受け取る</h4>
             <p>{narrative.currentRisk}</p>
             <figure class="code-block pitfall-code" data-pitfall-code>
               <figcaption>
@@ -463,37 +511,22 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 
           <section id="teach">
             <h2>事前知識（{session.timeBreakdown.teach}分）</h2>
-            <p>
-              この回で利用する型について確認します。配布コードの書き方を before、次のスナップショットの書き方を after として並べています。
-            </p>
+            <p>この回で利用する型について確認します。修正前の書き方は<a href="#naive-pitfalls">素朴な実装の落とし穴</a>にまとめました。ここでは解決に使う書き方を示します。</p>
             {teaching.map((topic) => (
               <article class="teaching-topic">
                 <h3>{topic.name}</h3>
                 <p>{topic.definition}</p>
-                <div class="teaching-topic__diff">
-                  <figure class="code-block">
-                    <figcaption>
-                      before:
-                      {topic.before.caption === undefined ? (
-                        topic.before.sources?.map((source, index) => (
-                          <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
-                        ))
-                      ) : <span>{topic.before.caption}</span>}
-                    </figcaption>
-                    <Code code={topic.before.code} lang="ts" />
-                  </figure>
-                  <figure class="code-block">
-                    <figcaption>
-                      after:
-                      {topic.after.caption === undefined ? (
-                        topic.after.sources?.map((source, index) => (
-                          <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
-                        ))
-                      ) : <span>{topic.after.caption}</span>}
-                    </figcaption>
-                    <Code code={topic.after.code} lang="ts" />
-                  </figure>
-                </div>
+                <p>修正前の書き方: <a href={topic.pitfall.href}>{topic.pitfall.label}</a></p>
+                <figure class="code-block">
+                  <figcaption>
+                    {topic.after.caption === undefined ? (
+                      topic.after.sources?.map((source, index) => (
+                        <Fragment>{index === 0 ? null : "、"}<code>{source}</code></Fragment>
+                      ))
+                    ) : <span>{topic.after.caption}</span>}
+                  </figcaption>
+                  <Code code={topic.after.code} lang="ts" />
+                </figure>
                 {topic.example === undefined ? null : (
                   <figure class="code-block" data-teaching-example>
                     <figcaption>{topic.example.caption}</figcaption>
@@ -503,6 +536,22 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 <p class="teaching-topic__why">{topic.why}</p>
               </article>
             ))}
+            <details class="step-solution">
+              <summary>おまけ: 他の言語で状態を型にする</summary>
+              <div class="step-solution__body">
+                <p>状態ごとに型を分け、遷移関数の引数で受け取る状態を限定する考え方は、TypeScript 以外でも使えます。Java と Rust で同じ遷移を書くと次のようになります。演習では使いません。</p>
+                <figure class="code-block">
+                  <figcaption>Java 17以降(抜粋)</figcaption>
+                  <Code code={javaStateCode} lang="java" />
+                </figure>
+                <figure class="code-block">
+                  <figcaption>Rust(抜粋)</figcaption>
+                  <Code code={rustStateCode} lang="rust" />
+                </figure>
+                <p>TypeScript では <code>kind</code> というプロパティを自分で書き、コンパイラがその値で型を絞り込みます。Java の <code>sealed interface</code> は、実装できる型を <code>permits</code> に書いた型に限定します。Rust の <code>enum</code> は、列挙子そのものが状態を区別します。Java と Rust のコードには、<code>kind</code> に当たるプロパティがありません。</p>
+                <p>Rust ではさらに、<code>start_examination</code> へ渡した値の所有権が関数へ移ります。同じ値をもう一度渡すとコンパイルエラーになるため、遷移前の状態を使い回せません。TypeScript と Java では、同じ値を何度でも渡せます。</p>
+              </div>
+            </details>
           </section>
 
           <section id="refactor">

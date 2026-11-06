@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import type { ExerciseStep, SolutionReference } from "./types";
 
 export const loadSolutionSnippets = async (
-  step: ExerciseStep,
+  step: Pick<ExerciseStep, "solutions">,
 ): Promise<
   readonly Readonly<{ solution: SolutionReference; code: string }>[]
 > => {
@@ -11,7 +11,7 @@ export const loadSolutionSnippets = async (
     step.solutions.map(({ presentation }) => presentation ?? "excerpt"),
   );
   if (presentations.size !== 1) {
-    throw new Error(`1ステップ内の表示形式を統一してください: ${step.id}`);
+    throw new Error(`1ステップ内の表示形式を統一してください: ${step.solutions[0].path}`);
   }
 
   return Promise.all(

@@ -136,7 +136,8 @@
   width: 100%;
 }
 
-.case-file--session .case-file__content > section {
+.case-file--session .case-file__content > section,
+.case-file--session .case-file__content > section > :is(h3, h4)[id] {
   scroll-margin-top: var(--case-scroll-offset, 8.5rem);
 }
 
@@ -408,7 +409,8 @@
     padding: clamp(1.5rem, 2.5vw, 2.5rem);
   }
 
-  .case-file--session .case-file__content > section {
+  .case-file--session .case-file__content > section,
+  .case-file--session .case-file__content > section > :is(h3, h4)[id] {
     scroll-margin-top: var(--case-scroll-offset, 1.5rem);
   }
 }
