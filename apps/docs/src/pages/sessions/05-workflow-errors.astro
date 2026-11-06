@@ -664,16 +664,11 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 {topic.railComparison === undefined ? null : (
                   <Fragment>
                     <p><a href="#rop-recap">ROPの図</a>と見比べると、次のように対応します。</p>
-                    <table>
-                      <thead>
-                        <tr><th>操作</th><th>図で対応するもの</th><th>渡す関数の戻り値</th></tr>
-                      </thead>
-                      <tbody>
-                        {topic.railComparison.map((row) => (
-                          <tr><th><code>{row.operation}</code></th><td>{row.rail}</td><td>{row.returns}</td></tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <ul class="decision-list">
+                      {topic.railComparison.map((row) => (
+                        <li><strong><code>{row.operation}</code>（渡す関数の戻り値: {row.returns}）:</strong> {row.rail}</li>
+                      ))}
+                    </ul>
                   </Fragment>
                 )}
                 <p class="teaching-topic__why">{topic.why}</p>
