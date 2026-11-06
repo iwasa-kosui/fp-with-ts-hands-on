@@ -55,7 +55,7 @@ const loadSide = async (root) => {
       buffer: await readFile(path.join(root, file)),
     })),
   );
-  return { entries, replacements };
+  return { entries, replacements, files: new Map(entries.map((entry) => [entry.file, entry])) };
 };
 
 const normalizeHashes = (text, replacements) => {
@@ -269,6 +269,15 @@ const normalizedText = (entry, replacements) => {
     : normalizeHashes(text, replacements);
 };
 
+const stylesheetOrder = (entry, side) =>
+  [...entry.buffer.toString("utf8").matchAll(/<link\b[^>]*>/g)]
+    .filter(([tag]) => /\brel=["']?stylesheet/.test(tag))
+    .flatMap(([tag]) => /\bhref=["']?([^"'\s>]+)/.exec(tag)?.[1] ?? [])
+    .map((href) => {
+      const file = side.files.get(href.replace(/^\//, ""));
+      return file === undefined ? href : normalizeHashes(file.buffer.toString("utf8"), side.replacements);
+    });
+
 let compared = 0;
 for (const key of [...beforeByKey.keys()].sort()) {
   const beforeEntries = beforeByKey.get(key);
@@ -285,6 +294,12 @@ for (const key of [...beforeByKey.keys()].sort()) {
     const afterBinary = afterEntries.map(({ buffer }) => buffer.toString("base64")).sort();
     if (beforeBinary.join("\n") !== afterBinary.join("\n")) report.push(`DIFF ${key}: binary content differs`);
     continue;
+  }
+  if (extension === ".html") {
+    beforeEntries.forEach((entry, index) => {
+      const orders = [stylesheetOrder(entry, before), stylesheetOrder(afterEntries[index], after)].map((order) => JSON.stringify(order));
+      if (orders[0] !== orders[1]) report.push(`DIFF-CSS-ORDER ${key}`);
+    });
   }
   const beforeTexts = beforeEntries.map((entry) => normalizedText(entry, before.replacements)).sort();
   const afterTexts = afterEntries.map((entry) => normalizedText(entry, after.replacements)).sort();
