@@ -261,14 +261,14 @@ type Checkup = Readonly<{ weightKg: WeightKg }>;
 // 型エラー: numberはWeightKgへ代入できない
 const first: Checkup = { weightKg: -3 };`,
     },
-    why: "beforeのnumberは、-3も1200も受け取ります。範囲の確認を忘れると、不正な重量がそのまま後続の処理へ進みます。afterのWeightKgはnumberと区別されるので、検査を通っていないnumberを渡すと型エラーになります。Branded Typeの用途はIDの区別に限りません。重量や金額のように制約のある値にも、同じ書き方を使えます。",
+    why: "beforeのnumberは、-3も1200も受け取ります。numberのままでは、受け取った関数からはその値が検査済みか分かりません。範囲の確認を忘れると、不正な重量がそのまま後続の処理へ進みます。afterのWeightKgはnumberと区別されるので、検査を通っていないnumberを渡すと型エラーになります。Branded Typeの用途はIDの区別に限りません。重量や金額のように制約のある値にも、同じ書き方を使えます。",
   },
   {
     name: "スマートコンストラクタで値の作り方を1つにする",
     definition:
       "スマートコンストラクタは、入力を検査し、制約を満たす場合だけ型付きの値を返す関数です。失敗の返し方には例外とResultがあります。ここではResultのErrで返します。",
     before: {
-      caption: "検査を呼び出し側に任せる（説明用の例）",
+      caption: "検査を受け取る関数ごとに書く（説明用の例）",
       code: `const recordWeight = (weightKg: number) => {
   if (weightKg < 0 || weightKg > 100) {
     throw new Error("重量が範囲外です");
@@ -288,7 +288,7 @@ WeightKg.parse(-3); // Err
 WeightKg.parse(1200); // Err`,
     },
     example: { caption: `実コード: ${paymentAmountQuote.source}`, code: paymentAmountQuote.code },
-    why: "検査をparseへまとめると、範囲を変えるときの修正箇所は1か所で済みます。受け取る側はWeightKgを引数にするだけで、同じ検査を繰り返しません。finalのPaymentAmountも同じ作りです。1以上の整数だけをPaymentAmountとして返し、支払済みの予約のamountがこの型を持ちます。finalのbrandは文字列ではなくSymbolを使いますが、型を区別する役割は同じです。asを使うと検査を飛ばせるので、レビューではasが増えていないかを確かめます。",
+    why: "schemaResultは、schemaからResultを返すparseを作る関数です。検査をparseへまとめると、範囲を変えるときの修正箇所は1か所で済みます。受け取る側はWeightKgを引数にするだけで、同じ検査を繰り返しません。finalのPaymentAmountも同じ作りです。1以上の整数だけをPaymentAmountとして返し、支払済みの予約のamountがこの型を持ちます。finalのbrandは文字列ではなくSymbolを使いますが、型を区別する役割は同じです。asを使うと検査を飛ばせるので、レビューではasが増えていないかを確かめます。",
   },
   {
     name: "schemaでunknownからbrand付き入力を作る",
@@ -718,15 +718,6 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
               <dt>Always-Valid Domain Model</dt>
               <dd>境界のparseに成功した値だけをStartExaminationInputにし、schemaが表現する制約を満たさない入力を通常の処理へ持ち込みません。</dd>
             </dl>
-            <aside class="decision-card boundary-limit" data-boundary-limit>
-              <h3>この境界だけでは検出できない入力</h3>
-              <p>
-                予約IDのUUIDが<code>veterinarianId</code>へ入った場合、UUIDという形式は正しいためschemaを通ります。
-                Branded Typeは、外部データが何を指すUUIDかを判定する仕組みではありません。
-                parse後のコードで、すでに区別されたIDを取り違えないための仕組みです。
-              </p>
-              <p>そのUUIDが実在する獣医師を指すか確かめるには、獣医師マスターの参照が必要です。この確認はS4の演習範囲には含めません。</p>
-            </aside>
             <p>まず重量の例で値のモデリングを確かめ、支払金額の実コードを読みます。そのあとで、配布コードの書き方をbefore、修正後の書き方をafterとして見比べます。</p>
             {teaching.map((topic) => (
               <article class="teaching-topic">
@@ -761,6 +752,13 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
                 <p class="teaching-topic__why">{topic.why}</p>
               </article>
             ))}
+            <aside class="decision-card boundary-limit" data-boundary-limit>
+              <h3>この境界だけでは検出できない入力</h3>
+              <p>
+                予約IDのUUIDが<code>veterinarianId</code>へ入った場合、UUIDという形式は正しいためschemaを通ります。Branded Typeは、外部データが何を指すUUIDかを判定する仕組みではありません。parseで確かめられるのは形式までです。
+              </p>
+              <p>そのUUIDが実在する獣医師を指すか確かめるには、獣医師マスターの参照が必要です。この確認はS4の演習範囲には含めません。</p>
+            </aside>
             <aside class="decision-card">
               <h3>時間外の補足: 検査結果とPII</h3>
               <p>
@@ -779,13 +777,13 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 
           <section id="supplementary">
             <h2>補助演習（目安5分）</h2>
-            <p>事前知識のWeightKgと同じ手順を、予約IDと担当獣医師IDで試します。Branded Typeの用途はIDの取り違えを防ぐことに限りません。ここでは配布コードの続きで試せるIDを題材にします。</p>
+            <p>事前知識のWeightKgと同じbrandの付け方を、予約IDと担当獣医師IDで試します。Branded Typeの用途はIDの取り違えを防ぐことに限りません。ここでは配布コードの続きで試せるIDを題材にします。</p>
             <p>補助演習は、手元のコードで実行します。このページの Playground は session-04 の snapshot なので、<code>{supplementaryExercise.exerciseCommand}</code> を実行できません。</p>
             <p>先に <code>{supplementaryExercise.exerciseCommand}</code>、次に <code>{session.exerciseCommand}</code> の順に実行します。どちらもリポジトリのルートで実行するので、<code>cd</code> は要りません。</p>
             <p>このページの開始コードには、補助演習の解答がすでに入っています。そのため、補助演習を飛ばしても、このページの演習は壊れません。目安は、補助演習が5分、このページの演習が10分です。</p>
             <p>参加者が手元で進めるのはステップ1と2です。ステップ3の型テストは、講師が画面で見せます。</p>
             <p>ステップ1と2を終えると、<code>examples/session-03/src/domain/domain.test-types.ts</code> の取り違えた2行が型エラーとして残り、<code>{supplementaryExercise.exerciseCommand}</code> は失敗のままです。この2行の型エラーは、用途の区別が効いていることを示します。ステップ3で <code>@ts-expect-error</code> を付けると、すべて成功します。手元で確かめたい場合は、解答のステップ3を開いて同じ変更を加えます。</p>
-            <p>補助演習の編集範囲は <code>{supplementaryExercise.exerciseModule.dir}</code>、変更するファイル数は最大{supplementaryExercise.exerciseModule.fileBudget}ファイル・約{supplementaryExercise.exerciseModule.lineBudget}行です。</p>
+            <p>補助演習の編集範囲は <code>{supplementaryExercise.exerciseModule.dir}</code>、変更するファイル数は最大{supplementaryExercise.exerciseModule.fileBudget}ファイル・約{supplementaryExercise.exerciseModule.lineBudget}行です。この上限はステップ3を含みます。手元で進めるステップ1と2は4ファイルです。</p>
             <h3>取り違えたまま型検査する</h3>
             <p><code>examples/session-03/src/domain/domain.test-types.ts</code> の <code>acceptAppointmentId</code> と <code>acceptVeterinarianId</code> の呼び出しは、渡す値が逆です。この状態で型検査を実行します。</p>
             <figure class="code-block" data-typecheck-reproduction>
