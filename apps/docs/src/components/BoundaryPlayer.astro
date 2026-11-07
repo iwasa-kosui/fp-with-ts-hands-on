@@ -1,0 +1,462 @@
+---
+import { Code } from "astro:components";
+import type { Walkthrough } from "../sessions/boundary-walkthroughs";
+
+type Props = Readonly<{ walkthrough: Walkthrough }>;
+
+const { walkthrough } = Astro.props;
+const pathOf = (fileId: string) =>
+  walkthrough.files.find(({ id }) => id === fileId)?.path ?? "";
+const data = JSON.stringify({
+  scenarios: walkthrough.scenarios,
+}).replaceAll("<", "\\u003c");
+const values = [
+  ...new Set(
+    walkthrough.scenarios.flatMap(({ frames }) => frames.map(({ value }) => value)),
+  ),
+];
+---
+
+<figure class="boundary-player" data-boundary-player>
+  <figcaption>
+    <strong>{walkthrough.title}</strong>
+    <span>{walkthrough.description}</span>
+  </figcaption>
+  <script is:inline type="application/json" data-player-data set:html={data} />
+
+  <div class="boundary-player__live" data-player-live>
+    <div class="boundary-player__scenarios" role="group" aria-label="入力を選ぶ">
+      {walkthrough.scenarios.map((scenario) => (
+        <button type="button" data-scenario={scenario.id} aria-pressed="false">{scenario.label}</button>
+      ))}
+    </div>
+    <div class="boundary-player__track" data-track>
+      {walkthrough.zones.map((zone, index) => (
+        <div class="boundary-player__zone" data-zone-index={index}>{zone}</div>
+      ))}
+      <span class="boundary-player__token" data-token aria-hidden="true">値</span>
+    </div>
+    <div class="boundary-player__value" data-status-box>
+      <p data-value-label></p>
+      {values.map((value) => (
+        <div class="boundary-player__value-code" data-value-text={value} hidden>
+          <Code code={value} lang="ts" wrap />
+        </div>
+      ))}
+    </div>
+    <p class="boundary-player__text" data-text aria-live="polite"></p>
+    <div class="boundary-player__controls">
+      <button type="button" data-action="prev">1コマ戻る</button>
+      <button type="button" data-action="play" class="boundary-player__play">再生</button>
+      <button type="button" data-action="next">1コマ進む</button>
+      <span data-counter></span>
+    </div>
+  </div>
+
+  <div class="boundary-player__files">
+    {walkthrough.files.map((file) => (
+      <figure class="code-block" data-file={file.id}>
+        <figcaption><code>{file.path}</code></figcaption>
+        <div class="boundary-player__code" data-code-scroll>
+          <Code code={file.code} lang="ts" />
+        </div>
+      </figure>
+    ))}
+  </div>
+
+  <div class="boundary-player__static" data-player-static>
+    {walkthrough.scenarios.map((scenario) => (
+      <section>
+        <h4>{scenario.label}</h4>
+        <ol>
+          {scenario.frames.map((frame) => (
+            <li data-status={frame.status}>
+              <p>{walkthrough.zones[frame.zone]}: {frame.text}</p>
+              <p><code>{pathOf(frame.fileId)}</code> {frame.from + 1}行目（{frame.valueLabel}）</p>
+              <div class="boundary-player__value-code"><Code code={frame.value} lang="ts" wrap /></div>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))}
+  </div>
+</figure>
+
+<script is:inline>
+  (() => {
+  const frameMilliseconds = 3200;
+
+  const setUp = (root) => {
+    const { scenarios } = JSON.parse(
+      root.querySelector("[data-player-data]")?.textContent ?? "{}",
+    );
+    const need = (selector) => {
+      const element = root.querySelector(selector);
+      if (element === null) throw new Error(`${selector} is missing`);
+      return element;
+    };
+    const token = need("[data-token]");
+    const track = need("[data-track]");
+    const statusBox = need("[data-status-box]");
+    const valueLabel = need("[data-value-label]");
+    const values = [...root.querySelectorAll("[data-value-text]")];
+    const text = need("[data-text]");
+    const counter = need("[data-counter]");
+    const prev = need('[data-action="prev"]');
+    const play = need('[data-action="play"]');
+    const next = need('[data-action="next"]');
+    const scenarioButtons = [...root.querySelectorAll("[data-scenario]")];
+    const files = [...root.querySelectorAll("[data-file]")];
+
+    let scenario = scenarios[0];
+    let index = 0;
+    let timer;
+
+    const stop = () => {
+      window.clearInterval(timer);
+      timer = undefined;
+      play.textContent = "再生";
+    };
+
+    const render = () => {
+      const frame = scenario?.frames[index];
+      if (scenario === undefined || frame === undefined) return;
+      scenarioButtons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.scenario === scenario?.id));
+      });
+      track.dataset.status = frame.status;
+      track.dataset.zone = String(frame.zone);
+      token.style.setProperty("--token-position", `${frame.zone * 33.333 + 16.667}%`);
+      token.textContent = frame.status === "stop" ? "✕" : "値";
+      statusBox.dataset.status = frame.status;
+      valueLabel.textContent = frame.valueLabel;
+      for (const value of values) value.hidden = value.dataset.valueText !== frame.value;
+      text.textContent = frame.text;
+      counter.textContent = `${index + 1} / ${scenario.frames.length}`;
+      prev.disabled = index === 0;
+      next.disabled = index === scenario.frames.length - 1;
+
+      for (const file of files) {
+        const active = file.dataset.file === frame.fileId;
+        file.hidden = !active;
+        const lines = [...file.querySelectorAll(".line")];
+        lines.forEach((line, lineIndex) => {
+          line.classList.toggle(
+            "is-active",
+            active && lineIndex >= frame.from && lineIndex <= frame.to,
+          );
+        });
+        const first = lines[frame.from];
+        const scroller = first?.closest("pre");
+        if (active && first && scroller) {
+          scroller.scrollTop = Math.max(
+            0,
+            first.offsetTop - scroller.offsetTop - scroller.clientHeight / 3,
+          );
+        }
+      }
+    };
+
+    const start = () => {
+      if (scenario && index === scenario.frames.length - 1) index = 0;
+      render();
+      play.textContent = "一時停止";
+      timer = window.setInterval(() => {
+        if (scenario && index < scenario.frames.length - 1) {
+          index += 1;
+          render();
+        }
+        if (!scenario || index === scenario.frames.length - 1) stop();
+      }, frameMilliseconds);
+    };
+
+    prev.addEventListener("click", () => {
+      stop();
+      index = Math.max(0, index - 1);
+      render();
+    });
+    next.addEventListener("click", () => {
+      stop();
+      index = Math.min((scenario?.frames.length ?? 1) - 1, index + 1);
+      render();
+    });
+    play.addEventListener("click", () => {
+      if (timer === undefined) start();
+      else stop();
+    });
+    scenarioButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        stop();
+        scenario = scenarios.find(({ id }) => id === button.dataset.scenario) ?? scenario;
+        index = 0;
+        render();
+      });
+    });
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const applyMotion = () => {
+      play.hidden = reducedMotion.matches;
+      if (reducedMotion.matches) stop();
+    };
+    reducedMotion.addEventListener("change", applyMotion);
+    applyMotion();
+
+    root.dataset.ready = "true";
+    render();
+  };
+
+  setUp(document.currentScript.previousElementSibling);
+  })();
+</script>
+
+<style>
+  .boundary-player {
+    --zone-0: #f1f0e8;
+    --zone-1: var(--case-cream);
+    --zone-2: #e2f9f3;
+    min-width: 0;
+    margin: 1.25rem 0;
+    padding: 1rem;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--case-paper);
+  }
+
+  .boundary-player > figcaption {
+    display: grid;
+    gap: 0.25rem;
+    margin-block-end: 0.75rem;
+  }
+
+  .boundary-player > figcaption span {
+    color: var(--case-muted);
+  }
+
+  .boundary-player__live {
+    display: none;
+  }
+
+  .boundary-player[data-ready] .boundary-player__live {
+    display: block;
+  }
+
+  .boundary-player[data-ready] .boundary-player__static {
+    display: none;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  button {
+    padding: 0.4rem 0.75rem;
+    border: 2px solid var(--case-line);
+    border-radius: 999px;
+    background: var(--case-paper);
+    color: var(--case-ink);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  button:focus-visible {
+    outline: 3px solid var(--case-blue);
+    outline-offset: 2px;
+  }
+
+  button[aria-pressed="true"],
+  .boundary-player__play {
+    background: var(--case-line);
+    color: var(--case-paper);
+  }
+
+  .boundary-player__scenarios,
+  .boundary-player__controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .boundary-player__track {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-block-start: 0.75rem;
+    border-radius: 0.375rem;
+    overflow: hidden;
+  }
+
+  .boundary-player__zone {
+    min-height: 5.25rem;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  [data-zone-index="0"] {
+    background: var(--zone-0);
+  }
+
+  [data-zone-index="1"] {
+    border-inline: 6px solid var(--case-line);
+    background: var(--zone-1);
+  }
+
+  [data-zone-index="2"] {
+    background: var(--zone-2);
+  }
+
+  .boundary-player__token {
+    position: absolute;
+    bottom: 0.625rem;
+    left: var(--token-position, 16.667%);
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    place-items: center;
+    border: 2px solid var(--case-line);
+    border-radius: 50%;
+    background: var(--case-paper);
+    font-size: 0.875rem;
+    font-weight: 700;
+    transform: translateX(-50%);
+  }
+
+  [data-status="pass"] .boundary-player__token {
+    background: var(--case-highlight);
+  }
+
+  [data-status="stop"] .boundary-player__token,
+  [data-status="danger"] .boundary-player__token {
+    background: var(--case-pink);
+  }
+
+  .boundary-player__value {
+    margin-block-start: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--case-divider);
+    border-radius: 0.375rem;
+  }
+
+  .boundary-player__value[data-status="pass"] {
+    border-color: var(--case-highlight);
+  }
+
+  .boundary-player__value[data-status="stop"],
+  .boundary-player__value[data-status="danger"] {
+    border-color: var(--case-pink);
+  }
+
+  .boundary-player__value p {
+    margin: 0;
+    color: var(--case-muted);
+    font-size: 0.8125rem;
+  }
+
+  .boundary-player__value-code {
+    min-height: 5.75em;
+    margin-block-start: 0.25rem;
+  }
+
+  .boundary-player__value-code :global(pre) {
+    margin: 0;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  .boundary-player__value-code :global(code) {
+    overflow-wrap: anywhere;
+  }
+
+  .boundary-player__text {
+    min-height: 3.2em;
+    margin: 0.75rem 0;
+    font-weight: 700;
+  }
+
+  .boundary-player__controls span {
+    color: var(--case-muted);
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .boundary-player__files {
+    display: grid;
+    gap: 0.75rem;
+    min-width: 0;
+    margin-block-start: 0.75rem;
+  }
+
+  .boundary-player__files figure {
+    min-width: 0;
+    margin: 0;
+  }
+
+  .boundary-player[data-ready] .boundary-player__code :global(pre) {
+    max-height: 22rem;
+    overflow: auto;
+  }
+
+  .boundary-player__code :global(.line) {
+    display: inline-block;
+    min-width: 100%;
+  }
+
+  .boundary-player__code :global(.line.is-active) {
+    background: rgb(255 210 27 / 35%);
+    box-shadow: inset 4px 0 0 var(--case-yellow);
+  }
+
+  .boundary-player__static {
+    margin-block-start: 1rem;
+  }
+
+  .boundary-player__static h4 {
+    margin-block: 1rem 0.25rem;
+  }
+
+  .boundary-player__static p {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .boundary-player__static li {
+    margin-block-end: 0.75rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .boundary-player__token {
+      transition:
+        left 0.7s ease-in-out,
+        background-color 0.3s;
+    }
+
+    [data-status="stop"] .boundary-player__token {
+      animation: boundary-player-reject 0.4s ease-in-out;
+    }
+
+    .boundary-player__code :global(.line) {
+      transition: background-color 0.25s;
+    }
+
+    @keyframes boundary-player-reject {
+      25% {
+        transform: translateX(calc(-50% - 0.375rem));
+      }
+
+      75% {
+        transform: translateX(calc(-50% + 0.375rem));
+      }
+    }
+  }
+</style>
