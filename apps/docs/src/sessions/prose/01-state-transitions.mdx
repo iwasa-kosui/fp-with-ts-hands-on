@@ -201,7 +201,6 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 
 <section id="review">
   <h2>レビューと持ち帰り</h2>
-  <GuardTable rows={props.guards} modules={props.guardModules} />
   <div class="exercise-review-checklist">
     <h3>個人での確認</h3>
     <ol>{props.commonReviewChecks.map((check) => <li>{check}</li>)}</ol>
@@ -220,4 +219,5 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <p><a href={props.promisesHref}>進行上の約束事を確認する</a></p>
     <ol>{props.session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
   </section>
+  <GuardTable rows={props.guards} modules={props.guardModules} question={props.guardQuestion} />
 </section>

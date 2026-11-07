@@ -357,6 +357,7 @@ export const navigation = ({
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
+const guardQuestion = "この演習の依頼文には、分岐漏れの1個を残すように書きました。Agent が <code>statusLabel.ts</code> まで直してしまうことを、文面のほかにどの仕組みで防げますか。";
 const guards = [
   {
     problem: "会計済みの来院を診察中へ戻す",
@@ -408,6 +409,7 @@ ${session.exerciseCommand} の失敗を、分岐漏れの型検査1個だけに�
         delegationPrompt={delegationPrompt}
         delegationDecisions={exerciseSession.delegationPrompt.decisions}
         guards={guards}
+        guardQuestion={guardQuestion}
         guardModules={guardModules}
         commonReviewChecks={commonReviewChecks}
         reviewCompletionArtifacts={reviewCompletionArtifacts}

@@ -28,7 +28,7 @@ import FinalBoundariesAnimation from "../../components/effects-walkthrough/Final
 
 <section id="mechanisms">
   <h2>依頼文ではなく仕組みで防ぐ</h2>
-  <p>依頼文に書いた禁止事項は、Agent が守らなかったときに何も止めません。型検査とテストは、誰がコードを書いても同じ基準で結果を判定します。問題を見つけたら、依頼文を足す前に、機械で止める方法を探します。</p>
+  <p>依頼文に書いた禁止事項は、Agent が守らなかったときに何も止めません。型検査とテストは、誰がコードを書いても同じ基準で結果を判定します。問題を見つけたら、依頼文を足す前に、機械で止める方法を探します。次の表は、各演習の振り返りで班が話した案と見比べるための一覧です。表と見比べて、自分の現場で次に足す仕組みを1つ選び、レビュー観点シートに書きます。</p>
   <table>
     <thead><tr><th scope="col">依頼文に書きたくなること</th><th scope="col">代わりに置く仕組み</th><th scope="col">扱った場所</th></tr></thead>
     <tbody>
@@ -39,6 +39,7 @@ import FinalBoundariesAnimation from "../../components/effects-walkthrough/Final
       <tr><th scope="row">失敗したら処理を止める</th><td><code>Result</code> と <code>andThen</code></td><td>S04</td></tr>
       <tr><th scope="row">状態と監査記録を片方だけ残さない</th><td>1つのイベントを1回で保存する設計</td><td>S06</td></tr>
       <tr><th scope="row">防いだ問題を後から戻さない</th><td><code>@ts-expect-error</code> を置いた型のテスト。次の行にエラーが無くなると、型検査が失敗します。</td><td>S03</td></tr>
+      <tr><th scope="row">同じ指示を毎回書かない</th><td>Agent が読むコンテキストとスキル。これらは Agent に伝える仕組みです。守られなかったときに止めるのは、静的検査、テスト、CI、hook です。</td><td>現場で足す</td></tr>
       <tr><th scope="row"><code>as</code> を使わない</th><td>typescript-eslint の <code>consistent-type-assertions</code> を <code>assertionStyle: "never"</code> で有効にします。<code>as const</code> は対象外です。</td><td>現場で足す</td></tr>
       <tr><th scope="row">テストを通してから merge する</th><td>GitHub の保護ブランチの required status checks</td><td>現場で足す</td></tr>
       <tr><th scope="row">テストを勝手に書き換えない</th><td>GitHub の CODEOWNERS と「Require review from Code Owners」。指定したパスの変更に、コードオーナーの承認を必須にします。</td><td>現場で足す</td></tr>

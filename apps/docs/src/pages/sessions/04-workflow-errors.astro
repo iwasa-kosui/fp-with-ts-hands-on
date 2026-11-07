@@ -458,6 +458,7 @@ export const navigation = ({
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
+const guardQuestion = "新しい処理が <code>Result</code> を返さずに例外を投げると、呼び出し側の網羅性の検査から漏れます。これを、文面のほかにどの仕組みで防げますか。";
 const guards = [
   {
     problem: "失敗したあとも保存へ進む",
@@ -503,6 +504,7 @@ ${session.exerciseCommand} を成功させてください。
         delegationPrompt={delegationPrompt}
         delegationDecisions={exerciseSession.delegationPrompt.decisions}
         guards={guards}
+        guardQuestion={guardQuestion}
         guardModules={guardModules}
         headcount={headcount}
         promisesHref={promisesHref}

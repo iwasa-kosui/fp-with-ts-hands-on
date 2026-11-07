@@ -329,6 +329,7 @@ export const navigation = ({
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
+const guardQuestion = "<code>as</code> で <code>AppointmentId</code> を作ると、検査を通らない値が型付きの入力になります。これを、文面のほかにどの仕組みで防げますか。";
 const guards = [
   {
     problem: "予約 ID と獣医師 ID を取り違える",
@@ -381,6 +382,7 @@ ${session.exerciseCommand} を成功させてください。
         delegationDecisions={exerciseSession.delegationPrompt.decisions}
         supplementaryDelegationDecisions={supplementaryExercise.delegationPrompt.decisions}
         guards={guards}
+        guardQuestion={guardQuestion}
         guardModules={guardModules}
         headcount={headcount}
         promisesHref={promisesHref}

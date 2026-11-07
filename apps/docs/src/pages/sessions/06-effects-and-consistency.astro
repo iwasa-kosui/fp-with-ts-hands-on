@@ -445,6 +445,7 @@ export const navigation = ({
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
+const guardQuestion = "本番の永続化層で状態と監査記録の片方だけが保存される問題は、この演習のテストでは確かめられません。これを、どの仕組みで見つけられますか。";
 const guards = [
   {
     problem: "実行のたびに値が変わり、テスト結果が安定しない",
@@ -488,6 +489,7 @@ ${session.exerciseCommand} を成功させてください。
         delegationPrompt={delegationPrompt}
         delegationDecisions={exerciseSession.delegationPrompt.decisions}
         guards={guards}
+        guardQuestion={guardQuestion}
         guardModules={guardModules}
         headcount={headcount}
         promisesHref={promisesHref}

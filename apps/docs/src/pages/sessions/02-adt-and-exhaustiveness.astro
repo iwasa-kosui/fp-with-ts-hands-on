@@ -261,6 +261,7 @@ export const navigation = ({
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
+const guardQuestion = "依頼文は <code>assertNever</code> を指定していません。<code>default</code> で「不明」を返すコードが残ることを、文面のほかにどの仕組みで防げますか。";
 const guards = [
   {
     problem: "状態を足したのに表示名の分岐を足し忘れる",
@@ -299,6 +300,7 @@ ${session.exerciseCommand} を成功させてください。
         delegationPrompt={delegationPrompt}
         delegationDecisions={exerciseSession.delegationPrompt.decisions}
         guards={guards}
+        guardQuestion={guardQuestion}
         guardModules={guardModules}
         initialExerciseFailureCount={initialExerciseFailureCount}
         headcount={headcount}
