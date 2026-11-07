@@ -32,6 +32,24 @@ describe("resolveWorkerRoute", () => {
     },
   );
 
+  it.each([
+    ["01-business-events-and-workflows", "05-business-events-and-workflows"],
+    ["02-state-transitions", "01-state-transitions"],
+    ["03-adt-and-exhaustiveness", "02-adt-and-exhaustiveness"],
+    ["04-boundaries-and-pii", "03-boundaries-and-pii"],
+    ["05-workflow-errors", "04-workflow-errors"],
+  ])(
+    "redirects the old URL of %s with and without a trailing slash",
+    (oldSlug, newSlug) => {
+      const redirect = {
+        kind: "redirect",
+        location: `/sessions/${newSlug}/`,
+      };
+      expect(resolveWorkerRoute(`/sessions/${oldSlug}`)).toEqual(redirect);
+      expect(resolveWorkerRoute(`/sessions/${oldSlug}/`)).toEqual(redirect);
+    },
+  );
+
   it("delegates static pages to assets", () => {
     expect(
       resolveWorkerRoute("/sessions/05-business-events-and-workflows/"),

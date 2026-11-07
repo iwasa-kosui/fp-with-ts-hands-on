@@ -31,10 +31,15 @@ const BASELINE_PATHS = [
   "/sessions/05-mini-integration",
   "/sessions/05-mini-integration/",
   "/sessions/03-semantic-identifiers",
+  "/sessions/01-business-events-and-workflows",
   "/sessions/01-business-events-and-workflows/",
+  "/sessions/02-state-transitions",
   "/sessions/02-state-transitions/",
+  "/sessions/03-adt-and-exhaustiveness",
   "/sessions/03-adt-and-exhaustiveness/",
+  "/sessions/04-boundaries-and-pii",
   "/sessions/04-boundaries-and-pii/",
+  "/sessions/05-workflow-errors",
   "/sessions/05-workflow-errors/",
 ];
 

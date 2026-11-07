@@ -2,7 +2,7 @@
 
 このディレクトリはSession 04の開始スナップショットです。解答は `examples/session-05/src` にあります。
 
-S2で区別したAppointmentIdとVeterinarianIdを、HTTPの文字列から作る境界を実装します。変更対象は `src/boundary/startExaminationInput.ts` の1ファイルです。
+S3の補助演習で区別したAppointmentIdとVeterinarianIdを、HTTPの文字列から作る境界を実装します。変更対象は `src/boundary/startExaminationInput.ts` の1ファイルです。
 
 ```bash
 pnpm demo:04
