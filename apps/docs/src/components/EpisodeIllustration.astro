@@ -1,0 +1,54 @@
+---
+import { ink } from "./clinic-art";
+import { episodeScenes } from "./episode-scenes";
+
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+const scene = Object.hasOwn(episodeScenes, slug)
+  ? episodeScenes[slug as keyof typeof episodeScenes]
+  : undefined;
+if (scene === undefined) {
+  throw new Error(`EpisodeIllustration: 未知の slug です: ${slug}`);
+}
+---
+
+<figure class="episode-illustration">
+  <svg viewBox="0 0 360 260" role="img" aria-label={scene.label}>
+    <g stroke={ink} stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <Fragment set:html={scene.art} />
+    </g>
+  </svg>
+</figure>
+
+<style is:inline>
+  .episode-illustration {
+    width: min(100%, 26rem);
+    margin: 0.75rem auto;
+  }
+
+  .episode-illustration svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 2px solid #17204d;
+    border-radius: 12px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .case-file__episode:has(.episode-illustration) {
+    display: flow-root;
+    container-type: inline-size;
+  }
+
+  @container (min-width: 620px) {
+    .episode-illustration {
+      float: right;
+      width: 48%;
+      margin: 0.25rem 0 0.75rem 1.5rem;
+    }
+  }
+</style>

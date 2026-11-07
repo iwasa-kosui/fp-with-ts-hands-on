@@ -18,6 +18,7 @@ import type {
 } from "../../sessions/types";
 import "../../styles/code-playground.css";
 import "../../styles/sessions.css";
+import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
 
 export const session: SessionSummary = {
   slug: "01-state-transitions",
@@ -407,7 +408,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         </p>
       </section>
       <Prose
-        components={{ AppointmentStateDiagram, CodeGuideCards, CommandBlock }}
+        components={{ AppointmentStateDiagram, CodeGuideCards, CommandBlock, EpisodeIllustration }}
         session={session}
         guides={guides}
         workspace={workspace}

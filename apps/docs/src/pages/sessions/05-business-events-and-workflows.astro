@@ -8,6 +8,7 @@ import SessionPageNavigation from "../../components/SessionPageNavigation.astro"
 import Prose from "../../sessions/prose/05-business-events-and-workflows.mdx";
 import type { SessionSummary } from "../../sessions/types";
 import "../../styles/sessions.css";
+import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
 
 export const session: SessionSummary = {
   slug: "05-business-events-and-workflows",
@@ -85,7 +86,7 @@ export const navigation = ({
         </p>
       </section>
       <Prose
-        components={{ CancelPipelineBoundaries, RailwayOrientedProgramming, SessionDetailsBody }}
+        components={{ CancelPipelineBoundaries, EpisodeIllustration, RailwayOrientedProgramming, SessionDetailsBody }}
         session={session}
         scheduledAppointment={scheduledAppointment}
         canceledAppointment={canceledAppointment}

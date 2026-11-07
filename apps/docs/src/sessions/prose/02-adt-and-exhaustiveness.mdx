@@ -5,6 +5,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <h2>今回つくるもの</h2>
   <aside class="case-file__episode" aria-label="動物病院のひと幕">
     <p class="case-file__episode-label">動物病院のひと幕</p>
+  <EpisodeIllustration slug={props.session.slug} />
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
   <p>Session 01 で定義した予約の6状態を、画面に表示する名前へ変換する分岐で扱います。never型とADT（代数的データ型）の考え方を使い、すべての状態を処理したことをコンパイラに確かめさせます。この確認を網羅性検証と呼びます。</p>
