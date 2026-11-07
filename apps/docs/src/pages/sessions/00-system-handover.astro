@@ -5,6 +5,8 @@ import SessionPageNavigation from "../../components/SessionPageNavigation.astro"
 import Prose from "../../sessions/prose/00-system-handover.mdx";
 import type { SessionNavigation, SessionSummary } from "../../sessions/types";
 import "../../styles/sessions.css";
+import HandoverClinicScenes from "../../components/HandoverClinicScenes.astro";
+import HandoverExamMock from "../../components/HandoverExamMock.astro";
 
 export const session: SessionSummary = {
   slug: "00-system-handover",
@@ -129,7 +131,7 @@ export const navigation = ({
           {session.summary}
         </p>
       </section>
-      <Prose session={session} />
+      <Prose components={{ HandoverClinicScenes, HandoverExamMock }} session={session} />
       <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         {
           navigation.previous === undefined ? null : (
