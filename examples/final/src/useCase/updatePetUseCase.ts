@@ -87,9 +87,7 @@ const run =
       )
       .andThen(ensurePet(input.petId))
       .andThen(createEvent(dependencies, input))
-      .andThrough((event) =>
-        dependencies.petUpdatedStore.store(event),
-      )
+      .andThrough(dependencies.petUpdatedStore.store)
       .map((event) => ({ pet: toView(event.aggregateState) }));
 
 export const UpdatePetUseCase = {

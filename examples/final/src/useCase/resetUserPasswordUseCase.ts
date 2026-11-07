@@ -105,10 +105,7 @@ const run =
           createEvent(dependencies, input.actorUserId, user),
         ),
       )
-      .andThrough((event) =>
-        dependencies.userPasswordResetStore
-          .store(event),
-      )
+      .andThrough(dependencies.userPasswordResetStore.store)
       .map((event) => ({ user: toUserView(event.aggregateState) }));
 
 export const ResetUserPasswordUseCase = {

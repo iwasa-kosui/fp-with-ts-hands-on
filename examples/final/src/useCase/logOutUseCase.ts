@@ -82,9 +82,7 @@ const run =
       .andThen(ensureSession(input.sessionId))
       .andThen(ensureOwnedBy(input.actorUserId))
       .andThen(createDeletionEvent(dependencies, input.actorUserId))
-      .andThrough((event) =>
-        dependencies.sessionDeletedStore.store(event),
-      )
+      .andThrough(dependencies.sessionDeletedStore.store)
       .map((event) => ({ sessionId: event.aggregateId }));
 
 export const LogOutUseCase = {

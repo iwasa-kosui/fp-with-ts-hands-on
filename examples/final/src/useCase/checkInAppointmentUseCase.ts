@@ -96,9 +96,7 @@ const run =
       .andThen(ensureAppointmentFound(input.appointmentId))
       .andThen(ensureScheduled)
       .andThen(createEvent(dependencies, input))
-      .andThrough((event) =>
-        dependencies.appointmentCheckedInStore.store(event),
-      )
+      .andThrough(dependencies.appointmentCheckedInStore.store)
       .map((event) => ({ appointment: event.aggregateState }));
 
 export const CheckInAppointmentUseCase = {

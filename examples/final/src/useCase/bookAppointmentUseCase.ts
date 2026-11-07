@@ -126,9 +126,7 @@ const run =
       .andThen(ensurePet(input.petId))
       .andThen(ensurePetOwner(input.ownerId))
       .andThen(() => createEvent(dependencies, input))
-      .andThrough((event) =>
-        dependencies.appointmentBookedStore.store(event),
-      )
+      .andThrough(dependencies.appointmentBookedStore.store)
       .map((event) => ({ appointment: event.aggregateState }));
 
 export const BookAppointmentUseCase = {

@@ -85,9 +85,7 @@ const run =
           .map(() => owner),
       )
       .andThen(createEvent(dependencies, input))
-      .andThrough((event) =>
-        dependencies.ownerDeletedStore.store(event),
-      )
+      .andThrough(dependencies.ownerDeletedStore.store)
       .map((event) => ({ ownerId: event.aggregateId }));
 
 export const DeleteOwnerUseCase = {

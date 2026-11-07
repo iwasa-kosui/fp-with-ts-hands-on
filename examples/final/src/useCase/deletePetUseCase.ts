@@ -92,9 +92,7 @@ const run =
           .map(() => pet),
       )
       .andThen(createEvent(dependencies, input))
-      .andThrough((event) =>
-        dependencies.petDeletedStore.store(event),
-      )
+      .andThrough(dependencies.petDeletedStore.store)
       .map((event) => ({ petId: event.aggregateId }));
 
 export const DeletePetUseCase = {

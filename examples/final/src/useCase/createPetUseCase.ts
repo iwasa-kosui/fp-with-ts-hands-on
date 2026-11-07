@@ -97,9 +97,7 @@ const run =
       )
       .andThen(ensureOwner(input.ownerId))
       .andThen(() => createEvent(dependencies, input))
-      .andThrough((event) =>
-        dependencies.petCreatedStore.store(event),
-      )
+      .andThrough(dependencies.petCreatedStore.store)
       .map((event) => ({ pet: toView(event.aggregateState) }));
 
 export const CreatePetUseCase = {

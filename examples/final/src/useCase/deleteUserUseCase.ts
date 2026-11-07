@@ -109,9 +109,7 @@ const run =
           .andThen((users) => ensureNotLastAdmin(users)(target)),
       )
       .andThen(createEvent(dependencies, input.actorUserId))
-      .andThrough((event) =>
-        dependencies.userDeletedStore.store(event),
-      )
+      .andThrough(dependencies.userDeletedStore.store)
       .map((event) => ({ userId: event.aggregateId }));
 
 export const DeleteUserUseCase = {
