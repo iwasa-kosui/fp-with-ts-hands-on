@@ -527,6 +527,43 @@
   margin: 0;
 }
 
+.precondition-compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: 1rem;
+  margin-block: 1rem;
+}
+
+.precondition-compare__column {
+  min-width: 0;
+}
+
+.precondition-compare__column h4 {
+  margin-block: 0 0.5rem;
+}
+
+.precondition-compare .code-block {
+  margin-block: 0 0.75rem;
+  border-inline-start: 0.35rem solid var(--precondition-version);
+}
+
+.precondition-compare [data-version="before"] {
+  --precondition-version: #c2185b;
+}
+
+.precondition-compare [data-version="after"] {
+  --precondition-version: #137333;
+}
+
+.precondition-compare__tag {
+  display: inline-block;
+  padding: 0 0.4rem;
+  border-radius: 0.25rem;
+  background: var(--precondition-version);
+  color: #fff;
+  font-weight: 700;
+}
+
 .boundary-request {
   margin: 1.5rem 0;
 }

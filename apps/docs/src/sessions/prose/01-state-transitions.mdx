@@ -134,6 +134,31 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <p>契約プログラミングは、関数が呼び出し側に求める条件を「事前条件」として書く考え方です。遷移関数では、受け取る予約が特定の状態であることが事前条件にあたります。たとえば <code>startExamination</code> は、<code>kind</code> が <code>CheckedIn</code> の予約を求めます。</p>
     <p>型は、この事前条件を型検査のときに確かめます。引数の型を <code>CheckedIn</code> にすると、TypeScript は別の状態の予約を渡す呼び出しをコンパイルエラーにします。ただし、型は実行時には消えます。データベースから読み取った値のように型検査が中身を確かめていない値は、誤った状態のまま関数へ届くことがあります。</p>
     <p>実行時の検証は、同じ事前条件をコードの実行中に確かめます。このセッションの配布コードにある <code>requireKind</code> は、許可していない状態の予約を受け取ると例外を投げます。型検査をすり抜けた値でも、遷移の処理へ進む前に止められます。ただし、誤った呼び出しに気づけるのは、その呼び出しが実際に実行されたときだけです。</p>
+    <p>次のコードで、2つの確かめ方を読み比べてください。修正前は配布コード、修正後は解答のコードです。<code>@ts-expect-error</code> は、次の行がコンパイルエラーになることを確かめる印です。</p>
+    <div class="precondition-compare">
+      <div class="precondition-compare__column">
+        <h4>型検査で止まる呼び出し</h4>
+        <figure class="code-block" data-version="after">
+          <figcaption><span class="precondition-compare__tag" data-version="after">修正後</span> <code>{props.preconditionCode.signature.solution.path}</code></figcaption>
+          <Code code={props.preconditionCode.signature.code} lang="ts" />
+        </figure>
+        <figure class="code-block" data-version="after">
+          <figcaption><span class="precondition-compare__tag" data-version="after">修正後</span> <code>{props.preconditionCode.typeError.solution.path}</code></figcaption>
+          <Code code={props.preconditionCode.typeError.code} lang="ts" />
+        </figure>
+      </div>
+      <div class="precondition-compare__column">
+        <h4>実行時の検証で止まる値</h4>
+        <figure class="code-block" data-version="before">
+          <figcaption><span class="precondition-compare__tag" data-version="before">修正前</span> <code>{props.preconditionCode.runtime.path}</code></figcaption>
+          <Code code={props.preconditionCode.runtime.code} lang="ts" />
+        </figure>
+        <figure class="code-block" data-version="after">
+          <figcaption><span class="precondition-compare__tag" data-version="after">修正後</span> <code>{props.preconditionCode.route.path}</code></figcaption>
+          <Code code={props.preconditionCode.route.code} lang="ts" />
+        </figure>
+      </div>
+    </div>
     <p class="teaching-topic__why">型と実行時の検証は確かめるタイミングが違うので、組み合わせて使えます。型は誤った呼び出しを実行前に見つけ、実行時の検証は型検査が確かめていない値を実行中に止めます。この演習の解答では遷移関数の引数を型で限定し、遷移関数の中の <code>requireKind</code> はなくなります。データベースから読み取った予約の <code>kind</code> は、ルートの処理が実行時に確かめます。</p>
   </article>
   <details class="step-solution">
