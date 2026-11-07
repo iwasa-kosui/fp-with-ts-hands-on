@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   paymentAmountQuote,
   supplementaryExercise,
-} from "./pages/sessions/04-boundaries-and-pii.astro";
+} from "./pages/sessions/03-boundaries-and-pii.astro";
 import { sessionNavigationItems } from "./sessions/navigation";
 import type { SessionNavigation, SessionSummary } from "./sessions/types";
 type PageModule = Readonly<{
@@ -57,18 +57,8 @@ const expectedCurriculum = [
     timeBreakdown: { brief: 4, teach: 3, exercise: 0, review: 3 },
   },
   {
-    slug: "01-business-events-and-workflows",
+    slug: "01-state-transitions",
     sequence: "01",
-    title: "データとパイプラインで予約キャンセルを設計する",
-    durationMinutes: 15,
-    kind: "workshop",
-    exerciseCommand: undefined,
-    snapshot: undefined,
-    timeBreakdown: { brief: 2, teach: 7, exercise: 4, review: 2 },
-  },
-  {
-    slug: "02-state-transitions",
-    sequence: "02",
     title: "予約の状態と遷移をモデル化する",
     durationMinutes: 20,
     kind: "exercise",
@@ -77,8 +67,8 @@ const expectedCurriculum = [
     timeBreakdown: { brief: 3, teach: 6, exercise: 8, review: 3 },
   },
   {
-    slug: "03-adt-and-exhaustiveness",
-    sequence: "03",
+    slug: "02-adt-and-exhaustiveness",
+    sequence: "02",
     title: "予約の状態の分岐漏れを型で検出する",
     durationMinutes: 20,
     kind: "exercise",
@@ -87,8 +77,8 @@ const expectedCurriculum = [
     timeBreakdown: { brief: 3, teach: 7, exercise: 7, review: 3 },
   },
   {
-    slug: "04-boundaries-and-pii",
-    sequence: "04",
+    slug: "03-boundaries-and-pii",
+    sequence: "03",
     title: "診察開始の入力を境界で検証する",
     durationMinutes: 35,
     kind: "exercise",
@@ -97,14 +87,24 @@ const expectedCurriculum = [
     timeBreakdown: { brief: 3, teach: 10, exercise: 15, review: 7 },
   },
   {
-    slug: "05-workflow-errors",
-    sequence: "05",
+    slug: "04-workflow-errors",
+    sequence: "04",
     title: "失敗をユースケースの結果として扱う",
     durationMinutes: 35,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:05",
     snapshot: "session-05",
     timeBreakdown: { brief: 4, teach: 13, exercise: 10, review: 8 },
+  },
+  {
+    slug: "05-business-events-and-workflows",
+    sequence: "05",
+    title: "データとパイプラインで予約キャンセルを設計する",
+    durationMinutes: 15,
+    kind: "workshop",
+    exerciseCommand: undefined,
+    snapshot: undefined,
+    timeBreakdown: { brief: 2, teach: 7, exercise: 4, review: 2 },
   },
   {
     slug: "06-effects-and-consistency",
@@ -135,11 +135,6 @@ const expectedEpisodes = [
     "引き継ぎ資料を開く前に、二重請求と個人情報流出の再現条件だけは確認できました。",
   ],
   [
-    "会計済みの予約を、受付担当者が誤ってキャンセルできました。",
-    "理由のないキャンセルがStoreへ記録され、どの条件を確認したか説明できません。",
-    "実装へ進む前に、予約のデータと、キャンセルでデータがどう変わるかを確かめます。",
-  ],
-  [
     "会計を終えたウサギは帰ったはずなのに、画面の中では診察室へ戻ってきました。",
     "受付画面は止めるどころか、2枚目の請求書まで手際よく用意します。",
     "許可された状態遷移を覚えていたのは人間だけで、コードは何でも通す危ない設計でした。",
@@ -156,6 +151,11 @@ const expectedEpisodes = [
     "新しい例外を投げた側は、呼び出し側のcatch漏れを型から確かめられませんでした。",
   ],
   [
+    "会計済みの予約を、受付担当者が誤ってキャンセルできました。",
+    "理由のないキャンセルがStoreへ記録され、どの条件を確認したか説明できません。",
+    "実装へ進む前に、予約のデータと、キャンセルでデータがどう変わるかを確かめます。",
+  ],
+  [
     "カメの診察を開始すると、予約状態だけが先に更新され、監査記録はどこにも残りませんでした。",
     "再現テストでは時刻とイベント ID が毎回変わり、失敗の証拠まで落ち着きがありません。",
     "状態更新は即決、記録保存は自由行動。原因究明だけが残業します。",
@@ -169,7 +169,7 @@ const expectedEpisodes = [
 
 const expectedExercises = [
   {
-    slug: "02-state-transitions",
+    slug: "01-state-transitions",
     adv: { articulate: 2, delegate: 4, verify: 2 },
     exerciseModule: {
       dir: "examples/session-02/src/domain/appointment",
@@ -189,7 +189,7 @@ const expectedExercises = [
     },
   },
   {
-    slug: "03-adt-and-exhaustiveness",
+    slug: "02-adt-and-exhaustiveness",
     adv: { articulate: 1, delegate: 5, verify: 1 },
     exerciseModule: {
       dir: "examples/session-02/src/domain/appointment",
@@ -210,7 +210,7 @@ const expectedExercises = [
     },
   },
   {
-    slug: "04-boundaries-and-pii",
+    slug: "03-boundaries-and-pii",
     adv: { articulate: 2, delegate: 11, verify: 2 },
     exerciseModule: {
       dir: "examples/session-04/src/boundary",
@@ -231,7 +231,7 @@ const expectedExercises = [
     },
   },
   {
-    slug: "05-workflow-errors",
+    slug: "04-workflow-errors",
     adv: { articulate: 2, delegate: 5, verify: 3 },
     exerciseModule: {
       dir: "examples/session-05/src",
@@ -278,8 +278,8 @@ const expectedNavigation = [
   {
     previous: undefined,
     next: {
-      href: "/sessions/01-business-events-and-workflows/",
-      title: "データとパイプラインで予約キャンセルを設計する",
+      href: "/sessions/01-state-transitions/",
+      title: "予約の状態と遷移をモデル化する",
     },
   },
   {
@@ -288,44 +288,44 @@ const expectedNavigation = [
       title: "業務とシステムを引き継ぐ",
     },
     next: {
-      href: "/sessions/02-state-transitions/",
-      title: "予約の状態と遷移をモデル化する",
-    },
-  },
-  {
-    previous: {
-      href: "/sessions/01-business-events-and-workflows/",
-      title: "データとパイプラインで予約キャンセルを設計する",
-    },
-    next: {
-      href: "/sessions/03-adt-and-exhaustiveness/",
+      href: "/sessions/02-adt-and-exhaustiveness/",
       title: "予約の状態の分岐漏れを型で検出する",
     },
   },
   {
     previous: {
-      href: "/sessions/02-state-transitions/",
+      href: "/sessions/01-state-transitions/",
       title: "予約の状態と遷移をモデル化する",
     },
     next: {
-      href: "/sessions/04-boundaries-and-pii/",
+      href: "/sessions/03-boundaries-and-pii/",
       title: "診察開始の入力を境界で検証する",
     },
   },
   {
     previous: {
-      href: "/sessions/03-adt-and-exhaustiveness/",
+      href: "/sessions/02-adt-and-exhaustiveness/",
       title: "予約の状態の分岐漏れを型で検出する",
     },
     next: {
-      href: "/sessions/05-workflow-errors/",
+      href: "/sessions/04-workflow-errors/",
       title: "失敗をユースケースの結果として扱う",
     },
   },
   {
     previous: {
-      href: "/sessions/04-boundaries-and-pii/",
+      href: "/sessions/03-boundaries-and-pii/",
       title: "診察開始の入力を境界で検証する",
+    },
+    next: {
+      href: "/sessions/05-business-events-and-workflows/",
+      title: "データとパイプラインで予約キャンセルを設計する",
+    },
+  },
+  {
+    previous: {
+      href: "/sessions/04-workflow-errors/",
+      title: "失敗をユースケースの結果として扱う",
     },
     next: {
       href: "/sessions/06-effects-and-consistency/",
@@ -334,8 +334,8 @@ const expectedNavigation = [
   },
   {
     previous: {
-      href: "/sessions/05-workflow-errors/",
-      title: "失敗をユースケースの結果として扱う",
+      href: "/sessions/05-business-events-and-workflows/",
+      title: "データとパイプラインで予約キャンセルを設計する",
     },
     next: {
       href: "/sessions/final/",
@@ -378,7 +378,7 @@ describe("page-owned session contracts", () => {
   it("keeps each three-line episode in its page metadata and hero", () => {
     expect(
       sessions.map((session) =>
-        session.slug === "04-boundaries-and-pii"
+        session.slug === "03-boundaries-and-pii"
           ? undefined
           : "episode" in session
             ? session.episode
@@ -387,7 +387,7 @@ describe("page-owned session contracts", () => {
     ).toEqual(expectedEpisodes);
 
     const boundaryEpisode = sessions.find(
-      ({ slug }) => slug === "04-boundaries-and-pii",
+      ({ slug }) => slug === "03-boundaries-and-pii",
     )?.episode;
     expect(boundaryEpisode).toHaveLength(3);
     expect(boundaryEpisode?.join("\n")).toContain("night-shift");
@@ -501,7 +501,7 @@ describe("page-owned session contracts", () => {
 
   it("keeps the semantic identifier supplementary exercise with its owning concepts", () => {
     const workflowErrors = exerciseSessions.find(
-      ({ slug }) => slug === "05-workflow-errors",
+      ({ slug }) => slug === "04-workflow-errors",
     );
 
     expect(supplementaryExercise.exerciseCommand).toBe("pnpm exercise:03");

@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { session } from "../pages/sessions/02-state-transitions.astro";
-import { supplementaryExercise } from "../pages/sessions/04-boundaries-and-pii.astro";
-import { session as session05 } from "../pages/sessions/05-workflow-errors.astro";
+import { session } from "../pages/sessions/01-state-transitions.astro";
+import { supplementaryExercise } from "../pages/sessions/03-boundaries-and-pii.astro";
+import { session as session04 } from "../pages/sessions/04-workflow-errors.astro";
 import type { ExerciseStep } from "./types";
 import { loadSolutionSnippets } from "./solution-snippets";
 
 const step = session.steps.at(0);
 
 if (step === undefined) {
-  throw new Error("S2 の解答ステップが見つかりません");
+  throw new Error("S1 の解答ステップが見つかりません");
 }
 
 describe("loadSolutionSnippets", () => {
@@ -36,9 +36,9 @@ describe("loadSolutionSnippets", () => {
     );
   });
 
-  it("keeps Session 05 solution excerpts self-contained", async () => {
+  it("keeps Session 04 solution excerpts self-contained", async () => {
     const snippets = await Promise.all(
-      session05.steps.map((sessionStep) => loadSolutionSnippets(sessionStep)),
+      session04.steps.map((sessionStep) => loadSolutionSnippets(sessionStep)),
     );
     const [invalidState, notFound, pipeline, webHandler] = snippets;
 
@@ -57,8 +57,8 @@ describe("loadSolutionSnippets", () => {
     expect(webHandler?.[1]?.code).not.toContain("try {");
   });
 
-  it("declares where each Session 05 solution is applied", () => {
-    for (const sessionStep of session05.steps) {
+  it("declares where each Session 04 solution is applied", () => {
+    for (const sessionStep of session04.steps) {
       for (const solution of sessionStep.solutions) {
         expect(solution.placement).toBeDefined();
         expect(solution.placement?.startsWith("examples/session-05/")).toBe(true);

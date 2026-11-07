@@ -61,19 +61,19 @@ const collectSourceFiles = async (directory: string): Promise<string[]> => {
 };
 
 const exerciseSlugs = [
-  "02-state-transitions",
-  "03-adt-and-exhaustiveness",
-  "04-boundaries-and-pii",
-  "05-workflow-errors",
+  "01-state-transitions",
+  "02-adt-and-exhaustiveness",
+  "03-boundaries-and-pii",
+  "04-workflow-errors",
   "06-effects-and-consistency",
 ] as const;
 
 type ExerciseSlug = (typeof exerciseSlugs)[number];
 
 const exerciseContracts = {
-  "02-state-transitions": {
+  "01-state-transitions": {
     workspace: {
-      slug: "02-state-transitions",
+      slug: "01-state-transitions",
       snapshot: "session-02",
       initialFile: "exercises/state-modeling.test.ts",
       description:
@@ -88,18 +88,18 @@ const exerciseContracts = {
     },
     navigation: {
       previous: {
-        href: "/sessions/01-business-events-and-workflows/",
-        title: "データとパイプラインで予約キャンセルを設計する",
+        href: "/sessions/00-system-handover/",
+        title: "業務とシステムを引き継ぐ",
       },
       next: {
-        href: "/sessions/03-adt-and-exhaustiveness/",
+        href: "/sessions/02-adt-and-exhaustiveness/",
         title: "予約の状態の分岐漏れを型で検出する",
       },
     },
   },
-  "03-adt-and-exhaustiveness": {
+  "02-adt-and-exhaustiveness": {
     workspace: {
-      slug: "03-adt-and-exhaustiveness",
+      slug: "02-adt-and-exhaustiveness",
       snapshot: "session-02",
       initialFile: "exercises/state-modeling.test.ts",
       description:
@@ -112,18 +112,18 @@ const exerciseContracts = {
     },
     navigation: {
       previous: {
-        href: "/sessions/02-state-transitions/",
+        href: "/sessions/01-state-transitions/",
         title: "予約の状態と遷移をモデル化する",
       },
       next: {
-        href: "/sessions/04-boundaries-and-pii/",
+        href: "/sessions/03-boundaries-and-pii/",
         title: "診察開始の入力を境界で検証する",
       },
     },
   },
-  "04-boundaries-and-pii": {
+  "03-boundaries-and-pii": {
     workspace: {
-      slug: "04-boundaries-and-pii",
+      slug: "03-boundaries-and-pii",
       snapshot: "session-04",
       initialFile: "exercises/start-examination-input.test.ts",
       description: "HTTP入力を診察開始の型付き入力へ変換する境界を確認します。",
@@ -140,18 +140,18 @@ const exerciseContracts = {
     },
     navigation: {
       previous: {
-        href: "/sessions/03-adt-and-exhaustiveness/",
+        href: "/sessions/02-adt-and-exhaustiveness/",
         title: "予約の状態の分岐漏れを型で検出する",
       },
       next: {
-        href: "/sessions/05-workflow-errors/",
+        href: "/sessions/04-workflow-errors/",
         title: "失敗をユースケースの結果として扱う",
       },
     },
   },
-  "05-workflow-errors": {
+  "04-workflow-errors": {
     workspace: {
-      slug: "05-workflow-errors",
+      slug: "04-workflow-errors",
       snapshot: "session-05",
       initialFile: "exercises/result-errors.test.ts",
       description:
@@ -178,12 +178,12 @@ const exerciseContracts = {
     },
     navigation: {
       previous: {
-        href: "/sessions/04-boundaries-and-pii/",
+        href: "/sessions/03-boundaries-and-pii/",
         title: "診察開始の入力を境界で検証する",
       },
       next: {
-        href: "/sessions/06-effects-and-consistency/",
-        title: "副作用と整合性境界を設計する",
+        href: "/sessions/05-business-events-and-workflows/",
+        title: "データとパイプラインで予約キャンセルを設計する",
       },
     },
   },
@@ -211,8 +211,8 @@ const exerciseContracts = {
     },
     navigation: {
       previous: {
-        href: "/sessions/05-workflow-errors/",
-        title: "失敗をユースケースの結果として扱う",
+        href: "/sessions/05-business-events-and-workflows/",
+        title: "データとパイプラインで予約キャンセルを設計する",
       },
       next: {
         href: "/sessions/final/",
@@ -248,10 +248,10 @@ const reviewText = [
 ] as const;
 
 const reviewPromptFor = {
-  "02-state-transitions": "起きてはいけない状態遷移",
-  "03-adt-and-exhaustiveness": "未対応のまま残してはいけない分岐",
-  "04-boundaries-and-pii": "境界で拒否する入力",
-  "05-workflow-errors": "失敗後に実行してはいけない処理",
+  "01-state-transitions": "起きてはいけない状態遷移",
+  "02-adt-and-exhaustiveness": "未対応のまま残してはいけない分岐",
+  "03-boundaries-and-pii": "境界で拒否する入力",
+  "04-workflow-errors": "失敗後に実行してはいけない処理",
   "06-effects-and-consistency": "一緒に記録する必要がある値",
 } as const satisfies Record<ExerciseSlug, string>;
 
@@ -303,7 +303,7 @@ describe("session pages", () => {
 
   for (const slug of [
     "00-system-handover",
-    "01-business-events-and-workflows",
+    "05-business-events-and-workflows",
     "final",
   ]) {
     it(`${slug} owns its page chrome`, () => {
@@ -367,17 +367,17 @@ describe("session pages", () => {
   }
 
   for (const slug of exerciseSlugs.slice(1)) {
-    it(`${slug} preserves the hero avatar whitespace emitted by S2`, () => {
+    it(`${slug} preserves the hero avatar whitespace emitted by S1`, () => {
       expect(sourceFor(slug)).toContain(
         `<p class="case-file__summary">\n          <span aria-hidden="true">{session.animal.avatar}</span>\n          {session.summary}\n        </p>`,
       );
     });
   }
 
-  it("S2 owns the inline peer-review promises", () => {
-    const source = sourceFor("02-state-transitions");
+  it("S1 owns the inline peer-review promises", () => {
+    const source = sourceFor("01-state-transitions");
 
-    expect(moduleFor("02-state-transitions").promisesHref).toBe(
+    expect(moduleFor("01-state-transitions").promisesHref).toBe(
       "#peer-review-promises",
     );
     expect(source).toContain('id="peer-review-promises"');
@@ -385,9 +385,9 @@ describe("session pages", () => {
   });
 
   for (const slug of exerciseSlugs.slice(1)) {
-    it(`${slug} owns the S2 peer-review promises href`, () => {
+    it(`${slug} owns the S1 peer-review promises href`, () => {
       expect(moduleFor(slug).promisesHref).toBe(
-        "/sessions/02-state-transitions/#peer-review-promises",
+        "/sessions/01-state-transitions/#peer-review-promises",
       );
       expect(sourceFor(slug)).not.toContain('id="peer-review-promises"');
     });

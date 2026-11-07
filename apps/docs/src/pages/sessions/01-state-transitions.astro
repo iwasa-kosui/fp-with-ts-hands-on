@@ -5,7 +5,7 @@ import CommandBlock from "../../components/CommandBlock.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
 // MDX だけで import すると head に xterm.css の <link> が増える
 import "../../components/code-explorer/CodeExplorer";
-import Prose from "../../sessions/prose/02-state-transitions.mdx";
+import Prose from "../../sessions/prose/01-state-transitions.mdx";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import type { SessionWorkspace } from "../../code-explorer/types";
@@ -20,9 +20,9 @@ import "../../styles/code-playground.css";
 import "../../styles/sessions.css";
 
 export const session: SessionSummary = {
-  slug: "02-state-transitions",
+  slug: "01-state-transitions",
   snapshot: "session-02",
-  sequence: "02",
+  sequence: "01",
   kind: "exercise",
   title: "予約の状態と遷移をモデル化する",
   durationMinutes: 20,
@@ -348,11 +348,11 @@ const peerReviewPromises = [
 export const promisesHref = "#peer-review-promises";
 export const navigation = ({
   previous: {
-    href: "/sessions/01-business-events-and-workflows/",
-    title: "データとパイプラインで予約キャンセルを設計する",
+    href: "/sessions/00-system-handover/",
+    title: "業務とシステムを引き継ぐ",
   },
   next: {
-    href: "/sessions/03-adt-and-exhaustiveness/",
+    href: "/sessions/02-adt-and-exhaustiveness/",
     title: "予約の状態の分岐漏れを型で検出する",
   },
 } as const);

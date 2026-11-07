@@ -12,7 +12,7 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
   </aside>
   <p>外部の文字列を検査し、値の制約を満たす2種類のIDを持つ入力へ変換します。</p>
   <h3>境界で起きていること</h3>
-  <p>アプリの外から届く値は、どんな形でも届きます。アプリの内側の関数は、引数の型を信じて動きます。境界は、この2つの間で値を検査する場所です。境界を通った値だけが型付きの値として内側へ入り、通らなかった値は内側へ入りません。</p>
+  <p>アプリの外から届く値は、どんな形でも届きます。アプリの内側の関数は、引数の型を信じて動きます。境界は、この2つの間で値を検査する場所です。境界を通った値だけが型付きの値として内側へ入り、通らなかった値は内側へ入りません。診察開始のように、業務上の1つの操作を実行する処理を、このハンズオンではユースケースと呼びます。境界を通った値は、ユースケースへ渡ります。</p>
   <BoundaryPlayer walkthrough={startExaminationWalkthrough} />
   <h3>実際に届いた入力</h3>
   <p>{"\n"}URLの予約IDはrouteが<code>appointmentId</code>へ入れます。request bodyには、{"\n              "}獣医師選択欄の表示用データが誤って入りました。{"\n"}</p>
@@ -80,7 +80,7 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
   <aside class="decision-card boundary-limit" data-boundary-limit>
     <h3>この境界だけでは検出できない入力</h3>
     <p>{"\n"}予約IDのUUIDが<code>veterinarianId</code>へ入った場合、UUIDという形式は正しいためschemaを通ります。アニメーションの「画面の不具合で、獣医師の欄に予約のIDが届いた」がこの入力です。Branded Typeは、外部データが何を指すUUIDかを判定する仕組みではありません。parseで確かめられるのは形式までです。{"\n"}</p>
-    <p>そのUUIDが実在する獣医師を指すか確かめるには、獣医師マスターの参照が必要です。この確認はS4の演習範囲には含めません。</p>
+    <p>そのUUIDが実在する獣医師を指すか確かめるには、獣医師マスターの参照が必要です。この確認はS3の演習範囲には含めません。</p>
   </aside>
   <aside class="decision-card">
     <h3>時間外の補足: 検査結果とPII</h3>
@@ -209,7 +209,7 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
     <pre><code>{props.delegationPrompt}</code></pre>
   </div>
   <h3>この演習で解決しないこと</h3>
-  <p>schemaはUUIDの形式を検査しますが、そのUUIDが実在する予約や獣医師を指すかは判断しません。対象の取得と状態確認はS5で扱います。</p>
+  <p>schemaはUUIDの形式を検査しますが、そのUUIDが実在する予約や獣医師を指すかは判断しません。対象の取得と状態確認はS4で扱います。</p>
   <h3 data-solution-heading>{props.session.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
   {props.session.solutionPresentation === "completed-file" ? (
     <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
@@ -235,7 +235,7 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
   ))}
   <CommandBlock phase="green" command={props.session.exerciseCommand} expected="演習テストがすべて成功します。" />
   <h3>演習を完了できないとき</h3>
-  <p>startExaminationInput.tsの手書き型をz.inferへ変え、AppointmentId.schemaとVeterinarianId.schemaを持つobject schemaを作ります。parseにはschemaResultを使います。相互レビューの約束事はS2のリンク先を確認します。</p>
+  <p>startExaminationInput.tsの手書き型をz.inferへ変え、AppointmentId.schemaとVeterinarianId.schemaを持つobject schemaを作ります。parseにはschemaResultを使います。相互レビューの約束事はS1のリンク先を確認します。</p>
 </section>
 
 <section id="review">

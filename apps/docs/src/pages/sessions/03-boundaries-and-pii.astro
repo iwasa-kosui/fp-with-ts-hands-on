@@ -4,7 +4,7 @@ import CommandBlock from "../../components/CommandBlock.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
 // CSS chunk の分割と読み込み順を変換前と同じに保つ
 import "../../components/code-explorer/CodeExplorer";
-import Prose from "../../sessions/prose/04-boundaries-and-pii.mdx";
+import Prose from "../../sessions/prose/03-boundaries-and-pii.mdx";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import type { ProjectFiles, SessionWorkspace } from "../../code-explorer/types";
@@ -39,9 +39,9 @@ type SupplementaryExercise = Readonly<{
 }>;
 
 export const session: SessionSummary = {
-  slug: "04-boundaries-and-pii",
+  slug: "03-boundaries-and-pii",
   snapshot: "session-04",
-  sequence: "04",
+  sequence: "03",
   kind: "exercise",
   title: "診察開始の入力を境界で検証する",
   durationMinutes: 35,
@@ -346,14 +346,14 @@ const chapters = [
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
 export const promisesHref =
-  "/sessions/02-state-transitions/#peer-review-promises";
+  "/sessions/01-state-transitions/#peer-review-promises";
 export const navigation = ({
   previous: {
-    href: "/sessions/03-adt-and-exhaustiveness/",
+    href: "/sessions/02-adt-and-exhaustiveness/",
     title: "予約の状態の分岐漏れを型で検出する",
   },
   next: {
-    href: "/sessions/05-workflow-errors/",
+    href: "/sessions/04-workflow-errors/",
     title: "失敗をユースケースの結果として扱う",
   },
 } as const);
