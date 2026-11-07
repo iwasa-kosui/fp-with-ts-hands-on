@@ -19,7 +19,9 @@ import { fileURLToPath } from "node:url";
 
 const BASELINE_COMMIT = "088c2ef";
 const ALLOWED_EXAMPLE_DIFFS = [
+  "examples/session-00/README.md",
   "examples/session-01/README.md",
+  "examples/session-02/README.md",
   "examples/session-03/README.md",
   "examples/session-04/README.md",
   "examples/session-05/README.md",

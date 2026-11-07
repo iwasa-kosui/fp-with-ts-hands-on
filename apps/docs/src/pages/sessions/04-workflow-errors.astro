@@ -47,13 +47,13 @@ export const session: SessionSummary = {
   solutionPresentation: "excerpt",
   peerReviewPromises: "reference",
   animal: { name: "HAMSTER", type: "hamster", avatar: "🐹" },
-  summary: "診察開始で顧客や現場が失敗理由に応じて操作を選ぶ失敗を、呼び出し側が扱える値として返します。",
+  summary: "診察開始の失敗のうち、理由によって顧客や現場の対応が変わるものを、呼び出し側が扱える値として返します。",
   episode: [
     "別の端末で受付情報が更新された後、古い画面に残っていたハムスターの診察開始ボタンを押すと、500エラーだけを返して止まりました。",
     "予約なしは専用表示になるのに、受付前の予約は想定外扱いです。後ろでは犬が吠え、列だけが伸びます。",
     "新しい例外を投げた側は、呼び出し側のcatch漏れを型から確かめられませんでした。",
   ],
-  incident: "診察開始で状態不正の例外が追加されたが、Web側にcatch分岐を足し忘れ、古い画面から送られた受付前の予約だけ500になった。",
+  incident: "診察開始に状態不正の例外を追加したが、Web側にcatch分岐を足し忘れ、古い画面から送られた受付前の予約だけ500になった。",
   exerciseCommand: "pnpm exercise:05",
   exerciseModule: {
     dir: "examples/session-05/src",
@@ -73,8 +73,8 @@ export const session: SessionSummary = {
   steps: [
     {
       id: "s5-invalid-state",
-      goal: "受付済みでない状態を型付きの失敗として返す。",
-      startingFailure: "受付済みでない予約を、例外として処理している。",
+      goal: "来院済みでない状態を型付きの失敗として返す。",
+      startingFailure: "来院済みでない予約を、例外として処理している。",
       targets: ["examples/session-05/src/useCase/errors.ts"],
       solutions: [{
         path: "examples/session-06/src/useCase/errors.ts",
@@ -409,7 +409,7 @@ export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
   initialFile: "exercises/result-errors.test.ts",
-  description: "例外の種類が型に現れず、Web側にcatch漏れがある開始 snapshot を確認します。",
+  description: "例外の種類が型に現れず、Web側にcatch漏れがある開始スナップショットを確認します。",
   visibleFiles: [
     "exercises/result-errors.test.ts",
     "test/regression/boundary-and-ids.test.ts",
@@ -442,8 +442,8 @@ const solutionSteps = await Promise.all(
 const chapters = [
   { id: "incident", label: "今回つくるもの" },
   { id: "legacy", label: "コードを読み、失敗を再現する" },
-  { id: "teach", label: "使う型を知る" },
-  { id: "refactor", label: "型で閉じる" },
+  { id: "teach", label: "事前知識" },
+  { id: "refactor", label: "演習" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
 export const promisesHref =
@@ -480,11 +480,11 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 変更範囲:
 - ${session.exerciseModule.dir}/ のみ
 - 最大 ${session.exerciseModule.fileBudget} ファイル・約 ${session.exerciseModule.lineBudget} 行
-- 範囲外の変更が必要に見えた場合は、変更せず理由を報告する
-- 型エラーを \`as\` によるキャストで回避しない
+- 範囲外の変更が必要に見えた場合は、変更せず理由を報告してください
+- 型エラーを \`as\` による型アサーションで回避しないでください
 
 検証:
-- ${session.exerciseCommand} を実行し、すべての assertion が成功すること
+- ${session.exerciseCommand} を実行し、すべての assertion が成功することを確かめてください
 
 完了時の報告:
 - 変更したファイルと判断理由
