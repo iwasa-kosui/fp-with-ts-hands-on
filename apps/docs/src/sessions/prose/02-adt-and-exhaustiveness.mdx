@@ -13,7 +13,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
   <p>toStatusLabel は kind を string として受け取り、どの case にも当てはまらない値には default で「不明」を返します。Appointment に NoShow を追加して case を足し忘れても、型検査は成功し、画面には「不明」と表示されます。</p>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
-  <p>Appointment は kind で区別できる直和型なので、状態の候補を列挙できます。Appointment の全状態を switch で処理すると、default に残る候補は0個になり、default の appointment は never 型になります。default では never 型の値だけを受け取る assertNever へ appointment を渡します。状態を追加して case を足し忘れると、default に候補が残るため、コンパイルエラーになります。</p>
+  <p>Appointment は kind で区別できる Discriminated Union なので、状態の候補を列挙できます。Appointment の全状態を switch で処理すると、default に残る候補は0個になり、default の appointment は never 型になります。default では never 型の値だけを受け取る assertNever へ appointment を渡します。状態を追加して case を足し忘れると、default に候補が残るため、コンパイルエラーになります。</p>
   <h3>このセッションで守ること</h3>
   <ul class="decision-list">{props.session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
   <p>今回の変更は <code>{props.session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
@@ -45,7 +45,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 
 <section id="teach">
   <h2>事前知識（{props.session.timeBreakdown.teach}分）</h2>
-  <p>この回で利用する型の考え方を確認します。never型とADTは小さな例で示します。assertNeverは、配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
+  <p>この回で使う型の考え方を確認します。never型とADTは小さな例で示します。assertNeverの例では、配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
   <article class="teaching-topic">
     <h3>never型は値が1つもない型である</h3>
     <p>型は、その型に入る値の集合と見ることができます。"Scheduled" | "CheckedIn" は2個の値を持つ集合です。never型は値を1個も持たない型で、空集合に当たります。</p>
@@ -65,7 +65,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
       <figcaption>never型の性質</figcaption>
       <Code code={props.teaching[0].example} lang="ts" />
     </figure>
-    <p class="teaching-topic__why">default内の型がneverになることは、処理していない候補が残っていないことを表します。never型へ代入できるかどうかを調べると、分岐を網羅したかどうかをコンパイラに確かめさせられます。</p>
+    <p class="teaching-topic__why">default内の型がneverになることは、処理していない候補が残っていないことを表します。default内の値をnever型へ代入するコードを書くと、分岐を網羅したかどうかをコンパイラに確かめさせられます。</p>
   </article>
   <article class="teaching-topic">
     <h3>ADTは直積型と直和型で型を組み立てる</h3>
@@ -99,7 +99,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
       <figcaption>NoShowを追加したのに、表示名の分岐を追加し忘れた例</figcaption>
       <Code code={props.teaching[2].example} lang="ts" />
     </figure>
-    <p class="teaching-topic__why">before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after でNoShowのcaseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverの引数の型neverに合わないため、コンパイルエラーになります。網羅性検証を使うすべての分岐で同じエラーが出るので、コンパイラが新しい状態の影響箇所を示します。assertNeverの戻り値はnever型なので、stringを返す関数のdefaultでそのままreturnできます。</p>
+    <p class="teaching-topic__why">before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after でNoShowのcaseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverの引数の型neverに合わないため、コンパイルエラーになります。網羅性検証を使うすべての分岐で、NoShowのcaseを足し忘れた箇所がエラーになるので、コンパイラが新しい状態の影響箇所を示します。assertNeverの戻り値はnever型なので、stringを返す関数のdefaultでそのままreturnできます。</p>
   </article>
 </section>
 

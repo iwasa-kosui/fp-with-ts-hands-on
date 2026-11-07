@@ -1,8 +1,8 @@
-# Session 03: 診察開始の識別子を型で区別する
+# Session 03（補助演習）: 診察開始の識別子を型で区別する
 
-このディレクトリはSession 03の開始スナップショットです。解答は `examples/session-04/src` にあります。
+このディレクトリはSession 03の補助演習の開始スナップショットです。解答は `examples/session-04/src` にあります。
 
-S0で確認した診察開始の業務にある、「どの予約を、どの獣医師が開始するか」という入力を扱います。PetId、OwnerId、ExamIdは用途別の型として配布済みです。これらを手本に、AppointmentIdとVeterinarianIdを区別し、予約状態と `startExamination` まで同じ型を使います。
+S00で確認した診察開始の業務にある、「どの予約を、どの獣医師が開始するか」という入力を扱います。PetId、OwnerId、ExamIdは用途別の型として配布済みです。これらを手本に、AppointmentIdとVeterinarianIdを区別し、予約状態と `startExamination` まで同じ型を使います。
 
 ```bash
 pnpm demo:03
@@ -13,7 +13,7 @@ pnpm exercise:03
 
 デモは `http://localhost:3000` で起動します。
 
-`typecheck` と `test` はS1の回帰を確認します。`exercise` は次の3段が未実装であることを示します。
+`typecheck` と `test` はS01とS02の回帰を確認します。`exercise` は次の3段が未実装であることを示します。
 
 1. AppointmentIdとVeterinarianIdを相互に代入できる
 2. 予約状態と `startExamination` にstringが残っている

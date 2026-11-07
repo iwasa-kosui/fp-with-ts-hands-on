@@ -77,7 +77,7 @@ const exerciseContracts = {
       snapshot: "session-02",
       initialFile: "exercises/state-modeling.test.ts",
       description:
-        "current state の要求と作成対象を開始 snapshot で確認します。",
+        "演習の要件と作成対象を、開始スナップショットで確認します。",
       visibleFiles: [
         "exercises/state-modeling.test.ts",
         "test/transitions.test.ts",

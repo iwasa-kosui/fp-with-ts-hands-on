@@ -211,7 +211,7 @@ export const guides = ([
     id: "unvalidated-start-examination-input",
     title: "HTTP入力をanyのまま診察開始の入力へ入れている",
     currentDesign: "raw: anyから2項目をコピーし、検査せずに必ずokを返しています。",
-    futureRisk: "TypeScriptは返り値の型注釈を信頼するため、night-shiftもVeterinarianIdとして後続処理へ渡ります。",
+    futureRisk: "TypeScriptは返り値の型注釈を信頼するため、night-shiftも型の上ではVeterinarianIdとして後続処理へ渡ります。",
     path: "src/boundary/startExaminationInput.ts",
     highlights: [{ startLineNumber: 1, endLineNumber: 15 }],
   },

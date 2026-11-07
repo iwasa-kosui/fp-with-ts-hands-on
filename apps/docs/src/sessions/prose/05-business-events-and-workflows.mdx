@@ -7,7 +7,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
     <p class="case-file__episode-label">動物病院のひと幕</p>
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
-  <p>S1〜S4では、診察開始を題材に、状態の型、分岐漏れの検出、入力の検証、失敗の扱いを学びました。S5では、この考え方を別の業務である予約キャンセルに当てはめて読みます。S5の軸は、「データ構造があり、それをパイプライン（関数）で処理して業務フローを実現する」という考え方です。</p>
+  <p>S1〜S4では、診察開始を題材に、状態の型、分岐漏れの検出、入力の検証、失敗の扱いを学びました。S5では、この考え方を別の業務である予約キャンセルに当てはめて読みます。S5で使う考え方は、「データ構造があり、それをパイプライン（関数）で処理して業務フローを実現する」という考え方です。</p>
 
   <h3>キャンセル前の予約</h3>
   <p>次の値は、予約済みで、まだ来院していない予約です。S1で学んだとおり、<code>kind</code>は予約の現在の状態を表します。</p>
@@ -17,9 +17,9 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
   <p>受付担当者がこの予約をキャンセルすると、データは次の形になります。</p>
   <Code code={props.canceledAppointment} lang="ts" />
 
-  <p>キャンセルという業務は、前のデータから後のデータを作る処理です。この処理を許す条件は次のとおりです。</p>
+  <p>キャンセルという業務は、キャンセル前のデータからキャンセル後のデータを作る処理です。この処理を許す条件は次のとおりです。</p>
   <blockquote>
-    <p>予約を管理する担当者が、診察開始前の予約だけを、キャンセルできます。キャンセルする際には、キャンセル理由を記入する必要があります。</p>
+    <p>予約を管理する担当者が、診察開始前の予約だけを、理由を記入してキャンセルできます。</p>
   </blockquote>
 </section>
 
@@ -75,17 +75,17 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
 
   <h3>2本のレールを思い出す</h3>
   <p>ROP（Railway Oriented Programming）は、S4で学んだ、処理の流れを成功と失敗の2本のレールで捉える考え方です。詳しい説明は、<a href="/sessions/04-workflow-errors/#rop-recap">S4のROPの節</a>を読み返してください。</p>
-  <p>キャンセルでも、失敗の値は下のレールを終点まで進み、後続の成功処理は実行しません。図の4工程は、前の表の4工程と同じです。図を左からたどり、どの条件で失敗のレールへ切り替わるかを確認してください。</p>
+  <p>キャンセルでも、失敗の値は下のレールを終点まで進み、後続の成功処理は実行されません。図の4工程は、前の表の4工程と同じです。図を左からたどり、どの条件で失敗のレールへ切り替わるかを確認してください。</p>
   <RailwayOrientedProgramming />
   <CancelRailwayAnimation />
 
   <h3>なぜROPを利用するのか</h3>
-  <p>{"\n"}S4で見たとおり、ROPはそれぞれの処理で発生する失敗を同じフローで扱います。キャンセルでも、「キャンセル先の予約が存在しない」、「キャンセルする権限がない」などさまざまな理由で失敗したときに、全体の処理のうち一部だけが処理されて不整合が発生することを防げます。{"\n"}</p>
+  <p>{"\n"}S4で見たとおり、ROPはそれぞれの処理で起きる失敗を同じ流れで扱います。キャンセルでは、「キャンセル先の予約が存在しない」「キャンセルする権限がない」などの理由で失敗したとき、ROPは後続の処理を実行しません。そのため、全体の処理のうち一部だけが実行されて不整合が起きることを防げます。{"\n"}</p>
 </section>
 
 <section id="io-boundaries">
-  <h2>I/Oをパイプラインの両端へ追い出す</h2>
-  <p>このセクションでは、S4で使ったResolverとStoreを、キャンセルのパイプラインの両端に置く構成を読みます。中心のドメインロジックは、副作用のないpureな関数として扱えます。</p>
+  <h2>I/Oをパイプラインの両端へ置く</h2>
+  <p>この節では、S4で使ったResolverとStoreを、キャンセルのパイプラインの両端に置く構成を読みます。中心のドメインロジックは、副作用のないpureな関数として扱えます。</p>
   <p>S4では、Resolverを現在の予約を取得する部品、Storeを結果を保存する部品として使いました。前の表の工程のうち、「対象を取得する」はデータベースを読むI/Oです。この工程はResolverが担います。記録はパイプラインの成功の後でStoreが担います。「入力を検査する」「権限と状態を確認する」「結果を作る」は、値だけで結果が決まります。</p>
 
   <h3>ビジネスユースケースとユースケースを区別する</h3>
@@ -94,18 +94,18 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
   <p><code>Appointment</code>は、予約のデータと業務ルールの置き場です。<code>Appointment.cancel</code>は、確認を通った診察開始前の予約とキャンセル理由を受け取り、成功イベントを返します。一つのデータと一つのユースケースが常に対応するわけではありません。同じ予約のデータを、キャンセルや診察開始など複数のユースケースが扱います。</p>
 
   <h3>なぜResolverとStoreをドメインロジックの外へ置くのか</h3>
-  <p>{"\n"}S4と同じ理由です。ResolverとStoreを外へ置くと、<code>Appointment.cancel</code>はデータベースへ接続せず、入力された値だけで結果が決まります。業務ルールを値だけでテストでき、取得方法や記録先が変わっても、中心の判断を変更せずにResolverとStoreの実装を差し替えられます。{"\n"}</p>
+  <p>{"\n"}S4と同じ理由です。ResolverとStoreを外へ置くと、<code>Appointment.cancel</code>はデータベースへ接続せず、入力された値だけで結果が決まります。業務ルールを値だけでテストでき、取得方法や記録先が変わっても、<code>Appointment.cancel</code>を変更せずにResolverとStoreの実装を差し替えられます。{"\n"}</p>
 
   <h3>入力側：Resolverの役割</h3>
-  <p>{"\n"}User ResolverとAppointment Resolverは、実行者と予約の現在状態を取得し、ユースケースへ値として渡します。S4の<code>resolver</code>と同じ役割です。図では、Resolverから受け取った値が確認する条件を通り、ドメインロジックへ渡るところを指でたどってみてください。{"\n"}</p>
+  <p>{"\n"}User ResolverとAppointment Resolverは、実行者と予約の現在状態を取得し、ユースケースへ値として渡します。S4の<code>resolver</code>と同じ役割です。下の図で、Resolverから受け取った値が確認の条件を通り、ドメインロジックへ渡るところをたどってください。{"\n"}</p>
 
   <h3>出力側：Storeの役割</h3>
-  <p>{"\n"}<code>Appointment.cancel</code>は、確認を通った予約から<code>AppointmentCanceled</code>を作ります。Storeは、S4の<code>store</code>と同じく成功の後にだけ呼ばれ、その成功イベントを受け取ってEvent Storeへ追記します。失敗した場合はStoreを呼ばないため、不正なキャンセルや途中状態を記録しません。誰がいつどの予約をキャンセルしたかは、追記された出来事から確認できます。{"\n"}</p>
+  <p>{"\n"}<code>Appointment.cancel</code>は、確認を通った予約から<code>AppointmentCanceled</code>を作ります。Storeは、S4の<code>store</code>と同じく成功の後にだけ呼ばれ、その成功イベントを受け取ってEvent Storeへ追記します。失敗した場合はStoreが呼ばれません。そのため、不正なキャンセルや途中状態は記録されません。誰がいつどの予約をキャンセルしたかは、追記された出来事から確認できます。{"\n"}</p>
   <CancelPipelineBoundaries />
-  <p>{"\n"}配布コード<code>examples/session-01</code>の<code>startExamination</code>は、S1〜S4で学んだ形より前の段階のコードです。<code>Repository</code>（データベースの読み書きをまとめたオブジェクト）からの取得、状態の記録、監査記録、時刻とIDの生成を、一つのユースケースで行います。このコードは今の到達点ではありません。時刻とIDの生成を外から渡す話と、状態と監査記録を1回の保存にまとめる話は、次のS6で扱います。{"\n"}</p>
+  <p>{"\n"}配布コード<code>examples/session-01</code>の<code>startExamination</code>は、S1〜S4で学んだ形より前の段階のコードです。<code>Repository</code>（データベースの読み書きをまとめたオブジェクト）からの取得、状態の記録、監査記録、時刻とIDの生成を、一つのユースケースで行います。このコードは、このハンズオンで目指す形ではありません。時刻とIDの生成を外から渡す話と、状態と監査記録を1回の保存にまとめる話は、次のS6で扱います。{"\n"}</p>
   <aside class="decision-card">
     <h3>このハンズオンでEvent Storeを選ぶ理由</h3>
-    <p>{"\n"}これはDMMF一般の必須条件ではなく、このハンズオンの設計です。成功イベントをそのまま履歴として追記でき、受付担当者がいつどの予約をキャンセルしたかを後から確認できるため、ユースケースの出力先にEvent Storeを選びます。{"\n"}</p>
+    <p>{"\n"}Event Storeを使うことは、DMMF一般の必須条件ではなく、このハンズオンの設計です。成功イベントをそのまま履歴として追記でき、受付担当者がいつどの予約をキャンセルしたかを後から確認できるため、ユースケースの出力先にEvent Storeを選びます。{"\n"}</p>
   </aside>
 </section>
 

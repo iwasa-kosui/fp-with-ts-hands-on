@@ -72,7 +72,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
                 <aside class="dashboard-notices" aria-label="待合と通知">
                   <section class="mini-widget"><h3>待合室</h3><div class="queue-row"><span>🐶</span><strong>ポチ</strong><em>あと 1</em></div><div class="queue-row"><span>🐱</span><strong>ミケ</strong><em>問診済</em></div><div class="queue-row"><span>🐰</span><strong>もも</strong><em>診察中</em></div></section>
                   <section class="mini-widget"><h3>検査結果</h3><p>ポチのワクチン前チェックは異常なし。ミケは皮膚検査待ち。</p></section>
-                  <section class="mini-widget"><h3>追加要求</h3><p>検査後に電話でフォローが必要な患者を抽出したい。連絡先がログに漏れている可能性もある。</p></section>
+                  <section class="mini-widget"><h3>追加要求</h3><p>検査後に電話でフォローが必要な飼い主を抽出したい。連絡先がログに漏れている可能性もある。</p></section>
                   <section class="mini-widget"><h3>会計</h3><p>ポチはワクチン会計準備中。ミケは検査内容確定後に見積り更新。</p></section>
                 </aside>
               </div>
@@ -86,7 +86,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           <div class="feature-splats" aria-label="機能一覧">
             <article class="splat-card"><span class="icon" aria-hidden="true">📅</span><strong>予約管理</strong><span>来院予定、問診、受付状況をひとつの画面で確認。</span></article>
             <article class="splat-card"><span class="icon" aria-hidden="true">🩺</span><strong>カルテ</strong><span>診察メモ、バイタル、処方、注意事項を記録。</span></article>
-            <article class="splat-card"><span class="icon" aria-hidden="true">🐾</span><strong>待合室</strong><span>受付済み、問診済み、診察中の患者を一覧化。</span></article>
+            <article class="splat-card"><span class="icon" aria-hidden="true">🐾</span><strong>待合室</strong><span>受付済み、問診済み、診察中の患者を一覧で表示。</span></article>
             <article class="splat-card"><span class="icon" aria-hidden="true">💳</span><strong>会計</strong><span>診察料、検査料、処方料をまとめて会計。</span></article>
             <article class="splat-card"><span class="icon" aria-hidden="true">☎️</span><strong>フォロー連絡</strong><span>検査後に連絡が必要な飼い主を抽出。</span></article>
             <article class="splat-card"><span class="icon" aria-hidden="true">🔒</span><strong>連絡先管理</strong><span>飼い主の電話番号やメールアドレスを管理。</span></article>
@@ -101,7 +101,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
             <article class="time-stop"><time>Risk / S1</time><strong>🐇 許可されない状態遷移</strong><span>会計済み・キャンセル済みの予約でも診察を開始できてしまうリスクを、状態と遷移の型で防ぐ。</span></article>
             <article class="time-stop"><time>Risk / S2</time><strong>🦔 状態の分岐漏れ</strong><span>予約の状態を追加したときに、表示名などの分岐を直し忘れるリスクを、コンパイルエラーで防ぐ。</span></article>
             <article class="time-stop"><time>Risk / S3</time><strong>🐦 未検証の外部入力</strong><span>HTTPから受け取った値をZodで検証し、値の制約を型で表した診察開始の入力へ変換する。</span></article>
-            <article class="time-stop"><time>Risk / S4</time><strong>🐹 ユースケースの予期できる失敗</strong><span>throw と undefined に埋もれた業務上の失敗を、呼び出し側が扱える結果へ変える。</span></article>
+            <article class="time-stop"><time>Risk / S4</time><strong>🐹 ユースケースの予期できる失敗</strong><span>throw と undefined で表している業務上の失敗を、呼び出し側が扱える結果へ変える。</span></article>
             <article class="time-stop"><time>Workflow / S5</time><strong>🐈 予約キャンセルを設計する</strong><span>予約のデータから始め、キャンセルをパイプラインとして読み、失敗の扱いとI/Oの分離を確かめる。</span></article>
             <article class="time-stop"><time>Risk / S6</time><strong>🐢 出力イベントと副作用</strong><span>時刻や保存処理を外から渡し、状態と監査記録を同じ整合性境界で保存する。</span></article>
           </div>
