@@ -163,42 +163,29 @@ const steps = [
     };
 
     play.addEventListener("click", () => {
-      observer.disconnect();
       if (timer !== undefined) {
         stop();
         render(current);
         return;
       }
-      if (current === last) moveTo(0);
-      start();
+      moveTo(current === last ? 0 : current + 1);
+      if (current !== last) start();
     });
 
     prev.addEventListener("click", () => {
-      observer.disconnect();
       stop();
       moveTo(current - 1);
     });
 
     next.addEventListener("click", () => {
-      observer.disconnect();
       stop();
       moveTo(current + 1);
     });
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return;
-        observer.disconnect();
-        start();
-      },
-      { threshold: 0.4 },
-    );
 
     root.classList.add("is-playing");
     controls.hidden = false;
     status.hidden = false;
     render(-1);
-    observer.observe(controls);
   };
 
   document.querySelectorAll("[data-never-set]").forEach(setup);

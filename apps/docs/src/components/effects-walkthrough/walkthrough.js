@@ -81,7 +81,7 @@ for (const root of roots) {
   };
 
   const renderPlay = () => {
-    play.textContent = playing ? "一時停止" : frame >= lastFrame() ? "最初から再生" : "再生";
+    play.textContent = playing ? "一時停止" : frame >= lastFrame() ? "最初から" : "再生";
   };
 
   const show = (nextScene, nextFrame, follow = true) => {
@@ -147,10 +147,15 @@ for (const root of roots) {
       stop();
       return;
     }
-    if (frame >= lastFrame()) show(scene, 0);
+    if (frame >= lastFrame()) {
+      show(scene, 0);
+      playing = true;
+      renderPlay();
+      schedule();
+      return;
+    }
     playing = true;
-    renderPlay();
-    schedule();
+    advance();
   });
   tabs.forEach((tab, index) =>
     tab.addEventListener("click", () => {

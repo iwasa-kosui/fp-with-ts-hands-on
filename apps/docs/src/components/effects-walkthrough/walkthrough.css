@@ -137,7 +137,7 @@
   }
 
   .walk__btn--play {
-    min-width: 0;
+    min-width: calc(4em + 0.6rem + 4px);
   }
 
   .walk__progress {

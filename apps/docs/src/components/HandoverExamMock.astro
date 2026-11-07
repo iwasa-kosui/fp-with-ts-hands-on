@@ -576,9 +576,8 @@ const details = [
           render(index);
           return;
         }
-        if (index >= last) index = 0;
         playing = true;
-        go(index);
+        go(index >= last ? 0 : index + 1);
       });
       prevButton.addEventListener("click", () => {
         pause();
@@ -599,20 +598,6 @@ const details = [
       });
 
       new ResizeObserver(() => placeCursor(rendered === 1)).observe(screen);
-
-      const screenHeight = screen.getBoundingClientRect().height;
-      const threshold = screenHeight > 0 ? Math.min(0.6, (window.innerHeight * 0.6) / screenHeight) : 0.6;
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (!entries.some((entry) => entry.isIntersecting)) return;
-          observer.disconnect();
-          if (playing || index !== 0) return;
-          playing = true;
-          go(0);
-        },
-        { threshold },
-      );
-      observer.observe(screen);
     });
   })();
 </script>
@@ -864,6 +849,8 @@ const details = [
   .hem button:not(.hem__start):hover {
     background: #ffd21b;
   }
+
+  .hem [data-play] { min-width: calc(4em + 32px + 4px); }
 
   .hem button:focus-visible,
   .hem__code:focus-visible {
