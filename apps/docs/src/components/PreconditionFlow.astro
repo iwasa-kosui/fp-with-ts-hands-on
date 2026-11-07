@@ -82,14 +82,14 @@ const frames: readonly Frame[] = [
   },
   {
     caption:
-      "修正前の配布コードでは、関数の中の requireKind も kind を確かめます。許可していない状態なら例外を投げ、遷移の処理へ進みません。",
+      "修正前の配布コードでは、ルートの確認に加えて、関数の中の requireKind も kind を確かめます。この図は requireKind の働きを見せるために、ルートの確認を省いています。許可していない状態なら、requireKind は例外を投げ、遷移の処理へ進みません。",
     code: { key: "runtime", version: "before", lines: [2, 3, 12] },
     top: { mode: "dim", focus: [], hide: [], token: null },
     bottom: { mode: "normal", focus: [], hide: [1], token: { label: "kind: Paid", at: 2, result: "stop" } },
   },
   {
     caption:
-      "修正後のコードでも、ルートの処理が current.kind を確かめます。CheckedIn でなければ例外を投げ、startExamination を呼びません。",
+      "ルートの処理は、修正前も修正後も current.kind を確かめます。CheckedIn でなければ例外を投げ、startExamination を呼びません。修正後のコードでは、requireKind はなくなり、この確認が実行時の検証として残ります。",
     code: { key: "route", version: "after", lines: [2] },
     top: { mode: "dim", focus: [], hide: [], token: null },
     bottom: { mode: "normal", focus: [], hide: [2], token: { label: "kind: Paid", at: 1, result: "stop" } },
@@ -198,8 +198,8 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
               <text x={node.x + node.w / 2} y={baseline(index, node)} text-anchor="middle" class:list={["precondition-flow__node-text", { "precondition-flow__mono": line.mono }]}>{line.text}</text>
             ))}
             <g class="precondition-flow__badge precondition-flow__badge--stop" data-badge="stop" data-on={band.initial.stopAt === node.slot ? "" : undefined}>
-              <circle cx={node.x + node.w - 8} cy={node.y} r="10"></circle>
-              <text x={node.x + node.w - 8} y={node.y + 5} text-anchor="middle">×</text>
+              <circle cx={node.x + node.w - 3} cy={node.y - 3} r="10"></circle>
+              <text x={node.x + node.w - 3} y={node.y + 2} text-anchor="middle">×</text>
             </g>
             <g class="precondition-flow__badge precondition-flow__badge--pass" data-badge="pass">
               <circle cx={node.x + node.w - 8} cy={node.y} r="10"></circle>
@@ -534,7 +534,9 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
 
   .precondition-flow :global(.precondition-flow__key) {
     display: inline-block;
-    min-width: 100%;
+    min-width: calc(100% + 0.5rem);
+    margin-left: -0.5rem;
+    padding-left: 0.5rem;
     background: rgb(255 210 27 / 22%);
     box-shadow: inset 0.3rem 0 0 #ffd21b;
   }
