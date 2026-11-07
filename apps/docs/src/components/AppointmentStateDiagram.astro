@@ -1,0 +1,723 @@
+---
+import { Code } from "astro:components";
+import type { ComponentProps } from "astro/types";
+
+const SOLUTION = "examples/session-03/src/domain/appointment/transitions.ts";
+const DISTRIBUTED = "examples/session-02/src/domain/appointment/transitions.ts";
+
+const flow = [
+  { kind: "Scheduled", label: "予約済み", y: 2 },
+  { kind: "CheckedIn", label: "来院済み", y: 98 },
+  { kind: "InExamination", label: "診察中", y: 194 },
+  { kind: "AwaitingPayment", label: "会計待ち", y: 290 },
+  { kind: "Paid", label: "会計済み", y: 386, final: true },
+] as const;
+const transitions = [
+  { name: "checkIn", y: 54 },
+  { name: "startExamination", y: 150 },
+  { name: "completeExamination", y: 246 },
+  { name: "recordPayment", y: 342 },
+] as const;
+
+const KEY_MARK = /\s*\/\/ \[!key\]$/;
+type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
+const markKeyLines: Transformer = {
+  name: "mark-key-lines",
+  preprocess(code) {
+    const lines = code.split("\n");
+    (this.meta as { keyLines?: number[] }).keyLines = lines.flatMap((line, index) => (KEY_MARK.test(line) ? [index + 1] : []));
+    return lines.map((line) => line.replace(KEY_MARK, "")).join("\n");
+  },
+  line(node, line) {
+    if ((this.meta as { keyLines?: number[] }).keyLines?.includes(line)) this.addClassToHast(node, "state-diagram__key");
+  },
+};
+
+const frames = [
+  {
+    edges: ["checkIn"],
+    states: ["Scheduled", "CheckedIn"],
+    path: [[154, 38], [154, 134]],
+    caption: "受付で来院を記録します。<code>Scheduled</code> だけが <code>CheckedIn</code> になります。",
+    source: SOLUTION,
+    input: `checkIn(
+  { kind: "Scheduled" /* 省略 */ }, // [!key]
+  "2026-08-30T09:50:00+09:00",
+);`,
+    impl: `export const checkIn = (
+  appointment: Scheduled, // [!key]
+  checkedInAt: string,
+): CheckedIn =>
+  ({
+    ...appointment,
+    kind: "CheckedIn", // [!key]
+    checkedInAt,
+  }) as const satisfies CheckedIn;`,
+    outputLabel: "出力: CheckedIn",
+    output: `{
+  kind: "CheckedIn", // [!key]
+  checkedInAt: "2026-08-30T09:50:00+09:00",
+  // 他の項目は入力のまま
+}`,
+  },
+  {
+    edges: ["startExamination"],
+    states: ["CheckedIn", "InExamination"],
+    path: [[154, 134], [154, 230]],
+    caption: "獣医師が診察を始めます。<code>CheckedIn</code> だけが <code>InExamination</code> になります。",
+    source: SOLUTION,
+    input: `startExamination(
+  { kind: "CheckedIn" /* 省略 */ }, // [!key]
+  "vet-001",
+  "2026-08-30T10:00:00+09:00",
+);`,
+    impl: `export const startExamination = (
+  appointment: CheckedIn, // [!key]
+  veterinarianId: string,
+  examinationStartedAt: string,
+): InExamination =>
+  ({
+    ...appointment,
+    kind: "InExamination", // [!key]
+    veterinarianId,
+    examinationStartedAt,
+  }) as const satisfies InExamination;`,
+    outputLabel: "出力: InExamination",
+    output: `{
+  kind: "InExamination", // [!key]
+  veterinarianId: "vet-001",
+  examinationStartedAt: "2026-08-30T10:00:00+09:00",
+  // 他の項目は入力のまま
+}`,
+  },
+  {
+    edges: ["completeExamination"],
+    states: ["InExamination", "AwaitingPayment"],
+    path: [[154, 230], [154, 326]],
+    caption: "診察結果を記録します。<code>InExamination</code> だけが <code>AwaitingPayment</code> になります。",
+    source: SOLUTION,
+    input: `completeExamination(
+  { kind: "InExamination" /* 省略 */ }, // [!key]
+  { examId: "exam-001" },
+  "2026-08-30T10:20:00+09:00",
+);`,
+    impl: `export const completeExamination = (
+  appointment: InExamination, // [!key]
+  input: CompleteExaminationInput,
+  examinationCompletedAt: string,
+): AwaitingPayment =>
+  ({
+    ...appointment,
+    ...input,
+    kind: "AwaitingPayment", // [!key]
+    examinationCompletedAt,
+  }) as const satisfies AwaitingPayment;`,
+    outputLabel: "出力: AwaitingPayment",
+    output: `{
+  kind: "AwaitingPayment", // [!key]
+  examId: "exam-001",
+  examinationCompletedAt: "2026-08-30T10:20:00+09:00",
+  // 他の項目は入力のまま
+}`,
+  },
+  {
+    edges: ["recordPayment"],
+    states: ["AwaitingPayment", "Paid"],
+    path: [[154, 326], [154, 422]],
+    caption: "会計します。<code>AwaitingPayment</code> だけが <code>Paid</code> になります。<code>Paid</code> から先へは進めません。",
+    source: SOLUTION,
+    input: `recordPayment(
+  { kind: "AwaitingPayment" /* 省略 */ }, // [!key]
+  {
+    diagnosis: "皮膚炎",
+    treatment: "軟膏",
+    amount: 4800,
+  },
+  "2026-08-30T10:30:00+09:00",
+);`,
+    impl: `export const recordPayment = (
+  appointment: AwaitingPayment, // [!key]
+  input: RecordPaymentInput,
+  paidAt: string,
+): Paid =>
+  ({
+    ...appointment,
+    ...input,
+    kind: "Paid", // [!key]
+    paidAt,
+  }) as const satisfies Paid;`,
+    outputLabel: "出力: Paid",
+    output: `{
+  kind: "Paid", // [!key]
+  diagnosis: "皮膚炎",
+  treatment: "軟膏",
+  amount: 4800,
+  paidAt: "2026-08-30T10:30:00+09:00",
+  // 他の項目は入力のまま
+}`,
+  },
+  {
+    edges: ["cancelFromScheduled", "cancelFromCheckedIn"],
+    states: ["Scheduled", "CheckedIn", "Canceled"],
+    path: [[154, 134], [170, 124], [241, 88], [296, 50]],
+    caption: "キャンセルできるのは <code>Scheduled</code> と <code>CheckedIn</code> だけです。理由は省略できません。",
+    source: SOLUTION,
+    input: `cancel(
+  { kind: "CheckedIn" /* 省略 */ }, // [!key]
+  "飼い主の都合", // [!key]
+  "2026-08-30T09:55:00+09:00",
+);`,
+    impl: `export const cancel = (
+  appointment: Scheduled | CheckedIn, // [!key]
+  reason: CancellationReason, // [!key]
+  canceledAt: string,
+): Canceled =>
+  ({
+    kind: "Canceled",
+    appointmentId: appointment.appointmentId,
+    petId: appointment.petId,
+    ownerId: appointment.ownerId,
+    scheduledAt: appointment.scheduledAt,
+    reason,
+    canceledAt,
+  }) as const satisfies Canceled;`,
+    outputLabel: "出力: Canceled",
+    output: `{
+  kind: "Canceled", // [!key]
+  reason: "飼い主の都合",
+  canceledAt: "2026-08-30T09:55:00+09:00",
+  // 共通の項目は入力のまま
+}`,
+  },
+  {
+    edges: ["denied"],
+    states: ["Paid", "InExamination"],
+    note: "s0",
+    path: [[154, 422], [170, 412], [197, 372], [204, 316], [197, 262], [173, 220], [154, 230]],
+    caption: "ひと幕の事故です。S0の <code>updateStatus</code> はどの状態も受け取るため、会計済みの予約が診察中へ戻ります。",
+    source: "examples/session-00/src/domain/appointment/appointment.ts",
+    input: `updateStatus(
+  { status: "paid" /* 省略 */ }, // [!key]
+  "in-examination", // [!key]
+);`,
+    impl: `export const updateStatus = (
+  appointment: Appointment, // [!key]
+  status: string, // [!key]
+  extra?: AppointmentExtra,
+): Appointment => ({
+  ...appointment,
+  ...extra,
+  status,
+});`,
+    outputLabel: "出力: 診察中へ戻った予約",
+    output: `{
+  status: "in-examination", // [!key]
+  // 他の項目は入力のまま
+}`,
+  },
+  {
+    edges: ["denied"],
+    states: ["Paid"],
+    note: "s2",
+    path: [[154, 422], [170, 412], [197, 372], [204, 316], [197, 372], [170, 412], [154, 422]],
+    caption: "S2の配布コードは実行時に止めます。ただし引数が <code>Appointment</code> 全体なので、<code>Paid</code> を渡してもコンパイルは通り、実行するまで誤りに気づけません。",
+    source: DISTRIBUTED,
+    input: `startExamination(
+  { kind: "Paid" /* 省略 */ }, // [!key]
+  "vet-001",
+  "2026-08-30T11:00:00+09:00",
+);`,
+    impl: `export const startExamination = (
+  appointment: Appointment, // [!key]
+  veterinarianId: string,
+  examinationStartedAt: string,
+): Appointment => {
+  requireKind(appointment, ["CheckedIn"]); // [!key]
+  return ({
+    ...appointment,
+    kind: "InExamination",
+    veterinarianId,
+    examinationStartedAt,
+  }) as Appointment;
+};`,
+    outputLabel: "出力: 実行時の例外",
+    output: `throw new Error("Cannot transition from Paid"); // [!key]`,
+  },
+  {
+    edges: ["denied"],
+    states: ["Paid"],
+    note: "after",
+    path: [[154, 422], [172, 410], [160, 416], [172, 410], [154, 422]],
+    caption: "このセッションの後は、引数が <code>CheckedIn</code> です。<code>Paid</code> を渡すとコンパイルエラーになり、実行前に止まります。",
+    source: SOLUTION,
+    input: `startExamination(
+  { kind: "Paid" /* 省略 */ }, // [!key]
+  "vet-001",
+  "2026-08-30T11:00:00+09:00",
+);`,
+    impl: `export const startExamination = (
+  appointment: CheckedIn, // [!key]
+  veterinarianId: string,
+  examinationStartedAt: string,
+): InExamination =>
+  ({
+    ...appointment,
+    kind: "InExamination",
+    veterinarianId,
+    examinationStartedAt,
+  }) as const satisfies InExamination;`,
+    outputLabel: "出力: なし",
+    output: `// コンパイルエラーになるため、 // [!key]
+// この呼び出しは実行できません。`,
+  },
+];
+
+const playerData = JSON.stringify(frames.map(({ edges, states, path, note }) => ({ edges, states, path, note })));
+---
+
+<figure id="appointment-state-diagram" class="state-diagram" data-state-diagram data-frames={playerData}>
+  <div class="state-diagram__controls" data-controls hidden>
+    <button type="button" data-prev>前へ</button>
+    <button type="button" data-play>再生</button>
+    <button type="button" data-next>次へ</button>
+    <span data-progress aria-live="polite"></span>
+  </div>
+  <div class="state-diagram__stage">
+    <svg viewBox="-4 0 354 440" role="img" aria-labelledby="state-diagram-title state-diagram-desc">
+      <title id="state-diagram-title">予約の6つの状態と遷移関数</title>
+      <desc id="state-diagram-desc">
+        Scheduled から checkIn で CheckedIn へ、startExamination で InExamination へ、completeExamination で AwaitingPayment へ、recordPayment で Paid へ進みます。Scheduled と CheckedIn は cancel で Canceled へ進めます。Paid から InExamination へ戻る遷移は、S0 のコードでは実行でき、S2 の配布コードでは実行時に例外になり、このセッションの後はコンパイルエラーになります。
+      </desc>
+      <defs>
+        <marker id="state-diagram-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" class="state-diagram__arrow-head"></path>
+        </marker>
+        <marker id="state-diagram-arrow-denied" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" class="state-diagram__arrow-head--denied"></path>
+        </marker>
+      </defs>
+
+      {transitions.map(({ name, y }) => (
+        <g data-edge={name}>
+          <line x1="154" y1={y} x2="154" y2={y + 42} class="state-diagram__edge" marker-end="url(#state-diagram-arrow)"></line>
+          <text x="146" y={y + 26} text-anchor="end" class="state-diagram__function">{name}</text>
+        </g>
+      ))}
+
+      <line data-edge="cancelFromScheduled" x1="170" y1="28" x2="241" y2="66" class="state-diagram__edge" marker-end="url(#state-diagram-arrow)"></line>
+      <line data-edge="cancelFromCheckedIn" x1="170" y1="124" x2="241" y2="88" class="state-diagram__edge" marker-end="url(#state-diagram-arrow)"></line>
+      <text data-edge="cancelFromCheckedIn" x="204" y="81" text-anchor="middle" class="state-diagram__function">cancel</text>
+
+      <g data-edge="denied" class="state-diagram__denied">
+        <path d="M 170 412 C 215 412, 215 220, 173 220" class="state-diagram__edge--denied" marker-end="url(#state-diagram-arrow-denied)"></path>
+        <g data-note="s2 after">
+          <circle cx="204" cy="316" r="9" class="state-diagram__denied-mark"></circle>
+          <path d="M 200 312 L 208 320 M 208 312 L 200 320" class="state-diagram__denied-cross"></path>
+        </g>
+        <text x="220" y="280" class="state-diagram__note state-diagram__note--strong">ひと幕の事故</text>
+        <text data-note="s0" x="220" y="298" class="state-diagram__note">S0: そのまま戻る</text>
+        <text data-note="s2" x="220" y="316" class="state-diagram__note">S2: 実行時に例外</text>
+        <text data-note="after" x="220" y="334" class="state-diagram__note">後: コンパイル</text>
+        <text data-note="after" x="220" y="350" class="state-diagram__note">エラー</text>
+      </g>
+
+      {flow.map((state) => (
+        <g data-state={state.kind} transform={`translate(0 ${state.y})`}>
+          <rect width="170" height="52" rx="8" class:list={["state-diagram__state", { "state-diagram__state--final": "final" in state }]}></rect>
+          <text x="14" y="23" class="state-diagram__kind">{state.kind}</text>
+          <text x="14" y="42" class="state-diagram__label">{state.label}</text>
+        </g>
+      ))}
+      <g data-state="Canceled" transform="translate(242 50)">
+        <rect width="108" height="52" rx="8" class="state-diagram__state state-diagram__state--final"></rect>
+        <text x="12" y="23" class="state-diagram__kind">Canceled</text>
+        <text x="12" y="42" class="state-diagram__label">キャンセル</text>
+      </g>
+
+      <g data-token class="state-diagram__token" aria-hidden="true">
+        <circle r="11"></circle>
+        <text text-anchor="middle" y="5" font-size="14">🐇</text>
+      </g>
+    </svg>
+
+    <ol class="state-diagram__frames">
+      {frames.map((frame) => (
+        <li data-frame>
+          <p class="state-diagram__caption" set:html={frame.caption}></p>
+          <div class="code-block state-diagram__part">
+            <p class="state-diagram__part-label">入力</p>
+            <Code code={frame.input} lang="ts" transformers={[markKeyLines]} />
+          </div>
+          <div class="code-block state-diagram__part">
+            <p class="state-diagram__part-label">関数の実装: <code>{frame.source}</code></p>
+            <Code code={frame.impl} lang="ts" transformers={[markKeyLines]} />
+          </div>
+          <div class="code-block state-diagram__part">
+            <p class="state-diagram__part-label">{frame.outputLabel}</p>
+            <Code code={frame.output} lang="ts" transformers={[markKeyLines]} />
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  <figcaption>矢印1本が遷移関数1つです。<code>Paid</code> と <code>Canceled</code> から先へは進めません。矢印のない遷移は型エラーにします。入力と出力の値は説明用で、項目の一部を省略しています。</figcaption>
+</figure>
+
+<script is:inline>
+  {
+  const FRAME_MS = 8000;
+  const MOVE_MS = 1100;
+  const translate = ([x, y]) => `translate(${x}px, ${y}px)`;
+
+  const start = (root) => {
+    const frames = JSON.parse(root.dataset.frames ?? "[]");
+    const panels = [...root.querySelectorAll("[data-frame]")];
+    const token = root.querySelector("[data-token]");
+    const controls = root.querySelector("[data-controls]");
+    const play = root.querySelector("[data-play]");
+    const progress = root.querySelector("[data-progress]");
+    if (!token || !controls || !play || !progress || frames.length !== panels.length) return;
+
+    let current = 0;
+    let timer;
+    let move;
+
+    const show = (index) => {
+      current = index;
+      const frame = frames[index];
+      panels.forEach((panel, i) => panel.classList.toggle("is-current", i === index));
+      root.querySelectorAll("[data-edge]").forEach((el) => {
+        el.classList.toggle("is-active", frame.edges.includes(el.dataset.edge ?? ""));
+      });
+      root.querySelectorAll("[data-state]").forEach((el) => {
+        el.classList.toggle("is-active", frame.states.includes(el.dataset.state ?? ""));
+      });
+      root.querySelectorAll("[data-note]").forEach((el) => {
+        el.classList.toggle("is-hidden", !el.dataset.note?.split(" ").includes(frame.note ?? ""));
+      });
+      progress.textContent = `${index + 1} / ${frames.length}`;
+      move?.cancel();
+      token.style.transform = translate(frame.path[frame.path.length - 1]);
+      move = token.animate(frame.path.map((point) => ({ transform: translate(point) })), {
+        duration: MOVE_MS,
+        easing: "ease-in-out",
+      });
+    };
+
+    const pause = () => {
+      window.clearInterval(timer);
+      timer = undefined;
+      play.textContent = "再生";
+    };
+
+    const resume = () => {
+      if (current === frames.length - 1) show(0);
+      play.textContent = "一時停止";
+      timer = window.setInterval(() => {
+        show(current + 1);
+        if (current === frames.length - 1) pause();
+      }, FRAME_MS);
+    };
+
+    play.addEventListener("click", () => (timer === undefined ? resume() : pause()));
+    root.querySelector("[data-prev]")?.addEventListener("click", () => {
+      pause();
+      show(Math.max(current - 1, 0));
+    });
+    root.querySelector("[data-next]")?.addEventListener("click", () => {
+      pause();
+      show(Math.min(current + 1, frames.length - 1));
+    });
+
+    root.dataset.animated = "";
+    controls.hidden = false;
+    show(0);
+
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      observer.disconnect();
+      show(0);
+      resume();
+    }, { threshold: 0.5 });
+    observer.observe(root);
+  };
+
+  const root = document.querySelector("[data-state-diagram]");
+  if (root && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) start(root);
+  }
+</script>
+
+<style>
+  .state-diagram {
+    margin: 1.5rem 0;
+    container-type: inline-size;
+  }
+
+  .state-diagram svg {
+    display: block;
+    width: 100%;
+    max-width: 26rem;
+    height: auto;
+    margin-inline: auto;
+  }
+
+  .state-diagram figcaption {
+    margin-top: 0.75rem;
+    color: var(--case-muted);
+    font-size: 0.875rem;
+  }
+
+  .state-diagram__frames {
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  [data-frame] + [data-frame] {
+    margin-top: 1rem;
+  }
+
+  .state-diagram__caption {
+    margin: 0 0 0.5rem;
+    font-weight: 700;
+  }
+
+  .state-diagram__part {
+    min-width: 0;
+    margin: 0;
+  }
+
+  .state-diagram__part + .state-diagram__part {
+    position: relative;
+    margin-top: 1.5rem;
+  }
+
+  .state-diagram__part + .state-diagram__part::before {
+    content: "↓";
+    position: absolute;
+    top: -1.45rem;
+    left: 1rem;
+    color: var(--case-line);
+    font-weight: 800;
+  }
+
+  .state-diagram__part-label {
+    margin: 0;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .state-diagram__part-label code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .state-diagram__part :global(pre) {
+    margin: 0;
+    font-size: 0.74rem;
+  }
+
+  .state-diagram :global(.state-diagram__key) {
+    display: inline-block;
+    min-width: 100%;
+    background: rgb(255 210 27 / 28%);
+  }
+
+  .state-diagram__state {
+    fill: var(--case-paper);
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .state-diagram__state--final {
+    fill: var(--case-cream);
+  }
+
+  .state-diagram__kind,
+  .state-diagram__function {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .state-diagram__kind {
+    fill: var(--case-ink);
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .state-diagram__label {
+    fill: var(--case-muted);
+    font-size: 13px;
+  }
+
+  .state-diagram__function {
+    fill: var(--case-blue);
+    font-size: 13px;
+  }
+
+  .state-diagram__edge {
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .state-diagram__arrow-head {
+    fill: var(--case-line);
+  }
+
+  .state-diagram__edge--denied {
+    fill: none;
+    stroke: #c2185b;
+    stroke-width: 1.5;
+    stroke-dasharray: 5 4;
+  }
+
+  .state-diagram__arrow-head--denied {
+    fill: #c2185b;
+  }
+
+  .state-diagram__denied-mark {
+    fill: var(--case-paper);
+    stroke: #c2185b;
+    stroke-width: 1.5;
+  }
+
+  .state-diagram__denied-cross {
+    stroke: #c2185b;
+    stroke-width: 2;
+  }
+
+  .state-diagram__note {
+    fill: #c2185b;
+    font-size: 12.5px;
+  }
+
+  .state-diagram__note--strong {
+    font-weight: 700;
+  }
+
+  .state-diagram__token {
+    display: none;
+  }
+
+  .state-diagram__token circle {
+    fill: var(--case-yellow);
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .state-diagram__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .state-diagram__controls[hidden] {
+    display: none;
+  }
+
+  .state-diagram__controls button {
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--case-paper);
+    color: var(--case-ink);
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .state-diagram__controls [data-play] {
+    min-width: 6rem;
+    background: var(--case-yellow);
+  }
+
+  [data-animated] .state-diagram__token {
+    display: block;
+  }
+
+  [data-animated] .state-diagram__frames {
+    display: grid;
+  }
+
+  [data-animated] [data-frame] {
+    grid-area: 1 / 1;
+    min-width: 0;
+    margin: 0;
+    visibility: hidden;
+  }
+
+  [data-animated] [data-frame].is-current {
+    visibility: visible;
+  }
+
+  [data-animated] [data-frame].is-current > * {
+    animation: state-diagram-enter 0.4s ease-out both;
+  }
+
+  [data-animated] [data-frame].is-current > :nth-child(3) {
+    animation-delay: 0.5s;
+  }
+
+  [data-animated] [data-frame].is-current > :nth-child(4) {
+    animation-delay: 1.1s;
+  }
+
+  [data-animated] [data-edge] {
+    opacity: 0.45;
+    transition: opacity 0.3s;
+  }
+
+  [data-animated] [data-edge].is-active {
+    opacity: 1;
+  }
+
+  [data-animated] [data-edge].is-active :global(.state-diagram__edge),
+  [data-animated] .state-diagram__edge.is-active {
+    stroke-width: 3;
+  }
+
+  [data-animated] [data-edge].is-active .state-diagram__function,
+  [data-animated] .state-diagram__function.is-active {
+    font-weight: 700;
+  }
+
+  [data-animated] .state-diagram__denied {
+    opacity: 0;
+  }
+
+  [data-animated] .is-hidden {
+    display: none;
+  }
+
+  [data-animated] [data-state].is-active .state-diagram__state {
+    stroke-width: 3;
+  }
+
+  @container (min-width: 40rem) {
+    [data-animated] .state-diagram__stage {
+      display: grid;
+      grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    [data-animated] .state-diagram__stage > svg {
+      position: sticky;
+      top: 1rem;
+    }
+
+    [data-animated] .state-diagram__frames {
+      margin-top: 0;
+    }
+  }
+
+  @keyframes state-diagram-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+</style>
