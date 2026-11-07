@@ -423,7 +423,7 @@ export const sensitiveWalkthrough: Walkthrough = {
       frames: [
         ...wrappedFrames,
         hiddenFrame(
-          "[inspect.custom]: () =>",
+          '[inspect.custom]: () => "[REDACTED]"',
           "console.log(contact.ownerEmail)",
           "[REDACTED]",
           "console.logはinspect.customの結果を出力するので、ログには[REDACTED]が出ます。",
@@ -436,7 +436,7 @@ export const sensitiveWalkthrough: Walkthrough = {
       frames: [
         ...wrappedFrames,
         hiddenFrame(
-          "toJSON: () =>",
+          'toJSON: () => "[REDACTED]"',
           "JSON.stringify(contact)",
           `{"ownerName":"[REDACTED]","ownerEmail":"[REDACTED]","ownerPhone":"[REDACTED]"}`,
           "JSON.stringifyはtoJSONの結果を使うので、3項目とも[REDACTED]になります。",
