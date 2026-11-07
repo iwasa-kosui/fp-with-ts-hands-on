@@ -1,3 +1,6 @@
+import AnimatedExplanation from "../../components/animated-explanation/AnimatedExplanation.astro";
+import { doubleBilling } from "../../animations/s0";
+
 <section id="incident">
   <h2>現行業務と起きている事故</h2>
   <aside class="case-file__episode" aria-label="動物病院のひと幕">
@@ -20,6 +23,7 @@
     <p>{"\n"}会計担当は診察を終えた Mugi の飼い主から4,800円を受け取り、予約を会計済みにしました。{"\n        "}その後、獣医師が同じ予約で「診察開始」を押すと、システムは操作を止めず、予約を診察中へ戻しました。{"\n        "}受付は会計前の来院だと判断し、飼い主へ同じ金額をもう一度請求しました。{"\n"}</p>
     <p>SQLite には、「会計済み」にした変更履歴と、「診察中」になっている現在の予約内容が、同じ予約 ID に残りました。</p>
   </article>
+  <AnimatedExplanation animation={doubleBilling} />
   <article class="incident-report">
     <h4>事故を調べた担当者へ、飼い主の連絡先まで見せてしまった</h4>
     <p>{"\n"}二重請求の経緯を確認するために予約の変更履歴を開くと、操作名や時刻だけでなく、{"\n        "}操作後の予約内容まで丸ごと保存されていました。調査に不要な飼い主の氏名、メールアドレス、電話番号も閲覧できる状態でした。{"\n"}</p>
