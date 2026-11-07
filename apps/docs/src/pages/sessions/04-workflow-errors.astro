@@ -458,7 +458,7 @@ export const navigation = ({
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
-const guardQuestion = "新しい処理が <code>Result</code> を返さずに例外を投げると、呼び出し側の網羅性の検査から漏れます。これを、文面のほかにどの仕組みで防げますか。";
+const guardQuestion = "新しい業務エラーを <code>Result</code> で返さずに例外で投げると、呼び出し側の網羅性の検査から漏れます。保存障害などのシステムエラーは、例外のままで正しい設計です。業務エラーの例外を、文面のほかにどの仕組みで防げますか。";
 const guards = [
   {
     problem: "失敗したあとも保存へ進む",
