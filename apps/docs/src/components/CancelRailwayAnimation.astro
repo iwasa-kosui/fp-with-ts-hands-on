@@ -104,7 +104,7 @@ const scenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }>)[
     steps: [
       ...untilAppointment("Scheduled"),
       step(6, "<code>ensureCancellable</code> が状態を確かめます。<code>Scheduled</code> は診察開始前なので、<code>ok(appointment)</code> を返します。", appointmentValue("Scheduled"), ok(appointmentValue("Scheduled"))),
-      step(7, "<code>createEvent</code> が <code>Appointment.cancel</code> を呼びます。前の行の予約に加えて、最初に受け取った入力の <code>reason</code> と <code>clock</code> の時刻を使い、<code>AppointmentCanceled</code> を作ります。", createEventInput, ok(eventValue)),
+      step(7, "キャンセルの出来事を表すイベントを作る <code>createEvent</code> が、<code>Appointment.cancel</code> を呼びます。前の行の予約に加えて、最初に受け取った入力の <code>reason</code> と、現在時刻を返す部品 <code>clock</code> の時刻を使い、<code>AppointmentCanceled</code> を作ります。", createEventInput, ok(eventValue)),
       step(8, "<code>andThrough</code> は、<code>andThen</code> と同じように Ok のときだけ処理へ進み、成功すると元の値を次へ渡します。ここでは store を呼び、予約の更新とイベントの追記を1つの transaction で行います。値は同じイベントのままです。<code>andThrough</code> の詳細は S6 で学びます。", eventValue, ok(eventValue)),
       step(9, "<code>map</code> がイベントからキャンセル後の予約を取り出します。", eventValue, finalValue),
       step(outputRow, "値は成功レールの終点に届きます。呼び出し側はキャンセル後の予約を受け取ります。", finalValue, finalValue),
