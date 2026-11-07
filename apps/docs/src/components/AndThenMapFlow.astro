@@ -241,6 +241,7 @@ const marks = {
           <span class="and-then-map__token and-then-map__token--input"><Fragment set:html={renderValue(okOf(plain(scene.arg)))} /></span>
           <span class="and-then-map__token and-then-map__token--fn"><code><span class="and-then-map__fn-name">{scene.fn}</span>(<span class="and-then-map__fn-arg">{scene.arg}</span>)</code></span>
           <span class="and-then-map__token and-then-map__token--arg"><Fragment set:html={renderValue(plain(scene.arg))} /></span>
+          <span class="and-then-map__token and-then-map__token--returned"><Fragment set:html={renderValue(scene.returned)} /></span>
           <span class="and-then-map__token and-then-map__token--result">
             <span class:list={["and-then-map__frame", `and-then-map__frame--${scene.wrap}`]}>
               {scene.wrap !== "none" && <span class="and-then-map__frame-tag">Ok(</span>}
@@ -448,6 +449,7 @@ const marks = {
   .and-then-map__fn-arg { color: #79b8ff; opacity: 0; transition: opacity 0.3s ease 0.35s; }
   .and-then-map__token--arg { --y: 0rem; opacity: 0; }
   .and-then-map__token--result { --y: 4.5rem; opacity: 0; }
+  .and-then-map__token--returned { --y: 9rem; opacity: 0; }
   .and-then-map__frame { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: 0.125rem; padding: 0.25rem 0.5rem; font-family: var(--font-mono, monospace); }
   .and-then-map__frame::before { content: ""; position: absolute; inset: 0; border: 2px solid #137333; border-radius: 6px; background: #24292e; z-index: -1; opacity: 0; transform: scale(1.6); transition: opacity 0.4s ease, transform 0.6s ease; }
   .and-then-map__frame--none::before { display: none; }
@@ -460,6 +462,7 @@ const marks = {
   [data-state="call"] .and-then-map__fn-arg, [data-state="return"] .and-then-map__fn-arg, [data-state="wrap"] .and-then-map__fn-arg, [data-state="result"] .and-then-map__fn-arg { opacity: 1; }
   [data-state="return"] .and-then-map__token--result { --y: 9rem; opacity: 1; }
   [data-state="wrap"] .and-then-map__token--result, [data-state="result"] .and-then-map__token--result { --y: 13.5rem; opacity: 1; }
+  [data-state="wrap"] .and-then-map__token--returned, [data-state="result"] .and-then-map__token--returned { opacity: 0.6; }
   [data-state="wrap"] .and-then-map__frame::before, [data-state="result"] .and-then-map__frame::before { opacity: 1; transform: none; }
   [data-state="wrap"] .and-then-map__frame-tag, [data-state="result"] .and-then-map__frame-tag { opacity: 1; }
   [data-state="wrap"] .and-then-map__action, [data-state="result"] .and-then-map__action { opacity: 1; }
