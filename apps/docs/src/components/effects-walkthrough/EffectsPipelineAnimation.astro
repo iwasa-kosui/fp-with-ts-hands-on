@@ -6,7 +6,12 @@ import Walkthrough from "./Walkthrough.astro";
 
 type Tone = "ok" | "err" | "reject";
 type Stage = Readonly<{ key: string; file?: string; outer?: true; code: string }>;
-type Impl = Readonly<{ stage: string; path: string; code: string }>;
+type Impl = Readonly<{
+  stage: string;
+  path: string;
+  code: string;
+  more?: readonly Readonly<{ path: string; code: string }>[];
+}>;
 type Card = Readonly<{
   key: string;
   stage: string;
@@ -48,30 +53,10 @@ const stages: readonly Stage[] = [
     input: StartExaminationWithEffectsInput,
   ): ResultAsync<InExamination, StartExaminationWithEffectsError> =>`,
   },
-  {
-    key: "resolve",
-    code: `    ResultAsync.fromSafePromise<AppointmentState | undefined>(
-      Promise.resolve().then(() =>
-        deps.resolver.resolveById(input.appointmentId),
-      ),
-    )`,
-  },
-  {
-    key: "found",
-    code: `      .andThen((appointment) =>
-        ensureAppointmentFound(appointment, input.appointmentId),
-      )`,
-  },
+  { key: "resolve", code: `    resolveAppointment(deps)(input.appointmentId)` },
+  { key: "found", code: `      .andThen(ensureFound(input.appointmentId))` },
   { key: "checked", code: `      .andThen(ensureCheckedIn)` },
-  {
-    key: "start",
-    code: `      .map((appointment) =>
-        Appointment.startExamination(createEventContext(deps))(
-          appointment,
-          input.veterinarianId,
-        ),
-      )`,
-  },
+  { key: "start", code: `      .map(startExaminationEvent(deps, input.veterinarianId))` },
   { key: "through", code: `      .andThrough((event) => deps.store.store(event))` },
   { key: "map", code: `      .map((event) => event.aggregateState);` },
   {
@@ -96,27 +81,35 @@ const stages: readonly Stage[] = [
 ];
 
 const impls: Readonly<Record<string, Impl>> = {
-  find: {
+  resolve: {
     stage: "resolve",
-    path: storePath,
-    code: `row = database
-  .select({ state: appointmentsTable.state })
-  .from(appointmentsTable)
-  .where(sql\`\${appointmentsTable.appointmentId} = \${appointmentId}\`)
-  .get();
-
-return row === undefined ? undefined : parsePersistedAppointment(row.state);`,
+    path: startExaminationPath,
+    code: `const resolveAppointment =
+  (deps: EffectsDependencies) =>
+  (appointmentId: AppointmentId): ResultAsync<AppointmentState | undefined, never> =>
+    ResultAsync.fromSafePromise(
+      Promise.resolve().then(() => deps.resolver.resolveById(appointmentId)),
+    );`,
   },
   found: {
     stage: "found",
-    path: errorsPath,
-    code: `export const ensureAppointmentFound = (
+    path: startExaminationPath,
+    code: `const ensureFound =
+  (appointmentId: AppointmentId) =>
+  (appointment: AppointmentState | undefined) =>
+    ensureAppointmentFound(appointment, appointmentId);`,
+    more: [
+      {
+        path: errorsPath,
+        code: `export const ensureAppointmentFound = (
   appointment: Appointment | undefined,
   appointmentId: AppointmentId,
 ): Result<Appointment, AppointmentNotFound> =>
   appointment === undefined
     ? err({ kind: "AppointmentNotFound", appointmentId })
     : ok(appointment);`,
+      },
+    ],
   },
   checkedin: {
     stage: "checked",
@@ -128,7 +121,7 @@ return row === undefined ? undefined : parsePersistedAppointment(row.state);`,
     ? ok(appointment)
     : err({ kind: "InvalidAppointmentState", actual: appointment.kind });`,
   },
-  context: {
+  event: {
     stage: "start",
     path: startExaminationPath,
     code: `export const createEventContext = (
@@ -136,7 +129,15 @@ return row === undefined ? undefined : parsePersistedAppointment(row.state);`,
 ): EventContext => ({
   eventId: deps.eventIdGenerator.generate(),
   occurredAt: deps.clock.now(),
-});`,
+});
+
+const startExaminationEvent =
+  (deps: EffectsDependencies, veterinarianId: VeterinarianId) =>
+  (appointment: CheckedIn): ExaminationStarted =>
+    Appointment.startExamination(createEventContext(deps))(
+      appointment,
+      veterinarianId,
+    );`,
   },
   transition: {
     stage: "start",
@@ -210,15 +211,15 @@ const scenes: readonly Scene[] = [
       {
         text: "`resolveById` が予約を読みます。値は `CheckedIn` の予約です。",
         at: "resolve",
-        impl: "find",
-        lines: [0, 1, 2, 3, 4, 6],
+        impl: "resolve",
+        lines: [4],
         out: "r0",
       },
       {
         text: "`ensureAppointmentFound` は予約があるので `ok` を返し、値をそのまま次へ渡します。",
         at: "found",
         impl: "found",
-        lines: [4, 6],
+        lines: [3, 8, 10],
         out: "r1",
       },
       {
@@ -229,10 +230,10 @@ const scenes: readonly Scene[] = [
         out: "r2",
       },
       {
-        text: "`createEventContext` が時刻と ID を1回だけ作ります。この1回の値を、状態と監査記録の両方が使います。",
+        text: "`startExaminationEvent` の中で、`createEventContext` が時刻と ID を1回だけ作ります。この1回の値を、状態と監査記録の両方が使います。",
         at: "start",
-        impl: "context",
-        lines: [3, 4],
+        impl: "event",
+        lines: [3, 4, 10],
         out: "r3",
       },
       {
@@ -379,6 +380,15 @@ const frameData = scenes.map(({ outer, settled, frames }) => ({
                           <code>{impl.path}</code>
                         </figcaption>
                         <Code code={impl.code} lang="ts" wrap />
+                        {(impl.more ?? []).map((part) => (
+                          <>
+                            <p class="ep-impl__file">
+                              <span class="walk-badge walk-badge--after">修正後</span>
+                              <code>{part.path}</code>
+                            </p>
+                            <Code code={part.code} lang="ts" wrap />
+                          </>
+                        ))}
                       </figure>
                     ))}
                     {cards.filter((card) => card.stage === stage.key).map((card) => (

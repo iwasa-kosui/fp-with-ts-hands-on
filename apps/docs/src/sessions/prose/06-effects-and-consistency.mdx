@@ -59,7 +59,7 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
     <p>new Date() と crypto.randomUUID() は、呼ぶたびに違う値を返します。同じ入力でも出力イベントが変わるので、テストは期待値を固定できません。</p>
     <p>port にすると、テストは固定の値を渡せます。本番相当の実装は、Final の参照実装 examples/final/src/app.ts で確認できます。そこでは Clock の実装が new Date() を呼び、EventIdGenerator の実装が randomUUID() を呼びます。</p>
     <p>値を作る回数も決めます。ユースケースは createEventContext を1回だけ呼び、できた EventContext を状態遷移へ渡します。状態遷移は、予約の examinationStartedAt とイベントの occurredAt を同じ値から作ります。</p>
-    <p>createEventContext を呼ぶ場所は、予約の確認の後です。予約が見つからないときや受付前のときは、map のコールバックが呼ばれないので、時刻もイベント ID も作りません。</p>
+    <p>createEventContext を呼ぶ場所は、予約の確認の後です。createEventContext は startExaminationEvent の中にあり、startExaminationEvent が返す関数は map のコールバックとして呼ばれます。予約が見つからないときや受付前のときは、このコールバックが呼ばれないので、時刻もイベント ID も作りません。</p>
     <Fragment slot="why">時刻と ID を引数で受け取ると、状態遷移は同じ入力から同じイベントを返す純粋関数のままです。実行ごとに変わる値を作る場所がユースケースの1か所に決まるので、テストは同じ実行を再現できます。</Fragment>
   </TeachingTopic>
   <TeachingTopic
@@ -99,7 +99,7 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
     <p>AppointmentConflict と保存障害では、呼び出し側の対応が違います。競合なら、呼び出し側は最新の予約を確認して操作をやり直せます。データベースの障害や破損データには、呼び出し側が理由別に選べる対応がありません。</p>
     <p>neverthrow の関数でこの2つの経路が分かれます。ResultAsync.fromPromise は、reject を第2引数の関数で Err へ変換します。ResultAsync.fromSafePromise は変換しないので、reject は reject のまま残ります。after は fromSafePromise を使います。</p>
     <p>before のように fromPromise ですべての reject を AppointmentConflict へ変換すると、データベースの障害でも画面は競合として案内します。例外が外側の例外境界へ届かないので、障害はログに記録されません。</p>
-    <p>after は resolver の呼び出しを Promise.resolve().then(...) で包みます。resolver は同期の関数で、破損データを読むと ZodError を投げます。then の中で呼ぶと、この throw も reject になります。包まずに呼ぶと、ResultAsync を返す前に例外が呼び出し元へ飛びます。</p>
+    <p>after は resolveAppointment の中で、resolver の呼び出しを Promise.resolve().then(...) で包みます。resolver は同期の関数で、破損データを読むと ZodError を投げます。then の中で呼ぶと、この throw も reject になります。包まずに呼ぶと、ResultAsync を返す前に例外が呼び出し元へ飛びます。</p>
     <p>store の実装も fromSafePromise を使います。transaction の中の throw は reject になり、そのまま andThrough を通り抜けます。</p>
     <p>reject は、S4 で確認した外側の例外境界が受け取ります。例外境界は、エラーの詳細を含まない 500 応答へ変換します。本番ではここでログへも記録します。配布コードの app.onError は記録を省いています。</p>
     <Fragment slot="why">E に AppointmentConflict だけを書くと、呼び出し側は選べる対応だけを型から読み取れます。演習の Step 4 は、競合が Err になり、保存障害と破損データが reject になることをテストで確かめます。</Fragment>
