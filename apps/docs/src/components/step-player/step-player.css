@@ -28,7 +28,9 @@
   .step-player__controls { position: static; display: contents; }
   .step-player__tabs { margin-top: 0.875rem; }
   .step-player__buttons { position: sticky; top: 5.5rem; z-index: 3; flex-wrap: nowrap; margin: 0.375rem 0 0; padding-block: 0.375rem; background: var(--case-paper, #fffefa); }
-  .step-player__controls button { padding-inline: 0.5rem; }
+  .step-player__controls button { flex: none; padding-inline: 0.4375rem; white-space: nowrap; }
+  .step-player__controls [data-step-player-action="play"] { min-width: 4.5em; }
+  .step-player__progress { min-width: 0; white-space: nowrap; }
 }
 
 @media (prefers-reduced-motion: reduce) {
