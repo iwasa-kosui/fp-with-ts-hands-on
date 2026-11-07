@@ -12,40 +12,63 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <p>このように、処理の前後を通して常に成立させる条件を、このセッションでは<strong>不変条件</strong>と呼びます。</p>
   <h3 data-story-stage="use-case">追加したい機能</h3>
   <p>予約を「診察中にする」、「診察結果を記録する」、「会計する」、「キャンセルする」といった状態変更の機能を追加します。</p>
-  <h3 id="naive-pitfalls" data-story-stage="pitfall">素朴な実装の落とし穴</h3>
-  <p>予約の状態の表し方には、段階ごとに次の3つの問題があります。</p>
-  <h4 id="pitfall-one-type" class="pitfall-heading">1. 1つの型に全状態の項目を詰め込む</h4>
-  <p>S0の配布コードの <code>Appointment</code> は、すべての状態の項目を1つの型に持ちます。S1の配布コードも、<code>items</code> を除いて同じ型です。</p>
-  <figure class="code-block">
-    <figcaption>配布コードの実物: <code>examples/session-00/src/domain/appointment/appointment.ts</code></figcaption>
-    <Code code={props.distributedAppointmentCode} lang="ts" />
-  </figure>
-  <p><code>status</code> は任意の文字列を受け取ります。診察や会計の項目は任意項目なので、<code>status</code> が <code>"paid"</code> なのに <code>paidAt</code> がない値もコンパイルできます。<code>updateStatus</code> は、どの状態からどの状態へも変更できます。</p>
-  <h4 id="pitfall-no-discriminant" class="pitfall-heading">2. 状態を判別する項目がない</h4>
-  <p>型を状態ごとに分けても、共通の判別フィールドがなければ、固有のプロパティの有無で状態を判定するしかありません。</p>
-  <figure class="code-block">
-    <figcaption>判別フィールドを持たないオブジェクトのUnion(説明用の例)</figcaption>
-    <Code code={props.narrative.noDiscriminantCode} lang="ts" />
-  </figure>
-  <p>この書き方は、<code>checkedInAt</code> や <code>examinationStartedAt</code> の有無と、判定する順序に依存します。<code>InExamination</code> にも <code>checkedInAt</code> があるため、先に <code>checkedInAt</code> を調べると誤判定します。状態が増えるほど条件は複雑になります。</p>
-  <h4 id="pitfall-wide-input" class="pitfall-heading">3. 遷移関数が Appointment 全体を受け取る</h4>
-  <p>S2の配布コードは、すでに kind で6つの状態を分けています。しかし、遷移関数は引数に Appointment 全体を受け取ります。そのため、Paid を startExamination へ渡すことも、診察結果を記録していない InExamination を recordPayment へ渡すこともコンパイルできます。実行時に requireKind が例外を投げるまで、状態の誤りに気づけません。cancel もキャンセル理由を undefined で受け取れるため、コンパイラではキャンセル理由が抜けていることを検知できません。</p>
-  <figure class="code-block pitfall-code" data-pitfall-code>
-    <figcaption>{"\n"}配布コードをもとにした例:{"\n"}{props.narrative.pitfallCode.sources.map((source, index) => (<Fragment>{index === 0 ? " " : "、"}<code>{source}</code></Fragment>))}</figcaption>
-    <Code code={props.narrative.pitfallCode.code} lang="ts" />
-  </figure>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
-  <p>Scheduled | CheckedIn | InExamination | AwaitingPayment | Paid | Canceled のDiscriminated Unionを、遷移関数でも一貫して使います。completeExamination は InExamination だけを受け取り、recordPayment は AwaitingPayment だけを受け取る純粋関数にします。</p>
+  <p>次の図の6つの状態を、<code>kind</code> で区別するDiscriminated Unionで表します。🐇の予約がどの関数でどの状態へ進むかを、入力、関数の実装、出力の順に1コマずつ追ってください。</p>
+  <AppointmentStateDiagram />
+  <p>遷移関数でも同じ型を使います。<code>completeExamination</code> は <code>InExamination</code> だけを受け取り、<code>recordPayment</code> は <code>AwaitingPayment</code> だけを受け取る純粋関数にします。</p>
   <h3>このセッションで守ること</h3>
   <ul class="decision-list">
     {props.session.decisions.map(({ invariant }) => <li>{invariant}</li>)}
   </ul>
   <p>今回の変更は <code>{props.session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
+  <h3 id="naive-pitfalls" data-story-stage="pitfall">素朴な実装の落とし穴</h3>
+  <p>予約の状態の表し方には、段階ごとに次の3つの問題があります。</p>
+  <h4 id="pitfall-one-type" class="pitfall-heading">1. 1つの型に全状態の項目を詰め込む</h4>
+  <p>S0の配布コードの <code>Appointment</code> は、すべての状態の項目を1つの型に持ちます。<code>status</code> が <code>"paid"</code> なのに <code>paidAt</code> がない値もコンパイルでき、<code>updateStatus</code> はどの状態からどの状態へも変更できます。</p>
+  <details class="step-solution">
+    <summary>コードを見る: 配布コードの <code>Appointment</code></summary>
+    <div class="step-solution__body">
+      <p>S1の配布コードも、<code>items</code> を除いて同じ型です。<code>status</code> は任意の文字列を受け取り、診察や会計の項目は任意項目です。</p>
+      <figure class="code-block">
+        <figcaption>配布コードの実物: <code>examples/session-00/src/domain/appointment/appointment.ts</code></figcaption>
+        <Code code={props.distributedAppointmentCode} lang="ts" />
+      </figure>
+    </div>
+  </details>
+  <h4 id="pitfall-no-discriminant" class="pitfall-heading">2. 状態を判別する項目がない</h4>
+  <p>型を状態ごとに分けても、共通の判別フィールドがなければ、固有のプロパティの有無と判定する順序に頼るしかありません。</p>
+  <details class="step-solution">
+    <summary>コードを見る: 判別フィールドのないUnion</summary>
+    <div class="step-solution__body">
+      <figure class="code-block">
+        <figcaption>判別フィールドを持たないオブジェクトのUnion(説明用の例)</figcaption>
+        <Code code={props.narrative.noDiscriminantCode} lang="ts" />
+      </figure>
+      <p><code>InExamination</code> にも <code>checkedInAt</code> があるため、先に <code>checkedInAt</code> を調べると誤判定します。状態が増えるほど条件は複雑になります。</p>
+    </div>
+  </details>
+  <h4 id="pitfall-wide-input" class="pitfall-heading">3. 遷移関数が Appointment 全体を受け取る</h4>
+  <p>S2の配布コードは、すでに <code>kind</code> で6つの状態を分けています。しかし、遷移関数は引数に <code>Appointment</code> 全体を受け取るため、次の誤りはどれもコンパイルできます。</p>
+  <ul>
+    <li><code>Paid</code> を <code>startExamination</code> へ渡す</li>
+    <li>診察結果を記録していない <code>InExamination</code> を <code>recordPayment</code> へ渡す</li>
+    <li><code>cancel</code> へキャンセル理由として <code>undefined</code> を渡す</li>
+  </ul>
+  <p>どれも、実行時に例外が投げられるまで気づけません。</p>
+  <details class="step-solution">
+    <summary>コードを見る: 3つの誤りがコンパイルできる例</summary>
+    <div class="step-solution__body">
+      <figure class="code-block pitfall-code" data-pitfall-code>
+        <figcaption>{"\n"}配布コードをもとにした例:{"\n"}{props.narrative.pitfallCode.sources.map((source, index) => (<Fragment>{index === 0 ? " " : "、"}<code>{source}</code></Fragment>))}</figcaption>
+        <Code code={props.narrative.pitfallCode.code} lang="ts" />
+      </figure>
+    </div>
+  </details>
 </section>
 
 <section id="legacy" class="code-playground">
   <h2>コードを読み、失敗を再現する</h2>
-  <p>Appointment 全体を受け取る遷移関数、throw、as Appointment を探します。これらは、許可されていない状態遷移をコンパイラで止められない箇所です。</p>
+  <p><code>Appointment</code> 全体を受け取る遷移関数、<code>throw</code>、<code>as Appointment</code> を探します。これらは、許可されていない状態遷移をコンパイラで止められない箇所です。</p>
   <p>{"\n"}編集する範囲は <code>{props.session.exerciseModule.dir}</code>、変更するファイル数は最大{"\n"}{props.session.exerciseModule.fileBudget}ファイル・約{props.session.exerciseModule.lineBudget}行です。{"\n"}</p>
   <CodeGuideCards guides={props.guides} projectFiles={props.projectFiles} />
   <h3>修正前の失敗を確認する</h3>
@@ -91,7 +114,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   </article>
   <article class="teaching-topic">
     <h3>遷移関数の引数型で、受け取れる状態を限定する</h3>
-    <p>Discriminated Unionから特定の状態型を選び、遷移関数の引数に指定します。許可していない状態は、関数を呼び出す時点でコンパイルエラーになります。</p>
+    <p>Discriminated Unionから特定の状態型を選び、遷移関数の引数に指定します。許可していない状態は、関数を呼び出す時点でコンパイルエラーになります。<a href="#appointment-state-diagram">状態遷移の図</a>の矢印が、次の関数に対応します。</p>
     <p>修正前の書き方: <a href="#pitfall-wide-input">3. 遷移関数が Appointment 全体を受け取る</a></p>
     <figure class="code-block">
       <figcaption>
@@ -103,7 +126,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
       </figcaption>
       <Code code={props.teaching[1].after.code} lang="ts" />
     </figure>
-    <p class="teaching-topic__why">遷移ごとに CheckedIn、InExamination、AwaitingPayment だけを受け取ります。会計済みの予約や診察結果を記録していない予約を誤った関数へ渡すと、コードを実行する前の型検査で止まります。Discriminated Unionが状態の候補を定義し、関数の引数型が許可された遷移を定義します。</p>
+    <p class="teaching-topic__why">遷移ごとに <code>CheckedIn</code>、<code>InExamination</code>、<code>AwaitingPayment</code> だけを受け取ります。会計済みの予約や診察結果を記録していない予約を誤った関数へ渡すと、コードを実行する前の型検査で止まります。Discriminated Unionが状態の候補を定義し、関数の引数型が許可された遷移を定義します。</p>
   </article>
   <details class="step-solution">
     <summary>おまけ: 他の言語で状態を型にする</summary>
@@ -137,9 +160,8 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <p>角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。技法名や完成形を先に指定する必要はありません。</p>
     <pre><code>{props.delegationPrompt}</code></pre>
   </div>
-  <h3>この演習で解決しないこと</h3>
-  <p>この型が守れるのは、TypeScript が検査できる値だけです。外部から届く未検証の値や、型アサーションで作った値は防げません。</p>
   <h3 data-solution-heading>{props.session.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
+  <p>演習を完了できないときは、解答スナップショットをステップ単位で開き、遷移関数の引数型をコピペします。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。</p>
   {props.session.solutionPresentation === "completed-file" ? (
     <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
       <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読む。</p>
@@ -163,8 +185,8 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     </div>
   ))}
   <CommandBlock phase="green" command={props.session.exerciseCommand} expected="分岐漏れの型検査1個だけが失敗します。この1個はSession 03で直します。" />
-  <h3>演習を完了できないとき</h3>
-  <p>解答スナップショットをステップ単位で開き、遷移関数の引数型をコピペします。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。</p>
+  <h3>この演習で解決しないこと</h3>
+  <p>この型が守れるのは、TypeScript が検査できる値だけです。外部から届く未検証の値や、型アサーションで作った値は防げません。</p>
 </section>
 
 <section id="review">

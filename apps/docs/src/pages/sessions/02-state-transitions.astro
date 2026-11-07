@@ -1,4 +1,5 @@
 ---
+import AppointmentStateDiagram from "../../components/AppointmentStateDiagram.astro";
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
@@ -112,12 +113,12 @@ export const guides = ([
   {
     id: "wide-transition-input",
     title: "current state を受け取る関数が Appointment 全体を受け入れている",
-    currentDesign: "current state を型で絞らず、実行時の requireKind と throw に頼っています。",
+    currentDesign: "current state を型で絞らず、実行時の requireKind と throw に頼っています。completeExamination と recordPayment も同じ形です。",
     futureRisk: "禁止したい状態でも呼び出し側のコードはコンパイルが通り、as で結果を押し通せます。",
     path: "src/domain/appointment/transitions.ts",
     highlights: [
       { startLineNumber: 8, endLineNumber: 17 },
-      { startLineNumber: 19, endLineNumber: 49 },
+      { startLineNumber: 19, endLineNumber: 26 },
     ],
   },
   {
@@ -406,7 +407,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         </p>
       </section>
       <Prose
-        components={{ CodeGuideCards, CommandBlock }}
+        components={{ AppointmentStateDiagram, CodeGuideCards, CommandBlock }}
         session={session}
         guides={guides}
         workspace={workspace}
