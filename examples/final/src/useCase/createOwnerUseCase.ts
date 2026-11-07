@@ -75,9 +75,7 @@ const run =
       .andThen(ensureUserFound(input.actorUserId))
       .andThen(ensureCanManageClinic)
       .andThen(() => createEvent(dependencies, input))
-      .andThrough((event) =>
-        dependencies.ownerCreatedStore.store(event),
-      )
+      .andThrough(dependencies.ownerCreatedStore.store)
       .map((event) => ({ owner: toView(event.aggregateState) }));
 
 export const CreateOwnerUseCase = {

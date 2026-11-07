@@ -24,7 +24,7 @@ const pipeline = [
   quote(routesSource, 74, 76, "const CancelSchema"),
   "",
   "// cancelAppointmentUseCase.ts",
-  quote(useCaseSource, 92, 105, "dependencies.userResolver"),
+  quote(useCaseSource, 92, 103, "dependencies.userResolver"),
   "",
   "// Output",
   quote(useCaseSource, 53, 53, "export type UseCaseOutput"),
@@ -50,13 +50,13 @@ const rows: readonly Row[] = [
   { stage: "結果を作る", lines: [15], file: "appointment.ts", code: quote(appointmentSource, 209, 233, "const cancel"), ok: [7, 12, 13, 16, 20] },
   {
     stage: "Event Store へ記録する",
-    lines: [16, 17, 18],
+    lines: [16],
     file: "appointmentEventStore.ts",
     code: [quote(storeSource, 185, 195, `case "AppointmentCanceled"`), "// …", quote(storeSource, 206, 212, "tx.insert(domainEventsTable)")].join("\n"),
     ok: [1, 2, 12, 13],
   },
-  { stage: "Output を作る", lines: [19], file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 105, 105, ".map((event)"), ok: [0] },
-  { stage: "Output", lines: [22], file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 53, 53, "export type UseCaseOutput"), ok: [0] },
+  { stage: "Output を作る", lines: [17], file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 103, 103, ".map((event)"), ok: [0] },
+  { stage: "Output", lines: [20], file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 53, 53, "export type UseCaseOutput"), ok: [0] },
 ];
 
 const outputRow = rows.length - 1;
