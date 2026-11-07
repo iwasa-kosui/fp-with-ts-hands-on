@@ -25,9 +25,12 @@ const values = [
   <script is:inline type="application/json" data-player-data set:html={data} />
 
   <div class="boundary-player__live" data-player-live>
-    <div class="boundary-player__scenarios" role="group" aria-label="入力を選ぶ">
+    <div class="boundary-player__scenarios" role="group" aria-label="場面を選ぶ">
       {walkthrough.scenarios.map((scenario) => (
-        <button type="button" data-scenario={scenario.id} aria-pressed="false">{scenario.label}</button>
+        <button type="button" data-scenario={scenario.id} aria-pressed="false">
+          {scenario.label}
+          <small>{scenario.note}</small>
+        </button>
       ))}
     </div>
     <div class="boundary-player__controls">
@@ -67,7 +70,7 @@ const values = [
   <div class="boundary-player__static" data-player-static>
     {walkthrough.scenarios.map((scenario) => (
       <section>
-        <h4>{scenario.label}</h4>
+        <h4>{scenario.label}（{scenario.note}）</h4>
         <ol>
           {scenario.frames.map((frame) => (
             <li data-status={frame.status}>
@@ -258,6 +261,18 @@ const values = [
     font-size: 0.875rem;
     font-weight: 700;
     cursor: pointer;
+  }
+
+  [data-scenario] {
+    border-radius: 0.5rem;
+    text-align: start;
+  }
+
+  [data-scenario] small {
+    display: block;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.75rem;
+    font-weight: 400;
   }
 
   button:disabled {

@@ -23,7 +23,7 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
   <h3 data-story-stage="use-case">追加したい機能</h3>
   <p>HTTPから届く予約IDと担当獣医師IDを検証し、正しい値だけをstartExaminationへ渡す。</p>
   <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
-  <p>raw: anyから値をコピーして必ずOkを返すため、night-shiftでもStartExaminationInputとして扱えます。アニメーションの「修正前の parse に night-shift」が、この状態です。</p>
+  <p>raw: anyから値をコピーして必ずOkを返すため、night-shiftでもStartExaminationInputとして扱えます。アニメーションの「同じ「夜勤」が、修正前のコードに届いた」が、この状態です。</p>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
   <p>AppointmentId.schemaとVeterinarianId.schemaをobject schemaへ組み合わせ、unknownの入力全体をparseしてbrand付きの入力へ変換する。</p>
   <h3>このセッションで守ること</h3>
@@ -79,7 +79,7 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
   <p><code>PaymentAmount.parse(1000)</code>はOkを返し、<code>0</code>、<code>-100</code>、<code>1.5</code>はどれもErrを返します。範囲を変えるときの修正箇所はschemaの1か所です。finalのschemaResultはneverthrowのResultを返す版で、brandには文字列ではなくSymbolを使いますが、形は上の表と同じです。<code>as</code>を使うと検査を飛ばせるので、レビューでは<code>as</code>が増えていないかを確かめます。</p>
   <aside class="decision-card boundary-limit" data-boundary-limit>
     <h3>この境界だけでは検出できない入力</h3>
-    <p>{"\n"}予約IDのUUIDが<code>veterinarianId</code>へ入った場合、UUIDという形式は正しいためschemaを通ります。アニメーションの「予約の UUID が獣医師の欄に入った」がこの入力です。Branded Typeは、外部データが何を指すUUIDかを判定する仕組みではありません。parseで確かめられるのは形式までです。{"\n"}</p>
+    <p>{"\n"}予約IDのUUIDが<code>veterinarianId</code>へ入った場合、UUIDという形式は正しいためschemaを通ります。アニメーションの「画面の不具合で、獣医師の欄に予約のIDが届いた」がこの入力です。Branded Typeは、外部データが何を指すUUIDかを判定する仕組みではありません。parseで確かめられるのは形式までです。{"\n"}</p>
     <p>そのUUIDが実在する獣医師を指すか確かめるには、獣医師マスターの参照が必要です。この確認はS4の演習範囲には含めません。</p>
   </aside>
   <aside class="decision-card">

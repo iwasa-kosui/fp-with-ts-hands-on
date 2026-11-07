@@ -22,6 +22,7 @@ export type Walkthrough = Readonly<{
   scenarios: readonly Readonly<{
     id: string;
     label: string;
+    note: string;
     frames: readonly WalkthroughFrame[];
   }>[];
 }>;
@@ -99,18 +100,16 @@ const startExaminationFiles: Walkthrough["files"] = [
 
 const startFrame = frameBuilder(startExaminationFiles);
 
-const rawOf = (veterinarianLine: string | null) =>
-  veterinarianLine === null
-    ? `{\n  appointmentId: "${appointmentUuid}",\n  veterinarianId: undefined,\n}`
-    : `{\n  appointmentId: "${appointmentUuid}",\n  veterinarianId: ${veterinarianLine},\n}`;
+const rawOf = (veterinarianLine: string) =>
+  `{\n  appointmentId: "${appointmentUuid}",\n  veterinarianId: ${veterinarianLine},\n}`;
 
-const arrivalFrames = (veterinarianLine: string | null) => [
+const arrivalFrames = (veterinarianLine: string) => [
   startFrame("route", {
     first: "const raw = await context.req.json",
     zone: 0,
     status: "neutral",
     valueLabel: "request body",
-    value: veterinarianLine === null ? "{}" : `{ veterinarianId: ${veterinarianLine} }`,
+    value: `{ veterinarianId: ${veterinarianLine} }`,
     text: "HTTPのリクエストが届きます。bodyの中身は、まだ何も確かめていません。",
   }),
   startFrame("route", {
@@ -125,7 +124,7 @@ const arrivalFrames = (veterinarianLine: string | null) => [
 ];
 
 const checkedFrames = (
-  veterinarianLine: string | null,
+  veterinarianLine: string,
   veterinarianPasses: boolean,
 ) => {
   const raw = rawOf(veterinarianLine);
@@ -169,7 +168,7 @@ const checkedFrames = (
       zone: 1,
       status: veterinarianPasses ? "pass" : "stop",
       valueLabel: `veterinarianId の検査: ${veterinarianPasses ? "UUID の形なので合格" : "UUID の形ではないので不合格"}`,
-      value: veterinarianLine ?? "undefined",
+      value: veterinarianLine,
       text: veterinarianPasses
         ? "2つ目の項目です。担当獣医師IDの欄の値もUUIDの形なので合格します。"
         : "2つ目の項目です。UUIDの形ではないので不合格です。",
@@ -263,13 +262,14 @@ const rejectedFrames = [
 export const startExaminationWalkthrough: Walkthrough = {
   title: "値が境界を通る様子",
   description:
-    "入力を選んで再生します。上の帯は値がいる場所、下のコードは今動いている行です。",
+    "場面を選んで再生します。上の帯は値がいる場所、下のコードは今動いている行です。",
   zones: ["外側", "境界", "内側"],
   files: startExaminationFiles,
   scenarios: [
     {
       id: "valid",
-      label: "正しい入力",
+      label: "受付が獣医師を選んで送信した",
+      note: "veterinarianId は獣医師の UUID",
       frames: [
         ...arrivalFrames(`"${veterinarianUuid}"`),
         ...checkedFrames(`"${veterinarianUuid}"`, true),
@@ -281,7 +281,8 @@ export const startExaminationWalkthrough: Walkthrough = {
     },
     {
       id: "night-shift",
-      label: "night-shift",
+      label: "画面の不具合で、獣医師の代わりに「夜勤」と届いた",
+      note: 'veterinarianId は "night-shift"',
       frames: [
         ...arrivalFrames(`"night-shift"`),
         ...checkedFrames(`"night-shift"`, false),
@@ -289,17 +290,9 @@ export const startExaminationWalkthrough: Walkthrough = {
       ],
     },
     {
-      id: "missing",
-      label: "veterinarianId がない",
-      frames: [
-        ...arrivalFrames(null),
-        ...checkedFrames(null, false),
-        ...rejectedFrames,
-      ],
-    },
-    {
       id: "wrong-uuid",
-      label: "予約の UUID が獣医師の欄に入った",
+      label: "画面の不具合で、獣医師の欄に予約のIDが届いた",
+      note: "veterinarianId は予約の UUID",
       frames: [
         ...arrivalFrames(`"${appointmentUuid}"`),
         ...checkedFrames(`"${appointmentUuid}"`, true),
@@ -311,7 +304,8 @@ export const startExaminationWalkthrough: Walkthrough = {
     },
     {
       id: "before",
-      label: "修正前の parse に night-shift",
+      label: "同じ「夜勤」が、修正前のコードに届いた",
+      note: "検査しない修正前の parse",
       frames: [
         ...arrivalFrames(`"night-shift"`),
         startFrame("parseBefore", {
@@ -413,13 +407,14 @@ const hiddenFrame = (
 
 export const sensitiveWalkthrough: Walkthrough = {
   title: "内側の値が外へ出る様子",
-  description: "出し方を選んで再生します。何も書かなければ伏せられ、unwrap と書いた箇所だけ平文が出ます。",
+  description: "場面を選んで再生します。何も書かなければ伏せられ、unwrap と書いた箇所だけ平文が出ます。",
   zones: ["内側", "境界", "外側（ログなど）"],
   files: sensitiveFiles,
   scenarios: [
     {
       id: "log",
-      label: "console.log",
+      label: "メールアドレスをログに書き出す",
+      note: "console.log(contact.ownerEmail)",
       frames: [
         ...wrappedFrames,
         hiddenFrame(
@@ -432,7 +427,8 @@ export const sensitiveWalkthrough: Walkthrough = {
     },
     {
       id: "json",
-      label: "JSON.stringify",
+      label: "連絡先全体を JSON にして書き出す",
+      note: "JSON.stringify(contact)",
       frames: [
         ...wrappedFrames,
         hiddenFrame(
@@ -445,7 +441,8 @@ export const sensitiveWalkthrough: Walkthrough = {
     },
     {
       id: "unwrap",
-      label: "unwrap",
+      label: "中身が必要な処理で平文を取り出す",
+      note: "contact.ownerEmail.unwrap()",
       frames: [
         ...wrappedFrames,
         sensitiveFrame("sensitive", {
