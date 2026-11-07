@@ -1,0 +1,241 @@
+.walk {
+  --walk-ink: var(--case-ink, #111116);
+  --walk-paper: var(--case-paper, #fffefa);
+  --walk-line: var(--case-line, #17204d);
+  --walk-blue: var(--case-blue, #2236b8);
+  --walk-muted: var(--case-muted, #58596d);
+  --walk-lemon: var(--case-lemon, #fff29f);
+  --walk-mint: var(--case-mint, #bcebd7);
+  --walk-coral: var(--case-coral, #ff8f7d);
+  --walk-divider: var(--case-divider, #dedccf);
+  container: walk / inline-size;
+  min-width: 0;
+  max-width: 100%;
+  margin-block: 1.5rem;
+  padding: 1rem;
+  border: 2px solid var(--walk-line);
+  background: var(--walk-paper);
+  color: var(--walk-ink);
+}
+
+.walk__title {
+  margin-block-start: 0;
+}
+
+.walk__lead {
+  margin-block: 0 0.5rem;
+}
+
+.walk__note {
+  margin-block: 0 0.75rem;
+  color: var(--walk-muted);
+  font-size: 0.875rem;
+}
+
+.walk__tabs,
+.walk__sticky {
+  display: none;
+}
+
+.walk[data-walk-ready] .walk__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-block: 0.75rem;
+}
+
+.walk[data-walk-ready] .walk__sticky {
+  --walk-live-floor: calc(5.1em + 1.2rem);
+  position: sticky;
+  top: calc(var(--case-scroll-offset, 1.5rem) - 1.5rem);
+  z-index: 2;
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.75rem -1rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 2px solid var(--walk-line);
+  background: var(--walk-paper);
+}
+
+.walk__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.walk__btn {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.9rem;
+  border: 2px solid var(--walk-line);
+  background: var(--walk-paper);
+  color: var(--walk-ink);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.walk__btn:focus-visible {
+  outline: 3px solid var(--walk-blue);
+  outline-offset: 2px;
+}
+
+.walk__btn[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.walk__btn[aria-pressed="true"] {
+  background: var(--walk-blue);
+  color: var(--walk-paper);
+}
+
+.walk__btn--play {
+  min-width: 8.5rem;
+  background: var(--walk-lemon);
+}
+
+.walk__progress {
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.walk__live {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-inline-start: 0.35rem solid var(--walk-blue);
+  background: color-mix(in srgb, var(--walk-lemon) 55%, var(--walk-paper));
+  line-height: 1.7;
+  min-height: var(--walk-live-floor);
+}
+
+@container walk (max-width: 34rem) {
+  .walk[data-walk-ready] .walk__sticky {
+    --walk-live-floor: calc(2 * 1.5em + 0.6rem);
+    gap: 0.3rem;
+    margin-block: 0.5rem;
+    padding: 0.3rem 0.6rem;
+  }
+
+  .walk__bar {
+    flex-wrap: nowrap;
+    gap: 0.2rem;
+  }
+
+  .walk__btn {
+    min-width: 0;
+    min-height: 2.5rem;
+    padding: 0.2rem 0.3rem;
+    font-size: clamp(0.72rem, 3.8cqi, 0.82rem);
+    white-space: nowrap;
+  }
+
+  .walk__btn--play {
+    min-width: 0;
+  }
+
+  .walk__progress {
+    font-size: clamp(0.72rem, 3.8cqi, 0.82rem);
+    white-space: nowrap;
+  }
+
+  .walk__live {
+    padding: 0.3rem 0.4rem;
+    border-inline-start-width: 0.2rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+}
+
+.walk__scenes {
+  display: grid;
+  gap: 0.75rem;
+  margin-block: 0.75rem;
+}
+
+.walk__scene h4 {
+  margin: 0 0 0.25rem;
+}
+
+.walk__scene ol {
+  margin: 0;
+  padding-inline-start: 1.5rem;
+  line-height: 1.7;
+}
+
+.walk[data-walk-ready] .walk__scenes {
+  display: none;
+}
+
+.walk__figure {
+  min-width: 0;
+}
+
+.walk-badge {
+  flex: none;
+  padding: 0.05rem 0.7rem;
+  border: 2px solid currentColor;
+  border-radius: 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.walk-badge--before {
+  background: #f6b3a5;
+  color: #5c1409;
+}
+
+.walk-badge--after {
+  background: #a9e3c6;
+  color: #0b3d2a;
+}
+
+.walk-badge--ref {
+  background: #e4e5ee;
+  color: #1f2140;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .walk *,
+  .walk *::before,
+  .walk *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .walk__btn--play {
+    display: none;
+  }
+
+  .walk[data-walk-ready] .walk__scenes {
+    display: grid;
+  }
+
+  .walk[data-walk-ready] .walk__scene:not([data-current]) {
+    display: none;
+  }
+
+  .walk__scene li[aria-current="step"] {
+    font-weight: 800;
+  }
+
+  .walk[data-walk-ready] .walk__live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-height: 0;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

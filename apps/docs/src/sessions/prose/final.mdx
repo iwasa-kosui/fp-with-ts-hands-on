@@ -1,4 +1,5 @@
 import { Fragment } from "astro/jsx-runtime";
+import FinalBoundariesAnimation from "../../components/effects-walkthrough/FinalBoundariesAnimation.astro";
 
 <section id="incident">
   <h2>何が起きたか</h2>
@@ -13,6 +14,7 @@ import { Fragment } from "astro/jsx-runtime";
 
 <section id="review">
   <h2>5つの境界を確認する</h2>
+  <FinalBoundariesAnimation />
   <p>ひとりの場合は、次のファイルを順に開いて該当箇所を探します。ハンズオンでは進行役が5分を目安に案内します。参照実装の起動やDBの操作は必要ありません。</p>
   <ol class="decision-list">
     <li><strong>入力境界</strong><Fragment set:html="<br>" />{"\n"}<code>examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts</code> で診察開始のHTTP入力を検証し、ユースケース入力へ変換する箇所を探します。{"\n"}</li>
