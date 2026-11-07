@@ -1,6 +1,5 @@
 import { Code } from "astro:components";
-import AnimatedExplanation from "../../components/animated-explanation/AnimatedExplanation.astro";
-import { cancelRailway } from "../../animations/s1";
+import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astro";
 
 <section id="incident">
   <h2>予約のデータから始める</h2>
@@ -78,7 +77,7 @@ import { cancelRailway } from "../../animations/s1";
   <p>{"\n"}Railway Oriented Programmingは、処理の流れを成功と失敗の2本のレールで捉える考え方です。一方は処理に成功した場合の経路、もう一方は失敗した場合の経路を表します。{"\n"}</p>
   <p>各工程が成功したら、その出力を次の工程へ渡します。失敗したら下のレールへ移り、後続の成功処理をスキップします。図の4工程は、前の表の4工程と同じです。図を左からたどり、どの条件で失敗のレールへ切り替わるかを確認してください。</p>
   <RailwayOrientedProgramming />
-  <AnimatedExplanation animation={cancelRailway} />
+  <CancelRailwayAnimation />
 
   <h3>なぜROPを利用するのか</h3>
   <p>{"\n"}それぞれの処理で発生する失敗を同じフローで扱い、その失敗を網羅的に検証することで、変更箇所とテスト観点を追いやすくなります。これにより、「キャンセル先の予約が存在しない」、「キャンセルする権限がない」などさまざまな理由で止まっても、それを適切にハンドリングでき、全体の処理のうち一部だけ処理されて不整合が発生することを防げます。{"\n"}</p>

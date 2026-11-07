@@ -1,0 +1,54 @@
+---
+import css from "./step-player.css?raw";
+import player from "./step-player.js?raw";
+
+type StepPlayerScenario = Readonly<{
+  label: string;
+  steps: readonly string[];
+}>;
+
+type Props = Readonly<{
+  id: string;
+  title: string;
+  lead?: string;
+  note?: string;
+  scenarios: readonly StepPlayerScenario[];
+}>;
+
+const { id, title, lead, note, scenarios } = Astro.props;
+---
+
+<style is:inline set:html={css}></style>
+<figure class="step-player" data-step-player id={id}>
+  <figcaption class="step-player__title">{title}</figcaption>
+  {lead && <p class="step-player__lead" set:html={lead} />}
+  <div class="step-player__scene" data-step-player-scene hidden aria-hidden="true"><slot /></div>
+  <div class="step-player__controls" data-step-player-controls hidden>
+    {scenarios.length > 1 && (
+      <div class="step-player__tabs" role="group" aria-label="場面を選ぶ">
+        {scenarios.map((scenario) => (
+          <button type="button" data-step-player-tab aria-pressed="false">{scenario.label}</button>
+        ))}
+      </div>
+    )}
+    <div class="step-player__buttons">
+      <button type="button" data-step-player-action="restart">最初へ</button>
+      <button type="button" data-step-player-action="back">前へ</button>
+      <button type="button" data-step-player-action="play">再生</button>
+      <button type="button" data-step-player-action="forward">次へ</button>
+      <span class="step-player__progress" data-step-player-progress></span>
+    </div>
+  </div>
+  <div class="step-player__steps" aria-live="polite">
+    {scenarios.map((scenario) => (
+      <div data-step-player-scenario>
+        <p class="step-player__scenario-title">{scenario.label}</p>
+        <ol>{scenario.steps.map((text) => <li set:html={text} />)}</ol>
+      </div>
+    ))}
+  </div>
+  {note && <p class="step-player__note" set:html={note} />}
+</figure>
+
+{/* hoisted script にすると、アニメーションの無いページの目次スクリプトまで別ファイルに分かれる */}
+<script is:inline type="module" set:html={`${player}\ndocument.addEventListener("DOMContentLoaded", initStepPlayers);`}></script>

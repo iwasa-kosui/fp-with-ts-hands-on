@@ -1,0 +1,167 @@
+---
+import StepPlayer from "./step-player/StepPlayer.astro";
+
+type Step = Readonly<{
+  text: string;
+  stage: number;
+  failedAt?: number;
+  state: "run" | "fail" | "skip" | "end";
+  input: string;
+  output: string;
+}>;
+
+const stageNames = ["入力を検査する", "対象を取得する", "権限と状態を確認する", "結果を作る", "Output"];
+const stageJobs = [
+  "キャンセル理由が空でないことを確かめます。",
+  "実行者と予約をデータベースから取得します。",
+  "予約を管理する権限と、予約が診察開始前であることを確かめます。",
+  "キャンセル後の予約とイベントを作ります。",
+  "呼び出し側が結果を受け取ります。",
+];
+
+const appointmentId = `"11111111-1111-4111-8111-111111111111"`;
+const request = (reason: string) => `予約ID: ${appointmentId}\n実行者ID: （受付担当者の ID）\nキャンセル理由: ${reason}`;
+const checkedInput = `検査済みの入力\n${request(`"owner request"`)}`;
+const resolved = (kind: string) => `実行者: 受付担当者\n予約: {\n  kind: "${kind}",\n  appointmentId: ${appointmentId},\n  scheduledAt: "2026-08-30T06:30:00.000Z",\n  reason: "skin check",\n}`;
+const allowed = `予約: {\n  kind: "Scheduled",\n  appointmentId: ${appointmentId},\n  scheduledAt: "2026-08-30T06:30:00.000Z",\n  reason: "skin check",\n}\nキャンセル理由: "owner request"`;
+const canceled = `AppointmentCanceled {\n  kind: "Canceled",\n  appointmentId: ${appointmentId},\n  scheduledAt: "2026-08-30T06:30:00.000Z",\n  reason: "owner request",\n  canceledAt: "2026-08-30T05:00:00.000Z",\n}`;
+
+const carried = (failure: string, stage: number, failedAt: number, text: string): Step => ({
+  text,
+  stage,
+  failedAt,
+  state: stage === 4 ? "end" : "skip",
+  input: failure,
+  output: stage === 4 ? "呼び出し側が失敗の理由を受け取ります" : failure,
+});
+
+const emptyReason = `失敗\n理由: キャンセル理由が空である`;
+const notManageable = `失敗\n理由: 予約が診察開始前ではない\n（kind: "Paid"）`;
+
+const scenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }>)[] = [
+  {
+    label: "成功",
+    steps: [
+      { text: "予約ID、実行者ID、キャンセル理由を受け取ります。理由が入っているので、検査済みの入力を次へ渡します。", stage: 0, state: "run", input: request(`"owner request"`), output: checkedInput },
+      { text: "検査済みの入力を受け取り、実行者と予約を取得します。実行者と予約のデータを次へ渡します。", stage: 1, state: "run", input: checkedInput, output: resolved("Scheduled") },
+      { text: "実行者に権限があり、予約は診察開始前の <code>Scheduled</code> です。診察開始前の予約を次へ渡します。", stage: 2, state: "run", input: resolved("Scheduled"), output: allowed },
+      { text: "診察開始前の予約とキャンセル理由から、<code>Canceled</code> のデータを持つ <code>AppointmentCanceled</code> を作ります。", stage: 3, state: "run", input: allowed, output: canceled },
+      { text: "値は上のレールの終点に届きます。呼び出し側は <code>AppointmentCanceled</code> を受け取ります。", stage: 4, state: "end", input: canceled, output: "呼び出し側が AppointmentCanceled を受け取ります" },
+    ],
+  },
+  {
+    label: "理由が空",
+    steps: [
+      { text: "キャンセル理由が空の依頼を受け取ります。検査は失敗し、値は下のレールへ切り替わります。次へ渡す値は失敗の理由です。", stage: 0, failedAt: 0, state: "fail", input: request(`""`), output: emptyReason },
+      carried(emptyReason, 1, 0, "失敗の値は下のレールを進みます。「対象を取得する」は実行しないので、予約を取得しません。"),
+      carried(emptyReason, 2, 0, "失敗の値はそのまま進みます。「権限と状態を確認する」も実行しません。"),
+      carried(emptyReason, 3, 0, "「結果を作る」も実行しません。失敗の値は変わりません。"),
+      carried(emptyReason, 4, 0, "失敗の値は下のレールの終点に届きます。呼び出し側は失敗の理由を受け取ります。理由のないキャンセルは記録されません。"),
+    ],
+  },
+  {
+    label: "Paid の予約",
+    steps: [
+      { text: "理由が入った依頼を受け取ります。検査は成功します。", stage: 0, state: "run", input: request(`"owner request"`), output: checkedInput },
+      { text: "実行者と予約を取得します。この予約の <code>kind</code> は <code>Paid</code> です。", stage: 1, state: "run", input: checkedInput, output: resolved("Paid") },
+      { text: "<code>Paid</code> は診察開始前ではないので、確認は失敗します。値は下のレールへ切り替わります。", stage: 2, failedAt: 2, state: "fail", input: resolved("Paid"), output: notManageable },
+      carried(notManageable, 3, 2, "失敗の値は下のレールを進みます。「結果を作る」は実行しないので、<code>Canceled</code> は作られません。"),
+      carried(notManageable, 4, 2, "失敗の値は下のレールの終点に届きます。呼び出し側は失敗の理由を受け取ります。記録は動きません。"),
+    ],
+  },
+];
+
+const playerScenarios = scenarios.map(({ label, steps }) => ({ label, steps: steps.map(({ text }) => text) }));
+const sceneData = JSON.stringify({
+  names: stageNames,
+  jobs: stageJobs,
+  scenarios: scenarios.map(({ steps }) => steps.map(({ text: _text, ...step }) => step)),
+});
+const id = "cancel-railway-animation";
+---
+
+<StepPlayer
+  id={id}
+  title="キャンセルの依頼が各工程で何を受け取り、何を渡すか"
+  lead="上の図で値の位置を、下の3つの枠で入力と出力を確かめます。失敗しても処理は途中で抜けません。失敗の値は下のレールを終点まで進みます。"
+  note="予約のデータはこのページの例と同じです。実行者 ID と受付担当者は説明用の表記です。Paid の場面の予約は、説明用に kind だけを変えたものです。"
+  scenarios={playerScenarios}
+>
+  <div class="cancel-rail" data-cancel-rail={sceneData}>
+    <div class="cancel-rail__map">
+      <span class="cancel-rail__token" data-token></span>
+      <div class="cancel-rail__line cancel-rail__line--ok"></div>
+      <div class="cancel-rail__line cancel-rail__line--bad"></div>
+      {stageNames.map((name, index) => (
+        <div class="cancel-rail__stop" data-stop style={`--index:${index}`}>
+          <span class="cancel-rail__dot" data-dot>{index === 4 ? "" : index + 1}</span>
+          <span class="cancel-rail__name">{name}</span>
+          <span class="cancel-rail__dot cancel-rail__dot--bad"></span>
+        </div>
+      ))}
+    </div>
+    <div class="cancel-rail__io">
+      <div class="cancel-rail__box"><p>受け取るデータ</p><pre data-input></pre></div>
+      <div class="cancel-rail__job" data-job-box><strong data-name></strong><span data-job></span></div>
+      <div class="cancel-rail__box" data-output-box><p>次へ渡すデータ</p><pre data-output></pre></div>
+    </div>
+  </div>
+</StepPlayer>
+
+<style is:inline>
+  .cancel-rail { --ok: #137333; --bad: #b42318; display: grid; gap: 1rem; min-width: 0; }
+  .cancel-rail__map { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); min-width: 0; }
+  .cancel-rail__line { position: absolute; left: 10%; right: 10%; height: 5px; border-radius: 3px; }
+  .cancel-rail__line--ok { top: 0.75rem; background: var(--ok); }
+  .cancel-rail__line--bad { bottom: 0.75rem; background: var(--bad); }
+  .cancel-rail__stop { position: relative; display: grid; justify-items: center; gap: 0.375rem; text-align: center; min-width: 0; }
+  .cancel-rail__dot { z-index: 1; display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border: 3px solid var(--ok); border-radius: 50%; background: var(--case-paper, #fffefa); font-size: 0.75rem; font-weight: 800; transition: background-color 250ms ease, opacity 250ms ease; }
+  .cancel-rail__dot--bad { border-color: var(--bad); }
+  .cancel-rail__dot[data-state="ok"] { background: #dff5e7; }
+  .cancel-rail__dot[data-state="bad"] { background: #fde7e4; border-color: var(--bad); }
+  .cancel-rail__dot[data-state="skip"] { opacity: 0.35; }
+  .cancel-rail__name { min-height: 3.25em; font-size: 0.75rem; line-height: 1.35; overflow-wrap: anywhere; }
+  .cancel-rail__stop[data-current] .cancel-rail__name { font-weight: 800; }
+  .cancel-rail__token { position: absolute; z-index: 2; left: calc((var(--stage, 0) + 0.5) * 20%); top: 0.875rem; width: 1.125rem; height: 1.125rem; margin: -0.5625rem 0 0 -0.5625rem; border: 3px solid var(--case-paper, #fffefa); border-radius: 50%; background: var(--case-blue, #2236b8); box-shadow: 0 0 0 2px var(--case-blue, #2236b8); transition: left 600ms cubic-bezier(0.3, 0.8, 0.3, 1), top 600ms cubic-bezier(0.3, 0.8, 0.3, 1); }
+  .cancel-rail__token[data-rail="bad"] { top: calc(100% - 0.875rem); background: var(--bad); box-shadow: 0 0 0 2px var(--bad); }
+  .cancel-rail__io { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.7fr) minmax(0, 1fr); gap: 0.5rem; }
+  .cancel-rail__box, .cancel-rail__job { min-width: 0; padding: 0.625rem; border: 1.5px solid var(--case-line, #17204d); border-radius: 0.375rem; }
+  .cancel-rail__box p { margin: 0 0 0.25rem; color: var(--case-muted, #58596d); font-size: 0.75rem; font-weight: 700; }
+  .cancel-rail__box pre { margin: 0; padding: 0; background: none; color: inherit; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.75rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .cancel-rail__box[data-bad] { border-color: var(--bad); background: #fde7e4; color: var(--bad); }
+  .cancel-rail__job { display: grid; align-content: center; gap: 0.25rem; background: var(--case-lemon, #fff29f); font-size: 0.8125rem; line-height: 1.5; }
+  .cancel-rail__job[data-state="skip"] { background: none; color: var(--case-muted, #58596d); border-style: dashed; }
+  .cancel-rail__job[data-state="fail"] { background: #fde7e4; border-color: var(--bad); }
+  @container (max-width: 34rem) { .cancel-rail__io { grid-template-columns: minmax(0, 1fr); } }
+  .step-player__scene:has(.cancel-rail) { container-type: inline-size; }
+</style>
+<script is:inline define:vars={{ id }}>
+  const root = document.getElementById(id);
+  const scene = root.querySelector("[data-cancel-rail]");
+  const data = JSON.parse(scene.dataset.cancelRail);
+  const token = scene.querySelector("[data-token]");
+  const stops = [...scene.querySelectorAll("[data-stop]")];
+  const dotState = (index, { stage, failedAt }) => {
+    if (failedAt === undefined) return index < stage ? "ok" : "";
+    if (index < failedAt) return "ok";
+    if (index === failedAt) return "bad";
+    return index <= stage ? "skip" : "";
+  };
+  root.addEventListener("stepchange", ({ detail }) => {
+    const step = data.scenarios[detail.scenarioIndex][detail.stepIndex];
+    const onBadRail = step.failedAt !== undefined;
+    token.style.setProperty("--stage", String(step.stage));
+    token.dataset.rail = onBadRail ? "bad" : "ok";
+    stops.forEach((stop, index) => {
+      stop.toggleAttribute("data-current", index === step.stage);
+      stop.querySelector("[data-dot]").dataset.state = dotState(index, step);
+    });
+    scene.querySelector("[data-input]").textContent = step.input;
+    scene.querySelector("[data-output]").textContent = step.output;
+    scene.querySelector("[data-name]").textContent = data.names[step.stage];
+    scene.querySelector("[data-job]").textContent =
+      step.state === "skip" ? "失敗レールの上なので、この工程は実行しません。" : data.jobs[step.stage];
+    scene.querySelector("[data-job-box]").dataset.state = step.state;
+    scene.querySelector("[data-output-box]").toggleAttribute("data-bad", onBadRail);
+  });
+</script>
