@@ -99,7 +99,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
       <figcaption>NoShowを追加したのに、表示名の分岐を追加し忘れた例</figcaption>
       <Code code={props.teaching[2].example} lang="ts" />
     </figure>
-    <p class="teaching-topic__why">before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after でNoShowのcaseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverへ渡せないため、コンパイルエラーになります。網羅性検証を使うすべての分岐で同じエラーが出るので、コンパイラが新しい状態の影響箇所を示します。assertNeverの戻り値はnever型なので、stringを返す関数のdefaultでそのままreturnできます。</p>
+    <p class="teaching-topic__why">before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after でNoShowのcaseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverの引数の型neverに合わないため、コンパイルエラーになります。網羅性検証を使うすべての分岐で同じエラーが出るので、コンパイラが新しい状態の影響箇所を示します。assertNeverの戻り値はnever型なので、stringを返す関数のdefaultでそのままreturnできます。</p>
   </article>
 </section>
 

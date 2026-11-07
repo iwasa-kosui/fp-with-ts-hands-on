@@ -64,7 +64,7 @@ export const session: SessionSummary = {
   steps: [
     {
       id: "s2-narrow-start",
-      goal: "会計済み・キャンセル済みの来院は診察を開始できないようにする。",
+      goal: "会計済み・キャンセル済みの来院で診察を開始するコードを、コンパイルエラーにする。",
       startingFailure: "会計済み・キャンセル済みでも診察を開始できる。",
       targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
       solutions: [{
@@ -86,7 +86,7 @@ export const session: SessionSummary = {
     },
     {
       id: "s2-align-transitions",
-      goal: "診察結果の記録前には会計できないようにし、残りの遷移も許可された遷移元だけを受け取る規約にそろえる。",
+      goal: "診察結果の記録前に会計するコードをコンパイルエラーにし、残りの遷移も許可された遷移元だけを受け取る規約にそろえる。",
       startingFailure: "診察結果の記録前や、許可されていない状態から操作できる。",
       targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
       solutions: [{
@@ -98,7 +98,7 @@ export const session: SessionSummary = {
   ],
   decisions: [
     {
-      invariant: "診察結果を記録するまで会計できず、許可されていない状態遷移を型で拒否する。",
+      invariant: "診察結果の記録前の会計と、許可されていない状態遷移を、型検査で拒否する。",
     },
     {
       invariant: "各状態に必要な情報が欠けた予約の値を、型で作れないようにする。",
