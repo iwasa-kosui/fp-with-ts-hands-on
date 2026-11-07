@@ -69,9 +69,12 @@ const initPlayer = (root) => {
   play.addEventListener("click", () => {
     if (timer !== undefined) {
       stop();
-    } else {
-      if (stepIndex === stepCount() - 1) stepIndex = 0;
+    } else if (stepIndex === stepCount() - 1) {
+      stepIndex = 0;
       schedule();
+    } else {
+      stepIndex = nextStep(stepIndex, stepCount());
+      if (stepIndex !== stepCount() - 1) schedule();
     }
     render();
   });
