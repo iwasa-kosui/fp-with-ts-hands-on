@@ -1,0 +1,205 @@
+---
+import { Code } from "astro:components";
+import routesSource from "../../../../examples/session-06/src/web/routes.ts?raw";
+import useCaseSource from "../../../../examples/session-06/src/useCase/startExamination.ts?raw";
+import handlerSource from "../sessions/solutions/session-05-start-examination-handler.ts.txt?raw";
+import StepPlayer from "./step-player/StepPlayer.astro";
+
+// 解答の行がずれたら、古いコードを見せないようにビルドを失敗させる
+const quote = (source: string, from: number, to: number, firstLine: string): string => {
+  const lines = source.split("\n").slice(from - 1, to);
+  if (!lines[0]?.includes(firstLine)) throw new Error(`引用元の行がずれています: ${firstLine}`);
+  const indent = Math.min(...lines.filter((line) => line.trim() !== "").map((line) => line.search(/\S/)));
+  return lines.map((line) => line.slice(indent)).join("\n");
+};
+
+const useCaseCode = quote(useCaseSource, 26, 44, "export const startExamination");
+const webCode = [
+  quote(handlerSource, 14, 21, "return result.match"),
+  "",
+  quote(routesSource, 40, 47, "switch (error.kind)"),
+].join("\n");
+const useCaseLines = useCaseCode.split("\n");
+const webLines = webCode.split("\n");
+
+const boundaryItems = ["app.onError で例外を受け取る", "500 を返す"];
+
+type Kind = "biz" | "sys";
+type Place = "use" | "web" | "boundary";
+type Mark = "ok" | Kind;
+
+type Step = Readonly<{
+  text: string;
+  kind: Kind;
+  at: Place;
+  badge: string;
+  mark: Mark;
+  lines: readonly number[];
+  skipped?: readonly number[];
+  connector?: Kind;
+}>;
+
+const range = (from: number, to: number): readonly number[] => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+
+const scenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }>)[] = [
+  {
+    label: "予約が見つからない（業務エラー）",
+    steps: [
+      { kind: "biz", at: "use", badge: "undefined", mark: "ok", lines: [4], text: "受付が、存在しない予約IDで診察開始を依頼します。<code>resolver.resolveById</code> は予約を見つけられず、<code>undefined</code> を返します。" },
+      { kind: "biz", at: "use", badge: "Err", mark: "biz", lines: [3, 4, 5, 6], text: "<code>ensureAppointmentFound</code> は例外を投げず、<code>AppointmentNotFound</code> を Err として返します。" },
+      { kind: "biz", at: "use", badge: "Err", mark: "biz", lines: [], skipped: range(7, 18), text: "結果が Err なので、後続の <code>andThen</code> と <code>map</code> は呼ばれません。状態遷移も保存も実行されません。" },
+      { kind: "biz", at: "use", badge: "Err", mark: "biz", lines: [2], skipped: range(7, 18), connector: "biz", text: "<code>startExamination</code> は Err を値として返します。戻り値の型に、この失敗が書かれています。" },
+      { kind: "biz", at: "web", badge: "Err", mark: "biz", lines: [2, 3, 4, 5, 6, 9, 10, 11], connector: "biz", text: "Web ルートの <code>match</code> が失敗側で Err を受け取り、<code>switch</code> で予約が見つからないときの notice へ変換します。受付は予約を探し直せます。" },
+    ],
+  },
+  {
+    label: "保存中に接続が切れた（システムエラー）",
+    steps: [
+      { kind: "sys", at: "use", badge: "Ok", mark: "ok", lines: range(3, 7), text: "予約は見つかり、来院済みです。<code>ensureAppointmentFound</code> と <code>ensureCheckedIn</code> は Ok を返します。" },
+      { kind: "sys", at: "use", badge: "Ok", mark: "ok", lines: range(8, 16), text: "状態遷移で診察中の予約を作り、<code>store.save</code> で保存します。" },
+      { kind: "sys", at: "use", badge: "例外", mark: "sys", lines: [16], text: "保存の途中でデータベースへの接続が切れ、<code>store.save</code> が例外を投げます。保存が完了したかは分かりません。" },
+      { kind: "sys", at: "use", badge: "例外", mark: "sys", lines: range(15, 16), skipped: [17, 18], connector: "sys", text: "この例外は Result に変換しません。<code>startExamination</code> は値を返さずに抜け、Web ルートの <code>match</code> と <code>switch</code> には届きません。" },
+      { kind: "sys", at: "boundary", badge: "例外", mark: "sys", lines: [0, 1], connector: "sys", text: "外側の例外境界（<code>app.onError</code>）が例外を受け取り、500 を返します。受付が理由ごとに選べる操作はありません。" },
+    ],
+  },
+];
+
+const pathName = { biz: "業務エラーの経路", sys: "例外の経路" } as const;
+const placeName = { use: "startExamination", web: "Web ルートの match と switch", boundary: "外側の例外境界" } as const;
+const escapeHtml = (text: string): string => text.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
+const excerpt = ({ at, lines }: Step): string => {
+  if (at === "boundary") return lines.map((line) => boundaryItems[line]).join("\n");
+  const source = at === "use" ? useCaseLines : webLines;
+  return lines.map((line) => source[line]).join("\n");
+};
+const codeHtml = (step: Step): string => (step.lines.length > 0 ? "<pre>" + escapeHtml(excerpt(step)) + "</pre>" : "");
+const stepHtml = (step: Step): string =>
+  `${step.text}<div data-step-extra><p>経路: ${pathName[step.kind]}</p><p>今の位置: ${placeName[step.at]}</p>${codeHtml(step)}</div>`;
+const playerScenarios = scenarios.map(({ label, steps }) => ({ label, steps: steps.map(stepHtml) }));
+
+const sceneData = JSON.stringify(
+  scenarios.map(({ steps }) =>
+    steps.map(({ kind, at, badge, mark, lines, skipped, connector }) => ({ kind, at, badge, mark, lines, skipped: skipped ?? [], connector: connector ?? null })),
+  ),
+);
+const id = "exception-or-result-animation";
+---
+
+<StepPlayer
+  id={id}
+  title="業務エラーとシステムエラーの行き先"
+  lead="予約が見つからない失敗と、保存中に接続が切れた失敗を、同じ startExamination で追います。"
+  note="コードは S04 の解答（examples/session-06/src）から引用しました。"
+  scenarios={playerScenarios}
+>
+  <div class="exc-flow" data-exc-flow={sceneData}>
+    <div class="exc-flow__legend">
+      <span class="exc-flow__legend-biz">業務エラーの経路: 橙色の破線</span>
+      <span class="exc-flow__legend-sys">例外の経路: 赤色の実線</span>
+    </div>
+    <div class="exc-flow__map">
+      <div class="exc-flow__box" data-place="use" style="grid-area: use">
+        <p class="exc-flow__title">startExamination（ユースケース）<span class="exc-flow__badge" data-badge></span></p>
+        <div data-code="use"><Code code={useCaseCode} lang="ts" /></div>
+      </div>
+      <div class="exc-flow__connector" data-connector="biz" style="grid-area: c1"><span>Err を返す</span></div>
+      <div class="exc-flow__connector" data-connector="sys" style="grid-area: c2"><span>例外が伝わる</span></div>
+      <div class="exc-flow__box" data-place="web" style="grid-area: web">
+        <p class="exc-flow__title">Web ルートの match と switch → notice<span class="exc-flow__badge" data-badge></span></p>
+        <div data-code="web"><Code code={webCode} lang="ts" /></div>
+      </div>
+      <div class="exc-flow__box" data-place="boundary" style="grid-area: boundary">
+        <p class="exc-flow__title">外側の例外境界（app.onError）→ 500<span class="exc-flow__badge" data-badge></span></p>
+        <ol class="exc-flow__boundary">
+          {boundaryItems.map((item) => <li>{item}</li>)}
+        </ol>
+      </div>
+    </div>
+  </div>
+</StepPlayer>
+
+<style is:inline>
+  .exc-flow { --biz: #b45309; --sys: #b42318; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; min-width: 0; }
+  .exc-flow__legend { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.75rem; font-weight: 700; }
+  .exc-flow__legend-biz { color: var(--biz); }
+  .exc-flow__legend-sys { color: var(--sys); }
+  .exc-flow__map { display: grid; gap: 0.5rem 0.75rem; min-width: 0; grid-template-columns: minmax(0, 1fr); grid-template-areas: "use" "c1" "web" "c2" "boundary"; }
+  .exc-flow__box { min-width: 0; padding: 0.5rem; border: 3px solid var(--case-line, #17204d); border-radius: 0.375rem; background: var(--case-paper, #fffefa); transition: opacity 200ms ease, border-color 200ms ease; }
+  .exc-flow__box[data-reached="false"] { opacity: 0.4; }
+  .exc-flow__box[data-current][data-kind="biz"] { border-style: dashed; border-color: var(--biz); }
+  .exc-flow__box[data-current][data-kind="sys"] { border-style: solid; border-color: var(--sys); }
+  .exc-flow__title { margin: 0 0 0.375rem; font-size: 0.8125rem; font-weight: 800; }
+  .exc-flow__badge { display: none; margin-left: 0.5rem; padding: 0 0.4375rem; border-radius: 999px; color: #ffffff; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.6875rem; font-weight: 800; }
+  .exc-flow__badge[data-mark] { display: inline-block; }
+  .exc-flow__badge[data-mark="ok"] { background: #137333; }
+  .exc-flow__badge[data-mark="biz"] { background: var(--biz); }
+  .exc-flow__badge[data-mark="sys"] { background: var(--sys); }
+  .exc-flow pre { margin: 0; padding: 0.5rem 0.625rem; border-radius: 0.25rem; overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.8125rem; line-height: 1.5; }
+  .exc-flow pre code { display: flex; flex-direction: column; min-width: max-content; background: none; padding: 0; color: inherit; font-size: inherit; }
+  .exc-flow .line { display: block; min-height: 1.5em; white-space: pre; margin: 0 -0.625rem; padding: 0 0.625rem; border-left: 3px solid transparent; transition: background-color 200ms ease, opacity 200ms ease; }
+  .exc-flow .line[data-hi="ok"] { background: rgb(255 210 27 / 0.24); border-left: 3px solid #ffd21b; }
+  .exc-flow .line[data-hi="biz"] { background: rgb(245 158 11 / 0.3); border-left: 3px dashed #f59e0b; }
+  .exc-flow .line[data-hi="sys"] { background: rgb(244 63 94 / 0.3); border-left: 3px solid #fb7185; }
+  .exc-flow .line[data-state="skipped"] { opacity: 0.35; }
+  .exc-flow__boundary { margin: 0; padding-left: 1.5rem; font-size: 0.8125rem; line-height: 1.7; }
+  .exc-flow__boundary li[data-hi] { background: rgb(244 63 94 / 0.14); box-shadow: -0.375rem 0 0 rgb(244 63 94 / 0.14); font-weight: 700; }
+  .exc-flow__connector { position: relative; display: flex; align-items: center; justify-content: center; min-height: 2.5rem; font-size: 0.75rem; font-weight: 700; opacity: 0.3; transition: opacity 200ms ease; }
+  .exc-flow__connector::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; }
+  .exc-flow__connector span { position: relative; padding: 0.125rem 0.25rem; background: var(--case-paper, #fffefa); }
+  .exc-flow__connector span::after { content: " ↓"; }
+  .exc-flow__connector[data-own] { opacity: 0.6; }
+  .exc-flow__connector[data-active] { opacity: 1; }
+  .exc-flow__connector[data-connector="biz"] { color: var(--biz); }
+  .exc-flow__connector[data-connector="sys"] { color: var(--sys); }
+  .exc-flow__connector[data-connector="biz"]::before { border-left: 3px dashed var(--biz); }
+  .exc-flow__connector[data-connector="sys"]::before { border-left: 3px solid var(--sys); }
+  @media (min-width: 641px) {
+    .exc-flow__map { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "use use" "c1 c2" "web boundary"; }
+  }
+</style>
+<script is:inline define:vars={{ id }}>
+  const root = document.getElementById(id);
+  const scene = root.querySelector("[data-exc-flow]");
+  const data = JSON.parse(scene.dataset.excFlow);
+  const boxes = Object.fromEntries([...scene.querySelectorAll("[data-place]")].map((box) => [box.dataset.place, box]));
+  const connectors = Object.fromEntries([...scene.querySelectorAll("[data-connector]")].map((item) => [item.dataset.connector, item]));
+  const linesOf = (place) => [...scene.querySelectorAll(`[data-code="${place}"] .line`)];
+  const boundaryItems = [...boxes.boundary.querySelectorAll("li")];
+  const order = ["use", "web", "boundary"];
+
+  root.addEventListener("stepchange", ({ detail }) => {
+    const step = data[detail.scenarioIndex][detail.stepIndex];
+    const useLines = linesOf("use");
+    const webLines = linesOf("web");
+    [...useLines, ...webLines].forEach((line) => {
+      line.removeAttribute("data-hi");
+      line.removeAttribute("data-state");
+    });
+    boundaryItems.forEach((item) => item.removeAttribute("data-hi"));
+    step.skipped.forEach((index) => useLines[index].setAttribute("data-state", "skipped"));
+    if (step.at === "use") step.lines.forEach((index) => useLines[index].setAttribute("data-hi", step.mark));
+    if (step.at === "web") step.lines.forEach((index) => webLines[index].setAttribute("data-hi", step.mark));
+    if (step.at === "boundary") step.lines.forEach((index) => boundaryItems[index].setAttribute("data-hi", ""));
+
+    order.forEach((place) => {
+      const box = boxes[place];
+      const badge = box.querySelector("[data-badge]");
+      const reachedViaThisPath = place === "use" || place === (step.kind === "biz" ? "web" : "boundary");
+      const here = place === step.at;
+      box.toggleAttribute("data-current", here);
+      box.dataset.kind = step.kind;
+      box.dataset.reached = String(reachedViaThisPath && (place === "use" || order.indexOf(step.at) >= order.indexOf(place)));
+      if (here) {
+        badge.textContent = step.badge;
+        badge.dataset.mark = step.mark;
+      } else {
+        badge.textContent = "";
+        badge.removeAttribute("data-mark");
+      }
+    });
+    Object.entries(connectors).forEach(([kind, item]) => {
+      item.toggleAttribute("data-active", step.connector === kind);
+      item.toggleAttribute("data-own", step.kind === kind);
+    });
+  });
+</script>

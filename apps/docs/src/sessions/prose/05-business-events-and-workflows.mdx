@@ -8,7 +8,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
   <EpisodeIllustration slug={props.session.slug} />
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
-  <p>S01〜S04では、診察開始を題材に、状態の型、分岐漏れの検出、入力の検証、失敗の扱いを学びました。S05では、この考え方を別の業務である予約キャンセルに当てはめて読みます。S05では、「データ構造があり、それをパイプライン（関数）で処理して業務フローを実現する」という考え方を使います。</p>
+  <p>S04では、診察開始の失敗を Result で返し、andThen と map でつなぎました。S05では、別の業務である予約キャンセルを題材に、ユースケースを工程に分け、ROPで失敗の流れを捉え、I/Oをパイプラインの両端に置く設計を読みます。S05では、「データ構造があり、それをパイプライン（関数）で処理して業務フローを実現する」という考え方を使います。</p>
 
   <h3>キャンセル前の予約</h3>
   <p>次の値は、予約済みで、まだ来院していない予約です。S01で学んだとおり、<code>kind</code>は予約の現在の状態を表します。</p>
@@ -25,7 +25,13 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
 </section>
 
 <section id="pipeline">
-  <h2>キャンセルをパイプラインとして読む</h2>
+  <h2>キャンセルのユースケースを工程に分ける</h2>
+
+  <h3>ビジネスユースケースとユースケースを区別する</h3>
+  <p>{"\n"}ビジネスユースケースとは、アクターが達成したい業務上の目的です。例えば「受付担当者が予約をキャンセルする」がこれにあたります。{"\n"}</p>
+  <p>ソフトウェアのユースケースは、S03で説明したとおり、ビジネスユースケースを実行する処理です。キャンセルのユースケースは、実行者と対象の予約を取得し、権限の有無、予約の存在、予約の現在の状態を確認してから、キャンセルの結果を作ります。</p>
+
+  <h3>ユースケースをパイプラインとして読む</h3>
   <p>パイプラインは、データを受け取って次のデータを返す工程を順につないだものです。予約のキャンセルは次の4工程で読めます。</p>
   <table>
     <thead>
@@ -65,43 +71,55 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
   </table>
   <p>各工程の入力と出力をデータで示すと、どの工程で何を確かめるかを説明できます。</p>
   <p><code>AppointmentCanceled</code>は、「予約がキャンセルされた」という業務上の出来事を表すデータです。このデータをイベントと呼びます。</p>
-
-  <h3>診察開始も同じ形で読む</h3>
-  <p>S01〜S04の診察開始も、キャンセルと同じ形で読めます。診察開始の入力は、「どの予約を、どの獣医師が開始するか」です。確認する条件は、「来院済みだけが診察を開始できる」です。条件を満たすと、<code>kind</code>は<code>CheckedIn</code>から<code>InExamination</code>へ変わります。S03の入力の検査、S04の対象の取得と状態の確認、S01の状態遷移が、前の表の工程に当たります。</p>
 </section>
 
 <section id="rop">
-  <h2>ROPでパイプラインの失敗を扱う</h2>
-  <p>前の表の「失敗の理由」が、パイプラインの失敗です。</p>
+  <h2>ROPでユースケースの失敗を扱う</h2>
+  <p>前の表の「失敗の理由」が、ユースケースの失敗です。ROP（Railway Oriented Programming）は、工程の流れを成功と失敗の2本のレールで捉える考え方です。</p>
 
-  <h3>2本のレールを思い出す</h3>
-  <p>ROP（Railway Oriented Programming）は、S04で学んだ、処理の流れを成功と失敗の2本のレールで捉える考え方です。詳しい説明は、<a href="/sessions/04-workflow-errors/#rop-recap">S04のROPの節</a>を読み返してください。</p>
-  <p>キャンセルでも、失敗の値は下のレールを終点まで進み、後続の成功処理は実行されません。図の4工程は、前の表の4工程と同じです。図を左からたどり、どの条件で失敗のレールへ切り替わるかを確認してください。</p>
+  <h3>成功と失敗の2本のレール</h3>
+  <p>各工程は、成功なら次の工程へ値を渡し、失敗なら下のレールへ移って後続の工程を飛ばします。失敗の値は下のレールを終点まで進みます。図の4工程は、前の表の4工程と同じです。</p>
   <RailwayOrientedProgramming />
+
+  <h3>S04のandThenは切り替え線に当たる</h3>
+  <p>S04で使った <code>andThen</code> は、Ok のときだけ次の関数へ進み、Err になった後はコールバックを呼びません。これは、失敗のレールへ移った値が後続の工程を飛ばすことに当たります。業務エラーを返さない <code>map</code> は、切り替え線のない工程です。S04で書いた診察開始の処理は、図の工程に次のように当たります。</p>
+  <table>
+    <thead>
+      <tr><th scope="col">図の工程</th><th scope="col">診察開始の処理</th><th scope="col">失敗のレールへ移る値</th></tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row">入力を検査する</th><td><code>StartExaminationInput.parse</code>。S03の境界で検査します</td><td>S03の境界で返す検査の失敗</td></tr>
+      <tr><th scope="row">対象を取得する</th><td><code>resolver.resolveById</code> と <code>ensureAppointmentFound</code></td><td><code>AppointmentNotFound</code></td></tr>
+      <tr><th scope="row">権限と状態を確認する</th><td><code>andThen(ensureCheckedIn)</code>。S04の演習コードは権限を確認しません</td><td><code>InvalidAppointmentState</code></td></tr>
+      <tr><th scope="row">結果を作る</th><td><code>map(transitionToInExamination)</code> と <code>store.save</code></td><td>なし</td></tr>
+    </tbody>
+  </table>
+  <p>キャンセルでは、3か所で失敗のレールへ切り替わります。次の図を左からたどり、どの条件で失敗のレールへ切り替わるかを確認してください。</p>
   <CancelRailwayAnimation />
 
   <h3>なぜROPを利用するのか</h3>
-  <p>{"\n"}S04で見たとおり、ROPはそれぞれの処理で起きる失敗を同じ流れで扱います。キャンセルでは、「キャンセル先の予約が存在しない」「キャンセルする権限がない」などの理由で失敗したとき、ROPは後続の処理を実行しません。そのため、全体の処理のうち一部だけが実行されて不整合が起きることを防げます。{"\n"}</p>
+  <p>ROPでは、工程ごとに起きる失敗を同じ流れで扱います。キャンセルでは、「キャンセル先の予約が存在しない」「キャンセルする権限がない」などの理由で失敗したとき、後続の処理を実行しません。そのため、全体の処理のうち一部だけが実行されて不整合が起きることを防げます。たとえば、権限のない依頼でキャンセルの記録だけが残ることはありません。</p>
 </section>
 
 <section id="io-boundaries">
   <h2>I/Oをパイプラインの両端へ置く</h2>
-  <p>この節では、S04で使ったResolverとStoreを、キャンセルのパイプラインの両端に置く構成を読みます。中心のドメインロジックは、副作用のないpureな関数として扱えます。</p>
-  <p>S04では、Resolverを現在の予約を取得する部品、Storeを結果を保存する部品として使いました。前の表の工程のうち、「対象を取得する」はデータベースを読むI/Oです。この工程はResolverが担います。記録はパイプラインの成功の後でStoreが担います。「入力を検査する」「権限と状態を確認する」「結果を作る」は、値だけで結果が決まります。</p>
+  <p>この節では、S04で <code>deps</code> から受け取ったResolverとStoreを、キャンセルのパイプラインの両端に置く構成を読みます。中心のドメインロジックは、副作用のないpureな関数として扱えます。</p>
+  <p>前の表の工程のうち、「対象を取得する」はデータベースを読むI/Oです。この工程はResolverが担います。記録はパイプラインの成功の後でStoreが担います。「入力を検査する」「権限と状態を確認する」「結果を作る」は、値だけで結果が決まります。</p>
 
-  <h3>ビジネスユースケースとユースケースを区別する</h3>
-  <p>{"\n"}ビジネスユースケースとは、アクターが達成したい業務上の目的です。例えば「受付担当者が予約をキャンセルする」がこれにあたります。{"\n"}</p>
-  <p>ソフトウェアのユースケースは、S03で説明したとおり、ビジネスユースケースを実行する処理です。キャンセルのユースケースは、Resolverから実行者と対象の予約を受け取り、権限の有無、予約の存在、予約の現在の状態を確認します。</p>
-  <p><code>Appointment</code>は、予約のデータと業務ルールの置き場です。<code>Appointment.cancel</code>は、確認を通った診察開始前の予約とキャンセル理由を受け取り、成功イベントを返します。一つのデータと一つのユースケースが常に対応するわけではありません。同じ予約のデータを、キャンセルや診察開始など複数のユースケースが扱います。</p>
+  <h3>中心に置くpureな関数</h3>
+  <p><code>Appointment</code>は、予約のデータと業務ルールの置き場です。一つのデータと一つのユースケースが常に対応するわけではありません。同じ予約のデータを、キャンセルや診察開始など複数のユースケースが扱います。</p>
+  <p>手元の <code>examples/session-05</code> にも、キャンセルの結果を作る関数 <code>cancel</code> があります。診察開始前の予約、キャンセル理由、キャンセルした時刻を受け取り、<code>Canceled</code> の予約を返します。データベースへ接続せず、受け取った値だけで結果が決まります。</p>
+  <Code code={props.cancelSource} lang="ts" />
+  <p>完成形の参照実装（<code>examples/final</code>）の <code>Appointment.cancel</code> は、同じ確認を通った予約から、<code>Canceled</code> の予約の代わりにイベント <code>AppointmentCanceled</code> を返します。イベントは、出力側の節で読みます。</p>
 
   <h3>なぜResolverとStoreをドメインロジックの外へ置くのか</h3>
-  <p>{"\n"}S04と同じ理由です。ResolverとStoreを外へ置くと、<code>Appointment.cancel</code>はデータベースへ接続せず、入力された値だけで結果が決まります。業務ルールを値だけでテストでき、取得方法や記録先が変わっても、<code>Appointment.cancel</code>を変更せずにResolverとStoreの実装を差し替えられます。{"\n"}</p>
+  <p>ResolverとStoreを外へ置くと、<code>cancel</code>はデータベースへ接続せず、入力された値だけで結果が決まります。業務ルールを値だけでテストできます。取得方法や記録先が変わっても、<code>cancel</code>を変更せずにResolverとStoreの実装を差し替えられます。S04の <code>startExamination</code> が resolver と store を <code>deps</code> から受け取ったのも、同じ理由です。</p>
 
   <h3>入力側：Resolverの役割</h3>
   <p>{"\n"}User ResolverとAppointment Resolverは、実行者と予約の現在状態を取得し、ユースケースへ値として渡します。S04の<code>resolver</code>と同じ役割です。下の図で、Resolverから受け取った値が確認の条件を通り、ドメインロジックへ渡るところをたどってください。{"\n"}</p>
 
   <h3>出力側：Storeの役割</h3>
-  <p>{"\n"}<code>Appointment.cancel</code>は、確認を通った予約から<code>AppointmentCanceled</code>を作ります。Storeは、S04の<code>store</code>と同じく成功の後にだけ呼ばれ、その成功イベントを受け取ってEvent Storeへ追記します。失敗した場合はStoreが呼ばれません。そのため、不正なキャンセルや途中状態は記録されません。参照実装（<code>examples/final</code>）の<code>AppointmentCanceled</code>には、実行者のID、発生した時刻、予約のIDが入ります。誰がいつどの予約をキャンセルしたかは、Event Storeに追記されたこのイベントから確認できます。{"\n"}</p>
+  <p>{"\n"}<code>Appointment.cancel</code>は、確認を通った予約から<code>AppointmentCanceled</code>を作ります。Storeは、S04の<code>store</code>と同じく成功の後にだけ呼ばれ、その成功イベントを受け取ってEvent Storeへ追記します。失敗した場合はStoreが呼ばれません。そのため、不正なキャンセルや途中状態は記録されません。完成形の参照実装（<code>examples/final</code>）の<code>AppointmentCanceled</code>には、実行者のID、発生した時刻、予約のIDが入ります。誰がいつどの予約をキャンセルしたかは、Event Storeに追記されたこのイベントから確認できます。{"\n"}</p>
   <CancelPipelineBoundaries />
   <p>{"\n"}配布コード<code>examples/session-01</code>の<code>startExamination</code>は、S01〜S04で学んだ形より前の段階のコードです。<code>Repository</code>（データベースの読み書きをまとめたオブジェクト）からの取得、状態の記録、監査記録、時刻とIDの生成を、一つのユースケースで行います。このコードは、このハンズオンで目指す形ではありません。時刻とIDの生成を外から渡す話と、状態と監査記録を1回の保存にまとめる話は、次のS06で扱います。{"\n"}</p>
   <aside class="decision-card">
@@ -134,7 +152,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
     <li>3か所で失敗へ切り替わるROP基本図と、ResolverとEvent Storeを外側へ置いたユースケース図</li>
   </ol>
   <p>診察直前のキャンセルを認めるかなど、答えが揃わない点は無理に決めず、未決の問いとしてメモに残します。</p>
-  <p>次のS06は、S04で学んだ流れに副作用の扱いを足す回で、S04の続きとして読みます。</p>
+  <p>次のS06では、S04で書いた診察開始に戻り、S05で両端に置いたResolverとStoreを使って、時刻とIDの生成と、状態と監査記録を1回で保存する方法を扱います。</p>
 
   <details class="step-solution">
     <summary>補足: ビジネスイベントとワークフローから考える方法</summary>
