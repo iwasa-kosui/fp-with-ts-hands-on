@@ -91,7 +91,7 @@ import InlineCode from "../../components/InlineCode.astro";
         <tr><th scope="row">受け取る場所</th><td>Web ルートの <code>match</code> と <code>switch</code></td><td>外側の例外境界</td></tr>
       </tbody>
     </table>
-    <p>次の図で、2つの失敗がどこまで進み、どこで受け取られるかを見比べます。</p>
+    <p>次の図で、2つの失敗がどこまで進み、どこで受け取られるかを見比べます。図のコードの andThen、map、match は後の節で説明します。ここでは、2つの失敗がどこで止まり、どこで受け取られるかだけを追ってください。</p>
     <ExceptionOrResultAnimation />
     <p>システムエラーを Result に変換しないのは、保存が完了したか分からないまま後続の処理を続けないためです。保存の結果を確認できないまま別の記録先への書き込みや外部サービスへの通知を行うと、データベースには保存されていないのに、書き込みや通知だけが行われる可能性があります。演習コードの外側の例外境界は <code>app.onError</code> で、例外を受け取ると500を返します。実際の業務では、この境界で例外をログへ記録し、必要なロールバックや接続の解放も行います。</p>
     <p class="teaching-topic__why">業務エラーを例外で投げると、関数の型から失敗理由を読み取れず、呼び出し側は処理漏れに気付けません。システムエラーを Result に入れると、呼び出し側に選べる操作がない失敗まで型に並び、すべての呼び出し側が同じ処理を書くことになります。迷ったときは、呼び出し側がこの失敗の理由ごとに違う操作を選ぶかを確かめます。</p>
@@ -110,7 +110,7 @@ import InlineCode from "../../components/InlineCode.astro";
     </ul>
     <Fragment slot="why">渡す関数が業務エラーを返しうるなら andThen、返さないなら map を選びます。Err になった後はどちらのコールバックも呼ばれないので、失敗の後に状態遷移や保存が実行されることはありません。</Fragment>
   </TeachingTopic>
-  <p>S05 では、この andThen と map のつなぎ方を ROP（Railway Oriented Programming）という考え方で捉え直し、入力の検査と権限の確認を含むユースケース全体を設計します。</p>
+  <p>S05 では、この andThen と map のつなぎ方を ROP（Railway Oriented Programming）という考え方で捉え直し、入力の検査と権限の確認を含むユースケース全体の設計を読みます。</p>
   <TeachingTopic
     name="isErr の例を andThen と map で書き直す"
     before={props.teaching[3].before}

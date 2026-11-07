@@ -89,7 +89,7 @@ const id = "exception-or-result-animation";
   id={id}
   title="業務エラーとシステムエラーの行き先"
   lead="予約が見つからない失敗と、保存中に接続が切れた失敗を、同じ startExamination で追います。"
-  note="コードは S04 の解答（examples/session-06/src）から引用しました。"
+  note="startExamination と switch は examples/session-06/src から、match は S04 の解答例から引用しました。"
   scenarios={playerScenarios}
 >
   <div class="exc-flow" data-exc-flow={sceneData}>
@@ -153,6 +153,9 @@ const id = "exception-or-result-animation";
   .exc-flow__connector[data-connector="sys"] { color: var(--sys); }
   .exc-flow__connector[data-connector="biz"]::before { border-left: 3px dashed var(--biz); }
   .exc-flow__connector[data-connector="sys"]::before { border-left: 3px solid var(--sys); }
+  @media (max-width: 640px) {
+    .exc-flow__box[data-place="web"]:not([data-own]), .exc-flow__box[data-place="boundary"]:not([data-own]), .exc-flow__connector:not([data-own]) { display: none; }
+  }
   @media (min-width: 641px) {
     .exc-flow__map { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "use use" "c1 c2" "web boundary"; }
   }
@@ -201,5 +204,7 @@ const id = "exception-or-result-animation";
       item.toggleAttribute("data-active", step.connector === kind);
       item.toggleAttribute("data-own", step.kind === kind);
     });
+    boxes.web.toggleAttribute("data-own", step.kind === "biz");
+    boxes.boundary.toggleAttribute("data-own", step.kind === "sys");
   });
 </script>
