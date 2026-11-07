@@ -141,7 +141,7 @@ const createHarness = (
     },
     clock: { now: () => FIXED_OCCURRED_AT },
     eventIdGenerator: { generate: () => FIXED_EVENT_ID },
-    store: {
+    examinationStartedStore: {
       store: (event) => {
         storeCalls += 1;
         if (outcome.kind === "conflict") {

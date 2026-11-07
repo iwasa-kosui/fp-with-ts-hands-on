@@ -12,13 +12,13 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
   <EpisodeIllustration slug={props.session.slug} />
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
-  <p>読み込み、時刻とイベントIDの生成、保存を外から渡し、診察開始イベントを1回保存します。</p>
+  <p>予約の読み込み、時刻とイベントIDの生成、保存を外から渡し、診察開始イベントを1回保存します。</p>
   <h3 data-story-stage="use-case">追加したい機能</h3>
-  <p>誰がいつ診察を開始したかを業務イベントとし、予約状態と監査記録を一つの保存境界へ渡す。</p>
+  <p>誰がいつ診察を開始したかを業務イベントとし、予約状態と監査記録を一つの保存境界へ渡します。</p>
   <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
-  <p>時刻と ID を処理中に直接作り、状態と監査記録を別々に保存するため、テスト結果が安定せず、片方だけが残り得る。</p>
+  <p>処理の中で時刻と ID を直接作り、状態と監査記録を別々に保存します。そのため、テスト結果が安定せず、片方だけが残ることがあります。</p>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
-  <p>Clock と EventIdGenerator を port として注入し、副作用を調整するユースケースで EventContext を一度だけ生成する。純粋な状態遷移にはその EventContext を渡し、状態と監査記録を表す ExaminationStarted を単一の Store へ渡す。予約が存在しない・予約の状態が不正・予約が競合しているケースは Result のエラーを返す。データベース起因のエラーやデータが破損しているエラーは業務エラーには変換せず、Promise の reject として外側の境界へ伝える。</p>
+  <p>Clock と EventIdGenerator を port として注入し、保存などの副作用を呼び出すユースケースで EventContext を一度だけ生成します。純粋な状態遷移にはその EventContext を渡し、状態と監査記録を表す ExaminationStarted を単一の Store へ渡します。予約が存在しない・予約の状態が不正・予約が競合しているケースは、Result のエラーとして返します。データベース起因のエラーやデータが破損しているエラーは業務エラーには変換せず、Promise の reject として外側の境界へ伝えます。</p>
   <h3>このセッションで守ること</h3>
   <ul class="decision-list">{props.session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
   <p>今回の変更は <code>{props.session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
@@ -26,7 +26,7 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
 
 <section id="legacy" class="code-playground">
   <h2>コードを読み、失敗を再現する</h2>
-  <p>直接時刻を参照したりIDを生成したりしている処理、状態の保存と監査記録の保存がアトミックになっていない実装を読んでみましょう。例えば監査記録の保存だけが失敗した場合、状態の保存のみが実行され、不整合な状況が発生してしまいます。また、用意された単一の store に業務競合が届かない箇所を探します。</p>
+  <p>直接時刻を参照したりIDを生成したりしている処理、状態の保存と監査記録の保存がアトミックになっていない実装を読んでみましょう。例えば監査記録の保存だけが失敗すると、状態の保存だけが成功し、状態と監査記録がそろわなくなります。また、保存処理が AppointmentConflict を返せない箇所も探します。</p>
   <p>{"\n"}編集する範囲は <code>{props.session.exerciseModule.dir}</code>、変更するファイル数は最大{"\n"}{props.session.exerciseModule.fileBudget}ファイル・約{props.session.exerciseModule.lineBudget}行です。{"\n"}</p>
   <CodeGuideCards guides={props.guides} projectFiles={props.projectFiles} />
   <h3>修正前の失敗を確認する</h3>
@@ -35,7 +35,7 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
     {props.session.steps.map((step) => <li>{step.startingFailure}</li>)}
   </ul>
   <CommandBlock phase="red" command={props.session.exerciseCommand} expected={`${props.session.steps.length}件の演習テストが失敗します。`} />
-  <p>ブラウザ内の変更はローカルへ反映されません。</p>
+  <p>ブラウザ内エディタで編集した内容は、手元の clone にあるファイルへ反映されません。</p>
   <div data-code-explorer={props.workspace.slug}>
     <CodeExplorer
       client:load
@@ -48,7 +48,7 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
 
 <section id="teach">
   <h2>事前知識（{props.session.timeBreakdown.teach}分）</h2>
-  <p>S4 では、呼び出し側に理由別の対応がなく、要求された処理を完了できない異常をシステムエラーと呼び、Result へ変換せずに外側へ伝えました。S6 はこの続きです。保存が非同期になり、保存先が状態と監査記録の2か所になると、システムエラーが起きたときに何が残るかを設計しなければなりません。</p>
+  <p>S04 では、呼び出し側に理由別の対応がなく、要求された処理を完了できない異常をシステムエラーと呼び、Result へ変換せずに外側へ伝えました。S06 はこの続きです。保存が非同期になり、保存先が状態と監査記録の2か所になると、システムエラーが起きたときに何が残るかを設計しなければなりません。</p>
   <p>次の4つのトピックは、演習の Step 1 から Step 4 に順に対応します。before は配布コードまたは避けたい書き方、after は次のスナップショットの書き方です。</p>
   <TeachingTopic
     name="時刻と ID は port から受け取り、1回の実行で一度だけ作る"
@@ -56,7 +56,7 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
     after={props.teaching[0].after}
     examples={props.teaching[0].examples}
   >
-    <p>port は、ユースケースが外側に求める処理を型で表した約束です。S4 で deps から受け取った resolver と store も port です。Clock は現在時刻を返す処理を、EventIdGenerator は新しいイベント ID を返す処理を表します。</p>
+    <p>port は、ユースケースが外側に求める処理を型で表した約束です。S04 で deps から受け取った resolver と store も port です。Clock は現在時刻を返す処理を、EventIdGenerator は新しいイベント ID を返す処理を表します。</p>
     <p>new Date() と crypto.randomUUID() は、呼ぶたびに違う値を返します。同じ入力でも出力イベントが変わるので、テストは期待値を固定できません。</p>
     <p>port にすると、テストは固定の値を渡せます。本番相当の実装は、Final の参照実装 examples/final/src/app.ts で確認できます。そこでは Clock の実装が new Date() を呼び、EventIdGenerator の実装が randomUUID() を呼びます。</p>
     <p>値を作る回数も決めます。ユースケースは createEventContext を1回だけ呼び、できた EventContext を状態遷移へ渡します。状態遷移は、予約の examinationStartedAt とイベントの occurredAt を同じ値から作ります。</p>
@@ -73,7 +73,7 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
     <p>before は stateStore.save の後に eventLog.append を呼びます。append だけが失敗すると、予約は診察中になるのに、誰がいつ診察を開始したかの記録は残りません。順番を入れ替えても、今度は記録だけが残る可能性があります。</p>
     <p>after は ExaminationStarted を store へ1回渡します。ExaminationStarted の aggregateState は保存後の予約の状態を持つので、1つの値が状態と監査記録の両方を表します。どう書き込むかは store の実装が決めます。</p>
     <p>同時に残すことを実際に守るのは store の実装です。SQLite の実装は、saveState と appendAudit を1つの transaction の中で呼びます。appendAudit が例外を投げると transaction が取り消され、状態の更新も残りません。</p>
-    <p>store は transaction の中で現在の予約を読み直します。SQLite の実装は、ユースケースが読んだ後に予約が変わっていて、予約が無いときや現在の状態が CheckedIn でないときに、AppointmentConflict を返します。このとき store は saveState の前に返るので、何も書き込みません。</p>
+    <p>store は transaction の中で現在の予約を読み直します。ユースケースが予約を読んだ後に、予約が変わっていることがあります。SQLite の実装は、予約が無いとき、または現在の状態が CheckedIn でないときに、AppointmentConflict を返します。このとき store は saveState の前に返るので、何も書き込みません。</p>
     <p>in-memory の実装は transaction を持ちません。新しい Map と配列を作ってから最後にまとめて置き換えることで、同じ約束を表します。</p>
     <Fragment slot="why">保存処理を1つにすると、ユースケースは片方だけ成功した場合の後始末を書かずに済みます。状態と監査記録をそろえる責任は store の実装に集まります。型だけでは transaction の有無を確かめられないので、examples/session-07/test/integration/fileSqliteTransaction.test.ts が監査記録の失敗時に状態が戻ることを確かめています。</Fragment>
   </TeachingTopic>
@@ -84,11 +84,11 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
     after={props.teaching[2].after}
     examples={props.teaching[2].examples}
   >
-    <p>ResultAsync&lt;T, E&gt; は、Promise&lt;Result&lt;T, E&gt;&gt; を包む neverthrow の型です。await を書かずに、S4 と同じ andThen と map をつなげられます。andThen のコールバックは、同期の Result も ResultAsync も返せます。</p>
+    <p>ResultAsync&lt;T, E&gt; は、Promise&lt;Result&lt;T, E&gt;&gt; を包む neverthrow の型です。await を書かずに、S04 と同じ andThen と map をつなげられます。andThen のコールバックは、同期の Result も ResultAsync も返せます。</p>
     <p>andThrough は、Ok の値を別の処理へ渡して実行し、その処理が Ok なら元の値を次へ渡します。その処理が Err を返したら、結果はその Err になります。</p>
     <p>store の成功値は void です。andThen でつなぐと次へ渡る値が void になり、続く map でイベントから aggregateState を取り出せません。andThrough なら、保存の成功後もイベントが次へ渡ります。</p>
     <p>andTee は使いません。andTee はコールバックの結果を見ないので、AppointmentConflict を結果に含められず、reject も握りつぶします。</p>
-    <Fragment slot="why">before は isErr で分岐してから await で保存を並べ、成功時は ok(undefined) を返します。before の型にも AppointmentConflict はありますが、保存処理が Promise&lt;void&gt; を返すので、before のコードは競合を返せません。after は S4 と同じ順に読め、store が返す AppointmentConflict をそのまま結果に含めます。成功時は InExamination を返します。</Fragment>
+    <Fragment slot="why">before は isErr で分岐してから await で保存を並べ、成功時は ok(undefined) を返します。before の型にも AppointmentConflict はありますが、保存処理が Promise&lt;void&gt; を返すので、before のコードは競合を返せません。after は S04 と同じ順に読め、store が返す AppointmentConflict をそのまま結果に含めます。成功時は InExamination を返します。</Fragment>
   </TeachingTopic>
   <TeachingTopic
     name="保存障害は Err へ変換せず、reject のまま伝える"
@@ -96,19 +96,19 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
     after={props.teaching[3].after}
     examples={props.teaching[3].examples}
   >
-    <p>S4 で外側へ伝えたシステムエラーは、非同期の処理では Promise の reject になります。ResultAsync の E には業務エラーだけを書き、reject の理由は E に書きません。</p>
+    <p>S04 で外側へ伝えたシステムエラーは、非同期の処理では Promise の reject になります。ResultAsync の E には業務エラーだけを書き、reject の理由は E に書きません。</p>
     <p>AppointmentConflict と保存障害では、呼び出し側の対応が違います。競合なら、呼び出し側は最新の予約を確認して操作をやり直せます。データベースの障害や破損データには、呼び出し側が理由別に選べる対応がありません。</p>
     <p>neverthrow の関数でこの2つの経路が分かれます。ResultAsync.fromPromise は、reject を第2引数の関数で Err へ変換します。ResultAsync.fromSafePromise は変換しないので、reject は reject のまま残ります。after は fromSafePromise を使います。</p>
     <p>before のように fromPromise ですべての reject を AppointmentConflict へ変換すると、データベースの障害でも画面は競合として案内します。例外が外側の例外境界へ届かないので、障害はログに記録されません。</p>
     <p>after は resolveAppointment の中で、resolver の呼び出しを Promise.resolve().then(...) で包みます。resolver は同期の関数で、破損データを読むと ZodError を投げます。then の中で呼ぶと、この throw も reject になります。包まずに呼ぶと、ResultAsync を返す前に例外が呼び出し元へ飛びます。</p>
     <p>store の実装も fromSafePromise を使います。transaction の中の throw は reject になり、そのまま andThrough を通り抜けます。</p>
-    <p>reject は、S4 で確認した外側の例外境界が受け取ります。例外境界は、エラーの詳細を含まない 500 応答へ変換します。本番ではここでログへも記録します。配布コードの app.onError は記録を省いています。</p>
+    <p>reject は、S04 で確認した外側の例外境界が受け取ります。例外境界は、エラーの詳細を含まない 500 応答へ変換します。本番ではここでログへも記録します。配布コードの app.onError は記録を省いています。</p>
     <Fragment slot="why">E に AppointmentConflict だけを書くと、呼び出し側は選べる対応だけを型から読み取れます。演習の Step 4 は、競合が Err になり、保存障害と破損データが reject になることをテストで確かめます。</Fragment>
   </TeachingTopic>
   <EffectsPipelineAnimation />
 </section>
 
-<aside class="failure-boundary" aria-label="業務エラーとインフラ例外の区別">
+<aside class="failure-boundary" aria-label="業務エラーとシステムエラーの区別">
   <h2>2つの失敗経路を見分ける</h2>
   <ul class="decision-list">
     <li><strong>業務エラー:</strong> 予約が存在しない・予約の状態が不正・予約が競合しているケースは、呼び出し元で次の対応を選択する余地があるため、{"\n"}<code>Result</code> の <code>Err</code> で返します。{"\n"}</li>
@@ -121,9 +121,9 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
   <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
   <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
   <ol class="adv-flow">
-    <li><strong>言語化（{props.session.adv.articulate}分）</strong>: 一緒に記録する必要がある値を1文で書く。</li>
-    <li><strong>依頼（{props.session.adv.delegate}分）</strong>: その1文をテンプレートへ入れ、Agent に依頼する。</li>
-    <li><strong>検証（{props.session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
+    <li><strong>言語化（{props.session.adv.articulate}分）</strong>: 一緒に記録する必要がある値を1文で書きます。</li>
+    <li><strong>依頼（{props.session.adv.delegate}分）</strong>: その1文をテンプレートへ入れ、Agent に依頼します。</li>
+    <li><strong>検証（{props.session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認します。</li>
   </ol>
   <div class="delegation-prompt">
     <h3>プロンプトのテンプレート</h3>
@@ -133,12 +133,12 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
     <ul class="decision-list">{props.delegationDecisions.map((decision) => <li>{decision}</li>)}</ul>
   </div>
   <h3>この演習で解決しないこと</h3>
-  <p>in-memory の一括保存は契約の形を示す。本番の永続化層でアトミック性を守るには、transaction と結合テストが必要になる。</p>
+  <p>in-memory の一括保存は、store が守る約束の形を示すだけです。本番の永続化層でアトミック性を守るには、transaction と結合テストが必要になります。</p>
   <h3 data-solution-heading>{props.session.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
   {props.session.solutionPresentation === "completed-file" ? (
     <div class="before-after" aria-label="業務エラーとシステムエラーの見比べ方">
-      <p><strong>演習の開始時点:</strong> 業務エラーとして返す Result と、保存処理が reject するシステムエラーの経路を分けて読む。</p>
-      <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示される。</p>
+      <p><strong>演習の開始時点:</strong> 業務エラーとして返す Result と、保存処理が reject するシステムエラーの経路を分けて読みます。</p>
+      <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示されます。</p>
     </div>
   ) : null}
   {props.solutionSteps.map(({ step, presentation, snippets }) => (
@@ -165,20 +165,20 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
 <section id="review">
   <h2>レビューと持ち帰り</h2>
   <div class="exercise-review-checklist">
-    <h3>個人で確認する</h3>
+    <h3>個人での確認</h3>
     <ol>
-      <li>{"`as` によるキャストが入っていないか全文検索して確認する。"}</li>
-      <li>{"`git diff --stat -- examples/session-06` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。"}</li>
-      <li>{"型検査では確認できないことを、テストまたは実行時に確認して記録する。"}</li>
+      <li>{"`as` による型アサーションが入っていないか全文検索して確認します。"}</li>
+      <li>{"`git diff --stat -- examples/session-06` で今回のスナップショットだけを確認します。`git status --short` で想定外の path がないか確認します。"}</li>
+      <li>{"型検査では確認できないことを、テストまたは実行時に確認して記録します。"}</li>
     </ol>
     <p>これまでのセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>
-    <p><strong>残すもの:</strong> 一緒に記録する必要がある値、Agentへの依頼文、型検査では確認できず、テストまたは実行時に確認すること</p>
+    <p>残すものは、一緒に記録する必要がある値、Agentへの依頼文、型検査では確認できず、テストまたは実行時に確認することです。</p>
     <h3>業務へ持ち帰る</h3>
     <p>自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。</p>
   </div>
   <section class="peer-review-panel">
     <h3>設計を振り返る</h3>
-    <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは{props.session.peerReview.minutes}分・{props.headcount}を目安にしてください。</p>
+    <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは、{props.session.peerReview.minutes}分の間に{props.headcount}の差分を見ることを目安にしてください。</p>
     <p><a href={props.promisesHref}>進行上の約束事を確認する</a></p>
     <ol>{props.session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
   </section>

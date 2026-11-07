@@ -57,7 +57,7 @@ const stages: readonly Stage[] = [
   { key: "found", code: `      .andThen(ensureFound(input.appointmentId))` },
   { key: "checked", code: `      .andThen(ensureCheckedIn)` },
   { key: "start", code: `      .map(startExaminationEvent(deps, input.veterinarianId))` },
-  { key: "through", code: `      .andThrough((event) => deps.store.store(event))` },
+  { key: "through", code: `      .andThrough(deps.examinationStartedStore.store)` },
   { key: "map", code: `      .map((event) => event.aggregateState);` },
   {
     key: "route",
@@ -313,7 +313,7 @@ const scenes: readonly Scene[] = [
         flow: { kind: "reject", from: "through", to: "through" },
       },
       {
-        text: "`andThrough` は `Result` を返せず、最後の `map` も実行されません。reject は `Result` の経路の外へ出ます。",
+        text: "`store` の Promise が reject するので、`andThrough` は `Result` を受け取れず、最後の `map` も実行されません。reject は `Result` の経路の外へ出ます。",
         at: "map",
         skipped: ["map"],
         flow: { kind: "reject", from: "through", to: "onError" },
@@ -339,7 +339,7 @@ const frameData = scenes.map(({ outer, settled, frames }) => ({
 <Walkthrough
   id="effects-pipeline-walkthrough"
   title="値がワークフローを流れる"
-  lead="診察開始のワークフローのコードを上から読み、実行中の段の下に、その段の実装と出力が開く様子で追います。成功、競合、保存障害の3つの流れがあります。"
+  lead="診察開始のワークフローのコードを上から読みます。実行中の段の下には、その段の実装と出力が開きます。成功、競合、保存障害の3つの流れを追います。"
   note="値は説明用の例です。項目は一部だけを載せています。"
   scenes={scenes.map(({ label, frames }) => ({ label, frames: frames.map(({ text }) => ({ text })) }))}
 >

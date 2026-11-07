@@ -74,7 +74,7 @@ const appendAudit = (
   "after-call": {
     box: "call",
     path: "examples/session-07/src/useCase/startExamination.ts",
-    code: `.andThrough((event) => deps.store.store(event))`,
+    code: `.andThrough(deps.examinationStartedStore.store)`,
   },
   "after-store": {
     box: "impl",
@@ -204,7 +204,7 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
         audit: "off",
       },
       {
-        text: "次に `eventLog.append` が監査記録を書きます。ここで書き込みが失敗し、例外が投げられました。",
+        text: "次に `eventLog.append` が監査記録を書こうとしますが、書き込みが失敗して例外を投げます。",
         call: { pane: "before-call", lines: [1] },
         impl: { pane: "before-append", lines: [1, 9, 10, 11] },
         tx: "none",
@@ -213,7 +213,7 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
         audit: "home-failed",
       },
       {
-        text: "500 応答が返りました。状態は `InExamination` のまま、`ExaminationStarted` の監査記録はありません。誰が診察を開始したかを後から確かめられません。",
+        text: "例外を受けて、外側の `app.onError` が 500 応答を返しました。状態は `InExamination` のまま、`ExaminationStarted` の監査記録はありません。誰が診察を開始したかを後から確かめられません。",
         call: null,
         impl: null,
         tx: "none",
@@ -227,7 +227,7 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
     label: "修正後: 成功",
     frames: [
       {
-        text: "ユースケースは `deps.store.store(event)` を1回だけ呼びます。保存先が2つあることをユースケースは知りません。",
+        text: "ユースケースは `deps.examinationStartedStore.store(event)` を1回だけ呼びます。保存先が2つあることをユースケースは知りません。",
         call: { pane: "after-call", lines: [0] },
         impl: { pane: "after-store", lines: [0, 1, 2, 3] },
         tx: "wait",
@@ -315,7 +315,7 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
         audit: "off",
       },
       {
-        text: "`appendAudit` の書き込みが失敗し、`AppointmentPersistenceError` が投げられます。",
+        text: "`appendAudit` の書き込みが失敗し、`AppointmentPersistenceError` を投げます。",
         call: { pane: "after-call", lines: [0] },
         impl: { pane: "after-audit", lines: [5, 6, 7] },
         tx: "open",
@@ -356,7 +356,7 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
         audit: "off",
       },
       {
-        text: "transaction の中で読み直すと `current.kind` が `CheckedIn` ではありません。",
+        text: "transaction の中で読み直した予約の `current.kind` は、`CheckedIn` ではありません。",
         call: { pane: "after-call", lines: [0] },
         impl: { pane: "after-atomic", lines: [2, 3] },
         tx: "open",

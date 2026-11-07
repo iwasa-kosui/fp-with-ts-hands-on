@@ -49,8 +49,8 @@ export const session: SessionSummary = {
   summary: "時刻や ID など実行のたびに変わる値と保存を port に切り出し、状態と監査記録を一度に保存します。",
   episode: [
     "カメの診察を開始すると、予約状態だけが先に更新され、監査記録はどこにも残りませんでした。",
-    "再現テストでは時刻とイベント ID が毎回変わり、失敗の証拠まで落ち着きがありません。",
-    "状態更新は即決、記録保存は自由行動。原因究明だけが残業します。",
+    "再現テストでは時刻とイベント ID が毎回変わり、失敗したときの値を同じ形で確かめられません。",
+    "状態の更新はすぐに終わりますが、監査記録の保存は別の処理です。そのため、原因を調べる作業だけが長引きます。",
   ],
   incident: "実行のたびに変わる値でテスト結果が安定せず、状態だけ保存され監査記録が残らない予約が生まれた。",
   exerciseCommand: "pnpm exercise:06",
@@ -118,7 +118,7 @@ export const session: SessionSummary = {
     },
     {
       id: "s6-propagate-store-failure",
-      goal: "保存失敗を業務Resultへ変換せず、例外として外側の境界へ伝播する。",
+      goal: "保存障害を業務エラーの Result へ変換せず、例外として外側の境界へ伝播する。",
       startingFailure: "業務上の競合と、保存障害・破損データを区別して返せない。",
       targets: [
         "examples/session-06/src/useCase/errors.ts",
@@ -165,16 +165,16 @@ export const session: SessionSummary = {
 export const guides = ([
   {
     id: "hidden-nondeterminism",
-    title: "output event の時刻と ID をユースケース内で生成している",
-    currentDesign: "Date と randomUUID を直接呼び、同じ入力でも output event が変わります。",
+    title: "出力イベントの時刻と ID をユースケース内で生成している",
+    currentDesign: "Date と randomUUID を直接呼び、同じ入力でも出力イベントが変わります。",
     futureRisk: "期待値を固定できず、テストが実行時刻に依存します。",
     path: "src/useCase/startExamination.ts",
     highlights: [{ startLineNumber: 45, endLineNumber: 67 }],
   },
   {
     id: "dual-write",
-    title: "side effects が2つの保存処理に分かれている",
-    currentDesign: "side effects として stateStore.save と eventLog.append を順番に await しています。",
+    title: "状態と監査記録の保存が2つの処理に分かれている",
+    currentDesign: "stateStore.save と eventLog.append を順番に await しています。",
     futureRisk: "片方だけ成功すると、監査記録を伴わない状態変更が残ります。",
     path: "src/useCase/startExamination.ts",
     highlights: [{ startLineNumber: 69, endLineNumber: 70 }],
@@ -187,7 +187,7 @@ export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
   initialFile: "exercises/effects-and-events.test.ts",
-  description: "output event と side effects の要求を開始 snapshot で確認します。",
+  description: "出力イベントと副作用の要求を、開始スナップショットで確認します。",
   visibleFiles: [
     "exercises/effects-and-events.test.ts",
     "test/regression/result-errors.test.ts",
@@ -286,7 +286,7 @@ await deps.eventLog.append(event);`,
   store: (event: ExaminationStarted) => ResultAsync<void, AppointmentConflict>;
 }>;
 
-.andThrough((event) => deps.store.store(event))`,
+.andThrough(deps.examinationStartedStore.store)`,
     },
     examples: [
       {
@@ -382,13 +382,13 @@ export const startExaminationWithEffects =
       .andThen(ensureFound(input.appointmentId))
       .andThen(ensureCheckedIn)
       .map(startExaminationEvent(deps, input.veterinarianId))
-      .andThrough((event) => deps.store.store(event))
+      .andThrough(deps.examinationStartedStore.store)
       .map((event) => event.aggregateState);`,
     },
     examples: [
       {
         caption: "andThen でつなぐと、次へ渡る値が void になります（配布コードにはありません）",
-        code: `.andThen((event) => deps.store.store(event)) // 次へ渡る値は void
+        code: `.andThen(deps.examinationStartedStore.store) // 次へ渡る値は void
 .map((event) => event.aggregateState); // 型エラー`,
       },
     ],
@@ -428,8 +428,8 @@ export const startExaminationWithEffects =
 const chapters = [
   { id: "incident", label: "今回つくるもの" },
   { id: "legacy", label: "コードを読み、失敗を再現する" },
-  { id: "teach", label: "使う型を知る" },
-  { id: "refactor", label: "型で閉じる" },
+  { id: "teach", label: "事前知識" },
+  { id: "refactor", label: "演習" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
 export const promisesHref =

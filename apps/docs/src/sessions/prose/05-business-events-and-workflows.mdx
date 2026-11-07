@@ -101,12 +101,12 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
   <p>{"\n"}User ResolverとAppointment Resolverは、実行者と予約の現在状態を取得し、ユースケースへ値として渡します。S04の<code>resolver</code>と同じ役割です。下の図で、Resolverから受け取った値が確認の条件を通り、ドメインロジックへ渡るところをたどってください。{"\n"}</p>
 
   <h3>出力側：Storeの役割</h3>
-  <p>{"\n"}<code>Appointment.cancel</code>は、確認を通った予約から<code>AppointmentCanceled</code>を作ります。Storeは、S04の<code>store</code>と同じく成功の後にだけ呼ばれ、その成功イベントを受け取ってEvent Storeへ追記します。失敗した場合はStoreが呼ばれません。そのため、不正なキャンセルや途中状態は記録されません。誰がいつどの予約をキャンセルしたかは、追記された出来事から確認できます。{"\n"}</p>
+  <p>{"\n"}<code>Appointment.cancel</code>は、確認を通った予約から<code>AppointmentCanceled</code>を作ります。Storeは、S04の<code>store</code>と同じく成功の後にだけ呼ばれ、その成功イベントを受け取ってEvent Storeへ追記します。失敗した場合はStoreが呼ばれません。そのため、不正なキャンセルや途中状態は記録されません。参照実装（<code>examples/final</code>）の<code>AppointmentCanceled</code>には、実行者のID、発生した時刻、予約のIDが入ります。誰がいつどの予約をキャンセルしたかは、Event Storeに追記されたこのイベントから確認できます。{"\n"}</p>
   <CancelPipelineBoundaries />
   <p>{"\n"}配布コード<code>examples/session-01</code>の<code>startExamination</code>は、S01〜S04で学んだ形より前の段階のコードです。<code>Repository</code>（データベースの読み書きをまとめたオブジェクト）からの取得、状態の記録、監査記録、時刻とIDの生成を、一つのユースケースで行います。このコードは、このハンズオンで目指す形ではありません。時刻とIDの生成を外から渡す話と、状態と監査記録を1回の保存にまとめる話は、次のS06で扱います。{"\n"}</p>
   <aside class="decision-card">
     <h3>このハンズオンでEvent Storeを選ぶ理由</h3>
-    <p>{"\n"}Event Storeを使うことは、DMMF一般の必須条件ではなく、このハンズオンの設計です。成功イベントをそのまま履歴として追記でき、受付担当者がいつどの予約をキャンセルしたかを後から確認できるため、ユースケースの出力先にEvent Storeを選びます。{"\n"}</p>
+    <p>{"\n"}Event Storeを使うことは、DMMF一般の必須条件ではなく、このハンズオンの設計です。成功イベントをそのまま履歴として追記でき、誰がいつどの予約をキャンセルしたかを後から確認できるため、ユースケースの出力先にEvent Storeを選びます。{"\n"}</p>
   </aside>
 </section>
 

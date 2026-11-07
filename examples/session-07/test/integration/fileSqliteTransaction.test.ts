@@ -302,7 +302,7 @@ test("corrupt persisted state rejects the effectful use case as a ZodError", asy
         clock: { now: () => occurredAt },
         eventIdGenerator: { generate: () => eventId },
         resolver: store,
-        store,
+        examinationStartedStore: store,
       })({
         appointmentId: AppointmentId.parse(clinicFixture.appointmentId),
         veterinarianId: VeterinarianId.parse(clinicFixture.veterinarianId),

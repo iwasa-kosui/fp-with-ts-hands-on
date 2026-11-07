@@ -95,7 +95,7 @@ const run =
       .andThen(ensureAppointmentFound(input.appointmentId))
       .andThen(ensureCheckedIn)
       .andThen(createEvent({ clock, eventIdGenerator }, input))
-      .andThrough((event) => examinationStartedStore.store(event))
+      .andThrough(examinationStartedStore.store)
       .map((event) => ({ appointment: event.aggregateState }));
 
 export const StartExaminationUseCase = {

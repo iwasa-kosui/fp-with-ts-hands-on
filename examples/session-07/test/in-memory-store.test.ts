@@ -31,7 +31,7 @@ describe("in-memory ExaminationStarted store", () => {
     const adapter = createInMemoryExaminationStartedStore([checkedIn]);
     const result = await startExaminationWithEffects({
       resolver: adapter.resolver,
-      store: adapter.store,
+      examinationStartedStore: adapter.store,
       clock: { now: () => "2026-08-30T06:30:00.000Z" },
       eventIdGenerator: { generate: () => eventId },
     })(input);
@@ -95,7 +95,7 @@ describe("in-memory ExaminationStarted store", () => {
     await expect(
       startExaminationWithEffects({
         resolver: adapter.resolver,
-        store: adapter.store,
+        examinationStartedStore: adapter.store,
         clock: { now: () => "2026-08-30T06:30:00.000Z" },
         eventIdGenerator: { generate: () => eventId },
       })(input),

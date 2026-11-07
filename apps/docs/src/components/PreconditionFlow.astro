@@ -1,0 +1,594 @@
+---
+import { Code } from "astro:components";
+import type { ComponentProps } from "astro/types";
+
+type Snippet = Readonly<{ code: string }>;
+type Props = Readonly<{
+  code: Readonly<{
+    signature: Snippet & Readonly<{ solution: Readonly<{ path: string }> }>;
+    typeError: Snippet & Readonly<{ solution: Readonly<{ path: string }> }>;
+    runtime: Snippet & Readonly<{ path: string }>;
+    route: Snippet & Readonly<{ path: string }>;
+  }>;
+}>;
+
+const { code } = Astro.props;
+
+const snippets = {
+  signature: { path: code.signature.solution.path, code: code.signature.code },
+  typeError: { path: code.typeError.solution.path, code: code.typeError.code },
+  runtime: { path: code.runtime.path, code: code.runtime.code },
+  route: { path: code.route.path, code: code.route.code },
+} as const;
+
+const versionLabels = { before: "修正前", after: "修正後" } as const;
+
+type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
+const KEY_MARK = /\s*\/\/ \[!precondition-key\]$/;
+const withMarks = (source: string, keyLines: readonly number[]) =>
+  source.split("\n").map((text, index) => (keyLines.includes(index + 1) ? `${text} // [!precondition-key]` : text)).join("\n");
+// Code はハイライターを transformer の違いを区別せずキャッシュするため、行番号は code の印で渡し、defaultColor でキャッシュを分ける
+const markKeyLines: Transformer = {
+  name: "mark-precondition-key-lines",
+  preprocess(source) {
+    const lines = source.split("\n");
+    (this.meta as { keyLines?: number[] }).keyLines = lines.flatMap((text, index) => (KEY_MARK.test(text) ? [index + 1] : []));
+    return lines.map((text) => text.replace(KEY_MARK, "")).join("\n");
+  },
+  line(node, line) {
+    if ((this.meta as { keyLines?: number[] }).keyLines?.includes(line)) this.addClassToHast(node, "precondition-flow__key");
+  },
+};
+
+type Token = Readonly<{ label: string; at: number; result?: "stop" | "pass" }>;
+type BandFrame = Readonly<{
+  mode: "normal" | "dim";
+  focus: readonly number[];
+  hide: readonly number[];
+  token: Token | null;
+}>;
+type Frame = Readonly<{
+  caption: string;
+  code?: Readonly<{ key: keyof typeof snippets; version: keyof typeof versionLabels; lines: readonly number[] }>;
+  top: BandFrame;
+  bottom: BandFrame;
+}>;
+
+const frames: readonly Frame[] = [
+  {
+    caption:
+      "startExamination は、kind が CheckedIn の予約を求めます。これが、呼び出し側に求める事前条件です。事前条件を確かめる時点は、型検査のときと実行中の2つあります。",
+    top: { mode: "dim", focus: [1], hide: [], token: null },
+    bottom: { mode: "dim", focus: [1, 2], hide: [], token: null },
+  },
+  {
+    caption: "解答のコードでは、引数の型 CheckedIn が事前条件を表します。",
+    code: { key: "signature", version: "after", lines: [2] },
+    top: { mode: "normal", focus: [1], hide: [], token: null },
+    bottom: { mode: "dim", focus: [], hide: [], token: null },
+  },
+  {
+    caption:
+      "Paid 型の値を渡す呼び出しは、型検査のときにコンパイルエラーになります。コードを実行する前に止まります。",
+    code: { key: "typeError", version: "after", lines: [3, 4] },
+    top: { mode: "normal", focus: [], hide: [], token: { label: "Paid", at: 1, result: "stop" } },
+    bottom: { mode: "dim", focus: [], hide: [], token: null },
+  },
+  {
+    caption:
+      "型は実行時には消えます。データベースから読み取った値は、型検査が中身を確かめていません。kind が Paid の値でも、型検査では止まりません。",
+    top: { mode: "dim", focus: [], hide: [], token: null },
+    bottom: { mode: "normal", focus: [], hide: [], token: { label: "kind: Paid", at: 0 } },
+  },
+  {
+    caption:
+      "修正前の配布コードでは、ルートの確認に加えて、関数の中の requireKind も kind を確かめます。この図は requireKind の働きを見せるために、ルートの確認を省いています。許可していない状態なら、requireKind は例外を投げ、遷移の処理へ進みません。",
+    code: { key: "runtime", version: "before", lines: [2, 3, 12] },
+    top: { mode: "dim", focus: [], hide: [], token: null },
+    bottom: { mode: "normal", focus: [], hide: [1], token: { label: "kind: Paid", at: 2, result: "stop" } },
+  },
+  {
+    caption:
+      "ルートの処理は、修正前も修正後も current.kind を確かめます。CheckedIn でなければ例外を投げ、startExamination を呼びません。修正後のコードでは、requireKind はなくなり、この確認が実行時の検証として残ります。",
+    code: { key: "route", version: "after", lines: [2] },
+    top: { mode: "dim", focus: [], hide: [], token: null },
+    bottom: { mode: "normal", focus: [], hide: [2], token: { label: "kind: Paid", at: 1, result: "stop" } },
+  },
+  {
+    caption:
+      "kind が CheckedIn の予約は、関門を通り、startExamination が動きます。型は誤った呼び出しを実行前に見つけ、実行時の検証は型検査が確かめていない値を実行中に止めます。",
+    top: { mode: "normal", focus: [], hide: [], token: { label: "CheckedIn", at: 2, result: "pass" } },
+    bottom: { mode: "normal", focus: [], hide: [2], token: { label: "CheckedIn", at: 3, result: "pass" } },
+  },
+];
+
+type NodeLine = Readonly<{ text: string; mono?: boolean }>;
+type DiagramNode = Readonly<{
+  slot: number;
+  kind: "box" | "gate";
+  x: number;
+  y: number;
+  w: number;
+  lines: readonly NodeLine[];
+  arrow?: "left" | "down";
+}>;
+const NODE_HEIGHT = 44;
+const topNodes: readonly DiagramNode[] = [
+  { slot: 0, kind: "box", x: 8, y: 60, w: 68, lines: [{ text: "呼び出し側" }] },
+  { slot: 1, kind: "gate", x: 96, y: 60, w: 90, lines: [{ text: "引数の型" }, { text: "CheckedIn", mono: true }], arrow: "left" },
+  { slot: 2, kind: "box", x: 204, y: 60, w: 128, lines: [{ text: "startExamination", mono: true }], arrow: "left" },
+];
+const bottomNodes: readonly DiagramNode[] = [
+  { slot: 0, kind: "box", x: 8, y: 186, w: 54, lines: [{ text: "ルート" }] },
+  { slot: 1, kind: "gate", x: 78, y: 186, w: 98, lines: [{ text: "current.kind", mono: true }, { text: "の確認" }], arrow: "left" },
+  { slot: 2, kind: "gate", x: 192, y: 186, w: 90, lines: [{ text: "requireKind", mono: true }], arrow: "left" },
+  { slot: 3, kind: "box", x: 204, y: 272, w: 128, lines: [{ text: "startExamination", mono: true }], arrow: "down" },
+];
+const topSlots = [{ x: 42, y: 38 }, { x: 141, y: 38 }, { x: 268, y: 38 }];
+const bottomSlots = [{ x: 42, y: 164 }, { x: 127, y: 164 }, { x: 237, y: 164 }, { x: 285, y: 251 }];
+
+const bands = [
+  {
+    id: "top",
+    y: 0,
+    height: 118,
+    label: "型検査のとき（コードを実行する前）",
+    nodes: topNodes,
+    slots: topSlots,
+    segments: ["M 76 82 H 96", "M 186 82 H 204"],
+    bridges: [],
+    initial: { token: { label: "Paid", at: 1 }, stopAt: 1 },
+  },
+  {
+    id: "bottom",
+    y: 126,
+    height: 198,
+    label: "実行中",
+    nodes: bottomNodes,
+    slots: bottomSlots,
+    segments: ["M 62 208 H 78", "M 176 208 H 192", "M 237 230 V 272"],
+    bridges: [{ slot: 1, d: "M 78 208 H 176" }, { slot: 2, d: "M 192 208 H 237 V 230" }],
+    initial: { token: { label: "kind: Paid", at: 1 }, stopAt: 1 },
+  },
+] as const;
+
+const baseline = (index: number, node: DiagramNode) => {
+  const centerY = node.y + NODE_HEIGHT / 2;
+  return centerY + (index - (node.lines.length - 1) / 2) * 15 + 4;
+};
+
+const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ caption, top, bottom })));
+---
+
+<div class="precondition-flow" data-precondition-flow data-frames={playerData}>
+  <div class="precondition-flow__controls" data-controls hidden>
+    <button type="button" data-prev disabled>前へ</button>
+    <span data-progress>1 / {frames.length}</span>
+    <button type="button" data-next>次へ</button>
+  </div>
+
+  <svg viewBox="0 0 340 324" role="img" aria-labelledby="precondition-flow-title precondition-flow-desc">
+    <title id="precondition-flow-title">事前条件を確かめる2つの時点</title>
+    <desc id="precondition-flow-desc">
+      上の帯は、型検査のときです。呼び出し側が startExamination を呼ぶ前に、引数の型 CheckedIn の関門があります。Paid 型の値はこの関門で止まります。下の帯は、実行中です。ルートから startExamination へ進む間に、current.kind の確認と requireKind の2つの関門があります。kind が Paid の値は、current.kind の確認で止まります。kind が CheckedIn の予約は、関門を通って startExamination に届きます。
+    </desc>
+
+    {bands.map((band) => (
+      <g class="precondition-flow__band" data-band={band.id} data-slots={JSON.stringify(band.slots)}>
+        <rect x="0" y={band.y} width="340" height={band.height} rx="8" class="precondition-flow__band-bg"></rect>
+        <text x="8" y={band.y + 18} class="precondition-flow__band-label precondition-flow__dimmable">{band.label}</text>
+        <text x="332" y={band.y + 18} text-anchor="end" class="precondition-flow__band-label precondition-flow__dimmable" data-status>× 止まった</text>
+        {band.segments.map((d) => (
+          <path d={d} class="precondition-flow__line precondition-flow__dimmable"></path>
+        ))}
+        {band.bridges.map(({ slot, d }) => (
+          <path d={d} class="precondition-flow__line precondition-flow__bridge precondition-flow__dimmable" data-bridge={slot}></path>
+        ))}
+
+        {band.nodes.map((node) => (
+          <g class="precondition-flow__node precondition-flow__dimmable" data-slot={node.slot} data-kind={node.kind}>
+            {node.arrow === "left" && (
+              <path d={`M ${node.x - 7} ${node.y + 22 - 4} L ${node.x} ${node.y + 22} L ${node.x - 7} ${node.y + 22 + 4} z`} class="precondition-flow__arrow-head"></path>
+            )}
+            {node.arrow === "down" && (
+              <path d={`M ${237 - 4} ${node.y - 7} L 237 ${node.y} L ${237 + 4} ${node.y - 7} z`} class="precondition-flow__arrow-head"></path>
+            )}
+            <rect x={node.x} y={node.y} width={node.w} height={NODE_HEIGHT} rx="6" class={`precondition-flow__shape precondition-flow__shape--${node.kind}`}></rect>
+            {node.lines.map((line, index) => (
+              <text x={node.x + node.w / 2} y={baseline(index, node)} text-anchor="middle" class:list={["precondition-flow__node-text", { "precondition-flow__mono": line.mono }]}>{line.text}</text>
+            ))}
+            <g class="precondition-flow__badge precondition-flow__badge--stop" data-badge="stop" data-on={band.initial.stopAt === node.slot ? "" : undefined}>
+              <circle cx={node.x + node.w - 3} cy={node.y - 3} r="10"></circle>
+              <text x={node.x + node.w - 3} y={node.y + 2} text-anchor="middle">×</text>
+            </g>
+            <g class="precondition-flow__badge precondition-flow__badge--pass" data-badge="pass">
+              <circle cx={node.x + node.w - 8} cy={node.y} r="10"></circle>
+              <text x={node.x + node.w - 8} y={node.y + 5} text-anchor="middle">✓</text>
+            </g>
+          </g>
+        ))}
+
+        <g class="precondition-flow__token" data-token style={`transform: translate(${band.slots[band.initial.token.at].x}px, ${band.slots[band.initial.token.at].y}px)`}>
+          <rect x="-39" y="-11" width="78" height="22" rx="11"></rect>
+          <text x="0" y="4.5" text-anchor="middle">{band.initial.token.label}</text>
+        </g>
+      </g>
+    ))}
+  </svg>
+
+  <p class="precondition-flow__live" data-live aria-live="polite" hidden></p>
+
+  <ol class="precondition-flow__frames">
+    {frames.map((frame) => (
+      <li data-frame data-has-code={frame.code ? "" : undefined}>
+        <p class="precondition-flow__caption">{frame.caption}</p>
+        {frame.code && (
+          <figure class="code-block precondition-flow__code" data-version={frame.code.version}>
+            <figcaption><span class="precondition-flow__tag" data-version={frame.code.version}>{versionLabels[frame.code.version]}</span> <code>{snippets[frame.code.key].path}</code></figcaption>
+            <Code code={withMarks(snippets[frame.code.key].code, frame.code.lines)} lang="ts" defaultColor="dark" transformers={[markKeyLines]} />
+          </figure>
+        )}
+      </li>
+    ))}
+  </ol>
+</div>
+
+<script>
+  type Token = { label: string; at: number; result?: "stop" | "pass" };
+  type BandFrame = { mode: "normal" | "dim"; focus: number[]; hide: number[]; token: Token | null };
+  type Frame = { caption: string; top: BandFrame; bottom: BandFrame };
+  type Slot = { x: number; y: number };
+
+  const translate = ({ x, y }: Slot) => `translate(${x}px, ${y}px)`;
+
+  const renderBand = (band: SVGGElement, next: BandFrame, previous: BandFrame | null) => {
+    band.dataset.mode = next.mode;
+    band.querySelectorAll<SVGGElement>("[data-slot]").forEach((node) => {
+      const slot = Number(node.dataset.slot);
+      node.toggleAttribute("data-focus", next.focus.includes(slot));
+      node.toggleAttribute("data-hidden", next.hide.includes(slot));
+      node.querySelectorAll("[data-badge]").forEach((badge) => badge.removeAttribute("data-on"));
+    });
+
+    band.querySelectorAll<SVGPathElement>("[data-bridge]").forEach((bridge) => {
+      bridge.toggleAttribute("data-on", next.hide.includes(Number(bridge.dataset.bridge)));
+    });
+
+    const status = band.querySelector("[data-status]");
+    if (status) status.textContent = next.token?.result === "stop" ? "× 止まった" : next.token?.result === "pass" ? "✓ 通った" : "";
+
+    const token = band.querySelector<SVGGElement>("[data-token]");
+    if (!token) return;
+    if (!next.token) {
+      token.toggleAttribute("data-hidden", true);
+      return;
+    }
+
+    const slots = JSON.parse(band.dataset.slots ?? "[]") as Slot[];
+    const label = token.querySelector("text");
+    if (label) label.textContent = next.token.label;
+    const continues = previous?.token != null && previous.token.label === next.token.label && previous.token.at <= next.token.at;
+    if (!continues) {
+      token.style.transition = "none";
+      token.style.transform = translate(slots[0]);
+      token.removeAttribute("data-hidden");
+      token.getBoundingClientRect();
+      token.style.transition = "";
+    }
+    token.removeAttribute("data-hidden");
+    token.style.transform = translate(slots[next.token.at]);
+
+    const result = next.token.result;
+    if (result) {
+      const target = band.querySelector(`[data-slot="${next.token.at}"]`);
+      target?.querySelector(`[data-badge="${result}"]`)?.setAttribute("data-on", "");
+    }
+  };
+
+  const setUp = (root: HTMLElement) => {
+    if (root.dataset.ready !== undefined) return;
+    const frames = JSON.parse(root.dataset.frames ?? "[]") as Frame[];
+    const panels = [...root.querySelectorAll<HTMLElement>("[data-frame]")];
+    const top = root.querySelector<SVGGElement>('[data-band="top"]');
+    const bottom = root.querySelector<SVGGElement>('[data-band="bottom"]');
+    const controls = root.querySelector<HTMLElement>("[data-controls]");
+    const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
+    const next = root.querySelector<HTMLButtonElement>("[data-next]");
+    const progress = root.querySelector<HTMLElement>("[data-progress]");
+    const live = root.querySelector<HTMLElement>("[data-live]");
+    if (!top || !bottom || !controls || !prev || !next || !progress || !live || frames.length !== panels.length) return;
+    root.dataset.ready = "";
+
+    let current: number | null = null;
+    const show = (index: number) => {
+      const before = current === null ? null : frames[current];
+      const frame = frames[index];
+      current = index;
+      panels.forEach((panel, i) => panel.classList.toggle("is-current", i === index));
+      renderBand(top, frame.top, before?.top ?? null);
+      renderBand(bottom, frame.bottom, before?.bottom ?? null);
+      live.textContent = frame.caption;
+      progress.textContent = `${index + 1} / ${frames.length}`;
+      prev.disabled = index === 0;
+      next.disabled = index === frames.length - 1;
+    };
+
+    prev.addEventListener("click", () => show(Math.max((current ?? 0) - 1, 0)));
+    next.addEventListener("click", () => show(Math.min((current ?? 0) + 1, frames.length - 1)));
+
+    root.dataset.animated = "";
+    controls.hidden = false;
+    live.hidden = false;
+    show(0);
+  };
+
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    document.querySelectorAll<HTMLElement>("[data-precondition-flow]").forEach(setUp);
+  }
+</script>
+
+<style>
+  .precondition-flow {
+    min-width: 0;
+    max-width: 100%;
+    margin: 1.5rem 0;
+    --version-before: #c2185b;
+    --version-after: #137333;
+    --stop: #c2185b;
+    --pass: #137333;
+  }
+
+  [data-version="before"] {
+    --version-color: var(--version-before);
+  }
+
+  [data-version="after"] {
+    --version-color: var(--version-after);
+  }
+
+  .precondition-flow svg {
+    display: block;
+    width: 100%;
+    max-width: 26rem;
+    height: auto;
+    margin-inline: auto;
+  }
+
+  .precondition-flow__band-bg {
+    fill: var(--case-paper);
+    stroke: var(--case-divider);
+    stroke-width: 1.5;
+  }
+
+  .precondition-flow__band-label,
+  .precondition-flow__node-text {
+    fill: var(--case-ink);
+    font-size: 12px;
+  }
+
+  .precondition-flow__band-label {
+    font-weight: 700;
+  }
+
+  .precondition-flow__mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .precondition-flow__line {
+    fill: none;
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .precondition-flow__bridge {
+    display: none;
+  }
+
+  .precondition-flow__bridge[data-on] {
+    display: block;
+  }
+
+  .precondition-flow__arrow-head {
+    fill: var(--case-line);
+  }
+
+  .precondition-flow__shape {
+    fill: var(--case-cream);
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .precondition-flow__shape--gate {
+    fill: var(--case-paper);
+    stroke: var(--case-blue);
+    stroke-width: 2.5;
+  }
+
+  .precondition-flow__node[data-focus] .precondition-flow__shape {
+    fill: var(--case-yellow);
+    stroke-width: 4;
+  }
+
+  .precondition-flow__node[data-hidden] {
+    visibility: hidden;
+  }
+
+  .precondition-flow__badge {
+    display: none;
+  }
+
+  .precondition-flow__badge[data-on] {
+    display: block;
+  }
+
+  .precondition-flow__badge circle {
+    stroke: var(--case-paper);
+    stroke-width: 2;
+  }
+
+  .precondition-flow__badge--stop circle {
+    fill: var(--stop);
+  }
+
+  .precondition-flow__badge--pass circle {
+    fill: var(--pass);
+  }
+
+  .precondition-flow__badge text {
+    fill: #fff;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .precondition-flow__token rect {
+    fill: var(--case-yellow);
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .precondition-flow__token text {
+    fill: var(--case-ink);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .precondition-flow__token[data-hidden] {
+    opacity: 0;
+  }
+
+  .precondition-flow__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .precondition-flow__controls[hidden] {
+    display: none;
+  }
+
+  .precondition-flow__controls button {
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--case-yellow);
+    color: var(--case-ink);
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .precondition-flow__controls button:disabled {
+    background: var(--case-paper);
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .precondition-flow__live,
+  .precondition-flow__caption {
+    margin: 0.75rem 0 0.5rem;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .precondition-flow__frames {
+    margin: 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .precondition-flow__frames > li {
+    min-width: 0;
+  }
+
+  .precondition-flow__frames > li + li {
+    margin-top: 1.25rem;
+  }
+
+  .precondition-flow__code {
+    min-width: 0;
+    margin: 0.5rem 0 0;
+    border-inline-start: 0.35rem solid var(--version-color);
+  }
+
+  .precondition-flow__code figcaption code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .precondition-flow__tag {
+    display: inline-block;
+    padding: 0 0.4rem;
+    border-radius: 0.25rem;
+    background: var(--version-color);
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .precondition-flow__code :global(pre) {
+    max-width: 100%;
+    margin: 0;
+    overflow-x: auto;
+    font-size: 0.8rem;
+  }
+
+  .precondition-flow :global(.precondition-flow__key) {
+    display: inline-block;
+    min-width: calc(100% + 0.5rem);
+    margin-left: -0.5rem;
+    padding-left: 0.5rem;
+    background: rgb(255 210 27 / 22%);
+    box-shadow: inset 0.3rem 0 0 #ffd21b;
+  }
+
+  .precondition-flow :global(.precondition-flow__key span[style*="#6A737D"]) {
+    color: #e1e4e8 !important;
+  }
+
+  [data-animated] .precondition-flow__frames {
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  [data-animated] .precondition-flow__frames > li {
+    display: none;
+    margin: 0;
+  }
+
+  [data-animated] .precondition-flow__frames > li.is-current[data-has-code] {
+    display: block;
+  }
+
+  [data-animated] .precondition-flow__caption {
+    display: none;
+  }
+
+  [data-animated] .precondition-flow__dimmable {
+    transition: opacity 0.3s;
+  }
+
+  [data-animated] .precondition-flow__band[data-mode="dim"] .precondition-flow__dimmable:not([data-focus]) {
+    opacity: 0.35;
+  }
+
+  [data-animated] .precondition-flow__token {
+    transition: transform 0.9s ease-in-out, opacity 0.3s;
+  }
+
+  [data-animated] .precondition-flow__badge[data-on] {
+    animation: precondition-flow-fade 0.3s ease-out 0.9s backwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-animated] * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+
+  @keyframes precondition-flow-fade {
+    from {
+      opacity: 0;
+    }
+  }
+</style>

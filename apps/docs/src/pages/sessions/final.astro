@@ -26,7 +26,7 @@ export const guides = ([
     id: "final-use-case-pipeline",
     title: "最初に読む ResultAsync パイプライン",
     currentDesign:
-      "Session 04 で学んだ形を、認可と永続化を含む use case へ広げています。",
+      "Session 04 で学んだ形を、認可と永続化を含むユースケースへ広げています。",
     futureRisk: "全体から読むと概念が多いため、まず run の処理だけを追います。",
     path: "src/useCase/startExaminationUseCase.ts",
     highlights: [{ startLineNumber: 83, endLineNumber: 99 }],
@@ -34,9 +34,9 @@ export const guides = ([
   {
     id: "final-seven-aggregates",
     title: "1業務集約から7つの集約へ広がる配線",
-    currentDesign: `${finalAggregateTour.aggregates.join("・")}の7つの集約を composition root で配線しています。`,
+    currentDesign: `${finalAggregateTour.aggregates.join("・")}の7つの集約を、app.ts でまとめて組み立てています。`,
     futureRisk:
-      "個別ファイルから読み始めると集約どうしの接続が見えないため、composition root から辿ります。",
+      "個別ファイルから読み始めると集約どうしのつながりが見えないため、app.ts から辿ります。",
     path: finalAggregateTour.path.replace("examples/final/", ""),
     highlights: [{ startLineNumber: 202, endLineNumber: 244 }],
   },
@@ -62,7 +62,7 @@ export const session: SessionSummary = {
   summary: "ここまでの学習内容を、より大きな参照実装へ接続します。",
   episode: [
     "ここまで直した頃、猫のムギはとっくに帰宅し、開発者だけが参照実装の前に残っていました。",
-    "入力、失敗、イベント、保存、例外を順に追うと、さっきまでの事故がそれぞれ決まった場所で待っています。",
+    "入力、失敗、イベント、保存、例外を順に追うと、さっきまでの事故が、それぞれどの境界で防がれるかが見えてきます。",
     "完成形と呼んでも、事故が消えたわけではありません。置き場所と担当が決まっただけです。",
   ],
   incident: "各セッションで行った改善を、実運用を想定した構成へどう接続するかを確認する。",
@@ -75,8 +75,8 @@ export const session: SessionSummary = {
 };
 
 const chapters = [
-  { id: "incident", label: "5つの境界を確認する" },
-  { id: "review", label: "レビューと持ち帰り" },
+  { id: "incident", label: "何が起きたか" },
+  { id: "review", label: "5つの境界を確認する" },
   { id: "mechanisms", label: "仕組みで防ぐ" },
 ] as const;
 export const navigation = ({
