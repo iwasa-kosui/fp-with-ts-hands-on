@@ -9,7 +9,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
   <p>S0で確認したとおり、獣医師は受付済みの予約から診察を開始します。この条件を、状態型と遷移で表します。</p>
-  <p>このように、処理の前後を通して常に成立させる条件を、このセッションでは<strong>不変条件</strong>と呼びます。</p>
+  <p>処理の前後を通して常に成立させる条件を、このセッションでは<strong>不変条件</strong>と呼びます。</p>
   <h3 data-story-stage="use-case">追加したい機能</h3>
   <p>予約を「診察中にする」、「診察結果を記録する」、「会計する」、「キャンセルする」といった状態変更の機能を追加します。</p>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
@@ -22,13 +22,13 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   </ul>
   <p>今回の変更は <code>{props.session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
   <h3 id="naive-pitfalls" data-story-stage="pitfall">素朴な実装の落とし穴</h3>
-  <p>予約の状態の表し方には、段階ごとに次の3つの問題があります。</p>
+  <p>予約の状態の表し方を改善していく段階ごとに、次の3つの問題が現れます。</p>
   <h4 id="pitfall-one-type" class="pitfall-heading">1. 1つの型に全状態の項目を詰め込む</h4>
   <p>S0の配布コードの <code>Appointment</code> は、すべての状態の項目を1つの型に持ちます。<code>status</code> が <code>"paid"</code> なのに <code>paidAt</code> がない値もコンパイルでき、<code>updateStatus</code> はどの状態からどの状態へも変更できます。</p>
   <details class="step-solution">
     <summary>コードを見る: 配布コードの <code>Appointment</code></summary>
     <div class="step-solution__body">
-      <p><code>status</code> は任意の文字列を受け取り、診察や会計の項目は任意項目です。</p>
+      <p><code>status</code> は <code>string</code> 型で、診察や会計の項目は省略できるプロパティです。</p>
       <figure class="code-block">
         <figcaption>配布コードの実物: <code>examples/session-00/src/domain/appointment/appointment.ts</code></figcaption>
         <Code code={props.distributedAppointmentCode} lang="ts" />
@@ -36,7 +36,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     </div>
   </details>
   <h4 id="pitfall-no-discriminant" class="pitfall-heading">2. 状態を判別する項目がない</h4>
-  <p>型を状態ごとに分けても、共通の判別フィールドがなければ、固有のプロパティの有無と判定する順序に頼るしかありません。</p>
+  <p>型を状態ごとに分けても、共通の判別フィールドがなければ、状態固有のプロパティがあるかどうかと、判定する順序に頼るしかありません。</p>
   <details class="step-solution">
     <summary>コードを見る: 判別フィールドのないUnion</summary>
     <div class="step-solution__body">
@@ -68,7 +68,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 
 <section id="legacy" class="code-playground">
   <h2>コードを読み、失敗を再現する</h2>
-  <p><code>Appointment</code> 全体を受け取る遷移関数、<code>throw</code>、<code>as Appointment</code> を探します。これらは、許可されていない状態遷移をコンパイラで止められない箇所です。</p>
+  <p><code>Appointment</code> 全体を受け取る遷移関数、<code>throw</code>、<code>as Appointment</code> を探してください。これらは、許可されていない状態遷移をコンパイラが止められない箇所です。</p>
   <p>{"\n"}編集する範囲は <code>{props.session.exerciseModule.dir}</code>、変更するファイル数は最大{"\n"}{props.session.exerciseModule.fileBudget}ファイル・約{props.session.exerciseModule.lineBudget}行です。{"\n"}</p>
   <CodeGuideCards guides={props.guides} projectFiles={props.projectFiles} />
   <h3>修正前の失敗を確認する</h3>
@@ -95,7 +95,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 
 <section id="teach">
   <h2>事前知識（{props.session.timeBreakdown.teach}分）</h2>
-  <p>この回で利用する型について確認します。修正前の書き方は<a href="#naive-pitfalls">素朴な実装の落とし穴</a>にまとめました。ここでは解決に使う書き方を示します。</p>
+  <p>このセッションで使う型を確認します。修正前の書き方は<a href="#naive-pitfalls">素朴な実装の落とし穴</a>にまとめました。ここでは解決に使う書き方を示します。</p>
   <article class="teaching-topic">
     <h3>Discriminated Unionは共通のkindで型を絞り込める</h3>
     <p>Unionは、値が複数の型のうち、いずれか1つであることを表します。判別フィールドを持たないオブジェクトのUnionでは、固有のプロパティがあるかどうかを調べて型を絞り込むしかありません。Discriminated Unionは、すべてのオブジェクト型に共通の判別フィールドを置き、型ごとに異なるリテラル値を割り当てたUnionです。</p>
@@ -114,7 +114,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   </article>
   <article class="teaching-topic">
     <h3>遷移関数の引数型で、受け取れる状態を限定する</h3>
-    <p>Discriminated Unionから特定の状態型を選び、遷移関数の引数に指定します。許可していない状態は、関数を呼び出す時点でコンパイルエラーになります。<a href="#appointment-state-diagram">状態遷移の図</a>の矢印が、次の関数に対応します。</p>
+    <p>Discriminated Unionから特定の状態型を選び、遷移関数の引数に指定します。許可していない状態の値を渡す呼び出しは、コンパイルエラーになります。<a href="#appointment-state-diagram">状態遷移の図</a>の矢印が、次の関数に対応します。</p>
     <p>修正前の書き方: <a href="#pitfall-wide-input">3. 遷移関数が Appointment 全体を受け取る</a></p>
     <figure class="code-block">
       <figcaption>
@@ -151,9 +151,9 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
   <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
   <ol class="adv-flow">
-    <li><strong>言語化（{props.session.adv.articulate}分）</strong>: 起きてはいけない状態遷移を1文で書く。</li>
-    <li><strong>依頼（{props.session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
-    <li><strong>検証（{props.session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
+    <li><strong>言語化（{props.session.adv.articulate}分）</strong>: 起きてはいけない状態遷移を1文で書きます。</li>
+    <li><strong>依頼（{props.session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼します。</li>
+    <li><strong>検証（{props.session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認します。</li>
   </ol>
   <div class="delegation-prompt">
     <h3>プロンプトのテンプレート</h3>

@@ -10,6 +10,6 @@ pnpm --filter @fp-with-ts/clinic-session-02 test
 pnpm exercise:02
 ```
 
-デモは `http://localhost:3000` で起動します。画面操作はこのstarterの遷移関数を呼びます。
+デモは `http://localhost:3000` で起動します。画面操作はこの開始スナップショットの遷移関数を呼びます。
 
 `pnpm exercise:02` は5つの型要件について、意図した失敗で始まります。

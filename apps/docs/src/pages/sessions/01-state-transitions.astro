@@ -101,7 +101,7 @@ export const session: SessionSummary = {
       invariant: "診察結果を記録するまで会計できず、許可されていない状態遷移を型で拒否する。",
     },
     {
-      invariant: "各状態において必要な情報の抜け漏れを許さない。",
+      invariant: "各状態に必要な情報が欠けた予約の値を、型で作れないようにする。",
     },
   ],
   finalReferences: [
@@ -112,9 +112,9 @@ export const session: SessionSummary = {
 export const guides = ([
   {
     id: "wide-transition-input",
-    title: "current state を受け取る関数が Appointment 全体を受け入れている",
-    currentDesign: "current state を型で絞らず、実行時の requireKind と throw に頼っています。completeExamination と recordPayment も同じ形です。",
-    futureRisk: "禁止したい状態でも呼び出し側のコードはコンパイルが通り、as で結果を押し通せます。",
+    title: "遷移関数が Appointment 全体を受け取っている",
+    currentDesign: "遷移関数の引数を現在の状態の型に絞らず、実行時の requireKind と throw で弾いています。completeExamination と recordPayment も同じ形です。",
+    futureRisk: "禁止したい状態の値を渡してもコンパイルが通ります。また、結果を as で Appointment に決め打ちしているため、型検査は結果の誤りを見つけられません。",
     path: "src/domain/appointment/transitions.ts",
     highlights: [
       { startLineNumber: 8, endLineNumber: 17 },

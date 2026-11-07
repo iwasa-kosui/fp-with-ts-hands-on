@@ -220,7 +220,7 @@ const frames = [
     states: ["Paid"],
     note: "s2",
     path: [[154, 422], [170, 412], [197, 372], [204, 316], [197, 372], [170, 412], [154, 422]],
-    caption: "S2の配布コードは実行時に止めます。ただし引数が <code>Appointment</code> 全体なので、<code>Paid</code> を渡してもコンパイルは通り、実行するまで誤りに気づけません。",
+    caption: "S1の配布コードは実行時に止めます。ただし引数が <code>Appointment</code> 全体なので、<code>Paid</code> を渡してもコンパイルは通り、実行するまで誤りに気づけません。",
     source: DISTRIBUTED,
     input: `startExamination(
   { kind: "Paid" /* 省略 */ }, // [!key]
@@ -288,7 +288,7 @@ const playerData = JSON.stringify(frames.map(({ edges, states, path, note }) => 
     <svg viewBox="-4 0 354 440" role="img" aria-labelledby="state-diagram-title state-diagram-desc">
       <title id="state-diagram-title">予約の6つの状態と遷移関数</title>
       <desc id="state-diagram-desc">
-        Scheduled から checkIn で CheckedIn へ、startExamination で InExamination へ、completeExamination で AwaitingPayment へ、recordPayment で Paid へ進みます。Scheduled と CheckedIn は cancel で Canceled へ進めます。Paid から InExamination へ戻る遷移は、S0 のコードでは実行でき、S2 の配布コードでは実行時に例外になり、このセッションの後はコンパイルエラーになります。
+        Scheduled から checkIn で CheckedIn へ、startExamination で InExamination へ、completeExamination で AwaitingPayment へ、recordPayment で Paid へ進みます。Scheduled と CheckedIn は cancel で Canceled へ進めます。Paid から InExamination へ戻る遷移は、S0 のコードでは実行でき、S1 の配布コードでは実行時に例外になり、このセッションの後はコンパイルエラーになります。
       </desc>
       <defs>
         <marker id="state-diagram-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -318,7 +318,7 @@ const playerData = JSON.stringify(frames.map(({ edges, states, path, note }) => 
         </g>
         <text x="220" y="280" class="state-diagram__note state-diagram__note--strong">ひと幕の事故</text>
         <text data-note="s0" x="220" y="298" class="state-diagram__note">S0: そのまま戻る</text>
-        <text data-note="s2" x="220" y="316" class="state-diagram__note">S2: 実行時に例外</text>
+        <text data-note="s2" x="220" y="316" class="state-diagram__note">S1: 実行時に例外</text>
         <text data-note="after" x="220" y="334" class="state-diagram__note">後: コンパイル</text>
         <text data-note="after" x="220" y="350" class="state-diagram__note">エラー</text>
       </g>
@@ -363,7 +363,7 @@ const playerData = JSON.stringify(frames.map(({ edges, states, path, note }) => 
     </ol>
   </div>
 
-  <figcaption>矢印に付いた名前が遷移関数です。<code>Paid</code> と <code>Canceled</code> から先へは進めません。矢印のない遷移は型エラーにします。入力と出力の値は説明用で、項目の一部を省略しています。</figcaption>
+  <figcaption>矢印に付いた名前が遷移関数です。<code>Paid</code> と <code>Canceled</code> から先へは進めません。実線の矢印がない遷移は型エラーにします。入力と出力の値は説明用で、項目の一部を省略しています。</figcaption>
 </figure>
 
 <script is:inline>
