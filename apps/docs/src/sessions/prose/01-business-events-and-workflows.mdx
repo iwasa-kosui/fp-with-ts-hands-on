@@ -122,7 +122,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
     <SessionDetailsBody as="ol">
       <li><code>appointmentId</code>、<code>petId</code>、<code>ownerId</code>、<code>scheduledAt</code>は変わりません。<code>kind</code>は<code>Scheduled</code>から<code>Canceled</code>へ変わり、<code>canceledAt</code>が増えます。<code>reason</code>は来院理由からキャンセル理由へ変わります。</li>
       <li>「権限と状態を確認する」で失敗します。<code>Paid</code>は診察開始前の状態ではないからです。失敗の値は下のレールを終点まで進み、後続の「結果を作る」と記録は実行されません。</li>
-      <li>「入力を検査する」で失敗します。失敗の値は下のレールを終点まで進み、後続の成功処理は実行されないので、理由のないキャンセルは記録されません。</li>
+      <li>「入力を検査する」で失敗します。後続の成功処理は実行されないので、理由のないキャンセルは記録されません。</li>
     </SessionDetailsBody>
   </details>
 
