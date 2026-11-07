@@ -32,7 +32,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
         <th scope="col">工程</th>
         <th scope="col">受け取るデータ</th>
         <th scope="col">次へ渡すデータ</th>
-        <th scope="col">止まる理由</th>
+        <th scope="col">失敗の理由</th>
       </tr>
     </thead>
     <tbody>
@@ -71,16 +71,16 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
 
 <section id="rop">
   <h2>ROPでパイプラインの失敗を扱う</h2>
-  <p>前の表の「止まる理由」が、パイプラインの失敗です。</p>
+  <p>前の表の「失敗の理由」が、パイプラインの失敗です。</p>
 
   <h3>2本のレールを考える</h3>
   <p>{"\n"}Railway Oriented Programmingは、処理の流れを成功と失敗の2本のレールで捉える考え方です。一方は処理に成功した場合の経路、もう一方は失敗した場合の経路を表します。{"\n"}</p>
-  <p>各工程が成功したら、その出力を次の工程へ渡します。失敗したら下のレールへ移り、後続の成功処理をスキップします。図の4工程は、前の表の4工程と同じです。図を左からたどり、どの条件で失敗のレールへ切り替わるかを確認してください。</p>
+  <p>各工程が成功したら、その出力を次の工程へ渡します。失敗したら下のレールへ移ります。失敗の値は下のレールを終点まで進み、後続の成功処理は実行しません。図の4工程は、前の表の4工程と同じです。図を左からたどり、どの条件で失敗のレールへ切り替わるかを確認してください。</p>
   <RailwayOrientedProgramming />
   <CancelRailwayAnimation />
 
   <h3>なぜROPを利用するのか</h3>
-  <p>{"\n"}それぞれの処理で発生する失敗を同じフローで扱い、その失敗を網羅的に検証することで、変更箇所とテスト観点を追いやすくなります。これにより、「キャンセル先の予約が存在しない」、「キャンセルする権限がない」などさまざまな理由で止まっても、それを適切にハンドリングでき、全体の処理のうち一部だけ処理されて不整合が発生することを防げます。{"\n"}</p>
+  <p>{"\n"}それぞれの処理で発生する失敗を同じフローで扱い、その失敗を網羅的に検証することで、変更箇所とテスト観点を追いやすくなります。これにより、「キャンセル先の予約が存在しない」、「キャンセルする権限がない」などさまざまな理由で失敗しても、それを適切にハンドリングでき、全体の処理のうち一部だけ処理されて不整合が発生することを防げます。{"\n"}</p>
 </section>
 
 <section id="io-boundaries">
@@ -114,15 +114,15 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
   <p>次の3問の答えを考えましょう。コードは編集しません。ひとりの場合はメモに残し、複数人の場合は答えを持ち寄って確認します。</p>
   <ol class="exercise-steps">
     <li>キャンセル前とキャンセル後の予約のデータを見比べてください。変わる項目と変わらない項目は、それぞれどれですか。</li>
-    <li>会計済みの予約（<code>kind: "Paid"</code>）がパイプラインへ入ると、どの工程で止まりますか。後続の工程は動きますか。</li>
-    <li>キャンセル理由が空の依頼は、どの工程で止まりますか。そのキャンセルは記録されますか。</li>
+    <li>会計済みの予約（<code>kind: "Paid"</code>）がパイプラインへ入ると、どの工程で失敗しますか。後続の成功処理は実行されますか。</li>
+    <li>キャンセル理由が空の依頼は、どの工程で失敗しますか。そのキャンセルは記録されますか。</li>
   </ol>
   <details class="step-solution">
     <summary>答えを確認する</summary>
     <SessionDetailsBody as="ol">
       <li><code>appointmentId</code>、<code>petId</code>、<code>ownerId</code>、<code>scheduledAt</code>は変わりません。<code>kind</code>は<code>Scheduled</code>から<code>Canceled</code>へ変わり、<code>canceledAt</code>が増えます。<code>reason</code>は来院理由からキャンセル理由へ変わります。</li>
-      <li>「権限と状態を確認する」で止まります。<code>Paid</code>は診察開始前の状態ではないからです。後続の「結果を作る」と記録は動きません。</li>
-      <li>「入力を検査する」で止まります。後続の工程へ進まないので、理由のないキャンセルは記録されません。</li>
+      <li>「権限と状態を確認する」で失敗します。<code>Paid</code>は診察開始前の状態ではないからです。失敗の値は下のレールを終点まで進み、後続の「結果を作る」と記録は実行されません。</li>
+      <li>「入力を検査する」で失敗します。失敗の値は下のレールを終点まで進み、後続の成功処理は実行されないので、理由のないキャンセルは記録されません。</li>
     </SessionDetailsBody>
   </details>
 
