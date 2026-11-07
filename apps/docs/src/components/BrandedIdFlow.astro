@@ -128,7 +128,7 @@ const frames: readonly Frame[] = [
     runtime: true,
   },
   {
-    caption: "印の付いた値を作る入口は parse です。parse は文字列がUUIDの形かを検査し、通った値だけを AppointmentId 型として返します。",
+    caption: "印の付いた値を作る入口は parse です。parse は文字列がUUIDの形かを検査し、通った値だけを AppointmentId 型として返します。UUIDの形の検査は修正前からあります。修正で変わったのは、通った値に印が付くことです。",
     stage: "after",
     code: { key: "afterParse", lines: [4, 5] },
     modes: ["normal", "normal", "normal", "dim"],
@@ -142,7 +142,7 @@ const frames: readonly Frame[] = [
   },
   {
     caption: "UUIDの形でない文字列は parse を通りません。parse は例外を投げるので、AppointmentId 型の値は作られません。",
-    stage: "after",
+    stage: null,
     modes: ["normal", "normal", "dim", "dim"],
     tokens: ["home", "home", "stop"],
     marks: "brand",
@@ -436,6 +436,12 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
     margin-inline: auto;
   }
 
+  @media (max-height: 900px) {
+    .branded-id-flow svg {
+      max-height: min(45vh, 380px);
+    }
+  }
+
   .branded-id-flow__band-bg {
     fill: var(--case-paper);
     stroke: var(--case-divider);
@@ -547,7 +553,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
 
   .branded-id-flow__slot {
     fill: var(--case-paper);
-    stroke: var(--case-blue);
+    stroke: var(--case-muted, #58596d);
     stroke-width: 2;
     stroke-dasharray: 6 4;
   }
