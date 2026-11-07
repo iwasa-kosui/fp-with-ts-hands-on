@@ -247,7 +247,7 @@ const rejectedFrames = [
     status: "stop",
     valueLabel: "route が受け取った結果",
     value: "Err()",
-    text: "routeがErrに_unsafeUnwrapを呼びます。Resultを使った分岐はS5で扱います。",
+    text: "routeがErrに_unsafeUnwrapを呼びます。Resultを使った分岐はS4で扱います。",
   }),
   startFrame("schemaResult", {
     first: 'throw new Error("Cannot unwrap an invalid boundary value");',
