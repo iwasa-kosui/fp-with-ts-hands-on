@@ -43,7 +43,6 @@ export type AdvBreakdown = Readonly<{
 }>;
 
 export type DelegationPrompt = Readonly<{
-  request: string;
   decisions: readonly [string, ...string[]];
 }>;
 

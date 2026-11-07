@@ -1,6 +1,7 @@
 ---
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
+import GuardTable from "../../components/GuardTable.astro";
 import RailwayOrientedProgramming from "../../components/RailwayOrientedProgramming.astro";
 import AndThenMapFlow from "../../components/AndThenMapFlow.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
@@ -61,8 +62,6 @@ export const session: SessionSummary = {
     lineBudget: 80,
   },
   delegationPrompt: {
-    request:
-      "診察開始で起こりうる業務エラーを、呼び出し側が判断できる形に改善してください。表示文言には依存せず、失敗後の処理を続けない設計にしてください。",
     decisions: [
       "どの失敗に対して顧客や現場が別の操作を選ぶか",
       "呼び出し側が分岐に使う安定した情報は何か",
@@ -459,37 +458,24 @@ export const navigation = ({
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
-const delegationPrompt = `次の変更を実装してください。
+const guardQuestion = "新しい業務エラーを <code>Result</code> で返さずに例外で投げると、呼び出し側の網羅性の検査から漏れます。保存障害などのシステムエラーは、例外のままで正しい設計です。業務エラーの例外を、文面のほかにどの仕組みで防げますか。";
+const guards = [
+  {
+    problem: "失敗したあとも保存へ進む",
+    mechanism: "<code>Result</code> と <code>andThen</code>",
+    signal: "<code>pnpm exercise:05</code> の演習テスト",
+  },
+  {
+    problem: "業務エラーの種類を足したのに、呼び出し側の対応を足し忘れる",
+    mechanism: "<code>kind</code> を持つ判別共用体と網羅性の検査",
+    signal: "<code>pnpm exercise:05</code> の型検査",
+  },
+] as const;
+const guardModules = [session.exerciseModule];
+const delegationPrompt = `${session.exerciseModule.dir} のコードを直して、
+${session.exerciseCommand} を成功させてください。
 
-業務背景:
-${session.incident}
-
-依頼:
-${exerciseSession.delegationPrompt.request}
-
-失敗後に実行してはいけない処理: [言語化フェーズで書いた1文]
-
-着手前に判断すること:
-${exerciseSession.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
-
-まず配布コードと失敗しているテストを読み、上の判断と変更方針を短く説明してください。説明のあとで実装に進んでください。設計手段は既存コードに合うものを選び、選んだ理由も示してください。
-
-受け入れ条件:
-${session.steps.map((step) => `- ${step.goal}`).join("\n")}
-
-変更範囲:
-- ${session.exerciseModule.dir}/ のみ
-- 最大 ${session.exerciseModule.fileBudget} ファイル・約 ${session.exerciseModule.lineBudget} 行
-- 範囲外の変更が必要に見えた場合は、変更せず理由を報告してください
-- 型エラーを \`as\` による型アサーションで回避しないでください
-
-検証:
-- ${session.exerciseCommand} を実行し、すべての assertion が成功することを確かめてください
-
-完了時の報告:
-- 変更したファイルと判断理由
-- 検証コマンドの結果
-- 型だけでは守れず、テストまたはレビューに残した点`;
+失敗後に実行してはいけない処理: [言語化フェーズで書いた1文]`;
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
@@ -506,7 +492,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         </p>
       </section>
       <Prose
-        components={{ AndThenMapFlow, CodeGuideCards, CommandBlock, EpisodeIllustration, RailwayOrientedProgramming }}
+        components={{ AndThenMapFlow, CodeGuideCards, CommandBlock, EpisodeIllustration, GuardTable, RailwayOrientedProgramming }}
         session={session}
         guides={guides}
         workspace={workspace}
@@ -516,6 +502,10 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         safeTryColumn={safeTryColumn}
         initialExerciseFailureCount={initialExerciseFailureCount}
         delegationPrompt={delegationPrompt}
+        delegationDecisions={exerciseSession.delegationPrompt.decisions}
+        guards={guards}
+        guardQuestion={guardQuestion}
+        guardModules={guardModules}
         headcount={headcount}
         promisesHref={promisesHref}
       />

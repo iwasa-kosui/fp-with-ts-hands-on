@@ -187,13 +187,15 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
   <ol class="adv-flow">
     <li><strong>言語化（{props.session.adv.articulate}分）</strong>: 起きてはいけない状態遷移を1文で書きます。</li>
-    <li><strong>依頼（{props.session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼します。</li>
+    <li><strong>依頼（{props.session.adv.delegate}分）</strong>: その1文をテンプレートへ入れ、Agent に依頼します。</li>
     <li><strong>検証（{props.session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認します。</li>
   </ol>
   <div class="delegation-prompt">
     <h3>プロンプトのテンプレート</h3>
-    <p>角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。技法名や完成形を先に指定する必要はありません。</p>
+    <p>合否は <code>{props.session.exerciseCommand}</code> が判定するので、受け入れ条件は依頼文に書きません。角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。技法名や完成形を先に指定する必要はありません。</p>
     <pre><code>{props.delegationPrompt}</code></pre>
+    <p>依頼の前に、次の点を自分で決めます。決めた内容は依頼文に書かず、Agent の差分を読むときの基準にします。</p>
+    <ul class="decision-list">{props.delegationDecisions.map((decision) => <li>{decision}</li>)}</ul>
   </div>
   <h3 data-solution-heading>{props.session.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
   <p>演習を完了できないときは、解答スナップショットをステップ単位で開き、遷移関数の引数型をコピーして貼り付けます。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。</p>
@@ -244,4 +246,5 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <p><a href={props.promisesHref}>進行上の約束事を確認する</a></p>
     <ol>{props.session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
   </section>
+  <GuardTable rows={props.guards} modules={props.guardModules} question={props.guardQuestion} />
 </section>

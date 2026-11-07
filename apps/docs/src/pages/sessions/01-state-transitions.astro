@@ -2,6 +2,7 @@
 import AppointmentStateDiagram from "../../components/AppointmentStateDiagram.astro";
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
+import GuardTable from "../../components/GuardTable.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
 // MDX だけで import すると head に xterm.css の <link> が増える
 import "../../components/code-explorer/CodeExplorer";
@@ -55,8 +56,6 @@ export const session: SessionSummary = {
     lineBudget: 35,
   },
   delegationPrompt: {
-    request:
-      "予約状態の変更処理を、業務で許された遷移と各状態に必要な情報がコードから読み取れる形に改善してください。",
     decisions: [
       "どの状態からどの状態への遷移を許可するか",
       "各状態で必須にする情報は何か",
@@ -406,38 +405,25 @@ export const navigation = ({
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
-const delegationPrompt = `次の変更を実装してください。
+const guardQuestion = "この演習の依頼文には、分岐漏れの1個を残すように書きました。Agent が <code>statusLabel.ts</code> まで直してしまうことを、文面のほかにどの仕組みで防げますか。";
+const guards = [
+  {
+    problem: "会計済みの来院を診察中へ戻す",
+    mechanism: "遷移関数の引数を、遷移元の状態だけに絞った型",
+    signal: "<code>pnpm exercise:02</code> の型検査",
+  },
+  {
+    problem: "診察結果を記録せずに会計へ進む",
+    mechanism: "遷移関数の引数を、遷移元の状態だけに絞った型",
+    signal: "<code>pnpm exercise:02</code> の型検査",
+  },
+] as const;
+const guardModules = [session.exerciseModule];
+const delegationPrompt = `${session.exerciseModule.dir} のコードを直して、
+${session.exerciseCommand} の失敗を、分岐漏れの型検査1個だけにしてください。
+その1個は次の Session で直します。
 
-業務背景:
-${session.incident}
-
-依頼:
-${exerciseSession.delegationPrompt.request}
-
-起きてはいけない状態遷移: [言語化フェーズで書いた1文]
-
-着手前に判断すること:
-${exerciseSession.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
-
-まず配布コードと失敗しているテストを読み、上の判断と変更方針を短く説明してください。説明のあとで実装に進んでください。設計手段は既存コードに合うものを選び、選んだ理由も示してください。
-
-受け入れ条件:
-${session.steps.map((step) => `- ${step.goal}`).join("\n")}
-
-変更範囲:
-- ${session.exerciseModule.dir}/ のみ
-- 最大 ${session.exerciseModule.fileBudget} ファイル・約 ${session.exerciseModule.lineBudget} 行
-- 範囲外の変更が必要に見えた場合は、変更せず理由を報告してください
-- statusLabel.ts は次の Session で扱うため、変更しないでください
-- 型エラーを \`as\` による型アサーションで回避しないでください
-
-検証:
-- ${session.exerciseCommand} を実行し、分岐漏れの1個を除くすべての assertion が成功することを確かめてください
-
-完了時の報告:
-- 変更したファイルと判断理由
-- 検証コマンドの結果
-- 型だけでは守れず、テストまたはレビューに残した点`;
+起きてはいけない状態遷移: [言語化フェーズで書いた1文]`;
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
@@ -456,7 +442,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         </p>
       </section>
       <Prose
-        components={{ AppointmentStateDiagram, CodeGuideCards, CommandBlock, EpisodeIllustration }}
+        components={{ AppointmentStateDiagram, CodeGuideCards, CommandBlock, EpisodeIllustration, GuardTable }}
         session={session}
         guides={guides}
         workspace={workspace}
@@ -470,6 +456,10 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         rustStateCode={rustStateCode}
         initialExerciseFailureCount={initialExerciseFailureCount}
         delegationPrompt={delegationPrompt}
+        delegationDecisions={exerciseSession.delegationPrompt.decisions}
+        guards={guards}
+        guardQuestion={guardQuestion}
+        guardModules={guardModules}
         commonReviewChecks={commonReviewChecks}
         reviewCompletionArtifacts={reviewCompletionArtifacts}
         businessReflectionQuestion={businessReflectionQuestion}

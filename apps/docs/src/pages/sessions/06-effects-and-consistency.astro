@@ -1,6 +1,7 @@
 ---
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
+import GuardTable from "../../components/GuardTable.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
 import Prose from "../../sessions/prose/06-effects-and-consistency.mdx";
 import type { CodeGuide } from "../../code-explorer/code-guide";
@@ -59,8 +60,6 @@ export const session: SessionSummary = {
     lineBudget: 55,
   },
   delegationPrompt: {
-    request:
-      "診察開始で作る状態と監査記録に、1回の実行で生成した値を使ってください。保存時に片方だけが残らない形へ改善してください。",
     decisions: [
       "実行ごとに変わる値をいつ生成するか",
       "どの状態と記録を同時に保存するか",
@@ -446,37 +445,24 @@ export const navigation = ({
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
-const delegationPrompt = `次の変更を実装してください。
+const guardQuestion = "本番の永続化層で状態と監査記録の片方だけが保存される問題は、この演習のテストでは確かめられません。これを、どの仕組みで見つけられますか。";
+const guards = [
+  {
+    problem: "実行のたびに値が変わり、テスト結果が安定しない",
+    mechanism: "時刻と ID の生成を引数で受け取る設計",
+    signal: "<code>pnpm exercise:06</code> の演習テスト",
+  },
+  {
+    problem: "状態だけが保存され、監査記録が残らない",
+    mechanism: "状態と監査記録を1つのイベントにして、1回で保存する設計",
+    signal: "<code>pnpm exercise:06</code> の演習テスト。本番の永続化層の原子性は、この演習では確かめません。",
+  },
+] as const;
+const guardModules = [session.exerciseModule];
+const delegationPrompt = `${session.exerciseModule.dir} のコードを直して、
+${session.exerciseCommand} を成功させてください。
 
-業務背景:
-${session.incident}
-
-依頼:
-${exerciseSession.delegationPrompt.request}
-
-一緒に記録する必要がある値: [言語化フェーズで書いた1文]
-
-着手前に判断すること:
-${exerciseSession.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
-
-まず配布コードと失敗しているテストを読み、上の判断と変更方針を短く説明してください。説明のあとで実装に進んでください。設計手段は既存コードに合うものを選び、選んだ理由も示してください。
-
-受け入れ条件:
-${session.steps.map((step) => `- ${step.goal}`).join("\n")}
-
-変更範囲:
-- ${session.exerciseModule.dir}/ のみ
-- 最大 ${session.exerciseModule.fileBudget} ファイル・約 ${session.exerciseModule.lineBudget} 行
-- 範囲外の変更が必要に見えた場合は、変更せず理由を報告してください
-- 型エラーを \`as\` による型アサーションで回避しないでください
-
-検証:
-- ${session.exerciseCommand} を実行し、すべての assertion が成功することを確かめてください
-
-完了時の報告:
-- 変更したファイルと判断理由
-- 検証コマンドの結果
-- 型だけでは守れず、テストまたはレビューに残した点`;
+一緒に記録する必要がある値: [言語化フェーズで書いた1文]`;
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
@@ -493,7 +479,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         </p>
       </section>
       <Prose
-        components={{ CodeGuideCards, CommandBlock, EpisodeIllustration }}
+        components={{ CodeGuideCards, CommandBlock, EpisodeIllustration, GuardTable }}
         session={session}
         guides={guides}
         workspace={workspace}
@@ -501,6 +487,10 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         solutionSteps={solutionSteps}
         teaching={teaching}
         delegationPrompt={delegationPrompt}
+        delegationDecisions={exerciseSession.delegationPrompt.decisions}
+        guards={guards}
+        guardQuestion={guardQuestion}
+        guardModules={guardModules}
         headcount={headcount}
         promisesHref={promisesHref}
       />

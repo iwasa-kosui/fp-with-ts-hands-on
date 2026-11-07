@@ -1,6 +1,7 @@
 ---
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
+import GuardTable from "../../components/GuardTable.astro";
 import NeverEmptySet from "../../components/NeverEmptySet.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
 // CSS chunk の分割と読み込み順を変換前と同じに保つ
@@ -61,8 +62,6 @@ export const session: SessionSummary = {
     lineBudget: 6,
   },
   delegationPrompt: {
-    request:
-      "予約状態の表示名を返す分岐を改善してください。状態を追加したときに、未対応の分岐がコンパイルエラーになる状態を目指します。",
     decisions: [
       "状態追加時の分岐漏れをどこで検出するか",
     ],
@@ -262,37 +261,19 @@ export const navigation = ({
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
-const delegationPrompt = `次の変更を実装してください。
+const guardQuestion = "依頼文は <code>assertNever</code> を指定していません。<code>default</code> で「不明」を返すコードが残ることを、文面のほかにどの仕組みで防げますか。";
+const guards = [
+  {
+    problem: "状態を足したのに表示名の分岐を足し忘れる",
+    mechanism: "<code>assertNever</code> と <code>never</code> 型",
+    signal: "<code>assertNever</code> を置いたコードに状態を足すと、<code>tsc</code> が失敗します。<code>pnpm exercise:02</code> は未定義の状態を渡せないことだけを確かめるので、<code>assertNever</code> の有無は差分で確かめます。",
+  },
+] as const;
+const guardModules = [session.exerciseModule];
+const delegationPrompt = `${session.exerciseModule.dir} のコードを直して、
+${session.exerciseCommand} を成功させてください。
 
-業務背景:
-${session.incident}
-
-依頼:
-${exerciseSession.delegationPrompt.request}
-
-未対応のまま残してはいけない分岐: [言語化フェーズで書いた1文]
-
-着手前に判断すること:
-${exerciseSession.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
-
-まず配布コードと失敗しているテストを読み、上の判断と変更方針を短く説明してください。説明のあとで実装に進んでください。設計手段は既存コードに合うものを選び、選んだ理由も示してください。
-
-受け入れ条件:
-${session.steps.map((step) => `- ${step.goal}`).join("\n")}
-
-変更範囲:
-- ${session.exerciseModule.dir}/ のみ
-- 最大 ${session.exerciseModule.fileBudget} ファイル・約 ${session.exerciseModule.lineBudget} 行
-- 範囲外の変更が必要に見えた場合は、変更せず理由を報告してください
-- 型エラーを \`as\` による型アサーションで回避しないでください
-
-検証:
-- ${session.exerciseCommand} を実行し、すべての assertion が成功することを確かめてください
-
-完了時の報告:
-- 変更したファイルと判断理由
-- 検証コマンドの結果
-- 型だけでは守れず、テストまたはレビューに残した点`;
+未対応のまま残してはいけない分岐: [言語化フェーズで書いた1文]`;
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
@@ -309,7 +290,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         </p>
       </section>
       <Prose
-        components={{ CodeGuideCards, CommandBlock, EpisodeIllustration, NeverEmptySet }}
+        components={{ CodeGuideCards, CommandBlock, EpisodeIllustration, GuardTable, NeverEmptySet }}
         session={session}
         guides={guides}
         workspace={workspace}
@@ -317,6 +298,10 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         solutionSteps={solutionSteps}
         teaching={teaching}
         delegationPrompt={delegationPrompt}
+        delegationDecisions={exerciseSession.delegationPrompt.decisions}
+        guards={guards}
+        guardQuestion={guardQuestion}
+        guardModules={guardModules}
         initialExerciseFailureCount={initialExerciseFailureCount}
         headcount={headcount}
         promisesHref={promisesHref}
