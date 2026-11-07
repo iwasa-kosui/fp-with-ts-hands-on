@@ -20,6 +20,11 @@ import { fileURLToPath } from "node:url";
 const BASELINE_COMMIT = "088c2ef";
 const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-01/README.md",
+  "examples/session-03/README.md",
+  "examples/session-04/README.md",
+  "examples/session-05/README.md",
+  "examples/session-06/README.md",
+  "examples/session-07/README.md",
   "examples/session-05/exercises/result-errors.test.ts",
 ];
 

@@ -8,12 +8,12 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <p class="case-file__episode-label">動物病院のひと幕</p>
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
-  <p>S5で確認した「受付済みだけが診察を開始できる」という条件を、状態型と遷移で表します。</p>
+  <p>S0で確認したとおり、獣医師は受付済みの予約から診察を開始します。この条件を、状態型と遷移で表します。</p>
   <p>このように、処理の前後を通して常に成立させる条件を、このセッションでは<strong>不変条件</strong>と呼びます。</p>
   <h3 data-story-stage="use-case">追加したい機能</h3>
   <p>予約を「診察中にする」、「診察結果を記録する」、「会計する」、「キャンセルする」といった状態変更の機能を追加します。</p>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
-  <p>次の図の6つの状態を、<code>kind</code> で区別するDiscriminated Unionで表します。🐇の予約がどの関数でどの状態へ進むかを、入力、関数の実装、出力の順に1コマずつ追ってください。</p>
+  <p>次の図の6つの状態を、状態の名前を持つ <code>kind</code> プロパティで区別するDiscriminated Unionで表します。🐇の予約がどの関数でどの状態へ進むかを、入力、関数の実装、出力の順に1コマずつ追ってください。</p>
   <AppointmentStateDiagram />
   <p>遷移関数でも同じ型を使います。<code>completeExamination</code> は <code>InExamination</code> だけを受け取り、<code>recordPayment</code> は <code>AwaitingPayment</code> だけを受け取る純粋関数にします。</p>
   <h3>このセッションで守ること</h3>
@@ -28,7 +28,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <details class="step-solution">
     <summary>コードを見る: 配布コードの <code>Appointment</code></summary>
     <div class="step-solution__body">
-      <p>S5の配布コードも、<code>items</code> を除いて同じ型です。<code>status</code> は任意の文字列を受け取り、診察や会計の項目は任意項目です。</p>
+      <p><code>status</code> は任意の文字列を受け取り、診察や会計の項目は任意項目です。</p>
       <figure class="code-block">
         <figcaption>配布コードの実物: <code>examples/session-00/src/domain/appointment/appointment.ts</code></figcaption>
         <Code code={props.distributedAppointmentCode} lang="ts" />
