@@ -150,9 +150,7 @@ const run =
       .andThen(() => hashPassword(dependencies.passwordHasher, input.password))
       .andThen((passwordHash) => createState(dependencies, input, passwordHash))
       .andThen(createEvent(dependencies, input.actorUserId))
-      .andThrough((event) =>
-        dependencies.userCreatedStore.store(event),
-      )
+      .andThrough(dependencies.userCreatedStore.store)
       .map((event) => ({ user: toUserView(event.aggregateState) }));
 
 export const CreateUserUseCase = {

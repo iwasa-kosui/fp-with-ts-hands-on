@@ -150,9 +150,7 @@ const run =
       )
       .andThen(updateState(dependencies, input))
       .andThen(createEvent(dependencies, input.actorUserId))
-      .andThrough((event) =>
-        dependencies.userUpdatedStore.store(event),
-      )
+      .andThrough(dependencies.userUpdatedStore.store)
       .map((event) => ({ user: toUserView(event.aggregateState) }));
 
 export const UpdateUserUseCase = {

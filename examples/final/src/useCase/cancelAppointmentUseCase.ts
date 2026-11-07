@@ -99,9 +99,7 @@ const run =
       .andThen(ensureAppointmentFound(input.appointmentId))
       .andThen(ensureCancellable)
       .andThen(createEvent(dependencies, input))
-      .andThrough((event) =>
-        dependencies.appointmentCanceledStore.store(event),
-      )
+      .andThrough(dependencies.appointmentCanceledStore.store)
       .map((event) => ({ appointment: event.aggregateState }));
 
 export const CancelAppointmentUseCase = {

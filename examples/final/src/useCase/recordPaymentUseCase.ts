@@ -106,9 +106,7 @@ const run =
       .andThen(ensureAppointmentFound(input.appointmentId))
       .andThen(ensureAwaitingPayment)
       .andThen(createEvent(dependencies, input))
-      .andThrough((event) =>
-        dependencies.paymentRecordedStore.store(event),
-      )
+      .andThrough(dependencies.paymentRecordedStore.store)
       .map((event) => ({ appointment: event.aggregateState }));
 
 export const RecordPaymentUseCase = {

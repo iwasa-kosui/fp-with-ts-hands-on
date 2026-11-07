@@ -95,9 +95,7 @@ const run =
       )
       .andThen(ensureOwner(input.ownerId))
       .andThen(createEvent(dependencies, input))
-      .andThrough((event) =>
-        dependencies.ownerUpdatedStore.store(event),
-      )
+      .andThrough(dependencies.ownerUpdatedStore.store)
       .map((event) => ({ owner: toView(event.aggregateState) }));
 
 export const UpdateOwnerUseCase = {

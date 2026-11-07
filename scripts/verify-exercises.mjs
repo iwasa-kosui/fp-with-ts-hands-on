@@ -36,6 +36,21 @@ const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-07/test/regression/effects-and-events.test.ts",
   "examples/session-06/exercises/effects-and-events.test.ts",
   "examples/final/src/useCase/startExaminationUseCase.ts",
+  "examples/final/src/useCase/bookAppointmentUseCase.ts",
+  "examples/final/src/useCase/cancelAppointmentUseCase.ts",
+  "examples/final/src/useCase/checkInAppointmentUseCase.ts",
+  "examples/final/src/useCase/createOwnerUseCase.ts",
+  "examples/final/src/useCase/createPetUseCase.ts",
+  "examples/final/src/useCase/createUserUseCase.ts",
+  "examples/final/src/useCase/deleteOwnerUseCase.ts",
+  "examples/final/src/useCase/deletePetUseCase.ts",
+  "examples/final/src/useCase/deleteUserUseCase.ts",
+  "examples/final/src/useCase/logOutUseCase.ts",
+  "examples/final/src/useCase/recordPaymentUseCase.ts",
+  "examples/final/src/useCase/updateOwnerUseCase.ts",
+  "examples/final/src/useCase/updatePetUseCase.ts",
+  "examples/final/src/useCase/updateUserUseCase.ts",
+  "examples/final/src/useCase/resetUserPasswordUseCase.ts",
 ];
 
 const STEP_1_TO_3_FILES = ["src/domain/appointment/transitions.ts"];
