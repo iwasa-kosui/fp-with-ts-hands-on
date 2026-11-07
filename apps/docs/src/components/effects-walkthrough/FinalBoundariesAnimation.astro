@@ -32,7 +32,7 @@ const gates: readonly Gate[] = [
   { key: "event", num: "3", name: "出力イベント", gloss: "業務の検証に成功した経路だけが、`ExaminationStarted` の生成へ進みます。" },
   { key: "effect", num: "4", name: "副作用", gloss: "予約の状態とイベントを、1つの transaction で保存します。" },
   { key: "exception", num: "5", name: "例外境界", gloss: "業務の `Result` に入らない障害を、共通の境界が受け取って 500 を返します。" },
-  { key: "answer", num: "", name: "応答", gloss: "route が結果を HTTP の応答に写します。" },
+  { key: "answer", num: "", name: "応答", gloss: "route が結果を HTTP の応答に変換します。" },
 ];
 
 const impls: Readonly<Record<string, Impl>> = {
@@ -344,13 +344,13 @@ const scenes: readonly Scene[] = [
         lines: [3, 6, 7, 8, 9, 10, 11, 12, 13],
       },
       {
-        text: "更新が1行なので、`domainEventsTable` にイベントを追加します。関数が最後まで終わると、状態とイベントが同時に確定します。",
+        text: "更新が1行なので、`domainEventsTable` にイベントを追加します。transaction に渡した関数が最後まで終わると、状態とイベントが同時に確定します。",
         at: "effect",
         impl: "commit",
         lines: [0, 6, 7, 8, 9, 10, 11, 12],
       },
       {
-        text: "`andThrough` は `store` の結果を捨て、`event` を次へ渡します。`map` が `UseCaseOk` を作ります。",
+        text: "`andThrough` は `store` が成功すると、元の `event` をそのまま次へ渡します。`map` が `UseCaseOk` を作ります。",
         at: "effect",
         impl: "call",
         lines: [0, 1],
