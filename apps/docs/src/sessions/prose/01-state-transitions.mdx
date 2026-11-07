@@ -128,6 +128,13 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     </figure>
     <p class="teaching-topic__why">遷移ごとに <code>CheckedIn</code>、<code>InExamination</code>、<code>AwaitingPayment</code> だけを受け取ります。会計済みの予約や診察結果を記録していない予約を誤った関数へ渡すと、コードを実行する前の型検査でコンパイルエラーになります。Discriminated Unionが状態の候補を定義し、関数の引数型が許可された遷移を定義します。</p>
   </article>
+  <article class="teaching-topic">
+    <h3>事前条件を型と実行時の検証で確かめる</h3>
+    <p>契約プログラミングは、関数が呼び出し側に求める条件を「事前条件」として書く考え方です。遷移関数では、受け取る予約が特定の状態であることが事前条件にあたります。たとえば <code>startExamination</code> は、<code>kind</code> が <code>CheckedIn</code> の予約を求めます。</p>
+    <p>型は、この事前条件を型検査のときに確かめます。引数の型を <code>CheckedIn</code> にすると、TypeScript は別の状態の予約を渡す呼び出しをコンパイルエラーにします。ただし、型は実行時には消えます。データベースから読み取った値のように型検査が中身を確かめていない値は、誤った状態のまま関数へ届くことがあります。</p>
+    <p>実行時の検証は、同じ事前条件をコードの実行中に確かめます。このセッションの配布コードにある <code>requireKind</code> は、許可していない状態の予約を受け取ると例外を投げます。型検査をすり抜けた値でも、遷移の処理へ進む前に止められます。ただし、誤った呼び出しに気づけるのは、その呼び出しが実際に実行されたときだけです。</p>
+    <p class="teaching-topic__why">型と実行時の検証は確かめるタイミングが違うので、組み合わせて使えます。型は誤った呼び出しを実行前に見つけ、実行時の検証は型検査が確かめていない値を実行中に止めます。この演習の解答では遷移関数の引数を型で限定し、遷移関数の中の <code>requireKind</code> はなくなります。データベースから読み取った予約の <code>kind</code> は、ルートの処理が実行時に確かめます。</p>
+  </article>
   <details class="step-solution">
     <summary>おまけ: 他の言語で状態を型にする</summary>
     <div class="step-solution__body">
