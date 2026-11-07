@@ -77,7 +77,7 @@ const exerciseContracts = {
       snapshot: "session-02",
       initialFile: "exercises/state-modeling.test.ts",
       description:
-        "current state の要求と作成対象を開始 snapshot で確認します。",
+        "演習の要件と作成対象を、開始スナップショットで確認します。",
       visibleFiles: [
         "exercises/state-modeling.test.ts",
         "test/transitions.test.ts",
@@ -103,7 +103,7 @@ const exerciseContracts = {
       snapshot: "session-02",
       initialFile: "exercises/state-modeling.test.ts",
       description:
-        "表示名の分岐と予約状態の定義を、開始 snapshot で確認します。",
+        "表示名の分岐と予約状態の定義を、開始スナップショットで確認します。",
       visibleFiles: [
         "exercises/state-modeling.test.ts",
         "src/domain/appointment/appointment.ts",
@@ -155,7 +155,7 @@ const exerciseContracts = {
       snapshot: "session-05",
       initialFile: "exercises/result-errors.test.ts",
       description:
-        "例外の種類が型に現れず、Web側にcatch漏れがある開始 snapshot を確認します。",
+        "例外の種類が型に現れず、Web側にcatch漏れがある開始スナップショットを確認します。",
       visibleFiles: [
         "exercises/result-errors.test.ts",
         "test/regression/boundary-and-ids.test.ts",
@@ -239,12 +239,19 @@ const forbiddenExerciseDependencies = [
 ] as const;
 
 const reviewText = [
-  "`as` によるキャストが入っていないか全文検索して確認する。",
-  "`git status --short` で想定外の path がないか確認する。",
-  "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
+  "`as` による型アサーションが入っていないか全文検索して確認します。",
+  "`git status --short` で想定外の path がないか確認します。",
+  "型検査では確認できないことを、テストまたは実行時に確認して記録します。",
   "Agentへの依頼文",
   "型検査では確認できず、テストまたは実行時に確認すること",
   "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。",
+] as const;
+
+// S06 の文が S01〜S04 と同じ敬体に直るまで、S06 だけ変更前の文を検査する
+const legacyReviewText = [
+  "`as` によるキャストが入っていないか全文検索して確認する。",
+  "`git status --short` で想定外の path がないか確認する。",
+  "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
 ] as const;
 
 const reviewPromptFor = {
@@ -326,7 +333,11 @@ describe("session pages", () => {
         expect(source).not.toContain(dependency);
       }
       expect(pageModule.navigation).toEqual(contract.navigation);
-      for (const text of reviewText) expect(source).toContain(text);
+      const expectedReviewText =
+        slug === "06-effects-and-consistency"
+          ? [...legacyReviewText, ...reviewText.slice(3)]
+          : reviewText;
+      for (const text of expectedReviewText) expect(source).toContain(text);
       expect(source).toContain(reviewPromptFor[slug]);
       expect(source).toContain(
         `\`git diff --stat -- examples/${contract.workspace.snapshot}\``,

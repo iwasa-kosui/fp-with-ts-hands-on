@@ -9,8 +9,8 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <EpisodeIllustration slug={props.session.slug} />
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
-  <p>S0で確認したとおり、獣医師は受付済みの予約から診察を開始します。この条件を、状態型と遷移で表します。</p>
-  <p>このように、処理の前後を通して常に成立させる条件を、このセッションでは<strong>不変条件</strong>と呼びます。</p>
+  <p>S00で確認したとおり、獣医師は来院済みの予約から診察を開始します。この条件を、状態型と遷移で表します。</p>
+  <p>処理の前後を通して常に成立させる条件を、このセッションでは<strong>不変条件</strong>と呼びます。</p>
   <h3 data-story-stage="use-case">追加したい機能</h3>
   <p>予約を「診察中にする」、「診察結果を記録する」、「会計する」、「キャンセルする」といった状態変更の機能を追加します。</p>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
@@ -23,13 +23,13 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   </ul>
   <p>今回の変更は <code>{props.session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
   <h3 id="naive-pitfalls" data-story-stage="pitfall">素朴な実装の落とし穴</h3>
-  <p>予約の状態の表し方には、段階ごとに次の3つの問題があります。</p>
+  <p>予約の状態の表し方を改善していく段階ごとに、次の3つの問題が現れます。</p>
   <h4 id="pitfall-one-type" class="pitfall-heading">1. 1つの型に全状態の項目を詰め込む</h4>
-  <p>S0の配布コードの <code>Appointment</code> は、すべての状態の項目を1つの型に持ちます。<code>status</code> が <code>"paid"</code> なのに <code>paidAt</code> がない値もコンパイルでき、<code>updateStatus</code> はどの状態からどの状態へも変更できます。</p>
+  <p>S00の配布コードの <code>Appointment</code> は、すべての状態の項目を1つの型に持ちます。<code>status</code> が <code>"paid"</code> なのに <code>paidAt</code> がない値もコンパイルでき、<code>updateStatus</code> はどの状態からどの状態へも変更できます。</p>
   <details class="step-solution">
     <summary>コードを見る: 配布コードの <code>Appointment</code></summary>
     <div class="step-solution__body">
-      <p><code>status</code> は任意の文字列を受け取り、診察や会計の項目は任意項目です。</p>
+      <p><code>status</code> は <code>string</code> 型で、診察や会計の項目は省略できるプロパティです。</p>
       <figure class="code-block">
         <figcaption>配布コードの実物: <code>examples/session-00/src/domain/appointment/appointment.ts</code></figcaption>
         <Code code={props.distributedAppointmentCode} lang="ts" />
@@ -37,7 +37,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     </div>
   </details>
   <h4 id="pitfall-no-discriminant" class="pitfall-heading">2. 状態を判別する項目がない</h4>
-  <p>型を状態ごとに分けても、共通の判別フィールドがなければ、固有のプロパティの有無と判定する順序に頼るしかありません。</p>
+  <p>型を状態ごとに分けても、共通の判別フィールドがなければ、状態固有のプロパティがあるかどうかと、判定する順序に頼るしかありません。</p>
   <details class="step-solution">
     <summary>コードを見る: 判別フィールドのないUnion</summary>
     <div class="step-solution__body">
@@ -49,7 +49,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     </div>
   </details>
   <h4 id="pitfall-wide-input" class="pitfall-heading">3. 遷移関数が Appointment 全体を受け取る</h4>
-  <p>S1の配布コードは、すでに <code>kind</code> で6つの状態を分けています。しかし、遷移関数は引数に <code>Appointment</code> 全体を受け取るため、次の誤りはどれもコンパイルできます。</p>
+  <p>このセッションの配布コードは、すでに <code>kind</code> で6つの状態を分けています。しかし、遷移関数は引数に <code>Appointment</code> 全体を受け取るため、次の誤りはどれもコンパイルできます。</p>
   <ul>
     <li><code>Paid</code> を <code>startExamination</code> へ渡す</li>
     <li>診察結果を記録していない <code>InExamination</code> を <code>recordPayment</code> へ渡す</li>
@@ -69,7 +69,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 
 <section id="legacy" class="code-playground">
   <h2>コードを読み、失敗を再現する</h2>
-  <p><code>Appointment</code> 全体を受け取る遷移関数、<code>throw</code>、<code>as Appointment</code> を探します。これらは、許可されていない状態遷移をコンパイラで止められない箇所です。</p>
+  <p><code>Appointment</code> 全体を受け取る遷移関数、<code>throw</code>、<code>as Appointment</code> を探してください。これらは、許可されていない状態遷移をコンパイラが止められない箇所です。</p>
   <p>{"\n"}編集する範囲は <code>{props.session.exerciseModule.dir}</code>、変更するファイル数は最大{"\n"}{props.session.exerciseModule.fileBudget}ファイル・約{props.session.exerciseModule.lineBudget}行です。{"\n"}</p>
   <CodeGuideCards guides={props.guides} projectFiles={props.projectFiles} />
   <h3>修正前の失敗を確認する</h3>
@@ -83,7 +83,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     expected={`${props.initialExerciseFailureCount}個の型検査が失敗します。このページの${props.session.steps.length}件のStepで4個を直し、残る1個は次のSessionで扱う分岐漏れの型検査です。`}
   />
   <p>失敗した型検査は、出力の前半に「要件未達」の行で並びます。出力の末尾に <code>Tests 5 passed (5)</code> と出ても、演習は終わっていません。端末を上へスクロールして、先に並ぶ要件未達を見てください。</p>
-  <p>ブラウザ内の変更はローカルへ反映されません。</p>
+  <p>ブラウザ内エディタで編集した内容は、手元の clone にあるファイルへ反映されません。</p>
   <div data-code-explorer={props.workspace.slug}>
     <CodeExplorer
       client:load
@@ -96,7 +96,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 
 <section id="teach">
   <h2>事前知識（{props.session.timeBreakdown.teach}分）</h2>
-  <p>この回で利用する型について確認します。修正前の書き方は<a href="#naive-pitfalls">素朴な実装の落とし穴</a>にまとめました。ここでは解決に使う書き方を示します。</p>
+  <p>このセッションで使う型を確認します。修正前の書き方は<a href="#naive-pitfalls">素朴な実装の落とし穴</a>にまとめました。ここでは解決に使う書き方を示します。</p>
   <article class="teaching-topic">
     <h3>Discriminated Unionは共通のkindで型を絞り込める</h3>
     <p>Unionは、値が複数の型のうち、いずれか1つであることを表します。判別フィールドを持たないオブジェクトのUnionでは、固有のプロパティがあるかどうかを調べて型を絞り込むしかありません。Discriminated Unionは、すべてのオブジェクト型に共通の判別フィールドを置き、型ごとに異なるリテラル値を割り当てたUnionです。</p>
@@ -129,6 +129,13 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     </figure>
     <p class="teaching-topic__why">遷移ごとに <code>CheckedIn</code>、<code>InExamination</code>、<code>AwaitingPayment</code> だけを受け取ります。会計済みの予約や診察結果を記録していない予約を誤った関数へ渡すと、コードを実行する前の型検査でコンパイルエラーになります。Discriminated Unionが状態の候補を定義し、関数の引数型が許可された遷移を定義します。</p>
   </article>
+  <article class="teaching-topic">
+    <h3>事前条件を型と実行時の検証で確かめる</h3>
+    <p>契約プログラミングは、関数が呼び出し側に求める条件を「事前条件」として書く考え方です。遷移関数では、受け取る予約が特定の状態であることが事前条件にあたります。たとえば <code>startExamination</code> は、<code>kind</code> が <code>CheckedIn</code> の予約を求めます。</p>
+    <p>型は、この事前条件を型検査のときに確かめます。引数の型を <code>CheckedIn</code> にすると、TypeScript は別の状態の予約を渡す呼び出しをコンパイルエラーにします。ただし、型は実行時には消えます。データベースから読み取った値のように型検査が中身を確かめていない値は、誤った状態のまま関数へ届くことがあります。</p>
+    <p>実行時の検証は、同じ事前条件をコードの実行中に確かめます。このセッションの配布コードにある <code>requireKind</code> は、許可していない状態の予約を受け取ると例外を投げます。型検査をすり抜けた値でも、遷移の処理へ進む前に止められます。ただし、誤った呼び出しに気づけるのは、その呼び出しが実際に実行されたときだけです。</p>
+    <p class="teaching-topic__why">型と実行時の検証は確かめるタイミングが違うので、組み合わせて使えます。型は誤った呼び出しを実行前に見つけ、実行時の検証は型検査が確かめていない値を実行中に止めます。この演習の解答では遷移関数の引数を型で限定し、遷移関数の中の <code>requireKind</code> はなくなります。データベースから読み取った予約の <code>kind</code> は、ルートの処理が実行時に確かめます。</p>
+  </article>
   <details class="step-solution">
     <summary>おまけ: 他の言語で状態を型にする</summary>
     <div class="step-solution__body">
@@ -152,9 +159,9 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
   <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
   <ol class="adv-flow">
-    <li><strong>言語化（{props.session.adv.articulate}分）</strong>: 起きてはいけない状態遷移を1文で書く。</li>
-    <li><strong>依頼（{props.session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
-    <li><strong>検証（{props.session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
+    <li><strong>言語化（{props.session.adv.articulate}分）</strong>: 起きてはいけない状態遷移を1文で書きます。</li>
+    <li><strong>依頼（{props.session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼します。</li>
+    <li><strong>検証（{props.session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認します。</li>
   </ol>
   <div class="delegation-prompt">
     <h3>プロンプトのテンプレート</h3>
@@ -162,11 +169,11 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <pre><code>{props.delegationPrompt}</code></pre>
   </div>
   <h3 data-solution-heading>{props.session.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
-  <p>演習を完了できないときは、解答スナップショットをステップ単位で開き、遷移関数の引数型をコピペします。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。</p>
+  <p>演習を完了できないときは、解答スナップショットをステップ単位で開き、遷移関数の引数型をコピーして貼り付けます。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。</p>
   {props.session.solutionPresentation === "completed-file" ? (
     <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
-      <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読む。</p>
-      <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示される。</p>
+      <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読みます。</p>
+      <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示されます。</p>
     </div>
   ) : null}
   {props.solutionSteps.map(({ step, presentation, snippets }) => (
@@ -185,7 +192,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
       </details>
     </div>
   ))}
-  <CommandBlock phase="green" command={props.session.exerciseCommand} expected="分岐漏れの型検査1個だけが失敗します。この1個はSession 02で直します。" />
+  <CommandBlock phase="green" command={props.session.exerciseCommand} expected="分岐漏れの型検査1個だけが失敗します。この1個はS02で直します。" />
   <h3>この演習で解決しないこと</h3>
   <p>この型が守れるのは、TypeScript が検査できる値だけです。外部から届く未検証の値や、型アサーションで作った値は防げません。</p>
 </section>
@@ -193,10 +200,10 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 <section id="review">
   <h2>レビューと持ち帰り</h2>
   <div class="exercise-review-checklist">
-    <h3>個人で確認する</h3>
+    <h3>個人での確認</h3>
     <ol>{props.commonReviewChecks.map((check) => <li>{check}</li>)}</ol>
-    <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>
-    <p><strong>残すもの:</strong> {props.reviewCompletionArtifacts.join("、")}</p>
+    <p>この演習の未commit差分は、次のセッションまでそのまま残して構いません。reset、stash、commit は不要です。</p>
+    <p>残すものは、{props.reviewCompletionArtifacts.join("、")}です。</p>
     <h3>業務へ持ち帰る</h3>
     <p>{props.businessReflectionQuestion}</p>
   </div>
@@ -206,7 +213,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   </section>
   <section class="peer-review-panel">
     <h3>設計を振り返る</h3>
-    <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは{props.session.peerReview.minutes}分・{props.headcount}を目安にしてください。</p>
+    <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは、{props.session.peerReview.minutes}分の間に{props.headcount}の差分を見ることを目安にしてください。</p>
     <p><a href={props.promisesHref}>進行上の約束事を確認する</a></p>
     <ol>{props.session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
   </section>

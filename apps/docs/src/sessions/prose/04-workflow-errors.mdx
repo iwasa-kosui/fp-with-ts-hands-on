@@ -10,13 +10,13 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <EpisodeIllustration slug={props.session.slug} />
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
-  <p>予約が見つからない場合と受付済みでない場合を、呼び出し側が処理できる業務エラーとして返します。</p>
+  <p>予約が見つからない場合と来院済みでない場合を、呼び出し側が処理できる業務エラーとして返します。</p>
   <h3 data-story-stage="use-case">追加したい機能</h3>
-  <p>診察開始で顧客や現場が失敗理由に応じて操作を選ぶ失敗を型付きの値として返し、Web側が受付の次の操作を選べるようにする。</p>
+  <p>診察開始の失敗のうち、理由によって顧客や現場の対応が変わるものを、型付きの値として返します。Web側は、その値から受付の次の操作を選べるようになります。</p>
   <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
-  <p>ユースケースは成功値だけを返す型のまま複数の Error をthrowします。Web側は予約なしの文言だけをcatchしているため、後から追加された状態不正を処理できず500にしています。</p>
+  <p>ユースケースは成功値だけを返す型のまま複数の Error をthrowします。Web側は予約なしの文言だけをcatchしているため、後から足した状態不正の例外を処理できず、500を返します。</p>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
-  <p>予約なしと状態不正をkindを持つDiscriminated Unionにし、Resultで返す。andThenで失敗後の状態遷移とStore呼び出しを止める。状態遷移はドメイン関数を直接呼び、外部境界のResolverとStoreだけを依存として受け取る。Web側はmatchとswitchでResultに含めた失敗を網羅してnoticeへ変換する。</p>
+  <p>予約なしと状態不正を、kindを持つDiscriminated Unionにして、Resultで返します。andThenで、失敗後の状態遷移とStoreの呼び出しを止めます。状態遷移はドメイン関数を直接呼び、外部境界のResolverとStoreだけを依存として受け取ります。Web側はmatchとswitchで、Resultに含めた失敗をすべて網羅し、noticeへ変換します。</p>
   <p>Resolverは、予約IDから現在の予約をデータベースなどの外部から取得する部品です。Storeは、状態を進めた予約を外部へ保存する部品です。どちらも外部に触れるので、ユースケースは引数の <code>deps</code> から受け取ります。</p>
   <h3>このセッションで守ること</h3>
   <ul class="decision-list">{props.session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
@@ -34,7 +34,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     {props.session.steps.map((step) => <li>{step.startingFailure}</li>)}
   </ul>
   <CommandBlock phase="red" command={props.session.exerciseCommand} expected={`型検査の要件未達3件と演習テストの失敗5件、合わせて${props.initialExerciseFailureCount}件の失敗が出ます。`} />
-  <p>ブラウザ内の変更はローカルへ反映されません。</p>
+  <p>ブラウザ内エディタで編集した内容は、手元の clone にあるファイルへ反映されません。</p>
   <div data-code-explorer={props.workspace.slug}>
     <CodeExplorer
       client:load
@@ -53,19 +53,19 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <p>診察開始は、入力を検査する、対象を取得する、権限と状態を確認する、結果を作る、という工程を順に実行します。ROPは、この工程の流れを成功と失敗の2本のレールで捉える考え方です。</p>
     <p>各工程は、成功なら次の工程へ値を渡し、失敗なら下のレールへ移って後続の工程を飛ばします。失敗の値は下のレールを終点まで進みます。</p>
     <RailwayOrientedProgramming />
-    <p>ROPを使うと、予約が見つからない、受付済みでないといった工程ごとの失敗を、同じ流れで扱えます。失敗した後に状態遷移や保存だけが実行され、途中の状態が残ることを防げます。図の工程と診察開始の処理は、次のように対応します。</p>
+    <p>ROPを使うと、予約が見つからない、来院済みでないといった工程ごとの失敗を、同じ流れで扱えます。失敗した後に状態遷移や保存だけが実行され、途中の状態が残ることを防げます。図の工程と診察開始の処理は、次のように対応します。</p>
     <table>
       <thead>
         <tr><th>図の工程</th><th>診察開始の処理</th><th>失敗レールへ移る値</th></tr>
       </thead>
       <tbody>
-        <tr><th>入力を検査する</th><td><code>StartExaminationInput.parse</code>。Session 03の境界で検査します</td><td>この回では扱いません</td></tr>
+        <tr><th>入力を検査する</th><td><code>StartExaminationInput.parse</code>。Session 03の境界で検査します</td><td>このセッションでは扱いません</td></tr>
         <tr><th>対象を取得する</th><td><code>resolver.resolveById</code> と <code>ensureAppointmentFound</code></td><td><code>AppointmentNotFound</code></td></tr>
-        <tr><th>権限と状態を確認する</th><td><code>ensureCheckedIn</code>（権限はこの回では扱いません）</td><td><code>InvalidAppointmentState</code></td></tr>
+        <tr><th>権限と状態を確認する</th><td><code>ensureCheckedIn</code>（権限はこのセッションでは扱いません）</td><td><code>InvalidAppointmentState</code></td></tr>
         <tr><th>結果を作る</th><td><code>transitionToInExamination</code> と <code>store.save</code></td><td>なし</td></tr>
       </tbody>
     </table>
-    <p>失敗レールを進むのは、呼び出し側が理由別の対応を選べる失敗です。この回では、この失敗を業務エラーと呼びます。一方、保存障害のように呼び出し側に理由別の対応がない異常はシステムエラーと呼びます。システムエラーは失敗レールへ載せず、例外として外側へ伝えます。</p>
+    <p>失敗レールを進むのは、呼び出し側が理由別の対応を選べる失敗です。このセッションでは、この失敗を業務エラーと呼びます。一方、保存障害のように呼び出し側に理由別の対応がない異常はシステムエラーと呼びます。システムエラーは失敗レールへ載せず、例外として外側へ伝えます。</p>
   </article>
   <TeachingTopic name="isErr で書くと、工程ごとに同じ分岐が増える">
     <p>throw をやめて失敗を値で返すと、呼び出し側は失敗を確かめてから次の工程へ進みます。Result は、成功値か失敗のどちらかを持つ値です。ensureAppointmentFound と ensureCheckedIn が Result を返すとして、診察開始を素直に書くと次のようになります。isErr() が true なら error に失敗が入り、false なら value に成功値が入ります。</p>
@@ -97,7 +97,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
       <figcaption>{props.teaching[1].example.caption}</figcaption>
       <Code code={props.teaching[1].example.code} lang="ts" />
     </figure>
-    <p class="teaching-topic__why">例外では、関数の型から失敗理由を読み取れません。Result の E に業務エラーを置くと、呼び出し側は実行前から起こりうる失敗を把握し、表示や次の操作を選べます。err は例外を投げず、失敗理由を値として返します。neverthrow の Result は、前の例の if を書かずに済む andThen と map も持っています。</p>
+    <p class="teaching-topic__why">例外では、関数の型から失敗理由を読み取れません。Result の E に業務エラーを置くと、呼び出し側は実行前から起こりうる失敗を把握し、表示や次の操作を選べます。err は例外を投げず、失敗理由を値として返します。neverthrow の Result は、isErr の例のような if を書かずに済む andThen と map も持っています。</p>
   </article>
   <TeachingTopic name="andThen と map を ROP の図と見比べる">
     <p>andThen は Ok のときだけ、Result を返す関数へ進みます。map は Ok のときだけ、素の値を返す関数で成功値を変換します。Err になった後は、どちらのコールバックも呼ばれません。</p>
@@ -119,7 +119,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     after={props.teaching[3].after}
   >
     <p>同じ診察開始を andThen と map で書くと、if が消えて工程の順序だけが残ります。</p>
-    <Fragment slot="why">after は、戻り値の型と処理順を上から続けて読めます。Err になった時点で後続の andThen と map は呼ばれません。2つ目の map は値を変えません。保存してから同じ値を返すので、保存の後も InExamination が次へ渡ります。resolver と store は外部境界として deps から受け取りますが、状態遷移はドメイン知識なので直接呼びます。store.save が投げる保存障害は、呼び出し側が理由別の対応を選ぶ業務エラーではなく、要求された保存処理を完了できないシステムエラーとして例外を伝播させます。</Fragment>
+    <Fragment slot="why">after は、戻り値の型と処理順を上から続けて読めます。Err になった時点で後続の andThen と map は呼ばれません。2つ目の map は値を変えません。保存してから同じ値を返すので、保存の後も InExamination が次へ渡ります。resolver と store は外部境界として deps から受け取りますが、状態遷移はドメイン知識なので直接呼びます。store.save が投げる保存障害は、呼び出し側が理由別の対応を選ぶ業務エラーではなく、要求された保存処理を完了できないシステムエラーです。Result に変換せず、例外のまま外側へ伝えます。</Fragment>
   </TeachingTopic>
   <article class="teaching-topic">
     <h3>match と switch で呼び出し側の処理漏れを型エラーにする</h3>
@@ -138,7 +138,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
       <figcaption>{props.teaching[4].example.caption}</figcaption>
       <Code code={props.teaching[4].example.code} lang="ts" />
     </figure>
-    <p class="teaching-topic__why">before では InvalidAppointmentState が追加されても catch に型エラーが出ないため、受付前の予約だけ500になりました。after は match の失敗側で union 全体を受け取り、default 節から never 専用の assertNever を呼びます。エラーの種類を追加して case を足し忘れると新しい型が default 節に残り、コンパイルエラーになります。Result に含めていないシステムエラーは、この switch では捕捉せず外側の例外境界へ伝えます。</p>
+    <p class="teaching-topic__why">before では InvalidAppointmentState を追加しても catch に型エラーが出ないため、受付前の予約だけ500になりました。after は match の失敗側で union 全体を受け取り、default 節から never 専用の assertNever を呼びます。エラーの種類を追加して case を足し忘れると新しい型が default 節に残り、コンパイルエラーになります。Result に含めていないシステムエラーは、この switch では捕捉せず外側の例外境界へ伝えます。</p>
   </article>
   <aside class="teaching-column" aria-labelledby="safe-try-column-title">
     <p class="teaching-column__label">OPTIONAL / コラム</p>
@@ -158,9 +158,9 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <h3>進め方: 言語化 → Agentへの依頼 → 検証</h3>
   <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
   <ol class="adv-flow">
-    <li><strong>言語化（{props.session.adv.articulate}分）</strong>: 失敗後に実行してはいけない処理を1文で書く。</li>
-    <li><strong>依頼（{props.session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
-    <li><strong>検証（{props.session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
+    <li><strong>言語化（{props.session.adv.articulate}分）</strong>: 失敗後に実行してはいけない処理を1文で書きます。</li>
+    <li><strong>依頼（{props.session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼します。</li>
+    <li><strong>検証（{props.session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認します。</li>
   </ol>
   <div class="delegation-prompt">
     <h3>プロンプトのテンプレート</h3>
@@ -168,12 +168,12 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <pre><code>{props.delegationPrompt}</code></pre>
   </div>
   <h3>この演習で解決しないこと</h3>
-  <p>どの失敗を業務エラーとして画面のnoticeへ変換するかは、人の判断とレビューが必要になる。呼び出し側に理由別の対応がなく、要求された処理を完了できないシステムエラーはResultへ変換せず、外側の例外境界へ伝える。</p>
+  <p>どの失敗を業務エラーとして画面のnoticeへ変換するかは、人の判断とレビューが必要です。呼び出し側に理由別の対応がなく、要求された処理を完了できないシステムエラーは、Resultへ変換せず外側の例外境界へ伝えます。</p>
   <h3 data-solution-heading>{props.session.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
   {props.session.solutionPresentation === "completed-file" ? (
     <div class="before-after" aria-label="業務エラーとシステムエラーの見比べ方">
-      <p><strong>演習の開始時点:</strong> 業務エラーとして返す Result と、システムエラーとして外側へ伝える例外経路を分けて読む。</p>
-      <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示される。</p>
+      <p><strong>演習の開始時点:</strong> 業務エラーとして返す Result と、システムエラーとして外側へ伝える例外経路を分けて読みます。</p>
+      <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示されます。</p>
     </div>
   ) : null}
   {props.solutionSteps.map(({ step, presentation, snippets }) => (
@@ -203,20 +203,20 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 <section id="review">
   <h2>レビューと持ち帰り</h2>
   <div class="exercise-review-checklist">
-    <h3>個人で確認する</h3>
+    <h3>個人での確認</h3>
     <ol>
-      <li>{"`as` によるキャストが入っていないか全文検索して確認する。"}</li>
-      <li>{"`git diff --stat -- examples/session-05` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。"}</li>
-      <li>{"型検査では確認できないことを、テストまたは実行時に確認して記録する。"}</li>
+      <li>{"`as` による型アサーションが入っていないか全文検索して確認します。"}</li>
+      <li>{"`git diff --stat -- examples/session-05` で今回のスナップショットだけを確認します。`git status --short` で想定外の path がないか確認します。"}</li>
+      <li>{"型検査では確認できないことを、テストまたは実行時に確認して記録します。"}</li>
     </ol>
     <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>
-    <p><strong>残すもの:</strong> 失敗後に実行してはいけない処理、Agentへの依頼文、型検査では確認できず、テストまたは実行時に確認すること</p>
+    <p>残すものは、失敗後に実行してはいけない処理、Agentへの依頼文、型検査では確認できず、テストまたは実行時に確認することです。</p>
     <h3>業務へ持ち帰る</h3>
     <p>自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。</p>
   </div>
   <section class="peer-review-panel">
     <h3>設計を振り返る</h3>
-    <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは{props.session.peerReview.minutes}分・{props.headcount}を目安にしてください。</p>
+    <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは、{props.session.peerReview.minutes}分の間に{props.headcount}の差分を見ることを目安にしてください。</p>
     <p><a href={props.promisesHref}>進行上の約束事を確認する</a></p>
     <ol>{props.session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
   </section>

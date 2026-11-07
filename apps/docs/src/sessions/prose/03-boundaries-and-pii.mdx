@@ -11,22 +11,22 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
   <EpisodeIllustration slug={props.session.slug} />
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
-  <p>外部の文字列を検査し、値の制約を満たす2種類のIDを持つ入力へ変換します。</p>
+  <p>HTTPから届く文字列を検査し、予約IDと担当獣医師IDの形が正しいときだけ、診察開始の入力へ変換します。</p>
   <h3>境界で起きていること</h3>
-  <p>アプリの外から届く値は、どんな形でも届きます。アプリの内側の関数は、引数の型を信じて動きます。境界は、この2つの間で値を検査する場所です。境界を通った値だけが型付きの値として内側へ入り、通らなかった値は内側へ入りません。診察開始のように、業務上の1つの操作を実行する処理を、このハンズオンではユースケースと呼びます。境界を通った値は、ユースケースへ渡ります。</p>
+  <p>アプリの外から届く値が、どんな形をしているかは分かりません。アプリの内側の関数は、引数の型を信じて動きます。境界は、アプリの外と内側の間で値を検査する場所です。境界を通った値だけが型付きの値として内側へ入り、通らなかった値は内側へ入りません。診察開始のように、業務上の1つの操作を実行する処理を、このハンズオンではユースケースと呼びます。境界を通った値は、ユースケースへ渡ります。</p>
   <BoundaryPlayer walkthrough={startExaminationWalkthrough} />
   <h3>実際に届いた入力</h3>
-  <p>{"\n"}URLの予約IDはrouteが<code>appointmentId</code>へ入れます。request bodyには、{"\n              "}獣医師選択欄の表示用データが誤って入りました。{"\n"}</p>
+  <p>{"\n"}URLの予約IDはrouteが<code>appointmentId</code>へ入れます。request bodyには、{"\n              "}フロントエンドが獣医師選択欄の表示用データを誤って入れました。{"\n"}</p>
   <figure class="code-block boundary-request" data-boundary-request>
     <figcaption>フロントエンドが送信したHTTPリクエスト</figcaption>
     <Code code={props.incidentRequest} lang="http" />
   </figure>
   <h3 data-story-stage="use-case">追加したい機能</h3>
-  <p>HTTPから届く予約IDと担当獣医師IDを検証し、正しい値だけをstartExaminationへ渡す。</p>
+  <p>HTTPから届く予約IDと担当獣医師IDを検証し、正しい値だけをstartExaminationへ渡します。</p>
   <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
-  <p>raw: anyから値をコピーして必ずOkを返すため、night-shiftでもStartExaminationInputとして扱えます。アニメーションの「同じ「夜勤」が、修正前のコードに届いた」が、この状態です。</p>
+  <p>修正前のparseは、raw: anyから値をコピーして必ずOkを返します。そのため、night-shiftでも型の上ではStartExaminationInputとして扱えます。この動きは、アニメーションの場面「同じ「夜勤」が、修正前のコードに届いた」で確認できます。</p>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
-  <p>AppointmentId.schemaとVeterinarianId.schemaをobject schemaへ組み合わせ、unknownの入力全体をparseしてbrand付きの入力へ変換する。</p>
+  <p>AppointmentId.schemaとVeterinarianId.schemaをobject schemaへ組み合わせ、unknownの入力全体をparseして型付きの入力へ変換します。</p>
   <h3>このセッションで守ること</h3>
   <ul class="decision-list">{props.session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
   <p>今回の変更は <code>{props.session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
@@ -43,7 +43,7 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
     {props.session.steps.map((step) => <li>{step.startingFailure}</li>)}
   </ul>
   <CommandBlock phase="red" command={props.session.exerciseCommand} expected={`${props.session.steps.length}件の演習テストが失敗します。`} />
-  <p>ブラウザ内の変更はローカルへ反映されません。</p>
+  <p>ブラウザ内エディタで編集した内容は、手元の clone にあるファイルへ反映されません。</p>
   <div data-code-explorer={props.workspace.slug}>
     <CodeExplorer
       client:load
@@ -57,19 +57,19 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
 <section id="teach">
   <h2>事前知識（{props.session.timeBreakdown.teach}分）</h2>
   <h3>4つの用語は境界のどこを指すか</h3>
-  <p>この回で使う4つの用語は、どれも「境界で起きていること」のアニメーションの一部を指します。</p>
+  <p>このセッションで使う4つの用語は、どれも「境界で起きていること」のアニメーションの一部を指します。</p>
   <dl class="boundary-concepts" data-boundary-concepts>
     <dt>Branded Type（内側の型）</dt>
     <dd>値の制約や用途を型の名前で表します。この区別はTypeScriptの型検査で使われ、実行時の値は変えません。</dd>
     <dt>スマートコンストラクタ（境界の検査）</dt>
     <dd>入力を検査する関数です。検査を通った値だけをその型として返し、制約を満たさない入力は失敗として呼び出し側へ返します。</dd>
     <dt set:html="Parse, don't validate（境界の出口）" />
-    <dd>真偽値だけを返してrawを使い続けず、parseの成功結果として型付きの値を返します。</dd>
+    <dd>検査の結果を真偽値だけで返し、検査後も元のrawを使い続ける書き方をしません。parseが、成功結果として型付きの値を返します。</dd>
     <dt>Always-Valid Domain Model（内側全体）</dt>
-    <dd>schemaが表現する制約を満たさない入力を、内側の通常の処理へ持ち込みません。内側の関数は同じ検査を繰り返しません。</dd>
+    <dd>境界は、schemaが表す制約を満たさない入力を内側へ入れません。内側の関数は、同じ検査を繰り返しません。</dd>
   </dl>
   <h3>扱う値が変わっても、形は同じ</h3>
-  <p>値ごとに変わるのは「外側の姿」「確かめること」「内側の型」だけです。表の1行目は、先ほどのアニメーションで値が通ったコードです。</p>
+  <p>値ごとに変わるのは「外側の姿」「確かめること」「内側の型」だけです。表の1行目の「診察開始の入力」は、先ほどのアニメーションで値が通ったコードに当たります。</p>
   <BoundaryPatterns />
   <h3>値の制約にも同じ形を使う</h3>
   <p>Branded Typeの用途はIDの区別に限りません。支払金額も同じ形で書けます。<code>number</code>のままでは、受け取った関数からはその値が検査済みか分かりません。受け取る関数ごとに同じ検査を書くことになり、検査を1か所忘れると不正な金額が後続の処理へ進みます。</p>
@@ -81,11 +81,11 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
   <aside class="decision-card boundary-limit" data-boundary-limit>
     <h3>この境界だけでは検出できない入力</h3>
     <p>{"\n"}予約IDのUUIDが<code>veterinarianId</code>へ入った場合、UUIDという形式は正しいためschemaを通ります。アニメーションの「画面の不具合で、獣医師の欄に予約のIDが届いた」がこの入力です。Branded Typeは、外部データが何を指すUUIDかを判定する仕組みではありません。parseで確かめられるのは形式までです。{"\n"}</p>
-    <p>そのUUIDが実在する獣医師を指すか確かめるには、獣医師マスターの参照が必要です。この確認はS3の演習範囲には含めません。</p>
+    <p>そのUUIDが実在する獣医師を指すか確かめるには、登録済みの獣医師と照らし合わせる処理が必要です。この確認はS03の演習範囲には含めません。</p>
   </aside>
   <aside class="decision-card">
-    <h3>時間外の補足: 検査結果とPII</h3>
-    <p>{"\n"}<code>ExamResult</code> のschemaと、連絡先を既定で伏せる{"\n"}<code>Sensitive</code> は、時間内のexerciseとレビューには含めません。入口の境界は入ってくる値を検査しました。個人情報では、内側から外へ出る値も境界で考えます。{"\n"}</p>
+    <h3>時間外の補足: 検査結果と個人情報（PII）</h3>
+    <p>{"\n"}<code>ExamResult</code> のschemaと、連絡先を既定で伏せる{"\n"}<code>Sensitive</code> は、時間内の演習とレビューには含めません。ここまで見た入口の境界は、入ってくる値を検査しました。個人情報では、内側から外へ出る値も境界で考えます。{"\n"}</p>
     <BoundaryPlayer walkthrough={sensitiveWalkthrough} />
     <details>
       <summary>ExamResult の外部JSONも同じ形で検証する</summary>
@@ -101,11 +101,11 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
 <section id="supplementary">
   <h2>補助演習（目安5分）</h2>
   <p>事前知識のPaymentAmountと同じく、brandで型を分ける書き方を、予約IDと担当獣医師IDで試します。brandの名前は、配布コードの規約に合わせて文字列で書きます。Branded Typeの用途はIDの取り違えを防ぐことに限りません。ここでは配布コードの続きで試せるIDを題材にします。</p>
-  <p>補助演習は、手元のコードで実行します。このページの Playground は session-04 の snapshot なので、<code>{props.supplementaryExercise.exerciseCommand}</code> を実行できません。</p>
+  <p>補助演習は、手元のコードで実行します。このページの Playground は session-04 のスナップショットなので、<code>{props.supplementaryExercise.exerciseCommand}</code> を実行できません。</p>
   <p>先に <code>{props.supplementaryExercise.exerciseCommand}</code>、次に <code>{props.session.exerciseCommand}</code> の順に実行します。どちらもリポジトリのルートで実行するので、<code>cd</code> は要りません。</p>
   <p>このページの開始コードには、補助演習の解答がすでに入っています。そのため、補助演習を飛ばしても、このページの演習は壊れません。目安は、補助演習が5分、このページの演習が10分です。</p>
   <p>参加者が手元で進めるのはステップ1と2です。ステップ3の型テストは、講師が画面で見せます。</p>
-  <p>ステップ1と2を終えると、<code>examples/session-03/src/domain/domain.test-types.ts</code> の取り違えた2行が型エラーとして残り、<code>{props.supplementaryExercise.exerciseCommand}</code> は失敗のままです。この2行の型エラーは、用途の区別が効いていることを示します。ステップ3で <code>@ts-expect-error</code> を付けると、すべて成功します。手元で確かめたい場合は、解答のステップ3を開いて同じ変更を加えます。</p>
+  <p>ステップ1と2を終えると、<code>examples/session-03/src/domain/domain.test-types.ts</code> の取り違えた2行が型エラーとして残り、<code>{props.supplementaryExercise.exerciseCommand}</code> は失敗のままです。この2行の型エラーは、用途の区別が型検査で守られていることを示します。ステップ3で <code>@ts-expect-error</code> を付けると、演習テストがすべて成功します。手元で確かめたい場合は、解答のステップ3を開いて同じ変更を加えます。</p>
   <p>補助演習の編集範囲は <code>{props.supplementaryExercise.exerciseModule.dir}</code>、変更するファイル数は最大{props.supplementaryExercise.exerciseModule.fileBudget}ファイル・約{props.supplementaryExercise.exerciseModule.lineBudget}行です。この上限はステップ3を含みます。手元で進めるステップ1と2は4ファイルです。</p>
   <h3>取り違えたまま型検査する</h3>
   <p><code>examples/session-03/src/domain/domain.test-types.ts</code> の <code>acceptAppointmentId</code> と <code>acceptVeterinarianId</code> の呼び出しは、渡す値が逆です。この状態で型検査を実行します。</p>
@@ -114,7 +114,7 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
     <Code code={props.supplementaryExerciseTypecheckCommand} lang="shell" />
     <p><strong>期待結果:</strong> 取り違えた2行が残っていても、型検査は成功します。</p>
   </figure>
-  <p>型検査が成功したこと自体が失敗の再現です。補助演習の開始時点の <code>AppointmentId</code> と <code>VeterinarianId</code> は、どちらもUUID検査済みの <code>string</code> なので、TypeScriptには用途の違いが見えません。</p>
+  <p>型検査が成功したこと自体が失敗の再現です。補助演習の開始時点の <code>AppointmentId</code> と <code>VeterinarianId</code> は、どちらもUUIDの形を検査するschemaから作った <code>string</code> 型で、型の上では同じです。そのため、TypeScriptには用途の違いが見えません。</p>
   <h3>修正前の失敗を確認する</h3>
   <p>修正前は、次の{props.supplementaryExercise.steps.length}件に対応する演習テストが失敗します。</p>
   <ul class="exercise-failures" aria-label="補助演習の修正前に確認する問題">
@@ -135,7 +135,7 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
         <Code code={props.supplementaryExerciseTeaching[0].after} lang="ts" />
       </figure>
     </div>
-    <p class="teaching-topic__why">AppointmentIdとVeterinarianIdは、どちらもUUID形式のstringです。uuid検査だけでは相互に代入できます。演習ではPetId、OwnerId、ExamIdの実装を手本にして、それぞれ別のbrandを付けます。区別するのは値の形式ではなく用途です。</p>
+    <p class="teaching-topic__why">AppointmentIdとVeterinarianIdは、どちらもUUID形式のstringです。型がどちらもstringなので、互いに代入できます。演習ではPetId、OwnerId、ExamIdの実装を手本にして、それぞれ別のbrandを付けます。区別するのは値の形式ではなく用途です。</p>
   </article>
   <article class="teaching-topic">
     <h3>識別子をドメインモデルと状態遷移で利用する</h3>
@@ -154,7 +154,7 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
   </article>
   <article class="teaching-topic">
     <h3>@ts-expect-error による型テスト</h3>
-    <p>わざとコンパイルエラーになるコードを書き、その行で確かにコンパイルエラーが発生することを検査します。もし誰かが実装を変更して意図せずコンパイルエラーが出なくなってしまった場合、@ts-expect-error は「不要なエラー抑制を行なっている」ことになり、逆にコンパイルエラーとなります。</p>
+    <p>型テストでは、わざとコンパイルエラーになるコードを書き、その行で確かにコンパイルエラーが発生することを検査します。実装の変更で、その行のコンパイルエラーが意図せず出なくなると、@ts-expect-error が不要になり、TypeScriptがその行を逆にコンパイルエラーにします。</p>
     <div class="teaching-topic__diff">
       <figure class="code-block">
         <figcaption>{"\n"}before:{"\n"}<code>examples/session-03/src/domain/domain.test-types.ts</code></figcaption>
@@ -167,7 +167,7 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
     </div>
     <p class="teaching-topic__why">実行時テストでは、間違えた値を渡すとコンパイルエラーになることを確かめられません。@ts-expect-errorは次の行に型エラーが必要だと宣言します。後から2つの識別子が同じ型へ戻ると、不要なエラー抑制として型検査が失敗します。</p>
   </article>
-  <p><strong>言語化</strong>: 取り違えてはいけない値を1文で書く。この1文を、次のテンプレートの「[言語化フェーズで書いた1文]」に入れます。</p>
+  <p><strong>言語化</strong>: 取り違えてはいけない値を1文で書きます。この1文を、次のテンプレートの「[言語化フェーズで書いた1文]」に入れます。</p>
   <div class="delegation-prompt">
     <h3>補助演習のプロンプトのテンプレート</h3>
     <p>角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。Agentを使わない場合は、実装メモとして使います。</p>
@@ -189,7 +189,7 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
   ))}
   <CommandBlock phase="green" command={props.supplementaryExercise.exerciseCommand} expected="ステップ3まで終えると、演習テストがすべて成功します。" />
   <h3>この演習で解決しないこと</h3>
-  <p>異なる用途は区別できますが、同じAppointmentId型を持つ別の予約を選ぶ誤りは型だけでは検出できない。</p>
+  <p>異なる用途は区別できますが、同じAppointmentId型を持つ別の予約を選ぶ誤りは型だけでは検出できません。</p>
   <h3>演習を完了できないとき</h3>
   <p>現在の3ステップを順に開き、まずAppointmentIdとVeterinarianIdに別々のbrandを付けます。次に予約状態とstartExaminationへ反映し、取り違えがコンパイルエラーになることを型テストで確かめます。</p>
 </section>
@@ -200,9 +200,9 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
   <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
   <p>次の時間は補助演習の5分を含む合計です。補助演習を行った場合、依頼に使えるのは6分です。</p>
   <ol class="adv-flow">
-    <li><strong>言語化（{props.session.adv.articulate}分）</strong>: 境界で拒否する入力を1文で書く。</li>
-    <li><strong>依頼（{props.session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
-    <li><strong>検証（{props.session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
+    <li><strong>言語化（{props.session.adv.articulate}分）</strong>: 境界で拒否する入力を1文で書きます。</li>
+    <li><strong>依頼（{props.session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼します。</li>
+    <li><strong>検証（{props.session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認します。</li>
   </ol>
   <div class="delegation-prompt">
     <h3>プロンプトのテンプレート</h3>
@@ -210,12 +210,12 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
     <pre><code>{props.delegationPrompt}</code></pre>
   </div>
   <h3>この演習で解決しないこと</h3>
-  <p>schemaはUUIDの形式を検査しますが、そのUUIDが実在する予約や獣医師を指すかは判断しません。対象の取得と状態確認はS4で扱います。</p>
+  <p>schemaはUUIDの形式を検査しますが、そのUUIDが実在する予約や獣医師を指すかは判断しません。対象の取得と状態確認はS04で扱います。</p>
   <h3 data-solution-heading>{props.session.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
   {props.session.solutionPresentation === "completed-file" ? (
     <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
-      <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読む。</p>
-      <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示される。</p>
+      <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読みます。</p>
+      <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示されます。</p>
     </div>
   ) : null}
   {props.solutionSteps.map(({ step, presentation, snippets }) => (
@@ -236,26 +236,26 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
   ))}
   <CommandBlock phase="green" command={props.session.exerciseCommand} expected="演習テストがすべて成功します。" />
   <h3>演習を完了できないとき</h3>
-  <p>startExaminationInput.tsの手書き型をz.inferへ変え、AppointmentId.schemaとVeterinarianId.schemaを持つobject schemaを作ります。parseにはschemaResultを使います。相互レビューの約束事はS1のリンク先を確認します。</p>
+  <p>startExaminationInput.tsの手書き型をz.inferへ変え、AppointmentId.schemaとVeterinarianId.schemaを持つobject schemaを作ります。parseにはschemaResultを使います。相互レビューの約束事は、S01のリンク先を確認します。</p>
 </section>
 
 <section id="review">
   <h2>レビューと持ち帰り</h2>
   <div class="exercise-review-checklist">
-    <h3>個人で確認する</h3>
+    <h3>個人での確認</h3>
     <ol>
-      <li>{"`as` によるキャストが入っていないか全文検索して確認する。"}</li>
-      <li>{"`git diff --stat -- examples/session-04` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。"}</li>
-      <li>{"型検査では確認できないことを、テストまたは実行時に確認して記録する。"}</li>
+      <li>{"`as` による型アサーションが入っていないか全文検索して確認します。"}</li>
+      <li>{"`git diff --stat -- examples/session-04` で今回のスナップショットだけを確認します。`git status --short` で想定外の path がないか確認します。"}</li>
+      <li>{"型検査では確認できないことを、テストまたは実行時に確認して記録します。"}</li>
     </ol>
     <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>
-    <p><strong>残すもの:</strong> 境界で拒否する入力、Agentへの依頼文、型検査では確認できず、テストまたは実行時に確認すること</p>
+    <p>残すものは、境界で拒否する入力、Agentへの依頼文、型検査では確認できず、テストまたは実行時に確認することです。</p>
     <h3>業務へ持ち帰る</h3>
     <p>自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。</p>
   </div>
   <section class="peer-review-panel">
     <h3>設計を振り返る</h3>
-    <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは{props.session.peerReview.minutes}分・{props.headcount}を目安にしてください。</p>
+    <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは、{props.session.peerReview.minutes}分の間に{props.headcount}の差分を見ることを目安にしてください。</p>
     <p><a href={props.promisesHref}>進行上の約束事を確認する</a></p>
     <ol>{props.session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
   </section>
