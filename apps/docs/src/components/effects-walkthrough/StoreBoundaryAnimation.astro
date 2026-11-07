@@ -1,0 +1,455 @@
+---
+import { Code } from "astro:components";
+import css from "./store-boundary.css?raw";
+import script from "./store-boundary.js?raw";
+import Walkthrough from "./Walkthrough.astro";
+
+type Box = "call" | "impl";
+type Snippet = Readonly<{ box: Box; path: string; code: string }>;
+type Pane = Readonly<{ pane: string; lines: readonly number[] }>;
+type CardState = "off" | "tx" | "tx-failed" | "tx-gone" | "home" | "home-failed";
+type Tx = "none" | "wait" | "open" | "commit" | "rollback" | "ended";
+type Frame = Readonly<{
+  text: string;
+  call: Pane | null;
+  impl: Pane | null;
+  tx: Tx;
+  old: "CheckedIn" | "InExamination" | "none";
+  state: CardState;
+  audit: CardState;
+  read?: boolean;
+}>;
+
+const snippets: Readonly<Record<string, Snippet>> = {
+  "before-call": {
+    box: "call",
+    path: "examples/session-06/src/useCase/startExamination.ts",
+    code: `await deps.stateStore.save(event.aggregateState);
+await deps.eventLog.append(event);`,
+  },
+  "before-save": {
+    box: "impl",
+    path: "examples/session-06/src/adaptor/secondary/sqlite/appointmentStore.ts",
+    code: `stateStore: {
+  save: async (appointment) => saveState(database, appointment),
+},
+
+const saveState = (
+  executor: SqliteExecutor,
+  appointment: Appointment,
+): void => {
+  const row = toAppointmentRow(appointment);
+  try {
+    executor
+      .insert(appointmentsTable)
+      .values(row)
+      .onConflictDoUpdate({
+        target: appointmentsTable.appointmentId,
+        set: row,
+      })
+      .run();
+  } catch (cause) {
+    throw new AppointmentPersistenceError("save-state", cause);
+  }
+};`,
+  },
+  "before-append": {
+    box: "impl",
+    path: "examples/session-06/src/adaptor/secondary/sqlite/appointmentStore.ts",
+    code: `eventLog: {
+  append: async (event) => appendAudit(database, event),
+},
+
+const appendAudit = (
+  executor: SqliteExecutor,
+  event: ExaminationStarted,
+): void => {
+  try {
+    executor.insert(auditLogsTable).values(toAuditRow(event)).run();
+  } catch (cause) {
+    throw new AppointmentPersistenceError("append-audit", cause);
+  }
+};`,
+  },
+  "after-call": {
+    box: "call",
+    path: "examples/session-07/src/useCase/startExamination.ts",
+    code: `.andThrough((event) => deps.store.store(event))`,
+  },
+  "after-store": {
+    box: "impl",
+    path: "examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    code: `store: (event) =>
+  ResultAsync.fromSafePromise(
+    Promise.resolve().then(() => storeAtomically(event)),
+  ).andThen((result) => result),`,
+  },
+  "after-atomic": {
+    box: "impl",
+    path: "examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    code: `const storeAtomically = (event: ExaminationStarted) =>
+  database.transaction((transaction) => {
+    const current = findInTransaction(transaction, event.appointmentId);
+    if (current === undefined || current.kind !== "CheckedIn") {
+      return err({
+        kind: "AppointmentConflict",
+        appointmentId: event.appointmentId,
+      } as const);
+    }
+
+    const committedEvent = Appointment.startExamination({
+      eventId: event.eventId,
+      occurredAt: event.occurredAt,
+    })(current, event.aggregateState.veterinarianId);
+
+    saveState(transaction, committedEvent.aggregateState);
+    appendAudit(transaction, committedEvent);
+    return ok(undefined);
+  });`,
+  },
+  "after-find": {
+    box: "impl",
+    path: "examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    code: `const findInTransaction = (
+  transaction: SqliteTransaction,
+  appointmentId: AppointmentId,
+): Appointment | undefined => {
+  let row: Readonly<{ state: string }> | undefined;
+  try {
+    row = transaction
+      .select({ state: appointmentsTable.state })
+      .from(appointmentsTable)
+      .where(sql\`\${appointmentsTable.appointmentId} = \${appointmentId}\`)
+      .get();
+  } catch (cause) {
+    throw new AppointmentPersistenceError("resolve", cause);
+  }
+
+  return row === undefined ? undefined : parsePersistedAppointment(row.state);
+};`,
+  },
+  "after-save": {
+    box: "impl",
+    path: "examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    code: `const saveState = (
+  executor: SqliteExecutor,
+  appointment: Appointment,
+): void => {
+  const row = toAppointmentRow(appointment);
+  try {
+    executor
+      .insert(appointmentsTable)
+      .values(row)
+      .onConflictDoUpdate({
+        target: appointmentsTable.appointmentId,
+        set: row,
+      })
+      .run();
+  } catch (cause) {
+    throw new AppointmentPersistenceError("save-state", cause);
+  }
+};`,
+  },
+  "after-audit": {
+    box: "impl",
+    path: "examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    code: `const appendAudit = (
+  executor: SqliteExecutor,
+  event: ExaminationStarted,
+): void => {
+  try {
+    executor.insert(auditLogsTable).values(toAuditRow(event)).run();
+  } catch (cause) {
+    throw new AppointmentPersistenceError("append-audit", cause);
+  }
+};`,
+  },
+};
+
+const boxes: readonly Readonly<{ box: Box; label: string }>[] = [
+  { box: "call", label: "呼び出し元のコード" },
+  { box: "impl", label: "実装のコード" },
+];
+
+const appointmentCards = [
+  { id: "old-CheckedIn", old: true, code: `{ status: "CheckedIn",\n  state: '{"kind":"CheckedIn",…}' }` },
+  { id: "old-InExamination", old: true, code: `{ status: "InExamination",\n  state: '{"kind":"InExamination",…}' }` },
+  { id: "state", old: false, code: `{ status: "InExamination",\n  state: '{"kind":"InExamination",…}' }` },
+] as const;
+const auditCards = [
+  { id: "old-audit", old: true, code: `{ eventId: "e-0",\n  eventName: "AppointmentSeeded" }` },
+  { id: "audit", old: false, code: `{ eventId: "e-1",\n  eventName: "ExaminationStarted" }` },
+] as const;
+
+const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] = [
+  {
+    label: "修正前: 2回の保存",
+    frames: [
+      {
+        text: "`event` を作り終えました。予約はまだ `CheckedIn` で、監査記録はありません。",
+        call: null,
+        impl: null,
+        tx: "none",
+        old: "CheckedIn",
+        state: "off",
+        audit: "off",
+      },
+      {
+        text: "`stateStore.save` は `database` に直接書きます。transaction がないので、`InExamination` はこの時点で確定します。",
+        call: { pane: "before-call", lines: [0] },
+        impl: { pane: "before-save", lines: [1, 10, 11, 12, 13, 14, 15, 16, 17] },
+        tx: "none",
+        old: "none",
+        state: "home",
+        audit: "off",
+      },
+      {
+        text: "次に `eventLog.append` が監査記録を書きます。ここで書き込みが失敗し、例外が投げられました。",
+        call: { pane: "before-call", lines: [1] },
+        impl: { pane: "before-append", lines: [1, 9, 10, 11] },
+        tx: "none",
+        old: "none",
+        state: "home",
+        audit: "home-failed",
+      },
+      {
+        text: "500 応答が返りました。状態は `InExamination` のまま、`ExaminationStarted` の監査記録はありません。誰が診察を開始したかを後から確かめられません。",
+        call: null,
+        impl: null,
+        tx: "none",
+        old: "none",
+        state: "home",
+        audit: "off",
+      },
+    ],
+  },
+  {
+    label: "修正後: 成功",
+    frames: [
+      {
+        text: "ユースケースは `deps.store.store(event)` を1回だけ呼びます。保存先が2つあることをユースケースは知りません。",
+        call: { pane: "after-call", lines: [0] },
+        impl: { pane: "after-store", lines: [0, 1, 2, 3] },
+        tx: "wait",
+        old: "CheckedIn",
+        state: "off",
+        audit: "off",
+      },
+      {
+        text: "`storeAtomically` が transaction を開きます。ここから先の書き込みは、最後まで未確定です。",
+        call: { pane: "after-call", lines: [0] },
+        impl: { pane: "after-atomic", lines: [0, 1] },
+        tx: "open",
+        old: "CheckedIn",
+        state: "off",
+        audit: "off",
+      },
+      {
+        text: "transaction の中で予約を読み直します。`CheckedIn` なので先へ進みます。",
+        call: { pane: "after-call", lines: [0] },
+        impl: { pane: "after-find", lines: [6, 7, 8, 9, 10, 15] },
+        tx: "open",
+        old: "CheckedIn",
+        state: "off",
+        audit: "off",
+        read: true,
+      },
+      {
+        text: "`saveState` が新しい状態を書きます。まだ未確定です。",
+        call: { pane: "after-call", lines: [0] },
+        impl: { pane: "after-save", lines: [6, 7, 8, 9, 10, 11, 12, 13] },
+        tx: "open",
+        old: "CheckedIn",
+        state: "tx",
+        audit: "off",
+      },
+      {
+        text: "`appendAudit` が監査記録を書きます。これも未確定です。",
+        call: { pane: "after-call", lines: [0] },
+        impl: { pane: "after-audit", lines: [5] },
+        tx: "open",
+        old: "CheckedIn",
+        state: "tx",
+        audit: "tx",
+      },
+      {
+        text: "`ok(undefined)` を返すと transaction が確定し、状態と監査記録が同時に残ります。",
+        call: null,
+        impl: null,
+        tx: "commit",
+        old: "none",
+        state: "home",
+        audit: "home",
+      },
+    ],
+  },
+  {
+    label: "修正後: 監査記録の保存に失敗",
+    frames: [
+      {
+        text: "`storeAtomically` が transaction を開きます。",
+        call: { pane: "after-call", lines: [0] },
+        impl: { pane: "after-atomic", lines: [0, 1] },
+        tx: "open",
+        old: "CheckedIn",
+        state: "off",
+        audit: "off",
+      },
+      {
+        text: "予約を読み直します。`CheckedIn` なので先へ進みます。",
+        call: { pane: "after-call", lines: [0] },
+        impl: { pane: "after-find", lines: [6, 7, 8, 9, 10, 15] },
+        tx: "open",
+        old: "CheckedIn",
+        state: "off",
+        audit: "off",
+        read: true,
+      },
+      {
+        text: "`saveState` が状態を書きます。まだ未確定です。",
+        call: { pane: "after-call", lines: [0] },
+        impl: { pane: "after-save", lines: [6, 7, 8, 9, 10, 11, 12, 13] },
+        tx: "open",
+        old: "CheckedIn",
+        state: "tx",
+        audit: "off",
+      },
+      {
+        text: "`appendAudit` の書き込みが失敗し、`AppointmentPersistenceError` が投げられます。",
+        call: { pane: "after-call", lines: [0] },
+        impl: { pane: "after-audit", lines: [5, 6, 7] },
+        tx: "open",
+        old: "CheckedIn",
+        state: "tx",
+        audit: "tx-failed",
+      },
+      {
+        text: "例外で transaction が取り消され、未確定だった状態の行も消えます。予約は `CheckedIn` のままで、監査記録もありません。",
+        call: null,
+        impl: null,
+        tx: "rollback",
+        old: "CheckedIn",
+        state: "tx-gone",
+        audit: "tx-gone",
+      },
+      {
+        text: "例外は `store` の Promise の reject になります。状態だけが残ることはありません。",
+        call: null,
+        impl: null,
+        tx: "rollback",
+        old: "CheckedIn",
+        state: "off",
+        audit: "off",
+      },
+    ],
+  },
+  {
+    label: "修正後: 競合",
+    frames: [
+      {
+        text: "transaction を開く前に、別の依頼が先に診察を開始していました。データベースの予約はすでに `InExamination` です。",
+        call: null,
+        impl: null,
+        tx: "wait",
+        old: "InExamination",
+        state: "off",
+        audit: "off",
+      },
+      {
+        text: "transaction の中で読み直すと `current.kind` が `CheckedIn` ではありません。",
+        call: { pane: "after-call", lines: [0] },
+        impl: { pane: "after-atomic", lines: [2, 3] },
+        tx: "open",
+        old: "InExamination",
+        state: "off",
+        audit: "off",
+        read: true,
+      },
+      {
+        text: "何も書かずに `err` で `AppointmentConflict` を返します。状態も監査記録も増えません。",
+        call: null,
+        impl: null,
+        tx: "ended",
+        old: "InExamination",
+        state: "off",
+        audit: "off",
+      },
+    ],
+  },
+];
+
+const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame }) => frame));
+---
+
+<Walkthrough
+  id="store-boundary-walkthrough"
+  title="状態と監査記録を1回で保存する"
+  lead="保存の途中で失敗が起きたとき、データベースに何が残るかを、修正前と修正後で1コマずつ追います。"
+  note="行の値は説明用の例です。列は一部だけを載せています。"
+  scenes={scenes.map(({ label, frames }) => ({ label, frames: frames.map(({ text }) => ({ text })) }))}
+>
+  <div class="sb" data-store-boundary data-frames={JSON.stringify(frameData)}>
+    {boxes.map(({ box, label }) => (
+      <section class="sb-box" data-box={box}>
+        <div class="sb-box__clip">
+          <div class="sb-box__inner">
+            <p class="sb-box__label">{label}</p>
+            <div class="sb-stack">
+              {Object.entries(snippets).filter(([, snippet]) => snippet.box === box).map(([name, snippet]) => (
+                <figure class="sb-pane" data-pane={name} data-era={name.startsWith("before") ? "before" : "after"}>
+                  <figcaption>
+                    <span class={`walk-badge walk-badge--${name.startsWith("before") ? "before" : "after"}`}>{name.startsWith("before") ? "修正前" : "修正後"}</span>
+                    <code>{snippet.path}</code>
+                  </figcaption>
+                  <Code code={snippet.code} lang="ts" wrap />
+                </figure>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    ))}
+    <div class="sb-diagram" aria-hidden="true" inert>
+      <div class="sb-tx" data-tx="none">
+        <p class="sb-tx__label" data-tx-label>transaction</p>
+        <div class="sb-cols">
+          <div class="sb-slot" data-slot="state"></div>
+          <div class="sb-slot" data-slot="audit"></div>
+        </div>
+      </div>
+      <div class="sb-db">
+        <p class="sb-db__label">database</p>
+        <div class="sb-cols">
+          <div class="sb-table" data-table="appointments">
+            <p class="sb-table__name">appointments</p>
+            <div class="sb-rows">
+              <div class="sb-cell">
+                {appointmentCards.map(({ id, old, code }) => (
+                  <figure class={`sb-card${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
+                    <figcaption class="sb-card__head"><span class="sb-chip" data-chip>{old ? "保存済み" : ""}</span></figcaption>
+                    <Code code={code} lang="ts" wrap />
+                  </figure>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div class="sb-table" data-table="audit_logs">
+            <p class="sb-table__name">audit_logs</p>
+            <div class="sb-rows">
+              {auditCards.map(({ id, old, code }) => (
+                <div class={`sb-cell${old ? "" : " sb-cell--landing"}`}>
+                  <figure class={`sb-card${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
+                    <figcaption class="sb-card__head"><span class="sb-chip" data-chip>{old ? "保存済み" : ""}</span></figcaption>
+                    <Code code={code} lang="ts" wrap />
+                  </figure>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <style is:inline set:html={css}></style>
+  <script is:inline type="module" set:html={script}></script>
+</Walkthrough>

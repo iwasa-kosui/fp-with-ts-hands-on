@@ -1,0 +1,364 @@
+.ep {
+  --ep-red: #b83a26;
+  --ep-red-bright: #ff8a78;
+  --ep-reject: var(--case-purple, #6b3fb5);
+  --ep-reject-bright: #c3a8f5;
+  --ep-rail: 0.8rem;
+  --ep-green: #1a7f5a;
+  min-width: 0;
+}
+
+.ep-flow {
+  min-width: 0;
+  padding-block-end: 0.2rem;
+  border: 2px solid var(--walk-line);
+  border-inline-start: 0.4rem solid var(--ep-green);
+  background: #24292e;
+  color: #e1e4e8;
+}
+
+.ep-file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem 0.5rem;
+  margin: 0;
+  padding: 0.2rem 0.6rem;
+  background: var(--walk-lemon);
+  color: var(--walk-ink);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.ep-file code {
+  overflow-wrap: anywhere;
+}
+
+.ep-file__tag {
+  font-weight: 800;
+}
+
+.ep-stage {
+  position: relative;
+  min-width: 0;
+  transition: background-color 0.3s;
+}
+
+.ep-stage::before,
+.ep-stage::after {
+  position: absolute;
+  inset-block: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.ep-stage::before {
+  inset-inline-start: 0;
+  width: 0.25rem;
+  background: transparent;
+  transition: width 0.3s, background-color 0.3s;
+}
+
+.ep-stage::after {
+  inset-inline-end: calc(var(--ep-rail) / 2 - 2px);
+  border-inline-start: 4px dotted transparent;
+  transition: border-color 0.3s;
+}
+
+.ep-stage--outer {
+  margin-top: 0;
+  border-top: 4px solid var(--walk-lemon);
+}
+
+.ep-stage[hidden] {
+  display: none;
+}
+
+.ep-stage[data-state="current"] {
+  background: #343b44;
+}
+
+.ep-stage[data-state="current"]::before {
+  width: 0.5rem;
+  background: var(--walk-lemon);
+}
+
+.ep-stage[data-rail="err"]::before {
+  width: 0.35rem;
+  background: var(--ep-red-bright);
+}
+
+.ep-stage[data-rail="err"][data-state="current"]::before {
+  width: 0.5rem;
+}
+
+.ep-stage[data-reject="on"]::after {
+  border-inline-start-color: var(--ep-reject-bright);
+}
+
+.ep-stage__code {
+  min-width: 0;
+  transition: opacity 0.3s;
+}
+
+.ep-stage__code pre {
+  margin: 0;
+  padding: 0 var(--ep-rail);
+  border-radius: 0;
+  background: transparent !important;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.ep-stage[data-state="static"] .ep-stage__code pre {
+  padding-block: 0.2rem 0;
+}
+
+.ep-stage[data-state="future"] .ep-stage__code {
+  opacity: 0.55;
+}
+
+.ep-stage[data-state="done"] .ep-stage__code {
+  opacity: 0.85;
+}
+
+.ep-stage[data-state="skipped"] .ep-stage__code {
+  opacity: 0.5;
+}
+
+.ep-stage[data-state="skipped"] .ep-stage__code .line {
+  text-decoration: line-through;
+}
+
+.ep-skip,
+.ep-sum {
+  display: none;
+  margin: 0.05rem var(--ep-rail) 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.ep-skip {
+  color: #c9d1d9;
+}
+
+.ep-stage[data-state="skipped"] .ep-skip {
+  display: block;
+}
+
+.ep-sum {
+  --ep-sum-bg: #dff3e8;
+  --ep-sum-ink: #0f4d36;
+  align-items: baseline;
+  gap: 0.2rem 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--ep-sum-ink);
+  border-radius: 0.3rem;
+  background: var(--ep-sum-bg);
+  color: var(--ep-sum-ink);
+}
+
+.ep-sum[data-tone="err"] {
+  --ep-sum-bg: #fde0da;
+  --ep-sum-ink: #7a1f10;
+}
+
+.ep-sum[data-tone="reject"] {
+  --ep-sum-bg: #ebe1fa;
+  --ep-sum-ink: #3f2278;
+  border-style: dashed;
+}
+
+.ep-stage[data-state="done"] .ep-sum[data-active] {
+  display: flex;
+}
+
+.ep-sum__type {
+  overflow-wrap: anywhere;
+}
+
+.ep-sum__val {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.ep-chip {
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.ep-open {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s ease;
+}
+
+.ep-stage[data-state="current"] .ep-open {
+  grid-template-rows: 1fr;
+}
+
+.ep-open__clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ep-open__body {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.2rem var(--ep-rail) 0.25rem;
+}
+
+.ep-impl,
+.ep-out {
+  display: none;
+  min-width: 0;
+  margin: 0;
+  border: 2px solid var(--walk-paper);
+  background: #24292e;
+}
+
+.ep-impl {
+  border-inline-start: 0.4rem solid var(--ep-green);
+}
+
+.ep-impl[data-active],
+.ep-out[data-active] {
+  display: block;
+  animation: ep-in 0.4s ease both;
+}
+
+.ep-out[data-active] {
+  animation-delay: 0.12s;
+}
+
+@keyframes ep-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.6rem);
+  }
+}
+
+.ep-impl figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem 0.5rem;
+  padding: 0.2rem 0.6rem;
+  background: var(--walk-paper);
+  color: var(--walk-ink);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.ep-impl figcaption code {
+  overflow-wrap: anywhere;
+}
+
+.ep-impl pre,
+.ep-out pre {
+  margin: 0;
+  border-radius: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.ep-impl pre {
+  max-height: 15rem;
+  padding: 0.1rem 0;
+  overflow-y: auto;
+}
+
+.ep-out pre {
+  padding: 0.15rem 0.6rem;
+}
+
+.ep-impl .line {
+  display: inline-block;
+  width: 100%;
+  box-sizing: border-box;
+  padding-inline: 0.6rem;
+  transition: opacity 0.3s, background-color 0.3s;
+}
+
+.ep-impl code[data-has-active] .line:not(.is-active) {
+  opacity: 0.5;
+}
+
+.ep-impl .line.is-active {
+  background: rgba(255, 242, 159, 0.16);
+  box-shadow: inset 0.25rem 0 0 var(--walk-lemon);
+}
+
+.ep-out {
+  --ep-tone: var(--walk-mint);
+  border-color: var(--walk-mint);
+}
+
+.ep-out[data-tone="err"] {
+  --ep-tone: #ffb4a7;
+  border-color: var(--ep-red-bright);
+  border-width: 3px;
+}
+
+.ep-out[data-tone="reject"] {
+  --ep-tone: #dccdf3;
+  border-style: dashed;
+  border-color: var(--ep-reject-bright);
+  border-width: 3px;
+}
+
+.ep-out figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.5rem;
+  padding: 0.1rem 0.6rem;
+  background: var(--ep-tone);
+  color: var(--walk-ink);
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.ep-out__label {
+  font-weight: 800;
+}
+
+.ep-out__type {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.walk:not([data-walk-ready]) .ep-stage__code {
+  opacity: 1;
+}
+
+.walk:not([data-walk-ready]) .ep-open {
+  grid-template-rows: 1fr;
+}
+
+.walk:not([data-walk-ready]) .ep-impl {
+  display: block;
+}
+
+.walk:not([data-walk-ready]) .ep-out {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .ep-stage__code pre,
+  .ep-impl pre,
+  .ep-out pre {
+    font-size: 0.75rem;
+  }
+}
+
+.ep.is-reset *,
+.ep.is-reset *::before,
+.ep.is-reset *::after {
+  transition: none;
+  animation: none;
+}
