@@ -48,7 +48,8 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <p>この回で利用する型の考え方を確認します。never型とADTは小さな例で示します。assertNeverは、配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
   <article class="teaching-topic">
     <h3>never型は値が1つもない型である</h3>
-    <p>型は、その型に入る値の集合と見ることができます。"Scheduled" | "CheckedIn" は2個の値を持つ集合です。never型は値を1個も持たない型で、空集合に当たります。never型の変数へ代入できるのは、never型の式だけです。具体的な値は1個も代入できません。空集合はどの集合にも含まれるので、never型の式はどの型へも代入できます。switchのcaseを通るたびに、コンパイラは処理済みの候補を型から取り除きます。候補が1個も残らなければ、残りの型はneverになります。</p>
+    <p>型は、その型に入る値の集合と見ることができます。"Scheduled" | "CheckedIn" は2個の値を持つ集合です。never型は値を1個も持たない型で、空集合に当たります。</p>
+    <NeverEmptySet code={props.teaching[0].after} />
     <div class="teaching-topic__diff">
       <figure class="code-block">
         <figcaption>{"\n"}before:{"\n"}<span>候補が残っているので、statusをneverへ代入できない</span></figcaption>
@@ -59,6 +60,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
         <Code code={props.teaching[0].after} lang="ts" />
       </figure>
     </div>
+    <p>never型の変数へ代入できるのは、never型の式だけです。具体的な値は1個も代入できません。空集合はどの集合にも含まれるので、never型の式はどの型へも代入できます。</p>
     <figure class="code-block" data-teaching-example>
       <figcaption>never型の性質</figcaption>
       <Code code={props.teaching[0].example} lang="ts" />
