@@ -13,7 +13,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <h3 data-story-stage="use-case">追加したい機能</h3>
   <p>予約を「診察中にする」、「診察結果を記録する」、「会計する」、「キャンセルする」といった状態変更の機能を追加します。</p>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
-  <p>次の図の6つの状態を、<code>kind</code> で区別するDiscriminated Unionで表します。🐇の予約がどの関数でどの状態へ進むかを、入力、関数の実装、出力の順に1コマずつ追ってください。</p>
+  <p>次の図の6つの状態を、<code>kind</code> で区別するDiscriminated Unionで表します。🐇の予約がどの関数でどの状態へ進むかを、1コマずつ追ってください。最後の3コマでは、以前のコード、修正前、修正後の順に、入力、関数の実装、出力を見比べます。</p>
   <AppointmentStateDiagram />
   <p>遷移関数でも同じ型を使います。<code>completeExamination</code> は <code>InExamination</code> だけを受け取り、<code>recordPayment</code> は <code>AwaitingPayment</code> だけを受け取る純粋関数にします。</p>
   <h3>このセッションで守ること</h3>
