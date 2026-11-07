@@ -86,7 +86,7 @@ export const session: SessionSummary = {
     },
     {
       id: "s2-align-transitions",
-      goal: "診察結果の記録前に会計するコードをコンパイルエラーにし、残りの遷移も許可された遷移元だけを受け取る規約にそろえる。",
+      goal: "診察結果の記録前に会計するコードをコンパイルエラーにし、残りの遷移関数も、許可された状態だけを引数で受け取る形にそろえる。",
       startingFailure: "診察結果の記録前や、許可されていない状態から操作できる。",
       targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
       solutions: [{
@@ -323,14 +323,14 @@ fn start_examination(appointment: CheckedIn, veterinarian_id: String) -> InExami
 const chapters = [
   { id: "incident", label: "今回つくるもの" },
   { id: "legacy", label: "コードを読み、失敗を再現する" },
-  { id: "teach", label: "使う型を知る" },
-  { id: "refactor", label: "型で閉じる" },
+  { id: "teach", label: "事前知識" },
+  { id: "refactor", label: "演習" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
 const commonReviewChecks = [
-  "`as` によるキャストが入っていないか全文検索して確認する。",
-  "`git diff --stat -- examples/session-02` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。",
-  "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
+  "`as` による型アサーションが入っていないか全文検索して確認します。",
+  "`git diff --stat -- examples/session-02` で今回のスナップショットだけを確認します。`git status --short` で想定外の path がないか確認します。",
+  "型検査では確認できないことを、テストまたは実行時に確認して記録します。",
 ] as const;
 const reviewCompletionArtifacts = [
   "起きてはいけない状態遷移",
@@ -378,12 +378,12 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 変更範囲:
 - ${session.exerciseModule.dir}/ のみ
 - 最大 ${session.exerciseModule.fileBudget} ファイル・約 ${session.exerciseModule.lineBudget} 行
-- 範囲外の変更が必要に見えた場合は、変更せず理由を報告する
-- statusLabel.ts は次の Session で扱うため、変更しない
-- 型エラーを \`as\` によるキャストで回避しない
+- 範囲外の変更が必要に見えた場合は、変更せず理由を報告してください
+- statusLabel.ts は次の Session で扱うため、変更しないでください
+- 型エラーを \`as\` による型アサーションで回避しないでください
 
 検証:
-- ${session.exerciseCommand} を実行し、分岐漏れの1個を除くすべての assertion が成功すること
+- ${session.exerciseCommand} を実行し、分岐漏れの1個を除くすべての assertion が成功することを確かめてください
 
 完了時の報告:
 - 変更したファイルと判断理由

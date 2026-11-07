@@ -292,11 +292,11 @@ ${supplementaryExercise.steps.map((step) => `- ${step.goal}`).join("\n")}
 変更範囲:
 - ${supplementaryExercise.exerciseModule.dir}/ のみ
 - 最大 ${supplementaryExercise.exerciseModule.fileBudget} ファイル・約 ${supplementaryExercise.exerciseModule.lineBudget} 行
-- 範囲外の変更が必要に見えた場合は、変更せず理由を報告する
-- 型エラーを \`as\` によるキャストで回避しない
+- 範囲外の変更が必要に見えた場合は、変更せず理由を報告してください
+- 型エラーを \`as\` による型アサーションで回避しないでください
 
 検証:
-- ${supplementaryExercise.exerciseCommand} を実行し、すべての assertion が成功すること
+- ${supplementaryExercise.exerciseCommand} を実行し、すべての assertion が成功することを確かめてください
 
 完了時の報告:
 - 変更したファイルと判断理由
@@ -340,9 +340,9 @@ const solutionSteps = await Promise.all(
 const chapters = [
   { id: "incident", label: "今回つくるもの" },
   { id: "legacy", label: "コードを読み、失敗を再現する" },
-  { id: "teach", label: "使う型を知る" },
+  { id: "teach", label: "事前知識" },
   { id: "supplementary", label: "補助演習" },
-  { id: "refactor", label: "型で閉じる" },
+  { id: "refactor", label: "演習" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
 export const promisesHref =
@@ -379,11 +379,11 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 変更範囲:
 - ${session.exerciseModule.dir}/ のみ
 - 最大 ${session.exerciseModule.fileBudget} ファイル・約 ${session.exerciseModule.lineBudget} 行
-- 範囲外の変更が必要に見えた場合は、変更せず理由を報告する
-- 型エラーを \`as\` によるキャストで回避しない
+- 範囲外の変更が必要に見えた場合は、変更せず理由を報告してください
+- 型エラーを \`as\` による型アサーションで回避しないでください
 
 検証:
-- ${session.exerciseCommand} を実行し、すべての assertion が成功すること
+- ${session.exerciseCommand} を実行し、すべての assertion が成功することを確かめてください
 
 完了時の報告:
 - 変更したファイルと判断理由
