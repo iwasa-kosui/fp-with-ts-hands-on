@@ -111,7 +111,7 @@ S0 は現状の業務・操作・保存先・ログを読む回、S5 は予約�
 
 S1〜S4 と S6 の各演習ページには、次スナップショットの実ソースから切り出したステップごとの解答があります。S6 は import や後続stepを含む完成ファイルを全target分表示します。S6では1stepずつ反映して個別にGREENになるとは限らないため、表示された全target fileを反映した後、同じ `pnpm exercise:06` で確認してください。
 
-ページの「配布コードを読む」では読み取り用の Code Explorer、「型で閉じる」では編集・実行できる WebContainer Playground を利用できます。Playground は説明用・環境トラブル時の退避先であり、ローカル clone が主線です。
+ページの「コードを読み、失敗を再現する」では、Code Explorer で実ファイルを読み、同じ画面の WebContainer Playground で編集とコマンド実行ができます。Playground は説明用・環境トラブル時の退避先であり、ローカル clone が主線です。
 
 ## 演習後の振り返り
 

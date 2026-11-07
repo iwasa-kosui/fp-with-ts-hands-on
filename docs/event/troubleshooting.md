@@ -93,7 +93,7 @@ git restore --source=HEAD -- path/to/file
 
 ## Code Explorer または Playground が動かない
 
-「配布コードを読む」の Code Explorer は読み取り用ガイド、「型で閉じる」の Playground は WebContainer 上の編集・実行環境です。専用URLではなく各セッションに埋め込まれています。
+Code Explorer は実ファイルを読むためのガイド、Playground は WebContainer 上の編集・実行環境です。どちらも専用URLではなく、各セッションの「コードを読み、失敗を再現する」に埋め込まれています。
 
 1. デスクトップ版ChromeまたはEdgeの現行版で開く。
 2. ページを再読み込みする。
