@@ -57,7 +57,7 @@ const stages: readonly Stage[] = [
   { key: "found", code: `      .andThen(ensureFound(input.appointmentId))` },
   { key: "checked", code: `      .andThen(ensureCheckedIn)` },
   { key: "start", code: `      .map(startExaminationEvent(deps, input.veterinarianId))` },
-  { key: "through", code: `      .andThrough((event) => deps.store.store(event))` },
+  { key: "through", code: `      .andThrough(deps.examinationStartedStore.store)` },
   { key: "map", code: `      .map((event) => event.aggregateState);` },
   {
     key: "route",

@@ -31,5 +31,5 @@ export type ExaminationStartedStore = Readonly<{
 
 export type EffectsDependencies = Readonly<{
   resolver: AppointmentResolver;
-  store: ExaminationStartedStore;
+  examinationStartedStore: ExaminationStartedStore;
 }> & EventContextDependencies;

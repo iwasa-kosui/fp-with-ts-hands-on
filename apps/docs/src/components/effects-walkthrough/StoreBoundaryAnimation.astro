@@ -74,7 +74,7 @@ const appendAudit = (
   "after-call": {
     box: "call",
     path: "examples/session-07/src/useCase/startExamination.ts",
-    code: `.andThrough((event) => deps.store.store(event))`,
+    code: `.andThrough(deps.examinationStartedStore.store)`,
   },
   "after-store": {
     box: "impl",
@@ -227,7 +227,7 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
     label: "修正後: 成功",
     frames: [
       {
-        text: "ユースケースは `deps.store.store(event)` を1回だけ呼びます。保存先が2つあることをユースケースは知りません。",
+        text: "ユースケースは `deps.examinationStartedStore.store(event)` を1回だけ呼びます。保存先が2つあることをユースケースは知りません。",
         call: { pane: "after-call", lines: [0] },
         impl: { pane: "after-store", lines: [0, 1, 2, 3] },
         tx: "wait",
