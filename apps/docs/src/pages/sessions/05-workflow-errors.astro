@@ -2,6 +2,7 @@
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
 import RailwayOrientedProgramming from "../../components/RailwayOrientedProgramming.astro";
+import AndThenMapFlow from "../../components/AndThenMapFlow.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
 import Prose from "../../sessions/prose/05-workflow-errors.mdx";
 import type { CodeGuide } from "../../code-explorer/code-guide";
@@ -504,7 +505,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         </p>
       </section>
       <Prose
-        components={{ CodeGuideCards, CommandBlock, RailwayOrientedProgramming }}
+        components={{ AndThenMapFlow, CodeGuideCards, CommandBlock, RailwayOrientedProgramming }}
         session={session}
         guides={guides}
         workspace={workspace}
