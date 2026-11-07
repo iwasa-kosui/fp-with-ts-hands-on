@@ -317,32 +317,27 @@ const playerData = JSON.stringify(frames.map(({ edges, states, path, note }) => 
       play.textContent = "再生";
     };
 
-    const resume = () => {
-      window.clearInterval(timer);
-      if (current === frames.length - 1) show(0);
-      play.textContent = "一時停止";
-      timer = window.setInterval(() => {
-        show(current + 1);
-        if (current === frames.length - 1) pause();
-      }, FRAME_MS);
+    const advance = () => {
+      show(current + 1);
+      if (current === frames.length - 1) pause();
     };
 
-    const observer = new IntersectionObserver((entries) => {
-      if (!entries.some((entry) => entry.isIntersecting)) return;
-      observer.disconnect();
-      if (timer !== undefined) return;
-      show(0);
-      resume();
-    }, { threshold: 0.5 });
+    const resume = () => {
+      window.clearInterval(timer);
+      timer = undefined;
+      if (current === frames.length - 1) show(0);
+      else advance();
+      if (current === frames.length - 1) return;
+      play.textContent = "一時停止";
+      timer = window.setInterval(advance, FRAME_MS);
+    };
 
     const step = (delta) => {
-      observer.disconnect();
       pause();
       show(Math.min(Math.max(current + delta, 0), frames.length - 1));
     };
 
     play.addEventListener("click", () => {
-      observer.disconnect();
       if (timer === undefined) resume();
       else pause();
     });
@@ -367,8 +362,6 @@ const playerData = JSON.stringify(frames.map(({ edges, states, path, note }) => 
     root.dataset.animated = "";
     controls.hidden = false;
     show(0);
-
-    observer.observe(root.querySelector("svg"));
   };
 
   const root = document.querySelector("[data-state-diagram]");

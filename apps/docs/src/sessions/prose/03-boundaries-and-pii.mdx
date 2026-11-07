@@ -3,6 +3,7 @@ import BoundaryPatterns from "../../components/BoundaryPatterns.astro";
 import BoundaryPlayer from "../../components/BoundaryPlayer.astro";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../sessions/boundary-walkthroughs";
+import InlineCode from "../../components/InlineCode.astro";
 
 <section id="incident">
   <h2>今回つくるもの</h2>
@@ -248,8 +249,8 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
   <div class="exercise-review-checklist">
     <h3>個人での確認</h3>
     <ol>
-      <li>{"`as` による型アサーションが入っていないか全文検索して確認します。"}</li>
-      <li>{"`git diff --stat -- examples/session-04` で今回のスナップショットだけを確認します。`git status --short` で想定外の path がないか確認します。"}</li>
+      <li><InlineCode text={"`as` による型アサーションが入っていないか全文検索して確認します。"} /></li>
+      <li><InlineCode text={"`git diff --stat -- examples/session-04` で今回のスナップショットだけを確認します。`git status --short` で想定外の path がないか確認します。"} /></li>
       <li>{"型検査では確認できないことを、テストまたは実行時に確認して記録します。"}</li>
     </ol>
     <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>
@@ -261,7 +262,7 @@ import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../session
     <h3>設計を振り返る</h3>
     <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは、{props.session.peerReview.minutes}分の間に{props.headcount}の差分を見ることを目安にしてください。</p>
     <p><a href={props.promisesHref}>進行上の約束事を確認する</a></p>
-    <ol>{props.session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
+    <ol>{props.session.peerReview.questions.map((question) => <li><InlineCode text={question} /></li>)}</ol>
   </section>
   <GuardTable rows={props.guards} modules={props.guardModules} question={props.guardQuestion} />
 </section>

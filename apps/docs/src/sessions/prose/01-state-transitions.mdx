@@ -2,6 +2,7 @@ import { Code } from "astro:components";
 import { Fragment } from "astro/jsx-runtime";
 import PreconditionFlow from "../../components/PreconditionFlow.astro";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
+import InlineCode from "../../components/InlineCode.astro";
 
 <section id="incident">
   <h2>今回つくるもの</h2>
@@ -230,7 +231,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <h2>レビューと持ち帰り</h2>
   <div class="exercise-review-checklist">
     <h3>個人での確認</h3>
-    <ol>{props.commonReviewChecks.map((check) => <li>{check}</li>)}</ol>
+    <ol>{props.commonReviewChecks.map((check) => <li><InlineCode text={check} /></li>)}</ol>
     <p>この演習の未commit差分は、次のセッションまでそのまま残して構いません。reset、stash、commit は不要です。</p>
     <p>残すものは、{props.reviewCompletionArtifacts.join("、")}です。</p>
     <h3>業務へ持ち帰る</h3>
@@ -244,7 +245,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <h3>設計を振り返る</h3>
     <p>ひとりの場合は、次の問いへの答えと根拠になるコードをメモします。複数人の場合は、お互いの差分を見ながら確認します。相互レビューは、{props.session.peerReview.minutes}分の間に{props.headcount}の差分を見ることを目安にしてください。</p>
     <p><a href={props.promisesHref}>進行上の約束事を確認する</a></p>
-    <ol>{props.session.peerReview.questions.map((question) => <li>{question}</li>)}</ol>
+    <ol>{props.session.peerReview.questions.map((question) => <li><InlineCode text={question} /></li>)}</ol>
   </section>
   <GuardTable rows={props.guards} modules={props.guardModules} question={props.guardQuestion} />
 </section>
