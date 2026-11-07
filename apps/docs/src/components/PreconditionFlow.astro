@@ -535,8 +535,12 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
   .precondition-flow :global(.precondition-flow__key) {
     display: inline-block;
     min-width: 100%;
-    background: rgb(255 210 27 / 45%);
+    background: rgb(255 210 27 / 22%);
     box-shadow: inset 0.3rem 0 0 #ffd21b;
+  }
+
+  .precondition-flow :global(.precondition-flow__key span[style*="#6A737D"]) {
+    color: #e1e4e8 !important;
   }
 
   [data-animated] .precondition-flow__frames {
