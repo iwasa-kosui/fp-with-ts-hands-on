@@ -34,6 +34,7 @@ const kinds = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Pa
 const beforeLines = before.split("\n");
 const booleanLines = beforeLines.flatMap((line, index) => (line.trim().endsWith(": boolean;") ? [index] : []));
 if (booleanLines.length !== 5) throw new Error("AdtValueCount: before に boolean のフラグが5個ありません");
+const extractedFlagNames = booleanLines.map((index) => beforeLines[index].trim().split(":")[0]);
 const beforeCode = markRange(beforeLines, booleanLines[0], booleanLines[4]);
 
 const afterLines = after.split("\n");
@@ -50,9 +51,10 @@ const caseLines = kinds.flatMap((kind) => {
   const caseIndex = lineIndex(labelLines, (line) => line.trim() === `case "${kind}":`, `case "${kind}":`, switchStart);
   const returnLine = labelLines[caseIndex + 1];
   if (!returnLine?.trim().startsWith('return "')) throw new Error(`AdtValueCount: case "${kind}" の return が見つかりません`);
-  return [`${labelLines[caseIndex].replace(/^ {2}/, "")} // [!key]`, `${returnLine.replace(/^ {2}/, "")} // [!key]`];
+  return [labelLines[caseIndex].replace(/^ {2}/, ""), returnLine.replace(/^ {2}/, "")];
 });
-const switchCode = [labelLines[switchStart].replace(/^ {2}/, ""), ...caseLines, "}"].join("\n");
+const switchHead = labelLines[switchStart].replace(/^ {2}/, "");
+const switchCode = [switchHead, ...caseLines.map((line) => `${line} // [!key]`), "}"].join("\n");
 
 const noShowCode = `type Appointment =
   | Scheduled
@@ -61,7 +63,9 @@ const noShowCode = `type Appointment =
   | AwaitingPayment
   | Paid
   | Canceled
-  | NoShow; // [!key]`;
+  | NoShow; // [!key]
+
+${[switchHead, ...caseLines, "  // NoShow の case が無い // [!key]", "}"].join("\n")}`;
 
 const flagsCode = `type Flags = Readonly<{
   isCheckedIn: boolean; // [!key]
@@ -69,9 +73,10 @@ const flagsCode = `type Flags = Readonly<{
 }>;`;
 
 const flagNames = ["isCheckedIn", "isExaminationStarted", "isExaminationCompleted", "isPaid", "isCanceled"];
+if (extractedFlagNames.join(",") !== flagNames.join(",")) throw new Error("AdtValueCount: before のフラグ名または順番が flagNames と一致しません");
 const indexOf = (...on: string[]) =>
   flagNames.reduce((sum, name, position) => sum + (on.includes(name) ? 2 ** (flagNames.length - 1 - position) : 0), 0);
-const usedTiles = new Map<number, string>([
+const usedTiles = new Map<number, (typeof kinds)[number]>([
   [indexOf(), "Scheduled"],
   [indexOf("isCheckedIn"), "CheckedIn"],
   [indexOf("isCheckedIn", "isExaminationStarted"), "InExamination"],
@@ -81,6 +86,15 @@ const usedTiles = new Map<number, string>([
 ]);
 const impossibleTile = indexOf("isPaid", "isCanceled");
 const allTiles = Array.from({ length: 2 ** flagNames.length }, (_, index) => index);
+
+const mapping = [
+  { kind: "Scheduled", condition: "すべて false" },
+  { kind: "CheckedIn", condition: "isCheckedIn だけ true" },
+  { kind: "InExamination", condition: "isCheckedIn と isExaminationStarted が true" },
+  { kind: "AwaitingPayment", condition: "3 に加えて isExaminationCompleted が true" },
+  { kind: "Paid", condition: "4 に加えて isPaid が true" },
+  { kind: "Canceled", condition: "isCanceled だけ true" },
+];
 
 const booleans = [false, true];
 const canceledFields = ['kind: "Canceled"', "appointmentId", "reason", "canceledAt"];
@@ -103,6 +117,7 @@ const frames = [
     id: "before",
     badge: "修正前",
     tone: "before",
+    durationMs: 10000,
     codeLabel: "修正前: フラグの直積型",
     code: beforeCode,
     text: "修正前は、5個のフラグの直積型で予約を表します。組み合わせは 2 × 2 × 2 × 2 × 2 = 32 通りです。6状態に6通りを割り当てても、会計済みかつキャンセル済みのような残りの26通りも型検査を通ります。",
@@ -113,7 +128,7 @@ const frames = [
     tone: "after",
     codeLabel: "修正後: 状態の直和型",
     code: unionCode,
-    text: "修正後は、6状態の直和型で予約を表します。kind の候補は 1 + 1 + 1 + 1 + 1 + 1 = 6 通りです。会計済みかつキャンセル済みのような、業務で起きない組み合わせは候補に入りません。",
+    text: "修正後は、6状態の直和型で予約を表します。状態を表す kind だけを数えると、各候補は1通りなので、候補は 1 + 1 + 1 + 1 + 1 + 1 = 6 通りです。会計済みかつキャンセル済みのような、業務で起きない組み合わせは候補に入りません。",
   },
   {
     id: "fields",
@@ -121,14 +136,14 @@ const frames = [
     tone: "after",
     codeLabel: "修正後: 状態の直和型",
     code: canceledCode,
-    text: "直和型の各候補は、直積型です。Canceled は kind、appointmentId、reason、canceledAt をすべて持ちます。ADT は、直積型と直和型を組み合わせて型を作ります。",
+    text: "直和型の各候補は、直積型です。Canceled は kind、appointmentId、reason、canceledAt をすべて持ちます。候補ごとの値の個数は、各項目が取りうる値の個数の掛け算です。Appointment の値の個数は、各候補の値の個数を足したものです。ADT は、直積型と直和型を組み合わせて型を作ります。",
   },
   {
     id: "exhaustive",
     badge: "網羅",
     tone: "neutral",
     code: switchCode,
-    text: "直和型は候補を列挙できます。switch で6個の case を処理すると、残りの候補が0個だと数えられます。",
+    text: "直和型は候補を列挙できます。switch で6個の case を処理すると、コンパイラは残りの候補が0個だと数えられます。",
   },
   {
     id: "extend",
@@ -152,7 +167,7 @@ const frames = [
   <ol class="adt-count__frames">
     {
       frames.map((frame, frameIndex) => (
-        <li class="adt-count__frame" data-adt-frame>
+        <li class="adt-count__frame" data-adt-frame data-adt-duration={frame.durationMs ?? 6000}>
           <div class="adt-count__head">
             <span class="adt-count__number">{frameIndex + 1} / {frames.length}</span>
             <span class={`adt-count__badge adt-count__badge--${frame.tone}`}>{frame.badge}</span>
@@ -233,16 +248,28 @@ const frames = [
                         ]}
                         style={`--i: ${tile}`}
                       >
-                        <span class="adt-count__tile-name">{usedTiles.get(tile)}</span>
+                        {usedTiles.has(tile) ? kinds.indexOf(usedTiles.get(tile)!) + 1 : ""}
                       </span>
                     ))}
                   </div>
                 </div>
-                <ul class="adt-count__legend">
-                  <li><span class="adt-count__swatch adt-count__tile--used" aria-hidden="true"></span>6状態に割り当てた組み合わせ（6個）</li>
-                  <li><span class="adt-count__swatch adt-count__tile--danger" aria-hidden="true"></span>会計済みかつキャンセル済み</li>
-                  <li><span class="adt-count__swatch adt-count__tile--unused" aria-hidden="true"></span>使わない組み合わせ</li>
-                </ul>
+                <div class="adt-count__legend">
+                  <div>
+                    <p class="adt-count__legend-title"><span class="adt-count__swatch adt-count__tile--used" aria-hidden="true"></span>6状態に割り当てた組み合わせ</p>
+                    <ol class="adt-count__mapping">
+                      {mapping.map(({ kind, condition }, mappingIndex) => (
+                        <li>
+                          <span class="adt-count__swatch adt-count__swatch--number adt-count__tile--used">{mappingIndex + 1}</span>
+                          <span>{kind}: {condition}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                  <ul class="adt-count__legend-list">
+                    <li><span class="adt-count__swatch adt-count__tile--danger" aria-hidden="true"></span>会計済みかつキャンセル済み</li>
+                    <li><span class="adt-count__swatch adt-count__tile--unused" aria-hidden="true"></span>使わない組み合わせ</li>
+                  </ul>
+                </div>
                 <p class="adt-count__formula">2 × 2 × 2 × 2 × 2 = 32 通り</p>
                 <p class="adt-count__formula-note">使うのは6通り、残り26通りも型検査を通る</p>
               </>
@@ -330,8 +357,6 @@ const frames = [
 </figure>
 
 <script is:inline type="module">
-  const AUTO_PLAY_INTERVAL_MS = 6000;
-
   const setup = (root) => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const frames = [...root.querySelectorAll("[data-adt-frame]")];
@@ -360,7 +385,7 @@ const frames = [
     };
 
     const stop = () => {
-      window.clearInterval(timer);
+      window.clearTimeout(timer);
       timer = undefined;
     };
 
@@ -369,11 +394,16 @@ const frames = [
       render();
     };
 
+    const schedule = (index) => {
+      timer = window.setTimeout(() => {
+        if (index + 1 === last) timer = undefined;
+        else schedule(index + 1);
+        moveTo(index + 1);
+      }, Number(frames[index].dataset.adtDuration));
+    };
+
     const start = () => {
-      timer = window.setInterval(() => {
-        if (current === last - 1) stop();
-        moveTo(current + 1);
-      }, AUTO_PLAY_INTERVAL_MS);
+      schedule(current);
       render();
     };
 
@@ -691,12 +721,9 @@ const frames = [
     padding: 0;
     aspect-ratio: 1 / 0.9;
     border-width: 2px;
-    font-size: calc(min(100cqw, 44rem) * 0.013 - 1px);
-    font-weight: 600;
+    font-size: 0.85rem;
+    font-weight: 700;
     line-height: 1.1;
-    overflow: hidden;
-    word-break: keep-all;
-    overflow-wrap: normal;
   }
 
   .adt-count__tile--grid.adt-count__tile--danger {
@@ -777,15 +804,39 @@ const frames = [
 
   .adt-count__legend {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem 1.25rem;
+    flex-direction: column;
+    gap: 0.75rem;
     margin: 0.75rem 0 0;
-    padding: 0;
-    list-style: none;
     font-size: 0.875rem;
   }
 
-  .adt-count__legend > li {
+  .adt-count__legend-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.375rem;
+    font-weight: 700;
+  }
+
+  .adt-count__mapping {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.375rem 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .adt-count__legend-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .adt-count__legend li {
     display: flex;
     align-items: center;
     gap: 0.4rem;
@@ -800,6 +851,16 @@ const frames = [
     border-style: solid;
     border-width: 2px;
     border-radius: 0.25rem;
+  }
+
+  .adt-count__swatch--number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
   }
 
   .adt-count__formula {
@@ -975,13 +1036,13 @@ const frames = [
     .adt-count__tile--grid {
       border-width: 1px;
     }
-
-    .adt-count__tile-name {
-      display: none;
-    }
   }
 
   @container (min-width: 34rem) {
+    .adt-count__mapping {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .adt-count__canceled {
       flex-direction: row;
       align-items: center;
