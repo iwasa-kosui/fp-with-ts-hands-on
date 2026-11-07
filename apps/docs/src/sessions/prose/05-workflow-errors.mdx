@@ -2,6 +2,8 @@ import { Code } from "astro:components";
 import { Fragment } from "astro/jsx-runtime";
 import TeachingTopic from "../../components/TeachingTopic.astro";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
+import AnimatedExplanation from "../../components/animated-explanation/AnimatedExplanation.astro";
+import { andThenMap } from "../../animations/s5";
 
 <section id="incident">
   <h2>今回つくるもの</h2>
@@ -109,6 +111,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     </ul>
     <Fragment slot="why">渡す関数が業務エラーを返しうるなら andThen、返さないなら map を選びます。Err になった後にコールバックが呼ばれないのは、図で失敗レールへ移った値が後続の工程を飛ばすことに当たります。</Fragment>
   </TeachingTopic>
+  <AnimatedExplanation animation={andThenMap} />
   <TeachingTopic
     name="isErr の例を andThen と map で書き直す"
     before={props.teaching[3].before}
