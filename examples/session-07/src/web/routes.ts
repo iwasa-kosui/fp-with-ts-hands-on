@@ -128,7 +128,7 @@ export const registerClinicRoutes = (
       })._unsafeUnwrap();
       const result = await startExaminationWithEffects({
         resolver: store,
-        store,
+        examinationStartedStore: store,
         ...effects,
       })({
         ...input,

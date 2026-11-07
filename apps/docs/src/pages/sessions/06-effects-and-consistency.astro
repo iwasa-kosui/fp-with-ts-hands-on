@@ -287,7 +287,7 @@ await deps.eventLog.append(event);`,
   store: (event: ExaminationStarted) => ResultAsync<void, AppointmentConflict>;
 }>;
 
-.andThrough((event) => deps.store.store(event))`,
+.andThrough(deps.examinationStartedStore.store)`,
     },
     examples: [
       {
@@ -383,13 +383,13 @@ export const startExaminationWithEffects =
       .andThen(ensureFound(input.appointmentId))
       .andThen(ensureCheckedIn)
       .map(startExaminationEvent(deps, input.veterinarianId))
-      .andThrough((event) => deps.store.store(event))
+      .andThrough(deps.examinationStartedStore.store)
       .map((event) => event.aggregateState);`,
     },
     examples: [
       {
         caption: "andThen でつなぐと、次へ渡る値が void になります（配布コードにはありません）",
-        code: `.andThen((event) => deps.store.store(event)) // 次へ渡る値は void
+        code: `.andThen(deps.examinationStartedStore.store) // 次へ渡る値は void
 .map((event) => event.aggregateState); // 型エラー`,
       },
     ],

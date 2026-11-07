@@ -86,5 +86,5 @@ export const startExaminationWithEffects =
       .andThen(ensureFound(input.appointmentId))
       .andThen(ensureCheckedIn)
       .map(startExaminationEvent(deps, input.veterinarianId))
-      .andThrough((event) => deps.store.store(event))
+      .andThrough(deps.examinationStartedStore.store)
       .map((event) => event.aggregateState);
