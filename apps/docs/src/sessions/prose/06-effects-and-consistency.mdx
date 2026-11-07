@@ -2,6 +2,8 @@ import { Code } from "astro:components";
 import { Fragment } from "astro/jsx-runtime";
 import TeachingTopic from "../../components/TeachingTopic.astro";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
+import AnimatedExplanation from "../../components/animated-explanation/AnimatedExplanation.astro";
+import { atomicStore } from "../../animations/s6";
 
 <section id="incident">
   <h2>今回つくるもの</h2>
@@ -74,6 +76,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <p>in-memory の実装は transaction を持ちません。新しい Map と配列を作ってから最後にまとめて置き換えることで、同じ約束を表します。</p>
     <Fragment slot="why">保存処理を1つにすると、ユースケースは片方だけ成功した場合の後始末を書かずに済みます。状態と監査記録をそろえる責任は store の実装に集まります。型だけでは transaction の有無を確かめられないので、examples/session-07/test/integration/fileSqliteTransaction.test.ts が監査記録の失敗時に状態が戻ることを確かめています。</Fragment>
   </TeachingTopic>
+  <AnimatedExplanation animation={atomicStore} />
   <TeachingTopic
     name="ResultAsync と andThrough で非同期の保存をつなぐ"
     before={props.teaching[2].before}
