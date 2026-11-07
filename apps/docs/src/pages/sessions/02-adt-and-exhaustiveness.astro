@@ -265,11 +265,12 @@ const guards = [
   {
     problem: "状態を足したのに表示名の分岐を足し忘れる",
     mechanism: "<code>assertNever</code> と <code>never</code> 型",
-    signal: "状態を足したときの <code>tsc</code> の型検査。<code>pnpm exercise:02</code> は、未定義の状態を渡せないことを確かめます。",
+    signal: "<code>assertNever</code> を置いたコードに状態を足すと、<code>tsc</code> が失敗します。<code>pnpm exercise:02</code> は未定義の状態を渡せないことだけを確かめるので、<code>assertNever</code> の有無は差分で確かめます。",
   },
 ] as const;
 const guardModules = [session.exerciseModule];
-const delegationPrompt = `${session.exerciseModule.dir} のコードを直して、${session.exerciseCommand} を成功させてください。
+const delegationPrompt = `${session.exerciseModule.dir} のコードを直して、
+${session.exerciseCommand} を成功させてください。
 
 未対応のまま残してはいけない分岐: [言語化フェーズで書いた1文]`;
 ---

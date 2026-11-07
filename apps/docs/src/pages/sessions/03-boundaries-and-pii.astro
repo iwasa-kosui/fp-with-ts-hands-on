@@ -269,7 +269,8 @@ const supplementaryExerciseSolutionSteps = await Promise.all(
     snippets: await loadSolutionSnippets(step),
   })),
 );
-const supplementaryExercisePrompt = `${supplementaryExercise.exerciseModule.dir} のコードを直して、${supplementaryExercise.exerciseCommand} を成功させてください。
+const supplementaryExercisePrompt = `${supplementaryExercise.exerciseModule.dir} のコードを直して、
+${supplementaryExercise.exerciseCommand} を成功させてください。
 
 取り違えてはいけない値: [言語化フェーズで書いた1文]`;
 
@@ -330,7 +331,7 @@ export const navigation = ({
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
 const guards = [
   {
-    problem: "<code>AppointmentId</code> と <code>VeterinarianId</code> を取り違える",
+    problem: "予約 ID と獣医師 ID を取り違える",
     mechanism: "Branded Type",
     signal: "<code>pnpm exercise:03</code> の型検査",
   },
@@ -341,7 +342,8 @@ const guards = [
   },
 ] as const;
 const guardModules = [supplementaryExercise.exerciseModule, session.exerciseModule];
-const delegationPrompt = `${session.exerciseModule.dir} のコードを直して、${session.exerciseCommand} を成功させてください。
+const delegationPrompt = `${session.exerciseModule.dir} のコードを直して、
+${session.exerciseCommand} を成功させてください。
 
 境界で拒否する入力: [言語化フェーズで書いた1文]`;
 ---

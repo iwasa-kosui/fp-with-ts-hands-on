@@ -458,7 +458,8 @@ const guards = [
   },
 ] as const;
 const guardModules = [session.exerciseModule];
-const delegationPrompt = `${session.exerciseModule.dir} のコードを直して、${session.exerciseCommand} を成功させてください。
+const delegationPrompt = `${session.exerciseModule.dir} のコードを直して、
+${session.exerciseCommand} を成功させてください。
 
 一緒に記録する必要がある値: [言語化フェーズで書いた1文]`;
 ---

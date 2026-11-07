@@ -370,8 +370,9 @@ const guards = [
   },
 ] as const;
 const guardModules = [session.exerciseModule];
-const delegationPrompt = `${session.exerciseModule.dir} のコードを直して、${session.exerciseCommand} を成功させてください。
-分岐漏れの型検査1個は S02 で直すので、失敗のまま残してください。
+const delegationPrompt = `${session.exerciseModule.dir} のコードを直して、
+${session.exerciseCommand} の失敗を、分岐漏れの型検査1個だけにしてください。
+その1個は次の Session で直します。
 
 起きてはいけない状態遷移: [言語化フェーズで書いた1文]`;
 ---
