@@ -81,7 +81,7 @@ for (const root of roots) {
   };
 
   const renderPlay = () => {
-    play.textContent = playing ? "一時停止" : frame >= lastFrame() ? "最初から再生" : "再生";
+    play.textContent = playing ? "一時停止" : frame >= lastFrame() ? "最初から" : "再生";
   };
 
   const show = (nextScene, nextFrame, follow = true) => {
