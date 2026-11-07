@@ -102,6 +102,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
       <figcaption>{props.teaching[2].example.caption}</figcaption>
       <Code code={props.teaching[2].example.code} lang="ts" />
     </figure>
+    <AndThenMapFlow />
     <p><a href="#rop-recap">ROPの図</a>と見比べると、次のように対応します。</p>
     <ul class="decision-list">
       <li><strong><code>andThen</code>（渡す関数の戻り値: Result）:</strong> 切り替え線のある工程。「対象を取得する」の後の「権限と状態を確認する」が該当し、Err を返すと失敗レールへ移ります。「対象を取得する」は最初の工程で前の値がないので、ensureAppointmentFound は andThen を使わずに直接呼びます。入力の検査は Session 04 の境界で済んでいます。</li>
