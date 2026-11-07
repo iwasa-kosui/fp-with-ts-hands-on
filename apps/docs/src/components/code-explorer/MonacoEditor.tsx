@@ -5,6 +5,14 @@ import type { EditorProps } from "./CodeExplorer";
 
 type MonacoApi = typeof Monaco;
 
+let typesRegistered = false;
+
+const ambientModules = [
+  'declare module "@fp-with-ts/clinic-web";',
+  'declare module "@fp-with-ts/clinic-web/server";',
+  "",
+].join("\n");
+
 type EditorResources = {
   monaco: MonacoApi;
   models: Map<string, Monaco.editor.ITextModel>;
@@ -19,7 +27,8 @@ type EditorRuntime = EditorResources & {
   highlightDecorations?: Monaco.editor.IEditorDecorationsCollection;
 };
 
-export const modelUriFor = (path: string): string => `file:///${path}`;
+export const modelUriFor = (path: string): string =>
+  new URL(path, "file:///workspace/").href;
 
 const languageForPath = (path: string): string => {
   const extension = path.toLowerCase().split(".").at(-1);
@@ -58,7 +67,13 @@ const configureTypeScript = (monaco: MonacoApi): void => {
     module: monaco.typescript.ModuleKind.ESNext,
     moduleResolution: monaco.typescript.ModuleResolutionKind.NodeJs,
     strict: true,
-    target: monaco.typescript.ScriptTarget.ES2020,
+    target: 9 as Monaco.typescript.ScriptTarget,
+    allowSyntheticDefaultImports: true,
+  });
+  monaco.typescript.typescriptDefaults.setEagerModelSync(true);
+  monaco.typescript.typescriptDefaults.setDiagnosticsOptions({
+    noSemanticValidation: !typesRegistered,
+    noSyntaxValidation: false,
   });
 };
 
@@ -107,9 +122,23 @@ const registerExtraLibs = (
     runtime.extraLibs.push(
       runtime.monaco.typescript.typescriptDefaults.addExtraLib(
         source,
-        path.startsWith("file:///") ? path : `file:///${path}`,
+        path.startsWith("file:///") ? path : `file:///workspace/${path}`,
       ),
     );
+  }
+
+  if (Object.keys(typeFiles).length > 0) {
+    runtime.extraLibs.push(
+      runtime.monaco.typescript.typescriptDefaults.addExtraLib(
+        ambientModules,
+        "file:///workspace/playground-ambient.d.ts",
+      ),
+    );
+    typesRegistered = true;
+    runtime.monaco.typescript.typescriptDefaults.setDiagnosticsOptions({
+      noSemanticValidation: false,
+      noSyntaxValidation: false,
+    });
   }
 };
 
@@ -232,6 +261,7 @@ export const MonacoEditor = (props: EditorProps) => {
       current.changeSubscription?.dispose();
       current.highlightDecorations?.clear();
       for (const disposable of current.extraLibs) disposable.dispose();
+      typesRegistered = false;
       current.editor.dispose();
       for (const model of current.ownedModels) model.dispose();
       runtime.current = undefined;

@@ -60,10 +60,12 @@ const monacoState = vi.hoisted(() => {
         typescriptDefaults: {
           setCompilerOptions: vi.fn(),
           addExtraLib: vi.fn(() => ({ dispose: vi.fn() })),
+          setEagerModelSync: vi.fn(),
+          setDiagnosticsOptions: vi.fn(),
         },
       },
     },
-    modelFor: (path: string) => models.get(`file:///${path}`),
+    modelFor: (path: string) => models.get(`file:///workspace/${path}`),
     reset: () => {
       models.clear();
       currentModel = null;
@@ -138,5 +140,58 @@ describe("MonacoEditor", () => {
     await mounted.rerender(initialProps);
 
     expect(removedModel.dispose).toHaveBeenCalledOnce();
+  });
+
+  it("disables semantic validation on initialization", async () => {
+    await renderHydratedEditor({
+      path: "src/first.ts",
+      value: projectFiles["src/first.ts"],
+      files: projectFiles,
+      typeFiles: {},
+      disabled: false,
+      readOnly: false,
+      highlights: [],
+      onChange: () => undefined,
+    });
+
+    const { setDiagnosticsOptions } =
+      monacoState.monaco.typescript.typescriptDefaults;
+    expect(setDiagnosticsOptions).toHaveBeenCalledWith({
+      noSemanticValidation: true,
+      noSyntaxValidation: false,
+    });
+    expect(setDiagnosticsOptions).not.toHaveBeenCalledWith(
+      expect.objectContaining({ noSemanticValidation: false }),
+    );
+  });
+
+  it("enables semantic validation after type files are registered", async () => {
+    await renderHydratedEditor({
+      path: "src/first.ts",
+      value: projectFiles["src/first.ts"],
+      files: projectFiles,
+      typeFiles: {
+        "file:///workspace/node_modules/zod/index.d.ts": "export {};",
+      },
+      disabled: false,
+      readOnly: false,
+      highlights: [],
+      onChange: () => undefined,
+    });
+
+    const { addExtraLib, setDiagnosticsOptions } =
+      monacoState.monaco.typescript.typescriptDefaults;
+    expect(addExtraLib).toHaveBeenCalledWith(
+      "export {};",
+      "file:///workspace/node_modules/zod/index.d.ts",
+    );
+    expect(addExtraLib).toHaveBeenCalledWith(
+      'declare module "@fp-with-ts/clinic-web";\ndeclare module "@fp-with-ts/clinic-web/server";\n',
+      "file:///workspace/playground-ambient.d.ts",
+    );
+    expect(setDiagnosticsOptions).toHaveBeenLastCalledWith({
+      noSemanticValidation: false,
+      noSyntaxValidation: false,
+    });
   });
 });
