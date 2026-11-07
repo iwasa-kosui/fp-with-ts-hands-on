@@ -16,6 +16,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <p>ユースケースは成功値だけを返す型のまま複数の Error をthrowします。Web側は予約なしの文言だけをcatchしているため、後から追加された状態不正を処理できず500にしています。</p>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
   <p>予約なしと状態不正をkindを持つDiscriminated Unionにし、Resultで返す。andThenで失敗後の状態遷移とStore呼び出しを止める。状態遷移はドメイン関数を直接呼び、外部境界のResolverとStoreだけを依存として受け取る。Web側はmatchとswitchでResultに含めた失敗を網羅してnoticeへ変換する。</p>
+  <p>Resolverは、予約IDから現在の予約をデータベースなどの外部から取得する部品です。Storeは、状態を進めた予約を外部へ保存する部品です。どちらも外部に触れるので、ユースケースは引数の <code>deps</code> から受け取ります。</p>
   <h3>このセッションで守ること</h3>
   <ul class="decision-list">{props.session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
   <p>今回の変更は <code>{props.session.exerciseModule.dir}</code> 内の3ファイルに限定します。</p>
@@ -45,18 +46,19 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 
 <section id="teach">
   <h2>事前知識（{props.session.timeBreakdown.teach}分）</h2>
-  <p>まずSession 01のROPの図を振り返り、失敗を値で返すコードをisErrで書いたときの煩雑さを確かめます。次にneverthrowのResultとResultに含める失敗の基準を整理し、andThenとmapを図と見比べます。</p>
+  <p>まずROP（Railway Oriented Programming）の考え方を学び、失敗を値で返すコードをisErrで書いたときの煩雑さを確かめます。次にneverthrowのResultとResultに含める失敗の基準を整理し、andThenとmapをROPの図と見比べます。</p>
   <article class="teaching-topic" id="rop-recap">
-    <h3>ROPをおさらいする</h3>
-    <p>Session 01で、処理の流れを成功と失敗の2本のレールで捉えるRailway Oriented Programming（ROP）を学びました。各工程は、成功なら次の工程へ値を渡し、失敗なら下のレールへ移って後続の工程を飛ばします。</p>
+    <h3>ROPで失敗の流れを捉える</h3>
+    <p>診察開始は、入力を検査する、対象を取得する、権限と状態を確認する、結果を作る、という工程を順に実行します。ROPは、この工程の流れを成功と失敗の2本のレールで捉える考え方です。</p>
+    <p>各工程は、成功なら次の工程へ値を渡し、失敗なら下のレールへ移って後続の工程を飛ばします。失敗の値は下のレールを終点まで進みます。</p>
     <RailwayOrientedProgramming />
-    <p>この回の診察開始も同じ形です。図の工程と診察開始の処理は、次のように対応します。</p>
+    <p>ROPを使うと、予約が見つからない、受付済みでないといった工程ごとの失敗を、同じ流れで扱えます。失敗した後に状態遷移や保存だけが実行され、途中の状態が残ることを防げます。図の工程と診察開始の処理は、次のように対応します。</p>
     <table>
       <thead>
         <tr><th>図の工程</th><th>診察開始の処理</th><th>失敗レールへ移る値</th></tr>
       </thead>
       <tbody>
-        <tr><th>入力を検査する</th><td><code>StartExaminationInput.parse</code>。Session 04の境界で検査します</td><td>この回では扱いません</td></tr>
+        <tr><th>入力を検査する</th><td><code>StartExaminationInput.parse</code>。Session 03の境界で検査します</td><td>この回では扱いません</td></tr>
         <tr><th>対象を取得する</th><td><code>resolver.resolveById</code> と <code>ensureAppointmentFound</code></td><td><code>AppointmentNotFound</code></td></tr>
         <tr><th>権限と状態を確認する</th><td><code>ensureCheckedIn</code>（権限はこの回では扱いません）</td><td><code>InvalidAppointmentState</code></td></tr>
         <tr><th>結果を作る</th><td><code>transitionToInExamination</code> と <code>store.save</code></td><td>なし</td></tr>
@@ -105,7 +107,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <AndThenMapFlow />
     <p><a href="#rop-recap">ROPの図</a>と見比べると、次のように対応します。</p>
     <ul class="decision-list">
-      <li><strong><code>andThen</code>（渡す関数の戻り値: Result）:</strong> 切り替え線のある工程。「対象を取得する」の後の「権限と状態を確認する」が該当し、Err を返すと失敗レールへ移ります。「対象を取得する」は最初の工程で前の値がないので、ensureAppointmentFound は andThen を使わずに直接呼びます。入力の検査は Session 04 の境界で済んでいます。</li>
+      <li><strong><code>andThen</code>（渡す関数の戻り値: Result）:</strong> 切り替え線のある工程。「対象を取得する」の後の「権限と状態を確認する」が該当し、Err を返すと失敗レールへ移ります。「対象を取得する」は最初の工程で前の値がないので、ensureAppointmentFound は andThen を使わずに直接呼びます。入力の検査は Session 03 の境界で済んでいます。</li>
       <li><strong><code>map</code>（渡す関数の戻り値: 素の値）:</strong> 切り替え線のない工程。「結果を作る」が該当し、成功レールを進みます。</li>
     </ul>
     <Fragment slot="why">渡す関数が業務エラーを返しうるなら andThen、返さないなら map を選びます。Err になった後にコールバックが呼ばれないのは、図で失敗レールへ移った値が後続の工程を飛ばすことに当たります。</Fragment>

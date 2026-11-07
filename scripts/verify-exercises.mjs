@@ -20,15 +20,20 @@ import { fileURLToPath } from "node:url";
 const BASELINE_COMMIT = "088c2ef";
 const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-01/README.md",
+  "examples/session-03/README.md",
+  "examples/session-04/README.md",
+  "examples/session-05/README.md",
+  "examples/session-06/README.md",
+  "examples/session-07/README.md",
   "examples/session-05/exercises/result-errors.test.ts",
 ];
 
 const STEP_1_TO_3_FILES = ["src/domain/appointment/transitions.ts"];
 
-const S5_PAGE = "apps/docs/src/pages/sessions/05-workflow-errors.astro";
+const S4_PAGE = "apps/docs/src/pages/sessions/04-workflow-errors.astro";
 
-const S5_PAGE_SOLUTION = {
-  page: S5_PAGE,
+const S4_PAGE_SOLUTION = {
+  page: S4_PAGE,
   wholeFiles: [
     {
       target: "src/useCase/errors.ts",
@@ -57,17 +62,17 @@ const S5_PAGE_SOLUTION = {
 };
 
 const SCENARIOS = [
-  { session: "02", name: "S2 開始", before: 5, overlay: null, after: null },
+  { session: "02", name: "S1 開始", before: 5, overlay: null, after: null },
   {
     session: "02",
-    name: "S2 Step 1-3",
+    name: "S1 Step 1-3",
     before: 5,
     overlay: { from: "examples/session-03", files: STEP_1_TO_3_FILES },
     after: 1,
   },
   {
     session: "02",
-    name: "S2 全解答",
+    name: "S1 全解答",
     before: 5,
     overlay: {
       from: "examples/session-03",
@@ -78,10 +83,10 @@ const SCENARIOS = [
     },
     after: 0,
   },
-  { session: "03", name: "S3 開始", before: 3, overlay: null, after: null },
+  { session: "03", name: "S2 開始", before: 3, overlay: null, after: null },
   {
     session: "03",
-    name: "S3 全解答",
+    name: "S2 全解答",
     before: 3,
     overlay: {
       from: "examples/session-04",
@@ -95,10 +100,10 @@ const SCENARIOS = [
     },
     after: 0,
   },
-  { session: "04", name: "S4 開始", before: 2, overlay: null, after: null },
+  { session: "04", name: "S3 開始", before: 2, overlay: null, after: null },
   {
     session: "04",
-    name: "S4 全解答",
+    name: "S3 全解答",
     before: 2,
     overlay: {
       from: "examples/session-05",
@@ -106,10 +111,10 @@ const SCENARIOS = [
     },
     after: 0,
   },
-  { session: "05", name: "S5 開始", before: 8, overlay: null, after: null },
+  { session: "05", name: "S4 開始", before: 8, overlay: null, after: null },
   {
     session: "05",
-    name: "S5 回帰（session-06）",
+    name: "S4 回帰（session-06）",
     before: 8,
     overlay: {
       regression: {
@@ -121,9 +126,9 @@ const SCENARIOS = [
   },
   {
     session: "05",
-    name: "S5 解答（ページの解答）",
+    name: "S4 解答（ページの解答）",
     before: 8,
-    overlay: { pageSolution: S5_PAGE_SOLUTION },
+    overlay: { pageSolution: S4_PAGE_SOLUTION },
     after: 0,
   },
   { session: "06", name: "S6 開始", before: 4, overlay: null, after: null },

@@ -4,7 +4,7 @@ import CommandBlock from "../../components/CommandBlock.astro";
 import RailwayOrientedProgramming from "../../components/RailwayOrientedProgramming.astro";
 import AndThenMapFlow from "../../components/AndThenMapFlow.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
-import Prose from "../../sessions/prose/05-workflow-errors.mdx";
+import Prose from "../../sessions/prose/04-workflow-errors.mdx";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import type { SessionWorkspace } from "../../code-explorer/types";
@@ -25,9 +25,9 @@ type TeachingSnippets = Readonly<{
 }>;
 
 export const session: SessionSummary = {
-  slug: "05-workflow-errors",
+  slug: "04-workflow-errors",
   snapshot: "session-05",
-  sequence: "05",
+  sequence: "04",
   kind: "exercise",
   title: "失敗をユースケースの結果として扱う",
   durationMinutes: 35,
@@ -446,15 +446,15 @@ const chapters = [
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
 export const promisesHref =
-  "/sessions/02-state-transitions/#peer-review-promises";
+  "/sessions/01-state-transitions/#peer-review-promises";
 export const navigation = ({
   previous: {
-    href: "/sessions/04-boundaries-and-pii/",
+    href: "/sessions/03-boundaries-and-pii/",
     title: "診察開始の入力を境界で検証する",
   },
   next: {
-    href: "/sessions/06-effects-and-consistency/",
-    title: "副作用と整合性境界を設計する",
+    href: "/sessions/05-business-events-and-workflows/",
+    title: "データとパイプラインで予約キャンセルを設計する",
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
