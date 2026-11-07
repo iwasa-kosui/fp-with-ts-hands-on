@@ -95,15 +95,15 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         </section>
 
         <section class="landing-section" id="problems" aria-labelledby="problems-title">
-          <div class="section-head"><h2 id="problems-title">ところが、問題が増えてきた</h2><p>便利になった分だけ、要求も増えました。小さな改修を重ねるうちに、どの状態で何ができるのか、どの情報を外へ出してよいのかが分かりにくくなっています。</p></div>
+          <div class="section-head"><h2 id="problems-title">ところが、問題が増えてきました</h2><p>便利になった分だけ、要求も増えました。小さな改修を重ねるうちに、どの状態で何ができるのか、どの情報を外へ出してよいのかが分かりにくくなっています。</p></div>
           <div class="timeline" aria-label="WAN NYAN OS に起きている問題">
-            <article class="time-stop is-active"><time>Current / S00</time><strong>🐕 現状と事故を対応付ける</strong><span>業務の流れ、画面操作、保存先、ログを確認し、二重請求と個人情報の流出がどこで起きたかを確かめる。</span></article>
-            <article class="time-stop"><time>Risk / S01</time><strong>🐇 許可されない状態遷移</strong><span>会計済み・キャンセル済みの予約でも診察を開始できてしまうリスクを、状態と遷移の型で防ぐ。</span></article>
-            <article class="time-stop"><time>Risk / S02</time><strong>🦔 状態の分岐漏れ</strong><span>予約の状態を追加したときに、表示名などの分岐を直し忘れるリスクを、コンパイルエラーで防ぐ。</span></article>
-            <article class="time-stop"><time>Risk / S03</time><strong>🐦 未検証の外部入力</strong><span>HTTPから受け取った値をZodで検証し、値の制約を型で表した診察開始の入力へ変換する。</span></article>
-            <article class="time-stop"><time>Risk / S04</time><strong>🐹 ユースケースの予期できる失敗</strong><span>throw と undefined で表している業務上の失敗を、呼び出し側が扱える結果へ変える。</span></article>
-            <article class="time-stop"><time>Workflow / S05</time><strong>🐈 予約キャンセルを設計する</strong><span>予約のデータから始め、キャンセルをパイプラインとして読み、失敗の扱いとI/Oの分離を確かめる。</span></article>
-            <article class="time-stop"><time>Risk / S06</time><strong>🐢 出力イベントと副作用</strong><span>時刻や保存処理を外から渡し、状態と監査記録を同じ整合性境界で保存する。</span></article>
+            <article class="time-stop is-active"><time>Current / S00</time><strong>🐕 現状と事故を対応付ける</strong><span>業務の流れ、画面操作、保存先、ログを確認し、二重請求と個人情報の流出がどこで起きたかを確かめます。</span></article>
+            <article class="time-stop"><time>Risk / S01</time><strong>🐇 許可されない状態遷移</strong><span>会計済み・キャンセル済みの予約でも診察を開始できてしまうリスクを、状態と遷移の型で防ぎます。</span></article>
+            <article class="time-stop"><time>Risk / S02</time><strong>🦔 状態の分岐漏れ</strong><span>予約の状態を追加したときに、表示名などの分岐を直し忘れるリスクを、コンパイルエラーで防ぎます。</span></article>
+            <article class="time-stop"><time>Risk / S03</time><strong>🐦 未検証の外部入力</strong><span>HTTPから受け取った値をZodで検証し、値の制約を型で表した診察開始の入力へ変換します。</span></article>
+            <article class="time-stop"><time>Risk / S04</time><strong>🐹 ユースケースの予期できる失敗</strong><span>throw と undefined で表している業務上の失敗を、呼び出し側が扱える結果へ変えます。</span></article>
+            <article class="time-stop"><time>Workflow / S05</time><strong>🐈 予約キャンセルを設計する</strong><span>予約のデータから始め、キャンセルをパイプラインとして読み、失敗の扱いとI/Oの分離を確かめます。</span></article>
+            <article class="time-stop"><time>Risk / S06</time><strong>🐢 出力イベントと副作用</strong><span>時刻や保存処理を外から渡し、状態と監査記録を同じ整合性境界で保存します。</span></article>
           </div>
         </section>
 

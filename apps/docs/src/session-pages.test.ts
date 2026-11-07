@@ -193,7 +193,7 @@ const exerciseContracts = {
       snapshot: "session-06",
       initialFile: "exercises/effects-and-events.test.ts",
       description:
-        "output event と side effects の要求を開始 snapshot で確認します。",
+        "出力イベントと副作用の要求を、開始スナップショットで確認します。",
       visibleFiles: [
         "exercises/effects-and-events.test.ts",
         "test/regression/result-errors.test.ts",
@@ -245,13 +245,6 @@ const reviewText = [
   "Agentへの依頼文",
   "型検査では確認できず、テストまたは実行時に確認すること",
   "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。",
-] as const;
-
-// S06 の文が S01〜S04 と同じ敬体に直るまで、S06 だけ変更前の文を検査する
-const legacyReviewText = [
-  "`as` によるキャストが入っていないか全文検索して確認する。",
-  "`git status --short` で想定外の path がないか確認する。",
-  "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
 ] as const;
 
 const reviewPromptFor = {
@@ -333,11 +326,7 @@ describe("session pages", () => {
         expect(source).not.toContain(dependency);
       }
       expect(pageModule.navigation).toEqual(contract.navigation);
-      const expectedReviewText =
-        slug === "06-effects-and-consistency"
-          ? [...legacyReviewText, ...reviewText.slice(3)]
-          : reviewText;
-      for (const text of expectedReviewText) expect(source).toContain(text);
+      for (const text of reviewText) expect(source).toContain(text);
       expect(source).toContain(reviewPromptFor[slug]);
       expect(source).toContain(
         `\`git diff --stat -- examples/${contract.workspace.snapshot}\``,
@@ -419,7 +408,7 @@ describe("session pages", () => {
     expect(source).toContain("data-presentation={presentation}");
     expect(source).toContain('class="step-solution__completed-file-note"');
     expect(source).toContain(
-      'class="failure-boundary" aria-label="業務エラーとインフラ例外の区別"',
+      'class="failure-boundary" aria-label="業務エラーとシステムエラーの区別"',
     );
     expect(source).toContain("2つの失敗経路を見分ける");
   });
