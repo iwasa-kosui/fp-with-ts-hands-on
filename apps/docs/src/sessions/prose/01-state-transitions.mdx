@@ -13,7 +13,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <h3 data-story-stage="use-case">追加したい機能</h3>
   <p>予約を「診察中にする」、「診察結果を記録する」、「会計する」、「キャンセルする」といった状態変更の機能を追加します。</p>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
-  <p>次の図の6つの状態を、状態の名前を持つ <code>kind</code> プロパティで区別するDiscriminated Unionで表します。🐇の予約がどの関数でどの状態へ進むかを、入力、関数の実装、出力の順に1コマずつ追ってください。</p>
+  <p>次の図の6つの状態を、状態の名前を持つ <code>kind</code> プロパティで区別するDiscriminated Unionで表します。🐇の予約がどの関数でどの状態へ進むかを、1コマずつ追ってください。最後の3コマでは、以前のコード、修正前、修正後の順に、入力、関数の実装、出力を見比べます。</p>
   <AppointmentStateDiagram />
   <p>遷移関数でも同じ型を使います。<code>completeExamination</code> は <code>InExamination</code> だけを受け取り、<code>recordPayment</code> は <code>AwaitingPayment</code> だけを受け取る純粋関数にします。</p>
   <h3>このセッションで守ること</h3>
@@ -114,7 +114,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   </article>
   <article class="teaching-topic">
     <h3>遷移関数の引数型で、受け取れる状態を限定する</h3>
-    <p>Discriminated Unionから特定の状態型を選び、遷移関数の引数に指定します。許可していない状態は、関数を呼び出す時点でコンパイルエラーになります。<a href="#appointment-state-diagram">状態遷移の図</a>の矢印が、次の関数に対応します。</p>
+    <p>Discriminated Unionから特定の状態型を選び、遷移関数の引数に指定します。許可していない状態を渡す呼び出しは、型検査でコンパイルエラーになります。<a href="#appointment-state-diagram">状態遷移の図</a>の矢印が、次の関数に対応します。</p>
     <p>修正前の書き方: <a href="#pitfall-wide-input">3. 遷移関数が Appointment 全体を受け取る</a></p>
     <figure class="code-block">
       <figcaption>
@@ -126,7 +126,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
       </figcaption>
       <Code code={props.teaching[1].after.code} lang="ts" />
     </figure>
-    <p class="teaching-topic__why">遷移ごとに <code>CheckedIn</code>、<code>InExamination</code>、<code>AwaitingPayment</code> だけを受け取ります。会計済みの予約や診察結果を記録していない予約を誤った関数へ渡すと、コードを実行する前の型検査で止まります。Discriminated Unionが状態の候補を定義し、関数の引数型が許可された遷移を定義します。</p>
+    <p class="teaching-topic__why">遷移ごとに <code>CheckedIn</code>、<code>InExamination</code>、<code>AwaitingPayment</code> だけを受け取ります。会計済みの予約や診察結果を記録していない予約を誤った関数へ渡すと、コードを実行する前の型検査でコンパイルエラーになります。Discriminated Unionが状態の候補を定義し、関数の引数型が許可された遷移を定義します。</p>
   </article>
   <details class="step-solution">
     <summary>おまけ: 他の言語で状態を型にする</summary>
