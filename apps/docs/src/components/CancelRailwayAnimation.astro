@@ -64,11 +64,15 @@ const appointmentId = `"11111111-…"`;
 const requestWith = (reason: string) =>
   `{\n  actorUserId: "（受付担当者の ID）",\n  appointmentId: ${appointmentId},\n  reason: ${reason},\n}`;
 const request = requestWith(`"owner request"`);
-const user = `Ok({ kind: "Receptionist", userId: "（受付担当者の ID）" })`;
-const found = (kind: string) =>
-  `Ok({\n  kind: "${kind}",\n  appointmentId: ${appointmentId},\n  reason: "skin check",\n})`;
-const event = `Ok({\n  kind: "AppointmentCanceled",\n  aggregateState: {\n    kind: "Canceled",\n    appointmentId: ${appointmentId},\n    reason: "owner request",\n    canceledAt: "2026-08-30T05:00:00.000Z",\n  },\n})`;
-const finalValue = `Ok({\n  appointment: {\n    kind: "Canceled",\n    appointmentId: ${appointmentId},\n    reason: "owner request",\n    canceledAt: "2026-08-30T05:00:00.000Z",\n  },\n})`;
+const userValue = `{ kind: "Receptionist", userId: "（受付担当者の ID）" }`;
+const appointmentValue = (kind: string) =>
+  `{\n  kind: "${kind}",\n  appointmentId: ${appointmentId},\n  reason: "skin check",\n}`;
+const canceledValue = `{\n  kind: "Canceled",\n  appointmentId: ${appointmentId},\n  reason: "owner request",\n  canceledAt: "2026-08-30T05:00:00.000Z",\n}`;
+const indented = (value: string) => value.replaceAll("\n", "\n  ");
+const ok = (value: string) => `Ok(${value})`;
+const eventValue = `{\n  kind: "AppointmentCanceled",\n  aggregateState: ${indented(canceledValue)},\n}`;
+const finalValue = ok(`{\n  appointment: ${indented(canceledValue)},\n}`);
+const createEventInput = `// 前の行の値\n${appointmentValue("Scheduled")}\n// 最初に受け取った入力の input.reason\n"owner request"\n// clock.now() の時刻\n"2026-08-30T05:00:00.000Z"`;
 const emptyReason = `Err("reason が空である")`;
 const invalidState = `Err({\n  kind: "InvalidAppointmentState",\n  appointmentId: ${appointmentId},\n  expectedKind: "ScheduledOrCheckedIn",\n  actualKind: "Paid",\n})`;
 
@@ -83,15 +87,15 @@ type Step = Readonly<{
 
 const step = (row: number, text: string, input: string, output: string): Step => ({ text, row, failed: false, skipped: false, input, output });
 const failAt = (row: number, text: string, input: string, output: string): Step => ({ ...step(row, text, input, output), failed: true });
-const carry = (row: number, text: string, failure: string): Step => ({ ...step(row, text, failure, failure), failed: true, skipped: true });
+const carry = (row: number, text: string, failure: string): Step => ({ ...step(row, text, failure, failure), failed: true, skipped: row !== outputRow });
 
 const untilAppointment = (kind: string): readonly Step[] => [
-  step(0, "Web の入口が依頼を検査します。キャンセル理由は空ではないので、<code>.min(1)</code> を通ります。", request, request),
-  step(1, "<code>resolveById</code> がデータベースから実行者を取得します。", request, user),
-  step(2, "<code>ensureUserFound</code> は、実行者を取得できたので <code>ok(user)</code> を返します。", user, user),
-  step(3, "<code>ensureCanManageClinic</code> が権限を確かめます。<code>Receptionist</code> には権限があります。", user, user),
-  step(4, "<code>resolveById</code> が予約を取得します。ここで値は実行者から予約へ変わります。", user, found(kind)),
-  step(5, "<code>ensureAppointmentFound</code> は、予約を取得できたので <code>ok(appointment)</code> を返します。", found(kind), found(kind)),
+  step(0, "Web の入口が依頼を検査します。キャンセル理由は空ではないので、<code>.min(1)</code> を通ります。", request, ok(request)),
+  step(1, "<code>resolveById</code> がデータベースから実行者を取得します。", request, ok(userValue)),
+  step(2, "<code>ensureUserFound</code> は、実行者を取得できたので <code>ok(user)</code> を返します。", userValue, ok(userValue)),
+  step(3, "<code>ensureCanManageClinic</code> が権限を確かめます。<code>Receptionist</code> には権限があります。", userValue, ok(userValue)),
+  step(4, "<code>resolveById</code> が予約を取得します。ここで値は実行者から予約へ変わります。", userValue, ok(appointmentValue(kind))),
+  step(5, "<code>ensureAppointmentFound</code> は、予約を取得できたので <code>ok(appointment)</code> を返します。", appointmentValue(kind), ok(appointmentValue(kind))),
 ];
 
 const scenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }>)[] = [
@@ -99,34 +103,25 @@ const scenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }>)[
     label: "成功",
     steps: [
       ...untilAppointment("Scheduled"),
-      step(6, "<code>ensureCancellable</code> が状態を確かめます。<code>Scheduled</code> は診察開始前なので、<code>ok(appointment)</code> を返します。", found("Scheduled"), found("Scheduled")),
-      step(7, "<code>createEvent</code> が <code>Appointment.cancel</code> を呼びます。<code>Canceled</code> のデータを持つ <code>AppointmentCanceled</code> ができます。", found("Scheduled"), event),
-      step(8, "<code>andThrough</code> が store を呼び、予約の更新とイベントの追記を1つの transaction で行います。値は同じイベントのままです。", event, event),
-      step(9, "<code>map</code> がイベントからキャンセル後の予約を取り出します。", event, finalValue),
+      step(6, "<code>ensureCancellable</code> が状態を確かめます。<code>Scheduled</code> は診察開始前なので、<code>ok(appointment)</code> を返します。", appointmentValue("Scheduled"), ok(appointmentValue("Scheduled"))),
+      step(7, "<code>createEvent</code> が <code>Appointment.cancel</code> を呼びます。前の行の予約に加えて、最初に受け取った入力の <code>reason</code> と <code>clock</code> の時刻を使い、<code>AppointmentCanceled</code> を作ります。", createEventInput, ok(eventValue)),
+      step(8, "<code>andThrough</code> が store を呼び、予約の更新とイベントの追記を1つの transaction で行います。値は同じイベントのままです。", eventValue, ok(eventValue)),
+      step(9, "<code>map</code> がイベントからキャンセル後の予約を取り出します。", eventValue, finalValue),
       step(outputRow, "値は成功レールの終点に届きます。呼び出し側はキャンセル後の予約を受け取ります。", finalValue, finalValue),
     ],
   },
   {
     label: "理由が空",
     steps: [
-      failAt(0, "Web の入口が依頼を検査します。キャンセル理由が空なので、<code>.min(1)</code> で失敗します。値は失敗レールへ切り替わります。", requestWith(`""`), emptyReason),
-      carry(1, "失敗の値は失敗レールを進みます。実行者の取得は実行しません。", emptyReason),
-      carry(2, "失敗の値はそのまま進みます。この関数も実行しません。", emptyReason),
-      carry(3, "権限の確認も実行しません。", emptyReason),
-      carry(4, "予約の取得も実行しません。データベースは読みません。", emptyReason),
-      carry(5, "予約の確認も実行しません。", emptyReason),
-      carry(6, "状態の確認も実行しません。", emptyReason),
-      carry(7, "イベントも作りません。", emptyReason),
-      carry(8, "Event Store への記録も実行しません。理由のないキャンセルは記録されません。", emptyReason),
-      carry(9, "結果の取り出しも実行しません。失敗の値は変わりません。", emptyReason),
-      carry(outputRow, "失敗の値は失敗レールの終点に届きます。呼び出し側は失敗の理由を受け取ります。", emptyReason),
+      failAt(0, "Web の入口が依頼を検査します。キャンセル理由が空なので、<code>.min(1)</code> で失敗します。", requestWith(`""`), emptyReason),
+      failAt(0, "参照実装の入口は、検査に失敗するとユースケースを呼ばずに入力エラーの画面を返します。パイプラインの後ろの行は1行も実行しません。", emptyReason, "// run を呼ばず、入力エラーの画面を返す"),
     ],
   },
   {
     label: "Paid の予約",
     steps: [
       ...untilAppointment("Paid"),
-      failAt(6, "<code>ensureCancellable</code> が状態を確かめます。<code>Paid</code> は診察開始前ではないので、<code>err</code> を返します。値は失敗レールへ切り替わります。", found("Paid"), invalidState),
+      failAt(6, "<code>ensureCancellable</code> が状態を確かめます。<code>Paid</code> は診察開始前ではないので、<code>err</code> を返します。値は失敗レールへ切り替わります。", appointmentValue("Paid"), invalidState),
       carry(7, "失敗の値は失敗レールを進みます。<code>createEvent</code> は実行しないので、<code>Canceled</code> は作られません。", invalidState),
       carry(8, "Event Store への記録も実行しません。記録は残りません。", invalidState),
       carry(9, "結果の取り出しも実行しません。失敗の値は変わりません。", invalidState),
@@ -159,8 +154,8 @@ const id = "cancel-railway-animation";
 <StepPlayer
   id={id}
   title="キャンセルのコードを実行すると、値はどう流れるか"
-  lead="再生すると、値がパイプラインの行に沿って上から下へ進みます。下の枠では、その行が受け取る値、実行する関数の実装、返す値を順に確かめます。失敗しても処理は途中で抜けません。失敗の値は右の失敗レールを終点まで進みます。"
-  note="コードは参照実装 examples/final/src から引用しました。andThen の意味は S5 で学びます。受付担当者の ID と Paid の予約は説明用です。Err の理由が空の値は説明用の表記で、実際の入口は入力の検証エラーを返します。値は読みやすさのため、UUID を「11111111-…」と省略し、petId、ownerId、scheduledAt などの項目と、reason を包む Sensitive も省略しています。"
+  lead="再生すると、値がパイプラインの行に沿って上から下へ進みます。下の枠では、その行が受け取る値、実行する関数の実装、返す値を順に確かめます。ユースケースの中で失敗しても、処理は途中で抜けません。失敗の値は右の失敗レールを終点まで進みます。"
+  note="コードは参照実装 examples/final/src から引用しました。andThen の意味は S5 で学びます。andThen は Ok の中身を次の関数へ渡すので、受け取る値には Ok を付けていません。受付担当者の ID、Paid の予約、Err の理由の文は説明用です。値は読みやすさのため、UUID を「11111111-…」と省略し、petId、ownerId、scheduledAt などの項目と、reason を包む Sensitive も省略しています。"
   scenarios={playerScenarios}
 >
   <div class="cancel-flow" data-cancel-flow={sceneData}>
