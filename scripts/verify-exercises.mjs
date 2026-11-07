@@ -35,6 +35,7 @@ const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-07/test/integration/fileSqliteTransaction.test.ts",
   "examples/session-07/test/regression/effects-and-events.test.ts",
   "examples/session-06/exercises/effects-and-events.test.ts",
+  "examples/final/src/useCase/startExaminationUseCase.ts",
 ];
 
 const STEP_1_TO_3_FILES = ["src/domain/appointment/transitions.ts"];
