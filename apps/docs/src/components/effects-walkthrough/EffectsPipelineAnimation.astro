@@ -1,0 +1,405 @@
+---
+import { Code } from "astro:components";
+import css from "./effects-pipeline.css?raw";
+import script from "./effects-pipeline.js?raw";
+import Walkthrough from "./Walkthrough.astro";
+
+type Tone = "ok" | "err" | "reject";
+type Stage = Readonly<{ key: string; file?: string; outer?: true; code: string }>;
+type Impl = Readonly<{ stage: string; path: string; code: string }>;
+type Card = Readonly<{
+  key: string;
+  stage: string;
+  tone: Tone;
+  chip: string;
+  type: string;
+  code: string;
+  short: string;
+}>;
+type Flow = Readonly<{ kind: "err" | "reject"; from: string; to: string }>;
+type Frame = Readonly<{
+  text: string;
+  at: string;
+  impl?: string;
+  lines?: readonly number[];
+  out?: string;
+  skipped?: readonly string[];
+  flow?: Flow;
+}>;
+type Scene = Readonly<{
+  label: string;
+  outer?: string;
+  settled: Readonly<Record<string, string>>;
+  frames: readonly Frame[];
+}>;
+
+const startExaminationPath = "examples/session-07/src/useCase/startExamination.ts";
+const errorsPath = "examples/session-07/src/useCase/errors.ts";
+const storePath = "examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts";
+const routesPath = "examples/session-07/src/web/routes.ts";
+
+const stages: readonly Stage[] = [
+  {
+    key: "sig",
+    file: startExaminationPath,
+    code: `export const startExaminationWithEffects =
+  (deps: EffectsDependencies) =>
+  (
+    input: StartExaminationWithEffectsInput,
+  ): ResultAsync<InExamination, StartExaminationWithEffectsError> =>`,
+  },
+  {
+    key: "resolve",
+    code: `    ResultAsync.fromSafePromise<AppointmentState | undefined>(
+      Promise.resolve().then(() =>
+        deps.resolver.resolveById(input.appointmentId),
+      ),
+    )`,
+  },
+  {
+    key: "found",
+    code: `      .andThen((appointment) =>
+        ensureAppointmentFound(appointment, input.appointmentId),
+      )`,
+  },
+  { key: "checked", code: `      .andThen(ensureCheckedIn)` },
+  {
+    key: "start",
+    code: `      .map((appointment) =>
+        Appointment.startExamination(createEventContext(deps))(
+          appointment,
+          input.veterinarianId,
+        ),
+      )`,
+  },
+  { key: "through", code: `      .andThrough((event) => deps.store.store(event))` },
+  { key: "map", code: `      .map((event) => event.aggregateState);` },
+  {
+    key: "route",
+    outer: true,
+    file: routesPath,
+    code: `return result.match(
+  () => context.redirect("/", 303),
+  (error) =>
+    context.redirect(
+      \`/?notice=\${toStartExaminationWithEffectsNoticeCode(error)}\`,
+      303,
+    ),
+);`,
+  },
+  {
+    key: "onError",
+    outer: true,
+    file: "examples/session-07/src/app.ts",
+    code: `app.onError((_error, context) => context.text("Internal Server Error", 500));`,
+  },
+];
+
+const impls: Readonly<Record<string, Impl>> = {
+  find: {
+    stage: "resolve",
+    path: storePath,
+    code: `row = database
+  .select({ state: appointmentsTable.state })
+  .from(appointmentsTable)
+  .where(sql\`\${appointmentsTable.appointmentId} = \${appointmentId}\`)
+  .get();
+
+return row === undefined ? undefined : parsePersistedAppointment(row.state);`,
+  },
+  found: {
+    stage: "found",
+    path: errorsPath,
+    code: `export const ensureAppointmentFound = (
+  appointment: Appointment | undefined,
+  appointmentId: AppointmentId,
+): Result<Appointment, AppointmentNotFound> =>
+  appointment === undefined
+    ? err({ kind: "AppointmentNotFound", appointmentId })
+    : ok(appointment);`,
+  },
+  checkedin: {
+    stage: "checked",
+    path: errorsPath,
+    code: `export const ensureCheckedIn = (
+  appointment: Appointment,
+): Result<CheckedIn, InvalidAppointmentState> =>
+  appointment.kind === "CheckedIn"
+    ? ok(appointment)
+    : err({ kind: "InvalidAppointmentState", actual: appointment.kind });`,
+  },
+  context: {
+    stage: "start",
+    path: startExaminationPath,
+    code: `export const createEventContext = (
+  deps: EventContextDependencies,
+): EventContext => ({
+  eventId: deps.eventIdGenerator.generate(),
+  occurredAt: deps.clock.now(),
+});`,
+  },
+  transition: {
+    stage: "start",
+    path: "examples/session-07/src/domain/appointment/transitions.ts",
+    code: `const aggregateState = startExamination(
+  appointment,
+  veterinarianId,
+  context.occurredAt,
+);
+
+return {
+  kind: "ExaminationStarted",
+  eventId: context.eventId,
+  occurredAt: context.occurredAt,
+  appointmentId: aggregateState.appointmentId,
+  aggregateState,
+} as const satisfies ExaminationStarted;`,
+  },
+  store: {
+    stage: "through",
+    path: storePath,
+    code: `store: (event) =>
+  ResultAsync.fromSafePromise(
+    Promise.resolve().then(() => storeAtomically(event)),
+  ).andThen((result) => result),`,
+  },
+  atomic: {
+    stage: "through",
+    path: storePath,
+    code: `if (current === undefined || current.kind !== "CheckedIn") {
+  return err({
+    kind: "AppointmentConflict",
+    appointmentId: event.appointmentId,
+  } as const);
+}`,
+  },
+  notice: {
+    stage: "route",
+    path: routesPath,
+    code: `error.kind === "AppointmentConflict"
+  ? "conflict"
+  : toStartExaminationNoticeCode(error);`,
+  },
+};
+
+const started = `{ kind: "ExaminationStarted", eventId: "e-1" }`;
+const conflict = `{ kind: "AppointmentConflict", appointmentId: "a-1" }`;
+const checkedIn = `{ kind: "CheckedIn", appointmentId: "a-1" }`;
+
+const cards: readonly Card[] = [
+  { key: "r0", stage: "resolve", tone: "ok", chip: "Ok", type: "AppointmentState | undefined", code: checkedIn, short: `{ kind: "CheckedIn", … }` },
+  { key: "r1", stage: "found", tone: "ok", chip: "Ok", type: "Appointment", code: checkedIn, short: `{ kind: "CheckedIn", … }` },
+  { key: "r2", stage: "checked", tone: "ok", chip: "Ok", type: "CheckedIn", code: checkedIn, short: `{ kind: "CheckedIn", … }` },
+  { key: "r3", stage: "start", tone: "ok", chip: "値", type: "EventContext", code: `{ eventId: "e-1", occurredAt: "2026-08-30T06:30:00.000Z" }`, short: `{ eventId: "e-1", … }` },
+  { key: "r4", stage: "start", tone: "ok", chip: "値", type: "ExaminationStarted", code: started, short: `{ kind: "ExaminationStarted", … }` },
+  { key: "r5", stage: "through", tone: "ok", chip: "Ok", type: "ExaminationStarted", code: started, short: `{ kind: "ExaminationStarted", … }` },
+  { key: "r5e", stage: "through", tone: "err", chip: "Err", type: "AppointmentConflict", code: conflict, short: `{ kind: "AppointmentConflict", … }` },
+  { key: "r5x", stage: "through", tone: "reject", chip: "reject", type: "AppointmentPersistenceError", code: `throw new AppointmentPersistenceError("append-audit", cause);`, short: `append-audit の書き込みが失敗` },
+  { key: "r6", stage: "map", tone: "ok", chip: "Ok", type: "InExamination", code: `{ kind: "InExamination", appointmentId: "a-1" }`, short: `{ kind: "InExamination", … }` },
+  { key: "r7r", stage: "route", tone: "err", chip: "応答", type: "Response", code: `context.redirect("/?notice=conflict", 303)`, short: `303 /?notice=conflict` },
+  { key: "r7x", stage: "onError", tone: "reject", chip: "応答", type: "Response", code: `context.text("Internal Server Error", 500)`, short: `500 Internal Server Error` },
+];
+
+const upstream = { resolve: "r0", found: "r1", checked: "r2", start: "r4" } as const;
+
+const scenes: readonly Scene[] = [
+  {
+    label: "成功",
+    settled: {},
+    frames: [
+      {
+        text: "`resolveById` が予約を読みます。値は `CheckedIn` の予約です。",
+        at: "resolve",
+        impl: "find",
+        lines: [0, 1, 2, 3, 4, 6],
+        out: "r0",
+      },
+      {
+        text: "`ensureAppointmentFound` は予約があるので `ok` を返し、値をそのまま次へ渡します。",
+        at: "found",
+        impl: "found",
+        lines: [4, 6],
+        out: "r1",
+      },
+      {
+        text: "`ensureCheckedIn` は `kind` を確かめます。ここから値の型は `CheckedIn` に絞られます。",
+        at: "checked",
+        impl: "checkedin",
+        lines: [3, 4],
+        out: "r2",
+      },
+      {
+        text: "`createEventContext` が時刻と ID を1回だけ作ります。この1回の値を、状態と監査記録の両方が使います。",
+        at: "start",
+        impl: "context",
+        lines: [3, 4],
+        out: "r3",
+      },
+      {
+        text: "`Appointment.startExamination` が `ExaminationStarted` を作ります。失敗しない計算なので `map` です。",
+        at: "start",
+        impl: "transition",
+        lines: [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12],
+        out: "r4",
+      },
+      {
+        text: "`andThrough` が `store` を呼びます。結果の `ok` は捨て、`event` をそのまま次へ渡します。",
+        at: "through",
+        impl: "store",
+        lines: [0, 1, 2, 3],
+        out: "r5",
+      },
+      {
+        text: "最後の `map` が `event.aggregateState` を取り出します。呼び出し元には `InExamination` が返ります。",
+        at: "map",
+        out: "r6",
+      },
+    ],
+  },
+  {
+    label: "競合: 業務エラーの経路",
+    outer: "route",
+    settled: upstream,
+    frames: [
+      {
+        text: "場面1の6段目まで同じです。`event` ができて `store` を呼びます。",
+        at: "through",
+        impl: "store",
+        lines: [0, 1, 2, 3],
+      },
+      {
+        text: "`store` は `err` で `AppointmentConflict` を返します。業務で起こりうる失敗なので型に残ります。",
+        at: "through",
+        impl: "atomic",
+        lines: [0, 1, 2, 3, 4, 5],
+        out: "r5e",
+        flow: { kind: "err", from: "through", to: "through" },
+      },
+      {
+        text: "`andThrough` は `Err` を次へ流し、最後の `map` は実行されません。",
+        at: "map",
+        skipped: ["map"],
+        flow: { kind: "err", from: "through", to: "map" },
+      },
+      {
+        text: "呼び出し元の route が `Err` を受け取り、`/?notice=conflict` への 303 リダイレクトに変換します。",
+        at: "route",
+        impl: "notice",
+        lines: [0, 1],
+        out: "r7r",
+        skipped: ["map"],
+        flow: { kind: "err", from: "through", to: "route" },
+      },
+    ],
+  },
+  {
+    label: "保存障害: 例外の経路",
+    outer: "onError",
+    settled: upstream,
+    frames: [
+      {
+        text: "場面1の6段目まで同じです。`event` ができて `store` を呼びます。",
+        at: "through",
+        impl: "store",
+        lines: [0, 1, 2, 3],
+      },
+      {
+        text: "SQLite の書き込みが失敗すると、`store` は `fromSafePromise` の中で reject します。`Err` に変換しません。",
+        at: "through",
+        impl: "store",
+        lines: [1, 2],
+        out: "r5x",
+        flow: { kind: "reject", from: "through", to: "through" },
+      },
+      {
+        text: "`andThrough` は `Result` を返せず、最後の `map` も実行されません。reject は `Result` の経路の外へ出ます。",
+        at: "map",
+        skipped: ["map"],
+        flow: { kind: "reject", from: "through", to: "onError" },
+      },
+      {
+        text: "外側の `app.onError` が受け取り、詳細を含まない 500 応答を返します。業務エラーの型は増えません。",
+        at: "onError",
+        out: "r7x",
+        skipped: ["map"],
+        flow: { kind: "reject", from: "through", to: "onError" },
+      },
+    ],
+  },
+];
+
+const frameData = scenes.map(({ outer, settled, frames }) => ({
+  outer,
+  settled,
+  frames: frames.map(({ text: _text, ...frame }) => frame),
+}));
+---
+
+<Walkthrough
+  id="effects-pipeline-walkthrough"
+  title="値がワークフローを流れる"
+  lead="診察開始のワークフローのコードを上から読み、実行中の段の下に、その段の実装と出力が開く様子で追います。成功、競合、保存障害の3つの流れがあります。"
+  note="値は説明用の例です。項目は一部だけを載せています。"
+  scenes={scenes.map(({ label, frames }) => ({ label, frames: frames.map(({ text }) => ({ text })) }))}
+>
+  <div class="ep" data-effects-pipeline data-frames={JSON.stringify(frameData)}>
+    <div class="ep-flow">
+      {stages.map((stage) => (
+        <div class={`ep-stage${stage.outer === true ? " ep-stage--outer" : ""}`} data-stage={stage.key} data-state={stage.key === "sig" ? "static" : "future"} data-outer={stage.outer === true ? "" : undefined}>
+          {stage.file === undefined ? null : (
+            <p class="ep-file">
+              <span class="walk-badge walk-badge--after">修正後</span>
+              {stage.outer === true ? <span class="ep-file__tag">パイプラインの外</span> : null}
+              <code>{stage.file}</code>
+            </p>
+          )}
+          <div class="ep-stage__code">
+            <Code code={stage.code} lang="ts" wrap />
+          </div>
+          {stage.key === "sig" ? null : (
+            <>
+              <p class="ep-skip">実行されない</p>
+              <div class="ep-sums">
+                {cards.filter((card) => card.stage === stage.key).map((card) => (
+                  <p class="ep-sum" data-sum={card.key} data-tone={card.tone}>
+                    <span class="ep-sum__arrow">→</span>
+                    <span class="ep-chip">{card.chip}</span>
+                    <code class="ep-sum__type">{card.type}</code>
+                    <span class="ep-sum__val">{card.short}</span>
+                  </p>
+                ))}
+              </div>
+              <div class="ep-open">
+                <div class="ep-open__clip">
+                  <div class="ep-open__body">
+                    {Object.entries(impls).filter(([, impl]) => impl.stage === stage.key).map(([name, impl]) => (
+                      <figure class="ep-impl" data-impl={name}>
+                        <figcaption>
+                          <span class="walk-badge walk-badge--after">修正後</span>
+                          <code>{impl.path}</code>
+                        </figcaption>
+                        <Code code={impl.code} lang="ts" wrap />
+                      </figure>
+                    ))}
+                    {cards.filter((card) => card.stage === stage.key).map((card) => (
+                      <figure class="ep-out" data-out={card.key} data-tone={card.tone}>
+                        <figcaption>
+                          <span class="ep-out__label">出力</span>
+                          <span class="ep-chip">{card.chip}</span>
+                          <code class="ep-out__type">{card.type}</code>
+                        </figcaption>
+                        <Code code={card.code} lang="ts" wrap />
+                      </figure>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+  <style is:inline set:html={css}></style>
+  <script is:inline type="module" set:html={script}></script>
+</Walkthrough>

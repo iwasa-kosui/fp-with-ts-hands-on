@@ -2,6 +2,8 @@ import { Code } from "astro:components";
 import { Fragment } from "astro/jsx-runtime";
 import TeachingTopic from "../../components/TeachingTopic.astro";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
+import StoreBoundaryAnimation from "../../components/effects-walkthrough/StoreBoundaryAnimation.astro";
+import EffectsPipelineAnimation from "../../components/effects-walkthrough/EffectsPipelineAnimation.astro";
 
 <section id="incident">
   <h2>今回つくるもの</h2>
@@ -74,6 +76,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <p>in-memory の実装は transaction を持ちません。新しい Map と配列を作ってから最後にまとめて置き換えることで、同じ約束を表します。</p>
     <Fragment slot="why">保存処理を1つにすると、ユースケースは片方だけ成功した場合の後始末を書かずに済みます。状態と監査記録をそろえる責任は store の実装に集まります。型だけでは transaction の有無を確かめられないので、examples/session-07/test/integration/fileSqliteTransaction.test.ts が監査記録の失敗時に状態が戻ることを確かめています。</Fragment>
   </TeachingTopic>
+  <StoreBoundaryAnimation />
   <TeachingTopic
     name="ResultAsync と andThrough で非同期の保存をつなぐ"
     before={props.teaching[2].before}
@@ -101,6 +104,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <p>reject は、S5 で確認した外側の例外境界が受け取ります。例外境界は、エラーの詳細を含まない 500 応答へ変換します。本番ではここでログへも記録します。配布コードの app.onError は記録を省いています。</p>
     <Fragment slot="why">E に AppointmentConflict だけを書くと、呼び出し側は選べる対応だけを型から読み取れます。演習の Step 4 は、競合が Err になり、保存障害と破損データが reject になることをテストで確かめます。</Fragment>
   </TeachingTopic>
+  <EffectsPipelineAnimation />
 </section>
 
 <aside class="failure-boundary" aria-label="業務エラーとインフラ例外の区別">
