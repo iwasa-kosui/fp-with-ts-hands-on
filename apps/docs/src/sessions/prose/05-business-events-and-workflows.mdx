@@ -7,7 +7,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
     <p class="case-file__episode-label">動物病院のひと幕</p>
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
-  <p>S01〜S04では、診察開始を題材に、状態の型、分岐漏れの検出、入力の検証、失敗の扱いを学びました。S05では、この考え方を別の業務である予約キャンセルに当てはめて読みます。S05で使う考え方は、「データ構造があり、それをパイプライン（関数）で処理して業務フローを実現する」という考え方です。</p>
+  <p>S01〜S04では、診察開始を題材に、状態の型、分岐漏れの検出、入力の検証、失敗の扱いを学びました。S05では、この考え方を別の業務である予約キャンセルに当てはめて読みます。S05では、「データ構造があり、それをパイプライン（関数）で処理して業務フローを実現する」という考え方を使います。</p>
 
   <h3>キャンセル前の予約</h3>
   <p>次の値は、予約済みで、まだ来院していない予約です。S01で学んだとおり、<code>kind</code>は予約の現在の状態を表します。</p>
@@ -66,7 +66,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
   <p><code>AppointmentCanceled</code>は、「予約がキャンセルされた」という業務上の出来事を表すデータです。このデータをイベントと呼びます。</p>
 
   <h3>診察開始も同じ形で読む</h3>
-  <p>S01〜S04の診察開始も、キャンセルと同じ形で読めます。診察開始の入力は、「どの予約を、どの獣医師が開始するか」です。確認する条件は、「受付済みだけが診察を開始できる」です。条件を満たすと、<code>kind</code>は<code>CheckedIn</code>から<code>InExamination</code>へ変わります。S03の入力の検査、S04の対象の取得と状態の確認、S01の状態遷移が、前の表の工程に当たります。</p>
+  <p>S01〜S04の診察開始も、キャンセルと同じ形で読めます。診察開始の入力は、「どの予約を、どの獣医師が開始するか」です。確認する条件は、「来院済みだけが診察を開始できる」です。条件を満たすと、<code>kind</code>は<code>CheckedIn</code>から<code>InExamination</code>へ変わります。S03の入力の検査、S04の対象の取得と状態の確認、S01の状態遷移が、前の表の工程に当たります。</p>
 </section>
 
 <section id="rop">

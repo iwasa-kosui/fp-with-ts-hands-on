@@ -72,8 +72,8 @@ export const session: SessionSummary = {
   steps: [
     {
       id: "s5-invalid-state",
-      goal: "受付済みでない状態を型付きの失敗として返す。",
-      startingFailure: "受付済みでない予約を、例外として処理している。",
+      goal: "来院済みでない状態を型付きの失敗として返す。",
+      startingFailure: "来院済みでない予約を、例外として処理している。",
       targets: ["examples/session-05/src/useCase/errors.ts"],
       solutions: [{
         path: "examples/session-06/src/useCase/errors.ts",
