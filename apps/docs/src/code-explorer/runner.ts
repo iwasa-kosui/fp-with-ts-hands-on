@@ -403,6 +403,7 @@ const readExternalTypeFiles = async (
     await Promise.all(
       entries.map(async (entry) => {
         const path = `${directory}/${entry.name}`;
+        if (path.includes("/@types/node/ts5.6/")) return;
         if (entry.isDirectory()) {
           await visit(path);
         } else if (
@@ -434,6 +435,9 @@ const readExternalTypeFiles = async (
       "node_modules/@vitest",
       "node_modules/neverthrow",
       "node_modules/hono",
+      "node_modules/@types/node",
+      "node_modules/undici-types",
+      "node_modules/@hono/inertia",
     ].map((directory) =>
       visitIfPresent(`${runtimeProjectDirectory}/${directory}`),
     ),

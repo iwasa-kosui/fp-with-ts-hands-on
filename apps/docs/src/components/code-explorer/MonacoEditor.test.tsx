@@ -185,6 +185,10 @@ describe("MonacoEditor", () => {
       "export {};",
       "file:///workspace/node_modules/zod/index.d.ts",
     );
+    expect(addExtraLib).toHaveBeenCalledWith(
+      'declare module "@fp-with-ts/clinic-web";\ndeclare module "@fp-with-ts/clinic-web/server";\n',
+      "file:///workspace/playground-ambient.d.ts",
+    );
     expect(setDiagnosticsOptions).toHaveBeenLastCalledWith({
       noSemanticValidation: false,
       noSyntaxValidation: false,

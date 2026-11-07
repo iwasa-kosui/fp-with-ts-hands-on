@@ -7,6 +7,12 @@ type MonacoApi = typeof Monaco;
 
 let typesRegistered = false;
 
+const ambientModules = [
+  'declare module "@fp-with-ts/clinic-web";',
+  'declare module "@fp-with-ts/clinic-web/server";',
+  "",
+].join("\n");
+
 type EditorResources = {
   monaco: MonacoApi;
   models: Map<string, Monaco.editor.ITextModel>;
@@ -61,7 +67,8 @@ const configureTypeScript = (monaco: MonacoApi): void => {
     module: monaco.typescript.ModuleKind.ESNext,
     moduleResolution: monaco.typescript.ModuleResolutionKind.NodeJs,
     strict: true,
-    target: monaco.typescript.ScriptTarget.ES2020,
+    target: 9 as Monaco.typescript.ScriptTarget,
+    allowSyntheticDefaultImports: true,
   });
   monaco.typescript.typescriptDefaults.setEagerModelSync(true);
   monaco.typescript.typescriptDefaults.setDiagnosticsOptions({
@@ -121,6 +128,12 @@ const registerExtraLibs = (
   }
 
   if (Object.keys(typeFiles).length > 0) {
+    runtime.extraLibs.push(
+      runtime.monaco.typescript.typescriptDefaults.addExtraLib(
+        ambientModules,
+        "file:///workspace/playground-ambient.d.ts",
+      ),
+    );
     typesRegistered = true;
     runtime.monaco.typescript.typescriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: false,
