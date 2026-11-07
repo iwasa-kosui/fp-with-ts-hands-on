@@ -201,11 +201,11 @@ describe("Code Explorer project files", () => {
 
   it("exposes semantic identifiers from their owning concepts", () => {
     const expectedPaths = {
-      "04-boundaries-and-pii": [
+      "03-boundaries-and-pii": [
         "src/domain/appointment/appointmentId.ts",
         "src/domain/appointment/veterinarianId.ts",
       ],
-      "05-workflow-errors": [
+      "04-workflow-errors": [
         "src/domain/appointment/appointmentId.ts",
         "src/domain/appointment/veterinarianId.ts",
         "src/domain/examResult/examId.ts",

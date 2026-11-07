@@ -1,10 +1,11 @@
 ---
+import AppointmentStateDiagram from "../../components/AppointmentStateDiagram.astro";
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
 // MDX だけで import すると head に xterm.css の <link> が増える
 import "../../components/code-explorer/CodeExplorer";
-import Prose from "../../sessions/prose/02-state-transitions.mdx";
+import Prose from "../../sessions/prose/01-state-transitions.mdx";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import type { SessionWorkspace } from "../../code-explorer/types";
@@ -19,9 +20,9 @@ import "../../styles/code-playground.css";
 import "../../styles/sessions.css";
 
 export const session: SessionSummary = {
-  slug: "02-state-transitions",
+  slug: "01-state-transitions",
   snapshot: "session-02",
-  sequence: "02",
+  sequence: "01",
   kind: "exercise",
   title: "予約の状態と遷移をモデル化する",
   durationMinutes: 20,
@@ -63,7 +64,7 @@ export const session: SessionSummary = {
   steps: [
     {
       id: "s2-narrow-start",
-      goal: "会計済み・キャンセル済みの来院は診察を開始できないようにする。",
+      goal: "会計済み・キャンセル済みの来院で診察を開始するコードを、コンパイルエラーにする。",
       startingFailure: "会計済み・キャンセル済みでも診察を開始できる。",
       targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
       solutions: [{
@@ -85,7 +86,7 @@ export const session: SessionSummary = {
     },
     {
       id: "s2-align-transitions",
-      goal: "診察結果の記録前には会計できないようにし、残りの遷移も許可された遷移元だけを受け取る規約にそろえる。",
+      goal: "診察結果の記録前に会計するコードをコンパイルエラーにし、残りの遷移も許可された遷移元だけを受け取る規約にそろえる。",
       startingFailure: "診察結果の記録前や、許可されていない状態から操作できる。",
       targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
       solutions: [{
@@ -97,7 +98,7 @@ export const session: SessionSummary = {
   ],
   decisions: [
     {
-      invariant: "診察結果を記録するまで会計できず、許可されていない状態遷移を型で拒否する。",
+      invariant: "診察結果の記録前の会計と、許可されていない状態遷移を、型検査で拒否する。",
     },
     {
       invariant: "各状態において必要な情報の抜け漏れを許さない。",
@@ -112,12 +113,12 @@ export const guides = ([
   {
     id: "wide-transition-input",
     title: "current state を受け取る関数が Appointment 全体を受け入れている",
-    currentDesign: "current state を型で絞らず、実行時の requireKind と throw に頼っています。",
+    currentDesign: "current state を型で絞らず、実行時の requireKind と throw に頼っています。completeExamination と recordPayment も同じ形です。",
     futureRisk: "禁止したい状態でも呼び出し側のコードはコンパイルが通り、as で結果を押し通せます。",
     path: "src/domain/appointment/transitions.ts",
     highlights: [
       { startLineNumber: 8, endLineNumber: 17 },
-      { startLineNumber: 19, endLineNumber: 49 },
+      { startLineNumber: 19, endLineNumber: 26 },
     ],
   },
   {
@@ -347,11 +348,11 @@ const peerReviewPromises = [
 export const promisesHref = "#peer-review-promises";
 export const navigation = ({
   previous: {
-    href: "/sessions/01-business-events-and-workflows/",
-    title: "データとパイプラインで予約キャンセルを設計する",
+    href: "/sessions/00-system-handover/",
+    title: "業務とシステムを引き継ぐ",
   },
   next: {
-    href: "/sessions/03-adt-and-exhaustiveness/",
+    href: "/sessions/02-adt-and-exhaustiveness/",
     title: "予約の状態の分岐漏れを型で検出する",
   },
 } as const);
@@ -406,7 +407,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         </p>
       </section>
       <Prose
-        components={{ CodeGuideCards, CommandBlock }}
+        components={{ AppointmentStateDiagram, CodeGuideCards, CommandBlock }}
         session={session}
         guides={guides}
         workspace={workspace}

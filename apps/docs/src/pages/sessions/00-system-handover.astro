@@ -5,6 +5,8 @@ import SessionPageNavigation from "../../components/SessionPageNavigation.astro"
 import Prose from "../../sessions/prose/00-system-handover.mdx";
 import type { SessionNavigation, SessionSummary } from "../../sessions/types";
 import "../../styles/sessions.css";
+import HandoverClinicScenes from "../../components/HandoverClinicScenes.astro";
+import HandoverExamMock from "../../components/HandoverExamMock.astro";
 
 export const session: SessionSummary = {
   slug: "00-system-handover",
@@ -103,13 +105,12 @@ export const guides = ([
 const chapters = [
   { id: "incident", label: "現行業務と事故" },
   { id: "system", label: "SQLite に残る内容" },
-  { id: "review", label: "レビューと持ち帰り" },
 ] as const;
 export const navigation = ({
   previous: undefined,
   next: {
-    href: "/sessions/01-business-events-and-workflows/",
-    title: "データとパイプラインで予約キャンセルを設計する",
+    href: "/sessions/01-state-transitions/",
+    title: "予約の状態と遷移をモデル化する",
   },
 } as SessionNavigation);
 ---
@@ -129,7 +130,7 @@ export const navigation = ({
           {session.summary}
         </p>
       </section>
-      <Prose session={session} />
+      <Prose components={{ HandoverClinicScenes, HandoverExamMock }} session={session} />
       <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         {
           navigation.previous === undefined ? null : (

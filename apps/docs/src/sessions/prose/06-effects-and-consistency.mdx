@@ -47,7 +47,7 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
 
 <section id="teach">
   <h2>事前知識（{props.session.timeBreakdown.teach}分）</h2>
-  <p>S5 では、呼び出し側に理由別の対応がなく、要求された処理を完了できない異常をシステムエラーと呼び、Result へ変換せずに外側へ伝えました。S6 はこの続きです。保存が非同期になり、保存先が状態と監査記録の2か所になると、システムエラーが起きたときに何が残るかを設計しなければなりません。</p>
+  <p>S4 では、呼び出し側に理由別の対応がなく、要求された処理を完了できない異常をシステムエラーと呼び、Result へ変換せずに外側へ伝えました。S6 はこの続きです。保存が非同期になり、保存先が状態と監査記録の2か所になると、システムエラーが起きたときに何が残るかを設計しなければなりません。</p>
   <p>次の4つのトピックは、演習の Step 1 から Step 4 に順に対応します。before は配布コードまたは避けたい書き方、after は次のスナップショットの書き方です。</p>
   <TeachingTopic
     name="時刻と ID は port から受け取り、1回の実行で一度だけ作る"
@@ -55,7 +55,7 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
     after={props.teaching[0].after}
     examples={props.teaching[0].examples}
   >
-    <p>port は、ユースケースが外側に求める処理を型で表した約束です。S5 で deps から受け取った resolver と store も port です。Clock は現在時刻を返す処理を、EventIdGenerator は新しいイベント ID を返す処理を表します。</p>
+    <p>port は、ユースケースが外側に求める処理を型で表した約束です。S4 で deps から受け取った resolver と store も port です。Clock は現在時刻を返す処理を、EventIdGenerator は新しいイベント ID を返す処理を表します。</p>
     <p>new Date() と crypto.randomUUID() は、呼ぶたびに違う値を返します。同じ入力でも出力イベントが変わるので、テストは期待値を固定できません。</p>
     <p>port にすると、テストは固定の値を渡せます。本番相当の実装は、Final の参照実装 examples/final/src/app.ts で確認できます。そこでは Clock の実装が new Date() を呼び、EventIdGenerator の実装が randomUUID() を呼びます。</p>
     <p>値を作る回数も決めます。ユースケースは createEventContext を1回だけ呼び、できた EventContext を状態遷移へ渡します。状態遷移は、予約の examinationStartedAt とイベントの occurredAt を同じ値から作ります。</p>
@@ -83,11 +83,11 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
     after={props.teaching[2].after}
     examples={props.teaching[2].examples}
   >
-    <p>ResultAsync&lt;T, E&gt; は、Promise&lt;Result&lt;T, E&gt;&gt; を包む neverthrow の型です。await を書かずに、S5 と同じ andThen と map をつなげられます。andThen のコールバックは、同期の Result も ResultAsync も返せます。</p>
+    <p>ResultAsync&lt;T, E&gt; は、Promise&lt;Result&lt;T, E&gt;&gt; を包む neverthrow の型です。await を書かずに、S4 と同じ andThen と map をつなげられます。andThen のコールバックは、同期の Result も ResultAsync も返せます。</p>
     <p>andThrough は、Ok の値を別の処理へ渡して実行し、その処理が Ok なら元の値を次へ渡します。その処理が Err を返したら、結果はその Err になります。</p>
     <p>store の成功値は void です。andThen でつなぐと次へ渡る値が void になり、続く map でイベントから aggregateState を取り出せません。andThrough なら、保存の成功後もイベントが次へ渡ります。</p>
     <p>andTee は使いません。andTee はコールバックの結果を見ないので、AppointmentConflict を結果に含められず、reject も握りつぶします。</p>
-    <Fragment slot="why">before は isErr で分岐してから await で保存を並べ、成功時は ok(undefined) を返します。before の型にも AppointmentConflict はありますが、保存処理が Promise&lt;void&gt; を返すので、before のコードは競合を返せません。after は S5 と同じ順に読め、store が返す AppointmentConflict をそのまま結果に含めます。成功時は InExamination を返します。</Fragment>
+    <Fragment slot="why">before は isErr で分岐してから await で保存を並べ、成功時は ok(undefined) を返します。before の型にも AppointmentConflict はありますが、保存処理が Promise&lt;void&gt; を返すので、before のコードは競合を返せません。after は S4 と同じ順に読め、store が返す AppointmentConflict をそのまま結果に含めます。成功時は InExamination を返します。</Fragment>
   </TeachingTopic>
   <TeachingTopic
     name="保存障害は Err へ変換せず、reject のまま伝える"
@@ -95,13 +95,13 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
     after={props.teaching[3].after}
     examples={props.teaching[3].examples}
   >
-    <p>S5 で外側へ伝えたシステムエラーは、非同期の処理では Promise の reject になります。ResultAsync の E には業務エラーだけを書き、reject の理由は E に書きません。</p>
+    <p>S4 で外側へ伝えたシステムエラーは、非同期の処理では Promise の reject になります。ResultAsync の E には業務エラーだけを書き、reject の理由は E に書きません。</p>
     <p>AppointmentConflict と保存障害では、呼び出し側の対応が違います。競合なら、呼び出し側は最新の予約を確認して操作をやり直せます。データベースの障害や破損データには、呼び出し側が理由別に選べる対応がありません。</p>
     <p>neverthrow の関数でこの2つの経路が分かれます。ResultAsync.fromPromise は、reject を第2引数の関数で Err へ変換します。ResultAsync.fromSafePromise は変換しないので、reject は reject のまま残ります。after は fromSafePromise を使います。</p>
     <p>before のように fromPromise ですべての reject を AppointmentConflict へ変換すると、データベースの障害でも画面は競合として案内します。例外が外側の例外境界へ届かないので、障害はログに記録されません。</p>
     <p>after は resolver の呼び出しを Promise.resolve().then(...) で包みます。resolver は同期の関数で、破損データを読むと ZodError を投げます。then の中で呼ぶと、この throw も reject になります。包まずに呼ぶと、ResultAsync を返す前に例外が呼び出し元へ飛びます。</p>
     <p>store の実装も fromSafePromise を使います。transaction の中の throw は reject になり、そのまま andThrough を通り抜けます。</p>
-    <p>reject は、S5 で確認した外側の例外境界が受け取ります。例外境界は、エラーの詳細を含まない 500 応答へ変換します。本番ではここでログへも記録します。配布コードの app.onError は記録を省いています。</p>
+    <p>reject は、S4 で確認した外側の例外境界が受け取ります。例外境界は、エラーの詳細を含まない 500 応答へ変換します。本番ではここでログへも記録します。配布コードの app.onError は記録を省いています。</p>
     <Fragment slot="why">E に AppointmentConflict だけを書くと、呼び出し側は選べる対応だけを型から読み取れます。演習の Step 4 は、競合が Err になり、保存障害と破損データが reject になることをテストで確かめます。</Fragment>
   </TeachingTopic>
   <EffectsPipelineAnimation />

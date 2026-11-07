@@ -15,7 +15,7 @@ const TestEditor: ComponentType<EditorProps> = ({ value, onChange }) => (
 );
 
 const workspace = {
-  slug: "02-state-transitions",
+  slug: "01-state-transitions",
   snapshot: "session-02",
   description: "状態遷移を編集します。",
   initialFile: "src/example.ts",

@@ -62,7 +62,7 @@ describe("worker request handler", () => {
     });
     const { env, fetch } = createAssets(assetResponse);
     const request = new Request(
-      "https://example.test/sessions/01-business-events-and-workflows/?source=worker-test",
+      "https://example.test/sessions/05-business-events-and-workflows/?source=worker-test",
       { headers: { "x-request": "original" } },
     );
 

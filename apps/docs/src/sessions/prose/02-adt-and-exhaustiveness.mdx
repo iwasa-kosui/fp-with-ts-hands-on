@@ -7,7 +7,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <p class="case-file__episode-label">動物病院のひと幕</p>
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
-  <p>Session 02 で定義した予約の6状態を、画面に表示する名前へ変換する分岐で扱います。never型とADT（代数的データ型）の考え方を使い、すべての状態を処理したことをコンパイラに確かめさせます。この確認を網羅性検証と呼びます。</p>
+  <p>Session 01 で定義した予約の6状態を、画面に表示する名前へ変換する分岐で扱います。never型とADT（代数的データ型）の考え方を使い、すべての状態を処理したことをコンパイラに確かめさせます。この確認を網羅性検証と呼びます。</p>
   <h3 data-story-stage="use-case">追加したい機能</h3>
   <p>予約画面に表示する状態名を、Appointment の kind ごとに返します。後から状態が増えたときに、表示名の追加漏れを見つけられるようにします。</p>
   <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
@@ -26,11 +26,11 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <CodeGuideCards guides={props.guides} projectFiles={props.projectFiles} />
   <h3>修正前の失敗を確認する</h3>
   <p>このページの Playground は未編集の snapshot から起動するので、{props.initialExerciseFailureCount}個の型検査が失敗する状態から始まります。</p>
-  <p>Session 02 を終えた手元のコードでは、同じコマンドで失敗するのは、次の分岐漏れの型検査1個だけです。</p>
+  <p>Session 01 を終えた手元のコードでは、同じコマンドで失敗するのは、次の分岐漏れの型検査1個だけです。</p>
   <ul class="exercise-failures" aria-label="修正前に確認する問題">
     {props.session.steps.map((step) => <li>{step.startingFailure}</li>)}
   </ul>
-  <CommandBlock phase="red" command={props.session.exerciseCommand} expected={`Playground では${props.initialExerciseFailureCount}個の型検査が失敗します。Session 02 を終えた手元のコードでは、分岐漏れの1個だけが失敗します。`} />
+  <CommandBlock phase="red" command={props.session.exerciseCommand} expected={`Playground では${props.initialExerciseFailureCount}個の型検査が失敗します。Session 01 を終えた手元のコードでは、分岐漏れの1個だけが失敗します。`} />
   <p>失敗した型検査は、出力の前半に「要件未達」の行で並びます。出力の末尾に <code>Tests 5 passed (5)</code> と出ても、演習は終わっていません。端末を上へスクロールして、先に並ぶ要件未達を見てください。</p>
   <p>ブラウザ内の変更はローカルへ反映されません。</p>
   <div data-code-explorer={props.workspace.slug}>
@@ -48,7 +48,8 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <p>この回で利用する型の考え方を確認します。never型とADTは小さな例で示します。assertNeverは、配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
   <article class="teaching-topic">
     <h3>never型は値が1つもない型である</h3>
-    <p>型は、その型に入る値の集合と見ることができます。"Scheduled" | "CheckedIn" は2個の値を持つ集合です。never型は値を1個も持たない型で、空集合に当たります。never型の変数へ代入できるのは、never型の式だけです。具体的な値は1個も代入できません。空集合はどの集合にも含まれるので、never型の式はどの型へも代入できます。switchのcaseを通るたびに、コンパイラは処理済みの候補を型から取り除きます。候補が1個も残らなければ、残りの型はneverになります。</p>
+    <p>型は、その型に入る値の集合と見ることができます。"Scheduled" | "CheckedIn" は2個の値を持つ集合です。never型は値を1個も持たない型で、空集合に当たります。</p>
+    <NeverEmptySet code={props.teaching[0].after} />
     <div class="teaching-topic__diff">
       <figure class="code-block">
         <figcaption>{"\n"}before:{"\n"}<span>候補が残っているので、statusをneverへ代入できない</span></figcaption>
@@ -59,6 +60,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
         <Code code={props.teaching[0].after} lang="ts" />
       </figure>
     </div>
+    <p>never型の変数へ代入できるのは、never型の式だけです。具体的な値は1個も代入できません。空集合はどの集合にも含まれるので、never型の式はどの型へも代入できます。</p>
     <figure class="code-block" data-teaching-example>
       <figcaption>never型の性質</figcaption>
       <Code code={props.teaching[0].example} lang="ts" />
@@ -97,7 +99,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
       <figcaption>NoShowを追加したのに、表示名の分岐を追加し忘れた例</figcaption>
       <Code code={props.teaching[2].example} lang="ts" />
     </figure>
-    <p class="teaching-topic__why">before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after でNoShowのcaseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverへ渡せないため、コンパイルエラーになります。網羅性検証を使うすべての分岐で同じエラーが出るので、コンパイラが新しい状態の影響箇所を示します。assertNeverの戻り値はnever型なので、stringを返す関数のdefaultでそのままreturnできます。</p>
+    <p class="teaching-topic__why">before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after でNoShowのcaseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverの引数の型neverに合わないため、コンパイルエラーになります。網羅性検証を使うすべての分岐で同じエラーが出るので、コンパイラが新しい状態の影響箇所を示します。assertNeverの戻り値はnever型なので、stringを返す関数のdefaultでそのままreturnできます。</p>
   </article>
 </section>
 
@@ -140,9 +142,9 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
       </details>
     </div>
   ))}
-  <CommandBlock phase="green" command={props.session.exerciseCommand} expected="Session 02 を終えた手元のコードで、演習テストがすべて成功します。" />
+  <CommandBlock phase="green" command={props.session.exerciseCommand} expected="Session 01 を終えた手元のコードで、演習テストがすべて成功します。" />
   <h3>演習を完了できないとき</h3>
-  <p>Session 02 が終わっていない場合は、先に Session 02 の解答を反映します。解答スナップショットのステップを開き、toStatusLabel の引数型と網羅分岐をコピペします。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。相互レビューの約束事はS2のリンク先を確認します。</p>
+  <p>Session 01 が終わっていない場合は、先に Session 01 の解答を反映します。解答スナップショットのステップを開き、toStatusLabel の引数型と網羅分岐をコピペします。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。相互レビューの約束事はS1のリンク先を確認します。</p>
 </section>
 
 <section id="review">
@@ -151,7 +153,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <h3>個人で確認する</h3>
     <ol>
       <li>{"`as` によるキャストが入っていないか全文検索して確認する。"}</li>
-      <li>{"`git diff --stat -- examples/session-02` で今回の snapshot だけを確認する。Session 02 の変更が残っている場合は、今回の変更が statusLabel.ts だけであることを確かめる。`git status --short` で想定外の path がないか確認する。"}</li>
+      <li>{"`git diff --stat -- examples/session-02` で今回の snapshot だけを確認する。Session 01 の変更が残っている場合は、今回の変更が statusLabel.ts だけであることを確かめる。`git status --short` で想定外の path がないか確認する。"}</li>
       <li>{"型検査では確認できないことを、テストまたは実行時に確認して記録する。"}</li>
     </ol>
     <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>

@@ -57,8 +57,8 @@
 | snapshot | 開始状態 | 参加者の変更対象 | 直後の解答状態と解消する事故 | 永続化境界 |
 | --- | --- | --- | --- | --- |
 | Session 00 | 任意の状態文字列、用途を区別しないID、未検証入力、例外文言による分類、処理内で生成する時刻とevent ID、非原子的な二重書き込みを含みます。 | コードは変更しません。現行の事故を再現します。 | 解答はありません。後続セッションと比較する未改善状態です。 | snapshot内のDB adapterがfile SQLiteへ予約状態と監査記録を別々に保存します。 |
-| Session 01 | Session 00と同じ利用者操作、fixture、SQLite上の事故を使います。別のMap実装へ戻しません。 | EventStormingで診察開始のコマンド、actor、事前条件、業務イベントを整理します。sourceは変更しません。 | 診察開始は受付済みの予約だけに許可する、という業務上の事前条件を確定します。 | Session 01自身が持つDB adapterを使います。Session 00のsourceはimportしません。 |
-| Session 02 | Session 01で確定した事前条件に対して、状態型と遷移関数が広すぎるstarterです。SQLite接続は配布済みコードとして残します。 | `src/domain/appointment` の2ファイルを変更します。 | Session 03がsolutionです。会計済みやキャンセル済みの予約から診察を開始できない状態型と遷移になります。 | Session 02自身のDB adapterがfile SQLiteへ保存します。状態更新と監査追記はまだ別の処理です。 |
+| Session 01 | Session 00と同じ利用者操作、fixture、SQLite上の事故を使います。別のMap実装へ戻しません。 | コードは変更しません。S5 のページで、予約のデータとキャンセルのパイプラインを読みます。 | 解答はありません。Session 02 以降の snapshot は Session 01 を前の段階として引き継がず、Session 00 の次に Session 02 が続きます。 | Session 01自身が持つDB adapterを使います。Session 00のsourceはimportしません。 |
+| Session 02 | Session 00の未改善状態に対して、状態型と遷移関数が広すぎるstarterです。診察開始は受付済みの予約だけに許可する、という業務上の事前条件を、この回で型と遷移に表します。SQLite接続は配布済みコードとして残します。 | `src/domain/appointment` の2ファイルを変更します。 | Session 03がsolutionです。会計済みやキャンセル済みの予約から診察を開始できない状態型と遷移になります。 | Session 02自身のDB adapterがfile SQLiteへ保存します。状態更新と監査追記はまだ別の処理です。 |
 | Session 03 | Session 02の解答に、用途を区別していないIDが残るstarterです。 | `src/domain` の5ファイルを変更します。 | Session 04がsolutionです。予約IDと獣医師IDをコード上で取り違えるとコンパイルできません。 | Session 03自身のDB adapterが、snapshot内のIDをSQLiteの値へ変換します。 |
 | Session 04 | Session 03の解答に、未検証のHTTP入力と連絡先を含む監査payloadが残るstarterです。 | `src/boundary` の1ファイルを変更します。 | Session 05がsolutionです。不正な外部入力は診察開始へ渡りません。配布済みの永続化処理は、監査記録から飼い主の連絡先を除外します。 | Session 04自身のDB adapterを使います。Session 05では検証済み入力と必要最小限の監査payloadを保存します。 |
 | Session 05 | Session 04の解答に、例外と例外文言による失敗分類が残るstarterです。 | use case、エラー、呼び出し側の3ファイルを変更します。 | Session 06がsolutionです。予約なしと状態不正を別の業務エラーとして返し、SQLite障害を業務エラーへ変換しません。 | Session 05自身のresolverとstoreをDB adapterへ接続します。保存処理はまだS6で扱う改善前の形です。 |
@@ -70,12 +70,14 @@
 
 | ページ | 開始snapshot | 解答snapshot | 演習コマンド |
 | --- | --- | --- | --- |
+| S1 | session-02 | session-03 | `pnpm exercise:02` |
 | S2 | session-02 | session-03 | `pnpm exercise:02` |
-| S3 | session-02 | session-03 | `pnpm exercise:02` |
-| S4 | session-04 | session-05 | `pnpm exercise:04` |
-| S4 補助演習 | session-03 | session-04 | `pnpm exercise:03` |
-| S5 | session-05 | session-06 | `pnpm exercise:05` |
+| S3 | session-04 | session-05 | `pnpm exercise:04` |
+| S3 補助演習 | session-03 | session-04 | `pnpm exercise:03` |
+| S4 | session-05 | session-06 | `pnpm exercise:05` |
 | S6 | session-06 | session-07 | `pnpm exercise:06` |
+
+S5 は session-01 のカードを読む回で、開始snapshotと解答snapshotの組を持たず、演習コマンドもありません。
 
 ## 事故ごとの解消確認
 
@@ -115,7 +117,7 @@ HTTPのstatus、redirect先、画面へ返す業務エラーが必要な事故�
 
 ### 教材サイトの操作
 
-#107 はS2〜S6のブラウザ上でREDを確認し、編集し、同じコマンドでGREENを確認する利用者フローを所有します。このテストはSQLiteの保存内容を検査しません。横断テストはCode Explorerの配置や画面構造を検査しません。
+#107 はS1〜S4 と S6 のブラウザ上でREDを確認し、編集し、同じコマンドでGREENを確認する利用者フローを所有します。このテストはSQLiteの保存内容を検査しません。横断テストはCode Explorerの配置や画面構造を検査しません。
 
 ### セキュリティ
 

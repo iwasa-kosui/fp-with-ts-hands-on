@@ -1,10 +1,11 @@
 ---
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
+import NeverEmptySet from "../../components/NeverEmptySet.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
 // CSS chunk の分割と読み込み順を変換前と同じに保つ
 import "../../components/code-explorer/CodeExplorer";
-import Prose from "../../sessions/prose/03-adt-and-exhaustiveness.mdx";
+import Prose from "../../sessions/prose/02-adt-and-exhaustiveness.mdx";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import type { SessionWorkspace } from "../../code-explorer/types";
@@ -24,9 +25,9 @@ type TeachingSnippets = Readonly<{
 }>;
 
 export const session: SessionSummary = {
-  slug: "03-adt-and-exhaustiveness",
+  slug: "02-adt-and-exhaustiveness",
   snapshot: "session-02",
-  sequence: "03",
+  sequence: "02",
   kind: "exercise",
   title: "予約の状態の分岐漏れを型で検出する",
   durationMinutes: 20,
@@ -248,14 +249,14 @@ const chapters = [
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
 export const promisesHref =
-  "/sessions/02-state-transitions/#peer-review-promises";
+  "/sessions/01-state-transitions/#peer-review-promises";
 export const navigation = ({
   previous: {
-    href: "/sessions/02-state-transitions/",
+    href: "/sessions/01-state-transitions/",
     title: "予約の状態と遷移をモデル化する",
   },
   next: {
-    href: "/sessions/04-boundaries-and-pii/",
+    href: "/sessions/03-boundaries-and-pii/",
     title: "診察開始の入力を境界で検証する",
   },
 } as const);
@@ -307,7 +308,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         </p>
       </section>
       <Prose
-        components={{ CodeGuideCards, CommandBlock }}
+        components={{ CodeGuideCards, CommandBlock, NeverEmptySet }}
         session={session}
         guides={guides}
         workspace={workspace}
