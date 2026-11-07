@@ -1,5 +1,7 @@
 import { Code } from "astro:components";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
+import AnimatedExplanation from "../../components/animated-explanation/AnimatedExplanation.astro";
+import { parseBoundary } from "../../animations/s4";
 
 <section id="incident">
   <h2>今回つくるもの</h2>
@@ -38,6 +40,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <li><strong>AppointmentId / VeterinarianId</strong><span>成功結果は、異なるbrandを持つTypeScriptの型として推論されます。実行時の文字列に印は付きません。</span></li>
     <li><strong>StartExaminationInput</strong><span>正しい2つのIDがそろった場合だけ構築します。</span></li>
   </ol>
+  <AnimatedExplanation animation={parseBoundary} />
   <h3>このセッションで守ること</h3>
   <ul class="decision-list">{props.session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
   <p>今回の変更は <code>{props.session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
