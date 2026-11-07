@@ -15,6 +15,7 @@ import type {
 } from "../../sessions/types";
 import "../../styles/code-playground.css";
 import "../../styles/sessions.css";
+import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
 
 type TeachingSnippets = Readonly<{
   before: TeachingCode;
@@ -494,7 +495,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         </p>
       </section>
       <Prose
-        components={{ CodeGuideCards, CommandBlock }}
+        components={{ CodeGuideCards, CommandBlock, EpisodeIllustration }}
         session={session}
         guides={guides}
         workspace={workspace}

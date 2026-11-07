@@ -5,6 +5,7 @@ import SessionPageNavigation from "../../components/SessionPageNavigation.astro"
 import Prose from "../../sessions/prose/final.mdx";
 import type { SessionNavigation, SessionSummary } from "../../sessions/types";
 import "../../styles/sessions.css";
+import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
 
 export const finalAggregateTour = {
   label: "1業務集約 → 7業務集約",
@@ -101,7 +102,7 @@ export const navigation = ({
           {session.summary}
         </p>
       </section>
-      <Prose session={session} />
+      <Prose components={{ EpisodeIllustration }} session={session} />
       <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         {
           navigation.previous === undefined ? null : (
