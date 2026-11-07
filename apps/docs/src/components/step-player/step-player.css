@@ -19,10 +19,7 @@
 .step-player__scenario-title { margin: 0.75rem 0 0.25rem; font-size: 0.875rem; font-weight: 800; }
 .step-player__steps ol { margin: 0; padding-left: 1.5rem; font-size: 0.9375rem; line-height: 1.7; }
 .step-player__steps li { margin: 0.25rem 0; }
-.step-player[data-step-player-ready] .step-player [data-step-extra] p { margin: 0.5rem 0 0; font-size: 0.8125rem; font-weight: 700; }
-.step-player [data-step-extra] pre { margin: 0.25rem 0 0; padding: 0; background: none; color: inherit; font-size: 0.8125rem; white-space: pre-wrap; overflow-wrap: anywhere; }
-.step-player[data-step-player-ready] [data-step-extra] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.step-player__scenario-title { display: none; }
+.step-player[data-step-player-ready] .step-player__scenario-title { display: none; }
 .step-player[data-step-player-ready] .step-player__steps { min-height: 3.5em; }
 .step-player[data-step-player-ready] .step-player__steps ol { padding-left: 0; list-style: none; }
 .step-player[data-step-player-ready] .step-player__steps li:not([data-current]) { display: none; }

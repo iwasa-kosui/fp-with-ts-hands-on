@@ -73,8 +73,8 @@ const scenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }>)[
   },
 ];
 
-const stepHtml = ({ text, input, output }: Step): string =>
-  `${text}<div data-step-extra><p>受け取るデータ</p><pre>${input}</pre><p>次へ渡すデータ</p><pre>${output}</pre></div>`;
+const stepHtml = ({ text, state, input, output }: Step): string =>
+  `${text}<div data-step-extra><p>受け取るデータ</p><pre>${input}</pre><p>${state === "end" ? "呼び出し側が受け取るデータ" : "次へ渡すデータ"}</p><pre>${output}</pre></div>`;
 const playerScenarios = scenarios.map(({ label, steps }) => ({ label, steps: steps.map(stepHtml) }));
 const sceneData = JSON.stringify({
   names: stageNames,
