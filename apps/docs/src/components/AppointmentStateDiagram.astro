@@ -159,7 +159,7 @@ const frames = [
   {
     edges: ["cancelFromScheduled", "cancelFromCheckedIn"],
     states: ["Scheduled", "CheckedIn", "Canceled"],
-    path: [[154, 134], [170, 124], [241, 88], [296, 50]],
+    path: [[154, 134], [170, 124], [241, 88], [336, 88]],
     caption: "キャンセルできるのは <code>Scheduled</code> と <code>CheckedIn</code> だけです。理由は省略できません。",
     source: SOLUTION,
     input: `cancel(
@@ -267,8 +267,9 @@ const frames = [
     examinationStartedAt,
   }) as const satisfies InExamination;`,
     outputLabel: "出力: なし",
-    output: `// コンパイルエラーになるため、 // [!key]
-// この呼び出しは実行できません。`,
+    outputLang: "plaintext" as const,
+    output: `コンパイルエラーになるため、 // [!key]
+この呼び出しは実行できません。 // [!key]`,
   },
 ];
 
@@ -277,10 +278,11 @@ const playerData = JSON.stringify(frames.map(({ edges, states, path, note }) => 
 
 <figure id="appointment-state-diagram" class="state-diagram" data-state-diagram data-frames={playerData}>
   <div class="state-diagram__controls" data-controls hidden>
-    <button type="button" data-prev>前へ</button>
+    <button type="button" data-prev aria-keyshortcuts="ArrowLeft">前へ</button>
     <button type="button" data-play>再生</button>
-    <button type="button" data-next>次へ</button>
+    <button type="button" data-next aria-keyshortcuts="ArrowRight">次へ</button>
     <span data-progress aria-live="polite"></span>
+    <span class="state-diagram__key-hint">← → キーでも動かせます</span>
   </div>
   <div class="state-diagram__stage">
     <svg viewBox="-4 0 354 440" role="img" aria-labelledby="state-diagram-title state-diagram-desc">
@@ -354,14 +356,14 @@ const playerData = JSON.stringify(frames.map(({ edges, states, path, note }) => 
           </div>
           <div class="code-block state-diagram__part">
             <p class="state-diagram__part-label">{frame.outputLabel}</p>
-            <Code code={frame.output} lang="ts" transformers={[markKeyLines]} />
+            <Code code={frame.output} lang={frame.outputLang ?? "ts"} transformers={[markKeyLines]} />
           </div>
         </li>
       ))}
     </ol>
   </div>
 
-  <figcaption>矢印1本が遷移関数1つです。<code>Paid</code> と <code>Canceled</code> から先へは進めません。矢印のない遷移は型エラーにします。入力と出力の値は説明用で、項目の一部を省略しています。</figcaption>
+  <figcaption>矢印に付いた名前が遷移関数です。<code>Paid</code> と <code>Canceled</code> から先へは進めません。矢印のない遷移は型エラーにします。入力と出力の値は説明用で、項目の一部を省略しています。</figcaption>
 </figure>
 
 <script is:inline>
@@ -412,6 +414,7 @@ const playerData = JSON.stringify(frames.map(({ edges, states, path, note }) => 
     };
 
     const resume = () => {
+      window.clearInterval(timer);
       if (current === frames.length - 1) show(0);
       play.textContent = "一時停止";
       timer = window.setInterval(() => {
@@ -420,27 +423,48 @@ const playerData = JSON.stringify(frames.map(({ edges, states, path, note }) => 
       }, FRAME_MS);
     };
 
-    play.addEventListener("click", () => (timer === undefined ? resume() : pause()));
-    root.querySelector("[data-prev]")?.addEventListener("click", () => {
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      observer.disconnect();
+      if (timer !== undefined) return;
+      show(0);
+      resume();
+    }, { threshold: 0.5 });
+
+    const step = (delta) => {
+      observer.disconnect();
       pause();
-      show(Math.max(current - 1, 0));
+      show(Math.min(Math.max(current + delta, 0), frames.length - 1));
+    };
+
+    play.addEventListener("click", () => {
+      observer.disconnect();
+      if (timer === undefined) resume();
+      else pause();
     });
-    root.querySelector("[data-next]")?.addEventListener("click", () => {
-      pause();
-      show(Math.min(current + 1, frames.length - 1));
+    root.querySelector("[data-prev]")?.addEventListener("click", () => step(-1));
+    root.querySelector("[data-next]")?.addEventListener("click", () => step(1));
+
+    document.addEventListener("keydown", (event) => {
+      if (event.defaultPrevented || event.repeat) return;
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      const delta = event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : 0;
+      if (delta === 0) return;
+      const active = document.activeElement;
+      if (active && active !== document.body && !root.contains(active)) return;
+      if (!root.contains(active)) {
+        const { top, bottom } = root.getBoundingClientRect();
+        if (bottom <= 0 || top >= window.innerHeight) return;
+      }
+      event.preventDefault();
+      step(delta);
     });
 
     root.dataset.animated = "";
     controls.hidden = false;
     show(0);
 
-    const observer = new IntersectionObserver((entries) => {
-      if (!entries.some((entry) => entry.isIntersecting)) return;
-      observer.disconnect();
-      show(0);
-      resume();
-    }, { threshold: 0.5 });
-    observer.observe(root);
+    observer.observe(root.querySelector("svg"));
   };
 
   const root = document.querySelector("[data-state-diagram]");
@@ -612,6 +636,11 @@ const playerData = JSON.stringify(frames.map(({ edges, states, path, note }) => 
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 0.75rem;
+  }
+
+  .state-diagram__key-hint {
+    color: var(--case-muted);
+    font-size: 0.75rem;
   }
 
   .state-diagram__controls[hidden] {
