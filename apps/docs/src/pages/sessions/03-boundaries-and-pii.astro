@@ -22,6 +22,7 @@ import type {
 } from "../../sessions/types";
 import "../../styles/code-playground.css";
 import "../../styles/sessions.css";
+import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
 
 type TeachingSnippets = Readonly<{
   before: string;
@@ -211,7 +212,7 @@ export const guides = ([
     id: "unvalidated-start-examination-input",
     title: "HTTP入力をanyのまま診察開始の入力へ入れている",
     currentDesign: "raw: anyから2項目をコピーし、検査せずに必ずokを返しています。",
-    futureRisk: "TypeScriptは返り値の型注釈を信頼するため、night-shiftもVeterinarianIdとして後続処理へ渡ります。",
+    futureRisk: "TypeScriptは返り値の型注釈を信頼するため、night-shiftも型の上ではVeterinarianIdとして後続処理へ渡ります。",
     path: "src/boundary/startExaminationInput.ts",
     highlights: [{ startLineNumber: 1, endLineNumber: 15 }],
   },
@@ -292,11 +293,11 @@ ${supplementaryExercise.steps.map((step) => `- ${step.goal}`).join("\n")}
 変更範囲:
 - ${supplementaryExercise.exerciseModule.dir}/ のみ
 - 最大 ${supplementaryExercise.exerciseModule.fileBudget} ファイル・約 ${supplementaryExercise.exerciseModule.lineBudget} 行
-- 範囲外の変更が必要に見えた場合は、変更せず理由を報告する
-- 型エラーを \`as\` によるキャストで回避しない
+- 範囲外の変更が必要に見えた場合は、変更せず理由を報告してください
+- 型エラーを \`as\` による型アサーションで回避しないでください
 
 検証:
-- ${supplementaryExercise.exerciseCommand} を実行し、すべての assertion が成功すること
+- ${supplementaryExercise.exerciseCommand} を実行し、すべての assertion が成功することを確かめてください
 
 完了時の報告:
 - 変更したファイルと判断理由
@@ -340,9 +341,9 @@ const solutionSteps = await Promise.all(
 const chapters = [
   { id: "incident", label: "今回つくるもの" },
   { id: "legacy", label: "コードを読み、失敗を再現する" },
-  { id: "teach", label: "使う型を知る" },
+  { id: "teach", label: "事前知識" },
   { id: "supplementary", label: "補助演習" },
-  { id: "refactor", label: "型で閉じる" },
+  { id: "refactor", label: "演習" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
 export const promisesHref =
@@ -379,11 +380,11 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 変更範囲:
 - ${session.exerciseModule.dir}/ のみ
 - 最大 ${session.exerciseModule.fileBudget} ファイル・約 ${session.exerciseModule.lineBudget} 行
-- 範囲外の変更が必要に見えた場合は、変更せず理由を報告する
-- 型エラーを \`as\` によるキャストで回避しない
+- 範囲外の変更が必要に見えた場合は、変更せず理由を報告してください
+- 型エラーを \`as\` による型アサーションで回避しないでください
 
 検証:
-- ${session.exerciseCommand} を実行し、すべての assertion が成功すること
+- ${session.exerciseCommand} を実行し、すべての assertion が成功することを確かめてください
 
 完了時の報告:
 - 変更したファイルと判断理由
@@ -405,7 +406,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         </p>
       </section>
       <Prose
-        components={{ CodeGuideCards, CommandBlock }}
+        components={{ CodeGuideCards, CommandBlock, EpisodeIllustration }}
         session={session}
         supplementaryExercise={supplementaryExercise}
         guides={guides}

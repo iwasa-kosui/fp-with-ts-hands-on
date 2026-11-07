@@ -18,6 +18,7 @@ import type {
 } from "../../sessions/types";
 import "../../styles/code-playground.css";
 import "../../styles/sessions.css";
+import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
 
 export const session: SessionSummary = {
   slug: "01-state-transitions",
@@ -64,7 +65,7 @@ export const session: SessionSummary = {
   steps: [
     {
       id: "s2-narrow-start",
-      goal: "会計済み・キャンセル済みの来院は診察を開始できないようにする。",
+      goal: "会計済み・キャンセル済みの来院で診察を開始するコードを、コンパイルエラーにする。",
       startingFailure: "会計済み・キャンセル済みでも診察を開始できる。",
       targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
       solutions: [{
@@ -86,7 +87,7 @@ export const session: SessionSummary = {
     },
     {
       id: "s2-align-transitions",
-      goal: "診察結果の記録前には会計できないようにし、残りの遷移も許可された遷移元だけを受け取る規約にそろえる。",
+      goal: "診察結果の記録前に会計するコードをコンパイルエラーにし、残りの遷移関数も、許可された状態だけを引数で受け取る形にそろえる。",
       startingFailure: "診察結果の記録前や、許可されていない状態から操作できる。",
       targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
       solutions: [{
@@ -98,10 +99,10 @@ export const session: SessionSummary = {
   ],
   decisions: [
     {
-      invariant: "診察結果を記録するまで会計できず、許可されていない状態遷移を型で拒否する。",
+      invariant: "診察結果の記録前の会計と、許可されていない状態遷移を、型検査で拒否する。",
     },
     {
-      invariant: "各状態において必要な情報の抜け漏れを許さない。",
+      invariant: "各状態に必要な情報が欠けた予約の値を、型で作れないようにする。",
     },
   ],
   finalReferences: [
@@ -112,9 +113,9 @@ export const session: SessionSummary = {
 export const guides = ([
   {
     id: "wide-transition-input",
-    title: "current state を受け取る関数が Appointment 全体を受け入れている",
-    currentDesign: "current state を型で絞らず、実行時の requireKind と throw に頼っています。completeExamination と recordPayment も同じ形です。",
-    futureRisk: "禁止したい状態でも呼び出し側のコードはコンパイルが通り、as で結果を押し通せます。",
+    title: "遷移関数が Appointment 全体を受け取っている",
+    currentDesign: "遷移関数の引数を現在の状態の型に絞らず、実行時の requireKind と throw で弾いています。completeExamination と recordPayment も同じ形です。",
+    futureRisk: "禁止したい状態の値を渡してもコンパイルが通ります。また、結果を as で Appointment に決め打ちしているため、型検査は結果の誤りを見つけられません。",
     path: "src/domain/appointment/transitions.ts",
     highlights: [
       { startLineNumber: 8, endLineNumber: 17 },
@@ -253,7 +254,7 @@ export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
   initialFile: "exercises/state-modeling.test.ts",
-  description: "current state の要求と作成対象を開始 snapshot で確認します。",
+  description: "演習の要件と作成対象を、開始スナップショットで確認します。",
   visibleFiles: [
     "exercises/state-modeling.test.ts",
     "test/transitions.test.ts",
@@ -323,14 +324,14 @@ fn start_examination(appointment: CheckedIn, veterinarian_id: String) -> InExami
 const chapters = [
   { id: "incident", label: "今回つくるもの" },
   { id: "legacy", label: "コードを読み、失敗を再現する" },
-  { id: "teach", label: "使う型を知る" },
-  { id: "refactor", label: "型で閉じる" },
+  { id: "teach", label: "事前知識" },
+  { id: "refactor", label: "演習" },
   { id: "review", label: "レビューと持ち帰り" },
 ] as const;
 const commonReviewChecks = [
-  "`as` によるキャストが入っていないか全文検索して確認する。",
-  "`git diff --stat -- examples/session-02` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。",
-  "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
+  "`as` による型アサーションが入っていないか全文検索して確認します。",
+  "`git diff --stat -- examples/session-02` で今回のスナップショットだけを確認します。`git status --short` で想定外の path がないか確認します。",
+  "型検査では確認できないことを、テストまたは実行時に確認して記録します。",
 ] as const;
 const reviewCompletionArtifacts = [
   "起きてはいけない状態遷移",
@@ -378,12 +379,12 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
 変更範囲:
 - ${session.exerciseModule.dir}/ のみ
 - 最大 ${session.exerciseModule.fileBudget} ファイル・約 ${session.exerciseModule.lineBudget} 行
-- 範囲外の変更が必要に見えた場合は、変更せず理由を報告する
-- statusLabel.ts は次の Session で扱うため、変更しない
-- 型エラーを \`as\` によるキャストで回避しない
+- 範囲外の変更が必要に見えた場合は、変更せず理由を報告してください
+- statusLabel.ts は次の Session で扱うため、変更しないでください
+- 型エラーを \`as\` による型アサーションで回避しないでください
 
 検証:
-- ${session.exerciseCommand} を実行し、分岐漏れの1個を除くすべての assertion が成功すること
+- ${session.exerciseCommand} を実行し、分岐漏れの1個を除くすべての assertion が成功することを確かめてください
 
 完了時の報告:
 - 変更したファイルと判断理由
@@ -407,7 +408,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         </p>
       </section>
       <Prose
-        components={{ AppointmentStateDiagram, CodeGuideCards, CommandBlock }}
+        components={{ AppointmentStateDiagram, CodeGuideCards, CommandBlock, EpisodeIllustration }}
         session={session}
         guides={guides}
         workspace={workspace}

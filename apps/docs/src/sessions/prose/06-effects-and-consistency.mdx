@@ -2,11 +2,14 @@ import { Code } from "astro:components";
 import { Fragment } from "astro/jsx-runtime";
 import TeachingTopic from "../../components/TeachingTopic.astro";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
+import StoreBoundaryAnimation from "../../components/effects-walkthrough/StoreBoundaryAnimation.astro";
+import EffectsPipelineAnimation from "../../components/effects-walkthrough/EffectsPipelineAnimation.astro";
 
 <section id="incident">
   <h2>今回つくるもの</h2>
   <aside class="case-file__episode" aria-label="動物病院のひと幕">
     <p class="case-file__episode-label">動物病院のひと幕</p>
+  <EpisodeIllustration slug={props.session.slug} />
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
   <p>読み込み、時刻とイベントIDの生成、保存を外から渡し、診察開始イベントを1回保存します。</p>
@@ -57,7 +60,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <p>new Date() と crypto.randomUUID() は、呼ぶたびに違う値を返します。同じ入力でも出力イベントが変わるので、テストは期待値を固定できません。</p>
     <p>port にすると、テストは固定の値を渡せます。本番相当の実装は、Final の参照実装 examples/final/src/app.ts で確認できます。そこでは Clock の実装が new Date() を呼び、EventIdGenerator の実装が randomUUID() を呼びます。</p>
     <p>値を作る回数も決めます。ユースケースは createEventContext を1回だけ呼び、できた EventContext を状態遷移へ渡します。状態遷移は、予約の examinationStartedAt とイベントの occurredAt を同じ値から作ります。</p>
-    <p>createEventContext を呼ぶ場所は、予約の確認の後です。予約が見つからないときや受付前のときは、map のコールバックが呼ばれないので、時刻もイベント ID も作りません。</p>
+    <p>createEventContext を呼ぶ場所は、予約の確認の後です。createEventContext は startExaminationEvent の中にあり、startExaminationEvent が返す関数は map のコールバックとして呼ばれます。予約が見つからないときや受付前のときは、このコールバックが呼ばれないので、時刻もイベント ID も作りません。</p>
     <Fragment slot="why">時刻と ID を引数で受け取ると、状態遷移は同じ入力から同じイベントを返す純粋関数のままです。実行ごとに変わる値を作る場所がユースケースの1か所に決まるので、テストは同じ実行を再現できます。</Fragment>
   </TeachingTopic>
   <TeachingTopic
@@ -74,6 +77,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <p>in-memory の実装は transaction を持ちません。新しい Map と配列を作ってから最後にまとめて置き換えることで、同じ約束を表します。</p>
     <Fragment slot="why">保存処理を1つにすると、ユースケースは片方だけ成功した場合の後始末を書かずに済みます。状態と監査記録をそろえる責任は store の実装に集まります。型だけでは transaction の有無を確かめられないので、examples/session-07/test/integration/fileSqliteTransaction.test.ts が監査記録の失敗時に状態が戻ることを確かめています。</Fragment>
   </TeachingTopic>
+  <StoreBoundaryAnimation />
   <TeachingTopic
     name="ResultAsync と andThrough で非同期の保存をつなぐ"
     before={props.teaching[2].before}
@@ -96,11 +100,12 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <p>AppointmentConflict と保存障害では、呼び出し側の対応が違います。競合なら、呼び出し側は最新の予約を確認して操作をやり直せます。データベースの障害や破損データには、呼び出し側が理由別に選べる対応がありません。</p>
     <p>neverthrow の関数でこの2つの経路が分かれます。ResultAsync.fromPromise は、reject を第2引数の関数で Err へ変換します。ResultAsync.fromSafePromise は変換しないので、reject は reject のまま残ります。after は fromSafePromise を使います。</p>
     <p>before のように fromPromise ですべての reject を AppointmentConflict へ変換すると、データベースの障害でも画面は競合として案内します。例外が外側の例外境界へ届かないので、障害はログに記録されません。</p>
-    <p>after は resolver の呼び出しを Promise.resolve().then(...) で包みます。resolver は同期の関数で、破損データを読むと ZodError を投げます。then の中で呼ぶと、この throw も reject になります。包まずに呼ぶと、ResultAsync を返す前に例外が呼び出し元へ飛びます。</p>
+    <p>after は resolveAppointment の中で、resolver の呼び出しを Promise.resolve().then(...) で包みます。resolver は同期の関数で、破損データを読むと ZodError を投げます。then の中で呼ぶと、この throw も reject になります。包まずに呼ぶと、ResultAsync を返す前に例外が呼び出し元へ飛びます。</p>
     <p>store の実装も fromSafePromise を使います。transaction の中の throw は reject になり、そのまま andThrough を通り抜けます。</p>
     <p>reject は、S4 で確認した外側の例外境界が受け取ります。例外境界は、エラーの詳細を含まない 500 応答へ変換します。本番ではここでログへも記録します。配布コードの app.onError は記録を省いています。</p>
     <Fragment slot="why">E に AppointmentConflict だけを書くと、呼び出し側は選べる対応だけを型から読み取れます。演習の Step 4 は、競合が Err になり、保存障害と破損データが reject になることをテストで確かめます。</Fragment>
   </TeachingTopic>
+  <EffectsPipelineAnimation />
 </section>
 
 <aside class="failure-boundary" aria-label="業務エラーとインフラ例外の区別">
@@ -164,7 +169,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
       <li>{"`git diff --stat -- examples/session-06` で今回の snapshot だけを確認する。`git status --short` で想定外の path がないか確認する。"}</li>
       <li>{"型検査では確認できないことを、テストまたは実行時に確認して記録する。"}</li>
     </ol>
-    <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>
+    <p>これまでのセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>
     <p><strong>残すもの:</strong> 一緒に記録する必要がある値、Agentへの依頼文、型検査では確認できず、テストまたは実行時に確認すること</p>
     <h3>業務へ持ち帰る</h3>
     <p>自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。</p>

@@ -108,7 +108,7 @@ extra: { veterinarianId: "${veterinarianId}", examinationStartedAt: occurredAt }
     },
   },
   {
-    text: "repository.save が現在の予約内容を上書きします。担当の獣医師と開始時刻もここで入ります。",
+    text: "repository.save が現在の予約内容を上書きします。担当の獣医師と開始時刻も、このとき保存されます。",
     highlight: highlight("use-case", useCaseCode, "repository.save(updated);", false),
     impl: {
       file: repositoryFile,
@@ -117,7 +117,7 @@ extra: { veterinarianId: "${veterinarianId}", examinationStartedAt: occurredAt }
     values: { input: updatedSummary, output: undefined },
   },
   {
-    text: "repository.appendAudit が予約の変更履歴に examination.started を足します。",
+    text: "repository.appendAudit が予約の変更履歴に examination.started を追加します。",
     highlight: highlight("use-case", useCaseCode, "repository.appendAudit({", true),
     impl: {
       file: repositoryFile,
@@ -426,7 +426,7 @@ const details = [
   </div>
 
   <figcaption>
-    updateStatus は今の状態を確かめないので、実物では会計済みの予約でも同じ操作で診察中へ戻ります。下の事故はこのことから起きました。このモックは説明用で、データベースには接続しません。コードは examples/session-00 の実物です。
+    updateStatus は今の状態を確かめないので、実物では会計済みの予約でも同じ操作で診察中へ戻ります。下の二重請求の報告にも、この戻る動きが関わっている可能性があります。この時点では原因を決めつけません。このモックは説明用で、データベースには接続しません。コードは examples/session-00 の実物です。
   </figcaption>
 </figure>
 

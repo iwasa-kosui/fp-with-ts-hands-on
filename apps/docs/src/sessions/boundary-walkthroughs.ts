@@ -117,7 +117,7 @@ const arrivalFrames = (veterinarianLine: string) => [
     last: "veterinarianId: raw.veterinarianId,",
     zone: 0,
     status: "neutral",
-    valueLabel: "parse へ渡す値（型は unknown）",
+    valueLabel: "parse へ渡す値",
     value: rawOf(veterinarianLine),
     text: "routeは、URLの予約IDとbodyのveterinarianIdを1つのobjectにまとめ、parseへ渡します。",
   }),
@@ -185,7 +185,7 @@ const passedFrames = (veterinarianUuidValue: string, lastText: string) => {
       status: "pass",
       valueLabel: "parse の結果",
       value: typed,
-      text: "全項目が合格したので、ok(parsed.data)を呼びます。ここで値に型が付きます。",
+      text: "全項目が合格したので、ok(parsed.data)を呼びます。型の上では、この値がStartExaminationInputになります。",
     }),
     startFrame("schemaResult", {
       first: "export const ok = <T>(value: T): Result<T> => ({",
@@ -194,7 +194,7 @@ const passedFrames = (veterinarianUuidValue: string, lastText: string) => {
       status: "pass",
       valueLabel: "parse の結果",
       value: typed,
-      text: "okは値を閉じ込めたResultを返します。_unsafeUnwrapを呼ぶと、その値が返ります。",
+      text: "okは値を持つResultを返します。_unsafeUnwrapを呼ぶと、その値が返ります。",
     }),
     startFrame("parseAfter", {
       first: "export type StartExaminationInput = z.infer<typeof schema>;",
@@ -230,7 +230,7 @@ const rejectedFrames = [
     status: "stop",
     valueLabel: "parse の結果",
     value: "Err()",
-    text: "不合格の項目があるので、err()を呼びます。StartExaminationInputは作られません。",
+    text: "不合格の項目があるので、err()を呼びます。この場合、parseはStartExaminationInputを返しません。",
   }),
   startFrame("schemaResult", {
     first: "export const err = <T>(): Result<T> => ({",
@@ -262,7 +262,7 @@ const rejectedFrames = [
 export const startExaminationWalkthrough: Walkthrough = {
   title: "値が境界を通る様子",
   description:
-    "場面を選んで再生します。上の帯は値がいる場所、下のコードは今動いている行です。",
+    "場面を選んで再生します。上の帯は値が今いる場所、下のコードは今説明している行です。",
   zones: ["外側", "境界", "内側"],
   files: startExaminationFiles,
   scenarios: [
@@ -332,7 +332,7 @@ export const startExaminationWalkthrough: Walkthrough = {
           status: "danger",
           valueLabel: "parse の結果",
           value: `Ok({\n  appointmentId: "${appointmentUuid}",\n  veterinarianId: "night-shift",\n})`,
-          text: "okは渡された値をそのまま閉じ込めます。okは値の中身を確かめません。",
+          text: "okは渡された値をそのまま持つResultを返します。okは値の中身を確かめません。",
         }),
         startFrame("route", {
           first: "})._unsafeUnwrap();",
@@ -407,7 +407,7 @@ const hiddenFrame = (
 
 export const sensitiveWalkthrough: Walkthrough = {
   title: "内側の値が外へ出る様子",
-  description: "場面を選んで再生します。何も書かなければ伏せられ、unwrap と書いた箇所だけ平文が出ます。",
+  description: "場面を選んで再生します。ログやJSONに書き出しても値は伏せられ、unwrap を呼んだ箇所だけ平文が出ます。",
   zones: ["内側", "境界", "外側（ログなど）"],
   files: sensitiveFiles,
   scenarios: [

@@ -1,8 +1,8 @@
-# Session 04: 診察開始の入力を境界で検証する
+# Session 03: 診察開始の入力を境界で検証する
 
-このディレクトリはSession 04の開始スナップショットです。解答は `examples/session-05/src` にあります。
+このディレクトリはSession 03の開始スナップショットです。解答は `examples/session-05/src` にあります。
 
-S3の補助演習で区別したAppointmentIdとVeterinarianIdを、HTTPの文字列から作る境界を実装します。変更対象は `src/boundary/startExaminationInput.ts` の1ファイルです。
+S03の補助演習で区別したAppointmentIdとVeterinarianIdを、HTTPの文字列から作る境界を実装します。変更対象は `src/boundary/startExaminationInput.ts` の1ファイルです。
 
 ```bash
 pnpm demo:04
@@ -13,7 +13,7 @@ pnpm exercise:04
 
 デモは `http://localhost:3000` で起動します。診察開始routeは、path parameterの予約IDと外部から届く担当獣医師IDを `StartExaminationInput.parse` へ渡します。
 
-`typecheck` と `test` はS1とS2の回帰を確認します。`exercise` は、不正な予約IDと不正な担当獣医師IDを拒否できない2件で意図的に失敗します。
+`typecheck` と `test` はS01、S02、S03の補助演習の回帰を確認します。`exercise` は、不正な予約IDと不正な担当獣医師IDを拒否できない2件で意図的に失敗します。
 
 ## 時間外の補足
 

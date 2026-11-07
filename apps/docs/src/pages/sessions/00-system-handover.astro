@@ -5,6 +5,7 @@ import SessionPageNavigation from "../../components/SessionPageNavigation.astro"
 import Prose from "../../sessions/prose/00-system-handover.mdx";
 import type { SessionNavigation, SessionSummary } from "../../sessions/types";
 import "../../styles/sessions.css";
+import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
 import HandoverClinicScenes from "../../components/HandoverClinicScenes.astro";
 import HandoverExamMock from "../../components/HandoverExamMock.astro";
 
@@ -17,11 +18,11 @@ export const session: SessionSummary = {
   durationMinutes: 10,
   timeBreakdown: { brief: 4, teach: 3, exercise: 0, review: 3 },
   animal: { name: "DOG", type: "dog", avatar: "🐕" },
-  summary: "WAN NYAN CLINIC の現行業務、SQLite に残る現在の予約内容と変更履歴、現在起きている事故を確認します。",
+  summary: "WAN NYAN CLINIC の現行業務、SQLite に残る現在の予約内容と変更履歴、起きている事故を確認します。",
   episode: [
-    "新人エンジニアの初出勤を歓迎するように、犬が観葉植物を倒し、プリンターは事故報告を吐き続けていました。",
-    "会計済みの予約は「診察中」へ戻り、請求書は2枚。ログには飼い主の電話番号まで律儀にそろっています。",
-    "引き継ぎ資料を開く前に、二重請求と個人情報流出の再現条件だけは確認できました。",
+    "新人エンジニアの初出勤の日、犬が観葉植物を倒し、プリンターは事故報告を何枚も印刷していました。",
+    "会計済みの予約は「診察中」へ戻り、請求書は2枚になっていました。ログには飼い主の電話番号も残っていました。",
+    "引き継ぎ資料を開く前に、新人エンジニアは二重請求と個人情報流出の再現条件だけは確認できました。",
   ],
   incident: "会計済みの予約が診察中へ戻り、予約ログから飼い主の個人情報が流出した。",
   steps: [],
@@ -34,13 +35,13 @@ export const guides = ([
     id: "string-status",
     title: "状態を任意の文字列で表している",
     currentDesign: "status と更新先の状態を string で受け取っています。",
-    futureRisk: "業務で使う状態と許可する遷移を型から判断できません。",
+    futureRisk: "どんな状態があり、どの状態からどの状態へ変えてよいかを、型を見ても判断できません。",
     path: "src/domain/appointment/appointment.ts",
     highlights: [{ startLineNumber: 11, endLineNumber: 11 }],
   },
   {
     id: "optional-state-data",
-    title: "状態固有の情報が複数の optional field に分散している",
+    title: "状態ごとの情報が複数の optional field に分かれている",
     currentDesign: "診察、会計、キャンセルの情報が、一つの型にある複数の optional field として定義されています。",
     futureRisk: "どの状態で何が必須なのかを型から判断できません。",
     path: "src/domain/appointment/appointment.ts",
@@ -50,7 +51,7 @@ export const guides = ([
     id: "plain-string-ids",
     title: "用途の異なる ID がすべて string である",
     currentDesign: "予約、動物、飼い主、獣医師の ID が同じ string です。",
-    futureRisk: "実行時には同じ形式の ID を TypeScript が区別できません。",
+    futureRisk: "どれも string なので、ID を取り違えて渡しても TypeScript は誤りとして知らせません。",
     path: "src/domain/appointment/appointment.ts",
     highlights: [
       { startLineNumber: 3, endLineNumber: 3 },
@@ -77,7 +78,7 @@ export const guides = ([
     id: "session-00-message-mapped-errors",
     title: "失敗理由を例外メッセージで判定している",
     currentDesign: "catch した例外の message を部分一致で調べ、状態不正として画面へ戻します。",
-    futureRisk: "予約なしと別の失敗を型で区別できず、表示と対応を誤ります。",
+    futureRisk: "予約が見つからない失敗とそれ以外の失敗を型で区別できず、表示と対応を誤ります。",
     path: "src/web/routes.ts",
     highlights: [{ startLineNumber: 204, endLineNumber: 205 }],
   },
@@ -130,7 +131,7 @@ export const navigation = ({
           {session.summary}
         </p>
       </section>
-      <Prose components={{ HandoverClinicScenes, HandoverExamMock }} session={session} />
+      <Prose components={{ EpisodeIllustration, HandoverClinicScenes, HandoverExamMock }} session={session} />
       <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         {
           navigation.previous === undefined ? null : (

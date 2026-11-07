@@ -105,7 +105,7 @@ const scenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }>)[
       ...untilAppointment("Scheduled"),
       step(6, "<code>ensureCancellable</code> が状態を確かめます。<code>Scheduled</code> は診察開始前なので、<code>ok(appointment)</code> を返します。", appointmentValue("Scheduled"), ok(appointmentValue("Scheduled"))),
       step(7, "キャンセルの出来事を表すイベントを作る <code>createEvent</code> が、<code>Appointment.cancel</code> を呼びます。前の行の予約に加えて、最初に受け取った入力の <code>reason</code> と、現在時刻を返す部品 <code>clock</code> の時刻を使い、<code>AppointmentCanceled</code> を作ります。", createEventInput, ok(eventValue)),
-      step(8, "<code>andThrough</code> は、<code>andThen</code> と同じように Ok のときだけ処理へ進み、成功すると元の値を次へ渡します。ここでは store を呼び、予約の更新とイベントの追記を1つの transaction で行います。値は同じイベントのままです。<code>andThrough</code> の詳細は S6 で学びます。", eventValue, ok(eventValue)),
+      step(8, "<code>andThrough</code> は、<code>andThen</code> と同じように Ok のときだけ処理へ進み、成功すると元の値を次へ渡します。ここでは store を呼び、予約の更新とイベントの追記を1つの transaction で行います。値は同じイベントのままです。<code>andThrough</code> の詳細は S06 で学びます。", eventValue, ok(eventValue)),
       step(9, "<code>map</code> がイベントからキャンセル後の予約を取り出します。", eventValue, finalValue),
       step(outputRow, "値は成功レールの終点に届きます。呼び出し側はキャンセル後の予約を受け取ります。", finalValue, finalValue),
     ],
@@ -155,7 +155,7 @@ const id = "cancel-railway-animation";
   id={id}
   title="キャンセルのコードを実行すると、値はどう流れるか"
   lead="再生すると、値がパイプラインの行に沿って上から下へ進みます。下の枠では、その行が受け取る値、実行する関数の実装、返す値を順に確かめます。ユースケースの中で失敗しても、処理は途中で抜けません。失敗の値は右の失敗レールを終点まで進みます。"
-  note="コードは参照実装 examples/final/src から引用しました。andThen の意味は S4 で学んだとおりです。andThen は Ok の中身を次の関数へ渡すので、受け取る値には Ok を付けていません。受付担当者の ID、Paid の予約、Err の理由の文は説明用です。値は読みやすさのため、UUID を「11111111-…」と省略し、petId、ownerId、scheduledAt などの項目と、reason を包む Sensitive も省略しています。"
+  note="コードは参照実装 examples/final/src から引用しました。andThen の意味は S04 で学んだとおりです。andThen は Ok の中身を次の関数へ渡すので、受け取る値には Ok を付けていません。受付担当者の ID、Paid の予約、Err の理由の文は説明用です。値は読みやすさのため、UUID を「11111111-…」と省略し、petId、ownerId、scheduledAt などの項目と、reason を包む Sensitive も省略しています。"
   scenarios={playerScenarios}
 >
   <div class="cancel-flow" data-cancel-flow={sceneData}>
