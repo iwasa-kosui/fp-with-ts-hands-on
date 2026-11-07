@@ -1,0 +1,844 @@
+---
+import { Code } from "astro:components";
+import type { ComponentProps } from "astro/types";
+import { clinicFixture } from "../../../../examples/fixtures/clinic";
+
+type Snippet = Readonly<{ path: string; code: string }>;
+type Props = Readonly<{
+  code: Readonly<{
+    beforeId: Snippet;
+    afterId: Snippet;
+    beforeSwap: Snippet;
+    afterSwap: Snippet;
+    afterParse: Snippet;
+  }>;
+}>;
+
+const { code } = Astro.props;
+
+const versionLabels = { before: "修正前", after: "修正後" } as const;
+
+type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
+const KEY_MARK = /\s*\/\/ \[!branded-key\]$/;
+const withMarks = (source: string, keyLines: readonly number[]) =>
+  source.split("\n").map((text, index) => (keyLines.includes(index + 1) ? `${text} // [!branded-key]` : text)).join("\n");
+const markKeyLines: Transformer = {
+  name: "mark-branded-key-lines",
+  preprocess(source) {
+    const lines = source.split("\n");
+    (this.meta as { keyLines?: number[] }).keyLines = lines.flatMap((text, index) => (KEY_MARK.test(text) ? [index + 1] : []));
+    return lines.map((text) => text.replace(KEY_MARK, "")).join("\n");
+  },
+  line(node, line) {
+    if ((this.meta as { keyLines?: number[] }).keyLines?.includes(line)) this.addClassToHast(node, "branded-id-flow__key");
+  },
+};
+
+type Mode = "normal" | "dim";
+type TokenState = "off" | "home" | "through" | "stop";
+type Frame = Readonly<{
+  caption: string;
+  stage: keyof typeof versionLabels | null;
+  code?: Readonly<{ key: keyof Props["code"]; lines: readonly number[] }>;
+  modes: readonly [Mode, Mode, Mode, Mode];
+  tokens: readonly [TokenState, TokenState, TokenState];
+  marks: "string" | "ghost" | "brand";
+  plug: "home" | "slot" | "stop";
+  slotTag: "string" | "brand";
+  verdict: "pass" | "error" | null;
+  gate: "pass" | "stop" | null;
+  runtime: boolean;
+}>;
+
+const frames: readonly Frame[] = [
+  {
+    caption: "予約IDと獣医師IDは、どちらもUUIDの形をした文字列です。値を見ただけでは、どちらのIDか分かりません。",
+    stage: null,
+    modes: ["normal", "dim", "dim", "dim"],
+    tokens: ["home", "home", "off"],
+    marks: "string",
+    plug: "home",
+    slotTag: "string",
+    verdict: null,
+    gate: null,
+    runtime: false,
+  },
+  {
+    caption: "修正前のschemaは z.string().uuid() だけです。z.infer で得る AppointmentId 型の中身は string で、VeterinarianId 型も同じ string です。",
+    stage: "before",
+    code: { key: "beforeId", lines: [3, 5] },
+    modes: ["dim", "dim", "normal", "dim"],
+    tokens: ["home", "home", "off"],
+    marks: "string",
+    plug: "home",
+    slotTag: "string",
+    verdict: null,
+    gate: null,
+    runtime: false,
+  },
+  {
+    caption: "獣医師IDを受け取る関数に予約IDを渡しても、どちらの型も string なので型検査は誤りを知らせません。取り違えは、実行して記録がおかしくなってから見つかります。",
+    stage: "before",
+    code: { key: "beforeSwap", lines: [5] },
+    modes: ["dim", "dim", "normal", "normal"],
+    tokens: ["home", "home", "off"],
+    marks: "string",
+    plug: "slot",
+    slotTag: "string",
+    verdict: "pass",
+    gate: null,
+    runtime: false,
+  },
+  {
+    caption: ".brand<\"AppointmentId\">() を付けると、推論される型は string に AppointmentId という印を足した型になります。獣医師IDには VeterinarianId という別の印が付きます。",
+    stage: "after",
+    code: { key: "afterId", lines: [3, 5] },
+    modes: ["dim", "dim", "normal", "dim"],
+    tokens: ["home", "home", "off"],
+    marks: "brand",
+    plug: "home",
+    slotTag: "brand",
+    verdict: null,
+    gate: null,
+    runtime: false,
+  },
+  {
+    caption: "印の違う値を渡すと、型検査がコンパイルエラーとして知らせます。@ts-expect-error は、この行で型エラーが出ることを確かめるための注釈です。",
+    stage: "after",
+    code: { key: "afterSwap", lines: [7, 8] },
+    modes: ["dim", "dim", "normal", "normal"],
+    tokens: ["home", "home", "off"],
+    marks: "brand",
+    plug: "stop",
+    slotTag: "brand",
+    verdict: "error",
+    gate: null,
+    runtime: false,
+  },
+  {
+    caption: "印は型検査のときだけ使われます。TypeScript を JavaScript に変換すると型は消え、実行時の値は修正前と同じ文字列のままです。",
+    stage: "after",
+    modes: ["dim", "dim", "normal", "dim"],
+    tokens: ["home", "home", "off"],
+    marks: "ghost",
+    plug: "home",
+    slotTag: "brand",
+    verdict: null,
+    gate: null,
+    runtime: true,
+  },
+  {
+    caption: "印の付いた値を作る入口は parse です。parse は文字列がUUIDの形かを検査し、通った値だけを AppointmentId 型として返します。",
+    stage: "after",
+    code: { key: "afterParse", lines: [4, 5] },
+    modes: ["normal", "normal", "normal", "dim"],
+    tokens: ["through", "through", "off"],
+    marks: "brand",
+    plug: "home",
+    slotTag: "brand",
+    verdict: null,
+    gate: "pass",
+    runtime: false,
+  },
+  {
+    caption: "UUIDの形でない文字列は parse を通りません。parse は例外を投げるので、AppointmentId 型の値は作られません。",
+    stage: "after",
+    modes: ["normal", "normal", "dim", "dim"],
+    tokens: ["home", "home", "stop"],
+    marks: "brand",
+    plug: "home",
+    slotTag: "brand",
+    verdict: null,
+    gate: "stop",
+    runtime: false,
+  },
+];
+
+const initial = frames[0];
+const idPreview = (id: string) => `${id.slice(0, 8)}…`;
+
+const tokens = [
+  { x: 10, label: "予約ID", value: idPreview(clinicFixture.appointmentId) },
+  { x: 120, label: "獣医師ID", value: idPreview(clinicFixture.veterinarianId) },
+  { x: 230, label: "文字列", value: "\"not-a-uuid\"" },
+] as const;
+
+const cards = [
+  { id: "appointment", label: "予約ID", value: tokens[0].value, brand: "AppointmentId" },
+  { id: "veterinarian", label: "獣医師ID", value: tokens[1].value, brand: "VeterinarianId" },
+] as const;
+
+const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => frame));
+---
+
+<div class="branded-id-flow" data-branded-id-flow data-frames={playerData}>
+  <div class="branded-id-flow__controls" data-controls hidden>
+    <button type="button" data-prev disabled>前へ</button>
+    <span data-progress>1 / {frames.length}</span>
+    <button type="button" data-next>次へ</button>
+  </div>
+
+  <div class="branded-id-flow__stage" data-stage hidden>
+    <span class="branded-id-flow__tag" data-stage-tag hidden></span>
+  </div>
+
+  <svg
+    viewBox="0 0 340 509"
+    role="img"
+    aria-labelledby="branded-id-flow-title branded-id-flow-desc"
+    data-marks={initial.marks}
+    data-plug={initial.plug}
+    data-slot-tag={initial.slotTag}
+  >
+    <title id="branded-id-flow-title">Branded Type が取り違えを止める仕組み</title>
+    <desc id="branded-id-flow-desc">
+      1段目は、外から届く予約IDと獣医師IDの文字列です。2段目は、UUIDの形かを検査する parse です。3段目は、予約IDと獣医師IDの値です。修正前はどちらも string 型で、修正後は AppointmentId と VeterinarianId という別の印が付きます。4段目は、獣医師IDを受け取る関数です。修正前は予約IDを渡しても型検査を通り、修正後は印が違うのでコンパイルエラーになります。
+    </desc>
+
+    <g class="branded-id-flow__band" data-band="0" data-mode={initial.modes[0]}>
+      <rect x="0" y="0" width="340" height="84" rx="8" class="branded-id-flow__band-bg"></rect>
+      <text x="8" y="18" class="branded-id-flow__band-label branded-id-flow__dimmable">外から届く文字列</text>
+    </g>
+
+    <g class="branded-id-flow__band" data-band="1" data-mode={initial.modes[1]}>
+      <rect x="0" y="92" width="340" height="64" rx="8" class="branded-id-flow__band-bg"></rect>
+      <text x="8" y="110" class="branded-id-flow__band-label branded-id-flow__dimmable">parse</text>
+      <g class="branded-id-flow__gate branded-id-flow__dimmable" data-gate-group data-gate={initial.gate}>
+        <rect x="30" y="118" width="280" height="30" rx="6"></rect>
+        <text x="170" y="138" text-anchor="middle" class="branded-id-flow__node-text">parse（UUIDの形かを検査）</text>
+        <g class="branded-id-flow__badge branded-id-flow__badge--pass">
+          <circle cx="306" cy="118" r="10"></circle>
+          <text x="306" y="123" text-anchor="middle">✓</text>
+        </g>
+        <g class="branded-id-flow__badge branded-id-flow__badge--stop">
+          <circle cx="306" cy="118" r="10"></circle>
+          <text x="306" y="123" text-anchor="middle">×</text>
+        </g>
+      </g>
+    </g>
+
+    <g class="branded-id-flow__band" data-band="2" data-mode={initial.modes[2]}>
+      <rect x="0" y="164" width="340" height="120" rx="8" class="branded-id-flow__band-bg"></rect>
+      <text x="8" y="182" class="branded-id-flow__band-label branded-id-flow__dimmable">値</text>
+      <text x="170" y="277" text-anchor="middle" class="branded-id-flow__note branded-id-flow__runtime-note branded-id-flow__dimmable">実行時の値には印がない</text>
+    </g>
+
+    <g class="branded-id-flow__band" data-band="3" data-mode={initial.modes[3]}>
+      <rect x="0" y="292" width="340" height="215" rx="8" class="branded-id-flow__band-bg"></rect>
+      <text x="8" y="310" class="branded-id-flow__band-label branded-id-flow__dimmable">受け取る関数</text>
+      <g class="branded-id-flow__dimmable">
+        <rect x="8" y="318" width="324" height="181" rx="8" class="branded-id-flow__function"></rect>
+        <text x="176" y="358" class="branded-id-flow__node-text branded-id-flow__signature branded-id-flow__mono">acceptVeterinarianId(</text>
+        <text x="176" y="374" class="branded-id-flow__node-text branded-id-flow__signature branded-id-flow__mono">  _id: VeterinarianId)</text>
+        <rect x="16" y="393" width="150" height="64" rx="6" class="branded-id-flow__slot"></rect>
+        <text x="91" y="429" text-anchor="middle" class="branded-id-flow__note">差し込み口</text>
+        <g class="branded-id-flow__slot-tag branded-id-flow__slot-tag--string">
+          <rect x="176" y="397" width="148" height="40" rx="12" class="branded-id-flow__pill-string"></rect>
+          <text x="250" y="414" text-anchor="middle" class="branded-id-flow__node-text">VeterinarianId</text>
+          <text x="250" y="429" text-anchor="middle" class="branded-id-flow__node-text">（中身は string）</text>
+        </g>
+        <g class="branded-id-flow__slot-tag branded-id-flow__slot-tag--brand" data-tone="veterinarian">
+          <rect x="176" y="405" width="148" height="24" rx="12" class="branded-id-flow__pill-brand"></rect>
+          <text x="250" y="421" text-anchor="middle" class="branded-id-flow__pill-text branded-id-flow__mono">VeterinarianId</text>
+        </g>
+        <g class="branded-id-flow__verdict branded-id-flow__verdict--pass">
+          <rect x="24" y="465" width="292" height="26" rx="6"></rect>
+          <text x="170" y="482" text-anchor="middle">型検査: 通る（取り違えに気づけない）</text>
+        </g>
+        <g class="branded-id-flow__verdict branded-id-flow__verdict--error">
+          <rect x="24" y="465" width="292" height="26" rx="6"></rect>
+          <text x="170" y="482" text-anchor="middle">型検査: コンパイルエラー</text>
+        </g>
+        <g class="branded-id-flow__reject">
+          <circle cx="168" cy="334" r="10"></circle>
+          <text x="168" y="339" text-anchor="middle">×</text>
+        </g>
+      </g>
+    </g>
+
+    <g class="branded-id-flow__tokens branded-id-flow__dimmable" data-tokens data-mode={initial.modes[0]}>
+      {tokens.map((token, index) => (
+        <g class="branded-id-flow__token" data-token={index} data-state={initial.tokens[index]}>
+          <rect x={token.x} y="28" width="100" height="48" rx="6"></rect>
+          <text x={token.x + 50} y="46" text-anchor="middle" class="branded-id-flow__node-text branded-id-flow__strong">{token.label}</text>
+          <text x={token.x + 50} y="64" text-anchor="middle" class="branded-id-flow__node-text branded-id-flow__mono">{token.value}</text>
+        </g>
+      ))}
+    </g>
+
+    <g class="branded-id-flow__cards branded-id-flow__dimmable" data-cards data-mode={initial.modes[2]}>
+      {cards.map((card) => (
+        <g class="branded-id-flow__card" data-card={card.id}>
+          <rect x="0" y="0" width="156" height="44" rx="6" class="branded-id-flow__card-body"></rect>
+          <text x="78" y="18" text-anchor="middle" class="branded-id-flow__node-text branded-id-flow__strong">{card.label}</text>
+          <text x="78" y="35" text-anchor="middle" class="branded-id-flow__node-text branded-id-flow__mono">{card.value}</text>
+          <g class="branded-id-flow__tag-string">
+            <rect x="24" y="48" width="108" height="22" rx="11" class="branded-id-flow__pill-string"></rect>
+            <text x="78" y="63" text-anchor="middle" class="branded-id-flow__node-text branded-id-flow__mono">string</text>
+          </g>
+          <g class="branded-id-flow__tag-brand" data-tone={card.id}>
+            <rect x="24" y="48" width="108" height="22" rx="11" class="branded-id-flow__pill-brand"></rect>
+            <text x="78" y="63" text-anchor="middle" class="branded-id-flow__pill-text branded-id-flow__mono">{card.brand}</text>
+          </g>
+        </g>
+      ))}
+    </g>
+  </svg>
+
+  <p class="branded-id-flow__live" data-live aria-live="polite" hidden></p>
+
+  <ol class="branded-id-flow__frames">
+    {frames.map((frame) => (
+      <li data-frame data-has-code={frame.code ? "" : undefined}>
+        <p class="branded-id-flow__caption">{frame.caption}</p>
+        {frame.code && frame.stage && (
+          <figure class="code-block branded-id-flow__code" data-version={frame.stage}>
+            <figcaption><span class="branded-id-flow__tag" data-version={frame.stage}>{versionLabels[frame.stage]}</span> <code>{code[frame.code.key].path}</code></figcaption>
+            <Code code={withMarks(code[frame.code.key].code, frame.code.lines)} lang="ts" defaultColor={false} transformers={[markKeyLines]} />
+          </figure>
+        )}
+      </li>
+    ))}
+  </ol>
+</div>
+
+<script>
+  type Mode = "normal" | "dim";
+  type TokenState = "off" | "home" | "through" | "stop";
+  type Frame = {
+    caption: string;
+    stage: "before" | "after" | null;
+    modes: Mode[];
+    tokens: TokenState[];
+    marks: string;
+    plug: string;
+    slotTag: string;
+    verdict: string | null;
+    gate: string | null;
+    runtime: boolean;
+  };
+
+  const versionLabels = { before: "修正前", after: "修正後" } as const;
+
+  const setUp = (root: HTMLElement) => {
+    if (root.dataset.ready !== undefined) return;
+    const frames = JSON.parse(root.dataset.frames ?? "[]") as Frame[];
+    const panels = [...root.querySelectorAll<HTMLElement>("[data-frame]")];
+    const svg = root.querySelector<SVGSVGElement>("svg");
+    const bands = [...root.querySelectorAll<SVGGElement>("[data-band]")];
+    const cards = root.querySelector<SVGGElement>("[data-cards]");
+    const tokenLayer = root.querySelector<SVGGElement>("[data-tokens]");
+    const tokens = [...root.querySelectorAll<SVGGElement>("[data-token]")];
+    const gate = root.querySelector<SVGGElement>("[data-gate-group]");
+    const stage = root.querySelector<HTMLElement>("[data-stage]");
+    const stageTag = root.querySelector<HTMLElement>("[data-stage-tag]");
+    const controls = root.querySelector<HTMLElement>("[data-controls]");
+    const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
+    const next = root.querySelector<HTMLButtonElement>("[data-next]");
+    const progress = root.querySelector<HTMLElement>("[data-progress]");
+    const live = root.querySelector<HTMLElement>("[data-live]");
+    if (!svg || !cards || !tokenLayer || !gate || !stage || !stageTag || !controls || !prev || !next || !progress || !live) return;
+    if (frames.length !== panels.length || bands.length !== 4 || tokens.length !== 3) return;
+    root.dataset.ready = "";
+
+    let current: number | null = null;
+    const show = (index: number) => {
+      const before = current === null ? null : frames[current];
+      const frame = frames[index];
+      current = index;
+      panels.forEach((panel, i) => panel.classList.toggle("is-current", i === index));
+
+      bands.forEach((band, i) => {
+        band.dataset.mode = frame.modes[i];
+      });
+      cards.dataset.mode = frame.modes[2];
+      tokenLayer.dataset.mode = frame.modes[0];
+
+      tokens.forEach((token, i) => {
+        const state = frame.tokens[i];
+        const previous = before?.tokens[i];
+        const jumps = (previous === "off" && (state === "through" || state === "stop")) || (previous === "through" && state === "home");
+        if (jumps) {
+          token.style.transition = "none";
+          token.dataset.state = previous === "off" ? "home" : state;
+          token.getBoundingClientRect();
+          token.style.transition = "";
+        }
+        token.dataset.state = state;
+      });
+
+      svg.dataset.marks = frame.marks;
+      svg.dataset.plug = frame.plug;
+      svg.dataset.slotTag = frame.slotTag;
+      svg.toggleAttribute("data-through", frame.tokens.includes("through"));
+      svg.toggleAttribute("data-runtime", frame.runtime);
+      if (frame.verdict) svg.dataset.verdict = frame.verdict;
+      else delete svg.dataset.verdict;
+      if (frame.gate) gate.dataset.gate = frame.gate;
+      else delete gate.dataset.gate;
+
+      if (frame.stage) {
+        stageTag.hidden = false;
+        stageTag.dataset.version = frame.stage;
+        stageTag.textContent = versionLabels[frame.stage];
+      } else {
+        stageTag.hidden = true;
+      }
+
+      live.textContent = frame.caption;
+      progress.textContent = `${index + 1} / ${frames.length}`;
+      prev.disabled = index === 0;
+      next.disabled = index === frames.length - 1;
+    };
+
+    prev.addEventListener("click", () => show(Math.max((current ?? 0) - 1, 0)));
+    next.addEventListener("click", () => show(Math.min((current ?? 0) + 1, frames.length - 1)));
+
+    root.dataset.animated = "";
+    controls.hidden = false;
+    stage.hidden = false;
+    live.hidden = false;
+    show(0);
+  };
+
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    document.querySelectorAll<HTMLElement>("[data-branded-id-flow]").forEach(setUp);
+  }
+</script>
+
+<style>
+  .branded-id-flow {
+    min-width: 0;
+    max-width: 100%;
+    margin: 1.5rem 0;
+    --version-before: #c2185b;
+    --version-after: #137333;
+    --brand-appointment: var(--case-blue);
+    --brand-veterinarian: #c2410c;
+    --verdict-error: #b3261e;
+    --verdict-pass: #137333;
+  }
+
+  [data-version="before"] {
+    --version-color: var(--version-before);
+  }
+
+  [data-version="after"] {
+    --version-color: var(--version-after);
+  }
+
+  .branded-id-flow svg {
+    display: block;
+    width: 100%;
+    max-width: 26rem;
+    height: auto;
+    max-height: min(55vh, 440px);
+    margin-inline: auto;
+  }
+
+  .branded-id-flow__band-bg {
+    fill: var(--case-paper);
+    stroke: var(--case-divider);
+    stroke-width: 1.5;
+  }
+
+  .branded-id-flow__band-label,
+  .branded-id-flow__node-text {
+    fill: var(--case-ink);
+    font-size: 12px;
+  }
+
+  .branded-id-flow__band-label {
+    font-weight: 700;
+  }
+
+  .branded-id-flow__node-text {
+    font-size: 12px;
+  }
+
+  .branded-id-flow__signature {
+    font-size: 11px;
+  }
+
+  .branded-id-flow__strong {
+    font-weight: 700;
+  }
+
+  .branded-id-flow__mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .branded-id-flow__note {
+    fill: var(--case-ink);
+    font-size: 12px;
+  }
+
+  .branded-id-flow svg:not([data-runtime]) .branded-id-flow__runtime-note {
+    display: none;
+  }
+
+  .branded-id-flow__token rect {
+    fill: var(--case-cream);
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .branded-id-flow__token[data-state="off"] {
+    opacity: 0;
+  }
+
+  .branded-id-flow__token[data-state="through"] {
+    transform: translateY(60px);
+    opacity: 0;
+  }
+
+  .branded-id-flow__token[data-state="stop"] rect {
+    stroke: var(--verdict-error);
+    stroke-width: 2.5;
+  }
+
+  .branded-id-flow__gate rect:first-child {
+    fill: var(--case-paper);
+    stroke: var(--case-blue);
+    stroke-width: 2.5;
+  }
+
+  .branded-id-flow__gate[data-gate="stop"] rect:first-child {
+    stroke: var(--verdict-error);
+  }
+
+  .branded-id-flow__gate[data-gate="pass"] rect:first-child {
+    stroke: var(--verdict-pass);
+  }
+
+  .branded-id-flow__badge {
+    display: none;
+  }
+
+  .branded-id-flow__gate[data-gate="pass"] .branded-id-flow__badge--pass,
+  .branded-id-flow__gate[data-gate="stop"] .branded-id-flow__badge--stop {
+    display: block;
+  }
+
+  .branded-id-flow__badge circle {
+    stroke: var(--case-paper);
+    stroke-width: 2;
+  }
+
+  .branded-id-flow__badge--pass circle {
+    fill: var(--verdict-pass);
+  }
+
+  .branded-id-flow__badge--stop circle {
+    fill: var(--verdict-error);
+  }
+
+  .branded-id-flow__badge text {
+    fill: #fff;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .branded-id-flow__function {
+    fill: var(--case-cream);
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .branded-id-flow__slot {
+    fill: var(--case-paper);
+    stroke: var(--case-blue);
+    stroke-width: 2;
+    stroke-dasharray: 6 4;
+  }
+
+  .branded-id-flow__card-body {
+    fill: var(--case-cream);
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .branded-id-flow__card[data-card="appointment"] {
+    transform: translate(8px, 192px);
+  }
+
+  .branded-id-flow__card[data-card="veterinarian"] {
+    transform: translate(176px, 192px);
+  }
+
+  .branded-id-flow svg[data-plug="slot"] .branded-id-flow__card[data-card="appointment"] {
+    transform: translate(29px, 396px) scale(0.8);
+  }
+
+  .branded-id-flow svg[data-plug="stop"] .branded-id-flow__card[data-card="appointment"] {
+    transform: translate(29px, 326px) scale(0.8);
+  }
+
+  .branded-id-flow svg[data-plug="stop"] .branded-id-flow__card[data-card="appointment"] .branded-id-flow__card-body {
+    stroke: var(--verdict-error);
+    stroke-width: 3;
+  }
+
+  .branded-id-flow__pill-string {
+    fill: var(--case-divider);
+    stroke: var(--case-muted, #58596d);
+    stroke-width: 1.5;
+  }
+
+  [data-tone="appointment"] {
+    --tone: var(--brand-appointment);
+  }
+
+  [data-tone="veterinarian"] {
+    --tone: var(--brand-veterinarian);
+  }
+
+  .branded-id-flow__pill-brand {
+    fill: var(--tone);
+    stroke: var(--tone);
+    stroke-width: 1.5;
+  }
+
+  .branded-id-flow__pill-text {
+    fill: #fff;
+    font-size: 11.5px;
+    font-weight: 700;
+  }
+
+  .branded-id-flow svg[data-marks="string"] .branded-id-flow__tag-brand,
+  .branded-id-flow svg:not([data-marks="string"]) .branded-id-flow__tag-string {
+    opacity: 0;
+  }
+
+  .branded-id-flow svg[data-marks="ghost"] .branded-id-flow__tag-brand {
+    opacity: 0.85;
+  }
+
+  .branded-id-flow svg[data-marks="ghost"] .branded-id-flow__tag-brand .branded-id-flow__pill-brand {
+    fill: color-mix(in srgb, var(--tone) 14%, var(--case-paper));
+    stroke-dasharray: 4 3;
+  }
+
+  .branded-id-flow svg[data-marks="ghost"] .branded-id-flow__tag-brand .branded-id-flow__pill-text {
+    fill: var(--case-ink);
+  }
+
+  .branded-id-flow svg[data-slot-tag="string"] .branded-id-flow__slot-tag--brand,
+  .branded-id-flow svg[data-slot-tag="brand"] .branded-id-flow__slot-tag--string {
+    display: none;
+  }
+
+  .branded-id-flow__reject {
+    display: none;
+  }
+
+  .branded-id-flow svg[data-plug="stop"] .branded-id-flow__reject {
+    display: block;
+  }
+
+  .branded-id-flow__reject circle {
+    fill: var(--verdict-error);
+    stroke: var(--case-paper);
+    stroke-width: 2;
+  }
+
+  .branded-id-flow__reject text {
+    fill: #fff;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .branded-id-flow__verdict {
+    display: none;
+  }
+
+  .branded-id-flow svg[data-verdict="pass"] .branded-id-flow__verdict--pass,
+  .branded-id-flow svg[data-verdict="error"] .branded-id-flow__verdict--error {
+    display: block;
+  }
+
+  .branded-id-flow__verdict text {
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .branded-id-flow__verdict--pass rect {
+    fill: var(--case-yellow);
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .branded-id-flow__verdict--pass text {
+    fill: var(--case-ink);
+  }
+
+  .branded-id-flow__verdict--error rect {
+    fill: var(--verdict-error);
+  }
+
+  .branded-id-flow__verdict--error text {
+    fill: #fff;
+  }
+
+  .branded-id-flow__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .branded-id-flow__controls[hidden] {
+    display: none;
+  }
+
+  .branded-id-flow__controls button {
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--case-yellow);
+    color: var(--case-ink);
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .branded-id-flow__controls button:disabled {
+    background: var(--case-paper);
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .branded-id-flow__stage {
+    min-height: 1.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .branded-id-flow__stage[hidden] {
+    display: none;
+  }
+
+  .branded-id-flow__live,
+  .branded-id-flow__caption {
+    margin: 0.75rem 0 0.5rem;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .branded-id-flow__frames {
+    margin: 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .branded-id-flow__frames > li {
+    min-width: 0;
+  }
+
+  .branded-id-flow__frames > li + li {
+    margin-top: 1.25rem;
+  }
+
+  .branded-id-flow__code {
+    min-width: 0;
+    margin: 0.5rem 0 0;
+    border-inline-start: 0.35rem solid var(--version-color);
+  }
+
+  .branded-id-flow__code figcaption code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .branded-id-flow__tag {
+    display: inline-block;
+    padding: 0 0.4rem;
+    border-radius: 0.25rem;
+    background: var(--version-color);
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .branded-id-flow__tag[hidden] {
+    display: none;
+  }
+
+  .branded-id-flow__code :global(pre) {
+    max-width: 100%;
+    margin: 0;
+    overflow-x: auto;
+    font-size: 0.8rem;
+  }
+
+  .branded-id-flow :global(.branded-id-flow__key) {
+    display: inline-block;
+    min-width: calc(100% + 0.5rem);
+    margin-left: -0.5rem;
+    padding-left: 0.5rem;
+    background: rgb(255 210 27 / 22%);
+    box-shadow: inset 0.3rem 0 0 #ffd21b;
+  }
+
+  .branded-id-flow :global(.branded-id-flow__key span[style*="#6A737D"]) {
+    color: #e1e4e8 !important;
+  }
+
+  [data-animated] .branded-id-flow__frames {
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  [data-animated] .branded-id-flow__frames > li {
+    display: none;
+    margin: 0;
+  }
+
+  [data-animated] .branded-id-flow__frames > li.is-current[data-has-code] {
+    display: block;
+  }
+
+  [data-animated] .branded-id-flow__caption {
+    display: none;
+  }
+
+  [data-animated] .branded-id-flow__dimmable {
+    transition: opacity 0.3s;
+  }
+
+  [data-animated] .branded-id-flow__band[data-mode="dim"] .branded-id-flow__dimmable,
+  [data-animated] .branded-id-flow__tokens[data-mode="dim"],
+  [data-animated] .branded-id-flow__cards[data-mode="dim"] {
+    opacity: 0.35;
+  }
+
+  [data-animated] .branded-id-flow__token {
+    transition: transform 0.9s ease-in-out, opacity 0.3s;
+  }
+
+  [data-animated] .branded-id-flow__token[data-state="through"] {
+    transition: transform 0.9s ease-in-out, opacity 0.3s 0.9s;
+  }
+
+  [data-animated] .branded-id-flow__card {
+    transition: transform 0.9s ease-in-out;
+  }
+
+  [data-animated] .branded-id-flow__tag-string,
+  [data-animated] .branded-id-flow__tag-brand,
+  [data-animated] .branded-id-flow__pill-brand,
+  [data-animated] .branded-id-flow__pill-text {
+    transition: opacity 0.3s, fill 0.3s;
+  }
+
+  [data-animated] svg[data-through] .branded-id-flow__tag-brand,
+  [data-animated] svg[data-through] .branded-id-flow__pill-brand,
+  [data-animated] svg[data-through] .branded-id-flow__pill-text {
+    transition-delay: 0.9s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-animated] * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>

@@ -261,6 +261,45 @@ const supplementaryExerciseTeaching: readonly TeachingSnippets[] = [
   },
 ];
 
+const brandedIdSnippets = await loadSolutionSnippets({
+  solutions: [
+    {
+      path: "examples/session-03/src/domain/appointment/appointmentId.ts",
+      symbol: "AppointmentId",
+      lines: [1, 6],
+    },
+    {
+      path: "examples/session-04/src/domain/appointment/appointmentId.ts",
+      symbol: "AppointmentId",
+      lines: [1, 6],
+    },
+    {
+      path: "examples/session-03/src/domain/domain.test-types.ts",
+      symbol: "acceptVeterinarianId",
+      lines: [6, 10],
+    },
+    {
+      path: "examples/session-04/src/domain/domain.test-types.ts",
+      symbol: "acceptVeterinarianId",
+      lines: [6, 13],
+    },
+    {
+      path: "examples/session-04/src/domain/domain.test-types.ts",
+      symbol: "AppointmentId.parse",
+      lines: [1, 5],
+    },
+  ],
+});
+const [brandedBeforeId, brandedAfterId, brandedBeforeSwap, brandedAfterSwap, brandedAfterParse] =
+  brandedIdSnippets.map(({ solution, code }) => ({ path: solution.path, code }));
+const brandedIdCode = {
+  beforeId: brandedBeforeId,
+  afterId: brandedAfterId,
+  beforeSwap: brandedBeforeSwap,
+  afterSwap: brandedAfterSwap,
+  afterParse: brandedAfterParse,
+};
+
 const supplementaryExerciseTypecheckCommand =
   "pnpm --filter @fp-with-ts/clinic-session-03 typecheck";
 const supplementaryExerciseSolutionSteps = await Promise.all(
@@ -374,6 +413,7 @@ ${session.exerciseCommand} を成功させてください。
         paymentAmountCaption={paymentAmountCaption}
         paymentAmountCode={paymentAmountQuote.code}
         examResultQuote={examResultQuote}
+        brandedIdCode={brandedIdCode}
         supplementaryExerciseTeaching={supplementaryExerciseTeaching}
         supplementaryExerciseTypecheckCommand={supplementaryExerciseTypecheckCommand}
         supplementaryExerciseSolutionSteps={supplementaryExerciseSolutionSteps}
