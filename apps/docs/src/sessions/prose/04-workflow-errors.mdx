@@ -7,6 +7,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <h2>今回つくるもの</h2>
   <aside class="case-file__episode" aria-label="動物病院のひと幕">
     <p class="case-file__episode-label">動物病院のひと幕</p>
+  <EpisodeIllustration slug={props.session.slug} />
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
   <p>予約が見つからない場合と来院済みでない場合を、呼び出し側が処理できる業務エラーとして返します。</p>

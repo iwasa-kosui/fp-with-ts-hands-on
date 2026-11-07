@@ -74,15 +74,15 @@ for (const figure of figures) {
     }
   };
 
-  const setOld = (key, shown) => {
+  const setOld = (key, shown, reset) => {
     const state = shown ? "old" : "off";
-    cards[key].toggleAttribute("data-walk-keep", state !== cards[key].dataset.state && shown);
+    cards[key].toggleAttribute("data-walk-keep", !reset && state !== cards[key].dataset.state && shown);
     cards[key].dataset.state = state;
   };
 
-  const setCard = (key, state, withTx) => {
+  const setCard = (key, state, withTx, reset) => {
     const card = cards[key];
-    card.toggleAttribute("data-walk-keep", state !== card.dataset.state && state !== "off");
+    card.toggleAttribute("data-walk-keep", !reset && state !== card.dataset.state && state !== "off");
     card.dataset.state = state;
     if (state in chipText) card.querySelector("[data-chip]").textContent = chipText[state];
     if (slotStates.has(state) || (state === "off" && withTx)) {
@@ -109,11 +109,11 @@ for (const figure of figures) {
     tx.dataset.tx = frame.tx;
     txLabel.textContent = txText[frame.tx] ?? "transaction";
     appointments.toggleAttribute("data-read", frame.read === true);
-    setOld("old-CheckedIn", frame.old === "CheckedIn");
-    setOld("old-InExamination", frame.old === "InExamination");
-    setOld("old-audit", true);
-    setCard("state", frame.state, frame.tx !== "none");
-    setCard("audit", frame.audit, frame.tx !== "none");
+    setOld("old-CheckedIn", frame.old === "CheckedIn", reset);
+    setOld("old-InExamination", frame.old === "InExamination", reset);
+    setOld("old-audit", true, reset);
+    setCard("state", frame.state, frame.tx !== "none", reset);
+    setCard("audit", frame.audit, frame.tx !== "none", reset);
 
     if (reset) {
       void figure.offsetWidth;

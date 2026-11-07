@@ -15,6 +15,7 @@ import type {
 } from "../../sessions/types";
 import "../../styles/code-playground.css";
 import "../../styles/sessions.css";
+import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
 
 type TeachingSnippets = Readonly<{
   before: TeachingCode;
@@ -85,7 +86,7 @@ export const session: SessionSummary = {
         {
           path: "examples/session-07/src/useCase/startExamination.ts",
           symbol: "createEventContext",
-          lines: [1, 81],
+          lines: [1, 90],
           presentation: "completed-file",
         },
       ],
@@ -112,7 +113,7 @@ export const session: SessionSummary = {
       solutions: [{
         path: "examples/session-07/src/useCase/startExamination.ts",
         symbol: "startExaminationWithEffects",
-        lines: [1, 81],
+        lines: [1, 90],
         presentation: "completed-file",
       }],
     },
@@ -134,7 +135,7 @@ export const session: SessionSummary = {
         {
           path: "examples/session-07/src/useCase/startExamination.ts",
           symbol: "startExaminationWithEffects",
-          lines: [1, 81],
+          lines: [1, 90],
           presentation: "completed-file",
         },
       ],
@@ -247,12 +248,15 @@ export const createEventContext = (
   occurredAt: deps.clock.now(),
 });
 
-.map((appointment) =>
-  Appointment.startExamination(createEventContext(deps))(
-    appointment,
-    input.veterinarianId,
-  ),
-)`,
+const startExaminationEvent =
+  (deps: EffectsDependencies, veterinarianId: VeterinarianId) =>
+  (appointment: CheckedIn): ExaminationStarted =>
+    Appointment.startExamination(createEventContext(deps))(
+      appointment,
+      veterinarianId,
+    );
+
+.map(startExaminationEvent(deps, input.veterinarianId))`,
     },
   },
   {
@@ -365,26 +369,20 @@ return ok(undefined);`,
     },
     after: {
       sources: ["examples/session-07/src/useCase/startExamination.ts"],
-      code: `export const startExaminationWithEffects =
+      code: `const ensureFound =
+  (appointmentId: AppointmentId) =>
+  (appointment: AppointmentState | undefined) =>
+    ensureAppointmentFound(appointment, appointmentId);
+
+export const startExaminationWithEffects =
   (deps: EffectsDependencies) =>
   (
     input: StartExaminationWithEffectsInput,
   ): ResultAsync<InExamination, StartExaminationWithEffectsError> =>
-    ResultAsync.fromSafePromise<AppointmentState | undefined>(
-      Promise.resolve().then(() =>
-        deps.resolver.resolveById(input.appointmentId),
-      ),
-    )
-      .andThen((appointment) =>
-        ensureAppointmentFound(appointment, input.appointmentId),
-      )
+    resolveAppointment(deps)(input.appointmentId)
+      .andThen(ensureFound(input.appointmentId))
       .andThen(ensureCheckedIn)
-      .map((appointment) =>
-        Appointment.startExamination(createEventContext(deps))(
-          appointment,
-          input.veterinarianId,
-        ),
-      )
+      .map(startExaminationEvent(deps, input.veterinarianId))
       .andThrough((event) => deps.store.store(event))
       .map((event) => event.aggregateState);`,
     },
@@ -410,11 +408,12 @@ return ok(undefined);`,
     },
     after: {
       sources: ["examples/session-07/src/useCase/startExamination.ts"],
-      code: `ResultAsync.fromSafePromise<AppointmentState | undefined>(
-  Promise.resolve().then(() =>
-    deps.resolver.resolveById(input.appointmentId),
-  ),
-)`,
+      code: `const resolveAppointment =
+  (deps: EffectsDependencies) =>
+  (appointmentId: AppointmentId): ResultAsync<AppointmentState | undefined, never> =>
+    ResultAsync.fromSafePromise(
+      Promise.resolve().then(() => deps.resolver.resolveById(appointmentId)),
+    );`,
     },
     examples: [
       {
@@ -494,7 +493,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         </p>
       </section>
       <Prose
-        components={{ CodeGuideCards, CommandBlock }}
+        components={{ CodeGuideCards, CommandBlock, EpisodeIllustration }}
         session={session}
         guides={guides}
         workspace={workspace}
