@@ -370,7 +370,7 @@ const toNoticeCode = (error: StartExaminationError): string => {
     case "InvalidAppointmentState":
       return "invalid-state";
     default:
-      // errorはAppointmentConflictなので、neverへ渡せない。
+      // errorはAppointmentConflictなので、neverへ渡すとコンパイルエラーになる。
       return assertNever(error);
   }
 };`,

@@ -76,7 +76,7 @@ const frames = [
     states: ["Paid", "InExamination"],
     note: "s0",
     path: [[154, 422], [170, 412], [197, 372], [204, 316], [197, 262], [173, 220], [154, 230]],
-    caption: "ひと幕の事故です。以前の <code>updateStatus</code> はどの状態も受け取るため、会計済みの予約が診察中へ戻ります。",
+    caption: "ひと幕の事故です。状態を文字列で持っていた以前の <code>updateStatus</code> はどの状態も受け取るため、会計済みの予約が診察中へ戻ります。",
     code: {
       version: "origin" as const,
       source: "examples/session-00/src/domain/appointment/appointment.ts",
@@ -136,7 +136,7 @@ const frames = [
     states: ["Paid"],
     note: "after",
     path: [[154, 422], [172, 410], [160, 416], [172, 410], [154, 422]],
-    caption: "修正後は引数が <code>CheckedIn</code> です。<code>Paid</code> を渡すとコンパイルエラーになり、実行前に止まります。",
+    caption: "修正後は引数が <code>CheckedIn</code> です。<code>Paid</code> を渡すと型検査でコンパイルエラーになるので、実行する前に誤りに気づけます。",
     code: {
       version: "after" as const,
       source: SOLUTION,
@@ -156,10 +156,11 @@ const frames = [
     veterinarianId,
     examinationStartedAt,
   }) as const satisfies InExamination;`,
-      outputLabel: "出力: なし",
+      outputLabel: "型検査の結果: コンパイルエラー",
       outputLang: "plaintext" as const,
-      output: `コンパイルエラーになるため、 // [!key]
-この呼び出しは実行できません。 // [!key]`,
+      output: `型検査でコンパイルエラーになります。 // [!key]
+型は実行時に消えるので、 // [!key]
+実行時の検査ではありません。 // [!key]`,
     },
   },
 ];
@@ -447,7 +448,7 @@ const playerData = JSON.stringify(frames.map(({ edges, states, path, note }) => 
     font-size: 0.8rem;
     font-weight: 700;
     text-align: center;
-    opacity: 0.45;
+    opacity: 0.6;
   }
 
   .state-diagram__versions > [aria-current="step"] {
