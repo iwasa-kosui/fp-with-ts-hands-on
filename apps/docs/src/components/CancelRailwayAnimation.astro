@@ -22,9 +22,11 @@ const stageJobs = [
 const appointmentId = `"11111111-1111-4111-8111-111111111111"`;
 const request = (reason: string) => `予約ID: ${appointmentId}\n実行者ID: （受付担当者の ID）\nキャンセル理由: ${reason}`;
 const checkedInput = `検査済みの入力\n${request(`"owner request"`)}`;
-const resolved = (kind: string) => `実行者: 受付担当者\n予約: {\n  kind: "${kind}",\n  appointmentId: ${appointmentId},\n  scheduledAt: "2026-08-30T06:30:00.000Z",\n  reason: "skin check",\n}`;
-const allowed = `予約: {\n  kind: "Scheduled",\n  appointmentId: ${appointmentId},\n  scheduledAt: "2026-08-30T06:30:00.000Z",\n  reason: "skin check",\n}\nキャンセル理由: "owner request"`;
-const canceled = `AppointmentCanceled {\n  kind: "Canceled",\n  appointmentId: ${appointmentId},\n  scheduledAt: "2026-08-30T06:30:00.000Z",\n  reason: "owner request",\n  canceledAt: "2026-08-30T05:00:00.000Z",\n}`;
+const appointment = (fields: string) => `{\n  ${fields},\n  appointmentId: ${appointmentId},\n  petId: "22222222-2222-4222-8222-222222222222",\n  ownerId: "33333333-3333-4333-8333-333333333333",\n  scheduledAt: "2026-08-30T06:30:00.000Z",`;
+const cancelReason = `キャンセル理由: "owner request"`;
+const resolved = (kind: string) => `実行者: 受付担当者\n予約: ${appointment(`kind: "${kind}"`)}\n  reason: "skin check",\n}\n${cancelReason}`;
+const allowed = `予約: ${appointment(`kind: "Scheduled"`)}\n  reason: "skin check",\n}\n${cancelReason}`;
+const canceled = `AppointmentCanceled ${appointment(`kind: "Canceled"`)}\n  reason: "owner request",\n  canceledAt: "2026-08-30T05:00:00.000Z",\n}`;
 
 const carried = (failure: string, stage: number, failedAt: number, text: string): Step => ({
   text,
@@ -32,7 +34,7 @@ const carried = (failure: string, stage: number, failedAt: number, text: string)
   failedAt,
   state: stage === 4 ? "end" : "skip",
   input: failure,
-  output: stage === 4 ? "呼び出し側が失敗の理由を受け取ります" : failure,
+  output: failure,
 });
 
 const emptyReason = `失敗\n理由: キャンセル理由が空である`;
@@ -46,7 +48,7 @@ const scenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }>)[
       { text: "検査済みの入力を受け取り、実行者と予約を取得します。実行者と予約のデータを次へ渡します。", stage: 1, state: "run", input: checkedInput, output: resolved("Scheduled") },
       { text: "実行者に権限があり、予約は診察開始前の <code>Scheduled</code> です。診察開始前の予約を次へ渡します。", stage: 2, state: "run", input: resolved("Scheduled"), output: allowed },
       { text: "診察開始前の予約とキャンセル理由から、<code>Canceled</code> のデータを持つ <code>AppointmentCanceled</code> を作ります。", stage: 3, state: "run", input: allowed, output: canceled },
-      { text: "値は上のレールの終点に届きます。呼び出し側は <code>AppointmentCanceled</code> を受け取ります。", stage: 4, state: "end", input: canceled, output: "呼び出し側が AppointmentCanceled を受け取ります" },
+      { text: "値は上のレールの終点に届きます。呼び出し側は <code>AppointmentCanceled</code> を受け取ります。", stage: 4, state: "end", input: canceled, output: canceled },
     ],
   },
   {
@@ -71,7 +73,9 @@ const scenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }>)[
   },
 ];
 
-const playerScenarios = scenarios.map(({ label, steps }) => ({ label, steps: steps.map(({ text }) => text) }));
+const stepHtml = ({ text, input, output }: Step): string =>
+  `${text}<div data-step-extra><p>受け取るデータ</p><pre>${input}</pre><p>次へ渡すデータ</p><pre>${output}</pre></div>`;
+const playerScenarios = scenarios.map(({ label, steps }) => ({ label, steps: steps.map(stepHtml) }));
 const sceneData = JSON.stringify({
   names: stageNames,
   jobs: stageJobs,
@@ -83,11 +87,12 @@ const id = "cancel-railway-animation";
 <StepPlayer
   id={id}
   title="キャンセルの依頼が各工程で何を受け取り、何を渡すか"
-  lead="上の図で値の位置を、下の3つの枠で入力と出力を確かめます。失敗しても処理は途中で抜けません。失敗の値は下のレールを終点まで進みます。"
-  note="予約のデータはこのページの例と同じです。実行者 ID と受付担当者は説明用の表記です。Paid の場面の予約は、説明用に kind だけを変えたものです。"
+  lead="各工程で受け取るデータと次へ渡すデータを確かめます。失敗しても処理は途中で抜けません。失敗の値は下のレールを終点まで進みます。"
+  note="予約のデータはこのページの例と同じです。実行者 ID と受付担当者は説明用の表記です。Paid の場面の予約は、説明用に kind だけを変えたものです。canceledAt の時刻の作り方は S6 で扱うので、ここでは省略します。"
   scenarios={playerScenarios}
 >
   <div class="cancel-rail" data-cancel-rail={sceneData}>
+    <p class="cancel-rail__legend"><span>上: 成功レール</span><span>下: 失敗レール</span></p>
     <div class="cancel-rail__map">
       <span class="cancel-rail__token" data-token></span>
       <div class="cancel-rail__line cancel-rail__line--ok"></div>
@@ -103,13 +108,16 @@ const id = "cancel-railway-animation";
     <div class="cancel-rail__io">
       <div class="cancel-rail__box"><p>受け取るデータ</p><pre data-input></pre></div>
       <div class="cancel-rail__job" data-job-box><strong data-name></strong><span data-job></span></div>
-      <div class="cancel-rail__box" data-output-box><p>次へ渡すデータ</p><pre data-output></pre></div>
+      <div class="cancel-rail__box" data-output-box><p data-output-label>次へ渡すデータ</p><pre data-output></pre></div>
     </div>
   </div>
 </StepPlayer>
 
 <style is:inline>
   .cancel-rail { --ok: #137333; --bad: #b42318; display: grid; gap: 1rem; min-width: 0; }
+  .cancel-rail__legend { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin: 0; font-size: 0.75rem; font-weight: 700; }
+  .cancel-rail__legend span:first-child { color: var(--ok); }
+  .cancel-rail__legend span:last-child { color: var(--bad); }
   .cancel-rail__map { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); min-width: 0; }
   .cancel-rail__line { position: absolute; left: 10%; right: 10%; height: 5px; border-radius: 3px; }
   .cancel-rail__line--ok { top: 0.75rem; background: var(--ok); }
@@ -158,6 +166,8 @@ const id = "cancel-railway-animation";
     });
     scene.querySelector("[data-input]").textContent = step.input;
     scene.querySelector("[data-output]").textContent = step.output;
+    scene.querySelector("[data-output-label]").textContent =
+      step.state === "end" ? "呼び出し側が受け取るデータ" : "次へ渡すデータ";
     scene.querySelector("[data-name]").textContent = data.names[step.stage];
     scene.querySelector("[data-job]").textContent =
       step.state === "skip" ? "失敗レールの上なので、この工程は実行しません。" : data.jobs[step.stage];

@@ -22,7 +22,6 @@ const { id, title, lead, note, scenarios } = Astro.props;
 <figure class="step-player" data-step-player id={id}>
   <figcaption class="step-player__title">{title}</figcaption>
   {lead && <p class="step-player__lead" set:html={lead} />}
-  <div class="step-player__scene" data-step-player-scene hidden aria-hidden="true"><slot /></div>
   <div class="step-player__controls" data-step-player-controls hidden>
     {scenarios.length > 1 && (
       <div class="step-player__tabs" role="group" aria-label="場面を選ぶ">
@@ -47,6 +46,7 @@ const { id, title, lead, note, scenarios } = Astro.props;
       </div>
     ))}
   </div>
+  <div class="step-player__scene" data-step-player-scene hidden aria-hidden="true"><slot /></div>
   {note && <p class="step-player__note" set:html={note} />}
 </figure>
 

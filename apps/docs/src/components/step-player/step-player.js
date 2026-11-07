@@ -46,7 +46,9 @@ const initPlayer = (root) => {
   };
 
   const schedule = () => {
-    const text = scenarios[scenarioIndex].steps[stepIndex].textContent ?? "";
+    const li = scenarios[scenarioIndex].steps[stepIndex];
+    const extra = li.querySelector("[data-step-extra]")?.textContent ?? "";
+    const text = (li.textContent ?? "").slice(0, -extra.length || undefined);
     timer = window.setTimeout(() => {
       stepIndex = nextStep(stepIndex, stepCount());
       if (stepIndex === stepCount() - 1) stop();
