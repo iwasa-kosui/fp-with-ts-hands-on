@@ -1,4 +1,5 @@
 ---
+import AdtValueCount from "../../components/AdtValueCount.astro";
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
 import GuardTable from "../../components/GuardTable.astro";
@@ -290,7 +291,7 @@ ${session.exerciseCommand} を成功させてください。
         </p>
       </section>
       <Prose
-        components={{ CodeGuideCards, CommandBlock, EpisodeIllustration, GuardTable, NeverEmptySet }}
+        components={{ AdtValueCount, CodeGuideCards, CommandBlock, EpisodeIllustration, GuardTable, NeverEmptySet }}
         session={session}
         guides={guides}
         workspace={workspace}

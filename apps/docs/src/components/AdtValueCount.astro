@@ -1,0 +1,999 @@
+---
+import { Code } from "astro:components";
+import type { ComponentProps } from "astro/types";
+import statusLabelSource from "../../../../examples/session-03/src/domain/appointment/statusLabel.ts?raw";
+
+type Props = { before: string; after: string };
+
+const { before, after } = Astro.props;
+
+const KEY_MARK = /\s*\/\/ \[!key\]$/;
+type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
+const markKeyLines: Transformer = {
+  name: "adt-count-mark-key-lines",
+  preprocess(code) {
+    const lines = code.split("\n");
+    (this.meta as { keyLines?: number[] }).keyLines = lines.flatMap((line, index) => (KEY_MARK.test(line) ? [index + 1] : []));
+    return lines.map((line) => line.replace(KEY_MARK, "")).join("\n");
+  },
+  line(node, line) {
+    if ((this.meta as { keyLines?: number[] }).keyLines?.includes(line)) this.addClassToHast(node, "adt-count__key");
+  },
+};
+
+const lineIndex = (lines: string[], matches: (line: string) => boolean, description: string, from = 0) => {
+  const index = lines.findIndex((line, position) => position >= from && matches(line));
+  if (index < 0) throw new Error(`AdtValueCount: ${description} が見つかりません`);
+  return index;
+};
+const markRange = (lines: string[], start: number, end: number) =>
+  lines.map((line, index) => (index >= start && index <= end ? `${line} // [!key]` : line)).join("\n");
+
+const kinds = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Paid", "Canceled"] as const;
+
+const beforeLines = before.split("\n");
+const booleanLines = beforeLines.flatMap((line, index) => (line.trim().endsWith(": boolean;") ? [index] : []));
+if (booleanLines.length !== 5) throw new Error("AdtValueCount: before に boolean のフラグが5個ありません");
+const beforeCode = markRange(beforeLines, booleanLines[0], booleanLines[4]);
+
+const afterLines = after.split("\n");
+const unionStart = lineIndex(afterLines, (line) => line.startsWith("type Appointment ="), "type Appointment =");
+const unionEnd = lineIndex(afterLines, (line) => line.trim() === "| Canceled;", "| Canceled;", unionStart);
+const canceledStart = lineIndex(afterLines, (line) => line.startsWith("type Canceled = Readonly<{"), "type Canceled = Readonly<{");
+const canceledEnd = lineIndex(afterLines, (line) => line === "}>;", "}>;", canceledStart);
+const unionCode = markRange(afterLines, unionStart, unionEnd);
+const canceledCode = markRange(afterLines, canceledStart, canceledEnd);
+
+const labelLines = statusLabelSource.split("\n");
+const switchStart = lineIndex(labelLines, (line) => line.trim() === "switch (appointment.kind) {", "switch (appointment.kind) {");
+const caseLines = kinds.flatMap((kind) => {
+  const caseIndex = lineIndex(labelLines, (line) => line.trim() === `case "${kind}":`, `case "${kind}":`, switchStart);
+  const returnLine = labelLines[caseIndex + 1];
+  if (!returnLine?.trim().startsWith('return "')) throw new Error(`AdtValueCount: case "${kind}" の return が見つかりません`);
+  return [`${labelLines[caseIndex].replace(/^ {2}/, "")} // [!key]`, `${returnLine.replace(/^ {2}/, "")} // [!key]`];
+});
+const switchCode = [labelLines[switchStart].replace(/^ {2}/, ""), ...caseLines, "}"].join("\n");
+
+const noShowCode = `type Appointment =
+  | Scheduled
+  | CheckedIn
+  | InExamination
+  | AwaitingPayment
+  | Paid
+  | Canceled
+  | NoShow; // [!key]`;
+
+const flagsCode = `type Flags = Readonly<{
+  isCheckedIn: boolean; // [!key]
+  isPaid: boolean; // [!key]
+}>;`;
+
+const flagNames = ["isCheckedIn", "isExaminationStarted", "isExaminationCompleted", "isPaid", "isCanceled"];
+const indexOf = (...on: string[]) =>
+  flagNames.reduce((sum, name, position) => sum + (on.includes(name) ? 2 ** (flagNames.length - 1 - position) : 0), 0);
+const usedTiles = new Map<number, string>([
+  [indexOf(), "Scheduled"],
+  [indexOf("isCheckedIn"), "CheckedIn"],
+  [indexOf("isCheckedIn", "isExaminationStarted"), "InExamination"],
+  [indexOf("isCheckedIn", "isExaminationStarted", "isExaminationCompleted"), "AwaitingPayment"],
+  [indexOf("isCheckedIn", "isExaminationStarted", "isExaminationCompleted", "isPaid"), "Paid"],
+  [indexOf("isCanceled"), "Canceled"],
+]);
+const impossibleTile = indexOf("isPaid", "isCanceled");
+const allTiles = Array.from({ length: 2 ** flagNames.length }, (_, index) => index);
+
+const booleans = [false, true];
+const canceledFields = ['kind: "Canceled"', "appointmentId", "reason", "canceledAt"];
+
+const frames = [
+  {
+    id: "intro",
+    badge: "図",
+    tone: "neutral",
+    text: "ADT（代数的データ型）は、型を「かつ」と「または」で組み立てる考え方です。「かつ」で組み立てた型を直積型、「または」で組み立てた型を直和型と呼びます。",
+  },
+  {
+    id: "product",
+    badge: "直積型",
+    tone: "neutral",
+    code: flagsCode,
+    text: "直積型の値は、項目をすべて持ちます。isCheckedIn の2通りと isPaid の2通りを掛けて、組み合わせは 2 × 2 = 4 通りです。",
+  },
+  {
+    id: "before",
+    badge: "修正前",
+    tone: "before",
+    codeLabel: "修正前: フラグの直積型",
+    code: beforeCode,
+    text: "修正前は、5個のフラグの直積型で予約を表します。組み合わせは 2 × 2 × 2 × 2 × 2 = 32 通りです。6状態に6通りを割り当てても、会計済みかつキャンセル済みのような残りの26通りも型検査を通ります。",
+  },
+  {
+    id: "sum",
+    badge: "修正後",
+    tone: "after",
+    codeLabel: "修正後: 状態の直和型",
+    code: unionCode,
+    text: "修正後は、6状態の直和型で予約を表します。kind の候補は 1 + 1 + 1 + 1 + 1 + 1 = 6 通りです。会計済みかつキャンセル済みのような、業務で起きない組み合わせは候補に入りません。",
+  },
+  {
+    id: "fields",
+    badge: "修正後",
+    tone: "after",
+    codeLabel: "修正後: 状態の直和型",
+    code: canceledCode,
+    text: "直和型の各候補は、直積型です。Canceled は kind、appointmentId、reason、canceledAt をすべて持ちます。ADT は、直積型と直和型を組み合わせて型を作ります。",
+  },
+  {
+    id: "exhaustive",
+    badge: "網羅",
+    tone: "neutral",
+    code: switchCode,
+    text: "直和型は候補を列挙できます。switch で6個の case を処理すると、残りの候補が0個だと数えられます。",
+  },
+  {
+    id: "extend",
+    badge: "状態を追加",
+    tone: "neutral",
+    code: noShowCode,
+    text: "NoShow を足して case を足し忘れると、残りの候補は NoShow の1個です。次の節の assertNever を使うと、この残りを型検査のエラーとして見つけられます。",
+  },
+];
+---
+
+<figure class="adt-count" data-adt-count>
+  <div class="adt-count__controls" data-adt-controls hidden>
+    <button type="button" data-adt-first>⏮ 最初へ</button>
+    <button type="button" data-adt-prev aria-keyshortcuts="ArrowLeft">← 前へ</button>
+    <button type="button" data-adt-play>▶ 再生</button>
+    <button type="button" data-adt-next aria-keyshortcuts="ArrowRight">次へ →</button>
+    <span class="adt-count__progress" data-adt-progress></span>
+  </div>
+  <p class="adt-count__status" data-adt-status aria-live="polite" hidden></p>
+  <ol class="adt-count__frames">
+    {
+      frames.map((frame, frameIndex) => (
+        <li class="adt-count__frame" data-adt-frame>
+          <div class="adt-count__head">
+            <span class="adt-count__number">{frameIndex + 1} / {frames.length}</span>
+            <span class={`adt-count__badge adt-count__badge--${frame.tone}`}>{frame.badge}</span>
+          </div>
+          {frame.code && (
+            <div class={`adt-count__code adt-count__code--${frame.tone}`}>
+              {frame.codeLabel && <p class="adt-count__code-label">{frame.codeLabel}</p>}
+              <Code code={frame.code} lang="typescript" transformers={[markKeyLines]} />
+            </div>
+          )}
+          <div class="adt-count__diagram">
+            {frame.id === "intro" && (
+              <div class="adt-count__boxes">
+                <div class="adt-count__box">
+                  <p class="adt-count__box-title">かつ（直積型）</p>
+                  <div class="adt-count__operands">
+                    <span class="adt-count__tile adt-count__tile--item" style="--i: 0">項目A</span>
+                    <span class="adt-count__operator">×</span>
+                    <span class="adt-count__tile adt-count__tile--item" style="--i: 1">項目B</span>
+                  </div>
+                  <p class="adt-count__box-note">項目をすべて持つ</p>
+                </div>
+                <div class="adt-count__box">
+                  <p class="adt-count__box-title">または（直和型）</p>
+                  <div class="adt-count__operands">
+                    <span class="adt-count__tile adt-count__tile--item" style="--i: 2">候補A</span>
+                    <span class="adt-count__operator">＋</span>
+                    <span class="adt-count__tile adt-count__tile--item" style="--i: 3">候補B</span>
+                  </div>
+                  <p class="adt-count__box-note">候補のどれか1つ</p>
+                </div>
+              </div>
+            )}
+            {frame.id === "product" && (
+              <>
+                <table class="adt-count__table">
+                  <thead>
+                    <tr>
+                      <td />
+                      {booleans.map((paid) => (
+                        <th scope="col">
+                          <span>isPaid:</span>
+                          <span>{String(paid)}</span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {booleans.map((checkedIn, row) => (
+                      <tr>
+                        <th scope="row">
+                          <span>isCheckedIn:</span>
+                          <span>{String(checkedIn)}</span>
+                        </th>
+                        {booleans.map((_, column) => (
+                          <td>
+                            <span class="adt-count__tile adt-count__tile--used adt-count__tile--cell" style={`--i: ${row * 2 + column}`} />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p class="adt-count__formula">2 × 2 = 4 通り</p>
+              </>
+            )}
+            {frame.id === "before" && (
+              <>
+                <div class="adt-count__grid-wrap">
+                  <p class="adt-count__bubble">会計済みかつキャンセル済み</p>
+                  <div class="adt-count__grid" aria-hidden="true">
+                    {allTiles.map((tile) => (
+                      <span
+                        class:list={[
+                          "adt-count__tile",
+                          "adt-count__tile--grid",
+                          usedTiles.has(tile) ? "adt-count__tile--used" : tile === impossibleTile ? "adt-count__tile--danger" : "adt-count__tile--unused",
+                        ]}
+                        style={`--i: ${tile}`}
+                      >
+                        <span class="adt-count__tile-name">{usedTiles.get(tile)}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <ul class="adt-count__legend">
+                  <li><span class="adt-count__swatch adt-count__tile--used" aria-hidden="true"></span>6状態に割り当てた組み合わせ（6個）</li>
+                  <li><span class="adt-count__swatch adt-count__tile--danger" aria-hidden="true"></span>会計済みかつキャンセル済み</li>
+                  <li><span class="adt-count__swatch adt-count__tile--unused" aria-hidden="true"></span>使わない組み合わせ</li>
+                </ul>
+                <p class="adt-count__formula">2 × 2 × 2 × 2 × 2 = 32 通り</p>
+                <p class="adt-count__formula-note">使うのは6通り、残り26通りも型検査を通る</p>
+              </>
+            )}
+            {frame.id === "sum" && (
+              <>
+                <ol class="adt-count__stack">
+                  {kinds.map((kind, kindIndex) => (
+                    <>
+                      {kindIndex > 0 && <li class="adt-count__operator" aria-hidden="true">＋</li>}
+                      <li>
+                        <span class="adt-count__tile adt-count__tile--used adt-count__tile--wide" style={`--i: ${kindIndex}`}>{kind}</span>
+                      </li>
+                    </>
+                  ))}
+                </ol>
+                <p class="adt-count__formula">1 + 1 + 1 + 1 + 1 + 1 = 6 候補</p>
+              </>
+            )}
+            {frame.id === "fields" && (
+              <ol class="adt-count__stack">
+                {kinds.map((kind, kindIndex) => (
+                  <>
+                    {kindIndex > 0 && <li class="adt-count__operator" aria-hidden="true">＋</li>}
+                    {kind === "Canceled" ? (
+                      <li class="adt-count__canceled">
+                        <span class="adt-count__tile adt-count__tile--used adt-count__tile--wide adt-count__tile--strong">{kind}</span>
+                        <span class="adt-count__fields">
+                          {canceledFields.map((field, fieldIndex) => (
+                            <>
+                              {fieldIndex > 0 && <span class="adt-count__operator">×</span>}
+                              <span class="adt-count__tile adt-count__tile--item" style={`--i: ${fieldIndex + 1}`}>{field}</span>
+                            </>
+                          ))}
+                        </span>
+                      </li>
+                    ) : (
+                      <li>
+                        <span class="adt-count__tile adt-count__tile--used adt-count__tile--wide adt-count__tile--dim">{kind}</span>
+                      </li>
+                    )}
+                  </>
+                ))}
+              </ol>
+            )}
+            {frame.id === "exhaustive" && (
+              <>
+                <ul class="adt-count__checks">
+                  {kinds.map((kind, kindIndex) => (
+                    <li>
+                      <span class="adt-count__tile adt-count__tile--used adt-count__tile--wide adt-count__tile--static">
+                        {kind}
+                        <span class="adt-count__check" style={`--i: ${kindIndex}`}>✓</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p class="adt-count__formula adt-count__formula--ok">残りの候補: 0 個</p>
+              </>
+            )}
+            {frame.id === "extend" && (
+              <>
+                <ul class="adt-count__checks">
+                  {kinds.map((kind) => (
+                    <li>
+                      <span class="adt-count__tile adt-count__tile--used adt-count__tile--wide adt-count__tile--static">
+                        {kind}
+                        <span class="adt-count__check adt-count__check--static">✓</span>
+                      </span>
+                    </li>
+                  ))}
+                  <li>
+                    <span class="adt-count__tile adt-count__tile--danger adt-count__tile--wide" style="--i: 0">NoShow</span>
+                  </li>
+                </ul>
+                <p class="adt-count__formula adt-count__formula--error">残りの候補: 1 個（NoShow）</p>
+              </>
+            )}
+          </div>
+          <p class="adt-count__text" data-adt-text>{frame.text}</p>
+        </li>
+      ))
+    }
+  </ol>
+</figure>
+
+<script is:inline type="module">
+  const AUTO_PLAY_INTERVAL_MS = 6000;
+
+  const setup = (root) => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const frames = [...root.querySelectorAll("[data-adt-frame]")];
+    const controls = root.querySelector("[data-adt-controls]");
+    const status = root.querySelector("[data-adt-status]");
+    const progress = root.querySelector("[data-adt-progress]");
+    const first = root.querySelector("[data-adt-first]");
+    const prev = root.querySelector("[data-adt-prev]");
+    const play = root.querySelector("[data-adt-play]");
+    const next = root.querySelector("[data-adt-next]");
+    if (frames.length === 0 || !controls || !status || !progress || !first || !prev || !play || !next) return;
+
+    const last = frames.length - 1;
+    let current = 0;
+    let timer;
+    let observer;
+
+    const render = () => {
+      frames.forEach((frame, index) => frame.classList.toggle("is-current", index === current));
+      status.textContent = frames[current].querySelector("[data-adt-text]")?.textContent ?? "";
+      progress.textContent = `${current + 1} / ${frames.length}`;
+      first.disabled = current === 0;
+      prev.disabled = current === 0;
+      next.disabled = current === last;
+      play.textContent = timer !== undefined ? "❚❚ 一時停止" : "▶ 再生";
+    };
+
+    const stop = () => {
+      window.clearInterval(timer);
+      timer = undefined;
+    };
+
+    const moveTo = (index) => {
+      current = Math.min(Math.max(index, 0), last);
+      render();
+    };
+
+    const start = () => {
+      timer = window.setInterval(() => {
+        if (current === last - 1) stop();
+        moveTo(current + 1);
+      }, AUTO_PLAY_INTERVAL_MS);
+      render();
+    };
+
+    const interrupt = () => {
+      observer?.disconnect();
+      stop();
+    };
+
+    play.addEventListener("click", () => {
+      observer?.disconnect();
+      if (timer !== undefined) {
+        stop();
+        render();
+        return;
+      }
+      if (current === last) moveTo(0);
+      start();
+    });
+
+    first.addEventListener("click", () => {
+      interrupt();
+      moveTo(0);
+    });
+
+    prev.addEventListener("click", () => {
+      interrupt();
+      moveTo(current - 1);
+    });
+
+    next.addEventListener("click", () => {
+      interrupt();
+      moveTo(current + 1);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.defaultPrevented || event.repeat) return;
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      const delta = event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : 0;
+      if (delta === 0) return;
+      const active = document.activeElement;
+      if (active && active !== document.body && !root.contains(active)) return;
+      if (!root.contains(active)) {
+        const { top, bottom } = root.getBoundingClientRect();
+        if (bottom <= 0 || top >= window.innerHeight) return;
+      }
+      event.preventDefault();
+      interrupt();
+      moveTo(current + delta);
+    });
+
+    root.classList.add("is-enhanced");
+    controls.hidden = false;
+    status.hidden = false;
+    render();
+
+    if (reduceMotion) {
+      play.hidden = true;
+      return;
+    }
+
+    observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        start();
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(controls);
+  };
+
+  document.querySelectorAll("[data-adt-count]").forEach(setup);
+</script>
+
+<style>
+  .adt-count {
+    --adt-ok: #137333;
+    --adt-ok-bg: #e6f4ea;
+    --adt-error: #b42318;
+    --adt-error-bg: #fdecea;
+    margin: 1.25rem 0;
+    container-type: inline-size;
+  }
+
+  .adt-count__controls:not([hidden]) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .adt-count__controls button {
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    white-space: nowrap;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--case-paper);
+    color: var(--case-ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .adt-count__controls button[data-adt-play] {
+    background: var(--case-yellow);
+  }
+
+  .adt-count__controls button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .adt-count__controls [hidden] {
+    display: none;
+  }
+
+  .adt-count__progress {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .adt-count__status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .adt-count__frames {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .adt-count__frame {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .adt-count__frame + .adt-count__frame {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed var(--case-line);
+  }
+
+  .adt-count__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .adt-count__number {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .adt-count__badge {
+    padding: 0.125rem 0.75rem;
+    border: 2px solid var(--case-line);
+    border-radius: 999px;
+    background: var(--case-paper);
+    color: var(--case-ink);
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .adt-count__badge--before {
+    border-color: var(--adt-error);
+    background: var(--adt-error);
+    color: #fff;
+  }
+
+  .adt-count__badge--after {
+    border-color: var(--adt-ok);
+    background: var(--adt-ok);
+    color: #fff;
+  }
+
+  .adt-count__code {
+    min-width: 0;
+    border: 3px solid var(--case-line);
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .adt-count__code--before {
+    border-color: var(--adt-error);
+  }
+
+  .adt-count__code--after {
+    border-color: var(--adt-ok);
+  }
+
+  .adt-count__code-label {
+    margin: 0;
+    padding: 0.35rem 0.75rem;
+    background: var(--case-paper);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .adt-count__code--before .adt-count__code-label {
+    background: var(--adt-error);
+    color: #fff;
+  }
+
+  .adt-count__code--after .adt-count__code-label {
+    background: var(--adt-ok);
+    color: #fff;
+  }
+
+  .adt-count__code :global(pre) {
+    margin: 0;
+    padding: 0.75rem 0;
+    border-radius: 0;
+    overflow-x: auto;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  .adt-count__code :global(code) {
+    display: grid;
+    min-width: max-content;
+  }
+
+  .adt-count__code :global(.line) {
+    padding: 0 0.875rem;
+    border-left: 4px solid transparent;
+  }
+
+  .adt-count :global(.adt-count__key) {
+    border-left-color: #ffd84d;
+    background: rgb(255 216 77 / 22%);
+  }
+
+  .adt-count__diagram {
+    min-width: 0;
+  }
+
+  .adt-count__text {
+    margin: 0;
+    line-height: 1.7;
+  }
+
+  .adt-count__tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-sizing: border-box;
+    min-width: 0;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--case-cream);
+    color: var(--case-ink);
+    font-weight: 700;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  .adt-count__tile--item {
+    min-height: 2.5rem;
+    padding: 0.25rem 0.75rem;
+  }
+
+  .adt-count__tile--used {
+    border-color: var(--adt-ok);
+    background: var(--adt-ok-bg);
+    color: #0d5226;
+  }
+
+  .adt-count__tile--unused {
+    border-color: #c4c7cc;
+    background: #eceef1;
+    color: #5f6368;
+  }
+
+  .adt-count__tile--danger {
+    border: 3px solid var(--adt-error);
+    background: var(--adt-error-bg);
+    color: var(--adt-error);
+  }
+
+  .adt-count__tile--dim {
+    opacity: 0.45;
+  }
+
+  .adt-count__tile--strong {
+    border-width: 4px;
+  }
+
+  .adt-count__tile--wide {
+    width: 100%;
+    min-height: 2.25rem;
+    padding: 0.25rem 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.875rem;
+  }
+
+  .adt-count__tile--cell {
+    width: 100%;
+    height: 2.5rem;
+  }
+
+  .adt-count__tile--grid {
+    min-height: 0;
+    padding: 0;
+    aspect-ratio: 1 / 0.9;
+    border-width: 2px;
+    font-size: calc(min(100cqw, 44rem) * 0.013 - 1px);
+    font-weight: 600;
+    line-height: 1.1;
+    overflow: hidden;
+    word-break: keep-all;
+    overflow-wrap: normal;
+  }
+
+  .adt-count__tile--grid.adt-count__tile--danger {
+    border-width: 3px;
+  }
+
+  .adt-count__boxes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .adt-count__box {
+    padding: 0.75rem;
+    border: 3px solid var(--case-line);
+    border-radius: 1.25rem;
+    background: var(--case-paper);
+  }
+
+  .adt-count__box p {
+    margin: 0;
+  }
+
+  .adt-count__box-title {
+    font-weight: 700;
+  }
+
+  .adt-count__box-note {
+    font-size: 0.875rem;
+    text-align: center;
+  }
+
+  .adt-count__operands {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+  }
+
+  .adt-count__operator {
+    color: var(--case-line);
+    font-size: 1.25rem;
+    font-weight: 800;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .adt-count__table {
+    width: 100%;
+    max-width: 26rem;
+    margin: 0 auto;
+    border-collapse: separate;
+    border-spacing: 0.5rem;
+    table-layout: fixed;
+  }
+
+  .adt-count__table th {
+    padding: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  .adt-count__table th span {
+    display: block;
+  }
+
+  .adt-count__table th[scope="row"] {
+    text-align: right;
+  }
+
+  .adt-count__table td {
+    padding: 0;
+  }
+
+  .adt-count__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem 1.25rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.875rem;
+  }
+
+  .adt-count__legend > li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+  }
+
+  .adt-count__swatch {
+    flex: none;
+    box-sizing: border-box;
+    width: 1.125rem;
+    height: 1rem;
+    border-style: solid;
+    border-width: 2px;
+    border-radius: 0.25rem;
+  }
+
+  .adt-count__formula {
+    margin: 0.75rem 0 0;
+    font-size: clamp(1.125rem, 6cqw, 1.75rem);
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .adt-count__formula--ok {
+    color: var(--adt-ok);
+  }
+
+  .adt-count__formula--error {
+    color: var(--adt-error);
+  }
+
+  .adt-count__formula-note {
+    margin: 0.25rem 0 0;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .adt-count__grid-wrap {
+    position: relative;
+    max-width: 44rem;
+    margin: 0 auto;
+    padding-top: 2.75rem;
+  }
+
+  .adt-count__grid {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 0.25rem;
+  }
+
+  .adt-count__bubble {
+    position: absolute;
+    top: 0;
+    left: 43.75%;
+    margin: 0;
+    padding: 0.25rem 0.625rem;
+    transform: translateX(-50%);
+    border: 2px solid var(--adt-error);
+    border-radius: 0.5rem;
+    background: #fff;
+    color: var(--adt-error);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .adt-count__bubble::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -0.4rem;
+    border: 0.4rem solid transparent;
+    border-top-color: var(--adt-error);
+  }
+
+  .adt-count__stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    max-width: 20rem;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+  }
+
+  .adt-count__stack > li {
+    margin: 0;
+  }
+
+  .adt-count__stack > .adt-count__operator {
+    font-size: 1rem;
+  }
+
+  .adt-count__canceled {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .adt-count__fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .adt-count__fields .adt-count__tile {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.8125rem;
+  }
+
+  .adt-count__checks {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .adt-count__checks > li {
+    margin: 0;
+  }
+
+  .adt-count__check {
+    color: var(--adt-ok);
+    font-family: inherit;
+    font-size: 1rem;
+  }
+
+  .adt-count.is-enhanced .adt-count__number {
+    display: none;
+  }
+
+  .adt-count.is-enhanced .adt-count__frame:not(.is-current) {
+    display: none;
+  }
+
+  .adt-count.is-enhanced .adt-count__frame + .adt-count__frame {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .adt-count.is-enhanced .adt-count__frame.is-current .adt-count__tile:not(.adt-count__tile--static) {
+      animation: adt-count-pop 0.35s ease-out both;
+      animation-delay: calc(var(--i, 0) * 0.12s);
+    }
+
+    .adt-count.is-enhanced .adt-count__frame.is-current .adt-count__tile--grid {
+      animation-delay: calc(var(--i, 0) * 0.04s);
+    }
+
+    .adt-count.is-enhanced .adt-count__frame.is-current .adt-count__tile--wide:not(.adt-count__tile--dim) {
+      animation-delay: calc(var(--i, 0) * 0.12s);
+    }
+
+    .adt-count.is-enhanced .adt-count__frame.is-current .adt-count__check:not(.adt-count__check--static) {
+      animation: adt-count-pop 0.35s ease-out both;
+      animation-delay: calc(0.4s + var(--i, 0) * 0.35s);
+    }
+
+    @keyframes adt-count-pop {
+      from {
+        opacity: 0;
+        transform: scale(0.6);
+      }
+    }
+  }
+
+  @container (max-width: 34rem) {
+    .adt-count__boxes {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .adt-count__controls button {
+      padding: 0 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .adt-count__grid {
+      gap: 0.1875rem;
+    }
+
+    .adt-count__tile--grid {
+      border-width: 1px;
+    }
+
+    .adt-count__tile-name {
+      display: none;
+    }
+  }
+
+  @container (min-width: 34rem) {
+    .adt-count__canceled {
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .adt-count__stack:has(.adt-count__canceled) {
+      max-width: 44rem;
+    }
+
+    .adt-count__canceled > .adt-count__tile {
+      flex: 0 0 12rem;
+      width: auto;
+    }
+  }
+</style>
