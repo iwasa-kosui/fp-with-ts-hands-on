@@ -49,6 +49,7 @@ for (const figure of figures) {
   const diagram = figure.querySelector(".sb-diagram");
 
   const showPane = (name, spec, instant) => {
+    const wasHidden = boxEls[name].hasAttribute("data-hidden");
     boxEls[name].toggleAttribute("data-hidden", spec === null);
     boxEls[name].inert = spec === null;
     if (spec === null) return;
@@ -60,12 +61,28 @@ for (const figure of figures) {
       pane.toggleAttribute("data-active", active);
       code.toggleAttribute("data-has-active", marked.size > 0);
       [...code.children].forEach((line, index) => line.classList.toggle("is-active", marked.has(index)));
+      if (active) {
+        const stack = pane.parentElement;
+        if (instant || wasHidden) stack.style.transition = "none";
+        stack.style.height = `${Math.ceil(pane.getBoundingClientRect().height)}px`;
+        if (instant || wasHidden) {
+          void stack.offsetHeight;
+          stack.style.transition = "";
+        }
+      }
       if (name === "impl" && active) revealFirst(pane.querySelector("pre"), code, marked, instant || !wasActive);
     }
   };
 
+  const setOld = (key, shown) => {
+    const state = shown ? "old" : "off";
+    cards[key].toggleAttribute("data-walk-keep", state !== cards[key].dataset.state && shown);
+    cards[key].dataset.state = state;
+  };
+
   const setCard = (key, state, withTx) => {
     const card = cards[key];
+    card.toggleAttribute("data-walk-keep", state !== card.dataset.state && state !== "off");
     card.dataset.state = state;
     if (state in chipText) card.querySelector("[data-chip]").textContent = chipText[state];
     if (slotStates.has(state) || (state === "off" && withTx)) {
@@ -92,9 +109,9 @@ for (const figure of figures) {
     tx.dataset.tx = frame.tx;
     txLabel.textContent = txText[frame.tx] ?? "transaction";
     appointments.toggleAttribute("data-read", frame.read === true);
-    cards["old-CheckedIn"].dataset.state = frame.old === "CheckedIn" ? "old" : "off";
-    cards["old-InExamination"].dataset.state = frame.old === "InExamination" ? "old" : "off";
-    cards["old-audit"].dataset.state = "old";
+    setOld("old-CheckedIn", frame.old === "CheckedIn");
+    setOld("old-InExamination", frame.old === "InExamination");
+    setOld("old-audit", true);
     setCard("state", frame.state, frame.tx !== "none");
     setCard("audit", frame.audit, frame.tx !== "none");
 

@@ -39,8 +39,14 @@
   min-width: 0;
 }
 
+.walk[data-walk-ready] .sb-stack {
+  overflow: hidden;
+  transition: height 0.3s ease;
+}
+
 .sb-pane {
   grid-area: 1 / 1;
+  align-self: start;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -349,6 +355,7 @@
 
 .sb.is-reset .sb-card,
 .sb.is-reset .sb-tx,
+.sb.is-reset .sb-stack,
 .sb.is-reset .sb-box {
   transition: none;
 }

@@ -54,7 +54,8 @@ for (const root of roots) {
       const target = root.querySelector("[data-walk-focus]");
       if (target === null) return;
       const box = target.getBoundingClientRect();
-      const key = `${box.top}|${box.bottom}`;
+      const keeps = [...root.querySelectorAll("[data-walk-keep]")].map((el) => el.getBoundingClientRect());
+      const key = [box, ...keeps].map((rect) => `${rect.top}|${rect.bottom}`).join(",");
       still = key === seen ? still + 1 : 0;
       seen = key;
       ticks += 1;
@@ -65,8 +66,11 @@ for (const root of roots) {
       const shown = sticky.getBoundingClientRect().bottom;
       if (shown <= 0 || shown >= innerHeight) return;
       const stuck = (parseFloat(getComputedStyle(sticky).top) || 0) + sticky.offsetHeight;
-      if (box.top >= stuck && box.bottom <= innerHeight) return;
-      scrollBy({ top: box.top - stuck - 8, behavior: reduced.matches ? "instant" : "smooth" });
+      let top = box.top >= stuck && box.bottom <= innerHeight ? 0 : box.top - stuck - 8;
+      const lowest = Math.max(...keeps.map((rect) => rect.bottom));
+      if (lowest - top > innerHeight - 8) top = lowest - innerHeight + 8;
+      if (top === 0) return;
+      scrollBy({ top, behavior: reduced.matches ? "instant" : "smooth" });
     };
     requestAnimationFrame(tick);
   };
