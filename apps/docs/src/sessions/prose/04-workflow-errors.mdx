@@ -48,42 +48,19 @@ import InlineCode from "../../components/InlineCode.astro";
 
 <section id="teach">
   <h2>事前知識（{props.session.timeBreakdown.teach}分）</h2>
-  <p>まずROP（Railway Oriented Programming）の考え方を学び、失敗を値で返すコードをisErrで書いたときの煩雑さを確かめます。次にneverthrowのResultとResultに含める失敗の基準を整理し、andThenとmapをROPの図と見比べます。</p>
-  <article class="teaching-topic" id="rop-recap">
-    <h3>ROPで失敗の流れを捉える</h3>
-    <p>診察開始は、入力を検査する、対象を取得する、権限と状態を確認する、結果を作る、という工程を順に実行します。ROPは、この工程の流れを成功と失敗の2本のレールで捉える考え方です。</p>
-    <p>各工程は、成功なら次の工程へ値を渡し、失敗なら下のレールへ移って後続の工程を飛ばします。失敗の値は下のレールを終点まで進みます。</p>
-    <RailwayOrientedProgramming />
-    <p>ROPを使うと、予約が見つからない、来院済みでないといった工程ごとの失敗を、同じ流れで扱えます。失敗した後に状態遷移や保存だけが実行され、途中の状態が残ることを防げます。図の工程と診察開始の処理は、次のように対応します。</p>
-    <table>
-      <thead>
-        <tr><th>図の工程</th><th>診察開始の処理</th><th>失敗レールへ移る値</th></tr>
-      </thead>
-      <tbody>
-        <tr><th>入力を検査する</th><td><code>StartExaminationInput.parse</code>。Session 03の境界で検査します</td><td>このセッションでは扱いません</td></tr>
-        <tr><th>対象を取得する</th><td><code>resolver.resolveById</code> と <code>ensureAppointmentFound</code></td><td><code>AppointmentNotFound</code></td></tr>
-        <tr><th>権限と状態を確認する</th><td><code>ensureCheckedIn</code>（権限はこのセッションでは扱いません）</td><td><code>InvalidAppointmentState</code></td></tr>
-        <tr><th>結果を作る</th><td><code>transitionToInExamination</code> と <code>store.save</code></td><td>なし</td></tr>
-      </tbody>
-    </table>
-    <p>失敗レールを進むのは、呼び出し側が理由別の対応を選べる失敗です。このセッションでは、この失敗を業務エラーと呼びます。一方、保存障害のように呼び出し側に理由別の対応がない異常はシステムエラーと呼びます。システムエラーは失敗レールへ載せず、例外として外側へ伝えます。</p>
-  </article>
+  <p>まず、失敗を値で返すコードをisErrで書いたときの煩雑さを確かめます。次にneverthrowのResultを学び、例外とResultをどう使い分けるかを整理します。最後にandThenとmapで工程をつなぎ、matchとswitchで呼び出し側の処理漏れを型エラーにします。</p>
   <TeachingTopic name="isErr で書くと、工程ごとに同じ分岐が増える">
     <p>throw をやめて失敗を値で返すと、呼び出し側は失敗を確かめてから次の工程へ進みます。Result は、成功値か失敗のどちらかを持つ値です。ensureAppointmentFound と ensureCheckedIn が Result を返すとして、診察開始を素直に書くと次のようになります。isErr() が true なら error に失敗が入り、false なら value に成功値が入ります。</p>
     <figure class="code-block" data-teaching-example>
       <figcaption>{props.teaching[0].example.caption}</figcaption>
       <Code code={props.teaching[0].example.code} lang="ts" />
     </figure>
-    <Fragment slot="why">工程ごとに if で失敗かどうかを確かめ、失敗なら途中でその失敗を返す形です。失敗を型で読めるようになりましたが、工程が増えるたびに同じ if が増え、診察開始の処理順が分岐に埋もれます。この if は、図の切り替え線を1本ずつ手で書いていることに当たります。isErr が誤りというわけではなく、分岐が1回だけなら読みやすい書き方です。</Fragment>
+    <Fragment slot="why">工程ごとに if で失敗かどうかを確かめ、失敗なら途中でその失敗を返す形です。失敗を型で読めるようになりましたが、工程が増えるたびに同じ if が増え、診察開始の処理順が分岐に埋もれます。isErr が誤りというわけではなく、分岐が1回だけなら読みやすい書き方です。</Fragment>
   </TeachingTopic>
   <article class="teaching-topic">
     <h3>neverthrow の Result で失敗を値として表す</h3>
     <p>前の例の Result、ok、err、isErr は neverthrow というライブラリが提供しています。Result&lt;T, E&gt; の T は成功値、E は呼び出し側が扱う業務エラーです。ok(value) は成功側の Ok、err(error) は失敗側の Err を作り、どちらも Result&lt;T, E&gt; として扱えます。</p>
-    <p>Result に含める失敗は、先に呼び出し側の対応から選びます。失敗理由に応じて呼び出し側が次の操作を選べる業務エラーを E として返します。</p>
-    <p>たとえば、予約が見つからなければ予約を探し直し、まだ受付されていなければ受付を先に行います。呼び出し側が理由ごとに異なる対応を選ぶ必要があるため、これらは Err で返します。</p>
-    <p>一方、呼び出し側に理由別の対応がなく、要求された処理を完了できない異常はシステムエラーとして扱います。このような異常はResultに変換せず、例外として外側へ伝えます。</p>
-    <p>たとえば、データベースへの保存中に接続が切れ、保存が完了したか確認できない場合です。データベースへの保存が完了したか確認できないまま、別の記録先への書き込みや外部サービスへの通知を行うと、データベースには保存されていないのに、書き込みや通知だけが行われる可能性があります。そのため、書き込みや通知は実行せず、保存時の例外をそのまま外側へ伝えます。</p>
-    <p>外側の例外境界では、例外をログへ記録し、必要なロールバックや接続の解放を行ったうえで、500などのエラー応答へ変換します。</p>
+    <p>E に入れる失敗と入れない失敗の分け方は、次の「例外と Result を使い分ける」で扱います。</p>
     <div class="teaching-topic__diff">
       <figure class="code-block">
         <figcaption>{"\n"}before:{"\n"}<span>{props.teaching[1].before.caption}</span></figcaption>
@@ -100,20 +77,40 @@ import InlineCode from "../../components/InlineCode.astro";
     </figure>
     <p class="teaching-topic__why">例外では、関数の型から失敗理由を読み取れません。Result の E に業務エラーを置くと、呼び出し側は実行前から起こりうる失敗を把握し、表示や次の操作を選べます。err は例外を投げず、失敗理由を値として返します。neverthrow の Result は、isErr の例のような if を書かずに済む andThen と map も持っています。</p>
   </article>
-  <TeachingTopic name="andThen と map を ROP の図と見比べる">
+  <article class="teaching-topic" id="exception-or-result">
+    <h3>例外と Result を使い分ける</h3>
+    <p>失敗には、Result の Err として返すものと、例外のまま外側へ伝えるものがあります。どちらにするかは、呼び出し側がその失敗の理由ごとに次の操作を選べるかで決めます。このハンズオンでは、前者を業務エラー、後者をシステムエラーと呼びます。</p>
+    <table>
+      <thead>
+        <tr><th scope="col"></th><th scope="col">業務エラー</th><th scope="col">システムエラー</th></tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">診察開始での例</th><td>予約が見つからない、まだ受付されていない</td><td>保存中にデータベースへの接続が切れた</td></tr>
+        <tr><th scope="row">呼び出し側の対応</th><td>予約を探し直す、先に受付を行う</td><td>理由ごとに選べる操作はない</td></tr>
+        <tr><th scope="row">伝え方</th><td><code>err</code> で Result の Err として返す</td><td>Result に変換せず、例外のまま伝える</td></tr>
+        <tr><th scope="row">受け取る場所</th><td>Web ルートの <code>match</code> と <code>switch</code></td><td>外側の例外境界</td></tr>
+      </tbody>
+    </table>
+    <p>次の図で、2つの失敗がどこまで進み、どこで受け取られるかを見比べます。図のコードの andThen、map、match は後の節で説明します。ここでは、2つの失敗がどこで止まり、どこで受け取られるかだけを追ってください。</p>
+    <ExceptionOrResultAnimation />
+    <p>システムエラーを Result に変換しないのは、保存が完了したか分からないまま後続の処理を続けないためです。保存の結果を確認できないまま別の記録先への書き込みや外部サービスへの通知を行うと、データベースには保存されていないのに、書き込みや通知だけが行われる可能性があります。演習コードの外側の例外境界は <code>app.onError</code> で、例外を受け取ると500を返します。実際の業務では、この境界で例外をログへ記録し、必要なロールバックや接続の解放も行います。</p>
+    <p class="teaching-topic__why">業務エラーを例外で投げると、関数の型から失敗理由を読み取れず、呼び出し側は処理漏れに気付けません。システムエラーを Result に入れると、呼び出し側に選べる操作がない失敗まで型に並び、すべての呼び出し側が同じ処理を書くことになります。迷ったときは、呼び出し側がこの失敗の理由ごとに違う操作を選ぶかを確かめます。</p>
+  </article>
+  <TeachingTopic name="andThen と map で工程をつなぐ">
     <p>andThen は Ok のときだけ、Result を返す関数へ進みます。map は Ok のときだけ、素の値を返す関数で成功値を変換します。Err になった後は、どちらのコールバックも呼ばれません。</p>
     <figure class="code-block" data-teaching-example>
       <figcaption>{props.teaching[2].example.caption}</figcaption>
       <Code code={props.teaching[2].example.code} lang="ts" />
     </figure>
     <AndThenMapFlow />
-    <p><a href="#rop-recap">ROPの図</a>と見比べると、次のように対応します。</p>
+    <p>診察開始の工程では、次のように使い分けます。</p>
     <ul class="decision-list">
-      <li><strong><code>andThen</code>（渡す関数の戻り値: Result）:</strong> 切り替え線のある工程。「対象を取得する」の後の「権限と状態を確認する」が該当し、Err を返すと失敗レールへ移ります。「対象を取得する」は最初の工程で前の値がないので、ensureAppointmentFound は andThen を使わずに直接呼びます。入力の検査は Session 03 の境界で済んでいます。</li>
-      <li><strong><code>map</code>（渡す関数の戻り値: 素の値）:</strong> 切り替え線のない工程。「結果を作る」が該当し、成功レールを進みます。</li>
+      <li><strong><code>andThen</code>（渡す関数の戻り値: Result）:</strong> 業務エラーを返しうる工程。来院済みかを確かめる ensureCheckedIn が該当し、Err を返すと後続の工程は呼ばれません。ensureAppointmentFound は最初の工程で前の Result がないので、andThen を使わずに直接呼びます。入力の検査は Session 03 の境界で済んでいます。</li>
+      <li><strong><code>map</code>（渡す関数の戻り値: 素の値）:</strong> 業務エラーを返さない工程。状態遷移の transitionToInExamination が該当します。</li>
     </ul>
-    <Fragment slot="why">渡す関数が業務エラーを返しうるなら andThen、返さないなら map を選びます。Err になった後にコールバックが呼ばれないのは、図で失敗レールへ移った値が後続の工程を飛ばすことに当たります。</Fragment>
+    <Fragment slot="why">渡す関数が業務エラーを返しうるなら andThen、返さないなら map を選びます。Err になった後はどちらのコールバックも呼ばれないので、失敗の後に状態遷移や保存が実行されることはありません。</Fragment>
   </TeachingTopic>
+  <p>S05 では、この andThen と map のつなぎ方を ROP（Railway Oriented Programming）という考え方で捉え直し、入力の検査と権限の確認を含むユースケース全体の設計を読みます。</p>
   <TeachingTopic
     name="isErr の例を andThen と map で書き直す"
     before={props.teaching[3].before}
