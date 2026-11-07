@@ -1,6 +1,8 @@
 import { Code } from "astro:components";
 import { Fragment } from "astro/jsx-runtime";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
+import AnimatedExplanation from "../../components/animated-explanation/AnimatedExplanation.astro";
+import { stateTransitions } from "../../animations/s2";
 
 <section id="incident">
   <h2>今回つくるもの</h2>
@@ -105,6 +107,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     </figure>
     <p class="teaching-topic__why">遷移ごとに CheckedIn、InExamination、AwaitingPayment だけを受け取ります。会計済みの予約や診察結果を記録していない予約を誤った関数へ渡すと、コードを実行する前の型検査で止まります。Discriminated Unionが状態の候補を定義し、関数の引数型が許可された遷移を定義します。</p>
   </article>
+  <AnimatedExplanation animation={stateTransitions} />
   <details class="step-solution">
     <summary>おまけ: 他の言語で状態を型にする</summary>
     <div class="step-solution__body">
