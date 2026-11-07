@@ -1,0 +1,1243 @@
+---
+import { Code } from "astro:components";
+import routesSource from "../../../../examples/session-00/src/web/routes.ts?raw";
+import startExaminationSource from "../../../../examples/session-00/src/useCase/startExamination.ts?raw";
+import repositorySource from "../../../../examples/session-00/src/adaptor/secondary/sqlite/appointmentRepository.ts?raw";
+import appointmentSource from "../../../../examples/session-00/src/domain/appointment/appointment.ts?raw";
+
+const appointmentId = "11111111-1111-4111-8111-111111111111";
+const veterinarianId = "44444444-4444-4444-8444-444444444444";
+
+const fail = (message: string): never => {
+  throw new Error(`HandoverExamMock: ${message}`);
+};
+
+const dedent = (lines: string[]): string[] => {
+  const indents = lines.filter((line) => line.trim() !== "").map((line) => line.length - line.trimStart().length);
+  const common = indents.length === 0 ? 0 : Math.min(...indents);
+  return lines.map((line) => line.slice(common));
+};
+
+const findLine = (lines: string[], text: string, from = 0): number => {
+  const found = lines.findIndex((line, index) => index >= from && line.trim().startsWith(text));
+  return found === -1 ? fail(`ソースに「${text}」が見つかりません`) : found;
+};
+
+const blockEnd = (lines: string[], start: number): number => {
+  const indent = lines[start].length - lines[start].trimStart().length;
+  const end = lines.findIndex(
+    (line, index) => index > start && line.length - line.trimStart().length === indent && line.trimStart().startsWith("}"),
+  );
+  return end === -1 ? fail(`「${lines[start].trim()}」の閉じ括弧が見つかりません`) : end;
+};
+
+const routeLines = routesSource.split("\n");
+const routeStart = findLine(routeLines, 'app.post("/appointments/:appointmentId/start-examination"');
+const routeEnd = blockEnd(routeLines, routeStart);
+const routeCode = dedent(routeLines.slice(routeStart, routeEnd + 1));
+
+const useCaseLines = startExaminationSource.split("\n");
+const useCaseStart = findLine(useCaseLines, "export const startExamination");
+const useCaseCode = dedent(useCaseLines.slice(useCaseStart)).join("\n").trimEnd().split("\n");
+
+const highlight = (file: string, lines: string[], text: string, multiline: boolean): string => {
+  const start = findLine(lines, text);
+  const end = multiline ? blockEnd(lines, start) : start;
+  return `${file}:${start + 1}:${end + 1}`;
+};
+
+const cut = (source: string, startText: string, mode: "block" | "line" | "end"): string => {
+  const lines = source.split("\n");
+  const start = findLine(lines, startText);
+  const end = mode === "block" ? blockEnd(lines, start) : mode === "line" ? start : lines.length - 1;
+  return dedent(lines.slice(start, end + 1)).join("\n").trimEnd();
+};
+
+const routeFile = "examples/session-00/src/web/routes.ts";
+const useCaseFile = "examples/session-00/src/useCase/startExamination.ts";
+const repositoryFile = "examples/session-00/src/adaptor/secondary/sqlite/appointmentRepository.ts";
+const appointmentFile = "examples/session-00/src/domain/appointment/appointment.ts";
+
+const updatedSummary = `updated: { status: "in-examination", ... }`;
+
+const steps = [
+  {
+    text: "獣医師が診察室の PC で Mugi の予約を開いています。予約の状態は来院済みです。",
+    highlight: undefined,
+    impl: undefined,
+    values: undefined,
+  },
+  {
+    text: "獣医師が「診察を開始する」を押します。サーバーは予約 ID と獣医師 ID を startExamination へ渡します。",
+    highlight: highlight("route", routeCode, "startExamination(repository)({", true),
+    impl: undefined,
+    values: {
+      input: `{
+  appointmentId: "${appointmentId}",
+  veterinarianId: "${veterinarianId}",
+}`,
+      output: undefined,
+    },
+  },
+  {
+    text: "サーバーは現在の予約内容を読みます。読んだ予約の状態は checked-in です。",
+    highlight: highlight("use-case", useCaseCode, "const current = repository.find(input.appointmentId);", false),
+    impl: {
+      file: repositoryFile,
+      code: cut(repositorySource, "find: (appointmentId) => {", "block"),
+    },
+    values: {
+      input: `appointmentId: "${appointmentId}"`,
+      output: `current: { petName: "Mugi", status: "checked-in", ... }`,
+    },
+  },
+  {
+    text: "updateStatus は状態を in-examination にした新しい予約を作ります。今の状態が何かは確かめません。",
+    highlight: highlight("use-case", useCaseCode, "const updated = updateStatus(", true),
+    impl: {
+      file: appointmentFile,
+      code: cut(appointmentSource, "export const updateStatus", "end"),
+    },
+    values: {
+      input: `current: { status: "checked-in", ... }
+status: "in-examination"
+extra: { veterinarianId: "${veterinarianId}", examinationStartedAt: occurredAt }`,
+      output: `updated: {
+  status: "in-examination", veterinarianId: "${veterinarianId}", examinationStartedAt: occurredAt, ...
+}`,
+    },
+  },
+  {
+    text: "repository.save が現在の予約内容を上書きします。担当の獣医師と開始時刻もここで入ります。",
+    highlight: highlight("use-case", useCaseCode, "repository.save(updated);", false),
+    impl: {
+      file: repositoryFile,
+      code: cut(repositorySource, "const save = (appointment: Appointment): void => {", "block"),
+    },
+    values: { input: updatedSummary, output: undefined },
+  },
+  {
+    text: "repository.appendAudit が予約の変更履歴に examination.started を足します。",
+    highlight: highlight("use-case", useCaseCode, "repository.appendAudit({", true),
+    impl: {
+      file: repositoryFile,
+      code: cut(repositorySource, "const appendAudit = (", "block"),
+    },
+    values: {
+      input: `{ eventName: "examination.started", occurredAt, appointment: updated, ... }`,
+      output: undefined,
+    },
+  },
+  {
+    text: "サーバーが画面を開き直させます。バッジは診察中に、「状態」は InExamination に変わります。獣医師の画面が変わるのはここです。",
+    highlight: highlight("route", routeCode, "return redirectToRoot(context);", false),
+    impl: {
+      file: routeFile,
+      code: cut(routesSource, "const redirectToRoot = ", "line"),
+    },
+    values: undefined,
+  },
+] as const;
+
+const staticFrames = [
+  { key: "before", label: "押す前", badge: "来院済み", kind: "CheckedIn", status: "checked-in" },
+  { key: "after", label: "押した後", badge: "診察中", kind: "InExamination", status: "in-examination" },
+] as const;
+
+const actions = [
+  { label: "受付する", kind: "primary" },
+  { label: "診察を開始する", kind: "start" },
+  { label: "診察結果を記録する", kind: "primary" },
+  { label: "会計を記録する", kind: "primary" },
+  { label: "キャンセルする", kind: "primary" },
+  { label: "電話フォローを依頼する", kind: "not-implemented" },
+] as const;
+
+const details = [
+  { term: "予約ID", value: appointmentId },
+  { term: "飼い主", value: "Owner A" },
+  { term: "予約日時", value: "2026-08-30T06:30:00.000Z" },
+] as const;
+---
+
+<figure class="hem" data-exam-mock>
+  <h4 class="hem__title">獣医師が予約を「診察中」にするとき、コードで起きること</h4>
+  <p class="hem__lead">診察室の PC で開いた予約画面を再現したモックです。獣医師の操作に合わせて、画面、動くコード、データベースが1コマずつ変わります。</p>
+
+  <div class="hem__player" data-player>
+    <div class="hem__screen" data-screen>
+      <div class="hem__app">
+        <p class="hem__app-name">関数型どうぶつ病院</p>
+        <section class="hem__card">
+          <div class="hem__heading">
+            <div>
+              <p class="hem__eyebrow">本日の予約</p>
+              <h5 class="hem__pet">Mugi</h5>
+            </div>
+            <span class="hem__badge" data-switch-at="6" data-text-before="来院済み" data-text-after="診察中" data-flash-frame="6">来院済み</span>
+          </div>
+          <dl class="hem__details">
+            {details.map((item) => <div><dt>{item.term}</dt><dd>{item.value}</dd></div>)}
+            <div><dt>状態</dt><dd data-switch-at="6" data-text-before="CheckedIn" data-text-after="InExamination" data-flash-frame="6">CheckedIn</dd></div>
+          </dl>
+          <div class="hem__actions" aria-label="予約操作">
+            {
+              actions.map((action) =>
+                action.kind === "start" ? (
+                  <button class="hem__action hem__action--primary hem__start" type="button" data-start>
+                    <span>{action.label}</span>
+                  </button>
+                ) : action.kind === "not-implemented" ? (
+                  <span class="hem__action hem__action--secondary">
+                    <span>{action.label}</span>
+                    <span class="hem__action-status">未実装</span>
+                  </span>
+                ) : (
+                  <span class="hem__action hem__action--primary">
+                    <span>{action.label}</span>
+                  </span>
+                ),
+              )
+            }
+          </div>
+        </section>
+      </div>
+      <svg class="hem__cursor" data-cursor viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+        <path d="M3 2 L3 19 L8 14.5 L11.5 22 L14.5 20.6 L11 13.2 L18 13 Z" fill="#fff" stroke="#17204d" stroke-width="1.8" stroke-linejoin="round"></path>
+      </svg>
+    </div>
+
+    <div class="hem__note">
+      <p class="hem__note-status">
+        <span class="hem__note-pet">Mugi</span>
+        <span class="hem__badge" data-switch-at="6" data-text-before="来院済み" data-text-after="診察中" data-flash-frame="6">来院済み</span>
+        <span class="hem__note-state">
+          <span>状態</span>
+          <span class="hem__note-kind" data-switch-at="6" data-text-before="CheckedIn" data-text-after="InExamination" data-flash-frame="6">CheckedIn</span>
+        </span>
+      </p>
+      <p class="hem__note-line" aria-live="polite">
+        <span class="hem__note-count" data-count>1 / {steps.length}</span>
+        <span class="hem__note-text" data-text>{steps[0].text}</span>
+      </p>
+    </div>
+
+    <section class="hem__db">
+      <h5 class="hem__db-title">データベースに残る内容</h5>
+      <div class="hem__db-columns">
+        <div class="hem__db-column">
+          <h6>現在の予約内容</h6>
+          <ul class="hem__lines">
+            <li data-hide-from="4" data-focus-frame="2"><Code code={'status: "checked-in"'} lang="ts" inline /></li>
+            <li data-show-from="4" data-flash-frame="4" hidden><Code code={'status: "in-examination"'} lang="ts" inline /></li>
+            <li data-show-from="4" data-flash-frame="4" hidden><Code code={`veterinarianId: "${veterinarianId}"`} lang="ts" inline /></li>
+            <li data-show-from="4" data-flash-frame="4" hidden><Code code="examinationStartedAt: 押した時刻" lang="ts" inline /></li>
+          </ul>
+        </div>
+        <div class="hem__db-column">
+          <h6>予約の変更履歴</h6>
+          <ul class="hem__lines">
+            <li><Code code={'"appointment.seeded"'} lang="ts" inline /></li>
+            <li><Code code={'"appointment.checked-in"'} lang="ts" inline /></li>
+            <li data-show-from="5" data-flash-frame="5" hidden><Code code={'"examination.started"'} lang="ts" inline /></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+
+    <div class="hem__code" data-code tabindex="0" role="region" aria-label="動くコード">
+      <figure class="code-block" data-code-file="route">
+        <figcaption>{routeFile}</figcaption>
+        <Code code={routeCode.join("\n")} lang="ts" />
+      </figure>
+      <figure class="code-block" data-code-file="use-case">
+        <figcaption>{useCaseFile}</figcaption>
+        <Code code={useCaseCode.join("\n")} lang="ts" />
+      </figure>
+    </div>
+
+    <div class="hem__impl" data-impl hidden>
+      <p class="hem__section-label">この行が呼ぶ関数</p>
+      {
+        steps.map((step, index) =>
+          step.impl === undefined ? null : (
+            <figure class="code-block" data-impl-frame={index} hidden>
+              <figcaption>{step.impl.file}</figcaption>
+              <Code code={step.impl.code} lang="ts" />
+            </figure>
+          ),
+        )
+      }
+    </div>
+
+    <div class="hem__values" data-values hidden>
+      {
+        steps.map((step, index) =>
+          step.values === undefined ? null : (
+            <div class="hem__io" data-values-frame={index} hidden>
+              <p class="hem__io-label">入力</p>
+              <Code code={step.values.input} lang="ts" />
+              {
+                step.values.output === undefined ? null : (
+                  <Fragment>
+                    <svg class="hem__flow" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+                      <polygon points="11,2 21,2 21,16 28,16 16,30 4,16 11,16" fill="#ffd21b" stroke="#17204d" stroke-width="2.5" stroke-linejoin="round"></polygon>
+                    </svg>
+                    <p class="hem__io-label">出力</p>
+                    <Code code={step.values.output} lang="ts" />
+                  </Fragment>
+                )
+              }
+            </div>
+          ),
+        )
+      }
+    </div>
+
+    <div class="hem__controls" role="group" aria-label="再生の操作">
+      <button type="button" data-play>再生</button>
+      <button type="button" data-prev>前へ</button>
+      <button type="button" data-next>次へ</button>
+      <button type="button" data-restart>最初から</button>
+    </div>
+  </div>
+
+  <div class="hem__static">
+    <div class="hem__frames">
+      {
+        staticFrames.map((frame) => (
+          <div class="hem__frame">
+            <p class="hem__frame-label">{frame.label}</p>
+            <div class="hem__app">
+              <p class="hem__app-name">関数型どうぶつ病院</p>
+              <section class="hem__card">
+                <div class="hem__heading">
+                  <div>
+                    <p class="hem__eyebrow">本日の予約</p>
+                    <h5 class="hem__pet">Mugi</h5>
+                  </div>
+                  <span class:list={["hem__badge", frame.key === "after" && "is-after"]}>{frame.badge}</span>
+                </div>
+                <dl class="hem__details">
+                  {details.map((item) => <div><dt>{item.term}</dt><dd>{item.value}</dd></div>)}
+                  <div><dt>状態</dt><dd>{frame.kind}</dd></div>
+                </dl>
+                <div class="hem__actions" aria-label="予約操作">
+                  {
+                    actions.map((action) =>
+                      action.kind === "not-implemented" ? (
+                        <span class="hem__action hem__action--secondary">
+                          <span>{action.label}</span>
+                          <span class="hem__action-status">未実装</span>
+                        </span>
+                      ) : (
+                        <span class="hem__action hem__action--primary">
+                          <span>{action.label}</span>
+                        </span>
+                      ),
+                    )
+                  }
+                </div>
+              </section>
+            </div>
+            <section class="hem__db">
+              <h5 class="hem__db-title">データベースに残る内容</h5>
+              <div class="hem__db-columns">
+                <div class="hem__db-column">
+                  <h6>現在の予約内容</h6>
+                  <ul class="hem__lines">
+                    <li><Code code={`status: "${frame.status}"`} lang="ts" inline /></li>
+                    {
+                      frame.key === "after" ? (
+                        <Fragment>
+                          <li><Code code={`veterinarianId: "${veterinarianId}"`} lang="ts" inline /></li>
+                          <li><Code code="examinationStartedAt: 押した時刻" lang="ts" inline /></li>
+                        </Fragment>
+                      ) : null
+                    }
+                  </ul>
+                </div>
+                <div class="hem__db-column">
+                  <h6>予約の変更履歴</h6>
+                  <ul class="hem__lines">
+                    <li><Code code={'"appointment.seeded"'} lang="ts" inline /></li>
+                    <li><Code code={'"appointment.checked-in"'} lang="ts" inline /></li>
+                    {frame.key === "after" ? <li><Code code={'"examination.started"'} lang="ts" inline /></li> : null}
+                  </ul>
+                </div>
+              </div>
+            </section>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="hem__static-code">
+      <figure class="code-block">
+        <figcaption>{routeFile}</figcaption>
+        <Code code={routeCode.join("\n")} lang="ts" />
+      </figure>
+      <figure class="code-block">
+        <figcaption>{useCaseFile}</figcaption>
+        <Code code={useCaseCode.join("\n")} lang="ts" />
+      </figure>
+    </div>
+
+    <ol class="hem__steps">
+      {
+        steps.map((step) => (
+          <li data-step data-highlight={step.highlight}>
+            <p data-step-text>{step.text}</p>
+            {
+              step.impl === undefined ? null : (
+                <Fragment>
+                  <p class="hem__section-label">この行が呼ぶ関数</p>
+                  <figure class="code-block">
+                    <figcaption>{step.impl.file}</figcaption>
+                    <Code code={step.impl.code} lang="ts" />
+                  </figure>
+                </Fragment>
+              )
+            }
+            {
+              step.values === undefined ? null : (
+                <div class="hem__io">
+                  <p class="hem__io-label">入力</p>
+                  <Code code={step.values.input} lang="ts" />
+                  {
+                    step.values.output === undefined ? null : (
+                      <Fragment>
+                        <svg class="hem__flow" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+                          <polygon points="11,2 21,2 21,16 28,16 16,30 4,16 11,16" fill="#ffd21b" stroke="#17204d" stroke-width="2.5" stroke-linejoin="round"></polygon>
+                        </svg>
+                        <p class="hem__io-label">出力</p>
+                        <Code code={step.values.output} lang="ts" />
+                      </Fragment>
+                    )
+                  }
+                </div>
+              )
+            }
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+
+  <figcaption>
+    updateStatus は今の状態を確かめないので、実物では会計済みの予約でも同じ操作で診察中へ戻ります。下の事故はこのことから起きました。このモックは説明用で、データベースには接続しません。コードは examples/session-00 の実物です。
+  </figcaption>
+</figure>
+
+<script is:inline>
+  (() => {
+    document.querySelectorAll("[data-exam-mock]").forEach((figure) => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+      const player = figure.querySelector("[data-player]");
+      const screen = figure.querySelector("[data-screen]");
+      const startButton = figure.querySelector("[data-player] [data-start]");
+      const cursor = figure.querySelector("[data-cursor]");
+      const codePane = figure.querySelector("[data-code]");
+      const count = figure.querySelector("[data-count]");
+      const text = figure.querySelector("[data-text]");
+      const playButton = figure.querySelector("[data-play]");
+      const prevButton = figure.querySelector("[data-prev]");
+      const nextButton = figure.querySelector("[data-next]");
+      const restartButton = figure.querySelector("[data-restart]");
+      const steps = Array.from(figure.querySelectorAll("[data-step]"));
+      if (
+        player === null || screen === null || startButton === null || cursor === null || codePane === null ||
+        count === null || text === null || playButton === null || prevButton === null || nextButton === null ||
+        restartButton === null || steps.length === 0
+      ) return;
+
+      const codeLines = new Map();
+      player.querySelectorAll("[data-code-file]").forEach((file) => {
+        codeLines.set(file.dataset.codeFile ?? "", Array.from(file.querySelectorAll(".line")));
+      });
+
+      const last = steps.length - 1;
+      let index = 0;
+      let rendered = -1;
+      let playing = false;
+      let timer;
+
+      const restartFlash = (element) => {
+        element.classList.remove("is-flash");
+        void element.offsetWidth;
+        element.classList.add("is-flash");
+      };
+
+      const placeCursor = (active) => {
+        const screenBox = screen.getBoundingClientRect();
+        const buttonBox = startButton.getBoundingClientRect();
+        const x = buttonBox.left - screenBox.left + buttonBox.width * 0.7 - 3;
+        const y = buttonBox.top - screenBox.top + buttonBox.height * 0.65 - 2;
+        cursor.style.transform = active ? `translate(${x}px, ${y}px)` : `translate(${x + 70}px, ${y - 60}px)`;
+        cursor.style.opacity = active ? "1" : "0";
+      };
+
+      const showCode = (frameIndex) => {
+        codeLines.forEach((lines) => lines.forEach((line) => line.classList.remove("is-hl")));
+        const [file, from, to] = (steps[frameIndex].dataset.highlight ?? "").split(":");
+        const lines = codeLines.get(file ?? "");
+        if (lines === undefined || from === undefined || to === undefined) {
+          codePane.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
+        lines.slice(Number(from) - 1, Number(to)).forEach((line) => line.classList.add("is-hl"));
+        const first = lines[Number(from) - 1];
+        if (first === undefined) return;
+        const offset = first.getBoundingClientRect().top - codePane.getBoundingClientRect().top;
+        codePane.scrollTo({ top: codePane.scrollTop + offset - 48, behavior: "smooth" });
+      };
+
+      const toggleFrames = (container, key) => {
+        if (container === null) return;
+        let shown = false;
+        container.querySelectorAll("*").forEach((panel) => {
+          const target = panel.dataset[key];
+          if (target === undefined) return;
+          panel.hidden = rendered !== Number(target);
+          shown = shown || !panel.hidden;
+        });
+        container.hidden = !shown;
+      };
+
+      const render = (frameIndex) => {
+        const changed = frameIndex !== rendered;
+        rendered = frameIndex;
+        player.dataset.frame = String(frameIndex);
+        count.textContent = `${frameIndex + 1} / ${steps.length}`;
+        text.textContent = steps[frameIndex].querySelector("[data-step-text]")?.textContent?.trim() ?? "";
+        playButton.textContent = playing ? "一時停止" : "再生";
+
+        player.querySelectorAll("[data-switch-at]").forEach((element) => {
+          const after = frameIndex >= Number(element.dataset.switchAt);
+          element.textContent = (after ? element.dataset.textAfter : element.dataset.textBefore) ?? "";
+          element.classList.toggle("is-after", after);
+        });
+        player.querySelectorAll("[data-show-from]").forEach((element) => {
+          element.hidden = frameIndex < Number(element.dataset.showFrom);
+        });
+        player.querySelectorAll("[data-hide-from]").forEach((element) => {
+          element.hidden = frameIndex >= Number(element.dataset.hideFrom);
+        });
+        player.querySelectorAll("[data-focus-frame]").forEach((element) => {
+          element.classList.toggle("is-focus", frameIndex === Number(element.dataset.focusFrame));
+        });
+        player.querySelectorAll("[data-flash-frame]").forEach((element) => {
+          if (frameIndex !== Number(element.dataset.flashFrame)) {
+            element.classList.remove("is-flash");
+          } else if (changed) {
+            restartFlash(element);
+          }
+        });
+
+        toggleFrames(player.querySelector("[data-impl]"), "implFrame");
+        toggleFrames(player.querySelector("[data-values]"), "valuesFrame");
+
+        startButton.classList.toggle("is-attention", frameIndex === 0);
+        startButton.classList.toggle("is-pressed", frameIndex === 1);
+        placeCursor(frameIndex === 1);
+        showCode(frameIndex);
+      };
+
+      const schedule = () => {
+        window.clearTimeout(timer);
+        if (!playing) return;
+        if (index >= last) {
+          playing = false;
+          return;
+        }
+        timer = window.setTimeout(() => go(index + 1), index === 0 ? 2500 : index === 1 ? 3500 : 5500);
+      };
+
+      const go = (target) => {
+        index = Math.min(Math.max(target, 0), last);
+        schedule();
+        render(index);
+      };
+
+      const pause = () => {
+        playing = false;
+        window.clearTimeout(timer);
+      };
+
+      player.querySelectorAll(".hem__lines code").forEach((code) => code.removeAttribute("tabindex"));
+      figure.dataset.enhanced = "";
+      render(0);
+
+      playButton.addEventListener("click", () => {
+        if (playing) {
+          pause();
+          render(index);
+          return;
+        }
+        if (index >= last) index = 0;
+        playing = true;
+        go(index);
+      });
+      prevButton.addEventListener("click", () => {
+        pause();
+        go(index - 1);
+      });
+      nextButton.addEventListener("click", () => {
+        pause();
+        go(index + 1);
+      });
+      restartButton.addEventListener("click", () => {
+        pause();
+        go(0);
+      });
+      startButton.addEventListener("click", () => {
+        if (index !== 0) return;
+        playing = true;
+        go(1);
+      });
+
+      new ResizeObserver(() => placeCursor(rendered === 1)).observe(screen);
+
+      const screenHeight = screen.getBoundingClientRect().height;
+      const threshold = screenHeight > 0 ? Math.min(0.6, (window.innerHeight * 0.6) / screenHeight) : 0.6;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((entry) => entry.isIntersecting)) return;
+          observer.disconnect();
+          if (playing || index !== 0) return;
+          playing = true;
+          go(0);
+        },
+        { threshold },
+      );
+      observer.observe(screen);
+    });
+  })();
+</script>
+
+<style is:inline>
+  .hem {
+    --hem-text: #0f172a;
+    --hem-muted: #64748b;
+    --hem-surface: #fff;
+    --hem-subtle: #f8fafc;
+    --hem-border: #e2e8f0;
+    --hem-border-strong: #cbd5e1;
+    --hem-primary: #4f46e5;
+    --hem-info: #0369a1;
+    --hem-info-soft: #e0f2fe;
+    margin: 1.5rem 0;
+    container: hem / inline-size;
+    font-family: Inter, "Noto Sans JP", ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.5;
+  }
+
+  .hem [hidden] {
+    display: none;
+  }
+
+  .hem .hem__title {
+    margin: 0 0 0.35rem;
+    color: #2236b8;
+    font-size: 1.05rem;
+    line-height: 1.4;
+  }
+
+  .hem .hem__lead {
+    margin: 0 0 1rem;
+    font-size: 0.92rem;
+    line-height: 1.7;
+  }
+
+  .hem__player {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .hem[data-enhanced] .hem__player {
+    display: flex;
+  }
+
+  .hem[data-enhanced] .hem__static {
+    display: none;
+  }
+
+  .hem__player > * {
+    min-width: 0;
+  }
+
+  .hem__screen {
+    position: relative;
+  }
+
+  .hem__note {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    padding: 0.6rem 1rem;
+    border: 2px solid #17204d;
+    border-radius: 12px;
+    background: #fffefa;
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  .hem .hem__note-status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.75rem;
+    margin: 0 0 0.4rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid #dedccf;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .hem__note-pet {
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  .hem__note-state {
+    display: inline-flex;
+    gap: 0.4rem;
+    color: #58596d;
+  }
+
+  .hem__note-kind {
+    padding: 0 0.25rem;
+    border-radius: 4px;
+    color: #0f172a;
+    font-weight: 700;
+  }
+
+  .hem .hem__note-line {
+    min-height: 3.4em;
+    margin: 0;
+  }
+
+  .hem__note-count {
+    display: inline-block;
+    margin-right: 0.6rem;
+    padding: 0 0.7rem;
+    border: 2px solid #17204d;
+    border-radius: 999px;
+    background: #ffd21b;
+    color: #17204d;
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+
+  .hem__code {
+    max-height: 22rem;
+    overflow: auto;
+    border: 2px solid #17204d;
+    border-radius: 12px;
+    background: #24292e;
+  }
+
+  .hem__code .code-block {
+    margin: 0;
+  }
+
+  .hem__code .code-block + .code-block {
+    margin-top: 0.5rem;
+  }
+
+  .hem__code code,
+  .hem__static-code code {
+    display: grid;
+    min-width: max-content;
+  }
+
+  .hem__code .line {
+    min-height: calc(1em * 1.6);
+    transition: background-color 0.3s;
+  }
+
+  .hem__code .line.is-hl {
+    background: rgb(255 210 27 / 28%);
+    box-shadow: inset 4px 0 0 #ffd21b;
+  }
+
+  .hem__db {
+    margin-top: 1rem;
+    padding: 10px 12px;
+    border: 2px solid #17204d;
+    border-radius: 12px;
+    background: #fffefa;
+  }
+
+  .hem__player .hem__db {
+    margin-top: 0;
+  }
+
+  .hem__controls {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.6rem;
+    border: 2px solid #17204d;
+    border-radius: 12px;
+    background: #fffefa;
+  }
+
+  .hem .hem__section-label,
+  .hem .hem__io-label {
+    margin: 0 0 0.35rem;
+    color: #17204d;
+    font-size: 0.85rem;
+    font-weight: 800;
+    line-height: 1.4;
+  }
+
+  .hem__impl .code-block {
+    margin: 0;
+  }
+
+  .hem__static .code-block {
+    margin: 0 0 0.5rem;
+  }
+
+  .hem__io pre {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+  }
+
+  .hem .hem__io .hem__io-label {
+    margin-bottom: 0.2rem;
+  }
+
+  .hem .hem__values .hem__io pre {
+    font-size: 12.5px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .hem__flow {
+    display: block;
+    margin: 0.1rem 0;
+  }
+
+  .hem__steps > li + li {
+    margin-top: 1.25rem;
+  }
+
+  .hem__steps > li > p {
+    margin: 0 0 0.5rem;
+  }
+
+  .hem__lines li > code {
+    display: block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    white-space: pre;
+  }
+
+  .hem button:not(.hem__start) {
+    min-height: 40px;
+    padding: 0 16px;
+    border: 2px solid #17204d;
+    border-radius: 8px;
+    background: #fff;
+    color: #17204d;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .hem button:not(.hem__start):hover {
+    background: #ffd21b;
+  }
+
+  .hem button:focus-visible,
+  .hem__code:focus-visible {
+    outline: 3px solid #17204d;
+    outline-offset: 3px;
+  }
+
+  .hem__cursor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.6s ease, opacity 0.6s ease;
+  }
+
+  .hem__frames {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+
+  .hem__frame {
+    min-width: 0;
+  }
+
+  .hem__static-code {
+    margin-top: 1.5rem;
+  }
+
+  .hem__static-code .code-block {
+    margin: 0 0 0.5rem;
+  }
+
+  .hem .hem__steps {
+    margin: 1rem 0 0;
+    padding-left: 1.5rem;
+    font-size: 0.92rem;
+    line-height: 1.7;
+  }
+
+  .hem .hem__frame-label {
+    display: inline-block;
+    margin: 0 0 0.5rem;
+    padding: 0.1rem 0.7rem;
+    border: 2px solid #17204d;
+    border-radius: 999px;
+    background: #ffd21b;
+    color: #17204d;
+    font-size: 0.85rem;
+    font-weight: 800;
+    line-height: 1.5;
+  }
+
+  .hem__frame:last-child .hem__frame-label {
+    background: #ff4f93;
+  }
+
+  .hem__app {
+    container: hemapp / inline-size;
+    padding: 1rem;
+    border-radius: 12px;
+    background: #f4f7fb;
+    color: var(--hem-text);
+  }
+
+  .hem .hem__app-name {
+    margin: 0 0 0.75rem;
+    color: var(--hem-text);
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .hem__card {
+    display: grid;
+    gap: 24px;
+    padding: 24px;
+    border: 1px solid var(--hem-border);
+    border-radius: 12px;
+    background: var(--hem-surface);
+  }
+
+  .hem__heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .hem .hem__eyebrow {
+    margin: 0 0 6px;
+    color: var(--hem-primary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.5;
+    text-transform: uppercase;
+  }
+
+  .hem .hem__pet {
+    margin: 0;
+    color: var(--hem-text);
+    font-size: 1.75rem;
+    line-height: 1.3;
+  }
+
+  .hem__badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--hem-info-soft);
+    color: var(--hem-info);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .hem .hem__badge.is-after {
+    background: #ff4f93;
+    color: #17204d;
+  }
+
+  .hem .hem__details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    line-height: 1.5;
+  }
+
+  .hem .hem__details > div {
+    min-width: 0;
+    padding: 14px 16px;
+    border: 1px solid var(--hem-border);
+    border-radius: 8px;
+    background: var(--hem-subtle);
+  }
+
+  .hem .hem__details dt {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--hem-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .hem .hem__details dd {
+    margin: 4px 0 0;
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+    font-weight: 600;
+  }
+
+  .hem__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .hem .hem__action {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    max-width: 100%;
+    padding: 0 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .hem .hem__action--primary {
+    background: var(--hem-primary);
+    color: #fff;
+  }
+
+  .hem .hem__action--secondary {
+    border-color: var(--hem-border-strong);
+    background: var(--hem-surface);
+    color: var(--hem-text);
+  }
+
+  .hem__action-status {
+    padding-left: 10px;
+    border-left: 1px solid currentcolor;
+    font-size: 0.75rem;
+    opacity: 0.75;
+    white-space: nowrap;
+  }
+
+  .hem button.hem__start {
+    cursor: pointer;
+    text-align: left;
+    transition: transform 0.15s ease 0.6s, filter 0.15s ease 0.6s;
+  }
+
+  .hem button.hem__start.is-attention {
+    outline: 2px solid #ff4f93;
+    outline-offset: 2px;
+    animation: hem-pulse 2s ease-in-out infinite;
+  }
+
+  .hem button.hem__start.is-pressed {
+    transform: scale(0.95);
+    filter: brightness(0.85);
+  }
+
+  .hem .hem__db-title {
+    margin: 0 0 0.4rem;
+    color: #17204d;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .hem__db-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .hem__db-column {
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--hem-border);
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .hem .hem__db-column h6 {
+    margin: 0 0 4px;
+    color: var(--hem-text);
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+
+  .hem .hem__lines {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .hem .hem__lines li {
+    margin: 0;
+    padding: 3px;
+    border-radius: 6px;
+    background: var(--hem-subtle);
+    transition: background-color 0.3s;
+  }
+
+  .hem .hem__lines li + li {
+    margin-top: 4px;
+  }
+
+  .hem .hem__lines li.is-focus {
+    background: #ffd21b;
+  }
+
+  .hem > figcaption {
+    margin-top: 0.9rem;
+    color: #58596d;
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  .hem .is-flash {
+    animation: hem-flash 600ms ease-out;
+  }
+
+  @keyframes hem-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgb(255 79 147 / 0%);
+    }
+
+    50% {
+      box-shadow: 0 0 0 6px rgb(255 79 147 / 45%);
+    }
+  }
+
+  @keyframes hem-flash {
+    from {
+      background-color: #ffd21b;
+    }
+  }
+
+  @container hem (min-width: 860px) {
+    .hem__frames {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @container hem (min-width: 640px) {
+    .hem__db-columns {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .hem__code {
+      max-height: 190px;
+    }
+
+    .hem__db .hem__lines li > code {
+      overflow: visible;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+    }
+  }
+
+  @container hem (max-width: 640px) {
+    .hem .hem__note-line {
+      min-height: calc(3 * 1.7em);
+    }
+  }
+
+  @container hem (max-width: 480px) {
+    .hem .hem__note-line {
+      min-height: calc(5 * 1.7em);
+      font-size: 0.85rem;
+    }
+  }
+
+  @container hemapp (max-width: 480px) {
+    .hem .hem__card {
+      padding: 20px;
+    }
+
+    .hem .hem__details {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 799px) {
+    .hem .hem__note {
+      top: 72px;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    .hem .hem__note-status {
+      margin-bottom: 0.25rem;
+      padding-bottom: 0.25rem;
+      font-size: 0.78rem;
+      line-height: 1.4;
+    }
+
+    .hem .hem__note-line {
+      min-height: 0;
+      font-size: 0.82rem;
+    }
+
+    .hem .hem__controls {
+      flex-wrap: nowrap;
+      gap: 0.3rem;
+      padding: 0.4rem;
+    }
+
+    .hem .hem__controls button:not(.hem__start) {
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 0 4px;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+  }
+</style>

@@ -1,0 +1,347 @@
+---
+const ink = "#17204d";
+
+const monitor = (x: number, top: number, surface: number, label: string, fill: string): string => `
+<rect x="${x + 49}" y="${top + 80}" width="20" height="${surface - top - 86}" fill="#8d95b8"/>
+<rect x="${x + 28}" y="${surface - 7}" width="62" height="7" rx="3" fill="#8d95b8"/>
+<rect x="${x}" y="${top}" width="118" height="84" rx="8" fill="#8d95b8"/>
+<rect x="${x + 6}" y="${top + 6}" width="106" height="72" rx="4" fill="#fff" stroke-width="2"/>
+<rect x="${x + 6}" y="${top + 6}" width="106" height="13" rx="4" fill="#2236b8" stroke-width="2"/>
+<circle cx="${x + 15}" cy="${top + 12.5}" r="2.2" fill="#fff" stroke="none"/>
+<circle cx="${x + 23}" cy="${top + 12.5}" r="2.2" fill="#fff" stroke="none"/>
+<rect x="${x + 12}" y="${top + 26}" width="94" height="34" rx="17" fill="${fill}" stroke-width="2.5"/>
+<text x="${x + 59}" y="${top + 50}" text-anchor="middle" font-size="20" font-weight="800" fill="${ink}" stroke="none">${label}</text>
+<rect x="${x + 14}" y="${top + 66}" width="52" height="4" rx="2" fill="#cfd4ee" stroke="none"/>`;
+
+const dog = (x: number, y: number): string => `
+<g transform="translate(${x} ${y})">
+<path d="M-33 -36 Q-54 -42 -49 -62" fill="none" stroke-width="9"/>
+<path d="M-33 -36 Q-54 -42 -49 -62" fill="none" stroke="#f4b86a" stroke-width="3.5"/>
+<rect x="-28" y="-24" width="11" height="24" rx="5" fill="#e0a050"/>
+<rect x="-12" y="-24" width="11" height="24" rx="5" fill="#e0a050"/>
+<rect x="12" y="-24" width="11" height="24" rx="5" fill="#f4b86a"/>
+<rect x="26" y="-24" width="11" height="24" rx="5" fill="#f4b86a"/>
+<ellipse cx="0" cy="-32" rx="35" ry="18" fill="#f4b86a"/>
+<ellipse cx="-12" cy="-37" rx="10" ry="6" fill="#c98a3f" stroke="none"/>
+<circle cx="40" cy="-54" r="16" fill="#f4b86a"/>
+<path d="M30 -66 Q15 -62 19 -41 Q32 -40 36 -54 Z" fill="#c98a3f"/>
+<ellipse cx="52" cy="-49" rx="9" ry="7" fill="#fde3b8"/>
+<circle cx="58" cy="-51" r="3" fill="${ink}" stroke="none"/>
+<circle cx="45" cy="-58" r="2.4" fill="${ink}" stroke="none"/>
+<path d="M29 -45 Q35 -36 46 -40" fill="none" stroke="#ff4f93" stroke-width="6"/>
+</g>`;
+
+const person = (
+  x: number,
+  head: number,
+  top: number,
+  width: number,
+  bottom: number,
+  cloth: string,
+  skin: string,
+  hair: string,
+): string => `
+<rect x="${x - width / 2}" y="${top}" width="${width}" height="${bottom - top}" rx="16" fill="${cloth}"/>
+<rect x="${x - 6}" y="${head + 14}" width="12" height="${top - head - 8}" fill="${skin}"/>
+<circle cx="${x}" cy="${head}" r="20" fill="${skin}"/>
+<path d="M${x - 21} ${head - 2} A21 21 0 0 1 ${x + 21} ${head - 2} Q${x} ${head - 14} ${x - 21} ${head - 2}Z" fill="${hair}"/>
+<circle cx="${x - 7}" cy="${head + 3}" r="2.4" fill="${ink}" stroke="none"/>
+<circle cx="${x + 7}" cy="${head + 3}" r="2.4" fill="${ink}" stroke="none"/>
+<path d="M${x - 5} ${head + 10} Q${x} ${head + 14} ${x + 5} ${head + 10}" fill="none" stroke-width="2.5"/>`;
+
+const arm = (x1: number, y1: number, x2: number, y2: number, cloth: string, skin: string): string => `
+<path d="M${x1} ${y1} L${x2} ${y2}" fill="none" stroke-width="16"/>
+<path d="M${x1} ${y1} L${x2} ${y2}" fill="none" stroke="${cloth}" stroke-width="10"/>
+<circle cx="${x2}" cy="${y2}" r="6.5" fill="${skin}" stroke-width="2.5"/>`;
+
+const legs = (x: number, top: number, bottom: number, fill: string): string => `
+<rect x="${x - 18}" y="${top}" width="15" height="${bottom - top}" rx="5" fill="${fill}"/>
+<rect x="${x + 3}" y="${top}" width="15" height="${bottom - top}" rx="5" fill="${fill}"/>`;
+
+const shadow = (x: number, y: number, rx: number): string =>
+  `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="5" fill="${ink}" opacity="0.14" stroke="none"/>`;
+
+const scenes = [
+  {
+    key: "reception",
+    title: "受付",
+    label: "受付のカウンターで、受付担当者が飼い主と犬を迎えている。PC の画面には来院済みと表示されている",
+    text: "受付担当者が Mugi の来院を確かめ、「受付する」を押します。予約は「来院済み」になります。",
+  },
+  {
+    key: "exam",
+    title: "診察室",
+    label: "診察室で、獣医師が診察台の犬を診ながら PC を操作している。PC の画面には診察中と表示されている",
+    text: "獣医師が「診察を開始する」を押します。予約は「診察中」になります。診察を終えた獣医師が「診察結果を記録する」を押すと、予約は「会計待ち」になります。",
+  },
+  {
+    key: "payment",
+    title: "会計",
+    label: "会計カウンターで、会計担当が飼い主から支払いを受けている。PC の画面には会計済みと表示されている",
+    text: "会計担当が飼い主から4,800円を受け取り、「会計を記録する」を押します。予約は「会計済み」になります。",
+  },
+] as const;
+---
+
+<figure class="hcs">
+  <ol class="hcs__grid">
+    <li class="hcs__scene">
+      <svg class="hcs__art" viewBox="0 0 360 260" role="img" aria-label={scenes[0].label}>
+        <g stroke={ink} stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+          <rect width="360" height="172" fill="#fff8ce" stroke="none"/>
+          <rect y="172" width="360" height="88" fill="#f0d5a0" stroke="none"/>
+          <path d="M0 172H360" />
+          <path d="M0 200H360M0 232H360" stroke="#d9b87c" stroke-width="2"/>
+
+          <rect x="10" y="62" width="86" height="7" fill="#c98a3f"/>
+          <rect x="10" y="104" width="86" height="7" fill="#c98a3f"/>
+          <rect x="18" y="40" width="18" height="22" rx="4" fill="#fff"/>
+          <rect x="46" y="32" width="30" height="30" rx="4" fill="#ff4f93"/>
+          <rect x="18" y="74" width="12" height="30" fill="#2236b8"/>
+          <rect x="32" y="70" width="12" height="34" fill="#ff4f93"/>
+          <rect x="46" y="76" width="12" height="28" fill="#ffd21b"/>
+          <rect x="64" y="84" width="28" height="20" rx="3" fill="#12dbb1"/>
+
+          <rect x="118" y="24" width="56" height="44" rx="6" fill="#fff"/>
+          <ellipse cx="146" cy="52" rx="10" ry="8" fill="#ff4f93" stroke-width="2"/>
+          <circle cx="134" cy="41" r="4" fill="#ff4f93" stroke-width="2"/>
+          <circle cx="142" cy="35" r="4" fill="#ff4f93" stroke-width="2"/>
+          <circle cx="150" cy="35" r="4" fill="#ff4f93" stroke-width="2"/>
+          <circle cx="158" cy="41" r="4" fill="#ff4f93" stroke-width="2"/>
+
+          <ellipse cx="124" cy="104" rx="7" ry="24" fill="#12dbb1" transform="rotate(-42 124 130)"/>
+          <ellipse cx="124" cy="104" rx="7" ry="24" fill="#0fb994" transform="rotate(42 124 130)"/>
+          <ellipse cx="124" cy="104" rx="7" ry="24" fill="#12dbb1" transform="rotate(-16 124 130)"/>
+          <ellipse cx="124" cy="104" rx="7" ry="24" fill="#0fb994" transform="rotate(16 124 130)"/>
+          <ellipse cx="124" cy="104" rx="7" ry="24" fill="#12dbb1"/>
+          <path d="M108 152 L112 130 H136 L140 152Z" fill="#e8895a"/>
+
+          <Fragment set:html={monitor(232, 54, 150, "来院済み", "#12dbb1")} />
+          <Fragment set:html={person(190, 94, 118, 60, 170, "#12dbb1", "#d9a37c", "#6b3f2a")} />
+          <path d="M180 118 L190 134 L200 118Z" fill="#fff" stroke-width="2"/>
+          <Fragment set:html={arm(166, 132, 150, 146, "#12dbb1", "#d9a37c")} />
+          <Fragment set:html={arm(214, 132, 238, 146, "#12dbb1", "#d9a37c")} />
+          <rect x="214" y="146" width="22" height="5" rx="2" fill="#fff" stroke-width="2"/>
+
+          <rect x="-2" y="150" width="364" height="12" fill="#ffd21b"/>
+          <rect x="-2" y="162" width="364" height="62" fill="#2236b8"/>
+          <rect x="14" y="174" width="332" height="38" rx="6" fill="none" stroke="#5b70e6" stroke-width="2"/>
+
+          <Fragment set:html={shadow(60, 254, 36)} />
+          <Fragment set:html={shadow(200, 254, 50)} />
+          <Fragment set:html={legs(60, 230, 256, "#17204d")} />
+          <Fragment set:html={person(60, 134, 156, 52, 238, "#ff4f93", "#f6c9a0", "#e0a030")} />
+          <Fragment set:html={arm(40, 178, 32, 218, "#ff4f93", "#f6c9a0")} />
+          <Fragment set:html={arm(80, 178, 100, 208, "#ff4f93", "#f6c9a0")} />
+          <Fragment set:html={dog(200, 254)} />
+          <path d="M100 208 Q165 186 230 214" fill="none" stroke-width="2.5"/>
+        </g>
+      </svg>
+      <h4>{scenes[0].title}</h4>
+      <p>{scenes[0].text}</p>
+    </li>
+
+    <li class="hcs__arrow" aria-hidden="true">
+      <svg viewBox="0 0 32 32" width="32" height="32">
+        <polygon points="2,11 17,11 17,4 30,16 17,28 17,21 2,21" fill="#ffd21b" stroke={ink} stroke-width="2.5" stroke-linejoin="round"/>
+      </svg>
+    </li>
+
+    <li class="hcs__scene">
+      <svg class="hcs__art" viewBox="0 0 360 260" role="img" aria-label={scenes[1].label}>
+        <g stroke={ink} stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+          <rect width="360" height="172" fill="#fff8ce" stroke="none"/>
+          <rect y="112" width="360" height="60" fill="#bcebd7" stroke="none"/>
+          <path d="M0 112H360"/>
+          <rect y="172" width="360" height="88" fill="#e6dcc0" stroke="none"/>
+          <path d="M0 172H360"/>
+          <path d="M0 202H360M0 234H360M120 172V260M250 172V260" stroke="#cbbf9d" stroke-width="2"/>
+
+          <rect x="16" y="24" width="54" height="70" rx="4" fill="#fff"/>
+          <rect x="26" y="36" width="34" height="6" fill="#2236b8" stroke="none"/>
+          <rect x="26" y="48" width="26" height="6" fill="#ff4f93" stroke="none"/>
+          <rect x="26" y="60" width="30" height="6" fill="#2236b8" stroke="none"/>
+          <rect x="26" y="72" width="18" height="6" fill="#12dbb1" stroke="none"/>
+          <rect x="88" y="22" width="58" height="44" rx="4" fill="#fff"/>
+          <path d="M112 30H122V36H128V46H122V52H112V46H106V36H112Z" fill="#ff4f93" stroke-width="2"/>
+
+          <rect x="206" y="164" width="160" height="10" rx="3" fill="#e8b46a"/>
+          <rect x="214" y="174" width="140" height="76" fill="#f3d29b"/>
+          <rect x="226" y="184" width="116" height="26" rx="3" fill="none" stroke-width="2"/>
+          <rect x="226" y="216" width="116" height="26" rx="3" fill="none" stroke-width="2"/>
+          <rect x="274" y="194" width="20" height="5" rx="2" fill={ink} stroke="none"/>
+          <rect x="274" y="226" width="20" height="5" rx="2" fill={ink} stroke="none"/>
+          <Fragment set:html={monitor(238, 70, 164, "診察中", "#ff4f93")} />
+          <rect x="220" y="158" width="44" height="6" rx="2" fill="#fff" stroke-width="2"/>
+
+          <Fragment set:html={shadow(75, 246, 66)} />
+          <rect x="30" y="234" width="90" height="8" fill="#8d95b8"/>
+          <rect x="16" y="184" width="118" height="50" rx="4" fill="#fff"/>
+          <path d="M75 184V234" stroke-width="2"/>
+          <circle cx="66" cy="208" r="2.5" fill={ink} stroke="none"/>
+          <circle cx="84" cy="208" r="2.5" fill={ink} stroke="none"/>
+          <rect x="6" y="172" width="138" height="12" rx="5" fill="#cfd8e8"/>
+          <Fragment set:html={dog(72, 173)} />
+
+          <Fragment set:html={shadow(178, 256, 34)} />
+          <Fragment set:html={legs(178, 230, 256, "#2236b8")} />
+          <Fragment set:html={person(178, 98, 122, 60, 234, "#fff", "#f6c9a0", "#6b3f2a")} />
+          <circle cx="178" cy="74" r="8" fill="#6b3f2a"/>
+          <path d="M168 122L178 144L188 122Z" fill="#12dbb1" stroke-width="2"/>
+          <path d="M178 144V234" stroke-width="2"/>
+          <path d="M166 120Q168 150 178 150Q188 150 190 120" fill="none" stroke-width="2.5"/>
+          <path d="M178 150Q140 176 99 156" fill="none" stroke-width="2.5"/>
+          <Fragment set:html={arm(150, 140, 106, 150, "#fff", "#f6c9a0")} />
+          <circle cx="98" cy="154" r="5" fill="#ffd21b" stroke-width="2.5"/>
+          <Fragment set:html={arm(206, 140, 238, 157, "#fff", "#f6c9a0")} />
+        </g>
+      </svg>
+      <h4>{scenes[1].title}</h4>
+      <p>{scenes[1].text}</p>
+    </li>
+
+    <li class="hcs__arrow" aria-hidden="true">
+      <svg viewBox="0 0 32 32" width="32" height="32">
+        <polygon points="2,11 17,11 17,4 30,16 17,28 17,21 2,21" fill="#ffd21b" stroke={ink} stroke-width="2.5" stroke-linejoin="round"/>
+      </svg>
+    </li>
+
+    <li class="hcs__scene">
+      <svg class="hcs__art" viewBox="0 0 360 260" role="img" aria-label={scenes[2].label}>
+        <g stroke={ink} stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+          <rect width="360" height="172" fill="#fff8ce" stroke="none"/>
+          <rect y="172" width="360" height="88" fill="#f0d5a0" stroke="none"/>
+          <path d="M0 172H360" />
+          <path d="M0 200H360M0 232H360" stroke="#d9b87c" stroke-width="2"/>
+
+          <rect x="16" y="24" width="76" height="56" rx="4" fill="#c98a3f"/>
+          <rect x="22" y="30" width="64" height="44" fill="#f0d5a0" stroke-width="2"/>
+          <rect x="28" y="36" width="16" height="14" fill="#fff" stroke-width="2"/>
+          <rect x="50" y="38" width="14" height="16" fill="#ff4f93" stroke-width="2"/>
+          <rect x="68" y="36" width="14" height="16" fill="#12dbb1" stroke-width="2"/>
+          <rect x="34" y="56" width="18" height="12" fill="#ffd21b" stroke-width="2"/>
+          <rect x="58" y="58" width="20" height="12" fill="#fff" stroke-width="2"/>
+          <circle cx="128" cy="50" r="22" fill="#fff"/>
+          <path d="M128 50V36M128 50L138 56" fill="none"/>
+
+          <Fragment set:html={monitor(232, 54, 150, "会計済み", "#12dbb1")} />
+          <rect x="100" y="143" width="66" height="7" rx="3" fill="#fff" stroke-width="2.5"/>
+          <rect x="108" y="133" width="28" height="10" fill="#12dbb1" stroke-width="2"/>
+          <rect x="130" y="130" width="28" height="10" fill="#bcebd7" stroke-width="2"/>
+          <circle cx="156" cy="138" r="5" fill="#ffd21b" stroke-width="2"/>
+
+          <Fragment set:html={person(196, 94, 118, 60, 170, "#2236b8", "#8c5a3a", "#3b2a4f")} />
+          <path d="M186 118L196 134L206 118Z" fill="#fff" stroke-width="2"/>
+          <Fragment set:html={arm(172, 132, 158, 146, "#2236b8", "#8c5a3a")} />
+          <Fragment set:html={arm(220, 132, 238, 146, "#2236b8", "#8c5a3a")} />
+          <rect x="214" y="146" width="22" height="5" rx="2" fill="#fff" stroke-width="2"/>
+
+          <rect x="-2" y="150" width="364" height="12" fill="#fff"/>
+          <rect x="-2" y="162" width="364" height="62" fill="#12dbb1"/>
+          <rect x="14" y="174" width="332" height="38" rx="6" fill="none" stroke="#0fb994" stroke-width="2"/>
+
+          <Fragment set:html={shadow(74, 254, 36)} />
+          <Fragment set:html={shadow(176, 254, 50)} />
+          <Fragment set:html={legs(74, 230, 256, "#17204d")} />
+          <Fragment set:html={person(74, 134, 156, 52, 238, "#ff4f93", "#f6c9a0", "#e0a030")} />
+          <Fragment set:html={arm(54, 178, 46, 218, "#ff4f93", "#f6c9a0")} />
+          <Fragment set:html={arm(96, 178, 112, 150, "#ff4f93", "#f6c9a0")} />
+          <Fragment set:html={dog(176, 254)} />
+        </g>
+      </svg>
+      <h4>{scenes[2].title}</h4>
+      <p>{scenes[2].text}</p>
+    </li>
+  </ol>
+  <figcaption>受付、診察室、会計の担当者は、同じ予約を同じシステムの画面で順に更新します。この3枚は説明用に描いたイラストです。</figcaption>
+</figure>
+
+<style is:inline>
+  .hcs {
+    margin: 1.5rem 0;
+    container-type: inline-size;
+  }
+
+  .hcs__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .hcs__scene {
+    min-width: 0;
+    max-width: 26rem;
+    margin-inline: auto;
+    width: 100%;
+  }
+
+  .hcs__art {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 2px solid #17204d;
+    border-radius: 12px;
+    background: #fff8ce;
+    box-shadow: 0.25rem 0.25rem 0 rgb(34 54 184 / 16%);
+  }
+
+  .hcs .hcs__scene h4 {
+    margin: 0.75rem 0 0.25rem;
+    color: #2236b8;
+    font-size: 1.05rem;
+    line-height: 1.4;
+  }
+
+  .hcs .hcs__scene p {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.7;
+  }
+
+  .hcs__arrow {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    margin-inline: auto;
+  }
+
+  .hcs__arrow svg {
+    display: block;
+    width: 2rem;
+    height: 2rem;
+    transform: rotate(90deg);
+  }
+
+  .hcs figcaption {
+    margin-top: 0.9rem;
+    color: #58596d;
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  @container (min-width: 520px) {
+    .hcs__scene {
+      display: grid;
+      grid-template-columns: 56% minmax(0, 1fr);
+      column-gap: 1rem;
+      max-width: none;
+    }
+
+    .hcs__scene .hcs__art {
+      grid-row: 1 / span 2;
+    }
+
+    .hcs .hcs__scene h4 {
+      align-self: end;
+      margin-top: 0;
+    }
+
+    .hcs .hcs__scene p {
+      align-self: start;
+    }
+  }
+</style>
