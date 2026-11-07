@@ -8,7 +8,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     <p class="case-file__episode-label">動物病院のひと幕</p>
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
-  <p>S1で確認した「受付済みだけが診察を開始できる」という条件を、状態型と遷移で表します。</p>
+  <p>S5で確認した「受付済みだけが診察を開始できる」という条件を、状態型と遷移で表します。</p>
   <p>このように、処理の前後を通して常に成立させる条件を、このセッションでは<strong>不変条件</strong>と呼びます。</p>
   <h3 data-story-stage="use-case">追加したい機能</h3>
   <p>予約を「診察中にする」、「診察結果を記録する」、「会計する」、「キャンセルする」といった状態変更の機能を追加します。</p>
@@ -28,7 +28,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
   <details class="step-solution">
     <summary>コードを見る: 配布コードの <code>Appointment</code></summary>
     <div class="step-solution__body">
-      <p>S1の配布コードも、<code>items</code> を除いて同じ型です。<code>status</code> は任意の文字列を受け取り、診察や会計の項目は任意項目です。</p>
+      <p>S5の配布コードも、<code>items</code> を除いて同じ型です。<code>status</code> は任意の文字列を受け取り、診察や会計の項目は任意項目です。</p>
       <figure class="code-block">
         <figcaption>配布コードの実物: <code>examples/session-00/src/domain/appointment/appointment.ts</code></figcaption>
         <Code code={props.distributedAppointmentCode} lang="ts" />
@@ -48,7 +48,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
     </div>
   </details>
   <h4 id="pitfall-wide-input" class="pitfall-heading">3. 遷移関数が Appointment 全体を受け取る</h4>
-  <p>S2の配布コードは、すでに <code>kind</code> で6つの状態を分けています。しかし、遷移関数は引数に <code>Appointment</code> 全体を受け取るため、次の誤りはどれもコンパイルできます。</p>
+  <p>S1の配布コードは、すでに <code>kind</code> で6つの状態を分けています。しかし、遷移関数は引数に <code>Appointment</code> 全体を受け取るため、次の誤りはどれもコンパイルできます。</p>
   <ul>
     <li><code>Paid</code> を <code>startExamination</code> へ渡す</li>
     <li>診察結果を記録していない <code>InExamination</code> を <code>recordPayment</code> へ渡す</li>
@@ -184,7 +184,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
       </details>
     </div>
   ))}
-  <CommandBlock phase="green" command={props.session.exerciseCommand} expected="分岐漏れの型検査1個だけが失敗します。この1個はSession 03で直します。" />
+  <CommandBlock phase="green" command={props.session.exerciseCommand} expected="分岐漏れの型検査1個だけが失敗します。この1個はSession 02で直します。" />
   <h3>この演習で解決しないこと</h3>
   <p>この型が守れるのは、TypeScript が検査できる値だけです。外部から届く未検証の値や、型アサーションで作った値は防げません。</p>
 </section>

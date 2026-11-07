@@ -7,7 +7,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
     <p class="case-file__episode-label">動物病院のひと幕</p>
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
-  <p>S0では、画面の操作がデータベースにどう残るかを読みました。S1でも、予約のデータから業務を考えます。S1の軸は、「データ構造があり、それをパイプライン（関数）で処理して業務フローを実現する」という考え方です。</p>
+  <p>S0では、画面の操作がデータベースにどう残るかを読みました。S5でも、予約のデータから業務を考えます。S5の軸は、「データ構造があり、それをパイプライン（関数）で処理して業務フローを実現する」という考え方です。</p>
 
   <h3>キャンセル前の予約</h3>
   <p>次の値は、受け付けたばかりの予約です。<code>kind</code>は予約の現在の状態を表します。</p>
@@ -102,7 +102,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
   <h3>出力側：Storeの役割</h3>
   <p>{"\n"}<code>Appointment.cancel</code>は、確認を通った予約から<code>AppointmentCanceled</code>を作ります。Storeはその成功イベントを受け取り、Event Storeへ追記します。失敗した場合はStoreを呼ばないため、不正なキャンセルや途中状態を記録しません。誰がいつどの予約をキャンセルしたかは、追記された出来事から確認できます。{"\n"}</p>
   <CancelPipelineBoundaries />
-  <p>{"\n"}S1の<code>startExamination</code>は、まだ<code>Repository</code>からの取得、状態の記録、監査記録、時刻とIDの生成を一つのユースケースで行います。S2以降でドメインロジックを分離し、後続セッションでResolverとStoreを明示的な依存へ変えます。{"\n"}</p>
+  <p>{"\n"}S5の<code>startExamination</code>は、まだ<code>Repository</code>からの取得、状態の記録、監査記録、時刻とIDの生成を一つのユースケースで行います。S1以降でドメインロジックを分離し、後続セッションでResolverとStoreを明示的な依存へ変えます。{"\n"}</p>
   <aside class="decision-card">
     <h3>このハンズオンでEvent Storeを選ぶ理由</h3>
     <p>{"\n"}これはDMMF一般の必須条件ではなく、このハンズオンの設計です。成功イベントをそのまま履歴として追記でき、受付担当者がいつどの予約をキャンセルしたかを後から確認できるため、ユースケースの出力先にEvent Storeを選びます。{"\n"}</p>
@@ -126,7 +126,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
     </SessionDetailsBody>
   </details>
 
-  <h3>S1で持ち帰る内容</h3>
+  <h3>S5で持ち帰る内容</h3>
   <ol>
     <li>キャンセル前とキャンセル後の予約のデータ</li>
     <li>権限、予約の存在、現在状態、理由の条件</li>
@@ -137,7 +137,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
   <details class="step-solution">
     <summary>補足: ビジネスイベントとワークフローから考える方法</summary>
     <SessionDetailsBody as="div">
-      <p>S1はデータから説明を始めました。これは説明の順序です。データベースの設計から業務を決めるという意味ではありません。</p>
+      <p>S5はデータから説明を始めました。これは説明の順序です。データベースの設計から業務を決めるという意味ではありません。</p>
       <p>業務を発見する段階では、「データ構造よりも、ビジネスイベントとワークフローに注目する」という考え方もあります。イベントストーミングはその代表的な手法です。「予約がキャンセルされた」のような出来事を付箋に書き、そこから依頼と条件を逆算します。</p>
       <p>イベントストーミングの付箋には「集約」があります。イベントストーミングの集約は、付箋の種類の呼び名です。DDDの集約は、整合性を保ちながらデータを更新する単位です。二つは同じものとは限らないので、「ドメインモデル=集約」とは読みません。Finalの「集約」はDDDの意味で使います。</p>
     </SessionDetailsBody>

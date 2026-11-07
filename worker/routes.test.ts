@@ -34,7 +34,7 @@ describe("resolveWorkerRoute", () => {
 
   it("delegates static pages to assets", () => {
     expect(
-      resolveWorkerRoute("/sessions/01-business-events-and-workflows/"),
+      resolveWorkerRoute("/sessions/05-business-events-and-workflows/"),
     ).toEqual({
       kind: "asset",
     });

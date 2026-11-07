@@ -27,21 +27,23 @@ pnpm dev
 | セッション | デモコマンド |
 | --- | --- |
 | S0 | `pnpm demo:00` |
-| S1 | `pnpm demo:01` |
-| S2 | `pnpm demo:02` |
-| S3 | `pnpm demo:03` |
-| S4 | `pnpm demo:04` |
-| S5 | `pnpm demo:05` |
+| S1 | `pnpm demo:02` |
+| S2 | `pnpm demo:03` |
+| S3 | `pnpm demo:04` |
+| S4 | `pnpm demo:05` |
+| S5 | `pnpm demo:01` |
 | S6 | `pnpm demo:06` |
 | S7 | `pnpm demo:07` |
+
+コマンドの番号は `examples/session-NN` の番号です。S1〜S5 のページ番号とは一致しません。
 
 学習前の確認には [セットアップの詳細](docs/event/participant-setup.md) を使ってください。進行側の準備は [ファシリテーターガイド](docs/event/facilitator-guide.md)、詰まったときの切り分けは [トラブルシューティング](docs/event/troubleshooting.md) にまとめています。
 
 ## 演習の構成
 
-公開教材は、現行業務とシステムを読む S0、予約キャンセルの業務条件とユースケースを設計する S1、コードを改善する S2〜S6、参照実装を読む Final で構成します。S0 は10分、S1 は15分、S2 と S3 は各20分、S4 と S5 は各35分、S6 は40分、Final は5分が目安です。個人学習では時間を区切らず進められます。S1 はデータとパイプラインを読む回で、コード編集や演習コマンドの実行は行いません。S2〜S6の開始コードは、業務上の問題を示す assertion failure による RED から始まります。
+公開教材は、現行業務とシステムを読む S0、コードを改善する S1〜S4、予約キャンセルの業務条件とユースケースを設計する S5、コードを改善する S6、参照実装を読む Final で構成します。S0 は10分、S1 と S2 は各20分、S3 と S4 は各35分、S5 は15分、S6 は40分、Final は5分が目安です。個人学習では時間を区切らず進められます。S5 はデータとパイプラインを読む回で、コード編集や演習コマンドの実行は行いません。S1〜S4 と S6 の開始コードは、業務上の問題を示す assertion failure による RED から始まります。
 
-S0 の観察対象は `examples/session-00`、S1 のカードは `examples/session-01/README.md` にあります。S2 と S3 は `examples/session-02` を使います。S4 は `examples/session-04` を使い、補助演習で `examples/session-03` を使います。S5 は `examples/session-05`、S6 は `examples/session-06` を使います。S3 を除き、どのスナップショットも前の回の改善を取り込み済みです。S3 は S2 の変更の上で進めます。自分の変更を次のディレクトリへコピーする必要はありません。`examples/session-07` は独立した公開セッションを持たない到達点スナップショットで、S2〜S6 の全解答と全回帰テストが GREEN になった状態です。`examples/final` は、各演習の改善を複数集約と SQLite へ広げた参照実装です。
+S0 の観察対象は `examples/session-00` です。S1 と S2 は `examples/session-02` を使います。S3 は `examples/session-04` を使い、補助演習で `examples/session-03` を使います。S4 は `examples/session-05` を使います。S5 のカードは `examples/session-01/README.md` にあります。S6 は `examples/session-06` を使います。S2 を除き、どのスナップショットも前のコード演習の改善を取り込み済みです。S2 は S1 の変更の上で進めます。自分の変更を次のディレクトリへコピーする必要はありません。`examples/session-07` は独立した公開セッションを持たない到達点スナップショットで、S1〜S4 と S6 の全解答と全回帰テストが GREEN になった状態です。`examples/final` は、各演習の改善を複数集約と SQLite へ広げた参照実装です。
 
 通常テストは、セットアップと各スナップショットが健全であることを確認するために実行します。
 
@@ -49,7 +51,7 @@ S0 の観察対象は `examples/session-00`、S1 のカードは `examples/sessi
 pnpm test
 ```
 
-演習テストは、S2〜S6 で扱う業務事故を再現します。公開スクリプトは次の5つだけです。
+演習テストは、S1〜S4 と S6 で扱う業務事故を再現します。公開スクリプトは次の5つだけです。
 
 ```bash
 pnpm exercise:02
@@ -59,18 +61,18 @@ pnpm exercise:05
 pnpm exercise:06
 ```
 
-S2 と S3 は `pnpm exercise:02` を使います。`pnpm exercise:03` は S4 の補助演習で使います。
+S1 と S2 は `pnpm exercise:02` を使います。`pnpm exercise:03` は S3 の補助演習で使い、S3 の本演習は `pnpm exercise:04` を使います。S4 は `pnpm exercise:05`、S6 は `pnpm exercise:06` を使います。
 
-開始時の RED は、module-not-found や import error ではありません。サイトの手順に沿って既存モジュールを小さく改善し、同じ `pnpm exercise:NN` をもう一度実行して GREEN を確認します。S0、S1、`session-07`、Final に exercise command はありません。各コード演習の最後には、その回で防ぐ問題と差分を照らして振り返ります。複数人の場合は相互レビューを行います。
+開始時の RED は、module-not-found や import error ではありません。サイトの手順に沿って既存モジュールを小さく改善し、同じ `pnpm exercise:NN` をもう一度実行して GREEN を確認します。S0、S5、`session-07`、Final に exercise command はありません。各コード演習の最後には、その回で防ぐ問題と差分を照らして振り返ります。複数人の場合は相互レビューを行います。
 
 ## 学習の流れ
 
 1. S0 で壊れやすい動物病院アプリの現行業務、操作、保存先、ログを読む
-2. S1 で予約のデータから始め、キャンセルをパイプラインとして読み、ROPとI/Oの分離を確かめる
-3. S2 で Discriminated Union を使い、状態遷移を閉じる
-4. S3 で never 型と `assertNever` を使い、状態を追加したときの分岐漏れをコンパイルエラーにする
-5. S4 で値の制約を型で表し、外部入力を Zod で検証して型付きの入力オブジェクトへ変換する。補助演習で AppointmentId と VeterinarianId を Branded Type で区別する
-6. S5 で失敗理由を同期 Result の型付きの値として返し、呼び出し側へ運ぶ
+2. S1 で Discriminated Union を使い、状態遷移を閉じる
+3. S2 で never 型と `assertNever` を使い、状態を追加したときの分岐漏れをコンパイルエラーにする
+4. S3 で値の制約を型で表し、外部入力を Zod で検証して型付きの入力オブジェクトへ変換する。補助演習で AppointmentId と VeterinarianId を Branded Type で区別する
+5. S4 で失敗理由を同期 Result の型付きの値として返し、呼び出し側へ運ぶ
+6. S5 で予約のデータから始め、キャンセルをパイプラインとして読み、ROPとI/Oの分離を確かめる
 7. S6 で時刻・ID・Storeを外から渡し、状態とイベントを一緒に記録する
-8. S2〜S6 の各コード演習で、自分の差分を振り返るか相互レビューを行い、型検査では確認できない点を記録する
+8. S1〜S4 と S6 の各コード演習で、自分の差分を振り返るか相互レビューを行い、型検査では確認できない点を記録する
 9. Final は環境構築や DB 操作をせず、ページの案内に沿って参照実装の5つの境界を読む

@@ -5,14 +5,14 @@ import SessionDetailsBody from "../../components/SessionDetailsBody.astro";
 // この順序で sessions.css の <link> が session-layout.css より前に出る
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
-import Prose from "../../sessions/prose/01-business-events-and-workflows.mdx";
+import Prose from "../../sessions/prose/05-business-events-and-workflows.mdx";
 import type { SessionSummary } from "../../sessions/types";
 import "../../styles/sessions.css";
 
 export const session: SessionSummary = {
-  slug: "01-business-events-and-workflows",
+  slug: "05-business-events-and-workflows",
   snapshot: undefined,
-  sequence: "01",
+  sequence: "05",
   kind: "workshop",
   title: "データとパイプラインで予約キャンセルを設計する",
   durationMinutes: 15,
@@ -59,12 +59,12 @@ const chapters = [
 
 export const navigation = ({
   previous: {
-    href: "/sessions/00-system-handover/",
-    title: "業務とシステムを引き継ぐ",
+    href: "/sessions/04-workflow-errors/",
+    title: "失敗をユースケースの結果として扱う",
   },
   next: {
-    href: "/sessions/02-state-transitions/",
-    title: "予約の状態と遷移をモデル化する",
+    href: "/sessions/06-effects-and-consistency/",
+    title: "副作用と整合性境界を設計する",
   },
 } as const);
 ---
