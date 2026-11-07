@@ -122,13 +122,15 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
   <p>Agentを使わない場合は、テンプレートを実装メモとして使って自分で実装します。以降の「Agentへの依頼文」も実装メモに読み替えてください。</p>
   <ol class="adv-flow">
     <li><strong>言語化（{props.session.adv.articulate}分）</strong>: 一緒に記録する必要がある値を1文で書く。</li>
-    <li><strong>依頼（{props.session.adv.delegate}分）</strong>: その1文と自分の判断をテンプレートへ入れ、Agent に依頼する。</li>
+    <li><strong>依頼（{props.session.adv.delegate}分）</strong>: その1文をテンプレートへ入れ、Agent に依頼します。</li>
     <li><strong>検証（{props.session.adv.verify}分）</strong>: 型、テスト、差分の範囲を確認する。</li>
   </ol>
   <div class="delegation-prompt">
     <h3>プロンプトのテンプレート</h3>
-    <p>角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。技法名や完成形を先に指定する必要はありません。</p>
+    <p>合否は <code>{props.session.exerciseCommand}</code> が判定するので、受け入れ条件は依頼文に書きません。角括弧の中は、事故と配布コードを読んだ自分の判断で埋めます。技法名や完成形を先に指定する必要はありません。</p>
     <pre><code>{props.delegationPrompt}</code></pre>
+    <p>依頼の前に、次の点を自分で決めます。決めた内容は依頼文に書かず、Agent の差分を読むときの基準にします。</p>
+    <ul class="decision-list">{props.delegationDecisions.map((decision) => <li>{decision}</li>)}</ul>
   </div>
   <h3>この演習で解決しないこと</h3>
   <p>in-memory の一括保存は契約の形を示す。本番の永続化層でアトミック性を守るには、transaction と結合テストが必要になる。</p>
@@ -162,6 +164,7 @@ import EffectsPipelineAnimation from "../../components/effects-walkthrough/Effec
 
 <section id="review">
   <h2>レビューと持ち帰り</h2>
+  <GuardTable rows={props.guards} modules={props.guardModules} />
   <div class="exercise-review-checklist">
     <h3>個人で確認する</h3>
     <ol>

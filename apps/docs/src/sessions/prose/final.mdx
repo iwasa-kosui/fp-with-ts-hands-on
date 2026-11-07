@@ -25,3 +25,27 @@ import FinalBoundariesAnimation from "../../components/effects-walkthrough/Final
   </ol>
   <p>{"\n"}自習では、検査結果の到着やフォローアップ依頼など、別のきっかけから始まるユースケースを1つ選び、同じ5項目を辿ってください。境界が見つからない箇所は、次に試す小さな改善候補です。{"\n"}</p>
 </section>
+
+<section id="mechanisms">
+  <h2>依頼文ではなく仕組みで防ぐ</h2>
+  <p>依頼文に書いた禁止事項は、Agent が守らなかったときに何も止めません。型検査とテストは、誰がコードを書いても同じ基準で結果を判定します。問題を見つけたら、依頼文を足す前に、機械で止める方法を探します。</p>
+  <table>
+    <thead><tr><th scope="col">依頼文に書きたくなること</th><th scope="col">代わりに置く仕組み</th><th scope="col">扱った場所</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">許されない状態遷移を書かない</th><td>遷移元の状態だけを受け取る引数の型</td><td>S01</td></tr>
+      <tr><th scope="row">分岐を漏らさない</th><td><code>assertNever</code> と <code>never</code> 型</td><td>S02</td></tr>
+      <tr><th scope="row">ID を取り違えない</th><td>Branded Type</td><td>S03</td></tr>
+      <tr><th scope="row">不正な入力を通さない</th><td>境界の schema と <code>Result</code></td><td>S03</td></tr>
+      <tr><th scope="row">失敗したら処理を止める</th><td><code>Result</code> と <code>andThen</code></td><td>S04</td></tr>
+      <tr><th scope="row">状態と監査記録を片方だけ残さない</th><td>1つのイベントを1回で保存する設計</td><td>S06</td></tr>
+      <tr><th scope="row">防いだ問題を後から戻さない</th><td><code>@ts-expect-error</code> を置いた型のテスト。次の行にエラーが無くなると、型検査が失敗します。</td><td>S03</td></tr>
+      <tr><th scope="row"><code>as</code> を使わない</th><td>typescript-eslint の <code>consistent-type-assertions</code> を <code>assertionStyle: "never"</code> で有効にします。<code>as const</code> は対象外です。</td><td>現場で足す</td></tr>
+      <tr><th scope="row">テストを通してから merge する</th><td>GitHub の保護ブランチの required status checks</td><td>現場で足す</td></tr>
+      <tr><th scope="row">テストを勝手に書き換えない</th><td>GitHub の CODEOWNERS と「Require review from Code Owners」。指定したパスの変更に、コードオーナーの承認を必須にします。</td><td>現場で足す</td></tr>
+      <tr><th scope="row">禁止した操作を実行しない</th><td>Agent の実行前 hook。Claude Code の <code>PreToolUse</code> hook は、exit code 2 でツールの実行を止めます。</td><td>現場で足す</td></tr>
+    </tbody>
+  </table>
+  <h3>ソフトウェアファクトリー</h3>
+  <p>StrongDM の Justin McCarthy は、2026年2月6日の<a href="https://factory.strongdm.ai/">記事</a>で、Software Factory を「仕様とシナリオが Agent を動かす非対話型の開発」と説明しました。この開発では、Agent がコードを書き、検証用のハーネスを実行し、人のレビューなしに結果を収束させます。同じ記事は、シナリオをコードベースの外に置くことが多いと書いています。この語は文脈によって別の意味でも使われるので、ここではこの記事の用法だけを扱います。</p>
+  <p>この教材の演習テストは、この記事のシナリオに近い役割を持ちます。ただし、演習テストは配布コードと同じリポジトリにあるので、Agent が書き換えられます。そのため、参加者は差分を確かめます。また、この教材は人のレビューをなくしません。型検査とテストで確かめられない点は、相互レビューで確かめます。</p>
+</section>

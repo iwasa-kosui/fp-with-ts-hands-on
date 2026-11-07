@@ -1,0 +1,40 @@
+---
+interface Props {
+  rows: readonly { problem: string; mechanism: string; signal: string }[];
+  modules: readonly { dir: string; fileBudget: number; lineBudget: number }[];
+}
+
+const { rows, modules } = Astro.props;
+const snapshotOf = (dir: string) => dir.split("/").slice(0, 2).join("/");
+const snapshots = [...new Set(modules.map(({ dir }) => snapshotOf(dir)))];
+---
+
+<h3>この演習で何が問題を止めたか</h3>
+<table>
+  <thead><tr><th scope="col">起きてほしくないこと</th><th scope="col">止めた仕組み</th><th scope="col">結果を確かめる場所</th></tr></thead>
+  <tbody>
+    {rows.map((row) => (
+      <tr>
+        <th scope="row" set:html={row.problem} />
+        <td set:html={row.mechanism} />
+        <td set:html={row.signal} />
+      </tr>
+    ))}
+    <tr>
+      <th scope="row">指定の外のファイルや演習テストを書き換える</th>
+      <td>まだ自動では止まりません。</td>
+      <td>
+        <code>git status --short</code> と <code>git diff --stat -- {snapshots.join(" ")}</code> を人が確かめます。
+        {modules.map(({ dir, fileBudget, lineBudget }) => (
+          <Fragment><code>{dir}</code> の目安は最大 {fileBudget} ファイル、約 {lineBudget} 行です。</Fragment>
+        ))}
+      </td>
+    </tr>
+    <tr>
+      <th scope="row"><code>as</code> で型エラーを隠す</th>
+      <td>まだ自動では止まりません。</td>
+      <td><code>as</code> の全文検索を人が確かめます。</td>
+    </tr>
+  </tbody>
+</table>
+<p>上の行は、Agent がどう書いても機械が止めます。下の2行は、まだ人が確かめています。Final の「依頼文ではなく仕組みで防ぐ」で、現場で機械へ移す方法を示します。</p>

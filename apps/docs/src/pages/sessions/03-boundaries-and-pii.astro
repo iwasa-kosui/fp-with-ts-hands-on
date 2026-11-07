@@ -1,6 +1,7 @@
 ---
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
+import GuardTable from "../../components/GuardTable.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
 // CSS chunk の分割と読み込み順を変換前と同じに保つ
 import "../../components/code-explorer/CodeExplorer";
@@ -75,8 +76,6 @@ export const session: SessionSummary = {
     lineBudget: 18,
   },
   delegationPrompt: {
-    request:
-      "HTTPから届く診察開始の入力を改善してください。不正な予約IDや担当獣医師IDが、型付き入力としてユースケースへ渡らない状態を目指します。",
     decisions: [
       "外部入力をunknownとして受け取る場所はどこか",
       "AppointmentIdとVeterinarianIdのschemaをどう組み合わせるか",
@@ -134,8 +133,6 @@ export const supplementaryExercise: SupplementaryExercise = {
   solutionPresentation: "excerpt",
   incident: "診察開始で AppointmentId と VeterinarianId を取り違えても、型検査が通った。",
   delegationPrompt: {
-    request:
-      "診察開始で使う予約IDと担当獣医師IDを改善してください。同じUUID形式でも、用途を取り違えたコードはコンパイルを通らない状態を目指します。",
     decisions: [
       "AppointmentIdとVeterinarianIdをどの型として定義するか",
       "用途の区別を予約状態とstartExaminationへどう伝えるか",
@@ -272,37 +269,9 @@ const supplementaryExerciseSolutionSteps = await Promise.all(
     snippets: await loadSolutionSnippets(step),
   })),
 );
-const supplementaryExercisePrompt = `次の変更を実装してください。
+const supplementaryExercisePrompt = `${supplementaryExercise.exerciseModule.dir} のコードを直して、${supplementaryExercise.exerciseCommand} を成功させてください。
 
-業務背景:
-${supplementaryExercise.incident}
-
-依頼:
-${supplementaryExercise.delegationPrompt.request}
-
-取り違えてはいけない値: [言語化フェーズで書いた1文]
-
-着手前に判断すること:
-${supplementaryExercise.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
-
-まず配布コードと失敗しているテストを読み、上の判断と変更方針を短く説明してください。説明のあとで実装に進んでください。設計手段は既存コードに合うものを選び、選んだ理由も示してください。
-
-受け入れ条件:
-${supplementaryExercise.steps.map((step) => `- ${step.goal}`).join("\n")}
-
-変更範囲:
-- ${supplementaryExercise.exerciseModule.dir}/ のみ
-- 最大 ${supplementaryExercise.exerciseModule.fileBudget} ファイル・約 ${supplementaryExercise.exerciseModule.lineBudget} 行
-- 範囲外の変更が必要に見えた場合は、変更せず理由を報告してください
-- 型エラーを \`as\` による型アサーションで回避しないでください
-
-検証:
-- ${supplementaryExercise.exerciseCommand} を実行し、すべての assertion が成功することを確かめてください
-
-完了時の報告:
-- 変更したファイルと判断理由
-- 検証コマンドの結果
-- 型だけでは守れず、テストまたはレビューに残した点`;
+取り違えてはいけない値: [言語化フェーズで書いた1文]`;
 
 const incidentRequest = `POST /appointments/11111111-1111-4111-8111-111111111111/start-examination
 Content-Type: application/json
@@ -359,37 +328,22 @@ export const navigation = ({
   },
 } as const);
 const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
-const delegationPrompt = `次の変更を実装してください。
+const guards = [
+  {
+    problem: "<code>AppointmentId</code> と <code>VeterinarianId</code> を取り違える",
+    mechanism: "Branded Type",
+    signal: "<code>pnpm exercise:03</code> の型検査",
+  },
+  {
+    problem: "検査していない外部入力を診察開始へ渡す",
+    mechanism: "Zod の schema と <code>Result</code> を返す入力の検査",
+    signal: "<code>pnpm exercise:04</code> の演習テスト",
+  },
+] as const;
+const guardModules = [supplementaryExercise.exerciseModule, session.exerciseModule];
+const delegationPrompt = `${session.exerciseModule.dir} のコードを直して、${session.exerciseCommand} を成功させてください。
 
-業務背景:
-${session.incident}
-
-依頼:
-${exerciseSession.delegationPrompt.request}
-
-境界で拒否する入力: [言語化フェーズで書いた1文]
-
-着手前に判断すること:
-${exerciseSession.delegationPrompt.decisions.map((decision) => `- ${decision}: [自分の判断を書く]`).join("\n")}
-
-まず配布コードと失敗しているテストを読み、上の判断と変更方針を短く説明してください。説明のあとで実装に進んでください。設計手段は既存コードに合うものを選び、選んだ理由も示してください。
-
-受け入れ条件:
-${session.steps.map((step) => `- ${step.goal}`).join("\n")}
-
-変更範囲:
-- ${session.exerciseModule.dir}/ のみ
-- 最大 ${session.exerciseModule.fileBudget} ファイル・約 ${session.exerciseModule.lineBudget} 行
-- 範囲外の変更が必要に見えた場合は、変更せず理由を報告してください
-- 型エラーを \`as\` による型アサーションで回避しないでください
-
-検証:
-- ${session.exerciseCommand} を実行し、すべての assertion が成功することを確かめてください
-
-完了時の報告:
-- 変更したファイルと判断理由
-- 検証コマンドの結果
-- 型だけでは守れず、テストまたはレビューに残した点`;
+境界で拒否する入力: [言語化フェーズで書いた1文]`;
 ---
 
 <BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
@@ -406,7 +360,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         </p>
       </section>
       <Prose
-        components={{ CodeGuideCards, CommandBlock, EpisodeIllustration }}
+        components={{ CodeGuideCards, CommandBlock, EpisodeIllustration, GuardTable }}
         session={session}
         supplementaryExercise={supplementaryExercise}
         guides={guides}
@@ -422,6 +376,10 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         supplementaryExerciseSolutionSteps={supplementaryExerciseSolutionSteps}
         supplementaryExercisePrompt={supplementaryExercisePrompt}
         delegationPrompt={delegationPrompt}
+        delegationDecisions={exerciseSession.delegationPrompt.decisions}
+        supplementaryDelegationDecisions={supplementaryExercise.delegationPrompt.decisions}
+        guards={guards}
+        guardModules={guardModules}
         headcount={headcount}
         promisesHref={promisesHref}
       />
