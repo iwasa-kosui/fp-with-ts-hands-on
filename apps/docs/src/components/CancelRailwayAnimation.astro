@@ -1,177 +1,282 @@
 ---
+import { Code } from "astro:components";
+import routesSource from "../../../../examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts?raw";
+import appointmentResolverSource from "../../../../examples/final/src/adaptor/secondary/sqlite/resolver/appointmentResolver.ts?raw";
+import userResolverSource from "../../../../examples/final/src/adaptor/secondary/sqlite/resolver/userResolver.ts?raw";
+import storeSource from "../../../../examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts?raw";
+import appointmentSource from "../../../../examples/final/src/domain/appointment/appointment.ts?raw";
+import cancellationReasonSource from "../../../../examples/final/src/domain/appointment/cancellationReason.ts?raw";
+import authorizationSource from "../../../../examples/final/src/useCase/authorization.ts?raw";
+import useCaseSource from "../../../../examples/final/src/useCase/cancelAppointmentUseCase.ts?raw";
+import errorsSource from "../../../../examples/final/src/useCase/errors.ts?raw";
 import StepPlayer from "./step-player/StepPlayer.astro";
+
+// 参照実装の行がずれたら、古いコードを見せないようにビルドを失敗させる
+const quote = (source: string, from: number, to: number, firstLine: string): string => {
+  const lines = source.split("\n").slice(from - 1, to);
+  if (!lines[0]?.includes(firstLine)) throw new Error(`引用元の行がずれています: ${firstLine}`);
+  const indent = Math.min(...lines.filter((line) => line.trim() !== "").map((line) => line.search(/\S/)));
+  return lines.map((line) => line.slice(indent)).join("\n");
+};
+
+const pipeline = [
+  "// appointmentRoutes.ts",
+  quote(routesSource, 74, 76, "const CancelSchema"),
+  "",
+  "// cancelAppointmentUseCase.ts",
+  quote(useCaseSource, 92, 105, "dependencies.userResolver"),
+  "",
+  "// Output",
+  quote(useCaseSource, 53, 53, "export type UseCaseOutput"),
+].join("\n");
+
+type Row = Readonly<{
+  stage: string;
+  lines: readonly number[];
+  file: string;
+  code: string;
+  ok: readonly number[];
+  err?: readonly number[];
+}>;
+
+const rows: readonly Row[] = [
+  { stage: "入力を検査する", lines: [2], file: "cancellationReason.ts", code: quote(cancellationReasonSource, 7, 13, "const CancellationReasonSchema"), ok: [3], err: [3] },
+  { stage: "対象を取得する", lines: [6, 7], file: "userResolver.ts", code: quote(userResolverSource, 54, 60, "resolveById"), ok: [3, 4] },
+  { stage: "対象を取得する", lines: [8], file: "errors.ts", code: quote(errorsSource, 25, 31, "ensureUserFound"), ok: [4, 6] },
+  { stage: "権限と状態を確認する", lines: [9], file: "authorization.ts", code: quote(authorizationSource, 7, 12, "ensureCanManageClinic"), ok: [3, 4] },
+  { stage: "対象を取得する", lines: [10, 11, 12], file: "appointmentResolver.ts", code: quote(appointmentResolverSource, 110, 120, "resolveById"), ok: [3, 4, 5, 6, 7, 8] },
+  { stage: "対象を取得する", lines: [13], file: "errors.ts", code: quote(errorsSource, 33, 39, "ensureAppointmentFound"), ok: [4, 6] },
+  { stage: "権限と状態を確認する", lines: [14], file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 65, 75, "ensureCancellable"), ok: [3, 4], err: [3, 5, 6, 7, 8, 9, 10] },
+  { stage: "結果を作る", lines: [15], file: "appointment.ts", code: quote(appointmentSource, 209, 233, "const cancel"), ok: [7, 12, 13, 16, 20] },
+  {
+    stage: "Event Store へ記録する",
+    lines: [16, 17, 18],
+    file: "appointmentEventStore.ts",
+    code: [quote(storeSource, 185, 195, `case "AppointmentCanceled"`), "// …", quote(storeSource, 206, 212, "tx.insert(domainEventsTable)")].join("\n"),
+    ok: [1, 2, 12, 13],
+  },
+  { stage: "Output を作る", lines: [19], file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 105, 105, ".map((event)"), ok: [0] },
+  { stage: "Output", lines: [22], file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 53, 53, "export type UseCaseOutput"), ok: [0] },
+];
+
+const outputRow = rows.length - 1;
+const appointmentId = `"11111111-…"`;
+const requestWith = (reason: string) =>
+  `{\n  actorUserId: "（受付担当者の ID）",\n  appointmentId: ${appointmentId},\n  reason: ${reason},\n}`;
+const request = requestWith(`"owner request"`);
+const user = `Ok({ kind: "Receptionist", userId: "（受付担当者の ID）" })`;
+const found = (kind: string) =>
+  `Ok({\n  kind: "${kind}",\n  appointmentId: ${appointmentId},\n  reason: "skin check",\n})`;
+const event = `Ok({\n  kind: "AppointmentCanceled",\n  aggregateState: {\n    kind: "Canceled",\n    appointmentId: ${appointmentId},\n    reason: "owner request",\n    canceledAt: "2026-08-30T05:00:00.000Z",\n  },\n})`;
+const finalValue = `Ok({\n  appointment: {\n    kind: "Canceled",\n    appointmentId: ${appointmentId},\n    reason: "owner request",\n    canceledAt: "2026-08-30T05:00:00.000Z",\n  },\n})`;
+const emptyReason = `Err("reason が空である")`;
+const invalidState = `Err({\n  kind: "InvalidAppointmentState",\n  appointmentId: ${appointmentId},\n  expectedKind: "ScheduledOrCheckedIn",\n  actualKind: "Paid",\n})`;
 
 type Step = Readonly<{
   text: string;
-  stage: number;
-  failedAt?: number;
-  state: "run" | "fail" | "skip" | "end";
+  row: number;
+  failed: boolean;
+  skipped: boolean;
   input: string;
   output: string;
 }>;
 
-const stageNames = ["入力を検査する", "対象を取得する", "権限と状態を確認する", "結果を作る", "Output"];
-const stageJobs = [
-  "キャンセル理由が空でないことを確かめます。",
-  "実行者と予約をデータベースから取得します。",
-  "予約を管理する権限と、予約が診察開始前であることを確かめます。",
-  "キャンセル後の予約とイベントを作ります。",
-  "呼び出し側が結果を受け取ります。",
+const step = (row: number, text: string, input: string, output: string): Step => ({ text, row, failed: false, skipped: false, input, output });
+const failAt = (row: number, text: string, input: string, output: string): Step => ({ ...step(row, text, input, output), failed: true });
+const carry = (row: number, text: string, failure: string): Step => ({ ...step(row, text, failure, failure), failed: true, skipped: true });
+
+const untilAppointment = (kind: string): readonly Step[] => [
+  step(0, "Web の入口が依頼を検査します。キャンセル理由は空ではないので、<code>.min(1)</code> を通ります。", request, request),
+  step(1, "<code>resolveById</code> がデータベースから実行者を取得します。", request, user),
+  step(2, "<code>ensureUserFound</code> は、実行者を取得できたので <code>ok(user)</code> を返します。", user, user),
+  step(3, "<code>ensureCanManageClinic</code> が権限を確かめます。<code>Receptionist</code> には権限があります。", user, user),
+  step(4, "<code>resolveById</code> が予約を取得します。ここで値は実行者から予約へ変わります。", user, found(kind)),
+  step(5, "<code>ensureAppointmentFound</code> は、予約を取得できたので <code>ok(appointment)</code> を返します。", found(kind), found(kind)),
 ];
-
-const appointmentId = `"11111111-1111-4111-8111-111111111111"`;
-const request = (reason: string) => `予約ID: ${appointmentId}\n実行者ID: （受付担当者の ID）\nキャンセル理由: ${reason}`;
-const checkedInput = `検査済みの入力\n${request(`"owner request"`)}`;
-const appointment = (fields: string) => `{\n  ${fields},\n  appointmentId: ${appointmentId},\n  petId: "22222222-2222-4222-8222-222222222222",\n  ownerId: "33333333-3333-4333-8333-333333333333",\n  scheduledAt: "2026-08-30T06:30:00.000Z",`;
-const cancelReason = `キャンセル理由: "owner request"`;
-const resolved = (kind: string) => `実行者: 受付担当者\n予約: ${appointment(`kind: "${kind}"`)}\n  reason: "skin check",\n}\n${cancelReason}`;
-const allowed = `予約: ${appointment(`kind: "Scheduled"`)}\n  reason: "skin check",\n}\n${cancelReason}`;
-const canceled = `AppointmentCanceled ${appointment(`kind: "Canceled"`)}\n  reason: "owner request",\n  canceledAt: "2026-08-30T05:00:00.000Z",\n}`;
-
-const carried = (failure: string, stage: number, failedAt: number, text: string): Step => ({
-  text,
-  stage,
-  failedAt,
-  state: stage === 4 ? "end" : "skip",
-  input: failure,
-  output: failure,
-});
-
-const emptyReason = `失敗\n理由: キャンセル理由が空である`;
-const notManageable = `失敗\n理由: 予約が診察開始前ではない\n（kind: "Paid"）`;
 
 const scenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }>)[] = [
   {
     label: "成功",
     steps: [
-      { text: "予約ID、実行者ID、キャンセル理由を受け取ります。理由が入っているので、検査済みの入力を次へ渡します。", stage: 0, state: "run", input: request(`"owner request"`), output: checkedInput },
-      { text: "検査済みの入力を受け取り、実行者と予約を取得します。実行者と予約のデータを次へ渡します。", stage: 1, state: "run", input: checkedInput, output: resolved("Scheduled") },
-      { text: "実行者に権限があり、予約は診察開始前の <code>Scheduled</code> です。診察開始前の予約を次へ渡します。", stage: 2, state: "run", input: resolved("Scheduled"), output: allowed },
-      { text: "診察開始前の予約とキャンセル理由から、<code>Canceled</code> のデータを持つ <code>AppointmentCanceled</code> を作ります。", stage: 3, state: "run", input: allowed, output: canceled },
-      { text: "値は上のレールの終点に届きます。呼び出し側は <code>AppointmentCanceled</code> を受け取ります。", stage: 4, state: "end", input: canceled, output: canceled },
+      ...untilAppointment("Scheduled"),
+      step(6, "<code>ensureCancellable</code> が状態を確かめます。<code>Scheduled</code> は診察開始前なので、<code>ok(appointment)</code> を返します。", found("Scheduled"), found("Scheduled")),
+      step(7, "<code>createEvent</code> が <code>Appointment.cancel</code> を呼びます。<code>Canceled</code> のデータを持つ <code>AppointmentCanceled</code> ができます。", found("Scheduled"), event),
+      step(8, "<code>andThrough</code> が store を呼び、予約の更新とイベントの追記を1つの transaction で行います。値は同じイベントのままです。", event, event),
+      step(9, "<code>map</code> がイベントからキャンセル後の予約を取り出します。", event, finalValue),
+      step(outputRow, "値は成功レールの終点に届きます。呼び出し側はキャンセル後の予約を受け取ります。", finalValue, finalValue),
     ],
   },
   {
     label: "理由が空",
     steps: [
-      { text: "キャンセル理由が空の依頼を受け取ります。検査は失敗し、値は下のレールへ切り替わります。次へ渡す値は失敗の理由です。", stage: 0, failedAt: 0, state: "fail", input: request(`""`), output: emptyReason },
-      carried(emptyReason, 1, 0, "失敗の値は下のレールを進みます。「対象を取得する」は実行しないので、予約を取得しません。"),
-      carried(emptyReason, 2, 0, "失敗の値はそのまま進みます。「権限と状態を確認する」も実行しません。"),
-      carried(emptyReason, 3, 0, "「結果を作る」も実行しません。失敗の値は変わりません。"),
-      carried(emptyReason, 4, 0, "失敗の値は下のレールの終点に届きます。呼び出し側は失敗の理由を受け取ります。理由のないキャンセルは記録されません。"),
+      failAt(0, "Web の入口が依頼を検査します。キャンセル理由が空なので、<code>.min(1)</code> で失敗します。値は失敗レールへ切り替わります。", requestWith(`""`), emptyReason),
+      carry(1, "失敗の値は失敗レールを進みます。実行者の取得は実行しません。", emptyReason),
+      carry(2, "失敗の値はそのまま進みます。この関数も実行しません。", emptyReason),
+      carry(3, "権限の確認も実行しません。", emptyReason),
+      carry(4, "予約の取得も実行しません。データベースは読みません。", emptyReason),
+      carry(5, "予約の確認も実行しません。", emptyReason),
+      carry(6, "状態の確認も実行しません。", emptyReason),
+      carry(7, "イベントも作りません。", emptyReason),
+      carry(8, "Event Store への記録も実行しません。理由のないキャンセルは記録されません。", emptyReason),
+      carry(9, "結果の取り出しも実行しません。失敗の値は変わりません。", emptyReason),
+      carry(outputRow, "失敗の値は失敗レールの終点に届きます。呼び出し側は失敗の理由を受け取ります。", emptyReason),
     ],
   },
   {
     label: "Paid の予約",
     steps: [
-      { text: "理由が入った依頼を受け取ります。検査は成功します。", stage: 0, state: "run", input: request(`"owner request"`), output: checkedInput },
-      { text: "実行者と予約を取得します。この予約の <code>kind</code> は <code>Paid</code> です。", stage: 1, state: "run", input: checkedInput, output: resolved("Paid") },
-      { text: "<code>Paid</code> は診察開始前ではないので、確認は失敗します。値は下のレールへ切り替わります。", stage: 2, failedAt: 2, state: "fail", input: resolved("Paid"), output: notManageable },
-      carried(notManageable, 3, 2, "失敗の値は下のレールを進みます。「結果を作る」は実行しないので、<code>Canceled</code> は作られません。"),
-      carried(notManageable, 4, 2, "失敗の値は下のレールの終点に届きます。呼び出し側は失敗の理由を受け取ります。記録は動きません。"),
+      ...untilAppointment("Paid"),
+      failAt(6, "<code>ensureCancellable</code> が状態を確かめます。<code>Paid</code> は診察開始前ではないので、<code>err</code> を返します。値は失敗レールへ切り替わります。", found("Paid"), invalidState),
+      carry(7, "失敗の値は失敗レールを進みます。<code>createEvent</code> は実行しないので、<code>Canceled</code> は作られません。", invalidState),
+      carry(8, "Event Store への記録も実行しません。記録は残りません。", invalidState),
+      carry(9, "結果の取り出しも実行しません。失敗の値は変わりません。", invalidState),
+      carry(outputRow, "失敗の値は失敗レールの終点に届きます。呼び出し側は <code>InvalidAppointmentState</code> を受け取ります。", invalidState),
     ],
   },
 ];
 
-const stepHtml = ({ text, state, input, output }: Step): string =>
-  `${text}<div data-step-extra><p>受け取るデータ</p><pre>${input}</pre><p>${state === "end" ? "呼び出し側が受け取るデータ" : "次へ渡すデータ"}</p><pre>${output}</pre></div>`;
+const escapeHtml = (text: string): string => text.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
+const stepHtml = ({ text, row, input, output }: Step): string =>
+  `${text}<div data-step-extra><p>実行する関数（${rows[row]?.file ?? ""}）</p><pre>${escapeHtml(rows[row]?.code ?? "")}</pre><p>受け取る値</p><pre>${escapeHtml(input)}</pre><p>返す値</p><pre>${escapeHtml(output)}</pre></div>`;
 const playerScenarios = scenarios.map(({ label, steps }) => ({ label, steps: steps.map(stepHtml) }));
+
+const values = [...new Set(scenarios.flatMap(({ steps }) => steps.flatMap(({ input, output }) => [input, output])))];
 const sceneData = JSON.stringify({
-  names: stageNames,
-  jobs: stageJobs,
-  scenarios: scenarios.map(({ steps }) => steps.map(({ text: _text, ...step }) => step)),
+  rows: rows.map(({ stage, lines, file, ok, err }) => ({ stage, lines, file, ok, err })),
+  scenarios: scenarios.map(({ steps }) =>
+    steps.map(({ row, failed, skipped, input, output }) => ({
+      row,
+      failed,
+      skipped,
+      input: values.indexOf(input),
+      output: values.indexOf(output),
+    })),
+  ),
 });
 const id = "cancel-railway-animation";
 ---
 
 <StepPlayer
   id={id}
-  title="キャンセルの依頼が各工程で何を受け取り、何を渡すか"
-  lead="各工程で受け取るデータと次へ渡すデータを確かめます。失敗しても処理は途中で抜けません。失敗の値は下のレールを終点まで進みます。"
-  note="予約のデータはこのページの例と同じです。実行者 ID と受付担当者は説明用の表記です。Paid の場面の予約は、説明用に kind だけを変えたものです。canceledAt の時刻の作り方は S6 で扱うので、ここでは省略します。"
+  title="キャンセルのコードを実行すると、値はどう流れるか"
+  lead="再生すると、値がパイプラインの行に沿って上から下へ進みます。下の枠では、その行が受け取る値、実行する関数の実装、返す値を順に確かめます。失敗しても処理は途中で抜けません。失敗の値は右の失敗レールを終点まで進みます。"
+  note="コードは参照実装 examples/final/src から引用しました。andThen の意味は S5 で学びます。受付担当者の ID と Paid の予約は説明用です。Err の理由が空の値は説明用の表記で、実際の入口は入力の検証エラーを返します。値は読みやすさのため、UUID を「11111111-…」と省略し、petId、ownerId、scheduledAt などの項目と、reason を包む Sensitive も省略しています。"
   scenarios={playerScenarios}
 >
-  <div class="cancel-rail" data-cancel-rail={sceneData}>
-    <p class="cancel-rail__legend"><span>上: 成功レール</span><span>下: 失敗レール</span></p>
-    <div class="cancel-rail__map">
-      <span class="cancel-rail__token" data-token></span>
-      <div class="cancel-rail__line cancel-rail__line--ok"></div>
-      <div class="cancel-rail__line cancel-rail__line--bad"></div>
-      {stageNames.map((name, index) => (
-        <div class="cancel-rail__stop" data-stop style={`--index:${index}`}>
-          <span class="cancel-rail__dot" data-dot>{index === 4 ? "" : index + 1}</span>
-          <span class="cancel-rail__name">{name}</span>
-          <span class="cancel-rail__dot cancel-rail__dot--bad"></span>
-        </div>
-      ))}
+  <div class="cancel-flow" data-cancel-flow={sceneData}>
+    <div class="cancel-flow__pipeline" data-pipeline>
+      <div class="cancel-flow__legend"><span>成功レール</span><span>失敗レール</span></div>
+      <div class="cancel-flow__rails" data-rails>
+        <span class="cancel-flow__token" data-token>Ok</span>
+        <Code code={pipeline} lang="ts" wrap />
+      </div>
     </div>
-    <div class="cancel-rail__io">
-      <div class="cancel-rail__box"><p>受け取るデータ</p><pre data-input></pre></div>
-      <div class="cancel-rail__job" data-job-box><strong data-name></strong><span data-job></span></div>
-      <div class="cancel-rail__box" data-output-box><p data-output-label>次へ渡すデータ</p><pre data-output></pre></div>
+    <div class="cancel-flow__box" data-input-box><p>受け取る値</p><div data-input></div></div>
+    <div class="cancel-flow__arrow" aria-hidden="true">↓</div>
+    <div class="cancel-flow__box" data-impl-box><p><span data-stage></span> <small data-file></small></p><div data-impl></div></div>
+    <div class="cancel-flow__arrow" aria-hidden="true">↓</div>
+    <div class="cancel-flow__box" data-output-box><p>返す値</p><div data-output></div></div>
+    <div hidden data-sources>
+      {rows.map((row) => <div data-impl-source><Code code={row.code} lang="ts" wrap /></div>)}
+      {values.map((value) => <div data-value-source><Code code={value} lang="ts" wrap /></div>)}
     </div>
   </div>
 </StepPlayer>
 
 <style is:inline>
-  .cancel-rail { --ok: #137333; --bad: #b42318; display: grid; gap: 1rem; min-width: 0; }
-  .cancel-rail__legend { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin: 0; font-size: 0.75rem; font-weight: 700; }
-  .cancel-rail__legend span:first-child { color: var(--ok); }
-  .cancel-rail__legend span:last-child { color: var(--bad); }
-  .cancel-rail__map { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); min-width: 0; }
-  .cancel-rail__line { position: absolute; left: 10%; right: 10%; height: 5px; border-radius: 3px; }
-  .cancel-rail__line--ok { top: 0.75rem; background: var(--ok); }
-  .cancel-rail__line--bad { bottom: 0.75rem; background: var(--bad); }
-  .cancel-rail__stop { position: relative; display: grid; justify-items: center; gap: 0.375rem; text-align: center; min-width: 0; }
-  .cancel-rail__dot { z-index: 1; display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border: 3px solid var(--ok); border-radius: 50%; background: var(--case-paper, #fffefa); font-size: 0.75rem; font-weight: 800; transition: background-color 250ms ease, opacity 250ms ease; }
-  .cancel-rail__dot--bad { border-color: var(--bad); }
-  .cancel-rail__dot[data-state="ok"] { background: #dff5e7; }
-  .cancel-rail__dot[data-state="bad"] { background: #fde7e4; border-color: var(--bad); }
-  .cancel-rail__dot[data-state="skip"] { opacity: 0.35; }
-  .cancel-rail__name { min-height: 3.25em; font-size: 0.75rem; line-height: 1.35; overflow-wrap: anywhere; }
-  .cancel-rail__stop[data-current] .cancel-rail__name { font-weight: 800; }
-  .cancel-rail__token { position: absolute; z-index: 2; left: calc((var(--stage, 0) + 0.5) * 20%); top: 0.875rem; width: 1.125rem; height: 1.125rem; margin: -0.5625rem 0 0 -0.5625rem; border: 3px solid var(--case-paper, #fffefa); border-radius: 50%; background: var(--case-blue, #2236b8); box-shadow: 0 0 0 2px var(--case-blue, #2236b8); transition: left 600ms cubic-bezier(0.3, 0.8, 0.3, 1), top 600ms cubic-bezier(0.3, 0.8, 0.3, 1); }
-  .cancel-rail__token[data-rail="bad"] { top: calc(100% - 0.875rem); background: var(--bad); box-shadow: 0 0 0 2px var(--bad); }
-  .cancel-rail__io { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.7fr) minmax(0, 1fr); gap: 0.5rem; }
-  .cancel-rail__box, .cancel-rail__job { min-width: 0; padding: 0.625rem; border: 1.5px solid var(--case-line, #17204d); border-radius: 0.375rem; }
-  .cancel-rail__box p { margin: 0 0 0.25rem; color: var(--case-muted, #58596d); font-size: 0.75rem; font-weight: 700; }
-  .cancel-rail__box pre { margin: 0; padding: 0; background: none; color: inherit; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.75rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .cancel-rail__box[data-bad] { border-color: var(--bad); background: #fde7e4; color: var(--bad); }
-  .cancel-rail__job { display: grid; align-content: center; gap: 0.25rem; background: var(--case-lemon, #fff29f); font-size: 0.8125rem; line-height: 1.5; }
-  .cancel-rail__job[data-state="skip"] { background: none; color: var(--case-muted, #58596d); border-style: dashed; }
-  .cancel-rail__job[data-state="fail"] { background: #fde7e4; border-color: var(--bad); }
-  @container (max-width: 34rem) { .cancel-rail__io { grid-template-columns: minmax(0, 1fr); } }
-  .step-player__scene:has(.cancel-rail) { container-type: inline-size; }
+  .cancel-flow { --ok: #4ade80; --bad: #ff8f7d; --bad-ink: #b42318; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.375rem; min-width: 0; }
+  .cancel-flow pre { margin: 0; padding: 0.5rem 0.625rem; border-radius: 0.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.75rem; line-height: 1.5; }
+  .cancel-flow pre code { display: flex; flex-direction: column; background: none; padding: 0; color: inherit; font-size: inherit; }
+  .cancel-flow .line { display: block; min-width: 0; min-height: 1.5em; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 -0.625rem; padding: 0 0.625rem; border-left: 3px solid transparent; transition: background-color 200ms ease, opacity 200ms ease; }
+  .cancel-flow__legend { display: flex; justify-content: space-between; padding: 0 0.125rem 0.25rem; font-size: 0.75rem; font-weight: 700; }
+  .cancel-flow__legend span:first-child { color: #137333; }
+  .cancel-flow__legend span:last-child { color: var(--bad-ink); }
+  .cancel-flow__rails { position: relative; padding: 0 1.875rem; border-radius: 0.375rem; background: #24292e; }
+  .cancel-flow__rails::before, .cancel-flow__rails::after { content: ""; position: absolute; top: 0; bottom: 0; width: 4px; }
+  .cancel-flow__rails::before { left: 0.8125rem; background: var(--ok); }
+  .cancel-flow__rails::after { right: 0.8125rem; background: var(--bad); }
+  .cancel-flow__rails .line[data-state="done"] { opacity: 0.6; }
+  .cancel-flow__rails .line[data-state="skipped"] { opacity: 0.35; }
+  .cancel-flow .line[data-hi] { background: rgb(255 210 27 / 0.24); border-left-color: #ffd21b; }
+  .cancel-flow .line[data-hi="bad"] { background: rgb(255 120 100 / 0.3); border-left-color: var(--bad); }
+  .cancel-flow__token { position: absolute; z-index: 2; top: 0; left: 0; padding: 0 0.3125rem; border-radius: 999px; background: var(--ok); color: #111116; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.6875rem; font-weight: 800; line-height: 1.5; transition: transform 550ms cubic-bezier(0.3, 0.8, 0.3, 1), background-color 250ms ease; }
+  .cancel-flow__token[data-rail="bad"] { background: var(--bad); }
+  .cancel-flow__box { min-width: 0; margin-top: 0.25rem; }
+  .cancel-flow__box p { margin: 0 0 0.25rem; color: var(--case-muted, #58596d); font-size: 0.8125rem; font-weight: 700; }
+  .cancel-flow__box small { font-weight: 400; font-size: 0.75rem; }
+  .cancel-flow__box[data-bad] p { color: var(--bad-ink); }
+  .cancel-flow__box[data-bad] pre { outline: 2px solid var(--bad); }
+  .cancel-flow__box[data-skipped] pre { opacity: 0.45; }
+  .cancel-flow__arrow { color: var(--case-muted, #58596d); font-weight: 800; line-height: 1; text-align: center; }
+  .cancel-flow[data-run] [data-input-box] { animation: cancel-flow-arrive 350ms ease both; }
+  .cancel-flow[data-run] [data-impl-box] { animation: cancel-flow-arrive 350ms ease 300ms both; }
+  .cancel-flow[data-run] [data-output-box] { animation: cancel-flow-arrive 400ms ease 650ms both; }
+  @keyframes cancel-flow-arrive { from { opacity: 0; transform: translateY(-0.625rem); } to { opacity: 1; transform: none; } }
 </style>
 <script is:inline define:vars={{ id }}>
   const root = document.getElementById(id);
-  const scene = root.querySelector("[data-cancel-rail]");
-  const data = JSON.parse(scene.dataset.cancelRail);
+  const scene = root.querySelector("[data-cancel-flow]");
+  const data = JSON.parse(scene.dataset.cancelFlow);
+  const rails = scene.querySelector("[data-rails]");
   const token = scene.querySelector("[data-token]");
-  const stops = [...scene.querySelectorAll("[data-stop]")];
-  const dotState = (index, { stage, failedAt }) => {
-    if (failedAt === undefined) return index < stage ? "ok" : "";
-    if (index < failedAt) return "ok";
-    if (index === failedAt) return "bad";
-    return index <= stage ? "skip" : "";
+  const pipelineLines = [...rails.querySelectorAll(".line")];
+  const implSources = [...scene.querySelectorAll("[data-impl-source]")];
+  const valueSources = [...scene.querySelectorAll("[data-value-source]")];
+  const part = (name) => scene.querySelector(`[data-${name}]`);
+  const show = (target, source) => target.replaceChildren(source.firstElementChild.cloneNode(true));
+  let current;
+
+  const pipelineState = (rowIndex, step) => {
+    if (rowIndex > step.row) return "";
+    if (rowIndex < step.row) return step.failed ? "skipped" : "done";
+    return step.skipped ? "skipped" : "current";
   };
+
+  const place = () => {
+    if (!current) return;
+    const line = pipelineLines[data.rows[current.row].lines[0]];
+    const railsRect = rails.getBoundingClientRect();
+    const lineRect = line.getBoundingClientRect();
+    const x = current.failed ? railsRect.width - token.offsetWidth - 2 : 2;
+    const y = lineRect.top - railsRect.top + lineRect.height / 2 - token.offsetHeight / 2;
+    token.style.transform = `translate(${x}px, ${y}px)`;
+  };
+
   root.addEventListener("stepchange", ({ detail }) => {
-    const step = data.scenarios[detail.scenarioIndex][detail.stepIndex];
-    const onBadRail = step.failedAt !== undefined;
-    token.style.setProperty("--stage", String(step.stage));
-    token.dataset.rail = onBadRail ? "bad" : "ok";
-    stops.forEach((stop, index) => {
-      stop.toggleAttribute("data-current", index === step.stage);
-      stop.querySelector("[data-dot]").dataset.state = dotState(index, step);
+    current = data.scenarios[detail.scenarioIndex][detail.stepIndex];
+    const row = data.rows[current.row];
+    pipelineLines.forEach((line) => {
+      line.removeAttribute("data-hi");
+      line.removeAttribute("data-state");
     });
-    scene.querySelector("[data-input]").textContent = step.input;
-    scene.querySelector("[data-output]").textContent = step.output;
-    scene.querySelector("[data-output-label]").textContent =
-      step.state === "end" ? "呼び出し側が受け取るデータ" : "次へ渡すデータ";
-    scene.querySelector("[data-name]").textContent = data.names[step.stage];
-    scene.querySelector("[data-job]").textContent =
-      step.state === "skip" ? "失敗レールの上なので、この工程は実行しません。" : data.jobs[step.stage];
-    scene.querySelector("[data-job-box]").dataset.state = step.state;
-    scene.querySelector("[data-output-box]").toggleAttribute("data-bad", onBadRail);
+    data.rows.forEach((item, rowIndex) => {
+      const state = pipelineState(rowIndex, current);
+      item.lines.forEach((lineIndex) => {
+        const line = pipelineLines[lineIndex];
+        if (state === "current") line.dataset.hi = current.failed ? "bad" : "ok";
+        else if (state) line.dataset.state = state;
+      });
+    });
+    show(part("input"), valueSources[current.input]);
+    show(part("output"), valueSources[current.output]);
+    show(part("impl"), implSources[current.row]);
+    part("stage").textContent = current.skipped ? `${row.stage}（実行しません）` : row.stage;
+    part("file").textContent = row.file;
+    part("impl-box").toggleAttribute("data-skipped", current.skipped);
+    part("output-box").toggleAttribute("data-bad", current.failed);
+    if (!current.skipped) {
+      const implLines = [...part("impl").querySelectorAll(".line")];
+      const highlighted = current.failed ? row.err ?? row.ok : row.ok;
+      highlighted.forEach((lineIndex) => {
+        implLines[lineIndex].dataset.hi = current.failed ? "bad" : "ok";
+      });
+    }
+    token.textContent = current.failed ? "Err" : "Ok";
+    token.dataset.rail = current.failed ? "bad" : "ok";
+    scene.removeAttribute("data-run");
+    void scene.offsetWidth;
+    scene.setAttribute("data-run", "");
+    place();
   });
+  new ResizeObserver(place).observe(rails);
 </script>
