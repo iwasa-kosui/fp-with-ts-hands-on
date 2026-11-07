@@ -286,6 +286,54 @@ const distributedAppointmentSnippets = await loadSolutionSnippets({
     },
   ],
 });
+const preconditionSnippets = await loadSolutionSnippets({
+  solutions: [
+    {
+      path: "examples/session-03/src/domain/appointment/transitions.ts",
+      symbol: "startExamination",
+      lines: [16, 20],
+    },
+    {
+      path: "examples/session-03/test/regression/type-fixtures/s2-paid-cannot-start.ts",
+      symbol: "startExamination",
+      lines: [6, 9],
+    },
+    {
+      path: "examples/session-02/src/domain/appointment/transitions.ts",
+      symbol: "requireKind",
+      lines: [8, 12],
+    },
+    {
+      path: "examples/session-02/src/domain/appointment/transitions.ts",
+      symbol: "startExamination",
+      lines: [19, 26],
+    },
+    {
+      path: "examples/session-03/src/web/routes.ts",
+      symbol: "start-examination",
+      lines: [99, 100],
+    },
+  ],
+});
+const [
+  preconditionSignature,
+  preconditionTypeError,
+  preconditionRequireKind,
+  preconditionRuntimeCall,
+  preconditionRoute,
+] = preconditionSnippets;
+const preconditionCode = {
+  signature: preconditionSignature,
+  typeError: preconditionTypeError,
+  runtime: {
+    path: preconditionRequireKind.solution.path,
+    code: `${preconditionRequireKind.code}\n\n${preconditionRuntimeCall.code}`,
+  },
+  route: {
+    path: preconditionRoute.solution.path,
+    code: preconditionRoute.code.replace(/^ {4}/gm, ""),
+  },
+};
 const distributedAppointmentCode = distributedAppointmentSnippets
   .map(({ code }) => code)
   .join("\n\n");
@@ -417,6 +465,7 @@ ${session.steps.map((step) => `- ${step.goal}`).join("\n")}
         teaching={teaching}
         narrative={narrative}
         distributedAppointmentCode={distributedAppointmentCode}
+        preconditionCode={preconditionCode}
         javaStateCode={javaStateCode}
         rustStateCode={rustStateCode}
         initialExerciseFailureCount={initialExerciseFailureCount}
