@@ -410,7 +410,7 @@ const readExternalTypeFiles = async (
           (/\.d\.[cm]?ts$/.test(entry.name) || entry.name === "package.json")
         ) {
           const projectPath = path.replace(`${runtimeProjectDirectory}/`, "");
-          files[`file:///${projectPath}`] = await runtime.fs.readFile(
+          files[`file:///workspace/${projectPath}`] = await runtime.fs.readFile(
             path,
             "utf8",
           );
@@ -428,9 +428,14 @@ const readExternalTypeFiles = async (
   };
 
   await Promise.all(
-    ["node_modules/zod", "node_modules/vitest", "node_modules/@vitest"].map(
-      (directory) =>
-        visitIfPresent(`${runtimeProjectDirectory}/${directory}`),
+    [
+      "node_modules/zod",
+      "node_modules/vitest",
+      "node_modules/@vitest",
+      "node_modules/neverthrow",
+      "node_modules/hono",
+    ].map((directory) =>
+      visitIfPresent(`${runtimeProjectDirectory}/${directory}`),
     ),
   );
   return files;
