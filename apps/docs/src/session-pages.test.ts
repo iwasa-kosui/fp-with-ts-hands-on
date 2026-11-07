@@ -247,6 +247,13 @@ const reviewText = [
   "自分の業務コードで、今回と同種の問題が起きうる箇所はどこですか。",
 ] as const;
 
+// S06 の文が S01〜S04 と同じ敬体に直るまで、S06 だけ変更前の文を検査する
+const legacyReviewText = [
+  "`as` によるキャストが入っていないか全文検索して確認する。",
+  "`git status --short` で想定外の path がないか確認する。",
+  "型検査では確認できないことを、テストまたは実行時に確認して記録する。",
+] as const;
+
 const reviewPromptFor = {
   "01-state-transitions": "起きてはいけない状態遷移",
   "02-adt-and-exhaustiveness": "未対応のまま残してはいけない分岐",
@@ -326,7 +333,11 @@ describe("session pages", () => {
         expect(source).not.toContain(dependency);
       }
       expect(pageModule.navigation).toEqual(contract.navigation);
-      for (const text of reviewText) expect(source).toContain(text);
+      const expectedReviewText =
+        slug === "06-effects-and-consistency"
+          ? [...legacyReviewText, ...reviewText.slice(3)]
+          : reviewText;
+      for (const text of expectedReviewText) expect(source).toContain(text);
       expect(source).toContain(reviewPromptFor[slug]);
       expect(source).toContain(
         `\`git diff --stat -- examples/${contract.workspace.snapshot}\``,
