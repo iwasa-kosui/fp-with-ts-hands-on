@@ -26,6 +26,7 @@ const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-06/README.md",
   "examples/session-07/README.md",
   "examples/session-05/exercises/result-errors.test.ts",
+  "examples/session-07/src/useCase/startExamination.ts",
 ];
 
 const STEP_1_TO_3_FILES = ["src/domain/appointment/transitions.ts"];

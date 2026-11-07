@@ -241,7 +241,8 @@
   }
 }
 
-.ep-impl figcaption {
+.ep-impl figcaption,
+.ep-impl__file {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -254,7 +255,12 @@
   line-height: 1.3;
 }
 
-.ep-impl figcaption code {
+.ep-impl__file {
+  margin: 0;
+}
+
+.ep-impl figcaption code,
+.ep-impl__file code {
   overflow-wrap: anywhere;
 }
 

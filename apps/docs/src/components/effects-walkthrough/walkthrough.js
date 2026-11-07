@@ -55,7 +55,9 @@ for (const root of roots) {
       if (target === null) return;
       const box = target.getBoundingClientRect();
       const keeps = [...root.querySelectorAll("[data-walk-keep]")].map((el) => el.getBoundingClientRect());
-      const key = [box, ...keeps].map((rect) => `${rect.top}|${rect.bottom}`).join(",");
+      const line = keeps.length > 0 ? target.querySelector(".line.is-active") : null;
+      const marked = line === null ? [] : [line.getBoundingClientRect()];
+      const key = [box, ...keeps, ...marked].map((rect) => `${rect.top}|${rect.bottom}`).join(",");
       still = key === seen ? still + 1 : 0;
       seen = key;
       ticks += 1;
@@ -68,7 +70,10 @@ for (const root of roots) {
       const stuck = (parseFloat(getComputedStyle(sticky).top) || 0) + sticky.offsetHeight;
       let top = box.top >= stuck && box.bottom <= innerHeight ? 0 : box.top - stuck - 8;
       const lowest = Math.max(...keeps.map((rect) => rect.bottom));
-      if (lowest - top > innerHeight - 8) top = lowest - innerHeight + 8;
+      if (lowest - top > innerHeight - 8) {
+        top = lowest - innerHeight + 8;
+        if (marked.length > 0) top = Math.min(top, marked[0].top - stuck - 8);
+      }
       if (top === 0) return;
       scrollBy({ top, behavior: reduced.matches ? "instant" : "smooth" });
     };

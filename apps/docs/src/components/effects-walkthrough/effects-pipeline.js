@@ -19,9 +19,10 @@ for (const figure of figures) {
   let lastScene = -1;
   let width = 0;
 
-  const revealFirst = (pre, code, marked, instant) => {
+  const revealFirst = (rows, marked, instant) => {
+    const line = rows[marked.size > 0 ? Math.min(...marked) : 0];
+    const pre = line.closest("pre");
     if (pre.scrollHeight <= pre.clientHeight) return;
-    const line = code.children[marked.size > 0 ? Math.min(...marked) : 0];
     const offset = line.getBoundingClientRect().top - pre.getBoundingClientRect().top + pre.scrollTop;
     const lineHeight = parseFloat(getComputedStyle(line).lineHeight) || 20;
     pre.scrollTo({ top: Math.max(0, offset - lineHeight * 1.5), behavior: instant || reduced.matches ? "instant" : "smooth" });
@@ -31,12 +32,13 @@ for (const figure of figures) {
     for (const impl of part.impls) {
       const active = impl.dataset.impl === name;
       const wasActive = impl.hasAttribute("data-active");
-      const code = impl.querySelector("pre code");
+      const codes = [...impl.querySelectorAll("pre code")];
+      const rows = codes.flatMap((code) => [...code.children]);
       const marked = new Set(active ? lines : []);
       impl.toggleAttribute("data-active", active);
-      code.toggleAttribute("data-has-active", marked.size > 0);
-      [...code.children].forEach((line, index) => line.classList.toggle("is-active", marked.has(index)));
-      if (active) revealFirst(impl.querySelector("pre"), code, marked, instant || !wasActive);
+      for (const code of codes) code.toggleAttribute("data-has-active", marked.size > 0);
+      rows.forEach((line, index) => line.classList.toggle("is-active", marked.has(index)));
+      if (active) revealFirst(rows, marked, instant || !wasActive);
     }
   };
 
