@@ -17,7 +17,7 @@ import InlineCode from "../../components/InlineCode.astro";
   <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
   <p>ユースケースは成功値だけを返す型のまま複数の Error をthrowします。Web側は予約なしの文言だけをcatchしているため、後から足した状態不正の例外を処理できず、500を返します。</p>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
-  <p>予約なしと状態不正を、kindを持つDiscriminated Unionにして、Resultで返します。andThenで、失敗後の状態遷移とStoreの呼び出しを止めます。状態遷移はドメイン関数を直接呼び、外部境界のResolverとStoreだけを依存として受け取ります。Web側はmatchとswitchで、Resultに含めた失敗をすべて網羅し、noticeへ変換します。</p>
+  <p>予約なしと状態不正を、kindを持つDiscriminated Unionにして、Resultで返します。andThenで、失敗後の状態遷移とStoreの呼び出しを止めます。状態遷移はドメイン関数を直接呼び、外部境界のResolverとStoreだけを依存として受け取ります。ドメイン関数は、外部に触れず、受け取った値と業務のルールだけで次の状態を作る関数です。S04では <code>transitionToInExamination</code> がこれにあたります。Web側はmatchとswitchで、Resultに含めた失敗をすべて網羅し、noticeへ変換します。</p>
   <p>Resolverは、予約IDから現在の予約をデータベースなどの外部から取得する部品です。Storeは、状態を進めた予約を外部へ保存する部品です。どちらも外部に触れるので、ユースケースは引数の <code>deps</code> から受け取ります。</p>
   <h3>このセッションで守ること</h3>
   <ul class="decision-list">{props.session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
@@ -49,6 +49,10 @@ import InlineCode from "../../components/InlineCode.astro";
 <section id="teach">
   <h2>事前知識（{props.session.timeBreakdown.teach}分）</h2>
   <p>まず、失敗を値で返すコードをisErrで書いたときの煩雑さを確かめます。次にneverthrowのResultを学び、例外とResultをどう使い分けるかを整理します。最後にandThenとmapで工程をつなぎ、matchとswitchで呼び出し側の処理漏れを型エラーにします。</p>
+  <h3 id="deps-then-input">依存と入力を2段に分けて受け取る</h3>
+  <p>S04のユースケース <code>startExamination</code> は、<code>{"(deps) => (input) =>"}</code> という形で定義されています。矢印が2つあり、引数を2回に分けて受け取ります。1回目の <code>deps</code> は、Resolver と Store のように外部に触れる部品です。2回目の <code>input</code> は、予約IDや獣医師IDのように依頼ごとに変わる値です。引数を1つずつ受け取り、そのたびに次の関数を返す形を、カリー化と呼びます。</p>
+  <DepsThenInputFlow />
+  <p>2段に分けると、外部に触れる部品を渡す場所と、依頼ごとの値を渡す場所が分かれます。演習の Web ルートとテストは、2段を続けて呼びます。完成形の参照実装（<code>examples/final</code>）は、アプリの起動時に1回だけ依存を渡してユースケースを作り、Web ルートは依頼ごとの入力だけを渡します。Resolver と Store をドメインロジックの外へ置く理由は、S05で詳しく読みます。</p>
   <TeachingTopic name="isErr で書くと、工程ごとに同じ分岐が増える">
     <p>throw をやめて失敗を値で返すと、呼び出し側は失敗を確かめてから次の工程へ進みます。Result は、成功値か失敗のどちらかを持つ値です。ensureAppointmentFound と ensureCheckedIn が Result を返すとして、診察開始を素直に書くと次のようになります。isErr() が true なら error に失敗が入り、false なら value に成功値が入ります。</p>
     <figure class="code-block" data-teaching-example>
@@ -91,9 +95,9 @@ import InlineCode from "../../components/InlineCode.astro";
         <tr><th scope="row">受け取る場所</th><td>Web ルートの <code>match</code> と <code>switch</code></td><td>外側の例外境界</td></tr>
       </tbody>
     </table>
-    <p>次の図で、2つの失敗がどこまで進み、どこで受け取られるかを見比べます。図のコードの andThen、map、match は後の節で説明します。ここでは、2つの失敗がどこで止まり、どこで受け取られるかだけを追ってください。</p>
+    <p>次の図で、2つの失敗がどこで止まり、どこで受け取られるかを見比べます。図のコードの andThen、map、match は後の節で説明します。</p>
     <ExceptionOrResultAnimation />
-    <p>システムエラーを Result に変換しないのは、保存が完了したか分からないまま後続の処理を続けないためです。保存の結果を確認できないまま別の記録先への書き込みや外部サービスへの通知を行うと、データベースには保存されていないのに、書き込みや通知だけが行われる可能性があります。演習コードの外側の例外境界は <code>app.onError</code> で、例外を受け取ると500を返します。実際の業務では、この境界で例外をログへ記録し、必要なロールバックや接続の解放も行います。</p>
+    <p>システムエラーを Result に変換しないのは、保存が完了したか分からないまま後続の処理を続けないためです。保存の結果を確認できないまま別の記録先への書き込みや外部サービスへの通知を行うと、データベースには保存されていないのに、書き込みや通知だけが行われる可能性があります。演習コードの外側の例外境界は <code>app.onError</code> で、例外を受け取ると500を返します。実際の業務では、この境界で例外をログへ記録し、必要なロールバック（途中まで進めたデータベースへの書き込みを取り消すこと）や接続の解放も行います。</p>
     <p class="teaching-topic__why">業務エラーを例外で投げると、関数の型から失敗理由を読み取れず、呼び出し側は処理漏れに気付けません。システムエラーを Result に入れると、呼び出し側に選べる操作がない失敗まで型に並び、すべての呼び出し側が同じ処理を書くことになります。迷ったときは、呼び出し側がこの失敗の理由ごとに違う操作を選ぶかを確かめます。</p>
   </article>
   <TeachingTopic name="andThen と map で工程をつなぐ">
@@ -105,7 +109,7 @@ import InlineCode from "../../components/InlineCode.astro";
     <AndThenMapFlow />
     <p>診察開始の工程では、次のように使い分けます。</p>
     <ul class="decision-list">
-      <li><strong><code>andThen</code>（渡す関数の戻り値: Result）:</strong> 業務エラーを返しうる工程。来院済みかを確かめる ensureCheckedIn が該当し、Err を返すと後続の工程は呼ばれません。ensureAppointmentFound は最初の工程で前の Result がないので、andThen を使わずに直接呼びます。入力の検査は Session 03 の境界で済んでいます。</li>
+      <li><strong><code>andThen</code>（渡す関数の戻り値: Result）:</strong> 業務エラーを返しうる工程。来院済みかを確かめる ensureCheckedIn が該当し、Err を返すと後続の工程は呼ばれません。ensureAppointmentFound は最初の工程で前の Result がないので、andThen を使わずに直接呼びます。入力の検査は Session 03 の境界で済んでいます。S03のschemaは、予約IDの形式だけを確かめました。そのIDの予約が実在するかは、resolver で取得した結果を <code>ensureAppointmentFound</code> が確かめます。</li>
       <li><strong><code>map</code>（渡す関数の戻り値: 素の値）:</strong> 業務エラーを返さない工程。状態遷移の transitionToInExamination が該当します。</li>
     </ul>
     <Fragment slot="why">渡す関数が業務エラーを返しうるなら andThen、返さないなら map を選びます。Err になった後はどちらのコールバックも呼ばれないので、失敗の後に状態遷移や保存が実行されることはありません。</Fragment>
@@ -117,7 +121,7 @@ import InlineCode from "../../components/InlineCode.astro";
     after={props.teaching[3].after}
   >
     <p>同じ診察開始を andThen と map で書くと、if が消えて工程の順序だけが残ります。</p>
-    <Fragment slot="why">after は、戻り値の型と処理順を上から続けて読めます。Err になった時点で後続の andThen と map は呼ばれません。2つ目の map は値を変えません。保存してから同じ値を返すので、保存の後も InExamination が次へ渡ります。resolver と store は外部境界として deps から受け取りますが、状態遷移はドメイン知識なので直接呼びます。store.save が投げる保存障害は、呼び出し側が理由別の対応を選ぶ業務エラーではなく、要求された保存処理を完了できないシステムエラーです。Result に変換せず、例外のまま外側へ伝えます。</Fragment>
+    <Fragment slot="why">after は、戻り値の型と処理順を上から続けて読めます。Err になった時点で後続の andThen と map は呼ばれません。2つ目の map は値を変えません。保存してから同じ値を返すので、保存の後も InExamination が次へ渡ります。resolver と store は外部境界として deps から受け取りますが、状態遷移は外部に触れないドメイン関数なので直接呼びます。store.save が投げる保存障害は、呼び出し側が理由別の対応を選ぶ業務エラーではなく、要求された保存処理を完了できないシステムエラーです。Result に変換せず、例外のまま外側へ伝えます。</Fragment>
   </TeachingTopic>
   <article class="teaching-topic">
     <h3>match と switch で呼び出し側の処理漏れを型エラーにする</h3>
@@ -168,7 +172,7 @@ import InlineCode from "../../components/InlineCode.astro";
     <ul class="decision-list">{props.delegationDecisions.map((decision) => <li>{decision}</li>)}</ul>
   </div>
   <h3>この演習で解決しないこと</h3>
-  <p>どの失敗を業務エラーとして画面のnoticeへ変換するかは、人の判断とレビューが必要です。呼び出し側に理由別の対応がなく、要求された処理を完了できないシステムエラーは、Resultへ変換せず外側の例外境界へ伝えます。</p>
+  <p>どの失敗を業務エラーとして画面のnoticeへ変換するかは、人の判断とレビューが必要です。呼び出し側に理由別の対応がなく、要求された処理を完了できないシステムエラーは、Resultへ変換せず外側の例外境界へ伝えます。入力の検査の失敗は、利用者が入力を直せば解決するので、Result で返す業務エラーの側に入ります。S05では、パイプラインの最初の工程の失敗として扱います。演習の Web ルートは、S03の検査の結果を <code>_unsafeUnwrap</code> で取り出しているので、検査に失敗した入力は今は500になります。この演習では変えません。</p>
   <h3 data-solution-heading>{props.session.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
   {props.session.solutionPresentation === "completed-file" ? (
     <div class="before-after" aria-label="業務エラーとシステムエラーの見比べ方">
