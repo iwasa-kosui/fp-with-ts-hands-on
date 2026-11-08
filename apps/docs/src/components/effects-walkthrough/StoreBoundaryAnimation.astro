@@ -236,7 +236,7 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
         audit: "off",
       },
       {
-        text: "`storeAtomically` が transaction を開きます。ここから先の書き込みは、最後まで未確定です。",
+        text: "`storeAtomically` が transaction を開始します。ここから先の書き込みは、確定するまで未確定です。",
         call: { pane: "after-call", lines: [0] },
         impl: { pane: "after-atomic", lines: [0, 1] },
         tx: "open",
@@ -287,7 +287,7 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
     label: "修正後: 監査記録の保存に失敗",
     frames: [
       {
-        text: "`storeAtomically` が transaction を開きます。",
+        text: "`storeAtomically` が transaction を開始します。",
         call: { pane: "after-call", lines: [0] },
         impl: { pane: "after-atomic", lines: [0, 1] },
         tx: "open",
@@ -347,7 +347,7 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
     label: "修正後: 競合",
     frames: [
       {
-        text: "transaction を開く前に、別の依頼が先に診察を開始していました。データベースの予約はすでに `InExamination` です。",
+        text: "transaction を開始する前に、別の依頼が先に診察を開始していました。データベースの予約はすでに `InExamination` です。",
         call: null,
         impl: null,
         tx: "wait",
@@ -385,7 +385,7 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
   id="store-boundary-walkthrough"
   title="状態と監査記録を1回で保存する"
   lead="保存の途中で失敗が起きたとき、データベースに何が残るかを、修正前と修正後で1コマずつ追います。"
-  note="行の値は説明用の例です。列は一部だけを載せています。"
+  note="行の値は説明用の例です。列は一部だけを載せています。コードの insert(...).values(...) や select(...).from(...).where(...) は、データベースを操作するライブラリ Drizzle ORM の書き方です。database.transaction に渡した関数の中の書き込みは、1つの transaction にまとまります。関数が値を返すと確定し、例外を投げると取り消されます。"
   scenes={scenes.map(({ label, frames }) => ({ label, frames: frames.map(({ text }) => ({ text })) }))}
 >
   <div class="sb" data-store-boundary data-frames={JSON.stringify(frameData)}>
