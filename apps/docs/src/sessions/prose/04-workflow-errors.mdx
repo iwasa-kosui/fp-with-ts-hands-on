@@ -48,11 +48,11 @@ import InlineCode from "../../components/InlineCode.astro";
 
 <section id="teach">
   <h2>事前知識（{props.session.timeBreakdown.teach}分）</h2>
-  <p>まず、失敗を値で返すコードをisErrで書いたときの煩雑さを確かめます。次にneverthrowのResultを学び、例外とResultをどう使い分けるかを整理します。最後にandThenとmapで工程をつなぎ、matchとswitchで呼び出し側の処理漏れを型エラーにします。</p>
+  <p>まず、ユースケースが依存と入力を2段に分けて受け取る形を確かめます。次に、失敗を値で返すコードをisErrで書いたときの煩雑さを確かめます。さらにneverthrowのResultを学び、例外とResultをどう使い分けるかを整理します。最後にandThenとmapで工程をつなぎ、matchとswitchで呼び出し側の処理漏れを型エラーにします。</p>
   <h3 id="deps-then-input">依存と入力を2段に分けて受け取る</h3>
   <p>S04のユースケース <code>startExamination</code> は、<code>{"(deps) => (input) =>"}</code> という形で定義されています。矢印が2つあり、引数を2回に分けて受け取ります。1回目の <code>deps</code> は、Resolver と Store のように外部に触れる部品です。2回目の <code>input</code> は、予約IDや獣医師IDのように依頼ごとに変わる値です。引数を1つずつ受け取り、そのたびに次の関数を返す形を、カリー化と呼びます。</p>
   <DepsThenInputFlow />
-  <p>2段に分けると、外部に触れる部品を渡す場所と、依頼ごとの値を渡す場所が分かれます。演習の Web ルートとテストは、2段を続けて呼びます。完成形の参照実装（<code>examples/final</code>）は、アプリの起動時に1回だけ依存を渡してユースケースを作り、Web ルートは依頼ごとの入力だけを渡します。Resolver と Store をドメインロジックの外へ置く理由は、S05で詳しく読みます。</p>
+  <p>完成形の参照実装（<code>examples/final</code>）は、アプリの起動時に1回だけ依存を渡してユースケースを作り、Web ルートは依頼ごとの入力だけを渡します。Resolver と Store をドメインロジックの外へ置く理由は、S05で詳しく読みます。</p>
   <TeachingTopic name="isErr で書くと、工程ごとに同じ分岐が増える">
     <p>throw をやめて失敗を値で返すと、呼び出し側は失敗を確かめてから次の工程へ進みます。Result は、成功値か失敗のどちらかを持つ値です。ensureAppointmentFound と ensureCheckedIn が Result を返すとして、診察開始を素直に書くと次のようになります。isErr() が true なら error に失敗が入り、false なら value に成功値が入ります。</p>
     <figure class="code-block" data-teaching-example>
