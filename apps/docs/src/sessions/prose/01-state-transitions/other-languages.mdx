@@ -1,7 +1,7 @@
 import { Code } from "astro:components";
 import { javaStateCode, rustStateCode } from "../../pages/01-state-transitions-content";
 
-<p>状態ごとに型を分け、遷移関数の引数で受け取る状態を限定する考え方は、TypeScript 以外でも使えます。Java と Rust で同じ遷移を書くと、次のようになります。どちらも説明用の短い例で、演習では使いません。</p>
+<p>状態ごとに型を分け、遷移関数の引数で受け取る状態を限定する考え方は、Java と Rust でも使えます。どちらも説明用の短い例です。</p>
 
 <div class="session-split">
   <figure class="code-block">
@@ -14,4 +14,4 @@ import { javaStateCode, rustStateCode } from "../../pages/01-state-transitions-c
   </figure>
 </div>
 
-<p>TypeScript では <code>kind</code> という項目を自分で書き、コンパイラがその値で型を絞り込みます。Java の <code>sealed interface</code> は、実装できる型を <code>permits</code> に書いた型に限定します。Rust の <code>enum</code> は、列挙子そのものが状態を区別します。</p>
+<p>Java の <code>sealed interface</code> は実装できる型を <code>permits</code> に書いた型に限定します。Rust の <code>enum</code> は列挙子そのものが状態を区別します。</p>

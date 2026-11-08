@@ -143,41 +143,26 @@ export const navigation = ({
 export const javaStateCode = `sealed interface Appointment
     permits CheckedIn, InExamination {}
 
-record CheckedIn(
-    String appointmentId)
-    implements Appointment {}
+record CheckedIn(String id) implements Appointment {}
 
-record InExamination(
-    String appointmentId,
-    String veterinarianId)
+record InExamination(String id, String vetId)
     implements Appointment {}
 
 static InExamination startExamination(
-    CheckedIn c, String veterinarianId) {
-  return new InExamination(
-      c.appointmentId(), veterinarianId);
+    CheckedIn c, String vetId) {
+  return new InExamination(c.id(), vetId);
 }`;
 
-export const rustStateCode = `struct CheckedIn {
-    appointment_id: String,
-}
+export const rustStateCode = `struct CheckedIn { id: String }
 
-struct InExamination {
-    appointment_id: String,
-    veterinarian_id: String,
-}
+struct InExamination { id: String, vet_id: String }
 
 enum Appointment {
     CheckedIn(CheckedIn),
     InExamination(InExamination),
 }
 
-fn start_examination(
-    c: CheckedIn,
-    veterinarian_id: String,
-) -> InExamination {
-    InExamination {
-        appointment_id: c.appointment_id,
-        veterinarian_id,
-    }
+fn start_examination(c: CheckedIn, vet_id: String)
+    -> InExamination {
+    InExamination { id: c.id, vet_id }
 }`;
