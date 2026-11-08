@@ -1,0 +1,6 @@
+import BoundaryPlayer from "../../../components/BoundaryPlayer.astro";
+import { sensitiveWalkthrough } from "../../boundary-walkthroughs";
+
+<p>PII（Personally Identifiable Information）は、氏名やメールアドレスのように、個人を識別できる情報です。<code>Sensitive</code> は、連絡先の値を包み、ログと JSON では <code>[REDACTED]</code> に伏せる型です。連絡先の schema は、<code>.transform</code>（検査を通った値を別の値に変換する Zod のメソッド）で <code>Sensitive.of</code> を呼んで包みます。</p>
+
+<BoundaryPlayer walkthrough={sensitiveWalkthrough} scenarioIds={["log", "json", "unwrap"]} />

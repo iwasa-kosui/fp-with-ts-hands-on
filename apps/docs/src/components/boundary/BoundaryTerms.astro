@@ -1,0 +1,350 @@
+---
+import StepControls from "./StepControls.astro";
+
+const terms = [
+  {
+    term: "スマートコンストラクタ",
+    place: "境界の検査",
+    definition:
+      "スマートコンストラクタは、受け取った値を検査し、条件を満たす値だけをその型の値として作る関数です。",
+    example: "この教材では、StartExaminationInput.parse がこれに当たります。AppointmentId.parse は例外を投げる点が違います。",
+  },
+  {
+    term: "Parse, don't validate",
+    place: "境界の出口",
+    definition:
+      "Parse, don't validate は、検査の結果を true か false だけで返さず、検査を通った値を型付きの値として返す、という書き方の方針です。",
+    example: "検査のあとは、元の raw を使い続けず、返された型付きの値だけを使います。",
+  },
+  {
+    term: "Branded Type",
+    place: "内側の型",
+    definition:
+      "Branded Type は、同じ string でも用途ごとに印を付けて、別の型として区別する書き方です。",
+    example: "この教材では、AppointmentId と VeterinarianId がこれに当たります。",
+  },
+  {
+    term: "Always-Valid Domain Model",
+    place: "内側全体",
+    definition:
+      "Always-Valid Domain Model は、予約や診察のような業務の概念と規則を表す内側の型と関数を、検査を通った値だけを受け取る前提で作る設計です。",
+    example:
+      "HTTP で届く入力は境界で検査済みなので、内側の関数は同じ検査を繰り返しません。この説明は、HTTP で届く入力に限った話です。",
+  },
+] as const;
+---
+
+<figure class="boundary-terms" data-boundary-terms aria-label="4つの用語が境界の図のどこを指すか">
+  <StepControls />
+
+  <div class="boundary-terms__stage">
+    <section class="boundary-terms__zone boundary-terms__zone--outside">
+      <h4>外側</h4>
+      <div class="boundary-terms__chip">
+        <span>HTTP で届いた値</span>
+        <code>unknown</code>
+      </div>
+    </section>
+
+    <div class="boundary-terms__link" aria-hidden="true">
+      <span class="boundary-terms__line"></span>
+    </div>
+
+    <section class="boundary-terms__zone boundary-terms__zone--boundary">
+      <h4>境界</h4>
+      <div class="boundary-terms__gate" data-target="0">
+        <code>parse</code>
+        <span>UUID の形かを検査する</span>
+        <span class="boundary-terms__pin" data-pin="0"><b>{terms[0].term}</b><small>{terms[0].place}</small></span>
+      </div>
+    </section>
+
+    <div class="boundary-terms__link boundary-terms__link--exit" data-target="1">
+      <span class="boundary-terms__line"></span>
+      <span class="boundary-terms__link-label">検査を通った値を返す</span>
+      <span class="boundary-terms__pin" data-pin="1"><b>{terms[1].term}</b><small>{terms[1].place}</small></span>
+    </div>
+
+    <section class="boundary-terms__zone boundary-terms__zone--inside" data-target="3">
+      <h4>内側</h4>
+      <span class="boundary-terms__pin boundary-terms__pin--zone" data-pin="3"><b>{terms[3].term}</b><small>{terms[3].place}</small></span>
+      <div class="boundary-terms__chip boundary-terms__chip--typed" data-target="2">
+        <span>型付きの値</span>
+        <code>VeterinarianId</code>
+        <span class="boundary-terms__pin" data-pin="2"><b>{terms[2].term}</b><small>{terms[2].place}</small></span>
+      </div>
+      <div class="boundary-terms__chip boundary-terms__chip--plain">
+        <span>業務の関数</span>
+        <code>startExamination</code>
+      </div>
+    </section>
+  </div>
+
+  <div aria-live="polite">
+    <ol class="boundary-terms__frames">
+      {terms.map((item) => (
+        <li data-frame>
+          <p class="boundary-terms__definition">{item.definition}</p>
+          <p class="boundary-terms__example">{item.example}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</figure>
+
+<script>
+  import { mountStepper } from "./stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-boundary-terms]").forEach((root) => {
+    mountStepper({
+      root,
+      onStep: (step) => {
+        root.querySelectorAll<HTMLElement>("[data-pin]").forEach((pin) => {
+          const index = Number(pin.dataset.pin);
+          pin.dataset.state = index < step ? "stuck" : index === step ? "current" : "hidden";
+        });
+        root.querySelectorAll<HTMLElement>("[data-target]").forEach((target) => {
+          target.toggleAttribute("data-current", Number(target.dataset.target) === step);
+        });
+      },
+    });
+  });
+</script>
+
+<style>
+  .boundary-terms {
+    --outside-tone: color-mix(in srgb, var(--case-divider) 45%, var(--case-paper));
+    --boundary-tone: var(--case-cream);
+    --inside-tone: var(--case-paper);
+    min-width: 0;
+    margin: 1rem 0;
+  }
+
+  .boundary-terms__stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 2rem minmax(0, 1.2fr) minmax(7rem, 1.2fr) minmax(0, 1.3fr);
+    align-items: stretch;
+    min-height: 15rem;
+    margin-block-end: 1.75rem;
+  }
+
+  .boundary-terms__zone {
+    position: relative;
+    display: grid;
+    align-content: center;
+    gap: 1.75rem;
+    padding: 1rem 0.75rem 0.75rem;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--tone);
+    color: var(--case-ink);
+  }
+
+  .boundary-terms__zone--outside {
+    --tone: var(--outside-tone);
+  }
+
+  .boundary-terms__zone--boundary {
+    --tone: var(--boundary-tone);
+    border-inline-width: 6px;
+  }
+
+  .boundary-terms__zone--inside {
+    --tone: var(--inside-tone);
+  }
+
+  .boundary-terms__zone h4 {
+    position: absolute;
+    inset-block-start: 0.375rem;
+    inset-inline-start: 0.75rem;
+    margin: 0;
+    font-size: 0.9375rem;
+  }
+
+  .boundary-terms__chip,
+  .boundary-terms__gate {
+    position: relative;
+    display: grid;
+    gap: 0.125rem;
+    padding: 0.5rem 0.625rem;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--case-paper);
+    font-size: 0.875rem;
+    text-align: center;
+  }
+
+  .boundary-terms__chip code,
+  .boundary-terms__gate code {
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .boundary-terms__chip--plain {
+    border-style: dashed;
+    color: var(--case-muted);
+  }
+
+  .boundary-terms__link {
+    position: relative;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 0.25rem;
+    padding-inline: 0.25rem;
+  }
+
+  .boundary-terms__line {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 3px;
+    background: var(--case-line);
+  }
+
+  .boundary-terms__line::after {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: -1px;
+    width: 0.625rem;
+    height: 0.625rem;
+    border-block-start: 3px solid var(--case-line);
+    border-inline-end: 3px solid var(--case-line);
+    content: "";
+    transform: translateY(-50%) rotate(45deg);
+  }
+
+  .boundary-terms__link-label {
+    font-size: 0.75rem;
+    text-align: center;
+  }
+
+  .boundary-terms__pin {
+    position: absolute;
+    inset-block-end: calc(100% - 0.25rem);
+    inset-inline-start: 50%;
+    z-index: 1;
+    display: grid;
+    max-width: 9rem;
+    padding: 0.125rem 0.625rem;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--case-paper);
+    color: var(--case-ink);
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    text-align: center;
+    transform: translateX(-50%);
+  }
+
+  .boundary-terms__pin small {
+    font-size: 0.6875rem;
+  }
+
+  .boundary-terms__pin--zone {
+    inset-block-end: -1.5rem;
+    max-width: 12rem;
+  }
+
+  .boundary-terms__link--exit .boundary-terms__pin {
+    inset-block-end: calc(50% + 1rem);
+  }
+
+  .boundary-terms__frames {
+    margin: 0.75rem 0 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .boundary-terms__frames > li + li {
+    margin-block-start: 0.75rem;
+  }
+
+  .boundary-terms__definition,
+  .boundary-terms__example {
+    margin: 0;
+    line-height: 1.7;
+  }
+
+  .boundary-terms__definition {
+    font-weight: 700;
+  }
+
+  .boundary-terms[data-ready] .boundary-terms__frames {
+    display: grid;
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  .boundary-terms[data-ready] .boundary-terms__frames > li {
+    grid-area: 1 / 1;
+  }
+
+  .boundary-terms[data-ready] .boundary-terms__frames > li[hidden] {
+    display: block;
+    visibility: hidden;
+  }
+
+  .boundary-terms[data-ready] [data-pin][data-state="hidden"] {
+    opacity: 0;
+  }
+
+  .boundary-terms[data-ready] [data-target][data-current] {
+    outline: 4px solid var(--case-blue);
+    outline-offset: 2px;
+  }
+
+  .boundary-terms[data-ready] .boundary-terms__zone[data-target][data-current] {
+    outline-offset: 3px;
+  }
+
+  .boundary-terms[data-ready] [data-pin] {
+    transition: opacity 0.3s;
+  }
+
+  .boundary-terms[data-ready] [data-pin][data-state="current"] {
+    background: var(--case-yellow);
+    box-shadow: 0 0 0 3px var(--case-blue);
+  }
+
+  @media (max-width: 40rem) {
+    .boundary-terms__stage {
+      grid-template-columns: 1fr;
+      row-gap: 1.75rem;
+    }
+
+    .boundary-terms__link {
+      min-height: 2.5rem;
+    }
+
+    .boundary-terms__line {
+      width: 3px;
+      height: 2rem;
+    }
+
+    .boundary-terms__line::after {
+      inset-block-start: auto;
+      inset-block-end: -1px;
+      inset-inline-end: 50%;
+      transform: translateX(50%) rotate(135deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .boundary-terms[data-ready] [data-pin][data-state="current"] {
+      animation: boundary-terms-stick 0.5s ease-out both;
+    }
+
+    @keyframes boundary-terms-stick {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -1.25rem) scale(1.2);
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .boundary-terms[data-ready] [data-pin] {
+      transition: none;
+    }
+  }
+</style>

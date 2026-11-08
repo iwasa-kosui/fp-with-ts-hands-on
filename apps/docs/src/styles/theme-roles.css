@@ -1,0 +1,23 @@
+:root {
+  --role-bg: #f4f4f4;
+  --role-surface: #ffffff;
+  --role-text: #1f1f1f;
+  --role-muted: #595959;
+  --role-border: #7a7a7a;
+  --role-accent: #1d4ed8;
+  --role-positive: #0a5c52;
+  --role-negative: #b8480c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --role-bg: #141414;
+    --role-surface: #1e1e1e;
+    --role-text: #ececec;
+    --role-muted: #a6a6a6;
+    --role-border: #7a7a7a;
+    --role-accent: #8ab4ff;
+    --role-positive: #7ae8c4;
+    --role-negative: #ff8a4c;
+  }
+}

@@ -1,0 +1,15 @@
+import LintRuleCards from "../../../components/boundary/LintRuleCards.astro";
+
+<p>直したコードも、次の変更で元に戻ることがあります。たとえば、別の人が <code>parse</code> に <code>raw: any</code> を戻しても、型検査は通ることがあります。ここから先の課題3は、直した状態を保つことです。</p>
+
+<p>悪い変更を機械で検出する仕組みは、次の3種類です。</p>
+
+<ul>
+  <li><strong>Linter の規則</strong>: コードの書き方を機械で調べ、<code>any</code> や <code>as</code> のような書き方を検出します。</li>
+  <li><strong>値の性質のテスト</strong>: ランダムな入力を多数作り、「UUID の形でない文字列を渡すと、<code>parse</code> は Err を返す」という性質を確かめます。</li>
+  <li><strong>型のテスト</strong>: 悪い変更を入れると型エラーが消えることを確かめます。</li>
+</ul>
+
+<p>テストの書き方は次のページで学びます。このページでは、ESLint の規則を見ます。規則は <code>eslint.config.mjs</code> の <code>rules</code> に <code>"規則名": "error"</code> の形で書きます。規則の候補は3組です。<code>consistent-type-assertions</code> だけは、カードの「設定」の形で書きます。</p>
+
+<LintRuleCards />

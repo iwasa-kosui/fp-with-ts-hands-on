@@ -61,7 +61,7 @@ describe("cli", () => {
     const result = await runCli(s03, ["--root", s03]);
 
     expect(result.code).toBe(1);
-    expect(result.stdout).toContain("検査の結果: まだ合格していません");
+    expect(result.stdout).toContain("結果: まだ合格していません");
   });
 
   it("lint-hangs: 終わらない規則は見張りで止め、プロセスを残さずに終わる", async () => {

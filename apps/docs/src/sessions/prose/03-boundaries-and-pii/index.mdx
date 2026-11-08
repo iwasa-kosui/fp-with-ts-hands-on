@@ -1,0 +1,7 @@
+import StartExaminationRoute from "../../../components/boundary/StartExaminationRoute.astro";
+
+<p>S00 で引き継いだ動物病院の予約システムの場面です。獣医師は、診察開始画面で予約を選び、「診察を開始する」ボタンを押して診察を始めます。この操作は、HTTP リクエストというメッセージになって、サーバーへ届きます。サーバーは、診察開始の処理を行い、診察を始めた記録を残します。</p>
+
+<p>リクエストに入る予約IDと獣医師のIDは、UUID という形式の文字列です。UUID は、<code>11111111-1111-4111-8111-111111111111</code> のように、数字と英字をハイフンで区切った形をしています。</p>
+
+<StartExaminationRoute />

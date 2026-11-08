@@ -15,6 +15,40 @@ const sessionSlugs = sessionPages
   )
   .map((entry) => entry.name.replace(/\.astro$/, ""));
 
+const splitSessions = {
+  "03-boundaries-and-pii": {
+    previous: "/sessions/02-adt-and-exhaustiveness/",
+    next: "/sessions/04-workflow-errors/",
+    pages: [
+      "",
+      "night-shift",
+      "current-code",
+      "boundary",
+      "audit-leak",
+      "result",
+      "zod",
+      "safe-parse",
+      "branded",
+      "boundary-after",
+      "terms",
+      "audit-record",
+      "checks",
+      "property-test",
+      "exercise",
+      "peer-review",
+      "guard",
+      "review",
+      "payment-amount",
+      "pii",
+      "value-shapes",
+    ],
+    lastInTime: "review",
+  },
+};
+
+const splitPagePath = (sessionSlug, pageSlug) =>
+  pageSlug === "" ? `/sessions/${sessionSlug}/` : `/sessions/${sessionSlug}/${pageSlug}/`;
+
 const distUrl = new URL("../dist/", import.meta.url);
 const distPath = fileURLToPath(distUrl);
 const requiredHtmlFiles = [
@@ -23,6 +57,11 @@ const requiredHtmlFiles = [
   "setup/index.html",
   "sessions/index.html",
   ...sessionSlugs.map((slug) => `sessions/${slug}/index.html`),
+  ...Object.entries(splitSessions).flatMap(([sessionSlug, { pages }]) =>
+    pages
+      .filter((pageSlug) => pageSlug !== "")
+      .map((pageSlug) => `sessions/${sessionSlug}/${pageSlug}/index.html`),
+  ),
 ];
 
 const missingHtmlFiles = [];
@@ -70,6 +109,45 @@ const unexpectedHtmlFiles = builtHtmlFiles.filter(
 
 if (unexpectedHtmlFiles.length > 0) {
   throw new Error(`Unexpected built HTML files:\n${unexpectedHtmlFiles.join("\n")}`);
+}
+
+const anchorHref = (html, attribute) => {
+  const tag = html.match(new RegExp(`<a\\b[^>]*\\b${attribute}[^>]*>`, "i"))?.[0];
+  return tag?.match(/\bhref\s*=\s*(["'])(.*?)\1/i)?.[2];
+};
+
+const brokenNavigation = [];
+for (const [sessionSlug, { pages, previous, next, lastInTime }] of Object.entries(splitSessions)) {
+  for (const [index, pageSlug] of pages.entries()) {
+    const htmlFile = pageSlug === ""
+      ? `sessions/${sessionSlug}/index.html`
+      : `sessions/${sessionSlug}/${pageSlug}/index.html`;
+    const html = await readFile(new URL(htmlFile, distUrl), "utf8");
+    const expectedPrevious = index === 0 ? previous : splitPagePath(sessionSlug, pages[index - 1]);
+    const expectedNext = pageSlug === lastInTime || index === pages.length - 1
+      ? next
+      : splitPagePath(sessionSlug, pages[index + 1]);
+    const actualPrevious = anchorHref(html, 'rel="prev"');
+    const actualNext = anchorHref(html, 'rel="next"');
+    if (actualPrevious !== expectedPrevious) {
+      brokenNavigation.push(`${htmlFile}: prev ${actualPrevious} (expected ${expectedPrevious})`);
+    }
+    if (actualNext !== expectedNext) {
+      brokenNavigation.push(`${htmlFile}: next ${actualNext} (expected ${expectedNext})`);
+    }
+    const lastIndex = pages.indexOf(lastInTime);
+    const expectedLater = pageSlug === lastInTime && lastIndex < pages.length - 1
+      ? splitPagePath(sessionSlug, pages[lastIndex + 1])
+      : undefined;
+    const actualLater = anchorHref(html, "data-session-later");
+    if (actualLater !== expectedLater) {
+      brokenNavigation.push(`${htmlFile}: later ${actualLater} (expected ${expectedLater})`);
+    }
+  }
+}
+
+if (brokenNavigation.length > 0) {
+  throw new Error(`Unexpected previous/next links:\n${brokenNavigation.join("\n")}`);
 }
 
 const siteOrigin = "https://static.example.test";

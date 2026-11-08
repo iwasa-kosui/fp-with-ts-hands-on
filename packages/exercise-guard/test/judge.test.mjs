@@ -125,7 +125,7 @@ describe("judge", () => {
     expect(result.hiddenCount).toBe(0);
     expect(result.problems).toEqual([]);
     expect(rowOf(result, "B5-any-result").cells.types.state).toBe("hit");
-    expect(result.next).toEqual(["合格です。次に、この仕組みで検出できないことを書きます。"]);
+    expect(result.next).toEqual(["合格です。表の行を開いて、この仕組みで検出できないことを書きます。"]);
     expect(result.durations.total).toBeGreaterThan(0);
   });
 
@@ -225,7 +225,7 @@ describe("judge", () => {
     const result = await scenario("empty");
 
     expect(result.next[0]).toBe(
-      "まだ悪い変更を 1 件も検出できていません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にテストか型のテストを足します。",
+      "まだ悪い変更を 1 件も検出できていません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にあるテストか型のテストのファイルに書きます。",
     );
   });
 
@@ -449,7 +449,7 @@ describe("render", () => {
     const text = render(await scenario("empty"), { color: false });
 
     expect(text).toContain("すり抜け");
-    expect(text).toContain("検査の結果: まだ合格していません（必須の悪い変更 4 件のうち 0 件を検出）");
+    expect(text).toContain("結果: まだ合格していません（必須の悪い変更 4 件のうち 0 件を検出）");
     expect(text).not.toMatch(/止ま|止め|実行できない/);
     expect(Math.max(...text.split("\n").map(stringWidth))).toBeLessThanOrEqual(78);
   });
@@ -463,7 +463,7 @@ describe("render", () => {
   it("合格の表示", async () => {
     const text = render(await scenario("pass"), { color: false });
 
-    expect(text.split("\n")[0]).toBe("検査の結果: 合格です");
+    expect(text.split("\n")[0]).toBe("結果: 合格です");
     expect(text).toContain("次にすること");
     expect(text).toMatch(/所要: 型 [\d.]+s \/ Linter [\d.]+s \/ テスト [\d.]+s \/ 合計 [\d.]+s/);
   });

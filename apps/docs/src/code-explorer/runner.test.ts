@@ -299,6 +299,135 @@ describe("terminal runner time limits", () => {
   });
 });
 
+const createFinishedProcess = (
+  output: string,
+  exitCode: number,
+): TerminalRuntimeProcess => ({
+  input: new WritableStream<string>(),
+  output: new ReadableStream<string>({
+    start: (controller) => {
+      controller.enqueue(output);
+      controller.close();
+    },
+  }),
+  exit: Promise.resolve(exitCode),
+  kill: vi.fn(),
+  resize: vi.fn(),
+});
+
+describe("terminal runner commands", () => {
+  it("runs a command as its own process and returns its exit code", async () => {
+    const outputs: string[] = [];
+    const spawnCommand = vi.fn(async () =>
+      createFinishedProcess("result\r\n", 1),
+    );
+    const runtime: TerminalRuntime = {
+      ...createInMemoryRuntime(),
+      spawnCommand,
+    };
+    const session = await createTerminalRunner(async () => runtime).start(
+      requestFor({ onOutput: (chunk) => outputs.push(chunk) }),
+    );
+
+    const exitCode = await session.runCommand?.(
+      "node",
+      ["vendor/exercise-guard/cli.mjs"],
+      { cols: 80, rows: 24 },
+    );
+
+    expect(exitCode).toBe(1);
+    expect(spawnCommand).toHaveBeenCalledWith(
+      "node",
+      ["vendor/exercise-guard/cli.mjs"],
+      { cols: 80, rows: 24 },
+    );
+    expect(outputs.join("")).toContain("$ node vendor/exercise-guard/cli.mjs");
+    expect(outputs.join("")).toContain("result\r\n");
+    await session.dispose();
+  });
+
+  it("rejects a command when the runtime cannot spawn one", async () => {
+    const session = await createTerminalRunner(async () =>
+      createInMemoryRuntime(),
+    ).start(requestFor());
+
+    await expect(
+      session.runCommand?.("node", [], { cols: 80, rows: 24 }),
+    ).rejects.toThrow("この実行環境ではコマンドを実行できません。");
+    await session.dispose();
+  });
+
+  it("kills a running command when the session is disposed", async () => {
+    const commandProcess = createControlledProcess();
+    const runtime: TerminalRuntime = {
+      ...createInMemoryRuntime(),
+      spawnCommand: async () => commandProcess,
+    };
+    const session = await createTerminalRunner(async () => runtime).start(
+      requestFor(),
+    );
+    const running = session.runCommand?.("node", [], { cols: 80, rows: 24 });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    await session.dispose();
+
+    expect(commandProcess.kill).toHaveBeenCalledOnce();
+    await expect(running).resolves.toBe(143);
+  });
+
+  it("reads a text file from the workspace", async () => {
+    const runtime: TerminalRuntime = {
+      ...createInMemoryRuntime(),
+      readWorkspaceEntry: vi.fn(async () => ({
+        kind: "file" as const,
+        contents: new TextEncoder().encode('{"version":1}'),
+      })),
+    };
+    const session = await createTerminalRunner(async () => runtime).start(
+      requestFor(),
+    );
+
+    await expect(session.readFile?.("dist/guard/result.json")).resolves.toBe(
+      '{"version":1}',
+    );
+    expect(runtime.readWorkspaceEntry).toHaveBeenCalledWith(
+      "dist/guard/result.json",
+    );
+    await session.dispose();
+  });
+
+  it("returns nothing for a missing file or a directory", async () => {
+    const readWorkspaceEntry = vi
+      .fn<TerminalRuntime["readWorkspaceEntry"]>()
+      .mockRejectedValueOnce(
+        Object.assign(new Error("ENOENT: no such file"), { code: "ENOENT" }),
+      )
+      .mockResolvedValueOnce({ kind: "directory", entries: [] });
+    const runtime: TerminalRuntime = {
+      ...createInMemoryRuntime(),
+      readWorkspaceEntry,
+    };
+    const session = await createTerminalRunner(async () => runtime).start(
+      requestFor(),
+    );
+
+    await expect(session.readFile?.("dist/missing.json")).resolves.toBeUndefined();
+    await expect(session.readFile?.("dist")).resolves.toBeUndefined();
+    await session.dispose();
+  });
+
+  it("rejects reading a path that escapes the project directory", async () => {
+    const session = await createTerminalRunner(async () =>
+      createInMemoryRuntime(),
+    ).start(requestFor());
+
+    await expect(session.readFile?.("../outside.json")).rejects.toThrow(
+      "Unsupported workspace path: ../outside.json",
+    );
+    await session.dispose();
+  });
+});
+
 describe("WebContainer terminal adapter", () => {
   it("rejects parent paths outside fixtures and tears down the runtime", async () => {
     const teardown = vi.fn();

@@ -12,11 +12,23 @@ const slugs = [
   "final",
 ] as const;
 
+const slugsWithSinglePage = slugs.filter(
+  (slug) => slug !== "03-boundaries-and-pii",
+);
+
 const proseSources = import.meta.glob<string>("../sessions/prose/*.mdx", {
   eager: true,
   query: "?raw",
   import: "default",
 });
+const boundaryEpisodeSources = import.meta.glob<string>(
+  "../sessions/prose/03-boundaries-and-pii/night-shift.mdx",
+  {
+    eager: true,
+    query: "?raw",
+    import: "default",
+  },
+);
 const pageSources = import.meta.glob<string>(
   ["../pages/sessions/*.astro", "!../pages/sessions/index.astro"],
   {
@@ -34,13 +46,19 @@ describe("episodeScenes", () => {
     expect(scene.art.trim()).not.toBe("");
   });
 
-  it.each(slugs)("%s の MDX が EpisodeIllustration を置いている", (slug) => {
+  it.each(slugsWithSinglePage)("%s の MDX が EpisodeIllustration を置いている", (slug) => {
     const source = proseSources[`../sessions/prose/${slug}.mdx`];
 
     expect(source).toContain("  <EpisodeIllustration slug={props.session.slug} />");
   });
 
-  it.each(slugs)("%s のページが Prose の components に EpisodeIllustration を渡している", (slug) => {
+  it("03-boundaries-and-pii の night-shift ページの MDX が EpisodeIllustration を置いている", () => {
+    const source = boundaryEpisodeSources["../sessions/prose/03-boundaries-and-pii/night-shift.mdx"];
+
+    expect(source).toContain('<EpisodeIllustration slug="03-boundaries-and-pii" />');
+  });
+
+  it.each(slugsWithSinglePage)("%s のページが Prose の components に EpisodeIllustration を渡している", (slug) => {
     const source = pageSources[`../pages/sessions/${slug}.astro`];
 
     expect(source).toMatch(/<Prose\s[^>]*components=\{\{[^}]*\bEpisodeIllustration\b[^}]*\}\}/);

@@ -2,17 +2,48 @@
 import { Code } from "astro:components";
 import type { Walkthrough } from "../sessions/boundary-walkthroughs";
 
-type Props = Readonly<{ walkthrough: Walkthrough }>;
+type Props = Readonly<{
+  walkthrough: Walkthrough;
+  scenarioIds?: readonly string[];
+  codeless?: boolean;
+}>;
 
-const { walkthrough } = Astro.props;
+const { walkthrough, scenarioIds, codeless = false } = Astro.props;
 const pathOf = (fileId: string) =>
   walkthrough.files.find(({ id }) => id === fileId)?.path ?? "";
+const chosenScenarios =
+  scenarioIds === undefined
+    ? walkthrough.scenarios
+    : scenarioIds.map((scenarioId) => {
+        const found = walkthrough.scenarios.find(({ id }) => id === scenarioId);
+        if (found === undefined) throw new Error(`${scenarioId} is not a walkthrough scenario`);
+        return found;
+      });
+const scenarios = codeless
+  ? chosenScenarios.map((scenario) => ({
+      ...scenario,
+      frames: scenario.frames.filter(({ fileId }) => fileId !== "schemaResult"),
+    }))
+  : chosenScenarios;
+const description = codeless
+  ? (walkthrough.descriptionWithoutCode ?? walkthrough.description)
+  : walkthrough.description;
 const data = JSON.stringify({
-  scenarios: walkthrough.scenarios,
+  scenarios,
 }).replaceAll("<", "\\u003c");
 const values = [
   ...new Set(
-    walkthrough.scenarios.flatMap(({ frames }) => frames.map(({ value }) => value)),
+    scenarios.flatMap(({ frames }) => frames.map(({ value }) => value)),
+  ),
+];
+const valueLabels = [
+  ...new Set(
+    scenarios.flatMap(({ frames }) => frames.map(({ valueLabel }) => valueLabel)),
+  ),
+];
+const texts = [
+  ...new Set(
+    scenarios.flatMap(({ frames }) => frames.map(({ text }) => text)),
   ),
 ];
 ---
@@ -20,13 +51,13 @@ const values = [
 <figure class="boundary-player" data-boundary-player>
   <figcaption>
     <strong>{walkthrough.title}</strong>
-    <span>{walkthrough.description}</span>
+    <span>{description}</span>
   </figcaption>
   <script is:inline type="application/json" data-player-data set:html={data} />
 
   <div class="boundary-player__live" data-player-live>
     <div class="boundary-player__scenarios" role="group" aria-label="場面を選ぶ">
-      {walkthrough.scenarios.map((scenario) => (
+      {scenarios.map((scenario) => (
         <button type="button" data-scenario={scenario.id} aria-pressed="false">
           {scenario.label}
           <small>{scenario.note}</small>
@@ -46,36 +77,54 @@ const values = [
       <span class="boundary-player__token" data-token aria-hidden="true">値</span>
     </div>
     <div class="boundary-player__value" data-status-box>
-      <p data-value-label></p>
-      {values.map((value) => (
-        <div class="boundary-player__value-code" data-value-text={value} hidden>
-          <Code code={value} lang="ts" wrap />
-        </div>
+      <div class="boundary-player__stack">
+        <p data-value-label></p>
+        {valueLabels.map((label) => (
+          <p class="boundary-player__sizer" aria-hidden="true">{label}</p>
+        ))}
+      </div>
+      <div class="boundary-player__stack">
+        {values.map((value) => (
+          <div class="boundary-player__value-code" data-value-text={value} hidden>
+            <Code code={value} lang="ts" wrap />
+          </div>
+        ))}
+      </div>
+    </div>
+    <div class="boundary-player__text boundary-player__stack">
+      <p data-text aria-live="polite"></p>
+      {texts.map((text) => (
+        <p class="boundary-player__sizer" aria-hidden="true">{text}</p>
       ))}
     </div>
-    <p class="boundary-player__text" data-text aria-live="polite"></p>
   </div>
 
-  <div class="boundary-player__files">
-    {walkthrough.files.map((file) => (
-      <figure class="code-block" data-file={file.id}>
-        <figcaption><code>{file.path}</code></figcaption>
-        <div class="boundary-player__code" data-code-scroll>
-          <Code code={file.code} lang="ts" />
-        </div>
-      </figure>
-    ))}
-  </div>
+  {!codeless && (
+    <div class="boundary-player__files">
+      {walkthrough.files.map((file) => (
+        <figure class="code-block" data-file={file.id}>
+          <figcaption><code>{file.path}</code></figcaption>
+          <div class="boundary-player__code" data-code-scroll>
+            <Code code={file.code} lang="ts" />
+          </div>
+        </figure>
+      ))}
+    </div>
+  )}
 
   <div class="boundary-player__static" data-player-static>
-    {walkthrough.scenarios.map((scenario) => (
+    {scenarios.map((scenario) => (
       <section>
         <h4>{scenario.label}（{scenario.note}）</h4>
         <ol>
           {scenario.frames.map((frame) => (
             <li data-status={frame.status}>
               <p>{walkthrough.zones[frame.zone]}: {frame.text}</p>
-              <p><code>{pathOf(frame.fileId)}</code>（{frame.valueLabel}）</p>
+              {codeless ? (
+                <p>{frame.valueLabel}</p>
+              ) : (
+                <p><code>{pathOf(frame.fileId)}</code>（{frame.valueLabel}）</p>
+              )}
               <div class="boundary-player__value-code"><Code code={frame.value} lang="ts" wrap /></div>
             </li>
           ))}
@@ -219,12 +268,9 @@ const values = [
 
 <style>
   .boundary-player {
-    --zone-0: #f1f0e8;
-    --zone-1: var(--case-cream);
-    --zone-2: #e2f9f3;
     min-width: 0;
-    margin: 1.25rem 0;
-    padding: 1rem;
+    margin: 0.5rem 0;
+    padding: 0.75rem 1rem;
     border: 2px solid var(--case-line);
     border-radius: 0.5rem;
     background: var(--case-paper);
@@ -233,7 +279,7 @@ const values = [
   .boundary-player > figcaption {
     display: grid;
     gap: 0.25rem;
-    margin-block-end: 0.75rem;
+    margin-block-end: 0.5rem;
   }
 
   .boundary-player > figcaption span {
@@ -269,14 +315,16 @@ const values = [
   }
 
   [data-scenario] {
+    padding-block: 0.25rem;
     border-radius: 0.5rem;
+    line-height: 1.4;
     text-align: start;
   }
 
   [data-scenario] small {
     display: block;
     font-family: var(--font-mono, monospace);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 400;
   }
 
@@ -290,16 +338,22 @@ const values = [
     outline-offset: 2px;
   }
 
+  .boundary-player__controls button {
+    border-color: var(--case-blue);
+    color: var(--case-blue);
+  }
+
   button[aria-pressed="true"],
-  .boundary-player__play {
-    background: var(--case-line);
+  .boundary-player__controls .boundary-player__play {
+    border-color: var(--case-blue);
+    background: var(--case-blue);
     color: var(--case-paper);
   }
 
   .boundary-player__play { min-width: calc(4em + 1.5rem + 4px); }
 
   .boundary-player__controls {
-    margin-block-start: 0.75rem;
+    margin-block-start: 0.5rem;
   }
 
   .boundary-player__scenarios,
@@ -314,39 +368,42 @@ const values = [
     position: relative;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin-block-start: 0.75rem;
+    margin-block-start: 0.5rem;
+    border: 2px solid var(--case-line);
     border-radius: 0.375rem;
     overflow: hidden;
   }
 
   .boundary-player__zone {
-    min-height: 5.25rem;
-    padding: 0.375rem 0.5rem;
+    min-height: 4.25rem;
+    padding: 0.25rem 0.5rem;
+    background: var(--case-paper);
     font-size: 0.875rem;
     font-weight: 700;
     text-align: center;
   }
 
   [data-zone-index="0"] {
-    background: var(--zone-0);
+    background: var(--case-cream);
   }
 
   [data-zone-index="1"] {
     border-inline: 6px solid var(--case-line);
-    background: var(--zone-1);
   }
 
-  [data-zone-index="2"] {
-    background: var(--zone-2);
+  [data-zone="0"] [data-zone-index="0"],
+  [data-zone="1"] [data-zone-index="1"],
+  [data-zone="2"] [data-zone-index="2"] {
+    background: var(--case-yellow);
   }
 
   .boundary-player__token {
     position: absolute;
-    bottom: 0.625rem;
+    bottom: 0.375rem;
     left: var(--token-position, 16.667%);
     display: grid;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2rem;
+    height: 2rem;
     place-items: center;
     border: 2px solid var(--case-line);
     border-radius: 50%;
@@ -357,16 +414,20 @@ const values = [
   }
 
   [data-status="pass"] .boundary-player__token {
+    border-color: var(--case-highlight);
     background: var(--case-highlight);
+    color: var(--case-paper);
   }
 
   [data-status="stop"] .boundary-player__token,
   [data-status="danger"] .boundary-player__token {
+    border-color: var(--case-pink);
     background: var(--case-pink);
+    color: var(--case-paper);
   }
 
   .boundary-player__value {
-    margin-block-start: 0.75rem;
+    margin-block-start: 0.5rem;
     padding: 0.5rem 0.75rem;
     border: 2px solid var(--case-divider);
     border-radius: 0.375rem;
@@ -384,12 +445,29 @@ const values = [
   .boundary-player__value p {
     margin: 0;
     color: var(--case-muted);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
   }
 
   .boundary-player__value-code {
-    min-height: 5.75em;
     margin-block-start: 0.25rem;
+  }
+
+  .boundary-player__stack {
+    display: grid;
+  }
+
+  .boundary-player__stack > * {
+    grid-area: 1 / 1;
+    min-width: 0;
+  }
+
+  .boundary-player__stack > .boundary-player__value-code[hidden] {
+    display: block !important;
+    visibility: hidden;
+  }
+
+  .boundary-player__sizer {
+    visibility: hidden;
   }
 
   .boundary-player__value-code :global(pre) {
@@ -405,8 +483,11 @@ const values = [
   }
 
   .boundary-player__text {
-    min-height: 3.2em;
-    margin: 0.75rem 0 0;
+    margin: 0.5rem 0 0;
+  }
+
+  .boundary-player__text p {
+    margin: 0;
     font-weight: 700;
   }
 
@@ -439,8 +520,8 @@ const values = [
   }
 
   .boundary-player__code :global(.line.is-active) {
-    background: rgb(255 210 27 / 35%);
-    box-shadow: inset 4px 0 0 var(--case-yellow);
+    background: color-mix(in srgb, var(--case-blue) 28%, transparent);
+    box-shadow: inset 4px 0 0 var(--case-blue);
   }
 
   .boundary-player__static {
@@ -460,11 +541,31 @@ const values = [
     margin-block-end: 0.75rem;
   }
 
+  @media (max-height: 760px) {
+    .boundary-player {
+      margin-block: 0.25rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .boundary-player__controls button {
+      padding-block: 0.25rem;
+    }
+
+    .boundary-player__value {
+      padding-block: 0.25rem;
+    }
+
+    .boundary-player__value-code :global(pre) {
+      padding: 0.25rem 0.5rem;
+    }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .boundary-player__token {
       transition:
         left 0.7s ease-in-out,
-        background-color 0.3s;
+        background-color 0.3s,
+        border-color 0.3s;
     }
 
     [data-status="stop"] .boundary-player__token {
@@ -473,6 +574,10 @@ const values = [
 
     .boundary-player__code :global(.line) {
       transition: background-color 0.25s;
+    }
+
+    .boundary-player__zone {
+      transition: background-color 0.3s;
     }
 
     @keyframes boundary-player-reject {

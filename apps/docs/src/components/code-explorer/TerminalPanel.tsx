@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import {
   prefetchDepsSnapshot,
   type DepsSnapshotProgress,
@@ -34,6 +41,10 @@ export type TerminalPanelStateKind =
   | "exited"
   | "failed";
 
+export type TerminalPanelController = Readonly<{
+  ensureSession: () => Promise<TerminalSession>;
+}>;
+
 export type TerminalPanelProps = Readonly<{
   files: ProjectFiles;
   visibleFiles: readonly string[];
@@ -46,6 +57,7 @@ export type TerminalPanelProps = Readonly<{
   onWorkspaceChange: (change: WorkspaceChange) => void;
   onSessionChange: (session: TerminalSession | undefined) => void;
   onStateChange?: (state: TerminalPanelStateKind) => void;
+  onPhaseChange?: (phase: TerminalPhase | undefined) => void;
   waitForPendingFileWrites?: () => Promise<void>;
   syncFiles?: (mountedFiles: ProjectFiles) => Promise<void>;
   restoredOutput?: string;
@@ -68,7 +80,7 @@ type DownloadProgress = DepsSnapshotProgress &
 
 const initialTerminalSize: TerminalSize = { cols: 80, rows: 24 };
 
-const phaseLabels: Readonly<Record<TerminalPhase, string>> = {
+export const phaseLabels: Readonly<Record<TerminalPhase, string>> = {
   booting: "実行環境を起動しています。",
   mounting: "教材ファイルを準備しています。",
   "downloading-deps": "依存パッケージを取得しています。",
@@ -224,7 +236,10 @@ export const createXtermView = async (): Promise<TerminalView> => {
 const defaultRunnerFactory = (): TerminalRunner =>
   createWebContainerTerminalRunner();
 
-export const TerminalPanel = ({
+export const TerminalPanel = forwardRef<
+  TerminalPanelController,
+  TerminalPanelProps
+>(({
   files,
   visibleFiles,
   initialCommand,
@@ -236,6 +251,7 @@ export const TerminalPanel = ({
   onWorkspaceChange,
   onSessionChange,
   onStateChange,
+  onPhaseChange,
   waitForPendingFileWrites = noPendingFileWrites,
   syncFiles,
   restoredOutput,
@@ -244,7 +260,7 @@ export const TerminalPanel = ({
   startDisabled,
   hasEdits,
   onCommandSent,
-}: TerminalPanelProps) => {
+}, ref) => {
   const [state, setState] = useState<PanelState>({ kind: "unstarted" });
   const terminalHost = useRef<HTMLDivElement>(null);
   const terminalView = useRef<TerminalView>();
@@ -263,6 +279,8 @@ export const TerminalPanel = ({
   const starting = useRef(false);
   const startupAbort = useRef<AbortController>();
   const attemptGeneration = useRef(0);
+  const startPromise = useRef<Promise<void>>();
+  const lastFailure = useRef<string>();
   const preparationStartedAt = useRef(0);
   const downloadProgress = useRef<DownloadProgress>();
   const skipDepsSnapshot = useRef(false);
@@ -270,6 +288,7 @@ export const TerminalPanel = ({
   const onWorkspaceChangeRef = useRef(onWorkspaceChange);
   const onSessionChangeRef = useRef(onSessionChange);
   const onStateChangeRef = useRef(onStateChange);
+  const onPhaseChangeRef = useRef(onPhaseChange);
   const waitForPendingFileWritesRef = useRef(waitForPendingFileWrites);
   const syncFilesRef = useRef(syncFiles);
   const onOutputRef = useRef(onOutput);
@@ -282,6 +301,7 @@ export const TerminalPanel = ({
   onWorkspaceChangeRef.current = onWorkspaceChange;
   onSessionChangeRef.current = onSessionChange;
   onStateChangeRef.current = onStateChange;
+  onPhaseChangeRef.current = onPhaseChange;
   waitForPendingFileWritesRef.current = waitForPendingFileWrites;
   syncFilesRef.current = syncFiles;
   onOutputRef.current = onOutput;
@@ -312,7 +332,11 @@ export const TerminalPanel = ({
   const transition = useCallback((nextState: PanelState) => {
     if (!mounted.current) return;
     setState(nextState);
+    if (nextState.kind === "failed") lastFailure.current = nextState.message;
     onStateChangeRef.current?.(nextState.kind);
+    onPhaseChangeRef.current?.(
+      nextState.kind === "preparing" ? nextState.phase : undefined,
+    );
   }, []);
 
   useEffect(() => {
@@ -593,6 +617,33 @@ export const TerminalPanel = ({
     visibleFiles,
   ]);
 
+  const startTracked = useCallback((): Promise<void> => {
+    if (starting.current && startPromise.current !== undefined) {
+      return startPromise.current;
+    }
+    lastFailure.current = undefined;
+    const next = startTerminal();
+    startPromise.current = next;
+    return next;
+  }, [startTerminal]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      ensureSession: async () => {
+        if (terminalSession.current === undefined) await startTracked();
+        const session = terminalSession.current;
+        if (session === undefined) {
+          throw new Error(
+            lastFailure.current ?? "ターミナルを起動できませんでした。",
+          );
+        }
+        return session;
+      },
+    }),
+    [startTracked],
+  );
+
   const restartTerminal = useCallback(async () => {
     const session = terminalSession.current;
     const view = terminalView.current;
@@ -645,7 +696,7 @@ export const TerminalPanel = ({
             type="button"
             data-action="start-terminal"
             disabled={startDisabled}
-            onClick={() => void startTerminal()}
+            onClick={() => void startTracked()}
           >
             {hasRestoredOutput || hasEdits || initialCommand === undefined
               ? "ターミナルを起動"
@@ -684,7 +735,7 @@ export const TerminalPanel = ({
           <button
             type="button"
             data-action="retry-terminal"
-            onClick={() => void startTerminal()}
+            onClick={() => void startTracked()}
           >
             ターミナルを再試行
           </button>
@@ -723,4 +774,6 @@ export const TerminalPanel = ({
       ) : null}
     </section>
   );
-};
+});
+
+TerminalPanel.displayName = "TerminalPanel";

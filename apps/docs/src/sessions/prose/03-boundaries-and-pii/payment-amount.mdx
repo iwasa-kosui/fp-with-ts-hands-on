@@ -1,0 +1,14 @@
+import { Code } from "astro:components";
+import { paymentAmountExample } from "../../pages/03-boundaries-and-pii-content";
+
+<div class="session-split">
+  <div>
+    <p>Branded Type の用途は、IDの区別に限りません。支払金額を <code>number</code> のまま渡すと、受け取る関数からは、その値が検査済みか分かりません。</p>
+    <p>brand を付けると、「1以上の整数」という制約を型に残せます。<code>PaymentAmount.parse(1000)</code> は Ok を返し、<code>0</code>、<code>-100</code>、<code>1.5</code> は Err を返します。</p>
+    <p>範囲を変えるときは、schema の1か所を直します。<code>as</code> を使うと検査を飛ばせるので、レビューでは <code>as</code> が増えていないかを確かめます。</p>
+  </div>
+  <figure class="code-block" data-teaching-example>
+    <figcaption>支払金額の型の例</figcaption>
+    <Code code={paymentAmountExample} lang="ts" />
+  </figure>
+</div>

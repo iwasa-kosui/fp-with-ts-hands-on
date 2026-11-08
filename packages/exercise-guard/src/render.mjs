@@ -115,8 +115,8 @@ const headline = (result) => {
   const required = result.rows.filter((row) => row.kind === "bad" && row.required);
   const detected = required.filter((row) => row.verdict === "detected");
   return result.passed
-    ? "検査の結果: 合格です"
-    : `検査の結果: まだ合格していません（必須の悪い変更 ${required.length} 件のうち ${detected.length} 件を検出）`;
+    ? "結果: 合格です"
+    : `結果: まだ合格していません（必須の悪い変更 ${required.length} 件のうち ${detected.length} 件を検出）`;
 };
 
 /**

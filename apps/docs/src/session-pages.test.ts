@@ -3,6 +3,7 @@ import { extname, join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import { projectFilesForSnapshot } from "./code-explorer/project-files";
 import type { SessionWorkspace } from "./code-explorer/types";
+import { sessionPages } from "./sessions/pages/03-boundaries-and-pii";
 import type { SessionNavigation, SessionSummary } from "./sessions/types";
 
 type PageModule = Readonly<{
@@ -36,6 +37,22 @@ const pageSources = Object.fromEntries(
     const slug = path.replace(/^.*\//, "").replace(/\.astro$/, "");
     return [path, `${source}\n${proseSources[`./sessions/prose/${slug}.mdx`] ?? ""}`];
   }),
+);
+const boundaryProseSources = import.meta.glob<string>(
+  "./sessions/prose/03-boundaries-and-pii/*.mdx",
+  {
+    eager: true,
+    query: "?raw",
+    import: "default",
+  },
+);
+const boundaryRouteSources = import.meta.glob<string>(
+  "./pages/sessions/03-boundaries-and-pii/*.astro",
+  {
+    eager: true,
+    query: "?raw",
+    import: "default",
+  },
 );
 const catalogModules = import.meta.glob("./sessions/catalog.ts", {
   eager: true,
@@ -238,6 +255,8 @@ const forbiddenExerciseDependencies = [
   "SessionCodePlayground",
 ] as const;
 
+const splitPageSlugs: readonly ExerciseSlug[] = ["03-boundaries-and-pii"];
+
 const reviewText = [
   "`as` による型アサーションが入っていないか全文検索して確認します。",
   "`git status --short` で想定外の path がないか確認します。",
@@ -326,6 +345,7 @@ describe("session pages", () => {
         expect(source).not.toContain(dependency);
       }
       expect(pageModule.navigation).toEqual(contract.navigation);
+      if (splitPageSlugs.includes(slug)) return;
       for (const text of reviewText) expect(source).toContain(text);
       expect(source).toContain(reviewPromptFor[slug]);
       expect(source).toContain(
@@ -366,13 +386,30 @@ describe("session pages", () => {
 
   }
 
-  for (const slug of exerciseSlugs.slice(1)) {
+  for (const slug of exerciseSlugs.slice(1).filter((slug) => !splitPageSlugs.includes(slug))) {
     it(`${slug} preserves the hero avatar whitespace emitted by S1`, () => {
       expect(sourceFor(slug)).toContain(
         `<p class="case-file__summary">\n          <span aria-hidden="true">{session.animal.avatar}</span>\n          {session.summary}\n        </p>`,
       );
     });
   }
+
+  it("S3 serves one prose file per page, and passes no props to it", () => {
+    const proseNames = Object.keys(boundaryProseSources)
+      .map((path) => path.replace(/^.*\//, "").replace(/\.mdx$/, ""))
+      .sort();
+    const expectedNames = sessionPages
+      .map(({ slug }) => (slug === "" ? "index" : slug))
+      .sort();
+    const routePaths = Object.keys(boundaryRouteSources);
+    const firstPage = pageSources["./pages/sessions/03-boundaries-and-pii.astro"] ?? "";
+
+    expect(proseNames).toEqual(expectedNames);
+    expect(routePaths).toEqual(["./pages/sessions/03-boundaries-and-pii/[page].astro"]);
+    expect(boundaryRouteSources[routePaths[0]!]).toContain("getStaticPaths");
+    expect(firstPage).toContain("<Prose />");
+    expect(firstPage).toContain("prose/03-boundaries-and-pii/index.mdx");
+  });
 
   it("S1 owns the inline peer-review promises", () => {
     const source = sourceFor("01-state-transitions");

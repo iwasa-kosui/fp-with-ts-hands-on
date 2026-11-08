@@ -1,0 +1,534 @@
+---
+import { Code } from "astro:components";
+import type { ComponentProps } from "astro/types";
+import { projectFilesForSnapshot } from "../../code-explorer/project-files";
+import { blockOf } from "../../sessions/source-quotes";
+import StepControls from "./StepControls.astro";
+
+type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
+type Side = "before" | "after" | "plain";
+type Item =
+  | Readonly<{ kind: "flow" }>
+  | Readonly<{ kind: "code"; path: string; code: string; marks: readonly number[] }>
+  | Readonly<{ kind: "result"; label: string; tone: "pass" | "fail"; text: string; hit?: string }>
+  | Readonly<{ kind: "samples"; label: string; values: readonly string[] }>;
+type Column = Readonly<{ side: Side; heading: string; items: readonly Item[] }>;
+type Frame = Readonly<{ caption: string; columns: readonly Column[] }>;
+
+const lineOf = (source: string, needle: string) => {
+  const index = source.split("\n").findIndex((line) => line.includes(needle));
+  if (index < 0) throw new Error(`PropertyTestFlow: "${needle}" is not in the excerpt`);
+  return index + 1;
+};
+
+const markLines = (lines: readonly number[]): Transformer => ({
+  name: "property-flow-mark-lines",
+  line(node, line) {
+    if (lines.includes(line)) this.addClassToHast(node, "is-mark");
+  },
+});
+
+const contactPath = "src/boundary/ownerContact.ts";
+const protectedLine = '.brand<"OwnerEmail">().transform(Sensitive.of),';
+const unprotectedLine = '.brand<"OwnerEmail">(),';
+const goodContact = blockOf(
+  projectFilesForSnapshot("session-03-solution"),
+  contactPath,
+  "const OwnerContactSchema = z",
+  "  .readonly();",
+);
+const badContact = goodContact.replace(protectedLine, unprotectedLine);
+if (badContact === goodContact) throw new Error(`PropertyTestFlow: ${protectedLine} is not in ${contactPath}`);
+const emailLine = lineOf(goodContact, "ownerEmail:");
+
+const testPath = "test/contact.test.ts";
+const testCode = `import fc from "fast-check";
+import { it } from "vitest";
+
+import { OwnerContact } from "../src/boundary/ownerContact.js";
+import { clinicFixture } from "../../fixtures/clinic.js";
+
+const emailAddress = fc.stringMatching(/^[a-z]{1,8}@example\\.test$/);
+
+it("どんなメールアドレスでも、JSON にしても出ない", () => {
+  fc.assert(
+    fc.property(emailAddress, (ownerEmail) => {
+      const contact = OwnerContact.parse({
+        ...clinicFixture.ownerContact,
+        ownerEmail,
+      })._unsafeUnwrap();
+      return !JSON.stringify(contact).includes(ownerEmail);
+    }),
+  );
+});`;
+
+const typeTestPath = "test/contact.type-test.ts";
+const typeTestCode = `import type { OwnerContact } from "../src/boundary/ownerContact.js";
+
+declare const contact: OwnerContact;
+
+// @ts-expect-error
+const plain: string = contact.ownerEmail;
+
+export { plain };`;
+
+const redactedJson = '{"ownerName":"[REDACTED]","ownerEmail":"[REDACTED]","ownerPhone":"[REDACTED]"}';
+const leakedEmail = "a@example.test";
+const leakedJson = `{"ownerName":"[REDACTED]","ownerEmail":"${leakedEmail}","ownerPhone":"[REDACTED]"}`;
+const jsonLabel = "JSON.stringify(contact) の結果";
+
+const passedRun = [
+  "✓ test/contact.test.ts (1 test)",
+  " Test Files  1 passed (1)",
+  "      Tests  1 passed (1)",
+].join("\n");
+const failedRun = [
+  "× どんなメールアドレスでも、JSON にしても出ない",
+  "  → Property failed after 1 tests",
+  `Counterexample: ["${leakedEmail}"]`,
+  "Shrunk 2 time(s)",
+  " Test Files  1 failed (1)",
+  "      Tests  1 failed (1)",
+].join("\n");
+const passedCompile = "（出力なし。終了コード 0）";
+const failedCompile = "test/contact.type-test.ts(5,1): error TS2578: Unused '@ts-expect-error' directive.";
+
+const contactCode = (code: string): Item => ({
+  kind: "code",
+  path: contactPath,
+  code,
+  marks: [emailLine],
+});
+const typeTestItem: Item = {
+  kind: "code",
+  path: typeTestPath,
+  code: typeTestCode,
+  marks: [lineOf(typeTestCode, "@ts-expect-error"), lineOf(typeTestCode, "const plain")],
+};
+const emailOnly = (code: string): Item => ({
+  kind: "code",
+  path: contactPath,
+  code: code.split("\n")[emailLine - 1]?.trim() ?? "",
+  marks: [1],
+});
+
+const beforeHeading = "変更前（正しいコード）";
+const afterHeading = "変更後（悪い変更）";
+
+const frames: readonly Frame[] = [
+  {
+    caption:
+      "守りたい性質は、どんなメールアドレスで OwnerContact を作っても、JSON にした文字列にそのメールアドレスが出ないことです。",
+    columns: [{ side: "plain", heading: "守りたい性質", items: [{ kind: "flow" }] }],
+  },
+  {
+    caption:
+      "テストは、fast-check が作ったメールアドレスごとに JSON を作り、その文字列にメールアドレスが含まれていなければ true を返します。false を返す入力が1つでもあるか、例外が投げられると、テストは失敗します。clinicFixture は、このハンズオンのテスト用の固定データです。fc.string() は任意の文字列を作り、fc.uuid() は UUID の形の文字列を作ります。expect を使うときは vitest から import します。",
+    columns: [
+      {
+        side: "plain",
+        heading: "テストのコード",
+        items: [
+          {
+            kind: "code",
+            path: testPath,
+            code: testCode,
+            marks: [lineOf(testCode, "const emailAddress"), lineOf(testCode, "return !JSON.stringify")],
+          },
+        ],
+      },
+      {
+        side: "plain",
+        heading: "fast-check が作る入力",
+        items: [
+          {
+            kind: "samples",
+            label: "fc.stringMatching が正規表現に合わせて作る文字列の例",
+            values: ["eod@example.test", "ruc@example.test", "i@example.test", "wc@example.test"],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    caption:
+      "正しいコードでは、ownerEmail の値が Sensitive に包まれて JSON で [REDACTED] になるので、テストは通ります。",
+    columns: [
+      { side: "before", heading: beforeHeading, items: [contactCode(goodContact)] },
+      {
+        side: "before",
+        heading: "テストの結果",
+        items: [
+          { kind: "result", label: jsonLabel, tone: "pass", text: redactedJson },
+          { kind: "result", label: "vitest の出力", tone: "pass", text: passedRun },
+        ],
+      },
+    ],
+  },
+  {
+    caption:
+      "悪い変更の例として、ownerEmail の行から .transform(Sensitive.of) を外します。メールアドレスは包まれなくなります。",
+    columns: [
+      { side: "before", heading: beforeHeading, items: [contactCode(goodContact)] },
+      { side: "after", heading: afterHeading, items: [contactCode(badContact)] },
+    ],
+  },
+  {
+    caption:
+      "悪い変更を入れると、fast-check が失敗する入力を見つけて、反例として表示します。fast-check は、失敗した入力を、失敗を保ったまま単純な入力に縮めて表示します。",
+    columns: [
+      {
+        side: "before",
+        heading: beforeHeading,
+        items: [
+          { kind: "result", label: jsonLabel, tone: "pass", text: redactedJson },
+          { kind: "result", label: "vitest の出力", tone: "pass", text: passedRun },
+        ],
+      },
+      {
+        side: "after",
+        heading: afterHeading,
+        items: [
+          { kind: "result", label: jsonLabel, tone: "fail", text: leakedJson, hit: leakedEmail },
+          { kind: "result", label: "vitest の出力", tone: "fail", text: failedRun, hit: `["${leakedEmail}"]` },
+        ],
+      },
+    ],
+  },
+  {
+    caption:
+      "型のテストは、型エラーになるはずの行の直前に @ts-expect-error を置きます。変更前は、この行が型エラーになるので、tsc は成功します。悪い変更で ownerEmail が string に代入できる型になると、型エラーが消えて、tsc は「未使用の @ts-expect-error」を報告します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
+    columns: [
+      {
+        side: "before",
+        heading: beforeHeading,
+        items: [
+          emailOnly(goodContact),
+          typeTestItem,
+          { kind: "result", label: "tsc の出力", tone: "pass", text: passedCompile },
+        ],
+      },
+      {
+        side: "after",
+        heading: afterHeading,
+        items: [
+          emailOnly(badContact),
+          typeTestItem,
+          { kind: "result", label: "tsc の出力", tone: "fail", text: failedCompile },
+        ],
+      },
+    ],
+  },
+];
+
+const sideMark = { before: "●", after: "▲", plain: "■" } as const;
+---
+
+<figure class="property-flow" data-property-flow aria-label="値の性質のテストと型のテストで悪い変更を検出する流れ">
+  <StepControls />
+
+  <div aria-live="polite">
+    <ol class="property-flow__frames">
+      {frames.map((frame) => (
+        <li data-frame>
+          <p class="property-flow__caption">{frame.caption}</p>
+          <div class:list={["property-flow__columns", { "property-flow__columns--single": frame.columns.length === 1 }]}>
+            {frame.columns.map((column) => (
+              <section class="property-flow__column" data-side={column.side}>
+                <h4 class="property-flow__heading"><span aria-hidden="true">{sideMark[column.side]}</span> {column.heading}</h4>
+                {column.items.map((item) => {
+                  if (item.kind === "flow") {
+                    return (
+                      <ol class="property-flow__steps">
+                        <li>
+                          <p class="property-flow__step-title">入力</p>
+                          <p>メールアドレス。fast-check が多数作ります。</p>
+                        </li>
+                        <li class="property-flow__arrow" aria-hidden="true">→</li>
+                        <li>
+                          <p class="property-flow__step-title">確かめる処理</p>
+                          <p><code>OwnerContact.parse</code> で連絡先を作り、<code>JSON.stringify</code> で JSON にします。</p>
+                        </li>
+                        <li class="property-flow__arrow" aria-hidden="true">→</li>
+                        <li>
+                          <p class="property-flow__step-title">守りたい性質</p>
+                          <p>JSON の文字列に、メールアドレスが出ません。</p>
+                          <p><code>{redactedJson}</code></p>
+                        </li>
+                      </ol>
+                    );
+                  }
+                  if (item.kind === "code") {
+                    return (
+                      <figure class="code-block property-flow__code">
+                        <figcaption><code>{item.path}</code></figcaption>
+                        <Code code={item.code} lang="ts" transformers={[markLines(item.marks)]} />
+                      </figure>
+                    );
+                  }
+                  if (item.kind === "samples") {
+                    return (
+                      <div class="property-flow__samples">
+                        <p>{item.label}</p>
+                        <ul>
+                          {item.values.map((value) => <li><code>{value}</code></li>)}
+                        </ul>
+                      </div>
+                    );
+                  }
+                  const [head = "", tail = ""] = item.hit === undefined ? [item.text, ""] : item.text.split(item.hit);
+                  return (
+                    <figure class="property-flow__result" data-tone={item.tone}>
+                      <figcaption>{item.label}</figcaption>
+                      <pre><code>{head}{item.hit !== undefined && <mark>{item.hit}</mark>}{tail}</code></pre>
+                    </figure>
+                  );
+                })}
+              </section>
+            ))}
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+</figure>
+
+<script>
+  import { mountStepper } from "./stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-property-flow]").forEach((root) => {
+    mountStepper({ root });
+  });
+</script>
+
+<style>
+  .property-flow {
+    --tone: var(--role-accent);
+    min-width: 0;
+    margin: 0.5rem 0;
+    color: var(--role-text);
+  }
+
+  .property-flow :global(.step-controls) {
+    margin-block-end: 0.5rem;
+  }
+
+  .property-flow__frames {
+    margin: 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .property-flow__frames > li + li {
+    margin-block-start: 1rem;
+  }
+
+  .property-flow__caption {
+    margin: 0 0 0.5rem;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .property-flow__columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    align-items: start;
+  }
+
+  .property-flow__columns--single {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .property-flow__column {
+    display: grid;
+    align-content: start;
+    gap: 0.5rem;
+    min-width: 0;
+    padding: 0.5rem 0.625rem;
+    border: 2px solid var(--tone);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+  }
+
+  .property-flow__column[data-side="before"] {
+    --tone: var(--role-positive);
+  }
+
+  .property-flow__column[data-side="after"] {
+    --tone: var(--role-negative);
+  }
+
+  .property-flow__heading {
+    margin: 0;
+    color: var(--tone);
+    font-size: 0.875rem;
+    font-weight: 800;
+  }
+
+  .property-flow__code {
+    min-width: 0;
+    margin: 0;
+  }
+
+  .property-flow__code figcaption {
+    padding-block: 0.125rem;
+  }
+
+  .property-flow__code figcaption code {
+    font-size: 0.6875rem;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .property-flow__code :global(pre) {
+    margin: 0;
+    padding: 0.375rem 0;
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .property-flow__code :global(.line) {
+    display: inline-block;
+    min-width: 100%;
+    padding-inline: 0.625rem;
+  }
+
+  .property-flow__code :global(.line.is-mark) {
+    background: color-mix(in srgb, var(--tone) 32%, transparent);
+    box-shadow: inset 4px 0 0 var(--tone);
+  }
+
+  .property-flow__result {
+    min-width: 0;
+    margin: 0;
+    border-inline-start: 4px solid var(--role-border);
+  }
+
+  .property-flow__result[data-tone="pass"] {
+    border-inline-start-color: var(--role-positive);
+  }
+
+  .property-flow__result[data-tone="fail"] {
+    border-inline-start-color: var(--role-negative);
+  }
+
+  .property-flow__result figcaption {
+    padding-inline: 0.625rem;
+    color: var(--role-muted);
+    font-size: 0.75rem;
+  }
+
+  .property-flow__result pre {
+    margin: 0;
+    padding: 0.125rem 0.625rem 0.25rem;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .property-flow__result code {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+
+  .property-flow__result mark {
+    background: color-mix(in srgb, var(--role-negative) 28%, transparent);
+    color: inherit;
+    font-weight: 800;
+  }
+
+  .property-flow__samples p {
+    margin: 0 0 0.25rem;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+  }
+
+  .property-flow__samples ul {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .property-flow__samples li {
+    padding: 0.125rem 0.5rem;
+    border: 1px solid var(--role-border);
+    border-radius: 0.25rem;
+    font-size: 0.8125rem;
+  }
+
+  .property-flow__steps {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1.3fr);
+    gap: 0.5rem;
+    align-items: stretch;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .property-flow__steps > li:not(.property-flow__arrow) {
+    min-width: 0;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid var(--role-border);
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  .property-flow__steps p {
+    margin: 0;
+  }
+
+  .property-flow__steps code {
+    overflow-wrap: anywhere;
+  }
+
+  .property-flow__step-title {
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .property-flow__arrow {
+    align-self: center;
+    color: var(--role-muted);
+  }
+
+  .property-flow[data-ready] .property-flow__frames {
+    display: grid;
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  .property-flow[data-ready] .property-flow__frames > li {
+    grid-area: 1 / 1;
+    min-width: 0;
+  }
+
+  .property-flow[data-ready] .property-flow__frames > li + li {
+    margin-block-start: 0;
+  }
+
+  .property-flow[data-ready] .property-flow__frames > li[hidden] {
+    display: block;
+    visibility: hidden;
+  }
+
+  @media (max-width: 40rem) {
+    .property-flow__columns {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .property-flow__steps {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .property-flow__arrow {
+      justify-self: center;
+      transform: rotate(90deg);
+    }
+  }
+</style>

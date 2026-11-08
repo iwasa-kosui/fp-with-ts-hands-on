@@ -1,5 +1,6 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
+import { sampleGuardResult } from "./guard-result.fixture";
 import { createIndexedDbWorkspaceStore } from "./workspace-store";
 
 const edits = {
@@ -122,5 +123,49 @@ describe("IndexedDB workspace store", () => {
     unsubscribe();
 
     expect(received).toEqual([1]);
+  });
+  it("restores the guard result and the limitations with a new store", async () => {
+    await createIndexedDbWorkspaceStore().saveGuardResult(
+      "s",
+      sampleGuardResult,
+      20,
+    );
+    await createIndexedDbWorkspaceStore().saveLimitations("s", {
+      "B1-any-parser": "別の書き方は検出できない",
+    });
+
+    const loaded = await createIndexedDbWorkspaceStore().load("s");
+
+    expect(loaded.view?.guardResult).toEqual(sampleGuardResult);
+    expect(loaded.view?.guardRanAt).toBe(20);
+    expect(loaded.view?.limitations).toEqual({
+      "B1-any-parser": "別の書き方は検出できない",
+    });
+  });
+
+  it("keeps the guard result when the terminal output and the selected path are saved", async () => {
+    const store = createIndexedDbWorkspaceStore();
+    await store.saveGuardResult("s", sampleGuardResult, 20);
+
+    await store.saveTerminalOutput("s", "hello", 30);
+    await store.saveSelectedPath("s", "src/a.ts");
+
+    const view = (await store.load("s")).view;
+    expect(view?.guardResult).toEqual(sampleGuardResult);
+    expect(view?.output).toBe("hello");
+    expect(view?.selectedPath).toBe("src/a.ts");
+  });
+
+  it("keeps the output and the guard result when the limitations are saved", async () => {
+    const store = createIndexedDbWorkspaceStore();
+    await store.saveTerminalOutput("s", "hello", 30);
+    await store.saveGuardResult("s", sampleGuardResult, 40);
+
+    await store.saveLimitations("s", { a: "b" });
+
+    const view = (await store.load("s")).view;
+    expect(view?.output).toBe("hello");
+    expect(view?.guardResult).toEqual(sampleGuardResult);
+    expect(view?.limitations).toEqual({ a: "b" });
   });
 });

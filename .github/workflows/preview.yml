@@ -53,6 +53,9 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Verify exercise guard
+        run: pnpm verify:guard
+
       - name: Verify exercises
         run: pnpm verify:exercises
 

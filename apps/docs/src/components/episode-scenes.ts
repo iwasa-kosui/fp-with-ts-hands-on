@@ -187,10 +187,12 @@ ${arm(52, 150, 60, 168, "#12dbb1", "#d9a37c")}
 <rect x="-2" y="170" width="176" height="66" fill="#2236b8"/>
 <rect x="10" y="180" width="152" height="44" rx="6" fill="none" stroke="#5b70e6" stroke-width="2"/>
 ${screen(64, 66, 108, 86, 158)}
-${text(76, 110, 13, "診察開始")}
-<rect x="76" y="116" width="86" height="22" rx="4" fill="#ffe0ee" stroke="#ff4f93" stroke-width="2.5"/>
-${text(79, 132, 12, "夜勤の獣医師")}
-<path d="M153 124H160L156.5 130Z" fill="${ink}" stroke="none"/>
+<rect x="76" y="92" width="84" height="20" rx="4" fill="#dbe4ff" stroke="#2236b8" stroke-width="2.5"/>
+${text(82, 106, 12, "予約")}
+<path d="M110 102H150" stroke="#9aa6e0" stroke-width="6"/>
+<rect x="76" y="118" width="84" height="22" rx="4" fill="#ffd21b" stroke-width="2.5"/>
+${text(80, 133, 12, "診察を開始する", { fit: 76 })}
+${cursor(140, 128)}
 
 <path d="M180 132H198V118L218 146L198 174V160H180Z" fill="#ffd21b" stroke-width="2.5"/>
 
@@ -198,9 +200,9 @@ ${shadow(287, 240, 66)}
 <rect x="222" y="62" width="14" height="176" fill="#8d95b8"/>
 <rect x="338" y="62" width="14" height="176" fill="#8d95b8"/>
 <rect x="216" y="54" width="142" height="26" rx="4" fill="#2236b8"/>
-${text(287, 73, 14, "parse", { anchor: "middle", fill: "#fff", mono: true })}
+${text(287, 73, 14, "サーバーの入口", { anchor: "middle", fill: "#fff" })}
 <rect x="262" y="16" width="50" height="30" rx="15" fill="#12dbb1"/>
-${text(287, 38, 20, "Ok", { anchor: "middle" })}
+${text(287, 38, 20, "通過", { anchor: "middle" })}
 <g transform="rotate(-3 287 140)">
 <path d="M236 122 L248 110 H338 V170 H236 Z" fill="#fff"/>
 <circle cx="248" cy="122" r="3.5" fill="#fff8ce" stroke-width="2"/>
@@ -355,7 +357,7 @@ export const episodeScenes = {
     art: adtAndExhaustiveness,
   },
   "03-boundaries-and-pii": {
-    label: "15時30分、受付担当者が診察開始画面で夜勤の獣医師を選ぶと、veterinarianId の欄に night-shift が入ったカードが作られ、境界の門を Ok で通り抜けていく",
+    label: "15時30分、獣医師が診察開始画面で予約を選んで「診察を開始する」ボタンを押すと、veterinarianId の欄に night-shift が入ったカードが作られ、サーバーの入口をそのまま通り抜けていく",
     art: boundariesAndPii,
   },
   "04-workflow-errors": {

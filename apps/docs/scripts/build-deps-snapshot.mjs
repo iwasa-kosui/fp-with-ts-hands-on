@@ -8,8 +8,8 @@ import { gzipSync } from "node:zlib";
 import { chromium } from "playwright-core";
 import {
   chmodBinScript,
+  mergedSnapshotPackageJsonFor,
   snapshotDependenciesOf,
-  snapshotPackageJsonFor,
 } from "../src/code-explorer/deps-snapshot-shared.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
@@ -29,14 +29,27 @@ if (values.out === undefined) {
 }
 const outputDirectory = resolve(values.out);
 
+const terminalSnapshots = [
+  "session-01",
+  "session-02",
+  "session-03",
+  "session-03-solution",
+  "session-04",
+  "session-06",
+];
+
 const buildPackageJson = async () => {
-  const source = JSON.parse(
-    await readFile(
-      join(repositoryRoot, "examples/session-06/package.json"),
-      "utf8",
+  const sources = await Promise.all(
+    terminalSnapshots.map(async (snapshot) =>
+      JSON.parse(
+        await readFile(
+          join(repositoryRoot, `examples/${snapshot}/package.json`),
+          "utf8",
+        ),
+      ),
     ),
   );
-  const completed = snapshotPackageJsonFor(source, {
+  const completed = mergedSnapshotPackageJsonFor(sources, {
     "exercise:06": "pnpm exercise",
   });
   return {

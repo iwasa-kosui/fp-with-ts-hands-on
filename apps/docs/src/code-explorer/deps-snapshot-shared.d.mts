@@ -26,6 +26,11 @@ export const snapshotPackageJsonFor: (
   scripts?: Record<string, string>,
 ) => PackageJson;
 
+export const mergedSnapshotPackageJsonFor: (
+  sourcePackageJsons: readonly PackageJson[],
+  scripts?: Record<string, string>,
+) => PackageJson;
+
 export const snapshotDependenciesOf: (
   packageJson: PackageJson,
 ) => Record<string, string>;

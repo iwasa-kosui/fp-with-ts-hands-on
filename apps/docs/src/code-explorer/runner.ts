@@ -39,6 +39,12 @@ export type TerminalSession = Readonly<{
   writeFile: (path: string, contents: string) => Promise<void>;
   resize: (size: TerminalSize) => void;
   restartShell: (size: TerminalSize) => Promise<void>;
+  runCommand?: (
+    command: string,
+    args: readonly string[],
+    size: TerminalSize,
+  ) => Promise<number>;
+  readFile?: (path: string) => Promise<string | undefined>;
   dispose: () => Promise<void>;
 }>;
 
@@ -89,6 +95,11 @@ export type TerminalRuntime = Readonly<{
   readWorkspaceEntry: (path: string) => Promise<WorkspaceEntry>;
   writeWorkspaceFile: (path: string, contents: string) => Promise<void>;
   spawnShell: (size: TerminalSize) => Promise<TerminalRuntimeProcess>;
+  spawnCommand?: (
+    command: string,
+    args: readonly string[],
+    size: TerminalSize,
+  ) => Promise<TerminalRuntimeProcess>;
   dispose: () => void | Promise<void>;
 }>;
 
@@ -278,6 +289,7 @@ export const createTerminalRunner = (
     let runtime: TerminalRuntime | undefined;
     let stopWatching: (() => void) | undefined;
     let activeShell: ActiveShell | undefined;
+    const runningCommands = new Set<TerminalRuntimeProcess>();
     let shellGeneration = 0;
     let disposed = false;
     let fileEventQueue = Promise.resolve();
@@ -523,11 +535,61 @@ export const createTerminalRunner = (
           if (disposed) throw new Error("Terminal session is disposed");
           await spawnShell(size);
         },
+        runCommand: async (command, args, size) => {
+          if (runtime?.spawnCommand === undefined || disposed) {
+            throw new Error("この実行環境ではコマンドを実行できません。");
+          }
+          request.onOutput(
+            `\r\n\x1b[2m$ ${[command, ...args].join(" ")}\x1b[0m\r\n`,
+          );
+          const process = await runtime.spawnCommand(command, args, size);
+          runningCommands.add(process);
+          const outputDone = process.output
+            .pipeTo(
+              new WritableStream<string>({
+                write: (chunk) => {
+                  if (!disposed && !request.signal.aborted) {
+                    request.onOutput(chunk);
+                  }
+                },
+              }),
+            )
+            .catch(() => undefined);
+          try {
+            const exitCode = await process.exit;
+            await outputDone;
+            return exitCode;
+          } finally {
+            runningCommands.delete(process);
+          }
+        },
+        readFile: async (rawPath) => {
+          const path = normalizeWorkspacePath(rawPath);
+          if (runtime === undefined || path === undefined) {
+            throw new Error(`Unsupported workspace path: ${rawPath}`);
+          }
+          try {
+            const entry = await runtime.readWorkspaceEntry(path);
+            return entry.kind === "file"
+              ? decodeTextFile(entry.contents)
+              : undefined;
+          } catch (error: unknown) {
+            if (isMissingPathError(error)) return undefined;
+            throw error;
+          }
+        },
         dispose: async () => {
           if (disposed) return;
           disposed = true;
           stopWatching?.();
           stopWatching = undefined;
+          for (const process of runningCommands) {
+            try {
+              process.kill();
+            } catch {
+              // The command may already have exited.
+            }
+          }
           await stopShell();
           await fileEventQueue;
           await runtime?.dispose();
@@ -548,13 +610,24 @@ export const createTerminalRunner = (
   },
 });
 
-const readExternalTypeFiles = async (
-  runtime: WebContainer,
+export type TypeFileReader = Readonly<{
+  readdir: (
+    path: string,
+    options: { withFileTypes: true },
+  ) => Promise<
+    readonly { name: string; isDirectory: () => boolean; isFile: () => boolean }[]
+  >;
+  readFile: (path: string, encoding: "utf8") => Promise<string>;
+}>;
+
+export const readExternalTypeFiles = async (
+  reader: TypeFileReader,
+  projectDirectory: string = runtimeProjectDirectory,
 ): Promise<ProjectFiles> => {
   const files: Record<string, string> = {};
 
   const visit = async (directory: string): Promise<void> => {
-    const entries = await runtime.fs.readdir(directory, { withFileTypes: true });
+    const entries = await reader.readdir(directory, { withFileTypes: true });
     await Promise.all(
       entries.map(async (entry) => {
         const path = `${directory}/${entry.name}`;
@@ -565,8 +638,8 @@ const readExternalTypeFiles = async (
           entry.isFile() &&
           (/\.d\.[cm]?ts$/.test(entry.name) || entry.name === "package.json")
         ) {
-          const projectPath = path.replace(`${runtimeProjectDirectory}/`, "");
-          files[`file:///workspace/${projectPath}`] = await runtime.fs.readFile(
+          const projectPath = path.replace(`${projectDirectory}/`, "");
+          files[`file:///workspace/${projectPath}`] = await reader.readFile(
             path,
             "utf8",
           );
@@ -594,9 +667,9 @@ const readExternalTypeFiles = async (
       "node_modules/undici-types",
       "node_modules/@hono/inertia",
       "node_modules/expect-type",
-    ].map((directory) =>
-      visitIfPresent(`${runtimeProjectDirectory}/${directory}`),
-    ),
+      "node_modules/fast-check",
+      "node_modules/pure-rand",
+    ].map((directory) => visitIfPresent(`${projectDirectory}/${directory}`)),
   );
   return files;
 };
@@ -717,7 +790,7 @@ const adaptWebContainer = (
     }
   },
   install: async (signal) => runInstallation(runtime, signal),
-  readTypeFiles: async () => readExternalTypeFiles(runtime),
+  readTypeFiles: async () => readExternalTypeFiles(runtime.fs),
   watchWorkspace: (onPath) => {
     const watcher = runtime.fs.watch(
       runtimeProjectDirectory,
@@ -759,6 +832,19 @@ const adaptWebContainer = (
   },
   spawnShell: async (size) => {
     const process = await runtime.spawn("jsh", [], {
+      cwd: runtimeProjectDirectory,
+      terminal: size,
+    });
+    return {
+      input: process.input,
+      output: process.output,
+      exit: process.exit,
+      kill: () => process.kill(),
+      resize: (nextSize) => process.resize(nextSize),
+    };
+  },
+  spawnCommand: async (command, args, size) => {
+    const process = await runtime.spawn(command, [...args], {
       cwd: runtimeProjectDirectory,
       terminal: size,
     });
