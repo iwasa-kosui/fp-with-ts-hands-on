@@ -4,6 +4,7 @@ import CommandBlock from "../../components/CommandBlock.astro";
 import GuardTable from "../../components/GuardTable.astro";
 import ExceptionOrResultAnimation from "../../components/ExceptionOrResultAnimation.astro";
 import AndThenMapFlow from "../../components/AndThenMapFlow.astro";
+import DepsThenInputFlow from "../../components/DepsThenInputFlow.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
 import Prose from "../../sessions/prose/04-workflow-errors.mdx";
 import type { CodeGuide } from "../../code-explorer/code-guide";
@@ -492,7 +493,7 @@ ${session.exerciseCommand} を成功させてください。
         </p>
       </section>
       <Prose
-        components={{ AndThenMapFlow, CodeGuideCards, CommandBlock, EpisodeIllustration, ExceptionOrResultAnimation, GuardTable }}
+        components={{ AndThenMapFlow, CodeGuideCards, CommandBlock, DepsThenInputFlow, EpisodeIllustration, ExceptionOrResultAnimation, GuardTable }}
         session={session}
         guides={guides}
         workspace={workspace}
