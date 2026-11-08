@@ -48,7 +48,9 @@ const monacoState = vi.hoisted(() => {
   let markers: FakeMarker[] = [];
   let diagnosticsOptions: Record<string, unknown> = {};
   const markerListeners = new Set<(uris: string[]) => void>();
-  let semanticResult: Promise<unknown> = Promise.resolve([]);
+  let semanticGate: Promise<void> = Promise.resolve();
+  let semanticCodes: number[] = [];
+  let semanticFails = false;
   let currentModel: FakeModel | null = null;
   const editor = {
     getModel: vi.fn(() => currentModel),
@@ -105,7 +107,12 @@ const monacoState = vi.hoisted(() => {
       typescript: {
         ModuleKind: { ESNext: 99 },
         getTypeScriptWorker: async () => async () => ({
-          getSemanticDiagnostics: () => semanticResult,
+          getSemanticDiagnostics: () =>
+            semanticFails
+              ? Promise.reject(new Error("worker restarted"))
+              : semanticGate.then(() =>
+                  semanticCodes.map((code) => ({ code })),
+                ),
         }),
         ScriptTarget: { ES2020: 7 },
         typescriptDefaults: {
@@ -131,10 +138,16 @@ const monacoState = vi.hoisted(() => {
     },
     holdFirstCheck: () => {
       let release: () => void = () => undefined;
-      semanticResult = new Promise((resolve) => {
-        release = () => resolve([]);
+      semanticGate = new Promise((resolve) => {
+        release = () => resolve();
       });
       return release;
+    },
+    setSemanticCodes: (codes: number[]) => {
+      semanticCodes = codes;
+    },
+    failChecks: () => {
+      semanticFails = true;
     },
     emitMarkers: (path: string) => {
       for (const listener of markerListeners) {
@@ -144,7 +157,9 @@ const monacoState = vi.hoisted(() => {
     reset: () => {
       models.clear();
       markers = [];
-      semanticResult = Promise.resolve([]);
+      semanticGate = Promise.resolve();
+      semanticCodes = [];
+      semanticFails = false;
       diagnosticsOptions = {};
       markerListeners.clear();
       currentModel = null;
@@ -312,7 +327,10 @@ describe("MonacoEditor", () => {
       "3:1 second problem TS2322",
     ]);
     expect(section.textContent).toContain(
-      "ターミナルを起動するまで、外部パッケージの型は any として検査します。",
+      "ターミナルを起動すると、外部パッケージの型を使う検査も行うので、型エラーが増えることがあります。",
+    );
+    expect(section.textContent).toContain(
+      "演習の開始時点では、まだ実装していない部分が型エラーになります。実装すると消えます。",
     );
 
     await act(async () => buttons[0]!.click());
@@ -357,7 +375,8 @@ describe("MonacoEditor", () => {
       ),
     );
     expect(section().querySelectorAll("button")).toHaveLength(0);
-    expect(section().textContent).not.toContain("ターミナルを起動するまで");
+    expect(section().textContent).not.toContain("ターミナルを起動すると");
+    expect(section().textContent).not.toContain("演習の開始時点では");
   });
 
   it("shows a checking heading until the first check finishes", async () => {
@@ -373,6 +392,221 @@ describe("MonacoEditor", () => {
     await vi.waitFor(() =>
       expect(heading()).toBe("このファイルに型エラーは見つかっていません"),
     );
+  });
+
+  it("returns to the checking heading when type files arrive", async () => {
+    const mounted = await renderHydratedEditor({ ...baseProps });
+    const heading = () =>
+      mounted.host.querySelector('section[aria-label="型検査の結果"] h3')
+        ?.textContent;
+    await vi.waitFor(() =>
+      expect(heading()).toBe("このファイルに型エラーは見つかっていません"),
+    );
+
+    const release = monacoState.holdFirstCheck();
+    await mounted.rerender({
+      ...baseProps,
+      typeFiles: { "node_modules/zod/index.d.ts": "export {};" },
+    });
+    expect(heading()).toBe("型を検査しています");
+
+    await act(async () => release());
+
+    await vi.waitFor(() =>
+      expect(heading()).toBe("このファイルに型エラーは見つかっていません"),
+    );
+  });
+
+  it("keeps the checking heading until markers arrive for reported errors", async () => {
+    monacoState.setSemanticCodes([2322]);
+    const { host } = await renderHydratedEditor({
+      ...baseProps,
+      typeFiles: { "node_modules/zod/index.d.ts": "export {};" },
+    });
+    const heading = () =>
+      host.querySelector('section[aria-label="型検査の結果"] h3')?.textContent;
+    const seen: (string | null | undefined)[] = [];
+    const observer = new MutationObserver(() => seen.push(heading()));
+    observer.observe(host, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(heading()).toBe("型を検査しています");
+
+    monacoState.setMarkers(
+      [
+        {
+          severity: 8,
+          message: "problem",
+          code: "2322",
+          startLineNumber: 1,
+          startColumn: 1,
+        },
+      ],
+      "src/first.ts",
+    );
+    monacoState.emitMarkers("src/first.ts");
+
+    await vi.waitFor(() => expect(heading()).toBe("型エラー 1 件"));
+    observer.disconnect();
+    expect(seen).not.toContain("このファイルに型エラーは見つかっていません");
+  });
+
+  it("goes straight to the count when markers arrive after an empty result", async () => {
+    const { host } = await renderHydratedEditor({
+      ...baseProps,
+      typeFiles: { "node_modules/zod/index.d.ts": "export {};" },
+    });
+    const heading = () =>
+      host.querySelector('section[aria-label="型検査の結果"] h3')?.textContent;
+    const seen: (string | null | undefined)[] = [];
+    const observer = new MutationObserver(() => seen.push(heading()));
+    observer.observe(host, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(heading()).toBe("型を検査しています");
+
+    monacoState.setMarkers(
+      [
+        {
+          severity: 8,
+          message: "problem",
+          code: "2322",
+          startLineNumber: 1,
+          startColumn: 1,
+        },
+      ],
+      "src/first.ts",
+    );
+    monacoState.emitMarkers("src/first.ts");
+
+    await vi.waitFor(() => expect(heading()).toBe("型エラー 1 件"));
+    observer.disconnect();
+    expect(seen).not.toContain("このファイルに型エラーは見つかっていません");
+  });
+
+  it("goes straight to the count when markers arrive after the worker call rejects", async () => {
+    monacoState.failChecks();
+    const { host } = await renderHydratedEditor({
+      ...baseProps,
+      typeFiles: { "node_modules/zod/index.d.ts": "export {};" },
+    });
+    const heading = () =>
+      host.querySelector('section[aria-label="型検査の結果"] h3')?.textContent;
+    const seen: (string | null | undefined)[] = [];
+    const observer = new MutationObserver(() => seen.push(heading()));
+    observer.observe(host, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(heading()).toBe("型を検査しています");
+
+    monacoState.setMarkers(
+      [
+        {
+          severity: 8,
+          message: "problem",
+          code: "2322",
+          startLineNumber: 1,
+          startColumn: 1,
+        },
+      ],
+      "src/first.ts",
+    );
+    monacoState.emitMarkers("src/first.ts");
+
+    await vi.waitFor(() => expect(heading()).toBe("型エラー 1 件"));
+    observer.disconnect();
+    expect(seen).not.toContain("このファイルに型エラーは見つかっていません");
+  });
+
+  it("shows the count at once when markers already exist as the worker returns", async () => {
+    const release = monacoState.holdFirstCheck();
+    const { host } = await renderHydratedEditor({
+      ...baseProps,
+      typeFiles: { "node_modules/zod/index.d.ts": "export {};" },
+    });
+    const heading = () =>
+      host.querySelector('section[aria-label="型検査の結果"] h3')?.textContent;
+    const seen: (string | null | undefined)[] = [];
+    const observer = new MutationObserver(() => seen.push(heading()));
+    observer.observe(host, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+    expect(heading()).toBe("型を検査しています");
+
+    monacoState.setMarkers(
+      [
+        {
+          severity: 8,
+          message: "problem",
+          code: "2322",
+          startLineNumber: 1,
+          startColumn: 1,
+        },
+      ],
+      "src/first.ts",
+    );
+    monacoState.emitMarkers("src/first.ts");
+    await act(async () => release());
+
+    await vi.waitFor(() => expect(heading()).toBe("型エラー 1 件"));
+    observer.disconnect();
+    expect(seen).not.toContain("このファイルに型エラーは見つかっていません");
+  });
+
+  it("finishes after a short wait when only ignored codes are reported", async () => {
+    monacoState.setSemanticCodes([7006]);
+    const { host } = await renderHydratedEditor({ ...baseProps });
+
+    await vi.waitFor(() =>
+      expect(
+        host.querySelector('section[aria-label="型検査の結果"] h3')
+          ?.textContent,
+      ).toBe("このファイルに型エラーは見つかっていません"),
+    );
+  });
+
+  it("shows the explanation only while errors are listed", async () => {
+    monacoState.setMarkers(
+      [
+        {
+          severity: 8,
+          message: "problem",
+          code: "2322",
+          startLineNumber: 1,
+          startColumn: 1,
+        },
+      ],
+      "src/first.ts",
+    );
+    const { host } = await renderHydratedEditor({ ...baseProps });
+    const text = () =>
+      host.querySelector('section[aria-label="型検査の結果"]')!.textContent;
+    expect(text()).toContain("演習の開始時点では");
+
+    monacoState.setMarkers([], "src/first.ts");
+    monacoState.emitMarkers("src/first.ts");
+
+    await vi.waitFor(() => expect(text()).not.toContain("演習の開始時点では"));
   });
 
   it("does not show the type check result while read-only", async () => {

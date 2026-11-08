@@ -302,9 +302,14 @@ export const MonacoEditor = (props: EditorProps) => {
   const onChangeRef = useRef(onChange);
   const [ready, setReady] = useState(false);
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
-  const [firstCheckDone, setFirstCheckDone] = useState(false);
+  const [checkedKey, setCheckedKey] = useState<string>();
+  const pendingKey = useRef<string>();
+  const typesArrived = Object.keys(typeFiles).length > 0;
+  const checkKey = `${path}:${typesArrived}`;
+  const checkKeyRef = useRef(checkKey);
 
   latestProps.current = props;
+  checkKeyRef.current = checkKey;
   onChangeRef.current = onChange;
 
   useEffect(() => {
@@ -425,10 +430,12 @@ export const MonacoEditor = (props: EditorProps) => {
     if (!ready || current === undefined) return;
 
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const finish = () => {
-      if (!cancelled) setFirstCheckDone(true);
+      pendingKey.current = undefined;
+      if (!cancelled) setCheckedKey(checkKey);
     };
-    const model = current.models.get(latestProps.current.path);
+    const model = current.models.get(path);
     if (model === undefined) {
       finish();
       return () => {
@@ -436,23 +443,41 @@ export const MonacoEditor = (props: EditorProps) => {
       };
     }
 
-    const waitForFirstCheck = async () => {
+    const waitForMarkers = (delay: number) => {
+      const found = readDiagnostics(current.monaco, model);
+      if (found.length > 0) {
+        setDiagnostics(found);
+        finish();
+        return;
+      }
+      pendingKey.current = checkKey;
+      timer = setTimeout(finish, delay);
+    };
+
+    const waitForCheck = async () => {
       try {
         const getWorker = await current.monaco.typescript.getTypeScriptWorker();
         const worker = await getWorker(model.uri);
-        await worker.getSemanticDiagnostics(model.uri.toString());
+        const found = await worker.getSemanticDiagnostics(model.uri.toString());
+        if (cancelled) return;
+        const ignored =
+          current.monaco.typescript.typescriptDefaults.getDiagnosticsOptions()
+            .diagnosticCodesToIgnore ?? [];
+        const count = found.filter(({ code }) => !ignored.includes(code)).length;
+        waitForMarkers(count === 0 ? 500 : 3000);
       } catch {
-        return;
-      } finally {
-        finish();
+        if (cancelled) return;
+        waitForMarkers(3000);
       }
     };
-    void waitForFirstCheck();
+    void waitForCheck();
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
+      if (pendingKey.current === checkKey) pendingKey.current = undefined;
     };
-  }, [ready]);
+  }, [ready, checkKey]);
 
   useEffect(() => {
     const current = runtime.current;
@@ -465,7 +490,14 @@ export const MonacoEditor = (props: EditorProps) => {
     }
 
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const read = () => setDiagnostics(readDiagnostics(current.monaco, model));
+    const read = () => {
+      const found = readDiagnostics(current.monaco, model);
+      setDiagnostics(found);
+      if (found.length > 0 && pendingKey.current === checkKeyRef.current) {
+        setCheckedKey(pendingKey.current);
+        pendingKey.current = undefined;
+      }
+    };
     read();
     const subscription = current.monaco.editor.onDidChangeMarkers((uris) => {
       if (!uris.some((uri) => uri.toString() === model.uri.toString())) return;
@@ -529,13 +561,16 @@ export const MonacoEditor = (props: EditorProps) => {
           <h3>
             {diagnostics.length > 0
               ? `型エラー ${diagnostics.length} 件`
-              : firstCheckDone
+              : checkedKey === checkKey
                 ? "このファイルに型エラーは見つかっていません"
                 : "型を検査しています"}
           </h3>
-          {Object.keys(typeFiles).length === 0 ? (
-            <p>ターミナルを起動するまで、外部パッケージの型は any として検査します。</p>
+          {diagnostics.length > 0 ? (
+            <p>演習の開始時点では、まだ実装していない部分が型エラーになります。実装すると消えます。</p>
           ) : null}
+          {typesArrived ? null : (
+            <p>ターミナルを起動すると、外部パッケージの型を使う検査も行うので、型エラーが増えることがあります。</p>
+          )}
           {diagnostics.length > 0 ? (
             <ul>
               {diagnostics.map((diagnostic) => (
