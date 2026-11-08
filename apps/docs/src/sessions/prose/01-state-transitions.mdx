@@ -18,7 +18,7 @@ import InlineCode from "../../components/InlineCode.astro";
   <h3 data-story-stage="goal">このセッションのゴール</h3>
   <p>次の図の6つの状態を、状態の名前を持つ <code>kind</code> プロパティで区別するDiscriminated Unionで表します。🐇の予約がどの関数でどの状態へ進むかを、1コマずつ追ってください。最後の3コマでは、以前のコード、修正前、修正後の順に、入力、関数の実装、出力を見比べます。</p>
   <AppointmentStateDiagram />
-  <p>遷移関数でも同じ型を使います。<code>completeExamination</code> は <code>InExamination</code> だけを受け取り、<code>recordPayment</code> は <code>AwaitingPayment</code> だけを受け取る純粋関数にします。</p>
+  <p>遷移関数でも同じ型を使います。<code>completeExamination</code> は <code>InExamination</code> だけを受け取り、<code>recordPayment</code> は <code>AwaitingPayment</code> だけを受け取る<a href="#pure-functions">純粋関数</a>にします。</p>
   <h3>このセッションで守ること</h3>
   <ul class="decision-list">
     {props.session.decisions.map(({ invariant }) => <li>{invariant}</li>)}
@@ -61,6 +61,7 @@ import InlineCode from "../../components/InlineCode.astro";
   <details class="step-solution">
     <summary>コードを見る: 3つの誤りがコンパイルできる例</summary>
     <div class="step-solution__body">
+      <p><code>declare const paidAppointment: Paid;</code> は、値を作らずに型だけを宣言する書き方です。ここでは、型検査がどう判定するかだけを見るために使っています。</p>
       <figure class="code-block pitfall-code" data-pitfall-code>
         <figcaption>{"\n"}配布コードをもとにした例:{"\n"}{props.narrative.pitfallCode.sources.map((source, index) => (<Fragment>{index === 0 ? " " : "、"}<code>{source}</code></Fragment>))}</figcaption>
         <Code code={props.narrative.pitfallCode.code} lang="ts" />
@@ -72,6 +73,7 @@ import InlineCode from "../../components/InlineCode.astro";
 <section id="legacy" class="code-playground">
   <h2>コードを読み、失敗を再現する</h2>
   <p><code>Appointment</code> 全体を受け取る遷移関数、<code>throw</code>、<code>as Appointment</code> を探してください。これらは、許可されていない状態遷移をコンパイラが止められない箇所です。</p>
+  <p><code>as</code> は型アサーションです。値の中身を確かめずに「この値はこの型だ」と型検査に伝えるので、中身が型と違っていても、多くの場合、型検査はエラーを報告しません。</p>
   <p>{"\n"}編集する範囲は <code>{props.session.exerciseModule.dir}</code>、変更するファイル数は最大{"\n"}{props.session.exerciseModule.fileBudget}ファイル・約{props.session.exerciseModule.lineBudget}行です。{"\n"}</p>
   <CodeGuideCards guides={props.guides} projectFiles={props.projectFiles} />
   <h3>修正前の失敗を確認する</h3>
@@ -99,9 +101,18 @@ import InlineCode from "../../components/InlineCode.astro";
 <section id="teach">
   <h2>事前知識（{props.session.timeBreakdown.teach}分）</h2>
   <p>このセッションで使う型を確認します。修正前の書き方は<a href="#naive-pitfalls">素朴な実装の落とし穴</a>にまとめました。ここでは解決に使う書き方を示します。</p>
+  <article id="illegal-states" class="teaching-topic">
+    <h3>必要な情報が欠けた状態を、型で作れなくする</h3>
+    <p>修正前の書き方: <a href="#pitfall-one-type">1. 1つの型に全状態の項目を詰め込む</a></p>
+    <p>状態を string で持ち、状態ごとに要る情報を省略可能にすると、診察中なのに開始時刻がない予約のような、業務上ありえない値も型検査を通ります。状態ごとに型を分けると、こうした値を書いた時点で型検査がエラーを報告します。</p>
+    <IllegalStateFlow />
+    <p class="teaching-topic__why">不正な値を作れない型にしておけば、値を受け取る関数は「開始時刻がないかもしれない」と確かめる必要がなくなります。</p>
+    <p>時間内に読み切れなければ、演習の後に読んでください。</p>
+  </article>
   <article class="teaching-topic">
     <h3>Discriminated Unionは共通のkindで型を絞り込める</h3>
     <p>Unionは、値が複数の型のうち、いずれか1つであることを表します。判別フィールドを持たないオブジェクトのUnionでは、固有のプロパティがあるかどうかを調べて型を絞り込むしかありません。Discriminated Unionは、すべてのオブジェクト型に共通の判別フィールドを置き、型ごとに異なるリテラル値を割り当てたUnionです。</p>
+    <p>型の絞り込み（narrowing）とは、if や switch の条件から、そのブロックの中で値の型を狭めることです。</p>
     <p>修正前の書き方: <a href="#pitfall-no-discriminant">2. 状態を判別する項目がない</a></p>
     <figure class="code-block">
       <figcaption>
@@ -113,6 +124,7 @@ import InlineCode from "../../components/InlineCode.astro";
       </figcaption>
       <Code code={props.teaching[0].after.code} lang="ts" />
     </figure>
+    <p><code>Readonly&lt;{"{…}"}&gt;</code> は、プロパティを書き換えられない型にします。</p>
     <p class="teaching-topic__why">判定の順序に依存しません。共通のkindがあれば、switchでkindの値を確認するだけで各型へ絞り込めます。状態固有の必須情報を持てること自体は、判別フィールドがないUnionでも同じです。違いは、どの型かを判別する共通フィールドがあるかどうかです。</p>
   </article>
   <article class="teaching-topic">
@@ -129,7 +141,16 @@ import InlineCode from "../../components/InlineCode.astro";
       </figcaption>
       <Code code={props.teaching[1].after.code} lang="ts" />
     </figure>
+    <p>遷移関数は元の値を書き換えず、<code>{"{ ...appointment, kind: \"InExamination\", … }"}</code> のスプレッド構文で新しい値を作って返します。末尾の <code>as const satisfies InExamination</code> は2つの指定です。<code>as const</code> は値を読み取り専用にし、<code>"InExamination"</code> のような文字列を string に広げずに、その文字列の型のまま残します。<code>satisfies InExamination</code> は、値が InExamination の形を満たすかを型検査で確かめます。<code>as</code> と違い、満たさなければ型検査がエラーを報告します。</p>
     <p class="teaching-topic__why">遷移ごとに <code>CheckedIn</code>、<code>InExamination</code>、<code>AwaitingPayment</code> だけを受け取ります。会計済みの予約や診察結果を記録していない予約を誤った関数へ渡すと、コードを実行する前の型検査でコンパイルエラーになります。Discriminated Unionが状態の候補を定義し、関数の引数型が許可された遷移を定義します。</p>
+  </article>
+  <article id="pure-functions" class="teaching-topic">
+    <h3>純粋関数は、同じ入力から同じ結果を返す</h3>
+    <p>遷移関数は、現在時刻を関数の中で読まず、examinationStartedAt のような引数で受け取ります。関数の外の世界を読み書きしない関数は、同じ引数からいつも同じ結果を返すので、テストで結果を比べられます。</p>
+    <p>S01 の配布コードの遷移関数は、すでに時刻を引数で受け取っています。次の図は、その形にしている理由を示します。</p>
+    <PureFunctionFlow />
+    <p class="teaching-topic__why">遷移関数を純粋関数にしておくと、状態遷移の判断を、データベースや時計を用意せずに確かめられます。</p>
+    <p>時間内に読み切れなければ、演習の後に読んでください。</p>
   </article>
   <article class="teaching-topic">
     <h3>事前条件を型と実行時の検証で確かめる</h3>
