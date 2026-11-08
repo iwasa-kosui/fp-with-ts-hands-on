@@ -72,7 +72,7 @@ const expectedCurriculum = [
     kind: "exercise",
     exerciseCommand: "pnpm exercise:01",
     snapshot: "session-01",
-    timeBreakdown: { brief: 3, teach: 6, exercise: 8, review: 3 },
+    timeBreakdown: { brief: 2, teach: 7, exercise: 8, review: 3 },
   },
   {
     slug: "02-adt-and-exhaustiveness",
@@ -142,11 +142,7 @@ const expectedEpisodes = [
     "会計済みの予約は「診察中」へ戻り、請求書は2枚になっていました。ログには飼い主の電話番号も残っていました。",
     "引き継ぎ資料を開く前に、新人エンジニアは二重請求と個人情報流出の再現条件だけは確認できました。",
   ],
-  [
-    "会計を終えたウサギは帰ったはずなのに、画面の中では診察室へ戻ってきました。",
-    "受付画面は止めるどころか、2枚目の請求書まで手際よく用意します。",
-    "許可された状態遷移を覚えていたのは人間だけで、コードは何でも通す危ない設計でした。",
-  ],
+  undefined,
   [
     "無断キャンセルを表すNoShowの状態を足した翌朝、受付画面のハリネズミの予約に「不明」と表示されていました。",
     "表示名の分岐にNoShowのcaseがなく、defaultが「不明」を返していても、型検査は成功しました。",

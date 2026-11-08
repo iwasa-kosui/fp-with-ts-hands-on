@@ -1,0 +1,196 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import { lineIndexOf, quotes } from "./quotes";
+import "./states.css";
+
+const code = quotes.startStartExamination.code;
+const lit = {
+  signature: lineIndexOf(code, "  appointment: Appointment,"),
+  requireCall: lineIndexOf(code, 'requireKind(appointment, ["CheckedIn"])'),
+};
+
+const cards = [
+  { label: "予約済み", kind: "Scheduled" },
+  { label: "来院済み", kind: "CheckedIn" },
+  { label: "診察中", kind: "InExamination" },
+  { label: "会計待ち", kind: "AwaitingPayment" },
+  { label: "会計済み", kind: "Paid" },
+  { label: "キャンセル", kind: "Canceled" },
+] as const;
+
+const allowed = "CheckedIn";
+
+const frames = cards.map((card) => ({
+  ...card,
+  ok: card.kind === allowed,
+  caption:
+    card.kind === allowed
+      ? `${card.label}の予約は、診察を始めてよい状態です。型検査も、実行したときの requireKind も通ります。`
+      : `${card.label}の予約も、引数の型 Appointment は受け取ります。型検査は報告しません。実行すると、requireKind が例外を投げます。`,
+}));
+
+const framesData = JSON.stringify({
+  lit,
+  frames: frames.map(({ ok }) => ({ ok })),
+});
+---
+
+<figure class="st-fig entrance" data-entrance data-frames={framesData} aria-label="6つの状態の予約が、遷移関数の入口を順に通る様子">
+  <StepControls />
+
+  <div class="entrance__grid">
+    <figure class="code-block st-code entrance__code">
+      <figcaption><span class="st-tag" data-tone="before">この回の開始コード</span> <code>{quotes.startStartExamination.path}</code></figcaption>
+      <Code code={code} lang="ts" />
+    </figure>
+
+    <div class="entrance__stage">
+      <p class="entrance__gate">
+        <span class="entrance__gate-title"><code>startExamination</code> の入口</span>
+        <span>引数の型は <code>Appointment</code>。6つの状態がすべて入ります。</span>
+      </p>
+      <ol class="entrance__cards">
+        {frames.map((frame, index) => (
+          <li class="entrance__card" data-card={index}>
+            <span class="entrance__name"><span class="entrance__pointer" aria-hidden="true">▶</span>{frame.label} <code>{frame.kind}</code></span>
+            <span class="entrance__verdict">
+              <span>型検査: 受け取る</span>
+              <span class="st-mark" data-tone={frame.ok ? "positive" : "negative"}>
+                {frame.ok ? "実行: ✓ 診察中になる" : "実行: × 例外"}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </div>
+
+  <div aria-live="polite">
+    <ol class="st-stack entrance__captions">
+      {frames.map((frame) => (
+        <li data-frame><p class="st-caption">{frame.caption}</p></li>
+      ))}
+    </ol>
+  </div>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  type Data = { lit: { signature: number; requireCall: number }; frames: { ok: boolean }[] };
+
+  document.querySelectorAll<HTMLElement>("[data-entrance]").forEach((root) => {
+    const data = JSON.parse(root.dataset.frames ?? "{}") as Data;
+    const lines = [...root.querySelectorAll<HTMLElement>(".entrance__code .line")];
+    const cards = [...root.querySelectorAll<HTMLElement>("[data-card]")];
+    mountStepper({
+      root,
+      onStep: (index) => {
+        const frame = data.frames[index];
+        if (frame === undefined) return;
+        cards.forEach((card, cardIndex) => card.classList.toggle("is-active", cardIndex === index));
+        lines.forEach((line, lineIndex) => {
+          line.classList.toggle("is-lit", lineIndex === data.lit.signature);
+          line.classList.toggle("is-lit-negative", lineIndex === data.lit.requireCall && !frame.ok);
+        });
+      },
+    });
+  });
+</script>
+
+<style>
+  .entrance__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: start;
+  }
+
+  .entrance__gate {
+    display: grid;
+    gap: 0.125rem;
+    margin: 0 0 0.5rem;
+    padding: 0.375rem 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  .entrance__gate-title {
+    font-weight: 800;
+  }
+
+  .entrance__cards {
+    display: grid;
+    gap: 0.375rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .entrance__card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0 0.5rem;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .entrance__name {
+    font-weight: 800;
+  }
+
+  .entrance__name code {
+    color: var(--role-muted);
+    font-size: 0.6875rem;
+    font-weight: 400;
+  }
+
+  .entrance__pointer {
+    display: inline-block;
+    width: 1.25em;
+    visibility: hidden;
+  }
+
+  .entrance__verdict {
+    display: grid;
+    justify-items: end;
+    font-size: 0.75rem;
+  }
+
+  .entrance[data-ready] .entrance__card:not(.is-active) {
+    opacity: 0.55;
+  }
+
+  .entrance[data-ready] .entrance__card:not(.is-active) .entrance__verdict {
+    visibility: hidden;
+  }
+
+  .entrance[data-ready] .entrance__card.is-active {
+    border-color: var(--role-accent);
+    box-shadow: 0 0 0 2px var(--role-accent);
+  }
+
+  .entrance[data-ready] .entrance__card.is-active .entrance__pointer {
+    color: var(--role-accent);
+    visibility: visible;
+  }
+
+  .entrance[data-ready] .entrance__card {
+    transition: opacity 0.3s;
+  }
+
+  @media (max-width: 55rem) {
+    .entrance__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

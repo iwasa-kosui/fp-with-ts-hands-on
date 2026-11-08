@@ -1,0 +1,252 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import { lineIndexOf, quotes } from "./quotes";
+import "./states.css";
+
+const versions = {
+  before: {
+    tag: "修正前: この回の開始コード",
+    path: quotes.startStartExamination.path,
+    code: quotes.startStartExamination.code,
+    signature: lineIndexOf(quotes.startStartExamination.code, "  appointment: Appointment,"),
+    requireCall: lineIndexOf(quotes.startStartExamination.code, 'requireKind(appointment, ["CheckedIn"])'),
+  },
+  after: {
+    tag: "修正後: この回の完成コード",
+    path: quotes.solutionStartExamination.path,
+    code: quotes.solutionStartExamination.code,
+    signature: lineIndexOf(quotes.solutionStartExamination.code, "  appointment: CheckedIn,"),
+    requireCall: -1,
+  },
+} as const;
+
+const inputs = {
+  checked: { label: "来院済み", kind: "CheckedIn", allowed: true },
+  paid: { label: "会計済み", kind: "Paid", allowed: false },
+} as const;
+
+type Output =
+  | Readonly<{ type: "done" }>
+  | Readonly<{ type: "exception" }>
+  | Readonly<{ type: "typeError" }>;
+
+const frames: readonly Readonly<{
+  version: keyof typeof versions;
+  input: keyof typeof inputs;
+  output: Output;
+  caption: string;
+}>[] = [
+  {
+    version: "before",
+    input: "checked",
+    output: { type: "done" },
+    caption:
+      "修正前のコードは、引数の型が Appointment です。来院済みの予約を渡すと、診察中の予約が返ります。",
+  },
+  {
+    version: "before",
+    input: "paid",
+    output: { type: "exception" },
+    caption:
+      "会計済みの予約を渡しても、型検査は報告しません。実行すると requireKind が例外を投げます。誤りに気づけるのは、この呼び出しを実行したときだけです。",
+  },
+  {
+    version: "after",
+    input: "checked",
+    output: { type: "done" },
+    caption:
+      "修正後のコードは、引数の型が CheckedIn で、返す型が InExamination です。来院済みの予約を渡すと、診察中の予約が返ります。",
+  },
+  {
+    version: "after",
+    input: "paid",
+    output: { type: "typeError" },
+    caption:
+      "会計済みの予約を渡すと、実行する前の型検査が報告します。この呼び出しは、型検査の時点で誤りだと分かります。",
+  },
+];
+---
+
+<figure class="st-fig na" data-narrow-arguments aria-label="startExamination の入力と出力を、修正前と修正後で見比べる図">
+  <StepControls />
+
+  <ol class="st-stack">
+    {frames.map((frame) => {
+      const version = versions[frame.version];
+      const input = inputs[frame.input];
+      return (
+        <li
+          data-frame
+          data-lit={JSON.stringify([version.signature])}
+          data-lit-negative={JSON.stringify(frame.output.type === "exception" ? [version.requireCall] : [])}
+        >
+          <div class="na__head">
+            <span class="st-tag" data-tone={frame.version}>{version.tag}</span>
+            <p class="na__event">
+              <strong>業務イベント</strong>
+              獣医師が「診察を開始する」を押す{input.allowed ? "" : "（別の予約と取り違えて、会計済みの予約で押した）"}
+            </p>
+          </div>
+
+          <div class="na__flow">
+            <div class="na__io" data-allowed={input.allowed ? "true" : "false"}>
+              <p class="na__label">遷移前（入力）</p>
+              <p class="na__state"><strong>{input.label}</strong><code>{input.kind}</code></p>
+              {!input.allowed && <p class="na__note">× 許されない入力</p>}
+            </div>
+
+            <span class="na__arrow" aria-hidden="true">→</span>
+
+            <figure class="code-block st-code na__code">
+              <figcaption>関数 <code>startExamination</code> <code>{version.path}</code></figcaption>
+              <Code code={version.code} lang="ts" />
+            </figure>
+
+            <span class="na__arrow" aria-hidden="true">→</span>
+
+            <div class="na__io" data-output={frame.output.type}>
+              <p class="na__label">遷移後（出力）</p>
+              {frame.output.type === "done" && (
+                <>
+                  <p class="na__state"><strong>診察中</strong><code>InExamination</code></p>
+                  <p class="na__note st-mark" data-tone="positive">✓ 許される遷移</p>
+                </>
+              )}
+              {frame.output.type === "exception" && (
+                <>
+                  <p class="na__state"><strong>実行時の例外</strong><code>Cannot transition from Paid</code></p>
+                  <p class="na__note">型検査は報告しない</p>
+                </>
+              )}
+              {frame.output.type === "typeError" && (
+                <>
+                  <p class="na__state"><strong>型検査の報告</strong><code>Argument of type 'Paid' is not assignable to parameter of type 'CheckedIn'.</code></p>
+                  <p class="na__note">関数は呼ばれない</p>
+                </>
+              )}
+            </div>
+          </div>
+
+          <p class="st-caption">{frame.caption}</p>
+        </li>
+      );
+    })}
+  </ol>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-narrow-arguments]").forEach((root) => {
+    root.querySelectorAll<HTMLElement>("[data-frame]").forEach((frame) => {
+      const lit = JSON.parse(frame.dataset.lit ?? "[]") as number[];
+      const negative = JSON.parse(frame.dataset.litNegative ?? "[]") as number[];
+      frame.querySelectorAll<HTMLElement>(".line").forEach((line, index) => {
+        line.classList.toggle("is-lit", lit.includes(index));
+        line.classList.toggle("is-lit-negative", negative.includes(index));
+      });
+    });
+    mountStepper({ root });
+  });
+</script>
+
+<style>
+  .na__head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem 0.75rem;
+    align-items: center;
+    margin-block-end: 0.5rem;
+  }
+
+  .na__event {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .na__event strong {
+    margin-inline-end: 0.5rem;
+    padding: 0 0.5rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .na__flow {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) auto minmax(0, 2.6fr) auto minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: start;
+    margin-block-end: 0.5rem;
+  }
+
+  .na__arrow {
+    align-self: center;
+    color: var(--role-muted);
+    font-weight: 800;
+  }
+
+  .na__io {
+    display: grid;
+    gap: 0.25rem;
+    min-width: 0;
+    padding: 0.5rem 0.625rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  .na__io[data-allowed="false"],
+  .na__io[data-output="exception"],
+  .na__io[data-output="typeError"] {
+    border: 2px dashed var(--role-negative);
+  }
+
+  .na__io[data-output="done"] {
+    border-color: var(--role-positive);
+  }
+
+  .na__io p {
+    margin: 0;
+  }
+
+  .na__label {
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .na__state {
+    display: grid;
+    gap: 0.125rem;
+  }
+
+  .na__state code {
+    font-size: 0.75rem;
+    overflow-wrap: anywhere;
+  }
+
+  .na__note {
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .na__io[data-allowed="false"] .na__note {
+    color: var(--role-negative);
+  }
+
+  @media (max-width: 55rem) {
+    .na__flow {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .na__arrow {
+      justify-self: center;
+      transform: rotate(90deg);
+    }
+  }
+</style>

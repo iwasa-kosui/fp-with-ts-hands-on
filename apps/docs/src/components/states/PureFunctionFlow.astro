@@ -1,6 +1,5 @@
 ---
 import { Code } from "astro:components";
-import type { ComponentProps } from "astro/types";
 
 const snippets = {
   before: `const startExamination = (
@@ -26,23 +25,6 @@ const snippets = {
 
 const versionLabels = { before: "時刻を中で読む書き方", after: "時刻を引数で受け取る書き方", summary: "まとめ" } as const;
 
-type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
-const KEY_MARK = /\s*\/\/ \[!pure-function-key\]$/;
-const withMarks = (source: string, keyLines: readonly number[]) =>
-  source.split("\n").map((text, index) => (keyLines.includes(index + 1) ? `${text} // [!pure-function-key]` : text)).join("\n");
-// Code のキャッシュキーは transformers の中身を見ない。PreconditionFlow（wrap=false）と IllegalStateFlow（wrap=true）とキーを分けるため、wrap に null を渡す
-const markKeyLines: Transformer = {
-  name: "mark-pure-function-key-lines",
-  preprocess(source) {
-    const lines = source.split("\n");
-    (this.meta as { keyLines?: number[] }).keyLines = lines.flatMap((text, index) => (KEY_MARK.test(text) ? [index + 1] : []));
-    return lines.map((text) => text.replace(KEY_MARK, "")).join("\n");
-  },
-  line(node, line) {
-    if ((this.meta as { keyLines?: number[] }).keyLines?.includes(line)) this.addClassToHast(node, "pure-function-flow__key");
-  },
-};
-
 type Frame = Readonly<{
   scene: number;
   version: keyof typeof versionLabels;
@@ -63,7 +45,7 @@ const frames: readonly Frame[] = [
   {
     scene: 2,
     version: "before",
-    caption: "同じ予約と同じ獣医師 ID を渡しても、呼んだ時刻によって結果が変わります。時計を差し替えない限り、テストに結果の値を書けません。",
+    caption: "同じ予約と同じ獣医師 ID を渡しても、呼んだ時刻によって結果が変わります。呼ぶ時刻で結果が変わるので、テストに期待する値を書けません。",
     alt: "同じ入力で startExamination を10:00と10:05の2回呼ぶ図です。2つの出力の examinationStartedAt は 10:00 と 10:05 で異なり、赤で示しています。",
   },
   {
@@ -91,7 +73,7 @@ const frames: readonly Frame[] = [
     scene: 6,
     version: "summary",
     caption:
-      "副作用は呼び出し側にまとめ、状態遷移の判断は純粋関数に残します。データベースの読み書きは S04 と S05、時刻と ID の作り方は S06 で扱います。",
+      "副作用は呼び出し側にまとめ、状態遷移の判断は純粋関数に残します。データベースの読み取りは S05、保存は S06 で扱います。時刻と ID の作り方は S06 で扱います。",
     alt: "外側の枠は呼び出し側で、時刻を読む仕事とデータベースに保存する仕事を持ちます。その中に、純粋な遷移関数 startExamination の箱があります。",
   },
 ];
@@ -287,9 +269,9 @@ const playerData = JSON.stringify(
         </div>
         <p class="pure-function-flow__caption">{frame.caption}</p>
         {frame.code && (
-          <figure class="code-block pure-function-flow__code" data-version={frame.code.key}>
-            <figcaption><span class="pure-function-flow__tag" data-version={frame.code.key}>{versionLabels[frame.code.key]}</span> <code>startExamination</code></figcaption>
-            <Code code={withMarks(snippets[frame.code.key], frame.code.lines)} lang="ts" defaultColor="dark" wrap={null} transformers={[markKeyLines]} />
+          <figure class="code-block pure-function-flow__code" data-version={frame.code.key} data-lit={JSON.stringify(frame.code.lines.map((line) => line - 1))}>
+            <figcaption><span class="pure-function-flow__tag" data-version={frame.code.key}>{versionLabels[frame.code.key]}</span> <code>startExamination</code>（説明用の短い例）</figcaption>
+            <Code code={snippets[frame.code.key]} lang="ts" defaultColor="dark" wrap={null} />
           </figure>
         )}
       </li>
@@ -322,6 +304,13 @@ const playerData = JSON.stringify(
 
     const svg = source.cloneNode(true) as SVGSVGElement;
     stageFigure.append(svg);
+
+    root.querySelectorAll<HTMLElement>("[data-lit]").forEach((block) => {
+      const lit = JSON.parse(block.dataset.lit ?? "[]") as number[];
+      block.querySelectorAll<HTMLElement>(".line").forEach((line, index) => {
+        line.classList.toggle("is-lit", lit.includes(index));
+      });
+    });
 
     let current = 0;
     let timer: number | null = null;
@@ -637,13 +626,43 @@ const playerData = JSON.stringify(
     overflow-wrap: anywhere;
   }
 
-  .pure-function-flow :global(.pure-function-flow__key) {
+  .pure-function-flow :global(.line.is-lit) {
     display: inline-block;
     min-width: calc(100% + 0.5rem);
     margin-left: -0.5rem;
     padding-left: 0.5rem;
-    background: rgb(255 210 27 / 22%);
-    box-shadow: inset 0.3rem 0 0 #ffd21b;
+    background: color-mix(in srgb, var(--case-paper) 20%, transparent);
+    box-shadow: inset 0.3rem 0 0 var(--case-blue);
+  }
+
+  .pure-function-flow[data-animated] {
+    display: grid;
+    grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
+    gap: 0 1.5rem;
+    align-items: start;
+    margin-block: 0.5rem;
+  }
+
+  .pure-function-flow[data-animated] > .pure-function-flow__title,
+  .pure-function-flow[data-animated] > .pure-function-flow__controls {
+    grid-column: 1 / -1;
+    margin-block-end: 0.5rem;
+  }
+
+  .pure-function-flow[data-animated] > .pure-function-flow__stage {
+    grid-column: 1;
+    grid-row: 3 / span 2;
+  }
+
+  .pure-function-flow[data-animated] > .pure-function-flow__live {
+    grid-column: 2;
+    grid-row: 3;
+    margin-block-start: 0;
+  }
+
+  .pure-function-flow[data-animated] > .pure-function-flow__frames {
+    grid-column: 2;
+    grid-row: 4;
   }
 
   [data-animated] .pure-function-flow__frames {

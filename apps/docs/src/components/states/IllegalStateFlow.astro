@@ -1,0 +1,361 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import { lineIndexOf, quotes } from "./quotes";
+import "./states.css";
+
+const generations = {
+  before: { tag: "S00 の配布コード", path: "examples/session-00/src/domain/appointment/appointment.ts" },
+  after: { tag: "この回の開始コード", path: "examples/session-01/src/domain/appointment/appointment.ts" },
+} as const;
+
+const beforeValue = 'const broken = updateStatus(checkedIn, "in-examination");';
+const afterValue = `const broken: InExamination = {
+  ...checkedIn,
+  kind: "InExamination",
+};`;
+
+type Candidate = Readonly<{
+  ok: boolean;
+  reason: string;
+  before: string;
+  after: string;
+  blanks: readonly string[];
+}>;
+
+const candidates: readonly Candidate[] = [
+  {
+    ok: true,
+    reason: "獣医師と開始時刻がそろっている",
+    before: `{
+  status: "in-examination",
+  veterinarianId: "vet-001",
+  examinationStartedAt: "10:00",
+}`,
+    after: `{
+  kind: "InExamination",
+  veterinarianId: "vet-001",
+  examinationStartedAt: "10:00",
+}`,
+    blanks: [],
+  },
+  {
+    ok: false,
+    reason: "診察中なのに、獣医師も開始時刻もない",
+    before: `{
+  status: "in-examination",
+}`,
+    after: `{
+  kind: "InExamination",
+}`,
+    blanks: ["veterinarianId", "examinationStartedAt"],
+  },
+  {
+    ok: false,
+    reason: "来院済みなのに、獣医師がいる",
+    before: `{
+  status: "checked-in",
+  veterinarianId: "vet-001",
+}`,
+    after: `{
+  kind: "CheckedIn",
+  veterinarianId: "vet-001",
+}`,
+    blanks: [],
+  },
+  {
+    ok: false,
+    reason: "状態の綴りが誤っている",
+    before: `{
+  status: "in-examintion",
+}`,
+    after: `{
+  kind: "InExamintion",
+}`,
+    blanks: [],
+  },
+];
+
+type Frame = Readonly<{
+  generation: keyof typeof generations;
+  body: "type" | "value" | "board";
+  caption: string;
+}>;
+
+const frames: readonly Frame[] = [
+  {
+    generation: "before",
+    body: "type",
+    caption:
+      "S00 の配布コードの Appointment は、状態を string で持ちます。診察中にだけ要る veterinarianId と examinationStartedAt は、? を付けて省略できます。",
+  },
+  {
+    generation: "before",
+    body: "value",
+    caption:
+      "S00 の updateStatus は、状態を文字列で受け取ります。診察中なのに獣医師も開始時刻もない予約を作る呼び出しが、型検査を通ります。",
+  },
+  {
+    generation: "before",
+    body: "board",
+    caption: "この型は、業務上ありえない組み合わせを、すべて受け入れます。",
+  },
+  {
+    generation: "after",
+    body: "type",
+    caption:
+      "この回の開始コードは、状態ごとに別の型を持ちます。InExamination では、kind が \"InExamination\" だけを受け取り、veterinarianId と examinationStartedAt が必須です。",
+  },
+  {
+    generation: "after",
+    body: "value",
+    caption:
+      "同じ状況の値を InExamination として書くと、veterinarianId と examinationStartedAt がないことを、型検査が報告します。書いた時点で気づけます。",
+  },
+  {
+    generation: "after",
+    body: "board",
+    caption:
+      "同じ4つの値のうち、型検査が受け入れるのは、業務上ありえる1つだけです。ありえない状態を、型で表せなくする考え方です。",
+  },
+];
+
+const beforeLit = ["status: string;", "veterinarianId?: string;", "examinationStartedAt?: string;"].map((needle) =>
+  lineIndexOf(quotes.distributedType.code, needle),
+);
+const afterLit = ['kind: "InExamination";', "veterinarianId: string;", "examinationStartedAt: string;"].map((needle) =>
+  lineIndexOf(quotes.startInExaminationType.code, needle),
+);
+---
+
+<figure class="st-fig illegal" data-illegal aria-label="必要な情報が欠けた予約を、型で作れなくする">
+  <StepControls />
+
+  <div aria-live="polite">
+    <ol class="st-stack">
+      {frames.map((frame) => (
+        <li data-frame>
+          <p class="illegal__head">
+            <span class="st-tag" data-tone={frame.generation}>{generations[frame.generation].tag}</span>
+          </p>
+
+          {frame.body === "type" && (
+            <div class="illegal__split">
+              <figure class="code-block st-code" data-lit={JSON.stringify(frame.generation === "before" ? beforeLit : afterLit)}>
+                <figcaption><code>{generations[frame.generation].path}</code></figcaption>
+                <Code code={frame.generation === "before" ? quotes.distributedType.code : quotes.startInExaminationType.code} lang="ts" />
+              </figure>
+              <ul class="illegal__notes">
+                {frame.generation === "before" ? (
+                  <>
+                    <li><code>status</code><span>どんな文字列でも入る</span></li>
+                    <li><code>veterinarianId?</code><span>省略できる</span></li>
+                    <li><code>examinationStartedAt?</code><span>省略できる</span></li>
+                  </>
+                ) : (
+                  <>
+                    <li><code>kind</code><span>"InExamination" だけ</span></li>
+                    <li><code>veterinarianId</code><span>必須</span></li>
+                    <li><code>examinationStartedAt</code><span>必須</span></li>
+                  </>
+                )}
+              </ul>
+            </div>
+          )}
+
+          {frame.body === "value" && (
+            <div class="illegal__split">
+              <figure class="code-block st-code">
+                <figcaption>説明用の短い例（<code>checkedIn</code> は来院済みの予約）</figcaption>
+                <Code code={frame.generation === "before" ? beforeValue : afterValue} lang="ts" />
+              </figure>
+              <div class="illegal__result" data-tone={frame.generation === "before" ? "negative" : "positive"}>
+                <p class="illegal__result-title">
+                  {frame.generation === "before" ? "! 型検査: エラーなし" : "× 型検査: エラー"}
+                </p>
+                <p>診察中の値に、次の項目がありません。</p>
+                <p class="illegal__blanks">
+                  <span class="st-blank">veterinarianId</span>
+                  <span class="st-blank">examinationStartedAt</span>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {frame.body === "board" && (
+            <ul class="illegal__board">
+              {candidates.map((candidate) => (
+                <li class="illegal__candidate" data-ok={candidate.ok ? "true" : "false"}>
+                  <p class="illegal__verdict st-mark" data-tone={candidate.ok ? "positive" : "negative"}>
+                    {candidate.ok ? "✓ 業務上ありえる" : "× 業務上ありえない"}
+                  </p>
+                  <p class="illegal__reason">{candidate.reason}</p>
+                  <figure class="code-block st-code illegal__candidate-code">
+                    <Code code={frame.generation === "before" ? candidate.before : candidate.after} lang="ts" />
+                  </figure>
+                  <p class="illegal__blanks">
+                    {candidate.blanks.map((name) => <span class="st-blank">{name}</span>)}
+                  </p>
+                  <p class="illegal__check st-mark" data-tone={candidate.ok ? "positive" : "negative"}>
+                    {frame.generation === "before"
+                      ? candidate.ok ? "型検査: 受け入れる" : "! 型検査: 受け入れる"
+                      : candidate.ok ? "✓ 型検査: 受け入れる" : "× 型検査: エラー"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <p class="st-caption">{frame.caption}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-illegal]").forEach((root) => {
+    root.querySelectorAll<HTMLElement>("[data-lit]").forEach((block) => {
+      const lit = JSON.parse(block.dataset.lit ?? "[]") as number[];
+      block.querySelectorAll<HTMLElement>(".line").forEach((line, index) => {
+        line.classList.toggle("is-lit", lit.includes(index));
+      });
+    });
+    mountStepper({ root });
+  });
+</script>
+
+<style>
+  .illegal__head {
+    margin: 0 0 0.375rem;
+  }
+
+  .illegal__split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: start;
+    margin-block-end: 0.5rem;
+  }
+
+  .illegal__notes {
+    display: grid;
+    gap: 0.375rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .illegal__notes li {
+    display: grid;
+    gap: 0.0625rem;
+    padding: 0.375rem 0.625rem;
+    border: 2px solid var(--role-border);
+    border-inline-start: 0.5rem solid var(--role-accent);
+    border-radius: 0.375rem;
+    background: var(--role-surface);
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+
+  .illegal__notes code {
+    font-weight: 800;
+  }
+
+  .illegal__result {
+    display: grid;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .illegal__result[data-tone="negative"] {
+    border-color: var(--role-negative);
+  }
+
+  .illegal__result[data-tone="positive"] {
+    border-color: var(--role-positive);
+  }
+
+  .illegal__result p {
+    margin: 0;
+  }
+
+  .illegal__result-title {
+    font-weight: 800;
+  }
+
+  .illegal__result[data-tone="negative"] .illegal__result-title {
+    color: var(--role-negative);
+  }
+
+  .illegal__result[data-tone="positive"] .illegal__result-title {
+    color: var(--role-positive);
+  }
+
+  .illegal__blanks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    min-height: 1.5rem;
+    margin: 0;
+  }
+
+  .illegal__board {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin: 0 0 0.5rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .illegal__candidate {
+    display: grid;
+    align-content: start;
+    gap: 0.25rem;
+    min-width: 0;
+    padding: 0.375rem 0.5rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+  }
+
+  .illegal__candidate[data-ok="false"] {
+    border-style: dashed;
+  }
+
+  .illegal__candidate p {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .illegal__reason {
+    min-height: 2.4em;
+  }
+
+  .illegal__candidate-code :global(pre) {
+    font-size: 0.75rem;
+  }
+
+  .illegal__check {
+    font-size: 0.8125rem;
+  }
+
+  @media (max-width: 55rem) {
+    .illegal__split {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .illegal__board {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

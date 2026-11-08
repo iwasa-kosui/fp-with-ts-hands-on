@@ -1,0 +1,115 @@
+---
+const mechanisms = [
+  {
+    name: "型のテスト",
+    sees: "型検査の結果",
+    how: "型エラーになるはずの行の前に、// @ts-expect-error を書く",
+    catches: "型エラーになるはずの呼び出しが、型エラーにならなくなった変更",
+    misses: "型に現れない、値の中身の誤り",
+  },
+  {
+    name: "Linter の規則",
+    sees: "コードの書き方",
+    how: "eslint.config.mjs の rules に、規則を書く",
+    catches: "規則に書いた書き方（たとえば as による型の書き換え）",
+    misses: "規則に書いていない、別の書き方",
+  },
+  {
+    name: "テスト",
+    sees: "実行した結果の値",
+    how: "関数を呼び、結果の値が期待どおりか確かめる",
+    catches: "値が期待どおりに引き継がれない変更",
+    misses: "テストが実行しない経路",
+  },
+] as const;
+---
+
+<ul class="checks" aria-label="悪い変更を検出する仕組みの3種類">
+  {mechanisms.map((mechanism) => (
+    <li class="checks__card">
+      <p class="checks__name">{mechanism.name}</p>
+      <dl>
+        <div>
+          <dt>見るもの</dt>
+          <dd>{mechanism.sees}</dd>
+        </div>
+        <div>
+          <dt>書き方</dt>
+          <dd>{mechanism.how}</dd>
+        </div>
+        <div data-tone="positive">
+          <dt>検出できること</dt>
+          <dd>{mechanism.catches}</dd>
+        </div>
+        <div data-tone="negative">
+          <dt>すり抜けること</dt>
+          <dd>{mechanism.misses}</dd>
+        </div>
+      </dl>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .checks {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 0.5rem 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .checks__card {
+    min-width: 0;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+  }
+
+  .checks__name {
+    margin: 0 0 0.375rem;
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  dl {
+    display: grid;
+    gap: 0.375rem;
+    margin: 0;
+  }
+
+  dl > div {
+    padding-inline-start: 0.5rem;
+    border-inline-start: 0.25rem solid var(--role-border);
+  }
+
+  dl > div[data-tone="positive"] {
+    border-inline-start-color: var(--role-positive);
+  }
+
+  dl > div[data-tone="negative"] {
+    border-inline-start-color: var(--role-negative);
+  }
+
+  dt {
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  dd {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 55rem) {
+    .checks {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

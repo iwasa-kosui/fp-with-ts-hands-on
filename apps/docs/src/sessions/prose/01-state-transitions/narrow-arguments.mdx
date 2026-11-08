@@ -1,0 +1,7 @@
+import NarrowArguments from "../../../components/states/NarrowArguments.astro";
+
+<p>遷移関数の入力は遷移前の状態で、出力は遷移後の状態です。引数の型を、遷移前に許す状態だけにすると、許されない状態の予約を渡す呼び出しは、実行前の型検査で報告されます。</p>
+
+<NarrowArguments />
+
+<p>修正後のコードの末尾にある <code>as const satisfies InExamination</code> は、2 つの指定です。<code>as const</code> は、<code>"InExamination"</code> を string に広げず、その文字列のまま残します。<code>satisfies InExamination</code> は、戻す値が <code>InExamination</code> の形を満たすかを型検査で確かめます。<code>as</code> と違い、満たさなければ型検査が報告します。</p>
