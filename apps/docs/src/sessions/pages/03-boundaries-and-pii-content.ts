@@ -191,7 +191,7 @@ export const guides = ([
     id: "unvalidated-start-examination-input",
     title: "HTTP入力をanyのまま診察開始の入力へ入れている",
     currentDesign: "parseはraw: anyから2項目をコピーし、検査せずに必ずokを返します。",
-    futureRisk: "rawがanyなのでraw.veterinarianIdもanyになり、VeterinarianId型の項目へ確認なしで入ります。このためnight-shiftも型の上ではVeterinarianIdになります。",
+    futureRisk: "rawがanyなのでraw.veterinarianIdもanyです。night-shiftは確認なしでVeterinarianId型の項目に入ります。",
     path: "src/boundary/startExaminationInput.ts",
     highlights: [{ startLineNumber: 1, endLineNumber: 15 }],
   },
