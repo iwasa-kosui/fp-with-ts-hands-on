@@ -221,6 +221,26 @@
     font-size: 0.85rem;
   }
 
+  @media (max-height: 700px) {
+    .code-layout-diagram {
+      margin: 0.5rem 0;
+      padding: 0.4rem;
+    }
+
+    .code-layout-diagram__box {
+      gap: 0;
+      padding: 0.2rem 0.5rem;
+    }
+
+    .code-layout-diagram__arrow--down {
+      height: 0.6rem;
+    }
+
+    .code-layout-diagram__legend {
+      margin-top: 0.3rem;
+    }
+  }
+
   @media (min-width: 56rem) {
     .code-layout-diagram__grid {
       grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1.2fr) 1rem minmax(0, 0.7fr);

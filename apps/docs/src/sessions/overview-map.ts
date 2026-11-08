@@ -36,7 +36,7 @@ export const sessionOverviews: Readonly<Record<SessionSlug, SessionOverview>> = 
     fixes: [],
   },
   "03-boundaries-and-pii": {
-    summary: "サーバーに届く値を入口で検査します。監査記録から連絡先を除きます。",
+    summary: "サーバーに届く値を入口で検査します。あわせて、保存の段の問題5として、監査記録から連絡先を除きます。",
     fills: ["entry"],
     fixes: [3, 4, 5],
     advancedFixes: [4],

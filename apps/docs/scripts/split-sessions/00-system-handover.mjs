@@ -5,7 +5,7 @@ const expectedPages = [
   ["incidents", "引き継ぎ初日に見つかった2件", "problem", "brief", 1.5],
   ["records", "事故はデータのどこに残っているか", "problem", "teach", 0.5],
   ["code-layout", "配布コードの構成", "knowledge", "teach", 1],
-  ["problems", "2件の事故を8つの問題に分ける", "solution", "review", 1],
+  ["problems", "事故をたどって見つかった8つの問題", "solution", "review", 1],
   ["roadmap", "どの回で、どの問題を直すか", "solution", "review", 1],
   ["forecast", "自分の現場なら、どこで気づけるか", "work", "review", 1],
   ["demo-screen", "デモ画面を手元で動かす", "advanced", "advanced", 0],

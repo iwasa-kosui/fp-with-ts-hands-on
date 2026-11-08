@@ -2,20 +2,20 @@
 import { stages, type StageId } from "../../sessions/overview-map";
 import StepControls from "../stepper/StepControls.astro";
 
-type Problem = Readonly<{ number: number; text: string }>;
+type Problem = Readonly<{ number: number; text: string; tag?: string }>;
 
 const problems: Readonly<Record<StageId, readonly Problem[]>> = {
   entry: [
-    { number: 3, text: "予約の ID と獣医師の ID を、同じ文字列として扱っている" },
+    { number: 3, text: "予約、動物、飼い主、獣医師の ID を、どれも同じ文字列として扱っている" },
     { number: 4, text: "外から届く診察結果を、検査せずに受け取っている" },
   ],
   read: [],
   decide: [
-    { number: 1, text: "予約の状態を、どんな文字列でも入る形で持っている" },
+    { number: 1, text: "予約の状態を、どんな文字列でも入る形で持ち、操作の前に確かめていない", tag: "課題1" },
     { number: 2, text: "状態ごとの情報を、どの状態でも空にできる項目で持っている" },
   ],
   save: [
-    { number: 5, text: "飼い主の連絡先を監査記録に残している" },
+    { number: 5, text: "飼い主の連絡先を監査記録に残している", tag: "課題2" },
     { number: 7, text: "時刻と監査記録の ID を、処理の中で直接作っている" },
     { number: 8, text: "予約と監査記録を、別々に保存している" },
   ],
@@ -29,7 +29,7 @@ const problems: Readonly<Record<StageId, readonly Problem[]>> = {
   <div aria-live="polite">
     <ol class="psm__frames">
       <li data-frame>
-        <p class="psm__caption">入口の問題です。場所は <code>domain/appointment/appointment.ts</code> と <code>boundary/examResult.ts</code> です。</p>
+        <p class="psm__caption">入口の問題です。問題3は ID の種類を決めている <code>domain/appointment/appointment.ts</code>、問題4は <code>boundary/examResult.ts</code> にあります。</p>
       </li>
       <li data-frame>
         <p class="psm__caption">読み取りの段に、見つかった問題はありません。</p>
@@ -38,7 +38,7 @@ const problems: Readonly<Record<StageId, readonly Problem[]>> = {
         <p class="psm__caption">業務の判断の問題です。今の状態を確かめないので、課題1の二重請求が起きました。場所は <code>domain/appointment/appointment.ts</code> です。</p>
       </li>
       <li data-frame>
-        <p class="psm__caption">保存の問題です。問題5が課題2の連絡先の事故です。問題8では、2つの保存の片方だけが成功することがあります。場所は <code>adaptor/secondary/sqlite/appointmentRepository.ts</code> と <code>useCase/startExamination.ts</code> です。</p>
+        <p class="psm__caption">保存の問題です。問題5が課題2の連絡先の事故で、<code>adaptor/secondary/sqlite/appointmentRepository.ts</code> にあります。問題7と問題8は <code>useCase/startExamination.ts</code> にあります。問題8では、2つの保存の片方だけが成功することがあります。</p>
       </li>
       <li data-frame>
         <p class="psm__caption">失敗の返し方の問題です。場所は <code>web/routes.ts</code> です。</p>
@@ -61,6 +61,7 @@ const problems: Readonly<Record<StageId, readonly Problem[]>> = {
             <li class="psm__card" data-card={index}>
               <span class="psm__number">{problem.number}</span>
               <span>{problem.text}</span>
+              {problem.tag && <span class="psm__tag">{problem.tag}</span>}
             </li>
           ))}
         </ul>
@@ -184,6 +185,18 @@ const problems: Readonly<Record<StageId, readonly Problem[]>> = {
     font-weight: 800;
   }
 
+  .psm__tag {
+    flex: none;
+    padding: 0 0.5rem;
+    border: 2px solid var(--role-negative);
+    border-radius: 999px;
+    color: var(--role-negative);
+    font-size: 0.6875rem;
+    font-weight: 800;
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+
   .psm__mark {
     flex: none;
   }
@@ -233,6 +246,34 @@ const problems: Readonly<Record<StageId, readonly Problem[]>> = {
         opacity: 0;
         transform: translateX(-1rem);
       }
+    }
+  }
+
+  @media (max-height: 700px) {
+    .psm__frames {
+      margin-block-start: 0.375rem;
+    }
+
+    .psm__stages {
+      gap: 0.25rem;
+      margin-block-start: 0.375rem;
+    }
+
+    .psm__name {
+      padding-block: 0.25rem;
+    }
+
+    .psm__cards {
+      gap: 0.125rem;
+    }
+
+    .psm__card {
+      padding-block: 0.125rem;
+    }
+
+    .psm__number {
+      width: 1.375rem;
+      height: 1.375rem;
     }
   }
 

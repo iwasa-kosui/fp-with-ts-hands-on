@@ -20,19 +20,19 @@ const frames = [
     alt: "5つの段のうち、一番上の入口を強調しています。",
   },
   {
-    caption: "診察を始めてよいかを判断するために、対象の予約をデータベースから読みます。",
+    caption: "診察を始めてよいかを判断するために、対象の予約をデータベースから読むのが、この段の仕事です。",
     alt: "5つの段のうち、上から2番目の読み取りを強調しています。",
   },
   {
-    caption: "読んだ予約の状態を見て、この操作をしてよいかを決めます。来院済みの予約は、診察を始められます。",
+    caption: "読んだ予約の状態を見て、この操作をしてよいかを決めるのが、この段の仕事です。来院済みの予約は、診察を始められます。",
     alt: "5つの段のうち、上から3番目の業務の判断を強調しています。",
   },
   {
-    caption: "決まった結果をデータベースに残します。予約の今の状態と、誰が何をしたかの記録（監査記録）の2つです。",
+    caption: "決まった結果をデータベースに残すのが、この段の仕事です。残すのは、予約の今の状態と、誰が何をしたかの記録（監査記録）の2つです。",
     alt: "5つの段のうち、上から4番目の保存を強調しています。",
   },
   {
-    caption: "途中の段で進めないと分かったら、その先の段には進みません。失敗は、その理由が分かる形で画面まで返します。",
+    caption: "途中の段で進めないと分かったら、その先の段には進まず、失敗の理由が分かる形で画面まで返すのが、この段の仕事です。",
     alt: "入口から保存までの4つの段の右側から横へ破線が分かれ、一番下の失敗の返し方の段へつながっています。失敗の返し方の段から、破線の矢印が画面へ向かっています。",
   },
 ] as const;
@@ -256,6 +256,25 @@ const headLeft = (x: number, y: number) => `M ${x + 7} ${y - 4} L ${x} ${y} L ${
   .start-map[data-ready] .start-map__box rect,
   .start-map[data-ready] .start-map__box text {
     transition: opacity 0.4s, fill 0.4s, stroke 0.4s;
+  }
+
+  @media (max-height: 700px) {
+    .start-map {
+      margin: 0.5rem 0;
+    }
+
+    .start-map :global(.step-controls) {
+      margin-bottom: 0.375rem;
+    }
+
+    .start-map__frames {
+      margin-top: 0.375rem;
+    }
+
+    .start-map svg {
+      height: clamp(20.6rem, 48vh, 28rem);
+      margin-top: 0.25rem;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

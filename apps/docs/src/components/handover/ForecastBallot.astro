@@ -13,8 +13,8 @@ const stages = [
 ] as const;
 
 const mechanisms = [
-  { value: "write", label: "書いた時点で気づく", text: "コードを書いているときに、エディタや型検査が誤りを報告します。" },
-  { value: "test", label: "テストで気づく", text: "自動テストを実行したときに、誤りが報告されます。" },
+  { value: "write", label: "書いた時点で気づく", text: "型検査（値の種類の食い違いを実行の前に調べる仕組み）や Linter（書き方の誤りを調べる道具）が、書いているときに誤りを報告します。" },
+  { value: "test", label: "テストで気づく", text: "テスト（期待どおりに動くかを確かめるコード）を実行したときに、誤りが報告されます。" },
   { value: "runtime", label: "動かしているときに気づく", text: "サーバーが処理の途中で値を確かめ、その操作を受け付けません。" },
   { value: "human", label: "人が気づく", text: "レビューや運用の確認で、担当者が見つけます。" },
 ] as const;
@@ -222,6 +222,38 @@ const mechanisms = [
   .fb__card:has(input:focus-visible) {
     outline: 3px solid var(--role-accent);
     outline-offset: 2px;
+  }
+
+  @media (max-height: 700px) {
+    .fb__title {
+      margin-block-end: 0.25rem;
+    }
+
+    .fb__group {
+      margin-block-end: 0.375rem;
+    }
+
+    .fb__group legend {
+      margin-block-end: 0.125rem;
+    }
+
+    .fb__stages {
+      flex-wrap: nowrap;
+      gap: 0.25rem;
+    }
+
+    .fb__card--stage {
+      gap: 0.25rem;
+      padding-inline: 0.375rem;
+    }
+
+    .fb__mechanisms {
+      gap: 0.25rem;
+    }
+
+    .fb__card--mechanism {
+      padding-block: 0.125rem;
+    }
   }
 
   @media (max-width: 55rem) {

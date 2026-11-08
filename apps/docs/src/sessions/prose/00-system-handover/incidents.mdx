@@ -1,12 +1,14 @@
 import EpisodeIllustration from "../../../components/EpisodeIllustration.astro";
+import IncidentPair from "../../../components/handover/IncidentPair.astro";
 
 <p>引き継ぎの初日に、この操作に関わる事故が2件見つかりました。</p>
 
+<IncidentPair>
 <div class="session-split session-split--compare">
   <div>
     <h3>課題1 会計を終えた Mugi へ、もう一度請求してしまった</h3>
     <EpisodeIllustration slug="00-system-handover" />
-    <p>会計担当は Mugi の飼い主から4,800円を受け取り、予約を会計済みにしました。そのあと、獣医師が別の予約と取り違えて、Mugi の予約で「診察を開始する」を押しました。システムはこの操作を拒まず、予約は診察中へ戻りました。受付は画面を見て会計前の来院だと判断し、飼い主へ同じ金額をもう一度請求しました。</p>
+    <p>会計担当は Mugi の飼い主から4,800円を受け取り、予約を会計済みにしました。そのあと、獣医師が別の予約と取り違えて、Mugi の予約で「診察を開始する」を押しました。システムはこの操作を拒まず、予約は診察中へ戻りました。受付は画面を見て会計前の来院だと判断し、会計担当が飼い主へ同じ金額をもう一度請求しました。</p>
   </div>
   <div>
     <h3>課題2 事故を調べた担当者に、飼い主の連絡先まで見えてしまった</h3>
@@ -14,3 +16,4 @@ import EpisodeIllustration from "../../../components/EpisodeIllustration.astro";
     <p>二重請求の経緯を調べるために監査記録を開くと、操作名や時刻だけでなく、操作後の予約内容が丸ごと残っていました。調査に要らない飼い主の氏名、メールアドレス、電話番号も読める状態でした。この問題は Session 03 で直します。</p>
   </div>
 </div>
+</IncidentPair>

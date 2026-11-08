@@ -25,7 +25,7 @@ export const sessionPages = [
     flow: "background",
     kind: "teach",
     minutes: 1.5,
-    role: "背景: 5つの段を、実際の操作1回でたどります。",
+    role: "背景: 地図の段を、実際の操作1回でたどります。",
   },
   {
     slug: "incidents",
@@ -53,11 +53,11 @@ export const sessionPages = [
   },
   {
     slug: "problems",
-    title: "2件の事故を8つの問題に分ける",
+    title: "事故をたどって見つかった8つの問題",
     flow: "solution",
     kind: "review",
     minutes: 1,
-    role: "解決策: 事故の原因を、5つの段に分けて置きます。",
+    role: "解決策: まず直す場所を決めます。事故の原因を、5つの段に分けて置きます。",
   },
   {
     slug: "roadmap",
@@ -65,7 +65,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "review",
     minutes: 1,
-    role: "解決策: 置いた問題を、どの回で直すかを確かめます。",
+    role: "解決策: 直す順番を確かめます。置いた問題を、どの回で直すかを見ます。",
   },
   {
     slug: "forecast",
