@@ -9,8 +9,10 @@ const generations = {
   after: { tag: "この回の開始コード", path: "examples/session-01/src/domain/appointment/appointment.ts" },
 } as const;
 
-const beforeValue = 'const broken = updateStatus(checkedIn, "in-examination");';
-const afterValue = `const broken: InExamination = {
+const beforeValue = `declare const checkedIn: Appointment;
+const broken = updateStatus(checkedIn, "in-examination");`;
+const afterValue = `declare const checkedIn: CheckedIn;
+const broken: InExamination = {
   ...checkedIn,
   kind: "InExamination",
 };`;
@@ -87,7 +89,7 @@ const frames: readonly Frame[] = [
     generation: "before",
     body: "type",
     caption:
-      "S00 の配布コードの Appointment は、状態を string で持ちます。診察中にだけ要る veterinarianId と examinationStartedAt は、? を付けて省略できます。",
+      "S00 の配布コードの Appointment は、状態を string で持ちます。診察中にだけ要る veterinarianId と examinationStartedAt は、? を付けて省略できます。Readonly<{…}> は、項目を書き換えられない型にします。",
   },
   {
     generation: "before",
@@ -104,13 +106,13 @@ const frames: readonly Frame[] = [
     generation: "after",
     body: "type",
     caption:
-      "この回の開始コードは、状態ごとに別の型を持ちます。InExamination では、kind が \"InExamination\" だけを受け取り、veterinarianId と examinationStartedAt が必須です。",
+      "この回の開始コードは、状態ごとに別の型を持ちます。InExamination では、kind が \"InExamination\" だけを受け取り、veterinarianId と examinationStartedAt が必須です。型はここまで済んでいて、残りは遷移関数の引数です。",
   },
   {
     generation: "after",
     body: "value",
     caption:
-      "同じ状況の値を InExamination として書くと、veterinarianId と examinationStartedAt がないことを、型検査が報告します。書いた時点で気づけます。",
+      "...checkedIn は、checkedIn の項目のコピーです。同じ状況の値を InExamination として書くと、veterinarianId と examinationStartedAt がないことを、型検査が報告します。書いた時点で気づけます。",
   },
   {
     generation: "after",
@@ -136,7 +138,7 @@ const afterLit = ['kind: "InExamination";', "veterinarianId: string;", "examinat
       {frames.map((frame) => (
         <li data-frame>
           <p class="illegal__head">
-            <span class="st-tag" data-tone={frame.generation}>{generations[frame.generation].tag}</span>
+            <span class="st-tag">{generations[frame.generation].tag}</span>
           </p>
 
           {frame.body === "type" && (
@@ -166,10 +168,10 @@ const afterLit = ['kind: "InExamination";', "veterinarianId: string;", "examinat
           {frame.body === "value" && (
             <div class="illegal__split">
               <figure class="code-block st-code">
-                <figcaption>説明用の短い例（<code>checkedIn</code> は来院済みの予約）</figcaption>
+                <figcaption>説明用の短い例</figcaption>
                 <Code code={frame.generation === "before" ? beforeValue : afterValue} lang="ts" />
               </figure>
-              <div class="illegal__result" data-tone={frame.generation === "before" ? "negative" : "positive"}>
+              <div class="illegal__result" data-tone="negative">
                 <p class="illegal__result-title">
                   {frame.generation === "before" ? "! 型検査: エラーなし" : "× 型検査: エラー"}
                 </p>
@@ -279,10 +281,6 @@ const afterLit = ['kind: "InExamination";', "veterinarianId: string;", "examinat
     border-color: var(--role-negative);
   }
 
-  .illegal__result[data-tone="positive"] {
-    border-color: var(--role-positive);
-  }
-
   .illegal__result p {
     margin: 0;
   }
@@ -293,10 +291,6 @@ const afterLit = ['kind: "InExamination";', "veterinarianId: string;", "examinat
 
   .illegal__result[data-tone="negative"] .illegal__result-title {
     color: var(--role-negative);
-  }
-
-  .illegal__result[data-tone="positive"] .illegal__result-title {
-    color: var(--role-positive);
   }
 
   .illegal__blanks {

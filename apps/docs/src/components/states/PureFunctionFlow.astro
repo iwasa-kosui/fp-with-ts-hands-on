@@ -381,11 +381,11 @@ const playerData = JSON.stringify(
     min-width: 0;
     max-width: 100%;
     margin: 1.5rem 0;
-    --version-before: #c2185b;
-    --version-after: #137333;
-    --version-summary: var(--case-blue);
-    --bad: #c2185b;
-    --good: #137333;
+    --version-before: var(--role-negative);
+    --version-after: var(--role-positive);
+    --version-summary: var(--role-accent);
+    --bad: var(--role-negative);
+    --good: var(--role-positive);
   }
 
   [data-version="before"] {
@@ -419,7 +419,7 @@ const playerData = JSON.stringify(
     display: inline-block;
     border-radius: 0.375rem;
     background: var(--version-color);
-    color: #fff;
+    color: var(--role-surface);
     font-weight: 700;
   }
 
@@ -445,6 +445,7 @@ const playerData = JSON.stringify(
   .pure-function-flow svg[data-scene="5"] [data-scenes~="5"],
   .pure-function-flow svg[data-scene="6"] [data-scenes~="6"] {
     opacity: 1;
+    transition: opacity 0.4s;
   }
 
   .pure-function-flow__rect {
@@ -533,6 +534,7 @@ const playerData = JSON.stringify(
   }
 
   .pure-function-flow__clock {
+    transform: translate(17px, 160px);
     opacity: 0;
   }
 
@@ -657,6 +659,7 @@ const playerData = JSON.stringify(
   .pure-function-flow[data-animated] > .pure-function-flow__live {
     grid-column: 2;
     grid-row: 3;
+    min-height: calc(1.7em * 3);
     margin-block-start: 0;
   }
 
@@ -666,17 +669,19 @@ const playerData = JSON.stringify(
   }
 
   [data-animated] .pure-function-flow__frames {
+    display: grid;
     padding-inline-start: 0;
     list-style: none;
   }
 
   [data-animated] .pure-function-flow__frames > li {
-    display: none;
+    grid-area: 1 / 1;
     margin: 0;
+    visibility: hidden;
   }
 
-  [data-animated] .pure-function-flow__frames > li.is-current[data-has-code] {
-    display: block;
+  [data-animated] .pure-function-flow__frames > li.is-current {
+    visibility: visible;
   }
 
   [data-animated] .pure-function-flow__visual,
@@ -684,11 +689,17 @@ const playerData = JSON.stringify(
     display: none;
   }
 
-  [data-animated] .pure-function-flow__layer {
+  [data-animated] .pure-function-flow__layer,
+  [data-animated] .pure-function-flow__clock {
+    transition: none;
+  }
+
+  [data-animated] svg[data-scene="1"] .pure-function-flow__clock,
+  [data-animated] svg[data-scene="3"] .pure-function-flow__clock {
     transition: opacity 0.4s;
   }
 
-  [data-animated] .pure-function-flow__clock {
+  [data-animated] svg[data-scene="4"] .pure-function-flow__clock {
     transition: transform 0.9s ease-in-out, opacity 0.4s;
   }
 

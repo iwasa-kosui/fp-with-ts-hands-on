@@ -1,1 +1,1 @@
-export * from "../../../src/domain/appointment/transitions.js";
+export * from "../../../src/domain/appointment/index.js";

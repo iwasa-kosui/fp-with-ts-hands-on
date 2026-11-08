@@ -1,7 +1,7 @@
 import AnyStateEntrance from "../../../components/states/AnyStateEntrance.astro";
 
-<p>この回のゴールは、遷移関数の引数を、受け取れる状態の型に絞ることです。この回の開始コード（<code>examples/session-01</code>）は、すでに状態の名前を入れる項目 <code>kind</code> で 6 つの状態を分け、状態ごとの遷移関数を持ちます。</p>
+<p>業務イベントごとに予約の状態を変える関数を、この回では<strong>遷移関数</strong>と呼びます。この回の開始コード（<code>examples/session-01</code>）は、状態の名前を入れる項目 <code>kind</code> で 6 つの状態を分け、状態ごとの遷移関数を持ちます。</p>
 
-<p>ところが <code>startExamination</code> は、引数の型が <code>Appointment</code> で、どの状態の予約も受け取ります。<code>requireKind</code> は、<code>kind</code> が許可されていなければ例外を投げる関数です。この例外は実行したときに起き、型検査は報告しません。<code>as</code> は、値の中身を確かめずに「この値はこの型だ」と型検査に伝える書き方です。</p>
+<p>ところが <code>startExamination</code> は、引数の型が <code>Appointment</code> で、どの状態の予約も受け取ります。この回の目的は、誤った状態の予約を渡したときの例外を、実行したときではなく、コードを書いた時点で知ることです。ゴールは、遷移関数の引数を、受け取れる状態の型に絞ることです。</p>
 
 <AnyStateEntrance />

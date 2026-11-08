@@ -5,10 +5,9 @@ import { lineIndexOf, quotes } from "./quotes";
 import "./states.css";
 
 const code = quotes.startStartExamination.code;
-const lit = {
-  signature: lineIndexOf(code, "  appointment: Appointment,"),
-  requireCall: lineIndexOf(code, 'requireKind(appointment, ["CheckedIn"])'),
-};
+const signature = lineIndexOf(code, "  appointment: Appointment,");
+const requireCall = lineIndexOf(code, 'requireKind(appointment, ["CheckedIn"])');
+const asCall = lineIndexOf(code, ") as Appointment;");
 
 const cards = [
   { label: "予約済み", kind: "Scheduled" },
@@ -21,18 +20,31 @@ const cards = [
 
 const allowed = "CheckedIn";
 
-const frames = cards.map((card) => ({
-  ...card,
-  ok: card.kind === allowed,
-  caption:
-    card.kind === allowed
+const requireKindNote = "requireKind は、kind が許可された状態でなければ例外を投げる関数です。";
+
+const cardFrames = cards.map((card, index) => {
+  const ok = card.kind === allowed;
+  return {
+    ok,
+    lit: [signature],
+    negative: ok ? [] : [requireCall],
+    caption: ok
       ? `${card.label}の予約は、診察を始めてよい状態です。型検査も、実行したときの requireKind も通ります。`
-      : `${card.label}の予約も、引数の型 Appointment は受け取ります。型検査は報告しません。実行すると、requireKind が例外を投げます。`,
-}));
+      : `${card.label}の予約も、引数の型 Appointment は受け取ります。型検査は報告しません。実行すると、requireKind が例外を投げます。${index === 0 ? requireKindNote : ""}`,
+  };
+});
+
+const asFrame = {
+  ok: true,
+  lit: [asCall],
+  negative: [] as number[],
+  caption: "戻り値の as Appointment は、値の中身を確かめずに「この値は Appointment だ」と型検査に伝える書き方です。",
+};
+
+const frames = [...cardFrames, asFrame];
 
 const framesData = JSON.stringify({
-  lit,
-  frames: frames.map(({ ok }) => ({ ok })),
+  frames: frames.map(({ lit, negative }) => ({ lit, negative })),
 });
 ---
 
@@ -41,7 +53,7 @@ const framesData = JSON.stringify({
 
   <div class="entrance__grid">
     <figure class="code-block st-code entrance__code">
-      <figcaption><span class="st-tag" data-tone="before">この回の開始コード</span> <code>{quotes.startStartExamination.path}</code></figcaption>
+      <figcaption><span class="st-tag">この回の開始コード</span> <code>{quotes.startStartExamination.path}</code></figcaption>
       <Code code={code} lang="ts" />
     </figure>
 
@@ -51,13 +63,13 @@ const framesData = JSON.stringify({
         <span>引数の型は <code>Appointment</code>。6つの状態がすべて入ります。</span>
       </p>
       <ol class="entrance__cards">
-        {frames.map((frame, index) => (
+        {cards.map((card, index) => (
           <li class="entrance__card" data-card={index}>
-            <span class="entrance__name"><span class="entrance__pointer" aria-hidden="true">▶</span>{frame.label} <code>{frame.kind}</code></span>
+            <span class="entrance__name"><span class="entrance__pointer" aria-hidden="true">▶</span>{card.label} <code>{card.kind}</code></span>
             <span class="entrance__verdict">
               <span>型検査: 受け取る</span>
-              <span class="st-mark" data-tone={frame.ok ? "positive" : "negative"}>
-                {frame.ok ? "実行: ✓ 診察中になる" : "実行: × 例外"}
+              <span class="st-mark" data-tone={cardFrames[index].ok ? "positive" : "negative"}>
+                {cardFrames[index].ok ? "実行: ✓ 診察中になる" : "実行: × 例外"}
               </span>
             </span>
           </li>
@@ -78,7 +90,7 @@ const framesData = JSON.stringify({
 <script>
   import { mountStepper } from "../stepper/stepper";
 
-  type Data = { lit: { signature: number; requireCall: number }; frames: { ok: boolean }[] };
+  type Data = { frames: { lit: number[]; negative: number[] }[] };
 
   document.querySelectorAll<HTMLElement>("[data-entrance]").forEach((root) => {
     const data = JSON.parse(root.dataset.frames ?? "{}") as Data;
@@ -91,8 +103,8 @@ const framesData = JSON.stringify({
         if (frame === undefined) return;
         cards.forEach((card, cardIndex) => card.classList.toggle("is-active", cardIndex === index));
         lines.forEach((line, lineIndex) => {
-          line.classList.toggle("is-lit", lineIndex === data.lit.signature);
-          line.classList.toggle("is-lit-negative", lineIndex === data.lit.requireCall && !frame.ok);
+          line.classList.toggle("is-lit", frame.lit.includes(lineIndex));
+          line.classList.toggle("is-lit-negative", frame.negative.includes(lineIndex));
         });
       },
     });

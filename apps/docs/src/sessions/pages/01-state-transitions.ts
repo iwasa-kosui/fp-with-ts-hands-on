@@ -17,7 +17,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "brief",
     minutes: 1,
-    role: "課題1: 会計済みの予約が診察中に戻り、同じ金額が2回請求されました。",
+    role: "課題: 会計済みの予約が診察中に戻り、同じ金額が2回請求されました。",
   },
   {
     slug: "current-code",
@@ -25,7 +25,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "brief",
     minutes: 1,
-    role: "課題1: 誤った呼び出しを、今のコードが実行前に見つけられない理由を確かめます。",
+    role: "課題: 誤った呼び出しを、今のコードが実行前に見つけられない理由を確かめます。",
   },
   {
     slug: "state-types",
@@ -33,7 +33,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1.5,
-    role: "事前知識（課題1）: 状態ごとに別の型を作ると、必要な情報が欠けた予約を書いた時点で報告されます。",
+    role: "事前知識: 状態ごとに別の型を作ると、必要な情報が欠けた予約を書いた時点で報告されます。",
   },
   {
     slug: "discriminated-union",
@@ -41,7 +41,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1.5,
-    role: "事前知識（課題1）: 別々の型を1つの名前で受け取り、kind で見分ける書き方を学びます。",
+    role: "事前知識: 別々の型を1つの名前で受け取り、kind で見分ける書き方を学びます。",
   },
   {
     slug: "narrow-arguments",
@@ -49,7 +49,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 2,
-    role: "解決策（課題1）: 遷移関数の引数の型を絞り、許可されていない呼び出しを型検査で見つけます。",
+    role: "解決策: 遷移関数の引数の型を絞り、許可されていない呼び出しを型検査で見つけます。",
   },
   {
     slug: "checks",
@@ -57,7 +57,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策を守る（課題2）: 直したコードも、次の変更で元に戻ることがあります。守る仕組みが要ります。",
+    role: "解決策を守る: 直したコードも、次の変更で元に戻ることがあります。守る仕組みが要ります。",
   },
   {
     slug: "exercise",
@@ -65,7 +65,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "exercise",
     minutes: 8,
-    role: "解決策を守る（課題2）: 学んだ仕組みを足して、悪い変更を検出します。",
+    role: "解決策を守る: 学んだ仕組みを足して、悪い変更を検出します。",
   },
   {
     slug: "peer-review",
@@ -73,7 +73,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "review",
     minutes: 2,
-    role: "解決策を守る（課題2）: 自分の仕組みの穴を、隣の人に見つけてもらいます。",
+    role: "解決策を守る: 自分の仕組みの穴を、隣の人に見つけてもらいます。",
   },
   {
     slug: "guard",

@@ -50,7 +50,7 @@ const frames: readonly Frame[] = [
   },
   {
     caption:
-      "ルートの処理は、current.kind を確認します。CheckedIn でなければ例外を投げ、startExamination を呼びません。実行中の値は、この確認で検出します。",
+      "HTTP リクエストを受ける関数（routes.ts）は、データベースから読んだ予約 current の kind を確認します。CheckedIn でなければ例外を投げ、startExamination を呼びません。実行中の値は、この確認で検出します。",
     code: { key: "route", lines: [0] },
     top: { mode: "dim", focus: [], hide: [], token: null },
     bottom: { mode: "normal", focus: [], hide: [], token: { label: "kind: Paid", at: 1, result: "stop" } },
@@ -80,12 +80,12 @@ const topNodes: readonly DiagramNode[] = [
   { slot: 2, kind: "box", x: 204, y: 60, w: 128, lines: [{ text: "startExamination", mono: true }], arrow: "left" },
 ];
 const bottomNodes: readonly DiagramNode[] = [
-  { slot: 0, kind: "box", x: 8, y: 186, w: 54, lines: [{ text: "ルート" }] },
-  { slot: 1, kind: "gate", x: 78, y: 186, w: 98, lines: [{ text: "current.kind", mono: true }, { text: "の確認" }], arrow: "left" },
+  { slot: 0, kind: "box", x: 2, y: 186, w: 72, lines: [{ text: "routes.ts", mono: true }] },
+  { slot: 1, kind: "gate", x: 86, y: 186, w: 96, lines: [{ text: "current.kind", mono: true }, { text: "の確認" }], arrow: "left" },
   { slot: 2, kind: "box", x: 204, y: 186, w: 128, lines: [{ text: "startExamination", mono: true }], arrow: "left" },
 ];
 const topSlots = [{ x: 42, y: 38 }, { x: 141, y: 38 }, { x: 268, y: 38 }];
-const bottomSlots = [{ x: 42, y: 164 }, { x: 127, y: 164 }, { x: 268, y: 164 }];
+const bottomSlots = [{ x: 38, y: 164 }, { x: 134, y: 164 }, { x: 268, y: 164 }];
 
 const bands = [
   {
@@ -105,7 +105,7 @@ const bands = [
     label: "実行中",
     nodes: bottomNodes,
     slots: bottomSlots,
-    segments: ["M 62 208 H 78", "M 176 208 H 204"],
+    segments: ["M 74 208 H 86", "M 182 208 H 204"],
     initial: { token: { label: "kind: Paid", at: 1 }, stopAt: 1 },
   },
 ] as const;
@@ -128,7 +128,7 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
   <svg viewBox="0 0 340 246" role="img" aria-labelledby="precondition-flow-title precondition-flow-desc">
     <title id="precondition-flow-title">事前条件を確かめる2つの時点</title>
     <desc id="precondition-flow-desc">
-      上の帯は、型検査のときです。呼び出し側が startExamination を呼ぶ前に、引数の型 CheckedIn の確認があります。Paid 型の値はこの確認で報告されます。下の帯は、実行中です。ルートから startExamination へ進む間に、current.kind の確認があります。kind が Paid の値は、この確認で検出されます。kind が CheckedIn の予約は、確認を通って startExamination に届きます。
+      上の帯は、型検査のときです。呼び出し側が startExamination を呼ぶ前に、引数の型 CheckedIn の確認があります。Paid 型の値はこの確認で報告されます。下の帯は、実行中です。HTTP リクエストを受ける関数（routes.ts）から startExamination へ進む間に、データベースから読んだ予約 current の current.kind の確認があります。kind が Paid の値は、この確認で検出されます。kind が CheckedIn の予約は、確認を通って startExamination に届きます。
     </desc>
 
     {bands.map((band) => (
@@ -291,8 +291,8 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
     min-width: 0;
     max-width: 100%;
     margin: 1.5rem 0;
-    --stop: #c2185b;
-    --pass: #137333;
+    --stop: var(--role-negative);
+    --pass: var(--role-positive);
   }
 
   .precondition-flow svg {
@@ -384,7 +384,7 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
   }
 
   .precondition-flow__badge text {
-    fill: #fff;
+    fill: var(--role-surface);
     font-size: 15px;
     font-weight: 700;
   }
@@ -467,18 +467,27 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
 
   .precondition-flow__tag {
     display: inline-block;
-    padding: 0 0.4rem;
-    border-radius: 0.25rem;
-    background: var(--case-highlight);
-    color: #fff;
-    font-weight: 700;
+    padding: 0.0625rem 0.625rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.375rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1.5;
   }
 
   .precondition-flow__code :global(pre) {
     max-width: 100%;
     margin: 0;
-    overflow-x: auto;
     font-size: 0.8rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .precondition-flow__code :global(code) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 
   .precondition-flow :global(.line.is-lit) {
@@ -492,7 +501,7 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
 
   .precondition-flow[data-animated] {
     display: grid;
-    grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 19rem) minmax(0, 1fr);
     gap: 0 1.5rem;
     align-items: start;
     margin-block: 0.5rem;

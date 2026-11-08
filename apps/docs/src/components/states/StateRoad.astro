@@ -18,7 +18,7 @@ const states = [
 ] as const;
 
 const events = [
-  ["受付", "来院を記録"],
+  ["来院を", "記録する"],
   ["診察を", "開始する"],
   ["診察結果を", "記録する"],
   ["会計する", ""],
@@ -54,22 +54,22 @@ const frames = [
   {
     edge: "e0",
     states: ["Scheduled", "CheckedIn"],
-    caption: "受付が来院を記録すると、「予約済み」の予約が「来院済み」になります。",
+    caption: "来院を記録すると、「予約済み」の予約が「来院済み」になります。",
   },
   {
     edge: "e1",
     states: ["CheckedIn", "InExamination"],
-    caption: "獣医師が診察を開始すると、「来院済み」の予約が「診察中」になります。",
+    caption: "診察を開始すると、「来院済み」の予約が「診察中」になります。",
   },
   {
     edge: "e2",
     states: ["InExamination", "AwaitingPayment"],
-    caption: "獣医師が診察結果を記録すると、「診察中」の予約が「会計待ち」になります。",
+    caption: "診察結果を記録すると、「診察中」の予約が「会計待ち」になります。",
   },
   {
     edge: "e3",
     states: ["AwaitingPayment", "Paid"],
-    caption: "会計担当が会計すると、「会計待ち」の予約が「会計済み」になります。「会計済み」から先へは進みません。",
+    caption: "会計すると、「会計待ち」の予約が「会計済み」になります。「会計済み」から先へは進みません。",
   },
   {
     edge: "cancel",

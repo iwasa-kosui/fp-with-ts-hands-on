@@ -25,9 +25,9 @@ export const session: SessionSummary = {
   animal: { name: "RABBIT", type: "rabbit", avatar: "🐇" },
   summary: "予約の6つの状態を状態ごとの型で表し、許可されていない状態の変更を、プログラムを実行する前に見つけます。",
   episode: [
-    "会計担当は、診察を終えた Mugi の飼い主から4,800円を受け取り、予約を「会計済み」にしました。",
-    "その後、獣医師が別の予約と取り違えて、Mugi の会計済みの予約で「診察を開始する」を押しました。",
-    "システムは操作を受け付けて、予約を「診察中」へ戻しました。受付は会計前の来院だと判断し、同じ金額をもう一度請求しました。",
+    "会計担当は診察を終えた Mugi の飼い主から4,800円を受け取り、予約を会計済みにしました。",
+    "その後、獣医師が別の予約と取り違えて、この会計済みの予約で「診察を開始する」を押しました。",
+    "システムは操作を止めず、予約を診察中へ戻しました。受付は画面を見て会計前の来院だと判断し、会計担当が飼い主へ同じ金額をもう一度請求しました。",
   ],
   incident: "会計済みの予約が診察中へ戻され、同じ金額が2回請求された。",
   exerciseCommand: "pnpm exercise:01",
@@ -140,24 +140,30 @@ export const navigation = ({
   },
 } as const);
 
-export const javaStateCode = `sealed interface Appointment permits CheckedIn, InExamination {}
+export const javaStateCode = `sealed interface Appointment
+    permits CheckedIn, InExamination {}
 
-record CheckedIn(String appointmentId, String checkedInAt)
+record CheckedIn(
+    String appointmentId)
     implements Appointment {}
 
-record InExamination(String appointmentId, String checkedInAt, String veterinarianId)
+record InExamination(
+    String appointmentId,
+    String veterinarianId)
     implements Appointment {}
 
-static InExamination startExamination(CheckedIn appointment, String veterinarianId) {
+static InExamination startExamination(
+    CheckedIn c, String veterinarianId) {
   return new InExamination(
-      appointment.appointmentId(), appointment.checkedInAt(), veterinarianId);
+      c.appointmentId(), veterinarianId);
 }`;
 
-export const rustStateCode = `struct CheckedIn { appointment_id: String, checked_in_at: String }
+export const rustStateCode = `struct CheckedIn {
+    appointment_id: String,
+}
 
 struct InExamination {
     appointment_id: String,
-    checked_in_at: String,
     veterinarian_id: String,
 }
 
@@ -166,10 +172,12 @@ enum Appointment {
     InExamination(InExamination),
 }
 
-fn start_examination(appointment: CheckedIn, veterinarian_id: String) -> InExamination {
+fn start_examination(
+    c: CheckedIn,
+    veterinarian_id: String,
+) -> InExamination {
     InExamination {
-        appointment_id: appointment.appointment_id,
-        checked_in_at: appointment.checked_in_at,
+        appointment_id: c.appointment_id,
         veterinarian_id,
     }
 }`;

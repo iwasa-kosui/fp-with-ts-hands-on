@@ -54,16 +54,6 @@
   line-height: 1.5;
 }
 
-.st-tag[data-tone="before"] {
-  border-color: var(--role-negative);
-  color: var(--role-negative);
-}
-
-.st-tag[data-tone="after"] {
-  border-color: var(--role-positive);
-  color: var(--role-positive);
-}
-
 .st-fig .st-code {
   min-width: 0;
   margin: 0;
@@ -109,6 +99,11 @@
 .st-fig .st-code .line.is-lit-negative {
   background: color-mix(in srgb, var(--frame-code-text, var(--role-surface)) 20%, transparent);
   box-shadow: inset 4px 0 0 var(--role-negative);
+}
+
+.st-fig .st-code .line.is-lit-positive {
+  background: color-mix(in srgb, var(--frame-code-text, var(--role-surface)) 20%, transparent);
+  box-shadow: inset 4px 0 0 var(--role-positive);
 }
 
 .st-mark {
