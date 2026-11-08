@@ -41,15 +41,15 @@ import PortsAndAdaptersFlow from "../../components/PortsAndAdaptersFlow.astro";
     <li><strong>副作用</strong><Fragment set:html="<br>" />{"\n"}<code>examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts</code> で、予約状態と監査用イベントを同じ保存境界へ渡すことを確認します。{"\n"}</li>
     <li><strong>例外境界</strong><Fragment set:html="<br>" />{"\n"}SQLite障害や破損データが業務 <code>Result</code> に入らず、<code>examples/final/src/app.ts</code> の共通境界で、詳細を含まない500応答になることを確認します。{"\n"}</li>
   </ol>
-  <p>{"\n"}自習では、検査結果の到着やフォローアップ依頼など、別のきっかけから始まるユースケースを1つ選び、同じ5項目を辿ってください。境界が見つからない箇所があれば、その箇所が次に試す小さな改善の候補です。{"\n"}</p>
+  <p>{"\n"}自習では、診察結果の記録やフォローアップ依頼など、別のきっかけから始まるユースケースを1つ選び、同じ5項目を辿ってください。境界が見つからない箇所があれば、その箇所が次に試す小さな改善の候補です。{"\n"}</p>
 </section>
 
 <section id="persistence">
   <h2>状態と監査記録の保存</h2>
-  <p>Final の store は、予約ごとの現在の状態を、予約のテーブルの1行に書きます。画面とユースケースは、この行から現在の状態を読みます。このように、読むために現在の状態だけを持つテーブルを projection と呼びます。監査記録は、監査記録のテーブルに別の行として追記します。Final は、監査記録を並べ直して現在の状態を作ることはしません。</p>
+  <p>Final の store は、受け取ったイベントから予約の現在の状態を取り出し、予約のテーブルの1行に書きます。画面とユースケースは、この行から現在の状態を読みます。このように、読むために現在の状態だけを持つテーブルを projection と呼びます。監査記録は、監査記録のテーブルに別の行として追記します。Final は、監査記録を並べ直して現在の状態を作ることはしません。</p>
   <p>1つの transaction にまとめるのは、1つの業務の操作でそろっていなければならない書き込みです。診察開始では、予約の状態と監査記録の2つです。診察結果の記録では、<code>ExaminationCompletionStore</code> が、診察結果の追加、予約の <code>AwaitingPayment</code> への更新、監査記録2件を1つの transaction で保存します。診察結果は残ったのに予約は診察中のまま、という状態を残さないためです。</p>
-  <p>集約は、整合性を保ちながら一緒に更新するデータのまとまりです。診察結果の記録は、予約と診察結果（コード上の名前は ExamResult）の2つの集約にまたがります。Final では両方が同じ SQLite にあるので、1つの transaction でそろえています。</p>
-  <p>store は、予約の状態が期待どおりの行だけを更新します。たとえば診察開始では、状態が <code>CheckedIn</code> の行だけを更新します。これを条件付き更新と呼びます。別の依頼が先に状態を変えていると、更新される行は0件になります。store は、更新した行の数が1でなければ <code>AppointmentConflict</code> を投げて transaction を取り消します。変換関数はこれを <code>Err</code> に変え、それ以外の例外は投げ直して reject にします。</p>
+  <p>集約の意味は、<a href="/sessions/05-business-events-and-workflows/#consistency-and-aggregate">S05 の整合性と集約の節</a>で確認できます。DDD には、1回の保存で変える集約を1つにするという指針があります。Final の診察結果の記録は、この指針から外れます。予約と診察結果（コード上の名前は ExamResult）の2つの集約を、1つの transaction で保存するからです。Final は、両方が同じ SQLite にあり、診察結果だけが残る状態を避けたいので、この形を選んでいます。</p>
+  <p>store は、予約の状態が期待どおりの行だけを更新します。たとえば診察開始では、状態が <code>CheckedIn</code> の行だけを更新します。これを条件付き更新と呼びます。別の依頼が先に状態を変えていると、更新される行は0件になります。store は、更新した行の数が1でなければ <code>AppointmentConflict</code> を投げて transaction を取り消します。store は、<code>ResultAsync.fromPromise</code> の2つ目の引数に渡した関数で、投げられた値が <code>AppointmentConflict</code> なら <code>Err</code> に変えます。それ以外の例外は投げ直し、reject にします。</p>
 </section>
 
 <section id="mechanisms">

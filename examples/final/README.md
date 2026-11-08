@@ -37,9 +37,9 @@ pnpm --filter @fp-with-ts/clinic-final exec node dist/index.js
 
 - `Admin`: 初期設定、ユーザー管理、監査履歴の確認を担当します。
 - `Receptionist`: 飼い主・ペット管理、予約、受付、会計、キャンセルを担当します。
-- `Veterinarian`: 診察開始、検査結果登録、電話フォロー依頼を担当します。
+- `Veterinarian`: 診察開始、診察結果の記録、電話フォロー依頼を担当します。
 
-予約は `Scheduled → CheckedIn → InExamination → AwaitingPayment → Paid` と進みます。診察結果を記録すると `AwaitingPayment` へ遷移し、診察結果の再送信を止めて、受付・管理者にだけ会計操作を表示します。電話フォローは、会計済み予約、要フォローの検査結果、一致する pet ID を検証して対象を作ります。
+予約は `Scheduled → CheckedIn → InExamination → AwaitingPayment → Paid` と進みます。診察結果を記録すると `AwaitingPayment` へ遷移し、診察結果の再送信を止めて、受付・管理者にだけ会計操作を表示します。電話フォローは、会計済み予約、要フォローの診察結果、一致する pet ID を検証して対象を作ります。
 
 ## コードの責務
 
