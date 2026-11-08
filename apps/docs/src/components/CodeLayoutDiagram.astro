@@ -1,0 +1,218 @@
+<figure class="code-layout-diagram">
+  <div class="code-layout-diagram__grid">
+    <div class="code-layout-diagram__box code-layout-diagram__web">
+      <p class="code-layout-diagram__name"><code>web/</code></p>
+      <p class="code-layout-diagram__role">HTTP のリクエストを受け取り、画面を返す</p>
+      <ul class="code-layout-diagram__files">
+        <li><code>routes.ts</code></li>
+        <li><code>appointmentView.ts</code></li>
+      </ul>
+      <ul class="code-layout-diagram__tags">
+        <li>Hono</li>
+      </ul>
+    </div>
+    <div class="code-layout-diagram__arrow code-layout-diagram__arrow--right code-layout-diagram__web-boundary" role="img" aria-label="web から boundary への import"></div>
+    <div class="code-layout-diagram__box code-layout-diagram__boundary">
+      <p class="code-layout-diagram__name"><code>boundary/</code></p>
+      <p class="code-layout-diagram__role">外部から届くデータを読み取る</p>
+      <ul class="code-layout-diagram__files">
+        <li><code>examResult.ts</code></li>
+      </ul>
+    </div>
+    <div class="code-layout-diagram__arrow code-layout-diagram__arrow--down code-layout-diagram__web-usecase" role="img" aria-label="web から useCase への import"></div>
+    <div class="code-layout-diagram__box code-layout-diagram__usecase">
+      <p class="code-layout-diagram__name"><code>useCase/</code></p>
+      <p class="code-layout-diagram__role">業務上の1つの操作を実行する</p>
+      <ul class="code-layout-diagram__files">
+        <li><code>startExamination.ts</code></li>
+      </ul>
+    </div>
+    <div class="code-layout-diagram__arrow code-layout-diagram__arrow--right code-layout-diagram__arrow--dashed code-layout-diagram__usecase-sqlite" role="img" aria-label="useCase から adaptor/secondary/sqlite への型だけの import">
+      <span class="code-layout-diagram__label">型だけ</span>
+    </div>
+    <div class="code-layout-diagram__box code-layout-diagram__sqlite">
+      <p class="code-layout-diagram__name"><code>adaptor/secondary/sqlite/</code></p>
+      <p class="code-layout-diagram__role">データベースを読み書きする（リポジトリ）</p>
+      <ul class="code-layout-diagram__files">
+        <li><code>appointmentRepository.ts</code></li>
+        <li><code>db.ts</code></li>
+        <li><code>schema.ts</code></li>
+      </ul>
+      <ul class="code-layout-diagram__tags">
+        <li>Drizzle ORM</li>
+        <li>better-sqlite3</li>
+      </ul>
+    </div>
+    <div class="code-layout-diagram__arrow code-layout-diagram__arrow--down code-layout-diagram__usecase-domain" role="img" aria-label="useCase から domain への import"></div>
+    <div class="code-layout-diagram__arrow code-layout-diagram__arrow--down code-layout-diagram__sqlite-domain" role="img" aria-label="adaptor/secondary/sqlite から domain への import"></div>
+    <div class="code-layout-diagram__box code-layout-diagram__domain">
+      <p class="code-layout-diagram__name"><code>domain/</code></p>
+      <p class="code-layout-diagram__role">予約のデータと業務ルール。ほかのディレクトリを import しない</p>
+      <ul class="code-layout-diagram__files">
+        <li><code>appointment/appointment.ts</code></li>
+        <li><code>appointment/statusLabel.ts</code></li>
+      </ul>
+    </div>
+  </div>
+  <div class="code-layout-diagram__box code-layout-diagram__entry">
+    <p class="code-layout-diagram__name"><code>app.ts</code> と <code>server.ts</code></p>
+    <p class="code-layout-diagram__role">部品を組み立てて、サーバーを起動する</p>
+  </div>
+  <p class="code-layout-diagram__legend">実線は関数や値の import、破線は型だけの import です。web は domain と adaptor の型も import します。</p>
+  <figcaption>配布コードのディレクトリと import の向き</figcaption>
+</figure>
+
+<style>
+  .code-layout-diagram {
+    margin: 1.5rem 0;
+    padding: 0.9rem;
+    border: 2px solid var(--case-line);
+    background: var(--case-paper);
+    line-height: 1.5;
+  }
+
+  .code-layout-diagram p,
+  .code-layout-diagram ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .code-layout-diagram code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .code-layout-diagram__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 3rem minmax(0, 1fr);
+    grid-template-areas:
+      "web web-boundary boundary"
+      "web-usecase . ."
+      "usecase usecase-sqlite sqlite"
+      "usecase-domain . sqlite-domain"
+      "domain domain domain";
+    align-items: stretch;
+  }
+
+  .code-layout-diagram__web { grid-area: web; }
+  .code-layout-diagram__web-boundary { grid-area: web-boundary; }
+  .code-layout-diagram__boundary { grid-area: boundary; }
+  .code-layout-diagram__web-usecase { grid-area: web-usecase; }
+  .code-layout-diagram__usecase { grid-area: usecase; }
+  .code-layout-diagram__usecase-sqlite { grid-area: usecase-sqlite; }
+  .code-layout-diagram__sqlite { grid-area: sqlite; }
+  .code-layout-diagram__usecase-domain { grid-area: usecase-domain; }
+  .code-layout-diagram__sqlite-domain { grid-area: sqlite-domain; }
+  .code-layout-diagram__domain { grid-area: domain; }
+
+  .code-layout-diagram__box {
+    display: grid;
+    align-content: start;
+    gap: 0.35rem;
+    min-width: 0;
+    padding: 0.6rem 0.65rem;
+    border: 2px solid var(--case-line);
+    background: color-mix(in srgb, var(--case-lemon) 45%, var(--case-paper));
+  }
+
+  .code-layout-diagram__entry {
+    width: fit-content;
+    max-width: 100%;
+    margin-top: 1rem;
+  }
+
+  .code-layout-diagram__name code {
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  .code-layout-diagram__role {
+    font-size: 0.9rem;
+  }
+
+  .code-layout-diagram__files {
+    display: grid;
+    gap: 0.1rem;
+    font-size: 0.78rem;
+    color: color-mix(in srgb, var(--case-ink) 78%, var(--case-paper));
+  }
+
+  .code-layout-diagram__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .code-layout-diagram__tags li {
+    padding: 0.05rem 0.5rem;
+    border: 1px solid var(--case-line);
+    border-radius: 999px;
+    background: var(--case-mint);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .code-layout-diagram__arrow {
+    position: relative;
+  }
+
+  .code-layout-diagram__arrow::after {
+    content: "";
+    position: absolute;
+  }
+
+  .code-layout-diagram__arrow--right {
+    align-self: center;
+    height: 0;
+    border-top: 2px solid var(--case-line);
+  }
+
+  .code-layout-diagram__arrow--right::after {
+    top: -6px;
+    right: -1px;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 8px solid var(--case-line);
+  }
+
+  .code-layout-diagram__arrow--down {
+    justify-self: center;
+    width: 0;
+    height: 1.6rem;
+    border-left: 2px solid var(--case-line);
+  }
+
+  .code-layout-diagram__arrow--down::after {
+    bottom: -1px;
+    left: -6px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 8px solid var(--case-line);
+  }
+
+  .code-layout-diagram__arrow--dashed {
+    border-top-style: dashed;
+  }
+
+  .code-layout-diagram__label {
+    position: absolute;
+    bottom: 0.3rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .code-layout-diagram__legend {
+    margin-top: 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .code-layout-diagram figcaption {
+    margin-top: 0.65rem;
+    color: color-mix(in srgb, var(--case-ink) 78%, var(--case-paper));
+    font-size: 0.9rem;
+  }
+</style>
