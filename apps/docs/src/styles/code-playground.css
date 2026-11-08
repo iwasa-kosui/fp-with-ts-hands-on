@@ -303,7 +303,35 @@
   font-weight: 900;
 }
 
-.code-playground :is(.code-explorer__actions, .code-explorer__terminal) button {
+.code-playground .code-explorer__notice {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-bottom: 0.1875rem solid var(--playground-text);
+  background: var(--playground-lemon);
+  color: var(--playground-text);
+}
+
+.code-playground .code-explorer__notice[role="alert"] {
+  border-left: 0.75rem solid var(--playground-danger);
+}
+
+.code-playground .code-explorer__notice > p {
+  flex: 1 1 100%;
+  margin: 0;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.code-playground
+  :is(
+    .code-explorer__actions,
+    .code-explorer__notice,
+    .code-explorer__terminal
+  )
+  button {
   min-height: 2.75rem;
   padding: 0.45rem 0.8rem;
   border: 0.1875rem solid var(--playground-text);
@@ -455,7 +483,7 @@
     min-height: 24rem;
   }
 
-  .code-playground .code-explorer__actions button {
+  .code-playground :is(.code-explorer__actions, .code-explorer__notice) button {
     flex: 1 1 12rem;
   }
 

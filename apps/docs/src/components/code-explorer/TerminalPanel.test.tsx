@@ -51,6 +51,9 @@ const defaultProps = (): TerminalPanelProps => ({
   onWorkspaceChange: vi.fn(),
   onSessionChange: vi.fn(),
   onStateChange: vi.fn(),
+  outputStale: false,
+  startDisabled: false,
+  hasEdits: false,
 });
 
 const renderPanel = async (props: Partial<TerminalPanelProps> = {}) => {
