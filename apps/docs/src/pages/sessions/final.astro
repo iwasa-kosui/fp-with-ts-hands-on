@@ -3,6 +3,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
 import Prose from "../../sessions/prose/final.mdx";
+import { loadSolutionSnippets } from "../../sessions/solution-snippets";
 import type { SessionNavigation, SessionSummary } from "../../sessions/types";
 import "../../styles/sessions.css";
 import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
@@ -12,7 +13,7 @@ export const finalAggregateTour = {
   path: "examples/final/src/app.ts",
   aggregates: [
     "予約",
-    "検査結果",
+    "診察結果",
     "フォローアップ",
     "飼い主",
     "ペット",
@@ -74,9 +75,50 @@ export const session: SessionSummary = {
   ],
 };
 
+const portsAndAdaptersSnippets = await loadSolutionSnippets({
+  solutions: [
+    {
+      path: "examples/final/src/domain/appointment/appointmentStores.ts",
+      symbol: "ExaminationStartedStore",
+      lines: [16, 21],
+    },
+    {
+      path: "examples/final/src/useCase/startExaminationUseCase.ts",
+      symbol: "Dependencies",
+      lines: [49, 55],
+    },
+    {
+      path: "examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
+      symbol: "createAppointmentEventStore",
+      lines: [140, 153],
+    },
+    {
+      path: "examples/final/src/app.ts",
+      symbol: "startExamination",
+      lines: [408, 414],
+    },
+    {
+      path: "examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts",
+      symbol: "startExamination",
+      lines: [502, 503],
+    },
+  ],
+});
+const [portSnippet, dependenciesSnippet, secondarySnippet, assemblySnippet, routeSnippet] =
+  portsAndAdaptersSnippets;
+const portsAndAdaptersCode = {
+  port: portSnippet,
+  dependencies: dependenciesSnippet,
+  secondary: secondarySnippet,
+  assembly: { ...assemblySnippet, code: assemblySnippet.code.replace(/^ {4}/gm, "") },
+  route: { ...routeSnippet, code: routeSnippet.code.replace(/^ {4}/gm, "") },
+};
+
 const chapters = [
   { id: "incident", label: "何が起きたか" },
+  { id: "ports-and-adaptors", label: "ポートとアダプタで層を分ける" },
   { id: "review", label: "5つの境界を確認する" },
+  { id: "persistence", label: "状態と監査記録の保存" },
   { id: "mechanisms", label: "仕組みで防ぐ" },
 ] as const;
 export const navigation = ({
@@ -103,7 +145,7 @@ export const navigation = ({
           {session.summary}
         </p>
       </section>
-      <Prose components={{ EpisodeIllustration }} session={session} />
+      <Prose components={{ EpisodeIllustration }} session={session} portsAndAdaptersCode={portsAndAdaptersCode} />
       <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         {
           navigation.previous === undefined ? null : (

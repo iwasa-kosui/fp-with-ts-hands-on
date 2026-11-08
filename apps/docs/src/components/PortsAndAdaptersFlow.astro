@@ -1,0 +1,542 @@
+---
+import { Code } from "astro:components";
+import type { ComponentProps } from "astro/types";
+
+type Snippet = Readonly<{
+  code: string;
+  solution: Readonly<{ path: string; lines: readonly [number, number] }>;
+}>;
+type Props = Readonly<{
+  code: Readonly<{
+    port: Snippet;
+    dependencies: Snippet;
+    secondary: Snippet;
+    assembly: Snippet;
+    route: Snippet;
+  }>;
+}>;
+
+const { code } = Astro.props;
+
+const title = "ポートとアダプタで層を分ける";
+const lead = "診察開始の処理を例に、どの層に何があり、何が何を import するかを1コマずつ追います。";
+
+type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
+const KEY_MARK = /\s*\/\/ \[!ports-key\]$/;
+const withMarks = (source: string, keyLines: readonly number[]) =>
+  source.split("\n").map((text, index) => (keyLines.includes(index + 1) ? `${text} // [!ports-key]` : text)).join("\n");
+const markKeyLines: Transformer = {
+  name: "mark-ports-key-lines",
+  preprocess(source) {
+    const lines = source.split("\n");
+    (this.meta as { keyLines?: number[] }).keyLines = lines.flatMap((text, index) => (KEY_MARK.test(text) ? [index + 1] : []));
+    return lines.map((text) => text.replace(KEY_MARK, "")).join("\n");
+  },
+  line(node, line) {
+    if ((this.meta as { keyLines?: number[] }).keyLines?.includes(line)) this.addClassToHast(node, "ports-flow__key");
+  },
+};
+
+type Emphasis = "normal" | "dim" | "focus";
+type Frame = Readonly<{
+  caption: string;
+  code?: Readonly<{ key: keyof typeof code; lines: readonly number[] }>;
+  nodes: "normal" | "dim";
+  focus: readonly string[];
+  calls: Emphasis;
+  imports: Emphasis;
+  token: boolean;
+}>;
+
+const frames: readonly Frame[] = [
+  {
+    caption:
+      "Final のコードは、内側（domain と useCase）と外側（adaptor）に分かれます。adaptor/primary は外から依頼を受ける側、adaptor/secondary はユースケースが外へ頼む先です。",
+    nodes: "normal",
+    focus: [],
+    calls: "normal",
+    imports: "normal",
+    token: false,
+  },
+  {
+    caption:
+      "port は domain に置いた型です。ExaminationStartedStore は、ExaminationStarted を受け取って ResultAsync を返すことだけを決めます。SQLite のことは書きません。",
+    code: { key: "port", lines: [2, 6] },
+    nodes: "dim",
+    focus: ["domain"],
+    calls: "dim",
+    imports: "dim",
+    token: false,
+  },
+  {
+    caption: "ユースケースは、依存を port の型で受け取ります。どの実装が渡されるかは知りません。",
+    code: { key: "dependencies", lines: [4] },
+    nodes: "dim",
+    focus: ["useCase"],
+    calls: "dim",
+    imports: "dim",
+    token: false,
+  },
+  {
+    caption:
+      "adaptor/secondary の createAppointmentEventStore は、port の型を満たす実装を返します。データベース（SQLite）を扱うコードは、この層にだけあります。",
+    code: { key: "secondary", lines: [1, 5] },
+    nodes: "dim",
+    focus: ["secondary"],
+    calls: "dim",
+    imports: "dim",
+    token: false,
+  },
+  {
+    caption: "app.ts が実装を作り、ユースケースへ渡します。S06 で見た注入です。",
+    code: { key: "assembly", lines: [1, 4] },
+    nodes: "dim",
+    focus: ["app"],
+    calls: "dim",
+    imports: "dim",
+    token: false,
+  },
+  {
+    caption:
+      "実行時は、route がユースケースを呼び、ユースケースが port を通して SQLite の store を呼びます。呼び出しは外側まで届きます。",
+    code: { key: "route", lines: [1, 2] },
+    nodes: "dim",
+    focus: ["primary", "useCase", "domain", "secondary"],
+    calls: "focus",
+    imports: "dim",
+    token: true,
+  },
+  {
+    caption:
+      "一方、import の矢印はすべて内側を向きます。adaptor は内側の型を import しますが、domain と useCase は adaptor を import しません。そのため、テストでは SQLite の代わりに、同じ port の型を満たす偽の実装を渡せます。",
+    nodes: "normal",
+    focus: [],
+    calls: "dim",
+    imports: "focus",
+    token: false,
+  },
+];
+
+const rangeLabel = ({ solution }: Snippet) => `${solution.path}:${solution.lines[0]}-${solution.lines[1]}`;
+
+const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, imports, token }) => ({ caption, nodes, focus, calls, imports, token })));
+---
+
+<div class="ports-flow" data-ports-flow data-frames={playerData} role="group" aria-label={title}>
+  <p class="ports-flow__lead">{lead}</p>
+
+  <div class="ports-flow__controls" data-controls hidden>
+    <button type="button" data-first disabled>最初へ</button>
+    <button type="button" data-prev disabled>前へ</button>
+    <span data-progress>1 / {frames.length}</span>
+    <button type="button" data-next>次へ</button>
+  </div>
+
+  <div class="ports-flow__stage">
+    <svg viewBox="0 0 420 340" role="img" aria-labelledby="ports-flow-title ports-flow-desc" data-nodes="normal" data-calls="normal" data-imports="normal">
+      <title id="ports-flow-title">{title}</title>
+      <desc id="ports-flow-desc">
+        中央に内側の枠があり、その中に useCase の箱と、さらに内側に domain（port の型）の箱があります。左に adaptor/primary（Hono の route）の箱、右に adaptor/secondary（SQLite の store）の箱、下に app.ts（組み立て）の箱があります。実線の矢印は呼び出しを表し、route から useCase、port、SQLite の store へ進みます。破線の矢印は import を表し、adaptor/primary から useCase、adaptor/secondary から domain、app.ts からすべての箱へ、いずれも内側を向きます。
+      </desc>
+      <defs>
+        <marker id="ports-flow-head-call" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+          <path d="M 0 0 L 8 4 L 0 8 z" class="ports-flow__head ports-flow__head--call"></path>
+        </marker>
+        <marker id="ports-flow-head-import" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+          <path d="M 0 0 L 8 4 L 0 8 z" class="ports-flow__head ports-flow__head--import"></path>
+        </marker>
+      </defs>
+
+      <rect x="140" y="24" width="140" height="208" rx="10" class="ports-flow__frame"></rect>
+      <text x="210" y="41" text-anchor="middle" class="ports-flow__text ports-flow__text--bold">内側</text>
+
+      <g class="ports-flow__node ports-flow__dimmable" data-node="useCase">
+        <rect x="148" y="52" width="124" height="160" rx="8" class="ports-flow__shape ports-flow__shape--usecase"></rect>
+        <text x="210" y="71" text-anchor="middle" class="ports-flow__text ports-flow__mono">useCase</text>
+      </g>
+      <g class="ports-flow__node ports-flow__dimmable" data-node="domain">
+        <rect x="160" y="128" width="100" height="70" rx="6" class="ports-flow__shape"></rect>
+        <text x="210" y="160" text-anchor="middle" class="ports-flow__text ports-flow__mono">domain</text>
+        <text x="210" y="178" text-anchor="middle" class="ports-flow__text">（port の型）</text>
+      </g>
+      <g class="ports-flow__node ports-flow__dimmable" data-node="primary">
+        <rect x="4" y="68" width="108" height="56" rx="6" class="ports-flow__shape"></rect>
+        <text x="58" y="90" text-anchor="middle" class="ports-flow__text ports-flow__text--small ports-flow__mono">adaptor/primary</text>
+        <text x="58" y="108" text-anchor="middle" class="ports-flow__text">Hono の route</text>
+      </g>
+      <g class="ports-flow__node ports-flow__dimmable" data-node="secondary">
+        <rect x="302" y="128" width="116" height="70" rx="6" class="ports-flow__shape"></rect>
+        <text x="360" y="156" text-anchor="middle" class="ports-flow__text ports-flow__text--small ports-flow__mono">adaptor/secondary</text>
+        <text x="360" y="174" text-anchor="middle" class="ports-flow__text">SQLite の store</text>
+      </g>
+      <g class="ports-flow__node ports-flow__dimmable" data-node="app">
+        <rect x="110" y="262" width="200" height="40" rx="6" class="ports-flow__shape"></rect>
+        <text x="210" y="287" text-anchor="middle" class="ports-flow__text"><tspan class="ports-flow__mono">app.ts</tspan>（組み立て）</text>
+      </g>
+
+      <g class="ports-flow__imports">
+        <path d="M 112 110 H 148" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
+        <path d="M 302 184 H 260" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
+        <path d="M 110 282 H 58 V 124" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
+        <path d="M 210 262 V 212" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
+        <path d="M 310 282 H 360 V 198" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
+      </g>
+      <g class="ports-flow__calls">
+        <path d="M 112 84 H 148" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
+        <path d="M 210 96 V 128" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
+        <path d="M 260 150 H 302" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
+      </g>
+      <path d="M 112 84 H 210 V 150 H 296" class="ports-flow__track" data-track></path>
+      <circle r="8" class="ports-flow__token" data-token data-hidden></circle>
+
+      <g class="ports-flow__legend">
+        <path d="M 8 322 H 40" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
+        <text x="48" y="326" class="ports-flow__text">実線 ＝ 呼び出し</text>
+        <path d="M 168 322 H 200" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
+        <text x="208" y="326" class="ports-flow__text">破線 ＝ import</text>
+      </g>
+    </svg>
+
+    <div class="ports-flow__side">
+      <p class="ports-flow__live" data-live aria-live="polite" hidden></p>
+
+      <ol class="ports-flow__frames">
+        {frames.map((frame) => (
+          <li data-frame data-has-code={frame.code ? "" : undefined}>
+            <p class="ports-flow__caption">{frame.caption}</p>
+            {frame.code && (
+              <figure class="code-block ports-flow__code">
+                <figcaption><code>{rangeLabel(code[frame.code.key])}</code></figcaption>
+                <Code code={withMarks(code[frame.code.key].code, frame.code.lines)} lang="typescript" defaultColor="dark" transformers={[markKeyLines]} />
+              </figure>
+            )}
+          </li>
+        ))}
+      </ol>
+    </div>
+  </div>
+</div>
+
+<script>
+  type Emphasis = "normal" | "dim" | "focus";
+  type Frame = { caption: string; nodes: "normal" | "dim"; focus: string[]; calls: Emphasis; imports: Emphasis; token: boolean };
+
+  const TOKEN_DURATION_MS = 2600;
+  const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+
+  const setUp = (root: HTMLElement) => {
+    if (root.dataset.ready !== undefined) return;
+    const frames = JSON.parse(root.dataset.frames ?? "[]") as Frame[];
+    const panels = [...root.querySelectorAll<HTMLElement>("[data-frame]")];
+    const svg = root.querySelector<SVGSVGElement>("svg");
+    const nodes = [...root.querySelectorAll<SVGGElement>("[data-node]")];
+    const track = root.querySelector<SVGPathElement>("[data-track]");
+    const token = root.querySelector<SVGCircleElement>("[data-token]");
+    const controls = root.querySelector<HTMLElement>("[data-controls]");
+    const first = root.querySelector<HTMLButtonElement>("[data-first]");
+    const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
+    const next = root.querySelector<HTMLButtonElement>("[data-next]");
+    const progress = root.querySelector<HTMLElement>("[data-progress]");
+    const live = root.querySelector<HTMLElement>("[data-live]");
+    if (!svg || !track || !token || !controls || !first || !prev || !next || !progress || !live || frames.length !== panels.length) return;
+    root.dataset.ready = "";
+
+    let frameId = 0;
+    const stopToken = () => {
+      cancelAnimationFrame(frameId);
+      token.toggleAttribute("data-hidden", true);
+    };
+    const runToken = () => {
+      cancelAnimationFrame(frameId);
+      const total = track.getTotalLength();
+      const startedAt = performance.now();
+      const place = (distance: number) => {
+        const { x, y } = track.getPointAtLength(distance);
+        token.setAttribute("transform", `translate(${x} ${y})`);
+      };
+      place(0);
+      token.removeAttribute("data-hidden");
+      const tick = (now: number) => {
+        const progressRatio = Math.min((now - startedAt) / TOKEN_DURATION_MS, 1);
+        place(total * easeInOut(progressRatio));
+        if (progressRatio < 1) frameId = requestAnimationFrame(tick);
+      };
+      frameId = requestAnimationFrame(tick);
+    };
+
+    let current: number | null = null;
+    const show = (index: number) => {
+      const frame = frames[index];
+      current = index;
+      panels.forEach((panel, i) => panel.classList.toggle("is-current", i === index));
+      svg.dataset.nodes = frame.nodes;
+      svg.dataset.calls = frame.calls;
+      svg.dataset.imports = frame.imports;
+      nodes.forEach((node) => node.toggleAttribute("data-focus", frame.focus.includes(node.dataset.node ?? "")));
+      if (frame.token) runToken();
+      else stopToken();
+      live.textContent = frame.caption;
+      progress.textContent = `${index + 1} / ${frames.length}`;
+      first.disabled = index === 0;
+      prev.disabled = index === 0;
+      next.disabled = index === frames.length - 1;
+    };
+
+    first.addEventListener("click", () => show(0));
+    prev.addEventListener("click", () => show(Math.max((current ?? 0) - 1, 0)));
+    next.addEventListener("click", () => show(Math.min((current ?? 0) + 1, frames.length - 1)));
+
+    root.dataset.animated = "";
+    controls.hidden = false;
+    live.hidden = false;
+    show(0);
+  };
+
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    document.querySelectorAll<HTMLElement>("[data-ports-flow]").forEach(setUp);
+  }
+</script>
+
+<style>
+  .ports-flow {
+    min-width: 0;
+    max-width: 100%;
+    margin: 1.5rem 0;
+    container-type: inline-size;
+  }
+
+  .ports-flow__lead {
+    margin: 0 0 0.75rem;
+    line-height: 1.7;
+  }
+
+  .ports-flow svg {
+    display: block;
+    width: 100%;
+    max-width: 26rem;
+    height: auto;
+    margin-inline: auto;
+  }
+
+  .ports-flow__frame {
+    fill: var(--case-paper);
+    stroke: var(--case-divider);
+    stroke-width: 2;
+  }
+
+  .ports-flow__text {
+    fill: var(--case-ink);
+    font-size: 12px;
+  }
+
+  .ports-flow__text--small {
+    font-size: 10px;
+  }
+
+  .ports-flow__text--bold {
+    font-weight: 700;
+  }
+
+  .ports-flow__mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .ports-flow__shape {
+    fill: var(--case-cream);
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .ports-flow__shape--usecase {
+    fill: var(--case-paper);
+  }
+
+  .ports-flow__node[data-focus] .ports-flow__shape {
+    fill: var(--case-yellow);
+    stroke-width: 3.5;
+  }
+
+  .ports-flow__line {
+    fill: none;
+    stroke-width: 1.5;
+  }
+
+  .ports-flow__line--call {
+    stroke: var(--case-line);
+  }
+
+  .ports-flow__line--import {
+    stroke: var(--case-blue);
+    stroke-dasharray: 5 4;
+  }
+
+  .ports-flow__head--call {
+    fill: var(--case-line);
+  }
+
+  .ports-flow__head--import {
+    fill: var(--case-blue);
+  }
+
+  .ports-flow__track {
+    fill: none;
+    stroke: none;
+  }
+
+  .ports-flow__token {
+    fill: var(--case-yellow);
+    stroke: var(--case-line);
+    stroke-width: 2;
+  }
+
+  .ports-flow__token[data-hidden] {
+    display: none;
+  }
+
+  .ports-flow__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .ports-flow__controls[hidden] {
+    display: none;
+  }
+
+  .ports-flow__controls button {
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--case-yellow);
+    color: var(--case-ink);
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .ports-flow__controls button:disabled {
+    background: var(--case-paper);
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .ports-flow__live,
+  .ports-flow__caption {
+    margin: 0.75rem 0 0.5rem;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .ports-flow__side {
+    min-width: 0;
+  }
+
+  .ports-flow__frames {
+    margin: 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .ports-flow__frames > li {
+    min-width: 0;
+  }
+
+  .ports-flow__frames > li + li {
+    margin-top: 1.25rem;
+  }
+
+  .ports-flow__code {
+    min-width: 0;
+    margin: 0.5rem 0 0;
+    border-inline-start: 0.35rem solid var(--case-blue);
+  }
+
+  .ports-flow__code figcaption code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .ports-flow__code :global(pre) {
+    max-width: 100%;
+    margin: 0;
+    overflow-x: auto;
+    font-size: 0.8rem;
+  }
+
+  .ports-flow :global(.ports-flow__key) {
+    display: inline-block;
+    min-width: calc(100% + 0.5rem);
+    margin-left: -0.5rem;
+    padding-left: 0.5rem;
+    background: rgb(255 210 27 / 22%);
+    box-shadow: inset 0.3rem 0 0 #ffd21b;
+  }
+
+  .ports-flow :global(.ports-flow__key span[style*="#6A737D"]) {
+    color: #e1e4e8 !important;
+  }
+
+  [data-animated] .ports-flow__frames {
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  [data-animated] .ports-flow__frames > li {
+    display: none;
+    margin: 0;
+  }
+
+  [data-animated] .ports-flow__frames > li.is-current[data-has-code] {
+    display: block;
+  }
+
+  [data-animated] .ports-flow__caption {
+    display: none;
+  }
+
+  [data-animated] .ports-flow__dimmable,
+  [data-animated] .ports-flow__line {
+    transition: opacity 0.3s, stroke-width 0.3s;
+  }
+
+  [data-animated] svg[data-nodes="dim"] .ports-flow__node:not([data-focus]) {
+    opacity: 0.3;
+  }
+
+  [data-animated] svg[data-calls="dim"] .ports-flow__calls {
+    opacity: 0.25;
+  }
+
+  [data-animated] svg[data-calls="focus"] .ports-flow__calls .ports-flow__line {
+    stroke-width: 3.5;
+  }
+
+  [data-animated] svg[data-imports="dim"] .ports-flow__imports {
+    opacity: 0.25;
+  }
+
+  [data-animated] svg[data-imports="focus"] .ports-flow__imports .ports-flow__line {
+    stroke-width: 3.5;
+  }
+
+  @container (min-width: 44rem) {
+    [data-animated] .ports-flow__stage {
+      display: grid;
+      grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    [data-animated] .ports-flow__live {
+      margin-top: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-animated] * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>

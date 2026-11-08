@@ -1,6 +1,6 @@
 # Final: 動物病院の完成アプリ
 
-`examples/final` は、予約を不正な状態へ戻す、用途の異なる ID を取り違える、現在状態だけ更新されて監査記録が残らない、PII が表示やログへ混じるといった業務事故を防ぐ完成アプリです。Hono、Inertia、React、Drizzle、file SQLite を一つの package で動かします。
+`examples/final` は、予約を不正な状態へ戻す、用途の異なる ID を取り違える、現在状態だけ更新されて監査記録が残らない、PII が表示やログへ混じるといった業務事故を防ぐ完成アプリです。Hono、Inertia、React、Drizzle、file SQLite を一つの package で動かします。Inertia は、サーバーの route が返す値を React のページへ props として渡し、画面を切り替えるライブラリです。
 
 ## セットアップと実行
 
@@ -46,11 +46,11 @@ pnpm --filter @fp-with-ts/clinic-final exec node dist/index.js
 - `src/domain`: 判別共用体の状態、branded ID、`Sensitive`、純粋な遷移、typed domain event
 - `src/useCase`: one-method resolver/read port と event store を `ResultAsync` で合成する業務処理
 - `src/adaptor/primary`: Hono route、認証 cookie、Inertia props、React page
-- `src/adaptor/secondary`: Drizzle/SQLite resolver、query reader、event store、パスワードハッシュ
+- `src/adaptor/secondary`: Drizzle/SQLite resolver、query reader（読むだけで書き込まない実装）、event store、パスワードハッシュ
 - `src/app.ts`: SQLite を明示的に受け取る factory、依存関係、middleware、route を一つの Hono app へ構成
 - `src/server.ts`: 既定の `clinic.sqlite`、migration directory、Vite の production flag を選び、server entry の app を構成
 
-command use case は `AppointmentByIdResolver.resolveById` のような用途ごとの1メソッド port から現在状態を読み、ドメインが作った typed event を `ExaminationStartedStore.store` のような event store へ渡します。event store は event から projection の insert/update/delete と監査行の insert を組み立て、Drizzle transaction で両方を atomic に保存します。監査用の1メソッド port は `EventHistoryReader.list(admin: Admin): ResultAsync<readonly SanitizedAuditRecord[], never>` です。Admin capability を受け取る reader 境界で保存行を Zod 検証し、許可した項目だけを `SanitizedAuditRecord` へ写して Admin の一覧画面へ届けます。利用者が判断できる明示的な業務競合だけを `Err` にし、`follow_up_request_claims.appointment_id` の競合は `FollowUpRequestConflict` として返します。それ以外の未知の SQLite 制約違反、保存済みデータの破損、SQLite 障害は rejection として Hono の共通エラー境界へ伝播し、opaque な 500 応答になります。
+command use case は `AppointmentByIdResolver.resolveById` のような用途ごとの1メソッド port（メソッドを1つだけ持つ port）から現在状態を読み、ドメインが作った typed event を `ExaminationStartedStore.store` のような event store へ渡します。event store は event から projection（現在の状態を読むためのテーブル）の insert/update/delete と監査行の insert を組み立て、Drizzle transaction で両方を atomic に保存します。監査用の1メソッド port は `EventHistoryReader.list(admin: Admin): ResultAsync<readonly SanitizedAuditRecord[], never>` です。Admin capability（`ensureAdmin` が `User` から絞り込んだ `Admin` 型の値。reader はこの型を引数に求めます）を受け取る reader 境界で保存行を Zod 検証し、許可した項目だけを `SanitizedAuditRecord` へ写して Admin の一覧画面へ届けます。利用者が判断できる明示的な業務競合だけを `Err` にし、`follow_up_request_claims.appointment_id` の競合は `FollowUpRequestConflict` として返します。それ以外の未知の SQLite 制約違反、保存済みデータの破損、SQLite 障害は rejection として Hono の共通エラー境界へ伝播し、opaque な 500 応答になります。
 
 診察結果の記録では `ExaminationCompletionStore` が `ExamResultRecorded` と `AppointmentExaminationCompleted` を受け取り、診察結果 projection、`AwaitingPayment` の予約 projection、2件の監査 event を1つの transaction で保存します。同じ `InExamination` を読んだ並行操作は条件付き更新で競合し、片方だけが確定します。
 
