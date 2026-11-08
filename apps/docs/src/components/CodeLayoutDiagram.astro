@@ -44,7 +44,7 @@
       </ul>
     </div>
     <div class="code-layout-diagram__arrow code-layout-diagram__arrow--down code-layout-diagram__usecase-domain" role="img" aria-label="useCase から domain への import"></div>
-    <div class="code-layout-diagram__arrow code-layout-diagram__arrow--down code-layout-diagram__sqlite-domain" role="img" aria-label="adaptor/secondary/sqlite から domain への import"></div>
+    <div class="code-layout-diagram__arrow code-layout-diagram__arrow--down code-layout-diagram__arrow--dashed code-layout-diagram__sqlite-domain" role="img" aria-label="adaptor/secondary/sqlite から domain への型だけの import"></div>
     <div class="code-layout-diagram__box code-layout-diagram__domain">
       <p class="code-layout-diagram__name"><code>domain/</code></p>
       <p class="code-layout-diagram__role">予約のデータと業務ルール。ほかのディレクトリを import しない</p>
@@ -58,7 +58,7 @@
     <p class="code-layout-diagram__name"><code>app.ts</code> と <code>server.ts</code></p>
     <p class="code-layout-diagram__role">部品を組み立てて、サーバーを起動する</p>
   </div>
-  <p class="code-layout-diagram__legend">実線は関数や値の import、破線は型だけの import です。web は domain と adaptor の型も import します。</p>
+  <p class="code-layout-diagram__legend">実線は関数や値の import、破線は型だけの import です。web は domain の関数と型、adaptor の型も import します。</p>
   <figcaption>配布コードのディレクトリと import の向き</figcaption>
 </figure>
 
@@ -193,6 +193,10 @@
 
   .code-layout-diagram__arrow--dashed {
     border-top-style: dashed;
+  }
+
+  .code-layout-diagram__arrow--down.code-layout-diagram__arrow--dashed {
+    border-left-style: dashed;
   }
 
   .code-layout-diagram__label {

@@ -57,23 +57,23 @@
   <p>配布コード <code>examples/session-00/src</code> は、役割ごとにディレクトリを分けています。矢印は import の向きです。</p>
   <CodeLayoutDiagram />
   <p>リポジトリは、データベースの読み書きをまとめたオブジェクトです。診察開始では、<code>repository.find</code> で予約を読み、<code>repository.save</code> で現在の予約内容を上書きし、<code>repository.appendAudit</code> で変更履歴を追加します。</p>
-  <p>Web サーバーには <code>Hono</code> を使います。データベースは SQLite で、<code>better-sqlite3</code> で接続し、<code>Drizzle ORM</code> で SQL を組み立てます。</p>
+  <p>HTTP のリクエストを処理する部分には、Web フレームワークの <code>Hono</code> を使います。データベースは SQLite で、<code>better-sqlite3</code> で接続し、<code>Drizzle ORM</code> で SQL を組み立てます。</p>
 
   <h3 id="problem-map">引き継いだコードの問題と、改善する回</h3>
-  <p>配布コードには、次の問題があります。どれも、後の回で改善します。</p>
+  <p>配布コードには、次の問題があります。どれも、後の回で改善します。この表は参照用です。時間内は図だけを見て、表は後で読んでください。</p>
   <table>
     <thead><tr><th>#</th><th>問題</th><th>該当するファイル</th><th>改善する回</th></tr></thead>
     <tbody>
       <tr><th>1</th><td>状態を任意の文字列で表している</td><td><code>domain/appointment/appointment.ts</code></td><td><a href="/sessions/01-state-transitions/">S01</a></td></tr>
-      <tr><th>2</th><td>状態ごとの情報を、複数の省略可能なフィールドで持っている</td><td><code>domain/appointment/appointment.ts</code></td><td><a href="/sessions/01-state-transitions/">S01</a></td></tr>
-      <tr><th>3</th><td>用途の異なる ID が、すべて <code>string</code> になっている</td><td><code>domain/appointment/appointment.ts</code></td><td><a href="/sessions/03-boundaries-and-pii/">S03</a> の時間外の補助演習</td></tr>
-      <tr><th>4</th><td>外部の診察結果を <code>any</code> のまま受け取っている</td><td><code>boundary/examResult.ts</code></td><td><a href="/sessions/03-boundaries-and-pii/">S03</a> の時間外の補足</td></tr>
-      <tr><th>5</th><td>個人情報を変更履歴に残している</td><td><code>adaptor/secondary/sqlite/appointmentRepository.ts</code></td><td><a href="/sessions/03-boundaries-and-pii/">S03</a> の時間外の補足</td></tr>
-      <tr><th>6</th><td>失敗の理由を、例外のメッセージで判定している</td><td><code>web/routes.ts</code></td><td><a href="/sessions/04-workflow-errors/">S04</a></td></tr>
-      <tr><th>7</th><td>時刻と履歴 ID を、処理の中で直接生成している</td><td><code>useCase/startExamination.ts</code></td><td><a href="/sessions/01-state-transitions/">S01</a> と <a href="/sessions/06-effects-and-consistency/">S06</a></td></tr>
+      <tr><th>2</th><td>状態ごとの情報が複数の optional field に分かれている</td><td><code>domain/appointment/appointment.ts</code></td><td><a href="/sessions/01-state-transitions/">S01</a></td></tr>
+      <tr><th>3</th><td>用途の異なる ID がすべて string である</td><td><code>domain/appointment/appointment.ts</code></td><td><a href="/sessions/03-boundaries-and-pii/">S03</a> の時間外の補助演習</td></tr>
+      <tr><th>4</th><td>外部の診察結果を any のまま受け取っている</td><td><code>boundary/examResult.ts</code></td><td><a href="/sessions/03-boundaries-and-pii/">S03</a> の時間外の補足</td></tr>
+      <tr><th>5</th><td>個人情報を予約の変更履歴に残している</td><td><code>adaptor/secondary/sqlite/appointmentRepository.ts</code></td><td><a href="/sessions/03-boundaries-and-pii/">S03</a> の時間外の補足</td></tr>
+      <tr><th>6</th><td>失敗理由を例外メッセージで判定している</td><td><code>web/routes.ts</code></td><td><a href="/sessions/04-workflow-errors/">S04</a></td></tr>
+      <tr><th>7</th><td>時刻と履歴 ID を処理の中で直接生成している</td><td><code>useCase/startExamination.ts</code></td><td><a href="/sessions/06-effects-and-consistency/">S06</a>（考え方は <a href="/sessions/01-state-transitions/#pure-functions">S01 の純粋関数</a>）</td></tr>
       <tr><th>8</th><td>現在の予約内容と変更履歴を、別々に保存している</td><td><code>useCase/startExamination.ts</code></td><td><a href="/sessions/06-effects-and-consistency/">S06</a></td></tr>
     </tbody>
   </table>
-  <p>8 の問題では、2つの保存の片方だけが成功することがあります。2つの保存をまとめて成功させるか、まとめて取り消す方法は、S06 で扱います。</p>
-  <p>S02 では、状態ごとの分岐の漏れを型検査で見つけます。S05 では、S01〜S04 の考え方を予約のキャンセルに当てはめます。</p>
+  <p>問題8 では、2つの保存の片方だけが成功することがあります。2つの保存をまとめて成功させるか、まとめて取り消す方法は、S06 で扱います。</p>
+  <p>S02 では、状態ごとの分岐の漏れを型検査で見つけます。S05 では、予約キャンセルを例に、ユースケースを工程に分け、ROP で失敗を扱い、I/O をパイプラインの両端に置く設計を読みます。</p>
 </section>
