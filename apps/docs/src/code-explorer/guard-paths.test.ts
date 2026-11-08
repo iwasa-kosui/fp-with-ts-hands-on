@@ -109,8 +109,8 @@ describe("guard exercise paths", () => {
     ]);
   });
 
-  it("reads every case of the session-05 snapshot", () => {
-    const snapshot = projectFilesForSnapshot("session-05");
+  it("reads every case of the session-03-solution snapshot", () => {
+    const snapshot = projectFilesForSnapshot("session-03-solution");
     const cases = readGuardCases(snapshot);
 
     expect(cases.length).toBeGreaterThan(0);

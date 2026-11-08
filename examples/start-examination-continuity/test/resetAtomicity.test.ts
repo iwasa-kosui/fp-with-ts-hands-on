@@ -55,12 +55,13 @@ const installSeedAuditFailureTrigger = (databasePath: string): void => {
 };
 
 const resetScenarioNames = [
-  "Session 02",
-  "Session 03",
-  "Session 04",
-  "Session 05",
-  "Session 06",
-  "Session 07",
+  "session-01",
+  "session-02",
+  "session-02-solution",
+  "session-03",
+  "session-04",
+  "session-06",
+  "session-06-solution",
 ] as const;
 
 const resetScenarios = resetScenarioNames.map((name) => {
@@ -77,9 +78,7 @@ afterEach(() => {
 
 describe.each(resetScenarios)("$name reset", (scenario) => {
   test("preserves the previous appointment and audits when AppointmentSeeded fails", async () => {
-    const databasePath = createDatabasePath(
-      scenario.name.replace(" ", "-").toLowerCase(),
-    );
+    const databasePath = createDatabasePath(scenario.name);
     const app = scenario.createApp(databasePath);
 
     try {

@@ -41,7 +41,9 @@ const actionsFor = (appointment: Appointment): AppointmentActions => {
     case "CheckedIn":
       return {
         ...actions,
-        startExamination: available(`${url}/start-examination`),
+        startExamination: available(`${url}/start-examination`, {
+          veterinarianId: clinicFixture.veterinarianId,
+        }),
         cancel: available(`${url}/cancel`),
       };
     case "InExamination":
@@ -50,7 +52,7 @@ const actionsFor = (appointment: Appointment): AppointmentActions => {
         recordExamResult: available(`${url}/exam-results`, {
           examId: clinicFixture.examId,
           petId: clinicFixture.petId,
-          items: "skin",
+          items: JSON.stringify(["skin"]),
           needsFollowUp: "false",
         }),
       };
@@ -67,7 +69,7 @@ export const toPageProps = (
   notice: ClinicPageProps["notice"],
 ): ClinicPageProps => ({
   sessionLabel: "Session 03",
-  learningFocus: "意味の異なる識別子を型で区別する",
+  learningFocus: "外部入力を検証し、個人情報をログから守る",
   appointment: {
     appointmentId: appointment.appointmentId,
     kind: appointment.kind,

@@ -40,7 +40,7 @@ const exercisePages = Object.values(pageModules)
   );
 
 const terminalPackageJsonSources = Object.entries(
-  import.meta.glob("../../../../examples/session-0[2-6]/package.json", {
+  import.meta.glob("../../../../examples/{session-01,session-02,session-03,session-03-solution,session-04,session-06}/package.json", {
     eager: true,
     query: "?raw",
     import: "default",
@@ -53,8 +53,31 @@ const projectSnapshots = [
   "session-00",
   ...exercisePages.map(({ workspace }) => workspace.snapshot),
   "final",
-  "session-07",
+  "session-06-solution",
 ] as const;
+
+const allSnapshots = [
+  "session-00",
+  "session-01",
+  "session-01-solution",
+  "session-02",
+  "session-02-solution",
+  "session-03-supplement",
+  "session-03-supplement-solution",
+  "session-03",
+  "session-03-solution",
+  "session-04",
+  "session-04-solution",
+  "session-05",
+  "session-06",
+  "session-06-solution",
+  "final",
+] as const satisfies readonly ExampleSnapshot[];
+
+const inMemoryAppSnapshots = ["session-03-solution", "session-04"] as const;
+
+const initialAppointmentExportFor = (snapshot: ExampleSnapshot): string =>
+  `${snapshot.replace(/-(\w)/g, (_, initial: string) => initial.toUpperCase())}InitialAppointment`;
 
 const relativeToSnapshot = (
   snapshot: ExampleSnapshot,
@@ -119,16 +142,16 @@ describe("Code Explorer project files", () => {
   it("builds runtime files for page-owned workspaces and supporting snapshots", () => {
     expect(projectSnapshots).toEqual([
       "session-00",
+      "session-01",
       "session-02",
-      "session-02",
+      "session-03",
       "session-04",
-      "session-05",
       "session-06",
       "final",
-      "session-07",
+      "session-06-solution",
     ]);
 
-    for (const snapshot of projectSnapshots) {
+    for (const snapshot of allSnapshots) {
       const files = projectFilesForSnapshot(snapshot);
       expect(files["package.json"], snapshot).toEqual(expect.any(String));
       expect(files["tsconfig.json"], snapshot).toEqual(expect.any(String));
@@ -137,7 +160,7 @@ describe("Code Explorer project files", () => {
   });
 
   it("adds the documented session command to each exercise workspace", () => {
-    for (const sequence of ["02", "03", "04", "05", "06"] as const) {
+    for (const sequence of ["01", "02", "03", "03-supplement", "04", "06"] as const) {
       const packageJson = JSON.parse(
         projectFilesForSnapshot(`session-${sequence}`)["package.json"]!,
       ) as {
@@ -153,7 +176,7 @@ describe("Code Explorer project files", () => {
   });
 
   it("omits workspace-only dependencies from browser workspaces", () => {
-    for (const snapshot of projectSnapshots) {
+    for (const snapshot of allSnapshots) {
       const packageJson = JSON.parse(
         projectFilesForSnapshot(snapshot)["package.json"]!,
       ) as { dependencies?: Record<string, string> };
@@ -195,8 +218,8 @@ describe("Code Explorer project files", () => {
     });
   });
 
-  it("covers every terminal workspace with the dependency snapshot built from session-02 to session-06", () => {
-    expect(terminalPackageJsonSources).toHaveLength(5);
+  it("covers every terminal workspace with the dependency snapshot built from the terminal workspaces and session-03-solution", () => {
+    expect(terminalPackageJsonSources).toHaveLength(6);
     const dependencies = snapshotDependenciesOf(
       mergedSnapshotPackageJsonFor(terminalPackageJsonSources, {
         "exercise:06": "pnpm exercise",
@@ -282,8 +305,7 @@ describe("Code Explorer project files", () => {
     for (const { session, workspace } of exercisePages) {
       const starterFiles = projectFilesForSnapshot(workspace.snapshot);
       const solutionSnapshot = session.solutionSnapshot;
-      expect(solutionSnapshot, session.slug).not.toBe("session-01");
-      if (solutionSnapshot === "session-01") continue;
+      expect(solutionSnapshot, session.slug).not.toBe("session-05");
       const solutionFiles = projectFilesForSnapshot(solutionSnapshot);
 
       for (const step of session.steps) {
@@ -303,8 +325,8 @@ describe("Code Explorer project files", () => {
     }
   });
 
-  it("bundles the clinic-web server sources and an in-memory app into the session-05 workspace", () => {
-    const files = projectFilesForSnapshot("session-05");
+  it.each(inMemoryAppSnapshots)("bundles the clinic-web server sources and an in-memory app into the %s workspace", (snapshot) => {
+    const files = projectFilesForSnapshot(snapshot);
 
     for (const vendorFile of [
       "vendor/clinic-web/server.ts",
@@ -315,6 +337,8 @@ describe("Code Explorer project files", () => {
       expect(files[vendorFile], vendorFile).toEqual(expect.any(String));
     }
     expect(files["src/app.ts"]).toEqual(expect.any(String));
+    expect(files["src/app.ts"]).toContain(initialAppointmentExportFor(snapshot));
+    expect(files["src/app.ts"]).not.toContain("INITIAL_APPOINTMENT");
     expect(files["src/app.ts"]).not.toContain("better-sqlite3");
     expect(files["src/app.ts"]).not.toContain("adaptor/secondary/sqlite");
     expect(files["src/app.ts"]).not.toContain("drizzle");
@@ -330,8 +354,8 @@ describe("Code Explorer project files", () => {
   });
 
   it("keeps the clinic-web vendor sources out of other snapshots", () => {
-    for (const snapshot of projectSnapshots) {
-      if (snapshot === "session-05") continue;
+    for (const snapshot of allSnapshots) {
+      if ((inMemoryAppSnapshots as readonly ExampleSnapshot[]).includes(snapshot)) continue;
       const files = projectFilesForSnapshot(snapshot);
 
       expect(
@@ -388,7 +412,7 @@ describe("Code Explorer project files", () => {
 
   it("leaves the snapshots without a guard config without exercise-guard files or script", () => {
     for (const snapshot of projectSnapshots.filter(
-      (name) => name !== "session-05",
+      (name) => name !== "session-03-solution",
     )) {
       const files = projectFilesForSnapshot(snapshot);
 
@@ -405,8 +429,8 @@ describe("Code Explorer project files", () => {
     }
   });
 
-  it("gives session-05 the exercise-guard vendor files and the guard script", () => {
-    const files = projectFilesForSnapshot("session-05");
+  it("gives session-03-solution the exercise-guard vendor files and the guard script", () => {
+    const files = projectFilesForSnapshot("session-03-solution");
 
     expect(files["exercises/guard/guard.config.mjs"]).toBeDefined();
     expect(
@@ -431,7 +455,7 @@ describe("Code Explorer project files", () => {
       entrypoint: "exercises/effects-and-events.test.ts",
     },
     {
-      snapshot: "session-07" as const,
+      snapshot: "session-06-solution" as const,
       entrypoint: "test/regression/effects-and-events.test.ts",
     },
   ])(

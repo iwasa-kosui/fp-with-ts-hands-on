@@ -71,8 +71,8 @@ const expectedCurriculum = [
     title: "予約の状態と遷移をモデル化する",
     durationMinutes: 20,
     kind: "exercise",
-    exerciseCommand: "pnpm exercise:02",
-    snapshot: "session-02",
+    exerciseCommand: "pnpm exercise:01",
+    snapshot: "session-01",
     timeBreakdown: { brief: 3, teach: 6, exercise: 8, review: 3 },
   },
   {
@@ -91,8 +91,8 @@ const expectedCurriculum = [
     title: "診察開始の入力を境界で検証する",
     durationMinutes: 35,
     kind: "exercise",
-    exerciseCommand: "pnpm exercise:04",
-    snapshot: "session-04",
+    exerciseCommand: "pnpm exercise:03",
+    snapshot: "session-03",
     timeBreakdown: { brief: 2, teach: 13, exercise: 15, review: 5 },
   },
   {
@@ -101,8 +101,8 @@ const expectedCurriculum = [
     title: "失敗をユースケースの結果として扱う",
     durationMinutes: 35,
     kind: "exercise",
-    exerciseCommand: "pnpm exercise:05",
-    snapshot: "session-05",
+    exerciseCommand: "pnpm exercise:04",
+    snapshot: "session-04",
     timeBreakdown: { brief: 4, teach: 13, exercise: 10, review: 8 },
   },
   {
@@ -181,11 +181,11 @@ const expectedExercises = [
     slug: "01-state-transitions",
     adv: { articulate: 2, delegate: 4, verify: 2 },
     exerciseModule: {
-      dir: "examples/session-02/src/domain/appointment",
+      dir: "examples/session-01/src/domain/appointment",
       fileBudget: 1,
       lineBudget: 35,
     },
-    solutionSnapshot: "session-03",
+    solutionSnapshot: "session-01-solution",
     solutionPresentation: "excerpt",
     peerReviewPromises: "inline",
     peerReview: {
@@ -205,7 +205,7 @@ const expectedExercises = [
       fileBudget: 1,
       lineBudget: 6,
     },
-    solutionSnapshot: "session-03",
+    solutionSnapshot: "session-02-solution",
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
     peerReview: {
@@ -222,11 +222,11 @@ const expectedExercises = [
     slug: "03-boundaries-and-pii",
     adv: { articulate: 2, delegate: 11, verify: 2 },
     exerciseModule: {
-      dir: "examples/session-04/src/boundary",
+      dir: "examples/session-03/src/boundary",
       fileBudget: 1,
       lineBudget: 18,
     },
-    solutionSnapshot: "session-05",
+    solutionSnapshot: "session-03-solution",
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
     peerReview: {
@@ -243,11 +243,11 @@ const expectedExercises = [
     slug: "04-workflow-errors",
     adv: { articulate: 2, delegate: 5, verify: 3 },
     exerciseModule: {
-      dir: "examples/session-05/src",
+      dir: "examples/session-04/src",
       fileBudget: 3,
       lineBudget: 80,
     },
-    solutionSnapshot: "session-06",
+    solutionSnapshot: "session-04-solution",
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
     peerReview: {
@@ -268,7 +268,7 @@ const expectedExercises = [
       fileBudget: 3,
       lineBudget: 55,
     },
-    solutionSnapshot: "session-07",
+    solutionSnapshot: "session-06-solution",
     solutionPresentation: "completed-file",
     peerReviewPromises: "reference",
     peerReview: {
@@ -497,14 +497,14 @@ describe("page-owned session contracts", () => {
 
     const injectContext = exerciseSessions
       .find(({ slug }) => slug === "06-effects-and-consistency")
-      ?.steps.find(({ id }) => id === "s6-inject-context");
+      ?.steps.find(({ id }) => id === "s06-inject-context");
     expect(injectContext?.solutions).toEqual([
       expect.objectContaining({
-        path: "examples/session-07/src/useCase/dependencies.ts",
+        path: "examples/session-06-solution/src/useCase/dependencies.ts",
         symbol: "EventContextDependencies",
       }),
       expect.objectContaining({
-        path: "examples/session-07/src/useCase/startExamination.ts",
+        path: "examples/session-06-solution/src/useCase/startExamination.ts",
         symbol: "createEventContext",
       }),
     ]);
@@ -515,19 +515,19 @@ describe("page-owned session contracts", () => {
       ({ slug }) => slug === "04-workflow-errors",
     );
 
-    expect(supplementaryExercise.exerciseCommand).toBe("pnpm exercise:03");
-    expect(supplementaryExercise.solutionSnapshot).toBe("session-04");
+    expect(supplementaryExercise.exerciseCommand).toBe("pnpm exercise:03-supplement");
+    expect(supplementaryExercise.solutionSnapshot).toBe("session-03-supplement-solution");
     expect(supplementaryExercise.steps[0]?.targets).toEqual([
-      "examples/session-03/src/domain/appointment/appointmentId.ts",
-      "examples/session-03/src/domain/appointment/veterinarianId.ts",
+      "examples/session-03-supplement/src/domain/appointment/appointmentId.ts",
+      "examples/session-03-supplement/src/domain/appointment/veterinarianId.ts",
     ]);
     expect(supplementaryExercise.steps[0]?.solutions).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: "examples/session-04/src/domain/appointment/appointmentId.ts",
+          path: "examples/session-03-supplement-solution/src/domain/appointment/appointmentId.ts",
         }),
         expect.objectContaining({
-          path: "examples/session-04/src/domain/appointment/veterinarianId.ts",
+          path: "examples/session-03-supplement-solution/src/domain/appointment/veterinarianId.ts",
         }),
       ]),
     );
@@ -544,7 +544,7 @@ describe("page-owned session contracts", () => {
       }
     }
     expect(workflowErrors?.steps.flatMap(({ targets }) => targets)).not.toContain(
-      "examples/session-05/src/domain/ids/appointmentId.ts",
+      "examples/session-04/src/domain/ids/appointmentId.ts",
     );
   });
 

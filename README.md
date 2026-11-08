@@ -22,20 +22,20 @@ pnpm dev
 
 `pnpm dev` は教材サイトを起動します。表示された localhost URL を開いてください。
 
-各セッションのサーバーサイドアプリケーションは、別のターミナルで `pnpm demo:00` から `pnpm demo:07` のいずれかを実行すると起動します。すべて同じ `http://localhost:3000` を使うため、一度に一つだけ起動してください。画面の「デモを初期状態へ戻す」で同じ予約済みfixtureへ戻せます。未実装の「電話フォローを依頼する」を選ぶと、トップページへ戻り「この機能は未実装です」と表示します。
+各セッションのサーバーサイドアプリケーションは、別のターミナルで次の表のデモコマンドのいずれかを実行すると起動します。すべて同じ `http://localhost:3000` を使うため、一度に一つだけ起動してください。画面の「デモを初期状態へ戻す」で同じ予約済みfixtureへ戻せます。未実装の「電話フォローを依頼する」を選ぶと、トップページへ戻り「この機能は未実装です」と表示します。
 
-| セッション | デモコマンド |
-| --- | --- |
-| S0 | `pnpm demo:00` |
-| S1 | `pnpm demo:02` |
-| S2 | `pnpm demo:03` |
-| S3 | `pnpm demo:04` |
-| S4 | `pnpm demo:05` |
-| S5 | `pnpm demo:01` |
-| S6 | `pnpm demo:06` |
-| S7 | `pnpm demo:07` |
+| セッション | 開始のデモコマンド | 解答のデモコマンド |
+| --- | --- | --- |
+| S0 | `pnpm demo:00` | なし |
+| S1 | `pnpm demo:01` | `pnpm demo:01-solution` |
+| S2 | `pnpm demo:02` | `pnpm demo:02-solution` |
+| S3 補助演習 | `pnpm demo:03-supplement` | `pnpm demo:03-supplement-solution` |
+| S3 | `pnpm demo:03` | `pnpm demo:03-solution` |
+| S4 | `pnpm demo:04` | `pnpm demo:04-solution` |
+| S5 | `pnpm demo:05` | なし |
+| S6 | `pnpm demo:06` | `pnpm demo:06-solution` |
 
-コマンドの番号は `examples/session-NN` の番号です。S1〜S5 のページ番号とは一致しません。この README と運営資料の S0〜S6 は、教材ページの S00〜S06 と同じ回を指します。表の S7 は、公開ページを持たない到達点のスナップショット `examples/session-07` です。
+コマンドの番号は `examples/session-NN` の番号で、教材ページの番号と一致します。解答のスナップショットは、開始と同じ名前に `-solution` を付けたフォルダです。この README と運営資料の S0〜S6 は、教材ページの S00〜S06 と同じ回を指します。
 
 学習前の確認には [セットアップの詳細](docs/event/participant-setup.md) を使ってください。進行側の準備は [ファシリテーターガイド](docs/event/facilitator-guide.md)、詰まったときの切り分けは [トラブルシューティング](docs/event/troubleshooting.md) にまとめています。
 
@@ -43,7 +43,7 @@ pnpm dev
 
 公開教材は、現行業務とシステムを読む S0、コードを改善する S1〜S4、予約キャンセルの業務条件とユースケースを設計する S5、コードを改善する S6、参照実装を読む Final で構成します。S0 は10分、S1 と S2 は各20分、S3 と S4 は各35分、S5 は15分、S6 は40分、Final は5分が目安です。個人学習では時間を区切らず進められます。S5 はデータとパイプラインを読む回で、コード編集や演習コマンドの実行は行いません。S1〜S4 と S6 の開始コードは、業務上の問題を示す assertion failure による RED から始まります。
 
-S0 の観察対象は `examples/session-00` です。S1 と S2 は `examples/session-02` を使います。S3 は `examples/session-04` を使い、補助演習で `examples/session-03` を使います。S4 は `examples/session-05` を使います。S5 のカードは `examples/session-01/README.md` にあります。S6 は `examples/session-06` を使います。S2 を除き、どのスナップショットも前のコード演習の改善を取り込み済みです。S2 は S1 の変更の上で進めます。自分の変更を次のディレクトリへコピーする必要はありません。`examples/session-07` は独立した公開セッションを持たない到達点スナップショットで、S1〜S4 と S6 の全解答と全回帰テストが GREEN になった状態です。`examples/final` は、各演習の改善を複数集約と SQLite へ広げた参照実装です。
+S0 の観察対象は `examples/session-00` です。S1 は `examples/session-01`、S2 は `examples/session-02` を使います。S3 は `examples/session-03` を使い、補助演習で `examples/session-03-supplement` を使います。S4 は `examples/session-04`、S6 は `examples/session-06` を使います。S5 のカードは `examples/session-05/README.md` にあります。各演習の解答は、開始と同じ名前に `-solution` を付けた `examples/session-NN-solution` にあります。どの開始スナップショットも、前のコード演習の解答を取り込み済みです。自分の変更を次のディレクトリへコピーする必要はありません。`examples/session-06-solution` は S6 の解答であり、S1〜S4 と S6 の全解答と全回帰テストが GREEN になった到達点も兼ねます。`examples/final` は、各演習の改善を複数集約と SQLite へ広げた参照実装です。
 
 通常テストは、セットアップと各スナップショットが健全であることを確認するために実行します。
 
@@ -51,19 +51,59 @@ S0 の観察対象は `examples/session-00` です。S1 と S2 は `examples/ses
 pnpm test
 ```
 
-演習テストは、S1〜S4 と S6 で扱う業務事故を再現します。公開スクリプトは次の5つだけです。
+演習テストは、S1〜S4 と S6 で扱う業務事故を再現します。公開スクリプトは次の6つだけです。
 
 ```bash
+pnpm exercise:01
 pnpm exercise:02
+pnpm exercise:03-supplement
 pnpm exercise:03
 pnpm exercise:04
-pnpm exercise:05
 pnpm exercise:06
 ```
 
-S1 と S2 は `pnpm exercise:02` を使います。`pnpm exercise:03` は S3 の補助演習で使い、S3 の本演習は `pnpm exercise:04` を使います。S4 は `pnpm exercise:05`、S6 は `pnpm exercise:06` を使います。
+S1 は `pnpm exercise:01`、S2 は `pnpm exercise:02` を使います。S3 の補助演習は `pnpm exercise:03-supplement`、S3 の本演習は `pnpm exercise:03` を使います。S4 は `pnpm exercise:04`、S6 は `pnpm exercise:06` を使います。
 
-開始時の RED は、module-not-found や import error ではありません。サイトの手順に沿って既存モジュールを小さく改善し、同じ `pnpm exercise:NN` をもう一度実行して GREEN を確認します。S0、S5、`session-07`、Final に exercise command はありません。各コード演習の最後には、その回で防ぐ問題と差分を照らして振り返ります。複数人の場合は相互レビューを行います。
+開始時の RED は、module-not-found や import error ではありません。サイトの手順に沿って既存モジュールを小さく改善し、開始時と同じ exercise コマンドをもう一度実行して GREEN を確認します。S0、S5、解答のスナップショット、Final に exercise command はありません。各コード演習の最後には、その回で防ぐ問題と差分を照らして振り返ります。複数人の場合は相互レビューを行います。
+
+## 第2回までの版と番号の振り直し
+
+第2回の後で、`examples/session-NN` と `pnpm exercise:NN` の番号を教材ページの番号にそろえました。第2回までのコードは、[コミット d6f13e3](https://github.com/iwasa-kosui/fp-with-ts-hands-on/tree/d6f13e3d34cf0666ea3be3fe611a62bc84cbaf84) で見られます。これから新しく clone する人は、この節の手順を実行する必要はありません。
+
+### clone 済みで `examples/` を編集した人が pull するとき
+
+フォルダの番号が変わったので、`examples/` に編集が残っていると `git pull` が止まるか、競合します。次の手順で編集を別のブランチに残してから、最新の `main` へ移ってください。
+
+1. `git pull` が競合で止まっているときは、merge を取り消します。競合が出ていないときは、この手順を飛ばします。
+
+   ```sh
+   git merge --abort
+   ```
+
+2. すべての編集を別のブランチに保存します。
+
+   ```sh
+   git switch -c my-session-work
+   git add -A
+   git commit -m "第2回までの演習の編集"
+   ```
+
+3. `main` を最新の状態に合わせて、依存を入れ直します。`git reset --hard` は `main` の手元の変更を消します。手順2の保存が終わってから実行してください。
+
+   ```sh
+   git switch main
+   git fetch origin
+   git reset --hard origin/main
+   pnpm install
+   ```
+
+`pnpm demo:NN` がデータベースの列の不一致で失敗するときは、そのフォルダの古いデモ用データベースだけを消してから、もう一度実行してください。`NN` は失敗したデモの番号に置き換えます。
+
+```sh
+rm examples/session-NN/clinic.sqlite*
+```
+
+保存した編集は、`git switch my-session-work` で見られます。このブランチのフォルダは旧番号のままです。新しい番号で解き直すときは、`main` の `examples/session-NN`（NN は教材ページの番号）を使ってください。
 
 ## 学習の流れ
 

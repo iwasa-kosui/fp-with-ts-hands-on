@@ -9,9 +9,7 @@ import { fileURLToPath } from "node:url";
 import { sqliteSchema } from "./schema.js";
 
 export type SqliteDatabase = BetterSQLite3Database<typeof sqliteSchema> &
-  Readonly<{
-    close: () => void;
-  }>;
+  Readonly<{ close: () => void }>;
 
 const defaultMigrationsFolder = fileURLToPath(
   new URL(
@@ -27,10 +25,7 @@ export const createSqliteDatabase = (path: string): SqliteDatabase => {
 
   return Object.assign(drizzle(client, { schema: sqliteSchema }), {
     close: () => {
-      if (closed) {
-        return;
-      }
-
+      if (closed) return;
       closed = true;
       client.close();
     },

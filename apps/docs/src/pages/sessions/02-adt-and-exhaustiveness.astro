@@ -45,7 +45,7 @@ export const session: SessionSummary = {
       "`default` 分岐は、固定の表示名を返して未対応の状態を隠していませんか。",
     ],
   },
-  solutionSnapshot: "session-03",
+  solutionSnapshot: "session-02-solution",
   solutionPresentation: "excerpt",
   peerReviewPromises: "reference",
   animal: { name: "HEDGEHOG", type: "hedgehog", avatar: "🦔" },
@@ -69,12 +69,12 @@ export const session: SessionSummary = {
   },
   steps: [
     {
-      id: "s3-exhaustive-label",
+      id: "s02-exhaustive-label",
       goal: "状態を追加したら表示名の分岐をコンパイルエラーにする。",
       startingFailure: "状態を追加しても、表示名の分岐漏れを検出できない。",
       targets: ["examples/session-02/src/domain/appointment/statusLabel.ts"],
       solutions: [{
-        path: "examples/session-03/src/domain/appointment/statusLabel.ts",
+        path: "examples/session-02-solution/src/domain/appointment/statusLabel.ts",
         symbol: "toStatusLabel",
         lines: [3, 24],
       }],
@@ -220,7 +220,7 @@ export const toStatusLabel = (appointment: Appointment): string => {
 ];
 
 const exerciseSession: ExerciseSessionSummary = session;
-const initialExerciseFailureCount = 5;
+const initialExerciseFailureCount = 1;
 
 export const workspace = ({
   slug: session.slug,

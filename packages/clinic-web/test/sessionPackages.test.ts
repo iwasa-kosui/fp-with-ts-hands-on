@@ -13,7 +13,41 @@ type PackageJson = Readonly<{
 
 const rootUrl = new URL("../../../", import.meta.url);
 
-const sessionsWithSemanticIds = ["03", "04", "05", "06", "07"] as const;
+const sessionFolders = [
+  "session-00",
+  "session-01",
+  "session-01-solution",
+  "session-02",
+  "session-02-solution",
+  "session-03",
+  "session-03-solution",
+  "session-03-supplement",
+  "session-03-supplement-solution",
+  "session-04",
+  "session-04-solution",
+  "session-05",
+  "session-06",
+  "session-06-solution",
+] as const;
+const appointmentModuleSessions = [
+  "session-01-solution",
+  "session-02-solution",
+  "session-03-supplement",
+  "session-03-supplement-solution",
+  "session-03",
+  "session-03-solution",
+  "session-04",
+] as const;
+const appointmentApiModuleSessions = [
+  "session-04-solution",
+  "session-06",
+  "session-06-solution",
+] as const;
+const sessionsWithSemanticIds = [
+  ...appointmentModuleSessions,
+  ...appointmentApiModuleSessions,
+] as const;
+const sessionFolderPattern = /^session-\d{2}(?:-supplement-solution|-supplement|-solution)?$/;
 const ownedIdentifierPaths = [
   "domain/appointment/appointmentId.ts",
   "domain/appointment/veterinarianId.ts",
@@ -44,14 +78,14 @@ const requiredPublicExports: ReadonlyArray<PublicExportRequirement> = [
     module: "appointment",
     symbol: "Appointment",
     typeOnly: true,
-    sessions: ["03", "04", "05"],
+    sessions: appointmentModuleSessions,
   },
   {
     concept: "appointment",
     module: "appointmentApi",
     symbol: "Appointment",
     typeOnly: true,
-    sessions: ["06", "07"],
+    sessions: appointmentApiModuleSessions,
   },
   { concept: "appointment", module: "appointmentId", symbol: "AppointmentId" },
   { concept: "appointment", module: "veterinarianId", symbol: "VeterinarianId" },
@@ -65,14 +99,14 @@ const requiredPublicExports: ReadonlyArray<PublicExportRequirement> = [
     concept: "appointment",
     module: "appointmentApi",
     symbol: "Appointment",
-    sessions: ["06", "07"],
+    sessions: appointmentApiModuleSessions,
   },
   {
     concept: "appointment",
     module: "examinationStarted",
     symbol: "ExaminationStarted",
     typeOnly: true,
-    sessions: ["06", "07"],
+    sessions: appointmentApiModuleSessions,
   },
   { concept: "owner", module: "ownerId", symbol: "OwnerId" },
   { concept: "pet", module: "petId", symbol: "PetId" },
@@ -125,7 +159,7 @@ const moduleSpecifiers = (source: string): string[] => [
 ];
 
 const isSnapshotPackageImport = (specifier: string): boolean =>
-  /^@fp-with-ts\/clinic-session-\d{2}(?:\/|$)/.test(specifier);
+  /^@fp-with-ts\/clinic-session-\d{2}(?:-supplement-solution|-supplement|-solution)?(?:\/|$)/.test(specifier);
 
 const assertNoCrossSessionSourceImports = async (sessionUrl: URL): Promise<void> => {
   const sourceFiles = await collectTypeScriptFiles(new URL("src/", sessionUrl));
@@ -185,7 +219,7 @@ const assertAcyclicRelativeImports = async (files: URL[], sessionUrl: URL): Prom
     );
     const escapedSessionSourceImports = imports.filter(
       (target) =>
-        !target.pathname.startsWith(sessionSourceRoot) && /\/session-\d{2}\/src\//.test(target.pathname),
+        !target.pathname.startsWith(sessionSourceRoot) && /\/session-\d{2}(?:-supplement-solution|-supplement|-solution)?\/src\//.test(target.pathname),
     );
     if (escapedSessionSourceImports.length > 0) {
       throw new Error(
@@ -321,19 +355,11 @@ const writeFinalPublicApiFixture = async (
 
 describe("runnable session package contract", () => {
   it("keeps local SQLite databases and journals outside Git", () => {
-    const databasePaths = [
-      "examples/session-01/clinic.sqlite",
-      "examples/session-02/clinic.sqlite",
-      "examples/session-03/clinic.sqlite",
-      "examples/session-04/clinic.sqlite",
-      "examples/session-04/clinic.sqlite-journal",
-      "examples/session-04/clinic.sqlite-wal",
-      "examples/session-04/clinic.sqlite-shm",
-      "examples/session-07/clinic.sqlite",
-      "examples/session-07/clinic.sqlite-journal",
-      "examples/session-07/clinic.sqlite-wal",
-      "examples/session-07/clinic.sqlite-shm",
-    ];
+    const databasePaths = sessionFolders.flatMap((folder) =>
+      ["clinic.sqlite", "clinic.sqlite-journal", "clinic.sqlite-wal", "clinic.sqlite-shm"].map(
+        (file) => `examples/${folder}/${file}`,
+      ),
+    );
     const result = spawnSync(
       "git",
       ["check-ignore", "--no-index", ...databasePaths],
@@ -344,23 +370,14 @@ describe("runnable session package contract", () => {
     expect(result.stdout.trim().split("\n").filter(Boolean)).toEqual(databasePaths);
   });
 
-  it("discovers all eight sessions with runnable package scripts", async () => {
+  it("discovers all fourteen session folders with runnable package scripts", async () => {
     const examplesUrl = new URL("examples/", rootUrl);
     const sessionDirectories = (await readdir(examplesUrl, { withFileTypes: true }))
-      .filter((entry) => entry.isDirectory() && /^session-\d{2}$/.test(entry.name))
+      .filter((entry) => entry.isDirectory() && sessionFolderPattern.test(entry.name))
       .map(({ name }) => name)
       .sort();
 
-    expect(sessionDirectories).toEqual([
-      "session-00",
-      "session-01",
-      "session-02",
-      "session-03",
-      "session-04",
-      "session-05",
-      "session-06",
-      "session-07",
-    ]);
+    expect(sessionDirectories).toEqual(sessionFolders);
 
     for (const directory of sessionDirectories) {
       const packageJson = await readJson(new URL(`${directory}/package.json`, examplesUrl));
@@ -374,8 +391,9 @@ describe("runnable session package contract", () => {
   it("connects every demo and shared Web package to root commands", async () => {
     const packageJson = await readJson(new URL("package.json", rootUrl));
 
-    for (const session of ["00", "01", "02", "03", "04", "05", "06", "07"]) {
-      expect(packageJson.scripts, `demo:${session}`).toHaveProperty(`demo:${session}`);
+    for (const folder of sessionFolders) {
+      const command = `demo:${folder.replace(/^session-/, "")}`;
+      expect(packageJson.scripts, command).toHaveProperty(command);
     }
     for (const command of ["build", "test", "typecheck"]) {
       expect(packageJson.scripts?.[command], command).toContain("./examples/session-*");
@@ -417,6 +435,19 @@ describe("runnable session package contract", () => {
       );
 
       await rm(packageImport);
+      const suffixedPackageImport = new URL(
+        "suffixedPackageImport.ts",
+        `${pathToFileURL(sourceDirectory).href}/`,
+      );
+      await writeFile(
+        suffixedPackageImport,
+        'import "@fp-with-ts/clinic-session-04-solution/src/domain/appointment/appointment.js";\n',
+      );
+      await expect(assertNoCrossSessionSourceImports(sessionUrl)).rejects.toThrow(
+        "must not import another session",
+      );
+
+      await rm(suffixedPackageImport);
       const packageExport = new URL("packageExport.ts", `${pathToFileURL(sourceDirectory).href}/`);
       await writeFile(
         packageExport,
@@ -451,38 +482,42 @@ describe("runnable session package contract", () => {
   });
 
   it("keeps all session source trees independent", async () => {
-    for (const session of ["00", "01", "02", "03", "04", "05", "06", "07"]) {
+    for (const folder of sessionFolders) {
       await expect(
-        assertNoCrossSessionSourceImports(new URL(`examples/session-${session}/`, rootUrl)),
+        assertNoCrossSessionSourceImports(new URL(`examples/${folder}/`, rootUrl)),
       ).resolves.toBeUndefined();
     }
   });
 
-  it("rejects a relative import that escapes to another session source", async () => {
-    const fixtureDirectory = await mkdtemp(join(tmpdir(), "session-import-contract-"));
-    const sessionUrl = `${pathToFileURL(join(fixtureDirectory, "session-03")).href}/`;
-    const sourcePath = join(
-      fixtureDirectory,
-      "session-03/src/domain/appointment/crossSessionImport.ts",
-    );
-    await mkdir(join(fixtureDirectory, "session-03/src/domain/appointment"), { recursive: true });
-    await writeFile(
-      sourcePath,
-      'import "../../../../session-04/src/domain/appointment/appointment.js";\n',
-    );
+  it.each(["session-04", "session-04-solution"])(
+    "rejects a relative import that escapes to %s source",
+    async (targetFolder) => {
+      const fixtureDirectory = await mkdtemp(join(tmpdir(), "session-import-contract-"));
+      const sessionUrl = `${pathToFileURL(join(fixtureDirectory, "session-03")).href}/`;
+      const sourcePath = join(
+        fixtureDirectory,
+        "session-03/src/domain/appointment/crossSessionImport.ts",
+      );
+      await mkdir(join(fixtureDirectory, "session-03/src/domain/appointment"), { recursive: true });
+      await writeFile(
+        sourcePath,
+        `import "../../../../${targetFolder}/src/domain/appointment/appointment.js";\n`,
+      );
 
-    try {
-      await expect(
-        assertAcyclicRelativeImports([pathToFileURL(sourcePath)], new URL(sessionUrl)),
-      ).rejects.toThrow("escapes session source root");
-    } finally {
-      await rm(fixtureDirectory, { recursive: true, force: true });
-    }
-  });
+      try {
+        await expect(
+          assertAcyclicRelativeImports([pathToFileURL(sourcePath)], new URL(sessionUrl)),
+        ).rejects.toThrow("escapes session source root");
+      } finally {
+        await rm(fixtureDirectory, { recursive: true, force: true });
+      }
+    },
+  );
 
-  it("keeps session 03 through 07 identifiers in their owning domain concepts", async () => {
-    for (const session of sessionsWithSemanticIds) {
-      const sessionUrl = new URL(`examples/session-${session}/`, rootUrl);
+  it.each(sessionsWithSemanticIds)(
+    "keeps identifiers of %s in their owning domain concepts",
+    async (session) => {
+      const sessionUrl = new URL(`examples/${session}/`, rootUrl);
       await expect(stat(new URL("src/domain/ids/", sessionUrl))).rejects.toMatchObject({
         code: "ENOENT",
       });
@@ -492,7 +527,7 @@ describe("runnable session package contract", () => {
       }
 
       const readmeSource = await readFile(new URL("README.md", sessionUrl), "utf8");
-      expect(readmeSource, `Session ${session} README guidance`).not.toContain("src/domain/ids");
+      expect(readmeSource, `${session} README guidance`).not.toContain("src/domain/ids");
 
       const files = await collectSessionTypeScriptFiles(sessionUrl);
       for (const file of files) {
@@ -541,19 +576,21 @@ describe("runnable session package contract", () => {
           );
         }
       }
-    }
-  });
+    },
+  );
 
-  it("keeps Session 05 source free of the removed in-memory appointment store", async () => {
-    const sessionUrl = new URL("examples/session-05/", rootUrl);
-    await expect(
-      stat(new URL("src/adaptor/inMemoryAppointmentStore.d.ts", sessionUrl)),
-    ).rejects.toMatchObject({ code: "ENOENT" });
+  it("keeps session-03-solution and session-04 source free of the removed in-memory appointment store", async () => {
+    for (const folder of ["session-03-solution", "session-04"]) {
+      const sessionUrl = new URL(`examples/${folder}/`, rootUrl);
+      await expect(
+        stat(new URL("src/adaptor/inMemoryAppointmentStore.d.ts", sessionUrl)),
+      ).rejects.toMatchObject({ code: "ENOENT" });
 
-    for (const file of await collectTypeScriptFiles(new URL("src/", sessionUrl))) {
-      expect(await readFile(file, "utf8"), file.pathname).not.toContain(
-        "inMemoryAppointmentStore",
-      );
+      for (const file of await collectTypeScriptFiles(new URL("src/", sessionUrl))) {
+        expect(await readFile(file, "utf8"), file.pathname).not.toContain(
+          "inMemoryAppointmentStore",
+        );
+      }
     }
   });
 

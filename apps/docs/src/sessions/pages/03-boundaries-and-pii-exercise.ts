@@ -2,7 +2,7 @@ import { guardInitialFile, guardVisibleFiles } from "../../code-explorer/guard-p
 import type { ProjectFiles, SessionWorkspace } from "../../code-explorer/types";
 import { sessionSlug } from "./03-boundaries-and-pii";
 
-export const guardExerciseSnapshot = "session-05" as const;
+export const guardExerciseSnapshot = "session-03-solution" as const;
 
 export const guardExerciseSlug = sessionSlug;
 

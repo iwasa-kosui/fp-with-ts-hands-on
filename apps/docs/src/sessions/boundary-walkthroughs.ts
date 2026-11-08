@@ -45,8 +45,8 @@ const frameBuilder =
     return { fileId, from, to, ...rest };
   };
 
-const session04 = projectFilesForSnapshot("session-04");
-const session05 = projectFilesForSnapshot("session-05");
+const session03 = projectFilesForSnapshot("session-03");
+const session03Solution = projectFilesForSnapshot("session-03-solution");
 
 const appointmentUuid = "11111111-1111-4111-8111-111111111111";
 const veterinarianUuid = "44444444-4444-4444-8444-444444444444";
@@ -54,9 +54,9 @@ const veterinarianUuid = "44444444-4444-4444-8444-444444444444";
 const startExaminationFiles: Walkthrough["files"] = [
   {
     id: "route",
-    path: "examples/session-04/src/web/routes.ts",
+    path: "examples/session-03/src/web/routes.ts",
     code: blockOf(
-      session04,
+      session03,
       "src/web/routes.ts",
       '  app.post("/appointments/:appointmentId/start-examination", async (context) => {',
       "  });",
@@ -64,34 +64,34 @@ const startExaminationFiles: Walkthrough["files"] = [
   },
   {
     id: "parseBefore",
-    path: "examples/session-04/src/boundary/startExaminationInput.ts（修正前）",
-    code: sourceOf(session04, "src/boundary/startExaminationInput.ts"),
+    path: "examples/session-03/src/boundary/startExaminationInput.ts（修正前）",
+    code: sourceOf(session03, "src/boundary/startExaminationInput.ts"),
   },
   {
     id: "parseAfter",
-    path: "examples/session-05/src/boundary/startExaminationInput.ts（修正後）",
-    code: sourceOf(session05, "src/boundary/startExaminationInput.ts"),
+    path: "examples/session-03-solution/src/boundary/startExaminationInput.ts（修正後）",
+    code: sourceOf(session03Solution, "src/boundary/startExaminationInput.ts"),
   },
   {
     id: "schemaResult",
-    path: "examples/session-05/src/shared/schemaResult.ts",
-    code: sourceOf(session05, "src/shared/schemaResult.ts"),
+    path: "examples/session-03-solution/src/shared/schemaResult.ts",
+    code: sourceOf(session03Solution, "src/shared/schemaResult.ts"),
   },
   {
     id: "appointmentId",
-    path: "examples/session-05/src/domain/appointment/appointmentId.ts",
-    code: sourceOf(session05, "src/domain/appointment/appointmentId.ts"),
+    path: "examples/session-03-solution/src/domain/appointment/appointmentId.ts",
+    code: sourceOf(session03Solution, "src/domain/appointment/appointmentId.ts"),
   },
   {
     id: "veterinarianId",
-    path: "examples/session-05/src/domain/appointment/veterinarianId.ts",
-    code: sourceOf(session05, "src/domain/appointment/veterinarianId.ts"),
+    path: "examples/session-03-solution/src/domain/appointment/veterinarianId.ts",
+    code: sourceOf(session03Solution, "src/domain/appointment/veterinarianId.ts"),
   },
   {
     id: "transition",
-    path: "examples/session-04/src/domain/appointment/transitions.ts",
+    path: "examples/session-03/src/domain/appointment/transitions.ts",
     code: blockOf(
-      session04,
+      session03,
       "src/domain/appointment/transitions.ts",
       "export const startExamination = (",
       "  }) as const satisfies InExamination;",
@@ -362,13 +362,13 @@ export const startExaminationWalkthrough: Walkthrough = {
 const sensitiveFiles: Walkthrough["files"] = [
   {
     id: "ownerContact",
-    path: "examples/session-05/src/boundary/ownerContact.ts",
-    code: sourceOf(session05, "src/boundary/ownerContact.ts"),
+    path: "examples/session-03-solution/src/boundary/ownerContact.ts",
+    code: sourceOf(session03Solution, "src/boundary/ownerContact.ts"),
   },
   {
     id: "sensitive",
-    path: "examples/session-05/src/shared/sensitive.ts",
-    code: sourceOf(session05, "src/shared/sensitive.ts"),
+    path: "examples/session-03-solution/src/shared/sensitive.ts",
+    code: sourceOf(session03Solution, "src/shared/sensitive.ts"),
   },
 ];
 

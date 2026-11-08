@@ -91,7 +91,7 @@ const exerciseContracts = {
   "01-state-transitions": {
     workspace: {
       slug: "01-state-transitions",
-      snapshot: "session-02",
+      snapshot: "session-01",
       initialFile: "exercises/state-modeling.test.ts",
       description:
         "演習の要件と作成対象を、開始スナップショットで確認します。",
@@ -141,7 +141,7 @@ const exerciseContracts = {
   "03-boundaries-and-pii": {
     workspace: {
       slug: "03-boundaries-and-pii",
-      snapshot: "session-04",
+      snapshot: "session-03",
       initialFile: "exercises/start-examination-input.test.ts",
       description: "HTTP入力を診察開始の型付き入力へ変換する境界を確認します。",
       visibleFiles: [
@@ -169,7 +169,7 @@ const exerciseContracts = {
   "04-workflow-errors": {
     workspace: {
       slug: "04-workflow-errors",
-      snapshot: "session-05",
+      snapshot: "session-04",
       initialFile: "exercises/result-errors.test.ts",
       description:
         "例外の種類が型に現れず、Web側にcatch漏れがある開始スナップショットを確認します。",

@@ -30,10 +30,11 @@ if (values.out === undefined) {
 const outputDirectory = resolve(values.out);
 
 const terminalSnapshots = [
+  "session-01",
   "session-02",
   "session-03",
+  "session-03-solution",
   "session-04",
-  "session-05",
   "session-06",
 ];
 

@@ -1,13 +1,15 @@
 import { randomUUID } from "node:crypto";
 
 import { noticeFromCode, notImplemented } from "@fp-with-ts/clinic-web/server";
-import type { Hono } from "hono";
+import type { Context, Hono } from "hono";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
 import type {
   AppointmentRepository,
   PersistenceContext,
 } from "../adaptor/secondary/sqlite/appointmentRepository.js";
+import { ExamResult } from "../boundary/examResult.js";
+import { StartExaminationInput } from "../boundary/startExaminationInput.js";
 import type { Appointment, Scheduled } from "../domain/appointment/index.js";
 import {
   cancel,
@@ -17,18 +19,14 @@ import {
   startExamination,
 } from "../domain/appointment/index.js";
 import { AppointmentId } from "../domain/appointment/index.js";
-import { ExamId } from "../domain/examResult/index.js";
 import { OwnerId } from "../domain/owner/index.js";
 import { PetId } from "../domain/pet/index.js";
-import { VeterinarianId } from "../domain/appointment/index.js";
 import { toPageProps } from "./appointmentView.js";
 
 const ids = {
   appointmentId: AppointmentId.parse(clinicFixture.appointmentId),
-  examId: ExamId.parse(clinicFixture.examId),
   ownerId: OwnerId.parse(clinicFixture.ownerId),
   petId: PetId.parse(clinicFixture.petId),
-  veterinarianId: VeterinarianId.parse(clinicFixture.veterinarianId),
 };
 
 const appointmentOrThrow = (
@@ -38,6 +36,19 @@ const appointmentOrThrow = (
   const appointment = repository.find(appointmentId);
   if (appointment === undefined) throw new Error("Appointment not found");
   return appointment;
+};
+
+const decodeExamPayload = async (context: Context) => {
+  const raw = await context.req.json<Record<string, unknown>>();
+  return {
+    ...raw,
+    items: typeof raw.items === "string" ? JSON.parse(raw.items) : raw.items,
+    needsFollowUp: raw.needsFollowUp === "true"
+      ? true
+      : raw.needsFollowUp === "false"
+        ? false
+        : raw.needsFollowUp,
+  };
 };
 
 export const session03InitialAppointment: Scheduled = {
@@ -95,14 +106,19 @@ export const registerClinicRoutes = (
     return context.redirect("/", 303);
   });
 
-  app.post("/appointments/:appointmentId/start-examination", (context) => {
-    const current = appointmentOrThrow(repository, context.req.param("appointmentId"));
+  app.post("/appointments/:appointmentId/start-examination", async (context) => {
+    const raw = await context.req.json<Readonly<{ veterinarianId?: unknown }>>();
+    const input = StartExaminationInput.parse({
+      appointmentId: context.req.param("appointmentId"),
+      veterinarianId: raw.veterinarianId,
+    })._unsafeUnwrap();
+    const current = appointmentOrThrow(repository, input.appointmentId);
     if (current.kind !== "CheckedIn") throw new Error("Invalid appointment state");
     saveAndAppendAudit(
       repository,
       startExamination(
         current,
-        ids.veterinarianId,
+        input.veterinarianId,
         "2026-08-30T06:30:00.000Z",
       ),
       "ExaminationStarted",
@@ -114,15 +130,14 @@ export const registerClinicRoutes = (
   app.post("/appointments/:appointmentId/exam-results", async (context) => {
     const current = appointmentOrThrow(repository, context.req.param("appointmentId"));
     if (current.kind !== "InExamination") throw new Error("Invalid appointment state");
-    const raw = await context.req.json<Readonly<{ examId?: unknown }>>();
-    const examId = ExamId.parse(
-      typeof raw.examId === "string" ? raw.examId : ids.examId,
-    );
+    const parsed = ExamResult.parse(await decodeExamPayload(context));
+    if (parsed.isErr()) throw new Error("Invalid exam result");
+    const examResult = parsed._unsafeUnwrap();
     saveAndAppendAudit(
       repository,
       completeExamination(
         current,
-        { examId },
+        { examId: examResult.examId },
         "2026-08-30T07:00:00.000Z",
       ),
       "ExaminationCompleted",

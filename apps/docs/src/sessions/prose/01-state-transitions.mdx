@@ -77,7 +77,7 @@ import InlineCode from "../../components/InlineCode.astro";
   <p>{"\n"}編集する範囲は <code>{props.session.exerciseModule.dir}</code>、変更するファイル数は最大{"\n"}{props.session.exerciseModule.fileBudget}ファイル・約{props.session.exerciseModule.lineBudget}行です。{"\n"}</p>
   <CodeGuideCards guides={props.guides} projectFiles={props.projectFiles} />
   <h3>修正前の失敗を確認する</h3>
-  <p>修正前は、{props.initialExerciseFailureCount}個の型検査が失敗します。このページの{props.session.steps.length}件のStepで、そのうち4個を直します。残る1個は、次のSessionで扱う分岐漏れの型検査です。直す問題は次の{props.session.steps.length}件です。</p>
+  <p>コマンドはリポジトリのルートで実行します。修正前は、{props.initialExerciseFailureCount}個の型検査が失敗します。このページの{props.session.steps.length}件のStepで、そのうち4個を直します。残る1個は、次のSessionで扱う分岐漏れの型検査です。直す問題は次の{props.session.steps.length}件です。</p>
   <ul class="exercise-failures" aria-label="修正前に確認する問題">
     {props.session.steps.map((step) => <li>{step.startingFailure}</li>)}
   </ul>
@@ -244,7 +244,7 @@ import InlineCode from "../../components/InlineCode.astro";
   <div class="exercise-review-checklist">
     <h3>個人での確認</h3>
     <ol>{props.commonReviewChecks.map((check) => <li><InlineCode text={check} /></li>)}</ol>
-    <p>この演習の未commit差分は、次のセッションまでそのまま残して構いません。reset、stash、commit は不要です。</p>
+    <p>この演習の未commit差分は、そのまま残して構いません。reset、stash、commit は不要です。次の Session 02 は <code>examples/session-02</code> という別のフォルダから始まるので、この差分を持ち越す必要はありません。</p>
     <p>残すものは、{props.reviewCompletionArtifacts.join("、")}です。</p>
     <h3>業務へ持ち帰る</h3>
     <p>{props.businessReflectionQuestion}</p>

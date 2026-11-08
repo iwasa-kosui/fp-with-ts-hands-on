@@ -8,7 +8,11 @@ import {
   migrateDatabase,
   type SqliteDatabase,
 } from "./adaptor/secondary/sqlite/db.js";
-import { initialAppointment, registerClinicRoutes } from "./web/routes.js";
+import {
+  registerClinicRoutes,
+  session01InitialAppointment,
+  session01PersistenceContext,
+} from "./web/routes.js";
 
 type DatabaseBackedAppOptions = Readonly<{
   databasePath: string;
@@ -16,15 +20,12 @@ type DatabaseBackedAppOptions = Readonly<{
   isProduction: boolean;
 }>;
 
-export type DatabaseBackedApp = Hono &
-  Readonly<{
-    close: () => void;
-  }>;
+export type DatabaseBackedApp = Hono & Readonly<{ close: () => void }>;
 
 const createApp = (database: SqliteDatabase, isProduction = false): Hono => {
-  const repository = createAppointmentRepository(database);
-  repository.seedIfEmpty(initialAppointment);
   const app = new Hono();
+  const repository = createAppointmentRepository(database);
+  repository.seedIfEmpty(session01InitialAppointment, session01PersistenceContext);
 
   app.use(
     "*",

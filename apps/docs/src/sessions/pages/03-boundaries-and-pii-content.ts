@@ -24,7 +24,7 @@ type SupplementaryExercise = Readonly<{
 
 export const session: SessionSummary = {
   slug: "03-boundaries-and-pii",
-  snapshot: "session-04",
+  snapshot: "session-03",
   sequence: "03",
   kind: "exercise",
   title: "診察開始の入力を境界で検証する",
@@ -40,7 +40,7 @@ export const session: SessionSummary = {
       "検証に成功した場合だけ、`AppointmentId` と `VeterinarianId` をユースケースへ渡せますか。",
     ],
   },
-  solutionSnapshot: "session-05",
+  solutionSnapshot: "session-03-solution",
   solutionPresentation: "excerpt",
   peerReviewPromises: "reference",
   animal: { name: "BIRD", type: "bird", avatar: "🐦" },
@@ -51,9 +51,9 @@ export const session: SessionSummary = {
     "境界のparseは値を検査せずOkを返し、不正な値からStartExaminationInputを作りました。",
   ],
   incident: "HTTPから届いた不正なIDを検査せず、診察開始の入力として扱った。",
-  exerciseCommand: "pnpm exercise:04",
+  exerciseCommand: "pnpm exercise:03",
   exerciseModule: {
-    dir: "examples/session-04/src/boundary",
+    dir: "examples/session-03/src/boundary",
     fileBudget: 1,
     lineBudget: 18,
   },
@@ -65,23 +65,23 @@ export const session: SessionSummary = {
   },
   steps: [
     {
-      id: "s4-reject-invalid-appointment-id",
+      id: "s03-reject-invalid-appointment-id",
       goal: "不正な予約IDを含むHTTP入力は、StartExaminationInputにならないようにする。",
       startingFailure: "不正な予約IDでも、診察開始の入力として扱える。",
-      targets: ["examples/session-04/src/boundary/startExaminationInput.ts"],
+      targets: ["examples/session-03/src/boundary/startExaminationInput.ts"],
       solutions: [{
-        path: "examples/session-05/src/boundary/startExaminationInput.ts",
+        path: "examples/session-03-solution/src/boundary/startExaminationInput.ts",
         symbol: "StartExaminationInput",
         lines: [6, 18],
       }],
     },
     {
-      id: "s4-reject-invalid-veterinarian-id",
+      id: "s03-reject-invalid-veterinarian-id",
       goal: "不正な担当獣医師IDを含むHTTP入力は、StartExaminationInputにならないようにする。",
       startingFailure: "不正な担当獣医師IDでも、診察開始の入力として扱える。",
-      targets: ["examples/session-04/src/boundary/startExaminationInput.ts"],
+      targets: ["examples/session-03/src/boundary/startExaminationInput.ts"],
       solutions: [{
-        path: "examples/session-05/src/boundary/startExaminationInput.ts",
+        path: "examples/session-03-solution/src/boundary/startExaminationInput.ts",
         symbol: "StartExaminationInput",
         lines: [6, 18],
       }],
@@ -105,13 +105,13 @@ export const session: SessionSummary = {
 };
 
 export const supplementaryExercise: SupplementaryExercise = {
-  exerciseCommand: "pnpm exercise:03",
+  exerciseCommand: "pnpm exercise:03-supplement",
   exerciseModule: {
-    dir: "examples/session-03/src/domain",
+    dir: "examples/session-03-supplement/src/domain",
     fileBudget: 5,
     lineBudget: 34,
   },
-  solutionSnapshot: "session-04",
+  solutionSnapshot: "session-03-supplement-solution",
   solutionPresentation: "excerpt",
   incident: "診察開始で AppointmentId と VeterinarianId を取り違えても、型検査が通った。",
   delegationPrompt: {
@@ -123,54 +123,54 @@ export const supplementaryExercise: SupplementaryExercise = {
   },
   steps: [
     {
-      id: "s3-brand-start-examination-ids",
+      id: "s03-brand-start-examination-ids",
       goal: "予約IDと担当獣医師IDを、配布済みの識別子と同じ規約で別々の型にする。",
       startingFailure: "予約IDと担当獣医師IDを取り違えても、型検査が通る。",
       targets: [
-        "examples/session-03/src/domain/appointment/appointmentId.ts",
-        "examples/session-03/src/domain/appointment/veterinarianId.ts",
+        "examples/session-03-supplement/src/domain/appointment/appointmentId.ts",
+        "examples/session-03-supplement/src/domain/appointment/veterinarianId.ts",
       ],
       solutions: [
         {
-          path: "examples/session-04/src/domain/appointment/appointmentId.ts",
+          path: "examples/session-03-supplement-solution/src/domain/appointment/appointmentId.ts",
           symbol: "AppointmentId",
           lines: [3, 6],
         },
         {
-          path: "examples/session-04/src/domain/appointment/veterinarianId.ts",
+          path: "examples/session-03-supplement-solution/src/domain/appointment/veterinarianId.ts",
           symbol: "VeterinarianId",
           lines: [3, 6],
         },
       ],
     },
     {
-      id: "s3-apply-start-examination-ids",
+      id: "s03-apply-start-examination-ids",
       goal: "予約の6状態とstartExaminationが、用途別の識別子を受け取るようにする。",
       startingFailure: "予約状態とstartExaminationが、用途を区別しないstringを受け取る。",
       targets: [
-        "examples/session-03/src/domain/appointment/appointment.ts",
-        "examples/session-03/src/domain/appointment/transitions.ts",
+        "examples/session-03-supplement/src/domain/appointment/appointment.ts",
+        "examples/session-03-supplement/src/domain/appointment/transitions.ts",
       ],
       solutions: [
         {
-          path: "examples/session-04/src/domain/appointment/appointment.ts",
+          path: "examples/session-03-supplement-solution/src/domain/appointment/appointment.ts",
           symbol: "Scheduled",
           lines: [1, 15],
         },
         {
-          path: "examples/session-04/src/domain/appointment/transitions.ts",
+          path: "examples/session-03-supplement-solution/src/domain/appointment/transitions.ts",
           symbol: "startExamination",
           lines: [17, 27],
         },
       ],
     },
     {
-      id: "s3-reject-id-swap",
+      id: "s03-reject-id-swap",
       goal: "AppointmentIdとVeterinarianIdを入れ替えたコードがコンパイルできないことを、型テストで確かめる。",
       startingFailure: "取り違えた2行が、型エラーにならないままコンパイルされる。",
-      targets: ["examples/session-03/src/domain/domain.test-types.ts"],
+      targets: ["examples/session-03-supplement/src/domain/domain.test-types.ts"],
       solutions: [{
-        path: "examples/session-04/src/domain/domain.test-types.ts",
+        path: "examples/session-03-supplement-solution/src/domain/domain.test-types.ts",
         symbol: "acceptAppointmentId",
         lines: [1, 14],
       }],
@@ -261,27 +261,27 @@ Content-Type: application/json
 const brandedIdSnippets = await loadSolutionSnippets({
   solutions: [
     {
-      path: "examples/session-03/src/domain/appointment/appointmentId.ts",
+      path: "examples/session-03-supplement/src/domain/appointment/appointmentId.ts",
       symbol: "AppointmentId",
       lines: [1, 6],
     },
     {
-      path: "examples/session-04/src/domain/appointment/appointmentId.ts",
+      path: "examples/session-03-supplement-solution/src/domain/appointment/appointmentId.ts",
       symbol: "AppointmentId",
       lines: [1, 6],
     },
     {
-      path: "examples/session-03/src/domain/domain.test-types.ts",
+      path: "examples/session-03-supplement/src/domain/domain.test-types.ts",
       symbol: "acceptVeterinarianId",
       lines: [6, 10],
     },
     {
-      path: "examples/session-04/src/domain/domain.test-types.ts",
+      path: "examples/session-03-supplement-solution/src/domain/domain.test-types.ts",
       symbol: "acceptVeterinarianId",
       lines: [6, 13],
     },
     {
-      path: "examples/session-04/src/domain/domain.test-types.ts",
+      path: "examples/session-03-supplement-solution/src/domain/domain.test-types.ts",
       symbol: "AppointmentId.parse",
       lines: [1, 5],
     },
@@ -301,17 +301,17 @@ export const brandedIdCode = {
 const schemaSourceSnippets = await loadSolutionSnippets({
   solutions: [
     {
-      path: "examples/session-04/src/boundary/startExaminationInput.ts",
+      path: "examples/session-03/src/boundary/startExaminationInput.ts",
       symbol: "StartExaminationInput",
       lines: [1, 16],
     },
     {
-      path: "examples/session-05/src/boundary/startExaminationInput.ts",
+      path: "examples/session-03-solution/src/boundary/startExaminationInput.ts",
       symbol: "StartExaminationInput",
       lines: [1, 17],
     },
     {
-      path: "examples/session-05/src/shared/schemaResult.ts",
+      path: "examples/session-03-solution/src/shared/schemaResult.ts",
       symbol: "schemaResult",
       lines: [23, 27],
     },
