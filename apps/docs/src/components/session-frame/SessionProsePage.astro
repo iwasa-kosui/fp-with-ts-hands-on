@@ -1,0 +1,34 @@
+---
+import type { AstroComponentFactory } from "astro/runtime/server/index.js";
+import type { SessionPage } from "../../sessions/pages/types";
+import SessionFrame from "./SessionFrame.astro";
+
+interface Props {
+  sessionSlug: string;
+  pages: readonly SessionPage[];
+  pageSlug: string;
+  prose: Record<string, () => Promise<{ Content: AstroComponentFactory }>>;
+}
+
+const { sessionSlug, pages, pageSlug, prose } = Astro.props;
+const page = pages.find(({ slug }) => slug === pageSlug);
+if (page === undefined) {
+  throw new Error(`Unknown page "${pageSlug}" in session ${sessionSlug}`);
+}
+const loadProse = Object.entries(prose).find(([path]) =>
+  path.endsWith(`/${page.slug}.mdx`),
+)?.[1];
+if (loadProse === undefined) {
+  throw new Error(`Missing prose for ${sessionSlug}/${page.slug}`);
+}
+const { Content } = await loadProse();
+---
+
+<SessionFrame
+  sessionSlug={sessionSlug}
+  pages={pages}
+  pageSlug={page.slug}
+  fullWidth={page.kind === "exercise"}
+>
+  <Content />
+</SessionFrame>

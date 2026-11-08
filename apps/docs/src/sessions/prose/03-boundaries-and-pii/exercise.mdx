@@ -2,13 +2,12 @@ import { GuardExercise } from "../../../components/guard-exercise/GuardExercise"
 import GuardAnswer from "../../../components/guard-exercise/GuardAnswer.astro";
 import { projectFilesForSnapshot } from "../../../code-explorer/project-files";
 import { guardAnswerDisplayFiles } from "../../../code-explorer/guard-paths";
-import {
-  guardExerciseSnapshot,
-  guardExerciseWorkspaceFor,
-} from "../../pages/03-boundaries-and-pii-exercise";
+import { guardExercise } from "../../pages/03-boundaries-and-pii-exercise";
+import { guardExerciseWorkspaceFor } from "../../pages/guard-exercise-workspace";
 
-export const projectFiles = projectFilesForSnapshot(guardExerciseSnapshot);
+export const projectFiles = projectFilesForSnapshot(guardExercise.snapshot);
 export const workspace = guardExerciseWorkspaceFor(
+  guardExercise,
   projectFiles,
   "悪い変更を検出する仕組みを足す演習の作業場所です。",
 );

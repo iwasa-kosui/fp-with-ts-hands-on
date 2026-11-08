@@ -10,7 +10,8 @@ import type {
   TerminalStartRequest,
 } from "../../code-explorer/runner";
 import { createIndexedDbWorkspaceStore } from "../../code-explorer/workspace-store";
-import { guardExerciseWorkspaceFor } from "../../sessions/pages/03-boundaries-and-pii-exercise";
+import { guardExercise } from "../../sessions/pages/03-boundaries-and-pii-exercise";
+import { guardExerciseWorkspaceFor } from "../../sessions/pages/guard-exercise-workspace";
 import type { EditorProps } from "../code-explorer/CodeExplorer";
 import { phaseLabels, type TerminalView } from "../code-explorer/TerminalPanel";
 import { GuardExercise } from "./GuardExercise";
@@ -42,7 +43,7 @@ const projectFiles = {
   "exercises/guard/subjects/input.ts": "// subject",
 } as const;
 
-const workspace = guardExerciseWorkspaceFor(projectFiles, "演習の作業場所");
+const workspace = guardExerciseWorkspaceFor(guardExercise, projectFiles, "演習の作業場所");
 
 const roots: Root[] = [];
 

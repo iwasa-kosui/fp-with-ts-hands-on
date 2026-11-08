@@ -1,0 +1,33 @@
+const expectedPages = [
+  ["", "診察開始は画面から届く", "background", "brief", 0.5],
+  ["night-shift", "獣医師の欄に「夜勤」と届いた", "problem", "brief", 0.5],
+  ["current-code", "今のコードは必ず成功を返す", "problem", "brief", 1],
+  ["boundary", "外側・境界・内側", "problem", "teach", 2],
+  ["audit-leak", "連絡先が記録に残っている", "problem", "teach", 0.5],
+  ["result", "Result は成否だけを持つ小さな型", "knowledge", "teach", 1],
+  ["zod", "Zod: 1つの schema から型を作る", "knowledge", "teach", 1.5],
+  ["safe-parse", "schema で検査して Result を返す", "knowledge", "teach", 1.5],
+  ["branded", "Branded Type: 同じ string を用途で区別する", "knowledge", "teach", 2],
+  ["boundary-after", "境界を通った値だけが内側へ入る", "solution", "teach", 2],
+  ["terms", "学んだことに名前を付ける", "solution", "teach", 0.5],
+  ["audit-record", "連絡先を記録に残さない", "solution", "teach", 1],
+  ["checks", "直した状態をどう守るか", "solution", "teach", 0.5],
+  ["property-test", "値の性質をテストで確かめる", "solution", "teach", 0.5],
+  ["exercise", "演習: 悪い変更を検出する仕組みを足す", "solution", "exercise", 15],
+  ["peer-review", "相互レビュー", "solution", "review", 3],
+  ["guard", "仕組みで防ぐ方法を話す", "work", "review", 1],
+  ["review", "自分の業務に持ち帰る", "work", "review", 1],
+  ["payment-amount", "値の制約にも同じ形を使う", "advanced", "advanced", 0],
+  ["pii", "Sensitive で値を伏せる", "advanced", "advanced", 0],
+  ["value-shapes", "扱う値が変わっても形は同じ", "advanced", "advanced", 0],
+];
+
+export default {
+  previous: "/sessions/02-adt-and-exhaustiveness/",
+  previousTitle: "予約の状態の分岐漏れを型で検出する",
+  next: "/sessions/04-workflow-errors/",
+  nextTitle: "失敗をユースケースの結果として扱う",
+  pages: expectedPages.map(([slug]) => slug),
+  expectedPages,
+  lastInTime: "review",
+};

@@ -1,12 +1,11 @@
 import { GuardExercise } from "../../../components/guard-exercise/GuardExercise";
 import { projectFilesForSnapshot } from "../../../code-explorer/project-files";
-import {
-  guardExerciseSnapshot,
-  guardExerciseWorkspaceFor,
-} from "../../pages/03-boundaries-and-pii-exercise";
+import { guardExercise } from "../../pages/03-boundaries-and-pii-exercise";
+import { guardExerciseWorkspaceFor } from "../../pages/guard-exercise-workspace";
 
-export const projectFiles = projectFilesForSnapshot(guardExerciseSnapshot);
+export const projectFiles = projectFilesForSnapshot(guardExercise.snapshot);
 export const workspace = guardExerciseWorkspaceFor(
+  guardExercise,
   projectFiles,
   "演習のページと同じファイルを開く作業場所です。",
 );

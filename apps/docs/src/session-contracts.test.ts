@@ -6,8 +6,8 @@ import {
   supplementaryExercise,
 } from "./pages/sessions/03-boundaries-and-pii.astro";
 import { sessionNavigationItems } from "./sessions/navigation";
-import { sessionPages } from "./sessions/pages/03-boundaries-and-pii";
-import { sessionPageEntries } from "./sessions/pages/links";
+import { sessionPageEntries, sessionPageHref } from "./sessions/pages/links";
+import { splitSessions } from "./sessions/pages/split-sessions.fixture";
 import { sessionPageFlowOrder, splitPageRole } from "./sessions/pages/types";
 import type { SessionNavigation, SessionSummary } from "./sessions/types";
 type PageModule = Readonly<{
@@ -579,44 +579,22 @@ describe("page-owned session contracts", () => {
   });
 });
 
-const expectedBoundaryPages = [
-  ["", "診察開始は画面から届く", "background", "brief", 0.5],
-  ["night-shift", "獣医師の欄に「夜勤」と届いた", "problem", "brief", 0.5],
-  ["current-code", "今のコードは必ず成功を返す", "problem", "brief", 1],
-  ["boundary", "外側・境界・内側", "problem", "teach", 2],
-  ["audit-leak", "連絡先が記録に残っている", "problem", "teach", 0.5],
-  ["result", "Result は成否だけを持つ小さな型", "knowledge", "teach", 1],
-  ["zod", "Zod: 1つの schema から型を作る", "knowledge", "teach", 1.5],
-  ["safe-parse", "schema で検査して Result を返す", "knowledge", "teach", 1.5],
-  ["branded", "Branded Type: 同じ string を用途で区別する", "knowledge", "teach", 2],
-  ["boundary-after", "境界を通った値だけが内側へ入る", "solution", "teach", 2],
-  ["terms", "学んだことに名前を付ける", "solution", "teach", 0.5],
-  ["audit-record", "連絡先を記録に残さない", "solution", "teach", 1],
-  ["checks", "直した状態をどう守るか", "solution", "teach", 0.5],
-  ["property-test", "値の性質をテストで確かめる", "solution", "teach", 0.5],
-  ["exercise", "演習: 悪い変更を検出する仕組みを足す", "solution", "exercise", 15],
-  ["peer-review", "相互レビュー", "solution", "review", 3],
-  ["guard", "仕組みで防ぐ方法を話す", "work", "review", 1],
-  ["review", "自分の業務に持ち帰る", "work", "review", 1],
-  ["payment-amount", "値の制約にも同じ形を使う", "advanced", "advanced", 0],
-  ["pii", "Sensitive で値を伏せる", "advanced", "advanced", 0],
-  ["value-shapes", "扱う値が変わっても形は同じ", "advanced", "advanced", 0],
-] as const;
+describe.each(splitSessions)("Session page list: $slug", ({
+  slug: sessionSlug,
+  previous,
+  previousTitle,
+  next,
+  nextTitle,
+  expectedPages,
+  lastInTime,
+  sessionPages,
+}) => {
+  const entries = sessionPageEntries(sessionSlug, sessionPages);
+  const hrefOf = (slug: string) => sessionPageHref(sessionSlug, slug);
+  const timedCount = expectedPages.filter(([, , , kind]) => kind !== "advanced").length;
+  const advancedCount = expectedPages.length - timedCount;
 
-describe("Session 03 page list", () => {
-  const base = "/sessions/03-boundaries-and-pii/";
-  const entries = sessionPageEntries("03-boundaries-and-pii", sessionPages);
-  const hrefOf = (slug: string) => (slug === "" ? base : `${base}${slug}/`);
-  const s02 = {
-    href: "/sessions/02-adt-and-exhaustiveness/",
-    title: "予約の状態の分岐漏れを型で検出する",
-  };
-  const s04 = {
-    href: "/sessions/04-workflow-errors/",
-    title: "失敗をユースケースの結果として扱う",
-  };
-
-  it("lists the 21 pages in the agreed order", () => {
+  it("lists the pages in the agreed order", () => {
     expect(
       sessionPages.map(({ slug, title, flow, kind, minutes }) => [
         slug,
@@ -625,19 +603,27 @@ describe("Session 03 page list", () => {
         kind,
         minutes,
       ]),
-    ).toEqual(expectedBoundaryPages);
-    expect(new Set(sessionPages.map(({ slug }) => slug)).size).toBe(21);
+    ).toEqual(expectedPages);
+    expect(new Set(sessionPages.map(({ slug }) => slug)).size).toBe(
+      expectedPages.length,
+    );
   });
 
-  it("orders the pages by flow and gives each page a role that starts with its stage", () => {
-    const flows = sessionPages.map(({ flow }) => flow);
+  it("puts lastInTime on the last page that is not advanced", () => {
+    expect(
+      sessionPages.filter(({ kind }) => kind !== "advanced").at(-1)?.slug,
+    ).toBe(lastInTime);
+  });
 
-    expect(flows).toEqual(
-      [...flows].sort(
-        (left, right) =>
-          sessionPageFlowOrder.indexOf(left) - sessionPageFlowOrder.indexOf(right),
-      ),
+  it("keeps the pages in the order of sessionPageFlowOrder", () => {
+    const positions = sessionPages.map(({ flow }) =>
+      sessionPageFlowOrder.indexOf(flow),
     );
+
+    expect(positions).toEqual([...positions].sort((left, right) => left - right));
+  });
+
+  it("gives each page a role that starts with its stage", () => {
     for (const { slug, role } of sessionPages) {
       const { label, text } = splitPageRole(role);
       expect(label, slug).not.toBe("");
@@ -655,7 +641,7 @@ describe("Session 03 page list", () => {
       sessionPages
         .filter((page) => page.kind === kind)
         .reduce((total, { minutes }) => total + minutes, 0);
-    const session = sessions.find(({ slug }) => slug === "03-boundaries-and-pii");
+    const session = sessions.find(({ slug }) => slug === sessionSlug);
 
     expect(session?.timeBreakdown).toEqual({
       brief: sum("brief"),
@@ -671,37 +657,43 @@ describe("Session 03 page list", () => {
   });
 
   it("links each page to its neighbours and to the adjacent sessions", () => {
-    const slugs = expectedBoundaryPages.map(([slug]) => slug);
-
-    entries.forEach(({ previous, next }, index) => {
+    entries.forEach(({ previous: actualPrevious, next: actualNext }, index) => {
+      const slug = expectedPages[index]![0];
       const expectedPrevious =
         index === 0
-          ? s02
-          : { href: hrefOf(slugs[index - 1]!), title: expectedBoundaryPages[index - 1]![1] };
+          ? { href: previous, title: previousTitle }
+          : { href: hrefOf(expectedPages[index - 1]![0]), title: expectedPages[index - 1]![1] };
       const expectedNext =
-        slugs[index] === "review" || index === slugs.length - 1
-          ? s04
-          : { href: hrefOf(slugs[index + 1]!), title: expectedBoundaryPages[index + 1]![1] };
+        slug === lastInTime || index === expectedPages.length - 1
+          ? { href: next, title: nextTitle }
+          : { href: hrefOf(expectedPages[index + 1]![0]), title: expectedPages[index + 1]![1] };
 
-      expect(previous, slugs[index]).toEqual(expectedPrevious);
-      expect(next, slugs[index]).toEqual(expectedNext);
+      expect(actualPrevious, slug).toEqual(expectedPrevious);
+      expect(actualNext, slug).toEqual(expectedNext);
     });
   });
 
   it("shows the advanced pages link only on the last in-time page", () => {
+    const firstAdvanced = expectedPages.find(([, , , kind]) => kind === "advanced");
+
     expect(
       entries.flatMap(({ page, later }) =>
         later === undefined ? [] : [[page.slug, later]],
       ),
-    ).toEqual([["review", { href: `${base}payment-amount/`, count: 3 }]]);
+    ).toEqual(
+      firstAdvanced === undefined
+        ? []
+        : [[lastInTime, { href: hrefOf(firstAdvanced[0]), count: advancedCount }]],
+    );
   });
 
   it("counts positions inside the in-time pages and the advanced pages separately", () => {
     expect(entries.map(({ position }) => position)).toEqual([
-      ...Array.from({ length: 18 }, (_, index) => `${index + 1} / 18`),
-      "発展 1 / 3",
-      "発展 2 / 3",
-      "発展 3 / 3",
+      ...Array.from({ length: timedCount }, (_, index) => `${index + 1} / ${timedCount}`),
+      ...Array.from(
+        { length: advancedCount },
+        (_, index) => `発展 ${index + 1} / ${advancedCount}`,
+      ),
     ]);
   });
 });
