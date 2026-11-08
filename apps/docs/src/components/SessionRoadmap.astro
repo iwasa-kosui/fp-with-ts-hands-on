@@ -1,6 +1,7 @@
 ---
 import { sessionNavigationItems } from "../sessions/navigation";
 import { sessionOverviews, stages, type StageId } from "../sessions/overview-map";
+import StepControls from "./stepper/StepControls.astro";
 
 type StageState = "fill" | "past" | "empty";
 
@@ -9,14 +10,18 @@ const stateLabels = { fill: "この回で埋める", past: "前の回で埋め�
 const stageLabel = (id: StageId) => stages.find((stage) => stage.id === id)?.label ?? id;
 
 const frames = sessionNavigationItems.map(({ slug, title }, index) => {
-  const { summary, fills } = sessionOverviews[slug];
+  const { summary, fills, fixes, advancedFixes = [] } = sessionOverviews[slug];
   const earlier = sessionNavigationItems.slice(0, index).flatMap((item) => sessionOverviews[item.slug].fills);
   const states: readonly StageState[] = stages.map(({ id }) => (fills.includes(id) ? "fill" : earlier.includes(id) ? "past" : "empty"));
   const number = slug === "final" ? "Final" : slug.slice(0, 2);
   const label = slug === "final" ? "Final" : `S${number}`;
   const filledText = fills.length === 0 ? "この回で埋める段はありません。" : `${label} が埋める段は、${fills.map(stageLabel).join("、")}です。`;
   const alt = `${filledText}上から、${stages.map((stage, i) => `${stage.label}は${stateLabels[states[i]]}`).join("、")}。`;
-  return { slug, title, summary, states, label, href: `/sessions/${slug}/`, alt };
+  const fixesText =
+    fixes.length === 0
+      ? "直す問題はありません"
+      : `直す問題: ${fixes.map((problem) => (advancedFixes.includes(problem) ? `${problem}（発展）` : String(problem))).join(", ")}`;
+  return { slug, title, summary, states, label, href: `/sessions/${slug}/`, alt, fixesText };
 });
 
 const stageHeight = 28;
@@ -25,156 +30,72 @@ const failGap = 16;
 const lastIndex = stages.length - 1;
 const boxY = (index: number) => 4 + index * pitch + (index === lastIndex ? failGap : 0);
 const viewHeight = boxY(lastIndex) + stageHeight + 4;
-
-const playerData = JSON.stringify(frames.map(({ title, summary, states, label, href, alt }) => ({ title, summary, states, label, href, alt })));
 ---
 
-<figure id="session-roadmap" class="roadmap" data-session-roadmap data-frames={playerData}>
+<figure class="roadmap" data-roadmap>
   <figcaption class="roadmap__title">Session ごとに埋まる段</figcaption>
 
-  <div class="roadmap__controls" data-controls hidden>
-    <button type="button" data-first disabled>最初へ</button>
-    <button type="button" data-prev disabled>前へ</button>
-    <button type="button" data-play>再生</button>
-    <button type="button" data-next>次へ</button>
-    <span data-progress>1 / {frames.length}</span>
-  </div>
+  <StepControls />
 
-  <div class="roadmap__stage" data-stage hidden>
-    <p class="roadmap__head"><a data-stage-link></a></p>
-    <div data-stage-figure></div>
-  </div>
-
-  <p class="roadmap__live" data-live aria-live="polite" hidden></p>
-
-  <ol class="roadmap__frames">
-    {frames.map((frame) => (
-      <li data-frame>
-        <div class="roadmap__visual">
+  <div aria-live="polite">
+    <ol class="roadmap__frames">
+      {frames.map((frame) => (
+        <li data-frame data-states={frame.states.join(" ")} data-alt={frame.alt}>
           <p class="roadmap__head"><a href={frame.href}>{frame.label} {frame.title}</a></p>
           <p class="roadmap__summary">{frame.summary}</p>
-          <svg viewBox={`0 0 340 ${viewHeight}`} role="img" aria-label={frame.alt}>
-            {stages.slice(0, -2).map((_, i) => (
-              <path d={`M 170 ${boxY(i) + stageHeight} V ${boxY(i + 1)}`} class="roadmap__line"></path>
-            ))}
-            {stages.map((stage, i) => (
-              <g class="roadmap__box" data-state={frame.states[i]}>
-                <rect x="10" y={boxY(i)} width="320" height={stageHeight} rx="6"></rect>
-                <text x="22" y={boxY(i) + 19} font-size="12">{stage.label}</text>
-                {(Object.keys(stateLabels) as StageState[]).map((state) => (
-                  <text class="roadmap__tag" data-tag={state} x="320" y={boxY(i) + 18} text-anchor="end" font-size="10">{stateLabels[state]}</text>
-                ))}
-              </g>
-            ))}
-          </svg>
-        </div>
-      </li>
+          <p class="roadmap__fixes">{frame.fixesText}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  <svg viewBox={`0 0 340 ${viewHeight}`} role="img" aria-label={frames[0].alt} data-roadmap-svg>
+    {stages.slice(0, -2).map((_, i) => (
+      <path d={`M 170 ${boxY(i) + stageHeight} V ${boxY(i + 1)}`} class="roadmap__line"></path>
     ))}
-  </ol>
+    {stages.map((stage, i) => (
+      <g class="roadmap__box" data-state={frames[0].states[i]}>
+        <rect x="10" y={boxY(i)} width="320" height={stageHeight} rx="6"></rect>
+        <text x="22" y={boxY(i) + 19} font-size="12">{stage.label}</text>
+        {(Object.keys(stateLabels) as StageState[]).map((state) => (
+          <text class="roadmap__tag" data-tag={state} x="320" y={boxY(i) + 18} text-anchor="end" font-size="10">{stateLabels[state]}</text>
+        ))}
+      </g>
+    ))}
+  </svg>
 </figure>
 
 <script>
-  type Frame = { title: string; summary: string; states: string[]; label: string; href: string; alt: string };
+  import { mountStepper } from "./stepper/stepper";
 
-  const STEP_MS = 3500;
-
-  const setUp = (root: HTMLElement) => {
-    if (root.dataset.ready !== undefined) return;
-    const frames = JSON.parse(root.dataset.frames ?? "[]") as Frame[];
+  document.querySelectorAll<HTMLElement>("[data-roadmap]").forEach((root) => {
+    const svg = root.querySelector<SVGSVGElement>("[data-roadmap-svg]");
+    const boxes = [...(svg?.querySelectorAll<SVGGElement>("[data-state]") ?? [])];
     const panels = [...root.querySelectorAll<HTMLElement>("[data-frame]")];
-    const source = root.querySelector<SVGSVGElement>("li svg");
-    const stage = root.querySelector<HTMLElement>("[data-stage]");
-    const stageLink = root.querySelector<HTMLAnchorElement>("[data-stage-link]");
-    const stageFigure = root.querySelector<HTMLElement>("[data-stage-figure]");
-    const controls = root.querySelector<HTMLElement>("[data-controls]");
-    const first = root.querySelector<HTMLButtonElement>("[data-first]");
-    const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
-    const play = root.querySelector<HTMLButtonElement>("[data-play]");
-    const next = root.querySelector<HTMLButtonElement>("[data-next]");
-    const progress = root.querySelector<HTMLElement>("[data-progress]");
-    const live = root.querySelector<HTMLElement>("[data-live]");
-    if (!source || !stage || !stageLink || !stageFigure || !controls || !first || !prev || !play || !next || !progress || !live || frames.length !== panels.length) return;
-    root.dataset.ready = "";
-
-    const svg = source.cloneNode(true) as SVGSVGElement;
-    stageFigure.append(svg);
-    const boxes = [...svg.querySelectorAll<SVGGElement>("[data-state]")];
-
-    let current = 0;
-    let timer: number | null = null;
-
-    const stop = () => {
-      if (timer !== null) window.clearInterval(timer);
-      timer = null;
-      play.textContent = "再生";
-    };
-
-    const show = (index: number) => {
-      const frame = frames[index];
-      current = index;
-      panels.forEach((panel, i) => panel.classList.toggle("is-current", i === index));
-      boxes.forEach((box, i) => {
-        box.dataset.state = frame.states[i];
-      });
-      svg.setAttribute("aria-label", frame.alt);
-      stageLink.textContent = `${frame.label} ${frame.title}`;
-      stageLink.href = frame.href;
-      live.textContent = frame.summary;
-      progress.textContent = `${index + 1} / ${frames.length}`;
-      first.disabled = index === 0;
-      prev.disabled = index === 0;
-      next.disabled = index === frames.length - 1;
-    };
-
-    first.addEventListener("click", () => {
-      stop();
-      show(0);
+    mountStepper({
+      root,
+      onStep: (step) => {
+        const panel = panels[step];
+        if (!svg || !panel) return;
+        const states = (panel.dataset.states ?? "").split(" ");
+        boxes.forEach((box, i) => {
+          box.dataset.state = states[i] ?? "empty";
+        });
+        svg.setAttribute("aria-label", panel.dataset.alt ?? "");
+      },
     });
-    prev.addEventListener("click", () => {
-      stop();
-      show(Math.max(current - 1, 0));
-    });
-    next.addEventListener("click", () => {
-      stop();
-      show(Math.min(current + 1, frames.length - 1));
-    });
-    play.addEventListener("click", () => {
-      if (timer !== null) {
-        stop();
-        return;
-      }
-      if (current === frames.length - 1) show(0);
-      play.textContent = "停止";
-      timer = window.setInterval(() => {
-        if (current >= frames.length - 1) {
-          stop();
-          return;
-        }
-        show(current + 1);
-      }, STEP_MS);
-    });
-
-    root.dataset.animated = "";
-    controls.hidden = false;
-    stage.hidden = false;
-    live.hidden = false;
-    show(0);
-  };
-
-  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    document.querySelectorAll<HTMLElement>("[data-session-roadmap]").forEach(setUp);
-  }
+  });
 </script>
 
 <style>
   .roadmap {
     min-width: 0;
     max-width: 100%;
-    margin: 1.5rem 0;
+    margin: 1rem 0;
   }
 
   .roadmap__title {
-    margin: 0 0 0.75rem;
+    margin: 0 0 0.5rem;
     font-weight: 700;
     line-height: 1.6;
   }
@@ -184,7 +105,7 @@ const playerData = JSON.stringify(frames.map(({ title, summary, states, label, h
     width: 100%;
     max-width: 22rem;
     height: auto;
-    margin: 0.5rem auto 0;
+    margin: 0.75rem auto 0;
   }
 
   .roadmap__head {
@@ -194,41 +115,43 @@ const playerData = JSON.stringify(frames.map(({ title, summary, states, label, h
     overflow-wrap: anywhere;
   }
 
-  .roadmap__summary,
-  .roadmap__live {
+  .roadmap__summary {
     margin: 0.25rem 0 0;
     line-height: 1.7;
   }
 
-  .roadmap__live {
+  .roadmap__fixes {
+    margin: 0.25rem 0 0;
+    color: var(--role-accent);
     font-weight: 700;
+    line-height: 1.6;
   }
 
   .roadmap__line {
     fill: none;
-    stroke: var(--case-line);
+    stroke: var(--role-border);
     stroke-width: 1.5;
   }
 
   .roadmap__box {
     --box-fill: transparent;
-    --box-stroke: var(--case-muted);
-    --box-ink: var(--case-muted);
+    --box-stroke: var(--role-muted);
+    --box-ink: var(--role-muted);
     --box-dash: 4 3;
     --box-width: 1.5;
     --box-weight: 400;
   }
 
   .roadmap__box[data-state="past"] {
-    --box-fill: var(--case-paper);
-    --box-stroke: var(--case-divider);
+    --box-fill: var(--role-surface);
+    --box-stroke: var(--role-border);
     --box-dash: none;
   }
 
   .roadmap__box[data-state="fill"] {
-    --box-fill: var(--case-yellow);
-    --box-stroke: var(--case-blue);
-    --box-ink: var(--case-ink);
+    --box-fill: color-mix(in srgb, var(--role-accent) 22%, var(--role-surface));
+    --box-stroke: var(--role-accent);
+    --box-ink: var(--role-text);
     --box-dash: none;
     --box-width: 2.5;
     --box-weight: 700;
@@ -256,35 +179,6 @@ const playerData = JSON.stringify(frames.map(({ title, summary, states, label, h
     display: inline;
   }
 
-  .roadmap__controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .roadmap__controls[hidden] {
-    display: none;
-  }
-
-  .roadmap__controls button {
-    min-height: 2.75rem;
-    padding: 0 1rem;
-    border: 2px solid var(--case-line);
-    border-radius: 0.5rem;
-    background: var(--case-yellow);
-    color: var(--case-ink);
-    cursor: pointer;
-    font-weight: 700;
-  }
-
-  .roadmap__controls button:disabled {
-    background: var(--case-paper);
-    cursor: not-allowed;
-    opacity: 0.55;
-  }
-
   .roadmap__frames {
     margin: 0;
     padding: 0;
@@ -296,20 +190,30 @@ const playerData = JSON.stringify(frames.map(({ title, summary, states, label, h
   }
 
   .roadmap__frames > li + li {
-    margin-top: 1.5rem;
+    margin-top: 1rem;
   }
 
-  [data-animated] .roadmap__frames {
-    display: none;
+  .roadmap[data-ready] .roadmap__frames {
+    display: grid;
   }
 
-  [data-animated] .roadmap__box rect,
-  [data-animated] .roadmap__box text {
+  .roadmap[data-ready] .roadmap__frames > li {
+    grid-area: 1 / 1;
+    margin: 0;
+  }
+
+  .roadmap[data-ready] .roadmap__frames > li[hidden] {
+    display: block;
+    visibility: hidden;
+  }
+
+  .roadmap[data-ready] .roadmap__box rect,
+  .roadmap[data-ready] .roadmap__box text {
     transition: fill 0.4s, stroke 0.4s;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-animated] * {
+    .roadmap[data-ready] * {
       transition: none !important;
       animation: none !important;
     }
