@@ -79,7 +79,7 @@ const steps = [
     values: undefined,
   },
   {
-    text: "<strong>入口</strong>: 獣医師が「診察を開始する」を押します。どの予約を、どの獣医師が担当するかが、サーバーへ届きます。",
+    text: "<strong>入口</strong>: 獣医師が「診察を開始する」を押します。どの予約を、どの獣医師が担当するかが、サーバーへ届きます。地図では値の形を確かめる段ですが、今のコードは確かめません。",
     file: "route",
     highlight: highlight("route", routeCode, "startExamination(repository)({", true),
     impl: undefined,
@@ -219,7 +219,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
 
       <section class="hem__col hem__col--code">
         <h5 class="hem__col-title">コード</h5>
-        <div class="hem__files" data-files-pane tabindex="0" role="region" aria-label="コード">
+        <div class="hem__files" data-files-pane role="region" aria-label="コード">
           <figure class="code-block hem__block" data-code-file="route">
             <figcaption>{routeFile}</figcaption>
             <Code code={routeCode.join("\n")} lang="ts" />
@@ -446,30 +446,33 @@ const files = JSON.stringify(steps.map((step) => step.file));
     };
 
     const showCode = (index: number) => {
-      if (blocks.some((block) => !block.hidden && block.dataset.codeFile !== files[index])) {
-        pane.scrollTo({ top: 0, behavior: "instant" });
-      }
+      const switched = blocks.some((block) => !block.hidden && block.dataset.codeFile !== files[index]);
       blocks.forEach((block) => {
         block.hidden = block.dataset.codeFile !== files[index];
       });
+      const scroller = pane.querySelector<HTMLElement>(".hem__block:not([hidden]) pre");
+      if (switched) scroller?.scrollTo({ top: 0, behavior: "instant" });
       codeLines.forEach((lines) => lines.forEach((line) => line.classList.remove("is-hl")));
       const [file, from, to] = (highlights[index] ?? "").split(":");
       const lines = codeLines.get(file ?? "");
       const first = lines?.[Number(from) - 1];
       const last = lines?.[Number(to) - 1];
+      if (!scroller) return;
       if (!lines || !first || !last) {
-        pane.scrollTo({ top: 0 });
+        scroller.scrollTo({ top: 0 });
         return;
       }
       lines.slice(Number(from) - 1, Number(to)).forEach((line) => line.classList.add("is-hl"));
-      const captionHeight = pane.querySelector<HTMLElement>("figure:not([hidden]) > figcaption")?.offsetHeight ?? 0;
-      const paneBox = pane.getBoundingClientRect();
-      const top = first.getBoundingClientRect().top;
-      const bottom = last.getBoundingClientRect().bottom;
-      const viewTop = paneBox.top + captionHeight;
-      const shift =
-        bottom - top > paneBox.bottom - viewTop ? top - viewTop : (top + bottom) / 2 - (viewTop + paneBox.bottom) / 2;
-      pane.scrollTo({ top: pane.scrollTop + shift, behavior: "smooth" });
+      const lineHeight = parseFloat(getComputedStyle(first).minHeight);
+      const padding = parseFloat(getComputedStyle(scroller).paddingTop);
+      const scrollerTop = scroller.getBoundingClientRect().top;
+      const top = first.getBoundingClientRect().top - scrollerTop + scroller.scrollTop - padding;
+      const height = last.getBoundingClientRect().bottom - first.getBoundingClientRect().top;
+      const view = scroller.clientHeight - 2 * padding;
+      const wanted = height > view ? top : top - (view - height) / 2;
+      const maxTop = Math.round((scroller.scrollHeight - scroller.clientHeight) / lineHeight) * lineHeight;
+      const snapped = Math.min(Math.max(Math.round(wanted / lineHeight) * lineHeight, 0), maxTop);
+      scroller.scrollTo({ top: snapped, behavior: "smooth" });
     };
 
     const render = (index: number) => {
@@ -601,7 +604,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
 
   .hem .hem__caption {
     margin: 0;
-    font-weight: 700;
+    font-weight: 400;
     line-height: 1.5;
   }
 
@@ -777,8 +780,25 @@ const files = JSON.stringify(steps.map((step) => step.file));
   .hem__files {
     flex: none;
     height: calc(var(--hem-file-lines) * var(--hem-lineh) + var(--hem-chrome));
-    overflow: auto;
-    scroll-padding-top: var(--hem-chrome);
+    overflow: hidden;
+  }
+
+  .hem .hem__files .hem__block:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-sizing: border-box;
+  }
+
+  .hem .hem__files .hem__block > figcaption {
+    flex: 1 0 auto;
+  }
+
+  .hem .hem__files .hem__block :global(pre) {
+    flex: none;
+    box-sizing: border-box;
+    height: calc(var(--hem-file-lines) * var(--hem-lineh) + 2 * var(--hem-pre-pad));
+    overflow-y: auto;
     scrollbar-width: thin;
   }
 
@@ -838,12 +858,6 @@ const files = JSON.stringify(steps.map((step) => step.file));
 
   .hem__block[hidden] {
     display: none;
-  }
-
-  .hem__files figcaption {
-    position: sticky;
-    top: 0;
-    z-index: 1;
   }
 
   .hem .hem__block.code-block {
@@ -1022,7 +1036,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
   }
 
   .hem :global(button:focus-visible),
-  .hem__files:focus-visible {
+  .hem__files :global(pre:focus-visible) {
     outline: 3px solid var(--role-accent);
     outline-offset: 2px;
   }

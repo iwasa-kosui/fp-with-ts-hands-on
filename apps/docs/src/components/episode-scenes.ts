@@ -365,7 +365,7 @@ ${text(208, Number(y) + 14.5, 12, String(label))}
 
 export const episodeScenes = {
   "00-system-handover": {
-    label: "会計カウンターで、会計担当が犬の飼い主へ2枚目の請求書を差し出している。受付の画面には診察中と表示されている。飼い主は驚いた顔をしている",
+    label: "会計カウンターで、会計担当が犬の飼い主へ2枚目の請求書を差し出している。カウンターの画面には診察中と表示されている。飼い主は驚いた顔をしている",
     art: handover,
   },
   "00-system-handover-pii": {
