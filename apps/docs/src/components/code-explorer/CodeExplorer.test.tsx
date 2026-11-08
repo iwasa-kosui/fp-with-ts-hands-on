@@ -332,6 +332,35 @@ describe("CodeExplorer file synchronization", () => {
     expect(host.querySelector('[role="alert"]')?.textContent).toBe("sync failed");
   });
 
+  it("does not show a synchronization error from a session that is no longer current", async () => {
+    const startGate = deferred();
+    const firstWrite = deferred();
+    let started: TerminalSession | undefined;
+    const { host, session } = await createHarness({
+      start: false,
+      startSession: async () => {
+        await startGate.promise;
+        return started!;
+      },
+    });
+    started = session;
+    vi.mocked(session.writeFile)
+      .mockReturnValueOnce(firstWrite.promise)
+      .mockRejectedValueOnce(new Error("disposed"));
+
+    await clickAction(host, "start-terminal");
+    await editCurrentFile(host, "export const value = 2;");
+    await act(async () => startGate.resolve());
+    await settle();
+    await editCurrentFile(host, "export const value = 3;");
+    await clickAction(host, "cancel-terminal");
+    await act(async () => firstWrite.resolve());
+    await settle();
+
+    expect(session.dispose).toHaveBeenCalled();
+    expect(host.querySelector('[role="alert"]')).toBeNull();
+  });
+
   describe("saved edits", () => {
     const edited = "export const value = 2;";
 

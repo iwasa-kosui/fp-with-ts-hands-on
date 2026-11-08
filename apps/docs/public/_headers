@@ -5,3 +5,6 @@
 /_astro/*
   Cross-Origin-Embedder-Policy: require-corp
   Cross-Origin-Resource-Policy: same-origin
+
+/deps-snapshot/:hash/*
+  Cache-Control: public, max-age=31536000, immutable

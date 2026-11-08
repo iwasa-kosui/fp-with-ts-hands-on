@@ -1,9 +1,11 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type {
-  TerminalSession,
-  TerminalStartRequest,
+import {
+  TerminalInstallError,
+  TerminalPreparationTimeoutError,
+  type TerminalSession,
+  type TerminalStartRequest,
 } from "../../code-explorer/runner";
 import {
   TerminalPanel,
@@ -43,6 +45,7 @@ const defaultProps = (): TerminalPanelProps => ({
     start: async () => createSession(),
   }),
   supportsRuntime: () => true,
+  prefetchDeps: vi.fn(async () => undefined),
   loadTerminalView: async () => createView(),
   onTypeFiles: vi.fn(),
   onWorkspaceChange: vi.fn(),
@@ -203,5 +206,272 @@ describe("TerminalPanel", () => {
 
     expect(request?.signal.aborted).toBe(true);
     expect(view.dispose).toHaveBeenCalledOnce();
+  });
+
+  it("shows elapsed seconds and download progress while preparing", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+    const megabyte = 1024 * 1024;
+    let request: TerminalStartRequest | undefined;
+    const host = await renderPanel({
+      runnerFactory: () => ({
+        start: async (nextRequest) => {
+          request = nextRequest;
+          return new Promise<TerminalSession>(() => undefined);
+        },
+      }),
+    });
+    await clickAction(host, "start-terminal");
+    await act(async () => {
+      request?.onPhase("downloading-deps");
+      request?.onDownloadProgress?.({ loaded: 0, total: 20 * megabyte });
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+      request?.onDownloadProgress?.({ loaded: 4 * megabyte, total: 20 * megabyte });
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(host.querySelector('[role="status"]')?.textContent).toBe(
+      "依存パッケージを取得しています。",
+    );
+    const detail = host.querySelector('[aria-hidden="true"]');
+    expect(detail?.textContent).toContain("経過 2秒");
+    expect(detail?.textContent).toContain("4 / 20 MB");
+    expect(detail?.textContent).toContain("残り約8秒");
+    const progress = detail?.querySelector("progress");
+    expect(progress?.getAttribute("max")).toBe(String(20 * megabyte));
+    expect(progress?.getAttribute("value")).toBe(String(4 * megabyte));
+    vi.useRealTimers();
+  });
+
+  it("returns to the unstarted state when preparation is cancelled", async () => {
+    let request: TerminalStartRequest | undefined;
+    const onStateChange = vi.fn();
+    const host = await renderPanel({
+      onStateChange,
+      runnerFactory: () => ({
+        start: async (nextRequest) => {
+          request = nextRequest;
+          return new Promise<TerminalSession>((_resolve, reject) => {
+            nextRequest.signal.addEventListener(
+              "abort",
+              () => reject(nextRequest.signal.reason),
+              { once: true },
+            );
+          });
+        },
+      }),
+    });
+    await clickAction(host, "start-terminal");
+
+    await clickAction(host, "cancel-terminal");
+    await act(async () => undefined);
+
+    expect(request?.signal.aborted).toBe(true);
+    expect(onStateChange).toHaveBeenLastCalledWith("unstarted");
+    expect(host.querySelector('[data-action="start-terminal"]')).not.toBeNull();
+    expect(host.querySelector('[data-action="retry-terminal"]')).toBeNull();
+  });
+
+  it.each([
+    [
+      "booting",
+      "実行環境の起動が時間内に終わりませんでした。ネットワークの接続を確かめてから「ターミナルを再試行」を押してください。",
+    ],
+    [
+      "installing",
+      "依存パッケージのインストールが時間内に終わりませんでした。ネットワークの接続を確かめてから「ターミナルを再試行」を押してください。",
+    ],
+    [
+      "restoring-deps",
+      "準備が時間内に終わりませんでした。「ターミナルを再試行」を押してください。",
+    ],
+  ] as const)("explains a %s timeout in Japanese with a link to the setup page", async (phase, message) => {
+    const host = await renderPanel({
+      runnerFactory: () => ({
+        start: async () => {
+          throw new TerminalPreparationTimeoutError(phase);
+        },
+      }),
+    });
+
+    await clickAction(host, "start-terminal");
+
+    expect(host.querySelector('[role="alert"]')?.textContent).toBe(message);
+    expect(host.querySelector('a[href="/setup/"]')?.textContent).toBe(
+      "環境構築のページ",
+    );
+    expect(host.textContent).toContain(
+      "繰り返し失敗するときは、環境構築のページの手順で手元で進めてください。",
+    );
+  });
+
+  it("explains an install failure without showing the English error", async () => {
+    const host = await renderPanel({
+      runnerFactory: () => ({
+        start: async () => {
+          throw new TerminalInstallError(1);
+        },
+      }),
+    });
+
+    await clickAction(host, "start-terminal");
+
+    expect(host.querySelector('[role="alert"]')?.textContent).toBe(
+      "依存パッケージの取得に失敗しました。ネットワークの接続を確かめてから「ターミナルを再試行」を押してください。",
+    );
+    expect(host.textContent).not.toContain("Dependency installation failed");
+    expect(host.querySelector('a[href="/setup/"]')).not.toBeNull();
+  });
+
+  it("does not show an unclassified English error message", async () => {
+    const host = await renderPanel({
+      runnerFactory: () => ({
+        start: async () => {
+          throw new Error("boot failed");
+        },
+      }),
+    });
+
+    await clickAction(host, "start-terminal");
+
+    expect(host.textContent).not.toContain("boot failed");
+    expect(host.querySelector('[role="alert"]')?.textContent).toBe(
+      "ターミナルの起動中にエラーが発生しました。「ターミナルを再試行」を押してください。",
+    );
+    expect(host.querySelector('a[href="/setup/"]')).not.toBeNull();
+  });
+
+  it("estimates the remaining time from the bytes received after the first report", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+    const megabyte = 1024 * 1024;
+    let request: TerminalStartRequest | undefined;
+    const host = await renderPanel({
+      runnerFactory: () => ({
+        start: async (nextRequest) => {
+          request = nextRequest;
+          return new Promise<TerminalSession>(() => undefined);
+        },
+      }),
+    });
+    await clickAction(host, "start-terminal");
+    await act(async () => {
+      request?.onPhase("downloading-deps");
+      request?.onDownloadProgress?.({ loaded: 10 * megabyte, total: 20 * megabyte });
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+      request?.onDownloadProgress?.({ loaded: 12 * megabyte, total: 20 * megabyte });
+      vi.advanceTimersByTime(1000);
+    });
+
+    const detail = host.querySelector('[aria-hidden="true"]');
+    expect(detail?.textContent).toContain("12 / 20 MB");
+    expect(detail?.textContent).toContain("残り約8秒");
+    vi.useRealTimers();
+  });
+
+  it("uses a new view when the first attempt was cancelled while the view loaded", async () => {
+    const staleView = createView();
+    const freshView = createView();
+    const staleLoad = Promise.withResolvers<TerminalView>();
+    const loadTerminalView = vi
+      .fn<() => Promise<TerminalView>>()
+      .mockReturnValueOnce(staleLoad.promise)
+      .mockResolvedValueOnce(freshView);
+    const host = await renderPanel({ loadTerminalView });
+    await clickAction(host, "start-terminal");
+    await clickAction(host, "cancel-terminal");
+
+    await act(async () => staleLoad.resolve(staleView));
+    await clickAction(host, "start-terminal");
+    await act(async () => undefined);
+
+    expect(staleView.dispose).toHaveBeenCalledOnce();
+    expect(staleView.open).not.toHaveBeenCalled();
+    expect(loadTerminalView).toHaveBeenCalledTimes(2);
+    expect(freshView.open).toHaveBeenCalledOnce();
+    expect(freshView.dispose).not.toHaveBeenCalled();
+  });
+
+  it("keeps the view for a restart that began while the first attempt was still loading it", async () => {
+    const view = createView();
+    const load = Promise.withResolvers<TerminalView>();
+    const loadTerminalView = vi.fn(() => load.promise);
+    const host = await renderPanel({ loadTerminalView });
+    await clickAction(host, "start-terminal");
+    await clickAction(host, "cancel-terminal");
+    await clickAction(host, "start-terminal");
+
+    await act(async () => load.resolve(view));
+    await act(async () => undefined);
+
+    expect(loadTerminalView).toHaveBeenCalledOnce();
+    expect(view.dispose).not.toHaveBeenCalled();
+    expect(view.open).toHaveBeenCalledOnce();
+  });
+
+  it("skips the dependency snapshot after restoring timed out", async () => {
+    const requests: TerminalStartRequest[] = [];
+    const host = await renderPanel({
+      runnerFactory: () => ({
+        start: async (request) => {
+          requests.push(request);
+          throw new TerminalPreparationTimeoutError("restoring-deps");
+        },
+      }),
+    });
+
+    await clickAction(host, "start-terminal");
+    await clickAction(host, "retry-terminal");
+
+    expect(requests.map(({ skipDepsSnapshot }) => skipDepsSnapshot)).toEqual([
+      false,
+      true,
+    ]);
+  });
+
+  it("keeps using the dependency snapshot after other failures", async () => {
+    const requests: TerminalStartRequest[] = [];
+    const host = await renderPanel({
+      runnerFactory: () => ({
+        start: async (request) => {
+          requests.push(request);
+          throw new TerminalPreparationTimeoutError("installing");
+        },
+      }),
+    });
+
+    await clickAction(host, "start-terminal");
+    await clickAction(host, "retry-terminal");
+
+    expect(requests.map(({ skipDepsSnapshot }) => skipDepsSnapshot)).toEqual([
+      false,
+      false,
+    ]);
+  });
+
+  it("prefetches dependencies after mounting unless data saving is on", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("requestIdleCallback", undefined);
+    const prefetchDeps = vi.fn(async () => undefined);
+    await renderPanel({ prefetchDeps });
+    expect(prefetchDeps).not.toHaveBeenCalled();
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(prefetchDeps).toHaveBeenCalledOnce();
+
+    vi.stubGlobal("navigator", { connection: { saveData: true } });
+    const saved = vi.fn(async () => undefined);
+    await renderPanel({ prefetchDeps: saved });
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(saved).not.toHaveBeenCalled();
+    vi.useRealTimers();
   });
 });

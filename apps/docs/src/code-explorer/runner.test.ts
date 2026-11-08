@@ -1,11 +1,15 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createTerminalRunner,
   createWebContainerTerminalRunner,
+  TerminalInstallError,
+  TerminalPreparationTimeoutError,
+  type TerminalPhase,
   type TerminalRuntime,
   type TerminalRuntimeProcess,
   type TerminalStartRequest,
 } from "./runner";
+import { chmodBinScript } from "./deps-snapshot-shared.mjs";
 
 const webContainerMock = vi.hoisted(() => ({
   boot: vi.fn<() => Promise<unknown>>(),
@@ -52,6 +56,7 @@ type InMemoryRuntime = TerminalRuntime &
   Readonly<{
     processes: ControlledProcess[];
     stopWatching: ReturnType<typeof vi.fn>;
+    installCalls: ReturnType<typeof vi.fn>;
   }>;
 
 const createInMemoryRuntime = (
@@ -62,12 +67,16 @@ const createInMemoryRuntime = (
 ): InMemoryRuntime => {
   const processes: ControlledProcess[] = [];
   const stopWatching = vi.fn();
+  const installCalls = vi.fn();
 
   return {
     processes,
     stopWatching,
+    installCalls,
     mount: vi.fn(async () => undefined),
+    restoreDependencies: vi.fn(async () => undefined),
     install: async (signal) => {
+      installCalls();
       if (options.install !== undefined) return options.install(signal);
       return options.installExitCode ?? 0;
     },
@@ -164,6 +173,130 @@ describe("terminal runner", () => {
 
     expect(runtime.dispose).toHaveBeenCalledOnce();
   });
+
+  it("reports a failed install as a TerminalInstallError", async () => {
+    const runtime = createInMemoryRuntime({ installExitCode: 1 });
+
+    await expect(
+      createTerminalRunner(async () => runtime).start(requestFor()),
+    ).rejects.toBeInstanceOf(TerminalInstallError);
+  });
+});
+
+describe("terminal runner dependency snapshot", () => {
+  const snapshot = new Uint8Array([1, 2, 3]);
+
+  const startWith = async (
+    runtime: TerminalRuntime,
+    loadDepsSnapshot: () => Promise<Uint8Array | null>,
+  ) => {
+    const phases: TerminalPhase[] = [];
+    const session = await createTerminalRunner(async () => runtime, {
+      loadDepsSnapshot,
+    }).start(requestFor({ onPhase: (phase) => phases.push(phase) }));
+    return { phases, session };
+  };
+
+  it("restores the snapshot without running an install", async () => {
+    const runtime = createInMemoryRuntime();
+
+    const { phases, session } = await startWith(runtime, async () => snapshot);
+
+    expect(runtime.restoreDependencies).toHaveBeenCalledWith(snapshot);
+    expect(runtime.installCalls).not.toHaveBeenCalled();
+    expect(phases).toContain("restoring-deps");
+    expect(phases).not.toContain("installing");
+    await session.dispose();
+  });
+
+  it("runs an install when no snapshot is available", async () => {
+    const runtime = createInMemoryRuntime();
+
+    const { phases, session } = await startWith(runtime, async () => null);
+
+    expect(runtime.restoreDependencies).not.toHaveBeenCalled();
+    expect(runtime.installCalls).toHaveBeenCalledOnce();
+    expect(phases).toContain("installing");
+    await session.dispose();
+  });
+
+  it("does not load the snapshot when the request skips it", async () => {
+    const runtime = createInMemoryRuntime();
+    const loadDepsSnapshot = vi.fn(async () => snapshot);
+
+    const session = await createTerminalRunner(async () => runtime, {
+      loadDepsSnapshot,
+    }).start(requestFor({ skipDepsSnapshot: true }));
+
+    expect(loadDepsSnapshot).not.toHaveBeenCalled();
+    expect(runtime.restoreDependencies).not.toHaveBeenCalled();
+    expect(runtime.installCalls).toHaveBeenCalledOnce();
+    await session.dispose();
+  });
+
+  it("falls back to an install when restoring fails", async () => {
+    const runtime = createInMemoryRuntime();
+    vi.mocked(runtime.restoreDependencies).mockRejectedValueOnce(
+      new Error("chmod failed"),
+    );
+
+    const { phases, session } = await startWith(runtime, async () => snapshot);
+
+    expect(phases).toEqual(
+      expect.arrayContaining(["restoring-deps", "installing"]),
+    );
+    expect(runtime.installCalls).toHaveBeenCalledOnce();
+    await session.dispose();
+  });
+
+  it("reports download progress and waits for the download after mounting", async () => {
+    const runtime = createInMemoryRuntime();
+    const progress = vi.fn();
+    const phases: TerminalPhase[] = [];
+    const session = await createTerminalRunner(async () => runtime, {
+      loadDepsSnapshot: async ({ onProgress }) => {
+        onProgress?.({ loaded: 1, total: 2 });
+        return null;
+      },
+    }).start(
+      requestFor({
+        onPhase: (phase) => phases.push(phase),
+        onDownloadProgress: progress,
+      }),
+    );
+
+    expect(progress).toHaveBeenCalledWith({ loaded: 1, total: 2 });
+    expect(phases.slice(0, 2)).toEqual(["booting", "mounting"]);
+    await session.dispose();
+  });
+});
+
+describe("terminal runner time limits", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("throws a timeout error naming the phase and disposes the runtime", async () => {
+    vi.useFakeTimers();
+    const runtime = createInMemoryRuntime({
+      install: () => new Promise<number>(() => undefined),
+    });
+    const starting = createTerminalRunner(async () => runtime, {
+      loadDepsSnapshot: async () => null,
+    }).start(requestFor());
+    const assertion = expect(starting).rejects.toMatchObject({
+      name: "TerminalPreparationTimeoutError",
+      phase: "installing",
+    });
+
+    await vi.advanceTimersByTimeAsync(240_000);
+    await assertion;
+
+    await expect(starting).rejects.toBeInstanceOf(
+      TerminalPreparationTimeoutError,
+    );
+    expect(runtime.dispose).toHaveBeenCalledOnce();
+  });
 });
 
 describe("WebContainer terminal adapter", () => {
@@ -192,5 +325,192 @@ describe("WebContainer terminal adapter", () => {
     ).rejects.toThrow("Unsupported external project path: ../private.txt");
 
     expect(teardown).toHaveBeenCalledOnce();
+  });
+
+  const bootWithSpawn = (nodeExitCode: number) => {
+    const spawn = vi.fn(async (_command: string) => ({
+      input: new WritableStream<string>(),
+      output: new ReadableStream<string>({
+        start: (controller) => controller.close(),
+      }),
+      exit: Promise.resolve(_command === "node" ? nodeExitCode : 0),
+      kill: vi.fn(),
+      resize: vi.fn(),
+    }));
+    const mount = vi.fn(async () => undefined);
+    const teardown = vi.fn();
+    const rm = vi.fn(async () => undefined);
+    webContainerMock.boot.mockReset();
+    webContainerMock.boot.mockResolvedValue({
+      mount,
+      spawn,
+      teardown,
+      fs: {
+        mkdir: vi.fn(async () => undefined),
+        writeFile: vi.fn(),
+        rm,
+        readdir: async () => [],
+        readFile: async () => "",
+        watch: vi.fn(() => ({ close: vi.fn() })),
+      },
+    });
+    return { spawn, mount, rm };
+  };
+
+  it("mounts the snapshot and restores executable bits instead of installing", async () => {
+    const { spawn, mount } = bootWithSpawn(0);
+    const snapshot = new Uint8Array([1, 2, 3]);
+
+    const session = await createWebContainerTerminalRunner({
+      loadDepsSnapshot: async () => snapshot,
+    }).start(requestFor());
+
+    expect(mount).toHaveBeenCalledWith(snapshot, {
+      mountPoint: "workspace/node_modules",
+    });
+    expect(spawn).toHaveBeenCalledWith(
+      "node",
+      ["-e", expect.stringContaining("chmodSync")],
+      { cwd: "workspace" },
+    );
+    expect(spawn.mock.calls.map(([command]) => command)).not.toContain("npm");
+    await session.dispose();
+  });
+
+  it("installs when restoring executable bits fails", async () => {
+    const { spawn } = bootWithSpawn(1);
+
+    const session = await createWebContainerTerminalRunner({
+      loadDepsSnapshot: async () => new Uint8Array([1]),
+    }).start(requestFor());
+
+    expect(spawn.mock.calls.map(([command]) => command)).toContain("npm");
+    await session.dispose();
+  });
+
+  it("removes the partly restored node_modules before installing", async () => {
+    const { spawn, rm } = bootWithSpawn(1);
+
+    const session = await createWebContainerTerminalRunner({
+      loadDepsSnapshot: async () => new Uint8Array([1]),
+    }).start(requestFor());
+
+    expect(rm).toHaveBeenCalledWith("workspace/node_modules", {
+      recursive: true,
+      force: true,
+    });
+    expect(rm.mock.invocationCallOrder[0]).toBeLessThan(
+      spawn.mock.invocationCallOrder[
+        spawn.mock.calls.findIndex(([command]) => command === "npm")
+      ]!,
+    );
+    await session.dispose();
+  });
+
+  it("ignores a broken symlink while restoring executable bits", () => {
+    const run = new Function(
+      "require",
+      chmodBinScript,
+    ) as (require: (name: string) => unknown) => void;
+    const chmodSync = vi.fn((path: string) => {
+      if (path.endsWith("broken")) throw new Error("ENOENT");
+    });
+
+    expect(() =>
+      run(() => ({
+        existsSync: () => true,
+        readdirSync: () => ["broken", "tsc"],
+        chmodSync,
+      })),
+    ).not.toThrow();
+    expect(chmodSync).toHaveBeenCalledWith("node_modules/.bin/tsc", 0o755);
+  });
+
+  describe("runtime slot", () => {
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    const fakeContainer = (teardown: () => Promise<void> | void) => ({
+      mount: vi.fn(async () => undefined),
+      spawn: vi.fn(async () => ({
+        input: new WritableStream<string>(),
+        output: new ReadableStream<string>({
+          start: (controller) => controller.close(),
+        }),
+        exit: Promise.resolve(0),
+        kill: vi.fn(),
+        resize: vi.fn(),
+      })),
+      teardown,
+      fs: {
+        mkdir: vi.fn(async () => undefined),
+        writeFile: vi.fn(),
+        readdir: async () => [],
+        readFile: async () => "",
+        watch: vi.fn(() => ({ close: vi.fn() })),
+      },
+    });
+
+    const runner = () =>
+      createWebContainerTerminalRunner({ loadDepsSnapshot: async () => null });
+
+    it("does not boot the next runtime until the previous teardown finishes", async () => {
+      const gate = Promise.withResolvers<void>();
+      webContainerMock.boot.mockReset();
+      webContainerMock.boot
+        .mockResolvedValueOnce(fakeContainer(() => gate.promise))
+        .mockResolvedValueOnce(fakeContainer(() => undefined));
+      const first = await runner().start(requestFor());
+
+      const disposing = first.dispose();
+      const second = runner().start(requestFor());
+      await flush();
+      expect(webContainerMock.boot).toHaveBeenCalledTimes(1);
+
+      gate.resolve();
+      await disposing;
+      const secondSession = await second;
+      expect(webContainerMock.boot).toHaveBeenCalledTimes(2);
+      await secondSession.dispose();
+    });
+
+    it("boots the next runtime after the previous boot fails", async () => {
+      webContainerMock.boot.mockReset();
+      webContainerMock.boot
+        .mockRejectedValueOnce(new Error("boot failed"))
+        .mockResolvedValueOnce(fakeContainer(() => undefined));
+
+      const first = runner().start(requestFor());
+      const second = runner().start(requestFor());
+
+      await expect(first).rejects.toThrow("boot failed");
+      const secondSession = await second;
+      expect(webContainerMock.boot).toHaveBeenCalledTimes(2);
+      await secondSession.dispose();
+    });
+
+    it("leaves no slot behind when a waiting start is aborted", async () => {
+      webContainerMock.boot.mockReset();
+      webContainerMock.boot
+        .mockResolvedValueOnce(fakeContainer(() => undefined))
+        .mockResolvedValueOnce(fakeContainer(() => undefined));
+      const first = await runner().start(requestFor());
+      const controller = new AbortController();
+      const aborted = runner().start(requestFor({ signal: controller.signal }));
+      const assertion = expect(aborted).rejects.toMatchObject({
+        name: "AbortError",
+      });
+      await flush();
+
+      controller.abort();
+      await assertion;
+      const third = runner().start(requestFor());
+      await flush();
+      expect(webContainerMock.boot).toHaveBeenCalledTimes(1);
+
+      await first.dispose();
+      const thirdSession = await third;
+      expect(webContainerMock.boot).toHaveBeenCalledTimes(2);
+      await thirdSession.dispose();
+    });
   });
 });

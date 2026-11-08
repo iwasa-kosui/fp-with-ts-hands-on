@@ -117,6 +117,7 @@ export const CodeExplorer = ({
       .then(() => session.writeFile(path, contents));
     pendingFileWrites.current = nextWrite;
     void nextWrite.catch((error: unknown) => {
+      if (terminalSession.current !== session) return;
       setSyncError(messageFrom(error));
     });
   }, []);

@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  prefetchDepsSnapshot,
+  type DepsSnapshotProgress,
+} from "../../code-explorer/deps-snapshot";
+import {
   createWebContainerTerminalRunner,
+  TerminalInstallError,
+  TerminalPreparationTimeoutError,
   type TerminalPhase,
   type TerminalRunner,
   type TerminalSession,
@@ -34,6 +40,7 @@ export type TerminalPanelProps = Readonly<{
   initialCommand?: string;
   runnerFactory?: () => TerminalRunner;
   supportsRuntime?: () => boolean;
+  prefetchDeps?: () => Promise<void>;
   loadTerminalView?: () => Promise<TerminalView>;
   onTypeFiles: (files: ProjectFiles) => void;
   onWorkspaceChange: (change: WorkspaceChange) => void;
@@ -51,25 +58,118 @@ export type TerminalPanelProps = Readonly<{
 
 type PanelState =
   | Readonly<{ kind: "unstarted" }>
-  | Readonly<{ kind: "preparing"; phase: TerminalPhase }>
+  | Readonly<{ kind: "preparing"; phase: TerminalPhase; startedAt: number }>
   | Readonly<{ kind: "ready" }>
   | Readonly<{ kind: "exited"; exitCode: number; restarting: boolean }>
-  | Readonly<{ kind: "failed"; message: string }>;
+  | Readonly<{ kind: "failed"; message: string; suggestsSetup: boolean }>;
+
+type DownloadProgress = DepsSnapshotProgress &
+  Readonly<{ firstAt: number; firstLoaded: number }>;
 
 const initialTerminalSize: TerminalSize = { cols: 80, rows: 24 };
 
 const phaseLabels: Readonly<Record<TerminalPhase, string>> = {
   booting: "実行環境を起動しています。",
   mounting: "教材ファイルを準備しています。",
-  installing: "依存パッケージを準備しています。",
+  "downloading-deps": "依存パッケージを取得しています。",
+  "restoring-deps": "依存パッケージを展開しています。",
+  installing: "依存パッケージをインストールしています。1〜2分かかることがあります。",
   "collecting-types": "エディタの型情報を準備しています。",
   "starting-shell": "シェルを起動しています。",
 };
 
-const messageFrom = (error: unknown): string =>
-  error instanceof Error
-    ? error.message
-    : "ターミナルの起動中にエラーが発生しました。";
+const retryGuidance = "「ターミナルを再試行」を押してください。";
+const networkRetryGuidance = `ネットワークの接続を確かめてから${retryGuidance}`;
+
+const timeoutMessageFor = (phase: TerminalPhase): string => {
+  if (phase === "booting") {
+    return `実行環境の起動が時間内に終わりませんでした。${networkRetryGuidance}`;
+  }
+  if (phase === "installing") {
+    return `依存パッケージのインストールが時間内に終わりませんでした。${networkRetryGuidance}`;
+  }
+  return `準備が時間内に終わりませんでした。${retryGuidance}`;
+};
+
+const failureFrom = (
+  error: unknown,
+): Readonly<{ message: string; suggestsSetup: boolean }> => {
+  if (error instanceof TerminalPreparationTimeoutError) {
+    return { message: timeoutMessageFor(error.phase), suggestsSetup: true };
+  }
+  if (error instanceof TerminalInstallError) {
+    return {
+      message: `依存パッケージの取得に失敗しました。${networkRetryGuidance}`,
+      suggestsSetup: true,
+    };
+  }
+  return {
+    message: `ターミナルの起動中にエラーが発生しました。${retryGuidance}`,
+    suggestsSetup: true,
+  };
+};
+
+const bytesPerMegabyte = 1024 * 1024;
+
+const remainingLabel = (
+  progress: DownloadProgress,
+  now: number,
+): string | undefined => {
+  const elapsedMilliseconds = now - progress.firstAt;
+  if (
+    elapsedMilliseconds < 1000 ||
+    progress.loaded <= progress.firstLoaded ||
+    progress.loaded >= progress.total
+  ) {
+    return undefined;
+  }
+  const bytesPerSecond =
+    (progress.loaded - progress.firstLoaded) / (elapsedMilliseconds / 1000);
+  const remaining = (progress.total - progress.loaded) / bytesPerSecond;
+  const seconds =
+    remaining > 10
+      ? Math.round(remaining / 10) * 10
+      : Math.max(1, Math.ceil(remaining));
+  return `残り約${seconds}秒`;
+};
+
+const PreparationDetail = ({
+  phase,
+  startedAt,
+  readProgress,
+}: Readonly<{
+  phase: TerminalPhase;
+  startedAt: number;
+  readProgress: () => DownloadProgress | undefined;
+}>) => {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(timer);
+  }, []);
+  const progress = phase === "downloading-deps" ? readProgress() : undefined;
+  const remaining =
+    progress === undefined ? undefined : remainingLabel(progress, now);
+
+  return (
+    <div className="code-explorer__terminal-progress" aria-hidden="true">
+      <p>経過 {Math.max(0, Math.floor((now - startedAt) / 1000))}秒</p>
+      {progress === undefined ? null : (
+        <p>
+          <progress value={progress.loaded} max={progress.total} />
+          <span>
+            {Math.round(progress.loaded / bytesPerMegabyte)} /{" "}
+            {Math.round(progress.total / bytesPerMegabyte)} MB
+            {remaining === undefined ? "" : `、${remaining}`}
+          </span>
+        </p>
+      )}
+    </div>
+  );
+};
+
+type NetworkInformationNavigator = Navigator &
+  Readonly<{ connection?: Readonly<{ saveData?: boolean }> }>;
 
 const defaultSupportsRuntime = (): boolean =>
   globalThis.crossOriginIsolated === true && typeof WebAssembly !== "undefined";
@@ -130,6 +230,7 @@ export const TerminalPanel = ({
   initialCommand,
   runnerFactory = defaultRunnerFactory,
   supportsRuntime = defaultSupportsRuntime,
+  prefetchDeps = prefetchDepsSnapshot,
   loadTerminalView = createXtermView,
   onTypeFiles,
   onWorkspaceChange,
@@ -162,6 +263,9 @@ export const TerminalPanel = ({
   const starting = useRef(false);
   const startupAbort = useRef<AbortController>();
   const attemptGeneration = useRef(0);
+  const preparationStartedAt = useRef(0);
+  const downloadProgress = useRef<DownloadProgress>();
+  const skipDepsSnapshot = useRef(false);
   const onTypeFilesRef = useRef(onTypeFiles);
   const onWorkspaceChangeRef = useRef(onWorkspaceChange);
   const onSessionChangeRef = useRef(onSessionChange);
@@ -240,6 +344,22 @@ export const TerminalPanel = ({
 
   useEffect(() => {
     if (
+      !supportsRuntime() ||
+      (navigator as NetworkInformationNavigator).connection?.saveData === true
+    ) {
+      return;
+    }
+    const prefetch = () => void prefetchDeps().catch(() => undefined);
+    if (typeof requestIdleCallback === "function") {
+      const handle = requestIdleCallback(prefetch);
+      return () => cancelIdleCallback(handle);
+    }
+    const timer = setTimeout(prefetch, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (
       !hasRestoredOutput ||
       restoreStarted.current ||
       viewOpened.current ||
@@ -308,6 +428,7 @@ export const TerminalPanel = ({
         kind: "failed",
         message:
           "ChromeまたはEdgeで開き、サイトの分離ヘッダーを確認してください。",
+        suggestsSetup: false,
       });
       return;
     }
@@ -322,7 +443,13 @@ export const TerminalPanel = ({
       !controller.signal.aborted;
     pendingOutput.current = [];
     pendingExitCode.current = undefined;
-    transition({ kind: "preparing", phase: "booting" });
+    downloadProgress.current = undefined;
+    preparationStartedAt.current = Date.now();
+    transition({
+      kind: "preparing",
+      phase: "booting",
+      startedAt: preparationStartedAt.current,
+    });
 
     const emitOutput = (chunk: string) => {
       if (viewOpened.current) {
@@ -339,7 +466,10 @@ export const TerminalPanel = ({
     try {
       view = await getView();
       if (!isActiveAttempt()) {
-        disposeView(view);
+        if (!restoredViewOpened.current && !(mounted.current && starting.current)) {
+          viewPromise.current = undefined;
+          disposeView(view);
+        }
         return;
       }
       terminalView.current = view;
@@ -356,8 +486,23 @@ export const TerminalPanel = ({
         visibleFiles,
         size: initialTerminalSize,
         signal: controller.signal,
+        skipDepsSnapshot: skipDepsSnapshot.current,
         onPhase: (phase) => {
-          if (isActiveAttempt()) transition({ kind: "preparing", phase });
+          if (isActiveAttempt()) {
+            transition({
+              kind: "preparing",
+              phase,
+              startedAt: preparationStartedAt.current,
+            });
+          }
+        },
+        onDownloadProgress: (progress) => {
+          if (!isActiveAttempt()) return;
+          downloadProgress.current = {
+            ...progress,
+            firstAt: downloadProgress.current?.firstAt ?? Date.now(),
+            firstLoaded: downloadProgress.current?.firstLoaded ?? progress.loaded,
+          };
         },
         onOutput: (chunk) => {
           if (isActiveAttempt()) emitOutput(chunk);
@@ -410,6 +555,12 @@ export const TerminalPanel = ({
           : { kind: "exited", exitCode, restarting: false },
       );
     } catch (error: unknown) {
+      if (
+        error instanceof TerminalPreparationTimeoutError &&
+        error.phase === "restoring-deps"
+      ) {
+        skipDepsSnapshot.current = true;
+      }
       if (session !== undefined) {
         await session.dispose();
         if (announced) onSessionChangeRef.current(undefined);
@@ -424,7 +575,7 @@ export const TerminalPanel = ({
         disposeView(view);
       }
       if (isActiveAttempt()) {
-        transition({ kind: "failed", message: messageFrom(error) });
+        transition({ kind: "failed", ...failureFrom(error) });
       }
     } finally {
       if (attemptGeneration.current === attempt) {
@@ -466,9 +617,17 @@ export const TerminalPanel = ({
       viewOpened.current = false;
       inputSubscribed.current = false;
       restoredViewOpened.current = false;
-      transition({ kind: "failed", message: messageFrom(error) });
+      transition({ kind: "failed", ...failureFrom(error) });
     }
   }, [state, transition]);
+
+  const cancelPreparation = useCallback(() => {
+    attemptGeneration.current += 1;
+    startupAbort.current?.abort();
+    startupAbort.current = undefined;
+    starting.current = false;
+    transition({ kind: "unstarted" });
+  }, [transition]);
 
   const showsTerminal =
     state.kind === "ready" || state.kind === "exited" || hasRestoredOutput;
@@ -495,13 +654,33 @@ export const TerminalPanel = ({
         </div>
       ) : null}
       {state.kind === "preparing" ? (
-        <p className="code-explorer__terminal-status" role="status" aria-live="polite">
-          {phaseLabels[state.phase]}
-        </p>
+        <div className="code-explorer__terminal-status">
+          <p role="status" aria-live="polite">
+            {phaseLabels[state.phase]}
+          </p>
+          <PreparationDetail
+            phase={state.phase}
+            startedAt={state.startedAt}
+            readProgress={() => downloadProgress.current}
+          />
+          <button
+            type="button"
+            data-action="cancel-terminal"
+            onClick={cancelPreparation}
+          >
+            準備をやめる
+          </button>
+        </div>
       ) : null}
       {state.kind === "failed" ? (
         <div className="code-explorer__terminal-status">
           <p role="alert">{state.message}</p>
+          {state.suggestsSetup ? (
+            <p>
+              繰り返し失敗するときは、<a href="/setup/">環境構築のページ</a>
+              の手順で手元で進めてください。
+            </p>
+          ) : null}
           <button
             type="button"
             data-action="retry-terminal"

@@ -1,6 +1,7 @@
 import path from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
+import session06PackageJsonSource from "../../../../examples/session-06/package.json?raw";
 import type {
   ExampleSnapshot,
   ExerciseSessionSummary,
@@ -10,6 +11,11 @@ import {
   browserPackageJsonFor,
   projectFilesForSnapshot,
 } from "./project-files";
+import { isCovered } from "./deps-snapshot";
+import {
+  snapshotDependenciesOf,
+  snapshotPackageJsonFor,
+} from "./deps-snapshot-shared.mjs";
 import type { ProjectFiles, SessionWorkspace } from "./types";
 
 type ExercisePageModule = Readonly<{
@@ -177,6 +183,35 @@ describe("Code Explorer project files", () => {
       optionalDependencies: { optional: "^3.0.0" },
       peerDependencies: { peer: "^4.0.0" },
     });
+  });
+
+  it("covers every terminal workspace with the dependency snapshot built from session-06", () => {
+    const dependencies = snapshotDependenciesOf(
+      snapshotPackageJsonFor(JSON.parse(session06PackageJsonSource), {
+        "exercise:06": "pnpm exercise",
+      }),
+    );
+    const manifest = {
+      hash: "0",
+      rawSize: 0,
+      gzipSize: 0,
+      parts: [],
+      dependencies,
+    };
+
+    expect(exercisePages.length).toBeGreaterThan(0);
+    for (const { workspace } of exercisePages) {
+      const packageJson = projectFilesForSnapshot(workspace.snapshot)[
+        "package.json"
+      ]!;
+      const missing = Object.entries({
+        ...JSON.parse(packageJson).dependencies,
+        ...JSON.parse(packageJson).devDependencies,
+      }).filter(([name, range]) => dependencies[name] !== range);
+
+      expect(missing, workspace.slug).toEqual([]);
+      expect(isCovered(manifest, packageJson), workspace.slug).toBe(true);
+    }
   });
 
   it("provides every file exposed by an exercise page workspace", () => {
