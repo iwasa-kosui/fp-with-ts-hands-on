@@ -1,10 +1,10 @@
 import type { SessionPage } from "./types";
 
 export type SplitSession = Readonly<{
-  previous: string;
-  previousTitle: string;
-  next: string;
-  nextTitle: string;
+  previous?: string;
+  previousTitle?: string;
+  next?: string;
+  nextTitle?: string;
   pages: readonly string[];
   expectedPages: readonly (readonly [string, string, string, string, number])[];
   lastInTime: string;

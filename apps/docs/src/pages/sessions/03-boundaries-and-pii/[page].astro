@@ -1,10 +1,11 @@
 ---
+import type { GetStaticPaths } from "astro";
 import type { AstroComponentFactory } from "astro/runtime/server/index.js";
 import SessionProsePage from "../../../components/session-frame/SessionProsePage.astro";
 import { sessionPages, sessionSlug } from "../../../sessions/pages/03-boundaries-and-pii";
 import { sessionPageStaticPaths } from "../../../sessions/pages/links";
 
-export const getStaticPaths = () => sessionPageStaticPaths(sessionPages);
+export const getStaticPaths = (() => sessionPageStaticPaths(sessionPages)) satisfies GetStaticPaths;
 
 const prose = import.meta.glob<{ Content: AstroComponentFactory }>(
   "../../../sessions/prose/03-boundaries-and-pii/*.mdx",

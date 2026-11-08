@@ -34,13 +34,11 @@ const proseSources = import.meta.glob<string>("./sessions/prose/*.mdx", {
   query: "?raw",
   import: "default",
 });
-const boundaryEpisodeSource = Object.values(
-  import.meta.glob<string>("./sessions/prose/03-boundaries-and-pii/night-shift.mdx", {
-    eager: true,
-    query: "?raw",
-    import: "default",
-  }),
-)[0] ?? "";
+const splitProseSources = import.meta.glob<string>("./sessions/prose/*/*.mdx", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+});
 const pageSources = Object.fromEntries(
   Object.entries(astroSources).map(([path, source]) => {
     const slug = path.replace(/^.*\//, "").replace(/\.astro$/, "");
@@ -388,7 +386,7 @@ describe("page-owned session contracts", () => {
   it("keeps each three-line episode in its page metadata and hero", () => {
     expect(
       sessions.map((session) =>
-        session.slug === "03-boundaries-and-pii"
+        splitSessions.some(({ slug }) => slug === session.slug)
           ? undefined
           : "episode" in session
             ? session.episode
@@ -405,8 +403,19 @@ describe("page-owned session contracts", () => {
     expect(boundaryEpisode?.join("\n")).toContain("StartExaminationInput");
 
     for (const { path, session } of pages) {
-      const isBoundary = session.slug === "03-boundaries-and-pii";
-      const source = isBoundary ? boundaryEpisodeSource : (pageSources[path] ?? "");
+      const split = splitSessions.find(({ slug }) => slug === session.slug);
+      const isBoundary = split !== undefined;
+      const source =
+        split === undefined
+          ? (pageSources[path] ?? "")
+          : split.sessionPages
+              .map(
+                ({ slug }) =>
+                  splitProseSources[
+                    `./sessions/prose/${split.slug}/${slug === "" ? "index" : slug}.mdx`
+                  ] ?? "",
+              )
+              .join("\n");
       expect(source, path).toContain('class="case-file__episode"');
       expect(source, path).toContain('class="case-file__episode-label"');
       if (isBoundary) continue;
@@ -649,7 +658,9 @@ describe.each(splitSessions)("Session page list: $slug", ({
       exercise: sum("exercise"),
       review: sum("review"),
     });
-    expect(session?.peerReview?.minutes).toBe(sum("review"));
+    if (session?.kind === "exercise") {
+      expect(session.peerReview.minutes).toBe(sum("review"));
+    }
     expect(session?.durationMinutes).toBe(
       sessionPages.reduce((total, { minutes }) => total + minutes, 0),
     );
@@ -661,11 +672,15 @@ describe.each(splitSessions)("Session page list: $slug", ({
       const slug = expectedPages[index]![0];
       const expectedPrevious =
         index === 0
-          ? { href: previous, title: previousTitle }
+          ? previous === undefined
+            ? undefined
+            : { href: previous, title: previousTitle }
           : { href: hrefOf(expectedPages[index - 1]![0]), title: expectedPages[index - 1]![1] };
       const expectedNext =
         slug === lastInTime || index === expectedPages.length - 1
-          ? { href: next, title: nextTitle }
+          ? next === undefined
+            ? undefined
+            : { href: next, title: nextTitle }
           : { href: hrefOf(expectedPages[index + 1]![0]), title: expectedPages[index + 1]![1] };
 
       expect(actualPrevious, slug).toEqual(expectedPrevious);
