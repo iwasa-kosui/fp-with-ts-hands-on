@@ -71,18 +71,11 @@ import InlineCode from "../../components/InlineCode.astro";
   </article>
   <article class="teaching-topic">
     <h3>ADTは直積型と直和型で型を組み立てる</h3>
-    <p>ADT（Algebraic Data Type、代数的データ型）は、直積型と直和型の2つの組み立て方で型を作る考え方です。直積型は、複数の項目をすべて持つ型で、TypeScriptではオブジェクト型で書きます。直和型は、複数の候補のどれか1つを表す型で、TypeScriptではDiscriminated Unionで書きます。直積型の値の組み合わせは各項目の個数の掛け算になり、直和型の値の個数は各候補の個数の足し算になります。</p>
-    <div class="teaching-topic__diff">
-      <figure class="code-block">
-        <figcaption>{"\n"}before:{"\n"}<span>直積型のフラグだけで状態を表す</span></figcaption>
-        <Code code={props.teaching[1].before} lang="ts" />
-      </figure>
-      <figure class="code-block">
-        <figcaption>{"\n"}after:{"\n"}<span>直和型で状態を列挙する</span></figcaption>
-        <Code code={props.teaching[1].after} lang="ts" />
-      </figure>
-    </div>
-    <p class="teaching-topic__why">フラグを足すたびに、直積型の組み合わせは2倍になり、起きてはいけない組み合わせも型検査を通ります。直和型では、状態を1個足すと候補が1個増えるだけです。候補を列挙できるので、コンパイラは分岐がすべての候補を処理したかを確かめられます。</p>
+    <p>ADT（Algebraic Data Type、代数的データ型）は、型を2つの組み立て方で作る考え方です。1つは「AかつB」を表す直積型で、複数の項目をすべて持ちます。もう1つは「AまたはB」を表す直和型で、複数の候補のどれか1つを持ちます。型が取りうる値の個数を、直積型は掛け算、直和型は足し算で数えられるので、代数的と呼びます。</p>
+    <p>予約のように状態を持つデータでは、業務で起こりうる状態だけを型で表したいです。値の個数を数えると、その型が業務で起きない値まで許しているかが分かります。</p>
+    <AdtValueCount before={props.teaching[1].before} after={props.teaching[1].after} />
+    <p>TypeScriptでは、直積型をオブジェクト型で書き、直和型をUnion型で書きます。直和型の候補がそれぞれオブジェクト型のときは、Session 01 で使ったDiscriminated Unionのように、共通の kind に候補ごとのリテラル値を割り当てて候補を区別します。</p>
+    <p class="teaching-topic__why">ADTで状態を表すと、2つの利点があります。1つ目に、取りうる値の組み合わせを型で数えられるので、業務で起きない組み合わせを型から外せます。フラグの直積型は、フラグを足すたびに組み合わせが2倍になりますが、直和型では状態を1個足すと候補が1個増えるだけです。2つ目に、候補を列挙できるので、分岐がすべての候補を処理したかをコンパイラが確かめられます。この確認が、次の節の網羅性検証です。</p>
   </article>
   <article class="teaching-topic">
     <h3>assertNeverは未処理の状態をコンパイルエラーにする</h3>

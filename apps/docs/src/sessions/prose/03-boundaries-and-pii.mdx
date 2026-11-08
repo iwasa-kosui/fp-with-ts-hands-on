@@ -4,6 +4,7 @@ import BoundaryPlayer from "../../components/BoundaryPlayer.astro";
 import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../sessions/boundary-walkthroughs";
 import InlineCode from "../../components/InlineCode.astro";
+import BrandedIdFlow from "../../components/BrandedIdFlow.astro";
 
 <section id="incident">
   <h2>今回つくるもの</h2>
@@ -61,7 +62,7 @@ import InlineCode from "../../components/InlineCode.astro";
   <p>このセッションで使う4つの用語は、どれも「境界で起きていること」のアニメーションの一部を指します。</p>
   <dl class="boundary-concepts" data-boundary-concepts>
     <dt>Branded Type（内側の型）</dt>
-    <dd>値の制約や用途を型の名前で表します。この区別はTypeScriptの型検査で使われ、実行時の値は変えません。</dd>
+    <dd>値の制約や用途を型の名前で表します。この区別はTypeScriptの型検査で使われ、実行時の値は変えません。詳しくは次の節で説明します。</dd>
     <dt>スマートコンストラクタ（境界の検査）</dt>
     <dd>入力を検査する関数です。検査を通った値だけをその型として返し、制約を満たさない入力は失敗として呼び出し側へ返します。</dd>
     <dt set:html="Parse, don't validate（境界の出口）" />
@@ -69,6 +70,10 @@ import InlineCode from "../../components/InlineCode.astro";
     <dt>Always-Valid Domain Model（内側全体）</dt>
     <dd>境界は、schemaが表す制約を満たさない入力を内側へ入れません。内側の関数は、同じ検査を繰り返しません。</dd>
   </dl>
+  <h3>Branded Type: 同じ string を用途で区別する</h3>
+  <p>予約IDも獣医師IDも、TypeScriptではどちらもstringです。型が同じなので、引数を取り違えても型検査は誤りを知らせません。Branded Typeは、stringなどの型に用途を表す印を足し、印の違う値を別の型として扱う書き方です。</p>
+  <BrandedIdFlow code={props.brandedIdCode} />
+  <p>このリポジトリでは、zodの<code>.brand&lt;"名前"&gt;()</code>で印を付けます。印の付いた値はparseで作ります。asで型を書き換えないかぎり、AppointmentId型の値は、UUIDの形の検査を通ったことも表します。</p>
   <h3>扱う値が変わっても、形は同じ</h3>
   <p>値ごとに変わるのは「外側の姿」「確かめること」「内側の型」だけです。表の1行目の「診察開始の入力」は、先ほどのアニメーションで値が通ったコードに当たります。</p>
   <BoundaryPatterns />

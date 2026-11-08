@@ -1,0 +1,777 @@
+---
+import { Code } from "astro:components";
+import type { ComponentProps } from "astro/types";
+
+const versionLabels = { before: "修正前", after: "修正後" } as const;
+
+const snippets = {
+  beforeType: {
+    label: "修正前の型",
+    code: `type Appointment = Readonly<{
+  appointmentId: string;
+  status: string;
+  veterinarianId?: string;
+  examinationStartedAt?: string;
+}>;`,
+  },
+  beforeValue: {
+    label: "修正前の値",
+    code: `const broken: Appointment = {
+  appointmentId: "a-1",
+  status: "InExamination",
+};`,
+  },
+  afterType: {
+    label: "修正後の型",
+    code: `type CheckedIn = Readonly<{
+  kind: "CheckedIn";
+  appointmentId: string;
+}>;
+type InExamination = Readonly<{
+  kind: "InExamination";
+  appointmentId: string;
+  veterinarianId: string;
+  examinationStartedAt: string;
+}>;
+type Appointment = CheckedIn | InExamination;`,
+  },
+  afterValue: {
+    label: "修正後の値",
+    code: `const broken: Appointment = {
+  kind: "InExamination",
+  appointmentId: "a-1",
+};`,
+  },
+} as const;
+
+type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
+const KEY_MARK = /\s*\/\/ \[!key\]$/;
+const withMarks = (source: string, keyLines: readonly number[]) =>
+  source.split("\n").map((text, index) => (keyLines.includes(index + 1) ? `${text} // [!key]` : text)).join("\n");
+const markKeyLines: Transformer = {
+  name: "mark-illegal-state-key-lines",
+  preprocess(source) {
+    const lines = source.split("\n");
+    (this.meta as { keyLines?: number[] }).keyLines = lines.flatMap((text, index) => (KEY_MARK.test(text) ? [index + 1] : []));
+    return lines.map((text) => text.replace(KEY_MARK, "")).join("\n");
+  },
+  line(node, line) {
+    if ((this.meta as { keyLines?: number[] }).keyLines?.includes(line)) this.addClassToHast(node, "illegal-state-flow__key");
+  },
+};
+
+type Tone = "plain" | "focus" | "missing" | "bad";
+type Row = Readonly<{ name: string; value: string; note?: string; tone?: Tone }>;
+type Card = Readonly<{
+  title: string;
+  subtitle?: string;
+  rows: readonly Row[];
+  verdict?: "ok" | "ng";
+  accepted?: boolean;
+  fade?: boolean;
+}>;
+type Notice = Readonly<{ tone: "warn" | "error"; text: string; detail?: string }>;
+type Diagram = Readonly<{ cards: readonly Card[]; join?: string; notice?: Notice }>;
+type Frame = Readonly<{
+  version: keyof typeof versionLabels;
+  caption: string;
+  code?: Readonly<{ key: keyof typeof snippets; lines: readonly number[] }>;
+  diagram: Diagram;
+}>;
+
+const verdictLabels = { ok: "✓ 業務上ありえる", ng: "× 業務上ありえない" } as const;
+
+const candidates = (fade: boolean): readonly Card[] => [
+  {
+    title: "受付済み",
+    rows: fade
+      ? [{ name: "kind", value: '"CheckedIn"' }]
+      : [
+        { name: "status", value: '"CheckedIn"' },
+        { name: "veterinarianId", value: "なし", tone: "missing" },
+        { name: "examinationStartedAt", value: "なし", tone: "missing" },
+      ],
+    verdict: "ok",
+    accepted: true,
+  },
+  {
+    title: "受付済みなのに獣医師あり",
+    rows: fade
+      ? [
+        { name: "kind", value: '"CheckedIn"' },
+        { name: "veterinarianId", value: "あり", tone: "bad" },
+      ]
+      : [
+        { name: "status", value: '"CheckedIn"' },
+        { name: "veterinarianId", value: "あり", tone: "bad" },
+        { name: "examinationStartedAt", value: "なし", tone: "missing" },
+      ],
+    verdict: "ng",
+    accepted: !fade,
+    fade,
+  },
+  {
+    title: "診察中",
+    rows: fade
+      ? [
+        { name: "kind", value: '"InExamination"' },
+        { name: "veterinarianId", value: "あり", note: "必須" },
+        { name: "examinationStartedAt", value: "あり", note: "必須" },
+      ]
+      : [
+        { name: "status", value: '"InExamination"' },
+        { name: "veterinarianId", value: "あり" },
+        { name: "examinationStartedAt", value: "あり" },
+      ],
+    verdict: "ok",
+    accepted: true,
+  },
+  {
+    title: "診察中なのに獣医師なし",
+    rows: [
+      { name: fade ? "kind" : "status", value: '"InExamination"' },
+      { name: "veterinarianId", value: "なし", tone: "bad" },
+      { name: "examinationStartedAt", value: "あり" },
+    ],
+    verdict: "ng",
+    accepted: !fade,
+    fade,
+  },
+  {
+    title: "診察中なのに開始時刻なし",
+    rows: [
+      { name: fade ? "kind" : "status", value: '"InExamination"' },
+      { name: "veterinarianId", value: "あり" },
+      { name: "examinationStartedAt", value: "なし", tone: "bad" },
+    ],
+    verdict: "ng",
+    accepted: !fade,
+    fade,
+  },
+  {
+    title: fade ? "kind の綴り誤り" : "status の綴り誤り",
+    rows: fade
+      ? [{ name: "kind", value: '"InExamintion"', tone: "bad" }]
+      : [
+        { name: "status", value: '"InExamintion"', tone: "bad" },
+        { name: "veterinarianId", value: "なし", tone: "missing" },
+        { name: "examinationStartedAt", value: "なし", tone: "missing" },
+      ],
+    verdict: "ng",
+    accepted: !fade,
+    fade,
+  },
+];
+
+const frames: readonly Frame[] = [
+  {
+    version: "before",
+    caption: "修正前の Appointment は、状態を string で持ち、診察中にだけ要る情報を省略可能（?）にしています。",
+    code: { key: "beforeType", lines: [4, 5] },
+    diagram: {
+      cards: [
+        {
+          title: "修正前の Appointment",
+          subtitle: "予約の値が持つ項目",
+          rows: [
+            { name: "appointmentId", value: "string", note: "必須" },
+            { name: "status", value: "string", note: "必須" },
+            { name: "veterinarianId", value: "string", note: "あってもなくてもよい", tone: "focus" },
+            { name: "examinationStartedAt", value: "string", note: "あってもなくてもよい", tone: "focus" },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    version: "before",
+    caption:
+      "診察中なのに獣医師も開始時刻もない値を書いても、型検査はエラーを報告しません。この値は、開始時刻を表示する処理まで進んで初めて問題になります。",
+    code: { key: "beforeValue", lines: [3] },
+    diagram: {
+      cards: [
+        {
+          title: "値 broken",
+          subtitle: "診察中・獣医師なし・開始時刻なし",
+          rows: [
+            { name: "appointmentId", value: '"a-1"' },
+            { name: "status", value: '"InExamination"', tone: "focus" },
+            { name: "veterinarianId", value: "なし", tone: "missing" },
+            { name: "examinationStartedAt", value: "なし", tone: "missing" },
+          ],
+        },
+      ],
+      notice: { tone: "warn", text: "型検査: エラーなし" },
+    },
+  },
+  {
+    version: "before",
+    caption: "修正前の型が受け入れる値には、業務上ありえない組み合わせが混ざっています。不正な状態を、型が表せてしまっています。",
+    diagram: { cards: candidates(false) },
+  },
+  {
+    version: "after",
+    caption: "修正後は、状態ごとに別の型を作り、kind で区別します。InExamination では、獣医師 ID と開始時刻を必須にします。",
+    code: { key: "afterType", lines: [8, 9] },
+    diagram: {
+      cards: [
+        {
+          title: "CheckedIn",
+          rows: [
+            { name: "kind", value: '"CheckedIn"' },
+            { name: "appointmentId", value: "string", note: "必須" },
+          ],
+        },
+        {
+          title: "InExamination",
+          rows: [
+            { name: "kind", value: '"InExamination"' },
+            { name: "appointmentId", value: "string", note: "必須" },
+            { name: "veterinarianId", value: "string", note: "必須", tone: "focus" },
+            { name: "examinationStartedAt", value: "string", note: "必須", tone: "focus" },
+          ],
+        },
+      ],
+      join: "または",
+    },
+  },
+  {
+    version: "after",
+    caption:
+      "同じ値を書くと、veterinarianId と examinationStartedAt がないことを型検査がエラーとして報告します。不正な値を書いた時点で気づけます。",
+    code: { key: "afterValue", lines: [2] },
+    diagram: {
+      cards: [
+        {
+          title: "値 broken",
+          subtitle: "診察中・獣医師なし・開始時刻なし",
+          rows: [
+            { name: "kind", value: '"InExamination"', tone: "focus" },
+            { name: "appointmentId", value: '"a-1"' },
+            { name: "veterinarianId", value: "なし", tone: "bad" },
+            { name: "examinationStartedAt", value: "なし", tone: "bad" },
+          ],
+        },
+      ],
+      notice: { tone: "error", text: "型検査: エラー", detail: "veterinarianId と examinationStartedAt がない" },
+    },
+  },
+  {
+    version: "after",
+    caption:
+      "修正後の型は、業務上ありえる組み合わせだけを受け入れます。このように、不正な状態を型で表せなくする設計を「不正な状態を表現できなくする（Make illegal states unrepresentable）」と呼びます。状態ごとの型を「または」でつなぐこの形は、S02 で代数的データ型として学びます。",
+    diagram: { cards: candidates(true) },
+  },
+];
+
+const noticePrefixes = { warn: "! ", error: "× " } as const;
+---
+
+<div id="illegal-state-flow" class="illegal-state-flow" data-illegal-state-flow role="group" aria-labelledby="illegal-state-flow-title">
+  <p class="illegal-state-flow__title" id="illegal-state-flow-title">必要な情報が欠けた予約を、型で作れなくする</p>
+
+  <div class="illegal-state-flow__controls" data-controls hidden>
+    <button type="button" data-first disabled>最初へ</button>
+    <button type="button" data-prev disabled>前へ</button>
+    <button type="button" data-play aria-pressed="false">再生</button>
+    <button type="button" data-next>次へ</button>
+    <span class="illegal-state-flow__progress" data-progress>1 / {frames.length}</span>
+  </div>
+
+  <p class="illegal-state-flow__live" data-live aria-live="polite"></p>
+
+  <ol class="illegal-state-flow__frames">
+    {frames.map((frame, index) => (
+      <li data-frame data-has-code={frame.code ? "" : undefined}>
+        <div class="illegal-state-flow__head">
+          <span class="illegal-state-flow__tag" data-version={frame.version}>{versionLabels[frame.version]}</span>
+          <span class="illegal-state-flow__count">コマ {index + 1} / {frames.length}</span>
+        </div>
+        <p class="illegal-state-flow__caption" data-caption>{frame.caption}</p>
+
+        <div class="illegal-state-flow__diagram">
+          <div class="illegal-state-flow__cards" data-stack={frame.diagram.join ? "" : undefined}>
+            {frame.diagram.cards.map((card, cardIndex) => (
+              <>
+                {frame.diagram.join && cardIndex > 0 && <p class="illegal-state-flow__join">{frame.diagram.join}</p>}
+                <div class="illegal-state-flow__card" data-verdict={card.verdict} data-fade={card.fade ? "" : undefined}>
+                  <p class="illegal-state-flow__card-title">{card.title}</p>
+                  {card.subtitle && <p class="illegal-state-flow__card-sub">{card.subtitle}</p>}
+                  <dl class="illegal-state-flow__rows">
+                    {card.rows.map((row) => (
+                      <div class="illegal-state-flow__row" data-tone={row.tone}>
+                        <dt class="illegal-state-flow__mono">{row.name}</dt>
+                        <dd>
+                          <span class="illegal-state-flow__mono">{row.value}</span>
+                          {row.note && <span class="illegal-state-flow__note">{row.note}</span>}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  {card.verdict && <p class="illegal-state-flow__verdict" data-verdict={card.verdict}>{verdictLabels[card.verdict]}</p>}
+                  {card.accepted !== undefined && <p class="illegal-state-flow__accepted">{card.accepted ? "型は受け入れる" : "型は受け入れない"}</p>}
+                </div>
+              </>
+            ))}
+          </div>
+          {frame.diagram.notice && (
+            <p class="illegal-state-flow__notice" data-tone={frame.diagram.notice.tone}>
+              <strong>{noticePrefixes[frame.diagram.notice.tone]}{frame.diagram.notice.text}</strong>
+              {frame.diagram.notice.detail && <span>{frame.diagram.notice.detail}</span>}
+            </p>
+          )}
+        </div>
+
+        {frame.code && (
+          <figure class="code-block illegal-state-flow__code" data-version={frame.version}>
+            <figcaption>{snippets[frame.code.key].label}</figcaption>
+            <Code code={withMarks(snippets[frame.code.key].code, frame.code.lines)} lang="ts" defaultColor="dark" wrap={true} transformers={[markKeyLines]} />
+          </figure>
+        )}
+      </li>
+    ))}
+  </ol>
+</div>
+
+<script>
+  const INTERVAL_MS = 4500;
+
+  const setUp = (root: HTMLElement) => {
+    if (root.dataset.ready !== undefined) return;
+    const panels = [...root.querySelectorAll<HTMLElement>("[data-frame]")];
+    const controls = root.querySelector<HTMLElement>("[data-controls]");
+    const first = root.querySelector<HTMLButtonElement>("[data-first]");
+    const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
+    const play = root.querySelector<HTMLButtonElement>("[data-play]");
+    const next = root.querySelector<HTMLButtonElement>("[data-next]");
+    const progress = root.querySelector<HTMLElement>("[data-progress]");
+    const live = root.querySelector<HTMLElement>("[data-live]");
+    if (!controls || !first || !prev || !play || !next || !progress || !live || panels.length === 0) return;
+    root.dataset.ready = "";
+
+    const last = panels.length - 1;
+    let current = 0;
+    let timer: number | null = null;
+
+    const stop = () => {
+      if (timer !== null) window.clearInterval(timer);
+      timer = null;
+      play.textContent = "再生";
+      play.setAttribute("aria-pressed", "false");
+    };
+
+    const show = (index: number) => {
+      current = index;
+      panels.forEach((panel, i) => panel.classList.toggle("is-current", i === index));
+      live.textContent = panels[index].querySelector("[data-caption]")?.textContent ?? "";
+      progress.textContent = `${index + 1} / ${panels.length}`;
+      first.disabled = index === 0;
+      prev.disabled = index === 0;
+      next.disabled = index === last;
+    };
+
+    const start = () => {
+      if (current === last) show(0);
+      play.textContent = "停止";
+      play.setAttribute("aria-pressed", "true");
+      timer = window.setInterval(() => {
+        if (!root.isConnected || current >= last) {
+          stop();
+          return;
+        }
+        show(current + 1);
+        if (current >= last) stop();
+      }, INTERVAL_MS);
+    };
+
+    first.addEventListener("click", () => {
+      stop();
+      show(0);
+    });
+    prev.addEventListener("click", () => {
+      stop();
+      show(Math.max(current - 1, 0));
+    });
+    next.addEventListener("click", () => {
+      stop();
+      show(Math.min(current + 1, last));
+    });
+    play.addEventListener("click", () => (timer === null ? start() : stop()));
+
+    root.dataset.animated = "";
+    controls.hidden = false;
+    show(0);
+  };
+
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    document.querySelectorAll<HTMLElement>("[data-illegal-state-flow]").forEach(setUp);
+  }
+</script>
+
+<style>
+  .illegal-state-flow {
+    min-width: 0;
+    max-width: 100%;
+    margin: 1.5rem 0;
+    --version-before: #c2185b;
+    --version-after: #137333;
+    --stop: #c2185b;
+    --pass: #137333;
+    --warn-bg: var(--case-yellow, #ffd21b);
+    --ink: var(--case-ink, #111116);
+    --paper: var(--case-paper, #fffefa);
+    --line: var(--case-line, #17204d);
+    --muted: var(--case-muted, #58596d);
+    --divider: var(--case-divider, #dedccf);
+  }
+
+  [data-version="before"] {
+    --version-color: var(--version-before);
+  }
+
+  [data-version="after"] {
+    --version-color: var(--version-after);
+  }
+
+  .illegal-state-flow__title {
+    margin: 0 0 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 900;
+    line-height: 1.5;
+  }
+
+  .illegal-state-flow__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .illegal-state-flow__controls[hidden] {
+    display: none;
+  }
+
+  .illegal-state-flow__controls button {
+    min-height: 2.75rem;
+    padding: 0 0.9rem;
+    border: 2px solid var(--line);
+    border-radius: 0.5rem;
+    background: var(--warn-bg);
+    color: var(--ink);
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .illegal-state-flow__controls button:disabled {
+    background: var(--paper);
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .illegal-state-flow__progress {
+    margin-inline-start: 0.25rem;
+    font-weight: 700;
+  }
+
+  .illegal-state-flow__live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .illegal-state-flow__frames {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .illegal-state-flow__frames > li {
+    min-width: 0;
+  }
+
+  .illegal-state-flow__frames > li + li {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px dashed var(--divider);
+  }
+
+  .illegal-state-flow__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+  }
+
+  .illegal-state-flow__tag {
+    display: inline-block;
+    padding: 0.2rem 1rem;
+    border-radius: 0.5rem;
+    background: var(--version-color);
+    color: #fff;
+    font-size: 1.25rem;
+    font-weight: 900;
+    line-height: 1.5;
+  }
+
+  .illegal-state-flow__count {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .illegal-state-flow__caption {
+    margin: 0.75rem 0;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .illegal-state-flow__diagram {
+    min-width: 0;
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    border: 2px solid var(--divider);
+    border-radius: 0.5rem;
+    background: var(--paper);
+  }
+
+  .illegal-state-flow__cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    gap: 0.75rem;
+  }
+
+  .illegal-state-flow__cards[data-stack] {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 24rem;
+    margin-inline: auto;
+    gap: 0.4rem;
+  }
+
+  .illegal-state-flow__card {
+    min-width: 0;
+    padding: 0.6rem 0.75rem;
+    border: 2px solid var(--line);
+    border-radius: 0.5rem;
+    background: var(--paper);
+  }
+
+  .illegal-state-flow__card[data-verdict="ng"] {
+    border-color: var(--stop);
+    border-style: dashed;
+  }
+
+  .illegal-state-flow__card[data-verdict="ok"] {
+    border-color: var(--pass);
+  }
+
+  .illegal-state-flow__card[data-fade] {
+    opacity: 0.15;
+  }
+
+  .illegal-state-flow__card-title {
+    margin: 0;
+    font-weight: 900;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .illegal-state-flow__card-sub {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .illegal-state-flow__rows {
+    display: block;
+    margin: 0.5rem 0 0;
+    border: 0;
+    background: none;
+  }
+
+  .illegal-state-flow__row {
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.25rem;
+    line-height: 1.5;
+  }
+
+  .illegal-state-flow__row dt,
+  .illegal-state-flow__row dd {
+    display: inline;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-weight: 400;
+    overflow-wrap: anywhere;
+  }
+
+  .illegal-state-flow__row dt {
+    color: var(--muted);
+  }
+
+  .illegal-state-flow__row dt::after {
+    content: ": ";
+  }
+
+  .illegal-state-flow__mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.8rem;
+  }
+
+  .illegal-state-flow__note {
+    margin-inline-start: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .illegal-state-flow__row[data-tone="focus"] {
+    background: rgb(255 210 27 / 35%);
+  }
+
+  .illegal-state-flow__row[data-tone="missing"] dd {
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .illegal-state-flow__row[data-tone="bad"] {
+    background: rgb(194 24 91 / 12%);
+  }
+
+  .illegal-state-flow__row[data-tone="bad"] dd {
+    color: var(--stop);
+    font-weight: 900;
+  }
+
+  .illegal-state-flow__verdict {
+    margin: 0.5rem 0 0;
+    font-weight: 900;
+    line-height: 1.5;
+  }
+
+  .illegal-state-flow__verdict[data-verdict="ok"] {
+    color: var(--pass);
+  }
+
+  .illegal-state-flow__verdict[data-verdict="ng"] {
+    color: var(--stop);
+  }
+
+  .illegal-state-flow__accepted {
+    display: inline-block;
+    margin: 0.4rem 0 0;
+    padding: 0.05rem 0.5rem;
+    border: 1.5px dashed var(--line);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .illegal-state-flow__join {
+    margin: 0;
+    color: var(--muted);
+    font-weight: 900;
+    text-align: center;
+  }
+
+  .illegal-state-flow__notice {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    max-width: 24rem;
+    margin: 0.75rem auto 0;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--line);
+    border-radius: 0.5rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .illegal-state-flow__notice[data-tone="warn"] {
+    background: var(--warn-bg);
+    color: var(--ink);
+  }
+
+  .illegal-state-flow__notice[data-tone="error"] {
+    border-color: var(--stop);
+    background: var(--stop);
+    color: #fff;
+  }
+
+  .illegal-state-flow__code {
+    min-width: 0;
+    margin: 0.75rem 0 0;
+    border-inline-start: 0.35rem solid var(--version-color);
+  }
+
+  .illegal-state-flow__code :global(pre) {
+    max-width: 100%;
+    padding: 0.75rem;
+    overflow-x: hidden;
+    font-size: 0.75rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .illegal-state-flow__code :global(code) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .illegal-state-flow :global(.illegal-state-flow__key) {
+    display: inline-block;
+    min-width: calc(100% + 0.5rem);
+    margin-left: -0.5rem;
+    padding-left: 0.5rem;
+    background: rgb(255 210 27 / 22%);
+    box-shadow: inset 0.3rem 0 0 #ffd21b;
+  }
+
+  .illegal-state-flow[data-animated] .illegal-state-flow__frames > li {
+    display: none;
+    margin: 0;
+    padding: 0;
+    border-top: 0;
+  }
+
+  .illegal-state-flow[data-animated] .illegal-state-flow__frames > li.is-current {
+    display: block;
+  }
+
+  .illegal-state-flow[data-animated] .illegal-state-flow__count {
+    display: none;
+  }
+
+  .illegal-state-flow[data-animated] li.is-current .illegal-state-flow__card[data-fade] {
+    animation: illegal-state-flow-fade 1.2s ease-in-out 0.8s backwards;
+  }
+
+  .illegal-state-flow[data-animated] li.is-current .illegal-state-flow__notice {
+    animation: illegal-state-flow-pop 0.4s ease-out 0.3s backwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .illegal-state-flow * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+
+  @keyframes illegal-state-flow-fade {
+    from {
+      opacity: 1;
+    }
+  }
+
+  @keyframes illegal-state-flow-pop {
+    from {
+      opacity: 0;
+      transform: translateY(0.4rem);
+    }
+  }
+</style>
