@@ -26,11 +26,7 @@ export type UseCaseInput = Readonly<{
   phone: OwnerPhone;
 }>;
 export type UseCaseOk = Readonly<{ owner: OwnerView }>;
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
-export type UseCaseError =
-  UnauthorizedError | IdentityGenerationFailed;
+export type UseCaseError = UnauthorizedError;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type OwnerIdGenerator = Readonly<{ generate: () => OwnerId }>;
 export type Dependencies = Readonly<{
@@ -51,7 +47,7 @@ const toView = (owner: Owner): OwnerView => ({
   phone: owner.phone,
 });
 const createEvent = (dependencies: Dependencies, input: UseCaseInput) =>
-  ResultAsync.fromPromise(
+  ResultAsync.fromSafePromise(
     Promise.resolve().then(() => {
       const owner = {
         ownerId: dependencies.ownerIdGenerator.generate(),
@@ -65,7 +61,6 @@ const createEvent = (dependencies: Dependencies, input: UseCaseInput) =>
         actorUserId: input.actorUserId,
       })(owner);
     }),
-    (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
   );
 const run =
   (dependencies: Dependencies) =>

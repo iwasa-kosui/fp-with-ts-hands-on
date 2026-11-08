@@ -37,15 +37,11 @@ export type FollowUpTargetNotFound = Readonly<{
   kind: "FollowUpTargetNotFound";
   appointmentId: AppointmentId;
 }>;
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | CollectFollowUpTargetsError
   | FollowUpTargetNotFound
-  | FollowUpRequestConflict
-  | IdentityGenerationFailed;
+  | FollowUpRequestConflict;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -103,7 +99,7 @@ const selectTargets =
 const createFreshEvents =
   (dependencies: Dependencies, input: UseCaseInput) =>
   (targets: readonly FollowUpTarget[]) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         targets.map((target) =>
           FollowUpRequested.create(
@@ -117,7 +113,6 @@ const createFreshEvents =
           ),
         ),
       ),
-      (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
 const persistEvents =
   (dependencies: Dependencies) =>

@@ -1,6 +1,5 @@
 import {
   ResultAsync,
-  type Result,
   type ResultAsync as UseResultAsync,
 } from "neverthrow";
 
@@ -43,17 +42,8 @@ export type UseCaseOk = Readonly<{
 }>;
 
 export type { InitialAdminAlreadyExists } from "../domain/installation/initialAdminSetupStore.js";
-export type PasswordHashingFailed = Readonly<{ kind: "PasswordHashingFailed" }>;
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
-export type SessionCreationFailed = Readonly<{ kind: "SessionCreationFailed" }>;
 
-export type UseCaseError =
-  | InitialAdminAlreadyExists
-  | PasswordHashingFailed
-  | IdentityGenerationFailed
-  | SessionCreationFailed;
+export type UseCaseError = InitialAdminAlreadyExists;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 
 export type UserIdGenerator = Readonly<{ generate: () => UserId }>;
@@ -78,24 +68,21 @@ const hashPassword = (
   passwordHasher: PasswordHasher,
   password: PlaintextPassword,
 ) =>
-  ResultAsync.fromPromise(
+  ResultAsync.fromSafePromise(
     Promise.resolve().then(() => passwordHasher.hash(password)),
-    (): PasswordHashingFailed => ({ kind: "PasswordHashingFailed" }),
   );
 
-const expirationFrom = (
-  occurredAt: TimestampValue,
-): Result<TimestampValue, SessionCreationFailed> =>
-  Timestamp.parse(
+const expirationFrom = (occurredAt: TimestampValue): TimestampValue =>
+  Timestamp.schema.parse(
     new Date(Date.parse(occurredAt) + sessionDurationMs).toISOString(),
-  ).mapErr(() => ({ kind: "SessionCreationFailed" }));
+  );
 
 const generateInitialAdmin = (
   dependencies: Dependencies,
   input: UseCaseInput,
   passwordHash: Awaited<ReturnType<PasswordHasher["hash"]>>,
 ) =>
-  ResultAsync.fromPromise(
+  ResultAsync.fromSafePromise(
     Promise.resolve().then(() => {
       const userId = dependencies.userIdGenerator.generate();
       const user = {
@@ -111,25 +98,22 @@ const generateInitialAdmin = (
         actorUserId: userId,
       })(user);
     }),
-    (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
   );
 
 const generateSession = (dependencies: Dependencies, userId: UserId) =>
-  ResultAsync.fromPromise(
-    Promise.resolve().then(() => ({
-      sessionId: dependencies.sessionIdGenerator.generate(),
-      token: dependencies.sessionTokenGenerator.generate(),
-      eventId: dependencies.eventIdGenerator.generate(),
-      occurredAt: dependencies.clock.now(),
-    })),
-    (): SessionCreationFailed => ({ kind: "SessionCreationFailed" }),
-  )
-    .andThen((generated) =>
-      expirationFrom(generated.occurredAt).map((expiresAt) => ({
+  ResultAsync.fromSafePromise(
+    Promise.resolve()
+      .then(() => ({
+        sessionId: dependencies.sessionIdGenerator.generate(),
+        token: dependencies.sessionTokenGenerator.generate(),
+        eventId: dependencies.eventIdGenerator.generate(),
+        occurredAt: dependencies.clock.now(),
+      }))
+      .then((generated) => ({
         ...generated,
-        expiresAt,
+        expiresAt: expirationFrom(generated.occurredAt),
       })),
-    )
+  )
     .map((generated) => ({
       event: Session.create({
         eventId: generated.eventId,

@@ -203,7 +203,7 @@ describe("SetUpInitialAdminUseCase", () => {
     expect(sessionEvents).toHaveLength(0);
   });
 
-  test("returns a typed redacted error when password hashing throws synchronously", async () => {
+  test("rejects when password hashing throws synchronously", async () => {
     const dependencies = {
       ...setupDependencies([], []),
       passwordHasher: {
@@ -214,16 +214,13 @@ describe("SetUpInitialAdminUseCase", () => {
       },
     } as const satisfies SetUpDependencies;
 
-    const result = await SetUpInitialAdminUseCase.create(dependencies).run({
-      email,
-      name,
-      password,
-    });
-
-    expect(result.isErr() && result.error).toEqual({
-      kind: "PasswordHashingFailed",
-    });
-    expect(JSON.stringify(result)).not.toContain(password.unwrap());
+    await expect(
+      SetUpInitialAdminUseCase.create(dependencies).run({
+        email,
+        name,
+        password,
+      }),
+    ).rejects.toThrow("hash failed");
   });
 });
 
@@ -349,7 +346,7 @@ describe("LogInUseCase", () => {
     });
   });
 
-  test("rejects resolver failures and redacts password verification failures", async () => {
+  test("rejects resolver failures and password verification failures", async () => {
     const failingResolver = {
       resolveById: () =>
         ResultAsync.fromSafePromise(Promise.reject(infrastructureError)),
@@ -378,7 +375,7 @@ describe("LogInUseCase", () => {
       name,
       passwordHash,
     } as const satisfies User;
-    const verifyResult = await LogInUseCase.create({
+    const verifyResult = LogInUseCase.create({
       userResolver: userResolverFor([admin]),
       sessionCreatedStore: createdSessionStore([]),
       passwordHasher: {
@@ -392,10 +389,7 @@ describe("LogInUseCase", () => {
       sessionIdGenerator: { generate: () => sessionId },
     }).run({ email, password });
 
-    expect(verifyResult.isErr() && verifyResult.error).toEqual({
-      kind: "PasswordVerificationFailed",
-    });
-    expect(JSON.stringify(verifyResult)).not.toContain(password.unwrap());
+    await expect(verifyResult).rejects.toThrow("password included here");
   });
 });
 

@@ -140,14 +140,8 @@ export const registerAuthRoutes = (
             switch (error.kind) {
               case "InitialAdminAlreadyExists":
                 return context.redirect("/login");
-              case "PasswordHashingFailed":
-              case "IdentityGenerationFailed":
-              case "SessionCreationFailed":
-                return respondToUseCaseError(context, {
-                  kind: "InternalServerError",
-                });
               default:
-                return assertNever(error);
+                return assertNever(error.kind);
             }
           },
         ),
@@ -208,13 +202,8 @@ export const registerAuthRoutes = (
                   }),
                   { url: "/login" },
                 );
-              case "PasswordVerificationFailed":
-              case "SessionCreationFailed":
-                return respondToUseCaseError(context, {
-                  kind: "InternalServerError",
-                });
               default:
-                return assertNever(error);
+                return assertNever(error.kind);
             }
           },
         ),
@@ -264,10 +253,6 @@ export const registerAuthRoutes = (
             case "Unauthorized":
               return respondToUseCaseError(context, {
                 kind: "Unauthorized",
-              });
-            case "SessionInvalidationFailed":
-              return respondToUseCaseError(context, {
-                kind: "InternalServerError",
               });
             default:
               return assertNever(error);

@@ -46,15 +46,11 @@ export type PetOwnerMismatch = Readonly<{
   expectedOwnerId: OwnerId;
   actualOwnerId: OwnerId;
 }>;
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | OwnerNotFound
   | PetNotFound
   | PetOwnerMismatch
-  | IdentityGenerationFailed
   | AppointmentConflict;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type AppointmentIdGenerator = Readonly<{
@@ -93,7 +89,7 @@ const ensurePetOwner =
           actualOwnerId: pet.ownerId,
         });
 const createEvent = (dependencies: Dependencies, input: UseCaseInput) =>
-  ResultAsync.fromPromise(
+  ResultAsync.fromSafePromise(
     Promise.resolve().then(() =>
       Appointment.book({
         eventId: dependencies.eventIdGenerator.generate(),
@@ -107,7 +103,6 @@ const createEvent = (dependencies: Dependencies, input: UseCaseInput) =>
         reason: input.reason,
       }),
     ),
-    (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
   );
 const run =
   (dependencies: Dependencies) =>

@@ -166,7 +166,6 @@ export const registerFollowUpRoutes = (
             case "FollowUpRequestConflict":
               return context.redirect("/follow-ups?error=request-conflict", 303);
             case "ExamResultPetMismatch":
-            case "IdentityGenerationFailed":
               return respondToUseCaseError(context, { kind: "InternalServerError" });
             default:
               return assertNever(error);

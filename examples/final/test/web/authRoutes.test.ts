@@ -1,18 +1,31 @@
+import { randomUUID } from "node:crypto";
+
 import { eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { describe, expect, test } from "vitest";
 
+import { sessionTokenGenerator } from "../../src/adaptor/secondary/authentication/sessionToken.js";
 import { createSqliteDatabase, migrateDatabase } from "../../src/adaptor/secondary/sqlite/db.js";
+import { createUserByEmailResolver } from "../../src/adaptor/secondary/sqlite/resolver/userResolver.js";
 import {
   installationTable,
   sessionsTable,
   usersTable,
 } from "../../src/adaptor/secondary/sqlite/schema.js";
+import { createInitialAdminSetupStore } from "../../src/adaptor/secondary/sqlite/store/initialAdminSetupStore.js";
+import { createSessionEventStore } from "../../src/adaptor/secondary/sqlite/store/sessionEventStore.js";
+import { EventId } from "../../src/domain/aggregate/eventId.js";
 import { Timestamp } from "../../src/domain/aggregate/timestamp.js";
+import { SessionId } from "../../src/domain/session/sessionId.js";
+import { PasswordHash } from "../../src/domain/user/passwordHash.js";
+import type { PasswordHasher } from "../../src/domain/user/passwordHasher.js";
+import { UserId } from "../../src/domain/user/userId.js";
 import {
   createApp,
   createApplicationDependencies,
 } from "../../src/app.js";
+import { LogInUseCase } from "../../src/useCase/logInUseCase.js";
+import { SetUpInitialAdminUseCase } from "../../src/useCase/setUpInitialAdminUseCase.js";
 
 const now = Timestamp.schema.parse("2026-08-09T01:30:00.000Z");
 const clock = { now: () => now } as const;
@@ -59,6 +72,13 @@ const cookiePair = (response: Response): string => {
   const setCookie = response.headers.get("set-cookie");
   expect(setCookie).not.toBeNull();
   return setCookie?.split(";")[0] ?? "";
+};
+
+const throwingPasswordHasher: PasswordHasher = {
+  hash: (password) =>
+    Promise.reject(new Error(`hash failed for ${password.unwrap()}`)),
+  verify: (password) =>
+    Promise.reject(new Error(`verify failed for ${password.unwrap()}`)),
 };
 
 const setUp = async (harness: ReturnType<typeof createHarness>) => {
@@ -196,6 +216,68 @@ describe("Hono/Inertia authentication boundary", () => {
 
     expect(response.status).toBe(500);
     expect(await response.text()).not.toContain(privateCause.message);
+  });
+
+  test("keeps password hashing failures behind Hono's opaque error boundary on setup", async () => {
+    const database = createSqliteDatabase(":memory:");
+    migrateDatabase(database);
+    const composed = createApplicationDependencies(database, {
+      clock,
+      isProduction: false,
+    });
+    const app = createApp({
+      ...composed,
+      setUpInitialAdmin: SetUpInitialAdminUseCase.create({
+        initialAdminSetupStore: createInitialAdminSetupStore(database),
+        passwordHasher: throwingPasswordHasher,
+        sessionTokenGenerator,
+        clock,
+        eventIdGenerator: { generate: () => EventId.schema.parse(randomUUID()) },
+        userIdGenerator: { generate: () => UserId.schema.parse(randomUUID()) },
+        sessionIdGenerator: {
+          generate: () => SessionId.schema.parse(randomUUID()),
+        },
+      }),
+    });
+
+    const response = await formRequest(app, "/setup", credentials);
+
+    expect(response.status).toBe(500);
+    expect(await response.text()).not.toContain(credentials.password);
+  });
+
+  test("keeps password verification failures behind Hono's opaque error boundary on login", async () => {
+    const harness = createHarness();
+    await setUp(harness);
+    const composed = createApplicationDependencies(harness.database, {
+      clock,
+      isProduction: false,
+    });
+    const app = createApp({
+      ...composed,
+      logIn: LogInUseCase.create({
+        userResolver: createUserByEmailResolver(harness.database),
+        sessionCreatedStore: createSessionEventStore(harness.database),
+        passwordHasher: throwingPasswordHasher,
+        dummyPasswordHash: PasswordHash.schema.parse(
+          `scrypt$${"D".repeat(22)}==$${"E".repeat(86)}==`,
+        ),
+        sessionTokenGenerator,
+        clock,
+        eventIdGenerator: { generate: () => EventId.schema.parse(randomUUID()) },
+        sessionIdGenerator: {
+          generate: () => SessionId.schema.parse(randomUUID()),
+        },
+      }),
+    });
+
+    const response = await formRequest(app, "/login", {
+      email: credentials.email,
+      password: credentials.password,
+    });
+
+    expect(response.status).toBe(500);
+    expect(await response.text()).not.toContain(credentials.password);
   });
 
   test("directs an empty installation to setup and makes setup unavailable after the first Admin", async () => {

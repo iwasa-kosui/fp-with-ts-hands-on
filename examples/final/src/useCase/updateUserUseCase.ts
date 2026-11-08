@@ -43,15 +43,11 @@ export type UserEmailAlreadyExists = Readonly<{
 export type CannotDowngradeLastAdmin = Readonly<{
   kind: "CannotDowngradeLastAdmin";
 }>;
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
 export type UseCaseError =
   | Unauthorized
   | UserNotFound
   | UserEmailAlreadyExists
-  | CannotDowngradeLastAdmin
-  | IdentityGenerationFailed;
+  | CannotDowngradeLastAdmin;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type VeterinarianIdGenerator = Readonly<{
   generate: () => VeterinarianId;
@@ -88,7 +84,7 @@ const ensureEmailAvailable =
       : err({ kind: "UserEmailAlreadyExists" });
 const updateState =
   (dependencies: Dependencies, input: UseCaseInput) => (user: User) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then((): User => {
         const base = {
           userId: user.userId,
@@ -114,11 +110,10 @@ const updateState =
             return assertNever(input.role);
         }
       }),
-      (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
 const createEvent =
   (dependencies: Dependencies, actorUserId: UserId) => (user: User) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         createUserUpdated(
           {
@@ -129,7 +124,6 @@ const createEvent =
           user,
         ),
       ),
-      (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
 const run =
   (dependencies: Dependencies) =>

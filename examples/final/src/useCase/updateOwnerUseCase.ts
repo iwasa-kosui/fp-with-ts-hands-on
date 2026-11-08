@@ -38,13 +38,9 @@ export type OwnerNotFound = Readonly<{
   kind: "OwnerNotFound";
   ownerId: OwnerId;
 }>;
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
 export type UseCaseError =
   | UnauthorizedError
-  | OwnerNotFound
-  | IdentityGenerationFailed;
+  | OwnerNotFound;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -69,7 +65,7 @@ const toView = (owner: Owner): OwnerView => ({
 });
 const createEvent =
   (dependencies: Dependencies, input: UseCaseInput) => (owner: Owner) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         Owner.update({
           eventId: dependencies.eventIdGenerator.generate(),
@@ -81,7 +77,6 @@ const createEvent =
           phone: input.phone,
         } as const satisfies OwnerProfile),
       ),
-      (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
 const run =
   (dependencies: Dependencies) =>

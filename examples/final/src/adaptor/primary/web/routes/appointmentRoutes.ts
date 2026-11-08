@@ -373,8 +373,6 @@ const invalidState = (
   context: Context<WebEnvironment>,
   appointmentId: AppointmentIdType,
 ): Response => context.redirect(`${detailUrl(appointmentId)}?error=invalid-state`, 303);
-const internalServerError = (context: Context<WebEnvironment>): Response =>
-  respondToUseCaseError(context, { kind: "InternalServerError" });
 
 export const registerAppointmentRoutes = (
   app: Hono<WebEnvironment>,
@@ -430,8 +428,6 @@ export const registerAppointmentRoutes = (
               });
             case "AppointmentConflict":
               return context.redirect(`${detailUrl(error.appointmentId)}?error=appointment-conflict`, 303);
-            case "IdentityGenerationFailed":
-              return internalServerError(context);
             default:
               return assertNever(error);
           }
@@ -472,8 +468,6 @@ export const registerAppointmentRoutes = (
               return invalidState(context, appointmentId.value);
             case "AppointmentConflict":
               return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
-            case "IdentityGenerationFailed":
-              return internalServerError(context);
             default:
               return assertNever(error);
           }
@@ -513,8 +507,6 @@ export const registerAppointmentRoutes = (
               return invalidState(context, appointmentId.value);
             case "AppointmentConflict":
               return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
-            case "IdentityGenerationFailed":
-              return internalServerError(context);
             default:
               return assertNever(error);
           }
@@ -554,8 +546,6 @@ export const registerAppointmentRoutes = (
               return context.redirect(`${detailUrl(appointmentId.value)}?error=pet-mismatch`, 303);
             case "AppointmentConflict":
               return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
-            case "IdentityGenerationFailed":
-              return internalServerError(context);
             default:
               return assertNever(error);
           }
@@ -586,8 +576,6 @@ export const registerAppointmentRoutes = (
               return invalidState(context, appointmentId.value);
             case "AppointmentConflict":
               return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
-            case "IdentityGenerationFailed":
-              return internalServerError(context);
             default:
               return assertNever(error);
           }
@@ -618,8 +606,6 @@ export const registerAppointmentRoutes = (
               return invalidState(context, appointmentId.value);
             case "AppointmentConflict":
               return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);
-            case "IdentityGenerationFailed":
-              return internalServerError(context);
             default:
               return assertNever(error);
           }

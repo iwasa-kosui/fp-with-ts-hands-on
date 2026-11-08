@@ -35,15 +35,9 @@ export type Unauthorized = Readonly<{
   actorUserId: UserId;
 }>;
 export type UserNotFound = Readonly<{ kind: "UserNotFound"; userId: UserId }>;
-export type PasswordHashingFailed = Readonly<{ kind: "PasswordHashingFailed" }>;
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
 export type UseCaseError =
   | Unauthorized
-  | UserNotFound
-  | PasswordHashingFailed
-  | IdentityGenerationFailed;
+  | UserNotFound;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -72,14 +66,13 @@ const hashPassword = (
   passwordHasher: PasswordHasher,
   password: PlaintextPassword,
 ) =>
-  ResultAsync.fromPromise(
+  ResultAsync.fromSafePromise(
     Promise.resolve().then(() => passwordHasher.hash(password)),
-    (): PasswordHashingFailed => ({ kind: "PasswordHashingFailed" }),
   );
 const createEvent =
   (dependencies: Dependencies, actorUserId: UserId, user: UserState) =>
   (passwordHash: Awaited<ReturnType<PasswordHasher["hash"]>>) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         User.resetPassword({
           eventId: dependencies.eventIdGenerator.generate(),
@@ -87,7 +80,6 @@ const createEvent =
           actorUserId,
         })(user, passwordHash),
       ),
-      (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
 const run =
   (dependencies: Dependencies) =>

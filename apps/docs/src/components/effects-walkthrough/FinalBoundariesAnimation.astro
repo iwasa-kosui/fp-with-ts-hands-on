@@ -120,7 +120,7 @@ return dependencies.startExamination
     input: UseCaseInput,
   ) =>
   (appointment: CheckedIn) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         Appointment.startExamination({
           eventId: eventIdGenerator.generate(),
@@ -128,7 +128,6 @@ return dependencies.startExamination
           actorUserId: input.actorUserId,
         })(appointment, input.veterinarianId),
       ),
-      (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );`,
   },
   transition: {

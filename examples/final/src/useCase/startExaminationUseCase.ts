@@ -33,16 +33,12 @@ export type UseCaseOk = Readonly<{
   appointment: InExamination;
 }>;
 
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
 
 export type UseCaseError =
   | UnauthorizedError
   | AppointmentNotFound
   | InvalidAppointmentState
-  | AppointmentConflict
-  | IdentityGenerationFailed;
+  | AppointmentConflict;
 
 export type UseCaseOutput = ResultAsync<UseCaseOk, UseCaseError>;
 
@@ -67,7 +63,7 @@ const createEvent =
     input: UseCaseInput,
   ) =>
   (appointment: CheckedIn) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         Appointment.startExamination({
           eventId: eventIdGenerator.generate(),
@@ -75,7 +71,6 @@ const createEvent =
           actorUserId: input.actorUserId,
         })(appointment, input.veterinarianId),
       ),
-      (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
 
 const run =
