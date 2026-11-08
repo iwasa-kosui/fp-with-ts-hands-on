@@ -47,6 +47,11 @@
   - `scripts/verify-exercises.mjs`
   - ルートの `package.json` の `verify:guard`。現在は `--root examples/session-03-solution` だけを検査します。
 
-## 共通にしないもの
+## コマ送りのボタンと図
 
 - 図の形とアニメーションの仕組みは、題材ごとに決めます。`apps/docs/src/components/stepper/` は、題材に合うときだけ使います。
+- 一方で、コマ送りのボタンは次の規約に乗せます。
+  - コマ送りのボタン群を囲む要素に `data-controls` を付けます。
+  - 「次へ」のボタンに `data-next` を付けます。「前へ」のボタンに `data-prev` を付けます。
+  - `SessionFrame` は、フォーカスが `data-controls` の中にあるときの左右キーを、対応するボタンの押下として扱います。この規約に乗せないと、「次へ」を押した直後の右キーでページが移動します。
+  - 最後のコマでの右キーと、最初のコマでの左キーは、何もしません。ページも移動しません。

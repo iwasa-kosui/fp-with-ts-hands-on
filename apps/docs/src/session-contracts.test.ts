@@ -409,7 +409,7 @@ describe("page-owned session contracts", () => {
 
     for (const { path, session } of pages) {
       const split = splitSessions.find(({ slug }) => slug === session.slug);
-      const isBoundary = split !== undefined;
+      const isSplit = split !== undefined;
       const source =
         split === undefined
           ? (pageSources[path] ?? "")
@@ -425,7 +425,7 @@ describe("page-owned session contracts", () => {
         expect(source, path).toContain('class="case-file__episode"');
         expect(source, path).toContain('class="case-file__episode-label"');
       }
-      if (isBoundary) continue;
+      if (isSplit) continue;
       expect(source, path).toContain("session.episode.map");
     }
   });

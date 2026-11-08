@@ -76,7 +76,7 @@ export const guides = ([
   },
   {
     id: "session-00-hidden-nondeterminism",
-    title: "時刻と履歴 ID を処理の中で直接生成している",
+    title: "時刻と監査記録の ID を処理の中で直接生成している",
     currentDesign: "診察開始の処理が現在時刻と UUID を直接生成します。",
     futureRisk: "同じ操作でも記録が毎回変わり、テストと事故調査の比較が安定しません。",
     path: "src/useCase/startExamination.ts",
