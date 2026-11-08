@@ -173,20 +173,11 @@ import InlineCode from "../../components/InlineCode.astro";
   </div>
   <h3>この演習で解決しないこと</h3>
   <p>どの失敗を業務エラーとして画面のnoticeへ変換するかは、人の判断とレビューが必要です。呼び出し側に理由別の対応がなく、要求された処理を完了できないシステムエラーは、Resultへ変換せず外側の例外境界へ伝えます。入力の検査の失敗は、利用者が入力を直せば解決するので、Result で返す業務エラーの側に入ります。S05では、パイプラインの最初の工程の失敗として扱います。演習の Web ルートは、S03の検査の結果を <code>_unsafeUnwrap</code> で取り出しているので、検査に失敗した入力は今は500になります。この演習では変えません。</p>
-  <h3 data-solution-heading>{props.session.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
-  {props.session.solutionPresentation === "completed-file" ? (
-    <div class="before-after" aria-label="業務エラーとシステムエラーの見比べ方">
-      <p><strong>演習の開始時点:</strong> 業務エラーとして返す Result と、システムエラーとして外側へ伝える例外経路を分けて読みます。</p>
-      <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示されます。</p>
-    </div>
-  ) : null}
+  <h3 data-solution-heading>ステップごとの解答</h3>
   {props.solutionSteps.map(({ step, presentation, snippets }) => (
     <div class="solution-step">
       <details class="step-solution" data-presentation={presentation}>
         <summary>{step.goal}</summary>
-        {presentation === "completed-file" ? (
-          <p class="step-solution__completed-file-note">この完成例には後続 step を含みます。すべての target file を反映してから検証します。</p>
-        ) : null}
         {snippets.map(({ solution, code }) => (
           <section class="step-solution__snippet">
             <h4><code>{solution.path}</code></h4>

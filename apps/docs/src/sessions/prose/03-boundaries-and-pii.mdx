@@ -221,20 +221,11 @@ import BrandedIdFlow from "../../components/BrandedIdFlow.astro";
   </div>
   <h3>この演習で解決しないこと</h3>
   <p>schemaはUUIDの形式を検査しますが、そのUUIDが実在する予約や獣医師を指すかは判断しません。対象の取得と状態確認はS04で扱います。</p>
-  <h3 data-solution-heading>{props.session.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
-  {props.session.solutionPresentation === "completed-file" ? (
-    <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
-      <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読みます。</p>
-      <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示されます。</p>
-    </div>
-  ) : null}
+  <h3 data-solution-heading>ステップごとの解答</h3>
   {props.solutionSteps.map(({ step, presentation, snippets }) => (
     <div class="solution-step">
       <details class="step-solution" data-presentation={presentation}>
         <summary>{step.goal}</summary>
-        {presentation === "completed-file" ? (
-          <p class="step-solution__completed-file-note">この完成例には後続 step を含みます。すべての target file を反映してから検証します。</p>
-        ) : null}
         {snippets.map(({ solution, code }) => (
           <section class="step-solution__snippet">
             <h4><code>{solution.path}</code></h4>

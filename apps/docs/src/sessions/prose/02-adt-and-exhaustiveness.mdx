@@ -135,14 +135,11 @@ import InlineCode from "../../components/InlineCode.astro";
     <li>型アサーション（<code>as Appointment</code> など）で型を付けた値。型アサーションは、中身を確かめずに型だけを付けます。</li>
   </ul>
   <p>これらの値が型にない kind を持って default に届くと、assertNever は例外を投げます。外から届く値を、型の付いた値に変える前に確かめる方法は、<a href="/sessions/03-boundaries-and-pii/">Session 03</a> の境界で扱います。表示名の文言が正しいかどうかも、型検査では確かめられません。</p>
-  <h3 data-solution-heading>{props.session.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
+  <h3 data-solution-heading>ステップごとの解答</h3>
   {props.solutionSteps.map(({ step, presentation, snippets }) => (
     <div class="solution-step">
       <details class="step-solution" data-presentation={presentation}>
         <summary>{step.goal}</summary>
-        {presentation === "completed-file" ? (
-          <p class="step-solution__completed-file-note">この完成例には後続 step を含みます。すべての target file を反映してから検証します。</p>
-        ) : null}
         {snippets.map(({ solution, code }) => (
           <section class="step-solution__snippet">
             <h4><code>{solution.path}</code></h4>
