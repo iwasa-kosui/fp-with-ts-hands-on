@@ -11,9 +11,15 @@ export type WorkspaceAction =
   | Readonly<{ kind: "edit"; path: string; contents: string }>
   | Readonly<{ kind: "reset"; path: string; contents: string }>
   | Readonly<{ kind: "external-write"; path: string; contents: string }>
-  | Readonly<{ kind: "external-delete"; path: string }>;
+  | Readonly<{ kind: "external-delete"; path: string }>
+  | Readonly<{
+      kind: "restore";
+      contents: ProjectFiles;
+      visiblePaths: readonly string[];
+      selectedPath?: string;
+    }>;
 
-const sortPaths = (paths: readonly string[]): readonly string[] =>
+export const sortPaths = (paths: readonly string[]): readonly string[] =>
   [...new Set(paths)].sort((left, right) => left.localeCompare(right));
 
 export const createWorkspaceState = (
@@ -40,6 +46,17 @@ export const reduceWorkspaceState = (
   state: WorkspaceState,
   action: WorkspaceAction,
 ): WorkspaceState => {
+  if (action.kind === "restore") {
+    const preferredPath = [action.selectedPath, state.selectedPath].find(
+      (path) => path !== undefined && action.visiblePaths.includes(path),
+    );
+    return {
+      contents: action.contents,
+      visiblePaths: action.visiblePaths,
+      selectedPath: preferredPath ?? action.visiblePaths[0],
+    };
+  }
+
   if (action.kind === "select") {
     if (
       action.path === state.selectedPath ||
