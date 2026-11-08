@@ -19,7 +19,7 @@ import InlineCode from "../../components/InlineCode.astro";
   <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
   <p>処理の中で時刻と ID を直接作り、状態と監査記録を別々に保存します。そのため、テスト結果が安定せず、片方だけが残ることがあります。</p>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
-  <p>Clock と EventIdGenerator を port として注入し、保存などの副作用を呼び出すユースケースで EventContext を一度だけ生成します。純粋な状態遷移にはその EventContext を渡し、状態と監査記録を表す ExaminationStarted を単一の Store へ渡します。予約が存在しない・予約の状態が不正・予約が競合しているケースは、Result のエラーとして返します。データベース起因のエラーやデータが破損しているエラーは業務エラーには変換せず、Promise の reject として外側の境界へ伝えます。</p>
+  <p>Clock と EventIdGenerator を port として注入し、保存などの副作用を呼び出すユースケースで EventContext を一度だけ生成します。port は、ユースケースが外側に求める処理を型で表した約束です。外から引数で渡すことを注入と呼びます。EventContext は、イベントに記録するイベント ID（eventId）と時刻（occurredAt）の組です。副作用と純粋関数の意味は、<a href="/sessions/01-state-transitions/#pure-functions">S01 の純粋関数と副作用の節</a>で確認できます。純粋な状態遷移にはその EventContext を渡し、状態と監査記録を表す ExaminationStarted を単一の Store へ渡します。予約が存在しない・予約の状態が不正・予約が競合しているケースは、Result のエラーとして返します。データベース起因のエラーやデータが破損しているエラーは業務エラーには変換せず、Promise の reject として外側の境界へ伝えます。</p>
   <h3>このセッションで守ること</h3>
   <ul class="decision-list">{props.session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
   <p>今回の変更は <code>{props.session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
@@ -27,7 +27,7 @@ import InlineCode from "../../components/InlineCode.astro";
 
 <section id="legacy" class="code-playground">
   <h2>コードを読み、失敗を再現する</h2>
-  <p>直接時刻を参照したりIDを生成したりしている処理、状態の保存と監査記録の保存がアトミックになっていない実装を読んでみましょう。例えば監査記録の保存だけが失敗すると、状態の保存だけが成功し、状態と監査記録がそろわなくなります。また、保存処理が AppointmentConflict を返せない箇所も探します。</p>
+  <p>直接時刻を参照したりIDを生成したりしている処理、状態の保存と監査記録の保存がアトミックになっていない実装を読んでみましょう。アトミックとは、複数の書き込みが、全部残るか何も残らないかのどちらかになることです。例えば監査記録の保存だけが失敗すると、状態の保存だけが成功し、状態と監査記録がそろわなくなります。また、保存処理が AppointmentConflict を返せない箇所も探します。</p>
   <p>{"\n"}編集する範囲は <code>{props.session.exerciseModule.dir}</code>、変更するファイル数は最大{"\n"}{props.session.exerciseModule.fileBudget}ファイル・約{props.session.exerciseModule.lineBudget}行です。{"\n"}</p>
   <CodeGuideCards guides={props.guides} projectFiles={props.projectFiles} />
   <h3>修正前の失敗を確認する</h3>
@@ -70,12 +70,13 @@ import InlineCode from "../../components/InlineCode.astro";
     after={props.teaching[1].after}
     examples={props.teaching[1].examples}
   >
-    <p>診察開始では、予約の状態の更新と監査記録の追加の2つの書き込みが起きます。この2つを別々の保存処理に分けると、途中で失敗したときに片方だけが残ります。</p>
+    <p>診察開始では、予約の状態の更新と監査記録の追加の2つの書き込みが起きます。この2つを別々の保存処理に分けると、途中で失敗したときに片方だけが残ります。このように、1つの変更を2つの保存処理に分けて書くことを dual-write と呼びます。</p>
     <p>before は stateStore.save の後に eventLog.append を呼びます。append だけが失敗すると、予約は診察中になるのに、誰がいつ診察を開始したかの記録は残りません。順番を入れ替えても、今度は記録だけが残る可能性があります。</p>
     <p>after は ExaminationStarted を store へ1回渡します。ExaminationStarted の aggregateState は保存後の予約の状態を持つので、1つの値が状態と監査記録の両方を表します。どう書き込むかは store の実装が決めます。</p>
+    <p>transaction は、データベースへの複数の書き込みを1つにまとめる仕組みです。transaction を開始した後の書き込みは、確定（commit）するまで未確定のままです。確定する前に例外が起きると、データベースは transaction を取り消し（rollback）、未確定の書き込みをすべて捨てます。そのため、まとめた書き込みは全部残るか、何も残らないかのどちらかになります。この性質を原子性と呼び、原子性を持つことをアトミックと言います。</p>
     <p>同時に残すことを実際に守るのは store の実装です。SQLite の実装は、saveState と appendAudit を1つの transaction の中で呼びます。appendAudit が例外を投げると transaction が取り消され、状態の更新も残りません。</p>
     <p>store は transaction の中で現在の予約を読み直します。ユースケースが予約を読んだ後に、予約が変わっていることがあります。SQLite の実装は、予約が無いとき、または現在の状態が CheckedIn でないときに、AppointmentConflict を返します。このとき store は saveState の前に返るので、何も書き込みません。</p>
-    <p>in-memory の実装は transaction を持ちません。新しい Map と配列を作ってから最後にまとめて置き換えることで、同じ約束を表します。</p>
+    <p>in-memory の実装は、データベースを使わずに、メモリ上の Map と配列へ保存する実装です。データベースを用意しなくても、store の約束をテストで確かめられます。in-memory の実装は transaction を持ちません。新しい Map と配列を作ってから最後にまとめて置き換えることで、同じ約束を表します。</p>
     <Fragment slot="why">保存処理を1つにすると、ユースケースは片方だけ成功した場合の後始末を書かずに済みます。状態と監査記録をそろえる責任は store の実装に集まります。型だけでは transaction の有無を確かめられないので、examples/session-07/test/integration/fileSqliteTransaction.test.ts が監査記録の失敗時に状態が戻ることを確かめています。</Fragment>
   </TeachingTopic>
   <StoreBoundaryAnimation />
@@ -103,7 +104,7 @@ import InlineCode from "../../components/InlineCode.astro";
     <p>before のように fromPromise ですべての reject を AppointmentConflict へ変換すると、データベースの障害でも画面は競合として案内します。例外が外側の例外境界へ届かないので、障害はログに記録されません。</p>
     <p>after は resolveAppointment の中で、resolver の呼び出しを Promise.resolve().then(...) で包みます。resolver は同期の関数で、破損データを読むと ZodError を投げます。then の中で呼ぶと、この throw も reject になります。包まずに呼ぶと、ResultAsync を返す前に例外が呼び出し元へ飛びます。</p>
     <p>store の実装も fromSafePromise を使います。transaction の中の throw は reject になり、そのまま andThrough を通り抜けます。</p>
-    <p>reject は、S04 で確認した外側の例外境界が受け取ります。例外境界は、エラーの詳細を含まない 500 応答へ変換します。本番ではここでログへも記録します。配布コードの app.onError は記録を省いています。</p>
+    <p>reject は、S04 で確認した外側の例外境界が受け取ります。例外境界は、エラーの詳細を含まない 500 応答へ変換します。本番ではここでログへも記録します。配布コードは Web フレームワークの Hono を使い、app.onError に例外境界の処理を登録しています。app.onError は、ルートの処理が投げた例外と reject を受け取ります。配布コードの app.onError は記録を省いています。</p>
     <Fragment slot="why">E に AppointmentConflict だけを書くと、呼び出し側は選べる対応だけを型から読み取れます。演習の Step 4 は、競合が Err になり、保存障害と破損データが reject になることをテストで確かめます。</Fragment>
   </TeachingTopic>
   <EffectsPipelineAnimation />
