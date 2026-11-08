@@ -8,6 +8,7 @@ import {
 import { sessionNavigationItems } from "./sessions/navigation";
 import { sessionPages } from "./sessions/pages/03-boundaries-and-pii";
 import { sessionPageEntries } from "./sessions/pages/links";
+import { sessionPageFlowOrder, splitPageRole } from "./sessions/pages/types";
 import type { SessionNavigation, SessionSummary } from "./sessions/types";
 type PageModule = Readonly<{
   session: SessionSummary;
@@ -33,8 +34,8 @@ const proseSources = import.meta.glob<string>("./sessions/prose/*.mdx", {
   query: "?raw",
   import: "default",
 });
-const boundaryIndexSource = Object.values(
-  import.meta.glob<string>("./sessions/prose/03-boundaries-and-pii/index.mdx", {
+const boundaryEpisodeSource = Object.values(
+  import.meta.glob<string>("./sessions/prose/03-boundaries-and-pii/night-shift.mdx", {
     eager: true,
     query: "?raw",
     import: "default",
@@ -405,7 +406,7 @@ describe("page-owned session contracts", () => {
 
     for (const { path, session } of pages) {
       const isBoundary = session.slug === "03-boundaries-and-pii";
-      const source = isBoundary ? boundaryIndexSource : (pageSources[path] ?? "");
+      const source = isBoundary ? boundaryEpisodeSource : (pageSources[path] ?? "");
       expect(source, path).toContain('class="case-file__episode"');
       expect(source, path).toContain('class="case-file__episode-label"');
       if (isBoundary) continue;
@@ -579,24 +580,27 @@ describe("page-owned session contracts", () => {
 });
 
 const expectedBoundaryPages = [
-  ["", "獣医師の欄に「夜勤」と届いた", "brief", 1],
-  ["current-code", "今のコードは必ず成功を返す", "brief", 1],
-  ["boundary", "外側・境界・内側", "teach", 2],
-  ["result", "Result は成否だけを持つ小さな型", "teach", 1],
-  ["zod", "Zod: 1つの schema から型を作る", "teach", 1.5],
-  ["safe-parse", "schema で検査して Result を返す", "teach", 1.5],
-  ["branded", "Branded Type: 同じ string を用途で区別する", "teach", 2],
-  ["boundary-after", "境界を通った値だけが内側へ入る", "teach", 2],
-  ["terms", "学んだことに名前を付ける", "teach", 0.5],
-  ["audit-record", "連絡先を記録に残さない", "teach", 1.5],
-  ["checks", "値の性質をテストで確かめる", "teach", 1],
-  ["exercise", "演習: 悪い変更を検出する仕組みを足す", "exercise", 15],
-  ["peer-review", "相互レビュー", "review", 3],
-  ["review", "個人の確認と持ち帰り", "review", 1],
-  ["guard", "仕組みで防ぐ方法を話す", "review", 1],
-  ["payment-amount", "値の制約にも同じ形を使う", "advanced", 0],
-  ["pii", "Sensitive で値を伏せる", "advanced", 0],
-  ["value-shapes", "扱う値が変わっても形は同じ", "advanced", 0],
+  ["", "診察開始は画面から届く", "background", "brief", 0.5],
+  ["night-shift", "獣医師の欄に「夜勤」と届いた", "problem", "brief", 0.5],
+  ["current-code", "今のコードは必ず成功を返す", "problem", "brief", 1],
+  ["boundary", "外側・境界・内側", "problem", "teach", 2],
+  ["audit-leak", "連絡先が記録に残っている", "problem", "teach", 0.5],
+  ["result", "Result は成否だけを持つ小さな型", "knowledge", "teach", 1],
+  ["zod", "Zod: 1つの schema から型を作る", "knowledge", "teach", 1.5],
+  ["safe-parse", "schema で検査して Result を返す", "knowledge", "teach", 1.5],
+  ["branded", "Branded Type: 同じ string を用途で区別する", "knowledge", "teach", 2],
+  ["boundary-after", "境界を通った値だけが内側へ入る", "solution", "teach", 2],
+  ["audit-record", "連絡先を記録に残さない", "solution", "teach", 1],
+  ["terms", "学んだことに名前を付ける", "solution", "teach", 0.5],
+  ["checks", "直した状態をどう守るか", "solution", "teach", 0.5],
+  ["property-test", "値の性質をテストで確かめる", "solution", "teach", 0.5],
+  ["exercise", "演習: 悪い変更を検出する仕組みを足す", "solution", "exercise", 15],
+  ["peer-review", "相互レビュー", "solution", "review", 3],
+  ["guard", "仕組みで防ぐ方法を話す", "work", "review", 1],
+  ["review", "自分の業務に持ち帰る", "work", "review", 1],
+  ["payment-amount", "値の制約にも同じ形を使う", "advanced", "advanced", 0],
+  ["pii", "Sensitive で値を伏せる", "advanced", "advanced", 0],
+  ["value-shapes", "扱う値が変わっても形は同じ", "advanced", "advanced", 0],
 ] as const;
 
 describe("Session 03 page list", () => {
@@ -612,16 +616,38 @@ describe("Session 03 page list", () => {
     title: "失敗をユースケースの結果として扱う",
   };
 
-  it("lists the 18 pages in the agreed order", () => {
+  it("lists the 21 pages in the agreed order", () => {
     expect(
-      sessionPages.map(({ slug, title, kind, minutes }) => [
+      sessionPages.map(({ slug, title, flow, kind, minutes }) => [
         slug,
         title,
+        flow,
         kind,
         minutes,
       ]),
     ).toEqual(expectedBoundaryPages);
-    expect(new Set(sessionPages.map(({ slug }) => slug)).size).toBe(18);
+    expect(new Set(sessionPages.map(({ slug }) => slug)).size).toBe(21);
+  });
+
+  it("orders the pages by flow and gives each page a role that starts with its stage", () => {
+    const flows = sessionPages.map(({ flow }) => flow);
+
+    expect(flows).toEqual(
+      [...flows].sort(
+        (left, right) =>
+          sessionPageFlowOrder.indexOf(left) - sessionPageFlowOrder.indexOf(right),
+      ),
+    );
+    for (const { slug, role } of sessionPages) {
+      const { label, text } = splitPageRole(role);
+      expect(label, slug).not.toBe("");
+      expect(text, slug).not.toBe("");
+    }
+    expect(
+      sessionPages.filter(({ flow }) => flow === "advanced").every(({ role }) =>
+        role.startsWith("あとで読む: "),
+      ),
+    ).toBe(true);
   });
 
   it("keeps the page minutes aligned with the session time breakdown", () => {
@@ -653,7 +679,7 @@ describe("Session 03 page list", () => {
           ? s02
           : { href: hrefOf(slugs[index - 1]!), title: expectedBoundaryPages[index - 1]![1] };
       const expectedNext =
-        slugs[index] === "guard" || index === slugs.length - 1
+        slugs[index] === "review" || index === slugs.length - 1
           ? s04
           : { href: hrefOf(slugs[index + 1]!), title: expectedBoundaryPages[index + 1]![1] };
 
@@ -667,12 +693,12 @@ describe("Session 03 page list", () => {
       entries.flatMap(({ page, later }) =>
         later === undefined ? [] : [[page.slug, later]],
       ),
-    ).toEqual([["guard", { href: `${base}payment-amount/`, count: 3 }]]);
+    ).toEqual([["review", { href: `${base}payment-amount/`, count: 3 }]]);
   });
 
   it("counts positions inside the in-time pages and the advanced pages separately", () => {
     expect(entries.map(({ position }) => position)).toEqual([
-      ...Array.from({ length: 15 }, (_, index) => `${index + 1} / 15`),
+      ...Array.from({ length: 18 }, (_, index) => `${index + 1} / 18`),
       "発展 1 / 3",
       "発展 2 / 3",
       "発展 3 / 3",

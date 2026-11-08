@@ -1,24 +1,7 @@
-import { Code } from "astro:components";
-import EpisodeIllustration from "../../../components/EpisodeIllustration.astro";
-import { incidentRequest, session } from "../../pages/03-boundaries-and-pii-content";
+import StartExaminationRoute from "../../../components/boundary/StartExaminationRoute.astro";
 
-<div class="session-split session-split--story">
-  <div>
-    <aside class="case-file__episode" aria-label="動物病院のひと幕">
-      <p class="case-file__episode-label">動物病院のひと幕</p>
-      <p>15時30分、獣医師が診察開始画面で、診察開始を押しました。</p>
-      <p>画面の不具合で、画面は獣医師のIDの代わりに、勤務区分を表す「night-shift」を送信しました。</p>
-      <p>サーバーは、届いた値を検査しないまま、診察開始の処理へ進めました。</p>
-    </aside>
-    <p>{session.summary}</p>
-    <p>画面からサーバーへ届いた内容は、HTTP リクエストという形のメッセージです。HTTP リクエストは、操作の内容をサーバーへ伝えます。</p>
-    <p>URL の予約IDは正しい形です。body の <code>veterinarianId</code> には、獣医師のIDではなく <code>night-shift</code> が入っています。</p>
-  </div>
-  <div>
-    <EpisodeIllustration slug="03-boundaries-and-pii" />
-    <figure class="code-block boundary-request" data-boundary-request>
-      <figcaption>画面が送信した HTTP リクエスト</figcaption>
-      <Code code={incidentRequest} lang="http" />
-    </figure>
-  </div>
-</div>
+<p>S00 で引き継いだ動物病院の予約システムの場面です。獣医師は、診察開始画面で予約を選び、「診察を開始する」ボタンを押して診察を始めます。この操作は、HTTP リクエストというメッセージになって、サーバーへ届きます。サーバーは、診察開始の処理を行い、診察を始めた記録を残します。</p>
+
+<p>リクエストに入る予約IDと獣医師のIDは、UUID という形式の文字列です。UUID は、<code>11111111-1111-4111-8111-111111111111</code> のように、数字と英字をハイフンで区切った形をしています。</p>
+
+<StartExaminationRoute />

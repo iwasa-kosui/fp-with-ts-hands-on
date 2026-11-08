@@ -5,7 +5,7 @@ import {
   sessionPageEntries,
 } from "../../sessions/pages/links";
 import { sessionNavigationItems } from "../../sessions/navigation";
-import type { SessionPage } from "../../sessions/pages/types";
+import { splitPageRole, type SessionPage } from "../../sessions/pages/types";
 import "../../styles/sessions.css";
 import "../../styles/code-playground.css";
 import "../../styles/session-layout.css";
@@ -30,6 +30,7 @@ if (entry === undefined) {
 const { page, previous, next, later, position } = entry;
 const sessionTitle =
   sessionNavigationItems.find(({ slug }) => slug === sessionSlug)?.title ?? "";
+const role = splitPageRole(page.role);
 const sequence = sessionSlug === "final" ? "Final" : `S${sessionSlug.slice(0, 2)}`;
 ---
 
@@ -72,6 +73,7 @@ const sequence = sessionSlug === "final" ? "Final" : `S${sessionSlug.slice(0, 2)
         />
       </aside>
       <main class="session-frame__main">
+        <p class="session-frame__role"><strong>{role.label}</strong>: {role.text}</p>
         <article class="session-frame__content case-file__content">
           <slot />
         </article>
@@ -89,15 +91,16 @@ const sequence = sessionSlug === "final" ? "Final" : `S${sessionSlug.slice(0, 2)
           </a>
         )
       }
-      {
-        later === undefined ? (
-          <span class="session-frame__link-slot"></span>
-        ) : (
-          <a class="session-frame__later" data-session-later href={later.href}>
-            あとで読む: 発展 {later.count}ページ
-          </a>
-        )
-      }
+      <div class="session-frame__center">
+        {
+          later === undefined ? null : (
+            <a class="session-frame__later" data-session-later href={later.href}>
+              あとで読む: 発展 {later.count}ページ
+            </a>
+          )
+        }
+        <span class="session-frame__key-hint">← → キーでも移動できます</span>
+      </div>
       {
         next === undefined ? (
           <span class="session-frame__link-slot"></span>
@@ -111,3 +114,18 @@ const sequence = sessionSlug === "final" ? "Final" : `S${sessionSlug.slice(0, 2)
     </nav>
   </div>
 </BaseLayout>
+
+<script>
+  import { pageKeyDirection } from "../../sessions/pages/page-key-navigation";
+
+  document.addEventListener("keydown", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const direction = pageKeyDirection(event, target);
+    if (direction === null) return;
+    const rel = direction === "previous" ? "prev" : "next";
+    const href = document
+      .querySelector<HTMLAnchorElement>(`.session-frame__footer a[rel="${rel}"]`)
+      ?.getAttribute("href");
+    if (href) location.assign(href);
+  });
+</script>

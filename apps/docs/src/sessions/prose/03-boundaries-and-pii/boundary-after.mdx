@@ -1,7 +1,9 @@
 import BoundaryPlayer from "../../../components/BoundaryPlayer.astro";
 import { startExaminationWalkthrough } from "../../boundary-walkthroughs";
 
-<p>検査を通った値だけが、型の付いた値として内側へ入ります。検査に失敗した値は内側へ入らず、今は 500 のエラーになります。失敗の扱いは S04 で変えます。形式の検査は実在を確かめないので、UUID の形が正しい別のIDは通ります。Branded Type が防ぐのは、コードの中で型が違う値を渡し間違える変更です。外から届いた値がどの ID を指すかは、Branded Type では確かめられません。</p>
+<p><strong>解けたこと</strong>: 課題1が解けました。検査を通った値だけが、型の付いた値として内側へ入ります。検査に失敗した値は内側へ入らず、今は 500 のエラーになります。失敗の扱いは S04 で変えます。</p>
+
+<p><strong>解けないこと</strong>: 形式の検査は、実在を確かめません。たとえば、獣医師の欄に予約のIDが届いても、UUID の形が正しければ通ります。Branded Type が防ぐのは、コードの中で型が違う値を渡し間違える変更だけです。</p>
 
 <BoundaryPlayer
   walkthrough={startExaminationWalkthrough}

@@ -21,8 +21,8 @@ const proseSources = import.meta.glob<string>("../sessions/prose/*.mdx", {
   query: "?raw",
   import: "default",
 });
-const boundaryIndexSources = import.meta.glob<string>(
-  "../sessions/prose/03-boundaries-and-pii/index.mdx",
+const boundaryEpisodeSources = import.meta.glob<string>(
+  "../sessions/prose/03-boundaries-and-pii/night-shift.mdx",
   {
     eager: true,
     query: "?raw",
@@ -52,8 +52,8 @@ describe("episodeScenes", () => {
     expect(source).toContain("  <EpisodeIllustration slug={props.session.slug} />");
   });
 
-  it("03-boundaries-and-pii の先頭ページの MDX が EpisodeIllustration を置いている", () => {
-    const source = boundaryIndexSources["../sessions/prose/03-boundaries-and-pii/index.mdx"];
+  it("03-boundaries-and-pii の night-shift ページの MDX が EpisodeIllustration を置いている", () => {
+    const source = boundaryEpisodeSources["../sessions/prose/03-boundaries-and-pii/night-shift.mdx"];
 
     expect(source).toContain('<EpisodeIllustration slug="03-boundaries-and-pii" />');
   });

@@ -1,0 +1,223 @@
+---
+import StepControls from "./StepControls.astro";
+
+const appointmentId = "11111111-1111-4111-8111-111111111111";
+const veterinarianId = "44444444-4444-4444-8444-444444444444";
+
+const frames = [
+  {
+    caption: "獣医師が診察開始画面で、予約を選んで「診察を開始する」ボタンを押します。",
+  },
+  {
+    caption:
+      "画面は、押された操作を HTTP リクエストにして、サーバーへ送ります。body は、リクエストに付いて届く本文です。ここには、診察を始める獣医師のIDが入っています。",
+  },
+  {
+    caption:
+      "サーバーの route が、届いたリクエストを受け取ります。route は URL ごとにどの処理を呼ぶかを決めるコードです。この URL では、診察開始の処理を呼びます。",
+  },
+  {
+    caption: "診察開始の処理は、予約を診察中にして、診察を始めた記録を残します。",
+  },
+] as const;
+---
+
+<figure class="start-route" data-start-route aria-label="診察開始の操作がサーバーで処理されるまでの流れ">
+  <StepControls />
+
+  <ol class="start-route__nodes">
+    <li class="start-route__node" data-node="0">
+      <p class="start-route__title">画面</p>
+      <span class="start-route__button">診察を開始する</span>
+    </li>
+    <li class="start-route__arrow" aria-hidden="true">→</li>
+    <li class="start-route__node" data-node="1">
+      <p class="start-route__title">HTTP リクエスト</p>
+      <p class="start-route__line"><code>POST /appointments/{appointmentId}/start-examination</code></p>
+      <p class="start-route__line"><strong>body</strong></p>
+      <p class="start-route__line"><code>{`{ "veterinarianId": "${veterinarianId}" }`}</code></p>
+    </li>
+    <li class="start-route__arrow" aria-hidden="true">→</li>
+    <li class="start-route__node" data-node="2">
+      <p class="start-route__title">サーバー</p>
+      <p class="start-route__chip"><code>route</code></p>
+      <p class="start-route__down" aria-hidden="true">▼</p>
+      <p class="start-route__chip">診察開始の処理</p>
+    </li>
+    <li class="start-route__arrow" aria-hidden="true">→</li>
+    <li class="start-route__node" data-node="3">
+      <p class="start-route__title">記録</p>
+      <ul class="start-route__record">
+        <li>どの予約か</li>
+        <li>誰が</li>
+        <li>いつ</li>
+      </ul>
+    </li>
+  </ol>
+
+  <div aria-live="polite">
+    <ol class="start-route__frames">
+      {frames.map((frame) => (
+        <li data-frame>
+          <p class="start-route__caption">{frame.caption}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</figure>
+
+<script>
+  import { mountStepper } from "./stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-start-route]").forEach((root) => {
+    mountStepper({
+      root,
+      onStep: (step) => {
+        root.querySelectorAll<HTMLElement>("[data-node]").forEach((node) => {
+          const index = Number(node.dataset.node);
+          node.dataset.state = index === step ? "current" : index < step ? "done" : "idle";
+        });
+      },
+    });
+  });
+</script>
+
+<style>
+  .start-route {
+    min-width: 0;
+    margin: 0.75rem 0;
+  }
+
+  .start-route__nodes {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.6fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: stretch;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .start-route__node {
+    display: grid;
+    align-content: start;
+    gap: 0.375rem;
+    min-width: 0;
+    padding: 0.625rem 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+  }
+
+  .start-route__node p,
+  .start-route__node ul {
+    margin: 0;
+  }
+
+  .start-route__title {
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    font-weight: 800;
+  }
+
+  .start-route__button {
+    justify-self: start;
+    padding: 0.25rem 0.75rem;
+    border: 2px solid var(--role-accent);
+    border-radius: 999px;
+    color: var(--role-accent);
+    font-size: 0.875rem;
+    font-weight: 800;
+  }
+
+  .start-route__line {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .start-route__line code,
+  .start-route__chip code {
+    font-size: inherit;
+  }
+
+  .start-route__chip {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--role-border);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .start-route__down {
+    color: var(--role-muted);
+    line-height: 1;
+    text-align: center;
+  }
+
+  .start-route__record {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .start-route__record li {
+    padding: 0.125rem 0.5rem;
+    border-inline-start: 4px solid var(--role-positive);
+    font-size: 0.8125rem;
+  }
+
+  .start-route__arrow {
+    align-self: center;
+    color: var(--role-muted);
+    font-weight: 800;
+  }
+
+  .start-route__frames {
+    margin: 0.75rem 0 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .start-route__caption {
+    margin: 0;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .start-route[data-ready] .start-route__frames {
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  .start-route[data-ready] .start-route__node {
+    transition: opacity 0.3s, border-color 0.3s;
+  }
+
+  .start-route[data-ready] .start-route__node[data-state="idle"] {
+    opacity: 0.4;
+  }
+
+  .start-route[data-ready] .start-route__node[data-state="current"] {
+    border-color: var(--role-accent);
+    box-shadow: 0 0 0 2px var(--role-accent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .start-route[data-ready] .start-route__node {
+      transition: none;
+    }
+  }
+
+  @media (max-width: 55rem) {
+    .start-route__nodes {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .start-route__arrow {
+      justify-self: center;
+      transform: rotate(90deg);
+    }
+  }
+</style>

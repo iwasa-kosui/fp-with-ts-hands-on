@@ -700,7 +700,7 @@
 @media (min-width: 1100px) {
   .guard-exercise__grid {
     grid-template-columns: 300px minmax(0, 1fr) 460px;
-    height: calc(100dvh - 48px - 56px - 2rem);
+    height: calc(100dvh - 48px - 56px - 2rem - var(--frame-role-height, 0px));
     min-height: 30rem;
   }
 

@@ -5,6 +5,12 @@ import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import { blockOf } from "../../sessions/source-quotes";
 import StepControls from "./StepControls.astro";
 
+interface Props {
+  part?: "problem" | "solution";
+}
+
+const { part } = Astro.props;
+
 const repositoryPath = "src/adaptor/secondary/sqlite/appointmentRepository.ts";
 const auditPayloadPath = "src/adaptor/secondary/sqlite/auditPayload.ts";
 
@@ -40,7 +46,7 @@ const afterCode = dedent(
 
 const sides = {
   before: {
-    label: "修正前",
+    label: part === "problem" ? "今のコード" : "修正前",
     path: `examples/session-03/src/adaptor/secondary/sqlite/appointmentRepository.ts:92-96`,
     code: beforeCode,
   },
@@ -65,7 +71,7 @@ const frames = [
     caption: "診察を開始するたびに、監査記録が1件書かれます。",
   },
   {
-    caption: "修正前のコードは、監査記録に ownerContact を入れています。氏名・メールアドレス・電話番号が、そのまま記録に残ります。",
+    caption: `${part === "problem" ? "今" : "修正前"}のコードは、監査記録に ownerContact を入れています。氏名・メールアドレス・電話番号が、そのまま記録に残ります。`,
   },
   {
     caption: "修正後のコードは、appointmentId・veterinarianId・examinationStartedAt の3項目だけを記録に入れます。連絡先は入りません。",
@@ -75,10 +81,15 @@ const frames = [
   },
 ] as const;
 
+const [firstFrame, endFrame] =
+  part === "problem" ? [0, 2] : part === "solution" ? [2, 4] : [0, 4];
+const shownFrames = frames.slice(firstFrame, endFrame);
+const showsAfter = part !== "problem";
+
 const litData = JSON.stringify(lit);
 ---
 
-<figure class="audit-flow" data-audit-record-flow data-lit={litData} aria-label="診察開始の監査記録の修正前と修正後">
+<figure class="audit-flow" data-audit-record-flow data-lit={litData} data-offset={firstFrame} aria-label="診察開始の監査記録の修正前と修正後">
   <StepControls />
 
   <div class="audit-flow__trigger">
@@ -86,7 +97,7 @@ const litData = JSON.stringify(lit);
     <span class="audit-flow__arrows" aria-hidden="true">▼　　　　▼</span>
   </div>
 
-  <div class="audit-flow__columns">
+  <div class:list={["audit-flow__columns", { "audit-flow__columns--single": !showsAfter }]}>
     <section class="audit-flow__column" data-side="before">
       <figure class="code-block audit-flow__code">
         <figcaption>
@@ -114,37 +125,39 @@ const litData = JSON.stringify(lit);
       </div>
     </section>
 
-    <section class="audit-flow__column" data-side="after">
-      <figure class="code-block audit-flow__code">
-        <figcaption>
-          <span class="audit-flow__tag audit-flow__tag--after">{sides.after.label}</span>
-          <code>{sides.after.path}</code>
-        </figcaption>
-        <Code code={sides.after.code} lang="ts" />
-      </figure>
-      <div class="audit-flow__record">
-        <p class="audit-flow__record-title">監査記録 1件</p>
-        <ul>
-          <li class="audit-flow__row audit-flow__row--keep" data-from="2" style="--i: 0">
-            <span>appointmentId</span><span>どの予約か</span>
-          </li>
-          <li class="audit-flow__row audit-flow__row--keep" data-from="2" style="--i: 1">
-            <span>veterinarianId</span><span>誰が</span>
-          </li>
-          <li class="audit-flow__row audit-flow__row--keep" data-from="2" style="--i: 2">
-            <span>examinationStartedAt</span><span>いつ</span>
-          </li>
-          <li class="audit-flow__row audit-flow__row--ghost" data-from="3" style="--i: 3">
-            <span>ownerContact</span><span>残さない</span>
-          </li>
-        </ul>
-      </div>
-    </section>
+    {showsAfter && (
+      <section class="audit-flow__column" data-side="after">
+        <figure class="code-block audit-flow__code">
+          <figcaption>
+            <span class="audit-flow__tag audit-flow__tag--after">{sides.after.label}</span>
+            <code>{sides.after.path}</code>
+          </figcaption>
+          <Code code={sides.after.code} lang="ts" />
+        </figure>
+        <div class="audit-flow__record">
+          <p class="audit-flow__record-title">監査記録 1件</p>
+          <ul>
+            <li class="audit-flow__row audit-flow__row--keep" data-from="2" style="--i: 0">
+              <span>appointmentId</span><span>どの予約か</span>
+            </li>
+            <li class="audit-flow__row audit-flow__row--keep" data-from="2" style="--i: 1">
+              <span>veterinarianId</span><span>誰が</span>
+            </li>
+            <li class="audit-flow__row audit-flow__row--keep" data-from="2" style="--i: 2">
+              <span>examinationStartedAt</span><span>いつ</span>
+            </li>
+            <li class="audit-flow__row audit-flow__row--ghost" data-from="3" style="--i: 3">
+              <span>ownerContact</span><span>残さない</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+    )}
   </div>
 
   <div aria-live="polite">
     <ol class="audit-flow__frames">
-      {frames.map((frame) => (
+      {shownFrames.map((frame) => (
         <li data-frame>
           <p class="audit-flow__caption">{frame.caption}</p>
         </li>
@@ -160,13 +173,16 @@ const litData = JSON.stringify(lit);
 
   document.querySelectorAll<HTMLElement>("[data-audit-record-flow]").forEach((root) => {
     const lit = JSON.parse(root.dataset.lit ?? "{}") as Lit;
+    const offset = Number(root.dataset.offset ?? 0);
     const lines = (side: "before" | "after") =>
       [...root.querySelectorAll<HTMLElement>(`[data-side="${side}"] .line`)];
     const rows = [...root.querySelectorAll<HTMLElement>("[data-from]")];
 
     mountStepper({
       root,
-      onStep: (step) => {
+      onStep: (index) => {
+        const step = index + offset;
+        root.dataset.phase = String(step);
         (["before", "after"] as const).forEach((side) => {
           const active = lit[side]?.[String(step)] ?? [];
           lines(side).forEach((line, index) => line.classList.toggle("is-lit", active.includes(index)));
@@ -369,20 +385,20 @@ const litData = JSON.stringify(lit);
     transition-delay: calc(var(--i) * 0.12s);
   }
 
-  .audit-flow[data-ready][data-step="0"] .audit-flow__code,
-  .audit-flow[data-ready][data-step="1"] .audit-flow__column[data-side="after"],
-  .audit-flow[data-ready][data-step="2"] .audit-flow__column[data-side="before"],
-  .audit-flow[data-ready][data-step="3"] .audit-flow__column[data-side="before"] {
+  .audit-flow[data-ready][data-phase="0"] .audit-flow__code,
+  .audit-flow[data-ready][data-phase="1"] .audit-flow__column[data-side="after"],
+  .audit-flow[data-ready][data-phase="2"] .audit-flow__column[data-side="before"],
+  .audit-flow[data-ready][data-phase="3"] .audit-flow__column[data-side="before"] {
     opacity: 0.4;
   }
 
-  .audit-flow[data-ready][data-step="3"] .audit-flow__column[data-side="after"] .audit-flow__row--keep:nth-child(n + 2) {
+  .audit-flow[data-ready][data-phase="3"] .audit-flow__column[data-side="after"] .audit-flow__row--keep:nth-child(n + 2) {
     outline: 2px solid var(--case-blue);
     outline-offset: 1px;
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .audit-flow[data-ready][data-step="0"] .audit-flow__arrows {
+    .audit-flow[data-ready][data-phase="0"] .audit-flow__arrows {
       animation: audit-flow-nudge 1.1s ease-in-out infinite;
     }
 
@@ -399,6 +415,17 @@ const litData = JSON.stringify(lit);
     .audit-flow[data-ready] .audit-flow__code :global(.line),
     .audit-flow[data-ready] .audit-flow__row {
       transition: none;
+    }
+  }
+
+  .audit-flow__columns--single {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  @media (min-width: 56rem) {
+    .audit-flow__columns--single .audit-flow__column {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
     }
   }
 

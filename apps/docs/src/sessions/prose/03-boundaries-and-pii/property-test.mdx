@@ -1,0 +1,9 @@
+<div class="session-split">
+  <div>
+    <p><strong>fast-check のテスト</strong>: fast-check は、ランダムな入力を多数作って、性質が成り立つかを確かめるライブラリです。「UUID の形でない文字列を渡すと、<code>parse</code> は Err を返す」という性質を、さまざまな文字列で確かめます。</p>
+    <p>テストは <code>{"fc.assert(fc.property(入力の作り方, (入力) => { ... }))"}</code> の形で書きます。中の関数が <code>false</code> を返すか例外を投げると、そのテストは失敗します。悪い変更でテストが失敗すれば、検出です。<code>fc.string()</code> は任意の文字列を作り、<code>fc.uuid()</code> は UUID の形の文字列を作ります。<code>expect</code> を使うときは <code>vitest</code> から import します。</p>
+  </div>
+  <div>
+    <p><strong>型のテスト</strong>: 型のテストは、<code>@ts-expect-error</code> を使い、悪い変更を入れると型エラーが消えるようにします。<code>exercises/guard/mine/</code> に <code>{"*.type-test.ts"}</code> という名前で置きます。</p>
+  </div>
+</div>
