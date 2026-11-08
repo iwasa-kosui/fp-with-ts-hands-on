@@ -110,14 +110,14 @@ describe("buildNext", () => {
     );
   });
 
-  it("判定対象のファイルが無く、allow の範囲の検出が 0 件なら、まだ仕組みがありません", () => {
+  it("判定対象のファイルが無く、allow の範囲の検出が 0 件なら、まだ悪い変更を 1 件も検出できていません", () => {
     const bad = rowOf({ kind: "bad", verdict: "slipped", allow: ["lint"] });
     const sentences = buildNext({ rows: [bad], problems: [], noJudgedFiles: true, stageOpened: 0, passed: false });
 
-    expect(sentences.some((sentence) => sentence.startsWith("まだ仕組みがありません"))).toBe(true);
+    expect(sentences.some((sentence) => sentence.startsWith("まだ悪い変更を 1 件も検出できていません"))).toBe(true);
   });
 
-  it("allow の範囲で検出していれば、まだ仕組みがありませんとは言わない", () => {
+  it("allow の範囲で検出していれば、まだ悪い変更を 1 件も検出できていませんとは言わない", () => {
     const bad = rowOf({
       kind: "bad",
       verdict: "detected",

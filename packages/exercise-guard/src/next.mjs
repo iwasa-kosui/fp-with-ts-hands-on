@@ -81,9 +81,9 @@ export const buildNext = ({ rows, problems, noJudgedFiles, stageOpened, passed }
   );
   return [
     ...fixes,
-    ...(noJudgedFiles && noAllowedDetection
+    ...(noJudgedFiles && noAllowedDetection && problems.length === 0
       ? [
-          "まだ仕組みがありません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にテストか型のテストを足します。",
+          "まだ悪い変更を 1 件も検出できていません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にテストか型のテストを足します。",
         ]
       : []),
     ...(stageOpened > 0 ? [`追加の悪い変更が ${stageOpened} 件増えました。`] : []),

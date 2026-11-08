@@ -84,7 +84,7 @@ describe("judge", () => {
     expect(result.rows.filter((row) => row.kind === "bad").every((row) => row.verdict === "slipped")).toBe(true);
     expect(result.rows.filter((row) => row.kind === "good").every((row) => row.verdict === "noFalsePositive")).toBe(true);
     expect(result.hiddenCount).toBe(1);
-    expect(result.next[0]).toContain("まだ仕組みがありません");
+    expect(result.next[0]).toContain("まだ悪い変更を 1 件も検出できていません");
   });
 
   it("pass: 参加者が足した仕組みですべて検出し、誤検知が無ければ合格する", async () => {
@@ -195,7 +195,7 @@ describe("judge", () => {
     const result = await scenario("empty");
 
     expect(result.next[0]).toBe(
-      "まだ仕組みがありません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にテストか型のテストを足します。",
+      "まだ悪い変更を 1 件も検出できていません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にテストか型のテストを足します。",
     );
   });
 
@@ -263,6 +263,7 @@ describe("judge", () => {
     expect(result.problems[0]).toContain("規則 local/explodes の実行中にエラーが出ました");
     expect(result.next).toContain("規則 local/explodes の書き方を見直します。");
     expect(result.problems.join("\n")).not.toContain("読み込めませんでした");
+    expect(result.next.some((sentence) => sentence.includes("まだ悪い変更を 1 件も検出できていません"))).toBe(false);
   });
 
   it("broken-config: 規則名が取れない例外は、設定を読み込めなかった扱いのまま", async () => {
@@ -302,12 +303,21 @@ describe("judge", () => {
     expect(rowOf(result, "G1-solution").detections.tests).toEqual([]);
   });
 
+  it("module-mock: テストファイルのトップレベルの vi.fn は、他のケースの実行で戻されても誤検知にならない", async () => {
+    const result = await scenario("module-mock");
+
+    expect(result.problems).toEqual([]);
+    expect(result.rows.filter((row) => row.kind === "good").every((row) => row.verdict === "noFalsePositive")).toBe(true);
+    expect(rowOf(result, "G1-solution").collectionErrors).toEqual([]);
+    expect(rowOf(result, "G1-solution").detections.tests).toEqual([]);
+  });
+
   it("unjudged: 題材を import しないテストの補足に、import する題材を示す", async () => {
     const result = await scenario("unjudged");
 
     expect(result.notes[0]).toContain("exercises/guard/subjects/input.ts");
     expect(result.notes[0]).toContain("exercises/guard/subjects/handler.ts");
-    expect(result.next[0]).toContain("まだ仕組みがありません");
+    expect(result.next[0]).toContain("まだ悪い変更を 1 件も検出できていません");
   });
 
   it("spec-file: *.spec.ts は実行せず、補足に出す", async () => {
