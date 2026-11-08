@@ -238,6 +238,54 @@
   min-height: 32rem;
 }
 
+.code-playground .code-explorer__diagnostics {
+  min-width: 0;
+  padding: 0.75rem;
+  border-top: 0.1875rem solid var(--playground-text);
+  background: var(--playground-surface);
+  color: var(--playground-text);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.code-playground .code-explorer__diagnostics > h3 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 950;
+}
+
+.code-playground .code-explorer__diagnostics > p {
+  margin: 0.5rem 0 0;
+}
+
+.code-playground .code-explorer__diagnostics ul {
+  max-height: 12rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.code-playground .code-explorer__diagnostics li + li {
+  margin-top: 0.375rem;
+}
+
+.code-playground .code-explorer__diagnostics button {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.8rem;
+  border: 0.1875rem solid var(--playground-text);
+  border-radius: 0.375rem;
+  background: var(--playground-lemon);
+  color: var(--playground-text);
+  font: inherit;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
 .code-playground .code-explorer__actions {
   display: flex;
   flex-wrap: wrap;

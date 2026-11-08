@@ -1,24 +1,33 @@
 import { useEffect, useRef, useState } from "react";
 import type * as Monaco from "monaco-editor";
 import type { CodeHighlight } from "../../code-explorer/code-guide";
+import { buildAmbientModules } from "./ambient-modules";
 import type { EditorProps } from "./CodeExplorer";
 
 type MonacoApi = typeof Monaco;
 
-let typesRegistered = false;
-
-const ambientModules = [
-  'declare module "@fp-with-ts/clinic-web";',
-  'declare module "@fp-with-ts/clinic-web/server";',
-  "",
-].join("\n");
+const ambientPath = "file:///workspace/playground-ambient.d.ts";
+const revalidatePath = "file:///workspace/playground-revalidate.d.ts";
+const missingTypeCodes = [7006, 7031, 2580, 2591, 2582, 2593, 2347, 2694, 2709, 2698, 2571, 18046];
 
 type EditorResources = {
   monaco: MonacoApi;
   models: Map<string, Monaco.editor.ITextModel>;
   ownedModels: Set<Monaco.editor.ITextModel>;
   extraLibs: Monaco.IDisposable[];
+  ambient?: { source: string; disposable: Monaco.IDisposable };
+  revalidateLib?: Monaco.IDisposable;
+  revalidateCount: number;
+  seenVersions: WeakMap<Monaco.editor.ITextModel, number>;
   applyingExternalChange: boolean;
+};
+
+type Diagnostic = {
+  key: string;
+  line: number;
+  column: number;
+  message: string;
+  code: string | undefined;
 };
 
 type EditorRuntime = EditorResources & {
@@ -61,20 +70,47 @@ const languageForPath = (path: string): string => {
   }
 };
 
-const configureTypeScript = (monaco: MonacoApi): void => {
+const applyDiagnosticsOptions = (
+  monaco: MonacoApi,
+  typeFiles: EditorProps["typeFiles"],
+): void => {
+  const defaults = monaco.typescript.typescriptDefaults;
+  const diagnosticCodesToIgnore =
+    Object.keys(typeFiles).length === 0 ? missingTypeCodes : [];
+  const current = defaults.getDiagnosticsOptions();
+  if (
+    current.noSemanticValidation === false &&
+    current.noSyntaxValidation === false &&
+    (current.diagnosticCodesToIgnore ?? []).join(",") ===
+      diagnosticCodesToIgnore.join(",")
+  ) {
+    return;
+  }
+  defaults.setDiagnosticsOptions({
+    noSemanticValidation: false,
+    noSyntaxValidation: false,
+    diagnosticCodesToIgnore,
+  });
+};
+
+const configureTypeScript = (
+  monaco: MonacoApi,
+  typeFiles: EditorProps["typeFiles"],
+): void => {
   monaco.typescript.typescriptDefaults.setCompilerOptions({
     allowNonTsExtensions: true,
     module: monaco.typescript.ModuleKind.ESNext,
-    moduleResolution: monaco.typescript.ModuleResolutionKind.NodeJs,
+    moduleResolution: 100 as Monaco.typescript.ModuleResolutionKind,
     strict: true,
     target: 9 as Monaco.typescript.ScriptTarget,
     allowSyntheticDefaultImports: true,
+    noUncheckedIndexedAccess: true,
+    exactOptionalPropertyTypes: true,
+    verbatimModuleSyntax: true,
+    skipLibCheck: true,
   });
   monaco.typescript.typescriptDefaults.setEagerModelSync(true);
-  monaco.typescript.typescriptDefaults.setDiagnosticsOptions({
-    noSemanticValidation: !typesRegistered,
-    noSyntaxValidation: false,
-  });
+  applyDiagnosticsOptions(monaco, typeFiles);
 };
 
 const ensureProjectModels = (
@@ -115,6 +151,7 @@ const registerExtraLibs = (
   runtime: EditorResources,
   typeFiles: EditorProps["typeFiles"],
 ): void => {
+  applyDiagnosticsOptions(runtime.monaco, typeFiles);
   for (const disposable of runtime.extraLibs) disposable.dispose();
   runtime.extraLibs = [];
 
@@ -126,21 +163,76 @@ const registerExtraLibs = (
       ),
     );
   }
-
-  if (Object.keys(typeFiles).length > 0) {
-    runtime.extraLibs.push(
-      runtime.monaco.typescript.typescriptDefaults.addExtraLib(
-        ambientModules,
-        "file:///workspace/playground-ambient.d.ts",
-      ),
-    );
-    typesRegistered = true;
-    runtime.monaco.typescript.typescriptDefaults.setDiagnosticsOptions({
-      noSemanticValidation: false,
-      noSyntaxValidation: false,
-    });
-  }
 };
+
+const registerAmbientModules = (
+  runtime: EditorResources,
+  files: EditorProps["files"],
+  typeFiles: EditorProps["typeFiles"],
+): void => {
+  const source = buildAmbientModules(files, typeFiles);
+  if (runtime.ambient?.source === source) return;
+
+  runtime.ambient?.disposable.dispose();
+  runtime.ambient = {
+    source,
+    disposable: runtime.monaco.typescript.typescriptDefaults.addExtraLib(
+      source,
+      ambientPath,
+    ),
+  };
+};
+
+const takeVersionSnapshot = (runtime: EditorResources): boolean => {
+  let changed = false;
+  for (const model of runtime.models.values()) {
+    const version = model.getVersionId();
+    if (runtime.seenVersions.get(model) !== version) changed = true;
+    runtime.seenVersions.set(model, version);
+  }
+  return changed;
+};
+
+const revalidateOtherModels = (runtime: EditorResources): void => {
+  if (!takeVersionSnapshot(runtime)) return;
+
+  runtime.revalidateCount += 1;
+  runtime.revalidateLib?.dispose();
+  runtime.revalidateLib =
+    runtime.monaco.typescript.typescriptDefaults.addExtraLib(
+      `// ${runtime.revalidateCount}\n`,
+      revalidatePath,
+    );
+};
+
+const readDiagnostics = (
+  monaco: MonacoApi,
+  model: Monaco.editor.ITextModel,
+): Diagnostic[] =>
+  monaco.editor
+    .getModelMarkers({ owner: "typescript", resource: model.uri })
+    .filter(
+      ({ severity }) =>
+        severity === monaco.MarkerSeverity.Error ||
+        severity === monaco.MarkerSeverity.Warning,
+    )
+    .sort(
+      (a, b) =>
+        a.startLineNumber - b.startLineNumber ||
+        a.startColumn - b.startColumn,
+    )
+    .map((marker, index) => ({
+      key: `${marker.startLineNumber}:${marker.startColumn}:${index}`,
+      line: marker.startLineNumber,
+      column: marker.startColumn,
+      message: marker.message,
+      code:
+        marker.code === undefined
+          ? undefined
+          : typeof marker.code === "string"
+            ? marker.code
+            : marker.code.value,
+    }));
 
 const synchronizeValue = (
   runtime: EditorResources,
@@ -209,6 +301,8 @@ export const MonacoEditor = (props: EditorProps) => {
   const latestProps = useRef(props);
   const onChangeRef = useRef(onChange);
   const [ready, setReady] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
+  const [firstCheckDone, setFirstCheckDone] = useState(false);
 
   latestProps.current = props;
   onChangeRef.current = onChange;
@@ -220,16 +314,20 @@ export const MonacoEditor = (props: EditorProps) => {
       const { monaco } = await import("./monaco-client");
       if (cancelled || editorHost.current === null) return;
 
-      configureTypeScript(monaco);
       const current = latestProps.current;
+      configureTypeScript(monaco, current.typeFiles);
       const resources: EditorResources = {
         monaco,
         models: new Map(),
         ownedModels: new Set(),
         extraLibs: [],
+        revalidateCount: 0,
+        seenVersions: new WeakMap(),
         applyingExternalChange: false,
       };
       ensureProjectModels(resources, current.files);
+      takeVersionSnapshot(resources);
+      registerAmbientModules(resources, current.files, current.typeFiles);
       registerExtraLibs(resources, current.typeFiles);
       const editor = monaco.editor.create(editorHost.current, {
         automaticLayout: true,
@@ -261,7 +359,8 @@ export const MonacoEditor = (props: EditorProps) => {
       current.changeSubscription?.dispose();
       current.highlightDecorations?.clear();
       for (const disposable of current.extraLibs) disposable.dispose();
-      typesRegistered = false;
+      current.ambient?.disposable.dispose();
+      current.revalidateLib?.dispose();
       current.editor.dispose();
       for (const model of current.ownedModels) model.dispose();
       runtime.current = undefined;
@@ -272,7 +371,8 @@ export const MonacoEditor = (props: EditorProps) => {
     const current = runtime.current;
     if (!ready || current === undefined) return;
     ensureProjectModels(current, files);
-  }, [files, ready]);
+    registerAmbientModules(current, files, typeFiles);
+  }, [files, ready, typeFiles]);
 
   useEffect(() => {
     const current = runtime.current;
@@ -298,6 +398,13 @@ export const MonacoEditor = (props: EditorProps) => {
   useEffect(() => {
     const current = runtime.current;
     if (!ready || current === undefined) return;
+    // Monaco は別ファイルの編集では他のモデルを再検証しない。
+    revalidateOtherModels(current);
+  }, [path, ready]);
+
+  useEffect(() => {
+    const current = runtime.current;
+    if (!ready || current === undefined) return;
     synchronizeValue(current, current.models.get(path), value);
   }, [path, ready, value]);
 
@@ -312,6 +419,75 @@ export const MonacoEditor = (props: EditorProps) => {
     if (!ready || current === undefined) return;
     current.editor.updateOptions({ readOnly: disabled || readOnly });
   }, [disabled, readOnly, ready]);
+
+  useEffect(() => {
+    const current = runtime.current;
+    if (!ready || current === undefined) return;
+
+    let cancelled = false;
+    const finish = () => {
+      if (!cancelled) setFirstCheckDone(true);
+    };
+    const model = current.models.get(latestProps.current.path);
+    if (model === undefined) {
+      finish();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const waitForFirstCheck = async () => {
+      try {
+        const getWorker = await current.monaco.typescript.getTypeScriptWorker();
+        const worker = await getWorker(model.uri);
+        await worker.getSemanticDiagnostics(model.uri.toString());
+      } catch {
+        return;
+      } finally {
+        finish();
+      }
+    };
+    void waitForFirstCheck();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ready]);
+
+  useEffect(() => {
+    const current = runtime.current;
+    if (!ready || readOnly || current === undefined) return;
+
+    const model = current.models.get(path);
+    if (model === undefined) {
+      setDiagnostics([]);
+      return;
+    }
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const read = () => setDiagnostics(readDiagnostics(current.monaco, model));
+    read();
+    const subscription = current.monaco.editor.onDidChangeMarkers((uris) => {
+      if (!uris.some((uri) => uri.toString() === model.uri.toString())) return;
+      clearTimeout(timer);
+      timer = setTimeout(read, 200);
+    });
+
+    return () => {
+      clearTimeout(timer);
+      subscription.dispose();
+    };
+  }, [path, readOnly, ready]);
+
+  const moveToDiagnostic = ({ line, column }: Diagnostic): void => {
+    const current = runtime.current;
+    if (current === undefined) return;
+    current.editor.setPosition({ lineNumber: line, column });
+    current.editor.revealRangeInCenter(
+      new current.monaco.Range(line, column, line, column),
+    );
+    current.editor.focus();
+  };
 
   const sourceLines = value.split("\n");
 
@@ -345,6 +521,46 @@ export const MonacoEditor = (props: EditorProps) => {
         </pre>
       )}
       <div ref={editorHost} aria-label={`コードエディタ: ${path}`} />
+      {ready && !readOnly ? (
+        <section
+          className="code-explorer__diagnostics"
+          aria-label="型検査の結果"
+        >
+          <h3>
+            {diagnostics.length > 0
+              ? `型エラー ${diagnostics.length} 件`
+              : firstCheckDone
+                ? "このファイルに型エラーは見つかっていません"
+                : "型を検査しています"}
+          </h3>
+          {Object.keys(typeFiles).length === 0 ? (
+            <p>ターミナルを起動するまで、外部パッケージの型は any として検査します。</p>
+          ) : null}
+          {diagnostics.length > 0 ? (
+            <ul>
+              {diagnostics.map((diagnostic) => (
+                <li key={diagnostic.key}>
+                  <button
+                    type="button"
+                    onClick={() => moveToDiagnostic(diagnostic)}
+                  >
+                    <span>
+                      {diagnostic.line}:{diagnostic.column}
+                    </span>{" "}
+                    <span>{diagnostic.message}</span>
+                    {diagnostic.code === undefined ? null : (
+                      <>
+                        {" "}
+                        <span>TS{diagnostic.code}</span>
+                      </>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
+      ) : null}
     </div>
   );
 };
