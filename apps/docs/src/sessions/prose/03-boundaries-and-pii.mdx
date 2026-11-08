@@ -5,6 +5,7 @@ import { CodeExplorer } from "../../components/code-explorer/CodeExplorer";
 import { sensitiveWalkthrough, startExaminationWalkthrough } from "../../sessions/boundary-walkthroughs";
 import InlineCode from "../../components/InlineCode.astro";
 import BrandedIdFlow from "../../components/BrandedIdFlow.astro";
+import SchemaSourceFlow from "../../components/SchemaSourceFlow.astro";
 
 <section id="incident">
   <h2>今回つくるもの</h2>
@@ -68,8 +69,11 @@ import BrandedIdFlow from "../../components/BrandedIdFlow.astro";
     <dt set:html="Parse, don't validate（境界の出口）" />
     <dd>検査の結果を真偽値だけで返し、検査後も元のrawを使い続ける書き方をしません。parseが、成功結果として型付きの値を返します。</dd>
     <dt>Always-Valid Domain Model（内側全体）</dt>
-    <dd>境界は、schemaが表す制約を満たさない入力を内側へ入れません。内側の関数は、同じ検査を繰り返しません。</dd>
+    <dd>ドメインモデルは、予約や診察のような業務の概念と規則を表す型と関数です。境界は、schemaが表す制約を満たさない入力を内側へ入れません。内側の関数は、同じ検査を繰り返しません。</dd>
   </dl>
+  <h3 id="zod-schema">Zod: 1つの schema から型と検査を作る</h3>
+  <p>「境界で起きていること」のアニメーションには、z.object、z.infer、safeParse など、Zod というライブラリの書き方が出てきました。この節では、修正前と修正後の startExaminationInput.ts を比べて、それぞれが何をしているかを確かめます。</p>
+  <SchemaSourceFlow code={props.schemaSourceCode} />
   <h3>Branded Type: 同じ string を用途で区別する</h3>
   <p>予約IDも獣医師IDも、TypeScriptではどちらもstringです。型が同じなので、引数を取り違えても型検査は誤りを知らせません。Branded Typeは、stringなどの型に用途を表す印を足し、印の違う値を別の型として扱う書き方です。</p>
   <BrandedIdFlow code={props.brandedIdCode} />
@@ -84,14 +88,21 @@ import BrandedIdFlow from "../../components/BrandedIdFlow.astro";
     <Code code={props.paymentAmountCode} lang="ts" />
   </figure>
   <p><code>PaymentAmount.parse(1000)</code>はOkを返し、<code>0</code>、<code>-100</code>、<code>1.5</code>はどれもErrを返します。範囲を変えるときの修正箇所はschemaの1か所です。finalのschemaResultはneverthrowのResultを返す版で、brandには文字列ではなくSymbolを使いますが、形は上の表と同じです。<code>as</code>を使うと検査を飛ばせるので、レビューでは<code>as</code>が増えていないかを確かめます。</p>
+  <h3 id="boundary-result">S03 の Result は、成否だけを持つ小さな型</h3>
+  <p>schemaResult が返す <code>Result&lt;T&gt;</code> は、このリポジトリで用意した小さな型です。isOk と isErr で成否を確かめ、_unsafeUnwrap で値を取り出します。失敗の理由は持ちません。Session 04 では、neverthrow というライブラリの <code>Result&lt;T, E&gt;</code> に替わります。E には失敗の理由が入ります。</p>
+  <p>_unsafeUnwrap は、Ok なら値を返し、Err なら例外を投げます。名前の unsafe は、Err のときに例外で処理が止まることを表します。S03 の route は、検査に通らなかった入力をその場で止めるために _unsafeUnwrap を使います。Err を例外にせず値として扱う書き方は、Session 04 で学びます。</p>
+  <details>
+    <summary>補足: 例外を投げる parse と、Err を返す parse</summary>
+    <p>AppointmentId.parse は、Zod の schema.parse をそのまま使います。schema.parse は、検査に失敗すると例外を投げます。StartExaminationInput.parse は schemaResult で作るので、失敗を例外ではなく Err として返します。</p>
+  </details>
   <aside class="decision-card boundary-limit" data-boundary-limit>
     <h3>この境界だけでは検出できない入力</h3>
     <p>{"\n"}予約IDのUUIDが<code>veterinarianId</code>へ入った場合、UUIDという形式は正しいためschemaを通ります。アニメーションの「画面の不具合で、獣医師の欄に予約のIDが届いた」がこの入力です。Branded Typeは、外部データが何を指すUUIDかを判定する仕組みではありません。parseで確かめられるのは形式までです。{"\n"}</p>
-    <p>そのUUIDが実在する獣医師を指すか確かめるには、登録済みの獣医師と照らし合わせる処理が必要です。この確認はS03の演習範囲には含めません。</p>
+    <p>そのUUIDが実在する獣医師を指すか確かめるには、登録済みの獣医師と照らし合わせる処理が必要です。この確認は、このハンズオンでは扱いません。</p>
   </aside>
   <aside class="decision-card">
     <h3>時間外の補足: 検査結果と個人情報（PII）</h3>
-    <p>{"\n"}<code>ExamResult</code> のschemaと、連絡先を既定で伏せる{"\n"}<code>Sensitive</code> は、時間内の演習とレビューには含めません。ここまで見た入口の境界は、入ってくる値を検査しました。個人情報では、内側から外へ出る値も境界で考えます。{"\n"}</p>
+    <p>{"\n"}<code>ExamResult</code> のschemaと、連絡先を既定で伏せる{"\n"}<code>Sensitive</code> は、時間内の演習とレビューには含めません。PII（Personally Identifiable Information、個人を特定できる情報）は、氏名、メールアドレス、電話番号のように、特定の個人を識別できる情報です。ここまで見た入口の境界は、入ってくる値を検査しました。個人情報では、内側から外へ出る値も境界で考えます。連絡先の schema は、検査を通った値を <code>.transform(Sensitive.of)</code> で Sensitive に包みます。<code>.transform</code> は、検査を通った値を別の値に変換する Zod のメソッドです。{"\n"}</p>
     <BoundaryPlayer walkthrough={sensitiveWalkthrough} />
     <details>
       <summary>ExamResult の外部JSONも同じ形で検証する</summary>
@@ -220,14 +231,8 @@ import BrandedIdFlow from "../../components/BrandedIdFlow.astro";
     <ul class="decision-list">{props.delegationDecisions.map((decision) => <li>{decision}</li>)}</ul>
   </div>
   <h3>この演習で解決しないこと</h3>
-  <p>schemaはUUIDの形式を検査しますが、そのUUIDが実在する予約や獣医師を指すかは判断しません。対象の取得と状態確認はS04で扱います。</p>
+  <p>schemaはUUIDの形式を検査しますが、そのUUIDが実在する予約や獣医師を指すかは判断しません。予約が存在するかと、予約の状態の確認は、Session 04 で扱います。獣医師が実在するかの確認は、このハンズオンでは扱いません。</p>
   <h3 data-solution-heading>{props.session.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
-  {props.session.solutionPresentation === "completed-file" ? (
-    <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
-      <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読みます。</p>
-      <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示されます。</p>
-    </div>
-  ) : null}
   {props.solutionSteps.map(({ step, presentation, snippets }) => (
     <div class="solution-step">
       <details class="step-solution" data-presentation={presentation}>
