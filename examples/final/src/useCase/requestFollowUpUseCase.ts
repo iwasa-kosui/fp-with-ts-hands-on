@@ -13,7 +13,6 @@ import type { EventIdGenerator } from "../domain/aggregate/eventIdGenerator.js";
 import type { AppointmentId } from "../domain/appointment/index.js";
 import {
   collectFollowUpTargets,
-  type CollectFollowUpTargetsError,
   type FollowUpTarget,
 } from "../domain/followUp/collectFollowUpTargets.js";
 import { FollowUpRequested } from "../domain/followUp/followUpRequested.js";
@@ -27,6 +26,7 @@ import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureCanManageClinic } from "./authorization.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
+import { rejectExamResultPetMismatch } from "./rejectExamResultPetMismatch.js";
 
 export type UseCaseInput = Readonly<{
   actorUserId: UserId;
@@ -39,7 +39,6 @@ export type FollowUpTargetNotFound = Readonly<{
 }>;
 export type UseCaseError =
   | UnauthorizedError
-  | CollectFollowUpTargetsError
   | FollowUpTargetNotFound
   | FollowUpRequestConflict;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
@@ -135,7 +134,10 @@ const collectEvents =
         yield* dependencies.followUpRequestReader.listRequestedAppointmentIds();
       yield* ensureNotRequested(input.appointmentIds)(requestedAppointmentIds);
       const candidates = yield* dependencies.followUpResolver.resolveCandidates();
-      const targets = yield* collectFollowUpTargets(candidates);
+      const targets = collectFollowUpTargets(candidates).match(
+        (collected) => collected,
+        rejectExamResultPetMismatch,
+      );
       const selectedTargets = yield* selectTargets(input.appointmentIds)(targets);
       const events = yield* createFreshEvents(dependencies, input)(selectedTargets);
       const persistedEvents = yield* persistEvents(dependencies)(events);

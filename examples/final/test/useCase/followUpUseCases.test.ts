@@ -207,7 +207,7 @@ describe("follow-up use cases", () => {
     ).toEqual([ids.appointment]);
   });
 
-  test("validates every candidate before deduplication and stores no partial batch on mismatch", async () => {
+  test("validates every candidate before deduplication and rejects without storing on mismatch", async () => {
     let storeCalls = 0;
     const mismatched = {
       ...candidate,
@@ -221,7 +221,7 @@ describe("follow-up use cases", () => {
         petId: ids.otherPet,
       },
     } as const satisfies FollowUpCandidate;
-    const result = await RequestFollowUpUseCase.create({
+    const result = RequestFollowUpUseCase.create({
       userResolver,
       followUpRequestReader: noFollowUpRequests,
       followUpResolver: {
@@ -240,7 +240,7 @@ describe("follow-up use cases", () => {
       appointmentIds: [ids.appointment],
     });
 
-    expect(result.isErr() && result.error.kind).toBe("ExamResultPetMismatch");
+    await expect(result).rejects.toThrow(ids.otherAppointment);
     expect(storeCalls).toBe(0);
   });
 
@@ -471,6 +471,23 @@ describe("follow-up use cases", () => {
     expect(followUp?.ownerPhone.unwrap()).toBe("090-9999-9999");
     expect(JSON.stringify(followUp)).not.toContain("Owner Secret");
     expect(JSON.stringify(followUp)).not.toContain("090-9999-9999");
+  });
+
+  test("rejects when a stored exam result belongs to another pet", async () => {
+    const mismatched = {
+      ...candidate,
+      examResult: { ...candidate.examResult, petId: ids.otherPet },
+    } as const satisfies FollowUpCandidate;
+    const result = ListFollowUpsUseCase.create({
+      userResolver,
+      followUpResolver: { resolveCandidates: () => okAsync([mismatched]) },
+      followUpRequestReader: {
+        listRequestedAppointmentIds: () => okAsync([]),
+      },
+    }).run({ actorUserId: ids.veterinarian });
+
+    await expect(result).rejects.toThrow(ids.appointment);
+    await expect(result).rejects.not.toThrow("Owner Secret");
   });
 });
 

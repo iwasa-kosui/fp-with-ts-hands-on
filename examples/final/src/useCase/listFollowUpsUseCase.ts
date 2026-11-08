@@ -3,7 +3,6 @@ import { ok, safeTry, type ResultAsync } from "neverthrow";
 import type { AppointmentId } from "../domain/appointment/index.js";
 import {
   collectFollowUpTargets,
-  type CollectFollowUpTargetsError,
   type FollowUpTarget,
 } from "../domain/followUp/collectFollowUpTargets.js";
 import type { FollowUpCandidate } from "../domain/followUp/followUpCandidate.js";
@@ -15,6 +14,7 @@ import type { PetId } from "../domain/pet/index.js";
 import type { UserId } from "../domain/user/userId.js";
 import type { UserByIdResolver } from "../domain/user/userResolver.js";
 import { ensureUserFound, type UnauthorizedError } from "./errors.js";
+import { rejectExamResultPetMismatch } from "./rejectExamResultPetMismatch.js";
 
 export type FollowUpView = Readonly<{
   appointmentId: AppointmentId;
@@ -25,8 +25,7 @@ export type FollowUpView = Readonly<{
 }>;
 export type UseCaseInput = Readonly<{ actorUserId: UserId }>;
 export type UseCaseOk = Readonly<{ followUps: readonly FollowUpView[] }>;
-export type UseCaseError =
-  UnauthorizedError | CollectFollowUpTargetsError;
+export type UseCaseError = UnauthorizedError;
 export type UseCaseOutput = ResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -54,7 +53,10 @@ const loadSources =
       const actor = yield* dependencies.userResolver.resolveById(input.actorUserId);
       yield* ensureUserFound(input.actorUserId)(actor);
       const candidates = yield* dependencies.followUpResolver.resolveCandidates();
-      const targets = yield* collectFollowUpTargets(candidates);
+      const targets = collectFollowUpTargets(candidates).match(
+        (collected) => collected,
+        rejectExamResultPetMismatch,
+      );
       const requestedAppointmentIds =
         yield* dependencies.followUpRequestReader.listRequestedAppointmentIds();
       return ok({ candidates, targets, requestedAppointmentIds });

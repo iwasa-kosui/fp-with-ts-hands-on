@@ -96,16 +96,7 @@ const loadFollowUps = async (
             errors,
           }),
         ),
-      (error) => {
-        switch (error.kind) {
-          case "Unauthorized":
-            return respondToUseCaseError(context, { kind: "Unauthorized" });
-          case "ExamResultPetMismatch":
-            return respondToUseCaseError(context, { kind: "InternalServerError" });
-          default:
-            return assertNever(error);
-        }
-      },
+      () => respondToUseCaseError(context, { kind: "Unauthorized" }),
     );
 };
 
@@ -165,8 +156,6 @@ export const registerFollowUpRoutes = (
               return context.redirect("/follow-ups?error=target-not-found", 303);
             case "FollowUpRequestConflict":
               return context.redirect("/follow-ups?error=request-conflict", 303);
-            case "ExamResultPetMismatch":
-              return respondToUseCaseError(context, { kind: "InternalServerError" });
             default:
               return assertNever(error);
           }
