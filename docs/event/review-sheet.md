@@ -10,7 +10,7 @@
 
 ## S1: 予約の状態と遷移をモデル化する
 
-差分確認: `git diff --stat -- examples/session-02`
+差分確認: `git diff --stat -- examples/session-01`
 
 **起きてはいけない状態遷移**
 
@@ -42,7 +42,7 @@ ________________________________________________________________________________
 
 ## S3: 診察開始の入力を境界で検証する
 
-差分確認: `git diff --stat -- examples/session-04`（補助演習は `git diff --stat -- examples/session-03`）
+差分確認: `git diff --stat -- examples/session-03`（補助演習は `git diff --stat -- examples/session-03-supplement`）
 
 **境界で拒否する入力**
 
@@ -58,7 +58,7 @@ ________________________________________________________________________________
 
 ## S4: 失敗をユースケースの結果として扱う
 
-差分確認: `git diff --stat -- examples/session-05`
+差分確認: `git diff --stat -- examples/session-04`
 
 **失敗後に実行してはいけない処理**
 

@@ -127,17 +127,23 @@ export type SessionSummary =
 export type ExampleSnapshot =
   | "session-00"
   | "session-01"
+  | "session-01-solution"
   | "session-02"
+  | "session-02-solution"
+  | "session-03-supplement"
+  | "session-03-supplement-solution"
   | "session-03"
+  | "session-03-solution"
   | "session-04"
+  | "session-04-solution"
   | "session-05"
   | "session-06"
-  | "session-07"
+  | "session-06-solution"
   | "final";
 
 export type PublicCodeExplorerSnapshot = Exclude<
   ExampleSnapshot,
-  "session-01" | "session-07"
+  "session-05" | "session-06-solution"
 >;
 
 export type TeachingCode = Readonly<{

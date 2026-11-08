@@ -111,13 +111,13 @@ describe("TerminalPanel", () => {
     const session = createSession();
     vi.mocked(session.writeInput).mockRejectedValueOnce(new Error("write failed"));
     const host = await renderPanel({
-      initialCommand: "pnpm exercise:02",
+      initialCommand: "pnpm exercise:01",
       runnerFactory: () => ({ start: async () => session }),
     });
 
     await clickAction(host, "start-terminal");
 
-    expect(session.writeInput).toHaveBeenCalledWith("pnpm exercise:02\r");
+    expect(session.writeInput).toHaveBeenCalledWith("pnpm exercise:01\r");
     expect(session.dispose).toHaveBeenCalledOnce();
     expect(host.querySelector('[data-action="retry-terminal"]')).not.toBeNull();
   });
@@ -132,7 +132,7 @@ describe("TerminalPanel", () => {
         }),
     );
     const host = await renderPanel({
-      initialCommand: "pnpm exercise:02",
+      initialCommand: "pnpm exercise:01",
       runnerFactory: () => ({ start: async () => session }),
     });
 

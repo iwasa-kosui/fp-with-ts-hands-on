@@ -16,7 +16,7 @@ const TestEditor: ComponentType<EditorProps> = ({ value, onChange }) => (
 
 const workspace = {
   slug: "01-state-transitions",
-  snapshot: "session-02",
+  snapshot: "session-01",
   description: "状態遷移を編集します。",
   initialFile: "src/example.ts",
   visibleFiles: ["src/example.ts"],
@@ -130,14 +130,14 @@ describe("CodeExplorer file synchronization", () => {
     vi.mocked(session.writeFile).mockReturnValueOnce(write.promise);
 
     await editCurrentFile(host, "export const value = 2;");
-    sendTerminalInput("pnpm exercise:02\r");
+    sendTerminalInput("pnpm exercise:01\r");
     await act(async () => undefined);
 
     expect(session.writeInput).not.toHaveBeenCalled();
 
     await act(async () => write.resolve());
 
-    expect(session.writeInput).toHaveBeenCalledWith("pnpm exercise:02\r");
+    expect(session.writeInput).toHaveBeenCalledWith("pnpm exercise:01\r");
   });
 
   it("waits for reset contents before rerunning the exercise", async () => {
@@ -152,14 +152,14 @@ describe("CodeExplorer file synchronization", () => {
         .querySelector<HTMLButtonElement>('[data-action="reset"]')
         ?.click();
     });
-    sendTerminalInput("pnpm exercise:02\r");
+    sendTerminalInput("pnpm exercise:01\r");
     await act(async () => undefined);
 
     expect(session.writeInput).not.toHaveBeenCalled();
 
     await act(async () => resetWrite.resolve());
 
-    expect(session.writeInput).toHaveBeenCalledWith("pnpm exercise:02\r");
+    expect(session.writeInput).toHaveBeenCalledWith("pnpm exercise:01\r");
   });
 
   it("does not rerun stale contents when editor synchronization fails", async () => {
@@ -168,7 +168,7 @@ describe("CodeExplorer file synchronization", () => {
     vi.mocked(session.writeFile).mockReturnValueOnce(write.promise);
 
     await editCurrentFile(host, "export const value = 2;");
-    sendTerminalInput("pnpm exercise:02\r");
+    sendTerminalInput("pnpm exercise:01\r");
     await act(async () => write.reject(new Error("sync failed")));
 
     expect(session.writeInput).not.toHaveBeenCalled();

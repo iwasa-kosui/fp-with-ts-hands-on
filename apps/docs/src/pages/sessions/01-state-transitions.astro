@@ -25,7 +25,7 @@ import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
 
 export const session: SessionSummary = {
   slug: "01-state-transitions",
-  snapshot: "session-02",
+  snapshot: "session-01",
   sequence: "01",
   kind: "exercise",
   title: "予約の状態と遷移をモデル化する",
@@ -40,7 +40,7 @@ export const session: SessionSummary = {
       "`recordPayment` は `AwaitingPayment` だけを受け取り、診察結果の記録前には会計できない型ですか。",
     ],
   },
-  solutionSnapshot: "session-03",
+  solutionSnapshot: "session-01-solution",
   solutionPresentation: "excerpt",
   peerReviewPromises: "inline",
   animal: { name: "RABBIT", type: "rabbit", avatar: "🐇" },
@@ -51,9 +51,9 @@ export const session: SessionSummary = {
     "許可された状態遷移を覚えていたのは人間だけで、コードは何でも通す危ない設計でした。",
   ],
   incident: "診察結果を記録していない予約が会計され、さらに会計済みの来院が診察中へ戻された。",
-  exerciseCommand: "pnpm exercise:02",
+  exerciseCommand: "pnpm exercise:01",
   exerciseModule: {
-    dir: "examples/session-02/src/domain/appointment",
+    dir: "examples/session-01/src/domain/appointment",
     fileBudget: 1,
     lineBudget: 35,
   },
@@ -68,9 +68,9 @@ export const session: SessionSummary = {
       id: "s2-narrow-start",
       goal: "会計済み・キャンセル済みの来院で診察を開始するコードを、コンパイルエラーにする。",
       startingFailure: "会計済み・キャンセル済みでも診察を開始できる。",
-      targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
+      targets: ["examples/session-01/src/domain/appointment/transitions.ts"],
       solutions: [{
-        path: "examples/session-03/src/domain/appointment/transitions.ts",
+        path: "examples/session-01-solution/src/domain/appointment/transitions.ts",
         symbol: "startExamination",
         lines: [16, 26],
       }],
@@ -79,9 +79,9 @@ export const session: SessionSummary = {
       id: "s2-require-cancel-reason",
       goal: "キャンセルには必ず理由を残す。",
       startingFailure: "理由を残さずに予約をキャンセルできる。",
-      targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
+      targets: ["examples/session-01/src/domain/appointment/transitions.ts"],
       solutions: [{
-        path: "examples/session-03/src/domain/appointment/transitions.ts",
+        path: "examples/session-01-solution/src/domain/appointment/transitions.ts",
         symbol: "cancel",
         lines: [47, 60],
       }],
@@ -90,9 +90,9 @@ export const session: SessionSummary = {
       id: "s2-align-transitions",
       goal: "診察結果の記録前に会計するコードをコンパイルエラーにし、残りの遷移関数も、許可された状態だけを引数で受け取る形にそろえる。",
       startingFailure: "診察結果の記録前や、許可されていない状態から操作できる。",
-      targets: ["examples/session-02/src/domain/appointment/transitions.ts"],
+      targets: ["examples/session-01/src/domain/appointment/transitions.ts"],
       solutions: [{
-        path: "examples/session-03/src/domain/appointment/transitions.ts",
+        path: "examples/session-01-solution/src/domain/appointment/transitions.ts",
         symbol: "checkIn",
         lines: [13, 45],
       }],
@@ -162,7 +162,7 @@ const toStatusLabel = (appointment: Appointment): string => {
   },
   {
     after: {
-      sources: ["examples/session-03/src/domain/appointment/transitions.ts"],
+      sources: ["examples/session-01-solution/src/domain/appointment/transitions.ts"],
       code: `export const startExamination = (
   appointment: CheckedIn,
   veterinarianId: string,
@@ -209,7 +209,7 @@ const toStatusLabel = (appointment: Appointment): string => {
   return "予約済み";
 };`,
   pitfallCode: {
-    sources: ["examples/session-02/src/domain/appointment/transitions.ts"],
+    sources: ["examples/session-01/src/domain/appointment/transitions.ts"],
     code: `export const startExamination = (
   appointment: Appointment,
   veterinarianId: string,
@@ -290,27 +290,27 @@ const distributedAppointmentSnippets = await loadSolutionSnippets({
 const preconditionSnippets = await loadSolutionSnippets({
   solutions: [
     {
-      path: "examples/session-03/src/domain/appointment/transitions.ts",
+      path: "examples/session-01-solution/src/domain/appointment/transitions.ts",
       symbol: "startExamination",
       lines: [16, 20],
     },
     {
-      path: "examples/session-03/test/regression/type-fixtures/s2-paid-cannot-start.ts",
+      path: "examples/session-01-solution/test/regression/type-fixtures/s2-paid-cannot-start.ts",
       symbol: "startExamination",
       lines: [6, 9],
     },
     {
-      path: "examples/session-02/src/domain/appointment/transitions.ts",
+      path: "examples/session-01/src/domain/appointment/transitions.ts",
       symbol: "requireKind",
       lines: [8, 12],
     },
     {
-      path: "examples/session-02/src/domain/appointment/transitions.ts",
+      path: "examples/session-01/src/domain/appointment/transitions.ts",
       symbol: "startExamination",
       lines: [19, 26],
     },
     {
-      path: "examples/session-03/src/web/routes.ts",
+      path: "examples/session-01-solution/src/web/routes.ts",
       symbol: "start-examination",
       lines: [99, 100],
     },
@@ -379,7 +379,7 @@ const chapters = [
 ] as const;
 const commonReviewChecks = [
   "`as` による型アサーションが入っていないか全文検索して確認します。",
-  "`git diff --stat -- examples/session-02` で今回のスナップショットだけを確認します。`git status --short` で想定外の path がないか確認します。",
+  "`git diff --stat -- examples/session-01` で今回のスナップショットだけを確認します。`git status --short` で想定外の path がないか確認します。",
   "型検査では確認できないことを、テストまたは実行時に確認して記録します。",
 ] as const;
 const reviewCompletionArtifacts = [
@@ -412,12 +412,12 @@ const guards = [
   {
     problem: "会計済みの来院を診察中へ戻す",
     mechanism: "遷移関数の引数を、遷移元の状態だけに絞った型",
-    signal: "<code>pnpm exercise:02</code> の型検査",
+    signal: "<code>pnpm exercise:01</code> の型検査",
   },
   {
     problem: "診察結果を記録せずに会計へ進む",
     mechanism: "遷移関数の引数を、遷移元の状態だけに絞った型",
-    signal: "<code>pnpm exercise:02</code> の型検査",
+    signal: "<code>pnpm exercise:01</code> の型検査",
   },
 ] as const;
 const guardModules = [session.exerciseModule];

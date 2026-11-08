@@ -48,14 +48,16 @@ describe("Session 03 Web application", () => {
     rmSync(directory, { recursive: true, force: true });
   });
 
-  it("型で絞った遷移をHono routeから最後まで呼び出す", async () => {
+  it("用途別IDと入力境界を通って会計済みまで操作できる", async () => {
     const appointmentUrl = `/appointments/${clinicFixture.appointmentId}`;
 
     expect(await page(app)).toMatchObject({
       props: { sessionLabel: "Session 03", appointment: { kind: "Scheduled" } },
     });
     await post(app, `${appointmentUrl}/check-in`);
-    await post(app, `${appointmentUrl}/start-examination`);
+    await post(app, `${appointmentUrl}/start-examination`, {
+      veterinarianId: clinicFixture.veterinarianId,
+    });
     await post(app, `${appointmentUrl}/exam-results`, {
       examId: clinicFixture.examId,
       petId: clinicFixture.petId,
@@ -69,21 +71,31 @@ describe("Session 03 Web application", () => {
     });
   });
 
-  it("診察結果を記録する前の会計を拒否する", async () => {
-    const response = await post(
-      app,
-      `/appointments/${clinicFixture.appointmentId}/payment`,
-    );
+  it("starterの未検証境界が不正な検査JSONを受け入れる問題を再現する", async () => {
+    const appointmentUrl = `/appointments/${clinicFixture.appointmentId}`;
+    await post(app, `${appointmentUrl}/check-in`);
+    await post(app, `${appointmentUrl}/start-examination`, {
+      veterinarianId: clinicFixture.veterinarianId,
+    });
 
-    expect(response.status).toBe(500);
+    const response = await post(app, `${appointmentUrl}/exam-results`, {
+      examId: "not-a-uuid",
+      petId: "wrong-pet",
+      items: [""],
+      needsFollowUp: "yes",
+    });
+
+    expect(response.status).toBe(303);
+    expect(await page(app)).toMatchObject({
+      props: { appointment: { kind: "AwaitingPayment" } },
+    });
   });
 
-  it("未実装操作とresetを共通URLで扱う", async () => {
+  it("診察結果前の会計を拒否し、未実装操作とresetを扱う", async () => {
     const appointmentUrl = `/appointments/${clinicFixture.appointmentId}`;
-    const unimplemented = await post(app, "/follow-ups/request");
-    expect(unimplemented.headers.get("location")).toBe(
-      "/?notice=not-implemented",
-    );
+    expect((await post(app, `${appointmentUrl}/payment`)).status).toBe(500);
+    expect((await post(app, "/follow-ups/request")).headers.get("location"))
+      .toBe("/?notice=not-implemented");
 
     await post(app, `${appointmentUrl}/check-in`);
     await post(app, "/demo/reset");

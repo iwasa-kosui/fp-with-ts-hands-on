@@ -42,7 +42,7 @@ export const session: SessionSummary = {
       "業務上の競合だけを `Result` で返し、保存障害は reject のまま伝播しますか。",
     ],
   },
-  solutionSnapshot: "session-07",
+  solutionSnapshot: "session-06-solution",
   solutionPresentation: "completed-file",
   peerReviewPromises: "reference",
   animal: { name: "TURTLE", type: "turtle", avatar: "🐢" },
@@ -77,13 +77,13 @@ export const session: SessionSummary = {
       ],
       solutions: [
         {
-          path: "examples/session-07/src/useCase/dependencies.ts",
+          path: "examples/session-06-solution/src/useCase/dependencies.ts",
           symbol: "EventContextDependencies",
           lines: [1, 35],
           presentation: "completed-file",
         },
         {
-          path: "examples/session-07/src/useCase/startExamination.ts",
+          path: "examples/session-06-solution/src/useCase/startExamination.ts",
           symbol: "createEventContext",
           lines: [1, 90],
           presentation: "completed-file",
@@ -97,7 +97,7 @@ export const session: SessionSummary = {
       targets: ["examples/session-06/src/useCase/dependencies.ts"],
       solutions: [
         {
-          path: "examples/session-07/src/useCase/dependencies.ts",
+          path: "examples/session-06-solution/src/useCase/dependencies.ts",
           symbol: "ExaminationStartedStore",
           lines: [1, 35],
           presentation: "completed-file",
@@ -110,7 +110,7 @@ export const session: SessionSummary = {
       startingFailure: "保存後に、更新した予約の状態を受け取れない。",
       targets: ["examples/session-06/src/useCase/startExamination.ts"],
       solutions: [{
-        path: "examples/session-07/src/useCase/startExamination.ts",
+        path: "examples/session-06-solution/src/useCase/startExamination.ts",
         symbol: "startExaminationWithEffects",
         lines: [1, 90],
         presentation: "completed-file",
@@ -126,13 +126,13 @@ export const session: SessionSummary = {
       ],
       solutions: [
         {
-          path: "examples/session-07/src/useCase/errors.ts",
+          path: "examples/session-06-solution/src/useCase/errors.ts",
           symbol: "AppointmentConflict",
           lines: [1, 39],
           presentation: "completed-file",
         },
         {
-          path: "examples/session-07/src/useCase/startExamination.ts",
+          path: "examples/session-06-solution/src/useCase/startExamination.ts",
           symbol: "startExaminationWithEffects",
           lines: [1, 90],
           presentation: "completed-file",
@@ -228,9 +228,9 @@ const event = {
     },
     after: {
       sources: [
-        "examples/session-07/src/domain/aggregate/clock.ts",
-        "examples/session-07/src/domain/aggregate/eventIdGenerator.ts",
-        "examples/session-07/src/useCase/startExamination.ts",
+        "examples/session-06-solution/src/domain/aggregate/clock.ts",
+        "examples/session-06-solution/src/domain/aggregate/eventIdGenerator.ts",
+        "examples/session-06-solution/src/useCase/startExamination.ts",
       ],
       code: `export type Clock = Readonly<{
   now: () => string;
@@ -279,8 +279,8 @@ await deps.eventLog.append(event);`,
     },
     after: {
       sources: [
-        "examples/session-07/src/useCase/dependencies.ts",
-        "examples/session-07/src/useCase/startExamination.ts",
+        "examples/session-06-solution/src/useCase/dependencies.ts",
+        "examples/session-06-solution/src/useCase/startExamination.ts",
       ],
       code: `export type ExaminationStartedStore = Readonly<{
   store: (event: ExaminationStarted) => ResultAsync<void, AppointmentConflict>;
@@ -290,7 +290,7 @@ await deps.eventLog.append(event);`,
     },
     examples: [
       {
-        sources: ["examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts"],
+        sources: ["examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts"],
         code: `const storeAtomically = (event: ExaminationStarted) =>
   database.transaction((transaction) => {
     const current = findInTransaction(transaction, event.appointmentId);
@@ -312,7 +312,7 @@ await deps.eventLog.append(event);`,
   });`,
       },
       {
-        sources: ["examples/session-07/src/adaptor/inMemoryExaminationStartedStore.ts"],
+        sources: ["examples/session-06-solution/src/adaptor/inMemoryExaminationStartedStore.ts"],
         code: `const currentAppointment = appointments.get(event.appointmentId);
 if (currentAppointment === undefined) {
   throw new Error(\`Appointment missing at commit: \${event.appointmentId}\`);
@@ -367,7 +367,7 @@ return ok(undefined);`,
   };`,
     },
     after: {
-      sources: ["examples/session-07/src/useCase/startExamination.ts"],
+      sources: ["examples/session-06-solution/src/useCase/startExamination.ts"],
       code: `const ensureFound =
   (appointmentId: AppointmentId) =>
   (appointment: AppointmentState | undefined) =>
@@ -406,7 +406,7 @@ export const startExaminationWithEffects =
 );`,
     },
     after: {
-      sources: ["examples/session-07/src/useCase/startExamination.ts"],
+      sources: ["examples/session-06-solution/src/useCase/startExamination.ts"],
       code: `const resolveAppointment =
   (deps: EffectsDependencies) =>
   (appointmentId: AppointmentId): ResultAsync<AppointmentState | undefined, never> =>
@@ -416,7 +416,7 @@ export const startExaminationWithEffects =
     },
     examples: [
       {
-        sources: ["examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts"],
+        sources: ["examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts"],
         code: `store: (event) =>
   ResultAsync.fromSafePromise(
     Promise.resolve().then(() => storeAtomically(event)),

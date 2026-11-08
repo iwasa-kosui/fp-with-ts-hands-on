@@ -1,8 +1,8 @@
-# Session 03（補助演習）: 診察開始の識別子を型で区別する
+# Session 03: 診察開始の入力を境界で検証する
 
-このディレクトリはSession 03の補助演習の開始スナップショットです。解答は `examples/session-04/src` にあります。
+このディレクトリはSession 03の開始スナップショットです。解答は `examples/session-03-solution/src` にあります。
 
-S00で確認した診察開始の業務にある、「どの予約を、どの獣医師が開始するか」という入力を扱います。PetId、OwnerId、ExamIdは用途別の型として配布済みです。これらを手本に、AppointmentIdとVeterinarianIdを区別し、予約状態と `startExamination` まで同じ型を使います。
+S03の補助演習で区別したAppointmentIdとVeterinarianIdを、HTTPの文字列から作る境界を実装します。変更対象は `src/boundary/startExaminationInput.ts` の1ファイルです。
 
 ```bash
 pnpm demo:03
@@ -11,12 +11,10 @@ pnpm --filter @fp-with-ts/clinic-session-03 test
 pnpm exercise:03
 ```
 
-デモは `http://localhost:3000` で起動します。
+デモは `http://localhost:3000` で起動します。診察開始routeは、path parameterの予約IDと外部から届く担当獣医師IDを `StartExaminationInput.parse` へ渡します。
 
-`typecheck` と `test` はS01とS02の回帰を確認します。`exercise` は次の3段が未実装であることを示します。
+`typecheck` と `test` はS01、S02、S03の補助演習の回帰を確認します。`exercise` は、不正な予約IDと不正な担当獣医師IDを拒否できない2件で意図的に失敗します。
 
-1. AppointmentIdとVeterinarianIdを相互に代入できる
-2. 予約状態と `startExamination` にstringが残っている
-3. 取り違えを止める型テストがない
+## 時間外の補足
 
-PetId、OwnerId、ExamIdをさらに比較したい場合は、時間外の補足として `src/domain/pet/petId.ts`、`src/domain/owner/ownerId.ts`、`src/domain/examResult/examId.ts` を読みます。
+`src/boundary/examResult.ts` と `src/boundary/ownerContact.ts` は時間内の変更対象ではありません。検査結果のschemaと個人情報（PII）のマスキングを比較したい場合は、解答側のsession-03-solutionと読み比べます。

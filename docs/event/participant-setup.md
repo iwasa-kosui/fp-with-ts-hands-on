@@ -55,40 +55,41 @@ pnpm dev
 
 ターミナルに表示された localhost のURLを Chrome または Edge で開きます。開発サーバーを終了するときは `Ctrl+C` を押します。
 
-セッションのデモアプリも事前に確認できます。`NN` を `00` から `07` の番号へ置き換えてください。この番号は `examples/session-NN` の番号であり、S1〜S5 のページ番号とは一致しません。
+セッションのデモアプリも事前に確認できます。`NAME` を `examples/session-NAME` の `NAME` へ置き換えてください。`NAME` は、開始スナップショットなら `00`、`01`、`02`、`03-supplement`、`03`、`04`、`05`、`06` のいずれかです。解答スナップショットなら `01-solution`、`02-solution`、`03-supplement-solution`、`03-solution`、`04-solution`、`06-solution` のいずれかです。番号はセッションページの番号と一致します。
 
 ```bash
-pnpm demo:NN
+pnpm demo:NAME
 ```
 
 デモはすべて `http://localhost:3000` を使うため、一度に一つだけ起動します。別セッションへ切り替えるときは `Ctrl+C` で終了してから次を起動します。画面の「デモを初期状態へ戻す」で初期予約へ戻せます。未実装操作は500にならず、「この機能は未実装です」というダイアログになります。
 
 ## 演習コマンド
 
-コードを編集する演習は S1〜S4 と S6 の5本です。S5 は予約のデータとキャンセルのパイプラインを読む回です。ひとりでも複数人でも進められます。S5 ではコマンドを実行しません。
+コードを編集する演習は S1〜S4 と S6 の6本です。S3 は補助演習と本演習の2本を持ちます。S5 は予約のデータとキャンセルのパイプラインを読む回です。ひとりでも複数人でも進められます。S5 ではコマンドを実行しません。
 
 | セッション | コマンド |
 | --- | --- |
-| S1 | `pnpm exercise:02` |
+| S1 | `pnpm exercise:01` |
 | S2 | `pnpm exercise:02` |
-| S3 補助演習 | `pnpm exercise:03` |
-| S3 | `pnpm exercise:04` |
-| S4 | `pnpm exercise:05` |
+| S3 補助演習 | `pnpm exercise:03-supplement` |
+| S3 | `pnpm exercise:03` |
+| S4 | `pnpm exercise:04` |
 | S6 | `pnpm exercise:06` |
 
-5本を続けて確認したい場合は、次を順に実行します。
+6本を続けて確認したい場合は、次を順に実行します。
 
 ```bash
+pnpm exercise:01
 pnpm exercise:02
+pnpm exercise:03-supplement
 pnpm exercise:03
 pnpm exercise:04
-pnpm exercise:05
 pnpm exercise:06
 ```
 
 各コマンドは、そのセッションの開始時には業務上の未解決条件を示す assertion failure になるよう作られています。環境エラーではありません。対象モジュールを変更したあと、同じコマンドを再実行して成功を確認します。
 
-S0 は現状の業務・操作・保存先・ログを読む回、S5 は予約のデータとキャンセルのパイプラインを読む回なので演習コマンドはありません。`examples/session-07` は全解答と回帰テストを持つ到達点です。Final はページの5項目に沿って参照実装を読む回です。ハンズオンでは講師が5分を目安に案内します。`examples/final` をセットアップしたり編集したりする必要はありません。
+S0 は現状の業務・操作・保存先・ログを読む回、S5 は予約のデータとキャンセルのパイプラインを読む回なので演習コマンドはありません。`examples/session-06-solution` は S6 の解答であり、全解答と回帰テストを持つ到達点も兼ねます。Final はページの5項目に沿って参照実装を読む回です。ハンズオンでは講師が5分を目安に案内します。`examples/final` をセットアップしたり編集したりする必要はありません。
 
 ## 差分の確認と次のセッションへの進み方
 
@@ -96,20 +97,20 @@ S0 は現状の業務・操作・保存先・ログを読む回、S5 は予約�
 
 | セッション | 差分確認 |
 | --- | --- |
-| S1 | `git diff --stat -- examples/session-02` |
+| S1 | `git diff --stat -- examples/session-01` |
 | S2 | `git diff --stat -- examples/session-02` |
-| S3 補助演習 | `git diff --stat -- examples/session-03` |
-| S3 | `git diff --stat -- examples/session-04` |
-| S4 | `git diff --stat -- examples/session-05` |
+| S3 補助演習 | `git diff --stat -- examples/session-03-supplement` |
+| S3 | `git diff --stat -- examples/session-03` |
+| S4 | `git diff --stat -- examples/session-04` |
 | S6 | `git diff --stat -- examples/session-06` |
 
-各回で `git status --short` も実行し、表のpath以外に意図しない変更がないか確認します。前のセッションの未commit差分は次の回の差分確認に含まれません。S2 は例外です。S2 の差分確認には S1 の変更も含まれます。
+各回で `git status --short` も実行し、表のpath以外に意図しない変更がないか確認します。前のセッションの未commit差分は次の回の差分確認に含まれません。
 
-振り返りとシート記入が終わったら、変更はそのまま残し、次のセッションページとexerciseコマンドを開いて、表の差分確認pathだけを切り替えます。S1 から S2 へ進むときは同じ `examples/session-02` を使うので、pathを切り替えません。S4 の次の S5 は差分確認の対象がないので、その次の S6 で path を切り替えます。前のセッションの未commit差分を消すための reset、stash、commit は必要ありません。S1 から S2 への移行を除き、次のコード演習の開始コードには前のコード演習の改善が取り込み済みなので、自分の変更をコピーする必要もありません。S2 は S1 の変更の上で進めます。
+振り返りとシート記入が終わったら、変更はそのまま残し、次のセッションページとexerciseコマンドを開いて、表の差分確認pathだけを切り替えます。S4 の次の S5 は差分確認の対象がないので、その次の S6 で path を切り替えます。前のセッションの未commit差分を消すための reset、stash、commit は必要ありません。次のコード演習の開始コードには前のコード演習の解答が取り込み済みなので、自分の変更をコピーする必要もありません。
 
 ## エージェントを使わない場合
 
-S1〜S4 と S6 の各演習ページには、次スナップショットの実ソースから切り出したステップごとの解答があります。S6 は import や後続stepを含む完成ファイルを全target分表示します。S6では1stepずつ反映して個別にGREENになるとは限らないため、表示された全target fileを反映した後、同じ `pnpm exercise:06` で確認してください。
+S1〜S4 と S6 の各演習ページには、解答スナップショットの実ソースから切り出したステップごとの解答があります。S6 は import や後続stepを含む完成ファイルを全target分表示します。S6では1stepずつ反映して個別にGREENになるとは限らないため、表示された全target fileを反映した後、同じ `pnpm exercise:06` で確認してください。
 
 ページの「コードを読み、失敗を再現する」では、Code Explorer で実ファイルを読み、同じ画面の WebContainer Playground で編集とコマンド実行ができます。Playground は説明用・環境トラブル時の退避先であり、ローカル clone が主線です。
 
