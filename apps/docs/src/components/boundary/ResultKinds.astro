@@ -218,8 +218,18 @@ const frames = [
   }
 
   .result-kinds[data-ready] .result-kinds__frames {
+    display: grid;
     padding-inline-start: 0;
     list-style: none;
+  }
+
+  .result-kinds[data-ready] .result-kinds__frames > li {
+    grid-area: 1 / 1;
+  }
+
+  .result-kinds[data-ready] .result-kinds__frames > li[hidden] {
+    display: block;
+    visibility: hidden;
   }
 
   .result-kinds[data-ready] .result-kinds__column,

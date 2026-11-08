@@ -38,6 +38,7 @@ type Mode = "normal" | "dim";
 type TokenState = "off" | "home" | "through" | "stop";
 type Frame = Readonly<{
   caption: string;
+  extra?: "fixture" | "compare";
   stage: keyof typeof versionLabels | null;
   code?: Readonly<{ key: keyof Props["code"]; lines: readonly number[] }>;
   modes: readonly [Mode, Mode, Mode, Mode];
@@ -131,6 +132,7 @@ const frames: readonly Frame[] = [
     caption: "印の付いた値を作る入口は parse です。parse は文字列がUUIDの形かを検査し、通った値だけを AppointmentId 型として返します。UUIDの形の検査は brand を付ける前からあります。brand を付けて変わったのは、通った値に印が付くことです。",
     stage: "after",
     code: { key: "afterParse", lines: [4, 5] },
+    extra: "fixture",
     modes: ["normal", "normal", "normal", "dim"],
     tokens: ["through", "through", "off"],
     marks: "brand",
@@ -142,6 +144,7 @@ const frames: readonly Frame[] = [
   },
   {
     caption: "UUIDの形でない文字列は AppointmentId.parse を通りません。AppointmentId.parse は例外を投げるので、AppointmentId 型の値は作られません。StartExaminationInput.parse は、例外を投げずに Err を返します。",
+    extra: "compare",
     stage: null,
     modes: ["normal", "normal", "dim", "dim"],
     tokens: ["home", "home", "stop"],
@@ -153,6 +156,19 @@ const frames: readonly Frame[] = [
     runtime: false,
   },
 ];
+
+const compareExamples = [
+  {
+    label: "例外を投げる parse",
+    text: "検査に失敗すると例外を投げます。",
+    code: `parse: schema.parse\nAppointmentId.parse("night-shift")`,
+  },
+  {
+    label: "Err を返す parse",
+    text: "検査に失敗すると Err を返します。",
+    code: `parse: schemaResult(schema)\nStartExaminationInput.parse(raw)`,
+  },
+] as const;
 
 const initial = frames[0];
 const idPreview = (id: string) => `${id.slice(0, 8)}…`;
@@ -168,7 +184,7 @@ const cards = [
   { id: "veterinarian", label: "獣医師ID", value: tokens[1].value, brand: "VeterinarianId" },
 ] as const;
 
-const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => frame));
+const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...frame }) => frame));
 ---
 
 <div class="branded-id-flow" data-branded-id-flow data-frames={playerData}>
@@ -176,10 +192,9 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
     <button type="button" data-prev disabled>前へ</button>
     <span data-progress>1 / {frames.length}</span>
     <button type="button" data-next>次へ</button>
-  </div>
-
-  <div class="branded-id-flow__stage" data-stage hidden>
-    <span class="branded-id-flow__tag" data-stage-tag hidden></span>
+    <div class="branded-id-flow__stage" data-stage hidden>
+      <span class="branded-id-flow__tag" data-stage-tag hidden></span>
+    </div>
   </div>
 
   <svg
@@ -283,17 +298,35 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
     </g>
   </svg>
 
-  <p class="branded-id-flow__live" data-live aria-live="polite" hidden></p>
+  <div class="branded-id-flow__captions">
+    <p class="branded-id-flow__live" data-live aria-live="polite" hidden></p>
+    {frames.map((frame) => (
+      <p class="branded-id-flow__sizer" aria-hidden="true">{frame.caption}</p>
+    ))}
+  </div>
 
   <ol class="branded-id-flow__frames">
     {frames.map((frame) => (
-      <li data-frame data-has-code={frame.code ? "" : undefined}>
+      <li data-frame data-has-code={frame.code || frame.extra ? "" : undefined}>
         <p class="branded-id-flow__caption">{frame.caption}</p>
         {frame.code && frame.stage && (
           <figure class="code-block branded-id-flow__code" data-version={frame.stage}>
             <figcaption><span class="branded-id-flow__tag" data-version={frame.stage}>{versionLabels[frame.stage]}</span> <code>{code[frame.code.key].path}</code></figcaption>
             <Code code={withMarks(code[frame.code.key].code, frame.code.lines)} lang="ts" defaultColor={false} transformers={[markKeyLines]} />
           </figure>
+        )}
+        {frame.extra === "fixture" && (
+          <p class="branded-id-flow__note"><code>clinicFixture</code> は、このハンズオンのテスト用の固定データです。</p>
+        )}
+        {frame.extra === "compare" && (
+          <div class="branded-id-flow__compare">
+            {compareExamples.map((example) => (
+              <section aria-label={example.label}>
+                <p><strong>{example.label}</strong>: {example.text}</p>
+                <Code code={example.code} lang="ts" />
+              </section>
+            ))}
+          </div>
         )}
       </li>
     ))}
@@ -681,8 +714,8 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
   }
 
   .branded-id-flow__controls[hidden] {
@@ -690,7 +723,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
   }
 
   .branded-id-flow__controls button {
-    min-height: 2.75rem;
+    min-height: 2.5rem;
     padding: 0 1rem;
     border: 2px solid var(--case-blue);
     border-radius: 0.5rem;
@@ -710,7 +743,28 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
 
   .branded-id-flow__stage {
     min-height: 1.75rem;
-    margin-bottom: 0.5rem;
+    margin-inline-start: auto;
+  }
+
+  .branded-id-flow__note {
+    margin: 0.5rem 0 0;
+  }
+
+  .branded-id-flow__compare {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .branded-id-flow__compare p {
+    margin: 0 0 0.25rem;
+  }
+
+  .branded-id-flow__compare :global(pre) {
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
   }
 
   .branded-id-flow__stage[hidden] {
@@ -718,10 +772,29 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
   }
 
   .branded-id-flow__live,
-  .branded-id-flow__caption {
-    margin: 0.75rem 0 0.5rem;
+  .branded-id-flow__caption,
+  .branded-id-flow__sizer {
+    margin: 0 0 0.5rem;
     font-weight: 700;
-    line-height: 1.7;
+    line-height: 1.55;
+  }
+
+  .branded-id-flow__sizer {
+    display: none;
+    visibility: hidden;
+  }
+
+  [data-animated] .branded-id-flow__captions {
+    display: grid;
+  }
+
+  [data-animated] .branded-id-flow__captions > * {
+    grid-area: 1 / 1;
+    min-width: 0;
+  }
+
+  [data-animated] .branded-id-flow__sizer {
+    display: block;
   }
 
   .branded-id-flow__frames {
@@ -741,6 +814,11 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
     min-width: 0;
     margin: 0.5rem 0 0;
     border-inline-start: 0.35rem solid var(--version-color);
+  }
+
+  .branded-id-flow__code figcaption {
+    gap: 0.25rem 0.5rem;
+    padding: 0.25rem 0.5rem;
   }
 
   .branded-id-flow__code figcaption code {
@@ -764,8 +842,10 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
   .branded-id-flow__code :global(pre) {
     max-width: 100%;
     margin: 0;
+    padding: 0.5rem 0.75rem;
     overflow-x: auto;
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
   }
 
   .branded-id-flow :global(.branded-id-flow__key) {
@@ -782,17 +862,19 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
   }
 
   [data-animated] .branded-id-flow__frames {
+    display: grid;
     padding-inline-start: 0;
     list-style: none;
   }
 
   [data-animated] .branded-id-flow__frames > li {
-    display: none;
+    grid-area: 1 / 1;
     margin: 0;
+    visibility: hidden;
   }
 
-  [data-animated] .branded-id-flow__frames > li.is-current[data-has-code] {
-    display: block;
+  [data-animated] .branded-id-flow__frames > li.is-current {
+    visibility: visible;
   }
 
   [data-animated] .branded-id-flow__caption {

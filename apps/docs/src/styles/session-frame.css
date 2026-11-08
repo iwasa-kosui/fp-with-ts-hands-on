@@ -1,4 +1,5 @@
 html:has(.session-frame) {
+  scrollbar-gutter: stable;
   scroll-padding-top: 3.5rem;
   scroll-padding-bottom: 4rem;
   background: var(--role-bg);
@@ -16,8 +17,10 @@ body:has(.session-frame) {
   --frame-side: 0px;
   --frame-pad: 1.5rem;
   --frame-column: calc(var(--frame-side) + var(--frame-content) + var(--frame-pad) * 2);
+  --frame-bar-height: 48px;
+  --frame-foot-height: 56px;
   --frame-role-height: 1.75rem;
-  --frame-figure-height: min(520px, calc(100dvh - 48px - 56px - 180px - var(--frame-role-height)));
+  --frame-figure-height: min(520px, calc(100dvh - var(--frame-bar-height) - var(--frame-foot-height) - 180px - var(--frame-role-height)));
   --frame-edge: max(1rem, calc((100% - var(--frame-column)) / 2));
   display: flex;
   flex-direction: column;
@@ -129,7 +132,7 @@ body:has(.session-frame) {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  height: 48px;
+  height: var(--frame-bar-height);
   padding: 0 calc(var(--frame-edge) + var(--frame-pad)) 0 calc(var(--frame-edge) + 0.5rem);
   border-bottom: 2px solid var(--case-line);
   background: var(--case-paper);
@@ -206,10 +209,10 @@ body:has(.session-frame) {
 
 .session-frame__menu-content {
   position: fixed;
-  top: 48px;
+  top: var(--frame-bar-height);
   right: 0;
   left: 0;
-  max-height: calc(100dvh - 48px - 56px);
+  max-height: calc(100dvh - var(--frame-bar-height) - var(--frame-foot-height));
   padding: 0.5rem 1rem;
   overflow-y: auto;
   border-bottom: 2px solid var(--case-line);
@@ -256,8 +259,16 @@ body:has(.session-frame) {
   justify-content: safe center;
   width: 100%;
   min-width: 0;
-  padding: 1rem clamp(1rem, 3vw, 2.5rem);
+  padding: 0.5rem clamp(1rem, 3vw, 2.5rem);
   line-height: 1.65;
+}
+
+.session-frame__content > p {
+  margin-block-end: 0.625rem;
+}
+
+.session-frame__content > :is(ul, ol) {
+  margin-block: 0.25rem 0.625rem;
 }
 
 .session-frame__content pre {
@@ -330,7 +341,7 @@ body:has(.session-frame) {
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 0.75rem;
   align-items: center;
-  height: 56px;
+  height: var(--frame-foot-height);
   padding: 0 calc(var(--frame-edge) + var(--frame-pad)) 0 calc(var(--frame-edge) + 0.5rem);
   border-top: 2px solid var(--case-line);
   background: var(--case-paper);
@@ -448,9 +459,9 @@ body:has(.session-frame) {
     display: block;
     grid-column: 2;
     position: sticky;
-    top: 48px;
+    top: var(--frame-bar-height);
     align-self: start;
-    height: calc(100dvh - 48px - 56px);
+    height: calc(100dvh - var(--frame-bar-height) - var(--frame-foot-height));
     padding: 0.5rem 0.4rem;
     overflow-y: auto;
     border-right: 1px solid var(--case-divider);
@@ -571,40 +582,112 @@ body:has(.session-frame) {
     grid-column: 2;
   }
 
-  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) {
+  .session-frame.case-file--session .case-file__content .boundary-player {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
     gap: 0 1.25rem;
     align-items: start;
     max-width: none;
     margin-block: 0.5rem;
   }
 
-  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) > figcaption {
+  .session-frame.case-file--session .case-file__content .boundary-player > figcaption {
     grid-column: 1 / -1;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player[data-ready] > .boundary-player__live {
+    display: contents;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player .boundary-player__scenarios {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 24rem);
+    align-items: stretch;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player :is(.boundary-player__controls, .boundary-player__track, .boundary-player__text) {
+    grid-column: 1;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:not(:has(.boundary-player__files)) .boundary-player__controls {
+    grid-row: 3;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:not(:has(.boundary-player__files)) .boundary-player__track {
+    grid-row: 4;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:not(:has(.boundary-player__files)) .boundary-player__value {
+    grid-column: 2;
+    grid-row: 3 / span 3;
+    margin-block-start: 0.5rem;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:not(:has(.boundary-player__files)) .boundary-player__text {
+    grid-row: 5;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) > figcaption {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+    margin-block-end: 0;
   }
 
   .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) > figcaption span {
     display: none;
   }
 
-  .session-frame.case-file--session .case-file__content .boundary-player[data-ready]:has(.boundary-player__files) > .boundary-player__live {
-    display: contents;
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) .boundary-player__controls {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    margin-block-start: 0;
   }
 
   .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) .boundary-player__scenarios {
-    grid-column: 1 / -1;
-    grid-row: 2;
+    margin-block-start: 0.5rem;
   }
 
-  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) :is(.boundary-player__controls, .boundary-player__track, .boundary-player__value, .boundary-player__text) {
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) .boundary-player__track {
+    grid-row: 3;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) .boundary-player__value {
     grid-column: 1;
+    grid-row: 4;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) .boundary-player__text {
+    grid-row: 5;
   }
 
   .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) > .boundary-player__files {
+    position: relative;
     grid-column: 2;
-    grid-row: 3 / span 4;
-    margin-block-start: 0.75rem;
+    grid-row: 3 / span 3;
+    align-self: stretch;
+    margin-block-start: 0.5rem;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player[data-ready] > .boundary-player__files > figure {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player[data-ready] > .boundary-player__files .boundary-player__code {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player[data-ready] > .boundary-player__files .boundary-player__code pre {
+    height: 100%;
+    max-height: none;
   }
 
   .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) > .boundary-player__static {
@@ -632,11 +715,32 @@ body:has(.session-frame) {
 }
 
 .session-frame .session-split--story .episode-illustration svg {
-  max-height: calc(100dvh - 48px - 56px - 2rem - 215px - var(--frame-role-height));
+  max-height: calc(100dvh - var(--frame-bar-height) - var(--frame-foot-height) - 2rem - 215px - var(--frame-role-height));
 }
 
 .session-frame .session-split--story .boundary-request {
   margin: 0;
+}
+
+.session-frame .session-split--guides .code-guide-cards > li {
+  padding: 0.75rem;
+}
+
+.session-frame .session-split--guides .code-guide-cards h4 {
+  margin-bottom: 0.5rem;
+}
+
+.session-frame .session-split--guides .code-guide-cards figure {
+  margin-block: 0.5rem;
+}
+
+.session-frame .session-split--guides .code-guide-cards pre {
+  padding: 0.5rem 0.75rem;
+  line-height: 1.4;
+}
+
+.session-frame .session-split--guides .code-guide-cards > li > p {
+  margin-top: 0.5rem;
 }
 
 @media (max-height: 760px) {
@@ -652,5 +756,22 @@ body:has(.session-frame) {
 
   .session-frame .session-split--guides .code-guide-cards h4 {
     margin-bottom: 0.4rem;
+  }
+}
+
+@media (max-height: 760px) {
+  .session-frame {
+    --frame-bar-height: 40px;
+    --frame-foot-height: 44px;
+  }
+
+  .session-frame__content {
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+
+  .session-frame__center {
+    flex-direction: row;
+    gap: 0.75rem;
   }
 }

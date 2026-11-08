@@ -270,8 +270,18 @@ const terms = [
   }
 
   .boundary-terms[data-ready] .boundary-terms__frames {
+    display: grid;
     padding-inline-start: 0;
     list-style: none;
+  }
+
+  .boundary-terms[data-ready] .boundary-terms__frames > li {
+    grid-area: 1 / 1;
+  }
+
+  .boundary-terms[data-ready] .boundary-terms__frames > li[hidden] {
+    display: block;
+    visibility: hidden;
   }
 
   .boundary-terms[data-ready] [data-pin][data-state="hidden"] {

@@ -196,14 +196,18 @@ const litData = JSON.stringify(lit);
 <style>
   .audit-flow {
     min-width: 0;
-    margin: 1rem 0;
+    margin: 0.5rem 0;
+  }
+
+  .audit-flow :global(.step-controls) {
+    margin-block-end: 0.5rem;
   }
 
   .audit-flow__trigger {
     display: grid;
     justify-items: center;
     gap: 0.125rem;
-    margin-block-end: 0.5rem;
+    margin-block-end: 0.25rem;
   }
 
   .audit-flow__button {
@@ -242,6 +246,7 @@ const litData = JSON.stringify(lit);
   .audit-flow__code figcaption {
     justify-content: flex-start;
     align-items: center;
+    padding-block: 0.25rem;
   }
 
   .audit-flow__code figcaption code {
@@ -251,11 +256,10 @@ const litData = JSON.stringify(lit);
   }
 
   .audit-flow__code :global(pre) {
-    min-height: 8.5rem;
     margin: 0;
-    padding: 0.625rem 0;
-    font-size: 0.75rem;
-    line-height: 1.55;
+    padding: 0.5rem 0;
+    font-size: 0.8125rem;
+    line-height: 1.45;
   }
 
   .audit-flow__code :global(.line) {
@@ -350,7 +354,7 @@ const litData = JSON.stringify(lit);
   }
 
   .audit-flow__frames {
-    margin: 0.75rem 0 0;
+    margin: 0.5rem 0 0;
     padding-inline-start: 1.5rem;
   }
 
@@ -365,8 +369,18 @@ const litData = JSON.stringify(lit);
   }
 
   .audit-flow[data-ready] .audit-flow__frames {
+    display: grid;
     padding-inline-start: 0;
     list-style: none;
+  }
+
+  .audit-flow[data-ready] .audit-flow__frames > li {
+    grid-area: 1 / 1;
+  }
+
+  .audit-flow[data-ready] .audit-flow__frames > li[hidden] {
+    display: block;
+    visibility: hidden;
   }
 
   .audit-flow[data-ready] .audit-flow__column,
@@ -426,6 +440,28 @@ const litData = JSON.stringify(lit);
     .audit-flow__columns--single .audit-flow__column {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       align-items: start;
+    }
+
+    .audit-flow {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .audit-flow :global(.step-controls) {
+      grid-column: 1;
+      grid-row: 1;
+      margin-block-end: 0;
+    }
+
+    .audit-flow__trigger {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .audit-flow__columns,
+    .audit-flow > div[aria-live] {
+      grid-column: 1 / -1;
     }
   }
 

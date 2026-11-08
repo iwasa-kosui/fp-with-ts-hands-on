@@ -317,7 +317,12 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     </g>
   </svg>
 
-  <p class="schema-source-flow__live" data-live aria-live="polite" hidden></p>
+  <div class="schema-source-flow__captions">
+    <p class="schema-source-flow__live" data-live aria-live="polite" hidden></p>
+    {shownFrames.map((frame) => (
+      <p class="schema-source-flow__sizer" aria-hidden="true">{frame.caption}</p>
+    ))}
+  </div>
 
   <ol class="schema-source-flow__frames">
     {shownFrames.map((frame) => (
@@ -777,7 +782,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem 0.75rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
   }
 
   .schema-source-flow__controls[hidden] {
@@ -785,7 +790,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   }
 
   .schema-source-flow__controls button {
-    min-height: 2.75rem;
+    min-height: 2.5rem;
     padding: 0 0.75rem;
     border: 2px solid var(--case-blue);
     border-radius: 0.5rem;
@@ -810,10 +815,29 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   }
 
   .schema-source-flow__live,
-  .schema-source-flow__caption {
-    margin: 0.75rem 0 0.5rem;
+  .schema-source-flow__caption,
+  .schema-source-flow__sizer {
+    margin: 0 0 0.5rem;
     font-weight: 700;
-    line-height: 1.7;
+    line-height: 1.55;
+  }
+
+  .schema-source-flow__sizer {
+    display: none;
+    visibility: hidden;
+  }
+
+  [data-animated] .schema-source-flow__captions {
+    display: grid;
+  }
+
+  [data-animated] .schema-source-flow__captions > * {
+    grid-area: 1 / 1;
+    min-width: 0;
+  }
+
+  [data-animated] .schema-source-flow__sizer {
+    display: block;
   }
 
   .schema-source-flow__frames {
@@ -835,6 +859,11 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     border-inline-start: 0.35rem solid var(--version-color);
   }
 
+  .schema-source-flow__code figcaption {
+    gap: 0.25rem 0.5rem;
+    padding: 0.25rem 0.5rem;
+  }
+
   .schema-source-flow__code figcaption code {
     font-size: 0.75rem;
     white-space: normal;
@@ -853,8 +882,10 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   .schema-source-flow__code :global(pre) {
     max-width: 100%;
     margin: 0;
+    padding: 0.5rem 0.75rem;
     overflow-x: auto;
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
   }
 
   .schema-source-flow :global(.schema-source-flow__key) {
@@ -867,17 +898,19 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   }
 
   [data-animated] .schema-source-flow__frames {
+    display: grid;
     padding-inline-start: 0;
     list-style: none;
   }
 
   [data-animated] .schema-source-flow__frames > li {
-    display: none;
+    grid-area: 1 / 1;
     margin: 0;
+    visibility: hidden;
   }
 
-  [data-animated] .schema-source-flow__frames > li.is-current[data-has-code] {
-    display: block;
+  [data-animated] .schema-source-flow__frames > li.is-current {
+    visibility: visible;
   }
 
   [data-animated] .schema-source-flow__caption {
@@ -891,6 +924,18 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
 
   [data-animated] .schema-source-flow__chip {
     transition: transform 0.9s ease-in-out, opacity 0.3s;
+  }
+
+  @media (max-height: 760px) {
+    .schema-source-flow__code :global(pre) {
+      padding-block: 0.25rem;
+      line-height: 1.35;
+    }
+
+    .schema-source-flow__live,
+    .schema-source-flow__sizer {
+      line-height: 1.45;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

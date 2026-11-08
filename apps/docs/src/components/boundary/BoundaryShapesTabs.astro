@@ -177,6 +177,24 @@ const zones = [
     margin-block-start: 1.25rem;
   }
 
+  .shapes[data-ready] {
+    display: grid;
+  }
+
+  .shapes[data-ready] .shapes__tabs {
+    grid-row: 1;
+  }
+
+  .shapes[data-ready] .shapes__panel {
+    grid-area: 2 / 1;
+    margin-block-start: 0;
+  }
+
+  .shapes[data-ready] .shapes__panel[hidden] {
+    display: block;
+    visibility: hidden;
+  }
+
   .shapes__name {
     margin: 0 0 0.5rem;
     font-weight: 700;

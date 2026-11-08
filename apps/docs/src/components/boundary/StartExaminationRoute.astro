@@ -187,8 +187,18 @@ const frames = [
   }
 
   .start-route[data-ready] .start-route__frames {
+    display: grid;
     padding-inline-start: 0;
     list-style: none;
+  }
+
+  .start-route[data-ready] .start-route__frames > li {
+    grid-area: 1 / 1;
+  }
+
+  .start-route[data-ready] .start-route__frames > li[hidden] {
+    display: block;
+    visibility: hidden;
   }
 
   .start-route[data-ready] .start-route__node {
