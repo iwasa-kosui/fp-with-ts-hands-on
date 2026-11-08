@@ -8,7 +8,7 @@ import { clinicFixture } from "../../../fixtures/clinic.js";
 
 const { examId: EXAM_ID, ownerContact: VALID_CONTACT } = clinicFixture;
 
-describe("S4 regression: 外部境界と PII", () => {
+describe("S03 regression: 外部境界と PII", () => {
   it("形の違う検査 JSON はドメイン型にならない", () => {
     expect(ExamResult.parse({ examId: EXAM_ID, items: [] }).isErr()).toBe(true);
   });
@@ -24,6 +24,6 @@ describe("S4 regression: 外部境界と PII", () => {
   });
 
   it("境界値と配列は読み取り専用", () => {
-    expect(compileTypeFixture("s4-exam-result-readonly.ts")).toEqual([]);
+    expect(compileTypeFixture("exam-result-readonly.ts")).toEqual([]);
   });
 });

@@ -35,7 +35,7 @@ const input = {
   examinationStartedAt: "2026-08-30T06:30:00.000Z",
 } as const;
 
-describe("S5 Step 1 regression: InvalidAppointmentState を値として返す", () => {
+describe("S04 Step 1 regression: InvalidAppointmentState を値として返す", () => {
   it("CheckedIn でない予約を kind で識別できる", () => {
     const result = ensureCheckedIn(scheduled);
     expect(result.isErr() && result.error).toEqual({
@@ -45,7 +45,7 @@ describe("S5 Step 1 regression: InvalidAppointmentState を値として返す", 
   });
 });
 
-describe("S5 Step 2 regression: AppointmentNotFound を値として返す", () => {
+describe("S04 Step 2 regression: AppointmentNotFound を値として返す", () => {
   it("見つからない appointmentId をエラーへ残す", () => {
     const result = ensureAppointmentFound(undefined, appointmentId);
     expect(result.isErr() && result.error).toEqual({
@@ -55,7 +55,7 @@ describe("S5 Step 2 regression: AppointmentNotFound を値として返す", () =
   });
 });
 
-describe("S5 Step 3 regression: andThen pipeline が失敗理由を運ぶ", () => {
+describe("S04 Step 3 regression: andThen pipeline が失敗理由を運ぶ", () => {
   it("予約なしを InvalidAppointmentState に潰さず保存しない", () => {
     const observer = { saveCalls: 0 };
     const result = startExamination(createDependencies(undefined, observer))(input);
@@ -98,7 +98,7 @@ describe("S5 Step 3 regression: andThen pipeline が失敗理由を運ぶ", () =
   });
 });
 
-describe("S5 Step 4 regression: Web側が業務エラーを漏れなく処理する", () => {
+describe("S04 Step 4 regression: Web側が業務エラーを漏れなく処理する", () => {
   it("業務エラーを追加すると未対応の分岐がコンパイルエラーになる", () => {
     expect(compileWithAdditionalStartExaminationError()).toEqual([]);
   });

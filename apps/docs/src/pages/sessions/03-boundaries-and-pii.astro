@@ -83,7 +83,7 @@ export const session: SessionSummary = {
   },
   steps: [
     {
-      id: "s4-reject-invalid-appointment-id",
+      id: "s03-reject-invalid-appointment-id",
       goal: "不正な予約IDを含むHTTP入力は、StartExaminationInputにならないようにする。",
       startingFailure: "不正な予約IDでも、診察開始の入力として扱える。",
       targets: ["examples/session-03/src/boundary/startExaminationInput.ts"],
@@ -94,7 +94,7 @@ export const session: SessionSummary = {
       }],
     },
     {
-      id: "s4-reject-invalid-veterinarian-id",
+      id: "s03-reject-invalid-veterinarian-id",
       goal: "不正な担当獣医師IDを含むHTTP入力は、StartExaminationInputにならないようにする。",
       startingFailure: "不正な担当獣医師IDでも、診察開始の入力として扱える。",
       targets: ["examples/session-03/src/boundary/startExaminationInput.ts"],
@@ -141,7 +141,7 @@ export const supplementaryExercise: SupplementaryExercise = {
   },
   steps: [
     {
-      id: "s3-brand-start-examination-ids",
+      id: "s03-brand-start-examination-ids",
       goal: "予約IDと担当獣医師IDを、配布済みの識別子と同じ規約で別々の型にする。",
       startingFailure: "予約IDと担当獣医師IDを取り違えても、型検査が通る。",
       targets: [
@@ -162,7 +162,7 @@ export const supplementaryExercise: SupplementaryExercise = {
       ],
     },
     {
-      id: "s3-apply-start-examination-ids",
+      id: "s03-apply-start-examination-ids",
       goal: "予約の6状態とstartExaminationが、用途別の識別子を受け取るようにする。",
       startingFailure: "予約状態とstartExaminationが、用途を区別しないstringを受け取る。",
       targets: [
@@ -183,7 +183,7 @@ export const supplementaryExercise: SupplementaryExercise = {
       ],
     },
     {
-      id: "s3-reject-id-swap",
+      id: "s03-reject-id-swap",
       goal: "AppointmentIdとVeterinarianIdを入れ替えたコードがコンパイルできないことを、型テストで確かめる。",
       startingFailure: "取り違えた2行が、型エラーにならないままコンパイルされる。",
       targets: ["examples/session-03-supplement/src/domain/domain.test-types.ts"],

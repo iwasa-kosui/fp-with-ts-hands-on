@@ -36,8 +36,8 @@ describe("回帰条件: schema とドメイン型がずれない", () => {
   });
 });
 
-describe("S4 regression: 境界値は読み取り専用", () => {
+describe("S03 regression: 境界値は読み取り専用", () => {
   it("schema が返す検査結果のプロパティと items は変更できない", () => {
-    expect(compileTypeFixture("s4-exam-result-readonly.ts")).toEqual([]);
+    expect(compileTypeFixture("exam-result-readonly.ts")).toEqual([]);
   });
 });

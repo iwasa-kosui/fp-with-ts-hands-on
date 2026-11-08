@@ -5,7 +5,7 @@ import ts from "typescript";
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const projectDirectory = path.resolve(directory, "..", "..");
 const configPath = path.join(projectDirectory, "tsconfig.json");
-const exhaustiveFixture = "s2-status-exhaustive.ts";
+const exhaustiveFixture = "status-exhaustive.ts";
 
 const printWithAdditionalStartExaminationError = (
   fileName: string,

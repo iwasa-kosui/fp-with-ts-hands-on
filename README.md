@@ -66,6 +66,45 @@ S1 は `pnpm exercise:01`、S2 は `pnpm exercise:02` を使います。S3 の�
 
 開始時の RED は、module-not-found や import error ではありません。サイトの手順に沿って既存モジュールを小さく改善し、開始時と同じ exercise コマンドをもう一度実行して GREEN を確認します。S0、S5、解答のスナップショット、Final に exercise command はありません。各コード演習の最後には、その回で防ぐ問題と差分を照らして振り返ります。複数人の場合は相互レビューを行います。
 
+## 第2回までの版と番号の振り直し
+
+第2回の後で、`examples/session-NN` と `pnpm exercise:NN` の番号を教材ページの番号にそろえました。第2回までのコードは、[コミット d6f13e3](https://github.com/iwasa-kosui/fp-with-ts-hands-on/tree/d6f13e3d34cf0666ea3be3fe611a62bc84cbaf84) で見られます。これから新しく clone する人は、この節の手順を実行する必要はありません。
+
+### clone 済みで `examples/` を編集した人が pull するとき
+
+フォルダの番号が変わったので、`examples/` に編集が残っていると `git pull` が止まるか、競合します。次の手順で編集を別のブランチに残してから、最新の `main` へ移ってください。
+
+1. `git pull` が競合で止まっているときは、merge を取り消します。競合が出ていないときは、この手順を飛ばします。
+
+   ```sh
+   git merge --abort
+   ```
+
+2. すべての編集を別のブランチに保存します。
+
+   ```sh
+   git switch -c my-session-work
+   git add -A
+   git commit -m "第2回までの演習の編集"
+   ```
+
+3. `main` を最新の状態に合わせて、依存を入れ直します。`git reset --hard` は `main` の手元の変更を消します。手順2の保存が終わってから実行してください。
+
+   ```sh
+   git switch main
+   git fetch origin
+   git reset --hard origin/main
+   pnpm install
+   ```
+
+`pnpm demo:NN` がデータベースの列の不一致で失敗するときは、そのフォルダの古いデモ用データベースだけを消してから、もう一度実行してください。`NN` は失敗したデモの番号に置き換えます。
+
+```sh
+rm examples/session-NN/clinic.sqlite*
+```
+
+保存した編集は、`git switch my-session-work` で見られます。このブランチのフォルダは旧番号のままです。新しい番号で解き直すときは、`main` の `examples/session-NN`（NN は教材ページの番号）を使ってください。
+
 ## 学習の流れ
 
 1. S0 で壊れやすい動物病院アプリの現行業務、操作、保存先、ログを読む

@@ -486,7 +486,7 @@ describe("page-owned session contracts", () => {
 
     const injectContext = exerciseSessions
       .find(({ slug }) => slug === "06-effects-and-consistency")
-      ?.steps.find(({ id }) => id === "s6-inject-context");
+      ?.steps.find(({ id }) => id === "s06-inject-context");
     expect(injectContext?.solutions).toEqual([
       expect.objectContaining({
         path: "examples/session-06-solution/src/useCase/dependencies.ts",

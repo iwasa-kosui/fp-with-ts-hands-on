@@ -16,101 +16,14 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-
-const BASELINE_COMMIT = "088c2ef";
-const EXERCISE_COMMANDS = ["01", "02", "03", "03-supplement", "04", "06"];
-
-const RENAMED_FOLDERS = [
-  { name: "session-01", source: "session-02", labels: { "02": "01", "01": "01" } },
-  { name: "session-01-solution", source: "session-03", labels: { "03": "01" } },
-  { name: "session-02", source: "session-02", labels: { "02": "02", "01": "02" } },
-  { name: "session-02-solution", source: "session-03", labels: { "03": "02" } },
-  { name: "session-03-supplement", source: "session-03", labels: { "03": "03" } },
-  { name: "session-03-supplement-solution", source: "session-04", labels: { "04": "03", "03": "03" } },
-  { name: "session-03", source: "session-04", labels: { "04": "03", "03": "03" } },
-  { name: "session-03-solution", source: "session-05", labels: { "05": "03" } },
-  { name: "session-04", source: "session-05", labels: { "05": "04", "04": "04" } },
-  { name: "session-04-solution", source: "session-06", labels: { "06": "04" } },
-  { name: "session-05", source: "session-01", labels: { "01": "05", "05": "05" } },
-  { name: "session-06", source: "session-06", labels: { "06": "06" } },
-  { name: "session-06-solution", source: "session-07", labels: { "07": "06" } },
-];
-
-const UNCHANGED_FOLDERS = ["session-00", "final", "fixtures", "start-examination-continuity"];
-
-const SESSION_02_COPIES_FROM_SESSION_03 = [
-  "src/domain/appointment/transitions.ts",
-  "test/regression/compileTypeFixture.ts",
-  "test/regression/type-fixtures/s2-paid-cannot-start.ts",
-  "test/regression/type-fixtures/s2-cancel-requires-reason.ts",
-  "test/regression/type-fixtures/s2-transition-sources.ts",
-];
-
-const ALLOWED_EXAMPLE_DIFFS = [
-  "examples/session-00/README.md",
-  ...RENAMED_FOLDERS.map(({ name }) => `examples/${name}/README.md`),
-  "examples/final/README.md",
-  "examples/session-03-solution/exercises/result-errors.test.ts",
-  "examples/session-04/exercises/result-errors.test.ts",
-  "examples/session-06-solution/src/useCase/startExamination.ts",
-  "examples/session-06-solution/src/useCase/dependencies.ts",
-  "examples/session-06-solution/src/web/routes.ts",
-  "examples/session-06-solution/test/in-memory-store.test.ts",
-  "examples/session-06-solution/test/integration/fileSqliteTransaction.test.ts",
-  "examples/session-06-solution/test/regression/effects-and-events.test.ts",
-  "examples/session-04-solution/exercises/effects-and-events.test.ts",
-  "examples/session-06/exercises/effects-and-events.test.ts",
-  "examples/session-02/test/transitions.test.ts",
-  "examples/session-02/test/regression/state-modeling.test.ts",
-  "examples/session-02/src/domain/appointment/index.ts",
-  "examples/session-02/test/regression/type-fixtures/s2-payment-requires-completed-examination.ts",
-  ...SESSION_02_COPIES_FROM_SESSION_03.map((file) => `examples/session-02/${file}`),
-  "examples/final/src/useCase/startExaminationUseCase.ts",
-  "examples/final/src/useCase/bookAppointmentUseCase.ts",
-  "examples/final/src/useCase/cancelAppointmentUseCase.ts",
-  "examples/final/src/useCase/checkInAppointmentUseCase.ts",
-  "examples/final/src/useCase/createOwnerUseCase.ts",
-  "examples/final/src/useCase/createPetUseCase.ts",
-  "examples/final/src/useCase/createUserUseCase.ts",
-  "examples/final/src/useCase/deleteOwnerUseCase.ts",
-  "examples/final/src/useCase/deletePetUseCase.ts",
-  "examples/final/src/useCase/deleteUserUseCase.ts",
-  "examples/final/src/useCase/logOutUseCase.ts",
-  "examples/final/src/useCase/recordPaymentUseCase.ts",
-  "examples/final/src/useCase/updateOwnerUseCase.ts",
-  "examples/final/src/useCase/updatePetUseCase.ts",
-  "examples/final/src/useCase/updateUserUseCase.ts",
-  "examples/final/src/useCase/resetUserPasswordUseCase.ts",
-  "examples/final/src/useCase/logInUseCase.ts",
-  "examples/final/src/useCase/recordExamResultUseCase.ts",
-  "examples/final/src/useCase/requestFollowUpUseCase.ts",
-  "examples/final/src/useCase/setUpInitialAdminUseCase.ts",
-  "examples/final/src/useCase/listFollowUpsUseCase.ts",
-  "examples/final/src/useCase/rejectExamResultPetMismatch.ts",
-  "examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts",
-  "examples/final/src/adaptor/primary/web/routes/authRoutes.ts",
-  "examples/final/src/adaptor/primary/web/routes/followUpRoutes.ts",
-  "examples/final/src/adaptor/primary/web/routes/ownerRoutes.ts",
-  "examples/final/src/adaptor/primary/web/routes/petRoutes.ts",
-  "examples/final/src/adaptor/primary/web/routes/userRoutes.ts",
-  "examples/final/src/domain/appointment/appointment.ts",
-  "examples/final/src/adaptor/secondary/sqlite/resolver/appointmentResolver.ts",
-  "examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
-  "examples/final/test/adaptor/sqliteEventStore.test.ts",
-  "examples/final/test/domain/appointment.test.ts",
-  "examples/final/test/useCase/appointmentUseCases.test.ts",
-  "examples/final/test/useCase/authenticationUseCases.test.ts",
-  "examples/final/test/useCase/followUpUseCases.test.ts",
-  "examples/final/test/useCase/ownerPetUseCases.test.ts",
-  "examples/final/test/useCase/startExaminationUseCase.test.ts",
-  "examples/final/test/web/authRoutes.test.ts",
-  "examples/start-examination-continuity/test/snapshotScenario.ts",
-  "examples/start-examination-continuity/test/resetAtomicity.test.ts",
-  "examples/start-examination-continuity/test/session00To05.test.ts",
-  "examples/start-examination-continuity/test/session06To07.test.ts",
-  "examples/start-examination-continuity/test/session00To04.test.ts",
-  "examples/start-examination-continuity/test/session06.test.ts",
-];
+import {
+  BASELINE_COMMIT,
+  BASELINE_FOLDERS,
+  findDemoScriptProblems,
+  findExerciseScriptProblems,
+  findFileProblems,
+  findReadmeProblems,
+} from "./baseline-check.mjs";
 
 const STEP_1_TO_3_FILES = ["src/domain/appointment/transitions.ts"];
 
@@ -515,29 +428,6 @@ const runScenario = (workDir, scenario, sourceFiles) => {
   return phases;
 };
 
-const camelCaseFolder = (suffix) =>
-  `session${suffix
-    .split("-")
-    .map((part, index) => (index === 0 ? part : `${part[0].toUpperCase()}${part.slice(1)}`))
-    .join("")}`;
-
-const renameIdentifiers = (text, { name, source, labels }) => {
-  const from = source.slice("session-".length);
-  const to = name.slice("session-".length);
-  return text
-    .replace(new RegExp(`clinic-session-${from}(?!\\d)`, "g"), `clinic-session-${to}`)
-    .replace(new RegExp(`(?<![\\w-])session-${from}(?!\\d)`, "g"), `session-${to}`)
-    .replace(
-      new RegExp(`(?<![A-Za-z0-9])session${from}(?=[A-Z])`, "g"),
-      camelCaseFolder(to),
-    )
-    .replace(/Session (\d\d)/g, (match, number) =>
-      labels[number] === undefined ? match : `Session ${labels[number]}`,
-    )
-    .replace(new RegExp(`exercise:${from}(?!\\d)`, "g"), `exercise:${to}`)
-    .replace(new RegExp(`demo:${from}(?!\\d)`, "g"), `demo:${to}`);
-};
-
 const readBaselineFiles = (paths) => {
   if (paths.length === 0) return new Map();
   const result = spawnSync("git", ["cat-file", "--batch"], {
@@ -574,46 +464,6 @@ const listBaselineFiles = (folder) => {
   return result.output.split("\n").filter((file) => file !== "");
 };
 
-const compareFolder = (current, folder, problems) => {
-  const { name, source } = folder;
-  const baselineFiles = listBaselineFiles(source);
-  const baseline = readBaselineFiles(baselineFiles);
-  const rename = (text) => (folder.labels === undefined ? text : renameIdentifiers(text, folder));
-  const expected = new Map(
-    baselineFiles.map((file) => [
-      `examples/${name}/${file.slice(`examples/${source}/`.length)}`,
-      rename(baseline.get(file)),
-    ]),
-  );
-  const actualFiles = current.filter((file) => file.startsWith(`examples/${name}/`));
-  const differing = [];
-  for (const file of new Set([...expected.keys(), ...actualFiles])) {
-    const actual = actualFiles.includes(file) ? readFileSync(join(rootDir, file), "utf8") : null;
-    if (actual !== (expected.get(file) ?? null)) differing.push(file);
-  }
-  for (const file of differing) {
-    if (!ALLOWED_EXAMPLE_DIFFS.includes(file)) {
-      problems.push(`基準 ${BASELINE_COMMIT} の examples/${source} から変わったファイル: ${file}`);
-    }
-  }
-};
-
-const compareSession02Copies = (current, problems) => {
-  const solution = RENAMED_FOLDERS.find(({ name }) => name === "session-02-solution");
-  const files = SESSION_02_COPIES_FROM_SESSION_03.map((file) => `examples/session-03/${file}`);
-  const baseline = readBaselineFiles(files);
-  for (const file of SESSION_02_COPIES_FROM_SESSION_03) {
-    const path = `examples/session-02/${file}`;
-    const expected = renameIdentifiers(baseline.get(`examples/session-03/${file}`), {
-      ...solution,
-      name: "session-02",
-    });
-    if (!current.includes(path) || readFileSync(join(rootDir, path), "utf8") !== expected) {
-      problems.push(`${path} が基準 ${BASELINE_COMMIT} の examples/session-03/${file} の写しではありません`);
-    }
-  }
-};
-
 const baselineCheck = () => {
   const problems = [];
   try {
@@ -627,41 +477,24 @@ const baselineCheck = () => {
     const current = [...new Set(listed.output.split("\n").map((line) => line.trim()))].filter(
       (file) => file !== "" && existsSync(join(rootDir, file)),
     );
-
-    const folders = [
-      ...RENAMED_FOLDERS,
-      ...UNCHANGED_FOLDERS.map((name) => ({ name, source: name })),
-    ];
-    const unknown = current.filter(
-      (file) => !folders.some(({ name }) => file.startsWith(`examples/${name}/`)),
+    const sources = [...new Set(BASELINE_FOLDERS.map(({ source }) => source))];
+    const baseline = readBaselineFiles(sources.flatMap(listBaselineFiles));
+    const readCurrent = (file) => readFileSync(join(rootDir, file), "utf8");
+    problems.push(...findFileProblems({ current, readCurrent, baseline }));
+    const folders = [...new Set(current.map((file) => file.split("/")[1]))];
+    const readmes = new Map(
+      folders
+        .filter((folder) => folder.startsWith("session-") && current.includes(`examples/${folder}/README.md`))
+        .map((folder) => [folder, readCurrent(`examples/${folder}/README.md`)]),
     );
-    if (unknown.length > 0) {
-      problems.push(`対応表にないフォルダのファイル:\n${unknown.map((file) => `  ${file}`).join("\n")}`);
-    }
-    for (const folder of folders) compareFolder(current, folder, problems);
-    compareSession02Copies(current, problems);
+    problems.push(...findReadmeProblems({ readmes, folders }));
   } catch (error) {
     problems.push(error instanceof Error ? error.message : String(error));
   }
 
-  const actual = Object.fromEntries(
-    Object.entries(JSON.parse(readFileSync(join(rootDir, "package.json"), "utf8")).scripts ?? {}).filter(
-      ([name]) => name.startsWith("exercise:"),
-    ),
-  );
-  const expected = Object.fromEntries(
-    EXERCISE_COMMANDS.map((number) => [
-      `exercise:${number}`,
-      `pnpm --filter @fp-with-ts/clinic-session-${number} exercise`,
-    ]),
-  );
-  for (const name of new Set([...Object.keys(expected), ...Object.keys(actual)])) {
-    if (expected[name] !== actual[name]) {
-      problems.push(
-        `package.json の ${name} が想定と違います\n  想定: ${expected[name] ?? "(なし)"}\n  現在: ${actual[name] ?? "(なし)"}`,
-      );
-    }
-  }
+  const { scripts = {} } = JSON.parse(readFileSync(join(rootDir, "package.json"), "utf8"));
+  problems.push(...findExerciseScriptProblems(scripts));
+  problems.push(...findDemoScriptProblems(scripts));
   return problems;
 };
 
@@ -701,7 +534,7 @@ const main = () => {
   const problems = baselineCheck();
   rows.push([
     "基準差分",
-    `${BASELINE_COMMIT} から examples（番号の振り直しを除く）と exercise:* が変わらない`,
+    `${BASELINE_COMMIT} から examples（番号の振り直しを除く）と exercise:* と demo:*、README の番号が変わらない`,
     problems.length === 0 ? "変更なし" : `${problems.length}件の問題`,
     problems.length === 0 ? "OK" : "NG",
   ]);

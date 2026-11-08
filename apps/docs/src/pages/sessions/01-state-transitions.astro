@@ -65,7 +65,7 @@ export const session: SessionSummary = {
   },
   steps: [
     {
-      id: "s2-narrow-start",
+      id: "s01-narrow-start",
       goal: "会計済み・キャンセル済みの来院で診察を開始するコードを、コンパイルエラーにする。",
       startingFailure: "会計済み・キャンセル済みでも診察を開始できる。",
       targets: ["examples/session-01/src/domain/appointment/transitions.ts"],
@@ -76,7 +76,7 @@ export const session: SessionSummary = {
       }],
     },
     {
-      id: "s2-require-cancel-reason",
+      id: "s01-require-cancel-reason",
       goal: "キャンセルには必ず理由を残す。",
       startingFailure: "理由を残さずに予約をキャンセルできる。",
       targets: ["examples/session-01/src/domain/appointment/transitions.ts"],
@@ -87,7 +87,7 @@ export const session: SessionSummary = {
       }],
     },
     {
-      id: "s2-align-transitions",
+      id: "s01-align-transitions",
       goal: "診察結果の記録前に会計するコードをコンパイルエラーにし、残りの遷移関数も、許可された状態だけを引数で受け取る形にそろえる。",
       startingFailure: "診察結果の記録前や、許可されていない状態から操作できる。",
       targets: ["examples/session-01/src/domain/appointment/transitions.ts"],
@@ -295,7 +295,7 @@ const preconditionSnippets = await loadSolutionSnippets({
       lines: [16, 20],
     },
     {
-      path: "examples/session-01-solution/test/regression/type-fixtures/s2-paid-cannot-start.ts",
+      path: "examples/session-01-solution/test/regression/type-fixtures/paid-cannot-start.ts",
       symbol: "startExamination",
       lines: [6, 9],
     },

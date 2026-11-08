@@ -72,7 +72,7 @@ export const session: SessionSummary = {
   },
   steps: [
     {
-      id: "s5-invalid-state",
+      id: "s04-invalid-state",
       goal: "来院済みでない状態を型付きの失敗として返す。",
       startingFailure: "来院済みでない予約を、例外として処理している。",
       targets: ["examples/session-04/src/useCase/errors.ts"],
@@ -84,7 +84,7 @@ export const session: SessionSummary = {
       }],
     },
     {
-      id: "s5-not-found",
+      id: "s04-not-found",
       goal: "予約が見つからない失敗を型付きの値として返す。",
       startingFailure: "予約が見つからない場合も、例外として処理している。",
       targets: ["examples/session-04/src/useCase/errors.ts"],
@@ -96,7 +96,7 @@ export const session: SessionSummary = {
       }],
     },
     {
-      id: "s5-result-pipeline",
+      id: "s04-result-pipeline",
       goal: "失敗理由をandThenで運び、失敗後の遷移と保存を実行しない。",
       startingFailure: "ユースケースが失敗理由をResultで運ばず、型から後続処理の条件を読めない。",
       targets: ["examples/session-04/src/useCase/startExamination.ts"],
@@ -108,7 +108,7 @@ export const session: SessionSummary = {
       }],
     },
     {
-      id: "s5-exhaustive-web-handler",
+      id: "s04-exhaustive-web-handler",
       goal: "Web側で業務エラーのkindを網羅し、それぞれ専用noticeへ変換する。",
       startingFailure: "状態不正の例外をWeb側が処理せず、500エラーにする。",
       targets: ["examples/session-04/src/web/routes.ts"],

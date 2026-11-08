@@ -68,7 +68,7 @@ export const session: SessionSummary = {
   },
   steps: [
     {
-      id: "s6-inject-context",
+      id: "s06-inject-context",
       goal: "Clock と ID generator を使って EventContext を一度だけ生成する。",
       startingFailure: "同じ条件で実行しても、時刻とイベント ID が毎回変わる。",
       targets: [
@@ -91,7 +91,7 @@ export const session: SessionSummary = {
       ],
     },
     {
-      id: "s6-atomic-store",
+      id: "s06-atomic-store",
       goal: "状態と監査記録を1回の保存で残す。",
       startingFailure: "状態と監査記録を別々に保存している。",
       targets: ["examples/session-06/src/useCase/dependencies.ts"],
@@ -105,7 +105,7 @@ export const session: SessionSummary = {
       ],
     },
     {
-      id: "s6-result-async",
+      id: "s06-result-async",
       goal: "非同期で保存しても、イベントを結果として返す。",
       startingFailure: "保存後に、更新した予約の状態を受け取れない。",
       targets: ["examples/session-06/src/useCase/startExamination.ts"],
@@ -117,7 +117,7 @@ export const session: SessionSummary = {
       }],
     },
     {
-      id: "s6-propagate-store-failure",
+      id: "s06-propagate-store-failure",
       goal: "保存障害を業務エラーの Result へ変換せず、例外として外側の境界へ伝播する。",
       startingFailure: "業務上の競合と、保存障害・破損データを区別して返せない。",
       targets: [
