@@ -71,10 +71,11 @@
 
 .case-file--session .case-file__sheet {
   min-width: 0;
-  padding: 0;
+  margin-inline: -1rem;
+  padding: 0 1rem;
   border: 0;
   border-radius: 0;
-  background: transparent;
+  background: var(--case-paper);
   box-shadow: none;
 }
 
@@ -406,10 +407,10 @@
   }
 
   .case-file--session .case-file__sheet {
+    margin-inline: 0;
     padding: clamp(1.5rem, 2.5vw, 2.5rem);
     border: 1px solid var(--case-divider);
     border-radius: 1rem;
-    background: var(--case-paper);
   }
 
   .case-file--session .case-file__content > section,
@@ -427,7 +428,7 @@
     width: 100%;
   }
 
-  .case-file--session .case-file__content > #refactor > * {
+  .case-file--session .case-file__content > section#refactor > * {
     max-width: none;
   }
 
@@ -441,11 +442,22 @@
       .decision-card,
       .teaching-column,
       .step-solution__body,
-      .command-block
+      .command-block,
+      .incident-report,
+      .peer-review-panel,
+      .peer-review-promises,
+      .exercise-review-checklist,
+      .solution-step
     )
     > :is(h2, h3, h4, p, ul, ol):not(.code-guide-cards),
   .case-file--session .case-file__content > section > .case-file__episode,
-  .case-file--session .case-file__content > section > .hcs {
+  .case-file--session .case-file__content > section > .hcs,
+  .case-file--session .case-file__content .start-map,
+  .case-file--session .case-file__content .roadmap,
+  .case-file--session .case-file__content .pure-function-flow,
+  .case-file--session .case-file__content .precondition-flow,
+  .case-file--session .case-file__content .schema-source-flow,
+  .case-file--session .case-file__content .branded-id-flow {
     max-width: 70ch;
   }
 }
@@ -480,8 +492,7 @@
 }
 
 .case-file--session .command-block > p:last-child {
-  color: var(--case-muted);
-  font-size: 0.875rem;
+  color: var(--case-ink);
   font-weight: 400;
 }
 
@@ -505,11 +516,9 @@
   :is(
     .decision-card,
     .teaching-column,
-    .onboarding-decision,
     .exercise-review-checklist,
     .peer-review-panel,
     .peer-review-promises,
-    .incident-report,
     .delegation-prompt,
     .before-after
   ) {
