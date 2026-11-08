@@ -438,6 +438,7 @@ const readExternalTypeFiles = async (
       "node_modules/@types/node",
       "node_modules/undici-types",
       "node_modules/@hono/inertia",
+      "node_modules/expect-type",
     ].map((directory) =>
       visitIfPresent(`${runtimeProjectDirectory}/${directory}`),
     ),
