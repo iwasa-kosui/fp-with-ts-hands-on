@@ -39,17 +39,17 @@ const frames = [
 
 const X = 10;
 const W = 240;
-const H = 44;
-const FIRST_Y = 92;
-const PITCH = 62;
+const H = 34;
+const FIRST_Y = 76;
+const PITCH = 46;
 const MID = X + W / 2;
 const FAIL_X = 292;
-const TERM_H = 30;
+const TERM_H = 26;
 const lastIndex = stages.length - 1;
 const mainStages = stages.slice(0, lastIndex);
 const mainY = (index: number) => FIRST_Y + index * PITCH;
-const termY = mainY(lastIndex - 1) + H + 18;
-const failY = termY + TERM_H + 34;
+const termY = mainY(lastIndex - 1) + H + 12;
+const failY = termY + TERM_H + 22;
 const stageY = (index: number) => (index < lastIndex ? mainY(index) : failY);
 
 const headDown = (x: number, y: number) => `M ${x - 4} ${y - 7} L ${x} ${y} L ${x + 4} ${y - 7} z`;
@@ -72,15 +72,15 @@ const headLeft = (x: number, y: number) => `M ${x + 7} ${y - 4} L ${x} ${y} L ${
 
   <svg viewBox={`0 0 340 ${failY + H + 12}`} role="img" aria-label={frames[0].alt} data-scene="1" data-map-svg>
     <g class="start-map__box" data-on="1">
-      <rect x={X} y="4" width={W} height="44" rx="6"></rect>
-      <text x={MID} y="23" text-anchor="middle" font-size="12">獣医師の画面</text>
-      <text x={MID} y="39" text-anchor="middle" font-size="10">「診察を開始する」ボタン</text>
+      <rect x={X} y="4" width={W} height="40" rx="6"></rect>
+      <text x={MID} y="21" text-anchor="middle" font-size="14">獣医師の画面</text>
+      <text x={MID} y="37" text-anchor="middle" font-size="13">「診察を開始する」ボタン</text>
     </g>
-    <path d={`M ${MID} 48 V 85`} class="start-map__line"></path>
-    <path d={headDown(MID, 92)} class="start-map__head"></path>
+    <path d={`M ${MID} 44 V ${FIRST_Y - 7}`} class="start-map__line"></path>
+    <path d={headDown(MID, FIRST_Y)} class="start-map__head"></path>
     <g class="start-map__layer" data-scenes="1">
-      <text x={MID + 10} y="66" font-size="10" class="start-map__note">サーバーへ届く値</text>
-      <text x={MID + 10} y="80" font-size="10" class="start-map__note">予約・担当獣医師</text>
+      <text x={MID + 10} y="57" font-size="13" class="start-map__note">サーバーへ届く値</text>
+      <text x={MID + 10} y="71" font-size="13" class="start-map__note">予約・担当獣医師</text>
     </g>
     {mainStages.map((_, i) => (
       <>
@@ -90,12 +90,12 @@ const headLeft = (x: number, y: number) => `M ${x + 7} ${y - 4} L ${x} ${y} L ${
     ))}
     <g class="start-map__box" data-on="6">
       <rect x={X + 40} y={termY} width={W - 80} height={TERM_H} rx="15"></rect>
-      <text x={MID} y={termY + 19} text-anchor="middle" font-size="11">画面へ結果を返す</text>
+      <text x={MID} y={termY + 18} text-anchor="middle" font-size="14">画面へ結果を返す</text>
     </g>
     {stages.map((stage, i) => (
       <g class:list={["start-map__box", { "start-map__box--fail": stage.id === "failure" }]} data-on={String(stageScenes[stage.id])}>
         <rect x={X} y={stageY(i)} width={W} height={H} rx="6"></rect>
-        <text x={X + 12} y={stageY(i) + 27} font-size="12">{stage.label}</text>
+        <text x={X + 12} y={stageY(i) + 23} font-size="15">{stage.label}</text>
       </g>
     ))}
     <g class="start-map__layer start-map__fail" data-scenes="6">
@@ -106,7 +106,7 @@ const headLeft = (x: number, y: number) => `M ${x + 7} ${y - 4} L ${x} ${y} L ${
       <path d={headLeft(X + W, stageY(lastIndex) + H / 2)} class="start-map__fail-head"></path>
       <path d={`M ${MID} ${failY} V ${termY + TERM_H + 7}`}></path>
       <path d={headUp(MID, termY + TERM_H)} class="start-map__fail-head"></path>
-      <text x={FAIL_X + 6} y={stageY(2) + H / 2 + 4} font-size="11">失敗</text>
+      <text x={FAIL_X + 6} y={stageY(2) + H / 2 + 5} font-size="14">失敗</text>
     </g>
   </svg>
 </figure>
@@ -143,9 +143,9 @@ const headLeft = (x: number, y: number) => `M ${x + 7} ${y - 4} L ${x} ${y} L ${
 
   .start-map svg {
     display: block;
-    width: 100%;
-    max-width: 17rem;
-    height: auto;
+    width: auto;
+    max-width: 100%;
+    height: clamp(21rem, 48vh, 28rem);
     margin: 0.5rem auto 0;
   }
 

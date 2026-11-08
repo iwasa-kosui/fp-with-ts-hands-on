@@ -53,22 +53,21 @@
         <li><code>appointment/statusLabel.ts</code></li>
       </ul>
     </div>
+    <div class="code-layout-diagram__box code-layout-diagram__entry">
+      <p class="code-layout-diagram__name"><code>app.ts</code> と <code>server.ts</code></p>
+      <p class="code-layout-diagram__role">部品を組み立てて、サーバーを起動する</p>
+    </div>
+    <p class="code-layout-diagram__legend">実線は関数や値の import、破線は型だけの import です。web は domain の関数と型、adaptor の型も import します。</p>
   </div>
-  <div class="code-layout-diagram__box code-layout-diagram__entry">
-    <p class="code-layout-diagram__name"><code>app.ts</code> と <code>server.ts</code></p>
-    <p class="code-layout-diagram__role">部品を組み立てて、サーバーを起動する</p>
-  </div>
-  <p class="code-layout-diagram__legend">実線は関数や値の import、破線は型だけの import です。web は domain の関数と型、adaptor の型も import します。</p>
-  <figcaption>配布コードのディレクトリと import の向き</figcaption>
 </figure>
 
 <style>
   .code-layout-diagram {
-    margin: 1.5rem 0;
-    padding: 0.9rem;
+    margin: 0.75rem 0;
+    padding: 0.6rem;
     border: 2px solid var(--case-line);
     background: var(--case-paper);
-    line-height: 1.5;
+    line-height: 1.4;
   }
 
   .code-layout-diagram p,
@@ -85,14 +84,17 @@
 
   .code-layout-diagram__grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 3rem minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr);
     grid-template-areas:
       "web web-boundary boundary"
       "web-usecase . ."
       "usecase usecase-sqlite sqlite"
       "usecase-domain . sqlite-domain"
-      "domain domain domain";
+      "domain domain domain"
+      "entry entry entry"
+      "legend legend legend";
     align-items: stretch;
+    gap: 0;
   }
 
   .code-layout-diagram__web { grid-area: web; }
@@ -105,47 +107,52 @@
   .code-layout-diagram__usecase-domain { grid-area: usecase-domain; }
   .code-layout-diagram__sqlite-domain { grid-area: sqlite-domain; }
   .code-layout-diagram__domain { grid-area: domain; }
+  .code-layout-diagram__entry { grid-area: entry; }
+  .code-layout-diagram__legend { grid-area: legend; }
 
   .code-layout-diagram__box {
     display: grid;
     align-content: start;
-    gap: 0.35rem;
+    gap: 0.1rem;
     min-width: 0;
-    padding: 0.6rem 0.65rem;
+    padding: 0.3rem 0.5rem;
     border: 2px solid var(--case-line);
     background: color-mix(in srgb, var(--case-lemon) 45%, var(--case-paper));
   }
 
   .code-layout-diagram__entry {
-    width: fit-content;
-    max-width: 100%;
-    margin-top: 1rem;
+    margin-top: 0.5rem;
   }
 
   .code-layout-diagram__name code {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 800;
   }
 
   .code-layout-diagram__role {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .code-layout-diagram__files {
-    display: grid;
-    gap: 0.1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.6rem;
     font-size: 0.78rem;
     color: color-mix(in srgb, var(--case-ink) 78%, var(--case-paper));
+  }
+
+  .code-layout-diagram__files code {
+    white-space: nowrap;
   }
 
   .code-layout-diagram__tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem;
+    gap: 0.25rem;
   }
 
   .code-layout-diagram__tags li {
-    padding: 0.05rem 0.5rem;
+    padding: 0 0.5rem;
     border: 1px solid var(--case-line);
     border-radius: 999px;
     background: var(--case-mint);
@@ -179,7 +186,7 @@
   .code-layout-diagram__arrow--down {
     justify-self: center;
     width: 0;
-    height: 1.6rem;
+    height: 1rem;
     border-left: 2px solid var(--case-line);
   }
 
@@ -210,13 +217,28 @@
   }
 
   .code-layout-diagram__legend {
-    margin-top: 0.8rem;
+    margin-top: 0.5rem;
     font-size: 0.85rem;
   }
 
-  .code-layout-diagram figcaption {
-    margin-top: 0.65rem;
-    color: color-mix(in srgb, var(--case-ink) 78%, var(--case-paper));
-    font-size: 0.9rem;
+  @media (min-width: 56rem) {
+    .code-layout-diagram__grid {
+      grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1.2fr) 1rem minmax(0, 0.7fr);
+      grid-template-areas:
+        "web web-boundary boundary . legend"
+        "web-usecase . . . legend"
+        "usecase usecase-sqlite sqlite . legend"
+        "usecase-domain . sqlite-domain . legend"
+        "domain domain domain . entry";
+    }
+
+    .code-layout-diagram__entry {
+      margin-top: 0;
+    }
+
+    .code-layout-diagram__legend {
+      align-self: start;
+      margin-top: 0;
+    }
   }
 </style>

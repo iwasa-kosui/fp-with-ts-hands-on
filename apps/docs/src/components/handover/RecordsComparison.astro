@@ -3,7 +3,7 @@ import StepControls from "../stepper/StepControls.astro";
 
 type Mark = "changed" | "added" | "personal";
 
-type Row = Readonly<{ name: string; value: string; mark?: Mark; note?: string }>;
+type Row = Readonly<{ name: string; value: string; mark?: Mark; note?: string; nested?: true }>;
 
 const markLabels = {
   changed: "変わった",
@@ -20,30 +20,28 @@ const auditEvents = [
 ] as const;
 
 const appointmentBefore: readonly Row[] = [
-  { name: "status", value: "paid", note: "会計済み" },
+  { name: "status", value: '"paid"', note: "会計済み" },
   { name: "amount", value: "4800" },
-  { name: "paidAt", value: "2026-08-30T07:10:00.000Z" },
+  { name: "paidAt", value: '"2026-08-30T07:10:00.000Z"' },
 ];
 
 const appointmentAfter: readonly Row[] = [
-  { name: "status", value: "in-examination", note: "診察中", mark: "changed" },
+  { name: "status", value: '"in-examination"', note: "診察中", mark: "changed" },
   { name: "amount", value: "4800" },
-  { name: "paidAt", value: "2026-08-30T07:10:00.000Z" },
+  { name: "paidAt", value: '"2026-08-30T07:10:00.000Z"' },
 ];
 
 const addedRowItems: readonly Row[] = [
   { name: "eventId", value: "操作ごとに作る新しい ID" },
-  { name: "appointmentId", value: "11111111-1111-4111-8111-111111111111" },
-  { name: "eventName", value: "examination.started" },
+  { name: "appointmentId", value: '"11111111-1111-4111-8111-111111111111"' },
+  { name: "eventName", value: '"examination.started"' },
   { name: "occurredAt", value: "操作した時刻" },
-];
-
-const payloadItems: readonly Row[] = [
-  { name: "petName", value: "Mugi" },
-  { name: "status", value: "in-examination", note: "診察中" },
-  { name: "ownerName", value: "Owner A", mark: "personal" },
-  { name: "ownerEmail", value: "owner@example.test", mark: "personal" },
-  { name: "ownerPhone", value: "090-0000-0000", mark: "personal" },
+  { name: "payload", value: "操作後の予約内容" },
+  { name: "petName", value: '"Mugi"', nested: true },
+  { name: "status", value: '"in-examination"', note: "診察中", nested: true },
+  { name: "ownerName", value: '"Owner A"', mark: "personal", nested: true },
+  { name: "ownerEmail", value: '"owner@example.test"', mark: "personal", nested: true },
+  { name: "ownerPhone", value: '"090-0000-0000"', mark: "personal", nested: true },
 ];
 ---
 
@@ -58,21 +56,20 @@ const payloadItems: readonly Row[] = [
           <section class="rc__side" aria-label="操作の前">
             <h4 class="rc__title">操作の前</h4>
             <h5 class="rc__sub">現在の予約内容</h5>
-            <dl class="rc__rows">
+            <ul class="rc__list">
               {appointmentBefore.map((row) => (
-                <div class="rc__row">
-                  <dt>{row.name}</dt>
-                  <dd>{row.value}{row.note && <span class="rc__note">（{row.note}）</span>}</dd>
-                </div>
+                <li class="rc__row">
+                  <span class="rc__mono">{row.name}: {row.value}</span>
+                  {row.note && <span class="rc__note">（{row.note}）</span>}
+                </li>
               ))}
-            </dl>
+            </ul>
             <h5 class="rc__sub">監査記録</h5>
-            <ol class="rc__events">
+            <ul class="rc__list">
               {auditEvents.map((event) => (
-                <li class="rc__row">{event}</li>
+                <li class="rc__row"><span class="rc__mono">{event}</span></li>
               ))}
-              <li class="rc__row rc__row--empty" aria-hidden="true">&nbsp;</li>
-            </ol>
+            </ul>
           </section>
 
           <div class="rc__operation">
@@ -84,27 +81,25 @@ const payloadItems: readonly Row[] = [
           <section class="rc__side" aria-label="操作の後">
             <h4 class="rc__title">操作の後</h4>
             <h5 class="rc__sub">現在の予約内容</h5>
-            <dl class="rc__rows">
+            <ul class="rc__list">
               {appointmentAfter.map((row) => (
-                <div class="rc__row" data-mark={row.mark}>
-                  <dt>{row.name}</dt>
-                  <dd>
-                    {row.value}{row.note && <span class="rc__note">（{row.note}）</span>}
-                    {row.mark && <span class="rc__tag">{markLabels[row.mark]}</span>}
-                  </dd>
-                </div>
+                <li class="rc__row" data-mark={row.mark}>
+                  <span class="rc__mono">{row.name}: {row.value}</span>
+                  {row.note && <span class="rc__note">（{row.note}）</span>}
+                  {row.mark && <span class="rc__tag">{markLabels[row.mark]}</span>}
+                </li>
               ))}
-            </dl>
+            </ul>
             <h5 class="rc__sub">監査記録</h5>
-            <ol class="rc__events">
+            <ul class="rc__list">
               {auditEvents.map((event) => (
-                <li class="rc__row">{event}</li>
+                <li class="rc__row"><span class="rc__mono">{event}</span></li>
               ))}
               <li class="rc__row" data-mark="added">
-                examination.started
+                <span class="rc__mono">examination.started</span>
                 <span class="rc__tag">{markLabels.added}</span>
               </li>
-            </ol>
+            </ul>
           </section>
         </div>
       </li>
@@ -115,14 +110,14 @@ const payloadItems: readonly Row[] = [
           <section class="rc__side" aria-label="操作の前">
             <h4 class="rc__title">操作の前</h4>
             <h5 class="rc__sub">監査記録</h5>
-            <ol class="rc__events">
+            <ul class="rc__list">
               {auditEvents.map((event) => (
-                <li class="rc__row">{event}</li>
+                <li class="rc__row"><span class="rc__mono">{event}</span></li>
               ))}
               <li class="rc__row rc__row--empty">
                 <span class="rc__none">診察開始の行は、まだありません</span>
               </li>
-            </ol>
+            </ul>
           </section>
 
           <div class="rc__operation">
@@ -134,27 +129,15 @@ const payloadItems: readonly Row[] = [
           <section class="rc__side" aria-label="操作の後">
             <h4 class="rc__title">操作の後</h4>
             <h5 class="rc__sub">増えた監査記録の1行</h5>
-            <dl class="rc__rows">
+            <ul class="rc__list">
               {addedRowItems.map((row) => (
-                <div class="rc__row">
-                  <dt>{row.name}</dt>
-                  <dd>{row.value}</dd>
-                </div>
+                <li class:list={["rc__row", { "rc__row--nested": row.nested }]} data-mark={row.mark}>
+                  <span class="rc__mono">{row.name}: {row.value}</span>
+                  {row.note && <span class="rc__note">（{row.note}）</span>}
+                  {row.mark && <span class="rc__tag">{markLabels[row.mark]}</span>}
+                </li>
               ))}
-              <div class="rc__row">
-                <dt>payload</dt>
-                <dd class="rc__payload-head">操作後の予約内容</dd>
-              </div>
-              {payloadItems.map((row) => (
-                <div class="rc__row rc__row--nested" data-mark={row.mark}>
-                  <dt>{row.name}</dt>
-                  <dd>
-                    {row.value}{row.note && <span class="rc__note">（{row.note}）</span>}
-                    {row.mark && <span class="rc__tag">{markLabels[row.mark]}</span>}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+            </ul>
           </section>
         </div>
       </li>
@@ -173,11 +156,16 @@ const payloadItems: readonly Row[] = [
 <style>
   .rc {
     min-width: 0;
-    margin: 1rem 0;
+    margin: 0.5rem 0;
+  }
+
+  .rc :is(h4, h5, p, ul) {
+    margin: 0;
+    padding: 0;
   }
 
   .rc__frames {
-    margin: 0.75rem 0 0;
+    margin: 0.5rem 0 0;
     padding-inline-start: 1.5rem;
   }
 
@@ -190,21 +178,21 @@ const payloadItems: readonly Row[] = [
   }
 
   .rc__caption {
-    margin: 0 0 0.75rem;
+    margin: 0 0 0.5rem;
     font-weight: 700;
-    line-height: 1.7;
+    line-height: 1.6;
   }
 
   .rc__grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.15fr);
-    gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.3fr);
+    gap: 0.625rem;
     align-items: start;
   }
 
   .rc__side {
     min-width: 0;
-    padding: 0.625rem 0.75rem;
+    padding: 0.375rem 0.625rem;
     border: 2px solid var(--role-border);
     border-radius: 0.5rem;
     background: var(--role-surface);
@@ -212,49 +200,38 @@ const payloadItems: readonly Row[] = [
   }
 
   .rc__title {
-    margin: 0 0 0.25rem;
-    font-size: 1rem;
+    font-size: 0.9375rem;
     font-weight: 800;
+    line-height: 1.4;
   }
 
   .rc__sub {
-    margin: 0.5rem 0 0.25rem;
+    margin-block-start: 0.25rem;
     color: var(--role-muted);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     font-weight: 800;
+    line-height: 1.4;
   }
 
-  .rc__rows,
-  .rc__events {
+  .rc__list {
     display: grid;
-    gap: 0.25rem;
-    margin: 0;
-    padding: 0;
+    gap: 0.125rem;
     list-style: none;
   }
 
   .rc__row {
     display: flex;
-    flex-wrap: wrap;
     align-items: baseline;
-    gap: 0.125rem 0.5rem;
-    min-height: 1.75rem;
+    gap: 0.25rem;
     margin: 0;
-    padding: 0.125rem 0.5rem;
+    padding: 0 0.5rem;
     border-inline-start: 4px solid var(--role-border);
     font-size: 0.8125rem;
-    line-height: 1.5;
-    overflow-wrap: anywhere;
+    line-height: 1.4;
+    white-space: nowrap;
   }
 
-  .rc__row dt {
-    min-width: 7rem;
-    color: var(--role-muted);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  }
-
-  .rc__row dd {
-    margin: 0;
+  .rc__mono {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
 
@@ -272,12 +249,7 @@ const payloadItems: readonly Row[] = [
     font-weight: 800;
   }
 
-  .rc__payload-head {
-    font-family: inherit;
-  }
-
   .rc__note {
-    font-family: inherit;
     font-weight: 400;
   }
 
@@ -286,28 +258,23 @@ const payloadItems: readonly Row[] = [
   }
 
   .rc__tag {
-    margin-inline-start: 0.5rem;
+    margin-inline-start: 0.25rem;
     padding: 0 0.5rem;
     border: 2px solid var(--role-negative);
     border-radius: 999px;
     color: var(--role-negative);
-    font-family: inherit;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 800;
-    white-space: nowrap;
+    line-height: 1.3;
   }
 
   .rc__operation {
     display: grid;
     justify-items: center;
     align-content: start;
-    gap: 0.25rem;
-    padding-block-start: 2.5rem;
+    gap: 0.125rem;
+    padding-block-start: 1.5rem;
     text-align: center;
-  }
-
-  .rc__operation p {
-    margin: 0;
   }
 
   .rc__operation-label {
@@ -317,7 +284,7 @@ const payloadItems: readonly Row[] = [
   }
 
   .rc__operation-name {
-    padding: 0.25rem 0.75rem;
+    padding: 0.125rem 0.75rem;
     border: 2px solid var(--role-accent);
     border-radius: 999px;
     color: var(--role-accent);
@@ -329,6 +296,7 @@ const payloadItems: readonly Row[] = [
     color: var(--role-muted);
     font-size: 1.25rem;
     font-weight: 800;
+    line-height: 1.2;
   }
 
   .rc[data-ready] .rc__frames {
@@ -366,6 +334,10 @@ const payloadItems: readonly Row[] = [
 
     .rc__operation {
       padding-block-start: 0;
+    }
+
+    .rc__row {
+      white-space: normal;
     }
 
     .rc__arrow {

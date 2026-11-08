@@ -55,6 +55,14 @@ const cut = (source: string, startText: string, mode: "block" | "line" | "end"):
   return dedent(lines.slice(start, end + 1)).join("\n").trimEnd();
 };
 
+const part = (source: string, anchorText: string, fromText: string, toText: string): string => {
+  const lines = source.split("\n");
+  const anchor = findLine(lines, anchorText);
+  const start = findLine(lines, fromText, anchor);
+  const end = findLine(lines, toText, start);
+  return dedent(lines.slice(start, end + 1)).join("\n").trimEnd();
+};
+
 const routeFile = "web/routes.ts";
 const useCaseFile = "useCase/startExamination.ts";
 const repositoryFile = "adaptor/secondary/sqlite/appointmentRepository.ts";
@@ -89,7 +97,7 @@ const steps = [
     highlight: highlight("use-case", useCaseCode, "const current = repository.find(input.appointmentId);", false),
     impl: {
       file: repositoryFile,
-      code: cut(repositorySource, "find: (appointmentId) => {", "block"),
+      code: part(repositorySource, "find: (appointmentId) => {", ".where(sql", "return row === undefined"),
     },
     values: {
       input: `appointmentId: "${appointmentId}"`,
@@ -106,12 +114,9 @@ const steps = [
     },
     values: {
       input: `current: { status: "checked-in", ... }
-status: "in-examination"
-extra: { veterinarianId: "${veterinarianId}", examinationStartedAt: occurredAt }`,
+status: "in-examination"`,
       output: `updated: {
   status: "in-examination",
-  veterinarianId: "${veterinarianId}",
-  examinationStartedAt: occurredAt,
   ...
 }`,
     },
@@ -122,7 +127,7 @@ extra: { veterinarianId: "${veterinarianId}", examinationStartedAt: occurredAt }
     highlight: highlight("use-case", useCaseCode, "repository.save(updated);", false),
     impl: {
       file: repositoryFile,
-      code: cut(repositorySource, "const save = (appointment: Appointment): void => {", "block"),
+      code: part(repositorySource, "const save = (appointment: Appointment): void => {", ".values(row)", ".run();"),
     },
     values: { input: updatedSummary, output: undefined },
   },
@@ -132,7 +137,7 @@ extra: { veterinarianId: "${veterinarianId}", examinationStartedAt: occurredAt }
     highlight: highlight("use-case", useCaseCode, "repository.appendAudit({", true),
     impl: {
       file: repositoryFile,
-      code: cut(repositorySource, "const appendAudit = (", "block"),
+      code: part(repositorySource, "const appendAudit = (", "db.insert(auditLogsTable)", "})"),
     },
     values: {
       input: `{ eventName: "examination.started", occurredAt, appointment: updated, ... }`,
@@ -159,16 +164,7 @@ const staticFrames = [
 const actions = [
   { label: "受付する", kind: "primary" },
   { label: "診察を開始する", kind: "start" },
-  { label: "診察結果を記録する", kind: "primary" },
   { label: "会計を記録する", kind: "primary" },
-  { label: "キャンセルする", kind: "primary" },
-  { label: "電話フォローを依頼する", kind: "not-implemented" },
-] as const;
-
-const details = [
-  { term: "予約ID", value: appointmentId },
-  { term: "飼い主", value: "Owner A" },
-  { term: "予約日時", value: "2026-08-30T06:30:00.000Z" },
 ] as const;
 
 const highlights = JSON.stringify(steps.map((step) => step.highlight ?? ""));
@@ -189,42 +185,31 @@ const files = JSON.stringify(steps.map((step) => step.file));
       <section class="hem__col hem__col--screen" aria-label="画面">
         <h5 class="hem__col-title">画面</h5>
         <div class="hem__screen" data-screen>
-          <div class="hem__app">
-            <p class="hem__app-name">関数型どうぶつ病院</p>
-            <section class="hem__card">
-              <div class="hem__heading">
-                <div>
-                  <p class="hem__eyebrow">本日の予約</p>
-                  <h6 class="hem__pet">Mugi</h6>
-                </div>
-                <span class="hem__badge" data-switch-at="6" data-text-before="来院済み" data-text-after="診察中">来院済み</span>
-              </div>
-              <dl class="hem__details">
-                {details.map((item) => <div><dt>{item.term}</dt><dd>{item.value}</dd></div>)}
-                <div><dt>状態</dt><dd data-switch-at="6" data-text-before="CheckedIn" data-text-after="InExamination">CheckedIn</dd></div>
-              </dl>
-              <div class="hem__actions" aria-label="予約操作">
-                {
-                  actions.map((action) =>
-                    action.kind === "start" ? (
-                      <button class="hem__action hem__action--primary hem__start" type="button" data-start>
-                        <span>{action.label}</span>
-                      </button>
-                    ) : action.kind === "not-implemented" ? (
-                      <span class="hem__action hem__action--secondary">
-                        <span>{action.label}</span>
-                        <span class="hem__action-status">未実装</span>
-                      </span>
-                    ) : (
-                      <span class="hem__action hem__action--primary">
-                        <span>{action.label}</span>
-                      </span>
-                    ),
-                  )
-                }
-              </div>
-            </section>
-          </div>
+          <section class="hem__card">
+            <div class="hem__heading">
+              <h6 class="hem__pet">Mugi</h6>
+              <span class="hem__badge" data-switch-at="6" data-text-before="来院済み" data-text-after="診察中">来院済み</span>
+            </div>
+            <dl class="hem__state">
+              <dt>状態</dt>
+              <dd data-switch-at="6" data-text-before="CheckedIn" data-text-after="InExamination">CheckedIn</dd>
+            </dl>
+            <div class="hem__actions" aria-label="予約操作">
+              {
+                actions.map((action) =>
+                  action.kind === "start" ? (
+                    <button class="hem__action hem__action--primary hem__start" type="button" data-start>
+                      <span>{action.label}</span>
+                    </button>
+                  ) : (
+                    <span class="hem__action hem__action--primary">
+                      <span>{action.label}</span>
+                    </span>
+                  ),
+                )
+              }
+            </div>
+          </section>
           <svg class="hem__cursor" data-cursor viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
             <path d="M3 2 L3 19 L8 14.5 L11.5 22 L14.5 20.6 L11 13.2 L18 13 Z" stroke-width="1.8" stroke-linejoin="round"></path>
           </svg>
@@ -264,7 +249,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
           {
             steps.map((step, index) =>
               step.values === undefined ? null : (
-                <div class="hem__io" data-at={index}>
+                <div class:list={["hem__io", step.values.output === undefined && "hem__io--single"]} data-at={index}>
                   <div class="hem__io-cell">
                     <p class="hem__label">入力</p>
                     <Code code={step.values.input} lang="ts" />
@@ -318,38 +303,25 @@ const files = JSON.stringify(steps.map((step) => step.file));
         staticFrames.map((frame) => (
           <div class="hem__frame">
             <p class="hem__frame-label">{frame.label}</p>
-            <div class="hem__app">
-              <p class="hem__app-name">関数型どうぶつ病院</p>
-              <section class="hem__card">
-                <div class="hem__heading">
-                  <div>
-                    <p class="hem__eyebrow">本日の予約</p>
-                    <h6 class="hem__pet">Mugi</h6>
-                  </div>
-                  <span class:list={["hem__badge", frame.key === "after" && "is-after"]}>{frame.badge}</span>
-                </div>
-                <dl class="hem__details">
-                  {details.map((item) => <div><dt>{item.term}</dt><dd>{item.value}</dd></div>)}
-                  <div><dt>状態</dt><dd>{frame.kind}</dd></div>
-                </dl>
-                <div class="hem__actions" aria-label="予約操作">
-                  {
-                    actions.map((action) =>
-                      action.kind === "not-implemented" ? (
-                        <span class="hem__action hem__action--secondary">
-                          <span>{action.label}</span>
-                          <span class="hem__action-status">未実装</span>
-                        </span>
-                      ) : (
-                        <span class="hem__action hem__action--primary">
-                          <span>{action.label}</span>
-                        </span>
-                      ),
-                    )
-                  }
-                </div>
-              </section>
-            </div>
+            <section class="hem__card">
+              <div class="hem__heading">
+                <h6 class="hem__pet">Mugi</h6>
+                <span class:list={["hem__badge", frame.key === "after" && "is-after"]}>{frame.badge}</span>
+              </div>
+              <dl class="hem__state">
+                <dt>状態</dt>
+                <dd>{frame.kind}</dd>
+              </dl>
+              <div class="hem__actions" aria-label="予約操作">
+                {
+                  actions.map((action) => (
+                    <span class="hem__action hem__action--primary">
+                      <span>{action.label}</span>
+                    </span>
+                  ))
+                }
+              </div>
+            </section>
             <div class="hem__table">
               <h6>現在の予約内容</h6>
               <ul class="hem__lines">
@@ -406,7 +378,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
             }
             {
               step.values === undefined ? null : (
-                <div class="hem__io">
+                <div class:list={["hem__io", step.values.output === undefined && "hem__io--single"]}>
                   <div class="hem__io-cell">
                     <p class="hem__label">入力</p>
                     <Code code={step.values.input} lang="ts" />
@@ -473,26 +445,27 @@ const files = JSON.stringify(steps.map((step) => step.file));
     };
 
     const showCode = (index: number) => {
-      if (blocks.some((block) => !block.hidden && block.dataset.codeFile !== files[index])) pane.scrollTo({ top: 0 });
+      if (blocks.some((block) => !block.hidden && block.dataset.codeFile !== files[index])) {
+        pane.scrollTo({ top: 0, behavior: "instant" });
+      }
       blocks.forEach((block) => {
         block.hidden = block.dataset.codeFile !== files[index];
       });
       codeLines.forEach((lines) => lines.forEach((line) => line.classList.remove("is-hl")));
       const [file, from, to] = (highlights[index] ?? "").split(":");
       const lines = codeLines.get(file ?? "");
-      if (!lines || from === undefined || to === undefined) {
+      const first = lines?.[Number(from) - 1];
+      const last = lines?.[Number(to) - 1];
+      if (!lines || !first || !last) {
         pane.scrollTo({ top: 0 });
         return;
       }
       lines.slice(Number(from) - 1, Number(to)).forEach((line) => line.classList.add("is-hl"));
-      const first = lines[Number(from) - 1];
-      if (!first || pane.scrollHeight <= pane.clientHeight) return;
       const captionHeight = pane.querySelector<HTMLElement>("figure:not([hidden]) > figcaption")?.offsetHeight ?? 0;
-      const visibleTop = pane.getBoundingClientRect().top + captionHeight;
-      const firstBox = first.getBoundingClientRect();
-      const lastBox = (lines[Number(to) - 1] ?? first).getBoundingClientRect();
-      if (firstBox.top >= visibleTop && lastBox.bottom <= pane.getBoundingClientRect().bottom) return;
-      pane.scrollTo({ top: pane.scrollTop + firstBox.top - visibleTop - firstBox.height, behavior: "smooth" });
+      const paneBox = pane.getBoundingClientRect();
+      const middle = (first.getBoundingClientRect().top + last.getBoundingClientRect().bottom) / 2;
+      const center = (paneBox.top + captionHeight + paneBox.bottom) / 2;
+      pane.scrollTo({ top: pane.scrollTop + middle - center, behavior: "smooth" });
     };
 
     const render = (index: number) => {
@@ -536,12 +509,14 @@ const files = JSON.stringify(steps.map((step) => step.file));
 
 <style>
   .hem {
-    --hem-code-size: 10.5px;
-    --hem-code-line: 1.35;
-    --hem-file-h: 184px;
-    --hem-impl-h: 182px;
-    --hem-values-h: 126px;
-    --hem-grid-h: 530px;
+    --hem-fs: 12px;
+    --hem-lh: 1.35;
+    --hem-lineh: calc(var(--hem-fs) * var(--hem-lh));
+    --hem-file-lines: 7;
+    --hem-impl-lines: 6;
+    --hem-io-lines: 4;
+    --hem-chrome: 27px;
+    --hem-grid-h: min(430px, calc(100dvh - 335px));
     --hem-code-bg: var(--role-text);
     min-width: 0;
     max-width: 1000px;
@@ -554,6 +529,12 @@ const files = JSON.stringify(steps.map((step) => step.file));
   @media (prefers-color-scheme: dark) {
     .hem {
       --hem-code-bg: var(--role-bg);
+    }
+  }
+
+  @media (max-height: 760px) {
+    .hem {
+      --hem-fs: 11px;
     }
   }
 
@@ -635,21 +616,6 @@ const files = JSON.stringify(steps.map((step) => step.file));
     position: relative;
   }
 
-  .hem__app {
-    padding: 8px;
-    border-radius: 8px;
-    background: var(--role-bg);
-    color: var(--role-text);
-  }
-
-  .hem .hem__app-name {
-    margin: 0 0 6px;
-    color: var(--role-text);
-    font-size: 0.7rem;
-    font-weight: 700;
-    line-height: 1.4;
-  }
-
   .hem__card {
     display: grid;
     gap: 10px;
@@ -659,19 +625,39 @@ const files = JSON.stringify(steps.map((step) => step.file));
     background: var(--role-surface);
   }
 
+  .hem .hem__state {
+    display: flex;
+    justify-content: space-between;
+    gap: 0 8px;
+    margin: 0;
+    padding: 4px 8px;
+    border: 1px solid var(--role-border);
+    border-radius: 6px;
+    background: var(--role-bg);
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+
+  .hem .hem__state dt {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--role-muted);
+    font-weight: 700;
+  }
+
+  .hem .hem__state dd {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-weight: 600;
+  }
+
   .hem__heading {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 8px;
-  }
-
-  .hem .hem__eyebrow {
-    margin: 0 0 2px;
-    color: var(--role-accent);
-    font-size: 0.7rem;
-    font-weight: 700;
-    line-height: 1.4;
   }
 
   .hem .hem__pet {
@@ -701,46 +687,6 @@ const files = JSON.stringify(steps.map((step) => step.file));
     color: var(--role-positive);
   }
 
-  .hem .hem__details {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 4px;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    line-height: 1.4;
-  }
-
-  .hem .hem__details > div {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 0 8px;
-    min-width: 0;
-    padding: 4px 8px;
-    border: 1px solid var(--role-border);
-    border-radius: 6px;
-    background: var(--role-bg);
-    font-size: 0.72rem;
-  }
-
-  .hem .hem__details dt {
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--role-muted);
-    font-weight: 700;
-  }
-
-  .hem .hem__details dd {
-    margin: 0;
-    padding: 0;
-    border: 0;
-    overflow-wrap: anywhere;
-    font-weight: 600;
-  }
-
   .hem__actions {
     display: flex;
     flex-wrap: wrap;
@@ -758,7 +704,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
     border: 1px solid transparent;
     border-radius: 6px;
     font: inherit;
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     font-weight: 600;
     line-height: 1.25;
   }
@@ -767,19 +713,6 @@ const files = JSON.stringify(steps.map((step) => step.file));
     border-color: var(--role-accent);
     background: var(--role-accent);
     color: var(--role-surface);
-  }
-
-  .hem .hem__action--secondary {
-    border-color: var(--role-border);
-    background: var(--role-surface);
-    color: var(--role-text);
-  }
-
-  .hem__action-status {
-    padding-left: 6px;
-    border-left: 1px solid currentcolor;
-    font-size: 0.65rem;
-    white-space: nowrap;
   }
 
   .hem button.hem__start {
@@ -816,14 +749,16 @@ const files = JSON.stringify(steps.map((step) => step.file));
 
   .hem__files {
     flex: none;
-    height: var(--hem-file-h);
+    height: calc(var(--hem-file-lines) * var(--hem-lineh) + var(--hem-chrome));
     overflow: auto;
+    scroll-padding-top: var(--hem-chrome);
+    scrollbar-width: thin;
   }
 
   .hem__impl {
     display: grid;
     flex: none;
-    height: var(--hem-impl-h);
+    height: calc(var(--hem-impl-lines) * var(--hem-lineh) + var(--hem-chrome));
     overflow: auto;
     align-content: start;
   }
@@ -836,7 +771,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
   .hem__values {
     display: grid;
     flex: none;
-    height: var(--hem-values-h);
+    height: calc(var(--hem-io-lines) * var(--hem-lineh) + 28px);
     overflow: auto;
     align-content: start;
   }
@@ -851,6 +786,10 @@ const files = JSON.stringify(steps.map((step) => step.file));
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: start;
     gap: 6px;
+  }
+
+  .hem .hem__io--single {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hem__io-cell {
@@ -883,6 +822,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
   .hem .hem__block.code-block {
     min-width: 0;
     margin: 0;
+    overflow: visible;
     border: 1px solid var(--role-border);
   }
 
@@ -898,21 +838,23 @@ const files = JSON.stringify(steps.map((step) => step.file));
   .hem .hem__block :global(pre) {
     margin: 0;
     padding: 2px 0;
-    overflow-x: auto;
+    overflow-x: hidden;
     background: var(--hem-code-bg) !important;
-    font-size: var(--hem-code-size);
-    line-height: var(--hem-code-line);
+    font-size: var(--hem-fs);
+    line-height: var(--hem-lh);
   }
 
   .hem .hem__block :global(code),
   .hem .hem__io-cell :global(code) {
     display: grid;
-    min-width: max-content;
+    min-width: 0;
     font-size: inherit;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
   }
 
   .hem .hem__block :global(.line) {
-    min-height: calc(1em * var(--hem-code-line));
+    min-height: var(--hem-lineh);
     padding-inline: 8px;
     transition: background-color 0.3s;
   }
@@ -927,8 +869,8 @@ const files = JSON.stringify(steps.map((step) => step.file));
     padding: 4px 6px;
     border-radius: 4px;
     background: var(--hem-code-bg) !important;
-    font-size: var(--hem-code-size);
-    line-height: var(--hem-code-line);
+    font-size: var(--hem-fs);
+    line-height: var(--hem-lh);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
@@ -983,8 +925,8 @@ const files = JSON.stringify(steps.map((step) => step.file));
     padding: 2px 6px;
     border-radius: 3px;
     background: var(--hem-code-bg) !important;
-    font-size: var(--hem-code-size);
-    line-height: var(--hem-code-line);
+    font-size: var(--hem-fs);
+    line-height: var(--hem-lh);
     overflow-wrap: anywhere;
     white-space: pre-wrap;
   }
@@ -1077,14 +1019,8 @@ const files = JSON.stringify(steps.map((step) => step.file));
 
   @container hem (min-width: 900px) {
     .hem__grid {
-      grid-template-columns: 232px minmax(0, 1fr) 216px;
+      grid-template-columns: 200px minmax(0, 1fr) 216px;
       height: var(--hem-grid-h);
-    }
-
-    .hem__files {
-      flex: 1;
-      height: auto;
-      min-height: 0;
     }
 
     .hem__frames-static {

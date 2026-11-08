@@ -24,19 +24,18 @@ const frames = sessionNavigationItems.map(({ slug, title }, index) => {
   return { slug, title, summary, states, label, href: `/sessions/${slug}/`, alt, fixesText };
 });
 
-const stageHeight = 28;
-const pitch = 38;
+const stageHeight = 30;
+const pitch = 40;
 const failGap = 16;
 const lastIndex = stages.length - 1;
 const boxY = (index: number) => 4 + index * pitch + (index === lastIndex ? failGap : 0);
 const viewHeight = boxY(lastIndex) + stageHeight + 4;
 ---
 
-<figure class="roadmap" data-roadmap>
-  <figcaption class="roadmap__title">Session ごとに埋まる段</figcaption>
-
+<figure class="roadmap" data-roadmap aria-label="Session ごとに埋まる段">
   <StepControls />
 
+  <div class="roadmap__body">
   <div aria-live="polite">
     <ol class="roadmap__frames">
       {frames.map((frame) => (
@@ -56,13 +55,14 @@ const viewHeight = boxY(lastIndex) + stageHeight + 4;
     {stages.map((stage, i) => (
       <g class="roadmap__box" data-state={frames[0].states[i]}>
         <rect x="10" y={boxY(i)} width="320" height={stageHeight} rx="6"></rect>
-        <text x="22" y={boxY(i) + 19} font-size="12">{stage.label}</text>
+        <text x="22" y={boxY(i) + 20} font-size="14">{stage.label}</text>
         {(Object.keys(stateLabels) as StageState[]).map((state) => (
-          <text class="roadmap__tag" data-tag={state} x="320" y={boxY(i) + 18} text-anchor="end" font-size="10">{stateLabels[state]}</text>
+          <text class="roadmap__tag" data-tag={state} x="320" y={boxY(i) + 20} text-anchor="end" font-size="14">{stateLabels[state]}</text>
         ))}
       </g>
     ))}
   </svg>
+  </div>
 </figure>
 
 <script>
@@ -94,18 +94,17 @@ const viewHeight = boxY(lastIndex) + stageHeight + 4;
     margin: 1rem 0;
   }
 
-  .roadmap__title {
-    margin: 0 0 0.5rem;
-    font-weight: 700;
-    line-height: 1.6;
+  .roadmap__body {
+    display: grid;
+    gap: 0.75rem;
   }
 
   .roadmap svg {
     display: block;
     width: 100%;
-    max-width: 22rem;
+    max-width: 26rem;
     height: auto;
-    margin: 0.75rem auto 0;
+    margin: 0 auto;
   }
 
   .roadmap__head {
@@ -122,8 +121,8 @@ const viewHeight = boxY(lastIndex) + stageHeight + 4;
 
   .roadmap__fixes {
     margin: 0.25rem 0 0;
-    color: var(--role-accent);
-    font-weight: 700;
+    color: var(--role-text);
+    font-weight: 800;
     line-height: 1.6;
   }
 
@@ -210,6 +209,14 @@ const viewHeight = boxY(lastIndex) + stageHeight + 4;
   .roadmap[data-ready] .roadmap__box rect,
   .roadmap[data-ready] .roadmap__box text {
     transition: fill 0.4s, stroke 0.4s;
+  }
+
+  @media (min-width: 900px) {
+    .roadmap__body {
+      grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+      gap: 1.5rem;
+      align-items: start;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
