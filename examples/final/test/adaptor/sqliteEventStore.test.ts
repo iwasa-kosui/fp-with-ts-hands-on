@@ -329,6 +329,33 @@ describe("SQLite event stores", () => {
     expect(await db.select().from(domainEventsTable)).toHaveLength(3);
   });
 
+  test("keeps the visit reason and the cancellation reason apart after a canceled appointment is read back", async () => {
+    const db = createSqliteDatabase(":memory:");
+    migrateDatabase(db);
+    const store = createAppointmentEventStore(db);
+    const booked = Appointment.book(eventContext(44))({
+      appointmentId: ids.appointment,
+      petId: ids.pet,
+      ownerId: ids.owner,
+      scheduledAt: Timestamp.schema.parse("2026-08-10T01:00:00.000Z"),
+      reason: AppointmentReason.schema.parse("private reason"),
+    });
+    await store.store(booked);
+    await store.store(
+      Appointment.cancel(eventContext(45))(
+        booked.aggregateState,
+        CancellationReason.schema.parse("private cancellation"),
+      ),
+    );
+
+    const resolved = (await createAppointmentByIdResolver(db).resolveById(ids.appointment))._unsafeUnwrap();
+
+    expect(resolved?.kind).toBe("Canceled");
+    if (resolved?.kind !== "Canceled") throw new Error("expected a Canceled appointment");
+    expect(resolved.reason.unwrap()).toBe("private reason");
+    expect(resolved.cancellationReason.unwrap()).toBe("private cancellation");
+  });
+
   test("atomically records one examination completion from concurrent stale submissions", async () => {
     const db = createSqliteDatabase(":memory:");
     migrateDatabase(db);

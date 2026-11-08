@@ -17,6 +17,8 @@ pnpm --filter @fp-with-ts/clinic-final dev
 pnpm --filter @fp-with-ts/clinic-final db:migrate
 ```
 
+キャンセルした予約を含む以前の `clinic.sqlite` は、来院の理由とキャンセルの理由を分ける前の形なので読み出せません。その場合は `examples/final/clinic.sqlite` を削除してください。次の起動時に空のデータベースが作られます。
+
 schemaを変更した場合はSQLを生成し、内容を確認してからmigrationを適用します。
 
 ```bash

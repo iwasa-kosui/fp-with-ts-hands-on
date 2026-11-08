@@ -47,7 +47,7 @@ export const guides = ([
     currentDesign: "状態更新とイベント追加を1つの transaction で行います。",
     futureRisk: "単純な dual-write へ戻すと、状態と監査記録が分離します。",
     path: "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
-    highlights: [{ startLineNumber: 140, endLineNumber: 153 }],
+    highlights: [{ startLineNumber: 144, endLineNumber: 157 }],
   },
 ] as const) satisfies readonly CodeGuide[];
 
@@ -90,7 +90,7 @@ const portsAndAdaptersSnippets = await loadSolutionSnippets({
     {
       path: "examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
       symbol: "createAppointmentEventStore",
-      lines: [140, 153],
+      lines: [144, 157],
     },
     {
       path: "examples/final/src/app.ts",

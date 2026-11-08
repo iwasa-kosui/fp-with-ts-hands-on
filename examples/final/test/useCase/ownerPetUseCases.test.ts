@@ -596,7 +596,7 @@ describe("owner and pet management use cases", () => {
         "84000000-0000-4000-8000-000000000002",
       ),
       kind: "Canceled",
-      reason: CancellationReason.schema.parse("owner request"),
+      cancellationReason: CancellationReason.schema.parse("owner request"),
       canceledAt: now,
     } as const satisfies Appointment;
 
@@ -714,7 +714,12 @@ describe("owner and pet management use cases", () => {
     db.update(appointmentsTable)
       .set({
         status: "Canceled",
-        state: { ...scheduled, kind: "Canceled", canceledAt: now },
+        state: {
+          ...scheduled,
+          kind: "Canceled",
+          cancellationReason: "owner request",
+          canceledAt: now,
+        },
       })
       .run();
     db.insert(examResultsTable)

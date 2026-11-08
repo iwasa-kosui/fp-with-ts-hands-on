@@ -70,7 +70,8 @@ const AppointmentSchema = z.discriminatedUnion("kind", [
     petId: PetId.schema,
     ownerId: OwnerId.schema,
     scheduledAt: Timestamp.schema,
-    reason: CancellationReason.schema,
+    reason: AppointmentReason.schema,
+    cancellationReason: CancellationReason.schema,
     canceledAt: Timestamp.schema,
   }),
 ]);

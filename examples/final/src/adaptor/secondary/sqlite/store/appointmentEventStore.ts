@@ -127,7 +127,11 @@ const projectionState = (state: Appointment): Readonly<Record<string, unknown>> 
         paidAt: state.paidAt,
       };
     case "Canceled":
-      return { ...base, canceledAt: state.canceledAt };
+      return {
+        ...base,
+        cancellationReason: state.cancellationReason.unwrap(),
+        canceledAt: state.canceledAt,
+      };
     default:
       return assertNever(state);
   }
