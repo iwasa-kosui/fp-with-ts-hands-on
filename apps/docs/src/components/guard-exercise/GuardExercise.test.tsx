@@ -12,7 +12,7 @@ import type {
 import { createIndexedDbWorkspaceStore } from "../../code-explorer/workspace-store";
 import { guardExerciseWorkspaceFor } from "../../sessions/pages/03-boundaries-and-pii-exercise";
 import type { EditorProps } from "../code-explorer/CodeExplorer";
-import type { TerminalView } from "../code-explorer/TerminalPanel";
+import { phaseLabels, type TerminalView } from "../code-explorer/TerminalPanel";
 import { GuardExercise } from "./GuardExercise";
 
 const TestEditor: ComponentType<EditorProps> = ({ value, readOnly }) => (
@@ -291,7 +291,7 @@ describe("GuardExercise", () => {
     await settle();
 
     expect(host.querySelector('[role="status"] progress')).not.toBeNull();
-    expect(host.textContent).toContain("依存パッケージを準備しています。");
+    expect(host.textContent).toContain(phaseLabels.installing);
     expect(action(host, "run-guard")?.disabled).toBe(true);
 
     await act(async () => started.resolve());

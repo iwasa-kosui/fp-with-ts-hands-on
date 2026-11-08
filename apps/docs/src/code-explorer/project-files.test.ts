@@ -11,6 +11,11 @@ import {
   exerciseGuardAdditionsFor,
   projectFilesForSnapshot,
 } from "./project-files";
+import { isCovered } from "./deps-snapshot";
+import {
+  mergedSnapshotPackageJsonFor,
+  snapshotDependenciesOf,
+} from "./deps-snapshot-shared.mjs";
 import type { ProjectFiles, SessionWorkspace } from "./types";
 
 type ExercisePageModule = Readonly<{
@@ -33,6 +38,16 @@ const exercisePages = Object.values(pageModules)
   .sort((left, right) =>
     left.workspace.slug.localeCompare(right.workspace.slug),
   );
+
+const terminalPackageJsonSources = Object.entries(
+  import.meta.glob("../../../../examples/session-0[2-6]/package.json", {
+    eager: true,
+    query: "?raw",
+    import: "default",
+  }) as Record<string, string>,
+)
+  .sort(([left], [right]) => left.localeCompare(right))
+  .map(([, source]) => JSON.parse(source));
 
 const projectSnapshots = [
   "session-00",
@@ -178,6 +193,46 @@ describe("Code Explorer project files", () => {
       optionalDependencies: { optional: "^3.0.0" },
       peerDependencies: { peer: "^4.0.0" },
     });
+  });
+
+  it("covers every terminal workspace with the dependency snapshot built from session-02 to session-06", () => {
+    expect(terminalPackageJsonSources).toHaveLength(5);
+    const dependencies = snapshotDependenciesOf(
+      mergedSnapshotPackageJsonFor(terminalPackageJsonSources, {
+        "exercise:06": "pnpm exercise",
+      }),
+    );
+    const manifest = {
+      hash: "0",
+      rawSize: 0,
+      gzipSize: 0,
+      parts: [],
+      dependencies,
+    };
+
+    expect(exercisePages.length).toBeGreaterThan(0);
+    for (const { workspace } of exercisePages) {
+      const packageJson = projectFilesForSnapshot(workspace.snapshot)[
+        "package.json"
+      ]!;
+      const missing = Object.entries({
+        ...JSON.parse(packageJson).dependencies,
+        ...JSON.parse(packageJson).devDependencies,
+      }).filter(([name, range]) => dependencies[name] !== range);
+
+      expect(missing, workspace.slug).toEqual([]);
+      expect(isCovered(manifest, packageJson), workspace.slug).toBe(true);
+    }
+  });
+
+  it("keeps the packages that vendor/exercise-guard needs in the dependency snapshot", () => {
+    const dependencies = snapshotDependenciesOf(
+      mergedSnapshotPackageJsonFor(terminalPackageJsonSources),
+    );
+
+    for (const name of ["eslint", "typescript-eslint", "fast-check", "typescript"]) {
+      expect(dependencies[name], name).toEqual(expect.any(String));
+    }
   });
 
   it("provides every file exposed by an exercise page workspace", () => {

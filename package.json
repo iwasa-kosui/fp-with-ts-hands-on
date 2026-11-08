@@ -23,6 +23,7 @@
     "exercise:04": "pnpm --filter @fp-with-ts/clinic-session-04 exercise",
     "exercise:05": "pnpm --filter @fp-with-ts/clinic-session-05 exercise",
     "exercise:06": "pnpm --filter @fp-with-ts/clinic-session-06 exercise",
+    "build:deps-snapshot": "node apps/docs/scripts/build-deps-snapshot.mjs --out apps/docs/dist",
     "verify:urls": "node scripts/verify-urls.mjs",
     "verify:exercises": "node scripts/verify-exercises.mjs",
     "verify:guard": "node packages/exercise-guard/src/cli.mjs verify --root examples/session-05",

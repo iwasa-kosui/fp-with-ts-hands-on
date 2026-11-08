@@ -57,6 +57,9 @@ jobs:
       - name: Build docs and all demo applications
         run: pnpm build
 
+      - name: Build dependency snapshot
+        run: pnpm build:deps-snapshot
+
       - name: Deploy preview Worker
         id: deploy
         run: |

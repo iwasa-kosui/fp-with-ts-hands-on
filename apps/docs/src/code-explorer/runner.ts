@@ -1,10 +1,18 @@
 import type { FileSystemTree, WebContainer } from "@webcontainer/api";
+import { chmodBinScript } from "./deps-snapshot-shared.mjs";
+import {
+  loadDepsSnapshot,
+  type DepsSnapshotProgress,
+  type DepsSnapshotRequest,
+} from "./deps-snapshot";
 import type { ProjectFiles } from "./types";
 
 export type TerminalSize = Readonly<{ cols: number; rows: number }>;
 export type TerminalPhase =
   | "booting"
   | "mounting"
+  | "downloading-deps"
+  | "restoring-deps"
   | "installing"
   | "collecting-types"
   | "starting-shell";
@@ -17,7 +25,9 @@ export type TerminalStartRequest = Readonly<{
   visibleFiles: readonly string[];
   size: TerminalSize;
   signal: AbortSignal;
+  skipDepsSnapshot?: boolean;
   onPhase: (phase: TerminalPhase) => void;
+  onDownloadProgress?: (progress: DepsSnapshotProgress) => void;
   onOutput: (chunk: string) => void;
   onTypeFiles: (files: ProjectFiles) => void;
   onWorkspaceChange: (change: WorkspaceChange) => void;
@@ -38,6 +48,32 @@ export type TerminalSession = Readonly<{
   dispose: () => Promise<void>;
 }>;
 
+export type TerminalRunnerOptions = Readonly<{
+  loadDepsSnapshot?: (
+    request: DepsSnapshotRequest,
+  ) => Promise<Uint8Array | null>;
+}>;
+
+export class TerminalPreparationTimeoutError extends Error {
+  readonly phase: TerminalPhase;
+
+  constructor(phase: TerminalPhase) {
+    super(`Terminal preparation timed out during ${phase}`);
+    this.name = "TerminalPreparationTimeoutError";
+    this.phase = phase;
+  }
+}
+
+export class TerminalInstallError extends Error {
+  readonly exitCode: number;
+
+  constructor(exitCode: number) {
+    super(`Dependency installation failed with exit code ${exitCode}`);
+    this.name = "TerminalInstallError";
+    this.exitCode = exitCode;
+  }
+}
+
 export type TerminalRunner = Readonly<{
   start: (request: TerminalStartRequest) => Promise<TerminalSession>;
 }>;
@@ -52,6 +88,7 @@ export type TerminalRuntimeProcess = Readonly<{
 
 export type TerminalRuntime = Readonly<{
   mount: (files: ProjectFiles) => Promise<void>;
+  restoreDependencies: (snapshot: Uint8Array) => Promise<void>;
   install: (signal: AbortSignal) => Promise<number>;
   readTypeFiles: () => Promise<ProjectFiles>;
   watchWorkspace: (onPath: (path: string) => void) => () => void;
@@ -112,6 +149,14 @@ export const buildFileSystemTree = (files: ProjectFiles): FileSystemTree => {
 };
 
 const runtimeProjectDirectory = "workspace";
+const stageTimeoutMilliseconds = {
+  booting: 60_000,
+  mounting: 30_000,
+  "restoring-deps": 30_000,
+  installing: 240_000,
+  "collecting-types": 30_000,
+  "starting-shell": 30_000,
+} as const;
 const ignoredDirectories = new Set([
   "node_modules",
   ".cache",
@@ -182,6 +227,53 @@ const throwIfAborted = (signal: AbortSignal): void => {
   if (signal.aborted) throw signal.reason ?? abortError();
 };
 
+const runUntilAborted = async <T>(
+  promise: Promise<T>,
+  signal: AbortSignal,
+): Promise<T> => {
+  throwIfAborted(signal);
+  let onAbort: (() => void) | undefined;
+  const aborted = new Promise<never>((_resolve, reject) => {
+    onAbort = () => reject(signal.reason ?? abortError());
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+  try {
+    return await Promise.race([promise, aborted]);
+  } finally {
+    if (onAbort !== undefined) signal.removeEventListener("abort", onAbort);
+  }
+};
+
+const runStage = async <T>(
+  phase: keyof typeof stageTimeoutMilliseconds,
+  parent: AbortSignal,
+  run: (signal: AbortSignal) => Promise<T>,
+): Promise<T> => {
+  throwIfAborted(parent);
+  const stage = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let onParentAbort: (() => void) | undefined;
+  const interrupted = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      stage.abort();
+      reject(new TerminalPreparationTimeoutError(phase));
+    }, stageTimeoutMilliseconds[phase]);
+    onParentAbort = () => {
+      stage.abort(parent.reason ?? abortError());
+      reject(parent.reason ?? abortError());
+    };
+    parent.addEventListener("abort", onParentAbort, { once: true });
+  });
+  try {
+    return await Promise.race([run(stage.signal), interrupted]);
+  } finally {
+    clearTimeout(timer);
+    if (onParentAbort !== undefined) {
+      parent.removeEventListener("abort", onParentAbort);
+    }
+  }
+};
+
 type ActiveShell = Readonly<{
   generation: number;
   process: TerminalRuntimeProcess;
@@ -190,7 +282,8 @@ type ActiveShell = Readonly<{
 }>;
 
 export const createTerminalRunner = (
-  loadRuntime: () => Promise<TerminalRuntime>,
+  loadRuntime: (signal: AbortSignal) => Promise<TerminalRuntime>,
+  options: TerminalRunnerOptions = {},
 ): TerminalRunner => ({
   start: async (request) => {
     let runtime: TerminalRuntime | undefined;
@@ -325,27 +418,84 @@ export const createTerminalRunner = (
       }
     };
 
+    const downloadController = new AbortController();
+    const abortDownload = () =>
+      downloadController.abort(request.signal.reason ?? abortError());
+    request.signal.addEventListener("abort", abortDownload, { once: true });
+    let snapshotSettled = false;
+    const snapshotPackageJson = request.files["package.json"];
+    const snapshotLoading: Promise<Uint8Array | null> =
+      snapshotPackageJson === undefined || request.skipDepsSnapshot === true
+        ? Promise.resolve(null)
+        : (options.loadDepsSnapshot ?? loadDepsSnapshot)({
+            packageJson: snapshotPackageJson,
+            signal: downloadController.signal,
+            onProgress: (progress) => request.onDownloadProgress?.(progress),
+          }).then(
+            (snapshot) => snapshot,
+            () => null,
+          );
+    void snapshotLoading.then(() => {
+      snapshotSettled = true;
+    });
+
     try {
       throwIfAborted(request.signal);
       request.onPhase("booting");
-      runtime = await loadRuntime();
-      throwIfAborted(request.signal);
+      let booting: Promise<TerminalRuntime> | undefined;
+      try {
+        runtime = await runStage(
+          "booting",
+          request.signal,
+          (signal) => (booting = loadRuntime(signal)),
+        );
+      } catch (error: unknown) {
+        void booting?.then((late) => late.dispose()).catch(() => undefined);
+        throw error;
+      }
+      const bootedRuntime = runtime;
 
       request.onPhase("mounting");
-      await runtime.mount(request.files);
-      throwIfAborted(request.signal);
+      await runStage("mounting", request.signal, () =>
+        bootedRuntime.mount(request.files),
+      );
 
-      request.onPhase("installing");
-      const installExitCode = await runtime.install(request.signal);
-      throwIfAborted(request.signal);
-      if (installExitCode !== 0) {
-        throw new Error(
-          `Dependency installation failed with exit code ${installExitCode}`,
+      if (!snapshotSettled) request.onPhase("downloading-deps");
+      const snapshot = await runUntilAborted(snapshotLoading, request.signal);
+
+      let restored = false;
+      if (snapshot !== null) {
+        request.onPhase("restoring-deps");
+        try {
+          await runStage("restoring-deps", request.signal, () =>
+            bootedRuntime.restoreDependencies(snapshot),
+          );
+          restored = true;
+        } catch (error: unknown) {
+          throwIfAborted(request.signal);
+          if (error instanceof TerminalPreparationTimeoutError) throw error;
+        }
+      }
+
+      if (!restored) {
+        request.onPhase("installing");
+        const installExitCode = await runStage(
+          "installing",
+          request.signal,
+          (signal) => bootedRuntime.install(signal),
         );
+        throwIfAborted(request.signal);
+        if (installExitCode !== 0) {
+          throw new TerminalInstallError(installExitCode);
+        }
       }
 
       request.onPhase("collecting-types");
-      request.onTypeFiles(await runtime.readTypeFiles());
+      request.onTypeFiles(
+        await runStage("collecting-types", request.signal, () =>
+          bootedRuntime.readTypeFiles(),
+        ),
+      );
       throwIfAborted(request.signal);
 
       stopWatching = runtime.watchWorkspace((path) => {
@@ -361,7 +511,9 @@ export const createTerminalRunner = (
       });
 
       request.onPhase("starting-shell");
-      await spawnShell(request.size);
+      await runStage("starting-shell", request.signal, () =>
+        spawnShell(request.size),
+      );
       throwIfAborted(request.signal);
 
       return {
@@ -446,11 +598,14 @@ export const createTerminalRunner = (
       };
     } catch (error: unknown) {
       disposed = true;
+      downloadController.abort();
       stopWatching?.();
       await fileEventQueue;
       await stopShell();
       await runtime?.dispose();
       throw error;
+    } finally {
+      request.signal.removeEventListener("abort", abortDownload);
     }
   },
 });
@@ -569,7 +724,29 @@ const runInstallation = async (
   }
 };
 
-const adaptWebContainer = (runtime: WebContainer): TerminalRuntime => ({
+let runtimeSlot: Promise<void> = Promise.resolve();
+
+const acquireRuntimeSlot = async (signal: AbortSignal): Promise<() => void> => {
+  throwIfAborted(signal);
+  const previous = runtimeSlot;
+  let release!: () => void;
+  const mine = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  runtimeSlot = previous.then(() => mine);
+  try {
+    await runUntilAborted(previous, signal);
+  } catch (error: unknown) {
+    release();
+    throw error;
+  }
+  return release;
+};
+
+const adaptWebContainer = (
+  runtime: WebContainer,
+  releaseSlot: () => void,
+): TerminalRuntime => ({
   mount: async (files) => {
     const { internal, parent } = splitProjectFiles(files);
     await runtime.fs.mkdir(runtimeProjectDirectory, { recursive: true });
@@ -577,6 +754,29 @@ const adaptWebContainer = (runtime: WebContainer): TerminalRuntime => ({
       mountPoint: runtimeProjectDirectory,
     });
     await writeParentFiles(runtime, parent);
+  },
+  restoreDependencies: async (snapshot) => {
+    const nodeModulesDirectory = `${runtimeProjectDirectory}/node_modules`;
+    try {
+      await runtime.fs.mkdir(nodeModulesDirectory, { recursive: true });
+      await runtime.mount(snapshot, { mountPoint: nodeModulesDirectory });
+      // WebContainer の export は実行ビットを保持しない
+      const chmod = await runtime.spawn("node", ["-e", chmodBinScript], {
+        cwd: runtimeProjectDirectory,
+      });
+      const output = chmod.output.pipeTo(new WritableStream<string>());
+      const [exitCode] = await Promise.all([chmod.exit, output]);
+      if (exitCode !== 0) {
+        throw new Error(
+          `Restoring executable bits failed with exit code ${exitCode}`,
+        );
+      }
+    } catch (error: unknown) {
+      await runtime.fs
+        .rm(nodeModulesDirectory, { recursive: true, force: true })
+        .catch(() => undefined);
+      throw error;
+    }
   },
   install: async (signal) => runInstallation(runtime, signal),
   readTypeFiles: async () => readExternalTypeFiles(runtime),
@@ -645,11 +845,25 @@ const adaptWebContainer = (runtime: WebContainer): TerminalRuntime => ({
       resize: (nextSize) => process.resize(nextSize),
     };
   },
-  dispose: () => runtime.teardown(),
+  dispose: async () => {
+    try {
+      await runtime.teardown();
+    } finally {
+      releaseSlot();
+    }
+  },
 });
 
-export const createWebContainerTerminalRunner = (): TerminalRunner =>
-  createTerminalRunner(async () => {
-    const { WebContainer } = await import("@webcontainer/api");
-    return adaptWebContainer(await WebContainer.boot());
-  });
+export const createWebContainerTerminalRunner = (
+  options: TerminalRunnerOptions = {},
+): TerminalRunner =>
+  createTerminalRunner(async (signal) => {
+    const releaseSlot = await acquireRuntimeSlot(signal);
+    try {
+      const { WebContainer } = await import("@webcontainer/api");
+      return adaptWebContainer(await WebContainer.boot(), releaseSlot);
+    } catch (error: unknown) {
+      releaseSlot();
+      throw error;
+    }
+  }, options);

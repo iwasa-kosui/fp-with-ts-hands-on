@@ -25,6 +25,8 @@ export type GuardLayoutProps = Readonly<{
 const phaseOrder = [
   "booting",
   "mounting",
+  "downloading-deps",
+  "restoring-deps",
   "installing",
   "collecting-types",
   "starting-shell",
