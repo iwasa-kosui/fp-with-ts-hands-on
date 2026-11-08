@@ -10,6 +10,7 @@ const mechanisms = [
   {
     id: "sensitive",
     name: "Sensitive",
+    catchesTitle: "防げること",
     about: "検査済みの値を包み、ログと JSON では [REDACTED] に伏せる型",
     catches: "toJSON や toString を通して、値がログや JSON に出ようとしたとき。",
     misses: "unwrap で中身を取り出して、そのまま渡したとき。",
@@ -38,7 +39,7 @@ const groups = [
 
 <figure class="guard" data-guard-compare aria-label="4つの仕組みが検出できることと、検出できないこと">
   <div class="guard__pick">
-    <p class="guard__pick-title">自分が使った仕組みを選ぶと、カードが2組に分かれます。</p>
+    <p class="guard__pick-title">自分が演習で使った仕組み（型のテスト、テスト、Linter）を選びます。Sensitive は演習で使っていない別の守り方です。</p>
     <div class="guard__chips" role="group" aria-label="仕組みを選ぶ">
       {mechanisms.map((mechanism) => (
         <button type="button" data-mechanism={mechanism.id} aria-pressed="true">
@@ -59,6 +60,9 @@ const groups = [
             <li class="guard__slot" data-card={mechanism.id} data-on="true">
               <div class="guard__card">
                 <p class="guard__card-name">{mechanism.name}</p>
+                {group.key === "catches" && "catchesTitle" in mechanism && (
+                  <p class="guard__card-title">{mechanism.catchesTitle}</p>
+                )}
                 <p>{mechanism[group.key]}</p>
               </div>
             </li>
@@ -120,7 +124,7 @@ const groups = [
 <style>
   .guard {
     --catch-tone: var(--case-highlight);
-    --miss-tone: var(--case-yellow);
+    --miss-tone: var(--case-muted);
     min-width: 0;
     margin: 1rem 0;
   }
@@ -163,7 +167,8 @@ const groups = [
   }
 
   button[aria-pressed="true"] {
-    background: var(--case-line);
+    border-color: var(--case-blue);
+    background: var(--case-blue);
     color: var(--case-paper);
   }
 
@@ -174,8 +179,9 @@ const groups = [
 
   .guard__replay {
     margin-block-start: 0.5rem;
-    background: var(--case-yellow);
-    color: var(--case-ink);
+    border-color: var(--case-blue);
+    background: var(--case-paper);
+    color: var(--case-blue);
     font-size: 0.8125rem;
   }
 
@@ -252,6 +258,13 @@ const groups = [
     margin-block-end: 0.125rem;
     font-size: 0.9375rem;
     font-weight: 800;
+  }
+
+  .guard__card .guard__card-title {
+    margin-block-end: 0.125rem;
+    color: var(--case-muted);
+    font-size: 0.8125rem;
+    font-weight: 700;
   }
 
   .guard[data-ready] .guard__slot {

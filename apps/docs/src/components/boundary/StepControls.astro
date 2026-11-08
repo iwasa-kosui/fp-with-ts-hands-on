@@ -24,10 +24,10 @@
   button {
     min-height: 2.5rem;
     padding: 0 0.875rem;
-    border: 2px solid var(--case-line);
+    border: 2px solid var(--case-blue);
     border-radius: 0.5rem;
-    background: var(--case-yellow);
-    color: var(--case-ink);
+    background: var(--case-blue);
+    color: var(--case-paper);
     cursor: pointer;
     font: inherit;
     font-weight: 700;
@@ -39,7 +39,9 @@
   }
 
   button:disabled {
+    border-color: var(--case-line);
     background: var(--case-paper);
+    color: var(--case-ink);
     cursor: not-allowed;
     opacity: 0.55;
   }

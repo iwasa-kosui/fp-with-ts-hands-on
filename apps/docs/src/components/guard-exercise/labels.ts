@@ -8,7 +8,7 @@ import type {
 import type { GuardCaseInfo } from "../../code-explorer/guard-paths";
 
 export const mechanismHeaders: Readonly<Record<GuardMechanism, string>> = {
-  types: "型のテスト",
+  types: "型",
   lint: "Linter",
   tests: "テスト",
 };

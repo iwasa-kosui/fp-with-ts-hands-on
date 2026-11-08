@@ -69,6 +69,7 @@ const deferred = <T,>() => {
 };
 
 type SessionOptions = Readonly<{
+  initialFile?: string;
   exitCode?: number;
   resultText?: string | undefined;
   onStart?: (request: TerminalStartRequest) => Promise<void>;
@@ -108,7 +109,11 @@ const mountExercise = async (options: SessionOptions = {}) => {
   await act(async () => {
     root.render(
       <GuardExercise
-        workspace={workspace}
+        workspace={
+          options.initialFile === undefined
+            ? workspace
+            : { ...workspace, initialFile: options.initialFile }
+        }
         projectFiles={projectFiles}
         workspaceStore={createIndexedDbWorkspaceStore()}
         Editor={TestEditor}
@@ -211,18 +216,31 @@ describe("GuardExercise", () => {
   });
 
   it("lets the participant edit only the peer review case among the cases", async () => {
+    const peer = await mountExercise({ initialFile: guardPaths.peerCase });
+    expect(editor(peer.host).value).toContain("export const peer = 1;");
+    expect(editor(peer.host).dataset.readonly).toBe("false");
+
+    const good = await mountExercise({
+      initialFile: "exercises/guard/cases/G1-solution.ts",
+    });
+    expect(editor(good.host).dataset.readonly).toBe("true");
+  });
+
+  it("shows tabs for the config, the mine files, and the opened case file", async () => {
     const { host } = await mountExercise();
+    const tabPaths = () =>
+      [...host.querySelectorAll(".code-explorer__tabs button")].map((tab) =>
+        tab.getAttribute("data-path"),
+      );
 
-    await click(
-      host.querySelector('button[data-path="exercises/guard/cases/R1-peer-change.ts"]'),
-    );
-    expect(editor(host).value).toContain("export const peer = 1;");
-    expect(editor(host).dataset.readonly).toBe("false");
+    expect(tabPaths()).toEqual(["eslint.config.mjs", "exercises/guard/mine/input.test.ts"]);
 
-    await click(
-      host.querySelector('button[data-path="exercises/guard/cases/G1-solution.ts"]'),
-    );
-    expect(editor(host).dataset.readonly).toBe("true");
+    await click(host.querySelector('[data-case-id="B1-any-parser"]'));
+    expect(tabPaths()).toEqual([
+      "eslint.config.mjs",
+      "exercises/guard/mine/input.test.ts",
+      "exercises/guard/cases/B1-any-parser.ts",
+    ]);
   });
 
   it("shows the guide given by props in place of the default steps", async () => {

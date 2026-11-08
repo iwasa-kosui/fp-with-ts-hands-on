@@ -115,7 +115,7 @@ const terms = [
   .boundary-terms {
     --outside-tone: color-mix(in srgb, var(--case-divider) 45%, var(--case-paper));
     --boundary-tone: var(--case-cream);
-    --inside-tone: color-mix(in srgb, var(--case-highlight) 18%, var(--case-paper));
+    --inside-tone: var(--case-paper);
     min-width: 0;
     margin: 1rem 0;
   }
@@ -229,7 +229,7 @@ const terms = [
     padding: 0.125rem 0.625rem;
     border: 2px solid var(--case-line);
     border-radius: 0.5rem;
-    background: var(--case-yellow);
+    background: var(--case-paper);
     color: var(--case-ink);
     font-size: 0.8125rem;
     line-height: 1.3;
@@ -292,6 +292,7 @@ const terms = [
   }
 
   .boundary-terms[data-ready] [data-pin][data-state="current"] {
+    background: var(--case-yellow);
     box-shadow: 0 0 0 3px var(--case-blue);
   }
 

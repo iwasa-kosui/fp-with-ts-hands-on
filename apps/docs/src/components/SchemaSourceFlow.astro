@@ -159,7 +159,7 @@ const frames: readonly Frame[] = [
   },
   {
     part: "parse",
-    caption: "修正後は、night-shift が parse の検査で止まり、Err になります。UUID の形をした値だけが Ok になり、StartExaminationInput 型の値として内側へ進みます。型と検査を同じ schema から作るので、型に書いた項目は実行時にも検査されます。",
+    caption: "修正後は、night-shift は parse の検査を通らず、Err が返ります。UUID の形をした値だけが Ok になり、StartExaminationInput 型の値として内側へ進みます。型と検査を同じ schema から作るので、型に書いた項目は実行時にも検査されます。",
     stage: "after",
     parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "on", linkCheck: "on", checkBox: "on", inside: "on", sameName: "off", unknown: "off", note: "on" },
     typeLabel: "infer",
@@ -521,7 +521,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   }
 
   .schema-source-flow__badge text {
-    fill: var(--case-ink);
+    fill: var(--case-paper);
     font-size: 18px;
     font-weight: 700;
   }
@@ -590,12 +590,8 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     font-size: 11px;
   }
 
-  .schema-source-flow__type rect {
-    stroke: var(--case-blue);
-  }
-
   .schema-source-flow__schema rect {
-    fill: var(--case-yellow);
+    fill: var(--case-paper);
   }
 
   .schema-source-flow__inside rect {
@@ -690,7 +686,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
 
   .schema-source-flow__unknown rect,
   .schema-source-flow__name-tag rect {
-    fill: var(--case-blue);
+    fill: var(--case-ink);
   }
 
   .schema-source-flow__unknown text,
@@ -760,7 +756,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   }
 
   .schema-source-flow__result-pill--warn rect {
-    fill: var(--case-yellow);
+    fill: var(--case-cream);
   }
 
   .schema-source-flow__result-pill--err rect {
@@ -769,6 +765,11 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
 
   .schema-source-flow__result-pill--ok rect {
     fill: var(--case-highlight);
+  }
+
+  .schema-source-flow__result-pill--err text,
+  .schema-source-flow__result-pill--ok text {
+    fill: var(--case-paper);
   }
 
   .schema-source-flow__controls {
@@ -786,10 +787,10 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   .schema-source-flow__controls button {
     min-height: 2.75rem;
     padding: 0 0.75rem;
-    border: 2px solid var(--case-line);
+    border: 2px solid var(--case-blue);
     border-radius: 0.5rem;
-    background: var(--case-yellow);
-    color: var(--case-ink);
+    background: var(--case-blue);
+    color: var(--case-paper);
     cursor: pointer;
     font: inherit;
     font-weight: 700;
@@ -801,7 +802,9 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   }
 
   .schema-source-flow__controls button:disabled {
+    border-color: var(--case-line);
     background: var(--case-paper);
+    color: var(--case-ink);
     cursor: not-allowed;
     opacity: 0.55;
   }
@@ -843,7 +846,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     padding: 0 0.4rem;
     border-radius: 0.25rem;
     background: var(--version-color);
-    color: var(--case-ink);
+    color: var(--case-paper);
     font-weight: 700;
   }
 
@@ -859,8 +862,8 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     min-width: calc(100% + 0.5rem);
     margin-left: -0.5rem;
     padding-left: 0.5rem;
-    background: color-mix(in srgb, var(--case-yellow) 22%, transparent);
-    box-shadow: inset 0.3rem 0 0 var(--case-yellow);
+    background: color-mix(in srgb, var(--case-blue) 28%, transparent);
+    box-shadow: inset 0.3rem 0 0 var(--case-blue);
   }
 
   [data-animated] .schema-source-flow__frames {

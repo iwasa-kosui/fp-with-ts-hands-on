@@ -84,7 +84,7 @@ describe("judge", () => {
     expect(result.hiddenCount).toBe(0);
     expect(result.problems).toEqual([]);
     expect(rowOf(result, "B5-any-result").cells.types.state).toBe("hit");
-    expect(result.next).toEqual(["合格です。表の最後の列に、この仕組みで検出できないことを書きます。"]);
+    expect(result.next).toEqual(["合格です。表の行を開いて、この仕組みで検出できないことを書きます。"]);
     expect(result.durations.total).toBeGreaterThan(0);
   });
 

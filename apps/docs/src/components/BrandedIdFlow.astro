@@ -141,7 +141,7 @@ const frames: readonly Frame[] = [
     runtime: false,
   },
   {
-    caption: "UUIDの形でない文字列は parse を通りません。parse は例外を投げるので、AppointmentId 型の値は作られません。",
+    caption: "UUIDの形でない文字列は AppointmentId.parse を通りません。AppointmentId.parse は例外を投げるので、AppointmentId 型の値は作られません。StartExaminationInput.parse は、例外を投げずに Err を返します。",
     stage: null,
     modes: ["normal", "normal", "dim", "dim"],
     tokens: ["home", "home", "stop"],
@@ -409,12 +409,12 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
     min-width: 0;
     max-width: 100%;
     margin: 1.5rem 0;
-    --version-before: #c2185b;
-    --version-after: #137333;
-    --brand-appointment: var(--case-blue);
-    --brand-veterinarian: #c2410c;
-    --verdict-error: #b3261e;
-    --verdict-pass: #137333;
+    --version-before: var(--case-pink);
+    --version-after: var(--case-highlight);
+    --brand-appointment: var(--case-ink);
+    --brand-veterinarian: var(--case-muted);
+    --verdict-error: var(--case-pink);
+    --verdict-pass: var(--case-highlight);
   }
 
   [data-version="before"] {
@@ -496,7 +496,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
 
   .branded-id-flow__gate rect:first-child {
     fill: var(--case-paper);
-    stroke: var(--case-blue);
+    stroke: var(--case-line);
     stroke-width: 2.5;
   }
 
@@ -531,7 +531,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
   }
 
   .branded-id-flow__badge text {
-    fill: #fff;
+    fill: var(--case-paper);
     font-size: 14px;
     font-weight: 700;
   }
@@ -544,7 +544,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
 
   .branded-id-flow__slot {
     fill: var(--case-paper);
-    stroke: var(--case-muted, #58596d);
+    stroke: var(--case-muted);
     stroke-width: 2;
     stroke-dasharray: 6 4;
   }
@@ -578,7 +578,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
 
   .branded-id-flow__pill-string {
     fill: var(--case-divider);
-    stroke: var(--case-muted, #58596d);
+    stroke: var(--case-muted);
     stroke-width: 1.5;
   }
 
@@ -597,7 +597,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
   }
 
   .branded-id-flow__pill-text {
-    fill: #fff;
+    fill: var(--case-paper);
     font-size: 12px;
     font-weight: 700;
   }
@@ -640,7 +640,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
   }
 
   .branded-id-flow__reject text {
-    fill: #fff;
+    fill: var(--case-paper);
     font-size: 14px;
     font-weight: 700;
   }
@@ -660,7 +660,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
   }
 
   .branded-id-flow__verdict--pass rect {
-    fill: var(--case-yellow);
+    fill: var(--case-cream);
     stroke: var(--case-line);
     stroke-width: 1.5;
   }
@@ -674,7 +674,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
   }
 
   .branded-id-flow__verdict--error text {
-    fill: #fff;
+    fill: var(--case-paper);
   }
 
   .branded-id-flow__controls {
@@ -692,16 +692,18 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
   .branded-id-flow__controls button {
     min-height: 2.75rem;
     padding: 0 1rem;
-    border: 2px solid var(--case-line);
+    border: 2px solid var(--case-blue);
     border-radius: 0.5rem;
-    background: var(--case-yellow);
-    color: var(--case-ink);
+    background: var(--case-blue);
+    color: var(--case-paper);
     cursor: pointer;
     font-weight: 700;
   }
 
   .branded-id-flow__controls button:disabled {
+    border-color: var(--case-line);
     background: var(--case-paper);
+    color: var(--case-ink);
     cursor: not-allowed;
     opacity: 0.55;
   }
@@ -751,7 +753,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
     padding: 0 0.4rem;
     border-radius: 0.25rem;
     background: var(--version-color);
-    color: #fff;
+    color: var(--case-paper);
     font-weight: 700;
   }
 
@@ -771,8 +773,8 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
     min-width: calc(100% + 0.5rem);
     margin-left: -0.5rem;
     padding-left: 0.5rem;
-    background: rgb(255 210 27 / 22%);
-    box-shadow: inset 0.3rem 0 0 #ffd21b;
+    background: color-mix(in srgb, var(--case-blue) 28%, transparent);
+    box-shadow: inset 0.3rem 0 0 var(--case-blue);
   }
 
   .branded-id-flow :global(.branded-id-flow__key span[style*="#6A737D"]) {

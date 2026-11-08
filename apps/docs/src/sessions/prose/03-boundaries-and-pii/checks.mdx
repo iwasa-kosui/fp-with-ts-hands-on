@@ -5,9 +5,12 @@ import LintRuleCards from "../../../components/boundary/LintRuleCards.astro";
 <div class="session-split">
   <div>
     <p><strong>fast-check のテスト</strong>: fast-check は、ランダムな入力を多数作って、性質が成り立つかを確かめるライブラリです。「UUID の形でない文字列を渡すと、<code>parse</code> は Err を返す」という性質を、さまざまな文字列で確かめます。</p>
+    <p>テストは <code>{"fc.assert(fc.property(入力の作り方, (入力) => { ... }))"}</code> の形で書きます。中の関数が <code>false</code> を返すか例外を投げると、そのテストは失敗します。悪い変更でテストが失敗すれば、検出です。<code>fc.string()</code> は任意の文字列を作り、<code>fc.uuid()</code> は UUID の形の文字列を作ります。<code>expect</code> を使うときは <code>vitest</code> から import します。</p>
   </div>
   <div>
     <p><strong>Linter の規則</strong>: Linter は、コードの書き方を機械で調べる道具です。<code>any</code> と <code>as</code> は、型を実際の値と食い違わせる書き方なので、規則で検出します。</p>
+    <p>このハンズオンの Linter は ESLint です。規則は <code>eslint.config.mjs</code> の <code>rules</code> に <code>"規則名": "error"</code> の形で書きます。</p>
+    <p><strong>型のテスト</strong>: 型のテストは、<code>@ts-expect-error</code> を使い、悪い変更を入れると型エラーが消えるようにします。<code>exercises/guard/mine/</code> に <code>{"*.type-test.ts"}</code> という名前で置きます。</p>
   </div>
 </div>
 

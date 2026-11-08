@@ -1,5 +1,6 @@
-import { useMemo, useState, type ComponentType } from "react";
+import { useMemo, useState, type ComponentType, type ReactNode } from "react";
 import {
+  guardPaths,
   isGuardReadOnlyPath,
   readGuardCases,
 } from "../../code-explorer/guard-paths";
@@ -28,7 +29,21 @@ export type GuardExerciseProps = Readonly<{
   supportsRuntime?: () => boolean;
   loadTerminalView?: () => Promise<TerminalView>;
   guide?: GuardGuide;
+  children?: ReactNode;
 }>;
+
+const tabPathsFor = (
+  visiblePaths: readonly string[],
+  selectedPath: string | undefined,
+): readonly string[] => {
+  const fixed = visiblePaths.filter(
+    (path) =>
+      path === guardPaths.eslintConfig || path.startsWith(guardPaths.mine),
+  );
+  return selectedPath === undefined || fixed.includes(selectedPath)
+    ? fixed
+    : [...fixed, selectedPath];
+};
 
 export const GuardExercise = ({
   workspace,
@@ -39,6 +54,7 @@ export const GuardExercise = ({
   supportsRuntime,
   loadTerminalView,
   guide,
+  children,
 }: GuardExerciseProps) => {
   const [store] = useState(
     () => workspaceStore ?? createIndexedDbWorkspaceStore(),
@@ -59,6 +75,7 @@ export const GuardExercise = ({
         supportsRuntime={supportsRuntime}
         loadTerminalView={loadTerminalView}
         isReadOnlyPath={isGuardReadOnlyPath}
+        tabPaths={tabPathsFor}
         renderLayout={(parts: CodeExplorerLayoutParts) => (
           <GuardLayout
             parts={parts}
@@ -67,7 +84,9 @@ export const GuardExercise = ({
             projectFiles={projectFiles}
             cases={cases}
             guide={guide}
-          />
+          >
+            {children}
+          </GuardLayout>
         )}
       />
     </div>

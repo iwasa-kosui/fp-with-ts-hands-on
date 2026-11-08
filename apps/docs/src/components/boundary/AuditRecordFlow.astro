@@ -62,10 +62,10 @@ const lit = {
 const contact = clinicFixture.ownerContact;
 const frames = [
   {
-    caption: "診察を開始するたびに、監査記録が1件書かれます。監査記録は、いつ何が起きたかを残す記録です。",
+    caption: "診察を開始するたびに、監査記録が1件書かれます。",
   },
   {
-    caption: "修正前のコードは、監査記録に ownerContact を入れています。氏名・メールアドレス・電話番号の3項目が、そのまま記録に残ります。",
+    caption: "修正前のコードは、監査記録に ownerContact を入れています。氏名・メールアドレス・電話番号が、そのまま記録に残ります。",
   },
   {
     caption: "修正後のコードは、appointmentId・veterinarianId・examinationStartedAt の3項目だけを記録に入れます。連絡先は入りません。",
@@ -194,7 +194,7 @@ const litData = JSON.stringify(lit);
     padding: 0.375rem 1rem;
     border: 2px solid var(--case-line);
     border-radius: 999px;
-    background: var(--case-yellow);
+    background: var(--case-paper);
     color: var(--case-ink);
     font-weight: 700;
   }
@@ -249,15 +249,15 @@ const litData = JSON.stringify(lit);
   }
 
   .audit-flow__code :global(.line.is-lit) {
-    background: rgb(255 210 27 / 35%);
-    box-shadow: inset 4px 0 0 var(--case-yellow);
+    background: color-mix(in srgb, var(--case-blue) 28%, transparent);
+    box-shadow: inset 4px 0 0 var(--case-blue);
   }
 
   .audit-flow__tag {
     display: inline-block;
     padding: 0 0.5rem;
     border-radius: 0.25rem;
-    color: var(--case-ink);
+    color: var(--case-paper);
     font-weight: 700;
   }
 

@@ -14,36 +14,32 @@ const languageOf = (path: string) => (path.endsWith(".mjs") ? "js" : "ts");
 
 <details class="guard-answer" data-guard-answer>
   <summary>解答の例を見る</summary>
-  {
-    entries.length === 0 ? (
-      <p>解答の例はまだありません。</p>
-    ) : (
-      entries.map(([path, source]) => (
-        <figure>
-          <figcaption>{path}</figcaption>
-          <Code code={source} lang={languageOf(path)} />
-        </figure>
-      ))
-    )
-  }
+  <div class="guard-answer__panel">
+    <div class="guard-answer__bar">
+      <strong>解答の例</strong>
+      <button type="button" data-guard-answer-close>閉じる</button>
+    </div>
+    {
+      entries.length === 0 ? (
+        <p>解答の例はまだありません。</p>
+      ) : (
+        entries.map(([path, source]) => (
+          <figure>
+            <figcaption>{path}</figcaption>
+            <Code code={source} lang={languageOf(path)} />
+          </figure>
+        ))
+      )
+    }
+  </div>
 </details>
 
-<style>
-  .guard-answer {
-    margin-top: 1rem;
-  }
-
-  .guard-answer summary {
-    font-weight: 900;
-    cursor: pointer;
-  }
-
-  .guard-answer figure {
-    margin: 0.75rem 0 0;
-  }
-
-  .guard-answer figcaption {
-    font-size: 0.8125rem;
-    font-weight: 900;
-  }
-</style>
+<script>
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const close = target.closest("[data-guard-answer-close]");
+    const details = close?.closest("details");
+    if (details !== null && details !== undefined) details.open = false;
+  });
+</script>

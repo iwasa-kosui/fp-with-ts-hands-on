@@ -1,19 +1,26 @@
 ---
 const rules = [
   {
-    name: "no-explicit-any",
+    names: ["@typescript-eslint/no-explicit-any"],
     about: "コードに any と書くこと",
     catches: "raw: any のように、型として any を書いたとき。",
     misses: "any と書かずに、any を返す関数の結果をそのまま受け取ったとき。",
   },
   {
-    name: "no-unsafe-*",
+    names: [
+      "@typescript-eslint/no-unsafe-assignment",
+      "@typescript-eslint/no-unsafe-argument",
+      "@typescript-eslint/no-unsafe-member-access",
+      "@typescript-eslint/no-unsafe-call",
+      "@typescript-eslint/no-unsafe-return",
+    ],
     about: "型が any の値を使うこと",
     catches: "型が any の値を、代入、関数の呼び出し、項目の参照、return、引数に使ったとき。",
     misses: "any を使わずに、検査をしない別の書き方をしたとき。",
   },
   {
-    name: "consistent-type-assertions",
+    names: ["@typescript-eslint/consistent-type-assertions"],
+    setting: '["error", { assertionStyle: "never" }]',
     about: "as による型アサーション",
     catches: "raw as StartExaminationInput のように、as で型を書き換えたとき。",
     misses: "as も any も使わずに、UUID の形を検査しない schema を書いたとき。",
@@ -24,7 +31,8 @@ const rules = [
 <div class="lint-rules" role="list" aria-label="規則の候補">
   {rules.map((rule) => (
     <div class="lint-rules__card" role="listitem">
-      <p class="lint-rules__name"><code>{rule.name}</code></p>
+      <p class="lint-rules__name">{rule.names.map((name) => <code>{name}</code>)}</p>
+      {"setting" in rule && <p class="lint-rules__setting"><code>{rule.setting}</code></p>}
       <p class="lint-rules__about">{rule.about}</p>
       <p class="lint-rules__label">検出できること</p>
       <p class="lint-rules__text">{rule.catches}</p>
@@ -60,6 +68,15 @@ const rules = [
     overflow-wrap: anywhere;
   }
 
+  .lint-rules__name code {
+    display: block;
+  }
+
+  .lint-rules__setting {
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
+  }
+
   .lint-rules__about {
     margin-block: 0.15rem 0.5rem;
     color: var(--case-muted);
@@ -68,7 +85,7 @@ const rules = [
 
   .lint-rules__label {
     margin-top: 0.4rem;
-    color: var(--case-blue);
+    color: var(--case-ink);
     font-size: 0.8rem;
     font-weight: 800;
   }

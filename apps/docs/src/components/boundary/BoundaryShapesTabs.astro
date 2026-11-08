@@ -10,15 +10,16 @@ const rows = [
   },
   {
     name: "支払金額",
-    scope: "完成形のコード",
+    scope: "発展のページ",
     outside: "入力された金額",
     check: "1以上の整数か",
     inside: "PaymentAmount",
     path: "examples/final/src/domain/appointment/paymentAmount.ts",
+    note: "発展のページには、実物を短くした例を載せています。",
   },
   {
     name: "検査結果",
-    scope: "発展のページ",
+    scope: "配布コードの補足",
     outside: "検査機関から届く JSON",
     check: "examId、petId、items、needsFollowUp の形",
     inside: "ExamResult",
@@ -69,7 +70,7 @@ const zones = [
           </>
         ))}
       </div>
-      <p class="shapes__path"><span>実物のコード</span> <code>{row.path}</code></p>
+      <p class="shapes__path"><span>実物のコード</span> <code>{row.path}</code>{"note" in row && ` ${row.note}`}</p>
     </div>
   ))}
 </figure>
@@ -117,7 +118,7 @@ const zones = [
   .shapes {
     --outside-tone: color-mix(in srgb, var(--case-divider) 45%, var(--case-paper));
     --check-tone: var(--case-cream);
-    --inside-tone: color-mix(in srgb, var(--case-highlight) 18%, var(--case-paper));
+    --inside-tone: var(--case-paper);
     min-width: 0;
     margin: 1rem 0;
   }
@@ -154,7 +155,8 @@ const zones = [
   }
 
   button[aria-selected="true"] {
-    background: var(--case-line);
+    border-color: var(--case-blue);
+    background: var(--case-blue);
     color: var(--case-paper);
   }
 
@@ -249,7 +251,7 @@ const zones = [
     height: 1rem;
     border: 2px solid var(--case-line);
     border-radius: 50%;
-    background: var(--case-yellow);
+    background: var(--case-blue);
     opacity: 0;
     pointer-events: none;
     transform: translateY(-50%);

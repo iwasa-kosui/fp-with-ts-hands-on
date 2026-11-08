@@ -2,22 +2,23 @@ import { Code } from "astro:components";
 import EpisodeIllustration from "../../../components/EpisodeIllustration.astro";
 import { incidentRequest, session } from "../../pages/03-boundaries-and-pii-content";
 
-<aside class="case-file__episode" aria-label="動物病院のひと幕">
-  <p class="case-file__episode-label">動物病院のひと幕</p>
-  <EpisodeIllustration slug="03-boundaries-and-pii" />
-  <p>15時30分、獣医師が診察開始画面で、診察開始を押しました。</p>
-  <p>画面の不具合で、画面は獣医師のIDの代わりに、勤務区分を表す「night-shift」を送信しました。</p>
-  <p>サーバーは、届いた値を検査しないまま、診察開始の処理へ進めました。</p>
-</aside>
-
-<div class="session-split session-split--wide-right">
+<div class="session-split session-split--story">
   <div>
+    <aside class="case-file__episode" aria-label="動物病院のひと幕">
+      <p class="case-file__episode-label">動物病院のひと幕</p>
+      <p>15時30分、獣医師が診察開始画面で、診察開始を押しました。</p>
+      <p>画面の不具合で、画面は獣医師のIDの代わりに、勤務区分を表す「night-shift」を送信しました。</p>
+      <p>サーバーは、届いた値を検査しないまま、診察開始の処理へ進めました。</p>
+    </aside>
     <p>{session.summary}</p>
     <p>画面からサーバーへ届いた内容は、HTTP リクエストという形のメッセージです。HTTP リクエストは、操作の内容をサーバーへ伝えます。</p>
     <p>URL の予約IDは正しい形です。body の <code>veterinarianId</code> には、獣医師のIDではなく <code>night-shift</code> が入っています。</p>
   </div>
-  <figure class="code-block boundary-request" data-boundary-request>
-    <figcaption>画面が送信した HTTP リクエスト</figcaption>
-    <Code code={incidentRequest} lang="http" />
-  </figure>
+  <div>
+    <EpisodeIllustration slug="03-boundaries-and-pii" />
+    <figure class="code-block boundary-request" data-boundary-request>
+      <figcaption>画面が送信した HTTP リクエスト</figcaption>
+      <Code code={incidentRequest} lang="http" />
+    </figure>
+  </div>
 </div>

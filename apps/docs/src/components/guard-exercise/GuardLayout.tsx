@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo, useState, type ReactNode } from "react";
 import {
   casePathFor,
   type GuardCaseInfo,
@@ -20,6 +20,7 @@ export type GuardLayoutProps = Readonly<{
   projectFiles: ProjectFiles;
   cases: readonly GuardCaseInfo[];
   guide?: GuardGuide;
+  children?: ReactNode;
 }>;
 
 const phaseOrder = [
@@ -61,6 +62,7 @@ export const GuardLayout = ({
   projectFiles,
   cases,
   guide,
+  children,
 }: GuardLayoutProps) => {
   const [terminalOpen, setTerminalOpen] = useState(false);
   const terminalId = useId();
@@ -91,6 +93,9 @@ export const GuardLayout = ({
           onSelect={parts.selectPath}
           guide={guide}
         />
+        {children === undefined ? null : (
+          <div className="guard-exercise__answer">{children}</div>
+        )}
       </aside>
       <div className="guard-exercise__column guard-exercise__column--center">
         <div className="guard-exercise__workspace">{parts.workspace}</div>
@@ -133,24 +138,26 @@ export const GuardLayout = ({
             </div>
           )}
         </div>
-        {guard.status.kind === "failed" ? (
-          <p className="guard-exercise__error" role="alert">
-            {guard.status.message}
-          </p>
-        ) : null}
-        {guard.notice === undefined ? null : (
-          <p className="guard-exercise__error" role="alert">
-            {guard.notice}
-          </p>
-        )}
-        <ResultTable
-          result={guard.result}
-          rows={rows}
-          restored={guard.source === "restored"}
-          limitations={guard.limitations}
-          limitationsEnabled={guard.ready}
-          onLimitationChange={guard.setLimitation}
-        />
+        <div className="guard-exercise__scroll">
+          {guard.status.kind === "failed" ? (
+            <p className="guard-exercise__error" role="alert">
+              {guard.status.message}
+            </p>
+          ) : null}
+          {guard.notice === undefined ? null : (
+            <p className="guard-exercise__error" role="alert">
+              {guard.notice}
+            </p>
+          )}
+          <ResultTable
+            result={guard.result}
+            rows={rows}
+            restored={guard.source === "restored"}
+            limitations={guard.limitations}
+            limitationsEnabled={guard.ready}
+            onLimitationChange={guard.setLimitation}
+          />
+        </div>
       </section>
     </div>
   );

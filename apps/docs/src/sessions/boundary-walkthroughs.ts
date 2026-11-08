@@ -308,7 +308,7 @@ export const startExaminationWalkthrough: Walkthrough = {
     },
     {
       id: "before",
-      label: "同じ「夜勤」が、修正前のコードに届いた",
+      label: "同じ「夜勤」が、検査しない今のコードに届いた",
       note: "検査しない修正前の parse",
       frames: [
         ...arrivalFrames(`"night-shift"`),
@@ -377,7 +377,7 @@ const sensitiveFrame = frameBuilder(sensitiveFiles);
 const wrappedFrames = [
   sensitiveFrame("ownerContact", {
     first: "ownerEmail: z.string().email()",
-    zone: 0,
+    zone: 1,
     status: "neutral",
     valueLabel: "parse に渡すメールアドレス（説明用の値）",
     value: `ownerEmail: "owner@example.com"`,

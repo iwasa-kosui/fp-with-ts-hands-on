@@ -20,6 +20,7 @@ import {
   createWorkspaceState,
   reduceWorkspaceState,
 } from "../../code-explorer/workspace-state";
+import { FileTabs } from "./FileTabs";
 import { FileTree } from "./FileTree";
 import { MonacoEditor } from "./MonacoEditor";
 import {
@@ -70,6 +71,10 @@ export type CodeExplorerProps = Readonly<{
   workspaceStore?: WorkspaceStore;
   isReadOnlyPath?: (path: string) => boolean;
   renderLayout?: (parts: CodeExplorerLayoutParts) => ReactNode;
+  tabPaths?: (
+    visiblePaths: readonly string[],
+    selectedPath: string | undefined,
+  ) => readonly string[];
 }>;
 
 const noHighlights: readonly CodeHighlight[] = [];
@@ -91,6 +96,7 @@ export const CodeExplorer = ({
   workspaceStore,
   isReadOnlyPath,
   renderLayout,
+  tabPaths,
 }: CodeExplorerProps) => {
   const availableGuides = guides ?? [];
   const [selectedGuideId, setSelectedGuideId] = useState(
@@ -278,6 +284,14 @@ export const CodeExplorer = ({
               </li>
             ))}
           </ol>
+        ) : tabPaths !== undefined ? (
+          <FileTabs
+            paths={tabPaths(workspaceState.visiblePaths, selectedPath)}
+            selectedPath={selectedPath ?? ""}
+            dirtyPaths={dirtyPaths}
+            disabled={isLocked}
+            onSelect={(path) => dispatch({ kind: "select", path })}
+          />
         ) : (
           <FileTree
             paths={workspaceState.visiblePaths}

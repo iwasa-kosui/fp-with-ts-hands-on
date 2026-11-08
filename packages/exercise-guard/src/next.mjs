@@ -80,6 +80,6 @@ export const buildNext = ({ rows, problems, mineEmpty, ruleCount, stageOpened, p
     ...(stageOpened > 0 ? [`追加の悪い変更が ${stageOpened} 件増えました。`] : []),
     ...rows.filter((row) => row.verdict === "falsePositive").flatMap(falsePositiveSentences),
     ...slipped.map(slippedSentence),
-    ...(passed ? ["合格です。表の最後の列に、この仕組みで検出できないことを書きます。"] : []),
+    ...(passed ? ["合格です。表の行を開いて、この仕組みで検出できないことを書きます。"] : []),
   ];
 };

@@ -63,7 +63,10 @@ export const ResultTable = ({
             ) : null}
           </th>
           {guardMechanisms.map((mechanism) => (
-            <td key={mechanism}>
+            <td
+              key={mechanism}
+              data-state={row.cells === undefined ? "none" : row.cells[mechanism].state}
+            >
               {row.cells === undefined ? "−" : cellText(row.cells[mechanism])}
             </td>
           ))}
@@ -111,14 +114,10 @@ export const ResultTable = ({
           {headlineFor(result)}
         </p>
       )}
-      {result !== undefined && result.next.length > 0 ? (
+      {result !== undefined && result.next[0] !== undefined ? (
         <section className="guard-exercise__next" aria-label="次にすること">
           <h3>次にすること</h3>
-          <ol>
-            {result.next.map((sentence, index) => (
-              <li key={`${index}:${sentence}`}>{sentence}</li>
-            ))}
-          </ol>
+          <p>{result.next[0]}</p>
         </section>
       ) : null}
       <table className="guard-exercise__table">

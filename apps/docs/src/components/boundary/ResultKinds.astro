@@ -8,7 +8,7 @@ const frames = [
   },
   {
     caption:
-      "Err は、検査に失敗したことを表す箱です。この Session の Err は、値も失敗の理由も入っていない、空の箱です。err() で作ります。S04 で、失敗の理由を持つ Err に替わります。",
+      "Err は、検査に失敗したことを表す箱です。S03 の Err は、値も失敗の理由も入っていない、空の箱です。err() で作ります。S04 で、失敗の理由を持つ Err に替わります。",
   },
   {
     caption:
@@ -151,7 +151,7 @@ const frames = [
     padding: 0.375rem 0.75rem;
     border: 2px solid var(--case-line);
     border-radius: 999px;
-    background: var(--ok-tone);
+    background: color-mix(in srgb, var(--ok-tone) 22%, var(--case-paper));
     font-weight: 700;
   }
 
@@ -195,11 +195,11 @@ const frames = [
   }
 
   .result-kinds__outcome--ok {
-    background: var(--ok-tone);
+    background: color-mix(in srgb, var(--ok-tone) 22%, var(--case-paper));
   }
 
   .result-kinds__outcome--err {
-    background: var(--err-tone);
+    background: color-mix(in srgb, var(--err-tone) 22%, var(--case-paper));
   }
 
   .result-kinds__frames {

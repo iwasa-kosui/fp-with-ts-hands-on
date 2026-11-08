@@ -27,7 +27,7 @@ describe("toAuditPayload", () => {
     fc.assert(
       fc.property(inExamination, (appointment) => {
         const payload = toAuditPayload(appointment);
-        // ここに確かめる性質を書きます
+        // payload の項目名は Object.keys(payload) で取り出せます。「連絡先を記録に残さない」のページで見た、残してよい項目と比べます
         return true;
       }),
     );
