@@ -95,6 +95,20 @@ import InlineCode from "../../components/InlineCode.astro";
       <Code code={props.teaching[2].example} lang="ts" />
     </figure>
     <p class="teaching-topic__why">before は未知の文字列を「不明」として受け入れるため、状態を追加しても分岐漏れに気づけません。after でNoShowのcaseを足し忘れると、defaultに残る型はNoShowです。NoShowはassertNeverの引数の型neverに合わないため、コンパイルエラーになります。網羅性検証を使うすべての分岐で、NoShowのcaseを足し忘れた箇所がエラーになるので、コンパイラが新しい状態の影響箇所を示します。assertNeverの戻り値はnever型なので、stringを返す関数のdefaultでそのままreturnできます。</p>
+    <h4 id="fail-fast">想定外の値は、見つけた場所で止める（fail-fast）</h4>
+    <p>想定していない値を見つけた時点で処理を止め、何が届いたかを知らせる考え方を fail-fast と呼びます。before の default は、想定外の kind にも「不明」という表示名を返して処理を続けます。関数は成功したように見えるので、分岐漏れは、受付画面に「不明」と表示されるまで誰にも見つかりません。after は、分岐漏れを型検査で見つけます。型検査をすり抜けた値が実行時に届いた場合も、assertNever が例外を投げてその場で処理を止めます。</p>
+    <table class="fail-fast-compare">
+      <caption>default で「不明」を返す場合と、assertNever を呼ぶ場合の違い</caption>
+      <thead>
+        <tr><th scope="col">場面</th><th scope="col">before: 「不明」を返す</th><th scope="col">after: assertNever を呼ぶ</th></tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">NoShow を追加して case を足し忘れた</th><td>型検査は成功します。画面に「不明」と表示されます。</td><td>case を足し忘れた分岐が、型検査でエラーになります。</td></tr>
+        <tr><th scope="row">型にない kind が実行時に届いた</th><td>「不明」を返して処理を続けます。</td><td>例外を投げて処理を止めます。例外のメッセージには、届いた値が入ります。</td></tr>
+        <tr><th scope="row">誤りに気づく時点</th><td>画面を見た人が、表示された後に気づきます。</td><td>開発者が型検査のときに気づきます。すり抜けた値は、例外が起きたその場で分かります。</td></tr>
+      </tbody>
+    </table>
+    <p class="teaching-topic__why">「不明」を返すと、誤りの原因である分岐と、誤りが見える画面が離れます。処理を止めると、原因に近い場所で誤りが見つかります。</p>
   </article>
 </section>
 
@@ -115,14 +129,13 @@ import InlineCode from "../../components/InlineCode.astro";
     <ul class="decision-list">{props.delegationDecisions.map((decision) => <li>{decision}</li>)}</ul>
   </div>
   <h3>この演習で解決しないこと</h3>
-  <p>網羅性検証が止めるのはコンパイル時の分岐漏れです。表示名の文言が正しいかどうかは、型検査では確かめられません。型アサーションで偽った値が実行時に default へ届いた場合、assertNever は例外を投げます。</p>
+  <p>網羅性検証が止めるのは、型検査で見つかる分岐漏れです。型検査が確かめるのは、TypeScript がコードから型を読み取れる値だけです。次の2種類の値は、型検査では確かめられません。</p>
+  <ul>
+    <li>API のリクエストやデータベースの行など、プログラムの外から届く値。型検査の時点では、実際に届く中身が分かりません。</li>
+    <li>型アサーション（<code>as Appointment</code> など）で型を付けた値。型アサーションは、中身を確かめずに型だけを付けます。</li>
+  </ul>
+  <p>これらの値が型にない kind を持って default に届くと、assertNever は例外を投げます。外から届く値を、型の付いた値に変える前に確かめる方法は、<a href="/sessions/03-boundaries-and-pii/">Session 03</a> の境界で扱います。表示名の文言が正しいかどうかも、型検査では確かめられません。</p>
   <h3 data-solution-heading>{props.session.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
-  {props.session.solutionPresentation === "completed-file" ? (
-    <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
-      <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読みます。</p>
-      <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示されます。</p>
-    </div>
-  ) : null}
   {props.solutionSteps.map(({ step, presentation, snippets }) => (
     <div class="solution-step">
       <details class="step-solution" data-presentation={presentation}>
