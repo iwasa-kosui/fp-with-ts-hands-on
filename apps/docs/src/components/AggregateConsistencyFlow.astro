@@ -91,7 +91,7 @@ const completionAppointmentFields: readonly Field[] = [
   },
 ];
 
-const completionExamFields: readonly Field[] = [{ chips: [{ text: "検査結果を記録" }] }];
+const completionExamFields: readonly Field[] = [{ chips: [{ text: "診察結果を記録" }] }];
 
 type Frame = Readonly<{
   caption: string;
@@ -123,7 +123,7 @@ const frames: readonly Frame[] = [
     after: true,
   },
   {
-    caption: "診察の完了では、検査結果の記録と、予約の状態の AwaitingPayment への変更が同時に起きます。完成形の参照実装は、検査結果と予約を別の集約として数えます。それでも、検査結果だけが残る状態を避けるため、2つを1回の保存で書きます。",
+    caption: "診察の完了では、診察結果の記録と、予約の状態の AwaitingPayment への変更が同時に起きます。完成形の参照実装は、診察結果と予約を別の集約として数えます。それでも、診察結果だけが残る状態を避けるため、2つを1回の保存で書きます。",
     view: "cross",
     code: { key: "store", keys: ["store: ("] },
   },
@@ -278,7 +278,7 @@ const frames: readonly Frame[] = [
               </div>
             </div>
             <div class="aggregate-flow__aggregate">
-              <p class="aggregate-flow__aggregate-title">検査結果の集約</p>
+              <p class="aggregate-flow__aggregate-title">診察結果の集約</p>
               <div class="aggregate-flow__fields">
                 {completionExamFields.map((field) => (
                   <div class="aggregate-flow__field">
