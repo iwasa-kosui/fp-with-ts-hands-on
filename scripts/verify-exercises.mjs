@@ -16,66 +16,14 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-
-const BASELINE_COMMIT = "088c2ef";
-const ALLOWED_EXAMPLE_DIFFS = [
-  "examples/session-00/README.md",
-  "examples/session-01/README.md",
-  "examples/session-02/README.md",
-  "examples/session-03/README.md",
-  "examples/session-04/README.md",
-  "examples/session-05/README.md",
-  "examples/session-06/README.md",
-  "examples/session-07/README.md",
-  "examples/final/README.md",
-  "examples/session-05/exercises/result-errors.test.ts",
-  "examples/session-07/src/useCase/startExamination.ts",
-  "examples/session-07/src/useCase/dependencies.ts",
-  "examples/session-07/src/web/routes.ts",
-  "examples/session-07/test/in-memory-store.test.ts",
-  "examples/session-07/test/integration/fileSqliteTransaction.test.ts",
-  "examples/session-07/test/regression/effects-and-events.test.ts",
-  "examples/session-06/exercises/effects-and-events.test.ts",
-  "examples/final/src/useCase/startExaminationUseCase.ts",
-  "examples/final/src/useCase/bookAppointmentUseCase.ts",
-  "examples/final/src/useCase/cancelAppointmentUseCase.ts",
-  "examples/final/src/useCase/checkInAppointmentUseCase.ts",
-  "examples/final/src/useCase/createOwnerUseCase.ts",
-  "examples/final/src/useCase/createPetUseCase.ts",
-  "examples/final/src/useCase/createUserUseCase.ts",
-  "examples/final/src/useCase/deleteOwnerUseCase.ts",
-  "examples/final/src/useCase/deletePetUseCase.ts",
-  "examples/final/src/useCase/deleteUserUseCase.ts",
-  "examples/final/src/useCase/logOutUseCase.ts",
-  "examples/final/src/useCase/recordPaymentUseCase.ts",
-  "examples/final/src/useCase/updateOwnerUseCase.ts",
-  "examples/final/src/useCase/updatePetUseCase.ts",
-  "examples/final/src/useCase/updateUserUseCase.ts",
-  "examples/final/src/useCase/resetUserPasswordUseCase.ts",
-  "examples/final/src/useCase/logInUseCase.ts",
-  "examples/final/src/useCase/recordExamResultUseCase.ts",
-  "examples/final/src/useCase/requestFollowUpUseCase.ts",
-  "examples/final/src/useCase/setUpInitialAdminUseCase.ts",
-  "examples/final/src/useCase/listFollowUpsUseCase.ts",
-  "examples/final/src/useCase/rejectExamResultPetMismatch.ts",
-  "examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts",
-  "examples/final/src/adaptor/primary/web/routes/authRoutes.ts",
-  "examples/final/src/adaptor/primary/web/routes/followUpRoutes.ts",
-  "examples/final/src/adaptor/primary/web/routes/ownerRoutes.ts",
-  "examples/final/src/adaptor/primary/web/routes/petRoutes.ts",
-  "examples/final/src/adaptor/primary/web/routes/userRoutes.ts",
-  "examples/final/src/domain/appointment/appointment.ts",
-  "examples/final/src/adaptor/secondary/sqlite/resolver/appointmentResolver.ts",
-  "examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
-  "examples/final/test/adaptor/sqliteEventStore.test.ts",
-  "examples/final/test/domain/appointment.test.ts",
-  "examples/final/test/useCase/appointmentUseCases.test.ts",
-  "examples/final/test/useCase/authenticationUseCases.test.ts",
-  "examples/final/test/useCase/followUpUseCases.test.ts",
-  "examples/final/test/useCase/ownerPetUseCases.test.ts",
-  "examples/final/test/useCase/startExaminationUseCase.test.ts",
-  "examples/final/test/web/authRoutes.test.ts",
-];
+import {
+  BASELINE_COMMIT,
+  BASELINE_FOLDERS,
+  findDemoScriptProblems,
+  findExerciseScriptProblems,
+  findFileProblems,
+  findReadmeProblems,
+} from "./baseline-check.mjs";
 
 const STEP_1_TO_3_FILES = ["src/domain/appointment/transitions.ts"];
 
@@ -86,45 +34,45 @@ const S4_PAGE_SOLUTION = {
   wholeFiles: [
     {
       target: "src/useCase/errors.ts",
-      path: "examples/session-06/src/useCase/errors.ts",
+      path: "examples/session-04-solution/src/useCase/errors.ts",
       lines: [1, 31],
     },
     {
       target: "src/useCase/startExamination.ts",
-      path: "examples/session-06/src/useCase/startExamination.ts",
+      path: "examples/session-04-solution/src/useCase/startExamination.ts",
       lines: [7, 44],
     },
   ],
   routes: {
     target: "src/web/routes.ts",
     handler: {
-      path: "examples/session-05/src/web/routes.ts",
-      sourcePath: "apps/docs/src/sessions/solutions/session-05-start-examination-handler.ts.txt",
+      path: "examples/session-04/src/web/routes.ts",
+      sourcePath: "apps/docs/src/sessions/solutions/session-04-start-examination-handler.ts.txt",
       lines: [1, 22],
       replaceLines: [73, 94],
     },
     insert: {
-      path: "examples/session-06/src/web/routes.ts",
+      path: "examples/session-04-solution/src/web/routes.ts",
       lines: [22, 48],
     },
   },
 };
 
 const SCENARIOS = [
-  { session: "02", name: "S1 開始", before: 5, overlay: null, after: null },
+  { session: "01", name: "S01 開始", before: 5, overlay: null, after: null },
   {
-    session: "02",
-    name: "S1 Step 1-3",
+    session: "01",
+    name: "S01 Step 1-3",
     before: 5,
-    overlay: { from: "examples/session-03", files: STEP_1_TO_3_FILES },
+    overlay: { from: "examples/session-01-solution", files: STEP_1_TO_3_FILES },
     after: 1,
   },
   {
-    session: "02",
-    name: "S1 全解答",
+    session: "01",
+    name: "S01 全解答",
     before: 5,
     overlay: {
-      from: "examples/session-03",
+      from: "examples/session-01-solution",
       files: [
         "src/domain/appointment/transitions.ts",
         "src/domain/appointment/statusLabel.ts",
@@ -132,13 +80,24 @@ const SCENARIOS = [
     },
     after: 0,
   },
-  { session: "03", name: "S2 開始", before: 3, overlay: null, after: null },
+  { session: "02", name: "S02 開始", before: 1, overlay: null, after: null },
   {
-    session: "03",
-    name: "S2 全解答",
+    session: "02",
+    name: "S02 全解答",
+    before: 1,
+    overlay: {
+      from: "examples/session-02-solution",
+      files: ["src/domain/appointment/statusLabel.ts"],
+    },
+    after: 0,
+  },
+  { session: "03-supplement", name: "S03 補助演習 開始", before: 3, overlay: null, after: null },
+  {
+    session: "03-supplement",
+    name: "S03 補助演習 全解答",
     before: 3,
     overlay: {
-      from: "examples/session-04",
+      from: "examples/session-03-supplement-solution",
       files: [
         "src/domain/appointment/appointmentId.ts",
         "src/domain/appointment/veterinarianId.ts",
@@ -149,44 +108,44 @@ const SCENARIOS = [
     },
     after: 0,
   },
-  { session: "04", name: "S3 開始", before: 2, overlay: null, after: null },
+  { session: "03", name: "S03 開始", before: 2, overlay: null, after: null },
   {
-    session: "04",
-    name: "S3 全解答",
+    session: "03",
+    name: "S03 全解答",
     before: 2,
     overlay: {
-      from: "examples/session-05",
+      from: "examples/session-03-solution",
       files: ["src/boundary/startExaminationInput.ts"],
     },
     after: 0,
   },
-  { session: "05", name: "S4 開始", before: 8, overlay: null, after: null },
+  { session: "04", name: "S04 開始", before: 8, overlay: null, after: null },
   {
-    session: "05",
-    name: "S4 回帰（session-06）",
+    session: "04",
+    name: "S04 回帰（session-04-solution）",
     before: 8,
     overlay: {
       regression: {
-        session: "06",
+        session: "04-solution",
         testFile: "test/regression/result-errors.test.ts",
       },
     },
     after: 0,
   },
   {
-    session: "05",
-    name: "S4 解答（ページの解答）",
+    session: "04",
+    name: "S04 解答（ページの解答）",
     before: 8,
     overlay: { pageSolution: S4_PAGE_SOLUTION },
     after: 0,
   },
-  { session: "06", name: "S6 開始", before: 4, overlay: null, after: null },
+  { session: "06", name: "S06 開始", before: 4, overlay: null, after: null },
   {
     session: "06",
-    name: "S6 全解答",
+    name: "S06 全解答",
     before: 4,
     overlay: {
-      from: "examples/session-07",
+      from: "examples/session-06-solution",
       files: [
         "src/useCase/dependencies.ts",
         "src/useCase/startExamination.ts",
@@ -202,7 +161,7 @@ const INSTALL_TIMEOUT_MS = 600000;
 const EXERCISE_TIMEOUT_MS = 300000;
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), "..");
-const usage = "使い方: node scripts/verify-exercises.mjs [--only 02,05] [--keep]";
+const usage = "使い方: node scripts/verify-exercises.mjs [--only 02,03-supplement] [--keep]";
 
 const parseArgs = (argv) => {
   const options = { only: null, keep: false };
@@ -469,51 +428,73 @@ const runScenario = (workDir, scenario, sourceFiles) => {
   return phases;
 };
 
-const baselineCheck = () => {
-  const problems = [];
-  const diff = run("git", ["diff", "--name-only", BASELINE_COMMIT, "--", "examples"], {
+const readBaselineFiles = (paths) => {
+  if (paths.length === 0) return new Map();
+  const result = spawnSync("git", ["cat-file", "--batch"], {
+    cwd: rootDir,
+    input: paths.map((path) => `${BASELINE_COMMIT}:${path}\n`).join(""),
+    maxBuffer: 256 * 1024 * 1024,
+  });
+  if (result.status !== 0) {
+    throw new Error(`git cat-file に失敗しました\n${tail(String(result.stderr ?? ""))}`);
+  }
+  const output = result.stdout;
+  const contents = new Map();
+  let position = 0;
+  for (const path of paths) {
+    const lineEnd = output.indexOf(0x0a, position);
+    const header = output.subarray(position, lineEnd).toString("utf8");
+    const size = header.match(/^\S+ blob (\d+)$/);
+    if (size === null) throw new Error(`基準 ${BASELINE_COMMIT} で読めません: ${path} (${header})`);
+    const length = Number(size[1]);
+    contents.set(path, output.subarray(lineEnd + 1, lineEnd + 1 + length).toString("utf8"));
+    position = lineEnd + 1 + length + 1;
+  }
+  return contents;
+};
+
+const listBaselineFiles = (folder) => {
+  const result = run("git", ["ls-tree", "-r", "--name-only", BASELINE_COMMIT, `examples/${folder}`], {
     cwd: rootDir,
     timeout: 60000,
   });
-  if (diff.status !== 0) {
-    problems.push(`git diff に失敗しました (基準 ${BASELINE_COMMIT})\n${tail(diff.output)}`);
-  } else {
-    const untracked = run("git", ["ls-files", "-o", "--exclude-standard", "--", "examples"], {
+  if (result.status !== 0) {
+    throw new Error(`git ls-tree に失敗しました (基準 ${BASELINE_COMMIT}, ${folder})\n${tail(result.output)}`);
+  }
+  return result.output.split("\n").filter((file) => file !== "");
+};
+
+const baselineCheck = () => {
+  const problems = [];
+  try {
+    const listed = run("git", ["ls-files", "-co", "--exclude-standard", "--", "examples"], {
       cwd: rootDir,
       timeout: 60000,
     });
-    if (untracked.status !== 0) {
-      problems.push(`git ls-files -o に失敗しました\n${tail(untracked.output)}`);
+    if (listed.status !== 0) {
+      throw new Error(`git ls-files に失敗しました\n${tail(listed.output)}`);
     }
-    const changed = [...diff.output.split("\n"), ...untracked.output.split("\n")]
-      .map((line) => line.trim())
-      .filter((line) => line !== "" && !ALLOWED_EXAMPLE_DIFFS.includes(line));
-    if (changed.length > 0) {
-      problems.push(`基準から変わった examples のファイル:\n${changed.map((file) => `  ${file}`).join("\n")}`);
-    }
+    const current = [...new Set(listed.output.split("\n").map((line) => line.trim()))].filter(
+      (file) => file !== "" && existsSync(join(rootDir, file)),
+    );
+    const sources = [...new Set(BASELINE_FOLDERS.map(({ source }) => source))];
+    const baseline = readBaselineFiles(sources.flatMap(listBaselineFiles));
+    const readCurrent = (file) => readFileSync(join(rootDir, file), "utf8");
+    problems.push(...findFileProblems({ current, readCurrent, baseline }));
+    const folders = [...new Set(current.map((file) => file.split("/")[1]))];
+    const readmes = new Map(
+      folders
+        .filter((folder) => folder.startsWith("session-") && current.includes(`examples/${folder}/README.md`))
+        .map((folder) => [folder, readCurrent(`examples/${folder}/README.md`)]),
+    );
+    problems.push(...findReadmeProblems({ readmes, folders }));
+  } catch (error) {
+    problems.push(error instanceof Error ? error.message : String(error));
   }
 
-  const baselinePackage = run("git", ["show", `${BASELINE_COMMIT}:package.json`], {
-    cwd: rootDir,
-    timeout: 60000,
-  });
-  if (baselinePackage.status !== 0) {
-    problems.push(`git show ${BASELINE_COMMIT}:package.json に失敗しました\n${tail(baselinePackage.output)}`);
-  } else {
-    const pick = (scripts) =>
-      Object.fromEntries(
-        Object.entries(scripts ?? {}).filter(([name]) => name.startsWith("exercise:")),
-      );
-    const expected = pick(JSON.parse(baselinePackage.output).scripts);
-    const actual = pick(JSON.parse(readFileSync(join(rootDir, "package.json"), "utf8")).scripts);
-    for (const name of new Set([...Object.keys(expected), ...Object.keys(actual)])) {
-      if (expected[name] !== actual[name]) {
-        problems.push(
-          `package.json の ${name} が基準と違います\n  基準: ${expected[name] ?? "(なし)"}\n  現在: ${actual[name] ?? "(なし)"}`,
-        );
-      }
-    }
-  }
+  const { scripts = {} } = JSON.parse(readFileSync(join(rootDir, "package.json"), "utf8"));
+  problems.push(...findExerciseScriptProblems(scripts));
+  problems.push(...findDemoScriptProblems(scripts));
   return problems;
 };
 
@@ -553,7 +534,7 @@ const main = () => {
   const problems = baselineCheck();
   rows.push([
     "基準差分",
-    `${BASELINE_COMMIT} から examples と exercise:* が変わらない`,
+    `${BASELINE_COMMIT} から examples（番号の振り直しを除く）と exercise:* と demo:*、README の番号が変わらない`,
     problems.length === 0 ? "変更なし" : `${problems.length}件の問題`,
     problems.length === 0 ? "OK" : "NG",
   ]);

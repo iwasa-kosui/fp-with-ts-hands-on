@@ -8,10 +8,10 @@
 
 | セッション | 差分確認 |
 | --- | --- |
-| S1 | `git diff --stat -- examples/session-02` |
-| S2 | `git diff --stat -- examples/session-02`（S1 の変更が残るので、今回の変更が `statusLabel.ts` だけであることも確かめる） |
-| S3 | `git diff --stat -- examples/session-04`（補助演習は `git diff --stat -- examples/session-03`） |
-| S4 | `git diff --stat -- examples/session-05` |
+| S1 | `git diff --stat -- examples/session-01` |
+| S2 | `git diff --stat -- examples/session-02`（今回の変更が `statusLabel.ts` だけであることも確かめる） |
+| S3 | `git diff --stat -- examples/session-03`（補助演習は `git diff --stat -- examples/session-03-supplement`） |
+| S4 | `git diff --stat -- examples/session-04` |
 | S6 | `git diff --stat -- examples/session-06` |
 
 最初に `git status --short` で全体の想定外pathを探し、比較する差分量は表の現在snapshot限定コマンドで判定します。前のセッションの未commit差分は比較へ混ぜません。

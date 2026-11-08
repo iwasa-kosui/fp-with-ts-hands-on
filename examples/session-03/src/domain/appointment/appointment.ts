@@ -1,3 +1,5 @@
+import type { AppointmentId } from "./appointmentId.js";
+import type { VeterinarianId } from "./veterinarianId.js";
 import type { ExamId } from "../examResult/index.js";
 import type { OwnerId } from "../owner/index.js";
 import type { PetId } from "../pet/index.js";
@@ -6,7 +8,7 @@ export type CancellationReason = string;
 
 export type Scheduled = Readonly<{
   kind: "Scheduled";
-  appointmentId: string;
+  appointmentId: AppointmentId;
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: string;
@@ -15,7 +17,7 @@ export type Scheduled = Readonly<{
 
 export type CheckedIn = Readonly<{
   kind: "CheckedIn";
-  appointmentId: string;
+  appointmentId: AppointmentId;
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: string;
@@ -25,25 +27,25 @@ export type CheckedIn = Readonly<{
 
 export type InExamination = Readonly<{
   kind: "InExamination";
-  appointmentId: string;
+  appointmentId: AppointmentId;
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: string;
   reason: string;
   checkedInAt: string;
-  veterinarianId: string;
+  veterinarianId: VeterinarianId;
   examinationStartedAt: string;
 }>;
 
 export type AwaitingPayment = Readonly<{
   kind: "AwaitingPayment";
-  appointmentId: string;
+  appointmentId: AppointmentId;
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: string;
   reason: string;
   checkedInAt: string;
-  veterinarianId: string;
+  veterinarianId: VeterinarianId;
   examinationStartedAt: string;
   examId: ExamId;
   examinationCompletedAt: string;
@@ -51,13 +53,13 @@ export type AwaitingPayment = Readonly<{
 
 export type Paid = Readonly<{
   kind: "Paid";
-  appointmentId: string;
+  appointmentId: AppointmentId;
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: string;
   reason: string;
   checkedInAt: string;
-  veterinarianId: string;
+  veterinarianId: VeterinarianId;
   examinationStartedAt: string;
   examId: ExamId;
   examinationCompletedAt: string;
@@ -69,7 +71,7 @@ export type Paid = Readonly<{
 
 export type Canceled = Readonly<{
   kind: "Canceled";
-  appointmentId: string;
+  appointmentId: AppointmentId;
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: string;

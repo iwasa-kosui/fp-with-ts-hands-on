@@ -9,7 +9,7 @@
     "db:migrate": "drizzle-kit migrate",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "exercise": "node exercises/run-exercise-checks.mjs"
+    "exercise": "vitest run --config vitest.exercises.config.ts"
   },
   "dependencies": {
     "@fp-with-ts/clinic-web": "workspace:*",

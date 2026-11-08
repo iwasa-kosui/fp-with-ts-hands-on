@@ -1,8 +1,8 @@
 ---
 import { Code } from "astro:components";
-import routesSource from "../../../../examples/session-06/src/web/routes.ts?raw";
-import useCaseSource from "../../../../examples/session-06/src/useCase/startExamination.ts?raw";
-import handlerSource from "../sessions/solutions/session-05-start-examination-handler.ts.txt?raw";
+import routesSource from "../../../../examples/session-04-solution/src/web/routes.ts?raw";
+import useCaseSource from "../../../../examples/session-04-solution/src/useCase/startExamination.ts?raw";
+import handlerSource from "../sessions/solutions/session-04-start-examination-handler.ts.txt?raw";
 import StepPlayer from "./step-player/StepPlayer.astro";
 
 // 解答の行がずれたら、古いコードを見せないようにビルドを失敗させる
@@ -89,7 +89,7 @@ const id = "exception-or-result-animation";
   id={id}
   title="業務エラーとシステムエラーの行き先"
   lead="予約が見つからない失敗と、保存中に接続が切れた失敗を、同じ startExamination で追います。"
-  note="startExamination と switch は examples/session-06/src から、match は S04 の解答例から引用しました。"
+  note="startExamination と switch は examples/session-04-solution/src から、match は S04 の解答例から引用しました。"
   scenarios={playerScenarios}
 >
   <div class="exc-flow" data-exc-flow={sceneData}>

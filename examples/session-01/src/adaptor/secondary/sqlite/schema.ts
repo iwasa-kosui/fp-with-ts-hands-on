@@ -6,6 +6,7 @@ export const appointmentsTable = sqliteTable("appointments", {
   petId: text("pet_id").notNull(),
   status: text("status").notNull(),
   state: text("state", { mode: "json" }).notNull(),
+  ownerContact: text("owner_contact", { mode: "json" }).notNull(),
 });
 
 export const auditLogsTable = sqliteTable("audit_logs", {

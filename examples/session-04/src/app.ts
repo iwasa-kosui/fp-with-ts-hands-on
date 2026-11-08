@@ -8,11 +8,7 @@ import {
   migrateDatabase,
   type SqliteDatabase,
 } from "./adaptor/secondary/sqlite/db.js";
-import {
-  registerClinicRoutes,
-  session04InitialAppointment,
-  session04PersistenceContext,
-} from "./web/routes.js";
+import { registerClinicRoutes, session04InitialAppointment } from "./web/routes.js";
 
 type DatabaseBackedAppOptions = Readonly<{
   databasePath: string;
@@ -22,19 +18,44 @@ type DatabaseBackedAppOptions = Readonly<{
 
 export type DatabaseBackedApp = Hono & Readonly<{ close: () => void }>;
 
-const createApp = (database: SqliteDatabase, isProduction = false): Hono => {
+const createHonoApp = (database: SqliteDatabase, isProduction: boolean): Hono => {
   const app = new Hono();
   const repository = createAppointmentRepository(database);
-  repository.seedIfEmpty(session04InitialAppointment, session04PersistenceContext);
+  repository.seedIfEmpty(session04InitialAppointment);
+  const store = {
+    find: repository.find,
+    resolveById: repository.resolveById,
+    reset: () => {
+      repository.reset(session04InitialAppointment);
+      return session04InitialAppointment;
+    },
+    save: repository.save,
+  };
 
-  app.use(
-    "*",
-    inertia({ version: "1", rootView: createClinicRootView(isProduction) }),
-  );
-  registerClinicRoutes(app, repository);
+  app.use("*", inertia({ version: "1", rootView: createClinicRootView(isProduction) }));
+  registerClinicRoutes(app, store);
   app.onError((_error, context) => context.text("Internal Server Error", 500));
-
   return app;
+};
+
+const createDatabaseBackedAppFromDatabase = (
+  database: SqliteDatabase,
+  isProduction: boolean,
+): DatabaseBackedApp =>
+  Object.assign(createHonoApp(database, isProduction), {
+    close: () => database.close(),
+  });
+
+export const createApp = (isProduction = false): DatabaseBackedApp => {
+  const database = createSqliteDatabase(":memory:");
+
+  try {
+    migrateDatabase(database);
+    return createDatabaseBackedAppFromDatabase(database, isProduction);
+  } catch (error) {
+    database.close();
+    throw error;
+  }
 };
 
 export const createDatabaseBackedApp = ({
@@ -46,9 +67,7 @@ export const createDatabaseBackedApp = ({
 
   try {
     migrateDatabase(database, migrationsFolder);
-    return Object.assign(createApp(database, isProduction), {
-      close: () => database.close(),
-    });
+    return createDatabaseBackedAppFromDatabase(database, isProduction);
   } catch (error) {
     database.close();
     throw error;

@@ -61,7 +61,7 @@ describe("loadSolutionSnippets", () => {
     for (const sessionStep of session04.steps) {
       for (const solution of sessionStep.solutions) {
         expect(solution.placement).toBeDefined();
-        expect(solution.placement?.startsWith("examples/session-05/")).toBe(true);
+        expect(solution.placement?.startsWith("examples/session-04/")).toBe(true);
       }
     }
   });
@@ -69,8 +69,8 @@ describe("loadSolutionSnippets", () => {
   it("loads supplementary exercise identifier solutions from their owning concept", async () => {
     const [identifierStep] = supplementaryExercise.steps;
     expect(identifierStep?.solutions.map(({ path }) => path)).toEqual([
-      "examples/session-04/src/domain/appointment/appointmentId.ts",
-      "examples/session-04/src/domain/appointment/veterinarianId.ts",
+      "examples/session-03-supplement-solution/src/domain/appointment/appointmentId.ts",
+      "examples/session-03-supplement-solution/src/domain/appointment/veterinarianId.ts",
     ]);
 
     const snippets = await loadSolutionSnippets(identifierStep!);

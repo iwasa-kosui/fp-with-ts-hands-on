@@ -30,7 +30,7 @@ import InlineCode from "../../components/InlineCode.astro";
   <p>{"\n"}編集する範囲は <code>{props.session.exerciseModule.dir}</code>、変更するファイル数は最大{"\n"}{props.session.exerciseModule.fileBudget}ファイル・約{props.session.exerciseModule.lineBudget}行です。{"\n"}</p>
   <CodeGuideCards guides={props.guides} projectFiles={props.projectFiles} />
   <h3>修正前の失敗を確認する</h3>
-  <p>修正前は、次の{props.session.steps.length}件に対応する演習テストが失敗します。</p>
+  <p>コマンドはリポジトリのルートで実行します。修正前は、次の{props.session.steps.length}件に対応する演習テストが失敗します。</p>
   <ul class="exercise-failures" aria-label="修正前に確認する問題">
     {props.session.steps.map((step) => <li>{step.startingFailure}</li>)}
   </ul>
@@ -201,7 +201,7 @@ import InlineCode from "../../components/InlineCode.astro";
     <h3>個人での確認</h3>
     <ol>
       <li><InlineCode text={"`as` による型アサーションが入っていないか全文検索して確認します。"} /></li>
-      <li><InlineCode text={"`git diff --stat -- examples/session-05` で今回のスナップショットだけを確認します。`git status --short` で想定外の path がないか確認します。"} /></li>
+      <li><InlineCode text={"`git diff --stat -- examples/session-04` で今回のスナップショットだけを確認します。`git status --short` で想定外の path がないか確認します。"} /></li>
       <li>{"型検査では確認できないことを、テストまたは実行時に確認して記録します。"}</li>
     </ol>
     <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>

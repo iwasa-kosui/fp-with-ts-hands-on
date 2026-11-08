@@ -1,155 +1,188 @@
+import { randomUUID } from "node:crypto";
+
 import { sql } from "drizzle-orm";
 
-import type { Appointment } from "../../../domain/appointment/index.js";
+import type {
+  Appointment,
+  AppointmentId,
+  InExamination,
+  Scheduled,
+  VeterinarianId,
+} from "../../../domain/appointment/index.js";
+import type {
+  AppointmentResolver,
+  InExaminationStore,
+} from "../../../useCase/dependencies.js";
+import { AppointmentPersistenceError } from "./appointmentPersistenceError.js";
 import type { SqliteDatabase } from "./db.js";
+import { parsePersistedAppointment } from "./persistedAppointment.js";
 import { appointmentsTable, auditLogsTable } from "./schema.js";
 
 export const INITIAL_AUDIT_EVENT_ID = "00000000-0000-4000-8000-000000000000";
 
-export type OwnerContactContext = Readonly<{
-  ownerName: string;
-  ownerEmail: string;
-  ownerPhone: string;
-}>;
-
-export type PersistenceContext = Readonly<{
-  ownerContact: OwnerContactContext;
-}>;
-
-export type AuditEvent = Readonly<{
-  eventId: string;
-  eventName: string;
-  occurredAt: string;
-  appointment: Appointment;
-  payload: Readonly<Record<string, unknown>>;
+export type ExaminationStartedAuditPayload = Readonly<{
+  appointmentId: AppointmentId;
+  veterinarianId: VeterinarianId;
+  examinationStartedAt: string;
 }>;
 
 export type AuditLog = Readonly<{
   eventId: string;
   appointmentId: string;
   eventName: string;
-  payload: Readonly<Record<string, unknown>>;
+  payload: unknown;
   occurredAt: string;
 }>;
 
-export type AppointmentRepository = Readonly<{
-  find: (appointmentId: string) => Appointment | undefined;
-  save: (appointment: Appointment) => void;
-  appendAudit: (event: AuditEvent) => void;
-  listAuditLogs: () => AuditLog[];
-  reset: (initialAppointment: Appointment, context: PersistenceContext) => void;
-  seedIfEmpty: (initialAppointment: Appointment, context: PersistenceContext) => void;
-}>;
+export type AppointmentRepository = AppointmentResolver &
+  InExaminationStore &
+  Readonly<{
+    find: (appointmentId: string) => Appointment | undefined;
+    reset: (initialAppointment: Scheduled) => void;
+    save: (appointment: Appointment) => void;
+    seedIfEmpty: (initialAppointment: Scheduled) => void;
+    listAuditLogs: () => AuditLog[];
+  }>;
 
-const toAppointmentRow = (
-  appointment: Appointment,
-  ownerContact: OwnerContactContext,
-) => ({
+const toAppointmentRow = (appointment: Appointment) => ({
   appointmentId: appointment.appointmentId,
   ownerId: appointment.ownerId,
   petId: appointment.petId,
   status: appointment.kind,
-  state: appointment,
-  ownerContact,
+  state: JSON.stringify(appointment),
+});
+
+const toExaminationStartedAuditPayload = (
+  appointment: InExamination,
+): ExaminationStartedAuditPayload => ({
+  appointmentId: appointment.appointmentId,
+  veterinarianId: appointment.veterinarianId,
+  examinationStartedAt: appointment.examinationStartedAt,
 });
 
 export const createAppointmentRepository = (
   database: SqliteDatabase,
 ): AppointmentRepository => {
-  const ownerContactFor = (appointmentId: string): OwnerContactContext => {
-    const row = database
-      .select({ ownerContact: appointmentsTable.ownerContact })
-      .from(appointmentsTable)
-      .where(sql`${appointmentsTable.appointmentId} = ${appointmentId}`)
-      .get();
-
-    if (row === undefined) throw new Error("Appointment not found");
-    return row.ownerContact as OwnerContactContext;
-  };
-
-  const save = (appointment: Appointment): void => {
-    const row = toAppointmentRow(
-      appointment,
-      ownerContactFor(appointment.appointmentId),
-    );
-
-    database
-      .insert(appointmentsTable)
-      .values(row)
-      .onConflictDoUpdate({
-        target: appointmentsTable.appointmentId,
-        set: row,
-      })
-      .run();
-  };
-
-  const appendAudit = ({ appointment, payload, ...event }: AuditEvent): void => {
-    database
-      .insert(auditLogsTable)
-      .values({
-        ...event,
-        appointmentId: appointment.appointmentId,
-        payload: {
-          ...payload,
-          appointment,
-          ownerContact: ownerContactFor(appointment.appointmentId),
-        },
-      })
-      .run();
-  };
-
-  const reset = (
-    initialAppointment: Appointment,
-    context: PersistenceContext,
-  ): void => {
-    database.transaction((transaction) => {
-      transaction.delete(auditLogsTable).run();
-      transaction.delete(appointmentsTable).run();
-      transaction
-        .insert(appointmentsTable)
-        .values(toAppointmentRow(initialAppointment, context.ownerContact))
-        .run();
-      transaction.insert(auditLogsTable).values({
-        eventId: INITIAL_AUDIT_EVENT_ID,
-        appointmentId: initialAppointment.appointmentId,
-        eventName: "AppointmentSeeded",
-        occurredAt: initialAppointment.scheduledAt,
-        payload: {
-          appointment: initialAppointment,
-          ownerContact: context.ownerContact,
-        },
-      }).run();
-    });
-  };
-
-  return {
-    find: (appointmentId) => {
-      const row = database
+  const find = (appointmentId: string): Appointment | undefined => {
+    let row: Readonly<{ state: string }> | undefined;
+    try {
+      row = database
         .select({ state: appointmentsTable.state })
         .from(appointmentsTable)
         .where(sql`${appointmentsTable.appointmentId} = ${appointmentId}`)
         .get();
-      return row === undefined ? undefined : (row.state as Appointment);
-    },
-    save,
-    appendAudit,
-    listAuditLogs: () =>
+    } catch (cause) {
+      throw new AppointmentPersistenceError("resolve", cause);
+    }
+
+    return row === undefined ? undefined : parsePersistedAppointment(row.state);
+  };
+
+  const saveState = (appointment: Appointment): void => {
+    const row = toAppointmentRow(appointment);
+    try {
       database
-        .select()
-        .from(auditLogsTable)
-        .orderBy(sql`rowid`)
-        .all()
-        .map((audit) => ({
-          ...audit,
-          payload: audit.payload as Readonly<Record<string, unknown>>,
-        })),
+        .insert(appointmentsTable)
+        .values(row)
+        .onConflictDoUpdate({
+          target: appointmentsTable.appointmentId,
+          set: row,
+        })
+        .run();
+    } catch (cause) {
+      throw new AppointmentPersistenceError("save-state", cause);
+    }
+  };
+
+  const appendAudit = (
+    eventId: string,
+    eventName: string,
+    occurredAt: string,
+    payload: unknown,
+    appointmentId: string,
+  ): void => {
+    try {
+      database
+        .insert(auditLogsTable)
+        .values({ eventId, eventName, occurredAt, payload, appointmentId })
+        .run();
+    } catch (cause) {
+      throw new AppointmentPersistenceError("append-audit", cause);
+    }
+  };
+
+  const appendExaminationStartedAudit = (appointment: InExamination): void => {
+    const payload = toExaminationStartedAuditPayload(appointment);
+    appendAudit(
+      randomUUID(),
+      "ExaminationStarted",
+      payload.examinationStartedAt,
+      payload,
+      payload.appointmentId,
+    );
+  };
+
+  const save = (appointment: Appointment): void => {
+    saveState(appointment);
+    if (appointment.kind === "InExamination") {
+      appendExaminationStartedAudit(appointment);
+    }
+  };
+
+  const reset = (initialAppointment: Scheduled): void => {
+    database.transaction((transaction) => {
+      try {
+        transaction.delete(auditLogsTable).run();
+        transaction.delete(appointmentsTable).run();
+        transaction
+          .insert(appointmentsTable)
+          .values(toAppointmentRow(initialAppointment))
+          .run();
+      } catch (cause) {
+        throw new AppointmentPersistenceError("save-state", cause);
+      }
+
+      try {
+        transaction.insert(auditLogsTable).values({
+          appointmentId: initialAppointment.appointmentId,
+          eventId: INITIAL_AUDIT_EVENT_ID,
+          eventName: "AppointmentSeeded",
+          occurredAt: initialAppointment.scheduledAt,
+          payload: { appointmentId: initialAppointment.appointmentId },
+        }).run();
+      } catch (cause) {
+        throw new AppointmentPersistenceError("append-audit", cause);
+      }
+    });
+  };
+
+  return {
+    find,
+    resolveById: find,
+    save,
     reset,
-    seedIfEmpty: (initialAppointment, context) => {
-      const row = database
-        .select({ appointmentId: appointmentsTable.appointmentId })
-        .from(appointmentsTable)
-        .get();
-      if (row === undefined) reset(initialAppointment, context);
+    seedIfEmpty: (initialAppointment) => {
+      let row: Readonly<{ appointmentId: string }> | undefined;
+      try {
+        row = database
+          .select({ appointmentId: appointmentsTable.appointmentId })
+          .from(appointmentsTable)
+          .get();
+      } catch (cause) {
+        throw new AppointmentPersistenceError("resolve", cause);
+      }
+      if (row === undefined) reset(initialAppointment);
+    },
+    listAuditLogs: () => {
+      try {
+        return database
+          .select()
+          .from(auditLogsTable)
+          .orderBy(sql`rowid`)
+          .all();
+      } catch (cause) {
+        throw new AppointmentPersistenceError("resolve", cause);
+      }
     },
   };
 };

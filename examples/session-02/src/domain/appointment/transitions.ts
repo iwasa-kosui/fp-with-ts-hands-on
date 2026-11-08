@@ -1,59 +1,60 @@
 import type {
-  Appointment,
+  AwaitingPayment,
   CancellationReason,
   CompleteExaminationInput,
+  CheckedIn,
+  InExamination,
+  Paid,
   RecordPaymentInput,
+  Scheduled,
+  Canceled,
 } from "./appointment.js";
 
-const requireKind = (appointment: Appointment, allowedKinds: ReadonlyArray<Appointment["kind"]>): void => {
-  if (!allowedKinds.includes(appointment.kind)) {
-    throw new Error(`Cannot transition from ${appointment.kind}`);
-  }
-};
-
-export const checkIn = (appointment: Appointment, checkedInAt: string): Appointment => {
-  requireKind(appointment, ["Scheduled"]);
-  return ({ ...appointment, kind: "CheckedIn", checkedInAt }) as Appointment;
-};
+export const checkIn = (appointment: Scheduled, checkedInAt: string): CheckedIn =>
+  ({ ...appointment, kind: "CheckedIn", checkedInAt }) as const satisfies CheckedIn;
 
 export const startExamination = (
-  appointment: Appointment,
+  appointment: CheckedIn,
   veterinarianId: string,
   examinationStartedAt: string,
-): Appointment => {
-  requireKind(appointment, ["CheckedIn"]);
-  return ({ ...appointment, kind: "InExamination", veterinarianId, examinationStartedAt }) as Appointment;
-};
+): InExamination =>
+  ({
+    ...appointment,
+    kind: "InExamination",
+    veterinarianId,
+    examinationStartedAt,
+  }) as const satisfies InExamination;
 
 export const completeExamination = (
-  appointment: Appointment,
+  appointment: InExamination,
   input: CompleteExaminationInput,
   examinationCompletedAt: string,
-): Appointment => {
-  requireKind(appointment, ["InExamination"]);
-  return ({
+): AwaitingPayment =>
+  ({
     ...appointment,
     ...input,
     kind: "AwaitingPayment",
     examinationCompletedAt,
-  }) as Appointment;
-};
+  }) as const satisfies AwaitingPayment;
 
 export const recordPayment = (
-  appointment: Appointment,
+  appointment: AwaitingPayment,
   input: RecordPaymentInput,
   paidAt: string,
-): Appointment => {
-  requireKind(appointment, ["AwaitingPayment"]);
-  return ({ ...appointment, ...input, kind: "Paid", paidAt }) as Appointment;
-};
+): Paid =>
+  ({ ...appointment, ...input, kind: "Paid", paidAt }) as const satisfies Paid;
 
 export const cancel = (
-  appointment: Appointment,
-  reason: CancellationReason | undefined,
+  appointment: Scheduled | CheckedIn,
+  reason: CancellationReason,
   canceledAt: string,
-): Appointment => {
-  requireKind(appointment, ["Scheduled", "CheckedIn"]);
-  if (reason === undefined) throw new Error("Cancellation reason is required");
-  return ({ ...appointment, kind: "Canceled", reason, canceledAt }) as Appointment;
-};
+): Canceled =>
+  ({
+    kind: "Canceled",
+    appointmentId: appointment.appointmentId,
+    petId: appointment.petId,
+    ownerId: appointment.ownerId,
+    scheduledAt: appointment.scheduledAt,
+    reason,
+    canceledAt,
+  }) as const satisfies Canceled;

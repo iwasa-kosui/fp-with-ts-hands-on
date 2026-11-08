@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node", "vitest/globals", "vite/client"],
+    "types": ["vitest/globals", "node", "vite/client"],
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "outDir": "dist"
@@ -11,11 +11,8 @@
     "src/**/*.tsx",
     "test/**/*.ts",
     "test/**/*.tsx",
-    "exercises/**/*.ts",
     "vitest.config.ts",
-    "vitest.exercises.config.ts",
     "vite.config.ts",
     "drizzle.config.ts"
-  ],
-  "exclude": ["exercises/result-errors.test.ts"]
+  ]
 }

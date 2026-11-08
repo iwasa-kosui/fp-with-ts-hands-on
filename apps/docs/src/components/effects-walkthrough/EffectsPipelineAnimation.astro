@@ -38,10 +38,10 @@ type Scene = Readonly<{
   frames: readonly Frame[];
 }>;
 
-const startExaminationPath = "examples/session-07/src/useCase/startExamination.ts";
-const errorsPath = "examples/session-07/src/useCase/errors.ts";
-const storePath = "examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts";
-const routesPath = "examples/session-07/src/web/routes.ts";
+const startExaminationPath = "examples/session-06-solution/src/useCase/startExamination.ts";
+const errorsPath = "examples/session-06-solution/src/useCase/errors.ts";
+const storePath = "examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts";
+const routesPath = "examples/session-06-solution/src/web/routes.ts";
 
 const stages: readonly Stage[] = [
   {
@@ -75,7 +75,7 @@ const stages: readonly Stage[] = [
   {
     key: "onError",
     outer: true,
-    file: "examples/session-07/src/app.ts",
+    file: "examples/session-06-solution/src/app.ts",
     code: `app.onError((_error, context) => context.text("Internal Server Error", 500));`,
   },
 ];
@@ -141,7 +141,7 @@ const startExaminationEvent =
   },
   transition: {
     stage: "start",
-    path: "examples/session-07/src/domain/appointment/transitions.ts",
+    path: "examples/session-06-solution/src/domain/appointment/transitions.ts",
     code: `const aggregateState = startExamination(
   appointment,
   veterinarianId,

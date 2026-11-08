@@ -1,16 +1,17 @@
-import type { AppointmentId } from "../domain/appointment/index.js";
-import type { VeterinarianId } from "../domain/appointment/index.js";
-import { ok, type Result } from "../shared/schemaResult.js";
+import { z } from "zod";
 
-export type StartExaminationInput = Readonly<{
-  appointmentId: AppointmentId;
-  veterinarianId: VeterinarianId;
-}>;
+import { AppointmentId } from "../domain/appointment/index.js";
+import { VeterinarianId } from "../domain/appointment/index.js";
+import { schemaResult } from "../shared/schemaResult.js";
+
+const schema = z.object({
+  appointmentId: AppointmentId.schema,
+  veterinarianId: VeterinarianId.schema,
+}).readonly();
+
+export type StartExaminationInput = z.infer<typeof schema>;
 
 export const StartExaminationInput = {
-  parse: (raw: any): Result<StartExaminationInput> =>
-    ok({
-      appointmentId: raw.appointmentId,
-      veterinarianId: raw.veterinarianId,
-    }),
+  schema,
+  parse: schemaResult(schema),
 } as const;

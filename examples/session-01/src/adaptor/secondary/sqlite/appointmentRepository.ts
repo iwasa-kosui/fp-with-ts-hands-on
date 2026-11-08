@@ -6,19 +6,30 @@ import { appointmentsTable, auditLogsTable } from "./schema.js";
 
 export const INITIAL_AUDIT_EVENT_ID = "00000000-0000-4000-8000-000000000000";
 
-export type AuditLog = Readonly<{
-  eventId: string;
-  appointmentId: string;
-  eventName: string;
-  payload: Appointment;
-  occurredAt: string;
+export type OwnerContactContext = Readonly<{
+  ownerName: string;
+  ownerEmail: string;
+  ownerPhone: string;
 }>;
 
-type AuditEvent = Readonly<{
+export type PersistenceContext = Readonly<{
+  ownerContact: OwnerContactContext;
+}>;
+
+export type AuditEvent = Readonly<{
   eventId: string;
   eventName: string;
   occurredAt: string;
   appointment: Appointment;
+  payload: Readonly<Record<string, unknown>>;
+}>;
+
+export type AuditLog = Readonly<{
+  eventId: string;
+  appointmentId: string;
+  eventName: string;
+  payload: Readonly<Record<string, unknown>>;
+  occurredAt: string;
 }>;
 
 export type AppointmentRepository = Readonly<{
@@ -26,31 +37,41 @@ export type AppointmentRepository = Readonly<{
   save: (appointment: Appointment) => void;
   appendAudit: (event: AuditEvent) => void;
   listAuditLogs: () => AuditLog[];
-  reset: (initialAppointment: Appointment) => void;
-  seedIfEmpty: (initialAppointment: Appointment) => void;
+  reset: (initialAppointment: Appointment, context: PersistenceContext) => void;
+  seedIfEmpty: (initialAppointment: Appointment, context: PersistenceContext) => void;
 }>;
 
-const toAppointmentRow = (appointment: Appointment) => ({
+const toAppointmentRow = (
+  appointment: Appointment,
+  ownerContact: OwnerContactContext,
+) => ({
   appointmentId: appointment.appointmentId,
   ownerId: appointment.ownerId,
   petId: appointment.petId,
-  status: appointment.status,
+  status: appointment.kind,
   state: appointment,
-});
-
-const toInitialAuditLog = (appointment: Appointment): AuditLog => ({
-  eventId: INITIAL_AUDIT_EVENT_ID,
-  appointmentId: appointment.appointmentId,
-  eventName: "appointment.seeded",
-  payload: appointment,
-  occurredAt: appointment.scheduledAt,
+  ownerContact,
 });
 
 export const createAppointmentRepository = (
   database: SqliteDatabase,
 ): AppointmentRepository => {
+  const ownerContactFor = (appointmentId: string): OwnerContactContext => {
+    const row = database
+      .select({ ownerContact: appointmentsTable.ownerContact })
+      .from(appointmentsTable)
+      .where(sql`${appointmentsTable.appointmentId} = ${appointmentId}`)
+      .get();
+
+    if (row === undefined) throw new Error("Appointment not found");
+    return row.ownerContact as OwnerContactContext;
+  };
+
   const save = (appointment: Appointment): void => {
-    const row = toAppointmentRow(appointment);
+    const row = toAppointmentRow(
+      appointment,
+      ownerContactFor(appointment.appointmentId),
+    );
 
     database
       .insert(appointmentsTable)
@@ -62,29 +83,42 @@ export const createAppointmentRepository = (
       .run();
   };
 
-  const appendAudit = ({ appointment, ...event }: AuditEvent): void => {
+  const appendAudit = ({ appointment, payload, ...event }: AuditEvent): void => {
     database
       .insert(auditLogsTable)
       .values({
         ...event,
         appointmentId: appointment.appointmentId,
-        payload: appointment,
+        payload: {
+          ...payload,
+          appointment,
+          ownerContact: ownerContactFor(appointment.appointmentId),
+        },
       })
       .run();
   };
 
-  const reset = (initialAppointment: Appointment): void => {
+  const reset = (
+    initialAppointment: Appointment,
+    context: PersistenceContext,
+  ): void => {
     database.transaction((transaction) => {
       transaction.delete(auditLogsTable).run();
       transaction.delete(appointmentsTable).run();
       transaction
         .insert(appointmentsTable)
-        .values(toAppointmentRow(initialAppointment))
+        .values(toAppointmentRow(initialAppointment, context.ownerContact))
         .run();
-      transaction
-        .insert(auditLogsTable)
-        .values(toInitialAuditLog(initialAppointment))
-        .run();
+      transaction.insert(auditLogsTable).values({
+        eventId: INITIAL_AUDIT_EVENT_ID,
+        appointmentId: initialAppointment.appointmentId,
+        eventName: "AppointmentSeeded",
+        occurredAt: initialAppointment.scheduledAt,
+        payload: {
+          appointment: initialAppointment,
+          ownerContact: context.ownerContact,
+        },
+      }).run();
     });
   };
 
@@ -95,7 +129,6 @@ export const createAppointmentRepository = (
         .from(appointmentsTable)
         .where(sql`${appointmentsTable.appointmentId} = ${appointmentId}`)
         .get();
-
       return row === undefined ? undefined : (row.state as Appointment);
     },
     save,
@@ -106,20 +139,17 @@ export const createAppointmentRepository = (
         .from(auditLogsTable)
         .orderBy(sql`rowid`)
         .all()
-        .map((auditLog) => ({
-          ...auditLog,
-          payload: auditLog.payload as Appointment,
+        .map((audit) => ({
+          ...audit,
+          payload: audit.payload as Readonly<Record<string, unknown>>,
         })),
     reset,
-    seedIfEmpty: (initialAppointment) => {
-      const appointment = database
+    seedIfEmpty: (initialAppointment, context) => {
+      const row = database
         .select({ appointmentId: appointmentsTable.appointmentId })
         .from(appointmentsTable)
         .get();
-
-      if (appointment === undefined) {
-        reset(initialAppointment);
-      }
+      if (row === undefined) reset(initialAppointment, context);
     },
   };
 };

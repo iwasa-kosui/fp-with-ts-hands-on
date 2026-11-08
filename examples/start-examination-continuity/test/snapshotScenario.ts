@@ -1,15 +1,16 @@
 import { fileURLToPath } from "node:url";
 
 import { createDatabaseBackedApp as createSession00App } from "../../session-00/src/app.js";
+import { createDatabaseBackedApp as createSession05App } from "../../session-05/src/app.js";
 import { createDatabaseBackedApp as createSession01App } from "../../session-01/src/app.js";
 import { createDatabaseBackedApp as createSession02App } from "../../session-02/src/app.js";
+import { createDatabaseBackedApp as createSession02SolutionApp } from "../../session-02-solution/src/app.js";
 import { createDatabaseBackedApp as createSession03App } from "../../session-03/src/app.js";
 import { createDatabaseBackedApp as createSession04App } from "../../session-04/src/app.js";
-import { createDatabaseBackedApp as createSession05App } from "../../session-05/src/app.js";
 import { createDatabaseBackedApp as createSession06App } from "../../session-06/src/app.js";
-import { createDatabaseBackedApp as createSession07App } from "../../session-07/src/app.js";
-import type { Clock } from "../../session-07/src/domain/aggregate/clock.js";
-import type { EventIdGenerator } from "../../session-07/src/domain/aggregate/eventIdGenerator.js";
+import { createDatabaseBackedApp as createSession06SolutionApp } from "../../session-06-solution/src/app.js";
+import type { Clock } from "../../session-06-solution/src/domain/aggregate/clock.js";
+import type { EventIdGenerator } from "../../session-06-solution/src/domain/aggregate/eventIdGenerator.js";
 
 type SnapshotState =
   | "Scheduled"
@@ -21,14 +22,15 @@ type SnapshotState =
 
 export type SnapshotScenario = Readonly<{
   name:
-    | "Session 00"
-    | "Session 01"
-    | "Session 02"
-    | "Session 03"
-    | "Session 04"
-    | "Session 05"
-    | "Session 06"
-    | "Session 07";
+    | "session-00"
+    | "session-05"
+    | "session-01"
+    | "session-02"
+    | "session-02-solution"
+    | "session-03"
+    | "session-04"
+    | "session-06"
+    | "session-06-solution";
   createApp: (databasePath: string) => SnapshotApp;
   createAppWithEffects?: (
     databasePath: string,
@@ -108,8 +110,8 @@ const stateFromStatus = (state: unknown): SnapshotState => {
   return statesByStatus[status];
 };
 
-const migrationFolderFor = (session: string): string =>
-  fileURLToPath(new URL(`../../session-${session}/drizzle`, import.meta.url));
+const migrationFolderFor = (folder: SnapshotScenario["name"]): string =>
+  fileURLToPath(new URL(`../../${folder}/drizzle`, import.meta.url));
 
 const toSnapshotApp = (runtimeApp: RuntimeApp): SnapshotApp => {
   const app = {
@@ -155,18 +157,24 @@ const createScenario = (
 };
 
 export const snapshotScenarios: readonly SnapshotScenario[] = [
-  createScenario("Session 00", createSession00App, migrationFolderFor("00"), stateFromStatus),
-  createScenario("Session 01", createSession01App, migrationFolderFor("01"), stateFromStatus),
-  createScenario("Session 02", createSession02App, migrationFolderFor("02"), stateFromKind),
-  createScenario("Session 03", createSession03App, migrationFolderFor("03"), stateFromKind),
-  createScenario("Session 04", createSession04App, migrationFolderFor("04"), stateFromKind),
-  createScenario("Session 05", createSession05App, migrationFolderFor("05"), stateFromKind),
-  createScenario("Session 06", createSession06App, migrationFolderFor("06"), stateFromKind),
+  createScenario("session-00", createSession00App, migrationFolderFor("session-00"), stateFromStatus),
+  createScenario("session-05", createSession05App, migrationFolderFor("session-05"), stateFromStatus),
+  createScenario("session-01", createSession01App, migrationFolderFor("session-01"), stateFromKind),
+  createScenario("session-02", createSession02App, migrationFolderFor("session-02"), stateFromKind),
   createScenario(
-    "Session 07",
-    createSession07App,
-    migrationFolderFor("07"),
+    "session-02-solution",
+    createSession02SolutionApp,
+    migrationFolderFor("session-02-solution"),
     stateFromKind,
-    createSession07App,
+  ),
+  createScenario("session-03", createSession03App, migrationFolderFor("session-03"), stateFromKind),
+  createScenario("session-04", createSession04App, migrationFolderFor("session-04"), stateFromKind),
+  createScenario("session-06", createSession06App, migrationFolderFor("session-06"), stateFromKind),
+  createScenario(
+    "session-06-solution",
+    createSession06SolutionApp,
+    migrationFolderFor("session-06-solution"),
+    stateFromKind,
+    createSession06SolutionApp,
   ),
 ];

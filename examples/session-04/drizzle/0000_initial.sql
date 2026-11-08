@@ -3,8 +3,7 @@ CREATE TABLE `appointments` (
   `owner_id` text NOT NULL,
   `pet_id` text NOT NULL,
   `status` text NOT NULL,
-  `state` text NOT NULL,
-  `owner_contact` text NOT NULL
+  `state` text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `audit_logs` (

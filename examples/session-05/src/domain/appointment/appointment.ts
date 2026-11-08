@@ -1,96 +1,37 @@
-import type { AppointmentId } from "./appointmentId.js";
-import type { VeterinarianId } from "./veterinarianId.js";
-import type { ExamId } from "../examResult/index.js";
-import type { OwnerId } from "../owner/index.js";
-import type { PetId } from "../pet/index.js";
-
-export type CancellationReason = string;
-
-export type Scheduled = Readonly<{
-  kind: "Scheduled";
-  appointmentId: AppointmentId;
-  petId: PetId;
-  ownerId: OwnerId;
+export type Appointment = Readonly<{
+  appointmentId: string;
+  petId: string;
+  petName: string;
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+  ownerPhone: string;
   scheduledAt: string;
   reason: string;
+  status: string;
+  checkedInAt?: string;
+  veterinarianId?: string;
+  examinationStartedAt?: string;
+  examId?: string;
+  examinationCompletedAt?: string;
+  diagnosis?: unknown;
+  treatment?: unknown;
+  amount?: unknown;
+  paidAt?: string;
+  cancelReason?: string;
 }>;
 
-export type CheckedIn = Readonly<{
-  kind: "CheckedIn";
-  appointmentId: AppointmentId;
-  petId: PetId;
-  ownerId: OwnerId;
-  scheduledAt: string;
-  reason: string;
-  checkedInAt: string;
-}>;
+export type AppointmentExtra = Partial<Omit<Appointment, "appointmentId">>;
 
-export type InExamination = Readonly<{
-  kind: "InExamination";
-  appointmentId: AppointmentId;
-  petId: PetId;
-  ownerId: OwnerId;
-  scheduledAt: string;
-  reason: string;
-  checkedInAt: string;
-  veterinarianId: VeterinarianId;
-  examinationStartedAt: string;
-}>;
+export type BookAppointmentInput = Omit<Appointment, "status">;
 
-export type AwaitingPayment = Readonly<{
-  kind: "AwaitingPayment";
-  appointmentId: AppointmentId;
-  petId: PetId;
-  ownerId: OwnerId;
-  scheduledAt: string;
-  reason: string;
-  checkedInAt: string;
-  veterinarianId: VeterinarianId;
-  examinationStartedAt: string;
-  examId: ExamId;
-  examinationCompletedAt: string;
-}>;
+export const bookAppointment = (input: BookAppointmentInput): Appointment => ({
+  ...input,
+  status: "scheduled",
+});
 
-export type Paid = Readonly<{
-  kind: "Paid";
-  appointmentId: AppointmentId;
-  petId: PetId;
-  ownerId: OwnerId;
-  scheduledAt: string;
-  reason: string;
-  checkedInAt: string;
-  veterinarianId: VeterinarianId;
-  examinationStartedAt: string;
-  examId: ExamId;
-  examinationCompletedAt: string;
-  diagnosis: string;
-  treatment: string;
-  amount: number;
-  paidAt: string;
-}>;
-
-export type Canceled = Readonly<{
-  kind: "Canceled";
-  appointmentId: AppointmentId;
-  petId: PetId;
-  ownerId: OwnerId;
-  scheduledAt: string;
-  reason: CancellationReason;
-  canceledAt: string;
-}>;
-
-export type Appointment =
-  | Scheduled
-  | CheckedIn
-  | InExamination
-  | AwaitingPayment
-  | Paid
-  | Canceled;
-
-export type CompleteExaminationInput = Readonly<{ examId: ExamId }>;
-
-export type RecordPaymentInput = Readonly<{
-  diagnosis: string;
-  treatment: string;
-  amount: number;
-}>;
+export const updateStatus = (
+  appointment: Appointment,
+  status: string,
+  extra?: AppointmentExtra,
+): Appointment => ({ ...appointment, ...extra, status });

@@ -41,7 +41,7 @@ import SchemaSourceFlow from "../../components/SchemaSourceFlow.astro";
   <p>{"\n"}編集する範囲は <code>{props.session.exerciseModule.dir}</code>、変更するファイル数は最大{"\n"}{props.session.exerciseModule.fileBudget}ファイル・約{props.session.exerciseModule.lineBudget}行です。{"\n"}</p>
   <CodeGuideCards guides={props.guides} projectFiles={props.projectFiles} />
   <h3>修正前の失敗を確認する</h3>
-  <p>修正前は、次の{props.session.steps.length}件に対応する演習テストが失敗します。</p>
+  <p>コマンドはリポジトリのルートで実行します。修正前は、次の{props.session.steps.length}件に対応する演習テストが失敗します。</p>
   <ul class="exercise-failures" aria-label="修正前に確認する問題">
     {props.session.steps.map((step) => <li>{step.startingFailure}</li>)}
   </ul>
@@ -117,15 +117,15 @@ import SchemaSourceFlow from "../../components/SchemaSourceFlow.astro";
 
 <section id="supplementary">
   <h2>補助演習（目安5分）</h2>
-  <p>事前知識のPaymentAmountと同じく、brandで型を分ける書き方を、予約IDと担当獣医師IDで試します。brandの名前は、配布コードの規約に合わせて文字列で書きます。Branded Typeの用途はIDの取り違えを防ぐことに限りません。ここでは配布コードの続きで試せるIDを題材にします。</p>
-  <p>補助演習は、手元のコードで実行します。このページの Playground は session-04 のスナップショットなので、<code>{props.supplementaryExercise.exerciseCommand}</code> を実行できません。</p>
+  <p>事前知識のPaymentAmountと同じく、brandで型を分ける書き方を、予約IDと担当獣医師IDで試します。brandの名前は、配布コードの規約に合わせて文字列で書きます。Branded Typeの用途はIDの取り違えを防ぐことに限りません。ここでは、配布コードにある <code>AppointmentId</code> と <code>VeterinarianId</code> を題材にします。補助演習の変更を <code>examples/session-03</code> へ写す必要はありません。</p>
+  <p>補助演習のコードは <code>examples/session-03-supplement</code> にあります。コマンドはリポジトリのルートで実行します。このページの Playground は session-03 のスナップショットなので、<code>{props.supplementaryExercise.exerciseCommand}</code> を実行できません。</p>
   <p>先に <code>{props.supplementaryExercise.exerciseCommand}</code>、次に <code>{props.session.exerciseCommand}</code> の順に実行します。どちらもリポジトリのルートで実行するので、<code>cd</code> は要りません。</p>
   <p>このページの開始コードには、補助演習の解答がすでに入っています。そのため、補助演習を飛ばしても、このページの演習は壊れません。目安は、補助演習が5分、このページの演習が10分です。</p>
   <p>参加者が手元で進めるのはステップ1と2です。ステップ3の型テストは、講師が画面で見せます。</p>
-  <p>ステップ1と2を終えると、<code>examples/session-03/src/domain/domain.test-types.ts</code> の取り違えた2行が型エラーとして残り、<code>{props.supplementaryExercise.exerciseCommand}</code> は失敗のままです。この2行の型エラーは、用途の区別が型検査で守られていることを示します。ステップ3で <code>@ts-expect-error</code> を付けると、演習テストがすべて成功します。手元で確かめたい場合は、解答のステップ3を開いて同じ変更を加えます。</p>
+  <p>ステップ1と2を終えると、<code>examples/session-03-supplement/src/domain/domain.test-types.ts</code> の取り違えた2行が型エラーとして残り、<code>{props.supplementaryExercise.exerciseCommand}</code> は失敗のままです。この2行の型エラーは、用途の区別が型検査で守られていることを示します。ステップ3で <code>@ts-expect-error</code> を付けると、演習テストがすべて成功します。手元で確かめたい場合は、解答のステップ3を開いて同じ変更を加えます。</p>
   <p>補助演習の編集範囲は <code>{props.supplementaryExercise.exerciseModule.dir}</code>、変更するファイル数は最大{props.supplementaryExercise.exerciseModule.fileBudget}ファイル・約{props.supplementaryExercise.exerciseModule.lineBudget}行です。この上限はステップ3を含みます。手元で進めるステップ1と2は4ファイルです。</p>
   <h3>取り違えたまま型検査する</h3>
-  <p><code>examples/session-03/src/domain/domain.test-types.ts</code> の <code>acceptAppointmentId</code> と <code>acceptVeterinarianId</code> の呼び出しは、渡す値が逆です。この状態で型検査を実行します。</p>
+  <p><code>examples/session-03-supplement/src/domain/domain.test-types.ts</code> の <code>acceptAppointmentId</code> と <code>acceptVeterinarianId</code> の呼び出しは、渡す値が逆です。この状態で型検査を実行します。</p>
   <figure class="code-block" data-typecheck-reproduction>
     <figcaption>型検査コマンド</figcaption>
     <Code code={props.supplementaryExerciseTypecheckCommand} lang="shell" />
@@ -144,11 +144,11 @@ import SchemaSourceFlow from "../../components/SchemaSourceFlow.astro";
     <p>同じ文字列形式でも、用途の違う識別子は別の型として扱います。zod の brand を付けると、互いに代入できない型ができます。</p>
     <div class="teaching-topic__diff">
       <figure class="code-block">
-        <figcaption>{"\n"}before:{"\n"}<code>examples/session-03/src/domain/appointment/appointmentId.ts</code></figcaption>
+        <figcaption>{"\n"}before:{"\n"}<code>examples/session-03-supplement/src/domain/appointment/appointmentId.ts</code></figcaption>
         <Code code={props.supplementaryExerciseTeaching[0].before} lang="ts" />
       </figure>
       <figure class="code-block">
-        <figcaption>{"\n"}after:{"\n"}<code>examples/session-04/src/domain/appointment/appointmentId.ts</code></figcaption>
+        <figcaption>{"\n"}after:{"\n"}<code>examples/session-03-supplement-solution/src/domain/appointment/appointmentId.ts</code></figcaption>
         <Code code={props.supplementaryExerciseTeaching[0].after} lang="ts" />
       </figure>
     </div>
@@ -159,11 +159,11 @@ import SchemaSourceFlow from "../../components/SchemaSourceFlow.astro";
     <p>予約の状態を表す型・状態遷移関数を、作成した Branded Type を利用する形に変更します。</p>
     <div class="teaching-topic__diff">
       <figure class="code-block">
-        <figcaption>{"\n"}before:{"\n"}<code>examples/session-03/src/domain/appointment/appointment.ts</code>{"、"}<code>examples/session-03/src/domain/appointment/transitions.ts</code></figcaption>
+        <figcaption>{"\n"}before:{"\n"}<code>examples/session-03-supplement/src/domain/appointment/appointment.ts</code>{"、"}<code>examples/session-03-supplement/src/domain/appointment/transitions.ts</code></figcaption>
         <Code code={props.supplementaryExerciseTeaching[1].before} lang="ts" />
       </figure>
       <figure class="code-block">
-        <figcaption>{"\n"}after:{"\n"}<code>examples/session-04/src/domain/appointment/appointment.ts</code>{"、"}<code>examples/session-04/src/domain/appointment/transitions.ts</code></figcaption>
+        <figcaption>{"\n"}after:{"\n"}<code>examples/session-03-supplement-solution/src/domain/appointment/appointment.ts</code>{"、"}<code>examples/session-03-supplement-solution/src/domain/appointment/transitions.ts</code></figcaption>
         <Code code={props.supplementaryExerciseTeaching[1].after} lang="ts" />
       </figure>
     </div>
@@ -174,11 +174,11 @@ import SchemaSourceFlow from "../../components/SchemaSourceFlow.astro";
     <p>型テストでは、わざとコンパイルエラーになるコードを書き、その行で確かにコンパイルエラーが発生することを検査します。実装の変更で、その行のコンパイルエラーが意図せず出なくなると、@ts-expect-error が不要になり、TypeScriptがその行を逆にコンパイルエラーにします。</p>
     <div class="teaching-topic__diff">
       <figure class="code-block">
-        <figcaption>{"\n"}before:{"\n"}<code>examples/session-03/src/domain/domain.test-types.ts</code></figcaption>
+        <figcaption>{"\n"}before:{"\n"}<code>examples/session-03-supplement/src/domain/domain.test-types.ts</code></figcaption>
         <Code code={props.supplementaryExerciseTeaching[2].before} lang="ts" />
       </figure>
       <figure class="code-block">
-        <figcaption>{"\n"}after:{"\n"}<code>examples/session-04/src/domain/domain.test-types.ts</code></figcaption>
+        <figcaption>{"\n"}after:{"\n"}<code>examples/session-03-supplement-solution/src/domain/domain.test-types.ts</code></figcaption>
         <Code code={props.supplementaryExerciseTeaching[2].after} lang="ts" />
       </figure>
     </div>
@@ -257,7 +257,7 @@ import SchemaSourceFlow from "../../components/SchemaSourceFlow.astro";
     <h3>個人での確認</h3>
     <ol>
       <li><InlineCode text={"`as` による型アサーションが入っていないか全文検索して確認します。"} /></li>
-      <li><InlineCode text={"`git diff --stat -- examples/session-04` で今回のスナップショットだけを確認します。`git status --short` で想定外の path がないか確認します。"} /></li>
+      <li><InlineCode text={"`git diff --stat -- examples/session-03` で今回のスナップショットだけを確認します。補助演習をした場合は、`git diff --stat -- examples/session-03-supplement` も確認します。`git status --short` で想定外の path がないか確認します。"} /></li>
       <li>{"型検査では確認できないことを、テストまたは実行時に確認して記録します。"}</li>
     </ol>
     <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>
