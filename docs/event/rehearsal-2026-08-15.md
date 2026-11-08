@@ -14,7 +14,7 @@
 - 内容時間は S0 10分 + S1 15分 + S2〜S6 各30分 + Final 5分 = 180分である。
 - 16:25-16:55の固定休憩30分を加え、開催時間は15:00-18:30の210分である。
 - S0は現行業務、画面操作、保存・ログと事故を対応付ける。
-- S1ではExcalidrawを使い、事前配置された「予約がキャンセルされた」からアクター、コマンド、確認する条件を逆算します。講師はROP基本図で3か所の失敗への切替を示し、別のユースケース図で`Appointment`集約を`Appointment.cancel`へ対応させ、入力側のResolverと出力側のEvent Storeを確認します。実行可能な演習ではありません。
+- S1ではExcalidrawを使い、事前配置された「予約がキャンセルされた」からアクター、コマンド、確認する条件を逆算します。講師はROP（Railway Oriented Programming）基本図で3か所の失敗への切替を示し、別のユースケース図で`Appointment`集約を`Appointment.cancel`へ対応させ、入力側のResolverと出力側のEvent Storeを確認します。実行可能な演習ではありません。
 - S2〜S6は同じ `startExamination` を題材に、current state、識別子、input、expected failures、output event / side effectsを順に実装する。
 - 公開する演習コマンドは `pnpm exercise:02`〜`pnpm exercise:06` の5本である。
 
@@ -46,7 +46,7 @@ S0、S1、到達点 `examples/session-07`、Finalにはexercise scriptを設け�
 | `pnpm exercise:05` | 3 | 状態不正、予約なし、同期Result pipelineの業務名付き `AssertionError` |
 | `pnpm exercise:06` | 4 | 決定性、single store、ResultAsync、保存失敗の業務名付き `AssertionError` |
 
-5コマンドとも、module resolution、syntax、type setupの失敗や予期しない例外ではなく、各starterの未解決条件を示すREDであることを確認対象とする。検査結果のschemaとPIIのマスキングはS4の時間外の補足であり、`exercise:04` の失敗件数へ含めない。
+5コマンドとも、module resolution、syntax、type setupの失敗や予期しない例外ではなく、各starterの未解決条件を示すREDであることを確認対象とする。検査結果のschemaと個人情報（PII）のマスキングはS4の時間外の補足であり、`exercise:04` の失敗件数へ含めない。
 
 ## 次snapshotのGREEN連鎖と解答表示
 
