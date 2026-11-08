@@ -1,4 +1,4 @@
-import { describe, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { cancel } from "../subjects/transitions.js";
 import { scheduled } from "./states.js";

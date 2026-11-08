@@ -14,14 +14,14 @@ export const workspace = guardExerciseWorkspaceFor(
 export const guide = {
   title: "この演習でやること",
   criteria:
-    "必須の悪い変更3件が「検出」、正しいコード3件が「誤検知なし」で合格です。",
+    "必須の3件が「検出」、正しいコード3件が「誤検知なし」で合格です。",
   steps: [
     "悪い変更を1件選んで読みます。",
     {
       text: "仕組みを足す場所は次のとおりです。",
       items: [
-        "Linter の規則: eslint.config.mjs",
-        "型のテスト: transitions.type-test.ts",
+        "Linter: eslint.config.mjs",
+        "型: transitions.type-test.ts",
         "テスト: transitions.test.ts と callers.test.ts",
       ],
     },
@@ -34,6 +34,7 @@ export const guide = {
         "誤検知: 正しいコードを悪いと判定した。",
       ],
     },
+    "合格の後に増える2件は、余裕があれば取り組みます。",
   ],
 };
 

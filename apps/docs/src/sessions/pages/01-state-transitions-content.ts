@@ -23,7 +23,7 @@ export const session: SessionSummary = {
   solutionPresentation: "excerpt",
   peerReviewPromises: "inline",
   animal: { name: "RABBIT", type: "rabbit", avatar: "🐇" },
-  summary: "予約の6つの状態を状態ごとの型で表し、許可されていない状態の変更を、プログラムを実行する前に見つけます。",
+  summary: "遷移関数の引数を絞り、許されない呼び出しを実行前に見つけ、次の変更でも検出します。",
   episode: [
     "会計担当は診察を終えた Mugi の飼い主から4,800円を受け取り、予約を会計済みにしました。",
     "その後、獣医師が別の予約と取り違えて、この会計済みの予約で「診察を開始する」を押しました。",

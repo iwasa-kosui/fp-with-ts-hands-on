@@ -41,7 +41,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1.5,
-    role: "事前知識: 別々の型を1つの名前で受け取り、kind で見分ける書き方を学びます。",
+    role: "事前知識: 引数を絞ると呼び出し側が kind を確かめる必要があるため、kind で型を絞り込む書き方を学びます。",
   },
   {
     slug: "narrow-arguments",
