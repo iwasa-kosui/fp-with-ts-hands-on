@@ -48,6 +48,6 @@ export const sessionOverviews: Readonly<Record<SessionSlug, SessionOverview>> = 
   },
   final: {
     summary: "参照実装で、埋まった図の全体をたどります。",
-    fills: stages.map(({ id }) => id),
+    fills: [],
   },
 };

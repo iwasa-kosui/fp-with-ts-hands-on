@@ -100,7 +100,7 @@ S1〜S4 と S6 は次の順序を崩しません。
 5. 対象モジュールだけを変更し、同じコマンド、型、現在snapshot限定の差分、リポジトリ全体の状態で個人検証する。
 6. TA が選んだ1〜2名の差分を班で相互レビューし、ページの問いで仕組みの案を話し、全員がレビュー観点シートへ1行書く。
 
-S0では現状を読み、S5では予約のデータとキャンセルのパイプラインを読みます。S0では、講師が最初に S00 の「全体の地図」の節で業務のあらすじを話してから、設計の全体図と Session の流れを図のコマ送りで見せます。図の最後のコマのコードは読ませず、各行の札で回との対応だけを示します。講師はROP基本図で3か所の失敗への切替を示します。別のユースケース図では、User ResolverとAppointment Resolverを入力側、Event Storeを出力側へ置いた成功経路を確認します。どちらも修正とexercise実行を行いません。Finalは講師が `examples/final/src/useCase/startExaminationUseCase.ts` を入口に5分で案内するだけです。参加者へ `examples/final` のセットアップ、編集、Playground操作を求めません。
+S0では、講師が最初に S00 の「全体の地図」の節で業務のあらすじを話してから、設計の全体図と Session の流れを図のコマ送りで見せます。図の最後のコマのコードは読ませず、各行の札で回との対応だけを示します。S0では現状を読み、S5では予約のデータとキャンセルのパイプラインを読みます。講師はROP基本図で3か所の失敗への切替を示します。別のユースケース図では、User ResolverとAppointment Resolverを入力側、Event Storeを出力側へ置いた成功経路を確認します。どちらも修正とexercise実行を行いません。Finalは講師が `examples/final/src/useCase/startExaminationUseCase.ts` を入口に5分で案内するだけです。参加者へ `examples/final` のセットアップ、編集、Playground操作を求めません。
 
 ## S5 の進行
 

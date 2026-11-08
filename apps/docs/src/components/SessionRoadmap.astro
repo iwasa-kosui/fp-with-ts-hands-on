@@ -14,8 +14,8 @@ const frames = sessionNavigationItems.map(({ slug, title }, index) => {
   const states: readonly StageState[] = stages.map(({ id }) => (fills.includes(id) ? "fill" : earlier.includes(id) ? "past" : "empty"));
   const number = slug === "final" ? "Final" : slug.slice(0, 2);
   const label = slug === "final" ? "Final" : `S${number}`;
-  const filled = fills.length === 0 ? "なし" : fills.map(stageLabel).join("、");
-  const alt = `${label} が埋める段は、${filled}です。上から、${stages.map((stage, i) => `${stage.label}は${stateLabels[states[i]]}`).join("、")}。`;
+  const filledText = fills.length === 0 ? "この回で埋める段はありません。" : `${label} が埋める段は、${fills.map(stageLabel).join("、")}です。`;
+  const alt = `${filledText}上から、${stages.map((stage, i) => `${stage.label}は${stateLabels[states[i]]}`).join("、")}。`;
   return { slug, title, summary, states, label, href: `/sessions/${slug}/`, alt };
 });
 

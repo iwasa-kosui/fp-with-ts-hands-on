@@ -58,12 +58,12 @@ const frames: readonly Frame[] = [
     alt: "5つの段のうち、上から4番目の保存を強調しています。札は S06 です。",
   },
   {
-    caption: "どの工程で失敗しても、その先の工程は動きません。失敗は例外ではなく Result の値として、呼び出し側へ返ります。",
-    alt: "入口から保存までの4つの段の右側から横へ線が分かれ、一番下の失敗の返し方の段へつながっています。失敗の返し方を強調しています。札は S04 と S05 です。",
+    caption: "業務で起きうる失敗（権限がない、予約がない、状態が違う）があると、その先の工程は動きません。この失敗は、例外ではなく Result の値として呼び出し側へ返ります。どの失敗をこう扱うかは S04 と S06 で決めます。",
+    alt: "入口から保存までの4つの段の右側から横へ赤い破線が分かれ、一番下の失敗の返し方の段へつながっています。失敗の返し方の段からは、赤い破線の矢印が画面へ結果を返す終端へ向かっています。失敗の返し方を強調しています。札は S04 と S05 です。",
   },
   {
-    caption: "参照実装（examples/final）では、この道が次の10行になります。行の横の札は、その書き方を学ぶ回です。いまは読めなくてかまいません。",
-    alt: "5つの段すべてを強調しています。下に参照実装のコードを示します。",
+    caption: "入口より後の道は、参照実装（examples/final）では次の10行になります。入口の検査は routes 側にあります。行の横の札は、その書き方を学ぶ回です。いまは読めなくてかまいません。",
+    alt: "入口を除く、読み取り、業務の判断、保存、失敗の返し方の4つの段と、画面へ結果を返す終端を強調しています。下に参照実装のコードを示します。",
     withCode: true,
   },
 ];
@@ -84,9 +84,10 @@ const failY = termY + TERM_H + 34;
 const stageY = (index: number) => (index < lastIndex ? mainY(index) : failY);
 
 const headDown = (x: number, y: number) => `M ${x - 4} ${y - 7} L ${x} ${y} L ${x + 4} ${y - 7} z`;
+const headUp = (x: number, y: number) => `M ${x - 4} ${y + 7} L ${x} ${y} L ${x + 4} ${y + 7} z`;
 const headLeft = (x: number, y: number) => `M ${x + 7} ${y - 4} L ${x} ${y} L ${x + 7} ${y + 4} z`;
 
-const onScenes = (id: StageId) => `${stageBadges[id].scene} 7`;
+const onScenes = (id: StageId) => (id === "entry" ? String(stageBadges[id].scene) : `${stageBadges[id].scene} 7`);
 
 const playerData = JSON.stringify(frames.map(({ caption, alt }, index) => ({ caption, alt, scene: index + 1 })));
 ---
@@ -130,7 +131,7 @@ const playerData = JSON.stringify(frames.map(({ caption, alt }, index) => ({ cap
                 <path d={headDown(MID, i + 1 < lastIndex ? mainY(i + 1) : termY)} class="start-map__head"></path>
               </>
             ))}
-            <g class="start-map__box" data-on="7">
+            <g class="start-map__box" data-on="6 7">
               <rect x={X + 40} y={termY} width={W - 80} height={TERM_H} rx="15"></rect>
               <text x={MID} y={termY + 19} text-anchor="middle" font-size="11">画面へ結果を返す</text>
             </g>
@@ -152,6 +153,8 @@ const playerData = JSON.stringify(frames.map(({ caption, alt }, index) => ({ cap
               ))}
               <path d={`M ${FAIL_X} ${stageY(0) + H / 2} V ${failY + H / 2} H ${X + W + 7}`}></path>
               <path d={headLeft(X + W, stageY(lastIndex) + H / 2)} class="start-map__fail-head"></path>
+              <path d={`M ${MID} ${failY} V ${termY + TERM_H + 7}`}></path>
+              <path d={headUp(MID, termY + TERM_H)} class="start-map__fail-head"></path>
               <text x={FAIL_X + 6} y={stageY(2) + H / 2 + 4} font-size="11">失敗</text>
             </g>
           </svg>
