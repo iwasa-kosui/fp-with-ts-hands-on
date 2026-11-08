@@ -25,7 +25,9 @@
     "@astrojs/check": "^0.9.10",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "fake-indexeddb": "^6.2.7",
     "happy-dom": "^15.11.7",
+    "playwright-core": "^1.65.0",
     "vitest": "^2.1.0"
   }
 }
