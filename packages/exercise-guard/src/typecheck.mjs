@@ -106,10 +106,10 @@ const describe = (diagnostic, root) =>
 
 /**
  * @param {readonly PlainDiagnostic[]} diagnostics
- * @param {Readonly<{ root: string, copiesDir: string, casesDir: string, mineDisplay: (rel: string) => string }>} context
+ * @param {Readonly<{ root: string, copiesDir: string, casesDir: string, caseDirs: Readonly<Record<string, string>>, mineDisplay: (rel: string) => string }>} context
  * @returns {Readonly<{ byCase: Readonly<Record<string, readonly Detection[]>>, builtin: Readonly<Record<string, readonly Detection[]>>, problems: readonly Problem[] }>}
  */
-export const classifyDiagnostics = (diagnostics, { root, copiesDir, casesDir, mineDisplay }) =>
+export const classifyDiagnostics = (diagnostics, { root, copiesDir, casesDir, caseDirs, mineDisplay }) =>
   diagnostics.reduce(
     (acc, diagnostic) => {
       const file = diagnostic.file;
@@ -122,8 +122,11 @@ export const classifyDiagnostics = (diagnostics, { root, copiesDir, casesDir, mi
         message: diagnostic.code === unusedExpectErrorCode ? unusedExpectErrorMessage : diagnostic.message,
       });
       if (file !== undefined && isInside(copiesDir, file)) {
-        const [caseId = "", ...rest] = toPosix(path.relative(copiesDir, file)).split("/");
-        return { ...acc, byCase: appendTo(acc.byCase, caseId, detection(mineDisplay(rest.join("/")))) };
+        const [caseDir = "", ...rest] = toPosix(path.relative(copiesDir, file)).split("/");
+        return {
+          ...acc,
+          byCase: appendTo(acc.byCase, caseDirs[caseDir] ?? caseDir, detection(mineDisplay(rest.join("/")))),
+        };
       }
       if (file !== undefined && isInside(casesDir, file)) {
         const [first = ""] = toPosix(path.relative(casesDir, file)).split("/");

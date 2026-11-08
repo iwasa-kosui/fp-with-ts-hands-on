@@ -1,6 +1,6 @@
 /** @typedef {"types" | "lint" | "tests"} Mechanism */
 /** @typedef {Readonly<{ id: string, kind: "bad" | "good", subject: string, title: string, stage: number, required: boolean, allow: readonly Mechanism[], hint: string }>} GuardCase */
-/** @typedef {Readonly<{ subjects: Readonly<Record<string, string>>, cases: readonly GuardCase[] }>} GuardConfig */
+/** @typedef {Readonly<{ subjects: Readonly<Record<string, string>>, cases: readonly GuardCase[], vitestBaseConfig?: string }>} GuardConfig */
 /** @typedef {Readonly<{ mechanism: Mechanism, file: string, line: number | null, label: string, message: string }>} Detection */
 /** @typedef {"hit" | "none" | "error" | "na"} CellState */
 /** @typedef {Readonly<{ state: CellState, count: number }>} Cell */

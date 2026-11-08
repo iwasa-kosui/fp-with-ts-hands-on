@@ -5,7 +5,7 @@ import { displayPath, toPosix } from "./paths.mjs";
 /** @typedef {import("./model.mjs").Problem} Problem */
 /** @typedef {Readonly<{ ruleId: string | null, severity: number, line: number, message: string, fatal: boolean }>} LintMessage */
 /** @typedef {Readonly<{ filePath: string, messages: readonly LintMessage[] }>} LintFileResult */
-/** @typedef {Readonly<{ results: readonly LintFileResult[], ruleCount: number | null }>} LintRun */
+/** @typedef {Readonly<{ results: readonly LintFileResult[], differingCases: readonly string[] }>} LintRun */
 
 /**
  * @param {unknown} error
@@ -15,19 +15,30 @@ const firstLine = (error) =>
   (error instanceof Error ? error.message : String(error)).split("\n")[0] ?? "";
 
 /**
- * @param {unknown} setting
- * @returns {boolean}
+ * @param {{ rules?: Record<string, unknown> } | undefined} config
+ * @returns {string}
  */
-const isEnabled = (setting) => {
-  const level = Array.isArray(setting) ? setting[0] : setting;
-  return level === "warn" || level === "error" || level === 1 || level === 2;
+const ruleSignature = (config) => (config === undefined ? "none" : JSON.stringify(config.rules ?? {}));
+
+/**
+ * @param {readonly (readonly [string, string])[]} signatures
+ * @returns {readonly string[]}
+ */
+const differingCases = (signatures) => {
+  const groups = Object.values(
+    signatures.reduce(
+      (acc, [id, signature]) => ({ ...acc, [signature]: [...(acc[signature] ?? []), id] }),
+      /** @type {Readonly<Record<string, readonly string[]>>} */ ({}),
+    ),
+  ).sort((left, right) => right.length - left.length);
+  return groups.slice(1).flat();
 };
 
 /**
- * @param {Readonly<{ root: string, eslintConfigFile: string, patterns: readonly string[], sampleFile: string | undefined }>} input
+ * @param {Readonly<{ root: string, eslintConfigFile: string, patterns: readonly string[], caseFiles: Readonly<Record<string, string>> }>} input
  * @returns {Promise<LintRun>}
  */
-export const runLint = async ({ root, eslintConfigFile, patterns, sampleFile }) => {
+export const runLint = async ({ root, eslintConfigFile, patterns, caseFiles }) => {
   const { ESLint } = await import("eslint");
   const eslint = new ESLint({
     cwd: root,
@@ -36,13 +47,12 @@ export const runLint = async ({ root, eslintConfigFile, patterns, sampleFile }) 
     errorOnUnmatchedPattern: false,
   });
   const results = await eslint.lintFiles([...patterns]);
-  const ruleCount = await (sampleFile === undefined
-    ? Promise.resolve(null)
-    : eslint.calculateConfigForFile(sampleFile).then(
-        /** @param {{ rules?: Record<string, unknown> } | undefined} config */
-        (config) => Object.values(config?.rules ?? {}).filter(isEnabled).length,
-        () => null,
-      ));
+  const signatures = await Promise.all(
+    Object.entries(caseFiles).map(async ([id, file]) => {
+      const signature = await eslint.calculateConfigForFile(file).then(ruleSignature, () => "error");
+      return /** @type {const} */ ([id, signature]);
+    }),
+  );
   return {
     results: results.map((result) => ({
       filePath: result.filePath,
@@ -54,18 +64,37 @@ export const runLint = async ({ root, eslintConfigFile, patterns, sampleFile }) 
         fatal: message.fatal === true,
       })),
     })),
-    ruleCount,
+    differingCases: differingCases(signatures),
   };
 };
+
+const byNameFix = "規則をファイル名で分けずに、コードの形で検出します。";
+
+/**
+ * @param {readonly string[]} ids
+ * @returns {Problem}
+ */
+export const ruleDifferenceProblem = (ids) => ({
+  message: `eslint.config.mjs の規則がケースによって違います（${ids.join("、")}）`,
+  fix: byNameFix,
+});
 
 /**
  * @param {unknown} error
  * @returns {Problem}
  */
-export const lintFailureProblem = (error) => ({
-  message: `eslint.config.mjs を読み込めませんでした: ${firstLine(error)}`,
-  fix: "eslint.config.mjs の構文と import を見直します。",
-});
+export const lintFailureProblem = (error) => {
+  const rule = /Rule: "([^"]+)"/.exec(error instanceof Error ? error.message : String(error))?.[1];
+  return rule === undefined
+    ? {
+        message: `eslint.config.mjs を読み込めませんでした: ${firstLine(error)}`,
+        fix: "eslint.config.mjs の構文と import を見直します。",
+      }
+    : {
+        message: `規則 ${rule} の実行中にエラーが出ました（${firstLine(error)}）。`,
+        fix: `規則 ${rule} の書き方を見直します。`,
+      };
+};
 
 /**
  * @param {string} filePath

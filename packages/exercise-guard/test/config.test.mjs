@@ -82,6 +82,43 @@ describe("validateConfig", () => {
     expect(messages.some((message) => message.includes("allow が要ります"))).toBe(true);
   });
 
+  it("tests か types で検出する bad がある subject に good が無いと検出する", () => {
+    const raw = {
+      subjects: { input: "subjects/input.ts", other: "subjects/other.ts" },
+      cases: [
+        { id: "B1", kind: "bad", subject: "input", title: "悪い", allow: ["tests"] },
+        { id: "G1", kind: "good", subject: "other", title: "良い" },
+      ],
+    };
+    const messages = errorsOf(raw);
+
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toContain("subject「input」");
+    expect(messages[0]).toContain("good を 1 件以上足します");
+  });
+
+  it("lint だけで検出する bad は、good が無くてもよい", () => {
+    const raw = {
+      subjects: { input: "subjects/input.ts" },
+      cases: [{ id: "B1", kind: "bad", subject: "input", title: "悪い", allow: ["lint"] }],
+    };
+
+    expect(errorsOf(raw, { caseEntries: [{ id: "B1", file: "/cases/B1.ts" }] })).toEqual([]);
+  });
+
+  it("vitestBaseConfig は文字列で、ファイルが要る", () => {
+    expect(errorsOf({ ...valid, vitestBaseConfig: 1 })).toEqual(["vitestBaseConfig は root からの相対パスの文字列にします。"]);
+    expect(errorsOf({ ...valid, vitestBaseConfig: "vitest.base.config.mjs" }, { subjectExists: (file) => file !== "vitest.base.config.mjs" })).toEqual([
+      "vitestBaseConfig のファイル vitest.base.config.mjs がありません。",
+    ]);
+    expect(
+      validateConfig(
+        { ...valid, vitestBaseConfig: "vitest.base.config.mjs" },
+        { caseEntries: entries, listErrors: [], subjectExists: () => true },
+      ).vitestBaseConfig,
+    ).toBe("vitest.base.config.mjs");
+  });
+
   it("題材のファイルが無いと検出する", () => {
     expect(errorsOf(valid, { subjectExists: () => false })[0]).toContain("subjects/input.ts がありません");
   });

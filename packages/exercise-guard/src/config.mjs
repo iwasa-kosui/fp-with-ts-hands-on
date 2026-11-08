@@ -130,6 +130,14 @@ export const validateConfig = (raw, { caseEntries, listErrors, subjectExists }) 
     isRecord(item) && typeof item.id === "string" ? [item.id] : [],
   );
   const fileIds = caseEntries.map((entry) => entry.id);
+  const vitestBaseConfig = raw.vitestBaseConfig;
+  const needsGood = [
+    ...new Set(
+      cases
+        .filter((item) => item.kind === "bad" && (item.allow.includes("types") || item.allow.includes("tests")))
+        .map((item) => item.subject),
+    ),
+  ].filter((name) => !cases.some((item) => item.kind === "good" && item.subject === name));
   const errors = [
     ...listErrors,
     ...Object.entries(subjects)
@@ -144,11 +152,21 @@ export const validateConfig = (raw, { caseEntries, listErrors, subjectExists }) 
       .filter((id) => !declaredIds.includes(id))
       .map((id) => `exercises/guard/cases/ の「${id}」は ${guardConfigPath} に定義がありません。`),
     ...duplicates(fileIds).map((id) => `exercises/guard/cases/ に「${id}」が複数あります。`),
+    ...needsGood.map(
+      (name) =>
+        `subject「${name}」には、型のテストかテストで検出する悪い変更がありますが、正しいコード（good）がありません。誤検知を確かめるため、good を 1 件以上足します。`,
+    ),
+    ...(vitestBaseConfig === undefined || typeof vitestBaseConfig === "string"
+      ? []
+      : ["vitestBaseConfig は root からの相対パスの文字列にします。"]),
+    ...(typeof vitestBaseConfig === "string" && !subjectExists(vitestBaseConfig)
+      ? [`vitestBaseConfig のファイル ${vitestBaseConfig} がありません。`]
+      : []),
   ];
   if (errors.length > 0) {
     throw new GuardConfigError(errors);
   }
-  return { subjects, cases };
+  return typeof vitestBaseConfig === "string" ? { subjects, cases, vitestBaseConfig } : { subjects, cases };
 };
 
 /**
