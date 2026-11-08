@@ -24,6 +24,7 @@ import {
   testsTimeoutProblem,
 } from "./tests.mjs";
 import { buildTsconfig, classifyDiagnostics, configProblems, runTypecheck } from "./typecheck.mjs";
+import { findUnchanged } from "./unchanged.mjs";
 
 /** @typedef {import("./model.mjs").Detection} Detection */
 /** @typedef {import("./model.mjs").Evidence} Evidence */
@@ -207,9 +208,12 @@ export const judge = async (options) => {
         })
       : Promise.resolve(undefined);
 
+  /** @type {import("typescript").Program | undefined} */
+  let sharedProgram;
   const typesRun = timed(() => {
     try {
       const run = runTypecheck(path.join(workDir, "tsconfig.json"));
+      sharedProgram = run.program;
       return {
         classified: classifyDiagnostics(run.diagnostics, { root, copiesDir, casesDir, caseDirs: plan.caseDirs, mineDisplay }),
         configProblems: configProblems(run.configErrors, root),
@@ -227,6 +231,7 @@ export const judge = async (options) => {
         eslintConfigFile,
         patterns: ["exercises/guard/cases/**/*.ts"],
         caseFiles,
+        program: sharedProgram,
       });
       return { run, classified: classifyLint(run.results, { root, casesDir, caseFiles }), failure: undefined };
     } catch (error) {
@@ -270,6 +275,7 @@ export const judge = async (options) => {
     problems,
     notes: [...plan.notes, ...(lintClassified?.notes ?? [])],
     noJudgedFiles: plan.copies.length === 0,
+    unchangedIds: findUnchanged(config.cases, caseFiles),
     durations,
     revealAllStages: options.revealAllStages === true,
   });

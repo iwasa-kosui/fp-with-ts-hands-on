@@ -30,9 +30,11 @@ const verdictText = (row) =>
     ? "検出"
     : row.verdict === "slipped"
       ? "すり抜け"
-      : row.verdict === "falsePositive"
-        ? "誤検知あり"
-        : "誤検知なし";
+      : row.verdict === "unchanged"
+        ? "未変更"
+        : row.verdict === "falsePositive"
+          ? "誤検知あり"
+          : "誤検知なし";
 
 /**
  * @param {Row} row

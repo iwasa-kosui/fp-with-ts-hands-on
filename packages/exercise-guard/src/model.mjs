@@ -1,12 +1,12 @@
 /** @typedef {"types" | "lint" | "tests"} Mechanism */
-/** @typedef {Readonly<{ id: string, kind: "bad" | "good", subject: string, title: string, stage: number, required: boolean, allow: readonly Mechanism[], hint: string }>} GuardCase */
+/** @typedef {Readonly<{ id: string, kind: "bad" | "good", subject: string, title: string, stage: number, required: boolean, allow: readonly Mechanism[], hint: string, unchangedFrom?: string }>} GuardCase */
 /** @typedef {Readonly<{ subjects: Readonly<Record<string, string>>, cases: readonly GuardCase[], vitestBaseConfig?: string }>} GuardConfig */
 /** @typedef {Readonly<{ mechanism: Mechanism, file: string, line: number | null, label: string, message: string }>} Detection */
 /** @typedef {"hit" | "none" | "error" | "na"} CellState */
 /** @typedef {Readonly<{ state: CellState, count: number }>} Cell */
 /** @typedef {Readonly<Record<Mechanism, Cell>>} Cells */
 /** @typedef {Readonly<Record<Mechanism, readonly Detection[]>>} Detections */
-/** @typedef {"detected" | "slipped" | "falsePositive" | "noFalsePositive"} Verdict */
+/** @typedef {"detected" | "slipped" | "unchanged" | "falsePositive" | "noFalsePositive"} Verdict */
 /** @typedef {Readonly<{ id: string, kind: "bad" | "good", title: string, stage: number, required: boolean, allow: readonly Mechanism[], hint: string, cells: Cells, verdict: Verdict, detections: Detections, builtinTypes: readonly Detection[], collectionErrors: readonly Detection[] }>} Row */
 /** @typedef {Readonly<{ types: number, lint: number, tests: number, total: number }>} Durations */
 /** @typedef {Readonly<{ version: 1, passed: boolean, rows: readonly Row[], hiddenCount: number, problems: readonly string[], notes: readonly string[], next: readonly string[], durations: Durations }>} GuardResult */

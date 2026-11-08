@@ -128,4 +128,18 @@ describe("buildNext", () => {
 
     expect(sentences).toEqual(["合格です。次に、この仕組みで検出できないことを書きます。"]);
   });
+
+  it("合格のときは、任意の悪い変更がすり抜けていても、合格の文を先頭に置く", () => {
+    const optional = rowOf({
+      kind: "bad",
+      verdict: "slipped",
+      required: false,
+      title: "相互レビューで作る悪い変更",
+      allow: ["tests"],
+    });
+    const sentences = buildNext({ rows: [optional], problems: [], noJudgedFiles: false, stageOpened: 0, passed: true });
+
+    expect(sentences[0]).toBe("合格です。次に、この仕組みで検出できないことを書きます。");
+    expect(sentences[1]).toContain("『相互レビューで作る悪い変更』がすり抜けています。");
+  });
 });

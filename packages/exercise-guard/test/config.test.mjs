@@ -119,6 +119,24 @@ describe("validateConfig", () => {
     ).toBe("vitest.base.config.mjs");
   });
 
+  it("unchangedFrom は同じ subject の good を指す bad にだけ書ける", () => {
+    const withFrom = (/** @type {string} */ from) => ({
+      ...valid,
+      cases: [{ ...valid.cases[0], unchangedFrom: from }, valid.cases[1]],
+    });
+
+    expect(errorsOf(withFrom("G1"))).toEqual([]);
+    expect(errorsOf(withFrom("B1"))[0]).toContain("B1 の unchangedFrom「B1」は、同じ subject の正しいコード（good）の id にします。");
+    expect(errorsOf(withFrom("G9"))).toHaveLength(1);
+    expect(errorsOf({ ...valid, cases: [valid.cases[0], { ...valid.cases[1], unchangedFrom: "B1" }] })[0]).toContain(
+      "G1 の unchangedFrom は悪い変更（bad）にだけ指定します。",
+    );
+    expect(errorsOf(withFrom(/** @type {never} */ (1)))[0]).toContain("unchangedFrom は正しいコード（good）の id の文字列にします。");
+    expect(
+      validateConfig(withFrom("G1"), { caseEntries: entries, listErrors: [], subjectExists: () => true }).cases[0]?.unchangedFrom,
+    ).toBe("G1");
+  });
+
   it("題材のファイルが無いと検出する", () => {
     expect(errorsOf(valid, { subjectExists: () => false })[0]).toContain("subjects/input.ts がありません");
   });

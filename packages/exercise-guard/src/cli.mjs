@@ -103,7 +103,7 @@ const runWatched = ({ root, timeoutMs }) =>
     });
     const timer = setTimeout(async () => {
       await writeOut(
-        `検査が ${Math.round(timeoutMs / 100) / 10} 秒で終わりませんでした。eslint.config.mjs の規則に、終わらない繰り返しがないか見直します。\n`,
+        `検出を確かめる処理が ${Math.round(timeoutMs / 100) / 10} 秒で終わりませんでした。eslint.config.mjs の規則に、終わらない繰り返しがないか見直します。\n`,
       );
       stopVitest();
       await exitNow(1);
@@ -118,7 +118,7 @@ const runWatched = ({ root, timeoutMs }) =>
     worker.on("error", (error) => {
       clearTimeout(timer);
       stopVitest();
-      process.stderr.write(`検査の途中でエラーが出ました。\n${(error instanceof Error ? error.message : String(error)).split("\n")[0]}\n`);
+      process.stderr.write(`検出を確かめる途中でエラーが出ました。\n${(error instanceof Error ? error.message : String(error)).split("\n")[0]}\n`);
       resolve(2);
     });
     worker.on("exit", () => {

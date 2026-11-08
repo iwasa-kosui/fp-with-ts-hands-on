@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -15,6 +15,33 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, "fixtures", "s03");
 const scenarios = path.join(here, "fixtures", "s03-scenarios");
 const originalCwd = process.cwd();
+const copiedRoots = path.join(here, "fixtures", "dist");
+
+/**
+ * @param {string} name
+ * @returns {string}
+ */
+const copyRoot = (name) => {
+  const copied = path.join(copiedRoots, name);
+  rmSync(copied, { recursive: true, force: true });
+  mkdirSync(copiedRoots, { recursive: true });
+  cpSync(root, copied, { recursive: true, filter: (source) => path.relative(root, source).split(path.sep)[0] !== "dist" });
+  return copied;
+};
+
+/**
+ * @param {string} copied
+ * @param {readonly string[]} names
+ * @returns {void}
+ */
+const placeAnswerTests = (copied, names) => {
+  names.forEach((name) => {
+    writeFileSync(
+      path.join(copied, "exercises/guard/mine", name),
+      readFileSync(path.join(copied, "exercises/guard/answer/mine", name), "utf8").replaceAll("../../subjects/", "../subjects/"),
+    );
+  });
+};
 
 /** @type {Map<string, Promise<GuardResult>>} */
 const cache = new Map();
@@ -73,6 +100,9 @@ beforeAll(() => {
 
 afterAll(() => {
   process.chdir(originalCwd);
+  ["verify-detecting-mine", "unchanged-root"].forEach((name) => {
+    rmSync(path.join(copiedRoots, name), { recursive: true, force: true });
+  });
 });
 
 describe("judge", () => {
@@ -332,6 +362,63 @@ describe("judge", () => {
     expect(result.lines).toHaveLength(2);
     expect(result.ok, result.lines.join("\n")).toBe(true);
     expect(existsSync(path.join(root, "dist/guard-verify/answer/result.json"))).toBe(true);
+  });
+
+  it("verify: 配布の mine/ の雛形を使い、悪い変更はすべてすり抜けて正しいコードに誤検知が出ない", async () => {
+    await verify({ root });
+    const initial = JSON.parse(readFileSync(path.join(root, "dist/guard-verify/initial/result.json"), "utf8"));
+
+    expect(existsSync(path.join(root, "exercises/guard/mine/input.test.ts"))).toBe(true);
+    expect(initial.rows.filter((/** @type {{ kind: string }} */ row) => row.kind === "bad")).toHaveLength(5);
+    expect(
+      initial.rows.every((/** @type {{ kind: string, verdict: string }} */ row) =>
+        row.kind === "bad" ? row.verdict === "slipped" : row.verdict === "noFalsePositive",
+      ),
+    ).toBe(true);
+    expect(initial.notes).toEqual([]);
+  });
+
+  it("verify: 配布の mine/ に悪い変更を検出するテストを入れると失敗する", async () => {
+    const copied = copyRoot("verify-detecting-mine");
+    placeAnswerTests(copied, ["input.test.ts"]);
+
+    const result = await verify({ root: copied });
+
+    expect(result.ok).toBe(false);
+    expect(result.lines[0]).toContain("NG 初期状態: 配布時点で検出される悪い変更があります（B1-any-parser、B2-unknown-cast、B3-schema-without-uuid）");
+  });
+
+  it("unchanged: 正しいコードと同じ内容の悪い変更は「未変更」とし、次にすることから外す", async () => {
+    const copied = copyRoot("unchanged-root");
+    const configFile = path.join(copied, "exercises/guard/guard.config.mjs");
+    const caseFile = path.join(copied, "exercises/guard/cases/R1-peer-change.ts");
+    const good = readFileSync(path.join(copied, "exercises/guard/cases/G1-solution.ts"), "utf8");
+    writeFileSync(
+      configFile,
+      readFileSync(configFile, "utf8").replace(
+        '    {\n      id: "G1-solution",',
+        '    {\n      id: "R1-peer-change",\n      kind: "bad",\n      subject: "input",\n      title: "相互レビューで作る悪い変更",\n      stage: 2,\n      required: false,\n      allow: ["types", "lint", "tests"],\n      unchangedFrom: "G1-solution",\n    },\n    {\n      id: "G1-solution",',
+      ),
+    );
+    writeFileSync(caseFile, `// 書き換えます\n${good}`);
+
+    placeAnswerTests(copied, ["input.test.ts", "handler.test.ts", "result.type-test.ts"]);
+    const eslintConfigFile = "exercises/guard/answer/eslint.config.mjs";
+
+    const before = await judge({ root: copied, eslintConfigFile, workDir: "dist/guard-unchanged-before" });
+    const untouched = rowOf(before, "R1-peer-change");
+
+    expect(untouched.verdict).toBe("unchanged");
+    expect(render(before, { color: false })).toContain("未変更");
+    expect(before.next.some((sentence) => sentence.includes("相互レビューで作る悪い変更"))).toBe(false);
+    expect(before.passed).toBe(true);
+
+    writeFileSync(caseFile, `${good}\nexport const changed = 1;\n`);
+    const after = await judge({ root: copied, eslintConfigFile, workDir: "dist/guard-unchanged-after" });
+
+    expect(rowOf(after, "R1-peer-change").verdict).toBe("slipped");
+    expect(after.next.some((sentence) => sentence.includes("『相互レビューで作る悪い変更』がすり抜けています。"))).toBe(true);
+    expect(after.passed).toBe(true);
   });
 });
 
