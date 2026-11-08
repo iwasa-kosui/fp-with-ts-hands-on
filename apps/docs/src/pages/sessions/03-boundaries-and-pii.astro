@@ -1,34 +1,19 @@
 ---
-import CodeGuideCards from "../../components/CodeGuideCards.astro";
-import CommandBlock from "../../components/CommandBlock.astro";
-import GuardTable from "../../components/GuardTable.astro";
-import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
-// CSS chunk の分割と読み込み順を変換前と同じに保つ
-import "../../components/code-explorer/CodeExplorer";
-import Prose from "../../sessions/prose/03-boundaries-and-pii.mdx";
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
-import type { ProjectFiles, SessionWorkspace } from "../../code-explorer/types";
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import { loadSolutionSnippets } from "../../sessions/solution-snippets";
-import { blockOf, sourceOf } from "../../sessions/source-quotes";
+import type { SessionWorkspace } from "../../code-explorer/types";
+import SessionFrame from "../../components/session-frame/SessionFrame.astro";
+import { sessionPages, sessionSlug } from "../../sessions/pages/03-boundaries-and-pii";
+import Prose from "../../sessions/prose/03-boundaries-and-pii/index.mdx";
+import { sourceOf } from "../../sessions/source-quotes";
 import type {
   DelegationPrompt,
   ExampleSnapshot,
   ExerciseModule,
-  ExerciseSessionSummary,
   ExerciseStep,
   SessionSummary,
   SolutionPresentation,
 } from "../../sessions/types";
-import "../../styles/code-playground.css";
-import "../../styles/sessions.css";
-import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
-
-type TeachingSnippets = Readonly<{
-  before: string;
-  after: string;
-}>;
 
 type SupplementaryExercise = Readonly<{
   exerciseCommand: string;
@@ -47,10 +32,10 @@ export const session: SessionSummary = {
   kind: "exercise",
   title: "診察開始の入力を境界で検証する",
   durationMinutes: 35,
-  timeBreakdown: { brief: 3, teach: 10, exercise: 15, review: 7 },
+  timeBreakdown: { brief: 2, teach: 13, exercise: 15, review: 5 },
   adv: { articulate: 2, delegate: 11, verify: 2 },
   peerReview: {
-    minutes: 7,
+    minutes: 5,
     pickCount: 2,
     questions: [
       "不正な予約IDまたは獣医師IDを含む入力は、`StartExaminationInput` になりませんか。",
@@ -223,132 +208,6 @@ export const paymentAmountQuote = ({
   ),
 } as const);
 
-const paymentAmountCaption = `実コード: ${paymentAmountQuote.source}`;
-
-const session03Files = projectFilesForSnapshot("session-03");
-const session04Files = projectFilesForSnapshot("session-04");
-const examResultQuote = {
-  path: "examples/session-05/src/boundary/examResult.ts",
-  code: sourceOf(projectFilesForSnapshot("session-05"), "src/boundary/examResult.ts"),
-};
-
-const appointmentAndStartExamination = (files: ProjectFiles) => `${blockOf(
-  files,
-  "src/domain/appointment/appointment.ts",
-  "export type Scheduled = Readonly<{",
-  "}>;",
-)}
-
-${blockOf(
-  files,
-  "src/domain/appointment/transitions.ts",
-  "export const startExamination = (",
-  "  }) as const satisfies InExamination;",
-)}`;
-
-const supplementaryExerciseTeaching: readonly TeachingSnippets[] = [
-  {
-    before: sourceOf(session03Files, "src/domain/appointment/appointmentId.ts"),
-    after: sourceOf(session04Files, "src/domain/appointment/appointmentId.ts"),
-  },
-  {
-    before: appointmentAndStartExamination(session03Files),
-    after: appointmentAndStartExamination(session04Files),
-  },
-  {
-    before: sourceOf(session03Files, "src/domain/domain.test-types.ts"),
-    after: sourceOf(session04Files, "src/domain/domain.test-types.ts"),
-  },
-];
-
-const brandedIdSnippets = await loadSolutionSnippets({
-  solutions: [
-    {
-      path: "examples/session-03/src/domain/appointment/appointmentId.ts",
-      symbol: "AppointmentId",
-      lines: [1, 6],
-    },
-    {
-      path: "examples/session-04/src/domain/appointment/appointmentId.ts",
-      symbol: "AppointmentId",
-      lines: [1, 6],
-    },
-    {
-      path: "examples/session-03/src/domain/domain.test-types.ts",
-      symbol: "acceptVeterinarianId",
-      lines: [6, 10],
-    },
-    {
-      path: "examples/session-04/src/domain/domain.test-types.ts",
-      symbol: "acceptVeterinarianId",
-      lines: [6, 13],
-    },
-    {
-      path: "examples/session-04/src/domain/domain.test-types.ts",
-      symbol: "AppointmentId.parse",
-      lines: [1, 5],
-    },
-  ],
-});
-const [brandedBeforeId, brandedAfterId, brandedBeforeSwap, brandedAfterSwap, brandedAfterParse] =
-  brandedIdSnippets.map(({ solution, code }) => ({ path: solution.path, code }));
-const brandedIdCode = {
-  beforeId: brandedBeforeId,
-  afterId: brandedAfterId,
-  beforeSwap: brandedBeforeSwap,
-  afterSwap: brandedAfterSwap,
-  afterParse: brandedAfterParse,
-};
-
-const schemaSourceSnippets = await loadSolutionSnippets({
-  solutions: [
-    {
-      path: "examples/session-04/src/boundary/startExaminationInput.ts",
-      symbol: "StartExaminationInput",
-      lines: [1, 16],
-    },
-    {
-      path: "examples/session-05/src/boundary/startExaminationInput.ts",
-      symbol: "StartExaminationInput",
-      lines: [1, 17],
-    },
-    {
-      path: "examples/session-05/src/shared/schemaResult.ts",
-      symbol: "schemaResult",
-      lines: [23, 27],
-    },
-  ],
-});
-const [schemaBefore, schemaAfter, schemaResultSource] =
-  schemaSourceSnippets.map(({ solution, code }) => ({ path: solution.path, code }));
-const schemaSourceCode = {
-  before: schemaBefore,
-  after: schemaAfter,
-  schemaResult: schemaResultSource,
-};
-
-const supplementaryExerciseTypecheckCommand =
-  "pnpm --filter @fp-with-ts/clinic-session-03 typecheck";
-const supplementaryExerciseSolutionSteps = await Promise.all(
-  supplementaryExercise.steps.map(async (step) => ({
-    step,
-    snippets: await loadSolutionSnippets(step),
-  })),
-);
-const supplementaryExercisePrompt = `${supplementaryExercise.exerciseModule.dir} のコードを直して、
-${supplementaryExercise.exerciseCommand} を成功させてください。
-
-取り違えてはいけない値: [言語化フェーズで書いた1文]`;
-
-const incidentRequest = `POST /appointments/11111111-1111-4111-8111-111111111111/start-examination
-Content-Type: application/json
-
-{
-  "veterinarianId": "night-shift"
-}`;
-
-const exerciseSession: ExerciseSessionSummary = session;
-
 export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
@@ -366,22 +225,6 @@ export const workspace = ({
   ],
 } as const) satisfies SessionWorkspace;
 
-const projectFiles = projectFilesForSnapshot(session.snapshot);
-const solutionSteps = await Promise.all(
-  session.steps.map(async (step) => ({
-    step,
-    presentation: step.solutions[0].presentation ?? "excerpt",
-    snippets: await loadSolutionSnippets(step),
-  })),
-);
-const chapters = [
-  { id: "incident", label: "今回つくるもの" },
-  { id: "legacy", label: "コードを読み、失敗を再現する" },
-  { id: "teach", label: "事前知識" },
-  { id: "supplementary", label: "補助演習" },
-  { id: "refactor", label: "演習" },
-  { id: "review", label: "レビューと持ち帰り" },
-] as const;
 export const promisesHref =
   "/sessions/01-state-transitions/#peer-review-promises";
 export const navigation = ({
@@ -394,72 +237,29 @@ export const navigation = ({
     title: "失敗をユースケースの結果として扱う",
   },
 } as const);
-const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
-const guardQuestion = "<code>as</code> で <code>AppointmentId</code> を作ると、検査を通らない値が型付きの入力になります。これを、文面のほかにどの仕組みで防げますか。";
-const guards = [
-  {
-    problem: "予約 ID と獣医師 ID を取り違える",
-    mechanism: "Branded Type",
-    signal: "<code>pnpm exercise:03</code> の型検査",
-  },
-  {
-    problem: "検査していない外部入力を診察開始へ渡す",
-    mechanism: "Zod の schema と <code>Result</code> を返す入力の検査",
-    signal: "<code>pnpm exercise:04</code> の演習テスト",
-  },
-] as const;
-const guardModules = [supplementaryExercise.exerciseModule, session.exerciseModule];
-const delegationPrompt = `${session.exerciseModule.dir} のコードを直して、
-${session.exerciseCommand} を成功させてください。
 
-境界で拒否する入力: [言語化フェーズで書いた1文]`;
 ---
 
-<BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
-  <div class="case-file case-file--session">
-    <header class="case-file__site-header"><a href="/"><span class="case-file__brand-mark" aria-hidden="true">🐾</span>WAN NYAN CLINIC</a></header>
-    <main>
-      <SessionPageNavigation currentSlug={session.slug} chapters={chapters}>
-      <section slot="hero" class="case-file__hero" aria-labelledby="session-title">
-        <p class="case-file__eyebrow">SESSION {session.sequence} · {session.durationMinutes}分</p>
-        <h1 id="session-title">{session.title}</h1>
-        <p class="case-file__summary">
-          <span aria-hidden="true">{session.animal.avatar}</span>
-          {session.summary}
-        </p>
-      </section>
-      <Prose
-        components={{ CodeGuideCards, CommandBlock, EpisodeIllustration, GuardTable }}
-        session={session}
-        supplementaryExercise={supplementaryExercise}
-        guides={guides}
-        workspace={workspace}
-        projectFiles={projectFiles}
-        solutionSteps={solutionSteps}
-        incidentRequest={incidentRequest}
-        paymentAmountCaption={paymentAmountCaption}
-        paymentAmountCode={paymentAmountQuote.code}
-        examResultQuote={examResultQuote}
-        brandedIdCode={brandedIdCode}
-        schemaSourceCode={schemaSourceCode}
-        supplementaryExerciseTeaching={supplementaryExerciseTeaching}
-        supplementaryExerciseTypecheckCommand={supplementaryExerciseTypecheckCommand}
-        supplementaryExerciseSolutionSteps={supplementaryExerciseSolutionSteps}
-        supplementaryExercisePrompt={supplementaryExercisePrompt}
-        delegationPrompt={delegationPrompt}
-        delegationDecisions={exerciseSession.delegationPrompt.decisions}
-        supplementaryDelegationDecisions={supplementaryExercise.delegationPrompt.decisions}
-        guards={guards}
-        guardQuestion={guardQuestion}
-        guardModules={guardModules}
-        headcount={headcount}
-        promisesHref={promisesHref}
-      />
-      <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
-        <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
-        <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
-      </nav>
-      </SessionPageNavigation>
-    </main>
-  </div>
-</BaseLayout>
+<SessionFrame
+  sessionSlug={sessionSlug}
+  pages={sessionPages}
+  pageSlug=""
+  description={session.summary}
+>
+  <Prose />
+  <script is:inline>
+    const destinations = new Map([
+      ["incident", ""],
+      ["legacy", "current-code/"],
+      ["teach", "boundary/"],
+      ["supplementary", "exercise/"],
+      ["refactor", "exercise/"],
+      ["review", "review/"],
+    ]);
+    const destination = destinations.get(location.hash.slice(1));
+    if (destination) {
+      const base = location.pathname.endsWith("/") ? location.pathname : `${location.pathname}/`;
+      location.replace(`${base}${destination}`);
+    }
+  </script>
+</SessionFrame>

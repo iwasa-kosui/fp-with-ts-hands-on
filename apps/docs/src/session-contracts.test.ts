@@ -6,6 +6,8 @@ import {
   supplementaryExercise,
 } from "./pages/sessions/03-boundaries-and-pii.astro";
 import { sessionNavigationItems } from "./sessions/navigation";
+import { sessionPages } from "./sessions/pages/03-boundaries-and-pii";
+import { sessionPageEntries } from "./sessions/pages/links";
 import type { SessionNavigation, SessionSummary } from "./sessions/types";
 type PageModule = Readonly<{
   session: SessionSummary;
@@ -84,7 +86,7 @@ const expectedCurriculum = [
     kind: "exercise",
     exerciseCommand: "pnpm exercise:04",
     snapshot: "session-04",
-    timeBreakdown: { brief: 3, teach: 10, exercise: 15, review: 7 },
+    timeBreakdown: { brief: 2, teach: 13, exercise: 15, review: 5 },
   },
   {
     slug: "04-workflow-errors",
@@ -221,7 +223,7 @@ const expectedExercises = [
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
     peerReview: {
-      minutes: 7,
+      minutes: 5,
       pickCount: 2,
       questions: [
         "不正な予約IDまたは獣医師IDを含む入力は、`StartExaminationInput` になりませんか。",
@@ -394,7 +396,8 @@ describe("page-owned session contracts", () => {
     expect(boundaryEpisode?.join("\n")).toContain("veterinarianId");
     expect(boundaryEpisode?.join("\n")).toContain("StartExaminationInput");
 
-    for (const { path } of pages) {
+    for (const { path, session } of pages) {
+      if (session.slug === "03-boundaries-and-pii") continue;
       const source = pageSources[path] ?? "";
       expect(source, path).toContain('class="case-file__episode"');
       expect(source, path).toContain('class="case-file__episode-label"');
@@ -564,5 +567,107 @@ describe("page-owned session contracts", () => {
     expect(pages.map(({ navigation }) => navigation)).toEqual(
       expectedNavigation,
     );
+  });
+});
+
+const expectedBoundaryPages = [
+  ["", "獣医師の欄に「夜勤」と届いた", "brief", 1],
+  ["current-code", "今のコードは必ず成功を返す", "brief", 1],
+  ["boundary", "外側・境界・内側", "teach", 2],
+  ["result", "Result は成否だけを持つ小さな型", "teach", 1],
+  ["zod", "Zod: 1つの schema から型を作る", "teach", 1.5],
+  ["safe-parse", "schema で検査して Result を返す", "teach", 1.5],
+  ["branded", "Branded Type: 同じ string を用途で区別する", "teach", 2],
+  ["boundary-after", "境界を通った値だけが内側へ入る", "teach", 2],
+  ["terms", "学んだことに名前を付ける", "teach", 0.5],
+  ["audit-record", "連絡先を記録に残さない", "teach", 1.5],
+  ["checks", "値の性質をテストで確かめる", "teach", 1],
+  ["exercise", "演習: 悪い変更を検出する仕組みを足す", "exercise", 15],
+  ["peer-review", "相互レビュー", "review", 3],
+  ["review", "個人の確認と持ち帰り", "review", 1],
+  ["guard", "仕組みで防ぐ方法を話す", "review", 1],
+  ["payment-amount", "値の制約にも同じ形を使う", "advanced", 0],
+  ["pii", "Sensitive で値を伏せる", "advanced", 0],
+  ["value-shapes", "扱う値が変わっても形は同じ", "advanced", 0],
+] as const;
+
+describe("Session 03 page list", () => {
+  const base = "/sessions/03-boundaries-and-pii/";
+  const entries = sessionPageEntries("03-boundaries-and-pii", sessionPages);
+  const hrefOf = (slug: string) => (slug === "" ? base : `${base}${slug}/`);
+  const s02 = {
+    href: "/sessions/02-adt-and-exhaustiveness/",
+    title: "予約の状態の分岐漏れを型で検出する",
+  };
+  const s04 = {
+    href: "/sessions/04-workflow-errors/",
+    title: "失敗をユースケースの結果として扱う",
+  };
+
+  it("lists the 18 pages in the agreed order", () => {
+    expect(
+      sessionPages.map(({ slug, title, kind, minutes }) => [
+        slug,
+        title,
+        kind,
+        minutes,
+      ]),
+    ).toEqual(expectedBoundaryPages);
+    expect(new Set(sessionPages.map(({ slug }) => slug)).size).toBe(18);
+  });
+
+  it("keeps the page minutes aligned with the session time breakdown", () => {
+    const sum = (kind: string) =>
+      sessionPages
+        .filter((page) => page.kind === kind)
+        .reduce((total, { minutes }) => total + minutes, 0);
+    const session = sessions.find(({ slug }) => slug === "03-boundaries-and-pii");
+
+    expect(session?.timeBreakdown).toEqual({
+      brief: sum("brief"),
+      teach: sum("teach"),
+      exercise: sum("exercise"),
+      review: sum("review"),
+    });
+    expect(session?.peerReview?.minutes).toBe(sum("review"));
+    expect(session?.durationMinutes).toBe(
+      sessionPages.reduce((total, { minutes }) => total + minutes, 0),
+    );
+    expect(sum("advanced")).toBe(0);
+  });
+
+  it("links each page to its neighbours and to the adjacent sessions", () => {
+    const slugs = expectedBoundaryPages.map(([slug]) => slug);
+
+    entries.forEach(({ previous, next }, index) => {
+      const expectedPrevious =
+        index === 0
+          ? s02
+          : { href: hrefOf(slugs[index - 1]!), title: expectedBoundaryPages[index - 1]![1] };
+      const expectedNext =
+        slugs[index] === "guard" || index === slugs.length - 1
+          ? s04
+          : { href: hrefOf(slugs[index + 1]!), title: expectedBoundaryPages[index + 1]![1] };
+
+      expect(previous, slugs[index]).toEqual(expectedPrevious);
+      expect(next, slugs[index]).toEqual(expectedNext);
+    });
+  });
+
+  it("shows the advanced pages link only on the last in-time page", () => {
+    expect(
+      entries.flatMap(({ page, later }) =>
+        later === undefined ? [] : [[page.slug, later]],
+      ),
+    ).toEqual([["guard", { href: `${base}payment-amount/`, count: 3 }]]);
+  });
+
+  it("counts positions inside the in-time pages and the advanced pages separately", () => {
+    expect(entries.map(({ position }) => position)).toEqual([
+      ...Array.from({ length: 15 }, (_, index) => `${index + 1} / 15`),
+      "発展 1 / 3",
+      "発展 2 / 3",
+      "発展 3 / 3",
+    ]);
   });
 });

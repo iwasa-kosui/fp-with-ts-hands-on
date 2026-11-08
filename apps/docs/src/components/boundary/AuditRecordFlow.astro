@@ -1,0 +1,409 @@
+---
+import { Code } from "astro:components";
+import { clinicFixture } from "../../../../../examples/fixtures/clinic";
+import { projectFilesForSnapshot } from "../../code-explorer/project-files";
+import { blockOf } from "../../sessions/source-quotes";
+import StepControls from "./StepControls.astro";
+
+const repositoryPath = "src/adaptor/secondary/sqlite/appointmentRepository.ts";
+
+const dedent = (source: string) => {
+  const lines = source.split("\n");
+  const indent = Math.min(
+    ...lines.filter((line) => line.trim() !== "").map((line) => line.length - line.trimStart().length),
+  );
+  return lines.map((line) => line.slice(indent)).join("\n");
+};
+const lineOf = (source: string, needle: string) => {
+  const index = source.split("\n").findIndex((line) => line.includes(needle));
+  if (index < 0) throw new Error(`AuditRecordFlow: "${needle}" is not in the excerpt`);
+  return index;
+};
+
+const beforeCode = dedent(
+  blockOf(
+    projectFilesForSnapshot("session-04"),
+    repositoryPath,
+    "        payload: {",
+    "        },",
+  ),
+);
+const afterCode = dedent(
+  blockOf(
+    projectFilesForSnapshot("session-05"),
+    repositoryPath,
+    "const toExaminationStartedAuditPayload = (",
+    "});",
+  ),
+);
+
+const sides = {
+  before: {
+    label: "修正前",
+    path: `examples/session-04/src/adaptor/secondary/sqlite/appointmentRepository.ts:92-96`,
+    code: beforeCode,
+  },
+  after: {
+    label: "修正後",
+    path: `examples/session-05/src/adaptor/secondary/sqlite/appointmentRepository.ts:55-61`,
+    code: afterCode,
+  },
+} as const;
+
+const lit = {
+  before: { 1: [lineOf(beforeCode, "ownerContact:")] },
+  after: {
+    2: [lineOf(afterCode, "appointmentId:"), lineOf(afterCode, "veterinarianId:"), lineOf(afterCode, "examinationStartedAt:")],
+    3: [lineOf(afterCode, "veterinarianId:"), lineOf(afterCode, "examinationStartedAt:")],
+  },
+};
+
+const contact = clinicFixture.ownerContact;
+const frames = [
+  {
+    caption: "診察を開始するたびに、監査記録が1件書かれます。監査記録は、いつ何が起きたかを残す記録です。",
+  },
+  {
+    caption: "修正前のコードは、監査記録に ownerContact を入れています。氏名・メールアドレス・電話番号の3項目が、そのまま記録に残ります。",
+  },
+  {
+    caption: "修正後のコードは、appointmentId・veterinarianId・examinationStartedAt の3項目だけを記録に入れます。連絡先は入りません。",
+  },
+  {
+    caption: "連絡先を残さなくても、veterinarianId で「誰が」、examinationStartedAt で「いつ」診察を開始したかは分かります。",
+  },
+] as const;
+
+const litData = JSON.stringify(lit);
+---
+
+<figure class="audit-flow" data-audit-record-flow data-lit={litData} aria-label="診察開始の監査記録の修正前と修正後">
+  <StepControls />
+
+  <div class="audit-flow__trigger">
+    <span class="audit-flow__button">獣医師が「診察を開始する」</span>
+    <span class="audit-flow__arrows" aria-hidden="true">▼　　　　▼</span>
+  </div>
+
+  <div class="audit-flow__columns">
+    <section class="audit-flow__column" data-side="before">
+      <figure class="code-block audit-flow__code">
+        <figcaption>
+          <span class="audit-flow__tag audit-flow__tag--before">{sides.before.label}</span>
+          <code>{sides.before.path}</code>
+        </figcaption>
+        <Code code={sides.before.code} lang="ts" />
+      </figure>
+      <div class="audit-flow__record">
+        <p class="audit-flow__record-title">監査記録 1件</p>
+        <ul>
+          <li class="audit-flow__row audit-flow__row--muted" data-from="1" style="--i: 0">
+            <span>appointment</span><span>予約の内容</span>
+          </li>
+          <li class="audit-flow__row audit-flow__row--danger" data-from="1" style="--i: 1">
+            <span>ownerName</span><span>{contact.ownerName}</span>
+          </li>
+          <li class="audit-flow__row audit-flow__row--danger" data-from="1" style="--i: 2">
+            <span>ownerEmail</span><span>{contact.ownerEmail}</span>
+          </li>
+          <li class="audit-flow__row audit-flow__row--danger" data-from="1" style="--i: 3">
+            <span>ownerPhone</span><span>{contact.ownerPhone}</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="audit-flow__column" data-side="after">
+      <figure class="code-block audit-flow__code">
+        <figcaption>
+          <span class="audit-flow__tag audit-flow__tag--after">{sides.after.label}</span>
+          <code>{sides.after.path}</code>
+        </figcaption>
+        <Code code={sides.after.code} lang="ts" />
+      </figure>
+      <div class="audit-flow__record">
+        <p class="audit-flow__record-title">監査記録 1件</p>
+        <ul>
+          <li class="audit-flow__row audit-flow__row--keep" data-from="2" style="--i: 0">
+            <span>appointmentId</span><span>どの予約か</span>
+          </li>
+          <li class="audit-flow__row audit-flow__row--keep" data-from="2" style="--i: 1">
+            <span>veterinarianId</span><span>誰が</span>
+          </li>
+          <li class="audit-flow__row audit-flow__row--keep" data-from="2" style="--i: 2">
+            <span>examinationStartedAt</span><span>いつ</span>
+          </li>
+          <li class="audit-flow__row audit-flow__row--ghost" data-from="3" style="--i: 3">
+            <span>ownerContact</span><span>残さない</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <div aria-live="polite">
+    <ol class="audit-flow__frames">
+      {frames.map((frame) => (
+        <li data-frame>
+          <p class="audit-flow__caption">{frame.caption}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</figure>
+
+<script>
+  import { mountStepper } from "./stepper";
+
+  type Lit = Partial<Record<"before" | "after", Record<string, number[]>>>;
+
+  document.querySelectorAll<HTMLElement>("[data-audit-record-flow]").forEach((root) => {
+    const lit = JSON.parse(root.dataset.lit ?? "{}") as Lit;
+    const lines = (side: "before" | "after") =>
+      [...root.querySelectorAll<HTMLElement>(`[data-side="${side}"] .line`)];
+    const rows = [...root.querySelectorAll<HTMLElement>("[data-from]")];
+
+    mountStepper({
+      root,
+      onStep: (step) => {
+        (["before", "after"] as const).forEach((side) => {
+          const active = lit[side]?.[String(step)] ?? [];
+          lines(side).forEach((line, index) => line.classList.toggle("is-lit", active.includes(index)));
+        });
+        rows.forEach((row) => row.classList.toggle("is-shown", Number(row.dataset.from) <= step));
+      },
+    });
+  });
+</script>
+
+<style>
+  .audit-flow {
+    min-width: 0;
+    margin: 1rem 0;
+  }
+
+  .audit-flow__trigger {
+    display: grid;
+    justify-items: center;
+    gap: 0.125rem;
+    margin-block-end: 0.5rem;
+  }
+
+  .audit-flow__button {
+    padding: 0.375rem 1rem;
+    border: 2px solid var(--case-line);
+    border-radius: 999px;
+    background: var(--case-yellow);
+    color: var(--case-ink);
+    font-weight: 700;
+  }
+
+  .audit-flow__arrows {
+    color: var(--case-muted);
+    line-height: 1.2;
+    white-space: pre;
+  }
+
+  .audit-flow__columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .audit-flow__column {
+    display: grid;
+    align-content: start;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .audit-flow__code {
+    min-width: 0;
+    margin: 0;
+  }
+
+  .audit-flow__code figcaption {
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  .audit-flow__code figcaption code {
+    font-size: 0.6875rem;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .audit-flow__code :global(pre) {
+    min-height: 8.5rem;
+    margin: 0;
+    padding: 0.625rem 0;
+    font-size: 0.75rem;
+    line-height: 1.55;
+  }
+
+  .audit-flow__code :global(.line) {
+    display: inline-block;
+    min-width: 100%;
+    padding-inline: 0.75rem;
+  }
+
+  .audit-flow__code :global(.line.is-lit) {
+    background: rgb(255 210 27 / 35%);
+    box-shadow: inset 4px 0 0 var(--case-yellow);
+  }
+
+  .audit-flow__tag {
+    display: inline-block;
+    padding: 0 0.5rem;
+    border-radius: 0.25rem;
+    color: var(--case-ink);
+    font-weight: 700;
+  }
+
+  .audit-flow__tag--before {
+    background: var(--case-pink);
+  }
+
+  .audit-flow__tag--after {
+    background: var(--case-highlight);
+  }
+
+  .audit-flow__record {
+    padding: 0.5rem 0.75rem 0.75rem;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--case-paper);
+    color: var(--case-ink);
+  }
+
+  .audit-flow__record-title {
+    margin: 0 0 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .audit-flow__record ul {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .audit-flow__row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0 0.75rem;
+    padding: 0.1875rem 0.5rem;
+    border-inline-start: 4px solid var(--case-divider);
+    border-radius: 0.25rem;
+    background: color-mix(in srgb, var(--case-divider) 35%, var(--case-paper));
+    font-size: 0.8125rem;
+  }
+
+  .audit-flow__row span:first-child {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 700;
+  }
+
+  .audit-flow__row--muted {
+    color: var(--case-muted);
+  }
+
+  .audit-flow__row--danger {
+    border-inline-color: var(--case-pink);
+    background: color-mix(in srgb, var(--case-pink) 22%, var(--case-paper));
+  }
+
+  .audit-flow__row--keep {
+    border-inline-color: var(--case-highlight);
+    background: color-mix(in srgb, var(--case-highlight) 22%, var(--case-paper));
+  }
+
+  .audit-flow__row--ghost {
+    border-style: dashed;
+    border-inline-color: var(--case-muted);
+    background: transparent;
+    color: var(--case-muted);
+  }
+
+  .audit-flow__row--ghost span:first-child {
+    text-decoration: line-through;
+  }
+
+  .audit-flow__frames {
+    margin: 0.75rem 0 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .audit-flow__frames > li + li {
+    margin-block-start: 0.5rem;
+  }
+
+  .audit-flow__caption {
+    margin: 0;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .audit-flow[data-ready] .audit-flow__frames {
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  .audit-flow[data-ready] .audit-flow__column,
+  .audit-flow[data-ready] .audit-flow__code,
+  .audit-flow[data-ready] .audit-flow__code :global(.line),
+  .audit-flow[data-ready] .audit-flow__row {
+    transition: opacity 0.35s, transform 0.35s, background-color 0.25s;
+  }
+
+  .audit-flow[data-ready] .audit-flow__row:not(.is-shown) {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+
+  .audit-flow[data-ready] .audit-flow__row.is-shown {
+    transition-delay: calc(var(--i) * 0.12s);
+  }
+
+  .audit-flow[data-ready][data-step="0"] .audit-flow__code,
+  .audit-flow[data-ready][data-step="1"] .audit-flow__column[data-side="after"],
+  .audit-flow[data-ready][data-step="2"] .audit-flow__column[data-side="before"],
+  .audit-flow[data-ready][data-step="3"] .audit-flow__column[data-side="before"] {
+    opacity: 0.4;
+  }
+
+  .audit-flow[data-ready][data-step="3"] .audit-flow__column[data-side="after"] .audit-flow__row--keep:nth-child(n + 2) {
+    outline: 2px solid var(--case-blue);
+    outline-offset: 1px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .audit-flow[data-ready][data-step="0"] .audit-flow__arrows {
+      animation: audit-flow-nudge 1.1s ease-in-out infinite;
+    }
+
+    @keyframes audit-flow-nudge {
+      50% {
+        transform: translateY(0.25rem);
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .audit-flow[data-ready] .audit-flow__column,
+    .audit-flow[data-ready] .audit-flow__code,
+    .audit-flow[data-ready] .audit-flow__code :global(.line),
+    .audit-flow[data-ready] .audit-flow__row {
+      transition: none;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .audit-flow__columns {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

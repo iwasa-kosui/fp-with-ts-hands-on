@@ -2,17 +2,38 @@
 import { Code } from "astro:components";
 import type { Walkthrough } from "../sessions/boundary-walkthroughs";
 
-type Props = Readonly<{ walkthrough: Walkthrough }>;
+type Props = Readonly<{
+  walkthrough: Walkthrough;
+  scenarioIds?: readonly string[];
+  codeless?: boolean;
+}>;
 
-const { walkthrough } = Astro.props;
+const { walkthrough, scenarioIds, codeless = false } = Astro.props;
 const pathOf = (fileId: string) =>
   walkthrough.files.find(({ id }) => id === fileId)?.path ?? "";
+const chosenScenarios =
+  scenarioIds === undefined
+    ? walkthrough.scenarios
+    : scenarioIds.map((scenarioId) => {
+        const found = walkthrough.scenarios.find(({ id }) => id === scenarioId);
+        if (found === undefined) throw new Error(`${scenarioId} is not a walkthrough scenario`);
+        return found;
+      });
+const scenarios = codeless
+  ? chosenScenarios.map((scenario) => ({
+      ...scenario,
+      frames: scenario.frames.filter(({ fileId }) => fileId !== "schemaResult"),
+    }))
+  : chosenScenarios;
+const description = codeless
+  ? (walkthrough.descriptionWithoutCode ?? walkthrough.description)
+  : walkthrough.description;
 const data = JSON.stringify({
-  scenarios: walkthrough.scenarios,
+  scenarios,
 }).replaceAll("<", "\\u003c");
 const values = [
   ...new Set(
-    walkthrough.scenarios.flatMap(({ frames }) => frames.map(({ value }) => value)),
+    scenarios.flatMap(({ frames }) => frames.map(({ value }) => value)),
   ),
 ];
 ---
@@ -20,13 +41,13 @@ const values = [
 <figure class="boundary-player" data-boundary-player>
   <figcaption>
     <strong>{walkthrough.title}</strong>
-    <span>{walkthrough.description}</span>
+    <span>{description}</span>
   </figcaption>
   <script is:inline type="application/json" data-player-data set:html={data} />
 
   <div class="boundary-player__live" data-player-live>
     <div class="boundary-player__scenarios" role="group" aria-label="場面を選ぶ">
-      {walkthrough.scenarios.map((scenario) => (
+      {scenarios.map((scenario) => (
         <button type="button" data-scenario={scenario.id} aria-pressed="false">
           {scenario.label}
           <small>{scenario.note}</small>
@@ -56,26 +77,32 @@ const values = [
     <p class="boundary-player__text" data-text aria-live="polite"></p>
   </div>
 
-  <div class="boundary-player__files">
-    {walkthrough.files.map((file) => (
-      <figure class="code-block" data-file={file.id}>
-        <figcaption><code>{file.path}</code></figcaption>
-        <div class="boundary-player__code" data-code-scroll>
-          <Code code={file.code} lang="ts" />
-        </div>
-      </figure>
-    ))}
-  </div>
+  {!codeless && (
+    <div class="boundary-player__files">
+      {walkthrough.files.map((file) => (
+        <figure class="code-block" data-file={file.id}>
+          <figcaption><code>{file.path}</code></figcaption>
+          <div class="boundary-player__code" data-code-scroll>
+            <Code code={file.code} lang="ts" />
+          </div>
+        </figure>
+      ))}
+    </div>
+  )}
 
   <div class="boundary-player__static" data-player-static>
-    {walkthrough.scenarios.map((scenario) => (
+    {scenarios.map((scenario) => (
       <section>
         <h4>{scenario.label}（{scenario.note}）</h4>
         <ol>
           {scenario.frames.map((frame) => (
             <li data-status={frame.status}>
               <p>{walkthrough.zones[frame.zone]}: {frame.text}</p>
-              <p><code>{pathOf(frame.fileId)}</code>（{frame.valueLabel}）</p>
+              {codeless ? (
+                <p>{frame.valueLabel}</p>
+              ) : (
+                <p><code>{pathOf(frame.fileId)}</code>（{frame.valueLabel}）</p>
+              )}
               <div class="boundary-player__value-code"><Code code={frame.value} lang="ts" wrap /></div>
             </li>
           ))}

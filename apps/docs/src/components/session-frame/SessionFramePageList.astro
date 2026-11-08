@@ -1,0 +1,45 @@
+---
+import { sessionPageHref } from "../../sessions/pages/links";
+import {
+  sessionPageKindLabels,
+  sessionPageKindOrder,
+  type SessionPage,
+} from "../../sessions/pages/types";
+
+interface Props {
+  sessionSlug: string;
+  pages: readonly SessionPage[];
+  currentPageSlug: string;
+  idPrefix: string;
+}
+
+const { sessionSlug, pages, currentPageSlug, idPrefix } = Astro.props;
+const groups = sessionPageKindOrder.flatMap((kind) => {
+  const members = pages.filter((page) => page.kind === kind);
+  return members.length === 0 ? [] : [{ kind, members }];
+});
+---
+
+<nav class="session-frame__pages" aria-label="このセッションのページ">
+  {
+    groups.map(({ kind, members }) => (
+      <div class="session-frame__group">
+        <p class="session-frame__group-title" id={`${idPrefix}-${kind}`}>
+          {sessionPageKindLabels[kind]}
+        </p>
+        <ol aria-labelledby={`${idPrefix}-${kind}`}>
+          {members.map((page) => (
+            <li>
+              <a
+                href={sessionPageHref(sessionSlug, page.slug)}
+                aria-current={page.slug === currentPageSlug ? "page" : undefined}
+              >
+                {page.title}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </div>
+    ))
+  }
+</nav>

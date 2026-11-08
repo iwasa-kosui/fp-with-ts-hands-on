@@ -1,0 +1,112 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import {
+  formatMinutes,
+  sessionPageEntries,
+} from "../../sessions/pages/links";
+import { sessionNavigationItems } from "../../sessions/navigation";
+import type { SessionPage } from "../../sessions/pages/types";
+import "../../styles/sessions.css";
+import "../../styles/code-playground.css";
+import "../../styles/session-layout.css";
+import "../../styles/session-frame.css";
+import SessionFramePageList from "./SessionFramePageList.astro";
+
+interface Props {
+  sessionSlug: string;
+  pages: readonly SessionPage[];
+  pageSlug: string;
+  description?: string;
+  fullWidth?: boolean;
+}
+
+const { sessionSlug, pages, pageSlug, description, fullWidth = false } = Astro.props;
+const entries = sessionPageEntries(sessionSlug, pages);
+const entry = entries.find(({ page }) => page.slug === pageSlug);
+if (entry === undefined) {
+  throw new Error(`Unknown page "${pageSlug}" in session ${sessionSlug}`);
+}
+const { page, previous, next, later, position } = entry;
+const sessionTitle =
+  sessionNavigationItems.find(({ slug }) => slug === sessionSlug)?.title ?? "";
+const sequence = sessionSlug === "final" ? "Final" : `S${sessionSlug.slice(0, 2)}`;
+---
+
+<BaseLayout
+  title={`${page.title} | ${sessionTitle} | FP with TypeScript`}
+  description={description}
+>
+  <div
+    class:list={["case-file", "case-file--session", "session-frame", { "session-frame--wide": fullWidth }]}
+  >
+    <header class="session-frame__bar">
+      <a class="session-frame__home" href="/">ホーム</a>
+      <a class="session-frame__all" href="/sessions/">全セッション</a>
+      <span class="session-frame__sequence" title={sessionTitle}>{sequence}</span>
+      <h1 class="session-frame__title">{page.title}</h1>
+      <p class="session-frame__position">
+        <strong>{position}</strong>
+        <span class="session-frame__minutes">目安 {formatMinutes(page.minutes)}</span>
+      </p>
+      <details class="session-frame__menu">
+        <summary>ページ一覧</summary>
+        <div class="session-frame__menu-content">
+          <SessionFramePageList
+            sessionSlug={sessionSlug}
+            pages={pages}
+            currentPageSlug={pageSlug}
+            idPrefix="menu"
+          />
+        </div>
+      </details>
+    </header>
+
+    <div class="session-frame__body">
+      <aside class="session-frame__sidebar">
+        <SessionFramePageList
+          sessionSlug={sessionSlug}
+          pages={pages}
+          currentPageSlug={pageSlug}
+          idPrefix="side"
+        />
+      </aside>
+      <main class="session-frame__main">
+        <article class="session-frame__content case-file__content">
+          <slot />
+        </article>
+      </main>
+    </div>
+
+    <nav class="session-frame__footer" aria-label="前後のページ">
+      {
+        previous === undefined ? (
+          <span class="session-frame__link-slot"></span>
+        ) : (
+          <a class="session-frame__link session-frame__link--previous" rel="prev" href={previous.href}>
+            <span class="session-frame__link-label">← 前</span>
+            <span class="session-frame__link-title">{previous.title}</span>
+          </a>
+        )
+      }
+      {
+        later === undefined ? (
+          <span class="session-frame__link-slot"></span>
+        ) : (
+          <a class="session-frame__later" data-session-later href={later.href}>
+            あとで読む: 発展 {later.count}ページ
+          </a>
+        )
+      }
+      {
+        next === undefined ? (
+          <span class="session-frame__link-slot"></span>
+        ) : (
+          <a class="session-frame__link session-frame__link--next" rel="next" href={next.href}>
+            <span class="session-frame__link-label">次 →</span>
+            <span class="session-frame__link-title">{next.title}</span>
+          </a>
+        )
+      }
+    </nav>
+  </div>
+</BaseLayout>

@@ -9,9 +9,10 @@ type Props = Readonly<{
     after: Snippet;
     schemaResult: Snippet;
   }>;
+  part?: "schema" | "parse";
 }>;
 
-const { code } = Astro.props;
+const { code, part } = Astro.props;
 
 const versionLabels = { before: "修正前", after: "修正後" } as const;
 
@@ -35,6 +36,7 @@ type Mode = "off" | "dim" | "on" | "focus";
 type ChipState = "off" | "home" | "through" | "stop";
 type ResultState = "off" | "warn" | "ok" | "err";
 type Frame = Readonly<{
+  part: "schema" | "parse";
   caption: string;
   stage: keyof typeof versionLabels | null;
   code?: Readonly<{ key: keyof Props["code"]; lines: readonly number[] }>;
@@ -58,6 +60,7 @@ type Frame = Readonly<{
 
 const frames: readonly Frame[] = [
   {
+    part: "schema",
     caption: "TypeScript の型は、型検査のときだけ使われます。JavaScript に変換すると型は消えます。実行時に届いた値が型のとおりかどうかは、型とは別のコードで確かめる必要があります。",
     stage: null,
     parts: { typeBox: "on", typeGhost: "on", schemaBox: "off", linkType: "off", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off", note: "off" },
@@ -67,6 +70,7 @@ const frames: readonly Frame[] = [
     results: ["off", "off"],
   },
   {
+    part: "schema",
     caption: "修正前は、StartExaminationInput の型を手で書いています。parse は raw を any で受け取り、中身を確かめずに項目をコピーします。any は、どんな使い方も型検査で許す型です。型はあっても実行時の検査がないので、night-shift も StartExaminationInput として内側へ進みます。",
     stage: "before",
     code: { key: "before", lines: [5, 6, 7, 8, 11, 12, 13, 14, 15] },
@@ -77,6 +81,7 @@ const frames: readonly Frame[] = [
     results: ["warn", "off"],
   },
   {
+    part: "schema",
     caption: "修正後は、値が満たす形を schema というオブジェクトで書くライブラリ Zod を使います。z.object は UUID の形の文字列を表す2つの schema をまとめ、.readonly() は取り出す型の項目を読み取り専用にします。",
     stage: "after",
     code: { key: "after", lines: [7, 8, 9, 10] },
@@ -87,6 +92,7 @@ const frames: readonly Frame[] = [
     results: ["off", "off"],
   },
   {
+    part: "schema",
     caption: "型は schema から取り出します。z.infer<typeof schema> は、schema が受け入れる値の型です。typeof は、値である schema の型を、型を書く場所で使うための書き方です。型を手で書かないので、schema を直すと型も同じように変わります。",
     stage: "after",
     code: { key: "after", lines: [12] },
@@ -97,16 +103,51 @@ const frames: readonly Frame[] = [
     results: ["off", "off"],
   },
   {
-    caption: "実行時の検査も、同じ schema から作ります。schemaResult は、schema を受け取り、raw を受け取る関数を返す関数です。返された関数は raw を unknown として受け取ります。unknown は、中身を確かめるまで項目を使えない型です。safeParse は、検査に失敗しても例外を投げず、成否を success に入れて返します。",
+    part: "parse",
+    caption: "実行時の検査も、同じ schema から作ります。この教材では、schema から検査を作る役を schemaResult という関数が担います。",
     stage: "after",
-    code: { key: "schemaResult", lines: [1, 2, 3] },
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "focus", checkBox: "focus", inside: "dim", sameName: "off", unknown: "on", note: "off" },
+    code: { key: "schemaResult", lines: [1] },
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "focus", checkBox: "on", inside: "dim", sameName: "off", unknown: "off", note: "off" },
     typeLabel: "infer",
     check: "checked",
     chips: ["home", "off"],
     results: ["off", "off"],
   },
   {
+    part: "parse",
+    caption: "schemaResult は、関数を返す関数です。schema を1つ受け取り、raw を受け取る別の関数を返します。返された関数が parse です。",
+    stage: "after",
+    code: { key: "schemaResult", lines: [1, 2] },
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "on", checkBox: "focus", inside: "dim", sameName: "off", unknown: "off", note: "off" },
+    typeLabel: "infer",
+    check: "checked",
+    chips: ["home", "off"],
+    results: ["off", "off"],
+  },
+  {
+    part: "parse",
+    caption: "返された関数は、raw を unknown として受け取ります。unknown は、中身を確かめるまで項目を使えない型です。",
+    stage: "after",
+    code: { key: "schemaResult", lines: [2] },
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "on", checkBox: "on", inside: "dim", sameName: "off", unknown: "on", note: "off" },
+    typeLabel: "infer",
+    check: "checked",
+    chips: ["home", "off"],
+    results: ["off", "off"],
+  },
+  {
+    part: "parse",
+    caption: "safeParse は、schema で raw を検査します。検査に失敗しても例外を投げず、成否を success に入れて返します。schemaResult は success を見て、Ok か Err を返します。",
+    stage: "after",
+    code: { key: "schemaResult", lines: [3, 4] },
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "focus", linkType: "dim", linkCheck: "on", checkBox: "on", inside: "dim", sameName: "off", unknown: "on", note: "off" },
+    typeLabel: "infer",
+    check: "checked",
+    chips: ["home", "off"],
+    results: ["off", "off"],
+  },
+  {
+    part: "parse",
     caption: "型と値に、同じ StartExaminationInput という名前を付けています。TypeScript は型の名前と値の名前を別々に扱うので、型を書く場所では型を、式の中ではオブジェクトを指します。使う側は StartExaminationInput.parse(raw) で検査し、受け取る値の型も StartExaminationInput と書けます。",
     stage: "after",
     code: { key: "after", lines: [12, 14, 15, 16, 17] },
@@ -117,6 +158,7 @@ const frames: readonly Frame[] = [
     results: ["off", "off"],
   },
   {
+    part: "parse",
     caption: "修正後は、night-shift が parse の検査で止まり、Err になります。UUID の形をした値だけが Ok になり、StartExaminationInput 型の値として内側へ進みます。型と検査を同じ schema から作るので、型に書いた項目は実行時にも検査されます。",
     stage: "after",
     parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "on", linkCheck: "on", checkBox: "on", inside: "on", sameName: "off", unknown: "off", note: "on" },
@@ -127,11 +169,12 @@ const frames: readonly Frame[] = [
   },
 ];
 
-const initial = frames[0];
+const shownFrames = part === undefined ? frames : frames.filter((frame) => frame.part === part);
+const initial = shownFrames[0];
 const nightShift = "\"night-shift\"";
 const uuidPreview = "\"3f2b…\"";
 
-const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => frame));
+const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, ...frame }) => frame));
 ---
 
 <div class="schema-source-flow" data-schema-source-flow data-frames={playerData}>
@@ -140,7 +183,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
     <button type="button" data-prev disabled>← 前へ</button>
     <button type="button" data-play>▶ 再生</button>
     <button type="button" data-next>次へ →</button>
-    <span data-progress>1 / {frames.length}</span>
+    <span data-progress>1 / {shownFrames.length}</span>
   </div>
 
   <svg
@@ -277,7 +320,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
   <p class="schema-source-flow__live" data-live aria-live="polite" hidden></p>
 
   <ol class="schema-source-flow__frames">
-    {frames.map((frame) => (
+    {shownFrames.map((frame) => (
       <li data-frame data-has-code={frame.code ? "" : undefined}>
         <p class="schema-source-flow__caption">{frame.caption}</p>
         {frame.code && frame.stage && (

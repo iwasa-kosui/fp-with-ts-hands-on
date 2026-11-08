@@ -17,6 +17,7 @@ export type WalkthroughFrame = Readonly<{
 export type Walkthrough = Readonly<{
   title: string;
   description: string;
+  descriptionWithoutCode?: string;
   zones: readonly [string, string, string];
   files: readonly Readonly<{ id: string; path: string; code: string }>[];
   scenarios: readonly Readonly<{
@@ -196,14 +197,6 @@ const passedFrames = (veterinarianUuidValue: string, lastText: string) => {
       value: typed,
       text: "okは値を持つResultを返します。_unsafeUnwrapを呼ぶと、その値が返ります。",
     }),
-    startFrame("parseAfter", {
-      first: "export type StartExaminationInput = z.infer<typeof schema>;",
-      zone: 1,
-      status: "pass",
-      valueLabel: "parse の結果",
-      value: typed,
-      text: "成功後の型は、手書きせずにschemaからz.inferで導きます。",
-    }),
     startFrame("route", {
       first: "})._unsafeUnwrap();",
       zone: 2,
@@ -211,6 +204,15 @@ const passedFrames = (veterinarianUuidValue: string, lastText: string) => {
       valueLabel: "input（StartExaminationInput）",
       value: `{\n  appointmentId: "${appointmentUuid}",\n  veterinarianId: "${veterinarianUuidValue}",\n}`,
       text: "routeはOkの中身を取り出します。ここから先が内側です。",
+    }),
+    startFrame("route", {
+      first: "startExamination(",
+      last: '"2026-08-30T06:30:00.000Z",',
+      zone: 2,
+      status: "pass",
+      valueLabel: "startExamination へ渡す値",
+      value: `{\n  veterinarianId: "${veterinarianUuidValue}",\n  examinationStartedAt: "2026-08-30T06:30:00.000Z",\n}`,
+      text: "routeは、取り出したinputの獣医師IDと、routeに書かれた固定の時刻を、startExaminationへ渡します。この時刻はS06で扱う固定値です。",
     }),
     startFrame("transition", {
       first: "veterinarianId: VeterinarianId,",
@@ -247,7 +249,7 @@ const rejectedFrames = [
     status: "stop",
     valueLabel: "route が受け取った結果",
     value: "Err()",
-    text: "routeがErrに_unsafeUnwrapを呼びます。Resultを使った分岐はS4で扱います。",
+    text: "routeがErrに_unsafeUnwrapを呼びます。Resultを使った分岐はS04で扱います。",
   }),
   startFrame("schemaResult", {
     first: 'throw new Error("Cannot unwrap an invalid boundary value");',
@@ -255,7 +257,7 @@ const rejectedFrames = [
     status: "stop",
     valueLabel: "内側に届いた値",
     value: "// なし",
-    text: "Errの_unsafeUnwrapは例外を投げます。routeの次の行へ進まないので、startExaminationは呼ばれません。",
+    text: "Errの_unsafeUnwrapは例外を投げます。routeの次の行へ進まないので、startExaminationは呼ばれません。検査の失敗は今は500のエラーになります。この扱いはS04で学びます。",
   }),
 ];
 
@@ -263,19 +265,21 @@ export const startExaminationWalkthrough: Walkthrough = {
   title: "値が境界を通る様子",
   description:
     "場面を選んで再生します。上の帯は値が今いる場所、下のコードは今説明している行です。",
+  descriptionWithoutCode:
+    "場面を選んで再生します。上の帯は、値が今いる場所です。",
   zones: ["外側", "境界", "内側"],
   files: startExaminationFiles,
   scenarios: [
     {
       id: "valid",
-      label: "受付が獣医師を選んで送信した",
+      label: "獣医師が診察開始を送信した",
       note: "veterinarianId は獣医師の UUID",
       frames: [
         ...arrivalFrames(`"${veterinarianUuid}"`),
         ...checkedFrames(`"${veterinarianUuid}"`, true),
         ...passedFrames(
           veterinarianUuid,
-          "startExaminationは、型がVeterinarianIdの値を受け取ります。関数の中で同じ検査を繰り返しません。",
+          "startExaminationは、型がVeterinarianIdの値を受け取ります。HTTPで届く入力は境界で検査済みなので、関数の中で同じ検査を繰り返しません。",
         ),
       ],
     },
@@ -421,7 +425,7 @@ export const sensitiveWalkthrough: Walkthrough = {
           '[inspect.custom]: () => "[REDACTED]"',
           "console.log(contact.ownerEmail)",
           "[REDACTED]",
-          "console.logはinspect.customの結果を出力するので、ログには[REDACTED]が出ます。",
+          "inspect.customは、Node.jsがconsole.logで値を文字にするときに呼ぶ関数を決める名前です。console.logはその結果を出力するので、ログには[REDACTED]が出ます。",
         ),
       ],
     },
@@ -435,7 +439,7 @@ export const sensitiveWalkthrough: Walkthrough = {
           'toJSON: () => "[REDACTED]"',
           "JSON.stringify(contact)",
           `{"ownerName":"[REDACTED]","ownerEmail":"[REDACTED]","ownerPhone":"[REDACTED]"}`,
-          "JSON.stringifyはtoJSONの結果を使うので、3項目とも[REDACTED]になります。",
+          "toJSONは、JSON.stringifyが値を文字列にするときに呼ぶメソッドの名前です。JSON.stringifyはその結果を使うので、3項目とも[REDACTED]になります。",
         ),
       ],
     },

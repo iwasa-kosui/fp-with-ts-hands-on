@@ -1,0 +1,308 @@
+---
+import StepControls from "./StepControls.astro";
+
+const frames = [
+  {
+    caption:
+      "Ok は、検査に成功したことを表す箱です。成功した値を1つ入れて持ちます。ok(値) で作ります。",
+  },
+  {
+    caption:
+      "Err は、検査に失敗したことを表す箱です。この Session の Err は、値も失敗の理由も入っていない、空の箱です。err() で作ります。Session 04 で、失敗の理由を持つ Err に替わります。",
+  },
+  {
+    caption:
+      "_unsafeUnwrap は、箱の中の値を取り出す操作です。Ok からは、入っていた値が返ります。Err には取り出す値がないので、例外を投げて処理が止まります。",
+  },
+] as const;
+---
+
+<figure class="result-kinds" data-result-kinds aria-label="Ok と Err の違い">
+  <StepControls />
+
+  <p class="result-kinds__type">どちらも <code>Result&lt;T&gt;</code> 型の値です。<code>T</code> は、成功したときの値の型です。</p>
+
+  <div class="result-kinds__stage">
+    <div class="result-kinds__column" data-kind="ok">
+      <div class="result-kinds__box result-kinds__box--ok">
+        <p class="result-kinds__name">Ok</p>
+        <p class="result-kinds__make"><code>ok(値)</code> で作る</p>
+        <div class="result-kinds__slot">
+          <span class="result-kinds__value">成功した値</span>
+        </div>
+        <p class="result-kinds__flag"><code>isOk()</code> は <strong>true</strong></p>
+        <p class="result-kinds__flag"><code>isErr()</code> は <strong>false</strong></p>
+      </div>
+      <div class="result-kinds__unwrap">
+        <span class="result-kinds__call"><code>_unsafeUnwrap()</code></span>
+        <span class="result-kinds__arrow" aria-hidden="true">▼</span>
+        <span class="result-kinds__outcome result-kinds__outcome--ok">値が返る</span>
+      </div>
+    </div>
+
+    <div class="result-kinds__column" data-kind="err">
+      <div class="result-kinds__box result-kinds__box--err">
+        <p class="result-kinds__name">Err</p>
+        <p class="result-kinds__make"><code>err()</code> で作る</p>
+        <div class="result-kinds__slot result-kinds__slot--empty">
+          <span class="result-kinds__empty">空（値も理由も入っていない）</span>
+        </div>
+        <p class="result-kinds__flag"><code>isOk()</code> は <strong>false</strong></p>
+        <p class="result-kinds__flag"><code>isErr()</code> は <strong>true</strong></p>
+      </div>
+      <div class="result-kinds__unwrap">
+        <span class="result-kinds__call"><code>_unsafeUnwrap()</code></span>
+        <span class="result-kinds__arrow" aria-hidden="true">▼</span>
+        <span class="result-kinds__outcome result-kinds__outcome--err">例外を投げて、処理が止まる</span>
+      </div>
+    </div>
+  </div>
+
+  <div aria-live="polite">
+    <ol class="result-kinds__frames">
+      {frames.map((frame) => (
+        <li data-frame>
+          <p class="result-kinds__caption">{frame.caption}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</figure>
+
+<script>
+  import { mountStepper } from "./stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-result-kinds]").forEach((root) => {
+    mountStepper({ root });
+  });
+</script>
+
+<style>
+  .result-kinds {
+    --ok-tone: var(--case-highlight);
+    --err-tone: var(--case-pink);
+    min-width: 0;
+    margin: 1rem 0;
+  }
+
+  .result-kinds__type {
+    margin: 0 0 0.75rem;
+    color: var(--case-muted);
+    font-size: 0.875rem;
+  }
+
+  .result-kinds__stage {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+
+  .result-kinds__column {
+    display: grid;
+    grid-template-rows: auto auto;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .result-kinds__box {
+    padding: 0.75rem 1rem;
+    border: 3px solid var(--tone);
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--tone) 14%, var(--case-paper));
+    color: var(--case-ink);
+  }
+
+  .result-kinds__box--ok {
+    --tone: var(--ok-tone);
+  }
+
+  .result-kinds__box--err {
+    --tone: var(--err-tone);
+  }
+
+  .result-kinds__name {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .result-kinds__make {
+    margin: 0 0 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .result-kinds__slot {
+    display: grid;
+    min-height: 3.5rem;
+    place-items: center;
+    margin-block-end: 0.5rem;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--case-paper);
+  }
+
+  .result-kinds__slot--empty {
+    border-style: dashed;
+    border-color: var(--case-muted);
+  }
+
+  .result-kinds__value {
+    padding: 0.375rem 0.75rem;
+    border: 2px solid var(--case-line);
+    border-radius: 999px;
+    background: var(--ok-tone);
+    font-weight: 700;
+  }
+
+  .result-kinds__empty {
+    color: var(--case-muted);
+    font-size: 0.875rem;
+  }
+
+  .result-kinds__flag {
+    margin: 0.125rem 0 0;
+    font-size: 0.875rem;
+  }
+
+  .result-kinds__unwrap {
+    display: grid;
+    justify-items: center;
+    gap: 0.25rem;
+  }
+
+  .result-kinds__call {
+    padding: 0.25rem 0.75rem;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--case-cream);
+    color: var(--case-ink);
+    font-size: 0.875rem;
+  }
+
+  .result-kinds__arrow {
+    color: var(--case-muted);
+    line-height: 1;
+  }
+
+  .result-kinds__outcome {
+    padding: 0.375rem 0.875rem;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    color: var(--case-ink);
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .result-kinds__outcome--ok {
+    background: var(--ok-tone);
+  }
+
+  .result-kinds__outcome--err {
+    background: var(--err-tone);
+  }
+
+  .result-kinds__frames {
+    margin: 0.75rem 0 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .result-kinds__frames > li + li {
+    margin-block-start: 0.5rem;
+  }
+
+  .result-kinds__caption {
+    margin: 0;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .result-kinds[data-ready] .result-kinds__frames {
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  .result-kinds[data-ready] .result-kinds__column,
+  .result-kinds[data-ready] .result-kinds__unwrap {
+    transition: opacity 0.35s;
+  }
+
+  .result-kinds[data-ready] .result-kinds__unwrap {
+    opacity: 0;
+  }
+
+  .result-kinds[data-ready][data-step="2"] .result-kinds__unwrap {
+    opacity: 1;
+  }
+
+  .result-kinds[data-ready][data-step="0"] .result-kinds__column[data-kind="err"],
+  .result-kinds[data-ready][data-step="1"] .result-kinds__column[data-kind="ok"] {
+    opacity: 0.4;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .result-kinds[data-ready][data-step="0"] .result-kinds__value {
+      animation: result-kinds-drop 0.8s ease-out both;
+    }
+
+    .result-kinds[data-ready][data-step="1"] .result-kinds__box--err {
+      animation: result-kinds-pop 0.45s ease-out both;
+    }
+
+    .result-kinds[data-ready][data-step="2"] .result-kinds__value {
+      animation: result-kinds-lift 0.7s ease-in-out both;
+    }
+
+    .result-kinds[data-ready][data-step="2"] .result-kinds__outcome--ok {
+      animation: result-kinds-slide 0.6s ease-out 0.5s both;
+    }
+
+    .result-kinds[data-ready][data-step="2"] .result-kinds__outcome--err {
+      animation: result-kinds-shake 0.55s ease-in-out 0.5s both;
+    }
+
+    @keyframes result-kinds-drop {
+      from {
+        opacity: 0;
+        transform: translateY(-2.5rem);
+      }
+    }
+
+    @keyframes result-kinds-pop {
+      from {
+        transform: scale(0.92);
+      }
+    }
+
+    @keyframes result-kinds-lift {
+      50% {
+        transform: translateY(-0.5rem);
+      }
+    }
+
+    @keyframes result-kinds-slide {
+      from {
+        opacity: 0;
+        transform: translateY(-0.75rem);
+      }
+    }
+
+    @keyframes result-kinds-shake {
+      20% {
+        transform: translateX(-0.5rem);
+      }
+
+      40% {
+        transform: translateX(0.5rem);
+      }
+
+      60% {
+        transform: translateX(-0.375rem);
+      }
+
+      80% {
+        transform: translateX(0.375rem);
+      }
+    }
+  }
+</style>
