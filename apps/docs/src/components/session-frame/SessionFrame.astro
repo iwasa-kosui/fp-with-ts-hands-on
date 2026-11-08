@@ -116,12 +116,9 @@ const sequence = sessionSlug === "final" ? "Final" : `S${sessionSlug.slice(0, 2)
 </BaseLayout>
 
 <script>
-  import { pageKeyDirection } from "../../sessions/pages/page-key-navigation";
+  import { installPageKeyNavigation } from "../../sessions/pages/page-key-navigation";
 
-  document.addEventListener("keydown", (event) => {
-    const target = event.target instanceof Element ? event.target : null;
-    const direction = pageKeyDirection(event, target);
-    if (direction === null) return;
+  installPageKeyNavigation(document, (direction) => {
     const rel = direction === "previous" ? "prev" : "next";
     const href = document
       .querySelector<HTMLAnchorElement>(`.session-frame__footer a[rel="${rel}"]`)

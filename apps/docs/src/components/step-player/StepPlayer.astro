@@ -30,11 +30,11 @@ const { id, title, lead, note, scenarios } = Astro.props;
         ))}
       </div>
     )}
-    <div class="step-player__buttons">
+    <div class="step-player__buttons" data-controls>
       <button type="button" data-step-player-action="restart">最初へ</button>
-      <button type="button" data-step-player-action="back">前へ</button>
+      <button type="button" data-step-player-action="back" data-prev>前へ</button>
       <button type="button" data-step-player-action="play">再生</button>
-      <button type="button" data-step-player-action="forward">次へ</button>
+      <button type="button" data-step-player-action="forward" data-next>次へ</button>
       <span class="step-player__progress" data-step-player-progress></span>
     </div>
   </div>

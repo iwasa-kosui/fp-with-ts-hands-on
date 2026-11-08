@@ -38,9 +38,15 @@ const actions = [
     </div>
   ) : null}
   <div class="walk__sticky">
-    <div class="walk__bar">
+    <div class="walk__bar" data-controls>
       {actions.map(([name, label]) => (
-        <button type="button" class={`walk__btn walk__btn--${name}`} data-walk-action={name}>{label}</button>
+        <button
+          type="button"
+          class={`walk__btn walk__btn--${name}`}
+          data-walk-action={name}
+          data-prev={name === "prev" ? "" : undefined}
+          data-next={name === "next" ? "" : undefined}
+        >{label}</button>
       ))}
       <span class="walk__progress" data-walk-progress></span>
     </div>
