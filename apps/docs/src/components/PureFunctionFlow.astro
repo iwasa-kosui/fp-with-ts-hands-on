@@ -24,7 +24,7 @@ const snippets = {
 });`,
 } as const;
 
-const versionLabels = { before: "修正前", after: "修正後", summary: "まとめ" } as const;
+const versionLabels = { before: "時刻を中で読む書き方", after: "時刻を引数で受け取る書き方", summary: "まとめ" } as const;
 
 type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
 const KEY_MARK = /\s*\/\/ \[!pure-function-key\]$/;
@@ -56,14 +56,14 @@ const frames: readonly Frame[] = [
     scene: 1,
     version: "before",
     caption:
-      "修正前の startExamination は、関数の中で new Date() を呼んで現在時刻を読みます。時刻は引数に無いので、呼び出し側からは見えません。",
-    alt: "入力は予約 CheckedIn と獣医師 ID の2つです。関数 startExamination の箱の中に時計があり、関数が自分で現在時刻を読みます。出力は InExamination です。",
+      "時刻を中で読む書き方の startExamination は、関数の中で new Date() を呼んで現在時刻を読みます。時刻は引数に無いので、呼び出し側からは見えません。",
+    alt: "入力は予約 CheckedIn と獣医師 ID の2つです。関数 startExamination の箱の中に時計と new Date() の表記があり、「現在時刻を読む」と示しています。出力は InExamination です。",
     code: { key: "before", lines: [8] },
   },
   {
     scene: 2,
     version: "before",
-    caption: "同じ予約と同じ獣医師 ID を渡しても、呼んだ時刻によって結果が変わります。テストに結果の値を書けません。",
+    caption: "同じ予約と同じ獣医師 ID を渡しても、呼んだ時刻によって結果が変わります。時計を差し替えない限り、テストに結果の値を書けません。",
     alt: "同じ入力で startExamination を10:00と10:05の2回呼ぶ図です。2つの出力の examinationStartedAt は 10:00 と 10:05 で異なり、赤で示しています。",
   },
   {
@@ -71,13 +71,13 @@ const frames: readonly Frame[] = [
     version: "before",
     caption:
       "戻り値を返す以外に、関数の外の世界を読んだり書き換えたりすることを副作用と呼びます。現在時刻を読む、乱数を作る、データベースに書く、ログを出す、が副作用の例です。",
-    alt: "関数 startExamination の箱から外へ向かう3本の矢印が、時計（現在時刻を読む）、データベース（書く）、ログ（出す）につながっています。",
+    alt: "関数の箱から外へ向かう3本の矢印が、時計（現在時刻を読む）、データベース（書く）、ログ（出す）につながっています。",
   },
   {
     scene: 4,
     version: "after",
-    caption: "修正後は、時刻を引数で受け取ります。時刻を読む仕事は呼び出し側へ移り、関数の中から副作用がなくなります。",
-    alt: "時計が関数 startExamination の箱の外へ出て、入力の矢印の1本になります。入力は予約、獣医師 ID、時刻の3つです。関数の中の副作用はなくなります。",
+    caption: "時刻を引数で受け取る書き方では、時刻を読む仕事が呼び出し側へ移り、関数の中から副作用がなくなります。",
+    alt: "時計が関数 startExamination の箱の外へ出て、3つ目の入力「時刻 string」の枠に移っています。入力は予約、獣医師 ID、時刻の3つです。箱の中には「副作用なし」と示しています。",
     code: { key: "after", lines: [4, 9] },
   },
   {
@@ -165,7 +165,7 @@ const labels: readonly Label[] = [
   ...stack("1 4", 38, 106, [{ text: "獣医師 ID" }, { text: "string", mono: true, size: 10 }], 14),
   ...stack("4", 50, 160, [{ text: "時刻" }, { text: "string", mono: true, size: 10 }], 14),
   ...stack("1 4", 295, 106, [{ text: "出力" }, { text: "InExamination", mono: true, size: 10 }], 14),
-  ...stack("3", 68, 112, [{ text: "startExamination", mono: true }, { text: "副作用あり", bold: true, tone: "bad" }], 18),
+  ...stack("3", 68, 112, [{ text: "関数" }, { text: "副作用あり", bold: true, tone: "bad" }], 18),
   { scenes: "3", x: 258, y: 26, text: "関数の外の世界", bold: true },
   { scenes: "3", x: 224, y: 66, text: "現在時刻を読む", anchor: "start" },
   { scenes: "3", x: 224, y: 116, text: "データベースに書く", anchor: "start" },
@@ -219,7 +219,7 @@ const playerData = JSON.stringify(
   </div>
 
   <div class="pure-function-flow__stage" data-stage hidden>
-    <span class="pure-function-flow__badge" data-stage-badge data-version="before">修正前</span>
+    <span class="pure-function-flow__badge" data-stage-badge data-version="before">時刻を中で読む書き方</span>
     <div data-stage-figure></div>
   </div>
 

@@ -96,13 +96,18 @@ const candidates = (fade: boolean): readonly Card[] => [
   },
   {
     title: "受付済みなのに獣医師あり",
-    rows: [
-      { name: "status", value: '"CheckedIn"' },
-      { name: "veterinarianId", value: "あり", tone: "bad" },
-      { name: "examinationStartedAt", value: "なし", tone: "missing" },
-    ],
+    rows: fade
+      ? [
+        { name: "kind", value: '"CheckedIn"' },
+        { name: "veterinarianId", value: "あり", tone: "bad" },
+      ]
+      : [
+        { name: "status", value: '"CheckedIn"' },
+        { name: "veterinarianId", value: "あり", tone: "bad" },
+        { name: "examinationStartedAt", value: "なし", tone: "missing" },
+      ],
     verdict: "ng",
-    accepted: true,
+    accepted: !fade,
     fade,
   },
   {
@@ -124,34 +129,36 @@ const candidates = (fade: boolean): readonly Card[] => [
   {
     title: "診察中なのに獣医師なし",
     rows: [
-      { name: "status", value: '"InExamination"' },
+      { name: fade ? "kind" : "status", value: '"InExamination"' },
       { name: "veterinarianId", value: "なし", tone: "bad" },
       { name: "examinationStartedAt", value: "あり" },
     ],
     verdict: "ng",
-    accepted: true,
+    accepted: !fade,
     fade,
   },
   {
     title: "診察中なのに開始時刻なし",
     rows: [
-      { name: "status", value: '"InExamination"' },
+      { name: fade ? "kind" : "status", value: '"InExamination"' },
       { name: "veterinarianId", value: "あり" },
       { name: "examinationStartedAt", value: "なし", tone: "bad" },
     ],
     verdict: "ng",
-    accepted: true,
+    accepted: !fade,
     fade,
   },
   {
-    title: "status の綴り誤り",
-    rows: [
-      { name: "status", value: '"InExamintion"', tone: "bad" },
-      { name: "veterinarianId", value: "なし", tone: "missing" },
-      { name: "examinationStartedAt", value: "なし", tone: "missing" },
-    ],
+    title: fade ? "kind の綴り誤り" : "status の綴り誤り",
+    rows: fade
+      ? [{ name: "kind", value: '"InExamintion"', tone: "bad" }]
+      : [
+        { name: "status", value: '"InExamintion"', tone: "bad" },
+        { name: "veterinarianId", value: "なし", tone: "missing" },
+        { name: "examinationStartedAt", value: "なし", tone: "missing" },
+      ],
     verdict: "ng",
-    accepted: true,
+    accepted: !fade,
     fade,
   },
 ];
@@ -302,7 +309,7 @@ const noticePrefixes = { warn: "! ", error: "× " } as const;
                     ))}
                   </dl>
                   {card.verdict && <p class="illegal-state-flow__verdict" data-verdict={card.verdict}>{verdictLabels[card.verdict]}</p>}
-                  {card.accepted && <p class="illegal-state-flow__accepted">型は受け入れる</p>}
+                  {card.accepted !== undefined && <p class="illegal-state-flow__accepted">{card.accepted ? "型は受け入れる" : "型は受け入れない"}</p>}
                 </div>
               </>
             ))}

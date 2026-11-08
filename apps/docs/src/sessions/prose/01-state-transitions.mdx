@@ -73,7 +73,7 @@ import InlineCode from "../../components/InlineCode.astro";
 <section id="legacy" class="code-playground">
   <h2>コードを読み、失敗を再現する</h2>
   <p><code>Appointment</code> 全体を受け取る遷移関数、<code>throw</code>、<code>as Appointment</code> を探してください。これらは、許可されていない状態遷移をコンパイラが止められない箇所です。</p>
-  <p><code>as</code> は型アサーションです。値の中身を確かめずに「この値はこの型だ」と型検査に伝えるので、中身が型と違っても型検査はエラーを報告しません。</p>
+  <p><code>as</code> は型アサーションです。値の中身を確かめずに「この値はこの型だ」と型検査に伝えるので、中身が型と違っていても、多くの場合、型検査はエラーを報告しません。</p>
   <p>{"\n"}編集する範囲は <code>{props.session.exerciseModule.dir}</code>、変更するファイル数は最大{"\n"}{props.session.exerciseModule.fileBudget}ファイル・約{props.session.exerciseModule.lineBudget}行です。{"\n"}</p>
   <CodeGuideCards guides={props.guides} projectFiles={props.projectFiles} />
   <h3>修正前の失敗を確認する</h3>
@@ -103,9 +103,11 @@ import InlineCode from "../../components/InlineCode.astro";
   <p>このセッションで使う型を確認します。修正前の書き方は<a href="#naive-pitfalls">素朴な実装の落とし穴</a>にまとめました。ここでは解決に使う書き方を示します。</p>
   <article id="illegal-states" class="teaching-topic">
     <h3>必要な情報が欠けた状態を、型で作れなくする</h3>
+    <p>修正前の書き方: <a href="#pitfall-one-type">1. 1つの型に全状態の項目を詰め込む</a></p>
     <p>状態を string で持ち、状態ごとに要る情報を省略可能にすると、診察中なのに開始時刻がない予約のような、業務上ありえない値も型検査を通ります。状態ごとに型を分けると、こうした値を書いた時点で型検査がエラーを報告します。</p>
     <IllegalStateFlow />
     <p class="teaching-topic__why">不正な値を作れない型にしておけば、値を受け取る関数は「開始時刻がないかもしれない」と確かめる必要がなくなります。</p>
+    <p>時間内に読み切れなければ、演習の後に読んでください。</p>
   </article>
   <article class="teaching-topic">
     <h3>Discriminated Unionは共通のkindで型を絞り込める</h3>
@@ -145,8 +147,10 @@ import InlineCode from "../../components/InlineCode.astro";
   <article id="pure-functions" class="teaching-topic">
     <h3>純粋関数は、同じ入力から同じ結果を返す</h3>
     <p>遷移関数は、現在時刻を関数の中で読まず、examinationStartedAt のような引数で受け取ります。関数の外の世界を読み書きしない関数は、同じ引数からいつも同じ結果を返すので、テストで結果を比べられます。</p>
+    <p>S01 の配布コードの遷移関数は、すでに時刻を引数で受け取っています。次の図は、その形にしている理由を示します。</p>
     <PureFunctionFlow />
     <p class="teaching-topic__why">遷移関数を純粋関数にしておくと、状態遷移の判断を、データベースや時計を用意せずに確かめられます。</p>
+    <p>時間内に読み切れなければ、演習の後に読んでください。</p>
   </article>
   <article class="teaching-topic">
     <h3>事前条件を型と実行時の検証で確かめる</h3>
