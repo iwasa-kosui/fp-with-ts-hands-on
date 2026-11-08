@@ -1,0 +1,25 @@
+{
+  "name": "@fp-with-ts/exercise-guard",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "exercise-guard": "src/cli.mjs"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "eslint": "^9.0.0",
+    "typescript": "^5.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "fast-check": "^4.0.0",
+    "hono": "^4.12.8",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^2.1.0",
+    "zod": "^3.25.0"
+  }
+}
