@@ -35,7 +35,7 @@ pnpm dev
 | S6 | `pnpm demo:06` |
 | S7 | `pnpm demo:07` |
 
-コマンドの番号は `examples/session-NN` の番号です。S1〜S5 のページ番号とは一致しません。
+コマンドの番号は `examples/session-NN` の番号です。S1〜S5 のページ番号とは一致しません。この README と運営資料の S0〜S6 は、教材ページの S00〜S06 と同じ回を指します。表の S7 は、公開ページを持たない到達点のスナップショット `examples/session-07` です。
 
 学習前の確認には [セットアップの詳細](docs/event/participant-setup.md) を使ってください。進行側の準備は [ファシリテーターガイド](docs/event/facilitator-guide.md)、詰まったときの切り分けは [トラブルシューティング](docs/event/troubleshooting.md) にまとめています。
 
@@ -68,11 +68,11 @@ S1 と S2 は `pnpm exercise:02` を使います。`pnpm exercise:03` は S3 の
 ## 学習の流れ
 
 1. S0 で壊れやすい動物病院アプリの現行業務、操作、保存先、ログを読む
-2. S1 で Discriminated Union を使い、状態遷移を閉じる
+2. S1 で Discriminated Union を使い、状態遷移を閉じる。予約の状態は、予約済み、来院済み、診察中、会計待ち、会計済み、キャンセルの6つです
 3. S2 で never 型と `assertNever` を使い、状態を追加したときの分岐漏れをコンパイルエラーにする
 4. S3 で値の制約を型で表し、外部入力を Zod で検証して型付きの入力オブジェクトへ変換する。補助演習で AppointmentId と VeterinarianId を Branded Type で区別する
 5. S4 で失敗理由を同期 Result の型付きの値として返し、呼び出し側へ運ぶ
-6. S5 で予約のデータから始め、キャンセルをパイプラインとして読み、ROPとI/Oの分離を確かめる
+6. S5 で予約のデータから始め、キャンセルをパイプラインとして読み、ROP（Railway Oriented Programming）とI/Oの分離を確かめる
 7. S6 で時刻・ID・Storeを外から渡し、状態とイベントを一緒に記録する
 8. S1〜S4 と S6 の各コード演習で、自分の差分を振り返るか相互レビューを行い、型検査では確認できない点を記録する
 9. Final は環境構築や DB 操作をせず、ページの案内に沿って参照実装の5つの境界を読む

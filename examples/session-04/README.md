@@ -17,4 +17,4 @@ pnpm exercise:04
 
 ## 時間外の補足
 
-`src/boundary/examResult.ts` と `src/boundary/ownerContact.ts` は時間内の変更対象ではありません。検査結果のschemaとPIIのマスキングを比較したい場合は、解答側のsession-05と読み比べます。
+`src/boundary/examResult.ts` と `src/boundary/ownerContact.ts` は時間内の変更対象ではありません。検査結果のschemaと個人情報（PII）のマスキングを比較したい場合は、解答側のsession-05と読み比べます。

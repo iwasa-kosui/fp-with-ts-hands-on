@@ -51,6 +51,20 @@ const ALLOWED_EXAMPLE_DIFFS = [
   "examples/final/src/useCase/updatePetUseCase.ts",
   "examples/final/src/useCase/updateUserUseCase.ts",
   "examples/final/src/useCase/resetUserPasswordUseCase.ts",
+  "examples/final/src/useCase/logInUseCase.ts",
+  "examples/final/src/useCase/recordExamResultUseCase.ts",
+  "examples/final/src/useCase/requestFollowUpUseCase.ts",
+  "examples/final/src/useCase/setUpInitialAdminUseCase.ts",
+  "examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts",
+  "examples/final/src/adaptor/primary/web/routes/authRoutes.ts",
+  "examples/final/src/adaptor/primary/web/routes/followUpRoutes.ts",
+  "examples/final/src/adaptor/primary/web/routes/ownerRoutes.ts",
+  "examples/final/src/adaptor/primary/web/routes/petRoutes.ts",
+  "examples/final/src/adaptor/primary/web/routes/userRoutes.ts",
+  "examples/final/test/useCase/appointmentUseCases.test.ts",
+  "examples/final/test/useCase/authenticationUseCases.test.ts",
+  "examples/final/test/useCase/startExaminationUseCase.test.ts",
+  "examples/final/test/web/authRoutes.test.ts",
 ];
 
 const STEP_1_TO_3_FILES = ["src/domain/appointment/transitions.ts"];
