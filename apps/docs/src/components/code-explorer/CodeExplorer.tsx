@@ -21,10 +21,11 @@ import {
 import { FileTree } from "./FileTree";
 import { MonacoEditor } from "./MonacoEditor";
 import {
-  TerminalPanel,
-  type TerminalPanelStateKind,
-  type TerminalView,
-} from "./TerminalPanel";
+  createIndexedDbWorkspaceStore,
+  type WorkspaceStore,
+} from "../../code-explorer/workspace-store";
+import { TerminalPanel, type TerminalView } from "./TerminalPanel";
+import { useWorkspacePersistence } from "./useWorkspacePersistence";
 import "@xterm/xterm/css/xterm.css";
 
 export type EditorProps = Readonly<{
@@ -47,6 +48,7 @@ export type CodeExplorerProps = Readonly<{
   runnerFactory?: () => TerminalRunner;
   supportsRuntime?: () => boolean;
   loadTerminalView?: () => Promise<TerminalView>;
+  workspaceStore?: WorkspaceStore;
 }>;
 
 const noHighlights: readonly CodeHighlight[] = [];
@@ -65,6 +67,7 @@ export const CodeExplorer = ({
   runnerFactory,
   supportsRuntime,
   loadTerminalView,
+  workspaceStore,
 }: CodeExplorerProps) => {
   const availableGuides = guides ?? [];
   const [selectedGuideId, setSelectedGuideId] = useState(
@@ -85,13 +88,15 @@ export const CodeExplorer = ({
       ),
   );
   const [typeFiles, setTypeFiles] = useState<ProjectFiles>({});
-  const [terminalState, setTerminalState] =
-    useState<TerminalPanelStateKind>("unstarted");
+  const [store] = useState(
+    () => workspaceStore ?? createIndexedDbWorkspaceStore(),
+  );
   const [syncError, setSyncError] = useState<string>();
   const terminalSession = useRef<TerminalSession>();
   const pendingFileWrites = useRef<Promise<void>>(Promise.resolve());
+  const contentsRef = useRef(workspaceState.contents);
+  contentsRef.current = workspaceState.contents;
   const selectedPath = workspaceState.selectedPath;
-  const isPreparing = terminalState === "preparing";
   const dirtyPaths = useMemo(
     () =>
       new Set(
@@ -119,6 +124,30 @@ export const CodeExplorer = ({
     () => pendingFileWrites.current,
     [],
   );
+
+  const syncFiles = useCallback(
+    async (mountedFiles: ProjectFiles) => {
+      for (const [path, contents] of Object.entries(contentsRef.current)) {
+        if (mountedFiles[path] !== contents) writeFile(path, contents);
+      }
+      await pendingFileWrites.current;
+    },
+    [writeFile],
+  );
+
+  const persistence = useWorkspacePersistence({
+    slug: workspace.slug,
+    projectFiles,
+    visiblePaths: workspace.visibleFiles,
+    contents: workspaceState.contents,
+    selectedPath,
+    dispatch,
+    store,
+    enabled: !isGuided,
+    writeToSession: writeFile,
+  });
+  const { status, notice } = persistence;
+  const isLocked = status.kind === "loading" || status.kind === "outdated";
 
   const resetSelectedFile = () => {
     if (selectedPath === undefined) return;
@@ -152,10 +181,6 @@ export const CodeExplorer = ({
     [],
   );
 
-  const handleTerminalState = useCallback((state: TerminalPanelStateKind) => {
-    setTerminalState(state);
-  }, []);
-
   return (
     <section className="code-explorer">
       <p>{workspace.description}</p>
@@ -183,11 +208,93 @@ export const CodeExplorer = ({
             paths={workspaceState.visiblePaths}
             selectedPath={selectedPath ?? ""}
             dirtyPaths={dirtyPaths}
-            disabled={isPreparing}
+            disabled={isLocked}
             onSelect={(path) => dispatch({ kind: "select", path })}
           />
         )}
         <div className="code-explorer__editor">
+          {isGuided ? null : (
+            <>
+              {notice === "restored" ? (
+                <div
+                  className="code-explorer__notice"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <p>前回の編集を読み込みました。</p>
+                </div>
+              ) : null}
+              {notice === "lost" && status.kind !== "read-failed" ? (
+                <div className="code-explorer__notice" role="alert">
+                  <p>
+                    前の編集を読み出せませんでした。開始の状態で表示しています。
+                  </p>
+                </div>
+              ) : null}
+              {status.kind === "read-failed" ? (
+                <div className="code-explorer__notice" role="alert">
+                  <p>
+                    前の編集を読み出せませんでした。開始の状態で表示しています。このページの編集は保存されません。ページを再読み込みすると、もう一度読み出します。
+                  </p>
+                </div>
+              ) : null}
+              {status.kind === "save-failed" ? (
+                <div className="code-explorer__notice" role="alert">
+                  <p>
+                    編集を保存できませんでした。このページを閉じると、保存していない編集は失われます。
+                  </p>
+                  <button
+                    type="button"
+                    data-action="retry-save"
+                    onClick={() => void persistence.retrySave()}
+                  >
+                    もう一度保存する
+                  </button>
+                </div>
+              ) : null}
+              {status.kind === "outdated" ? (
+                <div className="code-explorer__notice" role="alert">
+                  <p>教材が更新されました。前の編集を使いますか。</p>
+                  <p>対象のファイル: {status.paths.join("、")}</p>
+                  <button
+                    type="button"
+                    data-action="use-saved-edits"
+                    onClick={persistence.useSavedEdits}
+                  >
+                    前の編集を使う
+                  </button>
+                  <button
+                    type="button"
+                    data-action="use-updated-code"
+                    onClick={persistence.useUpdatedCode}
+                  >
+                    更新後のコードで始める
+                  </button>
+                </div>
+              ) : null}
+              {status.kind === "conflict" ? (
+                <div className="code-explorer__notice" role="alert">
+                  <p>
+                    別のタブでこの Session の編集が保存されました。このタブの編集はまだ保存していません。どちらを残すか選んでください。
+                  </p>
+                  <button
+                    type="button"
+                    data-action="load-other-tab"
+                    onClick={() => void persistence.loadOtherTab()}
+                  >
+                    別のタブの編集を読み込む
+                  </button>
+                  <button
+                    type="button"
+                    data-action="overwrite-other-tab"
+                    onClick={() => void persistence.overwriteOtherTab()}
+                  >
+                    このタブの編集で上書きする
+                  </button>
+                </div>
+              ) : null}
+            </>
+          )}
           {isGuided ? (
             <div className="code-explorer__guide-detail" aria-live="polite">
               <p>
@@ -206,7 +313,7 @@ export const CodeExplorer = ({
               value={workspaceState.contents[selectedPath] ?? ""}
               files={workspaceState.contents}
               typeFiles={typeFiles}
-              disabled={isPreparing}
+              disabled={isLocked}
               readOnly={isGuided}
               highlights={selectedGuide?.highlights ?? noHighlights}
               onChange={(value) => {
@@ -226,9 +333,7 @@ export const CodeExplorer = ({
               <button
                 type="button"
                 data-action="reset"
-                disabled={
-                  isPreparing || !canResetFile(projectFiles, selectedPath)
-                }
+                disabled={isLocked || !canResetFile(projectFiles, selectedPath)}
                 onClick={resetSelectedFile}
               >
                 選択中のファイルをリセット
@@ -248,8 +353,12 @@ export const CodeExplorer = ({
           onTypeFiles={setTypeFiles}
           onWorkspaceChange={handleWorkspaceChange}
           onSessionChange={handleSessionChange}
-          onStateChange={handleTerminalState}
           waitForPendingFileWrites={waitForPendingFileWrites}
+          syncFiles={syncFiles}
+          restoredOutput={persistence.restoredOutput}
+          outputStale={persistence.outputStale}
+          onOutput={persistence.appendTerminalOutput}
+          startDisabled={isLocked}
         />
       )}
     </section>
