@@ -196,9 +196,9 @@ describe("GuardExercise", () => {
       "B1-any-parser",
     ]);
     expect(cases[0]?.getAttribute("data-verdict")).toBe("unchecked");
-    expect(host.textContent).toContain("まだ検査していません");
+    expect(host.textContent).toContain("まだ確かめていません");
     expect(host.textContent).toContain("正しいコード");
-    expect(row(host, "G1-solution")?.textContent).toContain("未検査");
+    expect(row(host, "G1-solution")?.textContent).toContain("未確認");
   });
 
   it("opens the case file read-only and the mine file editable", async () => {
@@ -377,7 +377,7 @@ describe("GuardExercise", () => {
     await click(action(host, "run-guard"));
 
     expect(host.querySelector('[role="alert"]')?.textContent).toContain(
-      "検査の結果を読み出せませんでした",
+      "結果を読み出せませんでした",
     );
     expect(action(host, "run-guard")?.disabled).toBe(false);
   });
@@ -430,7 +430,7 @@ describe("GuardExercise", () => {
     );
 
     expect(second.host.querySelector(".guard-exercise__badge")?.textContent).toBe(
-      "前回の検査の結果",
+      "前回の結果",
     );
     expect(row(second.host, "B1-any-parser")?.textContent).toContain("すり抜け");
     expect(

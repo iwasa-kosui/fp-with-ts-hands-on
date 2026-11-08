@@ -257,7 +257,7 @@ const rejectedFrames = [
     status: "stop",
     valueLabel: "内側に届いた値",
     value: "// なし",
-    text: "Errの_unsafeUnwrapは例外を投げます。routeの次の行へ進まないので、startExaminationは呼ばれません。検査の失敗は今は500のエラーになります。この扱いはS04で学びます。",
+    text: "Errの_unsafeUnwrapは例外を投げます。routeの次の行へ進まないので、startExaminationは呼ばれません。検査の失敗は今はサーバーが失敗を返すHTTPの状態（500）になります。この扱いはS04で学びます。",
   }),
 ];
 
@@ -318,7 +318,7 @@ export const startExaminationWalkthrough: Walkthrough = {
           status: "danger",
           valueLabel: "parse へ渡された値（型は any）",
           value: rawOf(`"night-shift"`),
-          text: "修正前のparseはrawをanyで受け取ります。anyには、どんな値でも何の確認もなく入ります。",
+          text: "今のparseはrawをanyで受け取ります。anyには、どんな値でも何の確認もなく入ります。",
         }),
         startFrame("parseBefore", {
           first: "ok({",
@@ -381,7 +381,7 @@ const wrappedFrames = [
     status: "neutral",
     valueLabel: "parse に渡すメールアドレス（説明用の値）",
     value: `ownerEmail: "owner@example.com"`,
-    text: "入口の境界で形を検査したあと、transformでSensitive.ofに包みます。brandは他の値との取り違えを防ぐためのもので、ログには影響しません。",
+    text: "境界で形を検査したあと、transformでSensitive.ofに包みます。brandは他の値との取り違えを防ぐためのもので、ログには影響しません。",
   }),
   sensitiveFrame("sensitive", {
     first: "of: <T>(value: T): Sensitive<T> => ({",

@@ -34,7 +34,7 @@ const phaseOrder = [
 ] as const satisfies readonly TerminalPhase[];
 
 const stepLabels: Readonly<Record<Exclude<GuardRunStep, "starting">, string>> = {
-  judging: "検査を実行しています。",
+  judging: "検出を確かめています。",
   reading: "結果を読み込んでいます。",
 };
 
@@ -120,7 +120,7 @@ export const GuardLayout = ({
       </div>
       <section
         className="guard-exercise__column guard-exercise__column--result"
-        aria-label="検査の結果"
+        aria-label="結果"
       >
         <div className="guard-exercise__run">
           <button
@@ -129,7 +129,7 @@ export const GuardLayout = ({
             disabled={running || parts.locked}
             onClick={() => void guard.run()}
           >
-            {running ? "検査しています" : "検査する"}
+            {running ? "確かめています" : "検出を確かめる"}
           </button>
           {progress === undefined ? null : (
             <div className="guard-exercise__progress" role="status" aria-live="polite">

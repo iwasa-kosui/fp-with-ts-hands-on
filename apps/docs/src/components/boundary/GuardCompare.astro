@@ -2,18 +2,10 @@
 const mechanisms = [
   {
     id: "type",
-    name: "型",
-    about: "監査記録の型",
+    name: "型のテスト",
+    about: "型エラーになるはずの行を、@ts-expect-error で確かめる",
     catches: "監査記録の型にない項目を、直接書いたとき。",
-    misses: "スプレッド（...）で、型にない項目を混ぜたとき。",
-  },
-  {
-    id: "sensitive",
-    name: "Sensitive",
-    catchesTitle: "防げること",
-    about: "検査済みの値を包み、ログと JSON では [REDACTED] に伏せる型",
-    catches: "toJSON や toString を通して、値がログや JSON に出ようとしたとき。",
-    misses: "unwrap で中身を取り出して、そのまま渡したとき。",
+    misses: "監査記録の型に現れない形で、連絡先が混ざったとき。",
   },
   {
     id: "test",
@@ -24,7 +16,7 @@ const mechanisms = [
   },
   {
     id: "lint",
-    name: "Linter の規則",
+    name: "Linter",
     about: "コードの書き方を機械で調べる",
     catches: "規則に書いた、特定の書き方。",
     misses: "規則に書いていない、別の書き方で同じことをしたとき。",
@@ -37,9 +29,9 @@ const groups = [
 ] as const;
 ---
 
-<figure class="guard" data-guard-compare aria-label="4つの仕組みが検出できることと、検出できないこと">
+<figure class="guard" data-guard-compare aria-label="3つの仕組みが検出できることと、検出できないこと">
   <div class="guard__pick">
-    <p class="guard__pick-title">自分が演習で使った仕組み（型のテスト、テスト、Linter）を選びます。Sensitive は演習で使っていない別の守り方です。</p>
+    <p class="guard__pick-title">自分が演習で使った仕組みを選びます。</p>
     <div class="guard__chips" role="group" aria-label="仕組みを選ぶ">
       {mechanisms.map((mechanism) => (
         <button type="button" data-mechanism={mechanism.id} aria-pressed="true">
@@ -61,9 +53,6 @@ const groups = [
               <div class="guard__card">
                 <div class="guard__card-head">
                   <p class="guard__card-name">{mechanism.name}</p>
-                  {group.key === "catches" && "catchesTitle" in mechanism && (
-                    <p class="guard__card-title">{mechanism.catchesTitle}</p>
-                  )}
                 </div>
                 <p>{mechanism[group.key]}</p>
               </div>
@@ -270,12 +259,6 @@ const groups = [
   .guard__card .guard__card-name {
     font-size: 0.9375rem;
     font-weight: 800;
-  }
-
-  .guard__card .guard__card-title {
-    color: var(--case-muted);
-    font-size: 0.875rem;
-    font-weight: 700;
   }
 
   .guard[data-ready] .guard__slot {

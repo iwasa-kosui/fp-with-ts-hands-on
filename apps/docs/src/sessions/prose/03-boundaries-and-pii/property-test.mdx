@@ -4,6 +4,6 @@
     <p>テストは <code>{"fc.assert(fc.property(入力の作り方, (入力) => { ... }))"}</code> の形で書きます。中の関数が <code>false</code> を返すか例外を投げると、そのテストは失敗します。悪い変更でテストが失敗すれば、検出です。<code>fc.string()</code> は任意の文字列を作り、<code>fc.uuid()</code> は UUID の形の文字列を作ります。<code>expect</code> を使うときは <code>vitest</code> から import します。</p>
   </div>
   <div>
-    <p><strong>型のテスト</strong>: 型のテストは、<code>@ts-expect-error</code> を使い、悪い変更を入れると型エラーが消えるようにします。<code>exercises/guard/mine/</code> に <code>{"*.type-test.ts"}</code> という名前で置きます。</p>
+    <p><strong>型のテスト</strong>: <code>// @ts-expect-error</code> を、型エラーになるはずの1行の直前に書きます。悪い変更でその行が型エラーにならなくなると、<code>@ts-expect-error</code> 自体がエラーになり、悪い変更を検出できます。<code>exercises/guard/mine/</code> に <code>{"*.type-test.ts"}</code> という名前で置きます。</p>
   </div>
 </div>

@@ -65,7 +65,7 @@ export default {
       stage: 2,
       required: false,
       allow: ["types", "lint", "tests"],
-      hint: "検査の表で、この行が「すり抜け」のままなら、隣の人の仕組みをすり抜けています。",
+      hint: "結果の表で、この行が「すり抜け」のままなら、隣の人の仕組みをすり抜けています。",
     },
     {
       id: "G1-solution",
@@ -77,7 +77,7 @@ export default {
       id: "G2-handler-uses-parse",
       kind: "good",
       subject: "handler",
-      title: "parse を通してから渡す正しいハンドラ",
+      title: "parse を通してから渡す正しい route",
     },
     {
       id: "G3-as-const",

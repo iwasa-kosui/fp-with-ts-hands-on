@@ -41,7 +41,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "teach",
     minutes: 0.5,
-    role: "課題2: 入口とは別に、出ていく記録にも問題があります。",
+    role: "課題2: 境界の検査とは別に、内側から記録へ出ていく値にも問題があります。",
   },
   {
     slug: "result",
@@ -81,7 +81,15 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 2,
-    role: "解決策（課題1）: ここまでの知識を組み合わせて、入口の検査を作ります。",
+    role: "解決策（課題1）: ここまでの知識を組み合わせて、境界の検査を作ります。",
+  },
+  {
+    slug: "terms",
+    title: "学んだことに名前を付ける",
+    flow: "solution",
+    kind: "teach",
+    minutes: 0.5,
+    role: "解決策（課題1）: 読んだ形の名前を知ると、業務で調べたり話したりできます。",
   },
   {
     slug: "audit-record",
@@ -92,20 +100,12 @@ export const sessionPages = [
     role: "解決策（課題2）: 出ていく記録から、連絡先を取り除きます。",
   },
   {
-    slug: "terms",
-    title: "学んだことに名前を付ける",
-    flow: "solution",
-    kind: "teach",
-    minutes: 0.5,
-    role: "解決策: 作った形の名前を知ると、業務で調べたり話したりできます。",
-  },
-  {
     slug: "checks",
     title: "直した状態をどう守るか",
     flow: "solution",
     kind: "teach",
     minutes: 0.5,
-    role: "解決策を守る: 直したコードも、次の変更で元に戻ることがあります。守る仕組みが要ります。",
+    role: "解決策を守る（課題3）: 直したコードも、次の変更で元に戻ることがあります。守る仕組みが要ります。",
   },
   {
     slug: "property-test",
@@ -113,7 +113,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 0.5,
-    role: "解決策を守る: 値の性質を確かめるテストと型のテストの書き方を学びます。",
+    role: "解決策を守る（課題3）: 値の性質を確かめるテストと型のテストの書き方を学びます。",
   },
   {
     slug: "exercise",
@@ -121,7 +121,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "exercise",
     minutes: 15,
-    role: "解決策を守る: 学んだ仕組みを足して、悪い変更を検出します。",
+    role: "解決策を守る（課題3）: 学んだ仕組みを足して、悪い変更を検出します。",
   },
   {
     slug: "peer-review",
@@ -129,7 +129,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "review",
     minutes: 3,
-    role: "解決策を守る: 自分の仕組みの穴を、隣の人に見つけてもらいます。",
+    role: "解決策を守る（課題3）: 自分の仕組みの穴を、隣の人に見つけてもらいます。",
   },
   {
     slug: "guard",

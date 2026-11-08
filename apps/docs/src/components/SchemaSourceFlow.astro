@@ -148,7 +148,7 @@ const frames: readonly Frame[] = [
   },
   {
     part: "parse",
-    caption: "型と値に、同じ StartExaminationInput という名前を付けています。TypeScript は型の名前と値の名前を別々に扱うので、型を書く場所では型を、式の中ではオブジェクトを指します。使う側は StartExaminationInput.parse(raw) で検査し、受け取る値の型も StartExaminationInput と書けます。",
+    caption: "TypeScript では、型と値に同じ名前 StartExaminationInput を付けられます。",
     stage: "after",
     code: { key: "after", lines: [12, 14, 15, 16, 17] },
     parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "on", linkCheck: "on", checkBox: "on", inside: "dim", sameName: "focus", unknown: "off", note: "off" },
@@ -159,7 +159,7 @@ const frames: readonly Frame[] = [
   },
   {
     part: "parse",
-    caption: "修正後は、night-shift は parse の検査を通らず、Err が返ります。UUID の形をした値だけが Ok になり、StartExaminationInput 型の値として内側へ進みます。型と検査を同じ schema から作るので、型に書いた項目は実行時にも検査されます。",
+    caption: "この関数を使うと、night-shift は Err になります。使う場所は「境界を通った値だけが内側へ入る」のページで見ます。",
     stage: "after",
     parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "on", linkCheck: "on", checkBox: "on", inside: "on", sameName: "off", unknown: "off", note: "on" },
     typeLabel: "infer",

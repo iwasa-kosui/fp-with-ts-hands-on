@@ -31,7 +31,7 @@ export const verdictText = (verdict: GuardVerdict | undefined): string =>
         ? "誤検知あり"
         : verdict === "noFalsePositive"
           ? "誤検知なし"
-          : "未検査";
+          : "未確認";
 
 export type DisplayRow = Readonly<{
   id: string;

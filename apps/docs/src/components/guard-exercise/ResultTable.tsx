@@ -100,7 +100,7 @@ export const ResultTable = ({
     <div className="guard-exercise__table-area">
       {result === undefined ? (
         <p className="guard-exercise__status" data-role="unchecked">
-          まだ検査していません。「検査する」を押すと、悪い変更ごとの結果が表に出ます。
+          まだ確かめていません。「検出を確かめる」を押すと、悪い変更ごとの結果が表に出ます。
         </p>
       ) : (
         <p
@@ -109,7 +109,7 @@ export const ResultTable = ({
           role="status"
         >
           {restored ? (
-            <span className="guard-exercise__badge">前回の検査の結果</span>
+            <span className="guard-exercise__badge">前回の結果</span>
           ) : null}
           {headlineFor(result)}
         </p>

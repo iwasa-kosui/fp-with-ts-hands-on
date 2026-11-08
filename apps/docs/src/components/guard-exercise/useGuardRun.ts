@@ -40,7 +40,7 @@ export type UseGuardRunParams = Readonly<{
 const limitationSaveDelayMs = 400;
 
 const messageFrom = (error: unknown): string =>
-  error instanceof Error ? error.message : "検査を実行できませんでした。";
+  error instanceof Error ? error.message : "検出を確かめられませんでした。";
 
 export const useGuardRun = ({
   store,
@@ -101,7 +101,7 @@ export const useGuardRun = ({
       () => {
         if (cancelled) return;
         setNotice(
-          "前回の検査の結果を読み出せませんでした。この画面の結果と記入は保存されません。",
+          "前回の結果を読み出せませんでした。この画面の結果と記入は保存されません。",
         );
         setReady(true);
       },
@@ -140,7 +140,7 @@ export const useGuardRun = ({
       const session = await latest.current.acquireSession();
       const { runCommand, readFile } = session;
       if (runCommand === undefined || readFile === undefined) {
-        throw new Error("この実行環境では検査を実行できません。");
+        throw new Error("この実行環境では検出を確かめられません。");
       }
       if (mounted.current) setStatus({ kind: "running", step: "judging" });
       const exitCode = await runCommand(
@@ -150,7 +150,7 @@ export const useGuardRun = ({
       );
       if (exitCode !== 0 && exitCode !== 1) {
         throw new Error(
-          `検査が途中で終了しました（終了コード ${exitCode}）。ターミナルを開くと出力を確認できます。`,
+          `検出の確認が途中で終了しました（終了コード ${exitCode}）。ターミナルを開くと出力を確認できます。`,
         );
       }
       if (mounted.current) setStatus({ kind: "running", step: "reading" });
@@ -158,7 +158,7 @@ export const useGuardRun = ({
       const parsed = text === undefined ? undefined : parseGuardResult(text);
       if (parsed === undefined) {
         throw new Error(
-          "検査の結果を読み出せませんでした。ターミナルを開くと出力を確認できます。",
+          "結果を読み出せませんでした。ターミナルを開くと出力を確認できます。",
         );
       }
       const { store: currentStore, slug: currentSlug } = latest.current;
@@ -166,7 +166,7 @@ export const useGuardRun = ({
         .saveGuardResult(currentSlug, parsed, Date.now())
         .catch(() => {
           if (mounted.current) {
-            setNotice("検査の結果を保存できませんでした。");
+            setNotice("結果を保存できませんでした。");
           }
         });
       if (mounted.current) {
