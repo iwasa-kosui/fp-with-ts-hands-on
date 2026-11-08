@@ -1,0 +1,780 @@
+---
+import { Code } from "astro:components";
+import type { ComponentProps } from "astro/types";
+import appointmentSource from "../../../../examples/final/src/domain/appointment/appointment.ts?raw";
+import storesSource from "../../../../examples/final/src/domain/examResult/examResultStores.ts?raw";
+
+const quote = (source: string, from: number, to: number, firstLine: string, lastLine: string): string => {
+  const lines = source.split("\n").slice(from - 1, to);
+  if (!lines[0]?.includes(firstLine)) throw new Error(`引用元の先頭行がずれています: ${firstLine}`);
+  if (!lines[lines.length - 1]?.includes(lastLine)) throw new Error(`引用元の末尾行がずれています: ${lastLine}`);
+  const indent = Math.min(...lines.filter((line) => line.trim() !== "").map((line) => line.search(/\S/)));
+  return lines.map((line) => line.slice(indent)).join("\n");
+};
+
+const snippets = {
+  cancel: {
+    path: "examples/final/src/domain/appointment/appointment.ts",
+    code: quote(appointmentSource, 209, 233, "const cancel =", "};"),
+  },
+  store: {
+    path: "examples/final/src/domain/examResult/examResultStores.ts",
+    code: quote(storesSource, 10, 15, "export type ExaminationCompletionStore", "}>;"),
+  },
+} as const;
+
+type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
+const KEY_MARK = /\s*\/\/ \[!aggregate-flow-key\]$/;
+const keyLineNumbers = (source: string, keyTexts: readonly string[]) =>
+  keyTexts.map((text) => {
+    const found = source.split("\n").flatMap((line, index) => (line.trim() === text ? [index + 1] : []));
+    if (found.length !== 1) throw new Error(`強調する行が一意に見つかりません: ${text}`);
+    return found[0];
+  });
+const withMarks = (source: string, keyLines: readonly number[]) =>
+  source.split("\n").map((text, index) => (keyLines.includes(index + 1) ? `${text} // [!aggregate-flow-key]` : text)).join("\n");
+const markKeyLines: Transformer = {
+  name: "mark-aggregate-flow-key-lines",
+  preprocess(source) {
+    const lines = source.split("\n");
+    (this.meta as { keyLines?: number[] }).keyLines = lines.flatMap((text, index) => (KEY_MARK.test(text) ? [index + 1] : []));
+    return lines.map((text) => text.replace(KEY_MARK, "")).join("\n");
+  },
+  line(node, line) {
+    if ((this.meta as { keyLines?: number[] }).keyLines?.includes(line)) this.addClassToHast(node, "aggregate-flow__key");
+  },
+};
+
+type Chip = Readonly<{ text: string; mono?: boolean; ghost?: boolean; note?: boolean; arrow?: boolean }>;
+type Field = Readonly<{ label?: string; chips: readonly Chip[] }>;
+
+const appointmentFields = (ghost: boolean): readonly Field[] => [
+  {
+    label: "現在の状態",
+    chips: [
+      { text: "Scheduled", mono: true },
+      ...(ghost ? [{ text: "Canceled", mono: true, ghost: true, arrow: true }] : []),
+    ],
+  },
+  {
+    label: "履歴",
+    chips: [{ text: "予約された" }, ...(ghost ? [{ text: "キャンセルされた", ghost: true }] : [])],
+  },
+];
+
+const mismatchFields: readonly Field[] = [
+  { label: "現在の状態", chips: [{ text: "Canceled", mono: true }] },
+  { label: "履歴", chips: [{ text: "キャンセルが無い", note: true }] },
+];
+
+const outcomes: readonly Readonly<{ tag: string; fields: readonly Field[] }>[] = [
+  {
+    tag: "成功",
+    fields: [
+      { label: "現在の状態", chips: [{ text: "Canceled", mono: true }] },
+      { label: "履歴", chips: [{ text: "キャンセルされた" }] },
+    ],
+  },
+  {
+    tag: "失敗",
+    fields: [
+      { label: "現在の状態", chips: [{ text: "Scheduled", mono: true }] },
+      { label: "履歴", chips: [{ text: "変化なし", note: true }] },
+    ],
+  },
+];
+
+const completionAppointmentFields: readonly Field[] = [
+  {
+    label: "現在の状態",
+    chips: [{ text: "InExamination", mono: true }, { text: "AwaitingPayment", mono: true, arrow: true }],
+  },
+];
+
+const completionExamFields: readonly Field[] = [{ chips: [{ text: "検査結果を記録" }] }];
+
+type Frame = Readonly<{
+  caption: string;
+  view: "aggregate" | "compare" | "cross";
+  ghost?: boolean;
+  after?: boolean;
+  code?: Readonly<{ key: keyof typeof snippets; keys: readonly string[] }>;
+}>;
+
+const frames: readonly Frame[] = [
+  {
+    caption: "予約1件の現在の状態と、その予約の履歴を、1つの枠で囲みます。キャンセルで変わるのは、この枠の中だけです。別の予約や飼い主のデータは変わりません。",
+    view: "aggregate",
+  },
+  {
+    caption: "完成形の参照実装の Appointment.cancel は、イベント AppointmentCanceled を返します。このイベントは、キャンセル後の予約の状態（aggregateState）を持ちます。1つの値が、書き込む現在の状態と履歴の両方を表します。",
+    view: "aggregate",
+    ghost: true,
+    code: { key: "cancel", keys: ['kind: "Canceled",', "return AppointmentEvent.create("] },
+  },
+  {
+    caption: "保存を2回に分けた場合です。現在の状態を書いた後で履歴の追記が失敗すると、予約は Canceled なのに、履歴にキャンセルが残りません。整合性が崩れた状態です。",
+    view: "compare",
+    after: false,
+  },
+  {
+    caption: "集約を単位に1回で保存すると、結果は、両方が書かれるか、どちらも書かれないかの2通りになります。どちらでも、現在の状態と履歴は食い違いません。",
+    view: "compare",
+    after: true,
+  },
+  {
+    caption: "診察の完了では、検査結果の記録と、予約の状態の AwaitingPayment への変更が同時に起きます。完成形の参照実装は、検査結果と予約を別の集約として数えます。それでも、検査結果だけが残る状態を避けるため、2つを1回の保存で書きます。",
+    view: "cross",
+    code: { key: "store", keys: ["store: ("] },
+  },
+];
+---
+
+<figure
+  class="aggregate-flow"
+  aria-label="キャンセルで予約の集約の現在の状態と履歴をそろえて保存する流れ"
+  data-aggregate-flow
+>
+  <div class="aggregate-flow__controls" data-controls hidden>
+    <button type="button" data-prev disabled>前へ</button>
+    <span data-progress>1 / {frames.length}</span>
+    <button type="button" data-next>次へ</button>
+  </div>
+
+  <p class="aggregate-flow__live" data-live aria-live="polite" hidden></p>
+
+  <ol class="aggregate-flow__frames">
+    {frames.map((frame) => (
+      <li data-frame>
+        <p class="aggregate-flow__caption" data-caption>{frame.caption}</p>
+
+        {frame.view === "aggregate" && (
+          <div class="aggregate-flow__diagram">
+            <div class="aggregate-flow__aggregate">
+              <p class="aggregate-flow__aggregate-title">予約の集約</p>
+              <div class="aggregate-flow__fields">
+                {appointmentFields(frame.ghost === true).map((field) => (
+                  <div class="aggregate-flow__field">
+                    <p class="aggregate-flow__field-label">{field.label}</p>
+                    <div class="aggregate-flow__values aggregate-flow__values--stack">
+                      {field.chips.map((chip) => (
+                        <>
+                          {chip.arrow && <span class="aggregate-flow__to" aria-hidden="true">↓</span>}
+                          <span
+                            class:list={[
+                              "aggregate-flow__chip",
+                              { "aggregate-flow__chip--mono": chip.mono, "aggregate-flow__chip--ghost": chip.ghost },
+                            ]}
+                          >
+                            {chip.text}
+                          </span>
+                        </>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <ul class="aggregate-flow__outside">
+              <li class="aggregate-flow__other">別の予約</li>
+              <li class="aggregate-flow__other">飼い主</li>
+            </ul>
+            {frame.ghost && <p class="aggregate-flow__legend">点線: これから書く内容</p>}
+          </div>
+        )}
+
+        {frame.view === "compare" && (
+          <div class="aggregate-flow__compare">
+            <section class="aggregate-flow__side">
+              <p class="aggregate-flow__side-title">修正前: 2回に分けて保存する</p>
+              <ol class="aggregate-flow__steps">
+                <li class="aggregate-flow__step">
+                  <span class="aggregate-flow__step-no">1回目</span>
+                  <span>現在の状態を書く</span>
+                  <span class="aggregate-flow__tag aggregate-flow__tag--ok"><span aria-hidden="true">✓ </span>成功</span>
+                </li>
+                <li class="aggregate-flow__step">
+                  <span class="aggregate-flow__step-no">2回目</span>
+                  <span>履歴を追記する</span>
+                  <span class="aggregate-flow__tag aggregate-flow__tag--bad"><span aria-hidden="true">✕ </span>失敗</span>
+                </li>
+              </ol>
+              <p class="aggregate-flow__result-label">結果</p>
+              <div class="aggregate-flow__aggregate">
+                <p class="aggregate-flow__aggregate-title">予約の集約</p>
+                <div class="aggregate-flow__fields">
+                  {mismatchFields.map((field) => (
+                    <div class="aggregate-flow__field">
+                      <p class="aggregate-flow__field-label">{field.label}</p>
+                      <div class="aggregate-flow__values">
+                        {field.chips.map((chip) => (
+                          <span
+                            class:list={["aggregate-flow__chip", { "aggregate-flow__chip--mono": chip.mono, "aggregate-flow__chip--note": chip.note }]}
+                          >
+                            {chip.text}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p class="aggregate-flow__verdict aggregate-flow__verdict--bad"><span aria-hidden="true">✕ </span>食い違い</p>
+            </section>
+
+            <section class="aggregate-flow__side">
+              <p class="aggregate-flow__side-title">修正後: 集約を単位に1回で保存する</p>
+              {frame.after ? (
+                outcomes.map((outcome) => (
+                  <div class="aggregate-flow__outcome">
+                    <p class="aggregate-flow__outcome-tag"><span class="aggregate-flow__tag aggregate-flow__tag--plain">{outcome.tag}</span></p>
+                    <div class="aggregate-flow__aggregate">
+                      <p class="aggregate-flow__aggregate-title">予約の集約</p>
+                      <div class="aggregate-flow__fields">
+                        {outcome.fields.map((field) => (
+                          <div class="aggregate-flow__field">
+                            <p class="aggregate-flow__field-label">{field.label}</p>
+                            <div class="aggregate-flow__values">
+                              {field.chips.map((chip) => (
+                                <span
+                                  class:list={["aggregate-flow__chip", { "aggregate-flow__chip--mono": chip.mono, "aggregate-flow__chip--note": chip.note }]}
+                                >
+                                  {chip.text}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <p class="aggregate-flow__verdict aggregate-flow__verdict--good"><span aria-hidden="true">✓ </span>そろっている</p>
+                  </div>
+                ))
+              ) : (
+                <div class="aggregate-flow__placeholder" aria-hidden="true"></div>
+              )}
+            </section>
+          </div>
+        )}
+
+        {frame.view === "cross" && (
+          <div class="aggregate-flow__cross">
+            <div class="aggregate-flow__aggregate">
+              <p class="aggregate-flow__aggregate-title">予約の集約</p>
+              <div class="aggregate-flow__fields">
+                {completionAppointmentFields.map((field) => (
+                  <div class="aggregate-flow__field">
+                    <p class="aggregate-flow__field-label">{field.label}</p>
+                    <div class="aggregate-flow__values aggregate-flow__values--stack">
+                      {field.chips.map((chip) => (
+                        <>
+                          {chip.arrow && <span class="aggregate-flow__to" aria-hidden="true">↓</span>}
+                          <span class:list={["aggregate-flow__chip", { "aggregate-flow__chip--mono": chip.mono }]}>{chip.text}</span>
+                        </>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div class="aggregate-flow__aggregate">
+              <p class="aggregate-flow__aggregate-title">検査結果の集約</p>
+              <div class="aggregate-flow__fields">
+                {completionExamFields.map((field) => (
+                  <div class="aggregate-flow__field">
+                    <div class="aggregate-flow__values aggregate-flow__values--stack">
+                      {field.chips.map((chip) => (
+                        <span class="aggregate-flow__chip">{chip.text}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <span class="aggregate-flow__stem" aria-hidden="true"></span>
+            <span class="aggregate-flow__stem" aria-hidden="true"></span>
+            <p class="aggregate-flow__save">1回の保存</p>
+          </div>
+        )}
+
+        {frame.code && (
+          <figure class="code-block aggregate-flow__code">
+            <figcaption><code>{snippets[frame.code.key].path}</code></figcaption>
+            <Code
+              code={withMarks(snippets[frame.code.key].code, keyLineNumbers(snippets[frame.code.key].code, frame.code.keys))}
+              lang="typescript"
+              defaultColor="dark"
+              transformers={[markKeyLines]}
+            />
+          </figure>
+        )}
+      </li>
+    ))}
+  </ol>
+</figure>
+
+<script>
+  const setUp = (root: HTMLElement) => {
+    if (root.dataset.ready !== undefined) return;
+    const panels = [...root.querySelectorAll<HTMLElement>("[data-frame]")];
+    const captions = panels.map((panel) => panel.querySelector<HTMLElement>("[data-caption]")?.textContent ?? "");
+    const controls = root.querySelector<HTMLElement>("[data-controls]");
+    const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
+    const next = root.querySelector<HTMLButtonElement>("[data-next]");
+    const progress = root.querySelector<HTMLElement>("[data-progress]");
+    const live = root.querySelector<HTMLElement>("[data-live]");
+    if (!controls || !prev || !next || !progress || !live) return;
+    if (panels.length === 0) return;
+    root.dataset.ready = "";
+
+    let current = 0;
+    const show = (index: number) => {
+      current = index;
+      panels.forEach((panel, i) => panel.classList.toggle("is-current", i === index));
+      live.textContent = captions[index];
+      progress.textContent = `${index + 1} / ${panels.length}`;
+      prev.disabled = index === 0;
+      next.disabled = index === panels.length - 1;
+    };
+
+    prev.addEventListener("click", () => show(Math.max(current - 1, 0)));
+    next.addEventListener("click", () => show(Math.min(current + 1, panels.length - 1)));
+    root.addEventListener("keydown", (event) => {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        show(Math.max(current - 1, 0));
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        show(Math.min(current + 1, panels.length - 1));
+      }
+    });
+
+    root.tabIndex = 0;
+    root.dataset.animated = "";
+    controls.hidden = false;
+    live.hidden = false;
+    show(0);
+  };
+
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    document.querySelectorAll<HTMLElement>("[data-aggregate-flow]").forEach(setUp);
+  }
+</script>
+
+<style>
+  .aggregate-flow {
+    --agg: var(--case-blue, #2236b8);
+    --ok: #137333;
+    --bad: #b3261e;
+    --muted: color-mix(in srgb, var(--case-ink, #111116) 72%, var(--case-paper, #fffefa));
+    container-type: inline-size;
+    min-width: 0;
+    max-width: 100%;
+    margin: 1.5rem 0;
+  }
+
+  .aggregate-flow__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .aggregate-flow__controls[hidden] {
+    display: none;
+  }
+
+  .aggregate-flow__controls button {
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 2px solid var(--case-line, #17204d);
+    border-radius: 0.5rem;
+    background: var(--case-yellow, #ffd21b);
+    color: var(--case-ink, #111116);
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .aggregate-flow__controls button:disabled {
+    background: var(--case-paper, #fffefa);
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .aggregate-flow__live,
+  .aggregate-flow__caption {
+    margin: 0.75rem 0 0.5rem;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .aggregate-flow__live[hidden] {
+    display: none;
+  }
+
+  .aggregate-flow__frames {
+    margin: 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .aggregate-flow__frames > li {
+    min-width: 0;
+  }
+
+  .aggregate-flow__frames > li + li {
+    margin-top: 1.5rem;
+  }
+
+  .aggregate-flow__diagram,
+  .aggregate-flow__compare,
+  .aggregate-flow__cross {
+    margin-top: 0.75rem;
+  }
+
+  .aggregate-flow__aggregate {
+    min-width: 0;
+    overflow: hidden;
+    border: 3px solid var(--agg);
+    border-radius: 0.75rem;
+    background: var(--case-paper, #fffefa);
+    color: var(--case-ink, #111116);
+  }
+
+  .aggregate-flow__aggregate-title {
+    margin: 0;
+    padding: 0.3rem 0.6rem;
+    background: var(--agg);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  .aggregate-flow__fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(8rem, 100%), 1fr));
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .aggregate-flow__field {
+    min-width: 0;
+    padding: 0.4rem;
+    border: 2px solid var(--case-line, #17204d);
+    border-radius: 0.4rem;
+    background: var(--case-cream, #fff8ce);
+  }
+
+  .aggregate-flow__field-label {
+    margin: 0 0 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .aggregate-flow__values {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .aggregate-flow__values--stack {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .aggregate-flow__chip {
+    display: inline-block;
+    max-width: 100%;
+    padding: 0.15rem 0.45rem;
+    border: 2px solid var(--case-line, #17204d);
+    border-radius: 0.35rem;
+    background: var(--case-paper, #fffefa);
+    font-size: 0.8rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .aggregate-flow__chip--mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.75rem;
+  }
+
+  .aggregate-flow__chip--ghost {
+    border-color: var(--agg);
+    border-style: dashed;
+    background: transparent;
+    color: var(--agg);
+    font-weight: 700;
+  }
+
+  .aggregate-flow__chip--note {
+    border-style: dotted;
+    border-color: var(--muted);
+    background: transparent;
+    color: var(--muted);
+  }
+
+  .aggregate-flow__to {
+    color: var(--agg);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .aggregate-flow__outside {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .aggregate-flow__other {
+    padding: 0.4rem 0.75rem;
+    border: 2px dashed var(--muted);
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--case-ink, #111116) 6%, var(--case-paper, #fffefa));
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .aggregate-flow__legend {
+    margin: 0.5rem 0 0;
+    color: var(--agg);
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .aggregate-flow__compare {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    align-items: start;
+  }
+
+  .aggregate-flow__side {
+    min-width: 0;
+    padding: 0.4rem;
+    border: 2px solid var(--case-line, #17204d);
+    border-radius: 0.5rem;
+    background: var(--case-paper, #fffefa);
+    color: var(--case-ink, #111116);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .aggregate-flow__side .aggregate-flow__aggregate,
+  .aggregate-flow__cross .aggregate-flow__aggregate {
+    border-width: 2px;
+    border-radius: 0.5rem;
+  }
+
+  .aggregate-flow__side .aggregate-flow__aggregate-title,
+  .aggregate-flow__cross .aggregate-flow__aggregate-title {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.8rem;
+  }
+
+  .aggregate-flow__side .aggregate-flow__fields,
+  .aggregate-flow__cross .aggregate-flow__fields {
+    gap: 0.3rem;
+    padding: 0.3rem;
+  }
+
+  .aggregate-flow__side .aggregate-flow__field,
+  .aggregate-flow__cross .aggregate-flow__field {
+    padding: 0.25rem;
+    border-width: 1.5px;
+  }
+
+  .aggregate-flow__side .aggregate-flow__chip,
+  .aggregate-flow__cross .aggregate-flow__chip {
+    padding: 0.1rem 0.3rem;
+    border-width: 1.5px;
+    font-size: 0.75rem;
+  }
+
+  .aggregate-flow__side .aggregate-flow__chip--mono,
+  .aggregate-flow__cross .aggregate-flow__chip--mono {
+    font-size: 0.7rem;
+  }
+
+  .aggregate-flow__side-title {
+    margin: 0 0 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  .aggregate-flow__steps {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .aggregate-flow__step {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.2rem 0.4rem;
+    margin: 0;
+    padding: 0.3rem 0.4rem;
+    border: 2px solid var(--case-line, #17204d);
+    border-radius: 0.4rem;
+  }
+
+  .aggregate-flow__step-no {
+    font-weight: 700;
+  }
+
+  .aggregate-flow__tag {
+    display: inline-block;
+    padding: 0 0.4rem;
+    border-radius: 0.25rem;
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .aggregate-flow__tag--ok {
+    background: var(--ok);
+  }
+
+  .aggregate-flow__tag--bad {
+    background: var(--bad);
+  }
+
+  .aggregate-flow__tag--plain {
+    background: var(--case-line, #17204d);
+  }
+
+  .aggregate-flow__result-label {
+    margin: 0.5rem 0 0.25rem;
+    font-weight: 700;
+  }
+
+  .aggregate-flow__outcome + .aggregate-flow__outcome {
+    margin-top: 0.75rem;
+  }
+
+  .aggregate-flow__outcome-tag {
+    margin: 0 0 0.25rem;
+  }
+
+  .aggregate-flow__placeholder {
+    min-height: 8rem;
+    border: 2px dashed var(--muted);
+    border-radius: 0.5rem;
+    opacity: 0.35;
+  }
+
+  .aggregate-flow__verdict {
+    margin: 0.5rem 0 0;
+    padding: 0.25rem 0.4rem;
+    border: 2px solid currentColor;
+    border-radius: 0.4rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .aggregate-flow__verdict--bad {
+    background: color-mix(in srgb, var(--bad) 10%, var(--case-paper, #fffefa));
+    color: var(--bad);
+  }
+
+  .aggregate-flow__verdict--good {
+    background: color-mix(in srgb, var(--ok) 10%, var(--case-paper, #fffefa));
+    color: var(--ok);
+  }
+
+  .aggregate-flow__cross {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    column-gap: 0.5rem;
+    align-items: stretch;
+  }
+
+  .aggregate-flow__stem {
+    justify-self: center;
+    width: 4px;
+    height: 1rem;
+    background: var(--case-line, #17204d);
+  }
+
+  .aggregate-flow__save {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    border: 3px solid var(--case-line, #17204d);
+    border-radius: 0.5rem;
+    background: var(--case-yellow, #ffd21b);
+    color: var(--case-ink, #111116);
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .aggregate-flow__code {
+    min-width: 0;
+    margin: 0.75rem 0 0;
+  }
+
+  .aggregate-flow__code figcaption code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .aggregate-flow__code :global(pre) {
+    max-width: 100%;
+    margin: 0;
+    overflow-x: auto;
+    font-size: 0.8rem;
+  }
+
+  .aggregate-flow :global(.aggregate-flow__key) {
+    display: inline-block;
+    min-width: calc(100% + 0.5rem);
+    margin-left: -0.5rem;
+    padding-left: 0.5rem;
+    background: rgb(255 210 27 / 22%);
+    box-shadow: inset 0.3rem 0 0 #ffd21b;
+  }
+
+  .aggregate-flow[data-animated] .aggregate-flow__frames {
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  .aggregate-flow[data-animated] .aggregate-flow__frames > li {
+    display: none;
+    margin: 0;
+  }
+
+  .aggregate-flow[data-animated] .aggregate-flow__frames > li.is-current {
+    display: block;
+  }
+
+  .aggregate-flow[data-animated] .aggregate-flow__caption {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .aggregate-flow[data-animated] .aggregate-flow__frames > li.is-current {
+      animation: aggregate-flow-fade 0.25s ease-out;
+    }
+  }
+
+  @keyframes aggregate-flow-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+</style>
