@@ -276,7 +276,7 @@ type ActiveShell = Readonly<{
 }>;
 
 export const createTerminalRunner = (
-  loadRuntime: () => Promise<TerminalRuntime>,
+  loadRuntime: (signal: AbortSignal) => Promise<TerminalRuntime>,
   options: TerminalRunnerOptions = {},
 ): TerminalRunner => ({
   start: async (request) => {
@@ -435,11 +435,15 @@ export const createTerminalRunner = (
     try {
       throwIfAborted(request.signal);
       request.onPhase("booting");
-      const booting = loadRuntime();
+      let booting: Promise<TerminalRuntime> | undefined;
       try {
-        runtime = await runStage("booting", request.signal, () => booting);
+        runtime = await runStage(
+          "booting",
+          request.signal,
+          (signal) => (booting = loadRuntime(signal)),
+        );
       } catch (error: unknown) {
-        void booting.then((late) => late.dispose()).catch(() => undefined);
+        void booting?.then((late) => late.dispose()).catch(() => undefined);
         throw error;
       }
       const bootedRuntime = runtime;
@@ -663,7 +667,29 @@ const runInstallation = async (
   }
 };
 
-const adaptWebContainer = (runtime: WebContainer): TerminalRuntime => ({
+let runtimeSlot: Promise<void> = Promise.resolve();
+
+const acquireRuntimeSlot = async (signal: AbortSignal): Promise<() => void> => {
+  throwIfAborted(signal);
+  const previous = runtimeSlot;
+  let release!: () => void;
+  const mine = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  runtimeSlot = previous.then(() => mine);
+  try {
+    await runUntilAborted(previous, signal);
+  } catch (error: unknown) {
+    release();
+    throw error;
+  }
+  return release;
+};
+
+const adaptWebContainer = (
+  runtime: WebContainer,
+  releaseSlot: () => void,
+): TerminalRuntime => ({
   mount: async (files) => {
     const { internal, parent } = splitProjectFiles(files);
     await runtime.fs.mkdir(runtimeProjectDirectory, { recursive: true });
@@ -742,13 +768,25 @@ const adaptWebContainer = (runtime: WebContainer): TerminalRuntime => ({
       resize: (nextSize) => process.resize(nextSize),
     };
   },
-  dispose: () => runtime.teardown(),
+  dispose: async () => {
+    try {
+      await runtime.teardown();
+    } finally {
+      releaseSlot();
+    }
+  },
 });
 
 export const createWebContainerTerminalRunner = (
   options: TerminalRunnerOptions = {},
 ): TerminalRunner =>
-  createTerminalRunner(async () => {
-    const { WebContainer } = await import("@webcontainer/api");
-    return adaptWebContainer(await WebContainer.boot());
+  createTerminalRunner(async (signal) => {
+    const releaseSlot = await acquireRuntimeSlot(signal);
+    try {
+      const { WebContainer } = await import("@webcontainer/api");
+      return adaptWebContainer(await WebContainer.boot(), releaseSlot);
+    } catch (error: unknown) {
+      releaseSlot();
+      throw error;
+    }
   }, options);

@@ -370,4 +370,92 @@ describe("WebContainer terminal adapter", () => {
     expect(spawn.mock.calls.map(([command]) => command)).toContain("npm");
     await session.dispose();
   });
+
+  describe("runtime slot", () => {
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    const fakeContainer = (teardown: () => Promise<void> | void) => ({
+      mount: vi.fn(async () => undefined),
+      spawn: vi.fn(async () => ({
+        input: new WritableStream<string>(),
+        output: new ReadableStream<string>({
+          start: (controller) => controller.close(),
+        }),
+        exit: Promise.resolve(0),
+        kill: vi.fn(),
+        resize: vi.fn(),
+      })),
+      teardown,
+      fs: {
+        mkdir: vi.fn(async () => undefined),
+        writeFile: vi.fn(),
+        readdir: async () => [],
+        readFile: async () => "",
+        watch: vi.fn(() => ({ close: vi.fn() })),
+      },
+    });
+
+    const runner = () =>
+      createWebContainerTerminalRunner({ loadDepsSnapshot: async () => null });
+
+    it("does not boot the next runtime until the previous teardown finishes", async () => {
+      const gate = Promise.withResolvers<void>();
+      webContainerMock.boot.mockReset();
+      webContainerMock.boot
+        .mockResolvedValueOnce(fakeContainer(() => gate.promise))
+        .mockResolvedValueOnce(fakeContainer(() => undefined));
+      const first = await runner().start(requestFor());
+
+      const disposing = first.dispose();
+      const second = runner().start(requestFor());
+      await flush();
+      expect(webContainerMock.boot).toHaveBeenCalledTimes(1);
+
+      gate.resolve();
+      await disposing;
+      const secondSession = await second;
+      expect(webContainerMock.boot).toHaveBeenCalledTimes(2);
+      await secondSession.dispose();
+    });
+
+    it("boots the next runtime after the previous boot fails", async () => {
+      webContainerMock.boot.mockReset();
+      webContainerMock.boot
+        .mockRejectedValueOnce(new Error("boot failed"))
+        .mockResolvedValueOnce(fakeContainer(() => undefined));
+
+      const first = runner().start(requestFor());
+      const second = runner().start(requestFor());
+
+      await expect(first).rejects.toThrow("boot failed");
+      const secondSession = await second;
+      expect(webContainerMock.boot).toHaveBeenCalledTimes(2);
+      await secondSession.dispose();
+    });
+
+    it("leaves no slot behind when a waiting start is aborted", async () => {
+      webContainerMock.boot.mockReset();
+      webContainerMock.boot
+        .mockResolvedValueOnce(fakeContainer(() => undefined))
+        .mockResolvedValueOnce(fakeContainer(() => undefined));
+      const first = await runner().start(requestFor());
+      const controller = new AbortController();
+      const aborted = runner().start(requestFor({ signal: controller.signal }));
+      const assertion = expect(aborted).rejects.toMatchObject({
+        name: "AbortError",
+      });
+      await flush();
+
+      controller.abort();
+      await assertion;
+      const third = runner().start(requestFor());
+      await flush();
+      expect(webContainerMock.boot).toHaveBeenCalledTimes(1);
+
+      await first.dispose();
+      const thirdSession = await third;
+      expect(webContainerMock.boot).toHaveBeenCalledTimes(2);
+      await thirdSession.dispose();
+    });
+  });
 });
