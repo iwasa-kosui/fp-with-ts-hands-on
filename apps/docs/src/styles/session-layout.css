@@ -71,11 +71,11 @@
 
 .case-file--session .case-file__sheet {
   min-width: 0;
-  padding: 1.5rem 1.15rem;
-  border: 3px solid var(--case-line);
-  border-radius: 1rem;
-  background: var(--case-paper);
-  box-shadow: 6px 7px 0 rgb(34 54 184 / 16%);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .case-file--session .case-file__hero {
@@ -407,10 +407,155 @@
 
   .case-file--session .case-file__sheet {
     padding: clamp(1.5rem, 2.5vw, 2.5rem);
+    border: 1px solid var(--case-divider);
+    border-radius: 1rem;
+    background: var(--case-paper);
   }
 
   .case-file--session .case-file__content > section,
   .case-file--session .case-file__content > section > :is(h3, h4)[id] {
     scroll-margin-top: var(--case-scroll-offset, 1.5rem);
   }
+}
+
+.case-file--session .session-code-playground {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .case-file--session .case-file__content > section {
+    width: 100%;
+  }
+
+  .case-file--session .case-file__content > #refactor > * {
+    max-width: none;
+  }
+
+  /* #refactor の子への max-width は ID の詳細度を持つので、:is に ID を含めて上書きする */
+  .case-file--session
+    .case-file__content
+    :is(
+      .case-file__content > section,
+      #refactor,
+      .teaching-topic,
+      .decision-card,
+      .teaching-column,
+      .step-solution__body,
+      .command-block
+    )
+    > :is(h2, h3, h4, p, ul, ol):not(.code-guide-cards),
+  .case-file--session .case-file__content > section > .case-file__episode,
+  .case-file--session .case-file__content > section > .hcs {
+    max-width: 70ch;
+  }
+}
+
+.case-file--session .teaching-topic {
+  margin-block: 2.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.case-file--session .code-block {
+  border-width: 1px;
+  box-shadow: none;
+}
+
+.case-file--session .precondition-compare .code-block,
+.case-file--session .code-block.ports-flow__code {
+  border-inline-start-width: 0.35rem;
+}
+
+.case-file--session .case-file__content .code-block figcaption {
+  border-bottom-width: 1px;
+  background: color-mix(in srgb, var(--case-divider) 45%, var(--case-paper));
+}
+
+.case-file--session .command-block pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.case-file--session .command-block > p:last-child {
+  color: var(--case-muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.case-file--session :is(.ep-impl, .fb-impl) {
+  border-block: 0;
+  border-inline-end: 0;
+}
+
+.case-file--session .walk-badge {
+  border: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.case-file--session .code-playground [data-code-explorer] {
+  border-width: 1px;
+  box-shadow: none;
+}
+
+.case-file--session
+  :is(
+    .decision-card,
+    .teaching-column,
+    .onboarding-decision,
+    .exercise-review-checklist,
+    .peer-review-panel,
+    .peer-review-promises,
+    .incident-report,
+    .delegation-prompt,
+    .before-after
+  ) {
+  padding: 0 0 0 1rem;
+  border: 0;
+  border-inline-start: 2px solid var(--case-divider);
+  background: transparent;
+}
+
+.case-file--session :is(.exercise-steps, .exercise-failures, .adv-flow) {
+  gap: 0.25rem;
+}
+
+.case-file--session :is(.exercise-steps, .exercise-failures, .adv-flow) li {
+  padding: 0.25rem 0;
+  border: 0;
+  background: transparent;
+}
+
+.case-file--session .step-solution {
+  border: 1px solid var(--case-divider);
+  background: transparent;
+}
+
+.case-file--session .step-solution summary {
+  background: transparent;
+}
+
+.case-file--session .case-file__content :is(table, dl) {
+  border-width: 1px;
+}
+
+.case-file--session .case-file__content th {
+  background: color-mix(in srgb, var(--case-divider) 45%, var(--case-paper));
+  color: var(--case-ink);
+}
+
+.case-file--session .case-file__content .code-guide-cards > li {
+  border-width: 1px;
+}
+
+.case-file--session .case-file__content .code-guide-cards figcaption {
+  background: color-mix(in srgb, var(--case-divider) 45%, var(--case-paper));
+  color: var(--case-ink);
+}
+
+.case-file--session .case-file__content .code-guide-cards pre {
+  border-width: 0;
 }
