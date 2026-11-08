@@ -2,7 +2,6 @@
 import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
 import appointmentSource from "../../../../examples/final/src/domain/appointment/appointment.ts?raw";
-import storesSource from "../../../../examples/final/src/domain/examResult/examResultStores.ts?raw";
 
 const quote = (source: string, from: number, to: number, firstLine: string, lastLine: string): string => {
   const lines = source.split("\n").slice(from - 1, to);
@@ -16,10 +15,6 @@ const snippets = {
   cancel: {
     path: "examples/final/src/domain/appointment/appointment.ts",
     code: quote(appointmentSource, 209, 233, "const cancel =", "};"),
-  },
-  store: {
-    path: "examples/final/src/domain/examResult/examResultStores.ts",
-    code: quote(storesSource, 10, 15, "export type ExaminationCompletionStore", "}>;"),
   },
 } as const;
 
@@ -84,18 +79,9 @@ const outcomes: readonly Readonly<{ tag: string; fields: readonly Field[] }>[] =
   },
 ];
 
-const completionAppointmentFields: readonly Field[] = [
-  {
-    label: "現在の状態",
-    chips: [{ text: "InExamination", mono: true }, { text: "AwaitingPayment", mono: true, arrow: true }],
-  },
-];
-
-const completionExamFields: readonly Field[] = [{ chips: [{ text: "診察結果を記録" }] }];
-
 type Frame = Readonly<{
   caption: string;
-  view: "aggregate" | "compare" | "cross";
+  view: "aggregate" | "compare";
   ghost?: boolean;
   after?: boolean;
   code?: Readonly<{ key: keyof typeof snippets; keys: readonly string[] }>;
@@ -121,11 +107,6 @@ const frames: readonly Frame[] = [
     caption: "集約を単位に1回で保存すると、結果は、両方が書かれるか、どちらも書かれないかの2通りになります。どちらでも、現在の状態と履歴は食い違いません。",
     view: "compare",
     after: true,
-  },
-  {
-    caption: "診察の完了では、診察結果の記録と、予約の状態の AwaitingPayment への変更が同時に起きます。完成形の参照実装は、診察結果と予約を別の集約として数えます。それでも、診察結果だけが残る状態を避けるため、2つを1回の保存で書きます。",
-    view: "cross",
-    code: { key: "store", keys: ["store: ("] },
   },
 ];
 ---
@@ -186,7 +167,7 @@ const frames: readonly Frame[] = [
         {frame.view === "compare" && (
           <div class="aggregate-flow__compare">
             <section class="aggregate-flow__side">
-              <p class="aggregate-flow__side-title">修正前: 2回に分けて保存する</p>
+              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">修正前</span>保存を2回に分ける</p>
               <ol class="aggregate-flow__steps">
                 <li class="aggregate-flow__step">
                   <span class="aggregate-flow__step-no">1回目</span>
@@ -223,7 +204,7 @@ const frames: readonly Frame[] = [
             </section>
 
             <section class="aggregate-flow__side">
-              <p class="aggregate-flow__side-title">修正後: 集約を単位に1回で保存する</p>
+              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">修正後</span>集約を単位に1回で保存する</p>
               {frame.after ? (
                 outcomes.map((outcome) => (
                   <div class="aggregate-flow__outcome">
@@ -254,46 +235,6 @@ const frames: readonly Frame[] = [
                 <div class="aggregate-flow__placeholder" aria-hidden="true"></div>
               )}
             </section>
-          </div>
-        )}
-
-        {frame.view === "cross" && (
-          <div class="aggregate-flow__cross">
-            <div class="aggregate-flow__aggregate">
-              <p class="aggregate-flow__aggregate-title">予約の集約</p>
-              <div class="aggregate-flow__fields">
-                {completionAppointmentFields.map((field) => (
-                  <div class="aggregate-flow__field">
-                    <p class="aggregate-flow__field-label">{field.label}</p>
-                    <div class="aggregate-flow__values aggregate-flow__values--stack">
-                      {field.chips.map((chip) => (
-                        <>
-                          {chip.arrow && <span class="aggregate-flow__to" aria-hidden="true">↓</span>}
-                          <span class:list={["aggregate-flow__chip", { "aggregate-flow__chip--mono": chip.mono }]}>{chip.text}</span>
-                        </>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div class="aggregate-flow__aggregate">
-              <p class="aggregate-flow__aggregate-title">診察結果の集約</p>
-              <div class="aggregate-flow__fields">
-                {completionExamFields.map((field) => (
-                  <div class="aggregate-flow__field">
-                    <div class="aggregate-flow__values aggregate-flow__values--stack">
-                      {field.chips.map((chip) => (
-                        <span class="aggregate-flow__chip">{chip.text}</span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <span class="aggregate-flow__stem" aria-hidden="true"></span>
-            <span class="aggregate-flow__stem" aria-hidden="true"></span>
-            <p class="aggregate-flow__save">1回の保存</p>
           </div>
         )}
 
@@ -428,8 +369,7 @@ const frames: readonly Frame[] = [
   }
 
   .aggregate-flow__diagram,
-  .aggregate-flow__compare,
-  .aggregate-flow__cross {
+  .aggregate-flow__compare {
     margin-top: 0.75rem;
   }
 
@@ -568,39 +508,33 @@ const frames: readonly Frame[] = [
     overflow-wrap: anywhere;
   }
 
-  .aggregate-flow__side .aggregate-flow__aggregate,
-  .aggregate-flow__cross .aggregate-flow__aggregate {
+  .aggregate-flow__side .aggregate-flow__aggregate {
     border-width: 2px;
     border-radius: 0.5rem;
   }
 
-  .aggregate-flow__side .aggregate-flow__aggregate-title,
-  .aggregate-flow__cross .aggregate-flow__aggregate-title {
+  .aggregate-flow__side .aggregate-flow__aggregate-title {
     padding: 0.2rem 0.4rem;
     font-size: 0.8rem;
   }
 
-  .aggregate-flow__side .aggregate-flow__fields,
-  .aggregate-flow__cross .aggregate-flow__fields {
+  .aggregate-flow__side .aggregate-flow__fields {
     gap: 0.3rem;
     padding: 0.3rem;
   }
 
-  .aggregate-flow__side .aggregate-flow__field,
-  .aggregate-flow__cross .aggregate-flow__field {
+  .aggregate-flow__side .aggregate-flow__field {
     padding: 0.25rem;
     border-width: 1.5px;
   }
 
-  .aggregate-flow__side .aggregate-flow__chip,
-  .aggregate-flow__cross .aggregate-flow__chip {
+  .aggregate-flow__side .aggregate-flow__chip {
     padding: 0.1rem 0.3rem;
     border-width: 1.5px;
     font-size: 0.75rem;
   }
 
-  .aggregate-flow__side .aggregate-flow__chip--mono,
-  .aggregate-flow__cross .aggregate-flow__chip--mono {
+  .aggregate-flow__side .aggregate-flow__chip--mono {
     font-size: 0.7rem;
   }
 
@@ -608,6 +542,16 @@ const frames: readonly Frame[] = [
     margin: 0 0 0.5rem;
     font-size: 0.85rem;
     font-weight: 700;
+    line-height: 1.5;
+  }
+
+  .aggregate-flow__side-label {
+    display: inline-block;
+    margin-right: 0.4rem;
+    padding: 0 0.4rem;
+    border: 1.5px solid var(--case-line, #17204d);
+    border-radius: 0.25rem;
+    font-size: 0.7rem;
     line-height: 1.5;
   }
 
@@ -691,32 +635,6 @@ const frames: readonly Frame[] = [
   .aggregate-flow__verdict--good {
     background: color-mix(in srgb, var(--ok) 10%, var(--case-paper, #fffefa));
     color: var(--ok);
-  }
-
-  .aggregate-flow__cross {
-    display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    column-gap: 0.5rem;
-    align-items: stretch;
-  }
-
-  .aggregate-flow__stem {
-    justify-self: center;
-    width: 4px;
-    height: 1rem;
-    background: var(--case-line, #17204d);
-  }
-
-  .aggregate-flow__save {
-    grid-column: 1 / -1;
-    margin: 0;
-    padding: 0.5rem 0.75rem;
-    border: 3px solid var(--case-line, #17204d);
-    border-radius: 0.5rem;
-    background: var(--case-yellow, #ffd21b);
-    color: var(--case-ink, #111116);
-    font-weight: 700;
-    text-align: center;
   }
 
   .aggregate-flow__code {
