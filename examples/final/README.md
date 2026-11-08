@@ -17,6 +17,8 @@ pnpm --filter @fp-with-ts/clinic-final dev
 pnpm --filter @fp-with-ts/clinic-final db:migrate
 ```
 
+以前の `clinic.sqlite` にキャンセルした予約があると、予約の一覧や詳細の画面が `Internal Server Error` になり、ターミナルには原因が表示されません。来院の理由とキャンセルの理由を分ける前の形の行を読み出せないためです。その場合はサーバーを止めて `examples/final/clinic.sqlite` を削除してください。次の起動時に空のデータベースが作られるので、`/setup` から登録し直します。
+
 schemaを変更した場合はSQLを生成し、内容を確認してからmigrationを適用します。
 
 ```bash

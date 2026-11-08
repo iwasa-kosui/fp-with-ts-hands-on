@@ -89,7 +89,8 @@ export type Canceled = Readonly<{
   petId: PetId;
   ownerId: OwnerId;
   scheduledAt: Timestamp;
-  reason: CancellationReason;
+  reason: AppointmentReason;
+  cancellationReason: CancellationReason;
   canceledAt: Timestamp;
 }>;
 
@@ -210,7 +211,7 @@ const cancel =
   (context: EventContext) =>
   (
     appointment: Scheduled | CheckedIn,
-    reason: CancellationReason,
+    cancellationReason: CancellationReason,
   ): AppointmentCanceled => {
     const aggregateState = {
       kind: "Canceled",
@@ -218,7 +219,8 @@ const cancel =
       petId: appointment.petId,
       ownerId: appointment.ownerId,
       scheduledAt: appointment.scheduledAt,
-      reason,
+      reason: appointment.reason,
+      cancellationReason,
       canceledAt: context.occurredAt,
     } as const satisfies Canceled;
 

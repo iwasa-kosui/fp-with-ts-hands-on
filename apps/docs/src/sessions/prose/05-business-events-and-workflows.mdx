@@ -111,6 +111,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
   <p>手元の <code>examples/session-05</code> にも、キャンセルの結果を作る関数 <code>cancel</code> があります。診察開始前の予約、キャンセル理由、キャンセルした時刻を受け取り、<code>Canceled</code> の予約を返します。データベースへ接続せず、受け取った値だけで結果が決まります。</p>
   <Code code={props.cancelSource} lang="ts" />
   <p>完成形の参照実装（<code>examples/final</code>）の <code>Appointment.cancel</code> は、同じ確認を通った予約から、<code>Canceled</code> の予約の代わりにイベント <code>AppointmentCanceled</code> を返します。イベントは、出力側の節で読みます。</p>
+  <p>上の <code>examples/session-05</code> の <code>cancel</code> は来院理由を残しませんが、完成形の参照実装の <code>Canceled</code> は来院理由を <code>reason</code> に、キャンセル理由を <code>cancellationReason</code> に分けて残し、このページの「キャンセル後の予約」のデータもこの形です。</p>
 
   <h3>なぜResolverとStoreをドメインロジックの外へ置くのか</h3>
   <p>ResolverとStoreを外へ置くと、<code>cancel</code>はデータベースへ接続せず、入力された値だけで結果が決まります。業務ルールを値だけでテストできます。取得方法や記録先が変わっても、<code>cancel</code>を変更せずにResolverとStoreの実装を差し替えられます。S04の <code>startExamination</code> が resolver と store を <code>deps</code> から受け取ったのも、同じ理由です。</p>
@@ -143,7 +144,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
   <details class="step-solution">
     <summary>答えを確認する</summary>
     <SessionDetailsBody as="ol">
-      <li><code>appointmentId</code>、<code>petId</code>、<code>ownerId</code>、<code>scheduledAt</code>は変わりません。<code>kind</code>は<code>Scheduled</code>から<code>Canceled</code>へ変わり、<code>canceledAt</code>が増えます。<code>reason</code>は来院理由からキャンセル理由へ変わります。</li>
+      <li><code>appointmentId</code>、<code>petId</code>、<code>ownerId</code>、<code>scheduledAt</code>、<code>reason</code>は変わりません。<code>kind</code>は<code>Scheduled</code>から<code>Canceled</code>へ変わり、<code>cancellationReason</code>と<code>canceledAt</code>が増えます。来院理由は<code>reason</code>に残り、キャンセル理由は<code>cancellationReason</code>に入ります。</li>
       <li>「権限と状態を確認する」で失敗します。<code>Paid</code>は診察開始前の状態ではないからです。失敗の値は下のレールを終点まで進み、後続の「結果を作る」と記録は実行されません。</li>
       <li>「入力を検査する」で失敗します。後続の成功処理は実行されないので、理由のないキャンセルは記録されません。</li>
     </SessionDetailsBody>

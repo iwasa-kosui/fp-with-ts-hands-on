@@ -37,15 +37,15 @@ const rows: readonly Row[] = [
   { stage: "対象を取得する", lines: [6, 7], file: "userResolver.ts", code: quote(userResolverSource, 54, 60, "resolveById"), ok: [3, 4] },
   { stage: "対象を取得する", lines: [8], file: "errors.ts", code: quote(errorsSource, 25, 31, "ensureUserFound"), ok: [4, 6] },
   { stage: "権限と状態を確認する", lines: [9], file: "authorization.ts", code: quote(authorizationSource, 7, 12, "ensureCanManageClinic"), ok: [3, 4] },
-  { stage: "対象を取得する", lines: [10, 11, 12], file: "appointmentResolver.ts", code: quote(appointmentResolverSource, 110, 120, "resolveById"), ok: [3, 4, 5, 6, 7, 8] },
+  { stage: "対象を取得する", lines: [10, 11, 12], file: "appointmentResolver.ts", code: quote(appointmentResolverSource, 111, 121, "resolveById"), ok: [3, 4, 5, 6, 7, 8] },
   { stage: "対象を取得する", lines: [13], file: "errors.ts", code: quote(errorsSource, 33, 39, "ensureAppointmentFound"), ok: [4, 6] },
   { stage: "権限と状態を確認する", lines: [14], file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 61, 71, "ensureCancellable"), ok: [3, 4], err: [3, 5, 6, 7, 8, 9, 10] },
-  { stage: "結果を作る", lines: [15], file: "appointment.ts", code: quote(appointmentSource, 209, 233, "const cancel"), ok: [7, 12, 13, 16, 20] },
+  { stage: "結果を作る", lines: [15], file: "appointment.ts", code: quote(appointmentSource, 210, 235, "const cancel"), ok: [7, 12, 13, 14, 17, 21] },
   {
     stage: "Event Store へ記録する",
     lines: [16],
     file: "appointmentEventStore.ts",
-    code: [quote(storeSource, 185, 195, `case "AppointmentCanceled"`), "// …", quote(storeSource, 206, 212, "tx.insert(domainEventsTable)")].join("\n"),
+    code: [quote(storeSource, 189, 199, `case "AppointmentCanceled"`), "// …", quote(storeSource, 210, 216, "tx.insert(domainEventsTable)")].join("\n"),
     ok: [1, 2, 12, 13],
   },
   { stage: "Output を作る", lines: [17], file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 98, 98, ".map((event)"), ok: [0] },
@@ -60,12 +60,12 @@ const request = requestWith(`"owner request"`);
 const userValue = `{ kind: "Receptionist", userId: "（受付担当者の ID）" }`;
 const appointmentValue = (kind: string) =>
   `{\n  kind: "${kind}",\n  appointmentId: ${appointmentId},\n  reason: "skin check",\n}`;
-const canceledValue = `{\n  kind: "Canceled",\n  appointmentId: ${appointmentId},\n  reason: "owner request",\n  canceledAt: "2026-08-30T05:00:00.000Z",\n}`;
+const canceledValue = `{\n  kind: "Canceled",\n  appointmentId: ${appointmentId},\n  reason: "skin check",\n  cancellationReason: "owner request",\n  canceledAt: "2026-08-30T05:00:00.000Z",\n}`;
 const indented = (value: string) => value.replaceAll("\n", "\n  ");
 const ok = (value: string) => `Ok(${value})`;
 const eventValue = `{\n  kind: "AppointmentCanceled",\n  aggregateState: ${indented(canceledValue)},\n}`;
 const finalValue = ok(`{\n  appointment: ${indented(canceledValue)},\n}`);
-const createEventInput = `// 前の行の値\n${appointmentValue("Scheduled")}\n// 最初に受け取った入力の input.reason\n"owner request"\n// clock.now() の時刻\n"2026-08-30T05:00:00.000Z"`;
+const createEventInput = `// 前の行の値\n${appointmentValue("Scheduled")}\n// 最初に受け取った入力の input.reason（キャンセル理由）\n"owner request"\n// clock.now() の時刻\n"2026-08-30T05:00:00.000Z"`;
 const emptyReason = `Err("reason が空である")`;
 const invalidState = `Err({\n  kind: "InvalidAppointmentState",\n  appointmentId: ${appointmentId},\n  expectedKind: "ScheduledOrCheckedIn",\n  actualKind: "Paid",\n})`;
 
@@ -97,7 +97,7 @@ const scenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }>)[
     steps: [
       ...untilAppointment("Scheduled"),
       step(6, "<code>ensureCancellable</code> が状態を確かめます。<code>Scheduled</code> は診察開始前なので、<code>ok(appointment)</code> を返します。", appointmentValue("Scheduled"), ok(appointmentValue("Scheduled"))),
-      step(7, "キャンセルの出来事を表すイベントを作る <code>createEvent</code> が、<code>Appointment.cancel</code> を呼びます。前の行の予約に加えて、最初に受け取った入力の <code>reason</code> と、現在時刻を返す部品 <code>clock</code> の時刻を使い、<code>AppointmentCanceled</code> を作ります。", createEventInput, ok(eventValue)),
+      step(7, "キャンセルの出来事を表すイベントを作る <code>createEvent</code> が、<code>Appointment.cancel</code> を呼びます。前の行の予約に加えて、最初に受け取った入力の <code>reason</code>（キャンセル理由）と、現在時刻を返す部品 <code>clock</code> の時刻を使い、<code>AppointmentCanceled</code> を作ります。予約の来院理由は <code>reason</code> に残り、キャンセル理由は <code>cancellationReason</code> に入ります。", createEventInput, ok(eventValue)),
       step(8, "<code>andThrough</code> は、<code>andThen</code> と同じように Ok のときだけ処理へ進み、成功すると元の値を次へ渡します。ここでは store を呼び、予約の更新とイベントの追記を1つの transaction で行います。値は同じイベントのままです。<code>andThrough</code> の詳細は S06 で学びます。", eventValue, ok(eventValue)),
       step(9, "<code>map</code> がイベントからキャンセル後の予約を取り出します。", eventValue, finalValue),
       step(outputRow, "値は成功レールの終点に届きます。呼び出し側はキャンセル後の予約を受け取ります。", finalValue, finalValue),
