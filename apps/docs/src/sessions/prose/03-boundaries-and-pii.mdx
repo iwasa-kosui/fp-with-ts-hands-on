@@ -232,14 +232,11 @@ import SchemaSourceFlow from "../../components/SchemaSourceFlow.astro";
   </div>
   <h3>この演習で解決しないこと</h3>
   <p>schemaはUUIDの形式を検査しますが、そのUUIDが実在する予約や獣医師を指すかは判断しません。予約が存在するかと、予約の状態の確認は、Session 04 で扱います。獣医師が実在するかの確認は、このハンズオンでは扱いません。</p>
-  <h3 data-solution-heading>{props.session.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
+  <h3 data-solution-heading>ステップごとの解答</h3>
   {props.solutionSteps.map(({ step, presentation, snippets }) => (
     <div class="solution-step">
       <details class="step-solution" data-presentation={presentation}>
         <summary>{step.goal}</summary>
-        {presentation === "completed-file" ? (
-          <p class="step-solution__completed-file-note">この完成例には後続 step を含みます。すべての target file を反映してから検証します。</p>
-        ) : null}
         {snippets.map(({ solution, code }) => (
           <section class="step-solution__snippet">
             <h4><code>{solution.path}</code></h4>
