@@ -6,6 +6,8 @@ import SessionDetailsBody from "../../components/SessionDetailsBody.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
 import Prose from "../../sessions/prose/05-business-events-and-workflows.mdx";
+import { projectFilesForSnapshot } from "../../code-explorer/project-files";
+import { blockOf } from "../../sessions/source-quotes";
 import type { SessionSummary } from "../../sessions/types";
 import "../../styles/sessions.css";
 import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
@@ -19,7 +21,7 @@ export const session: SessionSummary = {
   durationMinutes: 15,
   timeBreakdown: { brief: 2, teach: 7, exercise: 4, review: 2 },
   animal: { name: "CAT", type: "cat", avatar: "🐈" },
-  summary: "S01〜S04で診察開始に使った考え方を、予約キャンセルに当てはめて読みます。予約のデータを確認し、キャンセルを、データを順に処理するパイプラインとして読みます。次に、失敗の扱いをROPで確かめ、I/Oをパイプラインの両端に置く構成を読みます。",
+  summary: "S04で学んだResultとandThenを踏まえ、予約キャンセルのユースケースの設計を読みます。キャンセルを工程に分け、ROPで失敗の流れを捉え、I/Oをパイプラインの両端に置く構成を読みます。",
   episode: [
     "会計済みの予約を、受付担当者が誤ってキャンセルできました。",
     "理由のないキャンセルがStoreへ記録されましたが、開発者はどの条件を確認したのかを説明できません。",
@@ -50,9 +52,16 @@ const canceledAppointment = `{
   canceledAt: "2026-08-30T05:00:00.000Z",
 }`;
 
+const cancelSource = blockOf(
+  projectFilesForSnapshot("session-05"),
+  "src/domain/appointment/transitions.ts",
+  "export const cancel = (",
+  "  }) as const satisfies Canceled;",
+);
+
 const chapters = [
   { id: "incident", label: "予約のデータ" },
-  { id: "pipeline", label: "パイプライン" },
+  { id: "pipeline", label: "ユースケースの工程" },
   { id: "rop", label: "ROPの失敗経路" },
   { id: "io-boundaries", label: "I/Oの分離" },
   { id: "exercise", label: "読む演習" },
@@ -90,6 +99,7 @@ export const navigation = ({
         session={session}
         scheduledAppointment={scheduledAppointment}
         canceledAppointment={canceledAppointment}
+        cancelSource={cancelSource}
       />
       <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
