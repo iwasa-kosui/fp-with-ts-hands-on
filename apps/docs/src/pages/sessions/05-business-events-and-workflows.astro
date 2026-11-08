@@ -1,4 +1,5 @@
 ---
+import AggregateConsistencyFlow from "../../components/AggregateConsistencyFlow.astro";
 import CancelPipelineBoundaries from "../../components/CancelPipelineBoundaries.astro";
 import RailwayOrientedProgramming from "../../components/RailwayOrientedProgramming.astro";
 import SessionDetailsBody from "../../components/SessionDetailsBody.astro";
@@ -95,7 +96,7 @@ export const navigation = ({
         </p>
       </section>
       <Prose
-        components={{ CancelPipelineBoundaries, EpisodeIllustration, RailwayOrientedProgramming, SessionDetailsBody }}
+        components={{ AggregateConsistencyFlow, CancelPipelineBoundaries, EpisodeIllustration, RailwayOrientedProgramming, SessionDetailsBody }}
         session={session}
         scheduledAppointment={scheduledAppointment}
         canceledAppointment={canceledAppointment}
