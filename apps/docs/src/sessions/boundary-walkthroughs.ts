@@ -257,7 +257,7 @@ const rejectedFrames = [
     status: "stop",
     valueLabel: "内側に届いた値",
     value: "// なし",
-    text: "Errの_unsafeUnwrapは例外を投げます。routeの次の行へ進まないので、startExaminationは呼ばれません。検査の失敗は今はサーバーが失敗を返すHTTPの状態（500）になります。この扱いはS04で学びます。",
+    text: "Errの_unsafeUnwrapは例外を投げ、startExaminationは呼ばれません。検査の失敗は今はサーバーが失敗を返すHTTPの状態（500）になり、S04で扱います。",
   }),
 ];
 
