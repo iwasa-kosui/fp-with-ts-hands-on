@@ -81,10 +81,6 @@ import SchemaSourceFlow from "../../components/SchemaSourceFlow.astro";
   <h3>扱う値が変わっても、形は同じ</h3>
   <p>値ごとに変わるのは「外側の姿」「確かめること」「内側の型」だけです。表の1行目の「診察開始の入力」は、先ほどのアニメーションで値が通ったコードに当たります。</p>
   <BoundaryPatterns />
-  <h3 id="boundary-result">S03 の Result は、成否だけを持つ小さな型</h3>
-  <p>schemaResult が返す <code>Result&lt;T&gt;</code> は、このリポジトリで用意した小さな型です。isOk と isErr で成否を確かめ、_unsafeUnwrap で値を取り出します。失敗の理由は持ちません。Session 04 では、neverthrow というライブラリの <code>Result&lt;T, E&gt;</code> に替わります。E には失敗の理由が入ります。</p>
-  <p>_unsafeUnwrap は、Ok なら値を返し、Err なら例外を投げます。名前の unsafe は、Err のときに例外で処理が止まることを表します。S03 の route は、検査に通らなかった入力をその場で止めるために _unsafeUnwrap を使います。Err を例外にせず値として扱う書き方は、Session 04 で学びます。</p>
-  <p>AppointmentId.parse は、Zod の schema.parse をそのまま使います。schema.parse は、検査に失敗すると例外を投げます。StartExaminationInput.parse は schemaResult で作るので、失敗を例外ではなく Err として返します。</p>
   <h3>値の制約にも同じ形を使う</h3>
   <p>Branded Typeの用途はIDの区別に限りません。支払金額も同じ形で書けます。<code>number</code>のままでは、受け取った関数からはその値が検査済みか分かりません。受け取る関数ごとに同じ検査を書くことになり、検査を1か所忘れると不正な金額が後続の処理へ進みます。</p>
   <figure class="code-block" data-teaching-example>
@@ -92,6 +88,13 @@ import SchemaSourceFlow from "../../components/SchemaSourceFlow.astro";
     <Code code={props.paymentAmountCode} lang="ts" />
   </figure>
   <p><code>PaymentAmount.parse(1000)</code>はOkを返し、<code>0</code>、<code>-100</code>、<code>1.5</code>はどれもErrを返します。範囲を変えるときの修正箇所はschemaの1か所です。finalのschemaResultはneverthrowのResultを返す版で、brandには文字列ではなくSymbolを使いますが、形は上の表と同じです。<code>as</code>を使うと検査を飛ばせるので、レビューでは<code>as</code>が増えていないかを確かめます。</p>
+  <h3 id="boundary-result">S03 の Result は、成否だけを持つ小さな型</h3>
+  <p>schemaResult が返す <code>Result&lt;T&gt;</code> は、このリポジトリで用意した小さな型です。isOk と isErr で成否を確かめ、_unsafeUnwrap で値を取り出します。失敗の理由は持ちません。Session 04 では、neverthrow というライブラリの <code>Result&lt;T, E&gt;</code> に替わります。E には失敗の理由が入ります。</p>
+  <p>_unsafeUnwrap は、Ok なら値を返し、Err なら例外を投げます。名前の unsafe は、Err のときに例外で処理が止まることを表します。S03 の route は、検査に通らなかった入力をその場で止めるために _unsafeUnwrap を使います。Err を例外にせず値として扱う書き方は、Session 04 で学びます。</p>
+  <details>
+    <summary>補足: 例外を投げる parse と、Err を返す parse</summary>
+    <p>AppointmentId.parse は、Zod の schema.parse をそのまま使います。schema.parse は、検査に失敗すると例外を投げます。StartExaminationInput.parse は schemaResult で作るので、失敗を例外ではなく Err として返します。</p>
+  </details>
   <aside class="decision-card boundary-limit" data-boundary-limit>
     <h3>この境界だけでは検出できない入力</h3>
     <p>{"\n"}予約IDのUUIDが<code>veterinarianId</code>へ入った場合、UUIDという形式は正しいためschemaを通ります。アニメーションの「画面の不具合で、獣医師の欄に予約のIDが届いた」がこの入力です。Branded Typeは、外部データが何を指すUUIDかを判定する仕組みではありません。parseで確かめられるのは形式までです。{"\n"}</p>
