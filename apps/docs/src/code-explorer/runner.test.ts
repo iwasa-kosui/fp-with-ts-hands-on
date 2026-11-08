@@ -1,7 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createTerminalRunner,
   createWebContainerTerminalRunner,
+  TerminalInstallError,
+  TerminalPreparationTimeoutError,
+  type TerminalPhase,
   type TerminalRuntime,
   type TerminalRuntimeProcess,
   type TerminalStartRequest,
@@ -52,6 +55,7 @@ type InMemoryRuntime = TerminalRuntime &
   Readonly<{
     processes: ControlledProcess[];
     stopWatching: ReturnType<typeof vi.fn>;
+    installCalls: ReturnType<typeof vi.fn>;
   }>;
 
 const createInMemoryRuntime = (
@@ -62,12 +66,16 @@ const createInMemoryRuntime = (
 ): InMemoryRuntime => {
   const processes: ControlledProcess[] = [];
   const stopWatching = vi.fn();
+  const installCalls = vi.fn();
 
   return {
     processes,
     stopWatching,
+    installCalls,
     mount: vi.fn(async () => undefined),
+    restoreDependencies: vi.fn(async () => undefined),
     install: async (signal) => {
+      installCalls();
       if (options.install !== undefined) return options.install(signal);
       return options.installExitCode ?? 0;
     },
@@ -164,6 +172,116 @@ describe("terminal runner", () => {
 
     expect(runtime.dispose).toHaveBeenCalledOnce();
   });
+
+  it("reports a failed install as a TerminalInstallError", async () => {
+    const runtime = createInMemoryRuntime({ installExitCode: 1 });
+
+    await expect(
+      createTerminalRunner(async () => runtime).start(requestFor()),
+    ).rejects.toBeInstanceOf(TerminalInstallError);
+  });
+});
+
+describe("terminal runner dependency snapshot", () => {
+  const snapshot = new Uint8Array([1, 2, 3]);
+
+  const startWith = async (
+    runtime: TerminalRuntime,
+    loadDepsSnapshot: () => Promise<Uint8Array | null>,
+  ) => {
+    const phases: TerminalPhase[] = [];
+    const session = await createTerminalRunner(async () => runtime, {
+      loadDepsSnapshot,
+    }).start(requestFor({ onPhase: (phase) => phases.push(phase) }));
+    return { phases, session };
+  };
+
+  it("restores the snapshot without running an install", async () => {
+    const runtime = createInMemoryRuntime();
+
+    const { phases, session } = await startWith(runtime, async () => snapshot);
+
+    expect(runtime.restoreDependencies).toHaveBeenCalledWith(snapshot);
+    expect(runtime.installCalls).not.toHaveBeenCalled();
+    expect(phases).toContain("restoring-deps");
+    expect(phases).not.toContain("installing");
+    await session.dispose();
+  });
+
+  it("runs an install when no snapshot is available", async () => {
+    const runtime = createInMemoryRuntime();
+
+    const { phases, session } = await startWith(runtime, async () => null);
+
+    expect(runtime.restoreDependencies).not.toHaveBeenCalled();
+    expect(runtime.installCalls).toHaveBeenCalledOnce();
+    expect(phases).toContain("installing");
+    await session.dispose();
+  });
+
+  it("falls back to an install when restoring fails", async () => {
+    const runtime = createInMemoryRuntime();
+    vi.mocked(runtime.restoreDependencies).mockRejectedValueOnce(
+      new Error("chmod failed"),
+    );
+
+    const { phases, session } = await startWith(runtime, async () => snapshot);
+
+    expect(phases).toEqual(
+      expect.arrayContaining(["restoring-deps", "installing"]),
+    );
+    expect(runtime.installCalls).toHaveBeenCalledOnce();
+    await session.dispose();
+  });
+
+  it("reports download progress and waits for the download after mounting", async () => {
+    const runtime = createInMemoryRuntime();
+    const progress = vi.fn();
+    const phases: TerminalPhase[] = [];
+    const session = await createTerminalRunner(async () => runtime, {
+      loadDepsSnapshot: async ({ onProgress }) => {
+        onProgress?.({ loaded: 1, total: 2 });
+        return null;
+      },
+    }).start(
+      requestFor({
+        onPhase: (phase) => phases.push(phase),
+        onDownloadProgress: progress,
+      }),
+    );
+
+    expect(progress).toHaveBeenCalledWith({ loaded: 1, total: 2 });
+    expect(phases.slice(0, 2)).toEqual(["booting", "mounting"]);
+    await session.dispose();
+  });
+});
+
+describe("terminal runner time limits", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("throws a timeout error naming the phase and disposes the runtime", async () => {
+    vi.useFakeTimers();
+    const runtime = createInMemoryRuntime({
+      install: () => new Promise<number>(() => undefined),
+    });
+    const starting = createTerminalRunner(async () => runtime, {
+      loadDepsSnapshot: async () => null,
+    }).start(requestFor());
+    const assertion = expect(starting).rejects.toMatchObject({
+      name: "TerminalPreparationTimeoutError",
+      phase: "installing",
+    });
+
+    await vi.advanceTimersByTimeAsync(240_000);
+    await assertion;
+
+    await expect(starting).rejects.toBeInstanceOf(
+      TerminalPreparationTimeoutError,
+    );
+    expect(runtime.dispose).toHaveBeenCalledOnce();
+  });
 });
 
 describe("WebContainer terminal adapter", () => {
@@ -192,5 +310,64 @@ describe("WebContainer terminal adapter", () => {
     ).rejects.toThrow("Unsupported external project path: ../private.txt");
 
     expect(teardown).toHaveBeenCalledOnce();
+  });
+
+  const bootWithSpawn = (nodeExitCode: number) => {
+    const spawn = vi.fn(async (_command: string) => ({
+      input: new WritableStream<string>(),
+      output: new ReadableStream<string>({
+        start: (controller) => controller.close(),
+      }),
+      exit: Promise.resolve(_command === "node" ? nodeExitCode : 0),
+      kill: vi.fn(),
+      resize: vi.fn(),
+    }));
+    const mount = vi.fn(async () => undefined);
+    const teardown = vi.fn();
+    webContainerMock.boot.mockReset();
+    webContainerMock.boot.mockResolvedValue({
+      mount,
+      spawn,
+      teardown,
+      fs: {
+        mkdir: vi.fn(async () => undefined),
+        writeFile: vi.fn(),
+        readdir: async () => [],
+        readFile: async () => "",
+        watch: vi.fn(() => ({ close: vi.fn() })),
+      },
+    });
+    return { spawn, mount };
+  };
+
+  it("mounts the snapshot and restores executable bits instead of installing", async () => {
+    const { spawn, mount } = bootWithSpawn(0);
+    const snapshot = new Uint8Array([1, 2, 3]);
+
+    const session = await createWebContainerTerminalRunner({
+      loadDepsSnapshot: async () => snapshot,
+    }).start(requestFor());
+
+    expect(mount).toHaveBeenCalledWith(snapshot, {
+      mountPoint: "workspace/node_modules",
+    });
+    expect(spawn).toHaveBeenCalledWith(
+      "node",
+      ["-e", expect.stringContaining("chmodSync")],
+      { cwd: "workspace" },
+    );
+    expect(spawn.mock.calls.map(([command]) => command)).not.toContain("npm");
+    await session.dispose();
+  });
+
+  it("installs when restoring executable bits fails", async () => {
+    const { spawn } = bootWithSpawn(1);
+
+    const session = await createWebContainerTerminalRunner({
+      loadDepsSnapshot: async () => new Uint8Array([1]),
+    }).start(requestFor());
+
+    expect(spawn.mock.calls.map(([command]) => command)).toContain("npm");
+    await session.dispose();
   });
 });

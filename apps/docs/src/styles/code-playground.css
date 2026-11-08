@@ -369,6 +369,23 @@
   margin-top: 0.75rem;
 }
 
+.code-playground .code-explorer__terminal-status p + p {
+  margin-top: 0.5rem;
+}
+
+.code-playground .code-explorer__terminal-progress p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+
+.code-playground .code-explorer__terminal-progress progress {
+  width: min(16rem, 100%);
+  accent-color: var(--playground-primary);
+}
+
 .code-playground .code-explorer__terminal-shell {
   min-width: 0;
   overflow: hidden;

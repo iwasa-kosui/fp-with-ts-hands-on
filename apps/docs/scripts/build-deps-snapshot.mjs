@@ -49,19 +49,19 @@ const buildPackageJson = async () => {
     ),
     peerDependencies: withoutWorkspaceDependencies(source.peerDependencies),
   };
-  return JSON.stringify(
-    {
-      ...packageJson,
-      scripts: { ...packageJson.scripts, "exercise:06": "pnpm exercise" },
-      devDependencies: {
-        ...packageJson.devDependencies,
-        tsx: "4.23.9",
-        typescript: "5.9.3",
-      },
+  const completed = {
+    ...packageJson,
+    scripts: { ...packageJson.scripts, "exercise:06": "pnpm exercise" },
+    devDependencies: {
+      ...packageJson.devDependencies,
+      tsx: "4.23.9",
+      typescript: "5.9.3",
     },
-    null,
-    2,
-  );
+  };
+  return {
+    contents: JSON.stringify(completed, null, 2),
+    dependencies: { ...completed.dependencies, ...completed.devDependencies },
+  };
 };
 
 const crossOriginHeaders = {
@@ -227,7 +227,7 @@ const mountAndVerify = async () => {
   return { mountSeconds };
 };
 
-const writeSnapshot = async (uploaded) => {
+const writeSnapshot = async (uploaded, dependencies) => {
   const hash = createHash("sha256").update(uploaded).digest("hex").slice(0, 16);
   const gzipped = gzipSync(uploaded, { level: 9 });
   const snapshotDirectory = join(outputDirectory, "deps-snapshot");
@@ -249,6 +249,7 @@ const writeSnapshot = async (uploaded) => {
     rawSize: uploaded.length,
     gzipSize: gzipped.length,
     parts,
+    dependencies,
   };
   await writeFile(
     join(snapshotDirectory, "manifest.json"),
@@ -258,7 +259,8 @@ const writeSnapshot = async (uploaded) => {
 };
 
 const run = async (resources) => {
-  const packageJsonContents = await buildPackageJson();
+  const { contents: packageJsonContents, dependencies } =
+    await buildPackageJson();
 
   const state = { uploadedParts: [] };
   resources.server = await startServer(state);
@@ -284,7 +286,10 @@ const run = async (resources) => {
   await page.reload();
   const verified = await page.evaluate(mountAndVerify);
 
-  const manifest = await writeSnapshot(Buffer.concat(state.uploadedParts));
+  const manifest = await writeSnapshot(
+    Buffer.concat(state.uploadedParts),
+    dependencies,
+  );
 
   console.log(`install seconds: ${built.installSeconds.toFixed(1)}`);
   console.log(`export seconds: ${built.exportSeconds.toFixed(1)}`);
