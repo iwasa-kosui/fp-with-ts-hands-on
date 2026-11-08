@@ -1,0 +1,862 @@
+---
+import { Code } from "astro:components";
+import type { ComponentProps } from "astro/types";
+
+type Snippet = Readonly<{ path: string; code: string }>;
+type Props = Readonly<{
+  code: Readonly<{
+    before: Snippet;
+    after: Snippet;
+    schemaResult: Snippet;
+  }>;
+}>;
+
+const { code } = Astro.props;
+
+const versionLabels = { before: "修正前", after: "修正後" } as const;
+
+type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
+const KEY_MARK = /\s*\/\/ \[!schema-source-key\]$/;
+const withMarks = (source: string, keyLines: readonly number[]) =>
+  source.split("\n").map((text, index) => (keyLines.includes(index + 1) ? `${text} // [!schema-source-key]` : text)).join("\n");
+const markKeyLines: Transformer = {
+  name: "mark-schema-source-key-lines",
+  preprocess(source) {
+    const lines = source.split("\n");
+    (this.meta as { keyLines?: number[] }).keyLines = lines.flatMap((text, index) => (KEY_MARK.test(text) ? [index + 1] : []));
+    return lines.map((text) => text.replace(KEY_MARK, "")).join("\n");
+  },
+  line(node, line) {
+    if ((this.meta as { keyLines?: number[] }).keyLines?.includes(line)) this.addClassToHast(node, "schema-source-flow__key");
+  },
+};
+
+type Mode = "off" | "dim" | "on" | "focus";
+type ChipState = "off" | "home" | "through" | "stop";
+type ResultState = "off" | "warn" | "ok" | "err";
+type Frame = Readonly<{
+  caption: string;
+  stage: keyof typeof versionLabels | null;
+  code?: Readonly<{ key: keyof Props["code"]; lines: readonly number[] }>;
+  parts: Readonly<{
+    typeBox: Mode;
+    typeGhost: Mode;
+    schemaBox: Mode;
+    linkType: Mode;
+    linkCheck: Mode;
+    checkBox: Mode;
+    inside: Mode;
+    sameName: Mode;
+    unknown: Mode;
+    note: Mode;
+  }>;
+  typeLabel: "name" | "hand" | "infer";
+  check: "plain" | "none" | "checked";
+  chips: readonly [ChipState, ChipState];
+  results: readonly [ResultState, ResultState];
+}>;
+
+const frames: readonly Frame[] = [
+  {
+    caption: "TypeScript の型は、型検査のときだけ使われます。JavaScript に変換すると型は消えます。実行時に届いた値が型のとおりかどうかは、型とは別のコードで確かめる必要があります。",
+    stage: null,
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "off", linkType: "off", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off", note: "off" },
+    typeLabel: "name",
+    check: "plain",
+    chips: ["home", "off"],
+    results: ["off", "off"],
+  },
+  {
+    caption: "修正前は、StartExaminationInput の型を手で書いています。parse は raw を any で受け取り、中身を確かめずに項目をコピーします。any は、どんな使い方も型検査で許す型です。型はあっても実行時の検査がないので、night-shift も StartExaminationInput として内側へ進みます。",
+    stage: "before",
+    code: { key: "before", lines: [5, 6, 7, 8, 11, 12, 13, 14, 15] },
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "off", linkType: "off", linkCheck: "off", checkBox: "on", inside: "on", sameName: "off", unknown: "off", note: "off" },
+    typeLabel: "hand",
+    check: "none",
+    chips: ["through", "off"],
+    results: ["warn", "off"],
+  },
+  {
+    caption: "修正後は Zod を使います。Zod は、値が満たす形を schema というオブジェクトで書くライブラリです。z.object は項目ごとの schema をまとめます。AppointmentId.schema と VeterinarianId.schema は、UUID の形の文字列を表す schema です。.readonly() は、取り出す型の項目を読み取り専用にします。",
+    stage: "after",
+    code: { key: "after", lines: [7, 8, 9, 10] },
+    parts: { typeBox: "dim", typeGhost: "dim", schemaBox: "focus", linkType: "off", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off", note: "off" },
+    typeLabel: "infer",
+    check: "checked",
+    chips: ["off", "off"],
+    results: ["off", "off"],
+  },
+  {
+    caption: "型は schema から取り出します。z.infer<typeof schema> は、schema が受け入れる値の型です。typeof は、値である schema の型を、型を書く場所で使うための書き方です。型を手で書かないので、schema を直すと型も同じように変わります。",
+    stage: "after",
+    code: { key: "after", lines: [12] },
+    parts: { typeBox: "focus", typeGhost: "on", schemaBox: "on", linkType: "focus", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off", note: "off" },
+    typeLabel: "infer",
+    check: "checked",
+    chips: ["off", "off"],
+    results: ["off", "off"],
+  },
+  {
+    caption: "実行時の検査も、同じ schema から作ります。schemaResult は、schema を受け取り、raw を受け取る関数を返す関数です。返された関数は raw を unknown として受け取ります。unknown は、中身を確かめるまで項目を使えない型です。safeParse は、検査に失敗しても例外を投げず、成否を success に入れて返します。",
+    stage: "after",
+    code: { key: "schemaResult", lines: [2, 3] },
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "focus", checkBox: "focus", inside: "dim", sameName: "off", unknown: "on", note: "off" },
+    typeLabel: "infer",
+    check: "checked",
+    chips: ["home", "off"],
+    results: ["off", "off"],
+  },
+  {
+    caption: "型と値に、同じ StartExaminationInput という名前を付けています。TypeScript は型の名前と値の名前を別々に扱うので、型を書く場所では型を、式の中ではオブジェクトを指します。使う側は StartExaminationInput.parse(raw) で検査し、受け取る値の型も StartExaminationInput と書けます。",
+    stage: "after",
+    code: { key: "after", lines: [12, 14, 15, 16, 17] },
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "on", linkCheck: "on", checkBox: "on", inside: "dim", sameName: "focus", unknown: "off", note: "off" },
+    typeLabel: "infer",
+    check: "checked",
+    chips: ["off", "off"],
+    results: ["off", "off"],
+  },
+  {
+    caption: "修正後は、night-shift が parse の検査で止まり、Err になります。UUID の形をした値だけが Ok になり、StartExaminationInput 型の値として内側へ進みます。型と検査を同じ schema から作るので、型に書いた項目は実行時にも検査されます。",
+    stage: "after",
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "on", linkCheck: "on", checkBox: "on", inside: "on", sameName: "off", unknown: "off", note: "on" },
+    typeLabel: "infer",
+    check: "checked",
+    chips: ["stop", "through"],
+    results: ["err", "ok"],
+  },
+];
+
+const initial = frames[0];
+const nightShift = "\"night-shift\"";
+const uuidPreview = "\"3f2b…\"";
+
+const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => frame));
+---
+
+<div class="schema-source-flow" data-schema-source-flow data-frames={playerData}>
+  <div class="schema-source-flow__controls" data-controls hidden>
+    <button type="button" data-first>⏮ 最初へ</button>
+    <button type="button" data-prev disabled>← 前へ</button>
+    <button type="button" data-play>▶ 再生</button>
+    <button type="button" data-next>次へ →</button>
+    <span data-progress>1 / {frames.length}</span>
+  </div>
+
+  <svg
+    viewBox="0 0 340 494"
+    role="img"
+    aria-labelledby="schema-source-flow-title schema-source-flow-desc"
+    data-stage={initial.stage ?? undefined}
+    data-type-label={initial.typeLabel}
+    data-check={initial.check}
+  >
+    <title id="schema-source-flow-title">1つの schema から型と検査を作る仕組み</title>
+    <desc id="schema-source-flow-desc">
+      上の帯は型検査のとき（TypeScript）、下の帯は実行時（JavaScript）です。JavaScript に変換すると型は消えるので、下の帯に型は残りません。修正前は、型を手で書き、parse は実行時の検査をしません。修正後は、1つの schema から z.infer で型を取り出し、schemaResult で実行時に検査する parse を作ります。修正前は night-shift という不正な値が内側へ進みます。修正後は night-shift が parse の検査で止まり、UUID の形をした値だけが内側へ進みます。
+    </desc>
+
+    <g class="schema-source-flow__badge schema-source-flow__badge--before">
+      <rect x="0" y="0" width="340" height="32" rx="8"></rect>
+      <text x="170" y="23" text-anchor="middle">修正前</text>
+    </g>
+    <g class="schema-source-flow__badge schema-source-flow__badge--after">
+      <rect x="0" y="0" width="340" height="32" rx="8"></rect>
+      <text x="170" y="23" text-anchor="middle">修正後</text>
+    </g>
+
+    <rect x="0" y="40" width="340" height="136" rx="8" class="schema-source-flow__band-bg"></rect>
+    <text x="8" y="58" class="schema-source-flow__band-label">型検査のとき（TypeScript）</text>
+
+    <line x1="8" y1="184" x2="332" y2="184" class="schema-source-flow__divider"></line>
+    <text x="8" y="196" class="schema-source-flow__note">JavaScript に変換すると、</text>
+    <text x="8" y="208" class="schema-source-flow__note">型は消える</text>
+
+    <rect x="0" y="216" width="340" height="254" rx="8" class="schema-source-flow__band-bg schema-source-flow__band-bg--runtime"></rect>
+    <text x="8" y="234" class="schema-source-flow__band-label">実行時（JavaScript）</text>
+
+    <g class="schema-source-flow__part schema-source-flow__ghost" data-part="typeGhost" data-mode={initial.parts.typeGhost}>
+      <rect x="10" y="256" width="130" height="52" rx="8"></rect>
+      <text x="75" y="286" text-anchor="middle">型は残らない</text>
+    </g>
+
+    <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__type" data-part="typeBox" data-mode={initial.parts.typeBox}>
+      <rect x="10" y="80" width="130" height="52" rx="8"></rect>
+      <text x="75" y="102" text-anchor="middle" class="schema-source-flow__type-label" data-label="name">StartExaminationInput</text>
+      <text x="75" y="118" text-anchor="middle" class="schema-source-flow__type-label" data-label="name">型</text>
+      <text x="75" y="110" text-anchor="middle" class="schema-source-flow__type-label" data-label="hand">手で書いた型</text>
+      <text x="75" y="102" text-anchor="middle" class="schema-source-flow__type-label" data-label="infer">z.infer で</text>
+      <text x="75" y="118" text-anchor="middle" class="schema-source-flow__type-label" data-label="infer">取り出した型</text>
+    </g>
+
+    <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__schema" data-part="schemaBox" data-mode={initial.parts.schemaBox}>
+      <rect x="208" y="96" width="128" height="100" rx="8"></rect>
+      <text x="272" y="114" text-anchor="middle" class="schema-source-flow__strong">schema</text>
+      <text x="216" y="132" class="schema-source-flow__code-text schema-source-flow__mono">z.object({"{"}</text>
+      <text x="224" y="145" class="schema-source-flow__code-text schema-source-flow__mono">appointmentId,</text>
+      <text x="224" y="158" class="schema-source-flow__code-text schema-source-flow__mono">veterinarianId</text>
+      <text x="216" y="171" class="schema-source-flow__code-text schema-source-flow__mono">{"}"}).readonly()</text>
+    </g>
+
+    <g class="schema-source-flow__part schema-source-flow__link" data-part="linkType" data-mode={initial.parts.linkType}>
+      <line x1="208" y1="112" x2="149" y2="112"></line>
+      <polygon points="140,112 149,107 149,117"></polygon>
+      <text x="174" y="104" text-anchor="middle" class="schema-source-flow__mono">z.infer</text>
+    </g>
+
+    <g class="schema-source-flow__part schema-source-flow__link" data-part="linkCheck" data-mode={initial.parts.linkCheck}>
+      <line x1="216" y1="196" x2="216" y2="316"></line>
+      <polygon points="216,325 211,316 221,316"></polygon>
+      <text x="224" y="264" class="schema-source-flow__mono">schemaResult</text>
+    </g>
+
+    <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__check" data-part="checkBox" data-mode={initial.parts.checkBox}>
+      <rect x="116" y="326" width="106" height="114" rx="8"></rect>
+      <text x="169" y="346" text-anchor="middle" class="schema-source-flow__check-label" data-label="plain">parse</text>
+      <text x="169" y="346" text-anchor="middle" class="schema-source-flow__check-label" data-label="none">parse（検査なし）</text>
+      <text x="169" y="346" text-anchor="middle" class="schema-source-flow__check-label" data-label="checked">parse（検査あり）</text>
+    </g>
+
+    <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__inside" data-part="inside" data-mode={initial.parts.inside}>
+      <rect x="248" y="326" width="88" height="114" rx="8"></rect>
+      <text x="292" y="344" text-anchor="middle" class="schema-source-flow__strong">内側</text>
+      <text x="292" y="358" text-anchor="middle" class="schema-source-flow__small">（ユースケース）</text>
+    </g>
+
+    <g class="schema-source-flow__part schema-source-flow__unknown" data-part="unknown" data-mode={initial.parts.unknown}>
+      <rect x="8" y="348" width="62" height="16" rx="8"></rect>
+      <text x="39" y="359.5" text-anchor="middle" class="schema-source-flow__mono">unknown</text>
+    </g>
+
+    <g class="schema-source-flow__chip" data-chip="0" data-pos={initial.chips[0] === "off" ? "home" : initial.chips[0]} data-visible={String(initial.chips[0] !== "off")}>
+      <rect x="8" y="370" width="82" height="30" rx="6"></rect>
+      <text x="49" y="389" text-anchor="middle" class="schema-source-flow__mono">{nightShift}</text>
+    </g>
+    <g class="schema-source-flow__chip" data-chip="1" data-pos={initial.chips[1] === "off" ? "home" : initial.chips[1]} data-visible={String(initial.chips[1] !== "off")}>
+      <rect x="8" y="404" width="82" height="30" rx="6"></rect>
+      <text x="49" y="423" text-anchor="middle" class="schema-source-flow__mono">{uuidPreview}</text>
+    </g>
+
+    <g class="schema-source-flow__result" data-result="0" data-state={initial.results[0]}>
+      <g class="schema-source-flow__result-pill schema-source-flow__result-pill--warn">
+        <rect x="198" y="375" width="48" height="20" rx="10"></rect>
+        <text x="222" y="389" text-anchor="middle">⚠</text>
+      </g>
+      <g class="schema-source-flow__result-pill schema-source-flow__result-pill--err">
+        <rect x="198" y="375" width="48" height="20" rx="10"></rect>
+        <text x="222" y="389" text-anchor="middle">✕ Err</text>
+      </g>
+      <g class="schema-source-flow__result-pill schema-source-flow__result-pill--ok">
+        <rect x="198" y="375" width="48" height="20" rx="10"></rect>
+        <text x="222" y="389" text-anchor="middle">✓ Ok</text>
+      </g>
+    </g>
+    <g class="schema-source-flow__result" data-result="1" data-state={initial.results[1]}>
+      <g class="schema-source-flow__result-pill schema-source-flow__result-pill--ok">
+        <rect x="198" y="409" width="48" height="20" rx="10"></rect>
+        <text x="222" y="423" text-anchor="middle">✓ Ok</text>
+      </g>
+    </g>
+
+    <g class="schema-source-flow__part schema-source-flow__same-name" data-part="sameName" data-mode={initial.parts.sameName}>
+      <text x="10" y="75" class="schema-source-flow__name schema-source-flow__mono">StartExaminationInput</text>
+      <g class="schema-source-flow__name-tag">
+        <rect x="10" y="136" width="56" height="16" rx="8"></rect>
+        <text x="38" y="148" text-anchor="middle">型として</text>
+      </g>
+      <text x="116" y="320" class="schema-source-flow__name schema-source-flow__mono">StartExaminationInput</text>
+      <g class="schema-source-flow__name-tag">
+        <rect x="116" y="444" width="56" height="16" rx="8"></rect>
+        <text x="144" y="456" text-anchor="middle">値として</text>
+      </g>
+    </g>
+
+    <g class="schema-source-flow__part" data-part="note" data-mode={initial.parts.note}>
+      <text x="170" y="487" text-anchor="middle" class="schema-source-flow__note">修正前は night-shift も通っていた</text>
+    </g>
+  </svg>
+
+  <p class="schema-source-flow__live" data-live aria-live="polite" hidden></p>
+
+  <ol class="schema-source-flow__frames">
+    {frames.map((frame) => (
+      <li data-frame data-has-code={frame.code ? "" : undefined}>
+        <p class="schema-source-flow__caption">{frame.caption}</p>
+        {frame.code && frame.stage && (
+          <figure class="code-block schema-source-flow__code" data-version={frame.stage}>
+            <figcaption><span class="schema-source-flow__tag" data-version={frame.stage}>{versionLabels[frame.stage]}</span> <code>{code[frame.code.key].path}</code></figcaption>
+            <Code code={withMarks(code[frame.code.key].code, frame.code.lines)} lang="ts" defaultColor={false} transformers={[markKeyLines]} />
+          </figure>
+        )}
+      </li>
+    ))}
+  </ol>
+</div>
+
+<script>
+  type Mode = "off" | "dim" | "on" | "focus";
+  type ChipState = "off" | "home" | "through" | "stop";
+  type Frame = {
+    caption: string;
+    stage: "before" | "after" | null;
+    parts: Record<string, Mode>;
+    typeLabel: string;
+    check: string;
+    chips: ChipState[];
+    results: string[];
+  };
+
+  const PLAY_INTERVAL_MS = 7000;
+
+  const setUp = (root: HTMLElement) => {
+    if (root.dataset.ready !== undefined) return;
+    const frames = JSON.parse(root.dataset.frames ?? "[]") as Frame[];
+    const panels = [...root.querySelectorAll<HTMLElement>("[data-frame]")];
+    const svg = root.querySelector<SVGSVGElement>("svg");
+    const parts = [...root.querySelectorAll<SVGGElement>("[data-part]")];
+    const chips = [...root.querySelectorAll<SVGGElement>("[data-chip]")];
+    const results = [...root.querySelectorAll<SVGGElement>("[data-result]")];
+    const controls = root.querySelector<HTMLElement>("[data-controls]");
+    const first = root.querySelector<HTMLButtonElement>("[data-first]");
+    const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
+    const play = root.querySelector<HTMLButtonElement>("[data-play]");
+    const next = root.querySelector<HTMLButtonElement>("[data-next]");
+    const progress = root.querySelector<HTMLElement>("[data-progress]");
+    const live = root.querySelector<HTMLElement>("[data-live]");
+    if (!svg || !controls || !first || !prev || !play || !next || !progress || !live) return;
+    if (frames.length !== panels.length || chips.length !== 2 || results.length !== 2) return;
+    root.dataset.ready = "";
+
+    const last = frames.length - 1;
+    let current = 0;
+    let timer: number | undefined;
+
+    const setChip = (chip: SVGGElement, state: ChipState) => {
+      if (state === "off") {
+        chip.dataset.visible = "false";
+        return;
+      }
+      if (chip.dataset.visible !== "true") {
+        chip.style.transition = "none";
+        chip.dataset.pos = "home";
+        chip.getBoundingClientRect();
+        chip.style.transition = "";
+        chip.dataset.visible = "true";
+        chip.getBoundingClientRect();
+      }
+      chip.dataset.pos = state;
+    };
+
+    const show = (index: number) => {
+      const frame = frames[index];
+      current = index;
+      panels.forEach((panel, i) => panel.classList.toggle("is-current", i === index));
+
+      parts.forEach((part) => {
+        part.dataset.mode = frame.parts[part.dataset.part ?? ""] ?? "off";
+      });
+      chips.forEach((chip, i) => setChip(chip, frame.chips[i]));
+      results.forEach((result, i) => {
+        result.dataset.state = frame.results[i];
+      });
+
+      svg.dataset.typeLabel = frame.typeLabel;
+      svg.dataset.check = frame.check;
+      if (frame.stage) svg.dataset.stage = frame.stage;
+      else delete svg.dataset.stage;
+
+      live.textContent = frame.caption;
+      progress.textContent = `${index + 1} / ${frames.length}`;
+      first.disabled = index === 0;
+      prev.disabled = index === 0;
+      next.disabled = index === last;
+      play.textContent = timer !== undefined ? "❚❚ 一時停止" : "▶ 再生";
+    };
+
+    const stop = () => {
+      window.clearInterval(timer);
+      timer = undefined;
+    };
+
+    const start = () => {
+      timer = window.setInterval(() => {
+        if (current === last - 1) stop();
+        show(current + 1);
+      }, PLAY_INTERVAL_MS);
+      show(current);
+    };
+
+    play.addEventListener("click", () => {
+      if (timer !== undefined) {
+        stop();
+        show(current);
+        return;
+      }
+      show(current === last ? 0 : current + 1);
+      if (current !== last) start();
+    });
+    first.addEventListener("click", () => {
+      stop();
+      show(0);
+    });
+    prev.addEventListener("click", () => {
+      stop();
+      show(Math.max(current - 1, 0));
+    });
+    next.addEventListener("click", () => {
+      stop();
+      show(Math.min(current + 1, last));
+    });
+    svg.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      stop();
+      show(event.key === "ArrowLeft" ? Math.max(current - 1, 0) : Math.min(current + 1, last));
+    });
+
+    svg.setAttribute("tabindex", "0");
+    root.dataset.animated = "";
+    controls.hidden = false;
+    live.hidden = false;
+    show(0);
+  };
+
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    document.querySelectorAll<HTMLElement>("[data-schema-source-flow]").forEach(setUp);
+  }
+</script>
+
+<style>
+  .schema-source-flow {
+    min-width: 0;
+    max-width: 100%;
+    margin: 1.5rem 0;
+    --version-before: var(--case-pink);
+    --version-after: var(--case-highlight);
+  }
+
+  [data-version="before"] {
+    --version-color: var(--version-before);
+  }
+
+  [data-version="after"] {
+    --version-color: var(--version-after);
+  }
+
+  .schema-source-flow svg {
+    display: block;
+    width: 100%;
+    max-width: 26rem;
+    height: auto;
+    max-height: min(65vh, 560px);
+    margin-inline: auto;
+  }
+
+  .schema-source-flow svg:focus-visible {
+    outline: 3px solid var(--case-blue);
+    outline-offset: 2px;
+  }
+
+  .schema-source-flow__badge {
+    display: none;
+  }
+
+  .schema-source-flow svg[data-stage="before"] .schema-source-flow__badge--before,
+  .schema-source-flow svg[data-stage="after"] .schema-source-flow__badge--after {
+    display: block;
+  }
+
+  .schema-source-flow__badge rect {
+    stroke: var(--case-line);
+    stroke-width: 2;
+  }
+
+  .schema-source-flow__badge--before rect {
+    fill: var(--version-before);
+  }
+
+  .schema-source-flow__badge--after rect {
+    fill: var(--version-after);
+  }
+
+  .schema-source-flow__badge text {
+    fill: var(--case-ink);
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .schema-source-flow__band-bg {
+    fill: var(--case-paper);
+    stroke: var(--case-divider);
+    stroke-width: 1.5;
+  }
+
+  .schema-source-flow__band-bg--runtime {
+    fill: var(--case-cream);
+  }
+
+  .schema-source-flow__band-label,
+  .schema-source-flow__strong,
+  .schema-source-flow__note,
+  .schema-source-flow__small {
+    fill: var(--case-ink);
+    font-size: 12px;
+  }
+
+  .schema-source-flow__band-label,
+  .schema-source-flow__strong {
+    font-weight: 700;
+  }
+
+  .schema-source-flow__note {
+    font-size: 10.5px;
+  }
+
+  .schema-source-flow__small {
+    font-size: 9.5px;
+  }
+
+  .schema-source-flow__mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .schema-source-flow__divider {
+    stroke: var(--case-muted);
+    stroke-width: 1.5;
+    stroke-dasharray: 6 4;
+  }
+
+  .schema-source-flow__box rect {
+    fill: var(--case-paper);
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .schema-source-flow__box text {
+    fill: var(--case-ink);
+    font-size: 11px;
+  }
+
+  .schema-source-flow__box text.schema-source-flow__strong {
+    font-size: 12px;
+  }
+
+  .schema-source-flow__box text.schema-source-flow__code-text {
+    font-size: 9.5px;
+  }
+
+  .schema-source-flow__box text.schema-source-flow__type-label {
+    font-size: 10px;
+  }
+
+  .schema-source-flow__box text.schema-source-flow__small {
+    font-size: 9.5px;
+  }
+
+  .schema-source-flow__type rect {
+    stroke: var(--case-blue);
+  }
+
+  .schema-source-flow__schema rect {
+    fill: var(--case-yellow);
+  }
+
+  .schema-source-flow__inside rect {
+    fill: var(--case-paper);
+  }
+
+  .schema-source-flow__part[data-mode="focus"] > rect {
+    stroke: var(--case-blue);
+    stroke-width: 4;
+  }
+
+  .schema-source-flow__part[data-mode="focus"] > rect:first-child {
+    fill: color-mix(in srgb, var(--case-yellow) 45%, var(--case-paper));
+  }
+
+  .schema-source-flow__schema[data-mode="focus"] > rect {
+    fill: var(--case-yellow);
+  }
+
+  .schema-source-flow__ghost rect {
+    fill: none;
+    stroke: var(--case-muted);
+    stroke-width: 1.5;
+    stroke-dasharray: 6 4;
+  }
+
+  .schema-source-flow__ghost text {
+    fill: var(--case-muted);
+    font-size: 11px;
+  }
+
+  .schema-source-flow__part[data-mode="off"] {
+    opacity: 0;
+  }
+
+  .schema-source-flow__part[data-mode="dim"] {
+    opacity: 0.35;
+  }
+
+  .schema-source-flow__type-label,
+  .schema-source-flow__check-label {
+    display: none;
+  }
+
+  .schema-source-flow svg[data-type-label="name"] .schema-source-flow__type-label[data-label="name"],
+  .schema-source-flow svg[data-type-label="hand"] .schema-source-flow__type-label[data-label="hand"],
+  .schema-source-flow svg[data-type-label="infer"] .schema-source-flow__type-label[data-label="infer"],
+  .schema-source-flow svg[data-check="plain"] .schema-source-flow__check-label[data-label="plain"],
+  .schema-source-flow svg[data-check="none"] .schema-source-flow__check-label[data-label="none"],
+  .schema-source-flow svg[data-check="checked"] .schema-source-flow__check-label[data-label="checked"] {
+    display: block;
+  }
+
+  .schema-source-flow svg[data-check="none"] .schema-source-flow__check rect {
+    stroke-dasharray: 6 4;
+  }
+
+  .schema-source-flow svg:not([data-check="none"]) .schema-source-flow__check rect {
+    stroke-width: 2.5;
+  }
+
+  .schema-source-flow svg:not([data-check="none"]) .schema-source-flow__check[data-mode="focus"] rect {
+    stroke-width: 4;
+  }
+
+  .schema-source-flow__link line {
+    stroke: var(--case-line);
+    stroke-width: 2;
+  }
+
+  .schema-source-flow__link polygon {
+    fill: var(--case-line);
+  }
+
+  .schema-source-flow__link text {
+    fill: var(--case-ink);
+    font-size: 10px;
+  }
+
+  .schema-source-flow__link[data-mode="focus"] line {
+    stroke: var(--case-blue);
+    stroke-width: 4;
+  }
+
+  .schema-source-flow__link[data-mode="focus"] polygon {
+    fill: var(--case-blue);
+  }
+
+  .schema-source-flow__link[data-mode="focus"] text {
+    font-weight: 700;
+  }
+
+  .schema-source-flow__unknown rect,
+  .schema-source-flow__name-tag rect {
+    fill: var(--case-blue);
+  }
+
+  .schema-source-flow__unknown text,
+  .schema-source-flow__name-tag text {
+    fill: var(--case-paper);
+    font-size: 9.5px;
+    font-weight: 700;
+  }
+
+  .schema-source-flow__name {
+    fill: var(--case-ink);
+    font-size: 10.5px;
+    font-weight: 700;
+    paint-order: stroke;
+    stroke: var(--case-paper);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+
+  .schema-source-flow__chip rect {
+    fill: var(--case-paper);
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .schema-source-flow__chip text {
+    fill: var(--case-ink);
+    font-size: 9.5px;
+  }
+
+  .schema-source-flow__chip[data-visible="false"] {
+    opacity: 0;
+  }
+
+  .schema-source-flow__chip[data-pos="through"] {
+    transform: translateX(243px);
+  }
+
+  .schema-source-flow__chip[data-pos="stop"] {
+    transform: translateX(22px);
+  }
+
+  .schema-source-flow__chip[data-pos="stop"] rect {
+    stroke: var(--case-pink);
+    stroke-width: 3;
+  }
+
+  .schema-source-flow__result-pill {
+    opacity: 0;
+  }
+
+  .schema-source-flow__result[data-state="warn"] .schema-source-flow__result-pill--warn,
+  .schema-source-flow__result[data-state="err"] .schema-source-flow__result-pill--err,
+  .schema-source-flow__result[data-state="ok"] .schema-source-flow__result-pill--ok {
+    opacity: 1;
+  }
+
+  .schema-source-flow__result-pill rect {
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .schema-source-flow__result-pill text {
+    fill: var(--case-ink);
+    font-size: 10.5px;
+    font-weight: 700;
+  }
+
+  .schema-source-flow__result-pill--warn rect {
+    fill: var(--case-yellow);
+  }
+
+  .schema-source-flow__result-pill--err rect {
+    fill: var(--case-pink);
+  }
+
+  .schema-source-flow__result-pill--ok rect {
+    fill: var(--case-highlight);
+  }
+
+  .schema-source-flow__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .schema-source-flow__controls[hidden] {
+    display: none;
+  }
+
+  .schema-source-flow__controls button {
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--case-yellow);
+    color: var(--case-ink);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .schema-source-flow__controls button[data-play] {
+    min-width: 8.5rem;
+  }
+
+  .schema-source-flow__controls button:disabled {
+    background: var(--case-paper);
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .schema-source-flow__live,
+  .schema-source-flow__caption {
+    margin: 0.75rem 0 0.5rem;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .schema-source-flow__frames {
+    margin: 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .schema-source-flow__frames > li {
+    min-width: 0;
+  }
+
+  .schema-source-flow__frames > li + li {
+    margin-top: 1.25rem;
+  }
+
+  .schema-source-flow__code {
+    min-width: 0;
+    margin: 0.5rem 0 0;
+    border-inline-start: 0.35rem solid var(--version-color);
+  }
+
+  .schema-source-flow__code figcaption code {
+    font-size: 0.75rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .schema-source-flow__tag {
+    display: inline-block;
+    padding: 0 0.4rem;
+    border-radius: 0.25rem;
+    background: var(--version-color);
+    color: var(--case-ink);
+    font-weight: 700;
+  }
+
+  .schema-source-flow__code :global(pre) {
+    max-width: 100%;
+    margin: 0;
+    overflow-x: auto;
+    font-size: 0.8rem;
+  }
+
+  .schema-source-flow :global(.schema-source-flow__key) {
+    display: inline-block;
+    min-width: calc(100% + 0.5rem);
+    margin-left: -0.5rem;
+    padding-left: 0.5rem;
+    background: color-mix(in srgb, var(--case-yellow) 22%, transparent);
+    box-shadow: inset 0.3rem 0 0 var(--case-yellow);
+  }
+
+  [data-animated] .schema-source-flow__frames {
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  [data-animated] .schema-source-flow__frames > li {
+    display: none;
+    margin: 0;
+  }
+
+  [data-animated] .schema-source-flow__frames > li.is-current[data-has-code] {
+    display: block;
+  }
+
+  [data-animated] .schema-source-flow__caption {
+    display: none;
+  }
+
+  [data-animated] .schema-source-flow__part,
+  [data-animated] .schema-source-flow__result-pill {
+    transition: opacity 0.3s;
+  }
+
+  [data-animated] .schema-source-flow__chip {
+    transition: transform 0.9s ease-in-out, opacity 0.3s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-animated] * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>
