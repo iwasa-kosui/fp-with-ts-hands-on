@@ -77,6 +77,7 @@ const normalizeCase = (names) => (raw, index) => {
   const required = raw.required ?? true;
   const hint = raw.hint ?? "";
   const allowRaw = raw.allow ?? [];
+  const unchangedFrom = raw.unchangedFrom;
   const errors = [
     ...(idPattern.test(id) ? [] : [`${at} の id は英数字と _ - . で書きます（いまの値: ${String(raw.id)}）。`]),
     ...(kind === undefined ? [`${name} の kind は "bad" か "good" にします。`] : []),
@@ -93,6 +94,9 @@ const normalizeCase = (names) => (raw, index) => {
     ...(kind === "bad" && !(isMechanismList(allowRaw) && allowRaw.length > 0)
       ? [`${name}（bad）には allow が要ります。"types"、"lint"、"tests" から 1 つ以上選びます。`]
       : []),
+    ...(unchangedFrom === undefined || typeof unchangedFrom === "string"
+      ? []
+      : [`${name} の unchangedFrom は正しいコード（good）の id の文字列にします。`]),
   ];
   return errors.length > 0 ||
     kind === undefined ||
@@ -101,7 +105,20 @@ const normalizeCase = (names) => (raw, index) => {
     typeof hint !== "string" ||
     !isMechanismList(allowRaw)
     ? { errors }
-    : { value: { id, kind, subject, title, stage, required, allow: allowRaw, hint }, errors };
+    : {
+        value: {
+          id,
+          kind,
+          subject,
+          title,
+          stage,
+          required,
+          allow: allowRaw,
+          hint,
+          ...(typeof unchangedFrom === "string" ? { unchangedFrom } : {}),
+        },
+        errors,
+      };
 };
 
 /**
@@ -138,12 +155,23 @@ export const validateConfig = (raw, { caseEntries, listErrors, subjectExists }) 
         .map((item) => item.subject),
     ),
   ].filter((name) => !cases.some((item) => item.kind === "good" && item.subject === name));
+  const unchangedErrors = cases.flatMap((item) => {
+    const from = item.unchangedFrom;
+    return from === undefined
+      ? []
+      : item.kind !== "bad"
+        ? [`${item.id} の unchangedFrom は悪い変更（bad）にだけ指定します。`]
+        : cases.some((other) => other.id === from && other.kind === "good" && other.subject === item.subject)
+          ? []
+          : [`${item.id} の unchangedFrom「${from}」は、同じ subject の正しいコード（good）の id にします。`];
+  });
   const errors = [
     ...listErrors,
     ...Object.entries(subjects)
       .filter(([, file]) => !subjectExists(file))
       .map(([name, file]) => `subjects の「${name}」のファイル ${file} がありません。`),
     ...normalized.flatMap((item) => item.errors),
+    ...unchangedErrors,
     ...duplicates(declaredIds).map((id) => `id「${id}」が重複しています。`),
     ...declaredIds
       .filter((id, index) => declaredIds.indexOf(id) === index && !fileIds.includes(id))

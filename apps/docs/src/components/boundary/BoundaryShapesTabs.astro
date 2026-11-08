@@ -6,7 +6,7 @@ const rows = [
     outside: "HTTP の path と body",
     check: "予約IDと担当獣医師IDが UUID の形か",
     inside: "StartExaminationInput",
-    path: "examples/session-03-solution/src/boundary/startExaminationInput.ts",
+    path: "src/boundary/startExaminationInput.ts",
   },
   {
     name: "支払金額",
@@ -14,7 +14,7 @@ const rows = [
     outside: "入力された金額",
     check: "1以上の整数か",
     inside: "PaymentAmount",
-    path: "examples/final/src/domain/appointment/paymentAmount.ts",
+    path: "src/domain/appointment/paymentAmount.ts",
     note: "発展のページには、実物を短くした例を載せています。",
   },
   {
@@ -23,7 +23,7 @@ const rows = [
     outside: "検査機関から届く JSON",
     check: "examId、petId、items、needsFollowUp の形",
     inside: "ExamResult",
-    path: "examples/session-03-solution/src/boundary/examResult.ts",
+    path: "src/boundary/examResult.ts",
   },
   {
     name: "飼い主の連絡先",
@@ -31,7 +31,7 @@ const rows = [
     outside: "氏名、メール、電話番号の文字列",
     check: "空でないか、メールの形か",
     inside: "OwnerContact（中身は Sensitive）",
-    path: "examples/session-03-solution/src/boundary/ownerContact.ts",
+    path: "src/boundary/ownerContact.ts",
   },
 ] as const;
 

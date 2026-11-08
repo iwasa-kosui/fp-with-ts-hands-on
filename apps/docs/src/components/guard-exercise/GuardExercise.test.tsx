@@ -72,6 +72,7 @@ type SessionOptions = Readonly<{
   initialFile?: string;
   exitCode?: number;
   resultText?: string | undefined;
+  outdatedEdits?: boolean;
   onStart?: (request: TerminalStartRequest) => Promise<void>;
 }>;
 
@@ -106,6 +107,18 @@ const mountExercise = async (options: SessionOptions = {}) => {
   document.body.append(host);
   const root = createRoot(host);
   roots.push(root);
+  if (options.outdatedEdits === true) {
+    await createIndexedDbWorkspaceStore().saveEdits(
+      workspace.slug,
+      {
+        "exercises/guard/mine/input.test.ts": {
+          contents: "// edited",
+          base: "// mine before the update",
+        },
+      },
+      0,
+    );
+  }
   await act(async () => {
     root.render(
       <GuardExercise
@@ -128,10 +141,11 @@ const mountExercise = async (options: SessionOptions = {}) => {
       />,
     );
   });
-  await settleUntil(
-    () =>
-      action(host, "run-guard")?.disabled === false &&
-      host.querySelector("table") !== null,
+  await settleUntil(() =>
+    options.outdatedEdits === true
+      ? action(host, "use-saved-edits") !== null
+      : action(host, "run-guard")?.disabled === false &&
+        host.querySelector("table") !== null,
   );
   await settle();
   return { host, root, session, unmount: () => act(async () => root.unmount()) };
@@ -285,13 +299,45 @@ describe("GuardExercise", () => {
     expect(session.readFile).toHaveBeenCalledWith(guardPaths.result);
     expect(row(host, "B1-any-parser")?.textContent).toContain("すり抜け");
     expect(row(host, "B1-any-parser")?.textContent).toContain("対象外");
+    expect(
+      row(host, "B1-any-parser")?.querySelector('td[data-state="none"]')
+        ?.textContent,
+    ).toBe("未検出");
     expect(row(host, "G1-solution")?.textContent).toContain("誤検知なし");
+    expect(
+      row(host, "G1-solution")?.querySelector('td[data-state="none"]')
+        ?.textContent,
+    ).toBe("なし");
     expect(host.textContent).toContain("まだ仕組みがありません。");
     expect(host.textContent).toContain("まだ合格していません");
     expect(host.querySelector(".guard-exercise__badge")).toBeNull();
     expect(
       host.querySelector('[data-case-id="B1-any-parser"]')?.getAttribute("data-verdict"),
     ).toBe("slipped");
+  });
+
+  it("keeps the run button disabled with a reason until the outdated edits notice is answered", async () => {
+    const answered = ["use-saved-edits", "use-updated-code"] as const;
+    for (const choice of answered) {
+      const { host, session, unmount } = await mountExercise({
+        outdatedEdits: true,
+      });
+
+      expect(action(host, "run-guard")?.disabled).toBe(true);
+      expect(host.querySelector('[data-role="outdated"]')?.textContent).toContain(
+        "案内に答えると、検出を確かめられます。",
+      );
+      await click(action(host, "run-guard"));
+      expect(session.runCommand).not.toHaveBeenCalled();
+
+      await click(action(host, choice));
+
+      expect(action(host, "run-guard")?.disabled).toBe(false);
+      expect(host.querySelector('[data-role="outdated"]')).toBeNull();
+      await unmount();
+      host.remove();
+      globalThis.indexedDB = new IDBFactory();
+    }
   });
 
   it("shows the startup phase as progress and blocks a second run", async () => {
@@ -369,6 +415,29 @@ describe("GuardExercise", () => {
 
     expect(row(host, "G1-solution")?.dataset.verdict).toBe("falsePositive");
     expect(row(host, "G1-solution")?.textContent).toContain("誤検知あり");
+  });
+
+  it("shows an unchanged row as 未変更 in the table and the case list, without the hint", async () => {
+    const unchanged: GuardResult = {
+      ...sampleGuardResult,
+      rows: sampleGuardResult.rows.map((item) =>
+        item.kind === "bad" ? { ...item, verdict: "unchanged" } : item,
+      ),
+    };
+    const { host } = await mountExercise({
+      resultText: JSON.stringify(unchanged),
+    });
+
+    await click(action(host, "run-guard"));
+    await click(row(host, "B1-any-parser")?.querySelector("button"));
+
+    expect(row(host, "B1-any-parser")?.dataset.verdict).toBe("unchanged");
+    expect(row(host, "B1-any-parser")?.textContent).toContain("未変更");
+    expect(row(host, "B1-any-parser")?.textContent).not.toContain("すり抜け");
+    expect(
+      host.querySelector('[data-case-id="B1-any-parser"]')?.textContent,
+    ).toContain("未変更");
+    expect(host.querySelector('[data-role="hint"]')).toBeNull();
   });
 
   it("reports a result that cannot be read", async () => {

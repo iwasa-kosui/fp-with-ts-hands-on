@@ -67,7 +67,7 @@ export const ResultTable = ({
               key={mechanism}
               data-state={row.cells === undefined ? "none" : row.cells[mechanism].state}
             >
-              {row.cells === undefined ? "−" : cellText(row.cells[mechanism])}
+              {row.cells === undefined ? "−" : cellText(row.cells[mechanism], row.kind)}
             </td>
           ))}
           <td className="guard-exercise__verdict">{verdictText(row.verdict)}</td>

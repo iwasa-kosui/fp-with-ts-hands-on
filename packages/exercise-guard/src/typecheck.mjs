@@ -5,7 +5,7 @@ import { displayPath, isInside, relativeSpecifier, toPosix } from "./paths.mjs";
 /** @typedef {import("./model.mjs").Detection} Detection */
 /** @typedef {import("./model.mjs").Problem} Problem */
 /** @typedef {Readonly<{ file: string | undefined, line: number | null, code: number, message: string }>} PlainDiagnostic */
-/** @typedef {Readonly<{ diagnostics: readonly PlainDiagnostic[], configErrors: readonly PlainDiagnostic[] }>} TypecheckRun */
+/** @typedef {Readonly<{ program?: ts.Program, diagnostics: readonly PlainDiagnostic[], configErrors: readonly PlainDiagnostic[] }>} TypecheckRun */
 
 const projectErrorFix = "プロジェクトの型エラーを直します。";
 const unusedExpectErrorCode = 2578;
@@ -78,6 +78,7 @@ export const runTypecheck = (configPath) => {
     ...(parsed.projectReferences === undefined ? {} : { projectReferences: parsed.projectReferences }),
   });
   return {
+    program,
     diagnostics: ts
       .getPreEmitDiagnostics(program)
       .filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error)

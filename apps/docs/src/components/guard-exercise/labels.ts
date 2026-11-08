@@ -13,25 +13,29 @@ export const mechanismHeaders: Readonly<Record<GuardMechanism, string>> = {
   tests: "テスト",
 };
 
-export const cellText = (cell: GuardCell): string =>
+export const cellText = (cell: GuardCell, kind: GuardRow["kind"]): string =>
   cell.state === "hit"
     ? `検出 ${cell.count}件`
     : cell.state === "na"
       ? "対象外"
       : cell.state === "error"
         ? "エラー"
-        : "−";
+        : kind === "bad"
+          ? "未検出"
+          : "なし";
 
 export const verdictText = (verdict: GuardVerdict | undefined): string =>
   verdict === "detected"
     ? "検出"
     : verdict === "slipped"
       ? "すり抜け"
-      : verdict === "falsePositive"
-        ? "誤検知あり"
-        : verdict === "noFalsePositive"
-          ? "誤検知なし"
-          : "未確認";
+      : verdict === "unchanged"
+        ? "未変更"
+        : verdict === "falsePositive"
+          ? "誤検知あり"
+          : verdict === "noFalsePositive"
+            ? "誤検知なし"
+            : "未確認";
 
 export type DisplayRow = Readonly<{
   id: string;

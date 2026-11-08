@@ -13,7 +13,7 @@ import { mechanisms } from "./model.mjs";
 /** @typedef {import("./model.mjs").Problem} Problem */
 /** @typedef {import("./model.mjs").Row} Row */
 /** @typedef {Readonly<{ types: Evidence, lint: Evidence, tests: Evidence }>} AllEvidence */
-/** @typedef {Readonly<{ cases: readonly GuardCase[], evidence: AllEvidence, builtin: Readonly<Record<string, readonly Detection[]>>, collectionErrors: Readonly<Record<string, readonly Detection[]>>, problems: readonly Problem[], notes: readonly string[], noJudgedFiles: boolean, durations: Durations, revealAllStages: boolean }>} AggregateInput */
+/** @typedef {Readonly<{ cases: readonly GuardCase[], evidence: AllEvidence, builtin: Readonly<Record<string, readonly Detection[]>>, collectionErrors: Readonly<Record<string, readonly Detection[]>>, problems: readonly Problem[], notes: readonly string[], noJudgedFiles: boolean, unchangedIds: readonly string[], durations: Durations, revealAllStages: boolean }>} AggregateInput */
 
 /**
  * @param {Evidence} evidence
@@ -27,7 +27,7 @@ const detectionsOf = (evidence, id) => evidence.byCase[id] ?? [];
  * @param {AggregateInput} input
  * @returns {Row}
  */
-const buildRow = (guardCase, { evidence, builtin, collectionErrors }) => {
+const buildRow = (guardCase, { evidence, builtin, collectionErrors, unchangedIds }) => {
   const id = guardCase.id;
   const isBad = guardCase.kind === "bad";
   const builtinTypes = builtin[id] ?? [];
@@ -63,7 +63,7 @@ const buildRow = (guardCase, { evidence, builtin, collectionErrors }) => {
     hint: guardCase.hint,
     cells,
     verdict: isBad
-      ? hit ? "detected" : "slipped"
+      ? hit ? "detected" : unchangedIds.includes(id) ? "unchanged" : "slipped"
       : hit || loadErrors.length > 0 ? "falsePositive" : "noFalsePositive",
     detections,
     builtinTypes,

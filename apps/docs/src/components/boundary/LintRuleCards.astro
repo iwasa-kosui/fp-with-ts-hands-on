@@ -74,8 +74,7 @@ const rules = [
 
   .lint-rules__name {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0 1.25rem;
+    flex-direction: column;
     font-size: 0.8125rem;
     font-weight: 800;
     line-height: 1.5;
@@ -120,8 +119,32 @@ const rules = [
 
   @media (min-width: 44rem) {
     .lint-rules__head,
-    .lint-rules__cells {
+    .lint-rules__rule {
       grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .lint-rules__rule {
+      display: grid;
+      gap: 0.25rem 1rem;
+      align-content: start;
+    }
+
+    .lint-rules__cells {
+      display: contents;
+    }
+
+    .lint-rules__name {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .lint-rules__about {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .lint-rules__text {
+      grid-row: 1 / span 2;
     }
 
     .lint-rules__head {

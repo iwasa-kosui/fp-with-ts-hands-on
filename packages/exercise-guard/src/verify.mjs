@@ -22,7 +22,7 @@ const idList = (ids) => ids.join("、");
 export const checkInitial = (result) => {
   const bad = result.rows.filter((row) => row.kind === "bad");
   const good = result.rows.filter((row) => row.kind === "good");
-  const detected = bad.filter((row) => row.verdict !== "slipped").map((row) => row.id);
+  const detected = bad.filter((row) => row.verdict === "detected").map((row) => row.id);
   const falsePositives = good.filter((row) => row.verdict !== "noFalsePositive").map((row) => row.id);
   const reasons = [
     ...(detected.length > 0 ? [`配布時点で検出される悪い変更があります（${idList(detected)}）`] : []),
@@ -64,7 +64,6 @@ export const verify = async ({ root }) => {
   const initial = checkInitial(
     await judge({
       root: rootDir,
-      mineDir: `${verifyWorkDir}/initial/mine`,
       workDir: `${verifyWorkDir}/initial`,
       revealAllStages: true,
     }),

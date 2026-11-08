@@ -131,6 +131,11 @@ export const GuardLayout = ({
           >
             {running ? "確かめています" : "検出を確かめる"}
           </button>
+          {parts.outdated ? (
+            <p className="guard-exercise__run-note" data-role="outdated">
+              「教材が更新されました。前の編集を使いますか。」の案内に答えると、検出を確かめられます。
+            </p>
+          ) : null}
           {progress === undefined ? null : (
             <div className="guard-exercise__progress" role="status" aria-live="polite">
               <progress max={totalSteps} value={progress.value} />

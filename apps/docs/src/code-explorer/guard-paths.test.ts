@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   casePathFor,
+  guardAnswerDisplayFiles,
   guardAnswerFiles,
   guardInitialFile,
   guardVisibleFiles,
@@ -62,6 +63,25 @@ describe("guard exercise paths", () => {
     expect(Object.keys(guardAnswerFiles(files))).toEqual([
       "exercises/guard/answer/eslint.config.mjs",
     ]);
+  });
+
+  it("shows the answer files under the names where the participant puts them", () => {
+    const shown = guardAnswerDisplayFiles({
+      "exercises/guard/answer/eslint.config.mjs": "export default [];",
+      "exercises/guard/answer/mine/audit.test.ts": [
+        'import { OwnerId } from "../../../../src/domain/owner/index.js";',
+        'import { toAuditPayload } from "../../subjects/audit.js";',
+      ].join("\n"),
+      "exercises/guard/mine/input.test.ts": "",
+    });
+
+    expect(shown).toEqual({
+      "eslint.config.mjs": "export default [];",
+      "exercises/guard/mine/audit.test.ts": [
+        'import { OwnerId } from "../../../src/domain/owner/index.js";',
+        'import { toAuditPayload } from "../subjects/audit.js";',
+      ].join("\n"),
+    });
   });
 
   it("reads the cases from the config", () => {

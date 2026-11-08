@@ -80,15 +80,15 @@ export const buildNext = ({ rows, problems, noJudgedFiles, stageOpened, passed }
     (row) => row.kind !== "bad" || mechanisms.every((mechanism) => !row.allow.includes(mechanism) || row.cells[mechanism].count === 0),
   );
   return [
+    ...(passed ? ["合格です。表の行を開いて、この仕組みで検出できないことを書きます。"] : []),
     ...fixes,
     ...(noJudgedFiles && noAllowedDetection && problems.length === 0
       ? [
-          "まだ悪い変更を 1 件も検出できていません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にテストか型のテストを足します。",
+          "まだ悪い変更を 1 件も検出できていません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にあるテストか型のテストのファイルに書きます。",
         ]
       : []),
     ...(stageOpened > 0 ? [`追加の悪い変更が ${stageOpened} 件増えました。`] : []),
     ...rows.filter((row) => row.verdict === "falsePositive").flatMap(falsePositiveSentences),
     ...slipped.map(slippedSentence),
-    ...(passed ? ["合格です。表の行を開いて、この仕組みで検出できないことを書きます。"] : []),
   ];
 };

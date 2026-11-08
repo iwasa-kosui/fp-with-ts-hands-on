@@ -1,3 +1,9 @@
+import PropertyTestFlow from "../../../components/boundary/PropertyTestFlow.astro";
+
+<p>このページでは、前のページで挙げた値の性質のテストと型のテストを、飼い主の連絡先の例で書き、悪い変更を検出する様子を見ます。</p>
+
+<PropertyTestFlow />
+
 <div class="session-split">
   <div>
     <p><strong>fast-check のテスト</strong>: fast-check は、ランダムな入力を多数作って、性質が成り立つかを確かめるライブラリです。「UUID の形でない文字列を渡すと、<code>parse</code> は Err を返す」という性質を、さまざまな文字列で確かめます。</p>

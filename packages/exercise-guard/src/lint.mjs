@@ -35,14 +35,17 @@ const differingCases = (signatures) => {
 };
 
 /**
- * @param {Readonly<{ root: string, eslintConfigFile: string, patterns: readonly string[], caseFiles: Readonly<Record<string, string>> }>} input
+ * @param {Readonly<{ root: string, eslintConfigFile: string, patterns: readonly string[], caseFiles: Readonly<Record<string, string>>, program?: import("typescript").Program | undefined }>} input
  * @returns {Promise<LintRun>}
  */
-export const runLint = async ({ root, eslintConfigFile, patterns, caseFiles }) => {
+export const runLint = async ({ root, eslintConfigFile, patterns, caseFiles, program }) => {
   const { ESLint } = await import("eslint");
   const eslint = new ESLint({
     cwd: root,
     overrideConfigFile: eslintConfigFile,
+    ...(program === undefined
+      ? {}
+      : { overrideConfig: [{ files: ["**/*.ts"], languageOptions: { parserOptions: { projectService: false, programs: [program] } } }] }),
     allowInlineConfig: false,
     errorOnUnmatchedPattern: false,
   });

@@ -5,9 +5,9 @@ import { startExaminationWalkthrough } from "../../boundary-walkthroughs";
 
 <p><strong>解けたこと</strong>: 課題1が解けました。失敗は、サーバーが失敗を返す HTTP の状態（500）になります。S04 で扱います。</p>
 
-<p><strong>解けないこと</strong>: 形式の検査は実在を確かめません。Branded Type が防ぐのは検査していない <code>string</code> や別の ID を ID の型の引数へ渡す変更です。</p>
+<p><strong>解けないこと</strong>: 形式の検査は実在を確かめません。Branded Type が防ぐのは検査していない <code>string</code> や別の ID を ID の型の引数へ渡す変更です。データベースから読む値は、この回の境界の対象外です。</p>
 
 <BoundaryPlayer
   walkthrough={startExaminationWalkthrough}
-  scenarioIds={["valid", "night-shift", "wrong-uuid"]}
+  scenarioIds={["night-shift", "valid", "wrong-uuid"]}
 />

@@ -53,6 +53,26 @@ export const guardAnswerFiles = (projectFiles: ProjectFiles): ProjectFiles =>
     ),
   );
 
+const answerDisplayPath = (path: string): string =>
+  path === `${guardPaths.answer}${guardPaths.eslintConfig}`
+    ? guardPaths.eslintConfig
+    : `${guardPaths.mine}${path.slice(`${guardPaths.answer}mine/`.length)}`;
+
+const answerDisplaySource = (source: string): string =>
+  source
+    .replaceAll("../../subjects/", "../subjects/")
+    .replaceAll("../../../../src/", "../../../src/");
+
+export const guardAnswerDisplayFiles = (
+  projectFiles: ProjectFiles,
+): ProjectFiles =>
+  Object.fromEntries(
+    Object.entries(guardAnswerFiles(projectFiles)).map(([path, source]) => [
+      answerDisplayPath(path),
+      answerDisplaySource(source),
+    ]),
+  );
+
 export const casePathFor = (
   paths: Iterable<string>,
   id: string,

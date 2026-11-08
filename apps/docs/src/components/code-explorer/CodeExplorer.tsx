@@ -52,6 +52,7 @@ export type CodeExplorerLayoutParts = Readonly<{
   workspace: ReactNode;
   terminal: ReactNode;
   locked: boolean;
+  outdated: boolean;
   selectedPath: string | undefined;
   selectPath: (path: string) => void;
   terminalState: TerminalPanelStateKind;
@@ -448,6 +449,7 @@ export const CodeExplorer = ({
           workspace: workspaceView,
           terminal,
           locked: isLocked,
+          outdated: status.kind === "outdated",
           selectedPath,
           selectPath,
           terminalState,

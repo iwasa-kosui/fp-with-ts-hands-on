@@ -47,12 +47,12 @@ const afterCode = dedent(
 const sides = {
   before: {
     label: part === "problem" ? "今のコード" : "修正前",
-    path: `examples/session-03/src/adaptor/secondary/sqlite/appointmentRepository.ts:92-96`,
+    path: `${repositoryPath}:92-96`,
     code: beforeCode,
   },
   after: {
     label: "修正後",
-    path: `examples/session-03-solution/src/adaptor/secondary/sqlite/auditPayload.ts:13-19`,
+    path: `${auditPayloadPath}:13-19`,
     code: afterCode,
   },
 } as const;
@@ -440,28 +440,6 @@ const litData = JSON.stringify(lit);
     .audit-flow__columns--single .audit-flow__column {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       align-items: start;
-    }
-
-    .audit-flow {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-      align-items: start;
-    }
-
-    .audit-flow :global(.step-controls) {
-      grid-column: 1;
-      grid-row: 1;
-      margin-block-end: 0;
-    }
-
-    .audit-flow__trigger {
-      grid-column: 2;
-      grid-row: 1;
-    }
-
-    .audit-flow__columns,
-    .audit-flow > div[aria-live] {
-      grid-column: 1 / -1;
     }
   }
 

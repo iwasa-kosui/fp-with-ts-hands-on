@@ -21,6 +21,7 @@ export type GuardCell = Readonly<{ state: GuardCellState; count: number }>;
 export type GuardVerdict =
   | "detected"
   | "slipped"
+  | "unchanged"
   | "falsePositive"
   | "noFalsePositive";
 
@@ -67,6 +68,7 @@ const cellStates: readonly unknown[] = ["hit", "none", "error", "na"];
 const verdicts: readonly unknown[] = [
   "detected",
   "slipped",
+  "unchanged",
   "falsePositive",
   "noFalsePositive",
 ];

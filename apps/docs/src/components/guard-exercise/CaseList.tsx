@@ -6,6 +6,7 @@ export type GuardGuideStep =
 
 export type GuardGuide = Readonly<{
   title: string;
+  criteria?: string;
   steps: readonly GuardGuideStep[];
 }>;
 
@@ -37,7 +38,12 @@ export const CaseList = ({
 }: CaseListProps) => (
   <div className="guard-exercise__cases-inner">
     <div className="guard-exercise__guide">
-      <h2>{guide.title}</h2>
+      <div className="guard-exercise__guide-head">
+        <h2>{guide.title}</h2>
+        {guide.criteria === undefined ? null : (
+          <p className="guard-exercise__criteria">{guide.criteria}</p>
+        )}
+      </div>
       <ol className="guard-exercise__steps">
         {guide.steps.map((step) => {
           const { text, items } =

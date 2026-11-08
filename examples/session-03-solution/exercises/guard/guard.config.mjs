@@ -65,6 +65,7 @@ export default {
       stage: 2,
       required: false,
       allow: ["types", "lint", "tests"],
+      unchangedFrom: "G1-solution",
       hint: "結果の表で、この行が「すり抜け」のままなら、隣の人の仕組みをすり抜けています。",
     },
     {

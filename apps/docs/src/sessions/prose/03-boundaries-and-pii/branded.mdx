@@ -1,8 +1,8 @@
 import BrandedIdFlow from "../../../components/BrandedIdFlow.astro";
 import { brandedIdCode } from "../../pages/03-boundaries-and-pii-content";
 
-<p>今のコードの <code>VeterinarianId</code> は、<code>parse</code> が <code>any</code> から値を写すだけなので、<code>night-shift</code> にも印が付きました。このページでは、印の付いた型が何を保証するかを確かめます。</p>
-
 <p>Branded Type は、同じ string でも用途ごとに印を付けて、別の型として区別する書き方です。検査を通った値だけに印を付けると、検査していない文字列は ID の型として渡せず、予約IDと獣医師IDの取り違えも型検査で検出できます。</p>
+
+<p>今のコードの <code>VeterinarianId</code> は、<code>parse</code> が <code>any</code> から値を写すだけなので、<code>night-shift</code> にも印が付きました。このページでは、印の付いた型が何を保証するかを確かめます。</p>
 
 <BrandedIdFlow code={brandedIdCode} />

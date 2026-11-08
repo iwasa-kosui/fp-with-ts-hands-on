@@ -54,7 +54,7 @@ const veterinarianUuid = "44444444-4444-4444-8444-444444444444";
 const startExaminationFiles: Walkthrough["files"] = [
   {
     id: "route",
-    path: "examples/session-03/src/web/routes.ts",
+    path: "src/web/routes.ts",
     code: blockOf(
       session03,
       "src/web/routes.ts",
@@ -64,32 +64,32 @@ const startExaminationFiles: Walkthrough["files"] = [
   },
   {
     id: "parseBefore",
-    path: "examples/session-03/src/boundary/startExaminationInput.ts（修正前）",
+    path: "src/boundary/startExaminationInput.ts（修正前）",
     code: sourceOf(session03, "src/boundary/startExaminationInput.ts"),
   },
   {
     id: "parseAfter",
-    path: "examples/session-03-solution/src/boundary/startExaminationInput.ts（修正後）",
+    path: "src/boundary/startExaminationInput.ts（修正後）",
     code: sourceOf(session03Solution, "src/boundary/startExaminationInput.ts"),
   },
   {
     id: "schemaResult",
-    path: "examples/session-03-solution/src/shared/schemaResult.ts",
+    path: "src/shared/schemaResult.ts",
     code: sourceOf(session03Solution, "src/shared/schemaResult.ts"),
   },
   {
     id: "appointmentId",
-    path: "examples/session-03-solution/src/domain/appointment/appointmentId.ts",
+    path: "src/domain/appointment/appointmentId.ts",
     code: sourceOf(session03Solution, "src/domain/appointment/appointmentId.ts"),
   },
   {
     id: "veterinarianId",
-    path: "examples/session-03-solution/src/domain/appointment/veterinarianId.ts",
+    path: "src/domain/appointment/veterinarianId.ts",
     code: sourceOf(session03Solution, "src/domain/appointment/veterinarianId.ts"),
   },
   {
     id: "transition",
-    path: "examples/session-03/src/domain/appointment/transitions.ts",
+    path: "src/domain/appointment/transitions.ts",
     code: blockOf(
       session03,
       "src/domain/appointment/transitions.ts",
@@ -362,12 +362,12 @@ export const startExaminationWalkthrough: Walkthrough = {
 const sensitiveFiles: Walkthrough["files"] = [
   {
     id: "ownerContact",
-    path: "examples/session-03-solution/src/boundary/ownerContact.ts",
+    path: "src/boundary/ownerContact.ts",
     code: sourceOf(session03Solution, "src/boundary/ownerContact.ts"),
   },
   {
     id: "sensitive",
-    path: "examples/session-03-solution/src/shared/sensitive.ts",
+    path: "src/shared/sensitive.ts",
     code: sourceOf(session03Solution, "src/shared/sensitive.ts"),
   },
 ];
