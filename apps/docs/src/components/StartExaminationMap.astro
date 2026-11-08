@@ -1,0 +1,493 @@
+---
+import { Code } from "astro:components";
+import type { ComponentProps } from "astro/types";
+import useCaseSource from "../../../../examples/final/src/useCase/startExaminationUseCase.ts?raw";
+import { stages, type StageId } from "../sessions/overview-map";
+import { quote } from "../sessions/reference-quote";
+
+const FIRST_LINE = 85;
+const LAST_LINE = 94;
+const code = quote(useCaseSource, FIRST_LINE, LAST_LINE, "userResolver");
+
+const lineBadges: readonly string[] = [
+  ...Array.from({ length: 6 }, () => "S05"),
+  "S01",
+  "S06",
+  "S06",
+  "S04",
+];
+
+type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
+const badgeLines: Transformer = {
+  name: "badge-start-examination-lines",
+  line(node, line) {
+    const badge = lineBadges[line - 1];
+    if (badge !== undefined) node.properties["data-badge"] = badge;
+  },
+};
+
+const stageBadges: Readonly<Record<StageId, Readonly<{ scene: number; badge: string }>>> = {
+  entry: { scene: 2, badge: "S03" },
+  read: { scene: 3, badge: "S05" },
+  decide: { scene: 4, badge: "S01・S02" },
+  save: { scene: 5, badge: "S06" },
+  failure: { scene: 6, badge: "S04・S05" },
+};
+
+type Frame = Readonly<{ caption: string; alt: string; withCode?: true }>;
+
+const frames: readonly Frame[] = [
+  {
+    caption: "獣医師が画面で「診察開始」を押します。予約 ID と担当獣医師 ID が、HTTP でサーバーへ届きます。",
+    alt: "獣医師の画面から下向きの矢印が伸び、入口の段へ向かっています。矢印には、HTTP で予約 ID と担当獣医師 ID が届くと示しています。5つの段は、上から入口、読み取り、業務の判断、保存、失敗の返し方です。",
+  },
+  {
+    caption: "入口で、届いた値を検査し、型の付いた入力に変えます。検査に通らない値は、ここで止まります。",
+    alt: "5つの段のうち、一番上の入口を強調しています。札は S03 です。",
+  },
+  {
+    caption: "操作した利用者と予約を、データベースから読みます。読み取りは道の先頭に置きます。",
+    alt: "5つの段のうち、上から2番目の読み取りを強調しています。札は S05 です。",
+  },
+  {
+    caption: "予約が「来院済み」のときだけ、診察を始められます。予約の状態と、許される遷移を型で表します。",
+    alt: "5つの段のうち、上から3番目の業務の判断を強調しています。札は S01 と S02 です。",
+  },
+  {
+    caption: "時刻と ID を外から受け取って「診察を開始した」記録を作り、予約の状態と監査記録を1回で保存します。",
+    alt: "5つの段のうち、上から4番目の保存を強調しています。札は S06 です。",
+  },
+  {
+    caption: "どの工程で失敗しても、その先の工程は動きません。失敗は例外ではなく Result の値として、呼び出し側へ返ります。",
+    alt: "入口から保存までの4つの段の右側から横へ線が分かれ、一番下の失敗の返し方の段へつながっています。失敗の返し方を強調しています。札は S04 と S05 です。",
+  },
+  {
+    caption: "参照実装（examples/final）では、この道が次の10行になります。行の横の札は、その書き方を学ぶ回です。いまは読めなくてかまいません。",
+    alt: "5つの段すべてを強調しています。下に参照実装のコードを示します。",
+    withCode: true,
+  },
+];
+
+const X = 10;
+const W = 240;
+const H = 44;
+const FIRST_Y = 92;
+const PITCH = 62;
+const MID = X + W / 2;
+const FAIL_X = 292;
+const TERM_H = 30;
+const lastIndex = stages.length - 1;
+const mainStages = stages.slice(0, lastIndex);
+const mainY = (index: number) => FIRST_Y + index * PITCH;
+const termY = mainY(lastIndex - 1) + H + 18;
+const failY = termY + TERM_H + 34;
+const stageY = (index: number) => (index < lastIndex ? mainY(index) : failY);
+
+const headDown = (x: number, y: number) => `M ${x - 4} ${y - 7} L ${x} ${y} L ${x + 4} ${y - 7} z`;
+const headLeft = (x: number, y: number) => `M ${x + 7} ${y - 4} L ${x} ${y} L ${x + 7} ${y + 4} z`;
+
+const onScenes = (id: StageId) => `${stageBadges[id].scene} 7`;
+
+const playerData = JSON.stringify(frames.map(({ caption, alt }, index) => ({ caption, alt, scene: index + 1 })));
+---
+
+<figure id="start-examination-map" class="start-map" data-start-examination-map data-frames={playerData}>
+  <figcaption class="start-map__title">「診察開始」の依頼が通る道</figcaption>
+
+  <div class="start-map__controls" data-controls hidden>
+    <button type="button" data-first disabled>最初へ</button>
+    <button type="button" data-prev disabled>前へ</button>
+    <button type="button" data-play>再生</button>
+    <button type="button" data-next>次へ</button>
+    <span data-progress>1 / {frames.length}</span>
+  </div>
+
+  <div class="start-map__stage" data-stage hidden>
+    <div data-stage-figure></div>
+  </div>
+
+  <p class="start-map__live" data-live aria-live="polite" hidden></p>
+
+  <ol class="start-map__frames">
+    {frames.map((frame, index) => (
+      <li data-frame data-has-code={frame.withCode ? "" : undefined}>
+        <div class="start-map__visual">
+          <svg viewBox={`0 0 340 ${failY + H + 12}`} role="img" aria-label={frame.alt} data-scene={index + 1}>
+            <g class="start-map__box" data-on="1">
+              <rect x={X} y="4" width={W} height="44" rx="6"></rect>
+              <text x={MID} y="23" text-anchor="middle" font-size="12">獣医師の画面</text>
+              <text x={MID} y="39" text-anchor="middle" font-size="10">「診察開始」ボタン</text>
+            </g>
+            <path d={`M ${MID} 48 V 85`} class="start-map__line"></path>
+            <path d={headDown(MID, 92)} class="start-map__head"></path>
+            <g class="start-map__layer" data-scenes="1">
+              <text x={MID + 10} y="66" font-size="10" class="start-map__note">HTTP で届く値</text>
+              <text x={MID + 10} y="80" font-size="10" class="start-map__note">予約 ID・担当獣医師 ID</text>
+            </g>
+            {mainStages.map((_, i) => (
+              <>
+                <path d={`M ${MID} ${mainY(i) + H} V ${i + 1 < lastIndex ? mainY(i + 1) - 7 : termY - 7}`} class="start-map__line"></path>
+                <path d={headDown(MID, i + 1 < lastIndex ? mainY(i + 1) : termY)} class="start-map__head"></path>
+              </>
+            ))}
+            <g class="start-map__box" data-on="7">
+              <rect x={X + 40} y={termY} width={W - 80} height={TERM_H} rx="15"></rect>
+              <text x={MID} y={termY + 19} text-anchor="middle" font-size="11">画面へ結果を返す</text>
+            </g>
+            {stages.map((stage, i) => (
+              <g class:list={["start-map__box", { "start-map__box--fail": stage.id === "failure" }]} data-on={onScenes(stage.id)}>
+                <rect x={X} y={stageY(i)} width={W} height={H} rx="6"></rect>
+                <text x={X + 12} y={stageY(i) + 27} font-size="12">{stage.label}</text>
+              </g>
+            ))}
+            {stages.map((stage, i) => (
+              <g class="start-map__layer start-map__pill" data-scenes={String(stageBadges[stage.id].scene)}>
+                <rect x={X + 154} y={stageY(i) + 12} width="78" height="20" rx="10"></rect>
+                <text x={X + 193} y={stageY(i) + 26} text-anchor="middle" font-size="11">{stageBadges[stage.id].badge}</text>
+              </g>
+            ))}
+            <g class="start-map__layer start-map__fail" data-scenes="6">
+              {mainStages.map((_, i) => (
+                <path d={`M ${X + W} ${stageY(i) + H / 2} H ${FAIL_X}`}></path>
+              ))}
+              <path d={`M ${FAIL_X} ${stageY(0) + H / 2} V ${failY + H / 2} H ${X + W + 7}`}></path>
+              <path d={headLeft(X + W, stageY(lastIndex) + H / 2)} class="start-map__fail-head"></path>
+              <text x={FAIL_X + 6} y={stageY(2) + H / 2 + 4} font-size="11">失敗</text>
+            </g>
+          </svg>
+        </div>
+        <p class="start-map__caption">{frame.caption}</p>
+        {frame.withCode && (
+          <figure class="code-block start-map__code">
+            <figcaption><code>startExaminationUseCase.ts</code> の {FIRST_LINE}〜{LAST_LINE} 行</figcaption>
+            <Code code={code} lang="ts" defaultColor="dark" wrap={null} transformers={[badgeLines]} />
+          </figure>
+        )}
+      </li>
+    ))}
+  </ol>
+</figure>
+
+<script>
+  type Frame = { scene: number; caption: string; alt: string };
+
+  const STEP_MS = 3500;
+
+  const setUp = (root: HTMLElement) => {
+    if (root.dataset.ready !== undefined) return;
+    const frames = JSON.parse(root.dataset.frames ?? "[]") as Frame[];
+    const panels = [...root.querySelectorAll<HTMLElement>("[data-frame]")];
+    const source = root.querySelector<SVGSVGElement>("li svg");
+    const stage = root.querySelector<HTMLElement>("[data-stage]");
+    const stageFigure = root.querySelector<HTMLElement>("[data-stage-figure]");
+    const controls = root.querySelector<HTMLElement>("[data-controls]");
+    const first = root.querySelector<HTMLButtonElement>("[data-first]");
+    const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
+    const play = root.querySelector<HTMLButtonElement>("[data-play]");
+    const next = root.querySelector<HTMLButtonElement>("[data-next]");
+    const progress = root.querySelector<HTMLElement>("[data-progress]");
+    const live = root.querySelector<HTMLElement>("[data-live]");
+    if (!source || !stage || !stageFigure || !controls || !first || !prev || !play || !next || !progress || !live || frames.length !== panels.length) return;
+    root.dataset.ready = "";
+
+    const svg = source.cloneNode(true) as SVGSVGElement;
+    stageFigure.append(svg);
+
+    let current = 0;
+    let timer: number | null = null;
+
+    const stop = () => {
+      if (timer !== null) window.clearInterval(timer);
+      timer = null;
+      play.textContent = "再生";
+    };
+
+    const show = (index: number) => {
+      const frame = frames[index];
+      current = index;
+      panels.forEach((panel, i) => panel.classList.toggle("is-current", i === index));
+      svg.dataset.scene = String(frame.scene);
+      svg.setAttribute("aria-label", frame.alt);
+      live.textContent = frame.caption;
+      progress.textContent = `${index + 1} / ${frames.length}`;
+      first.disabled = index === 0;
+      prev.disabled = index === 0;
+      next.disabled = index === frames.length - 1;
+    };
+
+    first.addEventListener("click", () => {
+      stop();
+      show(0);
+    });
+    prev.addEventListener("click", () => {
+      stop();
+      show(Math.max(current - 1, 0));
+    });
+    next.addEventListener("click", () => {
+      stop();
+      show(Math.min(current + 1, frames.length - 1));
+    });
+    play.addEventListener("click", () => {
+      if (timer !== null) {
+        stop();
+        return;
+      }
+      if (current === frames.length - 1) show(0);
+      play.textContent = "停止";
+      timer = window.setInterval(() => {
+        if (current >= frames.length - 1) {
+          stop();
+          return;
+        }
+        show(current + 1);
+      }, STEP_MS);
+    });
+
+    root.dataset.animated = "";
+    controls.hidden = false;
+    stage.hidden = false;
+    live.hidden = false;
+    show(0);
+  };
+
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    document.querySelectorAll<HTMLElement>("[data-start-examination-map]").forEach(setUp);
+  }
+</script>
+
+<style>
+  .start-map {
+    min-width: 0;
+    max-width: 100%;
+    margin: 1.5rem 0;
+    --bad: #c2185b;
+  }
+
+  .start-map__title {
+    margin: 0 0 0.75rem;
+    font-weight: 700;
+    line-height: 1.6;
+  }
+
+  .start-map svg {
+    display: block;
+    width: 100%;
+    max-width: 22rem;
+    height: auto;
+    margin: 0.5rem auto 0;
+  }
+
+  .start-map svg[data-scene="1"] .start-map__box[data-on~="1"],
+  .start-map svg[data-scene="2"] .start-map__box[data-on~="2"],
+  .start-map svg[data-scene="3"] .start-map__box[data-on~="3"],
+  .start-map svg[data-scene="4"] .start-map__box[data-on~="4"],
+  .start-map svg[data-scene="5"] .start-map__box[data-on~="5"],
+  .start-map svg[data-scene="6"] .start-map__box[data-on~="6"],
+  .start-map svg[data-scene="7"] .start-map__box[data-on~="7"] {
+    --box-fill: var(--case-yellow);
+    --box-stroke: var(--case-blue);
+    --box-ink: var(--case-ink);
+  }
+
+  .start-map__box[data-on] {
+    --box-fill: var(--case-paper);
+    --box-stroke: var(--case-divider);
+    --box-ink: var(--case-muted);
+  }
+
+  .start-map svg .start-map__box rect {
+    fill: var(--box-fill);
+    stroke: var(--box-stroke);
+    stroke-width: 1.5;
+  }
+
+  .start-map svg .start-map__box text {
+    fill: var(--box-ink);
+  }
+
+  .start-map svg[data-scene="1"] .start-map__box[data-on~="1"] rect,
+  .start-map svg[data-scene="2"] .start-map__box[data-on~="2"] rect,
+  .start-map svg[data-scene="3"] .start-map__box[data-on~="3"] rect,
+  .start-map svg[data-scene="4"] .start-map__box[data-on~="4"] rect,
+  .start-map svg[data-scene="5"] .start-map__box[data-on~="5"] rect,
+  .start-map svg[data-scene="6"] .start-map__box[data-on~="6"] rect,
+  .start-map svg[data-scene="7"] .start-map__box[data-on~="7"] rect {
+    stroke-width: 2.5;
+  }
+
+  .start-map svg .start-map__box--fail rect {
+    stroke-dasharray: 5 3;
+  }
+
+  .start-map__line {
+    fill: none;
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .start-map__head {
+    fill: var(--case-line);
+  }
+
+  .start-map__note {
+    fill: var(--case-ink);
+    font-weight: 700;
+  }
+
+  .start-map__layer {
+    opacity: 0;
+  }
+
+  .start-map svg[data-scene="1"] [data-scenes~="1"],
+  .start-map svg[data-scene="2"] [data-scenes~="2"],
+  .start-map svg[data-scene="3"] [data-scenes~="3"],
+  .start-map svg[data-scene="4"] [data-scenes~="4"],
+  .start-map svg[data-scene="5"] [data-scenes~="5"],
+  .start-map svg[data-scene="6"] [data-scenes~="6"] {
+    opacity: 1;
+  }
+
+  .start-map__pill rect {
+    fill: var(--case-blue);
+  }
+
+  .start-map__pill text {
+    fill: #fff;
+    font-weight: 700;
+  }
+
+  .start-map__fail path {
+    fill: none;
+    stroke: var(--bad);
+    stroke-width: 2;
+    stroke-dasharray: 5 3;
+  }
+
+  .start-map__fail .start-map__fail-head {
+    fill: var(--bad);
+    stroke: none;
+  }
+
+  .start-map__fail text {
+    fill: var(--bad);
+    font-weight: 700;
+  }
+
+  .start-map__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .start-map__controls[hidden] {
+    display: none;
+  }
+
+  .start-map__controls button {
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--case-yellow);
+    color: var(--case-ink);
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .start-map__controls button:disabled {
+    background: var(--case-paper);
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .start-map__live,
+  .start-map__caption {
+    margin: 0.75rem 0 0.5rem;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .start-map__frames {
+    margin: 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .start-map__frames > li {
+    min-width: 0;
+  }
+
+  .start-map__frames > li + li {
+    margin-top: 1.5rem;
+  }
+
+  .start-map__code {
+    min-width: 0;
+    margin: 0.75rem 0 0;
+    border-inline-start: 0.35rem solid var(--case-blue);
+  }
+
+  .start-map__code figcaption code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .start-map__code :global(pre) {
+    max-width: 100%;
+    margin: 0;
+    padding: 0.75rem;
+    overflow-x: auto;
+    font-size: 0.75rem;
+    white-space: pre;
+  }
+
+  .start-map__code :global(code) {
+    white-space: pre;
+  }
+
+  .start-map__code :global(.line[data-badge])::before {
+    content: attr(data-badge);
+    display: inline-block;
+    min-width: 2.75rem;
+    margin-right: 0.75rem;
+    padding: 0 0.35rem;
+    border-radius: 0.25rem;
+    background: var(--case-yellow);
+    color: var(--case-ink);
+    font-weight: 700;
+    text-align: center;
+  }
+
+  [data-animated] .start-map__frames {
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  [data-animated] .start-map__frames > li {
+    display: none;
+    margin: 0;
+  }
+
+  [data-animated] .start-map__frames > li.is-current[data-has-code] {
+    display: block;
+  }
+
+  [data-animated] .start-map__visual,
+  [data-animated] .start-map__caption {
+    display: none;
+  }
+
+  [data-animated] .start-map__layer,
+  [data-animated] .start-map__box rect,
+  [data-animated] .start-map__box text {
+    transition: opacity 0.4s, fill 0.4s, stroke 0.4s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-animated] * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>

@@ -1,0 +1,29 @@
+import { describe, expect, it } from "vitest";
+import { sessionNavigationItems } from "./navigation";
+import { sessionOverviews, stages } from "./overview-map";
+
+const slugs = sessionNavigationItems.map(({ slug }) => slug);
+
+describe("overview-map", () => {
+  it("has a description for every session in the navigation", () => {
+    for (const slug of slugs) {
+      expect(sessionOverviews[slug]?.summary.trim(), slug).toBeTruthy();
+    }
+  });
+
+  it("has no description for a slug outside the navigation", () => {
+    const extra = Object.keys(sessionOverviews).filter((slug) => !slugs.some((known) => known === slug));
+
+    expect(extra).toEqual([]);
+  });
+
+  it("fills only stages that are defined", () => {
+    const stageIds = stages.map(({ id }) => id);
+
+    for (const slug of slugs) {
+      for (const stageId of sessionOverviews[slug].fills) {
+        expect(stageIds, `${slug}: ${stageId}`).toContain(stageId);
+      }
+    }
+  });
+});
