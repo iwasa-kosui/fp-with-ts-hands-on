@@ -373,8 +373,6 @@ const invalidState = (
   context: Context<WebEnvironment>,
   appointmentId: AppointmentIdType,
 ): Response => context.redirect(`${detailUrl(appointmentId)}?error=invalid-state`, 303);
-const internalServerError = (context: Context<WebEnvironment>): Response =>
-  respondToUseCaseError(context, { kind: "InternalServerError" });
 
 export const registerAppointmentRoutes = (
   app: Hono<WebEnvironment>,
