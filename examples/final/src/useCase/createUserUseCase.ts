@@ -46,15 +46,9 @@ export type Unauthorized = Readonly<{
 export type UserEmailAlreadyExists = Readonly<{
   kind: "UserEmailAlreadyExists";
 }>;
-export type PasswordHashingFailed = Readonly<{ kind: "PasswordHashingFailed" }>;
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
 export type UseCaseError =
   | Unauthorized
-  | UserEmailAlreadyExists
-  | PasswordHashingFailed
-  | IdentityGenerationFailed;
+  | UserEmailAlreadyExists;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type UserIdGenerator = Readonly<{ generate: () => UserId }>;
 export type VeterinarianIdGenerator = Readonly<{
@@ -90,16 +84,15 @@ const hashPassword = (
   passwordHasher: PasswordHasher,
   password: PlaintextPassword,
 ) =>
-  ResultAsync.fromPromise(
+  ResultAsync.fromSafePromise(
     Promise.resolve().then(() => passwordHasher.hash(password)),
-    (): PasswordHashingFailed => ({ kind: "PasswordHashingFailed" }),
   );
 const createState = (
   dependencies: Dependencies,
   input: UseCaseInput,
   passwordHash: Awaited<ReturnType<PasswordHasher["hash"]>>,
 ) =>
-  ResultAsync.fromPromise(
+  ResultAsync.fromSafePromise(
     Promise.resolve().then((): UserState => {
       const base = {
         userId: dependencies.userIdGenerator.generate(),
@@ -122,11 +115,10 @@ const createState = (
           return assertNever(input.role);
       }
     }),
-    (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
   );
 const createEvent =
   (dependencies: Dependencies, actorUserId: UserId) => (user: UserState) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         User.create({
           eventId: dependencies.eventIdGenerator.generate(),
@@ -134,7 +126,6 @@ const createEvent =
           actorUserId,
         })(user),
       ),
-      (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
 const run =
   (dependencies: Dependencies) =>

@@ -26,14 +26,10 @@ export type OwnerNotFound = Readonly<{
   ownerId: OwnerId;
 }>;
 export type OwnerHasPets = Readonly<{ kind: "OwnerHasPets"; ownerId: OwnerId }>;
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | OwnerNotFound
-  | OwnerHasPets
-  | IdentityGenerationFailed;
+  | OwnerHasPets;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -57,7 +53,7 @@ const ensureNoPets =
     pets.length === 0 ? ok(undefined) : err({ kind: "OwnerHasPets", ownerId });
 const createEvent =
   (dependencies: Dependencies, input: UseCaseInput) => (owner: Owner) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         Owner.delete({
           eventId: dependencies.eventIdGenerator.generate(),
@@ -65,7 +61,6 @@ const createEvent =
           actorUserId: input.actorUserId,
         })(owner),
       ),
-      (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
 const run =
   (dependencies: Dependencies) =>

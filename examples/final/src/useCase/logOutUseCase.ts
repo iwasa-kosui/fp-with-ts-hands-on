@@ -30,13 +30,9 @@ export type Unauthorized = Readonly<{
   kind: "Unauthorized";
   actorUserId: UserId;
 }>;
-export type SessionInvalidationFailed = Readonly<{
-  kind: "SessionInvalidationFailed";
-}>;
 export type UseCaseError =
   | SessionNotFound
-  | Unauthorized
-  | SessionInvalidationFailed;
+  | Unauthorized;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   sessionResolver: SessionByIdResolver;
@@ -63,7 +59,7 @@ const ensureOwnedBy =
 const createDeletionEvent =
   (dependencies: Dependencies, actorUserId: UserId) =>
   (session: SessionState) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         Session.delete({
           eventId: dependencies.eventIdGenerator.generate(),
@@ -71,7 +67,6 @@ const createDeletionEvent =
           actorUserId,
         })(session),
       ),
-      (): SessionInvalidationFailed => ({ kind: "SessionInvalidationFailed" }),
     );
 
 const run =

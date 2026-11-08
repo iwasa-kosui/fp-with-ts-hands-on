@@ -41,14 +41,10 @@ export type InvalidAppointmentState = Readonly<{
   expectedKind: "ScheduledOrCheckedIn";
   actualKind: Exclude<AppointmentState["kind"], "Scheduled" | "CheckedIn">;
 }>;
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | AppointmentNotFound
   | InvalidAppointmentState
-  | IdentityGenerationFailed
   | AppointmentConflict;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
@@ -76,7 +72,7 @@ const ensureCancellable = (
 const createEvent =
   (dependencies: Dependencies, input: UseCaseInput) =>
   (appointment: Scheduled | CheckedIn) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         Appointment.cancel({
           eventId: dependencies.eventIdGenerator.generate(),
@@ -84,7 +80,6 @@ const createEvent =
           actorUserId: input.actorUserId,
         })(appointment, input.reason),
       ),
-      (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
 const run =
   (dependencies: Dependencies) =>

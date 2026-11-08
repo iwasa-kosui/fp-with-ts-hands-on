@@ -209,12 +209,8 @@ export const registerOwnerRoutes = (
           switch (error.kind) {
             case "Unauthorized":
               return respondToUseCaseError(context, { kind: "Unauthorized" });
-            case "IdentityGenerationFailed":
-              return respondToUseCaseError(context, {
-                kind: "InternalServerError",
-              });
             default:
-              return assertNever(error);
+              return assertNever(error.kind);
           }
         },
       );
@@ -269,10 +265,6 @@ export const registerOwnerRoutes = (
               return respondToUseCaseError(context, { kind: "Unauthorized" });
             case "OwnerNotFound":
               return respondToUseCaseError(context, { kind: "NotFound" });
-            case "IdentityGenerationFailed":
-              return respondToUseCaseError(context, {
-                kind: "InternalServerError",
-              });
             default:
               return assertNever(error);
           }
@@ -305,10 +297,6 @@ export const registerOwnerRoutes = (
                 `/owners/${ownerId.value}?error=owner-has-pets`,
                 303,
               );
-            case "IdentityGenerationFailed":
-              return respondToUseCaseError(context, {
-                kind: "InternalServerError",
-              });
             default:
               return assertNever(error);
           }

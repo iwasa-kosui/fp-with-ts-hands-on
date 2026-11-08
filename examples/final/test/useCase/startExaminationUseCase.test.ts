@@ -278,7 +278,7 @@ describe("StartExaminationUseCase", () => {
     expect(receivedEvents[0]?.kind).toBe("ExaminationStarted");
   });
 
-  test("returns IdentityGenerationFailed without storing when event ID generation throws", async () => {
+  test("rejects without storing when event ID generation throws", async () => {
     const storedEvents: ExaminationStarted[] = [];
     const useCase = StartExaminationUseCase.create(
       createDependencies({
@@ -291,15 +291,11 @@ describe("StartExaminationUseCase", () => {
       }),
     );
 
-    const result = await useCase.run(input);
-
-    expect(result.isErr() && result.error).toEqual({
-      kind: "IdentityGenerationFailed",
-    });
+    await expect(useCase.run(input)).rejects.toThrow("event ID unavailable");
     expect(storedEvents).toHaveLength(0);
   });
 
-  test("returns IdentityGenerationFailed without storing when the clock throws", async () => {
+  test("rejects without storing when the clock throws", async () => {
     const storedEvents: ExaminationStarted[] = [];
     const useCase = StartExaminationUseCase.create(
       createDependencies({
@@ -312,11 +308,7 @@ describe("StartExaminationUseCase", () => {
       }),
     );
 
-    const result = await useCase.run(input);
-
-    expect(result.isErr() && result.error).toEqual({
-      kind: "IdentityGenerationFailed",
-    });
+    await expect(useCase.run(input)).rejects.toThrow("clock unavailable");
     expect(storedEvents).toHaveLength(0);
   });
 });

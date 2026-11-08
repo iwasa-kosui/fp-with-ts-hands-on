@@ -33,15 +33,11 @@ export type Unauthorized = Readonly<{
 export type UserNotFound = Readonly<{ kind: "UserNotFound"; userId: UserId }>;
 export type CannotDeleteSelf = Readonly<{ kind: "CannotDeleteSelf" }>;
 export type CannotDeleteLastAdmin = Readonly<{ kind: "CannotDeleteLastAdmin" }>;
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
 export type UseCaseError =
   | Unauthorized
   | UserNotFound
   | CannotDeleteSelf
-  | CannotDeleteLastAdmin
-  | IdentityGenerationFailed;
+  | CannotDeleteLastAdmin;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userByIdResolver: UserByIdResolver;
@@ -80,7 +76,7 @@ const ensureNotLastAdmin =
       : err({ kind: "CannotDeleteLastAdmin" });
 const createEvent =
   (dependencies: Dependencies, actorUserId: UserId) => (user: UserState) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         User.delete({
           eventId: dependencies.eventIdGenerator.generate(),
@@ -88,7 +84,6 @@ const createEvent =
           actorUserId,
         })(user),
       ),
-      (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
 
 const run =

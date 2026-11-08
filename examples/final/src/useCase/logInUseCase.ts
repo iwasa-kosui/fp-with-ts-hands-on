@@ -40,14 +40,7 @@ export type UseCaseOk = Readonly<{
   sessionToken: SessionTokenPlaintext;
 }>;
 export type InvalidCredentials = Readonly<{ kind: "InvalidCredentials" }>;
-export type PasswordVerificationFailed = Readonly<{
-  kind: "PasswordVerificationFailed";
-}>;
-export type SessionCreationFailed = Readonly<{ kind: "SessionCreationFailed" }>;
-export type UseCaseError =
-  | InvalidCredentials
-  | PasswordVerificationFailed
-  | SessionCreationFailed;
+export type UseCaseError = InvalidCredentials;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 
 export type SessionIdGenerator = Readonly<{ generate: () => SessionId }>;
@@ -78,39 +71,32 @@ const verifyPassword =
     password: PlaintextPassword,
   ) =>
   (user: User | undefined) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         passwordHasher.verify(
           password,
           user?.passwordHash ?? dummyPasswordHash,
         ),
       ),
-      (): PasswordVerificationFailed => ({
-        kind: "PasswordVerificationFailed",
-      }),
     ).andThen(ensureVerified(user));
-const expirationFrom = (
-  occurredAt: TimestampValue,
-): Result<TimestampValue, SessionCreationFailed> =>
-  Timestamp.parse(
+const expirationFrom = (occurredAt: TimestampValue): TimestampValue =>
+  Timestamp.schema.parse(
     new Date(Date.parse(occurredAt) + sessionDurationMs).toISOString(),
-  ).mapErr(() => ({ kind: "SessionCreationFailed" }));
+  );
 const generateSession = (dependencies: Dependencies, userId: UserId) =>
-  ResultAsync.fromPromise(
-    Promise.resolve().then(() => ({
-      sessionId: dependencies.sessionIdGenerator.generate(),
-      token: dependencies.sessionTokenGenerator.generate(),
-      eventId: dependencies.eventIdGenerator.generate(),
-      occurredAt: dependencies.clock.now(),
-    })),
-    (): SessionCreationFailed => ({ kind: "SessionCreationFailed" }),
-  )
-    .andThen((generated) =>
-      expirationFrom(generated.occurredAt).map((expiresAt) => ({
+  ResultAsync.fromSafePromise(
+    Promise.resolve()
+      .then(() => ({
+        sessionId: dependencies.sessionIdGenerator.generate(),
+        token: dependencies.sessionTokenGenerator.generate(),
+        eventId: dependencies.eventIdGenerator.generate(),
+        occurredAt: dependencies.clock.now(),
+      }))
+      .then((generated) => ({
         ...generated,
-        expiresAt,
+        expiresAt: expirationFrom(generated.occurredAt),
       })),
-    )
+  )
     .map((generated) => ({
       event: Session.create({
         eventId: generated.eventId,

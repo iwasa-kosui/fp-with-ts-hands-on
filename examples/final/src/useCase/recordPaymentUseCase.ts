@@ -44,14 +44,10 @@ export type InvalidAppointmentState = Readonly<{
   expectedKind: "AwaitingPayment";
   actualKind: Exclude<AppointmentState["kind"], "AwaitingPayment">;
 }>;
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | AppointmentNotFound
   | InvalidAppointmentState
-  | IdentityGenerationFailed
   | AppointmentConflict;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
@@ -79,7 +75,7 @@ const ensureAwaitingPayment = (
 const createEvent =
   (dependencies: Dependencies, input: UseCaseInput) =>
   (appointment: AwaitingPayment) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         Appointment.recordPayment({
           eventId: dependencies.eventIdGenerator.generate(),
@@ -91,7 +87,6 @@ const createEvent =
           amount: input.amount,
         }),
       ),
-      (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
 const run =
   (dependencies: Dependencies) =>

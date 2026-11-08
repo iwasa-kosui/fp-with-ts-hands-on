@@ -319,7 +319,7 @@ describe("appointment command use cases", () => {
     expect(completionEvents).toHaveLength(0);
   });
 
-  test("maps synchronous examination-completion dependency failures without storing", async () => {
+  test("rejects synchronous examination-completion dependency failures without storing", async () => {
     const examining = Appointment.startExamination({
       eventId: eventIdGenerator().generate(),
       occurredAt: times.now,
@@ -351,7 +351,7 @@ describe("appointment command use cases", () => {
       const throwFailure = (): never => {
         throw new Error(`${dependency} failed`);
       };
-      const result = await RecordExamResultUseCase.create({
+      const result = RecordExamResultUseCase.create({
         userResolver,
         appointmentResolver: { resolveById: () => okAsync(examining) },
         examinationCompletionStore: {
@@ -381,9 +381,7 @@ describe("appointment command use cases", () => {
         needsFollowUp: false,
       });
 
-      expect(result._unsafeUnwrapErr()).toEqual({
-        kind: "IdentityGenerationFailed",
-      });
+      await expect(result).rejects.toThrow(`${dependency} failed`);
       expect(storeCalls).toBe(0);
     }
   });
@@ -410,7 +408,7 @@ describe("appointment command use cases", () => {
     expect(appointmentResolverCalls).toBe(0);
   });
 
-  test("returns IdentityGenerationFailed when an appointment event ID cannot be generated", async () => {
+  test("rejects when an appointment event ID cannot be generated", async () => {
     const scheduled = Appointment.book({
       eventId: eventIdGenerator().generate(),
       occurredAt: times.now,
@@ -422,7 +420,7 @@ describe("appointment command use cases", () => {
       scheduledAt: times.scheduled,
       reason: AppointmentReason.schema.parse("checkup"),
     }).aggregateState;
-    const result = await CheckInAppointmentUseCase.create({
+    const result = CheckInAppointmentUseCase.create({
       userResolver,
       appointmentResolver: { resolveById: () => okAsync(scheduled) },
       appointmentCheckedInStore: { store: () => okAsync(undefined) },
@@ -434,9 +432,7 @@ describe("appointment command use cases", () => {
       },
     }).run({ actorUserId: ids.receptionist, appointmentId: ids.appointment });
 
-    expect(result.isErr() && result.error).toEqual({
-      kind: "IdentityGenerationFailed",
-    });
+    await expect(result).rejects.toThrow("generator unavailable");
   });
 
   test("cancels Scheduled appointments and rejects terminal-state cancellation", async () => {

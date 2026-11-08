@@ -29,14 +29,10 @@ export type PetHasActiveAppointment = Readonly<{
   kind: "PetHasActiveAppointment";
   petId: PetId;
 }>;
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | PetNotFound
-  | PetHasActiveAppointment
-  | IdentityGenerationFailed;
+  | PetHasActiveAppointment;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -64,7 +60,7 @@ const ensureNoActiveAppointments =
       : ok(undefined);
 const createEvent =
   (dependencies: Dependencies, input: UseCaseInput) => (pet: Pet) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         Pet.delete({
           eventId: dependencies.eventIdGenerator.generate(),
@@ -72,7 +68,6 @@ const createEvent =
           actorUserId: input.actorUserId,
         })(pet),
       ),
-      (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
 const run =
   (dependencies: Dependencies) =>

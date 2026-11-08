@@ -266,10 +266,6 @@ export const registerPetRoutes = (
                 (response) => response,
               );
             }
-            case "IdentityGenerationFailed":
-              return respondToUseCaseError(context, {
-                kind: "InternalServerError",
-              });
             default:
               return assertNever(error);
           }
@@ -322,10 +318,6 @@ export const registerPetRoutes = (
               return respondToUseCaseError(context, { kind: "Unauthorized" });
             case "PetNotFound":
               return respondToUseCaseError(context, { kind: "NotFound" });
-            case "IdentityGenerationFailed":
-              return respondToUseCaseError(context, {
-                kind: "InternalServerError",
-              });
             default:
               return assertNever(error);
           }
@@ -358,10 +350,6 @@ export const registerPetRoutes = (
                 `/pets/${petId.value}?error=pet-has-active-appointment`,
                 303,
               );
-            case "IdentityGenerationFailed":
-              return respondToUseCaseError(context, {
-                kind: "InternalServerError",
-              });
             default:
               return assertNever(error);
           }

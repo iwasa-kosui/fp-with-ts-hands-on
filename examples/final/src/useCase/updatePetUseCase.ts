@@ -34,13 +34,9 @@ export type UseCaseInput = Readonly<{
 }>;
 export type UseCaseOk = Readonly<{ pet: PetView }>;
 export type PetNotFound = Readonly<{ kind: "PetNotFound"; petId: PetId }>;
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
 export type UseCaseError =
   | UnauthorizedError
-  | PetNotFound
-  | IdentityGenerationFailed;
+  | PetNotFound;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type Dependencies = Readonly<{
   userResolver: UserByIdResolver;
@@ -65,7 +61,7 @@ const toView = (pet: Pet): PetView => ({
 });
 const createEvent =
   (dependencies: Dependencies, input: UseCaseInput) => (pet: Pet) =>
-    ResultAsync.fromPromise(
+    ResultAsync.fromSafePromise(
       Promise.resolve().then(() =>
         Pet.update({
           eventId: dependencies.eventIdGenerator.generate(),
@@ -73,7 +69,6 @@ const createEvent =
           actorUserId: input.actorUserId,
         })(pet, { name: input.name, species: input.species }),
       ),
-      (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
     );
 const run =
   (dependencies: Dependencies) =>

@@ -57,15 +57,11 @@ export type ExamResultPetMismatch = Readonly<{
   expectedPetId: PetId;
   actualPetId: PetId;
 }>;
-export type IdentityGenerationFailed = Readonly<{
-  kind: "IdentityGenerationFailed";
-}>;
 export type UseCaseError =
   | UnauthorizedError
   | AppointmentNotFound
   | InvalidAppointmentState
   | ExamResultPetMismatch
-  | IdentityGenerationFailed
   | AppointmentConflict;
 export type UseCaseOutput = UseResultAsync<UseCaseOk, UseCaseError>;
 export type ExamIdGenerator = Readonly<{ generate: () => ExamId }>;
@@ -119,7 +115,7 @@ const createEvents = (
   input: UseCaseInput,
   appointment: InExamination,
 ) =>
-  ResultAsync.fromPromise(
+  ResultAsync.fromSafePromise(
     Promise.resolve().then(() => {
       const occurredAt = dependencies.clock.now();
       const result = {
@@ -141,7 +137,6 @@ const createEvents = (
       })(appointment, { examId: result.examId });
       return { examResult, appointmentCompleted } as const;
     }),
-    (): IdentityGenerationFailed => ({ kind: "IdentityGenerationFailed" }),
   );
 const run =
   (dependencies: Dependencies) =>
