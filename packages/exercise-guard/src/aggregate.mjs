@@ -13,7 +13,7 @@ import { mechanisms } from "./model.mjs";
 /** @typedef {import("./model.mjs").Problem} Problem */
 /** @typedef {import("./model.mjs").Row} Row */
 /** @typedef {Readonly<{ types: Evidence, lint: Evidence, tests: Evidence }>} AllEvidence */
-/** @typedef {Readonly<{ cases: readonly GuardCase[], evidence: AllEvidence, builtin: Readonly<Record<string, readonly Detection[]>>, collectionErrors: Readonly<Record<string, readonly Detection[]>>, problems: readonly Problem[], notes: readonly string[], mineEmpty: boolean, ruleCount: number | null, durations: Durations, revealAllStages: boolean }>} AggregateInput */
+/** @typedef {Readonly<{ cases: readonly GuardCase[], evidence: AllEvidence, builtin: Readonly<Record<string, readonly Detection[]>>, collectionErrors: Readonly<Record<string, readonly Detection[]>>, problems: readonly Problem[], notes: readonly string[], noJudgedFiles: boolean, durations: Durations, revealAllStages: boolean }>} AggregateInput */
 
 /**
  * @param {Evidence} evidence
@@ -114,8 +114,7 @@ export const aggregate = (input) => {
     next: buildNext({
       rows,
       problems: input.problems,
-      mineEmpty: input.mineEmpty,
-      ruleCount: input.ruleCount,
+      noJudgedFiles: input.noJudgedFiles,
       stageOpened,
       passed,
     }),

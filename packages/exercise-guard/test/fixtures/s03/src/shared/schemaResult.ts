@@ -6,11 +6,18 @@ export type Result<T> = Readonly<{
   _unsafeUnwrap: () => T;
 }>;
 
-export const ok = <T>(value: T): Result<T> => ({
-  isErr: () => false,
-  isOk: () => true,
-  _unsafeUnwrap: () => value,
-});
+let okCalls = 0;
+
+export const okCallCount = () => okCalls;
+
+export const ok = <T>(value: T): Result<T> => {
+  okCalls += 1;
+  return {
+    isErr: () => false,
+    isOk: () => true,
+    _unsafeUnwrap: () => value,
+  };
+};
 
 export const err = <T>(): Result<T> => ({
   isErr: () => true,

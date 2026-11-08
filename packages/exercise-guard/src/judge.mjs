@@ -2,8 +2,8 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { aggregate } from "./aggregate.mjs";
 import { loadConfig } from "./config.mjs";
-import { isTestFile, planCopies, readMineFiles } from "./copies.mjs";
-import { classifyLint, lintFailureProblem, runLint } from "./lint.mjs";
+import { isRunTestFile, planCopies, readMineFiles } from "./copies.mjs";
+import { classifyLint, lintFailureProblem, ruleDifferenceProblem, runLint } from "./lint.mjs";
 import {
   defaultEslintConfig,
   defaultMineDir,
@@ -13,10 +13,15 @@ import { displayPath, isInside } from "./paths.mjs";
 import {
   buildVitestConfig,
   classifyVitest,
+  defaultTestTimeoutMs,
   findVitest,
   readVitestJson,
   runVitest,
+  vitestSetupName,
+  vitestSetupSource,
+  testsIncompleteProblem,
   testsProblem,
+  testsTimeoutProblem,
 } from "./tests.mjs";
 import { buildTsconfig, classifyDiagnostics, configProblems, runTypecheck } from "./typecheck.mjs";
 
@@ -24,7 +29,7 @@ import { buildTsconfig, classifyDiagnostics, configProblems, runTypecheck } from
 /** @typedef {import("./model.mjs").Evidence} Evidence */
 /** @typedef {import("./model.mjs").GuardResult} GuardResult */
 /** @typedef {import("./model.mjs").Problem} Problem */
-/** @typedef {Readonly<{ root: string, mineDir?: string, eslintConfigFile?: string, workDir?: string, revealAllStages?: boolean }>} JudgeOptions */
+/** @typedef {Readonly<{ root: string, mineDir?: string, eslintConfigFile?: string, workDir?: string, revealAllStages?: boolean, testTimeoutMs?: number, isolate?: boolean, onVitestSpawn?: (pid: number) => void }>} JudgeOptions */
 
 const maxProblems = 10;
 
@@ -91,40 +96,63 @@ const writeWorkFiles = (workDir, tsconfig, copies) => {
 };
 
 /**
- * @param {Readonly<{ root: string, workDir: string, copiesDir: string, mineDisplay: (rel: string) => string }>} input
+ * @param {Readonly<{
+ *   root: string,
+ *   workDir: string,
+ *   copiesDir: string,
+ *   caseDirs: Readonly<Record<string, string>>,
+ *   expectedFiles: readonly string[],
+ *   baseConfigFile: string | undefined,
+ *   timeoutMs: number,
+ *   isolate: boolean,
+ *   onSpawn: ((pid: number) => void) | undefined,
+ *   mineDisplay: (rel: string) => string,
+ * }>} input
  * @returns {Promise<Readonly<{ problems: readonly Problem[], evidence: Evidence, collectionErrors: Readonly<Record<string, readonly Detection[]>>, seconds: number }>>}
  */
-const runTests = async ({ root, workDir, copiesDir, mineDisplay }) => {
+const runTests = async ({
+  root,
+  workDir,
+  copiesDir,
+  caseDirs,
+  expectedFiles,
+  baseConfigFile,
+  timeoutMs,
+  isolate,
+  onSpawn,
+  mineDisplay,
+}) => {
   const start = performance.now();
-  const vitestFile = findVitest(root);
-  const failure = (/** @type {string} */ message) => ({
-    problems: [testsProblem(message)],
+  const failure = (/** @type {Problem} */ problem) => ({
+    problems: [problem],
     evidence: { failed: true, byCase: {} },
     collectionErrors: {},
     seconds: (performance.now() - start) / 1000,
   });
+  const vitestFile = findVitest(root);
   if (vitestFile === undefined) {
-    return failure("vitest が見つかりません。node_modules に vitest を入れます。");
+    return failure(testsProblem("vitest が見つかりません。node_modules に vitest を入れます。"));
   }
   const configFile = path.join(workDir, "vitest.config.mjs");
   const outputFile = path.join(workDir, "vitest.json");
-  writeFileSync(configFile, buildVitestConfig({ root, workDir }));
-  const exit = await runVitest({ root, vitestFile, configFile, outputFile });
-  const classified = classifyVitest(readVitestJson(outputFile), { copiesDir, mineDisplay });
-  const seconds = (performance.now() - start) / 1000;
+  writeFileSync(path.join(workDir, vitestSetupName), vitestSetupSource);
+  writeFileSync(configFile, buildVitestConfig({ root, workDir, isolate, baseConfigFile }));
+  const exit = await runVitest({ root, vitestFile, configFile, outputFile, timeoutMs, onSpawn });
   if (exit.status === "timeout") {
-    return failure("テストが 60 秒で終わらなかったので、結果を読めませんでした。無限ループになっていないか見直します。");
+    return failure(testsTimeoutProblem(timeoutMs));
   }
+  const classified = classifyVitest(readVitestJson(outputFile), { copiesDir, caseDirs, expectedFiles, mineDisplay });
   if (classified === undefined) {
     return failure(
-      `テストの結果を読めませんでした。${exit.stderrTail.trim().split("\n").slice(-3).join(" ")}`.trim(),
+      testsProblem(`テストの結果を読めませんでした。${exit.stderrTail.trim().split("\n").slice(-3).join(" ")}`.trim()),
     );
   }
+  const incomplete = classified.incompleteCaseIds;
   return {
-    problems: [],
-    evidence: { failed: false, byCase: classified.byCase },
+    problems: incomplete.length > 0 ? [testsIncompleteProblem(incomplete.length)] : [],
+    evidence: { failed: incomplete.length > 0, byCase: classified.byCase },
     collectionErrors: classified.collectionErrors,
-    seconds,
+    seconds: (performance.now() - start) / 1000,
   };
 };
 
@@ -152,6 +180,7 @@ export const judge = async (options) => {
     subjectPaths: Object.fromEntries(
       Object.entries(config.subjects).map(([name, file]) => [name, path.resolve(root, file)]),
     ),
+    subjectFiles: Object.values(config.subjects),
     cases: config.cases,
     caseFiles,
     copiesDir,
@@ -159,15 +188,30 @@ export const judge = async (options) => {
   });
   writeWorkFiles(workDir, buildTsconfig({ root, workDir, casesDir }), plan.copies);
 
-  const testsPromise = plan.copies.some((copy) => isTestFile(copy.dest))
-    ? runTests({ root, workDir, copiesDir, mineDisplay })
-    : Promise.resolve(undefined);
+  const expectedFiles = plan.copies.filter((copy) => isRunTestFile(copy.dest)).map((copy) => copy.dest);
+  const timeoutMs = options.testTimeoutMs ?? defaultTestTimeoutMs;
+  const testsPromise =
+    expectedFiles.length > 0
+      ? runTests({
+          root,
+          workDir,
+          copiesDir,
+          caseDirs: plan.caseDirs,
+          expectedFiles,
+          baseConfigFile:
+            config.vitestBaseConfig === undefined ? undefined : path.resolve(root, config.vitestBaseConfig),
+          timeoutMs,
+          isolate: options.isolate ?? false,
+          onSpawn: options.onVitestSpawn,
+          mineDisplay,
+        })
+      : Promise.resolve(undefined);
 
   const typesRun = timed(() => {
     try {
       const run = runTypecheck(path.join(workDir, "tsconfig.json"));
       return {
-        classified: classifyDiagnostics(run.diagnostics, { root, copiesDir, casesDir, mineDisplay }),
+        classified: classifyDiagnostics(run.diagnostics, { root, copiesDir, casesDir, caseDirs: plan.caseDirs, mineDisplay }),
         configProblems: configProblems(run.configErrors, root),
         failure: undefined,
       };
@@ -182,7 +226,7 @@ export const judge = async (options) => {
         root,
         eslintConfigFile,
         patterns: ["exercises/guard/cases/**/*.ts"],
-        sampleFile: Object.values(caseFiles)[0],
+        caseFiles,
       });
       return { run, classified: classifyLint(run.results, { root, casesDir, caseFiles }), failure: undefined };
     } catch (error) {
@@ -196,6 +240,7 @@ export const judge = async (options) => {
   const lintFailure = lintRun.value.failure;
   const typesClassified = typesRun.value.classified;
   const lintClassified = lintRun.value.classified;
+  const differingCases = lintRun.value.run?.differingCases ?? [];
   const problems = capProblems([
     ...(typesFailure === undefined
       ? []
@@ -204,6 +249,7 @@ export const judge = async (options) => {
     ...(typesClassified?.problems ?? []),
     ...(lintFailure === undefined ? [] : [lintFailureProblem(lintFailure)]),
     ...(lintClassified?.problems ?? []),
+    ...(differingCases.length > 0 ? [ruleDifferenceProblem(differingCases)] : []),
     ...(testsRun?.problems ?? []),
   ]);
   const durations = {
@@ -223,8 +269,7 @@ export const judge = async (options) => {
     collectionErrors: testsRun?.collectionErrors ?? {},
     problems,
     notes: [...plan.notes, ...(lintClassified?.notes ?? [])],
-    mineEmpty: mineFiles.length === 0,
-    ruleCount: lintRun.value.run?.ruleCount ?? null,
+    noJudgedFiles: plan.copies.length === 0,
     durations,
     revealAllStages: options.revealAllStages === true,
   });

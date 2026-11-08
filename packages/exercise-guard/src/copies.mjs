@@ -5,14 +5,32 @@ import { relativeSpecifier, toPosix } from "./paths.mjs";
 
 /** @typedef {import("./model.mjs").GuardCase} GuardCase */
 /** @typedef {Readonly<{ abs: string, rel: string, text: string }>} MineFile */
-/** @typedef {Readonly<{ caseId: string, dest: string, text: string, mineRel: string }>} Copy */
+/** @typedef {Readonly<{ caseId: string, caseDir: string, dest: string, text: string, mineRel: string }>} Copy */
 /** @typedef {Readonly<{ spec: string, pos: number, base: string, subject: string | undefined, minePath: string | undefined }>} Import */
 
 /**
  * @param {string} value
  * @returns {boolean}
  */
-export const isTestFile = (value) => /\.(test|type-test)\.ts$/.test(value);
+export const isRunTestFile = (value) => /\.test\.ts$/.test(value);
+
+/**
+ * @param {string} value
+ * @returns {boolean}
+ */
+export const isTypeTestFile = (value) => /\.type-test\.ts$/.test(value);
+
+/**
+ * @param {string} value
+ * @returns {boolean}
+ */
+export const isTestFile = (value) => isRunTestFile(value) || isTypeTestFile(value);
+
+/**
+ * @param {string} value
+ * @returns {boolean}
+ */
+const isSpecFile = (value) => /\.spec\.ts$/.test(value);
 
 /**
  * @param {string} mineDir
@@ -124,14 +142,15 @@ const rewriteImports = (text, imports, replacementFor) =>
  * @param {Readonly<{
  *   mineFiles: readonly MineFile[],
  *   subjectPaths: Readonly<Record<string, string>>,
+ *   subjectFiles: readonly string[],
  *   cases: readonly GuardCase[],
  *   caseFiles: Readonly<Record<string, string>>,
  *   copiesDir: string,
  *   mineDisplay: (rel: string) => string,
  * }>} input
- * @returns {Readonly<{ copies: readonly Copy[], notes: readonly string[] }>}
+ * @returns {Readonly<{ copies: readonly Copy[], notes: readonly string[], caseDirs: Readonly<Record<string, string>> }>}
  */
-export const planCopies = ({ mineFiles, subjectPaths, cases, caseFiles, copiesDir, mineDisplay }) => {
+export const planCopies = ({ mineFiles, subjectPaths, subjectFiles, cases, caseFiles, copiesDir, mineDisplay }) => {
   const subjectByPath = new Map(Object.entries(subjectPaths).map(([name, abs]) => [abs, name]));
   const mineAbsPaths = new Set(mineFiles.map((file) => file.abs));
   const importsByFile = new Map(
@@ -145,29 +164,55 @@ export const planCopies = ({ mineFiles, subjectPaths, cases, caseFiles, copiesDi
   const unjudgedTests = judged.filter(
     ({ file, subjectNames }) => subjectNames.size === 0 && isTestFile(file.rel),
   );
-  const copies = judged
-    .filter(({ file, subjectNames }) => !(subjectNames.size === 0 && isTestFile(file.rel)))
-    .flatMap(({ file, subjectNames }) =>
-      cases
-        .filter((guardCase) => subjectNames.size === 0 || subjectNames.has(guardCase.subject))
-        .map((guardCase) => {
-          const dest = path.join(copiesDir, guardCase.id, file.rel);
-          const caseFile = caseFiles[guardCase.id] ?? "";
-          const text = rewriteImports(file.text, importsByFile.get(file.abs) ?? [], (imported) =>
-            imported.subject === guardCase.subject
-              ? relativeSpecifier(path.dirname(dest), caseFile).replace(/\.ts$/, ".js")
-              : imported.minePath !== undefined && imported.subject === undefined
-                ? undefined
-                : relativeSpecifier(path.dirname(dest), imported.base),
-          );
-          return { caseId: guardCase.id, dest, text, mineRel: file.rel };
-        }),
+  /** @param {ReadonlySet<string>} seed @returns {ReadonlySet<string>} */
+  const withHelpers = (seed) => {
+    const next = new Set([
+      ...seed,
+      ...[...seed].flatMap((abs) =>
+        (importsByFile.get(abs) ?? []).flatMap((imported) =>
+          imported.minePath === undefined ? [] : [imported.minePath],
+        ),
+      ),
+    ]);
+    return next.size === seed.size ? seed : withHelpers(next);
+  };
+  const copies = cases.flatMap((guardCase, index) => {
+    const caseDir = `c${index}`;
+    const included = withHelpers(
+      new Set(
+        judged
+          .filter(({ file, subjectNames }) =>
+            subjectNames.size === 0 ? !isTestFile(file.rel) : subjectNames.has(guardCase.subject),
+          )
+          .map(({ file }) => file.abs),
+      ),
     );
+    return mineFiles
+      .filter((file) => included.has(file.abs))
+      .map((file) => {
+        const dest = path.join(copiesDir, caseDir, file.rel);
+        const caseFile = caseFiles[guardCase.id] ?? "";
+        const text = rewriteImports(file.text, importsByFile.get(file.abs) ?? [], (imported) =>
+          imported.subject === guardCase.subject
+            ? relativeSpecifier(path.dirname(dest), caseFile).replace(/\.ts$/, ".js")
+            : imported.minePath !== undefined && imported.subject === undefined
+              ? undefined
+              : relativeSpecifier(path.dirname(dest), imported.base),
+        );
+        return { caseId: guardCase.id, caseDir, dest, text, mineRel: file.rel };
+      });
+  });
   return {
     copies,
-    notes: unjudgedTests.map(
-      ({ file }) =>
-        `判定に使わないファイル: ${mineDisplay(file.rel)}（悪い変更の題材を import していないので、どのケースにも当たりません）`,
-    ),
+    caseDirs: Object.fromEntries(cases.map((guardCase, index) => [`c${index}`, guardCase.id])),
+    notes: [
+      ...unjudgedTests.map(
+        ({ file }) =>
+          `判定に使わないファイル: ${mineDisplay(file.rel)}（悪い変更の題材を import していないので、どのケースにも当たりません。import する題材: ${subjectFiles.join("、")}）`,
+      ),
+      ...mineFiles
+        .filter((file) => isSpecFile(file.rel))
+        .map((file) => `${mineDisplay(file.rel)} は実行しません。テストのファイル名は *.test.ts にします。`),
+    ],
   };
 };
