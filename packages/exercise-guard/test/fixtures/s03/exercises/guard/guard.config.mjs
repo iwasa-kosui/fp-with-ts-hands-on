@@ -1,0 +1,61 @@
+export default {
+  subjects: {
+    input: "exercises/guard/subjects/input.ts",
+    handler: "exercises/guard/subjects/handler.ts",
+  },
+  cases: [
+    {
+      id: "B1-any-parser",
+      kind: "bad",
+      subject: "input",
+      title: "parse が any を受け取って検証しない",
+      allow: ["lint", "tests"],
+      hint: "any を禁じる規則か、不正な ID を渡すテストで検出します。",
+    },
+    {
+      id: "B2-unknown-cast",
+      kind: "bad",
+      subject: "input",
+      title: "parse が unknown を型アサーションで通す",
+      allow: ["lint", "tests"],
+      hint: "型アサーションを禁じる規則か、不正な ID を渡すテストで検出します。",
+    },
+    {
+      id: "B3-schema-without-uuid",
+      kind: "bad",
+      subject: "input",
+      title: "スキーマが UUID を確かめない",
+      allow: ["tests"],
+      hint: "UUID でない文字列を渡して err になることを確かめるテストで検出します。",
+    },
+    {
+      id: "B4-handler-bypasses-parse",
+      kind: "bad",
+      subject: "handler",
+      title: "ハンドラが parse を通さず本文を渡す",
+      allow: ["lint", "tests"],
+      hint: "any を渡す書き方を禁じる規則か、不正な本文に 400 を返すテストで検出します。",
+    },
+    {
+      id: "B5-any-result",
+      kind: "bad",
+      subject: "input",
+      title: "parse の戻り値が Result<any> になる",
+      stage: 2,
+      allow: ["types"],
+      hint: "戻り値の型を number に代入できてしまうことを、型のテストで検出します。",
+    },
+    {
+      id: "G1-solution",
+      kind: "good",
+      subject: "input",
+      title: "正しい parse",
+    },
+    {
+      id: "G2-handler-uses-parse",
+      kind: "good",
+      subject: "handler",
+      title: "parse を通すハンドラ",
+    },
+  ],
+};

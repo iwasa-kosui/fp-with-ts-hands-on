@@ -16,9 +16,24 @@ import type { ProjectFiles } from "./types";
 type ProjectSnapshot = ExampleSnapshot;
 
 const rawProjectFiles = import.meta.glob(
-  "../../../../examples/{session-*,final}/{package.json,tsconfig.json,tsconfig.exercises.json,vitest.config.ts,vitest.exercises.config.ts,src/**/*.ts,exercises/**/*.ts,exercises/**/*.mjs,test/**/*.ts}",
+  "../../../../examples/{session-*,final}/{package.json,tsconfig.json,tsconfig.exercises.json,vitest.config.ts,vitest.exercises.config.ts,eslint.config.mjs,src/**/*.ts,exercises/**/*.ts,exercises/**/*.mjs,test/**/*.ts}",
   { eager: true, query: "?raw", import: "default" },
 ) as Record<string, string>;
+
+const exerciseGuardSources = import.meta.glob(
+  "../../../../packages/exercise-guard/src/*.mjs",
+  { eager: true, query: "?raw", import: "default" },
+) as Record<string, string>;
+
+const exerciseGuardConfigPath = "exercises/guard/guard.config.mjs";
+const exerciseGuardVendorDir = "vendor/exercise-guard";
+
+const exerciseGuardVendorFiles: ProjectFiles = Object.fromEntries(
+  Object.entries(exerciseGuardSources).map(([path, source]) => [
+    `${exerciseGuardVendorDir}/${path.slice(path.lastIndexOf("/") + 1)}`,
+    source,
+  ]),
+);
 
 const snapshots = [
   "session-00",
@@ -83,6 +98,16 @@ export default defineConfig({
 
 export { browserPackageJsonFor };
 
+export const exerciseGuardAdditionsFor = (
+  files: ProjectFiles,
+): Readonly<{ files: ProjectFiles; scripts: Readonly<Record<string, string>> }> =>
+  files[exerciseGuardConfigPath] === undefined
+    ? { files: {}, scripts: {} }
+    : {
+        files: exerciseGuardVendorFiles,
+        scripts: { guard: `node ${exerciseGuardVendorDir}/cli.mjs` },
+      };
+
 const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
   const prefix = `../../../../examples/${snapshot}/`;
   const files = Object.fromEntries(
@@ -110,6 +135,14 @@ const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
   const exerciseSequence =
     /^session-(01|02|03|03-supplement|04|06)$/.exec(snapshot)?.[1];
   const usesInMemoryApp = inMemoryAppSnapshots.includes(snapshot);
+  const exerciseGuard = exerciseGuardAdditionsFor(files);
+  const exerciseScripts =
+    exerciseSequence === undefined
+      ? packageJson.scripts
+      : {
+          ...packageJson.scripts,
+          [`exercise:${exerciseSequence}`]: "pnpm exercise",
+        };
 
   return Object.freeze({
     ...files,
@@ -123,17 +156,15 @@ const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
           "vitest.exercises.config.ts": inMemoryAppVitestExercisesConfigSource,
         }
       : {}),
+    ...exerciseGuard.files,
     "../fixtures/clinic.ts": clinicFixtureSource,
     "package.json": JSON.stringify(
       {
         ...packageJson,
         scripts:
-          exerciseSequence === undefined
-            ? packageJson.scripts
-            : {
-                ...packageJson.scripts,
-                [`exercise:${exerciseSequence}`]: "pnpm exercise",
-              },
+          Object.keys(exerciseGuard.scripts).length === 0
+            ? exerciseScripts
+            : { ...exerciseScripts, ...exerciseGuard.scripts },
         devDependencies: withRuntimeTools(packageJson.devDependencies),
       },
       null,
