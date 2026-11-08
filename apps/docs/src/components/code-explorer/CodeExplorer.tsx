@@ -5,8 +5,10 @@ import {
   useRef,
   useState,
   type ComponentType,
+  type ReactNode,
 } from "react";
 import type {
+  TerminalPhase,
   TerminalRunner,
   TerminalSession,
   WorkspaceChange,
@@ -25,7 +27,12 @@ import {
   type WorkspaceStore,
 } from "../../code-explorer/workspace-store";
 import { computeEdits } from "../../code-explorer/workspace-persistence";
-import { TerminalPanel, type TerminalView } from "./TerminalPanel";
+import {
+  TerminalPanel,
+  type TerminalPanelController,
+  type TerminalPanelStateKind,
+  type TerminalView,
+} from "./TerminalPanel";
 import { useWorkspacePersistence } from "./useWorkspacePersistence";
 import "@xterm/xterm/css/xterm.css";
 
@@ -40,6 +47,17 @@ export type EditorProps = Readonly<{
   onChange: (value: string) => void;
 }>;
 
+export type CodeExplorerLayoutParts = Readonly<{
+  workspace: ReactNode;
+  terminal: ReactNode;
+  locked: boolean;
+  selectedPath: string | undefined;
+  selectPath: (path: string) => void;
+  terminalState: TerminalPanelStateKind;
+  terminalPhase: TerminalPhase | undefined;
+  acquireSession: () => Promise<TerminalSession>;
+}>;
+
 export type CodeExplorerProps = Readonly<{
   workspace: SessionWorkspace;
   projectFiles: ProjectFiles;
@@ -50,6 +68,8 @@ export type CodeExplorerProps = Readonly<{
   supportsRuntime?: () => boolean;
   loadTerminalView?: () => Promise<TerminalView>;
   workspaceStore?: WorkspaceStore;
+  isReadOnlyPath?: (path: string) => boolean;
+  renderLayout?: (parts: CodeExplorerLayoutParts) => ReactNode;
 }>;
 
 const noHighlights: readonly CodeHighlight[] = [];
@@ -69,6 +89,8 @@ export const CodeExplorer = ({
   supportsRuntime,
   loadTerminalView,
   workspaceStore,
+  isReadOnlyPath,
+  renderLayout,
 }: CodeExplorerProps) => {
   const availableGuides = guides ?? [];
   const [selectedGuideId, setSelectedGuideId] = useState(
@@ -94,6 +116,10 @@ export const CodeExplorer = ({
   );
   const [syncError, setSyncError] = useState<string>();
   const terminalSession = useRef<TerminalSession>();
+  const terminalPanel = useRef<TerminalPanelController>(null);
+  const [terminalState, setTerminalState] =
+    useState<TerminalPanelStateKind>("unstarted");
+  const [terminalPhase, setTerminalPhase] = useState<TerminalPhase>();
   const pendingFileWrites = useRef<Promise<void>>(Promise.resolve());
   const contentsRef = useRef(workspaceState.contents);
   contentsRef.current = workspaceState.contents;
@@ -155,6 +181,8 @@ export const CodeExplorer = ({
     [projectFiles, workspaceState.contents],
   );
   const isLocked = status.kind === "loading" || status.kind === "outdated";
+  const isReadOnlyFile =
+    selectedPath !== undefined && isReadOnlyPath?.(selectedPath) === true;
 
   const resetSelectedFile = () => {
     if (selectedPath === undefined) return;
@@ -181,6 +209,20 @@ export const CodeExplorer = ({
     );
   }, []);
 
+  const { notifyCommandSent } = persistence;
+  const acquireSession = useCallback(async (): Promise<TerminalSession> => {
+    const panel = terminalPanel.current;
+    if (panel === null) throw new Error("ターミナルを使えません。");
+    const session = await panel.ensureSession();
+    await pendingFileWrites.current.catch(() => undefined);
+    notifyCommandSent();
+    return session;
+  }, [notifyCommandSent]);
+
+  const selectPath = useCallback((path: string) => {
+    dispatch({ kind: "select", path });
+  }, []);
+
   const handleSessionChange = useCallback(
     (session: TerminalSession | undefined) => {
       terminalSession.current = session;
@@ -188,9 +230,34 @@ export const CodeExplorer = ({
     [],
   );
 
-  return (
-    <section className="code-explorer">
-      <p>{workspace.description}</p>
+  const terminal = isGuided ? null : (
+    <TerminalPanel
+      ref={terminalPanel}
+      files={workspaceState.contents}
+      visibleFiles={workspaceState.visiblePaths}
+      initialCommand={initialCommand}
+      runnerFactory={runnerFactory}
+      supportsRuntime={supportsRuntime}
+      loadTerminalView={loadTerminalView}
+      onTypeFiles={setTypeFiles}
+      onWorkspaceChange={handleWorkspaceChange}
+      onSessionChange={handleSessionChange}
+      onStateChange={setTerminalState}
+      onPhaseChange={setTerminalPhase}
+      waitForPendingFileWrites={waitForPendingFileWrites}
+      syncFiles={syncFiles}
+      restoredOutput={persistence.restoredOutput}
+      outputStale={persistence.outputStale}
+      onOutput={persistence.appendTerminalOutput}
+      startDisabled={isLocked}
+      hasEdits={hasEdits}
+      onCommandSent={persistence.notifyCommandSent}
+    />
+  );
+
+  const workspaceView = (
+    <>
+      {renderLayout === undefined ? <p>{workspace.description}</p> : null}
       <div className="code-explorer__workspace">
         {isGuided ? (
           <ol className="code-explorer__guides" aria-label="設計課題">
@@ -324,10 +391,10 @@ export const CodeExplorer = ({
               files={workspaceState.contents}
               typeFiles={typeFiles}
               disabled={isLocked}
-              readOnly={isGuided}
+              readOnly={isGuided || isReadOnlyFile}
               highlights={selectedGuide?.highlights ?? noHighlights}
               onChange={(value) => {
-                if (isGuided) return;
+                if (isGuided || isReadOnlyFile) return;
                 dispatch({
                   kind: "edit",
                   path: selectedPath,
@@ -343,7 +410,11 @@ export const CodeExplorer = ({
               <button
                 type="button"
                 data-action="reset"
-                disabled={isLocked || !canResetFile(projectFiles, selectedPath)}
+                disabled={
+                  isLocked ||
+                  isReadOnlyFile ||
+                  !canResetFile(projectFiles, selectedPath)
+                }
                 onClick={resetSelectedFile}
               >
                 選択中のファイルをリセット
@@ -352,27 +423,30 @@ export const CodeExplorer = ({
           )}
         </div>
       </div>
-      {isGuided ? null : (
-        <TerminalPanel
-          files={workspaceState.contents}
-          visibleFiles={workspaceState.visiblePaths}
-          initialCommand={initialCommand}
-          runnerFactory={runnerFactory}
-          supportsRuntime={supportsRuntime}
-          loadTerminalView={loadTerminalView}
-          onTypeFiles={setTypeFiles}
-          onWorkspaceChange={handleWorkspaceChange}
-          onSessionChange={handleSessionChange}
-          waitForPendingFileWrites={waitForPendingFileWrites}
-          syncFiles={syncFiles}
-          restoredOutput={persistence.restoredOutput}
-          outputStale={persistence.outputStale}
-          onOutput={persistence.appendTerminalOutput}
-          startDisabled={isLocked}
-          hasEdits={hasEdits}
-          onCommandSent={persistence.notifyCommandSent}
-        />
-      )}
+    </>
+  );
+
+  if (renderLayout !== undefined) {
+    return (
+      <>
+        {renderLayout({
+          workspace: workspaceView,
+          terminal,
+          locked: isLocked,
+          selectedPath,
+          selectPath,
+          terminalState,
+          terminalPhase,
+          acquireSession,
+        })}
+      </>
+    );
+  }
+
+  return (
+    <section className="code-explorer">
+      {workspaceView}
+      {terminal}
     </section>
   );
 };

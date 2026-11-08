@@ -1,1 +1,6 @@
-このページの本文は準備中です。
+import SchemaSourceFlow from "../../../components/SchemaSourceFlow.astro";
+import { schemaSourceCode } from "../../pages/03-boundaries-and-pii-content";
+
+<p><code>schemaResult</code> は、この教材の関数です。schema を受け取り、<code>unknown</code> の値を検査して Ok か Err を返す関数を作ります。</p>
+
+<SchemaSourceFlow code={schemaSourceCode} part="parse" />

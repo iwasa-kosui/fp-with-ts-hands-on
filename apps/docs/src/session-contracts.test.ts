@@ -33,6 +33,13 @@ const proseSources = import.meta.glob<string>("./sessions/prose/*.mdx", {
   query: "?raw",
   import: "default",
 });
+const boundaryIndexSource = Object.values(
+  import.meta.glob<string>("./sessions/prose/03-boundaries-and-pii/index.mdx", {
+    eager: true,
+    query: "?raw",
+    import: "default",
+  }),
+)[0] ?? "";
 const pageSources = Object.fromEntries(
   Object.entries(astroSources).map(([path, source]) => {
     const slug = path.replace(/^.*\//, "").replace(/\.astro$/, "");
@@ -397,10 +404,11 @@ describe("page-owned session contracts", () => {
     expect(boundaryEpisode?.join("\n")).toContain("StartExaminationInput");
 
     for (const { path, session } of pages) {
-      if (session.slug === "03-boundaries-and-pii") continue;
-      const source = pageSources[path] ?? "";
+      const isBoundary = session.slug === "03-boundaries-and-pii";
+      const source = isBoundary ? boundaryIndexSource : (pageSources[path] ?? "");
       expect(source, path).toContain('class="case-file__episode"');
       expect(source, path).toContain('class="case-file__episode-label"');
+      if (isBoundary) continue;
       expect(source, path).toContain("session.episode.map");
     }
   });

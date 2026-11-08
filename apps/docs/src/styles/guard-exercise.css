@@ -1,0 +1,409 @@
+.guard-exercise {
+  min-width: 0;
+  color: var(--playground-text);
+}
+
+.guard-exercise__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.guard-exercise__column {
+  min-width: 0;
+  border: 0.1875rem solid var(--playground-text);
+  border-radius: var(--radius, 0.5rem);
+  background: var(--playground-surface);
+}
+
+.guard-exercise__column--cases,
+.guard-exercise__column--result {
+  padding: 0.75rem;
+}
+
+.guard-exercise__column--center {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.guard-exercise__workspace {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.guard-exercise h2,
+.guard-exercise h3 {
+  margin: 0 0 0.375rem;
+  color: var(--playground-text);
+  font-size: 0.9rem;
+  font-weight: 950;
+  line-height: 1.35;
+}
+
+.guard-exercise h3 {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.guard-exercise__steps {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.guard-exercise__case-list {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guard-exercise__case-list button,
+.guard-exercise__table th > button {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border: 0.125rem solid var(--playground-border);
+  border-radius: 0.375rem;
+  background: var(--playground-surface);
+  color: var(--playground-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+}
+
+.guard-exercise__case-list button[aria-current="true"] {
+  border-color: var(--playground-primary);
+  background: var(--playground-highlight);
+  font-weight: 900;
+}
+
+.guard-exercise__mark {
+  flex: none;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--playground-background);
+  font-size: 0.6875rem;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.guard-exercise__case-list button[data-verdict="slipped"] .guard-exercise__mark {
+  background: var(--playground-danger);
+  color: var(--playground-surface);
+}
+
+.guard-exercise__case-list button[data-verdict="detected"] .guard-exercise__mark {
+  background: var(--playground-highlight);
+}
+
+.guard-exercise__terminal-bar {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  padding: 0.375rem 0.5rem;
+  border-top: 0.1875rem solid var(--playground-text);
+  background: var(--playground-surface);
+}
+
+.guard-exercise__terminal-bar button,
+.guard-exercise__run button {
+  min-height: 2.5rem;
+  padding: 0.35rem 0.8rem;
+  border: 0.1875rem solid var(--playground-text);
+  border-radius: 0.375rem;
+  background: var(--playground-lemon);
+  color: var(--playground-text);
+  font: inherit;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.guard-exercise__run button {
+  min-width: 8rem;
+}
+
+.guard-exercise button:focus-visible,
+.guard-exercise textarea:focus-visible {
+  outline: 0.25rem solid var(--playground-focus);
+  outline-offset: 0.125rem;
+}
+
+.guard-exercise button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.guard-exercise__terminal {
+  flex: none;
+  min-width: 0;
+  max-height: 16rem;
+  overflow: auto;
+}
+
+.guard-exercise__terminal[hidden] {
+  display: none;
+}
+
+.guard-exercise__terminal .code-explorer__terminal {
+  margin-top: 0;
+  border-width: 0;
+  border-top: 0.1875rem solid var(--playground-text);
+  border-radius: 0;
+}
+
+.guard-exercise__terminal .code-explorer__terminal-screen {
+  height: 11rem;
+}
+
+.guard-exercise__run {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.guard-exercise__progress {
+  display: grid;
+  flex: 1 1 10rem;
+  min-width: 0;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 850;
+}
+
+.guard-exercise__progress progress {
+  width: 100%;
+}
+
+.guard-exercise__error {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.625rem;
+  border-left: 0.5rem solid var(--playground-danger);
+  background: var(--playground-lemon);
+  font-size: 0.8125rem;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.guard-exercise__status,
+.guard-exercise__headline,
+.guard-exercise__limits-note,
+.guard-exercise__durations {
+  margin: 0 0 0.625rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.guard-exercise__headline {
+  font-weight: 950;
+}
+
+.guard-exercise__headline[data-passed="true"] {
+  padding: 0.5rem 0.625rem;
+  border: 0.1875rem solid var(--playground-primary);
+  background: var(--playground-highlight);
+}
+
+.guard-exercise__badge {
+  display: inline-block;
+  margin-right: 0.5rem;
+  padding: 0.05rem 0.5rem;
+  border: 0.125rem solid var(--playground-text);
+  border-radius: 999px;
+  background: var(--playground-lemon);
+  font-size: 0.6875rem;
+  font-weight: 950;
+}
+
+.guard-exercise__next,
+.guard-exercise__problems,
+.guard-exercise__notes {
+  margin-bottom: 0.625rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.guard-exercise__next h3,
+.guard-exercise__problems h3,
+.guard-exercise__notes h3 {
+  margin-top: 0;
+}
+
+.guard-exercise__next ol,
+.guard-exercise__problems ul,
+.guard-exercise__notes ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.guard-exercise__table {
+  width: 100%;
+  margin-bottom: 0.625rem;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  table-layout: fixed;
+}
+
+.guard-exercise__table th,
+.guard-exercise__table td {
+  padding: 0.3rem 0.35rem;
+  border: 0.125rem solid var(--playground-border);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.guard-exercise__table thead th {
+  background: var(--playground-background);
+  font-weight: 950;
+}
+
+.guard-exercise__table thead th:first-child {
+  width: 34%;
+}
+
+.guard-exercise__table tbody th {
+  font-weight: 800;
+}
+
+.guard-exercise__table th > button {
+  padding: 0.2rem 0.3rem;
+  border-color: transparent;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.guard-exercise__table th > button[aria-expanded="true"] {
+  border-color: var(--playground-primary);
+  background: var(--playground-highlight);
+}
+
+.guard-exercise__verdict {
+  font-weight: 950;
+}
+
+.guard-exercise__table tr[data-verdict="falsePositive"] {
+  background: color-mix(in srgb, var(--playground-danger) 14%, transparent);
+  color: var(--playground-danger);
+  font-weight: 900;
+}
+
+.guard-exercise__group th {
+  background: var(--playground-background);
+  font-weight: 950;
+}
+
+.guard-exercise__written {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.guard-exercise__detail td {
+  background: var(--playground-lemon);
+}
+
+.guard-exercise__detail p {
+  margin: 0 0 0.375rem;
+  font-weight: 850;
+}
+
+.guard-exercise__detail label {
+  display: grid;
+  gap: 0.25rem;
+  font-weight: 950;
+}
+
+.guard-exercise__detail textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.35rem 0.45rem;
+  border: 0.125rem solid var(--playground-text);
+  border-radius: 0.25rem;
+  background: var(--playground-surface);
+  color: var(--playground-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  resize: vertical;
+}
+
+@media (min-width: 1100px) {
+  .guard-exercise__grid {
+    grid-template-columns: 260px minmax(0, 1fr) 420px;
+    height: calc(100dvh - 48px - 56px - 2rem);
+    min-height: 30rem;
+  }
+
+  .guard-exercise__column--cases,
+  .guard-exercise__column--result {
+    overflow: auto;
+  }
+
+  .guard-exercise__workspace {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .guard-exercise.code-playground .code-explorer__workspace {
+    display: grid;
+    flex: 1 1 auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0;
+    min-height: 0;
+  }
+
+  .guard-exercise.code-playground .code-explorer__workspace nav {
+    max-height: 7.5rem;
+    border-width: 0 0 0.1875rem;
+    border-radius: 0;
+  }
+
+  .guard-exercise.code-playground .code-explorer__editor {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-width: 0;
+    border-radius: 0;
+  }
+
+  .guard-exercise.code-playground .code-explorer__monaco {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .guard-exercise.code-playground
+    .code-explorer__monaco
+    > div[aria-label^="コードエディタ:"] {
+    flex: 1 1 auto;
+    min-height: 8rem;
+  }
+
+  .guard-exercise.code-playground .code-explorer__diagnostics {
+    flex: none;
+    max-height: 5.5rem;
+    overflow: auto;
+  }
+
+  .guard-exercise.code-playground .code-explorer__actions {
+    flex: none;
+    padding: 0.4rem 0.5rem;
+  }
+}

@@ -51,6 +51,9 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Verify exercise guard
+        run: pnpm verify:guard
+
       - name: Build docs and all demo applications
         run: pnpm build
 

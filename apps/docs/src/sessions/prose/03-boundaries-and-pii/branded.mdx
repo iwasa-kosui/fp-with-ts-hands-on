@@ -1,1 +1,18 @@
-このページの本文は準備中です。
+import BrandedIdFlow from "../../../components/BrandedIdFlow.astro";
+import { Code } from "astro:components";
+import { brandedIdCode } from "../../pages/03-boundaries-and-pii-content";
+
+<p>Branded Type は、同じ string でも用途ごとに印を付けて、別の型として区別する書き方です。印のない string の予約IDと獣医師IDは、取り違えても型検査が誤りを検出しません。</p>
+
+<BrandedIdFlow code={brandedIdCode} />
+
+<div class="session-split session-split--compare">
+  <section aria-label="例外を投げる parse">
+    <p><strong>例外を投げる parse</strong>: 検査に失敗すると例外を投げます。</p>
+    <Code code={`parse: schema.parse\nAppointmentId.parse("night-shift")`} lang="ts" />
+  </section>
+  <section aria-label="Err を返す parse">
+    <p><strong>Err を返す parse</strong>: 検査に失敗すると Err を返します。</p>
+    <Code code={`parse: schemaResult(schema)\nStartExaminationInput.parse(raw)`} lang="ts" />
+  </section>
+</div>

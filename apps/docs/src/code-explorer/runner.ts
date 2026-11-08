@@ -29,6 +29,12 @@ export type TerminalSession = Readonly<{
   writeFile: (path: string, contents: string) => Promise<void>;
   resize: (size: TerminalSize) => void;
   restartShell: (size: TerminalSize) => Promise<void>;
+  runCommand?: (
+    command: string,
+    args: readonly string[],
+    size: TerminalSize,
+  ) => Promise<number>;
+  readFile?: (path: string) => Promise<string | undefined>;
   dispose: () => Promise<void>;
 }>;
 
@@ -52,6 +58,11 @@ export type TerminalRuntime = Readonly<{
   readWorkspaceEntry: (path: string) => Promise<WorkspaceEntry>;
   writeWorkspaceFile: (path: string, contents: string) => Promise<void>;
   spawnShell: (size: TerminalSize) => Promise<TerminalRuntimeProcess>;
+  spawnCommand?: (
+    command: string,
+    args: readonly string[],
+    size: TerminalSize,
+  ) => Promise<TerminalRuntimeProcess>;
   dispose: () => void | Promise<void>;
 }>;
 
@@ -185,6 +196,7 @@ export const createTerminalRunner = (
     let runtime: TerminalRuntime | undefined;
     let stopWatching: (() => void) | undefined;
     let activeShell: ActiveShell | undefined;
+    const runningCommands = new Set<TerminalRuntimeProcess>();
     let shellGeneration = 0;
     let disposed = false;
     let fileEventQueue = Promise.resolve();
@@ -371,11 +383,61 @@ export const createTerminalRunner = (
           if (disposed) throw new Error("Terminal session is disposed");
           await spawnShell(size);
         },
+        runCommand: async (command, args, size) => {
+          if (runtime?.spawnCommand === undefined || disposed) {
+            throw new Error("この実行環境ではコマンドを実行できません。");
+          }
+          request.onOutput(
+            `\r\n\x1b[2m$ ${[command, ...args].join(" ")}\x1b[0m\r\n`,
+          );
+          const process = await runtime.spawnCommand(command, args, size);
+          runningCommands.add(process);
+          const outputDone = process.output
+            .pipeTo(
+              new WritableStream<string>({
+                write: (chunk) => {
+                  if (!disposed && !request.signal.aborted) {
+                    request.onOutput(chunk);
+                  }
+                },
+              }),
+            )
+            .catch(() => undefined);
+          try {
+            const exitCode = await process.exit;
+            await outputDone;
+            return exitCode;
+          } finally {
+            runningCommands.delete(process);
+          }
+        },
+        readFile: async (rawPath) => {
+          const path = normalizeWorkspacePath(rawPath);
+          if (runtime === undefined || path === undefined) {
+            throw new Error(`Unsupported workspace path: ${rawPath}`);
+          }
+          try {
+            const entry = await runtime.readWorkspaceEntry(path);
+            return entry.kind === "file"
+              ? decodeTextFile(entry.contents)
+              : undefined;
+          } catch (error: unknown) {
+            if (isMissingPathError(error)) return undefined;
+            throw error;
+          }
+        },
         dispose: async () => {
           if (disposed) return;
           disposed = true;
           stopWatching?.();
           stopWatching = undefined;
+          for (const process of runningCommands) {
+            try {
+              process.kill();
+            } catch {
+              // The command may already have exited.
+            }
+          }
           await stopShell();
           await fileEventQueue;
           await runtime?.dispose();
@@ -559,6 +621,19 @@ const adaptWebContainer = (runtime: WebContainer): TerminalRuntime => ({
   },
   spawnShell: async (size) => {
     const process = await runtime.spawn("jsh", [], {
+      cwd: runtimeProjectDirectory,
+      terminal: size,
+    });
+    return {
+      input: process.input,
+      output: process.output,
+      exit: process.exit,
+      kill: () => process.kill(),
+      resize: (nextSize) => process.resize(nextSize),
+    };
+  },
+  spawnCommand: async (command, args, size) => {
+    const process = await runtime.spawn(command, [...args], {
       cwd: runtimeProjectDirectory,
       terminal: size,
     });

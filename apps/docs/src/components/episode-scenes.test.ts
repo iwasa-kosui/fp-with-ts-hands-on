@@ -21,6 +21,14 @@ const proseSources = import.meta.glob<string>("../sessions/prose/*.mdx", {
   query: "?raw",
   import: "default",
 });
+const boundaryIndexSources = import.meta.glob<string>(
+  "../sessions/prose/03-boundaries-and-pii/index.mdx",
+  {
+    eager: true,
+    query: "?raw",
+    import: "default",
+  },
+);
 const pageSources = import.meta.glob<string>(
   ["../pages/sessions/*.astro", "!../pages/sessions/index.astro"],
   {
@@ -42,6 +50,12 @@ describe("episodeScenes", () => {
     const source = proseSources[`../sessions/prose/${slug}.mdx`];
 
     expect(source).toContain("  <EpisodeIllustration slug={props.session.slug} />");
+  });
+
+  it("03-boundaries-and-pii の先頭ページの MDX が EpisodeIllustration を置いている", () => {
+    const source = boundaryIndexSources["../sessions/prose/03-boundaries-and-pii/index.mdx"];
+
+    expect(source).toContain('<EpisodeIllustration slug="03-boundaries-and-pii" />');
   });
 
   it.each(slugsWithSinglePage)("%s のページが Prose の components に EpisodeIllustration を渡している", (slug) => {

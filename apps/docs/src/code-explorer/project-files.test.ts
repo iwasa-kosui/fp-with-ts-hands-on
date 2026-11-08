@@ -331,8 +331,10 @@ describe("Code Explorer project files", () => {
     }
   });
 
-  it("leaves the existing snapshots without exercise-guard files or script", () => {
-    for (const snapshot of projectSnapshots) {
+  it("leaves the snapshots without a guard config without exercise-guard files or script", () => {
+    for (const snapshot of projectSnapshots.filter(
+      (name) => name !== "session-05",
+    )) {
       const files = projectFilesForSnapshot(snapshot);
 
       expect(
@@ -346,6 +348,26 @@ describe("Code Explorer project files", () => {
         snapshot,
       ).toBeUndefined();
     }
+  });
+
+  it("gives session-05 the exercise-guard vendor files and the guard script", () => {
+    const files = projectFilesForSnapshot("session-05");
+
+    expect(files["exercises/guard/guard.config.mjs"]).toBeDefined();
+    expect(
+      Object.keys(files).filter((file) =>
+        file.startsWith("vendor/exercise-guard/"),
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        "vendor/exercise-guard/cli.mjs",
+        "vendor/exercise-guard/judge.mjs",
+        "vendor/exercise-guard/render.mjs",
+      ]),
+    );
+    expect(JSON.parse(files["package.json"]!).scripts?.guard).toBe(
+      "node vendor/exercise-guard/cli.mjs",
+    );
   });
 
   it.each([

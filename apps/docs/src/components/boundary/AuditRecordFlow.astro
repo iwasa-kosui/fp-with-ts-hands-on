@@ -6,6 +6,7 @@ import { blockOf } from "../../sessions/source-quotes";
 import StepControls from "./StepControls.astro";
 
 const repositoryPath = "src/adaptor/secondary/sqlite/appointmentRepository.ts";
+const auditPayloadPath = "src/adaptor/secondary/sqlite/auditPayload.ts";
 
 const dedent = (source: string) => {
   const lines = source.split("\n");
@@ -31,8 +32,8 @@ const beforeCode = dedent(
 const afterCode = dedent(
   blockOf(
     projectFilesForSnapshot("session-05"),
-    repositoryPath,
-    "const toExaminationStartedAuditPayload = (",
+    auditPayloadPath,
+    "export const toAuditPayload = (",
     "});",
   ),
 );
@@ -45,7 +46,7 @@ const sides = {
   },
   after: {
     label: "修正後",
-    path: `examples/session-05/src/adaptor/secondary/sqlite/appointmentRepository.ts:55-61`,
+    path: `examples/session-05/src/adaptor/secondary/sqlite/auditPayload.ts:13-19`,
     code: afterCode,
   },
 } as const;

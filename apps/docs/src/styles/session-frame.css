@@ -261,3 +261,156 @@ html:has(.session-frame) {
     scrollbar-width: thin;
   }
 }
+
+.session-split {
+  display: grid;
+  gap: 1rem 1.5rem;
+  align-items: start;
+  margin-block: 0.75rem;
+}
+
+.session-split > * {
+  min-width: 0;
+}
+
+.session-split p {
+  margin: 0 0 0.5rem;
+}
+
+.session-split pre,
+.session-split .code-block {
+  margin: 0;
+}
+
+.session-split--compare pre {
+  padding: 0.5rem 0.75rem;
+}
+
+.session-glossary {
+  margin: 0;
+  padding: 0;
+  font-size: 0.9rem;
+  list-style: none;
+}
+
+.session-glossary li {
+  padding-block: 0.15rem;
+}
+
+.session-questions li + li {
+  margin-top: 0.5rem;
+}
+
+.session-frame.case-file--session .case-file__content .branded-id-flow {
+  max-width: none;
+  margin-block: 0.5rem;
+}
+
+@media (min-width: 900px) {
+  .session-split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .session-frame .session-split--guides ol.code-guide-cards {
+    display: contents;
+  }
+
+  .session-split--wide-right {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  }
+
+  .session-split--guides [data-code-guide-card="http-start-examination-input"] {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .session-split--guides [data-code-guide-card="unvalidated-start-examination-input"] {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .session-split--guides .session-glossary {
+    grid-column: 1;
+    grid-row: 2;
+  }
+}
+
+@media (min-width: 1100px) {
+  .session-frame.case-file--session .case-file__content .branded-id-flow {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-rows: auto auto auto 1fr;
+    gap: 0 1.5rem;
+    align-items: start;
+  }
+
+  .session-frame.case-file--session .case-file__content .branded-id-flow > svg {
+    grid-column: 1;
+    grid-row: 1 / span 4;
+  }
+
+  .session-frame.case-file--session .case-file__content .branded-id-flow > :not(svg) {
+    grid-column: 2;
+  }
+}
+
+@media (min-width: 1100px) {
+  .session-frame.case-file--session .case-file__content .schema-source-flow {
+    display: grid;
+    grid-template-columns: 26rem minmax(0, 1fr);
+    grid-template-rows: auto auto auto 1fr;
+    gap: 0 2rem;
+    align-items: start;
+    max-width: none;
+    margin-block: 0.5rem;
+  }
+
+  .session-frame.case-file--session .case-file__content .schema-source-flow > svg {
+    grid-column: 1;
+    grid-row: 1 / span 4;
+  }
+
+  .session-frame.case-file--session .case-file__content .schema-source-flow > :not(svg) {
+    grid-column: 2;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 1.25rem;
+    align-items: start;
+    max-width: none;
+    margin-block: 0.5rem;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) > figcaption {
+    grid-column: 1 / -1;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) > figcaption span {
+    display: none;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player[data-ready]:has(.boundary-player__files) > .boundary-player__live {
+    display: contents;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) .boundary-player__scenarios {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) :is(.boundary-player__controls, .boundary-player__track, .boundary-player__value, .boundary-player__text) {
+    grid-column: 1;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) > .boundary-player__files {
+    grid-column: 2;
+    grid-row: 3 / span 4;
+    margin-block-start: 0.75rem;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) > .boundary-player__static {
+    grid-column: 1 / -1;
+  }
+}

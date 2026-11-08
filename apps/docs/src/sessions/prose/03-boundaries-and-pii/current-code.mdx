@@ -1,1 +1,15 @@
-このページの本文は準備中です。
+import CodeGuideCards from "../../../components/CodeGuideCards.astro";
+import { guides, projectFiles } from "../../pages/03-boundaries-and-pii-content";
+
+<p>route は届いた body を <code>parse</code> に渡します。<code>parse</code> は検査せず、必ず成功を返します。</p>
+
+<div class="session-split session-split--guides">
+  <CodeGuideCards guides={guides} projectFiles={projectFiles} />
+  <ul class="session-glossary" aria-label="コードに出てくる語">
+    <li><code>any</code>: どんな値でも、型検査が受け入れる型です。</li>
+    <li><code>Result</code>: 成功か失敗かを持つ値の型です。</li>
+    <li><code>ok</code>: 成功を表す Result（Ok）を作る関数です。</li>
+    <li><code>_unsafeUnwrap</code>: Result から値を取り出す操作です。</li>
+    <li><code>context.req.json</code>: 届いた body を読む関数です。</li>
+  </ul>
+</div>

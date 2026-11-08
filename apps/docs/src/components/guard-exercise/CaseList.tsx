@@ -1,0 +1,86 @@
+import { verdictText, type DisplayRow } from "./labels";
+
+export type GuardGuideStep =
+  | string
+  | Readonly<{ text: string; items: readonly string[] }>;
+
+export type GuardGuide = Readonly<{
+  title: string;
+  steps: readonly GuardGuideStep[];
+}>;
+
+export type CaseListProps = Readonly<{
+  rows: readonly DisplayRow[];
+  casePath: (id: string) => string | undefined;
+  selectedPath: string | undefined;
+  disabled: boolean;
+  onSelect: (path: string) => void;
+  guide?: GuardGuide;
+}>;
+
+const defaultGuide: GuardGuide = {
+  title: "この演習でやること",
+  steps: [
+    "悪い変更をコードで見る",
+    "どの仕組みで検出するかを選ぶ",
+    "仕組みを足して「検査する」を押す",
+  ],
+};
+
+export const CaseList = ({
+  rows,
+  casePath,
+  selectedPath,
+  disabled,
+  onSelect,
+  guide = defaultGuide,
+}: CaseListProps) => (
+  <div className="guard-exercise__cases-inner">
+    <h2>{guide.title}</h2>
+    <ol className="guard-exercise__steps">
+      {guide.steps.map((step) => {
+        const { text, items } =
+          typeof step === "string" ? { text: step, items: [] } : step;
+        return (
+          <li key={text}>
+            {text}
+            {items.length === 0 ? null : (
+              <ul>
+                {items.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            )}
+          </li>
+        );
+      })}
+    </ol>
+    <h3>悪い変更</h3>
+    <ul className="guard-exercise__case-list" aria-label="悪い変更の一覧">
+      {rows
+        .filter(({ kind }) => kind === "bad")
+        .map((row) => {
+          const path = casePath(row.id);
+          return (
+            <li key={row.id}>
+              <button
+                type="button"
+                data-case-id={row.id}
+                data-verdict={row.verdict ?? "unchecked"}
+                aria-current={path !== undefined && path === selectedPath}
+                disabled={disabled || path === undefined}
+                onClick={() => {
+                  if (path !== undefined) onSelect(path);
+                }}
+              >
+                <span className="guard-exercise__case-title">{row.title}</span>
+                <span className="guard-exercise__mark">
+                  {verdictText(row.verdict)}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+    </ul>
+  </div>
+);

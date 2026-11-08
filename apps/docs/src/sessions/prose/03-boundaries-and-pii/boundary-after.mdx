@@ -1,1 +1,9 @@
-このページの本文は準備中です。
+import BoundaryPlayer from "../../../components/BoundaryPlayer.astro";
+import { startExaminationWalkthrough } from "../../boundary-walkthroughs";
+
+<p>検査を通った値だけが、型の付いた値として内側へ入ります。検査に失敗した値は内側へ入らず、今は 500 のエラーになります。S04 では、失敗を別の形で扱います。形式の検査では実在は分からないので、UUID の形が正しい別のIDは通ります。</p>
+
+<BoundaryPlayer
+  walkthrough={startExaminationWalkthrough}
+  scenarioIds={["valid", "night-shift", "wrong-uuid"]}
+/>

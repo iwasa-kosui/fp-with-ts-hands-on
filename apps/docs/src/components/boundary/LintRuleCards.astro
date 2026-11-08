@@ -1,0 +1,80 @@
+---
+const rules = [
+  {
+    name: "no-explicit-any",
+    about: "コードに any と書くこと",
+    catches: "raw: any のように、型として any を書いたとき。",
+    misses: "any と書かずに、any を返す関数の結果をそのまま受け取ったとき。",
+  },
+  {
+    name: "no-unsafe-*",
+    about: "型が any の値を使うこと",
+    catches: "型が any の値を、代入、関数の呼び出し、項目の参照、return、引数に使ったとき。",
+    misses: "any を使わずに、検査をしない別の書き方をしたとき。",
+  },
+  {
+    name: "consistent-type-assertions",
+    about: "as による型アサーション",
+    catches: "raw as StartExaminationInput のように、as で型を書き換えたとき。",
+    misses: "as も any も使わずに、UUID の形を検査しない schema を書いたとき。",
+  },
+] as const;
+---
+
+<div class="lint-rules" role="list" aria-label="規則の候補">
+  {rules.map((rule) => (
+    <div class="lint-rules__card" role="listitem">
+      <p class="lint-rules__name"><code>{rule.name}</code></p>
+      <p class="lint-rules__about">{rule.about}</p>
+      <p class="lint-rules__label">検出できること</p>
+      <p class="lint-rules__text">{rule.catches}</p>
+      <p class="lint-rules__label">検出できないこと</p>
+      <p class="lint-rules__text">{rule.misses}</p>
+    </div>
+  ))}
+</div>
+
+<style>
+  .lint-rules {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+
+  .lint-rules__card {
+    min-width: 0;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--case-line);
+    border-inline-start-width: 0.5rem;
+    background: var(--case-paper);
+  }
+
+  .lint-rules__card p {
+    margin: 0;
+  }
+
+  .lint-rules__name {
+    font-size: 0.95rem;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+  }
+
+  .lint-rules__about {
+    margin-block: 0.15rem 0.5rem;
+    color: var(--case-muted);
+    font-size: 0.85rem;
+  }
+
+  .lint-rules__label {
+    margin-top: 0.4rem;
+    color: var(--case-blue);
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+
+  .lint-rules__text {
+    font-size: 0.88rem;
+    line-height: 1.6;
+  }
+</style>

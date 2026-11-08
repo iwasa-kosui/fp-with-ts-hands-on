@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, createRef } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
@@ -7,6 +7,7 @@ import type {
 } from "../../code-explorer/runner";
 import {
   TerminalPanel,
+  type TerminalPanelController,
   type TerminalPanelProps,
   type TerminalView,
 } from "./TerminalPanel";
@@ -203,5 +204,177 @@ describe("TerminalPanel", () => {
 
     expect(request?.signal.aborted).toBe(true);
     expect(view.dispose).toHaveBeenCalledOnce();
+  });
+});
+
+describe("TerminalPanel controller", () => {
+  beforeEach(() => {
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe = vi.fn();
+        unobserve = vi.fn();
+        disconnect = vi.fn();
+      },
+    );
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      for (const root of roots.splice(0)) root.unmount();
+    });
+    document.body.replaceChildren();
+    vi.unstubAllGlobals();
+  });
+
+  const renderWithController = async (
+    props: Partial<TerminalPanelProps> = {},
+  ) => {
+    const ref = createRef<TerminalPanelController>();
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    roots.push(root);
+    await act(async () => {
+      root.render(<TerminalPanel ref={ref} {...defaultProps()} {...props} />);
+    });
+    return { host, ref };
+  };
+
+  it("starts the terminal on request and returns its session", async () => {
+    const session = createSession();
+    const start = vi.fn(async () => session);
+    const { host, ref } = await renderWithController({
+      runnerFactory: () => ({ start }),
+    });
+
+    let acquired: TerminalSession | undefined;
+    await act(async () => {
+      acquired = await ref.current?.ensureSession();
+    });
+
+    expect(acquired).toBe(session);
+    expect(start).toHaveBeenCalledOnce();
+    expect(host.querySelector("[data-state]")?.getAttribute("data-state")).toBe(
+      "ready",
+    );
+  });
+
+  it("returns the running session without starting another", async () => {
+    const start = vi.fn(async () => createSession());
+    const { ref } = await renderWithController({
+      runnerFactory: () => ({ start }),
+    });
+
+    await act(async () => {
+      await ref.current?.ensureSession();
+      await ref.current?.ensureSession();
+    });
+
+    expect(start).toHaveBeenCalledOnce();
+  });
+
+  it("shares one startup between requests made while it is in progress", async () => {
+    let finish!: (session: TerminalSession) => void;
+    const start = vi.fn(
+      () =>
+        new Promise<TerminalSession>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const { ref } = await renderWithController({
+      runnerFactory: () => ({ start }),
+    });
+    const session = createSession();
+
+    let acquired: TerminalSession[] = [];
+    await act(async () => {
+      const first = ref.current?.ensureSession();
+      const second = ref.current?.ensureSession();
+      await Promise.resolve();
+      finish(session);
+      acquired = await Promise.all([first!, second!]);
+    });
+
+    expect(start).toHaveBeenCalledOnce();
+    expect(acquired).toEqual([session, session]);
+  });
+
+  it("joins a startup that the start button began", async () => {
+    let finish!: (session: TerminalSession) => void;
+    const start = vi.fn(
+      () =>
+        new Promise<TerminalSession>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const { host, ref } = await renderWithController({
+      runnerFactory: () => ({ start }),
+    });
+    const session = createSession();
+
+    let acquired: TerminalSession | undefined;
+    await act(async () => {
+      host
+        .querySelector<HTMLButtonElement>('[data-action="start-terminal"]')
+        ?.click();
+      await Promise.resolve();
+      const pending = ref.current?.ensureSession();
+      finish(session);
+      acquired = await pending;
+    });
+
+    expect(start).toHaveBeenCalledOnce();
+    expect(acquired).toBe(session);
+  });
+
+  it("rejects with the startup failure message", async () => {
+    const { ref } = await renderWithController({
+      runnerFactory: () => ({
+        start: async () => {
+          throw new Error("boot failed");
+        },
+      }),
+    });
+
+    await act(async () => {
+      await expect(ref.current?.ensureSession()).rejects.toThrow("boot failed");
+    });
+  });
+
+  it("rejects with the reason when the runtime is not supported", async () => {
+    const { ref } = await renderWithController({ supportsRuntime: () => false });
+
+    await act(async () => {
+      await expect(ref.current?.ensureSession()).rejects.toThrow(
+        "ChromeまたはEdgeで開き",
+      );
+    });
+  });
+
+  it("reports each startup phase and clears it when the terminal is ready", async () => {
+    const onPhaseChange = vi.fn();
+    const { ref } = await renderWithController({
+      onPhaseChange,
+      runnerFactory: () => ({
+        start: async (request) => {
+          request.onPhase("mounting");
+          request.onPhase("installing");
+          return createSession();
+        },
+      }),
+    });
+
+    await act(async () => {
+      await ref.current?.ensureSession();
+    });
+
+    expect(onPhaseChange.mock.calls.map(([phase]) => phase)).toEqual([
+      "booting",
+      "mounting",
+      "installing",
+      undefined,
+    ]);
   });
 });

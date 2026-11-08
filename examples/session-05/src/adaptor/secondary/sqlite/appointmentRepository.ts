@@ -4,27 +4,20 @@ import { sql } from "drizzle-orm";
 
 import type {
   Appointment,
-  AppointmentId,
   InExamination,
   Scheduled,
-  VeterinarianId,
 } from "../../../domain/appointment/index.js";
 import type {
   AppointmentResolver,
   InExaminationStore,
 } from "../../../useCase/dependencies.js";
 import { AppointmentPersistenceError } from "./appointmentPersistenceError.js";
+import { toAuditPayload } from "./auditPayload.js";
 import type { SqliteDatabase } from "./db.js";
 import { parsePersistedAppointment } from "./persistedAppointment.js";
 import { appointmentsTable, auditLogsTable } from "./schema.js";
 
 export const INITIAL_AUDIT_EVENT_ID = "00000000-0000-4000-8000-000000000000";
-
-export type ExaminationStartedAuditPayload = Readonly<{
-  appointmentId: AppointmentId;
-  veterinarianId: VeterinarianId;
-  examinationStartedAt: string;
-}>;
 
 export type AuditLog = Readonly<{
   eventId: string;
@@ -50,14 +43,6 @@ const toAppointmentRow = (appointment: Appointment) => ({
   petId: appointment.petId,
   status: appointment.kind,
   state: JSON.stringify(appointment),
-});
-
-const toExaminationStartedAuditPayload = (
-  appointment: InExamination,
-): ExaminationStartedAuditPayload => ({
-  appointmentId: appointment.appointmentId,
-  veterinarianId: appointment.veterinarianId,
-  examinationStartedAt: appointment.examinationStartedAt,
 });
 
 export const createAppointmentRepository = (
@@ -112,7 +97,7 @@ export const createAppointmentRepository = (
   };
 
   const appendExaminationStartedAudit = (appointment: InExamination): void => {
-    const payload = toExaminationStartedAuditPayload(appointment);
+    const payload = toAuditPayload(appointment);
     appendAudit(
       randomUUID(),
       "ExaminationStarted",

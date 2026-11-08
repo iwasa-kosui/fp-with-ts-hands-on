@@ -1,1 +1,36 @@
-このページの本文は準備中です。
+import { GuardExercise } from "../../../components/guard-exercise/GuardExercise";
+import { projectFilesForSnapshot } from "../../../code-explorer/project-files";
+import {
+  guardExerciseSnapshot,
+  guardExerciseWorkspaceFor,
+} from "../../pages/03-boundaries-and-pii-exercise";
+
+export const projectFiles = projectFilesForSnapshot(guardExerciseSnapshot);
+export const workspace = guardExerciseWorkspaceFor(
+  projectFiles,
+  "演習のページと同じファイルを開く作業場所です。",
+);
+export const guide = {
+  title: "相互レビューでやること",
+  steps: [
+    "隣の人のブラウザの前に移り、隣の人の仕組みが入った画面を使います。",
+    "R1-peer-change.ts を書き換えて、悪い変更を1つ作ります。書き換えの前に、相手の規則とテストが何を見ているかを読みます。",
+    "「検査する」を押します。表の R1 の行が「すり抜け」なら、悪い変更が相手の仕組みをすり抜けています。",
+    "表に R1 の行が出ていないときは、必須の悪い変更がまだ全部検出されていません。そのときは必須の悪い変更の検出を2人で先に済ませます。",
+    {
+      text: "話す問いは次の3つです。",
+      items: [
+        "すり抜けた変更は何を変えたのか",
+        "その変更を検出するには何を足せばよいか",
+        "足した仕組みで誤検知は出ないか",
+      ],
+    },
+  ],
+};
+
+<GuardExercise
+  client:load
+  workspace={workspace}
+  projectFiles={projectFiles}
+  guide={guide}
+/>

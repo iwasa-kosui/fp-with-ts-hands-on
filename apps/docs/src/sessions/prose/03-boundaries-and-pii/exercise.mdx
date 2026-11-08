@@ -1,1 +1,22 @@
-このページの本文は準備中です。
+import { GuardExercise } from "../../../components/guard-exercise/GuardExercise";
+import GuardAnswer from "../../../components/guard-exercise/GuardAnswer.astro";
+import { projectFilesForSnapshot } from "../../../code-explorer/project-files";
+import { guardAnswerFiles } from "../../../code-explorer/guard-paths";
+import {
+  guardExerciseSnapshot,
+  guardExerciseWorkspaceFor,
+} from "../../pages/03-boundaries-and-pii-exercise";
+
+export const projectFiles = projectFilesForSnapshot(guardExerciseSnapshot);
+export const workspace = guardExerciseWorkspaceFor(
+  projectFiles,
+  "悪い変更を検出する仕組みを足す演習の作業場所です。",
+);
+
+<p>この演習では、schema、Branded Type、Result の3つの語を使います。</p>
+
+<GuardExercise client:load workspace={workspace} projectFiles={projectFiles} />
+
+<p>表の「この仕組みで検出できないこと」の文章と、班の話し合いは、機械では判定しません。</p>
+
+<GuardAnswer files={guardAnswerFiles(projectFiles)} />

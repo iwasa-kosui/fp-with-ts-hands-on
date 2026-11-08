@@ -1,3 +1,5 @@
+import type { GuardResult } from "./guard-result";
+
 export type SavedEdit = {
   readonly contents: string | null;
   readonly base: string | null;
@@ -15,6 +17,9 @@ export type SavedView = {
   readonly output: string;
   readonly lastOutputAt: number;
   readonly selectedPath?: string;
+  readonly guardResult?: GuardResult;
+  readonly guardRanAt?: number;
+  readonly limitations?: Readonly<Record<string, string>>;
 };
 
 export type SaveResult =
@@ -35,6 +40,18 @@ export type WorkspaceStore = {
   ): Promise<void>;
   saveSelectedPath(slug: string, selectedPath: string): Promise<void>;
   subscribe(slug: string, listener: (revision: number) => void): () => void;
+};
+
+export type GuardWorkspaceStore = WorkspaceStore & {
+  saveGuardResult(
+    slug: string,
+    result: GuardResult,
+    ranAt: number,
+  ): Promise<void>;
+  saveLimitations(
+    slug: string,
+    limitations: Readonly<Record<string, string>>,
+  ): Promise<void>;
 };
 
 const databaseName = "fp-with-ts-code-explorer";
@@ -64,7 +81,7 @@ const transactionDone = (transaction: IDBTransaction): Promise<void> =>
       reject(transaction.error ?? new Error("transaction aborted"));
   });
 
-export const createIndexedDbWorkspaceStore = (): WorkspaceStore => {
+export const createIndexedDbWorkspaceStore = (): GuardWorkspaceStore => {
   let connection: Promise<IDBDatabase> | undefined;
   let channel: BroadcastChannel | undefined;
 
@@ -193,6 +210,16 @@ export const createIndexedDbWorkspaceStore = (): WorkspaceStore => {
 
     saveSelectedPath: (slug, selectedPath) =>
       updateView(slug, (current) => ({ ...current, selectedPath })),
+
+    saveGuardResult: (slug, result, ranAt) =>
+      updateView(slug, (current) => ({
+        ...current,
+        guardResult: result,
+        guardRanAt: ranAt,
+      })),
+
+    saveLimitations: (slug, limitations) =>
+      updateView(slug, (current) => ({ ...current, limitations })),
 
     subscribe: (slug, listener) => {
       const subscribed = getChannel();
