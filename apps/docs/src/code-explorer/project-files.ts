@@ -6,6 +6,11 @@ import clinicWebRootViewSource from "../../../../packages/clinic-web/src/rootVie
 import clinicWebServerSource from "../../../../packages/clinic-web/src/server.ts?raw";
 import inMemoryAppSourceTemplate from "./replacements/in-memory-app.ts.txt?raw";
 import type { ExampleSnapshot } from "../sessions/types";
+import {
+  browserPackageJsonFor,
+  withRuntimeTools,
+  type PackageJson,
+} from "./deps-snapshot-shared.mjs";
 import type { ProjectFiles } from "./types";
 
 type ProjectSnapshot = ExampleSnapshot;
@@ -76,37 +81,7 @@ export default defineConfig({
 });
 `;
 
-type PackageJson = {
-  dependencies?: Record<string, string>;
-  devDependencies?: Record<string, string>;
-  optionalDependencies?: Record<string, string>;
-  peerDependencies?: Record<string, string>;
-  scripts?: Record<string, string>;
-  [key: string]: unknown;
-};
-
-const withoutWorkspaceDependencies = (
-  dependencies: Record<string, string> | undefined,
-): Record<string, string> | undefined =>
-  dependencies === undefined
-    ? undefined
-    : Object.fromEntries(
-        Object.entries(dependencies).filter(
-          ([, version]) => !version.startsWith("workspace:"),
-        ),
-      );
-
-export const browserPackageJsonFor = (
-  packageJson: PackageJson,
-): PackageJson => ({
-  ...packageJson,
-  dependencies: withoutWorkspaceDependencies(packageJson.dependencies),
-  devDependencies: withoutWorkspaceDependencies(packageJson.devDependencies),
-  optionalDependencies: withoutWorkspaceDependencies(
-    packageJson.optionalDependencies,
-  ),
-  peerDependencies: withoutWorkspaceDependencies(packageJson.peerDependencies),
-});
+export { browserPackageJsonFor };
 
 const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
   const prefix = `../../../../examples/${snapshot}/`;
@@ -159,11 +134,7 @@ const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
                 ...packageJson.scripts,
                 [`exercise:${exerciseSequence}`]: "pnpm exercise",
               },
-        devDependencies: {
-          ...packageJson.devDependencies,
-          tsx: "4.23.9",
-          typescript: "5.9.3",
-        },
+        devDependencies: withRuntimeTools(packageJson.devDependencies),
       },
       null,
       2,
