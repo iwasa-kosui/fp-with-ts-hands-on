@@ -3,6 +3,8 @@ import AppointmentStateDiagram from "../../components/AppointmentStateDiagram.as
 import CodeGuideCards from "../../components/CodeGuideCards.astro";
 import CommandBlock from "../../components/CommandBlock.astro";
 import GuardTable from "../../components/GuardTable.astro";
+import IllegalStateFlow from "../../components/IllegalStateFlow.astro";
+import PureFunctionFlow from "../../components/PureFunctionFlow.astro";
 import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
 // MDX だけで import すると head に xterm.css の <link> が増える
 import "../../components/code-explorer/CodeExplorer";
@@ -114,7 +116,7 @@ export const guides = ([
     id: "wide-transition-input",
     title: "遷移関数が Appointment 全体を受け取っている",
     currentDesign: "遷移関数の引数を現在の状態の型に絞らず、実行時の requireKind と throw で弾いています。completeExamination と recordPayment も同じ形です。",
-    futureRisk: "禁止したい状態の値を渡してもコンパイルが通ります。また、結果を as で Appointment に決め打ちしているため、型検査は結果の誤りを見つけられません。",
+    futureRisk: "禁止したい状態の値を渡してもコンパイルが通ります。また、結果を as で Appointment に決め打ちしているため、型検査は結果の誤りを見つけられません。Appointment[\"kind\"] は、Appointment の kind プロパティの型を取り出す書き方です。",
     path: "src/domain/appointment/transitions.ts",
     highlights: [
       { startLineNumber: 8, endLineNumber: 17 },
@@ -442,7 +444,7 @@ ${session.exerciseCommand} の失敗を、分岐漏れの型検査1個だけに�
         </p>
       </section>
       <Prose
-        components={{ AppointmentStateDiagram, CodeGuideCards, CommandBlock, EpisodeIllustration, GuardTable }}
+        components={{ AppointmentStateDiagram, CodeGuideCards, CommandBlock, EpisodeIllustration, GuardTable, IllegalStateFlow, PureFunctionFlow }}
         session={session}
         guides={guides}
         workspace={workspace}
