@@ -219,21 +219,12 @@ import InlineCode from "../../components/InlineCode.astro";
     <p>依頼の前に、次の点を自分で決めます。決めた内容は依頼文に書かず、Agent の差分を読むときの基準にします。</p>
     <ul class="decision-list">{props.delegationDecisions.map((decision) => <li>{decision}</li>)}</ul>
   </div>
-  <h3 data-solution-heading>{props.session.solutionPresentation === "completed-file" ? "完成ファイルの解答例" : "ステップごとの解答"}</h3>
+  <h3 data-solution-heading>ステップごとの解答</h3>
   <p>演習を完了できないときは、解答スナップショットをステップ単位で開き、遷移関数の引数型をコピーして貼り付けます。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。</p>
-  {props.session.solutionPresentation === "completed-file" ? (
-    <div class="before-after" aria-label="業務結果と非同期例外経路の見比べ方">
-      <p><strong>演習の開始時点:</strong> 予期できる業務 Result と、保存処理が reject する技術的な例外経路を分けて読みます。</p>
-      <p><strong>完成例:</strong> 下のすべての target file には、後続 step を含む完成状態が表示されます。</p>
-    </div>
-  ) : null}
   {props.solutionSteps.map(({ step, presentation, snippets }) => (
     <div class="solution-step">
       <details class="step-solution" data-presentation={presentation}>
         <summary>{step.goal}</summary>
-        {presentation === "completed-file" ? (
-          <p class="step-solution__completed-file-note">{"\n"}この完成例には後続 step を含みます。すべての target file を反映してから検証します。{"\n"}</p>
-        ) : null}
         {snippets.map(({ solution, code }) => (
           <section class="step-solution__snippet">
             <h4><code>{solution.path}</code></h4>
