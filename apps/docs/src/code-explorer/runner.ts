@@ -610,13 +610,24 @@ export const createTerminalRunner = (
   },
 });
 
-const readExternalTypeFiles = async (
-  runtime: WebContainer,
+export type TypeFileReader = Readonly<{
+  readdir: (
+    path: string,
+    options: { withFileTypes: true },
+  ) => Promise<
+    readonly { name: string; isDirectory: () => boolean; isFile: () => boolean }[]
+  >;
+  readFile: (path: string, encoding: "utf8") => Promise<string>;
+}>;
+
+export const readExternalTypeFiles = async (
+  reader: TypeFileReader,
+  projectDirectory: string = runtimeProjectDirectory,
 ): Promise<ProjectFiles> => {
   const files: Record<string, string> = {};
 
   const visit = async (directory: string): Promise<void> => {
-    const entries = await runtime.fs.readdir(directory, { withFileTypes: true });
+    const entries = await reader.readdir(directory, { withFileTypes: true });
     await Promise.all(
       entries.map(async (entry) => {
         const path = `${directory}/${entry.name}`;
@@ -627,8 +638,8 @@ const readExternalTypeFiles = async (
           entry.isFile() &&
           (/\.d\.[cm]?ts$/.test(entry.name) || entry.name === "package.json")
         ) {
-          const projectPath = path.replace(`${runtimeProjectDirectory}/`, "");
-          files[`file:///workspace/${projectPath}`] = await runtime.fs.readFile(
+          const projectPath = path.replace(`${projectDirectory}/`, "");
+          files[`file:///workspace/${projectPath}`] = await reader.readFile(
             path,
             "utf8",
           );
@@ -656,9 +667,9 @@ const readExternalTypeFiles = async (
       "node_modules/undici-types",
       "node_modules/@hono/inertia",
       "node_modules/expect-type",
-    ].map((directory) =>
-      visitIfPresent(`${runtimeProjectDirectory}/${directory}`),
-    ),
+      "node_modules/fast-check",
+      "node_modules/pure-rand",
+    ].map((directory) => visitIfPresent(`${projectDirectory}/${directory}`)),
   );
   return files;
 };
@@ -779,7 +790,7 @@ const adaptWebContainer = (
     }
   },
   install: async (signal) => runInstallation(runtime, signal),
-  readTypeFiles: async () => readExternalTypeFiles(runtime),
+  readTypeFiles: async () => readExternalTypeFiles(runtime.fs),
   watchWorkspace: (onPath) => {
     const watcher = runtime.fs.watch(
       runtimeProjectDirectory,

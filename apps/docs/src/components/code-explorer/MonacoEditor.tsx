@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type * as Monaco from "monaco-editor";
 import type { CodeHighlight } from "../../code-explorer/code-guide";
 import { buildAmbientModules } from "./ambient-modules";
+import { editorCompilerOptions } from "./editor-compiler-options";
 import type { EditorProps } from "./CodeExplorer";
 
 type MonacoApi = typeof Monaco;
@@ -97,18 +98,9 @@ const configureTypeScript = (
   monaco: MonacoApi,
   typeFiles: EditorProps["typeFiles"],
 ): void => {
-  monaco.typescript.typescriptDefaults.setCompilerOptions({
-    allowNonTsExtensions: true,
-    module: monaco.typescript.ModuleKind.ESNext,
-    moduleResolution: 100 as Monaco.typescript.ModuleResolutionKind,
-    strict: true,
-    target: 9 as Monaco.typescript.ScriptTarget,
-    allowSyntheticDefaultImports: true,
-    noUncheckedIndexedAccess: true,
-    exactOptionalPropertyTypes: true,
-    verbatimModuleSyntax: true,
-    skipLibCheck: true,
-  });
+  monaco.typescript.typescriptDefaults.setCompilerOptions(
+    editorCompilerOptions as unknown as Monaco.typescript.CompilerOptions,
+  );
   monaco.typescript.typescriptDefaults.setEagerModelSync(true);
   applyDiagnosticsOptions(monaco, typeFiles);
 };
