@@ -350,6 +350,28 @@ describe("judge", () => {
     expect(result.next[0]).toContain("まだ悪い変更を 1 件も検出できていません");
   });
 
+  it("配布の mine/ の雛形があり、検出が 0 件なら、まだ悪い変更を 1 件も検出できていませんと伝える", async () => {
+    const result = await judge({
+      root,
+      eslintConfigFile: path.join(scenarios, "empty", "eslint.config.mjs"),
+      workDir: "dist/guard-template-only",
+    });
+
+    expect(existsSync(path.join(root, "exercises/guard/mine/input.test.ts"))).toBe(true);
+    expect(result.problems).toEqual([]);
+    expect(result.passed).toBe(false);
+    expect(result.next[0]).toContain("まだ悪い変更を 1 件も検出できていません");
+  });
+
+  it("files-miss: eslint.config.mjs の files がケースに当たらなければ、構文エラーにせず補足に出す", async () => {
+    const result = await scenario("files-miss");
+
+    expect(result.problems).toEqual([]);
+    expect(result.problems.some((problem) => problem.includes("Parsing error"))).toBe(false);
+    expect(result.notes.some((note) => note.includes("対象にしていません"))).toBe(true);
+    expect(result.passed).toBe(false);
+  });
+
   it("spec-file: *.spec.ts は実行せず、補足に出す", async () => {
     const result = await scenario("spec-file");
 

@@ -274,7 +274,6 @@ export const judge = async (options) => {
     collectionErrors: testsRun?.collectionErrors ?? {},
     problems,
     notes: [...plan.notes, ...(lintClassified?.notes ?? [])],
-    noJudgedFiles: plan.copies.length === 0,
     unchangedIds: findUnchanged(config.cases, caseFiles),
     durations,
     revealAllStages: options.revealAllStages === true,

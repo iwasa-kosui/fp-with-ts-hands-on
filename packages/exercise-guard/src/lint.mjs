@@ -45,7 +45,7 @@ export const runLint = async ({ root, eslintConfigFile, patterns, caseFiles, pro
     overrideConfigFile: eslintConfigFile,
     ...(program === undefined
       ? {}
-      : { overrideConfig: [{ files: ["**/*.ts"], languageOptions: { parserOptions: { projectService: false, programs: [program] } } }] }),
+      : { overrideConfig: [{ languageOptions: { parserOptions: { projectService: false, programs: [program] } } }] }),
     allowInlineConfig: false,
     errorOnUnmatchedPattern: false,
   });
