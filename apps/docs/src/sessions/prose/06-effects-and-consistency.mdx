@@ -19,7 +19,7 @@ import InlineCode from "../../components/InlineCode.astro";
   <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
   <p>処理の中で時刻と ID を直接作り、状態と監査記録を別々に保存します。そのため、テスト結果が安定せず、片方だけが残ることがあります。</p>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
-  <p>Clock と EventIdGenerator を port として注入し、保存などの副作用を呼び出すユースケースで EventContext を一度だけ生成します。port は、ユースケースが外側に求める処理を型で表した約束です。外から引数で渡すことを注入と呼びます。EventContext は、イベントに記録するイベント ID（eventId）と時刻（occurredAt）の組です。副作用と純粋関数の意味は、<a href="/sessions/01-state-transitions/#pure-functions">S01 の純粋関数と副作用の節</a>で確認できます。純粋な状態遷移にはその EventContext を渡し、状態と監査記録を表す ExaminationStarted を単一の Store へ渡します。予約が存在しない・予約の状態が不正・予約が競合しているケースは、Result のエラーとして返します。データベース起因のエラーやデータが破損しているエラーは業務エラーには変換せず、Promise の reject として外側の境界へ伝えます。</p>
+  <p>Clock と EventIdGenerator を port として注入し、保存などの副作用を呼び出すユースケースで EventContext を一度だけ生成します。port は、ユースケースが外側に求める処理を型で表した約束です。port の実装をユースケースの外で作り、引数で渡すことを注入と呼びます。EventContext は、イベントに記録するイベント ID（eventId）と時刻（occurredAt）の組です。副作用と純粋関数の意味は、<a href="/sessions/01-state-transitions/#pure-functions">S01 の純粋関数と副作用の節</a>で確認できます。純粋な状態遷移にはその EventContext を渡し、状態と監査記録を表す ExaminationStarted を単一の Store へ渡します。予約が存在しない・予約の状態が不正・予約が競合しているケースは、Result のエラーとして返します。データベース起因のエラーやデータが破損しているエラーは業務エラーには変換せず、Promise の reject として外側の境界へ伝えます。</p>
   <h3>このセッションで守ること</h3>
   <ul class="decision-list">{props.session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
   <p>今回の変更は <code>{props.session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>
@@ -57,7 +57,7 @@ import InlineCode from "../../components/InlineCode.astro";
     after={props.teaching[0].after}
     examples={props.teaching[0].examples}
   >
-    <p>port は、ユースケースが外側に求める処理を型で表した約束です。S04 で deps から受け取った resolver と store も port です。Clock は現在時刻を返す処理を、EventIdGenerator は新しいイベント ID を返す処理を表します。</p>
+    <p>S04 で deps から受け取った resolver と store も port です。Clock は現在時刻を返す処理を、EventIdGenerator は新しいイベント ID を返す処理を表します。</p>
     <p>new Date() と crypto.randomUUID() は、呼ぶたびに違う値を返します。同じ入力でも出力イベントが変わるので、テストは期待値を固定できません。</p>
     <p>port にすると、テストは固定の値を渡せます。本番相当の実装は、Final の参照実装 examples/final/src/app.ts で確認できます。そこでは Clock の実装が new Date() を呼び、EventIdGenerator の実装が randomUUID() を呼びます。</p>
     <p>値を作る回数も決めます。ユースケースは createEventContext を1回だけ呼び、できた EventContext を状態遷移へ渡します。状態遷移は、予約の examinationStartedAt とイベントの occurredAt を同じ値から作ります。</p>
@@ -73,7 +73,7 @@ import InlineCode from "../../components/InlineCode.astro";
     <p>診察開始では、予約の状態の更新と監査記録の追加の2つの書き込みが起きます。この2つを別々の保存処理に分けると、途中で失敗したときに片方だけが残ります。このように、1つの変更を2つの保存処理に分けて書くことを dual-write と呼びます。</p>
     <p>before は stateStore.save の後に eventLog.append を呼びます。append だけが失敗すると、予約は診察中になるのに、誰がいつ診察を開始したかの記録は残りません。順番を入れ替えても、今度は記録だけが残る可能性があります。</p>
     <p>after は ExaminationStarted を store へ1回渡します。ExaminationStarted の aggregateState は保存後の予約の状態を持つので、1つの値が状態と監査記録の両方を表します。どう書き込むかは store の実装が決めます。</p>
-    <p>transaction は、データベースへの複数の書き込みを1つにまとめる仕組みです。transaction を開始した後の書き込みは、確定（commit）するまで未確定のままです。確定する前に例外が起きると、データベースは transaction を取り消し（rollback）、未確定の書き込みをすべて捨てます。そのため、まとめた書き込みは全部残るか、何も残らないかのどちらかになります。この性質を原子性と呼び、原子性を持つことをアトミックと言います。</p>
+    <p>transaction は、データベースへの複数の書き込みを1つにまとめる仕組みです。transaction を開始した後の書き込みは、確定（commit）するまで未確定のままです。確定する前に例外が起きると、transaction は取り消され（rollback）、未確定の書き込みはすべて捨てられます。そのため、まとめた書き込みは全部残るか、何も残らないかのどちらかになります。この性質を原子性と呼び、原子性を持つことをアトミックと言います。</p>
     <p>同時に残すことを実際に守るのは store の実装です。SQLite の実装は、saveState と appendAudit を1つの transaction の中で呼びます。appendAudit が例外を投げると transaction が取り消され、状態の更新も残りません。</p>
     <p>store は transaction の中で現在の予約を読み直します。ユースケースが予約を読んだ後に、予約が変わっていることがあります。SQLite の実装は、予約が無いとき、または現在の状態が CheckedIn でないときに、AppointmentConflict を返します。このとき store は saveState の前に返るので、何も書き込みません。</p>
     <p>in-memory の実装は、データベースを使わずに、メモリ上の Map と配列へ保存する実装です。データベースを用意しなくても、store の約束をテストで確かめられます。in-memory の実装は transaction を持ちません。新しい Map と配列を作ってから最後にまとめて置き換えることで、同じ約束を表します。</p>

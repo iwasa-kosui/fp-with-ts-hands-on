@@ -347,7 +347,7 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
     label: "修正後: 競合",
     frames: [
       {
-        text: "transaction を開く前に、別の依頼が先に診察を開始していました。データベースの予約はすでに `InExamination` です。",
+        text: "transaction を開始する前に、別の依頼が先に診察を開始していました。データベースの予約はすでに `InExamination` です。",
         call: null,
         impl: null,
         tx: "wait",
