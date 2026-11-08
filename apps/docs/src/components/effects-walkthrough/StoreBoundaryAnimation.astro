@@ -73,12 +73,12 @@ const appendAudit = (
   },
   "after-call": {
     box: "call",
-    path: "examples/session-07/src/useCase/startExamination.ts",
+    path: "examples/session-06-solution/src/useCase/startExamination.ts",
     code: `.andThrough(deps.examinationStartedStore.store)`,
   },
   "after-store": {
     box: "impl",
-    path: "examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    path: "examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
     code: `store: (event) =>
   ResultAsync.fromSafePromise(
     Promise.resolve().then(() => storeAtomically(event)),
@@ -86,7 +86,7 @@ const appendAudit = (
   },
   "after-atomic": {
     box: "impl",
-    path: "examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    path: "examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
     code: `const storeAtomically = (event: ExaminationStarted) =>
   database.transaction((transaction) => {
     const current = findInTransaction(transaction, event.appointmentId);
@@ -109,7 +109,7 @@ const appendAudit = (
   },
   "after-find": {
     box: "impl",
-    path: "examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    path: "examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
     code: `const findInTransaction = (
   transaction: SqliteTransaction,
   appointmentId: AppointmentId,
@@ -130,7 +130,7 @@ const appendAudit = (
   },
   "after-save": {
     box: "impl",
-    path: "examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    path: "examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
     code: `const saveState = (
   executor: SqliteExecutor,
   appointment: Appointment,
@@ -152,7 +152,7 @@ const appendAudit = (
   },
   "after-audit": {
     box: "impl",
-    path: "examples/session-07/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    path: "examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
     code: `const appendAudit = (
   executor: SqliteExecutor,
   event: ExaminationStarted,

@@ -4,7 +4,7 @@ import clinicWebContractsSource from "../../../../packages/clinic-web/src/contra
 import clinicWebNoticeSource from "../../../../packages/clinic-web/src/notice.ts?raw";
 import clinicWebRootViewSource from "../../../../packages/clinic-web/src/rootView.tsx?raw";
 import clinicWebServerSource from "../../../../packages/clinic-web/src/server.ts?raw";
-import session05InMemoryAppSource from "./replacements/session-05-app.ts.txt?raw";
+import inMemoryAppSourceTemplate from "./replacements/in-memory-app.ts.txt?raw";
 import type { ExampleSnapshot } from "../sessions/types";
 import {
   browserPackageJsonFor,
@@ -13,7 +13,7 @@ import {
 } from "./deps-snapshot-shared.mjs";
 import type { ProjectFiles } from "./types";
 
-type ProjectSnapshot = Exclude<ExampleSnapshot, "session-01">;
+type ProjectSnapshot = ExampleSnapshot;
 
 const rawProjectFiles = import.meta.glob(
   "../../../../examples/{session-*,final}/{package.json,tsconfig.json,tsconfig.exercises.json,vitest.config.ts,vitest.exercises.config.ts,eslint.config.mjs,src/**/*.ts,exercises/**/*.ts,exercises/**/*.mjs,test/**/*.ts}",
@@ -37,14 +37,29 @@ const exerciseGuardVendorFiles: ProjectFiles = Object.fromEntries(
 
 const snapshots = [
   "session-00",
+  "session-01",
+  "session-01-solution",
   "session-02",
+  "session-02-solution",
+  "session-03-supplement",
+  "session-03-supplement-solution",
   "session-03",
+  "session-03-solution",
   "session-04",
+  "session-04-solution",
   "session-05",
   "session-06",
+  "session-06-solution",
   "final",
-  "session-07",
 ] as const satisfies readonly ProjectSnapshot[];
+
+const inMemoryAppSnapshots: readonly ProjectSnapshot[] = [
+  "session-03-solution",
+  "session-04",
+];
+
+const initialAppointmentExportFor = (snapshot: ProjectSnapshot): string =>
+  `${snapshot.replace(/-(\w)/g, (_, initial: string) => initial.toUpperCase())}InitialAppointment`;
 
 const requiredRuntimeFiles = [
   "package.json",
@@ -57,14 +72,14 @@ const clinicWebVendorServerPath = "vendor/clinic-web/server.ts";
 const clinicWebTypesAlias = "@fp-with-ts/clinic-web";
 const clinicWebVendorContractsPath = "vendor/clinic-web/contracts.ts";
 
-const session05VendorFiles = {
+const inMemoryAppVendorFiles = {
   [clinicWebVendorContractsPath]: clinicWebContractsSource,
   "vendor/clinic-web/notice.ts": clinicWebNoticeSource,
   "vendor/clinic-web/rootView.tsx": clinicWebRootViewSource,
   [clinicWebVendorServerPath]: clinicWebServerSource,
 } as const;
 
-const session05VitestExercisesConfigSource = `import { fileURLToPath } from "node:url";
+const inMemoryAppVitestExercisesConfigSource = `import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -117,8 +132,9 @@ const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
     compilerOptions?: Record<string, unknown>;
     [key: string]: unknown;
   };
-  const exerciseSequence = /^session-(0[2-6])$/.exec(snapshot)?.[1];
-  const isSession05 = snapshot === "session-05";
+  const exerciseSequence =
+    /^session-(01|02|03|03-supplement|04|06)$/.exec(snapshot)?.[1];
+  const usesInMemoryApp = inMemoryAppSnapshots.includes(snapshot);
   const exerciseGuard = exerciseGuardAdditionsFor(files);
   const exerciseScripts =
     exerciseSequence === undefined
@@ -130,11 +146,14 @@ const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
 
   return Object.freeze({
     ...files,
-    ...(isSession05
+    ...(usesInMemoryApp
       ? {
-          ...session05VendorFiles,
-          "src/app.ts": session05InMemoryAppSource,
-          "vitest.exercises.config.ts": session05VitestExercisesConfigSource,
+          ...inMemoryAppVendorFiles,
+          "src/app.ts": inMemoryAppSourceTemplate.replaceAll(
+            "INITIAL_APPOINTMENT",
+            initialAppointmentExportFor(snapshot),
+          ),
+          "vitest.exercises.config.ts": inMemoryAppVitestExercisesConfigSource,
         }
       : {}),
     ...exerciseGuard.files,
@@ -155,7 +174,7 @@ const buildProjectFiles = (snapshot: ProjectSnapshot): ProjectFiles => {
       {
         ...tsconfig,
         extends: "./tsconfig.base.json",
-        ...(isSession05
+        ...(usesInMemoryApp
           ? {
               compilerOptions: {
                 ...tsconfig.compilerOptions,

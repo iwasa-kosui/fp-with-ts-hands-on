@@ -8,7 +8,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "exercise": "node exercises/run-exercise-checks.mjs"
   },
   "dependencies": {
     "@fp-with-ts/clinic-web": "workspace:*",
@@ -22,10 +23,10 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/better-sqlite3": "^7.6.13",
     "drizzle-kit": "^0.31.10",
     "vite": "^6.1.1",
     "vitest": "^2.1.0"

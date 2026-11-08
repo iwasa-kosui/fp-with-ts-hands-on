@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": [
+    "exercises/semantic-identifiers.test.ts",
+    "src/domain/domain.test-types.ts"
+  ],
+  "exclude": []
+}

@@ -27,12 +27,12 @@ import InlineCode from "../../components/InlineCode.astro";
   <p>{"\n"}編集する範囲は <code>{props.session.exerciseModule.dir}</code>、変更するファイル数は最大{"\n"}{props.session.exerciseModule.fileBudget}ファイル・約{props.session.exerciseModule.lineBudget}行です。{"\n"}</p>
   <CodeGuideCards guides={props.guides} projectFiles={props.projectFiles} />
   <h3>修正前の失敗を確認する</h3>
-  <p>このページの Playground は未編集のスナップショットから起動するので、{props.initialExerciseFailureCount}個の型検査が失敗する状態から始まります。</p>
-  <p>Session 01 を終えた手元のコードでは、同じコマンドで失敗するのは、次の分岐漏れの型検査1個だけです。</p>
+  <p>このページの演習で編集するコードは <code>examples/session-02</code> にあります。コマンドはリポジトリのルートで実行するので、<code>cd</code> は要りません。このフォルダと、このページの Playground は、どちらも Session 01 の解答が入った状態から始まります。Session 01 で編集した <code>examples/session-01</code> の内容を、写す必要はありません。</p>
+  <p>この状態で失敗する型検査は{props.initialExerciseFailureCount}個で、次の分岐漏れの型検査です。</p>
   <ul class="exercise-failures" aria-label="修正前に確認する問題">
     {props.session.steps.map((step) => <li>{step.startingFailure}</li>)}
   </ul>
-  <CommandBlock phase="red" command={props.session.exerciseCommand} expected={`Playground では${props.initialExerciseFailureCount}個の型検査が失敗します。Session 01 を終えた手元のコードでは、分岐漏れの1個だけが失敗します。`} />
+  <CommandBlock phase="red" command={props.session.exerciseCommand} expected={`${props.initialExerciseFailureCount}個の型検査が失敗します。Session 01 の解答が入っているので、失敗するのは分岐漏れの型検査です。`} />
   <p>失敗した型検査は、出力の前半に「要件未達」の行で並びます。出力の末尾に <code>Tests 5 passed (5)</code> と出ても、演習は終わっていません。端末を上へスクロールして、先に並ぶ要件未達を見てください。</p>
   <p>ブラウザ内エディタで編集した内容は、手元の clone にあるファイルへ反映されません。</p>
   <div data-code-explorer={props.workspace.slug}>
@@ -47,7 +47,7 @@ import InlineCode from "../../components/InlineCode.astro";
 
 <section id="teach">
   <h2>事前知識（{props.session.timeBreakdown.teach}分）</h2>
-  <p>この回で使う型の考え方を確認します。never型とADTは小さな例で示します。assertNeverの例では、配布コードの書き方を before、次のスナップショットの書き方を after として並べています。</p>
+  <p>この回で使う型の考え方を確認します。never型とADTは小さな例で示します。assertNeverの例では、配布コードの書き方を before、解答 <code>examples/session-02-solution</code> の書き方を after として並べています。</p>
   <article class="teaching-topic">
     <h3>never型は値が1つもない型である</h3>
     <p>型は、その型に入る値の集合と見ることができます。"Scheduled" | "CheckedIn" は2個の値を持つ集合です。never型は値を1個も持たない型で、空集合に当たります。</p>
@@ -86,7 +86,7 @@ import InlineCode from "../../components/InlineCode.astro";
         <Code code={props.teaching[2].before} lang="ts" />
       </figure>
       <figure class="code-block">
-        <figcaption>{"\n"}after:{"\n"}<code>examples/session-03/src/domain/appointment/statusLabel.ts</code></figcaption>
+        <figcaption>{"\n"}after:{"\n"}<code>examples/session-02-solution/src/domain/appointment/statusLabel.ts</code></figcaption>
         <Code code={props.teaching[2].after} lang="ts" />
       </figure>
     </div>
@@ -149,9 +149,9 @@ import InlineCode from "../../components/InlineCode.astro";
       </details>
     </div>
   ))}
-  <CommandBlock phase="green" command={props.session.exerciseCommand} expected="Session 01 を終えた手元のコードで、演習テストがすべて成功します。" />
+  <CommandBlock phase="green" command={props.session.exerciseCommand} expected="演習テストがすべて成功します。" />
   <h3>演習を完了できないとき</h3>
-  <p>Session 01 が終わっていない場合は、先に Session 01 の解答を反映します。解答スナップショットのステップを開き、toStatusLabel の引数型と網羅分岐をコピーして貼り付けます。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。相互レビューの約束事は、Session 01 のリンク先を確認します。</p>
+  <p>解答スナップショットのステップを開き、toStatusLabel の引数型と網羅分岐をコピーして貼り付けます。レビューの問いに答え、変更した型が何を防ぐか確認しましょう。相互レビューの約束事は、Session 01 のリンク先を確認します。</p>
 </section>
 
 <section id="review">
@@ -160,7 +160,7 @@ import InlineCode from "../../components/InlineCode.astro";
     <h3>個人での確認</h3>
     <ol>
       <li><InlineCode text={"`as` による型アサーションが入っていないか全文検索して確認します。"} /></li>
-      <li><InlineCode text={"`git diff --stat -- examples/session-02` で今回のスナップショットだけを確認します。Session 01 の変更が残っている場合は、今回の変更が statusLabel.ts だけであることを確かめます。`git status --short` で想定外の path がないか確認します。"} /></li>
+      <li><InlineCode text={"`git diff --stat -- examples/session-02` で今回のスナップショットだけを確認します。今回の変更が statusLabel.ts だけであることを確かめます。`git status --short` で想定外の path がないか確認します。"} /></li>
       <li>{"型検査では確認できないことを、テストまたは実行時に確認して記録します。"}</li>
     </ol>
     <p>前のセッションの未commit差分は残して構いません。reset、stash、commit は不要です。</p>

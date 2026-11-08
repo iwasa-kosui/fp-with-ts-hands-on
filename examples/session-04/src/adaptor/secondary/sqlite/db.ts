@@ -12,10 +12,7 @@ export type SqliteDatabase = BetterSQLite3Database<typeof sqliteSchema> &
   Readonly<{ close: () => void }>;
 
 const defaultMigrationsFolder = fileURLToPath(
-  new URL(
-    import.meta.env.PROD ? "./drizzle" : "../../../../drizzle",
-    import.meta.url,
-  ),
+  new URL("../../../../drizzle", import.meta.url),
 );
 
 export const createSqliteDatabase = (path: string): SqliteDatabase => {

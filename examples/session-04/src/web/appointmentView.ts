@@ -33,11 +33,7 @@ const actionsFor = (appointment: Appointment): AppointmentActions => {
 
   switch (appointment.kind) {
     case "Scheduled":
-      return {
-        ...actions,
-        checkIn: available(`${url}/check-in`),
-        cancel: available(`${url}/cancel`),
-      };
+      return { ...actions, checkIn: available(`${url}/check-in`), cancel: available(`${url}/cancel`) };
     case "CheckedIn":
       return {
         ...actions,
@@ -69,7 +65,7 @@ export const toPageProps = (
   notice: ClinicPageProps["notice"],
 ): ClinicPageProps => ({
   sessionLabel: "Session 04",
-  learningFocus: "外部入力を検証し、個人情報をログから守る",
+  learningFocus: "予期可能な失敗をResultで呼び出し側へ返す",
   appointment: {
     appointmentId: appointment.appointmentId,
     kind: appointment.kind,

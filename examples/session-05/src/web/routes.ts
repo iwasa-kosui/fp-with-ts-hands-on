@@ -1,136 +1,190 @@
+import { randomUUID } from "node:crypto";
+
+import type { ClinicPageProps } from "@fp-with-ts/clinic-web";
 import { noticeFromCode, notImplemented } from "@fp-with-ts/clinic-web/server";
 import type { Context, Hono } from "hono";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
-import { ExamResult } from "../boundary/examResult.js";
-import { StartExaminationInput } from "../boundary/startExaminationInput.js";
-import type { Appointment, Scheduled } from "../domain/appointment/index.js";
+import type { AppointmentRepository } from "../adaptor/secondary/sqlite/appointmentRepository.js";
 import {
-  cancel,
-  checkIn,
-  completeExamination,
-  recordPayment,
-} from "../domain/appointment/index.js";
-import { AppointmentId } from "../domain/appointment/index.js";
-import { OwnerId } from "../domain/owner/index.js";
-import { PetId } from "../domain/pet/index.js";
-import type { AppointmentStore } from "../useCase/dependencies.js";
+  bookAppointment,
+  updateStatus,
+  type Appointment,
+  type AppointmentExtra,
+} from "../domain/appointment/appointment.js";
 import { startExamination } from "../useCase/startExamination.js";
-import { toPageProps } from "./appointmentView.js";
 
-const ids = {
-  appointmentId: AppointmentId.parse(clinicFixture.appointmentId),
-  ownerId: OwnerId.parse(clinicFixture.ownerId),
-  petId: PetId.parse(clinicFixture.petId),
+const statusPresentation: Readonly<
+  Record<string, Readonly<{ kind: string; label: string }>>
+> = {
+  scheduled: { kind: "Scheduled", label: "予約済み" },
+  "checked-in": { kind: "CheckedIn", label: "受付済み" },
+  "in-examination": { kind: "InExamination", label: "診察中" },
+  "awaiting-payment": { kind: "AwaitingPayment", label: "会計待ち" },
+  paid: { kind: "Paid", label: "会計済み" },
+  canceled: { kind: "Canceled", label: "キャンセル済み" },
 };
 
-const appointmentOrThrow = (store: AppointmentStore, appointmentId: string): Appointment => {
-  const appointment = store.find(appointmentId);
-  if (appointment === undefined) throw new Error("Appointment not found");
+export const initialAppointment: Appointment = bookAppointment({
+  appointmentId: clinicFixture.appointmentId,
+  petId: clinicFixture.petId,
+  petName: "Mugi",
+  ownerId: clinicFixture.ownerId,
+  ...clinicFixture.ownerContact,
+  scheduledAt: clinicFixture.scheduledAt,
+  reason: "skin check",
+});
+
+const appointmentOrThrow = (
+  repository: AppointmentRepository,
+  appointmentId: string,
+): Appointment => {
+  const appointment = repository.find(appointmentId);
+  if (appointment === undefined) {
+    throw new Error(`Appointment not found: ${appointmentId}`);
+  }
   return appointment;
 };
 
-const decodeExamPayload = async (context: Context) => {
-  const raw = await context.req.json<Record<string, unknown>>();
+const toPageProps = (
+  appointment: Appointment,
+  noticeCode: string | undefined,
+): ClinicPageProps => {
+  const presentation = statusPresentation[appointment.status] ?? {
+    kind: appointment.status,
+    label: appointment.status,
+  };
+  const action = (path: string) =>
+    ({ kind: "Available", href: path, method: "post" }) as const;
+  const appointmentUrl = `/appointments/${appointment.appointmentId}`;
+
   return {
-    ...raw,
-    items: typeof raw.items === "string" ? JSON.parse(raw.items) : raw.items,
-    needsFollowUp: raw.needsFollowUp === "true"
-      ? true
-      : raw.needsFollowUp === "false"
-        ? false
-        : raw.needsFollowUp,
+    sessionLabel: "Session 05",
+    learningFocus: "操作を業務イベントとワークフローとして捉える",
+    appointment: {
+      appointmentId: appointment.appointmentId,
+      kind: presentation.kind,
+      ownerName: appointment.ownerName,
+      petName: appointment.petName,
+      scheduledAt: appointment.scheduledAt,
+      statusLabel: presentation.label,
+    },
+    actions: {
+      checkIn: action(`${appointmentUrl}/check-in`),
+      startExamination: action(`${appointmentUrl}/start-examination`),
+      recordExamResult: action(`${appointmentUrl}/exam-results`),
+      recordPayment: action(`${appointmentUrl}/payment`),
+      cancel: action(`${appointmentUrl}/cancel`),
+      requestFollowUp: {
+        kind: "NotImplemented",
+        href: "/follow-ups/request",
+        method: "post",
+      },
+    },
+    notice: noticeFromCode(noticeCode),
   };
 };
 
-export const session05InitialAppointment: Scheduled = {
-  kind: "Scheduled",
-  appointmentId: ids.appointmentId,
-  petId: ids.petId,
-  ownerId: ids.ownerId,
-  scheduledAt: clinicFixture.scheduledAt,
-  reason: "skin check",
+const updateAppointment = (
+  repository: AppointmentRepository,
+  appointmentId: string,
+  status: string,
+  eventName: string,
+  occurredAt: string,
+  extra?: AppointmentExtra,
+): Appointment => {
+  const appointment = appointmentOrThrow(repository, appointmentId);
+  const updated = updateStatus(appointment, status, extra);
+  repository.save(updated);
+  repository.appendAudit({
+    eventId: randomUUID(),
+    eventName,
+    occurredAt,
+    appointment: updated,
+  });
+  return updated;
 };
 
-export const registerClinicRoutes = (app: Hono, store: AppointmentStore): void => {
+const redirectToRoot = (context: Context) => context.redirect("/", 303);
+
+export const registerClinicRoutes = (
+  app: Hono,
+  repository: AppointmentRepository,
+): void => {
   app.get("/", (context) =>
     context.render(
       "ClinicDashboard",
       toPageProps(
-        appointmentOrThrow(store, clinicFixture.appointmentId),
-        noticeFromCode(context.req.query("notice")),
+        appointmentOrThrow(repository, clinicFixture.appointmentId),
+        context.req.query("notice"),
       ),
     ),
   );
 
   app.post("/appointments/:appointmentId/check-in", (context) => {
-    const current = appointmentOrThrow(store, context.req.param("appointmentId"));
-    if (current.kind !== "Scheduled") throw new Error("Invalid appointment state");
-    store.save(checkIn(current, clinicFixture.checkedInAt));
-    return context.redirect("/", 303);
-  });
-
-  app.post("/appointments/:appointmentId/start-examination", async (context) => {
-    const raw = await context.req.json<Readonly<{ veterinarianId?: unknown }>>();
-    const input = StartExaminationInput.parse({
-      appointmentId: context.req.param("appointmentId"),
-      veterinarianId: raw.veterinarianId,
-    })._unsafeUnwrap();
-    try {
-      startExamination({
-        resolver: store,
-        store,
-      })({
-        ...input,
-        examinationStartedAt: "2026-08-30T06:30:00.000Z",
-      });
-      return context.redirect("/", 303);
-    } catch (error) {
-      if (error instanceof Error && error.message.includes("was not found")) {
-        return context.redirect("/?notice=not-found", 303);
-      }
-      throw error;
-    }
-  });
-
-  app.post("/appointments/:appointmentId/exam-results", async (context) => {
-    const current = appointmentOrThrow(store, context.req.param("appointmentId"));
-    if (current.kind !== "InExamination") throw new Error("Invalid appointment state");
-    const parsed = ExamResult.parse(await decodeExamPayload(context));
-    if (parsed.isErr()) throw new Error("Invalid exam result");
-    store.save(
-      completeExamination(
-        current,
-        { examId: parsed._unsafeUnwrap().examId },
-        "2026-08-30T07:00:00.000Z",
-      ),
+    updateAppointment(
+      repository,
+      context.req.param("appointmentId"),
+      "checked-in",
+      "appointment.checked-in",
+      clinicFixture.checkedInAt,
+      { checkedInAt: clinicFixture.checkedInAt },
     );
-    return context.redirect("/", 303);
+    return redirectToRoot(context);
+  });
+
+  app.post("/appointments/:appointmentId/start-examination", (context) => {
+    startExamination(repository)({
+      appointmentId: context.req.param("appointmentId"),
+      veterinarianId: clinicFixture.veterinarianId,
+    });
+    return redirectToRoot(context);
+  });
+
+  app.post("/appointments/:appointmentId/exam-results", (context) => {
+    updateAppointment(
+      repository,
+      context.req.param("appointmentId"),
+      "awaiting-payment",
+      "examination.result-recorded",
+      "2026-08-30T07:00:00.000Z",
+      {
+        examId: clinicFixture.examId,
+        examinationCompletedAt: "2026-08-30T07:00:00.000Z",
+        diagnosis: "dermatitis",
+        treatment: "ointment",
+      },
+    );
+    return redirectToRoot(context);
   });
 
   app.post("/appointments/:appointmentId/payment", (context) => {
-    const current = appointmentOrThrow(store, context.req.param("appointmentId"));
-    if (current.kind !== "AwaitingPayment") throw new Error("Invalid appointment state");
-    store.save(recordPayment(
-      current,
-      { diagnosis: "dermatitis", treatment: "ointment", amount: 4800 },
+    updateAppointment(
+      repository,
+      context.req.param("appointmentId"),
+      "paid",
+      "payment.recorded",
       "2026-08-30T07:10:00.000Z",
-    ));
-    return context.redirect("/", 303);
+      { amount: 4800, paidAt: "2026-08-30T07:10:00.000Z" },
+    );
+    return redirectToRoot(context);
   });
 
   app.post("/appointments/:appointmentId/cancel", (context) => {
-    const current = appointmentOrThrow(store, context.req.param("appointmentId"));
-    if (current.kind !== "Scheduled" && current.kind !== "CheckedIn") {
-      throw new Error("Invalid appointment state");
-    }
-    store.save(cancel(current, "owner request", "2026-08-30T05:50:00.000Z"));
-    return context.redirect("/", 303);
+    updateAppointment(
+      repository,
+      context.req.param("appointmentId"),
+      "canceled",
+      "appointment.canceled",
+      new Date().toISOString(),
+      { cancelReason: "owner request" },
+    );
+    return redirectToRoot(context);
   });
 
   app.post("/follow-ups/request", notImplemented);
   app.post("/demo/reset", (context) => {
-    store.reset();
-    return context.redirect("/", 303);
+    repository.reset(initialAppointment);
+    return redirectToRoot(context);
   });
 };

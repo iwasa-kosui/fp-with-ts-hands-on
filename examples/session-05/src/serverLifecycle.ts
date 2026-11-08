@@ -1,5 +1,10 @@
-type CloseableApp = Readonly<{ close: () => void }>;
-type AppOwner = Readonly<{ close: () => void }>;
+type CloseableApp = Readonly<{
+  close: () => void;
+}>;
+
+type AppOwner = Readonly<{
+  close: () => void;
+}>;
 
 type EnvironmentOwnedAppOptions<App extends CloseableApp> = Readonly<{
   createApp: () => App;
@@ -18,10 +23,14 @@ runtime[appOwnersKey] = appOwners;
 
 const closeOwnedApp = (environment: string, owner?: AppOwner): void => {
   const ownedApp = owner ?? appOwners.get(environment);
-  if (ownedApp === undefined) return;
+  if (ownedApp === undefined) {
+    return;
+  }
 
   ownedApp.close();
-  if (appOwners.get(environment) === ownedApp) appOwners.delete(environment);
+  if (appOwners.get(environment) === ownedApp) {
+    appOwners.delete(environment);
+  }
 };
 
 export const closeEnvironmentOwnedApp = (environment: string): void => {
@@ -30,9 +39,13 @@ export const closeEnvironmentOwnedApp = (environment: string): void => {
 
 const own = (app: CloseableApp): AppOwner => {
   let closed = false;
+
   return {
     close: () => {
-      if (closed) return;
+      if (closed) {
+        return;
+      }
+
       closed = true;
       app.close();
     },
@@ -46,7 +59,9 @@ export const createEnvironmentOwnedApp = <App extends CloseableApp>({
   isProduction,
   process,
 }: EnvironmentOwnedAppOptions<App>): App => {
-  if (!isProduction) closeEnvironmentOwnedApp(environment);
+  if (!isProduction) {
+    closeEnvironmentOwnedApp(environment);
+  }
 
   const app = createApp();
   const owner = own(app);
@@ -55,7 +70,9 @@ export const createEnvironmentOwnedApp = <App extends CloseableApp>({
     process.once("exit", owner.close);
   } else {
     appOwners.set(environment, owner);
-    hot?.dispose(() => closeOwnedApp(environment, owner));
+    hot?.dispose(() => {
+      closeOwnedApp(environment, owner);
+    });
   }
 
   return app;
