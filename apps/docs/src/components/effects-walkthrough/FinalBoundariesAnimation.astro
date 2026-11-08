@@ -442,7 +442,7 @@ const scenes: readonly Scene[] = [
         lines: [0],
       },
       {
-        text: "`app.onError` は `HTTPException` かどうかを調べます。違うので、詳細を含まない 500 の `Response` を作ります。",
+        text: "`app.onError` は `HTTPException` かどうかを調べます。`HTTPException` は、Hono で、決まった HTTP 応答を表す例外です。違うので、詳細を含まない 500 の `Response` を作ります。",
         at: "exception",
         impl: "onError",
         lines: [1, 3],

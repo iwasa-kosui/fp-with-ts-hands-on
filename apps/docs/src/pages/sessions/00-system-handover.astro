@@ -9,6 +9,8 @@ import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
 import HandoverClinicScenes from "../../components/HandoverClinicScenes.astro";
 import HandoverExamMock from "../../components/HandoverExamMock.astro";
 import CodeLayoutDiagram from "../../components/CodeLayoutDiagram.astro";
+import SessionRoadmap from "../../components/SessionRoadmap.astro";
+import StartExaminationMap from "../../components/StartExaminationMap.astro";
 
 export const session: SessionSummary = {
   slug: "00-system-handover",
@@ -105,6 +107,7 @@ export const guides = ([
 ] as const) satisfies readonly CodeGuide[];
 
 const chapters = [
+  { id: "overview", label: "全体の地図" },
   { id: "incident", label: "現行業務と事故" },
   { id: "system", label: "SQLite に残る内容" },
 ] as const;
@@ -132,7 +135,7 @@ export const navigation = ({
           {session.summary}
         </p>
       </section>
-      <Prose components={{ CodeLayoutDiagram, EpisodeIllustration, HandoverClinicScenes, HandoverExamMock }} session={session} />
+      <Prose components={{ CodeLayoutDiagram, EpisodeIllustration, HandoverClinicScenes, HandoverExamMock, SessionRoadmap, StartExaminationMap }} session={session} />
       <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
         {
           navigation.previous === undefined ? null : (

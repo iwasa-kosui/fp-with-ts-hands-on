@@ -300,6 +300,33 @@ const brandedIdCode = {
   afterParse: brandedAfterParse,
 };
 
+const schemaSourceSnippets = await loadSolutionSnippets({
+  solutions: [
+    {
+      path: "examples/session-04/src/boundary/startExaminationInput.ts",
+      symbol: "StartExaminationInput",
+      lines: [1, 16],
+    },
+    {
+      path: "examples/session-05/src/boundary/startExaminationInput.ts",
+      symbol: "StartExaminationInput",
+      lines: [1, 17],
+    },
+    {
+      path: "examples/session-05/src/shared/schemaResult.ts",
+      symbol: "schemaResult",
+      lines: [23, 27],
+    },
+  ],
+});
+const [schemaBefore, schemaAfter, schemaResultSource] =
+  schemaSourceSnippets.map(({ solution, code }) => ({ path: solution.path, code }));
+const schemaSourceCode = {
+  before: schemaBefore,
+  after: schemaAfter,
+  schemaResult: schemaResultSource,
+};
+
 const supplementaryExerciseTypecheckCommand =
   "pnpm --filter @fp-with-ts/clinic-session-03 typecheck";
 const supplementaryExerciseSolutionSteps = await Promise.all(
@@ -414,6 +441,7 @@ ${session.exerciseCommand} を成功させてください。
         paymentAmountCode={paymentAmountQuote.code}
         examResultQuote={examResultQuote}
         brandedIdCode={brandedIdCode}
+        schemaSourceCode={schemaSourceCode}
         supplementaryExerciseTeaching={supplementaryExerciseTeaching}
         supplementaryExerciseTypecheckCommand={supplementaryExerciseTypecheckCommand}
         supplementaryExerciseSolutionSteps={supplementaryExerciseSolutionSteps}

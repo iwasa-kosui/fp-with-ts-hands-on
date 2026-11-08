@@ -9,15 +9,8 @@ import cancellationReasonSource from "../../../../examples/final/src/domain/appo
 import authorizationSource from "../../../../examples/final/src/useCase/authorization.ts?raw";
 import useCaseSource from "../../../../examples/final/src/useCase/cancelAppointmentUseCase.ts?raw";
 import errorsSource from "../../../../examples/final/src/useCase/errors.ts?raw";
+import { quote } from "../sessions/reference-quote";
 import StepPlayer from "./step-player/StepPlayer.astro";
-
-// 参照実装の行がずれたら、古いコードを見せないようにビルドを失敗させる
-const quote = (source: string, from: number, to: number, firstLine: string): string => {
-  const lines = source.split("\n").slice(from - 1, to);
-  if (!lines[0]?.includes(firstLine)) throw new Error(`引用元の行がずれています: ${firstLine}`);
-  const indent = Math.min(...lines.filter((line) => line.trim() !== "").map((line) => line.search(/\S/)));
-  return lines.map((line) => line.slice(indent)).join("\n");
-};
 
 const pipeline = [
   "// appointmentRoutes.ts",
