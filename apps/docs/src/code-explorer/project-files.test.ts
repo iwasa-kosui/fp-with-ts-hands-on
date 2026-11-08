@@ -8,6 +8,7 @@ import type {
 } from "../sessions/types";
 import {
   browserPackageJsonFor,
+  exerciseGuardAdditionsFor,
   projectFilesForSnapshot,
 } from "./project-files";
 import type { ProjectFiles, SessionWorkspace } from "./types";
@@ -282,6 +283,68 @@ describe("Code Explorer project files", () => {
         Object.keys(files).filter((file) => file.startsWith("vendor/clinic-web/")),
         snapshot,
       ).toEqual([]);
+    }
+  });
+
+  it("adds the exercise-guard vendor files and script only when the snapshot has a guard config", () => {
+    const withGuard = exerciseGuardAdditionsFor({
+      "exercises/guard/guard.config.mjs": "export default {};",
+    });
+
+    expect(withGuard.scripts).toEqual({
+      guard: "node vendor/exercise-guard/cli.mjs",
+    });
+    expect(Object.keys(withGuard.files)).toEqual(
+      expect.arrayContaining([
+        "vendor/exercise-guard/cli.mjs",
+        "vendor/exercise-guard/judge.mjs",
+        "vendor/exercise-guard/render.mjs",
+      ]),
+    );
+    expect(
+      Object.keys(withGuard.files).every((file) =>
+        /^vendor\/exercise-guard\/[^/]+\.mjs$/.test(file),
+      ),
+    ).toBe(true);
+    expect(exerciseGuardAdditionsFor({ "package.json": "{}" })).toEqual({
+      files: {},
+      scripts: {},
+    });
+  });
+
+  it("resolves every relative import inside the exercise-guard vendor files", () => {
+    const { files } = exerciseGuardAdditionsFor({
+      "exercises/guard/guard.config.mjs": "export default {};",
+    });
+    const names = new Set(Object.keys(files));
+
+    for (const [file, source] of Object.entries(files)) {
+      for (const imported of ts.preProcessFile(source, true, true).importedFiles) {
+        if (!imported.fileName.startsWith(".")) continue;
+        expect(
+          names.has(
+            path.posix.join(path.posix.dirname(file), imported.fileName),
+          ),
+          `${file}: ${imported.fileName}`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("leaves the existing snapshots without exercise-guard files or script", () => {
+    for (const snapshot of projectSnapshots) {
+      const files = projectFilesForSnapshot(snapshot);
+
+      expect(
+        Object.keys(files).filter((file) =>
+          file.startsWith("vendor/exercise-guard/"),
+        ),
+        snapshot,
+      ).toEqual([]);
+      expect(
+        JSON.parse(files["package.json"]!).scripts?.guard,
+        snapshot,
+      ).toBeUndefined();
     }
   });
 
