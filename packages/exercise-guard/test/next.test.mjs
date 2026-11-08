@@ -34,11 +34,19 @@ const rowOf = (overrides) => ({
   ...overrides,
 });
 
+const detectedBad = rowOf({
+  id: "B0",
+  kind: "bad",
+  verdict: "detected",
+  allow: ["lint"],
+  cells: { types: noHit, lint: cell("hit", 1), tests: noHit },
+});
+
 /**
  * @param {readonly Row[]} rows
  * @returns {readonly string[]}
  */
-const nextOf = (rows) => buildNext({ rows, problems: [], noJudgedFiles: false, stageOpened: 0, passed: false });
+const nextOf = (rows) => buildNext({ rows: [...rows, detectedBad], problems: [], stageOpened: 0, passed: false });
 
 /** @type {Detection} */
 const typeError = {
@@ -110,11 +118,18 @@ describe("buildNext", () => {
     );
   });
 
-  it("判定対象のファイルが無く、allow の範囲の検出が 0 件なら、まだ悪い変更を 1 件も検出できていません", () => {
+  it("allow の範囲の検出が 0 件で問題も無ければ、まだ悪い変更を 1 件も検出できていません", () => {
     const bad = rowOf({ kind: "bad", verdict: "slipped", allow: ["lint"] });
-    const sentences = buildNext({ rows: [bad], problems: [], noJudgedFiles: true, stageOpened: 0, passed: false });
+    const sentences = buildNext({ rows: [bad], problems: [], stageOpened: 0, passed: false });
 
     expect(sentences.some((sentence) => sentence.startsWith("まだ悪い変更を 1 件も検出できていません"))).toBe(true);
+  });
+
+  it("allow の範囲に検出が 1 件でもあれば、合格でなくてもまだ悪い変更を 1 件も検出できていませんとは言わない", () => {
+    const bad = rowOf({ id: "B2", kind: "bad", verdict: "slipped", allow: ["lint"] });
+    const sentences = buildNext({ rows: [detectedBad, bad], problems: [], stageOpened: 0, passed: false });
+
+    expect(sentences.some((sentence) => sentence.startsWith("まだ悪い変更を 1 件も検出できていません"))).toBe(false);
   });
 
   it("allow の範囲で検出していれば、まだ悪い変更を 1 件も検出できていませんとは言わない", () => {
@@ -124,7 +139,7 @@ describe("buildNext", () => {
       allow: ["lint"],
       cells: { types: noHit, lint: cell("hit", 1), tests: noHit },
     });
-    const sentences = buildNext({ rows: [bad], problems: [], noJudgedFiles: true, stageOpened: 0, passed: true });
+    const sentences = buildNext({ rows: [bad], problems: [], stageOpened: 0, passed: true });
 
     expect(sentences).toEqual(["合格です。次に、この仕組みで検出できないことを書きます。"]);
   });
@@ -137,7 +152,7 @@ describe("buildNext", () => {
       title: "相互レビューで作る悪い変更",
       allow: ["tests"],
     });
-    const sentences = buildNext({ rows: [optional], problems: [], noJudgedFiles: false, stageOpened: 0, passed: true });
+    const sentences = buildNext({ rows: [detectedBad, optional], problems: [], stageOpened: 0, passed: true });
 
     expect(sentences[0]).toBe("合格です。次に、この仕組みで検出できないことを書きます。");
     expect(sentences[1]).toContain("『相互レビューで作る悪い変更』がすり抜けています。");
