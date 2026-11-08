@@ -122,10 +122,22 @@ const raceAbort = <T>(promise: Promise<T>, signal: AbortSignal): Promise<T> => {
   });
 };
 
+type PartOutcome =
+  | Readonly<{ kind: "cached" }>
+  | Readonly<{ kind: "stored" }>
+  | Readonly<{ kind: "memory"; bytes: Uint8Array<ArrayBuffer> }>;
+
+type MemoryParts = ReadonlyMap<string, Uint8Array<ArrayBuffer>>;
+
+type Acquired = Readonly<{
+  manifest: DepsSnapshotManifest;
+  memory: MemoryParts | undefined;
+}>;
+
 type PartDownload = {
   loaded: number;
   readonly listeners: Set<(delta: number) => void>;
-  readonly promise: Promise<void>;
+  readonly promise: Promise<PartOutcome>;
 };
 
 export const createDepsSnapshotLoader = (
@@ -194,18 +206,42 @@ export const createDepsSnapshotLoader = (
     return manifestInFlight;
   };
 
+  const cacheStep = <T>(
+    environment: DepsSnapshotEnvironment,
+    run: () => Promise<T>,
+  ): Promise<T> =>
+    withStallGuard(environment.stallTimeoutMilliseconds, (_signal, guard) =>
+      guard(run()),
+    );
+
+  const concatenate = (
+    chunks: readonly Uint8Array[],
+  ): Uint8Array<ArrayBuffer> => {
+    const bytes = new Uint8Array(
+      chunks.reduce((length, chunk) => length + chunk.byteLength, 0),
+    );
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return bytes;
+  };
+
   const downloadPart = async (
     environment: DepsSnapshotEnvironment,
-    cache: Cache,
+    cache: Cache | undefined,
     url: string,
     report: (delta: number) => void,
-  ): Promise<void> => {
-    const cached = await cache.match(url);
-    if (cached !== undefined) {
-      report((await cached.blob()).size);
-      return;
+  ): Promise<PartOutcome> => {
+    if (cache !== undefined) {
+      const cached = await cacheStep(environment, () => cache.match(url));
+      if (cached !== undefined) {
+        report((await cacheStep(environment, () => cached.blob())).size);
+        return { kind: "cached" };
+      }
     }
-    await withStallGuard(
+    return withStallGuard(
       environment.stallTimeoutMilliseconds,
       async (signal, guard, touch) => {
         const response = await guard(environment.fetch(url, { signal }));
@@ -213,37 +249,52 @@ export const createDepsSnapshotLoader = (
           throw new Error(`Failed to download ${url}: ${response.status}`);
         }
         touch();
-        const [forProgress, forCache] = response.body.tee();
-        const putting = cache.put(
-          url,
-          new Response(forCache, {
-            headers: { "Content-Type": "application/octet-stream" },
-          }),
-        );
-        putting.catch(() => undefined);
-        const reader = forProgress.getReader();
+        let source = response.body;
+        let putting: Promise<void> | undefined;
+        if (cache !== undefined) {
+          const [forProgress, forCache] = response.body.tee();
+          source = forProgress;
+          putting = cache.put(
+            url,
+            new Response(forCache, {
+              headers: { "Content-Type": "application/octet-stream" },
+            }),
+          );
+          putting.catch(() => undefined);
+        }
+        const chunks: Uint8Array[] = [];
+        const reader = source.getReader();
         try {
           for (;;) {
             const { done, value } = await guard(reader.read());
             if (done) break;
             touch();
+            chunks.push(value);
             report(value.byteLength);
           }
         } catch (error: unknown) {
           void reader.cancel().catch(() => undefined);
           throw error;
         }
-        await guard(putting);
+        if (putting !== undefined) {
+          try {
+            await guard(putting);
+            return { kind: "stored" };
+          } catch (error: unknown) {
+            if (signal.aborted) throw error;
+          }
+        }
+        return { kind: "memory", bytes: concatenate(chunks) };
       },
     );
   };
 
   const ensurePart = (
     environment: DepsSnapshotEnvironment,
-    cache: Cache,
+    cache: Cache | undefined,
     url: string,
     listener: (delta: number) => void,
-  ): Promise<void> => {
+  ): Promise<PartOutcome> => {
     let download = downloads.get(url);
     if (download === undefined) {
       const listeners = new Set<(delta: number) => void>();
@@ -272,11 +323,13 @@ export const createDepsSnapshotLoader = (
     environment: DepsSnapshotEnvironment,
     currentName: string,
   ): Promise<void> => {
-    const names = await environment.caches!.keys();
+    const names = await cacheStep(environment, () => environment.caches!.keys());
     await Promise.all(
       names
         .filter((name) => name.startsWith(cacheNamePrefix) && name !== currentName)
-        .map((name) => environment.caches!.delete(name)),
+        .map((name) =>
+          cacheStep(environment, () => environment.caches!.delete(name)),
+        ),
     );
   };
 
@@ -284,84 +337,121 @@ export const createDepsSnapshotLoader = (
     environment: DepsSnapshotEnvironment,
     manifest: DepsSnapshotManifest,
     onProgress: ((progress: DepsSnapshotProgress) => void) | undefined,
-  ): Promise<void> => {
+    retainInMemory: boolean,
+  ): Promise<MemoryParts | undefined> => {
     const cacheName = `${cacheNamePrefix}${manifest.hash}`;
-    const cache = await environment.caches!.open(cacheName);
+    await deleteStaleCaches(environment, cacheName).catch(() => undefined);
+    const cache = await cacheStep(environment, () =>
+      environment.caches!.open(cacheName),
+    );
     let loaded = 0;
     const listener = (delta: number) => {
       loaded += delta;
       onProgress?.({ loaded, total: manifest.gzipSize });
     };
-    for (const part of manifest.parts) {
-      await ensurePart(
-        environment,
-        cache,
-        `${snapshotDirectory}/${manifest.hash}/${part}`,
-        listener,
-      );
+    const urls = manifest.parts.map(
+      (part) => `${snapshotDirectory}/${manifest.hash}/${part}`,
+    );
+    const memory = new Map<string, Uint8Array<ArrayBuffer>>();
+    let activeCache: Cache | undefined = cache;
+    for (const [index, url] of urls.entries()) {
+      const outcome = await ensurePart(environment, activeCache, url, listener);
+      if (outcome.kind !== "memory") continue;
+      if (activeCache !== undefined) {
+        activeCache = undefined;
+        if (retainInMemory) {
+          for (const earlier of urls.slice(0, index)) {
+            const stored = await cacheStep(environment, () =>
+              cache.match(earlier),
+            );
+            if (stored === undefined) {
+              throw new Error(`Missing cached part: ${earlier}`);
+            }
+            memory.set(
+              earlier,
+              new Uint8Array(
+                await cacheStep(environment, () => stored.arrayBuffer()),
+              ),
+            );
+          }
+        }
+        await cacheStep(environment, () =>
+          environment.caches!.delete(cacheName),
+        ).catch(() => false);
+      }
+      if (!retainInMemory) return undefined;
+      memory.set(url, outcome.bytes);
     }
-    await deleteStaleCaches(environment, cacheName).catch(() => undefined);
+    return memory.size > 0 ? memory : undefined;
   };
 
   const decompress = async (
     environment: DepsSnapshotEnvironment,
     manifest: DepsSnapshotManifest,
+    memory: MemoryParts | undefined,
     signal: AbortSignal,
-  ): Promise<Uint8Array> => {
-    const cache = await environment.caches!.open(
-      `${cacheNamePrefix}${manifest.hash}`,
-    );
-    const stream = new environment.DecompressionStream!("gzip");
-    const writer = stream.writable.getWriter();
-    const reader = stream.readable.getReader();
+  ): Promise<Uint8Array> =>
+    withStallGuard(
+      environment.stallTimeoutMilliseconds,
+      async (_stallSignal, guard, touch) => {
+        const cache =
+          memory === undefined
+            ? await guard(
+                environment.caches!.open(`${cacheNamePrefix}${manifest.hash}`),
+              )
+            : undefined;
+        const stream = new environment.DecompressionStream!("gzip");
+        const writer = stream.writable.getWriter();
+        const reader = stream.readable.getReader();
 
-    const feeding = (async () => {
-      try {
-        for (const part of manifest.parts) {
-          const response = await cache.match(
-            `${snapshotDirectory}/${manifest.hash}/${part}`,
-          );
-          if (response === undefined || response.body === null) {
-            throw new Error(`Missing cached part: ${part}`);
+        const feeding = (async () => {
+          try {
+            for (const part of manifest.parts) {
+              const url = `${snapshotDirectory}/${manifest.hash}/${part}`;
+              const bytes = memory?.get(url);
+              if (bytes !== undefined) {
+                if (signal.aborted) throw abortReason(signal);
+                await guard(writer.write(bytes));
+                touch();
+                continue;
+              }
+              const response = await guard(cache!.match(url));
+              if (response === undefined || response.body === null) {
+                throw new Error(`Missing cached part: ${part}`);
+              }
+              const partReader = response.body.getReader();
+              for (;;) {
+                if (signal.aborted) throw abortReason(signal);
+                const { done, value } = await guard(partReader.read());
+                if (done) break;
+                touch();
+                await guard(writer.write(value));
+              }
+            }
+            await guard(writer.close());
+          } catch (error: unknown) {
+            await writer.abort(error).catch(() => undefined);
+            throw error;
           }
-          const partReader = response.body.getReader();
+        })();
+
+        const collecting = (async () => {
+          const chunks: Uint8Array[] = [];
           for (;;) {
-            if (signal.aborted) throw abortReason(signal);
-            const { done, value } = await partReader.read();
+            const { done, value } = await guard(reader.read());
             if (done) break;
-            await writer.write(value);
+            touch();
+            chunks.push(value);
           }
-        }
-        await writer.close();
-      } catch (error: unknown) {
-        await writer.abort(error).catch(() => undefined);
-        throw error;
-      }
-    })();
+          return concatenate(chunks);
+        })();
 
-    const collecting = (async () => {
-      const chunks: Uint8Array[] = [];
-      let length = 0;
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-        length += value.byteLength;
-      }
-      const bytes = new Uint8Array(length);
-      let offset = 0;
-      for (const chunk of chunks) {
-        bytes.set(chunk, offset);
-        offset += chunk.byteLength;
-      }
-      return bytes;
-    })();
-
-    const [fed, collected] = await Promise.allSettled([feeding, collecting]);
-    if (fed.status === "rejected") throw fed.reason;
-    if (collected.status === "rejected") throw collected.reason;
-    return collected.value;
-  };
+        const [fed, collected] = await Promise.allSettled([feeding, collecting]);
+        if (fed.status === "rejected") throw fed.reason;
+        if (collected.status === "rejected") throw collected.reason;
+        return collected.value;
+      },
+    );
 
   const isSupported = (environment: DepsSnapshotEnvironment): boolean =>
     environment.caches !== undefined &&
@@ -373,7 +463,7 @@ export const createDepsSnapshotLoader = (
     try {
       const manifest = await fetchManifest();
       if (manifest === null) return;
-      await ensureParts(environment, manifest, undefined);
+      await ensureParts(environment, manifest, undefined, false);
     } catch {
       return;
     }
@@ -382,12 +472,15 @@ export const createDepsSnapshotLoader = (
   const acquire = async (
     environment: DepsSnapshotEnvironment,
     { packageJson, signal, onProgress }: DepsSnapshotRequest,
-  ): Promise<DepsSnapshotManifest | null> => {
+  ): Promise<Acquired | null> => {
     try {
       const manifest = await raceAbort(fetchManifest(), signal);
       if (manifest === null || !isCovered(manifest, packageJson)) return null;
-      await raceAbort(ensureParts(environment, manifest, onProgress), signal);
-      return manifest;
+      const memory = await raceAbort(
+        ensureParts(environment, manifest, onProgress, true),
+        signal,
+      );
+      return { manifest, memory };
     } catch {
       if (signal.aborted) throw abortReason(signal);
       return null;
@@ -399,15 +492,18 @@ export const createDepsSnapshotLoader = (
   ): Promise<Uint8Array | null> => {
     const environment = getEnvironment();
     if (!isSupported(environment)) return null;
-    const manifest = await acquire(environment, request);
-    if (manifest === null) return null;
+    const acquired = await acquire(environment, request);
+    if (acquired === null) return null;
+    const { manifest, memory } = acquired;
     try {
-      return await decompress(environment, manifest, request.signal);
-    } catch {
+      return await decompress(environment, manifest, memory, request.signal);
+    } catch (error: unknown) {
       if (request.signal.aborted) throw abortReason(request.signal);
-      await environment
-        .caches!.delete(`${cacheNamePrefix}${manifest.hash}`)
-        .catch(() => false);
+      if (memory === undefined && !(error instanceof DepsSnapshotStallError)) {
+        await environment
+          .caches!.delete(`${cacheNamePrefix}${manifest.hash}`)
+          .catch(() => false);
+      }
       return null;
     }
   };

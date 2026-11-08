@@ -1,4 +1,5 @@
 import type { FileSystemTree, WebContainer } from "@webcontainer/api";
+import { chmodBinScript } from "./deps-snapshot-shared.mjs";
 import {
   loadDepsSnapshot,
   type DepsSnapshotProgress,
@@ -24,6 +25,7 @@ export type TerminalStartRequest = Readonly<{
   visibleFiles: readonly string[];
   size: TerminalSize;
   signal: AbortSignal;
+  skipDepsSnapshot?: boolean;
   onPhase: (phase: TerminalPhase) => void;
   onDownloadProgress?: (progress: DepsSnapshotProgress) => void;
   onOutput: (chunk: string) => void;
@@ -144,13 +146,6 @@ const stageTimeoutMilliseconds = {
   "collecting-types": 30_000,
   "starting-shell": 30_000,
 } as const;
-const chmodBinScript = `const fs = require("node:fs");
-const directory = "node_modules/.bin";
-if (fs.existsSync(directory)) {
-  for (const name of fs.readdirSync(directory)) {
-    fs.chmodSync(directory + "/" + name, 0o755);
-  }
-}`;
 const ignoredDirectories = new Set([
   "node_modules",
   ".cache",
@@ -418,7 +413,7 @@ export const createTerminalRunner = (
     let snapshotSettled = false;
     const snapshotPackageJson = request.files["package.json"];
     const snapshotLoading: Promise<Uint8Array | null> =
-      snapshotPackageJson === undefined
+      snapshotPackageJson === undefined || request.skipDepsSnapshot === true
         ? Promise.resolve(null)
         : (options.loadDepsSnapshot ?? loadDepsSnapshot)({
             packageJson: snapshotPackageJson,
@@ -700,18 +695,25 @@ const adaptWebContainer = (
   },
   restoreDependencies: async (snapshot) => {
     const nodeModulesDirectory = `${runtimeProjectDirectory}/node_modules`;
-    await runtime.fs.mkdir(nodeModulesDirectory, { recursive: true });
-    await runtime.mount(snapshot, { mountPoint: nodeModulesDirectory });
-    // WebContainer の export は実行ビットを保持しない
-    const chmod = await runtime.spawn("node", ["-e", chmodBinScript], {
-      cwd: runtimeProjectDirectory,
-    });
-    const output = chmod.output.pipeTo(new WritableStream<string>());
-    const [exitCode] = await Promise.all([chmod.exit, output]);
-    if (exitCode !== 0) {
-      throw new Error(
-        `Restoring executable bits failed with exit code ${exitCode}`,
-      );
+    try {
+      await runtime.fs.mkdir(nodeModulesDirectory, { recursive: true });
+      await runtime.mount(snapshot, { mountPoint: nodeModulesDirectory });
+      // WebContainer の export は実行ビットを保持しない
+      const chmod = await runtime.spawn("node", ["-e", chmodBinScript], {
+        cwd: runtimeProjectDirectory,
+      });
+      const output = chmod.output.pipeTo(new WritableStream<string>());
+      const [exitCode] = await Promise.all([chmod.exit, output]);
+      if (exitCode !== 0) {
+        throw new Error(
+          `Restoring executable bits failed with exit code ${exitCode}`,
+        );
+      }
+    } catch (error: unknown) {
+      await runtime.fs
+        .rm(nodeModulesDirectory, { recursive: true, force: true })
+        .catch(() => undefined);
+      throw error;
     }
   },
   install: async (signal) => runInstallation(runtime, signal),

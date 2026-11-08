@@ -26,20 +26,34 @@ const packageJson = JSON.stringify({
 const partUrl = (name: string) => `/deps-snapshot/${manifest.hash}/${name}`;
 const cacheName = `deps-snapshot-${manifest.hash}`;
 
-const createCaches = (initialNames: readonly string[] = []) => {
+type CacheBehavior = Readonly<{
+  put?: (url: string) => Promise<void> | undefined;
+  open?: (name: string) => Promise<void> | undefined;
+  match?: (url: string, call: number) => Promise<unknown> | undefined;
+}>;
+
+const createCaches = (
+  initialNames: readonly string[] = [],
+  behavior: CacheBehavior = {},
+) => {
+  let matchCalls = 0;
   const stores = new Map<string, Map<string, ArrayBuffer>>(
     initialNames.map((name) => [name, new Map()]),
   );
   const caches = {
     open: async (name: string) => {
+      await behavior.open?.(name);
       const store = stores.get(name) ?? new Map<string, ArrayBuffer>();
       stores.set(name, store);
       return {
         match: async (url: string) => {
+          const overridden = behavior.match?.(url, ++matchCalls);
+          if (overridden !== undefined) return overridden;
           const stored = store.get(url);
           return stored === undefined ? undefined : new Response(stored);
         },
         put: async (url: string, response: Response) => {
+          await behavior.put?.(url);
           store.set(url, await response.arrayBuffer());
         },
       };
@@ -289,5 +303,140 @@ describe("deps snapshot loader", () => {
       })).load(requestFor()),
     ).toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("deletes older snapshot caches before it fetches the first part", async () => {
+    const { caches, stores } = createCaches(["deps-snapshot-ffff"]);
+    let cachesAtFirstPart: string[] = [];
+    const fetchMock = createFetch({
+      ...healthyResponses,
+      [partUrl("part-000.bin")]: () => {
+        cachesAtFirstPart = [...stores.keys()];
+        return new Response(firstPart);
+      },
+    });
+
+    await createLoader({ fetch: fetchMock, caches }).load(requestFor());
+
+    expect(cachesAtFirstPart).not.toContain("deps-snapshot-ffff");
+  });
+
+  describe("when the cache cannot store a part", () => {
+    const quotaExceeded = () => Promise.reject(new Error("QuotaExceededError"));
+
+    it("deletes the cache and still returns the bytes from memory", async () => {
+      const { caches, stores } = createCaches([], { put: quotaExceeded });
+      const fetchMock = createFetch(healthyResponses);
+
+      const bytes = await createLoader({ fetch: fetchMock, caches }).load(
+        requestFor(),
+      );
+
+      expect(bytes).toEqual(payload);
+      expect(stores.has(cacheName)).toBe(false);
+      expect(
+        fetchMock.mock.calls.filter(([input]) => String(input).endsWith(".bin")),
+      ).toHaveLength(2);
+    });
+
+    it("keeps the parts stored before the failure when the second part fails", async () => {
+      const { caches, stores } = createCaches([], {
+        put: (url) =>
+          url === partUrl("part-001.bin") ? quotaExceeded() : undefined,
+      });
+      const fetchMock = createFetch(healthyResponses);
+
+      const bytes = await createLoader({ fetch: fetchMock, caches }).load(
+        requestFor(),
+      );
+
+      expect(bytes).toEqual(payload);
+      expect(stores.has(cacheName)).toBe(false);
+      expect(
+        fetchMock.mock.calls.filter(([input]) => String(input).endsWith(".bin")),
+      ).toHaveLength(2);
+    });
+
+    it("drops the downloaded bytes after a prefetch", async () => {
+      const { caches, stores } = createCaches([], { put: quotaExceeded });
+      const fetchMock = createFetch(healthyResponses);
+      const loader = createLoader({ fetch: fetchMock, caches });
+
+      await loader.prefetch();
+      expect(stores.has(cacheName)).toBe(false);
+      await loader.load(requestFor());
+
+      expect(
+        fetchMock.mock.calls.filter(
+          ([input]) => String(input) === partUrl("part-000.bin"),
+        ),
+      ).toHaveLength(2);
+    });
+  });
+
+  describe("cache stalls", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const never = () => new Promise<never>(() => undefined);
+
+    it("returns null when opening the cache never finishes", async () => {
+      vi.useFakeTimers();
+      const { caches } = createCaches([], { open: never });
+      const loading = createLoader({
+        fetch: createFetch(healthyResponses),
+        caches,
+      }).load(requestFor());
+
+      await vi.advanceTimersByTimeAsync(20_000);
+
+      expect(await loading).toBeNull();
+    });
+
+    it("returns null when reading a cached part never finishes", async () => {
+      vi.useFakeTimers();
+      const { caches } = createCaches([], {
+        match: (_url, call) => (call === 1 ? never() : undefined),
+      });
+      const loading = createLoader({
+        fetch: createFetch(healthyResponses),
+        caches,
+      }).load(requestFor());
+
+      await vi.advanceTimersByTimeAsync(20_000);
+
+      expect(await loading).toBeNull();
+    });
+
+    it("returns null when a cached part never yields its size", async () => {
+      vi.useFakeTimers();
+      const { caches } = createCaches([], {
+        match: () => Promise.resolve({ blob: never }),
+      });
+      const loading = createLoader({
+        fetch: createFetch(healthyResponses),
+        caches,
+      }).load(requestFor());
+
+      await vi.advanceTimersByTimeAsync(20_000);
+
+      expect(await loading).toBeNull();
+    });
+
+    it("returns null when decompression starves for 20 seconds", async () => {
+      vi.useFakeTimers();
+      const { caches } = createCaches([], {
+        match: (_url, call) => (call > 2 ? never() : undefined),
+      });
+      const loading = createLoader({
+        fetch: createFetch(healthyResponses),
+        caches,
+      }).load(requestFor());
+
+      await vi.advanceTimersByTimeAsync(20_000);
+
+      expect(await loading).toBeNull();
+    });
   });
 });

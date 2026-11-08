@@ -9,6 +9,7 @@ import {
   type TerminalRuntimeProcess,
   type TerminalStartRequest,
 } from "./runner";
+import { chmodBinScript } from "./deps-snapshot-shared.mjs";
 
 const webContainerMock = vi.hoisted(() => ({
   boot: vi.fn<() => Promise<unknown>>(),
@@ -219,6 +220,20 @@ describe("terminal runner dependency snapshot", () => {
     await session.dispose();
   });
 
+  it("does not load the snapshot when the request skips it", async () => {
+    const runtime = createInMemoryRuntime();
+    const loadDepsSnapshot = vi.fn(async () => snapshot);
+
+    const session = await createTerminalRunner(async () => runtime, {
+      loadDepsSnapshot,
+    }).start(requestFor({ skipDepsSnapshot: true }));
+
+    expect(loadDepsSnapshot).not.toHaveBeenCalled();
+    expect(runtime.restoreDependencies).not.toHaveBeenCalled();
+    expect(runtime.installCalls).toHaveBeenCalledOnce();
+    await session.dispose();
+  });
+
   it("falls back to an install when restoring fails", async () => {
     const runtime = createInMemoryRuntime();
     vi.mocked(runtime.restoreDependencies).mockRejectedValueOnce(
@@ -324,6 +339,7 @@ describe("WebContainer terminal adapter", () => {
     }));
     const mount = vi.fn(async () => undefined);
     const teardown = vi.fn();
+    const rm = vi.fn(async () => undefined);
     webContainerMock.boot.mockReset();
     webContainerMock.boot.mockResolvedValue({
       mount,
@@ -332,12 +348,13 @@ describe("WebContainer terminal adapter", () => {
       fs: {
         mkdir: vi.fn(async () => undefined),
         writeFile: vi.fn(),
+        rm,
         readdir: async () => [],
         readFile: async () => "",
         watch: vi.fn(() => ({ close: vi.fn() })),
       },
     });
-    return { spawn, mount };
+    return { spawn, mount, rm };
   };
 
   it("mounts the snapshot and restores executable bits instead of installing", async () => {
@@ -369,6 +386,44 @@ describe("WebContainer terminal adapter", () => {
 
     expect(spawn.mock.calls.map(([command]) => command)).toContain("npm");
     await session.dispose();
+  });
+
+  it("removes the partly restored node_modules before installing", async () => {
+    const { spawn, rm } = bootWithSpawn(1);
+
+    const session = await createWebContainerTerminalRunner({
+      loadDepsSnapshot: async () => new Uint8Array([1]),
+    }).start(requestFor());
+
+    expect(rm).toHaveBeenCalledWith("workspace/node_modules", {
+      recursive: true,
+      force: true,
+    });
+    expect(rm.mock.invocationCallOrder[0]).toBeLessThan(
+      spawn.mock.invocationCallOrder[
+        spawn.mock.calls.findIndex(([command]) => command === "npm")
+      ]!,
+    );
+    await session.dispose();
+  });
+
+  it("ignores a broken symlink while restoring executable bits", () => {
+    const run = new Function(
+      "require",
+      chmodBinScript,
+    ) as (require: (name: string) => unknown) => void;
+    const chmodSync = vi.fn((path: string) => {
+      if (path.endsWith("broken")) throw new Error("ENOENT");
+    });
+
+    expect(() =>
+      run(() => ({
+        existsSync: () => true,
+        readdirSync: () => ["broken", "tsc"],
+        chmodSync,
+      })),
+    ).not.toThrow();
+    expect(chmodSync).toHaveBeenCalledWith("node_modules/.bin/tsc", 0o755);
   });
 
   describe("runtime slot", () => {

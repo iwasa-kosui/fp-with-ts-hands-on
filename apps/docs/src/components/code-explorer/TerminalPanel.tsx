@@ -63,7 +63,8 @@ type PanelState =
   | Readonly<{ kind: "exited"; exitCode: number; restarting: boolean }>
   | Readonly<{ kind: "failed"; message: string; suggestsSetup: boolean }>;
 
-type DownloadProgress = DepsSnapshotProgress & Readonly<{ firstAt: number }>;
+type DownloadProgress = DepsSnapshotProgress &
+  Readonly<{ firstAt: number; firstLoaded: number }>;
 
 const initialTerminalSize: TerminalSize = { cols: 80, rows: 24 };
 
@@ -77,27 +78,34 @@ const phaseLabels: Readonly<Record<TerminalPhase, string>> = {
   "starting-shell": "シェルを起動しています。",
 };
 
-const retryGuidance =
-  "ネットワークの接続を確かめてから「ターミナルを再試行」を押してください。";
+const retryGuidance = "「ターミナルを再試行」を押してください。";
+const networkRetryGuidance = `ネットワークの接続を確かめてから${retryGuidance}`;
+
+const timeoutMessageFor = (phase: TerminalPhase): string => {
+  if (phase === "booting") {
+    return `実行環境の起動が時間内に終わりませんでした。${networkRetryGuidance}`;
+  }
+  if (phase === "installing") {
+    return `依存パッケージのインストールが時間内に終わりませんでした。${networkRetryGuidance}`;
+  }
+  return `準備が時間内に終わりませんでした。${retryGuidance}`;
+};
 
 const failureFrom = (
   error: unknown,
 ): Readonly<{ message: string; suggestsSetup: boolean }> => {
   if (error instanceof TerminalPreparationTimeoutError) {
-    return {
-      message: `準備が時間内に終わりませんでした。${retryGuidance}`,
-      suggestsSetup: true,
-    };
+    return { message: timeoutMessageFor(error.phase), suggestsSetup: true };
   }
   if (error instanceof TerminalInstallError) {
     return {
-      message: `依存パッケージの取得に失敗しました。${retryGuidance}`,
+      message: `依存パッケージの取得に失敗しました。${networkRetryGuidance}`,
       suggestsSetup: true,
     };
   }
   return {
-    message: "ターミナルの起動中にエラーが発生しました。",
-    suggestsSetup: false,
+    message: `ターミナルの起動中にエラーが発生しました。${retryGuidance}`,
+    suggestsSetup: true,
   };
 };
 
@@ -110,12 +118,13 @@ const remainingLabel = (
   const elapsedMilliseconds = now - progress.firstAt;
   if (
     elapsedMilliseconds < 1000 ||
-    progress.loaded <= 0 ||
+    progress.loaded <= progress.firstLoaded ||
     progress.loaded >= progress.total
   ) {
     return undefined;
   }
-  const bytesPerSecond = progress.loaded / (elapsedMilliseconds / 1000);
+  const bytesPerSecond =
+    (progress.loaded - progress.firstLoaded) / (elapsedMilliseconds / 1000);
   const remaining = (progress.total - progress.loaded) / bytesPerSecond;
   const seconds =
     remaining > 10
@@ -256,6 +265,7 @@ export const TerminalPanel = ({
   const attemptGeneration = useRef(0);
   const preparationStartedAt = useRef(0);
   const downloadProgress = useRef<DownloadProgress>();
+  const skipDepsSnapshot = useRef(false);
   const onTypeFilesRef = useRef(onTypeFiles);
   const onWorkspaceChangeRef = useRef(onWorkspaceChange);
   const onSessionChangeRef = useRef(onSessionChange);
@@ -456,7 +466,10 @@ export const TerminalPanel = ({
     try {
       view = await getView();
       if (!isActiveAttempt()) {
-        disposeView(view);
+        if (!restoredViewOpened.current && !(mounted.current && starting.current)) {
+          viewPromise.current = undefined;
+          disposeView(view);
+        }
         return;
       }
       terminalView.current = view;
@@ -473,6 +486,7 @@ export const TerminalPanel = ({
         visibleFiles,
         size: initialTerminalSize,
         signal: controller.signal,
+        skipDepsSnapshot: skipDepsSnapshot.current,
         onPhase: (phase) => {
           if (isActiveAttempt()) {
             transition({
@@ -487,6 +501,7 @@ export const TerminalPanel = ({
           downloadProgress.current = {
             ...progress,
             firstAt: downloadProgress.current?.firstAt ?? Date.now(),
+            firstLoaded: downloadProgress.current?.firstLoaded ?? progress.loaded,
           };
         },
         onOutput: (chunk) => {
@@ -540,6 +555,12 @@ export const TerminalPanel = ({
           : { kind: "exited", exitCode, restarting: false },
       );
     } catch (error: unknown) {
+      if (
+        error instanceof TerminalPreparationTimeoutError &&
+        error.phase === "restoring-deps"
+      ) {
+        skipDepsSnapshot.current = true;
+      }
       if (session !== undefined) {
         await session.dispose();
         if (announced) onSessionChangeRef.current(undefined);

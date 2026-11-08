@@ -6,6 +6,11 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { gzipSync } from "node:zlib";
 import { chromium } from "playwright-core";
+import {
+  chmodBinScript,
+  snapshotDependenciesOf,
+  snapshotPackageJsonFor,
+} from "../src/code-explorer/deps-snapshot-shared.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptDirectory, "../../..");
@@ -24,15 +29,6 @@ if (values.out === undefined) {
 }
 const outputDirectory = resolve(values.out);
 
-const withoutWorkspaceDependencies = (dependencies) =>
-  dependencies === undefined
-    ? undefined
-    : Object.fromEntries(
-        Object.entries(dependencies).filter(
-          ([, version]) => !version.startsWith("workspace:"),
-        ),
-      );
-
 const buildPackageJson = async () => {
   const source = JSON.parse(
     await readFile(
@@ -40,27 +36,12 @@ const buildPackageJson = async () => {
       "utf8",
     ),
   );
-  const packageJson = {
-    ...source,
-    dependencies: withoutWorkspaceDependencies(source.dependencies),
-    devDependencies: withoutWorkspaceDependencies(source.devDependencies),
-    optionalDependencies: withoutWorkspaceDependencies(
-      source.optionalDependencies,
-    ),
-    peerDependencies: withoutWorkspaceDependencies(source.peerDependencies),
-  };
-  const completed = {
-    ...packageJson,
-    scripts: { ...packageJson.scripts, "exercise:06": "pnpm exercise" },
-    devDependencies: {
-      ...packageJson.devDependencies,
-      tsx: "4.23.9",
-      typescript: "5.9.3",
-    },
-  };
+  const completed = snapshotPackageJsonFor(source, {
+    "exercise:06": "pnpm exercise",
+  });
   return {
     contents: JSON.stringify(completed, null, 2),
-    dependencies: { ...completed.dependencies, ...completed.devDependencies },
+    dependencies: snapshotDependenciesOf(completed),
   };
 };
 
@@ -185,9 +166,30 @@ const installAndExport = async ({ packageJsonContents, uploadChunkSize }) => {
   return { installSeconds, exportSeconds, bytes: exported.byteLength };
 };
 
-const mountAndVerify = async () => {
+const mountAndVerify = async ({ packageJsonContents, chmodBinScript }) => {
   const { WebContainer } = await import("/webcontainer/index.js");
   const container = await WebContainer.boot();
+
+  const run = async (command, args) => {
+    const process = await container.spawn(command, args, { cwd: "workspace" });
+    let output = "";
+    const collecting = process.output.pipeTo(
+      new WritableStream({
+        write: (chunk) => {
+          output += chunk;
+        },
+      }),
+    );
+    const [exitCode] = await Promise.all([process.exit, collecting]);
+    console.log(`$ ${command} ${args.join(" ")}\n${output}`);
+    return { exitCode, output };
+  };
+
+  await container.fs.mkdir("workspace", { recursive: true });
+  await container.mount(
+    { "package.json": { file: { contents: packageJsonContents } } },
+    { mountPoint: "workspace" },
+  );
   await container.fs.mkdir("workspace/node_modules", { recursive: true });
 
   const response = await fetch("/uploaded");
@@ -198,30 +200,19 @@ const mountAndVerify = async () => {
   await container.mount(bytes, { mountPoint: "workspace/node_modules" });
   const mountSeconds = (performance.now() - mountStart) / 1000;
 
-  const check = await container.spawn(
-    "node",
-    [
-      "-e",
-      "console.log(require('typescript').version, require('vitest/package.json').version)",
-    ],
-    { cwd: "workspace" },
-  );
-  let output = "";
-  const checkOutput = check.output.pipeTo(
-    new WritableStream({
-      write: (chunk) => {
-        output += chunk;
-      },
-    }),
-  );
-  const [checkExitCode] = await Promise.all([check.exit, checkOutput]);
-  console.log(output);
-  if (checkExitCode !== 0) {
-    throw new Error(`Verification failed with exit code ${checkExitCode}`);
+  const chmod = await run("node", ["-e", chmodBinScript]);
+  if (chmod.exitCode !== 0) {
+    throw new Error(`Restoring executable bits failed: ${chmod.exitCode}`);
   }
-  const typescriptVersion = output.trim().split(/\s+/)[0];
-  if (typescriptVersion !== "5.9.3") {
-    throw new Error(`Unexpected typescript version: ${typescriptVersion}`);
+
+  // WebContainer は EACCES でも終了コード 0 を返すことがあるので、出力で判定する
+  const tsc = await run("pnpm", ["exec", "tsc", "--version"]);
+  if (!/Version 5\.9\.3/.test(tsc.output)) {
+    throw new Error(`Unexpected tsc output: ${tsc.output}`);
+  }
+  const vitest = await run("pnpm", ["exec", "vitest", "--version"]);
+  if (!/vitest\/\d+\.\d+\.\d+/.test(vitest.output)) {
+    throw new Error(`Unexpected vitest output: ${vitest.output}`);
   }
 
   return { mountSeconds };
@@ -284,7 +275,10 @@ const run = async (resources) => {
   if (state.uploadedParts.length === 0) throw new Error("Nothing was uploaded");
 
   await page.reload();
-  const verified = await page.evaluate(mountAndVerify);
+  const verified = await page.evaluate(mountAndVerify, {
+    packageJsonContents,
+    chmodBinScript,
+  });
 
   const manifest = await writeSnapshot(
     Buffer.concat(state.uploadedParts),
