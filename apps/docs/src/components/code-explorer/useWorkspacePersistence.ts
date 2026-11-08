@@ -42,8 +42,9 @@ export type WorkspacePersistence = Readonly<{
   restoredOutput: string | undefined;
   outputStale: boolean;
   appendTerminalOutput: (chunk: string) => void;
-  useSavedEdits: () => void;
-  useUpdatedCode: () => void;
+  notifyCommandSent: () => void;
+  chooseSavedEdits: () => void;
+  chooseUpdatedCode: () => void;
   loadOtherTab: () => Promise<void>;
   overwriteOtherTab: () => Promise<void>;
   retrySave: () => Promise<void>;
@@ -117,6 +118,10 @@ export const useWorkspacePersistence = (
   const pendingSaveRef = useRef(false);
   const outputBufferRef = useRef("");
   const lastOutputAtRef = useRef(0);
+  const outputDirtyRef = useRef(false);
+  const selectedDirtyRef = useRef<string>();
+  const lastSelectedPathRef = useRef<string>();
+  const commandSentRef = useRef(false);
   const viewTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const updateStatus = useCallback((next: WorkspacePersistenceStatus) => {
@@ -141,18 +146,30 @@ export const useWorkspacePersistence = (
       latest.current;
     const kind = statusRef.current.kind;
     if (!isEnabled || kind === "loading" || kind === "read-failed") return;
-    const currentPath = latest.current.selectedPath;
-    try {
-      void currentStore
-        .saveView({
-          slug: currentSlug,
-          output: outputBufferRef.current,
-          lastOutputAt: lastOutputAtRef.current,
-          ...(currentPath === undefined ? {} : { selectedPath: currentPath }),
-        })
-        .catch(() => undefined);
-    } catch {
-      return;
+    if (outputDirtyRef.current) {
+      outputDirtyRef.current = false;
+      try {
+        void currentStore
+          .saveTerminalOutput(
+            currentSlug,
+            outputBufferRef.current,
+            lastOutputAtRef.current,
+          )
+          .catch(() => undefined);
+      } catch {
+        return;
+      }
+    }
+    const currentPath = selectedDirtyRef.current;
+    if (currentPath !== undefined) {
+      selectedDirtyRef.current = undefined;
+      try {
+        void currentStore
+          .saveSelectedPath(currentSlug, currentPath)
+          .catch(() => undefined);
+      } catch {
+        return;
+      }
     }
   }, []);
 
@@ -166,11 +183,16 @@ export const useWorkspacePersistence = (
       outputBufferRef.current = trimTerminalOutput(
         outputBufferRef.current + chunk,
       );
-      lastOutputAtRef.current = Date.now();
+      if (commandSentRef.current) lastOutputAtRef.current = Date.now();
+      outputDirtyRef.current = true;
       scheduleViewSave();
     },
     [scheduleViewSave],
   );
+
+  const notifyCommandSent = useCallback(() => {
+    commandSentRef.current = true;
+  }, []);
 
   const flushSave = useCallback(
     async (force: boolean): Promise<void> => {
@@ -306,6 +328,7 @@ export const useWorkspacePersistence = (
         appliedContentsRef.current = applied.contents;
         outputBufferRef.current = view?.output ?? "";
         lastOutputAtRef.current = view?.lastOutputAt ?? 0;
+        lastSelectedPathRef.current = view?.selectedPath;
 
         dispatch({
           kind: "restore",
@@ -384,6 +407,11 @@ export const useWorkspacePersistence = (
     if (!enabled) return;
     const kind = statusRef.current.kind;
     if (kind === "loading" || kind === "read-failed") return;
+    if (selectedPath === undefined || selectedPath === lastSelectedPathRef.current) {
+      return;
+    }
+    lastSelectedPathRef.current = selectedPath;
+    selectedDirtyRef.current = selectedPath;
     scheduleViewSave();
   }, [enabled, scheduleViewSave, selectedPath]);
 
@@ -396,7 +424,13 @@ export const useWorkspacePersistence = (
   }, [flushView]);
 
   useEffect(() => {
-    if (status.kind !== "conflict" && status.kind !== "save-failed") return;
+    if (
+      status.kind !== "conflict" &&
+      status.kind !== "save-failed" &&
+      status.kind !== "read-failed"
+    ) {
+      return;
+    }
     if (!hasUnsavedEdits()) return;
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
@@ -406,7 +440,7 @@ export const useWorkspacePersistence = (
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [contents, hasUnsavedEdits, status.kind]);
 
-  const useSavedEdits = useCallback(() => {
+  const chooseSavedEdits = useCallback(() => {
     if (statusRef.current.kind !== "outdated") return;
     const { projectFiles, visiblePaths, dispatch } = latest.current;
     const applied = applyAllSavedEdits(
@@ -423,7 +457,7 @@ export const useWorkspacePersistence = (
     updateStatus({ kind: "active" });
   }, [updateStatus]);
 
-  const useUpdatedCode = useCallback(() => {
+  const chooseUpdatedCode = useCallback(() => {
     if (statusRef.current.kind !== "outdated") return;
     updateStatus({ kind: "active" });
   }, [updateStatus]);
@@ -455,8 +489,9 @@ export const useWorkspacePersistence = (
     restoredOutput,
     outputStale,
     appendTerminalOutput,
-    useSavedEdits,
-    useUpdatedCode,
+    notifyCommandSent,
+    chooseSavedEdits,
+    chooseUpdatedCode,
     loadOtherTab,
     overwriteOtherTab,
     retrySave,

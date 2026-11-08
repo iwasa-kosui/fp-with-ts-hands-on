@@ -24,6 +24,7 @@ import {
   createIndexedDbWorkspaceStore,
   type WorkspaceStore,
 } from "../../code-explorer/workspace-store";
+import { computeEdits } from "../../code-explorer/workspace-persistence";
 import { TerminalPanel, type TerminalView } from "./TerminalPanel";
 import { useWorkspacePersistence } from "./useWorkspacePersistence";
 import "@xterm/xterm/css/xterm.css";
@@ -147,6 +148,12 @@ export const CodeExplorer = ({
     writeToSession: writeFile,
   });
   const { status, notice } = persistence;
+  const hasEdits = useMemo(
+    () =>
+      Object.keys(computeEdits(workspaceState.contents, projectFiles)).length >
+      0,
+    [projectFiles, workspaceState.contents],
+  );
   const isLocked = status.kind === "loading" || status.kind === "outdated";
 
   const resetSelectedFile = () => {
@@ -234,7 +241,7 @@ export const CodeExplorer = ({
               {status.kind === "read-failed" ? (
                 <div className="code-explorer__notice" role="alert">
                   <p>
-                    前の編集を読み出せませんでした。開始の状態で表示しています。このページの編集は保存されません。ページを再読み込みすると、もう一度読み出します。
+                    前の編集を読み出せませんでした。開始の状態で表示しています。このページの編集は保存されません。ページを再読み込みすると、もう一度読み出します。そのとき、このページで書いた編集は消えます。
                   </p>
                 </div>
               ) : null}
@@ -256,17 +263,20 @@ export const CodeExplorer = ({
                 <div className="code-explorer__notice" role="alert">
                   <p>教材が更新されました。前の編集を使いますか。</p>
                   <p>対象のファイル: {status.paths.join("、")}</p>
+                  <p>
+                    更新後のコードで始めると、対象のファイルの前の編集は消え、元に戻せません。
+                  </p>
                   <button
                     type="button"
                     data-action="use-saved-edits"
-                    onClick={persistence.useSavedEdits}
+                    onClick={persistence.chooseSavedEdits}
                   >
                     前の編集を使う
                   </button>
                   <button
                     type="button"
                     data-action="use-updated-code"
-                    onClick={persistence.useUpdatedCode}
+                    onClick={persistence.chooseUpdatedCode}
                   >
                     更新後のコードで始める
                   </button>
@@ -359,6 +369,8 @@ export const CodeExplorer = ({
           outputStale={persistence.outputStale}
           onOutput={persistence.appendTerminalOutput}
           startDisabled={isLocked}
+          hasEdits={hasEdits}
+          onCommandSent={persistence.notifyCommandSent}
         />
       )}
     </section>

@@ -28,7 +28,12 @@ export type WorkspaceStore = {
     edits: SavedWorkspace["edits"],
     expectedRevision: number,
   ): Promise<SaveResult>;
-  saveView(view: SavedView): Promise<void>;
+  saveTerminalOutput(
+    slug: string,
+    output: string,
+    lastOutputAt: number,
+  ): Promise<void>;
+  saveSelectedPath(slug: string, selectedPath: string): Promise<void>;
   subscribe(slug: string, listener: (revision: number) => void): () => void;
 };
 
@@ -78,6 +83,9 @@ export const createIndexedDbWorkspaceStore = (): WorkspaceStore => {
           database.close();
           if (connection === next) connection = undefined;
         };
+        database.onclose = () => {
+          if (connection === next) connection = undefined;
+        };
         resolve(database);
       };
       request.onerror = () => reject(request.error);
@@ -89,6 +97,30 @@ export const createIndexedDbWorkspaceStore = (): WorkspaceStore => {
       if (connection === next) connection = undefined;
     });
     return next;
+  };
+
+  const updateView = async (
+    slug: string,
+    update: (current: SavedView) => SavedView,
+  ): Promise<void> => {
+    const database = await connect();
+    const transaction = database.transaction(viewStoreName, "readwrite");
+    const objectStore = transaction.objectStore(viewStoreName);
+    const done = transactionDone(transaction);
+    const written = new Promise<void>((resolve, reject) => {
+      const request = objectStore.get(slug);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const current = (request.result as SavedView | undefined) ?? {
+          slug,
+          output: "",
+          lastOutputAt: 0,
+        };
+        objectStore.put(update(current));
+        resolve();
+      };
+    });
+    await Promise.all([written, done]);
   };
 
   const getChannel = (): BroadcastChannel | undefined => {
@@ -131,12 +163,11 @@ export const createIndexedDbWorkspaceStore = (): WorkspaceStore => {
         request.onerror = () => reject(request.error);
         request.onsuccess = () => {
           const current = request.result as SavedWorkspace | undefined;
-          const currentRevision = current?.revision ?? 0;
-          if (currentRevision !== expectedRevision) {
-            resolve({ kind: "conflict", revision: currentRevision });
+          if (current !== undefined && current.revision !== expectedRevision) {
+            resolve({ kind: "conflict", revision: current.revision });
             return;
           }
-          const revision = currentRevision + 1;
+          const revision = expectedRevision + 1;
           const next: SavedWorkspace = {
             slug,
             revision,
@@ -157,12 +188,11 @@ export const createIndexedDbWorkspaceStore = (): WorkspaceStore => {
       return saveResult;
     },
 
-    saveView: async (view) => {
-      const database = await connect();
-      const transaction = database.transaction(viewStoreName, "readwrite");
-      transaction.objectStore(viewStoreName).put(view);
-      await transactionDone(transaction);
-    },
+    saveTerminalOutput: (slug, output, lastOutputAt) =>
+      updateView(slug, (current) => ({ ...current, output, lastOutputAt })),
+
+    saveSelectedPath: (slug, selectedPath) =>
+      updateView(slug, (current) => ({ ...current, selectedPath })),
 
     subscribe: (slug, listener) => {
       const subscribed = getChannel();

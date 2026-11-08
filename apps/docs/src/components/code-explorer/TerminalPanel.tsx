@@ -45,6 +45,8 @@ export type TerminalPanelProps = Readonly<{
   outputStale: boolean;
   onOutput?: (chunk: string) => void;
   startDisabled: boolean;
+  hasEdits: boolean;
+  onCommandSent?: () => void;
 }>;
 
 type PanelState =
@@ -75,7 +77,7 @@ const defaultSupportsRuntime = (): boolean =>
 const noPendingFileWrites = async (): Promise<void> => undefined;
 
 const previousOutputDelimiter =
-  "\r\n\x1b[!p\x1b[2m--- ここまでが前回の出力です。新しいシェルを起動しました ---\x1b[0m\r\n";
+  "\r\n\x1b[!p\x1b[2m--- ここまでが前回の出力です ---\x1b[0m\r\n";
 
 const disposedViews = new WeakSet<TerminalView>();
 
@@ -139,6 +141,8 @@ export const TerminalPanel = ({
   outputStale,
   onOutput,
   startDisabled,
+  hasEdits,
+  onCommandSent,
 }: TerminalPanelProps) => {
   const [state, setState] = useState<PanelState>({ kind: "unstarted" });
   const terminalHost = useRef<HTMLDivElement>(null);
@@ -165,6 +169,7 @@ export const TerminalPanel = ({
   const waitForPendingFileWritesRef = useRef(waitForPendingFileWrites);
   const syncFilesRef = useRef(syncFiles);
   const onOutputRef = useRef(onOutput);
+  const onCommandSentRef = useRef(onCommandSent);
   const restoredOutputRef = useRef(restoredOutput);
   const loadTerminalViewRef = useRef(loadTerminalView);
   const hasRestoredOutput = restoredOutput !== undefined && restoredOutput !== "";
@@ -176,6 +181,7 @@ export const TerminalPanel = ({
   waitForPendingFileWritesRef.current = waitForPendingFileWrites;
   syncFilesRef.current = syncFiles;
   onOutputRef.current = onOutput;
+  onCommandSentRef.current = onCommandSent;
   restoredOutputRef.current = restoredOutput;
   loadTerminalViewRef.current = loadTerminalView;
 
@@ -284,7 +290,10 @@ export const TerminalPanel = ({
     inputSubscription.current = view.onData((data) => {
       void waitForPendingFileWritesRef
         .current()
-        .then(() => session.writeInput(data))
+        .then(() => {
+          if (data.includes("\r")) onCommandSentRef.current?.();
+          return session.writeInput(data);
+        })
         .catch(() => undefined);
     });
     session.resize(view.fit());
@@ -383,6 +392,7 @@ export const TerminalPanel = ({
         return;
       }
       if (initialCommand !== undefined && !hasRestoredOutputAtStart) {
+        onCommandSentRef.current?.();
         await session.writeInput(`${initialCommand}\r`);
         if (!isActiveAttempt()) {
           await session.dispose();
@@ -478,7 +488,7 @@ export const TerminalPanel = ({
             disabled={startDisabled}
             onClick={() => void startTerminal()}
           >
-            {hasRestoredOutput || initialCommand === undefined
+            {hasRestoredOutput || hasEdits || initialCommand === undefined
               ? "ターミナルを起動"
               : "修正前の失敗を確認"}
           </button>

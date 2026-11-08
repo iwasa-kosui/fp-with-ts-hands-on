@@ -45,12 +45,8 @@ describe("IndexedDB workspace store", () => {
   it("saves and reads the terminal view separately from the edits", async () => {
     const store = createIndexedDbWorkspaceStore();
 
-    await store.saveView({
-      slug: "s",
-      output: "hello",
-      lastOutputAt: 10,
-      selectedPath: "src/a.ts",
-    });
+    await store.saveTerminalOutput("s", "hello", 10);
+    await store.saveSelectedPath("s", "src/a.ts");
     const loaded = await store.load("s");
 
     expect(loaded.workspace).toBeUndefined();
@@ -60,6 +56,49 @@ describe("IndexedDB workspace store", () => {
       lastOutputAt: 10,
       selectedPath: "src/a.ts",
     });
+  });
+
+  it("keeps the output when only the selected path is saved", async () => {
+    const store = createIndexedDbWorkspaceStore();
+    await store.saveTerminalOutput("s", "hello", 10);
+
+    await store.saveSelectedPath("s", "src/b.ts");
+
+    expect((await store.load("s")).view).toEqual({
+      slug: "s",
+      output: "hello",
+      lastOutputAt: 10,
+      selectedPath: "src/b.ts",
+    });
+  });
+
+  it("keeps the selected path when only the output is saved", async () => {
+    const store = createIndexedDbWorkspaceStore();
+    await store.saveSelectedPath("s", "src/b.ts");
+    expect((await store.load("s")).view).toEqual({
+      slug: "s",
+      output: "",
+      lastOutputAt: 0,
+      selectedPath: "src/b.ts",
+    });
+
+    await store.saveTerminalOutput("s", "later", 20);
+
+    expect((await store.load("s")).view).toEqual({
+      slug: "s",
+      output: "later",
+      lastOutputAt: 20,
+      selectedPath: "src/b.ts",
+    });
+  });
+
+  it("saves over a missing record instead of reporting a conflict", async () => {
+    const store = createIndexedDbWorkspaceStore();
+
+    const result = await store.saveEdits("s", edits, 4);
+
+    expect(result).toEqual({ kind: "saved", revision: 5 });
+    expect((await store.load("s")).workspace?.revision).toBe(5);
   });
 
   it("keeps slugs independent", async () => {

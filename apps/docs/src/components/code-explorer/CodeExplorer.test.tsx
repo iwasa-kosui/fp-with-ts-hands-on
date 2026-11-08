@@ -1,7 +1,11 @@
 import { act, type ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { TerminalSession } from "../../code-explorer/runner";
+import type {
+  TerminalSession,
+  TerminalStartRequest,
+} from "../../code-explorer/runner";
+import type { SessionWorkspace } from "../../code-explorer/types";
 import type {
   SavedView,
   SavedWorkspace,
@@ -55,6 +59,14 @@ type MemoryStore = WorkspaceStore & {
   revisionOf: (slug: string) => number;
   editsOf: (slug: string) => SavedWorkspace["edits"] | undefined;
   seed: (workspace: SavedWorkspace, view?: SavedView) => void;
+  viewOf: (slug: string) => SavedView | undefined;
+  setView: (view: SavedView) => void;
+  saveTerminalOutput: ReturnType<
+    typeof vi.fn<WorkspaceStore["saveTerminalOutput"]>
+  >;
+  saveSelectedPath: ReturnType<
+    typeof vi.fn<WorkspaceStore["saveSelectedPath"]>
+  >;
   writeAsOtherTab: (
     slug: string,
     edits: SavedWorkspace["edits"],
@@ -87,9 +99,25 @@ const createMemoryStore = (): MemoryStore => {
       });
       return { kind: "saved" as const, revision: revision + 1 };
     }),
-    saveView: vi.fn(async (view: SavedView) => {
-      views.set(view.slug, view);
+    saveTerminalOutput: vi.fn(
+      async (slug: string, output: string, lastOutputAt: number) => {
+        views.set(slug, {
+          ...(views.get(slug) ?? { slug, output: "", lastOutputAt: 0 }),
+          output,
+          lastOutputAt,
+        });
+      },
+    ),
+    saveSelectedPath: vi.fn(async (slug: string, selectedPath: string) => {
+      views.set(slug, {
+        ...(views.get(slug) ?? { slug, output: "", lastOutputAt: 0 }),
+        selectedPath,
+      });
     }),
+    viewOf: (slug) => views.get(slug),
+    setView: (view) => {
+      views.set(view.slug, view);
+    },
     subscribe: (slug, listener) => {
       const entry = { slug, listener };
       listeners.add(entry);
@@ -137,7 +165,8 @@ type HarnessOptions = Readonly<{
   store?: MemoryStore;
   start?: boolean;
   initialCommand?: string;
-  startSession?: () => Promise<TerminalSession>;
+  startSession?: (request: TerminalStartRequest) => Promise<TerminalSession>;
+  workspace?: SessionWorkspace;
 }>;
 
 const createHarness = async (options: HarnessOptions = {}) => {
@@ -169,7 +198,7 @@ const createHarness = async (options: HarnessOptions = {}) => {
   await act(async () => {
     root.render(
       <CodeExplorer
-        workspace={workspace}
+        workspace={options.workspace ?? workspace}
         projectFiles={files}
         initialCommand={options.initialCommand}
         Editor={TestEditor}
@@ -643,6 +672,130 @@ describe("CodeExplorer file synchronization", () => {
 
       expect(saved?.output).toContain(previousOutput);
       expect(saved?.output).toContain("ここまでが前回の出力です");
+    });
+  });
+
+  describe("saving the terminal view", () => {
+    const twoFiles: SessionWorkspace = {
+      ...workspace,
+      visibleFiles: ["src/example.ts", "package.json"],
+    };
+
+    const startRequest = () => {
+      let request!: TerminalStartRequest;
+      const session: TerminalSession = {
+        writeInput: vi.fn(async () => undefined),
+        writeFile: vi.fn(async () => undefined),
+        resize: vi.fn(),
+        restartShell: vi.fn(async () => undefined),
+        dispose: vi.fn(async () => undefined),
+      };
+      return {
+        getRequest: () => request,
+        startSession: async (next: TerminalStartRequest) => {
+          request = next;
+          return session;
+        },
+      };
+    };
+
+    const unmount = async (root: Root) => {
+      await act(async () => root.unmount());
+      roots.splice(roots.indexOf(root), 1);
+    };
+
+    it("keeps the output another tab saved when this tab only switches files", async () => {
+      const store = createMemoryStore();
+      store.seed(savedWorkspace({}), {
+        slug: workspace.slug,
+        output: "old output",
+        lastOutputAt: 1,
+      });
+      const { host, root } = await createHarness({
+        store,
+        start: false,
+        workspace: twoFiles,
+      });
+      store.setView({
+        slug: workspace.slug,
+        output: "output from the other tab",
+        lastOutputAt: 5000,
+      });
+
+      await act(async () => {
+        host.querySelector<HTMLButtonElement>('[data-path="package.json"]')?.click();
+      });
+      await act(async () => {
+        window.dispatchEvent(new Event("pagehide"));
+      });
+      await settle();
+      await unmount(root);
+
+      expect(store.saveTerminalOutput).not.toHaveBeenCalled();
+      expect(store.viewOf(workspace.slug)).toEqual({
+        slug: workspace.slug,
+        output: "output from the other tab",
+        lastOutputAt: 5000,
+        selectedPath: "package.json",
+      });
+    });
+
+    it("does not touch the saved output when this tab produced none", async () => {
+      const store = createMemoryStore();
+      const { root } = await createHarness({ store, start: false });
+
+      await unmount(root);
+
+      expect(store.saveTerminalOutput).not.toHaveBeenCalled();
+      expect(store.saveSelectedPath).not.toHaveBeenCalled();
+    });
+
+    it("advances the last output time only after a command was sent", async () => {
+      const store = createMemoryStore();
+      const runner = startRequest();
+      const { root } = await createHarness({
+        store,
+        startSession: runner.startSession,
+      });
+
+      await act(async () => {
+        runner.getRequest().onOutput("$ ");
+      });
+      await unmount(root);
+
+      expect(store.viewOf(workspace.slug)?.output).toBe("$ ");
+      expect(store.viewOf(workspace.slug)?.lastOutputAt).toBe(0);
+
+      const second = await createHarness({
+        store,
+        startSession: runner.startSession,
+      });
+      await act(async () => {
+        runner.getRequest().onOutput("$ ");
+      });
+      second.sendTerminalInput("ls\r");
+      await settle();
+      await act(async () => {
+        runner.getRequest().onOutput("package.json\r\n");
+      });
+      await unmount(second.root);
+
+      expect(store.viewOf(workspace.slug)?.lastOutputAt).toBeGreaterThan(0);
+    });
+
+    it("asks before leaving when reading failed and edits were made", async () => {
+      const store = createMemoryStore();
+      store.load.mockRejectedValueOnce(new Error("blocked"));
+      const { host } = await createHarness({ store, start: false });
+      const unedited = new Event("beforeunload", { cancelable: true });
+      window.dispatchEvent(unedited);
+      expect(unedited.defaultPrevented).toBe(false);
+
+      await editCurrentFile(host, "export const value = 2;");
+      const edited = new Event("beforeunload", { cancelable: true });
+      window.dispatchEvent(edited);
+
+      expect(edited.defaultPrevented).toBe(true);
     });
   });
 });
