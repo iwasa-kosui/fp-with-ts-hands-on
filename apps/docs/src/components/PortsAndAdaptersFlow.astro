@@ -125,18 +125,22 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
 <div class="ports-flow" data-ports-flow data-frames={playerData} role="group" aria-label={title}>
   <p class="ports-flow__lead">{lead}</p>
 
-  <div class="ports-flow__controls" data-controls hidden>
-    <button type="button" data-first disabled>最初へ</button>
-    <button type="button" data-prev disabled>前へ</button>
-    <span data-progress>1 / {frames.length}</span>
-    <button type="button" data-next>次へ</button>
-  </div>
-
   <div class="ports-flow__stage">
-    <svg viewBox="0 0 420 360" role="img" aria-labelledby="ports-flow-title ports-flow-desc" data-nodes="normal" data-calls="normal" data-imports="normal">
+    <div class="ports-flow__sticky">
+      <div class="ports-flow__controls" data-controls hidden>
+        <button type="button" data-first disabled>最初へ</button>
+        <button type="button" data-prev disabled>前へ</button>
+        <span data-progress>1 / {frames.length}</span>
+        <button type="button" data-next>次へ</button>
+      </div>
+
+      <p class="ports-flow__live" data-live aria-live="polite" hidden></p>
+    </div>
+
+    <svg viewBox="0 0 360 444" role="img" aria-labelledby="ports-flow-title ports-flow-desc" data-nodes="normal" data-calls="normal" data-imports="normal">
       <title id="ports-flow-title">{title}</title>
       <desc id="ports-flow-desc">
-        外側の枠の中に、左から adaptor/primary（Hono の route）の箱、内側の枠、adaptor/secondary（SQLite の store）の箱が並びます。内側の枠の中には useCase の箱があり、その中に domain（port の型）の箱があります。app.ts（組み立て）の箱は、外側の枠の外の下にあります。実線の矢印は呼び出しを表し、3本あります。adaptor/primary から useCase へ、useCase から domain の port へ、domain の port から adaptor/secondary へ向かいます。破線の矢印は import を表し、6本あります。adaptor/primary から useCase へ、adaptor/secondary から domain へ、useCase から domain へ、app.ts から adaptor/primary へ、app.ts から useCase へ、app.ts から adaptor/secondary へ向かいます。import の矢印はすべて、外側から内側を向きます。
+        「外側（adaptor）」と書かれた外側の枠の中に、上から primary（Hono の route）の箱、内側の枠、secondary（SQLite の store）の箱が並びます。内側の枠の中には useCase の箱があり、その中に domain（port の型）の箱があります。app.ts（組み立て）の箱は、外側の枠の外の下にあります。実線の矢印は呼び出しを表し、3本あります。primary から useCase へ、useCase から domain の port へ、domain の port から secondary へ向かいます。破線の矢印は import を表し、6本あります。primary から useCase へ、secondary から domain へ、useCase から domain へ、app.ts から primary へ、app.ts から useCase へ、app.ts から secondary へ向かいます。import の矢印はすべて、外側から内側を向きます。
       </desc>
       <defs>
         <marker id="ports-flow-head-call" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
@@ -147,75 +151,72 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
         </marker>
       </defs>
 
-      <rect x="2" y="6" width="416" height="238" rx="12" class="ports-flow__frame ports-flow__frame--outer"></rect>
-      <rect x="140" y="24" width="140" height="208" rx="10" class="ports-flow__frame"></rect>
-      <text x="210" y="41" text-anchor="middle" class="ports-flow__text ports-flow__text--bold">内側</text>
+      <rect x="4" y="4" width="352" height="348" rx="12" class="ports-flow__frame ports-flow__frame--outer"></rect>
+      <text x="180" y="25" text-anchor="middle" class="ports-flow__text ports-flow__text--bold">外側（adaptor）</text>
+      <rect x="75" y="104" width="210" height="156" rx="10" class="ports-flow__frame"></rect>
+      <text x="180" y="123" text-anchor="middle" class="ports-flow__text ports-flow__text--bold">内側</text>
 
       <g class="ports-flow__node ports-flow__dimmable" data-node="useCase">
-        <rect x="148" y="52" width="124" height="160" rx="8" class="ports-flow__shape ports-flow__shape--usecase"></rect>
-        <text x="210" y="71" text-anchor="middle" class="ports-flow__text ports-flow__mono">useCase</text>
+        <rect x="90" y="132" width="180" height="116" rx="8" class="ports-flow__shape ports-flow__shape--usecase"></rect>
+        <text x="180" y="152" text-anchor="middle" class="ports-flow__text ports-flow__mono">useCase</text>
       </g>
       <g class="ports-flow__node ports-flow__dimmable" data-node="domain">
-        <rect x="160" y="128" width="100" height="70" rx="6" class="ports-flow__shape"></rect>
-        <text x="210" y="160" text-anchor="middle" class="ports-flow__text ports-flow__mono">domain</text>
-        <text x="210" y="178" text-anchor="middle" class="ports-flow__text">（port の型）</text>
+        <rect x="110" y="180" width="140" height="56" rx="6" class="ports-flow__shape"></rect>
+        <text x="180" y="204" text-anchor="middle" class="ports-flow__text ports-flow__mono">domain</text>
+        <text x="180" y="223" text-anchor="middle" class="ports-flow__text">（port の型）</text>
       </g>
       <g class="ports-flow__node ports-flow__dimmable" data-node="primary">
-        <rect x="8" y="68" width="108" height="56" rx="6" class="ports-flow__shape"></rect>
-        <text x="62" y="90" text-anchor="middle" class="ports-flow__text ports-flow__text--small ports-flow__mono">adaptor/primary</text>
-        <text x="62" y="108" text-anchor="middle" class="ports-flow__text">Hono の route</text>
+        <rect x="105" y="36" width="150" height="54" rx="6" class="ports-flow__shape"></rect>
+        <text x="180" y="57" text-anchor="middle" class="ports-flow__text ports-flow__mono">primary</text>
+        <text x="180" y="76" text-anchor="middle" class="ports-flow__text">Hono の route</text>
       </g>
       <g class="ports-flow__node ports-flow__dimmable" data-node="secondary">
-        <rect x="300" y="128" width="112" height="70" rx="6" class="ports-flow__shape"></rect>
-        <text x="356" y="156" text-anchor="middle" class="ports-flow__text ports-flow__text--small ports-flow__mono">adaptor/secondary</text>
-        <text x="356" y="174" text-anchor="middle" class="ports-flow__text">SQLite の store</text>
+        <rect x="105" y="284" width="150" height="54" rx="6" class="ports-flow__shape"></rect>
+        <text x="180" y="305" text-anchor="middle" class="ports-flow__text ports-flow__mono">secondary</text>
+        <text x="180" y="324" text-anchor="middle" class="ports-flow__text">SQLite の store</text>
       </g>
       <g class="ports-flow__node ports-flow__dimmable" data-node="app">
-        <rect x="110" y="272" width="200" height="40" rx="6" class="ports-flow__shape"></rect>
-        <text x="210" y="297" text-anchor="middle" class="ports-flow__text"><tspan class="ports-flow__mono">app.ts</tspan>（組み立て）</text>
+        <rect x="95" y="374" width="170" height="36" rx="6" class="ports-flow__shape"></rect>
+        <text x="180" y="397" text-anchor="middle" class="ports-flow__text"><tspan class="ports-flow__mono">app.ts</tspan>（組み立て）</text>
       </g>
 
       <g class="ports-flow__imports">
-        <path d="M 116 110 H 148" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
-        <path d="M 300 184 H 260" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
-        <path d="M 240 88 V 128" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
-        <path d="M 110 292 H 62 V 124" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
-        <path d="M 210 272 V 212" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
-        <path d="M 310 292 H 356 V 198" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
+        <path d="M 238 90 V 132" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
+        <path d="M 238 284 V 236" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
+        <path d="M 238 156 V 180" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
+        <path d="M 95 392 H 40 V 63 H 105" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
+        <path d="M 180 374 V 338" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
+        <path d="M 265 392 H 320 V 206 H 270" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
       </g>
       <g class="ports-flow__calls">
-        <path d="M 116 84 H 148" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
-        <path d="M 210 96 V 128" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
-        <path d="M 260 150 H 300" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
+        <path d="M 122 90 V 132" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
+        <path d="M 122 156 V 180" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
+        <path d="M 122 236 V 284" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
       </g>
-      <path d="M 116 84 H 210 V 150 H 288" class="ports-flow__track" data-track data-stops="0,22,125,238"></path>
+      <path d="M 122 90 V 284" class="ports-flow__track" data-track data-stops="0,42,90,194"></path>
       <circle r="8" class="ports-flow__token" data-token data-hidden></circle>
 
       <g class="ports-flow__legend">
-        <path d="M 8 342 H 40" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
-        <text x="48" y="346" class="ports-flow__text">実線 ＝ 呼び出し</text>
-        <path d="M 168 342 H 200" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
-        <text x="208" y="346" class="ports-flow__text">破線 ＝ import</text>
+        <path d="M 10 428 H 42" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
+        <text x="50" y="433" class="ports-flow__text">実線 ＝ 呼び出し</text>
+        <path d="M 186 428 H 218" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
+        <text x="226" y="433" class="ports-flow__text">破線 ＝ import</text>
       </g>
     </svg>
 
-    <div class="ports-flow__side">
-      <p class="ports-flow__live" data-live aria-live="polite" hidden></p>
-
-      <ol class="ports-flow__frames">
-        {frames.map((frame) => (
-          <li data-frame data-has-code={frame.code ? "" : undefined}>
-            <p class="ports-flow__caption">{frame.caption}</p>
-            {frame.code && (
-              <figure class="code-block ports-flow__code">
-                <figcaption><code>{rangeLabel(code[frame.code.key])}</code></figcaption>
-                <Code code={withMarks(code[frame.code.key].code, frame.code.lines)} lang="typescript" defaultColor="dark" transformers={[markKeyLines]} />
-              </figure>
-            )}
-          </li>
-        ))}
-      </ol>
-    </div>
+    <ol class="ports-flow__frames">
+      {frames.map((frame) => (
+        <li data-frame data-has-code={frame.code ? "" : undefined}>
+          <p class="ports-flow__caption">{frame.caption}</p>
+          {frame.code && (
+            <figure class="code-block ports-flow__code">
+              <figcaption><code>{rangeLabel(code[frame.code.key])}</code></figcaption>
+              <Code code={withMarks(code[frame.code.key].code, frame.code.lines)} lang="typescript" defaultColor="dark" transformers={[markKeyLines]} />
+            </figure>
+          )}
+        </li>
+      ))}
+    </ol>
   </div>
 </div>
 
@@ -330,22 +331,17 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
 
   .ports-flow__frame {
     fill: var(--case-paper);
-    stroke: var(--case-divider);
+    stroke: var(--case-muted);
     stroke-width: 2;
   }
 
   .ports-flow__frame--outer {
     fill: none;
-    stroke-width: 1.5;
   }
 
   .ports-flow__text {
     fill: var(--case-ink);
-    font-size: 12px;
-  }
-
-  .ports-flow__text--small {
-    font-size: 10px;
+    font-size: 14px;
   }
 
   .ports-flow__text--bold {
@@ -413,7 +409,6 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     flex-wrap: wrap;
     align-items: center;
     gap: 0.75rem;
-    margin-bottom: 0.75rem;
   }
 
   .ports-flow__controls[hidden] {
@@ -442,10 +437,6 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     margin: 0.75rem 0 0.5rem;
     font-weight: 700;
     line-height: 1.7;
-  }
-
-  .ports-flow__side {
-    min-width: 0;
   }
 
   .ports-flow__frames {
@@ -492,6 +483,22 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     color: #e1e4e8 !important;
   }
 
+  [data-animated] .ports-flow__sticky {
+    position: sticky;
+    top: calc(var(--case-scroll-offset, 1.5rem) - 1.5rem);
+    z-index: 2;
+    display: grid;
+    gap: 0.4rem;
+    margin-bottom: 0.75rem;
+    padding: 0.4rem 0;
+    border-bottom: 2px solid var(--case-line);
+    background: var(--case-paper);
+  }
+
+  [data-animated] .ports-flow__live {
+    margin: 0;
+  }
+
   [data-animated] .ports-flow__frames {
     padding-inline-start: 0;
     list-style: none;
@@ -535,16 +542,54 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     stroke-width: 3.5;
   }
 
+  @container (max-width: 34rem) {
+    [data-animated] .ports-flow__controls {
+      flex-wrap: nowrap;
+      gap: 0.4rem;
+    }
+
+    [data-animated] .ports-flow__controls button {
+      padding: 0 0.6rem;
+    }
+
+    [data-animated] .ports-flow__live {
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+  }
+
   @container (min-width: 44rem) {
     [data-animated] .ports-flow__stage {
       display: grid;
       grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
-      gap: 1.25rem;
+      grid-template-rows: auto auto 1fr;
+      column-gap: 1.25rem;
       align-items: start;
     }
 
+    [data-animated] .ports-flow__sticky {
+      display: contents;
+    }
+
+    [data-animated] .ports-flow__controls {
+      grid-column: 1 / -1;
+      margin-bottom: 0.75rem;
+    }
+
+    [data-animated] svg {
+      grid-column: 1;
+      grid-row: 2 / span 2;
+    }
+
     [data-animated] .ports-flow__live {
-      margin-top: 0;
+      grid-column: 2;
+      grid-row: 2;
+      margin-bottom: 0.5rem;
+    }
+
+    [data-animated] .ports-flow__frames {
+      grid-column: 2;
+      grid-row: 3;
     }
   }
 
