@@ -1,0 +1,438 @@
+---
+import { Code } from "astro:components";
+import { changeCases, mechanisms, verdictOf } from "./change-checks";
+---
+
+<figure class="cc" data-change-checks aria-label="悪い変更と3つの仕組みの結果">
+  <fieldset class="cc__picker">
+    <legend>変更を選ぶ</legend>
+    <div class="cc__picks">
+      {changeCases.map((changeCase, index) => (
+        <label class="cc__pick" data-good={changeCase.kind === "good"}>
+          <input type="radio" name="change-checks" value={changeCase.id} checked={index === 0} />
+          <span>{changeCase.label}</span>
+        </label>
+      ))}
+    </div>
+  </fieldset>
+
+  <div class="cc__body">
+    <div class="cc__change">
+      <p class="cc__legend">
+        <span>元のコードとの差分（toStatusLabel の部分）</span>
+        <span class="cc__mark cc__mark--del">− 消した行</span>
+        <span class="cc__mark cc__mark--add">+ 足した行</span>
+      </p>
+      <div class="cc__stack">
+        {changeCases.map((changeCase, index) => (
+          <div
+            class="cc__panel"
+            data-panel={changeCase.id}
+            data-active={index === 0}
+            data-kinds={JSON.stringify(changeCase.diff.map((line) => line.kind))}
+          >
+            <Code code={changeCase.diff.map((line) => line.text).join("\n")} lang="ts" />
+            <p class="cc__why">{changeCase.why}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <ol class="cc__checks">
+      {mechanisms.map((mechanism) => (
+        <li class="cc__check" data-check={mechanism.id}>
+          <div class="cc__check-head">
+            <strong>{mechanism.name}</strong>
+            <span>{mechanism.detail}</span>
+            <div class="cc__stack cc__verdicts">
+              {changeCases.map((changeCase, index) => {
+                const verdict = verdictOf(changeCase, mechanism.id);
+                return (
+                  <span
+                    class="cc__badge cc__outcome"
+                    data-outcome={changeCase.id}
+                    data-active={index === 0}
+                    data-tone={verdict.tone}
+                  >
+                    {verdict.text}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+          <Code code={mechanism.code} lang="ts" />
+          <div class="cc__stack">
+            {changeCases.map((changeCase, index) => (
+              <code class="cc__output cc__outcome" data-outcome={changeCase.id} data-active={index === 0}>
+                {changeCase.results[mechanism.id].output}
+              </code>
+            ))}
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  <p class="cc__live" data-live aria-live="polite"></p>
+</figure>
+
+<script>
+  const STEP_MS = 280;
+
+  document.querySelectorAll<HTMLElement>("[data-change-checks]").forEach((root) => {
+    const inputs = [...root.querySelectorAll<HTMLInputElement>("input[name='change-checks']")];
+    const panels = [...root.querySelectorAll<HTMLElement>("[data-panel]")];
+    const outcomes = [...root.querySelectorAll<HTMLElement>("[data-outcome]")];
+    const checks = [...root.querySelectorAll<HTMLElement>("[data-check]")];
+    const live = root.querySelector<HTMLElement>("[data-live]");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let timers: number[] = [];
+
+    panels.forEach((panel) => {
+      const kinds = JSON.parse(panel.dataset.kinds ?? "[]") as string[];
+      panel.querySelectorAll(".line").forEach((line, index) => line.classList.add(`cc-line--${kinds[index]}`));
+    });
+
+    const verdictOf = (id: string, check: HTMLElement) =>
+      (check.querySelector(`.cc__badge[data-outcome="${id}"]`)?.textContent ?? "").replace(/[✓▲]/g, "").trim();
+
+    const announce = (input: HTMLInputElement) => {
+      if (!live) return;
+      const label = input.closest("label")?.textContent?.trim() ?? "";
+      const [types, lint, tests] = checks.map((check) => verdictOf(input.value, check));
+      live.textContent = `${label}。型検査 ${types}、Linter の規則 ${lint}、テスト ${tests}`;
+    };
+
+    const select = (input: HTMLInputElement) => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      timers = [];
+      panels.forEach((panel) => panel.toggleAttribute("data-active", panel.dataset.panel === input.value));
+      outcomes.forEach((outcome) => outcome.toggleAttribute("data-active", outcome.dataset.outcome === input.value));
+      announce(input);
+
+      if (reducedMotion.matches) {
+        root.removeAttribute("data-running");
+        checks.forEach((check) => check.removeAttribute("data-pending"));
+        return;
+      }
+
+      root.setAttribute("data-running", "");
+      checks.forEach((check) => check.setAttribute("data-pending", ""));
+      checks.forEach((check, index) => {
+        timers.push(window.setTimeout(() => check.removeAttribute("data-pending"), STEP_MS * (index + 1)));
+      });
+      timers.push(window.setTimeout(() => root.removeAttribute("data-running"), STEP_MS * (checks.length + 1)));
+    };
+
+    inputs.forEach((input) =>
+      input.addEventListener("change", () => {
+        if (input.checked) select(input);
+      }),
+    );
+
+    const initial = inputs.find((input) => input.checked) ?? inputs[0];
+    if (initial) select(initial);
+  });
+</script>
+
+<style>
+  .cc {
+    display: grid;
+    gap: 0.375rem;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .cc__picker {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .cc__picker legend {
+    margin-block-end: 0.125rem;
+    padding: 0;
+    color: var(--role-muted);
+    font-size: 0.875rem;
+    font-weight: 800;
+  }
+
+  .cc__picks {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem 0.375rem;
+  }
+
+  .cc__pick {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.5rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+  }
+
+  .cc__pick[data-good] {
+    border-style: dashed;
+  }
+
+  .cc__pick:has(input:checked) {
+    border-color: var(--role-accent);
+    border-style: solid;
+    box-shadow: 0 0 0 2px var(--role-accent);
+  }
+
+  .cc__pick:has(input:focus-visible) {
+    outline: 3px solid var(--role-accent);
+    outline-offset: 2px;
+  }
+
+  .cc__body {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .cc__change {
+    min-width: 0;
+  }
+
+  .cc__stack {
+    display: grid;
+  }
+
+  .cc__stack > * {
+    grid-area: 1 / 1;
+    visibility: hidden;
+  }
+
+  .cc__stack > [data-active] {
+    visibility: visible;
+  }
+
+  .cc__mark {
+    padding: 0 0.375rem;
+    border-radius: 0.25rem;
+    color: var(--role-text);
+  }
+
+  .cc__mark--del {
+    background: rgba(255, 120, 110, 0.25);
+  }
+
+  .cc__mark--add {
+    background: rgba(121, 184, 255, 0.25);
+  }
+
+  .cc__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.75rem;
+    margin: 0 0 0.125rem;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+  }
+
+  .cc :global(pre) {
+    margin: 0;
+    padding: 0.375rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .cc :global(pre code) {
+    display: grid;
+  }
+
+  .cc__change :global(.line) {
+    position: relative;
+    display: block;
+    padding-left: 1.25em;
+    min-height: 1lh;
+  }
+
+  .cc__change :global(.line)::before {
+    position: absolute;
+    left: 0;
+    content: "";
+  }
+
+  .cc__change :global(.cc-line--del)::before {
+    content: "−";
+  }
+
+  .cc__change :global(.cc-line--add)::before {
+    content: "+";
+  }
+
+  .cc__change :global(.cc-line--del) {
+    background: rgba(255, 120, 110, 0.2);
+  }
+
+  .cc__change :global(.cc-line--add) {
+    background: rgba(121, 184, 255, 0.2);
+  }
+
+  .cc__why {
+    margin: 0.25rem 0 0;
+    color: var(--role-text);
+    font-size: 0.875rem;
+    line-height: 1.45;
+    transition: opacity 0.2s;
+  }
+
+  .cc[data-running] .cc__why {
+    opacity: 0;
+  }
+
+  .cc__checks {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .cc__check {
+    min-width: 0;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+  }
+
+  .cc__check[data-pending] {
+    border-color: var(--role-accent);
+  }
+
+  .cc__check-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .cc__check-head strong {
+    font-size: 0.875rem;
+  }
+
+  .cc__check-head > span {
+    color: var(--role-muted);
+    font-size: 0.75rem;
+  }
+
+  .cc__verdicts {
+    margin-left: auto;
+  }
+
+  .cc__verdicts > * {
+    justify-self: end;
+  }
+
+  .cc__check > .cc__stack {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cc__check :global(pre) {
+    margin-block: 0.125rem;
+  }
+
+  .cc__outcome {
+    min-width: 0;
+    transition: opacity 0.2s;
+  }
+
+  .cc__check[data-pending] .cc__outcome {
+    opacity: 0;
+  }
+
+  .cc__badge {
+    font-size: 0.8125rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .cc__badge[data-tone="positive"] {
+    color: var(--role-positive);
+  }
+
+  .cc__badge[data-tone="negative"] {
+    color: var(--role-negative);
+  }
+
+  .cc__output {
+    display: block;
+    padding: 0;
+    background: none;
+    color: var(--role-text);
+    font-size: 0.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cc__live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  @keyframes cc-fill {
+    from {
+      background: transparent;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cc__panel[data-active] :global(.cc-line--del),
+    .cc__panel[data-active] :global(.cc-line--add) {
+      animation: cc-fill 0.35s;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cc__why,
+    .cc__outcome {
+      transition: none;
+    }
+  }
+
+  @media (max-width: 52rem) {
+    .cc__output {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .cc__body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cc__picks {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 35rem) {
+    .cc__picks {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (min-height: 845px) and (min-width: 75rem) {
+    .cc :global(pre) {
+      font-size: 0.875rem;
+    }
+  }
+</style>
