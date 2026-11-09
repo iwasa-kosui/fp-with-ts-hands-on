@@ -23,7 +23,9 @@ export const pageKeyIgnoredSelector = [
   '[role="slider"]',
   ".monaco-editor",
   ".xterm",
-  ".guard-answer__panel",
+  ".code-explorer",
+  ".guard-exercise",
+  ".guard-answer",
 ].join(", ");
 
 export const stepControlsSelector = "[data-controls]";
