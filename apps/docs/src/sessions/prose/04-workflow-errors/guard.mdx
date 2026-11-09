@@ -7,7 +7,6 @@ import PointCards from "../../../components/workflow-errors/PointCards.astro";
   cards={[
     {
       title: "機械が検出できること（規則またはテストを足したとき）",
-      tone: "positive",
       items: [
         "useCase に <code>throw</code> と書く変更",
         "失敗した後に保存を呼ぶ変更",
@@ -16,7 +15,6 @@ import PointCards from "../../../components/workflow-errors/PointCards.astro";
     },
     {
       title: "人が決めること",
-      tone: "negative",
       items: [
         "どの失敗を Err で返し、どの失敗を例外のままにするか",
         "新しい失敗の種類に、どの画面のお知らせを出すか",

@@ -60,7 +60,7 @@ const frames: readonly Frame[] = [
     code: { key: "route", keys: ["resolver: store,", "store,"] },
   },
   {
-    caption: "テストは、決まった予約を返す resolver と、保存の回数を数える store を渡します。本体は同じまま、データベースなしで動きます。",
+    caption: "テストは、決まった予約を返す resolver と、保存の回数を数える store を渡します。演習では、保存された予約を配列 saved に入れる偽物の Store を使います。",
     deps: "focus", input: "normal", body: "normal", sources: "normal", source: "test", wait: false, depsFilled: true, inputFilled: true,
     code: { key: "test", keys: ["resolver: { resolveById: () => resolved },", "observer.saveCalls += 1;"] },
   },

@@ -19,7 +19,6 @@ export const paths = {
   solutionUseCase: "examples/session-04-solution/src/useCase/startExamination.ts",
   solutionRoutes: "examples/session-04-solution/src/web/routes.ts",
   solutionApp: "examples/session-04-solution/src/app.ts",
-  solutionHandler: "apps/docs/src/sessions/solutions/session-04-start-examination-handler.ts.txt",
 } as const;
 
 export const routeBefore = quote(s03Routes, 111, 126, "StartExaminationInput.parse");
