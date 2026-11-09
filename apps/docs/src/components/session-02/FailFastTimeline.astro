@@ -64,7 +64,7 @@ const stages = ["実装", "型検査", "実行", "画面"] as const;
           <span class="ff__cell" data-from="2" style="--i: 2" />
           <span class="ff__cell ff__cell--ghost" data-from="2" style="--i: 3">画面へ渡されない</span>
           <p class="ff__note" data-from="1" style="grid-column: 2; --i: 2">✓ 追加漏れを型検査で検出する</p>
-          <p class="ff__note" data-from="2" style="grid-column: 3; --i: 3">✓ 通過した値は、検出した場所で例外になる</p>
+          <p class="ff__note" data-from="2" style="grid-column: 3; --i: 3">✓ 不正な値は、検出した場所で例外になる</p>
         </div>
       </section>
 
@@ -103,7 +103,7 @@ const stages = ["実装", "型検査", "実行", "画面"] as const;
             <p class="ff__caption"><code>assertNever</code> を呼ぶ分岐は、追加漏れを型検査で検出します。引数の型が <code>never</code> であるため、<code>case</code> が漏れている状態を渡すと、型エラーになります。</p>
           </li>
           <li data-frame>
-            <p class="ff__caption">型検査を通過した値は、<code>assertNever</code> の <code>throw</code> で例外になります。例外はそこで処理を中断し、メッセージに未対応の値が含まれます。受付の画面は「不明」の代わりにエラーになります。ログに記録するかどうかは、例外を受け取る側で決めます。</p>
+            <p class="ff__caption">型検査を通過した不正な値は、<code>assertNever</code> の <code>throw</code> で例外になります。例外はそこで処理を中断し、メッセージに未対応の値が含まれます。受付の画面は「不明」の代わりにエラーになります。ログに記録するかどうかは、例外を受け取る側で決めます。</p>
           </li>
           <li data-frame>
             <p class="ff__caption">HTTP の入力のように外部から渡される値には、型の保証がありません。S03 で仕組みを作ります。この Session では解決しません。</p>

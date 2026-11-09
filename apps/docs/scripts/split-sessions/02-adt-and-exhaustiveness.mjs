@@ -5,7 +5,7 @@ const expectedPages = [
   ["adt", "値の候補を数え上げられる型", "knowledge", "teach", 2.5],
   ["never", "候補が0個の型", "knowledge", "teach", 2],
   ["assert-never", "型検査による追加漏れの検出", "solution", "teach", 1.5],
-  ["fail-fast", "型検査を通過した不正な値の検出と中断", "solution", "teach", 1],
+  ["fail-fast", "型検査を通過した不正な値の検出と処理の中断", "solution", "teach", 1],
   ["checks", "assertNever に修正したコードを次の変更から守る仕組み", "solution", "teach", 1],
   ["exercise", "演習: 誤った変更を検出する仕組みを追加する", "solution", "exercise", 7],
   ["peer-review", "相互レビュー", "solution", "review", 2],

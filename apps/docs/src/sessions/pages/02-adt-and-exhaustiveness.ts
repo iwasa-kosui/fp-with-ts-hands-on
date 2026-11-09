@@ -53,11 +53,11 @@ export const sessionPages = [
   },
   {
     slug: "fail-fast",
-    title: "型検査を通過した不正な値の検出と中断",
+    title: "型検査を通過した不正な値の検出と処理の中断",
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策: 型検査を通過した値を、実行時に検出した場所で例外を発生させ、処理を中断します。",
+    role: "解決策: 型検査を通過した不正な値を、実行時に検出した場所で例外を発生させ、処理を中断します。",
   },
   {
     slug: "checks",

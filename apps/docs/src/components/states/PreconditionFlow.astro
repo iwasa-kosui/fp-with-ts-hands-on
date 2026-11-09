@@ -58,7 +58,7 @@ const frames: readonly Frame[] = [
   },
   {
     caption:
-      "HTTP リクエストを受ける関数（routes.ts）は、データベースから取得した予約 current の kind を検証します。CheckedIn でなければ例外を投げ、startExamination を呼びません。実行時の値は、この検証で検出します。",
+      "HTTP リクエストを受ける関数（routes.ts）は、データベースから取得した予約 current の kind を検証します。CheckedIn でなければ例外を投げ、startExamination を呼びません。不正な値は、実行時にこの検証で検出します。",
     code: { key: "route", lines: [0] },
     top: { mode: "dim", focus: [], hide: [], token: null },
     bottom: { mode: "normal", focus: [], hide: [], token: { label: "kind: Paid", at: 1, result: "stop" } },
