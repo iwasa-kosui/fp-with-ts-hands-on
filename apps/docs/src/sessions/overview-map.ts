@@ -25,7 +25,7 @@ export const sessionOverviews: Readonly<Record<Exclude<SessionSlug, "00-system-h
     incident: "課題2",
   },
   "04-workflow-errors": { rule: "「予約が見つからない」と「今の状態では操作できない」を取り違えない" },
-  "05-business-events-and-workflows": { rule: "工程の途中で失敗したら、その先の工程へ進まない" },
+  "05-business-events-and-workflows": { rule: "確認に1つでも失敗したキャンセルは記録しない" },
   "06-effects-and-consistency": { rule: "予約の変更と監査記録は、両方残すか、どちらも残さない" },
   final: { rule: "ここまでの決まりを、1つのシステムの中で通してたどる" },
 };

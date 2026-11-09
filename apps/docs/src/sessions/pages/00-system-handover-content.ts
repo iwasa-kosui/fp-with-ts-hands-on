@@ -8,7 +8,7 @@ export const session: SessionSummary = {
   kind: "orientation",
   title: "業務とシステムを引き継ぐ",
   durationMinutes: 10,
-  timeBreakdown: { brief: 4, teach: 4, exercise: 0, review: 2 },
+  timeBreakdown: { brief: 3.5, teach: 4, exercise: 0, review: 2.5 },
   animal: { name: "DOG", type: "dog", avatar: "🐕" },
   summary: "WAN NYAN CLINIC の現行業務と、システムに残る記録、起きている事故を確認します。",
   episode: [

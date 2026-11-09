@@ -376,6 +376,22 @@ const captions = [
     .mrf .mrf__block :global(pre) {
       padding-block: 0;
     }
+
+    .mrf:not([data-ready]) {
+      margin-block: 0;
+    }
+
+    .mrf:not([data-ready]) .mrf__frames > li + li {
+      margin-block-start: 0.125rem;
+    }
+
+    .mrf:not([data-ready]) .mrf__caption {
+      line-height: 1.4;
+    }
+
+    .mrf:not([data-ready]) .mrf__pane {
+      gap: 0.25rem;
+    }
   }
 
   @media (max-width: 55rem) {

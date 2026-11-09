@@ -8,7 +8,7 @@ export const sessionPages = [
     title: "動物病院のシステムを引き継ぐ",
     flow: "background",
     kind: "brief",
-    minutes: 1.5,
+    minutes: 1,
     role: "背景: これから引き継ぐ病院の仕事を、3つの場面で見ます。",
   },
   {
@@ -72,7 +72,7 @@ export const sessionPages = [
     title: "この研修で目指す状態",
     flow: "solution",
     kind: "review",
-    minutes: 0.5,
+    minutes: 1,
     role: "解決策: 2件の事故を、修正前と修正後で比べます。",
   },
   {
