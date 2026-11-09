@@ -1,259 +1,280 @@
 ---
-import StepControls from "../stepper/StepControls.astro";
-import { noticeMoments, type NoticeMomentId } from "./notice-moments";
+import { noticeMoments } from "./notice-moments";
 
-const details: Readonly<Record<NoticeMomentId, Readonly<{ who: string; caption: string }>>> = {
+const details = {
   write: {
-    who: "書いた本人",
-    caption: "型検査（値の種類の食い違いを実行の前に調べる仕組み）や Linter（書き方の誤りを調べる道具）が、書いているときに誤りを報告します。",
+    who: "変更した人",
+    via: "型検査（値の種類の食い違いを実行の前に調べる仕組み）や Linter（書き方の誤りを調べる道具）が知らせます。",
+    missLabel: "ここで気づかないと",
+    risk: "開発チームも困る",
+    miss: "誤りがテストまで進みます。",
   },
   test: {
     who: "開発チーム",
-    caption: "テスト（期待どおりに動くかを確かめるコード）を実行したときに、誤りが報告されます。",
+    via: "テスト（期待どおりに動くかを確かめるコード）が知らせます。",
+    missLabel: "ここで気づかないと",
+    risk: "操作できない人が出る",
+    miss: "誤りが動いているシステムまで進み、サーバーが操作を受け付けません。",
   },
   run: {
     who: "操作した人",
-    caption: "サーバーが処理の途中で値を確かめ、その操作を受け付けません。操作はできませんが、データは壊れません。",
+    via: "サーバーが処理の途中で値を確かめます。",
+    missLabel: "ここで気づかないと",
+    risk: "データが壊れる",
+    miss: "誤った操作や値がそのまま通ります。飼い主と病院も困ります。",
   },
   human: {
     who: "飼い主と病院",
-    caption: "請求を受けた飼い主や、記録を調べた担当者が見つけます。お金や情報への被害は、もう起きています。",
+    via: "請求を受けた飼い主や、記録を調べた担当者が見つけます。",
+    missLabel: "ここで気づいたときには",
+    risk: "お金や情報の被害",
+    miss: "もう起きています。二重請求と、飼い主の連絡先まで読める監査記録です。",
   },
-};
+} as const;
 
-const levels = [0.25, 0.5, 0.75, 1] as const;
+const moments = noticeMoments.map((moment, index) => ({
+  ...moment,
+  ...details[moment.id],
+  people: noticeMoments.slice(0, index + 1).map(({ id }) => details[id].who),
+}));
 ---
 
-<figure class="nm" data-notice-moments aria-label="誤りに気づける4つの場面と、それぞれの場面で困る人">
-  <StepControls />
-
-  <div aria-live="polite">
-    <ol class="nm__frames">
-      {noticeMoments.map((moment) => <li data-frame><p class="nm__caption">{details[moment.id].caption}</p></li>)}
-    </ol>
-  </div>
-
+<figure class="nm" aria-label="誤りに気づける4つの場面と、それぞれの場面で気づかないと増えるリスク">
   <ol class="nm__moments">
-    {noticeMoments.map((moment, index) => (
-      <li class="nm__moment" data-moment={index} style={`--level: ${levels[index]}`}>
-        <p class="nm__label">{moment.label}</p>
-        <div class="nm__chart">
-          <p class="nm__who"><span class="nm__who-label">困る人</span><span>{details[moment.id].who}</span></p>
-          <div class="nm__bar"></div>
-        </div>
-      </li>
-    ))}
+    {
+      moments.map((moment, index) => (
+        <li class="nm__moment" data-moment={moment.id} style={`--i: ${index}`}>
+          <p class="nm__label">
+            <span class="nm__number">{index + 1}</span>
+            {moment.label}
+          </p>
+          <p class="nm__via">{moment.via}</p>
+          <p class="nm__heading">ここで気づくと困る人</p>
+          <ul class="nm__people">
+            {moment.people.map((person, personIndex) => (
+              <li class:list={["nm__person", { "nm__person--new": personIndex === index }]}>
+                {person}
+              </li>
+            ))}
+          </ul>
+          <div class="nm__risk">
+            <p class="nm__heading">{moment.missLabel}</p>
+            <p class="nm__tag">{moment.risk}</p>
+            <p class="nm__miss">{moment.miss}</p>
+          </div>
+        </li>
+      ))
+    }
   </ol>
 </figure>
 
-<script>
-  import { mountStepper } from "../stepper/stepper";
-
-  document.querySelectorAll<HTMLElement>("[data-notice-moments]").forEach((root) => {
-    const moments = [...root.querySelectorAll<HTMLElement>("[data-moment]")];
-    mountStepper({
-      root,
-      onStep: (step) => {
-        moments.forEach((moment) => {
-          const index = Number(moment.dataset.moment);
-          moment.dataset.state = index === step ? "current" : index < step ? "past" : "later";
-        });
-      },
-    });
-  });
-</script>
-
 <style>
   .nm {
-    --nm-chart-h: 9rem;
-    --nm-bar-max: 6rem;
-    min-width: 0;
-    margin: 1rem 0;
-  }
-
-  .nm__frames {
-    margin: 0.75rem 0 0;
-    padding-inline-start: 1.5rem;
-  }
-
-  .nm__frames > li + li {
-    margin-block-start: 0.5rem;
-  }
-
-  .nm__caption {
-    margin: 0;
-    font-weight: 700;
-    line-height: 1.7;
-    overflow-wrap: anywhere;
+    --nm-gap: 1.75rem;
+    --nm-person-h: 1.75rem;
+    margin: 0 0 0.75rem;
   }
 
   .nm__moments {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.75rem;
-    margin: 0.75rem 0 0;
+    gap: 0 var(--nm-gap);
+    margin: 0;
     padding: 0;
     list-style: none;
   }
 
   .nm__moment {
-    min-width: 0;
+    position: relative;
+    display: grid;
+    grid-row: span 5;
+    grid-template-rows: subgrid;
+    row-gap: 0.5rem;
+  }
+
+  .nm__moment:not(:last-child)::after {
+    content: "→" / "";
+    position: absolute;
+    top: 0.4rem;
+    right: calc(var(--nm-gap) * -1);
+    width: var(--nm-gap);
+    color: var(--role-muted);
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .nm__moment p {
+    margin: 0;
   }
 
   .nm__label {
-    margin: 0;
-    padding: 0.5rem 0.75rem;
-    border: 2px solid var(--role-border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--role-border);
     border-radius: 0.5rem;
     background: var(--role-surface);
     color: var(--role-text);
-    font-size: 0.9375rem;
-    font-weight: 800;
-    text-align: center;
+    font-weight: 700;
   }
 
-  .nm__chart {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    height: var(--nm-chart-h);
-    margin-block-start: 0.5rem;
-  }
-
-  .nm__who {
-    display: grid;
-    margin: 0 0 0.25rem;
-    color: var(--role-text);
-    font-size: 0.875rem;
-    font-weight: 800;
-    line-height: 1.4;
-    text-align: center;
-  }
-
-  .nm__who-label {
-    color: var(--role-muted);
-    font-size: 0.75rem;
-  }
-
-  .nm__bar {
+  .nm__number {
+    display: inline-grid;
     flex: none;
-    height: calc(var(--level) * var(--nm-bar-max));
-    border: 2px solid var(--role-negative);
-    border-radius: 0.375rem 0.375rem 0 0;
-    background: color-mix(in srgb, var(--role-negative) 25%, var(--role-surface));
-    transform-origin: bottom;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 999px;
+    background: var(--role-accent);
+    color: var(--role-on-accent);
+    font-size: 0.85rem;
   }
 
-  .nm[data-ready] .nm__moment[data-state="later"] .nm__chart {
-    visibility: hidden;
+  .nm__via {
+    color: var(--role-text);
+    font-size: 0.85rem;
+    line-height: 1.45;
   }
 
-  .nm[data-ready] .nm__moment[data-state="later"] .nm__label {
+  .nm__heading {
     color: var(--role-muted);
+    font-size: 0.8rem;
   }
 
-  .nm[data-ready] .nm__moment[data-state="current"] .nm__label {
-    border-color: var(--role-accent);
-    box-shadow: 0 0 0 2px var(--role-accent);
-  }
-
-  .nm[data-ready] .nm__frames {
-    display: grid;
-    padding-inline-start: 0;
+  .nm__people {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.25rem;
+    min-height: calc(var(--nm-person-h) * 4 + 0.75rem);
+    margin: 0;
+    padding: 0;
     list-style: none;
   }
 
-  .nm[data-ready] .nm__frames > li {
-    grid-area: 1 / 1;
-    margin: 0;
+  .nm__person {
+    display: flex;
+    align-items: center;
+    min-height: var(--nm-person-h);
+    padding: 0 0.6rem;
+    border: 1px solid var(--role-border);
+    border-radius: 0.375rem;
+    color: var(--role-muted);
+    font-size: 0.875rem;
   }
 
-  .nm[data-ready] .nm__frames > li[hidden] {
-    display: block;
-    visibility: hidden;
+  .nm__person--new {
+    border-color: var(--role-accent);
+    background: var(--role-accent-soft);
+    color: var(--role-text);
+    font-weight: 700;
+  }
+
+  [data-moment="human"] .nm__person--new {
+    border-color: var(--role-negative);
+    background: color-mix(in srgb, var(--role-negative) 18%, var(--role-surface));
+  }
+
+  .nm__risk {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem 0.6rem;
+    border-left: 3px solid var(--role-accent);
+    background: var(--role-surface);
+  }
+
+  [data-moment="run"] .nm__risk,
+  [data-moment="human"] .nm__risk {
+    border-left-color: var(--role-negative);
+  }
+
+  .nm__tag {
+    color: var(--role-text);
+    font-weight: 700;
+  }
+
+  [data-moment="run"] .nm__tag,
+  [data-moment="human"] .nm__tag {
+    color: var(--role-negative);
+  }
+
+  .nm__miss {
+    color: var(--role-text);
+    font-size: 0.9rem;
+    line-height: 1.5;
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .nm[data-ready] .nm__moment[data-state="current"] .nm__bar {
-      animation: nm-grow 0.5s ease-out both;
+    .nm__person--new {
+      animation: nm-rise 0.4s ease-out both;
+      animation-delay: calc(var(--i) * 0.45s + 0.15s);
     }
 
-    @keyframes nm-grow {
-      from {
-        transform: scaleY(0);
-      }
+    .nm__moment:not(:last-child)::after {
+      animation: nm-fade 0.3s ease-out both;
+      animation-delay: calc(var(--i) * 0.45s + 0.4s);
+    }
+  }
+
+  @keyframes nm-rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+  }
+
+  @keyframes nm-fade {
+    from {
+      opacity: 0;
     }
   }
 
   @media (max-height: 700px) {
     .nm {
-      margin-block: 0.5rem;
+      --nm-person-h: 1.5rem;
     }
 
-    .nm__frames {
-      margin-block-start: 0.375rem;
+    .nm__moment {
+      row-gap: 0.3rem;
     }
 
-    .nm__moments {
-      margin-block-start: 0.375rem;
+    .nm__risk {
+      padding: 0.35rem 0.5rem;
     }
 
-    .nm__label {
-      padding-block: 0.25rem;
-    }
-
-    .nm__chart {
-      margin-block-start: 0.25rem;
+    .nm__miss {
+      font-size: 0.85rem;
+      line-height: 1.4;
     }
   }
 
   @media (max-width: 55rem) {
     .nm__moments {
       grid-template-columns: minmax(0, 1fr);
-      gap: 0.5rem;
+      gap: var(--nm-gap);
     }
 
     .nm__moment {
-      display: grid;
-      grid-template-columns: minmax(7rem, 9rem) minmax(0, 1fr);
-      gap: 0.5rem;
-      align-items: center;
+      display: flex;
+      flex-direction: column;
+      grid-row: auto;
     }
 
-    .nm__chart {
-      flex-direction: row;
-      align-items: center;
-      justify-content: flex-start;
-      height: auto;
-      min-height: 2.5rem;
-      margin: 0;
-      gap: 0.5rem;
+    .nm__moment:not(:last-child)::after {
+      content: "↓" / "";
+      top: auto;
+      right: auto;
+      bottom: calc(var(--nm-gap) * -1);
+      left: 0;
+      width: 100%;
+      line-height: var(--nm-gap);
     }
 
-    .nm__who {
-      flex: none;
-      margin: 0;
-      text-align: start;
-    }
-
-    .nm__bar {
-      flex: none;
-      width: calc(var(--level) * 40%);
-      height: 1.5rem;
-      border-radius: 0 0.375rem 0.375rem 0;
-      transform-origin: left;
-    }
-
-    @media (prefers-reduced-motion: no-preference) {
-      .nm[data-ready] .nm__moment[data-state="current"] .nm__bar {
-        animation-name: nm-grow-x;
-      }
-
-      @keyframes nm-grow-x {
-        from {
-          transform: scaleX(0);
-        }
-      }
+    .nm__people {
+      flex-flow: row wrap;
+      min-height: 0;
     }
   }
 </style>
