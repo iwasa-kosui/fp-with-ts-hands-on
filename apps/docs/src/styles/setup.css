@@ -44,7 +44,8 @@
   list-style: none;
 }
 
-#environment > p {
+#environment > p,
+#local > p {
   line-height: 1.8;
 }
 

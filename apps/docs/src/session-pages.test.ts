@@ -277,7 +277,7 @@ const reviewPromptFor = {
 } as const satisfies Record<ExerciseSlug, string>;
 
 const peerReviewPromises = [
-  "人ではなく変更を見ます。「この変更は」で話し始め、優劣をつけません。",
+  "人ではなく仕組みを見ます。「この仕組みは」で話し始め、優劣をつけません。",
   "作った本人が、自分の仕組みは何を見ているかを説明します。",
   "複数人で行うときは、全員の仕組みを少なくとも一度は確かめます。",
 ] as const;

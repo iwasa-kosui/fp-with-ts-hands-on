@@ -288,7 +288,7 @@ describe("TerminalPanel", () => {
       "restoring-deps",
       "準備が時間内に終わりませんでした。「ターミナルを再試行」を押してください。",
     ],
-  ] as const)("explains a %s timeout in Japanese with a link to the setup page", async (phase, message) => {
+  ] as const)("explains a %s timeout in Japanese and points to the answer example", async (phase, message) => {
     const host = await renderPanel({
       runnerFactory: () => ({
         start: async () => {
@@ -300,11 +300,9 @@ describe("TerminalPanel", () => {
     await clickAction(host, "start-terminal");
 
     expect(host.querySelector('[role="alert"]')?.textContent).toBe(message);
-    expect(host.querySelector('a[href="/setup/"]')?.textContent).toBe(
-      "環境構築のページ",
-    );
+    expect(host.querySelector('a[href="/setup/"]')).toBeNull();
     expect(host.textContent).toContain(
-      "繰り返し失敗するときは、環境構築のページの手順で手元で進めてください。",
+      "繰り返し失敗するときは、このSessionの「演習」ページにある「解答の例を見る」を開いてください。",
     );
   });
 
@@ -323,7 +321,8 @@ describe("TerminalPanel", () => {
       "依存パッケージの取得に失敗しました。ネットワークの接続を確かめてから「ターミナルを再試行」を押してください。",
     );
     expect(host.textContent).not.toContain("Dependency installation failed");
-    expect(host.querySelector('a[href="/setup/"]')).not.toBeNull();
+    expect(host.querySelector('a[href="/setup/"]')).toBeNull();
+    expect(host.textContent).toContain("「解答の例を見る」を開いてください。");
   });
 
   it("does not show an unclassified English error message", async () => {
@@ -341,7 +340,8 @@ describe("TerminalPanel", () => {
     expect(host.querySelector('[role="alert"]')?.textContent).toBe(
       "ターミナルの起動中にエラーが発生しました。「ターミナルを再試行」を押してください。",
     );
-    expect(host.querySelector('a[href="/setup/"]')).not.toBeNull();
+    expect(host.querySelector('a[href="/setup/"]')).toBeNull();
+    expect(host.textContent).toContain("「解答の例を見る」を開いてください。");
   });
 
   it("estimates the remaining time from the bytes received after the first report", async () => {

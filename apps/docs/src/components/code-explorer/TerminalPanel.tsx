@@ -74,7 +74,7 @@ type PanelState =
   | Readonly<{ kind: "preparing"; phase: TerminalPhase; startedAt: number }>
   | Readonly<{ kind: "ready" }>
   | Readonly<{ kind: "exited"; exitCode: number; restarting: boolean }>
-  | Readonly<{ kind: "failed"; message: string; suggestsSetup: boolean }>;
+  | Readonly<{ kind: "failed"; message: string; suggestsAnswer: boolean }>;
 
 type DownloadProgress = DepsSnapshotProgress &
   Readonly<{ firstAt: number; firstLoaded: number }>;
@@ -106,19 +106,19 @@ const timeoutMessageFor = (phase: TerminalPhase): string => {
 
 const failureFrom = (
   error: unknown,
-): Readonly<{ message: string; suggestsSetup: boolean }> => {
+): Readonly<{ message: string; suggestsAnswer: boolean }> => {
   if (error instanceof TerminalPreparationTimeoutError) {
-    return { message: timeoutMessageFor(error.phase), suggestsSetup: true };
+    return { message: timeoutMessageFor(error.phase), suggestsAnswer: true };
   }
   if (error instanceof TerminalInstallError) {
     return {
       message: `依存パッケージの取得に失敗しました。${networkRetryGuidance}`,
-      suggestsSetup: true,
+      suggestsAnswer: true,
     };
   }
   return {
     message: `ターミナルの起動中にエラーが発生しました。${retryGuidance}`,
-    suggestsSetup: true,
+    suggestsAnswer: true,
   };
 };
 
@@ -453,7 +453,7 @@ export const TerminalPanel = forwardRef<
         kind: "failed",
         message:
           "ChromeまたはEdgeで開き、サイトの分離ヘッダーを確認してください。",
-        suggestsSetup: false,
+        suggestsAnswer: false,
       });
       return;
     }
@@ -748,10 +748,9 @@ export const TerminalPanel = forwardRef<
       {state.kind === "failed" ? (
         <div className="code-explorer__terminal-status">
           <p role="alert">{state.message}</p>
-          {state.suggestsSetup ? (
+          {state.suggestsAnswer ? (
             <p>
-              繰り返し失敗するときは、<a href="/setup/">環境構築のページ</a>
-              の手順で手元で進めてください。
+              繰り返し失敗するときは、このSessionの「演習」ページにある「解答の例を見る」を開いてください。
             </p>
           ) : null}
           <button
