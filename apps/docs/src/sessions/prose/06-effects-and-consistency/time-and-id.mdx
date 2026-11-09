@@ -1,0 +1,7 @@
+import TimeAndIdCompare from "../../../components/effects-walkthrough/TimeAndIdCompare.astro";
+
+<p>課題2を解きます。<code>EventContext</code> は、イベントに記録する ID と時刻の組です。時刻と ID は直接作らず、port の <code>Clock</code> と <code>EventIdGenerator</code> から受け取り、<code>createEventContext</code> を1回だけ呼びます。</p>
+
+<TimeAndIdCompare />
+
+<p>S05 では、判定の関数の外に I/O を置きました（<a href="/sessions/05-business-events-and-workflows/io-outside/">S05 の説明</a>）。時刻と ID だけはイベントを作る瞬間に要るので、予約の確認が通った後の <code>map</code> の中で port から読みます。port を通すのでテストで固定できます。<code>clock</code> が返した時刻から <code>new Date(時刻)</code> を作る書き方は、時刻を読まないので問題ありません。</p>

@@ -1,0 +1,20 @@
+---
+import type { GetStaticPaths } from "astro";
+import type { AstroComponentFactory } from "astro/runtime/server/index.js";
+import SessionProsePage from "../../../components/session-frame/SessionProsePage.astro";
+import { sessionPages, sessionSlug } from "../../../sessions/pages/06-effects-and-consistency";
+import { sessionPageStaticPaths } from "../../../sessions/pages/links";
+
+export const getStaticPaths = (() => sessionPageStaticPaths(sessionPages)) satisfies GetStaticPaths;
+
+const prose = import.meta.glob<{ Content: AstroComponentFactory }>(
+  "../../../sessions/prose/06-effects-and-consistency/*.mdx",
+);
+---
+
+<SessionProsePage
+  sessionSlug={sessionSlug}
+  pages={sessionPages}
+  pageSlug={Astro.params.page ?? ""}
+  prose={prose}
+/>

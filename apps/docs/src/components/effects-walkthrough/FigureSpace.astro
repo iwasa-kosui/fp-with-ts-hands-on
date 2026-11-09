@@ -1,0 +1,18 @@
+---
+interface Props {
+  reserve: number;
+}
+
+const { reserve } = Astro.props;
+---
+
+<div class="figure-space" style={`--figure-reserve: ${reserve}px`}><slot /></div>
+
+<style>
+  .figure-space {
+    --frame-figure-height: min(
+      540px,
+      calc(100dvh - var(--frame-bar-height) - var(--frame-foot-height) - var(--figure-reserve) - var(--frame-role-height))
+    );
+  }
+</style>

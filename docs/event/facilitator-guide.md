@@ -19,19 +19,20 @@
 - 対象: TypeScript の基本文法を読み書きできる初級から中級の参加者
 - 題材: 動物病院の予約・カルテ管理システム
 - 主線: 事前にセットアップしたローカル clone
-- 退避先: S1〜S4はページの「ステップごとの解答」の `details`、S6は後続stepを含む全targetの完成ファイル、S3 の補助演習を除いて WebContainer Playground
+- 退避先: S1〜S4はページの「ステップごとの解答」の `details`、S6は演習のページの「解答の例」、S3 の補助演習を除いて WebContainer Playground
 
 コーディングエージェントは推奨ですが必須ではありません。参加者が担うのは、事故から各セッションの問いを言語化し、Agentへの依頼文または実装メモへ変換し、型とテストで個人検証したうえで班内相互レビューを行うことです。
 
 ## テストと演習コマンドの契約
 
 - `pnpm test`、`pnpm typecheck`、`pnpm build` は通常の健全性確認で、成功を期待します。
-- S1 は `pnpm exercise:01`、S2 は `pnpm exercise:02`、S3 は `pnpm exercise:03`（補助演習は `pnpm exercise:03-supplement`）、S4 は `pnpm exercise:04`、S6 は `pnpm exercise:06` を使います。開始コードでは、業務語彙を持つ `AssertionError` または型検査の要件未達が意図して出ます。module-not-found、import error、設定エラーは意図した RED ではありません。
+- S1 は `pnpm exercise:01`、S2 は `pnpm exercise:02`、S3 は `pnpm exercise:03`（補助演習は `pnpm exercise:03-supplement`）、S4 は `pnpm exercise:04` を使います。開始コードでは、業務語彙を持つ `AssertionError` または型検査の要件未達が意図して出ます。module-not-found、import error、設定エラーは意図した RED ではありません。
 - 参加者が対象モジュールを直した後は、同じ exercise コマンドの成功を期待します。S3 の補助演習は例外です。参加者がステップ1と2を終えた後も `pnpm exercise:03-supplement` は失敗のままです。
+- S6 は exercise コマンドを使いません。演習のページ（ブラウザ内の作業場所）で、足した仕組みを「検出を確かめる」で判定します。
 - S0 は現状理解、S5 は予約のデータとキャンセルのパイプラインを読む回です。どちらにも exercise コマンドはありません。
-- S4 は同期 `Result`、例外と `Result` の使い分け、`andThen` を扱います。S6 は副作用・イベント、`ResultAsync`、`andThrough`、1回の `store(event)` を扱います。
+- S4 は同期 `Result`、例外と `Result` の使い分け、`andThen` を扱います。S6 は副作用・イベント、`ResultAsync`、`andThrough`、1回の `store(event)` を扱い、演習では悪い変更を検出する仕組みを足します。
 
-参加者ステップは S1=3件、S2=1件、S3=2件（補助演習は3件で、参加者が手元で進めるのは2件）、S4=4件、S6=4件です。開始時の失敗はステップ数と同じとは限りません。S1=5件、S2=1件、S3=2件（補助演習は3件）、S4=8件（型検査の要件未達3件と演習テストの失敗5件）、S6=4件です。S2 の開始コードには S1 の解答が入っているので、S1 の5件のうち S2 で直す1件だけが失敗します。この件数と違う出力や予期しない例外を見たら、先に環境または差分範囲を切り分けます。
+参加者ステップは S1=3件、S2=1件、S3=2件（補助演習は3件で、参加者が手元で進めるのは2件）、S4=4件です。S6 の演習はステップではなく、必須の悪い変更4件の検出です。開始時の失敗はステップ数と同じとは限りません。S1=5件、S2=1件、S3=2件（補助演習は3件）、S4=8件（型検査の要件未達3件と演習テストの失敗5件）です。S6 は、仕組みを足す前は必須の悪い変更4件がすべて「すり抜け」になります。S2 の開始コードには S1 の解答が入っているので、S1 の5件のうち S2 で直す1件だけが失敗します。この件数と違う出力や予期しない例外を見たら、先に環境または差分範囲を切り分けます。
 
 ## 当日のタイムテーブル
 
@@ -91,7 +92,7 @@ ADV の検算は S1=2+4+2=8分、S2=1+5+1=7分、S3=2+11+2=15分、S4=2+5+3=10�
 
 ## 講師の共通台本
 
-S1〜S4 と S6 は次の順序を崩しません。
+S1〜S4 と S6 は次の順序を崩しません。S6 は、手順 2 と 5 の exercise コマンドを、演習のページの「検出を確かめる」に読み替えます。
 
 1. 要求と事故を読み、「何が壊れたか」を業務の言葉で確認する。
 2. exercise コマンドを実行し、意図した assertion RED を見る。
@@ -124,11 +125,11 @@ S5はページ上で進めます。TAが事前に用意するボードやテン�
 | S3 本演習 | `examples/session-03` | `git diff --stat -- examples/session-03` |
 | S3 補助演習 | `examples/session-03-supplement` | `git diff --stat -- examples/session-03-supplement` |
 | S4 | `examples/session-04` | `git diff --stat -- examples/session-04` |
-| S6 | `examples/session-06` | `git diff --stat -- examples/session-06` |
+| S6 | なし（ブラウザ内の作業場所） | 差分確認は使わない。判定は「検出を確かめる」の表で見る |
 
 各回で `git status --short` も実行し、現在snapshot以外に想定外pathが増えていないかをTAが確認します。これはリポジトリ全体の異常検知であり、レビュー対象の差分量を判定するコマンドではありません。
 
-レビュー終了後はシートへの記録を確認し、次のセッションページとexerciseコマンドへ進み、差分確認のpathだけを次のsnapshotへ切り替えます。S4 の次の S5 は差分確認の対象がないので、その次の S6 で path を切り替えます。前のセッションの未commit差分を消すための reset、stash、commit は要求しません。想定外pathがあっても自動で消さず、参加者が残したい作業を確認してから [トラブルシューティング](./troubleshooting.md) の限定手順を使います。
+レビュー終了後はシートへの記録を確認し、次のセッションページとexerciseコマンドへ進み、差分確認のpathだけを次のsnapshotへ切り替えます。S4 の次の S5 と、その次の S6 は、差分確認の対象がありません。前のセッションの未commit差分を消すための reset、stash、commit は要求しません。想定外pathがあっても自動で消さず、参加者が残したい作業を確認してから [トラブルシューティング](./troubleshooting.md) の限定手順を使います。
 
 ## Checkpoint
 
@@ -197,7 +198,7 @@ S6 の演習と相互レビュー、休憩30分は削りません。全体が押
 ## エージェントを使わない参加者の退避
 
 - S1〜S4はページの「ステップごとの解答」の `details` を1件ずつ開き、解答スナップショットの抜粋を写して理由を読む。
-- S6は「完成ファイルの解答例」の `details` を開く。各解答は後続stepを含む完成ファイルなので、表示された全target fileを反映してから同じexerciseを実行する。1stepずつの個別GREENは約束しない。
+- S6は演習のページの「解答の例」を開く。時間内に進められなくなった参加者だけが開き、写した後に「検出を確かめる」で判定する。
 - `コードを読み、失敗を再現する` の Code Explorer は、実ファイルの注目行を読むためのガイドとして使う。
 - 同じ節の Playground は WebContainer 上で編集とコマンド実行ができる説明用・退避用環境として使う。主線にはせず、会場ネットワークに依存させない。
 - Playground が起動しない場合はローカル clone へ戻る。新しいAPIキーや特定のエージェント製品は必要ない。
@@ -211,11 +212,11 @@ Code Explorer の専用URLはありません。各セッションの `コード�
 自動検証の実測結果はP4のリハーサル記録へ残します。このガイドでは実行順と期待だけを定めます。
 
 1. 依存関係を事前に取得し、`pnpm typecheck`、`pnpm test`、`pnpm build` が成功することを確認する。これらは `examples/` の全スナップショットの Web アプリも検査する。
-2. `pnpm exercise:01`、`pnpm exercise:02`、`pnpm exercise:03-supplement`、`pnpm exercise:03`、`pnpm exercise:04`、`pnpm exercise:06` を個別に実行し、開始スナップショットとして non-zero の意図した失敗になり、`pnpm exercise:01` が5件、`pnpm exercise:02` が1件、`pnpm exercise:03-supplement` が3件、`pnpm exercise:03` が2件、`pnpm exercise:04` が8件、`pnpm exercise:06` が4件の失敗になることを確認する。`pnpm exercise:03-supplement` は S3 の補助演習である。
-3. `pnpm --filter @fp-with-ts/clinic-session-06-solution test` が S1〜S4 と S6 の全回帰を含めて成功することを確認する。
+2. `pnpm exercise:01`、`pnpm exercise:02`、`pnpm exercise:03-supplement`、`pnpm exercise:03`、`pnpm exercise:04` を個別に実行し、開始スナップショットとして non-zero の意図した失敗になり、`pnpm exercise:01` が5件、`pnpm exercise:02` が1件、`pnpm exercise:03-supplement` が3件、`pnpm exercise:03` が2件、`pnpm exercise:04` が8件の失敗になることを確認する。`pnpm exercise:03-supplement` は S3 の補助演習である。
+3. `pnpm --filter @fp-with-ts/clinic-session-06-solution test` が S1〜S4 と S6 の全回帰を含めて成功することを確認する。`pnpm verify:guard` で、S6 の模範の仕組みが合格し、仕組みを足さない状態と穴のある仕組みが不合格になることを確認する。
 4. [README](../../README.md) の表にあるデモコマンドを一つずつ起動し、`http://localhost:3000` の初期表示、通常操作、reset、未実装ダイアログを確認する。切り替える前に現在のサーバーを `Ctrl+C` で終了する。
 5. 5人相当の差分で7分版を通し、問い1で沈黙しないか、2人目の比較まで収まるかを計測する。成功済みとは記録せず、実測結果をP4へ残す。
-6. エージェントを使わない条件で、S1〜S4の解答 `details` またはS6の全target完成ファイルを開き、委譲時間内に進めるかを1本計測する。
+6. エージェントを使わない条件で、S1〜S4の解答 `details` またはS6の「解答の例」を開き、委譲時間内に進めるかを1本計測する。
 
 スマホ表示を確認するときは開発サーバーを `0.0.0.0` で待ち受けます。現行の `pnpm dev` はこの設定を持ちます。表示された実ポートに対して `mobile-preview-url <port>` を実行し、返されたURLを使います。明示的な依頼がない限り公開トンネルは使いません。
 
