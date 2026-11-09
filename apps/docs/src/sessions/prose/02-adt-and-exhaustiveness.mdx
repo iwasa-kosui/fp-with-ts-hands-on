@@ -9,7 +9,7 @@ import InlineCode from "../../components/InlineCode.astro";
   <EpisodeIllustration slug={props.session.slug} />
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
-  <p>Session 01 で定義した予約の6状態を、画面に表示する名前へ変換する分岐で扱います。never型とADT（代数的データ型）の考え方を使い、すべての状態を処理したことをコンパイラに確かめさせます。この確認を網羅性検証と呼びます。</p>
+  <p>Session 01 で見た予約の6状態を、画面に表示する名前へ変換する分岐で扱います。never型とADT（代数的データ型）の考え方を使い、すべての状態を処理したことをコンパイラに確かめさせます。この確認を網羅性検証と呼びます。</p>
   <h3 data-story-stage="use-case">追加したい機能</h3>
   <p>予約画面に表示する状態名を、Appointment の kind ごとに返します。後から状態が増えたときに、表示名の追加漏れを見つけられるようにします。</p>
   <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
@@ -27,7 +27,7 @@ import InlineCode from "../../components/InlineCode.astro";
   <p>{"\n"}編集する範囲は <code>{props.session.exerciseModule.dir}</code>、変更するファイル数は最大{"\n"}{props.session.exerciseModule.fileBudget}ファイル・約{props.session.exerciseModule.lineBudget}行です。{"\n"}</p>
   <CodeGuideCards guides={props.guides} projectFiles={props.projectFiles} />
   <h3>修正前の失敗を確認する</h3>
-  <p>このページの演習で編集するコードは <code>examples/session-02</code> にあります。コマンドはリポジトリのルートで実行するので、<code>cd</code> は要りません。このフォルダと、このページの Playground は、どちらも Session 01 の解答が入った状態から始まります。Session 01 で編集した <code>examples/session-01</code> の内容を、写す必要はありません。</p>
+  <p>このページの演習で編集するコードは <code>examples/session-02</code> にあります。コマンドはリポジトリのルートで実行するので、<code>cd</code> は要りません。このフォルダと、このページの Playground は、どちらも Session 01 の解答が入った状態から始まります。Session 01 の演習で作った仕組みを、写す必要はありません。</p>
   <p>この状態で失敗する型検査は{props.initialExerciseFailureCount}個で、次の分岐漏れの型検査です。</p>
   <ul class="exercise-failures" aria-label="修正前に確認する問題">
     {props.session.steps.map((step) => <li>{step.startingFailure}</li>)}

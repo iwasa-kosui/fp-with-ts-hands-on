@@ -1,0 +1,198 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import "./states.css";
+
+const code = `type CheckedIn = Readonly<{ kind: "CheckedIn"; checkedInAt: string }>;
+type InExamination = Readonly<{
+  kind: "InExamination";
+  checkedInAt: string;
+  veterinarianId: string;
+}>;
+type Appointment = CheckedIn | InExamination;
+
+const describe = (appointment: Appointment): string => {
+  switch (appointment.kind) {
+    case "CheckedIn":
+      return appointment.checkedInAt;
+    case "InExamination":
+      return appointment.veterinarianId;
+  }
+};`;
+
+type Row = Readonly<{ name: string; usable: boolean | undefined; note: string }>;
+
+const common = [
+  { name: "kind", usable: true, note: "使える" },
+  { name: "checkedInAt", usable: true, note: "使える" },
+] as const;
+
+const frames: readonly Readonly<{
+  lit: readonly number[];
+  type: string;
+  rows: readonly Row[];
+  caption: string;
+}>[] = [
+  {
+    lit: [0, 1, 2, 3, 4, 5],
+    type: "2つの型が持つ項目",
+    rows: [
+      { name: "kind", usable: undefined, note: "どちらの型も持つ。値は型ごとに違う" },
+      { name: "checkedInAt", usable: undefined, note: "どちらの型も持つ" },
+      { name: "veterinarianId", usable: undefined, note: "InExamination だけが持つ" },
+    ],
+    caption:
+      "CheckedIn と InExamination は、どちらも kind を持ちます。kind の値は、型ごとに違う文字列です。このように共通の kind を持つ Union を、Discriminated Union と呼びます。",
+  },
+  {
+    lit: [6],
+    type: "Appointment",
+    rows: [...common, { name: "veterinarianId", usable: false, note: "使えない。どちらの型か分からない" }],
+    caption:
+      "Appointment は、CheckedIn か InExamination のどちらかです。この時点では、どちらの型か分からないので、両方が持つ項目だけを使えます。",
+  },
+  {
+    lit: [9],
+    type: "Appointment",
+    rows: [...common, { name: "veterinarianId", usable: false, note: "使えない。どちらの型か分からない" }],
+    caption: "switch は、kind の値で場合分けします。switch の行そのものでは、まだ型は絞られていません。",
+  },
+  {
+    lit: [10, 11],
+    type: "CheckedIn",
+    rows: [...common, { name: "veterinarianId", usable: false, note: "使えない。CheckedIn にはない" }],
+    caption:
+      "case \"CheckedIn\" の中では、appointment の型が CheckedIn に絞られます。これを型の絞り込みと呼びます。CheckedIn の項目だけを使えます。",
+  },
+  {
+    lit: [12, 13],
+    type: "InExamination",
+    rows: [...common, { name: "veterinarianId", usable: true, note: "使える" }],
+    caption:
+      "case \"InExamination\" の中では、InExamination に絞られるので、veterinarianId を使えます。kind を調べるだけで、使える項目が変わります。",
+  },
+];
+---
+
+<figure class="st-fig narrow" data-union-narrowing aria-label="switch の case ごとに、使える項目が変わる様子">
+  <StepControls />
+
+  <ol class="st-stack">
+    {frames.map((frame) => (
+      <li data-frame data-lit={JSON.stringify(frame.lit)}>
+        <div class="narrow__split">
+          <figure class="code-block st-code">
+            <figcaption>説明用の短い例。実物は <code>appointment.ts</code> にあります。</figcaption>
+            <Code code={code} lang="ts" />
+          </figure>
+          <div class="narrow__panel">
+            <p class="narrow__type">appointment の型: <code>{frame.type}</code></p>
+            <ul class="narrow__rows">
+              {frame.rows.map((row) => (
+                <li data-usable={row.usable === undefined ? "none" : row.usable ? "yes" : "no"}>
+                  <span class="narrow__mark st-mark" data-tone={row.usable === undefined ? undefined : row.usable ? "positive" : "negative"} aria-hidden="true">
+                    {row.usable === undefined ? "・" : row.usable ? "✓" : "×"}
+                  </span>
+                  <code>{row.name}</code>
+                  <span class="narrow__note">{row.note}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <p class="st-caption">{frame.caption}</p>
+      </li>
+    ))}
+  </ol>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-union-narrowing]").forEach((root) => {
+    root.querySelectorAll<HTMLElement>("[data-frame]").forEach((frame) => {
+      const lit = JSON.parse(frame.dataset.lit ?? "[]") as number[];
+      frame.querySelectorAll<HTMLElement>(".line").forEach((line, index) => {
+        line.classList.toggle("is-lit", lit.includes(index));
+      });
+    });
+    mountStepper({ root });
+  });
+</script>
+
+<style>
+  .narrow__split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: start;
+    margin-block-end: 0.125rem;
+  }
+
+  .narrow__split :global(.st-code pre) {
+    padding-block: 0.125rem;
+    line-height: 1.4;
+  }
+
+  .narrow :global(.st-caption) {
+    line-height: 1.5;
+  }
+
+  .narrow__panel {
+    display: grid;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border: 2px solid var(--role-accent);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+  }
+
+  .narrow__type {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 800;
+  }
+
+  .narrow__rows {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .narrow__rows li {
+    display: grid;
+    grid-template-columns: 1.25rem auto;
+    gap: 0 0.5rem;
+    align-items: baseline;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  .narrow__rows li[data-usable="no"] {
+    border: 2px dashed var(--role-negative);
+  }
+
+  .narrow__rows li[data-usable="yes"] {
+    border: 2px solid var(--role-positive);
+  }
+
+  .narrow__rows li[data-usable="none"] {
+    border: 2px solid var(--role-border);
+  }
+
+  .narrow__note {
+    grid-column: 2;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+  }
+
+  @media (max-width: 55rem) {
+    .narrow__split {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
