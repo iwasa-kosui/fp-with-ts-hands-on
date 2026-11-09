@@ -234,10 +234,10 @@ export const ResultTable = ({
         </section>
       ) : null}
       <p className="guard-exercise__durations">
-        所要: 型 {secondsText(result.durations.types)} / Linter{" "}
-        {secondsText(result.durations.lint)} / テスト{" "}
-        {secondsText(result.durations.tests)} / 合計{" "}
-        {secondsText(result.durations.total)}
+        所要: 全体 {secondsText(result.durations.total)}（型{" "}
+        {secondsText(result.durations.types)}、Linter{" "}
+        {secondsText(result.durations.lint)}。テスト{" "}
+        {secondsText(result.durations.tests)} は並行して実行）
       </p>
     </div>
   );

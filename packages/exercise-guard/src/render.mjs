@@ -118,7 +118,7 @@ export const render = (result, { color }) => {
       ? ["", "補足", ...result.notes.flatMap((note) => wrapWithPrefix("- ", note))]
       : []),
     "",
-    `所要: 型 ${secondsText(durations.types)} / Linter ${secondsText(durations.lint)} / テスト ${secondsText(durations.tests)} / 合計 ${secondsText(durations.total)}`,
+    `所要: 全体 ${secondsText(durations.total)}（型 ${secondsText(durations.types)}、Linter ${secondsText(durations.lint)}。テスト ${secondsText(durations.tests)} は並行して実行）`,
     "",
   ].join("\n");
 };

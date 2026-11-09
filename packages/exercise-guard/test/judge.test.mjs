@@ -490,7 +490,7 @@ describe("render", () => {
 
     expect(text.split("\n")[0]).toBe("結果: 合格です");
     expect(text).toContain("次にすること");
-    expect(text).toMatch(/所要: 型 [\d.]+s \/ Linter [\d.]+s \/ テスト [\d.]+s \/ 合計 [\d.]+s/);
+    expect(text).toMatch(/所要: 全体 [\d.]+s（型 [\d.]+s、Linter [\d.]+s。テスト [\d.]+s は並行して実行）/);
   });
 
   it("color のときだけ誤検知の行を赤にする", async () => {
