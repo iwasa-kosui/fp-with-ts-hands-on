@@ -115,27 +115,6 @@ const appendAudit = (
     return ok(undefined);
   });`,
   },
-  "after-find": {
-    box: "impl",
-    path: "examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
-    code: `const findInTransaction = (
-  transaction: SqliteTransaction,
-  appointmentId: AppointmentId,
-): Appointment | undefined => {
-  let row: Readonly<{ state: string }> | undefined;
-  try {
-    row = transaction
-      .select({ state: appointmentsTable.state })
-      .from(appointmentsTable)
-      .where(sql\`\${appointmentsTable.appointmentId} = \${appointmentId}\`)
-      .get();
-  } catch (cause) {
-    throw new AppointmentPersistenceError("resolve", cause);
-  }
-
-  return row === undefined ? undefined : parsePersistedAppointment(row.state);
-};`,
-  },
   "after-save": {
     box: "impl",
     path: "examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
@@ -212,9 +191,9 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "off",
       },
       {
-        text: "`stateStore.save` は `database` に直接書きます。`InExamination` は、その場ですぐ書き込まれます。",
+        text: "`stateStore.save` は `saveState(database, …)` で、`database` に直接書きます。transaction を使わないので、`InExamination` はその場ですぐ書き込まれます。",
         call: { pane: "before-call", lines: [0] },
-        impl: { pane: "before-save", lines: [1, 10, 11, 12, 13, 14, 15, 16, 17] },
+        impl: { pane: "before-save", lines: [1] },
         tx: "none",
         old: "none",
         state: "home",
@@ -223,7 +202,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       {
         text: "次に `eventLog.append` が監査記録を書こうとしますが、書き込みが失敗して例外を投げます。",
         call: { pane: "before-call", lines: [1] },
-        impl: { pane: "before-append", lines: [1, 9, 10, 11] },
+        impl: { pane: "before-append", lines: [9, 10, 11] },
         tx: "none",
         old: "none",
         state: "home",
@@ -265,7 +244,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       {
         text: "transaction の中で予約を読み直します。`CheckedIn` なので先へ進みます。",
         call: { pane: "after-call", lines: [0] },
-        impl: { pane: "after-find", lines: [6, 7, 8, 9, 10, 15] },
+        impl: { pane: "after-atomic", lines: [2, 3] },
         tx: "open",
         old: "CheckedIn",
         state: "off",
@@ -275,7 +254,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       {
         text: "`saveState` が新しい状態を書きます。まだ未確定です。",
         call: { pane: "after-call", lines: [0] },
-        impl: { pane: "after-save", lines: [6, 7, 8, 9, 10, 11, 12, 13] },
+        impl: { pane: "after-save", lines: [6, 7, 8] },
         tx: "open",
         old: "CheckedIn",
         state: "tx",
@@ -317,7 +296,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       {
         text: "予約を読み直します。`CheckedIn` なので先へ進みます。",
         call: { pane: "after-call", lines: [0] },
-        impl: { pane: "after-find", lines: [6, 7, 8, 9, 10, 15] },
+        impl: { pane: "after-atomic", lines: [2, 3] },
         tx: "open",
         old: "CheckedIn",
         state: "off",
@@ -327,7 +306,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       {
         text: "`saveState` が状態を書きます。まだ未確定です。",
         call: { pane: "after-call", lines: [0] },
-        impl: { pane: "after-save", lines: [6, 7, 8, 9, 10, 11, 12, 13] },
+        impl: { pane: "after-save", lines: [6, 7, 8] },
         tx: "open",
         old: "CheckedIn",
         state: "tx",

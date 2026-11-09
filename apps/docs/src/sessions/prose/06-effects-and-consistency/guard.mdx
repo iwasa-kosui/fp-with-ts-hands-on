@@ -1,5 +1,7 @@
 import GuardScopeCards from "../../../components/effects-walkthrough/GuardScopeCards.astro";
 
+<p><strong>問い</strong>: 自分の業務で、「1回の保存」（保存の処理を1回だけ呼ぶこと）と「原子性」（全部残るか何も残らないか）を、それぞれどの仕組みで守りますか。複数人の場合は、理由を話し合います。</p>
+
 <p>片方だけ残る問題は、設計と transaction の2つで防ぎます。設計は、ユースケースが store を1回だけ呼ぶ形で、演習で足した仕組みはこれを守ります。transaction は、全部残るか何も残らないかという性質（<strong>原子性</strong>）を、本番の保存先で守ります。演習で足した仕組みは、本番の原子性を保証できません。</p>
 
 <GuardScopeCards />

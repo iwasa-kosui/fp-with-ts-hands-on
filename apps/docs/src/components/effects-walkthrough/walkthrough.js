@@ -12,7 +12,6 @@ for (const root of roots) {
   const progress = root.querySelector("[data-walk-progress]");
   const page = root.hasAttribute("data-walk-page");
   const button = (name) => root.querySelector(`[data-walk-action="${name}"]`);
-  const first = button("first");
   const prev = button("prev");
   const play = button("play");
   const next = button("next");
@@ -82,7 +81,7 @@ for (const root of roots) {
   };
 
   const renderPlay = () => {
-    play.textContent = playing ? "一時停止" : frame >= lastFrame() ? "最初から" : "再生";
+    play.textContent = playing ? "❚❚ 一時停止" : "▶ 再生";
   };
 
   const show = (nextScene, nextFrame, follow = true) => {
@@ -102,7 +101,6 @@ for (const root of roots) {
     progress.textContent = `${frame + 1} / ${items[scene].length}`;
     if (sceneChanged && !page) fitLive();
     live.innerHTML = items[scene][frame].innerHTML;
-    setDisabled(first, frame === 0);
     setDisabled(prev, frame === 0);
     setDisabled(next, frame >= lastFrame());
     renderPlay();
@@ -128,11 +126,6 @@ for (const root of roots) {
     else schedule();
   }
 
-  first.addEventListener("click", () => {
-    if (isDisabled(first)) return;
-    stop();
-    show(scene, 0);
-  });
   prev.addEventListener("click", () => {
     if (isDisabled(prev)) return;
     stop();

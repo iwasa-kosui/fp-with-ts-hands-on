@@ -116,6 +116,7 @@ export const aggregate = (input) => {
       problems: input.problems,
       stageOpened,
       passed,
+      typesAllowed: allRows.some((row) => row.kind === "bad" && row.allow.includes("types")),
     }),
     durations: input.durations,
   };

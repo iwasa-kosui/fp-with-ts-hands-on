@@ -17,10 +17,10 @@ const thenStore = throughStore.replace(".andThrough(", ".andThen(");
 if (thenStore === throughStore) throw new Error("AndThroughCompare: .andThrough( is not in the excerpt");
 
 const frames = [
-  "修正前: `andThen` は、`store` が返した値を次の行へ流します。`store` が返すのは `void` なので、次の行へ流れるのは、保存したイベントではなく `void` です。",
-  "修正前: 次の行の `event` は `void` です。`void` に `aggregateState` はないので、型のエラーになります。",
-  "修正後: `andThrough` は、`store` の成功を確かめたあと、その結果を捨てます。次の行へは、保存したイベントがそのまま流れます。",
-  "修正後: 次の行の `event` は `ExaminationStarted` です。`event.aggregateState` を取り出して、画面に新しい予約の状態 `InExamination` を返せます。保存の後もイベントが要るのは、このためです。",
+  "`andThen` で書くと: `andThen` は、`store` が返した値を次の行へ流します。`store` が返すのは `void` なので、次の行へ流れるのは、保存したイベントではなく `void` です。",
+  "`andThen` で書くと: 次の行の `event` は `void` です。`void` に `aggregateState` はないので、型のエラーになります。",
+  "`andThrough` で書くと: `andThrough` は、`store` の成功を確かめたあと、その結果を捨てます。次の行へは、保存したイベントがそのまま流れます。",
+  "`andThrough` で書くと: 次の行の `event` は `ExaminationStarted` です。`event.aggregateState` を取り出して、画面に新しい予約の状態 `InExamination` を返せます。保存の後もイベントが要るのは、このためです。",
 ] as const;
 
 const lit = JSON.stringify([{ rows: [1] }, { rows: [3] }, { rows: [2] }, { rows: [3] }]);
@@ -41,9 +41,8 @@ const lit = JSON.stringify([{ rows: [1] }, { rows: [3] }, { rows: [2] }, { rows:
 
   <div class="sf-stage atc__stage">
     <div class="atc__head">
-      <span class="sf-tag sf-tag--before atc__era" data-era="before">修正前</span>
-      <span class="sf-tag sf-tag--after atc__era" data-era="after">修正後</span>
-      <code>startExamination.ts</code>
+      <span class="sf-tag sf-tag--before atc__era" data-era="before"><code>andThen</code> で書くと</span>
+      <span class="sf-tag sf-tag--after atc__era" data-era="after"><code>andThrough</code> で書くと</span>
       <span class="atc__note">右の札は、その行から次の行へ流れる値です。✗ の札は値ではなく、型のエラーです。</span>
     </div>
 

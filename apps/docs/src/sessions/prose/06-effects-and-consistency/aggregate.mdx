@@ -4,7 +4,7 @@ import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.ast
 <p>課題1を解くには、何を一緒に残すかの範囲を決めます。一緒に変えないと整合性（データの組み合わせが業務のルールどおりであること）が崩れるデータのまとまりを<strong>集約</strong>、その一緒に残す範囲を<strong>整合性境界</strong>と呼びます。診察開始では、予約1件の状態と監査記録が、同じ集約に入ります。</p>
 
 <FigureSpace reserve={152}>
-  <AggregateConsistencyFlow auditLabel="監査記録" condensedCode />
+  <AggregateConsistencyFlow auditLabel="監査記録" condensedCode scene="start-examination" />
 </FigureSpace>
 
-<p>図のコードは、S05 のキャンセルを例にした参照実装 <code>examples/final</code> の抜粋です（「…」は省略した行）。</p>
+<p>図のコードは、<code>examples/session-06-solution</code> の <code>Appointment.startExamination</code> の抜粋です（「…」は省略した部分）。</p>

@@ -316,7 +316,7 @@ const scenes: readonly Scene[] = [
         lines: [0, 1, 2, 3],
       },
       {
-        text: "SQLite の書き込みが失敗すると、`store` は `fromSafePromise` の中で reject します。`Err` に変換しません。",
+        text: "SQLite の書き込みが失敗すると、`store` は `fromSafePromise` の中で reject します。`fromSafePromise` は Promise を `ResultAsync` に包み、reject は変えないので、`Err` になりません。`fromPromise` は reject を指定した `Err` に変えますが、ここでは使いません。",
         at: "through",
         impl: "store",
         lines: [1, 2],

@@ -9,6 +9,15 @@ import { PetId } from "../../../src/domain/pet/index.js";
 import type { EffectsDependencies } from "../../../src/useCase/dependencies.js";
 import { startExaminationWithEffects } from "../subjects/useCase.js";
 
+describe("startExaminationWithEffects", () => {
+  it("診察を開始したときの性質", async () => {
+    const harness = createHarness();
+
+    const result = await startExaminationWithEffects(harness.dependencies)(input);
+    // ここに確かめることを書きます（使える値: harness.recordedEvents、harness.storeCalls）
+  });
+});
+
 const FIXED_EVENT_ID = EventId.parse("55555555-5555-4555-8555-555555555555");
 const FIXED_OCCURRED_AT = "2026-08-30T06:30:00.000Z";
 const appointmentId = AppointmentId.parse("11111111-1111-4111-8111-111111111111");
@@ -51,12 +60,3 @@ const createHarness = (options: Readonly<{ conflict?: boolean }> = {}) => {
     },
   };
 };
-
-describe("startExaminationWithEffects", () => {
-  it("診察を開始したときの性質", async () => {
-    const harness = createHarness();
-
-    const result = await startExaminationWithEffects(harness.dependencies)(input);
-    // ここに確かめることを書きます（使える値: harness.recordedEvents、harness.storeCalls）
-  });
-});

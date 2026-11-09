@@ -1,9 +1,9 @@
 import EffectsPipelineAnimation from "../../../components/effects-walkthrough/EffectsPipelineAnimation.astro";
 import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
 
-<p>データベースの障害や破損データには、呼び出し側が選べる対応がないので、Err に変えず、Promise の reject のまま外側へ渡します。<code>ResultAsync.fromSafePromise</code> は、reject を reject のまま通します。<code>fromPromise</code> で全部を <code>AppointmentConflict</code> に変えると、障害が競合として案内されて気づけません。</p>
+<p>データベースの障害や破損データには、呼び出し側が選べる対応がないので、Err に変えず、Promise の reject のまま外側へ渡します。<code>ResultAsync.fromSafePromise</code> は、Promise を <code>ResultAsync</code> に包み、reject は変えません。<code>fromPromise</code> は、reject を指定した <code>Err</code> に変えます。<code>fromPromise</code> で全部を <code>AppointmentConflict</code> に変えると、障害が競合として案内されて気づけません。</p>
 
-<FigureSpace reserve={152}>
+<FigureSpace reserve={162}>
   <EffectsPipelineAnimation scene="reject" />
 </FigureSpace>
 

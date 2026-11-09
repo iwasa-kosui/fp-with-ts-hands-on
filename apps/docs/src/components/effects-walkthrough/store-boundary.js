@@ -48,7 +48,7 @@ for (const figure of figures) {
     const lineHeight = parseFloat(getComputedStyle(line).lineHeight) || 20;
     const last = code.children[marked.size > 0 ? Math.max(...marked) : 0];
     const room = Math.max(0, pre.clientHeight - 2 - (last.getBoundingClientRect().bottom - line.getBoundingClientRect().top));
-    pre.scrollTo({ top: Math.max(0, offset - Math.min(lineHeight * 1.5, room)), behavior: instant || reduced.matches ? "instant" : "smooth" });
+    pre.scrollTo({ top: Math.max(0, offset - Math.min(lineHeight * 1.5, room / 2)), behavior: instant || reduced.matches ? "instant" : "smooth" });
   };
 
   const fitImpl = (pane) => {
