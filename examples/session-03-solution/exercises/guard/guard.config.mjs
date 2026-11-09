@@ -96,7 +96,7 @@ export default {
       required: false,
       allow: ["types", "lint", "tests"],
       unchangedFrom: "G1-solution",
-      hint: "結果の表で、この行が「未検出」のままの場合、隣の人の仕組みで検出されていません。",
+      hint: "結果の表で、この行が「すり抜け」のままの場合、隣の人の仕組みで検出されていません。",
     },
     {
       id: "G1-solution",

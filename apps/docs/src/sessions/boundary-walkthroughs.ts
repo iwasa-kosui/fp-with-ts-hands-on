@@ -113,7 +113,7 @@ const arrivalFrames = (veterinarianLine: string) => [
     status: "neutral",
     valueLabel: "request body",
     value: `{ veterinarianId: ${veterinarianLine} }`,
-    text: "HTTPのリクエストを受け取ります。bodyの中身は未検査です。上の帯は、コードの位置ではなく値の状態を表します。",
+    text: "HTTPのリクエストを受け取ります。bodyの中身は未検査です。",
   }),
   startFrame("route", {
     first: "const input = StartExaminationInput.parse({",
@@ -214,7 +214,7 @@ const passedFrames = (veterinarianUuidValue: string, lastText: string) => {
       status: "pass",
       valueLabel: "startExamination へ渡す値",
       value: `{\n  veterinarianId: "${veterinarianUuidValue}",\n  examinationStartedAt: "2026-08-30T06:30:00.000Z",\n}`,
-      text: "routeは、取り出したinputの獣医師IDと、routeに実装された固定の時刻を、startExaminationへ渡します。この時刻はS06で扱う固定値です。",
+      text: "routeは、取り出したinputの獣医師IDと、routeに実装された固定の時刻を、startExaminationへ渡します。この時刻はS06で扱う固定値です。表示中のroutesは修正前のコードです。",
     }),
     startFrame("transition", {
       first: "veterinarianId: VeterinarianId,",
@@ -251,7 +251,7 @@ const rejectedFrames = [
     status: "stop",
     valueLabel: "route が受け取った結果",
     value: "Err()",
-    text: "routeがErrに_unsafeUnwrapを呼びます。S04でも、入力の検査の失敗は例外のままです。",
+    text: "routeがErrに_unsafeUnwrapを呼びます。内側へ渡す値はありません。S04でも、入力の検査の失敗は例外のままです。",
   }),
   startFrame("schemaResult", {
     first: 'throw new Error("Cannot unwrap an invalid boundary value");',
@@ -265,14 +265,14 @@ const rejectedFrames = [
 
 export const startExaminationWalkthrough: Walkthrough = {
   title: "値が境界を通る様子",
-  description: "上の帯は値の現在の状態、下のコードは現在説明している行です。",
-  descriptionWithoutCode: "上の帯は、値の現在の状態です。",
-  zones: ["外側（未検査）", "境界（検査中）", "内側（検査済みの前提）"],
+  description: "上の帯は、値が parse の前、parse の中、parse の後のどこにあるかを表します。下のコードは現在説明している行です。",
+  descriptionWithoutCode: "上の帯は、値が parse の前、parse の中、parse の後のどこにあるかを表します。",
+  zones: ["外側（parse の前）", "境界（parse）", "内側（parse の後）"],
   tree: miniTree("session-03-solution", "src/", [
     {
       folder: "adaptor/primary/web/",
       files: [
-        { id: "route", name: "routes.ts", snapshot: "session-03", note: "（修正なし）" },
+        { id: "route", name: "routes.ts", snapshot: "session-03", note: "（入力の検査の部分は修正なし）" },
         { id: "parseAfter", name: "startExaminationInput.ts" },
       ],
     },
