@@ -28,6 +28,7 @@ export type ResultTableProps = Readonly<{
   limitations: Readonly<Record<string, string>>;
   limitationsEnabled: boolean;
   passedNext?: string;
+  nextPage?: Readonly<{ href: string; title: string }>;
   onLimitationChange: (id: string, text: string) => void;
 }>;
 
@@ -42,6 +43,7 @@ export const ResultTable = ({
   limitations,
   limitationsEnabled,
   passedNext,
+  nextPage,
   onLimitationChange,
 }: ResultTableProps) => {
   const [openId, setOpenId] = useState<string>();
@@ -174,6 +176,11 @@ export const ResultTable = ({
               result.passed && passedNext !== undefined ? passedNext : result.next[0],
             )}
           </p>
+          {result.passed && nextPage !== undefined ? (
+            <p>
+              完了したら、次のページ「<a href={nextPage.href}>{nextPage.title}</a>」へ進みます。
+            </p>
+          ) : null}
         </section>
       ) : null}
       <p className="guard-exercise__table-note">
@@ -216,7 +223,7 @@ export const ResultTable = ({
       <div className="guard-exercise__limits">
         {result.passed && passedNext === undefined ? (
           <p className="guard-exercise__limits-note">
-            行の題名の ▶ を押すと開く「この仕組みで検出できないこと」の欄に、表の少なくとも 1 つの行で 1 文を記入します。記入の内容はプログラムでは判定しません。
+            記入の内容はプログラムでは判定しません。
           </p>
         ) : null}
         <details

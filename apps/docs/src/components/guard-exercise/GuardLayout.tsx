@@ -12,6 +12,7 @@ import { CaseList, type GuardGuide } from "./CaseList";
 import { displayRowsFor } from "./labels";
 import { GuideSteps, defaultGuide } from "./GuideSteps";
 import { ResultTable } from "./ResultTable";
+import { loadTerminalOpen, saveTerminalOpen } from "./terminal-open-storage";
 import { useGuardRun, type GuardRunStep } from "./useGuardRun";
 
 export type GuardLayoutProps = Readonly<{
@@ -70,14 +71,42 @@ export const GuardLayout = ({
   children,
 }: GuardLayoutProps) => {
   const [terminalOpen, setTerminalOpen] = useState(false);
+  const [resumeTerminal, setResumeTerminal] = useState(false);
   const [onPeerReviewPage, setOnPeerReviewPage] = useState(false);
+  const [nextPage, setNextPage] = useState<
+    Readonly<{ href: string; title: string }> | undefined
+  >(undefined);
   const resultRef = useRef<HTMLElement>(null);
   const terminalId = useId();
   useEffect(() => {
     setOnPeerReviewPage(
       resultRef.current?.closest('[data-page="peer-review"]') != null,
     );
+    const link = document.querySelector<HTMLAnchorElement>(
+      "a[data-next-page-title]",
+    );
+    if (link !== null) {
+      const href = link.getAttribute("href") ?? "";
+      const title = link.dataset.nextPageTitle ?? "";
+      if (href !== "" && title !== "") setNextPage({ href, title });
+    }
   }, []);
+  useEffect(() => {
+    if (loadTerminalOpen()) {
+      setTerminalOpen(true);
+      setResumeTerminal(true);
+    }
+  }, []);
+  useEffect(() => {
+    if (
+      resumeTerminal &&
+      !parts.locked &&
+      parts.terminalState === "unstarted"
+    ) {
+      setResumeTerminal(false);
+      void parts.acquireSession().catch(() => undefined);
+    }
+  }, [resumeTerminal, parts.locked, parts.terminalState, parts.acquireSession]);
   useEffect(() => {
     if (parts.terminalState === "failed") setTerminalOpen(true);
   }, [parts.terminalState]);
@@ -137,7 +166,10 @@ export const GuardLayout = ({
               if (!terminalOpen && !parts.locked && parts.terminalState === "unstarted") {
                 void parts.acquireSession().catch(() => undefined);
               }
-              setTerminalOpen((open) => !open);
+              const next = !terminalOpen;
+              saveTerminalOpen(next);
+              setResumeTerminal(false);
+              setTerminalOpen(next);
             }}
           >
             {terminalOpen ? "ターミナルを閉じる" : "ターミナルを開く"}
@@ -210,6 +242,7 @@ export const GuardLayout = ({
               limitations={guard.limitations}
               limitationsEnabled={guard.ready}
               passedNext={guide?.passedNext}
+              nextPage={nextPage}
               onLimitationChange={guard.setLimitation}
             />
           )}
