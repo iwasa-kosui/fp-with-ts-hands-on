@@ -120,9 +120,9 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
 
 <div class="precondition-flow" data-precondition-flow data-frames={playerData}>
   <div class="precondition-flow__controls" data-controls hidden>
-    <button type="button" data-prev disabled>前へ</button>
+    <button type="button" data-prev disabled>← 前のコマ</button>
     <span data-progress>1 / {frames.length}</span>
-    <button type="button" data-next>次へ</button>
+    <button type="button" data-next>次のコマ →</button>
   </div>
 
   <svg viewBox="0 0 340 246" role="img" aria-labelledby="precondition-flow-title precondition-flow-desc">
@@ -546,11 +546,14 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
     display: none;
   }
 
-  [data-animated] .precondition-flow__dimmable {
+  [data-animated] .precondition-flow__line,
+  [data-animated] .precondition-flow__shape,
+  [data-animated] .precondition-flow__arrow-head {
     transition: opacity 0.3s;
   }
 
-  [data-animated] .precondition-flow__band[data-mode="dim"] .precondition-flow__dimmable:not([data-focus]) {
+  [data-animated] .precondition-flow__band[data-mode="dim"] .precondition-flow__line:not([data-focus]),
+  [data-animated] .precondition-flow__band[data-mode="dim"] .precondition-flow__node:not([data-focus]) :is(.precondition-flow__shape, .precondition-flow__arrow-head) {
     opacity: 0.35;
   }
 

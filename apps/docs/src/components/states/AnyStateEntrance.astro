@@ -182,7 +182,8 @@ const framesData = JSON.stringify({
   }
 
   .entrance[data-ready] .entrance__card:not(.is-active) {
-    opacity: 0.55;
+    border-color: var(--role-rule);
+    background: transparent;
   }
 
   .entrance[data-ready] .entrance__card:not(.is-active) .entrance__verdict {
@@ -200,7 +201,7 @@ const framesData = JSON.stringify({
   }
 
   .entrance[data-ready] .entrance__card {
-    transition: opacity 0.3s;
+    transition: border-color 0.3s, background-color 0.3s;
   }
 
   @media (max-width: 55rem) {

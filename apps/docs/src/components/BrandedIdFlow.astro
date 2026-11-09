@@ -189,9 +189,9 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
 
 <div class="branded-id-flow" data-branded-id-flow data-frames={playerData}>
   <div class="branded-id-flow__controls" data-controls hidden>
-    <button type="button" data-prev disabled>前へ</button>
+    <button type="button" data-prev disabled>← 前のコマ</button>
     <span data-progress>1 / {frames.length}</span>
-    <button type="button" data-next>次へ</button>
+    <button type="button" data-next>次のコマ →</button>
     <div class="branded-id-flow__stage" data-stage hidden>
       <span class="branded-id-flow__tag" data-stage-tag hidden></span>
     </div>
@@ -881,13 +881,26 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
     display: none;
   }
 
-  [data-animated] .branded-id-flow__dimmable {
+  [data-animated] .branded-id-flow__band-bg,
+  [data-animated] .branded-id-flow__gate > rect,
+  [data-animated] .branded-id-flow__function,
+  [data-animated] .branded-id-flow__slot,
+  [data-animated] .branded-id-flow__verdict--pass rect,
+  [data-animated] .branded-id-flow__token rect,
+  [data-animated] .branded-id-flow__card-body,
+  [data-animated] .branded-id-flow__pill-string {
     transition: opacity 0.3s;
   }
 
-  [data-animated] .branded-id-flow__band[data-mode="dim"] .branded-id-flow__dimmable,
-  [data-animated] .branded-id-flow__tokens[data-mode="dim"],
-  [data-animated] .branded-id-flow__cards[data-mode="dim"] {
+  [data-animated] .branded-id-flow__band[data-mode="dim"] .branded-id-flow__band-bg,
+  [data-animated] .branded-id-flow__band[data-mode="dim"] .branded-id-flow__gate > rect,
+  [data-animated] .branded-id-flow__band[data-mode="dim"] .branded-id-flow__function,
+  [data-animated] .branded-id-flow__band[data-mode="dim"] .branded-id-flow__slot,
+  [data-animated] .branded-id-flow__band[data-mode="dim"] .branded-id-flow__verdict--pass rect,
+  [data-animated] .branded-id-flow__band[data-mode="dim"] .branded-id-flow__pill-string,
+  [data-animated] .branded-id-flow__tokens[data-mode="dim"] .branded-id-flow__token rect,
+  [data-animated] .branded-id-flow__cards[data-mode="dim"] .branded-id-flow__card-body,
+  [data-animated] .branded-id-flow__cards[data-mode="dim"] .branded-id-flow__pill-string {
     opacity: 0.35;
   }
 

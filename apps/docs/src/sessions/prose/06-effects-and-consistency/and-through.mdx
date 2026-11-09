@@ -3,7 +3,7 @@ import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.ast
 
 <p>課題1の保存は非同期なので、結果は <code>ResultAsync</code> で表します。<code>ResultAsync</code> は <code>Result</code> の非同期版で、<code>andThen</code> と <code>map</code> を同じように使えます。図の <code>startExaminationEvent</code> は診察開始のイベント <code>ExaminationStarted</code> を作る処理、<code>deps.examinationStartedStore.store</code> は、1つのイベントを受け取る保存の処理です（どちらも後のページで作ります）。</p>
 
-<FigureSpace reserve={190}>
+<FigureSpace reserve={206}>
   <AndThroughCompare />
 </FigureSpace>
 

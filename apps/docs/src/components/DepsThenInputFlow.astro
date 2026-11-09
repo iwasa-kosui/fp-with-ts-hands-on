@@ -343,9 +343,9 @@ const playerData = JSON.stringify(frames.map(({ code: _code, compare: _compare, 
     font-weight: 700;
   }
 
-  .deps-input-flow[data-deps="dim"] [data-part="deps"],
-  .deps-input-flow[data-input="dim"] [data-part="input"],
-  .deps-input-flow[data-body="dim"] [data-part="body"] {
+  .deps-input-flow[data-deps="dim"] [data-part="deps"] :is(rect, path, polygon),
+  .deps-input-flow[data-input="dim"] [data-part="input"] :is(rect, path, polygon),
+  .deps-input-flow[data-body="dim"] [data-part="body"] :is(rect, path, polygon) {
     opacity: 0.35;
   }
 
@@ -421,10 +421,6 @@ const playerData = JSON.stringify(frames.map(({ code: _code, compare: _compare, 
     transform: translateX(-50%);
   }
 
-  .deps-input-flow[data-sources="dim"] .deps-input-flow__sources {
-    opacity: 0.35;
-  }
-
   .deps-input-flow[data-source="db"] .deps-input-flow__source[data-source-id="db"],
   .deps-input-flow[data-source="test"] .deps-input-flow__source[data-source-id="test"] {
     border-color: var(--role-accent);
@@ -437,9 +433,11 @@ const playerData = JSON.stringify(frames.map(({ code: _code, compare: _compare, 
     display: block;
   }
 
+  .deps-input-flow[data-sources="dim"] .deps-input-flow__source,
   .deps-input-flow[data-source="db"] .deps-input-flow__source[data-source-id="test"],
   .deps-input-flow[data-source="test"] .deps-input-flow__source[data-source-id="db"] {
-    opacity: 0.35;
+    border-color: color-mix(in srgb, var(--role-border) 35%, transparent);
+    background: color-mix(in srgb, var(--role-surface) 35%, transparent);
   }
 
   .deps-input-flow__frames {
@@ -503,9 +501,12 @@ const playerData = JSON.stringify(frames.map(({ code: _code, compare: _compare, 
     font-weight: 800;
   }
 
-  .deps-input-flow[data-ready] [data-part],
-  .deps-input-flow[data-ready] .deps-input-flow__source {
+  .deps-input-flow[data-ready] [data-part] :is(rect, path, polygon) {
     transition: opacity 0.3s;
+  }
+
+  .deps-input-flow[data-ready] .deps-input-flow__source {
+    transition: background-color 0.3s, border-color 0.3s;
   }
 
   @container (max-width: 40rem) {

@@ -406,7 +406,12 @@ const rowHeightRem = 1.25;
 
   .cf__code[data-skipped] .st-code,
   .cf__code[data-skipped] .cf__io {
-    opacity: 0.45;
+    border-style: dashed;
+    border-color: color-mix(in srgb, var(--role-border) 45%, transparent);
+  }
+
+  .cf__code[data-skipped] .cf__io {
+    background: color-mix(in srgb, var(--role-surface) 45%, transparent);
   }
 
   .cf__body :global(.st-code pre) {

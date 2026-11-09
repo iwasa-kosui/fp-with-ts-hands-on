@@ -330,11 +330,13 @@ const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
   }
 
   .eo-flow[data-ready] .eo-box {
-    transition: opacity 0.2s, border-color 0.2s;
+    transition: background-color 0.2s, border-color 0.2s;
   }
 
-  .eo-flow[data-ready] .eo-box[data-reached="false"] {
-    opacity: 0.4;
+  .eo-flow[data-ready] .eo-box[data-reached="false"],
+  .eo-flow[data-ready] .eo-box[data-reached="false"] .we-code {
+    border-color: color-mix(in srgb, var(--role-border) 40%, transparent);
+    background: color-mix(in srgb, var(--role-surface) 40%, transparent);
   }
 
   .eo-flow[data-ready] .eo-box[data-current="true"][data-tone="biz"] {
@@ -351,13 +353,8 @@ const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
     border-color: var(--role-text);
   }
 
-  .eo-flow[data-ready] .eo-connector {
-    opacity: 0.35;
-  }
-
   .eo-flow[data-ready] .eo-connector[data-active="true"] {
     color: var(--role-negative);
-    opacity: 1;
   }
 
   @media (max-width: 48rem) {

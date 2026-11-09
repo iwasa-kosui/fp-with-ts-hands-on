@@ -193,11 +193,17 @@ const frames = [
   }
 
   .notice-mapping[data-ready] :is(.nm-cell, .nm-link, .nm-notice) {
-    transition: opacity 0.3s;
+    transition: background-color 0.3s, border-color 0.3s;
   }
 
-  .notice-mapping[data-ready] :is(.nm-cell, .nm-link, .nm-notice)[data-on="false"] {
-    opacity: 0.35;
+  .notice-mapping[data-ready] :is(.nm-cell, .nm-notice)[data-on="false"] {
+    border-color: color-mix(in srgb, var(--role-border) 35%, transparent);
+    border-inline-start-color: color-mix(in srgb, var(--band) 35%, transparent);
+    background: color-mix(in srgb, var(--role-surface) 35%, transparent);
+  }
+
+  .notice-mapping[data-ready] .nm-link[data-on="false"] {
+    border-block-start-color: color-mix(in srgb, var(--band) 35%, transparent);
   }
 
   @media (max-width: 48rem) {

@@ -11,9 +11,9 @@
 
 .guard-exercise__column {
   min-width: 0;
-  border: 1px solid var(--playground-border);
-  border-radius: var(--radius, 0.5rem);
-  background: var(--playground-surface);
+  border: 1px solid var(--role-rule);
+  border-radius: 0.5rem;
+  background: var(--role-surface);
 }
 
 .guard-exercise__column--cases {
@@ -49,7 +49,7 @@
 
 .guard-exercise__answer {
   flex: none;
-  border-top: 1px solid var(--playground-border);
+  border-top: 1px solid var(--role-rule);
 }
 
 .guard-exercise__column--result {
@@ -231,13 +231,17 @@
 .guard-exercise__mark {
   flex: none;
   padding: 0.05rem 0.4rem;
-  border: 0.125rem solid var(--playground-border);
+  border: 1.5px solid currentColor;
   border-radius: 999px;
-  background: var(--playground-background);
-  color: var(--playground-text);
+  background: transparent;
+  color: var(--role-muted);
   font-size: 0.6875rem;
-  font-weight: 950;
+  font-weight: 800;
   white-space: nowrap;
+}
+
+.guard-exercise__case-list button[data-verdict="slipped"] .guard-exercise__mark {
+  color: var(--role-negative);
 }
 
 .guard-exercise__case-list button[data-verdict="slipped"] .guard-exercise__mark::before {
@@ -245,9 +249,7 @@
 }
 
 .guard-exercise__case-list button[data-verdict="detected"] .guard-exercise__mark {
-  border-color: var(--role-positive);
-  background: var(--role-positive);
-  color: var(--playground-surface);
+  color: var(--role-positive);
 }
 
 .guard-exercise__case-list button[data-verdict="detected"] .guard-exercise__mark::before {
@@ -260,7 +262,7 @@
   display: flex;
   align-items: center;
   padding: 0 0.5rem;
-  border-top: 1px solid var(--playground-border);
+  border-top: 1px solid var(--role-rule);
   background: var(--playground-surface);
 }
 
@@ -272,7 +274,7 @@
   border: 1px solid var(--role-accent);
   border-radius: 0.25rem;
   background: var(--role-accent);
-  color: var(--playground-surface);
+  color: var(--role-on-accent);
   font: inherit;
   font-size: 0.6875rem;
   font-weight: 700;
@@ -291,9 +293,9 @@
   border: 0.125rem solid var(--role-accent);
   border-radius: 0.375rem;
   background: var(--role-accent);
-  color: var(--playground-surface);
+  color: var(--role-on-accent);
   font: inherit;
-  font-weight: 950;
+  font-weight: 800;
   cursor: pointer;
 }
 
@@ -323,7 +325,7 @@
 .guard-exercise__terminal .code-explorer__terminal {
   margin-top: 0;
   border-width: 0;
-  border-top: 1px solid var(--playground-border);
+  border-top: 1px solid var(--role-rule);
   border-radius: 0;
 }
 
@@ -338,7 +340,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  border-bottom: 1px solid var(--playground-border);
+  border-bottom: 1px solid var(--role-rule);
 }
 
 .guard-exercise__run-note {
@@ -390,7 +392,8 @@
 
 .guard-exercise__headline[data-passed="true"] {
   padding: 0.5rem 0.625rem;
-  border: 0.1875rem solid var(--role-positive);
+  border: 1px solid var(--role-positive);
+  border-radius: 0.5rem;
   background: color-mix(in srgb, var(--role-positive) 12%, var(--playground-surface));
 }
 
@@ -452,25 +455,22 @@
 }
 
 .guard-exercise.code-playground .guard-exercise__table :is(th, td) {
-  padding: 0.2rem 0.25rem;
-  border: 0.125rem solid var(--playground-border);
-  border-width: 0 0.125rem 0.125rem 0;
+  padding: 0.3rem 0.25rem;
+  border: 0;
+  border-bottom: 1px solid var(--role-rule);
   text-align: left;
   vertical-align: top;
   overflow-wrap: anywhere;
-}
-
-.guard-exercise.code-playground .guard-exercise__table tr > :first-child {
-  border-left-width: 0.125rem;
 }
 
 .guard-exercise.code-playground .guard-exercise__table thead th {
   position: sticky;
   top: 0;
   z-index: 1;
-  border-top-width: 0.125rem;
-  background: var(--playground-background);
-  font-weight: 950;
+  background: var(--role-surface);
+  color: var(--role-muted);
+  font-size: 0.6875rem;
+  font-weight: 800;
 }
 
 .guard-exercise.code-playground .guard-exercise__table thead th:first-child {
@@ -538,8 +538,16 @@
   margin: 0.25rem 0 0;
 }
 
-.guard-exercise__verdict {
-  font-weight: 950;
+.guard-exercise__state {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--role-muted);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .guard-exercise__table td[data-state="hit"] {
@@ -556,21 +564,21 @@
   color: var(--role-muted);
 }
 
-.guard-exercise__table tr[data-verdict="detected"] .guard-exercise__verdict,
-.guard-exercise__table tr[data-verdict="noFalsePositive"] .guard-exercise__verdict {
+.guard-exercise__table tr[data-verdict="detected"] .guard-exercise__state,
+.guard-exercise__table tr[data-verdict="noFalsePositive"] .guard-exercise__state {
   color: var(--role-positive);
 }
 
-.guard-exercise__table tr[data-verdict="detected"] .guard-exercise__verdict::before,
-.guard-exercise__table tr[data-verdict="noFalsePositive"] .guard-exercise__verdict::before {
+.guard-exercise__table tr[data-verdict="detected"] .guard-exercise__state::before,
+.guard-exercise__table tr[data-verdict="noFalsePositive"] .guard-exercise__state::before {
   content: "✓ ";
 }
 
-.guard-exercise__table tr[data-verdict="slipped"] .guard-exercise__verdict {
-  color: var(--role-text);
+.guard-exercise__table tr[data-verdict="slipped"] .guard-exercise__state {
+  color: var(--role-negative);
 }
 
-.guard-exercise__table tr[data-verdict="slipped"] .guard-exercise__verdict::before {
+.guard-exercise__table tr[data-verdict="slipped"] .guard-exercise__state::before {
   content: "△ ";
 }
 
@@ -579,11 +587,11 @@
   font-weight: 900;
 }
 
-.guard-exercise__table tr[data-verdict="falsePositive"] .guard-exercise__verdict {
+.guard-exercise__table tr[data-verdict="falsePositive"] .guard-exercise__state {
   color: var(--role-negative);
 }
 
-.guard-exercise__table tr[data-verdict="falsePositive"] .guard-exercise__verdict::before {
+.guard-exercise__table tr[data-verdict="falsePositive"] .guard-exercise__state::before {
   content: "✕ ";
 }
 
@@ -654,7 +662,7 @@
   height: 30px;
   padding: 0 0.7rem;
   border: 0;
-  border-right: 1px solid var(--playground-border);
+  border-right: 1px solid var(--role-rule);
   border-bottom: 2px solid transparent;
   border-radius: 0;
   font-size: 0.75rem;
@@ -718,7 +726,7 @@
   overflow: visible;
   border-width: 1px 0 0;
   border-top-style: solid;
-  border-color: var(--playground-border);
+  border-color: var(--role-rule);
   font-size: 0.75rem;
   line-height: 1.2;
 }
@@ -748,7 +756,7 @@
   max-height: 8rem;
   margin: 0;
   padding: 0.25rem;
-  border: 1px solid var(--playground-border);
+  border: 1px solid var(--role-rule);
   background: var(--playground-surface);
   opacity: 0;
   pointer-events: none;
@@ -778,7 +786,7 @@
   padding: 0 0.5rem;
   border-width: 1px 0 0;
   border-top-style: solid;
-  border-color: var(--playground-border);
+  border-color: var(--role-rule);
 }
 
 .guard-exercise.code-playground .code-explorer__actions > p {
@@ -801,7 +809,7 @@
 }
 
 .guard-answer[open] > summary {
-  border-bottom: 1px solid var(--playground-border);
+  border-bottom: 1px solid var(--role-rule);
 }
 
 .guard-answer__panel {
@@ -818,7 +826,8 @@
   display: block;
   padding: 0 var(--frame-pad) 1rem;
   overflow: auto;
-  border: 1px solid var(--role-border);
+  border: 1px solid var(--role-rule);
+  border-radius: 0.5rem;
   background: var(--role-surface);
   color: var(--role-text);
 }
@@ -843,7 +852,7 @@
   border: 1px solid var(--role-accent);
   border-radius: 0.25rem;
   background: var(--role-accent);
-  color: var(--role-surface);
+  color: var(--role-on-accent);
   font: inherit;
   font-size: 0.8125rem;
   font-weight: 700;
@@ -880,7 +889,7 @@
   }
 }
 
-@media (max-height: 760px) {
+@media (max-height: 844px) {
   .guard-exercise__steps {
     line-height: 1.4;
   }

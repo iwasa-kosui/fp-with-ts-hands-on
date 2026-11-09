@@ -9,6 +9,7 @@ type MonacoApi = typeof Monaco;
 
 const ambientPath = "file:///workspace/playground-ambient.d.ts";
 const revalidatePath = "file:///workspace/playground-revalidate.d.ts";
+const colorSchemeQuery = "(prefers-color-scheme: dark)";
 const missingTypeCodes = [7006, 7031, 2580, 2591, 2582, 2593, 2347, 2694, 2709, 2698, 2571, 18046];
 
 type EditorResources = {
@@ -36,6 +37,11 @@ type EditorRuntime = EditorResources & {
   changeSubscription?: Monaco.IDisposable;
   highlightDecorations?: Monaco.editor.IEditorDecorationsCollection;
 };
+
+const themeFor = (dark: boolean): string => (dark ? "fp-dark" : "fp-light");
+
+const prefersDark = (): boolean =>
+  typeof window.matchMedia === "function" && window.matchMedia(colorSchemeQuery).matches;
 
 export const modelUriFor = (path: string): string =>
   new URL(path, "file:///workspace/").href;
@@ -336,6 +342,8 @@ export const MonacoEditor = (props: EditorProps) => {
         model: resources.models.get(current.path) ?? null,
         readOnly: current.disabled || current.readOnly,
         scrollBeyondLastColumn: 0,
+        theme: themeFor(prefersDark()),
+        bracketPairColorization: { enabled: false },
         scrollbar: {
           alwaysConsumeMouseWheel: false,
           horizontal: "visible",
@@ -367,6 +375,15 @@ export const MonacoEditor = (props: EditorProps) => {
       runtime.current = undefined;
     };
   }, []);
+
+  useEffect(() => {
+    const current = runtime.current;
+    if (!ready || current === undefined || typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia(colorSchemeQuery);
+    const apply = () => current.monaco.editor.setTheme(themeFor(query.matches));
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, [ready]);
 
   useEffect(() => {
     const current = runtime.current;

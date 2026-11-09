@@ -1,3 +1,17 @@
+.case-file.session-directory {
+  --case-mint: var(--wash-mint);
+  --case-lemon: var(--wash-lemon);
+  --case-coral: color-mix(in srgb, var(--color-accent) 55%, var(--wash-lemon));
+  --case-ink: var(--color-text);
+  --case-paper: #fffefb;
+  --case-line: var(--soft-line);
+  background: var(--color-background);
+}
+
+.session-directory .case-file__site-header {
+  border-bottom-width: 1px;
+}
+
 .session-directory__main {
   width: min(100% - 2rem, 74rem);
   margin-inline: auto;
@@ -25,7 +39,7 @@
   width: min(100%, 42rem);
   margin-bottom: 3rem;
   padding: clamp(1.25rem, 4vw, 1.75rem);
-  border-left: 0.5rem solid var(--case-coral);
+  border-left: 0.25rem solid var(--case-coral);
   background: var(--case-lemon);
 }
 
@@ -53,9 +67,10 @@
   gap: 0.6rem;
   margin-top: 1rem;
   padding: 0.65rem 0.9rem;
-  border: 2px solid var(--case-line);
+  border: 1.5px solid var(--color-primary);
+  border-radius: 0.5rem;
   background: var(--case-paper);
-  color: var(--case-ink);
+  color: var(--color-primary);
   font-weight: 800;
   text-decoration: none;
 }
@@ -63,7 +78,7 @@
 .session-directory__setup-link:hover,
 .session-directory__setup-link:focus-visible {
   background: var(--case-mint);
-  outline: 3px solid var(--case-coral);
+  outline: 3px solid var(--color-primary);
   outline-offset: 3px;
 }
 
@@ -80,9 +95,10 @@
   display: grid;
   height: 100%;
   padding: 1.5rem;
-  border: 2px solid var(--case-line);
+  border: 1.5px solid var(--case-line);
+  border-radius: 0.75rem;
   background: var(--case-paper);
-  box-shadow: 0.4rem 0.4rem 0 var(--case-mint);
+  box-shadow: var(--shadow-card);
   color: var(--case-ink);
   text-decoration: none;
   transition: translate 150ms ease, box-shadow 150ms ease;
@@ -90,10 +106,10 @@
 
 .session-directory__card:hover,
 .session-directory__card:focus-visible {
-  box-shadow: 0.65rem 0.65rem 0 var(--case-coral);
-  outline: 3px solid var(--case-line);
+  box-shadow: 0 0.75rem 2rem rgb(36 40 59 / 12%);
+  outline: 3px solid var(--color-primary);
   outline-offset: 3px;
-  translate: -0.2rem -0.2rem;
+  translate: 0 -2px;
 }
 
 .session-directory__meta {
@@ -137,5 +153,10 @@
 @media (prefers-reduced-motion: reduce) {
   .session-directory__card {
     transition: none;
+  }
+
+  .session-directory__card:hover,
+  .session-directory__card:focus-visible {
+    translate: none;
   }
 }
