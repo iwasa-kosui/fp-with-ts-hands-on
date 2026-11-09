@@ -108,21 +108,21 @@ const expectedCurriculum = [
     slug: "05-business-events-and-workflows",
     sequence: "05",
     title: "データとパイプラインで予約キャンセルを設計する",
-    durationMinutes: 15,
+    durationMinutes: 18,
     kind: "workshop",
     exerciseCommand: undefined,
     snapshot: undefined,
-    timeBreakdown: { brief: 2, teach: 7, exercise: 4, review: 2 },
+    timeBreakdown: { brief: 2, teach: 8, exercise: 6, review: 2 },
   },
   {
     slug: "06-effects-and-consistency",
     sequence: "06",
     title: "副作用と整合性境界を設計する",
-    durationMinutes: 35,
+    durationMinutes: 36,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:06",
     snapshot: "session-06",
-    timeBreakdown: { brief: 3, teach: 12, exercise: 15, review: 5 },
+    timeBreakdown: { brief: 3, teach: 13, exercise: 15, review: 5 },
   },
   {
     slug: "final",
@@ -434,7 +434,7 @@ describe("page-owned session contracts", () => {
   it("keeps the 180-minute schedule and each time allocation consistent", () => {
     expect(
       sessions.reduce((sum, { durationMinutes }) => sum + durationMinutes, 0),
-    ).toBe(176);
+    ).toBe(180);
     for (const session of sessions) {
       expect(
         Object.values(session.timeBreakdown).reduce(

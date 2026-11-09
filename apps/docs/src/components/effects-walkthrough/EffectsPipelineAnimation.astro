@@ -269,7 +269,7 @@ const scenes: readonly Scene[] = [
     ],
   },
   {
-    label: "競合: 業務エラーの経路",
+    label: "競合: 業務の失敗の経路",
     outer: "route",
     settled: upstream,
     frames: [
@@ -330,7 +330,7 @@ const scenes: readonly Scene[] = [
         flow: { kind: "reject", from: "through", to: "onError" },
       },
       {
-        text: page ? "例外のまま外へ出て、外側で 500 を返します。詳細は含めません。業務エラーの型は増えません。" : "外側の `app.onError` が受け取り、詳細を含まない 500 応答を返します。業務エラーの型は増えません。",
+        text: page ? "例外のまま外へ出て、外側で 500 を返します。詳細は含めません。業務の失敗の型は増えません。" : "外側の `app.onError` が受け取り、詳細を含まない 500 応答を返します。業務の失敗の型は増えません。",
         at: "onError",
         out: "r7x",
         skipped: ["map"],
@@ -399,7 +399,7 @@ const usesFlow = shownScenes.some(({ frames }) => frames.some(({ flow }) => flow
 const legendLines = [
   `札「Ok」は成功の箱に入った値、札「値」は箱に入る前の値${usedChips.has("応答") ? "、札「応答」は呼び出し元へ返す HTTP の応答" : ""}です。`,
   ...(usedChips.has("Err") || usesFlow
-    ? ["札「Err」は型に残る業務エラー、札「reject」は型に残らず外へ出る例外です。"]
+    ? ["札「Err」は型に残る業務の失敗で、枠と線は破線です。札「reject」は型に残らず外へ出る例外で、枠と線は実線です。"]
     : []),
 ];
 ---

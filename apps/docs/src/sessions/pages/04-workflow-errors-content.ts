@@ -130,7 +130,7 @@ export const session: SessionSummary = {
 export const guides = ([
   {
     id: "throws-known-errors",
-    title: "起こりうる業務エラーが戻り値の型に現れない",
+    title: "起こりうる業務の失敗が戻り値の型に現れない",
     currentDesign: "確認の関数（ensure...）は成功値だけを返す型ですが、予約なしと状態不正では Error を throw します。",
     futureRisk: "呼び出し側は実装を読まないと、どの例外を処理すべきか判断できません。",
     path: "src/useCase/errors.ts",

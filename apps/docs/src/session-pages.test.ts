@@ -453,7 +453,7 @@ describe("session pages", () => {
         ),
       ),
     ).toBe(true);
-    expect(twoPaths).toContain("業務エラー");
-    expect(twoPaths).toContain("システムエラー");
+    expect(twoPaths).toContain("業務の失敗");
+    expect(twoPaths).toContain("障害");
   });
 });

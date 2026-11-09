@@ -24,7 +24,7 @@ export default {
       id: "B3-store-failure-to-business-error",
       kind: "bad",
       subject: "startExamination",
-      title: "保存の障害を、業務エラーの Err に変換する",
+      title: "保存の障害を、業務の失敗の Err に変換する",
       allow: ["tests"],
       hint: "保存が投げた例外が、Err にならず、そのまま外へ出ることをテストで確かめます。",
     },

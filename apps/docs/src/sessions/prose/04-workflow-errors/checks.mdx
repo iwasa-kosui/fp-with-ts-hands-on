@@ -43,7 +43,7 @@ export const throwRuleCode = `"no-restricted-syntax": [
     <Code code={throwRuleCode} lang="js" />
   </figure>
   <div>
-    <p><code>ThrowStatement</code> は <code>throw</code> 文を表す構文の名前です。<code>selector</code> の前半は、検出の範囲を useCase の中に絞ります。<code>ThrowStatement</code> だけだと、useCase の外の正当な <code>throw</code> も検出して誤検知になります。</p>
+    <p><code>ThrowStatement</code> は <code>throw</code> 文を表す構文の名前です。<code>selector</code> の前半は、検出の範囲を useCase の中に絞ります。<code>ThrowStatement</code> だけだと、useCase の外の正当な <code>throw</code> も誤検知（正しいコードを悪い変更として検出すること）になります。</p>
     <p>規則が検出するのは、useCase に書かれた <code>throw</code> だけです。外から来た例外は検出しません。</p>
   </div>
 </div>

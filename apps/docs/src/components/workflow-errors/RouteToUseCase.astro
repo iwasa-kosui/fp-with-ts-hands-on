@@ -38,7 +38,7 @@ const themes = { light: "github-light", dark: "github-dark" } as const;
 
 const parts = [
   { band: "b", name: "Resolver", role: "予約を取ってくる部品", code: "deps.resolver.resolveById(…)" },
-  { band: "d", name: "Store", role: "保存と監査を行う部品", code: "deps.store.save(…)" },
+  { band: "d", name: "Store", role: "保存（状態の更新と監査記録の追加）", code: "deps.store.save(…)" },
   { band: "c", name: "errors.ts", role: "失敗を確かめる関数の置き場", code: "ensureCheckedIn(…)" },
 ] as const;
 

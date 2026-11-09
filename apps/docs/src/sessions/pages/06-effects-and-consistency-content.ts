@@ -10,8 +10,8 @@ export const session: SessionSummary = {
   sequence: "06",
   kind: "exercise",
   title: "副作用と整合性境界を設計する",
-  durationMinutes: 35,
-  timeBreakdown: { brief: 3, teach: 12, exercise: 15, review: 5 },
+  durationMinutes: 36,
+  timeBreakdown: { brief: 3, teach: 13, exercise: 15, review: 5 },
   adv: { articulate: 2, delegate: 10, verify: 3 },
   peerReview: {
     minutes: 5,
@@ -98,8 +98,8 @@ export const session: SessionSummary = {
     },
     {
       id: "s06-propagate-store-failure",
-      goal: "保存障害を業務エラーの Result へ変換せず、例外として外側の境界へ伝播する。",
-      startingFailure: "業務上の競合と、保存障害・破損データを区別して返せない。",
+      goal: "競合は Err で返し、保存障害は Err へ変換せず、例外として外側の境界へ伝播する。",
+      startingFailure: "競合を Err で返せない。",
       targets: [
         "examples/session-06/src/useCase/errors.ts",
         "examples/session-06/src/useCase/startExamination.ts",
@@ -128,7 +128,7 @@ export const session: SessionSummary = {
       invariant: "状態と監査記録は同時に残るか、どちらも残らない。",
     },
     {
-      invariant: "保存障害を、呼び出し側が選択できる業務上の失敗へ偽装しない。",
+      invariant: "保存障害を、利用者が次の操作を選べる業務の失敗へ偽装しない。",
     },
   ],
   finalReferences: [

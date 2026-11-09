@@ -41,7 +41,7 @@ pnpm dev
 
 ## 演習の構成
 
-公開教材は、現行業務とシステムを読む S0、コードを改善する S1〜S4、予約キャンセルの業務条件とユースケースを設計する S5、コードを改善する S6、参照実装を読む Final で構成します。S0 は10分、S1 と S2 は各20分、S3 と S4 は各35分、S5 は15分、S6 は40分、Final は5分が目安です。個人学習では時間を区切らず進められます。S5 はデータとパイプラインを読む回で、コード編集や演習コマンドの実行は行いません。S1〜S4 と S6 の開始コードは、業務上の問題を示す assertion failure による RED から始まります。
+公開教材は、現行業務とシステムを読む S0、コードを改善する S1〜S4、予約キャンセルの業務条件とユースケースを設計する S5、コードを改善する S6、参照実装を読む Final で構成します。S0 は10分、S1 と S2 は各20分、S3 は35分、S4 は31分、S5 は18分、S6 は36分、Final は10分が目安です。個人学習では時間を区切らず進められます。S5 はデータとパイプラインを読む回で、コード編集や演習コマンドの実行は行いません。S1〜S4 と S6 の開始コードは、業務上の問題を示す assertion failure による RED から始まります。
 
 S0 の観察対象は `examples/session-00` です。S1 は `examples/session-01`、S2 は `examples/session-02` を使います。S3 は `examples/session-03` を使い、補助演習で `examples/session-03-supplement` を使います。S4 は `examples/session-04`、S6 は `examples/session-06` を使います。S5 のカードは `examples/session-05/README.md` にあります。各演習の解答は、開始と同じ名前に `-solution` を付けた `examples/session-NN-solution` にあります。どの開始スナップショットも、前のコード演習の解答を取り込み済みです。自分の変更を次のディレクトリへコピーする必要はありません。`examples/session-06-solution` は S6 の解答であり、S1〜S4 と S6 の全解答と全回帰テストが GREEN になった到達点も兼ねます。`examples/final` は、各演習の改善を複数集約と SQLite へ広げた参照実装です。
 
