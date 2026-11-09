@@ -4,5 +4,5 @@ import { safeTryCode } from "../../pages/04-workflow-errors-content";
 <CodeSplit path="同じ診察開始を safeTry で実装した例（配布コードにはありません）" code={safeTryCode} codeFirst={false}>
   <p><code>andThen</code> の連結では、前の工程の成功値を、次の工程へ直接渡します。途中の成功値を後の工程でも使用するときや、名前を付けて上から順に読みたいときは、<code>safeTry</code> でも実装できます。</p>
   <p><code>yield*</code> した Result が Err なら、その場で <code>safeTry</code> 全体から同じ失敗を返します。Ok なら、成功値を取り出して次の行へ進みます。</p>
-  <p><code>safeTry</code> は Result の失敗を伝える仕組みで、<code>throw</code> された例外を捕捉する <code>try/catch</code> ではありません。保存の障害は、これまでと同じく例外のまま useCase の外へ送出されます。</p>
+  <p><code>safeTry</code> は Result の失敗を伝える仕組みで、<code>throw</code> された例外を捕捉する <code>try/catch</code> ではありません。保存の障害は、これまでと同じく例外のまま useCase の外へ伝わります。</p>
 </CodeSplit>

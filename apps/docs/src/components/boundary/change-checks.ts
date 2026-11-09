@@ -47,7 +47,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: true, output: "no-explicit-any: Unexpected any. Specify a different type.", setting: "\"@typescript-eslint/no-explicit-any\": \"error\"" },
       tests: { found: true, output: "3件失敗: Property failed" },
     },
-    why: "`any` は型検査を無効にするため、tsc は通ります。書き方を検査するルールと、不正な値を渡すテストが検出します。",
+    why: "`any` は型検査を無効にするため、型検査（tsc）は通ります。書き方を検査するルールと、不正な値を渡すテストが検出します。",
   },
   {
     id: "B2-unknown-cast",
@@ -92,8 +92,8 @@ const cases: readonly ChangeCase[] = [
       types: { found: false, output: "エラーなし" },
       lint: { found: true, output: "no-unsafe-assignment: Unsafe assignment of an `any` value.", setting: `"@typescript-eslint/no-unsafe-assignment": "error"
 "@typescript-eslint/no-unsafe-argument": "error"` },
-      tests: { found: true, output: "1件失敗: Property failed after 1 tests", setting: `// call: 本文をハンドラーへ渡すテスト用の関数
-// seen: 診察開始の処理に渡された入力の配列
+      tests: { found: true, output: "1件失敗: Property failed after 1 tests", setting: `// call: route に本文を渡すテスト用の関数
+// seen: 診察開始の処理への入力。空なら未実行
 const seen = await call({ appointmentId: id, … });
 return seen.length === 0;` },
     },

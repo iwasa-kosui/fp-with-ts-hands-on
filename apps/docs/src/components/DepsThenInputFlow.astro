@@ -42,7 +42,7 @@ type Frame = Readonly<{
 
 const frames: readonly Frame[] = [
   {
-    caption: "依存を受け取る関数は、deps を受け取ります。deps は、予約を取得する resolver と、予約を保存する store をまとめた値です。",
+    caption: "startExamination は、最初に依存（deps）を受け取る関数です。deps は、予約を取得する resolver と、予約を保存する store をまとめた値です。",
     deps: "focus", input: "dim", body: "dim", sources: "dim", source: "none", wait: false, depsFilled: false, inputFilled: false,
     code: { key: "useCase", keys: ["(deps: Dependencies) =>"] },
   },
@@ -62,7 +62,7 @@ const frames: readonly Frame[] = [
     code: { key: "route", keys: ["resolver: store,", "store,"] },
   },
   {
-    caption: "テストは、固定の予約を返す resolver と、保存の回数を数える store を渡します。演習では、保存された予約を配列 saved に格納するテスト用の代替の Store を使います。",
+    caption: "テストは、固定の予約を返す resolver と、保存の回数を数える store を渡します。演習では、保存された予約を配列 saved に格納するテスト用の Store を使います。",
     deps: "focus", input: "normal", body: "normal", sources: "normal", source: "test", wait: false, depsFilled: true, inputFilled: true,
     code: { key: "test", keys: ["resolver: { resolveById: () => resolved },", "observer.saveCalls += 1;"] },
   },
@@ -166,7 +166,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, compare: _compare, 
         <p class="deps-input-flow__sources-title">deps の中身の出どころ</p>
         <ul>
           <li class="deps-input-flow__source" data-source-id="db">本物の保存先（データベース）</li>
-          <li class="deps-input-flow__source" data-source-id="test">テスト用のオブジェクト</li>
+          <li class="deps-input-flow__source" data-source-id="test">テスト用の Store</li>
         </ul>
       </div>
     </div>

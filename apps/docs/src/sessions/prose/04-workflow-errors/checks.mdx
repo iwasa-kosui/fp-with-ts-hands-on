@@ -13,7 +13,7 @@ export const throwRuleCode = `"no-restricted-syntax": [
   },
 ],`;
 
-<p>修正したコードも、次の変更で元の状態に戻ることがあります。ここから先の課題3は、修正した状態を維持することです。誤った変更を選んで、結果を比較してください。どの変更でも型検査は通ります。<code>throw</code> と <code>_unsafeUnwrap</code> は Linter（コードの問題を静的に検出するツール）のルールとテストの両方が、失敗した後の保存と障害の変換はテストだけが、match の <code>default</code> 節でまとめて処理する変更はルールだけが検出します。</p>
+<p>修正したコードも、次の変更で元の状態に戻ることがあります。ここから先の課題3は、修正した状態を維持することです。誤った変更を選んで、結果を比較してください。どの変更でも型検査は通ります。<code>throw</code> と <code>_unsafeUnwrap</code> は Linter（コードを実行せずに、書き方の問題を検出するツール）のルールとテストの両方が、失敗した後の保存と障害の変換はテストだけが、失敗の種類を判定する <code>switch</code> の <code>default</code> 節でまとめて処理する変更は、ルールだけが検出します。</p>
 
 <ChangeChecks set={session04ChangeChecks} />
 

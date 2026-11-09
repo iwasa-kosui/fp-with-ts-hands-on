@@ -259,7 +259,7 @@ const rejectedFrames = [
     status: "stop",
     valueLabel: "内側に渡された値",
     value: "// なし",
-    text: "Errの_unsafeUnwrapは例外を投げ、startExaminationは呼ばれません。検査に失敗したときは、サーバーがHTTPステータス500を返します。S04で扱います。",
+    text: "Errの_unsafeUnwrapは例外を投げ、startExaminationは呼ばれません。検査に失敗したときは、サーバーがエラーを表すHTTPステータス500を返します。S04で扱います。",
   }),
 ];
 
@@ -401,7 +401,7 @@ const wrappedFrames = [
     status: "neutral",
     valueLabel: "parse に渡すメールアドレス（説明用の値）",
     value: `ownerEmail: "owner@example.com"`,
-    text: "境界で形を検査したあと、transformでSensitive.ofに包みます。brandは他の値との取り違えを防ぐためのもので、ログには影響しません。",
+    text: "境界で形を検査したあと、transformでSensitive.ofに包みます。ブランドは他の値との取り違えを防ぐためのもので、ログには影響しません。",
   }),
   sensitiveFrame("sensitive", {
     first: "of: <T>(value: T): Sensitive<T> => ({",

@@ -11,7 +11,7 @@ const expectedPages = [
   ["match", "失敗の種類ごとのお知らせの定義", "solution", "teach", 1],
   ["exhaustive-errors", "失敗の種類の追加漏れの検出", "solution", "teach", 0.5],
   ["business-error", "Result で返す業務の失敗", "solution", "teach", 1],
-  ["system-error", "例外のまま useCase の外へ送出する障害", "solution", "teach", 1.5],
+  ["system-error", "例外のまま useCase の外へ伝わる障害", "solution", "teach", 1.5],
   ["checks", "誤った変更を仕組みで検出する", "solution", "teach", 1],
   ["exercise", "演習: 誤った変更を検出する仕組みを追加する", "solution", "exercise", 10],
   ["peer-review", "相互レビュー", "solution", "review", 4],

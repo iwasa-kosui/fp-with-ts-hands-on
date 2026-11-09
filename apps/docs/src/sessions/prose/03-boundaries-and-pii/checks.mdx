@@ -1,7 +1,7 @@
 import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
 import { session03ChangeChecks } from "../../../components/boundary/change-checks";
 
-<p>修正したコードも、次の変更で元の状態に戻る場合があります。課題3は、修正後の状態の維持です。誤った変更の検出には、型のテスト、Linter（コードの問題を静的に検出するツール）のルール、値の性質のテストの3種類を使います。変更を選び、結果を比較してください。<code>any</code> や <code>as</code> の使用はルールと値の性質のテスト、UUID の検査の削除は値の性質のテストだけ、個人情報の追加は型のテストと値の性質のテストが検出します。</p>
+<p>修正したコードも、次の変更で元の状態に戻る場合があります。課題3は、修正後の状態の維持です。検出には、型のテスト、Linter（コードを実行せずに書き方の問題を検出するツール）のルール、値の性質のテストを使います。変更を選び、結果を比較してください。<code>any</code> や <code>as</code> の使用はルールと値の性質のテスト、UUID の検査の削除は値の性質のテストだけ、個人情報の追加は型のテストと値の性質のテストが検出します。</p>
 
 <ChangeChecks set={session03ChangeChecks} />
 

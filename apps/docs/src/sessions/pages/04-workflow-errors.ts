@@ -101,11 +101,11 @@ export const sessionPages = [
   },
   {
     slug: "system-error",
-    title: "例外のまま useCase の外へ送出する障害",
+    title: "例外のまま useCase の外へ伝わる障害",
     flow: "solution",
     kind: "teach",
     minutes: 1.5,
-    role: "解決策（課題2）: 保存の障害は、Result に含めず、例外のまま useCase の外へ送出します。",
+    role: "解決策（課題2）: 保存の障害は、Result に含めず、例外のまま useCase の外へ伝わります。",
   },
   {
     slug: "checks",

@@ -11,7 +11,7 @@ selector: "VariableDeclarator[id.name='startExamination'] ThrowStatement",`,
   {
     id: "tests",
     name: "テスト",
-    detail: "テスト用の代替の Store で検証する",
+    detail: "テスト用の Store で検証する",
     code: `expect(outcome.kind).toBe("returned");
 expect(saved).toHaveLength(0);`,
   },
@@ -85,7 +85,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: false, output: "エラーなし" },
       tests: { found: true, output: "1件失敗: expected 'returned' to be 'threw'", setting: "expect(outcome.kind).toBe(\"threw\");" },
     },
-    why: "障害を Err に変えても型は一致します。例外がそのまま useCase の外へ送出されることを検証するテストだけが検出します。",
+    why: "障害を Err に変えても型は一致します。例外がそのまま useCase の外へ伝わることを検証するテストだけが検出します。",
   },
   {
     id: "B4-unsafe-unwrap",
@@ -115,9 +115,9 @@ const cases: readonly ChangeCase[] = [
     kind: "bad",
     label: "失敗の種類を追加して default で受ける",
     baseCase: "G2-notice-assert-never",
-    target: "通知コードの部分",
+    target: "お知らせコードの部分",
     diff: [
-      { kind: "skip", text: "// import は同じ。AppointmentCancelled 型を足し、assertNever を消す" },
+      { kind: "skip", text: "// import は同じ。AppointmentCancelled 型を追加し、assertNever を消す" },
       { kind: "same", text: "export const toStartExaminationNoticeCode = (" },
       { kind: "del", text: "  error: StartExaminationError," },
       { kind: "add", text: "  error: StartExaminationError | AppointmentCancelled," },
