@@ -675,6 +675,28 @@
   font-weight: 700;
 }
 
+.guard-exercise.code-playground .code-explorer__tabs-area .code-explorer__tabs button:has(.code-explorer__tab-tail) {
+  min-width: calc(var(--tab-tail) + 1.5em + 1.55rem);
+}
+
+.guard-exercise.code-playground .code-explorer__tabs-area .code-explorer__tabs button:not([aria-pressed="true"]) {
+  flex-shrink: 5;
+}
+
+.guard-exercise.code-playground .code-explorer__tabs-area .code-explorer__tabs button[aria-pressed="true"] {
+  flex: 0 1 auto;
+  min-width: 4.5rem;
+}
+
+.guard-exercise.code-playground .code-explorer__tabs-area .code-explorer__tabs button[aria-pressed="true"]:has(.code-explorer__tab-tail) {
+  min-width: calc(var(--tab-tail) + 1.5em + 1.55rem);
+}
+
+.guard-exercise.code-playground .code-explorer__tab-tail {
+  flex: none;
+  white-space: nowrap;
+}
+
 .guard-exercise.code-playground .code-explorer__tabs-area {
   grid-row: 1;
   grid-column: 1 / -1;
