@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import {
   guardMechanisms,
   type GuardResult,
@@ -36,6 +36,7 @@ export const ResultTable = ({
   onLimitationChange,
 }: ResultTableProps) => {
   const [openId, setOpenId] = useState<string>();
+  const termsTextRef = useRef<HTMLParagraphElement>(null);
   const badRows = rows.filter(({ kind }) => kind === "bad");
   const goodRows = rows.filter(({ kind }) => kind === "good");
 
@@ -154,9 +155,16 @@ export const ResultTable = ({
         <p className="guard-exercise__limits-note">
           各行を開いて書く「この仕組みで検出できないこと」は、機械では判定しません。
         </p>
-        <details className="guard-exercise__terms">
+        <details
+          className="guard-exercise__terms"
+          onToggle={(event) => {
+            if (event.currentTarget.open) {
+              termsTextRef.current?.scrollIntoView({ block: "nearest" });
+            }
+          }}
+        >
           <summary>{tableTermsSummary}</summary>
-          <p>{tableTermsText}</p>
+          <p ref={termsTextRef}>{tableTermsText}</p>
         </details>
       </div>
       {result !== undefined && result.problems.length > 0 ? (

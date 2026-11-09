@@ -50,7 +50,7 @@
 .guard-exercise__cases {
   flex: 1 1 0;
   min-height: 6.5rem;
-  padding: 0 0.75rem 0.75rem;
+  padding: 0 0.75rem 0.6875rem;
   overflow: auto;
   border-top: 1px solid var(--playground-border);
 }
@@ -371,7 +371,8 @@
   width: 100%;
   margin: 0 0 0.625rem;
   border: 0;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.75rem;
   line-height: 1.4;
   table-layout: fixed;
@@ -380,15 +381,21 @@
 .guard-exercise.code-playground .guard-exercise__table :is(th, td) {
   padding: 0.2rem 0.25rem;
   border: 0.125rem solid var(--playground-border);
+  border-width: 0 0.125rem 0.125rem 0;
   text-align: left;
   vertical-align: top;
   overflow-wrap: anywhere;
+}
+
+.guard-exercise.code-playground .guard-exercise__table tr > :first-child {
+  border-left-width: 0.125rem;
 }
 
 .guard-exercise.code-playground .guard-exercise__table thead th {
   position: sticky;
   top: 0;
   z-index: 1;
+  border-top-width: 0.125rem;
   background: var(--playground-background);
   font-weight: 950;
 }

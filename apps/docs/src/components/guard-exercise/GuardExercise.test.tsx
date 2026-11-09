@@ -240,6 +240,32 @@ describe("GuardExercise", () => {
     expect(terms?.contains(host.querySelector("table"))).toBe(false);
   });
 
+  it("scrolls the table terms into view only when the details element opens", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    try {
+      const { host } = await mountExercise();
+      const terms = host.querySelector("details")!;
+
+      await act(async () => {
+        terms.dispatchEvent(new Event("toggle"));
+      });
+      expect(scrollIntoView).not.toHaveBeenCalled();
+
+      terms.open = true;
+      await act(async () => {
+        terms.dispatchEvent(new Event("toggle"));
+      });
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+      expect(scrollIntoView.mock.contexts[0]).toBe(terms.querySelector("p"));
+    } finally {
+      Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+    }
+  });
+
   it("opens the case file read-only and the mine file editable", async () => {
     const { host } = await mountExercise();
 
