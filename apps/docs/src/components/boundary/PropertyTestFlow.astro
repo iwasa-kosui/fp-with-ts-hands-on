@@ -533,8 +533,12 @@ const sideMark = { before: "●", after: "▲", plain: "■" } as const;
   }
 
   @media (max-height: 760px) {
-    .property-flow__caption {
+    .property-flow :global(.step-controls) {
       margin-block-end: 0.25rem;
+    }
+
+    .property-flow__caption {
+      margin-block-end: 0.125rem;
     }
 
     .property-flow__columns {
@@ -542,16 +546,20 @@ const sideMark = { before: "●", after: "▲", plain: "■" } as const;
     }
 
     .property-flow__column {
-      gap: 0.25rem;
-      padding-block: 0.25rem;
+      gap: 0.125rem;
+      padding-block: 0.125rem;
+    }
+
+    .property-flow__heading {
+      line-height: 1.3;
     }
 
     .property-flow__code figcaption {
-      padding-block: 0.0625rem;
+      padding-block: 0;
     }
 
     .property-flow__code :global(pre) {
-      padding-block: 0.25rem;
+      padding-block: 0.125rem;
       line-height: 1.3;
     }
 

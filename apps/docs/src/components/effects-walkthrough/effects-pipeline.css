@@ -99,7 +99,10 @@
 
 .ep-stage__code {
   min-width: 0;
-  transition: opacity 0.3s;
+}
+
+.ep-stage__code pre span {
+  transition: color 0.3s;
 }
 
 .ep-stage__code pre {
@@ -115,16 +118,9 @@
   padding-block: 0.2rem 0;
 }
 
-.ep-stage[data-state="future"] .ep-stage__code {
-  opacity: 0.55;
-}
-
-.ep-stage[data-state="done"] .ep-stage__code {
-  opacity: 0.85;
-}
-
-.ep-stage[data-state="skipped"] .ep-stage__code {
-  opacity: 0.5;
+.walk[data-walk-ready] .ep-stage[data-state="future"] .ep-stage__code pre span,
+.walk[data-walk-ready] .ep-stage[data-state="skipped"] .ep-stage__code pre span {
+  color: #a3acb6 !important;
 }
 
 .ep-stage[data-state="skipped"] .ep-stage__code .line {
@@ -336,10 +332,6 @@
 .ep-out__type {
   font-weight: 700;
   overflow-wrap: anywhere;
-}
-
-.walk:not([data-walk-ready]) .ep-stage__code {
-  opacity: 1;
 }
 
 .walk:not([data-walk-ready]) .ep-open {
