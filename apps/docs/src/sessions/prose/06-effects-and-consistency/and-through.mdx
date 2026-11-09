@@ -1,7 +1,10 @@
 import AndThroughCompare from "../../../components/effects-walkthrough/AndThroughCompare.astro";
+import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
 
 <p>課題1の保存は非同期なので、結果は <code>ResultAsync</code> で表します。<code>ResultAsync</code> は <code>Result</code> の非同期版で、<code>andThen</code> と <code>map</code> を同じように使えます。</p>
 
-<AndThroughCompare />
+<FigureSpace reserve={152}>
+  <AndThroughCompare />
+</FigureSpace>
 
 <p><code>andThrough</code> は、Ok の値を別の処理へ渡して実行し、その処理が Ok なら、元の値を次へ渡します。その処理が Err を返したら、結果はその Err になります。</p>
