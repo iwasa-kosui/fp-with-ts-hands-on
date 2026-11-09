@@ -9,19 +9,19 @@ export const throwRuleCode = `"no-restricted-syntax": [
   "error",
   {
     selector: "VariableDeclarator[id.name='startExamination'] ThrowStatement",
-    message: "throw しません。失敗は err で返します。",
+    message: "業務の失敗を throw しません。失敗は err で返します。",
   },
 ],`;
 
-<p>修正したコードも、次の変更で元の状態に戻ることがあります。ここから先の課題3は、修正した状態を維持することです。誤った変更を選んで、結果を比較してください。どの変更でも型検査は通ります。<code>throw</code> と <code>_unsafeUnwrap</code> は Linter（コードを実行せずに、書き方の問題を検出するツール）のルールとテストの両方が、失敗した後の保存と障害の変換はテストだけが、失敗の種類を判定する <code>switch</code> の <code>default</code> 節でまとめて処理する変更は、ルールだけが検出します。</p>
+<p>修正したコードも、次の変更で元の状態に戻ることがあります。誤った変更を選んで、Linter（コードを実行せずに、書き方の問題を検出するツール）のルールとテストの結果を比較してください。どの変更でも型検査は通ります。表の「✓ 検出」は、その仕組みが誤った変更を検出したことを、「－ 対象外」は、その誤った変更を検出する対象にならない仕組みを表します。</p>
 
 <ChangeChecks set={session04ChangeChecks} />
 
 <details class="step-solution">
-  <summary>useCase の throw を検出するルール（演習で写します）</summary>
-<p><code>ThrowStatement</code> は <code>throw</code> 文を表す構文の名前で、<code>selector</code> の前半は検出の範囲を useCase の中に限定します。<code>ThrowStatement</code> だけを指定すると、useCase の外の正当な <code>throw</code> も誤検知（正しいコードを誤った変更として検出すること）になります。ルールが検出するのは useCase に実装された <code>throw</code> だけで、useCase の外で発生した例外は検出しません。</p>
+  <summary>useCase の throw を検出するルールの例（演習で参考にします）</summary>
+<p><code>selector</code> の前半 <code>VariableDeclarator[id.name='startExamination']</code> は、<code>startExamination</code> という名前の変数宣言（useCase）を指します。後半の <code>ThrowStatement</code> は、<code>throw</code> 文を表す構文の名前です。この組み合わせで、検出の範囲を useCase の中に限定します。<code>ThrowStatement</code> だけを指定すると、useCase の外の正当な <code>throw</code> も誤検知（正しいコードを誤った変更として検出すること）になります。ルールが検出するのは useCase に実装された <code>throw</code> だけで、useCase の外で発生した例外は検出しません。</p>
 <figure class="code-block">
-  <figcaption>演習で写す設定です。写し先: <code>{rulesLabel}</code> の {"{}"} の中</figcaption>
+  <figcaption>演習で参考にする設定です。実装先: <code>{rulesLabel}</code> の {"{}"} の中</figcaption>
   <Code code={throwRuleCode} lang="js" />
 </figure>
 </details>

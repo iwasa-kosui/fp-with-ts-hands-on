@@ -25,23 +25,15 @@ export const sessionPages = [
     flow: "problem",
     kind: "brief",
     minutes: 1,
-    role: "課題1・2: 500 になった理由を、route の catch で確認します。",
-  },
-  {
-    slug: "deps-and-input",
-    title: "依存と入力を分けて受け取る関数",
-    flow: "knowledge",
-    kind: "teach",
-    minutes: 1,
-    role: "事前知識（課題1）: この後で書き換えるコードの形を読みます。",
+    role: "課題1・2・3: 500 になった理由を route の catch で確認し、直した状態の維持を課題3として示します。",
   },
   {
     slug: "result",
-    title: "useCase の戻り値の Result への変更",
+    title: "確認の関数の戻り値の Result への変更",
     flow: "knowledge",
     kind: "teach",
     minutes: 1,
-    role: "事前知識（課題1）: 失敗の理由を型に表すために、戻り値を Result にします。",
+    role: "事前知識（課題1の準備）: 失敗の理由を型に表すために、確認の関数の戻り値を Result にします。",
   },
   {
     slug: "typed-errors",
@@ -49,7 +41,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1,
-    role: "事前知識（課題1）: Err に含める失敗に、種類を付けます。",
+    role: "事前知識（課題1の準備）: Err に含める失敗に、種類を付けます。",
   },
   {
     slug: "map",
@@ -73,7 +65,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策（課題1）: map と andThen を使い、工程を連結したコードを読みます。",
+    role: "解決策（課題1の1点目）: 失敗の理由が型に現れない点を、useCase の戻り値の Result と map、andThen で解決します。",
   },
   {
     slug: "match",
@@ -81,7 +73,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策（課題1）: 返された失敗の種類ごとに、画面のお知らせを定義します。",
+    role: "解決策（課題1の2点目）: route が文言で判別する点を、失敗の種類ごとのお知らせの定義で解決します。",
   },
   {
     slug: "exhaustive-errors",
@@ -89,7 +81,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 0.5,
-    role: "解決策（課題1）: 失敗の種類を追加したときの、お知らせの追加漏れを検出します。",
+    role: "解決策（課題1の2点目）: 失敗の種類を追加したときの、お知らせの追加漏れを検出します。",
   },
   {
     slug: "business-error",
@@ -114,6 +106,14 @@ export const sessionPages = [
     kind: "teach",
     minutes: 1,
     role: "解決策を守る（課題3）: 修正したコードも、次の変更で元の状態に戻ることがあります。",
+  },
+  {
+    slug: "deps-and-input",
+    title: "依存と入力を分けて受け取る関数",
+    flow: "solution",
+    kind: "teach",
+    minutes: 1,
+    role: "解決策を守る（課題3）: 演習のテストで、本物の代わりのオブジェクトを渡す deps を読みます。",
   },
   {
     slug: "exercise",

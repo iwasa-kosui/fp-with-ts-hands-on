@@ -70,11 +70,11 @@ const steps = stepIds.map((id) => {
 const branchTotal = steps.reduce((sum, step) => sum + step.leftBranch, 0);
 
 const captions = [
-  `同じ4つの工程を、左は isErr で、右は andThen と map で実装します。左にだけ、失敗を検証する分岐（斜線の部分）が ${branchTotal} 行あります。`,
+  `同じ4つの工程（処理の1つ1つ）を、左は isErr で、右は andThen と map で実装します。失敗する工程は、予約を取得する工程と来院済みの確認の2つです。左にだけ、失敗を検証する分岐（斜線の部分）が ${branchTotal} 行あります。`,
   "工程1 予約を取得する: 左は、取得した直後に isErr で検証し、失敗の場合は返します。右は、呼び出すだけです。失敗をそのまま次の処理へ返す動作は、後ろに続く andThen と map が担当します。",
   "工程2 来院済みの確認: 左は、isErr の分岐がもう1組必要です。右は、andThen(ensureCheckedIn) の1行です。Err を受け取ったら、ensureCheckedIn を呼び出さずに、同じ Err を返します。",
   "工程3 状態の遷移: transitionToInExamination は失敗しない関数であるため、右は map を使います。左は、checkedIn.value を取り出して渡します。",
-  "工程4 保存して返す: 左は、保存した後に ok(next) で包み直します。右は、map の中で保存して、同じ値を返します。",
+  "工程4 保存して返す: 左は、保存した後に ok(next) で包み直します。右は、map の中で保存して、同じ値を返します。保存の例外を Result に含めないため、Result を返す andThen ではなく map を使います。",
 ] as const;
 ---
 
@@ -87,7 +87,7 @@ const captions = [
       <div class="we-body rbs-overview">
         {(["left", "right"] as const).map((side) => (
           <section class="rbs-column" data-side={side}>
-            <h4>{side === "left" ? "isErr で実装する（説明用の例）" : "andThen と map で実装する"}</h4>
+            <h4>{side === "left" ? "isErr で実装する（説明用のコード）" : "andThen と map で実装する"}</h4>
             <ol class="rbs-bars">
               {steps.map((step) => (
                 <li class="rbs-bar" data-band={step.band} style={`--lines: ${side === "left" ? step.leftBody : step.rightBody}`}>
@@ -114,7 +114,7 @@ const captions = [
           </ol>
           <div class="rbs-pair">
             <figure class="we-code">
-              <figcaption class="we-code__head"><span class="we-code__tag">isErr で実装する</span><code>説明用の例（配布コードにはありません）</code></figcaption>
+              <figcaption class="we-code__head"><span class="we-code__tag">isErr で実装する</span><code>説明用のコード</code></figcaption>
               <Code code={step.leftCode} lang="ts" themes={themes} defaultColor={false} transformers={[bandTransformer]} meta={bandMeta(step.leftBands)} />
             </figure>
             <figure class="we-code">
@@ -131,7 +131,7 @@ const captions = [
     <summary>全文を左右に並べて読む</summary>
     <div class="rbs-pair">
       <figure class="we-code">
-        <figcaption class="we-code__head"><span class="we-code__tag">isErr で実装する</span><code>説明用の例（配布コードにはありません）</code></figcaption>
+        <figcaption class="we-code__head"><span class="we-code__tag">isErr で実装する</span><code>説明用のコード</code></figcaption>
         <Code code={isErrPipeline} lang="ts" themes={themes} defaultColor={false} />
       </figure>
       <figure class="we-code">

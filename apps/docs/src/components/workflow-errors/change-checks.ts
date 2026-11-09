@@ -11,7 +11,7 @@ selector: "VariableDeclarator[id.name='startExamination'] ThrowStatement",`,
   {
     id: "tests",
     name: "テスト",
-    detail: "テスト用の Store で検証する",
+    detail: "テスト用の Store で、呼び出しの結果（outcome）と保存された予約（saved）を検証する",
     code: `expect(outcome.kind).toBe("returned");
 expect(saved).toHaveLength(0);`,
   },
@@ -35,10 +35,10 @@ const cases: readonly ChangeCase[] = [
       { kind: "add", text: "    return ensureCheckedIn(found)" },
     ],
     results: {
-      lint: { found: true, output: "no-restricted-syntax: throw しません。失敗は err で返します。" },
+      lint: { found: true, output: "no-restricted-syntax: 業務の失敗を throw しません。失敗は err で返します。" },
       tests: { found: true, output: "1件失敗: expected 'threw' to be 'returned'" },
     },
-    why: "戻り値の型は変わらないため、型検査は通ります。`throw` の使用を検出するルールと、例外が発生しないことを検証するテストが検出します。",
+    why: "戻り値の型は変わらないため、型検査は通ります。Linter のルールとテストの両方が検出します。",
   },
   {
     id: "B2-save-after-failure",
@@ -59,10 +59,10 @@ const cases: readonly ChangeCase[] = [
       { kind: "add", text: "    });" },
     ],
     results: {
-      lint: { found: false, output: "エラーなし" },
+      lint: { found: false, output: "エラーなし", notExpected: true },
       tests: { found: true, output: "1件失敗: expected [ { kind: 'InExamination', …(7) } ] to have a length of +0 but got 1" },
     },
-    why: "保存する順序は型にもコードの書き方にも現れません。`saved` の中身を検証するテストだけが検出します。",
+    why: "型検査は通ります。`saved` の中身を検証するテストが検出し、Linter のルールは対象外です。",
   },
   {
     id: "B3-store-failure-to-business-error",
@@ -82,10 +82,10 @@ const cases: readonly ChangeCase[] = [
       { kind: "same", text: "      });" },
     ],
     results: {
-      lint: { found: false, output: "エラーなし" },
+      lint: { found: false, output: "エラーなし", notExpected: true },
       tests: { found: true, output: "1件失敗: expected 'returned' to be 'threw'", setting: "expect(outcome.kind).toBe(\"threw\");" },
     },
-    why: "障害を Err に変えても型は一致します。例外がそのまま useCase の外へ伝わることを検証するテストだけが検出します。",
+    why: "障害を Err に変えても型は一致するため、型検査は通ります。テストが検出し、Linter のルールは対象外です。",
   },
   {
     id: "B4-unsafe-unwrap",
@@ -105,10 +105,10 @@ const cases: readonly ChangeCase[] = [
       { kind: "add", text: "  };" },
     ],
     results: {
-      lint: { found: true, output: "no-restricted-syntax: _unsafeUnwrap は失敗のとき例外を投げます。", setting: "selector: \"CallExpression[…]\"," },
+      lint: { found: true, output: "no-restricted-syntax: _unsafeUnwrap は失敗のとき例外を投げます。", setting: "selector: \"CallExpression[callee.property.name='_unsafeUnwrap']\"," },
       tests: { found: true, output: "2件失敗: expected 'threw' to be 'returned'" },
     },
-    why: "`_unsafeUnwrap` は失敗のとき例外を投げますが、型はそれを表しません。呼び出しを検出するルールと、例外が発生しないことを検証するテストが検出します。",
+    why: "`_unsafeUnwrap` は失敗のとき例外を投げますが、型はそれを表しません。Linter のルールとテストの両方が検出します。演習の検証は cases/ の中のコードだけを検査するため、route の入力の検査が使う `_unsafeUnwrap` は検査されません。実際のプロジェクトでは、`files` で useCase に限定します。",
   },
   {
     id: "B5-error-kind-swallowed",
@@ -131,7 +131,7 @@ const cases: readonly ChangeCase[] = [
 { considerDefaultExhaustiveForUnions: false }` },
       tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true, setting: "// この分岐のテストはまだありません" },
     },
-    why: "`default` が受けるため、型検査は通ります。テストはまだないため、`default` を候補に数えないルールだけが検出します。",
+    why: "`default` が受けるため、型検査は通ります。Linter のルールが検出し、テストはまだないため対象外です。",
   },
 ];
 

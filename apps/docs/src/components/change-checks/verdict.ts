@@ -11,7 +11,7 @@ export const verdictOf = (
   mechanism: Mechanism,
 ): Readonly<{ tone: "positive" | "negative" | "neutral"; text: string }> => {
   const outcome = outcomeOf(changeCase, mechanism);
-  if (outcome.notRun) return { tone: "neutral", text: "－ テストなし" };
+  if (outcome.notRun || outcome.notExpected) return { tone: "neutral", text: "－ 対象外" };
   if (outcome.found) return { tone: "positive", text: "✓ 検出" };
   return changeCase.kind === "bad"
     ? { tone: "negative", text: "▲ 未検出" }

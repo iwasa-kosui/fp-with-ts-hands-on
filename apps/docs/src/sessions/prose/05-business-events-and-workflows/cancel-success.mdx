@@ -1,7 +1,7 @@
 import CancelRailwayAnimation from "../../../components/CancelRailwayAnimation.astro";
 import SessionDetailsBody from "../../../components/SessionDetailsBody.astro";
 
-<p>完成形はデータベースの応答を待つため ResultAsync を使い、連結の方法は S04 の Result と同じです。ResultAsync は、データベースの応答を待ってから Ok か Err になる Result です。</p>
+<p>参照実装はデータベースの応答を待つため ResultAsync を使います。ResultAsync は、データベースの応答を待ってから Ok か Err になる Result です。連結の方法は、記録して返す工程の andThrough を除いて、S04 の Result と同じです。</p>
 
 <CancelRailwayAnimation scenes="success" />
 

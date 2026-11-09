@@ -1,10 +1,12 @@
 ---
 import { Code } from "astro:components";
+import useCaseSource from "../../../../../examples/final/src/useCase/cancelAppointmentUseCase.ts?raw";
+import { quote } from "../../sessions/reference-quote";
 import StepControls from "../stepper/StepControls.astro";
 import "../states/states.css";
 
-type Part = "resolver" | "decision" | "store";
-type Arrow = "read" | "pass" | "return" | "write";
+type Part = "resolver" | "createEvent" | "cancel" | "store";
+type Arrow = "read" | "pass" | "clock" | "return" | "write";
 
 type Frame = Readonly<{
   part: Part | undefined;
@@ -15,48 +17,58 @@ type Frame = Readonly<{
   caption: string;
 }>;
 
+const createEventCall = quote(useCaseSource, 77, 81, "Appointment.cancel({");
+
 const frames: readonly Frame[] = [
   {
     part: undefined,
     arrows: [],
-    heading: "データベースを操作するオブジェクト",
-    lines: ["取得するのは Resolver", "保存するのは Store", "判定の関数は、データベースを操作しない"],
-    caption: "判定の関数を中央に配置します。データベースから取得する Resolver を左に、データベースへ保存する Store を右に配置します。",
+    heading: "外に配置する I/O と、内にある業務ロジック",
+    lines: ["外の I/O: 取得するのは Resolver、保存するのは Store、時刻と ID を取得して渡すのは createEvent", "内の業務ロジック: 値だけで結果を返すのは Appointment.cancel"],
+    caption: "データベースから取得する Resolver を左に、データベースへ保存する Store を右に、時刻と ID を取得して渡す createEvent を中央に配置します。業務ロジックの Appointment.cancel は、createEvent から呼ばれます。",
   },
   {
     part: "resolver",
     arrows: ["read", "pass"],
-    heading: "Resolver が判定の関数へ渡す値",
+    heading: "Resolver が渡す値",
     code: `{\n  kind: "Scheduled",\n  appointmentId: "11111111-…",\n  …\n}`,
-    caption: "Resolver は、データベースから予約を取得し、判定の関数へ渡します。",
+    caption: "Resolver は、データベースから予約を取得します。条件の検証 ensureCancellable を通った予約が、createEvent へ渡されます。",
   },
   {
-    part: "decision",
+    part: "createEvent",
+    arrows: ["clock"],
+    heading: "createEvent が Appointment.cancel へ渡す値",
+    code: createEventCall,
+    caption: "createEvent は、時計から時刻を、ID の生成器から ID を取得し、Appointment.cancel へ渡します。",
+  },
+  {
+    part: "cancel",
     arrows: [],
-    heading: "判定の関数が返す値",
+    heading: "Appointment.cancel が返す値",
     code: `{\n  kind: "AppointmentCanceled",\n  aggregateState: { kind: "Canceled", … },\n}`,
-    caption: "判定の関数は、受け取った値だけで結果を返します。データベースは操作しません。",
+    caption: "Appointment.cancel は、渡された値だけで結果を返します。データベースにも時計にも触れません。",
   },
   {
     part: "store",
     arrows: ["return", "write"],
     heading: "Store が受け取る値",
     code: `{ kind: "AppointmentCanceled", … }`,
-    caption: "Store は、判定の関数が返したイベントを受け取り、データベースへ保存します。",
+    caption: "Store は、createEvent が返したイベントを受け取り、データベースへ保存します。",
   },
 ];
 
 const activeOf = (frame: Frame, arrow: Arrow): string | undefined => (frame.arrows.includes(arrow) ? "" : undefined);
+const headOf = (frame: Frame, arrow: Arrow, index: number): string => (frame.arrows.includes(arrow) ? `url(#rsf-head-active-${index})` : `url(#rsf-head-${index})`);
 ---
 
-<figure class="st-fig rsf" data-resolver-store aria-label="判定の関数を中央に、左に Resolver、右に Store を配置する図">
+<figure class="st-fig rsf" data-resolver-store aria-label="中央の createEvent が時計と ID の生成器から取得して Appointment.cancel へ渡し、左の Resolver が取得し、右の Store が保存する図">
   <StepControls />
 
   <ol class="st-stack">
     {frames.map((frame, index) => (
       <li data-frame>
         <div class="rsf__split">
-          <svg viewBox="0 0 640 204" role="img" aria-label="左の Resolver がデータベースから取得し、中央の判定の関数へ予約を渡す。判定の関数がイベントを返し、右の Store がデータベースへ保存する">
+          <svg viewBox="0 0 660 250" role="img" aria-label="左の Resolver がデータベースから予約を取得して中央の createEvent へ渡す。createEvent は時計と ID の生成器から時刻と ID を取得し、内側の Appointment.cancel へ渡す。Appointment.cancel は値だけでイベントを返し、右の Store がデータベースへ保存する">
             <defs>
               <marker id={`rsf-head-${index}`} viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" orient="auto">
                 <path d="M 0 0 L 10 5 L 0 10 z" class="rsf__head"></path>
@@ -66,37 +78,47 @@ const activeOf = (frame: Frame, arrow: Arrow): string | undefined => (frame.arro
               </marker>
             </defs>
 
-            <g class="rsf__box rsf__box--io" data-current={frame.part === "resolver" ? "" : undefined} transform="translate(10 14)">
+            <g class="rsf__box rsf__box--io" data-current={frame.part === "resolver" ? "" : undefined} transform="translate(6 18)">
               <rect width="160" height="72" rx="10"></rect>
               <text x="80" y="34" text-anchor="middle" class="rsf__title">Resolver</text>
               <text x="80" y="60" text-anchor="middle" class="rsf__sub">データベースから取得</text>
             </g>
-            <g class="rsf__box" data-current={frame.part === "decision" ? "" : undefined} transform="translate(230 14)">
-              <rect width="180" height="72" rx="10"></rect>
-              <text x="90" y="34" text-anchor="middle" class="rsf__title">判定の関数</text>
-              <text x="90" y="60" text-anchor="middle" class="rsf__sub">値だけで結果を返す</text>
+            <g class="rsf__box rsf__box--io" data-current={frame.part === "createEvent" ? "" : undefined} transform="translate(222 6)">
+              <rect width="216" height="112" rx="10"></rect>
+              <text x="108" y="24" text-anchor="middle" class="rsf__title rsf__title--sm">createEvent</text>
+              <text x="108" y="42" text-anchor="middle" class="rsf__sub">時刻と ID を取得して渡す</text>
             </g>
-            <g class="rsf__box rsf__box--io" data-current={frame.part === "store" ? "" : undefined} transform="translate(470 14)">
-              <rect width="160" height="72" rx="10"></rect>
-              <text x="80" y="34" text-anchor="middle" class="rsf__title">Store</text>
-              <text x="80" y="60" text-anchor="middle" class="rsf__sub">データベースへ保存</text>
+            <g class="rsf__box" data-current={frame.part === "cancel" ? "" : undefined} transform="translate(238 54)">
+              <rect width="184" height="56" rx="8"></rect>
+              <text x="92" y="24" text-anchor="middle" class="rsf__title rsf__title--sm">Appointment.cancel</text>
+              <text x="92" y="44" text-anchor="middle" class="rsf__sub">値だけで結果を返す</text>
+            </g>
+            <g class="rsf__box rsf__box--io" data-current={frame.part === "store" ? "" : undefined} transform="translate(506 18)">
+              <rect width="148" height="72" rx="10"></rect>
+              <text x="74" y="34" text-anchor="middle" class="rsf__title">Store</text>
+              <text x="74" y="60" text-anchor="middle" class="rsf__sub">データベースへ保存</text>
             </g>
 
-            <path d="M 170 50 H 226" class="rsf__arrow" data-active={activeOf(frame, "pass")} marker-end={frame.arrows.includes("pass") ? `url(#rsf-head-active-${index})` : `url(#rsf-head-${index})`}></path>
-            <text x="200" y="40" text-anchor="middle" class="rsf__label">予約</text>
-            <path d="M 410 50 H 466" class="rsf__arrow" data-active={activeOf(frame, "return")} marker-end={frame.arrows.includes("return") ? `url(#rsf-head-active-${index})` : `url(#rsf-head-${index})`}></path>
-            <text x="440" y="40" text-anchor="middle" class="rsf__label">イベント</text>
+            <path d="M 166 54 H 218" class="rsf__arrow" data-active={activeOf(frame, "pass")} marker-end={headOf(frame, "pass", index)}></path>
+            <text x="194" y="44" text-anchor="middle" class="rsf__label">予約</text>
+            <path d="M 438 54 H 502" class="rsf__arrow" data-active={activeOf(frame, "return")} marker-end={headOf(frame, "return", index)}></path>
+            <text x="470" y="44" text-anchor="middle" class="rsf__label rsf__label--sm">イベント</text>
 
-            <path d="M 90 150 V 92" class="rsf__arrow" data-active={activeOf(frame, "read")} marker-end={frame.arrows.includes("read") ? `url(#rsf-head-active-${index})` : `url(#rsf-head-${index})`}></path>
-            <text x="102" y="128" class="rsf__label">取得</text>
-            <path d="M 550 92 V 144" class="rsf__arrow" data-active={activeOf(frame, "write")} marker-end={frame.arrows.includes("write") ? `url(#rsf-head-active-${index})` : `url(#rsf-head-${index})`}></path>
-            <text x="562" y="128" class="rsf__label">保存</text>
+            <path d="M 86 204 V 94" class="rsf__arrow" data-active={activeOf(frame, "read")} marker-end={headOf(frame, "read", index)}></path>
+            <text x="98" y="150" class="rsf__label">取得</text>
+            <path d="M 580 94 V 200" class="rsf__arrow" data-active={activeOf(frame, "write")} marker-end={headOf(frame, "write", index)}></path>
+            <text x="592" y="150" class="rsf__label">保存</text>
 
-            <text x="320" y="124" text-anchor="middle" class="rsf__label rsf__label--muted">データベースを操作しない</text>
+            <g class="rsf__db rsf__db--clock" transform="translate(222 150)">
+              <rect width="216" height="40" rx="8"></rect>
+              <text x="108" y="25" text-anchor="middle">時計と ID の生成器</text>
+            </g>
+            <path d="M 330 150 V 122" class="rsf__arrow" data-active={activeOf(frame, "clock")} marker-end={headOf(frame, "clock", index)}></path>
+            <text x="342" y="141" class="rsf__label">時刻と ID</text>
 
-            <g class="rsf__db" transform="translate(10 150)">
-              <rect width="620" height="42" rx="8"></rect>
-              <text x="310" y="27" text-anchor="middle">データベース</text>
+            <g class="rsf__db" transform="translate(6 206)">
+              <rect width="648" height="38" rx="8"></rect>
+              <text x="324" y="25" text-anchor="middle">データベース</text>
             </g>
           </svg>
 
@@ -115,7 +137,7 @@ const activeOf = (frame: Frame, arrow: Arrow): string | undefined => (frame.arro
     ))}
   </ol>
 
-  <p class="rsf__note">注: Store は、保存するオブジェクトの総称です。完成形の Store は Event Store です。</p>
+  <p class="rsf__note">注: 工程ごとに取得と検証を繰り返します。図は関数と I/O の関係だけを示し、実行の順序は示しません。</p>
 </figure>
 
 <script>
@@ -129,7 +151,7 @@ const activeOf = (frame: Frame, arrow: Arrow): string | undefined => (frame.arro
 <style>
   .rsf__split {
     display: grid;
-    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
     gap: 0.75rem;
     align-items: start;
     margin-block-end: 0.125rem;
@@ -164,6 +186,14 @@ const activeOf = (frame: Frame, arrow: Arrow): string | undefined => (frame.arro
     fill: var(--role-text);
     font-size: 17px;
     font-weight: 800;
+  }
+
+  .rsf__title--sm {
+    font-size: 15px;
+  }
+
+  .rsf__label--sm {
+    font-size: 13px;
   }
 
   .rsf__sub {

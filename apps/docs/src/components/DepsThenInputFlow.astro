@@ -1,7 +1,7 @@
 ---
 import { Code } from "astro:components";
 import routesSource from "../../../../examples/session-04/src/adaptor/primary/web/routes.ts?raw";
-import testSource from "../../../../examples/session-04-solution/test/regression/result-errors.test.ts?raw";
+import testSource from "../../../../examples/session-04-solution/exercises/guard/mine/harness.ts?raw";
 import useCaseSource from "../../../../examples/session-04/src/useCase/startExamination.ts?raw";
 import { quote } from "../sessions/reference-quote";
 import MiniTree from "./mini-tree/MiniTree.astro";
@@ -20,8 +20,8 @@ const snippets = {
     code: quote(routesSource, 80, 86, "startExamination({"),
   },
   test: {
-    path: "examples/session-04-solution/test/regression/result-errors.test.ts:109-125",
-    code: quote(testSource, 109, 125, "const createDependencies"),
+    path: "examples/session-04-solution/exercises/guard/mine/harness.ts:28-43",
+    code: quote(testSource, 28, 43, "export const fakeDependencies"),
   },
 } as const;
 
@@ -57,17 +57,17 @@ const frames: readonly Frame[] = [
     code: { key: "useCase", keys: ["deps.resolver.resolveById(input.appointmentId),", "deps.store.save(next);"] },
   },
   {
-    caption: "route は、本物の保存先 store を resolver と store の両方として渡し、続けて input を渡します。S04 の route は、依頼のたびにこの形で渡します。",
+    caption: "route は、本物の保存先 store を resolver と store の両方として渡し、続けて input を渡します。S04 の route は、リクエストのたびにこの形で渡します。",
     deps: "focus", input: "normal", body: "normal", sources: "normal", source: "db", wait: false, depsFilled: true, inputFilled: true,
     code: { key: "route", keys: ["resolver: store,", "store,"] },
   },
   {
-    caption: "テストは、固定の予約を返す resolver と、保存の回数を数える store を渡します。演習では、保存された予約を配列 saved に格納するテスト用の Store を使います。",
+    caption: "演習のテストは、固定の予約を返す resolver と、保存された予約を配列 saved に格納する store を渡します。この関数 fakeDependencies は、演習の mine/harness.ts にあります。",
     deps: "focus", input: "normal", body: "normal", sources: "normal", source: "test", wait: false, depsFilled: true, inputFilled: true,
-    code: { key: "test", keys: ["resolver: { resolveById: () => resolved },", "observer.saveCalls += 1;"] },
+    code: { key: "test", keys: ["resolver: { resolveById: () => options.resolved },", "saved.push(appointment);"] },
   },
   {
-    caption: "(deps, input) を1度に受け取る形と比べます。この形は、呼ぶたびに deps も渡します。2回に分ける形は、start を作れば、以後は input だけで呼び出せます。S04 のコードでは、この利点はまだ現れません。",
+    caption: "(deps, input) を1度に受け取る形と比べます。この形は、呼ぶたびに deps も渡します。2回に分ける形は、start を作れば、以後は input だけで呼び出せます。演習のテストは、2回に分ける形で deps を渡します。",
     deps: "normal", input: "normal", body: "normal", sources: "normal", source: "none", wait: false, depsFilled: true, inputFilled: true,
     compare: true,
   },
@@ -82,7 +82,7 @@ const keyBands = (frame: Frame) => {
 const tree = miniTree("session-04", "", [
   { folder: "src/useCase/", files: [{ id: "useCase", name: "startExamination.ts" }] },
   { folder: "src/adaptor/primary/web/", files: [{ id: "route", name: "routes.ts" }] },
-  { folder: "test/regression/", files: [{ id: "test", name: "result-errors.test.ts", snapshot: "session-04-solution", note: "（解答: session-04-solution）" }] },
+  { folder: "exercises/guard/mine/", files: [{ id: "test", name: "harness.ts", snapshot: "session-04-solution", note: "（演習: session-04-solution）" }] },
 ]);
 
 const themes = { light: "github-light", dark: "github-dark" } as const;

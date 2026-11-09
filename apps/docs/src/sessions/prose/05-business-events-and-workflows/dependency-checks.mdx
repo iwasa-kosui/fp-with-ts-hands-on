@@ -2,7 +2,7 @@ import { Code } from "astro:components";
 import { session05ChangeChecks } from "../../../components/cancel-workflow/change-checks";
 import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
 
-<p>依存の向きの違反は、ESLint の <code>no-restricted-imports</code> で検出できます。変更を選んで結果を比較してください。どの変更も型検査は通ります。import の向きを逆にする3件は Linter のルールだけが、会計済みをキャンセルに通す変更はテストだけが検出します。import の向きを変えても実行結果は変わらないため、値を検証するテストでは検出できません。</p>
+<p>依存の向きの違反は、ESLint の <code>no-restricted-imports</code> で検出できます。変更を選んで結果を比較してください。どの変更も型検査は通ります。domain が外側の web、sqlite、useCase を import する3件は Linter のルールだけが、会計済みをキャンセルに通す変更はテストだけが検出します。表の「－ 対象外」は、その誤った変更を検出する対象にならない仕組みを表します。</p>
 
 <ChangeChecks set={session05ChangeChecks} />
 

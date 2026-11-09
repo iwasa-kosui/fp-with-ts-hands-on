@@ -62,8 +62,8 @@ const treeAfter = miniTree("session-04", "src/", [
 ]);
 
 const frames = [
-  "修正前: S03 の route は、入力の検査から監査まで、5つの処理を1つの関数に持っていました。",
-  "修正後: route には、入力の検査と useCase の呼び出しが残ります。ほかの処理は、状態の確認と遷移が useCase の本体、予約の取得が Resolver、保存と監査が Store に移りました。",
+  "S03（移動前）: route は、入力の検査から監査まで、5つの処理を1つの関数に持っていました。",
+  "S04 の教材のコード（移動済み）: route には入力の検査と呼び出しが残り、状態の確認と遷移は useCase の本体、予約の取得は Resolver、保存と監査は Store に移っています。",
 ] as const;
 ---
 
@@ -76,7 +76,7 @@ const frames = [
       <MiniTree tree={treeBefore} current={["route"]} />
       <div class="we-body rtu-grid rtu-grid--before">
         <figure class="we-code">
-          <figcaption class="we-code__head"><span class="we-code__tag">修正前の route</span><code>{paths.s03Routes}:111-126</code></figcaption>
+          <figcaption class="we-code__head"><span class="we-code__tag">S03 の route</span><code>{paths.s03Routes}:111-126</code></figcaption>
           <Code code={routeBefore} lang="ts" themes={themes} defaultColor={false} transformers={[bandTransformer]} meta={bandMeta(before)} />
         </figure>
         <ol class="rtu-processes" aria-label="route が持っていた5つの処理">
@@ -96,7 +96,7 @@ const frames = [
       <div class="we-body">
         <div class="rtu-grid rtu-grid--after">
           <figure class="we-code">
-            <figcaption class="we-code__head"><span class="we-code__tag">修正後の route</span><code>{paths.s04Routes}:75-78,80-86</code></figcaption>
+            <figcaption class="we-code__head"><span class="we-code__tag">S04 の route</span><code>{paths.s04Routes}:75-78,80-86</code></figcaption>
             <Code code={routeAfter} lang="ts" themes={themes} defaultColor={false} transformers={[bandTransformer]} meta={bandMeta(afterRoute)} />
           </figure>
           <figure class="we-code">

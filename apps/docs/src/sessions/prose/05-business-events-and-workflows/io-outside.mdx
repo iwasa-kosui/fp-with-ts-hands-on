@@ -6,9 +6,14 @@ export const cancelLabel = lineLabelOf("session-05-solution", "src/domain/appoin
 
 <div class="session-split">
   <div>
-    <p>課題 2 を解決するには、判定の関数の外に I/O を配置します。I/O は、データベースの読み書きや現在時刻の取得のように、関数の外部とやり取りする処理です。</p>
-    <p>副作用がなく、同じ入力から必ず同じ結果を返す関数を<strong>純粋関数</strong>と呼びます（<a href="/sessions/01-state-transitions/pure-functions/">S01 の説明</a>）。右の <code>cancel</code> は、予約、キャンセル理由、時刻を受け取り、値だけで <code>Canceled</code> の予約を返します。来院理由は <code>reason</code> に保持され、キャンセル理由は <code>cancellationReason</code> に格納されます。</p>
-    <p>完成形の <code>Appointment.cancel</code> は、<code>petId</code> と <code>ownerId</code> も保持し、時刻とイベント ID を <code>createEvent</code> から受け取ります。</p>
+    <p>課題2を解決するには、業務ロジックの外に I/O を配置します。I/O は、データベースの読み書きや現在時刻の取得のように、関数の外部とやり取りする処理です。domain の業務ロジックは <code>Appointment.cancel</code>（結果の作成）です。useCase にある <code>ensureCancellable</code> は条件の検証で、「結果を作る」工程の <code>createEvent</code>（時刻と ID の取得）は I/O です。</p>
+    <p>副作用がなく、同じ入力から必ず同じ結果を返す関数を<strong>純粋関数</strong>と呼びます（<a href="/sessions/01-state-transitions/pure-functions/">S01 の説明</a>）。<code>ensureCancellable</code> は予約の値だけで <code>ok</code> か <code>err</code> を返します。右は演習のコードの <code>cancel</code> で、予約、キャンセル理由、時刻の値だけで <code>Canceled</code> の予約を返します。</p>
+    <p>条件の検証は useCase の内部にあるため、Resolver、Store、時計の代替を useCase に渡して確認します（演習の Paid のテスト）。</p>
+    <p>参照実装の <code>Appointment.cancel</code> は、<code>petId</code> と <code>ownerId</code> も保持し、次の2点も異なります。</p>
+    <ul>
+      <li>結果を <code>Canceled</code> の予約だけではなく、イベント <code>AppointmentCanceled</code> で包んで返します。</li>
+      <li>時刻を引数の <code>canceledAt</code> ではなく、<code>context</code>（<code>eventId</code>、<code>occurredAt</code>、<code>actorUserId</code> をまとめた値）で受け取ります。<code>createEvent</code> が、時計と ID の生成器から取得して渡します。</li>
+    </ul>
   </div>
   <figure class="code-block">
     <figcaption>{cancelLabel}</figcaption>

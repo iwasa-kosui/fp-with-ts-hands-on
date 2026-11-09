@@ -21,7 +21,7 @@ const rows: readonly Row[] = [
 const tagOf = (change: Change): string => (change === "changed" ? "変更" : change === "added" ? "追加" : "");
 ---
 
-<figure class="cdd" aria-label="キャンセルの前と後で、予約のデータが変わる 3 項目">
+<figure class="cdd" aria-label="キャンセルの前と後で、予約のデータが変わる3項目">
   <div class="cdd__grid">
     <section class="cdd__panel" aria-labelledby="cdd-before">
       <h4 id="cdd-before">キャンセル前 <code>Scheduled</code></h4>
@@ -57,7 +57,7 @@ const tagOf = (change: Change): string => (change === "changed" ? "変更" : cha
   </div>
 
   <figcaption>
-    変わるのは <code>kind</code>、<code>cancellationReason</code>、<code>canceledAt</code> の 3 項目です。
+    変わるのは <code>kind</code>、<code>cancellationReason</code>、<code>canceledAt</code> の3項目で、キャンセル処理が設定します。
   </figcaption>
 </figure>
 

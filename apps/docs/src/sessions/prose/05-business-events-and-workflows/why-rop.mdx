@@ -1,19 +1,19 @@
-<p>1つの関数に実装したときの2つの課題に対して、工程の連結で次の3点を解決できます。</p>
+<p>ここまでに追跡したコードから、1つの関数に実装したときの2つの課題が解決された理由を確認します。解決の効果は、Result、工程の分割、I/O の配置に分かれます。</p>
 
-<ul class="session-cards" aria-label="工程の連結で解決できる3点">
+<ul class="session-cards" aria-label="Result、工程の分割、I/O の配置で解決した課題の3点">
   <li class="session-cards__card">
-    <h3 class="session-cards__title">失敗が戻り値の型に現れる</h3>
-    <p class="session-cards__target">課題 1 の解決</p>
-    <p>例外を投げる関数は、投げる失敗が型に現れません。Result を返す工程は、発生しうる失敗を戻り値の型に列挙します。</p>
+    <h3 class="session-cards__title">失敗が型に現れ、呼び出し側が網羅できる</h3>
+    <p class="session-cards__target">課題1の解決（Result の効果）</p>
+    <p>例外を投げる関数は、投げる失敗が型に現れません。各工程が Result を返すため、戻り値の型 <code>UseCaseError</code> に工程の失敗が列挙され、呼び出し側は <code>kind</code> で分岐して扱います。分岐の追加漏れは、型検査のときに報告されます。</p>
   </li>
   <li class="session-cards__card">
-    <h3 class="session-cards__title">工程の順序が読み取れ、判定だけを検証できる</h3>
-    <p class="session-cards__target">課題 1 と課題 2 の解決</p>
-    <p><code>andThen</code> を並べた順序が、そのまま工程の順序です。<code>Appointment.cancel</code> は値だけで検証でき、Resolver と Store と時計は引数で渡すため、テスト用の実装に差し替えられます。</p>
+    <h3 class="session-cards__title">どの工程がどの失敗を返すかが読み取れる</h3>
+    <p class="session-cards__target">課題1の解決（工程の分割の効果）</p>
+    <p>工程ごとに入力、出力、失敗が定まり、<code>andThen</code> などを並べた順序が、そのまま工程の順序です。失敗した工程より後の工程は実行されません。</p>
   </li>
   <li class="session-cards__card">
-    <h3 class="session-cards__title">呼び出し側が失敗を網羅できる</h3>
-    <p class="session-cards__target">課題 1 の解決</p>
-    <p>呼び出し側は、戻り値の型に含まれる失敗を <code>kind</code> で分岐して扱います。失敗の種類を追加したのに分岐を追加しなかった場合は、型検査のときに報告されます。</p>
+    <h3 class="session-cards__title">useCase を、本物のデータベースと時計なしでテストできる</h3>
+    <p class="session-cards__target">課題2の解決（I/O の配置の効果）</p>
+    <p><code>Appointment.cancel</code> は値だけを受け取ります。Resolver、Store、時計は引数で渡すため、テストでは代替の実装を useCase に渡して、条件の検証をデータベースなしで確認できます。</p>
   </li>
 </ul>
