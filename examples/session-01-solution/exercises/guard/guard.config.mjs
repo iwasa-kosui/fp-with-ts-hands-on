@@ -27,7 +27,7 @@ export default {
       hint: "手がかりは、診察開始の引数が受け取る予約の状態です。どの状態の予約を渡す呼び出しが、受け付けられてしまうかを考えます。",
       behavior: {
         input: { text: "来院前の予約を診察開始に渡すコードを書く" },
-        expected: { text: "型検査でエラー", value: "TS2345" },
+        expected: { text: "型検査でエラー" },
         actual: { text: "型検査を通り、実行すると例外" },
       },
     },
@@ -70,8 +70,8 @@ export default {
       hint: "来院の時刻と診察を始めた時刻は、どちらも文字列です。手がかりは、結果のどの項目の値を見れば気づけるかと、確かめるときに使う時刻の値です。値が同じだと、取り違えても結果が変わりません。",
       behavior: {
         input: { text: "06:10 に来院、06:25 に診察を開始する" },
-        expected: { text: "渡した時刻が入る", value: "examinationStartedAt: 06:25" },
-        actual: { text: "来院の時刻が入る", value: "examinationStartedAt: 06:10" },
+        expected: { text: "渡した時刻が入る", value: '"…T06:25:00.000Z"' },
+        actual: { text: "来院の時刻が入る", value: '"…T06:10:00.000Z"' },
       },
     },
     {

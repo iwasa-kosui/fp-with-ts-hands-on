@@ -51,7 +51,7 @@ export default {
       hint: "引数の型が広がっていないかを確かめます。",
       behavior: {
         input: { text: '表示名の関数に "NoSuchState" を渡すコードを書く' },
-        expected: { text: "型検査でエラー", value: "TS2322" },
+        expected: { text: "型検査でエラー" },
         actual: { text: "型検査を通り「不明」と出る" },
       },
     },
@@ -65,9 +65,9 @@ export default {
       allow: ["lint"],
       hint: "toStatusLabel だけでなく、同じファイルの別の関数でも検出できるかを確かめます。",
       behavior: {
-        input: { text: "キャンセルの予約を別の関数に渡す" },
-        expected: { text: "Canceled の case で決まる" },
-        actual: { text: "default の値になる", value: '"neutral"' },
+        input: { text: "キャンセルの予約を toStatusTone に渡す" },
+        expected: { text: "Canceled の case を通る" },
+        actual: { text: "case がなく default を通る", value: '"neutral"' },
       },
     },
     {

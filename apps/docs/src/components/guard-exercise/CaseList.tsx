@@ -26,22 +26,7 @@ export type CaseListProps = Readonly<{
   selectedPath: string | undefined;
   disabled: boolean;
   onSelect: (path: string) => void;
-  guide?: GuardGuide;
 }>;
-
-const defaultGuide: GuardGuide = {
-  title: "この演習でやること",
-  steps: [
-    "悪い変更をコードで見る",
-    "どの仕組みで検出するかを選ぶ",
-    "仕組みを足して「検出を確かめる」を押す",
-  ],
-};
-
-const segmentsKey = (segments: readonly GuardGuideSegment[]): string =>
-  segments
-    .map((segment) => (typeof segment === "string" ? segment : segment.text))
-    .join("");
 
 const BehaviorPart = ({
   label,
@@ -62,44 +47,8 @@ export const CaseList = ({
   selectedPath,
   disabled,
   onSelect,
-  guide = defaultGuide,
 }: CaseListProps) => (
   <div className="guard-exercise__cases-inner">
-    <div className="guard-exercise__guide">
-      <div className="guard-exercise__guide-head">
-        <h2>{guide.title}</h2>
-        {guide.criteria === undefined ? null : (
-          <p className="guard-exercise__criteria">{guide.criteria}</p>
-        )}
-      </div>
-      <ol className="guard-exercise__steps">
-        {guide.steps.map((step) => {
-          const { id, text, items = [] } =
-            typeof step === "string" ? { text: step } : step;
-          const segments = typeof text === "string" ? [text] : text;
-          return (
-            <li key={id ?? segmentsKey(segments)} id={id}>
-              {segments.map((segment, index) =>
-                typeof segment === "string" ? (
-                  segment
-                ) : (
-                  <a key={`${index}:${segment.href}`} href={segment.href}>
-                    {segment.text}
-                  </a>
-                ),
-              )}
-              {items.length === 0 ? null : (
-                <ul>
-                  {items.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          );
-        })}
-      </ol>
-    </div>
     <div className="guard-exercise__cases">
       <h3>悪い変更</h3>
       <ul className="guard-exercise__case-list" aria-label="悪い変更の一覧">

@@ -60,4 +60,14 @@ describe("CaseList behavior", () => {
     expect(button?.querySelector(".guard-exercise__behavior")).toBeNull();
     expect(button?.textContent).toBe("題名 B2未確認");
   });
+
+  it("renders only the list of bad changes, without the guide", () => {
+    const document = render([row("B3")]);
+
+    expect(document.querySelector("h2")).toBeNull();
+    expect(document.querySelector("ol, .guard-exercise__steps")).toBeNull();
+    expect(document.querySelector(".guard-exercise__criteria")).toBeNull();
+    expect(document.querySelector(".guard-exercise__guide")).toBeNull();
+    expect(document.querySelector("h3")?.textContent).toBe("悪い変更");
+  });
 });

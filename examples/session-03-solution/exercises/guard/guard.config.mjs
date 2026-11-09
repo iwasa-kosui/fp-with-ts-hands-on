@@ -39,7 +39,7 @@ export default {
       allow: ["tests"],
       hint: "UUID でない文字列を渡したときに Err になることを、テストで確かめます。",
       behavior: {
-        input: { text: '獣医師IDが "abc" の本文を parse する' },
+        input: { text: '予約IDは正しく、獣医師IDが "abc" の本文を parse する' },
         expected: { text: "Err を返す" },
         actual: { text: "UUID を確かめず Ok", value: 'veterinarianId: "abc"' },
       },
@@ -83,7 +83,7 @@ export default {
       hint: "一方の ID をもう一方の型へ代入できないことを、型のテストで確かめます。",
       behavior: {
         input: { text: "獣医師IDを予約IDの変数へ代入するコードを書く" },
-        expected: { text: "型検査でエラー", value: "TS2322" },
+        expected: { text: "型検査でエラー" },
         actual: { text: "型検査を通る" },
       },
     },
