@@ -1,34 +1,15 @@
 import { sql } from "drizzle-orm";
 
 import type { Appointment } from "../../../domain/appointment/appointment.js";
+import type {
+  AppointmentRepository,
+  AuditEvent,
+  AuditLog,
+} from "../../../useCase/dependencies.js";
 import type { SqliteDatabase } from "./db.js";
 import { appointmentsTable, auditLogsTable } from "./schema.js";
 
 export const INITIAL_AUDIT_EVENT_ID = "00000000-0000-4000-8000-000000000000";
-
-export type AuditLog = Readonly<{
-  eventId: string;
-  appointmentId: string;
-  eventName: string;
-  payload: Appointment;
-  occurredAt: string;
-}>;
-
-type AuditEvent = Readonly<{
-  eventId: string;
-  eventName: string;
-  occurredAt: string;
-  appointment: Appointment;
-}>;
-
-export type AppointmentRepository = Readonly<{
-  find: (appointmentId: string) => Appointment | undefined;
-  save: (appointment: Appointment) => void;
-  appendAudit: (event: AuditEvent) => void;
-  listAuditLogs: () => AuditLog[];
-  reset: (initialAppointment: Appointment) => void;
-  seedIfEmpty: (initialAppointment: Appointment) => void;
-}>;
 
 const toAppointmentRow = (appointment: Appointment) => ({
   appointmentId: appointment.appointmentId,

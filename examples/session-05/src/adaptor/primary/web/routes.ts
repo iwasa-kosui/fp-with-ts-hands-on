@@ -5,7 +5,7 @@ import { noticeFromCode, notImplemented } from "@fp-with-ts/clinic-web/server";
 import type { Context, Hono } from "hono";
 
 import { clinicFixture } from "../../../../../fixtures/clinic.js";
-import type { AppointmentRepository } from "../../secondary/sqlite/appointmentRepository.js";
+import type { AppointmentRepository } from "../../../useCase/dependencies.js";
 import {
   bookAppointment,
   updateStatus,
