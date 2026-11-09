@@ -4,21 +4,21 @@ const mechanisms: readonly MechanismInfo[] = [
   {
     id: "types",
     name: "型のテスト",
-    detail: "型エラーになることを確かめる",
+    detail: "型エラーになることを検証する",
     code: `// @ts-expect-error ← 次の行が型エラーでなければエラー
 startExamination(scheduled, "…", "…");`,
   },
   {
     id: "lint",
-    name: "Linter の規則",
-    detail: "書き方を見る",
+    name: "Linter のルール",
+    detail: "コードの書き方を検査する",
     code: `// selector: 検出するコードの形（TSAsExpression は as の式）
 selector: "TSAsExpression > TSTypeReference[…]",`,
   },
   {
     id: "tests",
     name: "テスト",
-    detail: "実行して値を確かめる",
+    detail: "実行して値を検証する",
     code: `expect(cancel(scheduled, "schedule conflict", canceledAt))
   .toMatchObject({ reason: "schedule conflict", … });`,
   },
@@ -47,7 +47,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: true, output: "no-restricted-syntax: 予約の状態の型へ as で変えず、kind を確かめて絞り込みます。" },
       tests: { found: true, output: "5件失敗: expected [Function] to throw an error", setting: "expect(() => startExaminationFor(appointment, veterinarianId, at)).toThrow();" },
     },
-    why: "`as` で型検査を黙らせても、`startExamination` の引数の型は変わらないので、型のテストは通ります。`as` の書き方を見る規則と、実行して確かめるテストが見つけます。",
+    why: "`as` で型検査のエラーを抑制しても、`startExamination` の引数の型は変わらないため、型のテストは通ります。`as` の書き方を検査する Linter のルールと、実行して値を検証するテストが検出します。",
   },
   {
     id: "B2-widened-start-examination",
@@ -73,7 +73,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: false, output: "エラーなし" },
       tests: { found: false, output: "2件成功" },
     },
-    why: "広げた引数には Scheduled も渡せるので、型エラーが消えて `// @ts-expect-error` の印が余ります。実行時の確認を足したので、テストと規則は通ります。",
+    why: "広げた引数には Scheduled も渡せるため、型エラーが消え、`// @ts-expect-error` が未使用になります。実行時の検証を追加したため、テストと Linter のルールは通ります。",
   },
   {
     id: "B3-cancel-keeps-visit-reason",
@@ -95,13 +95,13 @@ const cases: readonly ChangeCase[] = [
       lint: { found: false, output: "エラーなし" },
       tests: { found: true, output: "1件失敗: expected { kind: 'Canceled', …(6) } to match object { kind: 'Canceled', …(4) }" },
     },
-    why: "どちらの理由も同じ型の文字列なので、型検査と規則は通ります。どの値が結果に入るかは、テストだけが確かめます。",
+    why: "どちらの理由も同じ型の文字列であるため、型検査と Linter のルールは通ります。結果にどの値が格納されるかは、テストだけが検証します。",
   },
 ];
 
 export const session01ChangeChecks: ChangeCheckSet = {
   example: "session-01-solution",
-  ariaLabel: "悪い変更と3つの仕組みの結果",
+  ariaLabel: "誤った変更と3つの仕組みの結果",
   mechanisms,
   cases,
 };

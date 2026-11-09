@@ -23,7 +23,7 @@ const snippets = {
 
 const afterLabel = lineLabelOf("session-01-solution", transitionsPath, firstLine, lastLine);
 
-const versionLabels = { before: "時刻を中で読む書き方", after: "時刻を引数で受け取る書き方", summary: "まとめ" } as const;
+const versionLabels = { before: "時刻を内部で取得する書き方", after: "時刻を引数で受け取る書き方", summary: "まとめ" } as const;
 const codeTagLabels = { before: "修正前", after: "修正後" } as const;
 
 type Frame = Readonly<{
@@ -39,27 +39,27 @@ const frames: readonly Frame[] = [
     scene: 1,
     version: "before",
     caption:
-      "時刻を中で読む書き方の startExamination は、関数の中で new Date() を呼んで現在時刻を読みます。時刻は引数に無いので、呼び出し側からは見えません。",
-    alt: "入力は予約 CheckedIn と獣医師 ID の2つです。関数 startExamination の箱の中に時計と new Date() の表記があり、「現在時刻を読む」と示しています。出力は InExamination です。",
+      "時刻を内部で取得する書き方の startExamination は、関数の中で new Date() を呼んで現在時刻を取得します。時刻は引数にないため、呼び出し側からは把握できません。",
+    alt: "入力は予約 CheckedIn と獣医師 ID の2つです。関数 startExamination の箱の中に時計と new Date() の表記があり、「現在時刻を取得する」と示しています。出力は InExamination です。",
     code: { key: "before", lines: [9] },
   },
   {
     scene: 2,
     version: "before",
-    caption: "同じ予約と同じ獣医師 ID を渡しても、呼んだ時刻によって結果が変わります。呼ぶ時刻で結果が変わるので、テストに期待する値を書けません。",
+    caption: "同じ予約と同じ獣医師 ID を渡しても、呼んだ時刻によって結果が変わります。呼ぶ時刻で結果が変わるため、テストで期待値を固定できません。",
     alt: "同じ入力で startExamination を10:00と10:05の2回呼ぶ図です。2つの出力の examinationStartedAt は 10:00 と 10:05 で異なり、赤で示しています。",
   },
   {
     scene: 3,
     version: "before",
     caption:
-      "戻り値を返す以外に、関数の外の世界を読んだり書き換えたりすることを副作用と呼びます。現在時刻を読む、乱数を作る、データベースに書く、ログを出す、が副作用の例です。",
-    alt: "関数の箱から外へ向かう3本の矢印が、時計（現在時刻を読む）、データベース（書く）、ログ（出す）につながっています。",
+      "戻り値を返す以外に、関数の外の世界を参照したり変更したりすることを副作用と呼びます。副作用の例は、現在時刻の取得、乱数の生成、データベースへの保存、ログの出力です。",
+    alt: "関数の箱から外へ向かう3本の矢印が、時計（現在時刻を取得する）、データベース（保存する）、ログ（出力する）につながっています。",
   },
   {
     scene: 4,
     version: "after",
-    caption: "時刻を引数で受け取る書き方では、時刻を読む仕事が呼び出し側へ移り、関数の中から副作用がなくなります。",
+    caption: "時刻を引数で受け取る書き方では、時刻を取得する処理が呼び出し側へ移り、関数の中から副作用がなくなります。",
     alt: "時計が関数 startExamination の箱の外へ出て、3つ目の入力「時刻 string」の枠に移っています。入力は予約、獣医師 ID、時刻の3つです。箱の中には「副作用なし」と示しています。",
     code: { key: "after", lines: [4, 10] },
   },
@@ -74,8 +74,8 @@ const frames: readonly Frame[] = [
     scene: 6,
     version: "summary",
     caption:
-      "副作用は呼び出し側にまとめ、状態遷移の判断は純粋関数に残します。データベースの読み取りと保存の役割は S05、時刻と ID の作り方と保存のまとめ方は S06 で扱います。時刻と ID の作り方は S06 で扱います。",
-    alt: "外側の枠は呼び出し側で、時刻を読む仕事とデータベースに保存する仕事を持ちます。その中に、純粋な遷移関数 startExamination の箱があります。",
+      "副作用は呼び出し側にまとめ、状態遷移の判断は純粋関数に残します。データベースの読み取りと保存の役割は S05、時刻と ID の作り方と保存のまとめ方は S06 で扱います。",
+    alt: "外側の枠は呼び出し側で、時刻を取得する処理とデータベースに保存する処理を担当します。その中に、純粋な遷移関数 startExamination の箱があります。",
   },
 ];
 
@@ -142,7 +142,7 @@ const arrows: readonly Arrow[] = [
 const labels: readonly Label[] = [
   { scenes: "1 4", x: 162, y: 44, text: "startExamination", mono: true },
   { scenes: "1", x: 162, y: 146, text: "new Date()", mono: true },
-  { scenes: "1", x: 162, y: 168, text: "現在時刻を読む", bold: true, tone: "bad" },
+  { scenes: "1", x: 162, y: 168, text: "現在時刻を取得する", bold: true, tone: "bad" },
   { scenes: "4", x: 162, y: 160, text: "副作用なし", bold: true, tone: "good" },
   ...stack("1 4", 38, 52, [{ text: "予約" }, { text: "CheckedIn", mono: true, size: 10 }], 14),
   ...stack("1 4", 38, 106, [{ text: "獣医師 ID" }, { text: "string", mono: true, size: 10 }], 14),
@@ -150,9 +150,9 @@ const labels: readonly Label[] = [
   ...stack("1 4", 295, 106, [{ text: "出力" }, { text: "InExamination", mono: true, size: 10 }], 14),
   ...stack("3", 68, 112, [{ text: "関数" }, { text: "副作用あり", bold: true, tone: "bad" }], 18),
   { scenes: "3", x: 258, y: 26, text: "関数の外の世界", bold: true },
-  { scenes: "3", x: 224, y: 66, text: "現在時刻を読む", anchor: "start" },
-  { scenes: "3", x: 224, y: 116, text: "データベースに書く", anchor: "start" },
-  { scenes: "3", x: 224, y: 166, text: "ログを出す", anchor: "start" },
+  { scenes: "3", x: 224, y: 66, text: "現在時刻を取得する", anchor: "start" },
+  { scenes: "3", x: 224, y: 116, text: "データベースへ保存", anchor: "start" },
+  { scenes: "3", x: 224, y: 166, text: "ログを出力する", anchor: "start" },
   ...[
     { x: 77, call: "10:00", ordinal: "1回目", value: "10:00" },
     { x: 263, call: "10:05", ordinal: "2回目", value: "10:05" },
@@ -169,7 +169,7 @@ const labels: readonly Label[] = [
   { scenes: "2", x: 170, y: 184, text: "≠", size: 24, bold: true, tone: "bad" },
   { scenes: "5", x: 170, y: 184, text: "=", size: 24, bold: true, tone: "good" },
   { scenes: "6", x: 16, y: 24, text: "呼び出し側", bold: true, anchor: "start" },
-  { scenes: "6", x: 136, y: 53, text: "時刻を読む", anchor: "start" },
+  { scenes: "6", x: 136, y: 53, text: "時刻を取得する", anchor: "start" },
   { scenes: "6", x: 120, y: 175, text: "データベースに保存する", anchor: "start" },
   ...stack("6", 170, 110, [{ text: "startExamination", mono: true }, { text: "純粋な遷移関数（状態遷移の判断）" }], 17),
 ];
@@ -202,7 +202,7 @@ const playerData = JSON.stringify(
   </div>
 
   <div class="pure-function-flow__stage" data-stage hidden>
-    <span class="pure-function-flow__badge" data-stage-badge data-version="before">時刻を中で読む書き方</span>
+    <span class="pure-function-flow__badge" data-stage-badge data-version="before">時刻を内部で取得する書き方</span>
     <div data-stage-figure></div>
   </div>
 
@@ -704,6 +704,19 @@ const playerData = JSON.stringify(
 
   [data-animated] svg[data-scene="4"] .pure-function-flow__clock {
     transition: transform 0.9s ease-in-out, opacity 0.4s;
+  }
+
+  @media (max-width: 55rem) {
+    .pure-function-flow[data-animated] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .pure-function-flow[data-animated] > .pure-function-flow__stage,
+    .pure-function-flow[data-animated] > .pure-function-flow__live,
+    .pure-function-flow[data-animated] > .pure-function-flow__frames {
+      grid-column: 1;
+      grid-row: auto;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

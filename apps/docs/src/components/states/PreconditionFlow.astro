@@ -33,7 +33,7 @@ const tree = miniTree("session-01-solution", "", [
 const frames: readonly Frame[] = [
   {
     caption:
-      "startExamination は、kind が CheckedIn の予約を求めます。これが、呼び出し側に求める事前条件です。事前条件を確かめる時点は、型検査のときと実行中の2つあります。",
+      "startExamination は、kind が CheckedIn の予約を求めます。これが、呼び出し側に求める事前条件です。事前条件を検証する時点は、型検査のときと実行時の2つです。",
     top: { mode: "dim", focus: [1], hide: [], token: null },
     bottom: { mode: "dim", focus: [1], hide: [], token: null },
   },
@@ -52,20 +52,20 @@ const frames: readonly Frame[] = [
   },
   {
     caption:
-      "型は実行時には消えます。データベースから読み取った値は、型検査が中身を確かめていません。kind が Paid の値でも、型検査では報告されません。",
+      "型は実行時には消えます。データベースから取得した値は、型検査が中身を検証していません。kind が Paid の値でも、型検査では報告されません。",
     top: { mode: "dim", focus: [], hide: [], token: null },
     bottom: { mode: "normal", focus: [], hide: [], token: { label: "kind: Paid", at: 0 } },
   },
   {
     caption:
-      "HTTP リクエストを受ける関数（routes.ts）は、データベースから読んだ予約 current の kind を確認します。CheckedIn でなければ例外を投げ、startExamination を呼びません。実行中の値は、この確認で検出します。",
+      "HTTP リクエストを受ける関数（routes.ts）は、データベースから取得した予約 current の kind を検証します。CheckedIn でなければ例外を投げ、startExamination を呼びません。不正な値は、実行時にこの検証で検出します。",
     code: { key: "route", lines: [0] },
     top: { mode: "dim", focus: [], hide: [], token: null },
     bottom: { mode: "normal", focus: [], hide: [], token: { label: "kind: Paid", at: 1, result: "stop" } },
   },
   {
     caption:
-      "kind が CheckedIn の予約は、確認を通り、startExamination が動きます。型は誤った呼び出しを実行前に見つけ、実行時の確認は型検査が確かめていない値を実行中に見つけます。",
+      "kind が CheckedIn の予約は、検証を通り、startExamination が実行されます。型は誤った呼び出しを実行前に検出し、実行時の検証は、型検査の対象外の値を実行時に検出します。",
     top: { mode: "normal", focus: [], hide: [], token: { label: "CheckedIn", at: 2, result: "pass" } },
     bottom: { mode: "normal", focus: [], hide: [], token: { label: "CheckedIn", at: 2, result: "pass" } },
   },
@@ -89,7 +89,7 @@ const topNodes: readonly DiagramNode[] = [
 ];
 const bottomNodes: readonly DiagramNode[] = [
   { slot: 0, kind: "box", x: 2, y: 186, w: 72, lines: [{ text: "routes.ts", mono: true }] },
-  { slot: 1, kind: "gate", x: 86, y: 186, w: 96, lines: [{ text: "current.kind", mono: true }, { text: "の確認" }], arrow: "left" },
+  { slot: 1, kind: "gate", x: 86, y: 186, w: 96, lines: [{ text: "current.kind", mono: true }, { text: "の検証" }], arrow: "left" },
   { slot: 2, kind: "box", x: 204, y: 186, w: 128, lines: [{ text: "startExamination", mono: true }], arrow: "left" },
 ];
 const topSlots = [{ x: 42, y: 38 }, { x: 141, y: 38 }, { x: 268, y: 38 }];
@@ -110,7 +110,7 @@ const bands = [
     id: "bottom",
     y: 126,
     height: 118,
-    label: "実行中",
+    label: "実行時",
     nodes: bottomNodes,
     slots: bottomSlots,
     segments: ["M 74 208 H 86", "M 182 208 H 204"],
@@ -134,9 +134,9 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
   </div>
 
   <svg viewBox="0 0 340 246" role="img" aria-labelledby="precondition-flow-title precondition-flow-desc">
-    <title id="precondition-flow-title">事前条件を確かめる2つの時点</title>
+    <title id="precondition-flow-title">事前条件を検証する2つの時点</title>
     <desc id="precondition-flow-desc">
-      上の帯は、型検査のときです。呼び出し側が startExamination を呼ぶ前に、引数の型 CheckedIn の確認があります。Paid 型の値はこの確認で報告されます。下の帯は、実行中です。HTTP リクエストを受ける関数（routes.ts）から startExamination へ進む間に、データベースから読んだ予約 current の current.kind の確認があります。kind が Paid の値は、この確認で検出されます。kind が CheckedIn の予約は、確認を通って startExamination に届きます。
+      上の帯は、型検査のときです。呼び出し側が startExamination を呼ぶ前に、引数の型 CheckedIn の検証があります。Paid 型の値はこの検証で報告されます。下の帯は、実行時です。HTTP リクエストを受ける関数（routes.ts）から startExamination へ進む間に、データベースから取得した予約 current の current.kind の検証があります。kind が Paid の値は、この検証で検出されます。kind が CheckedIn の予約は、検証を通って startExamination に渡されます。
     </desc>
 
     {bands.map((band) => (
@@ -570,6 +570,19 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
 
   [data-animated] .precondition-flow__badge[data-on] {
     animation: precondition-flow-fade 0.3s ease-out 0.9s backwards;
+  }
+
+  @media (max-width: 55rem) {
+    .precondition-flow[data-animated] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .precondition-flow[data-animated] > svg,
+    .precondition-flow[data-animated] > .precondition-flow__live,
+    .precondition-flow[data-animated] > .precondition-flow__frames {
+      grid-column: 1;
+      grid-row: auto;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

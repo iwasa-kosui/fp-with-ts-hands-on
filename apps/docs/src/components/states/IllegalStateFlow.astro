@@ -164,10 +164,10 @@ const frames: readonly Frame[] = [
     file: "before-appointment",
     part: "Appointment 型",
     focus: "file",
-    lit: withNotes(beforeTypeLines, ["どんな文字列でも入る", "省略できる", "省略できる"]),
+    lit: withNotes(beforeTypeLines, ["どんな文字列でも格納できる", "省略できる", "省略できる"]),
     anchor: beforeTypeAnchor ?? 0,
     caption:
-      "S00 の配布コードの Appointment は、状態を string で持ちます。診察中にだけ要る veterinarianId と examinationStartedAt は、? を付けて省略できます。Readonly<{…}> は、項目を書き換えられない型にします。",
+      "S00 の配布コードの Appointment は、状態を string で持ちます。診察中にだけ必要な veterinarianId と examinationStartedAt は、? を付けて省略できます。Readonly<{…}> は、項目を書き換えられない型にします。",
   },
   {
     file: "before-appointment",
@@ -194,9 +194,9 @@ const frames: readonly Frame[] = [
     focus: "file",
     lit: withNotes(afterTypeLines, ['"InExamination" だけ', "必須", "必須"]),
     anchor: afterTypeAnchor ?? 0,
-    treeNote: { file: "after-transitions", text: "残りはここ" },
+    treeNote: { file: "after-transitions", text: "修正する箇所" },
     caption:
-      "この回の開始コードは、状態ごとに別の型を持ちます。InExamination では、kind が \"InExamination\" だけを受け取り、veterinarianId と examinationStartedAt が必須です。型はここまで済んでいて、残りは遷移関数の引数です。",
+      "この回の開始コードは、状態ごとに別の型を持ちます。InExamination では、kind が \"InExamination\" だけを受け取り、veterinarianId と examinationStartedAt が必須です。型の定義はここまでで完了しており、残りは遷移関数の引数です。",
   },
   {
     file: "after-appointment",
@@ -206,7 +206,7 @@ const frames: readonly Frame[] = [
     lit: plain(afterRequiredLines),
     anchor: afterTypeAnchor ?? 0,
     caption:
-      "...checkedIn は、checkedIn の項目のコピーです。同じ状況の値を InExamination として書くと、veterinarianId と examinationStartedAt がないことを、型検査が報告します。実行する前に気づけます。",
+      "...checkedIn は、checkedIn の項目のコピーです。同じ状況の値を InExamination として定義すると、veterinarianId と examinationStartedAt がないことを、型検査が報告します。実行前に検出できます。",
   },
   {
     file: "after-appointment",
@@ -216,7 +216,7 @@ const frames: readonly Frame[] = [
     lit: plain(afterRequiredLines),
     anchor: afterTypeAnchor ?? 0,
     caption:
-      "同じ4つの値のうち、型検査が受け入れるのは、業務上ありえる1つだけです。ありえない状態を、型で表せなくする考え方です。",
+      "同じ4つの値のうち、型検査が受け入れるのは、業務上ありえる1つだけです。ありえない状態を、型で表現できなくする考え方です。",
   },
 ];
 
@@ -225,7 +225,7 @@ const oneLine = (literal: string): string => literal.replace(/\n\s*/g, " ").repl
 const generationKeys = ["before", "after"] as const;
 ---
 
-<figure class="st-fig illegal" data-illegal data-step-figure aria-label="必要な情報が欠けた予約を、型で作れなくする">
+<figure class="st-fig illegal" data-illegal data-step-figure aria-label="必要な情報が欠けた予約を、型で排除する">
   <StepControls />
 
   <div class="illegal__stage">
