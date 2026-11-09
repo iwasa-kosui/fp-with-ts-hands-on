@@ -4,7 +4,7 @@ import { quote } from "../reference-quote";
 import type { SessionSummary } from "../types";
 import startBeforeErrorsSource from "../../../../../examples/session-04/src/useCase/errors.ts?raw";
 import solutionErrorsSource from "../../../../../examples/session-04-solution/src/useCase/errors.ts?raw";
-import solutionRoutesSource from "../../../../../examples/session-04-solution/src/web/routes.ts?raw";
+import solutionRoutesSource from "../../../../../examples/session-04-solution/src/adaptor/primary/web/routes.ts?raw";
 
 export const session: SessionSummary = {
   slug: "04-workflow-errors",
@@ -90,20 +90,20 @@ export const session: SessionSummary = {
       id: "s04-exhaustive-web-handler",
       goal: "Web側で業務エラーのkindを網羅し、それぞれ専用noticeへ変換する。",
       startingFailure: "状態不正の例外をWeb側が処理せず、500エラーにする。",
-      targets: ["examples/session-04/src/web/routes.ts"],
+      targets: ["examples/session-04/src/adaptor/primary/web/routes.ts"],
       solutions: [
         {
-          path: "examples/session-04-solution/src/web/routes.ts",
+          path: "examples/session-04-solution/src/adaptor/primary/web/routes.ts",
           symbol: "toStartExaminationNoticeCode",
           lines: [22, 48],
-          placement: "examples/session-04/src/web/routes.ts の import 群の直後に、このコードを足します。",
+          placement: "examples/session-04/src/adaptor/primary/web/routes.ts の import 群の直後に、このコードを足します。",
         },
         {
-          path: "examples/session-04/src/web/routes.ts",
+          path: "examples/session-04/src/adaptor/primary/web/routes.ts",
           sourcePath: "apps/docs/src/sessions/solutions/session-04-start-examination-handler.ts.txt",
           symbol: "registerClinicRoutes",
           lines: [1, 22],
-          placement: "examples/session-04/src/web/routes.ts の start-examination の app.post 全体を、このコードに置き換えます。",
+          placement: "examples/session-04/src/adaptor/primary/web/routes.ts の start-examination の app.post 全体を、このコードに置き換えます。",
         },
       ],
     },
@@ -141,7 +141,7 @@ export const guides = ([
     title: "Web側が予約なしだけを文言でcatchしている",
     currentDesign: "例外メッセージにwas not foundが含まれる場合だけ、画面のお知らせへ変換し、それ以外は500になります。",
     futureRisk: "例外の種類を追加しても呼び出し側に型エラーが出ず、状態不正の例外のような処理漏れが残ります。",
-    path: "src/web/routes.ts",
+    path: "src/adaptor/primary/web/routes.ts",
     highlights: [{ startLineNumber: 76, endLineNumber: 94 }],
   },
 ] as const) satisfies readonly CodeGuide[];
@@ -155,8 +155,8 @@ export const workspace = ({
     "exercises/result-errors.test.ts",
     "test/regression/boundary-and-ids.test.ts",
     "test/regression/state-modeling.test.ts",
-    "src/boundary/examResult.ts",
-    "src/boundary/ownerContact.ts",
+    "src/adaptor/primary/web/examResult.ts",
+    "src/adaptor/primary/web/ownerContact.ts",
     "src/domain/appointment/appointment.ts",
     "src/domain/appointment/transitions.ts",
     "src/domain/appointment/statusLabel.ts",
@@ -165,10 +165,10 @@ export const workspace = ({
     "src/domain/owner/ownerId.ts",
     "src/domain/pet/petId.ts",
     "src/domain/appointment/veterinarianId.ts",
-    "src/shared/sensitive.ts",
+    "src/domain/shared/sensitive.ts",
     "src/useCase/errors.ts",
     "src/useCase/startExamination.ts",
-    "src/web/routes.ts",
+    "src/adaptor/primary/web/routes.ts",
   ],
 } as const) satisfies SessionWorkspace;
 
@@ -213,7 +213,7 @@ export const typedErrorsCode: CodeQuote = {
 };
 
 export const exhaustiveErrorsCode: CodeQuote = {
-  path: "examples/session-04-solution/src/web/routes.ts",
+  path: "examples/session-04-solution/src/adaptor/primary/web/routes.ts",
   code: quote(solutionRoutesSource, 33, 48, "const assertNever"),
 };
 

@@ -43,7 +43,7 @@ const cards = guides.map((guide) => {
         <h4>{guide.title}</h4>
         {excerpts.map(({ startLineNumber, endLineNumber, source }) => (
           <figure>
-            <figcaption>{guide.path}:{startLineNumber}-{endLineNumber}</figcaption>
+            <figcaption>{guide.path}<span class="line-range">:{startLineNumber}-{endLineNumber}</span></figcaption>
             <Code code={source} lang="ts" />
           </figure>
         ))}
@@ -82,8 +82,12 @@ const cards = guides.map((guide) => {
     padding: 0.4rem 0.6rem;
     background: var(--playground-highlight);
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 800;
+  }
+
+  .line-range {
+    white-space: nowrap;
   }
 
   figure :global(pre) {

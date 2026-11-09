@@ -74,7 +74,7 @@ describe("Session 05 Web application", () => {
 
   it("Session 00の実装をimportしない", async () => {
     const source = readFileSync(
-      new URL("../../src/web/routes.ts", import.meta.url),
+      new URL("../../src/adaptor/primary/web/routes.ts", import.meta.url),
       "utf8",
     );
 

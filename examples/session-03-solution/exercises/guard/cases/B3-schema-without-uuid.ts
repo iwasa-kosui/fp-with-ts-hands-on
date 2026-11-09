@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { schemaResult } from "../../../src/shared/schemaResult.js";
+import { schemaResult } from "../../../src/domain/shared/schemaResult.js";
 
 const schema = z.object({
   appointmentId: z.string().brand<"AppointmentId">(),

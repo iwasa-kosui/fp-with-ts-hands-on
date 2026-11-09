@@ -22,7 +22,7 @@ import {
   VeterinarianId,
 } from "../../src/domain/appointment/index.js";
 import { startExaminationWithEffects } from "../../src/useCase/startExamination.js";
-import { session06SolutionInitialAppointment } from "../../src/web/routes.js";
+import { session06SolutionInitialAppointment } from "../../src/adaptor/primary/web/routes.js";
 import { ZodError } from "zod";
 
 const directories: string[] = [];

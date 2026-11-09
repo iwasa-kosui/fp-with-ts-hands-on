@@ -1,23 +1,23 @@
 import dashboardSource from "../../../../../packages/clinic-web/src/ClinicDashboard.tsx?raw";
-import s03Routes from "../../../../../examples/session-03/src/web/routes.ts?raw";
+import s03Routes from "../../../../../examples/session-03/src/adaptor/primary/web/routes.ts?raw";
 import s04Errors from "../../../../../examples/session-04/src/useCase/errors.ts?raw";
 import s04PersistenceError from "../../../../../examples/session-04/src/adaptor/secondary/sqlite/appointmentPersistenceError.ts?raw";
-import s04Routes from "../../../../../examples/session-04/src/web/routes.ts?raw";
+import s04Routes from "../../../../../examples/session-04/src/adaptor/primary/web/routes.ts?raw";
 import s04UseCase from "../../../../../examples/session-04/src/useCase/startExamination.ts?raw";
 import solutionApp from "../../../../../examples/session-04-solution/src/app.ts?raw";
 import solutionErrors from "../../../../../examples/session-04-solution/src/useCase/errors.ts?raw";
-import solutionRoutes from "../../../../../examples/session-04-solution/src/web/routes.ts?raw";
+import solutionRoutes from "../../../../../examples/session-04-solution/src/adaptor/primary/web/routes.ts?raw";
 import solutionUseCase from "../../../../../examples/session-04-solution/src/useCase/startExamination.ts?raw";
 import handlerSource from "../../sessions/solutions/session-04-start-examination-handler.ts.txt?raw";
 import { quote } from "../../sessions/reference-quote";
 
 export const paths = {
-  s03Routes: "examples/session-03/src/web/routes.ts",
-  s04Routes: "examples/session-04/src/web/routes.ts",
+  s03Routes: "examples/session-03/src/adaptor/primary/web/routes.ts",
+  s04Routes: "examples/session-04/src/adaptor/primary/web/routes.ts",
   s04UseCase: "examples/session-04/src/useCase/startExamination.ts",
   solutionErrors: "examples/session-04-solution/src/useCase/errors.ts",
   solutionUseCase: "examples/session-04-solution/src/useCase/startExamination.ts",
-  solutionRoutes: "examples/session-04-solution/src/web/routes.ts",
+  solutionRoutes: "examples/session-04-solution/src/adaptor/primary/web/routes.ts",
   solutionApp: "examples/session-04-solution/src/app.ts",
 } as const;
 

@@ -12,7 +12,7 @@ import {
   registerClinicRoutes,
   session02InitialAppointment,
   session02PersistenceContext,
-} from "./web/routes.js";
+} from "./adaptor/primary/web/routes.js";
 
 type DatabaseBackedAppOptions = Readonly<{
   databasePath: string;

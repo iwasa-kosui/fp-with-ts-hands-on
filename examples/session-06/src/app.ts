@@ -8,7 +8,7 @@ import {
   migrateDatabase,
   type SqliteDatabase,
 } from "./adaptor/secondary/sqlite/db.js";
-import { registerClinicRoutes, session06InitialAppointment } from "./web/routes.js";
+import { registerClinicRoutes, session06InitialAppointment } from "./adaptor/primary/web/routes.js";
 
 export type CreateAppOptions = Readonly<{
   isProduction?: boolean;

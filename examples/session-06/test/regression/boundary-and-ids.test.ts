@@ -1,8 +1,8 @@
 import { inspect } from "node:util";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
-import { ExamResult } from "../../src/boundary/examResult.js";
-import { OwnerContact } from "../../src/boundary/ownerContact.js";
+import { ExamResult } from "../../src/adaptor/primary/web/examResult.js";
+import { OwnerContact } from "../../src/adaptor/primary/web/ownerContact.js";
 import { compileTypeFixture } from "./compileTypeFixture.js";
 import { clinicFixture } from "../../../fixtures/clinic.js";
 

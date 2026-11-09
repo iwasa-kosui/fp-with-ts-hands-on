@@ -1,6 +1,6 @@
 ---
 import { Code } from "astro:components";
-import routesSource from "../../../../examples/session-00/src/web/routes.ts?raw";
+import routesSource from "../../../../examples/session-00/src/adaptor/primary/web/routes.ts?raw";
 import startExaminationSource from "../../../../examples/session-00/src/useCase/startExamination.ts?raw";
 import repositorySource from "../../../../examples/session-00/src/adaptor/secondary/sqlite/appointmentRepository.ts?raw";
 import appointmentSource from "../../../../examples/session-00/src/domain/appointment/appointment.ts?raw";
@@ -63,7 +63,7 @@ const part = (source: string, anchorText: string, fromText: string, toText: stri
   return dedent(lines.slice(start, end + 1)).join("\n").trimEnd();
 };
 
-const routeFile = "web/routes.ts";
+const routeFile = "adaptor/primary/web/routes.ts";
 const useCaseFile = "useCase/startExamination.ts";
 const repositoryFile = "adaptor/secondary/sqlite/appointmentRepository.ts";
 const appointmentFile = "domain/appointment/appointment.ts";
