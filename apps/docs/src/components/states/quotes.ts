@@ -1,7 +1,6 @@
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import { blockOf } from "../../sessions/source-quotes";
 
-const appointmentPath = "src/domain/appointment/appointment.ts";
 const transitionsPath = "src/domain/appointment/transitions.ts";
 
 export const dedent = (source: string): string => {
@@ -33,18 +32,6 @@ const quote = (
 });
 
 export const quotes = {
-  distributedType: quote(
-    "session-00",
-    appointmentPath,
-    "export type Appointment = Readonly<{",
-    "  examinationStartedAt?: string;",
-  ),
-  startInExaminationType: quote(
-    "session-01",
-    appointmentPath,
-    "export type InExamination = Readonly<{",
-    "}>;",
-  ),
   startStartExamination: quote(
     "session-01",
     transitionsPath,
