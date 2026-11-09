@@ -27,7 +27,7 @@ import {
   VeterinarianId,
 } from "../../src/domain/appointment/index.js";
 import { startExaminationWithEffects } from "../../src/useCase/startExamination.js";
-import { session04SolutionInitialAppointment } from "../../src/web/routes.js";
+import { session04SolutionInitialAppointment } from "../../src/adaptor/primary/web/routes.js";
 
 const directories: string[] = [];
 

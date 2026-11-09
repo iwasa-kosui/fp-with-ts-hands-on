@@ -21,7 +21,7 @@ export const createClinicViteConfig = (
           emptyOutDir: true,
           outDir: "./dist",
           rollupOptions: {
-            input: "./src/web/client.tsx",
+            input: "./src/adaptor/primary/web/client.tsx",
             output: {
               entryFileNames: "static/client.js",
               chunkFileNames: "static/assets/[name]-[hash].js",

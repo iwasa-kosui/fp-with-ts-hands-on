@@ -4,7 +4,7 @@ import { Hono } from "hono";
 
 import type { Appointment } from "./domain/appointment/index.js";
 import type { AppointmentStore } from "./useCase/dependencies.js";
-import { registerClinicRoutes, INITIAL_APPOINTMENT } from "./web/routes.js";
+import { registerClinicRoutes, INITIAL_APPOINTMENT } from "./adaptor/primary/web/routes.js";
 
 type DatabaseBackedAppOptions = Readonly<{
   databasePath: string;

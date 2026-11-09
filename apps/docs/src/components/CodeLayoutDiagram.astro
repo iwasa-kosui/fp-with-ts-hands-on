@@ -1,25 +1,18 @@
 <figure class="code-layout-diagram">
   <div class="code-layout-diagram__grid">
     <div class="code-layout-diagram__box code-layout-diagram__web">
-      <p class="code-layout-diagram__name"><code>web/</code></p>
-      <p class="code-layout-diagram__role">HTTP のリクエストを受け取り、画面を返す</p>
+      <p class="code-layout-diagram__name"><code>adaptor/primary/web/</code></p>
+      <p class="code-layout-diagram__role">HTTP のリクエストと外部から届くデータを読み取り、画面を返す</p>
       <ul class="code-layout-diagram__files">
         <li><code>routes.ts</code></li>
         <li><code>appointmentView.ts</code></li>
+        <li><code>examResult.ts</code></li>
       </ul>
       <ul class="code-layout-diagram__tags">
         <li>Hono</li>
       </ul>
     </div>
-    <div class="code-layout-diagram__arrow code-layout-diagram__arrow--right code-layout-diagram__web-boundary" role="img" aria-label="web から boundary への import"></div>
-    <div class="code-layout-diagram__box code-layout-diagram__boundary">
-      <p class="code-layout-diagram__name"><code>boundary/</code></p>
-      <p class="code-layout-diagram__role">外部から届くデータを読み取る</p>
-      <ul class="code-layout-diagram__files">
-        <li><code>examResult.ts</code></li>
-      </ul>
-    </div>
-    <div class="code-layout-diagram__arrow code-layout-diagram__arrow--down code-layout-diagram__web-usecase" role="img" aria-label="web から useCase への import"></div>
+    <div class="code-layout-diagram__arrow code-layout-diagram__arrow--down code-layout-diagram__web-usecase" role="img" aria-label="adaptor/primary/web から useCase への import"></div>
     <div class="code-layout-diagram__box code-layout-diagram__usecase">
       <p class="code-layout-diagram__name"><code>useCase/</code></p>
       <p class="code-layout-diagram__role">業務上の1つの操作を実行する</p>
@@ -57,7 +50,7 @@
       <p class="code-layout-diagram__name"><code>app.ts</code> と <code>server.ts</code></p>
       <p class="code-layout-diagram__role">部品を組み立てて、サーバーを起動する</p>
     </div>
-    <p class="code-layout-diagram__legend">実線は関数や値の import、破線は型だけの import です。web は domain の関数と型、adaptor の型も import します。</p>
+    <p class="code-layout-diagram__legend">実線は関数や値の import、破線は型だけの import です。adaptor/primary/web は domain の関数と型、adaptor/secondary/sqlite の型も import します。</p>
   </div>
 </figure>
 
@@ -86,7 +79,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr);
     grid-template-areas:
-      "web web-boundary boundary"
+      "web web web"
       "web-usecase . ."
       "usecase usecase-sqlite sqlite"
       "usecase-domain . sqlite-domain"
@@ -98,8 +91,6 @@
   }
 
   .code-layout-diagram__web { grid-area: web; }
-  .code-layout-diagram__web-boundary { grid-area: web-boundary; }
-  .code-layout-diagram__boundary { grid-area: boundary; }
   .code-layout-diagram__web-usecase { grid-area: web-usecase; }
   .code-layout-diagram__usecase { grid-area: usecase; }
   .code-layout-diagram__usecase-sqlite { grid-area: usecase-sqlite; }
@@ -245,7 +236,7 @@
     .code-layout-diagram__grid {
       grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1.2fr) 1rem minmax(0, 0.7fr);
       grid-template-areas:
-        "web web-boundary boundary . legend"
+        "web web web . legend"
         "web-usecase . . . legend"
         "usecase usecase-sqlite sqlite . legend"
         "usecase-domain . sqlite-domain . legend"

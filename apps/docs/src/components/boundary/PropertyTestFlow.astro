@@ -28,7 +28,7 @@ const markLines = (lines: readonly number[]): Transformer => ({
   },
 });
 
-const contactPath = "src/boundary/ownerContact.ts";
+const contactPath = "src/adaptor/primary/web/ownerContact.ts";
 const protectedLine = '.brand<"OwnerEmail">().transform(Sensitive.of),';
 const unprotectedLine = '.brand<"OwnerEmail">(),';
 const goodContact = blockOf(
@@ -45,7 +45,7 @@ const testPath = "test/contact.test.ts";
 const testCode = `import fc from "fast-check";
 import { it } from "vitest";
 
-import { OwnerContact } from "../src/boundary/ownerContact.js";
+import { OwnerContact } from "../src/adaptor/primary/web/ownerContact.js";
 import { clinicFixture } from "../../fixtures/clinic.js";
 
 const emailAddress = fc.stringMatching(/^[a-z]{1,8}@example\\.test$/);
@@ -63,7 +63,7 @@ it("どんなメールアドレスでも、JSON にしても出ない", () => {
 });`;
 
 const typeTestPath = "test/contact.type-test.ts";
-const typeTestCode = `import type { OwnerContact } from "../src/boundary/ownerContact.js";
+const typeTestCode = `import type { OwnerContact } from "../src/adaptor/primary/web/ownerContact.js";
 
 declare const contact: OwnerContact;
 

@@ -44,15 +44,15 @@ const S4_PAGE_SOLUTION = {
     },
   ],
   routes: {
-    target: "src/web/routes.ts",
+    target: "src/adaptor/primary/web/routes.ts",
     handler: {
-      path: "examples/session-04/src/web/routes.ts",
+      path: "examples/session-04/src/adaptor/primary/web/routes.ts",
       sourcePath: "apps/docs/src/sessions/solutions/session-04-start-examination-handler.ts.txt",
       lines: [1, 22],
       replaceLines: [73, 94],
     },
     insert: {
-      path: "examples/session-04-solution/src/web/routes.ts",
+      path: "examples/session-04-solution/src/adaptor/primary/web/routes.ts",
       lines: [22, 48],
     },
   },
@@ -115,7 +115,7 @@ const SCENARIOS = [
     before: 2,
     overlay: {
       from: "examples/session-03-solution",
-      files: ["src/boundary/startExaminationInput.ts"],
+      files: ["src/adaptor/primary/web/startExaminationInput.ts"],
     },
     after: 0,
   },

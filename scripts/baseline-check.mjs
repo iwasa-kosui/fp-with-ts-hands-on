@@ -1,3 +1,5 @@
+import { posix } from "node:path";
+
 export const BASELINE_COMMIT = "088c2ef";
 export const EXERCISE_COMMANDS = ["01", "02", "03", "03-supplement", "04", "06"];
 
@@ -152,7 +154,7 @@ export const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-06-solution/package.json",
   "examples/session-06-solution/tsconfig.json",
   "examples/session-06-solution/src/useCase/dependencies.ts",
-  "examples/session-06-solution/src/web/routes.ts",
+  "examples/session-06-solution/src/adaptor/primary/web/routes.ts",
   "examples/session-06-solution/test/in-memory-store.test.ts",
   "examples/session-06-solution/test/integration/fileSqliteTransaction.test.ts",
   "examples/session-06-solution/test/regression/effects-and-events.test.ts",
@@ -264,18 +266,65 @@ export const BASELINE_FOLDERS = [
   ...UNCHANGED_FOLDERS.map((name) => ({ name, source: name })),
 ];
 
+const LAYOUT_DIRECTORY_MOVES = [
+  ["src/web", "src/adaptor/primary/web"],
+  ["src/shared", "src/domain/shared"],
+  ["src/boundary", "src/adaptor/primary/web"],
+];
+
+const LAYOUT_DELETED_FILE = "src/boundary/boundary.test-types.ts";
+
+const LAYOUT_IMPORT_SPECIFIER =
+  /(\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|vi\.\w+\(\s*|new URL\(\s*)(["'])(\.{1,2}\/[^"'\n]*)\2/g;
+
+const LAYOUT_IMPORTER_PATH = /^(src|test|exercises)\/.+\.(ts|tsx|mjs)$/;
+
+const mapLayoutPath = (path) => {
+  for (const [from, to] of LAYOUT_DIRECTORY_MOVES) {
+    if (path === from) return to;
+    if (path.startsWith(`${from}/`)) return `${to}${path.slice(from.length)}`;
+  }
+  return path;
+};
+
+const rewriteLayoutImports = (path, text) => {
+  const moved = mapLayoutPath(path);
+  return text.replace(LAYOUT_IMPORT_SPECIFIER, (match, head, quote, specifier) => {
+    const target = posix.normalize(posix.join(posix.dirname(path), specifier));
+    const relative = posix.relative(posix.dirname(moved), mapLayoutPath(target));
+    const rewritten = relative.startsWith(".") ? relative : `./${relative}`;
+    return rewritten === specifier ? match : `${head}${quote}${rewritten}${quote}`;
+  });
+};
+
+export const isLayoutMovedFolder = (source) => source.startsWith("session-");
+
+export const applyLayoutMove = (path, text) => {
+  if (path === LAYOUT_DELETED_FILE && text.trim() === "export {};") return null;
+  const imported = LAYOUT_IMPORTER_PATH.test(path) ? rewriteLayoutImports(path, text) : text;
+  return {
+    path: mapLayoutPath(path),
+    text: LAYOUT_DIRECTORY_MOVES.reduce(
+      (current, [from, to]) => current.replaceAll(`${from}/`, `${to}/`),
+      imported,
+    ),
+  };
+};
+
 const compareFolder = ({ current, readCurrent, baseline }, folder, problems) => {
   const { name, source } = folder;
   const sourcePrefix = `examples/${source}/`;
   const rename = (text) => (folder.labels === undefined ? text : renameIdentifiers(text, folder));
-  const expected = new Map(
-    [...baseline.keys()]
-      .filter((file) => file.startsWith(sourcePrefix))
-      .map((file) => [
-        `examples/${name}/${renameFixturePath(file.slice(sourcePrefix.length))}`,
-        rename(baseline.get(file)),
-      ]),
-  );
+  const expected = new Map();
+  for (const file of baseline.keys()) {
+    if (!file.startsWith(sourcePrefix)) continue;
+    const relative = file.slice(sourcePrefix.length);
+    const moved = isLayoutMovedFolder(source)
+      ? applyLayoutMove(relative, baseline.get(file))
+      : { path: relative, text: baseline.get(file) };
+    if (moved === null) continue;
+    expected.set(`examples/${name}/${renameFixturePath(moved.path)}`, rename(moved.text));
+  }
   const actualFiles = current.filter((file) => file.startsWith(`examples/${name}/`));
   const differing = [];
   for (const file of new Set([...expected.keys(), ...actualFiles])) {
@@ -294,10 +343,10 @@ const compareSession02Copies = ({ current, readCurrent, baseline }, problems) =>
   for (const file of SESSION_02_COPIES_FROM_SESSION_03) {
     const path = `examples/session-02/${file}`;
     const baselinePath = `examples/session-03/${baselineFixturePath(file)}`;
-    const expected = renameIdentifiers(baseline.get(baselinePath), {
-      ...solution,
-      name: "session-02",
-    });
+    const expected = renameIdentifiers(
+      applyLayoutMove(baselineFixturePath(file), baseline.get(baselinePath)).text,
+      { ...solution, name: "session-02" },
+    );
     if (!current.includes(path) || readCurrent(path) !== expected) {
       problems.push(`${path} が基準 ${BASELINE_COMMIT} の ${baselinePath} の写しではありません`);
     }

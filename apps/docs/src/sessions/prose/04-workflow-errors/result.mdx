@@ -5,6 +5,6 @@ import { resultCode } from "../../pages/04-workflow-errors-content";
 
 <BeforeAfterCode before={resultCode.before} after={resultCode.after} />
 
-<p>S03 の Result は、このリポジトリの <code>shared/schemaResult.ts</code> で作った型で、Err は空でした。S04 の useCase の戻り値は neverthrow の Result で、route の入力の検査は S03 の Result のままです。route は、入力の検査の Result に <code>_unsafeUnwrap</code> を呼びます。neverthrow の Result は <code>Result&lt;成功の型, 失敗の型&gt;</code> と書き、成功は <code>ok(値)</code>、失敗は <code>err(値)</code> で返します。neverthrow の Err は、失敗の理由の値を持てます。</p>
+<p>S03 の Result は、このリポジトリの <code>domain/shared/schemaResult.ts</code> で作った型で、Err は空でした。S04 の useCase の戻り値は neverthrow の Result で、route の入力の検査は S03 の Result のままです。route は、入力の検査の Result に <code>_unsafeUnwrap</code> を呼びます。neverthrow の Result は <code>Result&lt;成功の型, 失敗の型&gt;</code> と書き、成功は <code>ok(値)</code>、失敗は <code>err(値)</code> で返します。neverthrow の Err は、失敗の理由の値を持てます。</p>
 
 <p>修正前は、戻り値の型 <code>Appointment</code> から失敗を読めませんでした。修正後は、戻り値の型に失敗が現れます。<code>AppointmentNotFound</code> の定義は次のページで見ます。ここまでで、失敗を例外ではなく、戻り値で返せます。</p>

@@ -15,7 +15,7 @@ import type { EventContextDependencies } from "./useCase/dependencies.js";
 import {
   registerClinicRoutes,
   session06SolutionInitialAppointment,
-} from "./web/routes.js";
+} from "./adaptor/primary/web/routes.js";
 
 export type CreateAppOptions = Readonly<{
   clock?: Clock;

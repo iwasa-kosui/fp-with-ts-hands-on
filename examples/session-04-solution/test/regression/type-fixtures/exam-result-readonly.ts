@@ -1,4 +1,4 @@
-import { ExamResult } from "../../../src/boundary/examResult.js";
+import { ExamResult } from "../../../src/adaptor/primary/web/examResult.js";
 import { clinicFixture } from "../../../../fixtures/clinic.js";
 
 const examResult = ExamResult.parse({

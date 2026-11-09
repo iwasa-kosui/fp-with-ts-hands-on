@@ -47,7 +47,7 @@ const Document = ({
 
 export const createClinicRootView = (
   isProduction: boolean,
-  developmentClientSource = "/src/web/client.tsx",
+  developmentClientSource = "/src/adaptor/primary/web/client.tsx",
 ): RootView =>
   async (page, context) => {
     const html = `<!DOCTYPE html>${renderToStaticMarkup(

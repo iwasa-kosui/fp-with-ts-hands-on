@@ -52,7 +52,7 @@ const rejectStart = "予約の確認とイベントの作成まで進み、保�
 const startExaminationPath = "examples/session-06-solution/src/useCase/startExamination.ts";
 const errorsPath = "examples/session-06-solution/src/useCase/errors.ts";
 const storePath = "examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts";
-const routesPath = "examples/session-06-solution/src/web/routes.ts";
+const routesPath = "examples/session-06-solution/src/adaptor/primary/web/routes.ts";
 
 const stages: readonly Stage[] = [
   {
@@ -373,7 +373,7 @@ const pageRows: readonly Readonly<{ key: string; code: string; outer?: true }>[]
     outer: true,
     code: quote(
       "session-06-solution",
-      "src/web/routes.ts",
+      "src/adaptor/primary/web/routes.ts",
       'error.kind === "AppointmentConflict"',
       ": toStartExaminationNoticeCode(error);",
     ),
