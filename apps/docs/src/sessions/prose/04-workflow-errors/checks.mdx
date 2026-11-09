@@ -1,27 +1,6 @@
-import { Code } from "astro:components";
 import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
 import { session04ChangeChecks } from "../../../components/workflow-errors/change-checks";
-import { lineLabelOf } from "../../source-quotes";
 
-export const rulesLabel = lineLabelOf("session-04-solution", "eslint.config.mjs", "const rules = {};", "const rules = {};");
-
-export const throwRuleCode = `"no-restricted-syntax": [
-  "error",
-  {
-    selector: "VariableDeclarator[id.name='startExamination'] ThrowStatement",
-    message: "業務の失敗を throw しません。失敗は err で返します。",
-  },
-],`;
-
-<p>修正したコードも、次の変更で元の状態に戻ることがあります。誤った変更を選んで、Linter（コードを実行せずに、書き方の問題を検出するツール）のルールとテストの結果を比較してください。どの変更でも型検査は通ります。表の「✓ 検出」は、その仕組みが誤った変更を検出したことを、「－ 対象外」は、その誤った変更を検出する対象にならない仕組みを表します。</p>
+<p>修正したコードも、次の変更で元の状態に戻ることがあります。演習の任意の2件の誤った変更を選んで、Linter（コードを実行せずに、書き方の問題を検出するツール）のルールとテストの結果を比較してください。どの変更でも型検査は通ります。表の「✓ 検出」は、その仕組みが誤った変更を検出したことを、「－ 対象外」は、その誤った変更を検出する対象にならない仕組みを表します。この2件だけでは、2つの仕組みが検出できる範囲の違いを示しきれません。必須の3件をどちらの仕組みで検出できるかは、演習で確認します。</p>
 
 <ChangeChecks set={session04ChangeChecks} />
-
-<details class="step-solution">
-  <summary>useCase の throw を検出するルールの例（演習で参考にします）</summary>
-<p><code>selector</code> の前半 <code>VariableDeclarator[id.name='startExamination']</code> は、<code>startExamination</code> という名前の変数宣言（useCase）を指します。後半の <code>ThrowStatement</code> は、<code>throw</code> 文を表す構文の名前です。この組み合わせで、検出の範囲を useCase の中に限定します。<code>ThrowStatement</code> だけを指定すると、useCase の外の正当な <code>throw</code> も誤検知（正しいコードを誤った変更として検出すること）になります。ルールが検出するのは useCase に実装された <code>throw</code> だけで、useCase の外で発生した例外は検出しません。</p>
-<figure class="code-block">
-  <figcaption>演習で参考にする設定です。実装先: <code>{rulesLabel}</code> の {"{}"} の中</figcaption>
-  <Code code={throwRuleCode} lang="js" />
-</figure>
-</details>

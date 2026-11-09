@@ -19,6 +19,7 @@ const languageOf = (path: string) => (path.endsWith(".mjs") ? "js" : "ts");
       <strong>解答の例</strong>
       <button type="button" data-guard-answer-close>閉じる</button>
     </div>
+    <slot />
     {
       entries.length === 0 ? (
         <p>解答の例はまだありません。</p>

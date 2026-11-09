@@ -111,9 +111,9 @@ const frames: readonly Frame[] = [
     lit: [1, 2],
     current: [1, 2],
     rows: [
-      { tone: "positive", from: "Ok(Scheduled)", to: "Ok(AppointmentCanceled)", note: "andThen(createEvent): 結果を作る工程の関数。失敗しないが、時刻と ID の取得を待つ Result を返すため、andThen で連結する" },
-      { tone: "positive", from: "Ok(AppointmentCanceled)", to: "Ok(AppointmentCanceled)", note: "andThrough(store): 記録して返す工程の関数。Ok の値は捨てて、元の値が次へ渡る" },
-      { tone: "negative", from: "Ok(AppointmentCanceled)", to: "Err(AppointmentConflict)", note: "andThrough(store): 別のリクエストの先行更新（競合）の err で失敗のレールへ移る" },
+      { tone: "positive", from: "Ok(Scheduled)", to: "Ok(…)", note: "andThen(createEvent): 結果を作る工程の関数（Ok の中身は省略）。失敗しないが、時刻と ID の取得を待つ Result を返すため、andThen で連結する" },
+      { tone: "positive", from: "Ok(…)", to: "Ok(…)", note: "andThrough(store): 記録して返す工程の関数。Ok の値は捨てて、元の値が次へ渡る" },
+      { tone: "negative", from: "Ok(…)", to: "Err(AppointmentConflict)", note: "andThrough(store): 別のリクエストの先行更新（競合）の err で失敗のレールへ移る" },
     ],
     caption: "記録して返す工程は andThrough です。保存は競合を Err で返せるため、切り替え線を持ちます。",
   },

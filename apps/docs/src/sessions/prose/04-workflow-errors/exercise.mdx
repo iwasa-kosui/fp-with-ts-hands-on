@@ -4,6 +4,18 @@ import { projectFilesForSnapshot } from "../../../code-explorer/project-files";
 import { guardAnswerDisplayFiles } from "../../../code-explorer/guard-paths";
 import { guardExercise } from "../../pages/04-workflow-errors-exercise";
 import { guardExerciseWorkspaceFor } from "../../pages/guard-exercise-workspace";
+import { Code } from "astro:components";
+import { lineLabelOf } from "../../source-quotes";
+
+export const rulesLabel = lineLabelOf("session-04-solution", "eslint.config.mjs", "const rules = {};", "const rules = {};");
+
+export const throwRuleCode = `"no-restricted-syntax": [
+  "error",
+  {
+    selector: "VariableDeclarator[id.name='startExamination'] ThrowStatement",
+    message: "業務の失敗を throw しません。失敗は err で返します。",
+  },
+],`;
 
 export const projectFiles = projectFilesForSnapshot(guardExercise.snapshot);
 export const workspace = guardExerciseWorkspaceFor(
@@ -19,12 +31,24 @@ export const guide = {
     "時間の目安は、読む1分、選ぶ2分、作る5分、確認する2分です。",
     "読む: 左の一覧の誤った変更を読みます。useCase は修正せず、検出する仕組みだけを追加します。route の _unsafeUnwrap は扱いません。useCase の中のものは、任意の誤った変更で扱います。",
     "選ぶ: 必須の3件それぞれについて、検出する仕組みを Linter のルールとテストから選び、選んだ理由を1文でメモに記載します。判断の材料は、その変更がコードの書き方（構文）に現れるか、実行したときの動作にだけ現れるかです。どの変更でも型検査は通ります。",
-    "作る: 選んだ仕組みを実装します。ルールは、「誤った変更を仕組みで検出する」のページの折りたたみにある例を参考に、検出する構文を表す selector と message を、eslint.config.mjs の const rules = {} の {} の中に実装します。テストは mine/startExamination.test.ts に実装します。最初の1件が記述例です。例外が投げられると outcome.kind が threw になり、outcome.error に例外が格納されます。",
-    "確認する: 「検出を検証する」を押します。「誤検知」は、正しいコードを誤った変更として検出することです。「対象外」は、その誤った変更を検出する対象にならない仕組みです。答え合わせは「解答の例を見る」で行います。",
+    "作る: 選んだ仕組みを実装します。ルールを選んだ場合は、「解答の例を見る」の「ルールの書き方の例」を参考に、検出する構文を表す selector と message を、eslint.config.mjs の const rules = {} の {} の中に実装します。テストは mine/startExamination.test.ts に実装します。最初の1件が記述例です。例外が投げられると outcome.kind が threw になり、outcome.error に例外が格納されます。",
+    "確認する: 「検出を検証する」を押します。「誤検知」は、正しいコードを誤った変更として検出することです。「対象外」は、その誤った変更を検出する対象にならない仕組みです。答え合わせは、「解答の例を見る」の必須3件の検出結果と理由で行います。",
     "合格すると、任意の誤った変更が一覧に追加されます。一覧の「_unsafeUnwrap で、失敗を例外に変える」などの名前を押して、自分の仕組みで検出されない変更を探します。検出されない変更が見つかったときは、表のその行を開き、「この仕組みで検出できないこと」に、その変更が何を変えるかと、検出されない理由を1文で記入します。班で議論するか、1人の場合は記入した文を読み返します。",
   ],
 };
 
 <GuardExercise client:load workspace={workspace} projectFiles={projectFiles} guide={guide}>
-  <GuardAnswer files={guardAnswerDisplayFiles(projectFiles)} />
+  <GuardAnswer files={guardAnswerDisplayFiles(projectFiles)}>
+    <p>必須の3件を、下の解答の例の仕組みで検証した結果です。どの変更でも型検査は通ります。</p>
+    <ul>
+      <li><strong>予約が見つからないとき、useCase が Err を返さずに例外を投げる</strong>: Linter のルールとテストの両方が検出します。throw 文はコードの書き方（構文）に現れるため、Linter のルールで指定できます。テストは、Err が返らず例外が投げられる動作を検出します。</li>
+      <li><strong>失敗を返すのに、保存を呼んでしまう</strong>: テストだけが検出します。保存の呼び出しは正しいコードにもあり、構文だけでは区別できません。失敗の後に保存されたかどうかは、実行した結果（saved）にだけ現れます。Linter のルールは検出しません。</li>
+      <li><strong>保存の障害を、業務の失敗の Err に変換する</strong>: テストだけが検出します。try と catch は正当な構文で、保存の例外が Err に変わるかどうかは、実行した結果にだけ現れます。Linter のルールは検出しません。</li>
+    </ul>
+    <p><strong>ルールの書き方の例</strong>: <code>selector</code> の前半 <code>VariableDeclarator[id.name='startExamination']</code> は、<code>startExamination</code> という名前の変数宣言（useCase）を指します。後半の <code>ThrowStatement</code> は、<code>throw</code> 文を表す構文の名前です。この組み合わせで、検出の範囲を useCase の中に限定します。<code>ThrowStatement</code> だけを指定すると、useCase の外の正当な <code>throw</code> も誤検知（正しいコードを誤った変更として検出すること）になります。</p>
+    <figure class="code-block">
+      <figcaption>実装先: <code>{rulesLabel}</code> の {"{}"} の中</figcaption>
+      <Code code={throwRuleCode} lang="js" />
+    </figure>
+  </GuardAnswer>
 </GuardExercise>
