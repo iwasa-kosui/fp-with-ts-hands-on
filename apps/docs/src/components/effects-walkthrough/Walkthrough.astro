@@ -13,21 +13,33 @@ interface Props {
   lead?: string;
   note?: string;
   scenes: readonly Scene[];
+  page?: boolean;
+  legend?: number;
 }
 
-const { id, title, lead, note, scenes } = Astro.props;
+const { id, title, lead, note, scenes, page = false, legend } = Astro.props;
+const pageStyle = page && legend !== undefined ? `--walk-legend: ${legend}rem` : undefined;
 const actions = [
-  ["first", "最初へ"],
   ["prev", "← 前のコマ"],
-  ["play", "再生"],
+  ["play", "▶ 再生"],
   ["next", "次のコマ →"],
 ] as const;
 ---
 
-<section class="walk" id={id} aria-labelledby={`${id}-title`} data-walk data-step-figure data-scene="0" data-frame="0">
-  <h3 class="walk__title" id={`${id}-title`}>{title}</h3>
-  {lead === undefined ? null : <p class="walk__lead">{lead}</p>}
-  {note === undefined ? null : <p class="walk__note">{note}</p>}
+<section
+  class:list={["walk", { "walk--page": page, "walk--tabs": page && scenes.length > 1 }]}
+  id={id}
+  aria-labelledby={`${id}-title`}
+  style={pageStyle}
+  data-walk
+  data-walk-page={page ? "" : undefined}
+  data-step-figure
+  data-scene="0"
+  data-frame="0"
+>
+  <h3 class:list={["walk__title", { "walk__title--hidden": page }]} id={`${id}-title`}>{title}</h3>
+  {lead === undefined || page ? null : <p class="walk__lead">{lead}</p>}
+  {note === undefined || page ? null : <p class="walk__note">{note}</p>}
   {scenes.length > 1 ? (
     <div class="walk__tabs" role="group" aria-label="場面">
       {scenes.map((scene, index) => (
@@ -67,6 +79,7 @@ const actions = [
   <div class="walk__figure">
     <slot />
   </div>
+  {Astro.slots.has("legend") ? <div class="walk__legend"><slot name="legend" /></div> : null}
 </section>
 <style is:inline set:html={css}></style>
 <script is:inline type="module" set:html={script}></script>
