@@ -54,28 +54,28 @@ const veterinarianUuid = "44444444-4444-4444-8444-444444444444";
 const startExaminationFiles: Walkthrough["files"] = [
   {
     id: "route",
-    path: "src/web/routes.ts",
+    path: "src/adaptor/primary/web/routes.ts",
     code: blockOf(
       session03,
-      "src/web/routes.ts",
+      "src/adaptor/primary/web/routes.ts",
       '  app.post("/appointments/:appointmentId/start-examination", async (context) => {',
       "  });",
     ),
   },
   {
     id: "parseBefore",
-    path: "src/boundary/startExaminationInput.ts（修正前）",
-    code: sourceOf(session03, "src/boundary/startExaminationInput.ts"),
+    path: "src/adaptor/primary/web/startExaminationInput.ts（修正前）",
+    code: sourceOf(session03, "src/adaptor/primary/web/startExaminationInput.ts"),
   },
   {
     id: "parseAfter",
-    path: "src/boundary/startExaminationInput.ts（修正後）",
-    code: sourceOf(session03Solution, "src/boundary/startExaminationInput.ts"),
+    path: "src/adaptor/primary/web/startExaminationInput.ts（修正後）",
+    code: sourceOf(session03Solution, "src/adaptor/primary/web/startExaminationInput.ts"),
   },
   {
     id: "schemaResult",
-    path: "src/shared/schemaResult.ts",
-    code: sourceOf(session03Solution, "src/shared/schemaResult.ts"),
+    path: "src/domain/shared/schemaResult.ts",
+    code: sourceOf(session03Solution, "src/domain/shared/schemaResult.ts"),
   },
   {
     id: "appointmentId",
@@ -362,13 +362,13 @@ export const startExaminationWalkthrough: Walkthrough = {
 const sensitiveFiles: Walkthrough["files"] = [
   {
     id: "ownerContact",
-    path: "src/boundary/ownerContact.ts",
-    code: sourceOf(session03Solution, "src/boundary/ownerContact.ts"),
+    path: "src/adaptor/primary/web/ownerContact.ts",
+    code: sourceOf(session03Solution, "src/adaptor/primary/web/ownerContact.ts"),
   },
   {
     id: "sensitive",
-    path: "src/shared/sensitive.ts",
-    code: sourceOf(session03Solution, "src/shared/sensitive.ts"),
+    path: "src/domain/shared/sensitive.ts",
+    code: sourceOf(session03Solution, "src/domain/shared/sensitive.ts"),
   },
 ];
 

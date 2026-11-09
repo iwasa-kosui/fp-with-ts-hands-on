@@ -1,1 +1,1 @@
-export * from "../../../src/boundary/startExaminationInput.js";
+export * from "../../../src/adaptor/primary/web/startExaminationInput.js";

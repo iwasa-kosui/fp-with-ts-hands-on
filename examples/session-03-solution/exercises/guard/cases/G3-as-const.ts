@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { AppointmentId } from "../../../src/domain/appointment/index.js";
 import { VeterinarianId } from "../../../src/domain/appointment/index.js";
-import { schemaResult } from "../../../src/shared/schemaResult.js";
+import { schemaResult } from "../../../src/domain/shared/schemaResult.js";
 
 const fieldNames = ["appointmentId", "veterinarianId"] as const;
 

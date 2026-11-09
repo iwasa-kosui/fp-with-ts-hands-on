@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ExamResult } from "../src/boundary/examResult.js";
+import { ExamResult } from "../src/adaptor/primary/web/examResult.js";
 import {
   bookAppointment,
   updateStatus,

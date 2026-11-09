@@ -4,7 +4,7 @@ import { clinicFixture } from "../../fixtures/clinic.js";
 import {
   StartExaminationInput,
   type StartExaminationInput as StartExaminationInputValue,
-} from "../src/boundary/startExaminationInput.js";
+} from "../src/adaptor/primary/web/startExaminationInput.js";
 
 describe("Step 1: HTTP入力を診察開始の入力へ変換する", () => {
   it("正しい予約IDと獣医師IDを型付き入力へ変換する", () => {

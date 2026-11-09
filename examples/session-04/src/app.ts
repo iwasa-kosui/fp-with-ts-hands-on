@@ -8,7 +8,7 @@ import {
   migrateDatabase,
   type SqliteDatabase,
 } from "./adaptor/secondary/sqlite/db.js";
-import { registerClinicRoutes, session04InitialAppointment } from "./web/routes.js";
+import { registerClinicRoutes, session04InitialAppointment } from "./adaptor/primary/web/routes.js";
 
 type DatabaseBackedAppOptions = Readonly<{
   databasePath: string;

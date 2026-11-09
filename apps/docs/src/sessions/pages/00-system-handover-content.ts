@@ -55,7 +55,7 @@ export const guides = ([
     title: "外部の診察結果を any のまま受け取っている",
     currentDesign: "診察結果の parse は raw: any をそのまま返します。",
     futureRisk: "壊れた JSON や用途の違う ID が、検査されないまま予約データとして保存されます。",
-    path: "src/boundary/examResult.ts",
+    path: "src/adaptor/primary/web/examResult.ts",
     highlights: [{ startLineNumber: 4, endLineNumber: 4 }],
   },
   {
@@ -71,7 +71,7 @@ export const guides = ([
     title: "失敗理由を例外メッセージで判定している",
     currentDesign: "catch した例外の message を部分一致で調べ、状態不正として画面へ戻します。",
     futureRisk: "予約が見つからない失敗とそれ以外の失敗を型で区別できず、表示と対応を誤ります。",
-    path: "src/web/routes.ts",
+    path: "src/adaptor/primary/web/routes.ts",
     highlights: [{ startLineNumber: 204, endLineNumber: 205 }],
   },
   {

@@ -267,6 +267,76 @@ describe("基準差分の検査: ファイル", () => {
   });
 });
 
+describe("基準差分の検査: フォルダ移動", () => {
+  const LAYOUT_BASELINE = {
+    "examples/session-02/src/web/routes.ts":
+      'import { app } from "../app.js";\nimport { view } from "./view.js";\nimport { ok } from "../shared/result.js";\nexport const routes = [app, view, ok];\n',
+    "examples/session-02/src/boundary/examResult.ts": 'import { ok } from "../shared/result.js";\nexport const parse = ok;\n',
+    "examples/session-02/src/shared/result.ts": "export const ok = 1;\n",
+    "examples/session-02/test/web/routes.test.ts":
+      'import { routes } from "../../src/web/routes.js";\nconst path = "src/web/routes.ts";\n',
+    "examples/session-02/src/app.ts": 'import { routes } from "./web/routes.js";\nexport const app = routes;\n',
+    "examples/session-02/src/boundary/boundary.test-types.ts": "export {};\n",
+    ...Object.fromEntries(copyEntries("session-03", "03", baselineFixturePath)),
+  };
+
+  const LAYOUT_CURRENT = {
+    "examples/session-01/src/adaptor/primary/web/routes.ts":
+      'import { app } from "../../../app.js";\nimport { view } from "./view.js";\nimport { ok } from "../../../domain/shared/result.js";\nexport const routes = [app, view, ok];\n',
+    "examples/session-01/src/adaptor/primary/web/examResult.ts":
+      'import { ok } from "../../../domain/shared/result.js";\nexport const parse = ok;\n',
+    "examples/session-01/src/domain/shared/result.ts": "export const ok = 1;\n",
+    "examples/session-01/test/web/routes.test.ts":
+      'import { routes } from "../../src/adaptor/primary/web/routes.js";\nconst path = "src/adaptor/primary/web/routes.ts";\n',
+    "examples/session-01/src/app.ts":
+      'import { routes } from "./adaptor/primary/web/routes.js";\nexport const app = routes;\n',
+  };
+
+  const layoutCheck = (mutate = () => {}, baselineOverrides = {}) => {
+    const baseline = new Map(Object.entries({ ...LAYOUT_BASELINE, ...baselineOverrides }));
+    const current = new Map(Object.entries(LAYOUT_CURRENT));
+    mutate(current);
+    return findFileProblems({
+      current: [...current.keys()],
+      readCurrent: (file) => current.get(file),
+      baseline,
+    }).filter((problem) => problem.includes("ファイル: examples/session-01/"));
+  };
+
+  test("12. 移動して import の深さだけが変わったファイルは OK になる", () => {
+    assert.deepEqual(layoutCheck(), []);
+  });
+
+  test("12. 移動したファイルの import 以外の行が変わると NG になる", () => {
+    const file = "examples/session-01/src/adaptor/primary/web/routes.ts";
+    assert.deepEqual(
+      layoutCheck((current) =>
+        current.set(file, current.get(file).replace("[app, view, ok]", "[app, view, no]")),
+      ),
+      [changed("session-02", file)],
+    );
+  });
+
+  test("12. 移動したファイルの import の指す先が変わると NG になる", () => {
+    const file = "examples/session-01/src/adaptor/primary/web/routes.ts";
+    assert.deepEqual(
+      layoutCheck((current) =>
+        current.set(file, current.get(file).replace('"./view.js"', '"./views.js"')),
+      ),
+      [changed("session-02", file)],
+    );
+  });
+
+  test("12. boundary.test-types.ts の中身が export {}; 以外だと NG になる", () => {
+    assert.deepEqual(
+      layoutCheck(() => {}, {
+        "examples/session-02/src/boundary/boundary.test-types.ts": "export const kept = 1;\n",
+      }),
+      [changed("session-02", "examples/session-01/src/adaptor/primary/web/boundary.test-types.ts")],
+    );
+  });
+});
+
 describe("基準差分の検査: exercise:*", () => {
   test("8. 想定の6本なら OK になる", () => {
     assert.deepEqual(findExerciseScriptProblems(exerciseScripts()), []);

@@ -71,7 +71,7 @@ export const quotes = {
   ),
   solutionRouteCheck: quote(
     "session-01-solution",
-    "src/web/routes.ts",
+    "src/adaptor/primary/web/routes.ts",
     "    if (current.kind !== \"CheckedIn\") throw new Error(\"Invalid appointment state\");",
     "    if (current.kind !== \"CheckedIn\") throw new Error(\"Invalid appointment state\");",
   ),
