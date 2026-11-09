@@ -105,7 +105,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1.5,
-    role: "解決策（課題2）: 保存の障害は、Result に含めず、例外のまま useCase の外へ伝わります。",
+    role: "解決策（課題2）: 保存の障害は、Result に含まれず、例外のまま useCase の外へ伝わります。",
   },
   {
     slug: "checks",
