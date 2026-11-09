@@ -277,11 +277,13 @@ const reviewPromptFor = {
 } as const satisfies Record<ExerciseSlug, string>;
 
 const peerReviewPromises = [
-  "人ではなく差分を見ます。「この差分は」で話し始め、優劣をつけません。",
-  "本人は、実装メモまたはAgentへの依頼文を共有し、どの要求を満たそうとしたか説明します。",
-  "同じ課題に対して設計判断が異なる差分を選びます。進行役がいない場合は、参加者で順番を決めます。",
-  "複数回行う場合は、全員の差分を少なくとも一度確認できるようにします。",
+  "人ではなく変更を見ます。「この変更は」で話し始め、優劣をつけません。",
+  "作った本人が、自分の仕組みは何を見ているかを説明します。",
+  "複数人で行うときは、全員の仕組みを少なくとも一度は確かめます。",
 ] as const;
+
+const peerReviewPromisesHref =
+  "/sessions/01-state-transitions/peer-review/#peer-review-promises";
 
 const moduleFor = (slug: ExerciseSlug): PageModule =>
   pageModules[`./pages/sessions/${slug}.astro`] ?? {};
@@ -418,11 +420,12 @@ describe("session pages", () => {
     });
   }
 
-  it("S1 owns the inline peer-review promises", () => {
-    const source = sourceFor("01-state-transitions");
+  it("S1 owns the peer-review promises on its peer-review page", () => {
+    const source =
+      splitProseSources["./sessions/prose/01-state-transitions/peer-review.mdx"] ?? "";
 
     expect(moduleFor("01-state-transitions").promisesHref).toBe(
-      "#peer-review-promises",
+      peerReviewPromisesHref,
     );
     expect(source).toContain('id="peer-review-promises"');
     for (const promise of peerReviewPromises) expect(source).toContain(promise);
@@ -430,9 +433,7 @@ describe("session pages", () => {
 
   for (const slug of exerciseSlugs.slice(1)) {
     it(`${slug} owns the S1 peer-review promises href`, () => {
-      expect(moduleFor(slug).promisesHref).toBe(
-        "/sessions/01-state-transitions/#peer-review-promises",
-      );
+      expect(moduleFor(slug).promisesHref).toBe(peerReviewPromisesHref);
       expect(sourceFor(slug)).not.toContain('id="peer-review-promises"');
     });
   }

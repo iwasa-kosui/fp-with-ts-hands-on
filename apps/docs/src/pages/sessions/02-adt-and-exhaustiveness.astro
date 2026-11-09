@@ -1,317 +1,36 @@
 ---
-import AdtValueCount from "../../components/AdtValueCount.astro";
-import CodeGuideCards from "../../components/CodeGuideCards.astro";
-import CommandBlock from "../../components/CommandBlock.astro";
-import GuardTable from "../../components/GuardTable.astro";
-import NeverEmptySet from "../../components/NeverEmptySet.astro";
-import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
-// CSS chunk の分割と読み込み順を変換前と同じに保つ
-import "../../components/code-explorer/CodeExplorer";
-import Prose from "../../sessions/prose/02-adt-and-exhaustiveness.mdx";
-import type { CodeGuide } from "../../code-explorer/code-guide";
-import { projectFilesForSnapshot } from "../../code-explorer/project-files";
-import type { SessionWorkspace } from "../../code-explorer/types";
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import { loadSolutionSnippets } from "../../sessions/solution-snippets";
-import type {
-  ExerciseSessionSummary,
-  SessionSummary,
-} from "../../sessions/types";
-import "../../styles/code-playground.css";
-import "../../styles/sessions.css";
-import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
+import SessionFrame from "../../components/session-frame/SessionFrame.astro";
+import { sessionPages, sessionSlug } from "../../sessions/pages/02-adt-and-exhaustiveness";
+import * as content from "../../sessions/pages/02-adt-and-exhaustiveness-content";
+import Prose from "../../sessions/prose/02-adt-and-exhaustiveness/index.mdx";
 
-type TeachingSnippets = Readonly<{
-  before: string;
-  after: string;
-  example?: string;
-}>;
-
-export const session: SessionSummary = {
-  slug: "02-adt-and-exhaustiveness",
-  snapshot: "session-02",
-  sequence: "02",
-  kind: "exercise",
-  title: "予約の状態の分岐漏れを型で検出する",
-  durationMinutes: 20,
-  timeBreakdown: { brief: 3, teach: 7, exercise: 7, review: 3 },
-  adv: { articulate: 1, delegate: 5, verify: 1 },
-  peerReview: {
-    minutes: 3,
-    pickCount: 1,
-    questions: [
-      "状態を追加したとき、未対応の分岐はコンパイルエラーになりますか。",
-      "`toStatusLabel` は `Readonly<{ kind: string }>` ではなく、`Appointment` を受け取っていますか。",
-      "`default` 分岐は、固定の表示名を返して未対応の状態を隠していませんか。",
-    ],
-  },
-  solutionSnapshot: "session-02-solution",
-  solutionPresentation: "excerpt",
-  peerReviewPromises: "reference",
-  animal: { name: "HEDGEHOG", type: "hedgehog", avatar: "🦔" },
-  summary: "予約の状態ごとの分岐を網羅し、状態を追加したときの未対応の分岐をコンパイルエラーにします。",
-  episode: [
-    "無断キャンセルを表すNoShowの状態を足した翌朝、受付画面のハリネズミの予約に「不明」と表示されていました。",
-    "表示名の分岐にNoShowのcaseがなく、defaultが「不明」を返していても、型検査は成功しました。",
-    "状態を足したときは、直し忘れた分岐をコンパイラに見つけさせる必要があります。",
-  ],
-  incident: "NoShowの状態を追加したとき、表示名の分岐が default で「不明」を返し、型検査は成功した。",
-  exerciseCommand: "pnpm exercise:02",
-  exerciseModule: {
-    dir: "examples/session-02/src/domain/appointment",
-    fileBudget: 1,
-    lineBudget: 6,
-  },
-  delegationPrompt: {
-    decisions: [
-      "状態追加時の分岐漏れをどこで検出するか",
-    ],
-  },
-  steps: [
-    {
-      id: "s02-exhaustive-label",
-      goal: "状態を追加したら表示名の分岐をコンパイルエラーにする。",
-      startingFailure: "状態を追加しても、表示名の分岐漏れを検出できない。",
-      targets: ["examples/session-02/src/domain/appointment/statusLabel.ts"],
-      solutions: [{
-        path: "examples/session-02-solution/src/domain/appointment/statusLabel.ts",
-        symbol: "toStatusLabel",
-        lines: [3, 24],
-      }],
-    },
-  ],
-  decisions: [
-    {
-      invariant: "状態を追加したとき、未対応の分岐をコンパイルエラーにする。",
-    },
-  ],
-  finalReferences: [
-    "examples/final/src/domain/shared/assertNever.ts",
-  ],
-};
-
-export const guides = ([
-  {
-    id: "string-kind-label",
-    title: "表示名の関数が kind を string として受け取っている",
-    currentDesign: "toStatusLabel の引数が kind: string で、Appointment の状態に限られていません。",
-    futureRisk: "存在しない kind の値を渡しても、コンパイルが通ります。",
-    path: "src/domain/appointment/statusLabel.ts",
-    highlights: [{ startLineNumber: 3, endLineNumber: 3 }],
-  },
-  {
-    id: "non-exhaustive-label",
-    title: "表示名の分岐が未知の状態を見逃す",
-    currentDesign: "default で「不明」を返し、すべての状態を処理したかを型で確かめていません。",
-    futureRisk: "状態を追加しても、未対応の分岐がコンパイルエラーになりません。",
-    path: "src/domain/appointment/statusLabel.ts",
-    highlights: [{ startLineNumber: 4, endLineNumber: 19 }],
-  },
-] as const) satisfies readonly CodeGuide[];
-
-const missingNoShowCase = `// もし後から Appointment に "NoShow"（無断キャンセル）を追加した場合...
-switch (appointment.kind) {
-  case "Scheduled":
-    return "予約済み";
-  // CheckedIn、InExamination、AwaitingPayment、Paid の case は省略
-  case "Canceled":
-    return "キャンセル";
-  // ❌ case "NoShow": の実装を忘れると...
-  default:
-    // ここで appointment は NoShow 型と推論される
-    // エラー: 型 'Readonly<{ kind: "NoShow"; ... }>' の引数を
-    // 型 'never' のパラメーターに割り当てることはできません
-    return assertNever(appointment);
-}`;
-
-const teaching: readonly TeachingSnippets[] = [
-  {
-    before: `type Status = "Scheduled" | "CheckedIn";
-
-const toLabel = (status: Status): string => {
-  switch (status) {
-    case "Scheduled":
-      return "予約済み";
-    default: {
-      // status の型は "CheckedIn"。値が1個残っている
-      const rest: never = status; // ❌ コンパイルエラー
-      return rest;
-    }
-  }
-};`,
-    after: `const toLabel = (status: Status): string => {
-  switch (status) {
-    case "Scheduled":
-      return "予約済み";
-    case "CheckedIn":
-      return "来院済み";
-    default: {
-      // status の型は never。値が1個も残っていない
-      const rest: never = status; // ✅ コンパイルが通る
-      return rest;
-    }
-  }
-};`,
-    example: `const label: never = "Scheduled"; // ❌ never型へ代入できる具体的な値はない
-
-type OnlyScheduled = "Scheduled" | never; // "Scheduled" と同じ。空集合を足しても候補は増えない
-
-const toText = (value: never): string => value; // ✅ never型の式はどの型へも代入できる`,
-  },
-  {
-    before: `type AppointmentFlags = Readonly<{
-  isCheckedIn: boolean;
-  isExaminationStarted: boolean;
-  isExaminationCompleted: boolean;
-  isPaid: boolean;
-  isCanceled: boolean;
-}>;
-
-// 2 × 2 × 2 × 2 × 2 = 32通り
-// 会計済みかつキャンセル済みの予約も表せてしまう`,
-    after: `// 各状態は直積型。状態ごとに必要な項目をすべて持つ
-type Canceled = Readonly<{
-  kind: "Canceled";
-  appointmentId: string;
-  reason: CancellationReason;
-  canceledAt: string;
-  // 他の項目は省略
-}>;
-
-// Appointment は直和型。kind の候補は6通り
-// 各状態の値の個数を足したものが、Appointment の値の個数になる
-type Appointment =
-  | Scheduled
-  | CheckedIn
-  | InExamination
-  | AwaitingPayment
-  | Paid
-  | Canceled;`,
-  },
-  {
-    before: `export const toStatusLabel = (appointment: Readonly<{ kind: string }>): string => {
-  switch (appointment.kind) {
-    case "Scheduled":
-      return "予約済み";
-    // CheckedIn、InExamination、AwaitingPayment、Paid の case は省略
-    case "Canceled":
-      return "キャンセル";
-    default:
-      return "不明";
-  }
-};`,
-    after: `const assertNever = (value: never): never => {
-  throw new Error(\`Unknown appointment status: \${JSON.stringify(value)}\`);
-};
-
-export const toStatusLabel = (appointment: Appointment): string => {
-  switch (appointment.kind) {
-    case "Scheduled":
-      return "予約済み";
-    // CheckedIn、InExamination、AwaitingPayment、Paid の case は省略
-    case "Canceled":
-      return "キャンセル";
-    default:
-      return assertNever(appointment);
-  }
-};`,
-    example: missingNoShowCase,
-  },
-];
-
-const exerciseSession: ExerciseSessionSummary = session;
-const initialExerciseFailureCount = 1;
-
-export const workspace = ({
-  slug: session.slug,
-  snapshot: session.snapshot,
-  initialFile: "exercises/state-modeling.test.ts",
-  description: "表示名の分岐と予約状態の定義を、開始スナップショットで確認します。",
-  visibleFiles: [
-    "exercises/state-modeling.test.ts",
-    "src/domain/appointment/appointment.ts",
-    "src/domain/appointment/statusLabel.ts",
-  ],
-} as const) satisfies SessionWorkspace;
-
-const projectFiles = projectFilesForSnapshot(session.snapshot);
-const solutionSteps = await Promise.all(
-  session.steps.map(async (step) => ({
-    step,
-    presentation: step.solutions[0].presentation ?? "excerpt",
-    snippets: await loadSolutionSnippets(step),
-  })),
-);
-const chapters = [
-  { id: "incident", label: "今回つくるもの" },
-  { id: "legacy", label: "コードを読み、失敗を再現する" },
-  { id: "teach", label: "事前知識" },
-  { id: "refactor", label: "演習" },
-  { id: "review", label: "レビューと持ち帰り" },
-] as const;
-export const promisesHref =
-  "/sessions/01-state-transitions/#peer-review-promises";
-export const navigation = ({
-  previous: {
-    href: "/sessions/01-state-transitions/",
-    title: "予約の状態と遷移をモデル化する",
-  },
-  next: {
-    href: "/sessions/03-boundaries-and-pii/",
-    title: "診察開始の入力を境界で検証する",
-  },
-} as const);
-const headcount = session.peerReview.pickCount === 2 ? "1〜2名" : "1名";
-const guardQuestion = "依頼文は <code>assertNever</code> を指定していません。<code>default</code> で「不明」を返すコードが残ることを、文面のほかにどの仕組みで防げますか。";
-const guards = [
-  {
-    problem: "状態を足したのに表示名の分岐を足し忘れる",
-    mechanism: "<code>assertNever</code> と <code>never</code> 型",
-    signal: "<code>assertNever</code> を置いたコードに状態を足すと、<code>tsc</code> が失敗します。<code>pnpm exercise:02</code> は未定義の状態を渡せないことだけを確かめるので、<code>assertNever</code> の有無は差分で確かめます。",
-  },
-] as const;
-const guardModules = [session.exerciseModule];
-const delegationPrompt = `${session.exerciseModule.dir} のコードを直して、
-${session.exerciseCommand} を成功させてください。
-
-未対応のまま残してはいけない分岐: [言語化フェーズで書いた1文]`;
+export const guides = content.guides;
+export const navigation = content.navigation;
+export const promisesHref = content.promisesHref;
+export const session = content.session;
+export const workspace = content.workspace;
 ---
 
-<BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
-  <div class="case-file case-file--session">
-    <header class="case-file__site-header"><a href="/"><span class="case-file__brand-mark" aria-hidden="true">🐾</span>WAN NYAN CLINIC</a></header>
-    <main>
-      <SessionPageNavigation currentSlug={session.slug} chapters={chapters}>
-      <section slot="hero" class="case-file__hero" aria-labelledby="session-title">
-        <p class="case-file__eyebrow">SESSION {session.sequence} · {session.durationMinutes}分</p>
-        <h1 id="session-title">{session.title}</h1>
-        <p class="case-file__summary">
-          <span aria-hidden="true">{session.animal.avatar}</span>
-          {session.summary}
-        </p>
-      </section>
-      <Prose
-        components={{ AdtValueCount, CodeGuideCards, CommandBlock, EpisodeIllustration, GuardTable, NeverEmptySet }}
-        session={session}
-        guides={guides}
-        workspace={workspace}
-        projectFiles={projectFiles}
-        solutionSteps={solutionSteps}
-        teaching={teaching}
-        delegationPrompt={delegationPrompt}
-        delegationDecisions={exerciseSession.delegationPrompt.decisions}
-        guards={guards}
-        guardQuestion={guardQuestion}
-        guardModules={guardModules}
-        initialExerciseFailureCount={initialExerciseFailureCount}
-        headcount={headcount}
-        promisesHref={promisesHref}
-      />
-      <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
-        <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
-        <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
-      </nav>
-      </SessionPageNavigation>
-    </main>
-  </div>
-</BaseLayout>
+<SessionFrame
+  sessionSlug={sessionSlug}
+  pages={sessionPages}
+  pageSlug=""
+  description={session.summary}
+>
+  <Prose />
+  <script is:inline>
+    const destinations = new Map([
+      ["incident", "no-show/"],
+      ["legacy", "current-code/"],
+      ["teach", "adt/"],
+      ["fail-fast", "fail-fast/"],
+      ["refactor", "exercise/"],
+      ["review", "peer-review/"],
+    ]);
+    const destination = destinations.get(location.hash.slice(1));
+    if (destination) {
+      const base = location.pathname.endsWith("/") ? location.pathname : `${location.pathname}/`;
+      location.replace(`${base}${destination}`);
+    }
+  </script>
+</SessionFrame>
