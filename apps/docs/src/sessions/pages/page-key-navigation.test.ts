@@ -16,6 +16,7 @@ const keyEvent = (overrides: Partial<PageKeyEvent> = {}): PageKeyEvent => ({
   metaKey: false,
   shiftKey: false,
   defaultPrevented: false,
+  repeat: false,
   ...overrides,
 });
 
@@ -193,5 +194,140 @@ describe("コマ送りの操作部の中での左右キー", () => {
   it("操作部の中では、ページの移動の向きを返さない", () => {
     const { play } = mountThreeFrames();
     expect(pageKeyDirection(keyEvent(), play)).toBeNull();
+  });
+});
+
+describe("場面を選ぶボタンでの左右キー", () => {
+  const navigate = vi.fn<(direction: PageKeyDirection) => void>();
+
+  beforeAll(() => {
+    installPageKeyNavigation(document, navigate);
+  });
+
+  beforeEach(() => {
+    navigate.mockClear();
+  });
+
+  const mountFigure = (withControls: boolean) => `
+    <section data-step-figure>
+      <button type="button" data-step-scene>場面</button>
+      <div data-frame>1</div>
+      <div data-frame>2</div>
+      <div data-frame>3</div>
+      ${
+        withControls
+          ? `<div data-controls hidden>
+              <button type="button" data-prev>前へ</button>
+              <button type="button" data-play>再生</button>
+              <button type="button" data-next>次へ</button>
+              <span data-progress></span>
+            </div>`
+          : ""
+      }
+    </section>`;
+
+  const mountScene = () => {
+    document.body.innerHTML = mountFigure(true);
+    const root = document.querySelector("section") as HTMLElement;
+    mountStepper({ root });
+    return {
+      scene: root.querySelector("[data-step-scene]") as HTMLButtonElement,
+      next: root.querySelector("[data-next]") as HTMLButtonElement,
+      step: () => Number(root.dataset.step),
+    };
+  };
+
+  const press = (
+    element: Element,
+    key: "ArrowLeft" | "ArrowRight",
+    init: KeyboardEventInit = {},
+  ) => {
+    const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...init });
+    element.dispatchEvent(event);
+    return event;
+  };
+
+  it("ArrowRight でその図の次のコマへ1つだけ進み、ページは移動しない", () => {
+    const { scene, step } = mountScene();
+    scene.focus();
+    const event = press(scene, "ArrowRight");
+    expect(step()).toBe(1);
+    expect(event.defaultPrevented).toBe(true);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("ArrowLeft でその図の前のコマへ1つだけ戻り、ページは移動しない", () => {
+    const { scene, next, step } = mountScene();
+    next.click();
+    next.click();
+    expect(step()).toBe(2);
+    scene.focus();
+    press(scene, "ArrowLeft");
+    expect(step()).toBe(1);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("コマが尽きているときは何もせず、ページも移動しない", () => {
+    const { scene, next, step } = mountScene();
+    scene.focus();
+    press(scene, "ArrowLeft");
+    expect(step()).toBe(0);
+    next.click();
+    next.click();
+    expect(step()).toBe(2);
+    expect(next.disabled).toBe(true);
+    scene.focus();
+    press(scene, "ArrowRight");
+    expect(step()).toBe(2);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("同じ図に操作部が無いときは何も押されず、別の図の操作部も押さない", () => {
+    document.body.innerHTML = `${mountFigure(false)}${mountFigure(true)}`;
+    const [bare, other] = [...document.querySelectorAll("section")] as HTMLElement[];
+    mountStepper({ root: other });
+    const scene = bare.querySelector("[data-step-scene]") as HTMLButtonElement;
+    scene.focus();
+    press(scene, "ArrowRight");
+    press(scene, "ArrowLeft");
+    expect(other.dataset.step).toBe("0");
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("図の外にある場面のボタンでは何もせず、ページも移動しない", () => {
+    document.body.innerHTML = `
+      <button type="button" data-step-scene>場面</button>
+      ${mountFigure(true)}`;
+    const root = document.querySelector("section") as HTMLElement;
+    mountStepper({ root });
+    const scene = document.querySelector("body > [data-step-scene]") as HTMLButtonElement;
+    scene.focus();
+    press(scene, "ArrowRight");
+    expect(root.dataset.step).toBe("0");
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("場面のボタンの中では、ページの移動の向きを返さない", () => {
+    const { scene } = mountScene();
+    expect(pageKeyDirection(keyEvent(), scene)).toBeNull();
+  });
+
+  it("押し続けて repeat になったキーでは、コマが進まず、ページも移動しない", () => {
+    const { scene, next, step } = mountScene();
+    scene.focus();
+    const fromScene = press(scene, "ArrowRight", { repeat: true });
+    expect(step()).toBe(0);
+    expect(fromScene.defaultPrevented).toBe(true);
+    next.focus();
+    const fromControls = press(next, "ArrowRight", { repeat: true });
+    expect(step()).toBe(0);
+    expect(fromControls.defaultPrevented).toBe(true);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("操作部の外で押し続けたキーは、今までどおりページを移動する", () => {
+    mountScene();
+    press(document.body, "ArrowRight", { repeat: true });
+    expect(navigate).toHaveBeenCalledWith("next");
   });
 });

@@ -5,6 +5,7 @@
 これらのファイルは Session ごとに分かれているので、並行の作業で衝突しません。`<slug>` は Session の slug（例は `03-boundaries-and-pii`）です。
 
 - `apps/docs/src/sessions/pages/<slug>.ts`: `sessionSlug` と `sessionPages` を export します。`apps/docs/src/sessions/pages/split-sessions.fixture.ts` が glob でこのファイルを読みます。
+  - `role` の先頭の段階名には、課題の番号を付けません。段階名は `課題`、`事前知識`、`解決策`、`解決策を守る`、`業務で考える`、`あとで読む` などです。役割の行では番号が定義されないので、番号を付けると参加者に意味の分からない番号が見えます。
 - `apps/docs/scripts/split-sessions/<slug>.mjs`: 期待値を default export します。参考は同じディレクトリの `03-boundaries-and-pii.mjs` です。`index.mjs` とテストはこのディレクトリのファイルを自動で集めるので、一覧を編集する必要はありません。項目の意味は次のとおりです。
   - `previous`、`previousTitle`、`next`、`nextTitle`: 前後の Session の href とタイトルです。S00 の前と Final の次は省略します。
   - `expectedPages`: `[slug, title, flow, kind, minutes]` の並びです。slug が空文字のページは Session の最初のページです。`kind` が `advanced` のページは時間外なので、`minutes` を 0 にします。
@@ -26,6 +27,10 @@
   - 解答は `exercises/guard/answer/mine/` に置きます。
   - 解答から subjects と src へは、`../../subjects/` と `../../../../src/` の相対パスで書きます。`answerDisplaySource` がこの2つの文字列を、表示用のパスに置き換えます。
 - `apps/docs/src/sessions/pages/<slug>-exercise.ts` に `guardExercise = { slug, snapshot }` を置きます。MDX から `guardExerciseWorkspaceFor(guardExercise, projectFiles, 説明)` を呼びます。参考は `apps/docs/src/sessions/pages/03-boundaries-and-pii-exercise.ts` と、`apps/docs/src/sessions/prose/03-boundaries-and-pii/exercise.mdx` です。
+- `exercise.mdx` が export する `guide` の `steps` には、文字列のほかに、`id` とリンクを持つ手順も書けます。`GuardGuideStep` の型は `apps/docs/src/components/guard-exercise/CaseList.tsx` にあります。
+  - リンクは、`text` に `{ text, href }` の並びを渡して書きます。
+  - 別のページを手順で指すときは、`href` に `sessionPageHref` で作ったリンクを渡します。`sessionPageHref` は `apps/docs/src/sessions/pages/links.ts` にあります。
+  - 相互レビューの画面で、合格したときに「次にすること」へ出す文は、`guide.passedNext` に書きます。
 - `apps/docs/scripts/build-deps-snapshot.mjs` は、`examples/*-solution/exercises/guard` を持つ snapshot を自動で集めます。このファイルを編集する必要はありません。
 
 ## 編集が要る共通のファイル
@@ -55,3 +60,8 @@
   - 「次へ」のボタンに `data-next` を付けます。「前へ」のボタンに `data-prev` を付けます。
   - `SessionFrame` は、フォーカスが `data-controls` の中にあるときの左右キーを、対応するボタンの押下として扱います。この規約に乗せないと、「次へ」を押した直後の右キーでページが移動します。
   - 最後のコマでの右キーと、最初のコマでの左キーは、何もしません。ページも移動しません。
+  - 場面を選ぶボタンに `data-step-scene` を付けます。図の根の要素に `data-step-figure` を付けます。
+  - `SessionFrame` は、フォーカスが `data-step-scene` のボタンにあるときの左右キーを、同じ図の `data-controls` の前後のボタンの押下として扱います。
+  - 同じ図に `data-controls` が無いとき、左右キーは何もしません。ページも移動しません。
+  - コードのコピー、ファイルの選択、リセットのボタンには `data-step-scene` を付けません。これらのボタンにフォーカスがあるとき、左右キーはページを移動します。
+  - キーを押し続けても、コマは連続して進みません。
