@@ -23,7 +23,7 @@ const expectedPages = [
 
 export default {
   previous: "/sessions/05-business-events-and-workflows/",
-  previousTitle: "データとパイプラインで予約キャンセルを設計する",
+  previousTitle: "データと工程で予約キャンセルを設計する",
   next: "/sessions/final/",
   nextTitle: "参照実装で境界をたどる",
   pages: expectedPages.map(([slug]) => slug),

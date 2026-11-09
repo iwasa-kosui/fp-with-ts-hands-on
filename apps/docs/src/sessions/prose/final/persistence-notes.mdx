@@ -2,4 +2,4 @@
 
 <p>1つの transaction にまとめるのは、1つの業務の操作でそろっていなければならない書き込みです。診察開始では、予約の状態と監査記録の2つです。診察結果の記録では、<code>ExaminationCompletionStore</code> が、診察結果の追加、予約の <code>AwaitingPayment</code> への更新、監査記録2件を1つの transaction で保存します。診察結果は残ったのに予約は診察中のまま、という状態を残さないためです。</p>
 
-<p>集約の意味は、<a href="/sessions/05-business-events-and-workflows/#consistency-and-aggregate">S05 の整合性と集約の節</a>で確認できます。DDD には、1回の保存で変える集約を1つにするという指針があります。診察結果の記録は、この指針から外れます。予約と診察結果（コード上の名前は ExamResult）の2つの集約を、1つの transaction で保存するからです。参照実装は、両方が同じ SQLite にあり、診察結果だけが残る状態を避けたいので、この形を選んでいます。</p>
+<p>集約の意味は、<a href="/sessions/06-effects-and-consistency/aggregate/">S06 の集約の説明</a>で確認できます。DDD には、1回の保存で変える集約を1つにするという指針があります。診察結果の記録は、この指針から外れます。予約と診察結果（コード上の名前は ExamResult）の2つの集約を、1つの transaction で保存するからです。参照実装は、両方が同じ SQLite にあり、診察結果だけが残る状態を避けたいので、この形を選んでいます。</p>

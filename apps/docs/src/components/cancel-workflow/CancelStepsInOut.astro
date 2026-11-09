@@ -1,0 +1,411 @@
+---
+import { Code } from "astro:components";
+import routesSource from "../../../../../examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts?raw";
+import { quote } from "../../sessions/reference-quote";
+import StepControls from "../stepper/StepControls.astro";
+import "../states/states.css";
+
+const schemaCode = quote(routesSource, 74, 76, "const CancelSchema");
+
+type Entry = Readonly<{ label: string; value: string; tone?: "accent" | "muted" }>;
+
+type Stage = Readonly<{
+  node: string;
+  zone: "boundary" | "useCase";
+  name: string;
+  where: string;
+  input: readonly Entry[];
+  functions: readonly string[];
+  process?: string;
+  failure: Readonly<{ when: string; kinds: readonly string[]; none?: true }>;
+  output: readonly Entry[];
+  outputNote?: string;
+  caption: string;
+}>;
+
+const stages: readonly Stage[] = [
+  {
+    node: "入力を検査する",
+    zone: "boundary",
+    name: "入力を検査する",
+    where: "ユースケースの手前の境界",
+    input: [
+      { label: "URL から入る", value: `appointmentId: "11111111-…"`, tone: "muted" },
+      { label: "ログイン情報から入る", value: `actorUserId: "（受付担当者の ID）"`, tone: "muted" },
+      { label: "フォームから入るキャンセル理由。検査するのはこれだけ", value: `reason: "owner request"`, tone: "accent" },
+    ],
+    functions: [],
+    process: schemaCode,
+    failure: { when: "理由が空のとき。ユースケースは呼ばずに、入力エラーの画面を返す", kinds: [] },
+    output: [
+      {
+        label: "ユースケースへ渡す入力",
+        value: `{\n  actorUserId: "（受付担当者の ID）",\n  appointmentId: "11111111-…",\n  reason: "owner request",\n}`,
+      },
+    ],
+    caption:
+      "最初の検査は、ユースケースの手前の境界で行います。実行者はログイン情報から、予約 ID は URL から入るので、ここで検査するのは理由だけです。",
+  },
+  {
+    node: "実行者の確認",
+    zone: "useCase",
+    name: "実行者の確認",
+    where: "ユースケースの1つ目の工程",
+    input: [{ label: "入力の actorUserId", value: `"（受付担当者の ID）"` }],
+    functions: ["userResolver.resolveById", "ensureUserFound", "ensureCanManageClinic"],
+    failure: { when: "実行者が見つからない、または管理する権限がないとき", kinds: ["Unauthorized"] },
+    output: [{ label: "実行者", value: `{\n  kind: "Receptionist",\n  userId: "（受付担当者の ID）",\n}` }],
+    caption:
+      "1つ目の工程は、実行者をデータベースから取得し、権限を確かめます。受付担当者には権限があるので、実行者の値を次へ渡します。",
+  },
+  {
+    node: "予約の確認",
+    zone: "useCase",
+    name: "予約の確認",
+    where: "ユースケースの2つ目の工程",
+    input: [{ label: "入力の appointmentId", value: `"11111111-…"` }],
+    functions: ["appointmentResolver.resolveById", "ensureAppointmentFound", "ensureCancellable"],
+    failure: { when: "予約が無い、または診察開始前（Scheduled と CheckedIn）ではないとき", kinds: ["AppointmentNotFound", "InvalidAppointmentState"] },
+    output: [{ label: "診察開始前の予約", value: `{\n  kind: "Scheduled",\n  appointmentId: "11111111-…",\n  reason: "skin check",\n}` }],
+    caption:
+      "2つ目の工程は、予約を取得し、診察開始前かどうかを確かめます。Scheduled の予約は、診察開始前なので次へ進みます。",
+  },
+  {
+    node: "結果を作る",
+    zone: "useCase",
+    name: "結果を作る",
+    where: "ユースケースの3つ目の工程",
+    input: [
+      { label: "前の工程の予約", value: `{ kind: "Scheduled", … }` },
+      { label: "入力のキャンセル理由 reason", value: `"owner request"` },
+      { label: "時計 clock の時刻", value: `"2026-08-30T05:00:00.000Z"` },
+    ],
+    functions: ["createEvent", "Appointment.cancel"],
+    failure: { when: "この工程では失敗しない", kinds: [], none: true },
+    output: [
+      {
+        label: "AppointmentCanceled",
+        value: `{\n  kind: "AppointmentCanceled",\n  aggregateState: {\n    kind: "Canceled",\n    reason: "skin check",\n    cancellationReason: "owner request",\n    canceledAt: "2026-08-30T05:00:00.000Z",\n    …\n  },\n}`,
+      },
+    ],
+    outputNote: "aggregateState は、キャンセル後の予約です。",
+    caption:
+      "3つ目の工程は、予約とキャンセル理由と時計の時刻から、キャンセルの出来事を表すデータ AppointmentCanceled を作ります。createEvent が、時計の時刻を Appointment.cancel へ渡します。",
+  },
+  {
+    node: "記録して返す",
+    zone: "useCase",
+    name: "記録して返す",
+    where: "ユースケースの4つ目の工程",
+    input: [{ label: "前の工程のイベント", value: `{ kind: "AppointmentCanceled", … }` }],
+    functions: ["andThrough(appointmentCanceledStore.store)", "map((event) => …)"],
+    failure: { when: "記録が他の更新とぶつかったとき", kinds: ["AppointmentConflict"] },
+    output: [{ label: "呼び出し側が受け取る値", value: `{\n  appointment: {\n    kind: "Canceled",\n    …\n  },\n}` }],
+    caption:
+      "4つ目の工程は、andThrough でイベントを記録し、成功したら値をそのまま次へ渡します。続く map が、キャンセル後の予約を取り出して返します。",
+  },
+];
+---
+
+<figure class="st-fig sio" data-steps-in-out aria-label="キャンセルの工程ごとに、入力と出力を見る図">
+  <StepControls />
+
+  <ol class="st-stack">
+    {stages.map((stage, current) => (
+      <li data-frame>
+        <div class="sio__strip" aria-hidden="true">
+          <span class="sio__zone sio__zone--boundary">ユースケースの手前の境界</span>
+          <span class="sio__zone sio__zone--use-case">ユースケース</span>
+          {stages.map((item, index) => (
+            <span
+              class="sio__node"
+              data-zone={item.zone}
+              data-state={index === current ? "current" : index < current ? "done" : "todo"}
+            >
+              {index === current ? "▶ " : index < current ? "✓ " : ""}{item.node}
+            </span>
+          ))}
+        </div>
+
+        <div class="sio__cards">
+          <section class="sio__card">
+            <h4>入力</h4>
+            <div class="sio__entries">
+              {stage.input.map((entry) => (
+                <div class="sio__entry" data-tone={entry.tone}>
+                  <p>{entry.label}</p>
+                  <figure class="code-block st-code"><Code code={entry.value} lang="ts" /></figure>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <span class="sio__arrow" aria-hidden="true">→</span>
+
+          <section class="sio__card sio__card--stage" data-zone={stage.zone}>
+            <h4>{stage.zone === "boundary" ? "境界" : "工程"} <strong>{stage.name}</strong></h4>
+            <p class="sio__where">{stage.where}</p>
+            {stage.process !== undefined && <figure class="code-block st-code"><Code code={stage.process} lang="ts" /></figure>}
+            {stage.functions.length > 0 && (
+              <ol class="sio__functions">
+                {stage.functions.map((fn) => <li><code>{fn}</code></li>)}
+              </ol>
+            )}
+            <p class="sio__failure" data-none={stage.failure.none ? "" : undefined}>
+              {!stage.failure.none && <span class="st-mark" data-tone="negative" aria-hidden="true">× </span>}
+              {stage.failure.none ? "" : "失敗: "}{stage.failure.when}
+              {stage.failure.kinds.length > 0 && <span class="sio__kinds">{stage.failure.kinds.map((kind) => <code>{kind}</code>)}</span>}
+            </p>
+          </section>
+
+          <span class="sio__arrow" aria-hidden="true">→</span>
+
+          <section class="sio__card">
+            <h4>出力</h4>
+            <div class="sio__entries">
+              {stage.output.map((entry) => (
+                <div class="sio__entry" data-tone={entry.tone}>
+                  <p>{entry.label}</p>
+                  <figure class="code-block st-code"><Code code={entry.value} lang="ts" /></figure>
+                </div>
+              ))}
+              {stage.outputNote !== undefined && <p class="sio__note">{stage.outputNote}</p>}
+            </div>
+          </section>
+        </div>
+
+        <p class="st-caption">{stage.caption}</p>
+      </li>
+    ))}
+  </ol>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-steps-in-out]").forEach((root) => {
+    mountStepper({ root });
+  });
+</script>
+
+<style>
+  .sio__strip {
+    display: grid;
+    grid-template-columns: 1.1fr repeat(4, minmax(0, 1fr));
+    grid-template-rows: auto auto;
+    gap: 0.125rem 0.375rem;
+    margin-block-end: 0.375rem;
+  }
+
+  .sio__zone {
+    padding-inline: 0.5rem;
+    border-block-end: 2px solid var(--role-border);
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1.5;
+  }
+
+  .sio__zone--boundary {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .sio__zone--use-case {
+    grid-column: 2 / span 4;
+    grid-row: 1;
+  }
+
+  .sio__node {
+    grid-row: 2;
+    padding: 0.25rem 0.5rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.375rem;
+    background: var(--role-surface);
+    color: var(--role-muted);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.5;
+    text-align: center;
+  }
+
+  .sio__node[data-zone="boundary"] {
+    border-style: dashed;
+  }
+
+  .sio__node[data-state="current"] {
+    border-color: var(--role-accent);
+    background: color-mix(in srgb, var(--role-accent) 14%, var(--role-surface));
+    color: var(--role-text);
+    font-weight: 800;
+  }
+
+  .sio__node[data-state="done"] {
+    color: var(--role-text);
+  }
+
+  .sio__cards {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) auto minmax(0, 0.95fr) auto minmax(0, 1.3fr);
+    gap: 0.375rem;
+    align-items: stretch;
+  }
+
+  .sio__arrow {
+    align-self: center;
+    color: var(--role-accent);
+    font-size: 1.25rem;
+    font-weight: 800;
+  }
+
+  .sio__card {
+    display: grid;
+    align-content: start;
+    gap: 0.25rem;
+    min-width: 0;
+    padding: 0.375rem 0.625rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+  }
+
+  .sio__card--stage {
+    border-color: var(--role-accent);
+  }
+
+  .sio__card--stage[data-zone="boundary"] {
+    border-style: dashed;
+  }
+
+  .sio__card h4 {
+    margin: 0;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1.5;
+  }
+
+  .sio__card h4 strong {
+    color: var(--role-text);
+    font-size: 0.9375rem;
+  }
+
+  .sio__where,
+  .sio__note {
+    margin: 0;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  .sio__entries {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .sio__entry {
+    min-width: 0;
+    padding-inline-start: 0.375rem;
+    border-inline-start: 4px solid var(--role-border);
+  }
+
+  .sio__entry[data-tone="accent"] {
+    border-inline-start-color: var(--role-accent);
+  }
+
+  .sio__entry[data-tone="muted"] {
+    opacity: 0.8;
+  }
+
+  .sio__entry p {
+    margin: 0;
+    color: var(--role-text);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .sio__card :global(.st-code pre) {
+    padding: 0.125rem 0;
+    line-height: 1.3;
+  }
+
+  .sio__card :global(.st-code .line) {
+    padding-inline: 0.5rem;
+  }
+
+  .sio__functions {
+    display: grid;
+    gap: 0.125rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: fn;
+  }
+
+  .sio__functions li {
+    counter-increment: fn;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .sio__functions li::before {
+    content: counter(fn) ". ";
+    color: var(--role-muted);
+    font-weight: 800;
+  }
+
+  .sio__failure {
+    margin: 0;
+    padding: 0.125rem 0.375rem;
+    border: 2px dashed var(--role-negative);
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  .sio__failure[data-none] {
+    border: 2px solid var(--role-border);
+    color: var(--role-muted);
+  }
+
+  .sio__kinds {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.5rem;
+  }
+
+  .sio__failure code {
+    font-size: 0.8125rem;
+    overflow-wrap: anywhere;
+  }
+
+  .sio :global(.st-caption) {
+    margin-block-start: 0.375rem;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 55rem) {
+    .sio__strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sio__zone {
+      display: none;
+    }
+
+    .sio__node {
+      grid-row: auto;
+    }
+
+    .sio__cards {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .sio__arrow {
+      justify-self: center;
+      transform: rotate(90deg);
+    }
+  }
+</style>

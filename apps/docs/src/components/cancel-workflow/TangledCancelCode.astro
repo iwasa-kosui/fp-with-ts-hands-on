@@ -1,0 +1,309 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import "../states/states.css";
+
+const code = `import { db } from "./db";
+const cancelAppointment = async (
+  appointment: Appointment,
+  cancellationReason: string,
+) => {
+  if (cancellationReason === "") {
+    throw new Error("empty reason");
+  }
+  const now = new Date();
+  if (appointment.kind === "Paid") {
+    throw new Error("already paid");
+  }
+  await db.update(appointment.appointmentId, {
+    kind: "Canceled",
+    cancellationReason,
+    canceledAt: now.toISOString(),
+  });
+};`;
+
+type Part = "condition" | "time" | "save";
+
+const parts: Readonly<Record<Part, Readonly<{ name: string; lines: readonly number[]; tagAt: readonly number[]; note: string }>>> = {
+  condition: {
+    name: "条件の判定",
+    lines: [5, 6, 7, 9, 10, 11],
+    tagAt: [5, 9],
+    note: "理由が空か、会計済みかを調べ、満たさなければ throw する",
+  },
+  time: { name: "時刻の取得", lines: [8], tagAt: [8], note: "new Date() で現在の時刻を読む" },
+  save: { name: "保存", lines: [0, 12, 13, 14, 15, 16], tagAt: [12], note: "モジュールから import した db へ書く" },
+};
+
+const order: readonly Part[] = ["condition", "time", "save"];
+
+type Mark = Readonly<{ line: number; tone: "accent" | "seen" | "negative"; tag?: string }>;
+
+const marksFor = (current: Part | undefined, passed: readonly Part[]): readonly Mark[] => [
+  ...passed.flatMap((part) =>
+    parts[part].lines.map((line): Mark => ({ line, tone: "seen", tag: parts[part].tagAt.includes(line) ? parts[part].name : undefined })),
+  ),
+  ...(current === undefined
+    ? []
+    : parts[current].lines.map((line): Mark => ({ line, tone: "accent", tag: parts[current].tagAt.includes(line) ? parts[current].name : undefined }))),
+];
+
+type Frame = Readonly<{
+  current: Part | undefined;
+  passed: readonly Part[];
+  marks: readonly Mark[];
+  problems: boolean;
+  caption: string;
+}>;
+
+const frames: readonly Frame[] = [
+  {
+    current: undefined,
+    passed: [],
+    marks: [],
+    problems: false,
+    caption: "1つの関数の中に、条件の判定、時刻の取得、保存、例外の throw が交互に並んでいます。順に色を付けて確かめます。",
+  },
+  {
+    current: "condition",
+    passed: [],
+    marks: marksFor("condition", []),
+    problems: false,
+    caption: "条件の判定です。理由が空のとき、予約が会計済みのときに、throw で関数を抜けます。",
+  },
+  {
+    current: "time",
+    passed: ["condition"],
+    marks: marksFor("time", ["condition"]),
+    problems: false,
+    caption: "時刻の取得です。条件の判定の途中で、現在の時刻を読んでいます。",
+  },
+  {
+    current: "save",
+    passed: ["condition", "time"],
+    marks: marksFor("save", ["condition", "time"]),
+    problems: false,
+    caption: "保存です。条件の判定を終えた後に、データベースへ書きます。",
+  },
+  {
+    current: undefined,
+    passed: order,
+    marks: [
+      { line: 0, tone: "negative", tag: "②" },
+      { line: 6, tone: "negative", tag: "①" },
+      { line: 8, tone: "negative", tag: "②" },
+      { line: 10, tone: "negative", tag: "①" },
+      { line: 12, tone: "negative", tag: "②" },
+      { line: 13, tone: "negative" },
+      { line: 14, tone: "negative" },
+      { line: 15, tone: "negative" },
+      { line: 16, tone: "negative" },
+    ],
+    problems: true,
+    caption: "3つが 1 つの関数に混ざっているので、次の2つの問題が起きます。",
+  },
+];
+
+const problems = [
+  { n: "①", text: "どんな失敗が起きうるかが、関数の型から読めない", detail: "呼び出し側は、全部の失敗を扱えたかを確かめられません。" },
+  { n: "②", text: "判定だけを確かめるには、データベースの用意と時刻の固定が要る", detail: "db はモジュールから import され、new Date() は現在の時刻を返すので、呼び出し側は差し替えられません。" },
+] as const;
+---
+
+<figure class="st-fig tangled" data-tangled aria-label="1つの関数に、条件の判定、時刻の取得、保存が混ざったコードを順に色分けする図">
+  <StepControls />
+
+  <ol class="st-stack">
+    {frames.map((frame) => (
+      <li data-frame data-marks={JSON.stringify(frame.marks)}>
+        <div class="tangled__split">
+          <figure class="code-block st-code">
+            <Code code={code} lang="ts" />
+          </figure>
+          <div class="tangled__panel">
+            <p class="tangled__badge">配布コードではない仮の例</p>
+            {frame.problems ? (
+              <ul class="tangled__problems">
+                {problems.map((problem) => (
+                  <li>
+                    <span class="st-mark" data-tone="negative" aria-hidden="true">{problem.n}</span>
+                    <strong>{problem.text}</strong>
+                    <span class="tangled__detail">{problem.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <ul class="tangled__parts">
+                {order.map((part) => {
+                  const state = frame.current === part ? "current" : frame.passed.includes(part) ? "done" : "todo";
+                  return (
+                    <li data-state={state}>
+                      <span class="tangled__mark" aria-hidden="true">{state === "current" ? "▶" : state === "done" ? "✓" : "・"}</span>
+                      <strong>{parts[part].name}</strong>
+                      <span class="tangled__detail">{parts[part].note}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+        <p class="st-caption">{frame.caption}</p>
+      </li>
+    ))}
+  </ol>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  type Mark = { line: number; tone: "accent" | "seen" | "negative"; tag?: string };
+  const toneClass = { accent: "is-lit", seen: "is-seen", negative: "is-lit-negative" } as const;
+
+  document.querySelectorAll<HTMLElement>("[data-tangled]").forEach((root) => {
+    root.querySelectorAll<HTMLElement>("[data-frame]").forEach((frame) => {
+      const marks = JSON.parse(frame.dataset.marks ?? "[]") as Mark[];
+      const lines = [...frame.querySelectorAll<HTMLElement>(".line")];
+      marks.forEach(({ line, tone, tag }) => {
+        const element = lines[line];
+        if (!element) return;
+        element.classList.add(toneClass[tone]);
+        if (tag !== undefined) element.dataset.tag = tag;
+      });
+    });
+    mountStepper({ root });
+  });
+</script>
+
+<style>
+  .tangled__split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: start;
+    margin-block-end: 0.125rem;
+  }
+
+  .tangled__split :global(.st-code pre) {
+    padding-block: 0.125rem;
+    line-height: 1.25;
+  }
+
+  .tangled__split :global(.st-code .line) {
+    position: relative;
+    padding-inline-end: 6rem;
+  }
+
+  .tangled__split :global(.st-code .line[data-tag])::after {
+    content: attr(data-tag);
+    position: absolute;
+    inset-inline-end: 0.5rem;
+    color: var(--lit-accent);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 800;
+  }
+
+  .tangled__split :global(.st-code .line.is-seen) {
+    background: color-mix(in srgb, var(--frame-code-text, var(--role-surface)) 8%, transparent);
+    box-shadow: inset 4px 0 0 color-mix(in srgb, var(--role-muted) 70%, transparent);
+  }
+
+  .tangled__split :global(.st-code .line.is-seen[data-tag])::after {
+    color: color-mix(in srgb, var(--frame-code-text, var(--role-surface)) 70%, transparent);
+  }
+
+  .tangled__split :global(.st-code .line.is-lit) {
+    box-shadow: inset 4px 0 0 var(--lit-accent);
+  }
+
+  .tangled__split :global(.st-code .line.is-lit-negative) {
+    box-shadow: inset 4px 0 0 var(--lit-negative);
+  }
+
+  .tangled__split :global(.st-code .line.is-lit-negative[data-tag])::after {
+    color: var(--lit-negative);
+  }
+
+  .tangled {
+    --lit-accent: color-mix(in srgb, var(--role-accent) 55%, var(--frame-code-text, #ffffff));
+    --lit-negative: color-mix(in srgb, var(--role-negative) 55%, var(--frame-code-text, #ffffff));
+  }
+
+  .tangled :global(.st-caption) {
+    line-height: 1.5;
+  }
+
+  .tangled__panel {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+  }
+
+  .tangled__badge {
+    justify-self: start;
+    margin: 0;
+    padding: 0 0.625rem;
+    border: 2px dashed var(--role-border);
+    border-radius: 0.375rem;
+    color: var(--role-text);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1.6;
+  }
+
+  .tangled__parts,
+  .tangled__problems {
+    display: grid;
+    gap: 0.375rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tangled__parts li,
+  .tangled__problems li {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    gap: 0 0.5rem;
+    align-items: baseline;
+    padding: 0.25rem 0.5rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+
+  .tangled__parts li[data-state="current"] {
+    border-color: var(--role-accent);
+    background: color-mix(in srgb, var(--role-accent) 14%, var(--role-surface));
+  }
+
+  .tangled__parts li[data-state="done"] {
+    color: var(--role-muted);
+  }
+
+  .tangled__problems li {
+    border-style: dashed;
+    border-color: var(--role-negative);
+  }
+
+  .tangled__detail {
+    grid-column: 2;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+  }
+
+  .tangled__mark {
+    font-weight: 800;
+  }
+
+  @media (max-width: 55rem) {
+    .tangled__split {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

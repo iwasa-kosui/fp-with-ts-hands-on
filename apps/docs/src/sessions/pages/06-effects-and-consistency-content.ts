@@ -191,7 +191,7 @@ export const promisesHref =
 export const navigation = ({
   previous: {
     href: "/sessions/05-business-events-and-workflows/",
-    title: "データとパイプラインで予約キャンセルを設計する",
+    title: "データと工程で予約キャンセルを設計する",
   },
   next: {
     href: "/sessions/final/",

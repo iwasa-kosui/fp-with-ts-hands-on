@@ -48,6 +48,7 @@ const snapshots = [
   "session-04",
   "session-04-solution",
   "session-05",
+  "session-05-solution",
   "session-06",
   "session-06-solution",
   "final",
