@@ -29,37 +29,7 @@ const questions = [
 </div>
 
 <script>
-  const STORAGE_KEY = "fp-with-ts:own-rule:session-00";
-  const MOMENTS = ["write", "test", "run", "human"];
-
-  type Saved = { version: 1; rule: string; now?: string; goal?: string };
-
-  const load = (): Saved => {
-    const empty: Saved = { version: 1, rule: "" };
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw === null) return empty;
-      const parsed: unknown = JSON.parse(raw);
-      if (typeof parsed !== "object" || parsed === null) return empty;
-      const record = parsed as Record<string, unknown>;
-      const result: Saved = { version: 1, rule: typeof record.rule === "string" ? record.rule : "" };
-      for (const field of ["now", "goal"] as const) {
-        const value = record[field];
-        if (typeof value === "string" && MOMENTS.includes(value)) result[field] = value;
-      }
-      return result;
-    } catch {
-      return empty;
-    }
-  };
-
-  const save = (saved: Saved): void => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
-    } catch {
-      return;
-    }
-  };
+  import { isMomentId, load, save } from "./own-rule-storage";
 
   document.querySelectorAll<HTMLElement>("[data-own-rule]").forEach((root) => {
     const saved = load();
@@ -74,7 +44,7 @@ const questions = [
       const field = input.dataset.field === "goal" ? "goal" : "now";
       input.checked = saved[field] === input.value;
       input.addEventListener("change", () => {
-        if (!input.checked) return;
+        if (!input.checked || !isMomentId(input.value)) return;
         save({ ...load(), [field]: input.value });
       });
     });

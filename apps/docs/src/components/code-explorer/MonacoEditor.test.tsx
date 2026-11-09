@@ -61,6 +61,8 @@ const monacoState = vi.hoisted(() => {
     createDecorationsCollection: vi.fn(() => ({ clear: vi.fn() })),
     revealRangeInCenter: vi.fn(),
     setPosition: vi.fn(),
+    saveViewState: vi.fn(() => ({ saved: true })),
+    restoreViewState: vi.fn(),
     focus: vi.fn(),
     updateOptions: vi.fn(),
     dispose: vi.fn(),
@@ -247,6 +249,43 @@ describe("MonacoEditor", () => {
     await mounted.rerender(initialProps);
 
     expect(removedModel.dispose).toHaveBeenCalledOnce();
+  });
+
+  it("restores the view state after replacing the shown model from outside", async () => {
+    const mounted = await renderHydratedEditor({ ...baseProps });
+    const changed = "const first = false;";
+    let valueAtRestore: string | undefined;
+    monacoState.editor.restoreViewState.mockImplementation(() => {
+      valueAtRestore = monacoState.modelFor("src/first.ts")!.getValue();
+    });
+
+    await mounted.rerender({
+      ...baseProps,
+      value: changed,
+      files: { ...projectFiles, "src/first.ts": changed },
+    });
+
+    expect(monacoState.editor.saveViewState).toHaveBeenCalledOnce();
+    expect(monacoState.editor.restoreViewState).toHaveBeenCalledOnce();
+    expect(monacoState.editor.restoreViewState).toHaveBeenCalledWith({
+      saved: true,
+    });
+    expect(valueAtRestore).toBe(changed);
+  });
+
+  it("leaves the view state alone when a model that is not shown is replaced", async () => {
+    const mounted = await renderHydratedEditor({ ...baseProps });
+
+    await mounted.rerender({
+      ...baseProps,
+      files: { ...projectFiles, "src/second.ts": "const second = false;" },
+    });
+
+    expect(monacoState.modelFor("src/second.ts")!.getValue()).toBe(
+      "const second = false;",
+    );
+    expect(monacoState.editor.saveViewState).not.toHaveBeenCalled();
+    expect(monacoState.editor.restoreViewState).not.toHaveBeenCalled();
   });
 
   it("enables validation from the start and ignores missing-type codes", async () => {
