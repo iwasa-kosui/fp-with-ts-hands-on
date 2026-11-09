@@ -102,7 +102,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
             <article class="time-stop"><time>Risk / S02</time><strong>🦔 状態の分岐漏れ</strong><span>予約の状態を追加したときに、表示名などの分岐を直し忘れるリスクを、コンパイルエラーで防ぎます。</span></article>
             <article class="time-stop"><time>Risk / S03</time><strong>🐦 未検証の外部入力</strong><span>HTTPから受け取った値をZodで検証し、値の制約を型で表した診察開始の入力へ変換します。</span></article>
             <article class="time-stop"><time>Risk / S04</time><strong>🐹 ユースケースの予期できる失敗</strong><span>throw と undefined で表している業務上の失敗を、呼び出し側が扱える結果へ変えます。</span></article>
-            <article class="time-stop"><time>Workflow / S05</time><strong>🐈 予約キャンセルを設計する</strong><span>予約のデータから始め、キャンセルをパイプラインとして読み、失敗の扱いとI/Oの分離を確かめます。</span></article>
+            <article class="time-stop"><time>Workflow / S05</time><strong>🐈 予約キャンセルを設計する</strong><span>予約のデータから始め、キャンセルを工程に分けて失敗の流れを捉え、I/Oの分離を確かめます。工程の条件を守る仕組みも選びます。</span></article>
             <article class="time-stop"><time>Risk / S06</time><strong>🐢 出力イベントと副作用</strong><span>時刻や保存処理を外から渡し、状態と監査記録を同じ整合性境界で保存します。</span></article>
           </div>
           <div class="learning-actions"><a href="/sessions/00-system-handover/#overview">全体の地図（設計の全体図と Session の流れ）を見る <span aria-hidden="true">→</span></a></div>

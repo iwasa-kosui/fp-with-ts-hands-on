@@ -1,0 +1,262 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import { bandMeta, bandTransformer, checkBands, excerptBetween, lineIndex, lineRange } from "./lines";
+import { ensureCheckedIn, ensureFound, errorTypes, isErrPipeline, paths } from "./sources";
+import "./figure.css";
+
+const themes = { light: "github-light", dark: "github-dark" } as const;
+
+const isErrBranches = excerptBetween(isErrPipeline, "const found = ", "const next = ");
+
+const frames = [
+  {
+    caption: "予約が見つからないとき、err に kind が \"AppointmentNotFound\" の札を付けた値を入れます。札には、どの予約かを表す appointmentId も付きます。",
+    code: ensureFound,
+    path: `${paths.solutionErrors}:18-24`,
+    bands: { a: [lineIndex(ensureFound, 'err({ kind: "AppointmentNotFound"')] },
+    view: "tag-not-found",
+  },
+  {
+    caption: "状態不正のときは、kind が \"InvalidAppointmentState\" の札を付けます。札には、今の状態 actual が付きます。",
+    code: ensureCheckedIn,
+    path: `${paths.solutionErrors}:26-31`,
+    bands: { b: [lineIndex(ensureCheckedIn, 'err({ kind: "InvalidAppointmentState"')] },
+    view: "tag-invalid-state",
+  },
+  {
+    caption: "札の型を | でつなぐと、診察開始の失敗の型 StartExaminationError になります。Result の2つ目の型に入るので、戻り値の型から、起こりうる失敗が読めます。",
+    code: errorTypes,
+    path: `${paths.solutionErrors}:6-16`,
+    bands: { a: lineRange(errorTypes, "export type AppointmentNotFound", "}>;"), b: lineRange(errorTypes, "export type InvalidAppointmentState", "}>;"), c: [lineIndex(errorTypes, "export type StartExaminationError")] },
+    view: "type",
+  },
+  {
+    caption: "失敗を isErr で受け取ると、工程ごとに「失敗なら、その失敗を返す」分岐を書きます。今は2工程なので、分岐は2つです。",
+    code: isErrBranches,
+    path: "説明用の例（配布コードにはありません）",
+    bands: {
+      c: [
+        ...lineRange(isErrBranches, "if (found.isErr())", "}"),
+        ...lineRange(isErrBranches, "if (checkedIn.isErr())", "}"),
+      ],
+    },
+    view: "branches-2",
+  },
+  {
+    caption: "工程が1つ増えるたびに、同じ形の分岐がもう1組増えます。処理の順番は、分岐の間に埋もれていきます。",
+    code: isErrBranches,
+    path: "説明用の例（配布コードにはありません）",
+    bands: {
+      c: [
+        ...lineRange(isErrBranches, "if (found.isErr())", "}"),
+        ...lineRange(isErrBranches, "if (checkedIn.isErr())", "}"),
+      ],
+    },
+    view: "branches-3",
+  },
+].map((frame) => ({ ...frame, bands: checkBands(frame.code, frame.bands) }));
+
+const rows = [
+  { step: "予約を取る", variable: "found" },
+  { step: "来院済みの確認", variable: "checkedIn" },
+  { step: "もう1つの工程", variable: "…" },
+] as const;
+---
+
+<figure class="we-fig we-fig--top failure-kinds" data-failure-kinds aria-label="失敗に kind の札を付け、型に現れる流れ">
+  <StepControls />
+
+  <ol class="we-frames">
+    {frames.map((frame) => (
+      <li data-frame>
+        <p class="we-caption">{frame.caption}</p>
+        <div class="we-body fk-grid">
+          <figure class="we-code">
+            <figcaption class="we-code__head"><span class="we-code__tag">コード</span><code>{frame.path}</code></figcaption>
+            <Code code={frame.code} lang="ts" themes={themes} defaultColor={false} transformers={[bandTransformer]} meta={bandMeta(frame.bands)} />
+          </figure>
+
+          <div class="fk-view" data-view={frame.view}>
+            {frame.view === "tag-not-found" && (
+              <div class="we-box fk-err" data-tone="err">
+                <p class="fk-err__label">Err の中身</p>
+                <p class="fk-tag" data-band="a"><span>kind</span><code class="we-mono">"AppointmentNotFound"</code></p>
+                <p class="fk-field"><code class="we-mono">appointmentId</code><span>どの予約か</span></p>
+              </div>
+            )}
+            {frame.view === "tag-invalid-state" && (
+              <div class="we-box fk-err" data-tone="err">
+                <p class="fk-err__label">Err の中身</p>
+                <p class="fk-tag" data-band="b"><span>kind</span><code class="we-mono">"InvalidAppointmentState"</code></p>
+                <p class="fk-field"><code class="we-mono">actual</code><span>今の状態（例: "Scheduled"）</span></p>
+              </div>
+            )}
+            {frame.view === "type" && (
+              <div class="fk-type">
+                <p class="fk-type__line we-mono">Result&lt;<span class="fk-type__t">InExamination</span>, <span class="fk-type__e">StartExaminationError</span>&gt;</p>
+                <div class="fk-type__slots">
+                  <div class="we-box fk-slot" data-tone="ok"><strong>成功の値</strong><code class="we-mono">InExamination</code></div>
+                  <div class="we-box fk-slot" data-tone="err">
+                    <strong>失敗の値（札の種類）</strong>
+                    <p class="fk-tag" data-band="a"><code class="we-mono">AppointmentNotFound</code></p>
+                    <p class="fk-tag" data-band="b"><code class="we-mono">InvalidAppointmentState</code></p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {(frame.view === "branches-2" || frame.view === "branches-3") && (
+              <ol class="fk-rows" aria-label="工程ごとの分岐">
+                {rows.map(({ step, variable }, index) => (
+                  <li class="fk-row" data-ghost={index === 2 ? "true" : "false"} hidden={index === 2 && frame.view === "branches-2"}>
+                    <span class="we-chip">{step}</span>
+                    <code class="we-mono fk-branch" data-band="c">if ({variable}.isErr()) return err(…)</code>
+                  </li>
+                ))}
+                <li class="fk-count">分岐: <strong>{frame.view === "branches-2" ? "2" : "3"}つ</strong></li>
+              </ol>
+            )}
+          </div>
+        </div>
+      </li>
+    ))}
+  </ol>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-failure-kinds]").forEach((root) => {
+    mountStepper({ root });
+  });
+</script>
+
+<style>
+  .fk-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2.45fr) minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: start;
+    margin-block-start: 0.375rem;
+  }
+
+  .fk-view {
+    min-width: 0;
+  }
+
+  .fk-err {
+    display: grid;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .fk-err__label {
+    color: var(--role-negative);
+    font-size: 1.125rem;
+    font-weight: 800;
+  }
+
+  .fk-tag {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.625rem;
+    border: 2px solid var(--band);
+    border-radius: 0.25rem 0.75rem 0.75rem 0.25rem;
+    background: color-mix(in srgb, var(--band) 14%, var(--role-surface));
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .fk-tag code {
+    padding: 0;
+    background: none;
+    font-size: 0.8125rem;
+    overflow-wrap: anywhere;
+  }
+
+  .fk-field {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    padding-inline-start: 0.625rem;
+    font-size: 0.8125rem;
+  }
+
+  .fk-type {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .fk-type__line {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .fk-type__t {
+    color: var(--role-positive);
+  }
+
+  .fk-type__e {
+    color: var(--role-negative);
+  }
+
+  .fk-type__slots {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .fk-slot {
+    display: grid;
+    gap: 0.25rem;
+    font-size: 0.8125rem;
+  }
+
+  .fk-rows {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fk-row {
+    display: grid;
+    justify-items: start;
+    gap: 0.25rem;
+    font-size: 0.8125rem;
+  }
+
+  .fk-branch {
+    padding: 0.0625rem 0.5rem;
+    border-inline-start: 4px solid var(--band);
+    background: color-mix(in srgb, var(--band) 16%, var(--role-surface));
+    overflow-wrap: anywhere;
+  }
+
+  .fk-row[hidden] {
+    display: none;
+  }
+
+  .fk-row[data-ghost="true"] {
+    opacity: 0.75;
+    outline: 2px dashed var(--role-border);
+    outline-offset: 3px;
+  }
+
+  .fk-count {
+    font-size: 0.9375rem;
+  }
+
+  .fk-count strong {
+    color: var(--role-negative);
+    font-size: 1.125rem;
+  }
+
+  @media (max-width: 48rem) {
+    .fk-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

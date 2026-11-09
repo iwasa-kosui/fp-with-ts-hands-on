@@ -156,8 +156,7 @@ const mountExercise = async (options: SessionOptions = {}) => {
   await settleUntil(() =>
     options.outdatedEdits === true
       ? action(host, "use-saved-edits") !== null
-      : action(host, "run-guard")?.disabled === false &&
-        host.querySelector("table") !== null,
+      : action(host, "run-guard")?.disabled === false,
   );
   await settle();
   return { host, root, session, unmount: () => act(async () => root.unmount()) };
@@ -214,21 +213,108 @@ describe("GuardExercise", () => {
     vi.unstubAllGlobals();
   });
 
-  it("lists the bad changes and shows an unchecked table before the first run", async () => {
-    const { host } = await mountExercise();
+  it("lists the bad changes and shows the steps instead of a table before the first run", async () => {
+    const { host } = await mountExercise({
+      guide: { title: "案内の題名", criteria: "合格の条件です。", steps: ["手順Aです。", "手順Bです。"] },
+    });
 
     const cases = [...host.querySelectorAll("[data-case-id]")];
     expect(cases.map((item) => item.getAttribute("data-case-id"))).toEqual([
       "B1-any-parser",
     ]);
     expect(cases[0]?.getAttribute("data-verdict")).toBe("unchecked");
-    expect(host.textContent).toContain("まだ確かめていません");
-    expect(host.textContent).toContain("正しいコード");
-    expect(row(host, "G1-solution")?.textContent).toContain("未確認");
+    expect(host.querySelector("table")).toBeNull();
+    expect(host.textContent).not.toContain("まだ確かめていません");
+    expect(host.querySelector(".guard-exercise__scroll h2")?.textContent).toBe(
+      "案内の題名",
+    );
+    expect(host.querySelectorAll(".guard-exercise__scroll .guard-exercise__steps > li")).toHaveLength(2);
+    expect(host.querySelector("details")).toBeNull();
+  });
+
+  it("shows the criteria band under the run button before and after a run, and not inside the steps", async () => {
+    const { host } = await mountExercise({
+      guide: { title: "案内の題名", criteria: "合格の条件です。", steps: ["手順Aです。"] },
+    });
+    const band = () => host.querySelectorAll(".guard-exercise__criteria");
+    const resultColumn = host.querySelector(".guard-exercise__column--result")!;
+
+    expect(band()).toHaveLength(1);
+    expect(band()[0]?.textContent).toBe("合格の条件です。");
+    expect(band()[0]?.parentElement).toBe(resultColumn);
+    expect(band()[0]?.previousElementSibling?.contains(action(host, "run-guard"))).toBe(true);
+    expect(host.querySelector(".guard-exercise__steps")?.textContent).not.toContain(
+      "合格の条件です。",
+    );
+
+    await click(action(host, "run-guard"));
+
+    expect(band()).toHaveLength(1);
+    expect(band()[0]?.textContent).toBe("合格の条件です。");
+    expect(band()[0]?.parentElement).toBe(resultColumn);
+  });
+
+  it("shows no criteria band when the guide gives no criteria", async () => {
+    const { host } = await mountExercise({
+      guide: { title: "案内の題名", steps: ["手順Aです。"] },
+    });
+
+    expect(host.querySelector(".guard-exercise__criteria")).toBeNull();
+
+    await click(action(host, "run-guard"));
+
+    expect(host.querySelector(".guard-exercise__criteria")).toBeNull();
+  });
+
+  it("keeps the steps while the first run is in progress", async () => {
+    const started = deferred<void>();
+    const { host } = await mountExercise({
+      onStart: async () => {
+        await started.promise;
+      },
+    });
+
+    await act(async () => {
+      action(host, "run-guard")?.click();
+    });
+    await settle();
+
+    expect(action(host, "run-guard")?.disabled).toBe(true);
+    expect(host.querySelector("table")).toBeNull();
+    expect(host.querySelector(".guard-exercise__scroll .guard-exercise__steps")).not.toBeNull();
+
+    await act(async () => started.resolve());
+    await settle();
+  });
+
+  it("puts the guide in a closed details under the table once there is a result", async () => {
+    const { host } = await mountExercise({
+      guide: { title: "案内の題名", steps: ["手順Aです。", "手順Bです。"] },
+    });
+
+    await click(action(host, "run-guard"));
+
+    const guideDetails = host.querySelector<HTMLDetailsElement>(
+      ".guard-exercise__guide-details",
+    );
+    expect(host.querySelector("table")).not.toBeNull();
+    expect(host.querySelector(".guard-exercise__scroll h2")).toBeNull();
+    expect(guideDetails?.tagName).toBe("DETAILS");
+    expect(guideDetails?.open).toBe(false);
+    expect(guideDetails?.querySelector("summary")?.textContent).toBe("案内の題名");
+    expect(guideDetails?.querySelectorAll(".guard-exercise__steps > li")).toHaveLength(2);
+    expect(
+      host.querySelectorAll(".guard-exercise__steps"),
+    ).toHaveLength(1);
+    expect(
+      host.querySelector(".guard-exercise__table-area")?.compareDocumentPosition(guideDetails!) ??
+        0,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
   it("keeps the table terms inside a details element while the table is rendered", async () => {
     const { host } = await mountExercise();
+    await click(action(host, "run-guard"));
 
     const terms = host.querySelector("details");
     expect(terms?.open).toBe(false);
@@ -248,6 +334,7 @@ describe("GuardExercise", () => {
     });
     try {
       const { host } = await mountExercise();
+      await click(action(host, "run-guard"));
       const terms = host.querySelector("details")!;
 
       await act(async () => {
@@ -329,7 +416,7 @@ describe("GuardExercise", () => {
     });
     await settleUntil(() => action(host, "run-guard")?.disabled === false);
 
-    expect(host.querySelector(".guard-exercise__cases-inner h2")?.textContent).toBe(
+    expect(host.querySelector(".guard-exercise__scroll h2")?.textContent).toBe(
       "相互レビューでやること",
     );
     expect(host.querySelectorAll(".guard-exercise__steps > li")).toHaveLength(2);
@@ -695,6 +782,9 @@ describe("GuardExercise", () => {
       "前回の結果",
     );
     expect(row(second.host, "B1-any-parser")?.textContent).toContain("すり抜け");
+    expect(
+      second.host.querySelector<HTMLDetailsElement>(".guard-exercise__guide-details")?.open,
+    ).toBe(false);
     expect(
       second.host
         .querySelector('[data-case-id="B1-any-parser"]')

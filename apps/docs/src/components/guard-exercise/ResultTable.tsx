@@ -15,7 +15,7 @@ import {
 } from "./labels";
 
 export type ResultTableProps = Readonly<{
-  result: GuardResult | undefined;
+  result: GuardResult;
   rows: readonly DisplayRow[];
   restored: boolean;
   limitations: Readonly<Record<string, string>>;
@@ -105,23 +105,17 @@ export const ResultTable = ({
 
   return (
     <div className="guard-exercise__table-area">
-      {result === undefined ? (
-        <p className="guard-exercise__status" data-role="unchecked">
-          まだ確かめていません。「検出を確かめる」を押すと、悪い変更ごとの結果が表に出ます。
-        </p>
-      ) : (
-        <p
-          className="guard-exercise__headline"
-          data-passed={result.passed}
-          role="status"
-        >
-          {restored ? (
-            <span className="guard-exercise__badge">前回の結果</span>
-          ) : null}
-          {headlineFor(result)}
-        </p>
-      )}
-      {result !== undefined && result.next[0] !== undefined ? (
+      <p
+        className="guard-exercise__headline"
+        data-passed={result.passed}
+        role="status"
+      >
+        {restored ? (
+          <span className="guard-exercise__badge">前回の結果</span>
+        ) : null}
+        {headlineFor(result)}
+      </p>
+      {result.next[0] !== undefined ? (
         <section className="guard-exercise__next" aria-label="次にすること">
           <h3>次にすること</h3>
           <p>{result.passed && passedNext !== undefined ? passedNext : result.next[0]}</p>
@@ -169,7 +163,7 @@ export const ResultTable = ({
           <p ref={termsTextRef}>{tableTermsText}</p>
         </details>
       </div>
-      {result !== undefined && result.problems.length > 0 ? (
+      {result.problems.length > 0 ? (
         <section className="guard-exercise__problems" aria-label="問題">
           <h3>問題</h3>
           <ul>
@@ -179,7 +173,7 @@ export const ResultTable = ({
           </ul>
         </section>
       ) : null}
-      {result !== undefined && result.notes.length > 0 ? (
+      {result.notes.length > 0 ? (
         <section className="guard-exercise__notes" aria-label="補足">
           <h3>補足</h3>
           <ul>
@@ -189,14 +183,12 @@ export const ResultTable = ({
           </ul>
         </section>
       ) : null}
-      {result !== undefined ? (
-        <p className="guard-exercise__durations">
-          所要: 型 {secondsText(result.durations.types)} / Linter{" "}
-          {secondsText(result.durations.lint)} / テスト{" "}
-          {secondsText(result.durations.tests)} / 合計{" "}
-          {secondsText(result.durations.total)}
-        </p>
-      ) : null}
+      <p className="guard-exercise__durations">
+        所要: 型 {secondsText(result.durations.types)} / Linter{" "}
+        {secondsText(result.durations.lint)} / テスト{" "}
+        {secondsText(result.durations.tests)} / 合計{" "}
+        {secondsText(result.durations.total)}
+      </p>
     </div>
   );
 };

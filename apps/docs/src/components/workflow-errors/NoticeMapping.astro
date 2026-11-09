@@ -1,0 +1,214 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import { bandMeta, bandTransformer, checkBands, lineIndex, lineRange } from "./lines";
+import { matchCall, noticeMessage, noticeSwitch, noticeTable, paths } from "./sources";
+import "./figure.css";
+
+const themes = { light: "github-light", dark: "github-dark" } as const;
+
+const tableNotFound = lineIndex(noticeTable, "AppointmentNotFound:");
+const tableInvalid = lineIndex(noticeTable, "InvalidAppointmentState:");
+const switchNotFound = lineRange(noticeSwitch, 'case "AppointmentNotFound":', "AppointmentNotFound;");
+const switchInvalid = lineRange(noticeSwitch, 'case "InvalidAppointmentState":', "InvalidAppointmentState;");
+
+const rows = [
+  { id: "a", kind: "AppointmentNotFound", code: "not-found", notice: noticeMessage("AppointmentNotFound") },
+  { id: "b", kind: "InvalidAppointmentState", code: "invalid-state", notice: noticeMessage("InvalidAppointmentState") },
+] as const;
+
+const frames = [
+  {
+    caption: "Result の match は、成功したときの処理と、失敗したときの処理を分けて渡します。失敗側は、kind を持つ失敗の値 error を受け取ります。",
+    view: "match",
+    lit: "",
+    code: matchCall,
+    path: "S04 の route の説明用の抜粋",
+    bands: { ok: [lineIndex(matchCall, '() => context.redirect("/", 303)')], err: lineRange(matchCall, "(error) =>", "),") },
+  },
+  {
+    caption: "失敗の種類ごとに、お知らせのコードを決めます。AppointmentNotFound には \"not-found\" を対応させます。画面は、このコードから「予約が見つかりません」と表示します。",
+    view: "mapping",
+    lit: "a",
+    code: noticeTable,
+    path: `${paths.solutionRoutes}:24-31`,
+    bands: { a: [tableNotFound] },
+  },
+  {
+    caption: `InvalidAppointmentState には "invalid-state" を対応させます。画面は、このコードから「${noticeMessage("InvalidAppointmentState")}」と表示します。獣医師はこの文を読んで、今の状態を確かめます。`,
+    view: "mapping",
+    lit: "b",
+    code: noticeTable,
+    path: `${paths.solutionRoutes}:24-31`,
+    bands: { b: [tableInvalid] },
+  },
+  {
+    caption: "match の失敗側は、switch で error.kind からお知らせのコードを選び、redirect の ?notice= に入れます。失敗の種類が違えば、画面のお知らせも違います。",
+    view: "mapping",
+    lit: "ab",
+    code: noticeSwitch,
+    path: `${paths.solutionRoutes}:40-47`,
+    bands: { a: switchNotFound, b: switchInvalid },
+  },
+].map((frame) => ({ ...frame, bands: checkBands(frame.code, frame.bands) }));
+---
+
+<figure class="we-fig we-fig--top notice-mapping" data-notice-mapping aria-label="失敗の種類と画面のお知らせの対応">
+  <StepControls />
+
+  <ol class="we-frames">
+    {frames.map((frame) => (
+      <li data-frame>
+        <p class="we-caption">{frame.caption}</p>
+        <div class="we-body">
+          {frame.view === "match" ? (
+            <div class="nm-lanes">
+              <div class="nm-lane" data-tone="ok">
+                <span class="we-chip" data-band="ok">Ok</span>
+                <span class="nm-arrow" aria-hidden="true">→</span>
+                <code class="we-mono">() =&gt; context.redirect("/", 303)</code>
+                <span>診察中の画面を開き直す</span>
+              </div>
+              <div class="nm-lane" data-tone="err">
+                <span class="we-chip" data-band="err">Err（error は kind を持つ）</span>
+                <span class="nm-arrow" aria-hidden="true">→</span>
+                <code class="we-mono">(error) =&gt; context.redirect(…)</code>
+                <span>お知らせを付けて画面を開き直す</span>
+              </div>
+            </div>
+          ) : (
+            <div class="nm-map">
+              <p class="nm-head">失敗の種類</p>
+              <span></span>
+              <p class="nm-head">お知らせのコード</p>
+              <span></span>
+              <p class="nm-head">画面のお知らせ</p>
+              {rows.map(({ id, kind, code, notice }) => (
+                <Fragment>
+                  <span class="we-chip nm-cell" data-band={id} data-on={frame.lit.includes(id) ? "true" : "false"}><code class="we-mono">{kind}</code></span>
+                  <span class="nm-link" data-band={id} data-on={frame.lit.includes(id) ? "true" : "false"} aria-hidden="true"></span>
+                  <span class="we-chip nm-cell" data-band={id} data-on={frame.lit.includes(id) ? "true" : "false"}><code class="we-mono">"{code}"</code></span>
+                  <span class="nm-link" data-band={id} data-on={frame.lit.includes(id) ? "true" : "false"} aria-hidden="true"></span>
+                  <span class="we-box nm-notice" data-band={id} data-on={frame.lit.includes(id) ? "true" : "false"}>{notice}</span>
+                </Fragment>
+              ))}
+            </div>
+          )}
+          <figure class="we-code nm-code">
+            <figcaption class="we-code__head"><span class="we-code__tag">コード</span><code>{frame.path}</code></figcaption>
+            <Code code={frame.code} lang="ts" themes={themes} defaultColor={false} transformers={[bandTransformer]} meta={bandMeta(frame.bands)} />
+          </figure>
+        </div>
+      </li>
+    ))}
+  </ol>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-notice-mapping]").forEach((root) => {
+    mountStepper({ root });
+  });
+</script>
+
+<style>
+  .nm-lanes {
+    display: grid;
+    gap: 0.5rem;
+    margin-block-start: 0.5rem;
+  }
+
+  .nm-lane {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    padding: 0.375rem 0.625rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    font-size: 0.8125rem;
+  }
+
+  .nm-lane[data-tone="ok"] {
+    border-color: var(--role-positive);
+  }
+
+  .nm-lane[data-tone="err"] {
+    border-color: var(--role-negative);
+  }
+
+  .nm-lane code {
+    font-size: 0.8125rem;
+  }
+
+  .nm-arrow {
+    color: var(--role-muted);
+    font-size: 1.125rem;
+  }
+
+  .nm-map {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 3rem minmax(0, 0.8fr) 3rem minmax(0, 1.5fr);
+    align-items: center;
+    row-gap: 0.5rem;
+    margin-block-start: 0.5rem;
+  }
+
+  .nm-head {
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .nm-cell {
+    justify-content: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .nm-cell code {
+    padding: 0;
+    background: none;
+    font-size: 0.8125rem;
+  }
+
+  .nm-link {
+    align-self: center;
+    height: 0;
+    border-block-start: 3px solid var(--band);
+  }
+
+  .nm-notice {
+    padding-block: 0.1875rem;
+    border-color: var(--band);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .nm-code {
+    margin-block-start: 0.5rem;
+  }
+
+  .notice-mapping[data-ready] :is(.nm-cell, .nm-link, .nm-notice) {
+    transition: opacity 0.3s;
+  }
+
+  .notice-mapping[data-ready] :is(.nm-cell, .nm-link, .nm-notice)[data-on="false"] {
+    opacity: 0.35;
+  }
+
+  @media (max-width: 48rem) {
+    .nm-map {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .nm-head,
+    .nm-map > span:not([class]),
+    .nm-link {
+      display: none;
+    }
+  }
+</style>

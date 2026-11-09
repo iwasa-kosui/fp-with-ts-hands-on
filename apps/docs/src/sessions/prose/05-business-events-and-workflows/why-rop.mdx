@@ -1,0 +1,19 @@
+<p>1つの関数に書いたときの2つの課題に対して、工程でつなぐと次の3点が解けます。</p>
+
+<ul class="session-cards" aria-label="工程でつなぐと解ける3点">
+  <li class="session-cards__card">
+    <h3 class="session-cards__title">失敗が戻り値の型に現れる</h3>
+    <p class="session-cards__target">課題 1 への答え</p>
+    <p>例外を投げる関数は、どの失敗を投げるかが型に現れません。Result を返す工程は、起こりうる失敗を戻り値の型に並べます。</p>
+  </li>
+  <li class="session-cards__card">
+    <h3 class="session-cards__title">工程の順が読め、判定だけを確かめられる</h3>
+    <p class="session-cards__target">課題 1 と課題 2 への答え</p>
+    <p><code>andThen</code> を並べた順が、そのまま工程の順です。<code>Appointment.cancel</code> は値だけで確かめられ、Resolver と Store と時計は引数で渡すので、偽物に差し替えられます。</p>
+  </li>
+  <li class="session-cards__card">
+    <h3 class="session-cards__title">呼び出し側が失敗を網羅できる</h3>
+    <p class="session-cards__target">課題 1 への答え</p>
+    <p>呼び出し側は、戻り値の型に並んだ失敗を <code>kind</code> で分けて扱います。失敗の種類を足したのに分岐を足し忘れると、型の検査が報告します。</p>
+  </li>
+</ul>

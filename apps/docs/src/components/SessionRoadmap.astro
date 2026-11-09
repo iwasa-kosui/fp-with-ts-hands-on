@@ -1,228 +1,105 @@
 ---
 import { sessionNavigationItems } from "../sessions/navigation";
-import { sessionOverviews, stages, type StageId } from "../sessions/overview-map";
-import StepControls from "./stepper/StepControls.astro";
+import { sessionOverviews } from "../sessions/overview-map";
 
-type StageState = "fill" | "past" | "empty";
-
-const stateLabels = { fill: "この回で埋める", past: "前の回で埋めた", empty: "まだ" } as const satisfies Record<StageState, string>;
-
-const stageLabel = (id: StageId) => stages.find((stage) => stage.id === id)?.label ?? id;
-
-const frames = sessionNavigationItems.map(({ slug, title }, index) => {
-  const { summary, fills, fixes, advancedFixes = [] } = sessionOverviews[slug];
-  const earlier = sessionNavigationItems.slice(0, index).flatMap((item) => sessionOverviews[item.slug].fills);
-  const states: readonly StageState[] = stages.map(({ id }) => (fills.includes(id) ? "fill" : earlier.includes(id) ? "past" : "empty"));
-  const number = slug === "final" ? "Final" : slug.slice(0, 2);
-  const label = slug === "final" ? "Final" : `S${number}`;
-  const filledText = fills.length === 0 ? "この回で埋める段はありません。" : `${label} が埋める段は、${fills.map(stageLabel).join("、")}です。`;
-  const alt = `${filledText}上から、${stages.map((stage, i) => `${stage.label}は${stateLabels[states[i]]}`).join("、")}。`;
-  const fixesText =
-    fixes.length === 0
-      ? "直す問題はありません"
-      : `直す問題: ${fixes.map((problem) => (advancedFixes.includes(problem) ? `${problem}（発展）` : String(problem))).join(", ")}`;
-  return { slug, title, summary, states, label, href: `/sessions/${slug}/`, alt, fixesText };
+const rows = sessionNavigationItems.flatMap(({ slug }) => {
+  if (slug === "00-system-handover") return [];
+  const overview = sessionOverviews[slug];
+  const label = slug === "final" ? "Final" : `S${slug.slice(0, 2)}`;
+  const openLabel = slug === "final" ? "Final を開く" : `Session ${slug.slice(0, 2)} を開く`;
+  return [{ label, openLabel, href: `/sessions/${slug}/`, rule: overview.rule, incident: overview.incident }];
 });
-
-const stageHeight = 30;
-const pitch = 40;
-const failGap = 16;
-const lastIndex = stages.length - 1;
-const boxY = (index: number) => 4 + index * pitch + (index === lastIndex ? failGap : 0);
-const viewHeight = boxY(lastIndex) + stageHeight + 4;
 ---
 
-<figure class="roadmap" data-roadmap aria-label="Session ごとに埋まる段">
-  <StepControls />
-
-  <div class="roadmap__body">
-  <div aria-live="polite">
-    <ol class="roadmap__frames">
-      {frames.map((frame) => (
-        <li data-frame data-states={frame.states.join(" ")} data-alt={frame.alt}>
-          <p class="roadmap__head"><a href={frame.href}>{frame.label} {frame.title}</a></p>
-          <p class="roadmap__summary">{frame.summary}</p>
-          <p class="roadmap__fixes">{frame.fixesText}</p>
-        </li>
-      ))}
-    </ol>
-  </div>
-
-  <svg viewBox={`0 0 340 ${viewHeight}`} role="img" aria-label={frames[0].alt} data-roadmap-svg>
-    {stages.slice(0, -2).map((_, i) => (
-      <path d={`M 170 ${boxY(i) + stageHeight} V ${boxY(i + 1)}`} class="roadmap__line"></path>
-    ))}
-    {stages.map((stage, i) => (
-      <g class="roadmap__box" data-state={frames[0].states[i]}>
-        <rect x="10" y={boxY(i)} width="320" height={stageHeight} rx="6"></rect>
-        <text x="22" y={boxY(i) + 20} font-size="14">{stage.label}</text>
-        {(Object.keys(stateLabels) as StageState[]).map((state) => (
-          <text class="roadmap__tag" data-tag={state} x="320" y={boxY(i) + 20} text-anchor="end" font-size="14">{stateLabels[state]}</text>
-        ))}
-      </g>
-    ))}
-  </svg>
-  </div>
-</figure>
-
-<script>
-  import { mountStepper } from "./stepper/stepper";
-
-  document.querySelectorAll<HTMLElement>("[data-roadmap]").forEach((root) => {
-    const svg = root.querySelector<SVGSVGElement>("[data-roadmap-svg]");
-    const boxes = [...(svg?.querySelectorAll<SVGGElement>("[data-state]") ?? [])];
-    const panels = [...root.querySelectorAll<HTMLElement>("[data-frame]")];
-    mountStepper({
-      root,
-      onStep: (step) => {
-        const panel = panels[step];
-        if (!svg || !panel) return;
-        const states = (panel.dataset.states ?? "").split(" ");
-        boxes.forEach((box, i) => {
-          box.dataset.state = states[i] ?? "empty";
-        });
-        svg.setAttribute("aria-label", panel.dataset.alt ?? "");
-      },
-    });
-  });
-</script>
+<ol class="roadmap" aria-label="Session ごとにコードへ書く決まり">
+  {rows.map((row) => (
+    <li class="roadmap__row">
+      <p class="roadmap__title"><a href={row.href} aria-label={row.openLabel}>{row.label}</a></p>
+      <p class="roadmap__rule">{row.rule}</p>
+      <p class="roadmap__tags">{row.incident && <span class="roadmap__tag">{row.incident}</span>}</p>
+    </li>
+  ))}
+</ol>
 
 <style>
   .roadmap {
-    min-width: 0;
-    max-width: 100%;
-    margin: 1rem 0;
-  }
-
-  .roadmap__body {
     display: grid;
-    gap: 0.75rem;
-  }
-
-  .roadmap svg {
-    display: block;
-    width: 100%;
-    max-width: 26rem;
-    height: auto;
-    margin: 0 auto;
-  }
-
-  .roadmap__head {
-    margin: 0;
-    font-weight: 700;
-    line-height: 1.6;
-    overflow-wrap: anywhere;
-  }
-
-  .roadmap__summary {
-    margin: 0.25rem 0 0;
-    line-height: 1.7;
-  }
-
-  .roadmap__fixes {
-    margin: 0.25rem 0 0;
-    color: var(--role-text);
-    font-weight: 800;
-    line-height: 1.6;
-  }
-
-  .roadmap__line {
-    fill: none;
-    stroke: var(--role-border);
-    stroke-width: 1.5;
-  }
-
-  .roadmap__box {
-    --box-fill: transparent;
-    --box-stroke: var(--role-muted);
-    --box-ink: var(--role-muted);
-    --box-dash: 4 3;
-    --box-width: 1.5;
-    --box-weight: 400;
-  }
-
-  .roadmap__box[data-state="past"] {
-    --box-fill: var(--role-surface);
-    --box-stroke: var(--role-border);
-    --box-dash: none;
-  }
-
-  .roadmap__box[data-state="fill"] {
-    --box-fill: color-mix(in srgb, var(--role-accent) 22%, var(--role-surface));
-    --box-stroke: var(--role-accent);
-    --box-ink: var(--role-text);
-    --box-dash: none;
-    --box-width: 2.5;
-    --box-weight: 700;
-  }
-
-  .roadmap__box rect {
-    fill: var(--box-fill);
-    stroke: var(--box-stroke);
-    stroke-width: var(--box-width);
-    stroke-dasharray: var(--box-dash);
-  }
-
-  .roadmap__box text {
-    fill: var(--box-ink);
-    font-weight: var(--box-weight);
-  }
-
-  .roadmap__tag {
-    display: none;
-  }
-
-  .roadmap__box[data-state="fill"] .roadmap__tag[data-tag="fill"],
-  .roadmap__box[data-state="past"] .roadmap__tag[data-tag="past"],
-  .roadmap__box[data-state="empty"] .roadmap__tag[data-tag="empty"] {
-    display: inline;
-  }
-
-  .roadmap__frames {
-    margin: 0;
+    gap: 0.375rem;
+    min-width: 0;
+    margin: 1rem 0;
     padding: 0;
     list-style: none;
   }
 
-  .roadmap__frames > li {
-    min-width: 0;
-  }
-
-  .roadmap__frames > li + li {
-    margin-top: 1rem;
-  }
-
-  .roadmap[data-ready] .roadmap__frames {
+  .roadmap__row {
     display: grid;
+    grid-template-columns: 4rem minmax(0, 1fr) 4.5rem;
+    gap: 0.75rem;
+    align-items: center;
+    min-width: 0;
+    padding: 0.375rem 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
   }
 
-  .roadmap[data-ready] .roadmap__frames > li {
-    grid-area: 1 / 1;
+  .roadmap__row p {
     margin: 0;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
   }
 
-  .roadmap[data-ready] .roadmap__frames > li[hidden] {
-    display: block;
-    visibility: hidden;
+  .roadmap__title {
+    font-size: 0.9375rem;
+    font-weight: 800;
   }
 
-  .roadmap[data-ready] .roadmap__box rect,
-  .roadmap[data-ready] .roadmap__box text {
-    transition: fill 0.4s, stroke 0.4s;
+  .roadmap__rule {
+    font-size: 1.0625rem;
+    font-weight: 700;
   }
 
-  @media (min-width: 900px) {
-    .roadmap__body {
-      grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
-      gap: 1.5rem;
-      align-items: start;
+  .roadmap__tags {
+    text-align: end;
+  }
+
+  .roadmap__tag {
+    display: inline-block;
+    padding: 0 0.5rem;
+    border: 2px solid var(--role-negative);
+    border-radius: 999px;
+    color: var(--role-negative);
+    font-size: 0.6875rem;
+    font-weight: 800;
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+
+  @media (max-height: 700px) {
+    .roadmap {
+      gap: 0.25rem;
+      margin-block: 0.5rem;
+    }
+
+    .roadmap__row {
+      padding-block: 0.125rem;
+    }
+
+    .roadmap__row p {
+      line-height: 1.4;
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .roadmap[data-ready] * {
-      transition: none !important;
-      animation: none !important;
+  @media (max-width: 55rem) {
+    .roadmap__row {
+      grid-template-columns: 3.5rem minmax(0, 1fr);
+      gap: 0.125rem 0.5rem;
+    }
+
+    .roadmap__tags {
+      grid-column: 2;
+      text-align: start;
     }
   }
 </style>

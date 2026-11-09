@@ -423,11 +423,16 @@
 }
 
 .ep--page .ep-stage[data-rail="err"]::before {
-  background: var(--role-negative, var(--ep-red-bright));
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--role-negative, var(--ep-red-bright)) 0 0.5rem,
+    transparent 0.5rem 0.75rem
+  );
 }
 
 .ep--page .ep-stage::after {
   inset-inline-end: 0.2rem;
+  border-inline-start-style: solid;
 }
 
 .ep--page .ep-stage__code {
@@ -482,7 +487,7 @@
   --ep-tone: var(--role-negative, #7a1f10);
 }
 
-.ep--page .ep-sum[data-tone="reject"] {
+.ep--page .ep-sum[data-tone="err"] {
   border-style: dashed;
 }
 

@@ -4,4 +4,4 @@ import TimeAndIdCompare from "../../../components/effects-walkthrough/TimeAndIdC
 
 <TimeAndIdCompare />
 
-<p>S05 では読み書きを両端に置きました。時刻と ID だけはイベントを作る瞬間に要るので、予約の確認が通った後の <code>map</code> の中で port から読みます。port を通すのでテストで固定できます。<code>clock</code> が返した時刻から <code>new Date(時刻)</code> を作る書き方は、時刻を読まないので問題ありません。</p>
+<p>S05 では、判定の関数の外に I/O を置きました（<a href="/sessions/05-business-events-and-workflows/io-outside/">S05 の説明</a>）。時刻と ID だけはイベントを作る瞬間に要るので、予約の確認が通った後の <code>map</code> の中で port から読みます。port を通すのでテストで固定できます。<code>clock</code> が返した時刻から <code>new Date(時刻)</code> を作る書き方は、時刻を読まないので問題ありません。</p>

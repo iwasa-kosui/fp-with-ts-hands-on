@@ -1,59 +1,31 @@
 ---
 import { Code } from "astro:components";
-import type { ComponentProps } from "astro/types";
 import routesSource from "../../../../examples/session-04/src/web/routes.ts?raw";
-import testSource from "../../../../examples/session-04/exercises/result-errors.test.ts?raw";
+import testSource from "../../../../examples/session-04-solution/test/regression/result-errors.test.ts?raw";
 import useCaseSource from "../../../../examples/session-04/src/useCase/startExamination.ts?raw";
-
-const quote = (source: string, from: number, to: number, firstLine: string, lastLine: string): string => {
-  const lines = source.split("\n").slice(from - 1, to);
-  if (!lines[0]?.includes(firstLine)) throw new Error(`引用元の先頭行がずれています: ${firstLine}`);
-  if (!lines[lines.length - 1]?.includes(lastLine)) throw new Error(`引用元の末尾行がずれています: ${lastLine}`);
-  const indent = Math.min(...lines.filter((line) => line.trim() !== "").map((line) => line.search(/\S/)));
-  return lines.map((line) => line.slice(indent)).join("\n");
-};
+import { quote } from "../sessions/reference-quote";
+import StepControls from "./stepper/StepControls.astro";
+import { bandMeta, bandTransformer, checkBands, lineIs } from "./workflow-errors/lines";
+import "./workflow-errors/figure.css";
 
 const snippets = {
   useCase: {
-    path: "examples/session-04/src/useCase/startExamination.ts",
-    code: quote(useCaseSource, 14, 30, "export const startExamination", "};"),
+    path: "examples/session-04/src/useCase/startExamination.ts:14-30",
+    code: quote(useCaseSource, 14, 30, "export const startExamination"),
   },
   route: {
-    path: "examples/session-04/src/web/routes.ts",
-    code: quote(routesSource, 80, 86, "startExamination({", "});"),
+    path: "examples/session-04/src/web/routes.ts:80-86",
+    code: quote(routesSource, 80, 86, "startExamination({"),
   },
   test: {
-    path: "examples/session-04/exercises/result-errors.test.ts",
-    code: quote(testSource, 158, 170, "const createDependencies", "});"),
+    path: "examples/session-04-solution/test/regression/result-errors.test.ts:109-125",
+    code: quote(testSource, 109, 125, "const createDependencies"),
   },
 } as const;
-
-type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
-const KEY_MARK = /\s*\/\/ \[!deps-input-key\]$/;
-const keyLineNumbers = (source: string, keyTexts: readonly string[]) =>
-  keyTexts.map((text) => {
-    const found = source.split("\n").flatMap((line, index) => (line.trim() === text ? [index + 1] : []));
-    if (found.length !== 1) throw new Error(`強調する行が一意に見つかりません: ${text}`);
-    return found[0];
-  });
-const withMarks = (source: string, keyLines: readonly number[]) =>
-  source.split("\n").map((text, index) => (keyLines.includes(index + 1) ? `${text} // [!deps-input-key]` : text)).join("\n");
-const markKeyLines: Transformer = {
-  name: "mark-deps-input-key-lines",
-  preprocess(source) {
-    const lines = source.split("\n");
-    (this.meta as { keyLines?: number[] }).keyLines = lines.flatMap((text, index) => (KEY_MARK.test(text) ? [index + 1] : []));
-    return lines.map((text) => text.replace(KEY_MARK, "")).join("\n");
-  },
-  line(node, line) {
-    if ((this.meta as { keyLines?: number[] }).keyLines?.includes(line)) this.addClassToHast(node, "deps-input-flow__key");
-  },
-};
 
 type Tone = "dim" | "normal" | "focus";
 type Frame = Readonly<{
   caption: string;
-  view: "function" | "compare";
   deps: Tone;
   input: Tone;
   body: Tone;
@@ -63,247 +35,179 @@ type Frame = Readonly<{
   depsFilled: boolean;
   inputFilled: boolean;
   code?: Readonly<{ key: keyof typeof snippets; keys: readonly string[] }>;
+  compare?: true;
 }>;
 
 const frames: readonly Frame[] = [
   {
-    caption: "1段目は deps を受け取ります。deps は、予約を取得する resolver と、予約を保存する store をまとめた値です。",
-    view: "function",
-    deps: "focus",
-    input: "dim",
-    body: "dim",
-    sources: "dim",
-    source: "none",
-    wait: false,
-    depsFilled: false,
-    inputFilled: false,
+    caption: "1段目は deps です。予約を取得する resolver と、予約を保存する store をまとめた値を受け取ります。",
+    deps: "focus", input: "dim", body: "dim", sources: "dim", source: "none", wait: false, depsFilled: false, inputFilled: false,
     code: { key: "useCase", keys: ["(deps: Dependencies) =>"] },
   },
   {
-    caption: "deps を渡しても、まだ診察は始まりません。返ってくるのは input を待つ関数です。2段目は、予約ID、獣医師ID、開始時刻を受け取ります。",
-    view: "function",
-    deps: "normal",
-    input: "focus",
-    body: "dim",
-    sources: "dim",
-    source: "none",
-    wait: true,
-    depsFilled: true,
-    inputFilled: false,
+    caption: "deps を渡しても診察は始まらず、input を待つ関数が返ります。2段目が予約ID、獣医師ID、開始時刻を受け取ります。",
+    deps: "normal", input: "focus", body: "dim", sources: "dim", source: "none", wait: true, depsFilled: true, inputFilled: false,
     code: { key: "useCase", keys: ["(input: StartExaminationInput): InExamination => {"] },
   },
   {
-    caption: "input を受け取ると、本体が動きます。本体は、外部に触れる処理を、deps.resolver と deps.store を呼び出すことでだけ行います。本体の中に、データベースへの接続はありません。",
-    view: "function",
-    deps: "normal",
-    input: "normal",
-    body: "focus",
-    sources: "dim",
-    source: "none",
-    wait: false,
-    depsFilled: true,
-    inputFilled: true,
+    caption: "input を受け取ると本体が動きます。本体は、外部に触れる処理を deps.resolver と deps.store の呼び出しでだけ行います。",
+    deps: "normal", input: "normal", body: "focus", sources: "dim", source: "none", wait: false, depsFilled: true, inputFilled: true,
     code: { key: "useCase", keys: ["deps.resolver.resolveById(input.appointmentId),", "deps.store.save(next);"] },
   },
   {
-    caption: "Web ルートは、本物の保存先 store を resolver と store の両方として渡し、続けて依頼の値を渡します。",
-    view: "function",
-    deps: "focus",
-    input: "normal",
-    body: "normal",
-    sources: "normal",
-    source: "db",
-    wait: false,
-    depsFilled: true,
-    inputFilled: true,
+    caption: "Web ルートは、本物の保存先 store を resolver と store の両方として渡し、続けて依頼の値を渡します。S04 の route は、依頼のたびにこの形で渡します。",
+    deps: "focus", input: "normal", body: "normal", sources: "normal", source: "db", wait: false, depsFilled: true, inputFilled: true,
     code: { key: "route", keys: ["resolver: store,", "store,"] },
   },
   {
-    caption: "テストは、決まった予約を返す resolver と、保存が呼ばれたことをテストへ知らせる store を渡します。本体は同じままで、データベースなしで動きます。",
-    view: "function",
-    deps: "focus",
-    input: "normal",
-    body: "normal",
-    sources: "normal",
-    source: "test",
-    wait: false,
-    depsFilled: true,
-    inputFilled: true,
-    code: { key: "test", keys: ["resolver: { resolveById: () => resolved },", "save: () => {"] },
+    caption: "テストは、決まった予約を返す resolver と、保存の回数を数える store を渡します。演習では、保存された予約を配列 saved に入れる偽物の Store を使います。",
+    deps: "focus", input: "normal", body: "normal", sources: "normal", source: "test", wait: false, depsFilled: true, inputFilled: true,
+    code: { key: "test", keys: ["resolver: { resolveById: () => resolved },", "observer.saveCalls += 1;"] },
   },
   {
-    caption: "deps を使わない形と比べます。本体が保存先を自分で import して使うと、テストでも本物の保存先が動きます。deps で受け取ると、呼び出す側が保存先を選べます。",
-    view: "compare",
-    deps: "normal",
-    input: "normal",
-    body: "normal",
-    sources: "normal",
-    source: "none",
-    wait: false,
-    depsFilled: true,
-    inputFilled: true,
+    caption: "(deps, input) の1段と比べます。1段は、呼ぶたびに deps も渡します。2段は start を作れば、以後は input だけで呼べます。S04 のコードでは、この利点はまだ現れません。",
+    deps: "normal", input: "normal", body: "normal", sources: "normal", source: "none", wait: false, depsFilled: true, inputFilled: true,
+    compare: true,
   },
 ];
 
-const overview = { deps: "normal", input: "normal", body: "normal", sources: "normal", source: "none", view: "function" } as const;
+const keyBands = (frame: Frame) => {
+  if (frame.code === undefined) return {};
+  const code = snippets[frame.code.key].code;
+  return checkBands(code, { a: frame.code.keys.map((text) => lineIs(code, text)) });
+};
 
-const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => frame));
+const themes = { light: "github-light", dark: "github-dark" } as const;
+const onePhase = `startExamination(deps, inputA);
+startExamination(deps, inputB);`;
+const twoPhase = `const start = startExamination(deps);
+start(inputA);
+start(inputB);`;
+
+const playerData = JSON.stringify(frames.map(({ code: _code, compare: _compare, caption: _caption, ...frame }) => frame));
 ---
 
 <figure
-  class="deps-input-flow"
+  class="we-fig deps-input-flow"
   aria-label="startExamination が deps と input を2段に分けて受け取る流れ"
   data-deps-input-flow
   data-frames={playerData}
-  data-deps={overview.deps}
-  data-input={overview.input}
-  data-body={overview.body}
-  data-sources={overview.sources}
-  data-source={overview.source}
-  data-view={overview.view}
 >
-  <div class="deps-input-flow__controls" data-controls hidden>
-    <button type="button" data-prev disabled>← 前のコマ</button>
-    <span data-progress>1 / {frames.length}</span>
-    <button type="button" data-next>次のコマ →</button>
-  </div>
+  <div class="deps-input-flow__layout">
+    <div class="deps-input-flow__left">
+      <StepControls />
+      <svg viewBox="0 0 340 232" role="img" aria-label="startExamination が deps と input を受け取る関数の図: 1段目の deps に resolver と store、2段目の input に予約ID、獣医師ID、開始時刻が入ります。">
+        <rect x="4" y="64" width="332" height="162" rx="10" class="deps-input-flow__frame"></rect>
+        <text x="326" y="86" text-anchor="end" class="deps-input-flow__mono deps-input-flow__strong deps-input-flow__text">startExamination</text>
+        <g class="deps-input-flow__wait">
+          <rect x="208" y="94" width="118" height="22" rx="11"></rect>
+          <text x="267" y="109" text-anchor="middle" class="deps-input-flow__text">input を待つ関数</text>
+        </g>
 
-  <div class="deps-input-flow__diagram">
-    <svg
-      viewBox="0 0 340 232"
-      role="img"
-      aria-labelledby="deps-input-flow-title deps-input-flow-desc"
-    >
-      <title id="deps-input-flow-title">startExamination が deps と input を受け取る関数の図</title>
-      <desc id="deps-input-flow-desc">
-        関数 startExamination の上に、2つの受け口があります。1段目の deps には resolver と store が入り、2段目の input には予約ID、獣医師ID、開始時刻が入ります。枠の中の本体は、resolver と store への線と、input から値が入る線でつながっています。
-      </desc>
+        <g class="deps-input-flow__part" data-part="body">
+          <path d="M39 64 V150" class="deps-input-flow__line"></path>
+          <path d="M97 64 V150" class="deps-input-flow__line"></path>
+          <polygon points="39,56 34,65 44,65" class="deps-input-flow__head"></polygon>
+          <polygon points="97,56 92,65 102,65" class="deps-input-flow__head"></polygon>
+          <path d="M172 64 V142" class="deps-input-flow__line"></path>
+          <polygon points="172,150 167,141 177,141" class="deps-input-flow__head"></polygon>
+          <rect x="14" y="150" width="190" height="60" rx="8" class="deps-input-flow__body"></rect>
+          <text x="109" y="186" text-anchor="middle" class="deps-input-flow__strong deps-input-flow__text deps-input-flow__body-text">本体</text>
+        </g>
 
-      <rect x="4" y="64" width="332" height="162" rx="10" class="deps-input-flow__frame"></rect>
-      <text x="326" y="86" text-anchor="end" class="deps-input-flow__mono deps-input-flow__strong deps-input-flow__text">startExamination</text>
-      <g class="deps-input-flow__wait">
-        <rect x="208" y="94" width="118" height="22" rx="11"></rect>
-        <text x="267" y="109" text-anchor="middle" class="deps-input-flow__text">input を待つ関数</text>
-      </g>
+        <g class="deps-input-flow__part" data-part="deps">
+          <rect x="4" y="4" width="128" height="60" rx="8" class="deps-input-flow__slot"></rect>
+          <text x="12" y="19" class="deps-input-flow__strong deps-input-flow__text">1段目 deps</text>
+          <g class="deps-input-flow__chip">
+            <rect x="12" y="26" width="54" height="28" rx="6"></rect>
+            <text x="39" y="44" text-anchor="middle" class="deps-input-flow__text">resolver</text>
+          </g>
+          <g class="deps-input-flow__chip">
+            <rect x="70" y="26" width="54" height="28" rx="6"></rect>
+            <text x="97" y="44" text-anchor="middle" class="deps-input-flow__text">store</text>
+          </g>
+          <g class="deps-input-flow__badge deps-input-flow__badge--deps">
+            <circle cx="122" cy="12" r="8"></circle>
+            <text x="122" y="16" text-anchor="middle">✓</text>
+          </g>
+        </g>
 
-      <g class="deps-input-flow__part deps-input-flow__part--body" data-part="body">
-        <path d="M39 64 V150" class="deps-input-flow__line"></path>
-        <path d="M97 64 V150" class="deps-input-flow__line"></path>
-        <polygon points="39,56 34,65 44,65" class="deps-input-flow__head"></polygon>
-        <polygon points="97,56 92,65 102,65" class="deps-input-flow__head"></polygon>
-        <path d="M172 64 V142" class="deps-input-flow__line"></path>
-        <polygon points="172,150 167,141 177,141" class="deps-input-flow__head"></polygon>
-        <rect x="14" y="150" width="190" height="60" rx="8" class="deps-input-flow__body"></rect>
-        <text x="109" y="186" text-anchor="middle" class="deps-input-flow__strong deps-input-flow__text deps-input-flow__body-text">本体</text>
-      </g>
+        <g class="deps-input-flow__part" data-part="input">
+          <rect x="140" y="4" width="196" height="60" rx="8" class="deps-input-flow__slot"></rect>
+          <text x="148" y="19" class="deps-input-flow__strong deps-input-flow__text">2段目 input</text>
+          <g class="deps-input-flow__chip">
+            <rect x="148" y="26" width="56" height="28" rx="6"></rect>
+            <text x="176" y="44" text-anchor="middle" class="deps-input-flow__text">予約ID</text>
+          </g>
+          <g class="deps-input-flow__chip">
+            <rect x="208" y="26" width="56" height="28" rx="6"></rect>
+            <text x="236" y="44" text-anchor="middle" class="deps-input-flow__text">獣医師ID</text>
+          </g>
+          <g class="deps-input-flow__chip">
+            <rect x="268" y="26" width="56" height="28" rx="6"></rect>
+            <text x="296" y="44" text-anchor="middle" class="deps-input-flow__text">開始時刻</text>
+          </g>
+          <g class="deps-input-flow__badge deps-input-flow__badge--input">
+            <circle cx="326" cy="12" r="8"></circle>
+            <text x="326" y="16" text-anchor="middle">✓</text>
+          </g>
+        </g>
+      </svg>
 
-      <g class="deps-input-flow__part deps-input-flow__part--deps" data-part="deps">
-        <rect x="4" y="4" width="128" height="60" rx="8" class="deps-input-flow__slot"></rect>
-        <text x="12" y="19" class="deps-input-flow__strong deps-input-flow__text">1段目 deps</text>
-        <g class="deps-input-flow__chip">
-          <rect x="12" y="26" width="54" height="28" rx="6"></rect>
-          <text x="39" y="44" text-anchor="middle" class="deps-input-flow__text">resolver</text>
-        </g>
-        <g class="deps-input-flow__chip">
-          <rect x="70" y="26" width="54" height="28" rx="6"></rect>
-          <text x="97" y="44" text-anchor="middle" class="deps-input-flow__text">store</text>
-        </g>
-        <g class="deps-input-flow__badge deps-input-flow__badge--deps">
-          <circle cx="122" cy="12" r="8"></circle>
-          <text x="122" y="16" text-anchor="middle">✓</text>
-        </g>
-      </g>
-
-      <g class="deps-input-flow__part deps-input-flow__part--input" data-part="input">
-        <rect x="140" y="4" width="196" height="60" rx="8" class="deps-input-flow__slot"></rect>
-        <text x="148" y="19" class="deps-input-flow__strong deps-input-flow__text">2段目 input</text>
-        <g class="deps-input-flow__chip">
-          <rect x="148" y="26" width="56" height="28" rx="6"></rect>
-          <text x="176" y="44" text-anchor="middle" class="deps-input-flow__text">予約ID</text>
-        </g>
-        <g class="deps-input-flow__chip">
-          <rect x="208" y="26" width="56" height="28" rx="6"></rect>
-          <text x="236" y="44" text-anchor="middle" class="deps-input-flow__text">獣医師ID</text>
-        </g>
-        <g class="deps-input-flow__chip">
-          <rect x="268" y="26" width="56" height="28" rx="6"></rect>
-          <text x="296" y="44" text-anchor="middle" class="deps-input-flow__text">開始時刻</text>
-        </g>
-        <g class="deps-input-flow__badge deps-input-flow__badge--input">
-          <circle cx="326" cy="12" r="8"></circle>
-          <text x="326" y="16" text-anchor="middle">✓</text>
-        </g>
-      </g>
-    </svg>
-
-    <div class="deps-input-flow__sources" data-part="sources">
-      <p class="deps-input-flow__sources-title">deps の中身の出どころ</p>
-      <ul>
-        <li class="deps-input-flow__source" data-source-id="db">本物の保存先（データベース）</li>
-        <li class="deps-input-flow__source" data-source-id="test">テスト用の部品</li>
-      </ul>
+      <div class="deps-input-flow__sources" data-part="sources">
+        <p class="deps-input-flow__sources-title">deps の中身の出どころ</p>
+        <ul>
+          <li class="deps-input-flow__source" data-source-id="db">本物の保存先（データベース）</li>
+          <li class="deps-input-flow__source" data-source-id="test">テスト用の部品</li>
+        </ul>
+      </div>
     </div>
+
+    <ol class="we-frames deps-input-flow__frames">
+      {frames.map((frame) => (
+        <li data-frame>
+          <p class="we-caption">{frame.caption}</p>
+          {frame.code && (
+            <figure class="we-code deps-input-flow__code">
+              <Code
+                code={snippets[frame.code.key].code}
+                lang="typescript"
+                themes={themes}
+                defaultColor={false}
+                transformers={[bandTransformer]} meta={bandMeta(keyBands(frame))}
+              />
+              <figcaption class="deps-input-flow__path"><code>{snippets[frame.code.key].path}</code></figcaption>
+            </figure>
+          )}
+          {frame.compare && (
+            <div class="deps-input-flow__compare">
+              <section class="deps-input-flow__side" data-band="c">
+                <p class="deps-input-flow__side-title">1段: <code>(deps, input)</code></p>
+                <figure class="we-code deps-input-flow__mini">
+                  <Code code={onePhase} lang="typescript" themes={themes} defaultColor={false} />
+                </figure>
+                <p class="deps-input-flow__verdict">呼ぶたびに deps も渡す</p>
+              </section>
+              <section class="deps-input-flow__side" data-band="b">
+                <p class="deps-input-flow__side-title">2段: <code>(deps)(input)</code></p>
+                <figure class="we-code deps-input-flow__mini">
+                  <Code code={twoPhase} lang="typescript" themes={themes} defaultColor={false} />
+                </figure>
+                <p class="deps-input-flow__verdict">deps を渡すのは1回。以後は input だけ</p>
+              </section>
+            </div>
+          )}
+        </li>
+      ))}
+    </ol>
   </div>
-
-  <p class="deps-input-flow__live" data-live aria-live="polite" hidden></p>
-
-  <ol class="deps-input-flow__frames">
-    {frames.map((frame) => (
-      <li data-frame data-has-extra={frame.code || frame.view === "compare" ? "" : undefined}>
-        <p class="deps-input-flow__caption">{frame.caption}</p>
-        {frame.code && (
-          <figure class="code-block deps-input-flow__code">
-            <figcaption><code>{snippets[frame.code.key].path}</code></figcaption>
-            <Code
-              code={withMarks(snippets[frame.code.key].code, keyLineNumbers(snippets[frame.code.key].code, frame.code.keys))}
-              lang="typescript"
-              defaultColor={false}
-              transformers={[markKeyLines]}
-            />
-          </figure>
-        )}
-        {frame.view === "compare" && (
-          <div class="deps-input-flow__compare">
-            <section class="deps-input-flow__side deps-input-flow__side--before">
-              <p class="deps-input-flow__side-title">修正前: 本体が保存先を自分で import して使う</p>
-              <div class="deps-input-flow__grid">
-                <span class="deps-input-flow__box">Web ルート</span>
-                <span class="deps-input-flow__box">テスト</span>
-                <span class="deps-input-flow__arrow" aria-hidden="true">↓</span>
-                <span class="deps-input-flow__arrow" aria-hidden="true">↓</span>
-                <span class="deps-input-flow__box deps-input-flow__box--body deps-input-flow__box--wide">本体</span>
-                <span class="deps-input-flow__arrow deps-input-flow__box--wide" aria-hidden="true">↓</span>
-                <span class="deps-input-flow__box deps-input-flow__box--db deps-input-flow__box--wide">本物の保存先（データベース）</span>
-              </div>
-              <p class="deps-input-flow__verdict deps-input-flow__verdict--bad">テストでも本物の保存先が動く</p>
-            </section>
-            <section class="deps-input-flow__side deps-input-flow__side--after">
-              <p class="deps-input-flow__side-title">修正後: deps で受け取る</p>
-              <div class="deps-input-flow__grid">
-                <span class="deps-input-flow__box">Web ルート</span>
-                <span class="deps-input-flow__box">テスト</span>
-                <span class="deps-input-flow__arrow" aria-hidden="true">↓</span>
-                <span class="deps-input-flow__arrow" aria-hidden="true">↓</span>
-                <span class="deps-input-flow__box deps-input-flow__box--db">本物の保存先（データベース）</span>
-                <span class="deps-input-flow__box deps-input-flow__box--test">テスト用の部品</span>
-                <span class="deps-input-flow__arrow" aria-hidden="true">↓</span>
-                <span class="deps-input-flow__arrow" aria-hidden="true">↓</span>
-                <span class="deps-input-flow__box deps-input-flow__box--body deps-input-flow__box--wide">本体</span>
-              </div>
-              <p class="deps-input-flow__verdict deps-input-flow__verdict--good">呼び出す側が保存先を選べる</p>
-            </section>
-          </div>
-        )}
-      </li>
-    ))}
-  </ol>
 </figure>
 
 <script>
+  import { mountStepper } from "./stepper/stepper";
+
   type Tone = "dim" | "normal" | "focus";
   type Frame = {
-    caption: string;
-    view: "function" | "compare";
     deps: Tone;
     input: Tone;
     body: Tone;
@@ -314,112 +218,61 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
     inputFilled: boolean;
   };
 
-  const setUp = (root: HTMLElement) => {
-    if (root.dataset.ready !== undefined) return;
+  document.querySelectorAll<HTMLElement>("[data-deps-input-flow]").forEach((root) => {
     const frames = JSON.parse(root.dataset.frames ?? "[]") as Frame[];
-    const panels = [...root.querySelectorAll<HTMLElement>("[data-frame]")];
-    const controls = root.querySelector<HTMLElement>("[data-controls]");
-    const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
-    const next = root.querySelector<HTMLButtonElement>("[data-next]");
-    const progress = root.querySelector<HTMLElement>("[data-progress]");
-    const live = root.querySelector<HTMLElement>("[data-live]");
-    if (!controls || !prev || !next || !progress || !live) return;
-    if (frames.length !== panels.length) return;
-    root.dataset.ready = "";
-
-    let current = 0;
-    const show = (index: number) => {
-      const frame = frames[index];
-      current = index;
-      panels.forEach((panel, i) => panel.classList.toggle("is-current", i === index));
-
-      root.dataset.view = frame.view;
-      root.dataset.deps = frame.deps;
-      root.dataset.input = frame.input;
-      root.dataset.body = frame.body;
-      root.dataset.sources = frame.sources;
-      root.dataset.source = frame.source;
-      root.toggleAttribute("data-wait", frame.wait);
-      root.toggleAttribute("data-deps-filled", frame.depsFilled);
-      root.toggleAttribute("data-input-filled", frame.inputFilled);
-
-      live.textContent = frame.caption;
-      progress.textContent = `${index + 1} / ${frames.length}`;
-      prev.disabled = index === 0;
-      next.disabled = index === frames.length - 1;
-    };
-
-    prev.addEventListener("click", () => show(Math.max(current - 1, 0)));
-    next.addEventListener("click", () => show(Math.min(current + 1, frames.length - 1)));
-    root.addEventListener("keydown", (event) => {
-      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-      if (event.key === "ArrowLeft") {
-        event.preventDefault();
-        show(Math.max(current - 1, 0));
-      } else if (event.key === "ArrowRight") {
-        event.preventDefault();
-        show(Math.min(current + 1, frames.length - 1));
-      }
+    mountStepper({
+      root,
+      onStep: (index) => {
+        const frame = frames[index];
+        if (frame === undefined) return;
+        root.dataset.deps = frame.deps;
+        root.dataset.input = frame.input;
+        root.dataset.body = frame.body;
+        root.dataset.sources = frame.sources;
+        root.dataset.source = frame.source;
+        root.toggleAttribute("data-wait", frame.wait);
+        root.toggleAttribute("data-deps-filled", frame.depsFilled);
+        root.toggleAttribute("data-input-filled", frame.inputFilled);
+      },
     });
-
-    root.tabIndex = 0;
-    root.dataset.animated = "";
-    controls.hidden = false;
-    live.hidden = false;
-    show(0);
-  };
-
-  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    document.querySelectorAll<HTMLElement>("[data-deps-input-flow]").forEach(setUp);
-  }
+  });
 </script>
 
 <style>
   .deps-input-flow {
-    --focus-fill: color-mix(in srgb, var(--case-yellow, #ffd21b) 45%, var(--case-paper, #fffefa));
-    --real: var(--case-blue, #2236b8);
-    --test: #137333;
-    --bad: #b3261e;
+    --focus-fill: color-mix(in srgb, var(--role-accent) 22%, var(--role-surface));
+    --chip-fill: color-mix(in srgb, var(--role-border) 14%, var(--role-surface));
     container-type: inline-size;
-    min-width: 0;
-    max-width: 100%;
-    margin: 1.5rem 0;
   }
 
-  .deps-input-flow__diagram {
+  .deps-input-flow__layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 16rem) minmax(0, 1fr);
     gap: 1rem;
     align-items: start;
   }
 
-  @container (min-width: 38rem) {
-    .deps-input-flow__diagram {
-      grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
-      gap: 2rem;
-    }
+  .deps-input-flow__left {
+    display: grid;
+    gap: 0.5rem;
+    min-width: 0;
   }
 
   .deps-input-flow svg {
     display: block;
     width: 100%;
-    max-width: 26rem;
     height: auto;
-    margin-inline: auto;
   }
 
-  .deps-input-flow[data-view="compare"] .deps-input-flow__diagram {
-    display: none;
-  }
-
-  .deps-input-flow__frame {
-    fill: var(--case-paper, #fffefa);
-    stroke: var(--case-line, #17204d);
+  .deps-input-flow__frame,
+  .deps-input-flow__slot {
+    fill: var(--role-surface);
+    stroke: var(--role-border);
     stroke-width: 2;
   }
 
   .deps-input-flow__text {
-    fill: var(--case-ink, #111116);
+    fill: var(--role-text);
     font-size: 11px;
   }
 
@@ -436,32 +289,26 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
     font-size: 13px;
   }
 
-  .deps-input-flow__slot {
-    fill: var(--case-paper, #fffefa);
-    stroke: var(--case-line, #17204d);
-    stroke-width: 2;
-  }
-
   .deps-input-flow__chip rect {
-    fill: var(--case-cream, #fff8ce);
-    stroke: var(--case-line, #17204d);
+    fill: var(--chip-fill);
+    stroke: var(--role-border);
     stroke-width: 1.5;
   }
 
   .deps-input-flow__body {
-    fill: var(--case-cream, #fff8ce);
-    stroke: var(--case-line, #17204d);
+    fill: var(--chip-fill);
+    stroke: var(--role-border);
     stroke-width: 2;
   }
 
   .deps-input-flow__line {
     fill: none;
-    stroke: var(--case-line, #17204d);
+    stroke: var(--role-text);
     stroke-width: 2;
   }
 
   .deps-input-flow__head {
-    fill: var(--case-line, #17204d);
+    fill: var(--role-text);
   }
 
   .deps-input-flow__wait,
@@ -470,8 +317,8 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
   }
 
   .deps-input-flow__wait rect {
-    fill: var(--case-yellow, #ffd21b);
-    stroke: var(--case-line, #17204d);
+    fill: var(--focus-fill);
+    stroke: var(--role-accent);
     stroke-width: 1.5;
   }
 
@@ -485,13 +332,13 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
   }
 
   .deps-input-flow__badge circle {
-    fill: var(--test);
-    stroke: var(--case-paper, #fffefa);
+    fill: var(--role-positive);
+    stroke: var(--role-surface);
     stroke-width: 1.5;
   }
 
   .deps-input-flow__badge text {
-    fill: #fff;
+    fill: var(--role-surface);
     font-size: 11px;
     font-weight: 700;
   }
@@ -505,27 +352,28 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
   .deps-input-flow[data-deps="focus"] [data-part="deps"] .deps-input-flow__slot,
   .deps-input-flow[data-input="focus"] [data-part="input"] .deps-input-flow__slot {
     fill: var(--focus-fill);
-    stroke: var(--real);
+    stroke: var(--role-accent);
     stroke-width: 3.5;
   }
 
   .deps-input-flow[data-deps="focus"] [data-part="deps"] .deps-input-flow__chip rect,
   .deps-input-flow[data-input="focus"] [data-part="input"] .deps-input-flow__chip rect {
-    fill: var(--case-yellow, #ffd21b);
+    fill: var(--focus-fill);
+    stroke: var(--role-accent);
   }
 
   .deps-input-flow[data-body="focus"] .deps-input-flow__line {
-    stroke: var(--real);
+    stroke: var(--role-accent);
     stroke-width: 4;
   }
 
   .deps-input-flow[data-body="focus"] .deps-input-flow__head {
-    fill: var(--real);
+    fill: var(--role-accent);
   }
 
   .deps-input-flow[data-body="focus"] .deps-input-flow__body {
     fill: var(--focus-fill);
-    stroke: var(--real);
+    stroke: var(--role-accent);
     stroke-width: 3.5;
   }
 
@@ -536,34 +384,28 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
   .deps-input-flow__sources ul {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.25rem 0.75rem;
+    gap: 1.25rem 0.5rem;
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  @container (min-width: 38rem) {
-    .deps-input-flow__sources ul {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 0.75rem;
-    }
-  }
-
   .deps-input-flow__sources-title {
-    margin: 0 0 0.75rem;
+    margin: 0 0 1.125rem;
+    font-size: 0.8125rem;
     font-weight: 700;
   }
 
   .deps-input-flow__source {
     position: relative;
     margin: 0;
-    padding: 0.6rem 0.75rem;
-    border: 2px solid var(--case-line, #17204d);
+    padding: 0.375rem 0.5rem;
+    border: 2px solid var(--role-border);
     border-radius: 0.5rem;
-    background: var(--case-paper, #fffefa);
-    color: var(--case-ink, #111116);
-    font-size: 0.9rem;
-    line-height: 1.5;
+    background: var(--role-surface);
+    color: var(--role-text);
+    font-size: 0.8125rem;
+    line-height: 1.4;
     overflow-wrap: anywhere;
   }
 
@@ -572,20 +414,11 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
     top: -1.1rem;
     left: 50%;
     display: none;
-    color: var(--real);
+    color: var(--role-accent);
     content: "▲";
-    font-size: 0.9rem;
+    font-size: 0.8125rem;
     line-height: 1;
     transform: translateX(-50%);
-  }
-
-  @container (min-width: 38rem) {
-    .deps-input-flow__source::before {
-      top: 50%;
-      left: -1.4rem;
-      content: "◀";
-      transform: translateY(-50%);
-    }
   }
 
   .deps-input-flow[data-sources="dim"] .deps-input-flow__sources {
@@ -594,8 +427,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
 
   .deps-input-flow[data-source="db"] .deps-input-flow__source[data-source-id="db"],
   .deps-input-flow[data-source="test"] .deps-input-flow__source[data-source-id="test"] {
-    border-color: var(--real);
-    border-width: 3px;
+    border-color: var(--role-accent);
     background: var(--focus-fill);
     font-weight: 700;
   }
@@ -610,198 +442,76 @@ const playerData = JSON.stringify(frames.map(({ code: _code, ...frame }) => fram
     opacity: 0.35;
   }
 
-  .deps-input-flow__controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .deps-input-flow__controls[hidden] {
-    display: none;
-  }
-
-  .deps-input-flow__controls button {
-    min-height: 2.75rem;
-    padding: 0 1rem;
-    border: 2px solid var(--case-line, #17204d);
-    border-radius: 0.5rem;
-    background: var(--case-yellow, #ffd21b);
-    color: var(--case-ink, #111116);
-    cursor: pointer;
-    font-weight: 700;
-  }
-
-  .deps-input-flow__controls button:disabled {
-    background: var(--case-paper, #fffefa);
-    cursor: not-allowed;
-    opacity: 0.55;
-  }
-
-  .deps-input-flow__live,
-  .deps-input-flow__caption {
-    margin: 0.75rem 0 0.5rem;
-    font-weight: 700;
-    line-height: 1.7;
-  }
-
-  .deps-input-flow__live[hidden] {
-    display: none;
-  }
-
   .deps-input-flow__frames {
-    margin: 0;
-    padding-inline-start: 1.5rem;
+    min-width: 0;
   }
 
   .deps-input-flow__frames > li {
     min-width: 0;
   }
 
-  .deps-input-flow__frames > li + li {
-    margin-top: 1.25rem;
+  .deps-input-flow .we-caption {
+    min-height: 2.9rem;
+    margin-block-end: 0.375rem;
   }
 
   .deps-input-flow__code {
-    min-width: 0;
-    margin: 0.5rem 0 0;
-  }
-
-  .deps-input-flow__code figcaption code {
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-
-  .deps-input-flow__code :global(pre) {
-    max-width: 100%;
     margin: 0;
-    overflow-x: auto;
-    font-size: 0.8rem;
   }
 
-  .deps-input-flow :global(.deps-input-flow__key) {
-    display: inline-block;
-    min-width: calc(100% + 0.5rem);
-    margin-left: -0.5rem;
-    padding-left: 0.5rem;
-    background: rgb(255 210 27 / 22%);
-    box-shadow: inset 0.3rem 0 0 #ffd21b;
+  .deps-input-flow__path {
+    padding: 0.125rem 0.625rem;
+    border-block-start: 1px solid var(--role-border);
+    background: color-mix(in srgb, var(--role-border) 14%, var(--role-surface));
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .deps-input-flow__path code {
+    padding: 0;
+    background: none;
+    font-size: inherit;
+    overflow-wrap: anywhere;
   }
 
   .deps-input-flow__compare {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
-    margin-top: 0.5rem;
   }
 
   .deps-input-flow__side {
+    display: grid;
+    align-content: start;
+    gap: 0.375rem;
     min-width: 0;
     padding: 0.5rem;
-    border: 2px solid var(--case-line, #17204d);
+    border: 2px solid var(--band);
     border-radius: 0.5rem;
-    background: var(--case-paper, #fffefa);
-    color: var(--case-ink, #111116);
+    background: var(--role-surface);
   }
 
   .deps-input-flow__side-title {
-    margin: 0 0 0.5rem;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     font-weight: 700;
-    line-height: 1.5;
-  }
-
-  .deps-input-flow__grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.25rem;
-    text-align: center;
-  }
-
-  .deps-input-flow__box {
-    display: block;
-    min-width: 0;
-    padding: 0.35rem 0.25rem;
-    border: 2px solid var(--case-line, #17204d);
-    border-radius: 0.4rem;
-    background: var(--case-paper, #fffefa);
-    font-size: 0.75rem;
-    line-height: 1.4;
-    overflow-wrap: anywhere;
-  }
-
-  .deps-input-flow__box--wide {
-    grid-column: 1 / -1;
-  }
-
-  .deps-input-flow__box--body {
-    background: var(--case-cream, #fff8ce);
-    font-weight: 700;
-  }
-
-  .deps-input-flow__box--db {
-    border-color: var(--real);
-    background: color-mix(in srgb, var(--real) 14%, var(--case-paper, #fffefa));
-  }
-
-  .deps-input-flow__box--test {
-    border-color: var(--test);
-    background: color-mix(in srgb, var(--test) 14%, var(--case-paper, #fffefa));
-  }
-
-  .deps-input-flow__arrow {
-    display: block;
-    font-size: 0.8rem;
-    line-height: 1;
-  }
-
-  .deps-input-flow__arrow.deps-input-flow__box--wide {
-    grid-column: 1 / -1;
   }
 
   .deps-input-flow__verdict {
-    margin: 0.5rem 0 0;
-    font-size: 0.8rem;
-    font-weight: 700;
-    line-height: 1.5;
+    color: var(--band);
+    font-size: 0.875rem;
+    font-weight: 800;
   }
 
-  .deps-input-flow__verdict--bad {
-    color: var(--bad);
-  }
-
-  .deps-input-flow__verdict--good {
-    color: var(--test);
-  }
-
-  .deps-input-flow[data-animated] .deps-input-flow__frames {
-    padding-inline-start: 0;
-    list-style: none;
-  }
-
-  .deps-input-flow[data-animated] .deps-input-flow__frames > li {
-    display: none;
-    margin: 0;
-  }
-
-  .deps-input-flow[data-animated] .deps-input-flow__frames > li.is-current[data-has-extra] {
-    display: block;
-  }
-
-  .deps-input-flow[data-animated] .deps-input-flow__caption {
-    display: none;
-  }
-
-  .deps-input-flow[data-animated] [data-part],
-  .deps-input-flow[data-animated] .deps-input-flow__source {
+  .deps-input-flow[data-ready] [data-part],
+  .deps-input-flow[data-ready] .deps-input-flow__source {
     transition: opacity 0.3s;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .deps-input-flow[data-animated] * {
-      transition: none !important;
-      animation: none !important;
+  @container (max-width: 40rem) {
+    .deps-input-flow__layout,
+    .deps-input-flow__compare {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 </style>

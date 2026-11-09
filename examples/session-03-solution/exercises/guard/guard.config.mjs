@@ -12,6 +12,11 @@ export default {
       title: "parse が any を受け取り、検査せずに値を取り出す",
       allow: ["lint", "tests"],
       hint: "any のまま値を扱う書き方を Linter の規則で、または検査に通らない入力を渡すテストで検出します。",
+      behavior: {
+        input: { text: '予約IDが "abc" の本文を parse する' },
+        expected: { text: "Err を返す" },
+        actual: { text: "検査せず Ok になる", value: 'appointmentId: "abc"' },
+      },
     },
     {
       id: "B2-unknown-cast",
@@ -20,6 +25,11 @@ export default {
       title: "parse が unknown を型アサーションで通す",
       allow: ["lint", "tests"],
       hint: "型アサーションを Linter の規則で、または検査に通らない入力を渡すテストで検出します。",
+      behavior: {
+        input: { text: "予約IDも獣医師IDもない本文を parse する" },
+        expected: { text: "Err を返す" },
+        actual: { text: "検査せず Ok になる", value: "Ok({})" },
+      },
     },
     {
       id: "B3-schema-without-uuid",
@@ -28,6 +38,11 @@ export default {
       title: "schema が UUID かどうかを確かめない",
       allow: ["tests"],
       hint: "UUID でない文字列を渡したときに Err になることを、テストで確かめます。",
+      behavior: {
+        input: { text: '予約IDは正しく、獣医師IDが "abc" の本文を parse する' },
+        expected: { text: "Err を返す" },
+        actual: { text: "UUID を確かめず Ok", value: 'veterinarianId: "abc"' },
+      },
     },
     {
       id: "B4-audit-owner-contact",
@@ -36,6 +51,11 @@ export default {
       title: "監査記録に飼い主の連絡先が入る",
       allow: ["types", "lint", "tests"],
       hint: "監査記録が3項目だけであることを、型のテスト、Linter の規則、テストのどれかで確かめます。",
+      behavior: {
+        input: { text: "診察中の予約から監査記録を作る" },
+        expected: { text: "3項目だけ残る", value: "ownerContact なし" },
+        actual: { text: "連絡先が入る", value: "ownerContact あり" },
+      },
     },
     {
       id: "B5-handler-bypasses-parse",
@@ -46,6 +66,11 @@ export default {
       required: false,
       allow: ["lint", "tests"],
       hint: "不正な本文を渡したときに診察開始の処理が呼ばれないことをテストで確かめます。",
+      behavior: {
+        input: { text: 'route に予約ID "abc" の本文が届く' },
+        expected: { text: "診察開始を呼ばない", value: "呼び出し 0 回" },
+        actual: { text: "不正な値で呼ぶ", value: 'appointmentId: "abc"' },
+      },
     },
     {
       id: "B6-swapped-ids",
@@ -56,6 +81,11 @@ export default {
       required: false,
       allow: ["types"],
       hint: "一方の ID をもう一方の型へ代入できないことを、型のテストで確かめます。",
+      behavior: {
+        input: { text: "獣医師IDを予約IDの変数へ代入するコードを書く" },
+        expected: { text: "型検査でエラー" },
+        actual: { text: "型検査を通る" },
+      },
     },
     {
       id: "R1-peer-change",

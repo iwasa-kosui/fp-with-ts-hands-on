@@ -6,7 +6,7 @@ import { guides, projectFiles } from "../../pages/06-effects-and-consistency-con
 <div class="session-split session-split--guides session-split--wrap-code">
   <CodeGuideCards guides={guides} projectFiles={projectFiles} dedent />
   <ul class="session-glossary" aria-label="コードに出てくる語">
-    <li><code>store: {"{ save: () => undefined }"}</code>: 状態遷移の関数が store を要求するので、何もしない store を渡しています。</li>
+    <li><code>store: {"{ save: () => undefined }"}</code>: S04 の useCase（<code>startExamination</code>）に、保存しない store を渡しています。続く <code>isErr</code> の分岐は、開始コードの書き方です。</li>
     <li>戻り値の型 <code>Result&lt;void, …Error&gt;</code>: エラーの型に <code>AppointmentConflict</code> がありますが、返すコードがありません。</li>
   </ul>
 </div>

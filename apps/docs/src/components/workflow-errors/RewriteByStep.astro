@@ -1,0 +1,261 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import { bandMeta, bandTransformer, checkBands, lineAll, lineCount, lineIndex, lineRange, lineSlice } from "./lines";
+import { isErrPipeline, paths, pipelineBody, pipelineFull } from "./sources";
+import "./figure.css";
+
+const themes = { light: "github-light", dark: "github-dark" } as const;
+
+const left = {
+  found: [lineIndex(isErrPipeline, "const found = "), lineIndex(isErrPipeline, "return err(found.error);") + 1],
+  checked: [lineIndex(isErrPipeline, "const checkedIn = "), lineIndex(isErrPipeline, "return err(checkedIn.error);") + 1],
+  next: [lineIndex(isErrPipeline, "const next = "), lineIndex(isErrPipeline, "deps.store.save(next);") - 1],
+  save: [lineIndex(isErrPipeline, "deps.store.save(next);"), lineIndex(isErrPipeline, "return ok(next);")],
+} as const;
+
+const mapLines = lineAll(pipelineBody, ".map((appointment) =>");
+const andThenLine = lineIndex(pipelineBody, ".andThen(ensureCheckedIn)");
+const right = {
+  found: [0, andThenLine - 1],
+  checked: [andThenLine, andThenLine],
+  next: [mapLines[0] as number, (mapLines[1] as number) - 1],
+  save: [mapLines[1] as number, lineCount(pipelineBody) - 1],
+} as const;
+
+type StepId = keyof typeof left;
+
+const stepNames: Readonly<Record<StepId, string>> = {
+  found: "予約を取る",
+  checked: "来院済みの確認",
+  next: "状態の遷移",
+  save: "保存して返す",
+};
+const stepBand: Readonly<Record<StepId, string>> = { found: "a", checked: "b", next: "d", save: "e" };
+const stepIds = ["found", "checked", "next", "save"] as const;
+
+const leftCode = (id: StepId) => {
+  const [from, to] = left[id];
+  const code = lineSlice(isErrPipeline, from, to);
+  const branch = id === "found" || id === "checked"
+    ? lineRange(code, `if (${id === "found" ? "found" : "checkedIn"}.isErr())`, "}")
+    : [];
+  const body = Array.from({ length: lineCount(code) }, (_, index) => index).filter((index) => !branch.includes(index));
+  return { code, branch, body };
+};
+const rightCode = (id: StepId) => {
+  const [from, to] = right[id];
+  const code = lineSlice(pipelineBody, from, to);
+  return { code, body: Array.from({ length: lineCount(code) }, (_, index) => index) };
+};
+
+const steps = stepIds.map((id) => {
+  const l = leftCode(id);
+  const r = rightCode(id);
+  const band = stepBand[id];
+  return {
+    id,
+    name: stepNames[id],
+    band,
+    leftCode: l.code,
+    leftBands: checkBands(l.code, { [band]: l.body, c: l.branch }),
+    rightCode: r.code,
+    rightBands: checkBands(r.code, { [band]: r.body }),
+    leftBody: l.body.length,
+    leftBranch: l.branch.length,
+    rightBody: r.body.length,
+  };
+});
+
+const branchTotal = steps.reduce((sum, step) => sum + step.leftBranch, 0);
+
+const captions = [
+  `同じ4つの工程を、左は isErr で、右は andThen と map で書きます。左にだけ、失敗を確かめる分岐（斜線の部分）が ${branchTotal} 行あります。`,
+  "工程1 予約を取る: 左は、取った直後に isErr で確かめて、失敗なら返します。右は、呼び出すだけです。失敗の通り抜けは、後ろに続く andThen と map が受け持ちます。",
+  "工程2 来院済みの確認: 左は、isErr の分岐がもう1組必要です。右は、andThen(ensureCheckedIn) の1行です。Err が来たら、ensureCheckedIn を呼ばずに通り抜けます。",
+  "工程3 状態の遷移: transitionToInExamination は失敗しない関数なので、右は map を使います。左は、checkedIn.value を取り出して渡します。",
+  "工程4 保存して返す: 左は、保存した後に ok(next) で包み直します。右は、map の中で保存して、同じ値を返します。",
+] as const;
+---
+
+<figure class="we-fig we-fig--top rewrite-by-step" data-rewrite-by-step aria-label="isErr の連続を andThen と map の連結へ、工程ごとに書き直す">
+  <StepControls />
+
+  <ol class="we-frames">
+    <li data-frame>
+      <p class="we-caption">{captions[0]}</p>
+      <div class="we-body rbs-overview">
+        {(["left", "right"] as const).map((side) => (
+          <section class="rbs-column" data-side={side}>
+            <h4>{side === "left" ? "isErr で書く（説明用の例）" : "andThen と map で書く"}</h4>
+            <ol class="rbs-bars">
+              {steps.map((step) => (
+                <li class="rbs-bar" data-band={step.band} style={`--lines: ${side === "left" ? step.leftBody : step.rightBody}`}>
+                  <span class="rbs-bar__name">{step.name}</span>
+                  {side === "left" && step.leftBranch > 0 && (
+                    <span class="rbs-bar__branch" style={`--lines: ${step.leftBranch}`}>isErr の分岐</span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </section>
+        ))}
+      </div>
+    </li>
+
+    {steps.map((step, index) => (
+      <li data-frame>
+        <p class="we-caption">{captions[index + 1]}</p>
+        <div class="we-body">
+          <ol class="rbs-rail" aria-label="4つの工程">
+            {steps.map((other) => (
+              <li class="we-chip" data-band={other.band} data-current={other.id === step.id ? "true" : "false"}>{other.name}</li>
+            ))}
+          </ol>
+          <div class="rbs-pair">
+            <figure class="we-code">
+              <figcaption class="we-code__head"><span class="we-code__tag">isErr で書く</span><code>説明用の例（配布コードにはありません）</code></figcaption>
+              <Code code={step.leftCode} lang="ts" themes={themes} defaultColor={false} transformers={[bandTransformer]} meta={bandMeta(step.leftBands)} />
+            </figure>
+            <figure class="we-code">
+              <figcaption class="we-code__head"><span class="we-code__tag">andThen と map で書く</span><code>{paths.solutionUseCase}</code></figcaption>
+              <Code code={step.rightCode} lang="ts" themes={themes} defaultColor={false} transformers={[bandTransformer]} meta={bandMeta(step.rightBands)} />
+            </figure>
+          </div>
+        </div>
+      </li>
+    ))}
+  </ol>
+
+  <details class="rbs-full">
+    <summary>全文を左右に並べて読む</summary>
+    <div class="rbs-pair">
+      <figure class="we-code">
+        <figcaption class="we-code__head"><span class="we-code__tag">isErr で書く</span><code>説明用の例（配布コードにはありません）</code></figcaption>
+        <Code code={isErrPipeline} lang="ts" themes={themes} defaultColor={false} />
+      </figure>
+      <figure class="we-code">
+        <figcaption class="we-code__head"><span class="we-code__tag">andThen と map で書く</span><code>{paths.solutionUseCase}:26-44</code></figcaption>
+        <Code code={pipelineFull} lang="ts" themes={themes} defaultColor={false} />
+      </figure>
+    </div>
+  </details>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-rewrite-by-step]").forEach((root) => {
+    mountStepper({ root });
+  });
+</script>
+
+<style>
+  .rbs-overview {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .rbs-column h4 {
+    margin: 0 0 0.375rem;
+    font-size: 0.875rem;
+  }
+
+  .rbs-bars {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rbs-bar {
+    display: grid;
+    grid-template-rows: auto auto;
+    overflow: hidden;
+    border: 1px solid var(--band);
+    border-radius: 0.25rem;
+    background: color-mix(in srgb, var(--band) 20%, var(--role-surface));
+  }
+
+  .rbs-bar__name {
+    display: flex;
+    align-items: center;
+    min-height: max(1.5rem, calc(var(--lines) * 0.8rem));
+    padding: 0 0.625rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .rbs-bar__branch {
+    display: flex;
+    align-items: center;
+    min-height: max(1.5rem, calc(var(--lines) * 0.8rem));
+    padding: 0 0.625rem;
+    border-block-start: 1px dashed var(--we-c);
+    background: repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--we-c) 34%, transparent) 0 6px,
+      color-mix(in srgb, var(--we-c) 10%, transparent) 6px 12px
+    );
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .rbs-rail {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rbs-rail .we-chip[data-current="false"] {
+    opacity: 0.45;
+    font-weight: 500;
+  }
+
+  .rbs-rail .we-chip[data-current="true"] {
+    background: color-mix(in srgb, var(--band) 20%, var(--role-surface));
+  }
+
+  .rbs-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    align-items: start;
+    margin-block-start: 0.5rem;
+  }
+
+  .rbs-full {
+    margin-block-start: 0.5rem;
+  }
+
+  .rbs-full :global(.we-code .astro-code) {
+    overflow-x: visible;
+  }
+
+  .rbs-full :global(.we-code .astro-code code) {
+    min-width: 0;
+  }
+
+  .rbs-full :global(.we-code .line) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .rbs-full summary {
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  @media (max-width: 48rem) {
+    .rbs-overview,
+    .rbs-pair {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

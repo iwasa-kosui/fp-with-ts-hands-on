@@ -29,6 +29,7 @@ const sessionFolders = [
   "session-06",
   "session-06-solution",
 ] as const;
+const exerciseCheckOnlySnapshots = ["session-05-solution"] as const;
 const appointmentModuleSessions = [
   "session-01-solution",
   "session-02-solution",
@@ -373,7 +374,12 @@ describe("runnable session package contract", () => {
   it("discovers all fourteen session folders with runnable package scripts", async () => {
     const examplesUrl = new URL("examples/", rootUrl);
     const sessionDirectories = (await readdir(examplesUrl, { withFileTypes: true }))
-      .filter((entry) => entry.isDirectory() && sessionFolderPattern.test(entry.name))
+      .filter(
+        (entry) =>
+          entry.isDirectory() &&
+          sessionFolderPattern.test(entry.name) &&
+          !(exerciseCheckOnlySnapshots as ReadonlyArray<string>).includes(entry.name),
+      )
       .map(({ name }) => name)
       .sort();
 
