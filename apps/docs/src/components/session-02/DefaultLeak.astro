@@ -180,6 +180,12 @@ const cases = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Pa
     display: inline-block;
     min-width: 100%;
     padding-inline: 0.75rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .leak__code :global(code) {
+    min-width: 0;
   }
 
   .leak__code :global(.line.is-lit) {
