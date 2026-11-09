@@ -464,8 +464,8 @@ const scenes = sceneKind === "success" ? allScenes.slice(0, 1) : allScenes.slice
 const title = sceneKind === "success" ? "診察開始の依頼が5つの境界を通る" : "失敗の依頼が5つの境界のどこまで進むか";
 const lead =
   sceneKind === "success"
-    ? "依頼カードが上から順に境界を通り、いま通っている境界の実コードと出力が開きます。"
-    : "業務上の失敗と SQLite 障害の2つの流れがあります。";
+    ? "依頼カードの値が変わり、いま通っている境界の実コードと出力が開きます。"
+    : undefined;
 
 const frameData = scenes.map(({ stop, frames }) => ({
   stop,
@@ -481,30 +481,27 @@ const cardData = Object.fromEntries(cards.map(({ key, tone, chip, type, short })
   note="値は説明用の例です。項目は一部だけを載せています。"
   scenes={scenes.map(({ label, frames }) => ({ label, frames: frames.map(({ text }) => ({ text })) }))}
 >
-  <div class="fb" data-final-boundaries data-frames={JSON.stringify(frameData)} data-cards={JSON.stringify(cardData)}>
+  <div class="fb" data-final-boundaries data-kind={sceneKind} data-frames={JSON.stringify(frameData)} data-cards={JSON.stringify(cardData)}>
     <ol class="fb-list">
       {gates.map((gate) => (
         <li class="fb-stage" data-stage={gate.key} data-state="future">
           <div class="fb-head">
             <span class="fb-num">{gate.num}</span>
             <span class="fb-name">{gate.name}</span>
-            <div class="fb-sums">
-              {cards.filter((card) => card.stage === gate.key).map((card) => (
-                <p class="fb-sum" data-sum={card.key} data-tone={card.tone} title={`${card.type} ${card.short}`}>
-                  <span class="fb-sum__arrow">→</span>
-                  <span class="fb-chip">{card.chip}</span>
-                  <code class="fb-sum__type">{card.type}</code>
-                  <span class="fb-sum__val">{card.short}</span>
-                </p>
-              ))}
-            </div>
             <span class="fb-tag" data-tag></span>
           </div>
-          <div class="fb-dock" data-dock></div>
         </li>
       ))}
     </ol>
     <div class="fb-panel">
+      <div class="fb-card" data-card data-tone="ok" aria-hidden="true">
+        <p class="fb-card__head">
+          <span class="fb-card__label">依頼カード</span>
+          <span class="fb-chip" data-card-chip></span>
+          <code class="fb-card__type" data-card-type></code>
+        </p>
+        <p class="fb-card__val"><code data-card-val></code></p>
+      </div>
       {gates.map((gate) => (
         <div class="fb-open" data-open={gate.key}>
           <p class="fb-gloss">{gate.gloss.split("`").map((part, index) => (index % 2 === 1 ? <code>{part}</code> : part))}</p>
@@ -529,14 +526,6 @@ const cardData = Object.fromEntries(cards.map(({ key, tone, chip, type, short })
           ))}
         </div>
       ))}
-    </div>
-    <div class="fb-card" data-card data-tone="ok" aria-hidden="true">
-      <p class="fb-card__head">
-        <span class="fb-card__label">依頼カード</span>
-        <span class="fb-chip" data-card-chip></span>
-        <code class="fb-card__type" data-card-type></code>
-      </p>
-      <p class="fb-card__val"><code data-card-val></code></p>
     </div>
   </div>
   <style is:inline set:html={css}></style>

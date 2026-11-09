@@ -234,6 +234,18 @@ import { whats, wheres } from "./next-mechanism";
     opacity: 0.6;
   }
 
+  @media (max-height: 700px) {
+    .nm {
+      gap: 0.375rem;
+      margin-block: 0.5rem;
+    }
+
+    .nm__what,
+    .nm__where {
+      line-height: 1.35;
+    }
+  }
+
   @media (max-width: 55rem) {
     .nm__what {
       grid-template-columns: auto minmax(0, 1fr);

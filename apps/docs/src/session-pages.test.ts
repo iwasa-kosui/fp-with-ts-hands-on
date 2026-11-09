@@ -439,8 +439,11 @@ describe("session pages", () => {
   }
 
   it("S6 owns the completed-file solution and failure-boundary contract", () => {
-    const source = sourceFor("06-effects-and-consistency");
     const session = moduleFor("06-effects-and-consistency").session;
+    const twoPaths =
+      splitProseSources[
+        "./sessions/prose/06-effects-and-consistency/two-paths.mdx"
+      ] ?? "";
 
     expect(session?.solutionPresentation).toBe("completed-file");
     expect(
@@ -450,11 +453,7 @@ describe("session pages", () => {
         ),
       ),
     ).toBe(true);
-    expect(source).toContain("data-presentation={presentation}");
-    expect(source).toContain('class="step-solution__completed-file-note"');
-    expect(source).toContain(
-      'class="failure-boundary" aria-label="業務エラーとシステムエラーの区別"',
-    );
-    expect(source).toContain("2つの失敗経路を見分ける");
+    expect(twoPaths).toContain("業務の失敗");
+    expect(twoPaths).toContain("障害");
   });
 });

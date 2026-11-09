@@ -1,0 +1,7 @@
+import EffectsRuleCards from "../../../components/effects-walkthrough/EffectsRuleCards.astro";
+
+<p>課題4は、直した状態を次の変更から守ることです。別の人が <code>new Date()</code> を戻しても、型検査は通ります。悪い変更を機械で検出する仕組みは、Linter の規則とテストの2つです。この演習では、2回の保存はテストで検出します。手を動かすのは検出の仕組みで、保存する側の実装は読むだけです。</p>
+
+<EffectsRuleCards />
+
+<p>正しいコードを悪い変更として検出してしまうことを、誤検知と呼びます。広すぎる規則は、正しいコードまで誤検知します。</p>

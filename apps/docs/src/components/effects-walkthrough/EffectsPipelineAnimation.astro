@@ -2,6 +2,7 @@
 import { Code } from "astro:components";
 import css from "./effects-pipeline.css?raw";
 import script from "./effects-pipeline.js?raw";
+import { quote, quoteRows } from "./quote";
 import Walkthrough from "./Walkthrough.astro";
 
 type Tone = "ok" | "err" | "reject";
@@ -31,12 +32,22 @@ type Frame = Readonly<{
   skipped?: readonly string[];
   flow?: Flow;
 }>;
+type SceneKey = "flow" | "reject" | "two-paths";
 type Scene = Readonly<{
   label: string;
   outer?: string;
   settled: Readonly<Record<string, string>>;
   frames: readonly Frame[];
 }>;
+
+interface Props {
+  scene?: SceneKey;
+}
+
+const { scene: sceneKey } = Astro.props;
+const page = sceneKey !== undefined;
+const sameUntil = page ? "成功の 6 コマ目まで同じです。" : "場面1の6コマ目まで同じです。";
+const rejectStart = "予約の確認とイベントの作成まで進み、保存で失敗します。作った `event` を `store` に渡して呼びます。";
 
 const startExaminationPath = "examples/session-06-solution/src/useCase/startExamination.ts";
 const errorsPath = "examples/session-06-solution/src/useCase/errors.ts";
@@ -230,7 +241,7 @@ const scenes: readonly Scene[] = [
         out: "r2",
       },
       {
-        text: "`startExaminationEvent` の中で、`createEventContext` が時刻と ID を1回だけ作ります。この1回の値を、状態と監査記録の両方が使います。",
+        text: "時刻と ID はイベントを作る瞬間に要るので、`map` の中で port から読みます。`createEventContext` が1回だけ読み、その1回の値を状態と監査記録の両方が使います。",
         at: "start",
         impl: "event",
         lines: [3, 4, 10],
@@ -244,7 +255,7 @@ const scenes: readonly Scene[] = [
         out: "r4",
       },
       {
-        text: "`andThrough` が `store` を呼びます。結果の `ok` は捨て、`event` をそのまま次へ渡します。",
+        text: "`andThrough` が `store` を呼びます。結果の `ok` は捨てます。保存した後もイベントを渡すので、`event` がそのまま次へ流れます。",
         at: "through",
         impl: "store",
         lines: [0, 1, 2, 3],
@@ -258,12 +269,12 @@ const scenes: readonly Scene[] = [
     ],
   },
   {
-    label: "競合: 業務エラーの経路",
+    label: "競合: 業務の失敗の経路",
     outer: "route",
     settled: upstream,
     frames: [
       {
-        text: "場面1の6コマ目まで同じです。`event` ができて `store` を呼びます。",
+        text: `${sameUntil}\`event\` ができて \`store\` を呼びます。`,
         at: "through",
         impl: "store",
         lines: [0, 1, 2, 3],
@@ -299,13 +310,13 @@ const scenes: readonly Scene[] = [
     settled: upstream,
     frames: [
       {
-        text: "場面1の6コマ目まで同じです。`event` ができて `store` を呼びます。",
+        text: sceneKey === "reject" ? rejectStart : `${sameUntil}\`event\` ができて \`store\` を呼びます。`,
         at: "through",
         impl: "store",
         lines: [0, 1, 2, 3],
       },
       {
-        text: "SQLite の書き込みが失敗すると、`store` は `fromSafePromise` の中で reject します。`Err` に変換しません。",
+        text: "SQLite の書き込みが失敗すると、`store` は `fromSafePromise` の中で reject します。`fromSafePromise` は Promise を `ResultAsync` に包み、reject は変えないので、`Err` になりません。`fromPromise` は reject を指定した `Err` に変えますが、ここでは使いません。",
         at: "through",
         impl: "store",
         lines: [1, 2],
@@ -319,7 +330,7 @@ const scenes: readonly Scene[] = [
         flow: { kind: "reject", from: "through", to: "onError" },
       },
       {
-        text: "外側の `app.onError` が受け取り、詳細を含まない 500 応答を返します。業務エラーの型は増えません。",
+        text: page ? "例外のまま外へ出て、外側で 500 を返します。詳細は含めません。業務の失敗の型は増えません。" : "外側の `app.onError` が受け取り、詳細を含まない 500 応答を返します。業務の失敗の型は増えません。",
         at: "onError",
         out: "r7x",
         skipped: ["map"],
@@ -329,11 +340,68 @@ const scenes: readonly Scene[] = [
   },
 ];
 
-const frameData = scenes.map(({ outer, settled, frames }) => ({
+const shownScenes =
+  sceneKey === "flow"
+    ? [scenes[0]]
+    : sceneKey === "reject"
+      ? [scenes[2]]
+      : sceneKey === "two-paths"
+        ? [scenes[1], scenes[2]]
+        : scenes;
+
+const frameData = shownScenes.map(({ outer, settled, frames }) => ({
   outer,
   settled,
   frames: frames.map(({ text: _text, ...frame }) => frame),
 }));
+
+const pipelineLines = quoteRows("session-06-solution", "src/useCase/startExamination.ts", [
+  "resolveAppointment(deps)(input.appointmentId)",
+  ".andThen(ensureFound(input.appointmentId))",
+  ".andThen(ensureCheckedIn)",
+  ".map(startExaminationEvent(deps, input.veterinarianId))",
+  ".andThrough(deps.examinationStartedStore.store)",
+  ".map((event) => event.aggregateState);",
+]);
+const pageRows: readonly Readonly<{ key: string; code: string; outer?: true }>[] = [
+  ...(["resolve", "found", "checked", "start", "through", "map"] as const).map((key, index) => ({
+    key,
+    code: pipelineLines[index] ?? "",
+  })),
+  {
+    key: "route",
+    outer: true,
+    code: quote(
+      "session-06-solution",
+      "src/web/routes.ts",
+      'error.kind === "AppointmentConflict"',
+      ": toStartExaminationNoticeCode(error);",
+    ),
+  },
+  {
+    key: "onError",
+    outer: true,
+    code: quote(
+      "session-06-solution",
+      "src/app.ts",
+      'app.onError((_error, context) => context.text("Internal Server Error", 500));',
+    ),
+  },
+];
+
+const usedChips = new Set(
+  shownScenes.flatMap(({ settled, frames }) => [
+    ...Object.values(settled),
+    ...frames.flatMap(({ out }) => (out === undefined ? [] : [out])),
+  ]).flatMap((key) => cards.filter((card) => card.key === key).map((card) => card.chip)),
+);
+const usesFlow = shownScenes.some(({ frames }) => frames.some(({ flow }) => flow !== undefined));
+const legendLines = [
+  `札「Ok」は成功の箱に入った値、札「値」は箱に入る前の値${usedChips.has("応答") ? "、札「応答」は呼び出し元へ返す HTTP の応答" : ""}です。`,
+  ...(usedChips.has("Err") || usesFlow
+    ? ["札「Err」は型に残る業務の失敗で、枠と線は破線です。札「reject」は型に残らず外へ出る例外で、枠と線は実線です。"]
+    : []),
+];
 ---
 
 <Walkthrough
@@ -341,74 +409,103 @@ const frameData = scenes.map(({ outer, settled, frames }) => ({
   title="値がワークフローを流れる"
   lead="診察開始のワークフローのコードを上から読みます。実行中の段の下には、その段の実装と出力が開きます。成功、競合、保存障害の3つの流れを追います。"
   note="値は説明用の例です。項目は一部だけを載せています。"
-  scenes={scenes.map(({ label, frames }) => ({ label, frames: frames.map(({ text }) => ({ text })) }))}
+  scenes={shownScenes.map(({ label, frames }) => ({ label, frames: frames.map(({ text }) => ({ text })) }))}
+  page={page}
+  legend={page ? legendLines.length * 1.25 + 0.5 : undefined}
 >
-  <div class="ep" data-effects-pipeline data-frames={JSON.stringify(frameData)}>
-    <div class="ep-flow">
-      {stages.map((stage) => (
-        <div class={`ep-stage${stage.outer === true ? " ep-stage--outer" : ""}`} data-stage={stage.key} data-state={stage.key === "sig" ? "static" : "future"} data-outer={stage.outer === true ? "" : undefined}>
-          {stage.file === undefined ? null : (
-            <p class="ep-file">
-              <span class="walk-badge walk-badge--after">修正後</span>
-              {stage.outer === true ? <span class="ep-file__tag">パイプラインの外</span> : null}
-              <code>{stage.file}</code>
-            </p>
-          )}
-          <div class="ep-stage__code">
-            <Code code={stage.code} lang="ts" wrap />
-          </div>
-          {stage.key === "sig" ? null : (
-            <>
+  {page ? (
+    <div class="ep ep--page" data-effects-pipeline data-frames={JSON.stringify(frameData)}>
+      <div class="ep-flow">
+        {pageRows.map((row) => (
+          <div class="ep-stage" data-stage={row.key} data-state="future" data-outer={row.outer === true ? "" : undefined}>
+            <div class="ep-stage__code">
+              <Code code={row.code} lang="ts" wrap />
+            </div>
+            <div class="ep-sums">
               <p class="ep-skip">実行されない</p>
-              <div class="ep-sums">
-                {cards.filter((card) => card.stage === stage.key).map((card) => (
-                  <p class="ep-sum" data-sum={card.key} data-tone={card.tone}>
-                    <span class="ep-sum__arrow">→</span>
-                    <span class="ep-chip">{card.chip}</span>
-                    <code class="ep-sum__type">{card.type}</code>
-                    <span class="ep-sum__val">{card.short}</span>
-                  </p>
-                ))}
-              </div>
-              <div class="ep-open">
-                <div class="ep-open__clip">
-                  <div class="ep-open__body">
-                    {Object.entries(impls).filter(([, impl]) => impl.stage === stage.key).map(([name, impl]) => (
-                      <figure class="ep-impl" data-impl={name}>
-                        <figcaption>
-                          <span class="walk-badge walk-badge--after">修正後</span>
-                          <code>{impl.path}</code>
-                        </figcaption>
-                        <Code code={impl.code} lang="ts" wrap />
-                        {(impl.more ?? []).map((part) => (
-                          <>
-                            <p class="ep-impl__file">
-                              <span class="walk-badge walk-badge--after">修正後</span>
-                              <code>{part.path}</code>
-                            </p>
-                            <Code code={part.code} lang="ts" wrap />
-                          </>
-                        ))}
-                      </figure>
-                    ))}
-                    {cards.filter((card) => card.stage === stage.key).map((card) => (
-                      <figure class="ep-out" data-out={card.key} data-tone={card.tone}>
-                        <figcaption>
-                          <span class="ep-out__label">出力</span>
-                          <span class="ep-chip">{card.chip}</span>
-                          <code class="ep-out__type">{card.type}</code>
-                        </figcaption>
-                        <Code code={card.code} lang="ts" wrap />
-                      </figure>
-                    ))}
+              {cards.filter((card) => card.stage === row.key).map((card) => (
+                <p class="ep-sum" data-sum={card.key} data-tone={card.tone}>
+                  <span class="ep-chip">{card.chip}</span>
+                  <code class="ep-sum__type">{card.type}</code>
+                  <span class="ep-sum__val">{card.short}</span>
+                </p>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  ) : (
+    <div class="ep" data-effects-pipeline data-frames={JSON.stringify(frameData)}>
+      <div class="ep-flow">
+        {stages.map((stage) => (
+          <div class={`ep-stage${stage.outer === true ? " ep-stage--outer" : ""}`} data-stage={stage.key} data-state={stage.key === "sig" ? "static" : "future"} data-outer={stage.outer === true ? "" : undefined}>
+            {stage.file === undefined ? null : (
+              <p class="ep-file">
+                <span class="walk-badge walk-badge--after">修正後</span>
+                {stage.outer === true ? <span class="ep-file__tag">パイプラインの外</span> : null}
+                <code>{stage.file}</code>
+              </p>
+            )}
+            <div class="ep-stage__code">
+              <Code code={stage.code} lang="ts" wrap />
+            </div>
+            {stage.key === "sig" ? null : (
+              <>
+                <p class="ep-skip">実行されない</p>
+                <div class="ep-sums">
+                  {cards.filter((card) => card.stage === stage.key).map((card) => (
+                    <p class="ep-sum" data-sum={card.key} data-tone={card.tone}>
+                      <span class="ep-sum__arrow">→</span>
+                      <span class="ep-chip">{card.chip}</span>
+                      <code class="ep-sum__type">{card.type}</code>
+                      <span class="ep-sum__val">{card.short}</span>
+                    </p>
+                  ))}
+                </div>
+                <div class="ep-open">
+                  <div class="ep-open__clip">
+                    <div class="ep-open__body">
+                      {Object.entries(impls).filter(([, impl]) => impl.stage === stage.key).map(([name, impl]) => (
+                        <figure class="ep-impl" data-impl={name}>
+                          <figcaption>
+                            <span class="walk-badge walk-badge--after">修正後</span>
+                            <code>{impl.path}</code>
+                          </figcaption>
+                          <Code code={impl.code} lang="ts" wrap />
+                          {(impl.more ?? []).map((part) => (
+                            <>
+                              <p class="ep-impl__file">
+                                <span class="walk-badge walk-badge--after">修正後</span>
+                                <code>{part.path}</code>
+                              </p>
+                              <Code code={part.code} lang="ts" wrap />
+                            </>
+                          ))}
+                        </figure>
+                      ))}
+                      {cards.filter((card) => card.stage === stage.key).map((card) => (
+                        <figure class="ep-out" data-out={card.key} data-tone={card.tone}>
+                          <figcaption>
+                            <span class="ep-out__label">出力</span>
+                            <span class="ep-chip">{card.chip}</span>
+                            <code class="ep-out__type">{card.type}</code>
+                          </figcaption>
+                          <Code code={card.code} lang="ts" wrap />
+                        </figure>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </>
-          )}
-        </div>
-      ))}
+              </>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
+  )}
+  <div slot="legend">
+    {legendLines.map((line) => <p>{line}</p>)}
   </div>
   <style is:inline set:html={css}></style>
   <script is:inline type="module" set:html={script}></script>

@@ -3,7 +3,7 @@ export const whats = [
     id: "as-lint",
     wish: "as を使わない",
     name: "Linter の規則",
-    detail: "typescript-eslint の consistent-type-assertions を assertionStyle: \"never\" で有効にします。as const は対象外です。",
+    detail: "as を使う書き方を Linter が報告します（typescript-eslint の consistent-type-assertions）。as const は対象外です。",
     recommended: "on-save",
   },
   {
@@ -24,7 +24,7 @@ export const whats = [
     id: "pre-tool-use",
     wish: "禁止した操作を実行しない",
     name: "Agent の実行前 hook",
-    detail: "Claude Code の PreToolUse hook は、exit code 2 でツールの実行を取り消します。",
+    detail: "Agent がツールを実行する直前に動く、自動の確認です。Claude Code の PreToolUse hook は、ツールの実行を取り消せます。",
     recommended: "agent-hook",
   },
   {

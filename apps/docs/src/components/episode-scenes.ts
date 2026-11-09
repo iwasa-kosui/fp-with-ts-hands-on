@@ -236,7 +236,7 @@ const workflowErrors = `
 ${room("#fff8ce", "#e6dcc0", "#cbbf9d", 150)}
 <rect x="0" y="76" width="118" height="9" fill="#e8b46a"/>
 ${screen(14, 14, 92, 56, 76)}
-${text(60, 60, 12, "更新済み", { anchor: "middle" })}
+${text(60, 60, 12, "診察中", { anchor: "middle" })}
 
 ${queuer(254, 150, 0.44, "#e0a030")}
 ${queuer(292, 150, 0.44, "#3b2a4f")}
@@ -385,7 +385,7 @@ export const episodeScenes = {
     art: boundariesAndPii,
   },
   "04-workflow-errors": {
-    label: "古い画面でハムスターの診察開始ボタンを押すと、大きく500と表示されて止まった。奥の別の端末には更新済みと出ており、後ろでは犬が吠え、飼い主の列が伸びている",
+    label: "古い画面でハムスターの診察開始ボタンを押すと、大きく500と表示されて止まった。奥の別の端末には診察中と出ており、後ろでは犬が吠え、飼い主の列が伸びている",
     art: workflowErrors,
   },
   "05-business-events-and-workflows": {

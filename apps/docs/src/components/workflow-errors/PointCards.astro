@@ -1,0 +1,77 @@
+---
+type Card = Readonly<{
+  title: string;
+  items: readonly string[];
+  tone?: "positive" | "negative";
+}>;
+
+interface Props {
+  label: string;
+  cards: readonly Card[];
+}
+
+const { label, cards } = Astro.props;
+---
+
+<div class="point-cards" role="list" aria-label={label} style={`--point-count: ${cards.length}`}>
+  {
+    cards.map(({ title, items, tone }) => (
+      <section class="point-cards__card" data-tone={tone} role="listitem">
+        <h4>{title}</h4>
+        <ul>
+          {items.map((item) => (
+            <li><Fragment set:html={item} /></li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+</div>
+
+<style>
+  .point-cards {
+    display: grid;
+    gap: 0.625rem;
+    margin: 0.5rem 0;
+  }
+
+  .point-cards__card {
+    min-width: 0;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--case-line);
+    border-block-start-width: 0.5rem;
+    background: var(--case-paper);
+    color: var(--case-ink);
+  }
+
+  .point-cards__card[data-tone="positive"] {
+    border-block-start-color: var(--case-highlight);
+  }
+
+  .point-cards__card[data-tone="negative"] {
+    border-block-start-color: var(--case-pink);
+  }
+
+  .point-cards__card h4 {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+
+  .point-cards__card ul {
+    margin: 0;
+    padding-inline-start: 1.25rem;
+  }
+
+  .point-cards__card li {
+    margin-block: 0.125rem;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+
+  @media (min-width: 900px) {
+    .point-cards {
+      grid-template-columns: repeat(var(--point-count), minmax(0, 1fr));
+    }
+  }
+</style>

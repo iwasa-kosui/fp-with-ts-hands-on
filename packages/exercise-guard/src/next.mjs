@@ -67,10 +67,10 @@ const slippedSentence = (row) => {
 };
 
 /**
- * @param {Readonly<{ rows: readonly Row[], problems: readonly Problem[], stageOpened: number, passed: boolean }>} input
+ * @param {Readonly<{ rows: readonly Row[], problems: readonly Problem[], stageOpened: number, passed: boolean, typesAllowed?: boolean }>} input
  * @returns {readonly string[]}
  */
-export const buildNext = ({ rows, problems, stageOpened, passed }) => {
+export const buildNext = ({ rows, problems, stageOpened, passed, typesAllowed = true }) => {
   const fixes = [...new Set(problems.map((problem) => problem.fix))];
   const slipped = rows
     .filter((row) => row.kind === "bad" && row.verdict === "slipped")
@@ -84,7 +84,7 @@ export const buildNext = ({ rows, problems, stageOpened, passed }) => {
     ...fixes,
     ...(noAllowedDetection && problems.length === 0
       ? [
-          "まだ悪い変更を 1 件も検出できていません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にあるテストか型のテストのファイルに書きます。",
+          `まだ悪い変更を 1 件も検出できていません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にある${typesAllowed ? "テストか型のテスト" : "テスト"}のファイルに書きます。`,
         ]
       : []),
     ...(stageOpened > 0 ? [`追加の悪い変更が ${stageOpened} 件増えました。`] : []),

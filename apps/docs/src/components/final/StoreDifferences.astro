@@ -26,7 +26,7 @@ const scenes = [
     label: "競合の伝え方",
     left: code.s06Conflict,
     right: code.finalConflict,
-    text: "S06 は err を返すので fromSafePromise で受けます。参照実装は競合を throw で伝えて transaction を取り消し、fromPromise の2つ目の引数で競合だけを Err に変えます。それ以外の例外は投げ直すので、S06 の悪い例と違い、障害は Err になりません。",
+    text: "S06 は err を返すので fromSafePromise で受けます。参照実装は競合を throw で伝えて transaction を取り消します。throw した競合は、fromPromise の2つ目の引数で Err に戻します。それ以外の例外は投げ直すので reject のままで、S06 の悪い例と違い、障害は Err になりません。",
   },
   {
     label: "port の置き場所",
@@ -266,6 +266,13 @@ const scenes = [
     color: var(--role-text);
     font-size: 0.9375rem;
     line-height: 1.65;
+  }
+
+  @media (max-height: 700px) {
+    .sd__text {
+      margin-block-start: 0.4rem;
+      line-height: 1.5;
+    }
   }
 
   @media (max-width: 45rem) {

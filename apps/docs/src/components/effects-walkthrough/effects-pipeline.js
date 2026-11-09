@@ -3,6 +3,7 @@ const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 
 for (const figure of figures) {
   figure.setAttribute("data-ep-ready", "");
+  const page = figure.classList.contains("ep--page");
 
   const root = figure.closest("[data-walk]");
   const scenes = JSON.parse(figure.dataset.frames);
@@ -56,6 +57,12 @@ for (const figure of figures) {
     for (const earlier of scene.frames.slice(0, frameIndex)) {
       if (earlier.out !== undefined) settled[earlier.at] = earlier.out;
     }
+    const shown = {};
+    for (const [stageKey, out] of Object.entries(scene.settled)) shown[stageKey] = [out];
+    for (const earlier of scene.frames.slice(0, frameIndex + 1)) {
+      if (earlier.out === undefined) continue;
+      shown[earlier.at] = [...(shown[earlier.at] ?? []).filter((out) => out !== earlier.out), earlier.out];
+    }
     const at = order.indexOf(frame.at);
     const skipped = new Set(frame.skipped ?? []);
     const from = frame.flow === undefined ? -1 : order.indexOf(frame.flow.from);
@@ -72,12 +79,15 @@ for (const figure of figures) {
       stage.dataset.state = state;
       stage.dataset.rail = inFlow && frame.flow.kind === "err" ? "err" : "";
       stage.dataset.reject = inFlow && frame.flow.kind === "reject" ? "on" : "";
-      part.open.inert = state !== "current";
+      if (part.open !== null) part.open.inert = state !== "current";
       if (state === "current") {
         showImpl(part, frame.impl, frame.lines ?? [], reset);
         for (const out of part.outs) out.toggleAttribute("data-active", out.dataset.out === frame.out);
       }
-      for (const item of part.sums) item.toggleAttribute("data-active", item.dataset.sum === settled[key]);
+      for (const item of part.sums) {
+        const active = page ? (shown[key] ?? []).includes(item.dataset.sum) : item.dataset.sum === settled[key];
+        item.toggleAttribute("data-active", active);
+      }
     });
 
     if (reset) {

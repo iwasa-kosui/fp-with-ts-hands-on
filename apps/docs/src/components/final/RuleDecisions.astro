@@ -6,7 +6,7 @@ const options = ["コードを直す", "規則を直す", "理由を付けて残
 const cards = [
   {
     id: "clock",
-    title: "時刻を読まない new Date（2件）",
+    title: "new Date（2件）",
     code: "new Date(Date.parse(occurredAt) + sessionDurationMs).toISOString()",
     source: "examples/final/src/useCase/logInUseCase.ts:84 と setUpInitialAdminUseCase.ts:77",
     decision: "規則を直す",
@@ -14,7 +14,7 @@ const cards = [
   },
   {
     id: "corruption",
-    title: "データ破損の throw（1件）",
+    title: "throw（1件）",
     code: [
       "export const rejectExamResultPetMismatch = (",
       "  mismatch: ExamResultPetMismatch,",
@@ -26,7 +26,7 @@ const cards = [
     ].join("\n"),
     source: "examples/final/src/useCase/rejectExamResultPetMismatch.ts:3-9",
     decision: "理由を付けて残す",
-    text: "保存済みのデータが食い違っているときに投げます。業務で対応を選べない破損なので、Err にせず例外境界へ渡します。規則を無効にするコメントに、この理由を書きます。",
+    text: "保存済みのデータが食い違っているときに投げます。業務で対応を選べない破損なので、Err にせず例外境界へ渡します。規則を無効にするときは、無効にする行のコメントにこの理由を書きます。",
   },
 ] as const;
 ---
@@ -49,7 +49,7 @@ const cards = [
 
       <div class="rd__answer" data-answer aria-live="polite">
         <div class="rd__answer-body" data-answer-body>
-          <p class="rd__decision">参照実装の判断: <strong>{card.decision}</strong></p>
+          <p class="rd__decision">この教材の判断: <strong>{card.decision}</strong></p>
           <p class="rd__text">{card.text}</p>
         </div>
       </div>
@@ -194,6 +194,24 @@ const cards = [
 
   .rd__text {
     color: var(--role-muted);
+  }
+
+  @media (max-height: 700px) {
+    .rd__card {
+      gap: 0.25rem;
+    }
+
+    .rd__code :global(pre) {
+      padding-block: 0.25rem;
+    }
+
+    .rd__option {
+      min-height: 2.25rem;
+    }
+
+    .rd__answer p {
+      line-height: 1.4;
+    }
   }
 
   @media (max-width: 55rem) {

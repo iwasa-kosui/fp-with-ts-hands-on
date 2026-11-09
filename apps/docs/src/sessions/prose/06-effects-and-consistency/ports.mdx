@@ -1,0 +1,10 @@
+import PortSwapFlow from "../../../components/effects-walkthrough/PortSwapFlow.astro";
+import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
+
+<p>課題2を解くには、時刻と ID を、テストで固定できる形で受け取ります。S04 で外部に触れる部品と呼んだものの型が、<strong>port</strong> です。S04 の <code>deps.store.save</code> を、S06 では <code>deps.examinationStartedStore.store</code> に置き換えます。</p>
+
+<FigureSpace reserve={152}>
+  <PortSwapFlow />
+</FigureSpace>
+
+<p>時刻を返す <code>Clock</code> と、イベント ID を返す <code>EventIdGenerator</code> も port にします。本番では本物を、テストでは偽物を渡します。偽物（fake）は、テストのために本物の代わりに渡す実装です。</p>

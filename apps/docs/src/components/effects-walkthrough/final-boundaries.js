@@ -18,27 +18,29 @@ for (const figure of figures) {
       stage,
       key: stage.dataset.stage,
       tag: stage.querySelector("[data-tag]"),
-      dock: stage.querySelector("[data-dock]"),
       open,
       impls: [...open.querySelectorAll("[data-impl]")],
       outs: [...open.querySelectorAll("[data-out]")],
-      sums: [...stage.querySelectorAll("[data-sum]")],
     };
   });
   const order = parts.map(({ key }) => key);
 
   let lastScene = -1;
+  let lastAt = -1;
   let width = 0;
 
   const revealFirst = (pre, code, marked, instant) => {
+    pre.style.paddingBottom = "";
     if (pre.scrollHeight <= pre.clientHeight) return;
     const line = code.children[marked.size > 0 ? Math.min(...marked) : 0];
-    const offset = line.getBoundingClientRect().top - pre.getBoundingClientRect().top + pre.scrollTop;
-    const lineHeight = parseFloat(getComputedStyle(line).lineHeight) || 20;
-    pre.scrollTo({ top: Math.max(0, offset - lineHeight * 1.5), behavior: instant || reduced.matches ? "instant" : "smooth" });
+    const offset = Math.round(line.getBoundingClientRect().top - pre.getBoundingClientRect().top + pre.scrollTop);
+    const slack = offset + pre.clientHeight - pre.scrollHeight;
+    if (slack > 0) pre.style.paddingBottom = `calc(0.1rem + ${slack}px)`;
+    pre.scrollTo({ top: offset, behavior: instant || reduced.matches ? "instant" : "smooth" });
   };
 
   const showImpl = (part, name, lines, instant) => {
+    const shown = [];
     for (const impl of part.impls) {
       const active = impl.dataset.impl === name;
       const wasActive = impl.hasAttribute("data-active");
@@ -47,8 +49,9 @@ for (const figure of figures) {
       impl.toggleAttribute("data-active", active);
       code.toggleAttribute("data-has-active", marked.size > 0);
       [...code.children].forEach((line, index) => line.classList.toggle("is-active", marked.has(index)));
-      if (active) revealFirst(impl.querySelector("pre"), code, marked, instant || !wasActive);
+      if (active) shown.push({ impl, code, marked, instant: instant || !wasActive });
     }
+    for (const { impl, code, marked, instant: now } of shown) revealFirst(impl.querySelector("pre"), code, marked, now);
   };
 
   const apply = (force = false) => {
@@ -59,7 +62,6 @@ for (const figure of figures) {
     if (frame === undefined) return;
     const reset = force || sceneIndex !== lastScene;
     lastScene = sceneIndex;
-    const before = card.getBoundingClientRect();
     if (reset) figure.classList.add("is-reset");
 
     const settled = {};
@@ -68,6 +70,8 @@ for (const figure of figures) {
     }
     const carried = [...scene.frames.slice(0, frameIndex + 1)].reverse().find((item) => item.out !== undefined)?.out;
     const at = order.indexOf(frame.at);
+    const entered = at !== lastAt;
+    lastAt = at;
     const skipped = new Set(frame.skipped ?? []);
 
     parts.forEach((part, index) => {
@@ -90,10 +94,9 @@ for (const figure of figures) {
       part.open.toggleAttribute("data-current", state === "current");
       part.open.inert = state !== "current";
       if (state === "current") {
-        showImpl(part, frame.impl, frame.lines ?? [], reset);
         for (const out of part.outs) out.toggleAttribute("data-active", out.dataset.out === frame.out);
+        showImpl(part, frame.impl, frame.lines ?? [], reset || entered);
       }
-      for (const item of part.sums) item.toggleAttribute("data-active", item.dataset.sum === settled[key]);
     });
 
     const data = cards[carried];
@@ -101,20 +104,6 @@ for (const figure of figures) {
     cardChip.textContent = data.chip;
     cardType.textContent = data.type;
     cardVal.textContent = data.short;
-
-    const target = parts[at].dock;
-    const moved = card.parentElement !== target;
-    if (moved) target.append(card);
-    for (const { dock } of parts) dock.style.height = dock.contains(card) ? `${card.offsetHeight}px` : "0px";
-
-    if (moved && !reset) {
-      const after = card.getBoundingClientRect();
-      card.style.transition = "none";
-      card.style.transform = `translate(${before.left - after.left}px, ${before.top - after.top}px)`;
-      void card.offsetWidth;
-      card.style.transition = "";
-      card.style.transform = "";
-    }
 
     if (reset) {
       void figure.offsetWidth;

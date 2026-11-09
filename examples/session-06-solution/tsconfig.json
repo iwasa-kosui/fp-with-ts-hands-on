@@ -11,6 +11,7 @@
     "src/**/*.tsx",
     "test/**/*.ts",
     "test/**/*.tsx",
+    "exercises/**/*.ts",
     "vitest.config.ts",
     "vite.config.ts",
     "drizzle.config.ts"

@@ -1,0 +1,32 @@
+const expectedPages = [
+  ["", "診察開始は2つのことを記録する", "background", "brief", 0.5],
+  ["state-only", "状態だけが残り、監査記録がない", "problem", "brief", 1],
+  ["current-code", "時刻の直接の生成と2回の保存", "problem", "brief", 1.5],
+  ["dual-write", "2回目の保存が失敗すると片方が残る", "problem", "teach", 1],
+  ["aggregate", "一緒に保存するものを決める", "knowledge", "teach", 1],
+  ["and-through", "保存した後もイベントを渡す", "knowledge", "teach", 1],
+  ["ports", "外から渡す約束を port と呼ぶ", "knowledge", "teach", 1],
+  ["time-and-id", "時刻と ID は1回の実行で一度だけ作る", "solution", "teach", 1],
+  ["one-save", "状態と監査記録を1回で渡す", "solution", "teach", 1.5],
+  ["save-failure", "途中で失敗すると何も残らない", "solution", "teach", 1],
+  ["conflict", "競合は Err で返し何も残らない", "solution", "teach", 1],
+  ["reject", "保存が壊れたら例外のまま外へ", "solution", "teach", 1],
+  ["flow", "全体の流れ", "solution", "teach", 1.5],
+  ["two-paths", "2つの失敗の経路", "solution", "teach", 1],
+  ["checks", "悪い変更を仕組みで検出する", "solution", "teach", 1],
+  ["exercise", "演習: 悪い変更を検出する仕組みを足す", "solution", "exercise", 15],
+  ["peer-review", "相互レビュー", "solution", "review", 3],
+  ["guard", "仕組みで防ぐ範囲", "work", "review", 1],
+  ["review", "自分の業務に持ち帰る", "work", "review", 1],
+  ["store-code", "SQLite と in-memory の読み比べ", "advanced", "advanced", 0],
+];
+
+export default {
+  previous: "/sessions/05-business-events-and-workflows/",
+  previousTitle: "データとパイプラインで予約キャンセルを設計する",
+  next: "/sessions/final/",
+  nextTitle: "参照実装で境界をたどる",
+  pages: expectedPages.map(([slug]) => slug),
+  expectedPages,
+  lastInTime: "review",
+};

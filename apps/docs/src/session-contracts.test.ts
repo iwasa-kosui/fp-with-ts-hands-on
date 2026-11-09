@@ -62,7 +62,7 @@ const expectedCurriculum = [
     kind: "orientation",
     exerciseCommand: undefined,
     snapshot: "session-00",
-    timeBreakdown: { brief: 4, teach: 3, exercise: 0, review: 3 },
+    timeBreakdown: { brief: 3.5, teach: 4, exercise: 0, review: 2.5 },
   },
   {
     slug: "01-state-transitions",
@@ -98,31 +98,31 @@ const expectedCurriculum = [
     slug: "04-workflow-errors",
     sequence: "04",
     title: "失敗をユースケースの結果として扱う",
-    durationMinutes: 35,
+    durationMinutes: 31,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:04",
     snapshot: "session-04",
-    timeBreakdown: { brief: 4, teach: 13, exercise: 10, review: 8 },
+    timeBreakdown: { brief: 3, teach: 12, exercise: 10, review: 6 },
   },
   {
     slug: "05-business-events-and-workflows",
     sequence: "05",
     title: "データとパイプラインで予約キャンセルを設計する",
-    durationMinutes: 15,
+    durationMinutes: 18,
     kind: "workshop",
     exerciseCommand: undefined,
     snapshot: undefined,
-    timeBreakdown: { brief: 2, teach: 7, exercise: 4, review: 2 },
+    timeBreakdown: { brief: 2, teach: 8, exercise: 6, review: 2 },
   },
   {
     slug: "06-effects-and-consistency",
     sequence: "06",
     title: "副作用と整合性境界を設計する",
-    durationMinutes: 40,
+    durationMinutes: 36,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:06",
     snapshot: "session-06",
-    timeBreakdown: { brief: 4, teach: 13, exercise: 15, review: 8 },
+    timeBreakdown: { brief: 3, teach: 13, exercise: 15, review: 5 },
   },
   {
     slug: "final",
@@ -141,21 +141,13 @@ const expectedEpisodes = [
   undefined,
   undefined,
   undefined,
-  [
-    "別の端末で受付情報が更新された後、古い画面に残っていたハムスターの診察開始ボタンを押すと、500エラーだけを返して止まりました。",
-    "予約なしは専用表示になるのに、受付前の予約は想定外扱いです。後ろでは犬が吠え、列だけが伸びます。",
-    "新しい例外を投げた側は、呼び出し側のcatch漏れを型から確かめられませんでした。",
-  ],
+  undefined,
   [
     "会計済みの予約を、受付担当者が誤ってキャンセルできました。",
     "理由のないキャンセルがStoreへ記録されましたが、開発者はどの条件を確認したのかを説明できません。",
     "実装へ進む前に、予約のデータと、キャンセルでデータがどう変わるかを確かめます。",
   ],
-  [
-    "カメの診察を開始すると、予約状態だけが先に更新され、監査記録はどこにも残りませんでした。",
-    "再現テストでは時刻とイベント ID が毎回変わり、失敗したときの値を同じ形で確かめられません。",
-    "状態の更新はすぐに終わりますが、監査記録の保存は別の処理です。そのため、原因を調べる作業だけが長引きます。",
-  ],
+  undefined,
   undefined,
 ] as const;
 
@@ -234,7 +226,7 @@ const expectedExercises = [
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
     peerReview: {
-      minutes: 8,
+      minutes: 6,
       pickCount: 2,
       questions: [
         "予約なしと状態不正は、異なる `kind` を持つ `Err` になっていますか。",
@@ -255,7 +247,7 @@ const expectedExercises = [
     solutionPresentation: "completed-file",
     peerReviewPromises: "reference",
     peerReview: {
-      minutes: 8,
+      minutes: 5,
       pickCount: 2,
       questions: [
         "時刻とイベント ID は実行ごとに一度だけ生成され、同じ `EventContext` に入りますか。",

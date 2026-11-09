@@ -10,6 +10,7 @@ import type { CodeExplorerLayoutParts } from "../code-explorer/CodeExplorer";
 import { phaseLabels } from "../code-explorer/TerminalPanel";
 import { CaseList, type GuardGuide } from "./CaseList";
 import { displayRowsFor } from "./labels";
+import { GuideSteps, defaultGuide } from "./GuideSteps";
 import { ResultTable } from "./ResultTable";
 import { useGuardRun, type GuardRunStep } from "./useGuardRun";
 
@@ -76,6 +77,7 @@ export const GuardLayout = ({
     () => displayRowsFor(guard.result, cases),
     [guard.result, cases],
   );
+  const activeGuide = guide ?? defaultGuide;
   const running = guard.status.kind === "running";
   const progress =
     guard.status.kind === "running"
@@ -91,7 +93,6 @@ export const GuardLayout = ({
           selectedPath={parts.selectedPath}
           disabled={parts.locked}
           onSelect={parts.selectPath}
-          guide={guide}
         />
         {children === undefined ? null : (
           <div className="guard-exercise__answer">{children}</div>
@@ -148,6 +149,9 @@ export const GuardLayout = ({
             </div>
           )}
         </div>
+        {activeGuide.criteria === undefined ? null : (
+          <p className="guard-exercise__criteria">{activeGuide.criteria}</p>
+        )}
         <div className="guard-exercise__scroll">
           {guard.status.kind === "failed" ? (
             <p className="guard-exercise__error" role="alert">
@@ -159,15 +163,28 @@ export const GuardLayout = ({
               {guard.notice}
             </p>
           )}
-          <ResultTable
-            result={guard.result}
-            rows={rows}
-            restored={guard.source === "restored"}
-            limitations={guard.limitations}
-            limitationsEnabled={guard.ready}
-            passedNext={guide?.passedNext}
-            onLimitationChange={guard.setLimitation}
-          />
+          {guard.result === undefined ? (
+            <div className="guard-exercise__guide">
+              <h2>{activeGuide.title}</h2>
+              <GuideSteps steps={activeGuide.steps} />
+            </div>
+          ) : (
+            <>
+              <ResultTable
+                result={guard.result}
+                rows={rows}
+                restored={guard.source === "restored"}
+                limitations={guard.limitations}
+                limitationsEnabled={guard.ready}
+                passedNext={guide?.passedNext}
+                onLimitationChange={guard.setLimitation}
+              />
+              <details className="guard-exercise__guide-details">
+                <summary>{activeGuide.title}</summary>
+                <GuideSteps steps={activeGuide.steps} />
+              </details>
+            </>
+          )}
         </div>
       </section>
     </div>

@@ -8,7 +8,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
   <EpisodeIllustration slug={props.session.slug} />
     {props.session.episode.map((line) => <p data-episode-line>{line}</p>)}
   </aside>
-  <p>S04では、診察開始の失敗を Result で返し、andThen と map でつなぎました。S05では、別の業務である予約キャンセルを題材に、ユースケースを工程に分け、ROPで失敗の流れを捉え、I/Oをパイプラインの両端に置く設計を読みます。S05では、「データ構造があり、それをパイプライン（関数）で処理して業務フローを実現する」という考え方を使います。</p>
+  <p>S04では、診察開始の失敗を Result で返し、andThen と map でつなぐ処理を読みました。S05では、別の業務である予約キャンセルを題材に、ユースケースを工程に分け、ROPで失敗の流れを捉え、I/Oをパイプラインの両端に置く設計を読みます。S05では、「データ構造があり、それをパイプライン（関数）で処理して業務フローを実現する」という考え方を使います。</p>
 
   <h3>キャンセル前の予約</h3>
   <p>次の値は、予約済みで、まだ来院していない予約です。S01で学んだとおり、<code>kind</code>は予約の現在の状態を表します。</p>
@@ -82,13 +82,13 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
   <RailwayOrientedProgramming />
 
   <h3>S04のandThenは切り替え線に当たる</h3>
-  <p>S04で使った <code>andThen</code> は、Ok のときだけ次の関数へ進み、Err になった後はコールバックを呼びません。これは、失敗のレールへ移った値が後続の工程を飛ばすことに当たります。業務エラーを返さない <code>map</code> は、切り替え線のない工程です。S04で書いた診察開始の処理は、図の工程に次のように当たります。</p>
+  <p>S04で読んだ <code>andThen</code> は、Ok のときだけ次の関数へ進み、Err になった後はコールバックを呼びません。これは、失敗のレールへ移った値が後続の工程を飛ばすことに当たります。業務エラーを返さない <code>map</code> は、切り替え線のない工程です。S04で読んだ診察開始の処理は、図の工程に次のように当たります。</p>
   <table>
     <thead>
       <tr><th scope="col">図の工程</th><th scope="col">診察開始の処理</th><th scope="col">失敗のレールへ移る値</th></tr>
     </thead>
     <tbody>
-      <tr><th scope="row">入力を検査する</th><td><code>StartExaminationInput.parse</code>。S03の境界で検査します</td><td>S03の境界で返す検査の失敗</td></tr>
+      <tr><th scope="row">入力を検査する</th><td><code>StartExaminationInput.parse</code>。S03の境界で検査します</td><td>S04 の時点では例外で 500 になり、失敗のレールには乗りません</td></tr>
       <tr><th scope="row">対象を取得する</th><td><code>resolver.resolveById</code> と <code>ensureAppointmentFound</code></td><td><code>AppointmentNotFound</code></td></tr>
       <tr><th scope="row">権限と状態を確認する</th><td><code>andThen(ensureCheckedIn)</code>。S04の演習コードは権限を確認しません</td><td><code>InvalidAppointmentState</code></td></tr>
       <tr><th scope="row">結果を作る</th><td><code>map(transitionToInExamination)</code> と <code>store.save</code></td><td>なし</td></tr>
@@ -125,7 +125,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
   <h3 id="consistency-and-aggregate">整合性と集約</h3>
   <p>キャンセルでは、予約の状態を Canceled に変えるだけでなく、誰がいつキャンセルしたかの履歴も残します。この2つは、片方だけが書かれると困ります。予約は Canceled なのに履歴にキャンセルが無い状態や、履歴にキャンセルがあるのに予約が Scheduled のままの状態です。業務のルールが求めるデータの組み合わせが崩れていないことを、整合性が保たれていると言います。</p>
   <AggregateConsistencyFlow />
-  <p>一緒に変えないと整合性が崩れるデータのまとまりを、集約と呼びます。集約は DDD（ドメイン駆動設計）の用語です。このハンズオンでは、予約1件の現在の状態と、その予約の履歴が、予約の集約に入ります。予約の現在の状態と履歴（S06では監査記録と呼びます）を1回の保存にまとめる実装は、S06で診察開始を題材に書きます。</p>
+  <p>一緒に変えないと整合性が崩れるデータのまとまりを、集約と呼びます。集約は DDD（ドメイン駆動設計）の用語です。このハンズオンでは、予約1件の現在の状態と、その予約の履歴が、予約の集約に入ります。予約の現在の状態と履歴（S06では監査記録と呼びます）を1回の保存にまとめる実装は、S06で診察開始を題材に読みます。</p>
   <p>{"\n"}<code>examples/session-05</code> の <code>startExamination</code> は、S01〜S04 で学ぶ前の形のコードです。コードは開かなくて構いません。<code>Repository</code>（データベースの読み書きをまとめたオブジェクト）からの取得、状態の記録、監査記録（誰がいつ何をしたかを後から確かめるための履歴）、時刻とIDの生成を、一つのユースケースで行います。このコードは、このハンズオンで目指す形ではありません。時刻とIDの生成を外から渡す話と、状態と監査記録を1回の保存にまとめる話は、次のS06で扱います。{"\n"}</p>
   <aside class="decision-card">
     <h3>このハンズオンでEvent Storeを選ぶ理由</h3>
@@ -157,7 +157,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
     <li>3か所で失敗へ切り替わるROP基本図と、ResolverとEvent Storeを外側へ置いたユースケース図</li>
   </ol>
   <p>診察直前のキャンセルを認めるかなど、答えが揃わない点は無理に決めず、未決の問いとしてメモに残します。</p>
-  <p>次のS06では、S04で書いた診察開始に戻り、S05で両端に置いたResolverとStoreを使って、時刻とIDの生成と、状態と監査記録を1回で保存する方法を扱います。</p>
+  <p>次のS06では、S04で読んだ診察開始に戻り、S05で両端に置いたResolverとStoreを使って、時刻とIDの生成と、状態と監査記録を1回で保存する方法を扱います。</p>
 
   <details class="step-solution">
     <summary>補足: ビジネスイベントとワークフローから考える方法</summary>

@@ -1,0 +1,344 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import { quote } from "./quote";
+import "./step-figure.css";
+
+const useCasePath = "src/useCase/startExamination.ts";
+const beforeTime = quote("session-06", useCasePath, "const occurredAt = new Date().toISOString();");
+const beforeId = quote("session-06", useCasePath, "eventId: EventId.parse(crypto.randomUUID()),");
+const afterContext = quote(
+  "session-06-solution",
+  useCasePath,
+  "eventId: deps.eventIdGenerator.generate(),",
+  "occurredAt: deps.clock.now(),",
+);
+const onceCode = quote(
+  "session-06-solution",
+  useCasePath,
+  "Appointment.startExamination(createEventContext(deps))(",
+  ");",
+);
+const calcCode = quote(
+  "session-06-solution",
+  "exercises/guard/cases/G2-date-from-timestamp.ts",
+  "occurredAt: new Date(deps.clock.now()).toISOString(),",
+);
+
+const lit = JSON.stringify([
+  { beforeTime: [0], beforeId: [0] },
+  { after: [0, 1] },
+  { once: [0] },
+  { calc: [0] },
+]);
+
+const frames = [
+  "修正前: `new Date().toISOString()` と `crypto.randomUUID()` は、呼ぶたびに別の値を返します。実行のたびに時刻と ID が変わるので、テストで値を決められません。",
+  "修正後: 時刻は `deps.clock.now()`、ID は `deps.eventIdGenerator.generate()` から受け取ります。テストで固定の clock と ID generator を渡せば、毎回同じ値になります。",
+  "修正後: 時刻と ID を作る `createEventContext` は、1回の実行で1度だけ呼びます。その1回の値を、予約の状態と監査記録の両方が使うので、2つの時刻は同じです。",
+  "修正後: すでにある時刻から `new Date(...)` で計算するのは問題ありません。`clock` が返した時刻を渡しているので、現在時刻は読んでおらず、実行のたびに変わりません。",
+] as const;
+---
+
+<figure class="sf tic" data-time-and-id data-step-figure data-lit={lit} aria-label="時刻と ID を直接作る書き方と、deps から受け取る書き方の違い">
+  <StepControls />
+
+  <div aria-live="polite">
+    <ol class="sf-frames">
+      {frames.map((frame) => (
+        <li data-frame>
+          <p class="sf-caption">{frame.split("`").map((part, index) => (index % 2 === 1 ? <code>{part}</code> : part))}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  <div class="sf-stage tic__stage">
+    <div class="tic__codes">
+      <div class="tic__group" data-group="0">
+        <div class="tic__era"><span class="sf-tag sf-tag--before">修正前</span><code>startExamination.ts</code></div>
+        <figure class="sf-code" data-code="beforeTime"><Code code={beforeTime} lang="ts" wrap /></figure>
+        <figure class="sf-code" data-code="beforeId"><Code code={beforeId} lang="ts" wrap /></figure>
+      </div>
+      <div class="tic__group" data-group="1">
+        <div class="tic__era"><span class="sf-tag sf-tag--after">修正後</span><code>startExamination.ts</code></div>
+        <figure class="sf-code" data-code="after"><Code code={afterContext} lang="ts" wrap /></figure>
+      </div>
+      <div class="tic__group" data-group="2">
+        <div class="tic__era"><span class="sf-tag sf-tag--after">修正後</span><code>startExamination.ts</code></div>
+        <figure class="sf-code" data-code="once"><Code code={onceCode} lang="ts" wrap /></figure>
+      </div>
+      <div class="tic__group" data-group="3">
+        <div class="tic__era"><span class="sf-tag sf-tag--after">修正後</span><code>G2-date-from-timestamp.ts</code></div>
+        <figure class="sf-code" data-code="calc"><Code code={calcCode} lang="ts" wrap /></figure>
+      </div>
+    </div>
+
+    <div class="tic__views">
+      <div class="tic__view" data-view="0">
+        <div class="tic__runs">
+          <section class="tic__run">
+            <h4>1回目の実行</h4>
+            <p><span>時刻</span><code>"2026-08-30T06:30:00.123Z"</code></p>
+            <p><span>ID</span><code>"e-1"</code></p>
+          </section>
+          <section class="tic__run">
+            <h4>2回目の実行</h4>
+            <p><span>時刻</span><code>"2026-08-30T06:30:07.456Z"</code></p>
+            <p><span>ID</span><code>"e-2"</code></p>
+          </section>
+        </div>
+        <p class="tic__verdict"><span class="sf-tag sf-tag--err">✗ 毎回違う値</span>テストで値を決められない</p>
+        <p class="tic__note">値は説明用の例です。「1回目」「2回目」は、同じ処理を2回実行した結果です。</p>
+      </div>
+
+      <div class="tic__view" data-view="1">
+        <div class="tic__runs">
+          <section class="tic__run">
+            <h4>1回目の実行</h4>
+            <p><span>時刻</span><code>"2026-08-30T06:30:00.000Z"</code></p>
+            <p><span>ID</span><code>"e-1"</code></p>
+          </section>
+          <section class="tic__run">
+            <h4>2回目の実行</h4>
+            <p><span>時刻</span><code>"2026-08-30T06:30:00.000Z"</code></p>
+            <p><span>ID</span><code>"e-1"</code></p>
+          </section>
+        </div>
+        <p class="tic__verdict"><span class="sf-tag sf-tag--ok">✓ 毎回同じ値</span>テストで固定の clock と ID generator を渡した場合</p>
+        <p class="tic__note">値は説明用の例です。「1回目」「2回目」は、同じ処理を2回実行した結果です。</p>
+      </div>
+
+      <div class="tic__view" data-view="2">
+        <p class="tic__once"><span class="sf-tag sf-tag--value">1回の実行</span><code>createEventContext(deps)</code> を1度だけ呼ぶ</p>
+        <p class="tic__context"><code>{"{ eventId: \"e-1\", occurredAt: \"2026-08-30T06:30:00.000Z\" }"}</code></p>
+        <div class="tic__uses">
+          <section class="tic__use">
+            <h4>予約の状態</h4>
+            <p><code>examinationStartedAt</code></p>
+            <p><code>"2026-08-30T06:30:00.000Z"</code></p>
+          </section>
+          <section class="tic__use">
+            <h4>監査記録</h4>
+            <p><code>occurredAt</code></p>
+            <p><code>"2026-08-30T06:30:00.000Z"</code></p>
+          </section>
+        </div>
+        <p class="tic__verdict"><span class="sf-tag sf-tag--ok">✓ 同じ時刻</span>2つの時刻は、同じ1回の値です</p>
+      </div>
+
+      <div class="tic__view" data-view="3">
+        <ol class="tic__steps">
+          <li><code>deps.clock.now()</code><small>clock が返した、すでにある時刻</small></li>
+          <li><code>"2026-08-30T06:30:00.000Z"</code><small>文字列</small></li>
+          <li><code>new Date(…).toISOString()</code><small>その時刻から計算し直すだけ</small></li>
+        </ol>
+        <p class="tic__verdict"><span class="sf-tag sf-tag--ok">✓ 問題なし</span>現在時刻は読んでいません</p>
+      </div>
+    </div>
+  </div>
+
+</figure>
+
+<script>
+  import { mountLitFigure } from "./lit-figure";
+
+  document.querySelectorAll<HTMLElement>("[data-time-and-id]").forEach((root) => {
+    mountLitFigure(root);
+  });
+</script>
+
+<style>
+  .tic__stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 1rem;
+  }
+
+  .tic__codes,
+  .tic__views {
+    display: grid;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .tic__group,
+  .tic__view {
+    grid-area: 1 / 1;
+    min-width: 0;
+  }
+
+  .tic__group {
+    display: grid;
+    align-content: start;
+    gap: 0.5rem;
+  }
+
+  .tic__era {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  .tic__era code {
+    font-size: 0.8125rem;
+  }
+
+  .tic__view {
+    display: grid;
+    align-self: start;
+    align-content: start;
+    gap: 0.625rem;
+    padding: 0.625rem 0.875rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+  }
+
+  .tic__view p,
+  .tic__view h4,
+  .tic__view ol {
+    margin: 0;
+  }
+
+  .tic__runs,
+  .tic__uses {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .tic__run,
+  .tic__use {
+    min-width: 0;
+    padding: 0.375rem 0.625rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.375rem;
+    background: var(--role-bg);
+  }
+
+  .tic__run h4,
+  .tic__use h4 {
+    margin-block-end: 0.25rem;
+    font-size: 0.875rem;
+  }
+
+  .tic__run p {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.5rem;
+    line-height: 1.6;
+  }
+
+  .tic__run p span {
+    min-width: 2.25rem;
+    font-weight: 800;
+  }
+
+  .tic__run code,
+  .tic__use code,
+  .tic__context code {
+    font-size: 0.75rem;
+    overflow-wrap: anywhere;
+  }
+
+  .tic__use p {
+    line-height: 1.5;
+  }
+
+  .tic__verdict {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.75rem;
+    font-weight: 700;
+  }
+
+  .tic__note {
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+  }
+
+  .tic__once {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.625rem;
+  }
+
+  .tic__context {
+    padding: 0.375rem 0.625rem;
+    border: 2px solid var(--role-accent);
+    border-radius: 0.375rem;
+    background: color-mix(in srgb, var(--role-accent) 10%, var(--role-surface));
+  }
+
+  .tic__steps {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tic__steps li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.125rem 0.75rem;
+    padding: 0.375rem 0.625rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.375rem;
+    background: var(--role-bg);
+  }
+
+  .tic__steps li + li::before {
+    flex-basis: 100%;
+    margin-block: -0.5rem 0;
+    color: var(--role-muted);
+    content: "▼";
+    font-size: 0.6875rem;
+    line-height: 1;
+  }
+
+  .tic__steps code {
+    font-size: 0.8125rem;
+  }
+
+  .tic__steps small {
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+  }
+
+  .tic:not([data-ready]) .tic__group,
+  .tic:not([data-ready]) .tic__view {
+    grid-area: auto;
+    margin-block-end: 0.5rem;
+  }
+
+  .tic[data-ready] .tic__group,
+  .tic[data-ready] .tic__view {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s, visibility 0s linear 0.35s;
+  }
+
+  .tic[data-ready][data-step="0"] [data-group="0"],
+  .tic[data-ready][data-step="1"] [data-group="1"],
+  .tic[data-ready][data-step="2"] [data-group="2"],
+  .tic[data-ready][data-step="3"] [data-group="3"],
+  .tic[data-ready][data-step="0"] [data-view="0"],
+  .tic[data-ready][data-step="1"] [data-view="1"],
+  .tic[data-ready][data-step="2"] [data-view="2"],
+  .tic[data-ready][data-step="3"] [data-view="3"] {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.35s;
+  }
+
+  @media (max-width: 52rem) {
+    .tic__stage {
+      grid-template-columns: minmax(0, 1fr);
+      height: auto;
+    }
+  }
+</style>

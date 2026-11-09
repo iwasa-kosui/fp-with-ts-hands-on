@@ -13,7 +13,7 @@ export const sessionPages = [
   },
   {
     slug: "reference",
-    title: "演習の形は大きなコードでも保たれるか",
+    title: "5つの境界は大きなコードでも保たれるか",
     flow: "problem",
     kind: "teach",
     minutes: 0.5,
@@ -25,7 +25,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1.5,
-    role: "事前知識: 参照実装を読むために、層の分け方と import の向きを知ります。",
+    role: "事前知識: 課題1の参照実装を読むために、層の分け方と import の向きを知ります。",
   },
   {
     slug: "differences",
@@ -33,7 +33,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 0.5,
-    role: "事前知識: S06 と参照実装で、書き方が違う3点を比べます。",
+    role: "事前知識: 課題1の保存を読むために、S06 と違う3点を比べます。",
   },
   {
     slug: "boundaries",
@@ -41,7 +41,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1.5,
-    role: "解決策: 1件の依頼が5つの境界を順に通ることを確かめます。",
+    role: "解決策: 課題1に答えます。1件の依頼が5つの境界を順に通ることを確かめます。",
   },
   {
     slug: "boundary-failures",
@@ -57,15 +57,15 @@ export const sessionPages = [
     flow: "solution",
     kind: "review",
     minutes: 1.5,
-    role: "解決策を守る: 機械の指摘を、直すか、理由を付けて残すかを判断します。",
+    role: "解決策を守る: 課題2に答えます。機械の指摘を、直すか、理由を付けて残すかを判断します。",
   },
   {
-    slug: "forecast-review",
-    title: "S00 の予想と比べる",
+    slug: "own-rule-review",
+    title: "S00 で書いた決まりを見直す",
     flow: "work",
     kind: "review",
     minutes: 0.5,
-    role: "業務で考える: S00 の予想と、実際に使った仕組みを並べます。",
+    role: "業務で考える: S00 で書いた自分の現場の決まりを、ここまでの仕組みで見直します。",
   },
   {
     slug: "next-mechanism",

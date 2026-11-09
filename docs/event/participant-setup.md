@@ -73,23 +73,24 @@ pnpm demo:NAME
 | S2 | `pnpm exercise:02` |
 | S3 補助演習 | `pnpm exercise:03-supplement` |
 | S3 | `pnpm exercise:03` |
-| S4 | `pnpm exercise:04` |
+| S4 | コマンドは使いません。ブラウザの演習の画面で行います |
 | S6 | `pnpm exercise:06` |
 
-6本を続けて確認したい場合は、次を順に実行します。
+S4 の演習は、ブラウザの演習の画面で、悪い変更を検出する仕組みを足します。`pnpm exercise:04` は以前の演習のコマンドで、この回では使いません。
+
+S4 を除く5本のコマンドを続けて確認したい場合は、次を順に実行します。
 
 ```bash
 pnpm exercise:01
 pnpm exercise:02
 pnpm exercise:03-supplement
 pnpm exercise:03
-pnpm exercise:04
 pnpm exercise:06
 ```
 
 各コマンドは、そのセッションの開始時には業務上の未解決条件を示す assertion failure になるよう作られています。環境エラーではありません。対象モジュールを変更したあと、同じコマンドを再実行して成功を確認します。
 
-S0 は現状の業務・操作・保存先・ログを読む回、S5 は予約のデータとキャンセルのパイプラインを読む回なので演習コマンドはありません。`examples/session-06-solution` は S6 の解答であり、全解答と回帰テストを持つ到達点も兼ねます。Final はページの5項目に沿って参照実装を読む回です。ハンズオンでは講師が5分を目安に案内します。`examples/final` をセットアップしたり編集したりする必要はありません。
+S0 は現状の業務・操作・保存先・ログを読む回、S5 は予約のデータとキャンセルのパイプラインを読む回なので演習コマンドはありません。`examples/session-06-solution` は S6 の解答であり、全解答と回帰テストを持つ到達点も兼ねます。Final はページの5項目に沿って参照実装を読む回です。ハンズオンでは講師が10分を目安に案内します。`examples/final` をセットアップしたり編集したりする必要はありません。
 
 ## 差分の確認と次のセッションへの進み方
 
@@ -101,7 +102,7 @@ S0 は現状の業務・操作・保存先・ログを読む回、S5 は予約�
 | S2 | `git diff --stat -- examples/session-02` |
 | S3 補助演習 | `git diff --stat -- examples/session-03-supplement` |
 | S3 | `git diff --stat -- examples/session-03` |
-| S4 | `git diff --stat -- examples/session-04` |
+| S4 | 手元のコードは編集しないので、確認は要りません |
 | S6 | `git diff --stat -- examples/session-06` |
 
 各回で `git status --short` も実行し、表のpath以外に意図しない変更がないか確認します。前のセッションの未commit差分は次の回の差分確認に含まれません。
