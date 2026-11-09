@@ -9,7 +9,7 @@ export const sessionPages = [
     flow: "background",
     kind: "teach",
     minutes: 0.5,
-    role: "背景: ここまでの Session で分けた5つの境界を、S00 の地図の上で確かめます。",
+    role: "背景: ここまでの Session で分けた5つの境界を、S00 の5つのステップの図の上で確かめます。",
   },
   {
     slug: "reference",

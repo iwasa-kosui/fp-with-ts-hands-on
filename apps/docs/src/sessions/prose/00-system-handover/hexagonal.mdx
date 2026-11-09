@@ -1,0 +1,9 @@
+import HexagonalMap from "../../../components/HexagonalMap.astro";
+
+<p>前のページの分け方は、ヘキサゴナルアーキテクチャという設計の考え方に沿っています。Ports and Adapters とも呼びます。業務の決まりと手順を内側に置き、画面やデータベースとつなぐコードを外側に置きます。内側のコードは、外側の実装を知らないようにします。そうすると、画面やデータベースの都合が変わっても、内側の業務の決まりを直さずに済みます。六角形の図で説明されることから付いた名前で、6という数に意味はありません。</p>
+
+<HexagonalMap />
+
+<p>内側と外側の間の約束を port と呼びます。port は、内側が外側に求める処理を型で表したものです。外側でつなぐコードをアダプタと呼び、配布コードでは <code>adaptor/</code> に置いています。</p>
+
+<p>S00 のコードには、この考え方に合っていない所が1つあります。<code>useCase/</code> が <code>adaptor/secondary/sqlite/</code> の型 <code>AppointmentRepository</code> を import しています。前のページの図の破線です。後の Session で、この型を内側へ移します。</p>

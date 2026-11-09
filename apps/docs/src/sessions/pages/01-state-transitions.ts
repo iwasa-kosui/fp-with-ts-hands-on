@@ -33,7 +33,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1.5,
-    role: "事前知識: 状態ごとに別の型を作ると、必要な情報が欠けた予約を書いた時点で報告されます。",
+    role: "事前知識: 状態ごとに別の型を作ると、必要な情報が欠けた予約は、型検査のときに報告されます。",
   },
   {
     slug: "discriminated-union",

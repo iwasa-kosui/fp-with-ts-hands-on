@@ -17,15 +17,15 @@ export const sessionPages = [
     flow: "background",
     kind: "brief",
     minutes: 1,
-    role: "背景: 病院の仕事がシステムの中をどう通るかを、5つの段で見ます。",
+    role: "背景: 病院の仕事がシステムの中をどう通るかを、5つのステップで見ます。",
   },
   {
     slug: "examination-mock",
     title: "「診察を開始する」を押すと何が起きるか",
     flow: "background",
     kind: "teach",
-    minutes: 1.5,
-    role: "背景: 地図の段を、実際の操作1回でたどります。",
+    minutes: 1,
+    role: "背景: 前のページの5つのステップを、実際の操作1回でたどります。",
   },
   {
     slug: "incidents",
@@ -58,6 +58,14 @@ export const sessionPages = [
     kind: "teach",
     minutes: 0.5,
     role: "事前知識: 業務の決まりをコードに書く場所を知るために、配布コードの分け方を見ます。",
+  },
+  {
+    slug: "hexagonal",
+    title: "この分け方の名前と理由",
+    flow: "knowledge",
+    kind: "teach",
+    minutes: 0.5,
+    role: "事前知識: 配布コードがなぜこの分け方なのかを知るために、ヘキサゴナルアーキテクチャの考え方を見ます。",
   },
   {
     slug: "when-noticed",
