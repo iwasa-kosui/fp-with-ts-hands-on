@@ -19,7 +19,7 @@ export const GuideSteps = ({
 }: Readonly<{ steps: GuardGuide["steps"] }>) => (
   <ol className="guard-exercise__steps">
     {steps.map((step) => {
-      const { id, text, items = [] } =
+      const { id, text, items = [], reference } =
         typeof step === "string" ? { text: step } : step;
       const segments = typeof text === "string" ? [text] : text;
       return (
@@ -39,6 +39,18 @@ export const GuideSteps = ({
                 <li key={item}>{item}</li>
               ))}
             </ul>
+          )}
+          {reference === undefined ? null : (
+            <details className="guard-exercise__reference">
+              <summary>{reference.summary}</summary>
+              <p>{reference.text}</p>
+              <figure>
+                <figcaption>{reference.caption}</figcaption>
+                <pre>
+                  <code>{reference.code}</code>
+                </pre>
+              </figure>
+            </details>
           )}
         </li>
       );

@@ -5,12 +5,20 @@ export type GuardGuideSegment =
   | string
   | Readonly<{ text: string; href: string }>;
 
+export type GuardGuideReference = Readonly<{
+  summary: string;
+  text: string;
+  caption: string;
+  code: string;
+}>;
+
 export type GuardGuideStep =
   | string
   | Readonly<{
       id?: string;
       text: string | readonly GuardGuideSegment[];
       items?: readonly string[];
+      reference?: GuardGuideReference;
     }>;
 
 export type GuardGuide = Readonly<{

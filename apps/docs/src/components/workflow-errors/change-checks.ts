@@ -6,7 +6,7 @@ const mechanisms: readonly MechanismInfo[] = [
     name: "Linter のルール",
     detail: "書き方を検査する",
     code: `// selector: 検出するコードの形
-selector: "VariableDeclarator[id.name='startExamination'] ThrowStatement",`,
+selector: "CallExpression[callee.property.name='_unsafeUnwrap']",`,
   },
   {
     id: "tests",
