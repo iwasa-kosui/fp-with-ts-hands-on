@@ -1,15 +1,19 @@
-import LintRuleCards from "../../../components/boundary/LintRuleCards.astro";
+import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
+import { session03ChangeChecks } from "../../../components/boundary/change-checks";
 
 <p>直したコードも、次の変更で元に戻ることがあります。たとえば、別の人が <code>parse</code> に <code>raw: any</code> を戻しても、型検査は通ることがあります。ここから先の課題3は、直した状態を保つことです。</p>
 
-<p>悪い変更を機械で検出する仕組みは、次の3種類です。</p>
+<p>悪い変更を機械で検出する仕組みは、Linter の規則、値の性質のテスト、型のテストの3種類です。変更を選んで結果を見比べてください。<code>any</code> や <code>as</code> の書き方は規則とテストが、UUID の検査を外す変更はテストだけが、連絡先を足す変更は型のテストとテストが検出します。</p>
 
-<ul>
-  <li><strong>Linter の規則</strong>: コードの書き方を機械で調べ、<code>any</code> や <code>as</code> のような書き方を検出します。</li>
-  <li><strong>値の性質のテスト</strong>: ランダムな入力を多数作り、「UUID の形でない文字列を渡すと、<code>parse</code> は Err を返す」という性質を確かめます。</li>
-  <li><strong>型のテスト</strong>: 悪い変更を入れると型エラーが消えることを確かめます。</li>
-</ul>
+<ChangeChecks set={session03ChangeChecks} />
 
-<p>テストの書き方は次のページで学びます。このページでは、ESLint の規則を見ます。規則は <code>eslint.config.mjs</code> の <code>rules</code> に <code>"規則名": "error"</code> の形で書きます。規則の候補は3組です。<code>consistent-type-assertions</code> だけは、カードの「設定」の形で書きます。</p>
-
-<LintRuleCards />
+<details class="step-solution">
+  <summary>eslint.config.mjs に足す規則の候補</summary>
+  <p><code>eslint.config.mjs</code> の <code>rules</code> に <code>"規則名": "error"</code> の形で書きます。</p>
+  <ul>
+    <li><code>no-explicit-any</code>: <code>any</code> の書き方を検出します。</li>
+    <li><code>no-unsafe-assignment</code>、<code>no-unsafe-argument</code>、<code>no-unsafe-member-access</code>、<code>no-unsafe-call</code>、<code>no-unsafe-return</code>: <code>any</code> の値を使う箇所を検出します。</li>
+    <li><code>consistent-type-assertions</code> の <code>{`["error", { assertionStyle: "never" }]`}</code>: <code>as</code> の型アサーションを検出します。</li>
+  </ul>
+  <p>規則名の前には <code>@typescript-eslint/</code> が付きます。</p>
+</details>

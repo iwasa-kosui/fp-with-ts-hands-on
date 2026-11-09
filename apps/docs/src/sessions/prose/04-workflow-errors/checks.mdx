@@ -1,5 +1,6 @@
 import { Code } from "astro:components";
-import PointCards from "../../../components/workflow-errors/PointCards.astro";
+import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
+import { session04ChangeChecks } from "../../../components/workflow-errors/change-checks";
 
 export const throwRuleCode = `"no-restricted-syntax": [
   "error",
@@ -9,41 +10,14 @@ export const throwRuleCode = `"no-restricted-syntax": [
   },
 ],`;
 
-<p>直したコードも、次の変更で元に戻ることがあります。ここから先の課題3は、直した状態を保つことです。元に戻る変更の例が3つあります。</p>
+<p>直したコードも、次の変更で元に戻ることがあります。ここから先の課題3は、直した状態を保つことです。変更を選んで結果を見比べてください。どの変更も型検査は通ります。<code>throw</code> と <code>_unsafeUnwrap</code> は規則とテストの両方が、失敗した後の保存と障害の変換はテストだけが、<code>default</code> で受ける変更は規則だけが検出します。</p>
 
-<PointCards
-  label="悪い変更と、検出する仕組み"
-  cards={[
-    {
-      title: "useCase が自分で throw する",
-      items: [
-        "業務の失敗が例外に戻り、型に現れなくなります。",
-        "<strong>Linter の規則</strong>: useCase の中の <code>throw</code> 文を検出します。設定は下のコードです。",
-      ],
-    },
-    {
-      title: "失敗した後も保存する",
-      items: [
-        "Err になった後も、<code>store.save</code> が呼ばれます。",
-        "<strong>テスト</strong>: deps に渡す偽物の Store は、保存された予約を <code>saved</code> に入れます。失敗する Resolver を渡し、<code>saved</code> が空であることを確かめます。",
-      ],
-    },
-    {
-      title: "保存の障害を業務の失敗にする",
-      items: [
-        "<code>store.save</code> の例外を <code>err(...)</code> に変えると、障害がお知らせになります。",
-        "<strong>テスト</strong>: 例外を投げる偽物の Store を渡し、例外が外へ出ることを確かめます。",
-      ],
-    },
-  ]}
-/>
+<ChangeChecks set={session04ChangeChecks} />
 
-<div class="session-split" style={{ gridTemplateColumns: "2.1fr 1fr" }}>
-  <figure class="code-block">
-    <Code code={throwRuleCode} lang="js" />
-  </figure>
-  <div>
-    <p><code>ThrowStatement</code> は <code>throw</code> 文を表す構文の名前です。<code>selector</code> の前半は、検出の範囲を useCase の中に絞ります。<code>ThrowStatement</code> だけだと、useCase の外の正当な <code>throw</code> も誤検知（正しいコードを悪い変更として検出すること）になります。</p>
-    <p>規則が検出するのは、useCase に書かれた <code>throw</code> だけです。外から来た例外は検出しません。</p>
-  </div>
-</div>
+<details class="step-solution">
+  <summary>useCase の throw を検出する規則（演習で写します）</summary>
+<p><code>ThrowStatement</code> は <code>throw</code> 文を表す構文の名前で、<code>selector</code> の前半は検出の範囲を useCase の中に絞ります。<code>ThrowStatement</code> だけを指定すると、useCase の外の正当な <code>throw</code> も誤検知（正しいコードを悪い変更として検出すること）になります。規則が検出するのは useCase に書かれた <code>throw</code> だけで、外から来た例外は検出しません。</p>
+<figure class="code-block">
+  <Code code={throwRuleCode} lang="js" />
+</figure>
+</details>

@@ -1,7 +1,8 @@
-import EffectsRuleCards from "../../../components/effects-walkthrough/EffectsRuleCards.astro";
+import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
+import { session06ChangeChecks } from "../../../components/effects-walkthrough/change-checks";
 
-<p>課題4は、直した状態を次の変更から守ることです。別の人が <code>new Date()</code> を戻しても、型検査は通ります。悪い変更を機械で検出する仕組みは、Linter の規則とテストの2つです。この演習では、2回の保存はテストで検出します。手を動かすのは検出の仕組みで、保存する側の実装は読むだけです。</p>
+<p>課題4は、直した状態を次の変更から守ることです。別の人が <code>new Date()</code> を戻しても、型検査は通ります。この演習の仕組みは Linter の規則とテストの2つで、表の型の列は対象外です。手を動かすのは検出の仕組みで、保存する側の実装は読むだけです。</p>
 
-<EffectsRuleCards />
+<p>変更を選んで結果を見比べてください。時刻や ID を直接作る変更は規則とテストの両方が、store を2回呼ぶ変更と clock を読み直す変更はテストだけが検出します。</p>
 
-<p>正しいコードを悪い変更として検出してしまうことを、誤検知と呼びます。広すぎる規則は、正しいコードまで誤検知します。</p>
+<ChangeChecks set={session06ChangeChecks} />

@@ -1,0 +1,174 @@
+import type { ChangeCase, ChangeCheckSet, MechanismInfo } from "../change-checks/types";
+
+const mechanisms: readonly MechanismInfo[] = [
+  {
+    id: "types",
+    name: "型のテスト",
+    detail: "型エラーになることを確かめる",
+    code: "// @ts-expect-error ← 次の行が型エラーでなければエラー",
+  },
+  {
+    id: "lint",
+    name: "Linter の規則",
+    detail: "`rules` に書く",
+    code: "// 規則の一覧は図の下にあります",
+  },
+  {
+    id: "tests",
+    name: "値の性質のテスト",
+    detail: "ランダムな入力を多数試す",
+    code: "// 書き方は次のページで見ます",
+  },
+];
+
+const cases: readonly ChangeCase[] = [
+  {
+    id: "B1-any-parser",
+    kind: "bad",
+    label: "any で受けて検査しない",
+    baseCase: "G1-solution",
+    target: "parse の部分",
+    diff: [
+      { kind: "skip", text: "// import と型の定義は schema を使わない形に変える" },
+      { kind: "same", text: "export const StartExaminationInput = {" },
+      { kind: "del", text: "  schema," },
+      { kind: "del", text: "  parse: schemaResult(schema)," },
+      { kind: "add", text: "  parse: (raw: any): Result<StartExaminationInput> =>" },
+      { kind: "add", text: "    ok({" },
+      { kind: "add", text: "      appointmentId: raw.appointmentId," },
+      { kind: "add", text: "      veterinarianId: raw.veterinarianId," },
+      { kind: "add", text: "    })," },
+      { kind: "same", text: "} as const;" },
+    ],
+    results: {
+      types: { found: false, output: "エラーなし" },
+      lint: { found: true, output: "no-explicit-any: Unexpected any. Specify a different type. ほか4件", setting: "\"@typescript-eslint/no-explicit-any\": \"error\"" },
+      tests: { found: true, output: "3件失敗: Property failed after 1 tests" },
+    },
+    why: "`any` は型検査を止めるので、tsc は通ります。書き方を見る規則と、不正な値を渡すテストが見つけます。",
+  },
+  {
+    id: "B2-unknown-cast",
+    kind: "bad",
+    label: "unknown を as で通す",
+    baseCase: "G1-solution",
+    target: "parse の部分",
+    diff: [
+      { kind: "skip", text: "// import と型の定義は schema を使わない形に変える" },
+      { kind: "same", text: "export const StartExaminationInput = {" },
+      { kind: "del", text: "  schema," },
+      { kind: "del", text: "  parse: schemaResult(schema)," },
+      { kind: "add", text: "  parse: (raw: unknown): Result<StartExaminationInput> =>" },
+      { kind: "add", text: "    ok(raw as StartExaminationInput)," },
+      { kind: "same", text: "} as const;" },
+    ],
+    results: {
+      types: { found: false, output: "エラーなし" },
+      lint: { found: true, output: "consistent-type-assertions: Do not use any type assertions.", setting: `"@typescript-eslint/consistent-type-assertions":
+  ["error", { assertionStyle: "never" }]` },
+      tests: { found: true, output: "2件失敗: Property failed after 1 tests" },
+    },
+    why: "`as` は値を確かめず、型だけを変えます。規則が `as` を見つけ、テストが UUID でない値を通すことを見つけます。",
+  },
+  {
+    id: "B5-handler-bypasses-parse",
+    kind: "bad",
+    label: "route が parse を通さない",
+    baseCase: "G2-handler-uses-parse",
+    target: "handle の部分",
+    diff: [
+      { kind: "skip", text: "// import は type import に変える" },
+      { kind: "same", text: "export const handle = async (" },
+      { kind: "same", text: "): Promise<Readonly<{ status: number }>> => {" },
+      { kind: "del", text: "  const input = StartExaminationInput.parse(await c.req.json())._unsafeUnwrap();" },
+      { kind: "del", text: "  run(input);" },
+      { kind: "add", text: "  const body = await c.req.json();" },
+      { kind: "add", text: "  run(body);" },
+      { kind: "same", text: "  return { status: 200 };" },
+    ],
+    results: {
+      types: { found: false, output: "エラーなし" },
+      lint: { found: true, output: "no-unsafe-assignment: Unsafe assignment of an `any` value. ほか1件", setting: `"@typescript-eslint/no-unsafe-assignment": "error"
+"@typescript-eslint/no-unsafe-argument": "error"` },
+      tests: { found: true, output: "1件失敗: Property failed after 1 tests" },
+    },
+    why: "`c.req.json()` の戻り値は `any` なので、そのまま渡しても型検査は通ります。`any` の受け渡しを見る規則と、不正な本文を渡すテストが見つけます。",
+  },
+  {
+    id: "B3-schema-without-uuid",
+    kind: "bad",
+    label: "UUID の検査を外す",
+    baseCase: "G1-solution",
+    target: "schema の部分",
+    diff: [
+      { kind: "skip", text: "// AppointmentId と VeterinarianId の import を消す" },
+      { kind: "same", text: "const schema = z.object({" },
+      { kind: "del", text: "  appointmentId: AppointmentId.schema," },
+      { kind: "del", text: "  veterinarianId: VeterinarianId.schema," },
+      { kind: "add", text: "  appointmentId: z.string().brand<\"AppointmentId\">()," },
+      { kind: "add", text: "  veterinarianId: z.string().brand<\"VeterinarianId\">()," },
+      { kind: "same", text: "}).readonly();" },
+      { kind: "skip", text: "// 以降は同じ" },
+    ],
+    results: {
+      types: { found: false, output: "エラーなし" },
+      lint: { found: false, output: "エラーなし" },
+      tests: { found: true, output: "2件失敗: Counterexample: [\"\"]" },
+    },
+    why: "UUID でなくても型は合い、書き方にも問題はありません。値を多数試すテストだけが見つけます。",
+  },
+  {
+    id: "B4-audit-owner-contact",
+    kind: "bad",
+    label: "監査記録に連絡先を入れる",
+    baseCase: "G4-audit-three-fields",
+    target: "toAuditPayload の部分",
+    diff: [
+      { kind: "skip", text: "// import と ExaminationStartedAuditPayload の型は消す" },
+      { kind: "del", text: "export const toAuditPayload = ({" },
+      { kind: "skip", text: "  // appointmentId、veterinarianId、examinationStartedAt の分割代入を消す" },
+      { kind: "del", text: "}: InExamination): ExaminationStartedAuditPayload => ({" },
+      { kind: "add", text: "export const toAuditPayload = (appointment: InExamination) => ({" },
+      { kind: "skip", text: "  // 3 項目は appointment から取る" },
+      { kind: "add", text: "  ownerContact: clinicFixture.ownerContact," },
+      { kind: "same", text: "});" },
+    ],
+    results: {
+      types: { found: true, output: "TS2578: Unused '@ts-expect-error' directive." },
+      lint: { found: false, output: "エラーなし" },
+      tests: { found: true, output: "1件失敗: Property failed after 1 tests" },
+    },
+    why: "項目が増えると型エラーが消えて、`// @ts-expect-error` の印が余ります。値のテストは余分な項目で失敗します。規則は書き方に問題がないので通します。",
+  },
+  {
+    id: "G3-as-const",
+    kind: "good",
+    label: "as const を足す（正しいコード）",
+    baseCase: "G1-solution",
+    target: "parse の部分",
+    diff: [
+      { kind: "same", text: "import { schemaResult } from \"../../../src/domain/shared/schemaResult.js\";" },
+      { kind: "add", text: "const fieldNames = [\"appointmentId\", \"veterinarianId\"] as const;" },
+      { kind: "skip", text: "// schema の定義は同じ" },
+      { kind: "same", text: "export const StartExaminationInput = {" },
+      { kind: "same", text: "  schema," },
+      { kind: "add", text: "  fieldNames," },
+      { kind: "same", text: "  parse: schemaResult(schema)," },
+      { kind: "same", text: "} as const;" },
+    ],
+    results: {
+      types: { found: false, output: "エラーなし" },
+      lint: { found: false, output: "エラーなし", setting: `"@typescript-eslint/consistent-type-assertions":
+  ["error", { assertionStyle: "never" }]` },
+      tests: { found: false, output: "5件成功" },
+    },
+    why: "`as const` は値を変えず、型も偽らないので、`never` の設定でも規則は検出しません。",
+  },
+];
+
+export const session03ChangeChecks: ChangeCheckSet = {
+  example: "session-03-solution",
+  ariaLabel: "悪い変更と3つの仕組みの結果",
+  mechanisms,
+  cases,
+};
