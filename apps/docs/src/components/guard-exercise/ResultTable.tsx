@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import {
   guardMechanisms,
   type GuardResult,
@@ -8,6 +8,8 @@ import {
   headlineFor,
   mechanismHeaders,
   secondsText,
+  tableTermsSummary,
+  tableTermsText,
   verdictText,
   type DisplayRow,
 } from "./labels";
@@ -34,6 +36,7 @@ export const ResultTable = ({
   onLimitationChange,
 }: ResultTableProps) => {
   const [openId, setOpenId] = useState<string>();
+  const termsTextRef = useRef<HTMLParagraphElement>(null);
   const badRows = rows.filter(({ kind }) => kind === "bad");
   const goodRows = rows.filter(({ kind }) => kind === "good");
 
@@ -148,9 +151,22 @@ export const ResultTable = ({
           </>
         ) : null}
       </table>
-      <p className="guard-exercise__limits-note">
-        各行を開いて書く「この仕組みで検出できないこと」は、機械では判定しません。
-      </p>
+      <div className="guard-exercise__limits">
+        <p className="guard-exercise__limits-note">
+          各行を開いて書く「この仕組みで検出できないこと」は、機械では判定しません。
+        </p>
+        <details
+          className="guard-exercise__terms"
+          onToggle={(event) => {
+            if (event.currentTarget.open) {
+              termsTextRef.current?.scrollIntoView({ block: "nearest" });
+            }
+          }}
+        >
+          <summary>{tableTermsSummary}</summary>
+          <p ref={termsTextRef}>{tableTermsText}</p>
+        </details>
+      </div>
       {result !== undefined && result.problems.length > 0 ? (
         <section className="guard-exercise__problems" aria-label="問題">
           <h3>問題</h3>

@@ -154,15 +154,15 @@ const exhaustiveFrames: readonly Frame[] = [
 const frames = part === "count" ? countFrames : exhaustiveFrames;
 ---
 
-<figure class="adt-count" data-adt-count aria-label={part === "count" ? "型の候補を数える図" : "修正前と修正後を並べ、状態を足す前と足した後で残りの候補を数える図"}>
+<figure class="adt-count" data-adt-count data-step-figure aria-label={part === "count" ? "型の候補を数える図" : "修正前と修正後を並べ、状態を足す前と足した後で残りの候補を数える図"}>
   <div class="adt-count__bar">
     <StepControls />
     {
       part === "exhaustive" && (
         <div class="adt-count__toggle" role="group" aria-label="修正前と修正後、状態を足す前、足した後を切り替える">
-          <button type="button" data-toggle="0" aria-pressed="true">修正前と修正後</button>
-          <button type="button" data-toggle="1" aria-pressed="false">状態を足す前</button>
-          <button type="button" data-toggle="2" aria-pressed="false">NoShow を足した後</button>
+          <button type="button" data-toggle="0" data-step-scene aria-pressed="true">修正前と修正後</button>
+          <button type="button" data-toggle="1" data-step-scene aria-pressed="false">状態を足す前</button>
+          <button type="button" data-toggle="2" data-step-scene aria-pressed="false">NoShow を足した後</button>
         </div>
       )
     }
@@ -593,11 +593,13 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
     }
   }
 
+  .adt-count__codes :global(.line),
   .adt-count__pair :global(.line) {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
 
+  .adt-count__codes :global(code),
   .adt-count__pair :global(code) {
     min-width: 0;
   }

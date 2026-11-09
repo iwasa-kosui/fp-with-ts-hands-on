@@ -227,6 +227,45 @@ describe("GuardExercise", () => {
     expect(row(host, "G1-solution")?.textContent).toContain("未確認");
   });
 
+  it("keeps the table terms inside a details element while the table is rendered", async () => {
+    const { host } = await mountExercise();
+
+    const terms = host.querySelector("details");
+    expect(terms?.open).toBe(false);
+    expect(terms?.querySelector("summary")).not.toBeNull();
+    expect(terms?.textContent?.length ?? 0).toBeGreaterThan(
+      terms?.querySelector("summary")?.textContent?.length ?? 0,
+    );
+    expect(host.querySelector("table")).not.toBeNull();
+    expect(terms?.contains(host.querySelector("table"))).toBe(false);
+  });
+
+  it("scrolls the table terms into view only when the details element opens", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    try {
+      const { host } = await mountExercise();
+      const terms = host.querySelector("details")!;
+
+      await act(async () => {
+        terms.dispatchEvent(new Event("toggle"));
+      });
+      expect(scrollIntoView).not.toHaveBeenCalled();
+
+      terms.open = true;
+      await act(async () => {
+        terms.dispatchEvent(new Event("toggle"));
+      });
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+      expect(scrollIntoView.mock.contexts[0]).toBe(terms.querySelector("p"));
+    } finally {
+      Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+    }
+  });
+
   it("opens the case file read-only and the mine file editable", async () => {
     const { host } = await mountExercise();
 

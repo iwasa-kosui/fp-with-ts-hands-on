@@ -110,7 +110,13 @@ const captions = [
   import { mountStepper } from "../stepper/stepper";
 
   document.querySelectorAll<HTMLElement>("[data-rule-candidates]").forEach((root) => {
-    mountStepper({ root });
+    const cards = [...root.querySelectorAll<HTMLElement>("[data-card]")];
+    mountStepper({
+      root,
+      onStep: (index) => {
+        cards.forEach((card, position) => card.toggleAttribute("data-current", index >= cards.length || position === index));
+      },
+    });
   });
 </script>
 
@@ -138,6 +144,30 @@ const captions = [
       grid-template-columns: repeat(4, minmax(0, 1fr));
       align-items: stretch;
     }
+
+    .cand[data-ready][data-step="0"] .cand__cards {
+      grid-template-columns: minmax(0, 3fr) repeat(3, minmax(0, 1fr));
+    }
+
+    .cand[data-ready][data-step="1"] .cand__cards {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 3fr) repeat(2, minmax(0, 1fr));
+    }
+
+    .cand[data-ready][data-step="2"] .cand__cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 3fr) minmax(0, 1fr);
+    }
+
+    .cand[data-ready][data-step="3"] .cand__cards {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 3fr);
+    }
+  }
+
+  .cand[data-ready] .cand__card:not([data-current]) :is(.cand__options, .cand__row) {
+    display: none;
+  }
+
+  .cand[data-ready][data-step="4"] .cand__row:not([data-tone]) {
+    display: none;
   }
 
   .cand__card {
@@ -158,7 +188,7 @@ const captions = [
 
   .cand__kind {
     color: var(--role-muted);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 800;
   }
 
@@ -176,7 +206,7 @@ const captions = [
 
   .cand__options {
     color: var(--role-muted);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     line-height: 1.4;
     overflow-wrap: anywhere;
   }
@@ -198,7 +228,7 @@ const captions = [
 
   .cand__label {
     color: var(--role-muted);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 800;
   }
 
@@ -211,7 +241,7 @@ const captions = [
   }
 
   .cand__text {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     line-height: 1.4;
   }
 

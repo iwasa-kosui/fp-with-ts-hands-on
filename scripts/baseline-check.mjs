@@ -88,6 +88,7 @@ export const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-03-solution/exercises/guard/subjects/input.ts",
   "examples/session-02-solution/package.json",
   "examples/session-02-solution/eslint.config.mjs",
+  "examples/session-02-solution/tsconfig.json",
   "examples/session-02-solution/exercises/guard/answer/eslint.config.mjs",
   "examples/session-02-solution/exercises/guard/answer/mine/statusLabel.test.ts",
   "examples/session-02-solution/exercises/guard/answer/mine/statusLabel.type-test.ts",
