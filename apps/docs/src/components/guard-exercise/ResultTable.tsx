@@ -8,6 +8,8 @@ import {
   headlineFor,
   mechanismHeaders,
   secondsText,
+  tableTermsSummary,
+  tableTermsText,
   verdictText,
   type DisplayRow,
 } from "./labels";
@@ -148,9 +150,15 @@ export const ResultTable = ({
           </>
         ) : null}
       </table>
-      <p className="guard-exercise__limits-note">
-        各行を開いて書く「この仕組みで検出できないこと」は、機械では判定しません。
-      </p>
+      <div className="guard-exercise__limits">
+        <p className="guard-exercise__limits-note">
+          各行を開いて書く「この仕組みで検出できないこと」は、機械では判定しません。
+        </p>
+        <details className="guard-exercise__terms">
+          <summary>{tableTermsSummary}</summary>
+          <p>{tableTermsText}</p>
+        </details>
+      </div>
       {result !== undefined && result.problems.length > 0 ? (
         <section className="guard-exercise__problems" aria-label="問題">
           <h3>問題</h3>

@@ -227,6 +227,19 @@ describe("GuardExercise", () => {
     expect(row(host, "G1-solution")?.textContent).toContain("未確認");
   });
 
+  it("keeps the table terms inside a details element while the table is rendered", async () => {
+    const { host } = await mountExercise();
+
+    const terms = host.querySelector("details");
+    expect(terms?.open).toBe(false);
+    expect(terms?.querySelector("summary")).not.toBeNull();
+    expect(terms?.textContent?.length ?? 0).toBeGreaterThan(
+      terms?.querySelector("summary")?.textContent?.length ?? 0,
+    );
+    expect(host.querySelector("table")).not.toBeNull();
+    expect(terms?.contains(host.querySelector("table"))).toBe(false);
+  });
+
   it("opens the case file read-only and the mine file editable", async () => {
     const { host } = await mountExercise();
 
