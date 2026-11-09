@@ -317,7 +317,7 @@ ${text(307, 113, 14, "監査記録", { anchor: "middle" })}
 <rect x="252" y="144" width="102" height="24" rx="6" fill="#2236b8"/>
 <rect x="252" y="158" width="102" height="10" fill="#2236b8" stroke="none"/>
 <path d="M252 168H354" stroke-width="2.5"/>
-${text(303, 162, 13, "再現テスト", { anchor: "middle", fill: "#fff" })}
+${text(303, 162, 13, "時刻と ID", { anchor: "middle", fill: "#fff" })}
 ${text(262, 194, 14, "時刻")}
 ${turnArrow(338, 189)}
 <path d="M258 206H348" stroke="#cfd4ee" stroke-width="2"/>
@@ -392,7 +392,7 @@ export const episodeScenes = {
     art: businessEvents,
   },
   "06-effects-and-consistency": {
-    label: "診察台のカメの診察が開始され、画面は診察中に変わった。監査記録の箱は空のままで、再現テストのカードでは時刻とイベント ID が毎回変わっている",
+    label: "診察台のカメの診察が開始され、画面は診察中に変わった。監査記録の箱は空のままで、時刻とイベント ID のカードでは値が毎回変わっている",
     art: effectsAndConsistency,
   },
   final: {

@@ -77,8 +77,9 @@ const assertEnd = lineIndex(labelLines, (line) => line === "};", "};", assertSta
 const switchBodyStart = lineIndex(labelLines, (line) => line.trim() === "switch (appointment.kind) {", "switch (appointment.kind) {", switchFunctionStart);
 const defaultCase = lineIndex(labelLines, (line) => line.trim() === "default:", "default:", switchBodyStart);
 const switchLines = [
-  ...slice(labelLines, assertStart, assertEnd),
-  "",
+  ...slice(labelLines, assertStart, assertStart),
+  "  …",
+  ...slice(labelLines, assertEnd, assertEnd),
   ...slice(labelLines, switchFunctionStart, switchBodyStart),
   "    …",
   ...slice(labelLines, defaultCase, switchFunctionEnd),
@@ -118,6 +119,10 @@ const usedTiles = new Map<number, (typeof kinds)[number]>([
 ]);
 const impossibleTile = indexOf("isPaid", "isCanceled");
 const allTiles = Array.from({ length: 2 ** flagNames.length }, (_, index) => index);
+const gridColumns = 8;
+const bitsOf = (value: number, width: number) => value.toString(2).padStart(width, "0");
+const columnLabels = Array.from({ length: gridColumns }, (_, column) => bitsOf(column, 3));
+const rowLabels = Array.from({ length: allTiles.length / gridColumns }, (_, row) => bitsOf(row, 2));
 
 const booleans = [false, true];
 
@@ -134,7 +139,7 @@ type Frame = Readonly<{
   error?: string;
 }>;
 
-const illustrativeNote = "説明用（配布コードにはありません）";
+const illustrativeNote = "説明用（教材のコードにはありません）";
 const solutionAppointmentPath = "src/domain/appointment/appointment.ts";
 const stringSignatureLabel = lineLabelOf(
   "session-02",
@@ -228,6 +233,7 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
                     <figure class="code-block adt-count__code adt-count__code--negative">
                       <figcaption>
                         <span class="adt-count__badge adt-count__badge--negative">{frame.extra.label}</span>
+                        <span>{illustrativeNote}</span>
                         <code>{frame.extra.path}</code>
                       </figcaption>
                       <Code code={frame.extra.code} lang="typescript" transformers={[markKeyLines]} />
@@ -322,19 +328,27 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
                       <div class="adt-count__grid-wrap">
                         <p class="adt-count__bubble">× 会計済みかつキャンセル済み</p>
                         <div class="adt-count__grid" aria-hidden="true">
-                          {allTiles.map((tile) => (
-                            <span
-                              class:list={[
-                                "adt-count__tile",
-                                "adt-count__tile--grid",
-                                usedTiles.has(tile) ? "adt-count__tile--used" : tile === impossibleTile ? "adt-count__tile--danger" : "adt-count__tile--unused",
-                              ]}
-                              style={`--i: ${tile}`}
-                            >
-                              {usedTiles.has(tile) ? kinds.indexOf(usedTiles.get(tile)!) + 1 : tile === impossibleTile ? "×" : ""}
-                            </span>
+                          <span />
+                          {columnLabels.map((label) => <span class="adt-count__axis-label">{label}</span>)}
+                          {rowLabels.map((label, row) => (
+                            <>
+                              <span class="adt-count__axis-label">{label}</span>
+                              {allTiles.slice(row * gridColumns, (row + 1) * gridColumns).map((tile) => (
+                                <span
+                                  class:list={[
+                                    "adt-count__tile",
+                                    "adt-count__tile--grid",
+                                    usedTiles.has(tile) ? "adt-count__tile--used" : tile === impossibleTile ? "adt-count__tile--danger" : "adt-count__tile--unused",
+                                  ]}
+                                  style={`--i: ${tile}`}
+                                >
+                                  {usedTiles.has(tile) ? kinds.indexOf(usedTiles.get(tile)!) + 1 : tile === impossibleTile ? "×" : ""}
+                                </span>
+                              ))}
+                            </>
                           ))}
                         </div>
+                        <p class="adt-count__axis-note" aria-hidden="true">行: isCheckedIn と isExaminationStarted、列: isExaminationCompleted と isPaid と isCanceled（0 は false、1 は true）</p>
                       </div>
                       <ol class="adt-count__mapping">
                         {kinds.map((kind, kindIndex) => (
@@ -417,9 +431,9 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
                 <div class="adt-count__text">
                   {frame.id === "string" && <p><code>kind: string</code> は、どんな文字列も取れます。取れる値は数え上げられず、<code>case</code> で処理した後に何が残るかも数え上げられません。</p>}
                   {frame.id === "sum" && <p><code>Appointment</code> の <code>kind</code> は6個で、1つずつ列挙できます。「または」で組み立てた型を直和型と呼びます。会計済みかつキャンセル済みのような、業務で発生しない組み合わせは候補に含まれません。</p>}
-                  {frame.id === "product" && <p>「かつ」で組み立てた型を直積型と呼びます。直積型の値は、項目をすべて持ちます。<code>isCheckedIn</code> の2通りと <code>isPaid</code> の2通りを掛けて、組み合わせは 2 × 2 = 4 通りです。</p>}
-                  {frame.id === "flags" && <p>仮に5個のフラグの直積型で表現すると、6状態に6通りを割り当てても、会計済みかつキャンセル済みのような残りの26通りが型検査を通過します。</p>}
-                  {frame.id === "adt" && <p>代数的データ型（ADT）は、型を直積と直和で組み立てる考え方です。<code>Appointment</code> は直和型で、候補の <code>Canceled</code> は直積型です。状態を特定するのは <code>kind</code> だけで、<code>string</code> の項目は状態を特定しないため数えません。候補を数え上げられる型なら、case の追加漏れを検出できます。</p>}
+                  {frame.id === "product" && <p>「かつ」で組み立てた型を直積型と呼びます。直積型の値は、項目をすべて持ちます。2つのフラグは状態を特定する項目であるため、<code>isCheckedIn</code> の2通りと <code>isPaid</code> の2通りを掛けて、組み合わせは 2 × 2 = 4 通りです。</p>}
+                  {frame.id === "flags" && <p>仮に5個のフラグ（どれも状態を特定する項目）の直積型で表現すると、6状態を割り当てても、残りの26通りが型検査を通過します。</p>}
+                  {frame.id === "adt" && <p>代数的データ型（ADT）は、型を直積と直和で組み立てる考え方です。<code>Appointment</code> は直和型で、候補の <code>Canceled</code> は直積型です。状態を特定するのは <code>kind</code> だけで、<code>string</code> の項目は状態を特定しないため数えません。候補を数え上げられると、<code>case</code> の後に残る候補を型で検証できます。追加漏れの検出には、残りの候補が0個であることを検証するコードも必要です。</p>}
                   {frame.id === "compare" && <p>左が修正前、右が修正後です。線を付けた2行が、修正点です。引数の型を <code>Appointment</code> にして、<code>default</code> で <code>assertNever</code> を呼びます。</p>}
                   {frame.id === "before" && <p>6個の case をすべて処理すると、<code>default</code> に残る候補は0個です。<code>appointment</code> は <code>never</code> 型になり、<code>assertNever</code> に渡せます。線を付けた2行が、修正点です。</p>}
                   {frame.id === "after" && <p><code>NoShow</code> を追加しても対応する case が漏れていると、<code>default</code> に残る候補は <code>NoShow</code> の1個です。この型エラーは、エディタの赤線と、型検査のコマンドの両方に表示されます。</p>}
@@ -608,7 +622,7 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
     align-items: center;
     justify-content: flex-start;
     gap: 0.25rem 0.5rem;
-    padding-block: 0.25rem;
+    padding-block: 0.125rem;
   }
 
   .adt-count__code figcaption code {
@@ -629,7 +643,7 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
 
   .adt-count__code :global(pre) {
     margin: 0;
-    padding: 0.5rem 0;
+    padding: 0.25rem 0;
     overflow-x: auto;
     font-size: 0.75rem;
     line-height: 1.35;
@@ -706,14 +720,14 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
 
   .adt-count__codes {
     display: grid;
-    gap: 0.5rem;
+    gap: 0.25rem;
     min-width: 0;
   }
 
   .adt-count__error {
     display: grid;
     gap: 0.125rem;
-    margin: 0.375rem 0 0;
+    margin: 0.25rem 0 0;
     padding: 0.125rem 0.625rem;
     border: 2px solid var(--role-negative);
     border-radius: 0.5rem;
@@ -785,7 +799,7 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
 
   .adt-count__tile--wide {
     width: 100%;
-    min-height: 2rem;
+    min-height: 1.75rem;
     padding: 0.125rem 0.5rem;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.75rem;
@@ -806,7 +820,7 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
   .adt-count__tile--grid {
     min-height: 0;
     padding: 0;
-    aspect-ratio: 1 / 0.6;
+    aspect-ratio: 1 / 0.45;
     border-width: 2px;
     font-size: 0.8125rem;
     line-height: 1.1;
@@ -875,7 +889,7 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
   .adt-count__mapping {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.125rem 0.75rem;
+    gap: 0.125rem 0.5rem;
     margin: 0.375rem 0 0;
     padding: 0;
     font-size: 0.75rem;
@@ -887,7 +901,7 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
   }
 
   .adt-count__formula {
-    margin: 0.5rem 0 0;
+    margin: 0.25rem 0 0;
     font-size: 1rem;
     font-weight: 800;
     text-align: center;
@@ -902,7 +916,7 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
   }
 
   .adt-count__result {
-    margin: 0.375rem 0 0;
+    margin: 0.25rem 0 0;
     padding: 0.25rem 0.625rem;
     border: 2px solid var(--role-border);
     border-radius: 0.5rem;
@@ -928,15 +942,32 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
   }
 
   .adt-count__grid {
+    --axis-width: 1.75rem;
     display: grid;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-columns: var(--axis-width) repeat(8, minmax(0, 1fr));
     gap: 0.25rem;
+    align-items: center;
+  }
+
+  .adt-count__axis-label {
+    color: var(--role-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .adt-count__axis-note {
+    margin: 0.25rem 0 0;
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    line-height: 1.4;
   }
 
   .adt-count__bubble {
     position: absolute;
     top: 0;
-    left: 43.75%;
+    left: calc(1.75rem + (100% - 1.75rem) * 0.4375);
     margin: 0;
     padding: 0.125rem 0.5rem;
     transform: translateX(-50%);

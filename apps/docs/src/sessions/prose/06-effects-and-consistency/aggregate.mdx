@@ -1,10 +1,10 @@
 import AggregateConsistencyFlow from "../../../components/AggregateConsistencyFlow.astro";
 import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
 
-<p>課題1を解決するには、同時に残す範囲を定義します。同時に変更しないと整合性（データの組み合わせが業務ルールを満たしていること）が崩れるデータのまとまりを<strong>集約</strong>、同時に残す範囲を<strong>整合性境界</strong>と呼びます。診察開始では、予約1件の状態と監査記録が、同じ集約に含まれます。</p>
+<p>課題1を解決するには、1回で保存する範囲を定義します。<strong>集約</strong>は、業務ルールの対象になるデータのまとまりです。<strong>整合性境界</strong>は、1回の保存で変更を確定し、データの組み合わせが業務ルールを満たした状態を保つ範囲です。診察開始では、予約1件の集約が整合性境界で、状態と監査記録の両方を含みます。</p>
 
-<FigureSpace reserve={152}>
+<FigureSpace reserve={162}>
   <AggregateConsistencyFlow auditLabel="監査記録" condensedCode scene="start-examination" />
 </FigureSpace>
 
-<p>図のコードは、<code>examples/session-06-solution</code> の <code>Appointment.startExamination</code> の抜粋です（「…」は省略した部分）。</p>
+<p>図のコードは、<a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/examples/session-06-solution/src/domain/appointment/transitions.ts"><code>transitions.ts</code></a> の <code>Appointment.startExamination</code> の抜粋です（「…」は省略した部分）。</p>

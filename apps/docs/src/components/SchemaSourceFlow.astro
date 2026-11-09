@@ -211,7 +211,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   >
     <title id="schema-source-flow-title">1つの schema から型と検査を作る仕組み</title>
     <desc id="schema-source-flow-desc">
-      上の帯は型検査のとき（TypeScript）、下の帯は実行時（JavaScript）です。JavaScript に変換すると型は消えるので、下の帯に型は残りません。修正前は、型を手動で定義し、parse は実行時の検査をしません。修正後は、1つの schema から z.infer で型を取り出し、schemaResult で実行時に検査する parse を作ります。修正前は night-shift という不正な値が内側へ進みます。修正後は night-shift が parse の検査で拒否され、UUID の形をした値だけが内側へ進みます。
+      上の帯は型検査のとき（TypeScript）、下の帯は実行時（JavaScript）です。JavaScript に変換すると型は消えるので、下の帯に型は残りません。schema は実行時の値なので下の帯にあり、z.infer の矢印だけが上の帯の型へ伸びます。修正前は、型を手動で定義し、parse は実行時の検査をしません。修正後は、1つの schema から z.infer で型を取り出し、schemaResult で実行時に検査する parse を作ります。修正前は night-shift という不正な値が内側へ進みます。修正後は night-shift が parse の検査で拒否され、UUID の形をした値だけが内側へ進みます。
     </desc>
 
     <g class="schema-source-flow__badge schema-source-flow__badge--before">
@@ -248,22 +248,23 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     </g>
 
     <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__schema" data-part="schemaBox" data-mode={initial.parts.schemaBox}>
-      <rect x="208" y="96" width="128" height="100" rx="8"></rect>
-      <text x="272" y="116" text-anchor="middle" class="schema-source-flow__strong">schema</text>
-      <text x="216" y="144" class="schema-source-flow__code-text schema-source-flow__mono">z.object({"{"}…{"}"})</text>
-      <text x="216" y="164" class="schema-source-flow__code-text schema-source-flow__mono">.readonly()</text>
+      <rect x="208" y="222" width="128" height="66" rx="8"></rect>
+      <text x="272" y="240" text-anchor="middle" class="schema-source-flow__strong">schema</text>
+      <text x="216" y="262" class="schema-source-flow__code-text schema-source-flow__mono">z.object({"{"}…{"}"})</text>
+      <text x="216" y="278" class="schema-source-flow__code-text schema-source-flow__mono">.readonly()</text>
     </g>
 
     <g class="schema-source-flow__part schema-source-flow__link" data-part="linkType" data-mode={initial.parts.linkType}>
-      <line x1="208" y1="112" x2="155" y2="112"></line>
+      <line x1="272" y1="222" x2="272" y2="112"></line>
+      <line x1="272" y1="112" x2="155" y2="112"></line>
       <polygon points="146,112 155,107 155,117"></polygon>
-      <text x="177" y="104" text-anchor="middle" class="schema-source-flow__mono">z.infer</text>
+      <text x="214" y="104" text-anchor="middle" class="schema-source-flow__mono">z.infer</text>
     </g>
 
     <g class="schema-source-flow__part schema-source-flow__link" data-part="linkCheck" data-mode={initial.parts.linkCheck}>
-      <line x1="216" y1="196" x2="216" y2="316"></line>
+      <line x1="216" y1="288" x2="216" y2="316"></line>
       <polygon points="216,325 211,316 221,316"></polygon>
-      <text x="224" y="264" class="schema-source-flow__mono">schemaResult</text>
+      <text x="224" y="308" class="schema-source-flow__mono">schemaResult</text>
     </g>
 
     <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__check" data-part="checkBox" data-mode={initial.parts.checkBox}>
@@ -320,7 +321,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
         <rect x="10" y="136" width="56" height="18" rx="9"></rect>
         <text x="38" y="149" text-anchor="middle">型として</text>
       </g>
-      <text x="116" y="320" class="schema-source-flow__name schema-source-flow__mono">StartExaminationInput</text>
+      <text x="208" y="320" text-anchor="end" class="schema-source-flow__name schema-source-flow__mono">StartExaminationInput</text>
       <g class="schema-source-flow__name-tag">
         <rect x="116" y="444" width="56" height="18" rx="9"></rect>
         <text x="144" y="457" text-anchor="middle">値として</text>
@@ -901,6 +902,11 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     overflow-x: auto;
     font-size: 0.8125rem;
     line-height: 1.4;
+  }
+
+  .schema-source-flow__code :global(:is(pre, code, .line)) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 
   .schema-source-flow :global(.schema-source-flow__key) {

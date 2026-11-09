@@ -3,6 +3,7 @@ import { Code } from "astro:components";
 import type { CodeGuide } from "../code-explorer/code-guide";
 import type { ProjectFiles } from "../code-explorer/types";
 import MiniTree from "./mini-tree/MiniTree.astro";
+import { breakBeforeMember } from "./break-before-member";
 import type { MiniTreeData } from "./mini-tree/mini-tree";
 
 interface Props {
@@ -48,7 +49,7 @@ const cards = guides.map((guide) => {
         {excerpts.map(({ startLineNumber, endLineNumber, source }) => (
           <figure>
             <figcaption>{guide.path}<span class="line-range">:{startLineNumber}-{endLineNumber}</span></figcaption>
-            <Code code={source} lang="ts" />
+            <Code code={source} lang="ts" transformers={[breakBeforeMember]} />
           </figure>
         ))}
         <p>{guide.currentDesign} {guide.futureRisk}</p>

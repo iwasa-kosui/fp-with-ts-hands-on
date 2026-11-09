@@ -11,14 +11,15 @@ const expectedPages = [
   ["boundary-after", "境界を通過した値だけを内側へ渡す構成", "solution", "teach", 2],
   ["terms", "学習した概念の名前", "solution", "teach", 0.5],
   ["audit-record", "監査記録からの個人情報の除外", "solution", "teach", 1],
-  ["checks", "修正後の状態を守る仕組み", "solution", "teach", 0.5],
   ["property-test", "値の性質のテストによる検証", "solution", "teach", 0.5],
+  ["checks", "修正後の状態を守る仕組み", "solution", "teach", 0.5],
   ["exercise", "演習: 誤った変更を検出する仕組みを追加する", "solution", "exercise", 15],
   ["peer-review", "相互レビュー", "solution", "review", 3],
   ["guard", "担当業務での防止策", "work", "review", 1],
   ["review", "担当業務への適用", "work", "review", 1],
   ["payment-amount", "値の制約への同じ形の適用", "advanced", "advanced", 0],
   ["pii", "Sensitive による値のマスク", "advanced", "advanced", 0],
+  ["pii-property-test", "Sensitive の値の性質のテスト", "advanced", "advanced", 0],
   ["value-shapes", "値の種類によらない共通の形", "advanced", "advanced", 0],
 ];
 

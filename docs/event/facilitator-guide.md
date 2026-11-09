@@ -159,7 +159,7 @@ S0 では、講師が incidents のページで2件の事故を読みます。wh
 
 S5 では、講師が予約キャンセルを工程に分けて読みます。ROP基本図で3か所の失敗への切替を示し、別のユースケース図では、User ResolverとAppointment Resolverによる取得、createEventによる時刻とIDの取得、Event Storeによる保存を、業務ロジックの外に配置した成功経路として確認します。この説明では業務のコードを修正しません。S5 の演習は、参加者が業務のコードを編集せず、誤った変更を検出する仕組みを追加する6分です。
 
-Final は、講師が参照実装 `examples/final` を、`examples/final/src/useCase/startExaminationUseCase.ts` を入口にして6分で案内します。参加者へ `examples/final` のセットアップと編集を求めません。残りの4分は、参加者が判断します。all-rules では、ルールの適用範囲を広げたときの3件の指摘を判断します。カードごとに選ぶと、教材の判断が表示されます。all-rules に合否はありません。own-rule-review では、S0 で記入した業務ルールを見直します。next-mechanism では、「依頼文に記載したくなる内容」と「実行する場所」を1つずつ選びます。「依頼文」は、Agent に渡す指示のことです。Agent を使わない参加者は、「チームで合意した規約」に読み替えます。シートの末尾にある「業務への振り返り」と「業務へ戻って最初に見る箇所」は、参加者が持ち帰って記入します。Final に演習と相互レビューはありません。self-study、persistence-notes、software-factory、agent-skill は「あとで読む」のページで、時間内に扱いません。
+Final は、講師が参照実装 `examples/final` を、`examples/final/src/useCase/startExaminationUseCase.ts` を入口にして6分で案内します。参加者へ `examples/final` のセットアップと編集を求めません。残りの4分は、参加者が判断します。all-rules では、ルールの適用範囲を広げたときの3件の指摘を判断します。カードごとに対処を選ぶと、その対処の結果と、教材の判断が表示されます。all-rules に合否はありません。own-rule-review では、S0 で記入した業務ルールを見直します。next-mechanism では、「依頼文に記載したくなる内容」と「実行する場所」を1つずつ選びます。「依頼文」は、Agent に渡す指示のことです。Agent を使わない参加者は、「チームで合意した規約」に読み替えます。シートの末尾にある「業務への振り返り」と「業務へ戻って最初に見る箇所」は、参加者が持ち帰って記入します。Final に演習と相互レビューはありません。self-study、persistence-notes、software-factory、agent-skill は「あとで読む」のページで、時間内に扱いません。
 
 ## S5 の進行
 

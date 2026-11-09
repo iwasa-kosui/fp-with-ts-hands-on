@@ -22,18 +22,18 @@ export const guide = {
       text: [
         "Linter のルールは eslint.config.mjs の rules に追加します。テストは exercises/guard/mine/ の *.test.ts に、型のテストは *.type-test.ts に実装します。どのファイルも用意してあります。実装方法は前の2ページ「",
         {
-          text: "修正後の状態を守る仕組み",
-          href: sessionPageHref("03-boundaries-and-pii", "checks"),
+          text: "値の性質のテストによる検証",
+          href: sessionPageHref("03-boundaries-and-pii", "property-test"),
         },
         "」と「",
         {
-          text: "値の性質のテストによる検証",
-          href: sessionPageHref("03-boundaries-and-pii", "property-test"),
+          text: "修正後の状態を守る仕組み",
+          href: sessionPageHref("03-boundaries-and-pii", "checks"),
         },
         "」にあります。UUID でない文字列を通す誤った変更は、テストでだけ検出できます。",
       ],
     },
-    "「検出を検証する」を押します。検出された誤った変更は「検出」、検出されない変更は「未検出」と表に表示されます。",
+    "「検出を検証する」を押します。表の「結果」の列に、検出された誤った変更は「検出」、検出されない変更は「未検出」と表示されます。",
     "合格すると追加の誤った変更が増えます。追加の分は任意です。合格したら、表の誤った変更の名前を押して行を開き、「この仕組みで検出できないこと」に1文を記載します。この欄はプログラムでは判定しません。",
     "解答の例は、時間内に進められなくなったときに開きます。",
   ],

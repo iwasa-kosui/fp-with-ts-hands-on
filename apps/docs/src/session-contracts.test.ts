@@ -378,7 +378,7 @@ describe("page-owned session contracts", () => {
     const finalEpisode = sessions.find(({ slug }) => slug === "final")?.episode;
     expect(finalEpisode).toEqual([
       "S00 で飼い主が再度請求された犬の Mugi は、すでに帰宅しました。",
-      "開発者は、修正した構成が大きなコードでも維持されているかを確認するため、参照実装の前に残っています。",
+      "大きなコードで境界が崩れると、S00 の二重請求と同じ事故が、別の処理で再び発生します。開発者は、参照実装でも5つの境界が維持されているかを確認しています。",
       "事故が消えたわけではありません。事故ごとに、防ぐ場所を割り当てました。",
     ]);
 

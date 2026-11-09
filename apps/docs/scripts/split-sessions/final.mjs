@@ -1,5 +1,5 @@
 const expectedPages = [
-  ["", "ここまでで分けた5つの境界", "background", "teach", 0.5],
+  ["", "ここまでの実装を整理する5つの境界", "background", "teach", 0.5],
   ["reference", "大きなコードでの5つの境界の維持", "problem", "teach", 0.5],
   ["ports-and-adapters", "層の import の向き", "knowledge", "teach", 1.5],
   ["differences", "S06 との違い", "knowledge", "teach", 1],

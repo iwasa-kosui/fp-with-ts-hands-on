@@ -48,7 +48,7 @@ interface Props {
 
 const { scene: sceneKey } = Astro.props;
 const page = sceneKey !== undefined;
-const sameUntil = page ? "成功の 6 コマ目まで同じです。" : "場面1の6コマ目まで同じです。";
+const sameUntil = page ? "前のページの成功の流れと、`store` を呼ぶまでは同じです。" : "場面1の6コマ目まで同じです。`event` を作り、`store` を呼びます。";
 const rejectStart = "予約の確認とイベントの作成まで進み、保存で失敗します。作った `event` を `store` に渡して呼びます。";
 
 const startExaminationPath = "examples/session-06-solution/src/useCase/startExamination.ts";
@@ -204,8 +204,7 @@ const cards: readonly Card[] = [
   { key: "r0", stage: "resolve", tone: "ok", chip: "Ok", type: "AppointmentState | undefined", code: checkedIn, short: `{ kind: "CheckedIn", … }` },
   { key: "r1", stage: "found", tone: "ok", chip: "Ok", type: "Appointment", code: checkedIn, short: `{ kind: "CheckedIn", … }` },
   { key: "r2", stage: "checked", tone: "ok", chip: "Ok", type: "CheckedIn", code: checkedIn, short: `{ kind: "CheckedIn", … }` },
-  { key: "r3", stage: "start", tone: "ok", chip: "値", type: "EventContext", code: `{ eventId: "e-1", occurredAt: "2026-08-30T06:30:00.000Z" }`, short: `{ eventId: "e-1", … }` },
-  { key: "r4", stage: "start", tone: "ok", chip: "値", type: "ExaminationStarted", code: started, short: `{ kind: "ExaminationStarted", … }` },
+  { key: "r4", stage: "start", tone: "ok", chip: "Ok", type: "ExaminationStarted", code: started, short: `{ kind: "ExaminationStarted", … }` },
   { key: "r5", stage: "through", tone: "ok", chip: "Ok", type: "ExaminationStarted", code: started, short: `{ kind: "ExaminationStarted", … }` },
   { key: "r5e", stage: "through", tone: "err", chip: "Err", type: "AppointmentConflict", code: conflict, short: `{ kind: "AppointmentConflict", … }` },
   { key: "r5x", stage: "through", tone: "reject", chip: "reject", type: "AppointmentPersistenceError", code: `throw new AppointmentPersistenceError("append-audit", cause);`, short: `append-audit の書き込みが失敗` },
@@ -222,14 +221,14 @@ const scenes: readonly Scene[] = [
     settled: {},
     frames: [
       {
-        text: "`resolveById` が予約を取得します。値は `CheckedIn` の予約です。",
+        text: "`resolveAppointment` が予約を取得します。値は `CheckedIn` の予約です。",
         at: "resolve",
         impl: "resolve",
         lines: [4],
         out: "r0",
       },
       {
-        text: "`ensureAppointmentFound` は予約があるため `ok` を返し、値をそのまま次へ渡します。",
+        text: "`ensureFound` の中で `ensureAppointmentFound` が予約の有無を検証します。予約があるため `ok` を返し、値をそのまま次へ渡します。",
         at: "found",
         impl: "found",
         lines: [3, 8, 10],
@@ -243,21 +242,20 @@ const scenes: readonly Scene[] = [
         out: "r2",
       },
       {
-        text: "時刻と ID はイベントを作る時点で必要なため、`map` の中で port から取得します。`createEventContext` が1回だけ取得し、この1回の値を状態と監査記録の両方が使用します。",
+        text: "時刻と ID はイベントを作る時点で必要なため、`startExaminationEvent` の中で `createEventContext` が port から取得します。取得は1回だけで、この1回の値を状態と監査記録の両方が使用します。",
         at: "start",
         impl: "event",
         lines: [3, 4, 10],
-        out: "r3",
       },
       {
-        text: "`Appointment.startExamination` が `ExaminationStarted` を生成します。失敗しない計算であるため `map` です。",
+        text: "`startExaminationEvent` の中で `Appointment.startExamination` が `ExaminationStarted` を生成します。失敗しない計算であるため `map` でつなぎます。",
         at: "start",
         impl: "transition",
         lines: [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12],
         out: "r4",
       },
       {
-        text: "`andThrough` が `store` を呼びます。結果の `ok` は破棄します。保存後もイベントを渡すため、`event` がそのまま次の処理へ引き継がれます。",
+        text: "`andThrough` が `store` を呼びます。結果の `ok` は破棄し、保存後も必要な `event` をそのまま次の行へ渡します。",
         at: "through",
         impl: "store",
         lines: [0, 1, 2, 3],
@@ -276,13 +274,7 @@ const scenes: readonly Scene[] = [
     settled: upstream,
     frames: [
       {
-        text: `${sameUntil}\`event\` を作り、\`store\` を呼びます。`,
-        at: "through",
-        impl: "store",
-        lines: [0, 1, 2, 3],
-      },
-      {
-        text: "`store` は `err` で `AppointmentConflict` を返します。業務で発生しうる失敗であるため、型に残ります。",
+        text: `${sameUntil}ここで \`store\` は \`err\` で \`AppointmentConflict\` を返します。業務で発生しうる失敗であるため、型に残ります。`,
         at: "through",
         impl: "atomic",
         lines: [0, 1, 2, 3, 4, 5],
@@ -312,7 +304,7 @@ const scenes: readonly Scene[] = [
     settled: upstream,
     frames: [
       {
-        text: sceneKey === "reject" ? rejectStart : `${sameUntil}\`event\` を作り、\`store\` を呼びます。`,
+        text: sceneKey === "reject" ? rejectStart : sameUntil,
         at: "through",
         impl: "store",
         lines: [0, 1, 2, 3],
@@ -342,13 +334,36 @@ const scenes: readonly Scene[] = [
   },
 ];
 
+const twoPathsFailure: Scene = {
+  label: "保存障害: 例外の経路",
+  outer: "onError",
+  settled: upstream,
+  frames: [
+    {
+      text: `${sameUntil}ここで SQLite の書き込みが失敗すると、\`store\` の Promise が reject します。\`Err\` にならず、型に残りません。`,
+      at: "through",
+      impl: "store",
+      lines: [1, 2],
+      out: "r5x",
+      flow: { kind: "reject", from: "through", to: "through" },
+    },
+    {
+      text: "最後の `map` は実行されず、reject は `Result` の経路の外へ出ます。外側で 500 を返し、詳細は含めません。業務の失敗の型は増えません。",
+      at: "onError",
+      out: "r7x",
+      skipped: ["map"],
+      flow: { kind: "reject", from: "through", to: "onError" },
+    },
+  ],
+};
+
 const shownScenes =
   sceneKey === "flow"
     ? [scenes[0]]
     : sceneKey === "reject"
       ? [scenes[2]]
       : sceneKey === "two-paths"
-        ? [scenes[1], scenes[2]]
+        ? [scenes[1], twoPathsFailure]
         : scenes;
 
 const frameData = shownScenes.map(({ outer, settled, frames }) => ({
@@ -421,7 +436,7 @@ const usedChips = new Set(
 );
 const usesFlow = shownScenes.some(({ frames }) => frames.some(({ flow }) => flow !== undefined));
 const legendLines = [
-  `札「Ok」は成功の箱に入った値、札「値」は箱に入る前の値${usedChips.has("応答") ? "、札「応答」は呼び出し元へ返す HTTP の応答" : ""}です。`,
+  `右の札は、その行から次の行へ渡される値です。札「Ok」は成功の Result です。${usedChips.has("応答") ? "札「応答」は呼び出し元へ返す HTTP の応答です。" : ""}`,
   ...(usedChips.has("Err") || usesFlow
     ? ["札「Err」は型に残る業務の失敗で、枠と線は破線です。札「reject」は型に残らず外へ出る例外で、枠と線は実線です。"]
     : []),

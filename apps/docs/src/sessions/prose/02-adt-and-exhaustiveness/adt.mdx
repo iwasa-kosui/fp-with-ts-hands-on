@@ -1,6 +1,6 @@
 import AdtValueCount from "../../../components/AdtValueCount.astro";
 
-<p><code>kind: string</code> は取れる値を数え上げられません。<code>Appointment</code> の <code>kind</code> は6個です。ここでの「候補」は、その型が取れる値の1つです。数え上げるのは、<code>kind</code> が取れる値です。TypeScript では、「かつ」で組む直積型をオブジェクト型、「または」で組む直和型を union 型で表現します。</p>
+<p>この Session で数え上げるのは、状態を特定する項目が取れる値だけです。<code>Appointment</code> では <code>kind</code> がその項目で、取れる値は6個です。<code>kind: string</code> は取れる値を数え上げられません。ここでの「候補」は、その型が取れる値の1つです。「または」で組む直和型は、S01 の Union のことです。「かつ」で組む直積型は、TypeScript ではオブジェクト型で表現します。</p>
 
 <AdtValueCount part="count" />
 

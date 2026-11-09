@@ -1,15 +1,15 @@
 ---
 import { Code } from "astro:components";
-import { lineLabelOf } from "../../sessions/source-quotes";
 import type { ExampleSnapshot } from "../../sessions/types";
 import css from "./store-boundary.css?raw";
 import script from "./store-boundary.js?raw";
+import { excerptOf, type Part } from "./excerpt";
 import PathLabel from "./PathLabel.astro";
+import { breakBeforeMember } from "../break-before-member";
 import Walkthrough from "./Walkthrough.astro";
 
 type Box = "call" | "impl";
-type Quote = Readonly<{ first: string; last: string }>;
-type Snippet = Readonly<{ box: Box; snapshot: ExampleSnapshot; path: string; quotes: readonly Quote[]; code: string }>;
+type Snippet = Readonly<{ box: Box; snapshot: ExampleSnapshot; path: string; parts: readonly Part[] }>;
 type Pane = Readonly<{ pane: string; lines: readonly number[] }>;
 type CardState = "off" | "tx" | "tx-failed" | "tx-gone" | "home" | "home-failed";
 type Tx = "none" | "wait" | "open" | "commit" | "rollback" | "ended";
@@ -37,157 +37,90 @@ const snippets: Readonly<Record<string, Snippet>> = {
     box: "call",
     snapshot: "session-06",
     path: "src/useCase/startExamination.ts",
-    quotes: [
-      { first: "    await deps.stateStore.save(event.aggregateState);", last: "    await deps.eventLog.append(event);" },
-    ],
-    code: `await deps.stateStore.save(event.aggregateState);
-await deps.eventLog.append(event);`,
+    parts: [{ from: "await deps.stateStore.save(event.aggregateState);", to: "await deps.eventLog.append(event);" }],
   },
   "before-save": {
     box: "impl",
     snapshot: "session-06",
     path: "src/adaptor/secondary/sqlite/appointmentStore.ts",
-    quotes: [
-      { first: "    stateStore: {", last: "    }," },
-      { first: "  const saveState = (", last: "  };" },
+    parts: [
+      { from: "save: async (appointment) => saveState(database, appointment)," },
+      "…",
+      { from: "executor", to: ".values(row)" },
     ],
-    code: `stateStore: {
-  save: async (appointment) => saveState(database, appointment),
-},
-
-const saveState = (
-  executor: SqliteExecutor,
-  appointment: Appointment,
-): void => {
-  const row = toAppointmentRow(appointment);
-  try {
-    executor
-      .insert(appointmentsTable)
-      .values(row)
-      .onConflictDoUpdate({
-        target: appointmentsTable.appointmentId,
-        set: row,
-      })
-      .run();
-  } catch (cause) {
-    throw new AppointmentPersistenceError("save-state", cause);
-  }
-};`,
   },
   "before-append": {
     box: "impl",
     snapshot: "session-06",
     path: "src/adaptor/secondary/sqlite/appointmentStore.ts",
-    quotes: [
-      { first: "    eventLog: {", last: "    }," },
-      { first: "  const appendAudit = (", last: "  };" },
+    parts: [
+      { from: "append: async (event) => appendAudit(database, event)," },
+      "…",
+      { from: "executor.insert(auditLogsTable).values(toAuditRow(event)).run();" },
+      "…",
+      { from: 'throw new AppointmentPersistenceError("append-audit", cause);' },
     ],
-    code: `eventLog: {
-  append: async (event) => appendAudit(database, event),
-},
-
-const appendAudit = (
-  executor: SqliteExecutor,
-  event: ExaminationStarted,
-): void => {
-  try {
-    executor.insert(auditLogsTable).values(toAuditRow(event)).run();
-  } catch (cause) {
-    throw new AppointmentPersistenceError("append-audit", cause);
-  }
-};`,
   },
   "after-call": {
     box: "call",
     snapshot: "session-06-solution",
     path: "src/useCase/startExamination.ts",
-    quotes: [
-      { first: "      .andThrough(deps.examinationStartedStore.store)", last: "      .andThrough(deps.examinationStartedStore.store)" },
-    ],
-    code: `.andThrough(deps.examinationStartedStore.store)`,
+    parts: [{ from: ".andThrough(deps.examinationStartedStore.store)" }],
   },
   "after-store": {
     box: "impl",
     snapshot: "session-06-solution",
     path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
-    quotes: [
-      { first: "    store: (event) =>", last: "      ).andThen((result) => result)," },
-    ],
-    code: `store: (event) =>
-  ResultAsync.fromSafePromise(
-    Promise.resolve().then(() => storeAtomically(event)),
-  ).andThen((result) => result),`,
+    parts: [{ from: "store: (event) =>", to: ").andThen((result) => result)," }],
   },
-  "after-atomic": {
+  "after-open": {
     box: "impl",
     snapshot: "session-06-solution",
     path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
-    quotes: [
-      { first: "  const storeAtomically = (event: ExaminationStarted) =>", last: "    });" },
+    parts: [
+      { from: "const storeAtomically = (event: ExaminationStarted) =>" },
+      { from: "database.transaction((transaction) => {" },
+      "…",
     ],
-    code: `const storeAtomically = (event: ExaminationStarted) =>
-  database.transaction((transaction) => {
-    const current = findInTransaction(transaction, event.appointmentId);
-    if (current === undefined || current.kind !== "CheckedIn") {
-      return err({
-        kind: "AppointmentConflict",
-        appointmentId: event.appointmentId,
-      } as const);
-    }
-
-    const committedEvent = Appointment.startExamination({
-      eventId: event.eventId,
-      occurredAt: event.occurredAt,
-    })(current, event.aggregateState.veterinarianId);
-
-    saveState(transaction, committedEvent.aggregateState);
-    appendAudit(transaction, committedEvent);
-    return ok(undefined);
-  });`,
+  },
+  "after-read": {
+    box: "impl",
+    snapshot: "session-06-solution",
+    path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    parts: [
+      { from: "const current = findInTransaction(transaction, event.appointmentId);", to: 'if (current === undefined || current.kind !== "CheckedIn") {' },
+      "…",
+    ],
+  },
+  "after-rebuild": {
+    box: "impl",
+    snapshot: "session-06-solution",
+    path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    parts: [{ from: "const committedEvent = Appointment.startExamination({", to: "})(current, event.aggregateState.veterinarianId);" }],
   },
   "after-save": {
     box: "impl",
     snapshot: "session-06-solution",
     path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
-    quotes: [
-      { first: "  const saveState = (", last: "  };" },
+    parts: [
+      { from: "saveState(transaction, committedEvent.aggregateState);" },
+      "…",
+      { from: "executor", to: ".values(row)" },
+      "…",
+      { from: ".run();" },
     ],
-    code: `const saveState = (
-  executor: SqliteExecutor,
-  appointment: Appointment,
-): void => {
-  const row = toAppointmentRow(appointment);
-  try {
-    executor
-      .insert(appointmentsTable)
-      .values(row)
-      .onConflictDoUpdate({
-        target: appointmentsTable.appointmentId,
-        set: row,
-      })
-      .run();
-  } catch (cause) {
-    throw new AppointmentPersistenceError("save-state", cause);
-  }
-};`,
   },
   "after-audit": {
     box: "impl",
     snapshot: "session-06-solution",
     path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
-    quotes: [
-      { first: "  const appendAudit = (", last: "  };" },
+    parts: [
+      { from: "appendAudit(transaction, committedEvent);" },
+      "…",
+      { from: "executor.insert(auditLogsTable).values(toAuditRow(event)).run();" },
+      "…",
+      { from: 'throw new AppointmentPersistenceError("append-audit", cause);' },
     ],
-    code: `const appendAudit = (
-  executor: SqliteExecutor,
-  event: ExaminationStarted,
-): void => {
-  try {
-    executor.insert(auditLogsTable).values(toAuditRow(event)).run();
-  } catch (cause) {
-    throw new AppointmentPersistenceError("append-audit", cause);
-  }
-};`,
   },
 };
 
@@ -212,10 +145,7 @@ const appointmentRows = [
 ] as const;
 const auditRows = [{ id: "audit", old: false, first: "e-1", second: "ExaminationStarted" }] as const;
 
-const labelOf = ({ snapshot, path, quotes }: Snippet): string => {
-  const [head, ...rest] = quotes.map(({ first, last }) => lineLabelOf(snapshot, path, first, last));
-  return [head, ...rest.map((label) => label.slice(label.lastIndexOf(":") + 1))].join(", ");
-};
+const excerpts = Object.fromEntries(Object.entries(snippets).map(([name, snippet]) => [name, excerptOf(snippet)]));
 
 const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: readonly Frame[] }>[] = [
   {
@@ -232,9 +162,9 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "off",
       },
       {
-        text: "`stateStore.save` は `saveState(database, …)` で、`database` に直接書き込みます。transaction を使わないため、`InExamination` はその場ですぐ書き込まれます。",
+        text: "`stateStore.save` は `saveState(database, …)` で、`database` に直接書き込みます。`InExamination` は、その場ですぐ書き込まれます。",
         call: { pane: "before-call", lines: [0] },
-        impl: { pane: "before-save", lines: [1] },
+        impl: { pane: "before-save", lines: [0, 3] },
         tx: "none",
         old: "none",
         state: "home",
@@ -243,7 +173,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       {
         text: "次に `eventLog.append` が監査記録の書き込みを試みますが失敗し、例外を投げます。",
         call: { pane: "before-call", lines: [1] },
-        impl: { pane: "before-append", lines: [9, 10, 11] },
+        impl: { pane: "before-append", lines: [2, 4] },
         tx: "none",
         old: "none",
         state: "home",
@@ -265,7 +195,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
     label: "修正後: 成功",
     frames: [
       {
-        text: "ユースケースは `deps.examinationStartedStore.store(event)` を1回だけ呼びます。保存先が2つあることは、ユースケースのコードに現れません。",
+        text: "ユースケースは `store(event)` を1回だけ呼びます。`Promise.resolve().then` は、`storeAtomically` が同期で投げた例外を、Promise（非同期処理の結果を表す値）の reject（非同期で発生した例外）にします。`fromSafePromise` は、reject を `Err` に変えず例外のまま残します。`.andThen((result) => result)` は、transaction が返した `Result` を `ResultAsync` の結果にします。",
         call: { pane: "after-call", lines: [0] },
         impl: { pane: "after-store", lines: [0, 1, 2, 3] },
         tx: "wait",
@@ -274,18 +204,18 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "off",
       },
       {
-        text: "`storeAtomically` が transaction を開始します。ここから先の書き込みは、確定するまで未確定です。",
-        call: { pane: "after-call", lines: [0] },
-        impl: { pane: "after-atomic", lines: [0, 1] },
+        text: "`storeAtomically` が transaction を開始します。transaction の中の書き込みは、確定するまで取り消せます。",
+        call: null,
+        impl: { pane: "after-open", lines: [0, 1] },
         tx: "open",
         old: "CheckedIn",
         state: "off",
         audit: "off",
       },
       {
-        text: "transaction の中で予約を再度取得します。`CheckedIn` であるため先へ進みます。",
-        call: { pane: "after-call", lines: [0] },
-        impl: { pane: "after-atomic", lines: [2, 3] },
+        text: "transaction の中で予約を再度取得し、`current` に格納します。`CheckedIn` であるため先へ進みます。",
+        call: null,
+        impl: { pane: "after-read", lines: [0, 1] },
         tx: "open",
         old: "CheckedIn",
         state: "off",
@@ -293,9 +223,18 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         read: true,
       },
       {
+        text: "`Appointment.startExamination` を再度実行し、再取得した最新の予約 `current` から `committedEvent` を作り直して保存します。受け取った `event` をそのまま保存しないのは、ユースケースが予約を取得した後に変更された内容を、古い値で上書きしないためです。`eventId` と `occurredAt` は `event` の値を再利用します。",
+        call: null,
+        impl: { pane: "after-rebuild", lines: [0, 1, 2, 3] },
+        tx: "open",
+        old: "CheckedIn",
+        state: "off",
+        audit: "off",
+      },
+      {
         text: "`saveState` が新しい状態を書き込みます。まだ未確定です。",
-        call: { pane: "after-call", lines: [0] },
-        impl: { pane: "after-save", lines: [6, 7, 8] },
+        call: null,
+        impl: { pane: "after-save", lines: [0] },
         tx: "open",
         old: "CheckedIn",
         state: "tx",
@@ -303,8 +242,8 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       },
       {
         text: "`appendAudit` が監査記録を書き込みます。これも未確定です。",
-        call: { pane: "after-call", lines: [0] },
-        impl: { pane: "after-audit", lines: [5] },
+        call: null,
+        impl: { pane: "after-audit", lines: [0] },
         tx: "open",
         old: "CheckedIn",
         state: "tx",
@@ -328,7 +267,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       {
         text: "`storeAtomically` が transaction を開始します。",
         call: { pane: "after-call", lines: [0] },
-        impl: { pane: "after-atomic", lines: [0, 1] },
+        impl: { pane: "after-open", lines: [0, 1] },
         tx: "open",
         old: "CheckedIn",
         state: "off",
@@ -336,8 +275,8 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       },
       {
         text: "予約を再度取得します。`CheckedIn` であるため先へ進みます。",
-        call: { pane: "after-call", lines: [0] },
-        impl: { pane: "after-atomic", lines: [2, 3] },
+        call: null,
+        impl: { pane: "after-read", lines: [0, 1] },
         tx: "open",
         old: "CheckedIn",
         state: "off",
@@ -346,8 +285,8 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       },
       {
         text: "`saveState` が状態を書き込みます。まだ未確定です。",
-        call: { pane: "after-call", lines: [0] },
-        impl: { pane: "after-save", lines: [6, 7, 8] },
+        call: null,
+        impl: { pane: "after-save", lines: [0] },
         tx: "open",
         old: "CheckedIn",
         state: "tx",
@@ -355,8 +294,8 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       },
       {
         text: "`appendAudit` が書き込みに失敗し、`AppointmentPersistenceError` を投げます。",
-        call: { pane: "after-call", lines: [0] },
-        impl: { pane: "after-audit", lines: [5, 6, 7] },
+        call: null,
+        impl: { pane: "after-audit", lines: [2, 4] },
         tx: "open",
         old: "CheckedIn",
         state: "tx",
@@ -372,7 +311,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "tx-gone",
       },
       {
-        text: "例外は `store` の Promise の reject になります。状態だけが残ることはありません。",
+        text: "例外は、`store` が返す Promise の reject（非同期で発生した例外）になります。状態だけが残ることはありません。",
         call: null,
         impl: null,
         tx: "rollback",
@@ -398,8 +337,8 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       },
       {
         text: "transaction の中で再取得した予約の `current.kind` は、`CheckedIn` ではありません。",
-        call: { pane: "after-call", lines: [0] },
-        impl: { pane: "after-atomic", lines: [2, 3] },
+        call: null,
+        impl: { pane: "after-read", lines: [0, 1] },
         tx: "open",
         old: "InExamination",
         state: "off",
@@ -426,6 +365,7 @@ const scenes = sceneKey === undefined ? allScenes : allScenes.filter(({ key }) =
 if (scenes.length === 0) throw new Error(`StoreBoundaryAnimation: unknown scene "${sceneKey}"`);
 
 const writtenOnly = sceneKey === "dual-write";
+const hasFailure = scenes.some(({ frames }) => frames.some(({ audit }) => audit.endsWith("failed")));
 const legendLines = [
   writtenOnly
     ? "「保存済み」ははじめからある行、「書き込み済み」は書き込まれた行です。破線の空枠は、まだ行がない場所です。"
@@ -451,16 +391,16 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
             <div class="sb-box__inner">
               <p class="sb-box__label">{label}</p>
               <div class="sb-stack">
-                {Object.entries(snippets).filter(([, snippet]) => snippet.box === box).map(([name, snippet]) => (
+                {Object.entries(snippets).filter(([, snippet]) => snippet.box === box).map(([name]) => (
                   <figure class="sb-pane" data-pane={name} data-era={name.startsWith("before") ? "before" : "after"}>
                     <figcaption>
                       <span class={`walk-badge walk-badge--${name.startsWith("before") ? "before" : "after"}`}>{name.startsWith("before") ? "修正前" : "修正後"}</span>
                       <span class="sb-cap">
-                        <code><PathLabel label={labelOf(snippet)} /></code>
+                        <code><PathLabel label={excerpts[name].label} /></code>
                         <span class="sb-role">{box === "call" ? "呼び出し元" : "実装"}</span>
                       </span>
                     </figcaption>
-                    <Code code={snippet.code} lang="ts" wrap />
+                    <Code code={excerpts[name].code} lang="ts" wrap transformers={[breakBeforeMember]} />
                   </figure>
                 ))}
               </div>
@@ -468,10 +408,10 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
           </div>
         </section>
       ))}
-      {page ? <p class="sb-idle" data-idle hidden>このコマではコードを実行していません。右の図を見ます。</p> : null}
     </div>
-    <div class="sb-diagram" aria-hidden="true" inert>
+    <div class:list={["sb-diagram", { "sb-diagram--failed": hasFailure }]} aria-hidden="true" inert>
       {page ? (
+        <>
         <div class="sb-db sb-db--page" data-tx="none">
           <div class="sb-db__head">
             <p class="sb-db__label">database</p>
@@ -503,6 +443,19 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
             </div>
           </div>
         </div>
+        {hasFailure ? (
+          <div class="sb-failed" data-failed>
+            <p class="sb-failed__label">書き込めなかった行（audit_logs には残りません）</p>
+            {auditRows.map(({ first, second }) => (
+              <div class="sb-failed__row sb-line">
+                <span class="sb-chip">失敗</span>
+                <code>{first}</code>
+                <code>{second}</code>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        </>
       ) : (
         <>
           <div class="sb-tx" data-tx="none">
@@ -522,7 +475,7 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
                     {appointmentCards.map(({ id, old, code }) => (
                       <figure class={`sb-card${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
                         <figcaption class="sb-card__head"><span class="sb-chip" data-chip>{old ? "保存済み" : ""}</span></figcaption>
-                        <Code code={code} lang="ts" wrap />
+                        <Code code={code} lang="ts" wrap transformers={[breakBeforeMember]} />
                       </figure>
                     ))}
                   </div>
@@ -535,7 +488,7 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
                     <div class={`sb-cell${old ? "" : " sb-cell--landing"}`}>
                       <figure class={`sb-card${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
                         <figcaption class="sb-card__head"><span class="sb-chip" data-chip>{old ? "保存済み" : ""}</span></figcaption>
-                        <Code code={code} lang="ts" wrap />
+                        <Code code={code} lang="ts" wrap transformers={[breakBeforeMember]} />
                       </figure>
                     </div>
                   ))}

@@ -95,10 +95,10 @@ const tree = miniTree("session-06-solution", "", [
 const treeCurrent = [["start", "start-s04"], ["dependencies", "clock", "eventIdGenerator"], ["app"], ["fake"]] as const;
 
 const frames = [
-  "S04 の `deps.resolver` と、S06 の保存先 `deps.examinationStartedStore` です。ユースケースは、予約を検索する処理も保存する処理も `deps` を通して外部に要求します。この「外部に要求する処理を型で表したもの」を port と呼びます。",
+  "表示中のコードに、S04 の `deps.resolver` と、S06 の保存先 `deps.examinationStartedStore` があります。ユースケースは、予約を検索する処理も保存する処理も `deps` を通して外部に要求します。この「外部に要求する処理を型で表したもの」を port と呼びます。",
   "時刻と ID の取得も外部の処理です。`Clock` は「現在の時刻を返す」処理の型、`EventIdGenerator` は「新しい ID を返す」処理の型で、どちらも port です。ユースケースは処理の型だけを参照します。",
-  "本番では、port に実際の処理を渡します。`app.ts` は、resolver と store には SQLite の実装を、clock には `new Date()` で現在時刻を返す処理を、ID generator には `randomUUID()` で新しい ID を返す処理を渡します。`new Date()` を呼ぶ箇所は、clock の実装の中だけです。",
-  "テストでは、同じユースケースの port に偽物（fake）をつなぎます。メモリ上の store と固定の時刻と ID を渡すため、ユースケースのコードを変更せずに結果を固定できます。",
+  "本番では、port に本番の実装を渡します。`app.ts` の `createExaminationStartedStore` は SQLite の resolver と store を作り、`defaultEffects` は `new Date()` を呼ぶ `clock` と `randomUUID()` を呼ぶ `eventIdGenerator` を作ります。",
+  "テストでは、同じユースケースの port にテスト用の実装（fake）を渡します。メモリ上の store と、固定の時刻と ID を返す `clock` と `eventIdGenerator` を渡すため、ユースケースのコードを変更せずに結果を固定できます。",
 ] as const;
 
 const ports = [
@@ -120,20 +120,20 @@ const ports = [
     key: "clock",
     name: "deps.clock",
     from: 1,
-    real: ["本物の時計", "現在の時刻を返す"],
-    fake: ["固定の時刻", "2026-08-30T06:30:00.000Z"],
+    real: ["new Date()", "現在の時刻を返す"],
+    fake: ["固定の時刻", "2026-08-30T06:30:00.000Z を返す"],
   },
   {
     key: "id",
     name: "deps.eventIdGenerator",
     from: 1,
-    real: ["本物の ID", "実行のたびに新しい ID を返す"],
+    real: ["randomUUID()", "実行のたびに新しい ID を返す"],
     fake: ["固定の ID", "常に同じ ID を返す"],
   },
 ] as const;
 ---
 
-<figure class="sf psf" data-port-swap data-step-figure data-lit={lit} data-tree-current={JSON.stringify(treeCurrent)} aria-label="port に本物と偽物を差し替える流れ">
+<figure class="sf psf" data-port-swap data-step-figure data-lit={lit} data-tree-current={JSON.stringify(treeCurrent)} aria-label="port に本番の実装とテスト用の実装（fake）を差し替える流れ">
   <StepControls />
 
   <div aria-live="polite">
@@ -198,8 +198,8 @@ const ports = [
     <div class="psf__diagram">
       <div class="psf__head">
         <span class="psf__title">useCase</span>
-        <span class="psf__era" data-era="2"><span class="sf-tag">本物</span></span>
-        <span class="psf__era" data-era="3"><span class="sf-tag sf-tag--empty">偽物（fake）</span></span>
+        <span class="psf__era" data-era="2"><span class="sf-tag">本番の実装</span></span>
+        <span class="psf__era" data-era="3"><span class="sf-tag sf-tag--empty">テスト用の実装（fake）</span></span>
         <p class="psf__same">ユースケースのコードは、どちらでも同じです。</p>
       </div>
       <ul class="psf__rows">

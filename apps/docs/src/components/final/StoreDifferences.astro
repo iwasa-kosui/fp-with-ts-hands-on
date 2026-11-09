@@ -20,13 +20,13 @@ const scenes = [
     label: "条件付き更新",
     left: code.s06Update,
     right: code.finalUpdate,
-    text: "S06 は transaction の中で予約を再取得し、CheckedIn でなければ err を返します。参照実装は、status が CheckedIn の行だけを更新します。このように条件を付けた更新を、条件付き更新と呼びます。更新した行が0件なら競合です。",
+    text: "S06 は transaction の中で予約を再取得して分岐します。この形は、書き込みが直列に実行される SQLite に依存します。PostgreSQL の既定の分離レベルでは、2つの transaction がどちらも CheckedIn を取得し、どちらも書き込めます。参照実装は、status が CheckedIn の行だけを更新します。このように WHERE に条件を付けた更新を条件付き更新と呼び、更新した行が0件なら競合です。WHERE の条件で判定するため、ほかのデータベースでも成り立ちます。",
   },
   {
     label: "競合の伝え方",
     left: code.s06Conflict,
     right: code.finalConflict,
-    text: "S06 は err を返すため、fromSafePromise で受け取ります。参照実装は競合を throw で伝えて transaction を取り消します。throw した競合は、fromPromise の2つ目の引数で Err に戻します。それ以外の例外は投げ直すため reject のままであり、S06 の誤った例と異なり、障害は Err になりません。",
+    text: "参照実装の store は複数のイベントを1つの transaction で保存します。S06 のように err を返すと transaction が確定するため、途中のイベントで競合したときは throw でそれまでの書き込みを取り消し、fromPromise の2つ目の引数で Err に戻します。それ以外は投げ直すため、障害は Err になりません。S06「保存先の障害と例外の伝播」の、fromPromise ですべてを AppointmentConflict に変える誤った例と異なります。",
   },
   {
     label: "port の配置先",
@@ -232,12 +232,12 @@ const scenes = [
   }
 
   .sd__code figcaption {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0 0.5rem;
     font-size: 0.75rem;
     line-height: 1.4;
+  }
+
+  .sd__code figcaption strong {
+    margin-inline-end: 0.5rem;
   }
 
   .sd__code figcaption code {
@@ -247,10 +247,9 @@ const scenes = [
   }
 
   .sd__code :global(pre) {
-    max-height: 14.5rem;
     margin: 0;
+    padding: 0.5rem 0.75rem;
     overflow-x: hidden;
-    overflow-y: auto;
     font-size: 0.75rem;
     line-height: 1.5;
     overflow-wrap: anywhere;
@@ -272,6 +271,10 @@ const scenes = [
     .sd__text {
       margin-block-start: 0.4rem;
       line-height: 1.5;
+    }
+
+    .sd__code :global(pre) {
+      padding-block: 0.375rem;
     }
   }
 
