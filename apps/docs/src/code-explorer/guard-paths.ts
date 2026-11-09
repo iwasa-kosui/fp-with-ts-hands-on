@@ -1,3 +1,4 @@
+import type { TerminalSize } from "./runner";
 import type { ProjectFiles } from "./types";
 
 export const guardPeerCaseId = "R1-peer-change";
@@ -19,6 +20,31 @@ export const guardCommand = {
 } as const;
 
 export const guardCommandSize = { cols: 80, rows: 24 } as const;
+
+export const guardUnmeasuredColumns = 58;
+
+export const guardCommandFor = (
+  size: TerminalSize | undefined,
+): Readonly<{
+  command: string;
+  args: readonly string[];
+  size: TerminalSize;
+}> =>
+  size === undefined
+    ? {
+        command: guardCommand.command,
+        args: [
+          ...guardCommand.args,
+          "--columns",
+          String(guardUnmeasuredColumns),
+        ],
+        size: guardCommandSize,
+      }
+    : {
+        command: guardCommand.command,
+        args: [...guardCommand.args, "--columns", String(size.cols)],
+        size,
+      };
 
 export type GuardBehaviorPart = Readonly<{ text: string; value?: string }>;
 

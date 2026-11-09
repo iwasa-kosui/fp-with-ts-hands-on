@@ -576,6 +576,57 @@ describe("TerminalPanel controller", () => {
     );
   });
 
+  it("passes the fitted view size to the session before returning it", async () => {
+    const session = createSession();
+    const view = createView();
+    vi.mocked(view.fit).mockReturnValue({ cols: 58, rows: 20 });
+    const { ref } = await renderWithController({
+      runnerFactory: () => ({ start: async () => session }),
+      loadTerminalView: async () => view,
+    });
+
+    let resizedBeforeReturn: boolean | undefined;
+    await act(async () => {
+      void ref.current?.ensureSession().then(() => {
+        resizedBeforeReturn = vi
+          .mocked(session.resize)
+          .mock.calls.some(([size]) => size.cols === 58 && size.rows === 20);
+      });
+    });
+    for (let attempt = 0; attempt < 50 && resizedBeforeReturn === undefined; attempt += 1) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      });
+    }
+
+    expect(resizedBeforeReturn).toBe(true);
+  });
+
+  it("does not resize the session when the view cannot measure its size", async () => {
+    const session = createSession();
+    const view = createView();
+    vi.mocked(view.fit).mockReturnValue(undefined);
+    const { ref } = await renderWithController({
+      runnerFactory: () => ({ start: async () => session }),
+      loadTerminalView: async () => view,
+    });
+
+    let returned = false;
+    await act(async () => {
+      void ref.current?.ensureSession().then(() => {
+        returned = true;
+      });
+    });
+    for (let attempt = 0; attempt < 50 && !returned; attempt += 1) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      });
+    }
+
+    expect(returned).toBe(true);
+    expect(session.resize).not.toHaveBeenCalled();
+  });
+
   it("returns the running session without starting another", async () => {
     const start = vi.fn(async () => createSession());
     const { ref } = await renderWithController({

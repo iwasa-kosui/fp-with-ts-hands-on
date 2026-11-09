@@ -5,6 +5,8 @@ import { stringWidth, wrapByWidth } from "./text.mjs";
 /** @typedef {import("./model.mjs").Row} Row */
 
 const maxWidth = 59;
+const minWidth = 24;
+const columnsMargin = 2;
 const peerCaseId = "R1-peer-change";
 const cellsIndent = 6;
 const red = (/** @type {string} */ line) => `\u001b[31m${line}\u001b[0m`;
@@ -47,43 +49,55 @@ const cellsText = (row) =>
   `型のテスト ${cellText(row.cells.types)} / Linter ${cellText(row.cells.lint)} / テスト ${cellText(row.cells.tests)}`;
 
 /**
+ * @param {number | undefined} columns
+ * @returns {number}
+ */
+const wrapWidthFor = (columns) =>
+  columns !== undefined && Number.isInteger(columns) && columns > 0
+    ? Math.min(maxWidth, Math.max(minWidth, columns - columnsMargin))
+    : maxWidth;
+
+/**
+ * @param {number} width
  * @param {string} prefix
  * @param {string} text
  * @returns {readonly string[]}
  */
-const wrapWithPrefix = (prefix, text) =>
-  wrapByWidth(text, maxWidth - stringWidth(prefix)).map(
+const wrapWithPrefix = (width, prefix, text) =>
+  wrapByWidth(text, width - stringWidth(prefix)).map(
     (line, index) => (index === 0 ? prefix : " ".repeat(stringWidth(prefix))) + line,
   );
 
 /**
+ * @param {number} width
  * @param {string} label
  * @param {readonly Row[]} rows
  * @param {boolean} color
  * @returns {readonly string[]}
  */
-const renderSection = (label, rows, color) => [
-  ...wrapWithPrefix("", label),
+const renderSection = (width, label, rows, color) => [
+  ...wrapWithPrefix(width, "", label),
   ...rows.flatMap((row) => {
     const lines = [
-      ...wrapWithPrefix(`[${verdictText(row)}] `, row.title),
-      ...wrapWithPrefix(" ".repeat(cellsIndent), cellsText(row)),
+      ...wrapWithPrefix(width, `[${verdictText(row)}] `, row.title),
+      ...wrapWithPrefix(width, " ".repeat(cellsIndent), cellsText(row)),
     ];
     return color && row.verdict === "falsePositive" ? lines.map(red) : lines;
   }),
 ];
 
 /**
+ * @param {number} width
  * @param {readonly Row[]} bad
  * @param {boolean} color
  * @returns {readonly string[]}
  */
-const badSections = (bad, color) => {
+const badSections = (width, bad, color) => {
   const peer = bad.filter((row) => row.id === peerCaseId);
   const optional = bad.filter((row) => row.id !== peerCaseId && !row.required);
   const required = bad.filter((row) => row.id !== peerCaseId && row.required);
   return optional.length === 0 && peer.length === 0
-    ? renderSection("誤った変更", bad, color)
+    ? renderSection(width, "誤った変更", bad, color)
     : [
         { label: "必須の誤った変更", rows: required },
         { label: "任意の誤った変更（時間に余裕がある場合に取り組みます）", rows: optional },
@@ -92,7 +106,7 @@ const badSections = (bad, color) => {
         .filter(({ rows }) => rows.length > 0)
         .flatMap(({ label, rows }, index) => [
           ...(index === 0 ? [] : [""]),
-          ...renderSection(label, rows, color),
+          ...renderSection(width, label, rows, color),
         ]);
 };
 
@@ -116,30 +130,32 @@ const headline = (result) => {
 
 /**
  * @param {GuardResult} result
- * @param {Readonly<{ color: boolean }>} options
+ * @param {Readonly<{ color: boolean, columns?: number | undefined }>} options
  * @returns {string}
  */
-export const render = (result, { color }) => {
+export const render = (result, { color, columns }) => {
+  const width = wrapWidthFor(columns);
   const bad = result.rows.filter((row) => row.kind === "bad");
   const good = result.rows.filter((row) => row.kind === "good");
   const { durations } = result;
   return [
-    ...wrapWithPrefix("結果: ", headline(result)),
+    ...wrapWithPrefix(width, "結果: ", headline(result)),
     "",
-    ...badSections(bad, color),
+    ...badSections(width, bad, color),
     "",
-    ...renderSection("正しいコード", good, color),
+    ...renderSection(width, "正しいコード", good, color),
     "",
     "次にすること",
-    ...result.next.flatMap((sentence, index) => wrapWithPrefix(`${index + 1}. `, sentence)),
+    ...result.next.flatMap((sentence, index) => wrapWithPrefix(width, `${index + 1}. `, sentence)),
     ...(result.problems.length > 0
-      ? ["", "問題", ...result.problems.flatMap((problem) => wrapWithPrefix("- ", problem))]
+      ? ["", "問題", ...result.problems.flatMap((problem) => wrapWithPrefix(width, "- ", problem))]
       : []),
     ...(result.notes.length > 0
-      ? ["", "補足", ...result.notes.flatMap((note) => wrapWithPrefix("- ", note))]
+      ? ["", "補足", ...result.notes.flatMap((note) => wrapWithPrefix(width, "- ", note))]
       : []),
     "",
     ...wrapWithPrefix(
+      width,
       "所要: ",
       `全体 ${secondsText(durations.total)}（型 ${secondsText(durations.types)}、Linter ${secondsText(durations.lint)}。テスト ${secondsText(durations.tests)} は並行して実行）`,
     ),

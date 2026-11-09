@@ -17,4 +17,19 @@ describe("wrapByWidth", () => {
   it("英数字の語を途中で切らない", () => {
     expect(wrapByWidth("あい no-restricted-syntax う", 20)).toEqual(["あい", "no-restricted-syntax", "う"]);
   });
+
+  it("最後の行が全角 1 文字だけにならないよう、直前の行の末尾の 1 文字を移す", () => {
+    expect(wrapByWidth("あいうえおか", 10)).toEqual(["あいうえ", "おか"]);
+  });
+
+  it("移す文字が行頭に置けないときは、置ける文字まで移す", () => {
+    const lines = wrapByWidth("あいうえ。か", 10);
+
+    expect(lines).toEqual(["あいう", "え。か"]);
+    expect(Math.max(...lines.map(stringWidth))).toBeLessThanOrEqual(10);
+  });
+
+  it("直前の行の末尾が英数字の語のときは、語を割らずに最後の 1 文字を残す", () => {
+    expect(wrapByWidth("あいうえおかabcdefghijkう", 12)).toEqual(["あいうえおか", "abcdefghijk", "う"]);
+  });
 });

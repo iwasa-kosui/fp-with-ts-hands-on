@@ -3,6 +3,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } fr
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
+import { stringWidth } from "../src/text.mjs";
 import { groupGone } from "./process-group.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -64,6 +65,13 @@ describe("cli", () => {
 
     expect(result.code).toBe(1);
     expect(result.stdout).toContain("結果: まだ合格していません");
+  });
+
+  it("--columns の桁数に合わせて結果を折り返す", async () => {
+    const result = await runCli(s03, ["--root", s03, "--columns", "40"]);
+
+    expect(result.code).toBe(1);
+    expect(Math.max(...result.stdout.split("\n").map(stringWidth))).toBeLessThanOrEqual(38);
   });
 
   it("lint-hangs: 終わらないルールは見張りで止め、プロセスを残さずに終わる", async () => {

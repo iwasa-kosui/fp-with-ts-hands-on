@@ -127,6 +127,19 @@ describe("terminal runner", () => {
     expect(runtime.dispose).toHaveBeenCalledOnce();
   });
 
+  it("reports the latest size only after the terminal view has resized the session", async () => {
+    const runtime = createInMemoryRuntime();
+    const session = await createTerminalRunner(async () => runtime).start(
+      requestFor(),
+    );
+
+    expect(session.currentSize?.()).toBeUndefined();
+
+    session.resize({ cols: 58, rows: 20 });
+
+    expect(session.currentSize?.()).toEqual({ cols: 58, rows: 20 });
+  });
+
   it("rejects workspace writes that escape the project directory", async () => {
     const runtime = createInMemoryRuntime();
     const session = await createTerminalRunner(async () => runtime).start(

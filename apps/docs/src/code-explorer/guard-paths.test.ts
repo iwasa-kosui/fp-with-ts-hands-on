@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   casePathFor,
+  guardCommandFor,
   guardAnswerDisplayFiles,
   guardAnswerFiles,
   guardInitialFile,
@@ -20,6 +21,24 @@ const files = {
   "exercises/guard/answer/eslint.config.mjs": "",
   "src/app.ts": "",
 };
+
+describe("guard command", () => {
+  it("adds --columns and uses the terminal size when the size is known", () => {
+    expect(guardCommandFor({ cols: 58, rows: 20 })).toEqual({
+      command: "node",
+      args: ["vendor/exercise-guard/cli.mjs", "--columns", "58"],
+      size: { cols: 58, rows: 20 },
+    });
+  });
+
+  it("uses 58 columns and the default size when the size is unknown", () => {
+    expect(guardCommandFor(undefined)).toEqual({
+      command: "node",
+      args: ["vendor/exercise-guard/cli.mjs", "--columns", "58"],
+      size: { cols: 80, rows: 24 },
+    });
+  });
+});
 
 describe("guard exercise paths", () => {
   it("shows the lint config, mine, cases, and subjects only", () => {

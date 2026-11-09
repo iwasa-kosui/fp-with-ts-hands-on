@@ -40,6 +40,7 @@ export type TerminalSession = Readonly<{
   writeInput: (data: string) => Promise<void>;
   writeFile: (path: string, contents: string) => Promise<void>;
   resize: (size: TerminalSize) => void;
+  currentSize?: () => TerminalSize | undefined;
   restartShell: (size: TerminalSize) => Promise<void>;
   runCommand?: (
     command: string,
@@ -303,6 +304,7 @@ export const createTerminalRunner = (
     let activeShell: ActiveShell | undefined;
     const runningCommands = new Set<TerminalRuntimeProcess>();
     let shellGeneration = 0;
+    let latestSize: TerminalSize | undefined;
     let disposed = false;
     let fileEventQueue = Promise.resolve();
     const projectedFiles = new Map<string, string>();
@@ -585,7 +587,11 @@ export const createTerminalRunner = (
             else pendingWrites.delete(path);
           }
         },
-        resize: (size) => activeShell?.process.resize(size),
+        resize: (size) => {
+          latestSize = size;
+          activeShell?.process.resize(size);
+        },
+        currentSize: () => latestSize,
         restartShell: async (size) => {
           await stopShell();
           if (disposed) throw new Error("Terminal session is disposed");

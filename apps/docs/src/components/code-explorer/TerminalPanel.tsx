@@ -29,7 +29,7 @@ export type TerminalView = Readonly<{
   onData: (
     listener: (data: string) => void,
   ) => Readonly<{ dispose: () => void }>;
-  fit: () => TerminalSize;
+  fit: () => TerminalSize | undefined;
   focus: () => void;
   dispose: () => void;
 }>;
@@ -80,6 +80,8 @@ type DownloadProgress = DepsSnapshotProgress &
   Readonly<{ firstAt: number; firstLoaded: number }>;
 
 const initialTerminalSize: TerminalSize = { cols: 80, rows: 24 };
+
+const viewOpenWaitMs = 1000;
 
 export const phaseLabels: Readonly<Record<TerminalPhase, string>> = {
   booting: "実行環境を起動しています。",
@@ -226,6 +228,16 @@ export const createXtermView = async (): Promise<TerminalView> => {
     write: (data, onWritten) => terminal.write(data, onWritten),
     onData: (listener) => terminal.onData(listener),
     fit: () => {
+      const dimensions = fitAddon.proposeDimensions();
+      if (
+        terminal.element === undefined ||
+        terminal.element.getClientRects().length === 0 ||
+        dimensions === undefined ||
+        Number.isNaN(dimensions.cols) ||
+        Number.isNaN(dimensions.rows)
+      ) {
+        return undefined;
+      }
       fitAddon.fit();
       return { cols: terminal.cols, rows: terminal.rows };
     },
@@ -274,6 +286,7 @@ export const TerminalPanel = forwardRef<
   const delimiterWritten = useRef(false);
   const inputSubscription = useRef<Readonly<{ dispose: () => void }>>();
   const resizeObserver = useRef<ResizeObserver>();
+  const viewOpenWaiters = useRef<(() => void)[]>([]);
   const pendingOutput = useRef<string[]>([]);
   const pendingExitCode = useRef<number>();
   const mounted = useRef(true);
@@ -314,7 +327,7 @@ export const TerminalPanel = forwardRef<
     if (resizeObserver.current !== undefined) return;
     resizeObserver.current = new ResizeObserver(() => {
       const size = view.fit();
-      terminalSession.current?.resize(size);
+      if (size !== undefined) terminalSession.current?.resize(size);
     });
     resizeObserver.current.observe(host);
   }, []);
@@ -441,7 +454,9 @@ export const TerminalPanel = forwardRef<
         })
         .catch(() => undefined);
     });
-    session.resize(view.fit());
+    const size = view.fit();
+    if (size !== undefined) session.resize(size);
+    for (const wake of viewOpenWaiters.current.splice(0)) wake();
     observeResize(view, terminalHost.current);
     view.focus();
   }, [observeResize, state.kind]);
@@ -639,6 +654,18 @@ export const TerminalPanel = forwardRef<
             lastFailure.current ?? "ターミナルを起動できませんでした。",
           );
         }
+        if (!viewOpened.current) {
+          await new Promise<void>((resolve) => {
+            const timer = setTimeout(resolve, viewOpenWaitMs);
+            viewOpenWaiters.current.push(() => {
+              clearTimeout(timer);
+              resolve();
+            });
+          });
+        }
+        const view = terminalView.current;
+        const size = viewOpened.current ? view?.fit() : undefined;
+        if (size !== undefined) session.resize(size);
         return session;
       },
       releaseSession: async () => {
@@ -674,7 +701,7 @@ export const TerminalPanel = forwardRef<
     }
     transition({ ...state, restarting: true });
     try {
-      await session.restartShell(view.fit());
+      await session.restartShell(view.fit() ?? initialTerminalSize);
       transition({ kind: "ready" });
       view.focus();
     } catch (error: unknown) {

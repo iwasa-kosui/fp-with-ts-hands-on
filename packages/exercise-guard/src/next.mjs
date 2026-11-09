@@ -81,7 +81,7 @@ const passedSentence = (optionalRemaining) =>
 export const buildNext = ({ rows, problems, stageOpened, passed, typesAllowed = true }) => {
   const fixes = [...new Set(problems.map((problem) => problem.fix))];
   const slipped = rows
-    .filter((row) => row.kind === "bad" && row.verdict === "slipped")
+    .filter((row) => row.kind === "bad" && row.id !== peerCaseId && row.verdict === "slipped")
     .sort((left, right) => Number(right.required) - Number(left.required))
     .slice(0, maxSlipped);
   const optionalRemaining = rows.filter(

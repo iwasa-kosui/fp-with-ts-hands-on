@@ -158,6 +158,20 @@ describe("buildNext", () => {
     expect(sentences[0]).toBe("必須の誤った変更はすべて検出しました。画面の表で行の題名の ▶ を押し、少なくとも 1 つの行に「この仕組みで検出できないこと」を 1 文で記入します。");
   });
 
+  it("相互レビューの行は、未検出でも次にすることの未検出の説明に入れない", () => {
+    const peer = rowOf({
+      id: "R1-peer-change",
+      kind: "bad",
+      title: "相互レビューで作る誤った変更",
+      verdict: "slipped",
+      required: false,
+      allow: ["tests"],
+    });
+    const sentences = buildNext({ rows: [detectedBad, peer], problems: [], stageOpened: 0, passed: true });
+
+    expect(sentences.some((sentence) => sentence.includes("相互レビューで作る誤った変更"))).toBe(false);
+  });
+
   it("合格のときは、任意の誤った変更が検出されていなくても、合格の文を先頭に置く", () => {
     const optional = rowOf({
       kind: "bad",

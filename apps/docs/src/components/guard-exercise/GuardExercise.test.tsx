@@ -7,6 +7,7 @@ import type { GuardResult } from "../../code-explorer/guard-result";
 import { sampleGuardResult } from "../../code-explorer/guard-result.fixture";
 import type {
   TerminalSession,
+  TerminalSize,
   TerminalStartRequest,
 } from "../../code-explorer/runner";
 import { createIndexedDbWorkspaceStore } from "../../code-explorer/workspace-store";
@@ -75,6 +76,9 @@ type SessionOptions = Readonly<{
   exitCode?: number;
   resultText?: string | undefined;
   runCommand?: () => Promise<number>;
+  currentSize?: () => TerminalSize | undefined;
+  trackSize?: boolean;
+  fit?: () => TerminalSize | undefined;
   readResults?: readonly (string | undefined)[];
   outdatedEdits?: boolean;
   guide?: GuardGuide;
@@ -85,10 +89,18 @@ type SessionOptions = Readonly<{
 
 const createSession = (options: SessionOptions) => {
   let reads = 0;
+  let latestSize: TerminalSize | undefined;
   const session: TerminalSession = {
     writeInput: vi.fn(async () => undefined),
     writeFile: vi.fn(async () => undefined),
-    resize: vi.fn(),
+    resize: vi.fn((size: TerminalSize) => {
+      latestSize = size;
+    }),
+    ...(options.currentSize !== undefined
+      ? { currentSize: vi.fn(options.currentSize) }
+      : options.trackSize === true
+        ? { currentSize: vi.fn(() => latestSize) }
+        : {}),
     restartShell: vi.fn(async () => undefined),
     runCommand: vi.fn(options.runCommand ?? (async () => options.exitCode ?? 1)),
     readFile: vi.fn(async () => {
@@ -112,7 +124,7 @@ const mountExercise = async (options: SessionOptions = {}) => {
     open: vi.fn(),
     write: vi.fn(),
     onData: vi.fn(() => ({ dispose: vi.fn() })),
-    fit: vi.fn(() => ({ cols: 80, rows: 24 })),
+    fit: vi.fn(options.fit ?? (() => ({ cols: 80, rows: 24 }))),
     focus: vi.fn(),
     dispose: vi.fn(),
   };
@@ -885,7 +897,7 @@ describe("GuardExercise", () => {
 
     expect(session.runCommand).toHaveBeenCalledWith(
       "node",
-      ["vendor/exercise-guard/cli.mjs"],
+      ["vendor/exercise-guard/cli.mjs", "--columns", "58"],
       { cols: 80, rows: 24 },
       { timeoutMs: expect.any(Number) },
     );
@@ -910,6 +922,69 @@ describe("GuardExercise", () => {
     expect(
       host.querySelector('[data-case-id="B1-any-parser"]')?.getAttribute("data-verdict"),
     ).toBe("slipped");
+  });
+
+  it("passes the terminal's actual columns to the guard command and the spawn size", async () => {
+    const { host, session } = await mountExercise({
+      currentSize: () => ({ cols: 58, rows: 20 }),
+    });
+
+    await click(action(host, "run-guard"));
+
+    expect(session.runCommand).toHaveBeenCalledWith(
+      "node",
+      ["vendor/exercise-guard/cli.mjs", "--columns", "58"],
+      { cols: 58, rows: 20 },
+      { timeoutMs: expect.any(Number) },
+    );
+  });
+
+  it("uses the fitted terminal size already on the first run", async () => {
+    const { host, session } = await mountExercise({
+      trackSize: true,
+      fit: () => ({ cols: 58, rows: 20 }),
+    });
+
+    await click(action(host, "run-guard"));
+
+    expect(session.runCommand).toHaveBeenCalledWith(
+      "node",
+      ["vendor/exercise-guard/cli.mjs", "--columns", "58"],
+      { cols: 58, rows: 20 },
+      { timeoutMs: expect.any(Number) },
+    );
+  });
+
+  it("falls back to 58 columns when the terminal view cannot measure its size", async () => {
+    const { host, session } = await mountExercise({
+      trackSize: true,
+      fit: () => undefined,
+    });
+
+    await click(action(host, "run-guard"));
+
+    expect(session.resize).not.toHaveBeenCalled();
+    expect(session.runCommand).toHaveBeenCalledWith(
+      "node",
+      ["vendor/exercise-guard/cli.mjs", "--columns", "58"],
+      { cols: 80, rows: 24 },
+      { timeoutMs: expect.any(Number) },
+    );
+  });
+
+  it("falls back to 58 columns when the session cannot tell the terminal size", async () => {
+    const { host, session } = await mountExercise({
+      currentSize: () => undefined,
+    });
+
+    await click(action(host, "run-guard"));
+
+    expect(session.runCommand).toHaveBeenCalledWith(
+      "node",
+      ["vendor/exercise-guard/cli.mjs", "--columns", "58"],
+      { cols: 80, rows: 24 },
+      { timeoutMs: expect.any(Number) },
+    );
   });
 
   it("keeps the run button disabled with a reason until the outdated edits notice is answered", async () => {

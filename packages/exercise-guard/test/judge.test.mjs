@@ -454,7 +454,7 @@ describe("judge", () => {
     const after = await judge({ root: copied, eslintConfigFile, workDir: "dist/guard-unchanged-after" });
 
     expect(rowOf(after, "R1-peer-change").verdict).toBe("slipped");
-    expect(after.next.some((sentence) => sentence.includes("『相互レビューで作る誤った変更』は検出されていません。"))).toBe(true);
+    expect(after.next.some((sentence) => sentence.includes("『相互レビューで作る誤った変更』は検出されていません。"))).toBe(false);
     expect(after.passed).toBe(true);
   });
 });
@@ -471,6 +471,20 @@ describe("render", () => {
     );
     expect(text).not.toMatch(/止ま|止め|実行できない/);
     expect(Math.max(...text.split("\n").map(stringWidth))).toBeLessThanOrEqual(59);
+  });
+
+  it("columns に合わせて折り返し、幅は 24 以上 59 以下に収める", async () => {
+    const result = await scenario("empty");
+    /** @param {number | undefined} columns */
+    const widest = (columns) =>
+      Math.max(...render(result, { color: false, columns }).split("\n").map(stringWidth));
+
+    expect(widest(58)).toBeLessThanOrEqual(56);
+    expect(widest(200)).toBeLessThanOrEqual(59);
+    expect(widest(undefined)).toBeLessThanOrEqual(59);
+    expect(widest(10)).toBeLessThanOrEqual(24);
+    expect(render(result, { color: false, columns: 10 })).toBe(render(result, { color: false, columns: 26 }));
+    expect(render(result, { color: false, columns: 200 })).toBe(render(result, { color: false }));
   });
 
   it("1 件を 2 行で表示し、1 行目に結果の語と題名、2 行目に 3 つの仕組みの結果を置く", async () => {

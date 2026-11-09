@@ -5,7 +5,7 @@ import { Worker } from "node:worker_threads";
 import { GuardConfigError } from "./config.mjs";
 import { verify } from "./verify.mjs";
 
-const usage = "使い方: exercise-guard [verify] [--root <dir>] [--timeout-ms <ミリ秒>]";
+const usage = "使い方: exercise-guard [verify] [--root <dir>] [--timeout-ms <ミリ秒>] [--columns <桁数>]";
 const defaultTimeoutMs = 120_000;
 const terminateWaitMs = 2000;
 const doneWaitMs = 1000;
@@ -23,12 +23,22 @@ const takeFlag = (args, flag) => {
 };
 
 /**
+ * @param {string | number | undefined | null} value
+ * @returns {number | undefined}
+ */
+const columnsFrom = (value) => {
+  const columns = typeof value === "string" ? Number(value) : value;
+  return typeof columns === "number" && Number.isInteger(columns) && columns > 0 ? columns : undefined;
+};
+
+/**
  * @param {readonly string[]} args
- * @returns {Readonly<{ command: "check" | "verify", root: string, timeoutMs: number }> | undefined}
+ * @returns {Readonly<{ command: "check" | "verify", root: string, timeoutMs: number, columns: number | undefined }> | undefined}
  */
 export const parseArgs = (args) => {
   const { rest: withoutRoot, value: rootArg } = takeFlag(args, "--root");
-  const { rest, value: timeoutArg } = takeFlag(withoutRoot, "--timeout-ms");
+  const { rest: withoutTimeout, value: timeoutArg } = takeFlag(withoutRoot, "--timeout-ms");
+  const { rest, value: columnsArg } = takeFlag(withoutTimeout, "--columns");
   const [command, ...extra] = rest;
   const rootValue = rootArg === undefined ? process.cwd() : rootArg;
   const timeoutMs = timeoutArg === undefined ? defaultTimeoutMs : Number(timeoutArg);
@@ -38,7 +48,12 @@ export const parseArgs = (args) => {
     extra.length > 0 ||
     (command !== undefined && command !== "verify")
     ? undefined
-    : { command: command === "verify" ? "verify" : "check", root: path.resolve(rootValue), timeoutMs };
+    : {
+        command: command === "verify" ? "verify" : "check",
+        root: path.resolve(rootValue),
+        timeoutMs,
+        columns: columnsFrom(columnsArg),
+      };
 };
 
 /**
@@ -69,13 +84,17 @@ const writeOut = (text) =>
   });
 
 /**
- * @param {Readonly<{ root: string, timeoutMs: number }>} input
+ * @param {Readonly<{ root: string, timeoutMs: number, columns: number | undefined }>} input
  * @returns {Promise<number>}
  */
-const runWatched = ({ root, timeoutMs }) =>
+const runWatched = ({ root, timeoutMs, columns }) =>
   new Promise((resolve) => {
     const worker = new Worker(new URL("./judge-worker.mjs", import.meta.url), {
-      workerData: { root, color: Boolean(process.stdout.isTTY) && !process.env.NO_COLOR },
+      workerData: {
+        root,
+        color: Boolean(process.stdout.isTTY) && !process.env.NO_COLOR,
+        columns: columns ?? columnsFrom(process.stdout.columns),
+      },
     });
     const vitestPids = new Set(/** @type {number[]} */ ([]));
     let doneCode = /** @type {number | undefined} */ (undefined);
@@ -168,7 +187,7 @@ export const main = async (args) => {
       throw error;
     }
   }
-  return runWatched({ root: parsed.root, timeoutMs: parsed.timeoutMs });
+  return runWatched({ root: parsed.root, timeoutMs: parsed.timeoutMs, columns: parsed.columns });
 };
 
 process.exitCode = await main(process.argv.slice(2));

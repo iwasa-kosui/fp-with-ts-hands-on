@@ -32,6 +32,33 @@ export const padEndWidth = (value, width) =>
 const noLineStart = "。、，．）」』】〕〉》］｝！？";
 
 /**
+ * @param {readonly string[]} lines
+ * @param {number} maxWidth
+ * @returns {readonly string[]}
+ */
+const avoidLoneLastChar = (lines, maxWidth) => {
+  const last = lines[lines.length - 1] ?? "";
+  if (lines.length < 2 || [...last].length !== 1 || stringWidth(last) !== 2) {
+    return lines;
+  }
+  const previous = [...(lines[lines.length - 2] ?? "")];
+  /** @type {(movedChars: readonly string[], rest: readonly string[]) => readonly string[] | undefined} */
+  const move = (movedChars, rest) => {
+    const char = rest[rest.length - 1];
+    if (char === undefined || rest.length < 2 || /[\x21-\x7e\s]/.test(char)) {
+      return undefined;
+    }
+    const moved = [char, ...movedChars];
+    const remaining = rest.slice(0, -1);
+    return noLineStart.includes(moved[0] ?? "") ? move(moved, remaining) : [remaining.join("").trimEnd(), moved.join("")];
+  };
+  const result = move([last], previous);
+  return result === undefined || stringWidth(result[1] ?? "") > maxWidth
+    ? lines
+    : [...lines.slice(0, -2), ...result];
+};
+
+/**
  * @param {string} value
  * @param {number} maxWidth
  * @returns {readonly string[]}
@@ -53,8 +80,11 @@ export const wrapByWidth = (value, maxWidth) => {
     },
     /** @type {readonly (readonly string[])[]} */ ([[]]),
   );
-  return lines.map((line, index) => {
-    const text = line.join("");
-    return index === 0 ? text.trimEnd() : text.trimStart().trimEnd();
-  });
+  return avoidLoneLastChar(
+    lines.map((line, index) => {
+      const text = line.join("");
+      return index === 0 ? text.trimEnd() : text.trimStart().trimEnd();
+    }),
+    maxWidth,
+  );
 };
