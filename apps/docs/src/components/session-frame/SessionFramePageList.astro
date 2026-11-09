@@ -47,14 +47,17 @@ const routeOf = (page: SessionPage) =>
           ))}
         </ol>
       );
+      const hasCurrent = members.some((page) => page.slug === currentPageSlug);
       return collapsible ? (
         <details
           class="session-frame__group"
           name={`${idPrefix}-groups`}
-          open={members.some((page) => page.slug === currentPageSlug)}
+          open={hasCurrent}
+          data-has-current={hasCurrent ? "true" : undefined}
         >
           <summary class="session-frame__group-title" id={`${idPrefix}-${flow}`}>
             {sessionPageFlowLabels[flow]}
+            {hasCurrent && <span class="session-frame__current-note">（現在のページを含む）</span>}
           </summary>
           {links}
         </details>
