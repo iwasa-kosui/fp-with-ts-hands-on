@@ -1,0 +1,420 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import { quote } from "./quote";
+import "./step-figure.css";
+
+const lineOf = (source: string, needle: string) => {
+  const index = source.split("\n").findIndex((line) => line.includes(needle));
+  if (index < 0) throw new Error(`PortSwapFlow: "${needle}" is not in the excerpt`);
+  return index;
+};
+
+const useCasePath = "src/useCase/startExamination.ts";
+const resolverCode = quote("session-04-solution", useCasePath, "ensureAppointmentFound(", ")");
+const storeCode = quote("session-06-solution", useCasePath, ".andThrough(deps.examinationStartedStore.store)");
+const contextDeps = quote(
+  "session-06-solution",
+  "src/useCase/dependencies.ts",
+  "export type EventContextDependencies = Readonly<{",
+  "}>;",
+);
+const clockType = quote("session-06-solution", "src/domain/aggregate/clock.ts", "export type Clock = Readonly<{", "}>;");
+const generatorType = quote(
+  "session-06-solution",
+  "src/domain/aggregate/eventIdGenerator.ts",
+  "export type EventIdGenerator = Readonly<{",
+  "}>;",
+);
+const sqliteCode = quote(
+  "session-06-solution",
+  "src/app.ts",
+  "const store = createExaminationStartedStore(",
+  ");",
+);
+const fakeCode = quote(
+  "session-06-solution",
+  "test/in-memory-store.test.ts",
+  "const adapter = createInMemoryExaminationStartedStore([checkedIn]);",
+  "})(input);",
+);
+
+const lit = JSON.stringify([
+  {
+    resolver: [lineOf(resolverCode, "deps.resolver")],
+    store: [0],
+  },
+  {
+    context: [lineOf(contextDeps, "clock:"), lineOf(contextDeps, "eventIdGenerator:")],
+    clock: [lineOf(clockType, "now:")],
+    generator: [lineOf(generatorType, "generate:")],
+  },
+  {
+    sqlite: [0],
+  },
+  {
+    fake: [
+      lineOf(fakeCode, "createInMemoryExaminationStartedStore"),
+      lineOf(fakeCode, "resolver:"),
+      lineOf(fakeCode, "examinationStartedStore:"),
+      lineOf(fakeCode, "clock:"),
+      lineOf(fakeCode, "eventIdGenerator:"),
+    ],
+  },
+]);
+
+const frames = [
+  "S04 で見た `deps.resolver` と、S06 の保存先 `deps.examinationStartedStore` です。ユースケースは、予約を探す処理も保存する処理も `deps` を通して外側に頼みます。この「外側に求める処理を型で表した約束」を port と呼びます。",
+  "時刻と ID も外側の処理です。`Clock` は「今の時刻を返す」約束、`EventIdGenerator` は「新しい ID を返す」約束で、どちらも port です。ユースケースは約束の型だけを知っています。",
+  "本番では、port に本物をつなぎます。resolver と store には SQLite、clock と ID generator には本物の時計と本物の ID の作り方をつなぎます。本物の時計の中だけは `new Date()` を呼びます。",
+  "テストでは、同じユースケースの port に偽物（fake）をつなぎます。メモリ上の store と固定の時刻と ID を渡すので、ユースケースのコードを変えずに結果を決められます。",
+] as const;
+
+const ports = [
+  {
+    key: "resolver",
+    name: "deps.resolver",
+    from: 0,
+    real: ["SQLite", "データベースから予約を読む"],
+    fake: ["fake の resolver", "メモリ上の予約を返す"],
+  },
+  {
+    key: "store",
+    name: "deps.examinationStartedStore",
+    from: 0,
+    real: ["SQLite", "データベースへ保存する"],
+    fake: ["fake の store", "メモリ上に保存し、呼ばれた回数を数える"],
+  },
+  {
+    key: "clock",
+    name: "deps.clock",
+    from: 1,
+    real: ["本物の時計", "実行した時刻を返す"],
+    fake: ["固定の時刻", "2026-08-30T06:30:00.000Z"],
+  },
+  {
+    key: "id",
+    name: "deps.eventIdGenerator",
+    from: 1,
+    real: ["本物の ID", "実行のたびに新しい ID を返す"],
+    fake: ["固定の ID", "いつも同じ ID を返す"],
+  },
+] as const;
+---
+
+<figure class="sf psf" data-port-swap data-step-figure data-lit={lit} aria-label="port に本物と偽物を差し替える流れ">
+  <StepControls />
+
+  <div aria-live="polite">
+    <ol class="sf-frames">
+      {frames.map((frame) => (
+        <li data-frame>
+          <p class="sf-caption">{frame.split("`").map((part, index) => (index % 2 === 1 ? <code>{part}</code> : part))}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  <div class="sf-stage psf__stage">
+    <div class="psf__codes">
+      <div class="psf__group" data-group="0">
+        <figure class="sf-code" data-code="resolver" data-ports={JSON.stringify([lineOf(resolverCode, "deps.resolver")])}>
+          <figcaption><code>startExamination.ts</code><span class="sf-tag sf-tag--before">S04</span></figcaption>
+          <Code code={resolverCode} lang="ts" wrap />
+        </figure>
+        <figure class="sf-code" data-code="store" data-ports={JSON.stringify([0])}>
+          <figcaption><code>startExamination.ts</code><span class="sf-tag">S06</span></figcaption>
+          <Code code={storeCode} lang="ts" wrap />
+        </figure>
+      </div>
+
+      <div class="psf__group psf__group--grid" data-group="1">
+        <figure class="sf-code psf__wide" data-code="context" data-ports={JSON.stringify([lineOf(contextDeps, "clock:"), lineOf(contextDeps, "eventIdGenerator:")])}>
+          <figcaption><code>dependencies.ts</code></figcaption>
+          <Code code={contextDeps} lang="ts" wrap />
+        </figure>
+        <figure class="sf-code" data-code="clock">
+          <figcaption><code>clock.ts</code></figcaption>
+          <Code code={clockType} lang="ts" wrap />
+        </figure>
+        <figure class="sf-code" data-code="generator">
+          <figcaption><code>eventIdGenerator.ts</code></figcaption>
+          <Code code={generatorType} lang="ts" wrap />
+        </figure>
+      </div>
+
+      <div class="psf__group" data-group="2">
+        <figure class="sf-code psf__wide" data-code="sqlite">
+          <figcaption><code>app.ts</code></figcaption>
+          <Code code={sqliteCode} lang="ts" wrap />
+        </figure>
+      </div>
+
+      <div class="psf__group" data-group="3">
+        <figure class="sf-code" data-code="fake">
+          <figcaption><code>in-memory-store.test.ts</code></figcaption>
+          <Code code={fakeCode} lang="ts" wrap />
+        </figure>
+      </div>
+    </div>
+
+    <div class="psf__diagram">
+      <div class="psf__head">
+        <span class="psf__title">useCase</span>
+        <span class="psf__era" data-era="2"><span class="sf-tag">本物</span></span>
+        <span class="psf__era" data-era="3"><span class="sf-tag sf-tag--empty">偽物（fake）</span></span>
+        <p class="psf__same">ユースケースのコードは、どちらでも同じです。</p>
+      </div>
+      <ul class="psf__rows">
+        {ports.map((port) => (
+          <li class="psf__row" data-from={port.from}>
+            <span class="psf__socket">
+              <span class="sf-tag">port</span>
+              <code>{port.name}</code>
+            </span>
+            <span class="psf__slot">
+              <span class="psf__plug psf__plug--none">何もつながっていません</span>
+              <span class="psf__plug psf__plug--real"><strong>{port.real[0]}</strong><small>{port.real[1]}</small></span>
+              <span class="psf__plug psf__plug--fake"><strong>{port.fake[0]}</strong><small>{port.fake[1]}</small></span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+
+</figure>
+
+<script>
+  import { mountLitFigure } from "./lit-figure";
+
+  document.querySelectorAll<HTMLElement>("[data-port-swap]").forEach((root) => {
+    root.querySelectorAll<HTMLElement>("[data-ports]").forEach((panel) => {
+      const marked = JSON.parse(panel.dataset.ports ?? "[]") as number[];
+      panel.querySelectorAll(".line").forEach((line, index) => {
+        if (!marked.includes(index)) return;
+        const tag = document.createElement("span");
+        tag.className = "psf__port-tag";
+        tag.textContent = "port";
+        line.append(tag);
+      });
+    });
+    mountLitFigure(root);
+  });
+</script>
+
+<style>
+  .psf__stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .psf__codes {
+    display: grid;
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .psf__group {
+    display: grid;
+    grid-area: 1 / 1;
+    align-content: start;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .psf__group--grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .psf__wide {
+    grid-column: 1 / -1;
+  }
+
+  .psf__codes :global(.psf__port-tag) {
+    margin-inline-start: 0.75rem;
+    padding: 0 0.4rem;
+    border: 2px solid var(--frame-code-text, var(--role-surface));
+    border-radius: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .psf__diagram {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0.5rem;
+    min-width: 0;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+  }
+
+  .psf__head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 1.75rem;
+  }
+
+  .psf__title {
+    font-weight: 800;
+  }
+
+  .psf__era {
+    display: none;
+  }
+
+  .psf__rows {
+    display: grid;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    gap: 0.375rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .psf__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: 0.5rem;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .psf__socket {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+    min-width: 0;
+  }
+
+  .psf__socket code {
+    font-size: 0.75rem;
+    overflow-wrap: anywhere;
+  }
+
+  .psf__slot {
+    display: grid;
+    align-self: stretch;
+    min-width: 0;
+  }
+
+  .psf__plug {
+    display: grid;
+    grid-area: 1 / 1;
+    align-content: center;
+    min-width: 0;
+    padding: 0.125rem 0.625rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.375rem;
+    line-height: 1.35;
+  }
+
+  .psf__plug strong {
+    font-size: 0.875rem;
+  }
+
+  .psf__plug small {
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    overflow-wrap: anywhere;
+  }
+
+  .psf__plug--none {
+    border-style: dashed;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+  }
+
+  .psf__plug--real {
+    border-color: var(--role-accent);
+    background: color-mix(in srgb, var(--role-accent) 10%, var(--role-surface));
+  }
+
+  .psf__plug--fake {
+    border-style: dashed;
+    border-color: var(--role-text);
+    background: var(--role-bg);
+  }
+
+  .psf__same {
+    margin: 0 0 0 auto;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .psf:not([data-ready]) .psf__group {
+    grid-area: auto;
+  }
+
+  .psf:not([data-ready]) .psf__plug--none,
+  .psf:not([data-ready]) .psf__plug--fake {
+    display: none;
+  }
+
+  .psf[data-ready] .psf__group,
+  .psf[data-ready] .psf__plug,
+  .psf[data-ready] .psf__row {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s, transform 0.35s, visibility 0s linear 0.35s;
+  }
+
+  .psf[data-ready][data-step="0"] [data-group="0"],
+  .psf[data-ready][data-step="1"] [data-group="1"],
+  .psf[data-ready][data-step="2"] [data-group="2"],
+  .psf[data-ready][data-step="3"] [data-group="3"],
+  .psf[data-ready][data-step="0"] .psf__plug--none,
+  .psf[data-ready][data-step="1"] .psf__plug--none,
+  .psf[data-ready][data-step="2"] .psf__plug--real,
+  .psf[data-ready][data-step="3"] .psf__plug--fake {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.35s, transform 0.35s;
+  }
+
+  .psf[data-ready] .psf__row[data-from="0"],
+  .psf[data-ready][data-step="1"] .psf__row[data-from="1"],
+  .psf[data-ready][data-step="2"] .psf__row[data-from="1"],
+  .psf[data-ready][data-step="3"] .psf__row[data-from="1"] {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .psf[data-ready][data-step="2"] .psf__era[data-era="2"],
+  .psf[data-ready][data-step="3"] .psf__era[data-era="3"] {
+    display: inline;
+  }
+
+  .psf[data-ready]:is([data-step="0"], [data-step="1"]) .psf__same {
+    visibility: hidden;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .psf[data-ready][data-step="2"] .psf__plug--real,
+    .psf[data-ready][data-step="3"] .psf__plug--fake {
+      animation: psf-plug 0.5s ease-out both;
+    }
+
+    @keyframes psf-plug {
+      from {
+        opacity: 0;
+        transform: translateX(1.25rem);
+      }
+    }
+  }
+
+  @media (max-width: 52rem) {
+    .psf__stage {
+      grid-template-columns: minmax(0, 1fr);
+      height: auto;
+    }
+  }
+</style>

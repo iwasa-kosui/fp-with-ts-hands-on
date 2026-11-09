@@ -1,0 +1,712 @@
+---
+import { Code } from "astro:components";
+
+const snippets = {
+  before: `const startExamination = (
+  appointment: CheckedIn,
+  veterinarianId: string,
+): InExamination => ({
+  ...appointment,
+  kind: "InExamination",
+  veterinarianId,
+  examinationStartedAt: new Date().toISOString(),
+});`,
+  after: `const startExamination = (
+  appointment: CheckedIn,
+  veterinarianId: string,
+  examinationStartedAt: string,
+): InExamination => ({
+  ...appointment,
+  kind: "InExamination",
+  veterinarianId,
+  examinationStartedAt,
+});`,
+} as const;
+
+const versionLabels = { before: "時刻を中で読む書き方", after: "時刻を引数で受け取る書き方", summary: "まとめ" } as const;
+
+type Frame = Readonly<{
+  scene: number;
+  version: keyof typeof versionLabels;
+  caption: string;
+  alt: string;
+  code?: Readonly<{ key: keyof typeof snippets; lines: readonly number[] }>;
+}>;
+
+const frames: readonly Frame[] = [
+  {
+    scene: 1,
+    version: "before",
+    caption:
+      "時刻を中で読む書き方の startExamination は、関数の中で new Date() を呼んで現在時刻を読みます。時刻は引数に無いので、呼び出し側からは見えません。",
+    alt: "入力は予約 CheckedIn と獣医師 ID の2つです。関数 startExamination の箱の中に時計と new Date() の表記があり、「現在時刻を読む」と示しています。出力は InExamination です。",
+    code: { key: "before", lines: [8] },
+  },
+  {
+    scene: 2,
+    version: "before",
+    caption: "同じ予約と同じ獣医師 ID を渡しても、呼んだ時刻によって結果が変わります。呼ぶ時刻で結果が変わるので、テストに期待する値を書けません。",
+    alt: "同じ入力で startExamination を10:00と10:05の2回呼ぶ図です。2つの出力の examinationStartedAt は 10:00 と 10:05 で異なり、赤で示しています。",
+  },
+  {
+    scene: 3,
+    version: "before",
+    caption:
+      "戻り値を返す以外に、関数の外の世界を読んだり書き換えたりすることを副作用と呼びます。現在時刻を読む、乱数を作る、データベースに書く、ログを出す、が副作用の例です。",
+    alt: "関数の箱から外へ向かう3本の矢印が、時計（現在時刻を読む）、データベース（書く）、ログ（出す）につながっています。",
+  },
+  {
+    scene: 4,
+    version: "after",
+    caption: "時刻を引数で受け取る書き方では、時刻を読む仕事が呼び出し側へ移り、関数の中から副作用がなくなります。",
+    alt: "時計が関数 startExamination の箱の外へ出て、3つ目の入力「時刻 string」の枠に移っています。入力は予約、獣医師 ID、時刻の3つです。箱の中には「副作用なし」と示しています。",
+    code: { key: "after", lines: [4, 9] },
+  },
+  {
+    scene: 5,
+    version: "after",
+    caption:
+      "同じ引数なら、いつ呼んでも同じ結果を返します。副作用がなく、同じ入力から必ず同じ結果を返す関数を純粋関数と呼びます。テストでは時刻を固定して結果を比べられます。",
+    alt: "時刻も含めて同じ入力で startExamination を2回呼ぶ図です。2つの出力の examinationStartedAt は どちらも 10:00 で一致し、緑で示しています。",
+  },
+  {
+    scene: 6,
+    version: "summary",
+    caption:
+      "副作用は呼び出し側にまとめ、状態遷移の判断は純粋関数に残します。データベースの読み取りは S05、保存は S06 で扱います。時刻と ID の作り方は S06 で扱います。",
+    alt: "外側の枠は呼び出し側で、時刻を読む仕事とデータベースに保存する仕事を持ちます。その中に、純粋な遷移関数 startExamination の箱があります。",
+  },
+];
+
+type Tone = "bad" | "good";
+type Rect = Readonly<{ scenes: string; x: number; y: number; w: number; h: number; kind: "box" | "fn" | "outer" | "frame"; tone?: Tone }>;
+type Label = Readonly<{
+  scenes: string;
+  x: number;
+  y: number;
+  text: string;
+  mono?: boolean;
+  size?: number;
+  bold?: boolean;
+  tone?: Tone;
+  anchor?: "start" | "middle";
+}>;
+type Arrow = Readonly<{ scenes: string; d: string; head: string }>;
+type Icon = Readonly<{ scenes: string; x: number; y: number; s: number }>;
+
+const headRight = (x: number, y: number) => `M ${x - 7} ${y - 4} L ${x} ${y} L ${x - 7} ${y + 4} z`;
+const headDown = (x: number, y: number) => `M ${x - 4} ${y - 7} L ${x} ${y} L ${x + 4} ${y - 7} z`;
+type Item = Readonly<{ text: string; mono?: boolean; size?: number; bold?: boolean; tone?: Tone }>;
+const stack = (scenes: string, x: number, centerY: number, items: readonly Item[], gap: number): readonly Label[] =>
+  items.map((item, index) => ({ ...item, scenes, x, y: centerY + (index - (items.length - 1) / 2) * gap + 4 }));
+
+const rects: readonly Rect[] = [
+  { scenes: "1 4", x: 100, y: 22, w: 124, h: 168, kind: "fn" },
+  { scenes: "1 4", x: 2, y: 32, w: 72, h: 40, kind: "box" },
+  { scenes: "1 4", x: 2, y: 86, w: 72, h: 40, kind: "box" },
+  { scenes: "4", x: 2, y: 140, w: 72, h: 40, kind: "box" },
+  { scenes: "1 4", x: 252, y: 80, w: 86, h: 52, kind: "box" },
+  { scenes: "3", x: 8, y: 70, w: 120, h: 84, kind: "fn" },
+  { scenes: "3", x: 180, y: 8, w: 156, h: 196, kind: "frame" },
+  { scenes: "2 5", x: 2, y: 6, w: 150, h: 52, kind: "box" },
+  { scenes: "2 5", x: 188, y: 6, w: 150, h: 52, kind: "box" },
+  { scenes: "2 5", x: 2, y: 78, w: 150, h: 40, kind: "fn" },
+  { scenes: "2 5", x: 188, y: 78, w: 150, h: 40, kind: "fn" },
+  { scenes: "2", x: 2, y: 142, w: 150, h: 62, kind: "box", tone: "bad" },
+  { scenes: "2", x: 188, y: 142, w: 150, h: 62, kind: "box", tone: "bad" },
+  { scenes: "5", x: 2, y: 142, w: 150, h: 62, kind: "box", tone: "good" },
+  { scenes: "5", x: 188, y: 142, w: 150, h: 62, kind: "box", tone: "good" },
+  { scenes: "6", x: 4, y: 4, w: 332, h: 204, kind: "outer" },
+  { scenes: "6", x: 105, y: 34, w: 130, h: 30, kind: "box" },
+  { scenes: "6", x: 50, y: 82, w: 240, h: 56, kind: "fn", tone: "good" },
+  { scenes: "6", x: 88, y: 156, w: 166, h: 30, kind: "box" },
+];
+
+const arrows: readonly Arrow[] = [
+  { scenes: "1 4", d: "M 74 52 H 93", head: headRight(100, 52) },
+  { scenes: "1 4", d: "M 74 106 H 93", head: headRight(100, 106) },
+  { scenes: "4", d: "M 74 160 H 93", head: headRight(100, 160) },
+  { scenes: "1 4", d: "M 224 106 H 245", head: headRight(252, 106) },
+  { scenes: "3", d: "M 128 92 H 154 V 62 H 179", head: headRight(186, 62) },
+  { scenes: "3", d: "M 128 112 H 179", head: headRight(186, 112) },
+  { scenes: "3", d: "M 128 132 H 154 V 162 H 179", head: headRight(186, 162) },
+  ...[77, 263].flatMap((x) => [
+    { scenes: "2 5", d: `M ${x} 58 V 71`, head: headDown(x, 78) },
+    { scenes: "2 5", d: `M ${x} 118 V 135`, head: headDown(x, 142) },
+  ]),
+  { scenes: "6", d: "M 170 64 V 75", head: headDown(170, 82) },
+  { scenes: "6", d: "M 170 138 V 149", head: headDown(170, 156) },
+];
+
+const labels: readonly Label[] = [
+  { scenes: "1 4", x: 162, y: 44, text: "startExamination", mono: true },
+  { scenes: "1", x: 162, y: 146, text: "new Date()", mono: true },
+  { scenes: "1", x: 162, y: 168, text: "現在時刻を読む", bold: true, tone: "bad" },
+  { scenes: "4", x: 162, y: 160, text: "副作用なし", bold: true, tone: "good" },
+  ...stack("1 4", 38, 52, [{ text: "予約" }, { text: "CheckedIn", mono: true, size: 10 }], 14),
+  ...stack("1 4", 38, 106, [{ text: "獣医師 ID" }, { text: "string", mono: true, size: 10 }], 14),
+  ...stack("4", 50, 160, [{ text: "時刻" }, { text: "string", mono: true, size: 10 }], 14),
+  ...stack("1 4", 295, 106, [{ text: "出力" }, { text: "InExamination", mono: true, size: 10 }], 14),
+  ...stack("3", 68, 112, [{ text: "関数" }, { text: "副作用あり", bold: true, tone: "bad" }], 18),
+  { scenes: "3", x: 258, y: 26, text: "関数の外の世界", bold: true },
+  { scenes: "3", x: 224, y: 66, text: "現在時刻を読む", anchor: "start" },
+  { scenes: "3", x: 224, y: 116, text: "データベースに書く", anchor: "start" },
+  { scenes: "3", x: 224, y: 166, text: "ログを出す", anchor: "start" },
+  ...[
+    { x: 77, call: "10:00", ordinal: "1回目", value: "10:00" },
+    { x: 263, call: "10:05", ordinal: "2回目", value: "10:05" },
+  ].flatMap(({ x, call, ordinal, value }) => [
+    ...stack("2", x, 32, [{ text: `${call} に呼ぶ`, bold: true }, { text: "同じ予約と獣医師 ID" }], 15),
+    ...stack("5", x, 32, [{ text: `${ordinal}に呼ぶ`, bold: true }, { text: "同じ予約と獣医師 ID" }, { text: "同じ時刻 10:00" }], 14),
+    { scenes: "2", x: x + 10, y: 102, text: "startExamination", mono: true, size: 10 },
+    { scenes: "5", x, y: 102, text: "startExamination", mono: true, size: 10 },
+    { scenes: "2 5", x, y: 158, text: "InExamination", mono: true, size: 10 },
+    { scenes: "2 5", x, y: 174, text: "examinationStartedAt:", mono: true, size: 10 },
+    { scenes: "2", x, y: 192, text: `"${value}"`, mono: true, bold: true, tone: "bad" as const },
+    { scenes: "5", x, y: 192, text: `"10:00"`, mono: true, bold: true, tone: "good" as const },
+  ]),
+  { scenes: "2", x: 170, y: 184, text: "≠", size: 24, bold: true, tone: "bad" },
+  { scenes: "5", x: 170, y: 184, text: "=", size: 24, bold: true, tone: "good" },
+  { scenes: "6", x: 16, y: 24, text: "呼び出し側", bold: true, anchor: "start" },
+  { scenes: "6", x: 136, y: 53, text: "時刻を読む", anchor: "start" },
+  { scenes: "6", x: 120, y: 175, text: "データベースに保存する", anchor: "start" },
+  ...stack("6", 170, 110, [{ text: "startExamination", mono: true }, { text: "純粋な遷移関数（状態遷移の判断）" }], 17),
+];
+
+const clocks: readonly Icon[] = [
+  { scenes: "2", x: 21, y: 98, s: 0.8 },
+  { scenes: "2", x: 207, y: 98, s: 0.8 },
+  { scenes: "6", x: 121, y: 49, s: 0.8 },
+];
+const databases: readonly Icon[] = [
+  { scenes: "3", x: 202, y: 112, s: 1 },
+  { scenes: "6", x: 104, y: 171, s: 0.8 },
+];
+const logs: readonly Icon[] = [{ scenes: "3", x: 202, y: 162, s: 1 }];
+
+const playerData = JSON.stringify(
+  frames.map(({ caption, scene, version, alt }) => ({ caption, scene, version, label: versionLabels[version], alt })),
+);
+---
+
+<figure id="pure-function-flow" class="pure-function-flow" data-pure-function-flow data-frames={playerData}>
+  <figcaption class="pure-function-flow__title">時刻を引数で受け取ると、同じ入力から同じ結果になる</figcaption>
+
+  <div class="pure-function-flow__controls" data-controls hidden>
+    <button type="button" data-first disabled>最初へ</button>
+    <button type="button" data-prev disabled>前へ</button>
+    <button type="button" data-play>再生</button>
+    <button type="button" data-next>次へ</button>
+    <span data-progress>1 / {frames.length}</span>
+  </div>
+
+  <div class="pure-function-flow__stage" data-stage hidden>
+    <span class="pure-function-flow__badge" data-stage-badge data-version="before">時刻を中で読む書き方</span>
+    <div data-stage-figure></div>
+  </div>
+
+  <p class="pure-function-flow__live" data-live aria-live="polite" hidden></p>
+
+  <ol class="pure-function-flow__frames">
+    {frames.map((frame) => (
+      <li data-frame data-has-code={frame.code ? "" : undefined}>
+        <div class="pure-function-flow__visual">
+          <span class="pure-function-flow__badge" data-version={frame.version}>{versionLabels[frame.version]}</span>
+          <svg viewBox="0 0 340 212" role="img" aria-label={frame.alt} data-scene={frame.scene}>
+            {rects.map((rect) => (
+              <rect
+                x={rect.x}
+                y={rect.y}
+                width={rect.w}
+                height={rect.h}
+                rx={rect.kind === "outer" ? 10 : 6}
+                class={`pure-function-flow__layer pure-function-flow__rect pure-function-flow__rect--${rect.kind}`}
+                data-scenes={rect.scenes}
+                data-tone={rect.tone}
+              ></rect>
+            ))}
+            {arrows.map((arrow) => (
+              <g class="pure-function-flow__layer" data-scenes={arrow.scenes}>
+                <path d={arrow.d} class="pure-function-flow__line"></path>
+                <path d={arrow.head} class="pure-function-flow__head"></path>
+              </g>
+            ))}
+            {databases.map((icon) => (
+              <g class="pure-function-flow__layer pure-function-flow__icon" data-scenes={icon.scenes} transform={`translate(${icon.x} ${icon.y}) scale(${icon.s})`}>
+                <path d="M -12 -9 V 9 A 12 4 0 0 0 12 9 V -9"></path>
+                <ellipse cx="0" cy="-9" rx="12" ry="4"></ellipse>
+                <path d="M -12 0 A 12 4 0 0 0 12 0"></path>
+              </g>
+            ))}
+            {logs.map((icon) => (
+              <g class="pure-function-flow__layer pure-function-flow__icon" data-scenes={icon.scenes} transform={`translate(${icon.x} ${icon.y}) scale(${icon.s})`}>
+                <rect x="-10" y="-12" width="20" height="24" rx="2"></rect>
+                <path d="M -6 -5 H 6 M -6 0 H 6 M -6 5 H 2"></path>
+              </g>
+            ))}
+            {clocks.map((icon) => (
+              <g class="pure-function-flow__layer pure-function-flow__clock-icon" data-scenes={icon.scenes} transform={`translate(${icon.x} ${icon.y}) scale(${icon.s})`}>
+                <circle cx="0" cy="0" r="11"></circle>
+                <path d="M 0 -6 V 0 L 5 3"></path>
+              </g>
+            ))}
+            {labels.map((label) => (
+              <text
+                x={label.x}
+                y={label.y}
+                text-anchor={label.anchor ?? "middle"}
+                font-size={label.size ?? 11}
+                class:list={["pure-function-flow__layer", "pure-function-flow__text", { "pure-function-flow__mono": label.mono, "pure-function-flow__bold": label.bold }]}
+                data-scenes={label.scenes}
+                data-tone={label.tone}
+              >{label.text}</text>
+            ))}
+            <g class="pure-function-flow__clock pure-function-flow__clock-icon">
+              <circle cx="0" cy="0" r="11"></circle>
+              <path d="M 0 -6 V 0 L 5 3"></path>
+            </g>
+          </svg>
+        </div>
+        <p class="pure-function-flow__caption">{frame.caption}</p>
+        {frame.code && (
+          <figure class="code-block pure-function-flow__code" data-version={frame.code.key} data-lit={JSON.stringify(frame.code.lines.map((line) => line - 1))}>
+            <figcaption><span class="pure-function-flow__tag" data-version={frame.code.key}>{versionLabels[frame.code.key]}</span> <code>startExamination</code>（説明用の短い例）</figcaption>
+            <Code code={snippets[frame.code.key]} lang="ts" defaultColor="dark" wrap={null} />
+          </figure>
+        )}
+      </li>
+    ))}
+  </ol>
+</figure>
+
+<script>
+  type Frame = { scene: number; version: string; label: string; caption: string; alt: string };
+
+  const STEP_MS = 3500;
+
+  const setUp = (root: HTMLElement) => {
+    if (root.dataset.ready !== undefined) return;
+    const frames = JSON.parse(root.dataset.frames ?? "[]") as Frame[];
+    const panels = [...root.querySelectorAll<HTMLElement>("[data-frame]")];
+    const source = root.querySelector<SVGSVGElement>("li svg");
+    const stage = root.querySelector<HTMLElement>("[data-stage]");
+    const stageBadge = root.querySelector<HTMLElement>("[data-stage-badge]");
+    const stageFigure = root.querySelector<HTMLElement>("[data-stage-figure]");
+    const controls = root.querySelector<HTMLElement>("[data-controls]");
+    const first = root.querySelector<HTMLButtonElement>("[data-first]");
+    const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
+    const play = root.querySelector<HTMLButtonElement>("[data-play]");
+    const next = root.querySelector<HTMLButtonElement>("[data-next]");
+    const progress = root.querySelector<HTMLElement>("[data-progress]");
+    const live = root.querySelector<HTMLElement>("[data-live]");
+    if (!source || !stage || !stageBadge || !stageFigure || !controls || !first || !prev || !play || !next || !progress || !live || frames.length !== panels.length) return;
+    root.dataset.ready = "";
+
+    const svg = source.cloneNode(true) as SVGSVGElement;
+    stageFigure.append(svg);
+
+    root.querySelectorAll<HTMLElement>("[data-lit]").forEach((block) => {
+      const lit = JSON.parse(block.dataset.lit ?? "[]") as number[];
+      block.querySelectorAll<HTMLElement>(".line").forEach((line, index) => {
+        line.classList.toggle("is-lit", lit.includes(index));
+      });
+    });
+
+    let current = 0;
+    let timer: number | null = null;
+
+    const stop = () => {
+      if (timer !== null) window.clearInterval(timer);
+      timer = null;
+      play.textContent = "再生";
+    };
+
+    const show = (index: number) => {
+      const frame = frames[index];
+      current = index;
+      panels.forEach((panel, i) => panel.classList.toggle("is-current", i === index));
+      svg.dataset.scene = String(frame.scene);
+      svg.setAttribute("aria-label", frame.alt);
+      stageBadge.textContent = frame.label;
+      stageBadge.dataset.version = frame.version;
+      live.textContent = frame.caption;
+      progress.textContent = `${index + 1} / ${frames.length}`;
+      first.disabled = index === 0;
+      prev.disabled = index === 0;
+      next.disabled = index === frames.length - 1;
+    };
+
+    first.addEventListener("click", () => {
+      stop();
+      show(0);
+    });
+    prev.addEventListener("click", () => {
+      stop();
+      show(Math.max(current - 1, 0));
+    });
+    next.addEventListener("click", () => {
+      stop();
+      show(Math.min(current + 1, frames.length - 1));
+    });
+    play.addEventListener("click", () => {
+      if (timer !== null) {
+        stop();
+        return;
+      }
+      if (current === frames.length - 1) show(0);
+      play.textContent = "停止";
+      timer = window.setInterval(() => {
+        if (current >= frames.length - 1) {
+          stop();
+          return;
+        }
+        show(current + 1);
+      }, STEP_MS);
+    });
+
+    root.dataset.animated = "";
+    controls.hidden = false;
+    stage.hidden = false;
+    live.hidden = false;
+    show(0);
+  };
+
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    document.querySelectorAll<HTMLElement>("[data-pure-function-flow]").forEach(setUp);
+  }
+</script>
+
+<style>
+  .pure-function-flow {
+    min-width: 0;
+    max-width: 100%;
+    margin: 1.5rem 0;
+    --version-before: var(--role-negative);
+    --version-after: var(--role-positive);
+    --version-summary: var(--role-accent);
+    --bad: var(--role-negative);
+    --good: var(--role-positive);
+  }
+
+  [data-version="before"] {
+    --version-color: var(--version-before);
+  }
+
+  [data-version="after"] {
+    --version-color: var(--version-after);
+  }
+
+  [data-version="summary"] {
+    --version-color: var(--version-summary);
+  }
+
+  .pure-function-flow__title {
+    margin: 0 0 0.75rem;
+    font-weight: 700;
+    line-height: 1.6;
+  }
+
+  .pure-function-flow svg {
+    display: block;
+    width: 100%;
+    max-width: 26rem;
+    height: auto;
+    margin: 0.5rem auto 0;
+  }
+
+  .pure-function-flow__badge,
+  .pure-function-flow__tag {
+    display: inline-block;
+    border-radius: 0.375rem;
+    background: var(--version-color);
+    color: var(--role-surface);
+    font-weight: 700;
+  }
+
+  .pure-function-flow__badge {
+    padding: 0.25rem 1rem;
+    border: 2px solid var(--case-line);
+    font-size: 1.25rem;
+    line-height: 1.5;
+  }
+
+  .pure-function-flow__tag {
+    padding: 0 0.4rem;
+  }
+
+  .pure-function-flow__layer {
+    opacity: 0;
+  }
+
+  .pure-function-flow svg[data-scene="1"] [data-scenes~="1"],
+  .pure-function-flow svg[data-scene="2"] [data-scenes~="2"],
+  .pure-function-flow svg[data-scene="3"] [data-scenes~="3"],
+  .pure-function-flow svg[data-scene="4"] [data-scenes~="4"],
+  .pure-function-flow svg[data-scene="5"] [data-scenes~="5"],
+  .pure-function-flow svg[data-scene="6"] [data-scenes~="6"] {
+    opacity: 1;
+    transition: opacity 0.4s;
+  }
+
+  .pure-function-flow__rect {
+    fill: var(--case-cream);
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .pure-function-flow__rect--fn {
+    fill: var(--case-paper);
+    stroke: var(--case-blue);
+    stroke-width: 2.5;
+  }
+
+  .pure-function-flow__rect--outer {
+    fill: var(--case-paper);
+    stroke: var(--case-blue);
+    stroke-width: 2;
+  }
+
+  .pure-function-flow__rect--frame {
+    fill: none;
+    stroke: var(--case-muted);
+    stroke-dasharray: 5 4;
+  }
+
+  .pure-function-flow__rect[data-tone="bad"] {
+    stroke: var(--bad);
+    stroke-width: 2.5;
+  }
+
+  .pure-function-flow__rect[data-tone="good"] {
+    stroke: var(--good);
+    stroke-width: 2.5;
+  }
+
+  .pure-function-flow__line {
+    fill: none;
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .pure-function-flow__head {
+    fill: var(--case-line);
+  }
+
+  .pure-function-flow__text {
+    fill: var(--case-ink);
+  }
+
+  .pure-function-flow__text[data-tone="bad"] {
+    fill: var(--bad);
+  }
+
+  .pure-function-flow__text[data-tone="good"] {
+    fill: var(--good);
+  }
+
+  .pure-function-flow__bold {
+    font-weight: 700;
+  }
+
+  .pure-function-flow__mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .pure-function-flow__icon :is(path, ellipse, rect) {
+    fill: var(--case-paper);
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+  }
+
+  .pure-function-flow__clock-icon circle {
+    fill: var(--case-yellow);
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+  }
+
+  .pure-function-flow__clock-icon path {
+    fill: none;
+    stroke: var(--case-line);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .pure-function-flow__clock {
+    transform: translate(17px, 160px);
+    opacity: 0;
+  }
+
+  .pure-function-flow svg[data-scene="1"] .pure-function-flow__clock {
+    transform: translate(162px, 104px) scale(1.8);
+    opacity: 1;
+  }
+
+  .pure-function-flow svg[data-scene="3"] .pure-function-flow__clock {
+    transform: translate(202px, 62px) scale(1.2);
+    opacity: 1;
+  }
+
+  .pure-function-flow svg[data-scene="4"] .pure-function-flow__clock {
+    transform: translate(17px, 160px);
+    opacity: 1;
+  }
+
+  .pure-function-flow__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .pure-function-flow__controls[hidden] {
+    display: none;
+  }
+
+  .pure-function-flow__controls button {
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 2px solid var(--case-line);
+    border-radius: 0.5rem;
+    background: var(--case-yellow);
+    color: var(--case-ink);
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .pure-function-flow__controls button:disabled {
+    background: var(--case-paper);
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .pure-function-flow__live,
+  .pure-function-flow__caption {
+    margin: 0.75rem 0 0.5rem;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .pure-function-flow__frames {
+    margin: 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .pure-function-flow__frames > li {
+    min-width: 0;
+  }
+
+  .pure-function-flow__frames > li + li {
+    margin-top: 1.5rem;
+  }
+
+  .pure-function-flow__code {
+    min-width: 0;
+    margin: 0.75rem 0 0;
+    border-inline-start: 0.35rem solid var(--version-color);
+  }
+
+  .pure-function-flow__code figcaption code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .pure-function-flow__code :global(pre) {
+    max-width: 100%;
+    margin: 0;
+    padding: 0.75rem;
+    overflow-x: hidden;
+    font-size: 0.75rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .pure-function-flow__code :global(code) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .pure-function-flow :global(.line.is-lit) {
+    display: inline-block;
+    min-width: calc(100% + 0.5rem);
+    margin-left: -0.5rem;
+    padding-left: 0.5rem;
+    background: color-mix(in srgb, var(--case-paper) 20%, transparent);
+    box-shadow: inset 0.3rem 0 0 var(--case-blue);
+  }
+
+  .pure-function-flow[data-animated] {
+    display: grid;
+    grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
+    gap: 0 1.5rem;
+    align-items: start;
+    margin-block: 0.5rem;
+  }
+
+  .pure-function-flow[data-animated] > .pure-function-flow__title,
+  .pure-function-flow[data-animated] > .pure-function-flow__controls {
+    grid-column: 1 / -1;
+    margin-block-end: 0.5rem;
+  }
+
+  .pure-function-flow[data-animated] > .pure-function-flow__stage {
+    grid-column: 1;
+    grid-row: 3 / span 2;
+  }
+
+  .pure-function-flow[data-animated] > .pure-function-flow__live {
+    grid-column: 2;
+    grid-row: 3;
+    min-height: calc(1.7em * 3);
+    margin-block-start: 0;
+  }
+
+  .pure-function-flow[data-animated] > .pure-function-flow__frames {
+    grid-column: 2;
+    grid-row: 4;
+  }
+
+  [data-animated] .pure-function-flow__frames {
+    display: grid;
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  [data-animated] .pure-function-flow__frames > li {
+    grid-area: 1 / 1;
+    margin: 0;
+    visibility: hidden;
+  }
+
+  [data-animated] .pure-function-flow__frames > li.is-current {
+    visibility: visible;
+  }
+
+  [data-animated] .pure-function-flow__visual,
+  [data-animated] .pure-function-flow__caption {
+    display: none;
+  }
+
+  [data-animated] .pure-function-flow__layer,
+  [data-animated] .pure-function-flow__clock {
+    transition: none;
+  }
+
+  [data-animated] svg[data-scene="1"] .pure-function-flow__clock,
+  [data-animated] svg[data-scene="3"] .pure-function-flow__clock {
+    transition: opacity 0.4s;
+  }
+
+  [data-animated] svg[data-scene="4"] .pure-function-flow__clock {
+    transition: transform 0.9s ease-in-out, opacity 0.4s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-animated] * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>

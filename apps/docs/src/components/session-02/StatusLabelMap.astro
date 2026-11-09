@@ -1,0 +1,234 @@
+---
+import { projectFilesForSnapshot } from "../../code-explorer/project-files";
+import { sourceOf } from "../../sessions/source-quotes";
+import StepControls from "../stepper/StepControls.astro";
+
+const kinds = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Paid", "Canceled"] as const;
+
+const lines = sourceOf(projectFilesForSnapshot("session-02-solution"), "src/domain/appointment/statusLabel.ts").split("\n");
+const rows = kinds.map((kind) => {
+  const caseIndex = lines.findIndex((line) => line.trim() === `case "${kind}":`);
+  const label = lines[caseIndex + 1]?.trim().match(/^return "(.+)";$/)?.[1];
+  if (caseIndex < 0 || label === undefined) throw new Error(`StatusLabelMap: case "${kind}" の表示名が見つかりません`);
+  return { kind, label };
+});
+---
+
+<figure class="map" data-status-label-map aria-label="予約の6つの状態が、画面の表示名につながる図">
+  <StepControls />
+
+  <div class="map__board">
+    <p class="map__head map__head--kinds">予約の状態（<code>kind</code>）</p>
+    <p class="map__head map__head--screen">受付の画面の表示名</p>
+    {rows.map(({ kind }, index) => (
+      <p class="map__kind" style={`grid-row: ${index + 2}; --i: ${index}`}><code>{kind}</code></p>
+    ))}
+    <p class="map__fn"><code>toStatusLabel</code><span>状態を表示名へ変える関数</span></p>
+    {rows.map(({ label }, index) => (
+      <p class="map__label" style={`grid-row: ${index + 2}; --i: ${index}`}>{label}</p>
+    ))}
+  </div>
+
+  <div aria-live="polite">
+    <ol class="map__frames">
+      <li data-frame>
+        <p class="map__caption">S01 で分けた6つの状態です。予約は、このどれか1つの状態にあります。</p>
+      </li>
+      <li data-frame>
+        <p class="map__caption"><code>toStatusLabel</code> は、予約の <code>kind</code> を受け取り、画面に出す文字を返す関数です。</p>
+      </li>
+      <li data-frame>
+        <p class="map__caption">6つの状態は、1つずつ別の表示名につながります。受付は、この表示名を見て予約の状態を判断します。</p>
+      </li>
+    </ol>
+  </div>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-status-label-map]").forEach((root) => {
+    mountStepper({ root });
+  });
+</script>
+
+<style>
+  .map {
+    min-width: 0;
+    margin: 0.5rem 0;
+    color: var(--role-text);
+  }
+
+  .map :global(.step-controls) {
+    margin-block-end: 0.5rem;
+  }
+
+  .map__board {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(8rem, 12rem) minmax(0, 1fr);
+    grid-template-rows: auto repeat(6, auto);
+    gap: 0.25rem 2.5rem;
+    align-items: center;
+    max-width: 44rem;
+    margin-inline: auto;
+  }
+
+  .map p {
+    margin: 0;
+  }
+
+  .map__head {
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    font-weight: 800;
+  }
+
+  .map__head--kinds {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .map__head--screen {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .map__kind,
+  .map__label {
+    position: relative;
+    padding: 0.125rem 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .map__kind {
+    grid-column: 1;
+    border-color: var(--role-accent);
+  }
+
+  .map__label {
+    grid-column: 3;
+  }
+
+  .map__kind code {
+    font-size: 0.875rem;
+  }
+
+  .map__kind::after,
+  .map__label::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 2.5rem;
+    border-top: 2px solid var(--role-accent);
+  }
+
+  .map__kind::after {
+    inset-inline-start: 100%;
+  }
+
+  .map__label::before {
+    inset-inline-end: 100%;
+  }
+
+  .map__fn {
+    grid-column: 2;
+    grid-row: 2 / span 6;
+    display: grid;
+    align-content: center;
+    gap: 0.25rem;
+    align-self: stretch;
+    padding: 0.5rem;
+    border: 3px solid var(--role-accent);
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--role-accent) 14%, var(--role-surface));
+    text-align: center;
+  }
+
+  .map__fn code {
+    font-size: 0.9375rem;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+  }
+
+  .map__fn span {
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .map__frames {
+    margin: 0.5rem 0 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .map__frames > li + li {
+    margin-block-start: 0.5rem;
+  }
+
+  .map__caption {
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .map[data-ready] .map__frames {
+    display: grid;
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  .map[data-ready] .map__frames > li {
+    grid-area: 1 / 1;
+  }
+
+  .map[data-ready] .map__frames > li[hidden] {
+    display: block;
+    visibility: hidden;
+  }
+
+  .map[data-ready] .map__fn,
+  .map[data-ready] .map__label,
+  .map[data-ready] .map__head--screen,
+  .map[data-ready] .map__kind::after {
+    transition: opacity 0.35s;
+  }
+
+  .map[data-ready][data-step="0"] .map__fn,
+  .map[data-ready][data-step="0"] .map__label,
+  .map[data-ready][data-step="0"] .map__head--screen,
+  .map[data-ready][data-step="0"] .map__kind::after,
+  .map[data-ready][data-step="1"] .map__label,
+  .map[data-ready][data-step="1"] .map__head--screen,
+  .map[data-ready][data-step="1"] .map__kind::after {
+    opacity: 0;
+  }
+
+  .map[data-ready][data-step="2"] .map__label {
+    transition-delay: calc(var(--i) * 0.1s);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .map[data-ready] .map__fn,
+    .map[data-ready] .map__label,
+    .map[data-ready] .map__head--screen,
+    .map[data-ready] .map__kind::after {
+      transition: none;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .map__board {
+      column-gap: 1.5rem;
+      grid-template-columns: minmax(0, 1fr) minmax(5rem, 7rem) minmax(0, 1fr);
+    }
+
+    .map__kind::after,
+    .map__label::before {
+      width: 1.5rem;
+    }
+  }
+</style>

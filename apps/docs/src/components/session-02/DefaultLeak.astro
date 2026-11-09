@@ -1,0 +1,385 @@
+---
+import { Code } from "astro:components";
+import { projectFilesForSnapshot } from "../../code-explorer/project-files";
+import { sourceOf } from "../../sessions/source-quotes";
+import StepControls from "../stepper/StepControls.astro";
+
+const path = "src/domain/appointment/statusLabel.ts";
+const firstLine = "export const toStatusLabel = (appointment: Readonly<{ kind: string }>): string => {";
+const sourceLines = sourceOf(projectFilesForSnapshot("session-02"), path).split("\n");
+const start = sourceLines.indexOf(firstLine);
+const end = sourceLines.indexOf("};", start);
+if (start < 0 || end < 0) throw new Error(`DefaultLeak: ${path} has no toStatusLabel block`);
+const codeLines = sourceLines.slice(start, end + 1);
+const code = codeLines.join("\n");
+
+const lineOf = (needle: string) => {
+  const index = codeLines.findIndex((line) => line.includes(needle));
+  if (index < 0) throw new Error(`DefaultLeak: "${needle}" is not in the excerpt`);
+  return index;
+};
+
+const lit = {
+  0: { lines: [lineOf("kind: string")] },
+  1: { lines: [lineOf("default:"), lineOf('return "不明"')] },
+  2: { lines: [lineOf("default:"), lineOf('return "不明"')], note: lineOf('return "不明"') },
+};
+
+const cases = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Paid", "Canceled"] as const;
+---
+
+<figure
+  class="leak"
+  data-default-leak
+  data-lit={JSON.stringify(lit)}
+  data-note="◀ NoShow がここへ届く"
+  aria-label="NoShow が case に当たらず default へ流れる様子"
+>
+  <StepControls />
+
+  <div class="leak__main">
+    <figure class="code-block leak__code">
+      <figcaption>
+        <span class="leak__tag">▲ 修正前</span>
+        <code>examples/session-02/{path}:{start + 1}-{end + 1}</code>
+      </figcaption>
+      <Code code={code} lang="ts" />
+    </figure>
+
+    <div class="leak__side">
+      <div class="leak__flow">
+        <p class="leak__box leak__box--input">
+          <span>引数の型</span><code>{"Readonly<{ kind: string }>"}</code><small>kind がどんな文字列でも受け取る</small>
+        </p>
+        <div class="leak__cases">
+          <p class="leak__title">case で扱う6状態</p>
+          <ul class="leak__tiles">
+            {cases.map((kind) => <li><code>{kind}</code></li>)}
+            <li class="leak__tile--new" data-from="2"><code>NoShow</code><small>7枚目 ×</small></li>
+          </ul>
+        </div>
+        <p class="leak__arrow" data-from="1" aria-hidden="true">▼ どの case にも当たらない値</p>
+        <div class="leak__bottom" data-from="1">
+          <p class="leak__box leak__box--default"><code>default</code><small>「不明」を返す</small></p>
+          <span class="leak__arrow-right" aria-hidden="true">→</span>
+          <p class="leak__box leak__box--screen">
+            <span>受付の画面</span>
+            <strong>不明</strong>
+            <small class="leak__screen-note" data-from="2">× 実際は NoShow の予約</small>
+          </p>
+        </div>
+      </div>
+
+      <div aria-live="polite">
+        <ol class="leak__frames">
+          <li data-frame>
+            <p class="leak__caption">1段目: 引数の型は <code>{"Readonly<{ kind: string }>"}</code> なので、<code>kind</code> がどんな文字列でも受け取ります。そのため <code>NoShow</code> の予約も型検査を通ります。</p>
+          </li>
+          <li data-frame>
+            <p class="leak__caption">2段目: <code>default</code> が「不明」を返すので、<code>case</code> のない状態もそのまま画面まで届きます。</p>
+          </li>
+          <li data-frame>
+            <p class="leak__caption"><code>NoShow</code> を足しても、型検査は通ります。7枚目の札は <code>case</code> に当たらず <code>default</code> へ流れ、画面に「不明」と出ます。</p>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  type Lit = Record<string, { lines: number[]; note?: number }>;
+
+  document.querySelectorAll<HTMLElement>("[data-default-leak]").forEach((root) => {
+    const lit = JSON.parse(root.dataset.lit ?? "{}") as Lit;
+    const lines = [...root.querySelectorAll<HTMLElement>(".leak__code .line")];
+    const parts = [...root.querySelectorAll<HTMLElement>("[data-from]")];
+
+    mountStepper({
+      root,
+      onStep: (index) => {
+        root.dataset.phase = String(index);
+        const active = lit[String(index)];
+        lines.forEach((line, lineIndex) => {
+          line.classList.toggle("is-lit", active?.lines.includes(lineIndex) ?? false);
+          const noted = active?.note === lineIndex;
+          line.classList.toggle("is-note", noted);
+          if (noted) line.dataset.note = root.dataset.note ?? "";
+          else delete line.dataset.note;
+        });
+        parts.forEach((part) => part.classList.toggle("is-shown", Number(part.dataset.from) <= index));
+      },
+    });
+  });
+</script>
+
+<style>
+  .leak {
+    min-width: 0;
+    margin: 0.5rem 0;
+    color: var(--role-text);
+  }
+
+  .leak :global(.step-controls) {
+    margin-block-end: 0.5rem;
+  }
+
+  .leak__main {
+    display: grid;
+    gap: 0.75rem 1rem;
+    align-items: start;
+  }
+
+  @media (min-width: 52rem) {
+    .leak__main {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    }
+  }
+
+  .leak__code {
+    min-width: 0;
+    margin: 0;
+  }
+
+  .leak__code figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+    justify-content: flex-start;
+    padding-block: 0.25rem;
+  }
+
+  .leak__code figcaption code {
+    font-size: 0.6875rem;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .leak__tag {
+    display: inline-block;
+    padding: 0 0.5rem;
+    border: 2px solid var(--role-negative);
+    border-radius: 0.25rem;
+    background: var(--role-surface);
+    color: var(--role-negative);
+    font-size: 0.8125rem;
+    font-weight: 800;
+  }
+
+  .leak__code :global(pre) {
+    margin: 0;
+    padding: 0.5rem 0;
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+
+  .leak__code :global(.line) {
+    display: inline-block;
+    min-width: 100%;
+    padding-inline: 0.75rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .leak__code :global(code) {
+    min-width: 0;
+  }
+
+  .leak__code :global(.line.is-lit) {
+    background: color-mix(in srgb, var(--lit, var(--role-accent)) 8%, transparent);
+    box-shadow: inset 6px 0 0 var(--lit, var(--role-accent));
+  }
+
+  .leak[data-phase="2"] .leak__code {
+    --lit: var(--role-negative);
+  }
+
+  .leak__code :global(.line.is-note)::after {
+    content: attr(data-note);
+    margin-inline-start: 0.75rem;
+    padding: 0 0.375rem;
+    border-radius: 0.25rem;
+    background: var(--role-surface);
+    color: var(--role-negative);
+    font-weight: 800;
+  }
+
+  .leak__side {
+    display: grid;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .leak__flow {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .leak__flow p {
+    margin: 0;
+  }
+
+  .leak__box {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.125rem 0.5rem;
+    padding: 0.25rem 0.625rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  .leak__box code {
+    font-weight: 800;
+  }
+
+  .leak__box small {
+    color: var(--role-muted);
+    font-size: 0.75rem;
+  }
+
+  .leak__box--input {
+    border-color: var(--role-accent);
+  }
+
+  .leak__cases {
+    padding: 0.25rem 0.625rem 0.375rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+  }
+
+  .leak__title {
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .leak__tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem;
+    margin: 0.125rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .leak__tiles li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0 0.375rem;
+    min-width: 0;
+    margin: 0;
+    padding: 0.125rem 0.25rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    overflow-wrap: anywhere;
+  }
+
+  .leak__tiles li small {
+    color: var(--role-negative);
+    font-size: 0.6875rem;
+    font-weight: 800;
+  }
+
+  .leak__tile--new {
+    border-color: var(--role-negative);
+    border-style: dashed;
+    background: var(--role-surface);
+    color: var(--role-negative);
+    font-weight: 800;
+  }
+
+  .leak__arrow {
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .leak__bottom {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+
+  .leak__arrow-right {
+    align-self: center;
+    color: var(--role-muted);
+    font-weight: 800;
+  }
+
+  .leak__box--screen strong {
+    font-size: 1.125rem;
+  }
+
+  .leak__screen-note {
+    flex-basis: 100%;
+    color: var(--role-negative);
+    font-weight: 800;
+  }
+
+  .leak__frames {
+    margin: 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .leak__frames > li + li {
+    margin-block-start: 0.5rem;
+  }
+
+  .leak__caption {
+    margin: 0;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .leak[data-ready] .leak__frames {
+    display: grid;
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  .leak[data-ready] .leak__frames > li {
+    grid-area: 1 / 1;
+  }
+
+  .leak[data-ready] .leak__frames > li[hidden] {
+    display: block;
+    visibility: hidden;
+  }
+
+  .leak[data-ready] [data-from] {
+    transition: opacity 0.35s;
+  }
+
+  .leak[data-ready] [data-from]:not(.is-shown) {
+    opacity: 0;
+  }
+
+  .leak[data-ready][data-phase="2"] .leak__tiles li:not(.leak__tile--new) {
+    border-style: dotted;
+    color: var(--role-muted);
+  }
+
+  .leak[data-ready][data-phase="2"] .leak__box--default,
+  .leak[data-ready][data-phase="2"] .leak__box--screen {
+    border-color: var(--role-negative);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .leak[data-ready] [data-from] {
+      transition: none;
+    }
+  }
+</style>

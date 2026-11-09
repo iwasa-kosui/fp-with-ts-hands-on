@@ -1,0 +1,43 @@
+import { GuardExercise } from "../../../components/guard-exercise/GuardExercise";
+import GuardAnswer from "../../../components/guard-exercise/GuardAnswer.astro";
+import { projectFilesForSnapshot } from "../../../code-explorer/project-files";
+import { guardAnswerDisplayFiles } from "../../../code-explorer/guard-paths";
+import { guardExercise } from "../../pages/01-state-transitions-exercise";
+import { guardExerciseWorkspaceFor } from "../../pages/guard-exercise-workspace";
+
+export const projectFiles = projectFilesForSnapshot(guardExercise.snapshot);
+export const workspace = guardExerciseWorkspaceFor(
+  guardExercise,
+  projectFiles,
+  "悪い変更を検出する仕組みを足す演習の作業場所です。",
+);
+export const guide = {
+  title: "この演習でやること",
+  criteria:
+    "必須の3件が「検出」、正しいコード3件が「誤検知なし」で合格です。",
+  steps: [
+    "悪い変更を1件選んで読みます。",
+    {
+      text: "仕組みを足す場所は次のとおりです。",
+      items: [
+        "Linter: eslint.config.mjs",
+        "型: transitions.type-test.ts",
+        "テスト: transitions.test.ts と callers.test.ts",
+      ],
+    },
+    "「検出を確かめる」を押します。",
+    {
+      text: "表の言葉の意味は次のとおりです。",
+      items: [
+        "検出: 悪い変更を見つけた。",
+        "すり抜け: 見つけられなかった。",
+        "誤検知: 正しいのに検出した。",
+      ],
+    },
+    "合格すると表に行が増えます。相互レビューの行は次のページで使い、残りの2件は余裕があれば取り組みます。",
+  ],
+};
+
+<GuardExercise client:load workspace={workspace} projectFiles={projectFiles} guide={guide}>
+  <GuardAnswer files={guardAnswerDisplayFiles(projectFiles)} />
+</GuardExercise>

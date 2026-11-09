@@ -72,7 +72,7 @@ const expectedCurriculum = [
     kind: "exercise",
     exerciseCommand: "pnpm exercise:01",
     snapshot: "session-01",
-    timeBreakdown: { brief: 3, teach: 6, exercise: 8, review: 3 },
+    timeBreakdown: { brief: 2, teach: 7, exercise: 8, review: 3 },
   },
   {
     slug: "02-adt-and-exhaustiveness",
@@ -82,7 +82,7 @@ const expectedCurriculum = [
     kind: "exercise",
     exerciseCommand: "pnpm exercise:02",
     snapshot: "session-02",
-    timeBreakdown: { brief: 3, teach: 7, exercise: 7, review: 3 },
+    timeBreakdown: { brief: 2, teach: 8, exercise: 7, review: 3 },
   },
   {
     slug: "03-boundaries-and-pii",
@@ -118,40 +118,28 @@ const expectedCurriculum = [
     slug: "06-effects-and-consistency",
     sequence: "06",
     title: "副作用と整合性境界を設計する",
-    durationMinutes: 40,
+    durationMinutes: 35,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:06",
     snapshot: "session-06",
-    timeBreakdown: { brief: 4, teach: 13, exercise: 15, review: 8 },
+    timeBreakdown: { brief: 3, teach: 12, exercise: 15, review: 5 },
   },
   {
     slug: "final",
     sequence: "Final",
     title: "参照実装で境界をたどる",
-    durationMinutes: 5,
+    durationMinutes: 10,
     kind: "reference",
     exerciseCommand: undefined,
     snapshot: "final",
-    timeBreakdown: { brief: 0, teach: 4, exercise: 0, review: 1 },
+    timeBreakdown: { brief: 0, teach: 6, exercise: 0, review: 4 },
   },
 ] as const;
 
 const expectedEpisodes = [
-  [
-    "新人エンジニアの初出勤の日、犬が観葉植物を倒し、プリンターは事故報告を何枚も印刷していました。",
-    "会計済みの予約は「診察中」へ戻り、請求書は2枚になっていました。ログには飼い主の電話番号も残っていました。",
-    "引き継ぎ資料を開く前に、新人エンジニアは二重請求と個人情報流出の再現条件だけは確認できました。",
-  ],
-  [
-    "会計を終えたウサギは帰ったはずなのに、画面の中では診察室へ戻ってきました。",
-    "受付画面は止めるどころか、2枚目の請求書まで手際よく用意します。",
-    "許可された状態遷移を覚えていたのは人間だけで、コードは何でも通す危ない設計でした。",
-  ],
-  [
-    "無断キャンセルを表すNoShowの状態を足した翌朝、受付画面のハリネズミの予約に「不明」と表示されていました。",
-    "表示名の分岐にNoShowのcaseがなく、defaultが「不明」を返していても、型検査は成功しました。",
-    "状態を足したときは、直し忘れた分岐をコンパイラに見つけさせる必要があります。",
-  ],
+  undefined,
+  undefined,
+  undefined,
   undefined,
   undefined,
   [
@@ -159,11 +147,7 @@ const expectedEpisodes = [
     "理由のないキャンセルがStoreへ記録されましたが、開発者はどの条件を確認したのかを説明できません。",
     "実装へ進む前に、予約のデータと、キャンセルでデータがどう変わるかを確かめます。",
   ],
-  [
-    "カメの診察を開始すると、予約状態だけが先に更新され、監査記録はどこにも残りませんでした。",
-    "再現テストでは時刻とイベント ID が毎回変わり、失敗したときの値を同じ形で確かめられません。",
-    "状態の更新はすぐに終わりますが、監査記録の保存は別の処理です。そのため、原因を調べる作業だけが長引きます。",
-  ],
+  undefined,
   [
     "ここまで直した頃、猫のムギはとっくに帰宅し、開発者だけが参照実装の前に残っていました。",
     "入力、失敗、イベント、保存、例外を順に追うと、さっきまでの事故が、それぞれどの境界で防がれるかが見えてきます。",
@@ -267,7 +251,7 @@ const expectedExercises = [
     solutionPresentation: "completed-file",
     peerReviewPromises: "reference",
     peerReview: {
-      minutes: 8,
+      minutes: 5,
       pickCount: 2,
       questions: [
         "時刻とイベント ID は実行ごとに一度だけ生成され、同じ `EventContext` に入りますか。",
@@ -390,6 +374,15 @@ describe("page-owned session contracts", () => {
       ),
     ).toEqual(expectedEpisodes);
 
+    const handoverEpisode = sessions.find(
+      ({ slug }) => slug === "00-system-handover",
+    )?.episode;
+    expect(handoverEpisode).toEqual([
+      "新人エンジニアの初出勤の日、プリンターは事故報告を何枚も印刷していました。",
+      "獣医師が別の予約と取り違えて「診察を開始する」を押し、会計済みの Mugi の予約は診察中へ戻りました。受付は会計前の来院だと判断し、会計担当が同じ金額をもう一度請求しました。",
+      "記録を調べると、飼い主の電話番号まで読めました。",
+    ]);
+
     const boundaryEpisode = sessions.find(
       ({ slug }) => slug === "03-boundaries-and-pii",
     )?.episode;
@@ -412,19 +405,28 @@ describe("page-owned session contracts", () => {
                   ] ?? "",
               )
               .join("\n");
-      expect(source, path).toContain('class="case-file__episode"');
-      expect(source, path).toContain('class="case-file__episode-label"');
+      if (session.slug !== "00-system-handover") {
+        expect(source, path).toContain('class="case-file__episode"');
+        expect(source, path).toContain('class="case-file__episode-label"');
+      }
       if (isSplit) continue;
       expect(source, path).toContain("session.episode.map");
     }
   });
 
   it("describes the Session 00 SQLite incident baseline without a legacy path", () => {
-    const source = pageSources["./pages/sessions/00-system-handover.astro"];
+    const handover = sessions.find(({ slug }) => slug === "00-system-handover");
+    const source = [
+      ...Object.entries(splitProseSources)
+        .filter(([path]) => path.startsWith("./sessions/prose/00-system-handover/"))
+        .map(([, prose]) => prose),
+      handover?.summary,
+      handover?.incident,
+    ].join("\n");
 
     expect(source).toContain("SQLite");
     expect(source).toContain("現在の予約内容");
-    expect(source).toContain("予約の変更履歴");
+    expect(source).toContain("監査記録");
     expect(source).toContain("個人情報");
     expect(source).not.toContain("src/legacy");
   });

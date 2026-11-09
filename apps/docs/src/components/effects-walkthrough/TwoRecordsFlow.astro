@@ -1,0 +1,361 @@
+---
+import StepControls from "../stepper/StepControls.astro";
+import "./step-figure.css";
+
+const frames = [
+  {
+    caption: "獣医師が「診察を開始する」を押すと、システムは2つのことを記録します。",
+  },
+  {
+    caption: "1つ目は「予約の状態」の更新です。予約の状態が、来院済みから診察中に変わります。",
+  },
+  {
+    caption: "2つ目は「監査記録」の追加です。誰がいつ診察を始めたかが、1件の記録として残ります。",
+  },
+] as const;
+---
+
+<figure class="sf trf" data-two-records data-step-figure aria-label="診察を開始する1つの操作が、予約の状態と監査記録の2つへ書き込む流れ">
+  <StepControls />
+
+  <div aria-live="polite">
+    <ol class="sf-frames">
+      {frames.map((frame) => (
+        <li data-frame>
+          <p class="sf-caption">{frame.caption}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  <div class="sf-stage trf__stage">
+    <div class="trf__action">
+      <span class="trf__button">診察を開始する</span>
+      <span class="trf__press" aria-hidden="true">▲ 押す</span>
+    </div>
+
+    <div class="trf__rail" aria-hidden="true">
+      <div class="trf__cell trf__cell--top">
+        <span class="trf__line trf__line--base"></span>
+        <span class="trf__line trf__line--on"></span>
+      </div>
+      <div class="trf__cell trf__cell--bottom">
+        <span class="trf__line trf__line--base"></span>
+        <span class="trf__line trf__line--on"></span>
+      </div>
+    </div>
+
+    <div class="trf__dests">
+      <section class="trf__dest" data-dest="state">
+        <h4>予約の状態</h4>
+        <div class="trf__body">
+          <p class="trf__before">来院済み（<code>CheckedIn</code>）</p>
+          <p class="trf__after">
+            <span class="trf__from">来院済み</span>
+            <span aria-hidden="true">→</span>
+            <strong>診察中（<code>InExamination</code>）</strong>
+            <span class="sf-tag sf-tag--ok">✓ 更新済み</span>
+          </p>
+        </div>
+      </section>
+
+      <section class="trf__dest" data-dest="audit">
+        <h4>監査記録（誰がいつ）</h4>
+        <div class="trf__body">
+          <p class="trf__none">まだ記録はありません</p>
+          <div class="trf__record">
+            <p><span>誰が</span><code>veterinarianId: "v-1"</code></p>
+            <p><span>いつ</span><code>occurredAt: "2026-08-30T06:30:00.000Z"</code></p>
+            <span class="sf-tag sf-tag--ok">✓ 追加済み</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <ul class="sf-legend">
+    <li>実線の枠は書き込まれた内容、破線の空枠はまだ何も書いていない場所です。「✓」は書き込みが済んだ保存先に付きます。</li>
+    <li>欄の項目は一部だけです。後の図の列も、一部だけを示します。</li>
+  </ul>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-two-records]").forEach((root) => {
+    mountStepper({ root });
+  });
+</script>
+
+<style>
+  .trf {
+    margin-block: 0;
+  }
+
+  .trf__stage {
+    display: grid;
+    grid-template-columns: minmax(10rem, 15rem) minmax(4rem, 7rem) minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .trf__action {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 0.25rem;
+  }
+
+  .trf__button {
+    padding: 0.625rem 1.25rem;
+    border: 2px solid var(--role-accent);
+    border-radius: 999px;
+    background: var(--role-accent);
+    color: var(--role-surface);
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .trf__press {
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .trf__rail {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .trf__cell {
+    position: relative;
+  }
+
+  .trf__line {
+    position: absolute;
+    inset-inline: 0;
+    border-inline-start: 3px solid var(--role-border);
+  }
+
+  .trf__cell--top .trf__line {
+    inset-block: 50% -0.375rem;
+    border-block-start: 3px solid var(--role-border);
+  }
+
+  .trf__cell--bottom .trf__line {
+    inset-block: -0.375rem 50%;
+    border-block-end: 3px solid var(--role-border);
+  }
+
+  .trf__line--base {
+    border-color: var(--role-border);
+    border-inline-start-style: dashed;
+    opacity: 0.6;
+  }
+
+  .trf__cell--top .trf__line--base {
+    border-block-start-style: dashed;
+  }
+
+  .trf__cell--bottom .trf__line--base {
+    border-block-end-style: dashed;
+  }
+
+  .trf__line--on {
+    --draw: inset(0 0 0 0);
+    border-color: var(--role-accent);
+    clip-path: var(--draw);
+  }
+
+  .trf__line--on::after {
+    position: absolute;
+    inset-inline-end: -0.125rem;
+    color: var(--role-accent);
+    content: "▶";
+    font-size: 0.875rem;
+    line-height: 1;
+  }
+
+  .trf__cell--top .trf__line--on::after {
+    inset-block-start: -0.5rem;
+  }
+
+  .trf__cell--bottom .trf__line--on::after {
+    inset-block-end: -0.5rem;
+  }
+
+  .trf__dests {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .trf__dest {
+    display: grid;
+    grid-template-columns: 10.5rem minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: center;
+    min-width: 0;
+    padding: 0.625rem 0.875rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+  }
+
+  .trf__dest h4 {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+
+  .trf__body {
+    display: grid;
+    min-width: 0;
+  }
+
+  .trf__body > * {
+    grid-area: 1 / 1;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .trf__body p {
+    line-height: 1.6;
+  }
+
+  .trf__after {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+  }
+
+  .trf__from {
+    color: var(--role-muted);
+    text-decoration: line-through;
+  }
+
+  .trf__none {
+    padding: 0.5rem 0.75rem;
+    border: 2px dashed var(--role-border);
+    border-radius: 0.375rem;
+    color: var(--role-muted);
+  }
+
+  .trf__record {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.125rem 0.75rem;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    border: 2px solid var(--role-positive);
+    border-radius: 0.375rem;
+    background: color-mix(in srgb, var(--role-positive) 12%, var(--role-surface));
+    justify-items: start;
+  }
+
+  .trf__record .sf-tag {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .trf__record p {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.75rem;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .trf__record code {
+    font-size: 0.8125rem;
+  }
+
+  .trf__record p span {
+    min-width: 2.5rem;
+    font-weight: 800;
+  }
+
+  .trf[data-ready] .trf__line--on,
+  .trf[data-ready] .trf__dest,
+  .trf[data-ready] .trf__body > *,
+  .trf[data-ready] .trf__button {
+    transition: clip-path 0.55s ease, opacity 0.35s, border-color 0.35s, background-color 0.35s, box-shadow 0.35s;
+  }
+
+  .trf[data-ready] .trf__body > * {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .trf:not([data-ready]) :is(.trf__before, .trf__none, .trf__press) {
+    display: none;
+  }
+
+  .trf[data-ready][data-step="0"] [data-dest="state"] .trf__before,
+  .trf[data-ready][data-step="0"] [data-dest="audit"] .trf__none,
+  .trf[data-ready][data-step="1"] [data-dest="state"] .trf__after,
+  .trf[data-ready][data-step="1"] [data-dest="audit"] .trf__none,
+  .trf[data-ready][data-step="2"] [data-dest="state"] .trf__after,
+  .trf[data-ready][data-step="2"] [data-dest="audit"] .trf__record {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .trf[data-ready] .trf__line--on {
+    --draw: inset(0 100% 0 0);
+  }
+
+  .trf[data-ready][data-step="1"] .trf__cell--top .trf__line--on,
+  .trf[data-ready][data-step="2"] .trf__line--on {
+    --draw: inset(-1rem -1rem -1rem 0);
+  }
+
+  .trf[data-ready][data-step="0"] .trf__button {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--role-accent) 35%, transparent);
+  }
+
+  .trf[data-ready][data-step="1"] [data-dest="state"],
+  .trf[data-ready][data-step="2"] [data-dest="audit"] {
+    border-color: var(--role-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--role-accent) 30%, transparent);
+  }
+
+  .trf[data-ready][data-step="2"] [data-dest="state"] {
+    border-color: var(--role-positive);
+  }
+
+  .trf[data-ready][data-step="0"] .trf__dest {
+    border-style: solid;
+  }
+
+  .trf[data-ready]:not([data-step="0"]) .trf__press {
+    visibility: hidden;
+  }
+
+  @media (max-height: 760px) {
+    .trf__dests {
+      gap: 0.5rem;
+    }
+
+    .trf__dest {
+      padding-block: 0.375rem;
+    }
+  }
+
+  @media (max-width: 44rem) {
+    .trf__stage {
+      grid-template-columns: minmax(6rem, 8rem) 2.5rem minmax(0, 1fr);
+    }
+
+    .trf__dest {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.25rem;
+    }
+
+    .trf__dest h4 {
+      font-size: 0.875rem;
+    }
+  }
+</style>

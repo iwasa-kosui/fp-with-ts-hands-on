@@ -10,12 +10,17 @@ const chipText = {
 const txText = {
   commit: "transaction: 確定",
   rollback: "transaction: 取り消し",
-  ended: "transaction: 書き込みなしで終了",
+  ended: "transaction: 確定（書き込みなし）",
 };
+const pageTxText = { open: "transaction の中", ...txText };
 const slotStates = new Set(["tx", "tx-failed", "tx-gone"]);
 
 for (const figure of figures) {
   figure.setAttribute("data-sb-ready", "");
+  const page = figure.classList.contains("sb--page");
+  if (figure.hasAttribute("data-written-only")) chipText.home = "書き込み済み";
+  const idle = figure.querySelector("[data-idle]");
+  const issue = figure.querySelector("[data-issue]");
 
   const root = figure.closest("[data-walk]");
   const frames = JSON.parse(figure.dataset.frames);
@@ -41,7 +46,18 @@ for (const figure of figures) {
     const line = code.children[marked.size > 0 ? Math.min(...marked) : 0];
     const offset = line.getBoundingClientRect().top - pre.getBoundingClientRect().top + pre.scrollTop;
     const lineHeight = parseFloat(getComputedStyle(line).lineHeight) || 20;
-    pre.scrollTo({ top: Math.max(0, offset - lineHeight * 1.5), behavior: instant || reduced.matches ? "instant" : "smooth" });
+    const last = code.children[marked.size > 0 ? Math.max(...marked) : 0];
+    const room = Math.max(0, pre.clientHeight - 2 - (last.getBoundingClientRect().bottom - line.getBoundingClientRect().top));
+    pre.scrollTo({ top: Math.max(0, offset - Math.min(lineHeight * 1.5, room / 2)), behavior: instant || reduced.matches ? "instant" : "smooth" });
+  };
+
+  const fitImpl = (pane) => {
+    const callStack = boxEls.call.querySelector(".sb-stack");
+    const callHeight = boxEls.call.hasAttribute("data-hidden") ? 0 : parseFloat(callStack.style.height) || 0;
+    const area = figure.querySelector(".sb-code");
+    const pre = pane.querySelector("pre");
+    const room = area.clientHeight - parseFloat(getComputedStyle(area).rowGap) - callHeight;
+    pre.style.maxHeight = `${Math.max(0, room - (pane.getBoundingClientRect().height - pre.getBoundingClientRect().height))}px`;
   };
 
   const boxEls = {};
@@ -62,6 +78,7 @@ for (const figure of figures) {
       code.toggleAttribute("data-has-active", marked.size > 0);
       [...code.children].forEach((line, index) => line.classList.toggle("is-active", marked.has(index)));
       if (active) {
+        if (page && name === "impl") fitImpl(pane);
         const stack = pane.parentElement;
         if (instant || wasHidden) stack.style.transition = "none";
         stack.style.height = `${Math.ceil(pane.getBoundingClientRect().height)}px`;
@@ -85,7 +102,7 @@ for (const figure of figures) {
     card.toggleAttribute("data-walk-keep", !reset && state !== card.dataset.state && state !== "off");
     card.dataset.state = state;
     if (state in chipText) card.querySelector("[data-chip]").textContent = chipText[state];
-    if (slotStates.has(state) || (state === "off" && withTx)) {
+    if (slots[key] !== null && (slotStates.has(state) || (state === "off" && withTx))) {
       const home = card.parentElement.getBoundingClientRect();
       const target = slots[key].getBoundingClientRect();
       card.style.transform = `translate(${target.left - home.left}px, ${target.top - home.top}px)`;
@@ -107,11 +124,12 @@ for (const figure of figures) {
     boxEls.impl.toggleAttribute("data-walk-focus", frame.impl !== null);
     diagram.toggleAttribute("data-walk-focus", frame.impl === null);
     tx.dataset.tx = frame.tx;
-    txLabel.textContent = txText[frame.tx] ?? "transaction";
+    txLabel.textContent = page ? (pageTxText[frame.tx] ?? "") : (txText[frame.tx] ?? "transaction");
+    if (idle !== null) idle.hidden = frame.call !== null || frame.impl !== null;
+    if (issue !== null) issue.toggleAttribute("data-on", frame.issue === true);
     appointments.toggleAttribute("data-read", frame.read === true);
     setOld("old-CheckedIn", frame.old === "CheckedIn", reset);
     setOld("old-InExamination", frame.old === "InExamination", reset);
-    setOld("old-audit", true, reset);
     setCard("state", frame.state, frame.tx !== "none", reset);
     setCard("audit", frame.audit, frame.tx !== "none", reset);
 

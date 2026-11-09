@@ -1,0 +1,12 @@
+<div class="incident-pair">
+  <slot />
+</div>
+
+<style>
+  @media (max-height: 700px) {
+    .incident-pair :global(.episode-illustration) {
+      width: min(100%, 19rem);
+      margin-block: 0.375rem;
+    }
+  }
+</style>

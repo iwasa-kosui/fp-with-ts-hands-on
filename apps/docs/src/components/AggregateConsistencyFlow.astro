@@ -2,6 +2,18 @@
 import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
 import appointmentSource from "../../../../examples/final/src/domain/appointment/appointment.ts?raw";
+import transitionsSource from "../../../../examples/session-06-solution/src/domain/appointment/transitions.ts?raw";
+
+type SceneName = "cancel" | "start-examination";
+
+interface Props {
+  auditLabel?: string;
+  condensedCode?: boolean;
+  scene?: SceneName;
+}
+
+const { auditLabel = "履歴", condensedCode = false, scene = "cancel" } = Astro.props;
+const audit = (text: string) => text.replaceAll("履歴", auditLabel);
 
 const quote = (source: string, from: number, to: number, firstLine: string, lastLine: string): string => {
   const lines = source.split("\n").slice(from - 1, to);
@@ -11,12 +23,102 @@ const quote = (source: string, from: number, to: number, firstLine: string, last
   return lines.map((line) => line.slice(indent)).join("\n");
 };
 
-const snippets = {
+const condenseCancel = (code: string): string => {
+  const lines = code.split("\n");
+  const kind = lines.findIndex((line) => line.trim() === 'kind: "Canceled",');
+  const close = lines.findIndex((line) => line.trim() === "} as const satisfies Canceled;");
+  const create = lines.findIndex((line) => line.trim() === "return AppointmentEvent.create(");
+  const state = lines.findIndex((line) => line.trim() === "aggregateState,");
+  const end = lines.map((line) => line.trim()).lastIndexOf(");");
+  if (kind < 0 || close < kind || create < close || state < create || end < state) {
+    throw new Error("引用元の形がずれていて、コードを短くできません");
+  }
+  const omitted = (index: number) => `${lines[index].slice(0, lines[index].search(/\S/))}…`;
+  return [
+    ...lines.slice(0, kind + 1),
+    omitted(kind),
+    lines[close],
+    lines[create],
+    omitted(create + 1),
+    lines[state],
+    omitted(state),
+    lines[end],
+  ].join("\n");
+};
+
+const condenseStart = (code: string): string => {
+  const lines = code.split("\n");
+  const find = (text: string, from = 0) => lines.findIndex((line, index) => index >= from && line.trim() === text);
+  const create = find("const aggregateState = startExamination(");
+  const closeArgs = find(");", create);
+  const ret = find("return {", closeArgs);
+  const kind = find('kind: "ExaminationStarted",', ret);
+  const state = find("aggregateState,", kind);
+  const close = find("} as const satisfies ExaminationStarted;", state);
+  const signature = lines[0].replace("veterinarianId: VeterinarianId", "…");
+  if (signature === lines[0] || create < 1 || closeArgs < create || ret < closeArgs || kind < ret || state < kind || close < state) {
+    throw new Error("引用元の形がずれていて、コードを短くできません");
+  }
+  const omitted = (index: number) => `${lines[index].slice(0, lines[index].search(/\S/))}…`;
+  return [
+    signature,
+    lines[create],
+    omitted(create + 1),
+    lines[closeArgs],
+    lines[ret],
+    lines[kind],
+    omitted(kind + 1),
+    lines[state],
+    lines[close],
+  ].join("\n");
+};
+
+const cancelCode = quote(appointmentSource, 215, 234, "): AppointmentCanceled => {", ");");
+const startCode = quote(transitionsSource, 68, 82, "(appointment: CheckedIn, veterinarianId: VeterinarianId): ExaminationStarted => {", "},");
+
+type Chip = Readonly<{ text: string; mono?: boolean; ghost?: boolean; note?: boolean; arrow?: boolean }>;
+type Field = Readonly<{ label?: string; chips: readonly Chip[] }>;
+
+const scenes = {
   cancel: {
-    path: "examples/final/src/domain/appointment/appointment.ts",
-    code: quote(appointmentSource, 210, 235, "const cancel =", "};"),
+    label: "キャンセルで予約の集約の現在の状態と履歴をそろえて保存する流れ",
+    from: "Scheduled",
+    to: "Canceled",
+    fromAudit: "予約された",
+    toAudit: "キャンセルされた",
+    missingAudit: "キャンセルが無い",
+    snippet: {
+      path: "examples/final/src/domain/appointment/appointment.ts",
+      code: condensedCode ? condenseCancel(cancelCode) : cancelCode,
+      keys: ['kind: "Canceled",', "return AppointmentEvent.create("],
+    },
+    captions: [
+      "予約1件の現在の状態と、その予約の履歴を、1つの枠で囲みます。キャンセルで変わるのは、この枠の中だけです。別の予約や飼い主のデータは変わりません。",
+      "キャンセルの処理 Appointment.cancel は、イベント AppointmentCanceled を返します。このイベントは、キャンセル後の予約の状態（aggregateState）を持ちます。1つの値が、書き込む現在の状態と履歴の両方を表します。",
+      "保存を2回に分けた場合です。現在の状態を書いた後で履歴の追記が失敗すると、予約は Canceled なのに、履歴にキャンセルが残りません。整合性が崩れた状態です。",
+    ],
   },
-} as const;
+  "start-examination": {
+    label: "診察開始で予約の集約の現在の状態と履歴をそろえて保存する流れ",
+    from: "CheckedIn",
+    to: "InExamination",
+    fromAudit: "来院を受け付けた",
+    toAudit: "診察が始まった",
+    missingAudit: "診察開始が無い",
+    snippet: {
+      path: "examples/session-06-solution/src/domain/appointment/transitions.ts",
+      code: condensedCode ? condenseStart(startCode) : startCode,
+      keys: ['kind: "ExaminationStarted",', "aggregateState,"],
+    },
+    captions: [
+      "予約1件の現在の状態と、その予約の履歴を、1つの枠で囲みます。診察開始で変わるのは、この枠の中だけです。別の予約や飼い主のデータは変わりません。",
+      "診察開始の処理 Appointment.startExamination は、イベント ExaminationStarted を返します。このイベントは、診察開始後の予約の状態（aggregateState）を持ちます。1つの値が、書き込む現在の状態と履歴の両方を表します。",
+      "保存を2回に分けた場合です。現在の状態を書いた後で履歴の追記が失敗すると、予約は InExamination なのに、履歴に診察開始が残りません。整合性が崩れた状態です。",
+    ],
+  },
+} as const satisfies Record<SceneName, unknown>;
+const config = scenes[scene];
+const stepperControls = scene === "start-examination";
 
 type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
 const KEY_MARK = /\s*\/\/ \[!aggregate-flow-key\]$/;
@@ -40,41 +142,38 @@ const markKeyLines: Transformer = {
   },
 };
 
-type Chip = Readonly<{ text: string; mono?: boolean; ghost?: boolean; note?: boolean; arrow?: boolean }>;
-type Field = Readonly<{ label?: string; chips: readonly Chip[] }>;
-
 const appointmentFields = (ghost: boolean): readonly Field[] => [
   {
     label: "現在の状態",
     chips: [
-      { text: "Scheduled", mono: true },
-      ...(ghost ? [{ text: "Canceled", mono: true, ghost: true, arrow: true }] : []),
+      { text: config.from, mono: true },
+      ...(ghost ? [{ text: config.to, mono: true, ghost: true, arrow: true }] : []),
     ],
   },
   {
-    label: "履歴",
-    chips: [{ text: "予約された" }, ...(ghost ? [{ text: "キャンセルされた", ghost: true }] : [])],
+    label: audit("履歴"),
+    chips: [{ text: config.fromAudit }, ...(ghost ? [{ text: config.toAudit, ghost: true }] : [])],
   },
 ];
 
 const mismatchFields: readonly Field[] = [
-  { label: "現在の状態", chips: [{ text: "Canceled", mono: true }] },
-  { label: "履歴", chips: [{ text: "キャンセルが無い", note: true }] },
+  { label: "現在の状態", chips: [{ text: config.to, mono: true }] },
+  { label: audit("履歴"), chips: [{ text: config.missingAudit, note: true }] },
 ];
 
 const outcomes: readonly Readonly<{ tag: string; fields: readonly Field[] }>[] = [
   {
     tag: "成功",
     fields: [
-      { label: "現在の状態", chips: [{ text: "Canceled", mono: true }] },
-      { label: "履歴", chips: [{ text: "キャンセルされた" }] },
+      { label: "現在の状態", chips: [{ text: config.to, mono: true }] },
+      { label: audit("履歴"), chips: [{ text: config.toAudit }] },
     ],
   },
   {
     tag: "失敗",
     fields: [
-      { label: "現在の状態", chips: [{ text: "Scheduled", mono: true }] },
-      { label: "履歴", chips: [{ text: "変化なし", note: true }] },
+      { label: "現在の状態", chips: [{ text: config.from, mono: true }] },
+      { label: audit("履歴"), chips: [{ text: "変化なし", note: true }] },
     ],
   },
 ];
@@ -84,27 +183,15 @@ type Frame = Readonly<{
   view: "aggregate" | "compare";
   ghost?: boolean;
   after?: boolean;
-  code?: Readonly<{ key: keyof typeof snippets; keys: readonly string[] }>;
+  code?: boolean;
 }>;
 
 const frames: readonly Frame[] = [
+  { caption: audit(config.captions[0]), view: "aggregate" },
+  { caption: audit(config.captions[1]), view: "aggregate", ghost: true, code: true },
+  { caption: audit(config.captions[2]), view: "compare", after: false },
   {
-    caption: "予約1件の現在の状態と、その予約の履歴を、1つの枠で囲みます。キャンセルで変わるのは、この枠の中だけです。別の予約や飼い主のデータは変わりません。",
-    view: "aggregate",
-  },
-  {
-    caption: "完成形の参照実装の Appointment.cancel は、イベント AppointmentCanceled を返します。このイベントは、キャンセル後の予約の状態（aggregateState）を持ちます。1つの値が、書き込む現在の状態と履歴の両方を表します。",
-    view: "aggregate",
-    ghost: true,
-    code: { key: "cancel", keys: ['kind: "Canceled",', "return AppointmentEvent.create("] },
-  },
-  {
-    caption: "保存を2回に分けた場合です。現在の状態を書いた後で履歴の追記が失敗すると、予約は Canceled なのに、履歴にキャンセルが残りません。整合性が崩れた状態です。",
-    view: "compare",
-    after: false,
-  },
-  {
-    caption: "集約を単位に1回で保存すると、結果は、両方が書かれるか、どちらも書かれないかの2通りになります。どちらでも、現在の状態と履歴は食い違いません。",
+    caption: audit("集約を単位に1回で保存すると、結果は、両方が書かれるか、どちらも書かれないかの2通りになります。どちらでも、現在の状態と履歴は食い違いません。"),
     view: "compare",
     after: true,
   },
@@ -113,20 +200,22 @@ const frames: readonly Frame[] = [
 
 <figure
   class="aggregate-flow"
-  aria-label="キャンセルで予約の集約の現在の状態と履歴をそろえて保存する流れ"
+  aria-label={audit(config.label)}
   data-aggregate-flow
 >
   <div class="aggregate-flow__controls" data-controls hidden>
-    <button type="button" data-prev disabled>前へ</button>
-    <span data-progress>1 / {frames.length}</span>
-    <button type="button" data-next>次へ</button>
+    <button type="button" data-prev disabled>{stepperControls ? "← 前へ" : "前へ"}</button>
+    {stepperControls && <button type="button" data-play>▶ 再生</button>}
+    {!stepperControls && <span data-progress>1 / {frames.length}</span>}
+    <button type="button" data-next>{stepperControls ? "次へ →" : "次へ"}</button>
+    {stepperControls && <span data-progress>1 / {frames.length}</span>}
   </div>
 
   <p class="aggregate-flow__live" data-live aria-live="polite" hidden></p>
 
   <ol class="aggregate-flow__frames">
     {frames.map((frame) => (
-      <li data-frame>
+      <li data-frame data-view={frame.view}>
         <p class="aggregate-flow__caption" data-caption>{frame.caption}</p>
 
         {frame.view === "aggregate" && (
@@ -167,7 +256,7 @@ const frames: readonly Frame[] = [
         {frame.view === "compare" && (
           <div class="aggregate-flow__compare">
             <section class="aggregate-flow__side">
-              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">修正前</span>保存を2回に分ける</p>
+              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">もし2回に分けたら</span>状態と{auditLabel}を別々に保存する</p>
               <ol class="aggregate-flow__steps">
                 <li class="aggregate-flow__step">
                   <span class="aggregate-flow__step-no">1回目</span>
@@ -176,7 +265,7 @@ const frames: readonly Frame[] = [
                 </li>
                 <li class="aggregate-flow__step">
                   <span class="aggregate-flow__step-no">2回目</span>
-                  <span>履歴を追記する</span>
+                  <span>{auditLabel}を追記する</span>
                   <span class="aggregate-flow__tag aggregate-flow__tag--bad"><span aria-hidden="true">✕ </span>失敗</span>
                 </li>
               </ol>
@@ -204,7 +293,7 @@ const frames: readonly Frame[] = [
             </section>
 
             <section class="aggregate-flow__side">
-              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">修正後</span>集約を単位に1回で保存する</p>
+              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">1回にまとめたら</span>集約を単位に1回で保存する</p>
               {frame.after ? (
                 outcomes.map((outcome) => (
                   <div class="aggregate-flow__outcome">
@@ -240,9 +329,9 @@ const frames: readonly Frame[] = [
 
         {frame.code && (
           <figure class="code-block aggregate-flow__code">
-            <figcaption><code>{snippets[frame.code.key].path}</code></figcaption>
+            <figcaption><code>{config.snippet.path}</code></figcaption>
             <Code
-              code={withMarks(snippets[frame.code.key].code, keyLineNumbers(snippets[frame.code.key].code, frame.code.keys))}
+              code={withMarks(config.snippet.code, keyLineNumbers(config.snippet.code, config.snippet.keys))}
               lang="typescript"
               defaultColor="dark"
               transformers={[markKeyLines]}
@@ -262,6 +351,7 @@ const frames: readonly Frame[] = [
     const controls = root.querySelector<HTMLElement>("[data-controls]");
     const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
     const next = root.querySelector<HTMLButtonElement>("[data-next]");
+    const play = root.querySelector<HTMLButtonElement>("[data-play]");
     const progress = root.querySelector<HTMLElement>("[data-progress]");
     const live = root.querySelector<HTMLElement>("[data-live]");
     if (!controls || !prev || !next || !progress || !live) return;
@@ -269,6 +359,12 @@ const frames: readonly Frame[] = [
     root.dataset.ready = "";
 
     let current = 0;
+    let timer: number | undefined;
+    const stop = () => {
+      if (timer !== undefined) window.clearInterval(timer);
+      timer = undefined;
+      if (play) play.textContent = "▶ 再生";
+    };
     const show = (index: number) => {
       current = index;
       panels.forEach((panel, i) => panel.classList.toggle("is-current", i === index));
@@ -278,8 +374,26 @@ const frames: readonly Frame[] = [
       next.disabled = index === panels.length - 1;
     };
 
-    prev.addEventListener("click", () => show(Math.max(current - 1, 0)));
-    next.addEventListener("click", () => show(Math.min(current + 1, panels.length - 1)));
+    prev.addEventListener("click", () => {
+      stop();
+      show(Math.max(current - 1, 0));
+    });
+    next.addEventListener("click", () => {
+      stop();
+      show(Math.min(current + 1, panels.length - 1));
+    });
+    play?.addEventListener("click", () => {
+      if (timer !== undefined) {
+        stop();
+        return;
+      }
+      if (current === panels.length - 1) show(0);
+      play.textContent = "❚❚ 一時停止";
+      timer = window.setInterval(() => {
+        show(Math.min(current + 1, panels.length - 1));
+        if (current === panels.length - 1) stop();
+      }, 6000);
+    });
     root.addEventListener("keydown", (event) => {
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
       if (event.key === "ArrowLeft") {
@@ -306,8 +420,8 @@ const frames: readonly Frame[] = [
 <style>
   .aggregate-flow {
     --agg: var(--case-blue, #2236b8);
-    --ok: #137333;
-    --bad: #b3261e;
+    --ok: var(--role-positive, #137333);
+    --bad: var(--role-negative, #b3261e);
     --muted: color-mix(in srgb, var(--case-ink, #111116) 72%, var(--case-paper, #fffefa));
     container-type: inline-size;
     min-width: 0;
@@ -386,7 +500,7 @@ const frames: readonly Frame[] = [
     margin: 0;
     padding: 0.3rem 0.6rem;
     background: var(--agg);
-    color: #fff;
+    color: var(--role-surface, #fff);
     font-size: 0.85rem;
     font-weight: 700;
     line-height: 1.5;
@@ -582,7 +696,7 @@ const frames: readonly Frame[] = [
     display: inline-block;
     padding: 0 0.4rem;
     border-radius: 0.25rem;
-    color: #fff;
+    color: var(--role-surface, #fff);
     font-weight: 700;
   }
 
@@ -659,8 +773,8 @@ const frames: readonly Frame[] = [
     min-width: calc(100% + 0.5rem);
     margin-left: -0.5rem;
     padding-left: 0.5rem;
-    background: rgb(255 210 27 / 22%);
-    box-shadow: inset 0.3rem 0 0 #ffd21b;
+    background: color-mix(in srgb, var(--frame-code-text, #ffd21b) 22%, transparent);
+    box-shadow: inset 0.3rem 0 0 var(--frame-code-text, #ffd21b);
   }
 
   .aggregate-flow[data-animated] .aggregate-flow__frames {
@@ -679,6 +793,101 @@ const frames: readonly Frame[] = [
 
   .aggregate-flow[data-animated] .aggregate-flow__caption {
     display: none;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] {
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    height: var(--frame-figure-height);
+    margin-block: 0.25rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__controls {
+    margin-bottom: 0.5rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__controls button {
+    min-height: 2.5rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__live {
+    min-height: 3.4em;
+    margin: 0 0 0.5rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__frames {
+    min-height: 0;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__frames > li.is-current {
+    display: grid;
+    height: 100%;
+    min-height: 0;
+    align-content: start;
+    gap: 0.75rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__frames > li[data-view="aggregate"].is-current {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    align-items: start;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] :is(.aggregate-flow__diagram, .aggregate-flow__compare, .aggregate-flow__code) {
+    margin-top: 0;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__code :global(pre) {
+    padding-block: 0.5rem;
+    line-height: 1.35;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__frames > li[data-view="compare"].is-current {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 0.5rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__compare {
+    display: contents;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 0.5rem;
+    align-content: start;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side > :is(.aggregate-flow__side-title, .aggregate-flow__steps, .aggregate-flow__result-label) {
+    grid-column: 1 / -1;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__result-label {
+    margin-block: 0.25rem 0.125rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side > .aggregate-flow__verdict {
+    align-self: center;
+    margin: 0;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side:has(.aggregate-flow__outcome) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__outcome + .aggregate-flow__outcome {
+    margin-top: 0;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side .aggregate-flow__fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__outside {
+    margin-top: 0.5rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__legend {
+    margin-top: 0.25rem;
   }
 
   @media (prefers-reduced-motion: no-preference) {
