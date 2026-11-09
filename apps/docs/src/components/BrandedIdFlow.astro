@@ -966,7 +966,22 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
     }
 
     .branded-id-flow__code {
-      margin-block-start: 0.25rem;
+      margin-block-start: 0.125rem;
+    }
+
+    .branded-id-flow__code figcaption {
+      padding-block: 0;
+      line-height: 1.3;
+    }
+
+    .branded-id-flow__live,
+    .branded-id-flow__sizer {
+      margin-block-end: 0.125rem;
+      line-height: 1.35;
+    }
+
+    .branded-id-flow :global(.mini-tree) {
+      line-height: 1.15;
     }
   }
 

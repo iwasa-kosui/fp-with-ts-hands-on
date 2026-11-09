@@ -186,17 +186,13 @@ const noShowTree = miniTree("session-02-solution", "src/", [
     ],
   },
 ]);
-const compareTree = miniTree("session-02-solution", "src/", [
-  {
-    folder: "domain/appointment/",
-    files: [
-      { id: "before", name: "statusLabel.ts", snapshot: "session-02", note: "（修正前）" },
-      { id: "after", name: "statusLabel.ts", note: "（修正後）" },
-    ],
-  },
+const beforeCompareTree = miniTree("session-02", "src/", [
+  { folder: "domain/appointment/", files: [{ id: "label", name: "statusLabel.ts" }] },
+]);
+const afterCompareTree = miniTree("session-02-solution", "src/", [
+  { folder: "domain/appointment/", files: [{ id: "label", name: "statusLabel.ts" }] },
 ]);
 const exhaustiveTrees: Readonly<Record<string, Readonly<{ tree: typeof labelTree; current: readonly string[] }>>> = {
-  compare: { tree: compareTree, current: ["before", "after"] },
   before: { tree: labelTree, current: ["label"] },
   after: { tree: noShowTree, current: ["label", "appointment"] },
 };
@@ -252,20 +248,26 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
               )}
               {frame.pair && (
                 <div class="adt-count__pair">
-                  <figure class="code-block adt-count__code adt-count__code--negative">
-                    <figcaption>
-                      <span class="adt-count__badge adt-count__badge--negative">▲ 修正前</span>
-                      <code>examples/session-02/{frame.pair.path}</code>
-                    </figcaption>
-                    <Code code={frame.pair.before} lang="typescript" transformers={[markKeyLines]} />
-                  </figure>
-                  <figure class="code-block adt-count__code adt-count__code--positive">
-                    <figcaption>
-                      <span class="adt-count__badge adt-count__badge--positive">● 修正後</span>
-                      <code>examples/session-02-solution/{frame.pair.path}</code>
-                    </figcaption>
-                    <Code code={frame.pair.after} lang="typescript" transformers={[markKeyLines]} />
-                  </figure>
+                  <div class="adt-count__column">
+                    <MiniTree tree={beforeCompareTree} current={["label"]} class="adt-count__tree" />
+                    <figure class="code-block adt-count__code adt-count__code--negative">
+                      <figcaption>
+                        <span class="adt-count__badge adt-count__badge--negative">▲ 修正前</span>
+                        <code>examples/session-02/{frame.pair.path}</code>
+                      </figcaption>
+                      <Code code={frame.pair.before} lang="typescript" transformers={[markKeyLines]} />
+                    </figure>
+                  </div>
+                  <div class="adt-count__column">
+                    <MiniTree tree={afterCompareTree} current={["label"]} class="adt-count__tree" />
+                    <figure class="code-block adt-count__code adt-count__code--positive">
+                      <figcaption>
+                        <span class="adt-count__badge adt-count__badge--positive">● 修正後</span>
+                        <code>examples/session-02-solution/{frame.pair.path}</code>
+                      </figcaption>
+                      <Code code={frame.pair.after} lang="typescript" transformers={[markKeyLines]} />
+                    </figure>
+                  </div>
                 </div>
               )}
               <div class="adt-count__side">
@@ -661,6 +663,10 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
   .adt-count__pair {
     display: grid;
     gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .adt-count__column {
     min-width: 0;
   }
 

@@ -84,13 +84,13 @@ const data = JSON.stringify(frames.map(({ caption: _caption, ...rest }) => rest)
 <figure class="we-fig we-fig--top catch-confluence" data-catch-confluence data-frames={data} aria-label="3種類の失敗が1つの catch に入り、文言で分岐する流れ">
   <StepControls />
 
-  <MiniTree tree={tree} current={frames[0].files} />
-
   <ol class="we-frames">
     {frames.map(({ caption }) => (
       <li data-frame><p class="we-caption">{caption}</p></li>
     ))}
   </ol>
+
+  <MiniTree tree={tree} current={frames[0].files} />
 
   <div class="we-body cc-stage">
     <ul class="cc-cards" aria-label="起きうる失敗">
