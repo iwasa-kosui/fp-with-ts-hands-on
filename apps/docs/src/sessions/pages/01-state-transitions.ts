@@ -21,7 +21,7 @@ export const sessionPages = [
   },
   {
     slug: "current-code",
-    title: "開始コードが誤りを検出できない原因",
+    title: "開始コードが誤りを実行前に検出できない原因",
     flow: "problem",
     kind: "brief",
     minutes: 1,

@@ -410,7 +410,7 @@ describe("MonacoEditor", () => {
 
     await vi.waitFor(() =>
       expect(section().querySelector("h3")?.textContent).toBe(
-        "このファイルに型エラーは見つかっていません",
+        "このファイルに型エラーは検出されていません",
       ),
     );
     expect(section().querySelectorAll("button")).toHaveLength(0);
@@ -429,7 +429,7 @@ describe("MonacoEditor", () => {
     await act(async () => release());
 
     await vi.waitFor(() =>
-      expect(heading()).toBe("このファイルに型エラーは見つかっていません"),
+      expect(heading()).toBe("このファイルに型エラーは検出されていません"),
     );
   });
 
@@ -439,7 +439,7 @@ describe("MonacoEditor", () => {
       mounted.host.querySelector('section[aria-label="型検査の結果"] h3')
         ?.textContent;
     await vi.waitFor(() =>
-      expect(heading()).toBe("このファイルに型エラーは見つかっていません"),
+      expect(heading()).toBe("このファイルに型エラーは検出されていません"),
     );
 
     const release = monacoState.holdFirstCheck();
@@ -452,7 +452,7 @@ describe("MonacoEditor", () => {
     await act(async () => release());
 
     await vi.waitFor(() =>
-      expect(heading()).toBe("このファイルに型エラーは見つかっていません"),
+      expect(heading()).toBe("このファイルに型エラーは検出されていません"),
     );
   });
 
@@ -493,7 +493,7 @@ describe("MonacoEditor", () => {
 
     await vi.waitFor(() => expect(heading()).toBe("型エラー 1 件"));
     observer.disconnect();
-    expect(seen).not.toContain("このファイルに型エラーは見つかっていません");
+    expect(seen).not.toContain("このファイルに型エラーは検出されていません");
   });
 
   it("goes straight to the count when markers arrive after an empty result", async () => {
@@ -532,7 +532,7 @@ describe("MonacoEditor", () => {
 
     await vi.waitFor(() => expect(heading()).toBe("型エラー 1 件"));
     observer.disconnect();
-    expect(seen).not.toContain("このファイルに型エラーは見つかっていません");
+    expect(seen).not.toContain("このファイルに型エラーは検出されていません");
   });
 
   it("goes straight to the count when markers arrive after the worker call rejects", async () => {
@@ -572,7 +572,7 @@ describe("MonacoEditor", () => {
 
     await vi.waitFor(() => expect(heading()).toBe("型エラー 1 件"));
     observer.disconnect();
-    expect(seen).not.toContain("このファイルに型エラーは見つかっていません");
+    expect(seen).not.toContain("このファイルに型エラーは検出されていません");
   });
 
   it("shows the count at once when markers already exist as the worker returns", async () => {
@@ -609,7 +609,7 @@ describe("MonacoEditor", () => {
 
     await vi.waitFor(() => expect(heading()).toBe("型エラー 1 件"));
     observer.disconnect();
-    expect(seen).not.toContain("このファイルに型エラーは見つかっていません");
+    expect(seen).not.toContain("このファイルに型エラーは検出されていません");
   });
 
   it("finishes after a short wait when only ignored codes are reported", async () => {
@@ -620,7 +620,7 @@ describe("MonacoEditor", () => {
       expect(
         host.querySelector('section[aria-label="型検査の結果"] h3')
           ?.textContent,
-      ).toBe("このファイルに型エラーは見つかっていません"),
+      ).toBe("このファイルに型エラーは検出されていません"),
     );
   });
 

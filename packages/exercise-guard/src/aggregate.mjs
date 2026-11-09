@@ -53,6 +53,7 @@ const buildRow = (guardCase, { evidence, builtin, collectionErrors, unchangedIds
   /** @type {Cells} */
   const cells = { types: cellFor("types"), lint: cellFor("lint"), tests: cellFor("tests") };
   const hit = mechanisms.some((mechanism) => cells[mechanism].state === "hit");
+  const incomplete = mechanisms.some((mechanism) => cells[mechanism].state === "error");
   return {
     id,
     kind: guardCase.kind,
@@ -63,8 +64,8 @@ const buildRow = (guardCase, { evidence, builtin, collectionErrors, unchangedIds
     hint: guardCase.hint,
     cells,
     verdict: isBad
-      ? hit ? "detected" : unchangedIds.includes(id) ? "unchanged" : "slipped"
-      : hit || loadErrors.length > 0 ? "falsePositive" : "noFalsePositive",
+      ? hit ? "detected" : incomplete ? "undetermined" : unchangedIds.includes(id) ? "unchanged" : "slipped"
+      : hit || loadErrors.length > 0 ? "falsePositive" : incomplete ? "undetermined" : "noFalsePositive",
     detections,
     builtinTypes,
     collectionErrors: loadErrors,

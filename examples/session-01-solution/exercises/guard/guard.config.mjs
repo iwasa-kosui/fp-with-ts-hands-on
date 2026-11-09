@@ -83,7 +83,7 @@ export default {
       required: false,
       allow: ["types", "lint", "tests"],
       unchangedFrom: "G1-transitions",
-      hint: "結果の表で、この行が「すり抜け」と表示されていれば、隣の人の仕組みでは検出されていません。",
+      hint: "結果の表で、この行が「未検出」と表示されていれば、隣の人の仕組みでは検出されていません。",
     },
     {
       id: "G1-transitions",
@@ -101,7 +101,7 @@ export default {
       id: "G3-global-this-cast",
       kind: "good",
       subject: "lifecycle",
-      title: "globalThis の型を拡張する実物のコード（serverLifecycle.ts）",
+      title: "状態の型以外への as を残すコード（serverLifecycle.ts）",
     },
   ],
 };

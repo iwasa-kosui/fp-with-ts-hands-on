@@ -38,7 +38,7 @@ const frames: readonly Frame[] = [
     bottom: { mode: "dim", focus: [1], hide: [], token: null },
   },
   {
-    caption: "この回の完成コードでは、引数の型 CheckedIn が事前条件を表します。",
+    caption: "S01 の完成コードでは、引数の型 CheckedIn が事前条件を表します。",
     code: { key: "signature", lines: [1] },
     top: { mode: "normal", focus: [1], hide: [], token: null },
     bottom: { mode: "dim", focus: [], hide: [], token: null },
@@ -185,7 +185,7 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
         {frame.code && <MiniTree tree={tree} current={[frame.code.key]} />}
         {frame.code && (
           <figure class="code-block precondition-flow__code" data-lit={JSON.stringify(frame.code.lines)}>
-            <figcaption><span class="precondition-flow__tag">この回の完成コード</span> <code>{snippets[frame.code.key].path}</code></figcaption>
+            <figcaption><span class="precondition-flow__tag">S01 の完成コード</span> <code>{snippets[frame.code.key].path}</code></figcaption>
             <Code code={snippets[frame.code.key].code} lang="ts" defaultColor="dark" />
           </figure>
         )}
@@ -284,6 +284,7 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
     prev.addEventListener("click", () => show(Math.max((current ?? 0) - 1, 0)));
     next.addEventListener("click", () => show(Math.min((current ?? 0) + 1, frames.length - 1)));
 
+    root.querySelectorAll(".precondition-flow__caption").forEach((caption) => caption.setAttribute("aria-hidden", "true"));
     root.dataset.animated = "";
     controls.hidden = false;
     live.hidden = false;
@@ -520,37 +521,43 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
 
   .precondition-flow[data-animated] > svg {
     grid-column: 1;
-    grid-row: 2 / span 2;
+    grid-row: 2;
     margin: 0;
   }
 
   .precondition-flow[data-animated] > .precondition-flow__live {
-    grid-column: 2;
-    grid-row: 2;
-    margin-block-start: 0;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .precondition-flow[data-animated] > .precondition-flow__frames {
     grid-column: 2;
-    grid-row: 3;
+    grid-row: 2;
   }
 
   [data-animated] .precondition-flow__frames {
+    display: grid;
     padding-inline-start: 0;
     list-style: none;
   }
 
   [data-animated] .precondition-flow__frames > li {
-    display: none;
+    grid-area: 1 / 1;
     margin: 0;
+    visibility: hidden;
   }
 
-  [data-animated] .precondition-flow__frames > li.is-current[data-has-code] {
-    display: block;
+  [data-animated] .precondition-flow__frames > li.is-current {
+    visibility: visible;
   }
 
   [data-animated] .precondition-flow__caption {
-    display: none;
+    margin-block-start: 0;
   }
 
   [data-animated] .precondition-flow__line,
@@ -578,7 +585,6 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
     }
 
     .precondition-flow[data-animated] > svg,
-    .precondition-flow[data-animated] > .precondition-flow__live,
     .precondition-flow[data-animated] > .precondition-flow__frames {
       grid-column: 1;
       grid-row: auto;

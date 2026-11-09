@@ -40,7 +40,7 @@ const cards = guides.map((guide) => {
 });
 ---
 
-<ol class="code-guide-cards" aria-label="配布コードの設計課題">
+<ol class="code-guide-cards" aria-label="教材のコードの設計課題">
   {
     cards.map(({ guide, excerpts }) => (
       <li data-code-guide-card={guide.id} data-has-tree={trees?.[guide.id] ? "" : undefined}>

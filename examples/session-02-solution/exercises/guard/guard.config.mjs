@@ -94,7 +94,7 @@ export default {
       required: false,
       allow: ["types", "lint", "tests"],
       unchangedFrom: "G1-assert-never",
-      hint: "結果の表で、この行が「すり抜け」と表示されていれば、隣の人の仕組みでは検出されていません。",
+      hint: "結果の表で、この行が「未検出」と表示されていれば、隣の人の仕組みでは検出されていません。",
     },
     {
       id: "G1-assert-never",

@@ -230,7 +230,7 @@ export const useGuardRun = ({
         if (parsed === undefined) {
           throw new Error(
             exitCode === runCommandTimedOutExitCode
-              ? "検出を検証する処理が時間内に終わりませんでした。eslint.config.mjs のルールやテストに、終わらない繰り返しがないか見直します。"
+              ? "検出を検証する処理が時間内に終わりませんでした。実行環境が遅い場合にも発生します。再度「検出を検証する」を押します。繰り返し発生する場合は、eslint.config.mjs のルールやテストに、終わらない繰り返しがないか見直します。"
               : "結果を読み出せませんでした。再度「検出を検証する」を押してください。",
           );
         }
