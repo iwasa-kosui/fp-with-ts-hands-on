@@ -1,16 +1,6 @@
-export type DiffLine = Readonly<{ kind: "same" | "del" | "add" | "skip"; text: string }>;
-export type Mechanism = "types" | "lint" | "tests";
-export type Outcome = Readonly<{ found: boolean; output: string }>;
-export type ChangeCase = Readonly<{
-  id: string;
-  kind: "bad" | "good";
-  label: string;
-  diff: readonly DiffLine[];
-  results: Readonly<Record<Mechanism, Outcome>>;
-  why: string;
-}>;
+import type { ChangeCase, ChangeCheckSet, MechanismInfo } from "../change-checks/types";
 
-export const mechanisms: readonly Readonly<{ id: Mechanism; name: string; detail: string; code: string }>[] = [
+const mechanisms: readonly MechanismInfo[] = [
   {
     id: "types",
     name: "型検査",
@@ -34,12 +24,13 @@ expect(toStatusLabel({ kind } as never)).toBe(label);`,
   },
 ];
 
-// results は exercise-guard の模範解答の仕組みを各ケースに実行した実際の出力です。
-export const changeCases: readonly ChangeCase[] = [
+const cases: readonly ChangeCase[] = [
   {
     id: "B2-missing-case-default",
     kind: "bad",
     label: "Paid を消し、default を「不明」に戻す",
+    baseCase: "G1-assert-never",
+    target: "toStatusLabel の部分",
     diff: [
       { kind: "same", text: "export const toStatusLabel = (appointment: Appointment): string => {" },
       { kind: "same", text: "  switch (appointment.kind) {" },
@@ -65,6 +56,8 @@ export const changeCases: readonly ChangeCase[] = [
     id: "B1-missing-case-assert-never",
     kind: "bad",
     label: "Paid を消し、assertNever は残す",
+    baseCase: "G1-assert-never",
+    target: "toStatusLabel の部分",
     diff: [
       { kind: "same", text: "export const toStatusLabel = (appointment: Appointment): string => {" },
       { kind: "same", text: "  switch (appointment.kind) {" },
@@ -92,6 +85,8 @@ export const changeCases: readonly ChangeCase[] = [
     id: "B3-added-state-default",
     kind: "bad",
     label: "NoShow を足し、表示名を書かない",
+    baseCase: "G1-assert-never",
+    target: "toStatusLabel の部分",
     diff: [
       { kind: "add", text: "type NoShow = Readonly<{" },
       { kind: "add", text: '  kind: "NoShow";' },
@@ -118,6 +113,8 @@ export const changeCases: readonly ChangeCase[] = [
     id: "B4-string-kind",
     kind: "bad",
     label: "kind を string に戻す",
+    baseCase: "G1-assert-never",
+    target: "toStatusLabel の部分",
     diff: [
       { kind: "del", text: "export const toStatusLabel = (appointment: Appointment): string => {" },
       { kind: "add", text: "export const toStatusLabel = (appointment: Readonly<{ kind: string }>): string => {" },
@@ -140,6 +137,8 @@ export const changeCases: readonly ChangeCase[] = [
     id: "B6-if-chain",
     kind: "bad",
     label: "switch を if に変え、Paid が抜ける",
+    baseCase: "G1-assert-never",
+    target: "toStatusLabel の部分",
     diff: [
       { kind: "same", text: "export const toStatusLabel = (appointment: Appointment): string => {" },
       { kind: "del", text: "  switch (appointment.kind) {" },
@@ -166,6 +165,8 @@ export const changeCases: readonly ChangeCase[] = [
     id: "G3-open-string-default",
     kind: "good",
     label: "正しいコード: string の switch に default",
+    baseCase: "G1-assert-never",
+    target: "toStatusLabel の部分",
     diff: [
       { kind: "skip", text: "// toStatusLabel は元のコードのまま" },
       { kind: "add", text: "export const toVisitReasonLabel = (reason: string): string => {" },
@@ -186,12 +187,9 @@ export const changeCases: readonly ChangeCase[] = [
   },
 ];
 
-export const verdictOf = (
-  changeCase: ChangeCase,
-  mechanism: Mechanism,
-): Readonly<{ tone: "positive" | "negative"; text: string }> => {
-  if (changeCase.results[mechanism].found) return { tone: "positive", text: "✓ 検出" };
-  return changeCase.kind === "bad"
-    ? { tone: "negative", text: "▲ すり抜け" }
-    : { tone: "positive", text: "✓ 誤検知なし" };
+export const session02ChangeChecks: ChangeCheckSet = {
+  example: "session-02-solution",
+  ariaLabel: "悪い変更と3つの仕組みの結果",
+  mechanisms,
+  cases,
 };

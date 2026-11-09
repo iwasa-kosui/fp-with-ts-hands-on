@@ -1,13 +1,18 @@
 ---
 import { Code } from "astro:components";
-import { changeCases, mechanisms, verdictOf } from "./change-checks";
+import type { ChangeCheckSet } from "./types";
+import { outcomeOf, verdictOf } from "./verdict";
+
+type Props = Readonly<{ set: ChangeCheckSet }>;
+const { set } = Astro.props;
+const { cases, mechanisms } = set;
 ---
 
-<figure class="cc" data-change-checks aria-label="悪い変更と3つの仕組みの結果">
+<figure class="cc" data-change-checks aria-label={set.ariaLabel}>
   <fieldset class="cc__picker">
     <legend>変更を選ぶ</legend>
     <div class="cc__picks">
-      {changeCases.map((changeCase, index) => (
+      {cases.map((changeCase, index) => (
         <label class="cc__pick" data-good={changeCase.kind === "good"}>
           <input type="radio" name="change-checks" value={changeCase.id} checked={index === 0} />
           <span>{changeCase.label}</span>
@@ -18,13 +23,17 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
 
   <div class="cc__body">
     <div class="cc__change">
-      <p class="cc__legend">
-        <span>元のコードとの差分（toStatusLabel の部分）</span>
-        <span class="cc__mark cc__mark--del">− 消した行</span>
-        <span class="cc__mark cc__mark--add">+ 足した行</span>
-      </p>
+      <div class="cc__stack cc__legends">
+        {cases.map((changeCase, index) => (
+          <p class="cc__legend" data-outcome={changeCase.id} data-active={index === 0}>
+            <span>元のコードとの差分（{changeCase.target}）</span>
+            <span class="cc__mark cc__mark--del">− 消した行</span>
+            <span class="cc__mark cc__mark--add">+ 足した行</span>
+          </p>
+        ))}
+      </div>
       <div class="cc__stack">
-        {changeCases.map((changeCase, index) => (
+        {cases.map((changeCase, index) => (
           <div
             class="cc__panel"
             data-panel={changeCase.id}
@@ -32,7 +41,7 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
             data-kinds={JSON.stringify(changeCase.diff.map((line) => line.kind))}
           >
             <Code code={changeCase.diff.map((line) => line.text).join("\n")} lang="ts" />
-            <p class="cc__why">{changeCase.why}</p>
+            <p class="cc__why">{changeCase.why.split("`").map((part, index) => (index % 2 === 1 ? <code>{part}</code> : part))}</p>
           </div>
         ))}
       </div>
@@ -40,12 +49,12 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
 
     <ol class="cc__checks">
       {mechanisms.map((mechanism) => (
-        <li class="cc__check" data-check={mechanism.id}>
+        <li class="cc__check" data-check={mechanism.id} data-name={mechanism.name}>
           <div class="cc__check-head">
             <strong>{mechanism.name}</strong>
-            <span>{mechanism.detail}</span>
+            <span class="cc__detail">{mechanism.detail.split("`").map((part, index) => (index % 2 === 1 ? <code>{part}</code> : part))}</span>
             <div class="cc__stack cc__verdicts">
-              {changeCases.map((changeCase, index) => {
+              {cases.map((changeCase, index) => {
                 const verdict = verdictOf(changeCase, mechanism.id);
                 return (
                   <span
@@ -60,11 +69,17 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
               })}
             </div>
           </div>
-          <Code code={mechanism.code} lang="ts" />
           <div class="cc__stack">
-            {changeCases.map((changeCase, index) => (
+            {cases.map((changeCase, index) => (
+              <div class="cc__outcome" data-outcome={changeCase.id} data-active={index === 0}>
+                <Code code={outcomeOf(changeCase, mechanism.id).setting ?? mechanism.code} lang="ts" />
+              </div>
+            ))}
+          </div>
+          <div class="cc__stack">
+            {cases.map((changeCase, index) => (
               <code class="cc__output cc__outcome" data-outcome={changeCase.id} data-active={index === 0}>
-                {changeCase.results[mechanism.id].output}
+                {outcomeOf(changeCase, mechanism.id).output}
               </code>
             ))}
           </div>
@@ -94,13 +109,13 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
     });
 
     const verdictOf = (id: string, check: HTMLElement) =>
-      (check.querySelector(`.cc__badge[data-outcome="${id}"]`)?.textContent ?? "").replace(/[✓▲]/g, "").trim();
+      (check.querySelector(`.cc__badge[data-outcome="${id}"]`)?.textContent ?? "").replace(/[✓▲－]/g, "").trim();
 
     const announce = (input: HTMLInputElement) => {
       if (!live) return;
       const label = input.closest("label")?.textContent?.trim() ?? "";
-      const [types, lint, tests] = checks.map((check) => verdictOf(input.value, check));
-      live.textContent = `${label}。型検査 ${types}、Linter の規則 ${lint}、テスト ${tests}`;
+      const results = checks.map((check) => `${check.dataset.name ?? ""} ${verdictOf(input.value, check)}`);
+      live.textContent = `${label}。${results.join("、")}`;
     };
 
     const select = (input: HTMLInputElement) => {
@@ -196,7 +211,7 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
   .cc__body {
     display: grid;
     gap: 0.5rem;
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
     align-items: start;
   }
 
@@ -234,6 +249,7 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
   .cc__legend {
     display: flex;
     flex-wrap: wrap;
+    align-items: flex-start;
     gap: 0 0.75rem;
     margin: 0 0 0.125rem;
     color: var(--role-muted);
@@ -297,7 +313,7 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
 
   .cc__checks {
     display: grid;
-    gap: 0.25rem;
+    gap: 0.1875rem;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -305,7 +321,7 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
 
   .cc__check {
     min-width: 0;
-    padding: 0.25rem 0.5rem;
+    padding: 0.0625rem 0.5rem;
     border: 1px solid var(--role-border);
     border-radius: 0.5rem;
     background: var(--role-surface);
@@ -325,9 +341,12 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
     font-size: 0.875rem;
   }
 
-  .cc__check-head > span {
+  .cc__detail {
+    flex: 1;
+    min-width: 0;
     color: var(--role-muted);
     font-size: 0.75rem;
+    line-height: 1.3;
   }
 
   .cc__verdicts {
@@ -343,7 +362,9 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
   }
 
   .cc__check :global(pre) {
-    margin-block: 0.125rem;
+    margin-block: 0.0625rem;
+    padding-block: 0.125rem;
+    line-height: 1.3;
   }
 
   .cc__outcome {
@@ -369,15 +390,18 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
     color: var(--role-negative);
   }
 
+  .cc__badge[data-tone="neutral"] {
+    color: var(--role-muted);
+  }
+
   .cc__output {
     display: block;
     padding: 0;
     background: none;
     color: var(--role-text);
     font-size: 0.75rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .cc__live {
@@ -410,11 +434,6 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
   }
 
   @media (max-width: 52rem) {
-    .cc__output {
-      white-space: normal;
-      overflow-wrap: anywhere;
-    }
-
     .cc__body {
       grid-template-columns: minmax(0, 1fr);
     }

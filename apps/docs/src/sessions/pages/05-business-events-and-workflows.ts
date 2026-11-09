@@ -88,8 +88,16 @@ export const sessionPages = [
     title: "domain は web に依存しない",
     flow: "solution",
     kind: "teach",
-    minutes: 0.5,
-    role: "解決策を守る: 直した形も、次の変更で元に戻ることがあります。依存の向きを守る仕組みを学びます。",
+    minutes: 0.25,
+    role: "解決策を守る: 直した形も、次の変更で元に戻ることがあります。守るべき依存の向きを確かめます。",
+  },
+  {
+    slug: "dependency-checks",
+    title: "依存の向きの違反を検出する",
+    flow: "solution",
+    kind: "teach",
+    minutes: 0.25,
+    role: "解決策を守る: 依存の向きの違反を、Linter の規則とテストのどちらが検出するかを見比べます。",
   },
   {
     slug: "exercise",

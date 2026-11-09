@@ -1,9 +1,8 @@
-import CheckCards from "../../../components/states/CheckCards.astro";
+import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
+import { session01ChangeChecks } from "../../../components/states/change-checks";
 
-<p>もう 1 つの課題があります。直したコードも、次の変更で元に戻ることがあります。たとえば、直した箇所を知らない人が、別の目的で関連するコードを書き換えて、誤りを入れてしまうことがあります。この課題は、直した状態を保つことです。</p>
+<p>もう 1 つの課題があります。直したコードも、次の変更で元に戻ることがあります。この課題は、直した状態を保つことです。悪い変更を機械で見つける道具を<strong>仕組み</strong>と呼びます。仕組みが悪い変更を見つけて報告することを<strong>検出</strong>、報告せずに通すことを<strong>すり抜け</strong>と呼びます。</p>
 
-<p>この教材では、悪い変更を機械で見つける道具を<strong>仕組み</strong>と呼びます。仕組みが悪い変更を見つけて報告することを<strong>検出</strong>、報告せずに通すことを<strong>すり抜け</strong>と呼びます。仕組みは次の 3 種類です。</p>
+<p>変更を選んで、3つの仕組みの結果を見比べてください。<code>as</code> で偽る変更は Linter の規則とテストが検出します。引数を広げる変更は型のテストだけが、理由を取り違える変更はテストだけが検出します。</p>
 
-<CheckCards />
-
-<p><code>// @ts-expect-error</code> は、次の行が型エラーになることを確かめる印です。型エラーが出なければ、この印が型検査のエラーになります。型は形を見ます。どの値が結果に入るかは、テストで確かめます。型は実行時に消えるので、実行中の値は別の仕組みで確かめます。</p>
+<ChangeChecks set={session01ChangeChecks} />
