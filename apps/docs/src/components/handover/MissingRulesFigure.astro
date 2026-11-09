@@ -79,15 +79,15 @@ const rules = [
 ] as const;
 
 const captions = [
-  "病院の人は、会計済みの予約を診察に戻してはいけないと知っています。",
-  "コードを見ます。updateStatus は、今の状態を確かめず、渡された状態をそのまま書き込みます。会計済みの予約を拒むロジックは、ここにありません。",
-  "もう1件の事故にも、守るべき条件があります。調査に不要な個人情報を、監査記録に出力してはいけません。監査記録は長期間保存され、複数の担当者が閲覧します。出力した飼い主の氏名、メールアドレス、電話番号は、知る必要のない担当者にも開示されます。",
-  "監査記録を保存するコードです。予約の内容を丸ごと payload に入れています。個人情報を除くロジックは、ここにもありません。",
-  "決まりは、人の頭の中にしかありません。コードは決まりを知らないので、破られても止まりません。",
+  "病院の担当者は、会計済みの予約を診察中に戻してはならないことを把握しています。",
+  "コードを確認します。updateStatus は、現在の状態を検証せず、渡された状態をそのまま書き込みます。会計済みの予約を拒否する業務ロジックは実装されていません。",
+  "もう1件の事故にも、守るべき業務ルールがあります。調査に不要な個人情報を、監査記録に出力してはなりません。監査記録は長期間保存され、複数の担当者が閲覧します。出力された飼い主の氏名、メールアドレス、電話番号は、知る必要のない担当者にも開示されます。",
+  "監査記録を保存するコードです。予約の内容全体を payload に格納しています。個人情報を除外する業務ロジックも実装されていません。",
+  "業務ルールは担当者の記憶にしか存在しません。コードに業務ルールを判定する処理がないため、違反する操作も拒否されません。",
 ] as const;
 ---
 
-<figure class="mrf" data-missing-rules aria-label="病院の人が知っている決まりと、コードに書かれていること">
+<figure class="mrf" data-missing-rules aria-label="病院の担当者が把握している業務ルールと、コードに実装されている内容">
   <StepControls />
 
   <div aria-live="polite">
@@ -98,11 +98,11 @@ const captions = [
 
   <div class="mrf__grid">
     <section class="mrf__side mrf__side--rules" aria-labelledby="mrf-rules-title">
-      <h4 class="mrf__title" id="mrf-rules-title">病院の人が知っている決まり</h4>
+      <h4 class="mrf__title" id="mrf-rules-title">病院の担当者が把握している業務ルール</h4>
       <ul class="mrf__cards">
         {rules.map((rule) => (
           <li class="mrf__card" data-rule={rule.id}>
-            <span class="mrf__number">決まり{rule.id}</span>
+            <span class="mrf__number">業務ルール{rule.id}</span>
             <span>{rule.text}</span>
           </li>
         ))}
@@ -110,7 +110,7 @@ const captions = [
     </section>
 
     <section class="mrf__side mrf__side--code" aria-labelledby="mrf-code-title">
-      <h4 class="mrf__title" id="mrf-code-title">コードに書かれていること</h4>
+      <h4 class="mrf__title" id="mrf-code-title">コードに実装されている内容</h4>
       <div class="mrf__pane">
         {codes.map((block) => (
           <figure class="mrf__block" data-code={block.id}>
@@ -128,7 +128,7 @@ const captions = [
             />
           </figure>
         ))}
-        <p class="mrf__empty" data-empty>決まりは書かれていない</p>
+        <p class="mrf__empty" data-empty>業務ロジックは実装されていない</p>
       </div>
     </section>
   </div>
