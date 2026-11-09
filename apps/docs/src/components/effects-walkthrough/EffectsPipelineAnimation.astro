@@ -222,42 +222,42 @@ const scenes: readonly Scene[] = [
     settled: {},
     frames: [
       {
-        text: "`resolveById` が予約を読みます。値は `CheckedIn` の予約です。",
+        text: "`resolveById` が予約を取得します。値は `CheckedIn` の予約です。",
         at: "resolve",
         impl: "resolve",
         lines: [4],
         out: "r0",
       },
       {
-        text: "`ensureAppointmentFound` は予約があるので `ok` を返し、値をそのまま次へ渡します。",
+        text: "`ensureAppointmentFound` は予約があるため `ok` を返し、値をそのまま次へ渡します。",
         at: "found",
         impl: "found",
         lines: [3, 8, 10],
         out: "r1",
       },
       {
-        text: "`ensureCheckedIn` は `kind` を確かめます。ここから値の型は `CheckedIn` に絞られます。",
+        text: "`ensureCheckedIn` は `kind` を検証します。ここから値の型は `CheckedIn` に絞られます。",
         at: "checked",
         impl: "checkedin",
         lines: [3, 4],
         out: "r2",
       },
       {
-        text: "時刻と ID はイベントを作る瞬間に要るので、`map` の中で port から読みます。`createEventContext` が1回だけ読み、その1回の値を状態と監査記録の両方が使います。",
+        text: "時刻と ID はイベントを作る時点で必要なため、`map` の中で port から取得します。`createEventContext` が1回だけ取得し、この1回の値を状態と監査記録の両方が使用します。",
         at: "start",
         impl: "event",
         lines: [3, 4, 10],
         out: "r3",
       },
       {
-        text: "`Appointment.startExamination` が `ExaminationStarted` を作ります。失敗しない計算なので `map` です。",
+        text: "`Appointment.startExamination` が `ExaminationStarted` を生成します。失敗しない計算であるため `map` です。",
         at: "start",
         impl: "transition",
         lines: [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12],
         out: "r4",
       },
       {
-        text: "`andThrough` が `store` を呼びます。結果の `ok` は捨てます。保存した後もイベントを渡すので、`event` がそのまま次へ流れます。",
+        text: "`andThrough` が `store` を呼びます。結果の `ok` は破棄します。保存後もイベントを渡すため、`event` がそのまま次の処理へ引き継がれます。",
         at: "through",
         impl: "store",
         lines: [0, 1, 2, 3],
@@ -276,13 +276,13 @@ const scenes: readonly Scene[] = [
     settled: upstream,
     frames: [
       {
-        text: `${sameUntil}\`event\` ができて \`store\` を呼びます。`,
+        text: `${sameUntil}\`event\` が作られ、\`store\` を呼びます。`,
         at: "through",
         impl: "store",
         lines: [0, 1, 2, 3],
       },
       {
-        text: "`store` は `err` で `AppointmentConflict` を返します。業務で起こりうる失敗なので型に残ります。",
+        text: "`store` は `err` で `AppointmentConflict` を返します。業務で発生しうる失敗であるため、型に残ります。",
         at: "through",
         impl: "atomic",
         lines: [0, 1, 2, 3, 4, 5],
@@ -290,7 +290,7 @@ const scenes: readonly Scene[] = [
         flow: { kind: "err", from: "through", to: "through" },
       },
       {
-        text: "`andThrough` は `Err` を次へ流し、最後の `map` は実行されません。",
+        text: "`andThrough` は `Err` を次へ渡し、最後の `map` は実行されません。",
         at: "map",
         skipped: ["map"],
         flow: { kind: "err", from: "through", to: "map" },
@@ -312,13 +312,13 @@ const scenes: readonly Scene[] = [
     settled: upstream,
     frames: [
       {
-        text: sceneKey === "reject" ? rejectStart : `${sameUntil}\`event\` ができて \`store\` を呼びます。`,
+        text: sceneKey === "reject" ? rejectStart : `${sameUntil}\`event\` が作られ、\`store\` を呼びます。`,
         at: "through",
         impl: "store",
         lines: [0, 1, 2, 3],
       },
       {
-        text: "SQLite の書き込みが失敗すると、`store` は `fromSafePromise` の中で reject します。`fromSafePromise` は Promise を `ResultAsync` に包み、reject は変えないので、`Err` になりません。`fromPromise` は reject を指定した `Err` に変えますが、ここでは使いません。",
+        text: "SQLite の書き込みが失敗すると、`store` は `fromSafePromise` の中で reject します。`fromSafePromise` は Promise を `ResultAsync` に包み、reject は変えないため、`Err` になりません。`fromPromise` は reject を指定した `Err` に変えますが、ここでは使いません。",
         at: "through",
         impl: "store",
         lines: [1, 2],
@@ -326,7 +326,7 @@ const scenes: readonly Scene[] = [
         flow: { kind: "reject", from: "through", to: "through" },
       },
       {
-        text: "`store` の Promise が reject するので、`andThrough` は `Result` を受け取れず、最後の `map` も実行されません。reject は `Result` の経路の外へ出ます。",
+        text: "`store` の Promise が reject するため、`andThrough` は `Result` を受け取れず、最後の `map` も実行されません。reject は `Result` の経路の外へ出ます。",
         at: "map",
         skipped: ["map"],
         flow: { kind: "reject", from: "through", to: "onError" },
@@ -431,7 +431,7 @@ const legendLines = [
 <Walkthrough
   id="effects-pipeline-walkthrough"
   title="値がワークフローを流れる"
-  lead="診察開始のワークフローのコードを上から読みます。実行中のステップの下には、そのステップの実装と出力が開きます。成功、競合、保存障害の3つの流れを追います。"
+  lead="診察開始のワークフローのコードを上から読みます。現在のステップの下には、そのステップの実装と出力が開きます。成功、競合、保存障害の3つの流れを追います。"
   note="値は説明用の例です。項目は一部だけを載せています。"
   scenes={shownScenes.map(({ label, frames }) => ({ label, frames: frames.map(({ text }) => ({ text })) }))}
   page={page}

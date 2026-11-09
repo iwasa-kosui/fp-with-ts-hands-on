@@ -1,7 +1,7 @@
 import StoreBoundaryAnimation from "../../../components/effects-walkthrough/StoreBoundaryAnimation.astro";
 import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
 
-<p>状態の保存と監査記録の保存を、別々に続けて2回書く形を、dual-write と呼びます。2回目の保存が失敗すると、予約は診察中なのに、監査記録が残りません。順番を入れ替えると、今度は監査記録だけが残ります。</p>
+<p>状態の保存と監査記録の保存を、別々に続けて2回実行する形を、dual-write と呼びます。2回目の保存が失敗すると、予約は診察中ですが、監査記録が残りません。順序を入れ替えると、監査記録だけが残ります。</p>
 
 <FigureSpace reserve={86}>
   <StoreBoundaryAnimation scene="dual-write" />

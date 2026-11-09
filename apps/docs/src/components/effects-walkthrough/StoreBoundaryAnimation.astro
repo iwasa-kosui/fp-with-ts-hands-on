@@ -223,7 +223,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
     label: "修正前: 2回の保存",
     frames: [
       {
-        text: "`event` を作り終えました。予約はまだ `CheckedIn` で、監査記録はありません。",
+        text: "`event` の生成が完了しました。予約はまだ `CheckedIn` で、監査記録はありません。",
         call: null,
         impl: null,
         tx: "none",
@@ -232,7 +232,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "off",
       },
       {
-        text: "`stateStore.save` は `saveState(database, …)` で、`database` に直接書きます。transaction を使わないので、`InExamination` はその場ですぐ書き込まれます。",
+        text: "`stateStore.save` は `saveState(database, …)` で、`database` に直接書き込みます。transaction を使わないため、`InExamination` はその場ですぐ書き込まれます。",
         call: { pane: "before-call", lines: [0] },
         impl: { pane: "before-save", lines: [1] },
         tx: "none",
@@ -241,7 +241,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "off",
       },
       {
-        text: "次に `eventLog.append` が監査記録を書こうとしますが、書き込みが失敗して例外を投げます。",
+        text: "次に `eventLog.append` が監査記録を書き込もうとしますが、書き込みが失敗し、例外を投げます。",
         call: { pane: "before-call", lines: [1] },
         impl: { pane: "before-append", lines: [9, 10, 11] },
         tx: "none",
@@ -250,7 +250,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "home-failed",
       },
       {
-        text: "例外は外側で 500 を返します。状態は `InExamination` のまま、`ExaminationStarted` の監査記録はありません。誰が診察を開始したかを後から確かめられません。",
+        text: "例外は外側で 500 を返します。状態は `InExamination` のまま、`ExaminationStarted` の監査記録はありません。誰が診察を開始したかを後から確認できません。",
         call: null,
         impl: null,
         tx: "none",
@@ -265,7 +265,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
     label: "修正後: 成功",
     frames: [
       {
-        text: "ユースケースは `deps.examinationStartedStore.store(event)` を1回だけ呼びます。保存先が2つあることをユースケースは知りません。",
+        text: "ユースケースは `deps.examinationStartedStore.store(event)` を1回だけ呼びます。保存先が2つあることは、ユースケースのコードに現れません。",
         call: { pane: "after-call", lines: [0] },
         impl: { pane: "after-store", lines: [0, 1, 2, 3] },
         tx: "wait",
@@ -283,7 +283,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "off",
       },
       {
-        text: "transaction の中で予約を読み直します。`CheckedIn` なので先へ進みます。",
+        text: "transaction の中で予約を再度取得します。`CheckedIn` であるため先へ進みます。",
         call: { pane: "after-call", lines: [0] },
         impl: { pane: "after-atomic", lines: [2, 3] },
         tx: "open",
@@ -293,7 +293,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         read: true,
       },
       {
-        text: "`saveState` が新しい状態を書きます。まだ未確定です。",
+        text: "`saveState` が新しい状態を書き込みます。まだ未確定です。",
         call: { pane: "after-call", lines: [0] },
         impl: { pane: "after-save", lines: [6, 7, 8] },
         tx: "open",
@@ -302,7 +302,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "off",
       },
       {
-        text: "`appendAudit` が監査記録を書きます。これも未確定です。",
+        text: "`appendAudit` が監査記録を書き込みます。これも未確定です。",
         call: { pane: "after-call", lines: [0] },
         impl: { pane: "after-audit", lines: [5] },
         tx: "open",
@@ -335,7 +335,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "off",
       },
       {
-        text: "予約を読み直します。`CheckedIn` なので先へ進みます。",
+        text: "予約を再度取得します。`CheckedIn` であるため先へ進みます。",
         call: { pane: "after-call", lines: [0] },
         impl: { pane: "after-atomic", lines: [2, 3] },
         tx: "open",
@@ -345,7 +345,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         read: true,
       },
       {
-        text: "`saveState` が状態を書きます。まだ未確定です。",
+        text: "`saveState` が状態を書き込みます。まだ未確定です。",
         call: { pane: "after-call", lines: [0] },
         impl: { pane: "after-save", lines: [6, 7, 8] },
         tx: "open",
@@ -387,7 +387,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
     label: "修正後: 競合",
     frames: [
       {
-        text: "ユースケースが予約を読んだ後、保存の前に、別の依頼が先に診察を開始していました。データベースの予約はすでに `InExamination` です。",
+        text: "ユースケースが予約を取得した後、保存の前に、別の依頼が先に診察を開始していました。データベースの予約はすでに `InExamination` です。",
         call: null,
         impl: null,
         tx: "wait",
@@ -397,7 +397,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         issue: true,
       },
       {
-        text: "transaction の中で読み直した予約の `current.kind` は、`CheckedIn` ではありません。",
+        text: "transaction の中で再取得した予約の `current.kind` は、`CheckedIn` ではありません。",
         call: { pane: "after-call", lines: [0] },
         impl: { pane: "after-atomic", lines: [2, 3] },
         tx: "open",
@@ -408,7 +408,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         issue: true,
       },
       {
-        text: "何も書かずに `err` で `AppointmentConflict` を返します。`err` も値なので transaction は確定しますが、書き込みの前に返すので何も残らず、状態も監査記録も増えません。",
+        text: "何も書き込まずに `err` で `AppointmentConflict` を返します。`err` も値であるため transaction は確定しますが、書き込みの前に返すため何も残らず、状態も監査記録も増えません。",
         call: null,
         impl: null,
         tx: "ended",
@@ -437,8 +437,8 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
 <Walkthrough
   id="store-boundary-walkthrough"
   title="状態と監査記録を1回で保存する"
-  lead="保存の途中で失敗が起きたとき、データベースに何が残るかを、修正前と修正後で1コマずつ追います。"
-  note="行の値は説明用の例です。列は一部だけを載せています。コードの insert(...).values(...) や select(...).from(...).where(...) は、データベースを操作するライブラリ Drizzle ORM の書き方です。database.transaction に渡した関数の中の書き込みは、1つの transaction にまとまります。関数が値を返すと確定し、例外を投げると取り消されます。"
+  lead="保存の途中で失敗が発生したとき、データベースに何が残るかを、修正前と修正後で1コマずつ追います。"
+  note="行の値は説明用の例です。列は一部だけを載せています。コードの insert(...).values(...) や select(...).from(...).where(...) は、データベースを操作するライブラリ Drizzle ORM の記法です。database.transaction に渡した関数の中の書き込みは、1つの transaction にまとまります。関数が値を返すと確定し、例外を投げると取り消されます。"
   scenes={scenes.map(({ label, frames }) => ({ label, frames: frames.map(({ text }) => ({ text })) }))}
   page={page}
   legend={page ? legendLines.length * 1.25 + 0.5 : undefined}
@@ -476,7 +476,7 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
           <div class="sb-db__head">
             <p class="sb-db__label">database</p>
             <p class="sb-tx__label" data-tx-label></p>
-            <p class="sb-issue" data-issue>問題: 別の依頼が先に診察を始めていた</p>
+            <p class="sb-issue" data-issue>問題: 別の依頼が先に診察を開始していた</p>
           </div>
           <div class="sb-table" data-table="appointments">
             <div class="sb-table__name sb-line"><span>appointments</span><span>status（状態名）</span><span>state（中身）</span></div>

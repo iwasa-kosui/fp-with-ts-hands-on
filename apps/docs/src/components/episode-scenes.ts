@@ -388,11 +388,11 @@ export const episodeScenes = {
     art: workflowErrors,
   },
   "05-business-events-and-workflows": {
-    label: "受付担当者が会計済みの予約のキャンセルを押して驚いている。Store の箱に入った記録の紙は、キャンセルとだけあり、理由の欄が空のままで、大きな疑問符が付いている",
+    label: "受付担当者が会計済みの予約のキャンセルを押して驚いている。Store の箱に格納された記録の紙は、キャンセルとだけあり、理由の欄が空のままで、大きな疑問符が付いている",
     art: businessEvents,
   },
   "06-effects-and-consistency": {
-    label: "診察台のカメの診察が始まり、画面は診察中に変わった。監査記録の箱は空のままで、再現テストのカードでは時刻とイベント ID が毎回変わっている",
+    label: "診察台のカメの診察が開始され、画面は診察中に変わった。監査記録の箱は空のままで、再現テストのカードでは時刻とイベント ID が毎回変わっている",
     art: effectsAndConsistency,
   },
   final: {

@@ -19,44 +19,44 @@ const frames: readonly Frame[] = [
   {
     part: undefined,
     arrows: [],
-    heading: "データベースに触る部品",
-    lines: ["読むのは Resolver", "書くのは Store", "判定の関数は、データベースに触らない"],
-    caption: "判定の関数を中央に置きます。データベースを読む Resolver を左に、データベースへ書く Store を右に置きます。",
+    heading: "データベースを操作するオブジェクト",
+    lines: ["取得するのは Resolver", "保存するのは Store", "判定の関数は、データベースを操作しない"],
+    caption: "判定の関数を中央に配置します。データベースから取得する Resolver を左に、データベースへ保存する Store を右に配置します。",
   },
   {
     part: "resolver",
     arrows: ["read", "pass"],
     heading: "Resolver が判定の関数へ渡す値",
     code: `{\n  kind: "Scheduled",\n  appointmentId: "11111111-…",\n  …\n}`,
-    caption: "Resolver は、データベースから予約を読み、判定の関数へ渡します。",
+    caption: "Resolver は、データベースから予約を取得し、判定の関数へ渡します。",
   },
   {
     part: "decision",
     arrows: [],
     heading: "判定の関数が返す値",
     code: `{\n  kind: "AppointmentCanceled",\n  aggregateState: { kind: "Canceled", … },\n}`,
-    caption: "判定の関数は、受け取った値だけで結果を決めます。データベースには触りません。",
+    caption: "判定の関数は、受け取った値だけで結果を返します。データベースは操作しません。",
   },
   {
     part: "store",
     arrows: ["return", "write"],
     heading: "Store が受け取る値",
     code: `{ kind: "AppointmentCanceled", … }`,
-    caption: "Store は、判定の関数が返したイベントを受け取り、データベースへ書きます。",
+    caption: "Store は、判定の関数が返したイベントを受け取り、データベースへ保存します。",
   },
 ];
 
 const activeOf = (frame: Frame, arrow: Arrow): string | undefined => (frame.arrows.includes(arrow) ? "" : undefined);
 ---
 
-<figure class="st-fig rsf" data-resolver-store aria-label="判定の関数を中央に、左に Resolver、右に Store を置く図">
+<figure class="st-fig rsf" data-resolver-store aria-label="判定の関数を中央に、左に Resolver、右に Store を配置する図">
   <StepControls />
 
   <ol class="st-stack">
     {frames.map((frame, index) => (
       <li data-frame>
         <div class="rsf__split">
-          <svg viewBox="0 0 640 204" role="img" aria-label="左の Resolver がデータベースを読み、中央の判定の関数へ予約を渡す。判定の関数がイベントを返し、右の Store がデータベースへ書く">
+          <svg viewBox="0 0 640 204" role="img" aria-label="左の Resolver がデータベースから取得し、中央の判定の関数へ予約を渡す。判定の関数がイベントを返し、右の Store がデータベースへ保存する">
             <defs>
               <marker id={`rsf-head-${index}`} viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" orient="auto">
                 <path d="M 0 0 L 10 5 L 0 10 z" class="rsf__head"></path>
@@ -69,17 +69,17 @@ const activeOf = (frame: Frame, arrow: Arrow): string | undefined => (frame.arro
             <g class="rsf__box rsf__box--io" data-current={frame.part === "resolver" ? "" : undefined} transform="translate(10 14)">
               <rect width="160" height="72" rx="10"></rect>
               <text x="80" y="34" text-anchor="middle" class="rsf__title">Resolver</text>
-              <text x="80" y="60" text-anchor="middle" class="rsf__sub">データベースから読む</text>
+              <text x="80" y="60" text-anchor="middle" class="rsf__sub">データベースから取得</text>
             </g>
             <g class="rsf__box" data-current={frame.part === "decision" ? "" : undefined} transform="translate(230 14)">
               <rect width="180" height="72" rx="10"></rect>
               <text x="90" y="34" text-anchor="middle" class="rsf__title">判定の関数</text>
-              <text x="90" y="60" text-anchor="middle" class="rsf__sub">値だけで結果を決める</text>
+              <text x="90" y="60" text-anchor="middle" class="rsf__sub">値だけで結果を返す</text>
             </g>
             <g class="rsf__box rsf__box--io" data-current={frame.part === "store" ? "" : undefined} transform="translate(470 14)">
               <rect width="160" height="72" rx="10"></rect>
               <text x="80" y="34" text-anchor="middle" class="rsf__title">Store</text>
-              <text x="80" y="60" text-anchor="middle" class="rsf__sub">データベースへ書く</text>
+              <text x="80" y="60" text-anchor="middle" class="rsf__sub">データベースへ保存</text>
             </g>
 
             <path d="M 170 50 H 226" class="rsf__arrow" data-active={activeOf(frame, "pass")} marker-end={frame.arrows.includes("pass") ? `url(#rsf-head-active-${index})` : `url(#rsf-head-${index})`}></path>
@@ -88,11 +88,11 @@ const activeOf = (frame: Frame, arrow: Arrow): string | undefined => (frame.arro
             <text x="440" y="40" text-anchor="middle" class="rsf__label">イベント</text>
 
             <path d="M 90 150 V 92" class="rsf__arrow" data-active={activeOf(frame, "read")} marker-end={frame.arrows.includes("read") ? `url(#rsf-head-active-${index})` : `url(#rsf-head-${index})`}></path>
-            <text x="102" y="128" class="rsf__label">読む</text>
+            <text x="102" y="128" class="rsf__label">取得</text>
             <path d="M 550 92 V 144" class="rsf__arrow" data-active={activeOf(frame, "write")} marker-end={frame.arrows.includes("write") ? `url(#rsf-head-active-${index})` : `url(#rsf-head-${index})`}></path>
-            <text x="562" y="128" class="rsf__label">書く</text>
+            <text x="562" y="128" class="rsf__label">保存</text>
 
-            <text x="320" y="124" text-anchor="middle" class="rsf__label rsf__label--muted">データベースに触らない</text>
+            <text x="320" y="124" text-anchor="middle" class="rsf__label rsf__label--muted">データベースを操作しない</text>
 
             <g class="rsf__db" transform="translate(10 150)">
               <rect width="620" height="42" rx="8"></rect>
@@ -115,7 +115,7 @@ const activeOf = (frame: Frame, arrow: Arrow): string | undefined => (frame.arro
     ))}
   </ol>
 
-  <p class="rsf__note">注: Store は、保存する部品の総称です。完成形の Store は Event Store です。</p>
+  <p class="rsf__note">注: Store は、保存するオブジェクトの総称です。完成形の Store は Event Store です。</p>
 </figure>
 
 <script>

@@ -13,12 +13,12 @@ const rows: readonly Row[] = [
   { key: "kind", before: `"Scheduled"`, after: `"Canceled"`, change: "changed" },
   { key: "appointmentId", before: `"11111111-1111-4111-8111-111111111111"`, after: `"11111111-1111-4111-8111-111111111111"`, change: "same" },
   { key: "scheduledAt", before: `"2026-08-30T06:30:00.000Z"`, after: `"2026-08-30T06:30:00.000Z"`, change: "same" },
-  { key: "reason", before: `"skin check"`, after: `"skin check"`, change: "same", note: "来院理由。残る" },
+  { key: "reason", before: `"skin check"`, after: `"skin check"`, change: "same", note: "来院理由。保持される" },
   { key: "cancellationReason", before: undefined, after: `"owner request"`, change: "added" },
   { key: "canceledAt", before: undefined, after: `"2026-08-30T05:00:00.000Z"`, change: "added" },
 ];
 
-const tagOf = (change: Change): string => (change === "changed" ? "変わる" : change === "added" ? "増える" : "");
+const tagOf = (change: Change): string => (change === "changed" ? "変更" : change === "added" ? "追加" : "");
 ---
 
 <figure class="cdd" aria-label="キャンセルの前と後で、予約のデータが変わる 3 項目">
@@ -30,7 +30,7 @@ const tagOf = (change: Change): string => (change === "changed" ? "変わる" : 
           <li data-change={row.change}>
             <code class="cdd__key">{row.key}</code>
             {row.before === undefined ? (
-              <span class="cdd__empty">まだ無い</span>
+              <span class="cdd__empty">まだ存在しない</span>
             ) : (
               <code class="cdd__value">{row.before}</code>
             )}
@@ -57,7 +57,7 @@ const tagOf = (change: Change): string => (change === "changed" ? "変わる" : 
   </div>
 
   <figcaption>
-    変わるのは <code>kind</code>、<code>cancellationReason</code>、<code>canceledAt</code> の 3 項目です。説明用に、<code>petId</code>、<code>ownerId</code>、Sensitive の包みを省略しています。
+    変わるのは <code>kind</code>、<code>cancellationReason</code>、<code>canceledAt</code> の 3 項目です。説明用に、<code>petId</code>、<code>ownerId</code>、Sensitive（連絡先を伏せる型）のラッパーを省略しています。
   </figcaption>
 </figure>
 

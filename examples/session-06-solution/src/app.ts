@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { createClinicRootView } from "@fp-with-ts/clinic-web/server";
 import { inertia } from "@hono/inertia";
 import { Hono } from "hono";
@@ -34,9 +36,9 @@ export type DatabaseBackedAppOptions = Readonly<{
 export type DatabaseBackedApp = Hono & Readonly<{ close: () => void }>;
 
 const defaultEffects: EventContextDependencies = {
-  clock: { now: () => "2026-08-30T06:30:00.000Z" },
+  clock: { now: () => new Date().toISOString() },
   eventIdGenerator: {
-    generate: () => EventId.parse("55555555-5555-4555-8555-555555555555"),
+    generate: () => EventId.parse(randomUUID()),
   },
 };
 

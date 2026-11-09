@@ -3,7 +3,7 @@ import type { ChangeCase, ChangeCheckSet, MechanismInfo } from "../change-checks
 const mechanisms: readonly MechanismInfo[] = [
   {
     id: "lint",
-    name: "Linter の規則",
+    name: "Linter のルール",
     detail: "import の文字列がパターンに一致すると報告する",
     code: `"no-restricted-imports": ["error",
   { patterns: ["**/<禁止するフォルダ名>/**"] }]`,
@@ -11,7 +11,7 @@ const mechanisms: readonly MechanismInfo[] = [
   {
     id: "tests",
     name: "テスト",
-    detail: "偽物の Store で確かめる",
+    detail: "テスト用の Store で検証する",
     code: `expect(result.isErr()).toBe(true);
 expect(saved).toHaveLength(0);`,
   },
@@ -35,7 +35,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: true, output: "no-restricted-imports: '…/adaptor/primary/web/appointmentPresenter.js' import is restricted from being used by a pattern." },
       tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true, setting: "// import の向きは実行結果に現れません" },
     },
-    why: "import の先は実在するので、型検査は通ります。import の向きを変えても実行結果は変わらないので、値を確かめるテストでは見つけられません。import の文字列を見る規則だけが見つけます。",
+    why: "import の先は実在するため、型検査は通ります。import の向きを変えても実行結果は変わらないため、値を検証するテストでは検出できません。import の文字列を検査するルールだけが検出します。",
   },
   {
     id: "B2-domain-imports-sqlite",
@@ -53,7 +53,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: true, output: "no-restricted-imports: '…/adaptor/secondary/sqlite/appointmentRow.js' import is restricted from being used by a pattern." },
       tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true, setting: "// import の向きは実行結果に現れません" },
     },
-    why: "型だけの import でも、domain は保存の形を知ることになります。実行結果は変わらないのでテストでは見つけられません。規則は `import type` も同じように報告します。",
+    why: "型だけの import でも、domain は保存形式に依存することになります。実行結果は変わらないため、テストでは検出できません。ルールは `import type` も同様に報告します。",
   },
   {
     id: "B4-domain-imports-use-case",
@@ -71,7 +71,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: true, output: "no-restricted-imports: '…/useCase/cancelAppointment.js' import is restricted from being used by a pattern." },
       tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true, setting: "// import の向きは実行結果に現れません" },
     },
-    why: "useCase は domain の外側です。向きが逆でも型検査は通り、実行結果も変わらないので、規則だけが見つけます。",
+    why: "useCase は domain の外側です。向きが逆でも型検査は通り、実行結果も変わらないため、ルールだけが検出します。",
   },
   {
     id: "B3-cancel-paid",
@@ -95,7 +95,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: false, output: "エラーなし" },
       tests: { found: true, output: "1件失敗: expected false to be true" },
     },
-    why: "`as` で型を合わせているので、型検査は通ります。import は変わらないので規則も通ります。Paid を渡すテストだけが見つけます。",
+    why: "`as` で型を合わせているため、型検査は通ります。import は変わらないため、Linter のルールでも検出されません。Paid を渡すテストだけが検出します。",
   },
   {
     id: "G3-web-booking-channel",
@@ -114,13 +114,13 @@ const cases: readonly ChangeCase[] = [
       lint: { found: false, output: "エラーなし" },
       tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true, setting: "// import を足しても実行結果は変わりません" },
     },
-    why: "`webBookingChannel` は domain の中のファイルです。パターンをフォルダの単位で書けば、名前に web を含むだけのファイルを誤検知（正しいコードを悪い変更として検出すること）しません。",
+    why: "`webBookingChannel` は domain の中のファイルです。パターンをフォルダの単位で記述すれば、名前に web を含むだけのファイルを誤検知（正しいコードを誤った変更として検出すること）しません。",
   },
 ];
 
 export const session05ChangeChecks: ChangeCheckSet = {
   example: "session-05-solution",
-  ariaLabel: "悪い変更と2つの仕組みの結果",
+  ariaLabel: "誤った変更と2つの仕組みの結果",
   mechanisms,
   cases,
 };

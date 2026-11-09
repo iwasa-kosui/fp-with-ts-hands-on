@@ -3,15 +3,15 @@ import type { ChangeCase, ChangeCheckSet, MechanismInfo } from "../change-checks
 const mechanisms: readonly MechanismInfo[] = [
   {
     id: "lint",
-    name: "Linter の規則",
-    detail: "`[…]` に範囲を絞る条件を書く。引数の個数は `[arguments.length=…]`",
+    name: "Linter のルール",
+    detail: "`[…]` に範囲を絞る条件を記述する。引数の個数は `[arguments.length=…]`",
     code: `// selector: 検出するコードの形
 selector: "NewExpression[callee.name='Date'][…]",`,
   },
   {
     id: "tests",
     name: "テスト",
-    detail: "fake の store と clock で確かめる",
+    detail: "fake の store と clock で検証する",
     code: "expect(harness.storeCalls).toBe(1);",
   },
 ];
@@ -20,7 +20,7 @@ const cases: readonly ChangeCase[] = [
   {
     id: "B1-new-date",
     kind: "bad",
-    label: "時刻を new Date() から作る",
+    label: "時刻を new Date() から生成する",
     baseCase: "G1-solution",
     target: "createEventContext の部分",
     diff: [
@@ -32,15 +32,15 @@ const cases: readonly ChangeCase[] = [
     ],
     results: {
       lint: { found: true, output: "no-restricted-syntax: 現在時刻を直接読まず、clock から受け取ります。" },
-      tests: { found: true, output: "2件失敗: expected +0 to be 1", setting: `// harness に clock を読んだ回数 clockReads を足した場合
+      tests: { found: true, output: "2件失敗: expected +0 to be 1", setting: `// harness に clock を取得した回数 clockReads を追加した場合
 expect(harness.clockReads).toBe(1);` },
     },
-    why: "時刻は string のままなので、型検査は通ります。`new Date()` の形を見る規則と、clock を読んだ回数を確かめるテストが見つけます。",
+    why: "時刻は string のままであるため、型検査は通ります。`new Date()` の形を検査する Linter のルールと、clock を取得した回数を検証するテストが検出します。",
   },
   {
     id: "B3-date-now",
     kind: "bad",
-    label: "時刻を Date.now() から作る",
+    label: "時刻を Date.now() から生成する",
     baseCase: "G1-solution",
     target: "createEventContext の部分",
     diff: [
@@ -53,19 +53,19 @@ expect(harness.clockReads).toBe(1);` },
     results: {
       lint: { found: true, output: "no-restricted-syntax: 現在時刻を直接読まず、clock から受け取ります。", setting: `// selector: 検出するコードの形
 selector: "CallExpression[callee.object.name='Date'][…]",` },
-      tests: { found: true, output: "2件失敗: expected +0 to be 1", setting: `// harness に clock を読んだ回数 clockReads を足した場合
+      tests: { found: true, output: "2件失敗: expected +0 to be 1", setting: `// harness に clock を取得した回数 clockReads を追加した場合
 expect(harness.clockReads).toBe(1);` },
     },
-    why: "`new Date()` の規則だけではこの書き方を見つけられないので、`Date.now` の形の規則を別に足します。",
+    why: "`new Date()` のルールだけではこの実装を検出できないため、`Date.now` の形のルールを別に追加します。",
   },
   {
     id: "B2-random-uuid",
     kind: "bad",
-    label: "ID を乱数から作る",
+    label: "ID を乱数から生成する",
     baseCase: "G1-solution",
     target: "createEventContext の部分",
     diff: [
-      { kind: "skip", text: "// import に EventId を足す" },
+      { kind: "skip", text: "// import に EventId を追加する" },
       { kind: "same", text: "const createEventContext = (deps: EventContextDependencies): EventContext => ({" },
       { kind: "del", text: "  eventId: deps.eventIdGenerator.generate()," },
       { kind: "add", text: "  eventId: EventId.parse(crypto.randomUUID())," },
@@ -77,7 +77,7 @@ expect(harness.clockReads).toBe(1);` },
 selector: "CallExpression[callee.object.name='crypto'][callee.property.name='randomUUID']",` },
       tests: { found: true, output: "1件失敗: expected [ { …(2) } ] to deeply equal [ { …(2) } ]", setting: "expect(harness.recordedEvents.map(…)).toEqual([…]);" },
     },
-    why: "ID の型は変わらないので、型検査は通ります。`randomUUID` の呼び出しを見る規則と、固定の ID と比べるテストが見つけます。",
+    why: "ID の型は変わらないため、型検査は通ります。`randomUUID` の呼び出しを検査するルールと、固定の ID と比較するテストが検出します。",
   },
   {
     id: "B4-two-saves",
@@ -95,12 +95,12 @@ selector: "CallExpression[callee.object.name='crypto'][callee.property.name='ran
       lint: { found: false, output: "エラーなし" },
       tests: { found: true, output: "2件失敗: expected 2 to be 1" },
     },
-    why: "同じ関数を2回呼ぶ書き方は規則の形に当てはまりません。呼んだ回数を数えるテストだけが見つけます。",
+    why: "同じ関数を2回呼ぶ実装はルールの形に当てはまりません。呼び出した回数を検証するテストだけが検出します。",
   },
   {
     id: "B5-clock-read-twice",
     kind: "bad",
-    label: "clock を読み直す",
+    label: "clock を再取得する",
     baseCase: "G1-solution",
     target: "useCase の最後の部分",
     diff: [
@@ -111,15 +111,15 @@ selector: "CallExpression[callee.object.name='crypto'][callee.property.name='ran
     ],
     results: {
       lint: { found: false, output: "エラーなし" },
-      tests: { found: true, output: "1件失敗: expected 2 to be 1", setting: `// harness に clock を読んだ回数 clockReads を足した場合
+      tests: { found: true, output: "1件失敗: expected 2 to be 1", setting: `// harness に clock を取得した回数 clockReads を追加した場合
 expect(harness.clockReads).toBe(1);` },
     },
-    why: "`deps.clock.now()` は許された書き方なので、規則は通します。読んだ回数を確かめるテストだけが見つけます。",
+    why: "`deps.clock.now()` は許可された実装であるため、ルールは検出しません。clock を取得した回数を検証するテストだけが検出します。",
   },
   {
     id: "G2-date-from-timestamp",
     kind: "good",
-    label: "clock の時刻から Date を作る（正しいコード）",
+    label: "clock の時刻から Date を生成する（正しいコード）",
     baseCase: "G1-solution",
     target: "createEventContext の部分",
     diff: [
@@ -133,13 +133,13 @@ expect(harness.clockReads).toBe(1);` },
       lint: { found: false, output: "エラーなし" },
       tests: { found: false, output: "4件成功" },
     },
-    why: "引数のある `new Date(...)` は clock の値を使っています。条件を引数なしに絞った規則は、これを誤検知（正しいコードを悪い変更として検出すること）しません。",
+    why: "引数のある `new Date(...)` は clock の値を使っています。条件を引数なしに絞ったルールは、これを誤検知（正しいコードを誤った変更として検出すること）しません。",
   },
 ];
 
 export const session06ChangeChecks: ChangeCheckSet = {
   example: "session-06-solution",
-  ariaLabel: "悪い変更と2つの仕組みの結果",
+  ariaLabel: "誤った変更と2つの仕組みの結果",
   mechanisms,
   cases,
 };

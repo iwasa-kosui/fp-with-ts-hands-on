@@ -34,6 +34,12 @@ const sqliteCode = quote(
   "const store = createExaminationStartedStore(",
   ");",
 );
+const effectsCode = quote(
+  "session-06-solution",
+  "src/app.ts",
+  "const defaultEffects: EventContextDependencies = {",
+  "};",
+);
 const fakeCode = quote(
   "session-06-solution",
   "test/in-memory-store.test.ts",
@@ -53,6 +59,7 @@ const lit = JSON.stringify([
   },
   {
     sqlite: [0],
+    effects: [0],
   },
   {
     fake: [
@@ -88,10 +95,10 @@ const tree = miniTree("session-06-solution", "", [
 const treeCurrent = [["start", "start-s04"], ["dependencies", "clock", "eventIdGenerator"], ["app"], ["fake"]] as const;
 
 const frames = [
-  "S04 で見た `deps.resolver` と、S06 の保存先 `deps.examinationStartedStore` です。ユースケースは、予約を探す処理も保存する処理も `deps` を通して外側に頼みます。この「外側に求める処理を型で表した約束」を port と呼びます。",
-  "時刻と ID も外側の処理です。`Clock` は「今の時刻を返す」約束、`EventIdGenerator` は「新しい ID を返す」約束で、どちらも port です。ユースケースは約束の型だけを知っています。",
-  "本番では、port に本物をつなぎます。resolver と store には SQLite、clock と ID generator には本物の時計と本物の ID の作り方をつなぎます。本物の時計の中だけは `new Date()` を呼びます。",
-  "テストでは、同じユースケースの port に偽物（fake）をつなぎます。メモリ上の store と固定の時刻と ID を渡すので、ユースケースのコードを変えずに結果を決められます。",
+  "S04 の `deps.resolver` と、S06 の保存先 `deps.examinationStartedStore` です。ユースケースは、予約を検索する処理も保存する処理も `deps` を通して外部に要求します。この「外部に要求する処理を型で表したもの」を port と呼びます。",
+  "時刻と ID の取得も外部の処理です。`Clock` は「現在の時刻を返す」処理の型、`EventIdGenerator` は「新しい ID を返す」処理の型で、どちらも port です。ユースケースは処理の型だけを参照します。",
+  "本番では、port に実際の処理を渡します。`app.ts` は、resolver と store には SQLite の実装を、clock には `new Date()` で現在時刻を返す処理を、ID generator には `randomUUID()` で新しい ID を返す処理を渡します。`new Date()` を呼ぶ箇所は、この実装の中だけです。",
+  "テストでは、同じユースケースの port に偽物（fake）をつなぎます。メモリ上の store と固定の時刻と ID を渡すため、ユースケースのコードを変更せずに結果を固定できます。",
 ] as const;
 
 const ports = [
@@ -99,7 +106,7 @@ const ports = [
     key: "resolver",
     name: "deps.resolver",
     from: 0,
-    real: ["SQLite", "データベースから予約を読む"],
+    real: ["SQLite", "データベースから予約を取得する"],
     fake: ["fake の resolver", "メモリ上の予約を返す"],
   },
   {
@@ -121,7 +128,7 @@ const ports = [
     name: "deps.eventIdGenerator",
     from: 1,
     real: ["本物の ID", "実行のたびに新しい ID を返す"],
-    fake: ["固定の ID", "いつも同じ ID を返す"],
+    fake: ["固定の ID", "常に同じ ID を返す"],
   },
 ] as const;
 ---
@@ -173,6 +180,10 @@ const ports = [
         <figure class="sf-code psf__wide" data-code="sqlite">
           <figcaption><code>app.ts</code></figcaption>
           <Code code={sqliteCode} lang="ts" wrap />
+        </figure>
+        <figure class="sf-code psf__wide" data-code="effects">
+          <figcaption><code>app.ts</code></figcaption>
+          <Code code={effectsCode} lang="ts" wrap />
         </figure>
       </div>
 

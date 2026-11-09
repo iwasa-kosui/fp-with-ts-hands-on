@@ -29,8 +29,8 @@ export const session: SessionSummary = {
   summary: "診察開始で予約の状態と監査記録が片方だけ残る問題と、テストの結果が時刻で変わる問題を解き、直した状態を仕組みで守ります。",
   episode: [
     "カメの診察を開始すると、予約状態だけが先に更新され、監査記録はどこにも残りませんでした。",
-    "記録がないので、誰がいつ診察を開始したかを後から調べられません。",
-    "再現テストでは時刻とイベント ID が毎回変わり、失敗したときの値を同じ形で確かめられません。",
+    "記録がないため、誰がいつ診察を開始したかを後から調査できません。",
+    "再現テストでは時刻とイベント ID が毎回変わり、失敗したときの値を同じ形で確認できません。",
   ],
   incident: "実行のたびに変わる値でテスト結果が安定せず、状態だけ保存され監査記録が残らない予約が生まれた。",
   exerciseCommand: "pnpm exercise:06",
@@ -145,9 +145,9 @@ export const session: SessionSummary = {
 export const guides = ([
   {
     id: "hidden-nondeterminism",
-    title: "時刻と ID を処理の中で直接作っている",
-    currentDesign: "new Date() と crypto.randomUUID() を直接呼び、イベントの時刻と ID を作っています。",
-    futureRisk: "同じ入力でも出力のイベントが変わるので、テストの期待値を固定できません。",
+    title: "時刻と ID を処理の中で直接生成している",
+    currentDesign: "new Date() と crypto.randomUUID() を直接呼び出し、イベントの時刻と ID を生成しています。",
+    futureRisk: "同じ入力でも出力のイベントが変わるため、テストの期待値を固定できません。",
     path: "src/useCase/startExamination.ts",
     highlights: [
       { startLineNumber: 51, endLineNumber: 51 },

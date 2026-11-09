@@ -25,7 +25,7 @@ const layers: readonly Readonly<{ id: Layer; name: string; folder: string }>[] =
 
 const webTree = miniTree("final", "src/", [{ folder: "adaptor/primary/web/routes/", files: [{ id: "web", name: "appointmentRoutes.ts" }] }]);
 const useCaseTree = miniTree("final", "src/", [{ folder: "useCase/", files: [{ id: "useCase", name: "cancelAppointmentUseCase.ts" }] }]);
-const domainBadTree = miniTree("final", "src/", [{ folder: "domain/appointment/", files: [{ id: "domain", name: "appointment.ts", note: "（仮の悪い例）" }] }]);
+const domainBadTree = miniTree("final", "src/", [{ folder: "domain/appointment/", files: [{ id: "domain", name: "appointment.ts", note: "（仮の誤った例）" }] }]);
 const domainTree = miniTree("final", "src/", [{ folder: "domain/appointment/", files: [{ id: "domain", name: "appointment.ts" }] }]);
 
 type Frame = Readonly<{
@@ -42,7 +42,7 @@ const frames: readonly Frame[] = [
     fixed: false,
     imports: { web: webImport, useCase: useCaseImport, domain: reverseImport },
     trees: { web: webTree, useCase: useCaseTree, domain: domainBadTree },
-    caption: "修正前です。矢印は import の向きです。domain が web を import しているので、矢印が内側から外側へ逆向きに伸びます。",
+    caption: "修正前です。矢印は import の向きです。domain が web を import しているため、矢印が内側から外側へ逆向きに伸びます。",
   },
   {
     tag: "修正後",
@@ -54,7 +54,7 @@ const frames: readonly Frame[] = [
 ];
 ---
 
-<figure class="st-fig dep" data-dependency-direction aria-label="import の向きを、修正前と修正後で見比べる図">
+<figure class="st-fig dep" data-dependency-direction aria-label="import の向きを、修正前と修正後で比較する図">
   <StepControls />
 
   <ol class="st-stack">
