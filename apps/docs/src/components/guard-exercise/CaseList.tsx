@@ -1,3 +1,4 @@
+import type { GuardBehaviorPart } from "../../code-explorer/guard-paths";
 import { verdictText, type DisplayRow } from "./labels";
 
 export type GuardGuideSegment =
@@ -41,6 +42,19 @@ const segmentsKey = (segments: readonly GuardGuideSegment[]): string =>
   segments
     .map((segment) => (typeof segment === "string" ? segment : segment.text))
     .join("");
+
+const BehaviorPart = ({
+  label,
+  part,
+}: Readonly<{ label: string; part: GuardBehaviorPart }>) => (
+  <>
+    <span className="guard-exercise__behavior-label">{label}</span>
+    <span className="guard-exercise__behavior-text">{part.text}</span>
+    {part.value === undefined ? null : (
+      <code className="guard-exercise__behavior-value">{part.value}</code>
+    )}
+  </>
+);
 
 export const CaseList = ({
   rows,
@@ -109,6 +123,28 @@ export const CaseList = ({
                   <span className="guard-exercise__mark">
                     {verdictText(row.verdict)}
                   </span>
+                  {row.behavior === undefined ? null : (
+                    <span className="guard-exercise__behavior">
+                      <span className="guard-exercise__behavior-input">
+                        <BehaviorPart label="入力" part={row.behavior.input} />
+                      </span>
+                      <span
+                        className="guard-exercise__behavior-side"
+                        data-side="expected"
+                      >
+                        <BehaviorPart label="本来" part={row.behavior.expected} />
+                      </span>
+                      <span
+                        className="guard-exercise__behavior-side"
+                        data-side="actual"
+                      >
+                        <BehaviorPart
+                          label="この変更では"
+                          part={row.behavior.actual}
+                        />
+                      </span>
+                    </span>
+                  )}
                 </button>
               </li>
             );

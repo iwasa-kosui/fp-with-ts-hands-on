@@ -18,6 +18,14 @@ export const guardCommand = {
 
 export const guardCommandSize = { cols: 80, rows: 24 } as const;
 
+export type GuardBehaviorPart = Readonly<{ text: string; value?: string }>;
+
+export type GuardBehavior = Readonly<{
+  input: GuardBehaviorPart;
+  expected: GuardBehaviorPart;
+  actual: GuardBehaviorPart;
+}>;
+
 export type GuardCaseInfo = Readonly<{
   id: string;
   kind: "bad" | "good";
@@ -25,6 +33,7 @@ export type GuardCaseInfo = Readonly<{
   stage: number;
   required: boolean;
   path: string | undefined;
+  behavior?: GuardBehavior;
 }>;
 
 const isVisibleGuardPath = (path: string): boolean =>
@@ -98,11 +107,33 @@ const parseConfigCases = (source: string): readonly unknown[] | undefined => {
   }
 };
 
+const behaviorPartFrom = (raw: unknown): GuardBehaviorPart | undefined =>
+  isRecord(raw) &&
+  typeof raw.text === "string" &&
+  raw.text !== "" &&
+  (raw.value === undefined || typeof raw.value === "string")
+    ? {
+        text: raw.text,
+        ...(typeof raw.value === "string" ? { value: raw.value } : {}),
+      }
+    : undefined;
+
+const behaviorFrom = (raw: unknown): GuardBehavior | undefined => {
+  if (!isRecord(raw)) return undefined;
+  const input = behaviorPartFrom(raw.input);
+  const expected = behaviorPartFrom(raw.expected);
+  const actual = behaviorPartFrom(raw.actual);
+  return input === undefined || expected === undefined || actual === undefined
+    ? undefined
+    : { input, expected, actual };
+};
+
 const caseFromConfig = (
   raw: unknown,
   projectFiles: ProjectFiles,
 ): GuardCaseInfo | undefined => {
   if (!isRecord(raw) || typeof raw.id !== "string") return undefined;
+  const behavior = behaviorFrom(raw.behavior);
   return {
     id: raw.id,
     kind: raw.kind === "good" ? "good" : "bad",
@@ -110,6 +141,7 @@ const caseFromConfig = (
     stage: typeof raw.stage === "number" ? raw.stage : 1,
     required: raw.required !== false,
     path: casePathFor(Object.keys(projectFiles), raw.id),
+    ...(behavior === undefined ? {} : { behavior }),
   };
 };
 

@@ -148,6 +148,74 @@
   line-height: 1.35;
 }
 
+.guard-exercise__case-list button:has(.guard-exercise__behavior) {
+  flex-wrap: wrap;
+}
+
+.guard-exercise__case-list button:has(.guard-exercise__behavior) .guard-exercise__case-title {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.guard-exercise__behavior {
+  display: grid;
+  flex: 1 1 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.2rem;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.guard-exercise__behavior-input {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+}
+
+.guard-exercise__behavior-side {
+  min-width: 0;
+  padding-left: 0.3rem;
+  border-left: 0.1875rem solid var(--playground-border);
+  overflow-wrap: anywhere;
+}
+
+.guard-exercise__behavior-side[data-side="expected"] {
+  border-left-color: var(--role-positive);
+}
+
+.guard-exercise__behavior-side[data-side="actual"] {
+  border-left-color: var(--role-negative);
+}
+
+.guard-exercise__behavior-label {
+  margin-right: 0.3rem;
+  font-weight: 700;
+}
+
+.guard-exercise__behavior-side .guard-exercise__behavior-label,
+.guard-exercise__behavior-side .guard-exercise__behavior-text,
+.guard-exercise__behavior-side .guard-exercise__behavior-value {
+  display: block;
+  margin-right: 0;
+}
+
+.guard-exercise__behavior-side[data-side="expected"] .guard-exercise__behavior-label {
+  color: var(--role-positive);
+}
+
+.guard-exercise__behavior-side[data-side="actual"] .guard-exercise__behavior-label {
+  color: var(--role-negative);
+}
+
+.guard-exercise__behavior-value {
+  font-size: inherit;
+}
+
+.guard-exercise__behavior-input .guard-exercise__behavior-value {
+  margin-left: 0.3rem;
+}
+
 .guard-exercise__case-list button[aria-current="true"] {
   border-color: var(--playground-primary);
   background: var(--playground-highlight);
