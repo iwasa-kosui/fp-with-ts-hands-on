@@ -16,7 +16,7 @@ export const sampleGuardResult: GuardResult = {
       stage: 1,
       required: true,
       allow: ["lint", "tests"],
-      hint: "any を禁じる規則で検出します。",
+      hint: "any を禁じるルールで検出します。",
       cells: {
         types: cell("na"),
         lint: cell("none"),

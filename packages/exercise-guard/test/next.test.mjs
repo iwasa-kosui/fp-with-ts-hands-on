@@ -62,7 +62,7 @@ describe("buildNext", () => {
     const [sentence] = nextOf([rowOf({ detections: { ...noDetections, types: [typeError] } })]);
 
     expect(sentence).toBe(
-      "正しいコード『正しい parse』を型のテストが検出しました（mine/result.type-test.ts:5 名前 'x' が見つかりません。）。規則の対象を狭めるか、テストを見直します。",
+      "正しいコード『正しい parse』を型のテストが検出しました（mine/result.type-test.ts:5 名前 'x' が見つかりません。）。ルールの対象を狭めるか、テストを見直します。",
     );
     expect(sentence).not.toContain("TS2304");
   });
@@ -72,7 +72,7 @@ describe("buildNext", () => {
 
     expect(sentence).toContain("もともとの型検査が検出しました");
     expect(sentence).toContain("src の変更で正しいコードが型エラーになっていないか見直します。");
-    expect(sentence).not.toContain("規則の対象を狭めるか");
+    expect(sentence).not.toContain("ルールの対象を狭めるか");
   });
 
   it("テストの読み込み失敗は、vitest のメッセージの先頭の行を入れる", () => {
@@ -89,7 +89,7 @@ describe("buildNext", () => {
     );
   });
 
-  it("Linter の検出は規則名のまま示す", () => {
+  it("Linter の検出はルール名のまま示す", () => {
     const [sentence] = nextOf([
       rowOf({
         detections: {
@@ -99,7 +99,7 @@ describe("buildNext", () => {
       }),
     ]);
 
-    expect(sentence).toContain("規則 no-restricted-syntax、exercises/guard/cases/G1.ts:7");
+    expect(sentence).toContain("ルール no-restricted-syntax、exercises/guard/cases/G1.ts:7");
   });
 
   it("allow に無い仕組みの検出は、この行では数えないと伝える", () => {
@@ -144,18 +144,18 @@ describe("buildNext", () => {
     expect(sentences).toEqual(["合格です。表の行を開いて、この仕組みで検出できないことを書きます。"]);
   });
 
-  it("合格のときは、任意の悪い変更がすり抜けていても、合格の文を先頭に置く", () => {
+  it("合格のときは、任意の誤った変更がすり抜けていても、合格の文を先頭に置く", () => {
     const optional = rowOf({
       kind: "bad",
       verdict: "slipped",
       required: false,
-      title: "相互レビューで作る悪い変更",
+      title: "相互レビューで作る誤った変更",
       allow: ["tests"],
     });
     const sentences = buildNext({ rows: [detectedBad, optional], problems: [], stageOpened: 0, passed: true });
 
     expect(sentences[0]).toBe("合格です。表の行を開いて、この仕組みで検出できないことを書きます。");
-    expect(sentences[1]).toContain("『相互レビューで作る悪い変更』がすり抜けています。");
+    expect(sentences[1]).toContain("『相互レビューで作る誤った変更』は検出されていません。");
   });
 
   describe("まだ 1 件も検出できていないときの案内", () => {

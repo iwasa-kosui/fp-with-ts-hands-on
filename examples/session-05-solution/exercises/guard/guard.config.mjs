@@ -11,7 +11,7 @@ export default {
       subject: "appointment",
       title: "domain の予約が、adaptor/primary/web の変換関数を import する",
       allow: ["lint"],
-      hint: "依存の向きの規則で検出します。domain が import してよい先と、import してはいけない先を分けます。",
+      hint: "依存の向きのルールで検出します。domain が import してよい先と、import してはいけない先を分けます。",
       behavior: {
         input: { text: "来院済みの予約をキャンセルする" },
         expected: { text: "キャンセル済みになる", value: 'kind: "Canceled"' },
@@ -24,7 +24,7 @@ export default {
       subject: "appointment",
       title: "domain の予約が、adaptor/secondary/sqlite の行の型を import する",
       allow: ["lint"],
-      hint: "web と別のフォルダも、同じ規則で検出します。",
+      hint: "web と別のフォルダも、同じルールで検出します。",
       behavior: {
         input: { text: "来院済みの予約をキャンセルする" },
         expected: { text: "キャンセル済みになる", value: 'kind: "Canceled"' },
@@ -37,7 +37,7 @@ export default {
       subject: "cancelAppointment",
       title: "会計済みの予約も、キャンセルを通してしまう",
       allow: ["tests"],
-      hint: "Paid の予約を resolver が返す偽物でキャンセルし、Err になることをテストで確かめます。",
+      hint: "Paid の予約を resolver が返す偽物でキャンセルし、Err になることをテストで検証します。",
       behavior: {
         input: { text: "会計済み（Paid）の予約をキャンセルする" },
         expected: { text: "失敗する", value: 'Err({ kind: "InvalidAppointmentState", actualKind: "Paid" })' },
@@ -52,7 +52,7 @@ export default {
       stage: 2,
       required: false,
       allow: ["lint"],
-      hint: "adaptor だけでなく、useCase への向きも同じ規則で検出できるかを確かめます。",
+      hint: "adaptor だけでなく、useCase への向きも同じルールで検出できるかを確認します。",
       behavior: {
         input: { text: "来院済みの予約をキャンセルする" },
         expected: { text: "キャンセル済みになる", value: 'kind: "Canceled"' },
@@ -67,7 +67,7 @@ export default {
       stage: 2,
       required: false,
       allow: ["tests"],
-      hint: "空の文字列を渡したときに Err になることを、テストで確かめます。",
+      hint: "空の文字列を渡したときに Err になることを、テストで検証します。",
       behavior: {
         input: { text: "空の文字列を理由にする", value: '""' },
         expected: { text: "検査が失敗する", value: "Err(SchemaValidationError)" },

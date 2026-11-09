@@ -71,7 +71,7 @@ const branchTotal = steps.reduce((sum, step) => sum + step.leftBranch, 0);
 
 const captions = [
   `同じ4つの工程を、左は isErr で、右は andThen と map で実装します。左にだけ、失敗を検証する分岐（斜線の部分）が ${branchTotal} 行あります。`,
-  "工程1 予約を取得する: 左は、取得した直後に isErr で検証し、失敗なら返します。右は、呼び出すだけです。失敗をそのまま次の処理へ返す動作は、後ろに続く andThen と map が担当します。",
+  "工程1 予約を取得する: 左は、取得した直後に isErr で検証し、失敗の場合は返します。右は、呼び出すだけです。失敗をそのまま次の処理へ返す動作は、後ろに続く andThen と map が担当します。",
   "工程2 来院済みの確認: 左は、isErr の分岐がもう1組必要です。右は、andThen(ensureCheckedIn) の1行です。Err を受け取ったら、ensureCheckedIn を呼び出さずに、同じ Err を返します。",
   "工程3 状態の遷移: transitionToInExamination は失敗しない関数であるため、右は map を使います。左は、checkedIn.value を取り出して渡します。",
   "工程4 保存して返す: 左は、保存した後に ok(next) で包み直します。右は、map の中で保存して、同じ値を返します。",

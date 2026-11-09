@@ -11,7 +11,7 @@ export default {
       subject: "input",
       title: "parse が any を受け取り、検査せずに値を取り出す",
       allow: ["lint", "tests"],
-      hint: "any のまま値を扱う書き方を Linter の規則で、または検査に通らない入力を渡すテストで検出します。",
+      hint: "any のまま値を扱う書き方を Linter のルールで、または検査に通らない入力を渡すテストで検出します。",
       behavior: {
         input: { text: '予約IDが "abc" の本文を parse する' },
         expected: { text: "Err を返す" },
@@ -24,7 +24,7 @@ export default {
       subject: "input",
       title: "parse が unknown を型アサーションで通す",
       allow: ["lint", "tests"],
-      hint: "型アサーションを Linter の規則で、または検査に通らない入力を渡すテストで検出します。",
+      hint: "型アサーションを Linter のルールで、または検査に通らない入力を渡すテストで検出します。",
       behavior: {
         input: { text: "予約IDも獣医師IDもない本文を parse する" },
         expected: { text: "Err を返す" },
@@ -35,13 +35,13 @@ export default {
       id: "B3-schema-without-uuid",
       kind: "bad",
       subject: "input",
-      title: "schema が UUID かどうかを確かめない",
+      title: "schema が UUID かどうかを検証しない",
       allow: ["tests"],
-      hint: "UUID でない文字列を渡したときに Err になることを、テストで確かめます。",
+      hint: "UUID でない文字列を渡したときに Err になることを、テストで検証します。",
       behavior: {
         input: { text: '予約IDは正しく、獣医師IDが "abc" の本文を parse する' },
         expected: { text: "Err を返す" },
-        actual: { text: "UUID を確かめず Ok", value: 'veterinarianId: "abc"' },
+        actual: { text: "UUID を検証せず Ok", value: 'veterinarianId: "abc"' },
       },
     },
     {
@@ -50,7 +50,7 @@ export default {
       subject: "audit",
       title: "監査記録に飼い主の連絡先が入る",
       allow: ["types", "lint", "tests"],
-      hint: "監査記録が3項目だけであることを、型のテスト、Linter の規則、テストのどれかで確かめます。",
+      hint: "監査記録が3項目だけであることを、型のテスト、Linter のルール、テストのどれかで検証します。",
       behavior: {
         input: { text: "診察中の予約から監査記録を作る" },
         expected: { text: "3項目だけ残る", value: "ownerContact なし" },
@@ -65,7 +65,7 @@ export default {
       stage: 2,
       required: false,
       allow: ["lint", "tests"],
-      hint: "不正な本文を渡したときに診察開始の処理が呼ばれないことをテストで確かめます。",
+      hint: "不正な本文を渡したときに診察開始の処理が呼ばれないことをテストで検証します。",
       behavior: {
         input: { text: 'route に予約ID "abc" の本文が届く' },
         expected: { text: "診察開始を呼ばない", value: "呼び出し 0 回" },
@@ -80,7 +80,7 @@ export default {
       stage: 2,
       required: false,
       allow: ["types"],
-      hint: "一方の ID をもう一方の型へ代入できないことを、型のテストで確かめます。",
+      hint: "一方の ID をもう一方の型へ代入できないことを、型のテストで検証します。",
       behavior: {
         input: { text: "獣医師IDを予約IDの変数へ代入するコードを書く" },
         expected: { text: "型検査でエラー" },
@@ -96,7 +96,7 @@ export default {
       required: false,
       allow: ["types", "lint", "tests"],
       unchangedFrom: "G1-solution",
-      hint: "結果の表で、この行が「すり抜け」のままなら、隣の人の仕組みをすり抜けています。",
+      hint: "結果の表で、この行が「すり抜け」のままの場合、隣の人の仕組みで検出されていません。",
     },
     {
       id: "G1-solution",

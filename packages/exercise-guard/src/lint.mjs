@@ -71,14 +71,14 @@ export const runLint = async ({ root, eslintConfigFile, patterns, caseFiles, pro
   };
 };
 
-const byNameFix = "規則をファイル名で分けずに、コードの形で検出します。";
+const byNameFix = "ルールをファイル名で分けずに、コードの形で検出します。";
 
 /**
  * @param {readonly string[]} ids
  * @returns {Problem}
  */
 export const ruleDifferenceProblem = (ids) => ({
-  message: `eslint.config.mjs の規則がケースによって違います（${ids.join("、")}）`,
+  message: `eslint.config.mjs のルールがケースによって違います（${ids.join("、")}）`,
   fix: byNameFix,
 });
 
@@ -94,8 +94,8 @@ export const lintFailureProblem = (error) => {
         fix: "eslint.config.mjs の構文と import を見直します。",
       }
     : {
-        message: `規則 ${rule} の実行中にエラーが出ました（${firstLine(error)}）。`,
-        fix: `規則 ${rule} の書き方を見直します。`,
+        message: `ルール ${rule} の実行中にエラーが出ました（${firstLine(error)}）。`,
+        fix: `ルール ${rule} の書き方を見直します。`,
       };
 };
 

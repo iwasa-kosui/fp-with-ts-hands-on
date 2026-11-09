@@ -92,7 +92,7 @@ export const phaseLabels: Readonly<Record<TerminalPhase, string>> = {
 };
 
 const retryGuidance = "「ターミナルを再試行」を押してください。";
-const networkRetryGuidance = `ネットワークの接続を確かめてから${retryGuidance}`;
+const networkRetryGuidance = `ネットワークの接続を確認してから${retryGuidance}`;
 
 const timeoutMessageFor = (phase: TerminalPhase): string => {
   if (phase === "booting") {

@@ -183,7 +183,7 @@ export const validateConfig = (raw, { caseEntries, listErrors, subjectExists }) 
     return from === undefined
       ? []
       : item.kind !== "bad"
-        ? [`${item.id} の unchangedFrom は悪い変更（bad）にだけ指定します。`]
+        ? [`${item.id} の unchangedFrom は誤った変更（bad）にだけ指定します。`]
         : cases.some((other) => other.id === from && other.kind === "good" && other.subject === item.subject)
           ? []
           : [`${item.id} の unchangedFrom「${from}」は、同じ subject の正しいコード（good）の id にします。`];
@@ -205,7 +205,7 @@ export const validateConfig = (raw, { caseEntries, listErrors, subjectExists }) 
     ...duplicates(fileIds).map((id) => `exercises/guard/cases/ に「${id}」が複数あります。`),
     ...needsGood.map(
       (name) =>
-        `subject「${name}」には、型のテストかテストで検出する悪い変更がありますが、正しいコード（good）がありません。誤検知を確かめるため、good を 1 件以上足します。`,
+        `subject「${name}」には、型のテストかテストで検出する誤った変更がありますが、正しいコード（good）がありません。誤検知を確認するため、good を 1 件以上足します。`,
     ),
     ...(vitestBaseConfig === undefined || typeof vitestBaseConfig === "string"
       ? []

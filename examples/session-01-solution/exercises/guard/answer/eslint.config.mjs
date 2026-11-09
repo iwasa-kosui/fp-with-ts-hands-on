@@ -8,7 +8,7 @@ const rules = {
     "error",
     {
       selector: `TSAsExpression > TSTypeReference[typeName.name=/^(${stateTypes})$/]`,
-      message: "予約の状態の型へ as で変えず、kind を確かめて絞り込みます。",
+      message: "予約の状態の型へ as で変えず、kind を確認して絞り込みます。",
     },
     {
       selector: "TSAsExpression > TSUnknownKeyword",

@@ -129,7 +129,7 @@ describe("validateConfig", () => {
     expect(errorsOf(withFrom("B1"))[0]).toContain("B1 の unchangedFrom「B1」は、同じ subject の正しいコード（good）の id にします。");
     expect(errorsOf(withFrom("G9"))).toHaveLength(1);
     expect(errorsOf({ ...valid, cases: [valid.cases[0], { ...valid.cases[1], unchangedFrom: "B1" }] })[0]).toContain(
-      "G1 の unchangedFrom は悪い変更（bad）にだけ指定します。",
+      "G1 の unchangedFrom は誤った変更（bad）にだけ指定します。",
     );
     expect(errorsOf(withFrom(/** @type {never} */ (1)))[0]).toContain("unchangedFrom は正しいコード（good）の id の文字列にします。");
     expect(

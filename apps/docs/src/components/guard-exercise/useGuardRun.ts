@@ -69,7 +69,7 @@ const waitUntilVisible = (): Promise<void> =>
   });
 
 const messageFrom = (error: unknown): string =>
-  error instanceof Error ? error.message : "検出を確かめられませんでした。";
+  error instanceof Error ? error.message : "検出を検証できませんでした。";
 
 export const useGuardRun = ({
   store,
@@ -172,7 +172,7 @@ export const useGuardRun = ({
         const session = await latest.current.acquireSession();
         const { runCommand, readFile } = session;
         if (runCommand === undefined || readFile === undefined) {
-          throw new Error("この実行環境では検出を確かめられません。");
+          throw new Error("この実行環境では検出を検証できません。");
         }
         if (mounted.current) {
           setStatus({
@@ -230,8 +230,8 @@ export const useGuardRun = ({
         if (parsed === undefined) {
           throw new Error(
             exitCode === runCommandTimedOutExitCode
-              ? "検出を確かめる処理が時間内に終わりませんでした。eslint.config.mjs の規則やテストに、終わらない繰り返しがないか見直します。"
-              : "結果を読み出せませんでした。もう一度「検出を確かめる」を押してください。",
+              ? "検出を検証する処理が時間内に終わりませんでした。eslint.config.mjs のルールやテストに、終わらない繰り返しがないか見直します。"
+              : "結果を読み出せませんでした。再度「検出を検証する」を押してください。",
           );
         }
         const { store: currentStore, slug: currentSlug } = latest.current;

@@ -66,7 +66,7 @@ describe("cli", () => {
     expect(result.stdout).toContain("結果: まだ合格していません");
   });
 
-  it("lint-hangs: 終わらない規則は見張りで止め、プロセスを残さずに終わる", async () => {
+  it("lint-hangs: 終わらないルールは見張りで止め、プロセスを残さずに終わる", async () => {
     rmSync(hangRoot, { recursive: true, force: true });
     mkdirSync(path.dirname(hangRoot), { recursive: true });
     cpSync(s03, hangRoot, { recursive: true, filter: (source) => path.relative(s03, source).split(path.sep)[0] !== "dist" });
@@ -81,7 +81,7 @@ describe("cli", () => {
 
     expect(result.code).toBe(124);
     expect(result.stdout).toContain(
-      "検出を確かめる処理が 8 秒で終わりませんでした。eslint.config.mjs の規則に、終わらない繰り返しがないか見直します。",
+      "検出を検証する処理が 8 秒で終わりませんでした。eslint.config.mjs のルールに、終わらない繰り返しがないか見直します。",
     );
     expect(result.groups.length).toBeGreaterThan(0);
     expect(await Promise.all(result.groups.map(groupGone))).toEqual(result.groups.map(() => true));

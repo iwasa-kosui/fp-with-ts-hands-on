@@ -13,7 +13,7 @@ describe("StartExaminationInput.parse", () => {
     fc.assert(
       fc.property(rawInput, (raw) => {
         const result = StartExaminationInput.parse(raw);
-        // ここに確かめる性質を書きます
+        // ここに検証する性質を実装します
         return true;
       }),
     );

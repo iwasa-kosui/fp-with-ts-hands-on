@@ -34,5 +34,5 @@ E2Eテストと画像スナップショットテストは追加しない。文�
 - ページを変更したときは、`pnpm --filter @fp-with-ts/docs test` と `pnpm --filter @fp-with-ts/docs build` を実行する。
 - CSS とレスポンシブ UI を変更したときは、ページ変更時の検証に加えて、変更した箇所の実画面確認を行う。
 - Worker ルーティングを変更したときは、`pnpm test:worker` と `pnpm typecheck` を実行する。
-- `src/sessions/prose/**/*.mdx` は `.astro` から props を受け取らない。`.astro` は `<Prose />` を props なしで描画し、`.mdx` は必要な値を自分で import する。`astro check` は MDX の中身を検査しない。`.mdx` を変更したときは、`pnpm --filter @fp-with-ts/docs test` と `pnpm --filter @fp-with-ts/docs build` に加えて、変更前後の `dist` を `compare-dist` で比べ、差が意図した変更だけであることを確かめる。
+- `src/sessions/prose/**/*.mdx` は `.astro` から props を受け取らない。`.astro` は `<Prose />` を props なしで描画し、`.mdx` は必要な値を自分で import する。`astro check` は MDX の中身を検査しない。`.mdx` を変更したときは、`pnpm --filter @fp-with-ts/docs test` と `pnpm --filter @fp-with-ts/docs build` に加えて、変更前後の `dist` を `compare-dist` で比べ、差が意図した変更だけであることを確認する。
 - MDX 化のように表示を変えない変更では、変更前後の `dist` を `node apps/docs/scripts/compare-dist.mjs <before> <after>` で比べる。

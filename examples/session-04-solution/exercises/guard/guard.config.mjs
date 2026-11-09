@@ -10,7 +10,7 @@ export default {
       subject: "startExamination",
       title: "予約が見つからないとき、useCase が Err を返さずに例外を投げる",
       allow: ["lint", "tests"],
-      hint: "useCase の中の throw を Linter の規則で、または予約が見つからないときに Err が返ることをテストで確かめます。",
+      hint: "useCase の中の throw を Linter のルールで、または予約が見つからないときに Err が返ることをテストで検証します。",
       behavior: {
         input: { text: "存在しない予約で診察を開始する" },
         expected: { text: "失敗の結果が返る", value: "kind: AppointmentNotFound" },
@@ -23,7 +23,7 @@ export default {
       subject: "startExamination",
       title: "失敗を返すのに、保存を呼んでしまう",
       allow: ["tests"],
-      hint: "失敗を返すときに保存が呼ばれないことを、テストで確かめます。失敗の理由は予約なしだけではありません。",
+      hint: "失敗を返すときに保存が呼ばれないことを、テストで検証します。失敗の理由は予約なしだけではありません。",
       behavior: {
         input: { text: "来院済みでない予約で診察を開始する" },
         expected: { text: "失敗の結果が返り、保存しない", value: "saved: 0" },
@@ -36,7 +36,7 @@ export default {
       subject: "startExamination",
       title: "保存の障害を、業務の失敗の Err に変換する",
       allow: ["tests"],
-      hint: "保存が投げた例外が、Err にならず、そのまま外へ出ることをテストで確かめます。",
+      hint: "保存が投げた例外が、Err にならず、そのまま外へ出ることをテストで検証します。",
       behavior: {
         input: { text: "来院済みの予約で、保存が例外で失敗する" },
         expected: { text: "同じ例外のまま外へ出る", value: "database unavailable" },
@@ -51,7 +51,7 @@ export default {
       stage: 2,
       required: false,
       allow: ["lint", "tests"],
-      hint: "throw を禁止する規則では見つかりません。_unsafeUnwrap の呼び出しを別の規則で、または失敗のときに Err が返ることをテストで確かめます。",
+      hint: "throw を禁止するルールでは検出されません。_unsafeUnwrap の呼び出しを別のルールで、または失敗のときに Err が返ることをテストで検証します。",
       behavior: {
         input: { text: "存在しない予約で診察を開始する" },
         expected: { text: "失敗の結果が返る", value: "kind: AppointmentNotFound" },
@@ -66,7 +66,7 @@ export default {
       stage: 2,
       required: false,
       allow: ["lint"],
-      hint: "Linter の規則 @typescript-eslint/switch-exhaustiveness-check を、オプション considerDefaultExhaustiveForUnions: false で有効にします。default があっても、足し忘れた種類を検出します。",
+      hint: "Linter のルール @typescript-eslint/switch-exhaustiveness-check を、オプション considerDefaultExhaustiveForUnions: false で有効にします。default があっても、足し忘れた種類を検出します。",
       behavior: {
         input: { text: "足した失敗 AppointmentCancelled を渡す" },
         expected: { text: "足し忘れを例外で知らせる" },
@@ -82,7 +82,7 @@ export default {
       required: false,
       allow: ["types", "lint", "tests"],
       unchangedFrom: "G1-solution",
-      hint: "結果の表で、この行が「すり抜け」のままなら、隣の人の仕組みをすり抜けています。",
+      hint: "結果の表で、この行が「すり抜け」のままの場合、隣の人の仕組みで検出されていません。",
     },
     {
       id: "G1-solution",

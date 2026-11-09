@@ -49,7 +49,7 @@ export const session: SessionSummary = {
   episode: [
     "15時30分、獣医師が診察開始画面で、「診察を開始する」ボタンを押しました。",
     "フロントエンドの送信処理は、獣医師のUUIDではなく画面表示用の勤務区分「night-shift」をveterinarianIdへ格納しました。",
-    "境界のparseは値を検査せずOkを返し、不正な値からStartExaminationInputを作りました。",
+    "境界のparseは値を検査せずOkを返し、不正な値からStartExaminationInputを作成しました。",
   ],
   incident: "HTTPで受け取った不正なIDを検査せず、診察開始の入力として扱った。",
   exerciseCommand: "pnpm exercise:03",

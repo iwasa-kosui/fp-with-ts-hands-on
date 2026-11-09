@@ -2,7 +2,7 @@
 
 これは、現在の予約内容と操作ごとの変更履歴を SQLite に残す、意図的に壊れやすい予約管理のスナップショットです。
 
-会計済みの予約を診察中へ戻せることと、予約の変更履歴に飼い主の個人情報が残ることを、画面で観察します。予約の保存と変更履歴の追加は別々の呼び出しなので、変更履歴の追加に失敗すると予約だけが変更される場合があります。これは画面では観察できないため、`src/adaptor/primary/web/routes.ts` の `updateAppointment` と `src/useCase/startExamination.ts` で、`repository.save` と `repository.appendAudit` が別々に呼ばれていることを読んで確かめます。Session 00 では修正せず、Session 01 から Session 06 で状態、ID、入力と個人情報、失敗、副作用と保存処理を順に改善します。
+会計済みの予約を診察中へ戻せることと、予約の変更履歴に飼い主の個人情報が残ることを、画面で観察します。予約の保存と変更履歴の追加は別々の呼び出しなので、変更履歴の追加に失敗すると予約だけが変更される場合があります。これは画面では観察できないため、`src/adaptor/primary/web/routes.ts` の `updateAppointment` と `src/useCase/startExamination.ts` で、`repository.save` と `repository.appendAudit` が別々に呼ばれていることを読んで確認します。Session 00 では修正せず、Session 01 から Session 06 で状態、ID、入力と個人情報、失敗、副作用と保存処理を順に改善します。
 
 ```bash
 pnpm demo:00

@@ -25,14 +25,14 @@ export const checkInitial = (result) => {
   const detected = bad.filter((row) => row.verdict === "detected").map((row) => row.id);
   const falsePositives = good.filter((row) => row.verdict !== "noFalsePositive").map((row) => row.id);
   const reasons = [
-    ...(detected.length > 0 ? [`配布時点で検出される悪い変更があります（${idList(detected)}）`] : []),
+    ...(detected.length > 0 ? [`配布時点で検出される誤った変更があります（${idList(detected)}）`] : []),
     ...(falsePositives.length > 0 ? [`配布時点で誤検知される正しいコードがあります（${idList(falsePositives)}）`] : []),
     ...result.problems.map((problem) => `問題があります（${problem}）`),
   ];
   return reasons.length === 0
     ? {
         ok: true,
-        line: `OK 初期状態: 悪い変更 ${bad.length} 件はすべてすり抜け、正しいコード ${good.length} 件に誤検知はありません`,
+        line: `OK 初期状態: 誤った変更 ${bad.length} 件はすべてすり抜け、正しいコード ${good.length} 件に誤検知はありません`,
       }
     : { ok: false, line: `NG 初期状態: ${reasons.join("。")}` };
 };
@@ -47,7 +47,7 @@ export const checkAnswer = (result) => {
   return result.passed
     ? {
         ok: true,
-        line: `OK 模範: 合格しました（悪い変更 ${bad.length} 件を検出、正しいコード ${good.length} 件に誤検知なし）`,
+        line: `OK 模範: 合格しました（誤った変更 ${bad.length} 件を検出、正しいコード ${good.length} 件に誤検知なし）`,
       }
     : {
         ok: false,

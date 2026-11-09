@@ -93,7 +93,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: true, output: "no-unsafe-assignment: Unsafe assignment of an `any` value.", setting: `"@typescript-eslint/no-unsafe-assignment": "error"
 "@typescript-eslint/no-unsafe-argument": "error"` },
       tests: { found: true, output: "1件失敗: Property failed after 1 tests", setting: `// call: route に本文を渡すテスト用の関数
-// seen: 診察開始の処理への入力。空なら未実行
+// seen: 診察開始の処理への入力。空の場合は未実行
 const seen = await call({ appointmentId: id, … });
 return seen.length === 0;` },
     },
