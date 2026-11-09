@@ -57,7 +57,7 @@
 | snapshot | 開始状態 | 参加者の変更対象 | 直後の解答状態と解消する事故 | 永続化境界 |
 | --- | --- | --- | --- | --- |
 | `session-00` | 任意の状態文字列、用途を区別しないID、未検証入力、例外文言による分類、処理内で生成する時刻とevent ID、非原子的な二重書き込みを含みます。 | コードは変更しません。現行の事故を再現します。 | 解答はありません。後続セッションと比較する未改善状態です。 | snapshot内のDB adapterがfile SQLiteへ予約状態と監査記録を別々に保存します。 |
-| `session-05` | `session-00` と同じ利用者操作、fixture、SQLite上の事故を使います。別のMap実装へ戻しません。 | コードは変更しません。S5 のページで、予約のデータとキャンセルのパイプラインを読みます。 | 解答はありません。`session-01` 以降の snapshot は `session-05` を前の段階として引き継がず、`session-00` の次に `session-01` が続きます。 | `session-05` 自身が持つDB adapterを使います。`session-00` のsourceはimportしません。 |
+| `session-05` | `session-00` と同じ利用者操作、fixture、SQLite上の事故を使います。別のMap実装へ戻しません。 | コードは変更しません。S5 のページで、予約のデータとキャンセルの工程を読み、工程の条件を守る仕組みを選びます。 | 解答はありません。`session-01` 以降の snapshot は `session-05` を前の段階として引き継がず、`session-00` の次に `session-01` が続きます。 | `session-05` 自身が持つDB adapterを使います。`session-00` のsourceはimportしません。 |
 | `session-01` | `session-00` の未改善状態に対して、状態型と遷移関数が広すぎるstarterです。診察開始は受付済みの予約だけに許可する、という業務上の事前条件を、この回で型と遷移に表します。SQLite接続は配布済みコードとして残します。 | `src/domain/appointment/transitions.ts` の1ファイルを変更します。 | `session-01-solution` がsolutionです。会計済みやキャンセル済みの予約から診察を開始できない状態型と遷移になります。 | `session-01` 自身のDB adapterがfile SQLiteへ保存します。状態更新と監査追記はまだ別の処理です。 |
 | `session-02` | S1 の解答が入った状態で、表示名の分岐が未知の状態を見逃すstarterです。 | `src/domain/appointment/statusLabel.ts` の1ファイルを変更します。 | `session-02-solution` がsolutionです。状態を追加すると、表示名の分岐がコンパイルエラーになります。 | `session-02` 自身のDB adapterがfile SQLiteへ保存します。状態更新と監査追記はまだ別の処理です。 |
 | `session-03-supplement` | `session-02` の解答に、用途を区別していないIDが残るstarterです。 | `src/domain` の5ファイルを変更します。 | `session-03-supplement-solution` がsolutionです。予約IDと獣医師IDをコード上で取り違えるとコンパイルできません。 | `session-03-supplement` 自身のDB adapterが、snapshot内のIDをSQLiteの値へ変換します。 |

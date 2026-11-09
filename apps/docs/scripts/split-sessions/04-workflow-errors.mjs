@@ -24,7 +24,7 @@ export default {
   previous: "/sessions/03-boundaries-and-pii/",
   previousTitle: "診察開始の入力を境界で検証する",
   next: "/sessions/05-business-events-and-workflows/",
-  nextTitle: "データとパイプラインで予約キャンセルを設計する",
+  nextTitle: "データと工程で予約キャンセルを設計する",
   pages: expectedPages.map(([slug]) => slug),
   expectedPages,
   lastInTime: "review",

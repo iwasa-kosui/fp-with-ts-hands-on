@@ -107,7 +107,7 @@ const expectedCurriculum = [
   {
     slug: "05-business-events-and-workflows",
     sequence: "05",
-    title: "データとパイプラインで予約キャンセルを設計する",
+    title: "データと工程で予約キャンセルを設計する",
     durationMinutes: 18,
     kind: "workshop",
     exerciseCommand: undefined,
@@ -142,11 +142,7 @@ const expectedEpisodes = [
   undefined,
   undefined,
   undefined,
-  [
-    "会計済みの予約を、受付担当者が誤ってキャンセルできました。",
-    "理由のないキャンセルがStoreへ記録されましたが、開発者はどの条件を確認したのかを説明できません。",
-    "実装へ進む前に、予約のデータと、キャンセルでデータがどう変わるかを確かめます。",
-  ],
+  undefined,
   undefined,
   [
     "ここまで直した頃、猫のムギはとっくに帰宅し、開発者だけが参照実装の前に残っていました。",
@@ -307,7 +303,7 @@ const expectedNavigation = [
     },
     next: {
       href: "/sessions/05-business-events-and-workflows/",
-      title: "データとパイプラインで予約キャンセルを設計する",
+      title: "データと工程で予約キャンセルを設計する",
     },
   },
   {
@@ -323,7 +319,7 @@ const expectedNavigation = [
   {
     previous: {
       href: "/sessions/05-business-events-and-workflows/",
-      title: "データとパイプラインで予約キャンセルを設計する",
+      title: "データと工程で予約キャンセルを設計する",
     },
     next: {
       href: "/sessions/final/",

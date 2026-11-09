@@ -572,6 +572,42 @@ body:has(.session-frame) {
   margin-top: 0.5rem;
 }
 
+.session-cards {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.session-cards__card {
+  min-width: 0;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--case-line);
+  background: var(--case-paper);
+}
+
+.session-cards__card p {
+  margin: 0 0 0.4rem;
+}
+
+.session-cards__title {
+  margin: 0 0 0.25rem;
+  font-size: 1.0625rem;
+}
+
+.session-cards__target {
+  color: var(--case-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+@media (min-width: 900px) {
+  .session-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .session-frame.case-file--session .case-file__content .branded-id-flow {
   max-width: none;
   margin-block: 0.5rem;
