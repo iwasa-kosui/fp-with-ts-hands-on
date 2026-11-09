@@ -1,6 +1,6 @@
 export type Candidate = "Scheduled" | "CheckedIn" | "Canceled" | "NoShow";
 
-export type Card = Readonly<{ name: Candidate; done: boolean }>;
+export type Card = Readonly<{ name: Candidate; done: boolean; forgotten?: boolean }>;
 
 export type Verdict = Readonly<
   { kind: "ok"; label: string } | { kind: "error"; label: string; message: string }
@@ -11,7 +11,6 @@ export type Frame = Readonly<{
   lit: readonly number[];
   negative: readonly number[];
   dimAfter?: number;
-  addedLine?: number;
   cards: readonly Card[];
   showNever: boolean;
   verdict?: Verdict;
@@ -62,6 +61,9 @@ const restLine = lineOf(threeCode, "const rest: never");
 const cardsFor = (names: readonly Candidate[], doneCount: number): readonly Card[] =>
   names.map((name, index) => ({ name, done: index < doneCount }));
 
+const cardsWithForgotten = (names: readonly Candidate[], doneCount: number): readonly Card[] =>
+  names.map((name, index) => ({ name, done: index < doneCount, forgotten: index >= doneCount }));
+
 export const noShowError = `Type '"NoShow"' is not assignable to type 'never'.`;
 
 export const frames: readonly Frame[] = [
@@ -72,7 +74,7 @@ export const frames: readonly Frame[] = [
     cards: cardsFor(threeNames, 0),
     showNever: false,
     caption:
-      "`status` の候補は3個です。`switch` 文を上から読み、`case` で処理した候補を箱から消していきます。",
+      "説明のため、候補を3個に絞った `Status` で見ます。型検査は `switch` 文を上から読み、`case` で処理した候補を `status` の型から消していきます。",
   },
   {
     code: threeCode,
@@ -82,7 +84,7 @@ export const frames: readonly Frame[] = [
     cards: cardsFor(threeNames, 1),
     showNever: false,
     caption:
-      '`status` が `"Scheduled"` なら、ここで `return` します。この行より下へ進む値の候補は2個です。',
+      '`status` が `"Scheduled"` なら、ここで `return` します。型検査は、この行より下の `status` の候補を2個と数えます。',
   },
   {
     code: threeCode,
@@ -92,7 +94,7 @@ export const frames: readonly Frame[] = [
     cards: cardsFor(threeNames, 2),
     showNever: false,
     caption:
-      '`case "CheckedIn"` も処理しました。この行より下へ進む値の候補は1個です。',
+      '`case "CheckedIn"` も処理しました。型検査は、この行より下の `status` の候補を1個と数えます。',
   },
   {
     code: threeCode,
@@ -102,7 +104,7 @@ export const frames: readonly Frame[] = [
     cards: cardsFor(threeNames, 3),
     showNever: false,
     caption:
-      '`case "Canceled"` も処理しました。この行より下へ進む値の候補は0個で、箱は空になりました。',
+      '`case "Canceled"` も処理しました。型検査は、この行より下の `status` の候補を0個と数えます。箱は空になりました。',
   },
   {
     code: threeCode,
@@ -112,22 +114,19 @@ export const frames: readonly Frame[] = [
     showNever: true,
     verdict: { kind: "ok", label: "型検査: エラーなし" },
     caption:
-      "候補が0個の型を `never` と呼びます。`default` の `status` は `never` 型なので、`never` 型の変数 `rest` に入れても、型検査は何も報告しません。",
+      "候補が0個の型を `never` と呼びます。`never` 型の変数には、候補が残っている値を入れられません。ここの `status` は候補が0個なので、`rest` に入れても型検査は何も報告しません。",
   },
   {
     code: fourCode,
     lit: [typeLine],
     negative: [restLine],
-    addedLine: typeLine,
-    cards: cardsFor(fourNames, 3),
+    cards: cardsWithForgotten(fourNames, 3),
     showNever: false,
     verdict: { kind: "error", label: "型検査のエラー", message: noShowError },
     caption:
-      '`Status` に `"NoShow"` を足し、`case` を書き忘れました。`default` に `"NoShow"` が残るので、型検査は `rest` の行をエラーとして報告します。エラーの文は「`"NoShow"` は `never` 型に代入できません」という意味です。次のページでは、この確かめ方を関数にまとめ、`Appointment` に使います。',
+      '`Status` に `"NoShow"` を足し、`case` を書き忘れました。`default` の `status` には `"NoShow"` が残るので、`never` 型の `rest` に入れられません。型検査は `rest` の行をエラーとして報告します。エラーの文は「`"NoShow"` は `never` 型に代入できません」という意味です。次のページでは、この確かめ方を関数にまとめ、`Appointment` に使います。',
   },
 ];
 
 export const remainingOf = (frame: Frame): readonly Candidate[] =>
   frame.cards.filter((card) => !card.done).map((card) => card.name);
-
-export const addedMark = "足した";

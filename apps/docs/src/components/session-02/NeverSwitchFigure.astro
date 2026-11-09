@@ -1,17 +1,19 @@
 ---
 import { Code } from "astro:components";
 import StepControls from "../stepper/StepControls.astro";
-import { addedMark, frames, remainingOf } from "./never-switch-frames";
+import { frames, remainingOf } from "./never-switch-frames";
 
 const segments = (text: string) => text.split("`").map((part, index) => ({ part, code: index % 2 === 1 }));
 const wasDone = (frameIndex: number, name: string) => frames[frameIndex - 1]?.cards.some((card) => card.name === name && card.done) ?? false;
+const isNewCard = (frameIndex: number, name: string) =>
+  frameIndex > 0 && !(frames[frameIndex - 1]?.cards.some((card) => card.name === name) ?? false);
 ---
 
 <figure
   class="nv"
   data-never-switch
   data-step-figure
-  aria-label="switch 文の case を処理するたびに、default に届く候補が減って0個になる図"
+  aria-label="switch 文の case を処理するたびに、default に残る候補が減って0個になる図"
 >
   <StepControls />
 
@@ -26,8 +28,6 @@ const wasDone = (frameIndex: number, name: string) => frames[frameIndex - 1]?.ca
               data-lit={JSON.stringify(frame.lit)}
               data-negative={JSON.stringify(frame.negative)}
               data-dim-after={frame.dimAfter}
-              data-added-line={frame.addedLine}
-              data-added-mark={frame.addedLine === undefined ? undefined : addedMark}
             >
               <div class="nv__main">
                 <figure class="code-block nv__code">
@@ -35,15 +35,18 @@ const wasDone = (frameIndex: number, name: string) => frames[frameIndex - 1]?.ca
                 </figure>
                 <div class="nv__side">
                   <div class:list={["nv__box", { "nv__box--empty": empty }]}>
-                    <p class="nv__title"><code>default</code> に届く候補</p>
+                    <p class="nv__title"><code>default</code> に残る候補</p>
                     <ul class="nv__cards">
                       {frame.cards.map((card) => (
                         <li
                           class:list={["nv__card", { "nv__card--done": card.done }]}
                           aria-label={card.done ? `"${card.name}" 処理済み` : undefined}
                           data-new={card.done && !wasDone(frameIndex, card.name) ? "" : undefined}
+                          data-appear={isNewCard(frameIndex, card.name) ? "" : undefined}
+                          data-forgotten={card.forgotten ? "" : undefined}
                         >
                           <code>{`"${card.name}"`}</code>
+                          {card.forgotten && <span class="nv__missing">case なし</span>}
                         </li>
                       ))}
                     </ul>
@@ -82,13 +85,17 @@ const wasDone = (frameIndex: number, name: string) => frames[frameIndex - 1]?.ca
       const lit = indexes(frame.dataset.lit);
       const negative = indexes(frame.dataset.negative);
       const dimAfter = frame.dataset.dimAfter === undefined ? undefined : Number(frame.dataset.dimAfter);
-      const addedLine = frame.dataset.addedLine === undefined ? undefined : Number(frame.dataset.addedLine);
+      const forgotten = frame.querySelector<HTMLElement>("[data-forgotten] code")?.textContent;
       frame.querySelectorAll<HTMLElement>(".line").forEach((line, index) => {
         line.classList.toggle("is-lit", lit.includes(index));
         line.classList.toggle("is-negative", negative.includes(index));
         line.classList.toggle("is-dim", dimAfter !== undefined && index > dimAfter);
-        if (index === addedLine) line.dataset.mark = frame.dataset.addedMark ?? "";
       });
+      if (forgotten) {
+        frame.querySelectorAll<HTMLElement>(".line")[0]?.querySelectorAll<HTMLElement>("span").forEach((span) => {
+          if (span.textContent?.trim() === forgotten) span.classList.add("is-emphasis");
+        });
+      }
     });
     mountStepper({ root });
   });
@@ -179,14 +186,10 @@ const wasDone = (frameIndex: number, name: string) => frames[frameIndex - 1]?.ca
     opacity: 0.45;
   }
 
-  .nv__code :global(.line[data-mark])::after {
-    content: attr(data-mark);
-    margin-inline-start: 0.75rem;
-    padding: 0 0.375rem;
+  .nv__code :global(.line .is-emphasis) {
     border-radius: 0.25rem;
-    background: var(--role-surface);
-    color: var(--role-accent);
-    font-size: 0.75rem;
+    background: color-mix(in srgb, var(--role-accent) 55%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--role-accent) 55%, transparent);
     font-weight: 800;
   }
 
@@ -232,7 +235,7 @@ const wasDone = (frameIndex: number, name: string) => frames[frameIndex - 1]?.ca
 
   .nv__card {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
     gap: 0 0.5rem;
@@ -243,7 +246,13 @@ const wasDone = (frameIndex: number, name: string) => frames[frameIndex - 1]?.ca
     border: 2px solid var(--role-accent);
     border-radius: 999px;
     font-size: 0.8125rem;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+  }
+
+  .nv__missing {
+    color: var(--role-negative);
+    font-size: 0.8125rem;
+    font-weight: 800;
   }
 
   .nv__card--done {
@@ -317,6 +326,17 @@ const wasDone = (frameIndex: number, name: string) => frames[frameIndex - 1]?.ca
 
     .nv[data-ready] .nv__frames > li:not([hidden]) .nv__empty {
       animation: nv-appear 0.4s ease-out 0.2s both;
+    }
+
+    .nv[data-ready] .nv__frames > li:not([hidden]) .nv__card[data-appear],
+    .nv[data-ready] .nv__frames > li:not([hidden]) .nv__verdict--error {
+      animation: nv-fade-in 0.4s ease-out both;
+    }
+
+    @keyframes nv-fade-in {
+      from {
+        opacity: 0;
+      }
     }
 
     @keyframes nv-fade {
