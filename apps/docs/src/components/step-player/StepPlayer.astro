@@ -19,14 +19,14 @@ const { id, title, lead, note, scenarios } = Astro.props;
 ---
 
 <style is:inline set:html={css}></style>
-<figure class="step-player" data-step-player id={id}>
+<figure class="step-player" data-step-player data-step-figure id={id}>
   <figcaption class="step-player__title">{title}</figcaption>
   {lead && <p class="step-player__lead" set:html={lead} />}
   <div class="step-player__controls" data-step-player-controls hidden>
     {scenarios.length > 1 && (
       <div class="step-player__tabs" role="group" aria-label="場面を選ぶ">
         {scenarios.map((scenario) => (
-          <button type="button" data-step-player-tab aria-pressed="false">{scenario.label}</button>
+          <button type="button" data-step-player-tab data-step-scene aria-pressed="false">{scenario.label}</button>
         ))}
       </div>
     )}

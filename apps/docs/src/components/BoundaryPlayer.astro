@@ -48,7 +48,7 @@ const texts = [
 ];
 ---
 
-<figure class="boundary-player" data-boundary-player>
+<figure class="boundary-player" data-boundary-player data-step-figure>
   <figcaption>
     <strong>{walkthrough.title}</strong>
     <span>{description}</span>
@@ -58,7 +58,7 @@ const texts = [
   <div class="boundary-player__live" data-player-live>
     <div class="boundary-player__scenarios" role="group" aria-label="場面を選ぶ">
       {scenarios.map((scenario) => (
-        <button type="button" data-scenario={scenario.id} aria-pressed="false">
+        <button type="button" data-scenario={scenario.id} data-step-scene aria-pressed="false">
           {scenario.label}
           <small>{scenario.note}</small>
         </button>
