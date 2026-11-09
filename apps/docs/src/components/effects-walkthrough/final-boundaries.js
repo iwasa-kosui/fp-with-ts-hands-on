@@ -74,6 +74,16 @@ for (const figure of figures) {
     lastAt = at;
     const skipped = new Set(frame.skipped ?? []);
 
+    for (const file of root.querySelectorAll("[data-mini-file]")) {
+      if (file.dataset.miniFile === frame.treeFile) {
+        file.setAttribute("data-current", "");
+        file.setAttribute("aria-current", "true");
+      } else {
+        file.removeAttribute("data-current");
+        file.removeAttribute("aria-current");
+      }
+    }
+
     const data = cards[carried];
     card.dataset.tone = data.tone;
     cardChip.textContent = data.chip;

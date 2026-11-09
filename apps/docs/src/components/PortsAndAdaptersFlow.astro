@@ -1,6 +1,8 @@
 ---
 import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
+import MiniTree from "./mini-tree/MiniTree.astro";
+import { miniTree } from "./mini-tree/mini-tree";
 
 type Snippet = Readonly<{
   code: string;
@@ -116,6 +118,14 @@ const frames: readonly Frame[] = [
   },
 ];
 
+const tree = miniTree("final", "src/", [
+  { folder: "adaptor/primary/web/routes/", files: [{ id: "route", name: "appointmentRoutes.ts" }] },
+  { folder: "useCase/", files: [{ id: "dependencies", name: "startExaminationUseCase.ts" }] },
+  { folder: "domain/appointment/", files: [{ id: "port", name: "appointmentStores.ts" }] },
+  { folder: "adaptor/secondary/sqlite/store/", files: [{ id: "secondary", name: "appointmentEventStore.ts" }] },
+  { folder: "", files: [{ id: "assembly", name: "app.ts" }] },
+]);
+
 const rangeLabel = ({ solution }: Snippet) => `${solution.path}:${solution.lines[0]}-${solution.lines[1]}`;
 
 const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, imports, token }) => ({ caption, nodes, focus, calls, imports, token })));
@@ -204,7 +214,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
 
     <ol class="ports-flow__frames">
       {frames.map((frame) => (
-        <li data-frame data-has-code={frame.code ? "" : undefined}>
+        <li data-frame data-has-code={frame.code ? "" : undefined} data-code-key={frame.code?.key ?? ""}>
           <p class="ports-flow__caption">{frame.caption}</p>
           {frame.code && (
             <figure class="code-block ports-flow__code">
@@ -215,10 +225,14 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
         </li>
       ))}
     </ol>
+
+    <MiniTree class="ports-flow__tree" tree={tree} />
   </div>
 </div>
 
 <script>
+  import { setMiniTreeCurrent } from "./mini-tree/mini-tree-client";
+
   type Emphasis = "normal" | "dim" | "focus";
   type Frame = { caption: string; nodes: "normal" | "dim"; focus: string[]; calls: Emphasis; imports: Emphasis; token: boolean };
 
@@ -282,6 +296,8 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
       svg.dataset.calls = frame.calls;
       svg.dataset.imports = frame.imports;
       nodes.forEach((node) => node.toggleAttribute("data-focus", frame.focus.includes(node.dataset.node ?? "")));
+      const codeKey = panels[index].dataset.codeKey;
+      setMiniTreeCurrent(root, codeKey ? [codeKey] : []);
       if (frame.token) runToken();
       else stopToken();
       live.textContent = frame.caption;
@@ -453,6 +469,14 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     margin-top: 1.25rem;
   }
 
+  .ports-flow :global(.ports-flow__tree) {
+    margin-top: 0.75rem;
+  }
+
+  .ports-flow:not([data-animated]) :global(.ports-flow__tree) {
+    display: none;
+  }
+
   .ports-flow__code {
     min-width: 0;
     margin: 0.5rem 0 0;
@@ -584,7 +608,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     [data-animated] .ports-flow__stage {
       display: grid;
       grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
-      grid-template-rows: auto auto 1fr;
+      grid-template-rows: auto auto auto 1fr;
       column-gap: 1.25rem;
       align-items: start;
     }
@@ -598,21 +622,33 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
       margin-bottom: 0.75rem;
     }
 
+    [data-animated] :global(.ports-flow__tree) {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      margin: 0 0 0.75rem;
+    }
+
     [data-animated] svg {
       grid-column: 1;
-      grid-row: 2 / span 2;
+      grid-row: 3 / span 2;
       max-width: 12.25rem;
     }
 
     [data-animated] .ports-flow__live {
       grid-column: 2;
-      grid-row: 2;
+      grid-row: 3;
       margin-bottom: 0.5rem;
     }
 
     [data-animated] .ports-flow__frames {
       grid-column: 2;
-      grid-row: 3;
+      grid-row: 4;
+    }
+  }
+
+  @media (max-height: 760px) {
+    .ports-flow {
+      margin-block: 0.5rem 0;
     }
   }
 

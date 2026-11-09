@@ -1,5 +1,7 @@
 ---
 import { Code } from "astro:components";
+import MiniTree from "../mini-tree/MiniTree.astro";
+import { miniTree } from "../mini-tree/mini-tree";
 import StepControls from "../stepper/StepControls.astro";
 import { bandMeta, bandTransformer, checkBands, lineCount, lineIndex, lineIs, lineRange } from "./lines";
 import { paths, routeAfter, routeBefore, useCaseBody } from "./sources";
@@ -42,6 +44,23 @@ const parts = [
   { band: "c", name: "errors.ts", role: "失敗を確かめる関数の置き場", code: "ensureCheckedIn(…)" },
 ] as const;
 
+const treeBefore = miniTree("session-03", "src/", [
+  { folder: "adaptor/primary/web/", files: [{ id: "route", name: "routes.ts" }] },
+  { folder: "useCase/", files: [], note: "まだありません" },
+]);
+
+const treeAfter = miniTree("session-04", "src/", [
+  { folder: "adaptor/primary/web/", files: [{ id: "route", name: "routes.ts" }] },
+  {
+    folder: "useCase/",
+    isNew: true,
+    files: [
+      { id: "useCase", name: "startExamination.ts" },
+      { id: "errors", name: "errors.ts" },
+    ],
+  },
+]);
+
 const frames = [
   "修正前: S03 の route は、入力の検査から監査まで、5つの処理を1つの関数に持っていました。",
   "修正後: route には、入力の検査と useCase の呼び出しが残ります。ほかの処理は、状態の確認と遷移が useCase の本体、予約の取得が Resolver、保存と監査が Store に移りました。",
@@ -54,6 +73,7 @@ const frames = [
   <ol class="we-frames">
     <li data-frame>
       <p class="we-caption">{frames[0]}</p>
+      <MiniTree tree={treeBefore} current={["route"]} />
       <div class="we-body rtu-grid rtu-grid--before">
         <figure class="we-code">
           <figcaption class="we-code__head"><span class="we-code__tag">修正前の route</span><code>{paths.s03Routes}:111-126</code></figcaption>
@@ -72,6 +92,7 @@ const frames = [
 
     <li data-frame>
       <p class="we-caption">{frames[1]}</p>
+      <MiniTree tree={treeAfter} current={["route", "useCase"]} />
       <div class="we-body">
         <div class="rtu-grid rtu-grid--after">
           <figure class="we-code">

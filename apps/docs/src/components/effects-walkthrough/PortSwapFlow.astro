@@ -1,5 +1,7 @@
 ---
 import { Code } from "astro:components";
+import MiniTree from "../mini-tree/MiniTree.astro";
+import { miniTree } from "../mini-tree/mini-tree";
 import StepControls from "../stepper/StepControls.astro";
 import { quote } from "./quote";
 import "./step-figure.css";
@@ -63,6 +65,28 @@ const lit = JSON.stringify([
   },
 ]);
 
+const tree = miniTree("session-06-solution", "", [
+  {
+    folder: "src/useCase/",
+    files: [
+      { id: "start", name: "startExamination.ts" },
+      { id: "start-s04", name: "startExamination.ts", snapshot: "session-04-solution", note: "（S04 の版）" },
+      { id: "dependencies", name: "dependencies.ts" },
+    ],
+  },
+  {
+    folder: "src/domain/aggregate/",
+    files: [
+      { id: "clock", name: "clock.ts" },
+      { id: "eventIdGenerator", name: "eventIdGenerator.ts" },
+    ],
+  },
+  { folder: "src/", files: [{ id: "app", name: "app.ts" }] },
+  { folder: "test/", files: [{ id: "fake", name: "in-memory-store.test.ts" }] },
+]);
+
+const treeCurrent = [["start", "start-s04"], ["dependencies", "clock", "eventIdGenerator"], ["app"], ["fake"]] as const;
+
 const frames = [
   "S04 で見た `deps.resolver` と、S06 の保存先 `deps.examinationStartedStore` です。ユースケースは、予約を探す処理も保存する処理も `deps` を通して外側に頼みます。この「外側に求める処理を型で表した約束」を port と呼びます。",
   "時刻と ID も外側の処理です。`Clock` は「今の時刻を返す」約束、`EventIdGenerator` は「新しい ID を返す」約束で、どちらも port です。ユースケースは約束の型だけを知っています。",
@@ -102,7 +126,7 @@ const ports = [
 ] as const;
 ---
 
-<figure class="sf psf" data-port-swap data-step-figure data-lit={lit} aria-label="port に本物と偽物を差し替える流れ">
+<figure class="sf psf" data-port-swap data-step-figure data-lit={lit} data-tree-current={JSON.stringify(treeCurrent)} aria-label="port に本物と偽物を差し替える流れ">
   <StepControls />
 
   <div aria-live="polite">
@@ -114,6 +138,8 @@ const ports = [
       ))}
     </ol>
   </div>
+
+  <MiniTree class="psf__tree" tree={tree} current={treeCurrent[0]} />
 
   <div class="sf-stage psf__stage">
     <div class="psf__codes">
@@ -186,9 +212,11 @@ const ports = [
 </figure>
 
 <script>
+  import { setMiniTreeCurrent } from "../mini-tree/mini-tree-client";
   import { mountLitFigure } from "./lit-figure";
 
   document.querySelectorAll<HTMLElement>("[data-port-swap]").forEach((root) => {
+    const treeCurrent = JSON.parse(root.dataset.treeCurrent ?? "[]") as string[][];
     root.querySelectorAll<HTMLElement>("[data-ports]").forEach((panel) => {
       const marked = JSON.parse(panel.dataset.ports ?? "[]") as number[];
       panel.querySelectorAll(".line").forEach((line, index) => {
@@ -199,11 +227,19 @@ const ports = [
         line.append(tag);
       });
     });
-    mountLitFigure(root);
+    mountLitFigure(root, (index) => setMiniTreeCurrent(root, treeCurrent[index] ?? []));
   });
 </script>
 
 <style>
+  .psf.sf[data-ready] {
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  }
+
+  .psf :global(.psf__tree) {
+    margin-block-end: 0.5rem;
+  }
+
   .psf__stage {
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
@@ -408,6 +444,42 @@ const ports = [
         opacity: 0;
         transform: translateX(1.25rem);
       }
+    }
+  }
+
+  @media (max-height: 700px) {
+    .psf.sf[data-ready] .sf-frames {
+      margin-block-end: 0.125rem;
+    }
+
+    .psf :global(.psf__tree) {
+      margin-block-end: 0.25rem;
+    }
+
+    .psf :global(.sf-caption) {
+      line-height: 1.5;
+    }
+
+    .psf__diagram {
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .psf__rows {
+      gap: 0.25rem;
+    }
+
+    .psf__row {
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.2fr);
+      gap: 0.25rem;
+    }
+
+    .psf__plug {
+      padding-inline: 0.5rem;
+    }
+
+    .psf__plug small {
+      font-size: 0.6875rem;
     }
   }
 
