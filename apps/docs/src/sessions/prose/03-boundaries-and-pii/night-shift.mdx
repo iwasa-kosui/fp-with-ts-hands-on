@@ -4,14 +4,14 @@ import { incidentRequest } from "../../pages/03-boundaries-and-pii-content";
 
 <div class="session-split session-split--story">
   <div>
-    <aside class="case-file__episode" aria-label="動物病院のひと幕">
-      <p class="case-file__episode-label">動物病院のひと幕</p>
+    <aside class="case-file__episode" aria-label="動物病院の事例">
+      <p class="case-file__episode-label">動物病院の事例</p>
       <p>15時30分、獣医師が診察開始画面で、診察開始を押しました。</p>
       <p>画面の不具合で、画面は獣医師のIDの代わりに、勤務区分を表す「night-shift」を送信しました。</p>
-      <p>サーバーは、届いた値を検査しないまま、診察開始の処理へ進めました。</p>
+      <p>サーバーは、受け取った値を検査しないまま、診察開始の処理へ進めました。</p>
     </aside>
-    <p>URL の予約IDは正しい形です。body の <code>veterinarianId</code> には、獣医師のIDではなく <code>night-shift</code> が入っています。</p>
-    <p>存在しない獣医師の値が、診察開始の処理へ進みました。その結果、獣医師名を表示できない記録が残りました。受付や獣医師は、誰が診察を始めたのかを後から調べられません。</p>
+    <p>URL の予約IDは正しい形です。body の <code>veterinarianId</code> には、獣医師のIDではなく <code>night-shift</code> が含まれています。</p>
+    <p>存在しない獣医師の値が、診察開始の処理へ進みました。その結果、獣医師名を表示できない記録が残りました。受付や獣医師は、誰が診察を始めたのかを後から調査できません。</p>
   </div>
   <div>
     <EpisodeIllustration slug="03-boundaries-and-pii" />

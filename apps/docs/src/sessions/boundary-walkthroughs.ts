@@ -113,7 +113,7 @@ const arrivalFrames = (veterinarianLine: string) => [
     status: "neutral",
     valueLabel: "request body",
     value: `{ veterinarianId: ${veterinarianLine} }`,
-    text: "HTTPのリクエストが届きます。bodyの中身は、まだ何も確かめていません。",
+    text: "HTTPのリクエストを受け取ります。bodyの中身は、まだ何も検証していません。",
   }),
   startFrame("route", {
     first: "const input = StartExaminationInput.parse({",
@@ -162,18 +162,18 @@ const checkedFrames = (
       first: 'const schema = z.string().uuid().brand<"AppointmentId">();',
       zone: 1,
       status: "pass",
-      valueLabel: "appointmentId の検査: UUID の形なので合格",
+      valueLabel: "appointmentId の検査: UUID の形であるため合格",
       value: `"${appointmentUuid}"`,
-      text: "1つ目の項目です。予約IDはUUIDの形なので合格します。",
+      text: "1つ目の項目です。予約IDはUUIDの形であるため合格します。",
     }),
     startFrame("veterinarianId", {
       first: 'const schema = z.string().uuid().brand<"VeterinarianId">();',
       zone: 1,
       status: veterinarianPasses ? "pass" : "stop",
-      valueLabel: `veterinarianId の検査: ${veterinarianPasses ? "UUID の形なので合格" : "UUID の形ではないので不合格"}`,
+      valueLabel: `veterinarianId の検査: ${veterinarianPasses ? "UUID の形であるため合格" : "UUID の形ではないので不合格"}`,
       value: veterinarianLine,
       text: veterinarianPasses
-        ? "2つ目の項目です。担当獣医師IDの欄の値もUUIDの形なので合格します。"
+        ? "2つ目の項目です。担当獣医師IDの欄の値もUUIDの形であるため合格します。"
         : "2つ目の項目です。UUIDの形ではないので不合格です。",
     }),
   ];
@@ -214,7 +214,7 @@ const passedFrames = (veterinarianUuidValue: string, lastText: string) => {
       status: "pass",
       valueLabel: "startExamination へ渡す値",
       value: `{\n  veterinarianId: "${veterinarianUuidValue}",\n  examinationStartedAt: "2026-08-30T06:30:00.000Z",\n}`,
-      text: "routeは、取り出したinputの獣医師IDと、routeに書かれた固定の時刻を、startExaminationへ渡します。この時刻はS06で扱う固定値です。",
+      text: "routeは、取り出したinputの獣医師IDと、routeに実装された固定の時刻を、startExaminationへ渡します。この時刻はS06で扱う固定値です。",
     }),
     startFrame("transition", {
       first: "veterinarianId: VeterinarianId,",
@@ -257,18 +257,18 @@ const rejectedFrames = [
     first: 'throw new Error("Cannot unwrap an invalid boundary value");',
     zone: 1,
     status: "stop",
-    valueLabel: "内側に届いた値",
+    valueLabel: "内側に渡された値",
     value: "// なし",
-    text: "Errの_unsafeUnwrapは例外を投げ、startExaminationは呼ばれません。検査の失敗は今はサーバーが失敗を返すHTTPの状態（500）になり、S04で扱います。",
+    text: "Errの_unsafeUnwrapは例外を投げ、startExaminationは呼ばれません。検査の失敗は現在はサーバーが失敗を返すHTTPステータス（500）になり、S04で扱います。",
   }),
 ];
 
 export const startExaminationWalkthrough: Walkthrough = {
   title: "値が境界を通る様子",
   description:
-    "場面を選んで再生します。上の帯は値が今いる場所、下のコードは今説明している行です。",
+    "場面を選んで再生します。上の帯は値が現在いる場所、下のコードは現在説明している行です。",
   descriptionWithoutCode:
-    "場面を選んで再生します。上の帯は、値が今いる場所です。",
+    "場面を選んで再生します。上の帯は、値が現在いる場所です。",
   zones: ["外側", "境界", "内側"],
   tree: miniTree("session-03-solution", "src/", [
     {
@@ -299,13 +299,13 @@ export const startExaminationWalkthrough: Walkthrough = {
         ...checkedFrames(`"${veterinarianUuid}"`, true),
         ...passedFrames(
           veterinarianUuid,
-          "startExaminationは、型がVeterinarianIdの値を受け取ります。HTTPで届く入力は境界で検査済みなので、関数の中で同じ検査を繰り返しません。",
+          "startExaminationは、型がVeterinarianIdの値を受け取ります。HTTPで受け取る入力は境界で検査済みであるため、関数の中で同じ検査を繰り返しません。",
         ),
       ],
     },
     {
       id: "night-shift",
-      label: "画面の不具合で、獣医師の代わりに「夜勤」と届いた",
+      label: "画面の不具合で、獣医師の代わりに「夜勤」が渡された",
       note: 'veterinarianId は "night-shift"',
       frames: [
         ...arrivalFrames(`"night-shift"`),
@@ -315,20 +315,20 @@ export const startExaminationWalkthrough: Walkthrough = {
     },
     {
       id: "wrong-uuid",
-      label: "画面の不具合で、獣医師の欄に予約のIDが届いた",
+      label: "画面の不具合で、獣医師の欄に予約のIDが渡された",
       note: "veterinarianId は予約の UUID",
       frames: [
         ...arrivalFrames(`"${appointmentUuid}"`),
         ...checkedFrames(`"${appointmentUuid}"`, true),
         ...passedFrames(
           appointmentUuid,
-          "形は正しいので内側まで届きます。境界で確かめられるのは形までで、そのUUIDが実在の獣医師を指すかどうかは分かりません。",
+          "形は正しいため内側まで渡されます。境界で検証できるのは形までで、そのUUIDが実在の獣医師を指すかどうかは判定できません。",
         ),
       ],
     },
     {
       id: "before",
-      label: "同じ「夜勤」が、検査しない今のコードに届いた",
+      label: "同じ「夜勤」が、検査しない現在のコードに渡された",
       note: "検査しない修正前の parse",
       frames: [
         ...arrivalFrames(`"night-shift"`),
@@ -338,7 +338,7 @@ export const startExaminationWalkthrough: Walkthrough = {
           status: "danger",
           valueLabel: "parse へ渡された値（型は any）",
           value: rawOf(`"night-shift"`),
-          text: "今のparseはrawをanyで受け取ります。anyには、どんな値でも何の確認もなく入ります。",
+          text: "現在のparseはrawをanyで受け取ります。anyには、どのような値でも検証されずに格納されます。",
         }),
         startFrame("parseBefore", {
           first: "ok({",
@@ -347,7 +347,7 @@ export const startExaminationWalkthrough: Walkthrough = {
           status: "danger",
           valueLabel: "parse の結果",
           value: `Ok({\n  appointmentId: "${appointmentUuid}",\n  veterinarianId: "night-shift",\n})`,
-          text: "値を確かめずに2項目をコピーし、必ずokを呼びます。",
+          text: "値を検証せずに2項目をコピーし、常にokを呼びます。",
         }),
         startFrame("schemaResult", {
           first: "export const ok = <T>(value: T): Result<T> => ({",
@@ -356,7 +356,7 @@ export const startExaminationWalkthrough: Walkthrough = {
           status: "danger",
           valueLabel: "parse の結果",
           value: `Ok({\n  appointmentId: "${appointmentUuid}",\n  veterinarianId: "night-shift",\n})`,
-          text: "okは渡された値をそのまま持つResultを返します。okは値の中身を確かめません。",
+          text: "okは渡された値をそのまま持つResultを返します。okは値の中身を検証しません。",
         }),
         startFrame("route", {
           first: "})._unsafeUnwrap();",
@@ -364,7 +364,7 @@ export const startExaminationWalkthrough: Walkthrough = {
           status: "danger",
           valueLabel: "input（StartExaminationInput）",
           value: `{\n  appointmentId: "${appointmentUuid}",\n  veterinarianId: "night-shift",\n}`,
-          text: "Okなので、routeは値を取り出して先へ進みます。不正な値が内側へ入りました。",
+          text: "Okであるため、routeは値を取り出して先へ進みます。不正な値が内側へ渡されました。",
         }),
         startFrame("transition", {
           first: "veterinarianId: VeterinarianId,",
@@ -431,7 +431,7 @@ const hiddenFrame = (
 
 export const sensitiveWalkthrough: Walkthrough = {
   title: "内側の値が外へ出る様子",
-  description: "場面を選んで再生します。ログやJSONに書き出しても値は伏せられ、unwrap を呼んだ箇所だけ平文が出ます。",
+  description: "場面を選んで再生します。ログやJSONに出力しても値はマスクされ、unwrap を呼んだ箇所だけ平文が出ます。",
   zones: ["内側", "境界", "外側（ログなど）"],
   tree: miniTree("session-03-solution", "src/", [
     { folder: "adaptor/primary/web/", files: [{ id: "ownerContact", name: "ownerContact.ts" }] },
@@ -441,7 +441,7 @@ export const sensitiveWalkthrough: Walkthrough = {
   scenarios: [
     {
       id: "log",
-      label: "メールアドレスをログに書き出す",
+      label: "メールアドレスをログに出力する",
       note: "console.log(contact.ownerEmail)",
       frames: [
         ...wrappedFrames,
@@ -449,13 +449,13 @@ export const sensitiveWalkthrough: Walkthrough = {
           '[inspect.custom]: () => "[REDACTED]"',
           "console.log(contact.ownerEmail)",
           "[REDACTED]",
-          "inspect.customは、Node.jsがconsole.logで値を文字にするときに呼ぶ関数を決める名前です。console.logはその結果を出力するので、ログには[REDACTED]が出ます。",
+          "inspect.customは、Node.jsがconsole.logで値を文字にするときに呼ぶ関数を指定する名前です。console.logはその結果を出力するので、ログには[REDACTED]が出ます。",
         ),
       ],
     },
     {
       id: "json",
-      label: "連絡先全体を JSON にして書き出す",
+      label: "連絡先全体を JSON にして出力する",
       note: "JSON.stringify(contact)",
       frames: [
         ...wrappedFrames,
@@ -479,7 +479,7 @@ export const sensitiveWalkthrough: Walkthrough = {
           status: "danger",
           valueLabel: "contact.ownerEmail.unwrap()",
           value: "owner@example.com",
-          text: "unwrapと明示した箇所だけ平文が出ます。unwrapで検索すれば、平文を取り出している箇所を調べられます。",
+          text: "unwrapと明示した箇所だけ平文が出ます。unwrapで検索すれば、平文を取り出している箇所を調査できます。",
         }),
       ],
     },

@@ -1,8 +1,8 @@
 import BoundaryPlayer from "../../../components/BoundaryPlayer.astro";
 import { startExaminationWalkthrough } from "../../boundary-walkthroughs";
 
-<p>アプリの外から届く値は、どんな形か分かりません。この値を検査する場所を、<strong>境界</strong>と呼びます。境界の外側は値が届く元（画面や HTTP）で、内側は診察開始のような業務の処理です。</p>
+<p>アプリの外から受け取る値は、どのような形か不明です。この値を検査する場所を、<strong>境界</strong>と呼びます。境界の外側は値の送信元（画面や HTTP）で、内側は診察開始のような業務の処理です。</p>
 
 <BoundaryPlayer walkthrough={startExaminationWalkthrough} scenarioIds={["before"]} codeless />
 
-<p>今のコードは、境界で何も検査しません。このため、night-shift がそのまま内側へ入ります。課題1は、値の検査が境界に無いことです。</p>
+<p>現在のコードは、境界で値を検査しません。このため、night-shift がそのまま内側へ渡されます。課題1は、値の検査が境界で実施されていないことです。</p>

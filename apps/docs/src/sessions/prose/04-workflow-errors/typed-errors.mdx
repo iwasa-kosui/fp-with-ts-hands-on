@@ -1,9 +1,9 @@
 import FailureKinds from "../../../components/workflow-errors/FailureKinds.astro";
 
-<p>課題1の「失敗の理由が型に現れない」を、Err に入れる値へ <code>kind</code> を付けて埋めます。</p>
+<p>課題1の「失敗の理由が型に現れない」点を、Err に含める値へ <code>kind</code> を付けて解消します。</p>
 
 <FailureKinds />
 
-<p>予約が見つからない失敗が <code>AppointmentNotFound</code>、状態不正が <code>InvalidAppointmentState</code> です。<code>actual</code> には予約の今の状態が入ります。2つを <code>|</code> でつないだ <code>StartExaminationError</code> が、診察開始の失敗の型です。<code>kind</code> の使い方は、S01 で見た Discriminated Union と同じです。</p>
+<p>予約が見つからない失敗が <code>AppointmentNotFound</code>、状態不正が <code>InvalidAppointmentState</code> です。<code>actual</code> には予約の現在の状態が格納されます。2つを <code>|</code> で連結した <code>StartExaminationError</code> が、診察開始の失敗の型です。<code>kind</code> の使い方は、S01 で確認した Discriminated Union と同じです。</p>
 
-<p>呼び出し側が <code>isErr()</code> で確かめる書き方もできますが、工程が増えるたびに同じ分岐が増えます。ここまでで、失敗に種類を付けて、戻り値の型に出せます。</p>
+<p>呼び出し側が <code>isErr()</code> で検証する実装もできますが、工程が増えるたびに同じ分岐が増えます。ここまでで、失敗に種類を付けて、戻り値の型に表せます。</p>

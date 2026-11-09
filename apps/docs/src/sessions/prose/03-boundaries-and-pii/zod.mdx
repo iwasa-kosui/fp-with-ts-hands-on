@@ -1,6 +1,6 @@
 import SchemaSourceFlow from "../../../components/SchemaSourceFlow.astro";
 import { schemaSourceCode } from "../../pages/03-boundaries-and-pii-content";
 
-<p>型は実行時に消えるので、検査には実行時に残る値が要ります。Zod は、その値を schema として書きます。文字列が UUID の形かを調べる schema は、<code>z.string().uuid()</code> と書きます。</p>
+<p>型は実行時に消えるため、検査には実行時に残る値が必要です。Zod は、その値を schema（値の形の条件を表す、実行時に残る値）として定義します。文字列が UUID の形かを検証する schema は、<code>z.string().uuid()</code> で定義します。</p>
 
 <SchemaSourceFlow code={schemaSourceCode} part="schema" />

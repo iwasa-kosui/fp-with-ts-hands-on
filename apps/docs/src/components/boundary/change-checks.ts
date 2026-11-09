@@ -4,22 +4,22 @@ const mechanisms: readonly MechanismInfo[] = [
   {
     id: "types",
     name: "型のテスト",
-    detail: "型エラーになることを確かめる",
+    detail: "型エラーになることを検証する",
     code: `// @ts-expect-error ← 次の行が型エラーでなければエラー
 const extra: Extra = "ownerContact";`,
   },
   {
     id: "lint",
-    name: "Linter の規則",
-    detail: "`rules` に書く",
-    code: "// 規則の一覧は図の下にあります",
+    name: "Linter のルール",
+    detail: "`rules` に記載する",
+    code: "// ルールの一覧は図の下にあります",
   },
   {
     id: "tests",
     name: "値の性質のテスト",
     detail: "ランダムな入力を多数試す",
     code: `fc.property(notUuid, (id) => StartExaminationInput
-  .parse({ appointmentId: id, … }).isErr(),`,
+  .parse({ appointmentId: id, … }).isErr())`,
   },
 ];
 
@@ -47,7 +47,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: true, output: "no-explicit-any: Unexpected any. Specify a different type.", setting: "\"@typescript-eslint/no-explicit-any\": \"error\"" },
       tests: { found: true, output: "3件失敗: Property failed" },
     },
-    why: "`any` は型検査を止めるので、tsc は通ります。書き方を見る規則と、不正な値を渡すテストが見つけます。",
+    why: "`any` は型検査を無効にするため、tsc は通ります。書き方を検査するルールと、不正な値を渡すテストが検出します。",
   },
   {
     id: "B2-unknown-cast",
@@ -70,7 +70,7 @@ const cases: readonly ChangeCase[] = [
   ["error", { assertionStyle: "never" }]` },
       tests: { found: true, output: "2件失敗: Property failed after 1 tests" },
     },
-    why: "`as` は値を確かめず、型だけを変えます。規則が `as` を見つけ、テストが UUID でない値を通すことを見つけます。",
+    why: "`as` は値を検証せず、型だけを変えます。ルールが `as` の使用を検出し、テストが UUID でない値を通すことを検出します。",
   },
   {
     id: "B5-handler-bypasses-parse",
@@ -92,10 +92,12 @@ const cases: readonly ChangeCase[] = [
       types: { found: false, output: "エラーなし" },
       lint: { found: true, output: "no-unsafe-assignment: Unsafe assignment of an `any` value.", setting: `"@typescript-eslint/no-unsafe-assignment": "error"
 "@typescript-eslint/no-unsafe-argument": "error"` },
-      tests: { found: true, output: "1件失敗: Property failed after 1 tests", setting: `const seen = await call({ appointmentId: id, … });
+      tests: { found: true, output: "1件失敗: Property failed after 1 tests", setting: `// call: 本文をハンドラーへ渡すテスト用の関数
+// seen: 診察開始の処理に渡された入力の配列
+const seen = await call({ appointmentId: id, … });
 return seen.length === 0;` },
     },
-    why: "`c.req.json()` の戻り値は `any` なので、そのまま渡しても型検査は通ります。`any` の受け渡しを見る規則と、不正な本文を渡すテストが見つけます。",
+    why: "`c.req.json()` の戻り値は `any` であるため、そのまま渡しても型検査は通ります。`any` の受け渡しを検査するルールと、不正な本文を渡すテストが検出します。",
   },
   {
     id: "B3-schema-without-uuid",
@@ -115,15 +117,15 @@ return seen.length === 0;` },
     ],
     results: {
       types: { found: false, output: "エラーなし" },
-      lint: { found: false, output: "エラーなし", setting: "// UUID の形は書き方に現れないので、どの規則も見つけません" },
+      lint: { found: false, output: "エラーなし", setting: "// UUID の形は書き方に現れないので、どのルールも検出しません" },
       tests: { found: true, output: "2件失敗: Counterexample: [\"\"]" },
     },
-    why: "UUID でなくても型は合い、書き方にも問題はありません。値を多数試すテストだけが見つけます。",
+    why: "UUID でなくても型は合い、書き方にも問題はありません。値を多数試すテストだけが検出します。",
   },
   {
     id: "B4-audit-owner-contact",
     kind: "bad",
-    label: "監査記録に連絡先を入れる",
+    label: "監査記録に個人情報を含める",
     baseCase: "G4-audit-three-fields",
     target: "toAuditPayload の部分",
     diff: [
@@ -138,15 +140,15 @@ return seen.length === 0;` },
     ],
     results: {
       types: { found: true, output: "TS2578: Unused '@ts-expect-error' directive." },
-      lint: { found: false, output: "エラーなし", setting: "// 項目の追加は書き方に現れないので、どの規則も見つけません" },
+      lint: { found: false, output: "エラーなし", setting: "// 項目の追加は書き方に現れないので、どのルールも検出しません" },
       tests: { found: true, output: "1件失敗: Property failed after 1 tests", setting: "expect(toAuditPayload(appointment)).toEqual({ appointmentId: appointment.appointmentId, … });" },
     },
-    why: "項目が増えると型エラーが消えて、`// @ts-expect-error` の印が余ります。値のテストは余分な項目で失敗します。模範解答の規則は書き方に問題を見つけないので通します。",
+    why: "項目が増えると型エラーが消えて、`// @ts-expect-error` が未使用のまま残ります。値のテストは余分な項目で失敗します。模範解答のルールは書き方の問題を検出しないため、このコードは通過します。",
   },
   {
     id: "G3-as-const",
     kind: "good",
-    label: "as const を足す（正しいコード）",
+    label: "as const を追加する（正しいコード）",
     baseCase: "G1-solution",
     target: "parse の部分",
     diff: [
@@ -165,13 +167,13 @@ return seen.length === 0;` },
   ["error", { assertionStyle: "never" }]` },
       tests: { found: false, output: "5件成功" },
     },
-    why: "`as const` は値を変えず、型も偽らないので、`never` の設定でも規則は誤検知（正しいコードを悪い変更として検出すること）しません。",
+    why: "`as const` は値を変えず、型も偽らないため、`never` の設定でもルールは誤検知（正しいコードを誤った変更として検出すること）しません。",
   },
 ];
 
 export const session03ChangeChecks: ChangeCheckSet = {
   example: "session-03-solution",
-  ariaLabel: "悪い変更と3つの仕組みの結果",
+  ariaLabel: "誤った変更と3つの仕組みの結果",
   mechanisms,
   cases,
 };

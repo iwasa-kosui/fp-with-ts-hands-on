@@ -29,7 +29,7 @@ export const session: SessionSummary = {
   solutionPresentation: "excerpt",
   peerReviewPromises: "reference",
   animal: { name: "HAMSTER", type: "hamster", avatar: "🐹" },
-  summary: "診察開始の失敗のうち、理由によって顧客や現場の対応が変わるものを、呼び出し側が扱える値として返します。",
+  summary: "診察開始の失敗のうち、理由によって利用者の対応が変わるものを、呼び出し側が扱える値として返します。",
   episode: [
     "別の端末で、同僚の獣医師がハムスターの診察を先に開始していました。",
     "古い画面にはまだ診察開始のボタンが残っていて、獣医師はそのボタンを押しました。",
@@ -44,7 +44,7 @@ export const session: SessionSummary = {
   },
   delegationPrompt: {
     decisions: [
-      "どの失敗に対して顧客や現場が別の操作を選ぶか",
+      "どの失敗に対して利用者が別の操作を選ぶか",
       "呼び出し側が分岐に使う安定した情報は何か",
       "失敗後に実行してはいけない処理は何か",
       "要求された処理を完了できず、Resultへ変換せず外側へ伝えるシステムエラーは何か",
@@ -97,7 +97,7 @@ export const session: SessionSummary = {
           path: "examples/session-04-solution/src/adaptor/primary/web/routes.ts",
           symbol: "toStartExaminationNoticeCode",
           lines: [22, 48],
-          placement: "examples/session-04/src/adaptor/primary/web/routes.ts の import 群の直後に、このコードを足します。",
+          placement: "examples/session-04/src/adaptor/primary/web/routes.ts の import 群の直後に、このコードを追加します。",
         },
         {
           path: "examples/session-04/src/adaptor/primary/web/routes.ts",
@@ -111,7 +111,7 @@ export const session: SessionSummary = {
   ],
   decisions: [
     {
-      invariant: "顧客や現場が失敗理由に応じて操作を選ぶ必要がある失敗は、戻り値に現れる。",
+      invariant: "利用者が失敗理由に応じて操作を選ぶ必要がある失敗は、戻り値に現れる。",
     },
     {
       invariant: "呼び出し側は文言ではなく失敗のkindで分岐する。",

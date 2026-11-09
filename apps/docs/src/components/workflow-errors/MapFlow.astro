@@ -23,11 +23,11 @@ const frames = [
     mark: { bands: checkBands(mapFlowCode, { a: [doubleLine], b: [okBranch] }) },
   },
   {
-    caption: "Err(\"NotPositive\") に map を使っても、double は呼ばれません。Err は、同じ値のまま通り抜けます。",
+    caption: "Err(\"NotPositive\") に map を使っても、double は呼ばれません。Err は、同じ値のまま返されます。",
     mark: { bands: checkBands(mapFlowCode, { c: [errBranch] }), skip: [doubleLine] },
   },
   {
-    caption: "Result を返す関数を map に渡すと、戻り値の Result がさらに Ok の箱に入り、Ok(Ok(3)) と二重になります。",
+    caption: "Result を返す関数を map に渡すと、戻り値の Result がさらに Ok の箱に格納され、Ok(Ok(3)) と二重になります。",
     mark: { bands: checkBands(mapFlowCode, { a: ensureLines, b: [okBranch] }) },
   },
 ] as const;
@@ -38,7 +38,7 @@ const data = JSON.stringify(frames.map(({ mark }) => mark));
 <figure class="we-fig map-flow" data-map-flow data-marks={data} aria-label="map の入力と出力">
   <div class="mf-layout">
     <figure class="we-code" data-code>
-      <figcaption class="we-code__head"><span class="we-code__tag">関数の実装</span><code>map は動きの説明用</code></figcaption>
+      <figcaption class="we-code__head"><span class="we-code__tag">関数の実装</span><code>map は動作の説明用</code></figcaption>
       <Code code={mapFlowCode} lang="ts" themes={themes} defaultColor={false} />
     </figure>
 

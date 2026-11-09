@@ -24,11 +24,11 @@ const frames = [
     mark: { bands: checkBands(andThenFlowCode, { a: ensureLines, d: [mapOk], b: [andThenOk] }) },
   },
   {
-    caption: "関数が Err を返すときも、andThen の出力は、その Err そのものです。map では、Err が Ok の中に入ってしまいます。",
+    caption: "関数が Err を返すときも、andThen の出力は、その Err そのものです。map では、Err が Ok の中に格納されます。",
     mark: { bands: checkBands(andThenFlowCode, { a: [ensureErrLine], d: [mapOk], b: [andThenOk] }) },
   },
   {
-    caption: "入力が Err のときは、andThen も関数を呼ばず、Err を通り抜けさせます。ここは map と同じです。",
+    caption: "入力が Err のときは、andThen も関数を呼び出さず、同じ Err を返します。ここは map と同じです。",
     mark: { bands: checkBands(andThenFlowCode, { c: errBranches }), skip: ensureLines },
   },
 ] as const;
@@ -39,7 +39,7 @@ const data = JSON.stringify(frames.map(({ mark }) => mark));
 <figure class="we-fig and-then-flow" data-and-then-flow data-marks={data} aria-label="andThen の入力と出力、map との違い">
   <div class="atf-layout">
     <figure class="we-code" data-code>
-      <figcaption class="we-code__head"><span class="we-code__tag">関数の実装</span><code>map と andThen は動きの説明用</code></figcaption>
+      <figcaption class="we-code__head"><span class="we-code__tag">関数の実装</span><code>map と andThen は動作の説明用</code></figcaption>
       <Code code={andThenFlowCode} lang="ts" themes={themes} defaultColor={false} />
     </figure>
 
@@ -57,7 +57,7 @@ const data = JSON.stringify(frames.map(({ mark }) => mark));
             </div>
             <div class="atf-lane atf-lane--empty" data-band="b">
               <span class="we-chip"><code class="we-mono">.andThen(ensurePositive)</code></span>
-              <span class="atf-wait">次のコマで確かめます</span>
+              <span class="atf-wait">次のコマで確認します</span>
             </div>
           </div>
         </li>

@@ -45,7 +45,7 @@ type Step = Readonly<{
 
 const businessSteps: readonly Step[] = [
   {
-    text: "獣医師が、存在しない予約IDで診察開始を依頼します。resolver.resolveById は予約を見つけられず、undefined を返します。",
+    text: "獣医師が、存在しない予約IDで診察開始を依頼します。resolver.resolveById は予約を取得できず、undefined を返します。",
     at: "use", tone: "neutral", badge: "undefined", mark: "none", connector: false, dest: {},
     use: { bands: checkBands(pipelineBody, { a: [resolveLine] }) },
   },
@@ -55,7 +55,7 @@ const businessSteps: readonly Step[] = [
     use: { bands: checkBands(pipelineBody, { err: range(0, andThenLine - 1) }) },
   },
   {
-    text: "結果が Err なので、後続の andThen と map は呼ばれません。状態遷移も保存も実行されません。",
+    text: "結果が Err であるため、後続の andThen と map は呼ばれません。状態遷移も保存も実行されません。",
     at: "use", tone: "biz", badge: "Err", mark: "err", connector: false, dest: {},
     use: { skip: skipAfterAndThen },
   },
@@ -65,7 +65,7 @@ const businessSteps: readonly Step[] = [
     use: { skip: skipAfterAndThen },
   },
   {
-    text: "Web ルートの match が失敗側で Err を受け取り、失敗の種類から画面のお知らせを決めます。獣医師は予約を探し直せます。",
+    text: "Web ルートの match が失敗側で Err を受け取り、失敗の種類に対応する画面のお知らせを選択します。獣医師は予約を探し直せます。",
     at: "dest", tone: "biz", badge: "Err", mark: "err", connector: true,
     use: { skip: skipAfterAndThen },
     dest: { bands: checkBands(webCode, { err: failureArm }) },
@@ -89,7 +89,7 @@ const systemSteps: readonly Step[] = [
     use: { bands: checkBands(pipelineBody, { err: [saveLine] }) },
   },
   {
-    text: "この例外は Result に変換しません。startExamination は値を返さずに抜け、Web ルートの match と switch には届きません。",
+    text: "この例外は Result に変換しません。startExamination は値を返さずに終了し、Web ルートの match と switch には渡されません。",
     at: "use", tone: "sys", badge: "例外", mark: "exc", connector: true, dest: {}, files: ["useCase"],
     use: { bands: checkBands(pipelineBody, { err: range(saveStart, saveLine) }), skip: range(saveLine + 1, lastLine) },
   },
@@ -122,7 +122,7 @@ const legend = isBusiness ? "破線の枠: Err の値として返る経路" : "�
 const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
 ---
 
-<figure class="we-fig we-fig--top eo-flow" data-exception-or-result data-scenario={scenario} data-steps={data} aria-label={isBusiness ? "業務の失敗が Err として Web ルートへ届く流れ" : "障害の例外が外側で 500 になる流れ"}>
+<figure class="we-fig we-fig--top eo-flow" data-exception-or-result data-scenario={scenario} data-steps={data} aria-label={isBusiness ? "業務の失敗が Err として Web ルートへ渡される流れ" : "障害の例外が外側で 500 になる流れ"}>
   <StepControls />
 
   <ol class="we-frames">
@@ -159,7 +159,7 @@ const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
         </p>
       )}
       {!isBusiness && (
-        <p class="eo-note">この教材の app.onError は 500 を返すだけです。実際の業務では、処理の取り消しや接続の解放を、このような外側の場所でまとめて書くことが多くあります。</p>
+        <p class="eo-note">この教材の app.onError は 500 を返すだけです。実際の業務では、処理の取り消しや接続の解放を、このような外側の場所でまとめて実装することが多くあります。</p>
       )}
       <p class="eo-path">{footnotes.map(({ text, file }) => <span>{text}{file !== undefined && <> <span class="eo-path__file">{file}</span></>}</span>)}</p>
     </section>

@@ -3,23 +3,23 @@ const mechanisms = [
   {
     id: "type",
     name: "型のテスト",
-    about: "型エラーになるはずの行を、@ts-expect-error で確かめる",
-    catches: "監査記録の型にない項目を、直接書いたとき。",
-    misses: "監査記録の型に現れない形で、連絡先が混ざったとき。",
+    about: "型エラーになるはずの行を、@ts-expect-error で検証する",
+    catches: "監査記録の型にない項目を、直接記述したとき。",
+    misses: "監査記録の型に現れない形で、個人情報が混入したとき。",
   },
   {
     id: "test",
     name: "テスト",
-    about: "fast-check で任意の連絡先を作り、確かめる",
-    catches: "どんな連絡先を入れても、JSON に連絡先が含まれないこと。",
-    misses: "テストに書いていない経路から、連絡先が出たとき。",
+    about: "fast-check で任意の個人情報を生成し、検証する",
+    catches: "どのような個人情報を含めても、JSON に個人情報が含まれないこと。",
+    misses: "テストに実装していない経路から、個人情報が出力されたとき。",
   },
   {
     id: "lint",
     name: "Linter",
-    about: "コードの書き方を機械で調べる",
-    catches: "規則に書いた、特定の書き方。",
-    misses: "規則に書いていない、別の書き方で同じことをしたとき。",
+    about: "コードの書き方を静的に検査する",
+    catches: "ルールに記載した、特定の書き方。",
+    misses: "ルールに記載していない、別の書き方で同じことをしたとき。",
   },
 ] as const;
 
@@ -40,7 +40,7 @@ const groups = [
         </button>
       ))}
     </div>
-    <button type="button" class="guard__replay" data-replay data-step-scene hidden>もう一度見る</button>
+    <button type="button" class="guard__replay" data-replay data-step-scene hidden>再度見る</button>
   </div>
 
   <div class="guard__groups">

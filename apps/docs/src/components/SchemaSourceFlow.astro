@@ -64,7 +64,7 @@ type Frame = Readonly<{
 const frames: readonly Frame[] = [
   {
     part: "schema",
-    caption: "TypeScript の型は、型検査のときだけ使われます。JavaScript に変換すると型は消えます。実行時に届いた値が型のとおりかどうかは、型とは別のコードで確かめる必要があります。",
+    caption: "TypeScript の型は、型検査のときだけ使われます。JavaScript に変換すると型は消えます。実行時に受け取った値が型のとおりかどうかは、型とは別のコードで検証する必要があります。",
     stage: null,
     parts: { typeBox: "on", typeGhost: "on", schemaBox: "off", linkType: "off", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off", note: "off" },
     typeLabel: "name",
@@ -74,7 +74,7 @@ const frames: readonly Frame[] = [
   },
   {
     part: "schema",
-    caption: "修正前は、StartExaminationInput の型を手で書いています。parse は raw を any で受け取り、中身を確かめずに項目をコピーします。any は、どんな使い方も型検査で許す型です。型はあっても実行時の検査がないので、night-shift も StartExaminationInput として内側へ進みます。",
+    caption: "修正前は、StartExaminationInput の型を手動で定義しています。parse は raw を any で受け取り、中身を検証せずに項目をコピーします。any は、どのような使い方も型検査で許可する型です。型はあっても実行時の検査がないため、night-shift も StartExaminationInput として内側へ進みます。",
     stage: "before",
     code: { key: "before", lines: [5, 6, 7, 8, 11, 12, 13, 14, 15] },
     parts: { typeBox: "on", typeGhost: "on", schemaBox: "off", linkType: "off", linkCheck: "off", checkBox: "on", inside: "on", sameName: "off", unknown: "off", note: "off" },
@@ -85,7 +85,7 @@ const frames: readonly Frame[] = [
   },
   {
     part: "schema",
-    caption: "修正後は、値が満たす形を schema というオブジェクトで書くライブラリ Zod を使います。z.object は UUID の形の文字列を表す2つの schema をまとめ、.readonly() は取り出す型の項目を読み取り専用にします。",
+    caption: "修正後は、値が満たす形を schema というオブジェクトで定義するライブラリ Zod を使います。z.object は UUID の形の文字列を表す2つの schema をまとめ、.readonly() は取り出す型の項目を読み取り専用にします。",
     stage: "after",
     code: { key: "after", lines: [7, 8, 9, 10] },
     parts: { typeBox: "dim", typeGhost: "dim", schemaBox: "focus", linkType: "off", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off", note: "off" },
@@ -96,7 +96,7 @@ const frames: readonly Frame[] = [
   },
   {
     part: "schema",
-    caption: "型は schema から取り出します。z.infer<typeof schema> は、schema が受け入れる値の型です。typeof は、値である schema の型を、型を書く場所で使うための書き方です。型を手で書かないので、schema を直すと型も同じように変わります。",
+    caption: "型は schema から取り出します。z.infer<typeof schema> は、schema が受け入れる値の型です。typeof は、値である schema の型を、型を指定する場所で使うための書き方です。型を手動で定義しないため、schema を修正すると型も同じように変わります。",
     stage: "after",
     code: { key: "after", lines: [12] },
     parts: { typeBox: "focus", typeGhost: "on", schemaBox: "on", linkType: "focus", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off", note: "off" },
@@ -107,7 +107,7 @@ const frames: readonly Frame[] = [
   },
   {
     part: "parse",
-    caption: "実行時の検査も、同じ schema から作ります。この教材では、schema から検査を作る役を schemaResult という関数が担います。",
+    caption: "実行時の検査も、同じ schema から作ります。この教材では、schema から検査を作る処理は schemaResult という関数で実装します。",
     stage: "after",
     code: { key: "schemaResult", lines: [1] },
     parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "focus", checkBox: "on", inside: "dim", sameName: "off", unknown: "off", note: "off" },
@@ -129,7 +129,7 @@ const frames: readonly Frame[] = [
   },
   {
     part: "parse",
-    caption: "返された関数は、raw を unknown として受け取ります。unknown は、中身を確かめるまで項目を使えない型です。",
+    caption: "返された関数は、raw を unknown として受け取ります。unknown は、中身を検証するまで項目を使えない型です。",
     stage: "after",
     code: { key: "schemaResult", lines: [2] },
     parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "on", checkBox: "on", inside: "dim", sameName: "off", unknown: "on", note: "off" },
@@ -140,7 +140,7 @@ const frames: readonly Frame[] = [
   },
   {
     part: "parse",
-    caption: "safeParse は、schema で raw を検査します。検査に失敗しても例外を投げず、成否を success に入れて返します。schemaResult は success を見て、Ok か Err を返します。",
+    caption: "safeParse は、schema で raw を検査します。検査に失敗しても例外を投げず、成否を success に格納して返します。schemaResult は success を参照して、Ok か Err を返します。",
     stage: "after",
     code: { key: "schemaResult", lines: [3, 4] },
     parts: { typeBox: "on", typeGhost: "on", schemaBox: "focus", linkType: "dim", linkCheck: "on", checkBox: "on", inside: "dim", sameName: "off", unknown: "on", note: "off" },
@@ -162,7 +162,7 @@ const frames: readonly Frame[] = [
   },
   {
     part: "parse",
-    caption: "この関数を使うと、night-shift は Err になります。使う場所は「境界を通った値だけが内側へ入る」のページで見ます。",
+    caption: "この関数を使うと、night-shift は Err になります。使う場所は「境界を通過した値だけを内側へ渡す構成」のページで確認します。",
     stage: "after",
     parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "on", linkCheck: "on", checkBox: "on", inside: "on", sameName: "off", unknown: "off", note: "on" },
     typeLabel: "infer",
@@ -211,7 +211,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   >
     <title id="schema-source-flow-title">1つの schema から型と検査を作る仕組み</title>
     <desc id="schema-source-flow-desc">
-      上の帯は型検査のとき（TypeScript）、下の帯は実行時（JavaScript）です。JavaScript に変換すると型は消えるので、下の帯に型は残りません。修正前は、型を手で書き、parse は実行時の検査をしません。修正後は、1つの schema から z.infer で型を取り出し、schemaResult で実行時に検査する parse を作ります。修正前は night-shift という不正な値が内側へ進みます。修正後は night-shift が parse の検査で止まり、UUID の形をした値だけが内側へ進みます。
+      上の帯は型検査のとき（TypeScript）、下の帯は実行時（JavaScript）です。JavaScript に変換すると型は消えるので、下の帯に型は残りません。修正前は、型を手動で定義し、parse は実行時の検査をしません。修正後は、1つの schema から z.infer で型を取り出し、schemaResult で実行時に検査する parse を作ります。修正前は night-shift という不正な値が内側へ進みます。修正後は night-shift が parse の検査で拒否され、UUID の形をした値だけが内側へ進みます。
     </desc>
 
     <g class="schema-source-flow__badge schema-source-flow__badge--before">
@@ -242,7 +242,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
       <rect x="10" y="80" width="136" height="52" rx="8"></rect>
       <text x="78" y="102" text-anchor="middle" class="schema-source-flow__type-label" data-label="name">StartExaminationInput</text>
       <text x="78" y="118" text-anchor="middle" class="schema-source-flow__type-label" data-label="name">型</text>
-      <text x="78" y="110" text-anchor="middle" class="schema-source-flow__type-label" data-label="hand">手で書いた型</text>
+      <text x="78" y="110" text-anchor="middle" class="schema-source-flow__type-label" data-label="hand">手動定義の型</text>
       <text x="78" y="102" text-anchor="middle" class="schema-source-flow__type-label" data-label="infer">z.infer で</text>
       <text x="78" y="118" text-anchor="middle" class="schema-source-flow__type-label" data-label="infer">取り出した型</text>
     </g>
@@ -328,7 +328,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     </g>
 
     <g class="schema-source-flow__part" data-part="note" data-mode={initial.parts.note}>
-      <text x="170" y="487" text-anchor="middle" class="schema-source-flow__note">修正前は night-shift も ⚠ Ok で通っていた</text>
+      <text x="170" y="487" text-anchor="middle" class="schema-source-flow__note">修正前は night-shift も ⚠ Ok になっていた</text>
     </g>
   </svg>
 

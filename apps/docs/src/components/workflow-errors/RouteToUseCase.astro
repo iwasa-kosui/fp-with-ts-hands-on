@@ -8,11 +8,11 @@ import { paths, routeAfter, routeBefore, useCaseBody } from "./sources";
 import "./figure.css";
 
 const processes = [
-  { band: "a", label: "入力の検査", text: "予約IDと獣医師IDの形を確かめる" },
-  { band: "b", label: "予約の取得", text: "予約IDで予約を読み出す" },
-  { band: "c", label: "状態の確認と遷移", text: "来院済みか確かめて、診察中にする" },
+  { band: "a", label: "入力の検査", text: "予約IDと獣医師IDの形を検証する" },
+  { band: "b", label: "予約の取得", text: "予約IDで予約を取得する" },
+  { band: "c", label: "状態の確認と遷移", text: "来院済みかを検証し、診察中にする" },
   { band: "d", label: "保存", text: "診察中の予約を保存する" },
-  { band: "e", label: "監査", text: "診察を開始した記録を書く" },
+  { band: "e", label: "監査", text: "診察を開始した記録を追加する" },
 ] as const;
 
 const before = checkBands(routeBefore, {
@@ -39,9 +39,9 @@ const afterUseCase = checkBands(useCaseBody, {
 const themes = { light: "github-light", dark: "github-dark" } as const;
 
 const parts = [
-  { band: "b", name: "Resolver", role: "予約を取ってくる部品", code: "deps.resolver.resolveById(…)" },
+  { band: "b", name: "Resolver", role: "予約を取得するオブジェクト", code: "deps.resolver.resolveById(…)" },
   { band: "d", name: "Store", role: "保存（状態の更新と監査記録の追加）", code: "deps.store.save(…)" },
-  { band: "c", name: "errors.ts", role: "失敗を確かめる関数の置き場", code: "ensureCheckedIn(…)" },
+  { band: "c", name: "errors.ts", role: "失敗を検証する関数の置き場", code: "ensureCheckedIn(…)" },
 ] as const;
 
 const treeBefore = miniTree("session-03", "src/", [

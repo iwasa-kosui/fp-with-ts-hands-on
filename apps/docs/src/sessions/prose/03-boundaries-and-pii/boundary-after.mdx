@@ -1,9 +1,9 @@
 import BoundaryPlayer from "../../../components/BoundaryPlayer.astro";
 import { startExaminationWalkthrough } from "../../boundary-walkthroughs";
 
-<p><code>StartExaminationInput.parse</code> は、<code>schemaResult</code> が <code>z.object</code> と印の付いた ID の schema から作った関数です。</p>
+<p><code>StartExaminationInput.parse</code> は、<code>schemaResult</code> が <code>z.object</code> とブランドを付けた ID の schema から作った関数です。</p>
 
-<p><strong>解けたこと</strong>: 課題1が解けました。失敗は、サーバーが失敗を返す HTTP の状態（500）になります。S04 で扱います。<br /><strong>解けないこと</strong>: 形式の検査は実在を確かめません。Branded Type が防ぐのは検査していない <code>string</code> や別の ID を ID の型の引数へ渡す変更です。データベースから読む値は、この回の境界の対象外です。</p>
+<p><strong>解決したこと</strong>: 課題1を解決しました。失敗時は、サーバーが失敗を返す HTTP ステータス（500）になります。S04 で扱います。<br /><strong>解決しないこと</strong>: 形式の検査は ID の実在を検証しません。Branded Type が防止するのは、検査していない <code>string</code> や別の ID を ID の型の引数へ渡す変更です。データベースから取得する値は、この回の境界の対象外です。</p>
 
 <BoundaryPlayer
   walkthrough={startExaminationWalkthrough}
