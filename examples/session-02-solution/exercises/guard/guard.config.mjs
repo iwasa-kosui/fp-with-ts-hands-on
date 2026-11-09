@@ -10,6 +10,11 @@ export default {
       title: "Paid の case を消しても、default の assertNever が残っている",
       allow: ["lint", "tests"],
       hint: "この変更は型検査も見つけます。この演習では、自分で足した仕組みでも検出できるかを確かめます。",
+      behavior: {
+        input: { text: "会計済みの予約の表示名を求める" },
+        expected: { text: "「会計済み」と出る" },
+        actual: { text: "例外で止まる" },
+      },
     },
     {
       id: "B2-missing-case-default",
@@ -18,6 +23,11 @@ export default {
       title: "Paid の case を消し、default が「不明」を返す",
       allow: ["lint", "tests"],
       hint: "「default が足し忘れを隠す」のページで見た問題と同じ形です。",
+      behavior: {
+        input: { text: "会計済みの予約の表示名を求める" },
+        expected: { text: "「会計済み」と出る" },
+        actual: { text: "「不明」と出る" },
+      },
     },
     {
       id: "B3-added-state-default",
@@ -26,6 +36,11 @@ export default {
       title: "7つ目の状態を足したのに、表示名を書いていない",
       allow: ["lint"],
       hint: "状態が増えたのに、switch が追いついていないことを確かめます。",
+      behavior: {
+        input: { text: "NoShow の予約の表示名を求める" },
+        expected: { text: "NoShow の表示名が出る" },
+        actual: { text: "「不明」と出る" },
+      },
     },
     {
       id: "B4-string-kind",
@@ -34,6 +49,11 @@ export default {
       title: "引数の kind が string に戻り、知らない状態を渡せる",
       allow: ["types"],
       hint: "引数の型が広がっていないかを確かめます。",
+      behavior: {
+        input: { text: '表示名の関数に "NoSuchState" を渡すコードを書く' },
+        expected: { text: "型検査でエラー" },
+        actual: { text: "型検査を通り「不明」と出る" },
+      },
     },
     {
       id: "B5-other-function",
@@ -44,6 +64,11 @@ export default {
       required: false,
       allow: ["lint"],
       hint: "toStatusLabel だけでなく、同じファイルの別の関数でも検出できるかを確かめます。",
+      behavior: {
+        input: { text: "キャンセルの予約を toStatusTone に渡す" },
+        expected: { text: "Canceled の case を通る" },
+        actual: { text: "case がなく default を通る", value: '"neutral"' },
+      },
     },
     {
       id: "B6-if-chain",
@@ -54,6 +79,11 @@ export default {
       required: false,
       allow: ["tests"],
       hint: "分岐の結果を実行して確かめます。",
+      behavior: {
+        input: { text: "会計済みの予約の表示名を求める" },
+        expected: { text: "「会計済み」と出る" },
+        actual: { text: "「不明」と出る" },
+      },
     },
     {
       id: "R1-peer-change",
