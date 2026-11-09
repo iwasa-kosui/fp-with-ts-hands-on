@@ -831,6 +831,12 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
     display: contents;
   }
 
+  .branded-id-flow :global(.mini-tree__group + .mini-tree__group .mini-tree__folder) {
+    border-inline-start: 1px solid var(--role-rule);
+    margin-inline-start: 0.25rem;
+    padding-inline-start: 0.5rem;
+  }
+
   .branded-id-flow__code {
     min-width: 0;
     margin: 0.5rem 0 0;
