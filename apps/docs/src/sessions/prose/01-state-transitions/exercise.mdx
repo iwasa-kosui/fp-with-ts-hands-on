@@ -5,6 +5,14 @@ import { guardAnswerDisplayFiles } from "../../../code-explorer/guard-paths";
 import { guardExercise } from "../../pages/01-state-transitions-exercise";
 import { guardExerciseWorkspaceFor } from "../../pages/guard-exercise-workspace";
 
+export const unknownRuleCode = `"no-restricted-syntax": [
+  "error",
+  {
+    selector: "TSAsExpression > TSUnknownKeyword",
+    message: "unknown を経由した型アサーションで、型検査を回避しません。",
+  },
+],`;
+
 export const projectFiles = projectFilesForSnapshot(guardExercise.snapshot);
 export const workspace = guardExerciseWorkspaceFor(
   guardExercise,
@@ -24,8 +32,16 @@ export const guide = {
         "型: transitions.type-test.ts",
         "テスト: transitions.test.ts と callers.test.ts",
       ],
+      reference: {
+        summary: "Linter のルールの書き方",
+        text: "selector は、検出するコードの形を指定します。下の例の TSAsExpression は as の式、TSUnknownKeyword は unknown を表し、「A > B」は A の直下の B を表します。この組み合わせは、as の式の直下にある unknown を検出します。TSAsExpression だけを指定すると、正しいコードの as const も as の式であるため、誤検知（正しいコードを誤った変更として検出すること）になります。検出の範囲は、型の名前などで限定します。",
+        caption: "実装先: eslint.config.mjs の const rules = {} の {} の中",
+        code: unknownRuleCode,
+      },
     },
-    "「検出を検証する」を押します。",
+    "callers.test.ts が呼ぶ startExaminationFor と recordPaymentFor は、routes.ts の kind の検証を関数に切り出したもので、cases/G2-callers-check-state.ts に定義してあります。引数は、startExaminationFor が (current, veterinarianId, examinationStartedAt)、recordPaymentFor が (current, input, paidAt) です。",
+    "Linter のルールは、as をすべて禁止する形にしません。表の「状態の型以外への as を残す正しいコード」の行は、状態の型以外への as が残る正しいコードであり、誤検知にしてはいけません。",
+    "「検出を検証する」を押します。必須3件の検出結果と理由は、「解答の例を見る」で確認できます。",
     {
       text: "表の用語の意味は次のとおりです。",
       items: [
@@ -36,10 +52,17 @@ export const guide = {
         "誤検知: 正しいコードを誤って検出した。",
       ],
     },
-    "合格すると表に行が追加されます。「相互レビューで作る誤った変更」の行は次のページで使います。「unknown を経由して会計でも状態を偽る」と「診察を始めた時刻に来院の時刻が格納される」の2件は、時間に余裕がある場合に取り組みます。",
+    "合格すると表に行が追加されます。「相互レビューで作る誤った変更」の行は次のページで使います。「kind の検証を削除し、unknown を経由した as で渡す」「診察開始の時刻に来院の時刻を格納する」「会計の引数を Appointment 全体に広げる」の3件は、時間に余裕がある場合に取り組みます。",
   ],
 };
 
 <GuardExercise client:load workspace={workspace} projectFiles={projectFiles} guide={guide}>
-  <GuardAnswer files={guardAnswerDisplayFiles(projectFiles)} />
+  <GuardAnswer files={guardAnswerDisplayFiles(projectFiles)}>
+    <p>必須の3件を、下の解答の例の仕組みで検証した結果です。</p>
+    <ul>
+      <li><strong>kind の検証を削除し、型アサーション（as）で来院済みの型に変更して渡す</strong>: Linter のルールとテストが検出します。<code>as</code> で来院済みの型に変更しても、<code>startExamination</code> の引数の型は変わらないため、型のテストは通ります。テストが検出する理由は、<code>kind</code> の検証を削除したことであり、<code>as</code> を書いたことではありません。</li>
+      <li><strong>診察開始の引数を Appointment 全体に広げる</strong>: 型のテストだけが検出します。広げた引数には Scheduled も渡せるため、型エラーが消え、<code>// @ts-expect-error</code> が未使用になります。実行時の検証を追加したため、テストと Linter のルールは通ります。</li>
+      <li><strong>キャンセルの理由ではなく来院の理由を格納する</strong>: テストだけが検出します。<code>reason</code> は、予約では来院の理由、キャンセルではキャンセルの理由を格納する項目です。どちらも同じ型の文字列であるため、型検査と Linter のルールは通ります。結果にどの値が格納されるかは、テストだけが検証します。</li>
+    </ul>
+  </GuardAnswer>
 </GuardExercise>

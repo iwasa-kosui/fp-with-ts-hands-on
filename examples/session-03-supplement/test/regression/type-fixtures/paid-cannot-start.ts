@@ -5,5 +5,5 @@ import { clinicFixture } from "../../../../fixtures/clinic.js";
 
 declare const paid: Paid;
 
-// @ts-expect-error Paid から診察を開始できません。
+// @ts-expect-error Paid は startExamination の引数の型に代入できません。
 startExamination(paid, clinicFixture.veterinarianId, clinicFixture.scheduledAt);

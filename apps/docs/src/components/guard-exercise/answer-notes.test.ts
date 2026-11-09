@@ -8,7 +8,9 @@ describe("answerNoteFor", () => {
         "01-state-transitions",
         "exercises/guard/mine/transitions.type-test.ts",
       ),
-    ).toBe("「診察開始の引数が Appointment 全体に戻る」を検出します。");
+    ).toBe(
+      "「診察開始の引数を Appointment 全体に広げる」と「会計の引数を Appointment 全体に広げる」（任意）を検出します。",
+    );
   });
 
   it("puts （任意） after the title of a case whose required is false", () => {
@@ -18,7 +20,7 @@ describe("answerNoteFor", () => {
         "exercises/guard/mine/transitions.test.ts",
       ),
     ).toBe(
-      "「キャンセルの理由ではなく来院の理由が残る」と「診察を始めた時刻に来院の時刻が格納される」（任意）を検出します。",
+      "「キャンセルの理由ではなく来院の理由を格納する」と「診察開始の時刻に来院の時刻を格納する」（任意）を検出します。",
     );
     expect(
       answerNoteFor("05-business-events-and-workflows", "eslint.config.mjs"),

@@ -7,8 +7,8 @@ import { session } from "../../pages/01-state-transitions-content";
       <p class="case-file__episode-label">動物病院の事例</p>
       {session.episode.map((line) => <p data-episode-line>{line}</p>)}
     </aside>
-    <p>システムは、会計済みの予約を診察中へ戻す操作を拒否しませんでした。その結果、飼い主への請求書が 2 枚になりました。</p>
-    <p>この Session の開始コードの画面は、会計済みの予約に「診察を開始する」を表示せず、サーバーも依頼を拒否します。この Session では、会計済みの予約を診察中へ戻すコードの誤りを、プログラムの実行前に検出する形にします。</p>
+    <p>S00 の「誤りを検出できる4つの時点」で見たとおり、実行時に検出すると、利用者の操作が失敗します。この例の誤りも、型検査では報告されず、本番で会計済みの予約を渡す操作が実行されたときに、例外として初めて発生します。</p>
+    <p>この Session では、受け取れない状態の予約を渡すコードの誤りを、プログラムの実行前に検出する形にします。</p>
   </div>
   <div>
     <EpisodeIllustration slug="01-state-transitions" />

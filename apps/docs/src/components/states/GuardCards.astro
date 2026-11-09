@@ -3,7 +3,7 @@ const groups = [
   {
     id: "machine",
     title: "機械が検出するもの",
-    lead: "仕組みを追加すると、変更のたびに自動で報告されます。",
+    lead: "CI などで変更のたびに実行すると、自動で報告されます。",
     cards: [
       {
         what: "受け取れない状態の予約を、遷移関数へ渡す呼び出し",
@@ -20,17 +20,24 @@ const groups = [
     ],
   },
   {
+    id: "next",
+    title: "この Session の仕組みでは検出しないもの",
+    lead: "S02 の仕組みで検出します。",
+    cards: [
+      {
+        what: "別の関数の分岐漏れ",
+        by: "状態ごとに表示や処理を分ける関数に、追加した状態の分岐がないことです。",
+      },
+    ],
+  },
+  {
     id: "human",
-    title: "人が確認するもの（この Session では解決しません）",
+    title: "人が確認するもの",
     lead: "仕組みでは検出できないため、人が読んで確認します。",
     cards: [
       {
-        what: "最初のページの矢印の一覧そのものが、業務と合っているか",
-        by: "型は、実装した一覧のとおりに守るだけです。",
-      },
-      {
-        what: "別の関数の分岐漏れ",
-        by: "状態ごとに表示や処理を分ける関数に、追加した状態の分岐がないことです。S02 で扱います。",
+        what: "最初のページの遷移図そのものが、業務と合っているか",
+        by: "型が検証するのは、実装した遷移図に違反しないことだけです。",
       },
       {
         what: "自分の仕組みで検出されない、新しい種類の変更",
@@ -61,7 +68,7 @@ const groups = [
 <style>
   .guard-cards {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.75rem;
     margin: 0.5rem 0;
   }
@@ -77,6 +84,10 @@ const groups = [
 
   .guard-cards__group[data-group="machine"] {
     border-color: var(--role-positive);
+  }
+
+  .guard-cards__group[data-group="next"] {
+    border-color: var(--role-accent);
   }
 
   .guard-cards__group[data-group="human"] {
@@ -111,6 +122,10 @@ const groups = [
 
   [data-group="machine"] li {
     border-inline-start-color: var(--role-positive);
+  }
+
+  [data-group="next"] li {
+    border-inline-start-color: var(--role-accent);
   }
 
   [data-group="human"] li {

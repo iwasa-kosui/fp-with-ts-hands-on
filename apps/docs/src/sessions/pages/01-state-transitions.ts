@@ -13,11 +13,11 @@ export const sessionPages = [
   },
   {
     slug: "double-billing",
-    title: "会計済みの予約が診察中へ戻った事故",
+    title: "実行時にしか検出できないコードの誤り",
     flow: "problem",
     kind: "brief",
     minutes: 1,
-    role: "課題: 会計済みの予約が診察中へ戻り、同じ金額が2回請求されました。",
+    role: "課題: 受け取れない状態の予約を渡すコードの誤りは、実行時にしか検出できず、本番で利用者の操作が失敗します。",
   },
   {
     slug: "current-code",
@@ -57,7 +57,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策を守る: 直したコードも、次の変更で元に戻ることがあります。守る仕組みが必要です。",
+    role: "解決策: 直したコードも、次の変更で元に戻ることがあります。守る仕組みが必要です。",
   },
   {
     slug: "exercise",
@@ -65,7 +65,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "exercise",
     minutes: 8,
-    role: "解決策を守る: 学んだ仕組みを追加して、誤った変更を検出します。",
+    role: "解決策: 学んだ仕組みを追加して、誤った変更を検出します。",
   },
   {
     slug: "peer-review",
@@ -73,7 +73,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "review",
     minutes: 2,
-    role: "解決策を守る: 自分の仕組みが検出できない変更を、隣の人に探してもらいます。",
+    role: "解決策: 自分の仕組みが検出できない変更を、隣の人に探してもらいます。",
   },
   {
     slug: "guard",

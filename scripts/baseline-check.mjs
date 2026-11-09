@@ -71,6 +71,7 @@ export const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-01-solution/exercises/guard/cases/B3-cancel-keeps-visit-reason.ts",
   "examples/session-01-solution/exercises/guard/cases/B4-cast-via-unknown.ts",
   "examples/session-01-solution/exercises/guard/cases/B5-start-time-from-check-in.ts",
+  "examples/session-01-solution/exercises/guard/cases/B6-widened-record-payment.ts",
   "examples/session-01-solution/exercises/guard/cases/G1-transitions.ts",
   "examples/session-01-solution/exercises/guard/cases/G2-callers-check-state.ts",
   "examples/session-01-solution/exercises/guard/cases/G3-global-this-cast.ts",
@@ -83,6 +84,17 @@ export const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-01-solution/exercises/guard/subjects/callers.ts",
   "examples/session-01-solution/exercises/guard/subjects/lifecycle.ts",
   "examples/session-01-solution/exercises/guard/subjects/transitions.ts",
+  "examples/session-02/test/regression/type-fixtures/paid-cannot-start.ts",
+  "examples/session-02-solution/test/regression/type-fixtures/paid-cannot-start.ts",
+  "examples/session-03/test/regression/type-fixtures/paid-cannot-start.ts",
+  "examples/session-03-solution/test/regression/type-fixtures/paid-cannot-start.ts",
+  "examples/session-03-supplement/test/regression/type-fixtures/paid-cannot-start.ts",
+  "examples/session-03-supplement-solution/test/regression/type-fixtures/paid-cannot-start.ts",
+  "examples/session-04/test/regression/type-fixtures/paid-cannot-start.ts",
+  "examples/session-04-solution/test/regression/type-fixtures/paid-cannot-start.ts",
+  "examples/session-06/test/regression/type-fixtures/paid-cannot-start.ts",
+  "examples/session-06-solution/test/regression/type-fixtures/paid-cannot-start.ts",
+  "examples/session-01-solution/test/regression/type-fixtures/paid-cannot-start.ts",
   "examples/session-03-solution/exercises/result-errors.test.ts",
   "examples/session-03-solution/package.json",
   "examples/session-03-solution/eslint.config.mjs",
@@ -365,6 +377,9 @@ const compareSession02Copies = ({ current, readCurrent, baseline }, problems) =>
     const expected = renameIdentifiers(
       applyLayoutMove(baselineFixturePath(file), baseline.get(baselinePath)).text,
       { ...solution, name: "session-02" },
+    ).replace(
+      "// @ts-expect-error Paid から診察を開始できません。",
+      "// @ts-expect-error Paid は startExamination の引数の型に代入できません。",
     );
     if (!current.includes(path) || readCurrent(path) !== expected) {
       problems.push(`${path} が基準 ${BASELINE_COMMIT} の ${baselinePath} の写しではありません`);

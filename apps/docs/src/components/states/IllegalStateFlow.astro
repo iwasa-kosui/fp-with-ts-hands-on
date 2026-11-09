@@ -199,7 +199,6 @@ const frames: readonly Frame[] = [
     focus: "file",
     lit: withNotes(afterTypeLines, ['"InExamination" だけ', "必須", "必須"]),
     show: spanOf(afterTypeRange),
-    treeNote: { file: "after-transitions", text: "修正する箇所" },
     caption:
       "S01 の開始コードは、状態ごとに別の型を持ちます。S00 の status: \"in-examination\" に当たる値は kind: \"InExamination\" で、値を型の名前と同じ綴りにしています。InExamination では veterinarianId と examinationStartedAt が必須です。型の定義はここまでで完了しており、残りは遷移関数の引数です。",
   },
@@ -211,7 +210,7 @@ const frames: readonly Frame[] = [
     lit: plain(afterRequiredLines),
     show: afterTypeShown,
     caption:
-      "...checkedIn は、checkedIn の項目のコピーです。同じ状況の値を InExamination として定義すると、veterinarianId と examinationStartedAt がないことを、型検査が報告します。実行前に検出できます。",
+      "...checkedIn は、checkedIn の項目のコピーです。この値は、S00 のような関数の呼び出しではなく、オブジェクトの定義です。同じ状況の値を InExamination として定義すると、veterinarianId と examinationStartedAt がないことを、型検査が報告します。実行前に検出できます。",
   },
   {
     file: "after-appointment",

@@ -3,43 +3,43 @@ import { noticeMoments } from "./notice-moments";
 
 const details = {
   write: {
-    who: "変更した人",
     via: "型検査（値の種類の不一致を実行前に検出する仕組み）や Linter（コードの問題を静的に検出するツール）が報告します。",
-    missLabel: "ここで検出しないと",
-    risk: "開発チームへの影響",
-    miss: "誤りがテストの時点まで進みます。",
+    people: ["変更した人"],
+    risk: "コードの修正だけで済む",
+    effect: "変更した人が、実行前にコードを修正します。",
   },
   test: {
-    who: "開発チーム",
     via: "テスト（期待どおりに動作するかを検証するコード）が報告します。",
-    missLabel: "ここで検出しないと",
-    risk: "利用者の操作の失敗",
-    miss: "誤りが稼働中のシステムまで到達し、サーバーが操作を拒否します。",
+    people: ["変更した人"],
+    risk: "コードの修正だけで済む",
+    effect: "変更した人が、テストの失敗を確認してコードを修正します。",
   },
   run: {
-    who: "操作した人",
     via: "サーバーが処理の途中で値を検証します。",
-    missLabel: "ここで検出しないと",
-    risk: "データの破損",
-    miss: "誤った操作や値がそのまま処理されます。飼い主と病院にも影響します。",
+    people: ["変更した人", "開発チーム", "利用者"],
+    risk: "利用者の操作の失敗",
+    effect: "サーバーが操作を拒否し、利用者の操作が失敗します。開発チームが原因を調査します。",
   },
   human: {
-    who: "飼い主と病院",
     via: "請求を受けた飼い主や、記録を調査した担当者が発見します。",
-    missLabel: "この時点では",
+    people: ["変更した人", "開発チーム", "利用者", "飼い主と病院"],
     risk: "金銭や個人情報の被害",
-    miss: "被害がすでに発生しています。二重請求と、飼い主の個人情報を閲覧できる監査記録です。",
+    effect: "被害がすでに発生しています。二重請求と、飼い主の個人情報を閲覧できる監査記録です。",
   },
 } as const;
 
-const moments = noticeMoments.map((moment, index) => ({
-  ...moment,
-  ...details[moment.id],
-  people: noticeMoments.slice(0, index + 1).map(({ id }) => details[id].who),
-}));
+const moments = noticeMoments.map((moment, index) => {
+  const detail = details[moment.id];
+  const previous: readonly string[] = index === 0 ? [] : details[noticeMoments[index - 1].id].people;
+  return {
+    ...moment,
+    ...detail,
+    people: detail.people.map((name) => ({ name, isNew: !previous.includes(name) })),
+  };
+});
 ---
 
-<figure class="nm" aria-label="誤りを検出できる4つの時点と、各時点で検出しない場合に増えるリスク">
+<figure class="nm" aria-label="誤りを検出できる4つの時点と、各時点で検出した場合に影響を受ける人">
   <ol class="nm__moments">
     {
       moments.map((moment, index) => (
@@ -51,16 +51,16 @@ const moments = noticeMoments.map((moment, index) => ({
           <p class="nm__via">{moment.via}</p>
           <p class="nm__heading">検出時に影響を受ける人</p>
           <ul class="nm__people">
-            {moment.people.map((person, personIndex) => (
-              <li class:list={["nm__person", { "nm__person--new": personIndex === index }]}>
-                {person}
+            {moment.people.map((person) => (
+              <li class:list={["nm__person", { "nm__person--new": person.isNew }]}>
+                {person.name}
               </li>
             ))}
           </ul>
           <div class="nm__risk">
-            <p class="nm__heading">{moment.missLabel}</p>
+            <p class="nm__heading">検出した場合の影響</p>
             <p class="nm__tag">{moment.risk}</p>
-            <p class="nm__miss">{moment.miss}</p>
+            <p class="nm__miss">{moment.effect}</p>
           </div>
         </li>
       ))

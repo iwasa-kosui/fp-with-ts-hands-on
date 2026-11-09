@@ -8,12 +8,13 @@ type Row = Readonly<{
   description: string;
   directory: string;
   kind?: "gap" | "muted";
+  branch?: true;
 }>;
 
 const rows: readonly Row[] = [
   {
     stage: "entry",
-    operation: "「診察を開始する」で、予約の ID を受け取る",
+    operation: "「診察を開始する」で、予約の ID を受け取る。値の形式を検証する処理もない（Session 03 で扱う）",
     description: "受け取った値の形式を検証する",
     directory: "adaptor/primary/web/",
   },
@@ -39,9 +40,10 @@ const rows: readonly Row[] = [
   {
     stage: "failure",
     operation: "処理を中断しなかったため、失敗を返す処理は実行されなかった",
-    description: "処理を中断したとき、理由を画面へ返す",
+    description: "ステップ3の拒否時の分岐。理由を画面へ返す",
     directory: "adaptor/primary/web/",
     kind: "muted",
+    branch: true,
   },
 ];
 
@@ -54,8 +56,8 @@ const frames = [
     alt: "表の1列目に、事故で見た5つの操作が上から順に並んでいます。上から3番目は、状態を検証する処理がない、という空欄です。",
   },
   {
-    caption: "状態を変える依頼は、同じ5つのステップを通ります。事故の操作にステップの名前を対応付けると、業務の判断だけが欠けています。",
-    alt: "1列目の操作の右に、ステップの列が加わっています。上から、入口、読み取り、業務の判断、保存、失敗の返し方です。状態を検証する処理がない3番目の操作は、業務の判断のステップに当たります。",
+    caption: "状態を変える依頼は、同じ5つのステップを通ります。ステップ5は、ステップ3で拒否したときの分岐です。この事故に直接関わる欠落は、ステップ3の業務の判断です。",
+    alt: "1列目の操作の右に、ステップの列が加わっています。上から、入口、読み取り、業務の判断、保存、失敗の返し方です。状態を検証する処理がない3番目の操作は、業務の判断のステップに当たります。失敗の返し方は、業務の判断で拒否したときの分岐として、破線の枠で表示しています。",
   },
   {
     caption: "ステップごとに、担当するディレクトリがあります。読み取りから保存までの順序は <code>useCase/</code> が制御します。",
@@ -63,7 +65,7 @@ const frames = [
   },
   {
     caption:
-      "事故で欠けていたのは業務の判断です。会計済みの予約を拒否する業務ロジックは <code>domain/</code> に実装します。事故の時点で、<code>domain/</code> の <code>updateStatus</code> は状態を検証せず、値を上書きするだけでした。",
+      "会計済みの予約を拒否する業務ロジックは <code>domain/</code> に実装します。事故の時点で、<code>domain/</code> の <code>updateStatus</code> は状態を検証せず、値を上書きするだけでした。業務ルール2（個人情報を監査記録に出力しない）の配置は、Session 03 で扱います。",
     alt: "表のうち、上から3番目の業務の判断の行と、担当の domain/ を強調しています。ほかの行は薄く表示しています。",
   },
 ] as const;
@@ -74,7 +76,7 @@ const rowOf = (index: number) => index + 2;
 <figure
   class="rlf"
   data-rule-location
-  aria-label="事故で見た操作に、5つのステップと担当のディレクトリを対応付けた表"
+  aria-label="事故で見た操作に、状態を変える依頼の5つのステップと担当のディレクトリを対応付けた表"
 >
   <StepControls />
 
@@ -109,7 +111,7 @@ const rowOf = (index: number) => index + 2;
           >
             {row.operation}
           </div>
-          <div class="rlf__cell rlf__step" data-col="2" data-row={String(index + 1)}>
+          <div class:list={["rlf__cell", "rlf__step", { "rlf__step--branch": row.branch }]} data-col="2" data-row={String(index + 1)}>
             <span class="rlf__num" aria-hidden="true">{index + 1}</span>
             <span class="rlf__step-text">
               <span class="rlf__name">{stageName(row.stage)}</span>
@@ -256,6 +258,10 @@ const rowOf = (index: number) => index + 2;
 
   .rlf__step {
     gap: 0.625rem;
+  }
+
+  .rlf__step--branch {
+    border-style: dashed;
   }
 
   .rlf__num {

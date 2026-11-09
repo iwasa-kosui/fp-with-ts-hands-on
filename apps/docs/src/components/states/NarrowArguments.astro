@@ -63,6 +63,7 @@ const frames: readonly Readonly<{
   input: keyof typeof inputs;
   output: Output;
   caption: string;
+  explain?: string;
 }>[] = [
   {
     event: { label: "業務イベント", text: "獣医師が「診察を開始する」を押す" },
@@ -87,6 +88,8 @@ const frames: readonly Readonly<{
     output: { type: "done" },
     caption:
       "修正後のコードは、引数の型が CheckedIn、返す型が InExamination で、末尾が as const satisfies InExamination です。引数を CheckedIn に絞ったため、関数の中の requireKind は不要になりました。来院済みの予約を渡すと、診察中の予約が返ります。",
+    explain:
+      "<code>as const satisfies InExamination</code> は、2 つの指定です。<code>as const</code> は、<code>\"InExamination\"</code> を string に広げず、その文字列のまま残します。<code>satisfies InExamination</code> は、戻す値が <code>InExamination</code> を満たすかを、値の定義の位置で型検査が検証します。型を上書きする <code>as</code> とは異なり、満たさなければ型検査が報告します。戻り値の型の指定だけでも、同じ誤りは報告されます。",
   },
   {
     event: { label: "コードの誤り", text: "開発者が、会計済みの予約を startExamination へ渡すコードを書く" },
@@ -102,7 +105,7 @@ const frames: readonly Readonly<{
     input: "paid",
     output: { type: "rejected" },
     caption:
-      "データベースから取得した値は、型検査の対象ではありません。HTTP リクエストを受ける routes.ts が、実行時に kind を検証して依頼を拒否します。この検証は修正前からあり、この Session の修正では変わりません。検証の後は current が CheckedIn に絞り込まれ、startExamination に渡せます。次のページと演習では、同じ検証を切り出した関数 startExaminationFor を扱います。",
+      "データベースから取得する予約は、どの状態の値が返るかが、実行するまで分かりません。型は Appointment であるため、routes.ts（HTTP リクエストを受ける関数）が kind を検証し、CheckedIn でなければ依頼を拒否します。この検証は修正前からあり、この Session の修正では変わりません。検証の後は current が CheckedIn に絞り込まれ、startExamination に渡せます。演習では、同じ検証を関数に切り出した startExaminationFor（cases/G2-callers-check-state.ts）を扱います。",
   },
 ];
 ---
@@ -145,7 +148,7 @@ const frames: readonly Readonly<{
             <span class="na__arrow" aria-hidden="true">→</span>
 
             <div class="na__io" data-output={frame.output.type}>
-              <p class="na__label">遷移後（出力）</p>
+              <p class="na__label">{frame.output.type === "done" ? "遷移後（出力）" : "結果"}</p>
               {frame.output.type === "done" && (
                 <>
                   <p class="na__state"><strong>診察中</strong><code>InExamination</code></p>
@@ -175,9 +178,7 @@ const frames: readonly Readonly<{
 
           <p class="st-caption">{frame.caption}</p>
 
-          <p class="na__explain" data-active={frame.version === "after" ? "true" : "false"} aria-hidden={frame.version === "after" ? undefined : "true"}>
-            <code>as const satisfies InExamination</code> は、2 つの指定です。<code>as const</code> は、<code>"InExamination"</code> を string に広げず、その文字列のまま残します。<code>satisfies InExamination</code> は、戻す値が <code>InExamination</code> の形を満たすかを型検査で検証します。<code>as</code> と違い、満たさなければ型検査が報告します。
-          </p>
+          <p class="na__explain" data-active={frame.explain === undefined ? "false" : "true"} aria-hidden={frame.explain === undefined ? "true" : undefined} set:html={frame.explain ?? ""} />
         </li>
       );
     })}
