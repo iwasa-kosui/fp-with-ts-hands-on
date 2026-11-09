@@ -17,7 +17,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "brief",
     minutes: 1,
-    role: "課題: 予約の状態だけが残る事故と、再現テストが安定しないこと、保存の失敗と競合を返し分けられないことを確かめます。",
+    role: "課題: 予約の状態だけが残る事故と、再現テストが安定しないこと、競合を Err で返せないことを確かめます。",
   },
   {
     slug: "current-code",
@@ -25,7 +25,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "brief",
     minutes: 1.5,
-    role: "課題: 片方だけ残る原因の2回の保存、時刻と ID の直接の生成、返し分けられない戻り値の型を、今のコードで確かめます。",
+    role: "課題: 片方だけ残る原因の2回の保存、時刻と ID の直接の生成、競合を返すコードがない戻り値の型を、今のコードで確かめます。",
   },
   {
     slug: "dual-write",
@@ -72,7 +72,7 @@ export const sessionPages = [
     title: "状態と監査記録を1回で渡す",
     flow: "solution",
     kind: "teach",
-    minutes: 1,
+    minutes: 1.5,
     role: "解決策: 状態と監査記録を1つのイベントにして、store へ1回で渡します。",
   },
   {
@@ -104,7 +104,7 @@ export const sessionPages = [
     title: "全体の流れ",
     flow: "solution",
     kind: "teach",
-    minutes: 1,
+    minutes: 1.5,
     role: "解決策: ここまでの部品をつないだ、診察開始の全体の流れを確かめます。",
   },
   {
@@ -113,7 +113,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策: 業務エラーを Err で返す経路と、システムエラーを例外で渡す経路を見分けます。",
+    role: "解決策: 業務の失敗を Err で返す経路と、障害を例外で渡す経路を見分けます。",
   },
   {
     slug: "checks",
@@ -161,6 +161,6 @@ export const sessionPages = [
     flow: "advanced",
     kind: "advanced",
     minutes: 0,
-    role: "あとで読む: store の2つの実装を読み比べて、保存と競合の扱いの違いを確かめます。",
+    role: "あとで読む: examinationStartedStore の2つの実装を読み比べて、保存と競合の扱いの違いを確かめます。",
   },
 ] as const satisfies readonly SessionPage[];

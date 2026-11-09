@@ -1,0 +1,186 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import { checkBands, lineIndex, lineRange } from "./lines";
+import { mapFlowCode } from "./examples";
+import ResultBox from "./ResultBox.astro";
+import "./figure.css";
+
+const themes = { light: "github-light", dark: "github-dark" } as const;
+
+const doubleLine = lineIndex(mapFlowCode, "const double");
+const ensureLines = lineRange(mapFlowCode, "const ensurePositive", 'err("NotPositive");');
+const okBranch = lineIndex(mapFlowCode, "? ok(f(r.value))");
+const errBranch = lineIndex(mapFlowCode, ": err(r.error)");
+
+const frames = [
+  {
+    caption: "map は、Ok の中の値だけを関数に渡します。double は、素の値 3 を受け取って、素の値を返す関数です。",
+    mark: { bands: checkBands(mapFlowCode, { a: [doubleLine] }) },
+  },
+  {
+    caption: "Ok(3) に map(double) を使うと、Ok(6) になります。箱は Ok のままで、中身だけが 6 に変わります。",
+    mark: { bands: checkBands(mapFlowCode, { a: [doubleLine], b: [okBranch] }) },
+  },
+  {
+    caption: "Err(\"NotPositive\") に map を使っても、double は呼ばれません。Err は、同じ値のまま通り抜けます。",
+    mark: { bands: checkBands(mapFlowCode, { c: [errBranch] }), skip: [doubleLine] },
+  },
+  {
+    caption: "Result を返す関数を map に渡すと、戻り値の Result がさらに Ok の箱に入り、Ok(Ok(3)) と二重になります。",
+    mark: { bands: checkBands(mapFlowCode, { a: ensureLines, b: [okBranch] }) },
+  },
+] as const;
+
+const data = JSON.stringify(frames.map(({ mark }) => mark));
+---
+
+<figure class="we-fig map-flow" data-map-flow data-marks={data} aria-label="map の入力と出力">
+  <div class="mf-layout">
+    <figure class="we-code" data-code>
+      <figcaption class="we-code__head"><span class="we-code__tag">関数の実装</span><code>map は動きの説明用</code></figcaption>
+      <Code code={mapFlowCode} lang="ts" themes={themes} defaultColor={false} />
+    </figure>
+
+    <div class="mf-right">
+      <StepControls />
+      <ol class="we-frames">
+        <li data-frame>
+          <p class="we-caption">{frames[0].caption}</p>
+          <div class="mf-flow">
+            <div class="mf-side"><span class="mf-label">入力</span><ResultBox kind="ok">3</ResultBox></div>
+            <div class="mf-call"><span class="we-chip" data-band="a"><code class="we-mono">.map(double)</code></span><span class="mf-arrow" aria-hidden="true">→</span></div>
+            <div class="mf-side"><span class="mf-label">出力</span><span class="mf-pending">まだ</span></div>
+          </div>
+        </li>
+        <li data-frame>
+          <p class="we-caption">{frames[1].caption}</p>
+          <div class="mf-flow">
+            <div class="mf-side"><span class="mf-label">入力</span><ResultBox kind="ok">3</ResultBox></div>
+            <div class="mf-call"><span class="we-chip" data-band="a"><code class="we-mono">.map(double)</code></span><span class="mf-arrow" aria-hidden="true">→</span><code class="mf-note we-mono">double(3) は 6</code></div>
+            <div class="mf-side"><span class="mf-label">出力</span><ResultBox kind="ok">6</ResultBox></div>
+          </div>
+        </li>
+        <li data-frame>
+          <p class="we-caption">{frames[2].caption}</p>
+          <div class="mf-flow">
+            <div class="mf-side"><span class="mf-label">入力</span><ResultBox kind="err">"NotPositive"</ResultBox></div>
+            <div class="mf-call"><span class="we-chip mf-skipped" data-band="c"><code class="we-mono">.map(double)</code></span><span class="mf-arrow" aria-hidden="true">→</span><span class="mf-note">double は呼ばれない</span></div>
+            <div class="mf-side"><span class="mf-label">出力</span><ResultBox kind="err">"NotPositive"</ResultBox></div>
+          </div>
+        </li>
+        <li data-frame>
+          <p class="we-caption">{frames[3].caption}</p>
+          <div class="mf-flow">
+            <div class="mf-side"><span class="mf-label">入力</span><ResultBox kind="ok">3</ResultBox></div>
+            <div class="mf-call"><span class="we-chip" data-band="a"><code class="we-mono">.map(ensurePositive)</code></span><span class="mf-arrow" aria-hidden="true">→</span><code class="mf-note we-mono">ensurePositive(3) は Ok(3)</code></div>
+            <div class="mf-side"><span class="mf-label">出力（二重）</span><ResultBox kind="ok"><ResultBox kind="ok">3</ResultBox></ResultBox></div>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+  import { applyMark, type Mark } from "./lit";
+
+  document.querySelectorAll<HTMLElement>("[data-map-flow]").forEach((root) => {
+    const marks = JSON.parse(root.dataset.marks ?? "[]") as Mark[];
+    const code = root.querySelector<HTMLElement>("[data-code]");
+    mountStepper({
+      root,
+      onStep: (index) => {
+        if (code !== null) applyMark(code, marks[index]);
+      },
+    });
+  });
+</script>
+
+<style>
+  .mf-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .mf-right {
+    display: grid;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .mf-flow {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.5rem;
+    align-items: center;
+    margin-block-start: 0.5rem;
+    padding: 0.625rem;
+    border: 1px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+  }
+
+  .mf-side {
+    display: grid;
+    justify-items: center;
+    gap: 0.25rem;
+    min-width: 6.5rem;
+  }
+
+  .mf-label {
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .mf-call {
+    display: grid;
+    justify-items: center;
+    gap: 0.25rem;
+    min-width: 0;
+    text-align: center;
+  }
+
+  .mf-call code {
+    padding: 0;
+    background: none;
+    font-size: 0.8125rem;
+  }
+
+  .mf-arrow {
+    color: var(--role-muted);
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  .mf-note {
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .mf-skipped code {
+    text-decoration: line-through;
+  }
+
+  .mf-pending {
+    display: grid;
+    place-items: center;
+    min-width: 5.5rem;
+    min-height: 3.5rem;
+    border: 2px dashed var(--role-border);
+    border-radius: 0.5rem;
+    color: var(--role-muted);
+    font-size: 0.875rem;
+  }
+
+  @media (max-width: 48rem) {
+    .mf-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

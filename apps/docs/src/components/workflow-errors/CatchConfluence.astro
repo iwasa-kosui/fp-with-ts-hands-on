@@ -1,0 +1,269 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import { checkBands, lineIndex } from "./lines";
+import { noticeMessage, paths, routeCatch, throwInvalidState, throwNotFound, throwPersistence } from "./sources";
+import "./figure.css";
+
+const templateOf = (line: string): string => {
+  const found = /`([^`]+)`/.exec(line);
+  if (found === null || found[1] === undefined) throw new Error(`メッセージが見つかりません: ${line}`);
+  return found[1];
+};
+
+const matchText = "was not found";
+const notFoundMessage = templateOf(throwNotFound);
+const [notFoundHead = "", notFoundTail = ""] = notFoundMessage.split(matchText);
+
+const cards = [
+  { id: "a", name: "予約が見つからない", message: notFoundMessage },
+  { id: "b", name: "状態不正", message: templateOf(throwInvalidState) },
+  { id: "c", name: "保存で障害が起きた", message: templateOf(throwPersistence) },
+] as const;
+
+const catchLine = lineIndex(routeCatch, "} catch (error) {");
+const testLine = lineIndex(routeCatch, "error.message.includes");
+const noticeLine = lineIndex(routeCatch, "context.redirect");
+const rethrowLine = lineIndex(routeCatch, "throw error;");
+
+const frames = [
+  {
+    caption: "診察開始では、3種類の失敗が起きます。予約が見つからない失敗、状態不正（予約の状態が来院済み（CheckedIn）ではない失敗）、保存で障害が起きる失敗です。",
+    cards: ["a", "b", "c"],
+    merge: false,
+    mark: {},
+    out: "",
+  },
+  {
+    caption: "3つとも throw された Error です。どの失敗も、同じ1つの catch に入ります。",
+    cards: ["a", "b", "c"],
+    merge: true,
+    mark: { bands: checkBands(routeCatch, { a: [catchLine] }) },
+    out: "",
+  },
+  {
+    caption: "catch は、error.message に \"was not found\" が含まれるかで分岐します。予約なしの文言は一致するので、画面のお知らせへ進みます。",
+    cards: ["a"],
+    merge: true,
+    mark: { bands: checkBands(routeCatch, { a: [testLine, noticeLine] }) },
+    out: "notice",
+  },
+  {
+    caption: "状態不正の文言は一致しません。throw error で外へ出て、500 になります。",
+    cards: ["b"],
+    merge: true,
+    mark: { bands: checkBands(routeCatch, { c: [testLine, rethrowLine] }) },
+    out: "500",
+  },
+  {
+    caption: "保存の障害の文言も一致しないので、同じ throw error から 500 になります。状態不正と保存の障害は、同じ 500 として返ります。",
+    cards: ["b", "c"],
+    merge: true,
+    mark: { bands: checkBands(routeCatch, { c: [testLine, rethrowLine] }) },
+    out: "500",
+  },
+] as const;
+
+const themes = { light: "github-light", dark: "github-dark" } as const;
+const data = JSON.stringify(frames.map(({ caption: _caption, ...rest }) => rest));
+---
+
+<figure class="we-fig we-fig--top catch-confluence" data-catch-confluence data-frames={data} aria-label="3種類の失敗が1つの catch に入り、文言で分岐する流れ">
+  <StepControls />
+
+  <ol class="we-frames">
+    {frames.map(({ caption }) => (
+      <li data-frame><p class="we-caption">{caption}</p></li>
+    ))}
+  </ol>
+
+  <div class="we-body cc-stage">
+    <ul class="cc-cards" aria-label="起きうる失敗">
+      {cards.map(({ id, name, message }) => (
+        <li class="cc-card" data-card={id}>
+          <strong>{name}</strong>
+          <code class="we-mono">
+            {id === "a" ? <Fragment>{notFoundHead}<mark class="cc-match">{matchText}</mark>{notFoundTail}</Fragment> : message}
+          </code>
+        </li>
+      ))}
+    </ul>
+
+    <svg class="cc-merge" viewBox="0 0 44 256" aria-hidden="true">
+      <path d="M0 40 C26 40 18 35 38 35" data-card-line="a"></path>
+      <path d="M0 128 C26 128 18 35 38 35" data-card-line="b"></path>
+      <path d="M0 216 C26 216 18 35 38 35" data-card-line="c"></path>
+      <polygon points="44,35 36,30 36,40"></polygon>
+    </svg>
+
+    <div class="cc-right">
+      <figure class="we-code" data-code>
+        <figcaption class="we-code__head"><span class="we-code__tag">route の catch</span><code>{paths.s04Routes}:88-93</code></figcaption>
+        <Code code={routeCatch} lang="ts" themes={themes} defaultColor={false} />
+      </figure>
+      <div class="cc-outs">
+        <p class="we-box cc-out" data-out="notice" data-tone="ok">
+          <strong>画面のお知らせ</strong>
+          <span>「{noticeMessage("AppointmentNotFound")}」</span>
+        </p>
+        <p class="we-box cc-out" data-out="500" data-tone="err">
+          <strong>500</strong>
+          <span>どの失敗なのか、画面からは分かりません</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+  import { applyMark, type Mark } from "./lit";
+
+  type Frame = { cards: string[]; merge: boolean; mark: Mark; out: string };
+
+  document.querySelectorAll<HTMLElement>("[data-catch-confluence]").forEach((root) => {
+    const frames = JSON.parse(root.dataset.frames ?? "[]") as Frame[];
+    const code = root.querySelector<HTMLElement>("[data-code]");
+    mountStepper({
+      root,
+      onStep: (index) => {
+        const frame = frames[index];
+        if (frame === undefined || code === null) return;
+        root.querySelectorAll<HTMLElement>("[data-card]").forEach((card) => {
+          card.dataset.on = String(frame.cards.includes(card.dataset.card ?? ""));
+        });
+        root.querySelectorAll<SVGElement>("[data-card-line]").forEach((line) => {
+          line.dataset.on = String(frame.merge && frame.cards.includes(line.dataset.cardLine ?? ""));
+        });
+        root.dataset.merge = String(frame.merge);
+        root.querySelectorAll<HTMLElement>("[data-out]").forEach((out) => {
+          out.dataset.on = String(out.dataset.out === frame.out);
+        });
+        applyMark(code, frame.mark);
+      },
+    });
+  });
+</script>
+
+<style>
+  .cc-stage {
+    display: grid;
+    grid-template-columns: 17rem 2.75rem minmax(0, 1fr);
+    align-items: start;
+    margin-block-start: 0.5rem;
+  }
+
+  .cc-cards {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .cc-card {
+    display: grid;
+    align-content: center;
+    gap: 0.25rem;
+    height: 5rem;
+    padding: 0.25rem 0.625rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    line-height: 1.4;
+  }
+
+  .cc-card strong {
+    font-size: 0.9375rem;
+  }
+
+  .cc-card code {
+    padding: 0;
+    background: none;
+    font-size: 0.75rem;
+    overflow-wrap: anywhere;
+  }
+
+  .cc-match {
+    padding: 0 0.125rem;
+    border-radius: 0.125rem;
+    background: color-mix(in srgb, var(--role-accent) 28%, transparent);
+    color: inherit;
+  }
+
+  .cc-merge {
+    display: block;
+    width: 2.75rem;
+    height: 16rem;
+    overflow: visible;
+  }
+
+  .cc-merge path {
+    fill: none;
+    stroke: var(--role-border);
+    stroke-width: 2;
+  }
+
+  .cc-merge polygon {
+    fill: var(--role-border);
+  }
+
+  .cc-right {
+    display: grid;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .cc-outs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .cc-out {
+    display: grid;
+    gap: 0.125rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .cc-out strong {
+    font-size: 0.9375rem;
+  }
+
+  .catch-confluence[data-ready] .cc-card,
+  .catch-confluence[data-ready] .cc-out {
+    transition: opacity 0.3s, border-color 0.3s;
+  }
+
+  .catch-confluence[data-ready] .cc-card[data-on="false"],
+  .catch-confluence[data-ready] .cc-out[data-on="false"] {
+    opacity: 0.35;
+  }
+
+  .catch-confluence[data-ready] .cc-card[data-on="true"] {
+    border-color: var(--role-accent);
+  }
+
+  .catch-confluence[data-ready] .cc-merge path[data-on="true"] {
+    stroke: var(--role-accent);
+    stroke-width: 3;
+  }
+
+  .catch-confluence[data-ready][data-merge="true"] .cc-merge polygon {
+    fill: var(--role-accent);
+  }
+
+  .catch-confluence:not([data-ready]) .cc-out {
+    opacity: 1;
+  }
+
+  @media (max-width: 48rem) {
+    .cc-stage {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cc-merge {
+      display: none;
+    }
+  }
+</style>

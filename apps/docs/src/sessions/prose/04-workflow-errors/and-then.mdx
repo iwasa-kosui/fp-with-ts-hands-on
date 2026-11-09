@@ -1,0 +1,7 @@
+import AndThenFlow from "../../../components/workflow-errors/AndThenFlow.astro";
+
+<p>課題1を解く修正後のコードには、失敗するかもしれない工程もあります。<code>map</code> ではつなげないこの工程を、<code>andThen</code> でつなぎます。</p>
+
+<AndThenFlow />
+
+<p><code>andThen</code> は、Ok のときだけ、Result を返す関数を呼びます。Err のときは、<code>map</code> と同じく、関数を呼ばずに同じ Err を返します。<code>map</code> に Result を返す関数を渡すと、Result が二重になります。ここまでで、失敗しない工程と失敗するかもしれない工程を、分岐を書かずにつなげます。</p>

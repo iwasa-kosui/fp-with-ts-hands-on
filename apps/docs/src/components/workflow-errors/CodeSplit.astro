@@ -1,0 +1,56 @@
+---
+import { Code } from "astro:components";
+import "./figure.css";
+
+interface Props {
+  path: string;
+  code: string;
+  codeFirst?: boolean;
+}
+
+const { path, code, codeFirst = true } = Astro.props;
+const themes = { light: "github-light", dark: "github-dark" } as const;
+---
+
+<div class="code-split" data-code-first={codeFirst ? "true" : "false"}>
+  <figure class="we-code we-code--wrap">
+    <figcaption class="we-code__head"><code>{path}</code></figcaption>
+    <Code code={code} lang="ts" themes={themes} defaultColor={false} />
+  </figure>
+  <div class="code-split__text"><slot /></div>
+</div>
+
+<style>
+  .code-split {
+    display: grid;
+    gap: 1rem 1.5rem;
+    align-items: start;
+    margin-block: 0.75rem;
+  }
+
+  .code-split > * {
+    min-width: 0;
+  }
+
+  .code-split figure {
+    margin: 0;
+  }
+
+  .code-split[data-code-first="false"] .code-split__text {
+    order: -1;
+  }
+
+  .code-split__text :global(p) {
+    margin: 0 0 0.5rem;
+  }
+
+  @media (min-width: 900px) {
+    .code-split[data-code-first="true"] {
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    }
+
+    .code-split[data-code-first="false"] {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    }
+  }
+</style>

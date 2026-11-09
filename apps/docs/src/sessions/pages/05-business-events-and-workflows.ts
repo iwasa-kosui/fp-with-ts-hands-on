@@ -41,7 +41,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1,
-    role: "事前知識: S04 で使った andThen と map が、2本のレールのどこに当たるかを確かめます。",
+    role: "事前知識: S04 で読んだ andThen と map が、2本のレールのどこに当たるかを確かめます。",
   },
   {
     slug: "io-outside",

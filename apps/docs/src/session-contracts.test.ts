@@ -98,11 +98,11 @@ const expectedCurriculum = [
     slug: "04-workflow-errors",
     sequence: "04",
     title: "失敗をユースケースの結果として扱う",
-    durationMinutes: 35,
+    durationMinutes: 31,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:04",
     snapshot: "session-04",
-    timeBreakdown: { brief: 4, teach: 13, exercise: 10, review: 8 },
+    timeBreakdown: { brief: 3, teach: 12, exercise: 10, review: 6 },
   },
   {
     slug: "05-business-events-and-workflows",
@@ -118,11 +118,11 @@ const expectedCurriculum = [
     slug: "06-effects-and-consistency",
     sequence: "06",
     title: "副作用と整合性境界を設計する",
-    durationMinutes: 35,
+    durationMinutes: 36,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:06",
     snapshot: "session-06",
-    timeBreakdown: { brief: 3, teach: 12, exercise: 15, review: 5 },
+    timeBreakdown: { brief: 3, teach: 13, exercise: 15, review: 5 },
   },
   {
     slug: "final",
@@ -141,11 +141,7 @@ const expectedEpisodes = [
   undefined,
   undefined,
   undefined,
-  [
-    "別の端末で受付情報が更新された後、古い画面に残っていたハムスターの診察開始ボタンを押すと、500エラーだけを返して止まりました。",
-    "予約なしは専用表示になるのに、受付前の予約は想定外扱いです。後ろでは犬が吠え、列だけが伸びます。",
-    "新しい例外を投げた側は、呼び出し側のcatch漏れを型から確かめられませんでした。",
-  ],
+  undefined,
   undefined,
   undefined,
   [
@@ -230,7 +226,7 @@ const expectedExercises = [
     solutionPresentation: "excerpt",
     peerReviewPromises: "reference",
     peerReview: {
-      minutes: 8,
+      minutes: 6,
       pickCount: 2,
       questions: [
         "予約なしと状態不正は、異なる `kind` を持つ `Err` になっていますか。",
@@ -434,7 +430,7 @@ describe("page-owned session contracts", () => {
   it("keeps the 180-minute schedule and each time allocation consistent", () => {
     expect(
       sessions.reduce((sum, { durationMinutes }) => sum + durationMinutes, 0),
-    ).toBe(183);
+    ).toBe(180);
     for (const session of sessions) {
       expect(
         Object.values(session.timeBreakdown).reduce(
