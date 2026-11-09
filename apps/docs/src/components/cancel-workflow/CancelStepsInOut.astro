@@ -82,6 +82,7 @@ const stages: readonly Stage[] = [
       { label: "前の工程の予約", value: `{ kind: "Scheduled", … }` },
       { label: "入力のキャンセル理由 reason", value: `"owner request"` },
       { label: "時計 clock の時刻", value: `"2026-08-30T05:00:00.000Z"` },
+      { label: "ID の生成器 eventIdGenerator の ID", value: `"（新しいイベントの ID）"` },
     ],
     functions: ["createEvent", "Appointment.cancel"],
     failure: { when: "この工程に業務の失敗はない", kinds: [], none: true },
@@ -91,7 +92,7 @@ const stages: readonly Stage[] = [
         value: `{\n  kind: "AppointmentCanceled",\n  aggregateState: {\n    kind: "Canceled",\n    reason: "skin check",\n    cancellationReason: "owner request",\n    canceledAt: "2026-08-30T05:00:00.000Z",\n    …\n  },\n}`,
       },
     ],
-    outputNote: "aggregateState は、イベントに含まれる、キャンセル後の予約です。背景で見た 3 項目が変わります。",
+    outputNote: "aggregateState は、イベントに含まれる、キャンセル後の予約です。背景で見た3項目が変わります。",
     caption:
       "3つ目の工程は、createEvent が時計から時刻と ID を取得し、業務ロジックの Appointment.cancel がイベント AppointmentCanceled を作ります。イベントは、誰がいつキャンセルしたかを履歴として記録するデータです。",
   },
@@ -105,7 +106,7 @@ const stages: readonly Stage[] = [
     failure: {
       when: "記録が別のリクエストと競合した場合",
       kinds: ["AppointmentConflict"],
-      note: "競合は業務の失敗であるため Err です。接続断は障害であるため、例外のまま送出します。",
+      note: "競合は、利用者が最新の内容を確認して操作をやり直せる（次の操作を選べる）ため Err、接続断は選べない障害であるため例外です。",
     },
     output: [{ label: "呼び出し側が受け取る値", value: `{\n  appointment: {\n    kind: "Canceled",\n    …\n  },\n}` }],
     caption:

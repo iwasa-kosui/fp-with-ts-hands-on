@@ -23,9 +23,9 @@ const frames: readonly Frame[] = [
   {
     part: undefined,
     arrows: [],
-    heading: "業務ロジックの外に配置するもの",
-    lines: ["取得するのは Resolver", "保存するのは Store", "時刻と ID を取得して渡すのは createEvent", "値だけで結果を返すのは Appointment.cancel"],
-    caption: "データベースから取得する Resolver を左に、データベースへ保存する Store を右に、時刻と ID を取得して渡す createEvent を中央に配置します。",
+    heading: "外に配置する I/O と、内にある業務ロジック",
+    lines: ["外の I/O: 取得するのは Resolver、保存するのは Store、時刻と ID を取得して渡すのは createEvent", "内の業務ロジック: 値だけで結果を返すのは Appointment.cancel"],
+    caption: "データベースから取得する Resolver を左に、データベースへ保存する Store を右に、時刻と ID を取得して渡す createEvent を中央に配置します。業務ロジックの Appointment.cancel は、createEvent から呼ばれます。",
   },
   {
     part: "resolver",
@@ -93,21 +93,21 @@ const headOf = (frame: Frame, arrow: Arrow, index: number): string => (frame.arr
               <text x="92" y="24" text-anchor="middle" class="rsf__title rsf__title--sm">Appointment.cancel</text>
               <text x="92" y="44" text-anchor="middle" class="rsf__sub">値だけで結果を返す</text>
             </g>
-            <g class="rsf__box rsf__box--io" data-current={frame.part === "store" ? "" : undefined} transform="translate(494 18)">
-              <rect width="160" height="72" rx="10"></rect>
-              <text x="80" y="34" text-anchor="middle" class="rsf__title">Store</text>
-              <text x="80" y="60" text-anchor="middle" class="rsf__sub">データベースへ保存</text>
+            <g class="rsf__box rsf__box--io" data-current={frame.part === "store" ? "" : undefined} transform="translate(506 18)">
+              <rect width="148" height="72" rx="10"></rect>
+              <text x="74" y="34" text-anchor="middle" class="rsf__title">Store</text>
+              <text x="74" y="60" text-anchor="middle" class="rsf__sub">データベースへ保存</text>
             </g>
 
             <path d="M 166 54 H 218" class="rsf__arrow" data-active={activeOf(frame, "pass")} marker-end={headOf(frame, "pass", index)}></path>
             <text x="194" y="44" text-anchor="middle" class="rsf__label">予約</text>
-            <path d="M 438 54 H 490" class="rsf__arrow" data-active={activeOf(frame, "return")} marker-end={headOf(frame, "return", index)}></path>
-            <text x="464" y="44" text-anchor="middle" class="rsf__label rsf__label--sm">イベント</text>
+            <path d="M 438 54 H 502" class="rsf__arrow" data-active={activeOf(frame, "return")} marker-end={headOf(frame, "return", index)}></path>
+            <text x="470" y="44" text-anchor="middle" class="rsf__label rsf__label--sm">イベント</text>
 
             <path d="M 86 204 V 94" class="rsf__arrow" data-active={activeOf(frame, "read")} marker-end={headOf(frame, "read", index)}></path>
             <text x="98" y="150" class="rsf__label">取得</text>
-            <path d="M 574 94 V 200" class="rsf__arrow" data-active={activeOf(frame, "write")} marker-end={headOf(frame, "write", index)}></path>
-            <text x="586" y="150" class="rsf__label">保存</text>
+            <path d="M 580 94 V 200" class="rsf__arrow" data-active={activeOf(frame, "write")} marker-end={headOf(frame, "write", index)}></path>
+            <text x="592" y="150" class="rsf__label">保存</text>
 
             <g class="rsf__db rsf__db--clock" transform="translate(222 150)">
               <rect width="216" height="40" rx="8"></rect>
@@ -137,7 +137,7 @@ const headOf = (frame: Frame, arrow: Arrow, index: number): string => (frame.arr
     ))}
   </ol>
 
-  <p class="rsf__note">注: 工程ごとに取得と検証を繰り返す。図は関数と I/O の関係だけを示し、実行の順序は示さない。</p>
+  <p class="rsf__note">注: 工程ごとに取得と検証を繰り返します。図は関数と I/O の関係だけを示し、実行の順序は示しません。</p>
 </figure>
 
 <script>

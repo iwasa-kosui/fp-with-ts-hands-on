@@ -99,7 +99,7 @@ const allScenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }
       ...untilAppointment("Scheduled"),
       step(6, "<code>ensureCancellable</code> が、状態を検証します。<code>Scheduled</code> は診察開始前であるため、<code>ok</code> を返します。", appointment("Scheduled"), ok(appointment("Scheduled"))),
       step(7, "<code>createEvent</code> が、時計から時刻を、ID の生成器から ID を取得し、入力の <code>reason</code> とともに <code>Appointment.cancel</code> へ渡します。", appointment("Scheduled"), ok(event)),
-      { ...step(7, "<code>Appointment.cancel</code> は、渡された値だけで <code>AppointmentCanceled</code> を作ります。背景で見た 3 項目が変わり、時刻は <code>context.occurredAt</code> から取ります。", `予約、"owner request"、context`, event), view: cancelView },
+      { ...step(7, "<code>Appointment.cancel</code> は、渡された値だけで <code>AppointmentCanceled</code> を作ります。背景で見た3項目が変わり、時刻は <code>context.occurredAt</code> から取ります。", `予約、"owner request"、context`, event), view: cancelView },
       step(8, "<code>andThrough</code> は、Ok の場合だけ store を呼び、値をそのまま次へ渡します。予約の更新とイベントの追記を、1回の保存で行います。", event, ok(event)),
       step(9, "<code>map</code> が、イベントからキャンセル後の予約を取り出します。", event, ok(canceled)),
       step(endIndex, "値は成功レールの終点に到達します。戻り値の型 <code>UseCaseOutput</code> は、成功の型 <code>UseCaseOk</code> と失敗の型 <code>UseCaseError</code> を持つ <code>ResultAsync</code> です（<code>UseResultAsync</code> は別名）。<code>UseCaseError</code> は、工程の失敗のユニオン型です。", canceled, ok(canceled)),

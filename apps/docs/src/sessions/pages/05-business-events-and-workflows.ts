@@ -24,7 +24,7 @@ export const sessionPages = [
     title: "成功と失敗の2本のレール",
     flow: "knowledge",
     kind: "teach",
-    minutes: 0.25,
+    minutes: 0.5,
     role: "事前知識: 課題1を解決する構成を読むために、工程が失敗した場合の残りの工程の扱いを、成功と失敗の2本のレールで説明します。",
   },
   {
@@ -40,7 +40,7 @@ export const sessionPages = [
     title: "キャンセルの4つの工程への分割",
     flow: "solution",
     kind: "teach",
-    minutes: 1,
+    minutes: 0.75,
     role: "解決策: 各工程が失敗を Result で返せるように、キャンセルを入力と出力を持つ4つの工程に分割します。",
   },
   {
@@ -48,7 +48,7 @@ export const sessionPages = [
     title: "業務ロジックの外への I/O の配置",
     flow: "solution",
     kind: "teach",
-    minutes: 0.5,
+    minutes: 0.75,
     role: "解決策: データベースと時計を代替の実装に差し替えて、条件の検証をテストできるようにするために、I/O を業務ロジックの外に配置します。",
   },
   {
@@ -64,7 +64,7 @@ export const sessionPages = [
     title: "キャンセル成功時の値の流れ",
     flow: "solution",
     kind: "teach",
-    minutes: 2,
+    minutes: 1.75,
     role: "解決策: キャンセルが成功する場合に、値が各工程でどう変わるかを参照実装のコードで追跡します。",
   },
   {
@@ -72,16 +72,16 @@ export const sessionPages = [
     title: "キャンセル失敗時の流れ",
     flow: "solution",
     kind: "teach",
-    minutes: 2,
+    minutes: 1.5,
     role: "解決策: キャンセルが失敗する場合に、失敗の値がどこで切り替わりどこへ進むかを追跡します。",
   },
   {
     slug: "why-rop",
-    title: "工程の連結で解決できる課題",
+    title: "Result、工程の分割、I/O の配置で解決した課題",
     flow: "solution",
     kind: "teach",
-    minutes: 0.25,
-    role: "解決策: 追跡した結果から、工程の連結が1つの関数に実装したときの2つの課題を解決する理由を確認します。",
+    minutes: 0.5,
+    role: "解決策: 追跡した結果から、Result、工程の分割、I/O の配置が、1つの関数に実装したときの2つの課題を解決した理由を確認します。",
   },
   {
     slug: "dependency-rule",
@@ -96,7 +96,7 @@ export const sessionPages = [
     title: "依存の向きの違反の検出",
     flow: "solution",
     kind: "teach",
-    minutes: 0.25,
+    minutes: 0.5,
     role: "解決策を守る: 依存の向きの違反を、Linter のルールとテストのどちらが検出するかを比較します。",
   },
   {

@@ -1,7 +1,7 @@
 import CancelRailwayAnimation from "../../../components/CancelRailwayAnimation.astro";
 import SessionDetailsBody from "../../../components/SessionDetailsBody.astro";
 
-<p>失敗した工程より後の工程は実行されず、失敗の値は失敗のレールを終点まで進みます。失敗する箇所は、工程では3か所、コードでは5か所です。実行者の確認は <code>ensureUserFound</code> と <code>ensureCanManageClinic</code>、予約の確認は <code>ensureAppointmentFound</code> と <code>ensureCancellable</code>、記録して返すは <code>store</code> の競合で失敗します。競合は業務の失敗であるため Err、接続断は障害であるため例外のままで、競合の経路は図に含みません。</p>
+<p>失敗する箇所は、工程では3か所、コードでは5か所です。「実行者の確認」は <code>ensureUserFound</code> と <code>ensureCanManageClinic</code>、「予約の確認」は <code>ensureAppointmentFound</code> と <code>ensureCancellable</code>、「記録して返す」は <code>store</code> です。競合（別のリクエストが先に同じ予約を更新した場合）は、利用者が最新の内容を確認して操作をやり直せるため Err、接続断は選べない障害であるため例外です。</p>
 
 <CancelRailwayAnimation scenes="failures" />
 

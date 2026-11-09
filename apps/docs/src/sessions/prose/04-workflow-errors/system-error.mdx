@@ -4,4 +4,4 @@ import ExceptionOrResultAnimation from "../../../components/ExceptionOrResultAni
 
 <ExceptionOrResultAnimation scenario="system" />
 
-<p><strong>入力の失敗</strong>: S03 で未対応とした入力の失敗は、この回の対象にしません。本来は、利用者が入力を直せる業務の失敗として Err で返しますが、S03 の Result の Err は失敗の理由を持たないため、現在のコードでは <code>_unsafeUnwrap</code> が例外を投げて 500 を返します。</p>
+<p><strong>入力の失敗</strong>: S03 で未対応とした入力の失敗は、この Session の対象にしません。本来は、利用者が入力を直せる業務の失敗として Err で返しますが、S03 の Result の Err は失敗の理由を持たないため、現在のコードでは <code>_unsafeUnwrap</code> が例外を投げて 500 を返します。</p>

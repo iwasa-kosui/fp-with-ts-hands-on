@@ -19,7 +19,7 @@ type Layer = "web" | "useCase" | "domain";
 
 const layers: readonly Readonly<{ id: Layer; name: string; folder: string; role: string }>[] = [
   { id: "web", name: "web", folder: "adaptor/primary/web/", role: "外側（入出力）" },
-  { id: "useCase", name: "useCase", folder: "useCase/", role: "外側（工程の連結）" },
+  { id: "useCase", name: "useCase", folder: "useCase/", role: "外側（条件の検証と工程の連結）" },
   { id: "domain", name: "domain", folder: "domain/", role: "内側（業務の知識）" },
 ];
 

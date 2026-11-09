@@ -617,7 +617,10 @@ describe("GuardExercise", () => {
       { timeoutMs: expect.any(Number) },
     );
     expect(session.readFile).toHaveBeenCalledWith(guardPaths.result);
-    expect(row(host, "B1-any-parser")?.textContent).toContain("すり抜け");
+    expect(
+      row(host, "B1-any-parser")?.querySelector(".guard-exercise__verdict .guard-exercise__state")
+        ?.textContent,
+    ).toBe("未検出");
     expect(row(host, "B1-any-parser")?.textContent).toContain("対象外");
     expect(
       row(host, "B1-any-parser")?.querySelector('td[data-state="none"]')
@@ -684,7 +687,10 @@ describe("GuardExercise", () => {
     await settle();
 
     expect(action(host, "run-guard")?.disabled).toBe(false);
-    expect(row(host, "B1-any-parser")?.textContent).toContain("すり抜け");
+    expect(
+      row(host, "B1-any-parser")?.querySelector(".guard-exercise__verdict .guard-exercise__state")
+        ?.textContent,
+    ).toBe("未検出");
   });
 
   it("shows the judging step once the session is ready and the command is waiting", async () => {
@@ -700,7 +706,10 @@ describe("GuardExercise", () => {
     await act(async () => command.resolve(1));
     await settle();
 
-    expect(row(host, "B1-any-parser")?.textContent).toContain("すり抜け");
+    expect(
+      row(host, "B1-any-parser")?.querySelector(".guard-exercise__verdict .guard-exercise__state")
+        ?.textContent,
+    ).toBe("未検出");
   });
 
   it("shows the hint of a slipped row only after the row is opened", async () => {
@@ -771,7 +780,10 @@ describe("GuardExercise", () => {
 
     expect(row(host, "B1-any-parser")?.dataset.verdict).toBe("unchanged");
     expect(row(host, "B1-any-parser")?.textContent).toContain("未変更");
-    expect(row(host, "B1-any-parser")?.textContent).not.toContain("すり抜け");
+    expect(
+      row(host, "B1-any-parser")?.querySelector(".guard-exercise__verdict .guard-exercise__state")
+        ?.textContent,
+    ).toBe("未変更");
     expect(
       host.querySelector('[data-case-id="B1-any-parser"]')?.textContent,
     ).toContain("未変更");
@@ -873,7 +885,11 @@ describe("GuardExercise", () => {
     expect(second.host.querySelector(".guard-exercise__badge")?.textContent).toBe(
       "前回の結果",
     );
-    expect(row(second.host, "B1-any-parser")?.textContent).toContain("すり抜け");
+    expect(
+      row(second.host, "B1-any-parser")?.querySelector(
+        ".guard-exercise__verdict .guard-exercise__state",
+      )?.textContent,
+    ).toBe("未検出");
     expect(
       second.host.querySelector<HTMLDetailsElement>(".guard-exercise__guide-details")?.open,
     ).toBe(false);

@@ -1,5 +1,5 @@
 import DependencyDirection from "../../../components/cancel-workflow/DependencyDirection.astro";
 
-<p>工程に分割して I/O を外に配置した構成は、この後の変更で崩れないように守る必要があります。内側の domain は業務の知識（業務ロジック）、外側の adaptor と useCase は入出力と工程の連結を担当します。adaptor の primary は画面など外部から呼ばれる側、secondary はデータベースなど外部を呼ぶ側です。内側の domain が外側のコードに依存すると、画面側の変更に合わせて業務ロジックを修正することになり、業務ロジックを画面なしで検証できなくなります。</p>
+<p>工程に分割して I/O を外に配置した構成は、この後の変更で崩れないように守る必要があります。内側の domain は、状態遷移を表す <code>Appointment.cancel</code> などの業務の知識（業務ロジック）を持ちます。外側の adaptor は入出力を、useCase は条件の検証と工程の連結を担当し、<code>ensureCancellable</code> は、キャンセルのユースケースだけが使う条件であるため useCase に置きます。adaptor の primary は画面など外部から呼ばれる側、secondary はデータベースなど外部を呼ぶ側です。内側の domain が外側のコードに依存すると、画面側の変更に合わせて業務ロジックを修正することになり、業務ロジックを画面なしで検証できなくなります。</p>
 
 <DependencyDirection />
