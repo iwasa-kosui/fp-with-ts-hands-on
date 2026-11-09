@@ -59,7 +59,7 @@ const frames: readonly Frame[] = [
   },
   {
     caption:
-      "port は参照実装では domain に置いた型です。S06 では useCase に置きました。どちらでも、外側の実装を知らないことが大事です。ExaminationStartedStore は、ExaminationStarted を受け取って ResultAsync を返すことだけを決めます。",
+      "port は参照実装では domain に置いた型です。S06 では useCase に置きました。どちらも内側なので、内側のコードは外側の実装を知らずに済みます。S00 では外側の adaptor/secondary/sqlite に置いていたので、useCase が外側を import していました。ExaminationStartedStore は、ExaminationStarted を受け取って ResultAsync を返すことだけを決めます。",
     code: { key: "port", lines: [2, 6] },
     nodes: "dim",
     focus: ["domain"],
@@ -107,7 +107,7 @@ const frames: readonly Frame[] = [
   },
   {
     caption:
-      "import の矢印はすべて内側を向きます。app.ts が各層を import して組み立てます。domain と useCase は adaptor を import しないので、テストでは偽の実装を渡せます。",
+      "import の矢印はすべて内側を向きます。app.ts が domain、useCase、adaptor を import して組み立てます。domain と useCase は adaptor を import しないので、テストでは偽の実装を渡せます。",
     nodes: "normal",
     focus: [],
     calls: "dim",

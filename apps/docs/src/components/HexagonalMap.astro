@@ -1,0 +1,288 @@
+<figure class="hexagonal-map" aria-label="ヘキサゴナルアーキテクチャの内側と外側に、配布コードのフォルダを対応させた図">
+  <div class="hexagonal-map__grid">
+    <div class="hexagonal-map__external hexagonal-map__browser">
+      <p>画面（ブラウザ）</p>
+    </div>
+    <div class="hexagonal-map__arrow hexagonal-map__arrow--down hexagonal-map__browser-web" role="img" aria-label="画面から外側の依頼を受けるアダプタへの依頼"></div>
+    <div class="hexagonal-map__box hexagonal-map__web">
+      <p class="hexagonal-map__heading">外側: 依頼を受けるアダプタ</p>
+      <p class="hexagonal-map__name"><code>adaptor/primary/web/</code></p>
+      <p class="hexagonal-map__role">外から届いた依頼を受け取り、内側を呼ぶ</p>
+    </div>
+    <div class="hexagonal-map__arrow hexagonal-map__arrow--right hexagonal-map__web-inner" role="img" aria-label="依頼を受けるアダプタから内側への依頼"></div>
+    <div class="hexagonal-map__box hexagonal-map__inner">
+      <p class="hexagonal-map__heading"><span class="hexagonal-map__hex" aria-hidden="true"></span>内側</p>
+      <p class="hexagonal-map__name"><code>useCase/</code></p>
+      <p class="hexagonal-map__role">業務上の1つの操作の手順</p>
+      <p class="hexagonal-map__name"><code>domain/</code></p>
+      <p class="hexagonal-map__role">予約のデータと業務の決まり</p>
+      <p class="hexagonal-map__name"><code>domain/shared/</code></p>
+      <p class="hexagonal-map__role">domain の中で共通に使う道具。S03 で初めて出る</p>
+    </div>
+    <div class="hexagonal-map__arrow hexagonal-map__arrow--right hexagonal-map__arrow--port hexagonal-map__inner-sqlite" role="img" aria-label="内側から頼まれて動くアダプタへの port">
+      <span class="hexagonal-map__label">port（約束の型）</span>
+    </div>
+    <div class="hexagonal-map__box hexagonal-map__sqlite">
+      <p class="hexagonal-map__heading">外側: 頼まれて動くアダプタ</p>
+      <p class="hexagonal-map__name"><code>adaptor/secondary/sqlite/</code></p>
+      <p class="hexagonal-map__role">内側に頼まれて、データベースを読み書きする</p>
+    </div>
+    <div class="hexagonal-map__arrow hexagonal-map__arrow--down hexagonal-map__sqlite-db" role="img" aria-label="頼まれて動くアダプタからデータベースへの読み書き"></div>
+    <div class="hexagonal-map__external hexagonal-map__db">
+      <p>データベース（SQLite）</p>
+    </div>
+    <p class="hexagonal-map__legend"><code>app.ts</code> は内側と外側を組み立てます。矢印は依頼の流れで、import の向きとは別です。</p>
+  </div>
+</figure>
+
+<style>
+  .hexagonal-map {
+    margin: 0.75rem 0;
+    padding: 0.6rem;
+    border: 2px solid var(--case-line);
+    background: var(--case-paper);
+    line-height: 1.4;
+  }
+
+  .hexagonal-map p {
+    margin: 0;
+    padding: 0;
+  }
+
+  .hexagonal-map code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .hexagonal-map__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "browser"
+      "browser-web"
+      "web"
+      "web-inner"
+      "inner"
+      "inner-sqlite"
+      "sqlite"
+      "sqlite-db"
+      "db"
+      "legend";
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .hexagonal-map__browser { grid-area: browser; }
+  .hexagonal-map__browser-web { grid-area: browser-web; }
+  .hexagonal-map__web { grid-area: web; }
+  .hexagonal-map__web-inner { grid-area: web-inner; }
+  .hexagonal-map__inner { grid-area: inner; }
+  .hexagonal-map__inner-sqlite { grid-area: inner-sqlite; }
+  .hexagonal-map__sqlite { grid-area: sqlite; }
+  .hexagonal-map__sqlite-db { grid-area: sqlite-db; }
+  .hexagonal-map__db { grid-area: db; }
+  .hexagonal-map__legend { grid-area: legend; }
+
+  .hexagonal-map__box,
+  .hexagonal-map__external {
+    min-width: 0;
+    padding: 0.3rem 0.5rem;
+    border: 2px solid var(--case-line);
+  }
+
+  .hexagonal-map__box {
+    display: grid;
+    align-content: start;
+    gap: 0.1rem;
+    background: color-mix(in srgb, var(--case-lemon) 45%, var(--case-paper));
+  }
+
+  .hexagonal-map__inner {
+    border-radius: 0.9rem;
+    background: color-mix(in srgb, var(--case-mint) 55%, var(--case-paper));
+  }
+
+  .hexagonal-map__external {
+    justify-self: center;
+    border-style: dashed;
+    background: var(--case-paper);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .hexagonal-map__heading {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+
+  .hexagonal-map__hex {
+    flex: none;
+    width: 1rem;
+    height: 0.9rem;
+    background: var(--case-line);
+    clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  }
+
+  .hexagonal-map__name code {
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+
+  .hexagonal-map__inner .hexagonal-map__name {
+    margin-top: 0.15rem;
+  }
+
+  .hexagonal-map__role {
+    font-size: 0.8rem;
+  }
+
+  .hexagonal-map__arrow {
+    position: relative;
+  }
+
+  .hexagonal-map__arrow::after {
+    content: "";
+    position: absolute;
+  }
+
+  .hexagonal-map__arrow--right {
+    align-self: center;
+    height: 0;
+    border-top: 2px solid var(--case-line);
+  }
+
+  .hexagonal-map__arrow--right::after {
+    top: -6px;
+    right: -1px;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 8px solid var(--case-line);
+  }
+
+  .hexagonal-map__arrow--down {
+    justify-self: center;
+    width: 0;
+    height: 1rem;
+    border-left: 2px solid var(--case-line);
+  }
+
+  .hexagonal-map__arrow--down::after {
+    bottom: -1px;
+    left: -6px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 8px solid var(--case-line);
+  }
+
+  .hexagonal-map__label {
+    position: absolute;
+    bottom: 0.3rem;
+    left: 0;
+    right: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .hexagonal-map__legend {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .hexagonal-map__legend code {
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 55.99rem) {
+    .hexagonal-map__arrow--port {
+      justify-self: center;
+      align-self: auto;
+      width: 0;
+      height: 1.6rem;
+      border-top: 0;
+      border-left: 2px solid var(--case-line);
+    }
+
+    .hexagonal-map__arrow--port::after {
+      top: auto;
+      right: auto;
+      bottom: -1px;
+      left: -6px;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 8px solid var(--case-line);
+      border-bottom: 0;
+    }
+
+    .hexagonal-map__arrow--port .hexagonal-map__label {
+      top: 50%;
+      right: auto;
+      bottom: auto;
+      left: 0.7rem;
+      transform: translateY(-50%);
+      white-space: nowrap;
+    }
+
+    .hexagonal-map__arrow--right:not(.hexagonal-map__arrow--port) {
+      justify-self: center;
+      align-self: auto;
+      width: 0;
+      height: 1rem;
+      border-top: 0;
+      border-left: 2px solid var(--case-line);
+    }
+
+    .hexagonal-map__arrow--right:not(.hexagonal-map__arrow--port)::after {
+      top: auto;
+      right: auto;
+      bottom: -1px;
+      left: -6px;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 8px solid var(--case-line);
+      border-bottom: 0;
+    }
+  }
+
+  @media (max-height: 700px) {
+    .hexagonal-map {
+      margin: 0.5rem 0;
+      padding: 0.4rem;
+    }
+
+    .hexagonal-map__box,
+    .hexagonal-map__external {
+      gap: 0;
+      padding: 0.2rem 0.5rem;
+    }
+
+    .hexagonal-map__arrow--down {
+      height: 0.6rem;
+    }
+
+    .hexagonal-map__inner .hexagonal-map__name {
+      margin-top: 0;
+    }
+
+    .hexagonal-map__legend {
+      margin-top: 0.3rem;
+    }
+  }
+
+  @media (min-width: 56rem) {
+    .hexagonal-map__grid {
+      grid-template-columns: minmax(0, 1fr) 2rem minmax(0, 1.6fr) 6rem minmax(0, 1fr);
+      grid-template-areas:
+        "browser . . . ."
+        "browser-web . . . ."
+        "web web-inner inner inner-sqlite sqlite"
+        ". . . . sqlite-db"
+        ". . . . db"
+        "legend legend legend legend legend";
+    }
+  }
+</style>

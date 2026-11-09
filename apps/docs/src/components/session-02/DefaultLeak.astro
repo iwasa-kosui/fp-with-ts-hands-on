@@ -73,10 +73,10 @@ const cases = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Pa
       <div aria-live="polite">
         <ol class="leak__frames">
           <li data-frame>
-            <p class="leak__caption">1段目: 引数の型は <code>{"Readonly<{ kind: string }>"}</code> なので、<code>kind</code> がどんな文字列でも受け取ります。そのため <code>NoShow</code> の予約も型検査を通ります。</p>
+            <p class="leak__caption">1つ目のステップ: 引数の型は <code>{"Readonly<{ kind: string }>"}</code> なので、<code>kind</code> がどんな文字列でも受け取ります。そのため <code>NoShow</code> の予約も型検査を通ります。</p>
           </li>
           <li data-frame>
-            <p class="leak__caption">2段目: <code>default</code> が「不明」を返すので、<code>case</code> のない状態もそのまま画面まで届きます。</p>
+            <p class="leak__caption">2つ目のステップ: <code>default</code> が「不明」を返すので、<code>case</code> のない状態もそのまま画面まで届きます。</p>
           </li>
           <li data-frame>
             <p class="leak__caption"><code>NoShow</code> を足しても、型検査は通ります。7枚目の札は <code>case</code> に当たらず <code>default</code> へ流れ、画面に「不明」と出ます。</p>
