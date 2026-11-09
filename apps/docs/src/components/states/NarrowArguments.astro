@@ -7,7 +7,8 @@ import "./states.css";
 const versions = {
   before: {
     tag: "修正前: S01 の開始コード",
-    fn: "startExamination",
+    label: "関数",
+    name: "startExamination",
     path: quotes.startStartExamination.path,
     code: quotes.startStartExamination.code,
     changed: [
@@ -19,7 +20,8 @@ const versions = {
   },
   after: {
     tag: "修正後: S01 の完成コード",
-    fn: "startExamination",
+    label: "関数",
+    name: "startExamination",
     path: quotes.solutionStartExamination.path,
     code: quotes.solutionStartExamination.code,
     changed: [
@@ -31,10 +33,15 @@ const versions = {
   },
   caller: {
     tag: "呼び出し側: S01 の完成コード",
-    fn: "registerClinicRoutes",
-    path: quotes.solutionRouteCheck.path,
-    code: quotes.solutionRouteCheck.code,
-    changed: [lineIndexOf(quotes.solutionRouteCheck.code, 'if (current.kind !== "CheckedIn")')],
+    label: "診察開始のルート",
+    name: null,
+    path: quotes.solutionStartRoute.path,
+    code: quotes.solutionStartRoute.code,
+    changed: [
+      lineIndexOf(quotes.solutionStartRoute.code, 'if (current.kind !== "CheckedIn")'),
+      lineIndexOf(quotes.solutionStartRoute.code, "startExamination("),
+      lineIndexOf(quotes.solutionStartRoute.code, "current,"),
+    ],
     tone: "positive",
   },
 } as const;
@@ -131,7 +138,7 @@ const frames: readonly Readonly<{
             <span class="na__arrow" aria-hidden="true">→</span>
 
             <figure class="code-block st-code na__code">
-              <figcaption>関数 <code>{version.fn}</code> <code>{version.path}</code></figcaption>
+              <figcaption>{version.label}{version.name && <> <code>{version.name}</code></>} <code>{version.path}</code></figcaption>
               <Code code={version.code} lang="ts" />
             </figure>
 
