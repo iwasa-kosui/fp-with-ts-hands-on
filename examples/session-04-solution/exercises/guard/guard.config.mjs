@@ -13,7 +13,7 @@ export default {
       hint: "useCase の中の throw を Linter の規則で、または予約が見つからないときに Err が返ることをテストで確かめます。",
       behavior: {
         input: { text: "存在しない予約で診察を開始する" },
-        expected: { text: "失敗の結果が返る", value: 'kind: "AppointmentNotFound"' },
+        expected: { text: "失敗の結果が返る", value: "kind: AppointmentNotFound" },
         actual: { text: "例外で止まる" },
       },
     },
@@ -40,7 +40,7 @@ export default {
       behavior: {
         input: { text: "来院済みの予約で、保存が例外で失敗する" },
         expected: { text: "同じ例外のまま外へ出る", value: "database unavailable" },
-        actual: { text: "予約なしの失敗に変わる", value: 'kind: "AppointmentNotFound"' },
+        actual: { text: "予約なしの失敗に変わる", value: "kind: AppointmentNotFound" },
       },
     },
     {
@@ -54,7 +54,7 @@ export default {
       hint: "throw を禁止する規則では見つかりません。_unsafeUnwrap の呼び出しを別の規則で、または失敗のときに Err が返ることをテストで確かめます。",
       behavior: {
         input: { text: "存在しない予約で診察を開始する" },
-        expected: { text: "失敗の結果が返る", value: 'kind: "AppointmentNotFound"' },
+        expected: { text: "失敗の結果が返る", value: "kind: AppointmentNotFound" },
         actual: { text: "例外で止まる" },
       },
     },
