@@ -40,7 +40,7 @@ export const wheres = [
   { id: "on-save", name: "保存時", text: "エディタがファイルを保存したときに実行されます。自分はすぐに結果を閲覧できますが、ほかの人には強制できません。" },
   { id: "pre-commit", name: "pre-commit", text: "git commit の直前に実行されます。commit の前に検出できますが、--no-verify で省略できます。" },
   { id: "ci", name: "CI の必須チェック", text: "push の後にサーバーで実行され、成功するまで merge を拒否します。全員に同じ基準が適用されます。" },
-  { id: "agent-hook", name: "AI の実行前 hook", text: "AI がツールを実行する直前に起動し、実行を拒否できます。" },
+  { id: "agent-hook", name: "Agent の実行前 hook", text: "Agent がツールを実行する直前に起動し、実行を拒否できます。" },
 ] as const;
 
 export type WhatId = (typeof whats)[number]["id"];

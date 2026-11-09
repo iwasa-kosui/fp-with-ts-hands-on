@@ -1,8 +1,8 @@
 import EffectsPipelineAnimation from "../../../components/effects-walkthrough/EffectsPipelineAnimation.astro";
 import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
 
-<p>課題1〜3を解決する処理を、1本の流れにつなぎます。診察開始は、予約を取得し、確認し、イベントを生成し、保存します。工程は <code>andThen</code> と <code>map</code> でつなぎ、保存の後だけ <code>andThrough</code> でつなぎます。</p>
+<p>課題1〜3を解決する処理を、1本の流れにつなぎます。図の関数は、<code>startExamination.ts</code> の <code>startExaminationWithEffects</code> です（同じファイルにある S04 の <code>startExamination</code> とは別の関数です）。診察開始は、予約を取得し、確認し、イベントを生成し、保存します。保存の工程だけ <code>andThrough</code> でつなぎます。保存の結果を捨てて、event を次の工程へ渡すためです。</p>
 
-<FigureSpace reserve={96}>
+<FigureSpace reserve={123}>
   <EffectsPipelineAnimation scene="flow" />
 </FigureSpace>

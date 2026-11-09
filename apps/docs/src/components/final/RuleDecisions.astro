@@ -8,9 +8,16 @@ const cards = [
     id: "clock",
     title: "new Date（2件）",
     code: "new Date(Date.parse(occurredAt) + sessionDurationMs).toISOString()",
-    source: "examples/final/src/useCase/logInUseCase.ts:84 と setUpInitialAdminUseCase.ts:77",
+    sources: [
+      { label: "examples/final/src/useCase/logInUseCase.ts:84", href: "https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/examples/final/src/useCase/logInUseCase.ts#L84" },
+      { label: "setUpInitialAdminUseCase.ts:77", href: "https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/examples/final/src/useCase/setUpInitialAdminUseCase.ts#L77" },
+    ],
     decision: "ルールを修正する",
-    text: "受け取った時刻から計算しているだけで、現在の時刻を取得していません。ルールを、引数なしの new Date() だけを対象にする形に戻します。S06 のルールと同じ形です。app.ts の new Date() は clock の実装で、src/useCase の外にあるため対象外です。",
+    results: {
+      "コードを修正する": "指摘は消えますが、この行は受け取った時刻から計算しているだけで、現在時刻を取得していません。正しいコードを、誤検知に合わせて書き換えることになります。",
+      "ルールを修正する": "ルールを、引数なしの new Date() だけを対象にする形に戻します。2件の指摘が消えます。現在時刻を取得する Date.now() は別のルールで検出されるため、検出できる範囲は減りません。",
+      "理由を付けて残す": "2件に理由のコメントが必要です。引数のある new Date を書くたびに同じコメントが増え、ルールの誤りをコード側で打ち消し続けます。",
+    },
   },
   {
     id: "corruption",
@@ -24,9 +31,13 @@ const cards = [
       "  );",
       "};",
     ].join("\n"),
-    source: "examples/final/src/useCase/rejectExamResultPetMismatch.ts:3-9",
+    sources: [{ label: "examples/final/src/useCase/rejectExamResultPetMismatch.ts:3-9", href: "https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/examples/final/src/useCase/rejectExamResultPetMismatch.ts#L3-L9" }],
     decision: "理由を付けて残す",
-    text: "保存済みのデータの不整合を検出したときに投げる throw です。業務で対応を選べない破損であるため、Err にせず例外境界へ渡します。ルールを無効にする行のコメントに、この理由を記載します。store の throw は src/adaptor にあり、src/useCase の外にあるため対象外です。",
+    results: {
+      "コードを修正する": "throw を Err に変えると、利用者が選べる操作のない破損データを、業務の失敗として返すことになります。S06 では、このような障害を例外のまま渡しました。",
+      "ルールを修正する": "useCase の throw を対象外にすると、業務の失敗を throw する誤りも検出されなくなります。1件のために、ルール全体を弱めることになります。",
+      "理由を付けて残す": "この throw は、保存済みのデータの破損を検出したときに投げます。Err にせず例外境界へ渡すため、この行だけ、理由のコメントを付けてルールを無効にします。",
+    },
   },
 ] as const;
 ---
@@ -37,7 +48,7 @@ const cards = [
       <h4 class="rd__title" id={`rd-title-${card.id}`}>{card.title}</h4>
 
       <figure class="code-block rd__code">
-        <figcaption><code>{card.source}</code></figcaption>
+        <figcaption>{card.sources.map((source, index) => <>{index > 0 && " と "}<a href={source.href}><code>{source.label}</code></a></>)}</figcaption>
         <Code code={card.code} lang="typescript" wrap />
       </figure>
 
@@ -48,10 +59,14 @@ const cards = [
       </div>
 
       <div class="rd__answer" data-answer aria-live="polite">
-        <p class="rd__placeholder">選ぶと、ここに教材の判断が表示されます。</p>
+        <p class="rd__placeholder">選ぶと、ここにその対処の結果が表示されます。</p>
         <div class="rd__answer-body" data-answer-body>
-          <p class="rd__decision">この教材の判断: <strong>{card.decision}</strong></p>
-          <p class="rd__text">{card.text}</p>
+          {options.map((option) => (
+            <div class="rd__result" data-result={option}>
+              <p class="rd__decision"><strong>{option}</strong>{option === card.decision ? "（この教材の判断）" : "（この教材の判断ではない）"}</p>
+              <p class="rd__text">{card.results[option]}</p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -62,12 +77,14 @@ const cards = [
   document.querySelectorAll<HTMLElement>("[data-rule-decisions]").forEach((root) => {
     root.querySelectorAll<HTMLElement>("[data-card]").forEach((card) => {
       const buttons = [...card.querySelectorAll<HTMLButtonElement>("[data-option]")];
+      const results = [...card.querySelectorAll<HTMLElement>("[data-result]")];
       const answer = card.querySelector<HTMLElement>("[data-answer]");
       if (!answer) return;
 
       buttons.forEach((button) =>
         button.addEventListener("click", () => {
           buttons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+          results.forEach((result) => result.toggleAttribute("data-selected", result.dataset.result === button.textContent));
           answer.dataset.open = "";
         }),
       );
@@ -190,7 +207,17 @@ const cards = [
   }
 
   .rd__answer-body {
+    display: grid;
     visibility: hidden;
+  }
+
+  .rd__result {
+    grid-area: 1 / 1;
+    visibility: hidden;
+  }
+
+  .rd__result[data-selected] {
+    visibility: visible;
   }
 
   .rd__answer[data-open] {

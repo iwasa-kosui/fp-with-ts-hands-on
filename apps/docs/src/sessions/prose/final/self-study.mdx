@@ -1,11 +1,11 @@
-<p>診察開始で追跡した5つの境界を、別のユースケースで追跡します。診察結果の記録やフォローアップ依頼など、別のきっかけで開始するものを1つ選びます。参照実装の起動やデータベースの操作は不要です。まず診察開始の次のファイルで確認します。</p>
+<p>診察開始で追跡した5つの境界を、別のユースケースで追跡します。診察結果の記録やフォローアップ依頼など、別のきっかけで開始するものを1つ選びます。ファイルは GitHub のリポジトリで閲覧でき、リンクから開けます。参照実装の起動やデータベースの操作は不要です。まず、診察開始を追跡した次のファイルで確認します。</p>
 
 <ol>
-  <li><strong>入力境界</strong>: <code>examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts</code> で、HTTP の入力を検証し、ユースケースの入力へ変換する箇所を探します。</li>
-  <li><strong>業務上の失敗</strong>: <code>examples/final/src/useCase/startExaminationUseCase.ts</code> で、予約なし、状態不正、予約競合が型付きの <code>Err</code> として扱われることを確認します。</li>
-  <li><strong>出力イベント</strong>: 同じファイルで、業務の検証に成功した経路だけがイベントの生成へ進むことを確認します。次に <code>examples/final/src/domain/appointment/appointment.ts</code> の <code>startExamination</code> が <code>ExaminationStarted</code> を生成することを確認します。</li>
-  <li><strong>副作用</strong>: <code>examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts</code> で、予約の状態と監査記録を同じ transaction で保存することを確認します。</li>
-  <li><strong>例外境界</strong>: SQLite の障害や破損したデータが業務の <code>Result</code> に含まれず、<code>examples/final/src/app.ts</code> の共通の境界で、詳細を含まない 500 の応答になることを確認します。</li>
+  <li><strong>入力境界</strong>: <a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts"><code>examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts</code></a> で、HTTP の入力を検証し、ユースケースの入力へ変換する箇所を探します。</li>
+  <li><strong>業務上の失敗</strong>: <a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/examples/final/src/useCase/startExaminationUseCase.ts"><code>examples/final/src/useCase/startExaminationUseCase.ts</code></a> で、予約なし、状態不正、予約競合が型付きの <code>Err</code> として扱われることを確認します。</li>
+  <li><strong>出力イベント</strong>: 同じファイルで、業務の検証に成功した経路だけがイベントの生成へ進むことを確認します。次に <a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/examples/final/src/domain/appointment/appointment.ts"><code>examples/final/src/domain/appointment/appointment.ts</code></a> の <code>startExamination</code> が <code>ExaminationStarted</code> を生成することを確認します。</li>
+  <li><strong>副作用</strong>: <a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts"><code>examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts</code></a> で、予約の状態と監査記録を同じ transaction で保存することを確認します。</li>
+  <li><strong>例外境界</strong>: SQLite の障害や破損したデータが業務の <code>Result</code> に含まれず、<a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/examples/final/src/app.ts"><code>examples/final/src/app.ts</code></a> の共通の境界で、詳細を含まない 500 の応答になることを確認します。</li>
 </ol>
 
 <p>別のユースケースに境界が存在しない箇所があれば、その箇所が次に試す小さな改善の候補です。</p>

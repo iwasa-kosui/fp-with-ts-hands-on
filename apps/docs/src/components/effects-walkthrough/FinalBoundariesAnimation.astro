@@ -2,13 +2,16 @@
 import { Code } from "astro:components";
 import css from "./final-boundaries.css?raw";
 import script from "./final-boundaries.js?raw";
+import type { ExampleSnapshot } from "../../sessions/types";
 import MiniTree from "../mini-tree/MiniTree.astro";
 import { miniTree } from "../mini-tree/mini-tree";
+import { excerptOf, type Part } from "./excerpt";
+import PathLabel from "./PathLabel.astro";
 import Walkthrough from "./Walkthrough.astro";
 
 type Tone = "ok" | "err" | "reject";
 type Gate = Readonly<{ key: string; num: string; name: string; gloss: string }>;
-type Impl = Readonly<{ stage: string; path: string; code: string }>;
+type Impl = Readonly<{ stage: string; snapshot: ExampleSnapshot; path: string; parts: readonly Part[] }>;
 type Card = Readonly<{
   key: string;
   stage: string;
@@ -25,6 +28,8 @@ type Frame = Readonly<{
   lines?: readonly number[];
   out?: string;
   skipped?: readonly string[];
+  gloss?: string;
+  treeFile?: string;
 }>;
 type Scene = Readonly<{ label: string; stop?: string; frames: readonly Frame[] }>;
 type Props = Readonly<{ scenes: "success" | "failures" }>;
@@ -43,142 +48,132 @@ const gates: readonly Gate[] = [
 const impls: Readonly<Record<string, Impl>> = {
   parse: {
     stage: "input",
-    path: "examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts",
-    code: `const StartExaminationSchema = z.object({
-  veterinarianId: VeterinarianId.schema.optional(),
-});
-
-ResultAsync.fromPromise(
-  context.req.parseBody(),
-  (): ValidationError => ({
-    kind: "ValidationError",
-    errors: { form: "入力内容を確認してください" },
-  }),
-).andThen((body) => {
-  const parsed = schema.safeParse(body);
-  return parsed.success
-    ? ok(parsed.data)
-    : err({
-        kind: "ValidationError",
-        errors: issuesToFieldErrors(parsed.error.issues),
-      } as const satisfies ValidationError);
-});`,
+    snapshot: "final",
+    path: "src/adaptor/primary/web/routes/appointmentRoutes.ts",
+    parts: [
+      { from: "context.req.parseBody()," },
+      "…",
+      { from: "const parsed = schema.safeParse(body);" },
+      "…",
+      { from: ".run({ actorUserId: actor.value.user.userId, appointmentId: appointmentId.value, veterinarianId })" },
+    ],
   },
   run: {
     stage: "business",
-    path: "examples/final/src/useCase/startExaminationUseCase.ts",
-    code: `(input: UseCaseInput): UseCaseOutput =>
-  userResolver
-    .resolveById(input.actorUserId)
-    .andThen(ensureUserFound(input.actorUserId))
-    .andThen(ensureCanStartExamination(input.veterinarianId))
-    .andThen(() => appointmentResolver.resolveById(input.appointmentId))
-    .andThen(ensureAppointmentFound(input.appointmentId))
-    .andThen(ensureCheckedIn)
-    .andThen(createEvent({ clock, eventIdGenerator }, input))
-    .andThrough(examinationStartedStore.store)
-    .map((event) => ({ appointment: event.aggregateState }));`,
+    snapshot: "final",
+    path: "src/useCase/startExaminationUseCase.ts",
+    parts: [
+      { from: "const run =" },
+      "…",
+      { from: ".andThen(ensureUserFound(input.actorUserId))", to: ".andThen(ensureCheckedIn)" },
+    ],
   },
   checkedin: {
     stage: "business",
-    path: "examples/final/src/useCase/errors.ts",
-    code: `export const ensureCheckedIn = (
-  appointment: Appointment,
-): Result<CheckedIn, InvalidAppointmentState> =>
-  appointment.kind === "CheckedIn"
-    ? ok(appointment)
-    : err({
-        kind: "InvalidAppointmentState",
-        appointmentId: appointment.appointmentId,
-        expectedKind: "CheckedIn",
-        actualKind: appointment.kind,
-      });`,
+    snapshot: "final",
+    path: "src/useCase/errors.ts",
+    parts: [
+      { from: "export const ensureCheckedIn = (" },
+      "…",
+      { from: "appointment.kind === \"CheckedIn\"", to: "kind: \"InvalidAppointmentState\"," },
+      "…",
+    ],
   },
   transition: {
     stage: "event",
-    path: "examples/final/src/domain/appointment/appointment.ts",
-    code: `const startExamination =
-  (context: EventContext) =>
-  (
-    checkedIn: CheckedIn,
-    veterinarianId: VeterinarianId,
-  ): ExaminationStarted => {
-    const aggregateState = {
-      ...checkedIn,
-      kind: "InExamination",
-      veterinarianId,
-      examinationStartedAt: context.occurredAt,
-    } as const satisfies InExamination;
-
-    return AppointmentEvent.create(
-      context,
-      aggregateState.appointmentId,
-      aggregateState,
-      "ExaminationStarted",
-      "appointment.examination-started",
-      { appointmentId: aggregateState.appointmentId, veterinarianId },
-    );
-  };`,
+    snapshot: "final",
+    path: "src/domain/appointment/appointment.ts",
+    parts: [
+      { from: "const startExamination =" },
+      "…",
+      { from: "): ExaminationStarted => {" },
+      { from: "kind: \"InExamination\",", to: "examinationStartedAt: context.occurredAt," },
+    ],
   },
   update: {
     stage: "effect",
-    path: "examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
-    code: `store: (...events: readonly AppointmentProjectionEvent[]) =>
-  ResultAsync.fromPromise<void, AppointmentStoreError>(
-    Promise.resolve().then(() =>
-      db.transaction((tx) => {
-        events.forEach((event) => {
-
-case "ExaminationStarted":
-  return tx.update(appointmentsTable)
-    .set(values)
-    .where(and(
-      eq(appointmentsTable.appointmentId, state.appointmentId),
-      eq(appointmentsTable.status, "CheckedIn"),
-    ))
-    .run().changes;`,
+    snapshot: "final",
+    path: "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
+    parts: [
+      { from: "store: (...events: readonly AppointmentProjectionEvent[]) =>" },
+      { from: "db.transaction((tx) => {" },
+      "…",
+      { from: "case \"ExaminationStarted\":", to: "return tx.update(appointmentsTable)" },
+      "…",
+      { from: "eq(appointmentsTable.status, \"CheckedIn\")," },
+    ],
   },
   commit: {
     stage: "effect",
-    path: "examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
-    code: `if (changes !== 1) {
-  throw {
-    kind: "AppointmentConflict",
-    appointmentId: event.aggregateId,
-  } as const;
-}
-tx.insert(domainEventsTable)
-  .values(toEventRecord(
-    event,
-    safeState(state),
-    safePayload(event),
-  ))
-  .run();`,
+    snapshot: "final",
+    path: "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
+    parts: [
+      { from: "if (changes !== 1) {" },
+      "…",
+      { from: "}" },
+      { from: "tx.insert(domainEventsTable)" },
+      "…",
+      { from: ".run();" },
+    ],
+  },
+  "commit-conflict": {
+    stage: "effect",
+    snapshot: "final",
+    path: "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
+    parts: [
+      { from: 'eq(appointmentsTable.status, "CheckedIn"),' },
+      "…",
+      { from: "if (changes !== 1) {", to: "}" },
+    ],
   },
   convert: {
     stage: "effect",
-    path: "examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
-    code: `const AppointmentConflictSchema = z.object({
-  kind: z.literal("AppointmentConflict"),
-  appointmentId: AppointmentId.schema,
-});
-
-(cause): AppointmentStoreError => {
-  const conflict = AppointmentConflictSchema.safeParse(cause);
-  if (conflict.success) return conflict.data;
-  throw cause;
-},`,
+    snapshot: "final",
+    path: "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
+    parts: [
+      { from: "const AppointmentConflictSchema = z.object({" },
+      "…",
+      { from: "ResultAsync.fromPromise<void, AppointmentStoreError>(" },
+      "…",
+      { from: "(cause): AppointmentStoreError => {" },
+      { from: "const conflict = AppointmentConflictSchema.safeParse(cause);" },
+      { from: "if (conflict.success) return conflict.data;" },
+    ],
+  },
+  "update-failure": {
+    stage: "effect",
+    snapshot: "final",
+    path: "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
+    parts: [
+      { from: "store: (...events: readonly AppointmentProjectionEvent[]) =>" },
+      { from: "db.transaction((tx) => {" },
+      "…",
+      { from: "case \"ExaminationStarted\":", to: "return tx.update(appointmentsTable)" },
+      "…",
+      { from: ".run().changes;" },
+    ],
+  },
+  rethrow: {
+    stage: "effect",
+    snapshot: "final",
+    path: "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
+    parts: [
+      { from: "ResultAsync.fromPromise<void, AppointmentStoreError>(" },
+      "…",
+      { from: "(cause): AppointmentStoreError => {", to: "throw cause;" },
+    ],
   },
   onError: {
     stage: "exception",
-    path: "examples/final/src/app.ts",
-    code: `app.onError((error) =>
-  error instanceof HTTPException
-    ? error.getResponse()
-    : new Response("Internal Server Error", { status: 500 }),
-);`,
+    snapshot: "final",
+    path: "src/app.ts",
+    parts: [
+      { from: "app.onError((error) =>", to: ");" },
+    ],
   },
 };
+
+const excerpts = Object.fromEntries(Object.entries(impls).map(([name, impl]) => [name, excerptOf(impl)]));
 
 const checkedIn = `{ kind: "CheckedIn", appointmentId: "a-1", … }`;
 const started = `{
@@ -222,6 +217,15 @@ const cards: readonly Card[] = [
   },
   { key: "c5", stage: "event", tone: "ok", chip: "Ok", type: "ExaminationStarted", code: started, short: `{ kind: "ExaminationStarted", … }` },
   { key: "c7r", stage: "effect", tone: "reject", chip: "reject", type: "unknown", code: `throw cause;`, short: `SQLite の書き込みが失敗` },
+  {
+    key: "c7c",
+    stage: "effect",
+    tone: "err",
+    chip: "Err",
+    type: "AppointmentConflict",
+    code: `{ kind: "AppointmentConflict", appointmentId: "a-1" }`,
+    short: `{ kind: "AppointmentConflict", … }`,
+  },
   { key: "c8", stage: "exception", tone: "reject", chip: "応答", type: "Response", code: serverError, short: `500 Internal Server Error` },
   { key: "c9a", stage: "answer", tone: "ok", chip: "応答", type: "Response", code: `context.redirect("/appointments/a-1", 303)`, short: `303 /appointments/a-1` },
   {
@@ -233,6 +237,15 @@ const cards: readonly Card[] = [
     code: `context.redirect("/appointments/a-1?error=invalid-state", 303)`,
     short: `303 /appointments/a-1?error=invalid-state`,
   },
+  {
+    key: "c9d",
+    stage: "answer",
+    tone: "err",
+    chip: "応答",
+    type: "Response",
+    code: `context.redirect("/appointments/a-1?error=appointment-conflict", 303)`,
+    short: `303 /appointments/a-1?error=appointment-conflict`,
+  },
   { key: "c9c", stage: "answer", tone: "reject", chip: "応答", type: "Response", code: serverError, short: `500 Internal Server Error` },
 ];
 
@@ -241,40 +254,40 @@ const allScenes: readonly Scene[] = [
     label: "成功",
     frames: [
       {
-        text: "診察開始の依頼を route の入力境界で受け取ります。`parseBody` が `safeParse` で入力を検証します。検証を通過した値だけが、`run` へ渡す入力（`UseCaseInput`）になります。",
+        text: "診察開始の依頼を route の入力境界で受け取ります。`parseBody` が HTTP のフォームを読み取り、`schema.safeParse` が内容を検証します。検証を通過した値だけが、ユースケースの実行（`run`）に渡す入力（`UseCaseInput`）になります。",
         at: "input",
         impl: "parse",
-        lines: [5, 11],
+        lines: [0, 2],
         out: "c2",
       },
       {
         text: "`run` は検証の関数を `andThen` でつなぎます。ユーザー、権限、予約の有無、予約が `CheckedIn` であることを順に検証し、すべて `Ok` であるため次へ進みます。",
         at: "business",
         impl: "run",
-        lines: [1, 2, 3, 4, 5, 6, 7],
+        lines: [2, 3, 4, 5, 6],
         out: "c4",
       },
       {
-        text: "`Appointment.startExamination` が予約を `InExamination` に遷移させ、`ExaminationStarted` を生成します。ID と時刻は、`eventIdGenerator` と `clock` から受け取ります。",
+        text: "`Appointment.startExamination` が予約を `InExamination` に遷移させ、`ExaminationStarted` を生成します。ID と時刻は、ユースケースが port から取得し、`context` で渡します。",
         at: "event",
         impl: "transition",
-        lines: [8, 10, 13],
+        lines: [2, 3, 5],
         out: "c5",
       },
       {
         text: "`store` は transaction の中で、`status` が `CheckedIn` の予約の行だけを更新します。",
         at: "effect",
         impl: "update",
-        lines: [7, 10, 11],
+        lines: [4, 5],
       },
       {
         text: "更新が1行であるため、監査記録のテーブル `domainEventsTable` に `ExaminationStarted` を追加します。transaction に渡した関数が最後まで完了すると、状態と監査記録が同時に確定します。",
         at: "effect",
         impl: "commit",
-        lines: [0, 6],
+        lines: [0, 3],
       },
       {
-        text: "route の `match` が `Ok` を受け取り、詳細ページへの 303 リダイレクトを返します。例外境界は通りません。",
+        text: "route の `match`（`Result` を `Ok` と `Err` で分岐する処理）が `Ok` を受け取り、詳細ページへの 303 リダイレクトを返します。例外境界は通りません。",
         at: "answer",
         out: "c9a",
         skipped: ["exception"],
@@ -289,7 +302,7 @@ const allScenes: readonly Scene[] = [
         text: "予約がすでに `InExamination` だったとします。入力と検証は前のページの成功と同じく通過し、`ensureCheckedIn` で `kind` が異なるため、`InvalidAppointmentState` の `Err` を返します。以降のステップは実行されません。",
         at: "business",
         impl: "checkedin",
-        lines: [3, 5, 6],
+        lines: [2, 4, 5],
         out: "c4e",
         skipped: ["event", "effect", "exception"],
       },
@@ -302,21 +315,47 @@ const allScenes: readonly Scene[] = [
     ],
   },
   {
+    label: "競合",
+    stop: "effect",
+    frames: [
+      {
+        text: "別の依頼が先に診察を開始していたとします。`status` が `CheckedIn` の行が無いため、更新は0行で、`changes !== 1` になります。`store` は `AppointmentConflict` を `throw` し、transaction は取り消されます。",
+        at: "effect",
+        impl: "commit-conflict",
+        lines: [0, 2, 3, 4, 5, 6],
+        out: "c5",
+      },
+      {
+        text: "`throw` された値は `fromPromise` の変換関数に渡されます。`AppointmentConflictSchema` に一致するため、`Err` の `AppointmentConflict` に戻します。",
+        at: "effect",
+        impl: "convert",
+        lines: [0, 5, 6],
+        out: "c7c",
+      },
+      {
+        text: "route の `match` が `AppointmentConflict` を受け取り、`error=appointment-conflict` が付いた詳細ページへの 303 を返します。例外境界は通りません。",
+        at: "answer",
+        out: "c9d",
+        skipped: ["exception"],
+      },
+    ],
+  },
+  {
     label: "SQLite 障害",
     stop: "effect",
     frames: [
       {
         text: "前のページの成功と同じくイベントまで生成し、`store` が transaction の中で予約の行を更新します。SQLite の書き込みが失敗して `run()` が例外を投げ、transaction は取り消されます。",
         at: "effect",
-        impl: "update",
-        lines: [7, 13],
+        impl: "update-failure",
+        lines: [4, 6],
         out: "c5",
       },
       {
         text: "例外は `fromPromise` の変換関数に渡されます。競合ではないため、変換せずに `throw cause` で投げ直します。",
         at: "effect",
-        impl: "convert",
-        lines: [5, 7, 8],
+        impl: "rethrow",
+        lines: [2, 4, 5],
         out: "c7r",
       },
       {
@@ -329,6 +368,8 @@ const allScenes: readonly Scene[] = [
       {
         text: "route の `Err` の分岐は使われず、応答は 500 です。SQLite の障害は業務の `Result` に含まれません。",
         at: "answer",
+        gloss: "例外境界が作った 500 がそのまま応答になります。",
+        treeFile: "app",
         out: "c9c",
       },
     ],
@@ -348,6 +389,9 @@ const treeFiles: Readonly<Record<string, string>> = {
   transition: "appointment",
   update: "store",
   commit: "store",
+  "commit-conflict": "store",
+  "update-failure": "store",
+  rethrow: "store",
   convert: "store",
   checkedin: "errors",
   onError: "app",
@@ -371,7 +415,7 @@ const frameData = scenes.map(({ stop, frames }) => ({
   stop,
   frames: frames.map(({ text: _text, ...frame }) => ({
     ...frame,
-    treeFile: frame.impl === undefined ? "routes" : treeFiles[frame.impl],
+    treeFile: frame.treeFile ?? (frame.impl === undefined ? "routes" : treeFiles[frame.impl]),
   })),
 }));
 const cardData = Object.fromEntries(cards.map(({ key, tone, chip, type, short }) => [key, { tone, chip, type, short }]));
@@ -413,9 +457,9 @@ const cardData = Object.fromEntries(cards.map(({ key, tone, chip, type, short })
             <figure class="fb-impl" data-impl={name}>
               <figcaption>
                 <span class="walk-badge walk-badge--ref">参照実装</span>
-                <code>{impl.path}</code>
+                <code><PathLabel label={excerpts[name].label} /></code>
               </figcaption>
-              <Code code={impl.code} lang="ts" wrap />
+              <Code code={excerpts[name].code} lang="ts" wrap />
             </figure>
           ))}
           {cards.filter((card) => card.stage === gate.key).map((card) => (

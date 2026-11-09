@@ -1,9 +1,9 @@
 import AndThroughCompare from "../../../components/effects-walkthrough/AndThroughCompare.astro";
 import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
 
-<p>課題1の保存は非同期のため、結果は <code>ResultAsync</code> で表します。<code>ResultAsync</code> は <code>Result</code> の非同期版で、<code>andThen</code> と <code>map</code> を同じように使えます。図の <code>startExaminationEvent</code> は診察開始のイベント <code>ExaminationStarted</code> を生成する処理、<code>deps.examinationStartedStore.store</code> は、1つのイベントを受け取る保存の処理です（どちらも後のページで実装します）。</p>
+<p>課題1の保存は、イベント1つを渡して <code>deps.examinationStartedStore.store</code> を1回呼ぶ形にします。保存は非同期のため、結果は <code>ResultAsync</code> で表します。ただし <code>store</code> の戻り値は <code>void</code> であるため、保存の後の <code>map</code> へ、保存したイベントを渡せません。最後の <code>map</code> は <code>event.aggregateState</code> を取り出すため、保存の後もイベントが必要です。図の <code>startExaminationEvent</code> は <code>ExaminationStarted</code> を生成する処理です。<code>store</code> とあわせて、実装は後のページで確認します。</p>
 
-<FigureSpace reserve={206}>
+<FigureSpace reserve={233}>
   <AndThroughCompare />
 </FigureSpace>
 

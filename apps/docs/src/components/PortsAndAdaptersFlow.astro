@@ -91,7 +91,7 @@ const frames: readonly Frame[] = [
     token: false,
   },
   {
-    caption: "app.ts が実装を生成し、ユースケースへ渡します。S06 で確認した注入です。",
+    caption: "app.ts が実装を生成し、ユースケースへ渡します。S06 で確認した、port へ実装を渡す処理です。",
     code: { key: "assembly", lines: [1, 4] },
     nodes: "dim",
     focus: ["app"],
@@ -147,17 +147,17 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
       <p class="ports-flow__live" data-live aria-live="polite" hidden></p>
     </div>
 
-    <svg viewBox="0 0 240 458" role="img" aria-labelledby="ports-flow-title ports-flow-desc" data-nodes="normal" data-calls="normal" data-imports="normal">
+    <svg viewBox="0 0 240 416" role="img" aria-labelledby="ports-flow-title ports-flow-desc" data-nodes="normal" data-calls="normal" data-imports="normal">
       <title id="ports-flow-title">{title}</title>
       <desc id="ports-flow-desc">
         「外側（adaptor）」と書かれた外側の枠の中に、上から primary（Hono の route）の箱、内側の枠、secondary（SQLite の store）の箱が並びます。内側の枠の中には useCase の箱があり、その中に domain（port の型）の箱があります。app.ts（組み立て）の箱は、外側の枠の外の下にあります。実線の矢印は呼び出しを表し、3本あります。primary から useCase へ、useCase から domain の port へ、useCase から secondary へ向かいます。useCase から secondary への矢印は、domain の箱の外側を通り、port の型を通す呼び出しです。破線の矢印は import を表し、6本あります。primary から useCase へ、secondary から domain へ、useCase から domain へ、app.ts から primary へ、app.ts から useCase へ、app.ts から secondary へ向かいます。import の矢印はすべて、外側から内側を向きます。
       </desc>
       <defs>
-        <marker id="ports-flow-head-call" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
-          <path d="M 0 0 L 8 4 L 0 8 z" class="ports-flow__head ports-flow__head--call"></path>
+        <marker id="ports-flow-head-call" markerWidth="11" markerHeight="11" refX="10" refY="5.5" orient="auto" markerUnits="userSpaceOnUse">
+          <path d="M 0 0 L 11 5.5 L 0 11 z" class="ports-flow__head ports-flow__head--call"></path>
         </marker>
-        <marker id="ports-flow-head-import" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
-          <path d="M 0 0 L 8 4 L 0 8 z" class="ports-flow__head ports-flow__head--import"></path>
+        <marker id="ports-flow-head-import" markerWidth="11" markerHeight="11" refX="10" refY="5.5" orient="auto" markerUnits="userSpaceOnUse">
+          <path d="M 0 0 L 11 5.5 L 0 11 z" class="ports-flow__head ports-flow__head--import"></path>
         </marker>
       </defs>
 
@@ -207,13 +207,12 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
       <path d="M 48 90 V 284" class="ports-flow__track" data-track data-stops="0,42,194"></path>
       <circle r="8" class="ports-flow__token" data-token data-hidden></circle>
 
-      <g class="ports-flow__legend">
-        <path d="M 10 426 H 42" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
-        <text x="50" y="431" class="ports-flow__text">実線 ＝ 呼び出し</text>
-        <path d="M 10 446 H 42" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
-        <text x="50" y="451" class="ports-flow__text">破線 ＝ import</text>
-      </g>
     </svg>
+
+    <p class="ports-flow__legend">
+      <span><span class="ports-flow__sample ports-flow__sample--call" aria-hidden="true"></span>実線 ＝ 呼び出し</span>
+      <span><span class="ports-flow__sample ports-flow__sample--import" aria-hidden="true"></span>破線 ＝ import</span>
+    </p>
 
     <ol class="ports-flow__frames">
       {frames.map((frame) => (
@@ -384,7 +383,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
 
   .ports-flow__line {
     fill: none;
-    stroke-width: 1.5;
+    stroke-width: 2;
   }
 
   .ports-flow__line--call {
@@ -425,6 +424,29 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
 
   .ports-flow__token[data-hidden] {
     display: none;
+  }
+
+  .ports-flow__legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.125rem 1rem;
+    margin: 0.5rem 0 0;
+    color: var(--role-text);
+    font-size: 0.875rem;
+  }
+
+  .ports-flow__sample {
+    display: inline-block;
+    width: 2rem;
+    margin-inline-end: 0.375rem;
+    border-top: 2px solid var(--case-line);
+    vertical-align: middle;
+  }
+
+  .ports-flow__sample--import {
+    border-top-color: var(--case-blue);
+    border-top-style: dashed;
   }
 
   .ports-flow__controls {
@@ -507,7 +529,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
   }
 
   [data-animated] .ports-flow__code :global(pre) {
-    max-height: 10rem;
+    max-height: 10.5rem;
     overflow-y: auto;
   }
 
@@ -583,7 +605,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
   }
 
   [data-animated] svg[data-calls="focus"] .ports-flow__calls .ports-flow__line {
-    stroke-width: 3.5;
+    stroke-width: 4;
   }
 
   [data-animated] svg[data-imports="dim"] .ports-flow__imports {
@@ -591,7 +613,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
   }
 
   [data-animated] svg[data-imports="focus"] .ports-flow__imports .ports-flow__line {
-    stroke-width: 3.5;
+    stroke-width: 4;
   }
 
   @container (max-width: 34rem) {
@@ -613,8 +635,8 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
   @container (min-width: 44rem) {
     [data-animated] .ports-flow__stage {
       display: grid;
-      grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
-      grid-template-rows: auto auto auto 1fr;
+      grid-template-columns: minmax(0, 14.5rem) minmax(0, 1fr);
+      grid-template-rows: auto auto auto auto 1fr;
       column-gap: 1.25rem;
       align-items: start;
     }
@@ -628,27 +650,34 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
       margin-bottom: 0.75rem;
     }
 
-    [data-animated] :global(.ports-flow__tree) {
-      grid-column: 1 / -1;
-      grid-row: 2;
-      margin: 0 0 0.75rem;
-    }
-
     [data-animated] svg {
       grid-column: 1;
-      grid-row: 3 / span 2;
-      max-width: 12.25rem;
+      grid-row: 2 / span 4;
+      max-width: 14.5rem;
+    }
+
+    [data-animated] .ports-flow__legend {
+      grid-column: 2;
+      grid-row: 2;
+      justify-content: start;
+      margin: 0 0 0.5rem;
+    }
+
+    [data-animated] :global(.ports-flow__tree) {
+      grid-column: 2;
+      grid-row: 3;
+      margin: 0 0 0.5rem;
     }
 
     [data-animated] .ports-flow__live {
       grid-column: 2;
-      grid-row: 3;
+      grid-row: 4;
       margin-bottom: 0.5rem;
     }
 
     [data-animated] .ports-flow__frames {
       grid-column: 2;
-      grid-row: 4;
+      grid-row: 5;
     }
   }
 

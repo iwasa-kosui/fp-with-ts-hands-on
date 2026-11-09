@@ -13,11 +13,11 @@ export const sessionPages = [
   },
   {
     slug: "state-only",
-    title: "監査記録の欠落",
+    title: "診察開始で発生した3つの課題",
     flow: "problem",
     kind: "brief",
     minutes: 1,
-    role: "課題: 予約の状態だけが残る事故と、再現テストが安定しないこと、競合を Err で返せないことを確認します。",
+    role: "課題: 予約の状態だけが残る事故と、時刻と ID が毎回変わること、競合を Err で返せないことを確認します。",
   },
   {
     slug: "current-code",
@@ -25,7 +25,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "brief",
     minutes: 1.5,
-    role: "課題: 片方だけ残る原因の2回の保存、時刻と ID の直接の生成、競合を返すコードがない戻り値の型を、現在のコードで確認します。",
+    role: "課題: 時刻と ID の直接の生成、2回の保存、保存時に現在の状態を検証しないことを、現在のコードで確認します。",
   },
   {
     slug: "dual-write",
@@ -49,7 +49,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1,
-    role: "事前知識: 保存は非同期であるため ResultAsync で表し、保存の後もイベントを次の処理へ渡す andThrough を使います。",
+    role: "事前知識: store の戻り値は void であるため、保存の後もイベントを次の処理へ渡す andThrough を使います。",
   },
   {
     slug: "ports",
@@ -57,15 +57,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1,
-    role: "事前知識: 時刻と ID をテストで固定するには、本物と偽物を差し替えられる処理の型（port）が必要です。",
-  },
-  {
-    slug: "time-and-id",
-    title: "1回の実行で一度だけ生成する時刻と ID",
-    flow: "solution",
-    kind: "teach",
-    minutes: 1,
-    role: "解決策: 時刻と ID を port から受け取り、1回の実行につき一度だけ生成します。",
+    role: "事前知識: 時刻と ID をテストで固定するには、本番の実装とテスト用の実装（fake）を差し替えられる処理の型（port）が必要です。",
   },
   {
     slug: "one-save",
@@ -82,6 +74,14 @@ export const sessionPages = [
     kind: "teach",
     minutes: 1,
     role: "解決策: 保存の途中で失敗したときに、何も残らないことを確認します。",
+  },
+  {
+    slug: "time-and-id",
+    title: "1回の実行で一度だけ生成する時刻と ID",
+    flow: "solution",
+    kind: "teach",
+    minutes: 1,
+    role: "解決策: 時刻と ID を port から受け取ります。clock を2回取得すると状態と監査記録の時刻が食い違うため、createEventContext は1回だけ呼びます。",
   },
   {
     slug: "conflict",
