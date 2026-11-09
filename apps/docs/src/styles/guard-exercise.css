@@ -889,7 +889,7 @@
   }
 }
 
-@media (max-height: 760px) {
+@media (max-height: 844px) {
   .guard-exercise__steps {
     line-height: 1.4;
   }

@@ -304,7 +304,7 @@ body:has(.session-frame) {
   margin-inline: 0;
 }
 
-@media (min-height: 761px) {
+@media (min-height: 845px) {
   .session-frame.case-file.case-file--session .session-frame__content > :is(p, ul, ol) {
     max-width: 52em;
   }
@@ -696,7 +696,7 @@ body:has(.session-frame) {
   white-space: pre-wrap;
 }
 
-@media (max-height: 760px) {
+@media (max-height: 844px) {
   .session-frame .session-split--tight pre {
     padding-block: 0.4rem;
     font-size: 0.8rem;
@@ -1023,7 +1023,7 @@ body:has(.session-frame) {
   margin-top: 0.5rem;
 }
 
-@media (max-height: 760px) {
+@media (max-height: 844px) {
   .session-frame .session-split--guides pre {
     padding: 0.5rem 0.75rem;
     font-size: 0.8rem;
@@ -1039,7 +1039,7 @@ body:has(.session-frame) {
   }
 }
 
-@media (max-height: 760px) {
+@media (max-height: 844px) {
   .session-frame {
     --frame-bar-height: 40px;
     --frame-foot-height: 40px;
@@ -1108,7 +1108,7 @@ body:has(.session-frame) {
   --walk-pad: 0.625rem;
 }
 
-@media (max-height: 760px) {
+@media (max-height: 844px) {
   .session-frame.case-file--session
     :is([data-step-figure], figure:has([data-controls]), :has(> [data-controls])):not(
       :is([data-step-figure], figure:has([data-controls]), :has(> [data-controls])) *
@@ -1125,7 +1125,7 @@ body:has(.session-frame) {
   }
 }
 
-@media (max-height: 760px) {
+@media (max-height: 844px) {
   .session-frame[data-session="03-boundaries-and-pii"] .session-frame__content {
     padding-block: 0.25rem 0;
   }

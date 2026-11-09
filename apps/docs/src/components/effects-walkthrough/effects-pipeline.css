@@ -505,7 +505,7 @@
   display: none;
 }
 
-@media (max-height: 760px) {
+@media (max-height: 844px) {
   .walk.walk--page[data-walk-ready] {
     row-gap: 0.25rem;
   }

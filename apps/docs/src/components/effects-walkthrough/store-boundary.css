@@ -598,7 +598,7 @@
   color: var(--walk-muted);
 }
 
-@media (max-height: 760px) {
+@media (max-height: 844px) {
   .sb-db--page {
     gap: 0.25rem;
     padding-block: 0.3rem;
