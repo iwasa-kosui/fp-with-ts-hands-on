@@ -26,7 +26,7 @@ const cards = [
     ].join("\n"),
     source: "examples/final/src/useCase/rejectExamResultPetMismatch.ts:3-9",
     decision: "理由を付けて残す",
-    text: "store の throw は src/adaptor にあり、src/useCase の外なので対象に入りません。保存済みのデータが食い違っているときに投げます。業務で対応を選べない破損なので、Err にせず例外境界へ渡します。規則を無効にするときは、無効にする行のコメントにこの理由を書きます。",
+    text: "保存済みのデータが食い違っているときに投げる throw です。業務で対応を選べない破損なので、Err にせず例外境界へ渡します。規則を無効にするときは、無効にする行のコメントにこの理由を書きます。store の throw は src/adaptor にあり、src/useCase の外なので、この規則の対象に入りません。",
   },
 ] as const;
 ---

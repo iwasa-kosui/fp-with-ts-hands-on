@@ -337,7 +337,7 @@ const scenes = sceneKind === "success" ? allScenes.slice(0, 1) : allScenes.slice
 const title = sceneKind === "success" ? "診察開始の依頼が5つの境界を通る" : "失敗の依頼が5つの境界のどこまで進むか";
 const lead =
   sceneKind === "success"
-    ? "依頼カードの値が変わり、いま通っている境界の実コードと出力が開きます。"
+    ? "依頼カードの値が変わり、いま通っている境界の実コードが開きます。"
     : undefined;
 
 const frameData = scenes.map(({ stop, frames }) => ({
