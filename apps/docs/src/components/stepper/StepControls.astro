@@ -2,9 +2,9 @@
 ---
 
 <div class="step-controls" data-controls hidden>
-  <button type="button" data-prev disabled>← 前へ</button>
+  <button type="button" data-prev disabled>← 前のコマ</button>
   <button type="button" data-play>▶ 再生</button>
-  <button type="button" data-next>次へ →</button>
+  <button type="button" data-next>次のコマ →</button>
   <span data-progress></span>
 </div>
 
@@ -22,32 +22,32 @@
   }
 
   button {
-    min-height: 2.5rem;
-    padding: 0 0.875rem;
-    border: 2px solid var(--case-blue);
+    min-height: 2.125rem;
+    padding: 0 0.75rem;
+    border: 1.5px solid var(--role-accent);
     border-radius: 0.5rem;
-    background: var(--case-blue);
-    color: var(--case-paper);
+    background: transparent;
+    color: var(--role-accent);
     cursor: pointer;
     font: inherit;
+    font-size: 0.85rem;
     font-weight: 700;
     white-space: nowrap;
   }
 
   button[data-play] {
     min-width: 8.5rem;
+    background: var(--role-accent-soft);
   }
 
   button:disabled {
-    border-color: var(--case-line);
-    background: var(--case-paper);
-    color: var(--case-ink);
+    border-color: var(--role-rule);
+    color: var(--role-muted);
     cursor: not-allowed;
-    opacity: 0.55;
   }
 
   button:focus-visible {
-    outline: 3px solid var(--case-blue);
+    outline: 3px solid var(--role-accent);
     outline-offset: 2px;
   }
 

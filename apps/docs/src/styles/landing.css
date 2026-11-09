@@ -1,0 +1,977 @@
+html:has(.wan-nyan-home) {
+  color-scheme: light dark;
+  background: var(--role-bg);
+}
+
+body:has(.wan-nyan-home) {
+  background: var(--role-bg);
+  color: var(--role-text);
+}
+
+.wan-nyan-home {
+  --landing-header-h: 4rem;
+  --landing-gutter: max(1.125rem, calc((100% - 76.25rem) / 2));
+  position: relative;
+  overflow: clip;
+  background: var(--role-bg);
+  color: var(--role-text);
+}
+
+.wan-nyan-home a:focus-visible {
+  outline: 3px solid var(--role-accent);
+  outline-offset: 3px;
+}
+
+.wan-nyan-home :is(.landing-header, .landing-hero) a:focus-visible {
+  outline-color: var(--role-on-band);
+}
+
+.wan-nyan-home .landing-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.125rem;
+  min-height: var(--landing-header-h);
+  padding: 0.5rem var(--landing-gutter);
+  border-bottom: 1px solid color-mix(in srgb, var(--role-on-band) 22%, transparent);
+  background: var(--role-band);
+  color: var(--role-on-band);
+}
+
+.wan-nyan-home .landing-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--role-on-band);
+  font-size: clamp(1rem, 1.6vw, 1.375rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.wan-nyan-home .landing-brand__mark {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--role-on-band) 45%, transparent);
+  border-radius: 0.5rem;
+  font-size: 1.25rem;
+}
+
+.wan-nyan-home .landing-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.wan-nyan-home .landing-nav a {
+  padding: 0.4375rem 0.75rem;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+  color: var(--role-on-band);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+}
+
+.wan-nyan-home .landing-nav a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+
+.wan-nyan-home .landing-nav a.landing-nav__start {
+  border-color: var(--role-on-band);
+  white-space: nowrap;
+}
+
+.wan-nyan-home .landing-nav a.landing-nav__start:hover {
+  background: color-mix(in srgb, var(--role-on-band) 14%, transparent);
+  text-decoration: none;
+}
+
+.wan-nyan-home .landing-main {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.wan-nyan-home .landing-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: min(calc(100svh - var(--landing-header-h)), 52rem);
+  padding: clamp(1rem, 3svh, 2.5rem) var(--landing-gutter) 0;
+  background: var(--role-band);
+  color: var(--role-on-band);
+  scroll-margin-top: var(--landing-header-h);
+}
+
+.wan-nyan-home .landing-hero__grid {
+  flex: 1;
+  display: grid;
+  grid-template-areas:
+    "eyebrow system"
+    "copy system"
+    "lead system";
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  column-gap: clamp(1.5rem, 4vw, 3.5rem);
+  align-content: center;
+}
+
+.wan-nyan-home .landing-eyebrow {
+  grid-area: eyebrow;
+  margin-bottom: 0.5rem;
+  color: color-mix(in srgb, var(--role-on-band) 82%, transparent);
+  font-size: clamp(0.875rem, 1.3vw, 1.125rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.wan-nyan-home .copy-panel {
+  grid-area: copy;
+  min-width: 0;
+}
+
+.wan-nyan-home h1 {
+  margin: 0 0 clamp(0.75rem, 2svh, 1.25rem);
+  color: var(--role-on-band);
+  font-feature-settings: "palt";
+  font-size: clamp(2.5rem, min(5.6vw, 11svh), 6rem);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.wan-nyan-home .rainbow-word span {
+  color: inherit;
+}
+
+.wan-nyan-home .rainbow-word span:nth-child(-n + 2) {
+  background: linear-gradient(var(--role-go), var(--role-go)) 0 92% / 100% 0.18em no-repeat;
+}
+
+.wan-nyan-home .landing-lead {
+  max-width: 34rem;
+  margin: 0;
+  color: color-mix(in srgb, var(--role-on-band) 90%, transparent);
+  font-size: clamp(0.9375rem, min(1.4vw, 2.6svh), 1.125rem);
+  font-weight: 500;
+}
+
+.wan-nyan-home .landing-intro {
+  grid-area: lead;
+  min-width: 0;
+}
+
+.wan-nyan-home .learning-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.wan-nyan-home .learning-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem 1.25rem;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.wan-nyan-home .learning-actions a:hover {
+  opacity: 0.88;
+}
+
+.wan-nyan-home .landing-hero .learning-actions {
+  margin-top: clamp(0.875rem, 2.4svh, 1.5rem);
+}
+
+.wan-nyan-home .landing-hero .learning-actions a:first-child {
+  border-color: var(--role-go);
+  background: var(--role-go);
+  color: var(--role-on-go);
+}
+
+.wan-nyan-home .landing-hero .learning-actions a + a {
+  border-color: var(--role-on-band);
+  background: transparent;
+  color: var(--role-on-band);
+}
+
+.wan-nyan-home .landing-hero .learning-actions a + a:hover {
+  background: color-mix(in srgb, var(--role-on-band) 14%, transparent);
+  opacity: 1;
+}
+
+.wan-nyan-home :is(.landing-section .learning-actions, .landing-start) a {
+  border-color: var(--role-accent);
+  background: var(--role-accent);
+  color: var(--role-on-accent);
+}
+
+.wan-nyan-home .landing-start {
+  justify-content: center;
+  width: min(76.25rem, calc(100% - 2.25rem));
+  margin: 0 auto;
+  padding-bottom: clamp(2rem, 5vw, 3.5rem);
+}
+
+.wan-nyan-home .system-window {
+  grid-area: system;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  contain: size;
+  border: 1px solid color-mix(in srgb, var(--role-on-band) 35%, transparent);
+  border-radius: 0.75rem;
+  background: var(--role-surface);
+  color: var(--role-text);
+  rotate: -0.75deg;
+}
+
+.wan-nyan-home .system-window__top {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--role-rule);
+  background: var(--role-bg);
+  color: var(--role-text);
+  font-weight: 800;
+}
+
+.wan-nyan-home .system-window__buttons {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.wan-nyan-home .system-window__buttons span {
+  width: 0.8125rem;
+  height: 0.8125rem;
+  border: 1px solid var(--role-border);
+  border-radius: 999px;
+}
+
+.wan-nyan-home .app-dashboard {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 7.5rem minmax(18rem, 1fr) 12rem;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--role-bg);
+}
+
+.wan-nyan-home .dashboard-sidebar {
+  padding: 0.625rem;
+  border-right: 1px solid var(--role-rule);
+  background: var(--role-bg);
+}
+
+.wan-nyan-home .clinic-stamp {
+  display: grid;
+  min-height: 5.25rem;
+  margin-bottom: 0.75rem;
+  place-items: center;
+  border: 1px solid var(--role-rule);
+  border-radius: 0.5rem;
+  background: var(--role-surface);
+  color: var(--role-accent);
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.wan-nyan-home .side-menu {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.wan-nyan-home .side-menu span {
+  min-height: 2.25rem;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--role-rule);
+  border-radius: 0.5rem;
+  background: var(--role-surface);
+  color: var(--role-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.wan-nyan-home .side-menu .is-active {
+  border-color: var(--role-accent);
+  background: var(--role-accent-soft);
+  font-weight: 900;
+}
+
+.wan-nyan-home .schedule-board {
+  min-width: 0;
+  padding: 0.875rem;
+  background: var(--role-surface);
+}
+
+.wan-nyan-home .board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.wan-nyan-home .board-head h2 {
+  margin: 0;
+  color: var(--role-text);
+  font-feature-settings: "palt";
+  font-size: clamp(1.25rem, 2.4vw, 1.75rem);
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.wan-nyan-home .date-pill {
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--role-rule);
+  border-radius: 999px;
+  background: var(--role-accent-soft);
+  color: var(--role-text);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.wan-nyan-home .appointment-grid {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.wan-nyan-home .appointment-card {
+  display: grid;
+  grid-template-columns: 2.625rem 4rem minmax(0, 1fr);
+  gap: 0.375rem 0.5625rem;
+  align-items: center;
+  min-height: 4.25rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--role-rule);
+  border-radius: 0.5rem;
+  background: var(--role-surface);
+}
+
+.wan-nyan-home .pet-icon {
+  display: grid;
+  grid-row: 1 / span 2;
+  width: 2.375rem;
+  height: 2.375rem;
+  place-items: center;
+  border: 1px solid var(--role-rule);
+  border-radius: 999px;
+  background: var(--role-bg);
+  font-size: 1.5rem;
+}
+
+.wan-nyan-home .time {
+  color: var(--role-accent);
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.wan-nyan-home .appointment-card strong {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.wan-nyan-home .appointment-card p {
+  grid-column: 2 / -1;
+  margin: 0;
+  color: var(--role-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.wan-nyan-home .chart-card {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--role-rule);
+  border-radius: 0.5rem;
+  background: var(--role-bg);
+}
+
+.wan-nyan-home .chart-patient {
+  display: grid;
+  grid-template-columns: 3.875rem minmax(0, 1fr);
+  gap: 0.5rem 0.625rem;
+  align-items: center;
+  padding: 0.625rem;
+  border: 1px solid var(--role-rule);
+  border-radius: 0.5rem;
+  background: var(--role-surface);
+}
+
+.wan-nyan-home .big-pet {
+  display: grid;
+  grid-row: 1 / span 2;
+  width: 3.5rem;
+  height: 3.5rem;
+  place-items: center;
+  border: 1px solid var(--role-rule);
+  border-radius: 999px;
+  background: var(--role-bg);
+  font-size: 2rem;
+}
+
+.wan-nyan-home .chart-patient h3 {
+  margin: 0;
+  color: var(--role-text);
+  font-size: 1rem;
+}
+
+.wan-nyan-home .chart-patient p {
+  margin: 0;
+  color: var(--role-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.wan-nyan-home .status-flow {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  gap: 0.375rem;
+}
+
+.wan-nyan-home .status-flow span {
+  padding: 0.1875rem 0.5rem;
+  border: 1px solid var(--role-rule);
+  border-radius: 999px;
+  background: var(--role-accent-soft);
+  color: var(--role-text);
+  font-size: 0.6875rem;
+  font-weight: 800;
+}
+
+.wan-nyan-home .chart-table {
+  width: 100%;
+  border-spacing: 0;
+  border: 1px solid var(--role-rule);
+  background: var(--role-surface);
+  color: var(--role-text);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.wan-nyan-home .chart-table th,
+.wan-nyan-home .chart-table td {
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid var(--role-rule);
+  text-align: left;
+  vertical-align: top;
+}
+
+.wan-nyan-home .chart-table th {
+  width: 5.75rem;
+  background: var(--role-bg);
+  color: var(--role-muted);
+  white-space: nowrap;
+}
+
+.wan-nyan-home .chart-table tr:last-child th,
+.wan-nyan-home .chart-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.wan-nyan-home .chart-table .is-alert th,
+.wan-nyan-home .chart-table .is-alert td {
+  background: var(--role-accent-soft);
+  color: var(--role-text);
+  font-weight: 800;
+}
+
+.wan-nyan-home .dashboard-notices {
+  display: grid;
+  align-content: start;
+  gap: 0.625rem;
+  padding: 0.625rem;
+  border-left: 1px solid var(--role-rule);
+  background: var(--role-bg);
+}
+
+.wan-nyan-home .mini-widget {
+  padding: 0.5625rem;
+  border: 1px solid var(--role-rule);
+  border-radius: 0.5rem;
+  background: var(--role-surface);
+}
+
+.wan-nyan-home .mini-widget h3 {
+  margin: 0 0 0.4375rem;
+  color: var(--role-accent);
+  font-size: 0.875rem;
+}
+
+.wan-nyan-home .mini-widget p {
+  margin: 0;
+  color: var(--role-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.wan-nyan-home .queue-row {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+  color: var(--role-text);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.wan-nyan-home .queue-row span {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid var(--role-rule);
+  border-radius: 999px;
+  background: var(--role-bg);
+}
+
+.wan-nyan-home .queue-row em {
+  font-size: 0.6875rem;
+  font-style: normal;
+}
+
+.wan-nyan-home .floating-pet {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  place-items: center;
+  border: 2px solid var(--role-rule);
+  border-radius: 999px;
+  background: var(--role-surface);
+  font-size: 1.75rem;
+  pointer-events: none;
+}
+
+.wan-nyan-home .floating-pet--cat {
+  top: 0.75rem;
+  right: max(0.5rem, calc(var(--landing-gutter) - 3.75rem));
+  animation: gentle-peek 7s ease-in-out infinite;
+}
+
+.wan-nyan-home .floating-pet--rabbit {
+  right: max(0.5rem, calc(var(--landing-gutter) - 3.75rem));
+  bottom: 4.5rem;
+}
+
+@supports (anchor-name: --system-window) {
+  .wan-nyan-home .system-window {
+    anchor-name: --system-window;
+  }
+
+  .wan-nyan-home .floating-pet {
+    position-anchor: --system-window;
+    right: anchor(right);
+    translate: 30% 0;
+  }
+
+  .wan-nyan-home .floating-pet--cat {
+    top: anchor(top);
+    translate: 30% -40%;
+  }
+
+  .wan-nyan-home .floating-pet--rabbit {
+    top: auto;
+    bottom: anchor(bottom);
+    translate: 30% 40%;
+  }
+}
+
+.wan-nyan-home .below-fold-cue {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.875rem;
+  margin-top: clamp(0.5rem, 1.5svh, 1rem);
+  padding: 0.625rem 0 0.875rem;
+  border-top: 1px solid color-mix(in srgb, var(--role-on-band) 30%, transparent);
+  color: color-mix(in srgb, var(--role-on-band) 82%, transparent);
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.wan-nyan-home .animal-train {
+  display: flex;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.wan-nyan-home .landing-section {
+  width: min(76.25rem, calc(100% - 2.25rem));
+  min-width: 0;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 6vw, 4.5rem) 0 0;
+  scroll-margin-top: var(--landing-header-h);
+}
+
+.wan-nyan-home .landing-section + .landing-start {
+  margin-top: clamp(2rem, 5vw, 3rem);
+}
+
+.wan-nyan-home .section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.375rem;
+  margin-bottom: 1.5rem;
+}
+
+.wan-nyan-home .section-head h2 {
+  max-width: 42.5rem;
+  margin: 0;
+  color: var(--role-text);
+  font-feature-settings: "palt";
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.wan-nyan-home .section-head p {
+  max-width: 30rem;
+  margin: 0;
+  color: var(--role-muted);
+  font-weight: 500;
+}
+
+.wan-nyan-home .mobile-title-break {
+  display: none;
+}
+
+.wan-nyan-home .feature-splats {
+  overflow: hidden;
+  border: 1px solid var(--role-rule);
+  border-radius: 0.75rem;
+  background: var(--role-surface);
+}
+
+.wan-nyan-home .splat-card {
+  display: grid;
+  grid-template-columns: 2.5rem 10rem minmax(0, 1fr);
+  column-gap: 1rem;
+  align-items: center;
+  padding: 0.875rem 1.25rem;
+}
+
+.wan-nyan-home .splat-card + .splat-card {
+  border-top: 1px solid var(--role-rule);
+}
+
+.wan-nyan-home .splat-card .icon {
+  font-size: 1.75rem;
+  line-height: 1;
+  text-align: center;
+}
+
+.wan-nyan-home .splat-card strong {
+  color: var(--role-text);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.wan-nyan-home .splat-card span:last-child {
+  color: var(--role-muted);
+  font-size: 0.9375rem;
+}
+
+.wan-nyan-home .timeline {
+  --timeline-gap: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(8.5rem, 1fr));
+  gap: var(--timeline-gap);
+  overflow-x: auto;
+  padding: 1.5rem 0.25rem 0.5rem;
+}
+
+.wan-nyan-home .time-stop {
+  position: relative;
+  min-height: 10rem;
+  padding: 0.875rem;
+  border: 1px solid var(--role-rule);
+  border-radius: 0.75rem;
+  background: var(--role-surface);
+}
+
+.wan-nyan-home .time-stop::before {
+  position: absolute;
+  top: -0.9rem;
+  left: calc(var(--timeline-gap) / -2);
+  width: calc(100% + var(--timeline-gap));
+  height: 2px;
+  background: var(--role-border);
+  content: "";
+}
+
+.wan-nyan-home .time-stop:first-child::before {
+  left: 0;
+  width: calc(100% + var(--timeline-gap) / 2);
+}
+
+.wan-nyan-home .time-stop:last-child::before {
+  width: calc(100% + var(--timeline-gap) / 2);
+}
+
+.wan-nyan-home .time-stop::after {
+  position: absolute;
+  top: calc(-0.9rem - 0.3125rem + 1px);
+  left: 0.875rem;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 999px;
+  background: var(--role-accent);
+  content: "";
+}
+
+.wan-nyan-home .time-stop.is-active {
+  background: var(--role-accent-soft);
+}
+
+.wan-nyan-home .time-stop time {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--role-accent);
+  font-size: 0.8125rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.wan-nyan-home .time-stop strong {
+  display: block;
+  margin-bottom: 0.375rem;
+  color: var(--role-text);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.wan-nyan-home .time-stop span {
+  display: block;
+  color: var(--role-muted);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+.wan-nyan-home .time-stop.is-active span {
+  color: var(--role-text);
+}
+
+.wan-nyan-home .landing-footer {
+  width: min(76.25rem, calc(100% - 2.25rem));
+  margin: 0 auto;
+  padding: 1.5rem 0 2.5rem;
+  border-top: 1px solid var(--role-rule);
+  color: var(--role-muted);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.wan-nyan-home .landing-footer p {
+  margin-bottom: 0.5rem;
+}
+
+.wan-nyan-home .landing-footer a {
+  color: var(--role-accent);
+  font-weight: 800;
+}
+
+@keyframes gentle-peek {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+
+  52% {
+    transform: translateY(-0.5rem) rotate(3deg);
+  }
+}
+
+@media (max-width: 75rem) {
+  .wan-nyan-home .landing-hero {
+    min-height: auto;
+  }
+
+  .wan-nyan-home .landing-hero__grid {
+    grid-template-areas:
+      "eyebrow"
+      "copy"
+      "lead"
+      "system";
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+  }
+
+  .wan-nyan-home .system-window {
+    contain: none;
+    margin-top: 2rem;
+  }
+
+  .wan-nyan-home .app-dashboard {
+    grid-template-columns: 8.125rem minmax(22.5rem, 1fr);
+    overflow-x: auto;
+  }
+
+  .wan-nyan-home .dashboard-notices {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid var(--role-rule);
+    border-left: 0;
+  }
+
+  .wan-nyan-home .floating-pet {
+    display: none;
+  }
+}
+
+@media (max-width: 64rem) {
+  .wan-nyan-home .timeline {
+    --timeline-gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+    padding: 0 0 0 1.75rem;
+  }
+
+  .wan-nyan-home .time-stop {
+    min-height: 0;
+  }
+
+  .wan-nyan-home .time-stop::before,
+  .wan-nyan-home .time-stop:first-child::before,
+  .wan-nyan-home .time-stop:last-child::before {
+    top: calc(var(--timeline-gap) / -2);
+    left: -1.125rem;
+    width: 2px;
+    height: calc(100% + var(--timeline-gap));
+  }
+
+  .wan-nyan-home .time-stop:first-child::before {
+    top: 1.25rem;
+    height: calc(100% + var(--timeline-gap) / 2 - 1.25rem);
+  }
+
+  .wan-nyan-home .time-stop:last-child::before {
+    height: calc(1.25rem + var(--timeline-gap) / 2);
+  }
+
+  .wan-nyan-home .time-stop::after {
+    top: 0.9375rem;
+    left: calc(-1.125rem - 0.3125rem + 1px);
+  }
+}
+
+@media (max-width: 43.75rem) {
+  .wan-nyan-home .landing-header {
+    position: static;
+    padding: 0.5rem 1.125rem;
+  }
+
+  .wan-nyan-home .landing-brand {
+    white-space: normal;
+  }
+
+  .wan-nyan-home .landing-nav a:not(.landing-nav__start) {
+    display: none;
+  }
+
+  .wan-nyan-home .landing-hero {
+    padding-inline: 1.125rem;
+  }
+
+  .wan-nyan-home h1 {
+    font-size: clamp(2.25rem, 11vw, 2.75rem);
+  }
+
+  .wan-nyan-home .system-window {
+    rotate: 0deg;
+  }
+
+  .wan-nyan-home .app-dashboard {
+    display: block;
+    overflow: visible;
+  }
+
+  .wan-nyan-home .dashboard-sidebar,
+  .wan-nyan-home .dashboard-notices {
+    border: 0;
+    border-bottom: 1px solid var(--role-rule);
+  }
+
+  .wan-nyan-home .side-menu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wan-nyan-home .dashboard-notices {
+    grid-template-columns: 1fr;
+  }
+
+  .wan-nyan-home .appointment-card {
+    grid-template-columns: 2.375rem minmax(0, 1fr);
+  }
+
+  .wan-nyan-home .appointment-card p {
+    grid-column: 1 / -1;
+  }
+
+  .wan-nyan-home .section-head {
+    display: grid;
+    gap: 0.625rem;
+    margin-bottom: 1rem;
+  }
+
+  .wan-nyan-home .section-head h2 {
+    font-size: clamp(1.875rem, 9vw, 2.25rem);
+  }
+
+  .wan-nyan-home .mobile-title-break {
+    display: block;
+  }
+
+  .wan-nyan-home .splat-card {
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+    column-gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .wan-nyan-home .splat-card .icon {
+    grid-row: 1 / span 2;
+  }
+
+  .wan-nyan-home .below-fold-cue {
+    display: grid;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wan-nyan-home *,
+  .wan-nyan-home *::before,
+  .wan-nyan-home *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

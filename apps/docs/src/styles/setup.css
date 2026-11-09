@@ -1,7 +1,47 @@
+html:has(.setup-page) {
+  color-scheme: light dark;
+  background: var(--role-bg);
+}
+
+body:has(.setup-page) {
+  background: var(--role-bg);
+}
+
+.setup-page {
+  background: var(--role-bg);
+  color: var(--role-text);
+}
+
+.setup-page .case-file__site-header {
+  width: 100%;
+  margin: 0;
+  padding: 1rem max(1rem, calc((100% - 74rem) / 2));
+  border-bottom: 0;
+  background: var(--role-band);
+  color: var(--role-on-band);
+  font-weight: 900;
+}
+
+.setup-page .case-file__site-header a:focus-visible {
+  outline: 3px solid var(--role-on-band);
+  outline-offset: 4px;
+}
+
 .setup-page__main {
   width: min(100% - 2rem, 48rem);
   margin-inline: auto;
   padding-block: clamp(2.5rem, 7vw, 5rem);
+}
+
+.setup-page__main a:not(.setup-page__start) {
+  color: var(--role-accent);
+}
+
+.setup-page .case-file__eyebrow {
+  padding: 0;
+  background: transparent;
+  color: var(--role-accent);
+  font-weight: 900;
 }
 
 .setup-page__hero {
@@ -11,14 +51,23 @@
 
 .setup-page__hero h1 {
   margin: 0;
+  font-feature-settings: "palt";
   font-size: clamp(2.75rem, 8vw, 5rem);
+  font-weight: 900;
   line-height: 1.05;
 }
 
 .setup-page__hero > p:last-child {
   margin: 1.25rem 0 0;
+  color: var(--role-muted);
   font-size: clamp(1rem, 2.5vw, 1.2rem);
   line-height: 1.8;
+}
+
+.setup-page h2 {
+  color: var(--role-text);
+  font-feature-settings: "palt";
+  font-weight: 900;
 }
 
 .setup-page__steps {
@@ -38,8 +87,8 @@
   scroll-margin-top: 1.5rem;
 }
 
-.setup-page a:focus-visible {
-  outline: 3px solid var(--case-ink);
+.setup-page :is(a, button):focus-visible {
+  outline: 3px solid var(--role-accent);
   outline-offset: 4px;
 }
 
@@ -53,9 +102,9 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: clamp(1rem, 3vw, 1.5rem);
   padding: clamp(1.25rem, 4vw, 2rem);
-  border: 2px solid var(--case-line);
-  background: var(--case-paper);
-  box-shadow: 0.45rem 0.45rem 0 var(--case-mint);
+  border: 1px solid var(--role-rule);
+  border-radius: 0.75rem;
+  background: var(--role-surface);
 }
 
 .setup-step > div,
@@ -63,44 +112,32 @@
   min-width: 0;
 }
 
-.setup-step--repository {
-  box-shadow: 0.45rem 0.45rem 0 var(--case-lemon);
-}
-
-.setup-step--verification {
-  box-shadow: 0.45rem 0.45rem 0 var(--case-coral);
-}
-
 .setup-step__number {
   display: grid;
   width: 3rem;
   height: 3rem;
   place-items: center;
-  border: 2px solid var(--case-line);
+  border: 2px solid var(--role-accent);
   border-radius: 50%;
-  background: var(--case-mint);
+  background: var(--role-accent-soft);
+  color: var(--role-text);
   font-weight: 900;
-}
-
-.setup-step--repository .setup-step__number {
-  background: var(--case-lemon);
-}
-
-.setup-step--verification .setup-step__number {
-  background: var(--case-coral);
 }
 
 .setup-step__label {
   margin: 0 0 0.35rem;
+  color: var(--role-accent);
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.08em;
 }
 
 .setup-step h3 {
   margin: 0;
-  color: var(--case-ink);
+  color: var(--role-text);
+  font-feature-settings: "palt";
   font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 900;
   line-height: 1.3;
 }
 
@@ -113,22 +150,24 @@
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.75rem 1rem;
-  border: 2px solid var(--case-line);
-  background: var(--case-ink);
-  color: var(--case-paper);
-  font-weight: 800;
+  padding: 0.75rem 1.1rem;
+  border: 2px solid var(--role-go);
+  border-radius: 0.5rem;
+  background: var(--role-go);
+  color: var(--role-on-go);
+  font-weight: 900;
   text-decoration: none;
 }
 
 .setup-page__start:hover {
-  background: var(--case-coral);
-  color: var(--case-ink);
+  opacity: 0.88;
 }
 
 .setup-step__command {
   margin-top: 1.25rem;
-  border: 2px solid var(--case-line);
+  overflow: hidden;
+  border: 1px solid var(--role-rule);
+  border-radius: 0.5rem;
   background: var(--case-ink);
 }
 
@@ -138,14 +177,22 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.65rem 0.75rem;
-  background: var(--case-lemon);
+  background: var(--role-band);
+  color: var(--role-on-band);
   font-size: 0.85rem;
   font-weight: 800;
 }
 
 .setup-step__command .copy-button {
   padding: 0.35rem 0.65rem;
-  background: var(--case-paper);
+  border-color: var(--role-on-band);
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--role-on-band);
+}
+
+.setup-step__command .copy-button:focus-visible {
+  outline-color: var(--role-on-band);
 }
 
 .setup-step__command .code-block {
@@ -168,7 +215,7 @@
   gap: 1rem;
   margin-top: 2.5rem;
   padding-top: 1.5rem;
-  border-top: 2px solid var(--case-line);
+  border-top: 1px solid var(--role-rule);
 }
 
 .setup-page__next a {

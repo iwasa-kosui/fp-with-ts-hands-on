@@ -497,3 +497,36 @@
     height: 15rem;
   }
 }
+
+:where(.session-frame) .code-playground [data-code-explorer] {
+  border-width: 1px;
+  border-radius: 0.75rem;
+  background: var(--role-surface);
+  box-shadow: none;
+}
+
+:where(.session-frame)
+  .code-playground
+  :is(
+    .code-explorer__workspace nav,
+    .code-explorer__guides,
+    .code-explorer__editor
+  ) {
+  border-width: 1px;
+  border-radius: 0.5rem;
+}
+
+.session-frame .code-playground .code-explorer__terminal:not([data-state="failed"], .guard-exercise__terminal .code-explorer__terminal) {
+  border-width: 1px;
+  border-radius: 0.5rem;
+}
+
+:where(.session-frame)
+  .code-playground
+  :is(.code-explorer__diagnostics, .code-explorer__actions, .code-explorer__terminal-exit) {
+  border-top-width: 1px;
+}
+
+:where(.session-frame) .code-playground .code-explorer__notice {
+  border-bottom-width: 1px;
+}

@@ -32,6 +32,11 @@ const sessionTitle =
   sessionNavigationItems.find(({ slug }) => slug === sessionSlug)?.title ?? "";
 const role = splitPageRole(page.role);
 const sequence = sessionSlug === "final" ? "Final" : `S${sessionSlug.slice(0, 2)}`;
+const isOtherSession = (href: string) => !href.startsWith(`/sessions/${sessionSlug}/`);
+const previousLabel = previous !== undefined && isOtherSession(previous.href) ? "前の Session" : "前のページ";
+const nextLabel = next !== undefined && isOtherSession(next.href) ? "次の Session" : "次のページ";
+const sameKind = pages.filter(({ kind }) => (kind === "advanced") === (page.kind === "advanced"));
+const progress = `${((sameKind.indexOf(page) + 1) / sameKind.length) * 100}%`;
 ---
 
 <BaseLayout
@@ -81,13 +86,20 @@ const sequence = sessionSlug === "final" ? "Final" : `S${sessionSlug.slice(0, 2)
     </div>
 
     <nav class="session-frame__footer" aria-label="前後のページ">
+      <span class="session-frame__progress" aria-hidden="true">
+        <span class="session-frame__progress-fill" style={`width: ${progress}`}></span>
+      </span>
       {
         previous === undefined ? (
           <span class="session-frame__link-slot"></span>
         ) : (
           <a class="session-frame__link session-frame__link--previous" rel="prev" href={previous.href}>
-            <span class="session-frame__link-label">← 前</span>
-            <span class="session-frame__link-title">{previous.title}</span>
+            <kbd aria-hidden="true">←</kbd>
+            <span class="session-frame__link-arrow" aria-hidden="true">←</span>
+            <span class="session-frame__link-text">
+              <span class="session-frame__link-label">{previousLabel}</span>
+              <span class="session-frame__link-title">{previous.title}</span>
+            </span>
           </a>
         )
       }
@@ -99,15 +111,19 @@ const sequence = sessionSlug === "final" ? "Final" : `S${sessionSlug.slice(0, 2)
             </a>
           )
         }
-        <span class="session-frame__key-hint">← → キーでも移動できます</span>
+        <span class="session-frame__key-hint">キーボードの ← → でも移動できます</span>
       </div>
       {
         next === undefined ? (
           <span class="session-frame__link-slot"></span>
         ) : (
           <a class="session-frame__link session-frame__link--next" rel="next" href={next.href}>
-            <span class="session-frame__link-label">次 →</span>
-            <span class="session-frame__link-title">{next.title}</span>
+            <span class="session-frame__link-text">
+              <span class="session-frame__link-label">{nextLabel}</span>
+              <span class="session-frame__link-title">{next.title}</span>
+            </span>
+            <span class="session-frame__link-arrow" aria-hidden="true">→</span>
+            <kbd aria-hidden="true">→</kbd>
           </a>
         )
       }
@@ -116,7 +132,11 @@ const sequence = sessionSlug === "final" ? "Final" : `S${sessionSlug.slice(0, 2)
 </BaseLayout>
 
 <script>
-  import { installPageKeyNavigation } from "../../sessions/pages/page-key-navigation";
+  import {
+    installPageKeyNavigation,
+    pageKeyScope,
+    type PageKeyScope,
+  } from "../../sessions/pages/page-key-navigation";
 
   installPageKeyNavigation(document, (direction) => {
     const rel = direction === "previous" ? "prev" : "next";
@@ -125,4 +145,26 @@ const sequence = sessionSlug === "final" ? "Final" : `S${sessionSlug.slice(0, 2)
       ?.getAttribute("href");
     if (href) location.assign(href);
   });
+
+  const keyHints: Record<PageKeyScope, string> = {
+    page: "キーボードの ← → でも移動できます",
+    step: "いま ← → はこの図のコマ送りです",
+    text: "いま ← → はカーソルの移動です",
+  };
+  const keyHint = document.querySelector<HTMLElement>(".session-frame__key-hint");
+  const showKeyHint = (target: EventTarget | null) => {
+    if (keyHint === null) return;
+    keyHint.textContent = keyHints[pageKeyScope(target instanceof Element ? target : null)];
+  };
+  document.addEventListener("focusin", (event) => showKeyHint(event.target));
+  document.addEventListener("focusout", (event) => showKeyHint(event.relatedTarget));
+
+  const sidebar = document.querySelector<HTMLElement>(".session-frame__sidebar");
+  const current = sidebar?.querySelector<HTMLElement>('[aria-current="page"]');
+  if (sidebar && current && sidebar.clientHeight > 0) {
+    const above = current.getBoundingClientRect().top - sidebar.getBoundingClientRect().top;
+    const below = current.getBoundingClientRect().bottom - sidebar.getBoundingClientRect().bottom;
+    if (above < 0) sidebar.scrollTo({ top: sidebar.scrollTop + above, behavior: "instant" });
+    else if (below > 0) sidebar.scrollTo({ top: sidebar.scrollTop + below, behavior: "instant" });
+  }
 </script>

@@ -120,9 +120,9 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
 
 <div class="precondition-flow" data-precondition-flow data-frames={playerData}>
   <div class="precondition-flow__controls" data-controls hidden>
-    <button type="button" data-prev disabled>前へ</button>
+    <button type="button" data-prev disabled>← 前のコマ</button>
     <span data-progress>1 / {frames.length}</span>
-    <button type="button" data-next>次へ</button>
+    <button type="button" data-next>次のコマ →</button>
   </div>
 
   <svg viewBox="0 0 340 246" role="img" aria-labelledby="precondition-flow-title precondition-flow-desc">

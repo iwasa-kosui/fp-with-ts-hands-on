@@ -18,6 +18,14 @@ const groups = sessionPageFlowOrder.flatMap((flow) => {
   const members = pages.filter((page) => page.flow === flow);
   return members.length === 0 ? [] : [{ flow, members }];
 });
+const ordered = groups.flatMap(({ members }) => members);
+const currentIndex = ordered.findIndex((page) => page.slug === currentPageSlug);
+const routeOf = (page: SessionPage) =>
+  page.slug === currentPageSlug
+    ? "current"
+    : ordered.indexOf(page) < currentIndex
+      ? "past"
+      : "future";
 ---
 
 <nav class="session-frame__pages" aria-label="このセッションのページ">
@@ -33,6 +41,7 @@ const groups = sessionPageFlowOrder.flatMap((flow) => {
               <a
                 href={sessionPageHref(sessionSlug, page.slug)}
                 aria-current={page.slug === currentPageSlug ? "page" : undefined}
+                data-route={routeOf(page)}
               >
                 {page.title}
               </a>

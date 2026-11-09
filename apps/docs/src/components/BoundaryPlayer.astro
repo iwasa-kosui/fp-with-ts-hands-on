@@ -65,9 +65,9 @@ const texts = [
       ))}
     </div>
     <div class="boundary-player__controls" data-controls>
-      <button type="button" data-action="prev" data-prev>1コマ戻る</button>
+      <button type="button" data-action="prev" data-prev>← 前のコマ</button>
       <button type="button" data-action="play" class="boundary-player__play">再生</button>
-      <button type="button" data-action="next" data-next>1コマ進む</button>
+      <button type="button" data-action="next" data-next>次のコマ →</button>
       <span data-counter></span>
     </div>
     <div class="boundary-player__track" data-track>
@@ -334,20 +334,34 @@ const texts = [
   }
 
   button:focus-visible {
-    outline: 3px solid var(--case-blue);
+    outline: 3px solid var(--role-accent, var(--case-blue));
     outline-offset: 2px;
   }
 
   .boundary-player__controls button {
-    border-color: var(--case-blue);
-    color: var(--case-blue);
+    min-height: 2.125rem;
+    padding: 0.25rem 0.75rem;
+    border: 1.5px solid var(--role-accent, var(--case-blue));
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--role-accent, var(--case-blue));
+    font-size: 0.85rem;
   }
 
-  button[aria-pressed="true"],
+  .boundary-player__controls button:disabled {
+    border-color: var(--role-rule, var(--case-divider));
+    color: var(--role-muted, var(--case-muted));
+    opacity: 1;
+  }
+
+  button[aria-pressed="true"] {
+    border-color: var(--role-accent, var(--case-blue));
+    background: var(--role-accent, var(--case-blue));
+    color: var(--role-on-accent, var(--case-paper));
+  }
+
   .boundary-player__controls .boundary-player__play {
-    border-color: var(--case-blue);
-    background: var(--case-blue);
-    color: var(--case-paper);
+    background: var(--role-accent-soft, var(--case-paper));
   }
 
   .boundary-player__play { min-width: calc(4em + 1.5rem + 4px); }
@@ -545,10 +559,6 @@ const texts = [
     .boundary-player {
       margin-block: 0.25rem;
       padding: 0.5rem 0.75rem;
-    }
-
-    .boundary-player__controls button {
-      padding-block: 0.25rem;
     }
 
     .boundary-player__value {
