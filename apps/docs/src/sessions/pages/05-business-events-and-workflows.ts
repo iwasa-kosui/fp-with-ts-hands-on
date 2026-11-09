@@ -17,7 +17,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "brief",
     minutes: 1,
-    role: "課題: キャンセルを1つの関数に書くと、どの条件で失敗したかが読めず、判定だけを確かめられません。",
+    role: "課題: キャンセルを1つの関数に書くと、どんな失敗が起きうるかが型から読めず、判定だけを確かめられません。",
   },
   {
     slug: "steps",
@@ -25,7 +25,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1.5,
-    role: "事前知識: どの条件で失敗したかを読めるようにするために、キャンセルを入力と出力を持つ4つの工程に分けます。",
+    role: "事前知識: どんな失敗が起きうるかを型から読めるようにするために、キャンセルを入力と出力を持つ4つの工程に分けます。",
   },
   {
     slug: "railway",
@@ -40,7 +40,7 @@ export const sessionPages = [
     title: "S04 の andThen は切り替え線",
     flow: "knowledge",
     kind: "teach",
-    minutes: 0.5,
+    minutes: 1,
     role: "事前知識: S04 で使った andThen と map が、2本のレールのどこに当たるかを確かめます。",
   },
   {
@@ -72,7 +72,7 @@ export const sessionPages = [
     title: "キャンセルが成功するときの値の流れ",
     flow: "solution",
     kind: "teach",
-    minutes: 2,
+    minutes: 1.5,
     role: "解決策: キャンセルが成功するときに、値が各工程でどう変わるかをコードで追います。",
   },
   {

@@ -7,7 +7,7 @@ export const session: SessionSummary = {
   snapshot: undefined,
   sequence: "05",
   kind: "workshop",
-  title: "データとパイプラインで予約キャンセルを設計する",
+  title: "データと工程で予約キャンセルを設計する",
   durationMinutes: 18,
   timeBreakdown: { brief: 2, teach: 8, exercise: 6, review: 2 },
   animal: { name: "CAT", type: "cat", avatar: "🐈" },

@@ -5,6 +5,6 @@ import TangledCancelCode from "../../../components/cancel-workflow/TangledCancel
 <TangledCancelCode />
 
 <ol class="session-questions">
-  <li>課題 1: 条件の確認が時刻の取得と保存の間に混ざり、失敗も例外として投げられるので、どの条件で失敗したかが読めません。</li>
+  <li>課題 1: 失敗を例外で投げるので、どんな失敗が起きうるかが関数の型から読めず、呼び出し側は全部の失敗を扱えたかを確かめられません。</li>
   <li>課題 2: 判定が時刻の取得と保存と同じ関数に入っているので、判定だけを確かめるには、データベースの用意と時刻の固定が要ります。</li>
 </ol>
