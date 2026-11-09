@@ -7,6 +7,7 @@ import statusLabelSource from "../../../../examples/session-02-solution/src/doma
 import beforeStatusLabelSource from "../../../../examples/session-02/src/domain/appointment/statusLabel.ts?raw";
 import MiniTree from "./mini-tree/MiniTree.astro";
 import { miniTree } from "./mini-tree/mini-tree";
+import { lineLabelOf } from "../sessions/source-quotes";
 import StepControls from "./stepper/StepControls.astro";
 
 type Props = { part: "count" | "exhaustive" };
@@ -125,6 +126,7 @@ type Frame = Readonly<{
   id: string;
   tone: Tone;
   codeLabel?: string;
+  codeNote?: string;
   codePath?: string;
   code?: string;
   extra?: Readonly<{ label: string; path: string; code: string }>;
@@ -132,12 +134,30 @@ type Frame = Readonly<{
   error?: string;
 }>;
 
+const illustrativeNote = "説明用（配布コードにはありません）";
+const solutionAppointmentPath = "src/domain/appointment/appointment.ts";
+const stringSignatureLabel = lineLabelOf(
+  "session-02",
+  "src/domain/appointment/statusLabel.ts",
+  "export const toStatusLabel = (appointment: Readonly<{ kind: string }>): string => {",
+  "export const toStatusLabel = (appointment: Readonly<{ kind: string }>): string => {",
+);
+const unionLabel = lineLabelOf("session-02-solution", solutionAppointmentPath, appointmentLines[unionStart], appointmentLines[unionEnd]);
+const canceledLabel = lineLabelOf("session-02-solution", solutionAppointmentPath, appointmentLines[canceledStart], appointmentLines[canceledEnd]);
+
 const countFrames: readonly Frame[] = [
-  { id: "string", tone: "negative", code: stringCode, codeLabel: "▲ 修正前の引数の型" },
-  { id: "sum", tone: "positive", code: unionCode, codeLabel: "● 直和型で書いた場合" },
-  { id: "product", tone: "neutral", code: twoFlagsCode, codeLabel: "2個のフラグの直積型" },
-  { id: "flags", tone: "negative", code: flagsCode, codeLabel: "▲ 仮にフラグで書くと" },
-  { id: "adt", tone: "positive", code: canceledCode, codeLabel: "● 直和型の候補 Canceled は直積型" },
+  {
+    id: "string",
+    tone: "negative",
+    code: stringCode,
+    codeLabel: "▲ 修正前の引数の型",
+    codeNote: "引数の型の部分を抜き出しました。",
+    codePath: stringSignatureLabel,
+  },
+  { id: "sum", tone: "positive", code: unionCode, codeLabel: "● 直和型で書いた場合", codePath: unionLabel },
+  { id: "product", tone: "neutral", code: twoFlagsCode, codeLabel: "2個のフラグの直積型", codeNote: illustrativeNote },
+  { id: "flags", tone: "negative", code: flagsCode, codeLabel: "▲ 仮にフラグで書くと", codeNote: illustrativeNote },
+  { id: "adt", tone: "positive", code: canceledCode, codeLabel: "● 直和型の候補 Canceled は直積型", codePath: canceledLabel },
 ];
 
 const exhaustiveFrames: readonly Frame[] = [
@@ -220,7 +240,11 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
                   <figure class={`code-block adt-count__code adt-count__code--${frame.tone}`}>
                     <figcaption>
                       <span class={`adt-count__badge adt-count__badge--${frame.tone}`}>{frame.codeLabel}</span>
-                      {frame.codePath && <code>{frame.codePath}</code>}
+                      {frame.codeNote && <span>{frame.codeNote}</span>}
+                      {frame.codePath && part === "exhaustive" && <code>{frame.codePath}</code>}
+                      {frame.codePath && part === "count" && (
+                        <code class="adt-count__path">{frame.codePath.split("/").map((segment, index, segments) => <><span>{index < segments.length - 1 ? `${segment}/` : segment}</span><wbr /></>)}</code>
+                      )}
                     </figcaption>
                     <Code code={frame.code} lang="typescript" transformers={[markKeyLines]} />
                   </figure>
@@ -589,6 +613,16 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
     font-size: 0.6875rem;
     overflow-wrap: anywhere;
     white-space: normal;
+  }
+
+  .adt-count__code figcaption code.adt-count__path {
+    display: block;
+    min-width: 0;
+    overflow-wrap: normal;
+  }
+
+  .adt-count__path span {
+    white-space: nowrap;
   }
 
   .adt-count__code :global(pre) {

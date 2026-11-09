@@ -1,0 +1,15 @@
+---
+interface Props {
+  label: string;
+}
+
+const parts = Astro.props.label.split("/");
+---
+
+{parts.map((part, index) => <><span class="path-seg">{index < parts.length - 1 ? `${part}/` : part}</span><wbr /></>)}
+
+<style>
+  .path-seg {
+    white-space: nowrap;
+  }
+</style>

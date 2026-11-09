@@ -3,7 +3,7 @@ import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import type { SessionWorkspace } from "../../code-explorer/types";
 import { miniTree } from "../../components/mini-tree/mini-tree";
 import { loadSolutionSnippets } from "../solution-snippets";
-import { sourceOf } from "../source-quotes";
+import { lineLabelOf, pathLabelOf, sourceOf } from "../source-quotes";
 import type {
   DelegationPrompt,
   ExampleSnapshot,
@@ -214,7 +214,7 @@ export const guideTrees = {
 } as const;
 
 export const paymentAmountQuote = ({
-  source: "examples/final/src/domain/appointment/paymentAmount.ts",
+  source: pathLabelOf("final", "src/domain/appointment/paymentAmount.ts"),
   code: sourceOf(
     projectFilesForSnapshot("final"),
     "src/domain/appointment/paymentAmount.ts",
@@ -253,19 +253,6 @@ export const navigation = ({
 } as const);
 
 export const projectFiles = projectFilesForSnapshot(session.snapshot);
-
-export const paymentAmountExample = `import { z } from "zod";
-
-import { schemaResult } from "../shared/schemaResult.js";
-
-const schema = z.number().int().positive().brand<"PaymentAmount">();
-
-export type PaymentAmount = z.infer<typeof schema>;
-
-export const PaymentAmount = {
-  schema,
-  parse: schemaResult(schema),
-} as const;`;
 
 export const incidentRequest = `POST /appointments/11111111-1111-4111-8111-111111111111/start-examination
 Content-Type: application/json
@@ -333,11 +320,25 @@ const schemaSourceSnippets = await loadSolutionSnippets({
     },
   ],
 });
-const [schemaBefore, schemaAfter, schemaResultSource] =
-  schemaSourceSnippets.map(({ solution, code }) => ({
-    path: solution.path.replace(/^examples\/session-03(-solution)?\//, ""),
-    code,
-  }));
+const [schemaBeforeSnippet, schemaAfterSnippet, schemaResultSnippet] = schemaSourceSnippets;
+const startExaminationInputPath = "src/adaptor/primary/web/startExaminationInput.ts";
+const schemaBefore = {
+  path: pathLabelOf("session-03", startExaminationInputPath),
+  code: schemaBeforeSnippet.code,
+};
+const schemaAfter = {
+  path: pathLabelOf("session-03-solution", startExaminationInputPath),
+  code: schemaAfterSnippet.code,
+};
+const schemaResultSource = {
+  path: lineLabelOf(
+    "session-03-solution",
+    "src/domain/shared/schemaResult.ts",
+    "export const schemaResult = <T>(schema: z.ZodType<T, z.ZodTypeDef, unknown>) =>",
+    "  };",
+  ),
+  code: schemaResultSnippet.code,
+};
 
 export const schemaSourceCode = {
   before: schemaBefore,

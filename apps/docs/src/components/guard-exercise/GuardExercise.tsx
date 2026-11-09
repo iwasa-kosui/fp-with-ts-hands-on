@@ -1,5 +1,12 @@
-import { useMemo, useState, type ComponentType, type ReactNode } from "react";
 import {
+  useCallback,
+  useMemo,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
+import {
+  casePathFor,
   guardPaths,
   isGuardReadOnlyPath,
   readGuardCases,
@@ -45,6 +52,25 @@ const tabPathsFor = (
     : [...fixed, selectedPath];
 };
 
+const fileListPathsFor = (
+  visiblePaths: readonly string[],
+  selectedPath: string | undefined,
+  listedCaseIds: readonly string[],
+): readonly string[] => {
+  const listed = [
+    ...visiblePaths.filter(
+      (path) => path === guardPaths.eslintConfig || path.startsWith(guardPaths.mine),
+    ),
+    ...listedCaseIds.flatMap((id) => {
+      const path = casePathFor(visiblePaths, id);
+      return path === undefined ? [] : [path];
+    }),
+  ];
+  return selectedPath === undefined || listed.includes(selectedPath)
+    ? listed
+    : [...listed, selectedPath];
+};
+
 export const GuardExercise = ({
   workspace,
   projectFiles,
@@ -60,6 +86,12 @@ export const GuardExercise = ({
     () => workspaceStore ?? createIndexedDbWorkspaceStore(),
   );
   const cases = useMemo(() => readGuardCases(projectFiles), [projectFiles]);
+  const [listedCaseIds, setListedCaseIds] = useState<readonly string[]>([]);
+  const fileListPaths = useCallback(
+    (visiblePaths: readonly string[], selectedPath: string | undefined) =>
+      fileListPathsFor(visiblePaths, selectedPath, listedCaseIds),
+    [listedCaseIds],
+  );
 
   return (
     <div
@@ -76,6 +108,7 @@ export const GuardExercise = ({
         loadTerminalView={loadTerminalView}
         isReadOnlyPath={isGuardReadOnlyPath}
         tabPaths={tabPathsFor}
+        fileListPaths={fileListPaths}
         renderLayout={(parts: CodeExplorerLayoutParts) => (
           <GuardLayout
             parts={parts}
@@ -84,6 +117,7 @@ export const GuardExercise = ({
             projectFiles={projectFiles}
             cases={cases}
             guide={guide}
+            onListedCasesChange={setListedCaseIds}
           >
             {children}
           </GuardLayout>

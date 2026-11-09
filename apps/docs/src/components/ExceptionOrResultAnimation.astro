@@ -4,6 +4,7 @@ import MiniTree from "./mini-tree/MiniTree.astro";
 import { miniTree } from "./mini-tree/mini-tree";
 import StepControls from "./stepper/StepControls.astro";
 import { checkBands, lineAll, lineCount, lineIndex } from "./workflow-errors/lines";
+import { lineLabelOf } from "../sessions/source-quotes";
 import { matchCall, noticeMessage, onErrorLine, paths, pipelineBody, pipelineResultType } from "./workflow-errors/sources";
 import "./workflow-errors/figure.css";
 
@@ -108,9 +109,14 @@ const tree = miniTree("session-04-solution", "src/", [
   { folder: "", files: [{ id: "app", name: "app.ts" }] },
 ]);
 const destTitle = isBusiness ? "Web ルートの match → 画面のお知らせ" : "例外を最後に受け取る場所（app.onError）→ 500";
-const footnote = isBusiness
-  ? `引用元: ${paths.solutionUseCase}:29-44 と S04 の route の説明用の抜粋`
-  : `引用元: ${paths.solutionUseCase}:29-44 と ${paths.solutionApp}:34`;
+const useCaseLabel = lineLabelOf("session-04-solution", "src/useCase/startExamination.ts", "    ensureAppointmentFound(", "      });");
+const realRouteLabel = lineLabelOf("session-04-solution", "src/adaptor/primary/web/routes.ts", "    return result.match(", "    );");
+const footnotes: readonly Readonly<{ text: string; file?: string }>[] = isBusiness
+  ? [
+    { text: "startExamination の引用元:", file: useCaseLabel },
+    { text: "Web ルートの match は説明用（配布コードにはありません）。実物の route:", file: realRouteLabel },
+  ]
+  : [{ text: `引用元: ${paths.solutionUseCase}:29-44 と ${paths.solutionApp}:34` }];
 const connectorText = isBusiness ? "Err を返す" : "例外が伝わる";
 const legend = isBusiness ? "破線の枠: Err の値として返る経路" : "実線の枠: 例外として伝わる経路";
 const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
@@ -155,7 +161,7 @@ const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
       {!isBusiness && (
         <p class="eo-note">この教材の app.onError は 500 を返すだけです。実際の業務では、処理の取り消しや接続の解放を、このような外側の場所でまとめて書くことが多くあります。</p>
       )}
-      <p class="eo-path">{footnote}</p>
+      <p class="eo-path">{footnotes.map(({ text, file }) => <span>{text}{file !== undefined && <> <span class="eo-path__file">{file}</span></>}</span>)}</p>
     </section>
   </div>
 </figure>
@@ -273,6 +279,14 @@ const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
     color: var(--role-muted);
     font-size: 0.75rem;
     overflow-wrap: anywhere;
+  }
+
+  .eo-path > span {
+    display: block;
+  }
+
+  .eo-path__file {
+    white-space: nowrap;
   }
 
   .eo-legend {
