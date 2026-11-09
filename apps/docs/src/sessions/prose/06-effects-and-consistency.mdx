@@ -19,7 +19,7 @@ import InlineCode from "../../components/InlineCode.astro";
   <h3 data-story-stage="pitfall">素朴な実装の落とし穴</h3>
   <p>処理の中で時刻と ID を直接作り、状態と監査記録を別々に保存します。そのため、テスト結果が安定せず、片方だけが残ることがあります。</p>
   <h3 data-story-stage="goal">このセッションのゴール</h3>
-  <p>Clock と EventIdGenerator を port として注入し、保存などの副作用を呼び出すユースケースで EventContext を一度だけ生成します。port は、ユースケースが外側に求める処理を型で表した約束です。port の実装をユースケースの外で作り、引数で渡すことを注入と呼びます。EventContext は、イベントに記録するイベント ID（eventId）と時刻（occurredAt）の組です。副作用と純粋関数の意味は、<a href="/sessions/01-state-transitions/#pure-functions">S01 の純粋関数と副作用の節</a>で確認できます。純粋な状態遷移にはその EventContext を渡し、状態と監査記録を表す ExaminationStarted を単一の Store へ渡します。予約が存在しない・予約の状態が不正・予約が競合しているケースは、Result のエラーとして返します。データベース起因のエラーやデータが破損しているエラーは業務エラーには変換せず、Promise の reject として外側の境界へ伝えます。</p>
+  <p>Clock と EventIdGenerator を port として注入し、保存などの副作用を呼び出すユースケースで EventContext を一度だけ生成します。port は、ユースケースが外側に求める処理を型で表した約束です。port の実装をユースケースの外で作り、引数で渡すことを注入と呼びます。EventContext は、イベントに記録するイベント ID（eventId）と時刻（occurredAt）の組です。副作用と純粋関数の意味は、<a href="/sessions/01-state-transitions/pure-functions/">S01 の純粋関数と副作用の節</a>で確認できます。純粋な状態遷移にはその EventContext を渡し、状態と監査記録を表す ExaminationStarted を単一の Store へ渡します。予約が存在しない・予約の状態が不正・予約が競合しているケースは、Result のエラーとして返します。データベース起因のエラーやデータが破損しているエラーは業務エラーには変換せず、Promise の reject として外側の境界へ伝えます。</p>
   <h3>このセッションで守ること</h3>
   <ul class="decision-list">{props.session.decisions.map(({ invariant }) => <li>{invariant}</li>)}</ul>
   <p>今回の変更は <code>{props.session.exerciseModule.dir}</code> 内の1モジュールに限定します。</p>

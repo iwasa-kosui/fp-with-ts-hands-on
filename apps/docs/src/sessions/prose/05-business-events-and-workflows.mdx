@@ -103,7 +103,7 @@ import CancelRailwayAnimation from "../../components/CancelRailwayAnimation.astr
 
 <section id="io-boundaries">
   <h2>I/Oをパイプラインの両端へ置く</h2>
-  <p>この節では、S04で <code>deps</code> から受け取ったResolverとStoreを、キャンセルのパイプラインの両端に置く構成を読みます。中心のドメインロジックは、副作用のないpureな関数（純粋関数）として扱えます。副作用と純粋関数の意味は、<a href="/sessions/01-state-transitions/#pure-functions">S01の説明</a>を見てください。</p>
+  <p>この節では、S04で <code>deps</code> から受け取ったResolverとStoreを、キャンセルのパイプラインの両端に置く構成を読みます。中心のドメインロジックは、副作用のないpureな関数（純粋関数）として扱えます。副作用と純粋関数の意味は、<a href="/sessions/01-state-transitions/pure-functions/">S01の説明</a>を見てください。</p>
   <p>前の表の工程のうち、「対象を取得する」はデータベースを読むI/Oです。この工程はResolverが担います。記録はパイプラインの成功の後でStoreが担います。「入力を検査する」「権限と状態を確認する」「結果を作る」は、値だけで結果が決まります。</p>
 
   <h3>中心に置くpureな関数</h3>
