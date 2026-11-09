@@ -1,113 +1,31 @@
 ---
-import AggregateConsistencyFlow from "../../components/AggregateConsistencyFlow.astro";
-import CancelPipelineBoundaries from "../../components/CancelPipelineBoundaries.astro";
-import RailwayOrientedProgramming from "../../components/RailwayOrientedProgramming.astro";
-import SessionDetailsBody from "../../components/SessionDetailsBody.astro";
-// この順序で sessions.css の <link> が session-layout.css より前に出る
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
-import Prose from "../../sessions/prose/05-business-events-and-workflows.mdx";
-import { projectFilesForSnapshot } from "../../code-explorer/project-files";
-import { blockOf } from "../../sessions/source-quotes";
-import type { SessionSummary } from "../../sessions/types";
-import "../../styles/sessions.css";
-import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
+import SessionFrame from "../../components/session-frame/SessionFrame.astro";
+import { sessionPages, sessionSlug } from "../../sessions/pages/05-business-events-and-workflows";
+import * as content from "../../sessions/pages/05-business-events-and-workflows-content";
+import Prose from "../../sessions/prose/05-business-events-and-workflows/index.mdx";
 
-export const session: SessionSummary = {
-  slug: "05-business-events-and-workflows",
-  snapshot: undefined,
-  sequence: "05",
-  kind: "workshop",
-  title: "データとパイプラインで予約キャンセルを設計する",
-  durationMinutes: 15,
-  timeBreakdown: { brief: 2, teach: 7, exercise: 4, review: 2 },
-  animal: { name: "CAT", type: "cat", avatar: "🐈" },
-  summary: "S04で学んだResultとandThenを踏まえ、予約キャンセルのユースケースの設計を読みます。キャンセルを工程に分け、ROPで失敗の流れを捉え、I/Oをパイプラインの両端に置く構成を読みます。",
-  episode: [
-    "会計済みの予約を、受付担当者が誤ってキャンセルできました。",
-    "理由のないキャンセルがStoreへ記録されましたが、開発者はどの条件を確認したのかを説明できません。",
-    "実装へ進む前に、予約のデータと、キャンセルでデータがどう変わるかを確かめます。",
-  ],
-  incident: "予約キャンセルで、実行者、予約の存在、現在状態、理由を一貫して確認できていない。",
-  steps: [],
-  decisions: [],
-  finalReferences: [],
-};
-
-const scheduledAppointment = `{
-  kind: "Scheduled",
-  appointmentId: "11111111-1111-4111-8111-111111111111",
-  petId: "22222222-2222-4222-8222-222222222222",
-  ownerId: "33333333-3333-4333-8333-333333333333",
-  scheduledAt: "2026-08-30T06:30:00.000Z",
-  reason: "skin check",
-}`;
-
-const canceledAppointment = `{
-  kind: "Canceled",
-  appointmentId: "11111111-1111-4111-8111-111111111111",
-  petId: "22222222-2222-4222-8222-222222222222",
-  ownerId: "33333333-3333-4333-8333-333333333333",
-  scheduledAt: "2026-08-30T06:30:00.000Z",
-  reason: "skin check",
-  cancellationReason: "owner request",
-  canceledAt: "2026-08-30T05:00:00.000Z",
-}`;
-
-const cancelSource = blockOf(
-  projectFilesForSnapshot("session-04"),
-  "src/domain/appointment/transitions.ts",
-  "export const cancel = (",
-  "  }) as const satisfies Canceled;",
-);
-
-const chapters = [
-  { id: "incident", label: "予約のデータ" },
-  { id: "pipeline", label: "ユースケースの工程" },
-  { id: "rop", label: "ROPの失敗経路" },
-  { id: "io-boundaries", label: "I/Oの分離" },
-  { id: "exercise", label: "読む演習" },
-] as const;
-
-export const navigation = ({
-  previous: {
-    href: "/sessions/04-workflow-errors/",
-    title: "失敗をユースケースの結果として扱う",
-  },
-  next: {
-    href: "/sessions/06-effects-and-consistency/",
-    title: "副作用と整合性境界を設計する",
-  },
-} as const);
+export const navigation = content.navigation;
+export const session = content.session;
 ---
 
-<BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
-  <div class="case-file case-file--session">
-    <header class="case-file__site-header">
-      <a href="/"><span class="case-file__brand-mark" aria-hidden="true">🐾</span>WAN NYAN CLINIC</a>
-    </header>
-    <main>
-      <SessionPageNavigation currentSlug={session.slug} chapters={chapters}>
-      <section slot="hero" class="case-file__hero" aria-labelledby="session-title">
-        <p class="case-file__eyebrow">SESSION {session.sequence} · {session.durationMinutes}分</p>
-        <h1 id="session-title">{session.title}</h1>
-        <p class="case-file__summary">
-          <span aria-hidden="true">{session.animal.avatar}</span>
-          {session.summary}
-        </p>
-      </section>
-      <Prose
-        components={{ AggregateConsistencyFlow, CancelPipelineBoundaries, EpisodeIllustration, RailwayOrientedProgramming, SessionDetailsBody }}
-        session={session}
-        scheduledAppointment={scheduledAppointment}
-        canceledAppointment={canceledAppointment}
-        cancelSource={cancelSource}
-      />
-      <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
-        <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
-        <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
-      </nav>
-      </SessionPageNavigation>
-    </main>
-  </div>
-</BaseLayout>
+<SessionFrame
+  sessionSlug={sessionSlug}
+  pages={sessionPages}
+  pageSlug=""
+  description={session.summary}
+>
+  <Prose />
+  <script is:inline>
+    const destinations = new Map([
+      ["pipeline", "steps/"],
+      ["rop", "railway/"],
+      ["io-boundaries", "io-outside/"],
+      ["exercise", "exercise/"],
+    ]);
+    const destination = destinations.get(location.hash.slice(1));
+    if (destination) {
+      const base = location.pathname.endsWith("/") ? location.pathname : `${location.pathname}/`;
+      location.replace(`${base}${destination}`);
+    }
+  </script>
+</SessionFrame>

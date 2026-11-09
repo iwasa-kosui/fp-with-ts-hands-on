@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "lib": ["ES2022"],
+    "outDir": "dist"
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "exercises/**/*.ts",
+    "vitest.config.ts"
+  ]
+}

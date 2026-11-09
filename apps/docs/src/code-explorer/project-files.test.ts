@@ -40,7 +40,7 @@ const exercisePages = Object.values(pageModules)
   );
 
 const terminalPackageJsonSources = Object.entries(
-  import.meta.glob("../../../../examples/{session-01,session-01-solution,session-02,session-02-solution,session-03,session-03-solution,session-04,session-06}/package.json", {
+  import.meta.glob("../../../../examples/{session-01,session-01-solution,session-02,session-02-solution,session-03,session-03-solution,session-04,session-05-solution,session-06}/package.json", {
     eager: true,
     query: "?raw",
     import: "default",
@@ -69,6 +69,7 @@ const allSnapshots = [
   "session-04",
   "session-04-solution",
   "session-05",
+  "session-05-solution",
   "session-06",
   "session-06-solution",
   "final",
@@ -219,7 +220,7 @@ describe("Code Explorer project files", () => {
   });
 
   it("covers every terminal workspace with the dependency snapshot built from the terminal workspaces and session-03-solution", () => {
-    expect(terminalPackageJsonSources).toHaveLength(8);
+    expect(terminalPackageJsonSources).toHaveLength(9);
     const dependencies = snapshotDependenciesOf(
       mergedSnapshotPackageJsonFor(terminalPackageJsonSources, {
         "exercise:06": "pnpm exercise",

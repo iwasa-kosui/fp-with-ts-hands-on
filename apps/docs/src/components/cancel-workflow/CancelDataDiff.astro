@@ -1,0 +1,198 @@
+---
+type Change = "same" | "changed" | "added";
+
+type Row = Readonly<{
+  key: string;
+  before: string | undefined;
+  after: string;
+  change: Change;
+  note?: string;
+}>;
+
+const rows: readonly Row[] = [
+  { key: "kind", before: `"Scheduled"`, after: `"Canceled"`, change: "changed" },
+  { key: "appointmentId", before: `"11111111-1111-4111-8111-111111111111"`, after: `"11111111-1111-4111-8111-111111111111"`, change: "same" },
+  { key: "scheduledAt", before: `"2026-08-30T06:30:00.000Z"`, after: `"2026-08-30T06:30:00.000Z"`, change: "same" },
+  { key: "reason", before: `"skin check"`, after: `"skin check"`, change: "same", note: "来院理由。残る" },
+  { key: "cancellationReason", before: undefined, after: `"owner request"`, change: "added" },
+  { key: "canceledAt", before: undefined, after: `"2026-08-30T05:00:00.000Z"`, change: "added" },
+];
+
+const tagOf = (change: Change): string => (change === "changed" ? "変わる" : change === "added" ? "増える" : "");
+---
+
+<figure class="cdd" aria-label="キャンセルの前と後で、予約のデータが変わる 3 項目">
+  <div class="cdd__grid">
+    <section class="cdd__panel" aria-labelledby="cdd-before">
+      <h4 id="cdd-before">キャンセル前 <code>Scheduled</code></h4>
+      <ul>
+        {rows.map((row) => (
+          <li data-change={row.change}>
+            <code class="cdd__key">{row.key}</code>
+            {row.before === undefined ? (
+              <span class="cdd__empty">まだ無い</span>
+            ) : (
+              <code class="cdd__value">{row.before}</code>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <p class="cdd__arrow" aria-hidden="true"><span>キャンセル</span>→</p>
+
+    <section class="cdd__panel" aria-labelledby="cdd-after">
+      <h4 id="cdd-after">キャンセル後 <code>Canceled</code></h4>
+      <ul>
+        {rows.map((row) => (
+          <li data-change={row.change}>
+            <code class="cdd__key">{row.key}</code>
+            <code class="cdd__value">{row.after}</code>
+            {tagOf(row.change) !== "" && <span class="cdd__tag">{tagOf(row.change)}</span>}
+            {row.change === "same" && row.note !== undefined && <span class="cdd__keep">{row.note}</span>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  </div>
+
+  <figcaption>
+    変わるのは <code>kind</code>、<code>cancellationReason</code>、<code>canceledAt</code> の 3 項目です。説明用に、<code>petId</code>、<code>ownerId</code>、Sensitive の包みを省略しています。
+  </figcaption>
+</figure>
+
+<style>
+  .cdd {
+    min-width: 0;
+    margin: 0.25rem 0 0;
+  }
+
+  .cdd__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: start;
+  }
+
+  .cdd__panel {
+    min-width: 0;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    overflow: hidden;
+  }
+
+  .cdd__panel h4 {
+    margin: 0;
+    padding: 0 0.75rem;
+    border-bottom: 2px solid var(--role-border);
+    background: color-mix(in srgb, var(--role-border) 14%, var(--role-surface));
+    color: var(--role-text);
+    font-size: 0.875rem;
+    font-weight: 800;
+    line-height: 1.5;
+  }
+
+  .cdd__panel ul {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .cdd__panel li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.5rem;
+    align-items: baseline;
+    min-height: 1.25rem;
+    padding: 0 0.75rem;
+    border-inline-start: 4px solid transparent;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+  }
+
+  .cdd__panel li + li {
+    border-block-start: 1px solid color-mix(in srgb, var(--role-border) 35%, var(--role-surface));
+  }
+
+  .cdd__panel li[data-change="same"] {
+    color: var(--role-muted);
+  }
+
+  .cdd__panel li:is([data-change="changed"], [data-change="added"]) {
+    border-inline-start-color: var(--role-accent);
+    background: color-mix(in srgb, var(--role-accent) 14%, var(--role-surface));
+    color: var(--role-text);
+    font-weight: 700;
+  }
+
+  .cdd__key,
+  .cdd__value {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.8125rem;
+    background: none;
+    color: inherit;
+  }
+
+  .cdd__value {
+    overflow-wrap: anywhere;
+  }
+
+  .cdd__empty {
+    padding: 0 0.5rem;
+    line-height: 1.125rem;
+    border: 1px dashed var(--role-border);
+    border-radius: 0.25rem;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+  }
+
+  .cdd__tag {
+    padding: 0 0.375rem;
+    line-height: 1.125rem;
+    border: 2px solid var(--role-accent);
+    border-radius: 0.25rem;
+    color: var(--role-accent);
+    font-size: 0.8125rem;
+    font-weight: 800;
+  }
+
+  .cdd__keep {
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .cdd__keep {
+    color: var(--role-text);
+  }
+
+  .cdd__arrow {
+    display: grid;
+    gap: 0.125rem;
+    align-self: center;
+    margin: 0;
+    color: var(--role-accent);
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .cdd__arrow span {
+    font-size: 0.8125rem;
+  }
+
+  .cdd figcaption {
+    margin-block-start: 0.25rem;
+    color: var(--role-text);
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 55rem) {
+    .cdd__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

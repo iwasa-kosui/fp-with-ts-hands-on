@@ -1,0 +1,18 @@
+import EpisodeIllustration from "../../../components/EpisodeIllustration.astro";
+import CancelDataDiff from "../../../components/cancel-workflow/CancelDataDiff.astro";
+import { session } from "../../pages/05-business-events-and-workflows-content";
+
+<div class="session-split session-split--story">
+  <div>
+    <aside class="case-file__episode" aria-label="動物病院のひと幕">
+      <p class="case-file__episode-label">動物病院のひと幕</p>
+      {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+    </aside>
+    <p>この回では業務のコードを編集しません。</p>
+  </div>
+  <div>
+    <EpisodeIllustration slug="05-business-events-and-workflows" />
+  </div>
+</div>
+
+<CancelDataDiff />

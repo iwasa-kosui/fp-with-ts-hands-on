@@ -57,7 +57,7 @@ import InlineCode from "../../components/InlineCode.astro";
     after={props.teaching[0].after}
     examples={props.teaching[0].examples}
   >
-    <p>S04 で deps から受け取り、S05 でパイプラインの両端に置いた resolver と store も port です。Clock は現在時刻を返す処理を、EventIdGenerator は新しいイベント ID を返す処理を表します。</p>
+    <p>S04 で deps から受け取り、S05 で判定の関数の外に置いた resolver と store も port です。Clock は現在時刻を返す処理を、EventIdGenerator は新しいイベント ID を返す処理を表します。</p>
     <p>new Date() と crypto.randomUUID() は、呼ぶたびに違う値を返します。同じ入力でも出力イベントが変わるので、テストは期待値を固定できません。</p>
     <p>port にすると、テストは固定の値を渡せます。本番相当の実装は、Final の参照実装 examples/final/src/app.ts で確認できます。そこでは Clock の実装が new Date() を呼び、EventIdGenerator の実装が randomUUID() を呼びます。</p>
     <p>値を作る回数も決めます。ユースケースは createEventContext を1回だけ呼び、できた EventContext を状態遷移へ渡します。状態遷移は、予約の examinationStartedAt とイベントの occurredAt を同じ値から作ります。</p>

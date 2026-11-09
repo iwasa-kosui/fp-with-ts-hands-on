@@ -19,6 +19,8 @@ export const RENAMED_FOLDERS = [
 
 export const UNCHANGED_FOLDERS = ["session-00", "final", "fixtures", "start-examination-continuity"];
 
+export const NEW_FOLDERS = ["session-05-solution"];
+
 export const FIXTURE_FILE_RENAMES = {
   "s2-paid-cannot-start.ts": "paid-cannot-start.ts",
   "s2-cancel-requires-reason.ts": "cancel-requires-reason.ts",
@@ -269,7 +271,10 @@ const compareSession02Copies = ({ current, readCurrent, baseline }, problems) =>
 export const findFileProblems = (input) => {
   const problems = [];
   const unknown = input.current.filter(
-    (file) => !BASELINE_FOLDERS.some(({ name }) => file.startsWith(`examples/${name}/`)),
+    (file) =>
+      ![...BASELINE_FOLDERS.map(({ name }) => name), ...NEW_FOLDERS].some((name) =>
+        file.startsWith(`examples/${name}/`),
+      ),
   );
   if (unknown.length > 0) {
     problems.push(`対応表にないフォルダのファイル:\n${unknown.map((file) => `  ${file}`).join("\n")}`);

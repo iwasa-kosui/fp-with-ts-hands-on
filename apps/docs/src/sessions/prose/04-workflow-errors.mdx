@@ -114,7 +114,7 @@ import InlineCode from "../../components/InlineCode.astro";
     </ul>
     <Fragment slot="why">渡す関数が業務エラーを返しうるなら andThen、返さないなら map を選びます。Err になった後はどちらのコールバックも呼ばれないので、失敗の後に状態遷移や保存が実行されることはありません。</Fragment>
   </TeachingTopic>
-  <p>S05 では、この andThen と map のつなぎ方を ROP（Railway Oriented Programming）という考え方で捉え直し、入力の検査と権限の確認を含むユースケース全体の設計を読みます。</p>
+  <p>S05 では、この andThen と map のつなぎ方を ROP（Railway Oriented Programming）という考え方で捉え直し、ユースケースを工程に分けて、判定の関数の外に I/O を置く構成を読みます。</p>
   <TeachingTopic
     name="isErr の例を andThen と map で書き直す"
     before={props.teaching[3].before}
@@ -172,7 +172,7 @@ import InlineCode from "../../components/InlineCode.astro";
     <ul class="decision-list">{props.delegationDecisions.map((decision) => <li>{decision}</li>)}</ul>
   </div>
   <h3>この演習で解決しないこと</h3>
-  <p>どの失敗を業務エラーとして画面のnoticeへ変換するかは、人の判断とレビューが必要です。呼び出し側に理由別の対応がなく、要求された処理を完了できないシステムエラーは、Resultへ変換せず外側の例外境界へ伝えます。入力の検査の失敗は、利用者が入力を直せば解決するので、Result で返す業務エラーの側に入ります。S05では、パイプラインの最初の工程の失敗として扱います。演習の Web ルートは、S03の検査の結果を <code>_unsafeUnwrap</code> で取り出しているので、検査に失敗した入力は今は500になります。この演習では変えません。</p>
+  <p>どの失敗を業務エラーとして画面のnoticeへ変換するかは、人の判断とレビューが必要です。呼び出し側に理由別の対応がなく、要求された処理を完了できないシステムエラーは、Resultへ変換せず外側の例外境界へ伝えます。入力の検査の失敗は、利用者が入力を直せば解決するので、Result で返す業務エラーの側に入ります。S05では、ユースケースを呼ぶ手前の入口で止まる失敗として読みます。演習の Web ルートは、S03の検査の結果を <code>_unsafeUnwrap</code> で取り出しているので、検査に失敗した入力は今は500になります。この演習では変えません。</p>
   <h3 data-solution-heading>ステップごとの解答</h3>
   {props.solutionSteps.map(({ step, presentation, snippets }) => (
     <div class="solution-step">

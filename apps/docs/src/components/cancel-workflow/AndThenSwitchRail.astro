@@ -1,0 +1,336 @@
+---
+import { Code } from "astro:components";
+import startExaminationSource from "../../../../../examples/session-04-solution/src/useCase/startExamination.ts?raw";
+import { quote } from "../../sessions/reference-quote";
+import StepControls from "../stepper/StepControls.astro";
+import "../states/states.css";
+
+const code = quote(startExaminationSource, 29, 44, "ensureAppointmentFound(");
+const codeLines = code.split("\n");
+const indexOf = (needle: string): number => {
+  const index = codeLines.findIndex((line) => line.includes(needle));
+  if (index < 0) throw new Error(`"${needle}" is not in the excerpt`);
+  return index;
+};
+const range = (from: number, to: number): readonly number[] => Array.from({ length: to - from + 1 }, (_, offset) => from + offset);
+
+const andThenAt = indexOf(".andThen(ensureCheckedIn)");
+const transitionAt = indexOf(".map((appointment) =>");
+const saveAt = indexOf(".map((appointment) => {");
+const lines = {
+  entry: range(0, andThenAt - 1),
+  andThen: [andThenAt],
+  transition: range(transitionAt, saveAt - 1),
+  save: range(saveAt, codeLines.length - 1),
+} as const;
+
+const stations = ["入口", "andThen", "map", "map"] as const;
+const centers = [76, 200, 324, 448] as const;
+
+type Row = Readonly<{ tone: "positive" | "negative" | "none"; from: string; to: string; note: string }>;
+
+type Frame = Readonly<{
+  lit: readonly number[];
+  current: readonly number[];
+  rows: readonly Row[];
+  caption: string;
+}>;
+
+const errPassThrough: Row = { tone: "none", from: "Err(…)", to: "Err(…)", note: "失敗のレールでは関数を呼ばず、そのまま通る" };
+
+const frames: readonly Frame[] = [
+  {
+    lit: [],
+    current: [],
+    rows: [
+      { tone: "positive", from: "Ok(…)", to: "", note: "上のレール。成功の値が進む" },
+      { tone: "negative", from: "Err(…)", to: "", note: "下のレール。失敗の値が進む" },
+    ],
+    caption: "S04 の診察開始のコードを、2本のレールに重ねます。呼び出し 1 つが、レールの 1 区間です。",
+  },
+  {
+    lit: lines.entry,
+    current: [0],
+    rows: [
+      { tone: "positive", from: "Ok(Appointment)", to: "", note: "予約が見つかった。成功のレールから始まる" },
+      { tone: "negative", from: "Err(AppointmentNotFound)", to: "", note: "見つからない。失敗のレールから始まる" },
+    ],
+    caption: "最初の ensureAppointmentFound は、Result を返します。見つかれば成功のレール、見つからなければ失敗のレールから始まります。",
+  },
+  {
+    lit: lines.andThen,
+    current: [1],
+    rows: [
+      { tone: "positive", from: "Ok(CheckedIn)", to: "Ok(CheckedIn)", note: "ensureCheckedIn が ok を返す。成功のレールのまま" },
+      { tone: "negative", from: "Ok(Paid)", to: "Err(InvalidAppointmentState)", note: "ensureCheckedIn が err を返す。切り替え線で失敗のレールへ移る" },
+    ],
+    caption: "andThen に渡す ensureCheckedIn は、ok か err を返します。err を返せるので、andThen は失敗のレールへ切り替えられる線です。",
+  },
+  {
+    lit: lines.transition,
+    current: [2],
+    rows: [
+      { tone: "positive", from: "Ok(CheckedIn)", to: "Ok(InExamination)", note: "成功のレールの上で、値を変えるだけ" },
+      errPassThrough,
+    ],
+    caption: "map に渡す関数は、普通の値を返します。失敗を返せないので、切り替え線はありません。値を CheckedIn から InExamination に変えるだけです。",
+  },
+  {
+    lit: lines.save,
+    current: [3],
+    rows: [
+      { tone: "positive", from: "Ok(InExamination)", to: "Ok(InExamination)", note: "保存してから同じ値を返す。レールは切り替わらない" },
+      errPassThrough,
+    ],
+    caption: "最後の map も同じです。保存の処理を行いますが、Result を返さないので、切り替え線はありません。",
+  },
+  {
+    lit: [...lines.andThen, ...lines.transition, ...lines.save],
+    current: [1],
+    rows: [
+      { tone: "negative", from: "andThen", to: "", note: "失敗のレールへ切り替えられる線。渡す関数は Result を返す" },
+      { tone: "positive", from: "map", to: "", note: "成功のレールの上で値を変えるだけの線。渡す関数は値を返す" },
+    ],
+    caption: "切り替え線を持つのは andThen です。値を変えるだけのときは map を使います。完成形の保存の andThrough も、失敗すると切り替えます。",
+  },
+];
+
+const markOf = (tone: Row["tone"]): string => (tone === "positive" ? "✓" : tone === "negative" ? "×" : "・");
+---
+
+<figure class="st-fig rail" data-and-then-rail aria-label="S04 の診察開始のコードを、成功と失敗の2本のレールに重ねる図">
+  <StepControls />
+
+  <ol class="st-stack">
+    {frames.map((frame, frameIndex) => (
+      <li data-frame data-lit={JSON.stringify(frame.lit)}>
+        <div class="rail__split">
+          <figure class="code-block st-code">
+            <Code code={code} lang="ts" />
+          </figure>
+
+          <div class="rail__side">
+            <svg viewBox="0 0 560 176" role="img" aria-label="上が成功のレール、下が失敗のレール。andThen の区間だけ、失敗のレールへ切り替える線がある">
+              <defs>
+                <marker id={`rail-head-ok-${frameIndex}`} viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" orient="auto">
+                  <path d="M 0 0 L 10 5 L 0 10 z" class="rail__head rail__head--ok"></path>
+                </marker>
+                <marker id={`rail-head-bad-${frameIndex}`} viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" orient="auto">
+                  <path d="M 0 0 L 10 5 L 0 10 z" class="rail__head rail__head--bad"></path>
+                </marker>
+              </defs>
+              <text x="12" y="24" class="rail__label rail__label--ok">成功のレール</text>
+              <text x="12" y="166" class="rail__label rail__label--bad">失敗のレール</text>
+              <path d="M 12 56 H 546" class="rail__line rail__line--ok" marker-end={`url(#rail-head-ok-${frameIndex})`}></path>
+              <path d="M 12 130 H 546" class="rail__line rail__line--bad" marker-end={`url(#rail-head-bad-${frameIndex})`}></path>
+              <path d="M 250 56 C 280 56, 266 130, 298 130" class="rail__switch" data-active={frame.current.includes(1) ? "" : undefined} marker-end={`url(#rail-head-bad-${frameIndex})`}></path>
+              <text x={centers[1]} y="100" text-anchor="middle" class="rail__note rail__note--bad">切り替え線</text>
+              <text x={centers[2]} y="100" text-anchor="middle" class="rail__note">線なし</text>
+              <text x={centers[3]} y="100" text-anchor="middle" class="rail__note">線なし</text>
+              {stations.map((name, index) => (
+                <g class="rail__station" data-current={frame.current.includes(index) ? "" : undefined} transform={`translate(${centers[index]! - 50} 36)`}>
+                  <rect width="100" height="40" rx="8"></rect>
+                  <text x="50" y="26" text-anchor="middle">{name}</text>
+                </g>
+              ))}
+            </svg>
+
+            <ul class="rail__rows">
+              {frame.rows.map((row) => (
+                <li data-tone={row.tone}>
+                  <span class="st-mark rail__mark" data-tone={row.tone === "none" ? undefined : row.tone} aria-hidden="true">{markOf(row.tone)}</span>
+                  <span class="rail__value">
+                    <code>{row.from}</code>
+                    {row.to !== "" && <><span aria-hidden="true"> → </span><code>{row.to}</code></>}
+                  </span>
+                  <span class="rail__row-note">{row.note}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <p class="st-caption">{frame.caption}</p>
+      </li>
+    ))}
+  </ol>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-and-then-rail]").forEach((root) => {
+    root.querySelectorAll<HTMLElement>("[data-frame]").forEach((frame) => {
+      const lit = JSON.parse(frame.dataset.lit ?? "[]") as number[];
+      frame.querySelectorAll<HTMLElement>(".line").forEach((line, index) => {
+        line.classList.toggle("is-lit", lit.includes(index));
+      });
+    });
+    mountStepper({ root });
+  });
+</script>
+
+<style>
+  .rail__split {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 0.75rem;
+    align-items: start;
+    margin-block-end: 0.125rem;
+  }
+
+  .rail__split :global(.st-code pre) {
+    padding-block: 0.125rem;
+    line-height: 1.3;
+  }
+
+  .rail :global(.st-caption) {
+    line-height: 1.5;
+  }
+
+  .rail {
+    --lit-accent: color-mix(in srgb, var(--role-accent) 55%, var(--frame-code-text, #ffffff));
+  }
+
+  .rail__split :global(.st-code .line.is-lit) {
+    box-shadow: inset 4px 0 0 var(--lit-accent);
+  }
+
+  .rail__side {
+    display: grid;
+    gap: 0.375rem;
+    min-width: 0;
+  }
+
+  .rail__side svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+  }
+
+  .rail__line,
+  .rail__switch {
+    fill: none;
+    stroke-linecap: round;
+    stroke-width: 5;
+  }
+
+  .rail__line--ok {
+    stroke: var(--role-positive);
+  }
+
+  .rail__line--bad {
+    stroke: var(--role-negative);
+  }
+
+  .rail__switch {
+    stroke: var(--role-negative);
+    stroke-dasharray: 7 6;
+    opacity: 0.55;
+  }
+
+  .rail__switch[data-active] {
+    stroke-dasharray: none;
+    stroke-width: 6;
+    opacity: 1;
+  }
+
+  .rail__head--ok {
+    fill: var(--role-positive);
+  }
+
+  .rail__head--bad {
+    fill: var(--role-negative);
+  }
+
+  .rail__label {
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .rail__label--ok {
+    fill: var(--role-positive);
+  }
+
+  .rail__label--bad {
+    fill: var(--role-negative);
+  }
+
+  .rail__note {
+    fill: var(--role-muted);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .rail__note--bad {
+    fill: var(--role-negative);
+  }
+
+  .rail__station rect {
+    fill: var(--role-surface);
+    stroke: var(--role-border);
+    stroke-width: 2;
+  }
+
+  .rail__station text {
+    fill: var(--role-text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .rail__station[data-current] rect {
+    fill: color-mix(in srgb, var(--role-accent) 16%, var(--role-surface));
+    stroke: var(--role-accent);
+    stroke-width: 4;
+  }
+
+  .rail__rows {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rail__rows li {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    gap: 0 0.5rem;
+    align-items: baseline;
+    padding: 0.125rem 0.5rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.375rem;
+    background: var(--role-surface);
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  .rail__rows li[data-tone="positive"] {
+    border-color: var(--role-positive);
+  }
+
+  .rail__rows li[data-tone="negative"] {
+    border-style: dashed;
+    border-color: var(--role-negative);
+  }
+
+  .rail__value code {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .rail__row-note {
+    grid-column: 2;
+    color: var(--role-muted);
+  }
+
+  @media (max-width: 55rem) {
+    .rail__split {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

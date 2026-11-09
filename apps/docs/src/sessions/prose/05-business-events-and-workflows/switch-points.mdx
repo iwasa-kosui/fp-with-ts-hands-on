@@ -1,0 +1,7 @@
+import AndThenSwitchRail from "../../../components/cancel-workflow/AndThenSwitchRail.astro";
+
+<p>S04 の <code>andThen</code> は、Ok のときだけ次の関数へ進み、Err になった後はコールバックを呼びません。この動きが、値が失敗のレールへ移って残りの工程を飛ばすことに当たり、<code>map</code> は切り替え線を持ちません。入力の検査は、<code>andThen</code> ではなく S03 の境界で行います。</p>
+
+<p>完成形（examples/final のコード）の保存は <code>andThrough</code> でつなぎます。<code>andThrough</code> は、失敗すると失敗のレールへ切り替え、成功すると受け取った値をそのまま次の工程へ渡します。</p>
+
+<AndThenSwitchRail />

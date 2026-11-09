@@ -1,0 +1,5 @@
+import RailwayOrientedProgramming from "../../../components/RailwayOrientedProgramming.astro";
+
+<p>キャンセルのユースケースは、実行者の確認、予約の確認、結果を作る、記録して返す、の4つの工程を順に進みます。このうち、実行者の確認、予約の確認、記録して返す工程は、失敗することがあります。工程が失敗すると、値は下の失敗のレールへ移り、残りの工程を飛ばして終点へ進みます。成功した工程は、次の工程へ値を渡して上の成功のレールを進みます。この考え方を Railway Oriented Programming（ROP）と呼びます。</p>
+
+<RailwayOrientedProgramming />
