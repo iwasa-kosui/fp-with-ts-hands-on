@@ -74,7 +74,7 @@ export const frames: readonly Frame[] = [
     cards: cardsFor(threeNames, 0),
     showNever: false,
     caption:
-      "説明のため、候補を3個に絞った `Status` で見ます。型検査は `switch` 文を上から読み、`case` で処理した候補を `status` の型から消していきます。",
+      "説明のため、候補を3個に絞った `Status` で確認します。型検査は `switch` 文を上から順に解析し、`case` で処理した候補を `status` の型から除外します。",
   },
   {
     code: threeCode,
@@ -114,7 +114,7 @@ export const frames: readonly Frame[] = [
     showNever: true,
     verdict: { kind: "ok", label: "型検査: エラーなし" },
     caption:
-      "候補が0個の型を `never` と呼びます。`never` 型の変数には、候補が残っている値を入れられません。ここの `status` は候補が0個なので、`rest` に入れても型検査は何も報告しません。",
+      "候補が0個の型を `never` と呼びます。`never` 型の変数には、候補が残っている値を代入できません。ここの `status` は候補が0個であるため、`rest` に代入しても型検査は何も報告しません。",
   },
   {
     code: fourCode,
@@ -124,7 +124,7 @@ export const frames: readonly Frame[] = [
     showNever: false,
     verdict: { kind: "error", label: "型検査のエラー", message: noShowError },
     caption:
-      '`Status` に `"NoShow"` を足し、`case` を書き忘れました。`default` の `status` には `"NoShow"` が残るので、`never` 型の `rest` に入れられません。型検査は `rest` の行をエラーとして報告します。エラーの文は「`"NoShow"` は `never` 型に代入できません」という意味です。次のページでは、この確かめ方を関数にまとめ、`Appointment` に使います。',
+      '`Status` に `"NoShow"` を追加し、`case` の実装が漏れました。`default` の `status` には `"NoShow"` が残るため、`never` 型の `rest` に代入できません。型検査は `rest` の行をエラーとして報告します。エラーの文は「`"NoShow"` は `never` 型に代入できません」という意味です。次のページでは、この検証を関数にまとめ、`Appointment` に使います。',
   },
 ];
 

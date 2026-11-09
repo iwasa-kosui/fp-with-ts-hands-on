@@ -8,11 +8,11 @@ const groups = [
     cards: [
       {
         what: "case が足りない分岐",
-        by: "assertNever の引数の型 never による型検査と、switch を検査する Linter の規則",
+        by: "assertNever の引数の型 never による型検査と、switch を検査する Linter のルール",
       },
       {
-        what: "default が「不明」を返して、足し忘れを隠す書き方",
-        by: "considerDefaultExhaustiveForUnions を false にした Linter の規則",
+        what: "default が「不明」を返して、追加漏れを隠す実装",
+        by: "considerDefaultExhaustiveForUnions を false にした Linter のルール",
       },
       {
         what: "引数が kind: string に戻り、知らない状態を渡せる変更",
@@ -27,16 +27,16 @@ const groups = [
   {
     id: "human",
     mark: "▲",
-    title: "人が確かめるもの",
-    lead: "仕組みでは検出できないので、人が読んで確かめます。",
+    title: "人が確認するもの",
+    lead: "仕組みでは検出できないため、人がコードを読んで確認します。",
     cards: [
       {
         what: "分岐の中身が業務として正しいか（表示名の正しさなど）",
-        by: "型は、書いた分岐のとおりに守るだけです。NoShow の表示名が、受付に伝わる文言かは分かりません。",
+        by: "型は、実装した分岐のとおりに検証するだけです。NoShow の表示名が、受付に伝わる文言かは判定できません。",
       },
       {
-        what: "自分の仕組みをすり抜ける、新しい種類の変更",
-        by: "相互レビューで見つけたすり抜けが、その例です。",
+        what: "自分の仕組みで検出されない、新しい種類の変更",
+        by: "相互レビューで発見した「すり抜け」の変更が、その例です。",
       },
     ],
   },

@@ -23,11 +23,11 @@ export const session: SessionSummary = {
   solutionPresentation: "excerpt",
   peerReviewPromises: "inline",
   animal: { name: "RABBIT", type: "rabbit", avatar: "🐇" },
-  summary: "遷移関数の引数を絞り、許されない呼び出しを実行前に見つけ、次の変更でも検出します。",
+  summary: "遷移関数の引数を絞り、許されない呼び出しを実行前に検出し、以後の変更でも検出されるようにします。",
   episode: [
     "会計担当は診察を終えた Mugi の飼い主から4,800円を受け取り、予約を会計済みにしました。",
     "その後、獣医師が別の予約と取り違えて、この会計済みの予約で「診察を開始する」を押しました。",
-    "システムは操作を止めず、予約を診察中へ戻しました。受付は画面を見て会計前の来院だと判断し、会計担当が飼い主へ同じ金額をもう一度請求しました。",
+    "システムは操作を拒否せず、予約を診察中へ戻しました。受付は画面から会計前の来院と判断し、会計担当が飼い主へ同じ金額を再度請求しました。",
   ],
   incident: "会計済みの予約が診察中へ戻され、同じ金額が2回請求された。",
   exerciseCommand: "pnpm exercise:01",
@@ -94,8 +94,8 @@ export const guides = ([
   {
     id: "wide-transition-input",
     title: "遷移関数が Appointment 全体を受け取っている",
-    currentDesign: "遷移関数の引数を現在の状態の型に絞らず、実行時の requireKind と throw で弾いています。completeExamination と recordPayment も同じ形です。Appointment[\"kind\"] は、Appointment の kind プロパティの型を取り出す書き方です。",
-    futureRisk: "禁止したい状態の値を渡してもコンパイルが通ります。また、結果を as で Appointment に決め打ちしているため、型検査は結果の誤りを見つけられません。",
+    currentDesign: "遷移関数の引数を現在の状態の型に絞らず、実行時の requireKind と throw で拒否しています。completeExamination と recordPayment も同じ形です。Appointment[\"kind\"] は、Appointment の kind プロパティの型を取り出す書き方です。",
+    futureRisk: "禁止したい状態の値を渡してもコンパイルが通ります。また、結果を as で Appointment に型指定しているため、型検査は結果の誤りを検出できません。",
     path: "src/domain/appointment/transitions.ts",
     highlights: [
       { startLineNumber: 8, endLineNumber: 17 },
@@ -106,7 +106,7 @@ export const guides = ([
     id: "optional-cancellation-reason",
     title: "cancel がキャンセル理由なしの呼び出しを受け入れている",
     currentDesign: "cancel の reason が CancellationReason | undefined で、理由がなければ実行時に throw します。",
-    futureRisk: "理由を渡さない呼び出しもコンパイルが通り、キャンセル理由の欠落は実行して初めて分かります。",
+    futureRisk: "理由を渡さない呼び出しもコンパイルが通り、キャンセル理由の欠落は実行して初めて判明します。",
     path: "src/domain/appointment/transitions.ts",
     highlights: [{ startLineNumber: 51, endLineNumber: 59 }],
   },

@@ -111,14 +111,14 @@ const framesData = JSON.stringify(frames.map(({ edge, states: active }) => ({ ed
         <text x={cardWidth / 2} y="49" text-anchor="middle" class="road__kind">{state.kind}</text>
       </g>
     ))}
-    <text x={x(4) + cardWidth / 2} y={rowTop + cardHeight + 18} text-anchor="middle" class="road__end">ここで終わり</text>
+    <text x={x(4) + cardWidth / 2} y={rowTop + cardHeight + 18} text-anchor="middle" class="road__end">遷移の終点</text>
 
     <g class="road__state" data-state="Canceled" transform={`translate(${cancel.x} ${cancel.y})`}>
       <rect width={cancel.width} height={cardHeight} rx="8"></rect>
       <text x={cancel.width / 2} y="29" text-anchor="middle" class="road__label">キャンセル</text>
       <text x={cancel.width / 2} y="49" text-anchor="middle" class="road__kind">Canceled</text>
     </g>
-    <text x={cancelCenter + cancel.width / 2 + 12} y={cancel.y + 36} class="road__end">ここで終わり</text>
+    <text x={cancelCenter + cancel.width / 2 + 12} y={cancel.y + 36} class="road__end">遷移の終点</text>
   </svg>
 
   <div aria-live="polite">
