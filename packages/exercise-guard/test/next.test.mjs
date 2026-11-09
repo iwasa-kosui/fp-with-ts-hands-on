@@ -157,4 +157,28 @@ describe("buildNext", () => {
     expect(sentences[0]).toBe("合格です。表の行を開いて、この仕組みで検出できないことを書きます。");
     expect(sentences[1]).toContain("『相互レビューで作る悪い変更』がすり抜けています。");
   });
+
+  describe("まだ 1 件も検出できていないときの案内", () => {
+    /** @param {boolean} typesAllowed */
+    const undetected = (typesAllowed) =>
+      buildNext({
+        rows: [rowOf({ id: "B0", kind: "bad", verdict: "slipped", allow: ["lint", "tests"], cells: { types: noHit, lint: noHit, tests: noHit } })],
+        problems: [],
+        stageOpened: 0,
+        passed: false,
+        typesAllowed,
+      })[0];
+
+    it("設定の allow に types がある演習では、型のテストのファイルにも触れる", () => {
+      expect(undetected(true)).toBe(
+        "まだ悪い変更を 1 件も検出できていません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にあるテストか型のテストのファイルに書きます。",
+      );
+    });
+
+    it("設定の allow に types が無い演習では、型のテストに触れない", () => {
+      expect(undetected(false)).toBe(
+        "まだ悪い変更を 1 件も検出できていません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にあるテストのファイルに書きます。",
+      );
+    });
+  });
 });

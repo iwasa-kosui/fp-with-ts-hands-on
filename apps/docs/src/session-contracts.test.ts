@@ -118,21 +118,21 @@ const expectedCurriculum = [
     slug: "06-effects-and-consistency",
     sequence: "06",
     title: "副作用と整合性境界を設計する",
-    durationMinutes: 40,
+    durationMinutes: 35,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:06",
     snapshot: "session-06",
-    timeBreakdown: { brief: 4, teach: 13, exercise: 15, review: 8 },
+    timeBreakdown: { brief: 3, teach: 12, exercise: 15, review: 5 },
   },
   {
     slug: "final",
     sequence: "Final",
     title: "参照実装で境界をたどる",
-    durationMinutes: 5,
+    durationMinutes: 10,
     kind: "reference",
     exerciseCommand: undefined,
     snapshot: "final",
-    timeBreakdown: { brief: 0, teach: 4, exercise: 0, review: 1 },
+    timeBreakdown: { brief: 0, teach: 6, exercise: 0, review: 4 },
   },
 ] as const;
 
@@ -151,11 +151,7 @@ const expectedEpisodes = [
     "理由のないキャンセルがStoreへ記録されましたが、開発者はどの条件を確認したのかを説明できません。",
     "実装へ進む前に、予約のデータと、キャンセルでデータがどう変わるかを確かめます。",
   ],
-  [
-    "カメの診察を開始すると、予約状態だけが先に更新され、監査記録はどこにも残りませんでした。",
-    "再現テストでは時刻とイベント ID が毎回変わり、失敗したときの値を同じ形で確かめられません。",
-    "状態の更新はすぐに終わりますが、監査記録の保存は別の処理です。そのため、原因を調べる作業だけが長引きます。",
-  ],
+  undefined,
   [
     "ここまで直した頃、猫のムギはとっくに帰宅し、開発者だけが参照実装の前に残っていました。",
     "入力、失敗、イベント、保存、例外を順に追うと、さっきまでの事故が、それぞれどの境界で防がれるかが見えてきます。",
@@ -259,7 +255,7 @@ const expectedExercises = [
     solutionPresentation: "completed-file",
     peerReviewPromises: "reference",
     peerReview: {
-      minutes: 8,
+      minutes: 5,
       pickCount: 2,
       questions: [
         "時刻とイベント ID は実行ごとに一度だけ生成され、同じ `EventContext` に入りますか。",

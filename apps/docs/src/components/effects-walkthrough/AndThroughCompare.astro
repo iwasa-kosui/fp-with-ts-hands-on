@@ -1,0 +1,232 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import { quoteRows } from "./quote";
+import "./step-figure.css";
+
+const [mapEvent, throughStore, mapState] = quoteRows(
+  "session-06-solution",
+  "src/useCase/startExamination.ts",
+  [
+    ".map(startExaminationEvent(deps, input.veterinarianId))",
+    ".andThrough(deps.examinationStartedStore.store)",
+    ".map((event) => event.aggregateState);",
+  ],
+) as readonly [string, string, string];
+const thenStore = throughStore.replace(".andThrough(", ".andThen(");
+if (thenStore === throughStore) throw new Error("AndThroughCompare: .andThrough( is not in the excerpt");
+
+const frames = [
+  "`andThen` で書くと: `andThen` は、`store` が返した値を次の行へ流します。`store` が返すのは `void` なので、次の行へ流れるのは、保存したイベントではなく `void` です。",
+  "`andThen` で書くと: 次の行の `event` は `void` です。`void` に `aggregateState` はないので、型のエラーになります。",
+  "`andThrough` で書くと: `andThrough` は、`store` の成功を確かめたあと、その結果を捨てます。次の行へは、保存したイベントがそのまま流れます。",
+  "`andThrough` で書くと: 次の行の `event` は `ExaminationStarted` です。`event.aggregateState` を取り出して、画面に新しい予約の状態 `InExamination` を返せます。保存の後もイベントが要るのは、このためです。",
+] as const;
+
+const lit = JSON.stringify([{ rows: [1] }, { rows: [3] }, { rows: [2] }, { rows: [3] }]);
+---
+
+<figure class="sf atc" data-and-through data-step-figure aria-label="andThen と andThrough で次の行へ流れる値の違い" data-lit={lit}>
+  <StepControls />
+
+  <div aria-live="polite">
+    <ol class="sf-frames">
+      {frames.map((frame) => (
+        <li data-frame>
+          <p class="sf-caption">{frame.split("`").map((part, index) => (index % 2 === 1 ? <code>{part}</code> : part))}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  <div class="sf-stage atc__stage">
+    <div class="atc__head">
+      <span class="sf-tag sf-tag--before atc__era" data-era="before"><code>andThen</code> で書くと</span>
+      <span class="sf-tag sf-tag--after atc__era" data-era="after"><code>andThrough</code> で書くと</span>
+      <span class="atc__note">右の札は、その行から次の行へ流れる値です。✗ の札は値ではなく、型のエラーです。</span>
+    </div>
+
+    <div class="atc__rows" data-code="rows">
+      <div class="atc__row" data-row="0">
+        <div class="sf-code atc__code"><Code code={mapEvent} lang="ts" wrap /></div>
+        <div class="atc__out">
+          <span class="sf-tag sf-tag--value">ExaminationStarted</span>
+        </div>
+      </div>
+
+      <div class="atc__row" data-row="1">
+        <div class="atc__variants">
+          <div class="sf-code atc__code" data-variant="before"><Code code={thenStore} lang="ts" wrap /></div>
+          <div class="sf-code atc__code" data-variant="after"><Code code={throughStore} lang="ts" wrap /></div>
+        </div>
+        <div class="atc__variants atc__out">
+          <span class="atc__value" data-variant="before">
+            <span class="sf-tag sf-tag--empty">void（値なし）</span>
+          </span>
+          <span class="atc__value" data-variant="after">
+            <span class="sf-tag sf-tag--value">ExaminationStarted</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="atc__row" data-row="2">
+        <div class="sf-code atc__code"><Code code={mapState} lang="ts" wrap /></div>
+        <div class="atc__variants atc__out">
+          <span class="atc__value" data-variant="before">
+            <span class="sf-tag sf-tag--err">✗ 型のエラー</span>
+            <small><code>void</code> に <code>aggregateState</code> はありません</small>
+          </span>
+          <span class="atc__value" data-variant="after">
+            <span class="sf-tag sf-tag--value">InExamination</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</figure>
+
+<script>
+  import { mountLitFigure } from "./lit-figure";
+
+  document.querySelectorAll<HTMLElement>("[data-and-through]").forEach((root) => {
+    mountLitFigure(root, (index) => {
+      root.dataset.era = index < 2 ? "before" : "after";
+    });
+  });
+</script>
+
+<style>
+  .atc__stage {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .atc__head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .atc__head code {
+    font-size: 0.8125rem;
+  }
+
+  .atc__note {
+    margin-inline-start: auto;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+  }
+
+  .atc__rows {
+    display: grid;
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 0.375rem;
+    min-height: 0;
+  }
+
+  .atc__row {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: stretch;
+    min-height: 0;
+  }
+
+  .atc__code {
+    display: grid;
+    align-items: center;
+    min-height: 0;
+    border-radius: 0.375rem;
+  }
+
+  .atc__code :global(pre) {
+    display: grid;
+    align-items: center;
+    box-sizing: border-box;
+    height: 100%;
+    padding: 0.25rem 0;
+    font-size: 0.875rem;
+  }
+
+  .atc__variants {
+    display: grid;
+    min-width: 0;
+  }
+
+  .atc__variants > * {
+    grid-area: 1 / 1;
+  }
+
+  .atc__out {
+    align-items: center;
+  }
+
+  .atc__value {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.75rem;
+  }
+
+  .atc__value small {
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+  }
+
+  .atc:not([data-ready]) [data-variant="before"] {
+    display: none;
+  }
+
+  .atc[data-ready] [data-variant] {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .atc[data-ready]:is([data-step="0"], [data-step="1"]) [data-variant="before"],
+  .atc[data-ready]:is([data-step="2"], [data-step="3"]) [data-variant="after"] {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .atc[data-ready] .atc__era {
+    display: none;
+  }
+
+  .atc[data-ready]:is([data-step="0"], [data-step="1"]) .atc__era[data-era="before"],
+  .atc[data-ready]:is([data-step="2"], [data-step="3"]) .atc__era[data-era="after"] {
+    display: inline-flex;
+  }
+
+  .atc:not([data-ready]) .atc__era[data-era="before"] {
+    display: none;
+  }
+
+  .atc[data-ready] .atc__row[data-row="1"] .atc__out,
+  .atc[data-ready] .atc__row[data-row="2"] .atc__out {
+    transition: opacity 0.35s;
+  }
+
+  .atc[data-ready][data-step="0"] .atc__row[data-row="2"] .atc__out,
+  .atc[data-ready][data-step="2"] .atc__row[data-row="2"] .atc__out {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .atc[data-ready][data-step="0"] .atc__row[data-row="1"] .atc__value,
+    .atc[data-ready][data-step="2"] .atc__row[data-row="1"] .atc__value,
+    .atc[data-ready][data-step="1"] .atc__row[data-row="2"] .atc__value,
+    .atc[data-ready][data-step="3"] .atc__row[data-row="2"] .atc__value {
+      animation: atc-flow 0.7s ease-out both;
+    }
+
+    @keyframes atc-flow {
+      from {
+        opacity: 0;
+        transform: translateY(-3rem);
+      }
+    }
+  }
+</style>
