@@ -1,7 +1,5 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import "../styles/theme-roles.css";
-import "../styles/landing.css";
 ---
 
 <BaseLayout
@@ -10,6 +8,10 @@ import "../styles/landing.css";
 >
   <div id="app">
     <div class="home-page wan-nyan-home">
+      <span class="home-shape home-shape--mint" aria-hidden="true"></span>
+      <span class="home-shape home-shape--lemon" aria-hidden="true"></span>
+      <span class="home-shape home-shape--pink" aria-hidden="true"></span>
+
       <header class="landing-header" aria-label="サイトヘッダー">
         <a class="landing-brand" href="#system">
           <span class="landing-brand__mark" aria-hidden="true">🐾</span>
@@ -25,6 +27,9 @@ import "../styles/landing.css";
 
       <main class="landing-main">
         <section class="landing-hero" id="system" aria-labelledby="page-title">
+          <span class="floating-pet floating-pet--cat" aria-hidden="true">🐈</span>
+          <span class="floating-pet floating-pet--rabbit" aria-hidden="true">🐇</span>
+
           <div class="landing-hero__grid">
             <p class="landing-eyebrow">🐱 TypeScriptで学ぶ関数型ドメインモデリング</p>
             <div class="copy-panel">
@@ -73,8 +78,6 @@ import "../styles/landing.css";
               </div>
             </div>
           </div>
-          <span class="floating-pet floating-pet--cat" aria-hidden="true">🐈</span>
-          <span class="floating-pet floating-pet--rabbit" aria-hidden="true">🐇</span>
           <div class="below-fold-cue"><span>下にスクロールして、WAN NYAN OS の機能と、現場で起き始めた問題を確認します。</span><span class="animal-train" aria-hidden="true">🐈 🐕 🐇 🐢 🦜 🦔</span></div>
         </section>
 

@@ -632,7 +632,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     opacity: 0;
   }
 
-  .schema-source-flow__part[data-mode="dim"] {
+  .schema-source-flow__part[data-mode="dim"] :is(rect, line, polygon) {
     opacity: 0.35;
   }
 
@@ -918,6 +918,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   }
 
   [data-animated] .schema-source-flow__part,
+  [data-animated] .schema-source-flow__part :is(rect, line, polygon),
   [data-animated] .schema-source-flow__result-pill {
     transition: opacity 0.3s;
   }
@@ -928,12 +929,21 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
 
   @media (max-height: 760px) {
     .schema-source-flow__code :global(pre) {
-      padding-block: 0.25rem;
-      line-height: 1.35;
+      padding-block: 0.125rem;
+      line-height: 1.25;
+    }
+
+    .schema-source-flow__code {
+      margin-block-start: 0.25rem;
+    }
+
+    .schema-source-flow__code figcaption {
+      padding-block: 0.125rem;
     }
 
     .schema-source-flow__live,
     .schema-source-flow__sizer {
+      margin-block-end: 0.25rem;
       line-height: 1.45;
     }
   }

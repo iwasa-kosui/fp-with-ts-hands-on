@@ -1,35 +1,15 @@
-html:has(.session-directory) {
-  color-scheme: light dark;
-  background: var(--role-bg);
-}
-
-body:has(.session-directory) {
-  background: var(--role-bg);
-}
-
-.session-directory {
-  background: var(--role-bg);
-  color: var(--role-text);
+.case-file.session-directory {
+  --case-mint: var(--wash-mint);
+  --case-lemon: var(--wash-lemon);
+  --case-coral: color-mix(in srgb, var(--color-accent) 55%, var(--wash-lemon));
+  --case-ink: var(--color-text);
+  --case-paper: #fffefb;
+  --case-line: var(--soft-line);
+  background: var(--color-background);
 }
 
 .session-directory .case-file__site-header {
-  width: 100%;
-  margin: 0;
-  padding: 1rem max(1rem, calc((100% - 74rem) / 2));
-  border-bottom: 0;
-  background: var(--role-band);
-  color: var(--role-on-band);
-  font-weight: 900;
-}
-
-.session-directory .case-file__site-header a:focus-visible {
-  outline: 3px solid var(--role-on-band);
-  outline-offset: 4px;
-}
-
-.session-directory :is(a, button):focus-visible {
-  outline: 3px solid var(--role-accent);
-  outline-offset: 3px;
+  border-bottom-width: 1px;
 }
 
 .session-directory__main {
@@ -43,24 +23,14 @@ body:has(.session-directory) {
   margin-bottom: 2rem;
 }
 
-.session-directory .case-file__eyebrow {
-  padding: 0;
-  background: transparent;
-  color: var(--role-accent);
-  font-weight: 900;
-}
-
 .session-directory__hero h1 {
   margin: 0;
-  font-feature-settings: "palt";
   font-size: clamp(2.25rem, 7vw, 4.5rem);
-  font-weight: 900;
   line-height: 1.1;
 }
 
 .session-directory__hero > h1 + p {
   margin: 1.25rem 0 0;
-  color: var(--role-muted);
   font-size: 1.1rem;
   line-height: 1.8;
 }
@@ -69,32 +39,25 @@ body:has(.session-directory) {
   width: min(100%, 42rem);
   margin-bottom: 3rem;
   padding: clamp(1.25rem, 4vw, 1.75rem);
-  border: 1px solid var(--role-rule);
-  border-left: 0.5rem solid var(--role-accent);
-  border-radius: 0.75rem;
-  background: var(--role-surface);
+  border-left: 0.25rem solid var(--case-coral);
+  background: var(--case-lemon);
 }
 
 .session-directory__setup-label {
   margin: 0;
-  color: var(--role-accent);
   font-size: 0.8rem;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.08em;
 }
 
 .session-directory__setup h2 {
   margin: 0.45rem 0 0;
-  color: var(--role-text);
-  font-feature-settings: "palt";
   font-size: clamp(1.6rem, 4vw, 2.2rem);
-  font-weight: 900;
   line-height: 1.2;
 }
 
 .session-directory__setup h2 + p {
   margin: 0.75rem 0 0;
-  color: var(--role-muted);
   line-height: 1.7;
 }
 
@@ -103,17 +66,20 @@ body:has(.session-directory) {
   align-items: center;
   gap: 0.6rem;
   margin-top: 1rem;
-  padding: 0.7rem 1.1rem;
-  border: 2px solid var(--role-go);
+  padding: 0.65rem 0.9rem;
+  border: 1.5px solid var(--color-primary);
   border-radius: 0.5rem;
-  background: var(--role-go);
-  color: var(--role-on-go);
-  font-weight: 900;
+  background: var(--case-paper);
+  color: var(--color-primary);
+  font-weight: 800;
   text-decoration: none;
 }
 
-.session-directory__setup-link:hover {
-  opacity: 0.88;
+.session-directory__setup-link:hover,
+.session-directory__setup-link:focus-visible {
+  background: var(--case-mint);
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
 .session-directory__list {
@@ -129,32 +95,30 @@ body:has(.session-directory) {
   display: grid;
   height: 100%;
   padding: 1.5rem;
-  border: 1px solid var(--role-rule);
+  border: 1.5px solid var(--case-line);
   border-radius: 0.75rem;
-  background: var(--role-surface);
-  color: var(--role-text);
+  background: var(--case-paper);
+  box-shadow: var(--shadow-card);
+  color: var(--case-ink);
   text-decoration: none;
-  transition: border-color 150ms ease;
+  transition: translate 150ms ease, box-shadow 150ms ease;
 }
 
 .session-directory__card:hover,
 .session-directory__card:focus-visible {
-  border-color: var(--role-accent);
+  box-shadow: 0 0.75rem 2rem rgb(36 40 59 / 12%);
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+  translate: 0 -2px;
 }
 
 .session-directory__meta {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  color: var(--role-muted);
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.08em;
-}
-
-.session-directory__meta span:first-child {
-  color: var(--role-accent);
-  font-weight: 900;
 }
 
 .session-directory__animal {
@@ -164,23 +128,18 @@ body:has(.session-directory) {
 
 .session-directory__card h2 {
   margin: 0.5rem 0 0;
-  color: var(--role-text);
-  font-feature-settings: "palt";
   font-size: clamp(1.35rem, 3vw, 1.75rem);
-  font-weight: 900;
   line-height: 1.3;
 }
 
 .session-directory__card p {
   margin: 0.75rem 0 1.5rem;
-  color: var(--role-muted);
   line-height: 1.7;
 }
 
 .session-directory__open {
   align-self: end;
-  color: var(--role-accent);
-  font-weight: 900;
+  font-weight: 800;
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
@@ -194,5 +153,10 @@ body:has(.session-directory) {
 @media (prefers-reduced-motion: reduce) {
   .session-directory__card {
     transition: none;
+  }
+
+  .session-directory__card:hover,
+  .session-directory__card:focus-visible {
+    translate: none;
   }
 }

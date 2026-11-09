@@ -531,4 +531,36 @@ const sideMark = { before: "●", after: "▲", plain: "■" } as const;
       transform: rotate(90deg);
     }
   }
+
+  @media (max-height: 760px) {
+    .property-flow__caption {
+      margin-block-end: 0.25rem;
+    }
+
+    .property-flow__columns {
+      gap: 0.5rem;
+    }
+
+    .property-flow__column {
+      gap: 0.25rem;
+      padding-block: 0.25rem;
+    }
+
+    .property-flow__code figcaption {
+      padding-block: 0.0625rem;
+    }
+
+    .property-flow__code :global(pre) {
+      padding-block: 0.25rem;
+      line-height: 1.3;
+    }
+
+    .property-flow__result pre {
+      line-height: 1.3;
+    }
+
+    .property-flow__steps > li:not(.property-flow__arrow) {
+      padding-block: 0.25rem;
+    }
+  }
 </style>

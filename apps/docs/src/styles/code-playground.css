@@ -500,7 +500,7 @@
 
 :where(.session-frame) .code-playground [data-code-explorer] {
   border-width: 1px;
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   background: var(--role-surface);
   box-shadow: none;
 }

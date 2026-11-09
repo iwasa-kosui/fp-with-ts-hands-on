@@ -1,47 +1,21 @@
-html:has(.setup-page) {
-  color-scheme: light dark;
-  background: var(--role-bg);
-}
-
-body:has(.setup-page) {
-  background: var(--role-bg);
-}
-
-.setup-page {
-  background: var(--role-bg);
-  color: var(--role-text);
+.case-file.setup-page {
+  --case-mint: var(--wash-mint);
+  --case-lemon: var(--wash-lemon);
+  --case-coral: var(--wash-peach);
+  --case-ink: var(--color-text);
+  --case-paper: #fffefb;
+  --case-line: var(--soft-line);
+  background: var(--color-background);
 }
 
 .setup-page .case-file__site-header {
-  width: 100%;
-  margin: 0;
-  padding: 1rem max(1rem, calc((100% - 74rem) / 2));
-  border-bottom: 0;
-  background: var(--role-band);
-  color: var(--role-on-band);
-  font-weight: 900;
-}
-
-.setup-page .case-file__site-header a:focus-visible {
-  outline: 3px solid var(--role-on-band);
-  outline-offset: 4px;
+  border-bottom-width: 1px;
 }
 
 .setup-page__main {
   width: min(100% - 2rem, 48rem);
   margin-inline: auto;
   padding-block: clamp(2.5rem, 7vw, 5rem);
-}
-
-.setup-page__main a:not(.setup-page__start) {
-  color: var(--role-accent);
-}
-
-.setup-page .case-file__eyebrow {
-  padding: 0;
-  background: transparent;
-  color: var(--role-accent);
-  font-weight: 900;
 }
 
 .setup-page__hero {
@@ -51,23 +25,14 @@ body:has(.setup-page) {
 
 .setup-page__hero h1 {
   margin: 0;
-  font-feature-settings: "palt";
   font-size: clamp(2.75rem, 8vw, 5rem);
-  font-weight: 900;
   line-height: 1.05;
 }
 
 .setup-page__hero > p:last-child {
   margin: 1.25rem 0 0;
-  color: var(--role-muted);
   font-size: clamp(1rem, 2.5vw, 1.2rem);
   line-height: 1.8;
-}
-
-.setup-page h2 {
-  color: var(--role-text);
-  font-feature-settings: "palt";
-  font-weight: 900;
 }
 
 .setup-page__steps {
@@ -87,8 +52,8 @@ body:has(.setup-page) {
   scroll-margin-top: 1.5rem;
 }
 
-.setup-page :is(a, button):focus-visible {
-  outline: 3px solid var(--role-accent);
+.setup-page a:focus-visible {
+  outline: 3px solid var(--case-ink);
   outline-offset: 4px;
 }
 
@@ -102,9 +67,10 @@ body:has(.setup-page) {
   grid-template-columns: auto minmax(0, 1fr);
   gap: clamp(1rem, 3vw, 1.5rem);
   padding: clamp(1.25rem, 4vw, 2rem);
-  border: 1px solid var(--role-rule);
+  border: 1.5px solid var(--case-line);
   border-radius: 0.75rem;
-  background: var(--role-surface);
+  background: var(--case-paper);
+  box-shadow: var(--shadow-card);
 }
 
 .setup-step > div,
@@ -117,27 +83,31 @@ body:has(.setup-page) {
   width: 3rem;
   height: 3rem;
   place-items: center;
-  border: 2px solid var(--role-accent);
+  border: 1.5px solid var(--case-line);
   border-radius: 50%;
-  background: var(--role-accent-soft);
-  color: var(--role-text);
+  background: var(--case-mint);
   font-weight: 900;
+}
+
+.setup-step--repository .setup-step__number {
+  background: var(--case-lemon);
+}
+
+.setup-step--verification .setup-step__number {
+  background: var(--case-coral);
 }
 
 .setup-step__label {
   margin: 0 0 0.35rem;
-  color: var(--role-accent);
   font-size: 0.8rem;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.08em;
 }
 
 .setup-step h3 {
   margin: 0;
-  color: var(--role-text);
-  font-feature-settings: "palt";
+  color: var(--case-ink);
   font-size: clamp(1.4rem, 4vw, 2rem);
-  font-weight: 900;
   line-height: 1.3;
 }
 
@@ -150,25 +120,26 @@ body:has(.setup-page) {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.75rem 1.1rem;
-  border: 2px solid var(--role-go);
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--color-primary);
   border-radius: 0.5rem;
-  background: var(--role-go);
-  color: var(--role-on-go);
-  font-weight: 900;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 800;
   text-decoration: none;
 }
 
 .setup-page__start:hover {
-  opacity: 0.88;
+  background: var(--case-lemon);
+  color: var(--case-ink);
 }
 
 .setup-step__command {
   margin-top: 1.25rem;
   overflow: hidden;
-  border: 1px solid var(--role-rule);
+  border: 1.5px solid var(--case-line);
   border-radius: 0.5rem;
-  background: var(--case-ink);
+  background: var(--color-code);
 }
 
 .setup-step__command-header {
@@ -177,26 +148,21 @@ body:has(.setup-page) {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.65rem 0.75rem;
-  background: var(--role-band);
-  color: var(--role-on-band);
+  background: var(--case-lemon);
   font-size: 0.85rem;
   font-weight: 800;
 }
 
 .setup-step__command .copy-button {
   padding: 0.35rem 0.65rem;
-  border-color: var(--role-on-band);
-  border-radius: 0.375rem;
-  background: transparent;
-  color: var(--role-on-band);
-}
-
-.setup-step__command .copy-button:focus-visible {
-  outline-color: var(--role-on-band);
+  background: var(--case-paper);
 }
 
 .setup-step__command .code-block {
   margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .setup-step__command pre {
@@ -215,7 +181,7 @@ body:has(.setup-page) {
   gap: 1rem;
   margin-top: 2.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid var(--role-rule);
+  border-top: 1px solid var(--case-line);
 }
 
 .setup-page__next a {

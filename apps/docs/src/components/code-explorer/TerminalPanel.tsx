@@ -211,10 +211,10 @@ export const createXtermView = async (): Promise<TerminalView> => {
     fontSize: 13,
     screenReaderMode: true,
     theme: {
-      background: "#14152b",
-      foreground: "#f1efe6",
-      cursor: "#ffd21b",
-      selectionBackground: "#3a3f78",
+      background: "#101814",
+      foreground: "#f4f1e8",
+      cursor: "#fff49a",
+      selectionBackground: "#3f6557",
     },
   });
   const fitAddon = new FitAddon();

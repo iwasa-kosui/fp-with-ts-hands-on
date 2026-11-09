@@ -12,7 +12,7 @@
 .guard-exercise__column {
   min-width: 0;
   border: 1px solid var(--role-rule);
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   background: var(--role-surface);
 }
 
@@ -754,7 +754,7 @@
   padding: 0 var(--frame-pad) 1rem;
   overflow: auto;
   border: 1px solid var(--role-rule);
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   background: var(--role-surface);
   color: var(--role-text);
 }

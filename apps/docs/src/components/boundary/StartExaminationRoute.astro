@@ -202,11 +202,12 @@ const frames = [
   }
 
   .start-route[data-ready] .start-route__node {
-    transition: opacity 0.3s, border-color 0.3s;
+    transition: border-color 0.3s, background-color 0.3s;
   }
 
   .start-route[data-ready] .start-route__node[data-state="idle"] {
-    opacity: 0.4;
+    border-color: var(--role-rule);
+    background: transparent;
   }
 
   .start-route[data-ready] .start-route__node[data-state="current"] {

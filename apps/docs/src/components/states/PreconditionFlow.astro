@@ -546,11 +546,14 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
     display: none;
   }
 
-  [data-animated] .precondition-flow__dimmable {
+  [data-animated] .precondition-flow__line,
+  [data-animated] .precondition-flow__shape,
+  [data-animated] .precondition-flow__arrow-head {
     transition: opacity 0.3s;
   }
 
-  [data-animated] .precondition-flow__band[data-mode="dim"] .precondition-flow__dimmable:not([data-focus]) {
+  [data-animated] .precondition-flow__band[data-mode="dim"] .precondition-flow__line:not([data-focus]),
+  [data-animated] .precondition-flow__band[data-mode="dim"] .precondition-flow__node:not([data-focus]) :is(.precondition-flow__shape, .precondition-flow__arrow-head) {
     opacity: 0.35;
   }
 
