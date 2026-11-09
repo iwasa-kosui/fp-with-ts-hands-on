@@ -4,27 +4,31 @@ import { noticeMoments } from "./notice-moments";
 const details = {
   write: {
     who: "変更した人",
+    via: "型検査（値の種類の食い違いを実行の前に調べる仕組み）や Linter（書き方の誤りを調べる道具）が知らせます。",
     missLabel: "ここで気づかないと",
     risk: "開発チームも困る",
     miss: "誤りがテストまで進みます。",
   },
   test: {
     who: "開発チーム",
+    via: "テスト（期待どおりに動くかを確かめるコード）が知らせます。",
     missLabel: "ここで気づかないと",
     risk: "操作できない人が出る",
     miss: "誤りが動いているシステムまで進み、サーバーが操作を受け付けません。",
   },
   run: {
     who: "操作した人",
+    via: "サーバーが処理の途中で値を確かめます。",
     missLabel: "ここで気づかないと",
     risk: "データが壊れる",
-    miss: "誤った操作が通ります。飼い主と病院も困ります。",
+    miss: "誤った操作や値がそのまま通ります。飼い主と病院も困ります。",
   },
   human: {
     who: "飼い主と病院",
+    via: "請求を受けた飼い主や、記録を調べた担当者が見つけます。",
     missLabel: "ここで気づいたときには",
     risk: "お金や情報の被害",
-    miss: "もう起きています。二重請求や、連絡先が読める監査記録です。",
+    miss: "もう起きています。二重請求と、飼い主の連絡先まで読める監査記録です。",
   },
 } as const;
 
@@ -44,6 +48,7 @@ const moments = noticeMoments.map((moment, index) => ({
             <span class="nm__number">{index + 1}</span>
             {moment.label}
           </p>
+          <p class="nm__via">{moment.via}</p>
           <p class="nm__heading">ここで気づくと困る人</p>
           <ul class="nm__people">
             {moment.people.map((person, personIndex) => (
@@ -73,7 +78,7 @@ const moments = noticeMoments.map((moment, index) => ({
   .nm__moments {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: var(--nm-gap);
+    gap: 0 var(--nm-gap);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -81,9 +86,10 @@ const moments = noticeMoments.map((moment, index) => ({
 
   .nm__moment {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    display: grid;
+    grid-row: span 5;
+    grid-template-rows: subgrid;
+    row-gap: 0.5rem;
   }
 
   .nm__moment:not(:last-child)::after {
@@ -123,6 +129,12 @@ const moments = noticeMoments.map((moment, index) => ({
     background: var(--role-accent);
     color: var(--role-on-accent);
     font-size: 0.85rem;
+  }
+
+  .nm__via {
+    color: var(--role-text);
+    font-size: 0.85rem;
+    line-height: 1.45;
   }
 
   .nm__heading {
@@ -225,7 +237,7 @@ const moments = noticeMoments.map((moment, index) => ({
     }
 
     .nm__moment {
-      gap: 0.3rem;
+      row-gap: 0.3rem;
     }
 
     .nm__risk {
@@ -241,6 +253,13 @@ const moments = noticeMoments.map((moment, index) => ({
   @media (max-width: 55rem) {
     .nm__moments {
       grid-template-columns: minmax(0, 1fr);
+      gap: var(--nm-gap);
+    }
+
+    .nm__moment {
+      display: flex;
+      flex-direction: column;
+      grid-row: auto;
     }
 
     .nm__moment:not(:last-child)::after {
