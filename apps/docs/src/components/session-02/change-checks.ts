@@ -86,7 +86,7 @@ export const changeCases: readonly ChangeCase[] = [
       lint: { found: true, output: `Switch is not exhaustive. Cases not matched: "Paid"` },
       tests: { found: true, output: `Paid: Unknown appointment status: {"kind":"Paid"}` },
     },
-    why: "assertNever が残っているので、Paid が足りないことを型検査が見つけます。Linter の規則とテストも見つけます。",
+    why: "assertNever が残っているので、Paid が足りないことを型検査が見つけます。Linter の規則とテストも見つけます。次の演習の表では、この型エラーは自分で足した仕組みの結果ではないので「対象外」と出ます。",
   },
   {
     id: "B3-added-state-default",
