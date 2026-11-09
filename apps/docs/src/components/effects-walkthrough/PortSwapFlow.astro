@@ -163,6 +163,7 @@ const ports = [
         <span class="psf__title">useCase</span>
         <span class="psf__era" data-era="2"><span class="sf-tag">本物</span></span>
         <span class="psf__era" data-era="3"><span class="sf-tag sf-tag--empty">偽物（fake）</span></span>
+        <p class="psf__same">ユースケースのコードは、どちらでも同じです。</p>
       </div>
       <ul class="psf__rows">
         {ports.map((port) => (
@@ -179,7 +180,6 @@ const ports = [
           </li>
         ))}
       </ul>
-      <p class="psf__same">ユースケースのコードは、どちらでも同じです。</p>
     </div>
   </div>
 
@@ -207,6 +207,7 @@ const ports = [
   .psf__stage {
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
     gap: 1rem;
   }
 
@@ -244,7 +245,7 @@ const ports = [
 
   .psf__diagram {
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
     gap: 0.5rem;
     min-width: 0;
     padding: 0.5rem 0.75rem;
@@ -343,7 +344,7 @@ const ports = [
   }
 
   .psf__same {
-    margin: 0;
+    margin: 0 0 0 auto;
     color: var(--role-muted);
     font-size: 0.8125rem;
     font-weight: 700;

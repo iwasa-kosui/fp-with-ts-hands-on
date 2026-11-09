@@ -2,16 +2,13 @@
 import { Code } from "astro:components";
 import "./step-figure.css";
 
-const lintShape = `"no-restricted-syntax": ["error",
-  {
-    selector: "CallExpression[callee.object.name='crypto'][callee.property.name='randomUUID']",
-    message: "ID を直接作らず、ID generator から受け取ります。",
-  },
-  {
-    selector: "NewExpression[callee.name='Date'][…]",
-    message: "…",
-  },
-]`;
+const lintShape = `"no-restricted-syntax": ["error", {
+  selector: "CallExpression[callee.object.name='crypto'][callee.property.name='randomUUID']",
+  message: "ID を直接作らず、ID generator から受け取ります。",
+}, {
+  selector: "NewExpression[callee.name='Date'][…]",
+  message: "…",
+}]`;
 
 const testShape = `store: (event) => {
   storeCalls += 1;
@@ -28,7 +25,7 @@ const cards = [
     shape: lintShape,
     catches: "規則に書いた形の書き方。引数なしの new Date() や crypto.randomUUID() の呼び出し。",
     misses: "規則に書いていない別の書き方。",
-    note: "広すぎる規則は、正しいコードまで誤検知します。selector の […] には、検出する範囲を絞る条件を書きます。",
+    note: "selector の […] には、検出する範囲を絞る条件を書きます。",
   },
   {
     id: "test",
@@ -61,7 +58,7 @@ const cards = [
 <style>
   .erc {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
     gap: 0.75rem;
     margin: 0.25rem 0;
     color: var(--role-text);
@@ -105,7 +102,8 @@ const cards = [
   }
 
   .erc__label {
-    display: block;
+    display: inline;
+    margin-inline-end: 0.5rem;
     font-weight: 800;
   }
 

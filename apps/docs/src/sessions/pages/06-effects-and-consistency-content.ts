@@ -213,24 +213,24 @@ const dedent = (code: string): string => {
 
 export const storeCode = {
   sqlite: {
-    path: "examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
     code: dedent(
       blockOf(
         solutionFiles,
         "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
-        "  const storeAtomically = (event: ExaminationStarted) =>",
+        "    database.transaction((transaction) => {",
         "    });",
       ),
     ),
   },
   inMemory: {
-    path: "examples/session-06-solution/src/adaptor/inMemoryExaminationStartedStore.ts",
+    path: "src/adaptor/inMemoryExaminationStartedStore.ts",
     code: dedent(
       blockOf(
         solutionFiles,
         "src/adaptor/inMemoryExaminationStartedStore.ts",
         "          const currentAppointment = appointments.get(event.appointmentId);",
-        "          return ok(undefined);",
+        "          events = nextEvents;",
       ),
     ),
   },

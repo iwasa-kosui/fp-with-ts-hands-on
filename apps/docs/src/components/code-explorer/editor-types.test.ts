@@ -11,7 +11,9 @@ import { editorCompilerOptions } from "./editor-compiler-options";
 
 const repositoryRoot = path.resolve(__dirname, "../../../../..");
 const exerciseSnapshot = "session-03-solution";
-const exerciseDirectory = path.join(repositoryRoot, "examples", exerciseSnapshot);
+const effectsSnapshot = "session-06-solution";
+const exerciseDirectoryOf = (snapshot: string): string =>
+  path.join(repositoryRoot, "examples", snapshot);
 const virtualProject = "workspace";
 
 type Dirent = Awaited<ReturnType<TypeFileReader["readdir"]>>[number];
@@ -33,7 +35,7 @@ const dependencyNamesOf = (realDirectory: string): string[] => {
   ];
 };
 
-const listInstalledPackages = (): Map<string, string> => {
+const listInstalledPackages = (exerciseDirectory: string): Map<string, string> => {
   const topLevel = path.join(exerciseDirectory, "node_modules");
   const installed = new Map<string, string>();
   const queue: { virtual: string; real: string }[] = [];
@@ -74,8 +76,8 @@ const listInstalledPackages = (): Map<string, string> => {
 };
 
 // npm が WebContainer に作る node_modules と同じ平らな配置を、pnpm の依存関係から再現する。
-const createInstalledReader = (): TypeFileReader => {
-  const installed = listInstalledPackages();
+const createInstalledReader = (exerciseDirectory: string): TypeFileReader => {
+  const installed = listInstalledPackages(exerciseDirectory);
   const virtualToReal = (virtualPath: string): string | undefined => {
     const relative = virtualPath.slice(virtualProject.length + 1);
     const owner = [...installed.keys()]
@@ -190,7 +192,7 @@ const diagnose = (
     if (sourceFile === undefined) return [`${target}: not found in the program`];
     return [
       ...program.getSyntacticDiagnostics(sourceFile),
-      ...program.getSemanticDiagnostics(sourceFile),
+      ...(target.endsWith(".mjs") ? [] : program.getSemanticDiagnostics(sourceFile)),
     ].map((diagnostic) => {
       const { line, character } = sourceFile.getLineAndCharacterOfPosition(
         diagnostic.start ?? 0,
@@ -233,7 +235,7 @@ describe("editor types for the S03 guard exercise", () => {
 
   beforeAll(async () => {
     typeFiles = await readExternalTypeFiles(
-      createInstalledReader(),
+      createInstalledReader(exerciseDirectoryOf(exerciseSnapshot)),
       virtualProject,
     );
   }, 60_000);
@@ -276,6 +278,68 @@ describe("editor types for the S03 guard exercise", () => {
     );
 
     expect(targets).toHaveLength(5);
+    expect(diagnose(files, typeFiles, targets)).toEqual([]);
+  });
+});
+
+describe("editor types for the S06 guard exercise", () => {
+  let typeFiles: ProjectFiles;
+  const starterFiles = projectFilesForSnapshot(effectsSnapshot);
+  const starterTargets = [
+    guardPaths.eslintConfig,
+    ...Object.keys(starterFiles).filter(
+      (candidate) =>
+        candidate.startsWith(guardPaths.mine) && candidate.endsWith(".ts"),
+    ),
+  ];
+
+  beforeAll(async () => {
+    typeFiles = await readExternalTypeFiles(
+      createInstalledReader(exerciseDirectoryOf(effectsSnapshot)),
+      virtualProject,
+    );
+  }, 60_000);
+
+  it("hands the editor the type definitions of neverthrow", () => {
+    const paths = Object.keys(typeFiles);
+
+    expect(paths).toContain("file:///workspace/node_modules/neverthrow/package.json");
+  });
+
+  it("types neverthrow and vitest instead of leaving them as any", () => {
+    const probe = [
+      'import { okAsync } from "neverthrow";',
+      'import { expect } from "vitest";',
+      "export const stored = okAsync(1);",
+      "export const assertion = expect(1);",
+      "",
+    ].join("\n");
+
+    expect(typeOfExport(starterFiles, typeFiles, probe, "stored")).toBe(
+      "ResultAsync<number, never>",
+    );
+    expect(typeOfExport(starterFiles, typeFiles, probe, "assertion")).toBe(
+      "Assertion<number>",
+    );
+  });
+
+  it("opens the starter useCase.test.ts and eslint.config.mjs with no errors", () => {
+    expect(starterTargets).toEqual([
+      "eslint.config.mjs",
+      "exercises/guard/mine/useCase.test.ts",
+    ]);
+    expect(diagnose(starterFiles, typeFiles, starterTargets)).toEqual([]);
+  });
+
+  it("opens the model answer placed in the editor with no errors", () => {
+    const answerFiles = guardAnswerDisplayFiles(starterFiles);
+    const files = { ...starterFiles, ...answerFiles };
+    const targets = Object.keys(answerFiles);
+
+    expect(targets.toSorted()).toEqual([
+      "eslint.config.mjs",
+      "exercises/guard/mine/useCase.test.ts",
+    ]);
     expect(diagnose(files, typeFiles, targets)).toEqual([]);
   });
 });

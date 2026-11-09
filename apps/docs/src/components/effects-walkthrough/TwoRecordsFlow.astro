@@ -4,13 +4,13 @@ import "./step-figure.css";
 
 const frames = [
   {
-    caption: "獣医師が「診察を開始する」を押します。この1つの操作で、2つの保存先に書き込みます。",
+    caption: "獣医師が「診察を開始する」を押すと、システムは2つのことを記録します。",
   },
   {
-    caption: "1つ目の保存先は「予約の状態」です。予約の状態が、来院済みから診察中に変わります。",
+    caption: "1つ目は「予約の状態」の更新です。予約の状態が、来院済みから診察中に変わります。",
   },
   {
-    caption: "2つ目の保存先は「監査記録」です。誰がいつ診察を開始したかが、1件の記録として残ります。",
+    caption: "2つ目は「監査記録」の追加です。誰がいつ診察を始めたかが、1件の記録として残ります。",
   },
 ] as const;
 ---
@@ -88,6 +88,10 @@ const frames = [
 </script>
 
 <style>
+  .trf {
+    margin-block: 0;
+  }
+
   .trf__stage {
     display: grid;
     grid-template-columns: minmax(10rem, 15rem) minmax(4rem, 7rem) minmax(0, 1fr);
@@ -241,12 +245,19 @@ const frames = [
 
   .trf__record {
     display: grid;
-    gap: 0.125rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.125rem 0.75rem;
+    align-items: center;
     padding: 0.375rem 0.75rem;
     border: 2px solid var(--role-positive);
     border-radius: 0.375rem;
     background: color-mix(in srgb, var(--role-positive) 12%, var(--role-surface));
     justify-items: start;
+  }
+
+  .trf__record .sf-tag {
+    grid-column: 2;
+    grid-row: 1 / span 2;
   }
 
   .trf__record p {
@@ -321,6 +332,16 @@ const frames = [
 
   .trf[data-ready]:not([data-step="0"]) .trf__press {
     visibility: hidden;
+  }
+
+  @media (max-height: 760px) {
+    .trf__dests {
+      gap: 0.5rem;
+    }
+
+    .trf__dest {
+      padding-block: 0.375rem;
+    }
   }
 
   @media (max-width: 44rem) {

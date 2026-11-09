@@ -20,7 +20,7 @@ const frames = [
   "修正前: `andThen` は、`store` が返した値を次の行へ流します。`store` が返すのは `void` なので、次の行へ流れるのは、保存したイベントではなく `void` です。",
   "修正前: 次の行の `event` は `void` です。`void` に `aggregateState` はないので、型のエラーになります。",
   "修正後: `andThrough` は、`store` の成功を確かめたあと、その結果を捨てます。次の行へは、保存したイベントがそのまま流れます。",
-  "修正後: 次の行の `event` は `ExaminationStarted` です。`event.aggregateState` を取り出せて、呼び出し元には `InExamination` が返ります。",
+  "修正後: 次の行の `event` は `ExaminationStarted` です。`event.aggregateState` を取り出して、画面に新しい予約の状態 `InExamination` を返せます。保存の後もイベントが要るのは、このためです。",
 ] as const;
 
 const lit = JSON.stringify([{ rows: [1] }, { rows: [3] }, { rows: [2] }, { rows: [3] }]);

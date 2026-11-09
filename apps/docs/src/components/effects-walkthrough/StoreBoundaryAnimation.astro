@@ -410,7 +410,6 @@ const legendLines = [
   writtenOnly
     ? "「保存済み」ははじめからある行、「書き込み済み」は書き込まれた行です。破線の空枠は、まだ行がない場所です。"
     : "「保存済み」ははじめからある行、「未確定」は transaction の中だけにある行、「確定」は書き込みが残った行です。",
-  "`status` は予約の状態の名前、`state` はその中身、`eventId` と `eventName` は監査記録の ID と種類です。",
 ];
 const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame }) => frame));
 ---
@@ -455,10 +454,10 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
           <div class="sb-db__head">
             <p class="sb-db__label">database</p>
             <p class="sb-tx__label" data-tx-label></p>
+            <p class="sb-issue" data-issue>問題: 別の依頼が先に診察を始めていた</p>
           </div>
           <div class="sb-table" data-table="appointments">
-            <p class="sb-table__name"><span>appointments</span><span class="sb-issue" data-issue>問題: 別の依頼が先に診察を始めていた</span></p>
-            <div class="sb-line sb-line--head"><span></span><span>status</span><span>state</span></div>
+            <div class="sb-table__name sb-line"><span>appointments</span><span>status（状態名）</span><span>state（中身）</span></div>
             <div class="sb-cell">
               {appointmentRows.map(({ id, old, first, second }) => (
                 <div class={`sb-card sb-line${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
@@ -470,8 +469,7 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
             </div>
           </div>
           <div class="sb-table" data-table="audit_logs">
-            <p class="sb-table__name">audit_logs</p>
-            <div class="sb-line sb-line--head"><span></span><span>eventId</span><span>eventName</span></div>
+            <div class="sb-table__name sb-line"><span>audit_logs</span><span>eventId（ID）</span><span>eventName（種類）</span></div>
             <div class="sb-cell sb-cell--landing">
               {auditRows.map(({ id, old, first, second }) => (
                 <div class={`sb-card sb-line${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">

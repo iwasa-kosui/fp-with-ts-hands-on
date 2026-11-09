@@ -46,7 +46,18 @@ for (const figure of figures) {
     const line = code.children[marked.size > 0 ? Math.min(...marked) : 0];
     const offset = line.getBoundingClientRect().top - pre.getBoundingClientRect().top + pre.scrollTop;
     const lineHeight = parseFloat(getComputedStyle(line).lineHeight) || 20;
-    pre.scrollTo({ top: Math.max(0, offset - lineHeight * 1.5), behavior: instant || reduced.matches ? "instant" : "smooth" });
+    const last = code.children[marked.size > 0 ? Math.max(...marked) : 0];
+    const room = Math.max(0, pre.clientHeight - (last.getBoundingClientRect().bottom - line.getBoundingClientRect().top));
+    pre.scrollTo({ top: Math.max(0, offset - Math.min(lineHeight * 1.5, room)), behavior: instant || reduced.matches ? "instant" : "smooth" });
+  };
+
+  const fitImpl = (pane) => {
+    const callStack = boxEls.call.querySelector(".sb-stack");
+    const callHeight = boxEls.call.hasAttribute("data-hidden") ? 0 : parseFloat(callStack.style.height) || 0;
+    const area = figure.querySelector(".sb-code");
+    const pre = pane.querySelector("pre");
+    const room = area.clientHeight - parseFloat(getComputedStyle(area).rowGap) - callHeight;
+    pre.style.maxHeight = `${Math.max(0, room - (pane.getBoundingClientRect().height - pre.getBoundingClientRect().height))}px`;
   };
 
   const boxEls = {};
@@ -67,6 +78,7 @@ for (const figure of figures) {
       code.toggleAttribute("data-has-active", marked.size > 0);
       [...code.children].forEach((line, index) => line.classList.toggle("is-active", marked.has(index)));
       if (active) {
+        if (page && name === "impl") fitImpl(pane);
         const stack = pane.parentElement;
         if (instant || wasHidden) stack.style.transition = "none";
         stack.style.height = `${Math.ceil(pane.getBoundingClientRect().height)}px`;

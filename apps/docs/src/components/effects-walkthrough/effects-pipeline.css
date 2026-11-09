@@ -506,3 +506,22 @@
 .ep--page .ep-stage[data-state="skipped"] .ep-sum {
   display: none;
 }
+
+@media (max-height: 760px) {
+  .walk.walk--page[data-walk-ready] {
+    row-gap: 0.25rem;
+  }
+
+  .walk--page .walk__btn {
+    min-height: 2.25rem;
+  }
+
+  .walk--page[data-walk-ready] .walk__live {
+    padding-block: 0.4rem;
+    min-height: calc(3.4em + 0.8rem);
+  }
+
+  .ep--page .ep-stage__code pre {
+    line-height: 1.35;
+  }
+}

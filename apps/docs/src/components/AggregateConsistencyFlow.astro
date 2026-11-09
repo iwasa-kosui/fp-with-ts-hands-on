@@ -5,9 +5,10 @@ import appointmentSource from "../../../../examples/final/src/domain/appointment
 
 interface Props {
   auditLabel?: string;
+  condensedCode?: boolean;
 }
 
-const { auditLabel = "履歴" } = Astro.props;
+const { auditLabel = "履歴", condensedCode = false } = Astro.props;
 const audit = (text: string) => text.replaceAll("履歴", auditLabel);
 
 const quote = (source: string, from: number, to: number, firstLine: string, lastLine: string): string => {
@@ -18,10 +19,35 @@ const quote = (source: string, from: number, to: number, firstLine: string, last
   return lines.map((line) => line.slice(indent)).join("\n");
 };
 
+const condense = (code: string): string => {
+  const lines = code.split("\n");
+  const kind = lines.findIndex((line) => line.trim() === 'kind: "Canceled",');
+  const close = lines.findIndex((line) => line.trim() === "} as const satisfies Canceled;");
+  const create = lines.findIndex((line) => line.trim() === "return AppointmentEvent.create(");
+  const state = lines.findIndex((line) => line.trim() === "aggregateState,");
+  const end = lines.map((line) => line.trim()).lastIndexOf(");");
+  if (kind < 0 || close < kind || create < close || state < create || end < state) {
+    throw new Error("引用元の形がずれていて、コードを短くできません");
+  }
+  const omitted = (index: number) => `${lines[index].slice(0, lines[index].search(/\S/))}…`;
+  return [
+    ...lines.slice(0, kind + 1),
+    omitted(kind),
+    lines[close],
+    lines[create],
+    omitted(create + 1),
+    lines[state],
+    omitted(state),
+    lines[end],
+  ].join("\n");
+};
+
+const cancelCode = quote(appointmentSource, 215, 234, "): AppointmentCanceled => {", ");");
+
 const snippets = {
   cancel: {
     path: "examples/final/src/domain/appointment/appointment.ts",
-    code: quote(appointmentSource, 215, 234, "): AppointmentCanceled => {", ");"),
+    code: condensedCode ? condense(cancelCode) : cancelCode,
   },
 } as const;
 
@@ -732,6 +758,55 @@ const frames: readonly Frame[] = [
   :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__code :global(pre) {
     padding-block: 0.5rem;
     line-height: 1.35;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__frames > li[data-view="compare"].is-current {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 0.5rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__compare {
+    display: contents;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 0.5rem;
+    align-content: start;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side > :is(.aggregate-flow__side-title, .aggregate-flow__steps, .aggregate-flow__result-label) {
+    grid-column: 1 / -1;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__result-label {
+    margin-block: 0.25rem 0.125rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side > .aggregate-flow__verdict {
+    align-self: center;
+    margin: 0;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side:has(.aggregate-flow__outcome) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__outcome + .aggregate-flow__outcome {
+    margin-top: 0;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side .aggregate-flow__fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__outside {
+    margin-top: 0.5rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__legend {
+    margin-top: 0.25rem;
   }
 
   @media (prefers-reduced-motion: no-preference) {
