@@ -294,6 +294,9 @@ export const createTerminalRunner = (
     let disposed = false;
     let fileEventQueue = Promise.resolve();
     const projectedFiles = new Map<string, string>();
+    const pendingWrites = new Map<string, number>();
+    const writeGenerations = new Map<string, number>();
+    let writeChain: Promise<void> = Promise.resolve();
     const initialProjectPaths = new Set(
       Object.keys(request.files).filter((path) => !path.startsWith("../")),
     );
@@ -371,6 +374,20 @@ export const createTerminalRunner = (
       }
     };
 
+    const writeStateOf = (path: string) => {
+      let pending = 0;
+      let generation = 0;
+      const covers = (candidate: string) =>
+        candidate === path || candidate.startsWith(`${path}/`);
+      for (const [candidate, count] of pendingWrites) {
+        if (covers(candidate)) pending += count;
+      }
+      for (const [candidate, value] of writeGenerations) {
+        if (covers(candidate)) generation += value;
+      }
+      return { pending, generation };
+    };
+
     const synchronizePath = async (rawPath: string) => {
       if (runtime === undefined || disposed) return;
       const path = normalizeWorkspacePath(rawPath);
@@ -383,10 +400,18 @@ export const createTerminalRunner = (
       if (initialProjectPaths.has(path) && !initialVisiblePaths.has(path)) {
         return;
       }
+      const before = writeStateOf(path);
+      if (before.pending > 0) return;
+      const isOutdated = () => {
+        const now = writeStateOf(path);
+        return now.pending > 0 || now.generation !== before.generation;
+      };
 
       try {
         const entry = await runtime.readWorkspaceEntry(path);
         if (disposed || request.signal.aborted) return;
+        // 読み取り中に書き込みが始まると、読んだ内容はすでに古い
+        if (isOutdated()) return;
         if (entry.kind === "directory") {
           const currentChildren = new Set(
             entry.entries.map(({ name }) => `${path}/${name}`),
@@ -414,6 +439,7 @@ export const createTerminalRunner = (
         request.onWorkspaceChange({ kind: "write", path, contents });
       } catch (error: unknown) {
         if (!isMissingPathError(error)) throw error;
+        if (isOutdated()) return;
         removeProjectedPath(path);
       }
     };
@@ -527,7 +553,27 @@ export const createTerminalRunner = (
           if (runtime === undefined || path === undefined) {
             throw new Error(`Unsupported workspace path: ${rawPath}`);
           }
-          await runtime.writeWorkspaceFile(path, contents);
+          const target = runtime;
+          const generation = (writeGenerations.get(path) ?? 0) + 1;
+          writeGenerations.set(path, generation);
+          pendingWrites.set(path, (pendingWrites.get(path) ?? 0) + 1);
+          const write = writeChain
+            .catch(() => undefined)
+            .then(async () => {
+              if (writeGenerations.get(path) !== generation) return;
+              await target.writeWorkspaceFile(path, contents);
+              if (writeGenerations.get(path) === generation) {
+                projectedFiles.set(path, contents);
+              }
+            });
+          writeChain = write;
+          try {
+            await write;
+          } finally {
+            const remaining = (pendingWrites.get(path) ?? 1) - 1;
+            if (remaining > 0) pendingWrites.set(path, remaining);
+            else pendingWrites.delete(path);
+          }
         },
         resize: (size) => activeShell?.process.resize(size),
         restartShell: async (size) => {

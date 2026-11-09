@@ -8,6 +8,7 @@ import {
   type TerminalRuntime,
   type TerminalRuntimeProcess,
   type TerminalStartRequest,
+  type WorkspaceChange,
 } from "./runner";
 import { chmodBinScript } from "./deps-snapshot-shared.mjs";
 
@@ -641,5 +642,199 @@ describe("WebContainer terminal adapter", () => {
       expect(webContainerMock.boot).toHaveBeenCalledTimes(2);
       await thirdSession.dispose();
     });
+  });
+});
+
+describe("terminal runner workspace synchronization", () => {
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  const startWithFileSystem = async () => {
+    const fileSystem = new Map<string, string>([["src/main.ts", "edited main"]]);
+    const writes: Array<{
+      path: string;
+      contents: string;
+      finish: () => void;
+      fail: (error: Error) => void;
+    }> = [];
+    const readGate: { current?: Promise<void> } = {};
+    let emit: (path: string) => void = () => undefined;
+    const changes: WorkspaceChange[] = [];
+    const runtime: TerminalRuntime = {
+      ...createInMemoryRuntime(),
+      watchWorkspace: vi.fn((onPath) => {
+        emit = onPath;
+        return () => undefined;
+      }),
+      readWorkspaceEntry: vi.fn(async (path) => {
+        const contents = fileSystem.get(path);
+        if (contents === undefined) {
+          throw Object.assign(new Error("ENOENT: no such file"), {
+            code: "ENOENT",
+          });
+        }
+        await readGate.current;
+        return { kind: "file" as const, contents };
+      }),
+      writeWorkspaceFile: vi.fn(
+        (path, contents) =>
+          new Promise<void>((resolve, reject) => {
+            writes.push({
+              path,
+              contents,
+              finish: () => {
+                fileSystem.set(path, contents);
+                resolve();
+              },
+              fail: reject,
+            });
+          }),
+      ),
+    };
+    const session = await createTerminalRunner(async () => runtime).start(
+      requestFor({ onWorkspaceChange: (change) => changes.push(change) }),
+    );
+    return {
+      session,
+      runtime,
+      fileSystem,
+      writes,
+      changes,
+      readGate,
+      emit: (path: string) => emit(path),
+    };
+  };
+
+  it("ignores events while a write to the path is pending", async () => {
+    const { session, runtime, fileSystem, writes, changes, emit } =
+      await startWithFileSystem();
+    fileSystem.set("src/main.ts", "older contents");
+
+    const writing = session.writeFile("src/main.ts", "typed");
+    emit("src/main.ts");
+    await settle();
+    writes[0]?.finish();
+    await writing;
+    emit("src/main.ts");
+    await settle();
+
+    expect(runtime.readWorkspaceEntry).toHaveBeenCalledTimes(1);
+    expect(changes).toEqual([]);
+    await session.dispose();
+  });
+
+  it("drops contents read while a write started during the read", async () => {
+    const { session, fileSystem, writes, changes, readGate, emit } =
+      await startWithFileSystem();
+    fileSystem.set("src/main.ts", "older contents");
+    let releaseRead!: () => void;
+    readGate.current = new Promise<void>((resolve) => {
+      releaseRead = resolve;
+    });
+
+    emit("src/main.ts");
+    await settle();
+    const writing = session.writeFile("src/main.ts", "typed");
+    releaseRead();
+    await settle();
+    writes[0]?.finish();
+    await writing;
+    await settle();
+
+    expect(changes).toEqual([]);
+    await session.dispose();
+  });
+
+  it("does not report the file again after its own write finished", async () => {
+    const { session, writes, changes, emit } = await startWithFileSystem();
+
+    const writing = session.writeFile("src/main.ts", "typed");
+    await settle();
+    writes[0]?.finish();
+    await writing;
+    emit("src/main.ts");
+    await settle();
+
+    expect(changes).toEqual([]);
+    await session.dispose();
+  });
+
+  it("reports contents a command changed when no write is pending", async () => {
+    const { session, fileSystem, changes, emit } = await startWithFileSystem();
+    fileSystem.set("src/main.ts", "changed by a command");
+
+    emit("src/main.ts");
+    await settle();
+
+    expect(changes).toEqual([
+      { kind: "write", path: "src/main.ts", contents: "changed by a command" },
+    ]);
+    await session.dispose();
+  });
+
+  it("writes only the first and the last of writes queued behind one in progress", async () => {
+    const { session, runtime, writes } = await startWithFileSystem();
+
+    const first = session.writeFile("src/main.ts", "first");
+    await settle();
+    const queued = [
+      session.writeFile("src/main.ts", "second"),
+      session.writeFile("src/main.ts", "third"),
+      session.writeFile("src/main.ts", "fourth"),
+    ];
+    expect(writes).toHaveLength(1);
+    writes[0]?.finish();
+    await settle();
+    expect(writes).toHaveLength(2);
+    writes[1]?.finish();
+    await Promise.all([first, ...queued]);
+
+    expect(vi.mocked(runtime.writeWorkspaceFile).mock.calls).toEqual([
+      ["src/main.ts", "first"],
+      ["src/main.ts", "fourth"],
+    ]);
+    await session.dispose();
+  });
+
+  it("keeps the order of writes to different paths", async () => {
+    const { session, runtime, writes } = await startWithFileSystem();
+
+    const results = [
+      session.writeFile("src/a.ts", "a"),
+      session.writeFile("src/b.ts", "b"),
+    ];
+    await settle();
+    writes[0]?.finish();
+    await settle();
+    writes[1]?.finish();
+    await Promise.all(results);
+
+    expect(vi.mocked(runtime.writeWorkspaceFile).mock.calls).toEqual([
+      ["src/a.ts", "a"],
+      ["src/b.ts", "b"],
+    ]);
+    await session.dispose();
+  });
+
+  it("continues with the next write and leaves nothing pending after a failed write", async () => {
+    const { session, fileSystem, writes, changes, emit } =
+      await startWithFileSystem();
+
+    const failing = session.writeFile("src/main.ts", "first");
+    const failed = expect(failing).rejects.toThrow("disk full");
+    await settle();
+    const following = session.writeFile("src/main.ts", "second");
+    writes[0]?.fail(new Error("disk full"));
+    await failed;
+    await settle();
+    writes[1]?.finish();
+    await following;
+    fileSystem.set("src/main.ts", "changed by a command");
+    emit("src/main.ts");
+    await settle();
+
+    expect(changes).toEqual([
+      { kind: "write", path: "src/main.ts", contents: "changed by a command" },
+    ]);
+    await session.dispose();
   });
 });
