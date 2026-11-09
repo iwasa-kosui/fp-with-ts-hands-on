@@ -225,9 +225,9 @@ const expectedExercises = [
       minutes: 6,
       pickCount: 2,
       questions: [
-        "予約なしと状態不正は、異なる `kind` を持つ `Err` になっていますか。",
-        "`andThen` は、失敗後の状態遷移と保存を実行しない構造になっていますか。",
-        "Web側は業務エラーを `kind` で網羅し、未対応の種類を型エラーにできますか。",
+        "すり抜けた変更は何を変えたのか",
+        "その変更を検出するには何を足せばよいか",
+        "足した仕組みで誤検知は出ないか",
       ],
     },
   },
@@ -377,7 +377,7 @@ describe("page-owned session contracts", () => {
 
     const finalEpisode = sessions.find(({ slug }) => slug === "final")?.episode;
     expect(finalEpisode).toEqual([
-      "S00 で飼い主がもう一度請求された猫の Mugi は、とっくに帰宅しました。",
+      "S00 で飼い主がもう一度請求された犬の Mugi は、とっくに帰宅しました。",
       "開発者は、直した形が大きなコードでも保たれているかを確かめるため、参照実装の前に残っています。",
       "事故が消えたわけではありません。事故ごとに、防ぐ場所が決まりました。",
     ]);
