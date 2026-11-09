@@ -1,11 +1,14 @@
-import { padEndWidth, stringWidth, wrapByWidth } from "./text.mjs";
+import { stringWidth, wrapByWidth } from "./text.mjs";
 
 /** @typedef {import("./model.mjs").Cell} Cell */
 /** @typedef {import("./model.mjs").GuardResult} GuardResult */
 /** @typedef {import("./model.mjs").Row} Row */
 
-const maxWidth = 78;
-const separator = " | ";
+const maxWidth = 59;
+const minWidth = 24;
+const columnsMargin = 2;
+const peerCaseId = "R1-peer-change";
+const cellsIndent = 6;
 const red = (/** @type {string} */ line) => `\u001b[31m${line}\u001b[0m`;
 
 /**
@@ -40,68 +43,72 @@ const verdictText = (row) =>
 
 /**
  * @param {Row} row
- * @returns {readonly string[]}
+ * @returns {string}
  */
-const bodyCells = (row) => [
-  row.title,
-  cellText(row.cells.types),
-  cellText(row.cells.lint),
-  cellText(row.cells.tests),
-  verdictText(row),
-];
+const cellsText = (row) =>
+  `型のテスト ${cellText(row.cells.types)} / Linter ${cellText(row.cells.lint)} / テスト ${cellText(row.cells.tests)}`;
 
 /**
- * @param {readonly (readonly string[])[]} tables
- * @returns {readonly number[]}
+ * @param {number | undefined} columns
+ * @returns {number}
  */
-const columnWidths = (tables) => {
-  const fixed = [1, 2, 3, 4].map((index) =>
-    Math.max(...tables.map((cells) => stringWidth(cells[index] ?? ""))),
-  );
-  const natural = Math.max(...tables.map((cells) => stringWidth(cells[0] ?? "")));
-  return [
-    Math.min(natural, maxWidth - fixed.reduce((sum, width) => sum + width, 0) - separator.length * 4),
-    ...fixed,
-  ];
-};
+const wrapWidthFor = (columns) =>
+  columns !== undefined && Number.isInteger(columns) && columns > 0
+    ? Math.min(maxWidth, Math.max(minWidth, columns - columnsMargin))
+    : maxWidth;
 
 /**
- * @param {string} label
- * @param {readonly Row[]} rows
- * @param {readonly number[]} widths
- * @param {boolean} color
- * @returns {readonly string[]}
- */
-const renderTable = (label, rows, widths, color) => {
-  /** @param {readonly string[]} cells @returns {string} */
-  const line = (cells) =>
-    cells
-      .map((cell, index) => padEndWidth(cell, widths[index] ?? 0))
-      .join(separator)
-      .trimEnd();
-  const rowLines = rows.flatMap((row) => {
-    const cells = bodyCells(row);
-    const lines = wrapByWidth(row.title, widths[0] ?? 0).map((title, lineIndex) =>
-      line(lineIndex === 0 ? [title, ...cells.slice(1)] : [title, "", "", "", ""]),
-    );
-    return color && row.verdict === "falsePositive" ? lines.map(red) : lines;
-  });
-  return [
-    line([label, "型のテスト", "Linter", "テスト", "結果"]),
-    widths.map((width) => "-".repeat(width)).join("-+-"),
-    ...rowLines,
-  ];
-};
-
-/**
+ * @param {number} width
  * @param {string} prefix
  * @param {string} text
  * @returns {readonly string[]}
  */
-const wrapWithPrefix = (prefix, text) =>
-  wrapByWidth(text, maxWidth - stringWidth(prefix)).map(
+const wrapWithPrefix = (width, prefix, text) =>
+  wrapByWidth(text, width - stringWidth(prefix)).map(
     (line, index) => (index === 0 ? prefix : " ".repeat(stringWidth(prefix))) + line,
   );
+
+/**
+ * @param {number} width
+ * @param {string} label
+ * @param {readonly Row[]} rows
+ * @param {boolean} color
+ * @returns {readonly string[]}
+ */
+const renderSection = (width, label, rows, color) => [
+  ...wrapWithPrefix(width, "", label),
+  ...rows.flatMap((row) => {
+    const lines = [
+      ...wrapWithPrefix(width, `[${verdictText(row)}] `, row.title),
+      ...wrapWithPrefix(width, " ".repeat(cellsIndent), cellsText(row)),
+    ];
+    return color && row.verdict === "falsePositive" ? lines.map(red) : lines;
+  }),
+];
+
+/**
+ * @param {number} width
+ * @param {readonly Row[]} bad
+ * @param {boolean} color
+ * @returns {readonly string[]}
+ */
+const badSections = (width, bad, color) => {
+  const peer = bad.filter((row) => row.id === peerCaseId);
+  const optional = bad.filter((row) => row.id !== peerCaseId && !row.required);
+  const required = bad.filter((row) => row.id !== peerCaseId && row.required);
+  return optional.length === 0 && peer.length === 0
+    ? renderSection(width, "誤った変更", bad, color)
+    : [
+        { label: "必須の誤った変更", rows: required },
+        { label: "任意の誤った変更（時間に余裕がある場合に取り組みます）", rows: optional },
+        { label: "相互レビューで使う行", rows: peer },
+      ]
+        .filter(({ rows }) => rows.length > 0)
+        .flatMap(({ label, rows }, index) => [
+          ...(index === 0 ? [] : [""]),
+          ...renderSection(width, label, rows, color),
+        ]);
+};
 
 /**
  * @param {number} seconds
@@ -117,41 +124,41 @@ const headline = (result) => {
   const required = result.rows.filter((row) => row.kind === "bad" && row.required);
   const detected = required.filter((row) => row.verdict === "detected");
   return result.passed
-    ? "結果: 合格です"
-    : `結果: まだ合格していません（必須の誤った変更 ${required.length} 件のうち ${detected.length} 件を検出）`;
+    ? "合格です"
+    : `まだ合格していません（必須の誤った変更 ${required.length} 件のうち ${detected.length} 件を検出）`;
 };
 
 /**
  * @param {GuardResult} result
- * @param {Readonly<{ color: boolean }>} options
+ * @param {Readonly<{ color: boolean, columns?: number | undefined }>} options
  * @returns {string}
  */
-export const render = (result, { color }) => {
+export const render = (result, { color, columns }) => {
+  const width = wrapWidthFor(columns);
   const bad = result.rows.filter((row) => row.kind === "bad");
   const good = result.rows.filter((row) => row.kind === "good");
   const { durations } = result;
-  const widths = columnWidths([
-    ["誤った変更", "型のテスト", "Linter", "テスト", "結果"],
-    ["正しいコード", "", "", "", ""],
-    ...result.rows.map(bodyCells),
-  ]);
   return [
-    ...wrapByWidth(headline(result), maxWidth),
+    ...wrapWithPrefix(width, "結果: ", headline(result)),
     "",
-    ...renderTable("誤った変更", bad, widths, color),
+    ...badSections(width, bad, color),
     "",
-    ...renderTable("正しいコード", good, widths, color),
+    ...renderSection(width, "正しいコード", good, color),
     "",
     "次にすること",
-    ...result.next.flatMap((sentence, index) => wrapWithPrefix(`${index + 1}. `, sentence)),
+    ...result.next.flatMap((sentence, index) => wrapWithPrefix(width, `${index + 1}. `, sentence)),
     ...(result.problems.length > 0
-      ? ["", "問題", ...result.problems.flatMap((problem) => wrapWithPrefix("- ", problem))]
+      ? ["", "問題", ...result.problems.flatMap((problem) => wrapWithPrefix(width, "- ", problem))]
       : []),
     ...(result.notes.length > 0
-      ? ["", "補足", ...result.notes.flatMap((note) => wrapWithPrefix("- ", note))]
+      ? ["", "補足", ...result.notes.flatMap((note) => wrapWithPrefix(width, "- ", note))]
       : []),
     "",
-    `所要: 型 ${secondsText(durations.types)} / Linter ${secondsText(durations.lint)} / テスト ${secondsText(durations.tests)} / 合計 ${secondsText(durations.total)}`,
+    ...wrapWithPrefix(
+      width,
+      "所要: ",
+      `全体 ${secondsText(durations.total)}（型 ${secondsText(durations.types)}、Linter ${secondsText(durations.lint)}。テスト ${secondsText(durations.tests)} は並行して実行）`,
+    ),
     "",
   ].join("\n");
 };

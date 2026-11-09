@@ -1,5 +1,6 @@
 ---
 import { Code } from "astro:components";
+import { answerNoteFor } from "./answer-notes";
 
 interface Props {
   files: Readonly<Record<string, string>>;
@@ -9,6 +10,7 @@ const { files } = Astro.props;
 const entries = Object.entries(files).sort(([left], [right]) =>
   left.localeCompare(right),
 );
+const slug = Astro.url.pathname.match(/\/sessions\/([^/]+)\//)?.[1];
 const languageOf = (path: string) => (path.endsWith(".mjs") ? "js" : "ts");
 ---
 
@@ -26,6 +28,9 @@ const languageOf = (path: string) => (path.endsWith(".mjs") ? "js" : "ts");
         entries.map(([path, source]) => (
           <figure>
             <figcaption>{path}</figcaption>
+            {answerNoteFor(slug, path) === undefined ? null : (
+              <p class="guard-answer__note">{answerNoteFor(slug, path)}</p>
+            )}
             <Code code={source} lang={languageOf(path)} />
           </figure>
         ))

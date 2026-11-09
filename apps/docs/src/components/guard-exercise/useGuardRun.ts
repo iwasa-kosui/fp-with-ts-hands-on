@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  guardCommand,
-  guardCommandSize,
+  guardCommandFor,
   guardPaths,
 } from "../../code-explorer/guard-paths";
 import {
@@ -188,10 +187,11 @@ export const useGuardRun = ({
         let parsed: GuardResult | undefined;
         let exitCode: number | undefined;
         try {
+          const launch = guardCommandFor(session.currentSize?.());
           exitCode = await runCommand(
-            guardCommand.command,
-            guardCommand.args,
-            guardCommandSize,
+            launch.command,
+            launch.args,
+            launch.size,
             { timeoutMs: guardCommandTimeoutMs },
           );
           if (

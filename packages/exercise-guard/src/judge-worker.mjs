@@ -6,9 +6,10 @@ import { render } from "./render.mjs";
 /**
  * @param {string} root
  * @param {boolean} color
+ * @param {number | undefined} columns
  * @returns {Promise<number>}
  */
-const main = async (root, color) => {
+const main = async (root, color, columns) => {
   try {
     const result = await judge({
       root,
@@ -16,7 +17,7 @@ const main = async (root, color) => {
         parentPort?.postMessage({ type: "vitest", pid });
       },
     });
-    process.stdout.write(render(result, { color }));
+    process.stdout.write(render(result, { color, columns }));
     return result.passed ? 0 : 1;
   } catch (error) {
     if (error instanceof GuardConfigError) {
@@ -27,4 +28,4 @@ const main = async (root, color) => {
   }
 };
 
-parentPort?.postMessage({ type: "done", code: await main(String(workerData.root), workerData.color === true) });
+parentPort?.postMessage({ type: "done", code: await main(String(workerData.root), workerData.color === true, typeof workerData.columns === "number" ? workerData.columns : undefined) });

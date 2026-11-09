@@ -275,6 +275,51 @@ describe("TerminalPanel", () => {
     expect(host.querySelector('[data-action="retry-terminal"]')).toBeNull();
   });
 
+  describe("while preparing with a previous output", () => {
+    const neverStarts = (): TerminalPanelProps["runnerFactory"] => () => ({
+      start: (request) =>
+        new Promise<TerminalSession>((_resolve, reject) => {
+          request.signal.addEventListener(
+            "abort",
+            () => reject(request.signal.reason),
+            { once: true },
+          );
+        }),
+    });
+    const note =
+      "前回の出力は残っています。ターミナルだけを準備しています。準備をやめても、前回の出力と結果は消えません。";
+
+    it("tells that the previous output stays, and keeps it after the preparation is cancelled", async () => {
+      const view = createView();
+      const onOutput = vi.fn();
+      const host = await renderPanel({
+        runnerFactory: neverStarts(),
+        loadTerminalView: async () => view,
+        restoredOutput: "前回の出力\r\n",
+        onOutput,
+      });
+      await act(async () => undefined);
+      await clickAction(host, "start-terminal");
+
+      expect(host.querySelector(".code-explorer__terminal-status")?.textContent).toContain(note);
+
+      await clickAction(host, "cancel-terminal");
+      await act(async () => undefined);
+
+      expect(host.textContent).not.toContain(note);
+      expect(host.textContent).toContain("前回の出力です。");
+      expect(view.dispose).not.toHaveBeenCalled();
+      expect(view.write).toHaveBeenCalledWith("前回の出力\r\n", expect.anything());
+    });
+
+    it("does not tell it when there is no previous output", async () => {
+      const host = await renderPanel({ runnerFactory: neverStarts() });
+      await clickAction(host, "start-terminal");
+
+      expect(host.textContent).not.toContain(note);
+    });
+  });
+
   it.each([
     [
       "booting",
@@ -529,6 +574,57 @@ describe("TerminalPanel controller", () => {
     expect(host.querySelector("[data-state]")?.getAttribute("data-state")).toBe(
       "ready",
     );
+  });
+
+  it("passes the fitted view size to the session before returning it", async () => {
+    const session = createSession();
+    const view = createView();
+    vi.mocked(view.fit).mockReturnValue({ cols: 58, rows: 20 });
+    const { ref } = await renderWithController({
+      runnerFactory: () => ({ start: async () => session }),
+      loadTerminalView: async () => view,
+    });
+
+    let resizedBeforeReturn: boolean | undefined;
+    await act(async () => {
+      void ref.current?.ensureSession().then(() => {
+        resizedBeforeReturn = vi
+          .mocked(session.resize)
+          .mock.calls.some(([size]) => size.cols === 58 && size.rows === 20);
+      });
+    });
+    for (let attempt = 0; attempt < 50 && resizedBeforeReturn === undefined; attempt += 1) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      });
+    }
+
+    expect(resizedBeforeReturn).toBe(true);
+  });
+
+  it("does not resize the session when the view cannot measure its size", async () => {
+    const session = createSession();
+    const view = createView();
+    vi.mocked(view.fit).mockReturnValue(undefined);
+    const { ref } = await renderWithController({
+      runnerFactory: () => ({ start: async () => session }),
+      loadTerminalView: async () => view,
+    });
+
+    let returned = false;
+    await act(async () => {
+      void ref.current?.ensureSession().then(() => {
+        returned = true;
+      });
+    });
+    for (let attempt = 0; attempt < 50 && !returned; attempt += 1) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      });
+    }
+
+    expect(returned).toBe(true);
+    expect(session.resize).not.toHaveBeenCalled();
   });
 
   it("returns the running session without starting another", async () => {

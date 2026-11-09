@@ -118,6 +118,7 @@ export const GuardLayout = ({
           casePath={(id) => casePathFor(paths, id)}
           selectedPath={parts.selectedPath}
           disabled={parts.locked}
+          showPeerNote={guide?.passedNext === undefined}
           onSelect={parts.selectPath}
         />
         {children === undefined ? null : (

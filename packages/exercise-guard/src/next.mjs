@@ -6,6 +6,7 @@ import { mechanisms, mechanismNames } from "./model.mjs";
 /** @typedef {import("./model.mjs").Row} Row */
 
 const maxSlipped = 3;
+const peerCaseId = "R1-peer-change";
 
 /**
  * @param {readonly Mechanism[]} list
@@ -67,20 +68,30 @@ const slippedSentence = (row) => {
 };
 
 /**
+ * @param {number} optionalRemaining
+ * @returns {string}
+ */
+const passedSentence = (optionalRemaining) =>
+  `必須の誤った変更はすべて検出しました。${optionalRemaining > 0 ? `任意の誤った変更の残り ${optionalRemaining} 件は、時間に余裕がある場合に取り組みます。` : ""}画面の表で行の題名の ▶ を押し、少なくとも 1 つの行に「この仕組みで検出できないこと」を 1 文で記入します。`;
+
+/**
  * @param {Readonly<{ rows: readonly Row[], problems: readonly Problem[], stageOpened: number, passed: boolean, typesAllowed?: boolean }>} input
  * @returns {readonly string[]}
  */
 export const buildNext = ({ rows, problems, stageOpened, passed, typesAllowed = true }) => {
   const fixes = [...new Set(problems.map((problem) => problem.fix))];
   const slipped = rows
-    .filter((row) => row.kind === "bad" && row.verdict === "slipped")
+    .filter((row) => row.kind === "bad" && row.id !== peerCaseId && row.verdict === "slipped")
     .sort((left, right) => Number(right.required) - Number(left.required))
     .slice(0, maxSlipped);
+  const optionalRemaining = rows.filter(
+    (row) => row.kind === "bad" && !row.required && row.id !== peerCaseId && (row.verdict === "slipped" || row.verdict === "undetermined"),
+  ).length;
   const noAllowedDetection = rows.every(
     (row) => row.kind !== "bad" || mechanisms.every((mechanism) => !row.allow.includes(mechanism) || row.cells[mechanism].count === 0),
   );
   return [
-    ...(passed ? ["合格です。表の行を開いて、この仕組みで検出できないことを書きます。"] : []),
+    ...(passed ? [passedSentence(optionalRemaining)] : []),
     ...fixes,
     ...(noAllowedDetection && problems.length === 0
       ? [

@@ -1,4 +1,5 @@
 import { Fragment, useRef, useState } from "react";
+import { guardPeerCaseId } from "../../code-explorer/guard-paths";
 import {
   guardMechanisms,
   type GuardResult,
@@ -7,12 +8,18 @@ import {
   cellText,
   headlineFor,
   mechanismHeaders,
+  nextTextForWeb,
+  optionalGroupHeading,
+  peerGroupHeading,
+  peerRowNote,
+  requiredGroupHeading,
   secondsText,
   tableTermsSummary,
   tableTermsText,
   verdictText,
   type DisplayRow,
 } from "./labels";
+import { RowTitle } from "./RowTitle";
 
 export type ResultTableProps = Readonly<{
   result: GuardResult;
@@ -25,6 +32,8 @@ export type ResultTableProps = Readonly<{
 }>;
 
 const columnCount = guardMechanisms.length + 2;
+
+type RowGroup = "required" | "optional" | "peer";
 
 export const ResultTable = ({
   result,
@@ -39,32 +48,54 @@ export const ResultTable = ({
   const termsTextRef = useRef<HTMLParagraphElement>(null);
   const badRows = rows.filter(({ kind }) => kind === "bad");
   const goodRows = rows.filter(({ kind }) => kind === "good");
+  const peerRows = badRows.filter(({ id }) => id === guardPeerCaseId);
+  const optionalRows = badRows.filter(
+    ({ id, required }) => id !== guardPeerCaseId && !required,
+  );
+  const requiredRows = badRows.filter(
+    ({ id, required }) => id !== guardPeerCaseId && required,
+  );
+  const grouped = optionalRows.length > 0 || peerRows.length > 0;
 
-  const renderRows = (list: readonly DisplayRow[]) =>
+  const renderRows = (list: readonly DisplayRow[], group?: RowGroup) =>
     list.map((row) => {
       const isBad = row.kind === "bad";
-      const isOpen = isBad && openId === row.id;
+      const editable = isBad && group !== "peer";
+      const isOpen = editable && openId === row.id;
       const written = (limitations[row.id] ?? "").trim() !== "";
       return (
         <Fragment key={row.id}>
-        <tr data-row-id={row.id} data-verdict={row.verdict ?? "unchecked"}>
+        <tr
+          data-row-id={row.id}
+          data-verdict={row.verdict ?? "unchecked"}
+          data-group={group}
+        >
           <th scope="row">
-            {isBad ? (
+            {editable ? (
               <button
                 type="button"
                 data-action="toggle-row"
                 aria-expanded={isOpen}
                 onClick={() => setOpenId(isOpen ? undefined : row.id)}
               >
-                {row.title}
+                <span>
+                  <RowTitle title={row.title} />
+                </span>
               </button>
             ) : (
-              <span>{row.title}</span>
+              <span>
+                <RowTitle title={row.title} />
+              </span>
             )}
-            {isBad && written ? (
+            {editable && written ? (
               <span className="guard-exercise__written">
                 検出できないことを記入済み
               </span>
+            ) : null}
+            {group === "peer" &&
+            passedNext === undefined &&
+            row.verdict === "unchanged" ? (
+              <span className="guard-exercise__peer-note">{peerRowNote}</span>
             ) : null}
           </th>
           {guardMechanisms.map((mechanism) => (
@@ -72,7 +103,9 @@ export const ResultTable = ({
               key={mechanism}
               data-state={row.cells === undefined ? "none" : row.cells[mechanism].state}
             >
-              {row.cells === undefined ? "−" : cellText(row.cells[mechanism], row.kind)}
+              {row.cells === undefined || row.verdict === "unchanged"
+                ? "−"
+                : cellText(row.cells[mechanism], row.kind)}
             </td>
           ))}
           <td className="guard-exercise__verdict">
@@ -103,6 +136,24 @@ export const ResultTable = ({
       );
     });
 
+  const renderGroup = (
+    heading: string,
+    list: readonly DisplayRow[],
+    group: RowGroup,
+  ) =>
+    list.length === 0 ? null : (
+      <>
+        <tbody>
+          <tr className="guard-exercise__group">
+            <th colSpan={columnCount} scope="colgroup">
+              {heading}
+            </th>
+          </tr>
+        </tbody>
+        <tbody>{renderRows(list, group)}</tbody>
+      </>
+    );
+
   return (
     <div className="guard-exercise__table-area">
       <p
@@ -118,9 +169,16 @@ export const ResultTable = ({
       {result.next[0] !== undefined ? (
         <section className="guard-exercise__next" aria-label="次にすること">
           <h3>次にすること</h3>
-          <p>{result.passed && passedNext !== undefined ? passedNext : result.next[0]}</p>
+          <p>
+            {nextTextForWeb(
+              result.passed && passedNext !== undefined ? passedNext : result.next[0],
+            )}
+          </p>
         </section>
       ) : null}
+      <p className="guard-exercise__table-note">
+        「結果」の列は、「対象外」ではない列のどれか 1 つが検出すれば「検出」です。
+      </p>
       <table className="guard-exercise__table">
         <thead>
           <tr>
@@ -133,7 +191,15 @@ export const ResultTable = ({
             <th scope="col">結果</th>
           </tr>
         </thead>
-        <tbody>{renderRows(badRows)}</tbody>
+        {grouped ? (
+          <>
+            {renderGroup(requiredGroupHeading, requiredRows, "required")}
+            {renderGroup(optionalGroupHeading, optionalRows, "optional")}
+            {renderGroup(peerGroupHeading, peerRows, "peer")}
+          </>
+        ) : (
+          <tbody>{renderRows(badRows)}</tbody>
+        )}
         {goodRows.length > 0 ? (
           <>
             <tbody>
@@ -148,9 +214,11 @@ export const ResultTable = ({
         ) : null}
       </table>
       <div className="guard-exercise__limits">
-        <p className="guard-exercise__limits-note">
-          表の行の題名を押すと開く「この仕組みで検出できないこと」の欄は、プログラムでは判定しません。
-        </p>
+        {result.passed && passedNext === undefined ? (
+          <p className="guard-exercise__limits-note">
+            行の題名の ▶ を押すと開く「この仕組みで検出できないこと」の欄に、表の少なくとも 1 つの行で 1 文を記入します。記入の内容はプログラムでは判定しません。
+          </p>
+        ) : null}
         <details
           className="guard-exercise__terms"
           onToggle={(event) => {
@@ -184,10 +252,10 @@ export const ResultTable = ({
         </section>
       ) : null}
       <p className="guard-exercise__durations">
-        所要: 型 {secondsText(result.durations.types)} / Linter{" "}
-        {secondsText(result.durations.lint)} / テスト{" "}
-        {secondsText(result.durations.tests)} / 合計{" "}
-        {secondsText(result.durations.total)}
+        所要: 全体 {secondsText(result.durations.total)}（型{" "}
+        {secondsText(result.durations.types)}、Linter{" "}
+        {secondsText(result.durations.lint)}。テスト{" "}
+        {secondsText(result.durations.tests)} は並行して実行）
       </p>
     </div>
   );

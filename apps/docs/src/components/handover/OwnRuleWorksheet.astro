@@ -11,6 +11,7 @@ const questions = [
   <div class="orw__group">
     <label class="orw__legend" for="own-rule-text">担当者の記憶にしかない業務ルール</label>
     <textarea class="orw__text" id="own-rule-text" rows="2" data-field="rule"></textarea>
+    <p class="orw__saved" role="status" data-saved></p>
   </div>
 
   {questions.map((question) => (
@@ -29,15 +30,19 @@ const questions = [
 </div>
 
 <script>
-  import { isMomentId, load, save } from "./own-rule-storage";
+  import { isMomentId, load, save, type Saved } from "./own-rule-storage";
 
   document.querySelectorAll<HTMLElement>("[data-own-rule]").forEach((root) => {
     const saved = load();
     const text = root.querySelector<HTMLTextAreaElement>("textarea[data-field='rule']");
+    const status = root.querySelector<HTMLElement>("[data-saved]");
+    const saveAndNotify = (next: Saved) => {
+      if (status) status.textContent = save(next) ? "このブラウザに保存しました。" : "";
+    };
     if (text) {
       text.value = saved.rule;
       text.addEventListener("input", () => {
-        save({ ...load(), rule: text.value });
+        saveAndNotify({ ...load(), rule: text.value });
       });
     }
     root.querySelectorAll<HTMLInputElement>("input[type='radio']").forEach((input) => {
@@ -45,7 +50,7 @@ const questions = [
       input.checked = saved[field] === input.value;
       input.addEventListener("change", () => {
         if (!input.checked || !isMomentId(input.value)) return;
-        save({ ...load(), [field]: input.value });
+        saveAndNotify({ ...load(), [field]: input.value });
       });
     });
   });
@@ -91,6 +96,13 @@ const questions = [
     font-size: 0.9375rem;
     line-height: 1.5;
     resize: vertical;
+  }
+
+  .orw__saved {
+    margin: 0.25rem 0 0;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    line-height: 1.4;
   }
 
   .orw__text:focus-visible {

@@ -125,7 +125,7 @@ describe("judge", () => {
     expect(result.hiddenCount).toBe(0);
     expect(result.problems).toEqual([]);
     expect(rowOf(result, "B5-any-result").cells.types.state).toBe("hit");
-    expect(result.next).toEqual(["合格です。表の行を開いて、この仕組みで検出できないことを書きます。"]);
+    expect(result.next).toEqual(["必須の誤った変更はすべて検出しました。画面の表で行の題名の ▶ を押し、少なくとも 1 つの行に「この仕組みで検出できないこと」を 1 文で記入します。"]);
     expect(result.durations.total).toBeGreaterThan(0);
     expect(result.testsTimedOut).toBe(false);
   });
@@ -454,19 +454,78 @@ describe("judge", () => {
     const after = await judge({ root: copied, eslintConfigFile, workDir: "dist/guard-unchanged-after" });
 
     expect(rowOf(after, "R1-peer-change").verdict).toBe("slipped");
-    expect(after.next.some((sentence) => sentence.includes("『相互レビューで作る誤った変更』は検出されていません。"))).toBe(true);
+    expect(after.next.some((sentence) => sentence.includes("『相互レビューで作る誤った変更』は検出されていません。"))).toBe(false);
     expect(after.passed).toBe(true);
   });
 });
 
 describe("render", () => {
-  it("78 桁以内で、止まったという言い方を使わない", async () => {
+  const withoutSpaces = (/** @type {string} */ text) => text.replace(/\s+/g, "");
+
+  it("59 桁以内で、止まったという言い方を使わない", async () => {
     const text = render(await scenario("empty"), { color: false });
 
     expect(text).toContain("未検出");
-    expect(text).toContain("結果: まだ合格していません（必須の誤った変更 4 件のうち 0 件を検出）");
+    expect(withoutSpaces(text)).toContain(
+      withoutSpaces("結果: まだ合格していません（必須の誤った変更 4 件のうち 0 件を検出）"),
+    );
     expect(text).not.toMatch(/止ま|止め|実行できない/);
-    expect(Math.max(...text.split("\n").map(stringWidth))).toBeLessThanOrEqual(78);
+    expect(Math.max(...text.split("\n").map(stringWidth))).toBeLessThanOrEqual(59);
+  });
+
+  it("columns に合わせて折り返し、幅は 24 以上 59 以下に収める", async () => {
+    const result = await scenario("empty");
+    /** @param {number | undefined} columns */
+    const widest = (columns) =>
+      Math.max(...render(result, { color: false, columns }).split("\n").map(stringWidth));
+
+    expect(widest(58)).toBeLessThanOrEqual(56);
+    expect(widest(200)).toBeLessThanOrEqual(59);
+    expect(widest(undefined)).toBeLessThanOrEqual(59);
+    expect(widest(10)).toBeLessThanOrEqual(24);
+    expect(render(result, { color: false, columns: 10 })).toBe(render(result, { color: false, columns: 26 }));
+    expect(render(result, { color: false, columns: 200 })).toBe(render(result, { color: false }));
+  });
+
+  it("1 件を 2 行で表示し、1 行目に結果の語と題名、2 行目に 3 つの仕組みの結果を置く", async () => {
+    const text = render(await scenario("pass"), { color: false });
+
+    expect(text).toMatch(/^\[検出\] .+\n {6}型のテスト .+ \/ Linter .+ \/ テスト .+$/m);
+    expect(text).toMatch(/^\[誤検知なし\] .+\n {6}型のテスト .+ \/ Linter .+ \/ テスト .+$/m);
+    expect(text).toContain("誤った変更\n");
+    expect(text).toContain("正しいコード\n");
+    expect(text).not.toContain(" | ");
+  });
+
+  it("任意の行と相互レビューの行があるときは、誤った変更を3つの節に分ける", async () => {
+    const passed = await scenario("pass");
+    const bad = passed.rows.filter((row) => row.kind === "bad");
+    const rows = passed.rows.map((row) =>
+      row.id === bad[1]?.id
+        ? { ...row, required: false }
+        : row.id === bad[2]?.id
+          ? { ...row, id: "R1-peer-change", required: false }
+          : row,
+    );
+    const lines = render({ ...passed, rows }, { color: false }).split("\n");
+    const headings = ["必須の誤った変更", "任意の誤った変更（時間に余裕がある場合に取り組みます）", "相互レビューで使う行"];
+    const positions = headings.map((heading) => lines.indexOf(heading));
+
+    expect(positions.every((position) => position >= 0)).toBe(true);
+    expect(positions).toEqual([...positions].sort((left, right) => left - right));
+    expect(lines).not.toContain("誤った変更");
+    expect(lines[Number(positions[1]) + 1]).toContain(String(bad[1]?.title));
+    expect(lines[Number(positions[2]) + 1]).toContain(String(bad[2]?.title));
+    expect(Math.max(...lines.map(stringWidth))).toBeLessThanOrEqual(59);
+  });
+
+  it("任意の行と相互レビューの行が無いときは、従来の見出し「誤った変更」のままにする", async () => {
+    const passed = await scenario("pass");
+    const rows = passed.rows.map((row) => ({ ...row, required: true }));
+    const lines = render({ ...passed, rows }, { color: false }).split("\n");
+
+    expect(lines).toContain("誤った変更");
+    expect(lines).not.toContain("必須の誤った変更");
   });
 
   it("行頭に句読点や閉じ括弧が来ない", async () => {
@@ -480,7 +539,7 @@ describe("render", () => {
 
     expect(text.split("\n")[0]).toBe("結果: 合格です");
     expect(text).toContain("次にすること");
-    expect(text).toMatch(/所要: 型 [\d.]+s \/ Linter [\d.]+s \/ テスト [\d.]+s \/ 合計 [\d.]+s/);
+    expect(withoutSpaces(text)).toMatch(/所要:全体[\d.]+s（型[\d.]+s、Linter[\d.]+s。テスト[\d.]+sは並行して実行）/);
   });
 
   it("color のときだけ誤検知の行を赤にする", async () => {

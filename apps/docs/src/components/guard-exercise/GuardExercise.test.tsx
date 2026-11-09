@@ -7,6 +7,7 @@ import type { GuardResult } from "../../code-explorer/guard-result";
 import { sampleGuardResult } from "../../code-explorer/guard-result.fixture";
 import type {
   TerminalSession,
+  TerminalSize,
   TerminalStartRequest,
 } from "../../code-explorer/runner";
 import { createIndexedDbWorkspaceStore } from "../../code-explorer/workspace-store";
@@ -75,6 +76,9 @@ type SessionOptions = Readonly<{
   exitCode?: number;
   resultText?: string | undefined;
   runCommand?: () => Promise<number>;
+  currentSize?: () => TerminalSize | undefined;
+  trackSize?: boolean;
+  fit?: () => TerminalSize | undefined;
   readResults?: readonly (string | undefined)[];
   outdatedEdits?: boolean;
   guide?: GuardGuide;
@@ -85,10 +89,18 @@ type SessionOptions = Readonly<{
 
 const createSession = (options: SessionOptions) => {
   let reads = 0;
+  let latestSize: TerminalSize | undefined;
   const session: TerminalSession = {
     writeInput: vi.fn(async () => undefined),
     writeFile: vi.fn(async () => undefined),
-    resize: vi.fn(),
+    resize: vi.fn((size: TerminalSize) => {
+      latestSize = size;
+    }),
+    ...(options.currentSize !== undefined
+      ? { currentSize: vi.fn(options.currentSize) }
+      : options.trackSize === true
+        ? { currentSize: vi.fn(() => latestSize) }
+        : {}),
     restartShell: vi.fn(async () => undefined),
     runCommand: vi.fn(options.runCommand ?? (async () => options.exitCode ?? 1)),
     readFile: vi.fn(async () => {
@@ -112,7 +124,7 @@ const mountExercise = async (options: SessionOptions = {}) => {
     open: vi.fn(),
     write: vi.fn(),
     onData: vi.fn(() => ({ dispose: vi.fn() })),
-    fit: vi.fn(() => ({ cols: 80, rows: 24 })),
+    fit: vi.fn(options.fit ?? (() => ({ cols: 80, rows: 24 }))),
     focus: vi.fn(),
     dispose: vi.fn(),
   };
@@ -610,6 +622,127 @@ describe("GuardExercise", () => {
     ]);
   });
 
+  describe("the groups of the bad rows in the table", () => {
+    const [requiredRow] = sampleGuardResult.rows;
+    const withRows = (extra: GuardResult["rows"]): GuardResult => ({
+      ...sampleGuardResult,
+      rows: [...sampleGuardResult.rows, ...extra],
+    });
+    const optionalRow = {
+      ...requiredRow!,
+      id: "B2-optional",
+      title: "任意の誤った変更",
+      required: false,
+    };
+    const peerRow = {
+      ...requiredRow!,
+      id: "R1-peer-change",
+      title: "相互レビューで作る誤った変更",
+      required: false,
+      verdict: "unchanged" as const,
+    };
+    const groupHeadings = (host: HTMLElement) =>
+      [...host.querySelectorAll(".guard-exercise__group th")].map(
+        (heading) => heading.textContent,
+      );
+
+    it("shows no heading above the bad rows when every bad row is required", async () => {
+      const { host } = await mountExercise();
+
+      await click(action(host, "run-guard"));
+
+      expect(groupHeadings(host)).toEqual(["正しいコード"]);
+    });
+
+    it("separates the required, optional and peer review rows with headings", async () => {
+      const { host } = await mountExercise({
+        resultText: JSON.stringify(withRows([optionalRow, peerRow])),
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(groupHeadings(host)).toEqual([
+        "必須の誤った変更",
+        "任意の誤った変更（時間に余裕がある場合に取り組みます）",
+        "相互レビューで使う行",
+        "正しいコード",
+      ]);
+      expect(row(host, "B2-optional")?.getAttribute("data-group")).toBe("optional");
+      expect(row(host, "R1-peer-change")?.getAttribute("data-group")).toBe("peer");
+    });
+
+    it("shows a dash in the three columns of an unchanged row and tells the exercise page that the row is for the next page", async () => {
+      const { host } = await mountExercise({
+        resultText: JSON.stringify(withRows([peerRow])),
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(
+        [...(row(host, "R1-peer-change")?.querySelectorAll("td[data-state]") ?? [])].map(
+          (cell) => cell.textContent,
+        ),
+      ).toEqual(["−", "−", "−"]);
+      expect(row(host, "R1-peer-change")?.querySelector(".guard-exercise__peer-note")?.textContent).toBe(
+        "次のページの相互レビューで使います。この演習での操作は不要です。",
+      );
+    });
+
+    it("shows the title of the peer row as text without a button, an arrow or a field to write in", async () => {
+      const { host } = await mountExercise({
+        resultText: JSON.stringify(withRows([optionalRow, peerRow])),
+      });
+
+      await click(action(host, "run-guard"));
+
+      const peer = row(host, "R1-peer-change");
+      expect(peer?.querySelector("th button")).toBeNull();
+      expect(peer?.querySelector("th")?.textContent).toContain("相互レビューで作る誤った変更");
+      expect(row(host, "B2-optional")?.querySelector('th button[data-action="toggle-row"]')).not.toBeNull();
+    });
+
+    it("lists the rows in the left list under the same three headings and shows the note under the unchanged peer row", async () => {
+      const { host } = await mountExercise({
+        resultText: JSON.stringify(withRows([optionalRow, peerRow])),
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(
+        [...host.querySelectorAll(".guard-exercise__cases h4")].map((heading) => heading.textContent),
+      ).toEqual([
+        "必須の誤った変更",
+        "任意の誤った変更（時間に余裕がある場合に取り組みます）",
+        "相互レビューで使う行",
+      ]);
+      expect(
+        host.querySelector('.guard-exercise__cases li:has([data-case-id="R1-peer-change"]) .guard-exercise__peer-note')
+          ?.textContent,
+      ).toBe("次のページの相互レビューで使います。この演習での操作は不要です。");
+    });
+
+    it("does not show the note about the next page once the peer row is no longer unchanged", async () => {
+      const { host } = await mountExercise({
+        resultText: JSON.stringify(withRows([{ ...peerRow, verdict: "slipped" as const }])),
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(row(host, "R1-peer-change")?.querySelector(".guard-exercise__peer-note")).toBeNull();
+    });
+
+    it("does not show the note about the next page when the guide gives the next step", async () => {
+      const { host } = await mountExercise({
+        resultText: JSON.stringify(withRows([peerRow])),
+        guide: { title: "案内", passedNext: "別の次の操作です。", steps: ["手順です。"] },
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(row(host, "R1-peer-change")?.querySelector(".guard-exercise__peer-note")).toBeNull();
+    });
+  });
+
   describe("the next step after a pass", () => {
     const passedResult: GuardResult = {
       ...sampleGuardResult,
@@ -644,6 +777,63 @@ describe("GuardExercise", () => {
       await click(action(host, "run-guard"));
 
       expect(nextText(host)).toBe("別の次の操作です。");
+    });
+
+    const limitsNote = (host: HTMLElement) =>
+      host.querySelector(".guard-exercise__limits-note")?.textContent;
+    const tableNote = (host: HTMLElement) =>
+      host.querySelector(".guard-exercise__table-note");
+    const detectionSentence =
+      "「結果」の列は、「対象外」ではない列のどれか 1 つが検出すれば「検出」です。";
+    const writingSentence =
+      "行の題名の ▶ を押すと開く「この仕組みで検出できないこと」の欄に、表の少なくとも 1 つの行で 1 文を記入します。記入の内容はプログラムでは判定しません。";
+
+    it("puts the sentence about the result column right before the table", async () => {
+      const { host } = await mountExercise();
+
+      await click(action(host, "run-guard"));
+
+      expect(tableNote(host)?.textContent).toBe(detectionSentence);
+      expect(tableNote(host)?.nextElementSibling).toBe(
+        host.querySelector(".guard-exercise__table"),
+      );
+      expect(tableNote(host)?.previousElementSibling?.className).toBe(
+        "guard-exercise__next",
+      );
+    });
+
+    it("puts the sentence about writing under limitations in the note below the table when the exercise page has passed", async () => {
+      const { host } = await mountExercise({
+        exitCode: 0,
+        resultText: JSON.stringify(passedResult),
+        guide: { title: "案内", steps: ["手順です。"] },
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(limitsNote(host)).toBe(writingSentence);
+      expect(tableNote(host)?.textContent).toBe(detectionSentence);
+    });
+
+    it("shows no note below the table when the guard has not passed", async () => {
+      const { host } = await mountExercise();
+
+      await click(action(host, "run-guard"));
+
+      expect(limitsNote(host)).toBeUndefined();
+    });
+
+    it("shows no note below the table when the guide gives the next step", async () => {
+      const { host } = await mountExercise({
+        exitCode: 0,
+        resultText: JSON.stringify(passedResult),
+        guide: { title: "案内", passedNext: "別の次の操作です。", steps: ["手順です。"] },
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(limitsNote(host)).toBeUndefined();
+      expect(tableNote(host)?.textContent).toBe(detectionSentence);
     });
 
     it("keeps the sentence from the result while the guard has not passed", async () => {
@@ -707,7 +897,7 @@ describe("GuardExercise", () => {
 
     expect(session.runCommand).toHaveBeenCalledWith(
       "node",
-      ["vendor/exercise-guard/cli.mjs"],
+      ["vendor/exercise-guard/cli.mjs", "--columns", "58"],
       { cols: 80, rows: 24 },
       { timeoutMs: expect.any(Number) },
     );
@@ -732,6 +922,69 @@ describe("GuardExercise", () => {
     expect(
       host.querySelector('[data-case-id="B1-any-parser"]')?.getAttribute("data-verdict"),
     ).toBe("slipped");
+  });
+
+  it("passes the terminal's actual columns to the guard command and the spawn size", async () => {
+    const { host, session } = await mountExercise({
+      currentSize: () => ({ cols: 58, rows: 20 }),
+    });
+
+    await click(action(host, "run-guard"));
+
+    expect(session.runCommand).toHaveBeenCalledWith(
+      "node",
+      ["vendor/exercise-guard/cli.mjs", "--columns", "58"],
+      { cols: 58, rows: 20 },
+      { timeoutMs: expect.any(Number) },
+    );
+  });
+
+  it("uses the fitted terminal size already on the first run", async () => {
+    const { host, session } = await mountExercise({
+      trackSize: true,
+      fit: () => ({ cols: 58, rows: 20 }),
+    });
+
+    await click(action(host, "run-guard"));
+
+    expect(session.runCommand).toHaveBeenCalledWith(
+      "node",
+      ["vendor/exercise-guard/cli.mjs", "--columns", "58"],
+      { cols: 58, rows: 20 },
+      { timeoutMs: expect.any(Number) },
+    );
+  });
+
+  it("falls back to 58 columns when the terminal view cannot measure its size", async () => {
+    const { host, session } = await mountExercise({
+      trackSize: true,
+      fit: () => undefined,
+    });
+
+    await click(action(host, "run-guard"));
+
+    expect(session.resize).not.toHaveBeenCalled();
+    expect(session.runCommand).toHaveBeenCalledWith(
+      "node",
+      ["vendor/exercise-guard/cli.mjs", "--columns", "58"],
+      { cols: 80, rows: 24 },
+      { timeoutMs: expect.any(Number) },
+    );
+  });
+
+  it("falls back to 58 columns when the session cannot tell the terminal size", async () => {
+    const { host, session } = await mountExercise({
+      currentSize: () => undefined,
+    });
+
+    await click(action(host, "run-guard"));
+
+    expect(session.runCommand).toHaveBeenCalledWith(
+      "node",
+      ["vendor/exercise-guard/cli.mjs", "--columns", "58"],
+      { cols: 80, rows: 24 },
+      { timeoutMs: expect.any(Number) },
+    );
   });
 
   it("keeps the run button disabled with a reason until the outdated edits notice is answered", async () => {
@@ -1049,9 +1302,6 @@ describe("GuardExercise", () => {
       second.host.querySelector<HTMLTextAreaElement>(".guard-exercise__detail textarea")
         ?.value,
     ).toBe("別の書き方は検出できない");
-    expect(second.host.textContent).toContain(
-      "プログラムでは判定しません",
-    );
   });
 
   describe("when the tab is hidden during a run", () => {

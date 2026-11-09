@@ -1,4 +1,7 @@
+import type { TerminalSize } from "./runner";
 import type { ProjectFiles } from "./types";
+
+export const guardPeerCaseId = "R1-peer-change";
 
 export const guardPaths = {
   config: "exercises/guard/guard.config.mjs",
@@ -6,7 +9,7 @@ export const guardPaths = {
   subjects: "exercises/guard/subjects/",
   mine: "exercises/guard/mine/",
   answer: "exercises/guard/answer/",
-  peerCase: "exercises/guard/cases/R1-peer-change.ts",
+  peerCase: `exercises/guard/cases/${guardPeerCaseId}.ts`,
   eslintConfig: "eslint.config.mjs",
   result: "dist/guard/result.json",
 } as const;
@@ -17,6 +20,31 @@ export const guardCommand = {
 } as const;
 
 export const guardCommandSize = { cols: 80, rows: 24 } as const;
+
+export const guardUnmeasuredColumns = 58;
+
+export const guardCommandFor = (
+  size: TerminalSize | undefined,
+): Readonly<{
+  command: string;
+  args: readonly string[];
+  size: TerminalSize;
+}> =>
+  size === undefined
+    ? {
+        command: guardCommand.command,
+        args: [
+          ...guardCommand.args,
+          "--columns",
+          String(guardUnmeasuredColumns),
+        ],
+        size: guardCommandSize,
+      }
+    : {
+        command: guardCommand.command,
+        args: [...guardCommand.args, "--columns", String(size.cols)],
+        size,
+      };
 
 export type GuardBehaviorPart = Readonly<{ text: string; value?: string }>;
 
@@ -76,10 +104,14 @@ export const guardAnswerDisplayFiles = (
   projectFiles: ProjectFiles,
 ): ProjectFiles =>
   Object.fromEntries(
-    Object.entries(guardAnswerFiles(projectFiles)).map(([path, source]) => [
-      answerDisplayPath(path),
-      answerDisplaySource(source),
-    ]),
+    Object.entries(guardAnswerFiles(projectFiles))
+      .map(([path, source]) => [
+        answerDisplayPath(path),
+        answerDisplaySource(source),
+      ])
+      .filter(
+        ([displayPath, source]) => projectFiles[displayPath] !== source,
+      ),
   );
 
 export const casePathFor = (

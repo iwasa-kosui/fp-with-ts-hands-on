@@ -16,10 +16,26 @@ export const mechanismHeaders: Readonly<Record<GuardMechanism, string>> = {
   tests: "テスト",
 };
 
+export const requiredGroupHeading = "必須の誤った変更";
+
+export const optionalGroupHeading =
+  "任意の誤った変更（時間に余裕がある場合に取り組みます）";
+
+export const peerGroupHeading = "相互レビューで使う行";
+
+export const nextTextForWeb = (text: string): string =>
+  text.replace("画面の表で行の題名", "表の行の題名");
+
+export const titleSegments = (title: string): readonly string[] =>
+  title.split(/(?<=[/.])/);
+
+export const peerRowNote =
+  "次のページの相互レビューで使います。この演習での操作は不要です。";
+
 export const tableTermsSummary = "表の言葉";
 
 export const tableTermsText =
-  "「誤検知」は、正しいコードを誤った変更として検出することで、Linter のルールかテストの対象が広すぎると発生します。「対象外」は、その誤った変更では数えない仕組みです。「未検出」は、誤った変更を仕組みが検出していないことを表します。型、Linter、テストの列はその列の仕組みについて、「結果」の列は数える対象の仕組みのどれも検出しなかったことを表します。「未判定」は、検査が完了せず判定できなかったことを表します。「なし」は正しいコードの行で、その列に誤検知がないこと（良い状態）を表します。";
+  "「誤検知」は、正しいコードを誤った変更として検出することで、Linter のルールかテストの対象が広すぎると発生します。「対象外」は、その誤った変更では数えない仕組みです。「未検出」は、誤った変更を仕組みが検出していないことを表します。型、Linter、テストの列はその列の仕組みについて、「結果」の列は「対象外」ではない列のどれも検出しなかったことを表します。「未判定」は、検査が完了せず判定できなかったことを表します。「なし」は正しいコードの行で、その列に誤検知がないこと（良い状態）を表します。";
 
 export const cellText = (cell: GuardCell, kind: GuardRow["kind"]): string =>
   cell.state === "hit"
@@ -51,6 +67,7 @@ export type DisplayRow = Readonly<{
   id: string;
   kind: "bad" | "good";
   title: string;
+  required: boolean;
   hint: string;
   cells: GuardRow["cells"] | undefined;
   verdict: GuardVerdict | undefined;
@@ -70,10 +87,11 @@ export const displayRowsFor = (
   cases: readonly GuardCaseInfo[],
 ): readonly DisplayRow[] =>
   result !== undefined
-    ? result.rows.map(({ id, kind, title, hint, cells, verdict }) => ({
+    ? result.rows.map(({ id, kind, title, required, hint, cells, verdict }) => ({
         id,
         kind,
         title,
+        required,
         hint,
         cells,
         verdict,
@@ -81,10 +99,11 @@ export const displayRowsFor = (
       }))
     : cases
         .filter(({ stage }) => stage <= 1)
-        .map(({ id, kind, title, behavior }) => ({
+        .map(({ id, kind, title, required, behavior }) => ({
           id,
           kind,
           title,
+          required,
           hint: "",
           cells: undefined,
           verdict: undefined,
