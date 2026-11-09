@@ -21,7 +21,7 @@ toStatusLabel({ kind: "NoSuchState" });`,
   {
     id: "lint",
     name: "Linter の規則",
-    detail: "union の候補を数える",
+    detail: "default があっても候補を数える",
     code: `"@typescript-eslint/switch-exhaustiveness-check"
 { considerDefaultExhaustiveForUnions: false }`,
   },
@@ -134,7 +134,7 @@ export const changeCases: readonly ChangeCase[] = [
       lint: { found: false, output: "指摘なし" },
       tests: { found: false, output: "6件すべて成功" },
     },
-    why: "kind が string になると union ではないので、規則は候補を数えません。6つの状態を渡すテストも通ります。知らない状態を渡せることには、型のテストだけが気づきます。",
+    why: "kind が string になると union ではないので、規則は候補を数えません。6つの状態を渡すテストも通ります。// @ts-expect-error は次の行が型エラーになることを確かめる印です。知らない状態を渡せるようになると型エラーが消えるので、TS2578 が出ます。",
   },
   {
     id: "B6-if-chain",

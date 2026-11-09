@@ -140,7 +140,7 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
     display: grid;
     gap: 0.375rem;
     min-width: 0;
-    margin: 0.25rem 0 0;
+    margin: 0;
   }
 
   .cc__picker {
@@ -281,10 +281,6 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
 
   .cc__change :global(.cc-line--add) {
     background: rgba(121, 184, 255, 0.2);
-  }
-
-  .cc__change :global(.cc-line--skip) {
-    opacity: 0.75;
   }
 
   .cc__why {
@@ -431,6 +427,12 @@ import { changeCases, mechanisms, verdictOf } from "./change-checks";
   @media (max-width: 35rem) {
     .cc__picks {
       grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (min-height: 845px) and (min-width: 75rem) {
+    .cc :global(pre) {
+      font-size: 0.875rem;
     }
   }
 </style>
