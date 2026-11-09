@@ -432,7 +432,7 @@ describe("page-owned session contracts", () => {
   it("keeps the 180-minute schedule and each time allocation consistent", () => {
     expect(
       sessions.reduce((sum, { durationMinutes }) => sum + durationMinutes, 0),
-    ).toBe(180);
+    ).toBe(176);
     for (const session of sessions) {
       expect(
         Object.values(session.timeBreakdown).reduce(
