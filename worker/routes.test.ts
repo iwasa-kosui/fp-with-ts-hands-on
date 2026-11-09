@@ -8,10 +8,13 @@ const pagesDirectory = resolve(repositoryRoot, "apps/docs/src/pages");
 
 const pageExists = (location: string): boolean => {
   const route = location.replace(/^\/+|\/+$/g, "");
+  const segments = route.split("/");
+  const dynamicPage =
+    segments.length >= 3 ? [`${segments.slice(0, -1).join("/")}/[page].astro`] : [];
   const candidates =
     route === ""
       ? ["index.astro"]
-      : [`${route}.astro`, `${route}/index.astro`];
+      : [`${route}.astro`, `${route}/index.astro`, ...dynamicPage];
   return candidates.some((candidate) =>
     existsSync(resolve(pagesDirectory, candidate)),
   );

@@ -43,6 +43,7 @@ type Emphasis = "normal" | "dim" | "focus";
 type Frame = Readonly<{
   caption: string;
   code?: Readonly<{ key: keyof typeof code; lines: readonly number[] }>;
+  treeFile?: string;
   nodes: "normal" | "dim";
   focus: readonly string[];
   calls: Emphasis;
@@ -111,6 +112,7 @@ const frames: readonly Frame[] = [
   {
     caption:
       "import の矢印はすべて内側を向きます。app.ts が domain、useCase、adaptor を import して組み立てます。domain と useCase は adaptor を import しないので、テストでは偽の実装を渡せます。",
+    treeFile: "assembly",
     nodes: "normal",
     focus: [],
     calls: "dim",
@@ -215,7 +217,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
 
     <ol class="ports-flow__frames">
       {frames.map((frame) => (
-        <li data-frame data-has-code={frame.code ? "" : undefined} data-code-key={frame.code?.key ?? ""}>
+        <li data-frame data-has-code={frame.code ? "" : undefined} data-code-key={frame.treeFile ?? frame.code?.key ?? ""}>
           <p class="ports-flow__caption">{frame.caption}</p>
           {frame.code && (
             <figure class="code-block ports-flow__code">
