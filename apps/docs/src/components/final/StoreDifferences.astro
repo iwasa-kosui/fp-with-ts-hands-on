@@ -20,26 +20,26 @@ const scenes = [
     label: "条件付き更新",
     left: code.s06Update,
     right: code.finalUpdate,
-    text: "S06 は transaction の中で予約を読み直し、CheckedIn でなければ err を返します。参照実装は、status が CheckedIn の行だけを更新します。このように条件を付けた更新を、条件付き更新と呼びます。更新した行が0件なら競合です。",
+    text: "S06 は transaction の中で予約を再取得し、CheckedIn でなければ err を返します。参照実装は、status が CheckedIn の行だけを更新します。このように条件を付けた更新を、条件付き更新と呼びます。更新した行が0件なら競合です。",
   },
   {
     label: "競合の伝え方",
     left: code.s06Conflict,
     right: code.finalConflict,
-    text: "S06 は err を返すので fromSafePromise で受けます。参照実装は競合を throw で伝えて transaction を取り消します。throw した競合は、fromPromise の2つ目の引数で Err に戻します。それ以外の例外は投げ直すので reject のままで、S06 の悪い例と違い、障害は Err になりません。",
+    text: "S06 は err を返すため、fromSafePromise で受け取ります。参照実装は競合を throw で伝えて transaction を取り消します。throw した競合は、fromPromise の2つ目の引数で Err に戻します。それ以外の例外は投げ直すため reject のままであり、S06 の誤った例と異なり、障害は Err になりません。",
   },
   {
-    label: "port の置き場所",
+    label: "port の配置先",
     left: code.s06Port,
     right: code.finalPort,
-    text: "S06 は port を useCase に置きました。参照実装は domain に置きました。どちらでも、port は外側の実装を知りません。大事なのはこの点です。",
+    text: "S06 は port を useCase に配置しました。参照実装は domain に配置しました。どちらの場合も、port は外側の実装に依存しません。重要なのはこの点です。",
   },
 ] as const;
 ---
 
-<figure class="sd" data-store-differences data-step-figure aria-label="S06 と参照実装の、書き方が違う3点">
+<figure class="sd" data-store-differences data-step-figure aria-label="S06 と参照実装の、実装が異なる3点">
   <div class="sd__bar">
-    <div class="sd__tabs" role="group" aria-label="場面を選ぶ">
+    <div class="sd__tabs" role="group" aria-label="実装が異なる点を選ぶ">
       {scenes.map((scene, index) => (
         <button type="button" class="sd__tab" data-step-scene aria-pressed={index === 0 ? "true" : "false"}>{scene.label}</button>
       ))}

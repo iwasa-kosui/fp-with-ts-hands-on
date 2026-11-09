@@ -8,12 +8,12 @@ const groups = [
       {
         name: "直接の時刻と ID の生成",
         by: "Linter の no-restricted-syntax",
-        about: "new Date()、Date.now()、crypto.randomUUID() を、clock と ID generator を通さずに呼ぶ書き方。",
+        about: "new Date()、Date.now()、crypto.randomUUID() を、clock と ID generator を通さずに呼ぶ実装。",
       },
       {
         name: "保存の分割",
         by: "fake の store を使うテスト",
-        about: "状態と監査記録のために、store を2回呼ぶ書き方。",
+        about: "状態と監査記録のために、store を2回呼ぶ実装。",
       },
     ],
   },
@@ -24,13 +24,13 @@ const groups = [
     items: [
       {
         name: "別のファイルの補助関数の中の呼び出し",
-        by: "ファイルを開いて読む人",
-        about: "この規則が見るのは、診察開始のファイルです。別のファイルにある補助関数の中で時刻を読んでいても、規則は検出しません。テストは、期待に書いた値に影響するときだけ検出します。",
+        by: "ファイルを開いて確認する担当者",
+        about: "この Linter のルールが検査するのは、診察開始のファイルです。別のファイルにある補助関数の中で時刻を取得していても、ルールは検出しません。テストは、期待値に影響するときだけ検出します。",
       },
       {
         name: "本番の永続化層の原子性",
         by: "保存先を使う結合テスト",
-        about: "fake の store はメモリ上で動きます。本物の transaction が、全部残るか全部消えるかのどちらかになることは、この演習の仕組みでは確かめません。",
+        about: "fake の store はメモリ上で動きます。本物の transaction が、全部残るか全部消えるかのどちらかになることは、この演習の仕組みでは検証しません。",
       },
     ],
   },
@@ -48,7 +48,7 @@ const groups = [
         {group.items.map((item) => (
           <li class="gsc__card">
             <p class="gsc__name">{item.name}</p>
-            <p class="gsc__by"><span>見つける人・仕組み</span>{item.by}</p>
+            <p class="gsc__by"><span>検出する担当者・仕組み</span>{item.by}</p>
             <p class="gsc__about">{item.about}</p>
           </li>
         ))}

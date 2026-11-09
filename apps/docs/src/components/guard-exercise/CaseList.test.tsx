@@ -68,6 +68,6 @@ describe("CaseList behavior", () => {
     expect(document.querySelector("ol, .guard-exercise__steps")).toBeNull();
     expect(document.querySelector(".guard-exercise__criteria")).toBeNull();
     expect(document.querySelector(".guard-exercise__guide")).toBeNull();
-    expect(document.querySelector("h3")?.textContent).toBe("悪い変更");
+    expect(document.querySelector("h3")?.textContent).toBe("誤った変更");
   });
 });

@@ -33,9 +33,9 @@ const stages: readonly Stage[] = [
     name: "入力を検査する",
     where: "ユースケースの手前の境界",
     input: [
-      { label: "URL から入る", value: `appointmentId: "11111111-…"`, tone: "muted" },
-      { label: "ログイン情報から入る", value: `actorUserId: "（受付担当者の ID）"`, tone: "muted" },
-      { label: "フォームから入るキャンセル理由。検査するのはこれだけ", value: `reason: "owner request"`, tone: "accent" },
+      { label: "URL から渡される", value: `appointmentId: "11111111-…"`, tone: "muted" },
+      { label: "ログイン情報から渡される", value: `actorUserId: "（受付担当者の ID）"`, tone: "muted" },
+      { label: "フォームから渡されるキャンセル理由。検査するのはこれだけ", value: `reason: "owner request"`, tone: "accent" },
     ],
     functions: [],
     process: schemaCode,
@@ -47,7 +47,7 @@ const stages: readonly Stage[] = [
       },
     ],
     caption:
-      "最初の検査は、ユースケースの手前の境界で行います。実行者はログイン情報から、予約 ID は URL から入るので、ここで検査するのは理由だけです。",
+      "最初の検査は、ユースケースの手前の境界で行います。実行者はログイン情報から、予約 ID は URL から渡されるため、ここで検査するのは理由だけです。",
   },
   {
     node: "実行者の確認",
@@ -56,10 +56,10 @@ const stages: readonly Stage[] = [
     where: "ユースケースの1つ目の工程",
     input: [{ label: "入力の actorUserId", value: `"（受付担当者の ID）"` }],
     functions: ["userResolver.resolveById", "ensureUserFound", "ensureCanManageClinic"],
-    failure: { when: "実行者が見つからない、または管理する権限がないとき", kinds: ["Unauthorized"] },
+    failure: { when: "実行者が存在しない、または管理する権限がない場合", kinds: ["Unauthorized"] },
     output: [{ label: "実行者", value: `{\n  kind: "Receptionist",\n  userId: "（受付担当者の ID）",\n}` }],
     caption:
-      "1つ目の工程は、実行者をデータベースから取得し、権限を確かめます。受付担当者には権限があるので、実行者の値を次へ渡します。",
+      "1つ目の工程は、実行者をデータベースから取得し、権限を検証します。受付担当者には権限があるため、実行者の値を次へ渡します。",
   },
   {
     node: "予約の確認",
@@ -68,10 +68,10 @@ const stages: readonly Stage[] = [
     where: "ユースケースの2つ目の工程",
     input: [{ label: "入力の appointmentId", value: `"11111111-…"` }],
     functions: ["appointmentResolver.resolveById", "ensureAppointmentFound", "ensureCancellable"],
-    failure: { when: "予約が無い、または診察開始前（Scheduled と CheckedIn）ではないとき", kinds: ["AppointmentNotFound", "InvalidAppointmentState"] },
+    failure: { when: "予約が存在しない、または診察開始前（Scheduled と CheckedIn）ではない場合", kinds: ["AppointmentNotFound", "InvalidAppointmentState"] },
     output: [{ label: "診察開始前の予約", value: `{\n  kind: "Scheduled",\n  appointmentId: "11111111-…",\n  reason: "skin check",\n}` }],
     caption:
-      "2つ目の工程は、予約を取得し、診察開始前かどうかを確かめます。Scheduled の予約は、診察開始前なので次へ進みます。",
+      "2つ目の工程は、予約を取得し、診察開始前かどうかを検証します。Scheduled の予約は、診察開始前であるため次へ進みます。",
   },
   {
     node: "結果を作る",
@@ -102,10 +102,10 @@ const stages: readonly Stage[] = [
     where: "ユースケースの4つ目の工程",
     input: [{ label: "前の工程のイベント", value: `{ kind: "AppointmentCanceled", … }` }],
     functions: ["andThrough(appointmentCanceledStore.store)", "map((event) => …)"],
-    failure: { when: "記録が他の更新とぶつかったとき", kinds: ["AppointmentConflict"] },
+    failure: { when: "記録が他の更新と競合した場合", kinds: ["AppointmentConflict"] },
     output: [{ label: "呼び出し側が受け取る値", value: `{\n  appointment: {\n    kind: "Canceled",\n    …\n  },\n}` }],
     caption:
-      "4つ目の工程は、andThrough でイベントを記録し、成功したら値をそのまま次へ渡します。続く map が、キャンセル後の予約を取り出して返します。",
+      "4つ目の工程は、andThrough でイベントを記録し、成功した場合は値をそのまま次へ渡します。続く map が、キャンセル後の予約を取り出して返します。",
   },
 ];
 ---

@@ -19,7 +19,7 @@ export const mechanismHeaders: Readonly<Record<GuardMechanism, string>> = {
 export const tableTermsSummary = "表の言葉";
 
 export const tableTermsText =
-  "「誤検知」は、正しいコードを悪い変更として検出してしまうことで、規則かテストが広すぎると起きます。「対象外」は、その悪い変更では数えない仕組みです。「未検出」は悪い変更の行で、その列の仕組みがまだ検出していないことを表します。「なし」は正しいコードの行で、その列に誤検知がないこと（良い状態）を表します。";
+  "「誤検知」は、正しいコードを誤った変更として検出することで、Linter のルールかテストの対象が広すぎると発生します。「対象外」は、その誤った変更では数えない仕組みです。「未検出」は誤った変更の行で、その列の仕組みがまだ検出していないことを表します。「なし」は正しいコードの行で、その列に誤検知がないこと（良い状態）を表します。";
 
 export const cellText = (cell: GuardCell, kind: GuardRow["kind"]): string =>
   cell.state === "hit"
@@ -96,7 +96,7 @@ export const headlineFor = (result: GuardResult): string => {
   const detected = required.filter((row) => row.verdict === "detected");
   return result.passed
     ? "合格です"
-    : `まだ合格していません（必須の悪い変更 ${required.length} 件のうち ${detected.length} 件を検出）`;
+    : `まだ合格していません（必須の誤った変更 ${required.length} 件のうち ${detected.length} 件を検出）`;
 };
 
 export const secondsText = (seconds: number): string => `${seconds.toFixed(1)}s`;

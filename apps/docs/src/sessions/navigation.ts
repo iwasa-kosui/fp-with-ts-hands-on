@@ -20,5 +20,5 @@ export const sessionNavigationItems = [
     title: "データと工程で予約キャンセルを設計する",
   },
   { slug: "06-effects-and-consistency", title: "副作用と整合性境界を設計する" },
-  { slug: "final", title: "参照実装で境界をたどる" },
+  { slug: "final", title: "参照実装で境界を追跡する" },
 ] as const satisfies readonly SessionNavigationItem[];

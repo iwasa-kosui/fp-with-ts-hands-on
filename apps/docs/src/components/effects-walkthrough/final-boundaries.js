@@ -1,6 +1,6 @@
 const figures = document.querySelectorAll("[data-final-boundaries]:not([data-fb-ready])");
 const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-const tagText = { current: "いまここ", done: "通過", stopped: "先へ進まない", skipped: "通らない" };
+const tagText = { current: "処理中", done: "通過", stopped: "中断", skipped: "経由しない" };
 
 for (const figure of figures) {
   figure.setAttribute("data-fb-ready", "");

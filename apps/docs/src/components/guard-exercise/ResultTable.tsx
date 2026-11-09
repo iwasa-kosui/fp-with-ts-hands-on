@@ -124,7 +124,7 @@ export const ResultTable = ({
       <table className="guard-exercise__table">
         <thead>
           <tr>
-            <th scope="col">悪い変更</th>
+            <th scope="col">誤った変更</th>
             {guardMechanisms.map((mechanism) => (
               <th key={mechanism} scope="col">
                 {mechanismHeaders[mechanism]}
@@ -149,7 +149,7 @@ export const ResultTable = ({
       </table>
       <div className="guard-exercise__limits">
         <p className="guard-exercise__limits-note">
-          各行を開いて書く「この仕組みで検出できないこと」は、機械では判定しません。
+          各行を開いて記載する「この仕組みで検出できないこと」は、機械では判定しません。
         </p>
         <details
           className="guard-exercise__terms"

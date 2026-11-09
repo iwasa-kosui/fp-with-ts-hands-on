@@ -224,7 +224,7 @@ export const CodeExplorer = ({
   const { notifyCommandSent } = persistence;
   const acquireSession = useCallback(async (): Promise<TerminalSession> => {
     const panel = terminalPanel.current;
-    if (panel === null) throw new Error("ターミナルを使えません。");
+    if (panel === null) throw new Error("ターミナルを使用できません。");
     const session = await panel.ensureSession();
     await pendingFileWrites.current.catch(() => undefined);
     notifyCommandSent();
@@ -336,7 +336,7 @@ export const CodeExplorer = ({
               {status.kind === "read-failed" ? (
                 <div className="code-explorer__notice" role="alert">
                   <p>
-                    前の編集を読み出せませんでした。開始の状態で表示しています。このページの編集は保存されません。ページを再読み込みすると、もう一度読み出します。そのとき、このページで書いた編集は消えます。
+                    前の編集を読み出せませんでした。開始の状態で表示しています。このページの編集は保存されません。ページを再読み込みすると、再度読み出します。その際、このページで行った編集は失われます。
                   </p>
                 </div>
               ) : null}
@@ -350,7 +350,7 @@ export const CodeExplorer = ({
                     data-action="retry-save"
                     onClick={() => void persistence.retrySave()}
                   >
-                    もう一度保存する
+                    再度保存する
                   </button>
                 </div>
               ) : null}
@@ -406,7 +406,7 @@ export const CodeExplorer = ({
                 <strong>現在の設計:</strong> {selectedGuide.currentDesign}
               </p>
               <p>
-                <strong>将来困り得ること:</strong> {selectedGuide.futureRisk}
+                <strong>将来のリスク:</strong> {selectedGuide.futureRisk}
               </p>
             </div>
           ) : null}

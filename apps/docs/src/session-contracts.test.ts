@@ -127,7 +127,7 @@ const expectedCurriculum = [
   {
     slug: "final",
     sequence: "Final",
-    title: "参照実装で境界をたどる",
+    title: "参照実装で境界を追跡する",
     durationMinutes: 10,
     kind: "reference",
     exerciseCommand: undefined,
@@ -246,7 +246,7 @@ const expectedExercises = [
       minutes: 5,
       pickCount: 2,
       questions: [
-        "時刻とイベント ID は実行ごとに一度だけ生成され、同じ `EventContext` に入りますか。",
+        "時刻とイベント ID は実行ごとに一度だけ生成され、同じ `EventContext` に格納されますか。",
         "状態と監査記録は、1つのイベントとして同じ `store` に渡されますか。",
         "業務上の競合だけを `Result` で返し、保存障害は reject のまま伝播しますか。",
       ],
@@ -319,7 +319,7 @@ const expectedNavigation = [
     },
     next: {
       href: "/sessions/final/",
-      title: "参照実装で境界をたどる",
+      title: "参照実装で境界を追跡する",
     },
   },
   {
@@ -377,9 +377,9 @@ describe("page-owned session contracts", () => {
 
     const finalEpisode = sessions.find(({ slug }) => slug === "final")?.episode;
     expect(finalEpisode).toEqual([
-      "S00 で飼い主がもう一度請求された犬の Mugi は、とっくに帰宅しました。",
-      "開発者は、直した形が大きなコードでも保たれているかを確かめるため、参照実装の前に残っています。",
-      "事故が消えたわけではありません。事故ごとに、防ぐ場所が決まりました。",
+      "S00 で飼い主が再度請求された犬の Mugi は、すでに帰宅しました。",
+      "開発者は、修正した構成が大きなコードでも維持されているかを確認するため、参照実装の前に残っています。",
+      "事故が消えたわけではありません。事故ごとに、防ぐ場所を割り当てました。",
     ]);
 
     const boundaryEpisode = sessions.find(

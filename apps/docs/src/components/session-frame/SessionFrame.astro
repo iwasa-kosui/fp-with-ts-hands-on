@@ -168,8 +168,8 @@ const progress = `${((sameKind.indexOf(page) + 1) / sameKind.length) * 100}%`;
 
   const keyHints: Record<PageKeyScope, string> = {
     page: "キーボードの ← → でも移動できます",
-    step: "いま ← → はこの図のコマ送りです",
-    text: "いま ← → ではページを移動しません",
+    step: "現在、← → はこの図のコマ送りです",
+    text: "現在、← → ではページを移動しません",
   };
   const keyHint = document.querySelector<HTMLElement>(".session-frame__key-hint");
   const showKeyHint = (target: EventTarget | null) => {

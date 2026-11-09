@@ -97,7 +97,7 @@ const scenes = {
     captions: [
       "予約1件の現在の状態と、その予約の履歴を、1つの枠で囲みます。キャンセルで変わるのは、この枠の中だけです。別の予約や飼い主のデータは変わりません。",
       "キャンセルの処理 Appointment.cancel は、イベント AppointmentCanceled を返します。このイベントは、キャンセル後の予約の状態（aggregateState）を持ちます。1つの値が、書き込む現在の状態と履歴の両方を表します。",
-      "保存を2回に分けた場合です。現在の状態を書いた後で履歴の追記が失敗すると、予約は Canceled なのに、履歴にキャンセルが残りません。整合性が崩れた状態です。",
+      "保存を2回に分けた場合です。現在の状態を書き込んだ後で履歴の追記が失敗すると、予約は Canceled ですが、履歴にキャンセルが残りません。整合性が崩れた状態です。",
     ],
   },
   "start-examination": {
@@ -120,7 +120,7 @@ const scenes = {
     captions: [
       "予約1件の現在の状態と、その予約の履歴を、1つの枠で囲みます。診察開始で変わるのは、この枠の中だけです。別の予約や飼い主のデータは変わりません。",
       "診察開始の処理 Appointment.startExamination は、イベント ExaminationStarted を返します。このイベントは、診察開始後の予約の状態（aggregateState）を持ちます。1つの値が、書き込む現在の状態と履歴の両方を表します。",
-      "保存を2回に分けた場合です。現在の状態を書いた後で履歴の追記が失敗すると、予約は InExamination なのに、履歴に診察開始が残りません。整合性が崩れた状態です。",
+      "保存を2回に分けた場合です。現在の状態を書き込んだ後で履歴の追記が失敗すると、予約は InExamination ですが、履歴に診察開始が残りません。整合性が崩れた状態です。",
     ],
   },
 } as const satisfies Record<SceneName, unknown>;
@@ -256,7 +256,7 @@ const frames: readonly Frame[] = [
               <li class="aggregate-flow__other">別の予約</li>
               <li class="aggregate-flow__other">飼い主</li>
             </ul>
-            {frame.ghost && <p class="aggregate-flow__legend">点線: これから書く内容</p>}
+            {frame.ghost && <p class="aggregate-flow__legend">点線: これから書き込む内容</p>}
           </div>
         )}
 
@@ -267,7 +267,7 @@ const frames: readonly Frame[] = [
               <ol class="aggregate-flow__steps">
                 <li class="aggregate-flow__step">
                   <span class="aggregate-flow__step-no">1回目</span>
-                  <span>現在の状態を書く</span>
+                  <span>現在の状態を書き込む</span>
                   <span class="aggregate-flow__tag aggregate-flow__tag--ok"><span aria-hidden="true">✓ </span>成功</span>
                 </li>
                 <li class="aggregate-flow__step">

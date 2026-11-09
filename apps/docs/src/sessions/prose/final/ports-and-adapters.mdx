@@ -1,6 +1,6 @@
 import PortsAndAdaptersFlow from "../../../components/PortsAndAdaptersFlow.astro";
 import { portsAndAdaptersCode } from "../../pages/final-content";
 
-<p>コードの分け方は、S00 で見たヘキサゴナルアーキテクチャです。参照実装では port の型を内側の domain に置いたので、domain と useCase は adaptor を import しません。port は S06 で見た、ユースケースが外側に求める処理の型です。アダプタ（コードでは adaptor）は、外からの依頼をユースケースへ渡す処理と、port の型を満たす実装です。</p>
+<p>コードの構成は、S00 で見たヘキサゴナルアーキテクチャです。参照実装では port の型を内側の domain に配置したため、domain と useCase は adaptor を import しません。port は S06 で見た、ユースケースが外側に要求する処理の型です。アダプタ（コードでは adaptor）は、外部からの依頼をユースケースへ渡す処理と、port の型を満たす実装です。</p>
 
 <PortsAndAdaptersFlow code={portsAndAdaptersCode} />

@@ -198,6 +198,7 @@ export const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-05/src/adaptor/secondary/sqlite/appointmentRepository.ts",
   "examples/session-05/src/useCase/dependencies.ts",
   "examples/session-05/src/useCase/startExamination.ts",
+  "examples/session-06-solution/src/app.ts",
   "examples/final/src/useCase/startExaminationUseCase.ts",
   "examples/final/src/useCase/bookAppointmentUseCase.ts",
   "examples/final/src/useCase/cancelAppointmentUseCase.ts",

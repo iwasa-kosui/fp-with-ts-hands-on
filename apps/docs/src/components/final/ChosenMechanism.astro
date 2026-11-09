@@ -10,7 +10,7 @@ const names = {
 ---
 
 <p class="chosen" data-chosen-mechanism data-names={JSON.stringify(names)}>
-  次に足す仕組みをまだ選んでいません。<a href={href}>次に足す仕組みを選ぶページ</a>
+  次に追加する仕組みをまだ選んでいません。<a href={href}>次に追加する仕組みを選ぶページ</a>
 </p>
 
 <script>
@@ -20,8 +20,8 @@ const names = {
     const names = JSON.parse(root.dataset.names ?? "{}") as Record<"what" | "where", Record<string, string>>;
     const { what, where } = load();
     if (what === undefined) return;
-    const place = where === undefined ? "どこで動かすかは未選択" : names.where[where];
-    root.textContent = `あなたが選んだ仕組み: ${names.what[what]}（${place}）`;
+    const place = where === undefined ? "実行する場所は未選択" : names.where[where];
+    root.textContent = `選択した仕組み: ${names.what[what]}（${place}）`;
   });
 </script>
 
