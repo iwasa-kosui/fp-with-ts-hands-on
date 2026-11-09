@@ -20,15 +20,31 @@ export const lineIndexOf = (source: string, needle: string): number => {
 };
 
 type Quote = Readonly<{ path: string; code: string }>;
+type Elision = readonly [firstLine: string, lastLine: string];
+
+const elide = (block: string, elisions: readonly Elision[]): string => {
+  const lines = block.split("\n");
+  let from = 0;
+  for (const [firstLine, lastLine] of elisions) {
+    const start = lines.indexOf(firstLine, from);
+    const end = lines.indexOf(lastLine, start);
+    if (start < 0 || end < 0) throw new Error(`"${firstLine}" to "${lastLine}" is not in the excerpt`);
+    const indent = firstLine.slice(0, firstLine.length - firstLine.trimStart().length);
+    lines.splice(start, end - start + 1, `${indent}// …`);
+    from = start + 1;
+  }
+  return lines.join("\n");
+};
 
 const quote = (
   snapshot: "session-00" | "session-01" | "session-01-solution",
   file: string,
   firstLine: string,
   lastLine: string,
+  elisions: readonly Elision[] = [],
 ): Quote => ({
   path: `examples/${snapshot}/${file}`,
-  code: dedent(blockOf(projectFilesForSnapshot(snapshot), file, firstLine, lastLine)),
+  code: dedent(elide(blockOf(projectFilesForSnapshot(snapshot), file, firstLine, lastLine), elisions)),
 });
 
 export const quotes = {
@@ -61,5 +77,12 @@ export const quotes = {
     "src/adaptor/primary/web/routes.ts",
     "    if (current.kind !== \"CheckedIn\") throw new Error(\"Invalid appointment state\");",
     "    if (current.kind !== \"CheckedIn\") throw new Error(\"Invalid appointment state\");",
+  ),
+  solutionStartRoute: quote(
+    "session-01-solution",
+    "src/adaptor/primary/web/routes.ts",
+    '  app.post("/appointments/:appointmentId/start-examination", (context) => {',
+    "    );",
+    [["        ids.veterinarianId,", "    );"]],
   ),
 } as const;

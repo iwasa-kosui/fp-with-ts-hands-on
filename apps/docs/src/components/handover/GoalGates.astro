@@ -2,7 +2,7 @@
 import StepControls from "../stepper/StepControls.astro";
 import { noticeMoments, type NoticeMomentId } from "./notice-moments";
 
-type Frame = Readonly<{ token: string; stop: NoticeMomentId | "none"; caption: string }>;
+type Frame = Readonly<{ token: string; stop: NoticeMomentId | "none"; caption: string; afterResult?: string }>;
 
 const frames: readonly Frame[] = [
   {
@@ -13,12 +13,12 @@ const frames: readonly Frame[] = [
   {
     token: "獣医師が会計済みの予約で押す",
     stop: "run",
-    caption: "課題1の修正後です。獣医師が会計済みの予約で押しても、実行時にサーバーが現在の状態を検証し、その操作を拒否します。二重請求は発生しません。Session 01 で、この実装にします。",
+    caption: "課題1の修正後です。ボタンを押す「操作の誤り」は、実行時にサーバーが現在の状態を検証し、拒否します。二重請求は発生しません。この検証は、Session 01 の開始コードに実装済みです。",
   },
   {
     token: "会計済みの予約を診察へ戻すコードを書く",
     stop: "write",
-    caption: "同じ誤りをコードに書いた場合は、より早い時点で検出できます。会計済みの予約を診察中へ戻すコードは、人が書いても AI が書いても、型検査のときに報告されます。",
+    caption: "開発者や AI が書く「コードの誤り」は、より早い時点で検出できます。会計済みの予約を診察開始の関数へ渡すコードは、型検査のときに報告されます。Session 01 で、この実装にします。",
   },
   {
     token: "個人情報を監査記録に含める",
@@ -30,11 +30,17 @@ const frames: readonly Frame[] = [
     stop: "test",
     caption: "課題2の修正後です。個人情報を監査記録に含める変更を、テストなどで報告できるようにします。Session 03 で、この実装にします。",
   },
+  {
+    token: "来院済みの別の予約で押す",
+    stop: "human",
+    afterResult: "人が確認",
+    caption: "コードでは解決できない事例もあります。獣医師が取り違えた先の予約が来院済みの場合、その予約は診察を開始できる状態であるため、コードは操作を拒否しません。コードで表現できない確認は、引き続き人が行います。",
+  },
 ];
 
 const rows = [
   { id: "before", name: "修正前", note: "現在のコード", result: "被害" },
-  { id: "after", name: "修正後", note: "研修修了時のコード", result: "防止" },
+  { id: "after", name: "修正後", note: "全 Session の完了後のコード", result: "防止" },
 ] as const;
 ---
 
@@ -44,7 +50,7 @@ const rows = [
   <div aria-live="polite">
     <ol class="gg__frames">
       {frames.map((frame) => (
-        <li data-frame data-token={frame.token} data-stop={frame.stop}>
+        <li data-frame data-token={frame.token} data-stop={frame.stop} data-after-result={frame.afterResult}>
           <p class="gg__caption">{frame.caption}</p>
         </li>
       ))}
@@ -106,6 +112,9 @@ const rows = [
         before.style.setProperty("--col", String(moments.indexOf("human")));
         after.style.setProperty("--col", String(hidden ? 0 : stopIndex));
         after.toggleAttribute("data-dim", hidden);
+        after.toggleAttribute("data-neutral", panel.dataset.afterResult !== undefined);
+        const result = after.querySelector<HTMLElement>(".gg__token-result");
+        if (result) result.textContent = panel.dataset.afterResult ?? "防止";
         void root.offsetWidth;
         root.setAttribute("data-run", "");
       },
@@ -275,6 +284,15 @@ const rows = [
   .gg[data-run] .gg__row[data-row="after"] .gg__token {
     border-color: var(--role-positive);
     background: color-mix(in srgb, var(--role-positive) 14%, var(--role-surface));
+  }
+
+  .gg[data-run] .gg__row[data-row="after"][data-neutral] .gg__token {
+    border-color: var(--role-border);
+    background: color-mix(in srgb, var(--role-muted) 14%, var(--role-surface));
+  }
+
+  .gg__row[data-row="after"][data-neutral] .gg__token-result {
+    color: var(--role-text);
   }
 
   .gg__row[data-dim] :is(.gg__name, .gg__lanes) {

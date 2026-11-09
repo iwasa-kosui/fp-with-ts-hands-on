@@ -106,7 +106,7 @@ afterAll(() => {
 });
 
 describe("judge", () => {
-  it("empty: 配布済みテストがあっても、仕組みが無ければ全部すり抜ける", async () => {
+  it("empty: 配布済みテストがあっても、仕組みが無ければ全部検出されない", async () => {
     const result = await scenario("empty");
 
     expect(result.passed).toBe(false);
@@ -146,7 +146,7 @@ describe("judge", () => {
     expect(written.version).toBe(1);
   });
 
-  it("miss-one: B3 を検出するテストが無ければ B3 だけすり抜ける", async () => {
+  it("miss-one: B3 を検出するテストが無ければ B3 だけ検出されない", async () => {
     const result = await scenario("miss-one");
 
     expect(result.passed).toBe(false);
@@ -170,7 +170,7 @@ describe("judge", () => {
     expect(rowOf(result, "G2-handler-uses-parse").verdict).toBe("noFalsePositive");
   });
 
-  it("stage: 型のテストが無いと stage 2 の B5 が見えてすり抜ける", async () => {
+  it("stage: 型のテストが無いと stage 2 の B5 が見えて検出されない", async () => {
     const result = await scenario("no-type-test");
 
     expect(result.passed).toBe(false);
@@ -315,7 +315,7 @@ describe("judge", () => {
     expect(result.passed).toBe(false);
     expect(result.problems).toContain("テストが 8 秒で終わりませんでした。");
     expect(result.testsTimedOut).toBe(true);
-    expect(result.next).toContain("テストの中に終わらない繰り返しや、待ち続ける処理がないか見直します。");
+    expect(result.next).toContain("実行環境が遅い場合にも発生します。再度「検出を検証する」を押します。繰り返し発生する場合は、テストの中に終わらない繰り返しや、待ち続ける処理がないか見直します。");
     expect(pids).toHaveLength(1);
     expect(await Promise.all(pids.map(groupGone))).toEqual([true]);
   });
@@ -393,7 +393,7 @@ describe("judge", () => {
     expect(result.notes.some((note) => note.includes("input.spec.ts は実行しません。テストのファイル名は *.test.ts にします。"))).toBe(true);
   });
 
-  it("verify: 配布時点ですり抜け、模範で合格する", async () => {
+  it("verify: 配布時点で検出されず、模範で合格する", async () => {
     const result = await verify({ root });
 
     expect(result.lines).toHaveLength(2);
@@ -401,7 +401,7 @@ describe("judge", () => {
     expect(existsSync(path.join(root, "dist/guard-verify/answer/result.json"))).toBe(true);
   });
 
-  it("verify: 配布の mine/ の雛形を使い、誤った変更はすべてすり抜けて正しいコードに誤検知が出ない", async () => {
+  it("verify: 配布の mine/ の雛形を使い、誤った変更はすべて検出されず、正しいコードに誤検知が出ない", async () => {
     await verify({ root });
     const initial = JSON.parse(readFileSync(path.join(root, "dist/guard-verify/initial/result.json"), "utf8"));
 
@@ -463,7 +463,7 @@ describe("render", () => {
   it("78 桁以内で、止まったという言い方を使わない", async () => {
     const text = render(await scenario("empty"), { color: false });
 
-    expect(text).toContain("すり抜け");
+    expect(text).toContain("未検出");
     expect(text).toContain("結果: まだ合格していません（必須の誤った変更 4 件のうち 0 件を検出）");
     expect(text).not.toMatch(/止ま|止め|実行できない/);
     expect(Math.max(...text.split("\n").map(stringWidth))).toBeLessThanOrEqual(78);

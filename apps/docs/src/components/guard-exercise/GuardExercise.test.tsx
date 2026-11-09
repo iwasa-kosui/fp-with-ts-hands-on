@@ -618,7 +618,7 @@ describe("GuardExercise", () => {
     );
     expect(session.readFile).toHaveBeenCalledWith(guardPaths.result);
     expect(
-      row(host, "B1-any-parser")?.querySelector(".guard-exercise__verdict .guard-exercise__state")
+      row(host, "B1-any-parser")?.querySelector("td.guard-exercise__verdict")
         ?.textContent,
     ).toBe("未検出");
     expect(row(host, "B1-any-parser")?.textContent).toContain("対象外");
@@ -688,7 +688,7 @@ describe("GuardExercise", () => {
 
     expect(action(host, "run-guard")?.disabled).toBe(false);
     expect(
-      row(host, "B1-any-parser")?.querySelector(".guard-exercise__verdict .guard-exercise__state")
+      row(host, "B1-any-parser")?.querySelector("td.guard-exercise__verdict")
         ?.textContent,
     ).toBe("未検出");
   });
@@ -707,7 +707,7 @@ describe("GuardExercise", () => {
     await settle();
 
     expect(
-      row(host, "B1-any-parser")?.querySelector(".guard-exercise__verdict .guard-exercise__state")
+      row(host, "B1-any-parser")?.querySelector("td.guard-exercise__verdict")
         ?.textContent,
     ).toBe("未検出");
   });
@@ -764,6 +764,26 @@ describe("GuardExercise", () => {
     expect(row(host, "G1-solution")?.textContent).toContain("誤検知あり");
   });
 
+  it("shows an undetermined row as 未判定 in the result column", async () => {
+    const undetermined: GuardResult = {
+      ...sampleGuardResult,
+      rows: sampleGuardResult.rows.map((item) =>
+        item.kind === "good" ? { ...item, verdict: "undetermined" } : item,
+      ),
+    };
+    const { host } = await mountExercise({
+      resultText: JSON.stringify(undetermined),
+    });
+
+    await click(action(host, "run-guard"));
+
+    expect(row(host, "G1-solution")?.dataset.verdict).toBe("undetermined");
+    expect(
+      row(host, "G1-solution")?.querySelector("td.guard-exercise__verdict")
+        ?.textContent,
+    ).toBe("未判定");
+  });
+
   it("shows an unchanged row as 未変更 in the table and the case list, without the hint", async () => {
     const unchanged: GuardResult = {
       ...sampleGuardResult,
@@ -781,7 +801,7 @@ describe("GuardExercise", () => {
     expect(row(host, "B1-any-parser")?.dataset.verdict).toBe("unchanged");
     expect(row(host, "B1-any-parser")?.textContent).toContain("未変更");
     expect(
-      row(host, "B1-any-parser")?.querySelector(".guard-exercise__verdict .guard-exercise__state")
+      row(host, "B1-any-parser")?.querySelector("td.guard-exercise__verdict")
         ?.textContent,
     ).toBe("未変更");
     expect(
@@ -887,7 +907,7 @@ describe("GuardExercise", () => {
     );
     expect(
       row(second.host, "B1-any-parser")?.querySelector(
-        ".guard-exercise__verdict .guard-exercise__state",
+        "td.guard-exercise__verdict",
       )?.textContent,
     ).toBe("未検出");
     expect(

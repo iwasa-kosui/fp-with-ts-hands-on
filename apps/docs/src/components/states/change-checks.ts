@@ -45,7 +45,7 @@ const cases: readonly ChangeCase[] = [
     results: {
       types: { found: false, output: "エラーなし" },
       lint: { found: true, output: "no-restricted-syntax: 予約の状態の型へ as で変えず、kind を確認して絞り込みます。" },
-      tests: { found: true, output: "5件失敗: expected [Function] to throw an error", setting: "expect(() => startExaminationFor(appointment, veterinarianId, at)).toThrow();" },
+      tests: { found: true, output: "callers.test.ts の 5 件失敗: expected [Function] to throw an error", setting: "expect(() => startExaminationFor(appointment, veterinarianId, at)).toThrow();" },
     },
     why: "`as` で型検査のエラーを抑制しても、`startExamination` の引数の型は変わらないため、型のテストは通ります。`as` の書き方を検査する Linter のルールと、実行して値を検証するテストが検出します。",
   },
@@ -71,7 +71,12 @@ const cases: readonly ChangeCase[] = [
     results: {
       types: { found: true, output: "TS2578: Unused '@ts-expect-error' directive." },
       lint: { found: false, output: "エラーなし" },
-      tests: { found: false, output: "2件成功" },
+      tests: {
+        found: false,
+        output: "transitions.test.ts の 2 件すべて成功",
+        setting: `expect(startExamination(checkedIn, veterinarianId, startedAt))
+  .toMatchObject({ kind: "InExamination", … });`,
+      },
     },
     why: "広げた引数には Scheduled も渡せるため、型エラーが消え、`// @ts-expect-error` が未使用になります。実行時の検証を追加したため、テストと Linter のルールは通ります。",
   },
@@ -93,9 +98,9 @@ const cases: readonly ChangeCase[] = [
     results: {
       types: { found: false, output: "エラーなし" },
       lint: { found: false, output: "エラーなし" },
-      tests: { found: true, output: "1件失敗: expected { kind: 'Canceled', …(6) } to match object { kind: 'Canceled', …(4) }" },
+      tests: { found: true, output: "transitions.test.ts の 1 件失敗: expected { kind: 'Canceled', …(6) } to match object { kind: 'Canceled', …(4) }" },
     },
-    why: "どちらの理由も同じ型の文字列であるため、型検査と Linter のルールは通ります。結果にどの値が格納されるかは、テストだけが検証します。",
+    why: "`reason` は、予約では来院の理由、キャンセルではキャンセルの理由を格納する項目です。どちらも同じ型の文字列であるため、型検査と Linter のルールは通ります。結果にどの値が格納されるかは、テストだけが検証します。",
   },
 ];
 

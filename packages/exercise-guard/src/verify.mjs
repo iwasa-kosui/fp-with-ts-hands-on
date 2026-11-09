@@ -23,16 +23,18 @@ export const checkInitial = (result) => {
   const bad = result.rows.filter((row) => row.kind === "bad");
   const good = result.rows.filter((row) => row.kind === "good");
   const detected = bad.filter((row) => row.verdict === "detected").map((row) => row.id);
-  const falsePositives = good.filter((row) => row.verdict !== "noFalsePositive").map((row) => row.id);
+  const falsePositives = good.filter((row) => row.verdict === "falsePositive").map((row) => row.id);
+  const undetermined = result.rows.filter((row) => row.verdict === "undetermined").map((row) => row.id);
   const reasons = [
     ...(detected.length > 0 ? [`配布時点で検出される誤った変更があります（${idList(detected)}）`] : []),
     ...(falsePositives.length > 0 ? [`配布時点で誤検知される正しいコードがあります（${idList(falsePositives)}）`] : []),
+    ...(undetermined.length > 0 ? [`配布時点で検査が完了せず判定できない行があります（${idList(undetermined)}）`] : []),
     ...result.problems.map((problem) => `問題があります（${problem}）`),
   ];
   return reasons.length === 0
     ? {
         ok: true,
-        line: `OK 初期状態: 誤った変更 ${bad.length} 件はすべてすり抜け、正しいコード ${good.length} 件に誤検知はありません`,
+        line: `OK 初期状態: 誤った変更 ${bad.length} 件はすべて未検出、正しいコード ${good.length} 件に誤検知はありません`,
       }
     : { ok: false, line: `NG 初期状態: ${reasons.join("。")}` };
 };

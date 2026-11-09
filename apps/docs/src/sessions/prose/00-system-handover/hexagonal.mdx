@@ -1,5 +1,5 @@
 import HexagonalConcept from "../../../components/handover/HexagonalConcept.astro";
 
-<p>前のページの構成は、ヘキサゴナルアーキテクチャ（Ports and Adapters）という設計の考え方に基づいています。名前は六角形の図に由来します。最初に考え方を図で説明し、次に配布コードのディレクトリと対応付けます。</p>
+<p>事故で欠けていた業務ロジックは <code>domain/</code> に実装します。<code>domain/</code> を画面やデータベースの実装から独立させると、業務ロジックを型検査とテストだけで検証できます。この構成の元になる考え方が、ヘキサゴナルアーキテクチャ（Ports and Adapters）です。図の port は Session 06 で使います。</p>
 
 <HexagonalConcept />
