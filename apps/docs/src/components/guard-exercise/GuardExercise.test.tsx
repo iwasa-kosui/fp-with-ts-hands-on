@@ -645,7 +645,7 @@ describe("GuardExercise", () => {
 
       expect(action(host, "run-guard")?.disabled).toBe(true);
       expect(host.querySelector('[data-role="outdated"]')?.textContent).toContain(
-        "案内に答えると、検出を確かめられます。",
+        "案内に答えると、検出を検証できます。",
       );
       await click(action(host, "run-guard"));
       expect(session.runCommand).not.toHaveBeenCalled();
@@ -694,7 +694,7 @@ describe("GuardExercise", () => {
     await click(action(host, "run-guard"));
 
     expect(host.querySelector(".guard-exercise__progress")?.textContent).toBe(
-      "検出を確かめています。",
+      "検出を検証しています。",
     );
 
     await act(async () => command.resolve(1));
@@ -919,7 +919,7 @@ describe("GuardExercise", () => {
         ?.value,
     ).toBe("別の書き方は検出できない");
     expect(second.host.textContent).toContain(
-      "機械では判定しません",
+      "プログラムでは判定しません",
     );
   });
 
@@ -1051,14 +1051,14 @@ describe("GuardExercise", () => {
       await settleUntil(() => starts === 2);
 
       expect(progressText()).toBe(phaseLabels.installing);
-      expect(progressText()).not.toBe("検出を確かめています。");
-      expect(progressText()).not.toContain("確かめ直しています");
+      expect(progressText()).not.toBe("検出を検証しています。");
+      expect(progressText()).not.toContain("再検証しています");
 
       await act(async () => secondStart.resolve());
       await settleUntil(() => commands === 2);
 
       expect(progressText()).toBe(
-        "タブが隠れていた間に時間切れになったため、確かめ直しています。",
+        "タブが隠れていた間に時間切れになったため、再検証しています。",
       );
 
       await act(async () => secondCommand.resolve(1));

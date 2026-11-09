@@ -248,7 +248,7 @@ describe("judge", () => {
     expect(result.problems[0]).not.toContain("正しい parse");
   });
 
-  it("target-by-name: ファイル名で悪い変更だけを狙う規則は不合格にする", async () => {
+  it("target-by-name: ファイル名で誤った変更だけを狙う規則は不合格にする", async () => {
     const result = await scenario("target-by-name");
 
     expect(result.passed).toBe(false);
@@ -401,7 +401,7 @@ describe("judge", () => {
     expect(existsSync(path.join(root, "dist/guard-verify/answer/result.json"))).toBe(true);
   });
 
-  it("verify: 配布の mine/ の雛形を使い、悪い変更はすべてすり抜けて正しいコードに誤検知が出ない", async () => {
+  it("verify: 配布の mine/ の雛形を使い、誤った変更はすべてすり抜けて正しいコードに誤検知が出ない", async () => {
     await verify({ root });
     const initial = JSON.parse(readFileSync(path.join(root, "dist/guard-verify/initial/result.json"), "utf8"));
 
@@ -415,17 +415,17 @@ describe("judge", () => {
     expect(initial.notes).toEqual([]);
   });
 
-  it("verify: 配布の mine/ に悪い変更を検出するテストを入れると失敗する", async () => {
+  it("verify: 配布の mine/ に誤った変更を検出するテストを入れると失敗する", async () => {
     const copied = copyRoot("verify-detecting-mine");
     placeAnswerTests(copied, ["input.test.ts"]);
 
     const result = await verify({ root: copied });
 
     expect(result.ok).toBe(false);
-    expect(result.lines[0]).toContain("NG 初期状態: 配布時点で検出される悪い変更があります（B1-any-parser、B2-unknown-cast、B3-schema-without-uuid）");
+    expect(result.lines[0]).toContain("NG 初期状態: 配布時点で検出される誤った変更があります（B1-any-parser、B2-unknown-cast、B3-schema-without-uuid）");
   });
 
-  it("unchanged: 正しいコードと同じ内容の悪い変更は「未変更」とし、次にすることから外す", async () => {
+  it("unchanged: 正しいコードと同じ内容の誤った変更は「未変更」とし、次にすることから外す", async () => {
     const copied = copyRoot("unchanged-root");
     const configFile = path.join(copied, "exercises/guard/guard.config.mjs");
     const caseFile = path.join(copied, "exercises/guard/cases/R1-peer-change.ts");

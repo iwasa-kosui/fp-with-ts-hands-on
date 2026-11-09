@@ -81,7 +81,7 @@ describe("cli", () => {
 
     expect(result.code).toBe(124);
     expect(result.stdout).toContain(
-      "検出を確かめる処理が 8 秒で終わりませんでした。eslint.config.mjs の規則に、終わらない繰り返しがないか見直します。",
+      "検出を検証する処理が 8 秒で終わりませんでした。eslint.config.mjs の規則に、終わらない繰り返しがないか見直します。",
     );
     expect(result.groups.length).toBeGreaterThan(0);
     expect(await Promise.all(result.groups.map(groupGone))).toEqual(result.groups.map(() => true));

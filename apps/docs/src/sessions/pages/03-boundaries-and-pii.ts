@@ -81,7 +81,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 2,
-    role: "解決策: ここまでの知識を組み合わせて、境界の検査を作ります。",
+    role: "解決策: ここまでの知識を組み合わせて、境界の検査を作成します。",
   },
   {
     slug: "terms",
@@ -137,7 +137,7 @@ export const sessionPages = [
     flow: "work",
     kind: "review",
     minutes: 1,
-    role: "業務で考える: 担当業務で守るなら、どの仕組みを選ぶかを比較します。",
+    role: "業務で考える: 担当業務で守る場合、どの仕組みを選ぶかを比較します。",
   },
   {
     slug: "review",

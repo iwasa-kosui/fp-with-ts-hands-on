@@ -36,9 +36,9 @@ const phaseOrder = [
 ] as const satisfies readonly TerminalPhase[];
 
 const stepLabels: Readonly<Record<Exclude<GuardRunStep, "starting">, string>> = {
-  judging: "検出を確かめています。",
-  waiting: "このタブに戻ると、検出を確かめ直します。",
-  rejudging: "タブが隠れていた間に時間切れになったため、確かめ直しています。",
+  judging: "検出を検証しています。",
+  waiting: "このタブに戻ると、検出を再検証します。",
+  rejudging: "タブが隠れていた間に時間切れになったため、再検証しています。",
   reading: "結果を読み込んでいます。",
 };
 
@@ -148,11 +148,11 @@ export const GuardLayout = ({
             disabled={running || parts.locked}
             onClick={() => void guard.run()}
           >
-            {running ? "確かめています" : "検出を確かめる"}
+            {running ? "検証しています" : "検出を検証する"}
           </button>
           {parts.outdated ? (
             <p className="guard-exercise__run-note" data-role="outdated">
-              「教材が更新されました。前の編集を使いますか。」の案内に答えると、検出を確かめられます。
+              「教材が更新されました。前の編集を使いますか。」の案内に答えると、検出を検証できます。
             </p>
           ) : null}
           {progress === undefined ? null : (

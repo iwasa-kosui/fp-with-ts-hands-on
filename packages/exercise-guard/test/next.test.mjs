@@ -144,7 +144,7 @@ describe("buildNext", () => {
     expect(sentences).toEqual(["合格です。表の行を開いて、この仕組みで検出できないことを書きます。"]);
   });
 
-  it("合格のときは、任意の悪い変更がすり抜けていても、合格の文を先頭に置く", () => {
+  it("合格のときは、任意の誤った変更がすり抜けていても、合格の文を先頭に置く", () => {
     const optional = rowOf({
       kind: "bad",
       verdict: "slipped",

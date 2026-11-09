@@ -1,4 +1,4 @@
-// このファイルを書き換えて、隣の人の仕組みをすり抜ける誤った変更を作ります
+// このファイルを書き換えて、隣の人の仕組みで検出されない誤った変更を作成します
 import type { Result } from "neverthrow";
 
 import type { InExamination } from "../../../src/domain/appointment/index.js";

@@ -149,7 +149,7 @@ export const ResultTable = ({
       </table>
       <div className="guard-exercise__limits">
         <p className="guard-exercise__limits-note">
-          各行を開いて記載する「この仕組みで検出できないこと」は、機械では判定しません。
+          各行を開いて記載する「この仕組みで検出できないこと」は、プログラムでは判定しません。
         </p>
         <details
           className="guard-exercise__terms"
