@@ -61,15 +61,22 @@ const plain = (lines: readonly number[]): readonly Lit[] => lines.map((line) => 
 const beforeTypeStart = "export type Appointment = Readonly<{";
 const beforeTypeNeedles = ["status: string;", "veterinarianId?: string;", "examinationStartedAt?: string;"];
 const beforeTypeLines = litLinesOf(sourceOfKey("before-appointment"), beforeTypeStart, beforeTypeNeedles);
-const beforeUpdateLines = litLinesOf(sourceOfKey("before-appointment"), "export const updateStatus = (", ["status: string"]);
+const beforeUpdateStart = "export const updateStatus = (";
+const beforeUpdateLines = litLinesOf(sourceOfKey("before-appointment"), beforeUpdateStart, ["status: string"]);
+const [beforeTypeAnchor] = litLinesOf(sourceOfKey("before-appointment"), beforeTypeStart, [beforeTypeStart]);
+const [beforeUpdateAnchor] = litLinesOf(sourceOfKey("before-appointment"), beforeUpdateStart, [beforeUpdateStart]);
 
 const afterTypeStart = "export type InExamination = Readonly<{";
 const afterTypeNeedles = ['kind: "InExamination";', "veterinarianId: string;", "examinationStartedAt: string;"];
 const afterTypeLines = litLinesOf(sourceOfKey("after-appointment"), afterTypeStart, afterTypeNeedles);
 const afterRequiredLines = litLinesOf(sourceOfKey("after-appointment"), afterTypeStart, afterTypeNeedles.slice(1));
+const [afterTypeAnchor] = litLinesOf(sourceOfKey("after-appointment"), afterTypeStart, [afterTypeStart]);
 
 const beforeValue = `declare const checkedIn: Appointment;
-const broken = updateStatus(checkedIn, "in-examination");`;
+const broken = updateStatus(
+  checkedIn,
+  "in-examination",
+);`;
 const afterValue = `declare const checkedIn: CheckedIn;
 const broken: InExamination = {
   ...checkedIn,
@@ -147,6 +154,8 @@ type Frame = Readonly<{
   focus: "file" | "scratch" | "board";
   scratch?: ScratchId;
   lit: readonly Lit[];
+  anchor: number;
+  treeNote?: Readonly<{ file: FileKey; text: string }>;
   caption: string;
 }>;
 
@@ -156,6 +165,7 @@ const frames: readonly Frame[] = [
     part: "Appointment 型",
     focus: "file",
     lit: withNotes(beforeTypeLines, ["どんな文字列でも入る", "省略できる", "省略できる"]),
+    anchor: beforeTypeAnchor ?? 0,
     caption:
       "S00 の配布コードの Appointment は、状態を string で持ちます。診察中にだけ要る veterinarianId と examinationStartedAt は、? を付けて省略できます。Readonly<{…}> は、項目を書き換えられない型にします。",
   },
@@ -165,6 +175,7 @@ const frames: readonly Frame[] = [
     focus: "scratch",
     scratch: "value-before",
     lit: plain(beforeUpdateLines),
+    anchor: beforeUpdateAnchor ?? 0,
     caption:
       "S00 の updateStatus は、状態を文字列で受け取ります。診察中なのに獣医師も開始時刻もない予約を作る呼び出しが、型検査を通ります。",
   },
@@ -174,6 +185,7 @@ const frames: readonly Frame[] = [
     focus: "board",
     scratch: "board-before",
     lit: plain(beforeTypeLines),
+    anchor: beforeTypeAnchor ?? 0,
     caption: "この型は、業務上ありえない組み合わせを、すべて受け入れます。",
   },
   {
@@ -181,6 +193,8 @@ const frames: readonly Frame[] = [
     part: "InExamination 型",
     focus: "file",
     lit: withNotes(afterTypeLines, ['"InExamination" だけ', "必須", "必須"]),
+    anchor: afterTypeAnchor ?? 0,
+    treeNote: { file: "after-transitions", text: "残りはここ" },
     caption:
       "この回の開始コードは、状態ごとに別の型を持ちます。InExamination では、kind が \"InExamination\" だけを受け取り、veterinarianId と examinationStartedAt が必須です。型はここまで済んでいて、残りは遷移関数の引数です。",
   },
@@ -190,6 +204,7 @@ const frames: readonly Frame[] = [
     focus: "scratch",
     scratch: "value-after",
     lit: plain(afterRequiredLines),
+    anchor: afterTypeAnchor ?? 0,
     caption:
       "...checkedIn は、checkedIn の項目のコピーです。同じ状況の値を InExamination として書くと、veterinarianId と examinationStartedAt がないことを、型検査が報告します。書いた時点で気づけます。",
   },
@@ -199,6 +214,7 @@ const frames: readonly Frame[] = [
     focus: "board",
     scratch: "board-after",
     lit: plain(afterRequiredLines),
+    anchor: afterTypeAnchor ?? 0,
     caption:
       "同じ4つの値のうち、型検査が受け入れるのは、業務上ありえる1つだけです。ありえない状態を、型で表せなくする考え方です。",
   },
@@ -224,7 +240,10 @@ const generationKeys = ["before", "after"] as const;
                 <p class="illegal__folder">{directory}/</p>
                 <ul class="illegal__tree-files">
                   {files.filter((file) => file.generation === generation).map((file) => (
-                    <li><button type="button" data-file={file.key} data-step-scene>{file.name}</button></li>
+                    <li>
+                      <button type="button" data-file={file.key} data-step-scene>{file.name}</button>
+                      <span class="illegal__tree-note" data-tree-note={file.key} hidden></span>
+                    </li>
                   ))}
                 </ul>
               </li>
@@ -244,8 +263,11 @@ const generationKeys = ["before", "after"] as const;
               <span class="illegal__part" data-part hidden></span>
               <button type="button" class="illegal__restore" data-restore data-step-scene hidden>このコマのファイルに戻す</button>
             </p>
-            <div class="illegal__code" data-scroll data-step-scene tabindex="0" role="region" aria-label={file.path}>
-              <Code code={file.source} lang="ts" />
+            <div class="illegal__codebox">
+              <div class="illegal__code" data-scroll data-step-scene tabindex="0" role="region" aria-label={file.path}>
+                <Code code={file.source} lang="ts" />
+              </div>
+              <div class="illegal__sticky" data-sticky aria-hidden="true" hidden></div>
             </div>
           </div>
         ))}
@@ -253,8 +275,8 @@ const generationKeys = ["before", "after"] as const;
 
       <section class="illegal__scratch">
         <p class="illegal__pane-head">
-          <span class="illegal__scratch-title"><strong>試し書き</strong><span class="illegal__scratch-off">: このコマでは使いません</span></span>
-          <span class="illegal__scratch-sub">ファイルにはない、説明用の短いコードです</span>
+          <span class="illegal__scratch-title"><strong>説明用のコード</strong><span class="illegal__scratch-off">: このコマにはありません</span></span>
+          <span class="illegal__scratch-sub">ファイルにはない、短い例です</span>
         </p>
         <div class="illegal__scratch-body">
           {scratchViews.map((view) => (
@@ -335,6 +357,8 @@ const generationKeys = ["before", "after"] as const;
             focus: frame.focus,
             scratch: frame.scratch,
             lit: frame.lit,
+            anchor: frame.anchor,
+            treeNote: frame.treeNote,
           })}
         >
           <p class="st-caption">{frame.caption}</p>
@@ -348,7 +372,15 @@ const generationKeys = ["before", "after"] as const;
   import { mountStepper } from "../stepper/stepper";
 
   type Lit = { line: number; note?: string };
-  type View = { file: string; part: string; focus: "file" | "scratch" | "board"; scratch?: string; lit: Lit[] };
+  type View = {
+    file: string;
+    part: string;
+    focus: "file" | "scratch" | "board";
+    scratch?: string;
+    lit: Lit[];
+    anchor: number;
+    treeNote?: { file: string; text: string };
+  };
 
   document.querySelectorAll<HTMLElement>("[data-illegal]").forEach((root) => {
     const panels = [...root.querySelectorAll<HTMLElement>("[data-panel]")];
@@ -367,17 +399,59 @@ const generationKeys = ["before", "after"] as const;
 
     const panelOf = (key: string) => panels.find((panel) => panel.dataset.panel === key);
 
-    const centerLit = (panel: HTMLElement, lit: readonly Lit[]) => {
+    const centerLit = (panel: HTMLElement, lit: readonly Lit[], anchor: number) => {
       const box = panel.querySelector<HTMLElement>("[data-scroll]");
       if (!box || lit.length === 0) return;
       const lines = panel.querySelectorAll<HTMLElement>(".line");
+      const head = lines[anchor];
       const first = lines[Math.min(...lit.map((item) => item.line))];
       const last = lines[Math.max(...lit.map((item) => item.line))];
-      if (!first || !last) return;
+      if (!head || !first || !last) return;
       const boxTop = box.getBoundingClientRect().top;
-      const top = first.getBoundingClientRect().top - boxTop + box.scrollTop;
-      const bottom = last.getBoundingClientRect().bottom - boxTop + box.scrollTop;
-      box.scrollTo({ top: Math.max(0, (top + bottom) / 2 - box.clientHeight / 2), behavior: scrollBehavior() });
+      const offsetOf = (line: HTMLElement) => line.getBoundingClientRect().top - boxTop + box.scrollTop;
+      const headTop = offsetOf(head);
+      const firstTop = offsetOf(first);
+      const lastBottom = offsetOf(last) + last.getBoundingClientRect().height;
+      const pinned = head.getBoundingClientRect().height + 1;
+      const height = box.clientHeight;
+      const target =
+        lastBottom - headTop <= height
+          ? (headTop + lastBottom) / 2 - height / 2
+          : (firstTop + lastBottom) / 2 - (height + pinned) / 2;
+      box.scrollTo({ top: Math.max(0, target), behavior: scrollBehavior() });
+    };
+
+    const updateSticky = (panel: HTMLElement) => {
+      const box = panel.querySelector<HTMLElement>("[data-scroll]");
+      const sticky = panel.querySelector<HTMLElement>("[data-sticky]");
+      if (!box || !sticky) return;
+      const head = frameView && chosen === null ? panel.querySelectorAll<HTMLElement>(".line")[frameView.anchor] : undefined;
+      if (!head) {
+        sticky.hidden = true;
+        return;
+      }
+      sticky.style.right = `${box.offsetWidth - box.clientWidth}px`;
+      sticky.hidden = head.getBoundingClientRect().top >= box.getBoundingClientRect().top - 0.5;
+    };
+
+    const buildSticky = (panel: HTMLElement) => {
+      const sticky = panel.querySelector<HTMLElement>("[data-sticky]");
+      if (!sticky) return;
+      const head = frameView && chosen === null ? panel.querySelectorAll<HTMLElement>(".line")[frameView.anchor] : undefined;
+      if (!head || !frameView) {
+        sticky.replaceChildren();
+        sticky.hidden = true;
+        return;
+      }
+      const clone = head.cloneNode(true) as HTMLElement;
+      clone.classList.remove("is-lit");
+      delete clone.dataset.note;
+      const code = document.createElement("code");
+      code.style.counterReset = `illegal-line ${frameView.anchor}`;
+      code.append(clone);
+      const pre = document.createElement("pre");
+      pre.append(code);
+      sticky.replaceChildren(pre);
     };
 
     const render = () => {
@@ -416,6 +490,7 @@ const generationKeys = ["before", "after"] as const;
       }
       if (!following) {
         panel.querySelector<HTMLElement>("[data-scroll]")?.scrollTo({ top: 0, behavior: "auto" });
+        buildSticky(panel);
         return;
       }
       const lines = panel.querySelectorAll<HTMLElement>(".line");
@@ -425,13 +500,19 @@ const generationKeys = ["before", "after"] as const;
         element.classList.add("is-lit");
         if (note) element.dataset.note = note;
       });
-      centerLit(panel, frameView.lit);
+      buildSticky(panel);
+      centerLit(panel, frameView.lit, frameView.anchor);
+      updateSticky(panel);
     };
 
     right?.addEventListener("transitionend", (event) => {
       if (event.target !== right || event.propertyName !== "grid-template-rows") return;
       const panel = frameView && chosen === null ? panelOf(frameView.file) : undefined;
-      if (panel && frameView) centerLit(panel, frameView.lit);
+      if (panel && frameView) centerLit(panel, frameView.lit, frameView.anchor);
+    });
+
+    panels.forEach((panel) => {
+      panel.querySelector("[data-scroll]")?.addEventListener("scroll", () => updateSticky(panel), { passive: true });
     });
 
     fileButtons.forEach((button) => {
@@ -458,6 +539,11 @@ const generationKeys = ["before", "after"] as const;
         chosen = null;
         if (!frameView) return;
         root.dataset.focus = frameView.focus;
+        root.querySelectorAll<HTMLElement>("[data-tree-note]").forEach((note) => {
+          const visible = frameView?.treeNote?.file === note.dataset.treeNote;
+          note.textContent = visible ? (frameView?.treeNote?.text ?? "") : "";
+          note.hidden = !visible;
+        });
         scratchViews.forEach((view) => {
           view.hidden = view.dataset.scratch !== frameView?.scratch;
         });
@@ -474,7 +560,7 @@ const generationKeys = ["before", "after"] as const;
 
   .illegal__stage {
     display: grid;
-    grid-template-columns: 13rem minmax(0, 1fr);
+    grid-template-columns: 14rem minmax(0, 1fr);
     gap: 0.5rem;
     margin-block-end: 0.5rem;
   }
@@ -547,9 +633,34 @@ const generationKeys = ["before", "after"] as const;
     color: var(--role-muted);
   }
 
+  .illegal__tree-files > li {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+  }
+
+  .illegal__tree-note {
+    flex: none;
+    padding: 0 0.375rem;
+    border-radius: 0.25rem;
+    background: var(--role-accent-soft);
+    color: var(--role-accent);
+    font-size: 0.6875rem;
+    font-weight: 800;
+    line-height: 1.5;
+    white-space: nowrap;
+    animation: illegal-fade 0.25s ease-out;
+  }
+
+  .illegal__tree-note[hidden] {
+    display: none;
+  }
+
   .illegal__tree button {
     display: block;
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
     padding: 0.125rem 0.375rem;
     border: 0;
     border-radius: 0.25rem;
@@ -559,6 +670,7 @@ const generationKeys = ["before", "after"] as const;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: inherit;
     text-align: start;
+    white-space: nowrap;
   }
 
   .illegal__tree button:hover {
@@ -727,19 +839,43 @@ const generationKeys = ["before", "after"] as const;
     line-height: 1.5;
   }
 
-  .illegal__code {
+  .illegal__codebox {
     position: relative;
+    display: flex;
+    flex-direction: column;
     max-height: 24rem;
-    overflow: auto;
-    overscroll-behavior: contain;
     background: var(--frame-code-surface);
     color: var(--frame-code-text);
   }
 
-  .illegal[data-ready] .illegal__code {
+  .illegal[data-ready] .illegal__codebox {
     flex: 1 1 0;
     min-height: 0;
     max-height: none;
+  }
+
+  .illegal__code {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .illegal__sticky {
+    position: absolute;
+    inset: 0 0 auto 0;
+    z-index: 1;
+    border-bottom: 1px solid color-mix(in srgb, var(--frame-code-text) 30%, transparent);
+    background: var(--frame-code-surface);
+    pointer-events: none;
+  }
+
+  .illegal__sticky[hidden] {
+    display: none;
+  }
+
+  .illegal[data-ready] .illegal__codebox .illegal__sticky :global(pre) {
+    padding: 0;
   }
 
   .illegal__code:focus-visible {
@@ -747,7 +883,7 @@ const generationKeys = ["before", "after"] as const;
     outline-offset: -3px;
   }
 
-  .illegal__code :global(pre) {
+  .illegal__codebox :global(pre) {
     margin: 0;
     padding: 0.375rem 0;
     border: 0;
@@ -757,7 +893,7 @@ const generationKeys = ["before", "after"] as const;
     line-height: 1.5;
   }
 
-  .illegal__code :global(code) {
+  .illegal__codebox :global(code) {
     display: flex;
     flex-direction: column;
     counter-reset: illegal-line;
@@ -765,7 +901,7 @@ const generationKeys = ["before", "after"] as const;
     white-space: pre-wrap;
   }
 
-  .illegal__code :global(.line) {
+  .illegal__codebox :global(.line) {
     display: block;
     min-height: 1.5em;
     padding-inline: 3rem 0.75rem;
@@ -773,7 +909,7 @@ const generationKeys = ["before", "after"] as const;
     text-indent: -3rem;
   }
 
-  .illegal__code :global(.line)::before {
+  .illegal__codebox :global(.line)::before {
     display: inline-block;
     width: 2.25rem;
     margin-inline-end: 0.75rem;
@@ -784,18 +920,28 @@ const generationKeys = ["before", "after"] as const;
     user-select: none;
   }
 
-  .illegal__code :global(.line.is-lit) {
+  .illegal__codebox :global(.line.is-lit) {
     background: color-mix(in srgb, var(--frame-code-text) 20%, transparent);
     box-shadow: inset 4px 0 0 var(--role-accent);
   }
 
-  .illegal__code :global(.line[data-note])::after {
+  .illegal__codebox :global(.line[data-note])::after {
     margin-inline-start: 1rem;
     color: color-mix(in srgb, var(--frame-code-text) 75%, transparent);
     content: "← " attr(data-note);
     font-size: 0.75rem;
     font-weight: 700;
     text-indent: 0;
+  }
+
+  .illegal[data-focus="board"] .illegal__codebox :global(pre) {
+    padding-block: 0.125rem;
+    font-size: 0.75rem;
+    line-height: 1.3;
+  }
+
+  .illegal[data-focus="board"] .illegal__codebox :global(.line) {
+    min-height: 1.3em;
   }
 
   .illegal__scratch-off {
@@ -963,6 +1109,11 @@ const generationKeys = ["before", "after"] as const;
     padding-inline: 0.5rem;
   }
 
+  .illegal .illegal__table .illegal__cell-code :global(.line > span) {
+    display: inline-block;
+    white-space: pre;
+  }
+
   .illegal__cell-check {
     white-space: nowrap;
   }
@@ -981,6 +1132,15 @@ const generationKeys = ["before", "after"] as const;
 
   .illegal .illegal__split :global(.st-code pre) {
     padding-block: 0.25rem;
+  }
+
+  @media (min-height: 845px) {
+    .illegal[data-ready] .illegal__stage {
+      height: min(
+        calc(var(--frame-figure-height) - 1.75rem - 1.25rem - 2px),
+        calc(100dvh - var(--frame-bar-height) - var(--frame-foot-height) - var(--frame-role-height) - 296px)
+      );
+    }
   }
 
   @media (max-width: 719px) {
@@ -1003,8 +1163,8 @@ const generationKeys = ["before", "after"] as const;
       flex: none;
     }
 
-    .illegal__code,
-    .illegal[data-ready] .illegal__code {
+    .illegal__codebox,
+    .illegal[data-ready] .illegal__codebox {
       flex: none;
       max-height: 18rem;
     }
