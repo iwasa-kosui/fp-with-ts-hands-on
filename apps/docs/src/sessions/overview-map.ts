@@ -21,7 +21,7 @@ export const sessionOverviews: Readonly<Record<Exclude<SessionSlug, "00-system-h
   "01-state-transitions": { rule: "会計済みの予約は、診察に戻せない", incident: "課題1" },
   "02-adt-and-exhaustiveness": { rule: "予約の状態を追加したら、すべての表示を対応させる" },
   "03-boundaries-and-pii": {
-    rule: "外部から受け取る値は検証してから使う。調査に不要な連絡先は監査記録に残さない",
+    rule: "外部から受け取る値は検証してから使う。調査に不要な個人情報は監査記録に出力しない",
     incident: "課題2",
   },
   "04-workflow-errors": { rule: "「予約が見つからない」と「今の状態では操作できない」を区別する" },

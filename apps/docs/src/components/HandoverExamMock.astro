@@ -105,7 +105,7 @@ const steps = [
     layers: ["entry"],
   },
   {
-    text: "サーバーは、データベースから Mugi の予約を取得します。取得した状態は <code>paid</code> です。この時点で、サーバーはこの予約が会計済みであることを把握します。コードの <code>repository</code> は、データベースを読み書きするオブジェクトです。",
+    text: "ユースケース（1つの業務の処理順序をまとめた関数）が、データベースから Mugi の予約を取得します。状態は <code>paid</code> であり、この時点でサーバーは会計済みであることを把握します。<code>repository</code> は、データベースを読み書きするオブジェクトです。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "const current = repository.find(input.appointmentId);", false),
     impl: {
@@ -121,7 +121,7 @@ const steps = [
     layers: ["useCase", "db"],
   },
   {
-    text: "本来はここで処理を中断すべきです。しかし <code>updateStatus</code> は、受け取った値で <code>status</code> を上書きするだけで、現在の状態を検証しません。ほかの行にも、状態を検証する処理はありません。",
+    text: "本来はここで処理を中断すべきです。しかし業務ロジック（操作の可否などを判定する処理）の <code>updateStatus</code> は、受け取った値で <code>status</code> を上書きするだけで、現在の状態を検証しません。ほかの行にも、状態を検証する処理はありません。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "const updated = updateStatus(", true),
     impl: {
@@ -488,7 +488,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
     </ol>
   </div>
 
-  <figcaption class="hem__note">このモックは説明用であり、データベースには接続しません。コードは examples/session-00 の実物です。同じ値をローカル環境で確認するには<a href="/sessions/00-system-handover/demo-screen/">デモ画面をローカル環境で起動する</a>を開いてください。</figcaption>
+  <figcaption class="hem__note">このモックは説明用であり、データベースには接続しません。コードは examples/session-00 の実物です。同じ値は<a href="/sessions/00-system-handover/demo-screen/">デモ画面をローカル環境で起動する</a>で確認できます。</figcaption>
 </figure>
 
 <script>
