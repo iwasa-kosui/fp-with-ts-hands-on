@@ -112,6 +112,7 @@ const rows = [
         before.style.setProperty("--col", String(moments.indexOf("human")));
         after.style.setProperty("--col", String(hidden ? 0 : stopIndex));
         after.toggleAttribute("data-dim", hidden);
+        after.toggleAttribute("data-neutral", panel.dataset.afterResult !== undefined);
         const result = after.querySelector<HTMLElement>(".gg__token-result");
         if (result) result.textContent = panel.dataset.afterResult ?? "防止";
         void root.offsetWidth;
@@ -283,6 +284,15 @@ const rows = [
   .gg[data-run] .gg__row[data-row="after"] .gg__token {
     border-color: var(--role-positive);
     background: color-mix(in srgb, var(--role-positive) 14%, var(--role-surface));
+  }
+
+  .gg[data-run] .gg__row[data-row="after"][data-neutral] .gg__token {
+    border-color: var(--role-border);
+    background: color-mix(in srgb, var(--role-muted) 14%, var(--role-surface));
+  }
+
+  .gg__row[data-row="after"][data-neutral] .gg__token-result {
+    color: var(--role-text);
   }
 
   .gg__row[data-dim] :is(.gg__name, .gg__lanes) {

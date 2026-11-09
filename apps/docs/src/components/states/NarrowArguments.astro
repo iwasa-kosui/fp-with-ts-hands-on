@@ -31,10 +31,10 @@ const versions = {
   },
   caller: {
     tag: "呼び出し側: S01 の完成コード",
-    fn: "startExaminationFor",
-    path: quotes.solutionCallerCheck.path,
-    code: quotes.solutionCallerCheck.code,
-    changed: [lineIndexOf(quotes.solutionCallerCheck.code, 'if (current.kind !== "CheckedIn")')],
+    fn: "registerClinicRoutes",
+    path: quotes.solutionRouteCheck.path,
+    code: quotes.solutionRouteCheck.code,
+    changed: [lineIndexOf(quotes.solutionRouteCheck.code, 'if (current.kind !== "CheckedIn")')],
     tone: "positive",
   },
 } as const;
@@ -66,7 +66,7 @@ const frames: readonly Readonly<{
       "修正前のコードは、引数の型が Appointment、返す型が Appointment です。末尾の as Appointment は、値の中身を検証せずに型を伝える書き方（型アサーション）です。来院済みの予約を渡すと、診察中の予約が返ります。",
   },
   {
-    event: { label: "業務イベント", text: "獣医師が「診察を開始する」を押す（会計済みの予約で押した）" },
+    event: { label: "コードの誤り", text: "開発者が、会計済みの予約を startExamination へ渡すコードを書く" },
     version: "before",
     input: "paid",
     output: { type: "exception" },
@@ -79,7 +79,7 @@ const frames: readonly Readonly<{
     input: "checked",
     output: { type: "done" },
     caption:
-      "修正後のコードは、引数の型が CheckedIn、返す型が InExamination で、末尾が as const satisfies InExamination です。来院済みの予約を渡すと、診察中の予約が返ります。",
+      "修正後のコードは、引数の型が CheckedIn、返す型が InExamination で、末尾が as const satisfies InExamination です。引数を CheckedIn に絞ったため、関数の中の requireKind は不要になりました。来院済みの予約を渡すと、診察中の予約が返ります。",
   },
   {
     event: { label: "コードの誤り", text: "開発者が、会計済みの予約を startExamination へ渡すコードを書く" },
@@ -90,12 +90,12 @@ const frames: readonly Readonly<{
       "会計済みの予約を渡すコードは、実行前の型検査が報告します。このコードの誤りは、型検査の時点で判明します。",
   },
   {
-    event: { label: "業務イベント", text: "獣医師が「診察を開始する」を押す（会計済みの予約で押した）" },
+    event: { label: "業務イベント", text: "サーバーが、会計済みの予約に対する診察開始の依頼を受け取る" },
     version: "caller",
     input: "paid",
     output: { type: "rejected" },
     caption:
-      "画面の操作で渡される予約はデータベースから取得した値で、型検査の対象ではありません。そこで、呼び出し側が実行時に kind を検証します。修正前の requireKind の検証は、呼び出し側のこの if に移りました。CheckedIn 以外は例外で中断するため、操作は拒否されます。検証の後は current が CheckedIn に絞り込まれ、startExamination に渡せます。この呼び出し側を、次のページと演習では startExaminationFor として扱います。",
+      "データベースから取得した値は、型検査の対象ではありません。HTTP リクエストを受ける routes.ts が、実行時に kind を検証して依頼を拒否します。この検証は修正前からあり、この Session の修正では変わりません。検証の後は current が CheckedIn に絞り込まれ、startExamination に渡せます。次のページと演習では、同じ検証を切り出した関数 startExaminationFor を扱います。",
   },
 ];
 ---
@@ -154,7 +154,7 @@ const frames: readonly Readonly<{
               {frame.output.type === "rejected" && (
                 <>
                   <p class="na__state"><strong>実行時の例外</strong><code>Invalid appointment state</code></p>
-                  <p class="na__note">操作を拒否する</p>
+                  <p class="na__note">依頼を拒否する</p>
                 </>
               )}
               {frame.output.type === "typeError" && (

@@ -2,6 +2,6 @@ import AnyStateEntrance from "../../../components/states/AnyStateEntrance.astro"
 
 <p>業務イベントごとに予約の状態を変える関数を、この Session では<strong>遷移関数</strong>と呼びます。この Session の開始コード（<code>examples/session-01</code>）は、状態の名前を格納する項目 <code>kind</code> で 6 つの状態を分け、状態ごとの遷移関数を持ちます。</p>
 
-<p>事故は S00 のコードの <code>updateStatus</code> で発生しました。この Session の開始コードには、実行時に <code>requireKind</code> で例外（処理を中断してエラーを知らせる仕組み）を投げる検証を実装済みで、会計済みの予約で押す操作は拒否されます。残る問題は、コードの誤りを検出できるのが実行したときだけであることです。<code>startExamination</code> の引数の型が <code>Appointment</code> であり、どの状態の予約も受け取るためです。この Session の目的は、誤った状態の予約を渡すコードの誤りを型検査のときに検出することで、ゴールは、遷移関数の引数を、受け取れる状態の型に絞ることです。</p>
+<p>事故は S00 のコードの <code>updateStatus</code> で発生しました。この Session の開始コードの画面は、会計済みの予約に「診察を開始する」を表示せず、サーバーも依頼を実行時に検証して拒否します。遷移関数にも、<code>requireKind</code> で例外（処理を中断してエラーを知らせる仕組み）を投げる検証があります。残る問題は、コードの誤りを検出できるのが実行したときだけであることです。<code>startExamination</code> の引数の型が <code>Appointment</code> であり、どの状態の予約も受け取るためです。この Session の目的は、誤った状態の予約を渡すコードの誤りを型検査のときに検出することで、ゴールは、遷移関数の引数を、受け取れる状態の型に絞ることです。</p>
 
 <AnyStateEntrance />

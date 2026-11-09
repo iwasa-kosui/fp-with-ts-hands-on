@@ -97,7 +97,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <section class="landing-section" id="problems" aria-labelledby="problems-title">
           <div class="section-head"><h2 id="problems-title">ところが、問題が増えてきました</h2><p>便利になった分だけ、要求も増えました。小さな改修を重ねるうちに、どの状態でどの操作を許可するのか、どの情報を外部へ出力してよいのかが不明確になっています。</p></div>
           <div class="timeline" aria-label="WAN NYAN OS に発生している問題">
-            <article class="time-stop is-active"><time>Current / S00</time><strong>🐕 現状と事故を対応付ける</strong><span>業務の流れ、画面操作、保存先、ログを確認し、二重請求と、監査記録で閲覧できた個人情報の発生箇所を確認します。</span></article>
+            <article class="time-stop is-active"><time>Current / S00</time><strong>🐕 現状と事故を対応付ける</strong><span>業務の流れ、画面操作、保存先、ログを確認し、二重請求と、監査記録で個人情報を閲覧できる問題の発生箇所を確認します。</span></article>
             <article class="time-stop"><time>Risk / S01</time><strong>🐇 許可されない状態遷移</strong><span>会計済み・キャンセル済みの予約を遷移関数へ渡すコードの誤りを、状態と遷移の型で実行前に検出します。</span></article>
             <article class="time-stop"><time>Risk / S02</time><strong>🦔 状態の分岐漏れ</strong><span>予約の状態を追加したときに、表示名などの分岐の修正漏れを、コンパイルエラーで防止します。</span></article>
             <article class="time-stop"><time>Risk / S03</time><strong>🐦 未検証の外部入力</strong><span>HTTPから受け取った値をZodで検証し、値の制約を型で表した診察開始の入力へ変換します。監査記録に個人情報を含めない形にします。</span></article>

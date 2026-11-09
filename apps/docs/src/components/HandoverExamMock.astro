@@ -50,6 +50,12 @@ const highlight = (file: string, lines: string[], text: string, multiline: boole
   return `${file}:${start + 1}:${end + 1}`;
 };
 
+const shown = (file: string, lines: string[], text: string, multiline: boolean, before = 0): string => {
+  const start = findLine(lines, text);
+  const end = multiline ? blockEnd(lines, start) : start;
+  return `${file}:${Math.max(start - before, 0) + 1}:${end + 1}`;
+};
+
 const cut = (source: string, startText: string, mode: "block" | "line" | "end"): string => {
   const lines = source.split("\n");
   const start = findLine(lines, startText);
@@ -84,6 +90,7 @@ const steps = [
     text: "会計が完了した Mugi の予約です。画面の「会計済み」と「Paid」、データベースの <code>paid</code> は、いずれも同じ状態の表記です。獣医師は別の予約と誤認して、この画面を開いています。",
     file: "",
     highlight: undefined,
+    show: undefined,
     impl: undefined,
     values: undefined,
     warn: undefined,
@@ -94,6 +101,7 @@ const steps = [
     text: "獣医師が「診察を開始する」を押します。入口は、予約の ID を受け取り、担当の獣医師の ID と合わせて次の処理へ渡します。受け取る値は ID のみであるため、サーバーはこの時点で予約の状態を把握していません。",
     file: "route",
     highlight: highlight("route", routeCode, "startExamination(repository)({", true),
+    show: shown("route", routeCode, "startExamination(repository)({", true, 1),
     impl: undefined,
     values: {
       input: `{
@@ -110,6 +118,7 @@ const steps = [
     text: "ユースケース（1つの業務の処理順序をまとめた関数）が、データベースから Mugi の予約を取得します。状態は <code>paid</code> であり、この時点でサーバーは会計済みであることを把握します。<code>repository</code> は、データベースを読み書きするオブジェクトです。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "const current = repository.find(input.appointmentId);", false),
+    show: shown("use-case", useCaseCode, "const current = repository.find(input.appointmentId);", false),
     impl: {
       file: repositoryFile,
       code: part(repositorySource, "find: (appointmentId) => {", ".where(sql", "return row === undefined"),
@@ -123,9 +132,10 @@ const steps = [
     lit: ["use-case", "db"],
   },
   {
-    text: "本来はここで処理を中断すべきです。しかし、業務ロジック（操作の可否などを判定する処理）を置く <code>domain/</code> の <code>updateStatus</code> は、受け取った値で <code>status</code> を上書きするだけで、現在の状態を検証しません。ほかの行にも、状態を検証する処理はありません。",
+    text: "本来はここで処理を中断すべきです。しかし、業務ロジック（操作の可否などを判定する処理）を置く <code>domain/</code> の <code>updateStatus</code> は、受け取った値で <code>status</code> を上書きするだけで、現在の状態を検証しません。省略した行にも、状態を検証する処理はありません。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "const updated = updateStatus(", true),
+    show: shown("use-case", useCaseCode, "const updated = updateStatus(", true),
     impl: {
       file: appointmentFile,
       code: cut(appointmentSource, "export const updateStatus", "end"),
@@ -144,6 +154,7 @@ status: "in-examination"`,
     text: "データベースの予約を、新しい内容で上書きします。<code>paid</code> は <code>in-examination</code> に変わります。<code>amount</code> と <code>paidAt</code> は残っているため、会計済みの予約が診察中の状態になりました。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "repository.save(updated);", false),
+    show: shown("use-case", useCaseCode, "repository.save(updated);", false),
     impl: {
       file: repositoryFile,
       code: part(repositorySource, "const save = (appointment: Appointment): void => {", ".values(row)", ".run();"),
@@ -157,6 +168,7 @@ status: "in-examination"`,
     text: "監査記録に、診察を開始した操作を1行追加します。<code>payload</code> には予約全体が含まれるため、調査に不要な飼い主の氏名、メールアドレス、電話番号も保存されます。これが課題2です。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "repository.appendAudit({", true),
+    show: shown("use-case", useCaseCode, "repository.appendAudit({", true),
     impl: {
       file: repositoryFile,
       code: part(repositorySource, "const appendAudit = (", "db.insert(auditLogsTable)", "})"),
@@ -173,6 +185,7 @@ status: "in-examination"`,
     text: "サーバーの応答によって画面が更新され、表示は「診察中」に変わります。受付はこの画面から会計前の来院と判断し、会計担当が飼い主へ同じ4,800円を再度請求しました。これが課題1です。",
     file: "",
     highlight: undefined,
+    show: undefined,
     impl: undefined,
     values: undefined,
     warn: undefined,
@@ -210,11 +223,12 @@ const payloadLines = [
 ] as const;
 
 const highlights = JSON.stringify(steps.map((step) => step.highlight ?? ""));
+const shows = JSON.stringify(steps.map((step) => step.show ?? ""));
 const files = JSON.stringify(steps.map((step) => step.file));
 const lit = JSON.stringify(steps.map((step) => step.lit));
 ---
 
-<figure class="hem" data-exam-mock data-highlights={highlights} data-files={files} data-lit={lit}>
+<figure class="hem" data-exam-mock data-highlights={highlights} data-shows={shows} data-files={files} data-lit={lit}>
   <div class="hem__player" data-player>
     <StepControls />
 
@@ -497,6 +511,7 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
     if (!screen || !startButton || !cursor || !pane) return;
 
     const highlights = JSON.parse(root.dataset.highlights ?? "[]") as string[];
+    const shows = JSON.parse(root.dataset.shows ?? "[]") as string[];
     const files = JSON.parse(root.dataset.files ?? "[]") as string[];
     const lit = JSON.parse(root.dataset.lit ?? "[]") as string[][];
     const player = root.querySelector<HTMLElement>("[data-player]") ?? root;
@@ -522,33 +537,43 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
     };
 
     const showCode = (index: number) => {
-      const switched = blocks.find((block) => !block.hidden)?.dataset.codeFile !== files[index];
       blocks.forEach((block) => {
         block.hidden = block.dataset.codeFile !== files[index];
       });
-      const scroller = pane.querySelector<HTMLElement>(".hem__block:not([hidden]) pre");
-      if (switched) scroller?.scrollTo({ top: 0, behavior: "instant" });
-      codeLines.forEach((lines) => lines.forEach((line) => line.classList.remove("is-hl")));
+      pane.querySelectorAll(".hem__gap").forEach((gap) => gap.remove());
+      codeLines.forEach((lines) =>
+        lines.forEach((line) => {
+          line.classList.remove("is-hl");
+          line.hidden = false;
+        }),
+      );
       const [file, from, to] = (highlights[index] ?? "").split(":");
+      const [, showFrom, showTo] = (shows[index] ?? "").split(":");
       const lines = codeLines.get(file ?? "");
-      const first = lines?.[Number(from) - 1];
-      const last = lines?.[Number(to) - 1];
-      if (!scroller) return;
-      if (!lines || !first || !last) {
-        scroller.scrollTo({ top: 0 });
-        return;
-      }
+      if (!lines) return;
       lines.slice(Number(from) - 1, Number(to)).forEach((line) => line.classList.add("is-hl"));
-      const lineHeight = parseFloat(getComputedStyle(first).minHeight);
-      const padding = parseFloat(getComputedStyle(scroller).paddingTop);
-      const scrollerTop = scroller.getBoundingClientRect().top;
-      const top = first.getBoundingClientRect().top - scrollerTop + scroller.scrollTop - padding;
-      const height = last.getBoundingClientRect().bottom - first.getBoundingClientRect().top;
-      const view = scroller.clientHeight - 2 * padding;
-      const wanted = height > view ? top : top - (view - height) / 2;
-      const maxTop = scroller.scrollHeight - scroller.clientHeight;
-      const snapped = Math.min(Math.max(Math.round(wanted / lineHeight) * lineHeight, 0), maxTop);
-      scroller.scrollTo({ top: snapped, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+
+      const first = Number(showFrom) - 1;
+      const last = Number(showTo) - 1;
+      lines.forEach((line, lineIndex) => {
+        line.hidden = lineIndex < first || lineIndex > last;
+      });
+      let head = first > 0;
+      let tail = last < lines.length - 1;
+      const capacity = Number.parseInt(getComputedStyle(root).getPropertyValue("--hem-file-lines"));
+      const overflowing = () => last - first + 1 + Number(head) + Number(tail) > capacity;
+      if (overflowing()) head = false;
+      if (overflowing()) tail = false;
+      const gapNextTo = (line: HTMLElement) => {
+        const gap = document.createElement("span");
+        gap.className = "hem__gap";
+        gap.textContent = `${/^\s*/.exec(line.textContent ?? "")?.[0] ?? ""}// …`;
+        return gap;
+      };
+      const firstLine = lines[first];
+      const lastLine = lines[last];
+      if (head && firstLine) firstLine.before(gapNextTo(firstLine));
+      if (tail && lastLine) lastLine.after(gapNextTo(lastLine));
     };
 
     const render = (index: number) => {
@@ -1059,6 +1084,17 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
     min-height: var(--hem-lineh);
     padding-inline: 8px;
     transition: background-color 0.3s;
+  }
+
+  .hem .hem__block :global(.line[hidden]) {
+    display: none;
+  }
+
+  .hem .hem__block :global(.hem__gap) {
+    min-height: var(--hem-lineh);
+    padding-inline: 8px;
+    color: color-mix(in srgb, currentColor 55%, transparent);
+    white-space: pre;
   }
 
   .hem .hem__block :global(.line.is-hl) {

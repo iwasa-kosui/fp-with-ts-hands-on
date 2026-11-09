@@ -8,7 +8,7 @@ import { session } from "../../pages/01-state-transitions-content";
       {session.episode.map((line) => <p data-episode-line>{line}</p>)}
     </aside>
     <p>システムは、会計済みの予約を診察中へ戻す操作を拒否しませんでした。その結果、飼い主への請求書が 2 枚になりました。</p>
-    <p>この Session の開始コードでは、実行時の検証によって、この操作はすでに拒否されます。この Session では、会計済みの予約を診察中へ戻すコードの誤りを、プログラムの実行前に検出する形にします。</p>
+    <p>この Session の開始コードの画面は、会計済みの予約に「診察を開始する」を表示せず、サーバーも依頼を拒否します。この Session では、会計済みの予約を診察中へ戻すコードの誤りを、プログラムの実行前に検出する形にします。</p>
   </div>
   <div>
     <EpisodeIllustration slug="01-state-transitions" />
