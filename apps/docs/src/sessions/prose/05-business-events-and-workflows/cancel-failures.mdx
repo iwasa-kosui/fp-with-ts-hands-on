@@ -1,7 +1,7 @@
 import CancelRailwayAnimation from "../../../components/CancelRailwayAnimation.astro";
 import SessionDetailsBody from "../../../components/SessionDetailsBody.astro";
 
-<p>失敗する箇所は、工程では3か所、コードでは5か所です。「実行者の確認」は <code>ensureUserFound</code> と <code>ensureCanManageClinic</code>、「予約の確認」は <code>ensureAppointmentFound</code> と <code>ensureCancellable</code>、「記録して返す」は <code>store</code> です。競合（別のリクエストが先に同じ予約を更新した場合）は、利用者が最新の内容を確認してやり直せるため Err で、図のタブに含まれません。接続断は選べない障害であるため例外です。</p>
+<p>失敗する箇所は、工程では3か所、コードでは5か所です。「実行者の確認」は <code>ensureUserFound</code> と <code>ensureCanManageClinic</code>、「予約の確認」は <code>ensureAppointmentFound</code> と <code>ensureCancellable</code>、「記録して返す」は <code>store</code> です。図のタブは競合を含みません。競合（別のリクエストの先行更新）は、利用者が最新の内容を確認してやり直せるため Err です。接続断は、利用者が次の操作を選べない障害のため例外です。</p>
 
 <CancelRailwayAnimation scenes="failures" />
 
@@ -14,7 +14,7 @@ import SessionDetailsBody from "../../../components/SessionDetailsBody.astro";
     </li>
     <li>
       <p>問い: キャンセル理由が空のリクエストは、どこで中断されますか。そのキャンセルは記録されますか。</p>
-      <p>答え: ユースケースの手前の境界で中断されます。境界が入力エラーの画面を返してユースケースを呼ばないため、理由のないキャンセルは記録されません。</p>
+      <p>答え: useCase の手前の境界で中断されます。境界が入力エラーの画面を返して useCase を呼ばないため、理由のないキャンセルは記録されません。</p>
     </li>
   </SessionDetailsBody>
 </details>

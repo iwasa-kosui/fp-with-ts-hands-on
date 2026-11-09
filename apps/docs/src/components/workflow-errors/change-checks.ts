@@ -11,7 +11,7 @@ selector: "CallExpression[callee.property.name='_unsafeUnwrap']",`,
   {
     id: "tests",
     name: "テスト",
-    detail: "テスト用の Store で、呼び出しの結果（outcome）を検証する",
+    detail: "テスト用の Store で、呼び出しの結果（outcome。戻り値または投げられた例外を格納する値）を検証する",
     code: `expect(outcome.kind).toBe("returned");`,
   },
 ];
@@ -38,7 +38,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: true, output: "no-restricted-syntax: _unsafeUnwrap は失敗のとき例外を投げます。", setting: "selector: \"CallExpression[callee.property.name='_unsafeUnwrap']\"," },
       tests: { found: true, output: "2件失敗: expected 'threw' to be 'returned'" },
     },
-    why: "`_unsafeUnwrap` は失敗のとき例外を投げますが、型はそれを表しません。Linter のルールとテストの両方が検出します。演習の検証は cases/ の中のコードだけを検査するため、route の入力の検査が使う `_unsafeUnwrap` は検査されません。実際のプロジェクトでは、`files` で useCase に限定します。",
+    why: "`_unsafeUnwrap` は失敗のとき例外を投げますが、型はそれを表しません。Linter のルールとテストの両方が検出します。演習の検証は、一覧の変更を格納した `cases/` の中のコードだけを検査するため、route の入力の検査が使う `_unsafeUnwrap` は検査されません。実際のプロジェクトでは、ESLint の設定の `files` で対象を useCase に限定します。",
   },
   {
     id: "B5-error-kind-swallowed",
@@ -59,9 +59,9 @@ const cases: readonly ChangeCase[] = [
     results: {
       lint: { found: true, output: "switch-exhaustiveness-check: Switch is not exhaustive. Cases not matched: \"AppointmentCancelled\"", setting: `"@typescript-eslint/switch-exhaustiveness-check"
 { considerDefaultExhaustiveForUnions: false }` },
-      tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true, setting: "// この分岐のテストはまだありません" },
+      tests: { found: false, output: "このファイルを実行するテストは 0 件", noTest: true, setting: "// この分岐のテストはまだありません" },
     },
-    why: "`default` が受けるため、型検査は通ります。Linter のルールが検出し、テストはまだないため対象外です。",
+    why: "`default` が受けるため、型検査は通ります。Linter のルールが検出します。この分岐を検証するテストはまだありません。",
   },
 ];
 

@@ -1,7 +1,7 @@
 import CancelRailwayAnimation from "../../../components/CancelRailwayAnimation.astro";
 import SessionDetailsBody from "../../../components/SessionDetailsBody.astro";
 
-<p>参照実装はデータベースの応答を待つため ResultAsync を使います。ResultAsync は、データベースの応答を待ってから Ok か Err になる Result です。連結の方法は、記録して返す工程の andThrough を除いて、S04 の Result と同じです。</p>
+<p>参照実装はデータベースの応答を待つため ResultAsync を使います。ResultAsync は、データベースの応答を待ってから Ok か Err になる Result です。連結の方法は、記録して返す工程の andThrough を除いて、S04 の Result と同じです。<code>createEvent</code> は Err を返しませんが、ResultAsync を返すため、<code>map</code> ではなく <code>andThen</code> で連結します。</p>
 
 <CancelRailwayAnimation scenes="success" />
 

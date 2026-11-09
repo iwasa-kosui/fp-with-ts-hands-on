@@ -4,4 +4,4 @@ import ExceptionOrResultAnimation from "../../../components/ExceptionOrResultAni
 
 <ExceptionOrResultAnimation scenario="system" />
 
-<p><strong>入力の失敗</strong>: S03 で未対応とした入力の失敗は、この Session の対象にしません。本来は、利用者が入力を直せる業務の失敗として Err で返しますが、S03 の Result の Err は失敗の理由を持たないため、現在のコードでは <code>_unsafeUnwrap</code> が例外を投げて 500 を返します。</p>
+<p><strong>route の変更</strong>: 修正前は、route の <code>catch</code> が3種類の失敗を受け取りました。修正後の route に <code>catch</code> はありません。業務の失敗は Result として <code>match</code> が受け取り、保存の障害は例外のまま <code>app.onError</code> が受け取って 500 を返します。</p>

@@ -1,7 +1,7 @@
 import RewriteByStep from "../../../components/workflow-errors/RewriteByStep.astro";
 
-<p>課題1の1点目、失敗の理由が型に現れない点を解決します。<code>isErr</code> で分岐して実装した診察開始を、<code>andThen</code> と <code>map</code> で書き換え、useCase の戻り値を Result にします。<code>andThen</code> は、前の工程と渡した関数の失敗の型をユニオン型にするため、<code>AppointmentNotFound</code> と <code>InvalidAppointmentState</code> が <code>StartExaminationError</code> になります。図で、工程（処理の1つ1つ）ごとに2つの実装を比較します。</p>
+<p>課題1の1点目、失敗の理由が型に現れない点は、確認の関数と useCase の戻り値を Result にすることで解決します。<code>andThen</code> と <code>map</code> は、失敗する工程が増えても分岐を増やさないために使います。図で、工程ごとに2つの実装を比較します。</p>
 
 <RewriteByStep />
 
-<p><strong>解決したこと</strong>: 失敗の理由が戻り値の型に現れました。課題1の2点目、route が文言で判別する点は、次のページの <code>match</code> で解決します。</p>
+<p><strong>解決したこと</strong>: 戻り値を Result にしたことで、失敗の理由が型に現れました。<code>andThen</code> と <code>map</code> によって、失敗する工程が増えても分岐は増えません。2点目は次のページで解決します。</p>

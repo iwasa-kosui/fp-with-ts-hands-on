@@ -1,0 +1,136 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import { bandMeta, bandTransformer, checkBands, excerptBetween, lineRange } from "./lines";
+import { isErrPipeline } from "./sources";
+import "./figure.css";
+
+const themes = { light: "github-light", dark: "github-dark" } as const;
+
+const isErrBranches = excerptBetween(isErrPipeline, "const found = ", "const next = ");
+const branchBands = {
+  c: [
+    ...lineRange(isErrBranches, "if (found.isErr())", "}"),
+    ...lineRange(isErrBranches, "if (checkedIn.isErr())", "}"),
+  ],
+};
+
+const frames = [
+  {
+    caption: "isErr（Result が Err かを判定するメソッド）で失敗を受け取ると、失敗する工程ごとに「失敗の場合、その失敗を返す」分岐を実装します。<code>found.value</code> は Ok の中の値を、<code>found.error</code> は Err の中の失敗を取り出します。現在は失敗する工程が2つであるため、分岐は2つです。",
+    view: "branches-2",
+  },
+  {
+    caption: "失敗する工程が1つ増えるたびに、同じ形の分岐がもう1組増えます。処理の順序は、分岐の間に埋もれていきます。",
+    view: "branches-3",
+  },
+].map((frame) => ({
+  ...frame,
+  code: isErrBranches,
+  path: "説明用のコード",
+  bands: checkBands(isErrBranches, branchBands),
+}));
+
+const rows = [
+  { step: "予約を取得する", variable: "found" },
+  { step: "来院済みの確認", variable: "checkedIn" },
+  { step: "失敗する工程がもう1つ", variable: "…" },
+] as const;
+---
+
+<figure class="we-fig we-fig--top failure-branches" data-failure-branches aria-label="失敗する工程が増えたときの isErr の分岐の増加">
+  <StepControls />
+
+  <ol class="we-frames">
+    {frames.map((frame) => (
+      <li data-frame>
+        <p class="we-caption" set:html={frame.caption} />
+        <div class="we-body fk-grid">
+          <figure class="we-code">
+            <figcaption class="we-code__head"><span class="we-code__tag">コード</span><code>{frame.path}</code></figcaption>
+            <Code code={frame.code} lang="ts" themes={themes} defaultColor={false} transformers={[bandTransformer]} meta={bandMeta(frame.bands)} />
+          </figure>
+
+          <div class="fk-view" data-view={frame.view}>
+            <ol class="fk-rows" aria-label="失敗する工程ごとの分岐">
+              {rows.map(({ step, variable }, index) => (
+                <li class="fk-row" data-ghost={index === 2 ? "true" : "false"} hidden={index === 2 && frame.view === "branches-2"}>
+                  <span class="we-chip">{step}</span>
+                  <code class="we-mono fk-branch" data-band="c">if ({variable}.isErr()) return err(…)</code>
+                </li>
+              ))}
+              <li class="fk-count">分岐: <strong>{frame.view === "branches-2" ? "2" : "3"}つ</strong></li>
+            </ol>
+          </div>
+        </div>
+      </li>
+    ))}
+  </ol>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-failure-branches]").forEach((root) => {
+    mountStepper({ root });
+  });
+</script>
+
+<style>
+  .fk-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2.45fr) minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: start;
+    margin-block-start: 0.375rem;
+  }
+
+  .fk-view {
+    min-width: 0;
+  }
+
+  .fk-rows {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fk-row {
+    display: grid;
+    justify-items: start;
+    gap: 0.25rem;
+    font-size: 0.8125rem;
+  }
+
+  .fk-branch {
+    padding: 0.0625rem 0.5rem;
+    border-inline-start: 4px solid var(--band);
+    background: color-mix(in srgb, var(--band) 16%, var(--role-surface));
+    overflow-wrap: anywhere;
+  }
+
+  .fk-row[hidden] {
+    display: none;
+  }
+
+  .fk-row[data-ghost="true"] {
+    outline: 2px dashed var(--role-border);
+    outline-offset: 3px;
+  }
+
+  .fk-count {
+    font-size: 0.9375rem;
+  }
+
+  .fk-count strong {
+    color: var(--role-negative);
+    font-size: 1.125rem;
+  }
+
+  @media (max-width: 48rem) {
+    .fk-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
