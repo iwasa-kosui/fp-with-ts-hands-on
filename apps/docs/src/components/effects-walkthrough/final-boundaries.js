@@ -74,6 +74,13 @@ for (const figure of figures) {
     lastAt = at;
     const skipped = new Set(frame.skipped ?? []);
 
+    const data = cards[carried];
+    card.dataset.tone = data.tone;
+    cardChip.textContent = data.chip;
+    cardType.textContent = data.type;
+    cardVal.textContent = data.short;
+
+    let currentPart;
     parts.forEach((part, index) => {
       const { stage, key } = part;
       const state = skipped.has(key)
@@ -95,15 +102,10 @@ for (const figure of figures) {
       part.open.inert = state !== "current";
       if (state === "current") {
         for (const out of part.outs) out.toggleAttribute("data-active", out.dataset.out === frame.out);
-        showImpl(part, frame.impl, frame.lines ?? [], reset || entered);
+        currentPart = part;
       }
     });
-
-    const data = cards[carried];
-    card.dataset.tone = data.tone;
-    cardChip.textContent = data.chip;
-    cardType.textContent = data.type;
-    cardVal.textContent = data.short;
+    if (currentPart !== undefined) showImpl(currentPart, frame.impl, frame.lines ?? [], reset || entered);
 
     if (reset) {
       void figure.offsetWidth;

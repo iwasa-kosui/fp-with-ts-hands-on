@@ -3,7 +3,7 @@
   --fb-err: var(--role-negative);
   --fb-reject: var(--role-negative);
   --fb-gutter: 0.5rem;
-  --fb-height: clamp(14rem, calc(100dvh - 25.75rem), 32rem);
+  --fb-height: clamp(14rem, calc(100dvh - 25.35rem), 32rem);
   display: grid;
   grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
   gap: 0.75rem;
@@ -373,17 +373,17 @@
 
 @media (min-height: 761px) {
   .fb {
-    --fb-height: clamp(14rem, calc(100dvh - 27.75rem), 32rem);
+    --fb-height: clamp(14rem, calc(100dvh - 27.35rem), 32rem);
   }
 }
 
 .fb[data-kind="failures"] {
-  --fb-height: clamp(13rem, calc(100dvh - 27rem), 32rem);
+  --fb-height: clamp(13rem, calc(100dvh - 23.9rem), 32rem);
 }
 
 @media (min-height: 761px) {
   .fb[data-kind="failures"] {
-    --fb-height: clamp(13rem, calc(100dvh - 29rem), 32rem);
+    --fb-height: clamp(13rem, calc(100dvh - 25.9rem), 32rem);
   }
 }
 
@@ -493,6 +493,13 @@
   .fb-impl pre,
   .fb-out pre {
     font-size: 0.75rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .fb-out[data-active],
+  .fb-gloss {
+    display: none;
   }
 }
 

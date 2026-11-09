@@ -3,8 +3,8 @@ export const whats = [
     id: "as-lint",
     wish: "as を使わない",
     name: "Linter の規則",
-    detail: "as を使う書き方を Linter が報告します（typescript-eslint の consistent-type-assertions）。as const は対象外です。",
-    recommended: "on-save",
+    detail: "as を使う書き方を Linter が報告します（typescript-eslint の consistent-type-assertions）。as const は対象外です。自分がすぐ気づくために、保存時の実行を併用できます。",
+    recommended: "ci",
   },
   {
     id: "required-checks",
@@ -17,7 +17,7 @@ export const whats = [
     id: "codeowners",
     wish: "テストを勝手に書き換えない",
     name: "GitHub の CODEOWNERS と Require review from Code Owners",
-    detail: "指定したパスの変更に、コードオーナーの承認を必須にします。",
+    detail: "指定したパスの変更に、コードオーナーの承認を必須にします。これは検査ではなく merge の条件です。CI の必須チェックと同じく、merge の前にかかります。",
     recommended: "ci",
   },
   {

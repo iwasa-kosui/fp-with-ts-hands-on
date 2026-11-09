@@ -45,7 +45,6 @@ type Frame = Readonly<{
   calls: Emphasis;
   imports: Emphasis;
   token: boolean;
-  tags: boolean;
 }>;
 
 const frames: readonly Frame[] = [
@@ -57,7 +56,6 @@ const frames: readonly Frame[] = [
     calls: "normal",
     imports: "normal",
     token: false,
-    tags: false,
   },
   {
     caption:
@@ -68,7 +66,6 @@ const frames: readonly Frame[] = [
     calls: "dim",
     imports: "dim",
     token: false,
-    tags: false,
   },
   {
     caption: "ユースケースは、依存を port の型で受け取ります。どの実装が渡されるかは知りません。",
@@ -78,7 +75,6 @@ const frames: readonly Frame[] = [
     calls: "dim",
     imports: "dim",
     token: false,
-    tags: false,
   },
   {
     caption:
@@ -89,7 +85,6 @@ const frames: readonly Frame[] = [
     calls: "dim",
     imports: "dim",
     token: false,
-    tags: false,
   },
   {
     caption: "app.ts が実装を作り、ユースケースへ渡します。S06 で見た注入です。",
@@ -99,7 +94,6 @@ const frames: readonly Frame[] = [
     calls: "dim",
     imports: "dim",
     token: false,
-    tags: false,
   },
   {
     caption:
@@ -110,23 +104,21 @@ const frames: readonly Frame[] = [
     calls: "focus",
     imports: "dim",
     token: true,
-    tags: false,
   },
   {
     caption:
-      "import の矢印はすべて内側を向きます。app.ts が各層を import して組み立てます。domain と useCase は adaptor を import しないので、テストでは偽の実装を渡せます。境界の札は、最初のページの5つの境界が、どの層にあるかを示します。",
+      "import の矢印はすべて内側を向きます。app.ts が各層を import して組み立てます。domain と useCase は adaptor を import しないので、テストでは偽の実装を渡せます。",
     nodes: "normal",
     focus: [],
     calls: "dim",
     imports: "focus",
     token: false,
-    tags: true,
   },
 ];
 
 const rangeLabel = ({ solution }: Snippet) => `${solution.path}:${solution.lines[0]}-${solution.lines[1]}`;
 
-const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, imports, token, tags }) => ({ caption, nodes, focus, calls, imports, token, tags })));
+const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, imports, token }) => ({ caption, nodes, focus, calls, imports, token })));
 ---
 
 <div class="ports-flow" data-ports-flow data-frames={playerData} role="group" aria-label={title}>
@@ -142,10 +134,10 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
       <p class="ports-flow__live" data-live aria-live="polite" hidden></p>
     </div>
 
-    <svg viewBox="0 0 360 444" role="img" aria-labelledby="ports-flow-title ports-flow-desc" data-nodes="normal" data-calls="normal" data-imports="normal" data-tags="false">
+    <svg viewBox="0 0 240 458" role="img" aria-labelledby="ports-flow-title ports-flow-desc" data-nodes="normal" data-calls="normal" data-imports="normal">
       <title id="ports-flow-title">{title}</title>
       <desc id="ports-flow-desc">
-        「外側（adaptor）」と書かれた外側の枠の中に、上から primary（Hono の route）の箱、内側の枠、secondary（SQLite の store）の箱が並びます。内側の枠の中には useCase の箱があり、その中に domain（port の型）の箱があります。app.ts（組み立て）の箱は、外側の枠の外の下にあります。実線の矢印は呼び出しを表し、3本あります。primary から useCase へ、useCase から domain の port へ、useCase から secondary へ向かいます。useCase から secondary への矢印は、domain の箱の外側を通り、port の型を通す呼び出しです。破線の矢印は import を表し、6本あります。primary から useCase へ、secondary から domain へ、useCase から domain へ、app.ts から primary へ、app.ts から useCase へ、app.ts から secondary へ向かいます。import の矢印はすべて、外側から内側を向きます。最後のコマでは、5つの境界の札が重なります。primary に入力境界、useCase に業務上の失敗と出力イベント、secondary に副作用、app.ts に例外境界の札が付きます。
+        「外側（adaptor）」と書かれた外側の枠の中に、上から primary（Hono の route）の箱、内側の枠、secondary（SQLite の store）の箱が並びます。内側の枠の中には useCase の箱があり、その中に domain（port の型）の箱があります。app.ts（組み立て）の箱は、外側の枠の外の下にあります。実線の矢印は呼び出しを表し、3本あります。primary から useCase へ、useCase から domain の port へ、useCase から secondary へ向かいます。useCase から secondary への矢印は、domain の箱の外側を通り、port の型を通す呼び出しです。破線の矢印は import を表し、6本あります。primary から useCase へ、secondary から domain へ、useCase から domain へ、app.ts から primary へ、app.ts から useCase へ、app.ts から secondary へ向かいます。import の矢印はすべて、外側から内側を向きます。
       </desc>
       <defs>
         <marker id="ports-flow-head-call" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
@@ -156,8 +148,8 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
         </marker>
       </defs>
 
-      <rect x="4" y="4" width="352" height="348" rx="12" class="ports-flow__frame ports-flow__frame--outer"></rect>
-      <text x="180" y="25" text-anchor="middle" class="ports-flow__text ports-flow__text--bold">外側（adaptor）</text>
+      <rect x="4" y="4" width="232" height="348" rx="12" class="ports-flow__frame ports-flow__frame--outer"></rect>
+      <text x="120" y="25" text-anchor="middle" class="ports-flow__text ports-flow__text--bold">外側（adaptor）</text>
       <rect x="26" y="104" width="188" height="156" rx="10" class="ports-flow__frame"></rect>
       <text x="120" y="123" text-anchor="middle" class="ports-flow__text ports-flow__text--bold">内側</text>
 
@@ -191,7 +183,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
         <path d="M 160 156 V 180" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
         <path d="M 36 392 H 15 V 63 H 40" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
         <path d="M 120 374 V 338" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
-        <path d="M 204 404 H 346 V 206 H 200" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
+        <path d="M 204 404 H 225 V 206 H 200" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
       </g>
       <g class="ports-flow__calls">
         <path d="M 48 90 V 132" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
@@ -202,24 +194,11 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
       <path d="M 48 90 V 284" class="ports-flow__track" data-track data-stops="0,42,194"></path>
       <circle r="8" class="ports-flow__token" data-token data-hidden></circle>
 
-      <g class="ports-flow__tags">
-        <rect x="224" y="52" width="76" height="22" rx="4" class="ports-flow__tag"></rect>
-        <text x="262" y="68" text-anchor="middle" class="ports-flow__tag-text">入力境界</text>
-        <rect x="224" y="146" width="108" height="22" rx="4" class="ports-flow__tag"></rect>
-        <text x="278" y="162" text-anchor="middle" class="ports-flow__tag-text">業務上の失敗</text>
-        <rect x="224" y="174" width="108" height="22" rx="4" class="ports-flow__tag"></rect>
-        <text x="278" y="190" text-anchor="middle" class="ports-flow__tag-text">出力イベント</text>
-        <rect x="224" y="300" width="62" height="22" rx="4" class="ports-flow__tag"></rect>
-        <text x="255" y="316" text-anchor="middle" class="ports-flow__tag-text">副作用</text>
-        <rect x="224" y="376" width="76" height="22" rx="4" class="ports-flow__tag"></rect>
-        <text x="262" y="392" text-anchor="middle" class="ports-flow__tag-text">例外境界</text>
-      </g>
-
       <g class="ports-flow__legend">
-        <path d="M 10 428 H 42" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
-        <text x="50" y="433" class="ports-flow__text">実線 ＝ 呼び出し</text>
-        <path d="M 186 428 H 218" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
-        <text x="226" y="433" class="ports-flow__text">破線 ＝ import</text>
+        <path d="M 10 426 H 42" class="ports-flow__line ports-flow__line--call" marker-end="url(#ports-flow-head-call)"></path>
+        <text x="50" y="431" class="ports-flow__text">実線 ＝ 呼び出し</text>
+        <path d="M 10 446 H 42" class="ports-flow__line ports-flow__line--import" marker-end="url(#ports-flow-head-import)"></path>
+        <text x="50" y="451" class="ports-flow__text">破線 ＝ import</text>
       </g>
     </svg>
 
@@ -241,7 +220,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
 
 <script>
   type Emphasis = "normal" | "dim" | "focus";
-  type Frame = { caption: string; nodes: "normal" | "dim"; focus: string[]; calls: Emphasis; imports: Emphasis; token: boolean; tags: boolean };
+  type Frame = { caption: string; nodes: "normal" | "dim"; focus: string[]; calls: Emphasis; imports: Emphasis; token: boolean };
 
   const MOVE_MS = 700;
   const PAUSE_MS = 500;
@@ -302,7 +281,6 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
       svg.dataset.nodes = frame.nodes;
       svg.dataset.calls = frame.calls;
       svg.dataset.imports = frame.imports;
-      svg.dataset.tags = String(frame.tags);
       nodes.forEach((node) => node.toggleAttribute("data-focus", frame.focus.includes(node.dataset.node ?? "")));
       if (frame.token) runToken();
       else stopToken();
@@ -339,7 +317,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
   .ports-flow svg {
     display: block;
     width: 100%;
-    max-width: 26rem;
+    max-width: 16.5rem;
     height: auto;
     margin-inline: auto;
   }
@@ -415,18 +393,6 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     paint-order: stroke;
     stroke: var(--role-surface);
     stroke-width: 4px;
-  }
-
-  .ports-flow__tag {
-    fill: var(--role-surface);
-    stroke: var(--role-accent);
-    stroke-width: 2;
-  }
-
-  .ports-flow__tag-text {
-    fill: var(--role-text);
-    font-size: 15px;
-    font-weight: 700;
   }
 
   .ports-flow__token {
@@ -571,13 +537,8 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     opacity: 0.3;
   }
 
-  [data-animated] .ports-flow__tags,
   [data-animated] .ports-flow__note {
     transition: opacity 0.3s;
-  }
-
-  [data-animated] svg:not([data-tags="true"]) .ports-flow__tags {
-    opacity: 0;
   }
 
   [data-animated] svg:not([data-calls="focus"]) .ports-flow__note {
@@ -619,7 +580,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
   @container (min-width: 44rem) {
     [data-animated] .ports-flow__stage {
       display: grid;
-      grid-template-columns: minmax(0, 19rem) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
       grid-template-rows: auto auto 1fr;
       column-gap: 1.25rem;
       align-items: start;
@@ -637,6 +598,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     [data-animated] svg {
       grid-column: 1;
       grid-row: 2 / span 2;
+      max-width: 12.25rem;
     }
 
     [data-animated] .ports-flow__live {

@@ -32,7 +32,7 @@ export const sessionPages = [
     title: "S06 との違い",
     flow: "knowledge",
     kind: "teach",
-    minutes: 0.5,
+    minutes: 1,
     role: "事前知識: 課題1の保存を読むために、S06 と違う3点を比べます。",
   },
   {
@@ -40,7 +40,7 @@ export const sessionPages = [
     title: "成功の流れで5つの境界をたどる",
     flow: "solution",
     kind: "teach",
-    minutes: 1.5,
+    minutes: 1.25,
     role: "解決策: 課題1に答えます。1件の依頼が5つの境界を順に通ることを確かめます。",
   },
   {
@@ -48,7 +48,7 @@ export const sessionPages = [
     title: "失敗の依頼はどこまで進むか",
     flow: "solution",
     kind: "teach",
-    minutes: 1.5,
+    minutes: 1.25,
     role: "解決策: 業務上の失敗と障害が、それぞれどこで分かれるかを確かめます。",
   },
   {
@@ -57,7 +57,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "review",
     minutes: 1.5,
-    role: "解決策を守る: 課題2に答えます。機械の指摘を、直すか、理由を付けて残すかを判断します。",
+    role: "解決策を守る: 課題2に答えます。機械の指摘を、コードか規則を直すか、理由を付けて残すかを判断します。",
   },
   {
     slug: "own-rule-review",
