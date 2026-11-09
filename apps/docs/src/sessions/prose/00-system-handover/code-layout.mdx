@@ -1,9 +1,9 @@
 import CodeLayoutDiagram from "../../../components/CodeLayoutDiagram.astro";
 
-<p>事故の原因は、配布コードのどこかにあります。探す前に、配布コード <code>examples/session-00/src</code> の分け方を見ます。矢印は import の向きです。</p>
+<p>業務の決まりをコードに書くには、何がどこに置かれているかを知る必要があります。配布コード <code>examples/session-00/src</code> の分け方を見ます。矢印は import の向きです。</p>
 
 <CodeLayoutDiagram />
 
-<p>5つの段は、次のディレクトリが受け持ちます。入口と失敗の返し方は <code>web/</code> と <code>boundary/</code>、読み取りから保存までの順番は <code>useCase/</code>、業務の判断は <code>domain/</code>、データベースの読み書きは <code>adaptor/secondary/sqlite/</code> です。</p>
+<p>5つの段は、次のディレクトリが受け持ちます。入口と失敗の返し方は <code>web/</code>、読み取りから保存までの順番は <code>useCase/</code>、業務の判断は <code>domain/</code>、データベースの読み書きは <code>adaptor/secondary/sqlite/</code> です。</p>
 
 <p>Hono は、HTTP のリクエストを処理する Web フレームワークです。SQLite は、このシステムのデータベースです。better-sqlite3 で接続し、Drizzle ORM で SQL を組み立てます。リポジトリ（Repository）は、データベースの読み書きをまとめたオブジェクトです。モックで見た <code>repository.find</code>、<code>repository.save</code>、<code>repository.appendAudit</code> は、このオブジェクトの関数です。</p>

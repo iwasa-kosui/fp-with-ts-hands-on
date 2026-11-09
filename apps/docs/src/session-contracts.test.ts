@@ -62,7 +62,7 @@ const expectedCurriculum = [
     kind: "orientation",
     exerciseCommand: undefined,
     snapshot: "session-00",
-    timeBreakdown: { brief: 4, teach: 3, exercise: 0, review: 3 },
+    timeBreakdown: { brief: 4, teach: 4, exercise: 0, review: 2 },
   },
   {
     slug: "01-state-transitions",

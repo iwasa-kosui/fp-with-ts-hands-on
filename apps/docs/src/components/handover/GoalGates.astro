@@ -1,0 +1,394 @@
+---
+import StepControls from "../stepper/StepControls.astro";
+import { noticeMoments, type NoticeMomentId } from "./notice-moments";
+
+type Frame = Readonly<{ token: string; stop: NoticeMomentId | "none"; caption: string }>;
+
+const frames: readonly Frame[] = [
+  {
+    token: "会計済みの予約で診察を開始",
+    stop: "none",
+    caption: "課題1の修正前です。会計済みの予約で診察を開始しても、どの場面でも止まりません。気づくのは人です。",
+  },
+  {
+    token: "会計済みの予約で診察を開始",
+    stop: "write",
+    caption: "課題1の修正後です。会計済みの予約を渡すコードは、書いているときに型検査が報告します。S01 で、この形にします。",
+  },
+  {
+    token: "会計済みの予約で診察を開始",
+    stop: "run",
+    caption: "課題1の修正後には、もう1つの止め方があります。データベースから読んだ値の中身は、型検査では確かめられません。動かしているときにサーバーが確かめ、その操作を受け付けません。",
+  },
+  {
+    token: "連絡先を監査記録に入れる",
+    stop: "none",
+    caption: "課題2の修正前です。監査記録に連絡先が入っても、どの場面でも止まりません。記録を調べた人が気づきます。",
+  },
+  {
+    token: "連絡先を監査記録に入れる",
+    stop: "test",
+    caption: "課題2の修正後です。連絡先を監査記録に戻す変更を、テストなどで報告できるようにします。S03 で、この形にします。",
+  },
+];
+
+const rows = [
+  { id: "before", name: "修正前", note: "今のコード", result: "被害" },
+  { id: "after", name: "修正後", note: "研修を終えたときのコード", result: "止まる" },
+] as const;
+---
+
+<figure class="gg" data-goal-gates aria-label="修正前と修正後で、誤りがどの場面まで進むか">
+  <StepControls />
+
+  <div aria-live="polite">
+    <ol class="gg__frames">
+      {frames.map((frame) => (
+        <li data-frame data-token={frame.token} data-stop={frame.stop}>
+          <p class="gg__caption">{frame.caption}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  <div class="gg__grid">
+    <div class="gg__head">
+      <span></span>
+      <div class="gg__moments">
+        {noticeMoments.map((moment) => <span>{moment.label}</span>)}
+      </div>
+    </div>
+
+    {rows.map((row) => (
+      <div class="gg__row" data-row={row.id}>
+        <p class="gg__name"><span class="gg__name-main">{row.name}</span><span class="gg__name-note">{row.note}</span></p>
+        <div class="gg__track">
+          <div class="gg__lanes">
+            {noticeMoments.map((moment) => (
+              <div class="gg__lane"><span class="gg__lane-name">{moment.label}</span></div>
+            ))}
+          </div>
+          <div class="gg__token">
+            <span class="gg__token-text" data-token-text>{frames[0].token}</span>
+            <span class="gg__token-result">{row.result}</span>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  const moments = ["write", "test", "run", "human"];
+
+  document.querySelectorAll<HTMLElement>("[data-goal-gates]").forEach((root) => {
+    const panels = [...root.querySelectorAll<HTMLElement>("[data-frame]")];
+    const before = root.querySelector<HTMLElement>("[data-row='before']");
+    const after = root.querySelector<HTMLElement>("[data-row='after']");
+    if (!before || !after) return;
+
+    mountStepper({
+      root,
+      onStep: (step) => {
+        const panel = panels[step];
+        if (!panel) return;
+        const stop = panel.dataset.stop ?? "none";
+        const stopIndex = moments.indexOf(stop);
+        const hidden = stopIndex === -1;
+
+        root.removeAttribute("data-run");
+        [before, after].forEach((row) => {
+          const text = row.querySelector<HTMLElement>("[data-token-text]");
+          if (text) text.textContent = panel.dataset.token ?? "";
+        });
+        before.style.setProperty("--col", String(moments.indexOf("human")));
+        after.style.setProperty("--col", String(hidden ? 0 : stopIndex));
+        after.toggleAttribute("data-dim", hidden);
+        void root.offsetWidth;
+        root.setAttribute("data-run", "");
+      },
+    });
+  });
+</script>
+
+<style>
+  .gg {
+    --gg-label: minmax(10rem, 12rem);
+    --gg-track-h: 4.25rem;
+    min-width: 0;
+    margin: 1rem 0;
+  }
+
+  .gg__frames {
+    margin: 0.75rem 0 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .gg__frames > li + li {
+    margin-block-start: 0.5rem;
+  }
+
+  .gg__caption {
+    margin: 0;
+    font-weight: 700;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+  }
+
+  .gg__grid {
+    display: none;
+    gap: 0.5rem;
+    margin-block-start: 0.75rem;
+  }
+
+  .gg[data-ready] .gg__grid {
+    display: grid;
+  }
+
+  .gg__head,
+  .gg__row {
+    display: grid;
+    grid-template-columns: var(--gg-label) minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .gg__moments {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .gg__moments > span {
+    padding: 0.125rem 0.25rem;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .gg__name {
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+    line-height: 1.4;
+  }
+
+  .gg__name-main {
+    display: block;
+    font-size: 0.9375rem;
+    font-weight: 800;
+  }
+
+  .gg__name-note {
+    display: block;
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    font-weight: 400;
+    word-break: keep-all;
+  }
+
+  .gg__track {
+    position: relative;
+    height: var(--gg-track-h);
+  }
+
+  .gg__lanes {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border: 1px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    overflow: hidden;
+  }
+
+  .gg__lane + .gg__lane {
+    border-inline-start: 1px dashed var(--role-border);
+  }
+
+  .gg__lane-name {
+    display: none;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    font-weight: 800;
+  }
+
+  .gg__token {
+    position: absolute;
+    top: 0.25rem;
+    bottom: 0.25rem;
+    left: 0.25rem;
+    display: grid;
+    align-content: center;
+    gap: 0.125rem;
+    box-sizing: border-box;
+    width: calc(25% - 0.5rem);
+    padding: 0.125rem 0.375rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  .gg__token-text {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .gg__token-result {
+    font-weight: 800;
+    opacity: 0;
+  }
+
+  .gg__row[data-row="before"] .gg__token-result {
+    color: var(--role-negative);
+  }
+
+  .gg__row[data-row="after"] .gg__token-result {
+    color: var(--role-positive);
+  }
+
+  .gg[data-run] .gg__token {
+    left: calc(var(--col) * 25% + 0.25rem);
+  }
+
+  .gg[data-run] .gg__token-result {
+    opacity: 1;
+  }
+
+  .gg[data-run] .gg__row[data-row="before"] .gg__token {
+    border-color: var(--role-negative);
+    background: color-mix(in srgb, var(--role-negative) 14%, var(--role-surface));
+  }
+
+  .gg[data-run] .gg__row[data-row="after"] .gg__token {
+    border-color: var(--role-positive);
+    background: color-mix(in srgb, var(--role-positive) 14%, var(--role-surface));
+  }
+
+  .gg__row[data-dim] {
+    opacity: 0.4;
+  }
+
+  .gg__row[data-dim] .gg__token {
+    visibility: hidden;
+  }
+
+  .gg[data-ready] .gg__frames {
+    display: grid;
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  .gg[data-ready] .gg__frames > li {
+    grid-area: 1 / 1;
+    margin: 0;
+  }
+
+  .gg[data-ready] .gg__frames > li[hidden] {
+    display: block;
+    visibility: hidden;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .gg[data-run] .gg__token {
+      transition:
+        left 0.9s ease-in-out,
+        top 0.9s ease-in-out,
+        border-color 0.2s ease 0.9s,
+        background-color 0.2s ease 0.9s;
+    }
+
+    .gg[data-run] .gg__token-result {
+      transition: opacity 0.2s ease 0.9s;
+    }
+  }
+
+  @media (max-height: 700px) {
+    .gg {
+      --gg-track-h: 3.5rem;
+      margin-block: 0.5rem;
+    }
+
+    .gg__frames {
+      margin-block-start: 0.375rem;
+    }
+
+    .gg__grid {
+      gap: 0.25rem;
+      margin-block-start: 0.375rem;
+    }
+
+    .gg__name {
+      padding-block: 0.25rem;
+    }
+
+    .gg__token {
+      top: 0.125rem;
+      bottom: 0.125rem;
+      font-size: 0.75rem;
+    }
+  }
+
+  @media (max-width: 55rem) {
+    .gg {
+      --gg-track-h: 12rem;
+    }
+
+    .gg__head {
+      display: none;
+    }
+
+    .gg__row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.25rem;
+    }
+
+    .gg__lanes {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: repeat(4, minmax(0, 1fr));
+    }
+
+    .gg__lane {
+      display: flex;
+      align-items: center;
+      padding-inline: 0.5rem;
+    }
+
+    .gg__lane + .gg__lane {
+      border-inline-start: 0;
+      border-block-start: 1px dashed var(--role-border);
+    }
+
+    .gg__lane-name {
+      display: block;
+    }
+
+    .gg__token {
+      top: 0.125rem;
+      bottom: auto;
+      left: 45%;
+      width: auto;
+      height: calc(25% - 0.25rem);
+      right: 0.25rem;
+      align-content: center;
+      grid-auto-flow: column;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .gg[data-run] .gg__token {
+      top: calc(var(--col) * 25% + 0.125rem);
+      left: 45%;
+    }
+  }
+</style>
