@@ -1,7 +1,7 @@
 import type { GuardGuide, GuardGuideSegment } from "./CaseList";
 
 export const defaultGuide: GuardGuide = {
-  title: "この演習でやること",
+  title: "この演習の手順",
   steps: [
     "誤った変更をコードで確認する",
     "どの仕組みで検出するかを選ぶ",

@@ -651,11 +651,24 @@ html[data-content-pending] .session-frame__content {
     top: var(--frame-bar-height);
     align-self: start;
     height: calc(100dvh - var(--frame-bar-height) - var(--frame-foot-height));
-    padding: 0.5rem 0.4rem;
+    padding: 0.25rem 0.4rem;
     overflow-y: auto;
     border-right: 1px solid var(--role-rule);
     background: transparent;
     scrollbar-width: thin;
+  }
+
+  .session-frame__sidebar .session-frame__group-title {
+    margin-top: 0.5rem;
+  }
+
+  .session-frame__sidebar .session-frame__pages a {
+    padding-block: 0.1rem;
+    line-height: 1.3;
+  }
+
+  .session-frame__sidebar .session-frame__pages a::before {
+    top: calc(0.1rem + 0.52rem - 4.5px);
   }
 }
 
