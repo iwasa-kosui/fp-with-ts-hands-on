@@ -74,24 +74,24 @@ const updatedSummary = `updated: { status: "in-examination", amount: 4800, ... }
 
 const tree = miniTree("session-00", "src/", [
   { folder: "adaptor/primary/web/", files: [{ id: "route", name: "routes.ts", note: "入口" }] },
-  { folder: "useCase/", files: [{ id: "use-case", name: "startExamination.ts", note: "手順" }] },
+  { folder: "useCase/", files: [{ id: "use-case", name: "startExamination.ts", note: "ユースケース" }] },
   { folder: "domain/appointment/", files: [{ id: "domain", name: "appointment.ts", note: "業務ロジック" }] },
   { folder: "adaptor/secondary/sqlite/", files: [{ id: "db", name: "appointmentRepository.ts", note: "DB" }] },
 ]);
 
 const steps = [
   {
-    text: "会計が終わった Mugi の予約です。画面の「会計済み」と「Paid」、データベースの <code>paid</code> は、どれも同じ状態の表記です。獣医師は別の予約のつもりで、この画面を開いています。",
+    text: "会計が完了した Mugi の予約です。画面の「会計済み」と「Paid」、データベースの <code>paid</code> は、いずれも同じ状態の表記です。獣医師は別の予約と誤認して、この画面を開いています。",
     file: "",
     highlight: undefined,
     impl: undefined,
     values: undefined,
     warn: undefined,
-    empty: "まだサーバーは動いていません",
+    empty: "サーバーの処理はまだ開始していません",
     lit: [],
   },
   {
-    text: "獣医師が「診察を開始する」を押します。入口は、どの予約かを示す ID を受け取り、担当の獣医師の ID と合わせて次の手順へ渡します。受け取るのは ID だけなので、サーバーはまだ予約の状態を知りません。",
+    text: "獣医師が「診察を開始する」を押します。入口は、予約の ID を受け取り、担当の獣医師の ID と合わせて次の処理へ渡します。受け取る値は ID のみであるため、サーバーはこの時点で予約の状態を把握していません。",
     file: "route",
     highlight: highlight("route", routeCode, "startExamination(repository)({", true),
     impl: undefined,
@@ -107,7 +107,7 @@ const steps = [
     lit: ["route"],
   },
   {
-    text: "サーバーは、データベースから Mugi の予約を読みます。読んだ状態は <code>paid</code> です。ここでサーバーは、この予約が会計済みだと分かります。コードの <code>repository</code> は、データベースを読み書きする部品です。",
+    text: "ユースケース（1つの業務の処理順序をまとめた関数）が、データベースから Mugi の予約を取得します。状態は <code>paid</code> であり、この時点でサーバーは会計済みであることを把握します。<code>repository</code> は、データベースを読み書きするオブジェクトです。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "const current = repository.find(input.appointmentId);", false),
     impl: {
@@ -123,7 +123,7 @@ const steps = [
     lit: ["use-case", "db"],
   },
   {
-    text: "本来はここで止めるべきです。しかし <code>updateStatus</code> は、受け取った値で <code>status</code> を上書きするだけで、今の状態を見ません。ほかの行にも、状態を確かめる処理はありません。",
+    text: "本来はここで処理を中断すべきです。しかし業務ロジック（操作の可否などを判定する処理）の <code>updateStatus</code> は、受け取った値で <code>status</code> を上書きするだけで、現在の状態を検証しません。ほかの行にも、状態を検証する処理はありません。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "const updated = updateStatus(", true),
     impl: {
@@ -136,12 +136,12 @@ status: "in-examination"`,
       output: `updated: { status: "in-examination",
   amount: 4800, ... }`,
     },
-    warn: "状態を確かめる行がない",
+    warn: "状態を検証する処理がない",
     empty: undefined,
     lit: ["use-case", "domain"],
   },
   {
-    text: "データベースの予約を、新しい内容で上書きします。<code>paid</code> は <code>in-examination</code> に変わります。<code>amount</code> と <code>paidAt</code> は残ったままなので、会計が済んだ予約が診察中になりました。",
+    text: "データベースの予約を、新しい内容で上書きします。<code>paid</code> は <code>in-examination</code> に変わります。<code>amount</code> と <code>paidAt</code> は残っているため、会計済みの予約が診察中の状態になりました。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "repository.save(updated);", false),
     impl: {
@@ -154,7 +154,7 @@ status: "in-examination"`,
     lit: ["use-case", "db"],
   },
   {
-    text: "監査記録に、診察を開始した操作を1行追加します。<code>payload</code> には予約全体が入るので、調査に要らない飼い主の氏名、メールアドレス、電話番号も残ります。これが課題2です。",
+    text: "監査記録に、診察を開始した操作を1行追加します。<code>payload</code> には予約全体が含まれるため、調査に不要な飼い主の氏名、メールアドレス、電話番号も保存されます。これが課題2です。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "repository.appendAudit({", true),
     impl: {
@@ -170,13 +170,13 @@ status: "in-examination"`,
     lit: ["use-case", "db"],
   },
   {
-    text: "サーバーが画面を開き直させ、表示は「診察中」に変わります。受付はこの画面を見て会計前の来院だと判断し、会計担当が飼い主へ同じ4,800円をもう一度請求しました。これが課題1です。",
+    text: "サーバーの応答によって画面が更新され、表示は「診察中」に変わります。受付はこの画面から会計前の来院と判断し、会計担当が飼い主へ同じ4,800円を再度請求しました。これが課題1です。",
     file: "",
     highlight: undefined,
     impl: undefined,
     values: undefined,
     warn: undefined,
-    empty: "色の付いた4つのファイルのどれにも、会計済みの予約を止める行はありませんでした",
+    empty: "色の付いた4つのファイルのいずれにも、会計済みの予約を拒否する処理はありませんでした",
     lit: ["route", "use-case", "domain", "db"],
   },
 ] as const;
@@ -262,7 +262,7 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
       </section>
 
       <section class="hem__col hem__col--code">
-        <h5 class="hem__col-title">コード（上の色の付いたファイルが、いま動いている場所）</h5>
+        <h5 class="hem__col-title">コード（上の色の付いたファイルが、現在の処理の位置）</h5>
         <div class="hem__files" data-files-pane role="region" aria-label="コード">
           {
             steps.map((step, index) =>
@@ -482,7 +482,7 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
     </ol>
   </div>
 
-  <figcaption class="hem__note">このモックは説明用で、データベースには接続しません。コードは examples/session-00 の実物です。手元で同じ値を見るには<a href="/sessions/00-system-handover/demo-screen/">デモ画面を手元で動かす</a>を開いてください。</figcaption>
+  <figcaption class="hem__note">このモックは説明用であり、データベースには接続しません。コードは examples/session-00 の実物です。同じ値は<a href="/sessions/00-system-handover/demo-screen/">デモ画面をローカル環境で起動する</a>で確認できます。</figcaption>
 </figure>
 
 <script>
