@@ -19,13 +19,13 @@ export type SessionSlug = (typeof sessionNavigationItems)[number]["slug"];
 
 export const sessionOverviews: Readonly<Record<Exclude<SessionSlug, "00-system-handover">, SessionOverview>> = {
   "01-state-transitions": { rule: "会計済みの予約は、診察に戻せない", incident: "課題1" },
-  "02-adt-and-exhaustiveness": { rule: "予約の状態を増やしたら、すべての表示を対応させる" },
+  "02-adt-and-exhaustiveness": { rule: "予約の状態を追加したら、すべての表示を対応させる" },
   "03-boundaries-and-pii": {
-    rule: "外から届く値は確かめてから使う。調査に要らない連絡先は監査記録に残さない",
+    rule: "外部から受け取る値は検証してから使う。調査に不要な連絡先は監査記録に残さない",
     incident: "課題2",
   },
-  "04-workflow-errors": { rule: "「予約が見つからない」と「今の状態では操作できない」を取り違えない" },
+  "04-workflow-errors": { rule: "「予約が見つからない」と「今の状態では操作できない」を区別する" },
   "05-business-events-and-workflows": { rule: "確認に1つでも失敗したキャンセルは記録しない" },
   "06-effects-and-consistency": { rule: "予約の変更と監査記録は、両方残すか、どちらも残さない" },
-  final: { rule: "ここまでの決まりを、1つのシステムの中で通してたどる" },
+  final: { rule: "実装した業務ルールを、1つのシステムの処理全体で確認する" },
 };

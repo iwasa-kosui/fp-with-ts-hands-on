@@ -72,24 +72,24 @@ const updatedSummary = `updated: { status: "in-examination", amount: 4800, ... }
 
 const layerLabels = [
   { id: "entry", name: "入口", path: "adaptor/primary/web" },
-  { id: "useCase", name: "手順", path: "useCase" },
-  { id: "domain", name: "決まり", path: "domain" },
+  { id: "useCase", name: "ユースケース", path: "useCase" },
+  { id: "domain", name: "業務ロジック", path: "domain" },
   { id: "db", name: "DB", path: "adaptor/secondary/sqlite" },
 ] as const;
 
 const steps = [
   {
-    text: "会計が終わった Mugi の予約です。画面の「会計済み」と「Paid」、データベースの <code>paid</code> は、どれも同じ状態の表記です。獣医師は別の予約のつもりで、この画面を開いています。",
+    text: "会計が完了した Mugi の予約です。画面の「会計済み」と「Paid」、データベースの <code>paid</code> は、いずれも同じ状態の表記です。獣医師は別の予約と誤認して、この画面を開いています。",
     file: "",
     highlight: undefined,
     impl: undefined,
     values: undefined,
     warn: undefined,
-    empty: "まだサーバーは動いていません",
+    empty: "サーバーの処理はまだ開始していません",
     layers: [],
   },
   {
-    text: "獣医師が「診察を開始する」を押します。入口は、どの予約かを示す ID を受け取り、担当の獣医師の ID と合わせて次の手順へ渡します。受け取るのは ID だけなので、サーバーはまだ予約の状態を知りません。",
+    text: "獣医師が「診察を開始する」を押します。入口は、予約の ID を受け取り、担当の獣医師の ID と合わせて次の処理へ渡します。受け取る値は ID のみであるため、サーバーはこの時点で予約の状態を把握していません。",
     file: "route",
     highlight: highlight("route", routeCode, "startExamination(repository)({", true),
     impl: undefined,
@@ -105,7 +105,7 @@ const steps = [
     layers: ["entry"],
   },
   {
-    text: "サーバーは、データベースから Mugi の予約を読みます。読んだ状態は <code>paid</code> です。ここでサーバーは、この予約が会計済みだと分かります。コードの <code>repository</code> は、データベースを読み書きする部品です。",
+    text: "サーバーは、データベースから Mugi の予約を取得します。取得した状態は <code>paid</code> です。この時点で、サーバーはこの予約が会計済みであることを把握します。コードの <code>repository</code> は、データベースを読み書きするオブジェクトです。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "const current = repository.find(input.appointmentId);", false),
     impl: {
@@ -121,7 +121,7 @@ const steps = [
     layers: ["useCase", "db"],
   },
   {
-    text: "本来はここで止めるべきです。しかし <code>updateStatus</code> は、受け取った値で <code>status</code> を上書きするだけで、今の状態を見ません。ほかの行にも、状態を確かめる処理はありません。",
+    text: "本来はここで処理を中断すべきです。しかし <code>updateStatus</code> は、受け取った値で <code>status</code> を上書きするだけで、現在の状態を検証しません。ほかの行にも、状態を検証する処理はありません。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "const updated = updateStatus(", true),
     impl: {
@@ -134,12 +134,12 @@ status: "in-examination"`,
       output: `updated: { status: "in-examination",
   amount: 4800, ... }`,
     },
-    warn: "状態を確かめる行がない",
+    warn: "状態を検証する処理がない",
     empty: undefined,
     layers: ["useCase", "domain"],
   },
   {
-    text: "データベースの予約を、新しい内容で上書きします。<code>paid</code> は <code>in-examination</code> に変わります。<code>amount</code> と <code>paidAt</code> は残ったままなので、会計が済んだ予約が診察中になりました。",
+    text: "データベースの予約を、新しい内容で上書きします。<code>paid</code> は <code>in-examination</code> に変わります。<code>amount</code> と <code>paidAt</code> は残っているため、会計済みの予約が診察中の状態になりました。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "repository.save(updated);", false),
     impl: {
@@ -152,7 +152,7 @@ status: "in-examination"`,
     layers: ["useCase", "db"],
   },
   {
-    text: "監査記録に、診察を開始した操作を1行追加します。<code>payload</code> には予約全体が入るので、調査に要らない飼い主の氏名、メールアドレス、電話番号も残ります。これが課題2です。",
+    text: "監査記録に、診察を開始した操作を1行追加します。<code>payload</code> には予約全体が含まれるため、調査に不要な飼い主の氏名、メールアドレス、電話番号も保存されます。これが課題2です。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "repository.appendAudit({", true),
     impl: {
@@ -168,13 +168,13 @@ status: "in-examination"`,
     layers: ["useCase", "db"],
   },
   {
-    text: "サーバーが画面を開き直させ、表示は「診察中」に変わります。受付はこの画面を見て会計前の来院だと判断し、会計担当が飼い主へ同じ4,800円をもう一度請求しました。これが課題1です。",
+    text: "サーバーの応答によって画面が更新され、表示は「診察中」に変わります。受付はこの画面から会計前の来院と判断し、会計担当が飼い主へ同じ4,800円を再度請求しました。これが課題1です。",
     file: "",
     highlight: undefined,
     impl: undefined,
     values: undefined,
     warn: undefined,
-    empty: "どのファイルにも、会計済みの予約を止める行はありませんでした",
+    empty: "どのファイルにも、会計済みの予約を拒否する処理はありませんでした",
     layers: [],
   },
 ] as const;
@@ -258,8 +258,8 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
       </section>
 
       <section class="hem__col hem__col--code">
-        <h5 class="hem__col-title">コード（光っている札が、いま動いている場所）</h5>
-        <ul class="hem__layers" aria-label="処理がいまどこにいるか">
+        <h5 class="hem__col-title">コード（強調表示のラベルが現在の処理の位置）</h5>
+        <ul class="hem__layers" aria-label="現在の処理の位置">
           {
             layerLabels.map((layer) => (
               <li class="hem__layer" data-layer={layer.id}>
@@ -488,7 +488,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
     </ol>
   </div>
 
-  <figcaption class="hem__note">このモックは説明用で、データベースには接続しません。コードは examples/session-00 の実物です。手元で同じ値を見るには<a href="/sessions/00-system-handover/demo-screen/">デモ画面を手元で動かす</a>を開いてください。</figcaption>
+  <figcaption class="hem__note">このモックは説明用であり、データベースには接続しません。コードは examples/session-00 の実物です。同じ値をローカル環境で確認するには<a href="/sessions/00-system-handover/demo-screen/">デモ画面をローカル環境で起動する</a>を開いてください。</figcaption>
 </figure>
 
 <script>
@@ -910,6 +910,11 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
     line-height: 1.4;
     white-space: nowrap;
     transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+  }
+
+  .hem .hem__layer[data-layer="useCase"],
+  .hem .hem__layer[data-layer="domain"] {
+    flex-shrink: 0;
   }
 
   .hem__layer-name {

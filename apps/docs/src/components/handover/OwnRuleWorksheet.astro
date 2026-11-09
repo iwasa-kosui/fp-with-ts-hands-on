@@ -2,14 +2,14 @@
 import { noticeMoments } from "./notice-moments";
 
 const questions = [
-  { field: "now", legend: "今、その決まりが破られたら、どの場面で気づきますか" },
-  { field: "goal", legend: "どの場面で気づけるようにしたいですか" },
+  { field: "now", legend: "現在、この業務ルールに違反する操作が行われた場合、どの時点で検出されますか" },
+  { field: "goal", legend: "どの時点で検出できるようにしますか" },
 ] as const;
 ---
 
 <div class="orw" data-own-rule>
   <div class="orw__group">
-    <label class="orw__legend" for="own-rule-text">人の頭の中にしかない決まり</label>
+    <label class="orw__legend" for="own-rule-text">担当者の記憶にしかない業務ルール</label>
     <textarea class="orw__text" id="own-rule-text" rows="2" data-field="rule"></textarea>
   </div>
 
