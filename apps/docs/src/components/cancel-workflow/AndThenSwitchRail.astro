@@ -38,7 +38,7 @@ type Frame = Readonly<{
   caption: string;
 }>;
 
-const errPassThrough: Row = { tone: "none", from: "Err(…)", to: "Err(…)", note: "失敗のレールでは関数を呼ばず、そのまま通る" };
+const errPassThrough: Row = { tone: "none", from: "Err(…)", to: "Err(…)", note: "失敗のレールでは関数を呼ばず、そのまま通過する" };
 
 const frames: readonly Frame[] = [
   {
@@ -48,16 +48,16 @@ const frames: readonly Frame[] = [
       { tone: "positive", from: "Ok(…)", to: "", note: "上のレール。成功の値が進む" },
       { tone: "negative", from: "Err(…)", to: "", note: "下のレール。失敗の値が進む" },
     ],
-    caption: "S04 の診察開始のコードを、2本のレールに重ねます。呼び出し 1 つが、レールの 1 区間です。",
+    caption: "S04 の診察開始のコードを、2本のレールに対応付けます。呼び出し 1 つが、レールの 1 区間に当たります。",
   },
   {
     lit: lines.entry,
     current: [0],
     rows: [
-      { tone: "positive", from: "Ok(Appointment)", to: "", note: "予約が見つかった。成功のレールから始まる" },
-      { tone: "negative", from: "Err(AppointmentNotFound)", to: "", note: "見つからない。失敗のレールから始まる" },
+      { tone: "positive", from: "Ok(Appointment)", to: "", note: "予約が存在する。成功のレールから始まる" },
+      { tone: "negative", from: "Err(AppointmentNotFound)", to: "", note: "存在しない。失敗のレールから始まる" },
     ],
-    caption: "最初の ensureAppointmentFound は、Result を返します。見つかれば成功のレール、見つからなければ失敗のレールから始まります。",
+    caption: "最初の ensureAppointmentFound は、Result を返します。存在すれば成功のレール、存在しなければ失敗のレールから始まります。",
   },
   {
     lit: lines.andThen,
@@ -66,7 +66,7 @@ const frames: readonly Frame[] = [
       { tone: "positive", from: "Ok(CheckedIn)", to: "Ok(CheckedIn)", note: "ensureCheckedIn が ok を返す。成功のレールのまま" },
       { tone: "negative", from: "Ok(Paid)", to: "Err(InvalidAppointmentState)", note: "ensureCheckedIn が err を返す。切り替え線で失敗のレールへ移る" },
     ],
-    caption: "andThen に渡す ensureCheckedIn は、ok か err を返します。err を返せるので、andThen は失敗のレールへ切り替えられる線です。",
+    caption: "andThen に渡す ensureCheckedIn は、ok か err を返します。err を返せるため、andThen は失敗のレールへ切り替えられる線です。",
   },
   {
     lit: lines.transition,
@@ -75,7 +75,7 @@ const frames: readonly Frame[] = [
       { tone: "positive", from: "Ok(CheckedIn)", to: "Ok(InExamination)", note: "成功のレールの上で、値を変えるだけ" },
       errPassThrough,
     ],
-    caption: "map に渡す関数は、普通の値を返します。失敗を返せないので、切り替え線はありません。値を CheckedIn から InExamination に変えるだけです。",
+    caption: "map に渡す関数は、通常の値を返します。失敗を返せないため、切り替え線はありません。値を CheckedIn から InExamination に変えるだけです。",
   },
   {
     lit: lines.save,
@@ -84,7 +84,7 @@ const frames: readonly Frame[] = [
       { tone: "positive", from: "Ok(InExamination)", to: "Ok(InExamination)", note: "保存してから同じ値を返す。レールは切り替わらない" },
       errPassThrough,
     ],
-    caption: "最後の map も同じです。保存の処理を行いますが、Result を返さないので、切り替え線はありません。",
+    caption: "最後の map も同じです。保存の処理を行いますが、Result を返さないため、切り替え線はありません。",
   },
   {
     lit: [...lines.andThen, ...lines.transition, ...lines.save],
@@ -93,14 +93,14 @@ const frames: readonly Frame[] = [
       { tone: "negative", from: "andThen", to: "", note: "失敗のレールへ切り替えられる線。渡す関数は Result を返す" },
       { tone: "positive", from: "map", to: "", note: "成功のレールの上で値を変えるだけの線。渡す関数は値を返す" },
     ],
-    caption: "切り替え線を持つのは andThen です。値を変えるだけのときは map を使います。完成形の保存の andThrough も、失敗すると切り替えます。",
+    caption: "切り替え線を持つのは andThen です。値を変えるだけの場合は map を使います。完成形の保存の andThrough も、失敗した場合は切り替えます。",
   },
 ];
 
 const markOf = (tone: Row["tone"]): string => (tone === "positive" ? "✓" : tone === "negative" ? "×" : "・");
 ---
 
-<figure class="st-fig rail" data-and-then-rail aria-label="S04 の診察開始のコードを、成功と失敗の2本のレールに重ねる図">
+<figure class="st-fig rail" data-and-then-rail aria-label="S04 の診察開始のコードを、成功と失敗の2本のレールに対応付ける図">
   <div class="rail__head">
     <StepControls />
     <p class="rail__source">図のコード: <code>{codeLabel}</code></p>

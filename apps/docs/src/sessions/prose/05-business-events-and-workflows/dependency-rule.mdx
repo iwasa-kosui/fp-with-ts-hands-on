@@ -1,5 +1,5 @@
 import DependencyDirection from "../../../components/cancel-workflow/DependencyDirection.astro";
 
-<p>工程に分けた形は、この後の変更で崩れないように守る必要があります。たとえば、判定の関数を持つ domain が adaptor/primary/web のコードに依存すると、画面の都合で判定のコードを直すことになり、判定を画面なしで確かめられなくなります。</p>
+<p>工程に分割した構成は、この後の変更で崩れないように守る必要があります。たとえば、判定の関数を持つ domain が adaptor/primary/web のコードに依存すると、画面側の変更に合わせて判定のコードを修正することになり、判定を画面なしで検証できなくなります。</p>
 
 <DependencyDirection />
