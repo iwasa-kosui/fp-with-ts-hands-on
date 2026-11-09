@@ -301,6 +301,10 @@ html[data-content-pending] .session-frame__content {
   margin-block: 0.25rem 0.625rem;
 }
 
+.session-frame__content > :last-child {
+  margin-block-end: 0;
+}
+
 .session-frame__content pre {
   line-height: 1.5;
 }
@@ -1114,6 +1118,7 @@ summary.session-frame__group-title:focus-visible {
   }
 
   .session-frame__content {
+    padding-block-end: 0.25rem;
     font-size: 0.9375rem;
     line-height: 1.55;
   }
