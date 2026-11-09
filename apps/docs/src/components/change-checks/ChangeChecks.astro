@@ -26,7 +26,7 @@ const { cases, mechanisms } = set;
       <div class="cc__stack cc__legends">
         {cases.map((changeCase, index) => (
           <p class="cc__legend" data-outcome={changeCase.id} data-active={index === 0}>
-            <span>元のコードとの差分（{changeCase.target}）</span>
+            <span>完成コードからの変更（{changeCase.target}）</span>
             <span class="cc__mark cc__mark--del">− 削除した行</span>
             <span class="cc__mark cc__mark--add">+ 追加した行</span>
           </p>

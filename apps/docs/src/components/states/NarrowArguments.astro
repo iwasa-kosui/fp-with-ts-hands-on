@@ -6,7 +6,8 @@ import "./states.css";
 
 const versions = {
   before: {
-    tag: "修正前: この回の開始コード",
+    tag: "修正前: S01 の開始コード",
+    fn: "startExamination",
     path: quotes.startStartExamination.path,
     code: quotes.startStartExamination.code,
     changed: [
@@ -17,7 +18,8 @@ const versions = {
     tone: "negative",
   },
   after: {
-    tag: "修正後: この回の完成コード",
+    tag: "修正後: S01 の完成コード",
+    fn: "startExamination",
     path: quotes.solutionStartExamination.path,
     code: quotes.solutionStartExamination.code,
     changed: [
@@ -25,6 +27,14 @@ const versions = {
       lineIndexOf(quotes.solutionStartExamination.code, "): InExamination =>"),
       lineIndexOf(quotes.solutionStartExamination.code, "}) as const satisfies InExamination;"),
     ],
+    tone: "positive",
+  },
+  caller: {
+    tag: "呼び出し側: S01 の完成コード",
+    fn: "startExaminationFor",
+    path: quotes.solutionCallerCheck.path,
+    code: quotes.solutionCallerCheck.code,
+    changed: [lineIndexOf(quotes.solutionCallerCheck.code, 'if (current.kind !== "CheckedIn")')],
     tone: "positive",
   },
 } as const;
@@ -37,22 +47,26 @@ const inputs = {
 type Output =
   | Readonly<{ type: "done" }>
   | Readonly<{ type: "exception" }>
-  | Readonly<{ type: "typeError" }>;
+  | Readonly<{ type: "typeError" }>
+  | Readonly<{ type: "rejected" }>;
 
 const frames: readonly Readonly<{
+  event: Readonly<{ label: string; text: string }>;
   version: keyof typeof versions;
   input: keyof typeof inputs;
   output: Output;
   caption: string;
 }>[] = [
   {
+    event: { label: "業務イベント", text: "獣医師が「診察を開始する」を押す" },
     version: "before",
     input: "checked",
     output: { type: "done" },
     caption:
-      "修正前のコードは、引数の型が Appointment、返す型が Appointment で、末尾が as Appointment です。来院済みの予約を渡すと、診察中の予約が返ります。",
+      "修正前のコードは、引数の型が Appointment、返す型が Appointment です。末尾の as Appointment は、値の中身を検証せずに型を伝える書き方（型アサーション）です。来院済みの予約を渡すと、診察中の予約が返ります。",
   },
   {
+    event: { label: "業務イベント", text: "獣医師が「診察を開始する」を押す（会計済みの予約で押した）" },
     version: "before",
     input: "paid",
     output: { type: "exception" },
@@ -60,6 +74,7 @@ const frames: readonly Readonly<{
       "会計済みの予約を渡しても、型検査は報告しません。実行すると requireKind が例外を投げます。誤りを検出できるのは、この呼び出しを実行した時点だけです。",
   },
   {
+    event: { label: "業務イベント", text: "獣医師が「診察を開始する」を押す" },
     version: "after",
     input: "checked",
     output: { type: "done" },
@@ -67,11 +82,20 @@ const frames: readonly Readonly<{
       "修正後のコードは、引数の型が CheckedIn、返す型が InExamination で、末尾が as const satisfies InExamination です。来院済みの予約を渡すと、診察中の予約が返ります。",
   },
   {
+    event: { label: "コードの誤り", text: "開発者が、会計済みの予約を startExamination へ渡すコードを書く" },
     version: "after",
     input: "paid",
     output: { type: "typeError" },
     caption:
-      "会計済みの予約を渡すと、実行前の型検査が報告します。この呼び出しの誤りは、型検査の時点で判明します。",
+      "会計済みの予約を渡すコードは、実行前の型検査が報告します。このコードの誤りは、型検査の時点で判明します。",
+  },
+  {
+    event: { label: "業務イベント", text: "獣医師が「診察を開始する」を押す（会計済みの予約で押した）" },
+    version: "caller",
+    input: "paid",
+    output: { type: "rejected" },
+    caption:
+      "画面の操作で渡される予約はデータベースから取得した値で、型検査の対象ではありません。そこで、呼び出し側が実行時に kind を検証します。修正前の requireKind の検証は、呼び出し側のこの if に移りました。CheckedIn 以外は例外で中断するため、操作は拒否されます。検証の後は current が CheckedIn に絞り込まれ、startExamination に渡せます。この呼び出し側を、次のページと演習では startExaminationFor として扱います。",
   },
 ];
 ---
@@ -92,8 +116,8 @@ const frames: readonly Readonly<{
           <div class="na__head">
             <span class="st-tag">{version.tag}</span>
             <p class="na__event">
-              <strong>業務イベント</strong>
-              獣医師が「診察を開始する」を押す{input.allowed ? "" : "（会計済みの予約で押した）"}
+              <strong>{frame.event.label}</strong>
+              {frame.event.text}
             </p>
           </div>
 
@@ -107,7 +131,7 @@ const frames: readonly Readonly<{
             <span class="na__arrow" aria-hidden="true">→</span>
 
             <figure class="code-block st-code na__code">
-              <figcaption>関数 <code>startExamination</code> <code>{version.path}</code></figcaption>
+              <figcaption>関数 <code>{version.fn}</code> <code>{version.path}</code></figcaption>
               <Code code={version.code} lang="ts" />
             </figure>
 
@@ -125,6 +149,12 @@ const frames: readonly Readonly<{
                 <>
                   <p class="na__state"><strong>実行時の例外</strong><code>Cannot transition from Paid</code></p>
                   <p class="na__note">型検査は報告しない</p>
+                </>
+              )}
+              {frame.output.type === "rejected" && (
+                <>
+                  <p class="na__state"><strong>実行時の例外</strong><code>Invalid appointment state</code></p>
+                  <p class="na__note">操作を拒否する</p>
                 </>
               )}
               {frame.output.type === "typeError" && (
@@ -231,6 +261,7 @@ const frames: readonly Readonly<{
 
   .na__io[data-allowed="false"],
   .na__io[data-output="exception"],
+  .na__io[data-output="rejected"],
   .na__io[data-output="typeError"] {
     border: 2px dashed var(--role-negative);
   }

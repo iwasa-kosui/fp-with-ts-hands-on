@@ -56,6 +56,12 @@ export const quotes = {
     "declare const paid: Paid;",
     "startExamination(paid, clinicFixture.veterinarianId, clinicFixture.scheduledAt);",
   ),
+  solutionCallerCheck: quote(
+    "session-01-solution",
+    "exercises/guard/cases/G2-callers-check-state.ts",
+    "export const startExaminationFor = (",
+    "};",
+  ),
   solutionRouteCheck: quote(
     "session-01-solution",
     "src/adaptor/primary/web/routes.ts",

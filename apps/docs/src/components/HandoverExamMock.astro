@@ -123,7 +123,7 @@ const steps = [
     lit: ["use-case", "db"],
   },
   {
-    text: "本来はここで処理を中断すべきです。しかし業務ロジック（操作の可否などを判定する処理）の <code>updateStatus</code> は、受け取った値で <code>status</code> を上書きするだけで、現在の状態を検証しません。ほかの行にも、状態を検証する処理はありません。",
+    text: "本来はここで処理を中断すべきです。しかし、業務ロジック（操作の可否などを判定する処理）を置く <code>domain/</code> の <code>updateStatus</code> は、受け取った値で <code>status</code> を上書きするだけで、現在の状態を検証しません。ほかの行にも、状態を検証する処理はありません。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "const updated = updateStatus(", true),
     impl: {
@@ -546,7 +546,7 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
       const height = last.getBoundingClientRect().bottom - first.getBoundingClientRect().top;
       const view = scroller.clientHeight - 2 * padding;
       const wanted = height > view ? top : top - (view - height) / 2;
-      const maxTop = Math.round((scroller.scrollHeight - scroller.clientHeight) / lineHeight) * lineHeight;
+      const maxTop = scroller.scrollHeight - scroller.clientHeight;
       const snapped = Math.min(Math.max(Math.round(wanted / lineHeight) * lineHeight, 0), maxTop);
       scroller.scrollTo({ top: snapped, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
     };
@@ -659,7 +659,7 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
 
   @media (max-height: 700px) {
     .hem {
-      --hem-file-lines: 5;
+      --hem-file-lines: 6;
       --hem-io-lines: 4;
       --hem-chrome: 21px;
       --hem-values-chrome: 22px;
@@ -669,7 +669,15 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
       --hem-col-pad: 2px;
       --hem-col-gap: 2px;
       --hem-note-gap: 0;
-      --hem-k: 329px;
+      --hem-k: 316px;
+    }
+
+    .hem :global(.step-controls) {
+      margin-block-end: 0.125rem;
+    }
+
+    .hem__frames {
+      margin-block-end: 0.125rem;
     }
   }
 
