@@ -4,6 +4,8 @@ import routesSource from "../../../../examples/session-04/src/adaptor/primary/we
 import testSource from "../../../../examples/session-04-solution/test/regression/result-errors.test.ts?raw";
 import useCaseSource from "../../../../examples/session-04/src/useCase/startExamination.ts?raw";
 import { quote } from "../sessions/reference-quote";
+import MiniTree from "./mini-tree/MiniTree.astro";
+import { miniTree } from "./mini-tree/mini-tree";
 import StepControls from "./stepper/StepControls.astro";
 import { bandMeta, bandTransformer, checkBands, lineIs } from "./workflow-errors/lines";
 import "./workflow-errors/figure.css";
@@ -76,6 +78,12 @@ const keyBands = (frame: Frame) => {
   const code = snippets[frame.code.key].code;
   return checkBands(code, { a: frame.code.keys.map((text) => lineIs(code, text)) });
 };
+
+const tree = miniTree("session-04", "", [
+  { folder: "src/useCase/", files: [{ id: "useCase", name: "startExamination.ts" }] },
+  { folder: "src/adaptor/primary/web/", files: [{ id: "route", name: "routes.ts" }] },
+  { folder: "test/regression/", files: [{ id: "test", name: "result-errors.test.ts", snapshot: "session-04-solution", note: "（解答: session-04-solution）" }] },
+]);
 
 const themes = { light: "github-light", dark: "github-dark" } as const;
 const onePhase = `startExamination(deps, inputA);
@@ -167,6 +175,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, compare: _compare, 
       {frames.map((frame) => (
         <li data-frame>
           <p class="we-caption">{frame.caption}</p>
+          {frame.code && <MiniTree tree={tree} current={[frame.code.key]} />}
           {frame.code && (
             <figure class="we-code deps-input-flow__code">
               <Code
@@ -507,6 +516,24 @@ const playerData = JSON.stringify(frames.map(({ code: _code, compare: _compare, 
 
   .deps-input-flow[data-ready] .deps-input-flow__source {
     transition: background-color 0.3s, border-color 0.3s;
+  }
+
+  @media (max-height: 700px) {
+    .deps-input-flow .we-caption {
+      margin-block-end: 0.125rem;
+    }
+
+    .deps-input-flow :global(.mini-tree) {
+      row-gap: 0;
+    }
+
+    .deps-input-flow :global(.mini-tree__file) {
+      padding-block: 0;
+    }
+
+    .deps-input-flow__path {
+      padding-block: 0;
+    }
   }
 
   @container (max-width: 40rem) {

@@ -4,6 +4,8 @@ import routesSource from "../../../../examples/session-00/src/adaptor/primary/we
 import startExaminationSource from "../../../../examples/session-00/src/useCase/startExamination.ts?raw";
 import repositorySource from "../../../../examples/session-00/src/adaptor/secondary/sqlite/appointmentRepository.ts?raw";
 import appointmentSource from "../../../../examples/session-00/src/domain/appointment/appointment.ts?raw";
+import MiniTree from "./mini-tree/MiniTree.astro";
+import { miniTree } from "./mini-tree/mini-tree";
 import StepControls from "./stepper/StepControls.astro";
 
 const appointmentId = "11111111-1111-4111-8111-111111111111";
@@ -70,12 +72,12 @@ const appointmentFile = "domain/appointment/appointment.ts";
 
 const updatedSummary = `updated: { status: "in-examination", amount: 4800, ... }`;
 
-const layerLabels = [
-  { id: "entry", name: "入口", path: "adaptor/primary/web" },
-  { id: "useCase", name: "ユースケース", path: "useCase" },
-  { id: "domain", name: "業務ロジック", path: "domain" },
-  { id: "db", name: "DB", path: "adaptor/secondary/sqlite" },
-] as const;
+const tree = miniTree("session-00", "src/", [
+  { folder: "adaptor/primary/web/", files: [{ id: "route", name: "routes.ts", note: "入口" }] },
+  { folder: "useCase/", files: [{ id: "use-case", name: "startExamination.ts", note: "ユースケース" }] },
+  { folder: "domain/appointment/", files: [{ id: "domain", name: "appointment.ts", note: "業務ロジック" }] },
+  { folder: "adaptor/secondary/sqlite/", files: [{ id: "db", name: "appointmentRepository.ts", note: "DB" }] },
+]);
 
 const steps = [
   {
@@ -86,7 +88,7 @@ const steps = [
     values: undefined,
     warn: undefined,
     empty: "サーバーの処理はまだ開始していません",
-    layers: [],
+    lit: [],
   },
   {
     text: "獣医師が「診察を開始する」を押します。入口は、予約の ID を受け取り、担当の獣医師の ID と合わせて次の処理へ渡します。受け取る値は ID のみであるため、サーバーはこの時点で予約の状態を把握していません。",
@@ -102,7 +104,7 @@ const steps = [
     },
     warn: undefined,
     empty: undefined,
-    layers: ["entry"],
+    lit: ["route"],
   },
   {
     text: "ユースケース（1つの業務の処理順序をまとめた関数）が、データベースから Mugi の予約を取得します。状態は <code>paid</code> であり、この時点でサーバーは会計済みであることを把握します。<code>repository</code> は、データベースを読み書きするオブジェクトです。",
@@ -118,7 +120,7 @@ const steps = [
     },
     warn: undefined,
     empty: undefined,
-    layers: ["useCase", "db"],
+    lit: ["use-case", "db"],
   },
   {
     text: "本来はここで処理を中断すべきです。しかし業務ロジック（操作の可否などを判定する処理）の <code>updateStatus</code> は、受け取った値で <code>status</code> を上書きするだけで、現在の状態を検証しません。ほかの行にも、状態を検証する処理はありません。",
@@ -136,7 +138,7 @@ status: "in-examination"`,
     },
     warn: "状態を検証する処理がない",
     empty: undefined,
-    layers: ["useCase", "domain"],
+    lit: ["use-case", "domain"],
   },
   {
     text: "データベースの予約を、新しい内容で上書きします。<code>paid</code> は <code>in-examination</code> に変わります。<code>amount</code> と <code>paidAt</code> は残っているため、会計済みの予約が診察中の状態になりました。",
@@ -149,7 +151,7 @@ status: "in-examination"`,
     values: { input: updatedSummary, output: undefined },
     warn: undefined,
     empty: undefined,
-    layers: ["useCase", "db"],
+    lit: ["use-case", "db"],
   },
   {
     text: "監査記録に、診察を開始した操作を1行追加します。<code>payload</code> には予約全体が含まれるため、調査に不要な飼い主の氏名、メールアドレス、電話番号も保存されます。これが課題2です。",
@@ -165,7 +167,7 @@ status: "in-examination"`,
     },
     warn: undefined,
     empty: undefined,
-    layers: ["useCase", "db"],
+    lit: ["use-case", "db"],
   },
   {
     text: "サーバーの応答によって画面が更新され、表示は「診察中」に変わります。受付はこの画面から会計前の来院と判断し、会計担当が飼い主へ同じ4,800円を再度請求しました。これが課題1です。",
@@ -174,8 +176,8 @@ status: "in-examination"`,
     impl: undefined,
     values: undefined,
     warn: undefined,
-    empty: "どのファイルにも、会計済みの予約を拒否する処理はありませんでした",
-    layers: [],
+    empty: "色の付いた4つのファイルのいずれにも、会計済みの予約を拒否する処理はありませんでした",
+    lit: ["route", "use-case", "domain", "db"],
   },
 ] as const;
 
@@ -209,10 +211,10 @@ const payloadLines = [
 
 const highlights = JSON.stringify(steps.map((step) => step.highlight ?? ""));
 const files = JSON.stringify(steps.map((step) => step.file));
-const layers = JSON.stringify(steps.map((step) => step.layers));
+const lit = JSON.stringify(steps.map((step) => step.lit));
 ---
 
-<figure class="hem" data-exam-mock data-highlights={highlights} data-files={files} data-layers={layers}>
+<figure class="hem" data-exam-mock data-highlights={highlights} data-files={files} data-lit={lit}>
   <div class="hem__player" data-player>
     <StepControls />
 
@@ -221,6 +223,8 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
         {steps.map((step) => <li data-frame><p class="hem__caption" set:html={step.text} /></li>)}
       </ol>
     </div>
+
+    <MiniTree tree={tree} class="hem__tree" />
 
     <div class="hem__grid">
       <section class="hem__col hem__col--screen" aria-label="画面">
@@ -258,17 +262,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
       </section>
 
       <section class="hem__col hem__col--code">
-        <h5 class="hem__col-title">コード（強調表示のラベルが現在の処理の位置）</h5>
-        <ul class="hem__layers" aria-label="現在の処理の位置">
-          {
-            layerLabels.map((layer) => (
-              <li class="hem__layer" data-layer={layer.id}>
-                <span class="hem__layer-name">{layer.name}</span>
-                <span class="hem__layer-path">{layer.path}</span>
-              </li>
-            ))
-          }
-        </ul>
+        <h5 class="hem__col-title">コード（上の色の付いたファイルが、現在の処理の位置）</h5>
         <div class="hem__files" data-files-pane role="region" aria-label="コード">
           {
             steps.map((step, index) =>
@@ -492,6 +486,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
 </figure>
 
 <script>
+  import { setMiniTreeCurrent } from "./mini-tree/mini-tree-client";
   import { mountStepper } from "./stepper/stepper";
 
   document.querySelectorAll<HTMLElement>("[data-exam-mock]").forEach((root) => {
@@ -503,7 +498,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
 
     const highlights = JSON.parse(root.dataset.highlights ?? "[]") as string[];
     const files = JSON.parse(root.dataset.files ?? "[]") as string[];
-    const layers = JSON.parse(root.dataset.layers ?? "[]") as string[][];
+    const lit = JSON.parse(root.dataset.lit ?? "[]") as string[][];
     const player = root.querySelector<HTMLElement>("[data-player]") ?? root;
     const blocks = [...pane.querySelectorAll<HTMLElement>("[data-code-file]")];
     const codeLines = new Map(
@@ -580,12 +575,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
       player.querySelectorAll<HTMLElement>("[data-empty-at]").forEach((element) => {
         element.hidden = index !== Number(element.dataset.emptyAt);
       });
-      player.querySelectorAll<HTMLElement>("[data-layer]").forEach((element) => {
-        const lit = layers[index]?.includes(element.dataset.layer ?? "") ?? false;
-        element.classList.toggle("is-lit", lit);
-        if (lit) element.setAttribute("aria-current", "true");
-        else element.removeAttribute("aria-current");
-      });
+      setMiniTreeCurrent(player, lit[index] ?? []);
       player.querySelectorAll<HTMLElement>("[data-focus-at]").forEach((element) => {
         element.classList.toggle("is-focus", index === Number(element.dataset.focusAt));
       });
@@ -630,7 +620,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
     --hem-col-pad: 4px;
     --hem-col-gap: 4px;
     --hem-note-gap: 0.375rem;
-    --hem-k: 335px;
+    --hem-k: 377px;
     --hem-grid-h: min(454px, calc(100dvh - var(--hem-k)));
     --hem-code-bg: var(--role-text);
     min-width: 0;
@@ -653,6 +643,20 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
     }
   }
 
+  @media (max-height: 760px) {
+    .hem {
+      --hem-chrome: 21px;
+      --hem-values-chrome: 22px;
+      --hem-pre-pad: 0px;
+      --hem-cap-pad: 1px;
+      --hem-io-pad: 2px;
+      --hem-col-pad: 2px;
+      --hem-col-gap: 2px;
+      --hem-note-gap: 0;
+      --hem-k: 351px;
+    }
+  }
+
   @media (max-height: 700px) {
     .hem {
       --hem-file-lines: 5;
@@ -665,7 +669,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
       --hem-col-pad: 2px;
       --hem-col-gap: 2px;
       --hem-note-gap: 0;
-      --hem-k: 308px;
+      --hem-k: 329px;
     }
   }
 
@@ -884,55 +888,8 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
     stroke: var(--role-text);
   }
 
-  .hem__layers {
-    display: flex;
-    flex: none;
-    flex-wrap: nowrap;
-    gap: 2px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .hem .hem__layer {
-    display: flex;
-    flex: 0 1 auto;
-    gap: 3px;
-    align-items: baseline;
-    min-width: 0;
-    margin: 0;
-    padding: 0 3px;
-    overflow: hidden;
-    border: 1px solid var(--role-border);
-    border-radius: 999px;
-    color: var(--role-muted);
-    font-size: 0.65rem;
-    line-height: 1.4;
-    white-space: nowrap;
-    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-  }
-
-  .hem .hem__layer[data-layer="useCase"],
-  .hem .hem__layer[data-layer="domain"] {
-    flex-shrink: 0;
-  }
-
-  .hem__layer-name {
-    flex: none;
-    font-weight: 700;
-  }
-
-  .hem__layer-path {
-    min-width: 0;
-    overflow: hidden;
-    font-family: var(--font-mono, ui-monospace, monospace);
-    text-overflow: ellipsis;
-  }
-
-  .hem .hem__layer.is-lit {
-    border-color: var(--role-accent);
-    background: color-mix(in srgb, var(--role-accent) 22%, var(--role-surface));
-    color: var(--role-text);
+  .hem :global(.hem__tree) {
+    margin-block-end: 4px;
   }
 
   .hem__empty {
@@ -1208,6 +1165,25 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
     line-height: 1.5;
   }
 
+  @media (max-height: 760px) {
+    .hem {
+      margin-block: 0;
+    }
+
+    .hem__frames {
+      margin-block-end: 2px;
+    }
+
+    .hem :global(.hem__tree) {
+      margin-block-end: 2px;
+      row-gap: 0;
+    }
+
+    .hem :global(.hem__tree .mini-tree__file) {
+      padding-block: 0;
+    }
+  }
+
   .hem__frames-static {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -1280,12 +1256,6 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
   @keyframes hem-flash {
     from {
       background-color: color-mix(in srgb, var(--role-accent) 35%, var(--role-surface));
-    }
-  }
-
-  @container hem (max-width: 700px) {
-    .hem__layer-path {
-      display: none;
     }
   }
 

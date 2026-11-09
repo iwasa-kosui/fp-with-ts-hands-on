@@ -5,6 +5,8 @@ import { keyedTransformer } from "./code-cache-key";
 import appointmentSource from "../../../../examples/session-02-solution/src/domain/appointment/appointment.ts?raw";
 import statusLabelSource from "../../../../examples/session-02-solution/src/domain/appointment/statusLabel.ts?raw";
 import beforeStatusLabelSource from "../../../../examples/session-02/src/domain/appointment/statusLabel.ts?raw";
+import MiniTree from "./mini-tree/MiniTree.astro";
+import { miniTree } from "./mini-tree/mini-tree";
 import { lineLabelOf } from "../sessions/source-quotes";
 import StepControls from "./stepper/StepControls.astro";
 
@@ -172,6 +174,29 @@ const exhaustiveFrames: readonly Frame[] = [
   },
 ];
 
+const labelTree = miniTree("session-02-solution", "src/", [
+  { folder: "domain/appointment/", files: [{ id: "label", name: "statusLabel.ts" }, { id: "appointment", name: "appointment.ts" }] },
+]);
+const noShowTree = miniTree("session-02-solution", "src/", [
+  {
+    folder: "domain/appointment/",
+    files: [
+      { id: "label", name: "statusLabel.ts" },
+      { id: "appointment", name: "appointment.ts", note: "（NoShow は説明用の変更）" },
+    ],
+  },
+]);
+const beforeCompareTree = miniTree("session-02", "src/", [
+  { folder: "domain/appointment/", files: [{ id: "label", name: "statusLabel.ts" }] },
+]);
+const afterCompareTree = miniTree("session-02-solution", "src/", [
+  { folder: "domain/appointment/", files: [{ id: "label", name: "statusLabel.ts" }] },
+]);
+const exhaustiveTrees: Readonly<Record<string, Readonly<{ tree: typeof labelTree; current: readonly string[] }>>> = {
+  before: { tree: labelTree, current: ["label"] },
+  after: { tree: noShowTree, current: ["label", "appointment"] },
+};
+
 const frames = part === "count" ? countFrames : exhaustiveFrames;
 ---
 
@@ -193,6 +218,9 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
       {
         frames.map((frame) => (
           <li class="adt-count__frame" data-frame>
+            {part === "exhaustive" && exhaustiveTrees[frame.id] && (
+              <MiniTree tree={exhaustiveTrees[frame.id].tree} current={exhaustiveTrees[frame.id].current} class="adt-count__tree" />
+            )}
             <div class:list={["adt-count__body", { "adt-count__body--code": frame.code !== undefined }]}>
               {frame.code && (
                 <div class="adt-count__codes">
@@ -220,20 +248,26 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
               )}
               {frame.pair && (
                 <div class="adt-count__pair">
-                  <figure class="code-block adt-count__code adt-count__code--negative">
-                    <figcaption>
-                      <span class="adt-count__badge adt-count__badge--negative">▲ 修正前</span>
-                      <code>examples/session-02/{frame.pair.path}</code>
-                    </figcaption>
-                    <Code code={frame.pair.before} lang="typescript" transformers={[markKeyLines]} />
-                  </figure>
-                  <figure class="code-block adt-count__code adt-count__code--positive">
-                    <figcaption>
-                      <span class="adt-count__badge adt-count__badge--positive">● 修正後</span>
-                      <code>examples/session-02-solution/{frame.pair.path}</code>
-                    </figcaption>
-                    <Code code={frame.pair.after} lang="typescript" transformers={[markKeyLines]} />
-                  </figure>
+                  <div class="adt-count__column">
+                    <MiniTree tree={beforeCompareTree} current={["label"]} class="adt-count__tree" />
+                    <figure class="code-block adt-count__code adt-count__code--negative">
+                      <figcaption>
+                        <span class="adt-count__badge adt-count__badge--negative">▲ 修正前</span>
+                        <code>examples/session-02/{frame.pair.path}</code>
+                      </figcaption>
+                      <Code code={frame.pair.before} lang="typescript" transformers={[markKeyLines]} />
+                    </figure>
+                  </div>
+                  <div class="adt-count__column">
+                    <MiniTree tree={afterCompareTree} current={["label"]} class="adt-count__tree" />
+                    <figure class="code-block adt-count__code adt-count__code--positive">
+                      <figcaption>
+                        <span class="adt-count__badge adt-count__badge--positive">● 修正後</span>
+                        <code>examples/session-02-solution/{frame.pair.path}</code>
+                      </figcaption>
+                      <Code code={frame.pair.after} lang="typescript" transformers={[markKeyLines]} />
+                    </figure>
+                  </div>
                 </div>
               )}
               <div class="adt-count__side">
@@ -504,6 +538,16 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
     visibility: hidden;
   }
 
+  .adt-count :global(.adt-count__tree) {
+    margin-block-end: 0.5rem;
+  }
+
+  @media (max-height: 700px) {
+    .adt-count :global(.adt-count__tree) {
+      margin-block-end: 0.25rem;
+    }
+  }
+
   .adt-count__body {
     display: grid;
     gap: 0.75rem 1rem;
@@ -619,6 +663,10 @@ const frames = part === "count" ? countFrames : exhaustiveFrames;
   .adt-count__pair {
     display: grid;
     gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .adt-count__column {
     min-width: 0;
   }
 
