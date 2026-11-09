@@ -10,7 +10,7 @@ export const cancelLabel = lineLabelOf("session-05-solution", "src/domain/appoin
     <p>副作用がなく、同じ入力から必ず同じ結果を返す関数を<strong>純粋関数</strong>と呼びます（<a href="/sessions/01-state-transitions/pure-functions/">S01 の説明</a>）。右の <code>cancel</code> は、予約、キャンセル理由、時刻を受け取り、値だけで <code>Canceled</code> の予約を決めます。来院理由は <code>reason</code> に残り、キャンセル理由は <code>cancellationReason</code> に入ります。</p>
     <p>完成形の <code>Appointment.cancel</code> は、<code>petId</code> と <code>ownerId</code> も残し、時刻とイベント ID を <code>createEvent</code> から受け取ります。</p>
   </div>
-  <figure class="code-block" data-teaching-example>
+  <figure class="code-block">
     <figcaption>{cancelLabel}</figcaption>
     <Code code={cancelSource} lang="ts" />
   </figure>
