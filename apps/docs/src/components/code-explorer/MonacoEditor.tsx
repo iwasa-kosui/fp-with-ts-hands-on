@@ -111,8 +111,24 @@ const configureTypeScript = (
   applyDiagnosticsOptions(monaco, typeFiles);
 };
 
+const replaceModelValue = (
+  runtime: EditorResources & Partial<Pick<EditorRuntime, "editor">>,
+  model: Monaco.editor.ITextModel,
+  value: string,
+): void => {
+  const { editor } = runtime;
+  const viewState = editor?.getModel() === model ? editor.saveViewState() : null;
+  runtime.applyingExternalChange = true;
+  try {
+    model.setValue(value);
+    if (viewState !== null) editor?.restoreViewState(viewState);
+  } finally {
+    runtime.applyingExternalChange = false;
+  }
+};
+
 const ensureProjectModels = (
-  runtime: EditorResources,
+  runtime: EditorResources & Partial<Pick<EditorRuntime, "editor">>,
   files: EditorProps["files"],
 ): void => {
   const currentPaths = new Set(Object.keys(files));
@@ -134,14 +150,7 @@ const ensureProjectModels = (
       if (existingModel === null) runtime.ownedModels.add(model);
     }
 
-    if (model.getValue() !== source) {
-      runtime.applyingExternalChange = true;
-      try {
-        model.setValue(source);
-      } finally {
-        runtime.applyingExternalChange = false;
-      }
-    }
+    if (model.getValue() !== source) replaceModelValue(runtime, model, source);
   }
 };
 
@@ -239,12 +248,7 @@ const synchronizeValue = (
 ): void => {
   if (model === undefined || model.getValue() === value) return;
 
-  runtime.applyingExternalChange = true;
-  try {
-    model.setValue(value);
-  } finally {
-    runtime.applyingExternalChange = false;
-  }
+  replaceModelValue(runtime, model, value);
 };
 
 const updateHighlights = (

@@ -145,9 +145,7 @@ export const CodeExplorer = ({
     const session = terminalSession.current;
     if (session === undefined) return;
     setSyncError(undefined);
-    const nextWrite = pendingFileWrites.current
-      .catch(() => undefined)
-      .then(() => session.writeFile(path, contents));
+    const nextWrite = session.writeFile(path, contents);
     pendingFileWrites.current = nextWrite;
     void nextWrite.catch((error: unknown) => {
       if (terminalSession.current !== session) return;

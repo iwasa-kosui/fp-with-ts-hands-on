@@ -335,6 +335,7 @@ describe("CodeExplorer file synchronization", () => {
   it("does not show a synchronization error from a session that is no longer current", async () => {
     const startGate = deferred();
     const firstWrite = deferred();
+    const secondWrite = deferred();
     let started: TerminalSession | undefined;
     const { host, session } = await createHarness({
       start: false,
@@ -346,7 +347,7 @@ describe("CodeExplorer file synchronization", () => {
     started = session;
     vi.mocked(session.writeFile)
       .mockReturnValueOnce(firstWrite.promise)
-      .mockRejectedValueOnce(new Error("disposed"));
+      .mockReturnValueOnce(secondWrite.promise);
 
     await clickAction(host, "start-terminal");
     await editCurrentFile(host, "export const value = 2;");
@@ -355,10 +356,33 @@ describe("CodeExplorer file synchronization", () => {
     await editCurrentFile(host, "export const value = 3;");
     await clickAction(host, "cancel-terminal");
     await act(async () => firstWrite.resolve());
+    await act(async () => secondWrite.reject(new Error("disposed")));
     await settle();
 
     expect(session.dispose).toHaveBeenCalled();
     expect(host.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it("hands each edit to the session at once without waiting for the previous write", async () => {
+    const firstWrite = deferred();
+    const { host, session } = await createHarness();
+    vi.mocked(session.writeFile).mockReturnValueOnce(firstWrite.promise);
+
+    await editCurrentFile(host, "export const value = 2;");
+    await editCurrentFile(host, "export const value = 3;");
+
+    expect(session.writeFile).toHaveBeenCalledTimes(2);
+    expect(session.writeFile).toHaveBeenNthCalledWith(
+      1,
+      "src/example.ts",
+      "export const value = 2;",
+    );
+    expect(session.writeFile).toHaveBeenNthCalledWith(
+      2,
+      "src/example.ts",
+      "export const value = 3;",
+    );
+    await act(async () => firstWrite.resolve());
   });
 
   describe("saved edits", () => {
