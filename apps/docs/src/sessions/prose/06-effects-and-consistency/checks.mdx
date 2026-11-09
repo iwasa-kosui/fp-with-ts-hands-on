@@ -2,9 +2,9 @@ import { Code } from "astro:components";
 import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
 import { session06ChangeChecks } from "../../../components/effects-walkthrough/change-checks";
 
-<p>課題1〜3は解決しました。ここからは、解決した状態を次の変更でも維持する方法を扱います。別の人が <code>new Date()</code> を戻しても型検査は通るため、検出する仕組みは Linter のルールとテストの2つです。演習で実装するのは検出の仕組みで、保存する側の実装は参照するだけです。</p>
+<p>課題1〜3を解決した状態を、次の変更から守る方法を扱います。別の人が <code>new Date()</code> を戻しても型検査は通るため、検出する仕組みは Linter のルールとテストの2つです。演習で実装するのは検出の仕組みで、保存する側の実装は参照するだけです。</p>
 
-<p>変更を選んで、2つの仕組みの結果を比較してください。テストの <code>harness</code> は、テスト用の <code>deps</code> と、記録された結果（保存されたイベント、store と clock を呼んだ回数）をまとめたオブジェクトです。</p>
+<p>変更を選んで、2つの仕組みの結果を比較してください。テストの <code>harness</code> は、テスト用の <code>deps</code> と、保存されたイベント、store と clock を呼んだ回数をまとめたオブジェクトです。</p>
 
 <ChangeChecks set={session06ChangeChecks} />
 

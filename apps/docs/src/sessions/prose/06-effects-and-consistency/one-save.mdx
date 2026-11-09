@@ -1,7 +1,7 @@
 import StoreBoundaryAnimation from "../../../components/effects-walkthrough/StoreBoundaryAnimation.astro";
 import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
 
-<p><code>ExaminationStarted</code> は、診察が開始されたことを表すイベントで、変更後の予約の状態 <code>aggregateState</code> を持ちます。この1つの値が状態と監査記録の両方を表すため、イベント1つを <code>examinationStartedStore</code> の <code>store</code> へ渡す形にすると、ユースケースの保存は1回になります。状態と監査記録の両方を残すのは、<code>store</code> の中の <strong>transaction</strong>（データベースへの複数の書き込みを、全部残るか何も残らないかにまとめる仕組み）です。図のコードは抜粋です。transaction の中の処理の全体は「SQLite と in-memory の実装の比較」のページにあります。</p>
+<p><code>ExaminationStarted</code> は、診察の開始を表すイベントで、変更後の予約の状態 <code>aggregateState</code> を持ちます。この値が状態と監査記録の両方を表すため、ユースケースは <code>examinationStartedStore</code> の <code>store</code> へ1回渡します。残すのは、<code>store</code> の中の <strong>transaction</strong>（データベースへの複数の書き込みを、全部残るか何も残らないかにまとめる仕組み）です。図のコードは抜粋で、transaction の中の全体は「SQLite と in-memory の実装の比較」のページにあります。</p>
 
 <FigureSpace reserve={130}>
   <StoreBoundaryAnimation scene="one-save" />
