@@ -1,6 +1,7 @@
 ---
 import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
+import { keyedTransformer } from "./code-cache-key";
 
 type Snippet = Readonly<{
   code: string;
@@ -24,7 +25,7 @@ type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[numb
 const KEY_MARK = /\s*\/\/ \[!ports-key\]$/;
 const withMarks = (source: string, keyLines: readonly number[]) =>
   source.split("\n").map((text, index) => (keyLines.includes(index + 1) ? `${text} // [!ports-key]` : text)).join("\n");
-const markKeyLines: Transformer = {
+const markKeyLines = keyedTransformer<Transformer>("ports-and-adapters-flow", {
   name: "mark-ports-key-lines",
   preprocess(source) {
     const lines = source.split("\n");
@@ -34,7 +35,7 @@ const markKeyLines: Transformer = {
   line(node, line) {
     if ((this.meta as { keyLines?: number[] }).keyLines?.includes(line)) this.addClassToHast(node, "ports-flow__key");
   },
-};
+});
 
 type Emphasis = "normal" | "dim" | "focus";
 type Frame = Readonly<{
@@ -256,6 +257,11 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
         const { x, y } = track.getPointAtLength(distance);
         token.setAttribute("transform", `translate(${x} ${y})`);
       };
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        place(stops[stops.length - 1] ?? 0);
+        token.removeAttribute("data-hidden");
+        return;
+      }
       place(stops[0] ?? 0);
       token.removeAttribute("data-hidden");
       const tick = (now: number) => {
@@ -301,9 +307,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     show(0);
   };
 
-  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    document.querySelectorAll<HTMLElement>("[data-ports-flow]").forEach(setUp);
-  }
+  document.querySelectorAll<HTMLElement>("[data-ports-flow]").forEach(setUp);
 </script>
 
 <style>
