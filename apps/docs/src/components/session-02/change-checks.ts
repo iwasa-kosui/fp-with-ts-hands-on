@@ -2,9 +2,15 @@ import type { ChangeCase, ChangeCheckSet, MechanismInfo } from "../change-checks
 
 const mechanisms: readonly MechanismInfo[] = [
   {
+    id: "tsc",
+    name: "tsc",
+    detail: "コードそのものの型検査",
+    code: "tsc --noEmit",
+  },
+  {
     id: "types",
-    name: "型検査",
-    detail: "tsc と、知らない状態を渡す型のテスト",
+    name: "型のテスト",
+    detail: "知らない状態を渡すコードを tsc に検査させる",
     code: `// @ts-expect-error
 toStatusLabel({ kind: "NoSuchState" });`,
   },
@@ -18,7 +24,7 @@ toStatusLabel({ kind: "NoSuchState" });`,
   {
     id: "tests",
     name: "テスト",
-    detail: "値を渡して表示名を検証する",
+    detail: "値を渡して表示名を検証する。`as never` は、kind だけの値を渡すための型アサーション",
     code: `// 6つの状態をそれぞれ渡す
 expect(toStatusLabel({ kind } as never)).toBe(label);`,
   },
@@ -46,11 +52,12 @@ const cases: readonly ChangeCase[] = [
       { kind: "same", text: "};" },
     ],
     results: {
+      tsc: { found: false, output: "エラーなし" },
       types: { found: false, output: "エラーなし" },
       lint: { found: true, output: `Switch is not exhaustive. Cases not matched: "Paid"` },
       tests: { found: true, output: `Paid: expected '不明' to be '会計済み'` },
     },
-    why: "型検査は、「不明」を返す default を正しいコードとして通します。case を数える Linter のルールと、Paid を渡すテストが検出します。",
+    why: "tsc は、「不明」を返す default を正しいコードとして通します。case を数える Linter のルールと、Paid を渡すテストが検出します。",
   },
   {
     id: "B1-missing-case-assert-never",
@@ -72,19 +79,20 @@ const cases: readonly ChangeCase[] = [
       { kind: "same", text: "};" },
     ],
     results: {
-      types: {
+      tsc: {
         found: true,
-        output: `TS2345: …"Paid"… is not assignable to … 'never'.`,
+        output: `default の assertNever(appointment) の行で TS2345: …"Paid"… is not assignable to … 'never'.`,
       },
+      types: { found: false, output: "エラーなし" },
       lint: { found: true, output: `Switch is not exhaustive. Cases not matched: "Paid"` },
       tests: { found: true, output: `Paid: Unknown appointment status: {"kind":"Paid"}` },
     },
-    why: "assertNever が残っているため、Paid が足りないことを型検査が検出します。Linter のルールとテストも検出します。次の演習の表では、この型エラーは自分で追加した仕組みの結果ではないため「対象外」と表示されます。",
+    why: "assertNever が残っているため、tsc は Paid が足りないことを型エラーとして報告します。Linter のルールとテストも検出します。tsc の検出は最初から備わっているため、次の演習の表では自分の仕組みとして数えず「対象外」と表示されます。",
   },
   {
     id: "B3-added-state-default",
     kind: "bad",
-    label: "NoShow を追加し、表示名を実装しない",
+    label: "NoShow を追加し、default も「不明」に戻す",
     baseCase: "G1-assert-never",
     target: "toStatusLabel の部分",
     diff: [
@@ -103,11 +111,12 @@ const cases: readonly ChangeCase[] = [
       { kind: "same", text: "};" },
     ],
     results: {
+      tsc: { found: false, output: "エラーなし" },
       types: { found: false, output: "エラーなし" },
       lint: { found: true, output: `Switch is not exhaustive. Cases not matched: "NoShow"` },
       tests: { found: false, output: "6件すべて成功" },
     },
-    why: "テストは6つの状態しか渡さないため、NoShow の漏れを検出できません。union の候補を数える Linter のルールだけが検出します。",
+    why: "default を「不明」に戻したため tsc は通り、6つの状態しか渡さないテストも通ります。Union の候補を数える Linter のルールだけが検出します。引数の型が `Appointment | NoShow` なのは、教材のコードの Appointment を書き換えずに7つ目の状態を仮に加えるためです。",
   },
   {
     id: "B4-string-kind",
@@ -127,11 +136,12 @@ const cases: readonly ChangeCase[] = [
       { kind: "same", text: "};" },
     ],
     results: {
-      types: { found: true, output: "TS2578: Unused '@ts-expect-error' directive." },
+      tsc: { found: false, output: "エラーなし" },
+      types: { found: true, output: "statusLabel.type-test.ts の @ts-expect-error の行で TS2578: Unused '@ts-expect-error' directive." },
       lint: { found: false, output: "指摘なし" },
       tests: { found: false, output: "6件すべて成功" },
     },
-    why: "kind が string になると union ではないため、Linter のルールは候補を数えません。6つの状態を渡すテストも通ります。// @ts-expect-error は、次の行が型エラーになることを検証するようコンパイラに指示するコメントです。知らない状態を渡せるようになると型エラーが消えるため、TS2578 が報告されます。",
+    why: "kind が string になると Union ではないため、Linter のルールは候補を数えません。6つの状態を渡すテストも通ります。// @ts-expect-error は、次の行が型エラーになることを検証するようコンパイラに指示するコメントです。知らない状態を渡せるようになると型エラーが消えるため、TS2578 が報告されます。",
   },
   {
     id: "B6-if-chain",
@@ -155,11 +165,12 @@ const cases: readonly ChangeCase[] = [
       { kind: "same", text: "};" },
     ],
     results: {
+      tsc: { found: false, output: "エラーなし" },
       types: { found: false, output: "エラーなし" },
       lint: { found: false, output: "指摘なし" },
       tests: { found: true, output: `Paid: expected '不明' to be '会計済み'` },
     },
-    why: "switch がなくなると Linter のルールは適用されず、型検査も通ります。値を渡して結果を検証するテストだけが検出します。",
+    why: "switch がなくなると Linter のルールは適用されず、tsc も通ります。値を渡して結果を検証するテストだけが検出します。",
   },
   {
     id: "G3-open-string-default",
@@ -179,6 +190,7 @@ const cases: readonly ChangeCase[] = [
       { kind: "add", text: "};" },
     ],
     results: {
+      tsc: { found: false, output: "エラーなし" },
       types: { found: false, output: "エラーなし" },
       lint: { found: false, output: "指摘なし" },
       tests: { found: false, output: "6件すべて成功" },
@@ -189,7 +201,8 @@ const cases: readonly ChangeCase[] = [
 
 export const session02ChangeChecks: ChangeCheckSet = {
   example: "session-02-solution",
-  ariaLabel: "誤った変更と3つの仕組みの結果",
+  ariaLabel: "誤った変更と4つの検証の結果",
+  pickerLabel: "変更を選択してください（tsc、型のテスト、Linter のルール、テストの4つの結果が表示されます）",
   mechanisms,
   cases,
 };

@@ -8,13 +8,17 @@ import StepControls from "../stepper/StepControls.astro";
 
 type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
 type Side = "before" | "after" | "plain";
+type FlowStep = Readonly<{ title: string; body: readonly (string | Readonly<{ code: string }>)[]; code?: string }>;
 type Item =
-  | Readonly<{ kind: "flow" }>
+  | Readonly<{ kind: "flow"; steps: readonly [FlowStep, FlowStep, FlowStep] }>
   | Readonly<{ kind: "code"; path: string; code: string; marks: readonly number[] }>
   | Readonly<{ kind: "result"; label: string; tone: "pass" | "fail"; text: string; hit?: string }>
   | Readonly<{ kind: "samples"; label: string; values: readonly string[] }>;
 type Column = Readonly<{ side: Side; heading: string; items: readonly Item[] }>;
 type Frame = Readonly<{ caption: string; columns: readonly Column[] }>;
+type Props = Readonly<{ example?: "uuid" | "sensitive" }>;
+
+const { example = "uuid" } = Astro.props;
 
 const lineOf = (source: string, needle: string) => {
   const index = source.split("\n").findIndex((line) => line.includes(needle));
@@ -43,7 +47,7 @@ if (badContact === goodContact) throw new Error(`PropertyTestFlow: ${protectedLi
 const emailLine = lineOf(goodContact, "ownerEmail:");
 const emailSourceLine = goodContact.split("\n")[emailLine - 1] ?? "";
 
-const teachingLabel = "説明用（配布コードにはありません）";
+const teachingLabel = "説明用（教材のコードにはありません）";
 const contactBlockLabel = lineLabelOf(
   "session-03-solution",
   contactPath,
@@ -54,12 +58,9 @@ const emailLineLabel = lineLabelOf("session-03-solution", contactPath, emailSour
 
 const testCode = `import fc from "fast-check";
 import { it } from "vitest";
-
 import { OwnerContact } from "../src/adaptor/primary/web/ownerContact.js";
 import { clinicFixture } from "../../fixtures/clinic.js";
-
 const emailAddress = fc.stringMatching(/^[a-z]{1,8}@example\\.test$/);
-
 it("どんなメールアドレスでも、JSON にしても出ない", () => {
   fc.assert(
     fc.property(emailAddress, (ownerEmail) => {
@@ -73,12 +74,9 @@ it("どんなメールアドレスでも、JSON にしても出ない", () => {
 });`;
 
 const typeTestCode = `import type { OwnerContact } from "../src/adaptor/primary/web/ownerContact.js";
-
 declare const contact: OwnerContact;
-
 // @ts-expect-error
 const plain: string = contact.ownerEmail;
-
 export { plain };`;
 
 const redactedJson = '{"ownerName":"[REDACTED]","ownerEmail":"[REDACTED]","ownerPhone":"[REDACTED]"}';
@@ -126,11 +124,23 @@ const badLabel = (label: string) => `${teachingLabel} 実物: ${label}`;
 const beforeHeading = "変更前（正しいコード）";
 const afterHeading = "変更後（誤った変更）";
 
-const frames: readonly Frame[] = [
+const sensitiveFlow: Item = {
+  kind: "flow",
+  steps: [
+    { title: "入力", body: ["メールアドレス。fast-check が多数生成します。"] },
+    {
+      title: "検証する処理",
+      body: [{ code: "OwnerContact.parse" }, " で連絡先を作り、", { code: "JSON.stringify" }, " で JSON にします。"],
+    },
+    { title: "守りたい性質", body: ["JSON の文字列に、メールアドレスが含まれません。"], code: redactedJson },
+  ],
+};
+
+const sensitiveFrames: readonly Frame[] = [
   {
     caption:
       "守りたい性質は、どんなメールアドレスで OwnerContact を作っても、JSON にした文字列にそのメールアドレスが含まれないことです。fast-check は、ランダムな入力を多数生成するライブラリです。",
-    columns: [{ side: "plain", heading: "守りたい性質", items: [{ kind: "flow" }] }],
+    columns: [{ side: "plain", heading: "守りたい性質", items: [sensitiveFlow] }],
   },
   {
     caption:
@@ -232,6 +242,215 @@ const frames: readonly Frame[] = [
   },
 ];
 
+const inputPath = "src/adaptor/primary/web/startExaminationInput.ts";
+const inputOpen = "const schema = z.object({";
+const inputClose = "}).readonly();";
+const appointmentLine = "  appointmentId: AppointmentId.schema,";
+const veterinarianLine = "  veterinarianId: VeterinarianId.schema,";
+const goodInput = blockOf(projectFilesForSnapshot("session-03-solution"), inputPath, inputOpen, inputClose);
+const withoutUuid = goodInput
+  .replace(appointmentLine, '  appointmentId: z.string().brand<"AppointmentId">(),')
+  .replace(veterinarianLine, '  veterinarianId: z.string().brand<"VeterinarianId">(),');
+const swappedIds = goodInput.replace(veterinarianLine, "  veterinarianId: AppointmentId.schema,");
+if (withoutUuid === goodInput || swappedIds === goodInput) throw new Error(`PropertyTestFlow: the schema lines are not in ${inputPath}`);
+const inputLine = lineOf(goodInput, "appointmentId:");
+const inputBlockLabel = lineLabelOf("session-03-solution", inputPath, inputOpen, inputClose);
+const veterinarianSourceLabel = lineLabelOf("session-03-solution", inputPath, veterinarianLine, veterinarianLine);
+
+const uuidTestCode = `import fc from "fast-check";
+import { it } from "vitest";
+
+import { StartExaminationInput } from "../subjects/input.js";
+
+const veterinarianId = "44444444-4444-4444-8444-444444444444";
+const uuidLike = /^[0-9a-f-]{36}$/i;
+const notUuid = fc.string().filter((s) => !uuidLike.test(s));
+
+it("UUID でない予約 ID は Err になる", () => {
+  fc.assert(
+    fc.property(notUuid, (appointmentId) => {
+      const input = { appointmentId, veterinarianId };
+      return StartExaminationInput.parse(input).isErr();
+    }),
+  );
+});`;
+
+const idsTypeTestCode = `import type { AppointmentId }
+  from "../../../src/domain/appointment/index.js";
+import { StartExaminationInput } from "../subjects/input.js";
+
+declare const input: StartExaminationInput;
+
+// @ts-expect-error
+const appointmentId: AppointmentId = input.veterinarianId;`;
+const idsTypeTestItem: Item = {
+  kind: "code",
+  path: teachingLabel,
+  code: idsTypeTestCode,
+  marks: [lineOf(idsTypeTestCode, "@ts-expect-error"), lineOf(idsTypeTestCode, "const appointmentId")],
+};
+const veterinarianLineOnly = (code: string, path: string): Item => ({
+  kind: "code",
+  path,
+  code: code.split("\n").find((line) => line.includes("veterinarianId:"))?.trim() ?? "",
+  marks: [1],
+});
+
+const errText = "Err()";
+const parseLabel = "StartExaminationInput.parse の結果";
+const uuidPassedRun = [
+  "✓ mine/input.test.ts (1 test)",
+  " Test Files  1 passed (1)",
+  "      Tests  1 passed (1)",
+].join("\n");
+const acceptedText = 'Ok({ appointmentId: "", veterinarianId: "44444444-4444-4444-8444-444444444444" })';
+const acceptedHit = 'appointmentId: ""';
+const emptyCounterexample = '[""]';
+const uuidFailedRun = [
+  "× UUID でない予約 ID は Err になる",
+  "  → Property failed after 1 tests",
+  `Counterexample: ${emptyCounterexample}`,
+  "Shrunk 1 time(s)",
+  " Test Files  1 failed (1)",
+  "      Tests  1 failed (1)",
+].join("\n");
+const uuidFailedCompile = `mine/ids.type-test.ts(${lineOf(idsTypeTestCode, "@ts-expect-error")},1): error TS2578: Unused '@ts-expect-error' directive.`;
+
+const uuidFrames: readonly Frame[] = [
+  {
+    caption:
+      "守りたい性質は、UUID でない文字列を予約ID として渡したとき、StartExaminationInput.parse が Err を返すことです。fast-check は、ランダムな入力を多数生成するライブラリです。",
+    columns: [
+      {
+        side: "plain",
+        heading: "守りたい性質",
+        items: [
+          {
+            kind: "flow",
+            steps: [
+              { title: "入力", body: ["UUID でない文字列。fast-check が多数生成します。"] },
+              { title: "検証する処理", body: ["予約IDとして ", { code: "StartExaminationInput.parse" }, " に渡します。"] },
+              { title: "守りたい性質", body: ["結果は Err です。"], code: errText },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    caption:
+      "テストは、fast-check が作った UUID でない文字列を予約IDとして parse に渡し、結果が Err であれば true を返します。false を返す入力が1つでもあるか、例外が投げられると、テストは失敗します。fc.string() は任意の文字列を作り、filter は UUID の形の文字列を除きます。",
+    columns: [
+      {
+        side: "plain",
+        heading: "テストのコード",
+        items: [
+          {
+            kind: "code",
+            path: teachingLabel,
+            code: uuidTestCode,
+            marks: [lineOf(uuidTestCode, "const notUuid"), lineOf(uuidTestCode, ".isErr()")],
+          },
+        ],
+      },
+      {
+        side: "plain",
+        heading: "fast-check が作る入力",
+        items: [
+          {
+            kind: "samples",
+            label: "notUuid が作る文字列の例",
+            values: ['""', '" "', '"a"', '"gm0"'],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    caption:
+      "正しいコードでは、予約IDの schema が UUID の形を検査するので、UUID でない文字列は Err になり、テストは通ります。",
+    columns: [
+      {
+        side: "before",
+        heading: beforeHeading,
+        items: [{ kind: "code", path: inputBlockLabel, code: goodInput, marks: [inputLine] }],
+      },
+      {
+        side: "before",
+        heading: "テストの結果（説明用）",
+        items: [
+          { kind: "result", label: parseLabel, tone: "pass", text: errText },
+          { kind: "result", label: "vitest の出力（説明用）", tone: "pass", text: uuidPassedRun },
+        ],
+      },
+    ],
+  },
+  {
+    caption:
+      "誤った変更の例として、2つの ID の schema から UUID の検査を外します。UUID でない文字列も受け付けるようになります。",
+    columns: [
+      {
+        side: "before",
+        heading: beforeHeading,
+        items: [{ kind: "code", path: inputBlockLabel, code: goodInput, marks: [inputLine, inputLine + 1] }],
+      },
+      {
+        side: "after",
+        heading: afterHeading,
+        items: [{ kind: "code", path: badLabel(inputBlockLabel), code: withoutUuid, marks: [inputLine, inputLine + 1] }],
+      },
+    ],
+  },
+  {
+    caption:
+      "誤った変更を加えると、fast-check が失敗する入力を検出して、反例として表示します。fast-check は、失敗した入力を、失敗を保ったまま単純な入力に縮めて表示します。",
+    columns: [
+      {
+        side: "before",
+        heading: beforeHeading,
+        items: [
+          { kind: "result", label: parseLabel, tone: "pass", text: errText },
+          { kind: "result", label: "vitest の出力（説明用）", tone: "pass", text: uuidPassedRun },
+        ],
+      },
+      {
+        side: "after",
+        heading: afterHeading,
+        items: [
+          { kind: "result", label: parseLabel, tone: "fail", text: acceptedText, hit: acceptedHit },
+          { kind: "result", label: "vitest の出力（説明用）", tone: "fail", text: uuidFailedRun, hit: emptyCounterexample },
+        ],
+      },
+    ],
+  },
+  {
+    caption:
+      "型のテストは、型エラーになるはずの行の直前に @ts-expect-error を置きます。変更前は、獣医師IDを予約IDの変数へ代入する行が型エラーになるので、tsc（TypeScript の型検査を実行するコマンド）は成功します。別の誤った変更で2つの ID が同じ型になると、型エラーが消えて、tsc は「未使用の @ts-expect-error」を報告します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
+    columns: [
+      {
+        side: "before",
+        heading: beforeHeading,
+        items: [
+          veterinarianLineOnly(goodInput, veterinarianSourceLabel),
+          idsTypeTestItem,
+          { kind: "result", label: "tsc の出力（説明用）", tone: "pass", text: passedCompile },
+        ],
+      },
+      {
+        side: "after",
+        heading: afterHeading,
+        items: [
+          veterinarianLineOnly(swappedIds, badLabel(veterinarianSourceLabel)),
+          idsTypeTestItem,
+          { kind: "result", label: "tsc の出力（説明用）", tone: "fail", text: uuidFailedCompile },
+        ],
+      },
+    ],
+  },
+];
+
+const frames = example === "sensitive" ? sensitiveFrames : uuidFrames;
+
 const sideMark = { before: "●", after: "▲", plain: "■" } as const;
 ---
 
@@ -251,21 +470,14 @@ const sideMark = { before: "●", after: "▲", plain: "■" } as const;
                   if (item.kind === "flow") {
                     return (
                       <ol class="property-flow__steps">
-                        <li>
-                          <p class="property-flow__step-title">入力</p>
-                          <p>メールアドレス。fast-check が多数生成します。</p>
-                        </li>
-                        <li class="property-flow__arrow" aria-hidden="true">→</li>
-                        <li>
-                          <p class="property-flow__step-title">検証する処理</p>
-                          <p><code>OwnerContact.parse</code> で連絡先を作り、<code>JSON.stringify</code> で JSON にします。</p>
-                        </li>
-                        <li class="property-flow__arrow" aria-hidden="true">→</li>
-                        <li>
-                          <p class="property-flow__step-title">守りたい性質</p>
-                          <p>JSON の文字列に、メールアドレスが含まれません。</p>
-                          <p><code>{redactedJson}</code></p>
-                        </li>
+                        {item.steps.flatMap((step, index) => [
+                          ...(index > 0 ? [<li class="property-flow__arrow" aria-hidden="true">→</li>] : []),
+                          <li>
+                            <p class="property-flow__step-title">{step.title}</p>
+                            <p>{step.body.map((part) => (typeof part === "string" ? part : <code>{part.code}</code>))}</p>
+                            {step.code !== undefined && <p><code>{step.code}</code></p>}
+                          </li>,
+                        ])}
                       </ol>
                     );
                   }
@@ -397,6 +609,11 @@ const sideMark = { before: "●", after: "▲", plain: "■" } as const;
     padding: 0.375rem 0;
     font-size: 0.75rem;
     line-height: 1.4;
+  }
+
+  .property-flow__code :global(:is(pre, code, .line)) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 
   .property-flow__code :global(.line) {

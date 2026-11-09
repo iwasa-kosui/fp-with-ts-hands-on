@@ -3,4 +3,8 @@ import { sensitiveWalkthrough } from "../../boundary-walkthroughs";
 
 <p>PII（Personally Identifiable Information）は、氏名やメールアドレスのように、個人を識別できる情報です。<code>Sensitive</code> は、連絡先の値を包み、ログと JSON では <code>[REDACTED]</code> に置き換える（マスクする）型です。マスクは、値を別の文字列に置き換えて隠すことです。連絡先の schema は、<code>.transform</code>（検査を通った値を別の値に変換する Zod のメソッド）で <code>Sensitive.of</code> を呼んで包みます。</p>
 
+<p>入力と出力の両方に境界があります。次の図の帯は出力側で、内側の値がログなどの外側へ出る順に並べています。</p>
+
 <BoundaryPlayer walkthrough={sensitiveWalkthrough} scenarioIds={["log", "json", "unwrap"]} />
+
+<p>マスクを守るテストは、あとで読むページ「<a href="/sessions/03-boundaries-and-pii/pii-property-test/">Sensitive の値の性質のテスト</a>」にあります。</p>

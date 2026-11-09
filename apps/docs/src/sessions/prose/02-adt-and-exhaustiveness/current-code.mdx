@@ -1,7 +1,7 @@
 import DefaultLeak from "../../../components/session-02/DefaultLeak.astro";
 
-<p><code>default</code> は、どの <code>case</code> にも一致しない値を受け取る分岐です。<code>NoShow</code> の予約に「不明」と表示された原因は、次の2つのステップにあります。</p>
+<p><code>default</code> は、どの <code>case</code> にも一致しない値を受け取る分岐です。<code>NoShow</code> の予約に「不明」と表示された原因は2つあります。1つは引数の型、もう1つは <code>default</code> です。</p>
 
 <DefaultLeak />
 
-<p>追加漏れを型検査で検出するには、<code>kind</code> が取れる値を数え上げられる型が必要です。</p>
+<p>この Session のゴールは、状態を追加したときに、その状態の表示の実装が漏れていれば型検査で検出されるようにすることです。そのためには、2つの原因をどちらも解消する必要があります。引数の型は <code>kind</code> が取れる値を数え上げられる型にし、<code>default</code> は、残りの候補が0個であることを型検査に確認させます。</p>

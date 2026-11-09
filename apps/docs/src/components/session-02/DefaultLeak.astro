@@ -10,7 +10,11 @@ const sourceLines = sourceOf(projectFilesForSnapshot("session-02"), path).split(
 const start = sourceLines.indexOf(firstLine);
 const end = sourceLines.indexOf("};", start);
 if (start < 0 || end < 0) throw new Error(`DefaultLeak: ${path} has no toStatusLabel block`);
-const codeLines = sourceLines.slice(start, end + 1);
+const fullLines = sourceLines.slice(start, end + 1);
+const foldFrom = fullLines.findIndex((line) => line.includes('case "Scheduled":'));
+const foldTo = fullLines.findIndex((line) => line.includes('case "Canceled":'));
+if (foldFrom < 0 || foldTo < foldFrom) throw new Error(`DefaultLeak: ${path} has no case block to fold`);
+const codeLines = [...fullLines.slice(0, foldFrom), "    …", ...fullLines.slice(foldTo)];
 const code = codeLines.join("\n");
 
 const lineOf = (needle: string) => {
@@ -41,7 +45,7 @@ const cases = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Pa
     <figure class="code-block leak__code">
       <figcaption>
         <span class="leak__tag">▲ 修正前</span>
-        <code>examples/session-02/{path}:{start + 1}-{end + 1}</code>
+        <code>examples/session-02/{path}:{start + 1}-{end + 1}（抜粋）</code>
       </figcaption>
       <Code code={code} lang="ts" />
     </figure>
@@ -55,7 +59,7 @@ const cases = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Pa
           <p class="leak__title">case で扱う6状態</p>
           <ul class="leak__tiles">
             {cases.map((kind) => <li><code>{kind}</code></li>)}
-            <li class="leak__tile--new" data-from="2"><code>NoShow</code><small>7枚目 ×</small></li>
+            <li class="leak__tile--new" data-from="2"><code>NoShow</code><small>7つ目 ×</small></li>
           </ul>
         </div>
         <p class="leak__arrow" data-from="1" aria-hidden="true">▼ どの case にも一致しない値</p>
@@ -69,21 +73,21 @@ const cases = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Pa
           </p>
         </div>
       </div>
-
-      <div aria-live="polite">
-        <ol class="leak__frames">
-          <li data-frame>
-            <p class="leak__caption">1つ目のステップ: 引数の型は <code>{"Readonly<{ kind: string }>"}</code> であるため、<code>kind</code> がどんな文字列でも受け取ります。そのため <code>NoShow</code> の予約も型検査を通過します。</p>
-          </li>
-          <li data-frame>
-            <p class="leak__caption">2つ目のステップ: <code>default</code> が「不明」を返すため、<code>case</code> のない状態もそのまま「不明」として画面に表示されます。</p>
-          </li>
-          <li data-frame>
-            <p class="leak__caption"><code>NoShow</code> を追加しても、型検査は通ります。7枚目の札は <code>case</code> に一致せず <code>default</code> へ流れ、画面に「不明」と表示されます。</p>
-          </li>
-        </ol>
-      </div>
     </div>
+  </div>
+
+  <div class="leak__live" aria-live="polite">
+    <ol class="leak__frames">
+      <li data-frame>
+        <p class="leak__caption">1つ目の原因: 引数の型は <code>{"Readonly<{ kind: string }>"}</code> であるため、<code>kind</code> がどんな文字列でも受け取ります。そのため <code>NoShow</code> の予約も型検査を通過します。</p>
+      </li>
+      <li data-frame>
+        <p class="leak__caption">2つ目の原因: <code>default</code> が「不明」を返すため、<code>case</code> のない状態もそのまま「不明」として画面に表示されます。</p>
+      </li>
+      <li data-frame>
+        <p class="leak__caption"><code>NoShow</code> を追加しても、型検査は通ります。7つ目の状態は <code>case</code> に一致せず <code>default</code> へ流れ、画面に「不明」と表示されます。</p>
+      </li>
+    </ol>
   </div>
 </figure>
 
@@ -215,7 +219,7 @@ const cases = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Pa
 
   .leak__flow {
     display: grid;
-    gap: 0.25rem;
+    gap: 0.125rem;
   }
 
   .leak__flow p {
@@ -327,6 +331,10 @@ const cases = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Pa
     flex-basis: 100%;
     color: var(--role-negative);
     font-weight: 800;
+  }
+
+  .leak__live {
+    margin-block-start: 0.5rem;
   }
 
   .leak__frames {

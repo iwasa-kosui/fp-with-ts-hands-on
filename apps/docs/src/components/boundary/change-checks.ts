@@ -4,8 +4,9 @@ const mechanisms: readonly MechanismInfo[] = [
   {
     id: "types",
     name: "型のテスト",
-    detail: "型エラーになることを検証する",
-    code: `// @ts-expect-error ← 次の行が型エラーでなければエラー
+    detail: "Extra（残す3項目以外の項目名の型）に項目名を代入すると型エラーになることを検証する",
+    code: `type Extra = Exclude<keyof Payload, "appointmentId" | …>;
+// @ts-expect-error ← 次の行が型エラーでなければエラー
 const extra: Extra = "ownerContact";`,
   },
   {
@@ -18,8 +19,8 @@ const extra: Extra = "ownerContact";`,
     id: "tests",
     name: "値の性質のテスト",
     detail: "ランダムな入力を多数試す",
-    code: `fc.property(notUuid, (id) => StartExaminationInput
-  .parse({ appointmentId: id, … }).isErr())`,
+    code: `fc.assert(fc.property(notUuid, (id) =>
+  StartExaminationInput.parse({ appointmentId: id, … }).isErr()));`,
   },
 ];
 
@@ -143,7 +144,7 @@ return seen.length === 0;` },
       lint: { found: false, output: "エラーなし", setting: "// 項目の追加は書き方に現れないので、どのルールも検出しません" },
       tests: { found: true, output: "1件失敗: Property failed after 1 tests", setting: "expect(toAuditPayload(appointment)).toEqual({ appointmentId: appointment.appointmentId, … });" },
     },
-    why: "項目が増えると型エラーが消えて、`// @ts-expect-error` が未使用のまま残ります。値のテストは余分な項目で失敗します。模範解答のルールは書き方の問題を検出しないため、このコードは通過します。",
+    why: "項目が増えると型エラーが消えて、`// @ts-expect-error` が未使用のまま残ります。値の性質のテストは余分な項目で失敗します。この表の Linter のルールは書き方の問題を検出しないため、このコードは通過します。",
   },
   {
     id: "G3-as-const",
@@ -167,7 +168,7 @@ return seen.length === 0;` },
   ["error", { assertionStyle: "never" }]` },
       tests: { found: false, output: "5件成功" },
     },
-    why: "`as const` は値を変えず、型も偽らないため、`never` の設定でもルールは誤検知（正しいコードを誤った変更として検出すること）しません。",
+    why: "`as const` は値を変えず、型も偽らないため、`assertionStyle` を `\"never\"` にしてもルールは誤検知（正しいコードを誤った変更として検出すること）しません。",
   },
 ];
 
@@ -176,4 +177,5 @@ export const session03ChangeChecks: ChangeCheckSet = {
   ariaLabel: "誤った変更と3つの仕組みの結果",
   mechanisms,
   cases,
+  note: "`any` や `as` の使用はルールと値の性質のテスト、UUID の検査の削除は値の性質のテストだけ、個人情報の追加は型のテストと値の性質のテストが検出します。",
 };
