@@ -10,8 +10,8 @@ export const session: SessionSummary = {
   sequence: "06",
   kind: "exercise",
   title: "副作用と整合性境界を設計する",
-  durationMinutes: 35,
-  timeBreakdown: { brief: 3, teach: 12, exercise: 15, review: 5 },
+  durationMinutes: 36,
+  timeBreakdown: { brief: 3, teach: 13, exercise: 15, review: 5 },
   adv: { articulate: 2, delegate: 10, verify: 3 },
   peerReview: {
     minutes: 5,
@@ -98,8 +98,8 @@ export const session: SessionSummary = {
     },
     {
       id: "s06-propagate-store-failure",
-      goal: "保存障害を業務エラーの Result へ変換せず、例外として外側の境界へ伝播する。",
-      startingFailure: "業務上の競合と、保存障害・破損データを区別して返せない。",
+      goal: "競合は Err で返し、保存障害は Err へ変換せず、例外として外側の境界へ伝播する。",
+      startingFailure: "競合を Err で返せない。",
       targets: [
         "examples/session-06/src/useCase/errors.ts",
         "examples/session-06/src/useCase/startExamination.ts",
@@ -128,7 +128,7 @@ export const session: SessionSummary = {
       invariant: "状態と監査記録は同時に残るか、どちらも残らない。",
     },
     {
-      invariant: "保存障害を、呼び出し側が選択できる業務上の失敗へ偽装しない。",
+      invariant: "保存障害を、利用者が次の操作を選べる業務の失敗へ偽装しない。",
     },
   ],
   finalReferences: [
@@ -191,7 +191,7 @@ export const promisesHref =
 export const navigation = ({
   previous: {
     href: "/sessions/05-business-events-and-workflows/",
-    title: "データとパイプラインで予約キャンセルを設計する",
+    title: "データと工程で予約キャンセルを設計する",
   },
   next: {
     href: "/sessions/final/",
@@ -211,27 +211,64 @@ const dedent = (code: string): string => {
   return lines.map((line) => line.slice(indent)).join("\n");
 };
 
+const reflow = (
+  code: string,
+  breaks: ReadonlyArray<readonly [line: string, replacement: string]>,
+): string =>
+  breaks.reduce((current, [line, replacement]) => {
+    if (!current.includes(line)) throw new Error(`${line} is not in the quoted code`);
+    return current.replace(line, () => replacement);
+  }, code);
+
 export const storeCode = {
   sqlite: {
     path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
-    code: dedent(
-      blockOf(
-        solutionFiles,
-        "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
-        "    database.transaction((transaction) => {",
-        "    });",
+    code: reflow(
+      dedent(
+        blockOf(
+          solutionFiles,
+          "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+          "    database.transaction((transaction) => {",
+          "    });",
+        ),
       ),
+      [
+        [
+          "  const current = findInTransaction(transaction, event.appointmentId);",
+          "  const current =\n    findInTransaction(transaction, event.appointmentId);",
+        ],
+        [
+          '  if (current === undefined || current.kind !== "CheckedIn") {',
+          '  if (current === undefined ||\n    current.kind !== "CheckedIn") {',
+        ],
+      ],
     ),
   },
   inMemory: {
     path: "src/adaptor/inMemoryExaminationStartedStore.ts",
-    code: dedent(
-      blockOf(
-        solutionFiles,
-        "src/adaptor/inMemoryExaminationStartedStore.ts",
-        "          const currentAppointment = appointments.get(event.appointmentId);",
-        "          events = nextEvents;",
+    code: reflow(
+      dedent(
+        blockOf(
+          solutionFiles,
+          "src/adaptor/inMemoryExaminationStartedStore.ts",
+          "          const currentAppointment = appointments.get(event.appointmentId);",
+          "          events = nextEvents;",
+        ),
       ),
+      [
+        [
+          "const currentAppointment = appointments.get(event.appointmentId);",
+          "const currentAppointment =\n  appointments.get(event.appointmentId);",
+        ],
+        [
+          "  throw new Error(`Appointment missing at commit: ${event.appointmentId}`);",
+          "  throw new Error(\n    `Appointment missing at commit: ${event.appointmentId}`,\n  );",
+        ],
+        [
+          "nextAppointments.set(event.appointmentId, event.aggregateState);",
+          "nextAppointments.set(\n  event.appointmentId, event.aggregateState);",
+        ],
+      ],
     ),
   },
 };

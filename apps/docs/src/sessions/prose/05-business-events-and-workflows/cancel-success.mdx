@@ -1,0 +1,16 @@
+import CancelRailwayAnimation from "../../../components/CancelRailwayAnimation.astro";
+import SessionDetailsBody from "../../../components/SessionDetailsBody.astro";
+
+<p>完成形はデータベースを待つので ResultAsync を使い、つなぎ方は S04 の Result と同じです。ResultAsync は、データベースの応答を待ってから Ok か Err になる Result です。</p>
+
+<CancelRailwayAnimation scenes="success" />
+
+<details class="step-solution">
+  <summary>確認の問い</summary>
+  <SessionDetailsBody as="ol">
+    <li>
+      <p>問い: キャンセル前とキャンセル後の予約のデータを見比べてください。変わる項目と変わらない項目は、それぞれどれですか。</p>
+      <p>答え: <code>appointmentId</code>、<code>scheduledAt</code>、<code>reason</code> は変わりません。<code>kind</code> は <code>Scheduled</code> から <code>Canceled</code> へ変わり、<code>cancellationReason</code> と <code>canceledAt</code> が増えます。来院理由は <code>reason</code> に残り、キャンセル理由は <code>cancellationReason</code> に入ります。</p>
+    </li>
+  </SessionDetailsBody>
+</details>

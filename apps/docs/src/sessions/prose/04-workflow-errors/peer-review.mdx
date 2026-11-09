@@ -1,0 +1,38 @@
+import { GuardExercise } from "../../../components/guard-exercise/GuardExercise";
+import { projectFilesForSnapshot } from "../../../code-explorer/project-files";
+import { guardExercise } from "../../pages/04-workflow-errors-exercise";
+import { guardExerciseWorkspaceFor } from "../../pages/guard-exercise-workspace";
+
+export const projectFiles = projectFilesForSnapshot(guardExercise.snapshot);
+export const workspace = guardExerciseWorkspaceFor(
+  guardExercise,
+  projectFiles,
+  "演習のページと同じファイルを開く作業場所です。",
+);
+export const guide = {
+  title: "相互レビューでやること",
+  steps: [
+    "隣の人のブラウザの前に移ります。1人で読むときは、自分の仕組みをすり抜ける変更を自分で作ります。",
+    "演習に合格すると、一覧に「相互レビューで作る悪い変更」の行が出ます。",
+    "左の一覧の「相互レビューで作る悪い変更」を選ぶと R1-peer-change.ts が開きます。このファイルは最初、正しい useCase と同じ内容です。書き換える前は「未変更」と出ます。「未変更」は、悪い変更をまだ作っていない状態です。",
+    "相手の規則とテストが何を見ているかを読みます。",
+    "相手のテストが見ていない条件を探します。その条件のときに保存を呼ぶ、または保存の例外を Err に変える悪い変更を書きます。",
+    "「検出を確かめる」を押します。表の「相互レビューで作る悪い変更」の行が「すり抜け」なら、その変更は相手の仕組みをすり抜けています。",
+    "一覧にこの行が無いとき、または誤検知が残っているときは、必須の悪い変更の検出がまだ終わっていません。必須の検出を2人で先に済ませます。",
+    {
+      text: "話す問いは次の3つです。",
+      items: [
+        "すり抜けた変更は何を変えたのか",
+        "その変更を検出するには何を足せばよいか",
+        "足した仕組みで誤検知は出ないか",
+      ],
+    },
+  ],
+};
+
+<GuardExercise
+  client:load
+  workspace={workspace}
+  projectFiles={projectFiles}
+  guide={guide}
+/>

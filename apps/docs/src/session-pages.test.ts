@@ -200,7 +200,7 @@ const exerciseContracts = {
       },
       next: {
         href: "/sessions/05-business-events-and-workflows/",
-        title: "データとパイプラインで予約キャンセルを設計する",
+        title: "データと工程で予約キャンセルを設計する",
       },
     },
   },
@@ -229,7 +229,7 @@ const exerciseContracts = {
     navigation: {
       previous: {
         href: "/sessions/05-business-events-and-workflows/",
-        title: "データとパイプラインで予約キャンセルを設計する",
+        title: "データと工程で予約キャンセルを設計する",
       },
       next: {
         href: "/sessions/final/",
@@ -453,7 +453,7 @@ describe("session pages", () => {
         ),
       ),
     ).toBe(true);
-    expect(twoPaths).toContain("業務エラー");
-    expect(twoPaths).toContain("システムエラー");
+    expect(twoPaths).toContain("業務の失敗");
+    expect(twoPaths).toContain("障害");
   });
 });

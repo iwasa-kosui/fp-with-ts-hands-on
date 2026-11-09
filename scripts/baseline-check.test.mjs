@@ -150,6 +150,13 @@ describe("基準差分の検査: ファイル", () => {
     );
   });
 
+  test("3. 基準を持たない新フォルダ（NEW_FOLDERS）のファイルは OK になる", () => {
+    assert.deepEqual(
+      check((current) => current.set("examples/session-05-solution/src/a.ts", "export {};\n")),
+      [],
+    );
+  });
+
   test("4. 元フォルダにあるファイルが新フォルダから消えていると NG になる", () => {
     assert.deepEqual(
       check((current) => current.delete("examples/session-01/src/a.ts")),

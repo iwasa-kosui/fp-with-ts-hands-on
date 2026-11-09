@@ -1,10 +1,10 @@
 import StoreBoundaryAnimation from "../../../components/effects-walkthrough/StoreBoundaryAnimation.astro";
 import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
 
-<p><code>ExaminationStarted</code> は、診察が始まったことを表すイベントで、変更後の予約の状態 <code>aggregateState</code> を持ちます。この1つの値が状態と監査記録の両方を表し、ユースケースはこれを <code>store</code> へ1回だけ渡します。</p>
+<p><code>ExaminationStarted</code> は、診察が始まったことを表すイベントで、変更後の予約の状態 <code>aggregateState</code> を持ちます。この1つの値が状態と監査記録の両方を表し、ユースケースはこれを <code>examinationStartedStore</code> へ1回だけ渡します。</p>
 
 <FigureSpace reserve={152}>
   <StoreBoundaryAnimation scene="one-save" />
 </FigureSpace>
 
-<p>ユースケース側の2回の保存を消すのは、設計です。両方を残すのは、store の <strong>transaction</strong> です。transaction は、データベースへの複数の書き込みを、全部残るか何も残らないかにまとめる仕組みです。</p>
+<p>ユースケース側の2回の保存を消すのは、設計です。両方を残すのは、<code>examinationStartedStore</code> の <strong>transaction</strong> です。transaction は、データベースへの複数の書き込みを、全部残るか何も残らないかにまとめる仕組みです。</p>

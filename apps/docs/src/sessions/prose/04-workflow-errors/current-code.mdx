@@ -1,0 +1,9 @@
+import CatchConfluence from "../../../components/workflow-errors/CatchConfluence.astro";
+
+<p>図は、診察開始で起きうる3種類の失敗が、route の <code>catch</code> に入る様子を示します。</p>
+
+<CatchConfluence />
+
+<p><strong>課題1</strong>: 失敗の理由が型に現れません。<code>startExamination</code> の戻り値の型は成功の値だけなので、route は例外のメッセージで失敗を見分けます。</p>
+
+<p><strong>課題2</strong>: 保存の障害（データベースへの接続が切れるなど）も、同じ <code>catch</code> に入ります。業務の失敗と障害を、route が区別できません。</p>

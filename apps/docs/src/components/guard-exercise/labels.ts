@@ -5,7 +5,10 @@ import type {
   GuardRow,
   GuardVerdict,
 } from "../../code-explorer/guard-result";
-import type { GuardCaseInfo } from "../../code-explorer/guard-paths";
+import type {
+  GuardBehavior,
+  GuardCaseInfo,
+} from "../../code-explorer/guard-paths";
 
 export const mechanismHeaders: Readonly<Record<GuardMechanism, string>> = {
   types: "型",
@@ -49,7 +52,16 @@ export type DisplayRow = Readonly<{
   hint: string;
   cells: GuardRow["cells"] | undefined;
   verdict: GuardVerdict | undefined;
+  behavior?: GuardBehavior;
 }>;
+
+const behaviorOf = (
+  cases: readonly GuardCaseInfo[],
+  id: string,
+): Pick<DisplayRow, "behavior"> => {
+  const behavior = cases.find((item) => item.id === id)?.behavior;
+  return behavior === undefined ? {} : { behavior };
+};
 
 export const displayRowsFor = (
   result: GuardResult | undefined,
@@ -63,16 +75,18 @@ export const displayRowsFor = (
         hint,
         cells,
         verdict,
+        ...behaviorOf(cases, id),
       }))
     : cases
         .filter(({ stage }) => stage <= 1)
-        .map(({ id, kind, title }) => ({
+        .map(({ id, kind, title, behavior }) => ({
           id,
           kind,
           title,
           hint: "",
           cells: undefined,
           verdict: undefined,
+          ...(behavior === undefined ? {} : { behavior }),
         }));
 
 export const headlineFor = (result: GuardResult): string => {

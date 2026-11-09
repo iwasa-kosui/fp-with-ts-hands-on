@@ -19,6 +19,8 @@ export const RENAMED_FOLDERS = [
 
 export const UNCHANGED_FOLDERS = ["session-00", "final", "fixtures", "start-examination-continuity"];
 
+export const NEW_FOLDERS = ["session-05-solution"];
+
 export const FIXTURE_FILE_RENAMES = {
   "s2-paid-cannot-start.ts": "paid-cannot-start.ts",
   "s2-cancel-requires-reason.ts": "cancel-requires-reason.ts",
@@ -154,7 +156,26 @@ export const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-06-solution/test/in-memory-store.test.ts",
   "examples/session-06-solution/test/integration/fileSqliteTransaction.test.ts",
   "examples/session-06-solution/test/regression/effects-and-events.test.ts",
+  "examples/session-04-solution/package.json",
+  "examples/session-04-solution/eslint.config.mjs",
+  "examples/session-04-solution/vitest.exercises.config.ts",
   "examples/session-04-solution/exercises/effects-and-events.test.ts",
+  "examples/session-04-solution/exercises/guard/answer/eslint.config.mjs",
+  "examples/session-04-solution/exercises/guard/answer/mine/harness.ts",
+  "examples/session-04-solution/exercises/guard/answer/mine/startExamination.test.ts",
+  "examples/session-04-solution/exercises/guard/cases/B1-throw-in-use-case.ts",
+  "examples/session-04-solution/exercises/guard/cases/B2-save-after-failure.ts",
+  "examples/session-04-solution/exercises/guard/cases/B3-store-failure-to-business-error.ts",
+  "examples/session-04-solution/exercises/guard/cases/B4-unsafe-unwrap.ts",
+  "examples/session-04-solution/exercises/guard/cases/B5-error-kind-swallowed.ts",
+  "examples/session-04-solution/exercises/guard/cases/G1-solution.ts",
+  "examples/session-04-solution/exercises/guard/cases/G2-notice-assert-never.ts",
+  "examples/session-04-solution/exercises/guard/cases/R1-peer-change.ts",
+  "examples/session-04-solution/exercises/guard/guard.config.mjs",
+  "examples/session-04-solution/exercises/guard/mine/harness.ts",
+  "examples/session-04-solution/exercises/guard/mine/startExamination.test.ts",
+  "examples/session-04-solution/exercises/guard/subjects/notice.ts",
+  "examples/session-04-solution/exercises/guard/subjects/startExamination.ts",
   "examples/session-06/exercises/effects-and-events.test.ts",
   "examples/session-02/test/transitions.test.ts",
   "examples/session-02/test/regression/state-modeling.test.ts",
@@ -286,7 +307,10 @@ const compareSession02Copies = ({ current, readCurrent, baseline }, problems) =>
 export const findFileProblems = (input) => {
   const problems = [];
   const unknown = input.current.filter(
-    (file) => !BASELINE_FOLDERS.some(({ name }) => file.startsWith(`examples/${name}/`)),
+    (file) =>
+      ![...BASELINE_FOLDERS.map(({ name }) => name), ...NEW_FOLDERS].some((name) =>
+        file.startsWith(`examples/${name}/`),
+      ),
   );
   if (unknown.length > 0) {
     problems.push(`対応表にないフォルダのファイル:\n${unknown.map((file) => `  ${file}`).join("\n")}`);

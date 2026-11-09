@@ -27,7 +27,7 @@ import {
 
 const STEP_1_TO_3_FILES = ["src/domain/appointment/transitions.ts"];
 
-const S4_PAGE = "apps/docs/src/pages/sessions/04-workflow-errors.astro";
+const S4_PAGE = "apps/docs/src/sessions/pages/04-workflow-errors-content.ts";
 
 const S4_PAGE_SOLUTION = {
   page: S4_PAGE,

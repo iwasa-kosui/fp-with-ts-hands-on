@@ -17,7 +17,7 @@ export const sessionNavigationItems = [
   { slug: "04-workflow-errors", title: "失敗をユースケースの結果として扱う" },
   {
     slug: "05-business-events-and-workflows",
-    title: "データとパイプラインで予約キャンセルを設計する",
+    title: "データと工程で予約キャンセルを設計する",
   },
   { slug: "06-effects-and-consistency", title: "副作用と整合性境界を設計する" },
   { slug: "final", title: "参照実装で境界をたどる" },

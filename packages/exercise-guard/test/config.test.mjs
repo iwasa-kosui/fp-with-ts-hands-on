@@ -137,6 +137,29 @@ describe("validateConfig", () => {
     ).toBe("G1");
   });
 
+  it("behavior は表示専用で、形が違うと設定エラーにする", () => {
+    const behavior = {
+      input: { text: "入力", value: "1" },
+      expected: { text: "本来" },
+      actual: { text: "この変更", value: "2" },
+    };
+    const withBehavior = (/** @type {unknown} */ value) => ({
+      ...valid,
+      cases: [{ ...valid.cases[0], behavior: value }, valid.cases[1]],
+    });
+    const message = "cases[0]（B1） の behavior は { input, expected, actual } にし、それぞれ { text: 空でない文字列, value?: 文字列 } にします。";
+
+    expect(errorsOf(withBehavior(behavior))).toEqual([]);
+    expect(errorsOf(withBehavior(undefined))).toEqual([]);
+    expect(
+      validateConfig(withBehavior(behavior), { caseEntries: entries, listErrors: [], subjectExists: () => true }).cases[0]?.behavior,
+    ).toEqual(behavior);
+    expect(errorsOf(withBehavior("x"))[0]).toContain(message);
+    expect(errorsOf(withBehavior({ ...behavior, actual: undefined }))[0]).toContain(message);
+    expect(errorsOf(withBehavior({ ...behavior, input: { text: "" } }))[0]).toContain(message);
+    expect(errorsOf(withBehavior({ ...behavior, expected: { text: "本来", value: 1 } }))[0]).toContain(message);
+  });
+
   it("題材のファイルが無いと検出する", () => {
     expect(errorsOf(valid, { subjectExists: () => false })[0]).toContain("subjects/input.ts がありません");
   });

@@ -1,270 +1,654 @@
 ---
 import { Code } from "astro:components";
-import routesSource from "../../../../examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts?raw";
-import appointmentResolverSource from "../../../../examples/final/src/adaptor/secondary/sqlite/resolver/appointmentResolver.ts?raw";
-import userResolverSource from "../../../../examples/final/src/adaptor/secondary/sqlite/resolver/userResolver.ts?raw";
-import storeSource from "../../../../examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts?raw";
 import appointmentSource from "../../../../examples/final/src/domain/appointment/appointment.ts?raw";
 import cancellationReasonSource from "../../../../examples/final/src/domain/appointment/cancellationReason.ts?raw";
 import authorizationSource from "../../../../examples/final/src/useCase/authorization.ts?raw";
 import useCaseSource from "../../../../examples/final/src/useCase/cancelAppointmentUseCase.ts?raw";
 import errorsSource from "../../../../examples/final/src/useCase/errors.ts?raw";
 import { quote } from "../sessions/reference-quote";
-import StepPlayer from "./step-player/StepPlayer.astro";
+import StepControls from "./stepper/StepControls.astro";
+import "./states/states.css";
 
-const pipeline = [
-  "// appointmentRoutes.ts",
-  quote(routesSource, 74, 76, "const CancelSchema"),
-  "",
-  "// cancelAppointmentUseCase.ts",
-  quote(useCaseSource, 87, 98, "dependencies.userResolver"),
-  "",
-  "// Output",
-  quote(useCaseSource, 49, 49, "export type UseCaseOutput"),
-].join("\n");
+type Props = Readonly<{ scenes: "success" | "failures" }>;
+const { scenes } = Astro.props;
 
 type Row = Readonly<{
-  stage: string;
-  lines: readonly number[];
+  group?: string;
+  call: string;
   file: string;
-  code: string;
+  code?: string;
+  io?: string;
   ok: readonly number[];
   err?: readonly number[];
 }>;
 
 const rows: readonly Row[] = [
-  { stage: "入力を検査する", lines: [2], file: "cancellationReason.ts", code: quote(cancellationReasonSource, 7, 13, "const CancellationReasonSchema"), ok: [3], err: [3] },
-  { stage: "対象を取得する", lines: [6, 7], file: "userResolver.ts", code: quote(userResolverSource, 54, 60, "resolveById"), ok: [3, 4] },
-  { stage: "対象を取得する", lines: [8], file: "errors.ts", code: quote(errorsSource, 25, 31, "ensureUserFound"), ok: [4, 6] },
-  { stage: "権限と状態を確認する", lines: [9], file: "authorization.ts", code: quote(authorizationSource, 7, 12, "ensureCanManageClinic"), ok: [3, 4] },
-  { stage: "対象を取得する", lines: [10, 11, 12], file: "appointmentResolver.ts", code: quote(appointmentResolverSource, 111, 121, "resolveById"), ok: [3, 4, 5, 6, 7, 8] },
-  { stage: "対象を取得する", lines: [13], file: "errors.ts", code: quote(errorsSource, 33, 39, "ensureAppointmentFound"), ok: [4, 6] },
-  { stage: "権限と状態を確認する", lines: [14], file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 61, 71, "ensureCancellable"), ok: [3, 4], err: [3, 5, 6, 7, 8, 9, 10] },
-  { stage: "結果を作る", lines: [15], file: "appointment.ts", code: quote(appointmentSource, 210, 235, "const cancel"), ok: [7, 12, 13, 14, 17, 21] },
-  {
-    stage: "Event Store へ記録する",
-    lines: [16],
-    file: "appointmentEventStore.ts",
-    code: [quote(storeSource, 189, 199, `case "AppointmentCanceled"`), "// …", quote(storeSource, 210, 216, "tx.insert(domainEventsTable)")].join("\n"),
-    ok: [1, 2, 12, 13],
-  },
-  { stage: "Output を作る", lines: [17], file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 98, 98, ".map((event)"), ok: [0] },
-  { stage: "Output", lines: [20], file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 49, 49, "export type UseCaseOutput"), ok: [0] },
+  { call: "CancelSchema", file: "cancellationReason.ts", code: quote(cancellationReasonSource, 7, 13, "const CancellationReasonSchema"), ok: [3], err: [3] },
+  { group: "実行者の確認", call: "resolveById", file: "userResolver.ts", io: "データベースから実行者を読みます。実装は省略します。", ok: [] },
+  { call: "ensureUserFound", file: "errors.ts", code: quote(errorsSource, 25, 31, "ensureUserFound"), ok: [4, 6] },
+  { call: "ensureCanManageClinic", file: "authorization.ts", code: quote(authorizationSource, 7, 12, "ensureCanManageClinic"), ok: [3, 4] },
+  { group: "予約の確認", call: "resolveById", file: "appointmentResolver.ts", io: "データベースから予約を読みます。実装は省略します。", ok: [] },
+  { call: "ensureAppointmentFound", file: "errors.ts", code: quote(errorsSource, 33, 39, "ensureAppointmentFound"), ok: [4, 6] },
+  { call: "ensureCancellable", file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 64, 71, "appointment.kind"), ok: [0, 1], err: [0, 2, 3, 4, 5, 6, 7] },
+  { group: "結果を作る", call: "createEvent", file: "appointment.ts", code: quote(appointmentSource, 216, 225, "const aggregateState"), ok: [1, 6, 7, 8] },
+  { group: "記録して返す", call: "andThrough(store)", file: "appointmentEventStore.ts", io: "予約の状態の更新と、イベントの追記を、1回の保存で行います。実装は省略します。", ok: [] },
+  { call: "map", file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 98, 98, ".map((event)"), ok: [0] },
+  { call: "UseCaseOutput", file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 49, 49, "export type UseCaseOutput"), ok: [0] },
 ];
 
-const outputRow = rows.length - 1;
-const appointmentId = `"11111111-…"`;
-const requestWith = (reason: string) =>
-  `{\n  actorUserId: "（受付担当者の ID）",\n  appointmentId: ${appointmentId},\n  reason: ${reason},\n}`;
-const request = requestWith(`"owner request"`);
-const userValue = `{ kind: "Receptionist", userId: "（受付担当者の ID）" }`;
-const appointmentValue = (kind: string) =>
-  `{\n  kind: "${kind}",\n  appointmentId: ${appointmentId},\n  reason: "skin check",\n}`;
-const canceledValue = `{\n  kind: "Canceled",\n  appointmentId: ${appointmentId},\n  reason: "skin check",\n  cancellationReason: "owner request",\n  canceledAt: "2026-08-30T05:00:00.000Z",\n}`;
-const indented = (value: string) => value.replaceAll("\n", "\n  ");
-const ok = (value: string) => `Ok(${value})`;
-const eventValue = `{\n  kind: "AppointmentCanceled",\n  aggregateState: ${indented(canceledValue)},\n}`;
-const finalValue = ok(`{\n  appointment: ${indented(canceledValue)},\n}`);
-const createEventInput = `// 前の行の値\n${appointmentValue("Scheduled")}\n// 最初に受け取った入力の input.reason（キャンセル理由）\n"owner request"\n// clock.now() の時刻\n"2026-08-30T05:00:00.000Z"`;
-const emptyReason = `Err("reason が空である")`;
-const invalidState = `Err({\n  kind: "InvalidAppointmentState",\n  appointmentId: ${appointmentId},\n  expectedKind: "ScheduledOrCheckedIn",\n  actualKind: "Paid",\n})`;
+const endRow = rows.length - 1;
+
+const chainRow: Row = {
+  call: "run",
+  file: "cancelAppointmentUseCase.ts",
+  code: quote(useCaseSource, 87, 98, "dependencies.userResolver"),
+  ok: [],
+};
 
 type Step = Readonly<{
-  text: string;
+  overview?: true;
   row: number;
   failed: boolean;
   skipped: boolean;
+  text: string;
   input: string;
   output: string;
 }>;
 
-const step = (row: number, text: string, input: string, output: string): Step => ({ text, row, failed: false, skipped: false, input, output });
+const step = (row: number, text: string, input: string, output: string): Step => ({ row, failed: false, skipped: false, text, input, output });
 const failAt = (row: number, text: string, input: string, output: string): Step => ({ ...step(row, text, input, output), failed: true });
-const carry = (row: number, text: string, failure: string): Step => ({ ...step(row, text, failure, failure), failed: true, skipped: row !== outputRow });
+const carry = (row: number, text: string, failure: string): Step => ({ ...step(row, text, failure, failure), failed: true, skipped: row !== endRow });
+
+const user = `{ kind: "Receptionist", … }`;
+const appointment = (kind: string) => `{ kind: "${kind}", … }`;
+const event = `{ kind: "AppointmentCanceled" }`;
+const canceled = `{ appointment: { kind: "Canceled" } }`;
+const ok = (value: string) => `Ok(${value})`;
+const invalid = `Err({ kind: "InvalidAppointmentState" })`;
+
+const overview: Step = {
+  overview: true,
+  row: -1,
+  failed: false,
+  skipped: false,
+  text: "ユースケース全体は、<code>andThen</code> をつないだ1本の連鎖です。実行者の確認、予約の確認、結果を作る、記録して返す、の順に進みます。次のコマから、値の流れを1行ずつ追います。",
+  input: "",
+  output: "",
+};
 
 const untilAppointment = (kind: string): readonly Step[] => [
-  step(0, "Web の入口が依頼を検査します。キャンセル理由は空ではないので、<code>.min(1)</code> を通ります。", request, ok(request)),
-  step(1, "<code>resolveById</code> がデータベースから実行者を取得します。", request, ok(userValue)),
-  step(2, "<code>ensureUserFound</code> は、実行者を取得できたので <code>ok(user)</code> を返します。", userValue, ok(userValue)),
-  step(3, "<code>ensureCanManageClinic</code> が権限を確かめます。<code>Receptionist</code> には権限があります。", userValue, ok(userValue)),
-  step(4, "<code>resolveById</code> が予約を取得します。ここで値は実行者から予約へ変わります。", userValue, ok(appointmentValue(kind))),
-  step(5, "<code>ensureAppointmentFound</code> は、予約を取得できたので <code>ok(appointment)</code> を返します。", appointmentValue(kind), ok(appointmentValue(kind))),
+  step(0, "ユースケースの手前の境界が、依頼を検査します。ここはレールの外です。理由は空ではないので、<code>.min(1)</code> を通ります。", `{ reason: "owner request" }`, `{ …, reason: "owner request" }`),
+  step(1, "<code>resolveById</code> が、データベースから実行者を取得します。", `"（受付担当者の ID）"`, ok(user)),
+  step(2, "<code>ensureUserFound</code> は、実行者を取得できたので <code>ok</code> を返します。", user, ok(user)),
+  step(3, "<code>ensureCanManageClinic</code> が、権限を確かめます。<code>Receptionist</code> には権限があります。", user, ok(user)),
+  step(4, "<code>resolveById</code> が、予約を取得します。値は実行者から予約へ変わります。", `"11111111-…"`, ok(appointment(kind))),
+  step(5, "<code>ensureAppointmentFound</code> は、予約を取得できたので <code>ok</code> を返します。", appointment(kind), ok(appointment(kind))),
 ];
 
-const scenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }>)[] = [
+const allScenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }>)[] = [
   {
     label: "成功",
     steps: [
+      overview,
       ...untilAppointment("Scheduled"),
-      step(6, "<code>ensureCancellable</code> が状態を確かめます。<code>Scheduled</code> は診察開始前なので、<code>ok(appointment)</code> を返します。", appointmentValue("Scheduled"), ok(appointmentValue("Scheduled"))),
-      step(7, "キャンセルの出来事を表すイベントを作る <code>createEvent</code> が、<code>Appointment.cancel</code> を呼びます。前の行の予約に加えて、最初に受け取った入力の <code>reason</code>（キャンセル理由）と、現在時刻を返す部品 <code>clock</code> の時刻を使い、<code>AppointmentCanceled</code> を作ります。予約の来院理由は <code>reason</code> に残り、キャンセル理由は <code>cancellationReason</code> に入ります。", createEventInput, ok(eventValue)),
-      step(8, "<code>andThrough</code> は、<code>andThen</code> と同じように Ok のときだけ処理へ進み、成功すると元の値を次へ渡します。ここでは store を呼び、予約の更新とイベントの追記を1つの transaction で行います。値は同じイベントのままです。<code>andThrough</code> の詳細は S06 で学びます。", eventValue, ok(eventValue)),
-      step(9, "<code>map</code> がイベントからキャンセル後の予約を取り出します。", eventValue, finalValue),
-      step(outputRow, "値は成功レールの終点に届きます。呼び出し側はキャンセル後の予約を受け取ります。", finalValue, finalValue),
+      step(6, "<code>ensureCancellable</code> が、状態を確かめます。<code>Scheduled</code> は診察開始前なので、<code>ok</code> を返します。", appointment("Scheduled"), ok(appointment("Scheduled"))),
+      step(7, "<code>createEvent</code> が <code>Appointment.cancel</code> を呼び、入力の <code>reason</code> と <code>clock</code> の時刻から、<code>AppointmentCanceled</code> を作ります。", `予約、"owner request"、時刻`, ok(event)),
+      step(8, "<code>andThrough</code> は、Ok のときだけ store を呼び、値をそのまま次へ渡します。予約の更新とイベントの追記を、1回の保存で行います。", event, ok(event)),
+      step(9, "<code>map</code> が、イベントからキャンセル後の予約を取り出します。", event, ok(canceled)),
+      step(endRow, "値は成功レールの終点に届きます。呼び出し側は、Ok に包まれたキャンセル後の予約を受け取ります。", canceled, ok(canceled)),
     ],
   },
   {
     label: "理由が空",
     steps: [
-      failAt(0, "Web の入口が依頼を検査します。キャンセル理由が空なので、<code>.min(1)</code> で失敗します。", requestWith(`""`), emptyReason),
-      failAt(0, "参照実装の入口は、検査に失敗するとユースケースを呼ばずに入力エラーの画面を返します。パイプラインの後ろの行は1行も実行しません。", emptyReason, "// run を呼ばず、入力エラーの画面を返す"),
+      failAt(0, "ユースケースの手前の境界が、依頼を検査します。理由が空なので、<code>.min(1)</code> で失敗します。", `{ reason: "" }`, `// 検査に失敗`),
+      failAt(0, "検査に失敗した依頼は、ユースケースに入りません。境界が入力エラーの画面を返し、レールの上の行は1行も実行しません。", `// 検査に失敗`, `// 入力エラーの画面を返す`),
     ],
   },
   {
     label: "Paid の予約",
     steps: [
       ...untilAppointment("Paid"),
-      failAt(6, "<code>ensureCancellable</code> が状態を確かめます。<code>Paid</code> は診察開始前ではないので、<code>err</code> を返します。値は失敗レールへ切り替わります。", appointmentValue("Paid"), invalidState),
-      carry(7, "失敗の値は失敗レールを進みます。<code>createEvent</code> は実行しないので、<code>Canceled</code> は作られません。", invalidState),
-      carry(8, "Event Store への記録も実行しません。記録は残りません。", invalidState),
-      carry(9, "結果の取り出しも実行しません。失敗の値は変わりません。", invalidState),
-      carry(outputRow, "失敗の値は失敗レールの終点に届きます。呼び出し側は <code>InvalidAppointmentState</code> を受け取ります。", invalidState),
+      failAt(6, "<code>ensureCancellable</code> が、状態を確かめます。<code>Paid</code> は診察開始前ではないので <code>err</code> を返し、値は失敗レールへ切り替わります。", appointment("Paid"), invalid),
+      carry(7, "失敗の値は、失敗レールを進みます。<code>createEvent</code> は実行しないので、<code>Canceled</code> は作られません。", invalid),
+      carry(8, "記録も実行しません。キャンセルは記録に残りません。", invalid),
+      carry(9, "結果の取り出しも実行しません。失敗の値は変わりません。", invalid),
+      carry(endRow, "失敗の値は、失敗レールの終点に届きます。呼び出し側は、<code>InvalidAppointmentState</code> を受け取ります。", invalid),
     ],
   },
 ];
 
-const escapeHtml = (text: string): string => text.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
-const stepHtml = ({ text, row, input, output }: Step): string =>
-  `${text}<div data-step-extra><p>実行する関数（${rows[row]?.file ?? ""}）</p><pre>${escapeHtml(rows[row]?.code ?? "")}</pre><p>受け取る値</p><pre>${escapeHtml(input)}</pre><p>返す値</p><pre>${escapeHtml(output)}</pre></div>`;
-const playerScenarios = scenarios.map(({ label, steps }) => ({ label, steps: steps.map(stepHtml) }));
+const scenarios = scenes === "success" ? allScenarios.slice(0, 1) : allScenarios.slice(1);
 
-const values = [...new Set(scenarios.flatMap(({ steps }) => steps.flatMap(({ input, output }) => [input, output])))];
-const sceneData = JSON.stringify({
-  rows: rows.map(({ stage, lines, file, ok, err }) => ({ stage, lines, file, ok, err })),
-  scenarios: scenarios.map(({ steps }) =>
-    steps.map(({ row, failed, skipped, input, output }) => ({
-      row,
-      failed,
-      skipped,
-      input: values.indexOf(input),
-      output: values.indexOf(output),
-    })),
-  ),
-});
-const id = "cancel-railway-animation";
+type RowState = "todo" | "current" | "done" | "skipped";
+const stateOf = (rowIndex: number, current: Step): RowState => {
+  if (rowIndex === current.row) return current.skipped ? "skipped" : "current";
+  if (rowIndex < current.row) return "done";
+  return current.failed ? "skipped" : "todo";
+};
+const boundaryFailed = (current: Step): boolean => current.row === 0 && current.failed;
+const rowState = (rowIndex: number, current: Step): RowState =>
+  rowIndex > 0 && boundaryFailed(current) ? "skipped" : stateOf(rowIndex, current);
+const markOf: Readonly<Record<RowState, string>> = { todo: "", current: "▶", done: "✓", skipped: "–" };
+
+const rowHeightRem = 1.25;
 ---
 
-<StepPlayer
-  id={id}
-  title="キャンセルのコードを実行すると、値はどう流れるか"
-  lead="再生すると、値がパイプラインの行に沿って上から下へ進みます。下の枠では、その行が受け取る値、実行する関数の実装、返す値を順に確かめます。ユースケースの中で失敗しても、処理は途中で抜けません。失敗の値は右の失敗レールを終点まで進みます。コードは完成形の参照実装（examples/final）から引用しています。"
-  note="コードは完成形の参照実装 examples/final/src から引用しました。andThen の意味は S04 で学んだとおりです。andThen は Ok の中身を次の関数へ渡すので、受け取る値には Ok を付けていません。受付担当者の ID、Paid の予約、Err の理由の文は説明用です。値は読みやすさのため、UUID を「11111111-…」と省略し、petId、ownerId、scheduledAt などの項目と、reason を包む Sensitive も省略しています。"
-  scenarios={playerScenarios}
->
-  <div class="cancel-flow" data-cancel-flow={sceneData}>
-    <div class="cancel-flow__pipeline" data-pipeline>
-      <div class="cancel-flow__legend"><span>成功レール</span><span>失敗レール</span></div>
-      <div class="cancel-flow__rails" data-rails>
-        <span class="cancel-flow__token" data-token>Ok</span>
-        <Code code={pipeline} lang="ts" wrap />
+<figure class="st-fig cf" data-cancel-flow data-step-figure aria-label="キャンセルのコードを実行すると、値がレールをどう進むか">
+  <div class="cf__bar">
+    {scenarios.length > 1 && (
+      <div class="cf__tabs" role="group" aria-label="場面を選ぶ">
+        {scenarios.map((scenario) => <button type="button" data-step-scene aria-pressed="false">{scenario.label}</button>)}
       </div>
-    </div>
-    <div class="cancel-flow__box" data-input-box><p>受け取る値</p><div data-input></div></div>
-    <div class="cancel-flow__arrow" aria-hidden="true">↓</div>
-    <div class="cancel-flow__box" data-impl-box><p><span data-stage></span> <small data-file></small></p><div data-impl></div></div>
-    <div class="cancel-flow__arrow" aria-hidden="true">↓</div>
-    <div class="cancel-flow__box" data-output-box><p>返す値</p><div data-output></div></div>
-    <div hidden data-sources>
-      {rows.map((row) => <div data-impl-source><Code code={row.code} lang="ts" wrap /></div>)}
-      {values.map((value) => <div data-value-source><Code code={value} lang="ts" wrap /></div>)}
-    </div>
+    )}
+    <StepControls />
+    <span class="cf__note">説明用に項目を省略しています。</span>
   </div>
-</StepPlayer>
 
-<style is:inline>
-  .cancel-flow { --ok: #4ade80; --bad: #ff8f7d; --bad-ink: #b42318; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.375rem; min-width: 0; }
-  .cancel-flow pre { margin: 0; padding: 0.5rem 0.625rem; border-radius: 0.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.75rem; line-height: 1.5; }
-  .cancel-flow pre code { display: flex; flex-direction: column; background: none; padding: 0; color: inherit; font-size: inherit; }
-  .cancel-flow .line { display: block; min-width: 0; min-height: 1.5em; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 -0.625rem; padding: 0 0.625rem; border-left: 3px solid transparent; transition: background-color 200ms ease, opacity 200ms ease; }
-  .cancel-flow__legend { display: flex; justify-content: space-between; padding: 0 0.125rem 0.25rem; font-size: 0.75rem; font-weight: 700; }
-  .cancel-flow__legend span:first-child { color: #137333; }
-  .cancel-flow__legend span:last-child { color: var(--bad-ink); }
-  .cancel-flow__rails { position: relative; padding: 0 1.875rem; border-radius: 0.375rem; background: #24292e; }
-  .cancel-flow__rails::before, .cancel-flow__rails::after { content: ""; position: absolute; top: 0; bottom: 0; width: 4px; }
-  .cancel-flow__rails::before { left: 0.8125rem; background: var(--ok); }
-  .cancel-flow__rails::after { right: 0.8125rem; background: var(--bad); }
-  .cancel-flow__rails .line[data-state="done"] { opacity: 0.6; }
-  .cancel-flow__rails .line[data-state="skipped"] { opacity: 0.35; }
-  .cancel-flow .line[data-hi] { background: rgb(255 210 27 / 0.24); border-left-color: #ffd21b; }
-  .cancel-flow .line[data-hi="bad"] { background: rgb(255 120 100 / 0.3); border-left-color: var(--bad); }
-  .cancel-flow__token { position: absolute; z-index: 2; top: 0; left: 0; padding: 0 0.3125rem; border-radius: 999px; background: var(--ok); color: #111116; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.6875rem; font-weight: 800; line-height: 1.5; transition: transform 550ms cubic-bezier(0.3, 0.8, 0.3, 1), background-color 250ms ease; }
-  .cancel-flow__token[data-rail="bad"] { background: var(--bad); }
-  .cancel-flow__box { min-width: 0; margin-top: 0.25rem; }
-  .cancel-flow__box p { margin: 0 0 0.25rem; color: var(--case-muted, #58596d); font-size: 0.8125rem; font-weight: 700; }
-  .cancel-flow__box small { font-weight: 400; font-size: 0.75rem; }
-  .cancel-flow__box[data-bad] p { color: var(--bad-ink); }
-  .cancel-flow__box[data-bad] pre { outline: 2px solid var(--bad); }
-  .cancel-flow__box[data-skipped] pre { opacity: 0.45; }
-  .cancel-flow__arrow { color: var(--case-muted, #58596d); font-weight: 800; line-height: 1; text-align: center; }
-  .cancel-flow[data-run] [data-input-box] { animation: cancel-flow-arrive 350ms ease both; }
-  .cancel-flow[data-run] [data-impl-box] { animation: cancel-flow-arrive 350ms ease 300ms both; }
-  .cancel-flow[data-run] [data-output-box] { animation: cancel-flow-arrive 400ms ease 650ms both; }
-  @keyframes cancel-flow-arrive { from { opacity: 0; transform: translateY(-0.625rem); } to { opacity: 1; transform: none; } }
-</style>
-<script is:inline define:vars={{ id }}>
-  const root = document.getElementById(id);
-  const scene = root.querySelector("[data-cancel-flow]");
-  const data = JSON.parse(scene.dataset.cancelFlow);
-  const rails = scene.querySelector("[data-rails]");
-  const token = scene.querySelector("[data-token]");
-  const pipelineLines = [...rails.querySelectorAll(".line")];
-  const implSources = [...scene.querySelectorAll("[data-impl-source]")];
-  const valueSources = [...scene.querySelectorAll("[data-value-source]")];
-  const part = (name) => scene.querySelector(`[data-${name}]`);
-  const show = (target, source) => target.replaceChildren(source.firstElementChild.cloneNode(true));
-  let current;
+  <ol class="st-stack">
+    {scenarios.flatMap((scenario, sceneIndex) =>
+      scenario.steps.map((current, stepIndex) => {
+        const row = current.overview ? chainRow : rows[current.row]!;
+        const previous = stepIndex > 0 ? scenario.steps[stepIndex - 1]! : undefined;
+        const distance = previous !== undefined && previous.row > 0 && current.row > 0 ? current.row - previous.row : 0;
+        const lit = (current.skipped ? [] : current.failed ? (row.err ?? row.ok) : row.ok);
+        return (
+          <li data-frame data-scene={sceneIndex} data-step={stepIndex} data-lit={JSON.stringify(lit)} data-tone={current.failed ? "negative" : "accent"}>
+            <div class="cf__body">
+              <div class="cf__left">
+                <div class="cf__code" data-skipped={current.skipped ? "" : undefined}>
+                  <p class="cf__file">実行する関数 <code>{row.file}</code>{current.skipped && "（実行しません）"}</p>
+                  {row.code !== undefined ? (
+                    <figure class="code-block st-code"><Code code={row.code} lang="ts" /></figure>
+                  ) : (
+                    <p class="cf__io">{row.io}</p>
+                  )}
+                </div>
+                {!current.overview && (
+                  <div class="cf__values">
+                    <div class="cf__value">
+                      <p>受け取る値</p>
+                      <figure class="code-block st-code"><Code code={current.input} lang="ts" wrap /></figure>
+                    </div>
+                    <span class="cf__arrow" aria-hidden="true">→</span>
+                    <div class="cf__value" data-bad={current.failed ? "" : undefined}>
+                      <p>返す値</p>
+                      <figure class="code-block st-code"><Code code={current.output} lang="ts" wrap /></figure>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-  const pipelineState = (rowIndex, step) => {
-    if (rowIndex > step.row) return "";
-    if (rowIndex < step.row) return step.failed ? "skipped" : "done";
-    return step.skipped ? "skipped" : "current";
-  };
+              <div class="cf__right">
+                <p class="cf__boundary" data-state={rowState(0, current)} data-failed={boundaryFailed(current) ? "" : undefined}>
+                  <span class="cf__mark" aria-hidden="true">{markOf[rowState(0, current)]}</span>
+                  <span>手前の境界: 入力を検査する</span>
+                  <small>レールには乗らない</small>
+                </p>
+                <div class="cf__legend"><span>成功</span><span>失敗</span></div>
+                <ol class="cf__rows">
+                  {rows.slice(1).map((item, offset) => {
+                    const index = offset + 1;
+                    const state = rowState(index, current);
+                    return (
+                      <li class="cf__row" data-state={state}>
+                        <span class="cf__rail cf__rail--ok">
+                          {state === "current" && !current.failed && (
+                            <span class="cf__token" data-ok style={`--dy: ${distance * rowHeightRem}rem`}>Ok</span>
+                          )}
+                        </span>
+                        <span class="cf__label">
+                          <span class="cf__mark" aria-hidden="true">{markOf[state]}</span>
+                          <span class="cf__group">{item.group ?? ""}</span>
+                          <code>{item.call}</code>
+                        </span>
+                        <span class="cf__rail cf__rail--bad">
+                          {(state === "current" || state === "skipped") && current.failed && index === current.row && (
+                            <span class="cf__token" data-bad style={`--dy: ${distance * rowHeightRem}rem`}>Err</span>
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            </div>
+            <p class="st-caption" set:html={current.text} />
+          </li>
+        );
+      }),
+    )}
+  </ol>
+</figure>
 
-  const place = () => {
-    if (!current) return;
-    const line = pipelineLines[data.rows[current.row].lines[0]];
-    const railsRect = rails.getBoundingClientRect();
-    const lineRect = line.getBoundingClientRect();
-    const x = current.failed ? railsRect.width - token.offsetWidth - 2 : 2;
-    const y = lineRect.top - railsRect.top + lineRect.height / 2 - token.offsetHeight / 2;
-    token.style.transform = `translate(${x}px, ${y}px)`;
-  };
+<script>
+  type Mark = "accent" | "negative";
 
-  root.addEventListener("stepchange", ({ detail }) => {
-    current = data.scenarios[detail.scenarioIndex][detail.stepIndex];
-    const row = data.rows[current.row];
-    pipelineLines.forEach((line) => {
-      line.removeAttribute("data-hi");
-      line.removeAttribute("data-state");
-    });
-    data.rows.forEach((item, rowIndex) => {
-      const state = pipelineState(rowIndex, current);
-      item.lines.forEach((lineIndex) => {
-        const line = pipelineLines[lineIndex];
-        if (state === "current") line.dataset.hi = current.failed ? "bad" : "ok";
-        else if (state) line.dataset.state = state;
+  document.querySelectorAll<HTMLElement>("[data-cancel-flow]").forEach((root) => {
+    if (root.dataset.ready !== undefined) return;
+    const frames = [...root.querySelectorAll<HTMLElement>("[data-frame]")];
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>("[data-step-scene]")];
+    const controls = root.querySelector<HTMLElement>("[data-controls]");
+    const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
+    const play = root.querySelector<HTMLButtonElement>("[data-play]");
+    const next = root.querySelector<HTMLButtonElement>("[data-next]");
+    const progress = root.querySelector<HTMLElement>("[data-progress]");
+    if (!controls || !prev || !play || !next || !progress) return;
+
+    frames.forEach((frame) => {
+      const lit = JSON.parse(frame.dataset.lit ?? "[]") as number[];
+      const tone = (frame.dataset.tone ?? "accent") as Mark;
+      frame.querySelectorAll<HTMLElement>(".cf__code .line").forEach((line, index) => {
+        line.classList.toggle(tone === "negative" ? "is-lit-negative" : "is-lit", lit.includes(index));
       });
     });
-    show(part("input"), valueSources[current.input]);
-    show(part("output"), valueSources[current.output]);
-    show(part("impl"), implSources[current.row]);
-    part("stage").textContent = current.skipped ? `${row.stage}（実行しません）` : row.stage;
-    part("file").textContent = row.file;
-    part("impl-box").toggleAttribute("data-skipped", current.skipped);
-    part("output-box").toggleAttribute("data-bad", current.failed);
-    if (!current.skipped) {
-      const implLines = [...part("impl").querySelectorAll(".line")];
-      const highlighted = current.failed ? row.err ?? row.ok : row.ok;
-      highlighted.forEach((lineIndex) => {
-        implLines[lineIndex].dataset.hi = current.failed ? "bad" : "ok";
+
+    const inScene = (scene: number) => frames.filter((frame) => Number(frame.dataset.scene) === scene);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let scene = 0;
+    let index = 0;
+    let timer: number | undefined;
+
+    const stop = () => {
+      if (timer !== undefined) window.clearInterval(timer);
+      timer = undefined;
+      play.textContent = "▶ 再生";
+    };
+
+    const show = () => {
+      const list = inScene(scene);
+      frames.forEach((frame) => {
+        const active = frame === list[index];
+        frame.hidden = !active;
+        frame.toggleAttribute("data-active", active);
       });
-    }
-    token.textContent = current.failed ? "Err" : "Ok";
-    token.dataset.rail = current.failed ? "bad" : "ok";
-    scene.removeAttribute("data-run");
-    void scene.offsetWidth;
-    scene.setAttribute("data-run", "");
-    place();
+      tabs.forEach((tab, tabIndex) => tab.setAttribute("aria-pressed", String(tabIndex === scene)));
+      progress.textContent = `${index + 1} / ${list.length}`;
+      prev.disabled = index === 0;
+      next.disabled = index === list.length - 1;
+    };
+
+    play.addEventListener("click", () => {
+      if (timer !== undefined) {
+        stop();
+        return;
+      }
+      const last = inScene(scene).length - 1;
+      if (index === last) {
+        index = 0;
+        show();
+      }
+      play.textContent = "❚❚ 一時停止";
+      timer = window.setInterval(() => {
+        index = Math.min(index + 1, last);
+        show();
+        if (index === last) stop();
+      }, 6000);
+    });
+    prev.addEventListener("click", () => {
+      stop();
+      index = Math.max(index - 1, 0);
+      show();
+    });
+    next.addEventListener("click", () => {
+      stop();
+      index = Math.min(index + 1, inScene(scene).length - 1);
+      show();
+    });
+    tabs.forEach((tab, tabIndex) =>
+      tab.addEventListener("click", () => {
+        stop();
+        scene = tabIndex;
+        index = 0;
+        show();
+      }),
+    );
+    const applyMotion = () => {
+      play.hidden = reducedMotion.matches;
+      if (reducedMotion.matches) stop();
+    };
+    reducedMotion.addEventListener("change", applyMotion);
+    applyMotion();
+
+    root.dataset.ready = "";
+    controls.hidden = false;
+    show();
   });
-  new ResizeObserver(place).observe(rails);
 </script>
+
+<style>
+  .cf__bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    align-items: center;
+    margin-block-end: 0.375rem;
+  }
+
+  .cf__bar :global(.step-controls) {
+    margin-block-end: 0;
+  }
+
+  .cf__tabs {
+    display: flex;
+    gap: 0.375rem;
+  }
+
+  .cf__tabs button {
+    min-height: 2.5rem;
+    padding: 0 0.875rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+  }
+
+  .cf__tabs button[aria-pressed="true"] {
+    border-color: var(--role-accent);
+    background: color-mix(in srgb, var(--role-accent) 16%, var(--role-surface));
+    box-shadow: inset 0 -3px 0 var(--role-accent);
+  }
+
+  .cf__tabs button:focus-visible {
+    outline: 3px solid var(--role-accent);
+    outline-offset: 2px;
+  }
+
+  .cf {
+    --lit-accent: color-mix(in srgb, var(--role-accent) 55%, var(--frame-code-text, #ffffff));
+    --lit-negative: color-mix(in srgb, var(--role-negative) 55%, var(--frame-code-text, #ffffff));
+  }
+
+  .cf__code :global(.line.is-lit) {
+    box-shadow: inset 4px 0 0 var(--lit-accent);
+  }
+
+  .cf__code :global(.line.is-lit-negative) {
+    box-shadow: inset 4px 0 0 var(--lit-negative);
+  }
+
+  .cf__note {
+    margin-inline-start: auto;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+  }
+
+  .cf__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: start;
+  }
+
+  .cf__left {
+    display: grid;
+    gap: 0.375rem;
+    min-width: 0;
+  }
+
+  .cf__file,
+  .cf__value p {
+    margin: 0 0 0.125rem;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .cf__file code {
+    margin-inline-start: 0.25rem;
+    color: var(--role-text);
+    font-size: 0.8125rem;
+  }
+
+  .cf__code[data-skipped] .st-code,
+  .cf__code[data-skipped] .cf__io {
+    opacity: 0.45;
+  }
+
+  .cf__body :global(.st-code pre) {
+    padding-block: 0.25rem;
+    line-height: 1.3;
+  }
+
+  .cf__code :global(.st-code pre) {
+    min-height: 10rem;
+  }
+
+  .cf__io {
+    min-height: 10rem;
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.375rem;
+    background: var(--role-surface);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  .cf__values {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 0.375rem;
+    align-items: end;
+  }
+
+  .cf__arrow {
+    align-self: center;
+    color: var(--role-accent);
+    font-weight: 800;
+  }
+
+  .cf__value {
+    min-width: 0;
+  }
+
+  .cf__value[data-bad] p {
+    color: var(--role-negative);
+  }
+
+  .cf__value[data-bad] :global(.st-code) {
+    outline: 2px dashed var(--role-negative);
+  }
+
+  .cf__value :global(.st-code pre) {
+    min-height: 2.75rem;
+  }
+
+  .cf__value :global(.st-code .line) {
+    padding-inline: 0.5rem;
+  }
+
+  .cf__right {
+    display: grid;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .cf__boundary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.5rem;
+    align-items: baseline;
+    margin: 0;
+    padding: 0.125rem 0.5rem;
+    border: 2px dashed var(--role-border);
+    border-radius: 0.375rem;
+    background: var(--role-surface);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  .cf__boundary small {
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    font-weight: 400;
+  }
+
+  .cf__boundary[data-state="current"] {
+    border-color: var(--role-accent);
+    background: color-mix(in srgb, var(--role-accent) 14%, var(--role-surface));
+  }
+
+  .cf__boundary[data-failed] {
+    border-color: var(--role-negative);
+    background: color-mix(in srgb, var(--role-negative) 12%, var(--role-surface));
+  }
+
+  .cf__legend {
+    display: flex;
+    justify-content: space-between;
+    padding-inline: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1.3;
+  }
+
+  .cf__legend span:first-child {
+    color: var(--role-positive);
+  }
+
+  .cf__legend span:last-child {
+    color: var(--role-negative);
+  }
+
+  .cf__rows {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .cf__row {
+    display: grid;
+    grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem;
+    align-items: center;
+    height: 1.25rem;
+    font-size: 0.8125rem;
+  }
+
+  .cf__rail {
+    position: relative;
+    display: grid;
+    height: 100%;
+    place-items: center;
+  }
+
+  .cf__rail::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline: calc(50% - 2px);
+    background: var(--role-positive);
+  }
+
+  .cf__rail--bad::before {
+    background: var(--role-negative);
+  }
+
+  .cf__label {
+    display: grid;
+    grid-template-columns: 1rem 5.75rem minmax(0, 1fr);
+    gap: 0 0.25rem;
+    align-items: center;
+    height: 100%;
+    min-width: 0;
+    padding-inline: 0.25rem;
+    border-block: 1px solid color-mix(in srgb, var(--role-border) 30%, var(--role-surface));
+    background: var(--role-surface);
+    color: var(--role-text);
+    line-height: 1.2;
+  }
+
+  .cf__label code {
+    overflow: hidden;
+    font-size: 0.8125rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cf__group {
+    font-size: 0.8125rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .cf__mark {
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .cf__row[data-state="current"] .cf__label {
+    border: 2px solid var(--role-accent);
+    background: color-mix(in srgb, var(--role-accent) 14%, var(--role-surface));
+    font-weight: 800;
+  }
+
+  .cf__row[data-state="done"] .cf__label {
+    color: var(--role-muted);
+  }
+
+  .cf__row[data-state="skipped"] .cf__label,
+  .cf__row[data-state="todo"] .cf__label {
+    color: var(--role-muted);
+  }
+
+  .cf__row[data-state="skipped"] .cf__label code {
+    text-decoration: line-through;
+  }
+
+  .cf__token {
+    position: relative;
+    z-index: 1;
+    padding: 0 0.375rem;
+    border-radius: 999px;
+    color: var(--role-surface);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1.25rem;
+  }
+
+  .cf__token[data-ok] {
+    background: var(--role-positive);
+  }
+
+  .cf__token[data-bad] {
+    background: var(--role-negative);
+  }
+
+  [data-active] .cf__token {
+    animation: cf-slide 450ms ease-out both;
+  }
+
+  @keyframes cf-slide {
+    from {
+      transform: translateY(calc(var(--dy, 0rem) * -1));
+    }
+
+    to {
+      transform: none;
+    }
+  }
+
+  .cf :global(.st-caption) {
+    min-height: 2.9em;
+    margin-block-start: 0.375rem;
+    line-height: 1.45;
+  }
+
+  .cf :global(.st-caption code) {
+    font-size: 0.875rem;
+  }
+
+  @media (max-width: 55rem) {
+    .cf__body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
