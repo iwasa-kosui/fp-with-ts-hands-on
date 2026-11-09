@@ -1,0 +1,7 @@
+import RuleCandidateCards from "../../../components/session-02/RuleCandidateCards.astro";
+
+<p><code>assertNever</code> を書いても、あとから誰かが <code>default</code> を「不明」を返す形に戻すかもしれません。そうした変更を悪い変更と呼びます。正しいコードを検出してしまうことを誤検知と呼びます。</p>
+
+<p><code>default</code> を残したい場面は、union でない <code>string</code> を受け取るときだけです。このとき <code>default</code> に残る候補は0個にならないので、<code>assertNever</code> は使えません。足し忘れを何で検出するかを、次の候補で見比べます。「網羅」は、すべての候補を <code>case</code> で処理していることです。</p>
+
+<RuleCandidateCards />

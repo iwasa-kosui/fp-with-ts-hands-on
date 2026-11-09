@@ -1,0 +1,415 @@
+---
+import { Code } from "astro:components";
+import { projectFilesForSnapshot } from "../../code-explorer/project-files";
+import { sourceOf } from "../../sessions/source-quotes";
+import StepControls from "../stepper/StepControls.astro";
+
+const path = "src/domain/appointment/statusLabel.ts";
+const firstLine = "export const toStatusLabel";
+
+const excerptOf = (snapshot: "session-02" | "session-02-solution", defaultReturn: string) => {
+  const sourceLines = sourceOf(projectFilesForSnapshot(snapshot), path).split("\n");
+  const start = sourceLines.findIndex((line) => line.startsWith(firstLine));
+  const end = sourceLines.indexOf("};", start);
+  const defaultAt = sourceLines.findIndex((line, index) => index > start && line.trim() === "default:");
+  if (start < 0 || end < 0 || defaultAt < 0 || sourceLines[defaultAt + 1]?.trim() !== defaultReturn) {
+    throw new Error(`FailFastTimeline: ${snapshot} の ${path} に想定の default が見つかりません`);
+  }
+  const codeLines = [...sourceLines.slice(start, start + 2), "    …", ...sourceLines.slice(defaultAt, end + 1)];
+  return { codeLines, code: codeLines.join("\n") };
+};
+
+const before = excerptOf("session-02", 'return "不明";');
+const after = excerptOf("session-02-solution", "return assertNever(appointment);");
+
+const litLines = (codeLines: string[], needles: string[]) =>
+  needles.map((needle) => {
+    const index = codeLines.findIndex((line) => line.includes(needle));
+    if (index < 0) throw new Error(`FailFastTimeline: "${needle}" is not in the excerpt`);
+    return index;
+  });
+const lit = {
+  0: litLines(before.codeLines, ["default:", 'return "不明"']),
+  1: litLines(after.codeLines, ["default:", "return assertNever"]),
+  2: litLines(after.codeLines, ["return assertNever"]),
+};
+
+const stages = ["書く", "型検査", "実行", "画面"] as const;
+---
+
+<figure class="ff" data-fail-fast data-lit={JSON.stringify(lit)} aria-label="書く、型検査、実行、画面の順に、誤りに気づく時点を比べる図">
+  <StepControls />
+
+  <div class="ff__main">
+    <div class="ff__axis">
+      <ol class="ff__stages">
+        {stages.map((stage) => <li>{stage}</li>)}
+      </ol>
+
+      <section class="ff__lane ff__lane--bad">
+        <p class="ff__lane-title">「不明」を返す場合</p>
+        <div class="ff__grid">
+          {[0, 1, 2, 3].map((column) => (
+            <span class="ff__cell" data-from="0" style={`--i: ${column}`} />
+          ))}
+          <p class="ff__note" data-from="0" style="grid-column: 4; --i: 4">× 画面に「不明」と出る。見た人が気づく</p>
+        </div>
+      </section>
+
+      <section class="ff__lane ff__lane--good">
+        <p class="ff__lane-title"><code>assertNever</code> を呼ぶ場合</p>
+        <div class="ff__grid">
+          <span class="ff__cell" data-from="1" style="--i: 0" />
+          <span class="ff__cell" data-from="1" style="--i: 1" />
+          <span class="ff__cell" data-from="2" style="--i: 2" />
+          <span class="ff__cell ff__cell--ghost" data-from="2" style="--i: 3">画面へ届かない</span>
+          <p class="ff__note" data-from="1" style="grid-column: 2; --i: 2">✓ 足し忘れを型検査で見つける</p>
+          <p class="ff__note" data-from="2" style="grid-column: 3; --i: 3">✓ すり抜けた値は、見つけた場所で例外になる</p>
+        </div>
+      </section>
+
+      <section class="ff__lane ff__lane--outside" data-from="3">
+        <p class="ff__lane-title">HTTP の入力のように外から届く値</p>
+        <div class="ff__grid">
+          <span class="ff__cell ff__cell--outside" style="grid-column: 3; --i: 0">型の保証がない</span>
+          <p class="ff__note" style="grid-column: 4; --i: 1">S03 で仕組みを作る</p>
+        </div>
+      </section>
+    </div>
+
+    <div class="ff__side">
+      <figure class="code-block ff__code ff__code--before" data-code="before">
+        <figcaption>
+          <span class="ff__tag ff__tag--before">▲ 修正前</span>
+          <code>examples/session-02/{path}（抜粋）</code>
+        </figcaption>
+        <Code code={before.code} lang="ts" />
+      </figure>
+
+      <figure class="code-block ff__code ff__code--after" data-code="after">
+        <figcaption>
+          <span class="ff__tag">● 修正後</span>
+          <code>examples/session-02-solution/{path}（抜粋）</code>
+        </figcaption>
+        <Code code={after.code} lang="ts" />
+      </figure>
+
+      <div aria-live="polite">
+        <ol class="ff__frames">
+          <li data-frame>
+            <p class="ff__caption"><code>default</code> が「不明」を返すと、値は実行を通り抜けて画面に届きます。誤りに気づくのは、画面を見た人です。</p>
+          </li>
+          <li data-frame>
+            <p class="ff__caption"><code>assertNever</code> を呼ぶ分岐は、足し忘れを型検査で見つけます。引数の型が <code>never</code> なので、足し忘れた状態を渡せません。</p>
+          </li>
+          <li data-frame>
+            <p class="ff__caption">型検査をすり抜けた想定外の値は、<code>assertNever</code> の <code>throw</code> で例外になります。例外は「未対応の状態の値」をエラーログに残します。利用者の画面に、「不明」のような誤った表示は出ません。</p>
+          </li>
+          <li data-frame>
+            <p class="ff__caption">HTTP の入力のように外から届く値には、型の保証がありません。S03 で仕組みを作ります。この Session では解決しません。</p>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  type Lit = Record<string, number[]>;
+
+  document.querySelectorAll<HTMLElement>("[data-fail-fast]").forEach((root) => {
+    const lit = JSON.parse(root.dataset.lit ?? "{}") as Lit;
+    const figures = {
+      before: [...root.querySelectorAll<HTMLElement>('[data-code="before"] .line')],
+      after: [...root.querySelectorAll<HTMLElement>('[data-code="after"] .line')],
+    };
+    const parts = [...root.querySelectorAll<HTMLElement>("[data-from]")];
+
+    mountStepper({
+      root,
+      onStep: (index) => {
+        root.dataset.phase = String(index);
+        const active = lit[String(index)] ?? [];
+        const shown = index === 0 ? "before" : "after";
+        (["before", "after"] as const).forEach((name) =>
+          figures[name].forEach((line, lineIndex) => line.classList.toggle("is-lit", name === shown && active.includes(lineIndex))),
+        );
+        parts.forEach((part) => part.classList.toggle("is-shown", Number(part.dataset.from) <= index));
+      },
+    });
+  });
+</script>
+
+<style>
+  .ff {
+    min-width: 0;
+    margin: 0.5rem 0;
+    color: var(--role-text);
+  }
+
+  .ff :global(.step-controls) {
+    margin-block-end: 0.5rem;
+  }
+
+  .ff__main {
+    display: grid;
+    gap: 0.75rem 1rem;
+    align-items: start;
+  }
+
+  @media (min-width: 52rem) {
+    .ff__main {
+      grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    }
+  }
+
+  .ff__axis {
+    display: grid;
+    gap: 0.375rem;
+    min-width: 0;
+  }
+
+  .ff__stages {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.375rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .ff__stages li {
+    margin: 0;
+    padding: 0.125rem 0.75rem;
+    background: color-mix(in srgb, var(--role-accent) 16%, var(--role-surface));
+    clip-path: polygon(0 0, calc(100% - 0.625rem) 0, 100% 50%, calc(100% - 0.625rem) 100%, 0 100%, 0.625rem 50%);
+    font-size: 0.875rem;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .ff__stages li:first-child {
+    clip-path: polygon(0 0, calc(100% - 0.625rem) 0, 100% 50%, calc(100% - 0.625rem) 100%, 0 100%);
+  }
+
+  .ff__lane {
+    display: grid;
+    gap: 0.125rem;
+    padding: 0.25rem 0.375rem 0.375rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+  }
+
+  .ff__lane--bad {
+    border-color: var(--role-negative);
+  }
+
+  .ff__lane--good {
+    border-color: var(--role-positive);
+  }
+
+  .ff__lane--outside {
+    border-style: dashed;
+  }
+
+  .ff__lane p {
+    margin: 0;
+  }
+
+  .ff__lane-title {
+    font-size: 0.8125rem;
+    font-weight: 800;
+  }
+
+  .ff__lane--bad .ff__lane-title {
+    color: var(--role-negative);
+  }
+
+  .ff__lane--good .ff__lane-title {
+    color: var(--role-positive);
+  }
+
+  .ff__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.25rem 0.375rem;
+  }
+
+  .ff__cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.25rem;
+    border-radius: 0.375rem;
+    background: var(--role-border);
+    color: var(--role-muted);
+    font-size: 0.6875rem;
+    font-weight: 700;
+  }
+
+  .ff__lane--bad .ff__cell {
+    background: var(--role-negative);
+  }
+
+  .ff__lane--good .ff__cell {
+    background: var(--role-positive);
+  }
+
+  .ff__lane--good .ff__cell--ghost {
+    border: 2px dashed var(--role-positive);
+    background: transparent;
+    color: var(--role-positive);
+  }
+
+  .ff__cell--outside {
+    border: 2px dashed var(--role-border);
+    background: transparent;
+    color: var(--role-text);
+  }
+
+  .ff__lane--outside .ff__cell--outside {
+    background: transparent;
+  }
+
+  .ff__lane--outside .ff__note {
+    grid-row: 1;
+  }
+
+  .ff__note {
+    grid-row: 2;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .ff__lane--bad .ff__note {
+    color: var(--role-negative);
+  }
+
+  .ff__lane--good .ff__note {
+    color: var(--role-positive);
+  }
+
+  .ff__side {
+    display: grid;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .ff__code {
+    min-width: 0;
+    margin: 0;
+  }
+
+  .ff__code figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.25rem 0.5rem;
+    padding-block: 0.25rem;
+  }
+
+  .ff__code figcaption code {
+    font-size: 0.6875rem;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .ff__tag {
+    display: inline-block;
+    padding: 0 0.5rem;
+    border: 2px solid var(--role-positive);
+    border-radius: 0.25rem;
+    background: var(--role-surface);
+    color: var(--role-positive);
+    font-size: 0.8125rem;
+    font-weight: 800;
+  }
+
+  .ff[data-phase="0"] .ff__code--after,
+  .ff[data-phase]:not([data-phase="0"]) .ff__code--before {
+    display: none;
+  }
+
+  .ff__tag--before {
+    border-color: var(--role-negative);
+    color: var(--role-negative);
+  }
+
+  .ff__code :global(pre) {
+    margin: 0;
+    padding: 0.5rem 0;
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+
+  .ff__code :global(code) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .ff__code :global(.line) {
+    display: inline-block;
+    min-width: 100%;
+    padding-inline: 0.75rem;
+  }
+
+  .ff__code :global(.line.is-lit) {
+    background: color-mix(in srgb, var(--role-accent) 8%, transparent);
+    box-shadow: inset 6px 0 0 var(--role-accent);
+  }
+
+  .ff__frames {
+    margin: 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .ff__frames > li + li {
+    margin-block-start: 0.5rem;
+  }
+
+  .ff__caption {
+    margin: 0;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .ff[data-ready] .ff__frames {
+    display: grid;
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  .ff[data-ready] .ff__frames > li {
+    grid-area: 1 / 1;
+  }
+
+  .ff[data-ready] .ff__frames > li[hidden] {
+    display: block;
+    visibility: hidden;
+  }
+
+  .ff[data-ready] [data-from] {
+    transition: opacity 0.35s, transform 0.35s;
+    transition-delay: calc(var(--i, 0) * 0.12s);
+  }
+
+  .ff[data-ready] [data-from]:not(.is-shown) {
+    opacity: 0;
+  }
+
+  .ff[data-ready] .ff__cell[data-from]:not(.is-shown) {
+    transform: scaleX(0.2);
+    transform-origin: left;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ff[data-ready] [data-from] {
+      transition: none;
+    }
+  }
+</style>

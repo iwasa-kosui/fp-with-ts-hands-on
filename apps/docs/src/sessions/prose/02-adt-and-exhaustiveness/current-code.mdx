@@ -1,0 +1,7 @@
+import DefaultLeak from "../../../components/session-02/DefaultLeak.astro";
+
+<p><code>default</code> は、どの <code>case</code> にも当たらない値を受け取る分岐です。<code>NoShow</code> の予約に「不明」と出た原因は、次の2段です。</p>
+
+<DefaultLeak />
+
+<p>足し忘れを型検査で見つけるには、<code>kind</code> が取れる値を数えられる型が要ります。</p>

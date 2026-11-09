@@ -1,0 +1,7 @@
+import AdtValueCount from "../../../components/AdtValueCount.astro";
+
+<p><code>kind: string</code> は取れる値を数え切れません。<code>Appointment</code> の <code>kind</code> は6個です。ここでの「候補」は、その型が取れる値の1つです。数えるのは、<code>kind</code> が取れる値です。ADT（代数的データ型）は、型を「かつ」で組む直積型と、「または」で組む直和型で作る考え方です。TypeScript では、直積型をオブジェクト型、直和型を union 型で書きます。</p>
+
+<AdtValueCount part="count" />
+
+<p>候補を数えられると、<code>case</code> で処理した後に残る候補も数えられます。</p>
