@@ -82,7 +82,7 @@ const expectedCurriculum = [
     kind: "exercise",
     exerciseCommand: "pnpm exercise:02",
     snapshot: "session-02",
-    timeBreakdown: { brief: 3, teach: 7, exercise: 7, review: 3 },
+    timeBreakdown: { brief: 2, teach: 8, exercise: 7, review: 3 },
   },
   {
     slug: "03-boundaries-and-pii",
@@ -139,11 +139,7 @@ const expectedCurriculum = [
 const expectedEpisodes = [
   undefined,
   undefined,
-  [
-    "無断キャンセルを表すNoShowの状態を足した翌朝、受付画面のハリネズミの予約に「不明」と表示されていました。",
-    "表示名の分岐にNoShowのcaseがなく、defaultが「不明」を返していても、型検査は成功しました。",
-    "状態を足したときは、直し忘れた分岐をコンパイラに見つけさせる必要があります。",
-  ],
+  undefined,
   undefined,
   [
     "別の端末で受付情報が更新された後、古い画面に残っていたハムスターの診察開始ボタンを押すと、500エラーだけを返して止まりました。",

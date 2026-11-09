@@ -1,0 +1,34 @@
+import { GuardExercise } from "../../../components/guard-exercise/GuardExercise";
+import { projectFilesForSnapshot } from "../../../code-explorer/project-files";
+import { guardExercise } from "../../pages/02-adt-and-exhaustiveness-exercise";
+import { guardExerciseWorkspaceFor } from "../../pages/guard-exercise-workspace";
+
+export const projectFiles = projectFilesForSnapshot(guardExercise.snapshot);
+export const workspace = guardExerciseWorkspaceFor(
+  guardExercise,
+  projectFiles,
+  "演習のページと同じファイルを開く作業場所です。",
+);
+export const guide = {
+  title: "相互レビューでやること",
+  passedNext:
+    "合格です。左の一覧の「相互レビューで作る悪い変更」を書き換えて「検出を確かめる」を押し、表の行が「すり抜け」になるかを見ます。",
+  steps: [
+    "隣の人の画面で「相互レビューで作る悪い変更」を開きます。1人のときは自分の画面で進めます。",
+    "画面に誤った表示が出て、相手の仕組みが見逃す変更を1行で作ります。",
+    "「検出を確かめる」を押し、表のその行が「すり抜け」になるかを見ます。",
+    {
+      text: "話す問いは次の1つです。",
+      items: [
+        "default を残したいのはどんなときか。残すなら何で漏れを検出するか",
+      ],
+    },
+  ],
+};
+
+<GuardExercise
+  client:load
+  workspace={workspace}
+  projectFiles={projectFiles}
+  guide={guide}
+/>

@@ -1,0 +1,7 @@
+import StatusLabelMap from "../../../components/session-02/StatusLabelMap.astro";
+
+<p>S00 の二重請求は、獣医師が別の予約と取り違えて診察開始を押し、受付が画面を見て会計前の来院だと判断し、会計担当が飼い主へ同じ金額をもう一度請求して起きました。S01 では、予約を6つの状態の型に分けました。この6状態を画面の文字へ変える関数が <code>toStatusLabel</code> です。</p>
+
+<StatusLabelMap />
+
+<p>この Session のゴールは、状態を足したときに、その状態の表示を書き忘れたら型検査で見つかるようにすることです。</p>

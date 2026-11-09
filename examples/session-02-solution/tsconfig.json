@@ -17,5 +17,5 @@
     "vite.config.ts",
     "drizzle.config.ts"
   ],
-  "exclude": ["exercises/semantic-identifiers.test.ts"]
+  "exclude": ["exercises/semantic-identifiers.test.ts", "exercises/guard/cases/B*.ts"]
 }

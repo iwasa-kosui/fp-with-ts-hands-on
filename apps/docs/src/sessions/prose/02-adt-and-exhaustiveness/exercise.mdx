@@ -1,0 +1,51 @@
+import { GuardExercise } from "../../../components/guard-exercise/GuardExercise";
+import GuardAnswer from "../../../components/guard-exercise/GuardAnswer.astro";
+import { projectFilesForSnapshot } from "../../../code-explorer/project-files";
+import { guardAnswerDisplayFiles } from "../../../code-explorer/guard-paths";
+import { guardExercise } from "../../pages/02-adt-and-exhaustiveness-exercise";
+import { guardExerciseWorkspaceFor } from "../../pages/guard-exercise-workspace";
+import { sessionPageHref } from "../../pages/links";
+
+export const projectFiles = projectFilesForSnapshot(guardExercise.snapshot);
+export const workspace = guardExerciseWorkspaceFor(
+  guardExercise,
+  projectFiles,
+  "悪い変更を検出する仕組みを足す演習の作業場所です。",
+);
+export const guide = {
+  title: "この演習でやること",
+  criteria:
+    "必須の悪い変更4件を、自分で足した仕組みで検出し、正しいコードに誤検知を出さないと合格です。修正前のコードは examples/session-02、この演習は修正後の examples/session-02-solution です。",
+  steps: [
+    {
+      text: [
+        "左の一覧から悪い変更を1件選び、仕組みを足します。選び方は前のページ「",
+        {
+          text: "assertNever に直したコードを、次の変更からどう守るか",
+          href: sessionPageHref("02-adt-and-exhaustiveness", "checks"),
+        },
+        "」にあります。必須の4件は Linter の規則と型のテストで足ります。テストの追加は任意です。場所は次です。",
+      ],
+      items: [
+        "規則: eslint.config.mjs の rules",
+        "型のテスト: exercises/guard/mine/ の statusLabel.type-test.ts",
+        "テスト: exercises/guard/mine/ の statusLabel.test.ts",
+      ],
+    },
+    {
+      text: "知識は次の3つです。",
+      items: [
+        "Appointment は6状態の union。",
+        "「不明」を返す default は足し忘れを隠す。",
+        "規則は union の switch の足し忘れを、型のテストは引数の型の広がりを見る。",
+      ],
+    },
+    "「検出を確かめる」を押すと、見つけた悪い変更は「検出」、見つけられない変更は「すり抜け」と表に出ます。「誤検知」は、正しいコードを検出してしまうことです。",
+    "この演習が確かめないことは、分岐の中身が業務として正しいかどうかです。AI を使う場合も、表の結果を自分で読んで判断します。",
+    "解答の例は、時間内に進められなくなったときに開きます。",
+  ],
+};
+
+<GuardExercise client:load workspace={workspace} projectFiles={projectFiles} guide={guide}>
+  <GuardAnswer files={guardAnswerDisplayFiles(projectFiles)} />
+</GuardExercise>
