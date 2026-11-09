@@ -8,27 +8,34 @@ import "./figure.css";
 const themes = { light: "github-light", dark: "github-dark" } as const;
 
 const isErrBranches = excerptBetween(isErrPipeline, "const found = ", "const next = ");
+const addedStep = ["const nextStep = ensureNextStep(checkedIn.value);", "if (nextStep.isErr()) {", "  return err(nextStep.error);", "}"].join("\n");
+const isErrBranchesThree = `${isErrBranches}\n\n${addedStep}`;
 const branchBands = {
   c: [
     ...lineRange(isErrBranches, "if (found.isErr())", "}"),
     ...lineRange(isErrBranches, "if (checkedIn.isErr())", "}"),
   ],
 };
+const branchBandsThree = {
+  c: [...branchBands.c, ...lineRange(isErrBranchesThree, "if (nextStep.isErr())", "}")],
+};
 
 const frames = [
   {
     caption: "isErr（Result が Err かを判定するメソッド）で失敗を受け取ると、失敗する工程ごとに「失敗の場合、その失敗を返す」分岐を実装します。<code>found.value</code> は Ok の中の値を、<code>found.error</code> は Err の中の失敗を取り出します。現在は失敗する工程が2つであるため、分岐は2つです。",
     view: "branches-2",
+    code: isErrBranches,
+    bands: checkBands(isErrBranches, branchBands),
   },
   {
-    caption: "失敗する工程が1つ増えるたびに、同じ形の分岐がもう1組増えます。処理の順序は、分岐の間に埋もれていきます。",
+    caption: "失敗する工程が1つ増えるたびに、同じ形の分岐がもう1組増えます。右端に + を付けた4行が、増えた工程と分岐です。処理の順序は、分岐の間に埋もれていきます。",
     view: "branches-3",
+    code: isErrBranchesThree,
+    bands: checkBands(isErrBranchesThree, branchBandsThree),
   },
 ].map((frame) => ({
   ...frame,
-  code: isErrBranches,
   path: "説明用のコード",
-  bands: checkBands(isErrBranches, branchBands),
 }));
 
 const rows = [
@@ -46,7 +53,7 @@ const rows = [
       <li data-frame>
         <p class="we-caption" set:html={frame.caption} />
         <div class="we-body fk-grid">
-          <figure class="we-code">
+          <figure class="we-code" data-added={frame.view === "branches-3" ? "" : undefined}>
             <figcaption class="we-code__head"><span class="we-code__tag">コード</span><code>{frame.path}</code></figcaption>
             <Code code={frame.code} lang="ts" themes={themes} defaultColor={false} transformers={[bandTransformer]} meta={bandMeta(frame.bands)} />
           </figure>
@@ -87,6 +94,13 @@ const rows = [
 
   .fk-view {
     min-width: 0;
+  }
+
+  .we-code[data-added] :global(.line:nth-last-child(-n + 4))::after {
+    float: right;
+    color: var(--role-positive);
+    content: "+";
+    font-weight: 700;
   }
 
   .fk-rows {

@@ -72,7 +72,7 @@ export const sessionPages = [
     title: "キャンセル失敗時の流れ",
     flow: "solution",
     kind: "teach",
-    minutes: 1.5,
+    minutes: 1.25,
     role: "解決策: キャンセルが失敗する場合に、失敗の値がどこで切り替わりどこへ進むかを追跡します。",
   },
   {
@@ -96,7 +96,7 @@ export const sessionPages = [
     title: "依存の向きの違反の検出",
     flow: "solution",
     kind: "teach",
-    minutes: 0.25,
+    minutes: 0.5,
     role: "解決策: 依存の向きの違反を、Linter のルールとテストのどちらが検出するかを比較します。",
   },
   {

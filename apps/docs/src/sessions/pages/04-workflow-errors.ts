@@ -141,7 +141,7 @@ export const sessionPages = [
   },
   {
     slug: "guard",
-    title: "担当業務での防止策",
+    title: "機械が検出できることと人が決めることの区分",
     flow: "work",
     kind: "review",
     minutes: 1,

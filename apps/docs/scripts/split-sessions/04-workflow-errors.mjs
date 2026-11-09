@@ -16,7 +16,7 @@ const expectedPages = [
   ["checks", "誤った変更を仕組みで検出する", "solution", "teach", 1],
   ["exercise", "演習: 誤った変更を検出する仕組みを追加する", "solution", "exercise", 10],
   ["peer-review", "相互レビュー", "solution", "review", 4],
-  ["guard", "担当業務での防止策", "work", "review", 1],
+  ["guard", "機械が検出できることと人が決めることの区分", "work", "review", 1],
   ["review", "担当業務への適用", "work", "review", 1],
   ["safe-try", "中間値に名前を付ける safeTry", "advanced", "advanced", 0],
 ];

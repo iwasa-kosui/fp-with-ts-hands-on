@@ -39,7 +39,7 @@ const stages: readonly Stage[] = [
     ],
     functions: [],
     process: schemaCode,
-    failure: { when: "予約 ID の形式が不正なときは予約なしの画面を、理由が空のときは入力エラーの画面を返す。どちらも useCase は呼ばない", kinds: [] },
+    failure: { when: "予約 ID の形式が不正なときは 404 を返し、理由が空のときは入力エラーの画面を返す。どちらも useCase は呼ばない", kinds: [] },
     output: [
       {
         label: "useCase へ渡す入力",

@@ -98,7 +98,7 @@ const allScenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }
       overview,
       ...untilAppointment("Scheduled"),
       step(6, "<code>ensureCancellable</code> が、状態を検証します。<code>Scheduled</code> は診察開始前であるため、<code>ok</code> を返します。err の <code>actualKind</code> は S04 の <code>actual</code> と同じ現在の状態で、<code>expectedKind</code> は通過できる状態です。", appointment("Scheduled"), ok(appointment("Scheduled"))),
-      step(7, "<code>createEvent</code> が、時計から時刻を、ID の生成器から ID を取得し、入力の <code>reason</code> とともに <code>Appointment.cancel</code> へ渡します。<code>ResultAsync.fromSafePromise</code> は、処理の結果を、Err にならない ResultAsync に包みます。", appointment("Scheduled"), ok(event)),
+      step(7, "<code>createEvent</code> が、時計から時刻を、ID の生成器から ID を取得し、入力の <code>reason</code> とともに <code>Appointment.cancel</code> へ渡します。前後の工程と同じ ResultAsync の連鎖につなぐために、<code>ResultAsync.fromSafePromise</code> が、処理の結果を、Err にならない ResultAsync に包みます。", appointment("Scheduled"), ok(event)),
       { ...step(7, "<code>Appointment.cancel</code> は、渡された値だけで <code>AppointmentCanceled</code> を作ります。背景で見た3項目が変わり、時刻は <code>context.occurredAt</code> から取ります。", `予約、"owner request"、context`, event), view: cancelView },
       step(8, "<code>andThrough</code> は、Ok の場合だけ store を呼び、値をそのまま次へ渡します。予約の更新とイベントの追記を、1回の保存で行います。", event, ok(event)),
       step(9, "<code>map</code> が、イベントからキャンセル後の予約を取り出します。", event, ok(canceled)),
