@@ -4,18 +4,18 @@ import StepControls from "../stepper/StepControls.astro";
 const frames = [
   {
     caption:
-      "業務の決まりを真ん中に置き、画面やデータベースとは出入口を通してつなぎます。矢印は依存の向きで、すべて内側を向きます。内側が外側に求める処理を型で表した出入口を port、外側でつなぐコードをアダプタと呼びます。",
-    alt: "中央に六角形が2重にあります。内側の六角形が業務の決まり、それを囲む六角形が手順です。画面とデータベースは、アダプタを挟んで外側にあります。画面側のアダプタから手順の入口へ、データベース側のアダプタから port へ、手順から業務の決まりへ、矢印がすべて内側を向いています。図には、内側、外側、外の世界の札が付いています。",
+      "業務の決まりを真ん中に置き、画面やデータベースとは出入口を通してつなぎます。矢印は依存の向きで、すべて内側を向きます。出入口は2つです。呼び出し口は外から手順を呼ぶ口、port は手順が外に求める処理を型で表した口です。外側でつなぐコードをアダプタと呼びます。",
+    alt: "中央に六角形が2重にあります。内側の六角形が業務の決まり、それを囲む六角形が手順です。手順の輪には、呼び出し口と port の2つの出入口の印があります。画面とデータベースは、アダプタを挟んで外側にあります。画面側のアダプタから呼び出し口へ、データベース側のアダプタから port へ、手順から業務の決まりへ、矢印がすべて内側を向いています。図には、内側、外側、外の世界の札が付いています。",
   },
   {
     caption:
-      "依頼は画面から入り、データベースへ向かって外へ出ていきます。それでも矢印は内向きのままです。内側は port の型を決めるだけで、外側がその型を満たします。データベースの都合が変わっても、内側を直さずに済みます。",
-    alt: "画面からデータベースまで、アダプタと六角形を通り抜ける点線の矢印が加わっています。点線は依頼の流れです。依存の矢印の向きは、内側を向いたままです。",
+      "依頼は画面から出入口を通って内側に入り、port を通ってデータベースへ向かいます。それでも依存の矢印は内向きのままです。内側は port の型を決めるだけで、外側がその型を満たします。",
+    alt: "画面からデータベースまで続く1本の点線が加わっています。点線は、画面側のアダプタから呼び出し口の印を通って内側に入り、業務の決まりの下を過ぎ、port の印を通って、データベース側のアダプタへ出ていきます。点線が届いたあと、port へ向かう依存の矢印が太くなり、依頼と逆向きの札が付きます。",
   },
   {
     caption:
-      "配布コードのディレクトリを重ねます。<code>domain/</code> と <code>useCase/</code> が内側、<code>adaptor/</code> が外側です。<code>app.ts</code> は内側と外側を組み立てます。",
-    alt: "ディレクトリの札が付いています。業務の決まりは domain/、手順は useCase/、画面側のアダプタは adaptor/primary/web/、データベース側のアダプタは adaptor/secondary/sqlite/ です。",
+      "配布コードのディレクトリを重ねます。<code>domain/</code> と <code>useCase/</code> が内側、<code>adaptor/</code> が外側です。事故で欠けていた決まりを書く <code>domain/</code> が図の真ん中です。真ん中に置くと、画面やデータベースの都合で決まりが変わりません。",
+    alt: "ディレクトリの札が付いています。業務の決まりは domain/、手順は useCase/、画面側のアダプタは adaptor/primary/web/、データベース側のアダプタは adaptor/secondary/sqlite/ です。図の真ん中にある domain/ の札を、塗りと太い枠で強調しています。",
   },
   {
     caption:
@@ -30,9 +30,10 @@ const words = {
   database: "データベース",
   procedure: "手順",
   rule: "業務の決まり",
-  entry: "手順の入口",
+  entry: "呼び出し口",
   port: "port",
   exception: "AppointmentRepository",
+  reverse: "依頼と逆向き",
   core: "内側",
   edge: "外側",
   world: "外の世界",
@@ -75,6 +76,15 @@ const arrow = (from: Point, tip: Point, direction: Direction) => {
   return { line: `M ${from[0]} ${from[1]} L ${tip[0] - dx * HEAD} ${tip[1] - dy * HEAD}`, head: headPath(tip, direction) };
 };
 
+const pathOf = (points: readonly Point[]) => points.map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x} ${y}`).join(" ");
+
+const route = (points: readonly Point[], direction: Direction) => {
+  const tip = points[points.length - 1];
+  const [dx, dy] = unit[direction];
+  const trimmed: Point[] = [...points.slice(0, -1), [tip[0] - dx * HEAD, tip[1] - dy * HEAD]];
+  return { line: pathOf(trimmed), reveal: pathOf(points), head: headPath(tip, direction) };
+};
+
 const tagWidth = (text: string, fontSize: number) => Math.ceil(text.length * 0.6 * fontSize + 12);
 const tag = (text: string, cx: number, y: number, fontSize: number) => ({ text, cx, y, w: tagWidth(text, fontSize) });
 const exceptionLines = words.exception.match(/[A-Z][a-z]+/g) ?? [words.exception];
@@ -100,10 +110,11 @@ const horizontal = (() => {
   const requestY = 164;
   const exceptionY = 65;
   const exceptionX = adapterOut.x + 68;
+  const leaderX = adapterOut.x - 12;
   const fs = 14;
   return {
     id: "h",
-    viewBox: "0 0 720 290",
+    size: [720, 290] as Point,
     boxes: { screen, adapterIn, adapterOut, database },
     outerHex: hexPoints(cx, cy, rOut, 0),
     innerHex: hexPoints(cx, cy, rIn, 0),
@@ -114,13 +125,26 @@ const horizontal = (() => {
     entryLabel: { x: entryMark[0] + 4, y: 112, anchor: "end" } as Place,
     portLabel: { x: portMark[0] - 4, y: 112, anchor: "start" } as Place,
     arrows: [
-      arrow([adapterIn.x + adapterIn.w, portY], [entryMark[0] - MARK_SIZE / 2, portY], "right"),
-      arrow([adapterOut.x, portY], [portMark[0] + MARK_SIZE / 2, portY], "left"),
-      arrow([cx, 75], [cx, innerTop], "down"),
+      { ...arrow([adapterIn.x + adapterIn.w, portY], [entryMark[0] - MARK_SIZE / 2, portY], "right"), port: false },
+      { ...arrow([adapterOut.x, portY], [portMark[0] + MARK_SIZE / 2, portY], "left"), port: true },
+      { ...arrow([cx, 75], [cx, innerTop], "down"), port: false },
     ],
-    request: {
-      line: `M ${screen.x + screen.w} ${requestY} L ${database.x - HEAD} ${requestY}`,
-      head: headPath([database.x, requestY], "right"),
+    request: route(
+      [
+        [screen.x + screen.w, requestY],
+        [adapterIn.x + adapterIn.w + 12, requestY],
+        entryMark,
+        [cx - 36, requestY],
+        [cx + 36, requestY],
+        portMark,
+        [leaderX, requestY],
+        [database.x, requestY],
+      ],
+      "right",
+    ),
+    reverse: {
+      pill: { x: leaderX - 46, y: 80, w: 96, h: 20 },
+      leader: `M ${leaderX} 100 V ${portY - 6}` as string | null,
     },
     exception: {
       line: `M ${cx + 22} ${exceptionY} H ${exceptionX} V ${boxY - HEAD}`,
@@ -130,10 +154,10 @@ const horizontal = (() => {
       lineHeight: 0,
     },
     tags: [
-      tag(directories.rule, cx, cy + rIn * HEIGHT_RATIO - TAG_H / 2, fs),
-      tag(directories.procedure, cx, cy + rOut * HEIGHT_RATIO - TAG_H / 2, fs),
-      tag(directories.entry, mid(adapterIn), boxY + boxH + 8, fs),
-      tag(directories.store, mid(adapterOut), boxY + boxH + 8, fs),
+      { ...tag(directories.rule, cx, cy + rIn * HEIGHT_RATIO - TAG_H / 2, fs), core: true },
+      { ...tag(directories.procedure, cx, cy + rOut * HEIGHT_RATIO - TAG_H / 2, fs), core: false },
+      { ...tag(directories.entry, mid(adapterIn), boxY + boxH + 8, fs), core: false },
+      { ...tag(directories.store, mid(adapterOut), boxY + boxH + 8, fs), core: false },
     ],
     tiers: [
       { text: words.world, x: mid(screen), y: boxY - 8, anchor: "middle" },
@@ -152,6 +176,7 @@ const vertical = (() => {
   const smallH = 40;
   const wideH = 56;
   const gap = 34;
+  const gapOut = 52;
   const outerBox = (y: number): Box => ({ x: cx - 85, y, w: 170, h: smallH, textY: y + 25 });
   const adapterBox = (y: number): Box => ({ x: cx - 112, y, w: 224, h: wideH, textY: y + 20 });
   const screen = outerBox(8);
@@ -159,33 +184,48 @@ const vertical = (() => {
   const hexTop = adapterIn.y + adapterIn.h + gap;
   const cy = hexTop + rOut;
   const hexBottom = cy + rOut;
-  const adapterOut = adapterBox(hexBottom + gap);
+  const adapterOut = adapterBox(hexBottom + gapOut);
   const database = outerBox(adapterOut.y + adapterOut.h + 30);
   const innerTop = cy - rIn;
   const requestX = cx + 75;
   const exceptionX = cx - 72;
   const fs = 13;
   const mid = (b: Box) => b.y + b.h / 2 + 4;
+  const entryMark: Point = [cx, hexTop];
+  const portMark: Point = [cx, hexBottom];
   return {
     id: "v",
-    viewBox: `0 0 360 ${database.y + database.h + 8}`,
+    size: [360, database.y + database.h + 8] as Point,
     boxes: { screen, adapterIn, adapterOut, database },
     outerHex: hexPoints(cx, cy, rOut, 30),
     innerHex: hexPoints(cx, cy, rIn, 30),
     procedure: { x: cx, y: cy - 85, anchor: "middle" } as Place,
     rule: { x: cx, y: cy - 4, anchor: "middle" } as Place,
-    entryMark: [cx, hexTop] as Point,
-    portMark: [cx, hexBottom] as Point,
+    entryMark,
+    portMark,
     entryLabel: { x: cx - 12, y: hexTop - 8, anchor: "end" } as Place,
-    portLabel: { x: cx + 12, y: hexBottom + 22, anchor: "start" } as Place,
+    portLabel: { x: cx - 12, y: hexBottom + 20, anchor: "end" } as Place,
     arrows: [
-      arrow([cx, adapterIn.y + adapterIn.h], [cx, hexTop - MARK_SIZE / 2], "down"),
-      arrow([cx, adapterOut.y], [cx, hexBottom + MARK_SIZE / 2], "up"),
-      arrow([cx, cy - 80], [cx, innerTop], "down"),
+      { ...arrow([cx, adapterIn.y + adapterIn.h], [cx, hexTop - MARK_SIZE / 2], "down"), port: false },
+      { ...arrow([cx, adapterOut.y], [cx, hexBottom + MARK_SIZE / 2], "up"), port: true },
+      { ...arrow([cx, cy - 80], [cx, innerTop], "down"), port: false },
     ],
-    request: {
-      line: `M ${requestX} ${screen.y + screen.h} L ${requestX} ${database.y - HEAD}`,
-      head: headPath([requestX, database.y], "down"),
+    request: route(
+      [
+        [requestX, screen.y + screen.h],
+        [requestX, adapterIn.y + adapterIn.h + 4],
+        entryMark,
+        [requestX, hexTop + 47],
+        [requestX, hexBottom - 47],
+        portMark,
+        [requestX, adapterOut.y - 4],
+        [requestX, database.y],
+      ],
+      "down",
+    ),
+    reverse: {
+      pill: { x: cx - 12 - 96, y: hexBottom + 24, w: 96, h: 20 },
+      leader: null as string | null,
     },
     exception: {
       line: `M ${exceptionX} ${cy + 10} V ${adapterOut.y - HEAD}`,
@@ -195,10 +235,10 @@ const vertical = (() => {
       lineHeight: 14,
     },
     tags: [
-      tag(directories.rule, cx, cy + 14, fs),
-      tag(directories.procedure, cx, cy + 68, fs),
-      tag(directories.entry, cx, adapterIn.y + 30, fs),
-      tag(directories.store, cx, adapterOut.y + 30, fs),
+      { ...tag(directories.rule, cx, cy + 14, fs), core: true },
+      { ...tag(directories.procedure, cx, cy + 68, fs), core: false },
+      { ...tag(directories.entry, cx, adapterIn.y + 30, fs), core: false },
+      { ...tag(directories.store, cx, adapterOut.y + 30, fs), core: false },
     ],
     tiers: [
       { text: words.world, x: 4, y: mid(screen), anchor: "start" },
@@ -233,7 +273,12 @@ const boxList = (layout: (typeof layouts)[number]) => [
   </div>
 
   {layouts.map((layout) => (
-    <svg class={`hx__svg hx__svg--${layout.id}`} viewBox={layout.viewBox} role="img" aria-label={frames[0].alt} data-hx-svg>
+    <svg class={`hx__svg hx__svg--${layout.id}`} viewBox={`0 0 ${layout.size[0]} ${layout.size[1]}`} role="img" aria-label={frames[0].alt} data-hx-svg>
+      <defs>
+        <mask id={`hx-reveal-${layout.id}`} maskUnits="userSpaceOnUse" x="0" y="0" width={layout.size[0]} height={layout.size[1]} mask-type="alpha" class="hx__mask">
+          <path d={layout.request.reveal} pathLength="1" class="hx__reveal"></path>
+        </mask>
+      </defs>
       {boxList(layout).map(({ box, text, outside }) => (
         <g class={outside ? "hx__outside" : "hx__adapter"}>
           <rect x={box.x} y={box.y} width={box.w} height={box.h} rx="6"></rect>
@@ -252,7 +297,7 @@ const boxList = (layout: (typeof layouts)[number]) => [
 
       {layout.arrows.map((item) => (
         <>
-          <path d={item.line} class="hx__dep"></path>
+          <path d={item.line} class:list={["hx__dep", { "hx__dep--port": item.port }]}></path>
           <path d={item.head} class="hx__dep-head"></path>
         </>
       ))}
@@ -262,9 +307,15 @@ const boxList = (layout: (typeof layouts)[number]) => [
       <text x={layout.entryLabel.x} y={layout.entryLabel.y} text-anchor={layout.entryLabel.anchor} class="hx__t-note">{words.entry}</text>
       <text x={layout.portLabel.x} y={layout.portLabel.y} text-anchor={layout.portLabel.anchor} class="hx__t-note">{words.port}</text>
 
-      <g class="hx__layer hx__request">
+      <g class="hx__layer hx__request" mask={`url(#hx-reveal-${layout.id})`}>
         <path d={layout.request.line} class="hx__request-line"></path>
         <path d={layout.request.head} class="hx__request-head"></path>
+      </g>
+
+      <g class="hx__reverse">
+        {layout.reverse.leader && <path d={layout.reverse.leader} class="hx__reverse-leader"></path>}
+        <rect x={layout.reverse.pill.x} y={layout.reverse.pill.y} width={layout.reverse.pill.w} height={layout.reverse.pill.h} rx="4" class="hx__reverse-pill"></rect>
+        <text x={layout.reverse.pill.x + layout.reverse.pill.w / 2} y={layout.reverse.pill.y + layout.reverse.pill.h / 2 + 4.5} text-anchor="middle" class="hx__t-reverse">{words.reverse}</text>
       </g>
 
       <g class="hx__layer hx__exception">
@@ -279,7 +330,7 @@ const boxList = (layout: (typeof layouts)[number]) => [
 
       <g class="hx__layer hx__tags">
         {layout.tags.map((item) => (
-          <g class="hx__tag">
+          <g class:list={["hx__tag", { "hx__tag--core": item.core }]}>
             <rect x={item.cx - item.w / 2} y={item.y} width={item.w} height={TAG_H} rx="4"></rect>
             <text x={item.cx} y={item.y + 13} text-anchor="middle" class="hx__t-tag">{item.text}</text>
           </g>
@@ -352,6 +403,7 @@ const boxList = (layout: (typeof layouts)[number]) => [
     --hx-fs-tier: 12px;
     --hx-fs-tag: 13px;
     --hx-fs-exception: 12px;
+    --hx-fs-reverse: 12px;
     max-height: clamp(15rem, 52vh, 26rem);
   }
 
@@ -362,6 +414,7 @@ const boxList = (layout: (typeof layouts)[number]) => [
     --hx-fs-tier: 13px;
     --hx-fs-tag: 13px;
     --hx-fs-exception: 13px;
+    --hx-fs-reverse: 13px;
     display: none;
     max-width: 26rem;
   }
@@ -451,7 +504,40 @@ const boxList = (layout: (typeof layouts)[number]) => [
     stroke: var(--role-text);
     stroke-width: 3;
     stroke-linecap: round;
+    stroke-linejoin: round;
     stroke-dasharray: 0.1 7;
+  }
+
+  .hx__mask {
+    mask-type: alpha;
+  }
+
+  .hx__reveal {
+    fill: none;
+    stroke: var(--role-text);
+    stroke-width: 14;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+
+  .hx__reverse {
+    opacity: 0;
+  }
+
+  .hx__reverse-pill {
+    fill: var(--role-accent);
+  }
+
+  .hx__reverse-leader {
+    fill: none;
+    stroke: var(--role-accent);
+    stroke-width: 1.5;
+  }
+
+  .hx__svg .hx__t-reverse {
+    fill: var(--role-on-accent);
+    font-size: var(--hx-fs-reverse);
   }
 
   .hx__request-head {
@@ -488,6 +574,19 @@ const boxList = (layout: (typeof layouts)[number]) => [
   .hx__svg[data-scene="1"] .hx__tags,
   .hx__svg[data-scene="2"] .hx__tags {
     opacity: 0;
+  }
+
+  .hx__svg[data-scene="2"] .hx__dep--port {
+    stroke-width: 4.5;
+  }
+
+  .hx__svg[data-scene="2"] .hx__reverse {
+    opacity: 1;
+  }
+
+  .hx__svg[data-scene="3"] .hx__tag--core rect {
+    fill: color-mix(in srgb, var(--role-accent) 22%, var(--role-surface));
+    stroke-width: 3.5;
   }
 
   .hx__svg[data-scene="4"] .hx__mark--port {
@@ -536,18 +635,46 @@ const boxList = (layout: (typeof layouts)[number]) => [
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .hx[data-ready] .hx__svg[data-scene="2"] .hx__request-line {
-      animation: hx-flow 2.4s linear 1 both;
+    .hx[data-ready] .hx__svg[data-scene="2"] .hx__reveal {
+      animation: hx-reveal 2.4s ease-in-out 1 both;
+    }
+
+    .hx[data-ready] .hx__svg[data-scene="2"] .hx__dep--port {
+      animation: hx-emphasis 0.4s ease-out 2.6s 1 both;
+    }
+
+    .hx[data-ready] .hx__svg[data-scene="2"] .hx__reverse {
+      animation: hx-appear 0.4s ease-out 2.6s 1 both;
     }
   }
 
-  @keyframes hx-flow {
+  @keyframes hx-reveal {
     from {
-      stroke-dashoffset: 0;
+      stroke-dashoffset: 1;
     }
 
     to {
-      stroke-dashoffset: -213;
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes hx-emphasis {
+    from {
+      stroke-width: 2.2;
+    }
+
+    to {
+      stroke-width: 4.5;
+    }
+  }
+
+  @keyframes hx-appear {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
     }
   }
 
@@ -559,6 +686,7 @@ const boxList = (layout: (typeof layouts)[number]) => [
       --hx-fs-tier: 14px;
       --hx-fs-tag: 14px;
       --hx-fs-exception: 13.5px;
+      --hx-fs-reverse: 14px;
     }
   }
 
