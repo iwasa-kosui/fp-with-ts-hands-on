@@ -1,0 +1,87 @@
+---
+import { Code } from "astro:components";
+
+type Quoted = Readonly<{ path: string; code: string }>;
+
+interface Props {
+  before: Quoted;
+  after: Quoted;
+}
+
+const { before, after } = Astro.props;
+const versions = [
+  { key: "before", label: "修正前", quoted: before },
+  { key: "after", label: "修正後", quoted: after },
+] as const;
+---
+
+<div class="before-after-code">
+  {
+    versions.map(({ key, label, quoted }) => (
+      <figure class="before-after-code__version" data-version={key}>
+        <figcaption>
+          <span class="before-after-code__tag">{label}</span>
+          <code>{quoted.path}</code>
+        </figcaption>
+        <Code code={quoted.code} lang="ts" />
+      </figure>
+    ))
+  }
+</div>
+
+<style>
+  .before-after-code {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0.5rem 0;
+  }
+
+  .before-after-code__version {
+    --version-color: var(--case-muted);
+    min-width: 0;
+    margin: 0;
+    border: 1px solid var(--case-line);
+    border-inline-start: 0.35rem solid var(--version-color);
+    background: var(--case-paper);
+  }
+
+  .before-after-code__version[data-version="before"] {
+    --version-color: var(--case-pink);
+  }
+
+  .before-after-code__version[data-version="after"] {
+    --version-color: var(--case-highlight);
+  }
+
+  .before-after-code figcaption {
+    padding: 0.375rem 0.75rem;
+    border-bottom: 1px solid var(--case-line);
+    color: var(--case-ink);
+    font-size: 0.8125rem;
+    overflow-wrap: anywhere;
+  }
+
+  .before-after-code__tag {
+    margin-inline-end: 0.5rem;
+    padding: 0 0.5rem;
+    border: 2px solid var(--version-color);
+    border-radius: 0.25rem;
+    font-weight: 800;
+  }
+
+  .before-after-code :global(pre) {
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    overflow-x: auto;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+
+  @media (min-width: 900px) {
+    .before-after-code {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+  }
+</style>

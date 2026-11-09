@@ -1,0 +1,208 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import { bandMeta, bandTransformer, checkBands, lineCount, lineIndex, lineIs, lineRange } from "./lines";
+import { paths, routeAfter, routeBefore, useCaseBody } from "./sources";
+import "./figure.css";
+
+const processes = [
+  { band: "a", label: "入力の検査", text: "予約IDと獣医師IDの形を確かめる" },
+  { band: "b", label: "予約の取得", text: "予約IDで予約を読み出す" },
+  { band: "c", label: "状態の確認と遷移", text: "来院済みか確かめて、診察中にする" },
+  { band: "d", label: "保存", text: "診察中の予約を保存する" },
+  { band: "e", label: "監査", text: "診察を開始した記録を書く" },
+] as const;
+
+const before = checkBands(routeBefore, {
+  a: lineRange(routeBefore, "StartExaminationInput.parse", "._unsafeUnwrap()"),
+  b: [lineIndex(routeBefore, "appointmentOrThrow(repository")],
+  c: [lineIndex(routeBefore, 'current.kind !== "CheckedIn"'), ...lineRange(routeBefore, "startExamination(", "),")],
+  d: [lineIndex(routeBefore, "saveAndAppendAudit("), lineIndex(routeBefore, "  repository,"), lineCount(routeBefore) - 1],
+  e: [lineIs(routeBefore, '"ExaminationStarted",'), lineIs(routeBefore, '"ExaminationStarted",') + 1],
+});
+
+const afterRoute = checkBands(routeAfter, {
+  a: lineRange(routeAfter, "StartExaminationInput.parse", "._unsafeUnwrap()"),
+});
+
+const afterUseCase = checkBands(useCaseBody, {
+  b: lineRange(useCaseBody, "const appointment = ensureAppointmentFound(", ");"),
+  c: [
+    lineIndex(useCaseBody, "ensureCheckedIn(appointment)"),
+    ...lineRange(useCaseBody, "const next = transitionToInExamination(", ");"),
+  ],
+  d: [lineIndex(useCaseBody, "deps.store.save(next)")],
+});
+
+const themes = { light: "github-light", dark: "github-dark" } as const;
+
+const parts = [
+  { band: "b", name: "Resolver", role: "予約を取ってくる部品", code: "deps.resolver.resolveById(…)" },
+  { band: "d", name: "Store", role: "保存（状態の更新と監査記録の追加）", code: "deps.store.save(…)" },
+  { band: "c", name: "errors.ts", role: "失敗を確かめる関数の置き場", code: "ensureCheckedIn(…)" },
+] as const;
+
+const frames = [
+  "修正前: S03 の route は、入力の検査から監査まで、5つの処理を1つの関数に持っていました。",
+  "修正後: route には、入力の検査と useCase の呼び出しが残ります。ほかの処理は、状態の確認と遷移が useCase の本体、予約の取得が Resolver、保存と監査が Store に移りました。",
+] as const;
+---
+
+<figure class="we-fig we-fig--top route-to-use-case" data-route-to-use-case aria-label="診察開始の route の処理が useCase へ移る前後">
+  <StepControls />
+
+  <ol class="we-frames">
+    <li data-frame>
+      <p class="we-caption">{frames[0]}</p>
+      <div class="we-body rtu-grid rtu-grid--before">
+        <figure class="we-code">
+          <figcaption class="we-code__head"><span class="we-code__tag">修正前の route</span><code>{paths.s03Routes}:111-126</code></figcaption>
+          <Code code={routeBefore} lang="ts" themes={themes} defaultColor={false} transformers={[bandTransformer]} meta={bandMeta(before)} />
+        </figure>
+        <ol class="rtu-processes" aria-label="route が持っていた5つの処理">
+          {processes.map(({ band, label, text }, index) => (
+            <li class="rtu-process" data-band={band}>
+              <span class="rtu-process__number">{index + 1}</span>
+              <span class="rtu-process__body"><strong>{label}</strong><span>{text}</span></span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </li>
+
+    <li data-frame>
+      <p class="we-caption">{frames[1]}</p>
+      <div class="we-body">
+        <div class="rtu-grid rtu-grid--after">
+          <figure class="we-code">
+            <figcaption class="we-code__head"><span class="we-code__tag">修正後の route</span><code>{paths.s04Routes}:75-78,80-86</code></figcaption>
+            <Code code={routeAfter} lang="ts" themes={themes} defaultColor={false} transformers={[bandTransformer]} meta={bandMeta(afterRoute)} />
+          </figure>
+          <figure class="we-code">
+            <figcaption class="we-code__head"><span class="we-code__tag">useCase</span><code>{paths.s04UseCase}:17-29</code></figcaption>
+            <Code code={useCaseBody} lang="ts" themes={themes} defaultColor={false} transformers={[bandTransformer]} meta={bandMeta(afterUseCase)} />
+          </figure>
+        </div>
+        <ul class="rtu-parts" aria-label="処理の移り先">
+          {parts.map(({ band, name, role, code }) => (
+            <li class="rtu-part" data-band={band}>
+              <strong>{name}<span>{role}</span></strong>
+              <code>{code}</code>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </li>
+  </ol>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-route-to-use-case]").forEach((root) => {
+    mountStepper({ root });
+  });
+</script>
+
+<style>
+  .rtu-grid {
+    display: grid;
+    gap: 0.75rem;
+    min-width: 0;
+    margin-block-start: 0.375rem;
+  }
+
+  .rtu-grid--before {
+    grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .rtu-grid--after {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .rtu-processes {
+    display: grid;
+    gap: 0.375rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rtu-process {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.3125rem 0.625rem;
+    border: 1px solid var(--role-border);
+    border-inline-start: 6px solid var(--band);
+    border-radius: 0.375rem;
+    background: color-mix(in srgb, var(--band) 12%, var(--role-surface));
+  }
+
+  .rtu-process__number {
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 999px;
+    background: var(--band);
+    color: var(--role-surface);
+    font-size: 0.8125rem;
+    font-weight: 800;
+  }
+
+  .rtu-process__body {
+    display: grid;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .rtu-process__body strong {
+    font-size: 0.9375rem;
+  }
+
+  .rtu-parts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rtu-part {
+    display: grid;
+    gap: 0.125rem;
+    padding: 0.25rem 0.625rem;
+    border: 1px solid var(--role-border);
+    border-inline-start: 6px solid var(--band);
+    border-radius: 0.375rem;
+    background: color-mix(in srgb, var(--band) 12%, var(--role-surface));
+    line-height: 1.4;
+  }
+
+  .rtu-part strong {
+    font-size: 0.9375rem;
+  }
+
+  .rtu-part strong span {
+    margin-inline-start: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .rtu-part code {
+    justify-self: start;
+    font-size: 0.8125rem;
+  }
+
+  @media (max-width: 40rem) {
+    .rtu-grid--before,
+    .rtu-grid--after,
+    .rtu-parts {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

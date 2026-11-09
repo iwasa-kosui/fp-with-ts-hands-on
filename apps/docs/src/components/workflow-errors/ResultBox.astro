@@ -1,0 +1,50 @@
+---
+interface Props {
+  kind: "ok" | "err";
+}
+
+const { kind } = Astro.props;
+---
+
+<span class="rb" data-kind={kind}>
+  <span class="rb__tag">{kind === "ok" ? "Ok" : "Err"}</span>
+  <span class="rb__value we-mono"><slot /></span>
+</span>
+
+<style>
+  .rb {
+    --rb-tone: var(--role-positive);
+    display: inline-flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 5.5rem;
+    border: 3px solid var(--rb-tone);
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--rb-tone) 10%, var(--role-surface));
+    color: var(--role-text);
+    vertical-align: top;
+  }
+
+  .rb[data-kind="err"] {
+    --rb-tone: var(--role-negative);
+  }
+
+  .rb__tag {
+    padding: 0 0.5rem;
+    background: var(--rb-tone);
+    color: var(--role-surface);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1.5;
+  }
+
+  .rb__value {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 1rem;
+    font-weight: 800;
+  }
+</style>
