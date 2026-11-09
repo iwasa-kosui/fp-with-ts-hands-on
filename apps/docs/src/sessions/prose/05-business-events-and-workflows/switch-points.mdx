@@ -1,7 +1,7 @@
 import AndThenSwitchRail from "../../../components/cancel-workflow/AndThenSwitchRail.astro";
 
-<p>S04 の <code>andThen</code> は、Ok のときだけ次の関数へ進み、Err になった後はコールバックを呼びません。この動きが、値が失敗のレールへ移って残りの工程を飛ばすことに当たり、<code>map</code> は切り替え線を持ちません。入力の検査は、<code>andThen</code> ではなく S03 の境界で行います。</p>
+<p>課題 1「どの条件で失敗したかが読めない」を解くために、どの工程が失敗のレールへ移るかを確かめます。失敗のレールへ移る分岐を切り替え線と呼びます。S04 の <code>andThen</code> は、Ok のときだけ次の関数へ進み、Err になると残りの工程を飛ばすので、切り替え線を持ちます。<code>map</code> は切り替え線を持たず、入力の検査は <code>andThen</code> ではなく S03 の境界で行います。</p>
 
-<p>完成形（examples/final のコード）の保存は <code>andThrough</code> でつなぎます。<code>andThrough</code> は、失敗すると失敗のレールへ切り替え、成功すると受け取った値をそのまま次の工程へ渡します。</p>
+<p>完成形（examples/final のコード）の保存は <code>andThrough</code> でつなぎ、<code>andThrough</code> は、成功すると受け取った値をそのまま次の工程へ渡し、失敗すると切り替え線で失敗のレールへ移ります。</p>
 
 <AndThenSwitchRail />

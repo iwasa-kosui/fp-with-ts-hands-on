@@ -1,5 +1,5 @@
 import ResolverStoreFlow from "../../../components/cancel-workflow/ResolverStoreFlow.astro";
 
-<p>Store は、結果を保存する部品の総称で、完成形の Store は Event Store です。Event Store は、起きた出来事をイベントとして記録する保存先です。Resolver は、実行者や予約を取得して、判定の関数へ値として渡す部品です。</p>
+<p>課題 2「判定だけを確かめるのにデータベースの用意が要る」を解くために、データの取得と保存を判定の外の部品に分けます。Resolver は、実行者や予約を取得して判定の関数へ値として渡す部品で、Store は、結果を保存する部品の総称です。完成形の Store は、起きた出来事をイベントとして記録する Event Store です。</p>
 
 <ResolverStoreFlow />
