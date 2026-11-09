@@ -4,4 +4,4 @@ import AndThenFlow from "../../../components/workflow-errors/AndThenFlow.astro";
 
 <AndThenFlow />
 
-<p><code>andThen</code> は、Ok のときだけ、Result を返す関数を呼び出します。Err のときは、<code>map</code> と同じく、関数を呼び出さずに同じ Err を返します。<code>map</code> に Result を返す関数を渡すと、Result が二重になります。ここまでで、失敗しない工程と失敗する可能性のある工程を、分岐を実装せずに連結できます。</p>
+<p><code>andThen</code> は、Ok のときだけ、Result を返す関数を呼び出します。Err のときは、<code>map</code> と同じく、関数を呼び出さずに同じ Err を返します。入力の失敗の型と関数の失敗の型は、別の型でもかまいません。結果の失敗の型は、2つを <code>|</code> で組み合わせたユニオン型になります。ここまでで、失敗しない工程と失敗する可能性のある工程を、分岐を実装せずに連結できます。</p>

@@ -3,6 +3,6 @@ import { exhaustiveErrorsCode } from "../../pages/04-workflow-errors-content";
 
 <CodeSplit path={exhaustiveErrorsCode.path} code={exhaustiveErrorsCode.code}>
   <p>S02 で、予約の状態の追加漏れを <code>assertNever</code> で検出しました。同じ仕組みを、失敗の種類にも使えます。</p>
-  <p><code>toStartExaminationNoticeCode</code> は、<code>error.kind</code> ごとに case を持ちます。各 case は、<code>startExaminationNoticeCodes</code>（失敗の <code>kind</code> とお知らせの種類の対応）から値を取得します。</p>
-  <p><code>StartExaminationError</code> に新しい <code>kind</code> を追加し、この関数に case の追加漏れがあると、default 節の <code>error</code> が <code>never</code> ではなくなります。型検査のときにエラーが報告されます。</p>
+  <p><code>toStartExaminationNoticeCode</code> は、<code>error.kind</code> ごとに case を持ち、前のページの対応表 <code>startExaminationNoticeCodes</code> から値を取得します。対応表は、<code>kind</code> とお知らせの種類の対応を1か所に定義し、教材のコードのテストが <code>kind</code> の過不足を検証します。</p>
+  <p><code>StartExaminationError</code> に新しい <code>kind</code> を追加すると、対応表のキーの不足と、case の不足が、どちらも型検査のときに報告されます。case の不足は、default 節の <code>error</code> が <code>never</code> ではなくなることで検出されます。</p>
 </CodeSplit>

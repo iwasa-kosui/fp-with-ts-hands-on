@@ -5,7 +5,7 @@ const rules = {
     "error",
     {
       selector: "VariableDeclarator[id.name='startExamination'] ThrowStatement",
-      message: "throw しません。失敗は err で返します。",
+      message: "業務の失敗を throw しません。失敗は err で返します。",
     },
     {
       selector: "CallExpression[callee.property.name='_unsafeUnwrap']",

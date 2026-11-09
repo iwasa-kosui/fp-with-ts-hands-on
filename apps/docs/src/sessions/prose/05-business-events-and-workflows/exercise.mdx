@@ -10,25 +10,25 @@ export const projectFiles = projectFilesForSnapshot(guardExercise.snapshot);
 export const workspace = guardExerciseWorkspaceFor(
   guardExercise,
   projectFiles,
-  "工程を守る仕組みを選択する演習の作業場所です。",
+  "工程と依存の向きを守る仕組みを選択する演習の作業場所です。",
 );
 export const guide = {
   title: "この演習の手順",
   criteria:
     "必須の誤った変更3件がすべて「検出」で、正しいコード4件がすべて「誤検知なし」になると合格です。",
   steps: [
-    "左の一覧から誤った変更を選び、コードを読みます。演習のコードは本文の完成形を簡略化したものです。",
+    "左の一覧から誤った変更を選び、コードを読みます。演習のコード（examples/session-05-solution）は、本文で読んだ参照実装（examples/final）を簡略化したものです。必須の3件は、domain が外側の web と sqlite を import する2件（依存の向き）と、会計済みの予約をキャンセルに通す1件（工程の条件）です。",
     {
       text: [
-        "どの仕組みで検出するかは自分で選びます。Linter は eslint.config.mjs の rules にルールを追加します。テストは exercises/guard/mine/ の cancelAppointment.test.ts と reason.test.ts に実装し、Err になることは expect(result.isErr()).toBe(true) で検証できます。Linter のルールの記述方法は「",
+        "どの仕組みで検出するかは自分で選びます。Linter は eslint.config.mjs の rules にルールを追加します。テストは exercises/guard/mine/ の cancelAppointment.test.ts に実装し、Err になることは expect(result.isErr()).toBe(true) で検証できます。Linter のルールの記述方法は「",
         {
           text: "依存の向きの違反の検出",
           href: sessionPageHref("05-business-events-and-workflows", "dependency-checks"),
         },
-        "」のページに記載があります。",
+        "」のページに記載があります。reason.test.ts は、合格後に追加される任意の誤った変更（空の理由）に使います。",
       ],
     },
-    "仕組みを追加したら「検出を検証する」を押します。検出された誤った変更は「検出」、検出されない変更は「すり抜け」と表に表示されます。表で「対象外」と表示されない列が、その誤った変更を検出できる仕組みです。",
+    "仕組みを追加したら「検出を検証する」を押します。検出された誤った変更は「検出」、検出されない変更は「未検出」と表に表示されます。「対象外」は、その誤った変更を検出する対象にならない仕組みを表します。「対象外」と表示されない列が、その誤った変更を検出できる仕組みです。",
     "合格すると追加の誤った変更が2件増えます。追加の分は任意です。合格したら、表の誤った変更の名前を押して行を開き、「この仕組みで検出できないこと」に1文を記入します。この欄はプログラムでは判定しません。",
     "解答例は、時間内に進められなくなった場合に開きます。",
   ],

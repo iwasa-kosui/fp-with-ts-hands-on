@@ -39,7 +39,7 @@ const data = JSON.stringify(frames.map(({ mark }) => mark));
 <figure class="we-fig and-then-flow" data-and-then-flow data-marks={data} aria-label="andThen の入力と出力、map との違い">
   <div class="atf-layout">
     <figure class="we-code" data-code>
-      <figcaption class="we-code__head"><span class="we-code__tag">関数の実装</span><code>map と andThen は動作の説明用</code></figcaption>
+      <figcaption class="we-code__head"><span class="we-code__tag">関数の実装</span><code>neverthrow の map と andThen の動作を単純化した実装。r.andThen(f) は andThen(r, f) に当たります</code></figcaption>
       <Code code={andThenFlowCode} lang="ts" themes={themes} defaultColor={false} />
     </figure>
 

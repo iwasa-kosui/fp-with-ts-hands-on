@@ -148,9 +148,10 @@ describe("引用元のコード", () => {
     expect(noticeMessage("InvalidAppointmentState")).toContain("実行できません");
   });
 
-  it("map と andThen の説明用のコードは、違いが渡す関数の戻り値だけに現れる", () => {
+  it("map と andThen の説明用のコードは、違いが渡す関数の戻り値と失敗の型に現れる", () => {
     expect(mapFlowCode).toContain("f: (v: T) => U,");
-    expect(andThenFlowCode).toContain("f: (v: T) => Result<U, E>,");
+    expect(andThenFlowCode).toContain("f: (v: T) => Result<U, E2>,");
+    expect(andThenFlowCode).toContain("): Result<U, E1 | E2> => r.isOk()");
     expect(andThenFlowCode).toContain("? f(r.value)");
   });
 });

@@ -4,4 +4,4 @@ import TimeAndIdCompare from "../../../components/effects-walkthrough/TimeAndIdC
 
 <TimeAndIdCompare />
 
-<p>S05 では、判定の関数の外に I/O を配置しました（<a href="/sessions/05-business-events-and-workflows/io-outside/">S05 の説明</a>）。時刻と ID だけはイベントを作る時点で必要であるため、予約の確認が通った後の <code>map</code> の中で port から取得します。port を通すため、テストで固定できます。<code>clock</code> が返した時刻から <code>new Date(時刻)</code> を生成する実装は、現在時刻を取得しないため問題ありません。</p>
+<p>S05 では、業務ロジックの外に I/O を配置しました（<a href="/sessions/05-business-events-and-workflows/io-outside/">S05 の説明</a>）。時刻と ID だけはイベントを作る時点で必要であるため、予約の確認が通った後の <code>map</code> の中で port から取得します。port を通すため、テストで固定できます。<code>clock</code> が返した時刻から <code>new Date(時刻)</code> を生成する実装は、現在時刻を取得しないため問題ありません。</p>

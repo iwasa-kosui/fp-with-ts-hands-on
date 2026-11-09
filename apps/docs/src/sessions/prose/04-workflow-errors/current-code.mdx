@@ -4,6 +4,8 @@ import CatchConfluence from "../../../components/workflow-errors/CatchConfluence
 
 <CatchConfluence />
 
-<p><strong>課題1</strong>: 失敗の理由が型に現れません。<code>startExamination</code> の戻り値の型は成功の値だけであるため、route は例外のメッセージで失敗を判別します。</p>
+<p><strong>課題1</strong>: 次の2点です。1点目は、失敗の理由が型に現れないことです。<code>startExamination</code> の戻り値の型は成功の値だけであるためです。2点目は、route が例外のメッセージの文言で失敗を判別することです。</p>
 
 <p><strong>課題2</strong>: 保存の障害（データベースへの接続が切れるなど）も、同じ <code>catch</code> に入ります。利用者が次の操作を選べる失敗（業務の失敗）と障害を、route が区別できません。</p>
+
+<p><strong>課題3</strong>: 課題1と課題2を直した状態を、次の変更でも維持することです。誤った変更を検出する仕組みを、演習で追加します。</p>

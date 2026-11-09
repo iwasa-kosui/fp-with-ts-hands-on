@@ -11,7 +11,7 @@ selector: "VariableDeclarator[id.name='startExamination'] ThrowStatement",`,
   {
     id: "tests",
     name: "テスト",
-    detail: "テスト用の Store で検証する",
+    detail: "テスト用の Store で、呼び出しの結果（outcome）と保存された予約（saved）を検証する",
     code: `expect(outcome.kind).toBe("returned");
 expect(saved).toHaveLength(0);`,
   },
@@ -35,7 +35,7 @@ const cases: readonly ChangeCase[] = [
       { kind: "add", text: "    return ensureCheckedIn(found)" },
     ],
     results: {
-      lint: { found: true, output: "no-restricted-syntax: throw しません。失敗は err で返します。" },
+      lint: { found: true, output: "no-restricted-syntax: 業務の失敗を throw しません。失敗は err で返します。" },
       tests: { found: true, output: "1件失敗: expected 'threw' to be 'returned'" },
     },
     why: "戻り値の型は変わらないため、型検査は通ります。`throw` の使用を検出するルールと、例外が発生しないことを検証するテストが検出します。",
@@ -105,10 +105,10 @@ const cases: readonly ChangeCase[] = [
       { kind: "add", text: "  };" },
     ],
     results: {
-      lint: { found: true, output: "no-restricted-syntax: _unsafeUnwrap は失敗のとき例外を投げます。", setting: "selector: \"CallExpression[…]\"," },
+      lint: { found: true, output: "no-restricted-syntax: _unsafeUnwrap は失敗のとき例外を投げます。", setting: "selector: \"CallExpression[callee.property.name='_unsafeUnwrap']\"," },
       tests: { found: true, output: "2件失敗: expected 'threw' to be 'returned'" },
     },
-    why: "`_unsafeUnwrap` は失敗のとき例外を投げますが、型はそれを表しません。呼び出しを検出するルールと、例外が発生しないことを検証するテストが検出します。",
+    why: "`_unsafeUnwrap` は失敗のとき例外を投げますが、型はそれを表しません。呼び出しを検出するルールと、例外が発生しないことを検証するテストが検出します。ここでは useCase の中の呼び出しが対象で、route の入力の検査が使う `_unsafeUnwrap` は、この回では対象外です。",
   },
   {
     id: "B5-error-kind-swallowed",

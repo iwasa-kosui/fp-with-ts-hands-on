@@ -45,7 +45,7 @@ type Step = Readonly<{
 
 const businessSteps: readonly Step[] = [
   {
-    text: "獣医師が、存在しない予約IDで診察開始を依頼します。resolver.resolveById は予約を取得できず、undefined を返します。",
+    text: "獣医師が、存在しない予約IDで診察開始のリクエストを送ります。resolver.resolveById は予約を取得できず、undefined を返します。",
     at: "use", tone: "neutral", badge: "undefined", mark: "none", connector: false, dest: {},
     use: { bands: checkBands(pipelineBody, { a: [resolveLine] }) },
   },
@@ -114,7 +114,7 @@ const realRouteLabel = lineLabelOf("session-04-solution", "src/adaptor/primary/w
 const footnotes: readonly Readonly<{ text: string; file?: string }>[] = isBusiness
   ? [
     { text: "startExamination の引用元:", file: useCaseLabel },
-    { text: "route の match は説明用（配布コードにはありません）。実物の route:", file: realRouteLabel },
+    { text: "route の match は説明用のコードです。解答のコードの route:", file: realRouteLabel },
   ]
   : [{ text: `引用元: ${paths.solutionUseCase}:29-44 と ${paths.solutionApp}:34` }];
 const connectorText = isBusiness ? "Err を返す" : "例外が伝わる";
@@ -157,9 +157,6 @@ const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
           <span aria-hidden="true">→</span>
           <span class="we-box" data-tone="ok">「{noticeMessage("AppointmentNotFound")}」</span>
         </p>
-      )}
-      {!isBusiness && (
-        <p class="eo-note">この教材の app.onError は 500 を返すだけです。実際の業務では、処理の取り消しや接続の解放を、このような外側の場所でまとめて実装することが多くあります。</p>
       )}
       <p class="eo-path">{footnotes.map(({ text, file }) => <span>{text}{file !== undefined && <> <span class="eo-path__file">{file}</span></>}</span>)}</p>
     </section>
@@ -311,12 +308,6 @@ const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
   .eo-box [data-wrap="true"] :global(.line) {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-  }
-
-  .eo-note {
-    margin-block-start: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 700;
   }
 
   .eo-notice {

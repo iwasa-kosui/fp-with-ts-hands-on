@@ -66,10 +66,10 @@ export default {
       stage: 2,
       required: false,
       allow: ["lint"],
-      hint: "Linter のルール @typescript-eslint/switch-exhaustiveness-check を、オプション considerDefaultExhaustiveForUnions: false で有効にします。default があっても、足し忘れた種類を検出します。",
+      hint: "Linter のルール @typescript-eslint/switch-exhaustiveness-check を、オプション considerDefaultExhaustiveForUnions: false で有効にします。default があっても、追加漏れを検出します。",
       behavior: {
         input: { text: "足した失敗 AppointmentCancelled を渡す" },
-        expected: { text: "足し忘れを例外で知らせる" },
+        expected: { text: "追加漏れを例外で知らせる" },
         actual: { text: "状態不正の案内を返す", value: '"invalid-state"' },
       },
     },
@@ -82,7 +82,7 @@ export default {
       required: false,
       allow: ["types", "lint", "tests"],
       unchangedFrom: "G1-solution",
-      hint: "結果の表で、この行が「すり抜け」のままの場合、隣の人の仕組みで検出されていません。",
+      hint: "結果の表で、この行が「未検出」のままの場合、隣の人の仕組みで検出されていません。",
     },
     {
       id: "G1-solution",
@@ -94,7 +94,7 @@ export default {
       id: "G2-notice-assert-never",
       kind: "good",
       subject: "notice",
-      title: "useCase の外で、失敗の種類の足し忘れを throw で知らせる正しい分岐",
+      title: "useCase の外で、失敗の種類の追加漏れを throw で知らせる正しい分岐",
     },
   ],
 };
