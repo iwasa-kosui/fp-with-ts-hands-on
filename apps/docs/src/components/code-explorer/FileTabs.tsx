@@ -46,7 +46,13 @@ const groupByFolder = (
     }));
 };
 
-const stemOf = (name: string): string => {
+const folderRoles: Readonly<Record<string, string>> = {
+  "": "Linter の規則を書く",
+  [guardPaths.mine]: "テストを書く",
+  [guardPaths.cases]: "悪い変更。読むだけ",
+};
+
+const stemOf =(name: string): string => {
   const dot = name.indexOf(".");
   return dot >= 1 ? name.slice(0, dot) : name;
 };
@@ -118,7 +124,10 @@ export const FileTabs = ({
               aria-pressed={path === selectedPath}
               aria-label={`${path}${dirtyPaths.has(path) ? "、変更あり" : ""}`}
               disabled={disabled}
-              onClick={() => onSelect(path)}
+              onClick={() => {
+                onSelect(path);
+                setListOpen(false);
+              }}
               style={
                 keepsTail
                   ? ({ "--tab-tail": `${tail.length * 0.5}em` } as CSSProperties)
@@ -147,7 +156,7 @@ export const FileTabs = ({
           className="code-explorer__path-toggle"
           aria-expanded={listOpen}
           aria-controls={listId}
-          aria-label={`${selectedPath}、すべてのファイルの一覧`}
+          aria-label={`${selectedPath}、ファイル一覧`}
           disabled={disabled}
           onClick={() => setListOpen((open) => !open)}
         >
@@ -158,7 +167,7 @@ export const FileTabs = ({
             <strong>{fileName}</strong>
           </span>
           <span className="code-explorer__path-action" aria-hidden="true">
-            一覧 ▾
+            ファイル一覧 ▾
           </span>
         </button>
       )}
@@ -167,12 +176,17 @@ export const FileTabs = ({
           id={listId}
           className="code-explorer__file-list"
           role="group"
-          aria-label="すべてのファイル"
+          aria-label="ファイル一覧"
         >
           {groupByFolder(allPaths).map(({ folder: groupFolder, paths: groupPaths }) => (
             <section key={groupFolder}>
               <h3 className="code-explorer__file-list-folder">
-                {groupFolder === "" ? "プロジェクトの直下" : groupFolder}
+                <span>{groupFolder === "" ? "プロジェクトの直下" : groupFolder}</span>
+                {folderRoles[groupFolder] === undefined ? null : (
+                  <span className="code-explorer__file-list-role">
+                    {folderRoles[groupFolder]}
+                  </span>
+                )}
               </h3>
               <ul>
                 {groupPaths.map((path) => (
@@ -188,6 +202,9 @@ export const FileTabs = ({
                       }}
                     >
                       <span>{fileNameOf(path)}</span>
+                      {path === guardPaths.peerCase ? (
+                        <span className="code-explorer__file-list-note">書き換える</span>
+                      ) : null}
                       {dirtyPaths.has(path) ? (
                         <span className="code-explorer__dirty">変更あり</span>
                       ) : null}

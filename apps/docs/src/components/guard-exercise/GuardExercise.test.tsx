@@ -404,6 +404,20 @@ describe("GuardExercise", () => {
     ]);
   });
 
+  it("lists only the files the participant works with before the guard runs", async () => {
+    const { host } = await mountExercise();
+    await click(host.querySelector(".code-explorer__path-toggle"));
+
+    const listed = [
+      ...host.querySelectorAll<HTMLElement>("[data-file-list-path]"),
+    ].map((item) => item.dataset.fileListPath);
+    expect(listed).toEqual([
+      "eslint.config.mjs",
+      "exercises/guard/mine/input.test.ts",
+      "exercises/guard/cases/B1-any-parser.ts",
+    ]);
+  });
+
   it("shows the full path of the opened file under the tabs", async () => {
     const { host } = await mountExercise();
     const path = () => host.querySelector(".code-explorer__path");

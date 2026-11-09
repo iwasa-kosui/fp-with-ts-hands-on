@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { guardPaths } from "../../code-explorer/guard-paths";
 import { FileTabs } from "./FileTabs";
 
 const roots: Root[] = [];
@@ -85,7 +86,9 @@ describe("FileTabs", () => {
     const list = host.querySelector('[role="group"]');
     expect(list).not.toBeNull();
     expect(
-      [...(list?.querySelectorAll("h3") ?? [])].map((h) => h.textContent),
+      [...(list?.querySelectorAll("h3 > span:first-child") ?? [])].map(
+        (h) => h.textContent,
+      ),
     ).toEqual(["プロジェクトの直下", "exercises/guard/mine/"]);
     expect(
       [...(list?.querySelectorAll("li button") ?? [])].map((b) => b.textContent),
@@ -111,6 +114,67 @@ describe("FileTabs", () => {
 
     expect(onSelect).toHaveBeenCalledWith("exercises/guard/mine/audit.test.ts");
     expect(host.querySelector('[role="group"]')).toBeNull();
+  });
+
+  it("closes the list when a tab is pressed", async () => {
+    const onSelect = vi.fn();
+    const host = await mountTabs(
+      ["eslint.config.mjs", "exercises/guard/mine/audit.test.ts"],
+      onSelect,
+    );
+    await act(async () => {
+      host.querySelector<HTMLButtonElement>(".code-explorer__path-toggle")?.click();
+    });
+    expect(host.querySelector('[role="group"]')).not.toBeNull();
+
+    await act(async () => {
+      tab(host, "exercises/guard/mine/audit.test.ts")?.click();
+    });
+
+    expect(onSelect).toHaveBeenCalledWith("exercises/guard/mine/audit.test.ts");
+    expect(host.querySelector('[role="group"]')).toBeNull();
+  });
+
+  it("states the role of the folders that have one in the list headings", async () => {
+    const host = await mountTabs([
+      "eslint.config.mjs",
+      "exercises/guard/mine/audit.test.ts",
+      `${guardPaths.cases}B1-any-parser.ts`,
+      `${guardPaths.subjects}input.ts`,
+    ]);
+    await act(async () => {
+      host.querySelector<HTMLButtonElement>(".code-explorer__path-toggle")?.click();
+    });
+
+    const roles = [...host.querySelectorAll('[role="group"] h3')].map((heading) => [
+      heading.querySelector("span:first-child")?.textContent,
+      heading.querySelector(".code-explorer__file-list-role")?.textContent ?? null,
+    ]);
+    expect(roles).toEqual([
+      ["プロジェクトの直下", "Linter の規則を書く"],
+      [guardPaths.mine, "テストを書く"],
+      [guardPaths.cases, "悪い変更。読むだけ"],
+      [guardPaths.subjects, null],
+    ]);
+  });
+
+  it("marks only the peer review case as one to rewrite", async () => {
+    const host = await mountTabs([
+      "eslint.config.mjs",
+      guardPaths.peerCase,
+      `${guardPaths.cases}B1-any-parser.ts`,
+    ]);
+    await act(async () => {
+      host.querySelector<HTMLButtonElement>(".code-explorer__path-toggle")?.click();
+    });
+    const note = (path: string) =>
+      host
+        .querySelector(`button[data-file-list-path="${path}"]`)
+        ?.querySelector(".code-explorer__file-list-note")?.textContent ?? null;
+
+    expect(note(guardPaths.peerCase)).toBe("書き換える");
+    expect(note(`${guardPaths.cases}B1-any-parser.ts`)).toBeNull();
+    expect(note("eslint.config.mjs")).toBeNull();
   });
 
   it("closes the list with Escape", async () => {

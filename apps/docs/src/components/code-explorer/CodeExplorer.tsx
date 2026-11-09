@@ -77,6 +77,10 @@ export type CodeExplorerProps = Readonly<{
     visiblePaths: readonly string[],
     selectedPath: string | undefined,
   ) => readonly string[];
+  fileListPaths?: (
+    visiblePaths: readonly string[],
+    selectedPath: string | undefined,
+  ) => readonly string[];
 }>;
 
 const noHighlights: readonly CodeHighlight[] = [];
@@ -99,6 +103,7 @@ export const CodeExplorer = ({
   isReadOnlyPath,
   renderLayout,
   tabPaths,
+  fileListPaths,
 }: CodeExplorerProps) => {
   const availableGuides = guides ?? [];
   const [selectedGuideId, setSelectedGuideId] = useState(
@@ -291,7 +296,10 @@ export const CodeExplorer = ({
         ) : tabPaths !== undefined ? (
           <FileTabs
             paths={tabPaths(workspaceState.visiblePaths, selectedPath)}
-            allPaths={workspaceState.visiblePaths}
+            allPaths={
+              fileListPaths?.(workspaceState.visiblePaths, selectedPath) ??
+              workspaceState.visiblePaths
+            }
             selectedPath={selectedPath ?? ""}
             dirtyPaths={dirtyPaths}
             disabled={isLocked}

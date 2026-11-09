@@ -823,6 +823,30 @@
   font-weight: 700;
 }
 
+.guard-exercise.code-playground .code-explorer__file-list h3.code-explorer__file-list-folder {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.6rem;
+}
+
+.guard-exercise.code-playground .code-explorer__file-list-role {
+  color: var(--playground-text);
+  font-family: ui-rounded, "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", Meiryo,
+    system-ui, sans-serif;
+  font-weight: 700;
+}
+
+.guard-exercise.code-playground .code-explorer__file-list-note {
+  flex: none;
+  margin-right: auto;
+  margin-left: 0.6rem;
+  color: var(--role-muted);
+  font-family: ui-rounded, "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", Meiryo,
+    system-ui, sans-serif;
+  font-size: 0.75rem;
+}
+
 .guard-exercise.code-playground .code-explorer__path-folder {
   color: var(--role-muted);
 }
