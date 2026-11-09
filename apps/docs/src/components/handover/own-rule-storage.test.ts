@@ -35,6 +35,21 @@ describe("own-rule-storage", () => {
     expect(load()).toEqual({ version: 1, rule: "決まり", now: "run", goal: "test" });
   });
 
+  it("save は保存できたとき true を返す", () => {
+    expect(save({ version: 1, rule: "決まり" })).toBe(true);
+  });
+
+  it("save は保存に失敗したとき false を返す", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error("quota");
+      },
+    });
+
+    expect(save({ version: 1, rule: "決まり" })).toBe(false);
+  });
+
   it("壊れた JSON は捨てて、空の決まりを返す", () => {
     window.localStorage.setItem(STORAGE_KEY, "{not json");
 

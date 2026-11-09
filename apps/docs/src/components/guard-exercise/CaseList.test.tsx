@@ -7,6 +7,7 @@ const row = (id: string, behavior?: DisplayRow["behavior"]): DisplayRow => ({
   id,
   kind: "bad",
   title: `題名 ${id}`,
+  required: true,
   hint: "",
   cells: undefined,
   verdict: undefined,

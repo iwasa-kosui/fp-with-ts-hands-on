@@ -1,4 +1,5 @@
 import { Fragment, useRef, useState } from "react";
+import { guardPeerCaseId } from "../../code-explorer/guard-paths";
 import {
   guardMechanisms,
   type GuardResult,
@@ -7,6 +8,10 @@ import {
   cellText,
   headlineFor,
   mechanismHeaders,
+  optionalGroupHeading,
+  peerGroupHeading,
+  peerRowNote,
+  requiredGroupHeading,
   secondsText,
   tableTermsSummary,
   tableTermsText,
@@ -26,6 +31,8 @@ export type ResultTableProps = Readonly<{
 
 const columnCount = guardMechanisms.length + 2;
 
+type RowGroup = "required" | "optional" | "peer";
+
 export const ResultTable = ({
   result,
   rows,
@@ -39,15 +46,27 @@ export const ResultTable = ({
   const termsTextRef = useRef<HTMLParagraphElement>(null);
   const badRows = rows.filter(({ kind }) => kind === "bad");
   const goodRows = rows.filter(({ kind }) => kind === "good");
+  const peerRows = badRows.filter(({ id }) => id === guardPeerCaseId);
+  const optionalRows = badRows.filter(
+    ({ id, required }) => id !== guardPeerCaseId && !required,
+  );
+  const requiredRows = badRows.filter(
+    ({ id, required }) => id !== guardPeerCaseId && required,
+  );
+  const grouped = optionalRows.length > 0 || peerRows.length > 0;
 
-  const renderRows = (list: readonly DisplayRow[]) =>
+  const renderRows = (list: readonly DisplayRow[], group?: RowGroup) =>
     list.map((row) => {
       const isBad = row.kind === "bad";
       const isOpen = isBad && openId === row.id;
       const written = (limitations[row.id] ?? "").trim() !== "";
       return (
         <Fragment key={row.id}>
-        <tr data-row-id={row.id} data-verdict={row.verdict ?? "unchecked"}>
+        <tr
+          data-row-id={row.id}
+          data-verdict={row.verdict ?? "unchecked"}
+          data-group={group}
+        >
           <th scope="row">
             {isBad ? (
               <button
@@ -66,13 +85,18 @@ export const ResultTable = ({
                 検出できないことを記入済み
               </span>
             ) : null}
+            {group === "peer" && passedNext === undefined ? (
+              <span className="guard-exercise__peer-note">{peerRowNote}</span>
+            ) : null}
           </th>
           {guardMechanisms.map((mechanism) => (
             <td
               key={mechanism}
               data-state={row.cells === undefined ? "none" : row.cells[mechanism].state}
             >
-              {row.cells === undefined ? "−" : cellText(row.cells[mechanism], row.kind)}
+              {row.cells === undefined || row.verdict === "unchanged"
+                ? "−"
+                : cellText(row.cells[mechanism], row.kind)}
             </td>
           ))}
           <td className="guard-exercise__verdict">
@@ -102,6 +126,24 @@ export const ResultTable = ({
         </Fragment>
       );
     });
+
+  const renderGroup = (
+    heading: string,
+    list: readonly DisplayRow[],
+    group: RowGroup,
+  ) =>
+    list.length === 0 ? null : (
+      <>
+        <tbody>
+          <tr className="guard-exercise__group">
+            <th colSpan={columnCount} scope="colgroup">
+              {heading}
+            </th>
+          </tr>
+        </tbody>
+        <tbody>{renderRows(list, group)}</tbody>
+      </>
+    );
 
   return (
     <div className="guard-exercise__table-area">
@@ -133,7 +175,15 @@ export const ResultTable = ({
             <th scope="col">結果</th>
           </tr>
         </thead>
-        <tbody>{renderRows(badRows)}</tbody>
+        {grouped ? (
+          <>
+            {renderGroup(requiredGroupHeading, requiredRows, "required")}
+            {renderGroup(optionalGroupHeading, optionalRows, "optional")}
+            {renderGroup(peerGroupHeading, peerRows, "peer")}
+          </>
+        ) : (
+          <tbody>{renderRows(badRows)}</tbody>
+        )}
         {goodRows.length > 0 ? (
           <>
             <tbody>
@@ -149,7 +199,7 @@ export const ResultTable = ({
       </table>
       <div className="guard-exercise__limits">
         <p className="guard-exercise__limits-note">
-          表の行の題名を押すと開く「この仕組みで検出できないこと」の欄は、プログラムでは判定しません。
+          「結果」の列は、数える仕組みのどれか 1 つが検出すれば「検出」です。行の題名の ▶ を押すと開く「この仕組みで検出できないこと」の欄は、少なくとも 1 行に記入します。記入の内容はプログラムでは判定しません。
         </p>
         <details
           className="guard-exercise__terms"

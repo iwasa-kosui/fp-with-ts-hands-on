@@ -16,6 +16,16 @@ export const mechanismHeaders: Readonly<Record<GuardMechanism, string>> = {
   tests: "テスト",
 };
 
+export const requiredGroupHeading = "必須の誤った変更";
+
+export const optionalGroupHeading =
+  "任意の誤った変更（時間に余裕がある場合に取り組みます）";
+
+export const peerGroupHeading = "相互レビューで使う行";
+
+export const peerRowNote =
+  "次のページの相互レビューで使います。この演習での操作は不要です。";
+
 export const tableTermsSummary = "表の言葉";
 
 export const tableTermsText =
@@ -51,6 +61,7 @@ export type DisplayRow = Readonly<{
   id: string;
   kind: "bad" | "good";
   title: string;
+  required: boolean;
   hint: string;
   cells: GuardRow["cells"] | undefined;
   verdict: GuardVerdict | undefined;
@@ -70,10 +81,11 @@ export const displayRowsFor = (
   cases: readonly GuardCaseInfo[],
 ): readonly DisplayRow[] =>
   result !== undefined
-    ? result.rows.map(({ id, kind, title, hint, cells, verdict }) => ({
+    ? result.rows.map(({ id, kind, title, required, hint, cells, verdict }) => ({
         id,
         kind,
         title,
+        required,
         hint,
         cells,
         verdict,
@@ -81,10 +93,11 @@ export const displayRowsFor = (
       }))
     : cases
         .filter(({ stage }) => stage <= 1)
-        .map(({ id, kind, title, behavior }) => ({
+        .map(({ id, kind, title, required, behavior }) => ({
           id,
           kind,
           title,
+          required,
           hint: "",
           cells: undefined,
           verdict: undefined,

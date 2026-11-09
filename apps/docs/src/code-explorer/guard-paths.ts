@@ -1,12 +1,14 @@
 import type { ProjectFiles } from "./types";
 
+export const guardPeerCaseId = "R1-peer-change";
+
 export const guardPaths = {
   config: "exercises/guard/guard.config.mjs",
   cases: "exercises/guard/cases/",
   subjects: "exercises/guard/subjects/",
   mine: "exercises/guard/mine/",
   answer: "exercises/guard/answer/",
-  peerCase: "exercises/guard/cases/R1-peer-change.ts",
+  peerCase: `exercises/guard/cases/${guardPeerCaseId}.ts`,
   eslintConfig: "eslint.config.mjs",
   result: "dist/guard/result.json",
 } as const;
@@ -76,10 +78,14 @@ export const guardAnswerDisplayFiles = (
   projectFiles: ProjectFiles,
 ): ProjectFiles =>
   Object.fromEntries(
-    Object.entries(guardAnswerFiles(projectFiles)).map(([path, source]) => [
-      answerDisplayPath(path),
-      answerDisplaySource(source),
-    ]),
+    Object.entries(guardAnswerFiles(projectFiles))
+      .map(([path, source]) => [
+        answerDisplayPath(path),
+        answerDisplaySource(source),
+      ])
+      .filter(
+        ([displayPath, source]) => projectFiles[displayPath] !== source,
+      ),
   );
 
 export const casePathFor = (

@@ -1,11 +1,11 @@
-import { padEndWidth, stringWidth, wrapByWidth } from "./text.mjs";
+import { stringWidth, wrapByWidth } from "./text.mjs";
 
 /** @typedef {import("./model.mjs").Cell} Cell */
 /** @typedef {import("./model.mjs").GuardResult} GuardResult */
 /** @typedef {import("./model.mjs").Row} Row */
 
 const maxWidth = 78;
-const separator = " | ";
+const cellsIndent = 6;
 const red = (/** @type {string} */ line) => `\u001b[31m${line}\u001b[0m`;
 
 /**
@@ -40,58 +40,30 @@ const verdictText = (row) =>
 
 /**
  * @param {Row} row
- * @returns {readonly string[]}
+ * @returns {string}
  */
-const bodyCells = (row) => [
-  row.title,
-  cellText(row.cells.types),
-  cellText(row.cells.lint),
-  cellText(row.cells.tests),
-  verdictText(row),
-];
-
-/**
- * @param {readonly (readonly string[])[]} tables
- * @returns {readonly number[]}
- */
-const columnWidths = (tables) => {
-  const fixed = [1, 2, 3, 4].map((index) =>
-    Math.max(...tables.map((cells) => stringWidth(cells[index] ?? ""))),
-  );
-  const natural = Math.max(...tables.map((cells) => stringWidth(cells[0] ?? "")));
-  return [
-    Math.min(natural, maxWidth - fixed.reduce((sum, width) => sum + width, 0) - separator.length * 4),
-    ...fixed,
-  ];
-};
+const cellsText = (row) =>
+  `型のテスト ${cellText(row.cells.types)} / Linter ${cellText(row.cells.lint)} / テスト ${cellText(row.cells.tests)}`;
 
 /**
  * @param {string} label
  * @param {readonly Row[]} rows
- * @param {readonly number[]} widths
  * @param {boolean} color
  * @returns {readonly string[]}
  */
-const renderTable = (label, rows, widths, color) => {
-  /** @param {readonly string[]} cells @returns {string} */
-  const line = (cells) =>
-    cells
-      .map((cell, index) => padEndWidth(cell, widths[index] ?? 0))
-      .join(separator)
-      .trimEnd();
-  const rowLines = rows.flatMap((row) => {
-    const cells = bodyCells(row);
-    const lines = wrapByWidth(row.title, widths[0] ?? 0).map((title, lineIndex) =>
-      line(lineIndex === 0 ? [title, ...cells.slice(1)] : [title, "", "", "", ""]),
-    );
+const renderSection = (label, rows, color) => [
+  label,
+  ...rows.flatMap((row) => {
+    const prefix = `[${verdictText(row)}] `;
+    const lines = [
+      ...wrapByWidth(row.title, maxWidth - stringWidth(prefix)).map(
+        (line, index) => (index === 0 ? prefix : " ".repeat(stringWidth(prefix))) + line,
+      ),
+      `${" ".repeat(cellsIndent)}${cellsText(row)}`,
+    ];
     return color && row.verdict === "falsePositive" ? lines.map(red) : lines;
-  });
-  return [
-    line([label, "型のテスト", "Linter", "テスト", "結果"]),
-    widths.map((width) => "-".repeat(width)).join("-+-"),
-    ...rowLines,
-  ];
-};
+  }),
+];
 
 /**
  * @param {string} prefix
@@ -130,17 +102,12 @@ export const render = (result, { color }) => {
   const bad = result.rows.filter((row) => row.kind === "bad");
   const good = result.rows.filter((row) => row.kind === "good");
   const { durations } = result;
-  const widths = columnWidths([
-    ["誤った変更", "型のテスト", "Linter", "テスト", "結果"],
-    ["正しいコード", "", "", "", ""],
-    ...result.rows.map(bodyCells),
-  ]);
   return [
     ...wrapByWidth(headline(result), maxWidth),
     "",
-    ...renderTable("誤った変更", bad, widths, color),
+    ...renderSection("誤った変更", bad, color),
     "",
-    ...renderTable("正しいコード", good, widths, color),
+    ...renderSection("正しいコード", good, color),
     "",
     "次にすること",
     ...result.next.flatMap((sentence, index) => wrapWithPrefix(`${index + 1}. `, sentence)),

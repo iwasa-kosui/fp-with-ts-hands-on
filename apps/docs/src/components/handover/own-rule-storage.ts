@@ -32,10 +32,11 @@ export const load = (): Saved => {
   }
 };
 
-export const save = (saved: Saved): void => {
+export const save = (saved: Saved): boolean => {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+    return true;
   } catch {
-    return;
+    return false;
   }
 };

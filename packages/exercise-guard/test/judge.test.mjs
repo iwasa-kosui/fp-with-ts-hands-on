@@ -125,7 +125,7 @@ describe("judge", () => {
     expect(result.hiddenCount).toBe(0);
     expect(result.problems).toEqual([]);
     expect(rowOf(result, "B5-any-result").cells.types.state).toBe("hit");
-    expect(result.next).toEqual(["合格です。表の行を開いて、この仕組みで検出できないことを書きます。"]);
+    expect(result.next).toEqual(["必須の誤った変更はすべて検出しました。画面の表で行の題名の ▶ を押し、少なくとも 1 行に「この仕組みで検出できないこと」を記入します。"]);
     expect(result.durations.total).toBeGreaterThan(0);
     expect(result.testsTimedOut).toBe(false);
   });
@@ -467,6 +467,16 @@ describe("render", () => {
     expect(text).toContain("結果: まだ合格していません（必須の誤った変更 4 件のうち 0 件を検出）");
     expect(text).not.toMatch(/止ま|止め|実行できない/);
     expect(Math.max(...text.split("\n").map(stringWidth))).toBeLessThanOrEqual(78);
+  });
+
+  it("1 件を 2 行で表示し、1 行目に結果の語と題名、2 行目に 3 つの仕組みの結果を置く", async () => {
+    const text = render(await scenario("pass"), { color: false });
+
+    expect(text).toMatch(/^\[検出\] .+\n {6}型のテスト .+ \/ Linter .+ \/ テスト .+$/m);
+    expect(text).toMatch(/^\[誤検知なし\] .+\n {6}型のテスト .+ \/ Linter .+ \/ テスト .+$/m);
+    expect(text).toContain("誤った変更\n");
+    expect(text).toContain("正しいコード\n");
+    expect(text).not.toContain(" | ");
   });
 
   it("行頭に句読点や閉じ括弧が来ない", async () => {

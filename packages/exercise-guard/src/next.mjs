@@ -67,6 +67,13 @@ const slippedSentence = (row) => {
 };
 
 /**
+ * @param {number} optionalRemaining
+ * @returns {string}
+ */
+const passedSentence = (optionalRemaining) =>
+  `必須の誤った変更はすべて検出しました。${optionalRemaining > 0 ? `任意の誤った変更の残り ${optionalRemaining} 件は、時間に余裕がある場合に取り組みます。` : ""}画面の表で行の題名の ▶ を押し、少なくとも 1 行に「この仕組みで検出できないこと」を記入します。`;
+
+/**
  * @param {Readonly<{ rows: readonly Row[], problems: readonly Problem[], stageOpened: number, passed: boolean, typesAllowed?: boolean }>} input
  * @returns {readonly string[]}
  */
@@ -76,11 +83,14 @@ export const buildNext = ({ rows, problems, stageOpened, passed, typesAllowed = 
     .filter((row) => row.kind === "bad" && row.verdict === "slipped")
     .sort((left, right) => Number(right.required) - Number(left.required))
     .slice(0, maxSlipped);
+  const optionalRemaining = rows.filter(
+    (row) => row.kind === "bad" && !row.required && (row.verdict === "slipped" || row.verdict === "undetermined"),
+  ).length;
   const noAllowedDetection = rows.every(
     (row) => row.kind !== "bad" || mechanisms.every((mechanism) => !row.allow.includes(mechanism) || row.cells[mechanism].count === 0),
   );
   return [
-    ...(passed ? ["合格です。表の行を開いて、この仕組みで検出できないことを書きます。"] : []),
+    ...(passed ? [passedSentence(optionalRemaining)] : []),
     ...fixes,
     ...(noAllowedDetection && problems.length === 0
       ? [

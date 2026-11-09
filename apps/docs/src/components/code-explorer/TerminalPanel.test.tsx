@@ -275,6 +275,51 @@ describe("TerminalPanel", () => {
     expect(host.querySelector('[data-action="retry-terminal"]')).toBeNull();
   });
 
+  describe("while preparing with a previous output", () => {
+    const neverStarts = (): TerminalPanelProps["runnerFactory"] => () => ({
+      start: (request) =>
+        new Promise<TerminalSession>((_resolve, reject) => {
+          request.signal.addEventListener(
+            "abort",
+            () => reject(request.signal.reason),
+            { once: true },
+          );
+        }),
+    });
+    const note =
+      "前回の出力は残っています。ターミナルだけを準備しています。準備をやめても、前回の出力と結果は消えません。";
+
+    it("tells that the previous output stays, and keeps it after the preparation is cancelled", async () => {
+      const view = createView();
+      const onOutput = vi.fn();
+      const host = await renderPanel({
+        runnerFactory: neverStarts(),
+        loadTerminalView: async () => view,
+        restoredOutput: "前回の出力\r\n",
+        onOutput,
+      });
+      await act(async () => undefined);
+      await clickAction(host, "start-terminal");
+
+      expect(host.querySelector(".code-explorer__terminal-status")?.textContent).toContain(note);
+
+      await clickAction(host, "cancel-terminal");
+      await act(async () => undefined);
+
+      expect(host.textContent).not.toContain(note);
+      expect(host.textContent).toContain("前回の出力です。");
+      expect(view.dispose).not.toHaveBeenCalled();
+      expect(view.write).toHaveBeenCalledWith("前回の出力\r\n", expect.anything());
+    });
+
+    it("does not tell it when there is no previous output", async () => {
+      const host = await renderPanel({ runnerFactory: neverStarts() });
+      await clickAction(host, "start-terminal");
+
+      expect(host.textContent).not.toContain(note);
+    });
+  });
+
   it.each([
     [
       "booting",

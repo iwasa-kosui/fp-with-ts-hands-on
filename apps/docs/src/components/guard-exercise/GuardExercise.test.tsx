@@ -515,6 +515,84 @@ describe("GuardExercise", () => {
     ]);
   });
 
+  describe("the groups of the bad rows in the table", () => {
+    const [requiredRow] = sampleGuardResult.rows;
+    const withRows = (extra: GuardResult["rows"]): GuardResult => ({
+      ...sampleGuardResult,
+      rows: [...sampleGuardResult.rows, ...extra],
+    });
+    const optionalRow = {
+      ...requiredRow!,
+      id: "B2-optional",
+      title: "任意の誤った変更",
+      required: false,
+    };
+    const peerRow = {
+      ...requiredRow!,
+      id: "R1-peer-change",
+      title: "相互レビューで作る誤った変更",
+      required: false,
+      verdict: "unchanged" as const,
+    };
+    const groupHeadings = (host: HTMLElement) =>
+      [...host.querySelectorAll(".guard-exercise__group th")].map(
+        (heading) => heading.textContent,
+      );
+
+    it("shows no heading above the bad rows when every bad row is required", async () => {
+      const { host } = await mountExercise();
+
+      await click(action(host, "run-guard"));
+
+      expect(groupHeadings(host)).toEqual(["正しいコード"]);
+    });
+
+    it("separates the required, optional and peer review rows with headings", async () => {
+      const { host } = await mountExercise({
+        resultText: JSON.stringify(withRows([optionalRow, peerRow])),
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(groupHeadings(host)).toEqual([
+        "必須の誤った変更",
+        "任意の誤った変更（時間に余裕がある場合に取り組みます）",
+        "相互レビューで使う行",
+        "正しいコード",
+      ]);
+      expect(row(host, "B2-optional")?.getAttribute("data-group")).toBe("optional");
+      expect(row(host, "R1-peer-change")?.getAttribute("data-group")).toBe("peer");
+    });
+
+    it("shows a dash in the three columns of an unchanged row and tells the exercise page that the row is for the next page", async () => {
+      const { host } = await mountExercise({
+        resultText: JSON.stringify(withRows([peerRow])),
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(
+        [...(row(host, "R1-peer-change")?.querySelectorAll("td[data-state]") ?? [])].map(
+          (cell) => cell.textContent,
+        ),
+      ).toEqual(["−", "−", "−"]);
+      expect(row(host, "R1-peer-change")?.querySelector(".guard-exercise__peer-note")?.textContent).toBe(
+        "次のページの相互レビューで使います。この演習での操作は不要です。",
+      );
+    });
+
+    it("does not show the note about the next page when the guide gives the next step", async () => {
+      const { host } = await mountExercise({
+        resultText: JSON.stringify(withRows([peerRow])),
+        guide: { title: "案内", passedNext: "別の次の操作です。", steps: ["手順です。"] },
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(row(host, "R1-peer-change")?.querySelector(".guard-exercise__peer-note")).toBeNull();
+    });
+  });
+
   describe("the next step after a pass", () => {
     const passedResult: GuardResult = {
       ...sampleGuardResult,

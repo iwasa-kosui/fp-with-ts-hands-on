@@ -84,6 +84,21 @@ describe("guard exercise paths", () => {
     });
   });
 
+  it("omits the answer files that match the file the participant starts with", () => {
+    const shown = guardAnswerDisplayFiles({
+      "exercises/guard/answer/mine/states.ts": "export const states = [];",
+      "exercises/guard/answer/mine/audit.test.ts": "changed",
+      "exercises/guard/answer/mine/new.test.ts": "no starting file",
+      "exercises/guard/mine/states.ts": "export const states = [];",
+      "exercises/guard/mine/audit.test.ts": "",
+    });
+
+    expect(shown).toEqual({
+      "exercises/guard/mine/audit.test.ts": "changed",
+      "exercises/guard/mine/new.test.ts": "no starting file",
+    });
+  });
+
   it("reads the cases from the config", () => {
     const cases = readGuardCases({
       ...files,

@@ -731,6 +731,12 @@ export const TerminalPanel = forwardRef<
           <p role="status" aria-live="polite">
             {phaseLabels[state.phase]}
           </p>
+          {restoredOutputRef.current !== undefined &&
+          restoredOutputRef.current !== "" ? (
+            <p>
+              前回の出力は残っています。ターミナルだけを準備しています。準備をやめても、前回の出力と結果は消えません。
+            </p>
+          ) : null}
           <PreparationDetail
             phase={state.phase}
             startedAt={state.startedAt}
