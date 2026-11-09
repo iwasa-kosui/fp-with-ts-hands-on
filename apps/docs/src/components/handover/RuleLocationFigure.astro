@@ -1,0 +1,448 @@
+---
+import { stages, type StageId } from "../../sessions/overview-map";
+import StepControls from "../stepper/StepControls.astro";
+
+type Row = Readonly<{
+  stage: StageId;
+  operation: string;
+  description: string;
+  directory: string;
+  kind?: "gap" | "muted";
+}>;
+
+const rows: readonly Row[] = [
+  {
+    stage: "entry",
+    operation: "「診察を開始する」で、予約の ID が届く",
+    description: "届いた値の形を確かめて受け取る",
+    directory: "adaptor/primary/web/",
+  },
+  {
+    stage: "read",
+    operation: "データベースから Mugi の予約を読む。状態は paid",
+    description: "判断に要るデータを読む",
+    directory: "adaptor/secondary/sqlite/",
+  },
+  {
+    stage: "decide",
+    operation: "状態を確かめる行がない",
+    description: "決まりを使って、操作してよいかを決める",
+    directory: "domain/",
+    kind: "gap",
+  },
+  {
+    stage: "save",
+    operation: "paid を in-examination に上書きし、監査記録を追加",
+    description: "結果をデータベースに残す",
+    directory: "adaptor/secondary/sqlite/",
+  },
+  {
+    stage: "failure",
+    operation: "止めなかったので、失敗を返す処理は動かなかった",
+    description: "途中で止めたとき、理由を画面へ返す",
+    directory: "adaptor/primary/web/",
+    kind: "muted",
+  },
+];
+
+const stageName = (id: StageId): string =>
+  (stages.find((stage) => stage.id === id)?.label ?? id).replace(/（.*）$/, "");
+
+const frames = [
+  {
+    caption: "事故で見た操作を、順に並べました。状態を確かめる行は、どこにもありませんでした。",
+    alt: "表の1列目に、事故で見た5つの操作が上から順に並んでいます。上から3番目は、状態を確かめる行がない、という空きです。",
+  },
+  {
+    caption: "どの依頼も、同じ5つのステップを通ります。事故の操作に名前を重ねると、業務の判断だけが空いています。",
+    alt: "1列目の操作の右に、ステップの列が加わっています。上から、入口、読み取り、業務の判断、保存、失敗の返し方です。状態を確かめる行がない3番目の操作は、業務の判断のステップに当たります。",
+  },
+  {
+    caption: "ステップごとに、受け持つディレクトリが決まっています。読み取りから保存までの順番は <code>useCase/</code> が受け持ちます。",
+    alt: "ステップの右に、担当のディレクトリの列が加わっています。入口と失敗の返し方は adaptor/primary/web/、読み取りと保存は adaptor/secondary/sqlite/、業務の判断は domain/ です。読み取りから保存までの3つの行をまたいで、順番を決める useCase/ の帯があります。",
+  },
+  {
+    caption:
+      "事故で欠けていたのは業務の判断です。会計済みの予約を止める決まりは <code>domain/</code> に書きます。事故のとき、<code>domain/</code> の <code>updateStatus</code> は状態を見ずに上書きするだけでした。",
+    alt: "表のうち、上から3番目の業務の判断の行と、担当の domain/ を強調しています。ほかの行は薄く表示しています。",
+  },
+] as const;
+
+const rowOf = (index: number) => index + 2;
+---
+
+<figure
+  class="rlf"
+  data-rule-location
+  aria-label="事故で見た操作に、5つのステップと担当のディレクトリを重ねた表"
+>
+  <StepControls />
+
+  <div aria-live="polite">
+    <ol class="rlf__frames">
+      {frames.map((frame) => (
+        <li data-frame data-alt={frame.alt}>
+          <p class="rlf__caption" set:html={frame.caption} />
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  <div class="rlf__grid">
+    <div class="rlf__head rlf__head--op" data-col="1">事故で見た操作</div>
+    <div class="rlf__head rlf__head--step" data-col="2">ステップ</div>
+    <div class="rlf__head rlf__head--dir" data-col="3">担当のディレクトリ</div>
+
+    {rows.map((row, index) => (
+      <>
+        {index === 1 && (
+          <div class="rlf__cell rlf__band" data-col="3" data-row="band">
+            <code class="rlf__band-name">useCase/</code>
+            <span class="rlf__band-note"><span class="rlf__band-scope">読み取りから保存までの</span>順番を決める</span>
+          </div>
+        )}
+        <div class="rlf__row" style={`--r: ${rowOf(index)}`}>
+          <div
+            class:list={["rlf__cell", "rlf__op", { "rlf__cell--gap": row.kind === "gap", "rlf__cell--muted": row.kind === "muted" }]}
+            data-col="1"
+            data-row={String(index + 1)}
+          >
+            {row.operation}
+          </div>
+          <div class="rlf__cell rlf__step" data-col="2" data-row={String(index + 1)}>
+            <span class="rlf__num" aria-hidden="true">{index + 1}</span>
+            <span class="rlf__step-text">
+              <span class="rlf__name">{stageName(row.stage)}</span>
+              <span class="rlf__desc">{row.description}</span>
+            </span>
+          </div>
+          <div class="rlf__cell rlf__tag" data-col="3" data-row={String(index + 1)}>
+            <code>{row.directory}</code>
+          </div>
+        </div>
+      </>
+    ))}
+  </div>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-rule-location]").forEach((root) => {
+    const alts = [...root.querySelectorAll<HTMLElement>("[data-frame]")].map((panel) => panel.dataset.alt ?? "");
+    mountStepper({
+      root,
+      onStep: (step) => {
+        root.dataset.scene = String(step + 1);
+        root.setAttribute("aria-label", alts[step] ?? "");
+      },
+    });
+  });
+</script>
+
+<style>
+  .rlf {
+    --c-fill: var(--role-surface);
+    --c-line: var(--role-border);
+    --c-ink: var(--role-text);
+    min-width: 0;
+    max-width: 100%;
+    margin: 1rem 0;
+  }
+
+  .rlf__caption {
+    margin: 0;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .rlf__frames {
+    margin: 0.75rem 0 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .rlf__frames > li {
+    min-width: 0;
+  }
+
+  .rlf__frames > li + li {
+    margin-top: 0.5rem;
+  }
+
+  .rlf__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.25fr) max-content max-content;
+    grid-template-rows: auto repeat(5, minmax(3.5rem, auto));
+    gap: 0.375rem 0.625rem;
+    margin-top: 0.75rem;
+  }
+
+  .rlf__head {
+    align-self: end;
+    padding: 0 0.25rem;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    font-weight: 800;
+  }
+
+  .rlf__head--op {
+    grid-area: 1 / 1;
+  }
+
+  .rlf__head--step {
+    grid-area: 1 / 2;
+  }
+
+  .rlf__head--dir {
+    grid-area: 1 / 3 / 2 / 5;
+  }
+
+  .rlf__row {
+    display: contents;
+  }
+
+  .rlf__row > .rlf__cell {
+    grid-row: var(--r);
+  }
+
+  .rlf__op {
+    grid-column: 1;
+  }
+
+  .rlf__step {
+    grid-column: 2;
+  }
+
+  .rlf__tag {
+    grid-column: 4;
+  }
+
+  .rlf__band {
+    grid-area: 3 / 3 / 6 / 4;
+  }
+
+  .rlf__band-scope {
+    display: none;
+  }
+
+  .rlf__cell {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding: 0.375rem 0.625rem;
+    border: 2px solid var(--c-line);
+    border-radius: 0.5rem;
+    background: var(--c-fill);
+    color: var(--c-ink);
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+
+  .rlf__op {
+    font-weight: 600;
+  }
+
+  .rlf__cell--gap {
+    --c-line: var(--role-negative);
+    --c-fill: transparent;
+    --c-ink: var(--role-negative);
+    border-style: dashed;
+  }
+
+  .rlf__cell--muted {
+    --c-ink: var(--role-muted);
+    font-weight: 400;
+  }
+
+  .rlf__step {
+    gap: 0.625rem;
+  }
+
+  .rlf__num {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid var(--c-line);
+    border-radius: 50%;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .rlf__step-text {
+    display: grid;
+    min-width: 0;
+    gap: 0.125rem;
+  }
+
+  .rlf__name {
+    font-size: 0.9375rem;
+    font-weight: 800;
+    line-height: 1.3;
+  }
+
+  .rlf__desc {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .rlf__tag {
+    justify-content: center;
+    border-inline-start: 0.5rem solid var(--role-accent);
+    font-weight: 800;
+  }
+
+  .rlf__tag code {
+    font-size: 0.8125rem;
+    overflow-wrap: anywhere;
+  }
+
+  .rlf__band {
+    --c-fill: var(--role-accent-soft);
+    --c-line: var(--role-accent);
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.25rem;
+    padding-inline: 0.5rem;
+    text-align: center;
+  }
+
+  .rlf__band-name {
+    font-size: 0.9375rem;
+    font-weight: 800;
+  }
+
+  .rlf__band-note {
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+
+  .rlf[data-scene="1"] [data-col="2"],
+  .rlf[data-scene="1"] [data-col="3"],
+  .rlf[data-scene="2"] [data-col="3"] {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .rlf[data-scene="4"] [data-row]:not([data-row="3"]) {
+    --c-fill: var(--role-surface);
+    --c-line: var(--role-rule);
+    --c-ink: var(--role-muted);
+  }
+
+  .rlf[data-scene="4"] .rlf__cell[data-row="3"]:not(.rlf__cell--gap) {
+    --c-fill: color-mix(in srgb, var(--role-accent) 22%, var(--role-surface));
+    --c-line: var(--role-accent);
+  }
+
+  .rlf[data-scene="4"] .rlf__cell--gap {
+    border-width: 3px;
+  }
+
+  .rlf[data-ready] .rlf__frames {
+    display: grid;
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  .rlf[data-ready] .rlf__frames > li {
+    grid-area: 1 / 1;
+    margin: 0;
+  }
+
+  .rlf[data-ready] .rlf__frames > li[hidden] {
+    display: block;
+    visibility: hidden;
+  }
+
+  .rlf[data-ready] [data-col] {
+    transition: opacity 0.4s, visibility 0.4s, background-color 0.4s, border-color 0.4s, color 0.4s;
+  }
+
+  @media (max-width: 56rem) {
+    .rlf__grid {
+      gap: 0.3125rem 0.5rem;
+    }
+
+    .rlf__cell {
+      padding: 0.3125rem 0.5rem;
+      font-size: 0.8125rem;
+    }
+
+    .rlf__desc,
+    .rlf__tag code {
+      font-size: 0.75rem;
+    }
+  }
+
+  @media (max-height: 700px) {
+    .rlf {
+      margin: 0.5rem 0;
+    }
+
+    .rlf :global(.step-controls) {
+      margin-bottom: 0.375rem;
+    }
+
+    .rlf__frames {
+      margin-top: 0.375rem;
+    }
+
+    .rlf__grid {
+      grid-template-rows: auto repeat(5, minmax(3.125rem, auto));
+      gap: 0.25rem 0.5rem;
+      margin-top: 0.5rem;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .rlf__grid {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: none;
+      gap: 0.875rem;
+    }
+
+    .rlf__head {
+      display: none;
+    }
+
+    .rlf__row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.25rem;
+    }
+
+    .rlf__row > .rlf__cell,
+    .rlf__op,
+    .rlf__step,
+    .rlf__tag {
+      grid-area: auto;
+    }
+
+    .rlf__tag {
+      justify-self: start;
+    }
+
+    .rlf__band {
+      grid-area: auto;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.125rem 0.625rem;
+      padding: 0.375rem 0.625rem;
+    }
+
+    .rlf__band-scope {
+      display: inline;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rlf[data-ready] * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>

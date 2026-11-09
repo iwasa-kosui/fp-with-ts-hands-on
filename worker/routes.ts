@@ -100,6 +100,14 @@ export const redirectRoutes = [
     pathname: "/sessions/05-workflow-errors/",
     location: "/sessions/04-workflow-errors/",
   },
+  {
+    pathname: "/sessions/00-system-handover/map",
+    location: "/sessions/00-system-handover/code-layout/",
+  },
+  {
+    pathname: "/sessions/00-system-handover/map/",
+    location: "/sessions/00-system-handover/code-layout/",
+  },
 ] as const satisfies readonly RedirectRoute[];
 
 const redirectLocations = new Map<string, string>(

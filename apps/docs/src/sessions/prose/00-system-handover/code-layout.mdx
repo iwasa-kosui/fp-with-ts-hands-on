@@ -1,7 +1,5 @@
-import CodeLayoutDiagram from "../../../components/CodeLayoutDiagram.astro";
+import RuleLocationFigure from "../../../components/handover/RuleLocationFigure.astro";
 
-<p>業務の決まりは <code>domain/</code> に書きます。配布コード <code>examples/session-00/src</code> の分け方で、その場所を確かめます。矢印は import の向きです。</p>
+<p>決まりをコードのどこに書けばよいのでしょうか。事故で見た操作に、どの依頼も通る5つのステップの名前と、受け持つディレクトリを重ねて確かめます。</p>
 
-<CodeLayoutDiagram />
-
-<p>5つのステップは、次のディレクトリが受け持ちます。入口と失敗の返し方は <code>adaptor/primary/web/</code>（Web フレームワークの Hono を使います）、読み取りから保存までの順番は <code>useCase/</code>、決まりを使って操作してよいかを決める業務の判断は <code>domain/</code>、データベース（SQLite）の読み書きは <code>adaptor/secondary/sqlite/</code> です。</p>
+<RuleLocationFigure />
