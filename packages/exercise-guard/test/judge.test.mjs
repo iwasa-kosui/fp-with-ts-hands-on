@@ -460,13 +460,17 @@ describe("judge", () => {
 });
 
 describe("render", () => {
-  it("78 桁以内で、止まったという言い方を使わない", async () => {
+  const withoutSpaces = (/** @type {string} */ text) => text.replace(/\s+/g, "");
+
+  it("59 桁以内で、止まったという言い方を使わない", async () => {
     const text = render(await scenario("empty"), { color: false });
 
     expect(text).toContain("未検出");
-    expect(text).toContain("結果: まだ合格していません（必須の誤った変更 4 件のうち 0 件を検出）");
+    expect(withoutSpaces(text)).toContain(
+      withoutSpaces("結果: まだ合格していません（必須の誤った変更 4 件のうち 0 件を検出）"),
+    );
     expect(text).not.toMatch(/止ま|止め|実行できない/);
-    expect(Math.max(...text.split("\n").map(stringWidth))).toBeLessThanOrEqual(78);
+    expect(Math.max(...text.split("\n").map(stringWidth))).toBeLessThanOrEqual(59);
   });
 
   it("1 件を 2 行で表示し、1 行目に結果の語と題名、2 行目に 3 つの仕組みの結果を置く", async () => {
@@ -498,7 +502,7 @@ describe("render", () => {
     expect(lines).not.toContain("誤った変更");
     expect(lines[Number(positions[1]) + 1]).toContain(String(bad[1]?.title));
     expect(lines[Number(positions[2]) + 1]).toContain(String(bad[2]?.title));
-    expect(Math.max(...lines.map(stringWidth))).toBeLessThanOrEqual(78);
+    expect(Math.max(...lines.map(stringWidth))).toBeLessThanOrEqual(59);
   });
 
   it("任意の行と相互レビューの行が無いときは、従来の見出し「誤った変更」のままにする", async () => {
@@ -521,7 +525,7 @@ describe("render", () => {
 
     expect(text.split("\n")[0]).toBe("結果: 合格です");
     expect(text).toContain("次にすること");
-    expect(text).toMatch(/所要: 全体 [\d.]+s（型 [\d.]+s、Linter [\d.]+s。テスト [\d.]+s は並行して実行）/);
+    expect(withoutSpaces(text)).toMatch(/所要:全体[\d.]+s（型[\d.]+s、Linter[\d.]+s。テスト[\d.]+sは並行して実行）/);
   });
 
   it("color のときだけ誤検知の行を赤にする", async () => {

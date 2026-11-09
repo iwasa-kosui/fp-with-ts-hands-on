@@ -8,6 +8,7 @@ import {
   cellText,
   headlineFor,
   mechanismHeaders,
+  nextTextForWeb,
   optionalGroupHeading,
   peerGroupHeading,
   peerRowNote,
@@ -18,6 +19,7 @@ import {
   verdictText,
   type DisplayRow,
 } from "./labels";
+import { RowTitle } from "./RowTitle";
 
 export type ResultTableProps = Readonly<{
   result: GuardResult;
@@ -58,7 +60,8 @@ export const ResultTable = ({
   const renderRows = (list: readonly DisplayRow[], group?: RowGroup) =>
     list.map((row) => {
       const isBad = row.kind === "bad";
-      const isOpen = isBad && openId === row.id;
+      const editable = isBad && group !== "peer";
+      const isOpen = editable && openId === row.id;
       const written = (limitations[row.id] ?? "").trim() !== "";
       return (
         <Fragment key={row.id}>
@@ -68,19 +71,23 @@ export const ResultTable = ({
           data-group={group}
         >
           <th scope="row">
-            {isBad ? (
+            {editable ? (
               <button
                 type="button"
                 data-action="toggle-row"
                 aria-expanded={isOpen}
                 onClick={() => setOpenId(isOpen ? undefined : row.id)}
               >
-                {row.title}
+                <span>
+                  <RowTitle title={row.title} />
+                </span>
               </button>
             ) : (
-              <span>{row.title}</span>
+              <span>
+                <RowTitle title={row.title} />
+              </span>
             )}
-            {isBad && written ? (
+            {editable && written ? (
               <span className="guard-exercise__written">
                 検出できないことを記入済み
               </span>
@@ -162,9 +169,16 @@ export const ResultTable = ({
       {result.next[0] !== undefined ? (
         <section className="guard-exercise__next" aria-label="次にすること">
           <h3>次にすること</h3>
-          <p>{result.passed && passedNext !== undefined ? passedNext : result.next[0]}</p>
+          <p>
+            {nextTextForWeb(
+              result.passed && passedNext !== undefined ? passedNext : result.next[0],
+            )}
+          </p>
         </section>
       ) : null}
+      <p className="guard-exercise__table-note">
+        「結果」の列は、「対象外」ではない列のどれか 1 つが検出すれば「検出」です。
+      </p>
       <table className="guard-exercise__table">
         <thead>
           <tr>
@@ -200,12 +214,11 @@ export const ResultTable = ({
         ) : null}
       </table>
       <div className="guard-exercise__limits">
-        <p className="guard-exercise__limits-note">
-          「結果」の列は、「対象外」ではない列のどれか 1 つが検出すれば「検出」です。
-          {result.passed && passedNext === undefined
-            ? "行の題名の ▶ を押すと開く「この仕組みで検出できないこと」の欄に、表の少なくとも 1 つの行で 1 文を記入します。記入の内容はプログラムでは判定しません。"
-            : null}
-        </p>
+        {result.passed && passedNext === undefined ? (
+          <p className="guard-exercise__limits-note">
+            行の題名の ▶ を押すと開く「この仕組みで検出できないこと」の欄に、表の少なくとも 1 つの行で 1 文を記入します。記入の内容はプログラムでは判定しません。
+          </p>
+        ) : null}
         <details
           className="guard-exercise__terms"
           onToggle={(event) => {

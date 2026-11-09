@@ -23,6 +23,12 @@ export const optionalGroupHeading =
 
 export const peerGroupHeading = "相互レビューで使う行";
 
+export const nextTextForWeb = (text: string): string =>
+  text.replace("画面の表で行の題名", "表の行の題名");
+
+export const titleSegments = (title: string): readonly string[] =>
+  title.split(/(?<=[/.])/);
+
 export const peerRowNote =
   "次のページの相互レビューで使います。この演習での操作は不要です。";
 

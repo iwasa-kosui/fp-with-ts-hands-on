@@ -14,7 +14,10 @@ const row = (id: string, behavior?: DisplayRow["behavior"]): DisplayRow => ({
   ...(behavior === undefined ? {} : { behavior }),
 });
 
-const render = (rows: readonly DisplayRow[]): Document => {
+const render = (
+  rows: readonly DisplayRow[],
+  showPeerNote = true,
+): Document => {
   const document = new DOMParser().parseFromString(
     renderToStaticMarkup(
       <CaseList
@@ -22,6 +25,7 @@ const render = (rows: readonly DisplayRow[]): Document => {
         casePath={(id) => `exercises/guard/cases/${id}.ts`}
         selectedPath={undefined}
         disabled={false}
+        showPeerNote={showPeerNote}
         onSelect={() => undefined}
       />,
     ),
@@ -70,5 +74,57 @@ describe("CaseList behavior", () => {
     expect(document.querySelector(".guard-exercise__criteria")).toBeNull();
     expect(document.querySelector(".guard-exercise__guide")).toBeNull();
     expect(document.querySelector("h3")?.textContent).toBe("誤った変更");
+  });
+});
+
+describe("CaseList groups", () => {
+  const optional = { ...row("B4"), required: false, verdict: "slipped" as const };
+  const peer = { ...row("R1-peer-change"), required: false, verdict: "unchanged" as const };
+  const headings = (document: Document) =>
+    [...document.querySelectorAll("h4")].map((heading) => heading.textContent);
+
+  it("shows no group heading when there is no optional row and no peer review row", () => {
+    expect(headings(render([row("B5"), row("B6")]))).toEqual([]);
+  });
+
+  it("divides the list under the three headings of the table", () => {
+    const document = render([row("B5"), optional, peer]);
+
+    expect(headings(document)).toEqual([
+      "必須の誤った変更",
+      "任意の誤った変更（時間に余裕がある場合に取り組みます）",
+      "相互レビューで使う行",
+    ]);
+    expect(
+      document.querySelector('button[data-case-id="B4"]')?.getAttribute("data-group"),
+    ).toBe("optional");
+  });
+
+  it("omits the headings of groups that have no row", () => {
+    expect(headings(render([row("B5"), optional]))).toEqual([
+      "必須の誤った変更",
+      "任意の誤った変更（時間に余裕がある場合に取り組みます）",
+    ]);
+  });
+
+  it("shows the note about the next page under an unchanged peer review row on the exercise page", () => {
+    const item = render([row("B5"), peer]).querySelector(
+      'li:has([data-case-id="R1-peer-change"])',
+    );
+
+    expect(item?.querySelector(".guard-exercise__peer-note")?.textContent).toBe(
+      "次のページの相互レビューで使います。この演習での操作は不要です。",
+    );
+  });
+
+  it("omits the note on the peer review page and once the row has changed", () => {
+    expect(
+      render([row("B5"), peer], false).querySelector(".guard-exercise__peer-note"),
+    ).toBeNull();
+    expect(
+      render([row("B5"), { ...peer, verdict: "slipped" }]).querySelector(
+        ".guard-exercise__peer-note",
+      ),
+    ).toBeNull();
   });
 });

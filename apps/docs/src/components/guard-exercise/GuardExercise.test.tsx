@@ -581,6 +581,39 @@ describe("GuardExercise", () => {
       );
     });
 
+    it("shows the title of the peer row as text without a button, an arrow or a field to write in", async () => {
+      const { host } = await mountExercise({
+        resultText: JSON.stringify(withRows([optionalRow, peerRow])),
+      });
+
+      await click(action(host, "run-guard"));
+
+      const peer = row(host, "R1-peer-change");
+      expect(peer?.querySelector("th button")).toBeNull();
+      expect(peer?.querySelector("th")?.textContent).toContain("相互レビューで作る誤った変更");
+      expect(row(host, "B2-optional")?.querySelector('th button[data-action="toggle-row"]')).not.toBeNull();
+    });
+
+    it("lists the rows in the left list under the same three headings and shows the note under the unchanged peer row", async () => {
+      const { host } = await mountExercise({
+        resultText: JSON.stringify(withRows([optionalRow, peerRow])),
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(
+        [...host.querySelectorAll(".guard-exercise__cases h4")].map((heading) => heading.textContent),
+      ).toEqual([
+        "必須の誤った変更",
+        "任意の誤った変更（時間に余裕がある場合に取り組みます）",
+        "相互レビューで使う行",
+      ]);
+      expect(
+        host.querySelector('.guard-exercise__cases li:has([data-case-id="R1-peer-change"]) .guard-exercise__peer-note')
+          ?.textContent,
+      ).toBe("次のページの相互レビューで使います。この演習での操作は不要です。");
+    });
+
     it("does not show the note about the next page once the peer row is no longer unchanged", async () => {
       const { host } = await mountExercise({
         resultText: JSON.stringify(withRows([{ ...peerRow, verdict: "slipped" as const }])),
@@ -641,12 +674,28 @@ describe("GuardExercise", () => {
 
     const limitsNote = (host: HTMLElement) =>
       host.querySelector(".guard-exercise__limits-note")?.textContent;
+    const tableNote = (host: HTMLElement) =>
+      host.querySelector(".guard-exercise__table-note");
     const detectionSentence =
       "「結果」の列は、「対象外」ではない列のどれか 1 つが検出すれば「検出」です。";
     const writingSentence =
       "行の題名の ▶ を押すと開く「この仕組みで検出できないこと」の欄に、表の少なくとも 1 つの行で 1 文を記入します。記入の内容はプログラムでは判定しません。";
 
-    it("adds the sentence about writing under limitations to the note below the table when the exercise page has passed", async () => {
+    it("puts the sentence about the result column right before the table", async () => {
+      const { host } = await mountExercise();
+
+      await click(action(host, "run-guard"));
+
+      expect(tableNote(host)?.textContent).toBe(detectionSentence);
+      expect(tableNote(host)?.nextElementSibling).toBe(
+        host.querySelector(".guard-exercise__table"),
+      );
+      expect(tableNote(host)?.previousElementSibling?.className).toBe(
+        "guard-exercise__next",
+      );
+    });
+
+    it("puts the sentence about writing under limitations in the note below the table when the exercise page has passed", async () => {
       const { host } = await mountExercise({
         exitCode: 0,
         resultText: JSON.stringify(passedResult),
@@ -655,18 +704,19 @@ describe("GuardExercise", () => {
 
       await click(action(host, "run-guard"));
 
-      expect(limitsNote(host)).toBe(`${detectionSentence}${writingSentence}`);
+      expect(limitsNote(host)).toBe(writingSentence);
+      expect(tableNote(host)?.textContent).toBe(detectionSentence);
     });
 
-    it("shows only the sentence about the result column below the table when the guard has not passed", async () => {
+    it("shows no note below the table when the guard has not passed", async () => {
       const { host } = await mountExercise();
 
       await click(action(host, "run-guard"));
 
-      expect(limitsNote(host)).toBe(detectionSentence);
+      expect(limitsNote(host)).toBeUndefined();
     });
 
-    it("shows only the sentence about the result column below the table when the guide gives the next step", async () => {
+    it("shows no note below the table when the guide gives the next step", async () => {
       const { host } = await mountExercise({
         exitCode: 0,
         resultText: JSON.stringify(passedResult),
@@ -675,7 +725,8 @@ describe("GuardExercise", () => {
 
       await click(action(host, "run-guard"));
 
-      expect(limitsNote(host)).toBe(detectionSentence);
+      expect(limitsNote(host)).toBeUndefined();
+      expect(tableNote(host)?.textContent).toBe(detectionSentence);
     });
 
     it("keeps the sentence from the result while the guard has not passed", async () => {

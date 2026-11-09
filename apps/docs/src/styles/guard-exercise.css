@@ -99,6 +99,14 @@
   margin-top: 0;
 }
 
+.guard-exercise .guard-exercise__cases-inner h4 {
+  margin: 0.5rem 0 0.25rem;
+  color: var(--playground-text);
+  font-size: 0.75rem;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
 .guard-exercise__steps {
   margin: 0;
   padding: 0 0 0 1.25rem;
@@ -248,6 +256,10 @@
   content: "△ ";
 }
 
+.guard-exercise__case-list button[data-group="optional"][data-verdict="slipped"] .guard-exercise__mark {
+  color: var(--role-muted);
+}
+
 .guard-exercise__case-list button[data-verdict="detected"] .guard-exercise__mark {
   color: var(--role-positive);
 }
@@ -374,6 +386,7 @@
 }
 
 .guard-exercise__headline,
+.guard-exercise__table-note,
 .guard-exercise__limits-note,
 .guard-exercise__durations {
   margin: 0.375rem 0;
@@ -381,6 +394,7 @@
   line-height: 1.4;
 }
 
+.guard-exercise__table-note,
 .guard-exercise__limits-note,
 .guard-exercise__durations {
   font-size: 0.75rem;
@@ -455,17 +469,17 @@
 }
 
 .guard-exercise.code-playground .guard-exercise__table :is(th, td) {
-  padding: 0.3rem 0.25rem;
+  padding: 0.3rem 0.125rem;
   border: 0;
   border-bottom: 1px solid var(--role-rule);
   text-align: left;
   vertical-align: top;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .guard-exercise.code-playground .guard-exercise__table thead th {
   position: sticky;
-  top: 0;
+  top: -0.5rem;
   z-index: 1;
   background: var(--role-surface);
   color: var(--role-muted);
@@ -473,12 +487,17 @@
   font-weight: 800;
 }
 
-.guard-exercise.code-playground .guard-exercise__table thead th:first-child {
-  width: 34%;
+.guard-exercise.code-playground .guard-exercise__table thead th:not(:first-child, :last-child) {
+  width: 3.5rem;
+  white-space: nowrap;
+}
+
+.guard-exercise__table td[data-state] {
+  white-space: nowrap;
 }
 
 .guard-exercise.code-playground .guard-exercise__table thead th:last-child {
-  width: 25.5%;
+  width: 6.125rem;
 }
 
 .guard-exercise.code-playground .guard-exercise__table tbody th {
@@ -487,7 +506,7 @@
 }
 
 .guard-exercise.code-playground .guard-exercise__table th > button {
-  padding: 0.1rem 0.25rem;
+  padding: 0.1rem 0.125rem;
   border-width: 0.0625rem;
   border-color: transparent;
   font-size: 0.8125rem;
@@ -496,6 +515,11 @@
 
 .guard-exercise__table th > button[data-action="toggle-row"] {
   justify-content: flex-start;
+  gap: 0.25rem;
+}
+
+.guard-exercise__table th > button[data-action="toggle-row"] > span {
+  min-width: 0;
 }
 
 .guard-exercise__table th > button[data-action="toggle-row"]::before {
