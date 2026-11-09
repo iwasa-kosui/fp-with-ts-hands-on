@@ -217,7 +217,7 @@ describe("SQLite event stores", () => {
       petId: ids.pet,
       ownerId: ids.owner,
       name: "Mugi",
-      species: "Cat",
+      species: "Dog",
     }));
     const createdPet = Pet.create(eventContext(4))(pet);
     const booked = Appointment.book(eventContext(5))({
@@ -632,7 +632,7 @@ describe("SQLite event stores", () => {
       petId: ids.pet,
       ownerId: ids.owner,
       name: "Mugi",
-      species: "Cat",
+      species: "Dog",
     }));
     await createOwnerEventStore(db).store(Owner.create(eventContext(20))(owner));
     const store = createPetEventStore(db);
@@ -661,7 +661,7 @@ describe("SQLite event stores", () => {
       petId: ids.pet,
       ownerId: ids.owner,
       name: "Mugi",
-      species: "Cat",
+      species: "Dog",
     }));
     await createOwnerEventStore(db).store(Owner.create(eventContext(38))(owner));
     const petStore = createPetEventStore(db);

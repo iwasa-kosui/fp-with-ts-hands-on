@@ -245,12 +245,12 @@ export const storeCode = {
     ),
   },
   inMemory: {
-    path: "src/adaptor/inMemoryExaminationStartedStore.ts",
+    path: "src/adaptor/secondary/inMemory/inMemoryExaminationStartedStore.ts",
     code: reflow(
       dedent(
         blockOf(
           solutionFiles,
-          "src/adaptor/inMemoryExaminationStartedStore.ts",
+          "src/adaptor/secondary/inMemory/inMemoryExaminationStartedStore.ts",
           "          const currentAppointment = appointments.get(event.appointmentId);",
           "          events = nextEvents;",
         ),

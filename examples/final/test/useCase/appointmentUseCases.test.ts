@@ -102,7 +102,7 @@ const pet = Pet.parse({
   petId: ids.pet,
   ownerId: ids.owner,
   name: "Mugi",
-  species: "Cat",
+  species: "Dog",
 })._unsafeUnwrap();
 const otherPet = Pet.parse({
   petId: ids.otherPet,

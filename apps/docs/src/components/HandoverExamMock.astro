@@ -79,7 +79,7 @@ const steps = [
     values: undefined,
   },
   {
-    text: "<strong>入口</strong>: 獣医師が「診察を開始する」を押します。どの予約を、どの獣医師が担当するかが、サーバーへ届きます。地図では値の形を確かめる段ですが、今のコードは確かめません。",
+    text: "<strong>入口</strong>: 獣医師が「診察を開始する」を押します。どの予約を、どの獣医師が担当するかが、サーバーへ届きます。前のページの図では、入口は届いた値の形を確かめるステップです。今のコードは確かめません。",
     file: "route",
     highlight: highlight("route", routeCode, "startExamination(repository)({", true),
     impl: undefined,
@@ -105,7 +105,7 @@ const steps = [
     },
   },
   {
-    text: "<strong>業務の判断</strong>: サーバーは、状態を <code>in-examination</code> にした新しい予約を作ります。地図では今の状態を見て決める段ですが、今のコードは状態を確かめません。",
+    text: "<strong>業務の判断</strong>: サーバーは、状態を <code>in-examination</code> にした新しい予約を作ります。前のページの図では、業務の判断は予約の今の状態を見て、進めてよいかを決めるステップです。今のコードは状態を確かめません。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "const updated = updateStatus(", true),
     impl: {

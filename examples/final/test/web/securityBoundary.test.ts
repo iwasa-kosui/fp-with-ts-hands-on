@@ -377,7 +377,7 @@ describe("Inertia security boundary", () => {
     }, adminCookie);
     const owner = database.select().from(ownersTable).get();
     if (owner === undefined) throw new TypeError("owner missing");
-    await post(app, "/pets", { ownerId: owner.ownerId, name: "Mugi", species: "Cat" }, adminCookie);
+    await post(app, "/pets", { ownerId: owner.ownerId, name: "Mugi", species: "Dog" }, adminCookie);
     const pet = database.select().from(petsTable).get();
     if (pet === undefined) throw new TypeError("pet missing");
     await post(app, "/appointments", {
