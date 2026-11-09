@@ -272,14 +272,14 @@
 
 .fb-impl figcaption {
   flex: none;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 0.15rem 0.6rem;
-  padding: 0.2rem 0.6rem;
+  gap: 0.15rem 0.5rem;
+  padding: 0.15rem 0.6rem;
   background: var(--walk-lemon);
   color: var(--walk-ink);
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   line-height: 1.3;
 }

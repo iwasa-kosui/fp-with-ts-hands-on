@@ -36,6 +36,7 @@ const expectedFragments: Readonly<Record<string, readonly string[]>> = {
   "catch-misses-state-error": ["error.message.includes", "throw error"],
   "hidden-nondeterminism": ["new Date()", "crypto.randomUUID()"],
   "dual-write": ["stateStore.save", "eventLog.append"],
+  "unchecked-current-state": ["store: { save: () => undefined }"],
   "final-use-case-pipeline": [".andThrough"],
   "final-seven-aggregates": [
     "createSessionEventStore",

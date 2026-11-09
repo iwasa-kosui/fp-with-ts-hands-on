@@ -98,6 +98,7 @@ const scenes = {
       "予約1件の現在の状態と、その予約の履歴を、1つの枠で囲みます。キャンセルで変わるのは、この枠の中だけです。別の予約や飼い主のデータは変わりません。",
       "キャンセルの処理 Appointment.cancel は、イベント AppointmentCanceled を返します。このイベントは、キャンセル後の予約の状態（aggregateState）を持ちます。1つの値が、書き込む現在の状態と履歴の両方を表します。",
       "保存を2回に分けた場合です。現在の状態を書き込んだ後で履歴の追記が失敗すると、予約は Canceled ですが、履歴にキャンセルが残りません。整合性が崩れた状態です。",
+      "集約を単位に1回で保存すると、結果は、両方が書かれるか、どちらも書かれないかの2通りになります。どちらでも、現在の状態と履歴は食い違いません。",
     ],
   },
   "start-examination": {
@@ -118,14 +119,17 @@ const scenes = {
       keys: ['kind: "ExaminationStarted",', "aggregateState,"],
     },
     captions: [
-      "予約1件の現在の状態と、その予約の履歴を、1つの枠で囲みます。診察開始で変わるのは、この枠の中だけです。別の予約や飼い主のデータは変わりません。",
+      "予約の集約は、予約1件の現在の状態と、その予約の履歴のまとまりです。外側の破線の枠が整合性境界で、診察開始の変更を1回で確定する範囲です。別の予約や飼い主のデータは変わりません。",
       "診察開始の処理 Appointment.startExamination は、イベント ExaminationStarted を返します。このイベントは、診察開始後の予約の状態（aggregateState）を持ちます。1つの値が、書き込む現在の状態と履歴の両方を表します。",
       "保存を2回に分けた場合です。現在の状態を書き込んだ後で履歴の追記が失敗すると、予約は InExamination ですが、履歴に診察開始が残りません。整合性が崩れた状態です。",
+      "整合性境界を単位に1回で保存すると、結果は、両方が書かれるか、どちらも書かれないかの2通りになります。どちらでも、現在の状態と履歴は食い違いません。",
     ],
   },
 } as const satisfies Record<SceneName, unknown>;
 const config = scenes[scene];
 const stepperControls = scene === "start-examination";
+const showBoundary = scene === "start-examination";
+const saveUnit = showBoundary ? "整合性境界" : "集約";
 
 type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
 const KEY_MARK = /\s*\/\/ \[!aggregate-flow-key\]$/;
@@ -198,7 +202,7 @@ const frames: readonly Frame[] = [
   { caption: audit(config.captions[1]), view: "aggregate", ghost: true, code: true },
   { caption: audit(config.captions[2]), view: "compare", after: false },
   {
-    caption: audit("集約を単位に1回で保存すると、結果は、両方が書かれるか、どちらも書かれないかの2通りになります。どちらでも、現在の状態と履歴は食い違いません。"),
+    caption: audit(config.captions[3]),
     view: "compare",
     after: true,
   },
@@ -227,6 +231,8 @@ const frames: readonly Frame[] = [
 
         {frame.view === "aggregate" && (
           <div class="aggregate-flow__diagram">
+            <div class:list={["aggregate-flow__boundary", { "aggregate-flow__boundary--on": showBoundary }]}>
+            {showBoundary && <p class="aggregate-flow__boundary-title">整合性境界: 1回で変更を確定する範囲</p>}
             <div class="aggregate-flow__aggregate">
               <p class="aggregate-flow__aggregate-title">予約の集約</p>
               <div class="aggregate-flow__fields">
@@ -251,6 +257,7 @@ const frames: readonly Frame[] = [
                   </div>
                 ))}
               </div>
+            </div>
             </div>
             <ul class="aggregate-flow__outside">
               <li class="aggregate-flow__other">別の予約</li>
@@ -300,11 +307,12 @@ const frames: readonly Frame[] = [
             </section>
 
             <section class="aggregate-flow__side">
-              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">1回にまとめたら</span>集約を単位に1回で保存する</p>
+              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">1回にまとめたら</span>{saveUnit}を単位に1回で保存する</p>
               {frame.after ? (
                 outcomes.map((outcome) => (
                   <div class="aggregate-flow__outcome">
                     <p class="aggregate-flow__outcome-tag"><span class="aggregate-flow__tag aggregate-flow__tag--plain">{outcome.tag}</span></p>
+                    <div class:list={["aggregate-flow__boundary", { "aggregate-flow__boundary--on": showBoundary }]}>
                     <div class="aggregate-flow__aggregate">
                       <p class="aggregate-flow__aggregate-title">予約の集約</p>
                       <div class="aggregate-flow__fields">
@@ -323,6 +331,7 @@ const frames: readonly Frame[] = [
                           </div>
                         ))}
                       </div>
+                    </div>
                     </div>
                     <p class="aggregate-flow__verdict aggregate-flow__verdict--good"><span aria-hidden="true">✓ </span>そろっている</p>
                   </div>
@@ -499,6 +508,20 @@ const frames: readonly Frame[] = [
     border-radius: 0.75rem;
     background: var(--case-paper, #fffefa);
     color: var(--case-ink, #111116);
+  }
+
+  .aggregate-flow__boundary--on {
+    padding: 0.35rem;
+    border: 2px dashed var(--case-line, #17204d);
+    border-radius: 0.9rem;
+  }
+
+  .aggregate-flow__boundary-title {
+    margin: 0 0 0.3rem;
+    color: var(--case-ink, #111116);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.4;
   }
 
   .aggregate-flow__aggregate-title {

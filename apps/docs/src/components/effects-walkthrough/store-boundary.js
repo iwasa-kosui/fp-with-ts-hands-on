@@ -19,7 +19,7 @@ for (const figure of figures) {
   figure.setAttribute("data-sb-ready", "");
   const page = figure.classList.contains("sb--page");
   if (figure.hasAttribute("data-written-only")) chipText.home = "書き込み済み";
-  const idle = figure.querySelector("[data-idle]");
+  const failed = figure.querySelector("[data-failed]");
   const issue = figure.querySelector("[data-issue]");
 
   const root = figure.closest("[data-walk]");
@@ -119,19 +119,21 @@ for (const figure of figures) {
     lastScene = scene;
     if (reset) figure.classList.add("is-reset");
 
+    figure.toggleAttribute("data-no-code", frame.call === null && frame.impl === null);
     showPane("call", frame.call, reset);
     showPane("impl", frame.impl, reset);
     boxEls.impl.toggleAttribute("data-walk-focus", frame.impl !== null);
     diagram.toggleAttribute("data-walk-focus", frame.impl === null);
     tx.dataset.tx = frame.tx;
     txLabel.textContent = page ? (pageTxText[frame.tx] ?? "") : (txText[frame.tx] ?? "transaction");
-    if (idle !== null) idle.hidden = frame.call !== null || frame.impl !== null;
     if (issue !== null) issue.toggleAttribute("data-on", frame.issue === true);
     appointments.toggleAttribute("data-read", frame.read === true);
     setOld("old-CheckedIn", frame.old === "CheckedIn", reset);
     setOld("old-InExamination", frame.old === "InExamination", reset);
     setCard("state", frame.state, frame.tx !== "none", reset);
-    setCard("audit", frame.audit, frame.tx !== "none", reset);
+    const auditFailed = failed !== null && frame.audit.endsWith("failed");
+    setCard("audit", auditFailed ? "off" : frame.audit, frame.tx !== "none", reset);
+    if (failed !== null) failed.toggleAttribute("data-on", auditFailed);
 
     if (reset) {
       void figure.offsetWidth;

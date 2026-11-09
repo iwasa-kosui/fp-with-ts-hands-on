@@ -1,6 +1,6 @@
 import StoreDifferences from "../../../components/final/StoreDifferences.astro";
 import { storeDifferencesCode } from "../../pages/final-content";
 
-<p>参照実装は、S06 と実装が3点異なります。保存の実装が2点、port の配置先が1点です。守るべき条件は同じです。状態と監査記録を同時に保存し、競合の場合は何も書き込みません。</p>
+<p>参照実装は、S06 と実装が3点異なります（保存の実装が2点、port の配置先が1点）。守るべき条件は同じで、状態と監査記録を同時に保存し、競合では何も書き込みません。</p>
 
 <StoreDifferences code={storeDifferencesCode} />
