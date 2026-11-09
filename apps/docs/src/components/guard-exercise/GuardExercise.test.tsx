@@ -404,6 +404,36 @@ describe("GuardExercise", () => {
     ]);
   });
 
+  it("lists only the files the participant works with before the guard runs", async () => {
+    const { host } = await mountExercise();
+    await click(host.querySelector(".code-explorer__path-toggle"));
+
+    const listed = [
+      ...host.querySelectorAll<HTMLElement>("[data-file-list-path]"),
+    ].map((item) => item.dataset.fileListPath);
+    expect(listed).toEqual([
+      "eslint.config.mjs",
+      "exercises/guard/mine/input.test.ts",
+      "exercises/guard/cases/B1-any-parser.ts",
+    ]);
+  });
+
+  it("shows the full path of the opened file under the tabs", async () => {
+    const { host } = await mountExercise();
+    const path = () => host.querySelector(".code-explorer__path");
+    const folder = () => host.querySelector(".code-explorer__path-folder");
+
+    await click(
+      host.querySelector('button[data-path="exercises/guard/mine/input.test.ts"]'),
+    );
+    expect(path()?.textContent).toBe("exercises/guard/mine/input.test.ts");
+    expect(folder()?.textContent).toBe("exercises/guard/mine/");
+
+    await click(host.querySelector('button[data-path="eslint.config.mjs"]'));
+    expect(path()?.textContent).toBe("eslint.config.mjs");
+    expect(folder()).toBeNull();
+  });
+
   it("shows the guide given by props in place of the default steps", async () => {
     const host = document.createElement("div");
     document.body.append(host);

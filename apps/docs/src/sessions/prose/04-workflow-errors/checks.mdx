@@ -1,6 +1,9 @@
 import { Code } from "astro:components";
 import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
 import { session04ChangeChecks } from "../../../components/workflow-errors/change-checks";
+import { lineLabelOf } from "../../source-quotes";
+
+export const rulesLabel = lineLabelOf("session-04-solution", "eslint.config.mjs", "const rules = {};", "const rules = {};");
 
 export const throwRuleCode = `"no-restricted-syntax": [
   "error",
@@ -18,6 +21,7 @@ export const throwRuleCode = `"no-restricted-syntax": [
   <summary>useCase の throw を検出する規則（演習で写します）</summary>
 <p><code>ThrowStatement</code> は <code>throw</code> 文を表す構文の名前で、<code>selector</code> の前半は検出の範囲を useCase の中に絞ります。<code>ThrowStatement</code> だけを指定すると、useCase の外の正当な <code>throw</code> も誤検知（正しいコードを悪い変更として検出すること）になります。規則が検出するのは useCase に書かれた <code>throw</code> だけで、外から来た例外は検出しません。</p>
 <figure class="code-block">
+  <figcaption>演習で写す設定です。写し先: <code>{rulesLabel}</code> の {"{}"} の中</figcaption>
   <Code code={throwRuleCode} lang="js" />
 </figure>
 </details>

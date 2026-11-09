@@ -2,6 +2,7 @@
 import { Code } from "astro:components";
 import repositorySource from "../../../../../examples/session-00/src/adaptor/secondary/sqlite/appointmentRepository.ts?raw";
 import appointmentSource from "../../../../../examples/session-00/src/domain/appointment/appointment.ts?raw";
+import { lineLabelOf } from "../../sessions/source-quotes";
 import { keyedTransformer } from "../code-cache-key";
 import StepControls from "../stepper/StepControls.astro";
 
@@ -50,20 +51,38 @@ const updateStatus = cut(
 const appendAudit = cut(repositorySource, "const appendAudit = ", blockEnd, "payload: appointment,");
 
 const codes = [
-  { id: "update-status", file: "domain/appointment/appointment.ts", ...updateStatus },
-  { id: "append-audit", file: "adaptor/secondary/sqlite/appointmentRepository.ts", ...appendAudit },
+  {
+    id: "update-status",
+    file: lineLabelOf(
+      "session-00",
+      "src/domain/appointment/appointment.ts",
+      "export const updateStatus = (",
+      "): Appointment => ({ ...appointment, ...extra, status });",
+    ),
+    ...updateStatus,
+  },
+  {
+    id: "append-audit",
+    file: lineLabelOf(
+      "session-00",
+      "src/adaptor/secondary/sqlite/appointmentRepository.ts",
+      "  const appendAudit = ({ appointment, ...event }: AuditEvent): void => {",
+      "  };",
+    ),
+    ...appendAudit,
+  },
 ] as const;
 
 const rules = [
   { id: "1", text: "会計済みの予約は、診察に戻せない" },
-  { id: "2", text: "調査に要らない連絡先は、調査する人にも見せない" },
+  { id: "2", text: "調査に不要な個人情報は、監査記録に出力しない" },
 ] as const;
 
 const captions = [
   "病院の人は、会計済みの予約を診察に戻してはいけないと知っています。",
-  "コードを見ます。updateStatus は、今の状態を確かめず、渡された状態をそのまま書き込みます。決まりはここにありません。",
-  "もう1つ、調査に要らない飼い主の連絡先は、調査する人にも見せないはずです。",
-  "監査記録を保存するコードです。予約の内容を丸ごと payload に入れています。連絡先を除く決まりは、ここにもありません。",
+  "コードを見ます。updateStatus は、今の状態を確かめず、渡された状態をそのまま書き込みます。会計済みの予約を拒むロジックは、ここにありません。",
+  "もう1件の事故にも、守るべき条件があります。調査に不要な個人情報を、監査記録に出力してはいけません。監査記録は長期間保存され、複数の担当者が閲覧します。出力した飼い主の氏名、メールアドレス、電話番号は、知る必要のない担当者にも開示されます。",
+  "監査記録を保存するコードです。予約の内容を丸ごと payload に入れています。個人情報を除くロジックは、ここにもありません。",
   "決まりは、人の頭の中にしかありません。コードは決まりを知らないので、破られても止まりません。",
 ] as const;
 ---

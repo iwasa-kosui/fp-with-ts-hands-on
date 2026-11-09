@@ -1,7 +1,9 @@
 ---
 import { Code } from "astro:components";
+import { lineLabelOf } from "../../sessions/source-quotes";
 import css from "./effects-pipeline.css?raw";
 import script from "./effects-pipeline.js?raw";
+import PathLabel from "./PathLabel.astro";
 import { quote, quoteRows } from "./quote";
 import Walkthrough from "./Walkthrough.astro";
 
@@ -363,14 +365,30 @@ const pipelineLines = quoteRows("session-06-solution", "src/useCase/startExamina
   ".andThrough(deps.examinationStartedStore.store)",
   ".map((event) => event.aggregateState);",
 ]);
-const pageRows: readonly Readonly<{ key: string; code: string; outer?: true }>[] = [
+const pageRows: readonly Readonly<{ key: string; code: string; label?: string; outer?: true }>[] = [
   ...(["resolve", "found", "checked", "start", "through", "map"] as const).map((key, index) => ({
     key,
     code: pipelineLines[index] ?? "",
+    ...(index === 0
+      ? {
+          label: lineLabelOf(
+            "session-06-solution",
+            "src/useCase/startExamination.ts",
+            "    resolveAppointment(deps)(input.appointmentId)",
+            "      .map((event) => event.aggregateState);",
+          ),
+        }
+      : {}),
   })),
   {
     key: "route",
     outer: true,
+    label: lineLabelOf(
+      "session-06-solution",
+      "src/adaptor/primary/web/routes.ts",
+      '  error.kind === "AppointmentConflict"',
+      "    : toStartExaminationNoticeCode(error);",
+    ),
     code: quote(
       "session-06-solution",
       "src/adaptor/primary/web/routes.ts",
@@ -381,6 +399,12 @@ const pageRows: readonly Readonly<{ key: string; code: string; outer?: true }>[]
   {
     key: "onError",
     outer: true,
+    label: lineLabelOf(
+      "session-06-solution",
+      "src/app.ts",
+      '  app.onError((_error, context) => context.text("Internal Server Error", 500));',
+      '  app.onError((_error, context) => context.text("Internal Server Error", 500));',
+    ),
     code: quote(
       "session-06-solution",
       "src/app.ts",
@@ -418,6 +442,7 @@ const legendLines = [
       <div class="ep-flow">
         {pageRows.map((row) => (
           <div class="ep-stage" data-stage={row.key} data-state="future" data-outer={row.outer === true ? "" : undefined}>
+            {row.label === undefined ? null : <p class="ep-file"><code><PathLabel label={row.label} /></code></p>}
             <div class="ep-stage__code">
               <Code code={row.code} lang="ts" wrap />
             </div>

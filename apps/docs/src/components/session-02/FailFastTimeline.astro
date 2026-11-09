@@ -1,7 +1,7 @@
 ---
 import { Code } from "astro:components";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
-import { sourceOf } from "../../sessions/source-quotes";
+import { lineLabelOf, sourceOf } from "../../sessions/source-quotes";
 import StepControls from "../stepper/StepControls.astro";
 
 const path = "src/domain/appointment/statusLabel.ts";
@@ -16,7 +16,7 @@ const excerptOf = (snapshot: "session-02" | "session-02-solution", defaultReturn
     throw new Error(`FailFastTimeline: ${snapshot} の ${path} に想定の default が見つかりません`);
   }
   const codeLines = [...sourceLines.slice(start, start + 2), "    …", ...sourceLines.slice(defaultAt, end + 1)];
-  return { codeLines, code: codeLines.join("\n") };
+  return { codeLines, code: codeLines.join("\n"), label: lineLabelOf(snapshot, path, sourceLines[start], "};") };
 };
 
 const before = excerptOf("session-02", 'return "不明";');
@@ -81,7 +81,7 @@ const stages = ["書く", "型検査", "実行", "画面"] as const;
       <figure class="code-block ff__code ff__code--before" data-code="before">
         <figcaption>
           <span class="ff__tag ff__tag--before">▲ 修正前</span>
-          <code>examples/session-02/{path}（抜粋）</code>
+          <code>{before.label}（抜粋）</code>
         </figcaption>
         <Code code={before.code} lang="ts" />
       </figure>
@@ -89,7 +89,7 @@ const stages = ["書く", "型検査", "実行", "画面"] as const;
       <figure class="code-block ff__code ff__code--after" data-code="after">
         <figcaption>
           <span class="ff__tag">● 修正後</span>
-          <code>examples/session-02-solution/{path}（抜粋）</code>
+          <code>{after.label}（抜粋）</code>
         </figcaption>
         <Code code={after.code} lang="ts" />
       </figure>
