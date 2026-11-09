@@ -29,7 +29,7 @@ const cardFrames = cards.map((card, index) => {
     lit: [signature],
     negative: ok ? [] : [requireCall],
     caption: ok
-      ? `${card.label}の予約は、診察を始めてよい状態です。型検査も、実行したときの requireKind も通ります。`
+      ? `${card.label}の予約は、診察を開始してよい状態です。型検査も、実行時の requireKind も通ります。`
       : `${card.label}の予約も、引数の型 Appointment は受け取ります。型検査は報告しません。実行すると、requireKind が例外を投げます。${index === 0 ? requireKindNote : ""}`,
   };
 });
@@ -38,7 +38,7 @@ const asFrame = {
   ok: true,
   lit: [asCall],
   negative: [] as number[],
-  caption: "戻り値の as Appointment は型アサーションです。値の中身を確かめずに「この値は Appointment だ」と型検査に伝える書き方です。",
+  caption: "戻り値の as Appointment は型アサーションです。値の中身を検証せずに「この値は Appointment だ」と型検査に伝える書き方です。",
 };
 
 const frames = [...cardFrames, asFrame];
@@ -60,7 +60,7 @@ const framesData = JSON.stringify({
     <div class="entrance__stage">
       <p class="entrance__gate">
         <span class="entrance__gate-title"><code>startExamination</code> の入口</span>
-        <span>引数の型は <code>Appointment</code>。6つの状態がすべて入ります。</span>
+        <span>引数の型は <code>Appointment</code>。6つの状態をすべて受け取ります。</span>
       </p>
       <ol class="entrance__cards">
         {cards.map((card, index) => (

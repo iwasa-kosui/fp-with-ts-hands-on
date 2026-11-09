@@ -2,14 +2,14 @@ import EpisodeIllustration from "../../../components/EpisodeIllustration.astro";
 
 <div class="session-split session-split--story">
   <div>
-    <aside class="case-file__episode" aria-label="動物病院のひと幕">
-      <p class="case-file__episode-label">動物病院のひと幕</p>
-      <p>無断キャンセルを表す <code>NoShow</code> の状態を足した翌朝に、受付の画面でハリネズミの予約が「不明」と表示されました。</p>
-      <p>この変更は、<code>NoShow</code> を <code>Appointment</code> の union に足したものでした。</p>
+    <aside class="case-file__episode" aria-label="動物病院の事例">
+      <p class="case-file__episode-label">動物病院の事例</p>
+      <p>無断キャンセルを表す <code>NoShow</code> の状態を追加した翌朝、受付の画面でハリネズミの予約が「不明」と表示されました。</p>
+      <p>この変更は、<code>NoShow</code> を <code>Appointment</code> の union に追加したものでした。</p>
       <p>表示名の分岐に <code>NoShow</code> の <code>case</code> がありませんでした。それでも型検査は成功しました。</p>
-      <p>公開する前には、誰も足し忘れに気づきませんでした。</p>
+      <p>公開前に追加漏れを発見した人はいませんでした。</p>
     </aside>
-    <p><code>NoShow</code> は、予約した飼い主が来院も連絡もしなかった状態です。受付は、「不明」と出た予約を見ても、次に何をすればよいか分かりません。</p>
+    <p><code>NoShow</code> は、予約した飼い主が来院も連絡もしなかった状態です。受付は、「不明」と表示された予約を見ても、次の対応を判断できません。</p>
   </div>
   <div>
     <EpisodeIllustration slug="02-adt-and-exhaustiveness" />

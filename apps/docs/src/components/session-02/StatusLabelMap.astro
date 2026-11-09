@@ -14,7 +14,7 @@ const rows = kinds.map((kind) => {
 });
 ---
 
-<figure class="map" data-status-label-map aria-label="予約の6つの状態が、画面の表示名につながる図">
+<figure class="map" data-status-label-map aria-label="予約の6つの状態が、画面の表示名に対応する図">
   <StepControls />
 
   <div class="map__board">
@@ -23,7 +23,7 @@ const rows = kinds.map((kind) => {
     {rows.map(({ kind }, index) => (
       <p class="map__kind" style={`grid-row: ${index + 2}; --i: ${index}`}><code>{kind}</code></p>
     ))}
-    <p class="map__fn"><code>toStatusLabel</code><span>状態を表示名へ変える関数</span></p>
+    <p class="map__fn"><code>toStatusLabel</code><span>状態を表示名へ変換する関数</span></p>
     {rows.map(({ label }, index) => (
       <p class="map__label" style={`grid-row: ${index + 2}; --i: ${index}`}>{label}</p>
     ))}
@@ -35,10 +35,10 @@ const rows = kinds.map((kind) => {
         <p class="map__caption">S01 で分けた6つの状態です。予約は、このどれか1つの状態にあります。</p>
       </li>
       <li data-frame>
-        <p class="map__caption"><code>toStatusLabel</code> は、予約の <code>kind</code> を受け取り、画面に出す文字を返す関数です。</p>
+        <p class="map__caption"><code>toStatusLabel</code> は、予約の <code>kind</code> を受け取り、画面に表示する文字を返す関数です。</p>
       </li>
       <li data-frame>
-        <p class="map__caption">6つの状態は、1つずつ別の表示名につながります。受付は、この表示名を見て予約の状態を判断します。</p>
+        <p class="map__caption">6つの状態は、1つずつ別の表示名に対応します。受付は、この表示名を確認して予約の状態を判断します。</p>
       </li>
     </ol>
   </div>
