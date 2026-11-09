@@ -21,6 +21,7 @@ export type GuardLayoutProps = Readonly<{
   projectFiles: ProjectFiles;
   cases: readonly GuardCaseInfo[];
   guide?: GuardGuide;
+  onListedCasesChange: (ids: readonly string[]) => void;
   children?: ReactNode;
 }>;
 
@@ -65,6 +66,7 @@ export const GuardLayout = ({
   projectFiles,
   cases,
   guide,
+  onListedCasesChange,
   children,
 }: GuardLayoutProps) => {
   const [terminalOpen, setTerminalOpen] = useState(false);
@@ -83,6 +85,11 @@ export const GuardLayout = ({
     () => displayRowsFor(guard.result, cases),
     [guard.result, cases],
   );
+  useEffect(() => {
+    onListedCasesChange(
+      rows.filter(({ kind }) => kind === "bad").map(({ id }) => id),
+    );
+  }, [rows, onListedCasesChange]);
   const activeGuide = guide ?? defaultGuide;
   const running = guard.status.kind === "running";
   const progress =
