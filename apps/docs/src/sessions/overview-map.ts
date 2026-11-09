@@ -26,6 +26,6 @@ export const sessionOverviews: Readonly<Record<Exclude<SessionSlug, "00-system-h
   },
   "04-workflow-errors": { rule: "「予約が見つからない」と「今の状態では操作できない」を区別する" },
   "05-business-events-and-workflows": { rule: "確認に1つでも失敗したキャンセルは記録しない" },
-  "06-effects-and-consistency": { rule: "予約の変更と監査記録は、両方保存するか、どちらも保存しない" },
+  "06-effects-and-consistency": { rule: "予約の変更と監査記録は、両方残すか、どちらも残さない" },
   final: { rule: "ここまでの業務ロジックを、1つのシステムの中で通して追跡する" },
 };
