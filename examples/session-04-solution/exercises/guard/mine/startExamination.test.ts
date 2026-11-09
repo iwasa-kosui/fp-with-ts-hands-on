@@ -17,19 +17,19 @@ describe("startExamination", () => {
   it("予約が見つからないとき", () => {
     const { dependencies, saved } = fakeDependencies({ resolved: undefined });
     const outcome = call(() => startExamination(dependencies)(input));
-    // ここに確かめる性質を書きます
+    // ここに検証する性質を実装します
   });
 
   it("状態が来院済みでないとき", () => {
     const { dependencies, saved } = fakeDependencies({ resolved: scheduled });
     const outcome = call(() => startExamination(dependencies)(input));
-    // ここに確かめる性質を書きます
+    // ここに検証する性質を実装します
   });
 
   it("保存が例外を投げたとき", () => {
     const saveError = new Error("database unavailable");
     const { dependencies, saved } = fakeDependencies({ resolved: checkedIn, saveError });
     const outcome = call(() => startExamination(dependencies)(input));
-    // ここに確かめる性質を書きます
+    // ここに検証する性質を実装します
   });
 });

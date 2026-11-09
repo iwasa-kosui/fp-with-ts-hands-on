@@ -113,7 +113,7 @@ const runWatched = ({ root, timeoutMs }) =>
     });
     const timer = setTimeout(async () => {
       await writeOut(
-        `検出を検証する処理が ${Math.round(timeoutMs / 100) / 10} 秒で終わりませんでした。eslint.config.mjs の規則に、終わらない繰り返しがないか見直します。\n`,
+        `検出を検証する処理が ${Math.round(timeoutMs / 100) / 10} 秒で終わりませんでした。eslint.config.mjs のルールに、終わらない繰り返しがないか見直します。\n`,
       );
       stopVitest();
       await exitNow(124);

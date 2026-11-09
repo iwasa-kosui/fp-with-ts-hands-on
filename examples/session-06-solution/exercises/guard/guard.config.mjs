@@ -9,7 +9,7 @@ export default {
       subject: "useCase",
       title: "イベントの時刻を、clock ではなく new Date() から作る",
       allow: ["lint", "tests"],
-      hint: "現在時刻を直接読む書き方を、Linter の規則かテストで検出します。",
+      hint: "現在時刻を直接読む書き方を、Linter のルールかテストで検出します。",
       behavior: {
         input: { text: "clock が 06:30 を返すとき" },
         expected: { text: "clock の時刻が入る", value: '"…T06:30:00.000Z"' },
@@ -22,7 +22,7 @@ export default {
       subject: "useCase",
       title: "イベントIDを、ID generator ではなく乱数から作る",
       allow: ["lint", "tests"],
-      hint: "ID を直接作る書き方を、Linter の規則かテストで検出します。",
+      hint: "ID を直接作る書き方を、Linter のルールかテストで検出します。",
       behavior: {
         input: { text: "ID generator が固定の ID を返すとき" },
         expected: { text: "固定の ID が入る", value: '"55555555-…"' },
@@ -35,7 +35,7 @@ export default {
       subject: "useCase",
       title: "イベントの時刻を、Date.now() から作る",
       allow: ["lint", "tests"],
-      hint: "現在時刻を直接読む別の書き方も、Linter の規則かテストで検出します。",
+      hint: "現在時刻を直接読む別の書き方も、Linter のルールかテストで検出します。",
       behavior: {
         input: { text: "clock が 06:30 を返すとき" },
         expected: { text: "clock の時刻が入る", value: '"…T06:30:00.000Z"' },
@@ -48,7 +48,7 @@ export default {
       subject: "useCase",
       title: "状態の保存と監査記録の保存で、store を2回呼ぶ",
       allow: ["tests"],
-      hint: "診察を開始したときの store とのやり取りを、テストで確かめます。",
+      hint: "診察を開始したときの store とのやり取りを、テストで検証します。",
       behavior: {
         input: { text: "来院済みの予約で診察を開始する" },
         expected: { text: "store を1回呼ぶ", value: "storeCalls: 1" },
@@ -63,7 +63,7 @@ export default {
       stage: 2,
       required: false,
       allow: ["tests"],
-      hint: "呼ぶたびに値が変わる clock を渡して、テストで確かめます。",
+      hint: "呼ぶたびに値が変わる clock を渡して、テストで検証します。",
       behavior: {
         input: { text: "clock が 06:30:01、06:30:02 と進むとき" },
         expected: { text: "診察開始の時刻と同じ", value: '"…T06:30:01.000Z"' },
@@ -78,7 +78,7 @@ export default {
       stage: 2,
       required: false,
       allow: ["tests"],
-      hint: "store が競合を返したときに、呼び出し側の結果がどうなるかをテストで確かめます。",
+      hint: "store が競合を返したときに、呼び出し側の結果がどうなるかをテストで検証します。",
       behavior: {
         input: { text: "store が競合を返すとき" },
         expected: { text: "競合の Err が返る", value: "Err: AppointmentConflict" },
@@ -94,7 +94,7 @@ export default {
       required: false,
       allow: ["lint", "tests"],
       unchangedFrom: "G1-solution",
-      hint: "結果の表で、この行が「すり抜け」のままなら、隣の人の仕組みをすり抜けています。",
+      hint: "結果の表で、この行が「すり抜け」のままの場合、隣の人の仕組みで検出されていません。",
     },
     {
       id: "G1-solution",

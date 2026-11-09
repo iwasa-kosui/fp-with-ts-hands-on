@@ -156,13 +156,13 @@ describe("judge", () => {
     expect(result.hiddenCount).toBe(1);
   });
 
-  it("false-positive: 正しいコードに当たる規則は誤検知として規則名を示す", async () => {
+  it("false-positive: 正しいコードに当たるルールは誤検知としてルール名を示す", async () => {
     const result = await scenario("false-positive");
     const good = rowOf(result, "G1-solution");
 
     expect(result.passed).toBe(false);
     expect(result.next).toContain(
-      "正しいコード『正しい parse』をLinterが検出しました（規則 no-restricted-syntax、exercises/guard/cases/G1-solution.ts:7）。規則の対象を狭めるか、テストを見直します。",
+      "正しいコード『正しい parse』をLinterが検出しました（ルール no-restricted-syntax、exercises/guard/cases/G1-solution.ts:7）。ルールの対象を狭めるか、テストを見直します。",
     );
     expect(good.verdict).toBe("falsePositive");
     expect(good.detections.lint.map((detection) => detection.label)).toContain("no-restricted-syntax");
@@ -248,16 +248,16 @@ describe("judge", () => {
     expect(result.problems[0]).not.toContain("正しい parse");
   });
 
-  it("target-by-name: ファイル名で誤った変更だけを狙う規則は不合格にする", async () => {
+  it("target-by-name: ファイル名で誤った変更だけを狙うルールは不合格にする", async () => {
     const result = await scenario("target-by-name");
 
     expect(result.passed).toBe(false);
-    expect(result.problems.some((problem) => problem.includes("eslint.config.mjs の規則がケースによって違います（"))).toBe(true);
-    expect(result.problems.some((problem) => problem.includes("規則をファイル名で分けずに"))).toBe(false);
-    expect(result.next).toContain("規則をファイル名で分けずに、コードの形で検出します。");
+    expect(result.problems.some((problem) => problem.includes("eslint.config.mjs のルールがケースによって違います（"))).toBe(true);
+    expect(result.problems.some((problem) => problem.includes("ルールをファイル名で分けずに"))).toBe(false);
+    expect(result.next).toContain("ルールをファイル名で分けずに、コードの形で検出します。");
   });
 
-  it("既存のシナリオの eslint.config.mjs は、全ケースに同じ規則を当てる", async () => {
+  it("既存のシナリオの eslint.config.mjs は、全ケースに同じルールを当てる", async () => {
     const names = ["empty", "pass", "miss-one", "false-positive", "no-type-test", "na-only", "broken-test", "unjudged"];
     const results = await Promise.all(names.map(scenario));
 
@@ -287,17 +287,17 @@ describe("judge", () => {
     expect(rowOf(result, "G2-handler-uses-parse").detections.types).toEqual([]);
   });
 
-  it("rule-throws: 規則の実行中の例外は、規則名を示す", async () => {
+  it("rule-throws: ルールの実行中の例外は、ルール名を示す", async () => {
     const result = await scenario("rule-throws");
 
     expect(result.passed).toBe(false);
-    expect(result.problems[0]).toContain("規則 local/explodes の実行中にエラーが出ました");
-    expect(result.next).toContain("規則 local/explodes の書き方を見直します。");
+    expect(result.problems[0]).toContain("ルール local/explodes の実行中にエラーが出ました");
+    expect(result.next).toContain("ルール local/explodes の書き方を見直します。");
     expect(result.problems.join("\n")).not.toContain("読み込めませんでした");
     expect(result.next.some((sentence) => sentence.includes("まだ誤った変更を 1 件も検出できていません"))).toBe(false);
   });
 
-  it("broken-config: 規則名が取れない例外は、設定を読み込めなかった扱いのまま", async () => {
+  it("broken-config: ルール名が取れない例外は、設定を読み込めなかった扱いのまま", async () => {
     const result = await scenario("broken-config");
 
     expect(result.problems[0]).toContain("eslint.config.mjs を読み込めませんでした");
@@ -434,7 +434,7 @@ describe("judge", () => {
       configFile,
       readFileSync(configFile, "utf8").replace(
         '    {\n      id: "G1-solution",',
-        '    {\n      id: "R1-peer-change",\n      kind: "bad",\n      subject: "input",\n      title: "相互レビューで作る悪い変更",\n      stage: 2,\n      required: false,\n      allow: ["types", "lint", "tests"],\n      unchangedFrom: "G1-solution",\n    },\n    {\n      id: "G1-solution",',
+        '    {\n      id: "R1-peer-change",\n      kind: "bad",\n      subject: "input",\n      title: "相互レビューで作る誤った変更",\n      stage: 2,\n      required: false,\n      allow: ["types", "lint", "tests"],\n      unchangedFrom: "G1-solution",\n    },\n    {\n      id: "G1-solution",',
       ),
     );
     writeFileSync(caseFile, `// 書き換えます\n${good}`);
@@ -447,14 +447,14 @@ describe("judge", () => {
 
     expect(untouched.verdict).toBe("unchanged");
     expect(render(before, { color: false })).toContain("未変更");
-    expect(before.next.some((sentence) => sentence.includes("相互レビューで作る悪い変更"))).toBe(false);
+    expect(before.next.some((sentence) => sentence.includes("相互レビューで作る誤った変更"))).toBe(false);
     expect(before.passed).toBe(true);
 
     writeFileSync(caseFile, `${good}\nexport const changed = 1;\n`);
     const after = await judge({ root: copied, eslintConfigFile, workDir: "dist/guard-unchanged-after" });
 
     expect(rowOf(after, "R1-peer-change").verdict).toBe("slipped");
-    expect(after.next.some((sentence) => sentence.includes("『相互レビューで作る悪い変更』がすり抜けています。"))).toBe(true);
+    expect(after.next.some((sentence) => sentence.includes("『相互レビューで作る誤った変更』は検出されていません。"))).toBe(true);
     expect(after.passed).toBe(true);
   });
 });

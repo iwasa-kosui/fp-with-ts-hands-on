@@ -26,7 +26,7 @@ const firstLine = (text) => text.split("\n")[0] ?? "";
  */
 const describeDetection = (detection) =>
   detection.mechanism === "lint"
-    ? `規則 ${detection.label}、${detection.file}${detection.line === null ? "" : `:${detection.line}`}`
+    ? `ルール ${detection.label}、${detection.file}${detection.line === null ? "" : `:${detection.line}`}`
     : detection.mechanism === "types"
       ? `${detection.file}${detection.line === null ? "" : `:${detection.line}`} ${firstLine(detection.message)}`
       : `${detection.file} の「${detection.label}」`;
@@ -42,7 +42,7 @@ const falsePositiveSentences = (row) => {
     return found === undefined
       ? []
       : [
-          `正しいコード『${row.title}』を${builtin ? "もともとの型検査" : mechanismNames[mechanism]}が検出しました（${describeDetection(found)}）。${builtin ? "src の変更で正しいコードが型エラーになっていないか見直します。" : "規則の対象を狭めるか、テストを見直します。"}`,
+          `正しいコード『${row.title}』を${builtin ? "もともとの型検査" : mechanismNames[mechanism]}が検出しました（${describeDetection(found)}）。${builtin ? "src の変更で正しいコードが型エラーになっていないか見直します。" : "ルールの対象を狭めるか、テストを見直します。"}`,
         ];
   });
   const loadErrors = row.collectionErrors.map(
@@ -63,7 +63,7 @@ const slippedSentence = (row) => {
   const hint = row.hint === "" ? "" : row.hint;
   return offAllow.length > 0
     ? `『${row.title}』について、${offAllow.map((mechanism) => mechanismNames[mechanism]).join("、")}の検出はこの行では数えません。${nameList(row.allow)}で検出します。${hint}`
-    : `『${row.title}』がすり抜けています。${nameList(row.allow)}で検出します。${hint}`;
+    : `『${row.title}』は検出されていません。${nameList(row.allow)}で検出します。${hint}`;
 };
 
 /**

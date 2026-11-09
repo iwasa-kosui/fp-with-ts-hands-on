@@ -17,7 +17,7 @@ describe("handle", () => {
     await fc.assert(
       fc.asyncProperty(fc.string(), async (id) => {
         const seen = await call({ appointmentId: id, veterinarianId: id });
-        // ここに確かめる性質を書きます
+        // ここに検証する性質を実装します
         return true;
       }),
       { numRuns: 30 },

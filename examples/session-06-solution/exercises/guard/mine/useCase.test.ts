@@ -14,7 +14,7 @@ describe("startExaminationWithEffects", () => {
     const harness = createHarness();
 
     const result = await startExaminationWithEffects(harness.dependencies)(input);
-    // ここに確かめることを書きます（使える値: harness.recordedEvents、harness.storeCalls）
+    // ここに検証することを実装します（使える値: harness.recordedEvents、harness.storeCalls）
   });
 });
 

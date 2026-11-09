@@ -3,5 +3,5 @@ import { startExamination } from "../subjects/transitions.js";
 
 declare const scheduled: Scheduled;
 
-// ここに確かめる呼び出しを書きます
+// ここに検証する呼び出しを実装します
 export { scheduled, startExamination };

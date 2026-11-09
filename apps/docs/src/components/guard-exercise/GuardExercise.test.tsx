@@ -233,7 +233,7 @@ describe("GuardExercise", () => {
     ]);
     expect(cases[0]?.getAttribute("data-verdict")).toBe("unchecked");
     expect(host.querySelector("table")).toBeNull();
-    expect(host.textContent).not.toContain("まだ確かめていません");
+    expect(host.textContent).not.toContain("まだ検証していません");
     expect(host.querySelector(".guard-exercise__scroll h2")?.textContent).toBe(
       "案内の題名",
     );
@@ -711,7 +711,7 @@ describe("GuardExercise", () => {
     await click(row(host, "B1-any-parser")?.querySelector("button"));
 
     expect(host.querySelector('[data-role="hint"]')?.textContent).toContain(
-      "any を禁じる規則で検出します。",
+      "any を禁じるルールで検出します。",
     );
   });
 
@@ -785,7 +785,7 @@ describe("GuardExercise", () => {
 
     const alert = host.querySelector('[role="alert"]')?.textContent;
     expect(alert).toContain("結果を読み出せませんでした");
-    expect(alert).toContain("もう一度");
+    expect(alert).toContain("再度");
     expect(alert).not.toContain("ターミナル");
     expect(action(host, "run-guard")?.disabled).toBe(false);
   });

@@ -205,7 +205,7 @@ export const validateConfig = (raw, { caseEntries, listErrors, subjectExists }) 
     ...duplicates(fileIds).map((id) => `exercises/guard/cases/ に「${id}」が複数あります。`),
     ...needsGood.map(
       (name) =>
-        `subject「${name}」には、型のテストかテストで検出する誤った変更がありますが、正しいコード（good）がありません。誤検知を確かめるため、good を 1 件以上足します。`,
+        `subject「${name}」には、型のテストかテストで検出する誤った変更がありますが、正しいコード（good）がありません。誤検知を確認するため、good を 1 件以上足します。`,
     ),
     ...(vitestBaseConfig === undefined || typeof vitestBaseConfig === "string"
       ? []

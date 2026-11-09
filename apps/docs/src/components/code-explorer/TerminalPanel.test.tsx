@@ -278,11 +278,11 @@ describe("TerminalPanel", () => {
   it.each([
     [
       "booting",
-      "実行環境の起動が時間内に終わりませんでした。ネットワークの接続を確かめてから「ターミナルを再試行」を押してください。",
+      "実行環境の起動が時間内に終わりませんでした。ネットワークの接続を確認してから「ターミナルを再試行」を押してください。",
     ],
     [
       "installing",
-      "依存パッケージのインストールが時間内に終わりませんでした。ネットワークの接続を確かめてから「ターミナルを再試行」を押してください。",
+      "依存パッケージのインストールが時間内に終わりませんでした。ネットワークの接続を確認してから「ターミナルを再試行」を押してください。",
     ],
     [
       "restoring-deps",
@@ -318,7 +318,7 @@ describe("TerminalPanel", () => {
     await clickAction(host, "start-terminal");
 
     expect(host.querySelector('[role="alert"]')?.textContent).toBe(
-      "依存パッケージの取得に失敗しました。ネットワークの接続を確かめてから「ターミナルを再試行」を押してください。",
+      "依存パッケージの取得に失敗しました。ネットワークの接続を確認してから「ターミナルを再試行」を押してください。",
     );
     expect(host.textContent).not.toContain("Dependency installation failed");
     expect(host.querySelector('a[href="/setup/"]')).toBeNull();

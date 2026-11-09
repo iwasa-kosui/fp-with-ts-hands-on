@@ -44,7 +44,7 @@ const cases: readonly ChangeCase[] = [
     ],
     results: {
       types: { found: false, output: "エラーなし" },
-      lint: { found: true, output: "no-restricted-syntax: 予約の状態の型へ as で変えず、kind を確かめて絞り込みます。" },
+      lint: { found: true, output: "no-restricted-syntax: 予約の状態の型へ as で変えず、kind を確認して絞り込みます。" },
       tests: { found: true, output: "5件失敗: expected [Function] to throw an error", setting: "expect(() => startExaminationFor(appointment, veterinarianId, at)).toThrow();" },
     },
     why: "`as` で型検査のエラーを抑制しても、`startExamination` の引数の型は変わらないため、型のテストは通ります。`as` の書き方を検査する Linter のルールと、実行して値を検証するテストが検出します。",

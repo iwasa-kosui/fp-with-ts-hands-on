@@ -2,5 +2,5 @@ import { StartExaminationInput } from "../subjects/input.js";
 
 declare const input: StartExaminationInput;
 
-// ここに確かめる型を書きます
+// ここに検証する型を実装します
 export { input };

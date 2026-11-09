@@ -1,6 +1,6 @@
 import tseslint from "typescript-eslint";
 
-// 規則は "規則名": ["error", { オプション }] の形で rules に書きます
+// ルールは "ルール名": ["error", { オプション }] の形で rules に書きます
 const rules = {};
 
 export default [
