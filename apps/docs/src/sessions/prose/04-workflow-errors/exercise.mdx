@@ -4,9 +4,6 @@ import { projectFilesForSnapshot } from "../../../code-explorer/project-files";
 import { guardAnswerDisplayFiles } from "../../../code-explorer/guard-paths";
 import { guardExercise } from "../../pages/04-workflow-errors-exercise";
 import { guardExerciseWorkspaceFor } from "../../pages/guard-exercise-workspace";
-import { lineLabelOf } from "../../source-quotes";
-
-export const rulesLabel = lineLabelOf("session-04-solution", "eslint.config.mjs", "const rules = {};", "const rules = {};");
 
 export const throwRuleCode = `"no-restricted-syntax": [
   "error",
@@ -35,8 +32,8 @@ export const guide = {
         "作る: 選んだ仕組みを実装します。ルールを選んだ場合は、「Linter のルールの書き方」の例を参考に、検出する構文を表す selector と message を、eslint.config.mjs の const rules = {} の {} の中に実装します。テストは mine/startExamination.test.ts に実装します。最初の1件が記述例です。例外が投げられると outcome.kind が threw になり、outcome.error に例外が格納されます。",
       reference: {
         summary: "Linter のルールの書き方",
-        text: "selector は、検出するコードの形を指定します。この例の VariableDeclarator[id.name='startExamination'] は、startExamination という名前の変数宣言（useCase）を指し、ThrowStatement は、throw 文を表す構文の名前です。この組み合わせで、検出の範囲を useCase の中に限定します。ThrowStatement だけを指定すると、useCase の外の正当な throw も誤検知（正しいコードを誤った変更として検出すること）になります。ルールが検出するのは useCase に実装された throw だけで、useCase の外で発生した例外は検出しません。",
-        caption: `実装先: ${rulesLabel} の {} の中`,
+        text: "selector は、検出するコードの形を指定します。下の例の VariableDeclarator[id.name='startExamination'] は、startExamination という名前の変数宣言（useCase）を指し、ThrowStatement は、throw 文を表す構文の名前です。この組み合わせで、検出の範囲を useCase の中に限定します。ThrowStatement だけを指定すると、useCase の外の正当な throw も誤検知（正しいコードを誤った変更として検出すること）になります。ルールが検出するのは useCase に実装された throw だけで、useCase の外で発生した例外は検出しません。",
+        caption: "実装先: eslint.config.mjs の3行目の {} の中",
         code: throwRuleCode,
       },
     },
