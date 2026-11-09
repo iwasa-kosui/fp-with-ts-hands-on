@@ -12,8 +12,8 @@ export default {
       hint: "この変更は型検査でも検出されます。この演習では、自分で追加した仕組みでも検出できるかを確認します。",
       behavior: {
         input: { text: "会計済みの予約の表示名を求める" },
-        expected: { text: "「会計済み」と表示される" },
-        actual: { text: "例外で中断する" },
+        expected: { text: "「会計済み」と表示" },
+        actual: { text: "例外で中断" },
       },
     },
     {
@@ -25,21 +25,21 @@ export default {
       hint: "「default が追加漏れの検出を妨げる原因」のページで見た問題と同じ形です。",
       behavior: {
         input: { text: "会計済みの予約の表示名を求める" },
-        expected: { text: "「会計済み」と表示される" },
-        actual: { text: "「不明」と表示される" },
+        expected: { text: "「会計済み」と表示" },
+        actual: { text: "「不明」と表示" },
       },
     },
     {
       id: "B3-added-state-default",
       kind: "bad",
       subject: "statusLabel",
-      title: "7つ目の状態を追加したが、表示名を実装していない",
+      title: "7つ目の状態を追加し、表示名を実装していない",
       allow: ["lint"],
       hint: "状態が増えたが、switch が対応していないことを確認します。",
       behavior: {
         input: { text: "NoShow の予約の表示名を求める" },
-        expected: { text: "NoShow の表示名が表示される" },
-        actual: { text: "「不明」と表示される" },
+        expected: { text: "NoShow の表示名を表示" },
+        actual: { text: "「不明」と表示" },
       },
     },
     {
@@ -50,9 +50,9 @@ export default {
       allow: ["types"],
       hint: "引数の型が広がっていないかを確認します。",
       behavior: {
-        input: { text: '表示名の関数に "NoSuchState" を渡すコードを実装する' },
+        input: { text: '表示名の関数に "NoSuchState" を渡すコードを実装' },
         expected: { text: "型検査でエラー" },
-        actual: { text: "型検査を通過し「不明」と表示される" },
+        actual: { text: "型検査を通り「不明」と表示" },
       },
     },
     {
@@ -81,8 +81,8 @@ export default {
       hint: "分岐の結果を実行して確認します。",
       behavior: {
         input: { text: "会計済みの予約の表示名を求める" },
-        expected: { text: "「会計済み」と表示される" },
-        actual: { text: "「不明」と表示される" },
+        expected: { text: "「会計済み」と表示" },
+        actual: { text: "「不明」と表示" },
       },
     },
     {

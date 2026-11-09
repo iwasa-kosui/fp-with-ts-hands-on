@@ -15,9 +15,9 @@ export const session: SessionSummary = {
     minutes: 3,
     pickCount: 1,
     questions: [
-      "状態を追加したとき、未対応の分岐はコンパイルエラーになりますか。",
-      "`toStatusLabel` は `Readonly<{ kind: string }>` ではなく、`Appointment` を受け取っていますか。",
-      "`default` 分岐は、固定の表示名を返して未対応の状態を隠していませんか。",
+      "検出されなかった変更は何を変えたのか",
+      "その変更を検出するには何を追加すればよいか",
+      "追加した仕組みで誤検知は発生しないか",
     ],
   },
   solutionSnapshot: "session-02-solution",
