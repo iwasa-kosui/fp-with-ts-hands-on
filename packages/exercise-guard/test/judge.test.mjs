@@ -125,7 +125,7 @@ describe("judge", () => {
     expect(result.hiddenCount).toBe(0);
     expect(result.problems).toEqual([]);
     expect(rowOf(result, "B5-any-result").cells.types.state).toBe("hit");
-    expect(result.next).toEqual(["必須の誤った変更はすべて検出しました。画面の表で行の題名の ▶ を押し、少なくとも 1 行に「この仕組みで検出できないこと」を記入します。"]);
+    expect(result.next).toEqual(["必須の誤った変更はすべて検出しました。画面の表で行の題名の ▶ を押し、少なくとも 1 つの行に「この仕組みで検出できないこと」を 1 文で記入します。"]);
     expect(result.durations.total).toBeGreaterThan(0);
     expect(result.testsTimedOut).toBe(false);
   });
@@ -477,6 +477,37 @@ describe("render", () => {
     expect(text).toContain("誤った変更\n");
     expect(text).toContain("正しいコード\n");
     expect(text).not.toContain(" | ");
+  });
+
+  it("任意の行と相互レビューの行があるときは、誤った変更を3つの節に分ける", async () => {
+    const passed = await scenario("pass");
+    const bad = passed.rows.filter((row) => row.kind === "bad");
+    const rows = passed.rows.map((row) =>
+      row.id === bad[1]?.id
+        ? { ...row, required: false }
+        : row.id === bad[2]?.id
+          ? { ...row, id: "R1-peer-change", required: false }
+          : row,
+    );
+    const lines = render({ ...passed, rows }, { color: false }).split("\n");
+    const headings = ["必須の誤った変更", "任意の誤った変更（時間に余裕がある場合に取り組みます）", "相互レビューで使う行"];
+    const positions = headings.map((heading) => lines.indexOf(heading));
+
+    expect(positions.every((position) => position >= 0)).toBe(true);
+    expect(positions).toEqual([...positions].sort((left, right) => left - right));
+    expect(lines).not.toContain("誤った変更");
+    expect(lines[Number(positions[1]) + 1]).toContain(String(bad[1]?.title));
+    expect(lines[Number(positions[2]) + 1]).toContain(String(bad[2]?.title));
+    expect(Math.max(...lines.map(stringWidth))).toBeLessThanOrEqual(78);
+  });
+
+  it("任意の行と相互レビューの行が無いときは、従来の見出し「誤った変更」のままにする", async () => {
+    const passed = await scenario("pass");
+    const rows = passed.rows.map((row) => ({ ...row, required: true }));
+    const lines = render({ ...passed, rows }, { color: false }).split("\n");
+
+    expect(lines).toContain("誤った変更");
+    expect(lines).not.toContain("必須の誤った変更");
   });
 
   it("行頭に句読点や閉じ括弧が来ない", async () => {

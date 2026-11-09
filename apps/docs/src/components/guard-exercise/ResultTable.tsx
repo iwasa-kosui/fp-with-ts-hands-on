@@ -85,7 +85,9 @@ export const ResultTable = ({
                 検出できないことを記入済み
               </span>
             ) : null}
-            {group === "peer" && passedNext === undefined ? (
+            {group === "peer" &&
+            passedNext === undefined &&
+            row.verdict === "unchanged" ? (
               <span className="guard-exercise__peer-note">{peerRowNote}</span>
             ) : null}
           </th>
@@ -199,7 +201,10 @@ export const ResultTable = ({
       </table>
       <div className="guard-exercise__limits">
         <p className="guard-exercise__limits-note">
-          「結果」の列は、数える仕組みのどれか 1 つが検出すれば「検出」です。行の題名の ▶ を押すと開く「この仕組みで検出できないこと」の欄は、少なくとも 1 行に記入します。記入の内容はプログラムでは判定しません。
+          「結果」の列は、「対象外」ではない列のどれか 1 つが検出すれば「検出」です。
+          {result.passed && passedNext === undefined
+            ? "行の題名の ▶ を押すと開く「この仕組みで検出できないこと」の欄に、表の少なくとも 1 つの行で 1 文を記入します。記入の内容はプログラムでは判定しません。"
+            : null}
         </p>
         <details
           className="guard-exercise__terms"

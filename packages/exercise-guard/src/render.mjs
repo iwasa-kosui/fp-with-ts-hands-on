@@ -5,6 +5,7 @@ import { stringWidth, wrapByWidth } from "./text.mjs";
 /** @typedef {import("./model.mjs").Row} Row */
 
 const maxWidth = 78;
+const peerCaseId = "R1-peer-change";
 const cellsIndent = 6;
 const red = (/** @type {string} */ line) => `\u001b[31m${line}\u001b[0m`;
 
@@ -66,6 +67,29 @@ const renderSection = (label, rows, color) => [
 ];
 
 /**
+ * @param {readonly Row[]} bad
+ * @param {boolean} color
+ * @returns {readonly string[]}
+ */
+const badSections = (bad, color) => {
+  const peer = bad.filter((row) => row.id === peerCaseId);
+  const optional = bad.filter((row) => row.id !== peerCaseId && !row.required);
+  const required = bad.filter((row) => row.id !== peerCaseId && row.required);
+  return optional.length === 0 && peer.length === 0
+    ? renderSection("誤った変更", bad, color)
+    : [
+        { label: "必須の誤った変更", rows: required },
+        { label: "任意の誤った変更（時間に余裕がある場合に取り組みます）", rows: optional },
+        { label: "相互レビューで使う行", rows: peer },
+      ]
+        .filter(({ rows }) => rows.length > 0)
+        .flatMap(({ label, rows }, index) => [
+          ...(index === 0 ? [] : [""]),
+          ...renderSection(label, rows, color),
+        ]);
+};
+
+/**
  * @param {string} prefix
  * @param {string} text
  * @returns {readonly string[]}
@@ -105,7 +129,7 @@ export const render = (result, { color }) => {
   return [
     ...wrapByWidth(headline(result), maxWidth),
     "",
-    ...renderSection("誤った変更", bad, color),
+    ...badSections(bad, color),
     "",
     ...renderSection("正しいコード", good, color),
     "",

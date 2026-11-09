@@ -581,6 +581,16 @@ describe("GuardExercise", () => {
       );
     });
 
+    it("does not show the note about the next page once the peer row is no longer unchanged", async () => {
+      const { host } = await mountExercise({
+        resultText: JSON.stringify(withRows([{ ...peerRow, verdict: "slipped" as const }])),
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(row(host, "R1-peer-change")?.querySelector(".guard-exercise__peer-note")).toBeNull();
+    });
+
     it("does not show the note about the next page when the guide gives the next step", async () => {
       const { host } = await mountExercise({
         resultText: JSON.stringify(withRows([peerRow])),
@@ -627,6 +637,45 @@ describe("GuardExercise", () => {
       await click(action(host, "run-guard"));
 
       expect(nextText(host)).toBe("別の次の操作です。");
+    });
+
+    const limitsNote = (host: HTMLElement) =>
+      host.querySelector(".guard-exercise__limits-note")?.textContent;
+    const detectionSentence =
+      "「結果」の列は、「対象外」ではない列のどれか 1 つが検出すれば「検出」です。";
+    const writingSentence =
+      "行の題名の ▶ を押すと開く「この仕組みで検出できないこと」の欄に、表の少なくとも 1 つの行で 1 文を記入します。記入の内容はプログラムでは判定しません。";
+
+    it("adds the sentence about writing under limitations to the note below the table when the exercise page has passed", async () => {
+      const { host } = await mountExercise({
+        exitCode: 0,
+        resultText: JSON.stringify(passedResult),
+        guide: { title: "案内", steps: ["手順です。"] },
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(limitsNote(host)).toBe(`${detectionSentence}${writingSentence}`);
+    });
+
+    it("shows only the sentence about the result column below the table when the guard has not passed", async () => {
+      const { host } = await mountExercise();
+
+      await click(action(host, "run-guard"));
+
+      expect(limitsNote(host)).toBe(detectionSentence);
+    });
+
+    it("shows only the sentence about the result column below the table when the guide gives the next step", async () => {
+      const { host } = await mountExercise({
+        exitCode: 0,
+        resultText: JSON.stringify(passedResult),
+        guide: { title: "案内", passedNext: "別の次の操作です。", steps: ["手順です。"] },
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(limitsNote(host)).toBe(detectionSentence);
     });
 
     it("keeps the sentence from the result while the guard has not passed", async () => {
@@ -1032,9 +1081,6 @@ describe("GuardExercise", () => {
       second.host.querySelector<HTMLTextAreaElement>(".guard-exercise__detail textarea")
         ?.value,
     ).toBe("別の書き方は検出できない");
-    expect(second.host.textContent).toContain(
-      "プログラムでは判定しません",
-    );
   });
 
   describe("when the tab is hidden during a run", () => {

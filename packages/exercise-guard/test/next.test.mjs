@@ -141,14 +141,21 @@ describe("buildNext", () => {
     });
     const sentences = buildNext({ rows: [bad], problems: [], stageOpened: 0, passed: true });
 
-    expect(sentences).toEqual(["必須の誤った変更はすべて検出しました。画面の表で行の題名の ▶ を押し、少なくとも 1 行に「この仕組みで検出できないこと」を記入します。"]);
+    expect(sentences).toEqual(["必須の誤った変更はすべて検出しました。画面の表で行の題名の ▶ を押し、少なくとも 1 つの行に「この仕組みで検出できないこと」を 1 文で記入します。"]);
   });
 
   it("合格のときは、未変更の任意の行を残りの件数に数えない", () => {
     const unchanged = rowOf({ id: "R1-peer-change", kind: "bad", verdict: "unchanged", required: false, allow: ["tests"] });
     const sentences = buildNext({ rows: [detectedBad, unchanged], problems: [], stageOpened: 0, passed: true });
 
-    expect(sentences[0]).toBe("必須の誤った変更はすべて検出しました。画面の表で行の題名の ▶ を押し、少なくとも 1 行に「この仕組みで検出できないこと」を記入します。");
+    expect(sentences[0]).toBe("必須の誤った変更はすべて検出しました。画面の表で行の題名の ▶ を押し、少なくとも 1 つの行に「この仕組みで検出できないこと」を 1 文で記入します。");
+  });
+
+  it("合格のときは、相互レビューの行が未検出でも、任意の残りの件数に数えない", () => {
+    const peer = rowOf({ id: "R1-peer-change", kind: "bad", verdict: "slipped", required: false, allow: ["tests"] });
+    const sentences = buildNext({ rows: [detectedBad, peer], problems: [], stageOpened: 0, passed: true });
+
+    expect(sentences[0]).toBe("必須の誤った変更はすべて検出しました。画面の表で行の題名の ▶ を押し、少なくとも 1 つの行に「この仕組みで検出できないこと」を 1 文で記入します。");
   });
 
   it("合格のときは、任意の誤った変更が検出されていなくても、合格の文を先頭に置く", () => {
@@ -161,7 +168,7 @@ describe("buildNext", () => {
     });
     const sentences = buildNext({ rows: [detectedBad, optional], problems: [], stageOpened: 0, passed: true });
 
-    expect(sentences[0]).toBe("必須の誤った変更はすべて検出しました。任意の誤った変更の残り 1 件は、時間に余裕がある場合に取り組みます。画面の表で行の題名の ▶ を押し、少なくとも 1 行に「この仕組みで検出できないこと」を記入します。");
+    expect(sentences[0]).toBe("必須の誤った変更はすべて検出しました。任意の誤った変更の残り 1 件は、時間に余裕がある場合に取り組みます。画面の表で行の題名の ▶ を押し、少なくとも 1 つの行に「この仕組みで検出できないこと」を 1 文で記入します。");
     expect(sentences[1]).toContain("『相互レビューで作る誤った変更』は検出されていません。");
   });
 
