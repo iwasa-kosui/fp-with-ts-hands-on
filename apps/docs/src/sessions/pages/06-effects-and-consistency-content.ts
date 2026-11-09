@@ -17,9 +17,9 @@ export const session: SessionSummary = {
     minutes: 5,
     pickCount: 2,
     questions: [
-      "時刻とイベント ID は実行ごとに一度だけ生成され、同じ `EventContext` に入りますか。",
-      "状態と監査記録は、1つのイベントとして同じ `store` に渡されますか。",
-      "業務上の競合だけを `Result` で返し、保存障害は reject のまま伝播しますか。",
+      "検出されなかった変更は何を変えたのか",
+      "その変更を検出するには何を追加すればよいか",
+      "追加した仕組みで誤検知は発生しないか",
     ],
   },
   solutionSnapshot: "session-06-solution",
