@@ -144,11 +144,7 @@ const expectedEpisodes = [
   undefined,
   undefined,
   undefined,
-  [
-    "ここまで直した頃、猫のムギはとっくに帰宅し、開発者だけが参照実装の前に残っていました。",
-    "入力、失敗、イベント、保存、例外を順に追うと、さっきまでの事故が、それぞれどの境界で防がれるかが見えてきます。",
-    "完成形と呼んでも、事故が消えたわけではありません。置き場所と担当が決まっただけです。",
-  ],
+  undefined,
 ] as const;
 
 const expectedExercises = [
@@ -377,6 +373,13 @@ describe("page-owned session contracts", () => {
       "新人エンジニアの初出勤の日、プリンターは事故報告を何枚も印刷していました。",
       "獣医師が別の予約と取り違えて「診察を開始する」を押し、会計済みの Mugi の予約は診察中へ戻りました。受付は会計前の来院だと判断し、会計担当が同じ金額をもう一度請求しました。",
       "記録を調べると、飼い主の電話番号まで読めました。",
+    ]);
+
+    const finalEpisode = sessions.find(({ slug }) => slug === "final")?.episode;
+    expect(finalEpisode).toEqual([
+      "S00 で飼い主がもう一度請求された猫の Mugi は、とっくに帰宅しました。",
+      "開発者は、直した形が大きなコードでも保たれているかを確かめるため、参照実装の前に残っています。",
+      "事故が消えたわけではありません。事故ごとに、防ぐ場所が決まりました。",
     ]);
 
     const boundaryEpisode = sessions.find(

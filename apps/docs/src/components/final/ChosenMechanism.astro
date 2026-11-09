@@ -1,0 +1,44 @@
+---
+import { sessionPageHref } from "../../sessions/pages/links";
+import { whats, wheres } from "./next-mechanism";
+
+const href = sessionPageHref("final", "next-mechanism");
+const names = {
+  what: Object.fromEntries(whats.map(({ id, name }) => [id, name])),
+  where: Object.fromEntries(wheres.map(({ id, name }) => [id, name])),
+};
+---
+
+<p class="chosen" data-chosen-mechanism data-names={JSON.stringify(names)}>
+  次に足す仕組みをまだ選んでいません。<a href={href}>次に足す仕組みを選ぶページ</a>
+</p>
+
+<script>
+  import { load } from "./next-mechanism";
+
+  document.querySelectorAll<HTMLElement>("[data-chosen-mechanism]").forEach((root) => {
+    const names = JSON.parse(root.dataset.names ?? "{}") as Record<"what" | "where", Record<string, string>>;
+    const { what, where } = load();
+    if (what === undefined) return;
+    const place = where === undefined ? "どこで動かすかは未選択" : names.where[where];
+    root.textContent = `あなたが選んだ仕組み: ${names.what[what]}（${place}）`;
+  });
+</script>
+
+<style>
+  .chosen {
+    margin: 0.75rem 0;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+    font-weight: 700;
+    line-height: 1.6;
+  }
+
+  .chosen a {
+    margin-inline-start: 0.5rem;
+    color: var(--role-accent);
+  }
+</style>
