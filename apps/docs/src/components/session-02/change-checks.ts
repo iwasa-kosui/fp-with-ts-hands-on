@@ -10,7 +10,7 @@ toStatusLabel({ kind: "NoSuchState" });`,
   },
   {
     id: "lint",
-    name: "Linter の規則",
+    name: "Linter のルール",
     detail: "default があっても候補を数える",
     code: `"@typescript-eslint/switch-exhaustiveness-check"
 { considerDefaultExhaustiveForUnions: false }`,
@@ -18,7 +18,7 @@ toStatusLabel({ kind: "NoSuchState" });`,
   {
     id: "tests",
     name: "テスト",
-    detail: "値を渡して表示名を見る",
+    detail: "値を渡して表示名を検証する",
     code: `// 6つの状態をそれぞれ渡す
 expect(toStatusLabel({ kind } as never)).toBe(label);`,
   },
@@ -50,7 +50,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: true, output: `Switch is not exhaustive. Cases not matched: "Paid"` },
       tests: { found: true, output: `Paid: expected '不明' to be '会計済み'` },
     },
-    why: "型検査は、「不明」を返す default を正しいコードとして通します。case を数える規則と、Paid を渡すテストが見つけます。",
+    why: "型検査は、「不明」を返す default を正しいコードとして通します。case を数える Linter のルールと、Paid を渡すテストが検出します。",
   },
   {
     id: "B1-missing-case-assert-never",
@@ -79,12 +79,12 @@ const cases: readonly ChangeCase[] = [
       lint: { found: true, output: `Switch is not exhaustive. Cases not matched: "Paid"` },
       tests: { found: true, output: `Paid: Unknown appointment status: {"kind":"Paid"}` },
     },
-    why: "assertNever が残っているので、Paid が足りないことを型検査が見つけます。Linter の規則とテストも見つけます。次の演習の表では、この型エラーは自分で足した仕組みの結果ではないので「対象外」と出ます。",
+    why: "assertNever が残っているため、Paid が足りないことを型検査が検出します。Linter のルールとテストも検出します。次の演習の表では、この型エラーは自分で追加した仕組みの結果ではないため「対象外」と表示されます。",
   },
   {
     id: "B3-added-state-default",
     kind: "bad",
-    label: "NoShow を足し、表示名を書かない",
+    label: "NoShow を追加し、表示名を実装しない",
     baseCase: "G1-assert-never",
     target: "toStatusLabel の部分",
     diff: [
@@ -107,7 +107,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: true, output: `Switch is not exhaustive. Cases not matched: "NoShow"` },
       tests: { found: false, output: "6件すべて成功" },
     },
-    why: "テストは6つの状態しか渡さないので、NoShow の漏れに気づきません。union の候補を数える規則だけが見つけます。",
+    why: "テストは6つの状態しか渡さないため、NoShow の漏れを検出できません。union の候補を数える Linter のルールだけが検出します。",
   },
   {
     id: "B4-string-kind",
@@ -131,7 +131,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: false, output: "指摘なし" },
       tests: { found: false, output: "6件すべて成功" },
     },
-    why: "kind が string になると union ではないので、規則は候補を数えません。6つの状態を渡すテストも通ります。// @ts-expect-error は次の行が型エラーになることを確かめる印です。知らない状態を渡せるようになると型エラーが消えるので、TS2578 が出ます。",
+    why: "kind が string になると union ではないため、Linter のルールは候補を数えません。6つの状態を渡すテストも通ります。// @ts-expect-error は、次の行が型エラーになることを検証するようコンパイラに指示するコメントです。知らない状態を渡せるようになると型エラーが消えるため、TS2578 が報告されます。",
   },
   {
     id: "B6-if-chain",
@@ -159,7 +159,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: false, output: "指摘なし" },
       tests: { found: true, output: `Paid: expected '不明' to be '会計済み'` },
     },
-    why: "switch がなくなると規則は働かず、型検査も通ります。値を渡して結果を見るテストだけが見つけます。",
+    why: "switch がなくなると Linter のルールは適用されず、型検査も通ります。値を渡して結果を検証するテストだけが検出します。",
   },
   {
     id: "G3-open-string-default",
@@ -183,13 +183,13 @@ const cases: readonly ChangeCase[] = [
       lint: { found: false, output: "指摘なし" },
       tests: { found: false, output: "6件すべて成功" },
     },
-    why: "string は候補を数え切れないので、この default は正しいコードです。ここで指摘が出たら誤検知です。",
+    why: "string は候補を数え上げられないため、この default は正しいコードです。ここで検出されたら誤検知です。",
   },
 ];
 
 export const session02ChangeChecks: ChangeCheckSet = {
   example: "session-02-solution",
-  ariaLabel: "悪い変更と3つの仕組みの結果",
+  ariaLabel: "誤った変更と3つの仕組みの結果",
   mechanisms,
   cases,
 };
