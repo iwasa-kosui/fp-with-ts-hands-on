@@ -89,7 +89,7 @@ const steps = [
     layers: [],
   },
   {
-    text: "獣医師が「診察を開始する」を押します。どの予約を、どの獣医師が担当するかが、サーバーへ届きます。届くのは ID だけなので、サーバーはまだ予約の状態を知りません。",
+    text: "獣医師が「診察を開始する」を押します。入口は、どの予約かを示す ID を受け取り、担当の獣医師の ID と合わせて次の手順へ渡します。受け取るのは ID だけなので、サーバーはまだ予約の状態を知りません。",
     file: "route",
     highlight: highlight("route", routeCode, "startExamination(repository)({", true),
     impl: undefined,
@@ -105,7 +105,7 @@ const steps = [
     layers: ["entry"],
   },
   {
-    text: "サーバーは、データベースから Mugi の予約を読みます。読んだ状態は <code>paid</code> です。ここでサーバーは、この予約が会計済みだと分かります。",
+    text: "サーバーは、データベースから Mugi の予約を読みます。読んだ状態は <code>paid</code> です。ここでサーバーは、この予約が会計済みだと分かります。コードの <code>repository</code> は、データベースを読み書きする部品です。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "const current = repository.find(input.appointmentId);", false),
     impl: {
@@ -258,7 +258,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
       </section>
 
       <section class="hem__col hem__col--code">
-        <h5 class="hem__col-title">コード</h5>
+        <h5 class="hem__col-title">コード（光っている札が、いま動いている場所）</h5>
         <ul class="hem__layers" aria-label="処理がいまどこにいるか">
           {
             layerLabels.map((layer) => (
@@ -340,9 +340,10 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
           <ul class="hem__lines">
             <li data-until="4" data-focus-at="2" data-slot="1"><Code code={'status: "paid"'} lang="ts" inline /></li>
             <li data-from="4" data-flash-at="4" data-slot="1"><Code code={'status: "in-examination"'} lang="ts" inline /></li>
-            <li data-fold-from="5"><Code code="amount: 4800" lang="ts" inline /></li>
-            <li data-fold-from="5"><Code code={'paidAt: "2026-08-30T07:10:00.000Z"'} lang="ts" inline /></li>
-            <li data-from="4" data-flash-at="4" data-fold-from="5"><Code code="examinationStartedAt: 押した時刻" lang="ts" inline /></li>
+            <li><Code code="amount: 4800" lang="ts" inline /></li>
+            <li><Code code={'paidAt: "2026-08-30T07:10:00.000Z"'} lang="ts" inline /></li>
+            <li data-until="4" data-slot="4"><Code code="examinationStartedAt: 1回目の開始時刻" lang="ts" inline /></li>
+            <li data-from="4" data-flash-at="4" data-slot="4"><Code code="examinationStartedAt: 押した時刻" lang="ts" inline /></li>
           </ul>
         </div>
         <div class="hem__table">
@@ -402,7 +403,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
                 </li>
                 <li><Code code="amount: 4800" lang="ts" inline /></li>
                 <li><Code code={'paidAt: "2026-08-30T07:10:00.000Z"'} lang="ts" inline /></li>
-                {frame.key === "after" ? <li><Code code="examinationStartedAt: 押した時刻" lang="ts" inline /></li> : null}
+                <li><Code code={frame.key === "after" ? "examinationStartedAt: 押した時刻" : "examinationStartedAt: 1回目の開始時刻"} lang="ts" inline /></li>
               </ul>
             </div>
             <div class="hem__table">
@@ -622,7 +623,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
     --hem-lineh: calc(var(--hem-fs) * var(--hem-lh));
     --hem-file-lines: 7;
     --hem-impl-lines: 6;
-    --hem-io-lines: 4;
+    --hem-io-lines: 5;
     --hem-chrome: 27px;
     --hem-values-chrome: 28px;
     --hem-pre-pad: 2px;
@@ -657,6 +658,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
   @media (max-height: 700px) {
     .hem {
       --hem-file-lines: 5;
+      --hem-io-lines: 4;
       --hem-chrome: 21px;
       --hem-values-chrome: 22px;
       --hem-pre-pad: 0px;
@@ -762,7 +764,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
 
   .hem .hem__state {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     gap: 0 8px;
     margin: 0;
     padding: 4px 8px;
@@ -779,6 +781,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
     background: transparent;
     color: var(--role-muted);
     font-weight: 700;
+    white-space: nowrap;
   }
 
   .hem .hem__state dd {
@@ -786,6 +789,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
     padding: 0;
     border: 0;
     font-weight: 600;
+    white-space: nowrap;
   }
 
   .hem__heading {
@@ -886,7 +890,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
     display: flex;
     flex: none;
     flex-wrap: nowrap;
-    gap: 3px;
+    gap: 2px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -899,7 +903,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
     align-items: baseline;
     min-width: 0;
     margin: 0;
-    padding: 0 5px;
+    padding: 0 3px;
     overflow: hidden;
     border: 1px solid var(--role-border);
     border-radius: 999px;
@@ -1144,6 +1148,10 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
 
   .hem .hem__lines li[data-slot="1"] {
     grid-area: 1 / 1;
+  }
+
+  .hem .hem__lines li[data-slot="4"] {
+    grid-area: 4 / 1;
   }
 
   .hem .hem__lines li.hem__nested {
