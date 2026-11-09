@@ -1,5 +1,5 @@
 ---
-import StepControls from "./StepControls.astro";
+import StepControls from "../stepper/StepControls.astro";
 
 const terms = [
   {
@@ -93,7 +93,7 @@ const terms = [
 </figure>
 
 <script>
-  import { mountStepper } from "./stepper";
+  import { mountStepper } from "../stepper/stepper";
 
   document.querySelectorAll<HTMLElement>("[data-boundary-terms]").forEach((root) => {
     mountStepper({

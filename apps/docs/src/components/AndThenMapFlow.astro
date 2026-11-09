@@ -220,11 +220,11 @@ const marks = {
 };
 ---
 
-<figure class="and-then-map" data-and-then-map>
+<figure class="and-then-map" data-and-then-map data-step-figure>
   <div class="and-then-map__player">
     <div class="and-then-map__tabs">
       {scenes.map((scene) => (
-        <button type="button" class="and-then-map__tab" data-scene-tab aria-pressed="false"><code>{scene.tab}</code></button>
+        <button type="button" class="and-then-map__tab" data-scene-tab data-step-scene aria-pressed="false"><code>{scene.tab}</code></button>
       ))}
     </div>
     {scenes.map((scene) => (
@@ -258,7 +258,7 @@ const marks = {
         </ol>
       </div>
     ))}
-    <div class="and-then-map__controls">
+    <div class="and-then-map__controls" data-controls>
       <button type="button" data-prev>前へ</button>
       <button type="button" data-play>再生</button>
       <button type="button" data-next>次へ</button>

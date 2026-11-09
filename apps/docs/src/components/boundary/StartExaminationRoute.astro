@@ -1,5 +1,5 @@
 ---
-import StepControls from "./StepControls.astro";
+import StepControls from "../stepper/StepControls.astro";
 
 const appointmentId = "11111111-1111-4111-8111-111111111111";
 const veterinarianId = "44444444-4444-4444-8444-444444444444";
@@ -67,7 +67,7 @@ const frames = [
 </figure>
 
 <script>
-  import { mountStepper } from "./stepper";
+  import { mountStepper } from "../stepper/stepper";
 
   document.querySelectorAll<HTMLElement>("[data-start-route]").forEach((root) => {
     mountStepper({

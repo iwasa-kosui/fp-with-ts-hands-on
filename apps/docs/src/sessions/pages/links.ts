@@ -71,3 +71,8 @@ export const sessionPageEntries = (
     };
   });
 };
+
+export const sessionPageStaticPaths = (pages: readonly SessionPage[]) =>
+  pages
+    .filter(({ slug }) => slug !== "")
+    .map(({ slug }) => ({ params: { page: slug } }));

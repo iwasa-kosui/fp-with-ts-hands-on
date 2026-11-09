@@ -29,18 +29,18 @@ const groups = [
 ] as const;
 ---
 
-<figure class="guard" data-guard-compare aria-label="3つの仕組みが検出できることと、検出できないこと">
+<figure class="guard" data-guard-compare data-step-figure aria-label="3つの仕組みが検出できることと、検出できないこと">
   <div class="guard__pick">
     <p class="guard__pick-title">自分が演習で使った仕組みを選びます。</p>
     <div class="guard__chips" role="group" aria-label="仕組みを選ぶ">
       {mechanisms.map((mechanism) => (
-        <button type="button" data-mechanism={mechanism.id} aria-pressed="true">
+        <button type="button" data-mechanism={mechanism.id} data-step-scene aria-pressed="true">
           {mechanism.name}
           <small>{mechanism.about}</small>
         </button>
       ))}
     </div>
-    <button type="button" class="guard__replay" data-replay hidden>もう一度見る</button>
+    <button type="button" class="guard__replay" data-replay data-step-scene hidden>もう一度見る</button>
   </div>
 
   <div class="guard__groups">

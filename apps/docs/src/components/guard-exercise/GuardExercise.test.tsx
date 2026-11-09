@@ -10,9 +10,11 @@ import type {
   TerminalStartRequest,
 } from "../../code-explorer/runner";
 import { createIndexedDbWorkspaceStore } from "../../code-explorer/workspace-store";
-import { guardExerciseWorkspaceFor } from "../../sessions/pages/03-boundaries-and-pii-exercise";
+import { guardExercise } from "../../sessions/pages/03-boundaries-and-pii-exercise";
+import { guardExerciseWorkspaceFor } from "../../sessions/pages/guard-exercise-workspace";
 import type { EditorProps } from "../code-explorer/CodeExplorer";
 import { phaseLabels, type TerminalView } from "../code-explorer/TerminalPanel";
+import type { GuardGuide } from "./CaseList";
 import { GuardExercise } from "./GuardExercise";
 
 const TestEditor: ComponentType<EditorProps> = ({ value, readOnly }) => (
@@ -42,7 +44,7 @@ const projectFiles = {
   "exercises/guard/subjects/input.ts": "// subject",
 } as const;
 
-const workspace = guardExerciseWorkspaceFor(projectFiles, "演習の作業場所");
+const workspace = guardExerciseWorkspaceFor(guardExercise, projectFiles, "演習の作業場所");
 
 const roots: Root[] = [];
 
@@ -73,6 +75,8 @@ type SessionOptions = Readonly<{
   exitCode?: number;
   resultText?: string | undefined;
   outdatedEdits?: boolean;
+  guide?: GuardGuide;
+  savedOutput?: string;
   onStart?: (request: TerminalStartRequest) => Promise<void>;
 }>;
 
@@ -119,6 +123,13 @@ const mountExercise = async (options: SessionOptions = {}) => {
       0,
     );
   }
+  if (options.savedOutput !== undefined) {
+    await createIndexedDbWorkspaceStore().saveTerminalOutput(
+      workspace.slug,
+      options.savedOutput,
+      1,
+    );
+  }
   await act(async () => {
     root.render(
       <GuardExercise
@@ -130,6 +141,7 @@ const mountExercise = async (options: SessionOptions = {}) => {
         projectFiles={projectFiles}
         workspaceStore={createIndexedDbWorkspaceStore()}
         Editor={TestEditor}
+        guide={options.guide}
         supportsRuntime={() => true}
         loadTerminalView={async () => view}
         runnerFactory={() => ({
@@ -215,6 +227,45 @@ describe("GuardExercise", () => {
     expect(row(host, "G1-solution")?.textContent).toContain("未確認");
   });
 
+  it("keeps the table terms inside a details element while the table is rendered", async () => {
+    const { host } = await mountExercise();
+
+    const terms = host.querySelector("details");
+    expect(terms?.open).toBe(false);
+    expect(terms?.querySelector("summary")).not.toBeNull();
+    expect(terms?.textContent?.length ?? 0).toBeGreaterThan(
+      terms?.querySelector("summary")?.textContent?.length ?? 0,
+    );
+    expect(host.querySelector("table")).not.toBeNull();
+    expect(terms?.contains(host.querySelector("table"))).toBe(false);
+  });
+
+  it("scrolls the table terms into view only when the details element opens", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    try {
+      const { host } = await mountExercise();
+      const terms = host.querySelector("details")!;
+
+      await act(async () => {
+        terms.dispatchEvent(new Event("toggle"));
+      });
+      expect(scrollIntoView).not.toHaveBeenCalled();
+
+      terms.open = true;
+      await act(async () => {
+        terms.dispatchEvent(new Event("toggle"));
+      });
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+      expect(scrollIntoView.mock.contexts[0]).toBe(terms.querySelector("p"));
+    } finally {
+      Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+    }
+  });
+
   it("opens the case file read-only and the mine file editable", async () => {
     const { host } = await mountExercise();
 
@@ -284,6 +335,148 @@ describe("GuardExercise", () => {
     expect(host.querySelectorAll(".guard-exercise__steps > li")).toHaveLength(2);
     expect(host.querySelectorAll(".guard-exercise__steps ul li")).toHaveLength(2);
     expect(host.textContent).not.toContain("悪い変更をコードで見る");
+  });
+
+  it("renders guide segments with href as links and puts the step id on the item", async () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    roots.push(root);
+    await act(async () => {
+      root.render(
+        <GuardExercise
+          workspace={workspace}
+          projectFiles={projectFiles}
+          workspaceStore={createIndexedDbWorkspaceStore()}
+          Editor={TestEditor}
+          guide={{
+            title: "リンクの確認",
+            steps: [
+              "手順1です。",
+              {
+                id: "step-links",
+                text: [
+                  "書き方は ",
+                  { text: "前のページ", href: "/sessions/example/previous/" },
+                  " と ",
+                  { text: "その前のページ", href: "/sessions/example/earlier/" },
+                  " にあります。",
+                ],
+                items: ["補足A"],
+              },
+            ],
+          }}
+        />,
+      );
+    });
+    await settleUntil(() => action(host, "run-guard")?.disabled === false);
+
+    const items = host.querySelectorAll(".guard-exercise__steps > li");
+    expect(items).toHaveLength(2);
+    expect(items[0]?.hasAttribute("id")).toBe(false);
+    expect(items[1]?.id).toBe("step-links");
+    expect(items[1]?.textContent).toBe(
+      "書き方は 前のページ と その前のページ にあります。補足A",
+    );
+    expect(
+      [...(items[1]?.querySelectorAll("a") ?? [])].map((link) => [
+        link.textContent,
+        link.getAttribute("href"),
+      ]),
+    ).toEqual([
+      ["前のページ", "/sessions/example/previous/"],
+      ["その前のページ", "/sessions/example/earlier/"],
+    ]);
+  });
+
+  describe("the next step after a pass", () => {
+    const passedResult: GuardResult = {
+      ...sampleGuardResult,
+      passed: true,
+      rows: sampleGuardResult.rows.map((item) =>
+        item.kind === "bad" ? { ...item, verdict: "detected" } : item,
+      ),
+      next: ["合格です。表の行を開きます。"],
+    };
+    const nextText = (host: HTMLElement) =>
+      host.querySelector(".guard-exercise__next p")?.textContent;
+
+    it("shows the sentence from the result when the guide gives none", async () => {
+      const { host } = await mountExercise({
+        exitCode: 0,
+        resultText: JSON.stringify(passedResult),
+        guide: { title: "案内", steps: ["手順です。"] },
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(nextText(host)).toBe("合格です。表の行を開きます。");
+    });
+
+    it("replaces the sentence of a pass with the one the guide gives", async () => {
+      const { host } = await mountExercise({
+        exitCode: 0,
+        resultText: JSON.stringify(passedResult),
+        guide: { title: "案内", passedNext: "別の次の操作です。", steps: ["手順です。"] },
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(nextText(host)).toBe("別の次の操作です。");
+    });
+
+    it("keeps the sentence from the result while the guard has not passed", async () => {
+      const { host } = await mountExercise({
+        guide: { title: "案内", passedNext: "別の次の操作です。", steps: ["手順です。"] },
+      });
+
+      await click(action(host, "run-guard"));
+
+      expect(nextText(host)).toBe("まだ仕組みがありません。");
+    });
+  });
+
+  describe("opening the terminal", () => {
+    const terminalState = (host: HTMLElement) =>
+      host.querySelector(".code-explorer__terminal")?.getAttribute("data-state");
+
+    it("does not start the runtime while the terminal stays collapsed", async () => {
+      const onStart = vi.fn(async () => undefined);
+      const { host } = await mountExercise({ onStart });
+
+      expect(onStart).not.toHaveBeenCalled();
+      expect(terminalState(host)).toBe("unstarted");
+    });
+
+    it("starts it once when the participant opens the terminal, and asks nothing about restarting", async () => {
+      const onStart = vi.fn(async () => undefined);
+      const { host } = await mountExercise({
+        onStart,
+        savedOutput: "前回の出力です\r\n",
+      });
+      await settleUntil(() => host.querySelector(".code-explorer__terminal-status") !== null);
+
+      await click(action(host, "toggle-terminal"));
+      await settleUntil(() => terminalState(host) === "ready");
+
+      expect(onStart).toHaveBeenCalledOnce();
+      expect(host.querySelector(".code-explorer__terminal-prompt")).toBeNull();
+      expect(host.querySelector(".code-explorer__terminal-status")).toBeNull();
+
+      await click(action(host, "toggle-terminal"));
+      await click(action(host, "toggle-terminal"));
+      expect(onStart).toHaveBeenCalledOnce();
+    });
+
+    it("reuses the runtime that the guard run already started", async () => {
+      const onStart = vi.fn(async () => undefined);
+      const { host } = await mountExercise({ onStart });
+
+      await click(action(host, "run-guard"));
+      await click(action(host, "toggle-terminal"));
+
+      expect(onStart).toHaveBeenCalledOnce();
+    });
   });
 
   it("starts the terminal, runs the guard, and fills the table", async () => {

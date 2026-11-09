@@ -105,7 +105,12 @@ export const GuardLayout = ({
             data-action="toggle-terminal"
             aria-expanded={terminalOpen}
             aria-controls={terminalId}
-            onClick={() => setTerminalOpen((open) => !open)}
+            onClick={() => {
+              if (!terminalOpen && !parts.locked && parts.terminalState === "unstarted") {
+                void parts.acquireSession().catch(() => undefined);
+              }
+              setTerminalOpen((open) => !open);
+            }}
           >
             {terminalOpen ? "ターミナルを閉じる" : "ターミナルを開く"}
           </button>
@@ -160,6 +165,7 @@ export const GuardLayout = ({
             restored={guard.source === "restored"}
             limitations={guard.limitations}
             limitationsEnabled={guard.ready}
+            passedNext={guide?.passedNext}
             onLimitationChange={guard.setLimitation}
           />
         </div>

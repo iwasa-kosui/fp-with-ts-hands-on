@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createServer } from "node:http";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -29,7 +29,7 @@ if (values.out === undefined) {
 }
 const outputDirectory = resolve(values.out);
 
-const terminalSnapshots = [
+const fixedTerminalSnapshots = [
   "session-01",
   "session-02",
   "session-03",
@@ -38,7 +38,32 @@ const terminalSnapshots = [
   "session-06",
 ];
 
+const isDirectory = (path) =>
+  stat(path).then(
+    (entry) => entry.isDirectory(),
+    () => false,
+  );
+
+const guardSolutionSnapshots = async () => {
+  const entries = await readdir(join(repositoryRoot, "examples"), {
+    withFileTypes: true,
+  });
+  const found = await Promise.all(
+    entries
+      .filter((entry) => entry.isDirectory() && entry.name.endsWith("-solution"))
+      .map(async ({ name }) =>
+        (await isDirectory(join(repositoryRoot, "examples", name, "exercises/guard")))
+          ? [name]
+          : [],
+      ),
+  );
+  return found.flat();
+};
+
 const buildPackageJson = async () => {
+  const terminalSnapshots = [
+    ...new Set([...fixedTerminalSnapshots, ...(await guardSolutionSnapshots())]),
+  ].sort();
   const sources = await Promise.all(
     terminalSnapshots.map(async (snapshot) =>
       JSON.parse(

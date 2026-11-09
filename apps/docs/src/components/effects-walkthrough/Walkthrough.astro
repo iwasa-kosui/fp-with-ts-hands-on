@@ -24,23 +24,29 @@ const actions = [
 ] as const;
 ---
 
-<section class="walk" id={id} aria-labelledby={`${id}-title`} data-walk data-scene="0" data-frame="0">
+<section class="walk" id={id} aria-labelledby={`${id}-title`} data-walk data-step-figure data-scene="0" data-frame="0">
   <h3 class="walk__title" id={`${id}-title`}>{title}</h3>
   {lead === undefined ? null : <p class="walk__lead">{lead}</p>}
   {note === undefined ? null : <p class="walk__note">{note}</p>}
   {scenes.length > 1 ? (
     <div class="walk__tabs" role="group" aria-label="場面">
       {scenes.map((scene, index) => (
-        <button type="button" class="walk__btn walk__tab" data-walk-tab={index} aria-pressed={index === 0 ? "true" : "false"}>
+        <button type="button" class="walk__btn walk__tab" data-walk-tab={index} data-step-scene aria-pressed={index === 0 ? "true" : "false"}>
           {scene.label}
         </button>
       ))}
     </div>
   ) : null}
   <div class="walk__sticky">
-    <div class="walk__bar">
+    <div class="walk__bar" data-controls>
       {actions.map(([name, label]) => (
-        <button type="button" class={`walk__btn walk__btn--${name}`} data-walk-action={name}>{label}</button>
+        <button
+          type="button"
+          class={`walk__btn walk__btn--${name}`}
+          data-walk-action={name}
+          data-prev={name === "prev" ? "" : undefined}
+          data-next={name === "next" ? "" : undefined}
+        >{label}</button>
       ))}
       <span class="walk__progress" data-walk-progress></span>
     </div>

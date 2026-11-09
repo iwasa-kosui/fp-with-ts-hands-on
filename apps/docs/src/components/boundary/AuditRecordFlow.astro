@@ -3,7 +3,7 @@ import { Code } from "astro:components";
 import { clinicFixture } from "../../../../../examples/fixtures/clinic";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import { blockOf } from "../../sessions/source-quotes";
-import StepControls from "./StepControls.astro";
+import StepControls from "../stepper/StepControls.astro";
 
 interface Props {
   part?: "problem" | "solution";
@@ -167,7 +167,7 @@ const litData = JSON.stringify(lit);
 </figure>
 
 <script>
-  import { mountStepper } from "./stepper";
+  import { mountStepper } from "../stepper/stepper";
 
   type Lit = Partial<Record<"before" | "after", Record<string, number[]>>>;
 

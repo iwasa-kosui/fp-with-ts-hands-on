@@ -1,5 +1,5 @@
 ---
-import StepControls from "./StepControls.astro";
+import StepControls from "../stepper/StepControls.astro";
 
 const frames = [
   {
@@ -70,7 +70,7 @@ const frames = [
 </figure>
 
 <script>
-  import { mountStepper } from "./stepper";
+  import { mountStepper } from "../stepper/stepper";
 
   document.querySelectorAll<HTMLElement>("[data-result-kinds]").forEach((root) => {
     mountStepper({ root });

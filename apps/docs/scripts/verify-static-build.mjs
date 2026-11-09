@@ -1,6 +1,7 @@
 import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { splitSessions } from "./split-sessions/index.mjs";
 
 const sessionPages = await readdir(
   new URL("../src/pages/sessions/", import.meta.url),
@@ -14,37 +15,6 @@ const sessionSlugs = sessionPages
       entry.name !== "index.astro",
   )
   .map((entry) => entry.name.replace(/\.astro$/, ""));
-
-const splitSessions = {
-  "03-boundaries-and-pii": {
-    previous: "/sessions/02-adt-and-exhaustiveness/",
-    next: "/sessions/04-workflow-errors/",
-    pages: [
-      "",
-      "night-shift",
-      "current-code",
-      "boundary",
-      "audit-leak",
-      "result",
-      "zod",
-      "safe-parse",
-      "branded",
-      "boundary-after",
-      "terms",
-      "audit-record",
-      "checks",
-      "property-test",
-      "exercise",
-      "peer-review",
-      "guard",
-      "review",
-      "payment-amount",
-      "pii",
-      "value-shapes",
-    ],
-    lastInTime: "review",
-  },
-};
 
 const splitPagePath = (sessionSlug, pageSlug) =>
   pageSlug === "" ? `/sessions/${sessionSlug}/` : `/sessions/${sessionSlug}/${pageSlug}/`;

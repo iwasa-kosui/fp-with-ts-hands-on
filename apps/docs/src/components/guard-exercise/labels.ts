@@ -13,6 +13,11 @@ export const mechanismHeaders: Readonly<Record<GuardMechanism, string>> = {
   tests: "テスト",
 };
 
+export const tableTermsSummary = "表の言葉";
+
+export const tableTermsText =
+  "「誤検知」は、正しいコードを悪い変更として検出してしまうことで、規則かテストが厳しすぎると起きます。「対象外」は、その悪い変更では数えない仕組みです。「未検出」は悪い変更の行で、その列の仕組みがまだ検出していないことを表します。「なし」は正しいコードの行で、その列に誤検知がないこと（良い状態）を表します。";
+
 export const cellText = (cell: GuardCell, kind: GuardRow["kind"]): string =>
   cell.state === "hit"
     ? `検出 ${cell.count}件`

@@ -3,7 +3,7 @@ import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import { blockOf } from "../../sessions/source-quotes";
-import StepControls from "./StepControls.astro";
+import StepControls from "../stepper/StepControls.astro";
 
 type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
 type Side = "before" | "after" | "plain";
@@ -294,7 +294,7 @@ const sideMark = { before: "●", after: "▲", plain: "■" } as const;
 </figure>
 
 <script>
-  import { mountStepper } from "./stepper";
+  import { mountStepper } from "../stepper/stepper";
 
   document.querySelectorAll<HTMLElement>("[data-property-flow]").forEach((root) => {
     mountStepper({ root });
