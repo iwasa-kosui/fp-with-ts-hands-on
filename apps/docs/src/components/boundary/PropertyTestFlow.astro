@@ -129,7 +129,7 @@ const afterHeading = "変更後（誤った変更）";
 const frames: readonly Frame[] = [
   {
     caption:
-      "守りたい性質は、どんなメールアドレスで OwnerContact を作っても、JSON にした文字列にそのメールアドレスが出ないことです。",
+      "守りたい性質は、どんなメールアドレスで OwnerContact を作っても、JSON にした文字列にそのメールアドレスが含まれないことです。fast-check は、ランダムな入力を多数生成するライブラリです。",
     columns: [{ side: "plain", heading: "守りたい性質", items: [{ kind: "flow" }] }],
   },
   {
@@ -163,7 +163,7 @@ const frames: readonly Frame[] = [
   },
   {
     caption:
-      "正しいコードでは、ownerEmail の値が Sensitive に包まれて JSON で [REDACTED] になるので、テストは通ります。",
+      "正しいコードでは、ownerEmail の値が Sensitive（値を包み、ログと JSON では [REDACTED] に置き換える型）で包まれるので、JSON では [REDACTED] になり、テストは通ります。",
     columns: [
       { side: "before", heading: beforeHeading, items: [contactCode(goodContact, contactBlockLabel)] },
       {
@@ -208,7 +208,7 @@ const frames: readonly Frame[] = [
   },
   {
     caption:
-      "型のテストは、型エラーになるはずの行の直前に @ts-expect-error を置きます。変更前は、この行が型エラーになるので、tsc は成功します。誤った変更で ownerEmail が string に代入できる型になると、型エラーが消えて、tsc は「未使用の @ts-expect-error」を報告します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
+      "型のテストは、型エラーになるはずの行の直前に @ts-expect-error を置きます。変更前は、この行が型エラーになるので、tsc（TypeScript の型検査を実行するコマンド）は成功します。誤った変更で ownerEmail が string に代入できる型になると、型エラーが消えて、tsc は「未使用の @ts-expect-error」を報告します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
     columns: [
       {
         side: "before",
@@ -263,7 +263,7 @@ const sideMark = { before: "●", after: "▲", plain: "■" } as const;
                         <li class="property-flow__arrow" aria-hidden="true">→</li>
                         <li>
                           <p class="property-flow__step-title">守りたい性質</p>
-                          <p>JSON の文字列に、メールアドレスが出ません。</p>
+                          <p>JSON の文字列に、メールアドレスが含まれません。</p>
                           <p><code>{redactedJson}</code></p>
                         </li>
                       </ol>

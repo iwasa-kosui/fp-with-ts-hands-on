@@ -47,7 +47,7 @@ export const session: SessionSummary = {
   animal: { name: "BIRD", type: "bird", avatar: "🐦" },
   summary: "値の制約を型で表す書き方を学び、HTTPで受け取る予約IDと担当獣医師IDを検査して、型付きの診察開始入力へ変換します。",
   episode: [
-    "15時30分、獣医師が診察開始画面で診察開始を押しました。",
+    "15時30分、獣医師が診察開始画面で、「診察を開始する」ボタンを押しました。",
     "フロントエンドの送信処理は、獣医師のUUIDではなく画面表示用の勤務区分「night-shift」をveterinarianIdへ格納しました。",
     "境界のparseは値を検査せずOkを返し、不正な値からStartExaminationInputを作りました。",
   ],
@@ -167,7 +167,7 @@ export const supplementaryExercise: SupplementaryExercise = {
     },
     {
       id: "s03-reject-id-swap",
-      goal: "AppointmentIdとVeterinarianIdを入れ替えたコードがコンパイルできないことを、型テストで検証する。",
+      goal: "AppointmentIdとVeterinarianIdを入れ替えたコードが型検査のときに型エラーとして報告されることを、型テストで検証する。",
       startingFailure: "取り違えた2行が、型エラーにならないままコンパイルされる。",
       targets: ["examples/session-03-supplement/src/domain/domain.test-types.ts"],
       solutions: [{
@@ -190,7 +190,7 @@ export const guides = ([
   },
   {
     id: "unvalidated-start-examination-input",
-    title: "HTTP入力をanyのまま診察開始の入力へ入れている",
+    title: "HTTP入力をanyのまま診察開始の入力へ渡している",
     currentDesign: "parseはraw: anyから2項目をコピーし、検査せずに必ずokを返します。",
     futureRisk: "rawがanyであるためraw.veterinarianIdもanyです。night-shiftは検証されずにVeterinarianId型の項目へ格納されます。",
     path: "src/adaptor/primary/web/startExaminationInput.ts",

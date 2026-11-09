@@ -74,7 +74,7 @@ const frames: readonly Frame[] = [
   },
   {
     part: "schema",
-    caption: "修正前は、StartExaminationInput の型を手動で定義しています。parse は raw を any で受け取り、中身を検証せずに項目をコピーします。any は、どのような使い方も型検査で許可する型です。型はあっても実行時の検査がないため、night-shift も StartExaminationInput として内側へ進みます。",
+    caption: "修正前は、StartExaminationInput の型を手動で定義しています。parse は raw（検査前の入力値）を any で受け取り、中身を検証せずに項目をコピーします。any は、どのような使い方も型検査で許可する型です。型はあっても実行時の検査がないため、night-shift も StartExaminationInput として内側へ進みます。",
     stage: "before",
     code: { key: "before", lines: [5, 6, 7, 8, 11, 12, 13, 14, 15] },
     parts: { typeBox: "on", typeGhost: "on", schemaBox: "off", linkType: "off", linkCheck: "off", checkBox: "on", inside: "on", sameName: "off", unknown: "off", note: "off" },
@@ -276,7 +276,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__inside" data-part="inside" data-mode={initial.parts.inside}>
       <rect x="232" y="326" width="104" height="114" rx="8"></rect>
       <text x="284" y="344" text-anchor="middle" class="schema-source-flow__strong">内側</text>
-      <text x="284" y="358" text-anchor="middle" class="schema-source-flow__small">（ユースケース）</text>
+      <text x="284" y="358" text-anchor="middle" class="schema-source-flow__small">（業務の処理）</text>
     </g>
 
     <g class="schema-source-flow__part schema-source-flow__unknown" data-part="unknown" data-mode={initial.parts.unknown}>

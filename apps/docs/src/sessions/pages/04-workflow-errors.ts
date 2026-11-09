@@ -77,7 +77,7 @@ export const sessionPages = [
   },
   {
     slug: "match",
-    title: "失敗の種類ごとの応答の定義",
+    title: "失敗の種類ごとのお知らせの定義",
     flow: "solution",
     kind: "teach",
     minutes: 1,
@@ -101,11 +101,11 @@ export const sessionPages = [
   },
   {
     slug: "system-error",
-    title: "例外のまま外部へ送出する障害",
+    title: "例外のまま useCase の外へ送出する障害",
     flow: "solution",
     kind: "teach",
     minutes: 1.5,
-    role: "解決策（課題2）: 保存の障害は、Result に含めず例外のまま外部へ送出します。",
+    role: "解決策（課題2）: 保存の障害は、Result に含めず、例外のまま useCase の外へ送出します。",
   },
   {
     slug: "checks",
@@ -113,7 +113,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策を守る（課題3）: 直したコードも、次の変更で元に戻ることがあります。",
+    role: "解決策を守る（課題3）: 修正したコードも、次の変更で元の状態に戻ることがあります。",
   },
   {
     slug: "exercise",

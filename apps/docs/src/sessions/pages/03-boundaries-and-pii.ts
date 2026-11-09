@@ -25,7 +25,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "brief",
     minutes: 1,
-    role: "課題: 受け取った値が受け付けられた原因を、現在のコードで確認します。",
+    role: "課題: night-shift が受け付けられた原因を、現在のコードで確認します。",
   },
   {
     slug: "boundary",

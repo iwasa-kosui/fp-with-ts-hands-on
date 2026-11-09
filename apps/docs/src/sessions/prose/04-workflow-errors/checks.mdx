@@ -13,13 +13,13 @@ export const throwRuleCode = `"no-restricted-syntax": [
   },
 ],`;
 
-<p>修正したコードも、次の変更で元の状態に戻ることがあります。ここから先の課題3は、修正した状態を維持することです。誤った変更を選んで、結果を比較してください。どの変更でも型検査は通ります。<code>throw</code> と <code>_unsafeUnwrap</code> はルールとテストの両方が、失敗した後の保存と障害の変換はテストだけが、<code>default</code> で受ける変更はルールだけが検出します。</p>
+<p>修正したコードも、次の変更で元の状態に戻ることがあります。ここから先の課題3は、修正した状態を維持することです。誤った変更を選んで、結果を比較してください。どの変更でも型検査は通ります。<code>throw</code> と <code>_unsafeUnwrap</code> は Linter（コードの問題を静的に検出するツール）のルールとテストの両方が、失敗した後の保存と障害の変換はテストだけが、match の <code>default</code> 節でまとめて処理する変更はルールだけが検出します。</p>
 
 <ChangeChecks set={session04ChangeChecks} />
 
 <details class="step-solution">
   <summary>useCase の throw を検出するルール（演習で写します）</summary>
-<p><code>ThrowStatement</code> は <code>throw</code> 文を表す構文の名前で、<code>selector</code> の前半は検出の範囲を useCase の中に限定します。<code>ThrowStatement</code> だけを指定すると、useCase の外の正当な <code>throw</code> も誤検知（正しいコードを誤った変更として検出すること）になります。ルールが検出するのは useCase に記載された <code>throw</code> だけで、useCase の外で発生した例外は検出しません。</p>
+<p><code>ThrowStatement</code> は <code>throw</code> 文を表す構文の名前で、<code>selector</code> の前半は検出の範囲を useCase の中に限定します。<code>ThrowStatement</code> だけを指定すると、useCase の外の正当な <code>throw</code> も誤検知（正しいコードを誤った変更として検出すること）になります。ルールが検出するのは useCase に実装された <code>throw</code> だけで、useCase の外で発生した例外は検出しません。</p>
 <figure class="code-block">
   <figcaption>演習で写す設定です。写し先: <code>{rulesLabel}</code> の {"{}"} の中</figcaption>
   <Code code={throwRuleCode} lang="js" />

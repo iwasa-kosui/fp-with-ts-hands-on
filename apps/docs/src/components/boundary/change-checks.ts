@@ -11,7 +11,7 @@ const extra: Extra = "ownerContact";`,
   {
     id: "lint",
     name: "Linter のルール",
-    detail: "`rules` に記載する",
+    detail: "`rules` に記述する",
     code: "// ルールの一覧は図の下にあります",
   },
   {

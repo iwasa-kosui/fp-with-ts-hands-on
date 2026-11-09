@@ -15,7 +15,7 @@ const errBranch = lineIndex(mapFlowCode, ": err(r.error)");
 
 const frames = [
   {
-    caption: "map は、Ok の中の値だけを関数に渡します。double は、素の値 3 を受け取って、素の値を返す関数です。",
+    caption: "map は、Ok の中の値だけを関数に渡します。double は、Result に包まれていない値 3 を受け取り、包まれていない値を返す関数です。",
     mark: { bands: checkBands(mapFlowCode, { a: [doubleLine] }) },
   },
   {

@@ -57,12 +57,12 @@ const frames: readonly Frame[] = [
     code: { key: "useCase", keys: ["deps.resolver.resolveById(input.appointmentId),", "deps.store.save(next);"] },
   },
   {
-    caption: "Web ルートは、本物の保存先 store を resolver と store の両方として渡し、続けて依頼の値を渡します。S04 の route は、依頼のたびにこの形で渡します。",
+    caption: "route は、本物の保存先 store を resolver と store の両方として渡し、続けて input を渡します。S04 の route は、依頼のたびにこの形で渡します。",
     deps: "focus", input: "normal", body: "normal", sources: "normal", source: "db", wait: false, depsFilled: true, inputFilled: true,
     code: { key: "route", keys: ["resolver: store,", "store,"] },
   },
   {
-    caption: "テストは、固定の予約を返す resolver と、保存の回数を数える store を渡します。演習では、保存された予約を配列 saved に格納する偽物の Store を使います。",
+    caption: "テストは、固定の予約を返す resolver と、保存の回数を数える store を渡します。演習では、保存された予約を配列 saved に格納するテスト用の代替の Store を使います。",
     deps: "focus", input: "normal", body: "normal", sources: "normal", source: "test", wait: false, depsFilled: true, inputFilled: true,
     code: { key: "test", keys: ["resolver: { resolveById: () => resolved },", "observer.saveCalls += 1;"] },
   },

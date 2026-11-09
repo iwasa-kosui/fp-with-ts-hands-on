@@ -11,7 +11,7 @@ selector: "VariableDeclarator[id.name='startExamination'] ThrowStatement",`,
   {
     id: "tests",
     name: "テスト",
-    detail: "偽物の Store で検証する",
+    detail: "テスト用の代替の Store で検証する",
     code: `expect(outcome.kind).toBe("returned");
 expect(saved).toHaveLength(0);`,
   },
@@ -85,7 +85,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: false, output: "エラーなし" },
       tests: { found: true, output: "1件失敗: expected 'returned' to be 'threw'", setting: "expect(outcome.kind).toBe(\"threw\");" },
     },
-    why: "障害を Err に変えても型は一致します。例外がそのまま外部へ送出されることを検証するテストだけが検出します。",
+    why: "障害を Err に変えても型は一致します。例外がそのまま useCase の外へ送出されることを検証するテストだけが検出します。",
   },
   {
     id: "B4-unsafe-unwrap",

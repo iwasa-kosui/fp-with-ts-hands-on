@@ -259,7 +259,7 @@ const rejectedFrames = [
     status: "stop",
     valueLabel: "内側に渡された値",
     value: "// なし",
-    text: "Errの_unsafeUnwrapは例外を投げ、startExaminationは呼ばれません。検査の失敗は現在はサーバーが失敗を返すHTTPステータス（500）になり、S04で扱います。",
+    text: "Errの_unsafeUnwrapは例外を投げ、startExaminationは呼ばれません。検査に失敗したときは、サーバーがHTTPステータス500を返します。S04で扱います。",
   }),
 ];
 
@@ -430,8 +430,8 @@ const hiddenFrame = (
   });
 
 export const sensitiveWalkthrough: Walkthrough = {
-  title: "内側の値が外へ出る様子",
-  description: "場面を選んで再生します。ログやJSONに出力しても値はマスクされ、unwrap を呼んだ箇所だけ平文が出ます。",
+  title: "内側の値が外側へ出力される様子",
+  description: "場面を選んで再生します。ログやJSONに出力しても値はマスクされ、unwrap を呼んだ箇所だけ平文が出力されます。",
   zones: ["内側", "境界", "外側（ログなど）"],
   tree: miniTree("session-03-solution", "src/", [
     { folder: "adaptor/primary/web/", files: [{ id: "ownerContact", name: "ownerContact.ts" }] },
@@ -449,7 +449,7 @@ export const sensitiveWalkthrough: Walkthrough = {
           '[inspect.custom]: () => "[REDACTED]"',
           "console.log(contact.ownerEmail)",
           "[REDACTED]",
-          "inspect.customは、Node.jsがconsole.logで値を文字にするときに呼ぶ関数を指定する名前です。console.logはその結果を出力するので、ログには[REDACTED]が出ます。",
+          "inspect.customは、Node.jsがconsole.logで値を文字にするときに呼ぶ関数を指定する名前です。console.logはその結果を出力するので、ログには[REDACTED]が出力されます。",
         ),
       ],
     },
@@ -479,7 +479,7 @@ export const sensitiveWalkthrough: Walkthrough = {
           status: "danger",
           valueLabel: "contact.ownerEmail.unwrap()",
           value: "owner@example.com",
-          text: "unwrapと明示した箇所だけ平文が出ます。unwrapで検索すれば、平文を取り出している箇所を調査できます。",
+          text: "unwrapと明示した箇所だけ平文が出力されます。unwrapで検索すれば、平文を取り出している箇所を調査できます。",
         }),
       ],
     },
