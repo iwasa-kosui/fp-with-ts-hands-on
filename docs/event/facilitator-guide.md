@@ -35,7 +35,7 @@ S1〜S6の演習は、各セッションの exercise ページのブラウザ内
 | --- | --- |
 | exercise | S1〜S4 と S6 は「演習: 誤った変更を検出する仕組みを追加する」。S5 は「演習: 工程と依存の向きを守る仕組みの選択」 |
 | peer-review | 「相互レビュー」 |
-| guard | S1〜S4 と S6 は「担当業務での防止策」 |
+| guard | S1〜S3 と S6 は「担当業務での防止策」。S4 は「機械が検出できることと人が決めることの区分」 |
 | review | S3、S4、S6 は「担当業務への適用」 |
 | takeaways | S5 は「担当業務の工程への分割」 |
 
@@ -102,7 +102,6 @@ S3、S4、S5、S6 の演習ページは、合格後に「この仕組みで検�
 - S0 の `review` は goal、roadmap、your-rule の3ページで、2.5分です。your-rule は個人のワークシートで、記入した内容はそのブラウザにだけ保存されます。相互レビューではありません。3.5+4+0+2.5=10分です。
 - S1〜S4 と S6 の `brief` は事故と要求、`teach` は技法の解説、`exercise` は誤った変更の一覧を確認し、仕組みを追加して「検出を検証する」を押す時間です。それぞれ 2+7+8+3=20分、2+8+7+3=20分、2+13+15+5=35分、3+12+10+6=31分、3+13+15+5=36分です。
 - S1 と S2 の `review` は、peer-review と guard のページです。S3、S4、S6 の `review` は、peer-review、guard、review のページです。
-- S4 の演習のページには、読む1分、選ぶ2分、作る5分、確認する2分の目安があります。ほかのセッションのページに、演習の内訳はありません。
 - S5 の `exercise` は、業務のコードを編集せず、誤った変更を検出する仕組みを追加する6分です。`teach` はROP（Railway Oriented Programming）の2本のレールと3つの切替、ユースケースの4工程、I/Oの分離を扱う8分です。`review` は takeaways のページで、答えと担当業務に適用する内容を確認する2分です。S5 に相互レビューはありません。2+8+6+2=18分です。
 - Final の `teach` は、index、reference、ports-and-adapters、differences、boundaries、boundary-failures のページです。`review` は、all-rules、own-rule-review、next-mechanism、summary のページです。参加者どうしのレビューではありません。0+6+0+4=10分です。
 

@@ -35,7 +35,7 @@ export default {
       id: "B3-cancel-paid",
       kind: "bad",
       subject: "cancelAppointment",
-      title: "会計済みの予約も、キャンセルを通してしまう",
+      title: "会計済みの予約のキャンセルを通す",
       allow: ["tests"],
       hint: "Paid の予約を resolver が返す偽物でキャンセルし、Err になることをテストで検証します。",
       behavior: {
@@ -48,7 +48,7 @@ export default {
       id: "B4-domain-imports-use-case",
       kind: "bad",
       subject: "appointment",
-      title: "domain の予約が、ユースケース（useCase）を import する",
+      title: "domain の予約が、useCase を import する",
       stage: 2,
       required: false,
       allow: ["lint"],

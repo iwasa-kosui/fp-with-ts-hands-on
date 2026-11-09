@@ -40,6 +40,7 @@ const figureNames = [
   "RouteToUseCase.astro",
   "CatchConfluence.astro",
   "FailureKinds.astro",
+  "FailureBranches.astro",
   "MapFlow.astro",
   "AndThenFlow.astro",
   "RewriteByStep.astro",

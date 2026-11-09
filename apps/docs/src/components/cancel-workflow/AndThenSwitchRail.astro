@@ -111,7 +111,7 @@ const frames: readonly Frame[] = [
     lit: [1, 2],
     current: [1, 2],
     rows: [
-      { tone: "positive", from: "Ok(Scheduled)", to: "Ok(…)", note: "andThen(createEvent): 結果を作る工程の関数（Ok の中身は省略）。失敗しないが、時刻と ID の取得を待つ Result を返すため、andThen で連結する" },
+      { tone: "positive", from: "Ok(Scheduled)", to: "Ok(…)", note: "andThen(createEvent): 結果を作る工程の関数（Ok の中身は省略）。Err を返さないため、切り替え線はない" },
       { tone: "positive", from: "Ok(…)", to: "Ok(…)", note: "andThrough(store): 記録して返す工程の関数。Ok の値は捨てて、元の値が次へ渡る" },
       { tone: "negative", from: "Ok(…)", to: "Err(AppointmentConflict)", note: "andThrough(store): 別のリクエストの先行更新（競合）の err で失敗のレールへ移る" },
     ],
@@ -123,11 +123,11 @@ const frames: readonly Frame[] = [
     lit: [0, 1, 2, 3],
     current: [],
     rows: [
-      { tone: "text", from: "andThen", to: "", note: "切り替え線あり。渡す関数が err を返すと失敗のレールへ移り、Ok の値は次へ渡る。結果を作る工程の createEvent は err を返さないが、Result を返すため andThen を使う" },
-      { tone: "text", from: "andThrough", to: "", note: "切り替え線あり。渡す関数は Result を返し、Ok の値は捨てて元の値が次へ渡る" },
+      { tone: "text", from: "andThen", to: "", note: "渡す関数が Err を返すときに切り替え線がある。Ok の値は次へ渡る" },
+      { tone: "text", from: "andThrough", to: "", note: "渡す関数が Err を返すときに切り替え線がある。Ok の値は捨てて元の値が次へ渡る" },
       { tone: "text", from: "map", to: "", note: "切り替え線なし。渡す関数は通常の値を返す" },
     ],
-    caption: "切り替え線を持つのは andThen と andThrough です。前の工程が Err のときは、どちらも関数を呼びません。",
+    caption: "切り替え線の有無は、渡す関数が Err を返すかどうかで異なります。前の工程が Err のときは、どの関数も呼びません。",
   },
 ];
 
@@ -166,7 +166,7 @@ const markOf = (tone: Row["tone"]): string => (tone === "positive" ? "✓" : ton
                 <path d={`M ${centers[index]! + 50} 56 C ${centers[index]! + 80} 56, ${centers[index]! + 66} 130, ${centers[index]! + 98} 130`} class="rail__switch" data-active={frame.current.includes(index) ? "" : undefined} marker-end={`url(#rail-head-bad-${frameIndex})`}></path>
               ))}
               {frame.stations.map((station, index) => station.line !== undefined && (
-                <text x={centers[index]} y="100" text-anchor="middle" class={station.line === "switch" ? "rail__note rail__note--bad" : "rail__note"}>{station.line === "switch" ? "切り替え線" : station.line === "unused" ? "失敗なし" : "線なし"}</text>
+                <text x={centers[index]} y="100" text-anchor="middle" class={station.line === "switch" ? "rail__note rail__note--bad" : "rail__note"}>{station.line === "switch" ? "切り替え線" : "線なし"}</text>
               ))}
               {frame.stations.map((station, index) => (
                 <g class="rail__station" data-current={frame.current.includes(index) ? "" : undefined} transform={`translate(${centers[index]! - 50} 36)`}>

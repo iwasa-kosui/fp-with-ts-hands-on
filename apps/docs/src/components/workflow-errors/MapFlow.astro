@@ -24,7 +24,7 @@ const frames = [
     mark: { code: "base", bands: checkBands(mapFlowCode, { a: [doubleLine], b: [okBranch] }) },
   },
   {
-    caption: "Err(\"NotPositive\") に map を使っても、double は呼ばれません。Err は、同じ値のまま返されます。",
+    caption: "Err(\"Failed\") に map を使っても、double は呼ばれません。Err は、同じ値のまま返されます。",
     mark: { code: "base", bands: checkBands(mapFlowCode, { c: [errBranch] }), skip: [doubleLine] },
   },
   {
@@ -71,9 +71,9 @@ const data = JSON.stringify(frames.map(({ mark }) => mark));
         <li data-frame>
           <p class="we-caption">{frames[2].caption}</p>
           <div class="mf-flow">
-            <div class="mf-side"><span class="mf-label">入力</span><ResultBox kind="err">"NotPositive"</ResultBox></div>
+            <div class="mf-side"><span class="mf-label">入力</span><ResultBox kind="err">"Failed"</ResultBox></div>
             <div class="mf-call"><span class="we-chip mf-skipped" data-band="c"><code class="we-mono">.map(double)</code></span><span class="mf-arrow" aria-hidden="true">→</span><span class="mf-note">double は呼ばれない</span></div>
-            <div class="mf-side"><span class="mf-label">出力</span><ResultBox kind="err">"NotPositive"</ResultBox></div>
+            <div class="mf-side"><span class="mf-label">出力</span><ResultBox kind="err">"Failed"</ResultBox></div>
           </div>
         </li>
         <li data-frame>

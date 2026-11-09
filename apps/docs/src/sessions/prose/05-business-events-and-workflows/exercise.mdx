@@ -17,7 +17,7 @@ export const guide = {
   criteria:
     "必須の誤った変更3件がすべて「検出」で、正しいコード4件がすべて「誤検知なし」になると合格です。",
   steps: [
-    "左の一覧から誤った変更を選び、コードを読みます。演習のコード（examples/session-05-solution）は、本文で読んだ参照実装（examples/final）を簡略化したものです。必須の3件は、domain が外側の web と sqlite を import する2件（依存の向き）と、会計済みの予約をキャンセルに通す1件（工程の条件）です。",
+    "左の一覧から誤った変更を選び、コードを読みます。必須の3件は、domain が外側の web と sqlite を import する2件（依存の向き）と、会計済みの予約をキャンセルに通す1件（工程の条件）です。",
     {
       text: [
         "どの仕組みで検出するかは自分で選びます。Linter は eslint.config.mjs の rules にルールを追加します。テストは exercises/guard/mine/ の cancelAppointment.test.ts に実装し、Err になることは expect(result.isErr()).toBe(true) で検証できます。Linter のルールの記述方法は「",
@@ -28,12 +28,19 @@ export const guide = {
         "」のページに記載があります。reason.test.ts は、合格後に追加される任意の誤った変更（空の理由）に使います。",
       ],
     },
-    "仕組みを追加したら「検出を検証する」を押します。検出された誤った変更は「検出」、検出されない変更は「未検出」と表に表示されます。「対象外」は、その誤った変更を検出する対象にならない仕組みを表します。「対象外」と表示されない列が、その誤った変更を検出できる仕組みです。",
+    "仕組みを追加したら「検出を検証する」を押します。検出された誤った変更は「検出」、検出されない変更は「未検出」と表に表示されます。「対象外」は、この教材の判定で、その誤った変更の検出に数えない仕組みです。「対象外」と表示されない列が、その誤った変更の検出に数える仕組みです。",
     "合格すると追加の誤った変更が2件増えます。追加の分は任意です。合格したら、表の誤った変更の名前を押して行を開き、「この仕組みで検出できないこと」に1文を記入します。この欄はプログラムでは判定しません。",
-    "解答例は、時間内に進められなくなった場合に開きます。",
+    "答え合わせは、合格の後に「解答の例を見る」の必須3件の検出結果と理由で行います。時間内に進められなくなった場合も、解答の例を開きます。",
   ],
 };
 
 <GuardExercise client:load workspace={workspace} projectFiles={projectFiles} guide={guide}>
-  <GuardAnswer files={guardAnswerDisplayFiles(projectFiles)} />
+  <GuardAnswer files={guardAnswerDisplayFiles(projectFiles)}>
+    <p>必須の3件を、下の解答の例の仕組みで検証した結果です。どの変更でも型検査は通ります。</p>
+    <ul>
+      <li><strong>domain の予約が、adaptor/primary/web の変換関数を import する</strong>: Linter のルールだけが検出します。import の向きを変えても実行結果は変わらないため、テストでは検出できません。</li>
+      <li><strong>domain の予約が、adaptor/secondary/sqlite の行の型を import する</strong>: Linter のルールだけが検出します。型だけの import でも、domain は保存形式に依存します。ルールは <code>import type</code> も同様に報告します。</li>
+      <li><strong>会計済みの予約のキャンセルを通す</strong>: テストだけが検出します。import は変わらないため、Linter のルールは対象外です。Paid の予約を渡すテストが、Err にならないことを検出します。</li>
+    </ul>
+  </GuardAnswer>
 </GuardExercise>
