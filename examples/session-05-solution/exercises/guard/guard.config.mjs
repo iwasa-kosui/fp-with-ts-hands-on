@@ -12,6 +12,11 @@ export default {
       title: "domain の予約が、adaptor/primary/web の変換関数を import する",
       allow: ["lint"],
       hint: "依存の向きの規則で検出します。domain が import してよい先と、import してはいけない先を分けます。",
+      behavior: {
+        input: { text: "来院済みの予約をキャンセルする" },
+        expected: { text: "キャンセル済みになる", value: 'kind: "Canceled"' },
+        actual: { text: "同じ結果になる。変わるのは依存の向きだけ", value: 'kind: "Canceled"' },
+      },
     },
     {
       id: "B2-domain-imports-sqlite",
@@ -20,6 +25,11 @@ export default {
       title: "domain の予約が、adaptor/secondary/sqlite の行の型を import する",
       allow: ["lint"],
       hint: "web と別のフォルダも、同じ規則で検出します。",
+      behavior: {
+        input: { text: "来院済みの予約をキャンセルする" },
+        expected: { text: "キャンセル済みになる", value: 'kind: "Canceled"' },
+        actual: { text: "同じ結果になる。変わるのは依存の向きだけ", value: 'kind: "Canceled"' },
+      },
     },
     {
       id: "B3-cancel-paid",
@@ -28,6 +38,11 @@ export default {
       title: "会計済みの予約も、キャンセルを通してしまう",
       allow: ["tests"],
       hint: "Paid の予約を resolver が返す偽物でキャンセルし、Err になることをテストで確かめます。",
+      behavior: {
+        input: { text: "会計済み（Paid）の予約をキャンセルする" },
+        expected: { text: "失敗する", value: 'Err({ kind: "InvalidAppointmentState", actualKind: "Paid" })' },
+        actual: { text: "成功する", value: 'Ok({ kind: "Canceled" })' },
+      },
     },
     {
       id: "B4-domain-imports-use-case",
@@ -38,6 +53,11 @@ export default {
       required: false,
       allow: ["lint"],
       hint: "adaptor だけでなく、useCase への向きも同じ規則で検出できるかを確かめます。",
+      behavior: {
+        input: { text: "来院済みの予約をキャンセルする" },
+        expected: { text: "キャンセル済みになる", value: 'kind: "Canceled"' },
+        actual: { text: "同じ結果になる。変わるのは依存の向きだけ", value: 'kind: "Canceled"' },
+      },
     },
     {
       id: "B5-empty-reason",
@@ -48,6 +68,11 @@ export default {
       required: false,
       allow: ["tests"],
       hint: "空の文字列を渡したときに Err になることを、テストで確かめます。",
+      behavior: {
+        input: { text: "空の文字列を理由にする", value: '""' },
+        expected: { text: "検査が失敗する", value: "Err(SchemaValidationError)" },
+        actual: { text: "検査が通る", value: 'Ok("")' },
+      },
     },
     {
       id: "G1-appointment",
