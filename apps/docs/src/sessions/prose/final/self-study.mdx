@@ -1,0 +1,11 @@
+<p>診察開始でたどった5つの境界を、別のユースケースでたどります。診察結果の記録やフォローアップ依頼など、別のきっかけから始まるものを1つ選びます。参照実装の起動やデータベースの操作は必要ありません。まず診察開始の次のファイルで確かめます。</p>
+
+<ol>
+  <li><strong>入力境界</strong>: <code>examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts</code> で、HTTP の入力を検証し、ユースケースの入力へ変換する箇所を探します。</li>
+  <li><strong>業務上の失敗</strong>: <code>examples/final/src/useCase/startExaminationUseCase.ts</code> で、予約なし、状態不正、予約競合が型付きの <code>Err</code> として残ることを確かめます。</li>
+  <li><strong>出力イベント</strong>: 同じファイルで、業務の検証に成功した経路だけがイベントの生成へ進むことを確かめます。次に <code>examples/final/src/domain/appointment/appointment.ts</code> の <code>startExamination</code> が <code>ExaminationStarted</code> を作ることを確かめます。</li>
+  <li><strong>副作用</strong>: <code>examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts</code> で、予約の状態と監査記録を同じ transaction で保存することを確かめます。</li>
+  <li><strong>例外境界</strong>: SQLite の障害や破損したデータが業務の <code>Result</code> に入らず、<code>examples/final/src/app.ts</code> の共通の境界で、詳細を含まない 500 の応答になることを確かめます。</li>
+</ol>
+
+<p>別のユースケースで境界が見つからない箇所があれば、その箇所が次に試す小さな改善の候補です。</p>

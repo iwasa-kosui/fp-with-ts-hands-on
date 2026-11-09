@@ -1,0 +1,268 @@
+---
+import { whats, wheres } from "./next-mechanism";
+---
+
+<figure class="nm" data-next-mechanism aria-label="次に足す仕組みと、動かす場所の選択">
+  <fieldset class="nm__group">
+    <legend>依頼文に書きたくなること</legend>
+    <div class="nm__whats">
+      {whats.map((what) => (
+        <label class="nm__what">
+          <input type="radio" name="next-mechanism-what" value={what.id} data-recommended={what.recommended ?? ""} />
+          <span class="nm__wish">{what.wish}</span>
+          <span class="nm__text"><strong>{what.name}</strong>。{what.detail}</span>
+        </label>
+      ))}
+    </div>
+  </fieldset>
+
+  <fieldset class="nm__group" data-wheres disabled>
+    <legend>どこで動かすか<span class="nm__hint" data-hint>仕組みを選ぶと、ここから1つ選べます。</span></legend>
+    <div class="nm__wheres">
+      {wheres.map((where) => (
+        <label class="nm__where" data-where={where.id}>
+          <input type="radio" name="next-mechanism-where" value={where.id} />
+          <span class="nm__where-head">
+            <span class="nm__where-name">{where.name}</span>
+            <span class="nm__mark" data-mark>★ 推奨</span>
+          </span>
+          <span class="nm__text">{where.text}</span>
+        </label>
+      ))}
+    </div>
+  </fieldset>
+</figure>
+
+<script>
+  import { load, save, type Selection } from "./next-mechanism";
+
+  document.querySelectorAll<HTMLElement>("[data-next-mechanism]").forEach((root) => {
+    const whatInputs = [...root.querySelectorAll<HTMLInputElement>("input[name='next-mechanism-what']")];
+    const whereInputs = [...root.querySelectorAll<HTMLInputElement>("input[name='next-mechanism-where']")];
+    const wheres = root.querySelector<HTMLFieldSetElement>("[data-wheres]");
+    const hint = root.querySelector<HTMLElement>("[data-hint]");
+    if (!wheres || !hint) return;
+
+    const render = (selection: Selection) => {
+      const input = whatInputs.find((item) => item.value === selection.what);
+      const recommended = input?.dataset.recommended ?? "";
+      wheres.disabled = input === undefined;
+      root.querySelectorAll<HTMLElement>("[data-where]").forEach((where) => {
+        where.toggleAttribute("data-recommended", input !== undefined && where.dataset.where === recommended);
+      });
+      hint.textContent =
+        input === undefined
+          ? "仕組みを選ぶと、ここから1つ選べます。"
+          : recommended === ""
+            ? "推奨なし"
+            : "★ が推奨の場所です。";
+    };
+
+    const selection = load();
+    whatInputs.forEach((item) => {
+      item.checked = item.value === selection.what;
+    });
+    whereInputs.forEach((item) => {
+      item.checked = item.value === selection.where;
+    });
+    render(selection);
+
+    whatInputs.forEach((item) =>
+      item.addEventListener("change", () => {
+        if (!item.checked) return;
+        const next = { ...load(), what: item.value } as Selection;
+        save(next);
+        render(next);
+      }),
+    );
+    whereInputs.forEach((item) =>
+      item.addEventListener("change", () => {
+        if (!item.checked) return;
+        save({ ...load(), where: item.value } as Selection);
+      }),
+    );
+  });
+</script>
+
+<style>
+  .nm {
+    display: grid;
+    gap: 0.5rem;
+    min-width: 0;
+    margin: 1rem 0;
+  }
+
+  .nm__group {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .nm__group legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.125rem 0.75rem;
+    margin-block-end: 0.125rem;
+    padding: 0;
+    color: var(--role-muted);
+    font-size: 0.875rem;
+    font-weight: 800;
+  }
+
+  .nm__hint {
+    font-size: 0.875rem;
+    font-weight: 400;
+  }
+
+  .nm__whats {
+    display: grid;
+    gap: 0.1875rem;
+  }
+
+  .nm__what,
+  .nm__where {
+    min-width: 0;
+    padding: 0.125rem 0.625rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+    cursor: pointer;
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+
+  .nm__what {
+    display: grid;
+    grid-template-columns: auto 11rem minmax(0, 1fr);
+    align-items: start;
+    gap: 0.625rem;
+  }
+
+  .nm__what input,
+  .nm__where input {
+    margin: 0.1875rem 0 0;
+    accent-color: var(--role-accent);
+  }
+
+  .nm__wish {
+    font-size: 0.875rem;
+    font-weight: 800;
+  }
+
+  .nm__text {
+    min-width: 0;
+    color: var(--role-muted);
+  }
+
+  .nm__text strong {
+    color: var(--role-text);
+  }
+
+  .nm__wheres {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.25rem 0.5rem;
+  }
+
+  .nm__where {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-content: start;
+    column-gap: 0.5rem;
+  }
+
+  .nm__where .nm__text {
+    grid-column: 1 / -1;
+  }
+
+  .nm__where-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0 0.5rem;
+  }
+
+  .nm__where-name {
+    font-size: 0.875rem;
+    font-weight: 800;
+  }
+
+  .nm__mark {
+    visibility: hidden;
+    padding: 0 0.375rem;
+    border: 1px solid var(--role-accent);
+    border-radius: 0.25rem;
+    color: var(--role-accent);
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .nm__where[data-recommended] {
+    border-color: var(--role-accent);
+    border-style: dashed;
+  }
+
+  .nm__where[data-recommended] .nm__mark {
+    visibility: visible;
+  }
+
+  .nm__what:has(input:checked),
+  .nm__where:has(input:checked) {
+    border-color: var(--role-accent);
+    border-style: solid;
+    box-shadow: 0 0 0 2px var(--role-accent);
+  }
+
+  .nm__what:has(input:checked) .nm__wish::before,
+  .nm__where:has(input:checked) .nm__where-name::before {
+    content: "✓ ";
+    color: var(--role-accent);
+  }
+
+  .nm__what:has(input:focus-visible),
+  .nm__where:has(input:focus-visible) {
+    outline: 3px solid var(--role-accent);
+    outline-offset: 2px;
+  }
+
+  .nm__group:disabled .nm__where {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  @media (max-height: 700px) {
+    .nm {
+      gap: 0.375rem;
+      margin-block: 0.5rem;
+    }
+
+    .nm__what,
+    .nm__where {
+      line-height: 1.35;
+    }
+  }
+
+  @media (max-width: 55rem) {
+    .nm__what {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .nm__what .nm__text {
+      grid-column: 2;
+    }
+
+    .nm__wheres {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 35rem) {
+    .nm__wheres {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

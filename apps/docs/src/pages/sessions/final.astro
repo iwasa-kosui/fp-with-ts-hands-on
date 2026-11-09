@@ -1,164 +1,33 @@
 ---
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import type { CodeGuide } from "../../code-explorer/code-guide";
-import SessionPageNavigation from "../../components/SessionPageNavigation.astro";
-import Prose from "../../sessions/prose/final.mdx";
-import { loadSolutionSnippets } from "../../sessions/solution-snippets";
-import type { SessionNavigation, SessionSummary } from "../../sessions/types";
-import "../../styles/sessions.css";
-import EpisodeIllustration from "../../components/EpisodeIllustration.astro";
+import SessionFrame from "../../components/session-frame/SessionFrame.astro";
+import { sessionPages, sessionSlug } from "../../sessions/pages/final";
+import * as content from "../../sessions/pages/final-content";
+import Prose from "../../sessions/prose/final/index.mdx";
 
-export const finalAggregateTour = {
-  label: "1業務集約 → 7業務集約",
-  path: "examples/final/src/app.ts",
-  aggregates: [
-    "予約",
-    "診察結果",
-    "フォローアップ",
-    "飼い主",
-    "ペット",
-    "セッション",
-    "ユーザー",
-  ],
-};
-
-export const guides = ([
-  {
-    id: "final-use-case-pipeline",
-    title: "最初に読む ResultAsync パイプライン",
-    currentDesign:
-      "Session 04 で学んだ形を、認可と永続化を含むユースケースへ広げています。",
-    futureRisk: "全体から読むと概念が多いため、まず run の処理だけを追います。",
-    path: "src/useCase/startExaminationUseCase.ts",
-    highlights: [{ startLineNumber: 76, endLineNumber: 94 }],
-  },
-  {
-    id: "final-seven-aggregates",
-    title: "1業務集約から7つの集約へ広がる配線",
-    currentDesign: `${finalAggregateTour.aggregates.join("・")}の7つの集約を、app.ts でまとめて組み立てています。`,
-    futureRisk:
-      "個別ファイルから読み始めると集約どうしのつながりが見えないため、app.ts から辿ります。",
-    path: finalAggregateTour.path.replace("examples/final/", ""),
-    highlights: [{ startLineNumber: 202, endLineNumber: 244 }],
-  },
-  {
-    id: "final-transaction-store",
-    title: "in-memory から SQLite transaction へ広がる",
-    currentDesign: "状態更新とイベント追加を1つの transaction で行います。",
-    futureRisk: "単純な dual-write へ戻すと、状態と監査記録が分離します。",
-    path: "src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
-    highlights: [{ startLineNumber: 144, endLineNumber: 157 }],
-  },
-] as const) satisfies readonly CodeGuide[];
-
-export const session: SessionSummary = {
-  slug: "final",
-  snapshot: "final",
-  sequence: "Final",
-  kind: "reference",
-  title: "参照実装で境界をたどる",
-  durationMinutes: 10,
-  timeBreakdown: { brief: 0, teach: 6, exercise: 0, review: 4 },
-  animal: { name: "Mugi", type: "cat", avatar: "🐈" },
-  summary: "ここまでの学習内容を、より大きな参照実装へ接続します。",
-  episode: [
-    "ここまで直した頃、猫のムギはとっくに帰宅し、開発者だけが参照実装の前に残っていました。",
-    "入力、失敗、イベント、保存、例外を順に追うと、さっきまでの事故が、それぞれどの境界で防がれるかが見えてきます。",
-    "完成形と呼んでも、事故が消えたわけではありません。置き場所と担当が決まっただけです。",
-  ],
-  incident: "各セッションで行った改善を、実運用を想定した構成へどう接続するかを確認する。",
-  steps: [],
-  decisions: [],
-  finalReferences: [
-    "examples/final/src/useCase/startExaminationUseCase.ts",
-    finalAggregateTour.path,
-  ],
-};
-
-const portsAndAdaptersSnippets = await loadSolutionSnippets({
-  solutions: [
-    {
-      path: "examples/final/src/domain/appointment/appointmentStores.ts",
-      symbol: "ExaminationStartedStore",
-      lines: [16, 21],
-    },
-    {
-      path: "examples/final/src/useCase/startExaminationUseCase.ts",
-      symbol: "Dependencies",
-      lines: [45, 51],
-    },
-    {
-      path: "examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
-      symbol: "createAppointmentEventStore",
-      lines: [144, 157],
-    },
-    {
-      path: "examples/final/src/app.ts",
-      symbol: "startExamination",
-      lines: [408, 414],
-    },
-    {
-      path: "examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts",
-      symbol: "startExamination",
-      lines: [496, 497],
-    },
-  ],
-});
-const [portSnippet, dependenciesSnippet, secondarySnippet, assemblySnippet, routeSnippet] =
-  portsAndAdaptersSnippets;
-const portsAndAdaptersCode = {
-  port: portSnippet,
-  dependencies: dependenciesSnippet,
-  secondary: secondarySnippet,
-  assembly: { ...assemblySnippet, code: assemblySnippet.code.replace(/^ {4}/gm, "") },
-  route: { ...routeSnippet, code: routeSnippet.code.replace(/^ {4}/gm, "") },
-};
-
-const chapters = [
-  { id: "incident", label: "何が起きたか" },
-  { id: "ports-and-adaptors", label: "ポートとアダプタで層を分ける" },
-  { id: "review", label: "5つの境界を確認する" },
-  { id: "persistence", label: "状態と監査記録の保存" },
-  { id: "mechanisms", label: "仕組みで防ぐ" },
-] as const;
-export const navigation = ({
-  previous: {
-    href: "/sessions/06-effects-and-consistency/",
-    title: "副作用と整合性境界を設計する",
-  },
-  next: undefined,
-} as SessionNavigation);
+export const guides = content.guides;
+export const navigation = content.navigation;
+export const session = content.session;
 ---
 
-<BaseLayout title={`${session.title} | FP with TypeScript`} description={session.summary}>
-  <div class="case-file case-file--session">
-    <header class="case-file__site-header">
-      <a href="/"><span class="case-file__brand-mark" aria-hidden="true">🐾</span>WAN NYAN CLINIC</a>
-    </header>
-    <main>
-      <SessionPageNavigation currentSlug={session.slug} chapters={chapters}>
-      <section slot="hero" class="case-file__hero" aria-labelledby="session-title">
-        <p class="case-file__eyebrow">SESSION {session.sequence} · {session.durationMinutes}分</p>
-        <h1 id="session-title">{session.title}</h1>
-        <p class="case-file__summary">
-          <span aria-hidden="true">{session.animal.avatar}</span>
-          {session.summary}
-        </p>
-      </section>
-      <Prose components={{ EpisodeIllustration }} session={session} portsAndAdaptersCode={portsAndAdaptersCode} />
-      <nav slot="footer" class="case-file__session-nav" aria-label="前後のセッション">
-        {
-          navigation.previous === undefined ? null : (
-            <a rel="prev" href={navigation.previous.href}>前へ: {navigation.previous.title}</a>
-          )
-        }
-        {
-          navigation.next === undefined ? null : (
-            <a rel="next" href={navigation.next.href}>次へ: {navigation.next.title}</a>
-          )
-        }
-      </nav>
-      </SessionPageNavigation>
-    </main>
-  </div>
-</BaseLayout>
+<SessionFrame
+  sessionSlug={sessionSlug}
+  pages={sessionPages}
+  pageSlug=""
+  description={session.summary}
+>
+  <Prose />
+  <script is:inline>
+    const destinations = new Map([
+      ["incident", "reference/"],
+      ["ports-and-adaptors", "ports-and-adapters/"],
+      ["review", "boundaries/"],
+      ["persistence", "differences/"],
+      ["mechanisms", "next-mechanism/"],
+    ]);
+    const destination = destinations.get(location.hash.slice(1));
+    if (destination) {
+      const base = location.pathname.endsWith("/") ? location.pathname : `${location.pathname}/`;
+      location.replace(`${base}${destination}`);
+    }
+  </script>
+</SessionFrame>

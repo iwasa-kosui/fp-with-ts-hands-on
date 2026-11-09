@@ -397,7 +397,7 @@ export const episodeScenes = {
     art: effectsAndConsistency,
   },
   final: {
-    label: "猫のムギがドアから帰っていき、開発者だけが画面に向かっている。画面には入力、失敗、イベント、保存、例外の5つの行が並び、それぞれの行に注意の印が置かれている",
+    label: "猫の Mugi がドアから帰っていき、開発者だけが画面に向かっている。画面には入力、失敗、イベント、保存、例外の5つの行が並び、それぞれの行に注意の印が置かれている",
     art: finalScene,
   },
 } as const satisfies Readonly<Record<string, EpisodeScene>>;
