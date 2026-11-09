@@ -2,14 +2,17 @@
 import { Code } from "astro:components";
 import type { CodeGuide } from "../code-explorer/code-guide";
 import type { ProjectFiles } from "../code-explorer/types";
+import MiniTree from "./mini-tree/MiniTree.astro";
+import type { MiniTreeData } from "./mini-tree/mini-tree";
 
 interface Props {
   guides: readonly CodeGuide[];
   projectFiles: ProjectFiles;
   dedent?: boolean;
+  trees?: Readonly<Record<string, { tree: MiniTreeData; current: readonly string[] }>>;
 }
 
-const { guides, projectFiles, dedent = false } = Astro.props;
+const { guides, projectFiles, dedent = false, trees } = Astro.props;
 const removeIndent = (lines: readonly string[]): string[] => {
   const indent = Math.min(
     ...lines.filter((line) => line.trim() !== "").map((line) => line.search(/\S/)),
@@ -39,8 +42,9 @@ const cards = guides.map((guide) => {
 <ol class="code-guide-cards" aria-label="配布コードの設計課題">
   {
     cards.map(({ guide, excerpts }) => (
-      <li data-code-guide-card={guide.id}>
+      <li data-code-guide-card={guide.id} data-has-tree={trees?.[guide.id] ? "" : undefined}>
         <h4>{guide.title}</h4>
+        {trees?.[guide.id] ? <MiniTree tree={trees[guide.id].tree} current={trees[guide.id].current} /> : null}
         {excerpts.map(({ startLineNumber, endLineNumber, source }) => (
           <figure>
             <figcaption>{guide.path}<span class="line-range">:{startLineNumber}-{endLineNumber}</span></figcaption>
@@ -99,6 +103,40 @@ const cards = guides.map((guide) => {
 
   li > p {
     margin: 0.75rem 0 0;
+  }
+
+  @media (max-height: 700px) {
+    .code-guide-cards > li[data-has-tree][data-code-guide-card] {
+      padding-block: 0.25rem;
+    }
+
+    .code-guide-cards > li[data-has-tree] > h4 {
+      margin-block-end: 0.125rem;
+    }
+
+    .code-guide-cards > li[data-has-tree] > :global(.mini-tree) {
+      row-gap: 0;
+    }
+
+    .code-guide-cards > li[data-has-tree] > :global(.mini-tree) :global(.mini-tree__file) {
+      padding-block: 0;
+    }
+
+    .code-guide-cards > li[data-has-tree] > figure {
+      margin-block: 0.125rem;
+    }
+
+    .code-guide-cards > li[data-has-tree] > figure figcaption {
+      padding-block: 0.1875rem;
+    }
+
+    .code-guide-cards > li[data-has-tree] > figure :global(pre) {
+      padding-block: 0.25rem;
+    }
+
+    .code-guide-cards > li[data-has-tree] > p {
+      margin-block-start: 0.125rem;
+    }
   }
 
 </style>

@@ -1,5 +1,7 @@
 ---
 import { Code } from "astro:components";
+import MiniTree from "../mini-tree/MiniTree.astro";
+import { miniTree } from "../mini-tree/mini-tree";
 import StepControls from "../stepper/StepControls.astro";
 import { checkBands, lineIndex } from "./lines";
 import { noticeMessage, paths, routeCatch, throwInvalidState, throwNotFound, throwPersistence } from "./sources";
@@ -33,6 +35,7 @@ const frames = [
     merge: false,
     mark: {},
     out: "",
+    files: ["errors", "persistence"],
   },
   {
     caption: "3つとも throw された Error です。どの失敗も、同じ1つの catch に入ります。",
@@ -40,6 +43,7 @@ const frames = [
     merge: true,
     mark: { bands: checkBands(routeCatch, { a: [catchLine] }) },
     out: "",
+    files: ["errors", "persistence", "routes"],
   },
   {
     caption: "catch は、error.message に \"was not found\" が含まれるかで分岐します。予約なしの文言は一致するので、画面のお知らせへ進みます。",
@@ -47,6 +51,7 @@ const frames = [
     merge: true,
     mark: { bands: checkBands(routeCatch, { a: [testLine, noticeLine] }) },
     out: "notice",
+    files: ["errors", "routes"],
   },
   {
     caption: "状態不正の文言は一致しません。throw error で外へ出て、500 になります。",
@@ -54,6 +59,7 @@ const frames = [
     merge: true,
     mark: { bands: checkBands(routeCatch, { c: [testLine, rethrowLine] }) },
     out: "500",
+    files: ["errors", "routes"],
   },
   {
     caption: "保存の障害の文言も一致しないので、同じ throw error から 500 になります。状態不正と保存の障害は、同じ 500 として返ります。",
@@ -61,8 +67,15 @@ const frames = [
     merge: true,
     mark: { bands: checkBands(routeCatch, { c: [testLine, rethrowLine] }) },
     out: "500",
+    files: ["errors", "persistence", "routes"],
   },
 ] as const;
+
+const tree = miniTree("session-04", "src/", [
+  { folder: "useCase/", files: [{ id: "errors", name: "errors.ts" }] },
+  { folder: "adaptor/secondary/sqlite/", files: [{ id: "persistence", name: "appointmentPersistenceError.ts" }] },
+  { folder: "adaptor/primary/web/", files: [{ id: "routes", name: "routes.ts" }] },
+]);
 
 const themes = { light: "github-light", dark: "github-dark" } as const;
 const data = JSON.stringify(frames.map(({ caption: _caption, ...rest }) => rest));
@@ -70,6 +83,8 @@ const data = JSON.stringify(frames.map(({ caption: _caption, ...rest }) => rest)
 
 <figure class="we-fig we-fig--top catch-confluence" data-catch-confluence data-frames={data} aria-label="3種類の失敗が1つの catch に入り、文言で分岐する流れ">
   <StepControls />
+
+  <MiniTree tree={tree} current={frames[0].files} />
 
   <ol class="we-frames">
     {frames.map(({ caption }) => (
@@ -116,10 +131,11 @@ const data = JSON.stringify(frames.map(({ caption: _caption, ...rest }) => rest)
 </figure>
 
 <script>
+  import { setMiniTreeCurrent } from "../mini-tree/mini-tree-client";
   import { mountStepper } from "../stepper/stepper";
   import { applyMark, type Mark } from "./lit";
 
-  type Frame = { cards: string[]; merge: boolean; mark: Mark; out: string };
+  type Frame = { cards: string[]; merge: boolean; mark: Mark; out: string; files: string[] };
 
   document.querySelectorAll<HTMLElement>("[data-catch-confluence]").forEach((root) => {
     const frames = JSON.parse(root.dataset.frames ?? "[]") as Frame[];
@@ -140,6 +156,7 @@ const data = JSON.stringify(frames.map(({ caption: _caption, ...rest }) => rest)
           out.dataset.on = String(out.dataset.out === frame.out);
         });
         applyMark(code, frame.mark);
+        setMiniTreeCurrent(root, frame.files);
       },
     });
   });

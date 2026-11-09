@@ -1,5 +1,7 @@
 ---
 import { Code } from "astro:components";
+import MiniTree from "./mini-tree/MiniTree.astro";
+import { miniTree } from "./mini-tree/mini-tree";
 import StepControls from "./stepper/StepControls.astro";
 import { checkBands, lineAll, lineCount, lineIndex } from "./workflow-errors/lines";
 import { matchCall, noticeMessage, onErrorLine, paths, pipelineBody, pipelineResultType } from "./workflow-errors/sources";
@@ -37,6 +39,7 @@ type Step = Readonly<{
   use: Mark;
   dest: Mark;
   connector: boolean;
+  files?: readonly string[];
 }>;
 
 const businessSteps: readonly Step[] = [
@@ -71,27 +74,27 @@ const businessSteps: readonly Step[] = [
 const systemSteps: readonly Step[] = [
   {
     text: "予約は見つかり、来院済みです。ensureAppointmentFound と ensureCheckedIn は Ok を返します。",
-    at: "use", tone: "neutral", badge: "Ok", mark: "ok", connector: false, dest: {},
+    at: "use", tone: "neutral", badge: "Ok", mark: "ok", connector: false, dest: {}, files: ["useCase"],
     use: { bands: checkBands(pipelineBody, { ok: range(0, andThenLine) }) },
   },
   {
     text: "状態遷移で診察中の予約を作り、store.save で保存します。",
-    at: "use", tone: "neutral", badge: "Ok", mark: "ok", connector: false, dest: {},
+    at: "use", tone: "neutral", badge: "Ok", mark: "ok", connector: false, dest: {}, files: ["useCase"],
     use: { bands: checkBands(pipelineBody, { ok: range(transitionStart, saveLine) }) },
   },
   {
     text: "保存の途中でデータベースへの接続が切れ、store.save が例外を投げます。",
-    at: "use", tone: "sys", badge: "例外", mark: "exc", connector: false, dest: {},
+    at: "use", tone: "sys", badge: "例外", mark: "exc", connector: false, dest: {}, files: ["useCase", "store"],
     use: { bands: checkBands(pipelineBody, { err: [saveLine] }) },
   },
   {
     text: "この例外は Result に変換しません。startExamination は値を返さずに抜け、Web ルートの match と switch には届きません。",
-    at: "use", tone: "sys", badge: "例外", mark: "exc", connector: true, dest: {},
+    at: "use", tone: "sys", badge: "例外", mark: "exc", connector: true, dest: {}, files: ["useCase"],
     use: { bands: checkBands(pipelineBody, { err: range(saveStart, saveLine) }), skip: range(saveLine + 1, lastLine) },
   },
   {
     text: "例外を最後に受け取る場所（app.onError）が例外を受け取り、500 を返します。",
-    at: "dest", tone: "sys", badge: "例外", mark: "exc", connector: true,
+    at: "dest", tone: "sys", badge: "例外", mark: "exc", connector: true, files: ["app"],
     use: { bands: checkBands(pipelineBody, { err: range(saveStart, saveLine) }), skip: range(saveLine + 1, lastLine) },
     dest: {},
   },
@@ -99,6 +102,11 @@ const systemSteps: readonly Step[] = [
 
 const steps = scenario === "business" ? businessSteps : systemSteps;
 const isBusiness = scenario === "business";
+const tree = miniTree("session-04-solution", "src/", [
+  { folder: "useCase/", files: [{ id: "useCase", name: "startExamination.ts" }] },
+  { folder: "adaptor/secondary/sqlite/", files: [{ id: "store", name: "appointmentStore.ts" }] },
+  { folder: "", files: [{ id: "app", name: "app.ts" }] },
+]);
 const destTitle = isBusiness ? "Web ルートの match → 画面のお知らせ" : "例外を最後に受け取る場所（app.onError）→ 500";
 const footnote = isBusiness
   ? `引用元: ${paths.solutionUseCase}:29-44 と S04 の route の説明用の抜粋`
@@ -116,6 +124,8 @@ const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
       <li data-frame><p class="we-caption">{text}</p></li>
     ))}
   </ol>
+
+  {!isBusiness && <MiniTree tree={tree} current={systemSteps[0]?.files} />}
 
   <div class="we-body eo-map">
     <section class="eo-box" data-place="use">
@@ -151,6 +161,7 @@ const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
 </figure>
 
 <script>
+  import { setMiniTreeCurrent } from "./mini-tree/mini-tree-client";
   import { mountStepper } from "./stepper/stepper";
   import { applyMark, type Mark } from "./workflow-errors/lit";
 
@@ -162,6 +173,7 @@ const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
     use: Mark;
     dest: Mark;
     connector: boolean;
+    files?: string[];
   };
 
   document.querySelectorAll<HTMLElement>("[data-exception-or-result]").forEach((root) => {
@@ -190,6 +202,7 @@ const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
         const dest = codeOf("dest");
         if (use !== null) applyMark(use, step.use);
         if (dest !== null) applyMark(dest, step.dest);
+        if (step.files !== undefined) setMiniTreeCurrent(root, step.files);
       },
     });
   });
@@ -355,6 +368,20 @@ const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
 
   .eo-flow[data-ready] .eo-connector[data-active="true"] {
     color: var(--role-negative);
+  }
+
+  @media (max-height: 700px) {
+    .eo-flow[data-ready] .eo-map {
+      margin-block-start: 0.125rem;
+    }
+
+    .eo-box {
+      padding-block: 0.125rem;
+    }
+
+    .eo-flow :global(.mini-tree__file) {
+      padding-block: 0;
+    }
   }
 
   @media (max-width: 48rem) {

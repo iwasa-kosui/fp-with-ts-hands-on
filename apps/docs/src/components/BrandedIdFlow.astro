@@ -2,6 +2,8 @@
 import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
 import { keyedTransformer } from "./code-cache-key";
+import MiniTree from "./mini-tree/MiniTree.astro";
+import { miniTree } from "./mini-tree/mini-tree";
 import { clinicFixture } from "../../../../examples/fixtures/clinic";
 
 type Snippet = Readonly<{ path: string; code: string }>;
@@ -171,6 +173,17 @@ const compareExamples = [
   },
 ] as const;
 
+const treeGroups = [
+  { folder: "domain/appointment/", files: [{ id: "appointmentId", name: "appointmentId.ts" }] },
+  { folder: "domain/", files: [{ id: "test-types", name: "domain.test-types.ts" }] },
+];
+const treeBefore = miniTree("session-03-supplement", "src/", treeGroups);
+const treeAfter = miniTree("session-03-supplement-solution", "src/", treeGroups);
+const treeFor = (key: keyof Props["code"]) => ({
+  tree: key === "beforeId" || key === "beforeSwap" ? treeBefore : treeAfter,
+  current: [key === "beforeId" || key === "afterId" ? "appointmentId" : "test-types"],
+});
+
 const initial = frames[0];
 const idPreview = (id: string) => `${id.slice(0, 8)}…`;
 
@@ -310,6 +323,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
     {frames.map((frame) => (
       <li data-frame data-has-code={frame.code || frame.extra ? "" : undefined}>
         <p class="branded-id-flow__caption">{frame.caption}</p>
+        {frame.code && frame.stage && <MiniTree tree={treeFor(frame.code.key).tree} current={treeFor(frame.code.key).current} />}
         {frame.code && frame.stage && (
           <figure class="code-block branded-id-flow__code" data-version={frame.stage}>
             <figcaption><span class="branded-id-flow__tag" data-version={frame.stage}>{versionLabels[frame.stage]}</span> <code>{code[frame.code.key].path}</code></figcaption>
@@ -809,6 +823,14 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
     margin-top: 1.25rem;
   }
 
+  .branded-id-flow :global(.mini-tree) {
+    column-gap: 0.25rem;
+  }
+
+  .branded-id-flow :global(.mini-tree .mini-tree__group) {
+    display: contents;
+  }
+
   .branded-id-flow__code {
     min-width: 0;
     margin: 0.5rem 0 0;
@@ -926,6 +948,20 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
   [data-animated] svg[data-through] .branded-id-flow__pill-brand,
   [data-animated] svg[data-through] .branded-id-flow__pill-text {
     transition-delay: 0.9s;
+  }
+
+  @media (max-height: 700px) {
+    .branded-id-flow :global(.mini-tree) {
+      row-gap: 0;
+    }
+
+    .branded-id-flow :global(.mini-tree__file) {
+      padding-block: 0;
+    }
+
+    .branded-id-flow__code {
+      margin-block-start: 0.25rem;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

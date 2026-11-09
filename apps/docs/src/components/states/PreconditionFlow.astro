@@ -1,5 +1,7 @@
 ---
 import { Code } from "astro:components";
+import MiniTree from "../mini-tree/MiniTree.astro";
+import { miniTree } from "../mini-tree/mini-tree";
 import { quotes } from "./quotes";
 
 const snippets = {
@@ -21,6 +23,12 @@ type Frame = Readonly<{
   top: BandFrame;
   bottom: BandFrame;
 }>;
+
+const tree = miniTree("session-01-solution", "", [
+  { folder: "src/domain/appointment/", files: [{ id: "signature", name: "transitions.ts" }] },
+  { folder: "test/regression/type-fixtures/", files: [{ id: "typeError", name: "paid-cannot-start.ts" }] },
+  { folder: "src/adaptor/primary/web/", files: [{ id: "route", name: "routes.ts" }] },
+]);
 
 const frames: readonly Frame[] = [
   {
@@ -174,6 +182,7 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
     {frames.map((frame) => (
       <li data-frame data-has-code={frame.code ? "" : undefined}>
         <p class="precondition-flow__caption">{frame.caption}</p>
+        {frame.code && <MiniTree tree={tree} current={[frame.code.key]} />}
         {frame.code && (
           <figure class="code-block precondition-flow__code" data-lit={JSON.stringify(frame.code.lines)}>
             <figcaption><span class="precondition-flow__tag">この回の完成コード</span> <code>{snippets[frame.code.key].path}</code></figcaption>
