@@ -4,31 +4,31 @@ import { noticeMoments } from "./notice-moments";
 const details = {
   write: {
     who: "変更した人",
-    via: "型検査（値の種類の食い違いを実行の前に調べる仕組み）や Linter（書き方の誤りを調べる道具）が知らせます。",
-    missLabel: "ここで気づかないと",
-    risk: "開発チームも困る",
-    miss: "誤りがテストまで進みます。",
+    via: "型検査（値の種類の不一致を実行前に検出する仕組み）や Linter（コードの問題を静的に検出するツール）が報告します。",
+    missLabel: "ここで検出しないと",
+    risk: "開発チームへの影響",
+    miss: "誤りがテストの時点まで進みます。",
   },
   test: {
     who: "開発チーム",
-    via: "テスト（期待どおりに動くかを確かめるコード）が知らせます。",
-    missLabel: "ここで気づかないと",
-    risk: "操作できない人が出る",
-    miss: "誤りが動いているシステムまで進み、サーバーが操作を受け付けません。",
+    via: "テスト（期待どおりに動作するかを検証するコード）が報告します。",
+    missLabel: "ここで検出しないと",
+    risk: "利用者の操作の失敗",
+    miss: "誤りが稼働中のシステムまで到達し、サーバーが操作を拒否します。",
   },
   run: {
     who: "操作した人",
-    via: "サーバーが処理の途中で値を確かめます。",
-    missLabel: "ここで気づかないと",
-    risk: "データが壊れる",
-    miss: "誤った操作や値がそのまま通ります。飼い主と病院も困ります。",
+    via: "サーバーが処理の途中で値を検証します。",
+    missLabel: "ここで検出しないと",
+    risk: "データの破損",
+    miss: "誤った操作や値がそのまま処理されます。飼い主と病院にも影響します。",
   },
   human: {
     who: "飼い主と病院",
-    via: "請求を受けた飼い主や、記録を調べた担当者が見つけます。",
-    missLabel: "ここで気づいたときには",
-    risk: "お金や情報の被害",
-    miss: "もう起きています。二重請求と、飼い主の連絡先まで読める監査記録です。",
+    via: "請求を受けた飼い主や、記録を調査した担当者が発見します。",
+    missLabel: "この時点では",
+    risk: "金銭や個人情報の被害",
+    miss: "被害がすでに発生しています。二重請求と、飼い主の個人情報を閲覧できる監査記録です。",
   },
 } as const;
 
@@ -39,7 +39,7 @@ const moments = noticeMoments.map((moment, index) => ({
 }));
 ---
 
-<figure class="nm" aria-label="誤りに気づける4つの場面と、それぞれの場面で気づかないと増えるリスク">
+<figure class="nm" aria-label="誤りを検出できる4つの時点と、各時点で検出しない場合に増えるリスク">
   <ol class="nm__moments">
     {
       moments.map((moment, index) => (
@@ -49,7 +49,7 @@ const moments = noticeMoments.map((moment, index) => ({
             {moment.label}
           </p>
           <p class="nm__via">{moment.via}</p>
-          <p class="nm__heading">ここで気づくと困る人</p>
+          <p class="nm__heading">検出時に影響を受ける人</p>
           <ul class="nm__people">
             {moment.people.map((person, personIndex) => (
               <li class:list={["nm__person", { "nm__person--new": personIndex === index }]}>

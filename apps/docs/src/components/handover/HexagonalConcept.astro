@@ -4,23 +4,23 @@ import StepControls from "../stepper/StepControls.astro";
 const frames = [
   {
     caption:
-      "業務の決まりを真ん中に置き、画面やデータベースとは出入口を通してつなぎます。矢印は依存の向きで、すべて内側を向きます。出入口は2つです。呼び出し口は外から手順を呼ぶ口、port は手順が外に求める処理を型で表した口です。外側でつなぐコードをアダプタと呼びます。",
-    alt: "中央に六角形が2重にあります。内側の六角形が業務の決まり、それを囲む六角形が手順です。手順の輪には、呼び出し口と port の2つの出入口の印があります。画面とデータベースは、アダプタを挟んで外側にあります。画面側のアダプタから呼び出し口へ、データベース側のアダプタから port へ、手順から業務の決まりへ、矢印がすべて内側を向いています。図には、内側、外側、外の世界の札が付いています。",
+      "業務ロジックを中心に配置し、画面やデータベースとは出入口で接続します。矢印は依存の向きで、すべて内側を向きます。出入口のうち、呼び出し口は外部からユースケースを呼ぶ接続点、port はユースケースが外部に要求する処理の型です。外側の接続コードをアダプタと呼びます。",
+    alt: "中央に六角形が2重にあります。内側の六角形が業務ロジック、それを囲む六角形がユースケースです。ユースケースの輪には、呼び出し口と port の2つの出入口の印があります。画面とデータベースは、アダプタを挟んで外側にあります。画面側のアダプタから呼び出し口へ、データベース側のアダプタから port へ、ユースケースから業務ロジックへ、矢印がすべて内側を向いています。図には、内側、外側、外の世界の札が付いています。",
   },
   {
     caption:
-      "依頼は画面から出入口を通って内側に入り、port を通ってデータベースへ向かいます。それでも依存の矢印は内向きのままです。内側は port の型を決めるだけで、外側がその型を満たします。",
-    alt: "画面からデータベースまで続く1本の点線が加わっています。点線は、画面側のアダプタから呼び出し口の印を通って内側に入り、業務の決まりの下を過ぎ、port の印を通って、データベース側のアダプタへ出ていきます。点線が届いたあと、port へ向かう依存の矢印が太くなり、依頼と逆向きの札が付きます。",
+      "依頼は画面から出入口を通って内側に入り、port を介してデータベースへ向かいます。依頼の向きにかかわらず、依存の矢印は内向きのままです。内側は port の型を定義するだけで、外側がその型を実装します。",
+    alt: "画面からデータベースまで続く1本の点線が加わっています。点線は、画面側のアダプタから呼び出し口の印を通って内側に入り、業務ロジックの下を過ぎ、port の印を通って、データベース側のアダプタへ出ていきます。点線が届いたあと、port へ向かう依存の矢印が太くなり、依頼と逆向きの札が付きます。",
   },
   {
     caption:
-      "配布コードのディレクトリを重ねます。<code>domain/</code> と <code>useCase/</code> が内側、<code>adaptor/</code> が外側です。事故で欠けていた決まりを書く <code>domain/</code> が図の真ん中です。真ん中に置くと、画面やデータベースの都合で決まりが変わりません。",
-    alt: "ディレクトリの札が付いています。業務の決まりは domain/、手順は useCase/、画面側のアダプタは adaptor/primary/web/、データベース側のアダプタは adaptor/secondary/sqlite/ です。図の真ん中にある domain/ の札を、塗りと太い枠で強調しています。",
+      "配布コードのディレクトリを対応付けます。<code>domain/</code> と <code>useCase/</code> が内側、<code>adaptor/</code> が外側です。事故で欠けていた業務ロジックを実装する <code>domain/</code> が図の中心です。中心に配置すると、画面やデータベースの変更が業務ロジックに影響しません。",
+    alt: "ディレクトリの札が付いています。業務ロジックは domain/、ユースケースは useCase/、画面側のアダプタは adaptor/primary/web/、データベース側のアダプタは adaptor/secondary/sqlite/ です。図の中心にある domain/ の札を、塗りと太い枠で強調しています。",
   },
   {
     caption:
-      "S00 のコードには、この形に合わない所が1つあります。port に当たる型 <code>AppointmentRepository</code> が外側の <code>adaptor/secondary/sqlite/</code> にあり、内側の <code>useCase/</code> がそれを import しています。S06 では、この型を内側に移します。",
-    alt: "手順からデータベース側のアダプタへ向かう破線の矢印が加わっています。矢印は外側を向いていて、AppointmentRepository の型を内側の手順が外側から import していることを表します。port の印は、中が空になっています。",
+      "port の型も内側に配置します。S00 のコードでは、色付きの輪に対応する <code>useCase/dependencies.ts</code> が <code>AppointmentRepository</code> を定義し、<code>adaptor/secondary/sqlite/</code> がその型を import して実装します。太くなった矢印が、この import の向きを示します。",
+    alt: "ユースケースの輪に色が付いています。輪と同じ色の枠の札に「内側: AppointmentRepository」と useCase/dependencies.ts と書かれ、札から伸びた線が輪の中を通って port の印につながっています。データベース側のアダプタから port へ向かう依存の矢印が太くなり、adaptor/secondary/sqlite/ が内側の型を import していることを表します。",
   },
 ] as const;
 
@@ -28,11 +28,11 @@ const words = {
   screen: "画面",
   adapter: "アダプタ",
   database: "データベース",
-  procedure: "手順",
-  rule: "業務の決まり",
+  procedure: "ユースケース",
+  rule: "業務ロジック",
   entry: "呼び出し口",
   port: "port",
-  exception: "AppointmentRepository",
+  portType: "AppointmentRepository",
   reverse: "依頼と逆向き",
   core: "内側",
   edge: "外側",
@@ -46,10 +46,15 @@ const directories = {
   store: "adaptor/secondary/sqlite/",
 } as const;
 
+const portTypeFileName = "dependencies.ts";
+const portTypeFile = `${directories.procedure}${portTypeFileName}`;
+
 type Point = readonly [number, number];
 type Direction = "right" | "left" | "down" | "up";
 type Box = Readonly<{ x: number; y: number; w: number; h: number; textY: number }>;
 type Place = Readonly<{ x: number; y: number; anchor: "start" | "middle" | "end" }>;
+type PortTypeLabel = Place & Readonly<{ lines: readonly string[]; lineHeight: number }>;
+type PortTypeBox = Readonly<{ x: number; y: number; w: number; h: number }>;
 
 const SLOPE = Math.sqrt(3) / 3;
 const HEIGHT_RATIO = Math.sqrt(3) / 2;
@@ -87,7 +92,9 @@ const route = (points: readonly Point[], direction: Direction) => {
 
 const tagWidth = (text: string, fontSize: number) => Math.ceil(text.length * 0.6 * fontSize + 12);
 const tag = (text: string, cx: number, y: number, fontSize: number) => ({ text, cx, y, w: tagWidth(text, fontSize) });
-const exceptionLines = words.exception.match(/[A-Z][a-z]+/g) ?? [words.exception];
+const textWidth = (text: string, fontSize: number) =>
+  [...text].reduce((sum, char) => sum + (char.charCodeAt(0) > 0x7f ? 1 : 0.6) * fontSize, 0);
+const portTypeLines = words.portType.match(/[A-Z][a-z]+/g) ?? [words.portType];
 
 const horizontal = (() => {
   const cx = 360;
@@ -108,8 +115,18 @@ const horizontal = (() => {
   const entryMark: Point = [cx - rOut + (cy - portY) * SLOPE, portY];
   const portMark: Point = [cx + rOut - (cy - portY) * SLOPE, portY];
   const requestY = 164;
-  const exceptionY = 65;
-  const exceptionX = adapterOut.x + 68;
+  const typeFs = 13.5;
+  const typeLines = [`${words.core}: ${words.portType}`, portTypeFile];
+  const typePad = 10;
+  const typeLineH = 16;
+  const typeW = Math.ceil(Math.max(...typeLines.map((line) => textWidth(line, typeFs)))) + typePad * 2;
+  const typeH = typeLineH * 2 + 14;
+  const typeBottom = Math.round(hexTop) + 18;
+  const typeY = typeBottom - typeH;
+  const typeX = Math.ceil(cx + rOut - (cy - typeBottom) * SLOPE) + 10;
+  const typeEnterY = typeBottom - 6;
+  const typeTurnX = cx + rIn;
+  const typeEnd: Point = [portMark[0] - MARK_SIZE / 2, portMark[1] - MARK_SIZE / 2];
   const leaderX = adapterOut.x - 12;
   const fs = 14;
   return {
@@ -146,12 +163,12 @@ const horizontal = (() => {
       pill: { x: leaderX - 46, y: 80, w: 96, h: 20 },
       leader: `M ${leaderX} 100 V ${portY - 6}` as string | null,
     },
-    exception: {
-      line: `M ${cx + 22} ${exceptionY} H ${exceptionX} V ${boxY - HEAD}`,
-      head: headPath([exceptionX, boxY], "down"),
-      label: { x: cx + 80, y: exceptionY - 8, anchor: "start" } as Place,
-      lines: [words.exception],
-      lineHeight: 0,
+    portType: {
+      box: { x: typeX, y: typeY, w: typeW, h: typeH } as PortTypeBox,
+      line: pathOf([[typeX, typeEnterY], [typeTurnX, typeEnterY], [typeTurnX, typeEnd[1]], typeEnd]),
+      labels: [
+        { lines: typeLines, x: typeX + typePad, y: typeY + 19, anchor: "start", lineHeight: typeLineH },
+      ] as readonly PortTypeLabel[],
     },
     tags: [
       { ...tag(directories.rule, cx, cy + rIn * HEIGHT_RATIO - TAG_H / 2, fs), core: true },
@@ -188,11 +205,21 @@ const vertical = (() => {
   const database = outerBox(adapterOut.y + adapterOut.h + 30);
   const innerTop = cy - rIn;
   const requestX = cx + 75;
-  const exceptionX = cx - 72;
   const fs = 13;
   const mid = (b: Box) => b.y + b.h / 2 + 4;
   const entryMark: Point = [cx, hexTop];
   const portMark: Point = [cx, hexBottom];
+  const typeFs = 13;
+  const typeLines = [`${words.core}:`, ...portTypeLines, directories.procedure, portTypeFileName];
+  const typePad = 6;
+  const typeLineH = 14;
+  const typeW = Math.ceil(Math.max(...typeLines.map((line) => textWidth(line, typeFs)))) + typePad * 2;
+  const typeH = typeLineH * (typeLines.length - 1) + 20;
+  const typeBottom = mid(adapterOut) - typeFs - 26;
+  const typeX = 4;
+  const typeY = typeBottom - typeH;
+  const typeLineY = portMark[1] - MARK_SIZE / 2 - 10;
+  const typeEnd: Point = [portMark[0] - MARK_SIZE / 2, portMark[1] - MARK_SIZE / 2];
   return {
     id: "v",
     size: [360, database.y + database.h + 8] as Point,
@@ -227,12 +254,12 @@ const vertical = (() => {
       pill: { x: cx - 12 - 96, y: hexBottom + 24, w: 96, h: 20 },
       leader: null as string | null,
     },
-    exception: {
-      line: `M ${exceptionX} ${cy + 10} V ${adapterOut.y - HEAD}`,
-      head: headPath([exceptionX, adapterOut.y], "down"),
-      label: { x: exceptionX - 8, y: adapterOut.y - 16 - 14 * (exceptionLines.length - 1), anchor: "end" } as Place,
-      lines: exceptionLines,
-      lineHeight: 14,
+    portType: {
+      box: { x: typeX, y: typeY, w: typeW, h: typeH } as PortTypeBox,
+      line: pathOf([[typeX + typeW, typeLineY], [typeEnd[0], typeLineY], typeEnd]),
+      labels: [
+        { lines: typeLines, x: typeX + typePad, y: typeY + 15, anchor: "start", lineHeight: typeLineH },
+      ] as readonly PortTypeLabel[],
     },
     tags: [
       { ...tag(directories.rule, cx, cy + 14, fs), core: true },
@@ -318,14 +345,16 @@ const boxList = (layout: (typeof layouts)[number]) => [
         <text x={layout.reverse.pill.x + layout.reverse.pill.w / 2} y={layout.reverse.pill.y + layout.reverse.pill.h / 2 + 4.5} text-anchor="middle" class="hx__t-reverse">{words.reverse}</text>
       </g>
 
-      <g class="hx__layer hx__exception">
-        <path d={layout.exception.line} class="hx__exception-line"></path>
-        <path d={layout.exception.head} class="hx__exception-head"></path>
-        <text x={layout.exception.label.x} y={layout.exception.label.y} text-anchor={layout.exception.label.anchor} class="hx__t-exception">
-          {layout.exception.lines.map((line, index) => (
-            <tspan x={layout.exception.label.x} dy={index === 0 ? 0 : layout.exception.lineHeight}>{line}</tspan>
-          ))}
-        </text>
+      <g class="hx__layer hx__port-type">
+        <rect x={layout.portType.box.x} y={layout.portType.box.y} width={layout.portType.box.w} height={layout.portType.box.h} rx="4" class="hx__port-type-box"></rect>
+        <path d={layout.portType.line} class="hx__port-type-line"></path>
+        {layout.portType.labels.map((label) => (
+          <text x={label.x} y={label.y} text-anchor={label.anchor} class="hx__t-port-type">
+            {label.lines.map((line, index) => (
+              <tspan x={label.x} dy={index === 0 ? 0 : label.lineHeight}>{line}</tspan>
+            ))}
+          </text>
+        ))}
       </g>
 
       <g class="hx__layer hx__tags">
@@ -390,6 +419,7 @@ const boxList = (layout: (typeof layouts)[number]) => [
   }
 
   .hx__svg {
+    --hx-ring-fill: color-mix(in srgb, var(--role-accent) 14%, var(--role-surface));
     display: block;
     width: 100%;
     height: auto;
@@ -402,7 +432,7 @@ const boxList = (layout: (typeof layouts)[number]) => [
     --hx-fs-note: 12px;
     --hx-fs-tier: 12px;
     --hx-fs-tag: 13px;
-    --hx-fs-exception: 12px;
+    --hx-fs-port-type: 12px;
     --hx-fs-reverse: 12px;
     max-height: clamp(15rem, 52vh, 26rem);
   }
@@ -413,7 +443,7 @@ const boxList = (layout: (typeof layouts)[number]) => [
     --hx-fs-note: 13px;
     --hx-fs-tier: 13px;
     --hx-fs-tag: 13px;
-    --hx-fs-exception: 13px;
+    --hx-fs-port-type: 13px;
     --hx-fs-reverse: 13px;
     display: none;
     max-width: 26rem;
@@ -476,7 +506,7 @@ const boxList = (layout: (typeof layouts)[number]) => [
   }
 
   .hx__t-tag,
-  .hx__t-exception {
+  .hx__t-port-type {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   }
 
@@ -484,9 +514,9 @@ const boxList = (layout: (typeof layouts)[number]) => [
     font-size: var(--hx-fs-tag);
   }
 
-  .hx__svg .hx__t-exception {
-    fill: var(--role-negative);
-    font-size: var(--hx-fs-exception);
+  .hx__svg .hx__t-port-type {
+    fill: var(--role-accent);
+    font-size: var(--hx-fs-port-type);
   }
 
   .hx__dep {
@@ -544,15 +574,16 @@ const boxList = (layout: (typeof layouts)[number]) => [
     fill: var(--role-text);
   }
 
-  .hx__exception-line {
+  .hx__port-type-line {
     fill: none;
-    stroke: var(--role-negative);
-    stroke-width: 2.5;
-    stroke-dasharray: 6 4;
+    stroke: var(--role-accent);
+    stroke-width: 2;
   }
 
-  .hx__exception-head {
-    fill: var(--role-negative);
+  .hx__port-type-box {
+    fill: var(--hx-ring-fill);
+    stroke: var(--role-accent);
+    stroke-width: 1.5;
   }
 
   .hx__tag rect {
@@ -562,12 +593,12 @@ const boxList = (layout: (typeof layouts)[number]) => [
   }
 
   .hx__request,
-  .hx__exception {
+  .hx__port-type {
     opacity: 0;
   }
 
   .hx__svg[data-scene="2"] .hx__request,
-  .hx__svg[data-scene="4"] .hx__exception {
+  .hx__svg[data-scene="4"] .hx__port-type {
     opacity: 1;
   }
 
@@ -576,7 +607,8 @@ const boxList = (layout: (typeof layouts)[number]) => [
     opacity: 0;
   }
 
-  .hx__svg[data-scene="2"] .hx__dep--port {
+  .hx__svg[data-scene="2"] .hx__dep--port,
+  .hx__svg[data-scene="4"] .hx__dep--port {
     stroke-width: 4.5;
   }
 
@@ -589,9 +621,12 @@ const boxList = (layout: (typeof layouts)[number]) => [
     stroke-width: 3.5;
   }
 
+  .hx__svg[data-scene="4"] .hx__hex--outer {
+    fill: var(--hx-ring-fill);
+  }
+
   .hx__svg[data-scene="4"] .hx__mark--port {
-    fill: var(--role-surface);
-    stroke: var(--role-negative);
+    stroke-width: 4;
   }
 
   .hx__legend {
@@ -630,6 +665,7 @@ const boxList = (layout: (typeof layouts)[number]) => [
   }
 
   .hx[data-ready] .hx__layer,
+  .hx[data-ready] .hx__hex--outer,
   .hx[data-ready] .hx__mark {
     transition: opacity 0.4s, fill 0.4s, stroke 0.4s;
   }
@@ -685,7 +721,7 @@ const boxList = (layout: (typeof layouts)[number]) => [
       --hx-fs-note: 14px;
       --hx-fs-tier: 14px;
       --hx-fs-tag: 14px;
-      --hx-fs-exception: 13.5px;
+      --hx-fs-port-type: 13.5px;
       --hx-fs-reverse: 14px;
     }
   }
