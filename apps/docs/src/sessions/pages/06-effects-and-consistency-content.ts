@@ -180,8 +180,8 @@ export const workspace = ({
     "src/useCase/dependencies.ts",
     "src/useCase/errors.ts",
     "src/useCase/startExamination.ts",
-    "src/shared/schemaResult.ts",
-    "src/shared/sensitive.ts",
+    "src/domain/shared/schemaResult.ts",
+    "src/domain/shared/sensitive.ts",
   ],
 } as const) satisfies SessionWorkspace;
 

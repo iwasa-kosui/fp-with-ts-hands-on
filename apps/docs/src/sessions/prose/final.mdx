@@ -15,7 +15,7 @@ import PortsAndAdaptersFlow from "../../components/PortsAndAdaptersFlow.astro";
 
 <section id="ports-and-adaptors">
   <h2>ポートとアダプタで層を分ける</h2>
-  <p>Final のコードは、内側の domain と useCase と、外側の adaptor に分かれます。この分け方は、ポートとアダプタ（Ports and Adapters）と呼ばれる設計です。port は、S06 で見たとおり、ユースケースが外側に求める処理を型で表した約束です。アダプタ（adaptor）は、外からの依頼をユースケースへ渡す処理と、port の型を満たす実装です。</p>
+  <p>Final のコードも、S00 から見てきたとおり、内側の domain と useCase と、外側の adaptor に分かれます。この分け方は、ポートとアダプタ（Ports and Adapters）と呼ばれる設計です。port は、S06 で見たとおり、ユースケースが外側に求める処理を型で表した約束です。アダプタ（adaptor）は、外からの依頼をユースケースへ渡す処理と、port の型を満たす実装です。</p>
   <PortsAndAdaptersFlow code={props.portsAndAdaptersCode} />
   <p>外側と内側をつなぐコードは app.ts に集まっています。そのため、ほかのファイルは相手の実装を知りません。次の節で確認する5つの境界は、次の層にあります。</p>
   <table>

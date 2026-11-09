@@ -4,7 +4,7 @@ import { clinicFixture } from "../../../fixtures/clinic.js";
 import {
   StartExaminationInput,
   type StartExaminationInput as StartExaminationInputValue,
-} from "../../src/boundary/startExaminationInput.js";
+} from "../../src/adaptor/primary/web/startExaminationInput.js";
 
 describe("S03 regression: 診察開始の外部入力を検証する", () => {
   it("正しい2つのIDを型付き入力へ変換する", () => {

@@ -197,7 +197,7 @@ const expectedExercises = [
     slug: "03-boundaries-and-pii",
     adv: { articulate: 2, delegate: 11, verify: 2 },
     exerciseModule: {
-      dir: "examples/session-03/src/boundary",
+      dir: "examples/session-03/src/adaptor/primary/web",
       fileBudget: 1,
       lineBudget: 18,
     },

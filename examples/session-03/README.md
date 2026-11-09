@@ -2,7 +2,7 @@
 
 このディレクトリはSession 03の開始スナップショットです。解答は `examples/session-03-solution/src` にあります。
 
-S03の補助演習で区別したAppointmentIdとVeterinarianIdを、HTTPの文字列から作る境界を実装します。変更対象は `src/boundary/startExaminationInput.ts` の1ファイルです。
+S03の補助演習で区別したAppointmentIdとVeterinarianIdを、HTTPの文字列から作る境界を実装します。変更対象は `src/adaptor/primary/web/startExaminationInput.ts` の1ファイルです。
 
 ```bash
 pnpm demo:03
@@ -17,4 +17,4 @@ pnpm exercise:03
 
 ## 時間外の補足
 
-`src/boundary/examResult.ts` と `src/boundary/ownerContact.ts` は時間内の変更対象ではありません。検査結果のschemaと個人情報（PII）のマスキングを比較したい場合は、解答側のsession-03-solutionと読み比べます。
+`src/adaptor/primary/web/examResult.ts` と `src/adaptor/primary/web/ownerContact.ts` は時間内の変更対象ではありません。検査結果のschemaと個人情報（PII）のマスキングを比較したい場合は、解答側のsession-03-solutionと読み比べます。

@@ -1,7 +1,7 @@
 import { Code } from "astro:components";
 import DependencyDirection from "../../../components/cancel-workflow/DependencyDirection.astro";
 
-<p>工程に分けた形は、この後の変更で崩れないように守る必要があります。たとえば、判定の関数を持つ domain が web のコードに依存すると、画面の都合で判定のコードを直すことになり、判定を画面なしで確かめられなくなります。</p>
+<p>工程に分けた形は、この後の変更で崩れないように守る必要があります。たとえば、判定の関数を持つ domain が adaptor/primary/web のコードに依存すると、画面の都合で判定のコードを直すことになり、判定を画面なしで確かめられなくなります。</p>
 
 <p>この向きの違反は、ESLint の <code>no-restricted-imports</code> で検出できます。<code>no-restricted-imports</code> は、import の文字列がパターンに一致すると問題として報告する規則です。パターンの <code>{"**/フォルダ名/**"}</code> は、相対パスのどの深さにあってもそのフォルダを指します。</p>
 

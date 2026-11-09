@@ -18,7 +18,7 @@ import {
 } from "../src/useCase/errors.js";
 import type { StartExaminationError } from "../src/useCase/errors.js"; // 要件: 予約なしと状態不正を、kindで区別できる診察開始エラーとして定義してください。
 import { startExamination } from "../src/useCase/startExamination.js";
-import type { startExaminationNoticeCodes } from "../src/web/routes.js"; // 要件: 診察開始エラーのkindをキーにした通知対応表を公開してください。
+import type { startExaminationNoticeCodes } from "../src/adaptor/primary/web/routes.js"; // 要件: 診察開始エラーのkindをキーにした通知対応表を公開してください。
 import { clinicFixture } from "../../fixtures/clinic.js";
 
 const appointmentId = AppointmentId.parse(clinicFixture.appointmentId);

@@ -16,7 +16,7 @@ const context = {} as Context;
 
 describe("createClinicRootView", () => {
   it("development clientと安全にserializeしたInertia pageを埋め込む", async () => {
-    const rootView = createClinicRootView(false, "/src/web/client.tsx");
+    const rootView = createClinicRootView(false, "/src/adaptor/primary/web/client.tsx");
 
     const html = await rootView(page, context);
 
@@ -27,7 +27,7 @@ describe("createClinicRootView", () => {
     expect(html).toContain("injectIntoGlobalHook(window);");
     expect(html).toContain("window.$RefreshReg$ = () => {};");
     expect(html).toContain("window.$RefreshSig$ = () => (type) => type;");
-    expect(html).toContain('src="/src/web/client.tsx"');
+    expect(html).toContain('src="/src/adaptor/primary/web/client.tsx"');
     expect(html).toContain('data-page="app"');
     expect(html).not.toContain('/static/styles.css');
   });
@@ -35,7 +35,7 @@ describe("createClinicRootView", () => {
   it("development HTMLをVite変換に通してReact Refreshを初期化する", async () => {
     const reactRefreshPreamble =
       '<script type="module">window.$RefreshReg$ = () => {};</script>';
-    const rootView = createClinicRootView(false, "/src/web/client.tsx");
+    const rootView = createClinicRootView(false, "/src/adaptor/primary/web/client.tsx");
     const developmentContext = {
       env: {
         vite: {
@@ -52,7 +52,7 @@ describe("createClinicRootView", () => {
   });
 
   it("production assetsを固定URLで参照する", async () => {
-    const rootView = createClinicRootView(true, "/src/web/client.tsx");
+    const rootView = createClinicRootView(true, "/src/adaptor/primary/web/client.tsx");
 
     const html = await rootView(page, context);
 
@@ -78,7 +78,7 @@ describe("createClinicViteConfig", () => {
     });
 
     expect(resolved.build?.rollupOptions).toMatchObject({
-      input: "./src/web/client.tsx",
+      input: "./src/adaptor/primary/web/client.tsx",
       output: {
         assetFileNames: "static/styles.css",
         entryFileNames: "static/client.js",

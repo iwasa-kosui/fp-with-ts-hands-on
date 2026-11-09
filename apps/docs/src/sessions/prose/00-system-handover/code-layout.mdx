@@ -4,4 +4,6 @@ import CodeLayoutDiagram from "../../../components/CodeLayoutDiagram.astro";
 
 <CodeLayoutDiagram />
 
-<p>5つの段は、次のディレクトリが受け持ちます。入口と失敗の返し方は <code>web/</code>（Web フレームワークの Hono を使います）、読み取りから保存までの順番は <code>useCase/</code>、決まりを使って操作してよいかを決める業務の判断は <code>domain/</code>、データベース（SQLite）の読み書きは <code>adaptor/secondary/sqlite/</code> です。</p>
+<p>5つの段は、次のディレクトリが受け持ちます。入口と失敗の返し方は <code>adaptor/primary/web/</code>（Web フレームワークの Hono を使います）、読み取りから保存までの順番は <code>useCase/</code>、決まりを使って操作してよいかを決める業務の判断は <code>domain/</code>、データベース（SQLite）の読み書きは <code>adaptor/secondary/sqlite/</code> です。</p>
+
+<p><code>adaptor/</code> は外部とつなぐコードの置き場所です。<code>adaptor/primary/</code> は外から依頼を受ける側、<code>adaptor/secondary/</code> はユースケースが外へ頼む先です。</p>

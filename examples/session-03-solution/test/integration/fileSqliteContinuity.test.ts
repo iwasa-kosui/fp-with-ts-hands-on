@@ -25,7 +25,7 @@ import {
   checkIn,
   startExamination,
 } from "../../src/domain/appointment/index.js";
-import { session03SolutionInitialAppointment } from "../../src/web/routes.js";
+import { session03SolutionInitialAppointment } from "../../src/adaptor/primary/web/routes.js";
 
 const directories: string[] = [];
 

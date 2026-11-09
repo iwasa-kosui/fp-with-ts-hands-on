@@ -53,7 +53,7 @@ export const session: SessionSummary = {
   incident: "HTTPから届いた不正なIDを検査せず、診察開始の入力として扱った。",
   exerciseCommand: "pnpm exercise:03",
   exerciseModule: {
-    dir: "examples/session-03/src/boundary",
+    dir: "examples/session-03/src/adaptor/primary/web",
     fileBudget: 1,
     lineBudget: 18,
   },
@@ -68,9 +68,9 @@ export const session: SessionSummary = {
       id: "s03-reject-invalid-appointment-id",
       goal: "不正な予約IDを含むHTTP入力は、StartExaminationInputにならないようにする。",
       startingFailure: "不正な予約IDでも、診察開始の入力として扱える。",
-      targets: ["examples/session-03/src/boundary/startExaminationInput.ts"],
+      targets: ["examples/session-03/src/adaptor/primary/web/startExaminationInput.ts"],
       solutions: [{
-        path: "examples/session-03-solution/src/boundary/startExaminationInput.ts",
+        path: "examples/session-03-solution/src/adaptor/primary/web/startExaminationInput.ts",
         symbol: "StartExaminationInput",
         lines: [6, 18],
       }],
@@ -79,9 +79,9 @@ export const session: SessionSummary = {
       id: "s03-reject-invalid-veterinarian-id",
       goal: "不正な担当獣医師IDを含むHTTP入力は、StartExaminationInputにならないようにする。",
       startingFailure: "不正な担当獣医師IDでも、診察開始の入力として扱える。",
-      targets: ["examples/session-03/src/boundary/startExaminationInput.ts"],
+      targets: ["examples/session-03/src/adaptor/primary/web/startExaminationInput.ts"],
       solutions: [{
-        path: "examples/session-03-solution/src/boundary/startExaminationInput.ts",
+        path: "examples/session-03-solution/src/adaptor/primary/web/startExaminationInput.ts",
         symbol: "StartExaminationInput",
         lines: [6, 18],
       }],
@@ -184,7 +184,7 @@ export const guides = ([
     title: "診察開始のHTTP入力はrouteで組み立てている",
     currentDesign: "routeは、予約IDとbodyのveterinarianIdを1つのobjectにまとめてparseへ渡します。",
     futureRisk: "bodyにnight-shiftが入っていても、ここでは何も確かめません。",
-    path: "src/web/routes.ts",
+    path: "src/adaptor/primary/web/routes.ts",
     highlights: [{ startLineNumber: 109, endLineNumber: 115 }],
   },
   {
@@ -192,7 +192,7 @@ export const guides = ([
     title: "HTTP入力をanyのまま診察開始の入力へ入れている",
     currentDesign: "parseはraw: anyから2項目をコピーし、検査せずに必ずokを返します。",
     futureRisk: "rawがanyなのでraw.veterinarianIdもanyです。night-shiftは確認なしでVeterinarianId型の項目に入ります。",
-    path: "src/boundary/startExaminationInput.ts",
+    path: "src/adaptor/primary/web/startExaminationInput.ts",
     highlights: [{ startLineNumber: 1, endLineNumber: 15 }],
   },
 ] as const) satisfies readonly CodeGuide[];
@@ -216,9 +216,9 @@ export const workspace = ({
     "test/regression/state-modeling.test.ts",
     "src/domain/appointment/appointmentId.ts",
     "src/domain/appointment/veterinarianId.ts",
-    "src/boundary/startExaminationInput.ts",
-    "src/shared/schemaResult.ts",
-    "src/web/routes.ts",
+    "src/adaptor/primary/web/startExaminationInput.ts",
+    "src/domain/shared/schemaResult.ts",
+    "src/adaptor/primary/web/routes.ts",
   ],
 } as const) satisfies SessionWorkspace;
 
@@ -301,24 +301,27 @@ export const brandedIdCode = {
 const schemaSourceSnippets = await loadSolutionSnippets({
   solutions: [
     {
-      path: "examples/session-03/src/boundary/startExaminationInput.ts",
+      path: "examples/session-03/src/adaptor/primary/web/startExaminationInput.ts",
       symbol: "StartExaminationInput",
       lines: [1, 16],
     },
     {
-      path: "examples/session-03-solution/src/boundary/startExaminationInput.ts",
+      path: "examples/session-03-solution/src/adaptor/primary/web/startExaminationInput.ts",
       symbol: "StartExaminationInput",
       lines: [1, 17],
     },
     {
-      path: "examples/session-03-solution/src/shared/schemaResult.ts",
+      path: "examples/session-03-solution/src/domain/shared/schemaResult.ts",
       symbol: "schemaResult",
       lines: [23, 27],
     },
   ],
 });
 const [schemaBefore, schemaAfter, schemaResultSource] =
-  schemaSourceSnippets.map(({ solution, code }) => ({ path: solution.path, code }));
+  schemaSourceSnippets.map(({ solution, code }) => ({
+    path: solution.path.replace(/^examples\/session-03(-solution)?\//, ""),
+    code,
+  }));
 
 export const schemaSourceCode = {
   before: schemaBefore,
