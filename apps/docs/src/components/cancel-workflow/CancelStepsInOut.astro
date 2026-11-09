@@ -2,10 +2,13 @@
 import { Code } from "astro:components";
 import routesSource from "../../../../../examples/final/src/adaptor/primary/web/routes/appointmentRoutes.ts?raw";
 import { quote } from "../../sessions/reference-quote";
+import { lineLabelOf } from "../../sessions/source-quotes";
 import StepControls from "../stepper/StepControls.astro";
 import "../states/states.css";
 
 const schemaCode = quote(routesSource, 74, 76, "const CancelSchema");
+const schemaLabel = lineLabelOf("final", "src/adaptor/primary/web/routes/appointmentRoutes.ts", "const CancelSchema = z.object({", "});");
+const useCaseLabel = lineLabelOf("final", "src/useCase/cancelAppointmentUseCase.ts", "const run =", "      .map((event) => ({ appointment: event.aggregateState }));");
 
 type Entry = Readonly<{ label: string; value: string; tone?: "accent" | "muted" }>;
 
@@ -115,7 +118,7 @@ const stages: readonly Stage[] = [
       <li data-frame>
         <div class="sio__strip" aria-hidden="true">
           <span class="sio__zone sio__zone--boundary">ユースケースの手前の境界</span>
-          <span class="sio__zone sio__zone--use-case">ユースケース</span>
+          <span class="sio__zone sio__zone--use-case">ユースケース <code>{useCaseLabel}</code></span>
           {stages.map((item, index) => (
             <span
               class="sio__node"
@@ -145,7 +148,7 @@ const stages: readonly Stage[] = [
           <section class="sio__card sio__card--stage" data-zone={stage.zone}>
             <h4>{stage.zone === "boundary" ? "境界" : "工程"} <strong>{stage.name}</strong></h4>
             <p class="sio__where">{stage.where}</p>
-            {stage.process !== undefined && <figure class="code-block st-code"><Code code={stage.process} lang="ts" /></figure>}
+            {stage.process !== undefined && <figure class="code-block st-code"><figcaption><span>{schemaLabel.split("/").map((part, index, parts) => (index < parts.length - 1 ? <>{part}/<wbr /></> : <span class="sio__nowrap">{part}</span>))}</span></figcaption><Code code={stage.process} lang="ts" /></figure>}
             {stage.functions.length > 0 && (
               <ol class="sio__functions">
                 {stage.functions.map((fn) => <li><code>{fn}</code></li>)}
@@ -354,6 +357,14 @@ const stages: readonly Stage[] = [
     content: counter(fn) ". ";
     color: var(--role-muted);
     font-weight: 800;
+  }
+
+  .sio .sio__card .code-block figcaption {
+    overflow-wrap: normal;
+  }
+
+  .sio__nowrap {
+    white-space: nowrap;
   }
 
   .sio__failure {

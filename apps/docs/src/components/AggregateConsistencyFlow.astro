@@ -3,6 +3,7 @@ import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
 import appointmentSource from "../../../../examples/final/src/domain/appointment/appointment.ts?raw";
 import transitionsSource from "../../../../examples/session-06-solution/src/domain/appointment/transitions.ts?raw";
+import { lineLabelOf } from "../sessions/source-quotes";
 
 type SceneName = "cancel" | "start-examination";
 
@@ -106,7 +107,12 @@ const scenes = {
     toAudit: "診察が始まった",
     missingAudit: "診察開始が無い",
     snippet: {
-      path: "examples/session-06-solution/src/domain/appointment/transitions.ts",
+      path: lineLabelOf(
+        "session-06-solution",
+        "src/domain/appointment/transitions.ts",
+        "    (appointment: CheckedIn, veterinarianId: VeterinarianId): ExaminationStarted => {",
+        "    },",
+      ),
       code: condensedCode ? condenseStart(startCode) : startCode,
       keys: ['kind: "ExaminationStarted",', "aggregateState,"],
     },

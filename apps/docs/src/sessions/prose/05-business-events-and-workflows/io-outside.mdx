@@ -1,5 +1,8 @@
 import { Code } from "astro:components";
 import { cancelSource } from "../../pages/05-business-events-and-workflows-content";
+import { lineLabelOf } from "../../source-quotes";
+
+export const cancelLabel = lineLabelOf("session-05-solution", "src/domain/appointment/appointment.ts", "export const cancel = (", "});");
 
 <div class="session-split">
   <div>
@@ -8,7 +11,7 @@ import { cancelSource } from "../../pages/05-business-events-and-workflows-conte
     <p>完成形の <code>Appointment.cancel</code> は、<code>petId</code> と <code>ownerId</code> も残し、時刻とイベント ID を <code>createEvent</code> から受け取ります。</p>
   </div>
   <figure class="code-block" data-teaching-example>
-    <figcaption>判定の関数 cancel（examples/session-05-solution の簡略版）</figcaption>
+    <figcaption>{cancelLabel}</figcaption>
     <Code code={cancelSource} lang="ts" />
   </figure>
 </div>

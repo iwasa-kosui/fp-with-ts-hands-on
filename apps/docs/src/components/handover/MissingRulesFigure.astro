@@ -2,6 +2,7 @@
 import { Code } from "astro:components";
 import repositorySource from "../../../../../examples/session-00/src/adaptor/secondary/sqlite/appointmentRepository.ts?raw";
 import appointmentSource from "../../../../../examples/session-00/src/domain/appointment/appointment.ts?raw";
+import { lineLabelOf } from "../../sessions/source-quotes";
 import StepControls from "../stepper/StepControls.astro";
 
 const fail = (message: string): never => {
@@ -49,8 +50,26 @@ const updateStatus = cut(
 const appendAudit = cut(repositorySource, "const appendAudit = ", blockEnd, "payload: appointment,");
 
 const codes = [
-  { id: "update-status", file: "domain/appointment/appointment.ts", ...updateStatus },
-  { id: "append-audit", file: "adaptor/secondary/sqlite/appointmentRepository.ts", ...appendAudit },
+  {
+    id: "update-status",
+    file: lineLabelOf(
+      "session-00",
+      "src/domain/appointment/appointment.ts",
+      "export const updateStatus = (",
+      "): Appointment => ({ ...appointment, ...extra, status });",
+    ),
+    ...updateStatus,
+  },
+  {
+    id: "append-audit",
+    file: lineLabelOf(
+      "session-00",
+      "src/adaptor/secondary/sqlite/appointmentRepository.ts",
+      "  const appendAudit = ({ appointment, ...event }: AuditEvent): void => {",
+      "  };",
+    ),
+    ...appendAudit,
+  },
 ] as const;
 
 const rules = [

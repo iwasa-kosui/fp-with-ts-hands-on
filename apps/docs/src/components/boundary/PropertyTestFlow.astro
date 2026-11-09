@@ -2,7 +2,7 @@
 import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
-import { blockOf } from "../../sessions/source-quotes";
+import { blockOf, lineLabelOf } from "../../sessions/source-quotes";
 import StepControls from "../stepper/StepControls.astro";
 
 type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
@@ -40,8 +40,17 @@ const goodContact = blockOf(
 const badContact = goodContact.replace(protectedLine, unprotectedLine);
 if (badContact === goodContact) throw new Error(`PropertyTestFlow: ${protectedLine} is not in ${contactPath}`);
 const emailLine = lineOf(goodContact, "ownerEmail:");
+const emailSourceLine = goodContact.split("\n")[emailLine - 1] ?? "";
 
-const testPath = "test/contact.test.ts";
+const teachingLabel = "説明用（配布コードにはありません）";
+const contactBlockLabel = lineLabelOf(
+  "session-03-solution",
+  contactPath,
+  "const OwnerContactSchema = z",
+  "  .readonly();",
+);
+const emailLineLabel = lineLabelOf("session-03-solution", contactPath, emailSourceLine, emailSourceLine);
+
 const testCode = `import fc from "fast-check";
 import { it } from "vitest";
 
@@ -62,7 +71,6 @@ it("どんなメールアドレスでも、JSON にしても出ない", () => {
   );
 });`;
 
-const typeTestPath = "test/contact.type-test.ts";
 const typeTestCode = `import type { OwnerContact } from "../src/adaptor/primary/web/ownerContact.js";
 
 declare const contact: OwnerContact;
@@ -93,24 +101,26 @@ const failedRun = [
 const passedCompile = "（出力なし。終了コード 0）";
 const failedCompile = "test/contact.type-test.ts(5,1): error TS2578: Unused '@ts-expect-error' directive.";
 
-const contactCode = (code: string): Item => ({
+const contactCode = (code: string, path: string): Item => ({
   kind: "code",
-  path: contactPath,
+  path,
   code,
   marks: [emailLine],
 });
 const typeTestItem: Item = {
   kind: "code",
-  path: typeTestPath,
+  path: teachingLabel,
   code: typeTestCode,
   marks: [lineOf(typeTestCode, "@ts-expect-error"), lineOf(typeTestCode, "const plain")],
 };
-const emailOnly = (code: string): Item => ({
+const emailOnly = (code: string, path: string): Item => ({
   kind: "code",
-  path: contactPath,
+  path,
   code: code.split("\n")[emailLine - 1]?.trim() ?? "",
   marks: [1],
 });
+
+const badLabel = (label: string) => `${teachingLabel} 実物: ${label}`;
 
 const beforeHeading = "変更前（正しいコード）";
 const afterHeading = "変更後（悪い変更）";
@@ -131,7 +141,7 @@ const frames: readonly Frame[] = [
         items: [
           {
             kind: "code",
-            path: testPath,
+            path: teachingLabel,
             code: testCode,
             marks: [lineOf(testCode, "const emailAddress"), lineOf(testCode, "return !JSON.stringify")],
           },
@@ -154,13 +164,13 @@ const frames: readonly Frame[] = [
     caption:
       "正しいコードでは、ownerEmail の値が Sensitive に包まれて JSON で [REDACTED] になるので、テストは通ります。",
     columns: [
-      { side: "before", heading: beforeHeading, items: [contactCode(goodContact)] },
+      { side: "before", heading: beforeHeading, items: [contactCode(goodContact, contactBlockLabel)] },
       {
         side: "before",
-        heading: "テストの結果",
+        heading: "テストの結果（説明用）",
         items: [
           { kind: "result", label: jsonLabel, tone: "pass", text: redactedJson },
-          { kind: "result", label: "vitest の出力", tone: "pass", text: passedRun },
+          { kind: "result", label: "vitest の出力（説明用）", tone: "pass", text: passedRun },
         ],
       },
     ],
@@ -169,8 +179,8 @@ const frames: readonly Frame[] = [
     caption:
       "悪い変更の例として、ownerEmail の行から .transform(Sensitive.of) を外します。メールアドレスは包まれなくなります。",
     columns: [
-      { side: "before", heading: beforeHeading, items: [contactCode(goodContact)] },
-      { side: "after", heading: afterHeading, items: [contactCode(badContact)] },
+      { side: "before", heading: beforeHeading, items: [contactCode(goodContact, contactBlockLabel)] },
+      { side: "after", heading: afterHeading, items: [contactCode(badContact, badLabel(contactBlockLabel))] },
     ],
   },
   {
@@ -182,7 +192,7 @@ const frames: readonly Frame[] = [
         heading: beforeHeading,
         items: [
           { kind: "result", label: jsonLabel, tone: "pass", text: redactedJson },
-          { kind: "result", label: "vitest の出力", tone: "pass", text: passedRun },
+          { kind: "result", label: "vitest の出力（説明用）", tone: "pass", text: passedRun },
         ],
       },
       {
@@ -190,7 +200,7 @@ const frames: readonly Frame[] = [
         heading: afterHeading,
         items: [
           { kind: "result", label: jsonLabel, tone: "fail", text: leakedJson, hit: leakedEmail },
-          { kind: "result", label: "vitest の出力", tone: "fail", text: failedRun, hit: `["${leakedEmail}"]` },
+          { kind: "result", label: "vitest の出力（説明用）", tone: "fail", text: failedRun, hit: `["${leakedEmail}"]` },
         ],
       },
     ],
@@ -203,18 +213,18 @@ const frames: readonly Frame[] = [
         side: "before",
         heading: beforeHeading,
         items: [
-          emailOnly(goodContact),
+          emailOnly(goodContact, emailLineLabel),
           typeTestItem,
-          { kind: "result", label: "tsc の出力", tone: "pass", text: passedCompile },
+          { kind: "result", label: "tsc の出力（説明用）", tone: "pass", text: passedCompile },
         ],
       },
       {
         side: "after",
         heading: afterHeading,
         items: [
-          emailOnly(badContact),
+          emailOnly(badContact, badLabel(emailLineLabel)),
           typeTestItem,
-          { kind: "result", label: "tsc の出力", tone: "fail", text: failedCompile },
+          { kind: "result", label: "tsc の出力（説明用）", tone: "fail", text: failedCompile },
         ],
       },
     ],
@@ -375,6 +385,7 @@ const sideMark = { before: "●", after: "▲", plain: "■" } as const;
   }
 
   .property-flow__code figcaption code {
+    font-family: inherit;
     font-size: 0.6875rem;
     overflow-wrap: anywhere;
     white-space: normal;
