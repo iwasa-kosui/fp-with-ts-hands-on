@@ -211,27 +211,64 @@ const dedent = (code: string): string => {
   return lines.map((line) => line.slice(indent)).join("\n");
 };
 
+const reflow = (
+  code: string,
+  breaks: ReadonlyArray<readonly [line: string, replacement: string]>,
+): string =>
+  breaks.reduce((current, [line, replacement]) => {
+    if (!current.includes(line)) throw new Error(`${line} is not in the quoted code`);
+    return current.replace(line, () => replacement);
+  }, code);
+
 export const storeCode = {
   sqlite: {
     path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
-    code: dedent(
-      blockOf(
-        solutionFiles,
-        "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
-        "    database.transaction((transaction) => {",
-        "    });",
+    code: reflow(
+      dedent(
+        blockOf(
+          solutionFiles,
+          "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+          "    database.transaction((transaction) => {",
+          "    });",
+        ),
       ),
+      [
+        [
+          "  const current = findInTransaction(transaction, event.appointmentId);",
+          "  const current =\n    findInTransaction(transaction, event.appointmentId);",
+        ],
+        [
+          '  if (current === undefined || current.kind !== "CheckedIn") {',
+          '  if (current === undefined ||\n    current.kind !== "CheckedIn") {',
+        ],
+      ],
     ),
   },
   inMemory: {
     path: "src/adaptor/inMemoryExaminationStartedStore.ts",
-    code: dedent(
-      blockOf(
-        solutionFiles,
-        "src/adaptor/inMemoryExaminationStartedStore.ts",
-        "          const currentAppointment = appointments.get(event.appointmentId);",
-        "          events = nextEvents;",
+    code: reflow(
+      dedent(
+        blockOf(
+          solutionFiles,
+          "src/adaptor/inMemoryExaminationStartedStore.ts",
+          "          const currentAppointment = appointments.get(event.appointmentId);",
+          "          events = nextEvents;",
+        ),
       ),
+      [
+        [
+          "const currentAppointment = appointments.get(event.appointmentId);",
+          "const currentAppointment =\n  appointments.get(event.appointmentId);",
+        ],
+        [
+          "  throw new Error(`Appointment missing at commit: ${event.appointmentId}`);",
+          "  throw new Error(\n    `Appointment missing at commit: ${event.appointmentId}`,\n  );",
+        ],
+        [
+          "nextAppointments.set(event.appointmentId, event.aggregateState);",
+          "nextAppointments.set(\n  event.appointmentId, event.aggregateState);",
+        ],
+      ],
     ),
   },
 };
