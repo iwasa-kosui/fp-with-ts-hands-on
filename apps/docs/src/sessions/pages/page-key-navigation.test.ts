@@ -63,10 +63,23 @@ describe("pageKeyDirection", () => {
     '[role="slider"]',
     ".monaco-editor",
     ".xterm",
-    ".guard-answer__panel",
+    ".code-explorer",
+    ".guard-exercise",
+    ".guard-answer",
   ])("%s の中では移動しない", (selector) => {
     expect(pageKeyIgnoredSelector.split(", ")).toContain(selector);
     expect(pageKeyDirection(keyEvent(), targetInside(selector))).toBeNull();
+  });
+});
+
+describe("ファイルタブの上での左右キー", () => {
+  it("CodeExplorer のファイルタブのボタンでは移動しない", () => {
+    document.body.innerHTML = `
+      <section class="code-explorer">
+        <nav class="code-explorer__tabs"><button type="button" data-path="a.ts">a.ts</button></nav>
+      </section>`;
+    const tab = document.querySelector("button") as HTMLButtonElement;
+    expect(pageKeyDirection(keyEvent(), tab)).toBeNull();
   });
 });
 

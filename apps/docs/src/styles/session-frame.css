@@ -20,6 +20,7 @@ body:has(.session-frame) {
   --frame-bar-height: 48px;
   --frame-foot-height: 56px;
   --frame-role-height: 1.75rem;
+  --frame-body-pad: 0.5rem;
   --frame-figure-height: min(520px, calc(100dvh - var(--frame-bar-height) - var(--frame-foot-height) - 180px - var(--frame-role-height)));
   --frame-edge: max(1rem, calc((100% - var(--frame-column)) / 2));
   display: flex;
@@ -256,10 +257,10 @@ body:has(.session-frame) {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  justify-content: safe center;
+  justify-content: flex-start;
   width: 100%;
   min-width: 0;
-  padding: 0.5rem clamp(1rem, 3vw, 2.5rem);
+  padding: var(--frame-body-pad) clamp(1rem, 3vw, 2.5rem);
   line-height: 1.65;
 }
 
@@ -467,6 +468,20 @@ body:has(.session-frame) {
     border-right: 1px solid var(--case-divider);
     background: var(--case-paper);
     scrollbar-width: thin;
+  }
+}
+
+@media (min-width: 1100px) {
+  .session-frame:has(.guard-exercise) {
+    --frame-side: 0px;
+  }
+
+  .session-frame:has(.guard-exercise) .session-frame__menu {
+    display: block;
+  }
+
+  .session-frame:has(.guard-exercise) .session-frame__sidebar {
+    display: none;
   }
 }
 

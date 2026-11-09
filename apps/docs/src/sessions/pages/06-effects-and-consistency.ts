@@ -17,7 +17,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "brief",
     minutes: 1,
-    role: "課題1〜3: 予約の状態だけが残る事故と、再現テストが安定しないこと、保存の失敗と競合を返し分けられないことを確かめます。",
+    role: "課題: 予約の状態だけが残る事故と、再現テストが安定しないこと、保存の失敗と競合を返し分けられないことを確かめます。",
   },
   {
     slug: "current-code",
@@ -25,7 +25,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "brief",
     minutes: 1.5,
-    role: "課題1〜3: 片方だけ残る原因の2回の保存、時刻と ID の直接の生成、返し分けられない戻り値の型を、今のコードで確かめます。",
+    role: "課題: 片方だけ残る原因の2回の保存、時刻と ID の直接の生成、返し分けられない戻り値の型を、今のコードで確かめます。",
   },
   {
     slug: "dual-write",
@@ -33,7 +33,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "teach",
     minutes: 1,
-    role: "課題1: 2回目の保存が失敗したときに、片方だけが残る仕組みを確かめます。",
+    role: "課題: 2回目の保存が失敗したときに、片方だけが残る仕組みを確かめます。",
   },
   {
     slug: "aggregate",
@@ -41,7 +41,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1,
-    role: "事前知識（課題1）: 片方だけ残らないようにするには、一緒に保存するものの範囲を決める考え方が要ります。",
+    role: "事前知識: 片方だけ残らないようにするには、一緒に保存するものの範囲を決める考え方が要ります。",
   },
   {
     slug: "and-through",
@@ -49,7 +49,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1,
-    role: "事前知識（課題1）: 保存は非同期なので ResultAsync で表し、保存の後もイベントを次の処理へ渡す andThrough を使います。",
+    role: "事前知識: 保存は非同期なので ResultAsync で表し、保存の後もイベントを次の処理へ渡す andThrough を使います。",
   },
   {
     slug: "ports",
@@ -57,7 +57,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1,
-    role: "事前知識（課題2）: 時刻と ID をテストで固定するには、本物と偽物を差し替えられる約束が要ります。",
+    role: "事前知識: 時刻と ID をテストで固定するには、本物と偽物を差し替えられる約束が要ります。",
   },
   {
     slug: "time-and-id",
@@ -65,7 +65,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策（課題2）: 時刻と ID を port から受け取り、1回の実行で一度だけ作ります。",
+    role: "解決策: 時刻と ID を port から受け取り、1回の実行で一度だけ作ります。",
   },
   {
     slug: "one-save",
@@ -73,7 +73,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策（課題1）: 状態と監査記録を1つのイベントにして、store へ1回で渡します。",
+    role: "解決策: 状態と監査記録を1つのイベントにして、store へ1回で渡します。",
   },
   {
     slug: "save-failure",
@@ -81,7 +81,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策（課題1）: 保存の途中で失敗したときに、何も残らないことを確かめます。",
+    role: "解決策: 保存の途中で失敗したときに、何も残らないことを確かめます。",
   },
   {
     slug: "conflict",
@@ -89,7 +89,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策（課題3）: 読んだ後、保存の前に別の依頼が先に診察を始めていた競合を、Err で返す形を確かめます。",
+    role: "解決策: 読んだ後、保存の前に別の依頼が先に診察を始めていた競合を、Err で返す形を確かめます。",
   },
   {
     slug: "reject",
@@ -97,7 +97,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策（課題3）: データベースの障害を Err に変えず、例外のまま外側へ渡します。",
+    role: "解決策: データベースの障害を Err に変えず、例外のまま外側へ渡します。",
   },
   {
     slug: "flow",
@@ -105,7 +105,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策（課題1〜3）: ここまでの部品をつないだ、診察開始の全体の流れを確かめます。",
+    role: "解決策: ここまでの部品をつないだ、診察開始の全体の流れを確かめます。",
   },
   {
     slug: "two-paths",
@@ -113,7 +113,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策（課題3）: 業務エラーを Err で返す経路と、システムエラーを例外で渡す経路を見分けます。",
+    role: "解決策: 業務エラーを Err で返す経路と、システムエラーを例外で渡す経路を見分けます。",
   },
   {
     slug: "checks",
@@ -121,7 +121,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策を守る（課題4）: 直したコードも、次の変更で元に戻ることがあります。守る仕組みが要ります。",
+    role: "解決策を守る: 直したコードも、次の変更で元に戻ることがあります。守る仕組みが要ります。",
   },
   {
     slug: "exercise",
@@ -129,7 +129,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "exercise",
     minutes: 15,
-    role: "解決策を守る（課題4）: 学んだ仕組みを足して、悪い変更を検出します。",
+    role: "解決策を守る: 学んだ仕組みを足して、悪い変更を検出します。",
   },
   {
     slug: "peer-review",
@@ -137,7 +137,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "review",
     minutes: 3,
-    role: "解決策を守る（課題4）: 自分の仕組みの穴を、隣の人に見つけてもらいます。",
+    role: "解決策を守る: 自分の仕組みの穴を、隣の人に見つけてもらいます。",
   },
   {
     slug: "guard",
