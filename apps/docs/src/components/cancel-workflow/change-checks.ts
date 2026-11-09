@@ -112,7 +112,7 @@ const cases: readonly ChangeCase[] = [
     ],
     results: {
       lint: { found: false, output: "エラーなし" },
-      tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true, setting: "// import を足しても実行結果は変わりません" },
+      tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true, setting: "// import を追加しても実行結果は変わりません" },
     },
     why: "`webBookingChannel` は domain の中のファイルです。パターンをフォルダの単位で記述すれば、名前に web を含むだけのファイルを誤検知（正しいコードを誤った変更として検出すること）しません。",
   },

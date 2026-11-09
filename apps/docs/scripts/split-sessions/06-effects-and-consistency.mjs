@@ -6,7 +6,7 @@ const expectedPages = [
   ["aggregate", "同時に保存する範囲の定義", "knowledge", "teach", 1],
   ["and-through", "保存後のイベントの受け渡し", "knowledge", "teach", 1],
   ["ports", "外部から渡す処理の型（port）", "knowledge", "teach", 1],
-  ["time-and-id", "時刻と ID の生成は1回の実行につき一度", "solution", "teach", 1],
+  ["time-and-id", "1回の実行で一度だけ生成する時刻と ID", "solution", "teach", 1],
   ["one-save", "状態と監査記録の一括保存", "solution", "teach", 1.5],
   ["save-failure", "保存の途中で失敗した場合の結果", "solution", "teach", 1],
   ["conflict", "競合時の Err の返却", "solution", "teach", 1],

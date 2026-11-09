@@ -61,7 +61,7 @@ export const sessionPages = [
   },
   {
     slug: "time-and-id",
-    title: "時刻と ID の生成は1回の実行につき一度",
+    title: "1回の実行で一度だけ生成する時刻と ID",
     flow: "solution",
     kind: "teach",
     minutes: 1,

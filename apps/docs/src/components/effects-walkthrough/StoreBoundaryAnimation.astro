@@ -241,7 +241,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "off",
       },
       {
-        text: "次に `eventLog.append` が監査記録を書き込もうとしますが、書き込みが失敗し、例外を投げます。",
+        text: "次に `eventLog.append` が監査記録の書き込みを試みますが失敗し、例外を投げます。",
         call: { pane: "before-call", lines: [1] },
         impl: { pane: "before-append", lines: [9, 10, 11] },
         tx: "none",
@@ -250,7 +250,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "home-failed",
       },
       {
-        text: "例外は外側で 500 を返します。状態は `InExamination` のまま、`ExaminationStarted` の監査記録はありません。誰が診察を開始したかを後から確認できません。",
+        text: "外側が例外を受け取り、500 を返します。状態は `InExamination` のまま、`ExaminationStarted` の監査記録はありません。誰が診察を開始したかを後から確認できません。",
         call: null,
         impl: null,
         tx: "none",
@@ -354,7 +354,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "off",
       },
       {
-        text: "`appendAudit` の書き込みが失敗し、`AppointmentPersistenceError` を投げます。",
+        text: "`appendAudit` が書き込みに失敗し、`AppointmentPersistenceError` を投げます。",
         call: { pane: "after-call", lines: [0] },
         impl: { pane: "after-audit", lines: [5, 6, 7] },
         tx: "open",

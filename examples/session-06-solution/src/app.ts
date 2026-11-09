@@ -37,9 +37,7 @@ export type DatabaseBackedApp = Hono & Readonly<{ close: () => void }>;
 
 const defaultEffects: EventContextDependencies = {
   clock: { now: () => new Date().toISOString() },
-  eventIdGenerator: {
-    generate: () => EventId.parse(randomUUID()),
-  },
+  eventIdGenerator: { generate: () => EventId.parse(randomUUID()) },
 };
 
 const createHonoApp = (

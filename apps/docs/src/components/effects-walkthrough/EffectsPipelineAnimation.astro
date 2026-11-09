@@ -276,7 +276,7 @@ const scenes: readonly Scene[] = [
     settled: upstream,
     frames: [
       {
-        text: `${sameUntil}\`event\` が作られ、\`store\` を呼びます。`,
+        text: `${sameUntil}\`event\` を作り、\`store\` を呼びます。`,
         at: "through",
         impl: "store",
         lines: [0, 1, 2, 3],
@@ -312,7 +312,7 @@ const scenes: readonly Scene[] = [
     settled: upstream,
     frames: [
       {
-        text: sceneKey === "reject" ? rejectStart : `${sameUntil}\`event\` が作られ、\`store\` を呼びます。`,
+        text: sceneKey === "reject" ? rejectStart : `${sameUntil}\`event\` を作り、\`store\` を呼びます。`,
         at: "through",
         impl: "store",
         lines: [0, 1, 2, 3],
