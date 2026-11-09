@@ -578,7 +578,7 @@ export const MonacoEditor = (props: EditorProps) => {
             {diagnostics.length > 0
               ? `型エラー ${diagnostics.length} 件`
               : checkedKey === checkKey
-                ? "このファイルに型エラーは見つかっていません"
+                ? "このファイルに型エラーは検出されていません"
                 : "型を検査しています"}
           </h3>
           {diagnostics.length > 0 ? (

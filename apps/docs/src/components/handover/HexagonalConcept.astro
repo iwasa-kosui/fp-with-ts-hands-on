@@ -4,17 +4,22 @@ import StepControls from "../stepper/StepControls.astro";
 const frames = [
   {
     caption:
-      "業務ロジックを中心に配置し、画面やデータベースとは出入口で接続します。矢印は依存の向きで、すべて内側を向きます。出入口のうち、呼び出し口は外部からユースケースを呼ぶ接続点、port はユースケースが外部に要求する処理の型です。外側の接続コードをアダプタと呼びます。",
+      "業務ロジックを中心に配置し、画面やデータベースとは出入口で接続します。外側の接続コードをアダプタと呼びます。矢印は依存の向きで、すべて内側を向きます。",
     alt: "中央に六角形が2重にあります。内側の六角形が業務ロジック、それを囲む六角形がユースケースです。ユースケースの輪には、呼び出し口と port の2つの出入口の印があります。画面とデータベースは、アダプタを挟んで外側にあります。画面側のアダプタから呼び出し口へ、データベース側のアダプタから port へ、ユースケースから業務ロジックへ、矢印がすべて内側を向いています。図には、内側、外側、外の世界の札が付いています。",
   },
   {
     caption:
-      "依頼は画面から出入口を通って内側に入り、port を介してデータベースへ向かいます。依頼の向きにかかわらず、依存の矢印は内向きのままです。内側は port の型を定義するだけで、外側がその型を実装します。",
-    alt: "画面からデータベースまで続く1本の点線が加わっています。点線は、画面側のアダプタから呼び出し口の印を通って内側に入り、業務ロジックの下を過ぎ、port の印を通って、データベース側のアダプタへ出ていきます。点線が届いたあと、port へ向かう依存の矢印が太くなり、依頼と逆向きの札が付きます。",
+      "依頼は画面から画面側の出入口を通って内側に入り、データベース側の出入口からデータベースへ向かいます。画面側の出入口は外部からユースケースを呼ぶ接続点で、この教材では呼び出し口と呼びます（一般には primary port と呼ばれます）。",
+    alt: "画面からデータベースまで続く1本の点線が加わっています。点線は、画面側のアダプタから呼び出し口の印を通って内側に入り、業務ロジックの下を過ぎ、port の印を通って、データベース側のアダプタへ出ていきます。",
   },
   {
     caption:
-      "配布コードのディレクトリを対応付けます。<code>domain/</code> と <code>useCase/</code> が内側、<code>adaptor/</code> が外側です。事故で欠けていた業務ロジックを実装する <code>domain/</code> が図の中心です。中心に配置すると、画面やデータベースの変更が業務ロジックに影響しません。",
+      "データベース側の出入口 port は、ユースケースが外部に要求する処理の型です。内側は port の型を定義するだけで、外側のアダプタがその型を実装します。依頼と逆向きでも、依存の矢印は内向きのままです。",
+    alt: "画面からデータベースまで続く点線は、表示されたままです。データベース側のアダプタから port へ向かう依存の矢印が太くなり、依頼と逆向きの札が付きます。",
+  },
+  {
+    caption:
+      "S00 のコードのディレクトリを対応付けます。<code>domain/</code> と <code>useCase/</code> が内側、<code>adaptor/</code> が外側です。事故で欠けていた業務ロジックを実装する <code>domain/</code> が図の中心です。中心に配置すると、画面やデータベースの実装の差し替えが業務ロジックに影響しません。",
     alt: "ディレクトリの札が付いています。業務ロジックは domain/、ユースケースは useCase/、画面側のアダプタは adaptor/primary/web/、データベース側のアダプタは adaptor/secondary/sqlite/ です。図の中心にある domain/ の札を、塗りと太い枠で強調しています。",
   },
   {
@@ -598,34 +603,36 @@ const boxList = (layout: (typeof layouts)[number]) => [
   }
 
   .hx__svg[data-scene="2"] .hx__request,
-  .hx__svg[data-scene="4"] .hx__port-type {
+  .hx__svg[data-scene="3"] .hx__request,
+  .hx__svg[data-scene="5"] .hx__port-type {
     opacity: 1;
   }
 
   .hx__svg[data-scene="1"] .hx__tags,
-  .hx__svg[data-scene="2"] .hx__tags {
+  .hx__svg[data-scene="2"] .hx__tags,
+  .hx__svg[data-scene="3"] .hx__tags {
     opacity: 0;
   }
 
-  .hx__svg[data-scene="2"] .hx__dep--port,
-  .hx__svg[data-scene="4"] .hx__dep--port {
+  .hx__svg[data-scene="3"] .hx__dep--port,
+  .hx__svg[data-scene="5"] .hx__dep--port {
     stroke-width: 4.5;
   }
 
-  .hx__svg[data-scene="2"] .hx__reverse {
+  .hx__svg[data-scene="3"] .hx__reverse {
     opacity: 1;
   }
 
-  .hx__svg[data-scene="3"] .hx__tag--core rect {
+  .hx__svg[data-scene="4"] .hx__tag--core rect {
     fill: color-mix(in srgb, var(--role-accent) 22%, var(--role-surface));
     stroke-width: 3.5;
   }
 
-  .hx__svg[data-scene="4"] .hx__hex--outer {
+  .hx__svg[data-scene="5"] .hx__hex--outer {
     fill: var(--hx-ring-fill);
   }
 
-  .hx__svg[data-scene="4"] .hx__mark--port {
+  .hx__svg[data-scene="5"] .hx__mark--port {
     stroke-width: 4;
   }
 
@@ -644,7 +651,7 @@ const boxList = (layout: (typeof layouts)[number]) => [
     color: var(--role-accent);
   }
 
-  .hx[data-ready]:not([data-step="1"]) .hx__legend-flow {
+  .hx[data-ready]:not([data-step="1"]):not([data-step="2"]) .hx__legend-flow {
     visibility: hidden;
   }
 
@@ -675,12 +682,12 @@ const boxList = (layout: (typeof layouts)[number]) => [
       animation: hx-reveal 2.4s ease-in-out 1 both;
     }
 
-    .hx[data-ready] .hx__svg[data-scene="2"] .hx__dep--port {
-      animation: hx-emphasis 0.4s ease-out 2.6s 1 both;
+    .hx[data-ready] .hx__svg[data-scene="3"] .hx__dep--port {
+      animation: hx-emphasis 0.4s ease-out 1 both;
     }
 
-    .hx[data-ready] .hx__svg[data-scene="2"] .hx__reverse {
-      animation: hx-appear 0.4s ease-out 2.6s 1 both;
+    .hx[data-ready] .hx__svg[data-scene="3"] .hx__reverse {
+      animation: hx-appear 0.4s ease-out 1 both;
     }
   }
 

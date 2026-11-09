@@ -18,10 +18,10 @@ const states = [
 ] as const;
 
 const events = [
-  ["来院を", "記録する"],
+  ["受付", "する"],
   ["診察を", "開始する"],
   ["診察結果を", "記録する"],
-  ["会計する", ""],
+  ["会計を", "記録する"],
 ] as const;
 
 const x = (index: number) => left + index * pitch;
@@ -54,7 +54,7 @@ const frames = [
   {
     edge: "e0",
     states: ["Scheduled", "CheckedIn"],
-    caption: "来院を記録すると、「予約済み」の予約が「来院済み」になります。",
+    caption: "受付すると、「予約済み」の予約が「来院済み」になります。",
   },
   {
     edge: "e1",
@@ -69,7 +69,7 @@ const frames = [
   {
     edge: "e3",
     states: ["AwaitingPayment", "Paid"],
-    caption: "会計すると、「会計待ち」の予約が「会計済み」になります。「会計済み」から先へは進みません。",
+    caption: "会計を記録すると、「会計待ち」の予約が「会計済み」になります。「会計済み」から先へは進みません。",
   },
   {
     edge: "cancel",
@@ -90,7 +90,7 @@ const framesData = JSON.stringify(frames.map(({ edge, states: active }) => ({ ed
         <path d={edge.line} class="road__line"></path>
         <path d={edge.head} class="road__head"></path>
         <text x={edge.centerX} y={arrowY - 24} text-anchor="middle" class="road__event">{edge.first}</text>
-        {edge.second !== "" && <text x={edge.centerX} y={arrowY - 10} text-anchor="middle" class="road__event">{edge.second}</text>}
+        <text x={edge.centerX} y={arrowY - 10} text-anchor="middle" class="road__event">{edge.second}</text>
       </g>
     ))}
 

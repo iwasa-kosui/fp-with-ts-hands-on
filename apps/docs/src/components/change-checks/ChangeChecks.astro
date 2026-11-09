@@ -26,9 +26,11 @@ const { cases, mechanisms } = set;
       <div class="cc__stack cc__legends">
         {cases.map((changeCase, index) => (
           <p class="cc__legend" data-outcome={changeCase.id} data-active={index === 0}>
-            <span>元のコードとの差分（{changeCase.target}）</span>
-            <span class="cc__mark cc__mark--del">− 削除した行</span>
-            <span class="cc__mark cc__mark--add">+ 追加した行</span>
+            <span>正しいコードからの変更（{changeCase.target}）</span>
+            <span class="cc__marks">
+              <span class="cc__mark cc__mark--del">− 削除した行</span>
+              <span class="cc__mark cc__mark--add">+ 追加した行</span>
+            </span>
           </p>
         ))}
       </div>
@@ -233,6 +235,12 @@ const { cases, mechanisms } = set;
 
   .cc__stack > [data-active] {
     visibility: visible;
+  }
+
+  .cc__marks {
+    display: flex;
+    gap: 0 0.75rem;
+    white-space: nowrap;
   }
 
   .cc__mark {

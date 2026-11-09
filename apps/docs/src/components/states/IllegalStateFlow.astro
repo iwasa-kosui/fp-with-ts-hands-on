@@ -6,8 +6,8 @@ import StepControls from "../stepper/StepControls.astro";
 import "./states.css";
 
 const generations = {
-  before: { snapshot: "session-00", tag: "S00 の配布コード" },
-  after: { snapshot: "session-01", tag: "この回の開始コード" },
+  before: { snapshot: "session-00", tag: "S00 のコード" },
+  after: { snapshot: "session-01", tag: "S01 の開始コード" },
 } as const;
 
 const directory = "src/domain/appointment";
@@ -56,21 +56,38 @@ type Lit = Readonly<{ line: number; note?: string }>;
 const withNotes = (lines: readonly number[], notes: readonly string[]): readonly Lit[] =>
   lines.map((line, index) => ({ line, note: notes[index] }));
 
+const rangeOf = (source: string, firstLine: string, lastLine: string): Readonly<{ start: number; end: number }> => {
+  const lines = source.split("\n");
+  const start = lines.indexOf(firstLine);
+  const end = lines.indexOf(lastLine, start);
+  if (start < 0 || end < 0) throw new Error(`"${firstLine}" to "${lastLine}" is not in the source`);
+  return { start, end };
+};
+
 const plain = (lines: readonly number[]): readonly Lit[] => lines.map((line) => ({ line }));
+
+const spanOf = (range: Readonly<{ start: number; end: number }>): readonly number[] =>
+  Array.from({ length: range.end - range.start + 1 }, (_, offset) => range.start + offset);
 
 const beforeTypeStart = "export type Appointment = Readonly<{";
 const beforeTypeNeedles = ["status: string;", "veterinarianId?: string;", "examinationStartedAt?: string;"];
 const beforeTypeLines = litLinesOf(sourceOfKey("before-appointment"), beforeTypeStart, beforeTypeNeedles);
 const beforeUpdateStart = "export const updateStatus = (";
 const beforeUpdateLines = litLinesOf(sourceOfKey("before-appointment"), beforeUpdateStart, ["status: string"]);
-const [beforeTypeAnchor] = litLinesOf(sourceOfKey("before-appointment"), beforeTypeStart, [beforeTypeStart]);
-const [beforeUpdateAnchor] = litLinesOf(sourceOfKey("before-appointment"), beforeUpdateStart, [beforeUpdateStart]);
+const beforeTypeRange = rangeOf(sourceOfKey("before-appointment"), beforeTypeStart, "}>;");
+const beforeTypeShown = [beforeTypeRange.start, ...beforeTypeLines, beforeTypeRange.end];
+const beforeUpdateRange = rangeOf(
+  sourceOfKey("before-appointment"),
+  beforeUpdateStart,
+  "): Appointment => ({ ...appointment, ...extra, status });",
+);
 
 const afterTypeStart = "export type InExamination = Readonly<{";
 const afterTypeNeedles = ['kind: "InExamination";', "veterinarianId: string;", "examinationStartedAt: string;"];
 const afterTypeLines = litLinesOf(sourceOfKey("after-appointment"), afterTypeStart, afterTypeNeedles);
 const afterRequiredLines = litLinesOf(sourceOfKey("after-appointment"), afterTypeStart, afterTypeNeedles.slice(1));
-const [afterTypeAnchor] = litLinesOf(sourceOfKey("after-appointment"), afterTypeStart, [afterTypeStart]);
+const afterTypeRange = rangeOf(sourceOfKey("after-appointment"), afterTypeStart, "}>;");
+const afterTypeShown = [afterTypeRange.start, ...afterTypeLines, afterTypeRange.end];
 
 const beforeValue = `declare const checkedIn: Appointment;
 const broken = updateStatus(
@@ -117,18 +134,6 @@ const candidates: readonly Candidate[] = [
   },
   {
     ok: false,
-    reason: "来院済みなのに、獣医師がいる",
-    before: `{
-  status: "checked-in",
-  veterinarianId: "vet-001",
-}`,
-    after: `{
-  kind: "CheckedIn",
-  veterinarianId: "vet-001",
-}`,
-  },
-  {
-    ok: false,
     reason: "状態の綴りが誤っている",
     before: `{
   status: "in-examintion",
@@ -154,7 +159,7 @@ type Frame = Readonly<{
   focus: "file" | "scratch" | "board";
   scratch?: ScratchId;
   lit: readonly Lit[];
-  anchor: number;
+  show: readonly number[];
   treeNote?: Readonly<{ file: FileKey; text: string }>;
   caption: string;
 }>;
@@ -165,9 +170,9 @@ const frames: readonly Frame[] = [
     part: "Appointment 型",
     focus: "file",
     lit: withNotes(beforeTypeLines, ["どんな文字列でも格納できる", "省略できる", "省略できる"]),
-    anchor: beforeTypeAnchor ?? 0,
+    show: beforeTypeShown,
     caption:
-      "S00 の配布コードの Appointment は、状態を string で持ちます。診察中にだけ必要な veterinarianId と examinationStartedAt は、? を付けて省略できます。Readonly<{…}> は、項目を書き換えられない型にします。",
+      "S00 のコードの Appointment は、状態を string で持ちます。診察中にだけ必要な veterinarianId と examinationStartedAt は、? を付けて省略できます。Readonly<{…}> は、項目を書き換えられない型にします。",
   },
   {
     file: "before-appointment",
@@ -175,7 +180,7 @@ const frames: readonly Frame[] = [
     focus: "scratch",
     scratch: "value-before",
     lit: plain(beforeUpdateLines),
-    anchor: beforeUpdateAnchor ?? 0,
+    show: spanOf(beforeUpdateRange),
     caption:
       "S00 の updateStatus は、状態を文字列で受け取ります。診察中なのに獣医師も開始時刻もない予約を作る呼び出しが、型検査を通ります。",
   },
@@ -185,7 +190,7 @@ const frames: readonly Frame[] = [
     focus: "board",
     scratch: "board-before",
     lit: plain(beforeTypeLines),
-    anchor: beforeTypeAnchor ?? 0,
+    show: beforeTypeShown,
     caption: "この型は、業務上ありえない組み合わせを、すべて受け入れます。",
   },
   {
@@ -193,10 +198,10 @@ const frames: readonly Frame[] = [
     part: "InExamination 型",
     focus: "file",
     lit: withNotes(afterTypeLines, ['"InExamination" だけ', "必須", "必須"]),
-    anchor: afterTypeAnchor ?? 0,
+    show: spanOf(afterTypeRange),
     treeNote: { file: "after-transitions", text: "修正する箇所" },
     caption:
-      "この回の開始コードは、状態ごとに別の型を持ちます。InExamination では、kind が \"InExamination\" だけを受け取り、veterinarianId と examinationStartedAt が必須です。型の定義はここまでで完了しており、残りは遷移関数の引数です。",
+      "S01 の開始コードは、状態ごとに別の型を持ちます。S00 の status: \"in-examination\" に当たる値は kind: \"InExamination\" で、値を型の名前と同じ綴りにしています。InExamination では veterinarianId と examinationStartedAt が必須です。型の定義はここまでで完了しており、残りは遷移関数の引数です。",
   },
   {
     file: "after-appointment",
@@ -204,7 +209,7 @@ const frames: readonly Frame[] = [
     focus: "scratch",
     scratch: "value-after",
     lit: plain(afterRequiredLines),
-    anchor: afterTypeAnchor ?? 0,
+    show: afterTypeShown,
     caption:
       "...checkedIn は、checkedIn の項目のコピーです。同じ状況の値を InExamination として定義すると、veterinarianId と examinationStartedAt がないことを、型検査が報告します。実行前に検出できます。",
   },
@@ -214,9 +219,9 @@ const frames: readonly Frame[] = [
     focus: "board",
     scratch: "board-after",
     lit: plain(afterRequiredLines),
-    anchor: afterTypeAnchor ?? 0,
+    show: afterTypeShown,
     caption:
-      "同じ4つの値のうち、型検査が受け入れるのは、業務上ありえる1つだけです。ありえない状態を、型で表現できなくする考え方です。",
+      "同じ3つの値のうち、型検査が受け入れるのは、業務上ありえる1つだけです。業務上ありえない値を、型検査のときに報告できる形にする考え方です。",
   },
 ];
 
@@ -253,7 +258,7 @@ const generationKeys = ["before", "after"] as const;
       </ul>
     </nav>
 
-    <div class="illegal__right" data-right>
+    <div class="illegal__right">
       <section class="illegal__file">
         {files.map((file) => (
           <div class="illegal__panel" data-panel={file.key}>
@@ -267,7 +272,6 @@ const generationKeys = ["before", "after"] as const;
               <div class="illegal__code" data-scroll data-step-scene tabindex="0" role="region" aria-label={file.path}>
                 <Code code={file.source} lang="ts" />
               </div>
-              <div class="illegal__sticky" data-sticky aria-hidden="true" hidden></div>
             </div>
           </div>
         ))}
@@ -357,7 +361,7 @@ const generationKeys = ["before", "after"] as const;
             focus: frame.focus,
             scratch: frame.scratch,
             lit: frame.lit,
-            anchor: frame.anchor,
+            show: frame.show,
             treeNote: frame.treeNote,
           })}
         >
@@ -378,7 +382,7 @@ const generationKeys = ["before", "after"] as const;
     focus: "file" | "scratch" | "board";
     scratch?: string;
     lit: Lit[];
-    anchor: number;
+    show: number[];
     treeNote?: { file: string; text: string };
   };
 
@@ -386,73 +390,15 @@ const generationKeys = ["before", "after"] as const;
     const panels = [...root.querySelectorAll<HTMLElement>("[data-panel]")];
     const fileButtons = [...root.querySelectorAll<HTMLButtonElement>("[data-file]")];
     const scratchViews = [...root.querySelectorAll<HTMLElement>("[data-scratch]")];
-    const right = root.querySelector<HTMLElement>("[data-right]");
     const frameViews = [...root.querySelectorAll<HTMLElement>("[data-frame]")].map(
       (frame) => JSON.parse(frame.dataset.view ?? "{}") as View,
     );
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const scrollBehavior = (): ScrollBehavior => (reducedMotion.matches ? "auto" : "smooth");
 
     let frameView = frameViews[0];
     let chosen: string | null = null;
     let shown: string | null = null;
 
     const panelOf = (key: string) => panels.find((panel) => panel.dataset.panel === key);
-
-    const centerLit = (panel: HTMLElement, lit: readonly Lit[], anchor: number) => {
-      const box = panel.querySelector<HTMLElement>("[data-scroll]");
-      if (!box || lit.length === 0) return;
-      const lines = panel.querySelectorAll<HTMLElement>(".line");
-      const head = lines[anchor];
-      const first = lines[Math.min(...lit.map((item) => item.line))];
-      const last = lines[Math.max(...lit.map((item) => item.line))];
-      if (!head || !first || !last) return;
-      const boxTop = box.getBoundingClientRect().top;
-      const offsetOf = (line: HTMLElement) => line.getBoundingClientRect().top - boxTop + box.scrollTop;
-      const headTop = offsetOf(head);
-      const firstTop = offsetOf(first);
-      const lastBottom = offsetOf(last) + last.getBoundingClientRect().height;
-      const pinned = head.getBoundingClientRect().height + 1;
-      const height = box.clientHeight;
-      const target =
-        lastBottom - headTop <= height
-          ? (headTop + lastBottom) / 2 - height / 2
-          : (firstTop + lastBottom) / 2 - (height + pinned) / 2;
-      box.scrollTo({ top: Math.max(0, target), behavior: scrollBehavior() });
-    };
-
-    const updateSticky = (panel: HTMLElement) => {
-      const box = panel.querySelector<HTMLElement>("[data-scroll]");
-      const sticky = panel.querySelector<HTMLElement>("[data-sticky]");
-      if (!box || !sticky) return;
-      const head = frameView && chosen === null ? panel.querySelectorAll<HTMLElement>(".line")[frameView.anchor] : undefined;
-      if (!head) {
-        sticky.hidden = true;
-        return;
-      }
-      sticky.style.right = `${box.offsetWidth - box.clientWidth}px`;
-      sticky.hidden = head.getBoundingClientRect().top >= box.getBoundingClientRect().top - 0.5;
-    };
-
-    const buildSticky = (panel: HTMLElement) => {
-      const sticky = panel.querySelector<HTMLElement>("[data-sticky]");
-      if (!sticky) return;
-      const head = frameView && chosen === null ? panel.querySelectorAll<HTMLElement>(".line")[frameView.anchor] : undefined;
-      if (!head || !frameView) {
-        sticky.replaceChildren();
-        sticky.hidden = true;
-        return;
-      }
-      const clone = head.cloneNode(true) as HTMLElement;
-      clone.classList.remove("is-lit");
-      delete clone.dataset.note;
-      const code = document.createElement("code");
-      code.style.counterReset = `illegal-line ${frameView.anchor}`;
-      code.append(clone);
-      const pre = document.createElement("pre");
-      pre.append(code);
-      sticky.replaceChildren(pre);
-    };
 
     const render = () => {
       if (!frameView) return;
@@ -464,9 +410,21 @@ const generationKeys = ["before", "after"] as const;
       panels.forEach((panel) => {
         const active = panel.dataset.panel === key;
         panel.hidden = !active;
-        panel.querySelectorAll<HTMLElement>(".line").forEach((line) => {
+        const show = active && following ? new Set(frameView?.show) : undefined;
+        panel.querySelectorAll(".illegal__gap").forEach((gap) => gap.remove());
+        const panelLines = panel.querySelectorAll<HTMLElement>(".line");
+        const firstShown = show === undefined ? 0 : Math.min(...show);
+        panelLines.forEach((line, index) => {
           line.classList.remove("is-lit");
           delete line.dataset.note;
+          line.hidden = show !== undefined && !show.has(index);
+          line.style.setProperty("counter-set", `illegal-line ${index + 1}`);
+          if (show !== undefined && show.has(index) && index > firstShown && !show.has(index - 1)) {
+            const gap = document.createElement("span");
+            gap.className = "illegal__gap";
+            gap.textContent = "  // …";
+            line.before(gap);
+          }
         });
         const part = panel.querySelector<HTMLElement>("[data-part]");
         const restore = panel.querySelector<HTMLElement>("[data-restore]");
@@ -490,7 +448,6 @@ const generationKeys = ["before", "after"] as const;
       }
       if (!following) {
         panel.querySelector<HTMLElement>("[data-scroll]")?.scrollTo({ top: 0, behavior: "auto" });
-        buildSticky(panel);
         return;
       }
       const lines = panel.querySelectorAll<HTMLElement>(".line");
@@ -500,20 +457,7 @@ const generationKeys = ["before", "after"] as const;
         element.classList.add("is-lit");
         if (note) element.dataset.note = note;
       });
-      buildSticky(panel);
-      centerLit(panel, frameView.lit, frameView.anchor);
-      updateSticky(panel);
     };
-
-    right?.addEventListener("transitionend", (event) => {
-      if (event.target !== right || event.propertyName !== "grid-template-rows") return;
-      const panel = frameView && chosen === null ? panelOf(frameView.file) : undefined;
-      if (panel && frameView) centerLit(panel, frameView.lit, frameView.anchor);
-    });
-
-    panels.forEach((panel) => {
-      panel.querySelector("[data-scroll]")?.addEventListener("scroll", () => updateSticky(panel), { passive: true });
-    });
 
     fileButtons.forEach((button) => {
       button.addEventListener("click", () => {
@@ -734,8 +678,12 @@ const generationKeys = ["before", "after"] as const;
     grid-template-rows: 1fr 0fr;
   }
 
+  .illegal[data-ready][data-focus="scratch"] .illegal__right {
+    grid-template-rows: 45fr 55fr;
+  }
+
   .illegal[data-ready][data-focus="board"] .illegal__right {
-    grid-template-rows: 37fr 63fr;
+    grid-template-rows: 53fr 47fr;
   }
 
   .illegal__file,
@@ -861,23 +809,6 @@ const generationKeys = ["before", "after"] as const;
     overscroll-behavior: contain;
   }
 
-  .illegal__sticky {
-    position: absolute;
-    inset: 0 0 auto 0;
-    z-index: 1;
-    border-bottom: 1px solid color-mix(in srgb, var(--frame-code-text) 30%, transparent);
-    background: var(--frame-code-surface);
-    pointer-events: none;
-  }
-
-  .illegal__sticky[hidden] {
-    display: none;
-  }
-
-  .illegal[data-ready] .illegal__codebox .illegal__sticky :global(pre) {
-    padding: 0;
-  }
-
   .illegal__code:focus-visible {
     outline: 3px solid var(--role-accent);
     outline-offset: -3px;
@@ -907,6 +838,18 @@ const generationKeys = ["before", "after"] as const;
     padding-inline: 3rem 0.75rem;
     counter-increment: illegal-line;
     text-indent: -3rem;
+  }
+
+  .illegal__codebox :global(.line[hidden]) {
+    display: none;
+  }
+
+  .illegal__codebox :global(.illegal__gap) {
+    display: block;
+    min-height: 1.5em;
+    padding-inline: 3rem 0.75rem;
+    color: color-mix(in srgb, var(--frame-code-text) 55%, transparent);
+    white-space: pre;
   }
 
   .illegal__codebox :global(.line)::before {
@@ -940,7 +883,8 @@ const generationKeys = ["before", "after"] as const;
     line-height: 1.3;
   }
 
-  .illegal[data-focus="board"] .illegal__codebox :global(.line) {
+  .illegal[data-focus="board"] .illegal__codebox :global(.line),
+  .illegal[data-focus="board"] .illegal__codebox :global(.illegal__gap) {
     min-height: 1.3em;
   }
 
@@ -1140,6 +1084,71 @@ const generationKeys = ["before", "after"] as const;
         calc(var(--frame-figure-height) - 1.75rem - 1.25rem - 2px),
         calc(100dvh - var(--frame-bar-height) - var(--frame-foot-height) - var(--frame-role-height) - 296px)
       );
+    }
+  }
+
+  @media (max-height: 844px) {
+    .illegal :global(.step-controls[data-controls]) {
+      margin-block-end: 0.125rem;
+    }
+
+    .illegal__stage {
+      margin-block-end: 0.25rem;
+    }
+
+    .illegal[data-ready] .illegal__stage {
+      height: calc(var(--frame-figure-height) - 1.75rem - 11px);
+    }
+
+    .illegal__right {
+      gap: 0.25rem;
+    }
+
+    .illegal__scratch {
+      min-height: 1.5rem;
+    }
+
+    .illegal__scratch > .illegal__pane-head {
+      min-height: 1.5rem;
+      padding-block: 0.0625rem;
+    }
+
+    .illegal__scratch-body {
+      padding-block: 0.125rem;
+    }
+
+    .illegal[data-focus="scratch"] .illegal__codebox :global(pre) {
+      padding-block: 0.125rem;
+      font-size: 0.75rem;
+      line-height: 1.3;
+    }
+
+    .illegal[data-focus="scratch"] .illegal__codebox :global(.line),
+    .illegal[data-focus="scratch"] .illegal__codebox :global(.illegal__gap) {
+      min-height: 1.3em;
+    }
+
+    .illegal .illegal__split :global(.st-code pre) {
+      padding-block: 0.125rem;
+      font-size: 0.75rem;
+      line-height: 1.3;
+    }
+
+    .illegal__row {
+      min-height: 1.4rem;
+    }
+
+    .illegal__table {
+      grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) auto;
+    }
+
+    .illegal[data-focus="board"] .illegal__codebox :global(pre) {
+      line-height: 1.25;
+    }
+
+    .illegal[data-focus="board"] .illegal__codebox :global(.line),
+    .illegal[data-focus="board"] .illegal__codebox :global(.illegal__gap) {
+      min-height: 1.25em;
     }
   }
 

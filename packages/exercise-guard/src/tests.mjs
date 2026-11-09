@@ -175,7 +175,7 @@ export const testsProblem = (message) => ({
  */
 export const testsTimeoutProblem = (timeoutMs) => ({
   message: `テストが ${Math.round(timeoutMs / 100) / 10} 秒で終わりませんでした。`,
-  fix: "テストの中に終わらない繰り返しや、待ち続ける処理がないか見直します。",
+  fix: "実行環境が遅い場合にも発生します。再度「検出を検証する」を押します。繰り返し発生する場合は、テストの中に終わらない繰り返しや、待ち続ける処理がないか見直します。",
 });
 
 /**
