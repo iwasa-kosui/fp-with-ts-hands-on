@@ -219,28 +219,8 @@
     display: none;
   }
 
-  .walk[data-walk-ready] .walk__scenes {
-    display: grid;
-  }
-
-  .walk[data-walk-ready] .walk__scene:not([data-current]) {
-    display: none;
-  }
-
   .walk__scene li[aria-current="step"] {
     font-weight: 800;
-  }
-
-  .walk[data-walk-ready] .walk__live {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    min-height: 0;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
 }
 

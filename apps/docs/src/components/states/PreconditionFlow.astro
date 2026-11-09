@@ -281,9 +281,7 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
     show(0);
   };
 
-  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    document.querySelectorAll<HTMLElement>("[data-precondition-flow]").forEach(setUp);
-  }
+  document.querySelectorAll<HTMLElement>("[data-precondition-flow]").forEach(setUp);
 </script>
 
 <style>

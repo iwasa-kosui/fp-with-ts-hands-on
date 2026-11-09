@@ -1,6 +1,7 @@
 ---
 import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
+import { keyedTransformer } from "./code-cache-key";
 import { clinicFixture } from "../../../../examples/fixtures/clinic";
 
 type Snippet = Readonly<{ path: string; code: string }>;
@@ -22,7 +23,7 @@ type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[numb
 const KEY_MARK = /\s*\/\/ \[!branded-key\]$/;
 const withMarks = (source: string, keyLines: readonly number[]) =>
   source.split("\n").map((text, index) => (keyLines.includes(index + 1) ? `${text} // [!branded-key]` : text)).join("\n");
-const markKeyLines: Transformer = {
+const markKeyLines = keyedTransformer<Transformer>("branded-id-flow", {
   name: "mark-branded-key-lines",
   preprocess(source) {
     const lines = source.split("\n");
@@ -32,7 +33,7 @@ const markKeyLines: Transformer = {
   line(node, line) {
     if ((this.meta as { keyLines?: number[] }).keyLines?.includes(line)) this.addClassToHast(node, "branded-id-flow__key");
   },
-};
+});
 
 type Mode = "normal" | "dim";
 type TokenState = "off" | "home" | "through" | "stop";
@@ -432,9 +433,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
     show(0);
   };
 
-  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    document.querySelectorAll<HTMLElement>("[data-branded-id-flow]").forEach(setUp);
-  }
+  document.querySelectorAll<HTMLElement>("[data-branded-id-flow]").forEach(setUp);
 </script>
 
 <style>

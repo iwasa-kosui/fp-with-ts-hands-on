@@ -1,6 +1,7 @@
 ---
 import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
+import { keyedTransformer } from "./code-cache-key";
 import appointmentSource from "../../../../examples/session-02-solution/src/domain/appointment/appointment.ts?raw";
 import statusLabelSource from "../../../../examples/session-02-solution/src/domain/appointment/statusLabel.ts?raw";
 import beforeStatusLabelSource from "../../../../examples/session-02/src/domain/appointment/statusLabel.ts?raw";
@@ -12,7 +13,7 @@ const { part } = Astro.props;
 
 const KEY_MARK = /\s*\/\/ \[!key\]$/;
 type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
-const markKeyLines: Transformer = {
+const markKeyLines = keyedTransformer<Transformer>("adt-value-count", {
   name: "adt-count-mark-key-lines",
   preprocess(code) {
     const lines = code.split("\n");
@@ -22,7 +23,7 @@ const markKeyLines: Transformer = {
   line(node, line) {
     if ((this.meta as { keyLines?: number[] }).keyLines?.includes(line)) this.addClassToHast(node, "adt-count__key");
   },
-};
+});
 
 const lineIndex = (lines: string[], matches: (line: string) => boolean, description: string, from = 0) => {
   const index = lines.findIndex((line, position) => position >= from && matches(line));

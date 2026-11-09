@@ -413,8 +413,6 @@ const files = JSON.stringify(steps.map((step) => step.file));
   import { mountStepper } from "./stepper/stepper";
 
   document.querySelectorAll<HTMLElement>("[data-exam-mock]").forEach((root) => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
     const screen = root.querySelector<HTMLElement>("[data-screen]");
     const startButton = root.querySelector<HTMLElement>("[data-player] [data-start]");
     const cursor = root.querySelector<HTMLElement>("[data-cursor]");
@@ -472,7 +470,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
       const wanted = height > view ? top : top - (view - height) / 2;
       const maxTop = Math.round((scroller.scrollHeight - scroller.clientHeight) / lineHeight) * lineHeight;
       const snapped = Math.min(Math.max(Math.round(wanted / lineHeight) * lineHeight, 0), maxTop);
-      scroller.scrollTo({ top: snapped, behavior: "smooth" });
+      scroller.scrollTo({ top: snapped, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
     };
 
     const render = (index: number) => {
@@ -1066,6 +1064,18 @@ const files = JSON.stringify(steps.map((step) => step.file));
 
     .hem__frames-static {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hem__cursor,
+    .hem button.hem__start,
+    .hem button.hem__start.is-attention,
+    .hem .hem__block :global(.line),
+    .hem .hem__lines li,
+    .hem .is-flash {
+      transition: none;
+      animation: none;
     }
   }
 </style>

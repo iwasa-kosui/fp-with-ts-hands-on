@@ -338,6 +338,8 @@ export const MonacoEditor = (props: EditorProps) => {
       registerExtraLibs(resources, current.typeFiles);
       const editor = monaco.editor.create(editorHost.current, {
         automaticLayout: true,
+        autoClosingBrackets: "never",
+        autoClosingQuotes: "never",
         minimap: { enabled: false },
         model: resources.models.get(current.path) ?? null,
         readOnly: current.disabled || current.readOnly,
