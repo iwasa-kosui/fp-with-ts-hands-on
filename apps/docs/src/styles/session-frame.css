@@ -770,15 +770,6 @@ summary.session-frame__group-title:focus-visible {
   white-space: pre-wrap;
 }
 
-.session-frame .session-split.session-split--compare.session-split--wrap-code pre.astro-code {
-  padding-inline: 0.5rem;
-}
-
-.session-frame .session-split.session-split--compare.session-split--wrap-code pre.astro-code,
-.session-frame .session-split.session-split--compare.session-split--wrap-code pre.astro-code code {
-  font-size: 0.77rem;
-}
-
 .session-glossary {
   margin: 0;
   padding: 0;

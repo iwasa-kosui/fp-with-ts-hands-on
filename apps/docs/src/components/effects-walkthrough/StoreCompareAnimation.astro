@@ -1,0 +1,105 @@
+---
+import { Code } from "astro:components";
+import css from "./store-compare.css?raw";
+import script from "./store-compare.js?raw";
+import { breakBeforeMember } from "../break-before-member";
+import { excerptOf, type Part } from "./excerpt";
+import PathLabel from "./PathLabel.astro";
+import Walkthrough from "./Walkthrough.astro";
+
+type Side = "sqlite" | "inMemory";
+type Snippet = Readonly<{ parts: readonly Part[]; marks: readonly string[] }>;
+type Frame = Readonly<{ text: string; sqlite: Snippet; inMemory: Snippet }>;
+
+const sides = [
+  { key: "sqlite", role: "SQLite", path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts" },
+  { key: "inMemory", role: "in-memory", path: "src/adaptor/secondary/inMemory/inMemoryExaminationStartedStore.ts" },
+] as const satisfies readonly Readonly<{ key: Side; role: string; path: string }>[];
+
+const frames: readonly Frame[] = [
+  {
+    text: "SQLite は、`database.transaction` の中で `saveState` と `appendAudit` を呼び、`ok(undefined)` を返すと状態と監査記録を同時に確定します。in-memory は、新しい `Map` と配列 `nextEvents` を作り、`appointments` と `events` を続けて置き換えます。",
+    sqlite: {
+      parts: [
+        { from: "database.transaction((transaction) => {" },
+        "…",
+        { from: "saveState(transaction, committedEvent.aggregateState);", to: "return ok(undefined);" },
+        { from: "});" },
+      ],
+      marks: ["database.transaction(", "saveState(transaction", "appendAudit(transaction", "return ok(undefined);"],
+    },
+    inMemory: {
+      parts: [{ from: "const nextAppointments = new Map(appointments);", to: "return ok(undefined);" }],
+      marks: ["new Map(appointments)", "const nextEvents", "appointments = nextAppointments;", "events = nextEvents;"],
+    },
+  },
+  {
+    text: "SQLite は、`transaction` の中で取得した `current` から `Appointment.startExamination` を再度実行し、作り直した `committedEvent` の状態を保存します。取得後に変更された予約を、古い値で上書きしないためです。in-memory は、渡された `event` の `aggregateState` をそのまま保存し、`event` も `nextEvents` に追加します。",
+    sqlite: {
+      parts: [
+        { from: "const current = findInTransaction(transaction, event.appointmentId);" },
+        "…",
+        { from: "const committedEvent = Appointment.startExamination({", to: "saveState(transaction, committedEvent.aggregateState);" },
+      ],
+      marks: ["const current =", "startExamination({", "eventId: event.eventId", "occurredAt: event.occurredAt", "})(current", "saveState(transaction"],
+    },
+    inMemory: {
+      parts: [{ from: "nextAppointments.set(event.appointmentId, event.aggregateState);", to: "const nextEvents = [...events, event];" }],
+      marks: ["event.aggregateState", "[...events, event]"],
+    },
+  },
+  {
+    text: "予約が存在しないとき、SQLite は存在しない場合と `CheckedIn` ではない場合を同じ条件で判定し、どちらも `AppointmentConflict` を `Err` で返します。in-memory は存在しない場合に `Error` を投げ、reject にします。",
+    sqlite: {
+      parts: [{ from: "const current = findInTransaction(transaction, event.appointmentId);", to: "}" }],
+      marks: ["current === undefined", "return err({", 'kind: "AppointmentConflict"'],
+    },
+    inMemory: {
+      parts: [{ from: "const currentAppointment = appointments.get(event.appointmentId);", to: "} as const);" }, { from: "}" }],
+      marks: ["currentAppointment === undefined", "throw new Error("],
+    },
+  },
+];
+
+const lineIndexes = (code: string, marks: readonly string[]): number[] => {
+  const lines = code.split("\n");
+  return marks.flatMap((mark) => {
+    const hits = lines.flatMap((line, index) => (line.includes(mark) ? [index] : []));
+    if (hits.length === 0) throw new Error(`StoreCompareAnimation: "${mark}" is not in the excerpt`);
+    return hits;
+  });
+};
+
+const panes = sides.map((side) => ({
+  ...side,
+  frames: frames.map((frame) => {
+    const excerpt = excerptOf({ snapshot: "session-06-solution", path: side.path, parts: frame[side.key].parts });
+    return { ...excerpt, lines: [...new Set(lineIndexes(excerpt.code, frame[side.key].marks))] };
+  }),
+}));
+---
+
+<Walkthrough
+  id="store-compare-walkthrough"
+  title="SQLite と in-memory の実装の比較"
+  scenes={[{ label: "SQLite と in-memory の違い", frames: frames.map(({ text }) => ({ text })) }]}
+  page
+>
+  <div class="sc" data-store-compare>
+    {panes.map((side) => (
+      <div class="sc-stack">
+        {side.frames.map((frame, index) => (
+          <figure class="sc-pane" data-pane={index} data-lines={JSON.stringify(frame.lines)}>
+            <figcaption>
+              <span class="sc-role">{side.role}</span>
+              <code><PathLabel label={frame.label} /></code>
+            </figcaption>
+            <Code code={frame.code} lang="ts" wrap transformers={[breakBeforeMember]} />
+          </figure>
+        ))}
+      </div>
+    ))}
+  </div>
+  <style is:inline set:html={css}></style>
+  <script is:inline type="module" set:html={script}></script>
+</Walkthrough>

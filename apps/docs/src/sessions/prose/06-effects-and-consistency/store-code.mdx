@@ -1,15 +1,10 @@
-import { Code } from "astro:components";
-import { storeCode } from "../../pages/06-effects-and-consistency-content";
+import StoreCompareAnimation from "../../../components/effects-walkthrough/StoreCompareAnimation.astro";
+import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
 
-<p><code>examples/session-06-solution</code> の <code>examinationStartedStore</code> の2つの実装です。左の SQLite は、<code>transaction</code> の中で予約を再取得し、状態遷移を再実行します。再取得した最新の予約から新しい状態を生成するため、ユースケースが取得した後に変更された予約を、古い値で上書きしません。右の in-memory は、渡されたイベントの <code>aggregateState</code> をそのまま保存します。戻り値が異なるのは、予約が存在しないときです。SQLite は、予約が存在しない場合と <code>CheckedIn</code> ではない場合を同じ条件で判定し、どちらも <code>AppointmentConflict</code> を <code>Err</code> で返します。in-memory は、予約が存在しない場合だけ <code>Error</code> を投げ、reject にします。このため、fake である in-memory を使うテストでは、SQLite が予約の欠落を <code>Err</code> で返す動作を確認できません。</p>
+<p><code>examples/session-06-solution</code> の <code>examinationStartedStore</code> の2つの実装を、左の SQLite と右の in-memory で比較します。</p>
 
-<div class="session-split session-split--compare session-split--wrap-code">
-  <figure class="code-block" data-teaching-example>
-    <figcaption>{storeCode.sqlite.path}</figcaption>
-    <Code code={storeCode.sqlite.code} lang="ts" />
-  </figure>
-  <figure class="code-block" data-teaching-example>
-    <figcaption>{storeCode.inMemory.path}</figcaption>
-    <Code code={storeCode.inMemory.code} lang="ts" />
-  </figure>
-</div>
+<FigureSpace reserve={95}>
+  <StoreCompareAnimation />
+</FigureSpace>
+
+<p>fake である in-memory を使うテストでは、SQLite が予約の欠落を <code>Err</code> で返す動作を確認できません。</p>

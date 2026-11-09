@@ -1,7 +1,6 @@
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import type { SessionWorkspace } from "../../code-explorer/types";
-import { blockOf } from "../source-quotes";
 import type { SessionSummary } from "../types";
 
 export const session: SessionSummary = {
@@ -208,75 +207,3 @@ export const navigation = ({
 } as const);
 
 export const projectFiles = projectFilesForSnapshot(session.snapshot);
-
-const solutionFiles = projectFilesForSnapshot("session-06-solution");
-
-const dedent = (code: string): string => {
-  const lines = code.split("\n");
-  const indent = Math.min(
-    ...lines.filter((line) => line.trim() !== "").map((line) => line.search(/\S/)),
-  );
-  return lines.map((line) => line.slice(indent)).join("\n");
-};
-
-const reflow = (
-  code: string,
-  breaks: ReadonlyArray<readonly [line: string, replacement: string]>,
-): string =>
-  breaks.reduce((current, [line, replacement]) => {
-    if (!current.includes(line)) throw new Error(`${line} is not in the quoted code`);
-    return current.replace(line, () => replacement);
-  }, code);
-
-export const storeCode = {
-  sqlite: {
-    path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
-    code: reflow(
-      dedent(
-        blockOf(
-          solutionFiles,
-          "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
-          "    database.transaction((transaction) => {",
-          "    });",
-        ),
-      ),
-      [
-        [
-          "  const current = findInTransaction(transaction, event.appointmentId);",
-          "  const current =\n    findInTransaction(transaction, event.appointmentId);",
-        ],
-        [
-          '  if (current === undefined || current.kind !== "CheckedIn") {',
-          '  if (current === undefined ||\n    current.kind !== "CheckedIn") {',
-        ],
-      ],
-    ),
-  },
-  inMemory: {
-    path: "src/adaptor/secondary/inMemory/inMemoryExaminationStartedStore.ts",
-    code: reflow(
-      dedent(
-        blockOf(
-          solutionFiles,
-          "src/adaptor/secondary/inMemory/inMemoryExaminationStartedStore.ts",
-          "          const currentAppointment = appointments.get(event.appointmentId);",
-          "          events = nextEvents;",
-        ),
-      ),
-      [
-        [
-          "const currentAppointment = appointments.get(event.appointmentId);",
-          "const currentAppointment =\n  appointments.get(event.appointmentId);",
-        ],
-        [
-          "  throw new Error(`Appointment missing at commit: ${event.appointmentId}`);",
-          "  throw new Error(\n    `Appointment missing at commit: ${event.appointmentId}`,\n  );",
-        ],
-        [
-          "nextAppointments.set(event.appointmentId, event.aggregateState);",
-          "nextAppointments.set(\n  event.appointmentId, event.aggregateState);",
-        ],
-      ],
-    ),
-  },
-};
