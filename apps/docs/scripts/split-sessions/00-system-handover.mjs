@@ -1,10 +1,9 @@
 const expectedPages = [
   ["", "動物病院のシステムを引き継ぐ", "background", "brief", 1],
-  ["map", "1回の依頼が通る道筋", "background", "brief", 1],
-  ["examination-mock", "「診察を開始する」を押すと何が起きるか", "background", "teach", 1.5],
   ["incidents", "引き継ぎ初日に見つかった2件", "problem", "brief", 1.5],
-  ["records", "事故はデータのどこに残っているか", "problem", "teach", 0.5],
+  ["why-not-stopped", "なぜ会計済みの予約で診察を開始できたのか", "problem", "teach", 2],
   ["common-cause", "2件の事故に共通する原因", "problem", "teach", 1],
+  ["map", "1回の依頼が本来通る道筋", "knowledge", "brief", 1],
   ["code-layout", "配布コードの構成", "knowledge", "teach", 0.5],
   ["when-noticed", "誤りに気づける場面は4つある", "knowledge", "teach", 0.5],
   ["goal", "この研修で目指す状態", "solution", "review", 1],
