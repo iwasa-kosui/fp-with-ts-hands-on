@@ -46,7 +46,7 @@ export default {
       stage: 2,
       required: false,
       allow: ["lint"],
-      hint: "前の回で作った、分岐の漏れを見つける規則を、この題材にも使えるかを確かめます。",
+      hint: "Linter の規則 @typescript-eslint/switch-exhaustiveness-check を、オプション considerDefaultExhaustiveForUnions: false で有効にします。default があっても、足し忘れた種類を検出します。",
     },
     {
       id: "R1-peer-change",

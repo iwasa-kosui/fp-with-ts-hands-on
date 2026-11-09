@@ -6,12 +6,12 @@ import PointCards from "../../../components/workflow-errors/PointCards.astro";
   label="機械が検出できることと、人が決めること"
   cards={[
     {
-      title: "機械が検出できること",
+      title: "機械が検出できること（規則またはテストを足したとき）",
       tone: "positive",
       items: [
         "useCase に <code>throw</code> と書く変更",
         "失敗した後に保存を呼ぶ変更",
-        "保存の障害を <code>err</code> に変える変更（テストで確かめたとき）",
+        "保存の障害を <code>err</code> に変える変更",
       ],
     },
     {

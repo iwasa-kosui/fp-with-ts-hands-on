@@ -51,20 +51,19 @@ S0 の観察対象は `examples/session-00` です。S1 は `examples/session-01
 pnpm test
 ```
 
-演習テストは、S1〜S4 と S6 で扱う業務事故を再現します。公開スクリプトは次の6つだけです。
+演習テストは、S1〜S3 と S6 で扱う業務事故を再現します。演習で使うコマンドは次の5つだけです。
 
 ```bash
 pnpm exercise:01
 pnpm exercise:02
 pnpm exercise:03-supplement
 pnpm exercise:03
-pnpm exercise:04
 pnpm exercise:06
 ```
 
-S1 は `pnpm exercise:01`、S2 は `pnpm exercise:02` を使います。S3 の補助演習は `pnpm exercise:03-supplement`、S3 の本演習は `pnpm exercise:03` を使います。S4 は `pnpm exercise:04`、S6 は `pnpm exercise:06` を使います。
+S1 は `pnpm exercise:01`、S2 は `pnpm exercise:02` を使います。S3 の補助演習は `pnpm exercise:03-supplement`、S3 の本演習は `pnpm exercise:03` を使います。S6 は `pnpm exercise:06` を使います。S4 の演習は、ブラウザの演習の画面で、悪い変更を検出する仕組みを足します。`pnpm exercise:04` は以前の演習のコマンドで、この回では使いません。
 
-開始時の RED は、module-not-found や import error ではありません。サイトの手順に沿って既存モジュールを小さく改善し、開始時と同じ exercise コマンドをもう一度実行して GREEN を確認します。S0、S5、解答のスナップショット、Final に exercise command はありません。各コード演習の最後には、その回で防ぐ問題と差分を照らして振り返ります。複数人の場合は相互レビューを行います。
+開始時の RED は、module-not-found や import error ではありません。サイトの手順に沿って既存モジュールを小さく改善し、S4 を除き、開始時と同じ exercise コマンドをもう一度実行して GREEN を確認します。S0、S5、解答のスナップショット、Final に exercise command はありません。各コード演習の最後には、その回で防ぐ問題と差分を照らして振り返ります。複数人の場合は相互レビューを行います。
 
 ## 第2回までの版と番号の振り直し
 

@@ -33,7 +33,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1,
-    role: "事前知識（課題3の準備）: 配布コードは、依存を先に渡す形で書かれています。",
+    role: "事前知識（課題1）: この後で書き換えるコードの形を読みます。",
   },
   {
     slug: "result",
