@@ -7,9 +7,14 @@ export default {
       id: "B1-new-date",
       kind: "bad",
       subject: "useCase",
-      title: "イベントの発生時刻を、clock ではなく実行時の現在時刻から作る",
+      title: "イベントの時刻を、clock ではなく new Date() から作る",
       allow: ["lint", "tests"],
       hint: "現在時刻を直接読む書き方を、Linter の規則かテストで検出します。",
+      behavior: {
+        input: { text: "clock が 06:30 を返すとき" },
+        expected: { text: "clock の時刻が入る", value: '"…T06:30:00.000Z"' },
+        actual: { text: "実行した日時が入る" },
+      },
     },
     {
       id: "B2-random-uuid",
@@ -18,14 +23,24 @@ export default {
       title: "イベントIDを、ID generator ではなく乱数から作る",
       allow: ["lint", "tests"],
       hint: "ID を直接作る書き方を、Linter の規則かテストで検出します。",
+      behavior: {
+        input: { text: "ID generator が固定の ID を返すとき" },
+        expected: { text: "固定の ID が入る", value: '"55555555-…"' },
+        actual: { text: "毎回違う ID が入る" },
+      },
     },
     {
       id: "B3-date-now",
       kind: "bad",
       subject: "useCase",
-      title: "イベントの発生時刻を、Date.now() から作る",
+      title: "イベントの時刻を、Date.now() から作る",
       allow: ["lint", "tests"],
       hint: "現在時刻を直接読む別の書き方も、Linter の規則かテストで検出します。",
+      behavior: {
+        input: { text: "clock が 06:30 を返すとき" },
+        expected: { text: "clock の時刻が入る", value: '"…T06:30:00.000Z"' },
+        actual: { text: "実行した日時が入る" },
+      },
     },
     {
       id: "B4-two-saves",
@@ -34,16 +49,26 @@ export default {
       title: "状態の保存と監査記録の保存で、store を2回呼ぶ",
       allow: ["tests"],
       hint: "診察を開始したときの store とのやり取りを、テストで確かめます。",
+      behavior: {
+        input: { text: "来院済みの予約で診察を開始する" },
+        expected: { text: "store を1回呼ぶ", value: "storeCalls: 1" },
+        actual: { text: "store を2回呼ぶ", value: "storeCalls: 2" },
+      },
     },
     {
       id: "B5-clock-read-twice",
       kind: "bad",
       subject: "useCase",
-      title: "イベントの発生時刻を、診察開始の時刻とは別に clock から読み直す",
+      title: "イベントの時刻を、診察開始の時刻とは別に clock から読み直す",
       stage: 2,
       required: false,
       allow: ["tests"],
       hint: "呼ぶたびに値が変わる clock を渡して、テストで確かめます。",
+      behavior: {
+        input: { text: "clock が 06:30:01、06:30:02 と進むとき" },
+        expected: { text: "診察開始の時刻と同じ", value: '"…T06:30:01.000Z"' },
+        actual: { text: "診察開始の時刻とずれる", value: '"…T06:30:02.000Z"' },
+      },
     },
     {
       id: "B6-store-result-dropped",
@@ -54,6 +79,11 @@ export default {
       required: false,
       allow: ["tests"],
       hint: "store が競合を返したときに、呼び出し側の結果がどうなるかをテストで確かめます。",
+      behavior: {
+        input: { text: "store が競合を返すとき" },
+        expected: { text: "競合の Err が返る", value: "Err: AppointmentConflict" },
+        actual: { text: "Err が返らず成功する", value: "Ok: InExamination" },
+      },
     },
     {
       id: "R1-peer-change",

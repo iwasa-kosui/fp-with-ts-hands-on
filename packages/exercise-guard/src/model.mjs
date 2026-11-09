@@ -1,5 +1,7 @@
 /** @typedef {"types" | "lint" | "tests"} Mechanism */
-/** @typedef {Readonly<{ id: string, kind: "bad" | "good", subject: string, title: string, stage: number, required: boolean, allow: readonly Mechanism[], hint: string, unchangedFrom?: string }>} GuardCase */
+/** @typedef {Readonly<{ text: string, value?: string }>} GuardBehaviorPart */
+/** @typedef {Readonly<{ input: GuardBehaviorPart, expected: GuardBehaviorPart, actual: GuardBehaviorPart }>} GuardBehavior */
+/** @typedef {Readonly<{ id: string, kind: "bad" | "good", subject: string, title: string, stage: number, required: boolean, allow: readonly Mechanism[], hint: string, unchangedFrom?: string, behavior?: GuardBehavior }>} GuardCase */
 /** @typedef {Readonly<{ subjects: Readonly<Record<string, string>>, cases: readonly GuardCase[], vitestBaseConfig?: string }>} GuardConfig */
 /** @typedef {Readonly<{ mechanism: Mechanism, file: string, line: number | null, label: string, message: string }>} Detection */
 /** @typedef {"hit" | "none" | "error" | "na"} CellState */

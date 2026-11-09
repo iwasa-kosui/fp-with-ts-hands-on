@@ -117,6 +117,36 @@ describe("guard exercise paths", () => {
     ]);
   });
 
+  it("reads behavior from the config and drops one with a wrong shape", () => {
+    const cases = readGuardCases({
+      ...files,
+      "exercises/guard/guard.config.mjs": `export default {
+  subjects: {},
+  cases: [
+    {
+      id: "B1-any",
+      kind: "bad",
+      title: "any を使う",
+      behavior: {
+        input: { text: "年齢", value: "20" },
+        expected: { text: "受け付ける" },
+        actual: { text: "拒否する", value: "error" },
+      },
+    },
+    { id: "G1-ok", kind: "good", title: "正しい", behavior: { input: { text: "x" } } },
+  ],
+};
+`,
+    });
+
+    expect(cases[0]?.behavior).toEqual({
+      input: { text: "年齢", value: "20" },
+      expected: { text: "受け付ける" },
+      actual: { text: "拒否する", value: "error" },
+    });
+    expect(cases[1]).not.toHaveProperty("behavior");
+  });
+
   it("falls back to the case file names when the config cannot be read", () => {
     const cases = readGuardCases({
       ...files,

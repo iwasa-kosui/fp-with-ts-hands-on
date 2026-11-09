@@ -3,6 +3,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { guardConfigPath, mechanisms } from "./model.mjs";
 
+/** @typedef {import("./model.mjs").GuardBehavior} GuardBehavior */
 /** @typedef {import("./model.mjs").GuardCase} GuardCase */
 /** @typedef {import("./model.mjs").GuardConfig} GuardConfig */
 /** @typedef {import("./model.mjs").Mechanism} Mechanism */
@@ -31,6 +32,23 @@ const isRecord = (value) => typeof value === "object" && value !== null && !Arra
  */
 const isMechanismList = (value) =>
   Array.isArray(value) && value.every((item) => mechanisms.includes(item));
+
+/**
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+const isBehaviorPart = (value) =>
+  isRecord(value) &&
+  typeof value.text === "string" &&
+  value.text !== "" &&
+  (value.value === undefined || typeof value.value === "string");
+
+/**
+ * @param {unknown} value
+ * @returns {value is GuardBehavior}
+ */
+const isBehavior = (value) =>
+  isRecord(value) && isBehaviorPart(value.input) && isBehaviorPart(value.expected) && isBehaviorPart(value.actual);
 
 /**
  * @param {string} casesDir
@@ -78,6 +96,7 @@ const normalizeCase = (names) => (raw, index) => {
   const hint = raw.hint ?? "";
   const allowRaw = raw.allow ?? [];
   const unchangedFrom = raw.unchangedFrom;
+  const behavior = raw.behavior;
   const errors = [
     ...(idPattern.test(id) ? [] : [`${at} の id は英数字と _ - . で書きます（いまの値: ${String(raw.id)}）。`]),
     ...(kind === undefined ? [`${name} の kind は "bad" か "good" にします。`] : []),
@@ -97,6 +116,9 @@ const normalizeCase = (names) => (raw, index) => {
     ...(unchangedFrom === undefined || typeof unchangedFrom === "string"
       ? []
       : [`${name} の unchangedFrom は正しいコード（good）の id の文字列にします。`]),
+    ...(behavior === undefined || isBehavior(behavior)
+      ? []
+      : [`${name} の behavior は { input, expected, actual } にし、それぞれ { text: 空でない文字列, value?: 文字列 } にします。`]),
   ];
   return errors.length > 0 ||
     kind === undefined ||
@@ -116,6 +138,7 @@ const normalizeCase = (names) => (raw, index) => {
           allow: allowRaw,
           hint,
           ...(typeof unchangedFrom === "string" ? { unchangedFrom } : {}),
+          ...(isBehavior(behavior) ? { behavior } : {}),
         },
         errors,
       };
