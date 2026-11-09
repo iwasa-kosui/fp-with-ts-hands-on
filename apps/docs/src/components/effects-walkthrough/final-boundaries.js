@@ -1,6 +1,6 @@
 const figures = document.querySelectorAll("[data-final-boundaries]:not([data-fb-ready])");
 const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-const tagText = { current: "いまここ", done: "通過", stopped: "ここで止まる", skipped: "通らない" };
+const tagText = { current: "いまここ", done: "通過", stopped: "先へ進まない", skipped: "通らない" };
 
 for (const figure of figures) {
   figure.setAttribute("data-fb-ready", "");
@@ -12,16 +12,19 @@ for (const figure of figures) {
   const cardChip = card.querySelector("[data-card-chip]");
   const cardType = card.querySelector("[data-card-type]");
   const cardVal = card.querySelector("[data-card-val]");
-  const parts = [...figure.querySelectorAll("[data-stage]")].map((stage) => ({
-    stage,
-    key: stage.dataset.stage,
-    tag: stage.querySelector("[data-tag]"),
-    dock: stage.querySelector("[data-dock]"),
-    open: stage.querySelector(".fb-open"),
-    impls: [...stage.querySelectorAll("[data-impl]")],
-    outs: [...stage.querySelectorAll("[data-out]")],
-    sums: [...stage.querySelectorAll("[data-sum]")],
-  }));
+  const parts = [...figure.querySelectorAll("[data-stage]")].map((stage) => {
+    const open = figure.querySelector(`[data-open="${stage.dataset.stage}"]`);
+    return {
+      stage,
+      key: stage.dataset.stage,
+      tag: stage.querySelector("[data-tag]"),
+      dock: stage.querySelector("[data-dock]"),
+      open,
+      impls: [...open.querySelectorAll("[data-impl]")],
+      outs: [...open.querySelectorAll("[data-out]")],
+      sums: [...stage.querySelectorAll("[data-sum]")],
+    };
+  });
   const order = parts.map(({ key }) => key);
 
   let lastScene = -1;
@@ -84,6 +87,7 @@ for (const figure of figures) {
       if (state === "current") stage.setAttribute("aria-current", "step");
       else stage.removeAttribute("aria-current");
       part.tag.textContent = tagText[state] ?? "";
+      part.open.toggleAttribute("data-current", state === "current");
       part.open.inert = state !== "current";
       if (state === "current") {
         showImpl(part, frame.impl, frame.lines ?? [], reset);

@@ -1,0 +1,204 @@
+---
+import { Code } from "astro:components";
+
+const options = ["コードを直す", "規則を直す", "理由を付けて残す"] as const;
+
+const cards = [
+  {
+    id: "clock",
+    title: "時刻を読まない new Date（2件）",
+    code: "new Date(Date.parse(occurredAt) + sessionDurationMs).toISOString()",
+    source: "examples/final/src/useCase/logInUseCase.ts:84 と setUpInitialAdminUseCase.ts:77",
+    decision: "規則を直す",
+    text: "受け取った時刻から計算しているだけで、現在の時刻を読んでいません。規則を、引数なしの new Date() だけを指す形に戻します。S06 の規則と同じ形です。app.ts の new Date() は clock の実装なので、src/useCase の外にあり、対象に入りません。",
+  },
+  {
+    id: "corruption",
+    title: "データ破損の throw（1件）",
+    code: [
+      "export const rejectExamResultPetMismatch = (",
+      "  mismatch: ExamResultPetMismatch,",
+      "): never => {",
+      "  throw new TypeError(",
+      "    `Corrupt follow-up candidate: appointment ${mismatch.appointmentId} expects pet ${mismatch.expectedPetId} but its exam result has pet ${mismatch.actualPetId}`,",
+      "  );",
+      "};",
+    ].join("\n"),
+    source: "examples/final/src/useCase/rejectExamResultPetMismatch.ts:3-9",
+    decision: "理由を付けて残す",
+    text: "保存済みのデータが食い違っているときに投げます。業務で対応を選べない破損なので、Err にせず例外境界へ渡します。規則を無効にするコメントに、この理由を書きます。",
+  },
+] as const;
+---
+
+<div class="rd" data-rule-decisions>
+  {cards.map((card) => (
+    <section class="rd__card" data-card aria-labelledby={`rd-title-${card.id}`}>
+      <h4 class="rd__title" id={`rd-title-${card.id}`}>{card.title}</h4>
+
+      <figure class="code-block rd__code">
+        <figcaption><code>{card.source}</code></figcaption>
+        <Code code={card.code} lang="typescript" wrap />
+      </figure>
+
+      <div class="rd__options" role="group" aria-label={`${card.title}の選択肢`}>
+        {options.map((option) => (
+          <button type="button" class="rd__option" data-option aria-pressed="false">{option}</button>
+        ))}
+      </div>
+
+      <div class="rd__answer" data-answer aria-live="polite">
+        <div class="rd__answer-body" data-answer-body>
+          <p class="rd__decision">参照実装の判断: <strong>{card.decision}</strong></p>
+          <p class="rd__text">{card.text}</p>
+        </div>
+      </div>
+    </section>
+  ))}
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-rule-decisions]").forEach((root) => {
+    root.querySelectorAll<HTMLElement>("[data-card]").forEach((card) => {
+      const buttons = [...card.querySelectorAll<HTMLButtonElement>("[data-option]")];
+      const answer = card.querySelector<HTMLElement>("[data-answer]");
+      if (!answer) return;
+
+      buttons.forEach((button) =>
+        button.addEventListener("click", () => {
+          buttons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+          answer.dataset.open = "";
+        }),
+      );
+    });
+  });
+</script>
+
+<style>
+  .rd {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1rem;
+    min-width: 0;
+    margin: 0.25rem 0;
+  }
+
+  .rd__card {
+    display: grid;
+    grid-row: span 4;
+    grid-template-rows: subgrid;
+    gap: 0.375rem;
+    min-width: 0;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+  }
+
+  .rd__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  .rd__code {
+    min-width: 0;
+    margin: 0;
+  }
+
+  .rd__code figcaption code {
+    font-size: 0.75rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .rd__code :global(figcaption) {
+    padding: 0.25rem 0.5rem;
+  }
+
+  .rd__code :global(pre) {
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    line-height: 1.45;
+  }
+
+  .rd__code :global(pre code) {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+
+  .rd__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  .rd__option {
+    min-height: 2.5rem;
+    padding: 0 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .rd__option[aria-pressed="true"] {
+    border-color: var(--role-accent);
+    box-shadow: 0 0 0 2px var(--role-accent);
+  }
+
+  .rd__option[aria-pressed="true"]::before {
+    content: "✓ ";
+    color: var(--role-accent);
+  }
+
+  .rd__option:focus-visible {
+    outline: 3px solid var(--role-accent);
+    outline-offset: 2px;
+  }
+
+  .rd__answer {
+    padding: 0.375rem 0.625rem;
+    border: 2px dashed var(--role-border);
+    border-radius: 0.5rem;
+  }
+
+  .rd__answer-body {
+    visibility: hidden;
+  }
+
+  .rd__answer[data-open] {
+    border-style: solid;
+  }
+
+  .rd__answer[data-open] .rd__answer-body {
+    visibility: visible;
+  }
+
+  .rd__answer p {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .rd__decision {
+    margin-block-end: 0.125rem;
+    font-weight: 700;
+  }
+
+  .rd__text {
+    color: var(--role-muted);
+  }
+
+  @media (max-width: 55rem) {
+    .rd {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

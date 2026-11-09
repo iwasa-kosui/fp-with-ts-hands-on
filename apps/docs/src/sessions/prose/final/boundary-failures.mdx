@@ -1,0 +1,5 @@
+import FinalBoundariesAnimation from "../../../components/effects-walkthrough/FinalBoundariesAnimation.astro";
+
+<p>同じ5つの境界で、失敗の依頼はどこまで進むかを見ます。業務上の失敗は <code>Err</code> として応答まで届きます。SQLite の障害は <code>Err</code> にならず、例外境界で 500 になります。</p>
+
+<FinalBoundariesAnimation scenes="failures" />

@@ -1,0 +1,262 @@
+---
+import { stages } from "../../sessions/overview-map";
+
+type Props = Readonly<{ staticView?: boolean }>;
+
+const { staticView = false } = Astro.props;
+
+const steps = [
+  { text: "これが S00 で見た、1回の依頼が通る5つの段です。" },
+  { label: "入力境界", from: 1, to: 1, lane: 2, text: "検査していない値を、内側へ渡しません。S03 で作りました。" },
+  { label: "業務上の失敗", from: 2, to: 3, lane: 2, text: "予約なしや状態不正を例外にせず、型の付いた Err で返します。S01、S02、S04 で作りました。" },
+  { label: "出力イベント", from: 3, to: 3, lane: 3, text: "判断に成功した経路だけが、イベントを作ります。S05 と S06 で見ました。" },
+  { label: "副作用", from: 4, to: 4, lane: 2, text: "状態と監査記録を、1回で保存します。S06 で作りました。" },
+  { label: "例外境界", from: 5, to: 5, lane: 2, text: "障害を業務の結果に混ぜず、共通の場所で 500 を返します。S04 で作りました。" },
+] as const;
+
+const tags = steps.flatMap((step, index) => ("label" in step ? [{ ...step, at: index }] : []));
+---
+
+<figure
+  class="bo"
+  data-boundary-overlay
+  data-static={staticView ? "" : undefined}
+  data-step-figure={staticView ? undefined : ""}
+  aria-label="5つの段と、段ごとの境界の札"
+>
+  {!staticView && (
+    <div class="bo__controls" data-controls hidden>
+      <button type="button" data-prev disabled>前へ</button>
+      <button type="button" data-next>次へ</button>
+      <span class="bo__progress" data-progress>1 / {steps.length}</span>
+    </div>
+  )}
+
+  {!staticView && (
+    <ol class="bo__texts" aria-live="polite">
+      {steps.map((step) => (
+        <li data-text>{step.text}</li>
+      ))}
+    </ol>
+  )}
+
+  <div class="bo__grid">
+    {stages.map((stage, index) => (
+      <div class="bo__stage" style={`grid-row: ${index + 1}`}>
+        <span class="bo__num" aria-hidden="true">{index + 1}</span>
+        <span class="bo__name">{stage.label}</span>
+      </div>
+    ))}
+    {tags.map((tag) => (
+      <div
+        class="bo__tag"
+        data-tag
+        data-at={tag.at}
+        data-shown={staticView ? "" : undefined}
+        style={`grid-row: ${tag.from} / ${tag.to + 1}; grid-column: ${tag.lane}`}
+      >
+        {tag.label}
+      </div>
+    ))}
+  </div>
+</figure>
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-boundary-overlay]").forEach((root) => {
+    if (root.dataset.static !== undefined || root.dataset.ready !== undefined) return;
+    const controls = root.querySelector<HTMLElement>("[data-controls]");
+    const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
+    const next = root.querySelector<HTMLButtonElement>("[data-next]");
+    const progress = root.querySelector<HTMLElement>("[data-progress]");
+    const texts = [...root.querySelectorAll<HTMLElement>("[data-text]")];
+    const tags = [...root.querySelectorAll<HTMLElement>("[data-tag]")];
+    if (!controls || !prev || !next || !progress || texts.length === 0) return;
+
+    const last = texts.length - 1;
+    const show = (index: number) => {
+      texts.forEach((text, textIndex) => {
+        if (textIndex === index) text.setAttribute("aria-current", "step");
+        else text.removeAttribute("aria-current");
+      });
+      tags.forEach((tag) => {
+        const at = Number(tag.dataset.at);
+        tag.toggleAttribute("data-shown", at <= index);
+        tag.toggleAttribute("data-current", at === index);
+      });
+      progress.textContent = `${index + 1} / ${texts.length}`;
+      prev.disabled = index === 0;
+      next.disabled = index === last;
+      root.dataset.step = String(index);
+    };
+
+    prev.addEventListener("click", () => show(Math.max(Number(root.dataset.step) - 1, 0)));
+    next.addEventListener("click", () => show(Math.min(Number(root.dataset.step) + 1, last)));
+
+    root.dataset.ready = "";
+    controls.hidden = false;
+    show(0);
+  });
+</script>
+
+<style>
+  .bo {
+    min-width: 0;
+    margin: 1rem 0;
+  }
+
+  .bo__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-block-end: 0.5rem;
+  }
+
+  .bo__controls[hidden] {
+    display: none;
+  }
+
+  .bo__controls button {
+    min-height: 2.5rem;
+    padding: 0 0.875rem;
+    border: 2px solid var(--role-accent);
+    border-radius: 0.5rem;
+    background: var(--role-accent);
+    color: var(--role-surface);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .bo__controls button:disabled {
+    border-color: var(--role-border);
+    background: var(--role-surface);
+    color: var(--role-text);
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .bo__controls button:focus-visible {
+    outline: 3px solid var(--role-accent);
+    outline-offset: 2px;
+  }
+
+  .bo__progress {
+    color: var(--role-muted);
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bo__texts {
+    margin: 0 0 0.625rem;
+    padding-inline-start: 1.5rem;
+    color: var(--role-text);
+    line-height: 1.6;
+  }
+
+  .bo[data-ready] .bo__texts {
+    display: grid;
+    padding: 0.375rem 0.75rem;
+    border-inline-start: 0.35rem solid var(--role-accent);
+    background: var(--role-surface);
+    list-style: none;
+    font-weight: 700;
+  }
+
+  .bo[data-ready] .bo__texts > li {
+    grid-area: 1 / 1;
+    visibility: hidden;
+  }
+
+  .bo[data-ready] .bo__texts > li[aria-current] {
+    visibility: visible;
+  }
+
+  .bo__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 20rem) 10rem 10rem;
+    grid-template-rows: repeat(5, minmax(2.5rem, auto));
+    gap: 0.375rem 0.75rem;
+    justify-content: start;
+  }
+
+  .bo__stage {
+    display: flex;
+    grid-column: 1;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: 0;
+    padding: 0 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+  }
+
+  .bo__num {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid var(--role-border);
+    border-radius: 50%;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .bo__name {
+    min-width: 0;
+    font-size: 0.9375rem;
+    font-weight: 800;
+    line-height: 1.3;
+  }
+
+  .bo__tag {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding: 0 0.75rem;
+    border: 2px solid var(--role-border);
+    border-inline-start: 0.5rem solid var(--role-accent);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    line-height: 1.3;
+    transition: opacity 0.3s, transform 0.3s;
+  }
+
+  .bo[data-ready] .bo__tag:not([data-shown]) {
+    opacity: 0;
+    transform: translateX(-0.75rem);
+    visibility: hidden;
+  }
+
+  .bo__tag[data-current] {
+    border-color: var(--role-accent);
+    background: color-mix(in srgb, var(--role-accent) 16%, var(--role-surface));
+    box-shadow: 0 0 0 2px var(--role-accent);
+  }
+
+  @media (max-width: 40rem) {
+    .bo__grid {
+      grid-template-columns: minmax(0, 1fr) 7.5rem 7.5rem;
+      column-gap: 0.375rem;
+    }
+
+    .bo__tag {
+      padding: 0 0.5rem;
+      font-size: 0.8125rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bo__tag {
+      transition: none;
+    }
+  }
+</style>

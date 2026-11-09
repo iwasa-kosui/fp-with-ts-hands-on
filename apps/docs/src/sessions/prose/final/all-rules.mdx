@@ -1,0 +1,5 @@
+import RuleDecisions from "../../../components/final/RuleDecisions.astro";
+
+<p>各 Session の模範の規則を、参照実装の168ファイルにあらかじめかけました。S04 の <code>throw</code> の規則と S06 の <code>new Date</code> の規則は、対象を <code>src/useCase</code> 全体に広げ、<code>new Date</code> は引数があっても指す形にしました。結果は3件です。どれも規則の指摘だけでは正しいか判断できません。</p>
+
+<RuleDecisions />

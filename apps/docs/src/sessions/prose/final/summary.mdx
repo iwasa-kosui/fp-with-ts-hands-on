@@ -1,0 +1,17 @@
+import BoundaryOverlay from "../../../components/final/BoundaryOverlay.astro";
+import ChosenMechanism from "../../../components/final/ChosenMechanism.astro";
+
+<div class="session-split">
+  <div>
+    <BoundaryOverlay staticView />
+  </div>
+  <div>
+    <p>S00 から S06 まで、診察開始の処理を5つの境界に分け、型、テスト、Linter の規則で悪い変更を検出できるようにしました。事故が消えたわけではありません。事故ごとに、防ぐ場所と確かめる仕組みが決まりました。</p>
+    <ChosenMechanism />
+    <ol>
+      <li>自分の業務で、いちばん事故が起きやすい段はどこですか。</li>
+      <li>選んだ仕組みは、どの事故を検出しますか。検出できない事故は何ですか。</li>
+      <li>選んだ仕組みを、誰と、いつ話しますか。</li>
+    </ol>
+  </div>
+</div>

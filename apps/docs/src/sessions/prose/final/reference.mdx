@@ -1,0 +1,17 @@
+import EpisodeIllustration from "../../../components/EpisodeIllustration.astro";
+import { session } from "../../pages/final-content";
+
+<div class="session-split session-split--story">
+  <div>
+    <aside class="case-file__episode" aria-label="動物病院のひと幕">
+      <p class="case-file__episode-label">動物病院のひと幕</p>
+      {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+    </aside>
+    <p>S06 では、状態と監査記録を本当に同時に残せるかは、store の実装を見ないと分からないところで終わりました。この回の題材は <code>examples/final</code> の参照実装です。<code>examples/session-06-solution</code> は診察開始だけを直したコードで、参照実装はログインやほかの業務も含む大きな見本です。S05 は業務のコードを編集しない回なので、到達点のコードはありません。</p>
+    <p><strong>課題1</strong> 5つの境界は、大きなコードでも保たれているか。</p>
+    <p><strong>課題2</strong> 規則が参照実装を指したとき、直すか、理由を付けて残すか。</p>
+  </div>
+  <div>
+    <EpisodeIllustration slug="final" />
+  </div>
+</div>

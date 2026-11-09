@@ -1,0 +1,276 @@
+---
+import { Code } from "astro:components";
+
+type Snippet = Readonly<{ code: string; path: string }>;
+type Props = Readonly<{
+  code: Readonly<{
+    s06Update: Snippet;
+    finalUpdate: Snippet;
+    s06Conflict: Snippet;
+    finalConflict: Snippet;
+    s06Port: Snippet;
+    finalPort: Snippet;
+  }>;
+}>;
+
+const { code } = Astro.props;
+
+const scenes = [
+  {
+    label: "条件付き更新",
+    left: code.s06Update,
+    right: code.finalUpdate,
+    text: "S06 は transaction の中で予約を読み直し、CheckedIn でなければ err を返します。参照実装は、status が CheckedIn の行だけを更新します。このように条件を付けた更新を、条件付き更新と呼びます。更新した行が0件なら競合です。",
+  },
+  {
+    label: "競合の伝え方",
+    left: code.s06Conflict,
+    right: code.finalConflict,
+    text: "S06 は err を返すので fromSafePromise で受けます。参照実装は競合を throw で伝えて transaction を取り消し、fromPromise の2つ目の引数で競合だけを Err に変えます。それ以外の例外は投げ直すので、S06 の悪い例と違い、障害は Err になりません。",
+  },
+  {
+    label: "port の置き場所",
+    left: code.s06Port,
+    right: code.finalPort,
+    text: "S06 は port を useCase に置きました。参照実装は domain に置きました。どちらでも、port は外側の実装を知りません。大事なのはこの点です。",
+  },
+] as const;
+---
+
+<figure class="sd" data-store-differences data-step-figure aria-label="S06 と参照実装の、書き方が違う3点">
+  <div class="sd__bar">
+    <div class="sd__tabs" role="group" aria-label="場面を選ぶ">
+      {scenes.map((scene, index) => (
+        <button type="button" class="sd__tab" data-step-scene aria-pressed={index === 0 ? "true" : "false"}>{scene.label}</button>
+      ))}
+    </div>
+    <div class="sd__controls" data-controls>
+      <button type="button" class="sd__step" data-prev disabled>前へ</button>
+      <span class="sd__progress" data-progress>1 / {scenes.length}</span>
+      <button type="button" class="sd__step" data-next>次へ</button>
+    </div>
+  </div>
+
+  <div class="sd__scenes">
+    {scenes.map((scene, index) => (
+      <section class="sd__scene" data-scene data-current={index === 0 ? "" : undefined}>
+        <h4 class="sd__scene-title">{scene.label}</h4>
+        <div class="sd__cols">
+          {[
+            { side: "S06", snippet: scene.left },
+            { side: "参照実装", snippet: scene.right },
+          ].map(({ side, snippet }) => (
+            <figure class="code-block sd__code">
+              <figcaption>
+                <strong>{side}</strong>
+                <code>{snippet.path}</code>
+              </figcaption>
+              <Code code={snippet.code} lang="typescript" wrap />
+            </figure>
+          ))}
+        </div>
+        <p class="sd__text">{scene.text}</p>
+      </section>
+    ))}
+  </div>
+</figure>
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-store-differences]").forEach((root) => {
+    if (root.dataset.ready !== undefined) return;
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>("[data-step-scene]")];
+    const scenes = [...root.querySelectorAll<HTMLElement>("[data-scene]")];
+    const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
+    const next = root.querySelector<HTMLButtonElement>("[data-next]");
+    const progress = root.querySelector<HTMLElement>("[data-progress]");
+    if (tabs.length === 0 || tabs.length !== scenes.length || !prev || !next || !progress) return;
+
+    let current = 0;
+    const select = (index: number) => {
+      current = index;
+      tabs.forEach((tab, tabIndex) => tab.setAttribute("aria-pressed", String(tabIndex === index)));
+      scenes.forEach((scene, sceneIndex) => {
+        scene.toggleAttribute("data-current", sceneIndex === index);
+        scene.inert = sceneIndex !== index;
+      });
+      progress.textContent = `${index + 1} / ${scenes.length}`;
+      prev.disabled = index === 0;
+      next.disabled = index === scenes.length - 1;
+    };
+
+    tabs.forEach((tab, index) => tab.addEventListener("click", () => select(index)));
+    prev.addEventListener("click", () => select(Math.max(current - 1, 0)));
+    next.addEventListener("click", () => select(Math.min(current + 1, scenes.length - 1)));
+    root.dataset.ready = "";
+    select(0);
+  });
+</script>
+
+<style>
+  .sd {
+    min-width: 0;
+    margin: 1rem 0;
+  }
+
+  .sd__bar {
+    display: none;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    margin-block-end: 0.5rem;
+  }
+
+  .sd[data-ready] .sd__bar {
+    display: flex;
+  }
+
+  .sd__tabs,
+  .sd__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .sd__step {
+    min-height: 2.5rem;
+    padding: 0 0.875rem;
+    border: 2px solid var(--role-accent);
+    border-radius: 0.5rem;
+    background: var(--role-accent);
+    color: var(--role-surface);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .sd__step:disabled {
+    border-color: var(--role-border);
+    background: var(--role-surface);
+    color: var(--role-text);
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .sd__step:focus-visible {
+    outline: 3px solid var(--role-accent);
+    outline-offset: 2px;
+  }
+
+  .sd__progress {
+    color: var(--role-muted);
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sd__tab {
+    min-height: 2.5rem;
+    padding: 0 0.875rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 700;
+  }
+
+  .sd__tab[aria-pressed="true"] {
+    border-color: var(--role-accent);
+    box-shadow: 0 0 0 2px var(--role-accent);
+  }
+
+  .sd__tab[aria-pressed="true"]::before {
+    content: "✓ ";
+    color: var(--role-accent);
+  }
+
+  .sd__tab:focus-visible {
+    outline: 3px solid var(--role-accent);
+    outline-offset: 2px;
+  }
+
+  .sd__scene + .sd__scene {
+    margin-block-start: 1.25rem;
+  }
+
+  .sd__scene-title {
+    margin: 0 0 0.375rem;
+  }
+
+  .sd[data-ready] .sd__scenes {
+    display: grid;
+  }
+
+  .sd[data-ready] .sd__scene {
+    grid-area: 1 / 1;
+    margin-block-start: 0;
+    visibility: hidden;
+  }
+
+  .sd[data-ready] .sd__scene[data-current] {
+    visibility: visible;
+  }
+
+  .sd[data-ready] .sd__scene-title {
+    display: none;
+  }
+
+  .sd__cols {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .sd__code {
+    min-width: 0;
+    margin: 0;
+  }
+
+  .sd__code figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .sd__code figcaption code {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .sd__code :global(pre) {
+    max-height: 14.5rem;
+    margin: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .sd__code :global(pre code) {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+
+  .sd__text {
+    margin: 0.625rem 0 0;
+    color: var(--role-text);
+    font-size: 0.9375rem;
+    line-height: 1.65;
+  }
+
+  @media (max-width: 45rem) {
+    .sd__cols {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

@@ -1,0 +1,6 @@
+import StoreDifferences from "../../../components/final/StoreDifferences.astro";
+import { storeDifferencesCode } from "../../pages/final-content";
+
+<p>参照実装の保存は、S06 と書き方が3点違います。守る約束は同じです。状態と監査記録を同時に残し、競合なら何も書きません。</p>
+
+<StoreDifferences code={storeDifferencesCode} />

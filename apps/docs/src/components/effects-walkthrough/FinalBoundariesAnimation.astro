@@ -25,12 +25,15 @@ type Frame = Readonly<{
   skipped?: readonly string[];
 }>;
 type Scene = Readonly<{ label: string; stop?: string; frames: readonly Frame[] }>;
+type Props = Readonly<{ scenes: "success" | "failures" }>;
+
+const { scenes: sceneKind } = Astro.props;
 
 const gates: readonly Gate[] = [
   { key: "input", num: "1", name: "入力境界", gloss: "HTTP の入力を検証し、ユースケースの入力へ変換します。" },
   { key: "business", num: "2", name: "業務上の失敗", gloss: "予約なしや状態不正などの業務上の失敗を、型付きの `Err` として返します。" },
   { key: "event", num: "3", name: "出力イベント", gloss: "業務の検証に成功した経路だけが、`ExaminationStarted` の生成へ進みます。" },
-  { key: "effect", num: "4", name: "副作用", gloss: "予約の状態とイベントを、1つの transaction で保存します。" },
+  { key: "effect", num: "4", name: "副作用", gloss: "予約の状態と監査記録を、1つの transaction で保存します。" },
   { key: "exception", num: "5", name: "例外境界", gloss: "業務の `Result` に入らない障害を、共通の境界が受け取って 500 を返します。" },
   { key: "answer", num: "", name: "応答", gloss: "route が結果を HTTP の応答に変換します。" },
 ];
@@ -291,7 +294,7 @@ const cards: readonly Card[] = [
   { key: "c9c", stage: "answer", tone: "reject", chip: "応答", type: "Response", code: serverError, short: `500 Internal Server Error` },
 ];
 
-const scenes: readonly Scene[] = [
+const allScenes: readonly Scene[] = [
   {
     label: "成功",
     frames: [
@@ -303,7 +306,7 @@ const scenes: readonly Scene[] = [
         out: "c1",
       },
       {
-        text: "route は、検証済みの値から `UseCaseInput` を作り、`run` を呼びます。`veterinarianId` は、獣医師なら本人の ID、そうでなければ入力の値です。",
+        text: "route は、検証済みの値から `UseCaseInput`（ユースケースへ渡す入力の型）を作り、`run` を呼びます。`veterinarianId` は、獣医師なら本人の ID、そうでなければ入力の値です。",
         at: "input",
         impl: "input",
         lines: [4, 5, 6, 7, 13, 14],
@@ -343,7 +346,7 @@ const scenes: readonly Scene[] = [
         lines: [3, 6, 7, 8, 9, 10, 11, 12, 13],
       },
       {
-        text: "更新が1行なので、`domainEventsTable` にイベントを追加します。transaction に渡した関数が最後まで終わると、状態とイベントが同時に確定します。",
+        text: "更新が1行なので、監査記録のテーブル `domainEventsTable` に `ExaminationStarted` を追加します。transaction に渡した関数が最後まで終わると、状態と監査記録が同時に確定します。",
         at: "effect",
         impl: "commit",
         lines: [0, 6, 7, 8, 9, 10, 11, 12],
@@ -368,7 +371,7 @@ const scenes: readonly Scene[] = [
     stop: "business",
     frames: [
       {
-        text: "予約がすでに `InExamination` だったとします。入力は場面1と同じく通り、route が `run` を呼びます。",
+        text: "予約がすでに `InExamination` だったとします。入力は前のページの成功と同じく通り、route が `run` を呼びます。",
         at: "input",
         impl: "input",
         lines: [0, 4, 5, 6, 7, 13, 14],
@@ -402,7 +405,7 @@ const scenes: readonly Scene[] = [
     stop: "effect",
     frames: [
       {
-        text: "入力は場面1と同じく通り、route が `run` を呼びます。ここから先で SQLite の障害が起きるとします。",
+        text: "入力は前のページの成功と同じく通り、route が `run` を呼びます。ここから先で SQLite の障害が起きるとします。",
         at: "input",
         impl: "input",
         lines: [0, 4, 5, 6, 7, 13, 14],
@@ -416,7 +419,7 @@ const scenes: readonly Scene[] = [
         out: "c4",
       },
       {
-        text: "`createEvent` と `Appointment.startExamination` が `ExaminationStarted` を作ります。ここまでは場面1と同じです。",
+        text: "`createEvent` と `Appointment.startExamination` が `ExaminationStarted` を作ります。ここまでは前のページの成功と同じです。",
         at: "event",
         impl: "transition",
         lines: [6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20],
@@ -457,6 +460,13 @@ const scenes: readonly Scene[] = [
   },
 ];
 
+const scenes = sceneKind === "success" ? allScenes.slice(0, 1) : allScenes.slice(1);
+const title = sceneKind === "success" ? "診察開始の依頼が5つの境界を通る" : "失敗の依頼が5つの境界のどこまで進むか";
+const lead =
+  sceneKind === "success"
+    ? "依頼カードが上から順に境界を通り、いま通っている境界の実コードと出力が開きます。"
+    : "業務上の失敗と SQLite 障害の2つの流れがあります。";
+
 const frameData = scenes.map(({ stop, frames }) => ({
   stop,
   frames: frames.map(({ text: _text, ...frame }) => frame),
@@ -466,8 +476,8 @@ const cardData = Object.fromEntries(cards.map(({ key, tone, chip, type, short })
 
 <Walkthrough
   id="final-boundaries-walkthrough"
-  title="診察開始の依頼が5つの境界を通る"
-  lead="依頼カードが上から順に境界を通り、いま通っている境界の実コードと出力が開きます。成功、業務上の失敗、SQLite 障害の3つの流れがあります。"
+  title={title}
+  lead={lead}
   note="値は説明用の例です。項目は一部だけを載せています。"
   scenes={scenes.map(({ label, frames }) => ({ label, frames: frames.map(({ text }) => ({ text })) }))}
 >
@@ -478,48 +488,48 @@ const cardData = Object.fromEntries(cards.map(({ key, tone, chip, type, short })
           <div class="fb-head">
             <span class="fb-num">{gate.num}</span>
             <span class="fb-name">{gate.name}</span>
+            <div class="fb-sums">
+              {cards.filter((card) => card.stage === gate.key).map((card) => (
+                <p class="fb-sum" data-sum={card.key} data-tone={card.tone} title={`${card.type} ${card.short}`}>
+                  <span class="fb-sum__arrow">→</span>
+                  <span class="fb-chip">{card.chip}</span>
+                  <code class="fb-sum__type">{card.type}</code>
+                  <span class="fb-sum__val">{card.short}</span>
+                </p>
+              ))}
+            </div>
             <span class="fb-tag" data-tag></span>
           </div>
-          <div class="fb-sums">
-            {cards.filter((card) => card.stage === gate.key).map((card) => (
-              <p class="fb-sum" data-sum={card.key} data-tone={card.tone}>
-                <span class="fb-sum__arrow">→</span>
-                <span class="fb-chip">{card.chip}</span>
-                <code class="fb-sum__type">{card.type}</code>
-                <span class="fb-sum__val">{card.short}</span>
-              </p>
-            ))}
-          </div>
           <div class="fb-dock" data-dock></div>
-          <div class="fb-open">
-            <div class="fb-open__clip">
-              <div class="fb-open__body">
-                <p class="fb-gloss">{gate.gloss.split("`").map((part, index) => (index % 2 === 1 ? <code>{part}</code> : part))}</p>
-                {Object.entries(impls).filter(([, impl]) => impl.stage === gate.key).map(([name, impl]) => (
-                  <figure class="fb-impl" data-impl={name}>
-                    <figcaption>
-                      <span class="walk-badge walk-badge--ref">参照実装</span>
-                      <code>{impl.path}</code>
-                    </figcaption>
-                    <Code code={impl.code} lang="ts" wrap />
-                  </figure>
-                ))}
-                {cards.filter((card) => card.stage === gate.key).map((card) => (
-                  <figure class="fb-out" data-out={card.key} data-tone={card.tone}>
-                    <figcaption>
-                      <span class="fb-out__label">出力</span>
-                      <span class="fb-chip">{card.chip}</span>
-                      <code class="fb-out__type">{card.type}</code>
-                    </figcaption>
-                    <Code code={card.code} lang="ts" wrap />
-                  </figure>
-                ))}
-              </div>
-            </div>
-          </div>
         </li>
       ))}
     </ol>
+    <div class="fb-panel">
+      {gates.map((gate) => (
+        <div class="fb-open" data-open={gate.key}>
+          <p class="fb-gloss">{gate.gloss.split("`").map((part, index) => (index % 2 === 1 ? <code>{part}</code> : part))}</p>
+          {Object.entries(impls).filter(([, impl]) => impl.stage === gate.key).map(([name, impl]) => (
+            <figure class="fb-impl" data-impl={name}>
+              <figcaption>
+                <span class="walk-badge walk-badge--ref">参照実装</span>
+                <code>{impl.path}</code>
+              </figcaption>
+              <Code code={impl.code} lang="ts" wrap />
+            </figure>
+          ))}
+          {cards.filter((card) => card.stage === gate.key).map((card) => (
+            <figure class="fb-out" data-out={card.key} data-tone={card.tone}>
+              <figcaption>
+                <span class="fb-out__label">出力</span>
+                <span class="fb-chip">{card.chip}</span>
+                <code class="fb-out__type">{card.type}</code>
+              </figcaption>
+              <Code code={card.code} lang="ts" wrap />
+            </figure>
+          ))}
+        </div>
+      ))}
+    </div>
     <div class="fb-card" data-card data-tone="ok" aria-hidden="true">
       <p class="fb-card__head">
         <span class="fb-card__label">依頼カード</span>
