@@ -4,6 +4,7 @@ import {
   installPageKeyNavigation,
   pageKeyDirection,
   pageKeyIgnoredSelector,
+  pageKeyScope,
   type PageKeyDirection,
   type PageKeyEvent,
   type PageKeyTarget,
@@ -342,5 +343,60 @@ describe("場面を選ぶボタンでの左右キー", () => {
     mountScene();
     press(document.body, "ArrowRight", { repeat: true });
     expect(navigate).toHaveBeenCalledWith("next");
+  });
+});
+
+describe("pageKeyScope", () => {
+  it("対象がないときと、本文や body の上ではページの移動を指す", () => {
+    document.body.innerHTML = `<article><p id="text">本文</p></article>`;
+    expect(pageKeyScope(null)).toBe("page");
+    expect(pageKeyScope(document.body)).toBe("page");
+    expect(pageKeyScope(document.getElementById("text"))).toBe("page");
+  });
+
+  it("図の操作部と図の場面のタブの上ではコマ送りを指す", () => {
+    document.body.innerHTML = `
+      <section data-step-figure>
+        <button type="button" data-step-scene role="tab">場面</button>
+        <div data-controls><button type="button" data-next>次のコマ</button></div>
+      </section>`;
+    expect(pageKeyScope(document.querySelector("[data-step-scene]"))).toBe("step");
+    expect(pageKeyScope(document.querySelector("[data-next]"))).toBe("step");
+  });
+
+  it.each([
+    ["input", `<input id="target" />`],
+    ["textarea", `<textarea id="target"></textarea>`],
+    ["select", `<select id="target"></select>`],
+    ["contenteditable", `<div contenteditable="true"><span id="target"></span></div>`],
+    [".monaco-editor", `<div class="monaco-editor"><span id="target"></span></div>`],
+    [".xterm", `<div class="xterm"><span id="target"></span></div>`],
+    [".code-explorer", `<div class="code-explorer"><span id="target"></span></div>`],
+    [".guard-exercise", `<div class="guard-exercise"><span id="target"></span></div>`],
+  ])("%s の中ではカーソルの移動を指す", (_name, html) => {
+    document.body.innerHTML = html;
+    expect(pageKeyScope(document.getElementById("target"))).toBe("text");
+  });
+
+  it("エディタの中に操作部があっても、カーソルの移動を指す", () => {
+    document.body.innerHTML = `
+      <div class="code-explorer"><div data-controls><button type="button" data-next>次</button></div></div>`;
+    expect(pageKeyScope(document.querySelector("[data-next]"))).toBe("text");
+  });
+
+  it("pageKeyDirection と stepKeyButton の判定と食い違わない", () => {
+    document.body.innerHTML = `
+      <p id="plain">本文</p>
+      <input id="field" />
+      <section data-step-figure>
+        <button type="button" data-step-scene>場面</button>
+        <div data-controls><button type="button" data-next>次</button></div>
+      </section>`;
+    for (const id of ["plain", "field"]) {
+      const element = document.getElementById(id) as HTMLElement;
+      expect(pageKeyScope(element) === "page").toBe(pageKeyDirection(keyEvent(), element) !== null);
+    }
+    const scene = document.querySelector("[data-step-scene]") as HTMLElement;
+    expect(pageKeyScope(scene) === "page").toBe(pageKeyDirection(keyEvent(), scene) !== null);
   });
 });

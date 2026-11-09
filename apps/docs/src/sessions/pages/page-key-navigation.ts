@@ -96,6 +96,23 @@ export const stepKeyButton = (
   return stepButtonIn(controls, direction);
 };
 
+export type PageKeyScope = "page" | "step" | "text";
+
+const probeEvent: PageKeyEvent = {
+  key: "ArrowRight",
+  altKey: false,
+  ctrlKey: false,
+  metaKey: false,
+  shiftKey: false,
+  defaultPrevented: false,
+  repeat: false,
+};
+
+export const pageKeyScope = (target: Element | null): PageKeyScope => {
+  if (stepKeyButton(probeEvent, target) !== null) return "step";
+  return pageKeyDirection(probeEvent, target) === null ? "text" : "page";
+};
+
 const isDisabledButton = (element: Element): boolean =>
   element instanceof HTMLButtonElement && element.disabled;
 

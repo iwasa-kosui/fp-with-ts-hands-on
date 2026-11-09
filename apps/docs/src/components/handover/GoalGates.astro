@@ -277,8 +277,13 @@ const rows = [
     background: color-mix(in srgb, var(--role-positive) 14%, var(--role-surface));
   }
 
-  .gg__row[data-dim] {
-    opacity: 0.4;
+  .gg__row[data-dim] :is(.gg__name, .gg__lanes) {
+    border-color: color-mix(in srgb, var(--role-border) 40%, transparent);
+    background: color-mix(in srgb, var(--role-surface) 40%, transparent);
+  }
+
+  .gg__row[data-dim] .gg__lane + .gg__lane {
+    border-inline-start-color: color-mix(in srgb, var(--role-border) 40%, transparent);
   }
 
   .gg__row[data-dim] .gg__token {

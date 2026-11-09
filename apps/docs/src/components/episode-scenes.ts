@@ -287,7 +287,7 @@ ${text(246, 100, 13, "理由:")}
 <rect x="222" y="118" width="134" height="10" rx="3" fill="#c98a3f"/>
 <rect x="262" y="136" width="62" height="26" rx="3" fill="#fff" stroke-width="2.5"/>
 ${text(293, 155, 15, "Store", { anchor: "middle", mono: true })}
-<g transform="rotate(12 334 60)">${text(334, 70, 56, "?", { anchor: "middle", fill: "#ff4f93", outline: true })}</g>`;
+<g transform="rotate(12 334 60)">${text(334, 70, 56, "?", { anchor: "middle", fill: "#ec3a82", outline: true })}</g>`;
 
 const effectsAndConsistency = `
 ${room("#fff8ce", "#e6dcc0", "#cbbf9d")}

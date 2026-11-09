@@ -8,11 +8,13 @@
   --walk-mint: var(--case-mint, #bcebd7);
   --walk-coral: var(--case-coral, #ff8f7d);
   --walk-divider: var(--case-divider, #dedccf);
+  --walk-pad: 1rem;
+  --walk-accent: var(--role-accent, var(--walk-blue));
   container: walk / inline-size;
   min-width: 0;
   max-width: 100%;
   margin-block: 1.5rem;
-  padding: 1rem;
+  padding: var(--walk-pad);
   border: 2px solid var(--walk-line);
   background: var(--walk-paper);
   color: var(--walk-ink);
@@ -52,9 +54,9 @@
   z-index: 2;
   display: grid;
   gap: 0.6rem;
-  margin: 0.75rem -1rem;
-  padding: 0.6rem 1rem;
-  border-bottom: 2px solid var(--walk-line);
+  margin: 0.75rem calc(var(--walk-pad) * -1);
+  padding: 0.6rem var(--walk-pad);
+  border-bottom: 1px solid var(--walk-divider);
   background: var(--walk-paper);
 }
 
@@ -67,36 +69,38 @@
 
 .walk__btn {
   min-width: 2.75rem;
-  min-height: 2.75rem;
-  padding: 0.4rem 0.9rem;
-  border: 2px solid var(--walk-line);
-  background: var(--walk-paper);
-  color: var(--walk-ink);
+  min-height: 2.125rem;
+  padding: 0.25rem 0.75rem;
+  border: 1.5px solid var(--walk-accent);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--walk-accent);
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 700;
   line-height: 1.3;
   cursor: pointer;
 }
 
 .walk__btn:focus-visible {
-  outline: 3px solid var(--walk-blue);
+  outline: 3px solid var(--walk-accent);
   outline-offset: 2px;
 }
 
 .walk__btn[aria-disabled="true"] {
-  opacity: 0.4;
+  border-color: var(--role-rule, var(--walk-divider));
+  color: var(--role-muted, var(--walk-muted));
   cursor: default;
 }
 
 .walk__btn[aria-pressed="true"] {
-  background: var(--walk-blue);
-  color: var(--walk-paper);
+  background: var(--walk-accent);
+  color: var(--role-on-accent, var(--walk-paper));
 }
 
 .walk__btn--play {
   min-width: 8.5rem;
-  background: var(--walk-lemon);
+  background: var(--role-accent-soft, var(--walk-paper));
 }
 
 .walk__progress {
@@ -130,7 +134,7 @@
 
   .walk__btn {
     min-width: 0;
-    min-height: 2.5rem;
+    min-height: 2.125rem;
     padding: 0.2rem 0.3rem;
     font-size: clamp(0.72rem, 3.8cqi, 0.82rem);
     white-space: nowrap;

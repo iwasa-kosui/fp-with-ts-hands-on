@@ -71,5 +71,11 @@ export const mountStepper = ({ root, onStep, intervalMs = 6000 }: Options): void
 
   root.dataset.ready = "";
   controls.hidden = false;
+  const measureControls = () => {
+    root.style.setProperty("--step-controls-w", `${controls.offsetWidth}px`);
+    root.style.setProperty("--step-controls-h", `${controls.offsetHeight}px`);
+  };
+  measureControls();
+  if (typeof ResizeObserver !== "undefined") new ResizeObserver(measureControls).observe(controls);
   show(0);
 };

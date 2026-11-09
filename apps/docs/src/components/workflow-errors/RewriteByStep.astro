@@ -213,7 +213,9 @@ const captions = [
   }
 
   .rbs-rail .we-chip[data-current="false"] {
-    opacity: 0.45;
+    border-color: color-mix(in srgb, var(--role-border) 45%, transparent);
+    border-inline-start-color: color-mix(in srgb, var(--band) 45%, transparent);
+    background: color-mix(in srgb, var(--role-surface) 45%, transparent);
     font-weight: 500;
   }
 

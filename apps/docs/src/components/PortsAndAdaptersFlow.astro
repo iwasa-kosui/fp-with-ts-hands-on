@@ -126,9 +126,9 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     <div class="ports-flow__sticky">
       <div class="ports-flow__controls" data-controls hidden>
         <button type="button" data-first disabled>最初へ</button>
-        <button type="button" data-prev disabled>前へ</button>
+        <button type="button" data-prev disabled>← 前のコマ</button>
         <span data-progress>1 / {frames.length}</span>
-        <button type="button" data-next>次へ</button>
+        <button type="button" data-next>次のコマ →</button>
       </div>
 
       <p class="ports-flow__live" data-live aria-live="polite" hidden></p>
@@ -486,7 +486,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     min-width: calc(100% + 0.5rem);
     margin-left: -0.5rem;
     padding-left: 0.5rem;
-    background: rgb(255 210 27 / 22%);
+    background: rgb(255 210 27 / 7%);
     box-shadow: inset 0.3rem 0 0 #ffd21b;
   }
 
@@ -528,12 +528,15 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     display: none;
   }
 
-  [data-animated] .ports-flow__dimmable,
   [data-animated] .ports-flow__line {
     transition: opacity 0.3s, stroke-width 0.3s;
   }
 
-  [data-animated] svg[data-nodes="dim"] .ports-flow__node:not([data-focus]) {
+  [data-animated] .ports-flow__shape {
+    transition: opacity 0.3s;
+  }
+
+  [data-animated] svg[data-nodes="dim"] .ports-flow__node:not([data-focus]) .ports-flow__shape {
     opacity: 0.3;
   }
 

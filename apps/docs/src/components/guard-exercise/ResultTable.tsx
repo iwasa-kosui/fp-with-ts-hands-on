@@ -75,7 +75,9 @@ export const ResultTable = ({
               {row.cells === undefined ? "−" : cellText(row.cells[mechanism], row.kind)}
             </td>
           ))}
-          <td className="guard-exercise__verdict">{verdictText(row.verdict)}</td>
+          <td className="guard-exercise__verdict">
+            <span className="guard-exercise__state">{verdictText(row.verdict)}</span>
+          </td>
         </tr>
         {isOpen ? (
           <tr className="guard-exercise__detail">

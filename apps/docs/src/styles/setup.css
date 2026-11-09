@@ -1,3 +1,17 @@
+.case-file.setup-page {
+  --case-mint: var(--wash-mint);
+  --case-lemon: var(--wash-lemon);
+  --case-coral: var(--wash-peach);
+  --case-ink: var(--color-text);
+  --case-paper: #fffefb;
+  --case-line: var(--soft-line);
+  background: var(--color-background);
+}
+
+.setup-page .case-file__site-header {
+  border-bottom-width: 1px;
+}
+
 .setup-page__main {
   width: min(100% - 2rem, 48rem);
   margin-inline: auto;
@@ -53,9 +67,10 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: clamp(1rem, 3vw, 1.5rem);
   padding: clamp(1.25rem, 4vw, 2rem);
-  border: 2px solid var(--case-line);
+  border: 1.5px solid var(--case-line);
+  border-radius: 0.75rem;
   background: var(--case-paper);
-  box-shadow: 0.45rem 0.45rem 0 var(--case-mint);
+  box-shadow: var(--shadow-card);
 }
 
 .setup-step > div,
@@ -63,20 +78,12 @@
   min-width: 0;
 }
 
-.setup-step--repository {
-  box-shadow: 0.45rem 0.45rem 0 var(--case-lemon);
-}
-
-.setup-step--verification {
-  box-shadow: 0.45rem 0.45rem 0 var(--case-coral);
-}
-
 .setup-step__number {
   display: grid;
   width: 3rem;
   height: 3rem;
   place-items: center;
-  border: 2px solid var(--case-line);
+  border: 1.5px solid var(--case-line);
   border-radius: 50%;
   background: var(--case-mint);
   font-weight: 900;
@@ -114,22 +121,25 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.75rem 1rem;
-  border: 2px solid var(--case-line);
-  background: var(--case-ink);
-  color: var(--case-paper);
+  border: 1.5px solid var(--color-primary);
+  border-radius: 0.5rem;
+  background: var(--color-primary);
+  color: #fff;
   font-weight: 800;
   text-decoration: none;
 }
 
 .setup-page__start:hover {
-  background: var(--case-coral);
+  background: var(--case-lemon);
   color: var(--case-ink);
 }
 
 .setup-step__command {
   margin-top: 1.25rem;
-  border: 2px solid var(--case-line);
-  background: var(--case-ink);
+  overflow: hidden;
+  border: 1.5px solid var(--case-line);
+  border-radius: 0.5rem;
+  background: var(--color-code);
 }
 
 .setup-step__command-header {
@@ -150,6 +160,9 @@
 
 .setup-step__command .code-block {
   margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .setup-step__command pre {
@@ -168,7 +181,7 @@
   gap: 1rem;
   margin-top: 2.5rem;
   padding-top: 1.5rem;
-  border-top: 2px solid var(--case-line);
+  border-top: 1px solid var(--case-line);
 }
 
 .setup-page__next a {

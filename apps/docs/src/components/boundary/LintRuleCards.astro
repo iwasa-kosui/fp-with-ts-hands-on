@@ -111,7 +111,7 @@ const rules = [
     font-weight: 800;
   }
 
-  @media (max-height: 760px) {
+  @media (max-height: 844px) {
     .lint-rules__rule {
       padding-block: 0.25rem;
     }
@@ -162,6 +162,17 @@ const rules = [
       height: 1px;
       overflow: hidden;
       clip-path: inset(50%);
+    }
+  }
+
+  @media (max-height: 844px) {
+    .lint-rules {
+      gap: 0.25rem;
+    }
+
+    .lint-rules__rule {
+      gap: 0.125rem 1rem;
+      padding-block: 0.1875rem;
     }
   }
 </style>

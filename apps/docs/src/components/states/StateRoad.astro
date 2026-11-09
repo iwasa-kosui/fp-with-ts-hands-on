@@ -199,16 +199,15 @@ const framesData = JSON.stringify(frames.map(({ edge, states: active }) => ({ ed
     font-size: 12px;
   }
 
-  .road[data-ready] .road__state,
-  .road[data-ready] .road__edge {
+  .road[data-ready] .road__state rect,
+  .road[data-ready] .road__line,
+  .road[data-ready] .road__head {
     transition: opacity 0.3s;
   }
 
-  .road[data-ready] .road__state:not(.is-active) {
-    opacity: 0.45;
-  }
-
-  .road[data-ready] .road__edge:not(.is-on) {
+  .road[data-ready] .road__state:not(.is-active) rect,
+  .road[data-ready] .road__edge:not(.is-on) .road__line,
+  .road[data-ready] .road__edge:not(.is-on) .road__head {
     opacity: 0.45;
   }
 

@@ -232,12 +232,13 @@ const data = JSON.stringify(frames.map(({ caption: _caption, ...rest }) => rest)
 
   .catch-confluence[data-ready] .cc-card,
   .catch-confluence[data-ready] .cc-out {
-    transition: opacity 0.3s, border-color 0.3s;
+    transition: background-color 0.3s, border-color 0.3s;
   }
 
   .catch-confluence[data-ready] .cc-card[data-on="false"],
   .catch-confluence[data-ready] .cc-out[data-on="false"] {
-    opacity: 0.35;
+    border-color: color-mix(in srgb, var(--role-border) 35%, transparent);
+    background: color-mix(in srgb, var(--role-surface) 35%, transparent);
   }
 
   .catch-confluence[data-ready] .cc-card[data-on="true"] {
