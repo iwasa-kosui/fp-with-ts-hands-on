@@ -562,9 +562,7 @@ export const createTerminalRunner = (
             .then(async () => {
               if (writeGenerations.get(path) !== generation) return;
               await target.writeWorkspaceFile(path, contents);
-              if (writeGenerations.get(path) === generation) {
-                projectedFiles.set(path, contents);
-              }
+              projectedFiles.set(path, contents);
             });
           writeChain = write;
           try {

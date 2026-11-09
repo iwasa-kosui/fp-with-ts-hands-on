@@ -837,4 +837,95 @@ describe("terminal runner workspace synchronization", () => {
     ]);
     await session.dispose();
   });
+
+  it("keeps a file listed when its read ends as missing while a write started", async () => {
+    const { session, runtime, writes, changes, emit } =
+      await startWithFileSystem();
+    let failRead!: () => void;
+    vi.mocked(runtime.readWorkspaceEntry).mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          failRead = () =>
+            reject(
+              Object.assign(new Error("ENOENT: no such file"), {
+                code: "ENOENT",
+              }),
+            );
+        }),
+    );
+
+    emit("src/main.ts");
+    await settle();
+    const writing = session.writeFile("src/main.ts", "typed");
+    failRead();
+    await settle();
+    writes[0]?.finish();
+    await writing;
+    await settle();
+
+    expect(changes).toEqual([]);
+    await session.dispose();
+  });
+
+  it("does not read a directory while a write to a file inside it is pending", async () => {
+    const { session, runtime, writes, emit } = await startWithFileSystem();
+
+    const writing = session.writeFile("src/main.ts", "typed");
+    await settle();
+    emit("src");
+    await settle();
+    writes[0]?.finish();
+    await writing;
+
+    expect(runtime.readWorkspaceEntry).not.toHaveBeenCalled();
+    await session.dispose();
+  });
+
+  it("drops a directory read when a write inside it started during the read", async () => {
+    const { session, runtime, writes, changes, emit } =
+      await startWithFileSystem();
+    let releaseRead!: () => void;
+    vi.mocked(runtime.readWorkspaceEntry).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseRead = () =>
+            resolve({
+              kind: "directory",
+              entries: [{ name: "other.ts", kind: "file" }],
+            });
+        }),
+    );
+
+    emit("src");
+    await settle();
+    const writing = session.writeFile("src/main.ts", "typed");
+    releaseRead();
+    await settle();
+    writes[0]?.finish();
+    await writing;
+    await settle();
+
+    expect(changes).toEqual([]);
+    expect(runtime.readWorkspaceEntry).toHaveBeenCalledTimes(1);
+    await session.dispose();
+  });
+
+  it("does not report the contents of an older write that succeeded before a newer write failed", async () => {
+    const { session, writes, changes, emit } = await startWithFileSystem();
+
+    const first = session.writeFile("src/main.ts", "first");
+    await settle();
+    const second = session.writeFile("src/main.ts", "second");
+    const failed = expect(second).rejects.toThrow("disk full");
+    writes[0]?.finish();
+    await first;
+    await settle();
+    writes[1]?.fail(new Error("disk full"));
+    await failed;
+    emit("src/main.ts");
+    await settle();
+
+    expect(changes).toEqual([]);
+    await session.dispose();
+  });
 });
