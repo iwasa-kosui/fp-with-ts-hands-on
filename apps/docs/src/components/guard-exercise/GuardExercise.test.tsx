@@ -74,6 +74,8 @@ type SessionOptions = Readonly<{
   initialFile?: string;
   exitCode?: number;
   resultText?: string | undefined;
+  runCommand?: () => Promise<number>;
+  readResults?: readonly (string | undefined)[];
   outdatedEdits?: boolean;
   guide?: GuardGuide;
   savedOutput?: string;
@@ -81,17 +83,23 @@ type SessionOptions = Readonly<{
 }>;
 
 const createSession = (options: SessionOptions) => {
+  let reads = 0;
   const session: TerminalSession = {
     writeInput: vi.fn(async () => undefined),
     writeFile: vi.fn(async () => undefined),
     resize: vi.fn(),
     restartShell: vi.fn(async () => undefined),
-    runCommand: vi.fn(async () => options.exitCode ?? 1),
-    readFile: vi.fn(async () =>
-      "resultText" in options
+    runCommand: vi.fn(options.runCommand ?? (async () => options.exitCode ?? 1)),
+    readFile: vi.fn(async () => {
+      if (options.readResults !== undefined) {
+        const index = Math.min(reads, options.readResults.length - 1);
+        reads += 1;
+        return options.readResults[index];
+      }
+      return "resultText" in options
         ? options.resultText
-        : JSON.stringify(sampleGuardResult),
-    ),
+        : JSON.stringify(sampleGuardResult);
+    }),
     dispose: vi.fn(async () => undefined),
   };
   return session;
@@ -210,6 +218,7 @@ describe("GuardExercise", () => {
       for (const root of roots.splice(0)) root.unmount();
     });
     document.body.replaceChildren();
+    Reflect.deleteProperty(document, "visibilityState");
     vi.unstubAllGlobals();
   });
 
@@ -575,6 +584,7 @@ describe("GuardExercise", () => {
       "node",
       ["vendor/exercise-guard/cli.mjs"],
       { cols: 80, rows: 24 },
+      { timeoutMs: expect.any(Number) },
     );
     expect(session.readFile).toHaveBeenCalledWith(guardPaths.result);
     expect(row(host, "B1-any-parser")?.textContent).toContain("すり抜け");
@@ -635,13 +645,31 @@ describe("GuardExercise", () => {
     await settle();
 
     expect(host.querySelector('[role="status"] progress')).not.toBeNull();
-    expect(host.textContent).toContain(phaseLabels.installing);
+    expect(host.querySelector(".guard-exercise__progress")?.textContent).toContain(
+      phaseLabels.installing,
+    );
     expect(action(host, "run-guard")?.disabled).toBe(true);
 
     await act(async () => started.resolve());
     await settle();
 
     expect(action(host, "run-guard")?.disabled).toBe(false);
+    expect(row(host, "B1-any-parser")?.textContent).toContain("すり抜け");
+  });
+
+  it("shows the judging step once the session is ready and the command is waiting", async () => {
+    const command = deferred<number>();
+    const { host } = await mountExercise({ runCommand: () => command.promise });
+
+    await click(action(host, "run-guard"));
+
+    expect(host.querySelector(".guard-exercise__progress")?.textContent).toBe(
+      "検出を確かめています。",
+    );
+
+    await act(async () => command.resolve(1));
+    await settle();
+
     expect(row(host, "B1-any-parser")?.textContent).toContain("すり抜け");
   });
 
@@ -725,10 +753,44 @@ describe("GuardExercise", () => {
 
     await click(action(host, "run-guard"));
 
-    expect(host.querySelector('[role="alert"]')?.textContent).toContain(
-      "結果を読み出せませんでした",
-    );
+    const alert = host.querySelector('[role="alert"]')?.textContent;
+    expect(alert).toContain("結果を読み出せませんでした");
+    expect(alert).toContain("もう一度");
+    expect(alert).not.toContain("ターミナル");
     expect(action(host, "run-guard")?.disabled).toBe(false);
+  });
+
+  it("reports a guard that timed out without a result, and disposes the session", async () => {
+    const { host, session } = await mountExercise({
+      exitCode: 124,
+      resultText: undefined,
+    });
+
+    await click(action(host, "run-guard"));
+
+    const alert = host.querySelector('[role="alert"]')?.textContent;
+    expect(alert).toContain("時間内に終わりませんでした");
+    expect(alert).not.toContain("ターミナル");
+    expect(session.dispose).toHaveBeenCalledOnce();
+  });
+
+  it("labels the table left beside a failed run as the previous result", async () => {
+    const { host } = await mountExercise({
+      readResults: [JSON.stringify(sampleGuardResult), undefined],
+    });
+
+    await click(action(host, "run-guard"));
+
+    expect(host.querySelector("table")).not.toBeNull();
+    expect(host.querySelector(".guard-exercise__badge")).toBeNull();
+
+    await click(action(host, "run-guard"));
+
+    expect(host.querySelector('[role="alert"]')).not.toBeNull();
+    expect(host.querySelector("table")).not.toBeNull();
+    expect(host.querySelector(".guard-exercise__badge")?.textContent).toBe(
+      "前回の結果",
+    );
   });
 
   it("reports a guard that ended with a configuration error", async () => {
@@ -829,6 +891,274 @@ describe("GuardExercise", () => {
     expect(second.host.textContent).toContain(
       "機械では判定しません",
     );
+  });
+
+  describe("when the tab is hidden during a run", () => {
+    const setVisibility = (state: DocumentVisibilityState) => {
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        get: () => state,
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+    };
+    const showTab = () => act(async () => setVisibility("visible"));
+    const hideTabOnRun = () => {
+      const runCommand = vi.fn(async () => {
+        setVisibility("hidden");
+        return 1;
+      });
+      return runCommand;
+    };
+    const timedOut: GuardResult = {
+      ...sampleGuardResult,
+      passed: false,
+      problems: ["テストが 60 秒で終わりませんでした。"],
+      testsTimedOut: true,
+    };
+    const passed: GuardResult = {
+      ...sampleGuardResult,
+      passed: true,
+      rows: sampleGuardResult.rows.map((item) =>
+        item.kind === "bad" ? { ...item, verdict: "detected" } : item,
+      ),
+    };
+    const headlinePassed = (host: HTMLElement) =>
+      host.querySelector(".guard-exercise__headline")?.getAttribute("data-passed");
+    const savedResult = async () =>
+      (await createIndexedDbWorkspaceStore().load(workspace.slug)).view?.guardResult;
+
+    it("neither shows nor saves the timed out result, and judges again once the tab is visible", async () => {
+      const runCommand = hideTabOnRun();
+      const { host } = await mountExercise({
+        runCommand,
+        readResults: [JSON.stringify(timedOut), JSON.stringify(passed)],
+      });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => runCommand.mock.calls.length === 1);
+      await settle();
+      await settle();
+
+      expect(runCommand).toHaveBeenCalledTimes(1);
+      expect(host.querySelector("table")).toBeNull();
+      expect(await savedResult()).toBeUndefined();
+
+      await showTab();
+      await settleUntil(() => host.querySelector("table") !== null);
+
+      expect(runCommand).toHaveBeenCalledTimes(2);
+      expect(headlinePassed(host)).toBe("true");
+      expect((await savedResult())?.passed).toBe(true);
+    });
+
+    it("shows a timed out result as it is while the tab stays visible", async () => {
+      const runCommand = vi.fn(async () => 1);
+      const { host } = await mountExercise({
+        runCommand,
+        readResults: [JSON.stringify(timedOut), JSON.stringify(passed)],
+      });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => host.querySelector("table") !== null);
+
+      expect(runCommand).toHaveBeenCalledTimes(1);
+      expect(headlinePassed(host)).toBe("false");
+    });
+
+    it("judges again when the result file is missing after the tab was hidden", async () => {
+      const runCommand = hideTabOnRun();
+      const { host } = await mountExercise({
+        runCommand,
+        readResults: [undefined, JSON.stringify(passed)],
+      });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => runCommand.mock.calls.length === 1);
+      await settle();
+      await settle();
+
+      expect(runCommand).toHaveBeenCalledTimes(1);
+      expect(host.querySelector("table")).toBeNull();
+
+      await showTab();
+      await settleUntil(() => host.querySelector("table") !== null);
+
+      expect(runCommand).toHaveBeenCalledTimes(2);
+      expect(headlinePassed(host)).toBe("true");
+    });
+
+    it("shows the startup phase while the runtime is recreated, then the rejudging step", async () => {
+      const secondStart = deferred<void>();
+      const secondCommand = deferred<number>();
+      let starts = 0;
+      let commands = 0;
+      const runCommand = vi.fn(async () => {
+        commands += 1;
+        if (commands === 1) {
+          setVisibility("hidden");
+          return 1;
+        }
+        return secondCommand.promise;
+      });
+      const { host } = await mountExercise({
+        runCommand,
+        readResults: [undefined, JSON.stringify(passed)],
+        onStart: async (request) => {
+          starts += 1;
+          if (starts === 2) {
+            request.onPhase("installing");
+            await secondStart.promise;
+          }
+        },
+      });
+      const progressText = () =>
+        host.querySelector(".guard-exercise__progress")?.textContent;
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => commands === 1);
+      await settle();
+      await showTab();
+      await settleUntil(() => starts === 2);
+
+      expect(progressText()).toBe(phaseLabels.installing);
+      expect(progressText()).not.toBe("検出を確かめています。");
+      expect(progressText()).not.toContain("確かめ直しています");
+
+      await act(async () => secondStart.resolve());
+      await settleUntil(() => commands === 2);
+
+      expect(progressText()).toBe(
+        "タブが隠れていた間に時間切れになったため、確かめ直しています。",
+      );
+
+      await act(async () => secondCommand.resolve(1));
+      await settleUntil(() => host.querySelector("table") !== null);
+
+      expect(headlinePassed(host)).toBe("true");
+    });
+
+    const caseTimedOut: GuardResult = {
+      ...sampleGuardResult,
+      passed: false,
+      testCaseTimedOut: true,
+    };
+
+    it("judges again once the tab is visible when a test case timed out while it was hidden", async () => {
+      const runCommand = hideTabOnRun();
+      const { host } = await mountExercise({
+        runCommand,
+        readResults: [JSON.stringify(caseTimedOut), JSON.stringify(passed)],
+      });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => runCommand.mock.calls.length === 1);
+      await settle();
+      await settle();
+
+      expect(host.querySelector("table")).toBeNull();
+
+      await showTab();
+      await settleUntil(() => host.querySelector("table") !== null);
+
+      expect(runCommand).toHaveBeenCalledTimes(2);
+      expect(headlinePassed(host)).toBe("true");
+    });
+
+    it("shows a test case timeout as it is while the tab stays visible, without disposing the session", async () => {
+      const runCommand = vi.fn(async () => 1);
+      const { host, session } = await mountExercise({
+        runCommand,
+        readResults: [JSON.stringify(caseTimedOut), JSON.stringify(passed)],
+      });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => host.querySelector("table") !== null);
+
+      expect(runCommand).toHaveBeenCalledTimes(1);
+      expect(headlinePassed(host)).toBe("false");
+      expect(session.dispose).not.toHaveBeenCalled();
+    });
+
+    it("shows a result that did not time out without judging again", async () => {
+      const runCommand = hideTabOnRun();
+      const { host } = await mountExercise({
+        runCommand,
+        readResults: [JSON.stringify(passed)],
+      });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => host.querySelector("table") !== null);
+
+      expect(runCommand).toHaveBeenCalledTimes(1);
+      expect(headlinePassed(host)).toBe("true");
+    });
+
+    it("stops after three attempts and shows the last result when it keeps timing out", async () => {
+      const runCommand = hideTabOnRun();
+      const { host } = await mountExercise({
+        runCommand,
+        readResults: [JSON.stringify(timedOut)],
+      });
+
+      await click(action(host, "run-guard"));
+      for (const attempt of [1, 2]) {
+        await settleUntil(() => runCommand.mock.calls.length === attempt);
+        await settle();
+        expect(host.querySelector("table")).toBeNull();
+        await showTab();
+      }
+      await settleUntil(() => host.querySelector("table") !== null);
+      await settle();
+      await settle();
+
+      expect(runCommand).toHaveBeenCalledTimes(3);
+      expect(headlinePassed(host)).toBe("false");
+      expect(action(host, "run-guard")?.disabled).toBe(false);
+    });
+  });
+
+  describe("recreating the runtime", () => {
+    const timedOut: GuardResult = {
+      ...sampleGuardResult,
+      passed: false,
+      problems: ["テストが 60 秒で終わりませんでした。"],
+      testsTimedOut: true,
+    };
+
+    it("disposes the session after a timed out result that stays visible, keeps the table, and starts a new runtime on the next run", async () => {
+      const onStart = vi.fn(async () => undefined);
+      const { host, session } = await mountExercise({
+        onStart,
+        resultText: JSON.stringify(timedOut),
+      });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => host.querySelector("table") !== null);
+
+      expect(session.dispose).toHaveBeenCalledOnce();
+      expect(host.querySelector("table")).not.toBeNull();
+      expect(onStart).toHaveBeenCalledTimes(1);
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => onStart.mock.calls.length === 2);
+
+      expect(onStart).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps the session for a result that did not time out", async () => {
+      const onStart = vi.fn(async () => undefined);
+      const { host, session } = await mountExercise({ onStart });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => host.querySelector("table") !== null);
+      await click(action(host, "run-guard"));
+      await settleUntil(
+        () => vi.mocked(session.runCommand!).mock.calls.length === 2,
+      );
+
+      expect(session.dispose).not.toHaveBeenCalled();
+      expect(onStart).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("keeps the terminal mounted while it is collapsed", async () => {

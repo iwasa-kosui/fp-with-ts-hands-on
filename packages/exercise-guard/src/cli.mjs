@@ -6,8 +6,9 @@ import { GuardConfigError } from "./config.mjs";
 import { verify } from "./verify.mjs";
 
 const usage = "使い方: exercise-guard [verify] [--root <dir>] [--timeout-ms <ミリ秒>]";
-const defaultTimeoutMs = 60_000;
+const defaultTimeoutMs = 120_000;
 const terminateWaitMs = 2000;
+const doneWaitMs = 1000;
 
 /**
  * @param {readonly string[]} args
@@ -90,6 +91,8 @@ const runWatched = ({ root, timeoutMs }) =>
       ]);
       process.exit(code);
     };
+    /** @type {ReturnType<typeof setTimeout> | undefined} */
+    let doneTimer = undefined;
     worker.on("message", (message) => {
       if (typeof message !== "object" || message === null || !("type" in message)) {
         return;
@@ -98,7 +101,14 @@ const runWatched = ({ root, timeoutMs }) =>
         vitestPids.add(message.pid);
       }
       if (message.type === "done" && "code" in message && typeof message.code === "number") {
-        doneCode = message.code;
+        const code = message.code;
+        doneCode = code;
+        clearTimeout(timer);
+        stopVitest();
+        // WebContainer では止められない子プロセスが Worker を残すので、結果を書いた後は待たずに終わる。
+        doneTimer = setTimeout(() => {
+          void exitNow(code);
+        }, doneWaitMs);
       }
     });
     const timer = setTimeout(async () => {
@@ -106,7 +116,7 @@ const runWatched = ({ root, timeoutMs }) =>
         `検出を確かめる処理が ${Math.round(timeoutMs / 100) / 10} 秒で終わりませんでした。eslint.config.mjs の規則に、終わらない繰り返しがないか見直します。\n`,
       );
       stopVitest();
-      await exitNow(1);
+      await exitNow(124);
     }, timeoutMs);
     const interrupt = () => {
       clearTimeout(timer);
@@ -123,6 +133,7 @@ const runWatched = ({ root, timeoutMs }) =>
     });
     worker.on("exit", () => {
       clearTimeout(timer);
+      clearTimeout(doneTimer);
       process.off("SIGINT", interrupt);
       process.off("SIGTERM", interrupt);
       resolve(doneCode ?? 1);

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createTerminalRunner,
   createWebContainerTerminalRunner,
+  runCommandTimedOutExitCode,
   TerminalInstallError,
   TerminalPreparationTimeoutError,
   type TerminalPhase,
@@ -317,6 +318,10 @@ const createFinishedProcess = (
 });
 
 describe("terminal runner commands", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("runs a command as its own process and returns its exit code", async () => {
     const outputs: string[] = [];
     const spawnCommand = vi.fn(async () =>
@@ -374,6 +379,65 @@ describe("terminal runner commands", () => {
 
     expect(commandProcess.kill).toHaveBeenCalledOnce();
     await expect(running).resolves.toBe(143);
+  });
+
+  it("kills a command that outlives its time limit and reports a timeout", async () => {
+    const commandProcess: TerminalRuntimeProcess = {
+      input: new WritableStream<string>(),
+      output: new ReadableStream<string>(),
+      exit: new Promise<number>(() => undefined),
+      kill: vi.fn(),
+      resize: vi.fn(),
+    };
+    const runtime: TerminalRuntime = {
+      ...createInMemoryRuntime(),
+      spawnCommand: async () => commandProcess,
+    };
+    const session = await createTerminalRunner(async () => runtime).start(
+      requestFor(),
+    );
+    vi.useFakeTimers();
+
+    const running = session.runCommand?.(
+      "node",
+      [],
+      { cols: 80, rows: 24 },
+      { timeoutMs: 5000 },
+    );
+    await vi.advanceTimersByTimeAsync(0);
+    expect(commandProcess.kill).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(5000);
+    await vi.advanceTimersByTimeAsync(2000);
+
+    expect(commandProcess.kill).toHaveBeenCalledOnce();
+    await expect(running).resolves.toBe(runCommandTimedOutExitCode);
+    vi.useRealTimers();
+    await session.dispose();
+  });
+
+  it("returns after the command exits even when its output never closes", async () => {
+    const commandProcess: TerminalRuntimeProcess = {
+      input: new WritableStream<string>(),
+      output: new ReadableStream<string>(),
+      exit: Promise.resolve(1),
+      kill: vi.fn(),
+      resize: vi.fn(),
+    };
+    const runtime: TerminalRuntime = {
+      ...createInMemoryRuntime(),
+      spawnCommand: async () => commandProcess,
+    };
+    const session = await createTerminalRunner(async () => runtime).start(
+      requestFor(),
+    );
+    vi.useFakeTimers();
+
+    const running = session.runCommand?.("node", [], { cols: 80, rows: 24 });
+    await vi.advanceTimersByTimeAsync(5000);
+
+    await expect(running).resolves.toBe(1);
+    vi.useRealTimers();
+    await session.dispose();
   });
 
   it("reads a text file from the workspace", async () => {

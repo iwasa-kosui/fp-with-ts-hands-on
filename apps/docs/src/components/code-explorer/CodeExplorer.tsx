@@ -58,6 +58,7 @@ export type CodeExplorerLayoutParts = Readonly<{
   terminalState: TerminalPanelStateKind;
   terminalPhase: TerminalPhase | undefined;
   acquireSession: () => Promise<TerminalSession>;
+  releaseSession: () => Promise<void>;
 }>;
 
 export type CodeExplorerProps = Readonly<{
@@ -224,6 +225,10 @@ export const CodeExplorer = ({
     notifyCommandSent();
     return session;
   }, [notifyCommandSent]);
+
+  const releaseSession = useCallback(async (): Promise<void> => {
+    await terminalPanel.current?.releaseSession();
+  }, []);
 
   const selectPath = useCallback((path: string) => {
     dispatch({ kind: "select", path });
@@ -453,6 +458,7 @@ export const CodeExplorer = ({
           terminalState,
           terminalPhase,
           acquireSession,
+          releaseSession,
         })}
       </>
     );
