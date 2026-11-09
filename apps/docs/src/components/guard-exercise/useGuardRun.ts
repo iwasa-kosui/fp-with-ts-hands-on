@@ -8,7 +8,10 @@ import {
   parseGuardResult,
   type GuardResult,
 } from "../../code-explorer/guard-result";
-import type { TerminalSession } from "../../code-explorer/runner";
+import {
+  runCommandTimedOutExitCode,
+  type TerminalSession,
+} from "../../code-explorer/runner";
 import type { GuardWorkspaceStore } from "../../code-explorer/workspace-store";
 
 export type GuardRunStep =
@@ -40,11 +43,14 @@ export type UseGuardRunParams = Readonly<{
   store: GuardWorkspaceStore;
   slug: string;
   acquireSession: () => Promise<TerminalSession>;
+  releaseSession: () => Promise<void>;
 }>;
 
 const limitationSaveDelayMs = 400;
 
 const maxHiddenRetries = 2;
+
+const guardCommandTimeoutMs = 130_000;
 
 const isHidden = (): boolean => document.visibilityState === "hidden";
 
@@ -69,6 +75,7 @@ export const useGuardRun = ({
   store,
   slug,
   acquireSession,
+  releaseSession,
 }: UseGuardRunParams): GuardRun => {
   const [status, setStatus] = useState<GuardRunStatus>({ kind: "idle" });
   const [result, setResult] = useState<GuardResult>();
@@ -85,8 +92,8 @@ export const useGuardRun = ({
   const latestLimitations = useRef(limitations);
   const limitationsDirty = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
-  const latest = useRef({ store, slug, acquireSession });
-  latest.current = { store, slug, acquireSession };
+  const latest = useRef({ store, slug, acquireSession, releaseSession });
+  latest.current = { store, slug, acquireSession, releaseSession };
 
   const flushLimitations = useCallback(() => {
     if (saveTimer.current !== undefined) {
@@ -160,11 +167,6 @@ export const useGuardRun = ({
     running.current = true;
     setStatus({ kind: "running", step: "starting" });
     try {
-      const session = await latest.current.acquireSession();
-      const { runCommand, readFile } = session;
-      if (runCommand === undefined || readFile === undefined) {
-        throw new Error("この実行環境では検出を確かめられません。");
-      }
       for (let attempt = 0; ; attempt += 1) {
         if (mounted.current) {
           setStatus({
@@ -172,19 +174,30 @@ export const useGuardRun = ({
             step: attempt === 0 ? "judging" : "rejudging",
           });
         }
+        const session = await latest.current.acquireSession();
+        const { runCommand, readFile } = session;
+        if (runCommand === undefined || readFile === undefined) {
+          throw new Error("この実行環境では検出を確かめられません。");
+        }
         let hiddenSeen = isHidden();
         const onVisibilityChange = () => {
           if (isHidden()) hiddenSeen = true;
         };
         document.addEventListener("visibilitychange", onVisibilityChange);
         let parsed: GuardResult | undefined;
+        let exitCode: number | undefined;
         try {
-          const exitCode = await runCommand(
+          exitCode = await runCommand(
             guardCommand.command,
             guardCommand.args,
             guardCommandSize,
+            { timeoutMs: guardCommandTimeoutMs },
           );
-          if (exitCode !== 0 && exitCode !== 1) {
+          if (
+            exitCode !== 0 &&
+            exitCode !== 1 &&
+            exitCode !== runCommandTimedOutExitCode
+          ) {
             throw new Error(
               `検出の確認が途中で終了しました（終了コード ${exitCode}）。ターミナルを開くと出力を確認できます。`,
             );
@@ -195,9 +208,18 @@ export const useGuardRun = ({
         } finally {
           document.removeEventListener("visibilitychange", onVisibilityChange);
         }
+        const needsFreshRuntime =
+          parsed === undefined ||
+          parsed.testsTimedOut === true ||
+          exitCode === runCommandTimedOutExitCode;
+        // WebContainer では終わらないテストのプロセスを止められないので、環境ごと作り直す。
+        if (needsFreshRuntime) await latest.current.releaseSession();
         // 隠れたタブでは WebContainer の処理がほぼ止まるので、その間の時間切れは参加者の誤りとして見せない。
         const stalled =
-          hiddenSeen && (parsed === undefined || parsed.testsTimedOut === true);
+          hiddenSeen &&
+          (parsed === undefined ||
+            parsed.testsTimedOut === true ||
+            parsed.testCaseTimedOut === true);
         if (stalled && attempt < maxHiddenRetries) {
           if (mounted.current) setStatus({ kind: "running", step: "waiting" });
           await waitUntilVisible();

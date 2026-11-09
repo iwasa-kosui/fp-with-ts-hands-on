@@ -584,6 +584,7 @@ describe("GuardExercise", () => {
       "node",
       ["vendor/exercise-guard/cli.mjs"],
       { cols: 80, rows: 24 },
+      { timeoutMs: expect.any(Number) },
     );
     expect(session.readFile).toHaveBeenCalledWith(guardPaths.result);
     expect(row(host, "B1-any-parser")?.textContent).toContain("すり抜け");
@@ -934,6 +935,48 @@ describe("GuardExercise", () => {
       expect(headlinePassed(host)).toBe("true");
     });
 
+    const caseTimedOut: GuardResult = {
+      ...sampleGuardResult,
+      passed: false,
+      testCaseTimedOut: true,
+    };
+
+    it("judges again once the tab is visible when a test case timed out while it was hidden", async () => {
+      const runCommand = hideTabOnRun();
+      const { host } = await mountExercise({
+        runCommand,
+        readResults: [JSON.stringify(caseTimedOut), JSON.stringify(passed)],
+      });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => runCommand.mock.calls.length === 1);
+      await settle();
+      await settle();
+
+      expect(host.querySelector("table")).toBeNull();
+
+      await showTab();
+      await settleUntil(() => host.querySelector("table") !== null);
+
+      expect(runCommand).toHaveBeenCalledTimes(2);
+      expect(headlinePassed(host)).toBe("true");
+    });
+
+    it("shows a test case timeout as it is while the tab stays visible, without disposing the session", async () => {
+      const runCommand = vi.fn(async () => 1);
+      const { host, session } = await mountExercise({
+        runCommand,
+        readResults: [JSON.stringify(caseTimedOut), JSON.stringify(passed)],
+      });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => host.querySelector("table") !== null);
+
+      expect(runCommand).toHaveBeenCalledTimes(1);
+      expect(headlinePassed(host)).toBe("false");
+      expect(session.dispose).not.toHaveBeenCalled();
+    });
+
     it("shows a result that did not time out without judging again", async () => {
       const runCommand = hideTabOnRun();
       const { host } = await mountExercise({
@@ -969,6 +1012,50 @@ describe("GuardExercise", () => {
       expect(runCommand).toHaveBeenCalledTimes(3);
       expect(headlinePassed(host)).toBe("false");
       expect(action(host, "run-guard")?.disabled).toBe(false);
+    });
+  });
+
+  describe("recreating the runtime", () => {
+    const timedOut: GuardResult = {
+      ...sampleGuardResult,
+      passed: false,
+      problems: ["テストが 60 秒で終わりませんでした。"],
+      testsTimedOut: true,
+    };
+
+    it("disposes the session after a timed out result that stays visible, keeps the table, and starts a new runtime on the next run", async () => {
+      const onStart = vi.fn(async () => undefined);
+      const { host, session } = await mountExercise({
+        onStart,
+        resultText: JSON.stringify(timedOut),
+      });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => host.querySelector("table") !== null);
+
+      expect(session.dispose).toHaveBeenCalledOnce();
+      expect(host.querySelector("table")).not.toBeNull();
+      expect(onStart).toHaveBeenCalledTimes(1);
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => onStart.mock.calls.length === 2);
+
+      expect(onStart).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps the session for a result that did not time out", async () => {
+      const onStart = vi.fn(async () => undefined);
+      const { host, session } = await mountExercise({ onStart });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => host.querySelector("table") !== null);
+      await click(action(host, "run-guard"));
+      await settleUntil(
+        () => vi.mocked(session.runCommand!).mock.calls.length === 2,
+      );
+
+      expect(session.dispose).not.toHaveBeenCalled();
+      expect(onStart).toHaveBeenCalledTimes(1);
     });
   });
 

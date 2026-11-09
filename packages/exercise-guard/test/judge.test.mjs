@@ -320,6 +320,19 @@ describe("judge", () => {
     expect(await Promise.all(pids.map(groupGone))).toEqual([true]);
   });
 
+  it("test-case-timeout: 1件が testTimeout を超えて失敗したら、testCaseTimedOut を立てる。テスト全体の打ち切りとは分ける", async () => {
+    const result = await runScenario("test-case-timeout");
+
+    expect(result.testCaseTimedOut).toBe(true);
+    expect(result.testsTimedOut).toBe(false);
+  });
+
+  it("miss-one: 通常のテストの失敗では testCaseTimedOut を立てない", async () => {
+    const result = await scenario("miss-one");
+
+    expect(result.testCaseTimedOut).toBe(false);
+  });
+
   it("state-leak: 既定の設定でも、ケースの間でモジュールの状態と globalThis のキーが漏れない", async () => {
     const result = await scenario("state-leak");
 

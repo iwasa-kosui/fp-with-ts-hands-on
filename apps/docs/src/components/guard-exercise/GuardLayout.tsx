@@ -73,6 +73,7 @@ export const GuardLayout = ({
     store,
     slug,
     acquireSession: parts.acquireSession,
+    releaseSession: parts.releaseSession,
   });
   const paths = useMemo(() => Object.keys(projectFiles), [projectFiles]);
   const rows = useMemo(

@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from "node:child_process";
-import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
@@ -9,6 +9,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const cli = path.join(here, "..", "src", "cli.mjs");
 const s03 = path.join(here, "fixtures", "s03");
 const hangRoot = path.join(here, "fixtures", "dist", "cli-lint-hangs");
+const lingerRoot = path.join(here, "fixtures", "dist", "cli-worker-lingers");
 
 /**
  * @param {number} rootPid
@@ -54,6 +55,7 @@ const runCli = (cwd, args) =>
 
 afterAll(() => {
   rmSync(hangRoot, { recursive: true, force: true });
+  rmSync(lingerRoot, { recursive: true, force: true });
 });
 
 describe("cli", () => {
@@ -83,5 +85,19 @@ describe("cli", () => {
     );
     expect(result.groups.length).toBeGreaterThan(0);
     expect(await Promise.all(result.groups.map(groupGone))).toEqual(result.groups.map(() => true));
+  });
+
+  it("結果を出した後に worker が終わらなくても、待たずに終わり、result.json が残る", async () => {
+    rmSync(lingerRoot, { recursive: true, force: true });
+    mkdirSync(path.dirname(lingerRoot), { recursive: true });
+    cpSync(s03, lingerRoot, { recursive: true, filter: (source) => path.relative(s03, source).split(path.sep)[0] !== "dist" });
+    const config = readFileSync(path.join(lingerRoot, "eslint.config.mjs"), "utf8");
+    writeFileSync(path.join(lingerRoot, "eslint.config.mjs"), `setInterval(() => {}, 1000);\n${config}`);
+
+    const result = await runCli(lingerRoot, ["--root", lingerRoot, "--timeout-ms", "60000"]);
+
+    expect(result.code).toBe(1);
+    expect(result.stdout).toContain("結果: まだ合格していません");
+    expect(existsSync(path.join(lingerRoot, "dist/guard/result.json"))).toBe(true);
   });
 });

@@ -13,7 +13,7 @@ import { mechanisms } from "./model.mjs";
 /** @typedef {import("./model.mjs").Problem} Problem */
 /** @typedef {import("./model.mjs").Row} Row */
 /** @typedef {Readonly<{ types: Evidence, lint: Evidence, tests: Evidence }>} AllEvidence */
-/** @typedef {Readonly<{ cases: readonly GuardCase[], evidence: AllEvidence, builtin: Readonly<Record<string, readonly Detection[]>>, collectionErrors: Readonly<Record<string, readonly Detection[]>>, problems: readonly Problem[], notes: readonly string[], unchangedIds: readonly string[], durations: Durations, revealAllStages: boolean, testsTimedOut?: boolean }>} AggregateInput */
+/** @typedef {Readonly<{ cases: readonly GuardCase[], evidence: AllEvidence, builtin: Readonly<Record<string, readonly Detection[]>>, collectionErrors: Readonly<Record<string, readonly Detection[]>>, problems: readonly Problem[], notes: readonly string[], unchangedIds: readonly string[], durations: Durations, revealAllStages: boolean, testsTimedOut?: boolean, testCaseTimedOut?: boolean }>} AggregateInput */
 
 /**
  * @param {Evidence} evidence
@@ -120,5 +120,6 @@ export const aggregate = (input) => {
     }),
     durations: input.durations,
     testsTimedOut: input.testsTimedOut === true,
+    testCaseTimedOut: input.testCaseTimedOut === true,
   };
 };

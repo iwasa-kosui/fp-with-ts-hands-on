@@ -109,7 +109,7 @@ const writeWorkFiles = (workDir, tsconfig, copies) => {
  *   onSpawn: ((pid: number) => void) | undefined,
  *   mineDisplay: (rel: string) => string,
  * }>} input
- * @returns {Promise<Readonly<{ problems: readonly Problem[], evidence: Evidence, collectionErrors: Readonly<Record<string, readonly Detection[]>>, seconds: number, timedOut?: boolean }>>}
+ * @returns {Promise<Readonly<{ problems: readonly Problem[], evidence: Evidence, collectionErrors: Readonly<Record<string, readonly Detection[]>>, seconds: number, timedOut?: boolean, testCaseTimedOut?: boolean }>>}
  */
 const runTests = async ({
   root,
@@ -154,6 +154,7 @@ const runTests = async ({
     evidence: { failed: incomplete.length > 0, byCase: classified.byCase },
     collectionErrors: classified.collectionErrors,
     seconds: (performance.now() - start) / 1000,
+    testCaseTimedOut: classified.testCaseTimedOut === true,
   };
 };
 
@@ -274,6 +275,7 @@ export const judge = async (options) => {
     collectionErrors: testsRun?.collectionErrors ?? {},
     problems,
     testsTimedOut: testsRun?.timedOut === true,
+    testCaseTimedOut: testsRun?.testCaseTimedOut === true,
     notes: [...plan.notes, ...(lintClassified?.notes ?? [])],
     unchangedIds: findUnchanged(config.cases, caseFiles),
     durations,

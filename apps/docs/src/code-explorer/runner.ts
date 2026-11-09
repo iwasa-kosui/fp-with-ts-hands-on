@@ -34,6 +34,8 @@ export type TerminalStartRequest = Readonly<{
   onExit: (exitCode: number) => void;
 }>;
 
+export const runCommandTimedOutExitCode = 124;
+
 export type TerminalSession = Readonly<{
   writeInput: (data: string) => Promise<void>;
   writeFile: (path: string, contents: string) => Promise<void>;
@@ -43,6 +45,7 @@ export type TerminalSession = Readonly<{
     command: string,
     args: readonly string[],
     size: TerminalSize,
+    options?: Readonly<{ timeoutMs?: number }>,
   ) => Promise<number>;
   readFile?: (path: string) => Promise<string | undefined>;
   dispose: () => Promise<void>;
@@ -149,6 +152,7 @@ export const buildFileSystemTree = (files: ProjectFiles): FileSystemTree => {
 };
 
 const runtimeProjectDirectory = "workspace";
+const outputCloseWaitMs = 1000;
 const stageTimeoutMilliseconds = {
   booting: 60_000,
   mounting: 30_000,
@@ -165,6 +169,14 @@ const ignoredDirectories = new Set([
   "dist",
   "coverage",
 ]);
+
+const killQuietly = (target: TerminalRuntimeProcess): void => {
+  try {
+    target.kill();
+  } catch {
+    return;
+  }
+};
 
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
@@ -579,7 +591,7 @@ export const createTerminalRunner = (
           if (disposed) throw new Error("Terminal session is disposed");
           await spawnShell(size);
         },
-        runCommand: async (command, args, size) => {
+        runCommand: async (command, args, size, options) => {
           if (runtime?.spawnCommand === undefined || disposed) {
             throw new Error("この実行環境ではコマンドを実行できません。");
           }
@@ -599,11 +611,31 @@ export const createTerminalRunner = (
               }),
             )
             .catch(() => undefined);
+          let timeoutTimer: ReturnType<typeof setTimeout> | undefined;
+          let outputTimer: ReturnType<typeof setTimeout> | undefined;
           try {
-            const exitCode = await process.exit;
-            await outputDone;
-            return exitCode;
+            const timeoutMs = options?.timeoutMs;
+            const settled =
+              timeoutMs === undefined
+                ? await process.exit
+                : await Promise.race([
+                    process.exit,
+                    new Promise<undefined>((resolve) => {
+                      timeoutTimer = setTimeout(() => resolve(undefined), timeoutMs);
+                    }),
+                  ]);
+            if (settled === undefined) killQuietly(process);
+            // 止められない子孫プロセスが出力を開いたままにすることがある。
+            await Promise.race([
+              outputDone,
+              new Promise<void>((resolve) => {
+                outputTimer = setTimeout(resolve, outputCloseWaitMs);
+              }),
+            ]);
+            return settled ?? runCommandTimedOutExitCode;
           } finally {
+            clearTimeout(timeoutTimer);
+            clearTimeout(outputTimer);
             runningCommands.delete(process);
           }
         },

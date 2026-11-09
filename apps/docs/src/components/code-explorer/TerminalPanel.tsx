@@ -43,6 +43,7 @@ export type TerminalPanelStateKind =
 
 export type TerminalPanelController = Readonly<{
   ensureSession: () => Promise<TerminalSession>;
+  releaseSession: () => Promise<void>;
 }>;
 
 export type TerminalPanelProps = Readonly<{
@@ -640,8 +641,29 @@ export const TerminalPanel = forwardRef<
         }
         return session;
       },
+      releaseSession: async () => {
+        const session = terminalSession.current;
+        if (session === undefined) return;
+        terminalSession.current = undefined;
+        attemptGeneration.current += 1;
+        onSessionChangeRef.current(undefined);
+        inputSubscription.current?.dispose();
+        inputSubscription.current = undefined;
+        inputSubscribed.current = false;
+        if (!restoredViewOpened.current) {
+          resizeObserver.current?.disconnect();
+          resizeObserver.current = undefined;
+          const view = terminalView.current;
+          terminalView.current = undefined;
+          viewPromise.current = undefined;
+          viewOpened.current = false;
+          if (view !== undefined) disposeView(view);
+        }
+        transition({ kind: "unstarted" });
+        await session.dispose().catch(() => undefined);
+      },
     }),
-    [startTracked],
+    [startTracked, transition],
   );
 
   const restartTerminal = useCallback(async () => {

@@ -7,7 +7,7 @@ import { isInside, toPosix } from "./paths.mjs";
 /** @typedef {import("./model.mjs").Problem} Problem */
 /** @typedef {Readonly<{ status: "ok" | "timeout" | "spawn-failed", stderrTail: string }>} VitestExit */
 /** @typedef {Readonly<Record<string, readonly Detection[]>>} ByCase */
-/** @typedef {Readonly<{ byCase: ByCase, collectionErrors: ByCase, incompleteCaseIds: readonly string[] }>} Classified */
+/** @typedef {Readonly<{ byCase: ByCase, collectionErrors: ByCase, incompleteCaseIds: readonly string[], testCaseTimedOut: boolean }>} Classified */
 
 export const defaultTestTimeoutMs = 60_000;
 
@@ -218,7 +218,7 @@ export const classifyVitest = (json, { copiesDir, caseDirs, expectedFiles, mineD
     ...new Set([...expectedFiles.filter((file) => !reported.has(file)), ...pendingFiles].map(caseIdOfFile)),
   ];
   /** @type {Classified} */
-  const initial = { byCase: {}, collectionErrors: {}, incompleteCaseIds };
+  const initial = { byCase: {}, collectionErrors: {}, incompleteCaseIds, testCaseTimedOut: false };
   return fileResults.reduce(
     /** @param {Classified} acc @param {Record<string, unknown>} fileResult @returns {Classified} */
     (acc, fileResult) => {
@@ -262,6 +262,13 @@ export const classifyVitest = (json, { copiesDir, caseDirs, expectedFiles, mineD
           setupFailed.length > 0
             ? { ...acc.collectionErrors, [caseId]: [...(acc.collectionErrors[caseId] ?? []), ...setupFailed] }
             : acc.collectionErrors,
+        testCaseTimedOut:
+          acc.testCaseTimedOut ||
+          assertions.some(
+            (assertion) =>
+              Array.isArray(assertion.failureMessages) &&
+              assertion.failureMessages.some((message) => String(message).includes("Test timed out")),
+          ),
       };
     },
     initial,
