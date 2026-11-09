@@ -39,7 +39,7 @@ const scenes = [
 
 <figure class="sd" data-store-differences data-step-figure aria-label="S06 と参照実装の、実装が異なる3点">
   <div class="sd__bar">
-    <div class="sd__tabs" role="group" aria-label="場面を選ぶ">
+    <div class="sd__tabs" role="group" aria-label="実装が異なる点を選ぶ">
       {scenes.map((scene, index) => (
         <button type="button" class="sd__tab" data-step-scene aria-pressed={index === 0 ? "true" : "false"}>{scene.label}</button>
       ))}

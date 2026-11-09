@@ -116,7 +116,7 @@ const headline = (result) => {
   const detected = required.filter((row) => row.verdict === "detected");
   return result.passed
     ? "結果: 合格です"
-    : `結果: まだ合格していません（必須の悪い変更 ${required.length} 件のうち ${detected.length} 件を検出）`;
+    : `結果: まだ合格していません（必須の誤った変更 ${required.length} 件のうち ${detected.length} 件を検出）`;
 };
 
 /**
@@ -129,14 +129,14 @@ export const render = (result, { color }) => {
   const good = result.rows.filter((row) => row.kind === "good");
   const { durations } = result;
   const widths = columnWidths([
-    ["悪い変更", "型のテスト", "Linter", "テスト", "結果"],
+    ["誤った変更", "型のテスト", "Linter", "テスト", "結果"],
     ["正しいコード", "", "", "", ""],
     ...result.rows.map(bodyCells),
   ]);
   return [
     ...wrapByWidth(headline(result), maxWidth),
     "",
-    ...renderTable("悪い変更", bad, widths, color),
+    ...renderTable("誤った変更", bad, widths, color),
     "",
     ...renderTable("正しいコード", good, widths, color),
     "",

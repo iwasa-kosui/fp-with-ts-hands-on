@@ -114,7 +114,7 @@ describe("judge", () => {
     expect(result.rows.filter((row) => row.kind === "bad").every((row) => row.verdict === "slipped")).toBe(true);
     expect(result.rows.filter((row) => row.kind === "good").every((row) => row.verdict === "noFalsePositive")).toBe(true);
     expect(result.hiddenCount).toBe(1);
-    expect(result.next[0]).toContain("まだ悪い変更を 1 件も検出できていません");
+    expect(result.next[0]).toContain("まだ誤った変更を 1 件も検出できていません");
   });
 
   it("pass: 参加者が足した仕組みですべて検出し、誤検知が無ければ合格する", async () => {
@@ -177,7 +177,7 @@ describe("judge", () => {
     expect(result.hiddenCount).toBe(0);
     expect(rowOf(result, "B5-any-result").verdict).toBe("slipped");
     expect(rowOf(result, "B5-any-result").cells.lint.state).toBe("na");
-    expect(result.next[0]).toBe("追加の悪い変更が 1 件増えました。");
+    expect(result.next[0]).toBe("追加の誤った変更が 1 件増えました。");
   });
 
   it("na-only: allow に無い仕組みの検出は対象外で、検出に数えない", async () => {
@@ -226,7 +226,7 @@ describe("judge", () => {
     const result = await scenario("empty");
 
     expect(result.next[0]).toBe(
-      "まだ悪い変更を 1 件も検出できていません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にあるテストか型のテストのファイルに書きます。",
+      "まだ誤った変更を 1 件も検出できていません。誤った変更を 1 件選び、eslint.config.mjs の rules に Linter のルールを追加するか、exercises/guard/mine/ にあるテストか型のテストのファイルに書きます。",
     );
   });
 
@@ -294,7 +294,7 @@ describe("judge", () => {
     expect(result.problems[0]).toContain("規則 local/explodes の実行中にエラーが出ました");
     expect(result.next).toContain("規則 local/explodes の書き方を見直します。");
     expect(result.problems.join("\n")).not.toContain("読み込めませんでした");
-    expect(result.next.some((sentence) => sentence.includes("まだ悪い変更を 1 件も検出できていません"))).toBe(false);
+    expect(result.next.some((sentence) => sentence.includes("まだ誤った変更を 1 件も検出できていません"))).toBe(false);
   });
 
   it("broken-config: 規則名が取れない例外は、設定を読み込めなかった扱いのまま", async () => {
@@ -362,10 +362,10 @@ describe("judge", () => {
 
     expect(result.notes[0]).toContain("exercises/guard/subjects/input.ts");
     expect(result.notes[0]).toContain("exercises/guard/subjects/handler.ts");
-    expect(result.next[0]).toContain("まだ悪い変更を 1 件も検出できていません");
+    expect(result.next[0]).toContain("まだ誤った変更を 1 件も検出できていません");
   });
 
-  it("配布の mine/ の雛形があり、検出が 0 件なら、まだ悪い変更を 1 件も検出できていませんと伝える", async () => {
+  it("配布の mine/ の雛形があり、検出が 0 件なら、まだ誤った変更を 1 件も検出できていませんと伝える", async () => {
     const result = await judge({
       root,
       eslintConfigFile: path.join(scenarios, "empty", "eslint.config.mjs"),
@@ -375,7 +375,7 @@ describe("judge", () => {
     expect(existsSync(path.join(root, "exercises/guard/mine/input.test.ts"))).toBe(true);
     expect(result.problems).toEqual([]);
     expect(result.passed).toBe(false);
-    expect(result.next[0]).toContain("まだ悪い変更を 1 件も検出できていません");
+    expect(result.next[0]).toContain("まだ誤った変更を 1 件も検出できていません");
   });
 
   it("files-miss: eslint.config.mjs の files がケースに当たらなければ、構文エラーにせず補足に出す", async () => {
@@ -464,7 +464,7 @@ describe("render", () => {
     const text = render(await scenario("empty"), { color: false });
 
     expect(text).toContain("すり抜け");
-    expect(text).toContain("結果: まだ合格していません（必須の悪い変更 4 件のうち 0 件を検出）");
+    expect(text).toContain("結果: まだ合格していません（必須の誤った変更 4 件のうち 0 件を検出）");
     expect(text).not.toMatch(/止ま|止め|実行できない/);
     expect(Math.max(...text.split("\n").map(stringWidth))).toBeLessThanOrEqual(78);
   });

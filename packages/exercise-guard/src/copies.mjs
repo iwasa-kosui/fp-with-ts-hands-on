@@ -208,7 +208,7 @@ export const planCopies = ({ mineFiles, subjectPaths, subjectFiles, cases, caseF
     notes: [
       ...unjudgedTests.map(
         ({ file }) =>
-          `判定に使わないファイル: ${mineDisplay(file.rel)}（悪い変更の題材を import していないので、どのケースにも当たりません。import する題材: ${subjectFiles.join("、")}）`,
+          `判定に使わないファイル: ${mineDisplay(file.rel)}（誤った変更の題材を import していないので、どのケースにも当たりません。import する題材: ${subjectFiles.join("、")}）`,
       ),
       ...mineFiles
         .filter((file) => isSpecFile(file.rel))

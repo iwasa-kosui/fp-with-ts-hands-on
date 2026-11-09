@@ -118,21 +118,21 @@ describe("buildNext", () => {
     );
   });
 
-  it("allow の範囲の検出が 0 件で問題も無ければ、まだ悪い変更を 1 件も検出できていません", () => {
+  it("allow の範囲の検出が 0 件で問題も無ければ、まだ誤った変更を 1 件も検出できていません", () => {
     const bad = rowOf({ kind: "bad", verdict: "slipped", allow: ["lint"] });
     const sentences = buildNext({ rows: [bad], problems: [], stageOpened: 0, passed: false });
 
-    expect(sentences.some((sentence) => sentence.startsWith("まだ悪い変更を 1 件も検出できていません"))).toBe(true);
+    expect(sentences.some((sentence) => sentence.startsWith("まだ誤った変更を 1 件も検出できていません"))).toBe(true);
   });
 
-  it("allow の範囲に検出が 1 件でもあれば、合格でなくてもまだ悪い変更を 1 件も検出できていませんとは言わない", () => {
+  it("allow の範囲に検出が 1 件でもあれば、合格でなくてもまだ誤った変更を 1 件も検出できていませんとは言わない", () => {
     const bad = rowOf({ id: "B2", kind: "bad", verdict: "slipped", allow: ["lint"] });
     const sentences = buildNext({ rows: [detectedBad, bad], problems: [], stageOpened: 0, passed: false });
 
-    expect(sentences.some((sentence) => sentence.startsWith("まだ悪い変更を 1 件も検出できていません"))).toBe(false);
+    expect(sentences.some((sentence) => sentence.startsWith("まだ誤った変更を 1 件も検出できていません"))).toBe(false);
   });
 
-  it("allow の範囲で検出していれば、まだ悪い変更を 1 件も検出できていませんとは言わない", () => {
+  it("allow の範囲で検出していれば、まだ誤った変更を 1 件も検出できていませんとは言わない", () => {
     const bad = rowOf({
       kind: "bad",
       verdict: "detected",
@@ -171,13 +171,13 @@ describe("buildNext", () => {
 
     it("設定の allow に types がある演習では、型のテストのファイルにも触れる", () => {
       expect(undetected(true)).toBe(
-        "まだ悪い変更を 1 件も検出できていません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にあるテストか型のテストのファイルに書きます。",
+        "まだ誤った変更を 1 件も検出できていません。誤った変更を 1 件選び、eslint.config.mjs の rules に Linter のルールを追加するか、exercises/guard/mine/ にあるテストか型のテストのファイルに書きます。",
       );
     });
 
     it("設定の allow に types が無い演習では、型のテストに触れない", () => {
       expect(undetected(false)).toBe(
-        "まだ悪い変更を 1 件も検出できていません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にあるテストのファイルに書きます。",
+        "まだ誤った変更を 1 件も検出できていません。誤った変更を 1 件選び、eslint.config.mjs の rules に Linter のルールを追加するか、exercises/guard/mine/ にあるテストのファイルに書きます。",
       );
     });
   });
