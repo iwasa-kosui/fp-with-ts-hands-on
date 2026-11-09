@@ -59,7 +59,7 @@ const lit = JSON.stringify([
   },
   {
     sqlite: [0],
-    effects: [0],
+    effects: [1, 2],
   },
   {
     fake: [
@@ -97,7 +97,7 @@ const treeCurrent = [["start", "start-s04"], ["dependencies", "clock", "eventIdG
 const frames = [
   "S04 の `deps.resolver` と、S06 の保存先 `deps.examinationStartedStore` です。ユースケースは、予約を検索する処理も保存する処理も `deps` を通して外部に要求します。この「外部に要求する処理を型で表したもの」を port と呼びます。",
   "時刻と ID の取得も外部の処理です。`Clock` は「現在の時刻を返す」処理の型、`EventIdGenerator` は「新しい ID を返す」処理の型で、どちらも port です。ユースケースは処理の型だけを参照します。",
-  "本番では、port に実際の処理を渡します。`app.ts` は、resolver と store には SQLite の実装を、clock には `new Date()` で現在時刻を返す処理を、ID generator には `randomUUID()` で新しい ID を返す処理を渡します。`new Date()` を呼ぶ箇所は、この実装の中だけです。",
+  "本番では、port に実際の処理を渡します。`app.ts` は、resolver と store には SQLite の実装を、clock には `new Date()` で現在時刻を返す処理を、ID generator には `randomUUID()` で新しい ID を返す処理を渡します。`new Date()` を呼ぶ箇所は、clock の実装の中だけです。",
   "テストでは、同じユースケースの port に偽物（fake）をつなぎます。メモリ上の store と固定の時刻と ID を渡すため、ユースケースのコードを変更せずに結果を固定できます。",
 ] as const;
 

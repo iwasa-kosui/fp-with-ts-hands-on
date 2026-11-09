@@ -1,7 +1,7 @@
 import EffectsPipelineAnimation from "../../../components/effects-walkthrough/EffectsPipelineAnimation.astro";
 import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
 
-<p>失敗の経路は2つあります。業務の失敗（予約が見つからない、取得した時点で予約が来院済みではない状態不正、保存の時点で競合した）は、利用者が次の操作を選べるため、<code>Err</code> で返します。障害（データベースの障害、破損データ）は、同期のコードでは例外、非同期のコードでは reject として発生し、利用者が次の操作を選べないため、<code>Err</code> に変えずに外側へ渡します。</p>
+<p>失敗の経路は2つあります。業務の失敗（予約が存在しない、取得した時点で予約が来院済みではない状態不正、保存の時点で競合した）は、利用者が次の操作を選べるため、<code>Err</code> で返します。障害（データベースの障害、破損データ）は、同期のコードでは例外、非同期のコードでは reject として発生し、利用者が次の操作を選べないため、<code>Err</code> に変えずに外側へ渡します。</p>
 
 <FigureSpace reserve={112}>
   <EffectsPipelineAnimation scene="two-paths" />
