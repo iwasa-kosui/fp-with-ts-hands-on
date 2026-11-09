@@ -15,12 +15,12 @@ const candidates: readonly Candidate[] = [
     kind: "Linter の規則",
     name: "@typescript-eslint/switch-exhaustiveness-check",
     options: "considerDefaultExhaustiveForUnions",
-    sees: "switch の case が、union の候補をすべて覆っているか",
+    sees: "case が候補をすべて覆うか",
     catches: [
-      "false のとき: default があっても、足し忘れた case を検出する",
+      "false のとき: default があっても検出する",
     ],
     misses: [
-      "true のとき: default があると網羅とみなすので、「不明」を返す default はすり抜ける",
+      "true のとき: 「不明」を返す default はすり抜ける",
     ],
   },
   {
@@ -30,8 +30,8 @@ const candidates: readonly Candidate[] = [
     sees: "default という書き方",
     catches: [
       "すべての default",
-      "前のページで書いた assertNever の default も検出する（誤検知）",
-      "string を受け取る関数の、正しい default も検出する（誤検知）",
+      "assertNever の default（誤検知）",
+      "string の default（誤検知）",
     ],
     misses: [
       "switch をやめて if の連なりで書いた「不明」",
@@ -48,17 +48,29 @@ const candidates: readonly Candidate[] = [
       "引数は Appointment のまま、default が「不明」を返す変更",
     ],
   },
+  {
+    kind: "テスト",
+    name: "statusLabel.test.ts",
+    sees: "値を渡したときの表示名",
+    catches: [
+      "union でない switch や、if の連なりで書いた「不明」の漏れ",
+    ],
+    misses: [
+      "テストに書いていない状態を足したときの漏れ",
+    ],
+  },
 ];
 
 const captions = [
   "規則は switch を見ます。considerDefaultExhaustiveForUnions の選び方で、default を残したコードの扱いが変わります。",
   "default を禁止する規則は、書き方だけを見ます。正しい default も、別の書き方の「不明」も区別しません。",
   "型のテストは、引数の型を見ます。分岐の中身は見ません。",
+  "テストは、値を渡して表示名を見ます。書き方に関係なく漏れを検出しますが、テストに書いていない状態は見ません。",
   "どの候補も、検出するものとすり抜けるものが違います。演習では、4件の悪い変更を検出できる組み合わせを、自分で選びます。",
 ] as const;
 ---
 
-<figure class="cand" data-rule-candidates aria-label="default を残したときの、漏れを検出する候補の見比べ">
+<figure class="cand" data-rule-candidates aria-label="assertNever に直したコードを守る、候補の見比べ">
   <StepControls />
 
   <ul class="cand__cards">
@@ -123,7 +135,7 @@ const captions = [
 
   @media (min-width: 52rem) {
     .cand__cards {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       align-items: stretch;
     }
   }
@@ -134,7 +146,7 @@ const captions = [
     gap: 0.25rem;
     min-width: 0;
     margin: 0;
-    padding: 0.375rem 0.625rem 0.5rem;
+    padding: 0.25rem 0.375rem 0.375rem;
     border: 2px solid var(--role-border);
     border-radius: 0.5rem;
     background: var(--role-surface);
@@ -164,7 +176,7 @@ const captions = [
 
   .cand__options {
     color: var(--role-muted);
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     line-height: 1.4;
     overflow-wrap: anywhere;
   }
@@ -199,8 +211,8 @@ const captions = [
   }
 
   .cand__text {
-    font-size: 0.8125rem;
-    line-height: 1.45;
+    font-size: 0.75rem;
+    line-height: 1.4;
   }
 
   .cand__frames {
@@ -239,13 +251,15 @@ const captions = [
 
   .cand[data-ready][data-step="0"] .cand__card:not([data-card="0"]),
   .cand[data-ready][data-step="1"] .cand__card:not([data-card="1"]),
-  .cand[data-ready][data-step="2"] .cand__card:not([data-card="2"]) {
+  .cand[data-ready][data-step="2"] .cand__card:not([data-card="2"]),
+  .cand[data-ready][data-step="3"] .cand__card:not([data-card="3"]) {
     border-style: dashed;
   }
 
   .cand[data-ready][data-step="0"] .cand__card[data-card="0"],
   .cand[data-ready][data-step="1"] .cand__card[data-card="1"],
-  .cand[data-ready][data-step="2"] .cand__card[data-card="2"] {
+  .cand[data-ready][data-step="2"] .cand__card[data-card="2"],
+  .cand[data-ready][data-step="3"] .cand__card[data-card="3"] {
     border-color: var(--role-accent);
   }
 

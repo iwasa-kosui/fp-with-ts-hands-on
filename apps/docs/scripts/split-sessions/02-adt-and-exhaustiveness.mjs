@@ -6,7 +6,7 @@ const expectedPages = [
   ["never", "候補が0個の型", "knowledge", "teach", 2],
   ["assert-never", "足し忘れを型検査で見つける", "solution", "teach", 1.5],
   ["fail-fast", "すり抜けた値は見つけた場所で止める", "solution", "teach", 1],
-  ["checks", "default を残すときは何で漏れを検出するか", "solution", "teach", 1],
+  ["checks", "assertNever に直したコードを、次の変更からどう守るか", "solution", "teach", 1],
   ["exercise", "演習: 悪い変更を検出する仕組みを足す", "solution", "exercise", 7],
   ["peer-review", "相互レビュー", "solution", "review", 2],
   ["guard", "自分の業務で、どう防ぐか", "work", "review", 1],

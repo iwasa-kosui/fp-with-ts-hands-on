@@ -100,10 +100,10 @@ const stages = ["書く", "型検査", "実行", "画面"] as const;
             <p class="ff__caption"><code>default</code> が「不明」を返すと、値は実行を通り抜けて画面に届きます。誤りに気づくのは、画面を見た人です。</p>
           </li>
           <li data-frame>
-            <p class="ff__caption"><code>assertNever</code> を呼ぶ分岐は、足し忘れを型検査で見つけます。引数の型が <code>never</code> なので、足し忘れた状態を渡せません。</p>
+            <p class="ff__caption"><code>assertNever</code> を呼ぶ分岐は、足し忘れを型検査で見つけます。引数の型が <code>never</code> なので、足し忘れた状態を渡すと、型エラーになります。</p>
           </li>
           <li data-frame>
-            <p class="ff__caption">型検査をすり抜けた想定外の値は、<code>assertNever</code> の <code>throw</code> で例外になります。例外は「未対応の状態の値」をエラーログに残します。利用者の画面に、「不明」のような誤った表示は出ません。</p>
+            <p class="ff__caption">すり抜けた値は、<code>assertNever</code> の <code>throw</code> で例外になります。例外はそこで処理を止め、メッセージに未対応の値が入ります。受付の画面は「不明」の代わりにエラーになります。ログに残すかどうかは、例外を受け取る側で決めます。</p>
           </li>
           <li data-frame>
             <p class="ff__caption">HTTP の入力のように外から届く値には、型の保証がありません。S03 で仕組みを作ります。この Session では解決しません。</p>
@@ -161,7 +161,7 @@ const stages = ["書く", "型検査", "実行", "画面"] as const;
 
   @media (min-width: 52rem) {
     .ff__main {
-      grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
     }
   }
 

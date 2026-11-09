@@ -61,11 +61,11 @@ export const sessionPages = [
   },
   {
     slug: "checks",
-    title: "default を残すときは何で漏れを検出するか",
+    title: "assertNever に直したコードを、次の変更からどう守るか",
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策を守る: default を残すときに、足し忘れを何で検出するかを考えます。",
+    role: "解決策を守る: assertNever に直したコードを、次の変更からどう守るかを考えます。",
   },
   {
     slug: "exercise",

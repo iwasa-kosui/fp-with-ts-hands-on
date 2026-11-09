@@ -1,1 +1,1 @@
-export * from "../../../src/domain/appointment/statusLabel.js";
+export * from "../../../src/domain/appointment/index.js";
