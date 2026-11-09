@@ -353,6 +353,73 @@ html[data-content-pending] .session-frame__content {
   margin-top: 0;
 }
 
+summary.session-frame__group-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding-block: 0.3rem;
+  border-radius: 0.3rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+summary.session-frame__group-title::-webkit-details-marker {
+  display: none;
+}
+
+summary.session-frame__group-title::after {
+  content: "";
+  flex: none;
+  box-sizing: border-box;
+  margin-left: auto;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+details[open] > summary.session-frame__group-title::after {
+  transform: rotate(45deg);
+}
+
+details[data-has-current]:not([open]) > summary.session-frame__group-title {
+  color: var(--role-accent);
+}
+
+details[data-has-current]:not([open]) > summary.session-frame__group-title::before {
+  content: "";
+  flex: none;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.session-frame__current-note {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+details[open] > summary > .session-frame__current-note {
+  display: none;
+}
+
+summary.session-frame__group-title:hover {
+  color: var(--role-accent);
+}
+
+summary.session-frame__group-title:focus-visible {
+  outline: 2px solid var(--role-accent);
+  outline-offset: -2px;
+}
+
 .session-frame__pages a {
   position: relative;
   display: block;
@@ -651,24 +718,11 @@ html[data-content-pending] .session-frame__content {
     top: var(--frame-bar-height);
     align-self: start;
     height: calc(100dvh - var(--frame-bar-height) - var(--frame-foot-height));
-    padding: 0.25rem 0.4rem;
+    padding: 0.5rem 0.4rem;
     overflow-y: auto;
     border-right: 1px solid var(--role-rule);
     background: transparent;
     scrollbar-width: thin;
-  }
-
-  .session-frame__sidebar .session-frame__group-title {
-    margin-top: 0.5rem;
-  }
-
-  .session-frame__sidebar .session-frame__pages a {
-    padding-block: 0.1rem;
-    line-height: 1.3;
-  }
-
-  .session-frame__sidebar .session-frame__pages a::before {
-    top: calc(0.1rem + 0.52rem - 4.5px);
   }
 }
 
