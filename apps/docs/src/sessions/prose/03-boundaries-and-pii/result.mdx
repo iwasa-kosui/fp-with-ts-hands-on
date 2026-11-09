@@ -2,8 +2,8 @@ import ResultKinds from "../../../components/boundary/ResultKinds.astro";
 
 <p>現在の <code>parse</code> は <code>ok</code> しか返さないため、night-shift も成功になります。検査に失敗したときに <code>err()</code> を返せる形が必要です。</p>
 
-<p>Result は、検査の成功か失敗かを表す小さな型です。成功は Ok、失敗は Err で表します。</p>
+<p>Result は、検査の成功か失敗かを表す小さな型です。失敗を戻り値で表すと、検査に失敗しうることが <code>parse</code> の戻り値の型に現れ、テストは <code>isErr()</code> で失敗を判定できます。</p>
 
 <ResultKinds />
 
-<p>この Result は、このリポジトリで用意した型です。置き場所は <code>domain/shared/</code> で、domain の中で共通に使う型や関数を置きます。<code>isOk</code> と <code>isErr</code> で成否を判定します。S04 の useCase は、別の Result を使います。</p>
+<p>この Result は、このリポジトリで用意した型です。置き場所は <code>domain/shared/</code> で、domain の中で共通に使う型や関数を置きます。S04 の useCase は、理由を持つ別の Result を使います。入力の検査は S04 でも、理由のないこの Result を使います。</p>

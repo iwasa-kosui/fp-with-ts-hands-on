@@ -5,9 +5,9 @@ import { paymentAmountQuote } from "../../pages/03-boundaries-and-pii-content";
   <div>
     <p>Branded Type の用途は、IDの区別に限りません。支払金額を <code>number</code> のまま渡すと、受け取る関数からは、その値が検査済みか判別できません。</p>
     <p>brand（ブランド）を付けると、「1以上の整数」という制約を型に残せます。ここではブランドの名前に、文字列の代わりに <code>PaymentAmountBrand</code>（Symbol）を使っています。<code>.brand&lt;"AppointmentId"&gt;()</code> と役割は同じです。<code>PaymentAmount.parse(1000)</code> は Ok を返し、<code>0</code>、<code>-100</code>、<code>1.5</code> は Err を返します。</p>
-    <p>範囲を変更するときは、schema の1か所を修正します。<code>as</code> を使うと検査を回避できるため、レビューでは <code>as</code> が増えていないかを確認します。</p>
+    <p>範囲を変更するときは、schema の1か所を修正します。<code>as</code> を使うと検査を回避できるため、<code>consistent-type-assertions</code> のルールで <code>as</code> の使用を検出します。</p>
   </div>
-  <figure class="code-block">
+  <figure class="code-block code-block--wrap">
     <figcaption>支払金額の型の例 <code style={{ fontFamily: "inherit", fontWeight: 400 }}>{paymentAmountQuote.source}</code></figcaption>
     <Code code={paymentAmountQuote.code} lang="ts" />
   </figure>

@@ -7,7 +7,7 @@ const terms = [
     place: "境界の検査",
     definition:
       "スマートコンストラクタは、受け取った値を検査し、条件を満たす値だけをその型の値として作る関数です。",
-    example: "この教材では、StartExaminationInput.parse がこれに当たります。AppointmentId.parse は例外を投げる点が違います。",
+    example: "この教材では、Err を返す StartExaminationInput.parse がこれに当たり、外部入力の検査に使います。例外を投げる AppointmentId.parse は、正しいと分かっている値に使います。",
   },
   {
     term: "Parse, don't validate",
@@ -29,7 +29,7 @@ const terms = [
     definition:
       "Always-Valid Domain Model は、予約や診察のような業務の概念と業務ルールを表す内側の型と関数を、検査を通った値だけを受け取る前提で作る設計です。",
     example:
-      "HTTP で受け取る入力は境界で検査済みであるため、内側の関数は同じ検査を繰り返しません。この説明は、HTTP で受け取る入力に限った話です。",
+      "HTTP で受け取る入力は境界で検査済みであるため、内側の関数は同じ検査を繰り返しません。この説明の対象は HTTP で受け取る入力です。データベースから取得する値は、この教材の境界の対象外です。",
   },
 ] as const;
 ---
@@ -243,6 +243,12 @@ const terms = [
 
   .boundary-terms__pin--zone {
     inset-block-end: -1.5rem;
+    max-width: 12rem;
+  }
+
+  .boundary-terms__gate > .boundary-terms__pin {
+    inset-block-end: calc(100% + 0.5rem);
+    width: max-content;
     max-width: 12rem;
   }
 

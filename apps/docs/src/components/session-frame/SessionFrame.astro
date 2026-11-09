@@ -58,6 +58,7 @@ const progress = `${((sameKind.indexOf(page) + 1) / sameKind.length) * 100}%`;
   <div
     class:list={["case-file", "case-file--session", "session-frame", { "session-frame--wide": fullWidth }]}
     data-session={sessionSlug}
+    data-page={page.slug}
     data-guard-page={hasGuardExercise ? "true" : "false"}
   >
     <header class="session-frame__bar">

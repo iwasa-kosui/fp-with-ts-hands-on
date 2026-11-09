@@ -104,7 +104,7 @@ export const frames: readonly Frame[] = [
     cards: cardsFor(threeNames, 3),
     showNever: false,
     caption:
-      '`case "Canceled"` も処理しました。型検査は、この行より下の `status` の候補を0個と数えます。箱は空になりました。',
+      '`case "Canceled"` も処理しました。型検査は、この行より下に残る `status` の候補を0個と数えます。',
   },
   {
     code: threeCode,
@@ -114,7 +114,7 @@ export const frames: readonly Frame[] = [
     showNever: true,
     verdict: { kind: "ok", label: "型検査: エラーなし" },
     caption:
-      "候補が0個の型を `never` と呼びます。`never` 型の変数には、候補が残っている値を代入できません。ここの `status` は候補が0個であるため、`rest` に代入しても型検査は何も報告しません。",
+      "候補が0個の型を `never` と呼びます。`never` 型の変数には、候補が1個以上ある値を代入できません。ここの `status` は候補が0個であるため、`rest` に代入しても型検査は何も報告しません。`never` 型の値は存在しないため、`return rest;` は戻り値の型 `string` にも矛盾しません。",
   },
   {
     code: fourCode,

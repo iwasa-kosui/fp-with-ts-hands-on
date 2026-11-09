@@ -119,7 +119,7 @@ export const supplementaryExercise: SupplementaryExercise = {
     decisions: [
       "AppointmentIdとVeterinarianIdをどの型として定義するか",
       "用途の区別を予約状態とstartExaminationへどう伝えるか",
-      "取り違えをコンパイルエラーとしてどう残すか",
+      "取り違えを型エラーとしてどう残すか",
     ],
   },
   steps: [
@@ -182,19 +182,19 @@ export const supplementaryExercise: SupplementaryExercise = {
 export const guides = ([
   {
     id: "http-start-examination-input",
-    title: "診察開始のHTTP入力はrouteで組み立てている",
-    currentDesign: "routeは、予約IDとbodyのveterinarianIdを1つのobjectにまとめてparseへ渡します。",
-    futureRisk: "bodyにnight-shiftが入っていても、ここでは何も検証しません。",
+    title: "診察開始の HTTP 入力は route で組み立てている",
+    currentDesign: "route は、予約 ID と body の veterinarianId を 1つの object にまとめて parse へ渡します。",
+    futureRisk: "body に night-shift が含まれていても、ここでは何も検証しません。",
     path: "src/adaptor/primary/web/routes.ts",
     highlights: [{ startLineNumber: 109, endLineNumber: 115 }],
   },
   {
     id: "unvalidated-start-examination-input",
-    title: "HTTP入力をanyのまま診察開始の入力へ渡している",
-    currentDesign: "parseはraw: anyから2項目をコピーし、検査せずに必ずokを返します。",
-    futureRisk: "rawがanyであるためraw.veterinarianIdもanyです。night-shiftは検証されずにVeterinarianId型の項目へ格納されます。",
+    title: "HTTP 入力を any のまま診察開始の入力へ渡している",
+    currentDesign: "parse は raw: any から 2項目をコピーし、検査せずに必ず ok を返します。",
+    futureRisk: "raw が any であるため raw.veterinarianId も any です。night-shift は検証されずに VeterinarianId 型の項目へ格納されます。",
     path: "src/adaptor/primary/web/startExaminationInput.ts",
-    highlights: [{ startLineNumber: 1, endLineNumber: 15 }],
+    highlights: [{ startLineNumber: 5, endLineNumber: 15 }],
   },
 ] as const) satisfies readonly CodeGuide[];
 

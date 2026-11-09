@@ -295,6 +295,11 @@ const litData = JSON.stringify(lit);
     line-height: 1.45;
   }
 
+  .audit-flow__code :global(:is(pre, code, .line)) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
   .audit-flow__code :global(.line) {
     display: inline-block;
     min-width: 100%;

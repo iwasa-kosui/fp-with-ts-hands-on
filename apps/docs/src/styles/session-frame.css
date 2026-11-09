@@ -908,6 +908,17 @@ summary.session-frame__group-title:focus-visible {
     grid-column: 1;
     grid-row: 2;
   }
+
+  .session-split--guides.session-split--glossary-below [data-code-guide-card="unvalidated-start-examination-input"] {
+    grid-row: 1;
+  }
+
+  .session-split--guides.session-split--glossary-below .session-glossary {
+    display: flex;
+    flex-wrap: wrap;
+    grid-column: 1 / -1;
+    gap: 0 1.5rem;
+  }
 }
 
 @media (min-width: 1100px) {
@@ -932,7 +943,7 @@ summary.session-frame__group-title:focus-visible {
 @media (min-width: 1100px) {
   .session-frame.case-file--session .case-file__content .schema-source-flow {
     display: grid;
-    grid-template-columns: 26rem minmax(0, 1fr);
+    grid-template-columns: min(26rem, calc(min(65vh, 560px) * 340 / 494)) minmax(0, 1fr);
     grid-template-rows: auto auto auto 1fr;
     gap: 0 2rem;
     align-items: start;
@@ -1359,4 +1370,9 @@ summary.session-frame__group-title:focus-visible {
       transform: translateY(6px);
     }
   }
+}
+
+.session-frame .code-block--wrap :is(pre, code, .line) {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

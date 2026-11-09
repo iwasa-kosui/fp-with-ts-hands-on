@@ -3,7 +3,7 @@ import { startExaminationWalkthrough } from "../../boundary-walkthroughs";
 
 <p><code>StartExaminationInput.parse</code> は、<code>schemaResult</code> が <code>z.object</code> とブランドを付けた ID の schema から作った関数です。</p>
 
-<p><strong>解決したこと</strong>: 課題1を解決しました。検査に失敗したときは、サーバーがエラーを表す HTTP ステータス 500 を返します。S04 で扱います。<br /><strong>この仕組みで解決しないこと</strong>: 形式の検査は ID の実在を検証しません。Branded Type が防止するのは、検査していない <code>string</code> や別の ID を ID の型の引数へ渡す変更です。データベースから取得する値は、この回の境界の対象外です。</p>
+<p><strong>解決したこと</strong>: 入力の検査の課題のうち、不正な値を内側へ渡さないこと。<strong>この仕組みで解決しないこと</strong>: 利用者へ返す応答は未解決で、いまは例外により HTTP ステータス 500 になります（S04 でも同じです）。ID の実在は検証しません。Branded Type が検出するのは、検査していない <code>string</code> や別の ID を ID の型の引数へ渡す、コードの誤りです。データベースの値は、この教材の境界の対象外です。</p>
 
 <BoundaryPlayer
   walkthrough={startExaminationWalkthrough}
