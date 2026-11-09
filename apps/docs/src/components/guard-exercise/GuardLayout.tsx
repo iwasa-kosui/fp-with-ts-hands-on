@@ -1,4 +1,4 @@
-import { useId, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import {
   casePathFor,
   type GuardCaseInfo,
@@ -69,6 +69,9 @@ export const GuardLayout = ({
 }: GuardLayoutProps) => {
   const [terminalOpen, setTerminalOpen] = useState(false);
   const terminalId = useId();
+  useEffect(() => {
+    if (parts.terminalState === "failed") setTerminalOpen(true);
+  }, [parts.terminalState]);
   const guard = useGuardRun({
     store,
     slug,
@@ -173,6 +176,10 @@ export const GuardLayout = ({
             </div>
           ) : (
             <>
+              <details className="guard-exercise__guide-details">
+                <summary>{activeGuide.title}</summary>
+                <GuideSteps steps={activeGuide.steps} />
+              </details>
               <ResultTable
                 result={guard.result}
                 rows={rows}
@@ -182,10 +189,6 @@ export const GuardLayout = ({
                 passedNext={guide?.passedNext}
                 onLimitationChange={guard.setLimitation}
               />
-              <details className="guard-exercise__guide-details">
-                <summary>{activeGuide.title}</summary>
-                <GuideSteps steps={activeGuide.steps} />
-              </details>
             </>
           )}
         </div>

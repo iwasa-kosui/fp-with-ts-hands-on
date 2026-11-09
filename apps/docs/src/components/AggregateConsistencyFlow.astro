@@ -1,6 +1,7 @@
 ---
 import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
+import { keyedTransformer } from "./code-cache-key";
 import appointmentSource from "../../../../examples/final/src/domain/appointment/appointment.ts?raw";
 import transitionsSource from "../../../../examples/session-06-solution/src/domain/appointment/transitions.ts?raw";
 import { lineLabelOf } from "../sessions/source-quotes";
@@ -136,7 +137,7 @@ const keyLineNumbers = (source: string, keyTexts: readonly string[]) =>
   });
 const withMarks = (source: string, keyLines: readonly number[]) =>
   source.split("\n").map((text, index) => (keyLines.includes(index + 1) ? `${text} // [!aggregate-flow-key]` : text)).join("\n");
-const markKeyLines: Transformer = {
+const markKeyLines = keyedTransformer<Transformer>("aggregate-consistency-flow", {
   name: "mark-aggregate-flow-key-lines",
   preprocess(source) {
     const lines = source.split("\n");
@@ -146,7 +147,7 @@ const markKeyLines: Transformer = {
   line(node, line) {
     if ((this.meta as { keyLines?: number[] }).keyLines?.includes(line)) this.addClassToHast(node, "aggregate-flow__key");
   },
-};
+});
 
 const appointmentFields = (ghost: boolean): readonly Field[] => [
   {
@@ -418,9 +419,7 @@ const frames: readonly Frame[] = [
     show(0);
   };
 
-  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    document.querySelectorAll<HTMLElement>("[data-aggregate-flow]").forEach(setUp);
-  }
+  document.querySelectorAll<HTMLElement>("[data-aggregate-flow]").forEach(setUp);
 </script>
 
 <style>
@@ -908,6 +907,12 @@ const frames: readonly Frame[] = [
     }
     to {
       opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .aggregate-flow__controls button[data-play] {
+      display: none;
     }
   }
 </style>

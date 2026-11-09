@@ -1,6 +1,7 @@
 ---
 import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
+import { keyedTransformer } from "./code-cache-key";
 import { clinicFixture } from "../../../../examples/fixtures/clinic";
 
 type Snippet = Readonly<{ path: string; code: string }>;
@@ -22,7 +23,7 @@ type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[numb
 const KEY_MARK = /\s*\/\/ \[!branded-key\]$/;
 const withMarks = (source: string, keyLines: readonly number[]) =>
   source.split("\n").map((text, index) => (keyLines.includes(index + 1) ? `${text} // [!branded-key]` : text)).join("\n");
-const markKeyLines: Transformer = {
+const markKeyLines = keyedTransformer<Transformer>("branded-id-flow", {
   name: "mark-branded-key-lines",
   preprocess(source) {
     const lines = source.split("\n");
@@ -32,7 +33,7 @@ const markKeyLines: Transformer = {
   line(node, line) {
     if ((this.meta as { keyLines?: number[] }).keyLines?.includes(line)) this.addClassToHast(node, "branded-id-flow__key");
   },
-};
+});
 
 type Mode = "normal" | "dim";
 type TokenState = "off" | "home" | "through" | "stop";
@@ -207,7 +208,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
   >
     <title id="branded-id-flow-title">Branded Type が取り違えを止める仕組み</title>
     <desc id="branded-id-flow-desc">
-      1段目は、外から届く予約IDと獣医師IDの文字列です。2段目は、UUIDの形かを検査する parse です。3段目は、予約IDと獣医師IDの値です。brand を付ける前はどちらも string 型で、付けた後は AppointmentId と VeterinarianId という別の印が付きます。4段目は、獣医師IDを受け取る関数です。brand を付ける前は予約IDを渡しても型検査を通り、付けた後は印が違うので型検査がコンパイルエラーとして報告します。
+      一番上の「外から届く文字列」の行は、外から届く予約IDと獣医師IDの文字列です。上から2番目の「parse」の行は、UUIDの形かを検査する parse です。上から3番目の「値」の行は、予約IDと獣医師IDの値です。brand を付ける前はどちらも string 型で、付けた後は AppointmentId と VeterinarianId という別の印が付きます。一番下の「受け取る関数」の行は、獣医師IDを受け取る関数です。brand を付ける前は予約IDを渡しても型検査を通り、付けた後は印が違うので型検査がコンパイルエラーとして報告します。
     </desc>
 
     <g class="branded-id-flow__band" data-band="0" data-mode={initial.modes[0]}>
@@ -432,9 +433,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
     show(0);
   };
 
-  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    document.querySelectorAll<HTMLElement>("[data-branded-id-flow]").forEach(setUp);
-  }
+  document.querySelectorAll<HTMLElement>("[data-branded-id-flow]").forEach(setUp);
 </script>
 
 <style>

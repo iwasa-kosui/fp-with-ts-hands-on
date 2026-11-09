@@ -1,3 +1,5 @@
+import { keyedTransformer } from "../code-cache-key";
+
 export type Bands = Readonly<Record<string, readonly number[]>>;
 
 export const lineIndex = (code: string, needle: string): number => {
@@ -65,7 +67,7 @@ const parseBandMeta = (raw: string): ReadonlyMap<number, string> => {
   return byLine;
 };
 
-export const bandTransformer = {
+export const bandTransformer = keyedTransformer("workflow-errors-band", {
   name: "workflow-errors-band",
   line(
     this: { options: { meta?: { __raw?: string } } },
@@ -75,7 +77,7 @@ export const bandTransformer = {
     const band = parseBandMeta(this.options.meta?.__raw ?? "").get(line);
     if (band !== undefined) node.properties["data-band"] = band;
   },
-};
+});
 
 export const dedent = (code: string): string => {
   const lines = code.split("\n");

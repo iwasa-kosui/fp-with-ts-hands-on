@@ -68,18 +68,28 @@ const useCaseFile = "useCase/startExamination.ts";
 const repositoryFile = "adaptor/secondary/sqlite/appointmentRepository.ts";
 const appointmentFile = "domain/appointment/appointment.ts";
 
-const updatedSummary = `updated: { status: "in-examination", ... }`;
+const updatedSummary = `updated: { status: "in-examination", amount: 4800, ... }`;
+
+const layerLabels = [
+  { id: "entry", name: "入口", path: "adaptor/primary/web" },
+  { id: "useCase", name: "手順", path: "useCase" },
+  { id: "domain", name: "決まり", path: "domain" },
+  { id: "db", name: "DB", path: "adaptor/secondary/sqlite" },
+] as const;
 
 const steps = [
   {
-    text: "獣医師が診察室の PC で Mugi の予約を開いています。画面の「来院済み」と「CheckedIn」、データベースの <code>checked-in</code> は、どれも同じ状態の表記です。",
-    file: "route",
+    text: "会計が終わった Mugi の予約です。画面の「会計済み」と「Paid」、データベースの <code>paid</code> は、どれも同じ状態の表記です。獣医師は別の予約のつもりで、この画面を開いています。",
+    file: "",
     highlight: undefined,
     impl: undefined,
     values: undefined,
+    warn: undefined,
+    empty: "まだサーバーは動いていません",
+    layers: [],
   },
   {
-    text: "<strong>入口</strong>: 獣医師が「診察を開始する」を押します。どの予約を、どの獣医師が担当するかが、サーバーへ届きます。前のページの図では、入口は届いた値の形を確かめるステップです。今のコードは確かめません。",
+    text: "獣医師が「診察を開始する」を押します。入口は、どの予約かを示す ID を受け取り、担当の獣医師の ID と合わせて次の手順へ渡します。受け取るのは ID だけなので、サーバーはまだ予約の状態を知りません。",
     file: "route",
     highlight: highlight("route", routeCode, "startExamination(repository)({", true),
     impl: undefined,
@@ -90,9 +100,12 @@ const steps = [
 }`,
       output: undefined,
     },
+    warn: undefined,
+    empty: undefined,
+    layers: ["entry"],
   },
   {
-    text: "<strong>読み取り</strong>: サーバーは、データベースから Mugi の予約を読みます。読んだ予約の状態は <code>checked-in</code> です。コードの <code>repository</code> は、データベースを読み書きする部品です。",
+    text: "サーバーは、データベースから Mugi の予約を読みます。読んだ状態は <code>paid</code> です。ここでサーバーは、この予約が会計済みだと分かります。コードの <code>repository</code> は、データベースを読み書きする部品です。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "const current = repository.find(input.appointmentId);", false),
     impl: {
@@ -101,11 +114,14 @@ const steps = [
     },
     values: {
       input: `appointmentId: "${appointmentId}"`,
-      output: `current: { petName: "Mugi", status: "checked-in", ... }`,
+      output: `current: { petName: "Mugi", status: "paid", amount: 4800, ... }`,
     },
+    warn: undefined,
+    empty: undefined,
+    layers: ["useCase", "db"],
   },
   {
-    text: "<strong>業務の判断</strong>: サーバーは、状態を <code>in-examination</code> にした新しい予約を作ります。前のページの図では、業務の判断は予約の今の状態を見て、進めてよいかを決めるステップです。今のコードは状態を確かめません。",
+    text: "本来はここで止めるべきです。しかし <code>updateStatus</code> は、受け取った値で <code>status</code> を上書きするだけで、今の状態を見ません。ほかの行にも、状態を確かめる処理はありません。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "const updated = updateStatus(", true),
     impl: {
@@ -113,16 +129,17 @@ const steps = [
       code: cut(appointmentSource, "export const updateStatus", "end"),
     },
     values: {
-      input: `current: { status: "checked-in", ... }
+      input: `current: { status: "paid", ... }
 status: "in-examination"`,
-      output: `updated: {
-  status: "in-examination",
-  ...
-}`,
+      output: `updated: { status: "in-examination",
+  amount: 4800, ... }`,
     },
+    warn: "状態を確かめる行がない",
+    empty: undefined,
+    layers: ["useCase", "domain"],
   },
   {
-    text: "<strong>保存</strong>: データベースの予約を、新しい内容で上書きします。担当の獣医師と開始時刻も、このとき保存されます。",
+    text: "データベースの予約を、新しい内容で上書きします。<code>paid</code> は <code>in-examination</code> に変わります。<code>amount</code> と <code>paidAt</code> は残ったままなので、会計が済んだ予約が診察中になりました。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "repository.save(updated);", false),
     impl: {
@@ -130,9 +147,12 @@ status: "in-examination"`,
       code: part(repositorySource, "const save = (appointment: Appointment): void => {", ".values(row)", ".run();"),
     },
     values: { input: updatedSummary, output: undefined },
+    warn: undefined,
+    empty: undefined,
+    layers: ["useCase", "db"],
   },
   {
-    text: "<strong>保存</strong>: 監査記録に、診察を開始した操作（<code>examination.started</code>）を1行追加します。",
+    text: "監査記録に、診察を開始した操作を1行追加します。<code>payload</code> には予約全体が入るので、調査に要らない飼い主の氏名、メールアドレス、電話番号も残ります。これが課題2です。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "repository.appendAudit({", true),
     impl: {
@@ -143,22 +163,25 @@ status: "in-examination"`,
       input: `{ eventName: "examination.started", occurredAt, appointment: updated, ... }`,
       output: undefined,
     },
+    warn: undefined,
+    empty: undefined,
+    layers: ["useCase", "db"],
   },
   {
-    text: "サーバーが画面を開き直させます。表示は「診察中」に変わります。獣医師の画面が変わるのはここです。",
-    file: "route",
-    highlight: highlight("route", routeCode, "return redirectToRoot(context);", false),
-    impl: {
-      file: routeFile,
-      code: cut(routesSource, "const redirectToRoot = ", "line"),
-    },
+    text: "サーバーが画面を開き直させ、表示は「診察中」に変わります。受付はこの画面を見て会計前の来院だと判断し、会計担当が飼い主へ同じ4,800円をもう一度請求しました。これが課題1です。",
+    file: "",
+    highlight: undefined,
+    impl: undefined,
     values: undefined,
+    warn: undefined,
+    empty: "どのファイルにも、会計済みの予約を止める行はありませんでした",
+    layers: [],
   },
 ] as const;
 
 const staticFrames = [
-  { key: "before", label: "押す前", badge: "来院済み", kind: "CheckedIn", status: "checked-in" },
-  { key: "after", label: "押した後", badge: "診察中", kind: "InExamination", status: "in-examination" },
+  { key: "before", label: "押す前", badge: "会計済み", kind: "Paid" },
+  { key: "after", label: "押した後", badge: "診察中", kind: "InExamination" },
 ] as const;
 
 const actions = [
@@ -168,11 +191,28 @@ const actions = [
   { label: "会計を記録する", kind: "primary" },
 ] as const;
 
+const auditSeed = [
+  "appointment.seeded",
+  "appointment.checked-in",
+  "examination.started",
+  "examination.result-recorded",
+  "payment.recorded",
+] as const;
+
+const payloadLines = [
+  { code: 'petName: "Mugi"', pii: false },
+  { code: 'status: "in-examination"', pii: false },
+  { code: 'ownerName: "Owner A"', pii: true },
+  { code: 'ownerEmail: "owner@example.test"', pii: true },
+  { code: 'ownerPhone: "090-0000-0000"', pii: true },
+] as const;
+
 const highlights = JSON.stringify(steps.map((step) => step.highlight ?? ""));
 const files = JSON.stringify(steps.map((step) => step.file));
+const layers = JSON.stringify(steps.map((step) => step.layers));
 ---
 
-<figure class="hem" data-exam-mock data-highlights={highlights} data-files={files}>
+<figure class="hem" data-exam-mock data-highlights={highlights} data-files={files} data-layers={layers}>
   <div class="hem__player" data-player>
     <StepControls />
 
@@ -189,11 +229,11 @@ const files = JSON.stringify(steps.map((step) => step.file));
           <section class="hem__card">
             <div class="hem__heading">
               <h6 class="hem__pet">Mugi</h6>
-              <span class="hem__badge" data-switch-at="6" data-text-before="来院済み" data-text-after="診察中">来院済み</span>
+              <span class="hem__badge" data-switch-at="6" data-text-before="会計済み" data-text-after="診察中">会計済み</span>
             </div>
             <dl class="hem__state">
               <dt>状態</dt>
-              <dd data-switch-at="6" data-text-before="CheckedIn" data-text-after="InExamination">CheckedIn</dd>
+              <dd data-switch-at="6" data-text-before="Paid" data-text-after="InExamination">Paid</dd>
             </dl>
             <div class="hem__actions" aria-label="予約操作">
               {
@@ -218,8 +258,25 @@ const files = JSON.stringify(steps.map((step) => step.file));
       </section>
 
       <section class="hem__col hem__col--code">
-        <h5 class="hem__col-title">コード</h5>
+        <h5 class="hem__col-title">コード（光っている札が、いま動いている場所）</h5>
+        <ul class="hem__layers" aria-label="処理がいまどこにいるか">
+          {
+            layerLabels.map((layer) => (
+              <li class="hem__layer" data-layer={layer.id}>
+                <span class="hem__layer-name">{layer.name}</span>
+                <span class="hem__layer-path">{layer.path}</span>
+              </li>
+            ))
+          }
+        </ul>
         <div class="hem__files" data-files-pane role="region" aria-label="コード">
+          {
+            steps.map((step, index) =>
+              step.empty === undefined ? null : (
+                <p class="hem__empty" data-empty-at={index} hidden>{step.empty}</p>
+              ),
+            )
+          }
           <figure class="code-block hem__block" data-code-file="route">
             <figcaption>{routeFile}</figcaption>
             <Code code={routeCode.join("\n")} lang="ts" />
@@ -254,6 +311,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
                   <div class="hem__io-cell">
                     <p class="hem__label">入力</p>
                     <Code code={step.values.input} lang="ts" />
+                    {step.warn === undefined ? null : <p class="hem__warn">{step.warn}</p>}
                   </div>
                   {
                     step.values.output === undefined ? null : (
@@ -280,18 +338,32 @@ const files = JSON.stringify(steps.map((step) => step.file));
         <div class="hem__table">
           <h6>現在の予約内容</h6>
           <ul class="hem__lines">
-            <li data-until="4" data-focus-at="2" data-slot="1"><Code code={'status: "checked-in"'} lang="ts" inline /></li>
+            <li data-until="4" data-focus-at="2" data-slot="1"><Code code={'status: "paid"'} lang="ts" inline /></li>
             <li data-from="4" data-flash-at="4" data-slot="1"><Code code={'status: "in-examination"'} lang="ts" inline /></li>
-            <li data-from="4" data-flash-at="4"><Code code={`veterinarianId: "${veterinarianId}"`} lang="ts" inline /></li>
-            <li data-from="4" data-flash-at="4"><Code code="examinationStartedAt: 押した時刻" lang="ts" inline /></li>
+            <li><Code code="amount: 4800" lang="ts" inline /></li>
+            <li><Code code={'paidAt: "2026-08-30T07:10:00.000Z"'} lang="ts" inline /></li>
+            <li data-until="4" data-slot="4"><Code code="examinationStartedAt: 1回目の時刻" lang="ts" inline /></li>
+            <li data-from="4" data-flash-at="4" data-slot="4"><Code code="examinationStartedAt: 押した時刻" lang="ts" inline /></li>
           </ul>
         </div>
         <div class="hem__table">
           <h6>監査記録</h6>
           <ul class="hem__lines">
-            <li><Code code={'"appointment.seeded"'} lang="ts" inline /></li>
-            <li><Code code={'"appointment.checked-in"'} lang="ts" inline /></li>
-            <li data-from="5" data-flash-at="5"><Code code={'"examination.started"'} lang="ts" inline /></li>
+            {
+              auditSeed.map((name) => (
+                <li data-fold-from="5"><Code code={`"${name}"`} lang="ts" inline /></li>
+              ))
+            }
+            <li class="hem__fold-note" data-show-from="5">前の5行は省略</li>
+            <li class="hem__new" data-show-from="5" data-flash-at="5"><Code code={'"examination.started"'} lang="ts" inline /></li>
+            <li class="hem__fold-note hem__payload-label" data-show-from="5">payload</li>
+            {
+              payloadLines.map((line) => (
+                <li class:list={["hem__nested", line.pii && "hem__pii"]} data-show-from="5" data-flash-at="5">
+                  <Code code={line.code} lang="ts" inline />
+                </li>
+              ))
+            }
           </ul>
         </div>
       </section>
@@ -326,23 +398,32 @@ const files = JSON.stringify(steps.map((step) => step.file));
             <div class="hem__table">
               <h6>現在の予約内容</h6>
               <ul class="hem__lines">
-                <li><Code code={`status: "${frame.status}"`} lang="ts" inline /></li>
-                {
-                  frame.key === "after" ? (
-                    <Fragment>
-                      <li><Code code={`veterinarianId: "${veterinarianId}"`} lang="ts" inline /></li>
-                      <li><Code code="examinationStartedAt: 押した時刻" lang="ts" inline /></li>
-                    </Fragment>
-                  ) : null
-                }
+                <li>
+                  <Code code={frame.key === "after" ? 'status: "paid" → "in-examination"' : 'status: "paid"'} lang="ts" inline />
+                </li>
+                <li><Code code="amount: 4800" lang="ts" inline /></li>
+                <li><Code code={'paidAt: "2026-08-30T07:10:00.000Z"'} lang="ts" inline /></li>
+                <li><Code code={frame.key === "after" ? "examinationStartedAt: 押した時刻" : "examinationStartedAt: 1回目の時刻"} lang="ts" inline /></li>
               </ul>
             </div>
             <div class="hem__table">
               <h6>監査記録</h6>
               <ul class="hem__lines">
-                <li><Code code={'"appointment.seeded"'} lang="ts" inline /></li>
-                <li><Code code={'"appointment.checked-in"'} lang="ts" inline /></li>
-                {frame.key === "after" ? <li><Code code={'"examination.started"'} lang="ts" inline /></li> : null}
+                {auditSeed.map((name) => <li><Code code={`"${name}"`} lang="ts" inline /></li>)}
+                {
+                  frame.key === "after" ? (
+                    <Fragment>
+                      <li class="hem__new"><Code code={'"examination.started"'} lang="ts" inline /></li>
+                      {
+                        payloadLines.map((line) => (
+                          <li class:list={["hem__nested", line.pii && "hem__pii"]}>
+                            <Code code={line.code} lang="ts" inline />
+                          </li>
+                        ))
+                      }
+                    </Fragment>
+                  ) : null
+                }
               </ul>
             </div>
           </div>
@@ -383,6 +464,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
                   <div class="hem__io-cell">
                     <p class="hem__label">入力</p>
                     <Code code={step.values.input} lang="ts" />
+                    {step.warn === undefined ? null : <p class="hem__warn">{step.warn}</p>}
                   </div>
                   {
                     step.values.output === undefined ? null : (
@@ -406,15 +488,13 @@ const files = JSON.stringify(steps.map((step) => step.file));
     </ol>
   </div>
 
-  <figcaption class="hem__note">このモックは説明用で、データベースには接続しません。コードは examples/session-00 の実物です。</figcaption>
+  <figcaption class="hem__note">このモックは説明用で、データベースには接続しません。コードは examples/session-00 の実物です。手元で同じ値を見るには<a href="/sessions/00-system-handover/demo-screen/">デモ画面を手元で動かす</a>を開いてください。</figcaption>
 </figure>
 
 <script>
   import { mountStepper } from "./stepper/stepper";
 
   document.querySelectorAll<HTMLElement>("[data-exam-mock]").forEach((root) => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
     const screen = root.querySelector<HTMLElement>("[data-screen]");
     const startButton = root.querySelector<HTMLElement>("[data-player] [data-start]");
     const cursor = root.querySelector<HTMLElement>("[data-cursor]");
@@ -423,6 +503,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
 
     const highlights = JSON.parse(root.dataset.highlights ?? "[]") as string[];
     const files = JSON.parse(root.dataset.files ?? "[]") as string[];
+    const layers = JSON.parse(root.dataset.layers ?? "[]") as string[][];
     const player = root.querySelector<HTMLElement>("[data-player]") ?? root;
     const blocks = [...pane.querySelectorAll<HTMLElement>("[data-code-file]")];
     const codeLines = new Map(
@@ -446,7 +527,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
     };
 
     const showCode = (index: number) => {
-      const switched = blocks.some((block) => !block.hidden && block.dataset.codeFile !== files[index]);
+      const switched = blocks.find((block) => !block.hidden)?.dataset.codeFile !== files[index];
       blocks.forEach((block) => {
         block.hidden = block.dataset.codeFile !== files[index];
       });
@@ -472,7 +553,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
       const wanted = height > view ? top : top - (view - height) / 2;
       const maxTop = Math.round((scroller.scrollHeight - scroller.clientHeight) / lineHeight) * lineHeight;
       const snapped = Math.min(Math.max(Math.round(wanted / lineHeight) * lineHeight, 0), maxTop);
-      scroller.scrollTo({ top: snapped, behavior: "smooth" });
+      scroller.scrollTo({ top: snapped, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
     };
 
     const render = (index: number) => {
@@ -491,6 +572,20 @@ const files = JSON.stringify(steps.map((step) => step.file));
       player.querySelectorAll<HTMLElement>("[data-until]").forEach((element) => {
         element.classList.toggle("is-off", index >= Number(element.dataset.until));
       });
+      player.querySelectorAll<HTMLElement>("[data-show-from], [data-fold-from]").forEach((element) => {
+        const from = Number(element.dataset.showFrom ?? 0);
+        const until = Number(element.dataset.foldFrom ?? Number.POSITIVE_INFINITY);
+        element.classList.toggle("is-gone", index < from || index >= until);
+      });
+      player.querySelectorAll<HTMLElement>("[data-empty-at]").forEach((element) => {
+        element.hidden = index !== Number(element.dataset.emptyAt);
+      });
+      player.querySelectorAll<HTMLElement>("[data-layer]").forEach((element) => {
+        const lit = layers[index]?.includes(element.dataset.layer ?? "") ?? false;
+        element.classList.toggle("is-lit", lit);
+        if (lit) element.setAttribute("aria-current", "true");
+        else element.removeAttribute("aria-current");
+      });
       player.querySelectorAll<HTMLElement>("[data-focus-at]").forEach((element) => {
         element.classList.toggle("is-focus", index === Number(element.dataset.focusAt));
       });
@@ -502,6 +597,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
         element.classList.toggle("is-off", index !== Number(element.dataset.at));
       });
 
+      startButton.setAttribute("aria-disabled", String(index !== 0));
       startButton.classList.toggle("is-attention", index === 0);
       startButton.classList.toggle("is-pressed", index === 1);
       placeCursor(index === 1);
@@ -510,6 +606,10 @@ const files = JSON.stringify(steps.map((step) => step.file));
 
     player.querySelectorAll(".hem__lines code").forEach((code) => code.removeAttribute("tabindex"));
     mountStepper({ root, onStep: render });
+    startButton.addEventListener("click", () => {
+      if (rendered !== 0) return;
+      root.querySelector<HTMLButtonElement>("[data-next]")?.click();
+    });
     new ResizeObserver(() => placeCursor(rendered === 1)).observe(screen);
   });
 </script>
@@ -521,7 +621,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
     --hem-lineh: calc(var(--hem-fs) * var(--hem-lh));
     --hem-file-lines: 7;
     --hem-impl-lines: 6;
-    --hem-io-lines: 4;
+    --hem-io-lines: 5;
     --hem-chrome: 27px;
     --hem-values-chrome: 28px;
     --hem-pre-pad: 2px;
@@ -531,7 +631,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
     --hem-col-gap: 4px;
     --hem-note-gap: 0.375rem;
     --hem-k: 335px;
-    --hem-grid-h: min(430px, calc(100dvh - var(--hem-k)));
+    --hem-grid-h: min(454px, calc(100dvh - var(--hem-k)));
     --hem-code-bg: var(--role-text);
     min-width: 0;
     max-width: 1000px;
@@ -556,6 +656,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
   @media (max-height: 700px) {
     .hem {
       --hem-file-lines: 5;
+      --hem-io-lines: 4;
       --hem-chrome: 21px;
       --hem-values-chrome: 22px;
       --hem-pre-pad: 0px;
@@ -564,7 +665,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
       --hem-col-pad: 2px;
       --hem-col-gap: 2px;
       --hem-note-gap: 0;
-      --hem-k: 312px;
+      --hem-k: 308px;
     }
   }
 
@@ -626,12 +727,16 @@ const files = JSON.stringify(steps.map((step) => step.file));
     background: var(--role-surface);
   }
 
+  .hem__col--db {
+    overflow: auto;
+  }
+
   .hem .hem__col-title {
     margin: 0;
     color: var(--role-muted);
     font-size: 0.75rem;
     font-weight: 700;
-    line-height: 1.4;
+    line-height: 1.2;
   }
 
   .hem .hem__label {
@@ -657,7 +762,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
 
   .hem .hem__state {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     gap: 0 8px;
     margin: 0;
     padding: 4px 8px;
@@ -674,6 +779,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
     background: transparent;
     color: var(--role-muted);
     font-weight: 700;
+    white-space: nowrap;
   }
 
   .hem .hem__state dd {
@@ -681,6 +787,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
     padding: 0;
     border: 0;
     font-weight: 600;
+    white-space: nowrap;
   }
 
   .hem__heading {
@@ -777,6 +884,73 @@ const files = JSON.stringify(steps.map((step) => step.file));
     stroke: var(--role-text);
   }
 
+  .hem__layers {
+    display: flex;
+    flex: none;
+    flex-wrap: nowrap;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .hem .hem__layer {
+    display: flex;
+    flex: 0 1 auto;
+    gap: 3px;
+    align-items: baseline;
+    min-width: 0;
+    margin: 0;
+    padding: 0 3px;
+    overflow: hidden;
+    border: 1px solid var(--role-border);
+    border-radius: 999px;
+    color: var(--role-muted);
+    font-size: 0.65rem;
+    line-height: 1.4;
+    white-space: nowrap;
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+  }
+
+  .hem__layer-name {
+    flex: none;
+    font-weight: 700;
+  }
+
+  .hem__layer-path {
+    min-width: 0;
+    overflow: hidden;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    text-overflow: ellipsis;
+  }
+
+  .hem .hem__layer.is-lit {
+    border-color: var(--role-accent);
+    background: color-mix(in srgb, var(--role-accent) 22%, var(--role-surface));
+    color: var(--role-text);
+  }
+
+  .hem__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    height: 100%;
+    margin: 0;
+    padding: 0 12px;
+    border: 1px dashed var(--role-border);
+    border-radius: 6px;
+    color: var(--role-text);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.5;
+    text-align: center;
+  }
+
+  .hem .hem__empty[hidden] {
+    display: none;
+  }
+
   .hem__files {
     flex: none;
     height: calc(var(--hem-file-lines) * var(--hem-lineh) + var(--hem-chrome));
@@ -830,9 +1004,9 @@ const files = JSON.stringify(steps.map((step) => step.file));
 
   .hem__io {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-columns: auto auto auto;
     align-items: start;
-    gap: 6px;
+    gap: 4px;
   }
 
   .hem .hem__io--single {
@@ -841,6 +1015,19 @@ const files = JSON.stringify(steps.map((step) => step.file));
 
   .hem__io-cell {
     min-width: 0;
+  }
+
+  .hem .hem__warn {
+    display: inline-block;
+    margin: 4px 0 0;
+    padding: 1px 8px;
+    border: 1px solid var(--role-negative);
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--role-negative) 14%, var(--role-surface));
+    color: var(--role-negative);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.5;
   }
 
   .hem__flow {
@@ -854,6 +1041,10 @@ const files = JSON.stringify(steps.map((step) => step.file));
 
   .hem .is-off {
     visibility: hidden;
+  }
+
+  .hem .is-gone {
+    display: none;
   }
 
   .hem__block[hidden] {
@@ -924,14 +1115,14 @@ const files = JSON.stringify(steps.map((step) => step.file));
   .hem__table {
     flex: 1;
     min-width: 0;
-    padding: 6px 8px;
+    padding: 4px 8px;
     border: 1px solid var(--role-border);
     border-radius: 6px;
     background: var(--role-bg);
   }
 
   .hem .hem__table h6 {
-    margin: 0 0 4px;
+    margin: 0 0 2px;
     color: var(--role-text);
     font-size: 0.75rem;
     line-height: 1.4;
@@ -939,7 +1130,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
 
   .hem .hem__lines {
     display: grid;
-    gap: 4px;
+    gap: 2px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -947,7 +1138,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
 
   .hem .hem__lines li {
     margin: 0;
-    padding: 2px;
+    padding: 1px 2px;
     border-radius: 4px;
     background: var(--role-surface);
     transition: background-color 0.3s;
@@ -957,13 +1148,42 @@ const files = JSON.stringify(steps.map((step) => step.file));
     grid-area: 1 / 1;
   }
 
+  .hem .hem__lines li[data-slot="4"] {
+    grid-area: 4 / 1;
+  }
+
+  .hem .hem__lines li.hem__nested {
+    margin-left: 12px;
+    padding-block: 0;
+  }
+
+  .hem .hem__lines li.hem__nested > :global(code) {
+    padding-block: 0;
+  }
+
+  .hem .hem__lines li.hem__new {
+    box-shadow: inset 3px 0 0 var(--role-accent);
+  }
+
+  .hem .hem__lines li.hem__pii {
+    outline: 2px solid var(--role-negative);
+    outline-offset: -2px;
+  }
+
+  .hem .hem__lines li.hem__fold-note {
+    background: transparent;
+    color: var(--role-muted);
+    font-size: 0.7rem;
+    line-height: 1.4;
+  }
+
   .hem .hem__lines li.is-focus {
     background: color-mix(in srgb, var(--role-accent) 22%, var(--role-surface));
   }
 
   .hem .hem__lines li > :global(code) {
     display: block;
-    padding: 2px 6px;
+    padding: 1px 6px;
     border-radius: 3px;
     background: var(--hem-code-bg) !important;
     font-size: var(--hem-fs);
@@ -1058,14 +1278,32 @@ const files = JSON.stringify(steps.map((step) => step.file));
     }
   }
 
+  @container hem (max-width: 700px) {
+    .hem__layer-path {
+      display: none;
+    }
+  }
+
   @container hem (min-width: 900px) {
     .hem__grid {
-      grid-template-columns: 200px minmax(0, 1fr) 216px;
+      grid-template-columns: 170px minmax(0, 1fr) 290px;
       height: var(--hem-grid-h);
     }
 
     .hem__frames-static {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hem__cursor,
+    .hem button.hem__start,
+    .hem button.hem__start.is-attention,
+    .hem .hem__block :global(.line),
+    .hem .hem__lines li,
+    .hem .is-flash {
+      transition: none;
+      animation: none;
     }
   }
 </style>

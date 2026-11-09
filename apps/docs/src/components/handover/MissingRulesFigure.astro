@@ -3,6 +3,7 @@ import { Code } from "astro:components";
 import repositorySource from "../../../../../examples/session-00/src/adaptor/secondary/sqlite/appointmentRepository.ts?raw";
 import appointmentSource from "../../../../../examples/session-00/src/domain/appointment/appointment.ts?raw";
 import { lineLabelOf } from "../../sessions/source-quotes";
+import { keyedTransformer } from "../code-cache-key";
 import StepControls from "../stepper/StepControls.astro";
 
 const fail = (message: string): never => {
@@ -118,11 +119,11 @@ const captions = [
               code={block.code}
               lang="ts"
               transformers={[
-                {
+                keyedTransformer("missing-rules-figure", {
                   line(node, line) {
                     if (line === codes.find((entry) => entry.code === this.source)?.highlight) this.addClassToHast(node, "is-hl");
                   },
-                },
+                }),
               ]}
             />
           </figure>

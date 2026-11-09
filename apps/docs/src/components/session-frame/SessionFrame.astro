@@ -30,6 +30,7 @@ if (entry === undefined) {
 const { page, previous, next, later, position } = entry;
 const sessionTitle =
   sessionNavigationItems.find(({ slug }) => slug === sessionSlug)?.title ?? "";
+const hasGuardExercise = page.kind === "exercise" || page.slug === "peer-review";
 const role = splitPageRole(page.role);
 const sequence = sessionSlug === "final" ? "Final" : `S${sessionSlug.slice(0, 2)}`;
 const isOtherSession = (href: string) => !href.startsWith(`/sessions/${sessionSlug}/`);
@@ -43,9 +44,21 @@ const progress = `${((sameKind.indexOf(page) + 1) / sameKind.length) * 100}%`;
   title={`${page.title} | ${sessionTitle} | FP with TypeScript`}
   description={description}
 >
+  <script is:inline slot="head">
+    (() => {
+      const root = document.documentElement;
+      root.dataset.contentPending = "";
+      const reveal = () => delete root.dataset.contentPending;
+      setTimeout(reveal, 3000);
+      document.addEventListener("DOMContentLoaded", () => {
+        requestAnimationFrame(() => requestAnimationFrame(reveal));
+      });
+    })();
+  </script>
   <div
     class:list={["case-file", "case-file--session", "session-frame", { "session-frame--wide": fullWidth }]}
     data-session={sessionSlug}
+    data-guard-page={hasGuardExercise ? "true" : "false"}
   >
     <header class="session-frame__bar">
       <a class="session-frame__home" href="/">ホーム</a>

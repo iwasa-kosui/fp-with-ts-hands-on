@@ -296,7 +296,7 @@ describe("GuardExercise", () => {
     await settle();
   });
 
-  it("puts the guide in a closed details under the table once there is a result", async () => {
+  it("puts the guide in a closed details above the table once there is a result", async () => {
     const { host } = await mountExercise({
       guide: { title: "案内の題名", steps: ["手順Aです。", "手順Bです。"] },
     });
@@ -318,14 +318,14 @@ describe("GuardExercise", () => {
     expect(
       host.querySelector(".guard-exercise__table-area")?.compareDocumentPosition(guideDetails!) ??
         0,
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    ).toBe(Node.DOCUMENT_POSITION_PRECEDING);
   });
 
   it("keeps the table terms inside a details element while the table is rendered", async () => {
     const { host } = await mountExercise();
     await click(action(host, "run-guard"));
 
-    const terms = host.querySelector("details");
+    const terms = host.querySelector<HTMLDetailsElement>(".guard-exercise__terms");
     expect(terms?.open).toBe(false);
     expect(terms?.querySelector("summary")).not.toBeNull();
     expect(terms?.textContent?.length ?? 0).toBeGreaterThan(
@@ -344,7 +344,7 @@ describe("GuardExercise", () => {
     try {
       const { host } = await mountExercise();
       await click(action(host, "run-guard"));
-      const terms = host.querySelector("details")!;
+      const terms = host.querySelector<HTMLDetailsElement>(".guard-exercise__terms")!;
 
       await act(async () => {
         terms.dispatchEvent(new Event("toggle"));
@@ -1159,6 +1159,33 @@ describe("GuardExercise", () => {
       expect(session.dispose).not.toHaveBeenCalled();
       expect(onStart).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it("opens the collapsed terminal once when the terminal fails, so the retry button is visible", async () => {
+    const { host } = await mountExercise({
+      onStart: async () => {
+        throw new Error("boom");
+      },
+    });
+    const terminal = host.querySelector<HTMLElement>(".guard-exercise__terminal")!;
+    expect(terminal.hidden).toBe(true);
+
+    await click(action(host, "run-guard"));
+
+    expect(host.querySelector(".code-explorer__terminal")?.getAttribute("data-state")).toBe(
+      "failed",
+    );
+    expect(terminal.hidden).toBe(false);
+    expect(action(host, "toggle-terminal")?.getAttribute("aria-expanded")).toBe("true");
+    expect(action(host, "retry-terminal")).not.toBeNull();
+
+    await click(action(host, "toggle-terminal"));
+    await settle();
+
+    expect(host.querySelector(".code-explorer__terminal")?.getAttribute("data-state")).toBe(
+      "failed",
+    );
+    expect(terminal.hidden).toBe(true);
   });
 
   it("keeps the terminal mounted while it is collapsed", async () => {
