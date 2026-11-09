@@ -9,11 +9,11 @@ export default {
       subject: "statusLabel",
       title: "Paid の case を消しても、default の assertNever が残っている",
       allow: ["lint", "tests"],
-      hint: "この変更は型検査も見つけます。この演習では、自分で足した仕組みでも検出できるかを確かめます。",
+      hint: "この変更は型検査でも検出されます。この演習では、自分で追加した仕組みでも検出できるかを確認します。",
       behavior: {
         input: { text: "会計済みの予約の表示名を求める" },
-        expected: { text: "「会計済み」と出る" },
-        actual: { text: "例外で止まる" },
+        expected: { text: "「会計済み」と表示される" },
+        actual: { text: "例外で中断する" },
       },
     },
     {
@@ -22,24 +22,24 @@ export default {
       subject: "statusLabel",
       title: "Paid の case を消し、default が「不明」を返す",
       allow: ["lint", "tests"],
-      hint: "「default が足し忘れを隠す」のページで見た問題と同じ形です。",
+      hint: "「default が追加漏れの検出を妨げる原因」のページで見た問題と同じ形です。",
       behavior: {
         input: { text: "会計済みの予約の表示名を求める" },
-        expected: { text: "「会計済み」と出る" },
-        actual: { text: "「不明」と出る" },
+        expected: { text: "「会計済み」と表示される" },
+        actual: { text: "「不明」と表示される" },
       },
     },
     {
       id: "B3-added-state-default",
       kind: "bad",
       subject: "statusLabel",
-      title: "7つ目の状態を足したのに、表示名を書いていない",
+      title: "7つ目の状態を追加したが、表示名を実装していない",
       allow: ["lint"],
-      hint: "状態が増えたのに、switch が追いついていないことを確かめます。",
+      hint: "状態が増えたが、switch が対応していないことを確認します。",
       behavior: {
         input: { text: "NoShow の予約の表示名を求める" },
-        expected: { text: "NoShow の表示名が出る" },
-        actual: { text: "「不明」と出る" },
+        expected: { text: "NoShow の表示名が表示される" },
+        actual: { text: "「不明」と表示される" },
       },
     },
     {
@@ -48,11 +48,11 @@ export default {
       subject: "statusLabel",
       title: "引数の kind が string に戻り、知らない状態を渡せる",
       allow: ["types"],
-      hint: "引数の型が広がっていないかを確かめます。",
+      hint: "引数の型が広がっていないかを確認します。",
       behavior: {
-        input: { text: '表示名の関数に "NoSuchState" を渡すコードを書く' },
+        input: { text: '表示名の関数に "NoSuchState" を渡すコードを実装する' },
         expected: { text: "型検査でエラー" },
-        actual: { text: "型検査を通り「不明」と出る" },
+        actual: { text: "型検査を通過し「不明」と表示される" },
       },
     },
     {
@@ -63,7 +63,7 @@ export default {
       stage: 2,
       required: false,
       allow: ["lint"],
-      hint: "toStatusLabel だけでなく、同じファイルの別の関数でも検出できるかを確かめます。",
+      hint: "toStatusLabel だけでなく、同じファイルの別の関数でも検出できるかを確認します。",
       behavior: {
         input: { text: "キャンセルの予約を toStatusTone に渡す" },
         expected: { text: "Canceled の case を通る" },
@@ -78,11 +78,11 @@ export default {
       stage: 2,
       required: false,
       allow: ["tests"],
-      hint: "分岐の結果を実行して確かめます。",
+      hint: "分岐の結果を実行して確認します。",
       behavior: {
         input: { text: "会計済みの予約の表示名を求める" },
-        expected: { text: "「会計済み」と出る" },
-        actual: { text: "「不明」と出る" },
+        expected: { text: "「会計済み」と表示される" },
+        actual: { text: "「不明」と表示される" },
       },
     },
     {
@@ -94,7 +94,7 @@ export default {
       required: false,
       allow: ["types", "lint", "tests"],
       unchangedFrom: "G1-assert-never",
-      hint: "結果の表で、この行が「すり抜け」のままなら、隣の人の仕組みをすり抜けています。",
+      hint: "結果の表で、この行が「すり抜け」と表示されていれば、隣の人の仕組みでは検出されていません。",
     },
     {
       id: "G1-assert-never",
@@ -106,7 +106,7 @@ export default {
       id: "G2-no-default",
       kind: "good",
       subject: "statusLabel",
-      title: "6つの case をすべて書き、default を書かない正しい switch",
+      title: "6つの case をすべて実装し、default を実装しない正しい switch",
     },
     {
       id: "G3-open-string-default",

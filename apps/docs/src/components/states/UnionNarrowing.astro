@@ -55,14 +55,14 @@ const frames: readonly Readonly<{
   {
     lit: [6],
     type: "Appointment",
-    rows: [...common, { name: "veterinarianId", usable: false, note: "使えない。どちらの型か分からない" }],
+    rows: [...common, { name: "veterinarianId", usable: false, note: "使えない。どちらの型か判別できない" }],
     caption:
-      "Appointment は、CheckedIn か InExamination のどちらかです。この時点では、どちらの型か分からないので、両方が持つ項目だけを使えます。",
+      "Appointment は、CheckedIn か InExamination のどちらかです。この時点では、どちらの型か判別できないため、両方が持つ項目だけを使えます。",
   },
   {
     lit: [9],
     type: "Appointment",
-    rows: [...common, { name: "veterinarianId", usable: false, note: "使えない。どちらの型か分からない" }],
+    rows: [...common, { name: "veterinarianId", usable: false, note: "使えない。どちらの型か判別できない" }],
     caption: "switch は、kind の値で場合分けします。switch の行そのものでは、まだ型は絞られていません。",
   },
   {
@@ -77,7 +77,7 @@ const frames: readonly Readonly<{
     type: "InExamination",
     rows: [...common, { name: "veterinarianId", usable: true, note: "使える" }],
     caption:
-      "case \"InExamination\" の中では、InExamination に絞られるので、veterinarianId を使えます。kind を調べるだけで、使える項目が変わります。",
+      "case \"InExamination\" の中では、InExamination に絞られるので、veterinarianId を使えます。kind を判定するだけで、使える項目が変わります。",
   },
 ];
 ---

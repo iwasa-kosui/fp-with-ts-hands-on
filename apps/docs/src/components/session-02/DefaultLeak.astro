@@ -32,8 +32,8 @@ const cases = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Pa
   class="leak"
   data-default-leak
   data-lit={JSON.stringify(lit)}
-  data-note="◀ NoShow がここへ届く"
-  aria-label="NoShow が case に当たらず default へ流れる様子"
+  data-note="◀ NoShow がここへ渡される"
+  aria-label="NoShow が case に一致せず default へ流れる様子"
 >
   <StepControls />
 
@@ -58,7 +58,7 @@ const cases = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Pa
             <li class="leak__tile--new" data-from="2"><code>NoShow</code><small>7枚目 ×</small></li>
           </ul>
         </div>
-        <p class="leak__arrow" data-from="1" aria-hidden="true">▼ どの case にも当たらない値</p>
+        <p class="leak__arrow" data-from="1" aria-hidden="true">▼ どの case にも一致しない値</p>
         <div class="leak__bottom" data-from="1">
           <p class="leak__box leak__box--default"><code>default</code><small>「不明」を返す</small></p>
           <span class="leak__arrow-right" aria-hidden="true">→</span>
@@ -73,13 +73,13 @@ const cases = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Pa
       <div aria-live="polite">
         <ol class="leak__frames">
           <li data-frame>
-            <p class="leak__caption">1つ目のステップ: 引数の型は <code>{"Readonly<{ kind: string }>"}</code> なので、<code>kind</code> がどんな文字列でも受け取ります。そのため <code>NoShow</code> の予約も型検査を通ります。</p>
+            <p class="leak__caption">1つ目のステップ: 引数の型は <code>{"Readonly<{ kind: string }>"}</code> であるため、<code>kind</code> がどんな文字列でも受け取ります。そのため <code>NoShow</code> の予約も型検査を通過します。</p>
           </li>
           <li data-frame>
-            <p class="leak__caption">2つ目のステップ: <code>default</code> が「不明」を返すので、<code>case</code> のない状態もそのまま画面まで届きます。</p>
+            <p class="leak__caption">2つ目のステップ: <code>default</code> が「不明」を返すため、<code>case</code> のない状態もそのまま「不明」として画面に表示されます。</p>
           </li>
           <li data-frame>
-            <p class="leak__caption"><code>NoShow</code> を足しても、型検査は通ります。7枚目の札は <code>case</code> に当たらず <code>default</code> へ流れ、画面に「不明」と出ます。</p>
+            <p class="leak__caption"><code>NoShow</code> を追加しても、型検査は通ります。7枚目の札は <code>case</code> に一致せず <code>default</code> へ流れ、画面に「不明」と表示されます。</p>
           </li>
         </ol>
       </div>

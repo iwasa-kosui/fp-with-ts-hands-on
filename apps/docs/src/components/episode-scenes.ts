@@ -372,7 +372,7 @@ export const episodeScenes = {
     art: handoverPii,
   },
   "01-state-transitions": {
-    label: "会計を終えた犬の Mugi がドアから帰っていく。受付の大きな画面の中では、同じ Mugi の予約が診察中に戻って表示され、2枚目の請求書まで用意されている",
+    label: "会計を終えた犬の Mugi がドアから帰っていく。受付の大きな画面の中では、同じ Mugi の予約が診察中へ戻って表示され、2枚目の請求書まで用意されている",
     art: stateTransitions,
   },
   "02-adt-and-exhaustiveness": {

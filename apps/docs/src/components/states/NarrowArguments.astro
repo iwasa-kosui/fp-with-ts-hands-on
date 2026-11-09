@@ -57,7 +57,7 @@ const frames: readonly Readonly<{
     input: "paid",
     output: { type: "exception" },
     caption:
-      "会計済みの予約を渡しても、型検査は報告しません。実行すると requireKind が例外を投げます。誤りに気づけるのは、この呼び出しを実行したときだけです。",
+      "会計済みの予約を渡しても、型検査は報告しません。実行すると requireKind が例外を投げます。誤りを検出できるのは、この呼び出しを実行した時点だけです。",
   },
   {
     version: "after",
@@ -71,7 +71,7 @@ const frames: readonly Readonly<{
     input: "paid",
     output: { type: "typeError" },
     caption:
-      "会計済みの予約を渡すと、実行する前の型検査が報告します。この呼び出しは、型検査の時点で誤りだと分かります。",
+      "会計済みの予約を渡すと、実行前の型検査が報告します。この呼び出しの誤りは、型検査の時点で判明します。",
   },
 ];
 ---
@@ -139,7 +139,7 @@ const frames: readonly Readonly<{
           <p class="st-caption">{frame.caption}</p>
 
           <p class="na__explain" data-active={frame.version === "after" ? "true" : "false"} aria-hidden={frame.version === "after" ? undefined : "true"}>
-            <code>as const satisfies InExamination</code> は、2 つの指定です。<code>as const</code> は、<code>"InExamination"</code> を string に広げず、その文字列のまま残します。<code>satisfies InExamination</code> は、戻す値が <code>InExamination</code> の形を満たすかを型検査で確かめます。<code>as</code> と違い、満たさなければ型検査が報告します。
+            <code>as const satisfies InExamination</code> は、2 つの指定です。<code>as const</code> は、<code>"InExamination"</code> を string に広げず、その文字列のまま残します。<code>satisfies InExamination</code> は、戻す値が <code>InExamination</code> の形を満たすかを型検査で検証します。<code>as</code> と違い、満たさなければ型検査が報告します。
           </p>
         </li>
       );

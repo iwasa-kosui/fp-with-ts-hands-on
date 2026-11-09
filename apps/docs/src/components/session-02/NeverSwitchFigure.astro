@@ -50,7 +50,7 @@ const isNewCard = (frameIndex: number, name: string) =>
                         </li>
                       ))}
                     </ul>
-                    {empty && <p class="nv__empty"><span aria-hidden="true">∅</span> 空っぽ</p>}
+                    {empty && <p class="nv__empty"><span aria-hidden="true">∅</span> 空</p>}
                     <p class="nv__count">
                       {remainingOf(frame).length}個
                       {frame.showNever && <> = <code>never</code></>}

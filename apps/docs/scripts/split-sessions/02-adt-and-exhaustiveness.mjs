@@ -1,15 +1,15 @@
 const expectedPages = [
-  ["", "状態ごとの表示は別の関数が決める", "background", "brief", 0.5],
-  ["no-show", "NoShow を足した翌朝、画面に「不明」が出た", "problem", "brief", 0.5],
-  ["current-code", "default が足し忘れを隠す", "problem", "brief", 1],
-  ["adt", "候補を数え切れる型", "knowledge", "teach", 2.5],
+  ["", "状態ごとの表示を担当する関数", "background", "brief", 0.5],
+  ["no-show", "NoShow の追加後に画面へ表示された「不明」", "problem", "brief", 0.5],
+  ["current-code", "default が追加漏れの検出を妨げる原因", "problem", "brief", 1],
+  ["adt", "値の候補を数え上げられる型", "knowledge", "teach", 2.5],
   ["never", "候補が0個の型", "knowledge", "teach", 2],
-  ["assert-never", "足し忘れを型検査で見つける", "solution", "teach", 1.5],
-  ["fail-fast", "すり抜けた値は見つけた場所で止める", "solution", "teach", 1],
-  ["checks", "assertNever に直したコードを、次の変更からどう守るか", "solution", "teach", 1],
-  ["exercise", "演習: 悪い変更を検出する仕組みを足す", "solution", "exercise", 7],
+  ["assert-never", "型検査による追加漏れの検出", "solution", "teach", 1.5],
+  ["fail-fast", "型検査を通過した不正な値の検出と中断", "solution", "teach", 1],
+  ["checks", "assertNever に修正したコードを次の変更から守る仕組み", "solution", "teach", 1],
+  ["exercise", "演習: 誤った変更を検出する仕組みを追加する", "solution", "exercise", 7],
   ["peer-review", "相互レビュー", "solution", "review", 2],
-  ["guard", "自分の業務で、どう防ぐか", "work", "review", 1],
+  ["guard", "担当業務での防止策", "work", "review", 1],
 ];
 
 export default {

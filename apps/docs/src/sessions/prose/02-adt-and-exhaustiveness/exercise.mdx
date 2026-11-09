@@ -10,24 +10,24 @@ export const projectFiles = projectFilesForSnapshot(guardExercise.snapshot);
 export const workspace = guardExerciseWorkspaceFor(
   guardExercise,
   projectFiles,
-  "悪い変更を検出する仕組みを足す演習の作業場所です。",
+  "誤った変更を検出する仕組みを追加する演習の作業場所です。",
 );
 export const guide = {
-  title: "この演習でやること",
+  title: "この演習の手順",
   criteria:
-    "必須の悪い変更4件を、自分で足した仕組みで検出し、正しいコードに誤検知を出さないと合格です。修正前のコードは examples/session-02、この演習は修正後の examples/session-02-solution です。",
+    "必須の誤った変更4件を、自分で追加した仕組みで検出し、正しいコードに誤検知を出さないと合格です。修正前のコードは examples/session-02、この演習は修正後の examples/session-02-solution です。",
   steps: [
     {
       text: [
-        "左の一覧から悪い変更を1件選び、仕組みを足します。選び方は前のページ「",
+        "左の一覧から誤った変更を1件選び、仕組みを追加します。選び方は前のページ「",
         {
-          text: "assertNever に直したコードを、次の変更からどう守るか",
+          text: "assertNever に修正したコードを次の変更から守る仕組み",
           href: sessionPageHref("02-adt-and-exhaustiveness", "checks"),
         },
-        "」にあります。必須の4件は Linter の規則と型のテストで足ります。テストの追加は任意です。場所は次です。",
+        "」にあります。必須の4件は Linter のルールと型のテストで対応できます。テストの追加は任意です。追加する場所は次のとおりです。",
       ],
       items: [
-        "規則: eslint.config.mjs の rules",
+        "ルール: eslint.config.mjs の rules",
         "型のテスト: exercises/guard/mine/ の statusLabel.type-test.ts",
         "テスト: exercises/guard/mine/ の statusLabel.test.ts",
       ],
@@ -36,12 +36,12 @@ export const guide = {
       text: "知識は次の3つです。",
       items: [
         "Appointment は6状態の union。",
-        "「不明」を返す default は足し忘れを隠す。",
-        "規則は union の switch の足し忘れを、型のテストは引数の型の広がりを見る。",
+        "「不明」を返す default は追加漏れを隠す。",
+        "Linter のルールは union の switch の追加漏れを、型のテストは引数の型の広がりを検証する。",
       ],
     },
-    "「検出を確かめる」を押すと、見つけた悪い変更は「検出」、見つけられない変更は「すり抜け」と表に出ます。「誤検知」は、正しいコードを検出してしまうことです。",
-    "この演習が確かめないことは、分岐の中身が業務として正しいかどうかです。AI を使う場合も、表の結果を自分で読んで判断します。",
+    "「検出を確かめる」を押すと、検出できた誤った変更は「検出」、検出できない変更は「すり抜け」と表に表示されます。「誤検知」は、正しいコードを誤って検出することです。",
+    "この演習が検証しないことは、分岐の中身が業務として正しいかどうかです。AI を使う場合も、表の結果を自分で確認して判断します。",
     "解答の例は、時間内に進められなくなったときに開きます。",
   ],
 };

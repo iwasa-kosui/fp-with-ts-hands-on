@@ -18,7 +18,7 @@ export type SessionOverview = Readonly<{
 export type SessionSlug = (typeof sessionNavigationItems)[number]["slug"];
 
 export const sessionOverviews: Readonly<Record<Exclude<SessionSlug, "00-system-handover">, SessionOverview>> = {
-  "01-state-transitions": { rule: "会計済みの予約は、診察に戻せない", incident: "課題1" },
+  "01-state-transitions": { rule: "会計済みの予約は、診察中の状態へ戻さない", incident: "課題1" },
   "02-adt-and-exhaustiveness": { rule: "予約の状態を増やしたら、すべての表示を対応させる" },
   "03-boundaries-and-pii": {
     rule: "外から届く値は確かめてから使う。調査に要らない連絡先は監査記録に残さない",
