@@ -1,5 +1,8 @@
 import { Code } from "astro:components";
 import { cancelSource } from "../../pages/05-business-events-and-workflows-content";
+import { lineLabelOf } from "../../source-quotes";
+
+export const cancelLabel = lineLabelOf("session-05-solution", "src/domain/appointment/appointment.ts", "export const cancel = (", "});");
 
 <div class="session-split">
   <div>
@@ -7,8 +10,8 @@ import { cancelSource } from "../../pages/05-business-events-and-workflows-conte
     <p>副作用がなく、同じ入力から必ず同じ結果を返す関数を<strong>純粋関数</strong>と呼びます（<a href="/sessions/01-state-transitions/pure-functions/">S01 の説明</a>）。右の <code>cancel</code> は、予約、キャンセル理由、時刻を受け取り、値だけで <code>Canceled</code> の予約を決めます。来院理由は <code>reason</code> に残り、キャンセル理由は <code>cancellationReason</code> に入ります。</p>
     <p>完成形の <code>Appointment.cancel</code> は、<code>petId</code> と <code>ownerId</code> も残し、時刻とイベント ID を <code>createEvent</code> から受け取ります。</p>
   </div>
-  <figure class="code-block" data-teaching-example>
-    <figcaption>判定の関数 cancel（examples/session-05-solution の簡略版）</figcaption>
+  <figure class="code-block">
+    <figcaption>{cancelLabel}</figcaption>
     <Code code={cancelSource} lang="ts" />
   </figure>
 </div>

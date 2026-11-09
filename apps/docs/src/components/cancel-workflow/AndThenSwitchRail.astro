@@ -2,10 +2,12 @@
 import { Code } from "astro:components";
 import startExaminationSource from "../../../../../examples/session-04-solution/src/useCase/startExamination.ts?raw";
 import { quote } from "../../sessions/reference-quote";
+import { lineLabelOf } from "../../sessions/source-quotes";
 import StepControls from "../stepper/StepControls.astro";
 import "../states/states.css";
 
 const code = quote(startExaminationSource, 29, 44, "ensureAppointmentFound(");
+const codeLabel = lineLabelOf("session-04-solution", "src/useCase/startExamination.ts", "    ensureAppointmentFound(", "      });");
 const codeLines = code.split("\n");
 const indexOf = (needle: string): number => {
   const index = codeLines.findIndex((line) => line.includes(needle));
@@ -99,7 +101,10 @@ const markOf = (tone: Row["tone"]): string => (tone === "positive" ? "✓" : ton
 ---
 
 <figure class="st-fig rail" data-and-then-rail aria-label="S04 の診察開始のコードを、成功と失敗の2本のレールに重ねる図">
-  <StepControls />
+  <div class="rail__head">
+    <StepControls />
+    <p class="rail__source">図のコード: <code>{codeLabel}</code></p>
+  </div>
 
   <ol class="st-stack">
     {frames.map((frame, frameIndex) => (
@@ -170,6 +175,23 @@ const markOf = (tone: Row["tone"]): string => (tone === "positive" ? "✓" : ton
 </script>
 
 <style>
+  .rail__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0 1rem;
+  }
+
+  .rail__source {
+    margin: 0;
+    padding-block-start: 0.5rem;
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
   .rail__split {
     display: grid;
     grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);

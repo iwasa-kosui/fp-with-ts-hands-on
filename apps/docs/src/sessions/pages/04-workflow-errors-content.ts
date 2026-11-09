@@ -1,6 +1,7 @@
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import type { SessionWorkspace } from "../../code-explorer/types";
 import { quote } from "../reference-quote";
+import { lineLabelOf } from "../source-quotes";
 import type { SessionSummary } from "../types";
 import startBeforeErrorsSource from "../../../../../examples/session-04/src/useCase/errors.ts?raw";
 import solutionErrorsSource from "../../../../../examples/session-04-solution/src/useCase/errors.ts?raw";
@@ -190,13 +191,24 @@ type CodeQuote = Readonly<{ path: string; code: string }>;
 
 const joinQuotes = (...parts: readonly string[]): string => parts.join("\n\n");
 
+const rangeOf = (label: string): string => label.slice(label.lastIndexOf(":"));
+const joinedLabel = (first: string, last: string): string =>
+  `${first.slice(0, first.lastIndexOf(":"))}:${rangeOf(first).slice(1).split("-")[0]}-${rangeOf(last).split("-").pop()}`;
+
+const errorsPath = "src/useCase/errors.ts";
+const ensureFoundStart = "export const ensureAppointmentFound = (";
+const ensureFoundEnd = "    : ok(appointment);";
+const importLine = 'import { err, ok, type Result } from "neverthrow";';
+const solutionImportLabel = lineLabelOf("session-04-solution", errorsPath, importLine, importLine);
+const solutionEnsureFoundLabel = lineLabelOf("session-04-solution", errorsPath, ensureFoundStart, ensureFoundEnd);
+
 export const resultCode: Readonly<{ before: CodeQuote; after: CodeQuote }> = {
   before: {
-    path: "examples/session-04/src/useCase/errors.ts",
+    path: lineLabelOf("session-04", errorsPath, ensureFoundStart, "};"),
     code: quote(startBeforeErrorsSource, 4, 13, "export const ensureAppointmentFound"),
   },
   after: {
-    path: "examples/session-04-solution/src/useCase/errors.ts",
+    path: `${solutionImportLabel}（import）と ${rangeOf(solutionEnsureFoundLabel)}（ensureAppointmentFound）`,
     code: joinQuotes(
       quote(solutionErrorsSource, 1, 1, 'import { err, ok, type Result } from "neverthrow"'),
       quote(solutionErrorsSource, 18, 24, "export const ensureAppointmentFound"),
@@ -212,8 +224,22 @@ export const typedErrorsCode: CodeQuote = {
   ),
 };
 
+const routesPath = "src/adaptor/primary/web/routes.ts";
+const assertNeverLabel = lineLabelOf(
+  "session-04-solution",
+  routesPath,
+  "const assertNever = (error: never): never => {",
+  "};",
+);
+const noticeCodeLabel = lineLabelOf(
+  "session-04-solution",
+  routesPath,
+  "const toStartExaminationNoticeCode = (",
+  "};",
+);
+
 export const exhaustiveErrorsCode: CodeQuote = {
-  path: "examples/session-04-solution/src/adaptor/primary/web/routes.ts",
+  path: joinedLabel(assertNeverLabel, noticeCodeLabel),
   code: quote(solutionRoutesSource, 33, 48, "const assertNever"),
 };
 

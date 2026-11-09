@@ -1,29 +1,30 @@
 ---
 import { Code } from "astro:components";
+import { projectFilesForSnapshot } from "../../code-explorer/project-files";
+import { blockOf, lineLabelOf } from "../../sessions/source-quotes";
+
+const transitionsPath = "src/domain/appointment/transitions.ts";
+const firstLine = "export const startExamination = (";
+const lastLine = "  }) as const satisfies InExamination;";
 
 const snippets = {
-  before: `const startExamination = (
+  before: `export const startExamination = (
   appointment: CheckedIn,
   veterinarianId: string,
-): InExamination => ({
-  ...appointment,
-  kind: "InExamination",
-  veterinarianId,
-  examinationStartedAt: new Date().toISOString(),
-});`,
-  after: `const startExamination = (
-  appointment: CheckedIn,
-  veterinarianId: string,
-  examinationStartedAt: string,
-): InExamination => ({
-  ...appointment,
-  kind: "InExamination",
-  veterinarianId,
-  examinationStartedAt,
-});`,
+): InExamination =>
+  ({
+    ...appointment,
+    kind: "InExamination",
+    veterinarianId,
+    examinationStartedAt: new Date().toISOString(),
+  }) as const satisfies InExamination;`,
+  after: blockOf(projectFilesForSnapshot("session-01-solution"), transitionsPath, firstLine, lastLine),
 } as const;
 
+const afterLabel = lineLabelOf("session-01-solution", transitionsPath, firstLine, lastLine);
+
 const versionLabels = { before: "時刻を中で読む書き方", after: "時刻を引数で受け取る書き方", summary: "まとめ" } as const;
+const codeTagLabels = { before: "修正前", after: "修正後" } as const;
 
 type Frame = Readonly<{
   scene: number;
@@ -40,7 +41,7 @@ const frames: readonly Frame[] = [
     caption:
       "時刻を中で読む書き方の startExamination は、関数の中で new Date() を呼んで現在時刻を読みます。時刻は引数に無いので、呼び出し側からは見えません。",
     alt: "入力は予約 CheckedIn と獣医師 ID の2つです。関数 startExamination の箱の中に時計と new Date() の表記があり、「現在時刻を読む」と示しています。出力は InExamination です。",
-    code: { key: "before", lines: [8] },
+    code: { key: "before", lines: [9] },
   },
   {
     scene: 2,
@@ -60,7 +61,7 @@ const frames: readonly Frame[] = [
     version: "after",
     caption: "時刻を引数で受け取る書き方では、時刻を読む仕事が呼び出し側へ移り、関数の中から副作用がなくなります。",
     alt: "時計が関数 startExamination の箱の外へ出て、3つ目の入力「時刻 string」の枠に移っています。入力は予約、獣医師 ID、時刻の3つです。箱の中には「副作用なし」と示しています。",
-    code: { key: "after", lines: [4, 9] },
+    code: { key: "after", lines: [4, 10] },
   },
   {
     scene: 5,
@@ -270,7 +271,7 @@ const playerData = JSON.stringify(
         <p class="pure-function-flow__caption">{frame.caption}</p>
         {frame.code && (
           <figure class="code-block pure-function-flow__code" data-version={frame.code.key} data-lit={JSON.stringify(frame.code.lines.map((line) => line - 1))}>
-            <figcaption><span class="pure-function-flow__tag" data-version={frame.code.key}>{versionLabels[frame.code.key]}</span> <code>startExamination</code>（説明用の短い例）</figcaption>
+            <figcaption><span class="pure-function-flow__tag" data-version={frame.code.key}>{codeTagLabels[frame.code.key]}</span> {frame.code.key === "after" ? <code class="pure-function-flow__path">{afterLabel}</code> : <><code>startExamination</code>（説明用。配布コードにはありません）</>}</figcaption>
             <Code code={snippets[frame.code.key]} lang="ts" defaultColor="dark" wrap={null} />
           </figure>
         )}
@@ -609,6 +610,10 @@ const playerData = JSON.stringify(
   .pure-function-flow__code figcaption code {
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+
+  .pure-function-flow__code figcaption .pure-function-flow__path {
+    font-family: inherit;
   }
 
   .pure-function-flow__code :global(pre) {

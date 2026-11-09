@@ -420,7 +420,26 @@
   font-weight: 700;
 }
 
+.walk--page .sb-pane figcaption {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  padding-block: 0.15rem;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+}
+
+.walk--page .sb-pane figcaption code {
+  overflow-wrap: normal;
+}
+
+.walk--page .sb-role {
+  white-space: nowrap;
+}
+
 .walk--page .sb-pane pre {
+  padding-block: 0.4rem;
   font-size: 0.8125rem;
   line-height: 1.5;
 }

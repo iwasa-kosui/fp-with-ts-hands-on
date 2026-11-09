@@ -1,11 +1,15 @@
 ---
 import { Code } from "astro:components";
+import { lineLabelOf } from "../../sessions/source-quotes";
+import type { ExampleSnapshot } from "../../sessions/types";
 import css from "./store-boundary.css?raw";
 import script from "./store-boundary.js?raw";
+import PathLabel from "./PathLabel.astro";
 import Walkthrough from "./Walkthrough.astro";
 
 type Box = "call" | "impl";
-type Snippet = Readonly<{ box: Box; path: string; code: string }>;
+type Quote = Readonly<{ first: string; last: string }>;
+type Snippet = Readonly<{ box: Box; snapshot: ExampleSnapshot; path: string; quotes: readonly Quote[]; code: string }>;
 type Pane = Readonly<{ pane: string; lines: readonly number[] }>;
 type CardState = "off" | "tx" | "tx-failed" | "tx-gone" | "home" | "home-failed";
 type Tx = "none" | "wait" | "open" | "commit" | "rollback" | "ended";
@@ -31,13 +35,22 @@ const { scene: sceneKey } = Astro.props;
 const snippets: Readonly<Record<string, Snippet>> = {
   "before-call": {
     box: "call",
-    path: "examples/session-06/src/useCase/startExamination.ts",
+    snapshot: "session-06",
+    path: "src/useCase/startExamination.ts",
+    quotes: [
+      { first: "    await deps.stateStore.save(event.aggregateState);", last: "    await deps.eventLog.append(event);" },
+    ],
     code: `await deps.stateStore.save(event.aggregateState);
 await deps.eventLog.append(event);`,
   },
   "before-save": {
     box: "impl",
-    path: "examples/session-06/src/adaptor/secondary/sqlite/appointmentStore.ts",
+    snapshot: "session-06",
+    path: "src/adaptor/secondary/sqlite/appointmentStore.ts",
+    quotes: [
+      { first: "    stateStore: {", last: "    }," },
+      { first: "  const saveState = (", last: "  };" },
+    ],
     code: `stateStore: {
   save: async (appointment) => saveState(database, appointment),
 },
@@ -63,7 +76,12 @@ const saveState = (
   },
   "before-append": {
     box: "impl",
-    path: "examples/session-06/src/adaptor/secondary/sqlite/appointmentStore.ts",
+    snapshot: "session-06",
+    path: "src/adaptor/secondary/sqlite/appointmentStore.ts",
+    quotes: [
+      { first: "    eventLog: {", last: "    }," },
+      { first: "  const appendAudit = (", last: "  };" },
+    ],
     code: `eventLog: {
   append: async (event) => appendAudit(database, event),
 },
@@ -81,12 +99,20 @@ const appendAudit = (
   },
   "after-call": {
     box: "call",
-    path: "examples/session-06-solution/src/useCase/startExamination.ts",
+    snapshot: "session-06-solution",
+    path: "src/useCase/startExamination.ts",
+    quotes: [
+      { first: "      .andThrough(deps.examinationStartedStore.store)", last: "      .andThrough(deps.examinationStartedStore.store)" },
+    ],
     code: `.andThrough(deps.examinationStartedStore.store)`,
   },
   "after-store": {
     box: "impl",
-    path: "examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    snapshot: "session-06-solution",
+    path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    quotes: [
+      { first: "    store: (event) =>", last: "      ).andThen((result) => result)," },
+    ],
     code: `store: (event) =>
   ResultAsync.fromSafePromise(
     Promise.resolve().then(() => storeAtomically(event)),
@@ -94,7 +120,11 @@ const appendAudit = (
   },
   "after-atomic": {
     box: "impl",
-    path: "examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    snapshot: "session-06-solution",
+    path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    quotes: [
+      { first: "  const storeAtomically = (event: ExaminationStarted) =>", last: "    });" },
+    ],
     code: `const storeAtomically = (event: ExaminationStarted) =>
   database.transaction((transaction) => {
     const current = findInTransaction(transaction, event.appointmentId);
@@ -117,7 +147,11 @@ const appendAudit = (
   },
   "after-save": {
     box: "impl",
-    path: "examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    snapshot: "session-06-solution",
+    path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    quotes: [
+      { first: "  const saveState = (", last: "  };" },
+    ],
     code: `const saveState = (
   executor: SqliteExecutor,
   appointment: Appointment,
@@ -139,7 +173,11 @@ const appendAudit = (
   },
   "after-audit": {
     box: "impl",
-    path: "examples/session-06-solution/src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    snapshot: "session-06-solution",
+    path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    quotes: [
+      { first: "  const appendAudit = (", last: "  };" },
+    ],
     code: `const appendAudit = (
   executor: SqliteExecutor,
   event: ExaminationStarted,
@@ -174,7 +212,10 @@ const appointmentRows = [
 ] as const;
 const auditRows = [{ id: "audit", old: false, first: "e-1", second: "ExaminationStarted" }] as const;
 
-const fileName = (path: string) => path.slice(path.lastIndexOf("/") + 1);
+const labelOf = ({ snapshot, path, quotes }: Snippet): string => {
+  const [head, ...rest] = quotes.map(({ first, last }) => lineLabelOf(snapshot, path, first, last));
+  return [head, ...rest.map((label) => label.slice(label.lastIndexOf(":") + 1))].join(", ");
+};
 
 const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: readonly Frame[] }>[] = [
   {
@@ -414,8 +455,10 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
                   <figure class="sb-pane" data-pane={name} data-era={name.startsWith("before") ? "before" : "after"}>
                     <figcaption>
                       <span class={`walk-badge walk-badge--${name.startsWith("before") ? "before" : "after"}`}>{name.startsWith("before") ? "修正前" : "修正後"}</span>
-                      <code>{fileName(snippet.path)}</code>
-                      <span class="sb-role">{box === "call" ? "呼び出し元" : "実装"}</span>
+                      <span class="sb-cap">
+                        <code><PathLabel label={labelOf(snippet)} /></code>
+                        <span class="sb-role">{box === "call" ? "呼び出し元" : "実装"}</span>
+                      </span>
                     </figcaption>
                     <Code code={snippet.code} lang="ts" wrap />
                   </figure>

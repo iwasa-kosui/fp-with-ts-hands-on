@@ -1,5 +1,6 @@
 ---
 import { Code } from "astro:components";
+import { lineLabelOf } from "../../sessions/source-quotes";
 import StepControls from "../stepper/StepControls.astro";
 import "./states.css";
 
@@ -19,6 +20,13 @@ const describe = (appointment: Appointment): string => {
       return appointment.veterinarianId;
   }
 };`;
+
+const unionLabel = lineLabelOf(
+  "session-01",
+  "src/domain/appointment/appointment.ts",
+  "export type Appointment =",
+  "  | Canceled;",
+);
 
 type Row = Readonly<{ name: string; usable: boolean | undefined; note: string }>;
 
@@ -82,7 +90,7 @@ const frames: readonly Readonly<{
       <li data-frame data-lit={JSON.stringify(frame.lit)}>
         <div class="narrow__split">
           <figure class="code-block st-code">
-            <figcaption>説明用の短い例。実物は <code>appointment.ts</code> にあります。</figcaption>
+            <figcaption>説明用の短い例。実物は <code>{unionLabel}</code></figcaption>
             <Code code={code} lang="ts" />
           </figure>
           <div class="narrow__panel">
@@ -132,6 +140,10 @@ const frames: readonly Readonly<{
   .narrow__split :global(.st-code pre) {
     padding-block: 0.125rem;
     line-height: 1.4;
+  }
+
+  .narrow__split :global(.st-code figcaption code) {
+    font-family: inherit;
   }
 
   .narrow :global(.st-caption) {

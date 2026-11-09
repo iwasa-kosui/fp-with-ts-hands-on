@@ -2,7 +2,7 @@
 import { Code } from "astro:components";
 import { clinicFixture } from "../../../../../examples/fixtures/clinic";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
-import { blockOf } from "../../sessions/source-quotes";
+import { blockOf, lineLabelOf } from "../../sessions/source-quotes";
 import StepControls from "../stepper/StepControls.astro";
 
 interface Props {
@@ -47,12 +47,22 @@ const afterCode = dedent(
 const sides = {
   before: {
     label: part === "problem" ? "今のコード" : "修正前",
-    path: `${repositoryPath}:92-96`,
+    path: lineLabelOf(
+      "session-03",
+      repositoryPath,
+      "        payload: {",
+      "        },",
+    ),
     code: beforeCode,
   },
   after: {
     label: "修正後",
-    path: `${auditPayloadPath}:13-19`,
+    path: lineLabelOf(
+      "session-03-solution",
+      auditPayloadPath,
+      "export const toAuditPayload = (",
+      "});",
+    ),
     code: afterCode,
   },
 } as const;
@@ -247,9 +257,11 @@ const litData = JSON.stringify(lit);
     justify-content: flex-start;
     align-items: center;
     padding-block: 0.25rem;
+    row-gap: 0;
   }
 
   .audit-flow__code figcaption code {
+    font-family: inherit;
     font-size: 0.6875rem;
     overflow-wrap: anywhere;
     white-space: normal;
