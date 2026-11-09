@@ -26,8 +26,8 @@ const tags = steps.flatMap((step, index) => ("label" in step ? [{ ...step, at: i
 >
   {!staticView && (
     <div class="bo__controls" data-controls hidden>
-      <button type="button" data-prev disabled>前へ</button>
-      <button type="button" data-next>次へ</button>
+      <button type="button" data-prev disabled>← 前のコマ</button>
+      <button type="button" data-next>次のコマ →</button>
       <span class="bo__progress" data-progress>1 / {steps.length}</span>
     </div>
   )}

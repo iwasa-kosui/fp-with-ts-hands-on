@@ -82,8 +82,13 @@
   display: none;
 }
 
-.fb-stage[data-state="future"] .fb-head {
-  opacity: 0.6;
+.fb-stage[data-state="future"] {
+  border-color: color-mix(in srgb, var(--walk-line) 40%, var(--walk-paper));
+}
+
+.fb-stage[data-state="future"] .fb-num {
+  border-color: color-mix(in srgb, var(--walk-line) 40%, var(--walk-paper));
+  background: color-mix(in srgb, var(--walk-lemon) 40%, var(--walk-paper));
 }
 
 .fb-stage[data-state="current"] {
@@ -123,10 +128,6 @@
     var(--walk-paper) 0 0.5rem,
     color-mix(in srgb, var(--walk-line) 8%, var(--walk-paper)) 0.5rem 1rem
   );
-}
-
-.fb-stage[data-state="skipped"] .fb-head {
-  opacity: 0.75;
 }
 
 .fb-stage[data-state="skipped"] .fb-name {
@@ -307,11 +308,15 @@
   width: 100%;
   box-sizing: border-box;
   padding-inline: 0.6rem;
-  transition: opacity 0.3s, background-color 0.3s;
+  transition: background-color 0.3s;
 }
 
-.fb-impl code[data-has-active] .line:not(.is-active) {
-  opacity: 0.5;
+.fb-impl .line span {
+  transition: color 0.3s;
+}
+
+.fb-impl code[data-has-active] .line:not(.is-active) span {
+  color: #959da5 !important;
 }
 
 .fb-impl .line.is-active {
@@ -371,7 +376,7 @@
   overflow-wrap: anywhere;
 }
 
-@media (min-height: 761px) {
+@media (min-height: 845px) {
   .fb {
     --fb-height: clamp(14rem, calc(100dvh - 27.35rem), 32rem);
   }
@@ -381,9 +386,9 @@
   --fb-height: clamp(13rem, calc(100dvh - 23.9rem), 32rem);
 }
 
-@media (min-height: 761px) {
+@media (min-height: 845px) {
   .fb[data-kind="failures"] {
-    --fb-height: clamp(13rem, calc(100dvh - 25.9rem), 32rem);
+    --fb-height: clamp(13rem, calc(100dvh - 26.8rem), 32rem);
   }
 }
 

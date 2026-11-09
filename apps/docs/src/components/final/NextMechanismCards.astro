@@ -230,8 +230,9 @@ import { whats, wheres } from "./next-mechanism";
   }
 
   .nm__group:disabled .nm__where {
+    border-color: color-mix(in srgb, var(--role-border) 40%, var(--role-surface));
+    background: color-mix(in srgb, var(--role-text) 6%, var(--role-surface));
     cursor: not-allowed;
-    opacity: 0.6;
   }
 
   @media (max-height: 700px) {
