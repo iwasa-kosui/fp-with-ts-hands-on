@@ -11,7 +11,12 @@ import {
 import type { TerminalSession } from "../../code-explorer/runner";
 import type { GuardWorkspaceStore } from "../../code-explorer/workspace-store";
 
-export type GuardRunStep = "starting" | "judging" | "reading";
+export type GuardRunStep =
+  | "starting"
+  | "judging"
+  | "waiting"
+  | "rejudging"
+  | "reading";
 
 export type GuardRunStatus =
   | Readonly<{ kind: "idle" }>
@@ -38,6 +43,24 @@ export type UseGuardRunParams = Readonly<{
 }>;
 
 const limitationSaveDelayMs = 400;
+
+const maxHiddenRetries = 2;
+
+const isHidden = (): boolean => document.visibilityState === "hidden";
+
+const waitUntilVisible = (): Promise<void> =>
+  new Promise((resolve) => {
+    if (!isHidden()) {
+      resolve();
+      return;
+    }
+    const onChange = () => {
+      if (isHidden()) return;
+      document.removeEventListener("visibilitychange", onChange);
+      resolve();
+    };
+    document.addEventListener("visibilitychange", onChange);
+  });
 
 const messageFrom = (error: unknown): string =>
   error instanceof Error ? error.message : "検出を確かめられませんでした。";
@@ -142,38 +165,65 @@ export const useGuardRun = ({
       if (runCommand === undefined || readFile === undefined) {
         throw new Error("この実行環境では検出を確かめられません。");
       }
-      if (mounted.current) setStatus({ kind: "running", step: "judging" });
-      const exitCode = await runCommand(
-        guardCommand.command,
-        guardCommand.args,
-        guardCommandSize,
-      );
-      if (exitCode !== 0 && exitCode !== 1) {
-        throw new Error(
-          `検出の確認が途中で終了しました（終了コード ${exitCode}）。ターミナルを開くと出力を確認できます。`,
-        );
-      }
-      if (mounted.current) setStatus({ kind: "running", step: "reading" });
-      const text = await readFile(guardPaths.result);
-      const parsed = text === undefined ? undefined : parseGuardResult(text);
-      if (parsed === undefined) {
-        throw new Error(
-          "結果を読み出せませんでした。ターミナルを開くと出力を確認できます。",
-        );
-      }
-      const { store: currentStore, slug: currentSlug } = latest.current;
-      void currentStore
-        .saveGuardResult(currentSlug, parsed, Date.now())
-        .catch(() => {
-          if (mounted.current) {
-            setNotice("結果を保存できませんでした。");
+      for (let attempt = 0; ; attempt += 1) {
+        if (mounted.current) {
+          setStatus({
+            kind: "running",
+            step: attempt === 0 ? "judging" : "rejudging",
+          });
+        }
+        let hiddenSeen = isHidden();
+        const onVisibilityChange = () => {
+          if (isHidden()) hiddenSeen = true;
+        };
+        document.addEventListener("visibilitychange", onVisibilityChange);
+        let parsed: GuardResult | undefined;
+        try {
+          const exitCode = await runCommand(
+            guardCommand.command,
+            guardCommand.args,
+            guardCommandSize,
+          );
+          if (exitCode !== 0 && exitCode !== 1) {
+            throw new Error(
+              `検出の確認が途中で終了しました（終了コード ${exitCode}）。ターミナルを開くと出力を確認できます。`,
+            );
           }
-        });
-      if (mounted.current) {
-        hasFreshResult.current = true;
-        setResult(parsed);
-        setSource("fresh");
-        setStatus({ kind: "idle" });
+          if (mounted.current) setStatus({ kind: "running", step: "reading" });
+          const text = await readFile(guardPaths.result);
+          parsed = text === undefined ? undefined : parseGuardResult(text);
+        } finally {
+          document.removeEventListener("visibilitychange", onVisibilityChange);
+        }
+        // 隠れたタブでは WebContainer の処理がほぼ止まるので、その間の時間切れは参加者の誤りとして見せない。
+        const stalled =
+          hiddenSeen && (parsed === undefined || parsed.testsTimedOut === true);
+        if (stalled && attempt < maxHiddenRetries) {
+          if (mounted.current) setStatus({ kind: "running", step: "waiting" });
+          await waitUntilVisible();
+          if (!mounted.current) return;
+          continue;
+        }
+        if (parsed === undefined) {
+          throw new Error(
+            "結果を読み出せませんでした。ターミナルを開くと出力を確認できます。",
+          );
+        }
+        const { store: currentStore, slug: currentSlug } = latest.current;
+        void currentStore
+          .saveGuardResult(currentSlug, parsed, Date.now())
+          .catch(() => {
+            if (mounted.current) {
+              setNotice("結果を保存できませんでした。");
+            }
+          });
+        if (mounted.current) {
+          hasFreshResult.current = true;
+          setResult(parsed);
+          setSource("fresh");
+          setStatus({ kind: "idle" });
+        }
+        return;
       }
     } catch (error: unknown) {
       if (mounted.current) {

@@ -6,7 +6,7 @@ import { GuardConfigError } from "./config.mjs";
 import { verify } from "./verify.mjs";
 
 const usage = "使い方: exercise-guard [verify] [--root <dir>] [--timeout-ms <ミリ秒>]";
-const defaultTimeoutMs = 60_000;
+const defaultTimeoutMs = 120_000;
 const terminateWaitMs = 2000;
 
 /**

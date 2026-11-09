@@ -56,6 +56,7 @@ export type GuardResult = Readonly<{
   notes: readonly string[];
   next: readonly string[];
   durations: GuardDurations;
+  testsTimedOut?: boolean;
 }>;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

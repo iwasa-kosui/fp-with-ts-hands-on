@@ -127,6 +127,7 @@ describe("judge", () => {
     expect(rowOf(result, "B5-any-result").cells.types.state).toBe("hit");
     expect(result.next).toEqual(["合格です。表の行を開いて、この仕組みで検出できないことを書きます。"]);
     expect(result.durations.total).toBeGreaterThan(0);
+    expect(result.testsTimedOut).toBe(false);
   });
 
   it("pass: 未使用の @ts-expect-error の検出は日本語の文言になる", async () => {
@@ -313,6 +314,7 @@ describe("judge", () => {
 
     expect(result.passed).toBe(false);
     expect(result.problems).toContain("テストが 8 秒で終わりませんでした。");
+    expect(result.testsTimedOut).toBe(true);
     expect(result.next).toContain("テストの中に終わらない繰り返しや、待ち続ける処理がないか見直します。");
     expect(pids).toHaveLength(1);
     expect(await Promise.all(pids.map(groupGone))).toEqual([true]);

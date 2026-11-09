@@ -74,6 +74,8 @@ type SessionOptions = Readonly<{
   initialFile?: string;
   exitCode?: number;
   resultText?: string | undefined;
+  runCommand?: () => Promise<number>;
+  readResults?: readonly (string | undefined)[];
   outdatedEdits?: boolean;
   guide?: GuardGuide;
   savedOutput?: string;
@@ -81,17 +83,23 @@ type SessionOptions = Readonly<{
 }>;
 
 const createSession = (options: SessionOptions) => {
+  let reads = 0;
   const session: TerminalSession = {
     writeInput: vi.fn(async () => undefined),
     writeFile: vi.fn(async () => undefined),
     resize: vi.fn(),
     restartShell: vi.fn(async () => undefined),
-    runCommand: vi.fn(async () => options.exitCode ?? 1),
-    readFile: vi.fn(async () =>
-      "resultText" in options
+    runCommand: vi.fn(options.runCommand ?? (async () => options.exitCode ?? 1)),
+    readFile: vi.fn(async () => {
+      if (options.readResults !== undefined) {
+        const index = Math.min(reads, options.readResults.length - 1);
+        reads += 1;
+        return options.readResults[index];
+      }
+      return "resultText" in options
         ? options.resultText
-        : JSON.stringify(sampleGuardResult),
-    ),
+        : JSON.stringify(sampleGuardResult);
+    }),
     dispose: vi.fn(async () => undefined),
   };
   return session;
@@ -210,6 +218,7 @@ describe("GuardExercise", () => {
       for (const root of roots.splice(0)) root.unmount();
     });
     document.body.replaceChildren();
+    Reflect.deleteProperty(document, "visibilityState");
     vi.unstubAllGlobals();
   });
 
@@ -829,6 +838,138 @@ describe("GuardExercise", () => {
     expect(second.host.textContent).toContain(
       "機械では判定しません",
     );
+  });
+
+  describe("when the tab is hidden during a run", () => {
+    const setVisibility = (state: DocumentVisibilityState) => {
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        get: () => state,
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+    };
+    const showTab = () => act(async () => setVisibility("visible"));
+    const hideTabOnRun = () => {
+      const runCommand = vi.fn(async () => {
+        setVisibility("hidden");
+        return 1;
+      });
+      return runCommand;
+    };
+    const timedOut: GuardResult = {
+      ...sampleGuardResult,
+      passed: false,
+      problems: ["テストが 60 秒で終わりませんでした。"],
+      testsTimedOut: true,
+    };
+    const passed: GuardResult = {
+      ...sampleGuardResult,
+      passed: true,
+      rows: sampleGuardResult.rows.map((item) =>
+        item.kind === "bad" ? { ...item, verdict: "detected" } : item,
+      ),
+    };
+    const headlinePassed = (host: HTMLElement) =>
+      host.querySelector(".guard-exercise__headline")?.getAttribute("data-passed");
+    const savedResult = async () =>
+      (await createIndexedDbWorkspaceStore().load(workspace.slug)).view?.guardResult;
+
+    it("neither shows nor saves the timed out result, and judges again once the tab is visible", async () => {
+      const runCommand = hideTabOnRun();
+      const { host } = await mountExercise({
+        runCommand,
+        readResults: [JSON.stringify(timedOut), JSON.stringify(passed)],
+      });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => runCommand.mock.calls.length === 1);
+      await settle();
+      await settle();
+
+      expect(runCommand).toHaveBeenCalledTimes(1);
+      expect(host.querySelector("table")).toBeNull();
+      expect(await savedResult()).toBeUndefined();
+
+      await showTab();
+      await settleUntil(() => host.querySelector("table") !== null);
+
+      expect(runCommand).toHaveBeenCalledTimes(2);
+      expect(headlinePassed(host)).toBe("true");
+      expect((await savedResult())?.passed).toBe(true);
+    });
+
+    it("shows a timed out result as it is while the tab stays visible", async () => {
+      const runCommand = vi.fn(async () => 1);
+      const { host } = await mountExercise({
+        runCommand,
+        readResults: [JSON.stringify(timedOut), JSON.stringify(passed)],
+      });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => host.querySelector("table") !== null);
+
+      expect(runCommand).toHaveBeenCalledTimes(1);
+      expect(headlinePassed(host)).toBe("false");
+    });
+
+    it("judges again when the result file is missing after the tab was hidden", async () => {
+      const runCommand = hideTabOnRun();
+      const { host } = await mountExercise({
+        runCommand,
+        readResults: [undefined, JSON.stringify(passed)],
+      });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => runCommand.mock.calls.length === 1);
+      await settle();
+      await settle();
+
+      expect(runCommand).toHaveBeenCalledTimes(1);
+      expect(host.querySelector("table")).toBeNull();
+
+      await showTab();
+      await settleUntil(() => host.querySelector("table") !== null);
+
+      expect(runCommand).toHaveBeenCalledTimes(2);
+      expect(headlinePassed(host)).toBe("true");
+    });
+
+    it("shows a result that did not time out without judging again", async () => {
+      const runCommand = hideTabOnRun();
+      const { host } = await mountExercise({
+        runCommand,
+        readResults: [JSON.stringify(passed)],
+      });
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => host.querySelector("table") !== null);
+
+      expect(runCommand).toHaveBeenCalledTimes(1);
+      expect(headlinePassed(host)).toBe("true");
+    });
+
+    it("stops after three attempts and shows the last result when it keeps timing out", async () => {
+      const runCommand = hideTabOnRun();
+      const { host } = await mountExercise({
+        runCommand,
+        readResults: [JSON.stringify(timedOut)],
+      });
+
+      await click(action(host, "run-guard"));
+      for (const attempt of [1, 2]) {
+        await settleUntil(() => runCommand.mock.calls.length === attempt);
+        await settle();
+        expect(host.querySelector("table")).toBeNull();
+        await showTab();
+      }
+      await settleUntil(() => host.querySelector("table") !== null);
+      await settle();
+      await settle();
+
+      expect(runCommand).toHaveBeenCalledTimes(3);
+      expect(headlinePassed(host)).toBe("false");
+      expect(action(host, "run-guard")?.disabled).toBe(false);
+    });
   });
 
   it("keeps the terminal mounted while it is collapsed", async () => {

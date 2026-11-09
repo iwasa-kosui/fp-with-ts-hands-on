@@ -9,7 +9,7 @@ import { isInside, toPosix } from "./paths.mjs";
 /** @typedef {Readonly<Record<string, readonly Detection[]>>} ByCase */
 /** @typedef {Readonly<{ byCase: ByCase, collectionErrors: ByCase, incompleteCaseIds: readonly string[] }>} Classified */
 
-export const defaultTestTimeoutMs = 30_000;
+export const defaultTestTimeoutMs = 60_000;
 
 export const vitestSetupName = "vitest.setup.mjs";
 

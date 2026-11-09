@@ -109,7 +109,7 @@ const writeWorkFiles = (workDir, tsconfig, copies) => {
  *   onSpawn: ((pid: number) => void) | undefined,
  *   mineDisplay: (rel: string) => string,
  * }>} input
- * @returns {Promise<Readonly<{ problems: readonly Problem[], evidence: Evidence, collectionErrors: Readonly<Record<string, readonly Detection[]>>, seconds: number }>>}
+ * @returns {Promise<Readonly<{ problems: readonly Problem[], evidence: Evidence, collectionErrors: Readonly<Record<string, readonly Detection[]>>, seconds: number, timedOut?: boolean }>>}
  */
 const runTests = async ({
   root,
@@ -140,7 +140,7 @@ const runTests = async ({
   writeFileSync(configFile, buildVitestConfig({ root, workDir, isolate, baseConfigFile }));
   const exit = await runVitest({ root, vitestFile, configFile, outputFile, timeoutMs, onSpawn });
   if (exit.status === "timeout") {
-    return failure(testsTimeoutProblem(timeoutMs));
+    return { ...failure(testsTimeoutProblem(timeoutMs)), timedOut: true };
   }
   const classified = classifyVitest(readVitestJson(outputFile), { copiesDir, caseDirs, expectedFiles, mineDisplay });
   if (classified === undefined) {
@@ -273,6 +273,7 @@ export const judge = async (options) => {
     builtin: typesClassified?.builtin ?? {},
     collectionErrors: testsRun?.collectionErrors ?? {},
     problems,
+    testsTimedOut: testsRun?.timedOut === true,
     notes: [...plan.notes, ...(lintClassified?.notes ?? [])],
     unchangedIds: findUnchanged(config.cases, caseFiles),
     durations,

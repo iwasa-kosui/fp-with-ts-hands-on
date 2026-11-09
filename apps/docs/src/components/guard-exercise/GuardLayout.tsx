@@ -36,6 +36,8 @@ const phaseOrder = [
 
 const stepLabels: Readonly<Record<Exclude<GuardRunStep, "starting">, string>> = {
   judging: "検出を確かめています。",
+  waiting: "このタブに戻ると、検出を確かめ直します。",
+  rejudging: "タブが隠れていた間に時間切れになったため、確かめ直しています。",
   reading: "結果を読み込んでいます。",
 };
 
@@ -52,7 +54,7 @@ const progressFor = (
   }
   return {
     label: stepLabels[step],
-    value: phaseOrder.length + (step === "judging" ? 1 : 2),
+    value: phaseOrder.length + (step === "reading" ? 2 : 1),
   };
 };
 
