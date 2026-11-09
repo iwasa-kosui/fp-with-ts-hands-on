@@ -1,5 +1,8 @@
 import { Code } from "astro:components";
 import PointCards from "../../../components/workflow-errors/PointCards.astro";
+import { lineLabelOf } from "../../source-quotes";
+
+export const rulesLabel = lineLabelOf("session-04-solution", "eslint.config.mjs", "const rules = {};", "const rules = {};");
 
 export const throwRuleCode = `"no-restricted-syntax": [
   "error",
@@ -40,6 +43,7 @@ export const throwRuleCode = `"no-restricted-syntax": [
 
 <div class="session-split" style={{ gridTemplateColumns: "2.1fr 1fr" }}>
   <figure class="code-block">
+    <figcaption>演習で写す設定です。写し先: <code>{rulesLabel}</code> の {"{}"} の中</figcaption>
     <Code code={throwRuleCode} lang="js" />
   </figure>
   <div>

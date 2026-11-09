@@ -1,6 +1,8 @@
 ---
 import { Code } from "astro:components";
 import StepControls from "../stepper/StepControls.astro";
+import { lineLabelOf } from "../../sessions/source-quotes";
+import PathLabel from "./PathLabel.astro";
 import { quote } from "./quote";
 import "./step-figure.css";
 
@@ -23,6 +25,33 @@ const calcCode = quote(
   "session-06-solution",
   "exercises/guard/cases/G2-date-from-timestamp.ts",
   "occurredAt: new Date(deps.clock.now()).toISOString(),",
+);
+
+const labelOfAll = (labels: readonly string[]): string => {
+  const [head, ...rest] = labels;
+  return [head, ...rest.map((label) => label.slice(label.lastIndexOf(":") + 1))].join(", ");
+};
+const beforeLabel = labelOfAll([
+  lineLabelOf("session-06", useCasePath, "    const occurredAt = new Date().toISOString();", "    const occurredAt = new Date().toISOString();"),
+  lineLabelOf("session-06", useCasePath, "      eventId: EventId.parse(crypto.randomUUID()),", "      eventId: EventId.parse(crypto.randomUUID()),"),
+]);
+const afterLabel = lineLabelOf(
+  "session-06-solution",
+  useCasePath,
+  "  eventId: deps.eventIdGenerator.generate(),",
+  "  occurredAt: deps.clock.now(),",
+);
+const onceLabel = lineLabelOf(
+  "session-06-solution",
+  useCasePath,
+  "    Appointment.startExamination(createEventContext(deps))(",
+  "    );",
+);
+const calcLabel = lineLabelOf(
+  "session-06-solution",
+  "exercises/guard/cases/G2-date-from-timestamp.ts",
+  "  occurredAt: new Date(deps.clock.now()).toISOString(),",
+  "  occurredAt: new Date(deps.clock.now()).toISOString(),",
 );
 
 const lit = JSON.stringify([
@@ -56,20 +85,20 @@ const frames = [
   <div class="sf-stage tic__stage">
     <div class="tic__codes">
       <div class="tic__group" data-group="0">
-        <div class="tic__era"><span class="sf-tag sf-tag--before">修正前</span><code>startExamination.ts</code></div>
+        <div class="tic__era"><span class="sf-tag sf-tag--before">修正前</span><code><PathLabel label={beforeLabel} /></code></div>
         <figure class="sf-code" data-code="beforeTime"><Code code={beforeTime} lang="ts" wrap /></figure>
         <figure class="sf-code" data-code="beforeId"><Code code={beforeId} lang="ts" wrap /></figure>
       </div>
       <div class="tic__group" data-group="1">
-        <div class="tic__era"><span class="sf-tag sf-tag--after">修正後</span><code>startExamination.ts</code></div>
+        <div class="tic__era"><span class="sf-tag sf-tag--after">修正後</span><code><PathLabel label={afterLabel} /></code></div>
         <figure class="sf-code" data-code="after"><Code code={afterContext} lang="ts" wrap /></figure>
       </div>
       <div class="tic__group" data-group="2">
-        <div class="tic__era"><span class="sf-tag sf-tag--after">修正後</span><code>startExamination.ts</code></div>
+        <div class="tic__era"><span class="sf-tag sf-tag--after">修正後</span><code><PathLabel label={onceLabel} /></code></div>
         <figure class="sf-code" data-code="once"><Code code={onceCode} lang="ts" wrap /></figure>
       </div>
       <div class="tic__group" data-group="3">
-        <div class="tic__era"><span class="sf-tag sf-tag--after">修正後</span><code>G2-date-from-timestamp.ts</code></div>
+        <div class="tic__era"><span class="sf-tag sf-tag--after">修正後</span><code><PathLabel label={calcLabel} /></code></div>
         <figure class="sf-code" data-code="calc"><Code code={calcCode} lang="ts" wrap /></figure>
       </div>
     </div>
@@ -181,7 +210,8 @@ const frames = [
   }
 
   .tic__era code {
-    font-size: 0.8125rem;
+    min-width: 0;
+    font-size: 0.75rem;
   }
 
   .tic__view {
