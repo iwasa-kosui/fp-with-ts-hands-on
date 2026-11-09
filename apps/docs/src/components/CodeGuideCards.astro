@@ -6,9 +6,16 @@ import type { ProjectFiles } from "../code-explorer/types";
 interface Props {
   guides: readonly CodeGuide[];
   projectFiles: ProjectFiles;
+  dedent?: boolean;
 }
 
-const { guides, projectFiles } = Astro.props;
+const { guides, projectFiles, dedent = false } = Astro.props;
+const removeIndent = (lines: readonly string[]): string[] => {
+  const indent = Math.min(
+    ...lines.filter((line) => line.trim() !== "").map((line) => line.search(/\S/)),
+  );
+  return lines.map((line) => line.slice(indent));
+};
 const cards = guides.map((guide) => {
   const source = projectFiles[guide.path];
   if (source === undefined) {
@@ -20,7 +27,10 @@ const cards = guides.map((guide) => {
     excerpts: guide.highlights.map(({ startLineNumber, endLineNumber }) => ({
       startLineNumber,
       endLineNumber,
-      source: source.split("\n").slice(startLineNumber - 1, endLineNumber).join("\n"),
+      source: (() => {
+        const lines = source.split("\n").slice(startLineNumber - 1, endLineNumber);
+        return (dedent ? removeIndent(lines) : lines).join("\n");
+      })(),
     })),
   };
 });
