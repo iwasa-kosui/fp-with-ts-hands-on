@@ -42,32 +42,32 @@ type Frame = Readonly<{
 
 const frames: readonly Frame[] = [
   {
-    caption: "1段目は deps です。予約を取得する resolver と、予約を保存する store をまとめた値を受け取ります。",
+    caption: "startExamination は、最初に依存（deps）を受け取る関数です。deps は、予約を取得する resolver と、予約を保存する store をまとめた値です。",
     deps: "focus", input: "dim", body: "dim", sources: "dim", source: "none", wait: false, depsFilled: false, inputFilled: false,
     code: { key: "useCase", keys: ["(deps: Dependencies) =>"] },
   },
   {
-    caption: "deps を渡しても診察は始まらず、input を待つ関数が返ります。2段目が予約ID、獣医師ID、開始時刻を受け取ります。",
+    caption: "deps を渡しても診察は始まらず、入力を受け取る関数が返されます。この関数が、予約ID、獣医師ID、開始時刻を受け取ります。",
     deps: "normal", input: "focus", body: "dim", sources: "dim", source: "none", wait: true, depsFilled: true, inputFilled: false,
     code: { key: "useCase", keys: ["(input: StartExaminationInput): InExamination => {"] },
   },
   {
-    caption: "input を受け取ると本体が動きます。本体は、外部に触れる処理を deps.resolver と deps.store の呼び出しでだけ行います。",
+    caption: "input を受け取ると本体が実行されます。本体は、外部とやり取りする処理を deps.resolver と deps.store の呼び出しでだけ実行します。",
     deps: "normal", input: "normal", body: "focus", sources: "dim", source: "none", wait: false, depsFilled: true, inputFilled: true,
     code: { key: "useCase", keys: ["deps.resolver.resolveById(input.appointmentId),", "deps.store.save(next);"] },
   },
   {
-    caption: "Web ルートは、本物の保存先 store を resolver と store の両方として渡し、続けて依頼の値を渡します。S04 の route は、依頼のたびにこの形で渡します。",
+    caption: "route は、本物の保存先 store を resolver と store の両方として渡し、続けて input を渡します。S04 の route は、依頼のたびにこの形で渡します。",
     deps: "focus", input: "normal", body: "normal", sources: "normal", source: "db", wait: false, depsFilled: true, inputFilled: true,
     code: { key: "route", keys: ["resolver: store,", "store,"] },
   },
   {
-    caption: "テストは、決まった予約を返す resolver と、保存の回数を数える store を渡します。演習では、保存された予約を配列 saved に入れる偽物の Store を使います。",
+    caption: "テストは、固定の予約を返す resolver と、保存の回数を数える store を渡します。演習では、保存された予約を配列 saved に格納するテスト用の Store を使います。",
     deps: "focus", input: "normal", body: "normal", sources: "normal", source: "test", wait: false, depsFilled: true, inputFilled: true,
     code: { key: "test", keys: ["resolver: { resolveById: () => resolved },", "observer.saveCalls += 1;"] },
   },
   {
-    caption: "(deps, input) の1段と比べます。1段は、呼ぶたびに deps も渡します。2段は start を作れば、以後は input だけで呼べます。S04 のコードでは、この利点はまだ現れません。",
+    caption: "(deps, input) を1度に受け取る形と比べます。この形は、呼ぶたびに deps も渡します。2回に分ける形は、start を作れば、以後は input だけで呼び出せます。S04 のコードでは、この利点はまだ現れません。",
     deps: "normal", input: "normal", body: "normal", sources: "normal", source: "none", wait: false, depsFilled: true, inputFilled: true,
     compare: true,
   },
@@ -97,19 +97,19 @@ const playerData = JSON.stringify(frames.map(({ code: _code, compare: _compare, 
 
 <figure
   class="we-fig deps-input-flow"
-  aria-label="startExamination が deps と input を2段に分けて受け取る流れ"
+  aria-label="startExamination が deps と input を2回に分けて受け取る流れ"
   data-deps-input-flow
   data-frames={playerData}
 >
   <div class="deps-input-flow__layout">
     <div class="deps-input-flow__left">
       <StepControls />
-      <svg viewBox="0 0 340 232" role="img" aria-label="startExamination が deps と input を受け取る関数の図: 1段目の deps に resolver と store、2段目の input に予約ID、獣医師ID、開始時刻が入ります。">
+      <svg viewBox="0 0 340 232" role="img" aria-label="startExamination が deps と input を受け取る関数の図: 依存を受け取る関数の deps に resolver と store、入力を受け取る関数の input に予約ID、獣医師ID、開始時刻が含まれます。">
         <rect x="4" y="64" width="332" height="162" rx="10" class="deps-input-flow__frame"></rect>
         <text x="326" y="86" text-anchor="end" class="deps-input-flow__mono deps-input-flow__strong deps-input-flow__text">startExamination</text>
         <g class="deps-input-flow__wait">
           <rect x="208" y="94" width="118" height="22" rx="11"></rect>
-          <text x="267" y="109" text-anchor="middle" class="deps-input-flow__text">input を待つ関数</text>
+          <text x="267" y="109" text-anchor="middle" class="deps-input-flow__text">input 待ちの関数</text>
         </g>
 
         <g class="deps-input-flow__part" data-part="body">
@@ -125,7 +125,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, compare: _compare, 
 
         <g class="deps-input-flow__part" data-part="deps">
           <rect x="4" y="4" width="128" height="60" rx="8" class="deps-input-flow__slot"></rect>
-          <text x="12" y="19" class="deps-input-flow__strong deps-input-flow__text">1段目 deps</text>
+          <text x="12" y="19" class="deps-input-flow__strong deps-input-flow__text">依存 deps</text>
           <g class="deps-input-flow__chip">
             <rect x="12" y="26" width="54" height="28" rx="6"></rect>
             <text x="39" y="44" text-anchor="middle" class="deps-input-flow__text">resolver</text>
@@ -142,7 +142,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, compare: _compare, 
 
         <g class="deps-input-flow__part" data-part="input">
           <rect x="140" y="4" width="196" height="60" rx="8" class="deps-input-flow__slot"></rect>
-          <text x="148" y="19" class="deps-input-flow__strong deps-input-flow__text">2段目 input</text>
+          <text x="148" y="19" class="deps-input-flow__strong deps-input-flow__text">入力 input</text>
           <g class="deps-input-flow__chip">
             <rect x="148" y="26" width="56" height="28" rx="6"></rect>
             <text x="176" y="44" text-anchor="middle" class="deps-input-flow__text">予約ID</text>
@@ -166,7 +166,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, compare: _compare, 
         <p class="deps-input-flow__sources-title">deps の中身の出どころ</p>
         <ul>
           <li class="deps-input-flow__source" data-source-id="db">本物の保存先（データベース）</li>
-          <li class="deps-input-flow__source" data-source-id="test">テスト用の部品</li>
+          <li class="deps-input-flow__source" data-source-id="test">テスト用の Store</li>
         </ul>
       </div>
     </div>
@@ -191,14 +191,14 @@ const playerData = JSON.stringify(frames.map(({ code: _code, compare: _compare, 
           {frame.compare && (
             <div class="deps-input-flow__compare">
               <section class="deps-input-flow__side" data-band="c">
-                <p class="deps-input-flow__side-title">1段: <code>(deps, input)</code></p>
+                <p class="deps-input-flow__side-title">1度に受け取る: <code>(deps, input)</code></p>
                 <figure class="we-code deps-input-flow__mini">
                   <Code code={onePhase} lang="typescript" themes={themes} defaultColor={false} />
                 </figure>
                 <p class="deps-input-flow__verdict">呼ぶたびに deps も渡す</p>
               </section>
               <section class="deps-input-flow__side" data-band="b">
-                <p class="deps-input-flow__side-title">2段: <code>(deps)(input)</code></p>
+                <p class="deps-input-flow__side-title">2回に分ける: <code>(deps)(input)</code></p>
                 <figure class="we-code deps-input-flow__mini">
                   <Code code={twoPhase} lang="typescript" themes={themes} defaultColor={false} />
                 </figure>

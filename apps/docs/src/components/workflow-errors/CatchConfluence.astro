@@ -20,7 +20,7 @@ const [notFoundHead = "", notFoundTail = ""] = notFoundMessage.split(matchText);
 const cards = [
   { id: "a", name: "予約が見つからない", message: notFoundMessage },
   { id: "b", name: "状態不正", message: templateOf(throwInvalidState) },
-  { id: "c", name: "保存で障害が起きた", message: templateOf(throwPersistence) },
+  { id: "c", name: "保存で障害が発生した", message: templateOf(throwPersistence) },
 ] as const;
 
 const catchLine = lineIndex(routeCatch, "} catch (error) {");
@@ -30,7 +30,7 @@ const rethrowLine = lineIndex(routeCatch, "throw error;");
 
 const frames = [
   {
-    caption: "診察開始では、3種類の失敗が起きます。予約が見つからない失敗、状態不正（予約の状態が来院済み（CheckedIn）ではない失敗）、保存で障害が起きる失敗です。",
+    caption: "診察開始では、3種類の失敗が発生します。予約が見つからない失敗、状態不正（予約の状態が来院済み（CheckedIn）ではない失敗）、保存で障害が発生する失敗です。",
     cards: ["a", "b", "c"],
     merge: false,
     mark: {},
@@ -46,7 +46,7 @@ const frames = [
     files: ["errors", "persistence", "routes"],
   },
   {
-    caption: "catch は、error.message に \"was not found\" が含まれるかで分岐します。予約なしの文言は一致するので、画面のお知らせへ進みます。",
+    caption: "catch は、error.message に \"was not found\" が含まれるかで分岐します。予約なしの文言は一致するため、画面のお知らせへ進みます。",
     cards: ["a"],
     merge: true,
     mark: { bands: checkBands(routeCatch, { a: [testLine, noticeLine] }) },
@@ -62,7 +62,7 @@ const frames = [
     files: ["errors", "routes"],
   },
   {
-    caption: "保存の障害の文言も一致しないので、同じ throw error から 500 になります。状態不正と保存の障害は、同じ 500 として返ります。",
+    caption: "保存の障害の文言も一致しないため、同じ throw error から 500 になります。状態不正と保存の障害は、同じ 500 として返されます。",
     cards: ["b", "c"],
     merge: true,
     mark: { bands: checkBands(routeCatch, { c: [testLine, rethrowLine] }) },
@@ -93,7 +93,7 @@ const data = JSON.stringify(frames.map(({ caption: _caption, ...rest }) => rest)
   <MiniTree tree={tree} current={frames[0].files} />
 
   <div class="we-body cc-stage">
-    <ul class="cc-cards" aria-label="起きうる失敗">
+    <ul class="cc-cards" aria-label="発生しうる失敗">
       {cards.map(({ id, name, message }) => (
         <li class="cc-card" data-card={id}>
           <strong>{name}</strong>

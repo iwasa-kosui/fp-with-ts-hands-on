@@ -11,28 +11,28 @@ const isErrBranches = excerptBetween(isErrPipeline, "const found = ", "const nex
 
 const frames = [
   {
-    caption: "予約が見つからないとき、err に kind が \"AppointmentNotFound\" の札を付けた値を入れます。札には、どの予約かを表す appointmentId も付きます。",
+    caption: "予約が見つからないとき、err に、失敗の種類を表す kind が \"AppointmentNotFound\" の値を格納します。この値には、どの予約かを表す appointmentId も付きます。",
     code: ensureFound,
     path: `${paths.solutionErrors}:18-24`,
     bands: { a: [lineIndex(ensureFound, 'err({ kind: "AppointmentNotFound"')] },
     view: "tag-not-found",
   },
   {
-    caption: "状態不正のときは、kind が \"InvalidAppointmentState\" の札を付けます。札には、今の状態 actual が付きます。",
+    caption: "状態不正のときは、err に、kind が \"InvalidAppointmentState\" の値を格納します。この値には、現在の状態 actual も付きます。",
     code: ensureCheckedIn,
     path: `${paths.solutionErrors}:26-31`,
     bands: { b: [lineIndex(ensureCheckedIn, 'err({ kind: "InvalidAppointmentState"')] },
     view: "tag-invalid-state",
   },
   {
-    caption: "札の型を | でつなぐと、診察開始の失敗の型 StartExaminationError になります。Result の2つ目の型に入るので、戻り値の型から、起こりうる失敗が読めます。",
+    caption: "kind を持つ2つの型を | で組み合わせると、診察開始の失敗の型 StartExaminationError になります。Result の2つ目の型に含まれるため、戻り値の型から、発生しうる失敗が読み取れます。",
     code: errorTypes,
     path: `${paths.solutionErrors}:6-16`,
     bands: { a: lineRange(errorTypes, "export type AppointmentNotFound", "}>;"), b: lineRange(errorTypes, "export type InvalidAppointmentState", "}>;"), c: [lineIndex(errorTypes, "export type StartExaminationError")] },
     view: "type",
   },
   {
-    caption: "失敗を isErr で受け取ると、工程ごとに「失敗なら、その失敗を返す」分岐を書きます。今は2工程なので、分岐は2つです。",
+    caption: "失敗を isErr で受け取ると、工程ごとに「失敗なら、その失敗を返す」分岐を実装します。現在は2工程であるため、分岐は2つです。",
     code: isErrBranches,
     path: "説明用の例（配布コードにはありません）",
     bands: {
@@ -44,7 +44,7 @@ const frames = [
     view: "branches-2",
   },
   {
-    caption: "工程が1つ増えるたびに、同じ形の分岐がもう1組増えます。処理の順番は、分岐の間に埋もれていきます。",
+    caption: "工程が1つ増えるたびに、同じ形の分岐がもう1組増えます。処理の順序は、分岐の間に埋もれていきます。",
     code: isErrBranches,
     path: "説明用の例（配布コードにはありません）",
     bands: {
@@ -58,13 +58,13 @@ const frames = [
 ].map((frame) => ({ ...frame, bands: checkBands(frame.code, frame.bands) }));
 
 const rows = [
-  { step: "予約を取る", variable: "found" },
+  { step: "予約を取得する", variable: "found" },
   { step: "来院済みの確認", variable: "checkedIn" },
   { step: "もう1つの工程", variable: "…" },
 ] as const;
 ---
 
-<figure class="we-fig we-fig--top failure-kinds" data-failure-kinds aria-label="失敗に kind の札を付け、型に現れる流れ">
+<figure class="we-fig we-fig--top failure-kinds" data-failure-kinds aria-label="失敗に kind を付け、型に現れる流れ">
   <StepControls />
 
   <ol class="we-frames">
@@ -89,7 +89,7 @@ const rows = [
               <div class="we-box fk-err" data-tone="err">
                 <p class="fk-err__label">Err の中身</p>
                 <p class="fk-tag" data-band="b"><span>kind</span><code class="we-mono">"InvalidAppointmentState"</code></p>
-                <p class="fk-field"><code class="we-mono">actual</code><span>今の状態（例: "Scheduled"）</span></p>
+                <p class="fk-field"><code class="we-mono">actual</code><span>現在の状態（例: "Scheduled"）</span></p>
               </div>
             )}
             {frame.view === "type" && (
@@ -98,7 +98,7 @@ const rows = [
                 <div class="fk-type__slots">
                   <div class="we-box fk-slot" data-tone="ok"><strong>成功の値</strong><code class="we-mono">InExamination</code></div>
                   <div class="we-box fk-slot" data-tone="err">
-                    <strong>失敗の値（札の種類）</strong>
+                    <strong>失敗の値（kind）</strong>
                     <p class="fk-tag" data-band="a"><code class="we-mono">AppointmentNotFound</code></p>
                     <p class="fk-tag" data-band="b"><code class="we-mono">InvalidAppointmentState</code></p>
                   </div>

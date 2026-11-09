@@ -1,19 +1,17 @@
 import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
 import { session03ChangeChecks } from "../../../components/boundary/change-checks";
 
-<p>直したコードも、次の変更で元に戻ることがあります。ここから先の課題3は、直した状態を保つことです。</p>
-
-<p>悪い変更を機械で検出する仕組みは、型のテスト、Linter の規則、値の性質のテストの3種類です。変更を選んで結果を見比べてください。<code>any</code> や <code>as</code> の書き方は規則と値の性質のテストが、UUID の検査を外す変更は値の性質のテストだけが、連絡先を足す変更は型のテストと値の性質のテストが検出します。</p>
+<p>修正したコードも、次の変更で元の状態に戻る場合があります。課題3は、修正後の状態の維持です。検出には、型のテスト、Linter（コードを実行せずに書き方の問題を検出するツール）のルール、値の性質のテストを使います。変更を選び、結果を比較してください。<code>any</code> や <code>as</code> の使用はルールと値の性質のテスト、UUID の検査の削除は値の性質のテストだけ、個人情報の追加は型のテストと値の性質のテストが検出します。</p>
 
 <ChangeChecks set={session03ChangeChecks} />
 
 <details class="step-solution">
-  <summary>eslint.config.mjs に足す規則の候補</summary>
-  <p><code>eslint.config.mjs</code> の <code>rules</code> に <code>"規則名": "error"</code> の形で書きます。</p>
+  <summary>eslint.config.mjs に追加するルールの候補</summary>
+  <p><code>eslint.config.mjs</code> の <code>rules</code> に <code>"ルール名": "error"</code> の形で記述します。</p>
   <ul>
-    <li><code>no-explicit-any</code>: <code>any</code> の書き方を検出します。</li>
+    <li><code>no-explicit-any</code>: <code>any</code> の使用を検出します。</li>
     <li><code>no-unsafe-assignment</code>、<code>no-unsafe-argument</code>、<code>no-unsafe-member-access</code>、<code>no-unsafe-call</code>、<code>no-unsafe-return</code>: <code>any</code> の値を使う箇所を検出します。</li>
     <li><code>consistent-type-assertions</code> の <code>{`["error", { assertionStyle: "never" }]`}</code>: <code>as</code> の型アサーションを検出します。</li>
   </ul>
-  <p>規則名の前には <code>@typescript-eslint/</code> が付きます。</p>
+  <p>ルール名の前には <code>@typescript-eslint/</code> が付きます。</p>
 </details>

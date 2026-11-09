@@ -1,7 +1,7 @@
 import RewriteByStep from "../../../components/workflow-errors/RewriteByStep.astro";
 
-<p>課題1のうち、失敗の理由が戻り値の型に現れない点を解きます。<code>isErr</code> で分岐して書いた診察開始を、<code>andThen</code> と <code>map</code> で書き直します。<code>andThen</code> でつなぐと、2種類の失敗の型が <code>StartExaminationError</code> に合流します。図で、工程ごとに2つの書き方を見比べます。</p>
+<p>課題1のうち、失敗の理由が戻り値の型に現れない点を解消します。<code>isErr</code> で分岐して実装した診察開始を、<code>andThen</code> と <code>map</code> で書き換えます。<code>andThen</code> で連結すると、2種類の失敗の型が <code>StartExaminationError</code> に合流します。図で、工程ごとに2つの実装を比較します。</p>
 
 <RewriteByStep />
 
-<p><strong>解けたこと</strong>: 失敗の理由が戻り値の型に現れました。ゴールの、失敗ごとに別々のお知らせを出す部分は、次のページの <code>match</code> で実現します。</p>
+<p><strong>解決したこと</strong>: 失敗の理由が戻り値の型に現れました。ゴールの、失敗ごとに別々のお知らせを表示する部分は、次のページの <code>match</code> で実現します。</p>

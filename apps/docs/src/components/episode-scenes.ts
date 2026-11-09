@@ -380,11 +380,11 @@ export const episodeScenes = {
     art: adtAndExhaustiveness,
   },
   "03-boundaries-and-pii": {
-    label: "15時30分、獣医師が診察開始画面で予約を選んで「診察を開始する」ボタンを押すと、veterinarianId の欄に night-shift が入ったカードが作られ、サーバーの入口をそのまま通り抜けていく",
+    label: "15時30分、獣医師が診察開始画面で予約を選んで「診察を開始する」ボタンを押すと、veterinarianId の欄に night-shift が含まれたカードが作られ、サーバーの入口を検証されずに通過する",
     art: boundariesAndPii,
   },
   "04-workflow-errors": {
-    label: "古い画面でハムスターの診察開始ボタンを押すと、大きく500と表示されて止まった。奥の別の端末には診察中と出ており、後ろでは犬が吠え、飼い主の列が伸びている",
+    label: "古い画面でハムスターの診察開始ボタンを押すと、大きく500と表示され、処理が中断した。奥の別の端末には診察中と表示されており、後ろでは犬が吠え、飼い主の列が伸びている",
     art: workflowErrors,
   },
   "05-business-events-and-workflows": {

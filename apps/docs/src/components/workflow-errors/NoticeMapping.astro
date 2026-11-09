@@ -27,7 +27,7 @@ const frames = [
     bands: { ok: [lineIndex(matchCall, '() => context.redirect("/", 303)')], err: lineRange(matchCall, "(error) =>", "),") },
   },
   {
-    caption: "失敗の種類ごとに、お知らせのコードを決めます。AppointmentNotFound には \"not-found\" を対応させます。画面は、このコードから「予約が見つかりません」と表示します。",
+    caption: "失敗の種類ごとに、お知らせのコードを定義します。AppointmentNotFound には \"not-found\" を対応させます。画面は、このコードから「予約が見つかりません」と表示します。",
     view: "mapping",
     lit: "a",
     code: noticeTable,
@@ -35,7 +35,7 @@ const frames = [
     bands: { a: [tableNotFound] },
   },
   {
-    caption: `InvalidAppointmentState には "invalid-state" を対応させます。画面は、このコードから「${noticeMessage("InvalidAppointmentState")}」と表示します。獣医師はこの文を読んで、今の状態を確かめます。`,
+    caption: `InvalidAppointmentState には "invalid-state" を対応させます。画面は、このコードから「${noticeMessage("InvalidAppointmentState")}」と表示します。獣医師はこの文を読んで、現在の状態を確認します。`,
     view: "mapping",
     lit: "b",
     code: noticeTable,
@@ -43,7 +43,7 @@ const frames = [
     bands: { b: [tableInvalid] },
   },
   {
-    caption: "match の失敗側は、switch で error.kind からお知らせのコードを選び、redirect の ?notice= に入れます。失敗の種類が違えば、画面のお知らせも違います。",
+    caption: "match の失敗側は、switch で error.kind からお知らせのコードを選び、redirect の ?notice= に含めます。失敗の種類が違えば、画面のお知らせも違います。",
     view: "mapping",
     lit: "ab",
     code: noticeSwitch,

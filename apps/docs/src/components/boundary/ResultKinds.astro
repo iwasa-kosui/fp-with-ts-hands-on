@@ -4,15 +4,15 @@ import StepControls from "../stepper/StepControls.astro";
 const frames = [
   {
     caption:
-      "Ok は、検査に成功したことを表す箱です。成功した値を1つ入れて持ちます。ok(値) で作ります。",
+      "Ok は、検査に成功したことを表す箱です。成功した値を1つ格納します。ok(値) で作ります。",
   },
   {
     caption:
-      "Err は、検査に失敗したことを表す箱です。S03 の Err は、値も失敗の理由も入っていない、空の箱です。err() で作ります。S04 の useCase は、理由を持つ別の Result を使います。入力の検査は、このままです。",
+      "Err は、検査に失敗したことを表す箱です。S03 の Err は、値も失敗の理由も含まれていない、空の箱です。err() で作ります。S04 の useCase は、理由を持つ別の Result を使います。入力の検査は、このままです。",
   },
   {
     caption:
-      "_unsafeUnwrap は、箱の中の値を取り出す操作です。Ok からは、入っていた値が返ります。Err には取り出す値がないので、例外を投げて処理が止まります。",
+      "_unsafeUnwrap は、箱の中の値を取り出す操作です。Ok からは、格納されていた値が返ります。Err には取り出す値がないため、例外を投げて処理が中断されます。",
   },
 ] as const;
 ---
@@ -45,7 +45,7 @@ const frames = [
         <p class="result-kinds__name">Err</p>
         <p class="result-kinds__make"><code>err()</code> で作る</p>
         <div class="result-kinds__slot result-kinds__slot--empty">
-          <span class="result-kinds__empty">空（値も理由も入っていない）</span>
+          <span class="result-kinds__empty">空（値も理由も含まれていない）</span>
         </div>
         <p class="result-kinds__flag"><code>isOk()</code> は <strong>false</strong></p>
         <p class="result-kinds__flag"><code>isErr()</code> は <strong>true</strong></p>
@@ -53,7 +53,7 @@ const frames = [
       <div class="result-kinds__unwrap">
         <span class="result-kinds__call"><code>_unsafeUnwrap()</code></span>
         <span class="result-kinds__arrow" aria-hidden="true">▼</span>
-        <span class="result-kinds__outcome result-kinds__outcome--err">例外を投げて、処理が止まる</span>
+        <span class="result-kinds__outcome result-kinds__outcome--err">例外を投げて、処理が中断される</span>
       </div>
     </div>
   </div>

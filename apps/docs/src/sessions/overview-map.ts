@@ -24,7 +24,7 @@ export const sessionOverviews: Readonly<Record<Exclude<SessionSlug, "00-system-h
     rule: "外部から受け取る値は検証してから使う。調査に不要な個人情報は監査記録に出力しない",
     incident: "課題2",
   },
-  "04-workflow-errors": { rule: "「予約が見つからない」と「今の状態では操作できない」を区別する" },
+  "04-workflow-errors": { rule: "予約が見つからない失敗と、現在の予約状態では操作できない失敗を区別する" },
   "05-business-events-and-workflows": { rule: "確認に1つでも失敗したキャンセルは記録しない" },
   "06-effects-and-consistency": { rule: "予約の変更と監査記録は、両方残すか、どちらも残さない" },
   final: { rule: "ここまでの業務ロジックを、1つのシステムの中で通して追跡する" },

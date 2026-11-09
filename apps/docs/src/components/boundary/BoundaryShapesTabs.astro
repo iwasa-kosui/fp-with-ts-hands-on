@@ -20,7 +20,7 @@ const rows = [
   {
     name: "検査結果",
     scope: "配布コードの補足",
-    outside: "検査機関から届く JSON",
+    outside: "検査機関から受け取る JSON",
     check: "examId、petId、items、needsFollowUp の形",
     inside: "ExamResult",
     path: "src/adaptor/primary/web/examResult.ts",
@@ -37,7 +37,7 @@ const rows = [
 
 const zones = [
   { key: "outside", zone: "外側", label: "外側の姿" },
-  { key: "check", zone: "検査", label: "境界で確かめること" },
+  { key: "check", zone: "検査", label: "境界で検証すること" },
   { key: "inside", zone: "内側", label: "内側の型" },
 ] as const;
 ---

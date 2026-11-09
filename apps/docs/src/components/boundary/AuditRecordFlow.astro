@@ -57,7 +57,7 @@ const afterCode = dedent(
 
 const sides = {
   before: {
-    label: part === "problem" ? "今のコード" : "修正前",
+    label: part === "problem" ? "現在のコード" : "修正前",
     path: lineLabelOf(
       "session-03",
       repositoryPath,
@@ -89,16 +89,16 @@ const lit = {
 const contact = clinicFixture.ownerContact;
 const frames = [
   {
-    caption: "診察を開始するたびに、監査記録が1件書かれます。",
+    caption: "診察を開始するたびに、監査記録が1件記録されます。",
   },
   {
-    caption: `${part === "problem" ? "今" : "修正前"}のコードは、監査記録に ownerContact を入れています。氏名・メールアドレス・電話番号が、そのまま記録に残ります。`,
+    caption: `${part === "problem" ? "現在" : "修正前"}のコードは、監査記録に ownerContact を含めています。個人情報（氏名・メールアドレス・電話番号）が、そのまま記録に残ります。`,
   },
   {
-    caption: "修正後のコードは、appointmentId・veterinarianId・examinationStartedAt の3項目だけを記録に入れます。連絡先は入りません。",
+    caption: "修正後のコードは、appointmentId・veterinarianId・examinationStartedAt の3項目だけを記録に含めます。個人情報は含まれません。",
   },
   {
-    caption: "連絡先を残さなくても、veterinarianId で「誰が」、examinationStartedAt で「いつ」診察を開始したかは分かります。",
+    caption: "個人情報を残さなくても、veterinarianId で「誰が」、examinationStartedAt で「いつ」診察を開始したかは確認できます。",
   },
 ] as const;
 

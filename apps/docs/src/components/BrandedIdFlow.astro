@@ -19,7 +19,7 @@ type Props = Readonly<{
 
 const { code } = Astro.props;
 
-const versionLabels = { before: "brand を付ける前", after: "修正後" } as const;
+const versionLabels = { before: "ブランドを付ける前", after: "修正後" } as const;
 
 type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
 const KEY_MARK = /\s*\/\/ \[!branded-key\]$/;
@@ -56,7 +56,7 @@ type Frame = Readonly<{
 
 const frames: readonly Frame[] = [
   {
-    caption: "予約IDと獣医師IDは、どちらもUUIDの形をした文字列です。値を見ただけでは、どちらのIDか分かりません。",
+    caption: "予約IDと獣医師IDは、どちらもUUIDの形をした文字列です。値を見ただけでは、どちらのIDか判別できません。",
     stage: null,
     modes: ["normal", "dim", "dim", "dim"],
     tokens: ["home", "home", "off"],
@@ -68,7 +68,7 @@ const frames: readonly Frame[] = [
     runtime: false,
   },
   {
-    caption: "brand を付ける前のschemaは z.string().uuid() だけです。z.infer で得る AppointmentId 型の中身は string で、VeterinarianId 型も同じ string です。",
+    caption: "ブランドを付ける前のschemaは z.string().uuid() だけです。z.infer で得る AppointmentId 型の中身は string で、VeterinarianId 型も同じ string です。",
     stage: "before",
     code: { key: "beforeId", lines: [3, 5] },
     modes: ["dim", "dim", "normal", "dim"],
@@ -81,7 +81,7 @@ const frames: readonly Frame[] = [
     runtime: false,
   },
   {
-    caption: "獣医師IDを受け取る関数に予約IDを渡しても、どちらの型も string なので型検査は誤りを知らせません。取り違えは、実行して記録がおかしくなってから見つかります。",
+    caption: "獣医師IDを受け取る関数に予約IDを渡しても、どちらの型も string であるため型検査は誤りを報告しません。取り違えは、実行して記録に異常が出てから発見されます。",
     stage: "before",
     code: { key: "beforeSwap", lines: [5] },
     modes: ["dim", "dim", "normal", "normal"],
@@ -94,7 +94,7 @@ const frames: readonly Frame[] = [
     runtime: false,
   },
   {
-    caption: ".brand<\"AppointmentId\">() を付けると、推論される型は string に AppointmentId という印を足した型になります。獣医師IDには VeterinarianId という別の印が付きます。",
+    caption: ".brand<\"AppointmentId\">() を付けると、推論される型は string に AppointmentId というブランドを追加した型になります。獣医師IDには VeterinarianId という別のブランドが付きます。",
     stage: "after",
     code: { key: "afterId", lines: [3, 5] },
     modes: ["dim", "dim", "normal", "dim"],
@@ -107,7 +107,7 @@ const frames: readonly Frame[] = [
     runtime: false,
   },
   {
-    caption: "印の違う値を渡すと、型検査が型エラーとして知らせます。@ts-expect-error は、この行で型エラーが出ることを確かめるための注釈です。",
+    caption: "ブランドの違う値を渡すと、型検査が型エラーとして報告します。@ts-expect-error は、この行で型エラーが発生することを検証するための注釈です。",
     stage: "after",
     code: { key: "afterSwap", lines: [7, 8] },
     modes: ["dim", "dim", "normal", "normal"],
@@ -120,7 +120,7 @@ const frames: readonly Frame[] = [
     runtime: false,
   },
   {
-    caption: "印は型検査のときだけ使われます。TypeScript を JavaScript に変換すると型は消え、実行時の値は brand を付ける前と同じ文字列のままです。",
+    caption: "ブランドは型検査のときだけ使われます。TypeScript を JavaScript に変換すると型は消え、実行時の値はブランドを付ける前と同じ文字列のままです。",
     stage: "after",
     modes: ["dim", "dim", "normal", "dim"],
     tokens: ["home", "home", "off"],
@@ -132,7 +132,7 @@ const frames: readonly Frame[] = [
     runtime: true,
   },
   {
-    caption: "印の付いた値を作る入口は parse です。parse は文字列がUUIDの形かを検査し、通った値だけを AppointmentId 型として返します。UUIDの形の検査は brand を付ける前からあります。brand を付けて変わったのは、通った値に印が付くことです。",
+    caption: "ブランドが付いた値を作る入口は parse です。parse は文字列がUUIDの形かを検査し、通った値だけを AppointmentId 型として返します。UUIDの形の検査はブランドを付ける前からあります。ブランドを付けて変わったのは、通った値にブランドが付くことです。",
     stage: "after",
     code: { key: "afterParse", lines: [4, 5] },
     extra: "fixture",
@@ -219,14 +219,14 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
     data-plug={initial.plug}
     data-slot-tag={initial.slotTag}
   >
-    <title id="branded-id-flow-title">Branded Type が取り違えを止める仕組み</title>
+    <title id="branded-id-flow-title">Branded Type が取り違えを防止する仕組み</title>
     <desc id="branded-id-flow-desc">
-      一番上の「外から届く文字列」の行は、外から届く予約IDと獣医師IDの文字列です。上から2番目の「parse」の行は、UUIDの形かを検査する parse です。上から3番目の「値」の行は、予約IDと獣医師IDの値です。brand を付ける前はどちらも string 型で、付けた後は AppointmentId と VeterinarianId という別の印が付きます。一番下の「受け取る関数」の行は、獣医師IDを受け取る関数です。brand を付ける前は予約IDを渡しても型検査を通り、付けた後は印が違うので型検査がコンパイルエラーとして報告します。
+      一番上の「外部入力の文字列」の行は、外部から受け取る予約IDと獣医師IDの文字列です。上から2番目の「parse」の行は、UUIDの形かを検査する parse です。上から3番目の「値」の行は、予約IDと獣医師IDの値です。ブランドを付ける前はどちらも string 型で、付けた後は AppointmentId と VeterinarianId という別のブランドが付きます。一番下の「受け取る関数」の行は、獣医師IDを受け取る関数です。ブランドを付ける前は予約IDを渡しても型検査を通り、付けた後はブランドが違うため型検査がコンパイルエラーとして報告します。
     </desc>
 
     <g class="branded-id-flow__band" data-band="0" data-mode={initial.modes[0]}>
       <rect x="0" y="0" width="640" height="76" rx="8" class="branded-id-flow__band-bg"></rect>
-      <text x="10" y="18" class="branded-id-flow__band-label branded-id-flow__dimmable">外から届く文字列</text>
+      <text x="10" y="18" class="branded-id-flow__band-label branded-id-flow__dimmable">外部入力の文字列</text>
     </g>
 
     <g class="branded-id-flow__band" data-band="1" data-mode={initial.modes[1]}>
@@ -249,7 +249,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
     <g class="branded-id-flow__band" data-band="2" data-mode={initial.modes[2]}>
       <rect x="0" y="148" width="640" height="112" rx="8" class="branded-id-flow__band-bg"></rect>
       <text x="10" y="166" class="branded-id-flow__band-label branded-id-flow__dimmable">値</text>
-      <text x="320" y="252" text-anchor="middle" class="branded-id-flow__note branded-id-flow__runtime-note branded-id-flow__dimmable">実行時の値には印がない</text>
+      <text x="320" y="252" text-anchor="middle" class="branded-id-flow__note branded-id-flow__runtime-note branded-id-flow__dimmable">実行時の値にはブランドがない</text>
     </g>
 
     <g class="branded-id-flow__band" data-band="3" data-mode={initial.modes[3]}>
@@ -270,7 +270,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
         <text x="385" y="374" text-anchor="middle" class="branded-id-flow__note">差し込み口</text>
         <g class="branded-id-flow__verdict branded-id-flow__verdict--pass">
           <rect x="24" y="408" width="592" height="24" rx="6"></rect>
-          <text x="320" y="425" text-anchor="middle">型検査: 通る（取り違えに気づけない）</text>
+          <text x="320" y="425" text-anchor="middle">型検査: 通る（取り違えを検出できない）</text>
         </g>
         <g class="branded-id-flow__verdict branded-id-flow__verdict--error">
           <rect x="24" y="408" width="592" height="24" rx="6"></rect>
@@ -364,7 +364,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
     runtime: boolean;
   };
 
-  const versionLabels = { before: "brand を付ける前", after: "修正後" } as const;
+  const versionLabels = { before: "ブランドを付ける前", after: "修正後" } as const;
 
   const setUp = (root: HTMLElement) => {
     if (root.dataset.ready !== undefined) return;

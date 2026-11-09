@@ -20,16 +20,16 @@ const terms = [
     term: "Branded Type",
     place: "内側の型",
     definition:
-      "Branded Type は、同じ string でも用途ごとに印を付けて、別の型として区別する書き方です。",
+      "Branded Type は、同じ string でも用途ごとにブランド（型を区別する情報）を付けて、別の型として区別する書き方です。",
     example: "この教材では、AppointmentId と VeterinarianId がこれに当たります。",
   },
   {
     term: "Always-Valid Domain Model",
     place: "内側全体",
     definition:
-      "Always-Valid Domain Model は、予約や診察のような業務の概念と規則を表す内側の型と関数を、検査を通った値だけを受け取る前提で作る設計です。",
+      "Always-Valid Domain Model は、予約や診察のような業務の概念と業務ルールを表す内側の型と関数を、検査を通った値だけを受け取る前提で作る設計です。",
     example:
-      "HTTP で届く入力は境界で検査済みなので、内側の関数は同じ検査を繰り返しません。この説明は、HTTP で届く入力に限った話です。",
+      "HTTP で受け取る入力は境界で検査済みであるため、内側の関数は同じ検査を繰り返しません。この説明は、HTTP で受け取る入力に限った話です。",
   },
 ] as const;
 ---
@@ -41,7 +41,7 @@ const terms = [
     <section class="boundary-terms__zone boundary-terms__zone--outside">
       <h4>外側</h4>
       <div class="boundary-terms__chip">
-        <span>HTTP で届いた値</span>
+        <span>HTTP で受け取った値</span>
         <code>unknown</code>
       </div>
     </section>
