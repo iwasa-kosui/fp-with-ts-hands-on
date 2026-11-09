@@ -33,7 +33,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 2.5,
-    role: "事前知識（課題）: 状態の候補を数えて、1つずつ並べられる型の考え方を学びます。",
+    role: "事前知識: 状態の候補を数えて、1つずつ並べられる型の考え方を学びます。",
   },
   {
     slug: "never",
@@ -41,7 +41,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 2,
-    role: "事前知識（課題）: case を処理した後に残る候補が0個であることを、型で表す語を学びます。",
+    role: "事前知識: case を処理した後に残る候補が0個であることを、型で表す語を学びます。",
   },
   {
     slug: "assert-never",
