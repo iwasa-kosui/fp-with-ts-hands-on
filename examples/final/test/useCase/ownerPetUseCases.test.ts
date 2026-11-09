@@ -136,7 +136,7 @@ const pet = Pet.parse({
   petId: ids.pet,
   ownerId: ids.owner,
   name: "Mugi",
-  species: "Cat",
+  species: "Dog",
 })._unsafeUnwrap();
 const scheduled = {
   kind: "Scheduled",
@@ -319,7 +319,7 @@ describe("owner and pet management use cases", () => {
       actorUserId: ids.receptionist,
       petId: ids.pet,
       name: PetName.schema.parse("Mugi II"),
-      species: PetSpecies.schema.parse("Cat"),
+      species: PetSpecies.schema.parse("Dog"),
     });
 
     expect(createdOwner._unsafeUnwrap().owner.ownerId).toBe(ids.newOwner);
@@ -479,7 +479,7 @@ describe("owner and pet management use cases", () => {
             actorUserId: ids.veterinarian,
             petId: ids.pet,
             name: PetName.schema.parse("Mugi II"),
-            species: PetSpecies.schema.parse("Cat"),
+            species: PetSpecies.schema.parse("Dog"),
           }),
       ],
       [

@@ -19,9 +19,9 @@ export const session: SessionSummary = {
     minutes: 6,
     pickCount: 2,
     questions: [
-      "予約なしと状態不正は、異なる `kind` を持つ `Err` になっていますか。",
-      "`andThen` は、失敗後の状態遷移と保存を実行しない構造になっていますか。",
-      "Web側は業務エラーを `kind` で網羅し、未対応の種類を型エラーにできますか。",
+      "すり抜けた変更は何を変えたのか",
+      "その変更を検出するには何を足せばよいか",
+      "足した仕組みで誤検知は出ないか",
     ],
   },
   solutionSnapshot: "session-04-solution",

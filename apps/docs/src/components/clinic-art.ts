@@ -133,35 +133,15 @@ export const turtle = (x: number, y: number, scale = 1, flip = false): string =>
 <circle cx="56" cy="-34" r="2.6" fill="${ink}" stroke="none"/>
 <path d="M54 -25 Q60 -22 64 -26" fill="none" stroke-width="2"/>`);
 
-export const cat = (x: number, y: number, scale = 1, flip = false): string =>
+export const dogBack = (x: number, y: number, scale = 1, flip = false): string =>
   pet(x, y, scale, flip, `
-<path d="M-32 -34 Q-64 -38 -56 -74" fill="none" stroke-width="10"/>
-<path d="M-32 -34 Q-64 -38 -56 -74" fill="none" stroke="#b9bfd8" stroke-width="4"/>
-<rect x="-28" y="-20" width="11" height="20" rx="5" fill="#8d95b8"/>
-<rect x="-12" y="-20" width="11" height="20" rx="5" fill="#8d95b8"/>
-<rect x="12" y="-20" width="11" height="20" rx="5" fill="#b9bfd8"/>
-<rect x="26" y="-20" width="11" height="20" rx="5" fill="#b9bfd8"/>
-<ellipse cx="0" cy="-32" rx="36" ry="20" fill="#b9bfd8"/>
-<path d="M-12 -50 L-8 -38 M0 -52 L2 -40 M12 -50 L12 -38" fill="none" stroke="#8d95b8" stroke-width="3"/>
-<path d="M26 -66 L28 -88 L42 -70 Z" fill="#b9bfd8"/>
-<path d="M46 -70 L58 -86 L58 -62 Z" fill="#b9bfd8"/>
-<circle cx="42" cy="-54" r="18" fill="#b9bfd8"/>
-<path d="M30 -70 L30 -80 L38 -71 Z" fill="#ffb3d0" stroke="none"/>
-<circle cx="47" cy="-58" r="2.6" fill="${ink}" stroke="none"/>
-<circle cx="36" cy="-58" r="2.6" fill="${ink}" stroke="none"/>
-<path d="M44 -50 L48 -50 L46 -47 Z" fill="#ff4f93" stroke-width="2"/>
-<path d="M56 -52 L68 -55 M56 -48 L68 -47" fill="none" stroke-width="2"/>`);
-
-export const catBack = (x: number, y: number, scale = 1, flip = false): string =>
-  pet(x, y, scale, flip, `
-<path d="M10 -14 Q48 -8 40 -50 Q38 -64 30 -70" fill="none" stroke-width="12"/>
-<path d="M10 -14 Q48 -8 40 -50 Q38 -64 30 -70" fill="none" stroke="#b9bfd8" stroke-width="6"/>
-<path d="M32 -56 L46 -52 M36 -40 L48 -38" fill="none" stroke="#8d95b8" stroke-width="3"/>
-<ellipse cx="-12" cy="-4" rx="10" ry="6" fill="#8d95b8"/>
-<ellipse cx="12" cy="-4" rx="10" ry="6" fill="#8d95b8"/>
-<path d="M-28 -6 Q-30 -56 0 -58 Q30 -56 28 -6 Z" fill="#b9bfd8"/>
-<path d="M-10 -50 L-8 -34 M0 -52 L0 -32 M10 -50 L8 -34" fill="none" stroke="#8d95b8" stroke-width="3"/>
-<path d="M-20 -76 L-24 -98 L-6 -84 Z" fill="#b9bfd8"/>
-<path d="M20 -76 L24 -98 L6 -84 Z" fill="#b9bfd8"/>
-<circle cx="0" cy="-70" r="20" fill="#b9bfd8"/>
-<path d="M-6 -88 L-5 -80 M0 -90 L0 -81 M6 -88 L5 -80" fill="none" stroke="#8d95b8" stroke-width="3"/>`);
+<path d="M20 -20 Q46 -22 38 -50" fill="none" stroke-width="9"/>
+<path d="M20 -20 Q46 -22 38 -50" fill="none" stroke="#f4b86a" stroke-width="3.5"/>
+<ellipse cx="-12" cy="-4" rx="10" ry="6" fill="#e0a050"/>
+<ellipse cx="12" cy="-4" rx="10" ry="6" fill="#e0a050"/>
+<path d="M-28 -6 Q-30 -54 0 -56 Q30 -54 28 -6 Z" fill="#f4b86a"/>
+<ellipse cx="-8" cy="-34" rx="11" ry="9" fill="#c98a3f" stroke="none"/>
+<circle cx="0" cy="-66" r="18" fill="#f4b86a"/>
+<path d="M-12 -78 Q-30 -76 -27 -50 Q-14 -50 -10 -64 Z" fill="#c98a3f"/>
+<path d="M12 -78 Q30 -76 27 -50 Q14 -50 10 -64 Z" fill="#c98a3f"/>
+<path d="M-14 -53 Q0 -46 14 -53" fill="none" stroke="#ff4f93" stroke-width="6"/>`);

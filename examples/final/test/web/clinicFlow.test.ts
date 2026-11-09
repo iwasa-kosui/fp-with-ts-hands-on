@@ -149,7 +149,7 @@ const createOwnerAndPet = async (harness: Harness, cookie: string) => {
     (await post(
       harness,
       "/pets",
-      { ownerId: owner.ownerId, name: "Mugi", species: "Cat" },
+      { ownerId: owner.ownerId, name: "Mugi", species: "Dog" },
       cookie,
     )).status,
   ).toBe(302);

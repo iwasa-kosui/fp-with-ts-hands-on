@@ -1,6 +1,6 @@
 import PortsAndAdaptersFlow from "../../../components/PortsAndAdaptersFlow.astro";
 import { portsAndAdaptersCode } from "../../pages/final-content";
 
-<p>コードは S00 と同じく、内側の domain と useCase、外側の adaptor に分かれます。port は S06 で見た、ユースケースが外側に求める処理を型で表した約束です。アダプタ（コード上の名前は adaptor）は、外からの依頼をユースケースへ渡す処理と、port の型を満たす実装です。</p>
+<p>コードのディレクトリは、S00 と同じく domain、useCase、adaptor に分かれます。import の向きは S00 と違います。S00 では、useCase が adaptor/secondary/sqlite の型を import していました。参照実装では、その型を domain に置いたので、domain と useCase は adaptor を import しません。port は S06 で見た、ユースケースが外側に求める処理を型で表した約束です。アダプタ（コード上の名前は adaptor）は、外からの依頼をユースケースへ渡す処理と、port の型を満たす実装です。</p>
 
 <PortsAndAdaptersFlow code={portsAndAdaptersCode} />
