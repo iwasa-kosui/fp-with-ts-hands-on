@@ -1,12 +1,21 @@
 import { verdictText, type DisplayRow } from "./labels";
 
+export type GuardGuideSegment =
+  | string
+  | Readonly<{ text: string; href: string }>;
+
 export type GuardGuideStep =
   | string
-  | Readonly<{ text: string; items: readonly string[] }>;
+  | Readonly<{
+      id?: string;
+      text: string | readonly GuardGuideSegment[];
+      items?: readonly string[];
+    }>;
 
 export type GuardGuide = Readonly<{
   title: string;
   criteria?: string;
+  passedNext?: string;
   steps: readonly GuardGuideStep[];
 }>;
 
@@ -28,6 +37,11 @@ const defaultGuide: GuardGuide = {
   ],
 };
 
+const segmentsKey = (segments: readonly GuardGuideSegment[]): string =>
+  segments
+    .map((segment) => (typeof segment === "string" ? segment : segment.text))
+    .join("");
+
 export const CaseList = ({
   rows,
   casePath,
@@ -46,11 +60,20 @@ export const CaseList = ({
       </div>
       <ol className="guard-exercise__steps">
         {guide.steps.map((step) => {
-          const { text, items } =
-            typeof step === "string" ? { text: step, items: [] } : step;
+          const { id, text, items = [] } =
+            typeof step === "string" ? { text: step } : step;
+          const segments = typeof text === "string" ? [text] : text;
           return (
-            <li key={text}>
-              {text}
+            <li key={id ?? segmentsKey(segments)} id={id}>
+              {segments.map((segment, index) =>
+                typeof segment === "string" ? (
+                  segment
+                ) : (
+                  <a key={`${index}:${segment.href}`} href={segment.href}>
+                    {segment.text}
+                  </a>
+                ),
+              )}
               {items.length === 0 ? null : (
                 <ul>
                   {items.map((item) => (

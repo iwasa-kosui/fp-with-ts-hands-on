@@ -17,7 +17,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "brief",
     minutes: 0.5,
-    role: "課題1: 前のページの道筋を通って、獣医師の欄に想定外の値が届きました。",
+    role: "課題: 前のページの道筋を通って、獣医師の欄に想定外の値が届きました。",
   },
   {
     slug: "current-code",
@@ -25,7 +25,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "brief",
     minutes: 1,
-    role: "課題1: 届いた値がなぜ受け付けられたのかを、今のコードで確かめます。",
+    role: "課題: 届いた値がなぜ受け付けられたのかを、今のコードで確かめます。",
   },
   {
     slug: "boundary",
@@ -33,7 +33,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "teach",
     minutes: 2,
-    role: "課題1: 今のコードで値が素通りする場所に、名前を付けます。",
+    role: "課題: 今のコードで値が素通りする場所に、名前を付けます。",
   },
   {
     slug: "audit-leak",
@@ -41,7 +41,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "teach",
     minutes: 0.5,
-    role: "課題2: 境界の検査とは別に、内側から記録へ出ていく値にも問題があります。",
+    role: "課題: 境界の検査とは別に、内側から記録へ出ていく値にも問題があります。",
   },
   {
     slug: "result",
@@ -49,7 +49,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1,
-    role: "事前知識（課題1）: 値を検査するには、成功と失敗を分けて返す形が要ります。",
+    role: "事前知識: 値を検査するには、成功と失敗を分けて返す形が要ります。",
   },
   {
     slug: "zod",
@@ -57,7 +57,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1.5,
-    role: "事前知識（課題1）: Result で結果を返せるようになりました。次は、実行時に値を検査する手段が要ります。",
+    role: "事前知識: Result で結果を返せるようになりました。次は、実行時に値を検査する手段が要ります。",
   },
   {
     slug: "safe-parse",
@@ -65,7 +65,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1.5,
-    role: "事前知識（課題1）: schema で検査した結果を、Result につなぐ手段が要ります。",
+    role: "事前知識: schema で検査した結果を、Result につなぐ手段が要ります。",
   },
   {
     slug: "branded",
@@ -73,7 +73,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 2,
-    role: "事前知識（課題1）: 検査を通った値と、検査していない文字列を、型で区別する手段が要ります。",
+    role: "事前知識: 検査を通った値と、検査していない文字列を、型で区別する手段が要ります。",
   },
   {
     slug: "boundary-after",
@@ -81,7 +81,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 2,
-    role: "解決策（課題1）: ここまでの知識を組み合わせて、境界の検査を作ります。",
+    role: "解決策: ここまでの知識を組み合わせて、境界の検査を作ります。",
   },
   {
     slug: "terms",
@@ -89,7 +89,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 0.5,
-    role: "解決策（課題1）: 読んだ形の名前を知ると、業務で調べたり話したりできます。",
+    role: "解決策: 読んだ形の名前を知ると、業務で調べたり話したりできます。",
   },
   {
     slug: "audit-record",
@@ -97,7 +97,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策（課題2）: 出ていく記録から、連絡先を取り除きます。",
+    role: "解決策: 出ていく記録から、連絡先を取り除きます。",
   },
   {
     slug: "checks",
@@ -105,7 +105,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 0.5,
-    role: "解決策を守る（課題3）: 直したコードも、次の変更で元に戻ることがあります。守る仕組みが要ります。",
+    role: "解決策を守る: 直したコードも、次の変更で元に戻ることがあります。守る仕組みが要ります。",
   },
   {
     slug: "property-test",
@@ -113,7 +113,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 0.5,
-    role: "解決策を守る（課題3）: 値の性質を確かめるテストと型のテストの書き方を学びます。",
+    role: "解決策を守る: 値の性質を確かめるテストと型のテストの書き方を学びます。",
   },
   {
     slug: "exercise",
@@ -121,7 +121,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "exercise",
     minutes: 15,
-    role: "解決策を守る（課題3）: 学んだ仕組みを足して、悪い変更を検出します。",
+    role: "解決策を守る: 学んだ仕組みを足して、悪い変更を検出します。",
   },
   {
     slug: "peer-review",
@@ -129,7 +129,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "review",
     minutes: 3,
-    role: "解決策を守る（課題3）: 自分の仕組みの穴を、隣の人に見つけてもらいます。",
+    role: "解決策を守る: 自分の仕組みの穴を、隣の人に見つけてもらいます。",
   },
   {
     slug: "guard",

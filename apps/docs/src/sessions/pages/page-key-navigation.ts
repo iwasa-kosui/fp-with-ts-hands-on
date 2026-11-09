@@ -7,6 +7,7 @@ export type PageKeyEvent = Readonly<{
   metaKey: boolean;
   shiftKey: boolean;
   defaultPrevented: boolean;
+  repeat: boolean;
 }>;
 
 export type PageKeyTarget = Readonly<{
@@ -26,6 +27,10 @@ export const pageKeyIgnoredSelector = [
 ].join(", ");
 
 export const stepControlsSelector = "[data-controls]";
+
+export const stepSceneSelector = "[data-step-scene]";
+
+export const stepFigureSelector = "[data-step-figure]";
 
 export type StepButton = Readonly<{
   click: () => void;
@@ -51,31 +56,46 @@ export const pageKeyDirection = (
   if (direction === null) return null;
   if (target !== null && target.closest(pageKeyIgnoredSelector) !== null) return null;
   if (target !== null && target.closest(stepControlsSelector) !== null) return null;
+  if (target !== null && target.closest(stepSceneSelector) !== null) return null;
   return direction;
 };
 
-const hasMethod = (value: unknown, name: string): boolean =>
+const hasMethod = (value: unknown, name: "click"): value is StepButton =>
   typeof value === "object" &&
   value !== null &&
   typeof (value as Record<string, unknown>)[name] === "function";
 
+const stepButtonIn = (controls: Element | null, direction: PageKeyDirection): StepKey => {
+  const found = controls?.querySelector(direction === "next" ? "[data-next]" : "[data-prev]");
+  return { button: hasMethod(found, "click") ? found : null };
+};
+
+const controlsOfFigure = (scene: Element): Element | null => {
+  const figure = scene.closest(stepFigureSelector);
+  if (figure === null) return null;
+  return (
+    [...figure.querySelectorAll(stepControlsSelector)].find(
+      (controls) => controls.closest(stepFigureSelector) === figure,
+    ) ?? null
+  );
+};
+
 export const stepKeyButton = (
   event: PageKeyEvent,
-  target: PageKeyTarget | null,
+  target: Element | null,
 ): StepKey | null => {
   const direction = arrowDirection(event);
   if (direction === null || target === null) return null;
+  const scene = target.closest(stepSceneSelector);
+  if (scene !== null) return stepButtonIn(controlsOfFigure(scene), direction);
   if (target.closest(pageKeyIgnoredSelector) !== null) return null;
   const controls = target.closest(stepControlsSelector);
-  if (!hasMethod(controls, "querySelector")) return null;
-  const found = (controls as ParentNode).querySelector(
-    direction === "next" ? "[data-next]" : "[data-prev]",
-  );
-  return { button: hasMethod(found, "click") ? (found as unknown as StepButton) : null };
+  if (controls === null) return null;
+  return stepButtonIn(controls, direction);
 };
 
 const isDisabledButton = (element: Element): boolean =>
-  (element as Partial<HTMLButtonElement>).disabled === true;
+  element instanceof HTMLButtonElement && element.disabled;
 
 export const focusEnabledControl = (disabledButton: Element): void => {
   const controls = disabledButton.closest(stepControlsSelector);
@@ -96,7 +116,9 @@ export const installPageKeyNavigation = (
   let stepping = false;
 
   const controlButton = (target: EventTarget | null): HTMLElement | null =>
-    target instanceof Element ? target.closest<HTMLElement>(`${stepControlsSelector} button`) : null;
+    target instanceof Element
+      ? target.closest<HTMLElement>(`${stepControlsSelector} button, ${stepSceneSelector}`)
+      : null;
 
   const leaveDisabled = (button: Element | null) => {
     if (button !== null && isDisabledButton(button)) focusEnabledControl(button);
@@ -107,7 +129,7 @@ export const installPageKeyNavigation = (
     const step = stepKeyButton(event, target);
     if (step !== null) {
       event.preventDefault();
-      if (step.button !== null && step.button.disabled !== true) {
+      if (!event.repeat && step.button !== null && step.button.disabled !== true) {
         stepping = true;
         try {
           step.button.click();

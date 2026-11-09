@@ -18,6 +18,7 @@ export type ResultTableProps = Readonly<{
   restored: boolean;
   limitations: Readonly<Record<string, string>>;
   limitationsEnabled: boolean;
+  passedNext?: string;
   onLimitationChange: (id: string, text: string) => void;
 }>;
 
@@ -29,6 +30,7 @@ export const ResultTable = ({
   restored,
   limitations,
   limitationsEnabled,
+  passedNext,
   onLimitationChange,
 }: ResultTableProps) => {
   const [openId, setOpenId] = useState<string>();
@@ -117,7 +119,7 @@ export const ResultTable = ({
       {result !== undefined && result.next[0] !== undefined ? (
         <section className="guard-exercise__next" aria-label="次にすること">
           <h3>次にすること</h3>
-          <p>{result.next[0]}</p>
+          <p>{result.passed && passedNext !== undefined ? passedNext : result.next[0]}</p>
         </section>
       ) : null}
       <table className="guard-exercise__table">
