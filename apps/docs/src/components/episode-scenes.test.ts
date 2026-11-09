@@ -13,6 +13,8 @@ const slugs = [
   "final",
 ] as const;
 
+const sceneSlugs = [...slugs, "00-system-handover-pii"] as const;
+
 const isSplit = (slug: string) =>
   splitSessions.some((session) => session.slug === slug);
 const slugsWithSinglePage = slugs.filter((slug) => !isSplit(slug));
@@ -40,7 +42,7 @@ const pageSources = import.meta.glob<string>(
 );
 
 describe("episodeScenes", () => {
-  it.each(slugs)("%s に空でない label と art がある", (slug) => {
+  it.each(sceneSlugs)("%s に空でない label と art がある", (slug) => {
     const scene: { label: string; art: string } = episodeScenes[slug];
 
     expect(scene.label.trim()).not.toBe("");

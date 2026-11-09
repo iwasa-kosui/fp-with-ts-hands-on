@@ -69,47 +69,67 @@ const turnArrow = (x: number, y: number): string => `
 <path d="M${x + 1} ${y - 4} L${x + 12} ${y - 4} L${x + 8} ${y - 13}Z" fill="#ff4f93" stroke-width="2"/>`;
 
 const handover = `
-${room("#fff8ce", "#f0d5a0", "#d9b87c")}
-<rect x="104" y="22" width="68" height="58" rx="4" fill="#bfe6ff"/>
-<path d="M138 22V80M104 51H172" stroke-width="2"/>
-<circle cx="120" cy="37" r="7" fill="#ffd21b" stroke-width="2"/>
+${room("#fff8ce", "#f0d5a0", "#d9b87c", 196)}
+<rect x="104" y="20" width="56" height="48" rx="4" fill="#bfe6ff"/>
+<path d="M132 20V68M104 44H160" stroke-width="2"/>
 
-${shadow(46, 254, 34)}
-${legs(46, 230, 256, "#2236b8")}
-${person(46, 128, 150, 52, 238, "#ffd21b", "#f6c9a0", "#3b2a4f")}
-${shocked(46, 128)}
-${arm(24, 166, 8, 138, "#ffd21b", "#f6c9a0")}
-${arm(68, 166, 84, 138, "#ffd21b", "#f6c9a0")}
-${sparks(46, 98)}
+${shadow(48, 254, 34)}
+${legs(48, 196, 256, "#2236b8")}
+${person(48, 112, 134, 52, 204, "#12dbb1", "#d9a37c", "#6b3f2a")}
+${shocked(48, 112)}
+${arm(26, 152, 10, 124, "#12dbb1", "#d9a37c")}
+${arm(70, 154, 100, 168, "#12dbb1", "#d9a37c")}
+${sparks(48, 82)}
 
-${shadow(106, 254, 56)}
-${dog(106, 252)}
+${shadow(118, 254, 56)}
+${dog(118, 254)}
 
-${shadow(184, 248, 40)}
-<g transform="translate(178 232)">
-<path d="M26 -14 Q58 -22 68 2 Q74 20 46 22 L26 16Z" fill="#7a4f33"/>
-<circle cx="52" cy="26" r="3" fill="#7a4f33" stroke="none"/>
-<circle cx="72" cy="16" r="2.5" fill="#7a4f33" stroke="none"/>
-<ellipse cx="46" cy="-2" rx="20" ry="6" fill="#12dbb1" transform="rotate(-24 36 -2)"/>
-<ellipse cx="48" cy="6" rx="18" ry="6" fill="#0fb994" transform="rotate(18 36 6)"/>
-<ellipse cx="50" cy="1" rx="16" ry="5" fill="#12dbb1"/>
-<path d="M-22 -12 L22 -19 L22 19 L-22 12Z" fill="#e8895a"/>
-<rect x="18" y="-22" width="9" height="44" rx="3" fill="#d9744a"/>
+${person(330, 94, 116, 48, 176, "#ff4f93", "#f6c9a0", "#e0a030")}
+${monitor(190, 66, 172, "診察中", "#ff4f93")}
+<g transform="rotate(-6 150 146)">
+<rect x="126" y="118" width="48" height="60" fill="#fff"/>
+${text(132, 136, 12, "請求書")}
+<path d="M132 146H168M132 156H168" stroke="#cfd4ee" stroke-width="3"/>
+<rect x="132" y="164" width="22" height="9" rx="3" fill="#ffd21b" stroke-width="2"/>
 </g>
+<rect x="124" y="104" width="40" height="18" rx="9" fill="#ff4f93" stroke-width="2.5"/>
+${text(144, 117, 11, "2枚目", { anchor: "middle" })}
+${arm(312, 142, 176, 156, "#ff4f93", "#f6c9a0")}
 
-<g transform="translate(-12 0)">
-<rect x="262" y="152" width="98" height="9" rx="2" fill="#e8b46a"/>
-<rect x="268" y="161" width="8" height="74" fill="#c98a3f"/>
-<rect x="346" y="161" width="8" height="74" fill="#c98a3f"/>
-<rect x="274" y="116" width="80" height="36" rx="5" fill="#cfd8e8"/>
-<rect x="286" y="102" width="56" height="16" rx="2" fill="#fff"/>
-<rect x="284" y="130" width="58" height="7" rx="2" fill="${ink}"/>
-<circle cx="344" cy="126" r="3" fill="#ff4f93" stroke-width="2"/>
-<path d="M286 136 H340 V220 Q340 232 354 238 V252 H266 V240 Q286 232 286 220 Z" fill="#fff"/>
-<path d="M292 205H334M292 232H334" stroke="#cfd4ee" stroke-width="2"/>
-${text(313, 166, 12, "事故報告", { anchor: "middle" })}
-<path d="M292 174H334" stroke="#cfd4ee" stroke-width="2"/>
-</g>`;
+<rect x="172" y="172" width="190" height="10" rx="2" fill="#e8b46a"/>
+<rect x="176" y="182" width="184" height="62" fill="#c98a3f"/>
+<rect x="186" y="190" width="164" height="46" rx="4" fill="none" stroke="#e8b46a" stroke-width="2"/>
+${shadow(268, 250, 92)}`;
+
+const handoverPii = `
+${room("#fff8ce", "#f0d5a0", "#d9b87c")}
+<rect x="14" y="16" width="56" height="52" rx="4" fill="#bfe6ff"/>
+<path d="M42 16V68M14 42H70" stroke-width="2"/>
+
+${person(40, 120, 142, 52, 204, "#12dbb1", "#d9a37c", "#6b3f2a")}
+${shocked(40, 120)}
+${arm(16, 164, 6, 132, "#12dbb1", "#d9a37c")}
+${arm(64, 166, 88, 180, "#12dbb1", "#d9a37c")}
+${sparks(40, 90)}
+
+<rect x="-2" y="184" width="364" height="12" fill="#ffd21b"/>
+<rect x="-2" y="196" width="364" height="42" fill="#2236b8"/>
+<rect x="12" y="204" width="180" height="26" rx="6" fill="none" stroke="#5b70e6" stroke-width="2"/>
+${screen(100, 24, 240, 146, 184)}
+${text(134, 41, 10, "監査記録", { fill: "#fff" })}
+<rect x="112" y="50" width="216" height="24" rx="5" fill="#eef1ff" stroke-width="2"/>
+${text(120, 66, 12, "操作")}
+${text(160, 66, 11, "examination.started", { mono: true })}
+<rect x="112" y="78" width="216" height="24" rx="5" fill="#eef1ff" stroke-width="2"/>
+${text(120, 94, 12, "時刻")}
+<path d="M160 90H240" stroke="#9aa6e0" stroke-width="6"/>
+<rect x="112" y="106" width="216" height="24" rx="5" fill="#ffe0ee" stroke-width="2.5"/>
+${text(120, 122, 12, "氏名")}
+<path d="M160 118H230" stroke="#ff4f93" stroke-width="6"/>
+<rect x="112" y="134" width="216" height="24" rx="5" fill="#ffe0ee" stroke-width="2.5"/>
+${text(120, 150, 12, "電話番号")}
+<path d="M176 146H260" stroke="#ff4f93" stroke-width="6"/>
+${shadow(220, 252, 60)}`;
 
 const stateTransitions = `
 ${room("#fff8ce", "#f0d5a0", "#d9b87c", 198)}
@@ -345,8 +365,12 @@ ${text(208, Number(y) + 14.5, 12, String(label))}
 
 export const episodeScenes = {
   "00-system-handover": {
-    label: "初出勤の新人エンジニアが驚いて立っている。犬が観葉植物の鉢を倒し、プリンターは「事故報告」と書かれた紙を床まで吐き続けている",
+    label: "会計カウンターで、会計担当が犬の飼い主へ2枚目の請求書を差し出している。カウンターの画面には診察中と表示されている。飼い主は驚いた顔をしている",
     art: handover,
+  },
+  "00-system-handover-pii": {
+    label: "担当者が監査記録の画面を見て驚いている。画面には操作の行のほかに、氏名と電話番号の行が並んでいる",
+    art: handoverPii,
   },
   "01-state-transitions": {
     label: "会計を終えた猫の Mugi がドアから帰っていく。受付の大きな画面の中では、同じ Mugi の予約が診察中に戻って表示され、2枚目の請求書まで用意されている",
