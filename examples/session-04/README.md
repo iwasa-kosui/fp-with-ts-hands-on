@@ -8,7 +8,7 @@ pnpm --filter @fp-with-ts/clinic-session-04 typecheck
 pnpm --filter @fp-with-ts/clinic-session-04 test
 ```
 
-S04 の演習は、ブラウザの演習の画面で、悪い変更を検出する仕組みを足します。`pnpm exercise:04` は以前の演習のコマンドで、この回では使いません。
+S04 の演習は、ブラウザの演習の画面で、誤った変更を検出する仕組みを足します。`pnpm exercise:04` は以前の演習のコマンドで、この回では使いません。
 
 デモは `http://localhost:3000` で起動します。診察開始routeは複数の例外を投げますが、Web側は予約なしだけを文言でcatchするため、状態不正は500になります。
 

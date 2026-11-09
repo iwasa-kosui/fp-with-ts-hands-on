@@ -195,7 +195,7 @@ export const navigation = ({
   },
   next: {
     href: "/sessions/final/",
-    title: "参照実装で境界をたどる",
+    title: "参照実装で境界を追跡する",
   },
 } as const);
 

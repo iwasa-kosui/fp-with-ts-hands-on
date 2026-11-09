@@ -77,7 +77,7 @@ export default {
       id: "R1-peer-change",
       kind: "bad",
       subject: "startExamination",
-      title: "相互レビューで作る悪い変更",
+      title: "相互レビューで作る誤った変更",
       stage: 2,
       required: false,
       allow: ["types", "lint", "tests"],

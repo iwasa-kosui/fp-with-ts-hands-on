@@ -460,7 +460,7 @@ describe("GuardExercise", () => {
     );
     expect(host.querySelectorAll(".guard-exercise__steps > li")).toHaveLength(2);
     expect(host.querySelectorAll(".guard-exercise__steps ul li")).toHaveLength(2);
-    expect(host.textContent).not.toContain("悪い変更をコードで見る");
+    expect(host.textContent).not.toContain("誤った変更をコードで確認する");
   });
 
   it("renders guide segments with href as links and puts the step id on the item", async () => {

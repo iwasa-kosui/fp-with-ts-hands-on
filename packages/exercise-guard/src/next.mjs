@@ -84,10 +84,10 @@ export const buildNext = ({ rows, problems, stageOpened, passed, typesAllowed = 
     ...fixes,
     ...(noAllowedDetection && problems.length === 0
       ? [
-          `まだ悪い変更を 1 件も検出できていません。悪い変更を 1 件選び、eslint.config.mjs の rules に規則を足すか、exercises/guard/mine/ にある${typesAllowed ? "テストか型のテスト" : "テスト"}のファイルに書きます。`,
+          `まだ誤った変更を 1 件も検出できていません。誤った変更を 1 件選び、eslint.config.mjs の rules に Linter のルールを追加するか、exercises/guard/mine/ にある${typesAllowed ? "テストか型のテスト" : "テスト"}のファイルに書きます。`,
         ]
       : []),
-    ...(stageOpened > 0 ? [`追加の悪い変更が ${stageOpened} 件増えました。`] : []),
+    ...(stageOpened > 0 ? [`追加の誤った変更が ${stageOpened} 件増えました。`] : []),
     ...rows.filter((row) => row.verdict === "falsePositive").flatMap(falsePositiveSentences),
     ...slipped.map(slippedSentence),
   ];

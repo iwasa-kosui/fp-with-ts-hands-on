@@ -1,7 +1,7 @@
 ---
 import { Code } from "astro:components";
 
-const options = ["コードを直す", "規則を直す", "理由を付けて残す"] as const;
+const options = ["コードを修正する", "ルールを修正する", "理由を付けて残す"] as const;
 
 const cards = [
   {
@@ -9,8 +9,8 @@ const cards = [
     title: "new Date（2件）",
     code: "new Date(Date.parse(occurredAt) + sessionDurationMs).toISOString()",
     source: "examples/final/src/useCase/logInUseCase.ts:84 と setUpInitialAdminUseCase.ts:77",
-    decision: "規則を直す",
-    text: "受け取った時刻から計算しているだけで、現在の時刻を読んでいません。規則を、引数なしの new Date() だけを指す形に戻します。S06 の規則と同じ形です。app.ts の new Date() は clock の実装なので、src/useCase の外にあり、対象に入りません。",
+    decision: "ルールを修正する",
+    text: "受け取った時刻から計算しているだけで、現在の時刻を取得していません。ルールを、引数なしの new Date() だけを対象にする形に戻します。S06 のルールと同じ形です。app.ts の new Date() は clock の実装で、src/useCase の外にあるため対象外です。",
   },
   {
     id: "corruption",
@@ -26,7 +26,7 @@ const cards = [
     ].join("\n"),
     source: "examples/final/src/useCase/rejectExamResultPetMismatch.ts:3-9",
     decision: "理由を付けて残す",
-    text: "保存済みのデータが食い違っているときに投げる throw です。業務で対応を選べない破損なので、Err にせず例外境界へ渡します。規則を無効にするときは、無効にする行のコメントにこの理由を書きます。store の throw は src/adaptor にあり、src/useCase の外なので、この規則の対象に入りません。",
+    text: "保存済みのデータの不整合を検出したときに投げる throw です。業務で対応を選べない破損であるため、Err にせず例外境界へ渡します。ルールを無効にする行のコメントに、この理由を記載します。store の throw は src/adaptor にあり、src/useCase の外にあるため対象外です。",
   },
 ] as const;
 ---
@@ -48,7 +48,7 @@ const cards = [
       </div>
 
       <div class="rd__answer" data-answer aria-live="polite">
-        <p class="rd__placeholder">選ぶと、ここに教材の判断が出ます。</p>
+        <p class="rd__placeholder">選ぶと、ここに教材の判断が表示されます。</p>
         <div class="rd__answer-body" data-answer-body>
           <p class="rd__decision">この教材の判断: <strong>{card.decision}</strong></p>
           <p class="rd__text">{card.text}</p>
