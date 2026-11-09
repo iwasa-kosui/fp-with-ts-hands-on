@@ -286,8 +286,9 @@
   transition: opacity 0.3s, background-color 0.3s;
 }
 
-.ep-impl code[data-has-active] .line:not(.is-active) {
-  opacity: 0.5;
+.ep-impl code[data-has-active] .line:not(.is-active),
+.ep-impl code[data-has-active] .line:not(.is-active) span {
+  color: color-mix(in srgb, var(--frame-code-text, var(--role-surface)) 65%, var(--frame-code-surface, var(--role-text))) !important;
 }
 
 .ep-impl .line.is-active {

@@ -53,6 +53,18 @@
   z-index: 1;
 }
 
+.we-fig.we-fig--top > .step-controls[data-controls] {
+  gap: 0.25rem 0.375rem;
+}
+
+.we-fig.we-fig--top > .step-controls[data-controls] button:not(.walk__btn):not([hidden]) {
+  padding: 0 0.5rem;
+}
+
+.we-fig.we-fig--top > .step-controls[data-controls] button[data-play]:not(.walk__btn):not([hidden]) {
+  min-width: 5.5rem;
+}
+
 .we-frames {
   padding-inline-start: 1.5rem;
 }
@@ -86,7 +98,13 @@
 
 .we-fig--top[data-ready] .we-caption {
   min-height: 2.9rem;
-  padding-inline-end: 19rem;
+}
+
+.we-fig--top[data-ready] .we-caption::before {
+  float: inline-end;
+  width: calc(var(--step-controls-w, 0px) + 0.5rem);
+  height: var(--step-controls-h, 0px);
+  content: "";
 }
 
 .we-fig--top[data-ready] .we-body {
@@ -109,7 +127,7 @@
   gap: 0 0.5rem;
   padding: 0.125rem 0.625rem;
   border-bottom: 1px solid var(--role-border);
-  background: color-mix(in srgb, var(--role-border) 14%, var(--role-surface));
+  background: color-mix(in srgb, var(--role-border) 8%, var(--role-surface));
   color: var(--role-muted);
   font-size: 0.75rem;
   font-weight: 700;
@@ -138,13 +156,13 @@
 
 .we-code .astro-code,
 .we-code .astro-code span {
-  color: var(--shiki-light);
+  color: color-mix(in srgb, var(--shiki-light) 55%, var(--role-text));
 }
 
 @media (prefers-color-scheme: dark) {
   .we-code .astro-code,
   .we-code .astro-code span {
-    color: var(--shiki-dark);
+    color: color-mix(in srgb, var(--shiki-dark) 60%, var(--role-text));
   }
 }
 
@@ -171,8 +189,9 @@
   background: color-mix(in srgb, var(--band) 20%, transparent);
 }
 
-.we-code .line[data-skip] {
-  opacity: 0.4;
+.we-code .line[data-skip],
+.we-code .line[data-skip] span {
+  color: var(--role-muted);
 }
 
 .we-chip {

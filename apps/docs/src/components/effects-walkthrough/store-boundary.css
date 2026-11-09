@@ -109,8 +109,9 @@
   transition: opacity 0.3s, background-color 0.3s;
 }
 
-.sb-pane code[data-has-active] .line:not(.is-active) {
-  opacity: 0.4;
+.sb-pane code[data-has-active] .line:not(.is-active),
+.sb-pane code[data-has-active] .line:not(.is-active) span {
+  color: color-mix(in srgb, var(--frame-code-text, var(--role-surface)) 65%, var(--frame-code-surface, var(--role-text))) !important;
 }
 
 .sb-pane .line.is-active {
@@ -184,8 +185,8 @@
 }
 
 .sb-tx[data-tx="ended"] {
-  border-color: var(--walk-muted);
-  opacity: 0.7;
+  border-color: color-mix(in srgb, var(--walk-muted) 70%, transparent);
+  background: transparent;
 }
 
 .sb-tx__label,
@@ -197,7 +198,7 @@
 }
 
 .sb-db__label {
-  color: var(--walk-line);
+  color: var(--walk-muted);
 }
 
 .sb-slot {

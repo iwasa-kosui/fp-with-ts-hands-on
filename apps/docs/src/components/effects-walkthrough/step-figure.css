@@ -164,8 +164,9 @@
   box-shadow: inset 0.25rem 0 0 var(--frame-code-text, var(--role-surface));
 }
 
-.sf-code code[data-lit] .line:not(.is-lit) {
-  opacity: 0.5;
+.sf-code code[data-lit] .line:not(.is-lit),
+.sf-code code[data-lit] .line:not(.is-lit) span {
+  color: color-mix(in srgb, var(--frame-code-text, var(--role-surface)) 65%, var(--frame-code-surface, var(--role-text))) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
