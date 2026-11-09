@@ -291,6 +291,7 @@ export const CodeExplorer = ({
         ) : tabPaths !== undefined ? (
           <FileTabs
             paths={tabPaths(workspaceState.visiblePaths, selectedPath)}
+            allPaths={workspaceState.visiblePaths}
             selectedPath={selectedPath ?? ""}
             dirtyPaths={dirtyPaths}
             disabled={isLocked}

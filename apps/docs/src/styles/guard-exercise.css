@@ -690,7 +690,13 @@
 }
 
 .guard-exercise.code-playground .code-explorer__tabs-area .code-explorer__tabs button:has(.code-explorer__tab-tail) {
+  justify-content: flex-start;
+  gap: 0;
   min-width: calc(var(--tab-tail) + 1.5em + 1.55rem);
+}
+
+.guard-exercise.code-playground .code-explorer__tabs-area .code-explorer__tabs button:has(.code-explorer__tab-tail) .code-explorer__dirty {
+  margin-left: 0.25rem;
 }
 
 .guard-exercise.code-playground .code-explorer__tabs-area .code-explorer__tabs button:not([aria-pressed="true"]) {
@@ -708,27 +714,113 @@
 
 .guard-exercise.code-playground .code-explorer__tab-tail {
   flex: none;
-  margin-left: -0.25rem;
   white-space: nowrap;
 }
 
 .guard-exercise.code-playground .code-explorer__tabs-area {
+  position: relative;
   grid-row: 1;
   grid-column: 1 / -1;
   min-width: 0;
 }
 
-.guard-exercise.code-playground .code-explorer__path {
-  max-width: none;
-  margin: 0;
+.guard-exercise.code-playground .code-explorer__path-toggle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
   padding: 0.2rem 0.7rem;
+  border: 0;
   border-bottom: 1px solid var(--role-rule);
   background: var(--playground-surface);
   color: var(--playground-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.guard-exercise.code-playground .code-explorer__path-toggle:hover:not(:disabled) {
+  background: var(--playground-highlight);
+}
+
+.guard-exercise.code-playground .code-explorer__path-toggle:focus-visible,
+.guard-exercise.code-playground .code-explorer__file-list button:focus-visible {
+  outline: 2px solid var(--playground-primary);
+  outline-offset: -2px;
+}
+
+.guard-exercise.code-playground .code-explorer__path {
+  min-width: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   font-size: 0.8125rem;
   line-height: 1.3;
   overflow-wrap: anywhere;
+}
+
+.guard-exercise.code-playground .code-explorer__path-action {
+  flex: none;
+  color: var(--role-muted);
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.guard-exercise.code-playground .code-explorer__file-list {
+  position: absolute;
+  z-index: 30;
+  top: 100%;
+  right: 0;
+  left: 0;
+  max-height: min(24rem, calc(100dvh - 15rem));
+  overflow-y: auto;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--role-rule);
+  background: var(--playground-surface);
+  color: var(--playground-text);
+  box-shadow: 0 0.5rem 1rem rgb(0 0 0 / 0.2);
+}
+
+.guard-exercise.code-playground .code-explorer__file-list h3.code-explorer__file-list-folder {
+  margin: 0.35rem 0 0.1rem;
+  padding: 0 0.7rem;
+  color: var(--role-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.guard-exercise.code-playground .code-explorer__file-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guard-exercise.code-playground .code-explorer__file-list button {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.15rem 0.7rem 0.15rem 1.4rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.guard-exercise.code-playground .code-explorer__file-list button:hover {
+  background: var(--playground-highlight);
+}
+
+.guard-exercise.code-playground .code-explorer__file-list button[aria-current="true"] {
+  background: var(--playground-highlight);
+  font-weight: 700;
 }
 
 .guard-exercise.code-playground .code-explorer__path-folder {

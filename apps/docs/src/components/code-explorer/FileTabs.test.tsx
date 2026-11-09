@@ -5,7 +5,10 @@ import { FileTabs } from "./FileTabs";
 
 const roots: Root[] = [];
 
-const mountTabs = async (paths: readonly string[]) => {
+const mountTabs = async (
+  paths: readonly string[],
+  onSelect: (path: string) => void = () => undefined,
+) => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -14,10 +17,11 @@ const mountTabs = async (paths: readonly string[]) => {
     root.render(
       <FileTabs
         paths={paths}
+        allPaths={paths}
         selectedPath={paths[0] ?? ""}
         dirtyPaths={new Set()}
         disabled={false}
-        onSelect={() => undefined}
+        onSelect={onSelect}
       />,
     );
   });
@@ -61,5 +65,65 @@ describe("FileTabs", () => {
     expect(tab(host, "eslint.config.mjs")?.querySelector("span")?.textContent).toBe(
       "eslint.config.mjs",
     );
+  });
+
+  it("opens a list of every file grouped by folder without shortening names", async () => {
+    const host = await mountTabs([
+      "eslint.config.mjs",
+      "exercises/guard/mine/audit.test.ts",
+      "exercises/guard/mine/audit.type-test.ts",
+    ]);
+    const toggle = host.querySelector<HTMLButtonElement>(
+      ".code-explorer__path-toggle",
+    );
+    expect(host.querySelector('[role="group"]')).toBeNull();
+
+    await act(async () => {
+      toggle?.click();
+    });
+
+    const list = host.querySelector('[role="group"]');
+    expect(list).not.toBeNull();
+    expect(
+      [...(list?.querySelectorAll("h3") ?? [])].map((h) => h.textContent),
+    ).toEqual(["プロジェクトの直下", "exercises/guard/mine/"]);
+    expect(
+      [...(list?.querySelectorAll("li button") ?? [])].map((b) => b.textContent),
+    ).toEqual(["eslint.config.mjs", "audit.test.ts", "audit.type-test.ts"]);
+  });
+
+  it("selects the chosen file and closes the list", async () => {
+    const onSelect = vi.fn();
+    const host = await mountTabs(
+      ["eslint.config.mjs", "exercises/guard/mine/audit.test.ts"],
+      onSelect,
+    );
+    await act(async () => {
+      host.querySelector<HTMLButtonElement>(".code-explorer__path-toggle")?.click();
+    });
+    await act(async () => {
+      host
+        .querySelector<HTMLButtonElement>(
+          'button[data-file-list-path="exercises/guard/mine/audit.test.ts"]',
+        )
+        ?.click();
+    });
+
+    expect(onSelect).toHaveBeenCalledWith("exercises/guard/mine/audit.test.ts");
+    expect(host.querySelector('[role="group"]')).toBeNull();
+  });
+
+  it("closes the list with Escape", async () => {
+    const host = await mountTabs(["eslint.config.mjs"]);
+    await act(async () => {
+      host.querySelector<HTMLButtonElement>(".code-explorer__path-toggle")?.click();
+    });
+    expect(host.querySelector('[role="group"]')).not.toBeNull();
+
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    });
+
+    expect(host.querySelector('[role="group"]')).toBeNull();
   });
 });
