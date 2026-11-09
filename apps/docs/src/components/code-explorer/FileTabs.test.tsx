@@ -151,9 +151,9 @@ describe("FileTabs", () => {
       heading.querySelector(".code-explorer__file-list-role")?.textContent ?? null,
     ]);
     expect(roles).toEqual([
-      ["プロジェクトの直下", "Linter の規則を書く"],
-      [guardPaths.mine, "テストを書く"],
-      [guardPaths.cases, "悪い変更。読むだけ"],
+      ["プロジェクトの直下", "Linter のルールを実装"],
+      [guardPaths.mine, "テストを実装"],
+      [guardPaths.cases, "誤った変更。閲覧のみ"],
       [guardPaths.subjects, null],
     ]);
   });

@@ -58,6 +58,6 @@ describe("own-rule-storage", () => {
 
   it("場面の id から表示名を返す", () => {
     expect(momentLabel("write")).toBe("型検査のとき");
-    expect(momentLabel("human")).toBe("人が気づくとき");
+    expect(momentLabel("human")).toBe("人が発見するとき");
   });
 });

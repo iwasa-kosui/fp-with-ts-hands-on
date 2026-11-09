@@ -36,7 +36,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
               <h1 id="page-title">ようこそ<br />WAN NYAN<br /><span class="rainbow-word" aria-label="OSへ！！"><span>O</span><span>S</span><span>へ</span><span>！</span><span>！</span></span></h1>
             </div>
             <div class="landing-intro">
-              <p class="landing-lead">動物病院の予約・カルテ管理システムを題材に、業務のルールを型と関数で表す教材です。既存のコードを少しずつ改善しながら、設計の理由を学びます。個人学習にもハンズオンにも使えます。</p>
+              <p class="landing-lead">動物病院の予約・カルテ管理システムを題材に、業務ルールを型と関数で表現する教材です。既存のコードを順に改善しながら、設計の理由を学びます。個人学習にもハンズオンにも使えます。</p>
               <div class="learning-actions" aria-label="教材を始める">
                 <a href="/setup/">事前準備 <span aria-hidden="true">→</span></a>
                 <a href="/sessions/">セッション一覧 <span aria-hidden="true">→</span></a>
@@ -59,8 +59,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
                 <section class="schedule-board" aria-labelledby="dashboard-title">
                   <div class="board-head"><h2 id="dashboard-title">今日の診察</h2><span class="date-pill">画面例</span></div>
                   <div class="appointment-grid" aria-label="予約一覧">
-                    <article class="appointment-card"><span class="pet-icon" aria-hidden="true">🐕</span><span class="time">09:20</span><strong>ポチ / ワクチン</strong><p>受付済み。診察室 1 へ案内待ち。体重測定済み。</p></article>
-                    <article class="appointment-card"><span class="pet-icon" aria-hidden="true">🐈</span><span class="time">09:40</span><strong>ミケ / 皮膚相談</strong><p>予約済み。飼い主アプリから問診票が届いた。</p></article>
+                    <article class="appointment-card"><span class="pet-icon" aria-hidden="true">🐕</span><span class="time">09:20</span><strong>ポチ / ワクチン</strong><p>受付済み。診察室 1 への案内待ち。体重測定済み。</p></article>
+                    <article class="appointment-card"><span class="pet-icon" aria-hidden="true">🐈</span><span class="time">09:40</span><strong>ミケ / 皮膚相談</strong><p>予約済み。飼い主アプリから問診票を受信した。</p></article>
                     <article class="appointment-card"><span class="pet-icon" aria-hidden="true">🐇</span><span class="time">10:10</span><strong>もも / 再診</strong><p>診察中。体重と食欲メモをカルテに反映。</p></article>
                   </div>
                   <div class="chart-card" aria-label="カルテ詳細">
@@ -72,13 +72,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
                 <aside class="dashboard-notices" aria-label="待合と通知">
                   <section class="mini-widget"><h3>待合室</h3><div class="queue-row"><span>🐶</span><strong>ポチ</strong><em>あと 1</em></div><div class="queue-row"><span>🐱</span><strong>ミケ</strong><em>問診済</em></div><div class="queue-row"><span>🐰</span><strong>もも</strong><em>診察中</em></div></section>
                   <section class="mini-widget"><h3>検査結果</h3><p>ポチのワクチン前チェックは異常なし。ミケは皮膚検査待ち。</p></section>
-                  <section class="mini-widget"><h3>追加要求</h3><p>検査後に電話でフォローが必要な飼い主を抽出したい。連絡先がログに漏れている可能性もある。</p></section>
+                  <section class="mini-widget"><h3>追加要求</h3><p>検査後に電話でフォローが必要な飼い主を抽出したい。個人情報がログに漏えいしている可能性もある。</p></section>
                   <section class="mini-widget"><h3>会計</h3><p>ポチはワクチン会計準備中。ミケは検査内容確定後に見積り更新。</p></section>
                 </aside>
               </div>
             </div>
           </div>
-          <div class="below-fold-cue"><span>下にスクロールして、WAN NYAN OS の機能と、現場で起き始めた問題を確認します。</span><span class="animal-train" aria-hidden="true">🐈 🐕 🐇 🐢 🦜 🦔</span></div>
+          <div class="below-fold-cue"><span>下にスクロールして、WAN NYAN OS の機能と、運用中に発生し始めた問題を確認します。</span><span class="animal-train" aria-hidden="true">🐈 🐕 🐇 🐢 🦜 🦔</span></div>
         </section>
 
         <section class="landing-section" id="features" aria-labelledby="features-title">
@@ -95,15 +95,15 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         </section>
 
         <section class="landing-section" id="problems" aria-labelledby="problems-title">
-          <div class="section-head"><h2 id="problems-title">ところが、問題が増えてきました</h2><p>便利になった分だけ、要求も増えました。小さな改修を重ねるうちに、どの状態で何ができるのか、どの情報を外へ出してよいのかが分かりにくくなっています。</p></div>
-          <div class="timeline" aria-label="WAN NYAN OS に起きている問題">
-            <article class="time-stop is-active"><time>Current / S00</time><strong>🐕 現状と事故を対応付ける</strong><span>業務の流れ、画面操作、保存先、ログを確認し、二重請求と個人情報の流出がどこで起きたかを確かめます。</span></article>
-            <article class="time-stop"><time>Risk / S01</time><strong>🐇 許可されない状態遷移</strong><span>会計済み・キャンセル済みの予約でも診察を開始できてしまうリスクを、状態と遷移の型で防ぎます。</span></article>
-            <article class="time-stop"><time>Risk / S02</time><strong>🦔 状態の分岐漏れ</strong><span>予約の状態を追加したときに、表示名などの分岐を直し忘れるリスクを、コンパイルエラーで防ぎます。</span></article>
+          <div class="section-head"><h2 id="problems-title">ところが、問題が増えてきました</h2><p>便利になった分だけ、要求も増えました。小さな改修を重ねるうちに、どの状態でどの操作を許可するのか、どの情報を外部へ出力してよいのかが不明確になっています。</p></div>
+          <div class="timeline" aria-label="WAN NYAN OS に発生している問題">
+            <article class="time-stop is-active"><time>Current / S00</time><strong>🐕 現状と事故を対応付ける</strong><span>業務の流れ、画面操作、保存先、ログを確認し、二重請求と個人情報の流出がどこで発生したかを確認します。</span></article>
+            <article class="time-stop"><time>Risk / S01</time><strong>🐇 許可されない状態遷移</strong><span>会計済み・キャンセル済みの予約でも診察を開始できるリスクを、状態と遷移の型で防止します。</span></article>
+            <article class="time-stop"><time>Risk / S02</time><strong>🦔 状態の分岐漏れ</strong><span>予約の状態を追加したときに、表示名などの分岐の修正漏れを、コンパイルエラーで防止します。</span></article>
             <article class="time-stop"><time>Risk / S03</time><strong>🐦 未検証の外部入力</strong><span>HTTPから受け取った値をZodで検証し、値の制約を型で表した診察開始の入力へ変換します。</span></article>
-            <article class="time-stop"><time>Risk / S04</time><strong>🐹 ユースケースの予期できる失敗</strong><span>throw と undefined で表している業務上の失敗を、呼び出し側が扱える結果へ変えます。</span></article>
-            <article class="time-stop"><time>Workflow / S05</time><strong>🐈 予約キャンセルを設計する</strong><span>予約のデータから始め、キャンセルを工程に分けて失敗の流れを捉え、I/Oの分離を確かめます。工程の条件を守る仕組みも選びます。</span></article>
-            <article class="time-stop"><time>Risk / S06</time><strong>🐢 出力イベントと副作用</strong><span>時刻や保存処理を外から渡し、状態と監査記録を同じ整合性境界で保存します。</span></article>
+            <article class="time-stop"><time>Risk / S04</time><strong>🐹 ユースケースの予期できる失敗</strong><span>throw と undefined で表している業務上の失敗を、呼び出し側が扱える結果へ変換します。</span></article>
+            <article class="time-stop"><time>Workflow / S05</time><strong>🐈 予約キャンセルを設計する</strong><span>予約のデータから始め、キャンセルを工程に分けて失敗の流れを捉え、I/Oの分離を確認します。工程の条件を守る仕組みも選びます。</span></article>
+            <article class="time-stop"><time>Risk / S06</time><strong>🐢 出力イベントと副作用</strong><span>時刻や保存処理を外部から渡し、状態と監査記録を同じ整合性境界で保存します。</span></article>
           </div>
           <div class="learning-actions"><a href="/sessions/00-system-handover/roadmap/">研修の進み方（Session ごとに実装する業務ルール）を見る <span aria-hidden="true">→</span></a></div>
         </section>

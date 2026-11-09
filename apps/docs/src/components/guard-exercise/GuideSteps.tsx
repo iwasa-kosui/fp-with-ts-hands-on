@@ -3,9 +3,9 @@ import type { GuardGuide, GuardGuideSegment } from "./CaseList";
 export const defaultGuide: GuardGuide = {
   title: "この演習でやること",
   steps: [
-    "悪い変更をコードで見る",
+    "誤った変更をコードで確認する",
     "どの仕組みで検出するかを選ぶ",
-    "仕組みを足して「検出を確かめる」を押す",
+    "仕組みを追加して「検出を確かめる」を押す",
   ],
 };
 

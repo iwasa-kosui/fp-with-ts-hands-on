@@ -7,11 +7,11 @@ const { staticView = false } = Astro.props;
 
 const steps = [
   { text: "これが S00 で見た、1回の依頼が通る5つのステップです。" },
-  { label: "入力境界", from: 1, to: 1, lane: 2, text: "検査していない値を、内側へ渡しません。S03 で作りました。" },
-  { label: "業務上の失敗", from: 2, to: 3, lane: 2, text: "予約なしや状態不正を例外にせず、型の付いた Err で返します。S01、S02、S04 で作りました。" },
-  { label: "出力イベント", from: 3, to: 3, lane: 3, text: "判断に成功した経路だけが、イベントを作ります。S05 と S06 で見ました。" },
-  { label: "副作用", from: 4, to: 4, lane: 2, text: "状態と監査記録を、1回で保存します。S06 で作りました。" },
-  { label: "例外境界", from: 5, to: 5, lane: 2, text: "障害を業務の結果に混ぜず、共通の場所で 500 を返します。S04 で作りました。" },
+  { label: "入力境界", from: 1, to: 1, lane: 2, text: "検証していない値を、内側へ渡しません。S03 で実装しました。" },
+  { label: "業務上の失敗", from: 2, to: 3, lane: 2, text: "予約なしや状態不正を例外にせず、型付きの Err で返します。S01、S02、S04 で実装しました。" },
+  { label: "出力イベント", from: 3, to: 3, lane: 3, text: "判断に成功した経路だけが、イベントを生成します。S05 と S06 で確認しました。" },
+  { label: "副作用", from: 4, to: 4, lane: 2, text: "状態と監査記録を、1回の transaction で保存します。S06 で実装しました。" },
+  { label: "例外境界", from: 5, to: 5, lane: 2, text: "障害を業務の結果に含めず、共通の箇所で 500 を返します。S04 で実装しました。" },
 ] as const;
 
 const tags = steps.flatMap((step, index) => ("label" in step ? [{ ...step, at: index }] : []));
@@ -22,7 +22,7 @@ const tags = steps.flatMap((step, index) => ("label" in step ? [{ ...step, at: i
   data-boundary-overlay
   data-static={staticView ? "" : undefined}
   data-step-figure={staticView ? undefined : ""}
-  aria-label="5つのステップと、ステップごとの境界の札"
+  aria-label="5つのステップと、ステップごとの境界のラベル"
 >
   {!staticView && (
     <div class="bo__controls" data-controls hidden>

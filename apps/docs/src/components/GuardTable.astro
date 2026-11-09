@@ -11,14 +11,14 @@ const snapshots = [...new Set(modules.map(({ dir }) => snapshotOf(dir)))];
 ---
 
 <section class="peer-review-panel">
-  <h3>仕組みで防ぐ方法を班で話す</h3>
+  <h3>仕組みで防ぐ方法を班で議論する</h3>
   <p set:html={question} />
-  <p>候補は、Agent に伝える仕組み（コンテキスト、スキル）と、守られなかったときに止める仕組み（静的検査、テスト、CI、hook）です。正解は決まっていません。この話し合いは、相互レビューの時間の中で行います。ひとりの場合は、案をメモします。</p>
+  <p>候補は、Agent に伝える仕組み（コンテキスト、スキル）と、守られなかったときに処理を中断する仕組み（静的検査、テスト、CI、hook）です。唯一の正解はありません。この話し合いは、相互レビューの時間の中で行います。ひとりの場合は、案をメモします。</p>
   <details class="step-solution">
-    <summary>話したあとで見比べる: この演習で何が問題を止めたか</summary>
+    <summary>議論のあとで比較する: この演習で問題を防止した仕組み</summary>
     <div class="step-solution__body">
       <table>
-        <thead><tr><th scope="col">起きてほしくないこと</th><th scope="col">止めた仕組み</th><th scope="col">結果を確かめる場所</th></tr></thead>
+        <thead><tr><th scope="col">発生させたくないこと</th><th scope="col">防止した仕組み</th><th scope="col">結果を確認する場所</th></tr></thead>
         <tbody>
           {rows.map((row) => (
             <tr>
@@ -29,9 +29,9 @@ const snapshots = [...new Set(modules.map(({ dir }) => snapshotOf(dir)))];
           ))}
           <tr>
             <th scope="row">指定の外のファイルや演習テストを書き換える</th>
-            <td>まだ自動では止まりません。</td>
+            <td>まだ自動では防止されません。</td>
             <td>
-              <code>git status --short</code> と <code>git diff --stat -- {snapshots.join(" ")}</code> を人が確かめます。
+              <code>git status --short</code> と <code>git diff --stat -- {snapshots.join(" ")}</code> を人が確認します。
               {modules.map(({ dir, fileBudget, lineBudget }) => (
                 <Fragment><code>{dir}</code> の目安は最大 {fileBudget} ファイル、約 {lineBudget} 行です。</Fragment>
               ))}
@@ -39,12 +39,12 @@ const snapshots = [...new Set(modules.map(({ dir }) => snapshotOf(dir)))];
           </tr>
           <tr>
             <th scope="row"><code>as</code> で型エラーを隠す</th>
-            <td>まだ自動では止まりません。</td>
-            <td><code>as</code> の全文検索を人が確かめます。</td>
+            <td>まだ自動では防止されません。</td>
+            <td><code>as</code> の全文検索を人が確認します。</td>
           </tr>
         </tbody>
       </table>
-      <p>上の行は、検査を書き換えなければ、機械が結果を判定します。下の2行は、まだ人が確かめています。Final の「依頼文ではなく仕組みで防ぐ」で、話した案と現場で足す仕組みを見比べます。</p>
+      <p>上の行は、検査を書き換えなければ、機械が結果を判定します。下の2行は、まだ人が確認しています。Final の「次に足す仕組みを1つ選ぶ」で、議論した案と、担当業務に追加する仕組みを比較します。</p>
     </div>
   </details>
 </section>

@@ -50,8 +50,8 @@ export const CaseList = ({
 }: CaseListProps) => (
   <div className="guard-exercise__cases-inner">
     <div className="guard-exercise__cases">
-      <h3>悪い変更</h3>
-      <ul className="guard-exercise__case-list" aria-label="悪い変更の一覧">
+      <h3>誤った変更</h3>
+      <ul className="guard-exercise__case-list" aria-label="誤った変更の一覧">
         {rows
           .filter(({ kind }) => kind === "bad")
           .map((row) => {

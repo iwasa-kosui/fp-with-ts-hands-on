@@ -47,9 +47,9 @@ const groupByFolder = (
 };
 
 const folderRoles: Readonly<Record<string, string>> = {
-  "": "Linter の規則を書く",
-  [guardPaths.mine]: "テストを書く",
-  [guardPaths.cases]: "悪い変更。読むだけ",
+  "": "Linter のルールを実装",
+  [guardPaths.mine]: "テストを実装",
+  [guardPaths.cases]: "誤った変更。閲覧のみ",
 };
 
 const stemOf =(name: string): string => {

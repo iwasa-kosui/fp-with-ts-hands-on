@@ -3,12 +3,12 @@ import { sessionPageHref } from "../../sessions/pages/links";
 import type { NoticeMomentId } from "../handover/notice-moments";
 
 const mechanisms: Readonly<Record<NoticeMomentId, string>> = {
-  write: "型と Linter の規則です。S01 から S06 までの演習で足しました。",
-  test: "テストです。S01 から S06 までの演習で足しました。",
-  run: "境界の検査と Result です。S03 と S04 で足しました。",
-  human: "相互レビューです。機械で確かめられないことを、人が確かめます。",
+  write: "型と Linter のルールです。S01 から S06 までの演習で追加しました。",
+  test: "テストです。S01 から S06 までの演習で追加しました。",
+  run: "境界の検査と Result です。S03 と S04 で追加しました。",
+  human: "相互レビューです。機械で検証できないことを、人が確認します。",
 };
-const noGoal = "気づきたい場面を選ぶと、使える仕組みが出ます。";
+const noGoal = "検出できるようにする時点を選択すると、使用できる仕組みが表示されます。";
 
 const ruleHref = sessionPageHref("00-system-handover", "your-rule");
 ---
@@ -18,34 +18,34 @@ const ruleHref = sessionPageHref("00-system-handover", "your-rule");
   data-own-rule-review
   data-mechanisms={JSON.stringify(mechanisms)}
   data-no-goal={noGoal}
-  aria-label="S00 で書いた決まりと、使える仕組み"
+  aria-label="S00 で記入した業務ルールと、使用できる仕組み"
 >
   <p class="orr__notice" data-empty-notice hidden>
-    S00 の決まりがこのブラウザに保存されていません。S00 のページに書くと、ここに出ます。<a href={ruleHref}>S00 の決まりを書くページ</a>
+    S00 の業務ルールがこのブラウザに保存されていません。S00 のページに記入すると、ここに表示されます。<a href={ruleHref}>担当システムの暗黙の業務ルールを1つ選ぶ</a>
   </p>
 
   <div class="orr__body" data-body hidden>
     <section class="orr__block">
-      <h3 class="orr__heading">書いた決まり</h3>
+      <h3 class="orr__heading">記入した業務ルール</h3>
       <p class="orr__rule" data-rule tabindex="0"></p>
     </section>
 
     <section class="orr__block">
       <div class="orr__moments">
         <div class="orr__moment">
-          <h3 class="orr__heading">今気づく場面</h3>
+          <h3 class="orr__heading">現在検出される時点</h3>
           <p class="orr__value" data-moment="now"></p>
         </div>
         <span class="orr__arrow" aria-hidden="true">→</span>
         <div class="orr__moment">
-          <h3 class="orr__heading">気づきたい場面</h3>
+          <h3 class="orr__heading">検出できるようにする時点</h3>
           <p class="orr__value" data-moment="goal"></p>
         </div>
       </div>
     </section>
 
     <section class="orr__block">
-      <h3 class="orr__heading">気づきたい場面で使える仕組み</h3>
+      <h3 class="orr__heading">その時点で検出するために使える仕組み</h3>
       <p class="orr__mechanism" data-mechanism></p>
     </section>
   </div>

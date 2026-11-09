@@ -2,9 +2,9 @@
 import { whats, wheres } from "./next-mechanism";
 ---
 
-<figure class="nm" data-next-mechanism aria-label="次に足す仕組みと、動かす場所の選択">
+<figure class="nm" data-next-mechanism aria-label="次に追加する仕組みと、実行する場所の選択">
   <fieldset class="nm__group">
-    <legend>依頼文に書きたくなること</legend>
+    <legend>依頼文に記載したくなる内容</legend>
     <div class="nm__whats">
       {whats.map((what) => (
         <label class="nm__what">
@@ -17,7 +17,7 @@ import { whats, wheres } from "./next-mechanism";
   </fieldset>
 
   <fieldset class="nm__group" data-wheres disabled>
-    <legend>どこで動かすか<span class="nm__hint" data-hint>仕組みを選ぶと、ここから1つ選べます。</span></legend>
+    <legend>実行する場所<span class="nm__hint" data-hint>仕組みを選ぶと、ここから1つ選べます。</span></legend>
     <div class="nm__wheres">
       {wheres.map((where) => (
         <label class="nm__where" data-where={where.id}>
