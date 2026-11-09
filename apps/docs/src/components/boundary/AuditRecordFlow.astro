@@ -2,6 +2,8 @@
 import { Code } from "astro:components";
 import { clinicFixture } from "../../../../../examples/fixtures/clinic";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
+import MiniTree from "../mini-tree/MiniTree.astro";
+import { miniTree } from "../mini-tree/mini-tree";
 import { blockOf, lineLabelOf } from "../../sessions/source-quotes";
 import StepControls from "../stepper/StepControls.astro";
 
@@ -13,6 +15,15 @@ const { part } = Astro.props;
 
 const repositoryPath = "src/adaptor/secondary/sqlite/appointmentRepository.ts";
 const auditPayloadPath = "src/adaptor/secondary/sqlite/auditPayload.ts";
+
+const repositoryFile = { id: "repo", name: "appointmentRepository.ts" };
+const treeBefore = miniTree("session-03", "src/", [{ folder: "adaptor/secondary/sqlite/", files: [repositoryFile] }]);
+const treeAfter = miniTree("session-03-solution", "src/", [
+  {
+    folder: "adaptor/secondary/sqlite/",
+    files: [repositoryFile, { id: "audit", name: "auditPayload.ts", note: "（新しいファイル）" }],
+  },
+]);
 
 const dedent = (source: string) => {
   const lines = source.split("\n");
@@ -109,6 +120,7 @@ const litData = JSON.stringify(lit);
 
   <div class:list={["audit-flow__columns", { "audit-flow__columns--single": !showsAfter }]}>
     <section class="audit-flow__column" data-side="before">
+      <MiniTree tree={treeBefore} current={["repo"]} />
       <figure class="code-block audit-flow__code">
         <figcaption>
           <span class="audit-flow__tag audit-flow__tag--before">{sides.before.label}</span>
@@ -137,6 +149,7 @@ const litData = JSON.stringify(lit);
 
     {showsAfter && (
       <section class="audit-flow__column" data-side="after">
+        <MiniTree tree={treeAfter} current={["audit"]} />
         <figure class="code-block audit-flow__code">
           <figcaption>
             <span class="audit-flow__tag audit-flow__tag--after">{sides.after.label}</span>
@@ -246,6 +259,14 @@ const litData = JSON.stringify(lit);
     align-content: start;
     gap: 0.75rem;
     min-width: 0;
+  }
+
+  .audit-flow :global(.mini-tree) {
+    column-gap: 0.25rem;
+  }
+
+  .audit-flow :global(.mini-tree .mini-tree__group) {
+    display: contents;
   }
 
   .audit-flow__code {
@@ -477,6 +498,10 @@ const litData = JSON.stringify(lit);
       grid-template-columns: repeat(2, minmax(0, 1fr));
       align-items: start;
     }
+
+    .audit-flow__columns--single .audit-flow__column > :global(.mini-tree) {
+      grid-column: 1 / -1;
+    }
   }
 
   @media (max-width: 40rem) {
@@ -513,6 +538,32 @@ const litData = JSON.stringify(lit);
 
     .audit-flow__frames {
       margin-block-start: 0.25rem;
+    }
+  }
+
+  @media (max-height: 700px) {
+    .audit-flow :global(.step-controls) {
+      margin-block-end: 0.25rem;
+    }
+
+    .audit-flow__arrows {
+      display: none;
+    }
+
+    .audit-flow__frames {
+      margin-block-start: 0;
+    }
+
+    .audit-flow__record {
+      padding-block: 0.25rem;
+    }
+
+    .audit-flow__record-title {
+      margin-block-end: 0.125rem;
+    }
+
+    .audit-flow__row {
+      padding-block: 0.0625rem;
     }
   }
 </style>

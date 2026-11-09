@@ -1,6 +1,7 @@
 import type { CodeGuide } from "../../code-explorer/code-guide";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import type { SessionWorkspace } from "../../code-explorer/types";
+import { miniTree } from "../../components/mini-tree/mini-tree";
 import { loadSolutionSnippets } from "../solution-snippets";
 import { lineLabelOf, pathLabelOf, sourceOf } from "../source-quotes";
 import type {
@@ -196,6 +197,21 @@ export const guides = ([
     highlights: [{ startLineNumber: 1, endLineNumber: 15 }],
   },
 ] as const) satisfies readonly CodeGuide[];
+
+const guideTree = miniTree("session-03", "src/", [
+  {
+    folder: "adaptor/primary/web/",
+    files: [
+      { id: "route", name: "routes.ts" },
+      { id: "input", name: "startExaminationInput.ts" },
+    ],
+  },
+]);
+
+export const guideTrees = {
+  "http-start-examination-input": { tree: guideTree, current: ["route"] },
+  "unvalidated-start-examination-input": { tree: guideTree, current: ["input"] },
+} as const;
 
 export const paymentAmountQuote = ({
   source: pathLabelOf("final", "src/domain/appointment/paymentAmount.ts"),

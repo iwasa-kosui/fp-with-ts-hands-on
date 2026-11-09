@@ -2,6 +2,8 @@
 import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
 import { keyedTransformer } from "./code-cache-key";
+import MiniTree from "./mini-tree/MiniTree.astro";
+import { miniTree } from "./mini-tree/mini-tree";
 
 type Snippet = Readonly<{ path: string; code: string }>;
 type Props = Readonly<{
@@ -170,6 +172,18 @@ const frames: readonly Frame[] = [
   },
 ];
 
+const inputFile = { id: "input", name: "startExaminationInput.ts" };
+const treeBefore = miniTree("session-03", "src/", [{ folder: "adaptor/primary/web/", files: [inputFile] }]);
+const treeAfter = miniTree("session-03-solution", "src/", [
+  { folder: "domain/shared/", files: [{ id: "schemaResult", name: "schemaResult.ts" }] },
+  { folder: "adaptor/primary/web/", files: [inputFile] },
+]);
+const treeFor = (key: keyof Props["code"]) => {
+  if (key === "before") return { tree: treeBefore, current: ["input"] };
+  if (key === "schemaResult") return { tree: treeAfter, current: ["schemaResult"] };
+  return { tree: treeAfter, current: ["input"] };
+};
+
 const shownFrames = part === undefined ? frames : frames.filter((frame) => frame.part === part);
 const initial = shownFrames[0];
 const nightShift = "\"night-shift\"";
@@ -329,6 +343,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     {shownFrames.map((frame) => (
       <li data-frame data-has-code={frame.code ? "" : undefined}>
         <p class="schema-source-flow__caption">{frame.caption}</p>
+        {frame.code && frame.stage && <MiniTree tree={treeFor(frame.code.key).tree} current={treeFor(frame.code.key).current} />}
         {frame.code && frame.stage && (
           <figure class="code-block schema-source-flow__code" data-version={frame.stage}>
             <figcaption><span class="schema-source-flow__tag" data-version={frame.stage}>{versionLabels[frame.stage]}</span> <code>{code[frame.code.key].path}</code></figcaption>
@@ -945,6 +960,36 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     .schema-source-flow__sizer {
       margin-block-end: 0.25rem;
       line-height: 1.45;
+    }
+  }
+
+  @media (max-height: 700px) {
+    .schema-source-flow .schema-source-flow__controls {
+      margin-bottom: 0.125rem;
+    }
+
+    .schema-source-flow__live,
+    .schema-source-flow__sizer {
+      margin-block-end: 0;
+      line-height: 1.3;
+    }
+
+    .schema-source-flow :global(.mini-tree) {
+      row-gap: 0;
+      line-height: 1.15;
+    }
+
+    .schema-source-flow :global(.mini-tree__file) {
+      padding-block: 0;
+    }
+
+    .schema-source-flow__code {
+      margin-block-start: 0;
+    }
+
+    .schema-source-flow__code figcaption {
+      padding-block: 0;
+      line-height: 1.3;
     }
   }
 
