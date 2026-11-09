@@ -1,7 +1,7 @@
 import ExceptionOrResultAnimation from "../../../components/ExceptionOrResultAnimation.astro";
 
-<p>課題2の後半です。保存中にデータベースへの接続が切れるような障害では、利用者が次の操作を選べません。この失敗は Result に含めず、例外のまま送出（throw）します。例外は useCase の外へ伝わり、最後に受け取る場所（<code>app.onError</code>）が 500 を返します。</p>
+<p>課題2の後半です。保存中にデータベースへの接続が切れるような障害では、利用者が次の操作を選べないため、Result に含めず、例外のまま送出（throw）します。</p>
 
 <ExceptionOrResultAnimation scenario="system" />
 
-<p>S03 で未対応としていた入力の失敗は、ここで分類します。画面の入力の誤りは、利用者が修正できるため、業務の失敗に該当します。プログラムの不具合は、利用者が修正できないため、障害に該当します。この回のコードは入力の失敗を変えず、例外のまま 500 を返します。</p>
+<p><strong>入力の失敗</strong>: S03 で未対応とした入力の失敗は、この Session の対象にしません。本来は、利用者が入力を直せる業務の失敗として Err で返しますが、S03 の Result の Err は失敗の理由を持たないため、現在のコードでは <code>_unsafeUnwrap</code> が例外を投げて 500 を返します。</p>

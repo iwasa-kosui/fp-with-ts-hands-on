@@ -92,10 +92,10 @@ const cases: readonly ChangeCase[] = [
       { kind: "add", text: "    : ok(appointment as Scheduled | CheckedIn);" },
     ],
     results: {
-      lint: { found: false, output: "エラーなし" },
+      lint: { found: false, output: "エラーなし", notExpected: true },
       tests: { found: true, output: "1件失敗: expected false to be true" },
     },
-    why: "`as` で型を合わせているため、型検査は通ります。import は変わらないため、Linter のルールでも検出されません。Paid を渡すテストだけが検出します。",
+    why: "`as` で型を合わせているため、型検査は通ります。import は変わらないため、Linter のルールは対象外です。Paid を渡すテストだけが検出します。",
   },
   {
     id: "G3-web-booking-channel",
@@ -112,7 +112,7 @@ const cases: readonly ChangeCase[] = [
     ],
     results: {
       lint: { found: false, output: "エラーなし" },
-      tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true, setting: "// import を追加しても実行結果は変わりません" },
+      tests: { found: false, output: "このファイルを実行するテストは 0 件", setting: "// import を追加しても実行結果は変わりません" },
     },
     why: "`webBookingChannel` は domain の中のファイルです。パターンをフォルダの単位で記述すれば、名前に web を含むだけのファイルを誤検知（正しいコードを誤った変更として検出すること）しません。",
   },

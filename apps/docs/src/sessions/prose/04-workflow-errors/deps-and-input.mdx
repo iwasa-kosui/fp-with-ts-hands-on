@@ -1,7 +1,7 @@
 import DepsThenInputFlow from "../../../components/DepsThenInputFlow.astro";
 
-<p>配布コードの関数は、依存（deps）を受け取ると、入力（input）を受け取る関数を返す形で実装されています。</p>
+<p>教材のコード（Result への変更前）の関数は、依存（deps）を受け取ると、入力（input）を受け取る関数を返す形で実装されています。解答のコードも deps の形は同じで、演習のテストは、この形で deps を渡します。</p>
 
 <DepsThenInputFlow />
 
-<p>deps を渡した後は input だけで呼び出せますが、S04 ではこの利点はまだ現れません。<code>{"(deps) => (input) =>"}</code> の形のコードを読めるようになり、テストでは本物の代わりにテスト用の resolver と store を渡せます。この後のページでは、この形のまま中身を書き換えます。</p>
+<p><code>{"(deps) => (input) =>"}</code> の形を読めると、演習のテストで、本物の代わりのオブジェクトを deps として渡し、useCase を呼び出せます。</p>

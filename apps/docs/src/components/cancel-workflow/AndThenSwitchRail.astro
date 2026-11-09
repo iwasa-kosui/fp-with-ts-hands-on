@@ -1,16 +1,19 @@
 ---
 import { Code } from "astro:components";
+import finalUseCaseSource from "../../../../../examples/final/src/useCase/cancelAppointmentUseCase.ts?raw";
 import startExaminationSource from "../../../../../examples/session-04-solution/src/useCase/startExamination.ts?raw";
 import { quote } from "../../sessions/reference-quote";
 import { lineLabelOf } from "../../sessions/source-quotes";
 import StepControls from "../stepper/StepControls.astro";
 import "../states/states.css";
 
-const code = quote(startExaminationSource, 29, 44, "ensureAppointmentFound(");
-const codeLabel = lineLabelOf("session-04-solution", "src/useCase/startExamination.ts", "    ensureAppointmentFound(", "      });");
-const codeLines = code.split("\n");
+const s04Code = quote(startExaminationSource, 29, 44, "ensureAppointmentFound(");
+const s04Label = lineLabelOf("session-04-solution", "src/useCase/startExamination.ts", "    ensureAppointmentFound(", "      });");
+const finalCode = quote(finalUseCaseSource, 95, 98, ".andThen(ensureCancellable)");
+const finalLabel = lineLabelOf("final", "src/useCase/cancelAppointmentUseCase.ts", "      .andThen(ensureCancellable)", "      .map((event) => ({ appointment: event.aggregateState }));");
+const s04Lines = s04Code.split("\n");
 const indexOf = (needle: string): number => {
-  const index = codeLines.findIndex((line) => line.includes(needle));
+  const index = s04Lines.findIndex((line) => line.includes(needle));
   if (index < 0) throw new Error(`"${needle}" is not in the excerpt`);
   return index;
 };
@@ -23,15 +26,21 @@ const lines = {
   entry: range(0, andThenAt - 1),
   andThen: [andThenAt],
   transition: range(transitionAt, saveAt - 1),
-  save: range(saveAt, codeLines.length - 1),
+  save: range(saveAt, s04Lines.length - 1),
 } as const;
 
-const stations = ["入口", "andThen", "map", "map"] as const;
 const centers = [76, 200, 324, 448] as const;
 
-type Row = Readonly<{ tone: "positive" | "negative" | "none"; from: string; to: string; note: string }>;
+type Station = Readonly<{ name: string; line?: "switch" | "none" | "unused" }>;
+
+const s04Stations: readonly Station[] = [{ name: "入口" }, { name: "andThen", line: "switch" }, { name: "map", line: "none" }, { name: "map", line: "none" }];
+const finalStations: readonly Station[] = [{ name: "andThen", line: "switch" }, { name: "andThen", line: "unused" }, { name: "andThrough", line: "switch" }, { name: "map", line: "none" }];
+
+type Row = Readonly<{ tone: "positive" | "negative" | "none" | "text"; from: string; to: string; note: string }>;
 
 type Frame = Readonly<{
+  source: "s04" | "final";
+  stations: readonly Station[];
   lit: readonly number[];
   current: readonly number[];
   rows: readonly Row[];
@@ -42,6 +51,8 @@ const errPassThrough: Row = { tone: "none", from: "Err(…)", to: "Err(…)", no
 
 const frames: readonly Frame[] = [
   {
+    source: "s04",
+    stations: s04Stations,
     lit: [],
     current: [],
     rows: [
@@ -51,6 +62,8 @@ const frames: readonly Frame[] = [
     caption: "S04 の診察開始のコードを、2本のレールに対応付けます。呼び出し 1 つが、レールの 1 区間に当たります。",
   },
   {
+    source: "s04",
+    stations: s04Stations,
     lit: lines.entry,
     current: [0],
     rows: [
@@ -60,6 +73,8 @@ const frames: readonly Frame[] = [
     caption: "最初の ensureAppointmentFound は、Result を返します。存在すれば成功のレール、存在しなければ失敗のレールから始まります。",
   },
   {
+    source: "s04",
+    stations: s04Stations,
     lit: lines.andThen,
     current: [1],
     rows: [
@@ -69,6 +84,8 @@ const frames: readonly Frame[] = [
     caption: "andThen に渡す ensureCheckedIn は、ok か err を返します。err を返せるため、andThen は失敗のレールへ切り替えられる線です。",
   },
   {
+    source: "s04",
+    stations: s04Stations,
     lit: lines.transition,
     current: [2],
     rows: [
@@ -78,32 +95,48 @@ const frames: readonly Frame[] = [
     caption: "map に渡す関数は、通常の値を返します。失敗を返せないため、切り替え線はありません。値を CheckedIn から InExamination に変えるだけです。",
   },
   {
+    source: "s04",
+    stations: s04Stations,
     lit: lines.save,
     current: [3],
     rows: [
       { tone: "positive", from: "Ok(InExamination)", to: "Ok(InExamination)", note: "保存してから同じ値を返す。レールは切り替わらない" },
       errPassThrough,
     ],
-    caption: "最後の map も同じです。保存の処理を行いますが、Result を返さないため、切り替え線はありません。",
+    caption: "最後の map は、保存の処理を行い、同じ値を返します。S04 は保存の接続断を障害として例外のままにするため、保存を Result を返さない map で行います。",
   },
   {
-    lit: [...lines.andThen, ...lines.transition, ...lines.save],
-    current: [1],
+    source: "final",
+    stations: finalStations,
+    lit: [1, 2],
+    current: [1, 2],
     rows: [
-      { tone: "negative", from: "andThen", to: "", note: "失敗のレールへ切り替えられる線。渡す関数は Result を返す" },
-      { tone: "positive", from: "map", to: "", note: "成功のレールの上で値を変えるだけの線。渡す関数は値を返す" },
+      { tone: "positive", from: "Ok(Scheduled)", to: "Ok(AppointmentCanceled)", note: "andThen(createEvent): 結果を作る工程の関数。失敗しないが、時刻と ID の取得を待つ Result を返すため、andThen で連結する" },
+      { tone: "positive", from: "Ok(AppointmentCanceled)", to: "Ok(AppointmentCanceled)", note: "andThrough(store): 記録して返す工程の関数。Ok の値は捨てて、元の値が次へ渡る" },
+      { tone: "negative", from: "Ok(AppointmentCanceled)", to: "Err(AppointmentConflict)", note: "andThrough(store): 別のリクエストの先行更新（競合）の err で失敗のレールへ移る" },
     ],
-    caption: "切り替え線を持つのは andThen です。値を変えるだけの場合は map を使います。完成形の保存の andThrough も、失敗した場合は切り替えます。",
+    caption: "記録して返す工程は andThrough です。保存は競合を Err で返せるため、切り替え線を持ちます。",
+  },
+  {
+    source: "final",
+    stations: finalStations,
+    lit: [0, 1, 2, 3],
+    current: [],
+    rows: [
+      { tone: "text", from: "andThen", to: "", note: "切り替え線あり。渡す関数が err を返すと失敗のレールへ移り、Ok の値は次へ渡る。結果を作る工程の createEvent は err を返さないが、Result を返すため andThen を使う" },
+      { tone: "text", from: "andThrough", to: "", note: "切り替え線あり。渡す関数は Result を返し、Ok の値は捨てて元の値が次へ渡る" },
+      { tone: "text", from: "map", to: "", note: "切り替え線なし。渡す関数は通常の値を返す" },
+    ],
+    caption: "切り替え線を持つのは andThen と andThrough です。前の工程が Err のときは、どちらも関数を呼びません。",
   },
 ];
 
 const markOf = (tone: Row["tone"]): string => (tone === "positive" ? "✓" : tone === "negative" ? "×" : "・");
 ---
 
-<figure class="st-fig rail" data-and-then-rail aria-label="S04 の診察開始のコードを、成功と失敗の2本のレールに対応付ける図">
+<figure class="st-fig rail" data-and-then-rail aria-label="S04 の診察開始のコードと、参照実装のキャンセルのコードを、成功と失敗の2本のレールに対応付ける図">
   <div class="rail__head">
     <StepControls />
-    <p class="rail__source">図のコード: <code>{codeLabel}</code></p>
   </div>
 
   <ol class="st-stack">
@@ -111,11 +144,12 @@ const markOf = (tone: Row["tone"]): string => (tone === "positive" ? "✓" : ton
       <li data-frame data-lit={JSON.stringify(frame.lit)}>
         <div class="rail__split">
           <figure class="code-block st-code">
-            <Code code={code} lang="ts" />
+            <figcaption>{frame.source === "s04" ? s04Label : finalLabel}</figcaption>
+            <Code code={frame.source === "s04" ? s04Code : finalCode} lang="ts" />
           </figure>
 
           <div class="rail__side">
-            <svg viewBox="0 0 560 176" role="img" aria-label="上が成功のレール、下が失敗のレール。andThen の区間だけ、失敗のレールへ切り替える線がある">
+            <svg viewBox="0 0 560 160" role="img" aria-label="上が成功のレール、下が失敗のレール。切り替え線がある区間と、線がない区間を示す">
               <defs>
                 <marker id={`rail-head-ok-${frameIndex}`} viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" orient="auto">
                   <path d="M 0 0 L 10 5 L 0 10 z" class="rail__head rail__head--ok"></path>
@@ -125,17 +159,19 @@ const markOf = (tone: Row["tone"]): string => (tone === "positive" ? "✓" : ton
                 </marker>
               </defs>
               <text x="12" y="24" class="rail__label rail__label--ok">成功のレール</text>
-              <text x="12" y="166" class="rail__label rail__label--bad">失敗のレール</text>
+              <text x="12" y="152" class="rail__label rail__label--bad">失敗のレール</text>
               <path d="M 12 56 H 546" class="rail__line rail__line--ok" marker-end={`url(#rail-head-ok-${frameIndex})`}></path>
               <path d="M 12 130 H 546" class="rail__line rail__line--bad" marker-end={`url(#rail-head-bad-${frameIndex})`}></path>
-              <path d="M 250 56 C 280 56, 266 130, 298 130" class="rail__switch" data-active={frame.current.includes(1) ? "" : undefined} marker-end={`url(#rail-head-bad-${frameIndex})`}></path>
-              <text x={centers[1]} y="100" text-anchor="middle" class="rail__note rail__note--bad">切り替え線</text>
-              <text x={centers[2]} y="100" text-anchor="middle" class="rail__note">線なし</text>
-              <text x={centers[3]} y="100" text-anchor="middle" class="rail__note">線なし</text>
-              {stations.map((name, index) => (
+              {frame.stations.map((station, index) => station.line === "switch" && (
+                <path d={`M ${centers[index]! + 50} 56 C ${centers[index]! + 80} 56, ${centers[index]! + 66} 130, ${centers[index]! + 98} 130`} class="rail__switch" data-active={frame.current.includes(index) ? "" : undefined} marker-end={`url(#rail-head-bad-${frameIndex})`}></path>
+              ))}
+              {frame.stations.map((station, index) => station.line !== undefined && (
+                <text x={centers[index]} y="100" text-anchor="middle" class={station.line === "switch" ? "rail__note rail__note--bad" : "rail__note"}>{station.line === "switch" ? "切り替え線" : station.line === "unused" ? "失敗なし" : "線なし"}</text>
+              ))}
+              {frame.stations.map((station, index) => (
                 <g class="rail__station" data-current={frame.current.includes(index) ? "" : undefined} transform={`translate(${centers[index]! - 50} 36)`}>
                   <rect width="100" height="40" rx="8"></rect>
-                  <text x="50" y="26" text-anchor="middle">{name}</text>
+                  <text x="50" y="26" text-anchor="middle">{station.name}</text>
                 </g>
               ))}
             </svg>
@@ -143,7 +179,7 @@ const markOf = (tone: Row["tone"]): string => (tone === "positive" ? "✓" : ton
             <ul class="rail__rows">
               {frame.rows.map((row) => (
                 <li data-tone={row.tone}>
-                  <span class="st-mark rail__mark" data-tone={row.tone === "none" ? undefined : row.tone} aria-hidden="true">{markOf(row.tone)}</span>
+                  {row.tone !== "text" && <span class="st-mark rail__mark" data-tone={row.tone === "none" ? undefined : row.tone} aria-hidden="true">{markOf(row.tone)}</span>}
                   <span class="rail__value">
                     <code>{row.from}</code>
                     {row.to !== "" && <><span aria-hidden="true"> → </span><code>{row.to}</code></>}
@@ -181,15 +217,6 @@ const markOf = (tone: Row["tone"]): string => (tone === "positive" ? "✓" : ton
     align-items: flex-start;
     justify-content: space-between;
     gap: 0 1rem;
-  }
-
-  .rail__source {
-    margin: 0;
-    padding-block-start: 0.5rem;
-    color: var(--role-muted);
-    font-size: 0.75rem;
-    font-weight: 700;
-    white-space: nowrap;
   }
 
   .rail__split {
@@ -348,6 +375,14 @@ const markOf = (tone: Row["tone"]): string => (tone === "positive" ? "✓" : ton
   .rail__row-note {
     grid-column: 2;
     color: var(--role-muted);
+  }
+
+  .rail__rows li[data-tone="text"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rail__rows li[data-tone="text"] .rail__row-note {
+    grid-column: 1;
   }
 
   @media (max-width: 55rem) {

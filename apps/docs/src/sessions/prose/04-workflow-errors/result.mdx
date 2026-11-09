@@ -1,10 +1,10 @@
 import BeforeAfterCode from "../../../components/workflow-errors/BeforeAfterCode.astro";
 import { resultCode } from "../../pages/04-workflow-errors-content";
 
-<p>課題1の「失敗の理由が型に現れない」点を解消するため、確認の関数（<code>ensure...</code>）の戻り値を Result にします。</p>
+<p>課題1の準備として、確認の関数（<code>ensure...</code>）の戻り値を Result にします。このページが変更する対象は確認の関数です。useCase の戻り値の変更は、「isErr の分岐の andThen と map への書き換え」のページで行います。</p>
 
 <BeforeAfterCode before={resultCode.before} after={resultCode.after} />
 
-<p>S03 の Result は、このリポジトリの <code>domain/shared/schemaResult.ts</code> で定義した型で、Err は値を持ちませんでした。S04 の useCase の戻り値は neverthrow（Result 型を提供するライブラリ）の Result で、route の入力の検査は S03 の Result のままです。route は、入力の検査の Result に対して <code>_unsafeUnwrap</code> を呼び出します。neverthrow の Result は <code>Result&lt;成功の型, 失敗の型&gt;</code> と表記し、成功は <code>ok(値)</code>、失敗は <code>err(値)</code> で返します。neverthrow の Err は、失敗の理由の値を持てます。</p>
+<p>Result は、成功か失敗かを値として表す型です。S03 の Result と、neverthrow（Result 型を提供するライブラリ）の Result は、別の型です。S03 の Result（<code>domain/shared/schemaResult.ts</code> で定義）では、Err が値を持ちません。neverthrow の Err は、失敗の理由の値を持てます。S04 の useCase は neverthrow の Result を返し、route の入力の検査は S03 の Result のままです。</p>
 
-<p>修正前は、戻り値の型 <code>Appointment</code> から失敗を読み取れませんでした。修正後は、戻り値の型に失敗が現れます。<code>AppointmentNotFound</code> の定義は次のページで確認します。ここまでで、失敗を例外ではなく、戻り値で返せます。</p>
+<p>neverthrow の Result は <code>Result&lt;成功の型, 失敗の型&gt;</code> と表記します。成功は <code>ok(値)</code> が返す Ok、失敗は <code>err(値)</code> が返す Err です。修正前は、戻り値の型 <code>Appointment</code> から失敗を読み取れませんでした。修正後は、戻り値の型に失敗が現れます。<code>AppointmentNotFound</code> の定義は次のページで確認します。</p>
