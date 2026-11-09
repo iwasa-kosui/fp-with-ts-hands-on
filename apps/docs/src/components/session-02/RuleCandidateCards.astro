@@ -3,6 +3,7 @@ import StepControls from "../stepper/StepControls.astro";
 
 type Candidate = Readonly<{
   kind: string;
+  short?: string;
   name: string;
   options?: string;
   sees: string;
@@ -13,6 +14,7 @@ type Candidate = Readonly<{
 const candidates: readonly Candidate[] = [
   {
     kind: "Linter の規則",
+    short: "switch の検査",
     name: "@typescript-eslint/switch-exhaustiveness-check",
     options: "considerDefaultExhaustiveForUnions",
     sees: "case が候補をすべて覆うか",
@@ -25,6 +27,7 @@ const candidates: readonly Candidate[] = [
   },
   {
     kind: "Linter の規則",
+    short: "default の禁止",
     name: "no-restricted-syntax",
     options: "すべての default を禁止する規則",
     sees: "default という書き方",
@@ -77,6 +80,7 @@ const captions = [
     {candidates.map((candidate, index) => (
       <li class="cand__card" data-card={index}>
         <p class="cand__kind">{candidate.kind}</p>
+        {candidate.short && <p class="cand__short">{candidate.short}</p>}
         <p class="cand__name"><code>{candidate.name}</code></p>
         {candidate.options && <p class="cand__options"><code>{candidate.options}</code></p>}
         <div class="cand__row">
@@ -162,8 +166,18 @@ const captions = [
     }
   }
 
-  .cand[data-ready] .cand__card:not([data-current]) :is(.cand__options, .cand__row) {
+  .cand[data-ready] .cand__card:not([data-current]) :is(.cand__name, .cand__options, .cand__row),
+  .cand[data-ready][data-step="4"] :is(.cand__name, .cand__options) {
     display: none;
+  }
+
+  .cand__short {
+    display: none;
+  }
+
+  .cand[data-ready] .cand__card:not([data-current]) .cand__short,
+  .cand[data-ready][data-step="4"] .cand__short {
+    display: block;
   }
 
   .cand[data-ready][data-step="4"] .cand__row:not([data-tone]) {
@@ -190,6 +204,12 @@ const captions = [
     color: var(--role-muted);
     font-size: 0.8125rem;
     font-weight: 800;
+  }
+
+  .cand__short {
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1.4;
   }
 
   .cand__name {
