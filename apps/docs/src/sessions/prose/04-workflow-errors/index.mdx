@@ -1,0 +1,7 @@
+import RouteToUseCase from "../../../components/workflow-errors/RouteToUseCase.astro";
+
+<p>S03 の診察開始は、route の1つの関数が、入力の検査から監査記録まで行っていました。S04 の配布コードでは、入力の検査と呼び出しだけが route に残り、ほかの処理は useCase に移っています。useCase は、1つの業務の手順をまとめた関数です。</p>
+
+<RouteToUseCase />
+
+<p>deps は、外部に触れる部品をまとめた引数です。予約を読む Resolver と、予約を保存する Store が入っています。deps の形は、後のページで説明します。入力の検査を通った後にも、予約が見つからない失敗と、状態が来院済み（CheckedIn）ではない失敗が起きます。</p>

@@ -1,0 +1,17 @@
+import EpisodeIllustration from "../../../components/EpisodeIllustration.astro";
+import { session } from "../../pages/04-workflow-errors-content";
+
+<div class="session-split session-split--story">
+  <div>
+    <aside class="case-file__episode" aria-label="動物病院のひと幕">
+      <p class="case-file__episode-label">動物病院のひと幕</p>
+      {session.episode.map((line) => <p data-episode-line>{line}</p>)}
+    </aside>
+    <p>予約が見つからないときは、画面にお知らせが出ます。予約の状態が来院済み（CheckedIn）ではない失敗を、この教材では「状態不正」と呼びます。先に別の端末で診察を開始していたときは、状態不正になり、お知らせが出ず 500 だけが返ります。保存先との接続が切れたときも、同じ 500 が返ります。獣医師には、状態不正と保存の障害の違いが分からず、次の操作を選べません。</p>
+    <p><strong>このセッションのゴール</strong>: 予約が見つからない失敗と状態不正を、別々の画面のお知らせで伝えます。保存の障害のように、獣医師が次の操作を選べない失敗は、お知らせにせず 500 のままにします。</p>
+    <p>入力の検査に失敗したときは、S03 の route が使う <code>_unsafeUnwrap</code> が例外を投げ、500 になります。この回では、この部分を変えません。</p>
+  </div>
+  <div>
+    <EpisodeIllustration slug="04-workflow-errors" />
+  </div>
+</div>

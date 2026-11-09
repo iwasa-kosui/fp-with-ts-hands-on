@@ -45,7 +45,7 @@
 - `*-solution` を足すとき:
   - `scripts/baseline-check.mjs`
   - `scripts/verify-exercises.mjs`
-  - ルートの `package.json` の `verify:guard`。現在は `--root examples/session-03-solution` だけを検査します。
+  - ルートの `package.json` の `verify:guard`。現在は `--root examples/session-03-solution` と `--root examples/session-04-solution` を、`&&` でつないで検査します。
 
 ## コマ送りのボタンと図
 

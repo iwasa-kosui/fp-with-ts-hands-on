@@ -1,0 +1,31 @@
+const expectedPages = [
+  ["", "診察開始の処理は useCase へ移った", "background", "brief", 1],
+  ["same-error", "理由の違う失敗が同じ 500 になった", "problem", "brief", 1],
+  ["current-code", "今のコードは文言で分岐している", "problem", "brief", 1],
+  ["deps-and-input", "依存と入力を2段に分けて受け取る", "knowledge", "teach", 1],
+  ["result", "useCase の戻り値を Result にする", "knowledge", "teach", 1],
+  ["typed-errors", "失敗に種類を付ける", "knowledge", "teach", 1],
+  ["map", "成功の値だけを変える", "knowledge", "teach", 1.5],
+  ["and-then", "失敗するかもしれない処理をつなぐ", "knowledge", "teach", 1.5],
+  ["rewrite", "isErr の分岐を andThen と map で書き直す", "solution", "teach", 1],
+  ["match", "失敗の種類ごとに応答を決める", "solution", "teach", 1],
+  ["exhaustive-errors", "失敗の種類の足し忘れを見つける", "solution", "teach", 0.5],
+  ["business-error", "業務の失敗は Result で返す", "solution", "teach", 1],
+  ["system-error", "障害は例外のまま外へ出す", "solution", "teach", 1.5],
+  ["checks", "悪い変更を仕組みで検出する", "solution", "teach", 1],
+  ["exercise", "演習: 悪い変更を検出する仕組みを足す", "solution", "exercise", 10],
+  ["peer-review", "相互レビュー", "solution", "review", 4],
+  ["guard", "仕組みで防ぐ方法を話す", "work", "review", 1],
+  ["review", "自分の業務に持ち帰る", "work", "review", 1],
+  ["safe-try", "中間値に名前を付ける safeTry", "advanced", "advanced", 0],
+];
+
+export default {
+  previous: "/sessions/03-boundaries-and-pii/",
+  previousTitle: "診察開始の入力を境界で検証する",
+  next: "/sessions/05-business-events-and-workflows/",
+  nextTitle: "データとパイプラインで予約キャンセルを設計する",
+  pages: expectedPages.map(([slug]) => slug),
+  expectedPages,
+  lastInTime: "review",
+};

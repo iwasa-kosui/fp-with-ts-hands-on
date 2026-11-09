@@ -1,0 +1,241 @@
+---
+import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
+import { checkBands, lineAll, lineIndex, lineRange } from "./lines";
+import { andThenFlowCode } from "./examples";
+import ResultBox from "./ResultBox.astro";
+import "./figure.css";
+
+const themes = { light: "github-light", dark: "github-dark" } as const;
+
+const ensureLines = lineRange(andThenFlowCode, "const ensurePositive", 'err("NotPositive");');
+const ensureErrLine = lineIndex(andThenFlowCode, 'err("NotPositive");');
+const mapOk = lineIndex(andThenFlowCode, "? ok(f(r.value))");
+const andThenOk = lineIndex(andThenFlowCode, "? f(r.value)");
+const errBranches = lineAll(andThenFlowCode, ": err(r.error)");
+
+const frames = [
+  {
+    caption: "前のページの map は、Result を返す関数を渡すと、Ok(Ok(3)) と二重になりました。",
+    mark: { bands: checkBands(andThenFlowCode, { a: ensureLines, d: [mapOk] }) },
+  },
+  {
+    caption: "andThen は、Result を返す関数の戻り値を、そのまま出力にします。Ok(3) は二重にならず、Ok(3) のままです。",
+    mark: { bands: checkBands(andThenFlowCode, { a: ensureLines, d: [mapOk], b: [andThenOk] }) },
+  },
+  {
+    caption: "関数が Err を返すときも、andThen の出力は、その Err そのものです。map では、Err が Ok の中に入ってしまいます。",
+    mark: { bands: checkBands(andThenFlowCode, { a: [ensureErrLine], d: [mapOk], b: [andThenOk] }) },
+  },
+  {
+    caption: "入力が Err のときは、andThen も関数を呼ばず、Err を通り抜けさせます。ここは map と同じです。",
+    mark: { bands: checkBands(andThenFlowCode, { c: errBranches }), skip: ensureLines },
+  },
+] as const;
+
+const data = JSON.stringify(frames.map(({ mark }) => mark));
+---
+
+<figure class="we-fig and-then-flow" data-and-then-flow data-marks={data} aria-label="andThen の入力と出力、map との違い">
+  <div class="atf-layout">
+    <figure class="we-code" data-code>
+      <figcaption class="we-code__head"><span class="we-code__tag">関数の実装</span><code>map と andThen は動きの説明用</code></figcaption>
+      <Code code={andThenFlowCode} lang="ts" themes={themes} defaultColor={false} />
+    </figure>
+
+    <div class="atf-right">
+      <StepControls />
+      <ol class="we-frames">
+        <li data-frame>
+          <p class="we-caption">{frames[0].caption}</p>
+          <div class="atf-lanes">
+            <div class="atf-lane" data-band="d">
+              <span class="we-chip"><code class="we-mono">.map(ensurePositive)</code></span>
+              <ResultBox kind="ok">3</ResultBox><span class="atf-arrow" aria-hidden="true">→</span>
+              <ResultBox kind="ok"><ResultBox kind="ok">3</ResultBox></ResultBox>
+              <span class="atf-verdict" data-state="bad">二重</span>
+            </div>
+            <div class="atf-lane atf-lane--empty" data-band="b">
+              <span class="we-chip"><code class="we-mono">.andThen(ensurePositive)</code></span>
+              <span class="atf-wait">次のコマで確かめます</span>
+            </div>
+          </div>
+        </li>
+        <li data-frame>
+          <p class="we-caption">{frames[1].caption}</p>
+          <div class="atf-lanes">
+            <div class="atf-lane atf-lane--past" data-band="d">
+              <span class="we-chip"><code class="we-mono">.map(ensurePositive)</code></span>
+              <ResultBox kind="ok">3</ResultBox><span class="atf-arrow" aria-hidden="true">→</span>
+              <ResultBox kind="ok"><ResultBox kind="ok">3</ResultBox></ResultBox>
+              <span class="atf-verdict" data-state="bad">二重</span>
+            </div>
+            <div class="atf-lane" data-band="b">
+              <span class="we-chip"><code class="we-mono">.andThen(ensurePositive)</code></span>
+              <ResultBox kind="ok">3</ResultBox><span class="atf-arrow" aria-hidden="true">→</span>
+              <ResultBox kind="ok">3</ResultBox>
+              <span class="atf-verdict" data-state="good">ensurePositive(3) の戻り値そのもの</span>
+            </div>
+          </div>
+        </li>
+        <li data-frame>
+          <p class="we-caption">{frames[2].caption}</p>
+          <div class="atf-lanes">
+            <div class="atf-lane atf-lane--past" data-band="d">
+              <span class="we-chip"><code class="we-mono">.map(ensurePositive)</code></span>
+              <ResultBox kind="ok">-1</ResultBox><span class="atf-arrow" aria-hidden="true">→</span>
+              <ResultBox kind="ok"><ResultBox kind="err">"NotPositive"</ResultBox></ResultBox>
+              <span class="atf-verdict" data-state="bad">失敗が Ok の中に隠れる</span>
+            </div>
+            <div class="atf-lane" data-band="b">
+              <span class="we-chip"><code class="we-mono">.andThen(ensurePositive)</code></span>
+              <ResultBox kind="ok">-1</ResultBox><span class="atf-arrow" aria-hidden="true">→</span>
+              <ResultBox kind="err">"NotPositive"</ResultBox>
+              <span class="atf-verdict" data-state="good">ensurePositive(-1) の戻り値そのもの</span>
+            </div>
+          </div>
+        </li>
+        <li data-frame>
+          <p class="we-caption">{frames[3].caption}</p>
+          <div class="atf-lanes">
+            <div class="atf-lane atf-lane--past" data-band="d">
+              <span class="we-chip"><code class="we-mono">.map(ensurePositive)</code></span>
+              <ResultBox kind="err">"NotPositive"</ResultBox><span class="atf-arrow" aria-hidden="true">→</span>
+              <ResultBox kind="err">"NotPositive"</ResultBox>
+              <span class="atf-verdict" data-state="skip">ensurePositive は呼ばれない</span>
+            </div>
+            <div class="atf-lane" data-band="b">
+              <span class="we-chip"><code class="we-mono">.andThen(ensurePositive)</code></span>
+              <ResultBox kind="err">"NotPositive"</ResultBox><span class="atf-arrow" aria-hidden="true">→</span>
+              <ResultBox kind="err">"NotPositive"</ResultBox>
+              <span class="atf-verdict" data-state="skip">ensurePositive は呼ばれない</span>
+            </div>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+  import { applyMark, type Mark } from "./lit";
+
+  document.querySelectorAll<HTMLElement>("[data-and-then-flow]").forEach((root) => {
+    const marks = JSON.parse(root.dataset.marks ?? "[]") as Mark[];
+    const code = root.querySelector<HTMLElement>("[data-code]");
+    mountStepper({
+      root,
+      onStep: (index) => {
+        if (code !== null) applyMark(code, marks[index]);
+      },
+    });
+  });
+</script>
+
+<style>
+  .atf-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .atf-right {
+    display: grid;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .atf-lanes {
+    display: grid;
+    gap: 0.5rem;
+    margin-block-start: 0.5rem;
+  }
+
+  .atf-lane {
+    display: grid;
+    grid-template-columns: auto auto auto minmax(0, 1fr);
+    grid-template-areas:
+      "label label label label"
+      "in arrow out verdict";
+    gap: 0.25rem 0.5rem;
+    align-items: center;
+    padding: 0.5rem 0.625rem;
+    border: 2px solid var(--band);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+  }
+
+  .atf-lane > :nth-child(1) {
+    grid-area: label;
+    justify-self: start;
+  }
+
+  .atf-lane > :nth-child(2) {
+    grid-area: in;
+    justify-self: start;
+  }
+
+  .atf-lane > :nth-child(3) {
+    grid-area: arrow;
+  }
+
+  .atf-lane > :nth-child(4) {
+    grid-area: out;
+  }
+
+  .atf-lane > :nth-child(5) {
+    grid-area: verdict;
+  }
+
+  .atf-lane--empty {
+    border-style: dashed;
+    grid-template-areas: "label wait";
+    grid-template-columns: auto minmax(0, 1fr);
+    opacity: 0.7;
+  }
+
+  .atf-lane--empty > :nth-child(2) {
+    grid-area: wait;
+  }
+
+  .atf-lane--past {
+    opacity: 0.6;
+  }
+
+  .atf-arrow {
+    color: var(--role-muted);
+    font-size: 1.25rem;
+  }
+
+  .atf-wait {
+    color: var(--role-muted);
+    font-size: 0.875rem;
+  }
+
+  .atf-verdict {
+    max-width: 11rem;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1.4;
+  }
+
+  .atf-verdict[data-state="bad"] {
+    color: var(--role-negative);
+  }
+
+  .atf-verdict[data-state="good"] {
+    color: var(--role-positive);
+  }
+
+  .atf-verdict[data-state="skip"] {
+    color: var(--role-muted);
+  }
+
+  @media (max-width: 48rem) {
+    .atf-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

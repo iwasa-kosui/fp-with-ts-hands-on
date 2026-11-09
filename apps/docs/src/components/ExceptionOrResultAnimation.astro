@@ -1,210 +1,372 @@
 ---
 import { Code } from "astro:components";
-import routesSource from "../../../../examples/session-04-solution/src/web/routes.ts?raw";
-import useCaseSource from "../../../../examples/session-04-solution/src/useCase/startExamination.ts?raw";
-import handlerSource from "../sessions/solutions/session-04-start-examination-handler.ts.txt?raw";
-import StepPlayer from "./step-player/StepPlayer.astro";
+import StepControls from "./stepper/StepControls.astro";
+import { checkBands, lineAll, lineCount, lineIndex } from "./workflow-errors/lines";
+import { matchCall, noticeMessage, onErrorLine, paths, pipelineBody, pipelineResultType } from "./workflow-errors/sources";
+import "./workflow-errors/figure.css";
 
-// 解答の行がずれたら、古いコードを見せないようにビルドを失敗させる
-const quote = (source: string, from: number, to: number, firstLine: string): string => {
-  const lines = source.split("\n").slice(from - 1, to);
-  if (!lines[0]?.includes(firstLine)) throw new Error(`引用元の行がずれています: ${firstLine}`);
-  const indent = Math.min(...lines.filter((line) => line.trim() !== "").map((line) => line.search(/\S/)));
-  return lines.map((line) => line.slice(indent)).join("\n");
-};
+interface Props {
+  scenario: "business" | "system";
+}
 
-const useCaseCode = quote(useCaseSource, 26, 44, "export const startExamination");
-const webCode = [
-  quote(handlerSource, 14, 21, "return result.match"),
-  "",
-  quote(routesSource, 40, 47, "switch (error.kind)"),
-].join("\n");
-const useCaseLines = useCaseCode.split("\n");
-const webLines = webCode.split("\n");
+const { scenario } = Astro.props;
 
-const boundaryItems = ["app.onError で例外を受け取る", "500 を返す"];
+const themes = { light: "github-light", dark: "github-dark" } as const;
 
-type Kind = "biz" | "sys";
-type Place = "use" | "web" | "boundary";
-type Mark = "ok" | Kind;
+const resolveLine = lineIndex(pipelineBody, "deps.resolver.resolveById");
+const andThenLine = lineIndex(pipelineBody, ".andThen(ensureCheckedIn)");
+const [transitionStart = 0, saveStart = 0] = lineAll(pipelineBody, ".map((appointment) =>");
+const saveLine = lineIndex(pipelineBody, "deps.store.save");
+const lastLine = lineCount(pipelineBody) - 1;
+const range = (from: number, to: number): readonly number[] => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+const skipAfterAndThen = range(andThenLine + 1, lastLine);
 
+const webCode = matchCall;
+const failureArm = range(lineIndex(webCode, "(error) =>"), lineIndex(webCode, "(error) =>") + 5);
+const boundaryCode = onErrorLine;
+
+const resultType = (/:\s*(Result<.+>)\s*=>/.exec(pipelineResultType)?.[1]) ?? "";
+
+type Mark = Readonly<{ bands?: Readonly<Record<string, readonly number[]>>; skip?: readonly number[] }>;
 type Step = Readonly<{
   text: string;
-  kind: Kind;
-  at: Place;
+  at: "use" | "dest";
+  tone: "neutral" | "biz" | "sys";
   badge: string;
-  mark: Mark;
-  lines: readonly number[];
-  skipped?: readonly number[];
-  connector?: Kind;
+  mark: "ok" | "err" | "exc" | "none";
+  use: Mark;
+  dest: Mark;
+  connector: boolean;
 }>;
 
-const range = (from: number, to: number): readonly number[] => Array.from({ length: to - from + 1 }, (_, i) => from + i);
-
-const scenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }>)[] = [
+const businessSteps: readonly Step[] = [
   {
-    label: "予約が見つからない（業務エラー）",
-    steps: [
-      { kind: "biz", at: "use", badge: "undefined", mark: "ok", lines: [4], text: "受付が、存在しない予約IDで診察開始を依頼します。<code>resolver.resolveById</code> は予約を見つけられず、<code>undefined</code> を返します。" },
-      { kind: "biz", at: "use", badge: "Err", mark: "biz", lines: [3, 4, 5, 6], text: "<code>ensureAppointmentFound</code> は例外を投げず、<code>AppointmentNotFound</code> を Err として返します。" },
-      { kind: "biz", at: "use", badge: "Err", mark: "biz", lines: [], skipped: range(7, 18), text: "結果が Err なので、後続の <code>andThen</code> と <code>map</code> は呼ばれません。状態遷移も保存も実行されません。" },
-      { kind: "biz", at: "use", badge: "Err", mark: "biz", lines: [2], skipped: range(7, 18), connector: "biz", text: "<code>startExamination</code> は Err を値として返します。戻り値の型に、この失敗が書かれています。" },
-      { kind: "biz", at: "web", badge: "Err", mark: "biz", lines: [2, 3, 4, 5, 6, 9, 10, 11], connector: "biz", text: "Web ルートの <code>match</code> が失敗側で Err を受け取り、<code>switch</code> で予約が見つからないときの notice へ変換します。受付は予約を探し直せます。" },
-    ],
+    text: "獣医師が、存在しない予約IDで診察開始を依頼します。resolver.resolveById は予約を見つけられず、undefined を返します。",
+    at: "use", tone: "neutral", badge: "undefined", mark: "none", connector: false, dest: {},
+    use: { bands: checkBands(pipelineBody, { a: [resolveLine] }) },
   },
   {
-    label: "保存中に接続が切れた（システムエラー）",
-    steps: [
-      { kind: "sys", at: "use", badge: "Ok", mark: "ok", lines: range(3, 7), text: "予約は見つかり、来院済みです。<code>ensureAppointmentFound</code> と <code>ensureCheckedIn</code> は Ok を返します。" },
-      { kind: "sys", at: "use", badge: "Ok", mark: "ok", lines: range(8, 16), text: "状態遷移で診察中の予約を作り、<code>store.save</code> で保存します。" },
-      { kind: "sys", at: "use", badge: "例外", mark: "sys", lines: [16], text: "保存の途中でデータベースへの接続が切れ、<code>store.save</code> が例外を投げます。保存が完了したかは分かりません。" },
-      { kind: "sys", at: "use", badge: "例外", mark: "sys", lines: range(15, 16), skipped: [17, 18], connector: "sys", text: "この例外は Result に変換しません。<code>startExamination</code> は値を返さずに抜け、Web ルートの <code>match</code> と <code>switch</code> には届きません。" },
-      { kind: "sys", at: "boundary", badge: "例外", mark: "sys", lines: [0, 1], connector: "sys", text: "外側の例外境界（<code>app.onError</code>）が例外を受け取り、500 を返します。受付が理由ごとに選べる操作はありません。" },
-    ],
+    text: "ensureAppointmentFound は例外を投げず、AppointmentNotFound を Err として返します。",
+    at: "use", tone: "biz", badge: "Err", mark: "err", connector: false, dest: {},
+    use: { bands: checkBands(pipelineBody, { err: range(0, andThenLine - 1) }) },
+  },
+  {
+    text: "結果が Err なので、後続の andThen と map は呼ばれません。状態遷移も保存も実行されません。",
+    at: "use", tone: "biz", badge: "Err", mark: "err", connector: false, dest: {},
+    use: { skip: skipAfterAndThen },
+  },
+  {
+    text: `startExamination は Err を値として返します。戻り値の型 ${resultType} に、この失敗が含まれています。`,
+    at: "use", tone: "biz", badge: "Err", mark: "err", connector: true, dest: {},
+    use: { skip: skipAfterAndThen },
+  },
+  {
+    text: "Web ルートの match が失敗側で Err を受け取り、失敗の種類から画面のお知らせを決めます。獣医師は予約を探し直せます。",
+    at: "dest", tone: "biz", badge: "Err", mark: "err", connector: true,
+    use: { skip: skipAfterAndThen },
+    dest: { bands: checkBands(webCode, { err: failureArm }) },
   },
 ];
 
-const pathName = { biz: "業務エラーの経路", sys: "例外の経路" } as const;
-const placeName = { use: "startExamination", web: "Web ルートの match と switch", boundary: "外側の例外境界" } as const;
-const escapeHtml = (text: string): string => text.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
-const excerpt = ({ at, lines }: Step): string => {
-  if (at === "boundary") return lines.map((line) => boundaryItems[line]).join("\n");
-  const source = at === "use" ? useCaseLines : webLines;
-  return lines.map((line) => source[line]).join("\n");
-};
-const codeHtml = (step: Step): string => (step.lines.length > 0 ? "<pre>" + escapeHtml(excerpt(step)) + "</pre>" : "");
-const stepHtml = (step: Step): string =>
-  `${step.text}<div data-step-extra><p>経路: ${pathName[step.kind]}</p><p>今の位置: ${placeName[step.at]}</p>${codeHtml(step)}</div>`;
-const playerScenarios = scenarios.map(({ label, steps }) => ({ label, steps: steps.map(stepHtml) }));
+const systemSteps: readonly Step[] = [
+  {
+    text: "予約は見つかり、来院済みです。ensureAppointmentFound と ensureCheckedIn は Ok を返します。",
+    at: "use", tone: "neutral", badge: "Ok", mark: "ok", connector: false, dest: {},
+    use: { bands: checkBands(pipelineBody, { ok: range(0, andThenLine) }) },
+  },
+  {
+    text: "状態遷移で診察中の予約を作り、store.save で保存します。",
+    at: "use", tone: "neutral", badge: "Ok", mark: "ok", connector: false, dest: {},
+    use: { bands: checkBands(pipelineBody, { ok: range(transitionStart, saveLine) }) },
+  },
+  {
+    text: "保存の途中でデータベースへの接続が切れ、store.save が例外を投げます。",
+    at: "use", tone: "sys", badge: "例外", mark: "exc", connector: false, dest: {},
+    use: { bands: checkBands(pipelineBody, { err: [saveLine] }) },
+  },
+  {
+    text: "この例外は Result に変換しません。startExamination は値を返さずに抜け、Web ルートの match と switch には届きません。",
+    at: "use", tone: "sys", badge: "例外", mark: "exc", connector: true, dest: {},
+    use: { bands: checkBands(pipelineBody, { err: range(saveStart, saveLine) }), skip: range(saveLine + 1, lastLine) },
+  },
+  {
+    text: "例外を最後に受け取る場所（app.onError）が例外を受け取り、500 を返します。",
+    at: "dest", tone: "sys", badge: "例外", mark: "exc", connector: true,
+    use: { bands: checkBands(pipelineBody, { err: range(saveStart, saveLine) }), skip: range(saveLine + 1, lastLine) },
+    dest: {},
+  },
+];
 
-const sceneData = JSON.stringify(
-  scenarios.map(({ steps }) =>
-    steps.map(({ kind, at, badge, mark, lines, skipped, connector }) => ({ kind, at, badge, mark, lines, skipped: skipped ?? [], connector: connector ?? null })),
-  ),
-);
-const id = "exception-or-result-animation";
+const steps = scenario === "business" ? businessSteps : systemSteps;
+const isBusiness = scenario === "business";
+const destTitle = isBusiness ? "Web ルートの match → 画面のお知らせ" : "例外を最後に受け取る場所（app.onError）→ 500";
+const footnote = isBusiness
+  ? `引用元: ${paths.solutionUseCase}:29-44 と ${paths.solutionHandler}:14-21`
+  : `引用元: ${paths.solutionUseCase}:29-44 と ${paths.solutionApp}:34`;
+const connectorText = isBusiness ? "Err を返す" : "例外が伝わる";
+const legend = isBusiness ? "破線の枠: Err の値として返る経路" : "実線の枠: 例外として伝わる経路";
+const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
 ---
 
-<StepPlayer
-  id={id}
-  title="業務エラーとシステムエラーの行き先"
-  lead="予約が見つからない失敗と、保存中に接続が切れた失敗を、同じ startExamination で追います。"
-  note="startExamination と switch は examples/session-04-solution/src から、match は S04 の解答例から引用しました。"
-  scenarios={playerScenarios}
->
-  <div class="exc-flow" data-exc-flow={sceneData}>
-    <div class="exc-flow__legend">
-      <span class="exc-flow__legend-biz">業務エラーの経路: 橙色の破線</span>
-      <span class="exc-flow__legend-sys">例外の経路: 赤色の実線</span>
+<figure class="we-fig we-fig--top eo-flow" data-exception-or-result data-scenario={scenario} data-steps={data} aria-label={isBusiness ? "業務の失敗が Err として Web ルートへ届く流れ" : "障害の例外が外側で 500 になる流れ"}>
+  <StepControls />
+
+  <ol class="we-frames">
+    {steps.map(({ text }) => (
+      <li data-frame><p class="we-caption">{text}</p></li>
+    ))}
+  </ol>
+
+  <div class="we-body eo-map">
+    <section class="eo-box" data-place="use">
+      <p class="eo-title"><span>startExamination</span><span class="eo-badge" data-badge></span><span class="eo-legend">{legend}</span></p>
+      <figure class="we-code" data-code="use">
+        <Code code={pipelineBody} lang="ts" themes={themes} defaultColor={false} />
+      </figure>
+    </section>
+
+    <div class="eo-connector" data-connector>
+      <span>{connectorText}</span>
+      <span class="eo-connector__line" aria-hidden="true">→</span>
     </div>
-    <div class="exc-flow__map">
-      <div class="exc-flow__box" data-place="use" style="grid-area: use">
-        <p class="exc-flow__title">startExamination（ユースケース）<span class="exc-flow__badge" data-badge></span></p>
-        <div data-code="use"><Code code={useCaseCode} lang="ts" /></div>
-      </div>
-      <div class="exc-flow__connector" data-connector="biz" style="grid-area: c1"><span>Err を返す</span></div>
-      <div class="exc-flow__connector" data-connector="sys" style="grid-area: c2"><span>例外が伝わる</span></div>
-      <div class="exc-flow__box" data-place="web" style="grid-area: web">
-        <p class="exc-flow__title">Web ルートの match と switch → notice<span class="exc-flow__badge" data-badge></span></p>
-        <div data-code="web"><Code code={webCode} lang="ts" /></div>
-      </div>
-      <div class="exc-flow__box" data-place="boundary" style="grid-area: boundary">
-        <p class="exc-flow__title">外側の例外境界（app.onError）→ 500<span class="exc-flow__badge" data-badge></span></p>
-        <ol class="exc-flow__boundary">
-          {boundaryItems.map((item) => <li>{item}</li>)}
-        </ol>
-      </div>
-    </div>
+
+    <section class="eo-box" data-place="dest">
+      <p class="eo-title"><span>{destTitle}</span><span class="eo-badge" data-badge></span></p>
+      <figure class="we-code" data-code="dest" data-wrap="true">
+        <Code code={isBusiness ? webCode : boundaryCode} lang="ts" themes={themes} defaultColor={false} />
+      </figure>
+      {isBusiness && (
+        <p class="eo-notice" data-notice>
+          <span class="we-chip" data-band="err"><code class="we-mono">AppointmentNotFound</code></span>
+          <span aria-hidden="true">→</span>
+          <span class="we-box" data-tone="ok">「{noticeMessage("AppointmentNotFound")}」</span>
+        </p>
+      )}
+      {!isBusiness && (
+        <p class="eo-note">この教材の app.onError は 500 を返すだけです。実際の業務では、処理の取り消しや接続の解放を、このような外側の場所でまとめて書くことが多くあります。</p>
+      )}
+      <p class="eo-path">{footnote}</p>
+    </section>
   </div>
-</StepPlayer>
+</figure>
 
-<style is:inline>
-  .exc-flow { --biz: #b45309; --sys: #b42318; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; min-width: 0; }
-  .exc-flow__legend { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.75rem; font-weight: 700; }
-  .exc-flow__legend-biz { color: var(--biz); }
-  .exc-flow__legend-sys { color: var(--sys); }
-  .exc-flow__map { display: grid; gap: 0.5rem 0.75rem; min-width: 0; grid-template-columns: minmax(0, 1fr); grid-template-areas: "use" "c1" "web" "c2" "boundary"; }
-  .exc-flow__box { min-width: 0; padding: 0.5rem; border: 3px solid var(--case-line, #17204d); border-radius: 0.375rem; background: var(--case-paper, #fffefa); transition: opacity 200ms ease, border-color 200ms ease; }
-  .exc-flow__box[data-reached="false"] { opacity: 0.4; }
-  .exc-flow__box[data-current][data-kind="biz"] { border-style: dashed; border-color: var(--biz); }
-  .exc-flow__box[data-current][data-kind="sys"] { border-style: solid; border-color: var(--sys); }
-  .exc-flow__title { margin: 0 0 0.375rem; font-size: 0.8125rem; font-weight: 800; }
-  .exc-flow__badge { display: none; margin-left: 0.5rem; padding: 0 0.4375rem; border-radius: 999px; color: #ffffff; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.6875rem; font-weight: 800; }
-  .exc-flow__badge[data-mark] { display: inline-block; }
-  .exc-flow__badge[data-mark="ok"] { background: #137333; }
-  .exc-flow__badge[data-mark="biz"] { background: var(--biz); }
-  .exc-flow__badge[data-mark="sys"] { background: var(--sys); }
-  .exc-flow pre { margin: 0; padding: 0.5rem 0.625rem; border-radius: 0.25rem; overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.8125rem; line-height: 1.5; }
-  .exc-flow pre code { display: flex; flex-direction: column; min-width: max-content; background: none; padding: 0; color: inherit; font-size: inherit; }
-  .exc-flow .line { display: block; min-height: 1.5em; white-space: pre; margin: 0 -0.625rem; padding: 0 0.625rem; border-left: 3px solid transparent; transition: background-color 200ms ease, opacity 200ms ease; }
-  .exc-flow .line[data-hi="ok"] { background: rgb(255 210 27 / 0.24); border-left: 3px solid #ffd21b; }
-  .exc-flow .line[data-hi="biz"] { background: rgb(245 158 11 / 0.3); border-left: 3px dashed #f59e0b; }
-  .exc-flow .line[data-hi="sys"] { background: rgb(244 63 94 / 0.3); border-left: 3px solid #fb7185; }
-  .exc-flow .line[data-state="skipped"] { opacity: 0.35; }
-  .exc-flow__boundary { margin: 0; padding-left: 1.5rem; font-size: 0.8125rem; line-height: 1.7; }
-  .exc-flow__boundary li[data-hi] { background: rgb(244 63 94 / 0.14); box-shadow: -0.375rem 0 0 rgb(244 63 94 / 0.14); font-weight: 700; }
-  .exc-flow__connector { position: relative; display: flex; align-items: center; justify-content: center; min-height: 2.5rem; font-size: 0.75rem; font-weight: 700; opacity: 0.3; transition: opacity 200ms ease; }
-  .exc-flow__connector::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; }
-  .exc-flow__connector span { position: relative; padding: 0.125rem 0.25rem; background: var(--case-paper, #fffefa); }
-  .exc-flow__connector span::after { content: " ↓"; }
-  .exc-flow__connector[data-own] { opacity: 0.6; }
-  .exc-flow__connector[data-active] { opacity: 1; }
-  .exc-flow__connector[data-connector="biz"] { color: var(--biz); }
-  .exc-flow__connector[data-connector="sys"] { color: var(--sys); }
-  .exc-flow__connector[data-connector="biz"]::before { border-left: 3px dashed var(--biz); }
-  .exc-flow__connector[data-connector="sys"]::before { border-left: 3px solid var(--sys); }
-  @media (max-width: 640px) {
-    .exc-flow__box[data-place="web"]:not([data-own]), .exc-flow__box[data-place="boundary"]:not([data-own]), .exc-flow__connector:not([data-own]) { display: none; }
-  }
-  @media (min-width: 641px) {
-    .exc-flow__map { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "use use" "c1 c2" "web boundary"; }
-  }
-</style>
-<script is:inline define:vars={{ id }}>
-  const root = document.getElementById(id);
-  const scene = root.querySelector("[data-exc-flow]");
-  const data = JSON.parse(scene.dataset.excFlow);
-  const boxes = Object.fromEntries([...scene.querySelectorAll("[data-place]")].map((box) => [box.dataset.place, box]));
-  const connectors = Object.fromEntries([...scene.querySelectorAll("[data-connector]")].map((item) => [item.dataset.connector, item]));
-  const linesOf = (place) => [...scene.querySelectorAll(`[data-code="${place}"] .line`)];
-  const boundaryItems = [...boxes.boundary.querySelectorAll("li")];
-  const order = ["use", "web", "boundary"];
+<script>
+  import { mountStepper } from "./stepper/stepper";
+  import { applyMark, type Mark } from "./workflow-errors/lit";
 
-  root.addEventListener("stepchange", ({ detail }) => {
-    const step = data[detail.scenarioIndex][detail.stepIndex];
-    const useLines = linesOf("use");
-    const webLines = linesOf("web");
-    [...useLines, ...webLines].forEach((line) => {
-      line.removeAttribute("data-hi");
-      line.removeAttribute("data-state");
-    });
-    boundaryItems.forEach((item) => item.removeAttribute("data-hi"));
-    step.skipped.forEach((index) => useLines[index].setAttribute("data-state", "skipped"));
-    if (step.at === "use") step.lines.forEach((index) => useLines[index].setAttribute("data-hi", step.mark));
-    if (step.at === "web") step.lines.forEach((index) => webLines[index].setAttribute("data-hi", step.mark));
-    if (step.at === "boundary") step.lines.forEach((index) => boundaryItems[index].setAttribute("data-hi", ""));
+  type Step = {
+    at: "use" | "dest";
+    tone: string;
+    badge: string;
+    mark: string;
+    use: Mark;
+    dest: Mark;
+    connector: boolean;
+  };
 
-    order.forEach((place) => {
-      const box = boxes[place];
-      const badge = box.querySelector("[data-badge]");
-      const reachedViaThisPath = place === "use" || place === (step.kind === "biz" ? "web" : "boundary");
-      const here = place === step.at;
-      box.toggleAttribute("data-current", here);
-      box.dataset.kind = step.kind;
-      box.dataset.reached = String(reachedViaThisPath && (place === "use" || order.indexOf(step.at) >= order.indexOf(place)));
-      if (here) {
-        badge.textContent = step.badge;
-        badge.dataset.mark = step.mark;
-      } else {
-        badge.textContent = "";
-        badge.removeAttribute("data-mark");
-      }
+  document.querySelectorAll<HTMLElement>("[data-exception-or-result]").forEach((root) => {
+    const steps = JSON.parse(root.dataset.steps ?? "[]") as Step[];
+    const boxes = [...root.querySelectorAll<HTMLElement>("[data-place]")];
+    const connector = root.querySelector<HTMLElement>("[data-connector]");
+    const codeOf = (place: string) => root.querySelector<HTMLElement>(`[data-code="${place}"]`);
+    mountStepper({
+      root,
+      onStep: (index) => {
+        const step = steps[index];
+        if (step === undefined) return;
+        boxes.forEach((box) => {
+          const place = box.dataset.place ?? "";
+          const here = place === step.at;
+          box.dataset.current = String(here);
+          box.dataset.reached = String(place === "use" || step.at === "dest");
+          box.dataset.tone = here ? step.tone : "neutral";
+          const badge = box.querySelector<HTMLElement>("[data-badge]");
+          if (badge === null) return;
+          badge.textContent = here ? step.badge : "";
+          badge.dataset.mark = here ? step.mark : "";
+        });
+        if (connector !== null) connector.dataset.active = String(step.connector);
+        const use = codeOf("use");
+        const dest = codeOf("dest");
+        if (use !== null) applyMark(use, step.use);
+        if (dest !== null) applyMark(dest, step.dest);
+      },
     });
-    Object.entries(connectors).forEach(([kind, item]) => {
-      item.toggleAttribute("data-active", step.connector === kind);
-      item.toggleAttribute("data-own", step.kind === kind);
-    });
-    boxes.web.toggleAttribute("data-own", step.kind === "biz");
-    boxes.boundary.toggleAttribute("data-own", step.kind === "sys");
   });
 </script>
+
+<style>
+  .eo-map {
+    display: grid;
+    grid-template-columns: minmax(0, 27rem) 3rem minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: start;
+  }
+
+  .eo-box {
+    min-width: 0;
+    padding: 0.25rem 0.5rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+  }
+
+  .eo-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+    margin-block-end: 0.125rem;
+    font-size: 0.8125rem;
+    font-weight: 800;
+  }
+
+  .eo-badge {
+    display: none;
+    padding: 0 0.5rem;
+    border: 2px solid var(--role-border);
+    border-radius: 999px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .eo-badge[data-mark="ok"],
+  .eo-badge[data-mark="err"],
+  .eo-badge[data-mark="exc"],
+  .eo-badge[data-mark="none"] {
+    display: inline-block;
+  }
+
+  .eo-badge[data-mark="ok"] {
+    border-color: var(--role-positive);
+    background: var(--role-positive);
+    color: var(--role-surface);
+  }
+
+  .eo-badge[data-mark="err"] {
+    border-color: var(--role-negative);
+    background: var(--role-negative);
+    color: var(--role-surface);
+  }
+
+  .eo-badge[data-mark="exc"] {
+    border-color: var(--role-negative);
+    color: var(--role-negative);
+  }
+
+  .eo-path {
+    margin-block-start: 0.25rem;
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    overflow-wrap: anywhere;
+  }
+
+  .eo-legend {
+    margin-inline-start: auto;
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .eo-box .we-code {
+    border-color: var(--role-border);
+  }
+
+  .eo-box [data-wrap="true"] :global(.astro-code) {
+    overflow-x: visible;
+  }
+
+  .eo-box [data-wrap="true"] :global(.astro-code code) {
+    min-width: 0;
+  }
+
+  .eo-box [data-wrap="true"] :global(.line) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .eo-note {
+    margin-block-start: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .eo-notice {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem 0.5rem;
+    margin-block-start: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .eo-notice .we-box {
+    padding-block: 0.125rem;
+  }
+
+  .eo-notice code {
+    padding: 0;
+    background: none;
+    font-size: 0.8125rem;
+  }
+
+  .eo-connector {
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: 0.25rem;
+    padding-block-start: 2rem;
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .eo-connector__line {
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+
+  .eo-flow[data-ready] .eo-box {
+    transition: opacity 0.2s, border-color 0.2s;
+  }
+
+  .eo-flow[data-ready] .eo-box[data-reached="false"] {
+    opacity: 0.4;
+  }
+
+  .eo-flow[data-ready] .eo-box[data-current="true"][data-tone="biz"] {
+    border-style: dashed;
+    border-color: var(--role-negative);
+  }
+
+  .eo-flow[data-ready] .eo-box[data-current="true"][data-tone="sys"] {
+    border-style: solid;
+    border-color: var(--role-negative);
+  }
+
+  .eo-flow[data-ready] .eo-box[data-current="true"][data-tone="neutral"] {
+    border-color: var(--role-text);
+  }
+
+  .eo-flow[data-ready] .eo-connector {
+    opacity: 0.35;
+  }
+
+  .eo-flow[data-ready] .eo-connector[data-active="true"] {
+    color: var(--role-negative);
+    opacity: 1;
+  }
+
+  @media (max-width: 48rem) {
+    .eo-map {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .eo-connector {
+      display: none;
+    }
+  }
+</style>

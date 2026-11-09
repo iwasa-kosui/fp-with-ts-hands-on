@@ -1,0 +1,49 @@
+import { Code } from "astro:components";
+import PointCards from "../../../components/workflow-errors/PointCards.astro";
+
+export const throwRuleCode = `"no-restricted-syntax": [
+  "error",
+  {
+    selector: "VariableDeclarator[id.name='startExamination'] ThrowStatement",
+    message: "throw しません。失敗は err で返します。",
+  },
+],`;
+
+<p>直したコードも、次の変更で元に戻ることがあります。ここから先の課題3は、直した状態を保つことです。元に戻る変更の例が3つあります。</p>
+
+<PointCards
+  label="悪い変更と、検出する仕組み"
+  cards={[
+    {
+      title: "useCase が自分で throw する",
+      items: [
+        "業務の失敗が例外に戻り、型に現れなくなります。",
+        "<strong>Linter の規則</strong>: useCase の中の <code>throw</code> 文を検出します。設定は下のコードです。",
+      ],
+    },
+    {
+      title: "失敗した後も保存する",
+      items: [
+        "Err になった後も、<code>store.save</code> が呼ばれます。",
+        "<strong>テスト</strong>: 偽物の Store は、保存された予約を <code>saved</code> に入れます。失敗する Resolver を渡し、<code>saved</code> が空であることを確かめます。",
+      ],
+    },
+    {
+      title: "保存の障害を業務の失敗にする",
+      items: [
+        "<code>store.save</code> の例外を <code>err(...)</code> に変えると、障害がお知らせになります。",
+        "<strong>テスト</strong>: 例外を投げる偽物の Store を渡し、例外が外へ出ることを確かめます。",
+      ],
+    },
+  ]}
+/>
+
+<div class="session-split" style={{ gridTemplateColumns: "2.1fr 1fr" }}>
+  <figure class="code-block">
+    <Code code={throwRuleCode} lang="js" />
+  </figure>
+  <div>
+    <p><code>ThrowStatement</code> は <code>throw</code> 文を表す構文の名前です。<code>selector</code> の前半は、検出の範囲を useCase の中に絞ります。<code>ThrowStatement</code> だけだと、useCase の外の正当な <code>throw</code> も検出して誤検知になります。</p>
+    <p>規則が検出するのは、useCase に書かれた <code>throw</code> だけです。外から来た例外は検出しません。</p>
+  </div>
+</div>
