@@ -1,0 +1,7 @@
+import GuardScopeCards from "../../../components/effects-walkthrough/GuardScopeCards.astro";
+
+<p>片方だけ残る問題は、設計と transaction の2つで防ぎます。設計は、ユースケースが store を1回だけ呼ぶ形で、演習で足した仕組みはこれを守ります。transaction は、全部残るか何も残らないかという性質（<strong>原子性</strong>）を、本番の保存先で守ります。演習で足した仕組みは、本番の原子性を保証できません。</p>
+
+<GuardScopeCards />
+
+<p>本番の原子性は、保存先を使った結合テストで確かめます。この Session の例は <code>fileSqliteTransaction.test.ts</code> です。</p>

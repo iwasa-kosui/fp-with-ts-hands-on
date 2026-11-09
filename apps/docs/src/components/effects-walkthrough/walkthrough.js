@@ -10,6 +10,7 @@ for (const root of roots) {
   const live = root.querySelector("[data-walk-live]");
   const sticky = root.querySelector(".walk__sticky");
   const progress = root.querySelector("[data-walk-progress]");
+  const page = root.hasAttribute("data-walk-page");
   const button = (name) => root.querySelector(`[data-walk-action="${name}"]`);
   const first = button("first");
   const prev = button("prev");
@@ -36,7 +37,7 @@ for (const root of roots) {
     probe.style.cssText = `position:absolute;visibility:hidden;pointer-events:none;min-height:0;width:${live.offsetWidth}px`;
     live.after(probe);
     let tallest = 0;
-    for (const li of items[scene]) {
+    for (const li of page ? items.flat() : items[scene]) {
       probe.innerHTML = li.innerHTML;
       tallest = Math.max(tallest, probe.offsetHeight);
     }
@@ -99,14 +100,14 @@ for (const root of roots) {
     );
     tabs.forEach((tab, index) => tab.setAttribute("aria-pressed", String(index === scene)));
     progress.textContent = `${frame + 1} / ${items[scene].length}`;
-    if (sceneChanged) fitLive();
+    if (sceneChanged && !page) fitLive();
     live.innerHTML = items[scene][frame].innerHTML;
     setDisabled(first, frame === 0);
     setDisabled(prev, frame === 0);
     setDisabled(next, frame >= lastFrame());
     renderPlay();
     root.dispatchEvent(new CustomEvent("stepchange", { detail: { scene, frame } }));
-    if (follow) reveal();
+    if (follow && !page) reveal();
   };
 
   const stop = () => {

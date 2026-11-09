@@ -1,0 +1,18 @@
+import EpisodeIllustration from "../../../components/EpisodeIllustration.astro";
+
+<div class="session-split session-split--story">
+  <div>
+    <aside class="case-file__episode" aria-label="動物病院のひと幕">
+      <p class="case-file__episode-label">動物病院のひと幕</p>
+      <p>カメの診察を開始すると、予約の状態は「診察中」に変わりました。</p>
+      <p>ところが、監査記録はどこにも残りませんでした。</p>
+      <p>再現テストを書くと、時刻とイベント ID が毎回変わり、失敗したときの値を同じ形で確かめられません。</p>
+    </aside>
+    <p><strong>課題1</strong>: 予約の状態だけが残りました。監査記録がないので、誰がいつ診察を始めたかを後から調べられません。</p>
+    <p><strong>課題2</strong>: 時刻と ID を固定できません。同じ入力でも出力のイベントが変わるので、テストの結果が時刻で変わります。</p>
+    <p><strong>課題3</strong>: 保存の失敗と競合を、呼び出し側へ返し分けられません。開始のコードは、競合（別の依頼が先に診察を始めていたこと）を <code>Err</code> で返せません。</p>
+  </div>
+  <div>
+    <EpisodeIllustration slug="06-effects-and-consistency" />
+  </div>
+</div>

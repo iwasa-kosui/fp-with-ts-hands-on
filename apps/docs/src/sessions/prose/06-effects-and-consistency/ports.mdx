@@ -1,0 +1,7 @@
+import PortSwapFlow from "../../../components/effects-walkthrough/PortSwapFlow.astro";
+
+<p>課題2を解くには、時刻と ID を、テストで固定できる形で受け取ります。S04 では、ユースケースが <code>resolver</code> と <code>store</code> を <code>deps</code> から受け取りました。このように、ユースケースが外側に求める処理を型で表した約束を、<strong>port</strong> と呼びます。</p>
+
+<PortSwapFlow />
+
+<p>時刻を返す <code>Clock</code> と、イベント ID を返す <code>EventIdGenerator</code> も port にします。本番では本物を、テストでは偽物を渡します。偽物（fake）は、テストのために本物の代わりに渡す実装です。</p>

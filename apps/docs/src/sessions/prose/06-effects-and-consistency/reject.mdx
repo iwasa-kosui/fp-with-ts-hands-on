@@ -1,0 +1,7 @@
+import EffectsPipelineAnimation from "../../../components/effects-walkthrough/EffectsPipelineAnimation.astro";
+
+<p>データベースの障害や破損データには、呼び出し側が選べる対応がないので、Err に変えず、Promise の reject のまま外側へ渡します。<code>ResultAsync.fromSafePromise</code> は、reject を reject のまま通します。<code>fromPromise</code> で全部を <code>AppointmentConflict</code> に変えると、障害が競合として案内されて気づけません。</p>
+
+<EffectsPipelineAnimation scene="reject" />
+
+<p>reject は、S04 で見た外側の例外を受け取る場所（<code>app.onError</code>）が、詳細を含まない 500 応答にします。</p>

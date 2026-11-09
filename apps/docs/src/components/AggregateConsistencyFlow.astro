@@ -3,6 +3,13 @@ import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
 import appointmentSource from "../../../../examples/final/src/domain/appointment/appointment.ts?raw";
 
+interface Props {
+  auditLabel?: string;
+}
+
+const { auditLabel = "履歴" } = Astro.props;
+const audit = (text: string) => text.replaceAll("履歴", auditLabel);
+
 const quote = (source: string, from: number, to: number, firstLine: string, lastLine: string): string => {
   const lines = source.split("\n").slice(from - 1, to);
   if (!lines[0]?.includes(firstLine)) throw new Error(`引用元の先頭行がずれています: ${firstLine}`);
@@ -14,7 +21,7 @@ const quote = (source: string, from: number, to: number, firstLine: string, last
 const snippets = {
   cancel: {
     path: "examples/final/src/domain/appointment/appointment.ts",
-    code: quote(appointmentSource, 210, 235, "const cancel =", "};"),
+    code: quote(appointmentSource, 215, 234, "): AppointmentCanceled => {", ");"),
   },
 } as const;
 
@@ -52,14 +59,14 @@ const appointmentFields = (ghost: boolean): readonly Field[] => [
     ],
   },
   {
-    label: "履歴",
+    label: audit("履歴"),
     chips: [{ text: "予約された" }, ...(ghost ? [{ text: "キャンセルされた", ghost: true }] : [])],
   },
 ];
 
 const mismatchFields: readonly Field[] = [
   { label: "現在の状態", chips: [{ text: "Canceled", mono: true }] },
-  { label: "履歴", chips: [{ text: "キャンセルが無い", note: true }] },
+  { label: audit("履歴"), chips: [{ text: "キャンセルが無い", note: true }] },
 ];
 
 const outcomes: readonly Readonly<{ tag: string; fields: readonly Field[] }>[] = [
@@ -67,14 +74,14 @@ const outcomes: readonly Readonly<{ tag: string; fields: readonly Field[] }>[] =
     tag: "成功",
     fields: [
       { label: "現在の状態", chips: [{ text: "Canceled", mono: true }] },
-      { label: "履歴", chips: [{ text: "キャンセルされた" }] },
+      { label: audit("履歴"), chips: [{ text: "キャンセルされた" }] },
     ],
   },
   {
     tag: "失敗",
     fields: [
       { label: "現在の状態", chips: [{ text: "Scheduled", mono: true }] },
-      { label: "履歴", chips: [{ text: "変化なし", note: true }] },
+      { label: audit("履歴"), chips: [{ text: "変化なし", note: true }] },
     ],
   },
 ];
@@ -89,22 +96,22 @@ type Frame = Readonly<{
 
 const frames: readonly Frame[] = [
   {
-    caption: "予約1件の現在の状態と、その予約の履歴を、1つの枠で囲みます。キャンセルで変わるのは、この枠の中だけです。別の予約や飼い主のデータは変わりません。",
+    caption: audit("予約1件の現在の状態と、その予約の履歴を、1つの枠で囲みます。キャンセルで変わるのは、この枠の中だけです。別の予約や飼い主のデータは変わりません。"),
     view: "aggregate",
   },
   {
-    caption: "完成形の参照実装の Appointment.cancel は、イベント AppointmentCanceled を返します。このイベントは、キャンセル後の予約の状態（aggregateState）を持ちます。1つの値が、書き込む現在の状態と履歴の両方を表します。",
+    caption: audit("キャンセルの処理 Appointment.cancel は、イベント AppointmentCanceled を返します。このイベントは、キャンセル後の予約の状態（aggregateState）を持ちます。1つの値が、書き込む現在の状態と履歴の両方を表します。"),
     view: "aggregate",
     ghost: true,
     code: { key: "cancel", keys: ['kind: "Canceled",', "return AppointmentEvent.create("] },
   },
   {
-    caption: "保存を2回に分けた場合です。現在の状態を書いた後で履歴の追記が失敗すると、予約は Canceled なのに、履歴にキャンセルが残りません。整合性が崩れた状態です。",
+    caption: audit("保存を2回に分けた場合です。現在の状態を書いた後で履歴の追記が失敗すると、予約は Canceled なのに、履歴にキャンセルが残りません。整合性が崩れた状態です。"),
     view: "compare",
     after: false,
   },
   {
-    caption: "集約を単位に1回で保存すると、結果は、両方が書かれるか、どちらも書かれないかの2通りになります。どちらでも、現在の状態と履歴は食い違いません。",
+    caption: audit("集約を単位に1回で保存すると、結果は、両方が書かれるか、どちらも書かれないかの2通りになります。どちらでも、現在の状態と履歴は食い違いません。"),
     view: "compare",
     after: true,
   },
@@ -113,7 +120,7 @@ const frames: readonly Frame[] = [
 
 <figure
   class="aggregate-flow"
-  aria-label="キャンセルで予約の集約の現在の状態と履歴をそろえて保存する流れ"
+  aria-label={audit("キャンセルで予約の集約の現在の状態と履歴をそろえて保存する流れ")}
   data-aggregate-flow
 >
   <div class="aggregate-flow__controls" data-controls hidden>
@@ -126,7 +133,7 @@ const frames: readonly Frame[] = [
 
   <ol class="aggregate-flow__frames">
     {frames.map((frame) => (
-      <li data-frame>
+      <li data-frame data-view={frame.view}>
         <p class="aggregate-flow__caption" data-caption>{frame.caption}</p>
 
         {frame.view === "aggregate" && (
@@ -167,7 +174,7 @@ const frames: readonly Frame[] = [
         {frame.view === "compare" && (
           <div class="aggregate-flow__compare">
             <section class="aggregate-flow__side">
-              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">修正前</span>保存を2回に分ける</p>
+              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">もし2回に分けたら</span>状態と{auditLabel}を別々に保存する</p>
               <ol class="aggregate-flow__steps">
                 <li class="aggregate-flow__step">
                   <span class="aggregate-flow__step-no">1回目</span>
@@ -176,7 +183,7 @@ const frames: readonly Frame[] = [
                 </li>
                 <li class="aggregate-flow__step">
                   <span class="aggregate-flow__step-no">2回目</span>
-                  <span>履歴を追記する</span>
+                  <span>{auditLabel}を追記する</span>
                   <span class="aggregate-flow__tag aggregate-flow__tag--bad"><span aria-hidden="true">✕ </span>失敗</span>
                 </li>
               </ol>
@@ -204,7 +211,7 @@ const frames: readonly Frame[] = [
             </section>
 
             <section class="aggregate-flow__side">
-              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">修正後</span>集約を単位に1回で保存する</p>
+              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">1回にまとめたら</span>集約を単位に1回で保存する</p>
               {frame.after ? (
                 outcomes.map((outcome) => (
                   <div class="aggregate-flow__outcome">
@@ -306,8 +313,8 @@ const frames: readonly Frame[] = [
 <style>
   .aggregate-flow {
     --agg: var(--case-blue, #2236b8);
-    --ok: #137333;
-    --bad: #b3261e;
+    --ok: var(--role-positive, #137333);
+    --bad: var(--role-negative, #b3261e);
     --muted: color-mix(in srgb, var(--case-ink, #111116) 72%, var(--case-paper, #fffefa));
     container-type: inline-size;
     min-width: 0;
@@ -386,7 +393,7 @@ const frames: readonly Frame[] = [
     margin: 0;
     padding: 0.3rem 0.6rem;
     background: var(--agg);
-    color: #fff;
+    color: var(--role-surface, #fff);
     font-size: 0.85rem;
     font-weight: 700;
     line-height: 1.5;
@@ -582,7 +589,7 @@ const frames: readonly Frame[] = [
     display: inline-block;
     padding: 0 0.4rem;
     border-radius: 0.25rem;
-    color: #fff;
+    color: var(--role-surface, #fff);
     font-weight: 700;
   }
 
@@ -659,8 +666,8 @@ const frames: readonly Frame[] = [
     min-width: calc(100% + 0.5rem);
     margin-left: -0.5rem;
     padding-left: 0.5rem;
-    background: rgb(255 210 27 / 22%);
-    box-shadow: inset 0.3rem 0 0 #ffd21b;
+    background: color-mix(in srgb, var(--frame-code-text, #ffd21b) 22%, transparent);
+    box-shadow: inset 0.3rem 0 0 var(--frame-code-text, #ffd21b);
   }
 
   .aggregate-flow[data-animated] .aggregate-flow__frames {
@@ -679,6 +686,52 @@ const frames: readonly Frame[] = [
 
   .aggregate-flow[data-animated] .aggregate-flow__caption {
     display: none;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] {
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    height: var(--frame-figure-height);
+    margin-block: 0.25rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__controls {
+    margin-bottom: 0.5rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__controls button {
+    min-height: 2.5rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__live {
+    min-height: 3.4em;
+    margin: 0 0 0.5rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__frames {
+    min-height: 0;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__frames > li.is-current {
+    display: grid;
+    height: 100%;
+    min-height: 0;
+    align-content: start;
+    gap: 0.75rem;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__frames > li[data-view="aggregate"].is-current {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    align-items: start;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] :is(.aggregate-flow__diagram, .aggregate-flow__compare, .aggregate-flow__code) {
+    margin-top: 0;
+  }
+
+  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__code :global(pre) {
+    padding-block: 0.5rem;
+    line-height: 1.35;
   }
 
   @media (prefers-reduced-motion: no-preference) {

@@ -1,0 +1,36 @@
+import { GuardExercise } from "../../../components/guard-exercise/GuardExercise";
+import { projectFilesForSnapshot } from "../../../code-explorer/project-files";
+import { guardExercise } from "../../pages/06-effects-and-consistency-exercise";
+import { guardExerciseWorkspaceFor } from "../../pages/guard-exercise-workspace";
+
+export const projectFiles = projectFilesForSnapshot(guardExercise.snapshot);
+export const workspace = guardExerciseWorkspaceFor(
+  guardExercise,
+  projectFiles,
+  "演習のページと同じファイルを開く作業場所です。",
+);
+export const guide = {
+  title: "相互レビューでやること",
+  steps: [
+    "隣の人のブラウザの前に移ります。1人のときは、自分の仕組みをすり抜ける変更を自分で作ります。",
+    "左の一覧の「相互レビューで作る悪い変更」を選ぶと R1-peer-change.ts が開きます。最初は正しいコードと同じ内容で、「未変更」（悪い変更をまだ作っていない状態）と出ます。",
+    "相手の規則とテストを読み、new Date() を戻す、store を2回呼ぶなど、本当に悪い変更に書き換えます。",
+    "「検出を確かめる」を押します。この行が「すり抜け」なら、相手の仕組みをすり抜けています。",
+    "この行が無いとき、または誤検知が残っているときは、先に必須の検出を2人で済ませます。",
+    {
+      text: "話す問いは次の3つです。",
+      items: [
+        "すり抜けた変更は何を変えたのか",
+        "検出するには何を足せばよいか",
+        "足した仕組みで誤検知は出ないか",
+      ],
+    },
+  ],
+};
+
+<GuardExercise
+  client:load
+  workspace={workspace}
+  projectFiles={projectFiles}
+  guide={guide}
+/>

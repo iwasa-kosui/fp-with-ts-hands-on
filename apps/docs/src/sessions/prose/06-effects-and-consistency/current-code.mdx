@@ -1,0 +1,12 @@
+import CodeGuideCards from "../../../components/CodeGuideCards.astro";
+import { guides, projectFiles } from "../../pages/06-effects-and-consistency-content";
+
+<p>課題1〜3の原因は、診察開始の処理 <code>startExaminationWithEffects</code> にあります。このコードは <code>examples/session-06</code> にあり、このページでは読むだけです。</p>
+
+<div class="session-split session-split--guides">
+  <CodeGuideCards guides={guides} projectFiles={projectFiles} />
+  <ul class="session-glossary" aria-label="コードに出てくる語">
+    <li><code>store: {"{ save: () => undefined }"}</code>: 状態遷移の関数が store を要求するので、何もしない store を渡しています。</li>
+    <li>戻り値の型 <code>Result&lt;void, …Error&gt;</code>: エラーの型に <code>AppointmentConflict</code> がありますが、返すコードがありません。</li>
+  </ul>
+</div>

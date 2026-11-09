@@ -9,6 +9,7 @@ type Snippet = Readonly<{ box: Box; path: string; code: string }>;
 type Pane = Readonly<{ pane: string; lines: readonly number[] }>;
 type CardState = "off" | "tx" | "tx-failed" | "tx-gone" | "home" | "home-failed";
 type Tx = "none" | "wait" | "open" | "commit" | "rollback" | "ended";
+type SceneKey = "dual-write" | "one-save" | "save-failure" | "conflict";
 type Frame = Readonly<{
   text: string;
   call: Pane | null;
@@ -18,7 +19,14 @@ type Frame = Readonly<{
   state: CardState;
   audit: CardState;
   read?: boolean;
+  issue?: boolean;
 }>;
+
+interface Props {
+  scene?: SceneKey;
+}
+
+const { scene: sceneKey } = Astro.props;
 
 const snippets: Readonly<Record<string, Snippet>> = {
   "before-call": {
@@ -177,12 +185,21 @@ const appointmentCards = [
   { id: "state", old: false, code: `{ status: "InExamination",\n  state: '{"kind":"InExamination",…}' }` },
 ] as const;
 const auditCards = [
-  { id: "old-audit", old: true, code: `{ eventId: "e-0",\n  eventName: "AppointmentSeeded" }` },
   { id: "audit", old: false, code: `{ eventId: "e-1",\n  eventName: "ExaminationStarted" }` },
 ] as const;
 
-const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] = [
+const appointmentRows = [
+  { id: "old-CheckedIn", old: true, first: "CheckedIn", second: `{"kind":"CheckedIn",…}` },
+  { id: "old-InExamination", old: true, first: "InExamination", second: `{"kind":"InExamination",…}` },
+  { id: "state", old: false, first: "InExamination", second: `{"kind":"InExamination",…}` },
+] as const;
+const auditRows = [{ id: "audit", old: false, first: "e-1", second: "ExaminationStarted" }] as const;
+
+const fileName = (path: string) => path.slice(path.lastIndexOf("/") + 1);
+
+const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: readonly Frame[] }>[] = [
   {
+    key: "dual-write",
     label: "修正前: 2回の保存",
     frames: [
       {
@@ -195,7 +212,7 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
         audit: "off",
       },
       {
-        text: "`stateStore.save` は `database` に直接書きます。transaction がないので、`InExamination` はこの時点で確定します。",
+        text: "`stateStore.save` は `database` に直接書きます。`InExamination` は、その場ですぐ書き込まれます。",
         call: { pane: "before-call", lines: [0] },
         impl: { pane: "before-save", lines: [1, 10, 11, 12, 13, 14, 15, 16, 17] },
         tx: "none",
@@ -213,7 +230,7 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
         audit: "home-failed",
       },
       {
-        text: "例外を受けて、外側の `app.onError` が 500 応答を返しました。状態は `InExamination` のまま、`ExaminationStarted` の監査記録はありません。誰が診察を開始したかを後から確かめられません。",
+        text: "例外は外側で 500 を返します。状態は `InExamination` のまま、`ExaminationStarted` の監査記録はありません。誰が診察を開始したかを後から確かめられません。",
         call: null,
         impl: null,
         tx: "none",
@@ -224,6 +241,7 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
     ],
   },
   {
+    key: "one-save",
     label: "修正後: 成功",
     frames: [
       {
@@ -284,6 +302,7 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
     ],
   },
   {
+    key: "save-failure",
     label: "修正後: 監査記録の保存に失敗",
     frames: [
       {
@@ -344,16 +363,18 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
     ],
   },
   {
+    key: "conflict",
     label: "修正後: 競合",
     frames: [
       {
-        text: "transaction を開始する前に、別の依頼が先に診察を開始していました。データベースの予約はすでに `InExamination` です。",
+        text: "ユースケースが予約を読んだ後、保存の前に、別の依頼が先に診察を開始していました。データベースの予約はすでに `InExamination` です。",
         call: null,
         impl: null,
         tx: "wait",
         old: "InExamination",
         state: "off",
         audit: "off",
+        issue: true,
       },
       {
         text: "transaction の中で読み直した予約の `current.kind` は、`CheckedIn` ではありません。",
@@ -364,20 +385,33 @@ const scenes: readonly Readonly<{ label: string; frames: readonly Frame[] }>[] =
         state: "off",
         audit: "off",
         read: true,
+        issue: true,
       },
       {
-        text: "何も書かずに `err` で `AppointmentConflict` を返します。状態も監査記録も増えません。",
+        text: "何も書かずに `err` で `AppointmentConflict` を返します。`err` も値なので transaction は確定しますが、書き込みの前に返すので何も残らず、状態も監査記録も増えません。",
         call: null,
         impl: null,
         tx: "ended",
         old: "InExamination",
         state: "off",
         audit: "off",
+        issue: true,
       },
     ],
   },
 ];
 
+const page = sceneKey !== undefined;
+const scenes = sceneKey === undefined ? allScenes : allScenes.filter(({ key }) => key === sceneKey);
+if (scenes.length === 0) throw new Error(`StoreBoundaryAnimation: unknown scene "${sceneKey}"`);
+
+const writtenOnly = sceneKey === "dual-write";
+const legendLines = [
+  writtenOnly
+    ? "「保存済み」ははじめからある行、「書き込み済み」は書き込まれた行です。破線の空枠は、まだ行がない場所です。"
+    : "「保存済み」ははじめからある行、「未確定」は transaction の中だけにある行、「確定」は書き込みが残った行です。",
+  "`status` は予約の状態の名前、`state` はその中身、`eventId` と `eventName` は監査記録の ID と種類です。",
+];
 const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame }) => frame));
 ---
 
@@ -387,68 +421,114 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
   lead="保存の途中で失敗が起きたとき、データベースに何が残るかを、修正前と修正後で1コマずつ追います。"
   note="行の値は説明用の例です。列は一部だけを載せています。コードの insert(...).values(...) や select(...).from(...).where(...) は、データベースを操作するライブラリ Drizzle ORM の書き方です。database.transaction に渡した関数の中の書き込みは、1つの transaction にまとまります。関数が値を返すと確定し、例外を投げると取り消されます。"
   scenes={scenes.map(({ label, frames }) => ({ label, frames: frames.map(({ text }) => ({ text })) }))}
+  page={page}
+  legend={page ? legendLines.length * 1.25 + 0.5 : undefined}
 >
-  <div class="sb" data-store-boundary data-frames={JSON.stringify(frameData)}>
-    {boxes.map(({ box, label }) => (
-      <section class="sb-box" data-box={box}>
-        <div class="sb-box__clip">
-          <div class="sb-box__inner">
-            <p class="sb-box__label">{label}</p>
-            <div class="sb-stack">
-              {Object.entries(snippets).filter(([, snippet]) => snippet.box === box).map(([name, snippet]) => (
-                <figure class="sb-pane" data-pane={name} data-era={name.startsWith("before") ? "before" : "after"}>
-                  <figcaption>
-                    <span class={`walk-badge walk-badge--${name.startsWith("before") ? "before" : "after"}`}>{name.startsWith("before") ? "修正前" : "修正後"}</span>
-                    <code>{snippet.path}</code>
-                  </figcaption>
-                  <Code code={snippet.code} lang="ts" wrap />
-                </figure>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-    ))}
-    <div class="sb-diagram" aria-hidden="true" inert>
-      <div class="sb-tx" data-tx="none">
-        <p class="sb-tx__label" data-tx-label>transaction</p>
-        <div class="sb-cols">
-          <div class="sb-slot" data-slot="state"></div>
-          <div class="sb-slot" data-slot="audit"></div>
-        </div>
-      </div>
-      <div class="sb-db">
-        <p class="sb-db__label">database</p>
-        <div class="sb-cols">
-          <div class="sb-table" data-table="appointments">
-            <p class="sb-table__name">appointments</p>
-            <div class="sb-rows">
-              <div class="sb-cell">
-                {appointmentCards.map(({ id, old, code }) => (
-                  <figure class={`sb-card${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
-                    <figcaption class="sb-card__head"><span class="sb-chip" data-chip>{old ? "保存済み" : ""}</span></figcaption>
-                    <Code code={code} lang="ts" wrap />
+  <div class:list={["sb", { "sb--page": page }]} data-store-boundary data-written-only={writtenOnly ? "" : undefined} data-frames={JSON.stringify(frameData)}>
+    <div class="sb-code">
+      {boxes.map(({ box, label }) => (
+        <section class="sb-box" data-box={box}>
+          <div class="sb-box__clip">
+            <div class="sb-box__inner">
+              <p class="sb-box__label">{label}</p>
+              <div class="sb-stack">
+                {Object.entries(snippets).filter(([, snippet]) => snippet.box === box).map(([name, snippet]) => (
+                  <figure class="sb-pane" data-pane={name} data-era={name.startsWith("before") ? "before" : "after"}>
+                    <figcaption>
+                      <span class={`walk-badge walk-badge--${name.startsWith("before") ? "before" : "after"}`}>{name.startsWith("before") ? "修正前" : "修正後"}</span>
+                      <code>{fileName(snippet.path)}</code>
+                      <span class="sb-role">{box === "call" ? "呼び出し元" : "実装"}</span>
+                    </figcaption>
+                    <Code code={snippet.code} lang="ts" wrap />
                   </figure>
                 ))}
               </div>
             </div>
           </div>
+        </section>
+      ))}
+      {page ? <p class="sb-idle" data-idle hidden>このコマではコードを実行していません。右の図を見ます。</p> : null}
+    </div>
+    <div class="sb-diagram" aria-hidden="true" inert>
+      {page ? (
+        <div class="sb-db sb-db--page" data-tx="none">
+          <div class="sb-db__head">
+            <p class="sb-db__label">database</p>
+            <p class="sb-tx__label" data-tx-label></p>
+          </div>
+          <div class="sb-table" data-table="appointments">
+            <p class="sb-table__name"><span>appointments</span><span class="sb-issue" data-issue>問題: 別の依頼が先に診察を始めていた</span></p>
+            <div class="sb-line sb-line--head"><span></span><span>status</span><span>state</span></div>
+            <div class="sb-cell">
+              {appointmentRows.map(({ id, old, first, second }) => (
+                <div class={`sb-card sb-line${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
+                  <span class="sb-chip" data-chip>{old ? "保存済み" : ""}</span>
+                  <code>{first}</code>
+                  <code>{second}</code>
+                </div>
+              ))}
+            </div>
+          </div>
           <div class="sb-table" data-table="audit_logs">
             <p class="sb-table__name">audit_logs</p>
-            <div class="sb-rows">
-              {auditCards.map(({ id, old, code }) => (
-                <div class={`sb-cell${old ? "" : " sb-cell--landing"}`}>
-                  <figure class={`sb-card${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
-                    <figcaption class="sb-card__head"><span class="sb-chip" data-chip>{old ? "保存済み" : ""}</span></figcaption>
-                    <Code code={code} lang="ts" wrap />
-                  </figure>
+            <div class="sb-line sb-line--head"><span></span><span>eventId</span><span>eventName</span></div>
+            <div class="sb-cell sb-cell--landing">
+              {auditRows.map(({ id, old, first, second }) => (
+                <div class={`sb-card sb-line${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
+                  <span class="sb-chip" data-chip></span>
+                  <code>{first}</code>
+                  <code>{second}</code>
                 </div>
               ))}
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <>
+          <div class="sb-tx" data-tx="none">
+            <p class="sb-tx__label" data-tx-label>transaction</p>
+            <div class="sb-cols">
+              <div class="sb-slot" data-slot="state"></div>
+              <div class="sb-slot" data-slot="audit"></div>
+            </div>
+          </div>
+          <div class="sb-db">
+            <p class="sb-db__label">database</p>
+            <div class="sb-cols">
+              <div class="sb-table" data-table="appointments">
+                <p class="sb-table__name">appointments</p>
+                <div class="sb-rows">
+                  <div class="sb-cell">
+                    {appointmentCards.map(({ id, old, code }) => (
+                      <figure class={`sb-card${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
+                        <figcaption class="sb-card__head"><span class="sb-chip" data-chip>{old ? "保存済み" : ""}</span></figcaption>
+                        <Code code={code} lang="ts" wrap />
+                      </figure>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div class="sb-table" data-table="audit_logs">
+                <p class="sb-table__name">audit_logs</p>
+                <div class="sb-rows">
+                  {auditCards.map(({ id, old, code }) => (
+                    <div class={`sb-cell${old ? "" : " sb-cell--landing"}`}>
+                      <figure class={`sb-card${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
+                        <figcaption class="sb-card__head"><span class="sb-chip" data-chip>{old ? "保存済み" : ""}</span></figcaption>
+                        <Code code={code} lang="ts" wrap />
+                      </figure>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
+  </div>
+  <div slot="legend">
+    {legendLines.map((line) => <p>{line.split("`").map((part, index) => (index % 2 === 1 ? <code>{part}</code> : part))}</p>)}
   </div>
   <style is:inline set:html={css}></style>
   <script is:inline type="module" set:html={script}></script>

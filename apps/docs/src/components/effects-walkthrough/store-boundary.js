@@ -10,12 +10,17 @@ const chipText = {
 const txText = {
   commit: "transaction: 確定",
   rollback: "transaction: 取り消し",
-  ended: "transaction: 書き込みなしで終了",
+  ended: "transaction: 確定（書き込みなし）",
 };
+const pageTxText = { open: "transaction の中", ...txText };
 const slotStates = new Set(["tx", "tx-failed", "tx-gone"]);
 
 for (const figure of figures) {
   figure.setAttribute("data-sb-ready", "");
+  const page = figure.classList.contains("sb--page");
+  if (figure.hasAttribute("data-written-only")) chipText.home = "書き込み済み";
+  const idle = figure.querySelector("[data-idle]");
+  const issue = figure.querySelector("[data-issue]");
 
   const root = figure.closest("[data-walk]");
   const frames = JSON.parse(figure.dataset.frames);
@@ -85,7 +90,7 @@ for (const figure of figures) {
     card.toggleAttribute("data-walk-keep", !reset && state !== card.dataset.state && state !== "off");
     card.dataset.state = state;
     if (state in chipText) card.querySelector("[data-chip]").textContent = chipText[state];
-    if (slotStates.has(state) || (state === "off" && withTx)) {
+    if (slots[key] !== null && (slotStates.has(state) || (state === "off" && withTx))) {
       const home = card.parentElement.getBoundingClientRect();
       const target = slots[key].getBoundingClientRect();
       card.style.transform = `translate(${target.left - home.left}px, ${target.top - home.top}px)`;
@@ -107,11 +112,12 @@ for (const figure of figures) {
     boxEls.impl.toggleAttribute("data-walk-focus", frame.impl !== null);
     diagram.toggleAttribute("data-walk-focus", frame.impl === null);
     tx.dataset.tx = frame.tx;
-    txLabel.textContent = txText[frame.tx] ?? "transaction";
+    txLabel.textContent = page ? (pageTxText[frame.tx] ?? "") : (txText[frame.tx] ?? "transaction");
+    if (idle !== null) idle.hidden = frame.call !== null || frame.impl !== null;
+    if (issue !== null) issue.toggleAttribute("data-on", frame.issue === true);
     appointments.toggleAttribute("data-read", frame.read === true);
     setOld("old-CheckedIn", frame.old === "CheckedIn", reset);
     setOld("old-InExamination", frame.old === "InExamination", reset);
-    setOld("old-audit", true, reset);
     setCard("state", frame.state, frame.tx !== "none", reset);
     setCard("audit", frame.audit, frame.tx !== "none", reset);
 
