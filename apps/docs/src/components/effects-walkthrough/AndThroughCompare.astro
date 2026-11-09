@@ -25,16 +25,16 @@ const thenStore = throughStore.replace(".andThrough(", ".andThen(");
 if (thenStore === throughStore) throw new Error("AndThroughCompare: .andThrough( is not in the excerpt");
 
 const frames = [
-  "`andThen` で書くと: `andThen` は、`store` が返した値を次の行へ流します。`store` が返すのは `void` なので、次の行へ流れるのは、保存したイベントではなく `void` です。",
-  "`andThen` で書くと: 次の行の `event` は `void` です。`void` に `aggregateState` はないので、型のエラーになります。",
-  "`andThrough` で書くと: `andThrough` は、`store` の成功を確かめたあと、その結果を捨てます。次の行へは、保存したイベントがそのまま流れます。",
-  "`andThrough` で書くと: 次の行の `event` は `ExaminationStarted` です。`event.aggregateState` を取り出して、画面に新しい予約の状態 `InExamination` を返せます。保存の後もイベントが要るのは、このためです。",
+  "`andThen` で実装すると: `andThen` は、`store` が返した値を次の行へ渡します。`store` が返す値は `void` であるため、次の行へ渡されるのは、保存したイベントではなく `void` です。",
+  "`andThen` で実装すると: 次の行の `event` は `void` です。`void` に `aggregateState` はないため、型検査のときに報告されます。",
+  "`andThrough` で実装すると: `andThrough` は、`store` の成功を確認したあと、その結果を破棄します。次の行へは、保存したイベントがそのまま渡されます。",
+  "`andThrough` で実装すると: 次の行の `event` は `ExaminationStarted` です。`event.aggregateState` を取り出して、画面に新しい予約の状態 `InExamination` を返せます。保存の後もイベントが必要なのは、このためです。",
 ] as const;
 
 const lit = JSON.stringify([{ rows: [1] }, { rows: [3] }, { rows: [2] }, { rows: [3] }]);
 ---
 
-<figure class="sf atc" data-and-through data-step-figure aria-label="andThen と andThrough で次の行へ流れる値の違い" data-lit={lit}>
+<figure class="sf atc" data-and-through data-step-figure aria-label="andThen と andThrough で次の行へ渡される値の違い" data-lit={lit}>
   <StepControls />
 
   <div aria-live="polite">
@@ -49,9 +49,9 @@ const lit = JSON.stringify([{ rows: [1] }, { rows: [3] }, { rows: [2] }, { rows:
 
   <div class="sf-stage atc__stage">
     <div class="atc__head">
-      <span class="sf-tag sf-tag--before atc__era" data-era="before"><code>andThen</code> で書くと</span>
-      <span class="sf-tag sf-tag--after atc__era" data-era="after"><code>andThrough</code> で書くと</span>
-      <span class="atc__note">右の札は、その行から次の行へ流れる値です。✗ の札は値ではなく、型のエラーです。</span>
+      <span class="sf-tag sf-tag--before atc__era" data-era="before"><code>andThen</code> で実装すると</span>
+      <span class="sf-tag sf-tag--after atc__era" data-era="after"><code>andThrough</code> で実装すると</span>
+      <span class="atc__note">右の札は、その行から次の行へ渡される値です。✗ の札は値ではなく、型のエラーです。</span>
       <span class="atc__where" data-era="before"><code>.andThen</code> の行は説明用（配布コードにはありません）。実物: <code><PathLabel label={sourceLabel} /></code></span>
       <span class="atc__where" data-era="after"><code><PathLabel label={sourceLabel} /></code></span>
     </div>

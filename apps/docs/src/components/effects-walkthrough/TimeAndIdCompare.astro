@@ -62,14 +62,14 @@ const lit = JSON.stringify([
 ]);
 
 const frames = [
-  "修正前: `new Date().toISOString()` と `crypto.randomUUID()` は、呼ぶたびに別の値を返します。実行のたびに時刻と ID が変わるので、テストで値を決められません。",
+  "修正前: `new Date().toISOString()` と `crypto.randomUUID()` は、呼び出すたびに別の値を返します。実行のたびに時刻と ID が変わるため、テストで値を固定できません。",
   "修正後: 時刻は `deps.clock.now()`、ID は `deps.eventIdGenerator.generate()` から受け取ります。テストで固定の clock と ID generator を渡せば、毎回同じ値になります。",
-  "修正後: 時刻と ID を作る `createEventContext` は、1回の実行で1度だけ呼びます。その1回の値を、予約の状態と監査記録の両方が使うので、2つの時刻は同じです。",
-  "修正後: すでにある時刻から `new Date(...)` で計算するのは問題ありません。`clock` が返した時刻を渡しているので、現在時刻は読んでおらず、実行のたびに変わりません。",
+  "修正後: 時刻と ID を生成する `createEventContext` は、1回の実行につき1度だけ呼び出します。この1回の値を、予約の状態と監査記録の両方が使用するため、2つの時刻は同じです。",
+  "修正後: すでにある時刻から `new Date(...)` で計算するのは問題ありません。`clock` が返した時刻を渡しているため、現在時刻は取得しておらず、実行のたびに変わりません。",
 ] as const;
 ---
 
-<figure class="sf tic" data-time-and-id data-step-figure data-lit={lit} aria-label="時刻と ID を直接作る書き方と、deps から受け取る書き方の違い">
+<figure class="sf tic" data-time-and-id data-step-figure data-lit={lit} aria-label="時刻と ID を直接生成する実装と、deps から受け取る実装の違い">
   <StepControls />
 
   <div aria-live="polite">
@@ -117,7 +117,7 @@ const frames = [
             <p><span>ID</span><code>"e-2"</code></p>
           </section>
         </div>
-        <p class="tic__verdict"><span class="sf-tag sf-tag--err">✗ 毎回違う値</span>テストで値を決められない</p>
+        <p class="tic__verdict"><span class="sf-tag sf-tag--err">✗ 毎回違う値</span>テストで値を固定できない</p>
         <p class="tic__note">値は説明用の例です。「1回目」「2回目」は、同じ処理を2回実行した結果です。</p>
       </div>
 
@@ -162,7 +162,7 @@ const frames = [
           <li><code>"2026-08-30T06:30:00.000Z"</code><small>文字列</small></li>
           <li><code>new Date(…).toISOString()</code><small>その時刻から計算し直すだけ</small></li>
         </ol>
-        <p class="tic__verdict"><span class="sf-tag sf-tag--ok">✓ 問題なし</span>現在時刻は読んでいません</p>
+        <p class="tic__verdict"><span class="sf-tag sf-tag--ok">✓ 問題なし</span>現在時刻を取得していません</p>
       </div>
     </div>
   </div>

@@ -246,7 +246,7 @@ const expectedExercises = [
       minutes: 5,
       pickCount: 2,
       questions: [
-        "時刻とイベント ID は実行ごとに一度だけ生成され、同じ `EventContext` に入りますか。",
+        "時刻とイベント ID は実行ごとに一度だけ生成され、同じ `EventContext` に格納されますか。",
         "状態と監査記録は、1つのイベントとして同じ `store` に渡されますか。",
         "業務上の競合だけを `Result` で返し、保存障害は reject のまま伝播しますか。",
       ],

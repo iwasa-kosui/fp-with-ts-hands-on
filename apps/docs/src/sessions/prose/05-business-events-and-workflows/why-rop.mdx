@@ -1,19 +1,19 @@
-<p>1つの関数に書いたときの2つの課題に対して、工程でつなぐと次の3点が解けます。</p>
+<p>1つの関数に実装したときの2つの課題に対して、工程の連結で次の3点を解決できます。</p>
 
-<ul class="session-cards" aria-label="工程でつなぐと解ける3点">
+<ul class="session-cards" aria-label="工程の連結で解決できる3点">
   <li class="session-cards__card">
     <h3 class="session-cards__title">失敗が戻り値の型に現れる</h3>
-    <p class="session-cards__target">課題 1 への答え</p>
-    <p>例外を投げる関数は、どの失敗を投げるかが型に現れません。Result を返す工程は、起こりうる失敗を戻り値の型に並べます。</p>
+    <p class="session-cards__target">課題 1 の解決</p>
+    <p>例外を投げる関数は、投げる失敗が型に現れません。Result を返す工程は、発生しうる失敗を戻り値の型に列挙します。</p>
   </li>
   <li class="session-cards__card">
-    <h3 class="session-cards__title">工程の順が読め、判定だけを確かめられる</h3>
-    <p class="session-cards__target">課題 1 と課題 2 への答え</p>
-    <p><code>andThen</code> を並べた順が、そのまま工程の順です。<code>Appointment.cancel</code> は値だけで確かめられ、Resolver と Store と時計は引数で渡すので、偽物に差し替えられます。</p>
+    <h3 class="session-cards__title">工程の順序が読み取れ、判定だけを検証できる</h3>
+    <p class="session-cards__target">課題 1 と課題 2 の解決</p>
+    <p><code>andThen</code> を並べた順序が、そのまま工程の順序です。<code>Appointment.cancel</code> は値だけで検証でき、Resolver と Store と時計は引数で渡すため、テスト用の実装に差し替えられます。</p>
   </li>
   <li class="session-cards__card">
     <h3 class="session-cards__title">呼び出し側が失敗を網羅できる</h3>
-    <p class="session-cards__target">課題 1 への答え</p>
-    <p>呼び出し側は、戻り値の型に並んだ失敗を <code>kind</code> で分けて扱います。失敗の種類を足したのに分岐を足し忘れると、型の検査が報告します。</p>
+    <p class="session-cards__target">課題 1 の解決</p>
+    <p>呼び出し側は、戻り値の型に含まれる失敗を <code>kind</code> で分岐して扱います。失敗の種類を追加したのに分岐を追加しなかった場合は、型検査のときに報告されます。</p>
   </li>
 </ul>

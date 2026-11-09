@@ -1,7 +1,7 @@
 import StoreBoundaryAnimation from "../../../components/effects-walkthrough/StoreBoundaryAnimation.astro";
 import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
 
-<p>transaction の途中で書き込みが失敗すると、transaction は取り消され（rollback）、そこまでの書き込みは捨てられます。防げる事故は、監査記録の保存だけが失敗して、予約だけが診察中になることです。</p>
+<p>transaction の途中で書き込みが失敗すると、transaction は取り消され（rollback）、そこまでの書き込みは破棄されます。防止できる事故は、監査記録の保存だけが失敗して、予約だけが診察中になることです。</p>
 
 <FigureSpace reserve={86}>
   <StoreBoundaryAnimation scene="save-failure" />

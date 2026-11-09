@@ -1,7 +1,7 @@
 import { Code } from "astro:components";
 import { storeCode } from "../../pages/06-effects-and-consistency-content";
 
-<p><code>examples/session-06-solution</code> の <code>examinationStartedStore</code> の2つの実装です。左の SQLite は、<code>transaction</code> の中で予約を読み直し、状態遷移をやり直します。読み直した最新の予約から新しい状態を作るので、ユースケースが読んだ後に変わった予約を、古い値で上書きしません。右の in-memory は、渡されたイベントの <code>aggregateState</code> をそのまま保存します。予約が見つからないときだけ、結果が違います。SQLite は <code>AppointmentConflict</code> を返し、in-memory は <code>Error</code> を投げて reject にします。</p>
+<p><code>examples/session-06-solution</code> の <code>examinationStartedStore</code> の2つの実装です。左の SQLite は、<code>transaction</code> の中で予約を再取得し、状態遷移を再実行します。再取得した最新の予約から新しい状態を生成するため、ユースケースが取得した後に変更された予約を、古い値で上書きしません。右の in-memory は、渡されたイベントの <code>aggregateState</code> をそのまま保存します。予約が存在しないときだけ、結果が異なります。SQLite は <code>AppointmentConflict</code> を返し、in-memory は <code>Error</code> を投げて reject にします。</p>
 
 <div class="session-split session-split--compare session-split--tight session-split--wrap-code">
   <figure class="code-block" data-teaching-example>

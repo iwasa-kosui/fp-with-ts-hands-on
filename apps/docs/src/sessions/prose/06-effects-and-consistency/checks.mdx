@@ -2,15 +2,15 @@ import { Code } from "astro:components";
 import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
 import { session06ChangeChecks } from "../../../components/effects-walkthrough/change-checks";
 
-<p>課題4は、直した状態を次の変更から守ることです。別の人が <code>new Date()</code> を戻しても、型検査は通ります。ここで扱う変更はどれも型検査を通るので、仕組みは Linter の規則とテストの2つです。手を動かすのは検出の仕組みで、保存する側の実装は読むだけです。</p>
+<p>課題4は、直した状態を次の変更から守ることです。別の人が <code>new Date()</code> を戻しても、型検査は通ります。ここで扱う変更はどれも型検査を通るため、仕組みは Linter のルールとテストの2つです。演習で実装するのは検出の仕組みで、保存する側の実装は参照するだけです。</p>
 
-<p>変更を選んで結果を見比べてください。時刻や ID を直接作る変更は規則とテストの両方が、store を2回呼ぶ変更と clock を読み直す変更はテストだけが検出します。</p>
+<p>変更を選んで結果を比較してください。時刻や ID を直接生成する変更は Linter のルールとテストの両方が、store を2回呼ぶ変更と clock を再取得する変更はテストだけが検出します。</p>
 
 <ChangeChecks set={session06ChangeChecks} />
 
 <details class="step-solution">
-  <summary>eslint.config.mjs の rules に足す設定の形（[…] の部分は自分で決めます）</summary>
-<p>規則は <code>no-restricted-syntax</code> です。<code>selector</code> の <code>[…]</code> には、検出する範囲を絞る条件を書きます。</p>
+  <summary>eslint.config.mjs の rules に追加する設定の形（[…] の部分は自分で指定します）</summary>
+<p>Linter のルールは <code>no-restricted-syntax</code> です。<code>selector</code> の <code>[…]</code> には、検出する範囲を絞る条件を記述します。</p>
 <figure class="code-block">
   <Code
     code={`"no-restricted-syntax": ["error", {

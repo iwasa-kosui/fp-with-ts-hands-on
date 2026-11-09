@@ -29,10 +29,10 @@ const parts: Readonly<Record<Part, Readonly<{ name: string; lines: readonly numb
     name: "条件の判定",
     lines: [5, 6, 7, 9, 10, 11],
     tagAt: [5, 9],
-    note: "理由が空か、会計済みかを調べ、満たさなければ throw する",
+    note: "理由が空か、会計済みかを検証し、条件を満たさない場合は throw する",
   },
-  time: { name: "時刻の取得", lines: [8], tagAt: [8], note: "new Date() で現在の時刻を読む" },
-  save: { name: "保存", lines: [0, 12, 13, 14, 15, 16], tagAt: [12], note: "モジュールから import した db へ書く" },
+  time: { name: "時刻の取得", lines: [8], tagAt: [8], note: "new Date() で現在の時刻を取得する" },
+  save: { name: "保存", lines: [0, 12, 13, 14, 15, 16], tagAt: [12], note: "モジュールから import した db へ書き込む" },
 };
 
 const order: readonly Part[] = ["condition", "time", "save"];
@@ -62,28 +62,28 @@ const frames: readonly Frame[] = [
     passed: [],
     marks: [],
     problems: false,
-    caption: "1つの関数の中に、条件の判定、時刻の取得、保存、例外の throw が交互に並んでいます。順に色を付けて確かめます。",
+    caption: "1つの関数の中に、条件の判定、時刻の取得、保存、例外の throw が交互に並んでいます。順に色を付けて確認します。",
   },
   {
     current: "condition",
     passed: [],
     marks: marksFor("condition", []),
     problems: false,
-    caption: "条件の判定です。理由が空のとき、予約が会計済みのときに、throw で関数を抜けます。",
+    caption: "条件の判定です。理由が空の場合と、予約が会計済みの場合に、throw で関数の処理を中断します。",
   },
   {
     current: "time",
     passed: ["condition"],
     marks: marksFor("time", ["condition"]),
     problems: false,
-    caption: "時刻の取得です。条件の判定の途中で、現在の時刻を読んでいます。",
+    caption: "時刻の取得です。条件の判定の途中で、現在の時刻を取得しています。",
   },
   {
     current: "save",
     passed: ["condition", "time"],
     marks: marksFor("save", ["condition", "time"]),
     problems: false,
-    caption: "保存です。条件の判定を終えた後に、データベースへ書きます。",
+    caption: "保存です。条件の判定を終えた後に、データベースへ書き込みます。",
   },
   {
     current: undefined,
@@ -100,17 +100,17 @@ const frames: readonly Frame[] = [
       { line: 16, tone: "negative" },
     ],
     problems: true,
-    caption: "3つが 1 つの関数に混ざっているので、次の2つの問題が起きます。",
+    caption: "3つが 1 つの関数に混在するため、次の2つの問題が発生します。",
   },
 ];
 
 const problems = [
-  { n: "①", text: "どんな失敗が起きうるかが、関数の型から読めない", detail: "呼び出し側は、全部の失敗を扱えたかを確かめられません。" },
-  { n: "②", text: "判定だけを確かめるには、データベースの用意と時刻の固定が要る", detail: "db はモジュールから import され、new Date() は現在の時刻を返すので、呼び出し側は差し替えられません。" },
+  { n: "①", text: "発生しうる失敗が、関数の型から読み取れない", detail: "呼び出し側は、すべての失敗を扱えたかを検証できません。" },
+  { n: "②", text: "判定だけを検証するには、データベースの準備と時刻の固定が必要", detail: "db はモジュールから import され、new Date() は現在の時刻を返すため、呼び出し側は差し替えられません。" },
 ] as const;
 ---
 
-<figure class="st-fig tangled" data-tangled aria-label="1つの関数に、条件の判定、時刻の取得、保存が混ざったコードを順に色分けする図">
+<figure class="st-fig tangled" data-tangled aria-label="1つの関数に、条件の判定、時刻の取得、保存が混在したコードを順に色分けする図">
   <StepControls />
 
   <ol class="st-stack">

@@ -26,10 +26,10 @@ type Row = Readonly<{
 
 const rows: readonly Row[] = [
   { call: "CancelSchema", file: "cancellationReason.ts", code: quote(cancellationReasonSource, 7, 13, "const CancellationReasonSchema"), ok: [3], err: [3] },
-  { group: "実行者の確認", call: "resolveById", file: "userResolver.ts", io: "データベースから実行者を読みます。実装は省略します。", ok: [] },
+  { group: "実行者の確認", call: "resolveById", file: "userResolver.ts", io: "データベースから実行者を取得します。実装は省略します。", ok: [] },
   { call: "ensureUserFound", file: "errors.ts", code: quote(errorsSource, 25, 31, "ensureUserFound"), ok: [4, 6] },
   { call: "ensureCanManageClinic", file: "authorization.ts", code: quote(authorizationSource, 7, 12, "ensureCanManageClinic"), ok: [3, 4] },
-  { group: "予約の確認", call: "resolveById", file: "appointmentResolver.ts", io: "データベースから予約を読みます。実装は省略します。", ok: [] },
+  { group: "予約の確認", call: "resolveById", file: "appointmentResolver.ts", io: "データベースから予約を取得します。実装は省略します。", ok: [] },
   { call: "ensureAppointmentFound", file: "errors.ts", code: quote(errorsSource, 33, 39, "ensureAppointmentFound"), ok: [4, 6] },
   { call: "ensureCancellable", file: "cancelAppointmentUseCase.ts", code: quote(useCaseSource, 64, 71, "appointment.kind"), ok: [0, 1], err: [0, 2, 3, 4, 5, 6, 7] },
   { group: "結果を作る", call: "createEvent", file: "appointment.ts", code: quote(appointmentSource, 216, 225, "const aggregateState"), ok: [1, 6, 7, 8] },
@@ -73,18 +73,18 @@ const overview: Step = {
   row: -1,
   failed: false,
   skipped: false,
-  text: "ユースケース全体は、<code>andThen</code> をつないだ1本の連鎖です。実行者の確認、予約の確認、結果を作る、記録して返す、の順に進みます。次のコマから、値の流れを1行ずつ追います。",
+  text: "ユースケース全体は、<code>andThen</code> を連結した1本の連鎖です。実行者の確認、予約の確認、結果を作る、記録して返す、の順に進みます。次のコマから、値の流れを1行ずつ追跡します。",
   input: "",
   output: "",
 };
 
 const untilAppointment = (kind: string): readonly Step[] => [
-  step(0, "ユースケースの手前の境界が、依頼を検査します。ここはレールの外です。理由は空ではないので、<code>.min(1)</code> を通ります。", `{ reason: "owner request" }`, `{ …, reason: "owner request" }`),
+  step(0, "ユースケースの手前の境界が、依頼を検査します。ここはレールの外です。理由は空ではないため、<code>.min(1)</code> を通過します。", `{ reason: "owner request" }`, `{ …, reason: "owner request" }`),
   step(1, "<code>resolveById</code> が、データベースから実行者を取得します。", `"（受付担当者の ID）"`, ok(user)),
-  step(2, "<code>ensureUserFound</code> は、実行者を取得できたので <code>ok</code> を返します。", user, ok(user)),
-  step(3, "<code>ensureCanManageClinic</code> が、権限を確かめます。<code>Receptionist</code> には権限があります。", user, ok(user)),
+  step(2, "<code>ensureUserFound</code> は、実行者を取得できたため <code>ok</code> を返します。", user, ok(user)),
+  step(3, "<code>ensureCanManageClinic</code> が、権限を検証します。<code>Receptionist</code> には権限があります。", user, ok(user)),
   step(4, "<code>resolveById</code> が、予約を取得します。値は実行者から予約へ変わります。", `"11111111-…"`, ok(appointment(kind))),
-  step(5, "<code>ensureAppointmentFound</code> は、予約を取得できたので <code>ok</code> を返します。", appointment(kind), ok(appointment(kind))),
+  step(5, "<code>ensureAppointmentFound</code> は、予約を取得できたため <code>ok</code> を返します。", appointment(kind), ok(appointment(kind))),
 ];
 
 const allScenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }>)[] = [
@@ -93,29 +93,29 @@ const allScenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }
     steps: [
       overview,
       ...untilAppointment("Scheduled"),
-      step(6, "<code>ensureCancellable</code> が、状態を確かめます。<code>Scheduled</code> は診察開始前なので、<code>ok</code> を返します。", appointment("Scheduled"), ok(appointment("Scheduled"))),
+      step(6, "<code>ensureCancellable</code> が、状態を検証します。<code>Scheduled</code> は診察開始前であるため、<code>ok</code> を返します。", appointment("Scheduled"), ok(appointment("Scheduled"))),
       step(7, "<code>createEvent</code> が <code>Appointment.cancel</code> を呼び、入力の <code>reason</code> と <code>clock</code> の時刻から、<code>AppointmentCanceled</code> を作ります。", `予約、"owner request"、時刻`, ok(event)),
-      step(8, "<code>andThrough</code> は、Ok のときだけ store を呼び、値をそのまま次へ渡します。予約の更新とイベントの追記を、1回の保存で行います。", event, ok(event)),
+      step(8, "<code>andThrough</code> は、Ok の場合だけ store を呼び、値をそのまま次へ渡します。予約の更新とイベントの追記を、1回の保存で行います。", event, ok(event)),
       step(9, "<code>map</code> が、イベントからキャンセル後の予約を取り出します。", event, ok(canceled)),
-      step(endRow, "値は成功レールの終点に届きます。呼び出し側は、Ok に包まれたキャンセル後の予約を受け取ります。", canceled, ok(canceled)),
+      step(endRow, "値は成功レールの終点に到達します。呼び出し側は、Ok の値としてキャンセル後の予約を受け取ります。", canceled, ok(canceled)),
     ],
   },
   {
     label: "理由が空",
     steps: [
-      failAt(0, "ユースケースの手前の境界が、依頼を検査します。理由が空なので、<code>.min(1)</code> で失敗します。", `{ reason: "" }`, `// 検査に失敗`),
-      failAt(0, "検査に失敗した依頼は、ユースケースに入りません。境界が入力エラーの画面を返し、レールの上の行は1行も実行しません。", `// 検査に失敗`, `// 入力エラーの画面を返す`),
+      failAt(0, "ユースケースの手前の境界が、依頼を検査します。理由が空であるため、<code>.min(1)</code> で失敗します。", `{ reason: "" }`, `// 検査に失敗`),
+      failAt(0, "検査に失敗した依頼は、ユースケースに渡されません。境界が入力エラーの画面を返し、レールの上の行は1行も実行しません。", `// 検査に失敗`, `// 入力エラーの画面を返す`),
     ],
   },
   {
     label: "Paid の予約",
     steps: [
       ...untilAppointment("Paid"),
-      failAt(6, "<code>ensureCancellable</code> が、状態を確かめます。<code>Paid</code> は診察開始前ではないので <code>err</code> を返し、値は失敗レールへ切り替わります。", appointment("Paid"), invalid),
-      carry(7, "失敗の値は、失敗レールを進みます。<code>createEvent</code> は実行しないので、<code>Canceled</code> は作られません。", invalid),
+      failAt(6, "<code>ensureCancellable</code> が、状態を検証します。<code>Paid</code> は診察開始前ではないため <code>err</code> を返し、値は失敗レールへ切り替わります。", appointment("Paid"), invalid),
+      carry(7, "失敗の値は、失敗レールを進みます。<code>createEvent</code> は実行しないため、<code>Canceled</code> は作られません。", invalid),
       carry(8, "記録も実行しません。キャンセルは記録に残りません。", invalid),
       carry(9, "結果の取り出しも実行しません。失敗の値は変わりません。", invalid),
-      carry(endRow, "失敗の値は、失敗レールの終点に届きます。呼び出し側は、<code>InvalidAppointmentState</code> を受け取ります。", invalid),
+      carry(endRow, "失敗の値は、失敗レールの終点に到達します。呼び出し側は、<code>InvalidAppointmentState</code> を受け取ります。", invalid),
     ],
   },
 ];

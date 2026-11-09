@@ -1,10 +1,10 @@
 import StoreBoundaryAnimation from "../../../components/effects-walkthrough/StoreBoundaryAnimation.astro";
 import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
 
-<p>ユースケースが予約を読んだ後、保存の前に、別の依頼が先に診察を始めていた場合を、競合と呼びます。読んだ時点で状態不正（予約が来院済みではない）の場合は <code>ensureCheckedIn</code> が先に返しますが、競合は保存の時点で <code>examinationStartedStore</code> が見つけて、<code>AppointmentConflict</code> を <code>Err</code> で返します。後から届いた依頼が、先の結果を上書きする事故を防ぎます。</p>
+<p>ユースケースが予約を取得した後、保存の前に、別の依頼が先に診察を開始していた場合を、競合と呼びます。取得した時点で状態不正（予約が来院済みではない）の場合は <code>ensureCheckedIn</code> が先に返しますが、競合は保存の時点で <code>examinationStartedStore</code> が検出して、<code>AppointmentConflict</code> を <code>Err</code> で返します。後から実行された依頼が、先の結果を上書きする事故を防止します。</p>
 
 <FigureSpace reserve={152}>
   <StoreBoundaryAnimation scene="conflict" />
 </FigureSpace>
 
-<p>開始のコードの保存は <code>Promise&lt;void&gt;</code> を返すだけなので、この競合を <code>Err</code> で返せません。</p>
+<p>開始のコードの保存は <code>Promise&lt;void&gt;</code> を返すだけであるため、この競合を <code>Err</code> で返せません。</p>
