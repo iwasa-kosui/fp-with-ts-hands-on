@@ -990,6 +990,27 @@ html[data-content-pending] .session-frame__content {
     max-height: none;
   }
 
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__tree) .boundary-player__tree {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__tree) .boundary-player__track {
+    grid-row: 4;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__tree) .boundary-player__value {
+    grid-row: 5;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__tree) .boundary-player__text {
+    grid-row: 6;
+  }
+
+  .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__tree) > .boundary-player__files {
+    grid-row: 4 / span 3;
+  }
+
   .session-frame.case-file--session .case-file__content .boundary-player:has(.boundary-player__files) > .boundary-player__static {
     grid-column: 1 / -1;
   }
@@ -1209,8 +1230,14 @@ html[data-content-pending] .session-frame__content {
     padding-block: 0.5rem;
   }
 
-  .session-frame.case-file--session[data-session="03-boundaries-and-pii"] .case-file__content .boundary-player:has(.boundary-player__files) :is(.boundary-player__scenarios, .boundary-player__track, .boundary-player__value, .boundary-player__text, .boundary-player__files) {
+  .session-frame.case-file--session[data-session="03-boundaries-and-pii"] .case-file__content .boundary-player:has(.boundary-player__files) :is(.boundary-player__scenarios, .boundary-player__track, .boundary-player__value, .boundary-player__text, .boundary-player__files, .boundary-player__tree) {
     margin-block-start: 0.25rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .session-frame.case-file--session[data-session="03-boundaries-and-pii"] .case-file__content .boundary-player:has(.boundary-player__files) .boundary-player__zone {
+    min-height: 3.8rem;
   }
 }
 

@@ -452,7 +452,6 @@
     > :is(h2, h3, h4, p, ul, ol):not(.code-guide-cards),
   .case-file--session .case-file__content > section > .case-file__episode,
   .case-file--session .case-file__content > section > .hcs,
-  .case-file--session .case-file__content .start-map,
   .case-file--session .case-file__content .roadmap,
   .case-file--session .case-file__content .pure-function-flow,
   .case-file--session .case-file__content .precondition-flow,

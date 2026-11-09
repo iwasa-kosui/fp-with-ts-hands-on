@@ -1161,6 +1161,33 @@ describe("GuardExercise", () => {
     });
   });
 
+  it("opens the collapsed terminal once when the terminal fails, so the retry button is visible", async () => {
+    const { host } = await mountExercise({
+      onStart: async () => {
+        throw new Error("boom");
+      },
+    });
+    const terminal = host.querySelector<HTMLElement>(".guard-exercise__terminal")!;
+    expect(terminal.hidden).toBe(true);
+
+    await click(action(host, "run-guard"));
+
+    expect(host.querySelector(".code-explorer__terminal")?.getAttribute("data-state")).toBe(
+      "failed",
+    );
+    expect(terminal.hidden).toBe(false);
+    expect(action(host, "toggle-terminal")?.getAttribute("aria-expanded")).toBe("true");
+    expect(action(host, "retry-terminal")).not.toBeNull();
+
+    await click(action(host, "toggle-terminal"));
+    await settle();
+
+    expect(host.querySelector(".code-explorer__terminal")?.getAttribute("data-state")).toBe(
+      "failed",
+    );
+    expect(terminal.hidden).toBe(true);
+  });
+
   it("keeps the terminal mounted while it is collapsed", async () => {
     const { host } = await mountExercise();
     const terminal = host.querySelector<HTMLElement>(".guard-exercise__terminal")!;

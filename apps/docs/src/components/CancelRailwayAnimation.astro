@@ -6,6 +6,8 @@ import authorizationSource from "../../../../examples/final/src/useCase/authoriz
 import useCaseSource from "../../../../examples/final/src/useCase/cancelAppointmentUseCase.ts?raw";
 import errorsSource from "../../../../examples/final/src/useCase/errors.ts?raw";
 import { quote } from "../sessions/reference-quote";
+import MiniTree from "./mini-tree/MiniTree.astro";
+import { miniTree } from "./mini-tree/mini-tree";
 import StepControls from "./stepper/StepControls.astro";
 import "./states/states.css";
 
@@ -132,6 +134,27 @@ const rowState = (rowIndex: number, current: Step): RowState =>
 const markOf: Readonly<Record<RowState, string>> = { todo: "", current: "▶", done: "✓", skipped: "–" };
 
 const rowHeightRem = 1.25;
+
+const fileOf = (step: Step): string => (step.overview ? chainRow.file : rows[step.row]!.file);
+
+const tree = miniTree("final", "src/", [
+  { folder: "useCase/", files: [
+    { id: "cancelAppointmentUseCase.ts", name: "cancelAppointmentUseCase.ts" },
+    { id: "errors.ts", name: "errors.ts" },
+    { id: "authorization.ts", name: "authorization.ts" },
+  ] },
+  { folder: "domain/appointment/", files: [
+    { id: "cancellationReason.ts", name: "cancellationReason.ts" },
+    { id: "appointment.ts", name: "appointment.ts" },
+  ] },
+  { folder: "adaptor/secondary/sqlite/resolver/", files: [
+    { id: "userResolver.ts", name: "userResolver.ts" },
+    { id: "appointmentResolver.ts", name: "appointmentResolver.ts" },
+  ] },
+  { folder: "adaptor/secondary/sqlite/store/", files: [
+    { id: "appointmentEventStore.ts", name: "appointmentEventStore.ts" },
+  ] },
+]);
 ---
 
 <figure class="st-fig cf" data-cancel-flow data-step-figure aria-label="キャンセルのコードを実行すると、値がレールをどう進むか">
@@ -145,6 +168,8 @@ const rowHeightRem = 1.25;
     <span class="cf__note">説明用に項目を省略しています。</span>
   </div>
 
+  <MiniTree class="cf__tree" tree={tree} current={[fileOf(scenarios[0]!.steps[0]!)]} />
+
   <ol class="st-stack">
     {scenarios.flatMap((scenario, sceneIndex) =>
       scenario.steps.map((current, stepIndex) => {
@@ -153,7 +178,7 @@ const rowHeightRem = 1.25;
         const distance = previous !== undefined && previous.row > 0 && current.row > 0 ? current.row - previous.row : 0;
         const lit = (current.skipped ? [] : current.failed ? (row.err ?? row.ok) : row.ok);
         return (
-          <li data-frame data-scene={sceneIndex} data-step={stepIndex} data-lit={JSON.stringify(lit)} data-tone={current.failed ? "negative" : "accent"}>
+          <li data-frame data-scene={sceneIndex} data-step={stepIndex} data-mini-current={row.file} data-lit={JSON.stringify(lit)} data-tone={current.failed ? "negative" : "accent"}>
             <div class="cf__body">
               <div class="cf__left">
                 <div class="cf__code" data-skipped={current.skipped ? "" : undefined}>
@@ -222,6 +247,8 @@ const rowHeightRem = 1.25;
 </figure>
 
 <script>
+  import { setMiniTreeCurrent } from "./mini-tree/mini-tree-client";
+
   type Mark = "accent" | "negative";
 
   document.querySelectorAll<HTMLElement>("[data-cancel-flow]").forEach((root) => {
@@ -263,6 +290,7 @@ const rowHeightRem = 1.25;
         frame.toggleAttribute("data-active", active);
       });
       tabs.forEach((tab, tabIndex) => tab.setAttribute("aria-pressed", String(tabIndex === scene)));
+      setMiniTreeCurrent(root, [list[index]?.dataset.miniCurrent ?? ""]);
       progress.textContent = `${index + 1} / ${list.length}`;
       prev.disabled = index === 0;
       next.disabled = index === list.length - 1;
@@ -368,6 +396,10 @@ const rowHeightRem = 1.25;
 
   .cf__code :global(.line.is-lit-negative) {
     box-shadow: inset 4px 0 0 var(--lit-negative);
+  }
+
+  .cf :global(.cf__tree) {
+    margin-block: 0.25rem;
   }
 
   .cf__note {
@@ -649,6 +681,47 @@ const rowHeightRem = 1.25;
 
   .cf :global(.st-caption code) {
     font-size: 0.875rem;
+  }
+
+  @media (max-height: 700px) {
+    .cf__bar {
+      margin-block-end: 0.25rem;
+    }
+
+    .cf :global(.cf__tree) {
+      margin-block: 0;
+    }
+
+    .cf__left {
+      gap: 0.25rem;
+    }
+
+    .cf__file,
+    .cf__value p {
+      margin-block-end: 0;
+    }
+
+    .cf__code :global(.st-code pre),
+    .cf__io {
+      min-height: 8rem;
+    }
+
+    .cf__value :global(.st-code pre) {
+      min-height: 0;
+    }
+
+    .cf__right {
+      gap: 0.125rem;
+    }
+
+    .cf :global(.st-caption) {
+      min-height: 0;
+      margin-block-start: 0.25rem;
+    }
+
+    .cf__tabs button {
+      min-height: 2rem;
+    }
   }
 
   @media (max-width: 55rem) {

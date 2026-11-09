@@ -1,6 +1,7 @@
 ---
 import { Code } from "astro:components";
 import type { Walkthrough } from "../sessions/boundary-walkthroughs";
+import MiniTree from "./mini-tree/MiniTree.astro";
 
 type Props = Readonly<{
   walkthrough: Walkthrough;
@@ -64,6 +65,13 @@ const texts = [
         </button>
       ))}
     </div>
+    {walkthrough.tree && !codeless && (
+      <MiniTree
+        tree={walkthrough.tree}
+        current={[scenarios[0]?.frames[0]?.fileId ?? ""]}
+        class="boundary-player__tree"
+      />
+    )}
     <div class="boundary-player__controls" data-controls>
       <button type="button" data-action="prev" data-prev>← 前のコマ</button>
       <button type="button" data-action="play" class="boundary-player__play">再生</button>
@@ -159,6 +167,7 @@ const texts = [
     const next = need('[data-action="next"]');
     const scenarioButtons = [...root.querySelectorAll("[data-scenario]")];
     const files = [...root.querySelectorAll("[data-file]")];
+    const miniFiles = [...root.querySelectorAll("[data-mini-file]")];
 
     let scenario = scenarios[0];
     let index = 0;
@@ -187,6 +196,16 @@ const texts = [
       counter.textContent = `${index + 1} / ${scenario.frames.length}`;
       prev.disabled = index === 0;
       next.disabled = index === scenario.frames.length - 1;
+
+      for (const miniFile of miniFiles) {
+        if (miniFile.dataset.miniFile === frame.fileId) {
+          miniFile.setAttribute("data-current", "");
+          miniFile.setAttribute("aria-current", "true");
+        } else {
+          miniFile.removeAttribute("data-current");
+          miniFile.removeAttribute("aria-current");
+        }
+      }
 
       for (const file of files) {
         const active = file.dataset.file === frame.fileId;
@@ -367,6 +386,10 @@ const texts = [
   .boundary-player__play { min-width: calc(4em + 1.5rem + 4px); }
 
   .boundary-player__controls {
+    margin-block-start: 0.5rem;
+  }
+
+  .boundary-player__live :global(.boundary-player__tree) {
     margin-block-start: 0.5rem;
   }
 
@@ -567,6 +590,28 @@ const texts = [
 
     .boundary-player__value-code :global(pre) {
       padding: 0.125rem 0.5rem;
+    }
+  }
+
+  @media (max-height: 700px) {
+    [data-scenario] small {
+      display: none;
+    }
+
+    [data-scenario] {
+      line-height: 1.25;
+    }
+
+    .boundary-player__value p {
+      line-height: 1.3;
+    }
+
+    .boundary-player__value-code {
+      margin-block-start: 0.125rem;
+    }
+
+    .boundary-player__text p {
+      line-height: 1.4;
     }
   }
 

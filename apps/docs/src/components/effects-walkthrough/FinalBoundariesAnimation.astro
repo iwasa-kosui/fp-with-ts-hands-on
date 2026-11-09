@@ -2,6 +2,8 @@
 import { Code } from "astro:components";
 import css from "./final-boundaries.css?raw";
 import script from "./final-boundaries.js?raw";
+import MiniTree from "../mini-tree/MiniTree.astro";
+import { miniTree } from "../mini-tree/mini-tree";
 import Walkthrough from "./Walkthrough.astro";
 
 type Tone = "ok" | "err" | "reject";
@@ -340,9 +342,37 @@ const lead =
     ? "依頼カードの値が変わり、いま通っている境界の実コードが開きます。"
     : undefined;
 
+const treeFiles: Readonly<Record<string, string>> = {
+  parse: "routes",
+  run: "useCase",
+  transition: "appointment",
+  update: "store",
+  commit: "store",
+  convert: "store",
+  checkedin: "errors",
+  onError: "app",
+};
+
+const tree = miniTree("final", "src/", [
+  { folder: "adaptor/primary/web/routes/", files: [{ id: "routes", name: "appointmentRoutes.ts" }] },
+  {
+    folder: "useCase/",
+    files: [
+      { id: "useCase", name: "startExaminationUseCase.ts" },
+      { id: "errors", name: "errors.ts" },
+    ],
+  },
+  { folder: "domain/appointment/", files: [{ id: "appointment", name: "appointment.ts" }] },
+  { folder: "adaptor/secondary/sqlite/store/", files: [{ id: "store", name: "appointmentEventStore.ts" }] },
+  { folder: "", files: [{ id: "app", name: "app.ts" }] },
+]);
+
 const frameData = scenes.map(({ stop, frames }) => ({
   stop,
-  frames: frames.map(({ text: _text, ...frame }) => frame),
+  frames: frames.map(({ text: _text, ...frame }) => ({
+    ...frame,
+    treeFile: frame.impl === undefined ? "routes" : treeFiles[frame.impl],
+  })),
 }));
 const cardData = Object.fromEntries(cards.map(({ key, tone, chip, type, short }) => [key, { tone, chip, type, short }]));
 ---
@@ -354,6 +384,7 @@ const cardData = Object.fromEntries(cards.map(({ key, tone, chip, type, short })
   note="値は説明用の例です。項目は一部だけを載せています。"
   scenes={scenes.map(({ label, frames }) => ({ label, frames: frames.map(({ text }) => ({ text })) }))}
 >
+  <MiniTree class="fb-tree" tree={tree} />
   <div class="fb" data-final-boundaries data-kind={sceneKind} data-frames={JSON.stringify(frameData)} data-cards={JSON.stringify(cardData)}>
     <ol class="fb-list">
       {gates.map((gate) => (

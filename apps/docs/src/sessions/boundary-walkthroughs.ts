@@ -1,4 +1,5 @@
 import { projectFilesForSnapshot } from "../code-explorer/project-files";
+import { type MiniTreeData, miniTree } from "../components/mini-tree/mini-tree";
 import { blockOf, sourceOf } from "./source-quotes";
 
 export type FrameStatus = "neutral" | "pass" | "stop" | "danger";
@@ -19,6 +20,7 @@ export type Walkthrough = Readonly<{
   description: string;
   descriptionWithoutCode?: string;
   zones: readonly [string, string, string];
+  tree?: MiniTreeData;
   files: readonly Readonly<{ id: string; path: string; code: string }>[];
   scenarios: readonly Readonly<{
     id: string;
@@ -268,6 +270,24 @@ export const startExaminationWalkthrough: Walkthrough = {
   descriptionWithoutCode:
     "場面を選んで再生します。上の帯は、値が今いる場所です。",
   zones: ["外側", "境界", "内側"],
+  tree: miniTree("session-03-solution", "src/", [
+    {
+      folder: "adaptor/primary/web/",
+      files: [
+        { id: "route", name: "routes.ts", snapshot: "session-03", note: "（開始コード）" },
+        { id: "parseAfter", name: "startExaminationInput.ts" },
+      ],
+    },
+    { folder: "domain/shared/", files: [{ id: "schemaResult", name: "schemaResult.ts" }] },
+    {
+      folder: "domain/appointment/",
+      files: [
+        { id: "appointmentId", name: "appointmentId.ts" },
+        { id: "veterinarianId", name: "veterinarianId.ts" },
+        { id: "transition", name: "transitions.ts" },
+      ],
+    },
+  ]),
   files: startExaminationFiles,
   scenarios: [
     {
@@ -413,6 +433,10 @@ export const sensitiveWalkthrough: Walkthrough = {
   title: "内側の値が外へ出る様子",
   description: "場面を選んで再生します。ログやJSONに書き出しても値は伏せられ、unwrap を呼んだ箇所だけ平文が出ます。",
   zones: ["内側", "境界", "外側（ログなど）"],
+  tree: miniTree("session-03-solution", "src/", [
+    { folder: "adaptor/primary/web/", files: [{ id: "ownerContact", name: "ownerContact.ts" }] },
+    { folder: "domain/shared/", files: [{ id: "sensitive", name: "sensitive.ts" }] },
+  ]),
   files: sensitiveFiles,
   scenarios: [
     {

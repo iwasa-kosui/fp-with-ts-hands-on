@@ -9,13 +9,12 @@ const cloneCommand =
   "git clone https://github.com/iwasa-kosui/fp-with-ts-hands-on.git";
 const verificationCommand = `cd fp-with-ts-hands-on
 pnpm install --frozen-lockfile
-pnpm test
 pnpm dev`;
 ---
 
 <BaseLayout
   title="事前準備 | FP with TypeScript"
-  description="TypeScriptの演習を始めるために、ツールの準備から教材の起動までを案内します。"
+  description="TypeScriptの演習を始めるために、ブラウザの準備と演習の進め方を案内します。"
 >
   <div class="case-file setup-page">
     <header class="case-file__site-header">
@@ -31,14 +30,41 @@ pnpm dev`;
 
       <section id="environment" aria-labelledby="environment-title">
       <h2 id="environment-title">環境を準備する</h2>
-      <p>コードを編集する演習は、ローカル環境で進めます。</p>
+      <p>演習は、各Sessionの「演習」ページのブラウザ内で行います。ローカルへcloneする必要はありません。</p>
       <ol class="setup-page__steps" aria-label="事前準備の手順">
+        <li class="setup-step">
+          <span class="setup-step__number" aria-hidden="true">01</span>
+          <div>
+            <p class="setup-step__label">使うブラウザをそろえる</p>
+            <h3>デスクトップ版ChromeまたはEdgeを用意する</h3>
+            <p>演習のコードは、ブラウザ内の隔離環境で動きます。ローカルPCのファイルには触りません。データベース、Docker、外部サービスのAPIキーは必要ありません。</p>
+          </div>
+        </li>
+
+        <li class="setup-step setup-step--repository">
+          <span class="setup-step__number" aria-hidden="true">02</span>
+          <div>
+            <p class="setup-step__label">演習の進め方を知る</p>
+            <h3>各Sessionの「演習」ページで進める</h3>
+            <p>「演習」ページで悪い変更の一覧を読み、Linterの規則、型のテスト、テストのどれかを足します。「検出を確かめる」を押すと、足した仕組みが悪い変更を検出するか、正しいコードを誤って検出しないかが表に出ます。</p>
+            <p>作業内容は、そのブラウザに保存されます。ページを閉じても、同じブラウザで開き直せば、続きから進められます。別のブラウザや別のPCには引き継がれません。</p>
+            <p>詰まったときは、ページの「解答の例を見る」を開いてください。</p>
+          </div>
+        </li>
+      </ol>
+      <p class="setup-page__help">環境構築で困ったら、<a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/docs/event/troubleshooting.md">トラブルシューティング</a>を確認してください。</p>
+      </section>
+
+      <section id="local" aria-labelledby="local-title">
+      <h2 id="local-title">手元でも動かしたい人向けの準備</h2>
+      <p>次の作業は任意です。演習には不要です。手元で教材サイトやデモ画面を動かしたい人だけが行ってください。</p>
+      <ol class="setup-page__steps" aria-label="手元で動かす手順">
         <li class="setup-step">
           <span class="setup-step__number" aria-hidden="true">01</span>
           <div>
             <p class="setup-step__label">使うツールをそろえる</p>
             <h3>Node.js・pnpm・Gitを用意する</h3>
-            <p>Node.js 20以上、pnpm 9.12.0、Git、TypeScriptを編集できるエディタを用意します。ブラウザはデスクトップ版ChromeまたはEdgeを使ってください。</p>
+            <p>Node.js 20以上、pnpm 9.12.0、Gitを用意してください。</p>
           </div>
         </li>
 
@@ -61,7 +87,7 @@ pnpm dev`;
         <li class="setup-step setup-step--verification">
           <span class="setup-step__number" aria-hidden="true">03</span>
           <div>
-            <p class="setup-step__label">ローカル環境を確認する</p>
+            <p class="setup-step__label">教材サイトを表示する</p>
             <h3>依存関係を入れて教材を起動する</h3>
             <p>
               続けて、次のコマンドを実行してください。
@@ -74,13 +100,15 @@ pnpm dev`;
               <CodeBlock code={verificationCommand} language="shell" />
             </div>
             <p>
-              テストが成功したら、表示されたlocalhostのURLをChromeまたはEdgeで開いてください。終了するときは
+              ターミナルに表示されたlocalhostのURLをChromeまたはEdgeで開いてください。終了するときは
               <code>Ctrl+C</code> を押してください。
+            </p>
+            <p>
+              Session 00のデモ画面は、<code>pnpm demo:00</code> で起動します。Session 00の「あとで読む」のページにも、この手順を載せています。
             </p>
           </div>
         </li>
       </ol>
-      <p class="setup-page__help">環境構築で困ったら、<a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/docs/event/troubleshooting.md">トラブルシューティング</a>を確認してください。</p>
       </section>
 
       <p>ハンズオンを開催する方は、<a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/docs/event/facilitator-guide.md">ファシリテーターガイド</a>も参照できます。</p>
