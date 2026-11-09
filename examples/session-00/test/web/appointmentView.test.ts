@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { clinicFixture } from "../../../fixtures/clinic.js";
-import type { AuditLog } from "../../src/adaptor/secondary/sqlite/appointmentRepository.js";
+import type { AuditLog } from "../../src/useCase/dependencies.js";
 import type { Appointment } from "../../src/domain/appointment/appointment.js";
 import { toPageProps } from "../../src/adaptor/primary/web/appointmentView.js";
 

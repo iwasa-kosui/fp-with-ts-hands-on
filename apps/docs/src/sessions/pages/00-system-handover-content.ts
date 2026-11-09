@@ -64,7 +64,7 @@ export const guides = ([
     currentDesign: "操作後の予約内容を丸ごと監査記録として SQLite へ保存します。",
     futureRisk: "氏名、メールアドレス、電話番号を含む個人情報が監査記録から読めます。",
     path: "src/adaptor/secondary/sqlite/appointmentRepository.ts",
-    highlights: [{ startLineNumber: 69, endLineNumber: 69 }],
+    highlights: [{ startLineNumber: 50, endLineNumber: 50 }],
   },
   {
     id: "session-00-message-mapped-errors",

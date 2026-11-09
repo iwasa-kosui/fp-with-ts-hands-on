@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 
-import type { AppointmentRepository } from "../adaptor/secondary/sqlite/appointmentRepository.js";
 import {
   updateStatus,
   type Appointment,
 } from "../domain/appointment/appointment.js";
+import type { AppointmentRepository } from "./dependencies.js";
 
 type Input = Readonly<{
   appointmentId: string;
