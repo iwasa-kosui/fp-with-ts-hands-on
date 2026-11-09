@@ -371,9 +371,7 @@ const playerData = JSON.stringify(
     show(0);
   };
 
-  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    document.querySelectorAll<HTMLElement>("[data-pure-function-flow]").forEach(setUp);
-  }
+  document.querySelectorAll<HTMLElement>("[data-pure-function-flow]").forEach(setUp);
 </script>
 
 <style>
@@ -707,6 +705,10 @@ const playerData = JSON.stringify(
     [data-animated] * {
       transition: none !important;
       animation: none !important;
+    }
+
+    .pure-function-flow__controls button[data-play] {
+      display: none;
     }
   }
 </style>

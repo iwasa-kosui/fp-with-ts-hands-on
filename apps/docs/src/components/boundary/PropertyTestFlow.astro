@@ -1,6 +1,7 @@
 ---
 import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
+import { keyedTransformer } from "../code-cache-key";
 import { projectFilesForSnapshot } from "../../code-explorer/project-files";
 import { blockOf } from "../../sessions/source-quotes";
 import StepControls from "../stepper/StepControls.astro";
@@ -21,7 +22,7 @@ const lineOf = (source: string, needle: string) => {
   return index + 1;
 };
 
-const markLines = (lines: readonly number[]): Transformer => ({
+const markLines = (lines: readonly number[]) => keyedTransformer<Transformer>(`property-test-flow-${JSON.stringify(lines)}`, {
   name: "property-flow-mark-lines",
   line(node, line) {
     if (lines.includes(line)) this.addClassToHast(node, "is-mark");

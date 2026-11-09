@@ -256,7 +256,9 @@ body:has(.session-frame) {
 .session-frame__main {
   display: flex;
   flex-direction: column;
+  align-self: start;
   width: 100%;
+  min-height: calc(100dvh - var(--frame-bar-height) - var(--frame-foot-height));
   max-width: var(--frame-column);
   min-width: 0;
   margin-inline: auto;
@@ -284,6 +286,11 @@ body:has(.session-frame) {
   min-width: 0;
   padding: var(--frame-body-pad) clamp(1rem, 3vw, 2.5rem);
   line-height: 1.65;
+}
+
+/* コマ送りの部品の準備で高さが変わる間は本文を見せない。 */
+html[data-content-pending] .session-frame__content {
+  visibility: hidden;
 }
 
 .session-frame__content > p {
@@ -320,7 +327,7 @@ body:has(.session-frame) {
   max-height: var(--frame-figure-height);
 }
 
-.session-frame:is(.session-frame--wide, :has(.guard-exercise)) {
+.session-frame:is(.session-frame--wide, [data-guard-page="true"]) {
   --frame-pad: 1rem;
   --frame-content: calc(1800px - var(--frame-side) - var(--frame-pad) * 2);
 }
@@ -653,15 +660,15 @@ body:has(.session-frame) {
 }
 
 @media (min-width: 1100px) {
-  .session-frame:has(.guard-exercise) {
+  .session-frame[data-guard-page="true"] {
     --frame-side: 0px;
   }
 
-  .session-frame:has(.guard-exercise) .session-frame__menu {
+  .session-frame[data-guard-page="true"] .session-frame__menu {
     display: block;
   }
 
-  .session-frame:has(.guard-exercise) .session-frame__sidebar {
+  .session-frame[data-guard-page="true"] .session-frame__sidebar {
     display: none;
   }
 }
@@ -696,6 +703,15 @@ body:has(.session-frame) {
   white-space: pre-wrap;
 }
 
+.session-frame .session-split.session-split--compare.session-split--wrap-code pre.astro-code {
+  padding-inline: 0.5rem;
+}
+
+.session-frame .session-split.session-split--compare.session-split--wrap-code pre.astro-code,
+.session-frame .session-split.session-split--compare.session-split--wrap-code pre.astro-code code {
+  font-size: 0.77rem;
+}
+
 @media (max-height: 844px) {
   .session-frame .session-split--tight pre {
     padding-block: 0.4rem;
@@ -716,6 +732,10 @@ body:has(.session-frame) {
 
   .session-frame:has(.session-split--tight) :is(.session-frame__main, .session-frame__content) {
     min-height: 0;
+  }
+
+  .session-frame:has(.session-split--tight) .session-frame__main {
+    align-self: stretch;
   }
 
   .session-split--tight {
