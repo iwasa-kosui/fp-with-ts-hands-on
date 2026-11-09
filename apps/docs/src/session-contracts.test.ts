@@ -127,7 +127,7 @@ const expectedCurriculum = [
   {
     slug: "final",
     sequence: "Final",
-    title: "参照実装で境界をたどる",
+    title: "参照実装で境界を追跡する",
     durationMinutes: 10,
     kind: "reference",
     exerciseCommand: undefined,
@@ -319,7 +319,7 @@ const expectedNavigation = [
     },
     next: {
       href: "/sessions/final/",
-      title: "参照実装で境界をたどる",
+      title: "参照実装で境界を追跡する",
     },
   },
   {

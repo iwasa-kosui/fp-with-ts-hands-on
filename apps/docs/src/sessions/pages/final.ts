@@ -109,7 +109,7 @@ export const sessionPages = [
   },
   {
     slug: "agent-skill",
-    title: "追加した仕組みを AI に実行させるスキルを記載する",
+    title: "追加した仕組みを AI に実行させるスキルを作成する",
     flow: "advanced",
     kind: "advanced",
     minutes: 0,

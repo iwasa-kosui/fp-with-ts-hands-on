@@ -1,4 +1,4 @@
-// このファイルを書き換えて、隣の人の仕組みをすり抜ける悪い変更を作ります
+// このファイルを書き換えて、隣の人の仕組みをすり抜ける誤った変更を作ります
 import type { Appointment } from "../../../src/domain/appointment/index.js";
 
 const assertNever = (value: never): never => {

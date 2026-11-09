@@ -12,7 +12,7 @@ const expectedPages = [
   ["self-study", "別のユースケースを追跡する", "advanced", "advanced", 0],
   ["persistence-notes", "projection と集約を読む", "advanced", "advanced", 0],
   ["software-factory", "ソフトウェアファクトリー", "advanced", "advanced", 0],
-  ["agent-skill", "追加した仕組みを AI に実行させるスキルを記載する", "advanced", "advanced", 0],
+  ["agent-skill", "追加した仕組みを AI に実行させるスキルを作成する", "advanced", "advanced", 0],
 ];
 
 export default {

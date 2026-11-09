@@ -50,7 +50,7 @@ export const session: SessionSummary = {
   snapshot: "final",
   sequence: "Final",
   kind: "reference",
-  title: "参照実装で境界をたどる",
+  title: "参照実装で境界を追跡する",
   durationMinutes: 10,
   timeBreakdown: { brief: 0, teach: 6, exercise: 0, review: 4 },
   animal: { name: "Mugi", type: "dog", avatar: "🐕" },
