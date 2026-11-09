@@ -919,6 +919,10 @@ summary.session-frame__group-title:focus-visible {
     grid-column: 1 / -1;
     gap: 0 1.5rem;
   }
+
+  .session-split--guides.session-split--glossary-below {
+    row-gap: 0.5rem;
+  }
 }
 
 @media (min-width: 1100px) {

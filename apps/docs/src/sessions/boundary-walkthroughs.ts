@@ -214,7 +214,7 @@ const passedFrames = (veterinarianUuidValue: string, lastText: string) => {
       status: "pass",
       valueLabel: "startExamination へ渡す値",
       value: `{\n  veterinarianId: "${veterinarianUuidValue}",\n  examinationStartedAt: "2026-08-30T06:30:00.000Z",\n}`,
-      text: "routeは、取り出したinputの獣医師IDと、routeに実装された固定の時刻を、startExaminationへ渡します。この時刻はS06で扱う固定値です。表示中のroutesは修正前のコードです。",
+      text: "routeは、取り出したinputの獣医師IDと、routeに実装された固定の時刻を、startExaminationへ渡します。この時刻はS06で扱う固定値です。表示中の routes.ts は修正前のコードです。",
     }),
     startFrame("transition", {
       first: "veterinarianId: VeterinarianId,",
@@ -259,7 +259,7 @@ const rejectedFrames = [
     status: "stop",
     valueLabel: "内側に渡された値",
     value: "// なし",
-    text: "Errの_unsafeUnwrapは例外を投げ、startExaminationは呼ばれません。利用者へ返す応答は未解決で、いまは例外のため500になります。",
+    text: "Errの_unsafeUnwrapは例外を投げ、startExaminationは呼ばれません。利用者へ返す応答は未解決で、現在は例外のため500になります。",
   }),
 ];
 

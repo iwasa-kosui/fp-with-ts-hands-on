@@ -132,7 +132,7 @@ const frames: readonly Frame[] = [
     runtime: true,
   },
   {
-    caption: "ブランドが付いた値を作る入口は parse です。parse は文字列がUUIDの形かを検査し、通った値だけを AppointmentId 型として返します。ブランドを付けて変わったのは、通った値にブランドが付くことです。",
+    caption: "ブランドが付いた値を作る入口は parse です。parse は文字列がUUIDの形かを検査し、通った値だけを AppointmentId 型として返します。ブランドを付けて変わったのは、通った値が AppointmentId 型として扱われることです。",
     stage: "after",
     code: { key: "afterParse", lines: [4, 5] },
     extra: "fixture",

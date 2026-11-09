@@ -339,7 +339,7 @@ const uuidFrames: readonly Frame[] = [
   },
   {
     caption:
-      "テストは、fast-check が作った UUID でない文字列を予約IDとして parse に渡し、結果が Err であれば true を返します。false を返す入力が1つでもあるか、例外が投げられると、テストは失敗します。fc.string() は任意の文字列を作り、filter は UUID の形の文字列を除きます。expect を使うときは vitest から import します。",
+      "テストは、fast-check が作った UUID でない文字列を予約IDとして parse に渡し、結果が Err であれば true を返します。false を返す入力が1つでもあるか、例外が投げられると、テストは失敗します。fc.string() は任意の文字列を作り、filter は UUID の形の文字列を除きます。",
     columns: [
       {
         side: "plain",
@@ -425,7 +425,7 @@ const uuidFrames: readonly Frame[] = [
   },
   {
     caption:
-      "型のテストは、型エラーになるはずの行の直前に @ts-expect-error を置きます。変更前は、獣医師IDを予約IDの変数へ代入する行が型エラーになるので、tsc（TypeScript の型検査を実行するコマンド）は成功します。誤った変更で2つの ID が同じ型になると、型エラーが消えて、tsc は「未使用の @ts-expect-error」を報告します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
+      "型のテストは、型エラーになるはずの行の直前に @ts-expect-error を置きます。変更前は、獣医師IDを予約IDの変数へ代入する行が型エラーになるので、tsc（TypeScript の型検査を実行するコマンド）は成功します。別の誤った変更で2つの ID が同じ型になると、型エラーが消えて、tsc は「未使用の @ts-expect-error」を報告します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
     columns: [
       {
         side: "before",

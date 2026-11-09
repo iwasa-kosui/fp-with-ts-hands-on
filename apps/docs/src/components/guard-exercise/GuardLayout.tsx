@@ -97,6 +97,12 @@ export const GuardLayout = ({
       rows.filter(({ kind }) => kind === "bad").map(({ id }) => id),
     );
   }, [rows, onListedCasesChange]);
+  useEffect(() => {
+    if (!onPeerReviewPage || guard.source !== "fresh") return;
+    resultRef.current
+      ?.querySelector(".guard-exercise__headline")
+      ?.scrollIntoView?.({ block: "start" });
+  }, [guard.result, guard.source, onPeerReviewPage]);
   const activeGuide = guide ?? defaultGuide;
   const running = guard.status.kind === "running";
   const progress =

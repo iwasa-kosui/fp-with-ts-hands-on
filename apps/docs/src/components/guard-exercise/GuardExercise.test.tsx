@@ -365,6 +365,57 @@ describe("GuardExercise", () => {
     );
   });
 
+  it("scrolls the result headline to the top on the peer-review page only for a new result", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    try {
+      const first = await mountExercise({ page: "peer-review" });
+      expect(scrollIntoView).not.toHaveBeenCalled();
+
+      await click(action(first.host, "run-guard"));
+      expect(scrollIntoView).toHaveBeenCalledOnce();
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: "start" });
+      expect(scrollIntoView.mock.contexts[0]).toBe(
+        first.host.querySelector(".guard-exercise__headline"),
+      );
+      await first.unmount();
+      first.host.remove();
+      scrollIntoView.mockClear();
+
+      const second = await mountExercise({ page: "peer-review" });
+      await settleUntil(
+        () => second.host.querySelector(".guard-exercise__badge") !== null,
+      );
+      expect(scrollIntoView).not.toHaveBeenCalled();
+
+      await click(action(second.host, "run-guard"));
+      expect(scrollIntoView).toHaveBeenCalledOnce();
+    } finally {
+      Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+    }
+  });
+
+  it("does not scroll the result headline on the exercise page", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    try {
+      const { host } = await mountExercise({ page: "exercise" });
+
+      await click(action(host, "run-guard"));
+
+      expect(host.querySelector("table")).not.toBeNull();
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+    }
+  });
+
   it("keeps the table terms inside a details element while the table is rendered", async () => {
     const { host } = await mountExercise();
     await click(action(host, "run-guard"));
