@@ -13,7 +13,7 @@ export const session: SessionSummary = {
   summary: "WAN NYAN CLINIC の現行業務と、システムに残る記録、起きている事故を確認します。",
   episode: [
     "新人エンジニアの初出勤の日、プリンターは事故報告を何枚も印刷していました。",
-    "獣医師が別の予約と取り違えて「診察を開始する」を押し、会計済みの Mugi の予約は診察中へ戻りました。受付は会計前の来院だと判断し、会計担当が同じ金額をもう一度請求しました。",
+    "獣医師が別の予約と取り違えて「診察を開始する」を押し、会計済みの Mugi の予約は診察中へ戻りました。受付は会計前の来院だと判断し、会計担当が同じ金額を再度請求しました。",
     "記録を調べると、飼い主の電話番号まで読めました。",
   ],
   incident: "会計済みの予約が診察中へ戻り、監査記録から飼い主の個人情報が読めた。",
@@ -43,7 +43,7 @@ export const guides = ([
     id: "plain-string-ids",
     title: "用途の異なる ID がすべて string である",
     currentDesign: "予約、動物、飼い主、獣医師の ID が同じ string です。",
-    futureRisk: "どれも string なので、ID を取り違えて渡しても TypeScript は誤りとして知らせません。",
+    futureRisk: "いずれも string であるため、ID を取り違えて渡しても TypeScript は誤りとして知らせません。",
     path: "src/domain/appointment/appointment.ts",
     highlights: [
       { startLineNumber: 3, endLineNumber: 3 },
@@ -61,7 +61,7 @@ export const guides = ([
   {
     id: "session-00-raw-pii-audit",
     title: "個人情報を予約の監査記録に残している",
-    currentDesign: "操作後の予約内容を丸ごと監査記録として SQLite へ保存します。",
+    currentDesign: "操作後の予約内容全体を監査記録として SQLite へ保存します。",
     futureRisk: "氏名、メールアドレス、電話番号を含む個人情報が監査記録から読めます。",
     path: "src/adaptor/secondary/sqlite/appointmentRepository.ts",
     highlights: [{ startLineNumber: 50, endLineNumber: 50 }],
