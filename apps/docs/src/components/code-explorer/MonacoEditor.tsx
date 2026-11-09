@@ -340,6 +340,7 @@ export const MonacoEditor = (props: EditorProps) => {
         automaticLayout: true,
         autoClosingBrackets: "never",
         autoClosingQuotes: "never",
+        autoIndent: "full",
         minimap: { enabled: false },
         model: resources.models.get(current.path) ?? null,
         readOnly: current.disabled || current.readOnly,
