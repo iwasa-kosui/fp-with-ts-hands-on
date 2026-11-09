@@ -15,16 +15,17 @@ const afterContext = quote(
   "eventId: deps.eventIdGenerator.generate(),",
   "occurredAt: deps.clock.now(),",
 );
-const onceCode = quote(
+const twiceCode = quote(
+  "session-06-solution",
+  "exercises/guard/cases/B5-clock-read-twice.ts",
+  ".map(startExaminationEvent(deps, input.veterinarianId))",
+  ".andThrough(deps.examinationStartedStore.store)",
+);
+const contextCode = quote(
   "session-06-solution",
   useCasePath,
-  "Appointment.startExamination(createEventContext(deps))(",
-  ");",
-);
-const calcCode = quote(
-  "session-06-solution",
-  "exercises/guard/cases/G2-date-from-timestamp.ts",
-  "occurredAt: new Date(deps.clock.now()).toISOString(),",
+  "export const createEventContext = (",
+  "});",
 );
 
 const labelOfAll = (labels: readonly string[]): string => {
@@ -41,31 +42,31 @@ const afterLabel = lineLabelOf(
   "  eventId: deps.eventIdGenerator.generate(),",
   "  occurredAt: deps.clock.now(),",
 );
-const onceLabel = lineLabelOf(
+const twiceLabel = lineLabelOf(
+  "session-06-solution",
+  "exercises/guard/cases/B5-clock-read-twice.ts",
+  "      .map(startExaminationEvent(deps, input.veterinarianId))",
+  "      .andThrough(deps.examinationStartedStore.store)",
+);
+const contextLabel = lineLabelOf(
   "session-06-solution",
   useCasePath,
-  "    Appointment.startExamination(createEventContext(deps))(",
-  "    );",
-);
-const calcLabel = lineLabelOf(
-  "session-06-solution",
-  "exercises/guard/cases/G2-date-from-timestamp.ts",
-  "  occurredAt: new Date(deps.clock.now()).toISOString(),",
-  "  occurredAt: new Date(deps.clock.now()).toISOString(),",
+  "export const createEventContext = (",
+  "});",
 );
 
 const lit = JSON.stringify([
   { beforeTime: [0], beforeId: [0] },
   { after: [0, 1] },
-  { once: [0] },
-  { calc: [0] },
+  { twice: [1] },
+  { context: [3, 4] },
 ]);
 
 const frames = [
   "修正前: `new Date().toISOString()` と `crypto.randomUUID()` は、呼び出すたびに別の値を返します。実行のたびに時刻と ID が変わるため、テストで値を固定できません。",
-  "修正後: 時刻は `deps.clock.now()`、ID は `deps.eventIdGenerator.generate()` から受け取ります。テストで固定の clock と ID generator を渡せば、毎回同じ値になります。",
-  "修正後: 時刻と ID を生成する `createEventContext` は、1回の実行につき1度だけ呼び出します。この1回の値を、予約の状態と監査記録の両方が使用するため、2つの時刻は同じです。",
-  "修正後: すでにある時刻から `new Date(...)` で計算するのは問題ありません。`clock` が返した時刻を渡しているため、現在時刻は取得しておらず、実行のたびに変わりません。",
+  "修正後: 時刻は `deps.clock.now()`、ID は `deps.eventIdGenerator.generate()` から受け取ります。テストで固定の `clock` と `eventIdGenerator` を渡せば、毎回同じ値になります。",
+  "誤った例: `clock` を2回取得すると、状態と監査記録の時刻が食い違います。1回目の時刻は予約の状態（`aggregateState`）に記録され、2回目の時刻だけがイベントの `occurredAt` に記録されるためです。",
+  "修正後: `createEventContext` は、`eventId` と `occurredAt` を1回ずつ作ります。この1つの値から、予約の状態と監査記録の両方を作るため、2つの時刻は同じです。",
 ] as const;
 ---
 
@@ -94,12 +95,12 @@ const frames = [
         <figure class="sf-code" data-code="after"><Code code={afterContext} lang="ts" wrap /></figure>
       </div>
       <div class="tic__group" data-group="2">
-        <div class="tic__era"><span class="sf-tag sf-tag--after">修正後</span><code><PathLabel label={onceLabel} /></code></div>
-        <figure class="sf-code" data-code="once"><Code code={onceCode} lang="ts" wrap /></figure>
+        <div class="tic__era"><span class="sf-tag sf-tag--err">誤った例</span><code><PathLabel label={twiceLabel} /></code></div>
+        <figure class="sf-code" data-code="twice"><Code code={twiceCode} lang="ts" wrap /></figure>
       </div>
       <div class="tic__group" data-group="3">
-        <div class="tic__era"><span class="sf-tag sf-tag--after">修正後</span><code><PathLabel label={calcLabel} /></code></div>
-        <figure class="sf-code" data-code="calc"><Code code={calcCode} lang="ts" wrap /></figure>
+        <div class="tic__era"><span class="sf-tag sf-tag--after">修正後</span><code><PathLabel label={contextLabel} /></code></div>
+        <figure class="sf-code" data-code="context"><Code code={contextCode} lang="ts" wrap /></figure>
       </div>
     </div>
 
@@ -134,11 +135,28 @@ const frames = [
             <p><span>ID</span><code>"e-1"</code></p>
           </section>
         </div>
-        <p class="tic__verdict"><span class="sf-tag sf-tag--ok">✓ 毎回同じ値</span>テストで固定の clock と ID generator を渡した場合</p>
+        <p class="tic__verdict"><span class="sf-tag sf-tag--ok">✓ 毎回同じ値</span>テストで固定の <code>clock</code> と <code>eventIdGenerator</code> を渡した場合</p>
         <p class="tic__note">値は説明用の例です。「1回目」「2回目」は、同じ処理を2回実行した結果です。</p>
       </div>
 
       <div class="tic__view" data-view="2">
+        <p class="tic__once"><span class="sf-tag sf-tag--err">clock を2回取得</span>1回目の時刻は予約の状態、2回目の時刻は監査記録に記録されます</p>
+        <div class="tic__uses">
+          <section class="tic__use">
+            <h4>予約の状態</h4>
+            <p><code>examinationStartedAt</code></p>
+            <p><code>"2026-08-30T06:30:00.000Z"</code></p>
+          </section>
+          <section class="tic__use">
+            <h4>監査記録</h4>
+            <p><code>occurredAt</code></p>
+            <p><code>"2026-08-30T06:30:01.000Z"</code></p>
+          </section>
+        </div>
+        <p class="tic__verdict"><span class="sf-tag sf-tag--err">✗ 時刻が食い違う</span>診察を開始した時刻を、状態と監査記録から1つに確定できない</p>
+      </div>
+
+      <div class="tic__view" data-view="3">
         <p class="tic__once"><span class="sf-tag sf-tag--value">1回の実行</span><code>createEventContext(deps)</code> を1度だけ呼ぶ</p>
         <p class="tic__context"><code>{"{ eventId: \"e-1\", occurredAt: \"2026-08-30T06:30:00.000Z\" }"}</code></p>
         <div class="tic__uses">
@@ -154,15 +172,6 @@ const frames = [
           </section>
         </div>
         <p class="tic__verdict"><span class="sf-tag sf-tag--ok">✓ 同じ時刻</span>2つの時刻は、同じ1回の値です</p>
-      </div>
-
-      <div class="tic__view" data-view="3">
-        <ol class="tic__steps">
-          <li><code>deps.clock.now()</code><small>clock が返した、すでにある時刻</small></li>
-          <li><code>"2026-08-30T06:30:00.000Z"</code><small>文字列</small></li>
-          <li><code>new Date(…).toISOString()</code><small>その時刻から計算し直すだけ</small></li>
-        </ol>
-        <p class="tic__verdict"><span class="sf-tag sf-tag--ok">✓ 問題なし</span>現在時刻を取得していません</p>
       </div>
     </div>
   </div>
@@ -301,42 +310,6 @@ const frames = [
     border: 2px solid var(--role-accent);
     border-radius: 0.375rem;
     background: color-mix(in srgb, var(--role-accent) 10%, var(--role-surface));
-  }
-
-  .tic__steps {
-    display: grid;
-    gap: 0.5rem;
-    padding: 0;
-    list-style: none;
-  }
-
-  .tic__steps li {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.125rem 0.75rem;
-    padding: 0.375rem 0.625rem;
-    border: 2px solid var(--role-border);
-    border-radius: 0.375rem;
-    background: var(--role-bg);
-  }
-
-  .tic__steps li + li::before {
-    flex-basis: 100%;
-    margin-block: -0.5rem 0;
-    color: var(--role-muted);
-    content: "▼";
-    font-size: 0.6875rem;
-    line-height: 1;
-  }
-
-  .tic__steps code {
-    font-size: 0.8125rem;
-  }
-
-  .tic__steps small {
-    color: var(--role-muted);
-    font-size: 0.8125rem;
   }
 
   .tic:not([data-ready]) .tic__group,

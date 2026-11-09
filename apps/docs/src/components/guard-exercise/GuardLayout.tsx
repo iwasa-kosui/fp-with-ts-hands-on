@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   casePathFor,
   type GuardCaseInfo,
@@ -70,7 +70,14 @@ export const GuardLayout = ({
   children,
 }: GuardLayoutProps) => {
   const [terminalOpen, setTerminalOpen] = useState(false);
+  const [onPeerReviewPage, setOnPeerReviewPage] = useState(false);
+  const resultRef = useRef<HTMLElement>(null);
   const terminalId = useId();
+  useEffect(() => {
+    setOnPeerReviewPage(
+      resultRef.current?.closest('[data-page="peer-review"]') != null,
+    );
+  }, []);
   useEffect(() => {
     if (parts.terminalState === "failed") setTerminalOpen(true);
   }, [parts.terminalState]);
@@ -90,6 +97,12 @@ export const GuardLayout = ({
       rows.filter(({ kind }) => kind === "bad").map(({ id }) => id),
     );
   }, [rows, onListedCasesChange]);
+  useEffect(() => {
+    if (!onPeerReviewPage || guard.source !== "fresh") return;
+    resultRef.current
+      ?.querySelector(".guard-exercise__headline")
+      ?.scrollIntoView?.({ block: "start" });
+  }, [guard.result, guard.source, onPeerReviewPage]);
   const activeGuide = guide ?? defaultGuide;
   const running = guard.status.kind === "running";
   const progress =
@@ -139,6 +152,7 @@ export const GuardLayout = ({
         </div>
       </div>
       <section
+        ref={resultRef}
         className="guard-exercise__column guard-exercise__column--result"
         aria-label="結果"
       >
@@ -177,27 +191,27 @@ export const GuardLayout = ({
               {guard.notice}
             </p>
           )}
-          {guard.result === undefined ? (
+          {guard.result === undefined || onPeerReviewPage ? (
             <div className="guard-exercise__guide">
               <h2>{activeGuide.title}</h2>
               <GuideSteps steps={activeGuide.steps} />
             </div>
           ) : (
-            <>
-              <details className="guard-exercise__guide-details">
-                <summary>{activeGuide.title}</summary>
-                <GuideSteps steps={activeGuide.steps} />
-              </details>
-              <ResultTable
-                result={guard.result}
-                rows={rows}
-                restored={guard.source === "restored"}
-                limitations={guard.limitations}
-                limitationsEnabled={guard.ready}
-                passedNext={guide?.passedNext}
-                onLimitationChange={guard.setLimitation}
-              />
-            </>
+            <details className="guard-exercise__guide-details">
+              <summary>{activeGuide.title}</summary>
+              <GuideSteps steps={activeGuide.steps} />
+            </details>
+          )}
+          {guard.result === undefined ? null : (
+            <ResultTable
+              result={guard.result}
+              rows={rows}
+              restored={guard.source === "restored"}
+              limitations={guard.limitations}
+              limitationsEnabled={guard.ready}
+              passedNext={guide?.passedNext}
+              onLimitationChange={guard.setLimitation}
+            />
           )}
         </div>
       </section>

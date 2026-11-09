@@ -113,7 +113,7 @@ const arrivalFrames = (veterinarianLine: string) => [
     status: "neutral",
     valueLabel: "request body",
     value: `{ veterinarianId: ${veterinarianLine} }`,
-    text: "HTTPのリクエストを受け取ります。bodyの中身は、まだ何も検証していません。",
+    text: "HTTPのリクエストを受け取ります。bodyの中身は未検査です。",
   }),
   startFrame("route", {
     first: "const input = StartExaminationInput.parse({",
@@ -214,7 +214,7 @@ const passedFrames = (veterinarianUuidValue: string, lastText: string) => {
       status: "pass",
       valueLabel: "startExamination へ渡す値",
       value: `{\n  veterinarianId: "${veterinarianUuidValue}",\n  examinationStartedAt: "2026-08-30T06:30:00.000Z",\n}`,
-      text: "routeは、取り出したinputの獣医師IDと、routeに実装された固定の時刻を、startExaminationへ渡します。この時刻はS06で扱う固定値です。",
+      text: "routeは、取り出したinputの獣医師IDと、routeに実装された固定の時刻を、startExaminationへ渡します。この時刻はS06で扱う固定値です。表示中の routes.ts は修正前のコードです。",
     }),
     startFrame("transition", {
       first: "veterinarianId: VeterinarianId,",
@@ -251,7 +251,7 @@ const rejectedFrames = [
     status: "stop",
     valueLabel: "route が受け取った結果",
     value: "Err()",
-    text: "routeがErrに_unsafeUnwrapを呼びます。Resultを使った分岐はS04で扱います。",
+    text: "routeがErrに_unsafeUnwrapを呼びます。内側へ渡す値はありません。S04でも、入力の検査の失敗は例外のままです。",
   }),
   startFrame("schemaResult", {
     first: 'throw new Error("Cannot unwrap an invalid boundary value");',
@@ -259,22 +259,20 @@ const rejectedFrames = [
     status: "stop",
     valueLabel: "内側に渡された値",
     value: "// なし",
-    text: "Errの_unsafeUnwrapは例外を投げ、startExaminationは呼ばれません。検査に失敗したときは、サーバーがエラーを表すHTTPステータス500を返します。S04で扱います。",
+    text: "Errの_unsafeUnwrapは例外を投げ、startExaminationは呼ばれません。利用者へ返す応答は未解決で、現在は例外のため500になります。",
   }),
 ];
 
 export const startExaminationWalkthrough: Walkthrough = {
   title: "値が境界を通る様子",
-  description:
-    "場面を選んで再生します。上の帯は値が現在いる場所、下のコードは現在説明している行です。",
-  descriptionWithoutCode:
-    "場面を選んで再生します。上の帯は、値が現在いる場所です。",
-  zones: ["外側", "境界", "内側"],
+  description: "上の帯は、値が parse の前、parse の中、parse の後のどこにあるかを表します。下のコードは現在説明している行です。",
+  descriptionWithoutCode: "上の帯は、値が parse の前、parse の中、parse の後のどこにあるかを表します。",
+  zones: ["外側（parse の前）", "境界（parse）", "内側（parse の後）"],
   tree: miniTree("session-03-solution", "src/", [
     {
       folder: "adaptor/primary/web/",
       files: [
-        { id: "route", name: "routes.ts", snapshot: "session-03", note: "（開始コード）" },
+        { id: "route", name: "routes.ts", snapshot: "session-03", note: "（入力の検査の部分は修正なし）" },
         { id: "parseAfter", name: "startExaminationInput.ts" },
       ],
     },
@@ -305,7 +303,7 @@ export const startExaminationWalkthrough: Walkthrough = {
     },
     {
       id: "night-shift",
-      label: "画面の不具合で、獣医師の代わりに「夜勤」が渡された",
+      label: "画面の不具合で「夜勤」が渡された",
       note: 'veterinarianId は "night-shift"',
       frames: [
         ...arrivalFrames(`"night-shift"`),
@@ -315,14 +313,14 @@ export const startExaminationWalkthrough: Walkthrough = {
     },
     {
       id: "wrong-uuid",
-      label: "画面の不具合で、獣医師の欄に予約のIDが渡された",
+      label: "画面の不具合で予約の ID が渡された",
       note: "veterinarianId は予約の UUID",
       frames: [
         ...arrivalFrames(`"${appointmentUuid}"`),
         ...checkedFrames(`"${appointmentUuid}"`, true),
         ...passedFrames(
           appointmentUuid,
-          "形は正しいため内側まで渡されます。境界で検証できるのは形までで、そのUUIDが実在の獣医師を指すかどうかは判定できません。",
+          "形は正しいため内側まで渡されます。境界で検証できるのは形までで、実在の獣医師を指すかは判定できません。Branded Typeが検出するのはコードの誤りで、受け取った値の取り違えは検出しません。",
         ),
       ],
     },
@@ -431,7 +429,7 @@ const hiddenFrame = (
 
 export const sensitiveWalkthrough: Walkthrough = {
   title: "内側の値が外側へ出力される様子",
-  description: "場面を選んで再生します。ログやJSONに出力しても値はマスクされ、unwrap を呼んだ箇所だけ平文が出力されます。",
+  description: "ログやJSONに出力しても値はマスクされ、unwrap を呼んだ箇所だけ平文が出力されます。",
   zones: ["内側", "境界", "外側（ログなど）"],
   tree: miniTree("session-03-solution", "src/", [
     { folder: "adaptor/primary/web/", files: [{ id: "ownerContact", name: "ownerContact.ts" }] },

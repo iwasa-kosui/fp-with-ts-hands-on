@@ -9,11 +9,11 @@ export default {
       subject: "statusLabel",
       title: "Paid の case を消しても、default の assertNever が残っている",
       allow: ["lint", "tests"],
-      hint: "この変更は型検査でも検出されます。この演習では、自分で追加した仕組みでも検出できるかを確認します。",
+      hint: "tsc の検出は最初から備わっているため、自分の仕組みとして数えません。自分で追加した仕組みでも検出できるかを確認します。",
       behavior: {
         input: { text: "会計済みの予約の表示名を求める" },
         expected: { text: "「会計済み」と表示" },
-        actual: { text: "例外で中断" },
+        actual: { text: "tsc は型エラーを報告する。無視して実行すると例外で中断" },
       },
     },
     {
@@ -33,7 +33,7 @@ export default {
       id: "B3-added-state-default",
       kind: "bad",
       subject: "statusLabel",
-      title: "7つ目の状態を追加し、表示名を実装していない",
+      title: "NoShow を追加し、default も「不明」に戻す",
       allow: ["lint"],
       hint: "状態が増えたが、switch が対応していないことを確認します。",
       behavior: {

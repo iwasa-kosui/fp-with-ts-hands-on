@@ -14,7 +14,9 @@ describe("startExaminationWithEffects", () => {
     const harness = createHarness();
 
     const result = await startExaminationWithEffects(harness.dependencies)(input);
-    // ここに検証することを実装します（使える値: harness.recordedEvents、harness.storeCalls）
+    // ここに検証することを実装します
+    // （使える値: harness.recordedEvents、
+    //  harness.storeCalls、harness.clockReads）
   });
 });
 
@@ -36,9 +38,15 @@ const input = { appointmentId, veterinarianId } as const;
 const createHarness = (options: Readonly<{ conflict?: boolean }> = {}) => {
   const recordedEvents: Array<ExaminationStarted> = [];
   let storeCalls = 0;
+  let clockReads = 0;
   const dependencies: EffectsDependencies = {
     resolver: { resolveById: () => checkedIn },
-    clock: { now: () => FIXED_OCCURRED_AT },
+    clock: {
+      now: () => {
+        clockReads += 1;
+        return FIXED_OCCURRED_AT;
+      },
+    },
     eventIdGenerator: { generate: () => FIXED_EVENT_ID },
     examinationStartedStore: {
       store: (event) => {
@@ -57,6 +65,9 @@ const createHarness = (options: Readonly<{ conflict?: boolean }> = {}) => {
     recordedEvents,
     get storeCalls() {
       return storeCalls;
+    },
+    get clockReads() {
+      return clockReads;
     },
   };
 };

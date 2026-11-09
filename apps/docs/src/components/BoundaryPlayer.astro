@@ -29,6 +29,7 @@ const scenarios = codeless
 const description = codeless
   ? (walkthrough.descriptionWithoutCode ?? walkthrough.description)
   : walkthrough.description;
+const hasChoice = scenarios.length > 1;
 const data = JSON.stringify({
   scenarios,
 }).replaceAll("<", "\\u003c");
@@ -52,19 +53,23 @@ const texts = [
 <figure class="boundary-player" data-boundary-player data-step-figure>
   <figcaption>
     <strong>{walkthrough.title}</strong>
-    <span>{description}</span>
+    <span>{hasChoice ? "場面を選んで再生します。" : ""}{description}</span>
   </figcaption>
   <script is:inline type="application/json" data-player-data set:html={data} />
 
   <div class="boundary-player__live" data-player-live>
-    <div class="boundary-player__scenarios" role="group" aria-label="場面を選ぶ">
-      {scenarios.map((scenario) => (
-        <button type="button" data-scenario={scenario.id} data-step-scene aria-pressed="false">
-          {scenario.label}
-          <small>{scenario.note}</small>
-        </button>
-      ))}
-    </div>
+    {hasChoice ? (
+      <div class="boundary-player__scenarios" role="group" aria-label="場面を選ぶ">
+        {scenarios.map((scenario) => (
+          <button type="button" data-scenario={scenario.id} data-step-scene aria-pressed="false">
+            {scenario.label}
+            <small>{scenario.note}</small>
+          </button>
+        ))}
+      </div>
+    ) : (
+      <p class="boundary-player__scenario-label">{scenarios[0]?.label}（{scenarios[0]?.note}）</p>
+    )}
     {walkthrough.tree && !codeless && (
       <MiniTree
         tree={walkthrough.tree}
@@ -169,6 +174,58 @@ const texts = [
     const files = [...root.querySelectorAll("[data-file]")];
     const miniFiles = [...root.querySelectorAll("[data-mini-file]")];
 
+    const codeOf = new Map(
+      files.map((file) => [
+        file,
+        { code: file.querySelector("pre code"), lines: [...file.querySelectorAll(".line")] },
+      ]),
+    );
+
+    const fold = () => {
+      const mark = document.createElement("span");
+      mark.className = "boundary-player__fold";
+      mark.setAttribute("aria-hidden", "true");
+      mark.textContent = "…";
+      return mark;
+    };
+
+    const rangeOf = (frame, total, rows) => {
+      const count = frame.to - frame.from + 1;
+      for (let size = rows; size >= count; size -= 1) {
+        const extra = size - count;
+        const roomAfter = total - 1 - frame.to;
+        const before = Math.min(frame.from, Math.floor(extra * 0.3));
+        const after = Math.min(roomAfter, extra - before);
+        const first = frame.from - Math.min(frame.from, extra - after);
+        const last = frame.to + after;
+        const folds = (first > 0 ? 1 : 0) + (last < total - 1 ? 1 : 0);
+        if (last - first + 1 + folds <= rows) return [first, last];
+      }
+      return [frame.from, frame.to];
+    };
+
+    const showWindow = ({ code, lines }, frame) => {
+      const pre = code?.parentElement;
+      if (!code || !pre) return;
+      const style = getComputedStyle(pre);
+      const lineHeight = Number.parseFloat(style.lineHeight) || Number.parseFloat(style.fontSize) * 1.45;
+      const inner = pre.clientHeight - Number.parseFloat(style.paddingTop) - Number.parseFloat(style.paddingBottom);
+      const count = frame.to - frame.from + 1;
+      for (let rows = Math.max(1, Math.floor(inner / lineHeight)); rows >= count; rows -= 1) {
+        const [first, last] = rangeOf(frame, lines.length, rows);
+        const items = [
+          ...(first > 0 ? [fold()] : []),
+          ...lines.slice(first, last + 1),
+          ...(last < lines.length - 1 ? [fold()] : []),
+        ];
+        code.replaceChildren(
+          ...items.flatMap((item, index) => (index === 0 ? [item] : [document.createTextNode("\n"), item])),
+        );
+        if (pre.scrollHeight <= pre.clientHeight + 1) break;
+      }
+      pre.scrollTop = 0;
+    };
+
     let scenario = scenarios[0];
     let index = 0;
     let timer;
@@ -210,21 +267,15 @@ const texts = [
       for (const file of files) {
         const active = file.dataset.file === frame.fileId;
         file.hidden = !active;
-        const lines = [...file.querySelectorAll(".line")];
-        lines.forEach((line, lineIndex) => {
+        const shown = codeOf.get(file);
+        if (shown === undefined) continue;
+        shown.lines.forEach((line, lineIndex) => {
           line.classList.toggle(
             "is-active",
             active && lineIndex >= frame.from && lineIndex <= frame.to,
           );
         });
-        const first = lines[frame.from];
-        const scroller = first?.closest("pre");
-        if (active && first && scroller) {
-          scroller.scrollTop = Math.max(
-            0,
-            first.offsetTop - scroller.offsetTop - scroller.clientHeight / 3,
-          );
-        }
+        if (active) showWindow(shown, frame);
       }
     };
 
@@ -276,6 +327,7 @@ const texts = [
     };
     reducedMotion.addEventListener("change", applyMotion);
     applyMotion();
+    window.addEventListener("resize", () => render());
 
     root.dataset.ready = "true";
     render();
@@ -399,6 +451,14 @@ const texts = [
     flex-wrap: wrap;
     gap: 0.5rem;
     align-items: center;
+  }
+
+  .boundary-player__scenario-label {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
   }
 
   .boundary-player__track {
@@ -551,9 +611,20 @@ const texts = [
     overflow: auto;
   }
 
+  .boundary-player[data-ready] .boundary-player__code :global(:is(pre, code, .line)) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
   .boundary-player__code :global(.line) {
     display: inline-block;
     min-width: 100%;
+  }
+
+  .boundary-player__code :global(.boundary-player__fold) {
+    display: inline-block;
+    min-width: 100%;
+    opacity: 0.6;
   }
 
   .boundary-player__code :global(.line.is-active) {

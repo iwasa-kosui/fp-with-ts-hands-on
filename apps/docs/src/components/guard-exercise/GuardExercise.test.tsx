@@ -78,6 +78,7 @@ type SessionOptions = Readonly<{
   readResults?: readonly (string | undefined)[];
   outdatedEdits?: boolean;
   guide?: GuardGuide;
+  page?: string;
   savedOutput?: string;
   onStart?: (request: TerminalStartRequest) => Promise<void>;
 }>;
@@ -116,7 +117,14 @@ const mountExercise = async (options: SessionOptions = {}) => {
     dispose: vi.fn(),
   };
   const host = document.createElement("div");
-  document.body.append(host);
+  if (options.page === undefined) {
+    document.body.append(host);
+  } else {
+    const page = document.createElement("div");
+    page.setAttribute("data-page", options.page);
+    page.append(host);
+    document.body.append(page);
+  }
   const root = createRoot(host);
   roots.push(root);
   if (options.outdatedEdits === true) {
@@ -319,6 +327,93 @@ describe("GuardExercise", () => {
       host.querySelector(".guard-exercise__table-area")?.compareDocumentPosition(guideDetails!) ??
         0,
     ).toBe(Node.DOCUMENT_POSITION_PRECEDING);
+  });
+
+  it("keeps the guide as a closed details above the table on the exercise page", async () => {
+    const { host } = await mountExercise({
+      page: "exercise",
+      guide: { title: "案内の題名", steps: ["手順Aです。", "手順Bです。"] },
+    });
+
+    await click(action(host, "run-guard"));
+
+    const guideDetails = host.querySelector<HTMLDetailsElement>(
+      ".guard-exercise__guide-details",
+    );
+    expect(host.querySelector("table")).not.toBeNull();
+    expect(host.querySelector(".guard-exercise__scroll h2")).toBeNull();
+    expect(guideDetails?.open).toBe(false);
+    expect(host.querySelectorAll(".guard-exercise__steps")).toHaveLength(1);
+  });
+
+  it("keeps the guide open above the table after a result on the peer-review page", async () => {
+    const { host } = await mountExercise({
+      page: "peer-review",
+      guide: { title: "案内の題名", steps: ["手順Aです。", "手順Bです。"] },
+    });
+
+    await click(action(host, "run-guard"));
+
+    const heading = host.querySelector(".guard-exercise__scroll h2");
+    const tableArea = host.querySelector(".guard-exercise__table-area");
+    expect(host.querySelector("table")).not.toBeNull();
+    expect(heading?.textContent).toBe("案内の題名");
+    expect(host.querySelector("details.guard-exercise__guide-details")).toBeNull();
+    expect(host.querySelectorAll(".guard-exercise__steps > li")).toHaveLength(2);
+    expect(heading?.compareDocumentPosition(tableArea!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  it("scrolls the result headline to the top on the peer-review page only for a new result", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    try {
+      const first = await mountExercise({ page: "peer-review" });
+      expect(scrollIntoView).not.toHaveBeenCalled();
+
+      await click(action(first.host, "run-guard"));
+      expect(scrollIntoView).toHaveBeenCalledOnce();
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: "start" });
+      expect(scrollIntoView.mock.contexts[0]).toBe(
+        first.host.querySelector(".guard-exercise__headline"),
+      );
+      await first.unmount();
+      first.host.remove();
+      scrollIntoView.mockClear();
+
+      const second = await mountExercise({ page: "peer-review" });
+      await settleUntil(
+        () => second.host.querySelector(".guard-exercise__badge") !== null,
+      );
+      expect(scrollIntoView).not.toHaveBeenCalled();
+
+      await click(action(second.host, "run-guard"));
+      expect(scrollIntoView).toHaveBeenCalledOnce();
+    } finally {
+      Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+    }
+  });
+
+  it("does not scroll the result headline on the exercise page", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    try {
+      const { host } = await mountExercise({ page: "exercise" });
+
+      await click(action(host, "run-guard"));
+
+      expect(host.querySelector("table")).not.toBeNull();
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+    }
   });
 
   it("keeps the table terms inside a details element while the table is rendered", async () => {

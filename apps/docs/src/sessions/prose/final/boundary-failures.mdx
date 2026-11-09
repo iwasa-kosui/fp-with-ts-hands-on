@@ -1,5 +1,5 @@
 import FinalBoundariesAnimation from "../../../components/effects-walkthrough/FinalBoundariesAnimation.astro";
 
-<p>このページでは、同じ5つの境界で、失敗の依頼がどこまで進むかを確認します。業務上の失敗は <code>Err</code> として応答まで渡されます。SQLite の障害は <code>Err</code> にならず、例外境界で 500 の応答になります。競合は、副作用の境界で <code>AppointmentConflict</code> の <code>Err</code> として返されます。</p>
+<p>このページでは、同じ5つの境界で、失敗の依頼がどこまで進むかを確認します。業務上の失敗と、副作用の境界で <code>Err</code> に戻る競合は、<code>Err</code> として応答まで渡されます。SQLite の障害は <code>Err</code> にならず、例外境界で 500 の応答になります。</p>
 
 <FinalBoundariesAnimation scenes="failures" />

@@ -9,7 +9,7 @@ export const sessionPages = [
     flow: "background",
     kind: "brief",
     minutes: 0.5,
-    role: "背景: 予約の6つの状態を画面の表示名へ変換する関数 toStatusLabel と、この Session のゴールを説明します。",
+    role: "背景: 受付が表示名を見て判断することと、予約の6つの状態を画面の表示名へ変換する関数 toStatusLabel を説明します。",
   },
   {
     slug: "no-show",
@@ -25,7 +25,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "brief",
     minutes: 1,
-    role: "課題: 追加漏れが検出されなかった理由を、修正前のコードで確認します。",
+    role: "課題: 追加漏れが検出されなかった2つの原因を、修正前のコードで確認し、この Session のゴールを示します。",
   },
   {
     slug: "adt",

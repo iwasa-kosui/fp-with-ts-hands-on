@@ -1,12 +1,8 @@
 import CodeGuideCards from "../../../components/CodeGuideCards.astro";
 import { guides, projectFiles } from "../../pages/06-effects-and-consistency-content";
 
-<p>課題1〜3の原因は、診察開始の処理 <code>startExaminationWithEffects</code> にあります。このコードは <code>examples/session-06</code> にあり、このページでは参照するだけです。時刻の取得や保存は<strong>副作用</strong>です。副作用の意味は、<a href="/sessions/01-state-transitions/pure-functions/">S01の説明</a>に記載しています。</p>
+<p>課題1〜3の原因は、診察開始の処理 <code>startExaminationWithEffects</code> にあります。このコードは GitHub の <a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/blob/main/examples/session-06/src/useCase/startExamination.ts"><code>examples/session-06/src/useCase/startExamination.ts</code></a> にあり、このページでは参照するだけです。時刻の取得や保存は<strong>副作用</strong>です（意味は<a href="/sessions/01-state-transitions/pure-functions/">S01の説明</a>）。</p>
 
-<div class="session-split session-split--guides session-split--wrap-code">
+<div class="session-split session-split--guides session-split--wrap-code" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(16rem, 1fr))" }}>
   <CodeGuideCards guides={guides} projectFiles={projectFiles} dedent />
-  <ul class="session-glossary" aria-label="コードに出てくる語">
-    <li><code>store: {"{ save: () => undefined }"}</code>: S04 の useCase（<code>startExamination</code>）に、保存しない store を渡しています。続く <code>isErr</code> の分岐は、開始コードの実装です。</li>
-    <li>戻り値の型 <code>Result&lt;void, …Error&gt;</code>: エラーの型に <code>AppointmentConflict</code> がありますが、返すコードがありません。</li>
-  </ul>
 </div>

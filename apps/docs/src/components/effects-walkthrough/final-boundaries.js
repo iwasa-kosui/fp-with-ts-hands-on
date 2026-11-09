@@ -1,5 +1,4 @@
 const figures = document.querySelectorAll("[data-final-boundaries]:not([data-fb-ready])");
-const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 const tagText = { current: "処理中", done: "通過", stopped: "中断", skipped: "経由しない" };
 
 for (const figure of figures) {
@@ -26,32 +25,17 @@ for (const figure of figures) {
   const order = parts.map(({ key }) => key);
 
   let lastScene = -1;
-  let lastAt = -1;
   let width = 0;
 
-  const revealFirst = (pre, code, marked, instant) => {
-    pre.style.paddingBottom = "";
-    if (pre.scrollHeight <= pre.clientHeight) return;
-    const line = code.children[marked.size > 0 ? Math.min(...marked) : 0];
-    const offset = Math.round(line.getBoundingClientRect().top - pre.getBoundingClientRect().top + pre.scrollTop);
-    const slack = offset + pre.clientHeight - pre.scrollHeight;
-    if (slack > 0) pre.style.paddingBottom = `calc(0.1rem + ${slack}px)`;
-    pre.scrollTo({ top: offset, behavior: instant || reduced.matches ? "instant" : "smooth" });
-  };
-
-  const showImpl = (part, name, lines, instant) => {
-    const shown = [];
+  const showImpl = (part, name, lines) => {
     for (const impl of part.impls) {
       const active = impl.dataset.impl === name;
-      const wasActive = impl.hasAttribute("data-active");
       const code = impl.querySelector("pre code");
       const marked = new Set(active ? lines : []);
       impl.toggleAttribute("data-active", active);
       code.toggleAttribute("data-has-active", marked.size > 0);
       [...code.children].forEach((line, index) => line.classList.toggle("is-active", marked.has(index)));
-      if (active) shown.push({ impl, code, marked, instant: instant || !wasActive });
     }
-    for (const { impl, code, marked, instant: now } of shown) revealFirst(impl.querySelector("pre"), code, marked, now);
   };
 
   const apply = (force = false) => {
@@ -70,8 +54,6 @@ for (const figure of figures) {
     }
     const carried = [...scene.frames.slice(0, frameIndex + 1)].reverse().find((item) => item.out !== undefined)?.out;
     const at = order.indexOf(frame.at);
-    const entered = at !== lastAt;
-    lastAt = at;
     const skipped = new Set(frame.skipped ?? []);
 
     for (const file of root.querySelectorAll("[data-mini-file]")) {
@@ -115,7 +97,7 @@ for (const figure of figures) {
         currentPart = part;
       }
     });
-    if (currentPart !== undefined) showImpl(currentPart, frame.impl, frame.lines ?? [], reset || entered);
+    if (currentPart !== undefined) showImpl(currentPart, frame.impl, frame.lines ?? []);
 
     if (reset) {
       void figure.offsetWidth;

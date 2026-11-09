@@ -15,7 +15,7 @@ export const workspace = guardExerciseWorkspaceFor(
 export const guide = {
   title: "この演習の手順",
   criteria:
-    "必須の誤った変更4件を自分で追加した仕組みで検出し、正しいコードを誤検知しなければ合格です。修正前のコードは examples/session-02、この演習は修正後の examples/session-02-solution です。",
+    "必須の誤った変更4件を自分で追加した仕組みで検出し、正しいコードを誤検知しなければ合格です。",
   steps: [
     {
       text: [
@@ -33,11 +33,11 @@ export const guide = {
       ],
     },
     {
-      text: "知識は次の3つです。",
+      text: "この演習に使う内容は次の3つです。",
       items: [
-        "Appointment は6状態の union。",
+        "Appointment は6状態の Union。",
         "「不明」を返す default は追加漏れを隠す。",
-        "ルールは union の switch の漏れ、型のテストは引数の型の広がりを検証する。",
+        "ルールは Union の switch の漏れ、型のテストは引数の型を string に広げる変更を検証する。",
       ],
     },
     "「検出を検証する」を押すと、検出した誤った変更は「検出」、検出しない変更は「未検出」と表示されます。「誤検知」は、正しいコードを誤って検出することです。",
