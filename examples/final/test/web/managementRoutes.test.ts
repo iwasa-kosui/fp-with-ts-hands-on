@@ -452,7 +452,7 @@ describe("management route boundary", () => {
     const petCreate = await postForm(
       harness,
       "/pets",
-      { ownerId: owner.ownerId, name: "Mugi", species: "Cat" },
+      { ownerId: owner.ownerId, name: "Mugi", species: "Dog" },
       receptionistCookie,
     );
     expect(petCreate.status).toBe(302);
@@ -474,7 +474,7 @@ describe("management route boundary", () => {
             petId: pet.petId,
             ownerId: owner.ownerId,
             name: "Mugi",
-            species: "Cat",
+            species: "Dog",
           },
         ],
       },
@@ -493,7 +493,7 @@ describe("management route boundary", () => {
           petId: pet.petId,
           ownerId: owner.ownerId,
           name: "Mugi",
-          species: "Cat",
+          species: "Dog",
         },
       },
     });

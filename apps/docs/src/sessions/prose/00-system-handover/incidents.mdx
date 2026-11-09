@@ -1,7 +1,7 @@
 import EpisodeIllustration from "../../../components/EpisodeIllustration.astro";
 import IncidentPair from "../../../components/handover/IncidentPair.astro";
 
-<p>引き継ぎの初日に、この操作に関わる事故が2件見つかりました。</p>
+<p>引き継ぎの初日に、予約システムの事故が2件見つかりました。どちらも、獣医師が診察を始めるときに押す「診察を開始する」という操作で起きています。</p>
 
 <IncidentPair>
 <div class="session-split session-split--compare">
@@ -13,7 +13,7 @@ import IncidentPair from "../../../components/handover/IncidentPair.astro";
   <div>
     <h3>課題2 事故を調べた担当者に、飼い主の連絡先まで見えてしまった</h3>
     <EpisodeIllustration slug="00-system-handover-pii" />
-    <p>二重請求の経緯を調べるために監査記録を開くと、操作名や時刻だけでなく、操作後の予約内容が丸ごと残っていました。調査に要らない飼い主の氏名、メールアドレス、電話番号も読める状態でした。この問題は Session 03 で直します。</p>
+    <p>二重請求の経緯を調べるために、誰が何をしたかの記録（監査記録）を開くと、操作名や時刻だけでなく、操作後の予約内容が丸ごと残っていました。調査に要らない飼い主の氏名、メールアドレス、電話番号も読める状態でした。この問題は Session 03 で直します。</p>
   </div>
 </div>
 </IncidentPair>

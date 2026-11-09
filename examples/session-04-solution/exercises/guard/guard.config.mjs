@@ -11,6 +11,11 @@ export default {
       title: "予約が見つからないとき、useCase が Err を返さずに例外を投げる",
       allow: ["lint", "tests"],
       hint: "useCase の中の throw を Linter の規則で、または予約が見つからないときに Err が返ることをテストで確かめます。",
+      behavior: {
+        input: { text: "存在しない予約で診察を開始する" },
+        expected: { text: "失敗の結果が返る", value: "kind: AppointmentNotFound" },
+        actual: { text: "例外で止まる" },
+      },
     },
     {
       id: "B2-save-after-failure",
@@ -19,6 +24,11 @@ export default {
       title: "失敗を返すのに、保存を呼んでしまう",
       allow: ["tests"],
       hint: "失敗を返すときに保存が呼ばれないことを、テストで確かめます。失敗の理由は予約なしだけではありません。",
+      behavior: {
+        input: { text: "来院済みでない予約で診察を開始する" },
+        expected: { text: "失敗の結果が返り、保存しない", value: "saved: 0" },
+        actual: { text: "同じ失敗の結果が返るが、保存してしまう", value: "saved: 1" },
+      },
     },
     {
       id: "B3-store-failure-to-business-error",
@@ -27,6 +37,11 @@ export default {
       title: "保存の障害を、業務の失敗の Err に変換する",
       allow: ["tests"],
       hint: "保存が投げた例外が、Err にならず、そのまま外へ出ることをテストで確かめます。",
+      behavior: {
+        input: { text: "来院済みの予約で、保存が例外で失敗する" },
+        expected: { text: "同じ例外のまま外へ出る", value: "database unavailable" },
+        actual: { text: "予約なしの失敗に変わる", value: "kind: AppointmentNotFound" },
+      },
     },
     {
       id: "B4-unsafe-unwrap",
@@ -37,6 +52,11 @@ export default {
       required: false,
       allow: ["lint", "tests"],
       hint: "throw を禁止する規則では見つかりません。_unsafeUnwrap の呼び出しを別の規則で、または失敗のときに Err が返ることをテストで確かめます。",
+      behavior: {
+        input: { text: "存在しない予約で診察を開始する" },
+        expected: { text: "失敗の結果が返る", value: "kind: AppointmentNotFound" },
+        actual: { text: "例外で止まる" },
+      },
     },
     {
       id: "B5-error-kind-swallowed",
@@ -47,6 +67,11 @@ export default {
       required: false,
       allow: ["lint"],
       hint: "Linter の規則 @typescript-eslint/switch-exhaustiveness-check を、オプション considerDefaultExhaustiveForUnions: false で有効にします。default があっても、足し忘れた種類を検出します。",
+      behavior: {
+        input: { text: "足した失敗 AppointmentCancelled を渡す" },
+        expected: { text: "足し忘れを例外で知らせる" },
+        actual: { text: "状態不正の案内を返す", value: '"invalid-state"' },
+      },
     },
     {
       id: "R1-peer-change",

@@ -1,12 +1,12 @@
 import { err, ok, ResultAsync } from "neverthrow";
 
-import type { Appointment } from "../domain/appointment/index.js";
-import type { ExaminationStarted } from "../domain/appointment/index.js";
-import type { AppointmentId } from "../domain/appointment/index.js";
+import type { Appointment } from "../../../domain/appointment/index.js";
+import type { ExaminationStarted } from "../../../domain/appointment/index.js";
+import type { AppointmentId } from "../../../domain/appointment/index.js";
 import type {
   AppointmentResolver,
   ExaminationStartedStore,
-} from "../useCase/dependencies.js";
+} from "../../../useCase/dependencies.js";
 
 export type InMemoryExaminationStartedStore = Readonly<{
   resolver: AppointmentResolver;

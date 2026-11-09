@@ -43,7 +43,16 @@ const BASELINE_PATHS = [
   "/sessions/05-workflow-errors/",
 ];
 
-const ALLOWED_DYNAMIC_ROUTES = [];
+const ALLOWED_DYNAMIC_ROUTES = [
+  "sessions/00-system-handover/[page].astro",
+  "sessions/01-state-transitions/[page].astro",
+  "sessions/02-adt-and-exhaustiveness/[page].astro",
+  "sessions/03-boundaries-and-pii/[page].astro",
+  "sessions/04-workflow-errors/[page].astro",
+  "sessions/05-business-events-and-workflows/[page].astro",
+  "sessions/06-effects-and-consistency/[page].astro",
+  "sessions/final/[page].astro",
+];
 
 const PAGE_EXTENSIONS = [".astro", ".md", ".mdx", ".html"];
 const EXCLUDED_PAGES = ["404"];
@@ -51,6 +60,7 @@ const REQUEST_TIMEOUT_MS = 15000;
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pagesDir = join(rootDir, "apps", "docs", "src", "pages");
+const proseDir = join(rootDir, "apps", "docs", "src", "sessions", "prose");
 const routesFile = join(rootDir, "worker", "routes.ts");
 
 const usage = "使い方: node scripts/verify-urls.mjs <base-url>";
@@ -98,9 +108,20 @@ const collectPageFiles = (dir) =>
       : [join(dir, entry.name)],
   );
 
+const collectGeneratedPages = (relativePath) => {
+  const sessionSlug = relativePath.split("/")[1];
+  return readdirSync(join(proseDir, sessionSlug))
+    .filter((name) => name.endsWith(".mdx") && name !== "index.mdx")
+    .map((name) => ({
+      source: `${relativePath} (prose/${sessionSlug}/${name})`,
+      pathname: `/sessions/${sessionSlug}/${name.slice(0, -".mdx".length)}/`,
+    }));
+};
+
 const collectPages = () => {
   const pages = [];
   const skipped = [];
+  const dynamic = [];
   const disallowedDynamic = [];
   for (const file of collectPageFiles(pagesDir)) {
     const relativePath = relative(pagesDir, file).split(sep).join("/");
@@ -116,7 +137,9 @@ const collectPages = () => {
     const route = relativePath.slice(0, -extension.length);
     if (route.includes("[")) {
       if (ALLOWED_DYNAMIC_ROUTES.includes(relativePath)) {
-        skipped.push({ source: relativePath, reason: "動的ルート" });
+        const generated = collectGeneratedPages(relativePath);
+        pages.push(...generated);
+        dynamic.push({ source: relativePath, count: generated.length });
       } else {
         disallowedDynamic.push(relativePath);
       }
@@ -131,7 +154,7 @@ const collectPages = () => {
     });
   }
   pages.sort((a, b) => a.pathname.localeCompare(b.pathname));
-  return { pages, skipped, disallowedDynamic };
+  return { pages, skipped, dynamic, disallowedDynamic };
 };
 
 const responseCache = new Map();
@@ -282,10 +305,15 @@ const printTable = (header, tableRows) => {
 
 const main = async () => {
   const redirectRoutes = await loadRedirectRoutes();
-  const { pages, skipped, disallowedDynamic } = collectPages();
+  const { pages, skipped, dynamic, disallowedDynamic } = collectPages();
 
   console.log(`対象: ${base.href}`);
   console.log(`ページ ${pages.length} 件、リダイレクト ${redirectRoutes.length} 件`);
+  for (const item of dynamic) {
+    console.log(
+      `動的ルート: apps/docs/src/pages/${item.source} (prose の mdx から ${item.count} ページを確認)`,
+    );
+  }
   for (const item of skipped) {
     console.log(`対象外: apps/docs/src/pages/${item.source} (${item.reason})`);
   }

@@ -2,7 +2,7 @@
 
 ## セッションページの受け入れ条件
 
-`src/pages/sessions/*.astro` を変更する場合は、背景、登場人物の要求、出来事、参加者の作業、確認方法、期待する気づきを、ページ単体で理解できる順序で示す。最初のセッションだけでなく、後続セッションも同じ学習構造を保つ。散文を `src/sessions/prose/<slug>.mdx` に分けたページでは、この `.mdx` を変更する場合にも同じ条件を適用する。
+`src/pages/sessions/*.astro` を変更する場合は、背景、登場人物の要求、出来事、参加者の作業、確認方法、期待する気づきを、ページ単体で理解できる順序で示す。最初のセッションだけでなく、後続セッションも同じ学習構造を保つ。散文は `src/sessions/prose/<session-slug>/<page-slug>.mdx` に分かれている。各 session の最初のページは `index.mdx` である。この `.mdx` を変更する場合にも同じ条件を適用する。
 
 状態モデリングを扱う場合は、業務イベント、遷移前、遷移後、実装する関数を対応させる。時系列や状態遷移を理解しづらい表だけで説明せず、内容に応じてタイムライン、段階表示、状態図、カードを使う。
 
@@ -18,8 +18,10 @@
 
 セッションの追加、改名、移動では、次をまとめて同期する。
 
-- `src/pages/sessions/*.astro`: frontmatter、本文、前後ナビゲーションと対応するページテスト。
-- `src/sessions/prose/<slug>.mdx`: 散文を MDX に分けたページの本文。ルートとメタデータは `.astro` に残るので、対応する `.astro` と同時に更新する。
+- `src/pages/sessions/<session-slug>.astro`（最初のページ）と `src/pages/sessions/<session-slug>/[page].astro`（残りのページ）: ルート、frontmatter、本文、前後ナビゲーションと対応するページテスト。
+- `src/sessions/prose/<session-slug>/<page-slug>.mdx`: 各ページの本文。
+- `src/sessions/pages/<session-slug>.ts`: `sessionPages` に、ページの一覧と順序がある。ページを足すときは、`sessionPages` に slug を足し、同じ名前の `.mdx` を作る。`.mdx` が無いと、`SessionProsePage.astro` が例外を投げてビルドが失敗する。
+- `src/sessions/pages/<session-slug>-content.ts`: 各ページの文言。
 - `scripts/verify-static-build.mjs` の必須 HTML、内部リンク、前後ナビゲーション。
 - 旧 URL を維持する場合は、`../../worker/routes.ts` とそのテスト。
 
@@ -32,5 +34,5 @@ E2Eテストと画像スナップショットテストは追加しない。文�
 - ページを変更したときは、`pnpm --filter @fp-with-ts/docs test` と `pnpm --filter @fp-with-ts/docs build` を実行する。
 - CSS とレスポンシブ UI を変更したときは、ページ変更時の検証に加えて、変更した箇所の実画面確認を行う。
 - Worker ルーティングを変更したときは、`pnpm test:worker` と `pnpm typecheck` を実行する。
-- `src/sessions/prose/*.mdx` は `.astro` から props を受け取る。`astro check` は MDX の中身を検査しないので、`props` の綴りの誤りは test と build のどちらでも失敗しない。`.mdx` を変更したときは、`pnpm --filter @fp-with-ts/docs test` と `pnpm --filter @fp-with-ts/docs build` に加えて、変更前後の `dist` を `compare-dist` で比べ、差が意図した変更だけであることを確かめる。
+- `src/sessions/prose/**/*.mdx` は `.astro` から props を受け取らない。`.astro` は `<Prose />` を props なしで描画し、`.mdx` は必要な値を自分で import する。`astro check` は MDX の中身を検査しない。`.mdx` を変更したときは、`pnpm --filter @fp-with-ts/docs test` と `pnpm --filter @fp-with-ts/docs build` に加えて、変更前後の `dist` を `compare-dist` で比べ、差が意図した変更だけであることを確かめる。
 - MDX 化のように表示を変えない変更では、変更前後の `dist` を `node apps/docs/scripts/compare-dist.mjs <before> <after>` で比べる。

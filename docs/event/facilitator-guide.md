@@ -117,7 +117,7 @@ S3、S4、S5、S6 の演習ページは、合格後に「この仕組みで検�
 | S5 | 2:26-2:36 | 2:36-2:42 | なし | なし | takeaways 2:42-2:44 |
 | S6 | 2:44-3:00 | 3:00-3:15 | 3:15-3:18 | 3:18-3:19 | 3:19-3:20 |
 
-[相互レビュー進行カード](./peer-review-card.md) の S3 と S6 の5分版は、peer-review、guard、review の3ページを合わせた5分です。TA は、カードの時刻で進めます。
+[相互レビュー進行カード](./peer-review-card.md) の S3 と S6 の5分版は、peer-review、guard、review の3ページを合わせた5分です。カードの 3:00 と 4:00 の区切りは、peer-review から guard へ、guard から review へ画面が切り替わる時刻と同じです。
 
 Final は、3:20-3:26 に teach の6ページを案内します。その後、all-rules が 3:26-3:27.5、own-rule-review が 3:27.5-3:28、next-mechanism が 3:28-3:29、summary が 3:29-3:30 です。
 

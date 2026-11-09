@@ -1,16 +1,82 @@
 ---
 import { Code } from "astro:components";
+import { projectFilesForSnapshot } from "../../code-explorer/project-files";
+import { sourceOf } from "../../sessions/source-quotes";
 import StepControls from "../stepper/StepControls.astro";
-import { lineIndexOf, quotes } from "./quotes";
 import "./states.css";
 
 const generations = {
-  before: { tag: "S00 の配布コード", path: "examples/session-00/src/domain/appointment/appointment.ts" },
-  after: { tag: "この回の開始コード", path: "examples/session-01/src/domain/appointment/appointment.ts" },
+  before: { snapshot: "session-00", tag: "S00 の配布コード" },
+  after: { snapshot: "session-01", tag: "この回の開始コード" },
 } as const;
 
+const directory = "src/domain/appointment";
+
+const fileDefinitions = [
+  { key: "before-appointment", generation: "before", name: "appointment.ts" },
+  { key: "before-statusLabel", generation: "before", name: "statusLabel.ts" },
+  { key: "after-appointment", generation: "after", name: "appointment.ts" },
+  { key: "after-statusLabel", generation: "after", name: "statusLabel.ts" },
+  { key: "after-transitions", generation: "after", name: "transitions.ts" },
+] as const;
+
+type FileKey = (typeof fileDefinitions)[number]["key"];
+
+const files = fileDefinitions.map((definition) => {
+  const { snapshot, tag } = generations[definition.generation];
+  const relativePath = `${directory}/${definition.name}`;
+  return {
+    ...definition,
+    tag,
+    snapshot,
+    path: `examples/${snapshot}/${relativePath}`,
+    source: sourceOf(projectFilesForSnapshot(snapshot), relativePath),
+  };
+});
+
+const sourceOfKey = (key: FileKey): string => {
+  const file = files.find((candidate) => candidate.key === key);
+  if (file === undefined) throw new Error(`${key} is not a file in the figure`);
+  return file.source;
+};
+
+const litLinesOf = (source: string, blockStart: string, needles: readonly string[]): readonly number[] => {
+  const lines = source.split("\n");
+  const start = lines.indexOf(blockStart);
+  if (start < 0) throw new Error(`"${blockStart}" is not in the source`);
+  return needles.map((needle) => {
+    const offset = lines.slice(start).findIndex((line) => line.includes(needle));
+    if (offset < 0) throw new Error(`"${needle}" is not after "${blockStart}"`);
+    return start + offset;
+  });
+};
+
+type Lit = Readonly<{ line: number; note?: string }>;
+
+const withNotes = (lines: readonly number[], notes: readonly string[]): readonly Lit[] =>
+  lines.map((line, index) => ({ line, note: notes[index] }));
+
+const plain = (lines: readonly number[]): readonly Lit[] => lines.map((line) => ({ line }));
+
+const beforeTypeStart = "export type Appointment = Readonly<{";
+const beforeTypeNeedles = ["status: string;", "veterinarianId?: string;", "examinationStartedAt?: string;"];
+const beforeTypeLines = litLinesOf(sourceOfKey("before-appointment"), beforeTypeStart, beforeTypeNeedles);
+const beforeUpdateStart = "export const updateStatus = (";
+const beforeUpdateLines = litLinesOf(sourceOfKey("before-appointment"), beforeUpdateStart, ["status: string"]);
+const [beforeTypeAnchor] = litLinesOf(sourceOfKey("before-appointment"), beforeTypeStart, [beforeTypeStart]);
+const [beforeUpdateAnchor] = litLinesOf(sourceOfKey("before-appointment"), beforeUpdateStart, [beforeUpdateStart]);
+
+const afterTypeStart = "export type InExamination = Readonly<{";
+const afterTypeNeedles = ['kind: "InExamination";', "veterinarianId: string;", "examinationStartedAt: string;"];
+const afterTypeLines = litLinesOf(sourceOfKey("after-appointment"), afterTypeStart, afterTypeNeedles);
+const afterRequiredLines = litLinesOf(sourceOfKey("after-appointment"), afterTypeStart, afterTypeNeedles.slice(1));
+const [afterTypeAnchor] = litLinesOf(sourceOfKey("after-appointment"), afterTypeStart, [afterTypeStart]);
+
 const beforeValue = `declare const checkedIn: Appointment;
-const broken = updateStatus(checkedIn, "in-examination");`;
+const broken = updateStatus(
+  checkedIn,
+  "in-examination",
+);`;
 const afterValue = `declare const checkedIn: CheckedIn;
 const broken: InExamination = {
   ...checkedIn,
@@ -22,7 +88,6 @@ type Candidate = Readonly<{
   reason: string;
   before: string;
   after: string;
-  blanks: readonly string[];
 }>;
 
 const candidates: readonly Candidate[] = [
@@ -39,7 +104,6 @@ const candidates: readonly Candidate[] = [
   veterinarianId: "vet-001",
   examinationStartedAt: "10:00",
 }`,
-    blanks: [],
   },
   {
     ok: false,
@@ -50,7 +114,6 @@ const candidates: readonly Candidate[] = [
     after: `{
   kind: "InExamination",
 }`,
-    blanks: ["veterinarianId", "examinationStartedAt"],
   },
   {
     ok: false,
@@ -63,7 +126,6 @@ const candidates: readonly Candidate[] = [
   kind: "CheckedIn",
   veterinarianId: "vet-001",
 }`,
-    blanks: [],
   },
   {
     ok: false,
@@ -74,150 +136,231 @@ const candidates: readonly Candidate[] = [
     after: `{
   kind: "InExamintion",
 }`,
-    blanks: [],
   },
 ];
 
+const scratchViews = [
+  { id: "value-before", body: "value", generation: "before" },
+  { id: "board-before", body: "board", generation: "before" },
+  { id: "value-after", body: "value", generation: "after" },
+  { id: "board-after", body: "board", generation: "after" },
+] as const;
+
+type ScratchId = (typeof scratchViews)[number]["id"];
+
 type Frame = Readonly<{
-  generation: keyof typeof generations;
-  body: "type" | "value" | "board";
+  file: FileKey;
+  part: string;
+  focus: "file" | "scratch" | "board";
+  scratch?: ScratchId;
+  lit: readonly Lit[];
+  anchor: number;
+  treeNote?: Readonly<{ file: FileKey; text: string }>;
   caption: string;
 }>;
 
 const frames: readonly Frame[] = [
   {
-    generation: "before",
-    body: "type",
+    file: "before-appointment",
+    part: "Appointment 型",
+    focus: "file",
+    lit: withNotes(beforeTypeLines, ["どんな文字列でも入る", "省略できる", "省略できる"]),
+    anchor: beforeTypeAnchor ?? 0,
     caption:
       "S00 の配布コードの Appointment は、状態を string で持ちます。診察中にだけ要る veterinarianId と examinationStartedAt は、? を付けて省略できます。Readonly<{…}> は、項目を書き換えられない型にします。",
   },
   {
-    generation: "before",
-    body: "value",
+    file: "before-appointment",
+    part: "updateStatus 関数",
+    focus: "scratch",
+    scratch: "value-before",
+    lit: plain(beforeUpdateLines),
+    anchor: beforeUpdateAnchor ?? 0,
     caption:
       "S00 の updateStatus は、状態を文字列で受け取ります。診察中なのに獣医師も開始時刻もない予約を作る呼び出しが、型検査を通ります。",
   },
   {
-    generation: "before",
-    body: "board",
+    file: "before-appointment",
+    part: "Appointment 型",
+    focus: "board",
+    scratch: "board-before",
+    lit: plain(beforeTypeLines),
+    anchor: beforeTypeAnchor ?? 0,
     caption: "この型は、業務上ありえない組み合わせを、すべて受け入れます。",
   },
   {
-    generation: "after",
-    body: "type",
+    file: "after-appointment",
+    part: "InExamination 型",
+    focus: "file",
+    lit: withNotes(afterTypeLines, ['"InExamination" だけ', "必須", "必須"]),
+    anchor: afterTypeAnchor ?? 0,
+    treeNote: { file: "after-transitions", text: "残りはここ" },
     caption:
       "この回の開始コードは、状態ごとに別の型を持ちます。InExamination では、kind が \"InExamination\" だけを受け取り、veterinarianId と examinationStartedAt が必須です。型はここまで済んでいて、残りは遷移関数の引数です。",
   },
   {
-    generation: "after",
-    body: "value",
+    file: "after-appointment",
+    part: "InExamination 型",
+    focus: "scratch",
+    scratch: "value-after",
+    lit: plain(afterRequiredLines),
+    anchor: afterTypeAnchor ?? 0,
     caption:
-      "...checkedIn は、checkedIn の項目のコピーです。同じ状況の値を InExamination として書くと、veterinarianId と examinationStartedAt がないことを、型検査が報告します。書いた時点で気づけます。",
+      "...checkedIn は、checkedIn の項目のコピーです。同じ状況の値を InExamination として書くと、veterinarianId と examinationStartedAt がないことを、型検査が報告します。実行する前に気づけます。",
   },
   {
-    generation: "after",
-    body: "board",
+    file: "after-appointment",
+    part: "InExamination 型",
+    focus: "board",
+    scratch: "board-after",
+    lit: plain(afterRequiredLines),
+    anchor: afterTypeAnchor ?? 0,
     caption:
       "同じ4つの値のうち、型検査が受け入れるのは、業務上ありえる1つだけです。ありえない状態を、型で表せなくする考え方です。",
   },
 ];
 
-const beforeNeedles = ["status: string;", "veterinarianId?: string;", "examinationStartedAt?: string;"];
-const beforeCode = quotes.distributedType.code
-  .split("\n")
-  .filter((line, index) => index === 0 || beforeNeedles.some((needle) => line.includes(needle)))
-  .join("\n");
-const beforeLit = beforeNeedles.map((needle) => lineIndexOf(beforeCode, needle));
-const afterLit = ['kind: "InExamination";', "veterinarianId: string;", "examinationStartedAt: string;"].map((needle) =>
-  lineIndexOf(quotes.startInExaminationType.code, needle),
-);
+const oneLine = (literal: string): string => literal.replace(/\n\s*/g, " ").replace(/, }$/, " }");
+
+const generationKeys = ["before", "after"] as const;
 ---
 
-<figure class="st-fig illegal" data-illegal aria-label="必要な情報が欠けた予約を、型で作れなくする">
+<figure class="st-fig illegal" data-illegal data-step-figure aria-label="必要な情報が欠けた予約を、型で作れなくする">
   <StepControls />
+
+  <div class="illegal__stage">
+    <nav class="illegal__tree" aria-label="ファイルツリー">
+      <ul class="illegal__tree-list">
+        {generationKeys.map((generation) => (
+          <li class="illegal__tree-gen" data-gen={generation}>
+            <p class="illegal__folder">{generations[generation].snapshot}</p>
+            <p class="illegal__tree-tag"><span class="illegal__gen" data-gen={generation}>{generations[generation].tag}</span></p>
+            <ul class="illegal__tree-dir">
+              <li>
+                <p class="illegal__folder">{directory}/</p>
+                <ul class="illegal__tree-files">
+                  {files.filter((file) => file.generation === generation).map((file) => (
+                    <li>
+                      <button type="button" data-file={file.key} data-step-scene>{file.name}</button>
+                      <span class="illegal__tree-note" data-tree-note={file.key} hidden></span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            </ul>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="illegal__right" data-right>
+      <section class="illegal__file">
+        {files.map((file) => (
+          <div class="illegal__panel" data-panel={file.key}>
+            <p class="illegal__pane-head">
+              <code class="illegal__path">{file.path}</code>
+              <span class="illegal__gen" data-gen={file.generation}>{file.tag}</span>
+              <span class="illegal__part" data-part hidden></span>
+              <button type="button" class="illegal__restore" data-restore data-step-scene hidden>このコマのファイルに戻す</button>
+            </p>
+            <div class="illegal__codebox">
+              <div class="illegal__code" data-scroll data-step-scene tabindex="0" role="region" aria-label={file.path}>
+                <Code code={file.source} lang="ts" />
+              </div>
+              <div class="illegal__sticky" data-sticky aria-hidden="true" hidden></div>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section class="illegal__scratch">
+        <p class="illegal__pane-head">
+          <span class="illegal__scratch-title"><strong>説明用のコード</strong><span class="illegal__scratch-off">: このコマにはありません</span></span>
+          <span class="illegal__scratch-sub">ファイルにはない、短い例です</span>
+        </p>
+        <div class="illegal__scratch-body">
+          {scratchViews.map((view) => (
+            <div class="illegal__view" data-scratch={view.id}>
+              {view.body === "value" && (
+                <p class="illegal__view-note">
+                  <span class="st-tag">{generations[view.generation].tag}</span>
+                  <span><code>declare const</code> は、値があるものとして型検査だけに伝える書き方です。</span>
+                </p>
+              )}
+
+              {view.body === "value" && (
+                <div class="illegal__split">
+                  <figure class="code-block st-code">
+                    <Code code={view.generation === "before" ? beforeValue : afterValue} lang="ts" />
+                  </figure>
+                  <div class="illegal__result" data-tone="negative">
+                    <p class="illegal__result-title">
+                      {view.generation === "before" ? "! 型検査: エラーなし" : "× 型検査: エラー"}
+                    </p>
+                    <p>診察中の値に、次の項目がありません。</p>
+                    <p class="illegal__blanks">
+                      <span class="st-blank">veterinarianId</span>
+                      <span class="st-blank">examinationStartedAt</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {view.body === "board" && (
+                <div class="illegal__table" role="table">
+                  <div class="illegal__row illegal__row--head" role="row">
+                    <span role="columnheader">業務上</span>
+                    <span role="columnheader">
+                      値（共通の項目は省略）
+                      <span class="st-tag">{generations[view.generation].tag}</span>
+                    </span>
+                    <span role="columnheader">型検査</span>
+                  </div>
+                  {candidates.map((candidate) => (
+                    <div class="illegal__row" role="row" data-ok={candidate.ok ? "true" : "false"}>
+                      <span class="illegal__cell-verdict" role="cell">
+                        <span class="st-mark" data-tone={candidate.ok ? "positive" : "negative"} aria-hidden="true">
+                          {candidate.ok ? "✓" : "×"}
+                        </span>
+                        <span class="illegal__sr">{candidate.ok ? "業務上ありえる" : "業務上ありえない"}</span>
+                        <span>{candidate.reason}</span>
+                      </span>
+                      <span class="illegal__cell-value" role="cell">
+                        <figure class="code-block st-code illegal__cell-code">
+                          <Code code={oneLine(view.generation === "before" ? candidate.before : candidate.after)} lang="ts" />
+                        </figure>
+                      </span>
+                      <span class="illegal__cell-check st-mark" role="cell" data-tone={candidate.ok ? "positive" : "negative"}>
+                        {view.generation === "before"
+                          ? candidate.ok ? "型検査: 受け入れる" : "! 型検査: 受け入れる"
+                          : candidate.ok ? "✓ 型検査: 受け入れる" : "× 型検査: エラー"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  </div>
 
   <div aria-live="polite">
     <ol class="st-stack">
       {frames.map((frame) => (
-        <li data-frame>
-          <p class="illegal__head">
-            <span class="st-tag">{generations[frame.generation].tag}</span>
-            {frame.body === "value" && (
-              <span class="illegal__note"><code>declare const</code> は、値があるものとして型検査だけに伝える書き方です。</span>
-            )}
-            {frame.body === "board" && <span class="illegal__note">候補の値: 共通の項目は省略</span>}
-          </p>
-
-          {frame.body === "type" && (
-            <div class="illegal__split">
-              <figure class="code-block st-code" data-lit={JSON.stringify(frame.generation === "before" ? beforeLit : afterLit)}>
-                <figcaption>
-                  <code>{generations[frame.generation].path}</code>
-                  {frame.generation === "before" && <span class="illegal__omit">診察中に関係しない項目は表示を省略</span>}
-                </figcaption>
-                <Code code={frame.generation === "before" ? beforeCode : quotes.startInExaminationType.code} lang="ts" />
-              </figure>
-              <ul class="illegal__notes">
-                {frame.generation === "before" ? (
-                  <>
-                    <li><code>status</code><span>どんな文字列でも入る</span></li>
-                    <li><code>veterinarianId?</code><span>省略できる</span></li>
-                    <li><code>examinationStartedAt?</code><span>省略できる</span></li>
-                  </>
-                ) : (
-                  <>
-                    <li><code>kind</code><span>"InExamination" だけ</span></li>
-                    <li><code>veterinarianId</code><span>必須</span></li>
-                    <li><code>examinationStartedAt</code><span>必須</span></li>
-                  </>
-                )}
-              </ul>
-            </div>
-          )}
-
-          {frame.body === "value" && (
-            <div class="illegal__split">
-              <figure class="code-block st-code">
-                <figcaption>説明用の短い例</figcaption>
-                <Code code={frame.generation === "before" ? beforeValue : afterValue} lang="ts" />
-              </figure>
-              <div class="illegal__result" data-tone="negative">
-                <p class="illegal__result-title">
-                  {frame.generation === "before" ? "! 型検査: エラーなし" : "× 型検査: エラー"}
-                </p>
-                <p>診察中の値に、次の項目がありません。</p>
-                <p class="illegal__blanks">
-                  <span class="st-blank">veterinarianId</span>
-                  <span class="st-blank">examinationStartedAt</span>
-                </p>
-              </div>
-            </div>
-          )}
-
-          {frame.body === "board" && (
-            <ul class="illegal__board">
-              {candidates.map((candidate) => (
-                <li class="illegal__candidate" data-ok={candidate.ok ? "true" : "false"}>
-                  <p class="illegal__verdict st-mark" data-tone={candidate.ok ? "positive" : "negative"}>
-                    {candidate.ok ? "✓ 業務上ありえる" : "× 業務上ありえない"}
-                  </p>
-                  <p class="illegal__reason">{candidate.reason}</p>
-                  <figure class="code-block st-code illegal__candidate-code">
-                    <Code code={frame.generation === "before" ? candidate.before : candidate.after} lang="ts" />
-                  </figure>
-                  <p class="illegal__blanks">
-                    {candidate.blanks.map((name) => <span class="st-blank">{name}</span>)}
-                  </p>
-                  <p class="illegal__check st-mark" data-tone={candidate.ok ? "positive" : "negative"}>
-                    {frame.generation === "before"
-                      ? candidate.ok ? "型検査: 受け入れる" : "! 型検査: 受け入れる"
-                      : candidate.ok ? "✓ 型検査: 受け入れる" : "× 型検査: エラー"}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-
+        <li
+          data-frame
+          data-view={JSON.stringify({
+            file: frame.file,
+            part: frame.part,
+            focus: frame.focus,
+            scratch: frame.scratch,
+            lit: frame.lit,
+            anchor: frame.anchor,
+            treeNote: frame.treeNote,
+          })}
+        >
           <p class="st-caption">{frame.caption}</p>
         </li>
       ))}
@@ -228,77 +371,650 @@ const afterLit = ['kind: "InExamination";', "veterinarianId: string;", "examinat
 <script>
   import { mountStepper } from "../stepper/stepper";
 
+  type Lit = { line: number; note?: string };
+  type View = {
+    file: string;
+    part: string;
+    focus: "file" | "scratch" | "board";
+    scratch?: string;
+    lit: Lit[];
+    anchor: number;
+    treeNote?: { file: string; text: string };
+  };
+
   document.querySelectorAll<HTMLElement>("[data-illegal]").forEach((root) => {
-    root.querySelectorAll<HTMLElement>("[data-lit]").forEach((block) => {
-      const lit = JSON.parse(block.dataset.lit ?? "[]") as number[];
-      block.querySelectorAll<HTMLElement>(".line").forEach((line, index) => {
-        line.classList.toggle("is-lit", lit.includes(index));
+    const panels = [...root.querySelectorAll<HTMLElement>("[data-panel]")];
+    const fileButtons = [...root.querySelectorAll<HTMLButtonElement>("[data-file]")];
+    const scratchViews = [...root.querySelectorAll<HTMLElement>("[data-scratch]")];
+    const right = root.querySelector<HTMLElement>("[data-right]");
+    const frameViews = [...root.querySelectorAll<HTMLElement>("[data-frame]")].map(
+      (frame) => JSON.parse(frame.dataset.view ?? "{}") as View,
+    );
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const scrollBehavior = (): ScrollBehavior => (reducedMotion.matches ? "auto" : "smooth");
+
+    let frameView = frameViews[0];
+    let chosen: string | null = null;
+    let shown: string | null = null;
+
+    const panelOf = (key: string) => panels.find((panel) => panel.dataset.panel === key);
+
+    const centerLit = (panel: HTMLElement, lit: readonly Lit[], anchor: number) => {
+      const box = panel.querySelector<HTMLElement>("[data-scroll]");
+      if (!box || lit.length === 0) return;
+      const lines = panel.querySelectorAll<HTMLElement>(".line");
+      const head = lines[anchor];
+      const first = lines[Math.min(...lit.map((item) => item.line))];
+      const last = lines[Math.max(...lit.map((item) => item.line))];
+      if (!head || !first || !last) return;
+      const boxTop = box.getBoundingClientRect().top;
+      const offsetOf = (line: HTMLElement) => line.getBoundingClientRect().top - boxTop + box.scrollTop;
+      const headTop = offsetOf(head);
+      const firstTop = offsetOf(first);
+      const lastBottom = offsetOf(last) + last.getBoundingClientRect().height;
+      const pinned = head.getBoundingClientRect().height + 1;
+      const height = box.clientHeight;
+      const target =
+        lastBottom - headTop <= height
+          ? (headTop + lastBottom) / 2 - height / 2
+          : (firstTop + lastBottom) / 2 - (height + pinned) / 2;
+      box.scrollTo({ top: Math.max(0, target), behavior: scrollBehavior() });
+    };
+
+    const updateSticky = (panel: HTMLElement) => {
+      const box = panel.querySelector<HTMLElement>("[data-scroll]");
+      const sticky = panel.querySelector<HTMLElement>("[data-sticky]");
+      if (!box || !sticky) return;
+      const head = frameView && chosen === null ? panel.querySelectorAll<HTMLElement>(".line")[frameView.anchor] : undefined;
+      if (!head) {
+        sticky.hidden = true;
+        return;
+      }
+      sticky.style.right = `${box.offsetWidth - box.clientWidth}px`;
+      sticky.hidden = head.getBoundingClientRect().top >= box.getBoundingClientRect().top - 0.5;
+    };
+
+    const buildSticky = (panel: HTMLElement) => {
+      const sticky = panel.querySelector<HTMLElement>("[data-sticky]");
+      if (!sticky) return;
+      const head = frameView && chosen === null ? panel.querySelectorAll<HTMLElement>(".line")[frameView.anchor] : undefined;
+      if (!head || !frameView) {
+        sticky.replaceChildren();
+        sticky.hidden = true;
+        return;
+      }
+      const clone = head.cloneNode(true) as HTMLElement;
+      clone.classList.remove("is-lit");
+      delete clone.dataset.note;
+      const code = document.createElement("code");
+      code.style.counterReset = `illegal-line ${frameView.anchor}`;
+      code.append(clone);
+      const pre = document.createElement("pre");
+      pre.append(code);
+      sticky.replaceChildren(pre);
+    };
+
+    const render = () => {
+      if (!frameView) return;
+      const key = chosen ?? frameView.file;
+      const following = key === frameView.file;
+      const changed = shown !== null && shown !== key;
+      shown = key;
+
+      panels.forEach((panel) => {
+        const active = panel.dataset.panel === key;
+        panel.hidden = !active;
+        panel.querySelectorAll<HTMLElement>(".line").forEach((line) => {
+          line.classList.remove("is-lit");
+          delete line.dataset.note;
+        });
+        const part = panel.querySelector<HTMLElement>("[data-part]");
+        const restore = panel.querySelector<HTMLElement>("[data-restore]");
+        if (part) {
+          part.textContent = active && following ? frameView.part : "";
+          part.hidden = !(active && following);
+        }
+        if (restore) restore.hidden = !(active && !following);
+      });
+      fileButtons.forEach((button) => {
+        if (button.dataset.file === key) button.setAttribute("aria-current", "true");
+        else button.removeAttribute("aria-current");
+      });
+
+      const panel = panelOf(key);
+      if (!panel) return;
+      if (changed) {
+        panel.classList.remove("is-entering");
+        void panel.offsetWidth;
+        panel.classList.add("is-entering");
+      }
+      if (!following) {
+        panel.querySelector<HTMLElement>("[data-scroll]")?.scrollTo({ top: 0, behavior: "auto" });
+        buildSticky(panel);
+        return;
+      }
+      const lines = panel.querySelectorAll<HTMLElement>(".line");
+      frameView.lit.forEach(({ line, note }) => {
+        const element = lines[line];
+        if (!element) return;
+        element.classList.add("is-lit");
+        if (note) element.dataset.note = note;
+      });
+      buildSticky(panel);
+      centerLit(panel, frameView.lit, frameView.anchor);
+      updateSticky(panel);
+    };
+
+    right?.addEventListener("transitionend", (event) => {
+      if (event.target !== right || event.propertyName !== "grid-template-rows") return;
+      const panel = frameView && chosen === null ? panelOf(frameView.file) : undefined;
+      if (panel && frameView) centerLit(panel, frameView.lit, frameView.anchor);
+    });
+
+    panels.forEach((panel) => {
+      panel.querySelector("[data-scroll]")?.addEventListener("scroll", () => updateSticky(panel), { passive: true });
+    });
+
+    fileButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        stepper?.pause();
+        chosen = button.dataset.file === frameView?.file ? null : (button.dataset.file ?? null);
+        render();
       });
     });
-    mountStepper({ root });
+
+    root.querySelectorAll<HTMLElement>("[data-restore]").forEach((button) => {
+      button.addEventListener("click", () => {
+        chosen = null;
+        render();
+      });
+    });
+
+    panels.forEach((panel) => panel.querySelector("pre")?.removeAttribute("tabindex"));
+
+    const stepper = mountStepper({
+      root,
+      onStep: (index) => {
+        frameView = frameViews[index];
+        chosen = null;
+        if (!frameView) return;
+        root.dataset.focus = frameView.focus;
+        root.querySelectorAll<HTMLElement>("[data-tree-note]").forEach((note) => {
+          const visible = frameView?.treeNote?.file === note.dataset.treeNote;
+          note.textContent = visible ? (frameView?.treeNote?.text ?? "") : "";
+          note.hidden = !visible;
+        });
+        scratchViews.forEach((view) => {
+          view.hidden = view.dataset.scratch !== frameView?.scratch;
+        });
+        render();
+      },
+    });
   });
 </script>
 
 <style>
-  .illegal__head {
-    margin: 0 0 0.25rem;
-  }
-
   .illegal :global(.st-caption) {
     line-height: 1.5;
   }
 
-  .illegal__split {
+  .illegal__stage {
     display: grid;
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-    gap: 0.75rem;
-    align-items: start;
-    margin-block-end: 0.25rem;
+    grid-template-columns: 14rem minmax(0, 1fr);
+    gap: 0.5rem;
+    margin-block-end: 0.5rem;
   }
 
-  .illegal__omit {
-    margin-inline-start: 0.5rem;
-    font-size: 0.6875rem;
+  .illegal[data-ready] .illegal__stage {
+    height: calc(var(--frame-figure-height) - 1.75rem);
   }
 
-  .illegal__note {
-    margin-inline-start: 0.5rem;
-    font-size: 0.8125rem;
+  .illegal__tree {
+    min-width: 0;
+    min-height: 0;
+    padding: 0.5rem;
+    overflow: auto;
+    border: 1px solid var(--role-border);
+    border-radius: 0.375rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+    font-size: 0.75rem;
+    line-height: 1.4;
   }
 
-  .illegal__notes {
-    display: grid;
-    gap: 0.375rem;
+  .illegal__tree ul {
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  .illegal__notes li {
-    display: grid;
-    gap: 0.0625rem;
-    padding: 0.375rem 0.625rem;
-    border: 2px solid var(--role-border);
-    border-inline-start: 0.5rem solid var(--role-accent);
-    border-radius: 0.375rem;
-    background: var(--role-surface);
-    font-size: 0.875rem;
-    line-height: 1.45;
+  .illegal__tree p {
+    margin: 0;
   }
 
-  .illegal__notes code {
+  .illegal__tree-gen {
+    padding-inline-start: 0.5rem;
+    border-inline-start: 3px solid var(--role-border);
+  }
+
+  .illegal__tree-gen[data-gen="before"] {
+    border-inline-start-color: var(--role-negative);
+  }
+
+  .illegal__tree-gen[data-gen="after"] {
+    border-inline-start-color: var(--role-positive);
+  }
+
+  .illegal__tree-gen + .illegal__tree-gen {
+    margin-block-start: 0.75rem;
+  }
+
+  .illegal__tree-tag {
+    margin-block: 0.125rem 0.25rem;
+  }
+
+  .illegal__tree-dir {
+    margin-inline-start: 0.25rem;
+  }
+
+  .illegal__tree-files {
+    margin-inline-start: 0.75rem;
+  }
+
+  .illegal__folder {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .illegal__folder::before {
+    content: "▾ ";
+    color: var(--role-muted);
+  }
+
+  .illegal__tree-files > li {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+  }
+
+  .illegal__tree-note {
+    flex: none;
+    padding: 0 0.375rem;
+    border-radius: 0.25rem;
+    background: var(--role-accent-soft);
+    color: var(--role-accent);
+    font-size: 0.6875rem;
     font-weight: 800;
+    line-height: 1.5;
+    white-space: nowrap;
+    animation: illegal-fade 0.25s ease-out;
+  }
+
+  .illegal__tree-note[hidden] {
+    display: none;
+  }
+
+  .illegal__tree button {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+    padding: 0.125rem 0.375rem;
+    border: 0;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: var(--role-text);
+    cursor: pointer;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: inherit;
+    text-align: start;
+    white-space: nowrap;
+  }
+
+  .illegal__tree button:hover {
+    background: var(--role-accent-soft);
+  }
+
+  .illegal__tree button[aria-current="true"] {
+    background: var(--role-accent-soft);
+    box-shadow: inset 3px 0 0 var(--role-accent);
+    color: var(--role-accent);
+    font-weight: 800;
+  }
+
+  .illegal__tree button:focus-visible,
+  .illegal__restore:focus-visible {
+    outline: 3px solid var(--role-accent);
+    outline-offset: 2px;
+  }
+
+  .illegal:not([data-ready]) .illegal__tree button {
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .illegal__gen {
+    display: inline-block;
+    padding: 0 0.5rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.375rem;
+    background: var(--role-surface);
+    font-size: 0.75rem;
+    font-weight: 800;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  .illegal__gen[data-gen="before"] {
+    border-color: var(--role-negative);
+    color: var(--role-negative);
+  }
+
+  .illegal__gen[data-gen="after"] {
+    border-color: var(--role-positive);
+    color: var(--role-positive);
+  }
+
+  .illegal__right {
+    display: grid;
+    grid-template-rows: auto auto;
+    gap: 0.5rem;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .illegal[data-ready] .illegal__right {
+    grid-template-rows: 4fr 6fr;
+    transition: grid-template-rows 0.35s ease;
+  }
+
+  .illegal[data-ready][data-focus="file"] .illegal__right {
+    grid-template-rows: 1fr 0fr;
+  }
+
+  .illegal[data-ready][data-focus="board"] .illegal__right {
+    grid-template-rows: 37fr 63fr;
+  }
+
+  .illegal__file,
+  .illegal__scratch {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid var(--role-border);
+    border-radius: 0.375rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+  }
+
+  .illegal__scratch {
+    min-height: 1.9rem;
+  }
+
+  .illegal__panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .illegal[data-ready] .illegal__panel {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .illegal__panel[hidden] {
+    display: none;
+  }
+
+  .illegal__panel + .illegal__panel {
+    border-top: 1px solid var(--role-border);
+  }
+
+  .illegal__panel.is-entering .illegal__code {
+    animation: illegal-fade 0.2s ease-out;
+  }
+
+  @keyframes illegal-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .illegal__pane-head {
+    box-sizing: border-box;
+    display: flex;
+    flex: none;
+    flex-wrap: wrap;
+    gap: 0.125rem 0.5rem;
+    align-items: center;
+    min-height: 1.9rem;
+    margin: 0;
+    padding: 0.125rem 0.5rem;
+    border-bottom: 1px solid var(--role-rule);
+    background: var(--role-surface);
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .illegal__path {
+    flex: 0 1 auto;
+    min-width: 0;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .illegal__panel .illegal__pane-head {
+    min-height: 1.5rem;
+    padding-block: 0.0625rem;
+  }
+
+  .illegal__part {
+    padding: 0 0.5rem;
+    border-radius: 0.25rem;
+    background: var(--role-accent-soft);
+    color: var(--role-accent);
+    font-weight: 800;
+  }
+
+  .illegal__part[hidden],
+  .illegal__restore[hidden] {
+    display: none;
+  }
+
+  .illegal__restore {
+    margin-inline-start: auto;
+    padding: 0 0.5rem;
+    border: 1.5px solid var(--role-accent);
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--role-accent);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  .illegal__codebox {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    max-height: 24rem;
+    background: var(--frame-code-surface);
+    color: var(--frame-code-text);
+  }
+
+  .illegal[data-ready] .illegal__codebox {
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .illegal__code {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .illegal__sticky {
+    position: absolute;
+    inset: 0 0 auto 0;
+    z-index: 1;
+    border-bottom: 1px solid color-mix(in srgb, var(--frame-code-text) 30%, transparent);
+    background: var(--frame-code-surface);
+    pointer-events: none;
+  }
+
+  .illegal__sticky[hidden] {
+    display: none;
+  }
+
+  .illegal[data-ready] .illegal__codebox .illegal__sticky :global(pre) {
+    padding: 0;
+  }
+
+  .illegal__code:focus-visible {
+    outline: 3px solid var(--role-accent);
+    outline-offset: -3px;
+  }
+
+  .illegal__codebox :global(pre) {
+    margin: 0;
+    padding: 0.375rem 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent !important;
+    font-size: 0.78125rem;
+    line-height: 1.5;
+  }
+
+  .illegal__codebox :global(code) {
+    display: flex;
+    flex-direction: column;
+    counter-reset: illegal-line;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+
+  .illegal__codebox :global(.line) {
+    display: block;
+    min-height: 1.5em;
+    padding-inline: 3rem 0.75rem;
+    counter-increment: illegal-line;
+    text-indent: -3rem;
+  }
+
+  .illegal__codebox :global(.line)::before {
+    display: inline-block;
+    width: 2.25rem;
+    margin-inline-end: 0.75rem;
+    color: color-mix(in srgb, var(--frame-code-text) 55%, transparent);
+    content: counter(illegal-line);
+    text-align: end;
+    text-indent: 0;
+    user-select: none;
+  }
+
+  .illegal__codebox :global(.line.is-lit) {
+    background: color-mix(in srgb, var(--frame-code-text) 20%, transparent);
+    box-shadow: inset 4px 0 0 var(--role-accent);
+  }
+
+  .illegal__codebox :global(.line[data-note])::after {
+    margin-inline-start: 1rem;
+    color: color-mix(in srgb, var(--frame-code-text) 75%, transparent);
+    content: "← " attr(data-note);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-indent: 0;
+  }
+
+  .illegal[data-focus="board"] .illegal__codebox :global(pre) {
+    padding-block: 0.125rem;
+    font-size: 0.75rem;
+    line-height: 1.3;
+  }
+
+  .illegal[data-focus="board"] .illegal__codebox :global(.line) {
+    min-height: 1.3em;
+  }
+
+  .illegal__scratch-off {
+    display: none;
+  }
+
+  .illegal[data-focus="file"] .illegal__scratch-off {
+    display: inline;
+  }
+
+  .illegal[data-focus="file"] .illegal__scratch-sub {
+    display: none;
+  }
+
+  .illegal__scratch-sub {
+    color: var(--role-muted);
+  }
+
+  .illegal__scratch-body {
+    padding: 0.25rem 0.5rem;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .illegal[data-ready] .illegal__scratch-body {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .illegal__view {
+    display: grid;
+    gap: 0.375rem;
+  }
+
+  .illegal__view[hidden] {
+    display: none;
+  }
+
+  .illegal:not([data-ready]) .illegal__view + .illegal__view {
+    margin-block-start: 0.75rem;
+  }
+
+  .illegal__view-note {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.125rem 0.5rem;
+    align-items: center;
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .illegal__view-note :global(.st-tag) {
+    font-size: 0.6875rem;
+    line-height: 1.4;
+  }
+
+  .illegal__split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: start;
   }
 
   .illegal__result {
     display: grid;
-    gap: 0.375rem;
-    padding: 0.5rem 0.75rem;
+    gap: 0.25rem;
+    padding: 0.375rem 0.625rem;
     border: 2px solid var(--role-border);
     border-radius: 0.5rem;
     background: var(--role-surface);
-    font-size: 0.875rem;
-    line-height: 1.5;
+    font-size: 0.8125rem;
+    line-height: 1.45;
   }
 
   .illegal__result[data-tone="negative"] {
@@ -325,60 +1041,150 @@ const afterLit = ['kind: "InExamination";', "veterinarianId: string;", "examinat
     margin: 0;
   }
 
-  .illegal__board {
+  .illegal__table {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.5rem;
-    margin: 0 0 0.25rem;
-    padding: 0;
-    list-style: none;
+    grid-template-columns: minmax(0, 13rem) minmax(0, 1fr) auto;
+    column-gap: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.25;
   }
 
-  .illegal__candidate {
+  .illegal__row {
     display: grid;
-    align-content: start;
-    gap: 0.125rem;
-    min-width: 0;
-    padding: 0.25rem 0.5rem;
-    border: 2px solid var(--role-border);
-    border-radius: 0.5rem;
-    background: var(--role-surface);
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    align-items: center;
+    min-height: 1.6rem;
+    padding: 0 0.5rem;
+    border-bottom: 1px solid var(--role-rule);
   }
 
-  .illegal__candidate[data-ok="false"] {
-    border-style: dashed;
+  .illegal__row--head {
+    min-height: 1.1rem;
+    border-bottom-color: var(--role-border);
+    color: var(--role-muted);
+    font-weight: 700;
   }
 
-  .illegal__candidate p {
-    margin: 0;
-    font-size: 0.8125rem;
+  .illegal__row--head > :nth-child(2) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.125rem 0.5rem;
+    align-items: center;
+  }
+
+  .illegal__row--head :global(.st-tag) {
+    font-size: 0.6875rem;
     line-height: 1.4;
   }
 
-  .illegal__reason {
-    min-height: 2.4em;
+  .illegal__cell-verdict {
+    position: relative;
+    display: flex;
+    gap: 0.375rem;
+    align-items: center;
+    min-width: 0;
   }
 
-  .illegal__split :global(.st-code pre),
-  .illegal__candidate .illegal__candidate-code :global(pre) {
+  .illegal__cell-value {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.125rem 0.375rem;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .illegal__cell-value .illegal__cell-code {
+    flex: 1 1 auto;
+  }
+
+  .illegal .illegal__table .illegal__cell-code :global(pre) {
+    padding-block: 0;
+    font-size: 0.75rem;
+    line-height: 1.25;
+    white-space: pre-wrap;
+  }
+
+  .illegal .illegal__table .illegal__cell-code :global(.line) {
+    padding-inline: 0.5rem;
+  }
+
+  .illegal .illegal__table .illegal__cell-code :global(.line > span) {
+    display: inline-block;
+    white-space: pre;
+  }
+
+  .illegal__cell-check {
+    white-space: nowrap;
+  }
+
+  .illegal__sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .illegal .illegal__split :global(.st-code pre) {
     padding-block: 0.25rem;
   }
 
-  .illegal__candidate-code :global(pre) {
-    font-size: 0.75rem;
+  @media (min-height: 845px) {
+    .illegal[data-ready] .illegal__stage {
+      height: min(
+        calc(var(--frame-figure-height) - 1.75rem - 1.25rem - 2px),
+        calc(100dvh - var(--frame-bar-height) - var(--frame-foot-height) - var(--frame-role-height) - 296px)
+      );
+    }
   }
 
-  .illegal__check {
-    font-size: 0.8125rem;
-  }
+  @media (max-width: 719px) {
+    .illegal__stage,
+    .illegal[data-ready] .illegal__stage {
+      grid-template-columns: minmax(0, 1fr);
+      height: auto;
+    }
 
-  @media (max-width: 55rem) {
+    .illegal__right,
+    .illegal[data-ready] .illegal__right,
+    .illegal[data-ready][data-focus="file"] .illegal__right,
+    .illegal[data-ready][data-focus="board"] .illegal__right {
+      grid-template-rows: auto auto;
+      transition: none;
+    }
+
+    .illegal[data-ready] .illegal__panel,
+    .illegal[data-ready] .illegal__scratch-body {
+      flex: none;
+    }
+
+    .illegal__codebox,
+    .illegal[data-ready] .illegal__codebox {
+      flex: none;
+      max-height: 18rem;
+    }
+
     .illegal__split {
       grid-template-columns: minmax(0, 1fr);
     }
 
-    .illegal__board {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    .illegal__table {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .illegal__row {
+      grid-column: auto;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.125rem;
+    }
+
+    .illegal__row--head {
+      display: none;
     }
   }
 </style>
