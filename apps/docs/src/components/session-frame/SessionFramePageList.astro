@@ -11,9 +11,10 @@ interface Props {
   pages: readonly SessionPage[];
   currentPageSlug: string;
   idPrefix: string;
+  collapsible?: boolean;
 }
 
-const { sessionSlug, pages, currentPageSlug, idPrefix } = Astro.props;
+const { sessionSlug, pages, currentPageSlug, idPrefix, collapsible = false } = Astro.props;
 const groups = sessionPageFlowOrder.flatMap((flow) => {
   const members = pages.filter((page) => page.flow === flow);
   return members.length === 0 ? [] : [{ flow, members }];
@@ -30,11 +31,8 @@ const routeOf = (page: SessionPage) =>
 
 <nav class="session-frame__pages" aria-label="このセッションのページ">
   {
-    groups.map(({ flow, members }) => (
-      <div class="session-frame__group">
-        <p class="session-frame__group-title" id={`${idPrefix}-${flow}`}>
-          {sessionPageFlowLabels[flow]}
-        </p>
+    groups.map(({ flow, members }) => {
+      const links = (
         <ol aria-labelledby={`${idPrefix}-${flow}`}>
           {members.map((page) => (
             <li>
@@ -48,7 +46,29 @@ const routeOf = (page: SessionPage) =>
             </li>
           ))}
         </ol>
-      </div>
-    ))
+      );
+      const hasCurrent = members.some((page) => page.slug === currentPageSlug);
+      return collapsible ? (
+        <details
+          class="session-frame__group"
+          name={`${idPrefix}-groups`}
+          open={hasCurrent}
+          data-has-current={hasCurrent ? "true" : undefined}
+        >
+          <summary class="session-frame__group-title" id={`${idPrefix}-${flow}`}>
+            {sessionPageFlowLabels[flow]}
+            {hasCurrent && <span class="session-frame__current-note">（現在のページを含む）</span>}
+          </summary>
+          {links}
+        </details>
+      ) : (
+        <div class="session-frame__group">
+          <p class="session-frame__group-title" id={`${idPrefix}-${flow}`}>
+            {sessionPageFlowLabels[flow]}
+          </p>
+          {links}
+        </div>
+      );
+    })
   }
 </nav>
