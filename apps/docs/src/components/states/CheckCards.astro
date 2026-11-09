@@ -1,0 +1,121 @@
+---
+const mechanisms = [
+  {
+    name: "型のテスト",
+    sees: "型検査の結果",
+    catches: "型エラーが出なくなる変更",
+    misses: "値の中身の誤り",
+  },
+  {
+    name: "Linter の規則",
+    sees: "コードの書き方",
+    catches: "規則に書いた書き方",
+    misses: "規則にない別の書き方",
+  },
+  {
+    name: "テスト",
+    sees: "実行した結果の値",
+    catches: "結果の値が違う変更",
+    misses: "実行しない経路",
+  },
+] as const;
+---
+
+<ul class="checks" aria-label="悪い変更を検出する仕組みの3種類">
+  {mechanisms.map((mechanism) => (
+    <li class="checks__card">
+      <p class="checks__name">{mechanism.name}</p>
+      <div class="checks__rows">
+        <div class="checks__row">
+          <p class="checks__label">何を見るか</p>
+          <p class="checks__text">{mechanism.sees}</p>
+        </div>
+        <div class="checks__row" data-tone="positive">
+          <p class="checks__label">検出できるもの</p>
+          <p class="checks__text">{mechanism.catches}</p>
+        </div>
+        <div class="checks__row" data-tone="negative">
+          <p class="checks__label">すり抜けるもの</p>
+          <p class="checks__text">{mechanism.misses}</p>
+        </div>
+      </div>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .checks {
+    display: grid;
+    grid-auto-rows: 1fr;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .checks__card {
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    gap: 0.5rem 0.75rem;
+    align-items: center;
+    min-width: 0;
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+  }
+
+  .checks p {
+    margin: 0;
+  }
+
+  .checks__name {
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.4;
+  }
+
+  .checks__rows {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .checks__row {
+    min-width: 0;
+    padding-inline-start: 0.5rem;
+    border-inline-start: 0.25rem solid var(--role-border);
+  }
+
+  .checks__row[data-tone="positive"] {
+    border-inline-start-color: var(--role-positive);
+  }
+
+  .checks__row[data-tone="negative"] {
+    border-inline-start-color: var(--role-negative);
+  }
+
+  .checks__label {
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .checks__text {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    text-wrap: balance;
+  }
+
+  @media (max-width: 55rem) {
+    .checks__card {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .checks__rows {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

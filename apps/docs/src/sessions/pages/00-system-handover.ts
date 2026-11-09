@@ -1,0 +1,86 @@
+import type { SessionPage } from "./types";
+
+export const sessionSlug = "00-system-handover";
+
+export const sessionPages = [
+  {
+    slug: "",
+    title: "動物病院のシステムを引き継ぐ",
+    flow: "background",
+    kind: "brief",
+    minutes: 1.5,
+    role: "背景: これから引き継ぐ病院の仕事を、3つの場面で見ます。",
+  },
+  {
+    slug: "map",
+    title: "1回の依頼が通る道筋",
+    flow: "background",
+    kind: "brief",
+    minutes: 1,
+    role: "背景: 病院の仕事がシステムの中をどう通るかを、5つの段で見ます。",
+  },
+  {
+    slug: "examination-mock",
+    title: "「診察を開始する」を押すと何が起きるか",
+    flow: "background",
+    kind: "teach",
+    minutes: 1.5,
+    role: "背景: 地図の段を、実際の操作1回でたどります。",
+  },
+  {
+    slug: "incidents",
+    title: "引き継ぎ初日に見つかった2件",
+    flow: "problem",
+    kind: "brief",
+    minutes: 1.5,
+    role: "課題: この操作に関わる事故が、2件起きていました。",
+  },
+  {
+    slug: "records",
+    title: "事故はデータのどこに残っているか",
+    flow: "problem",
+    kind: "teach",
+    minutes: 0.5,
+    role: "課題: 2件の事故を、操作と値の組で確かめます。",
+  },
+  {
+    slug: "code-layout",
+    title: "配布コードの構成",
+    flow: "knowledge",
+    kind: "teach",
+    minutes: 1,
+    role: "事前知識: 事故の原因を探すために、コードの分け方を知ります。",
+  },
+  {
+    slug: "problems",
+    title: "事故をたどって見つかった8つの問題",
+    flow: "solution",
+    kind: "review",
+    minutes: 1,
+    role: "解決策: まず直す場所を決めます。事故の原因を、5つの段に分けて置きます。",
+  },
+  {
+    slug: "roadmap",
+    title: "どの回で、どの問題を直すか",
+    flow: "solution",
+    kind: "review",
+    minutes: 1,
+    role: "解決策: 直す順番を確かめます。置いた問題を、どの回で直すかを見ます。",
+  },
+  {
+    slug: "forecast",
+    title: "自分の現場なら、どこで気づけるか",
+    flow: "work",
+    kind: "review",
+    minutes: 1,
+    role: "業務で考える: 2件の事故に、どの段のどの仕組みで気づけたかを予想します。",
+  },
+  {
+    slug: "demo-screen",
+    title: "デモ画面を手元で動かす",
+    flow: "advanced",
+    kind: "advanced",
+    minutes: 0,
+    role: "あとで読む: 同じ操作と値を、手元のデモ画面で確かめます。",
+  },
+] as const satisfies readonly SessionPage[];

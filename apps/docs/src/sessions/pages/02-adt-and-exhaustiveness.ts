@@ -89,6 +89,6 @@ export const sessionPages = [
     flow: "work",
     kind: "review",
     minutes: 1,
-    role: "業務で考える: 機械で止めるものと人が確かめるものを分けて、自分の業務に当てはめます。",
+    role: "業務で考える: 機械が検出するものと人が確かめるものを分けて、自分の業務に当てはめます。",
   },
 ] as const satisfies readonly SessionPage[];

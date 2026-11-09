@@ -34,7 +34,7 @@
     "build:deps-snapshot": "node apps/docs/scripts/build-deps-snapshot.mjs --out apps/docs/dist",
     "verify:urls": "node scripts/verify-urls.mjs",
     "verify:exercises": "node scripts/verify-exercises.mjs",
-    "verify:guard": "node packages/exercise-guard/src/cli.mjs verify --root examples/session-02-solution && node packages/exercise-guard/src/cli.mjs verify --root examples/session-03-solution",
+    "verify:guard": "node packages/exercise-guard/src/cli.mjs verify --root examples/session-01-solution && node packages/exercise-guard/src/cli.mjs verify --root examples/session-02-solution && node packages/exercise-guard/src/cli.mjs verify --root examples/session-03-solution",
     "typecheck": "pnpm --filter @fp-with-ts/clinic-web typecheck && pnpm --filter './examples/session-*' typecheck && pnpm typecheck:continuity && pnpm --filter @fp-with-ts/clinic-final typecheck && pnpm --filter @fp-with-ts/exercise-guard typecheck && pnpm --filter @fp-with-ts/docs typecheck && tsc -p worker/tsconfig.json --noEmit",
     "typecheck:continuity": "pnpm --filter @fp-with-ts/start-examination-continuity typecheck",
     "preview": "pnpm --filter @fp-with-ts/docs preview",

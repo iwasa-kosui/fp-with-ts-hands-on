@@ -97,7 +97,7 @@ export const workspace = ({
 } as const) satisfies SessionWorkspace;
 
 export const promisesHref =
-  "/sessions/01-state-transitions/#peer-review-promises";
+  "/sessions/01-state-transitions/peer-review/#peer-review-promises";
 
 export const navigation = ({
   previous: {

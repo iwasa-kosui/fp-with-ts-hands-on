@@ -40,7 +40,7 @@ const exercisePages = Object.values(pageModules)
   );
 
 const terminalPackageJsonSources = Object.entries(
-  import.meta.glob("../../../../examples/{session-01,session-02,session-02-solution,session-03,session-03-solution,session-04,session-06}/package.json", {
+  import.meta.glob("../../../../examples/{session-01,session-01-solution,session-02,session-02-solution,session-03,session-03-solution,session-04,session-06}/package.json", {
     eager: true,
     query: "?raw",
     import: "default",
@@ -219,7 +219,7 @@ describe("Code Explorer project files", () => {
   });
 
   it("covers every terminal workspace with the dependency snapshot built from the terminal workspaces and session-03-solution", () => {
-    expect(terminalPackageJsonSources).toHaveLength(7);
+    expect(terminalPackageJsonSources).toHaveLength(8);
     const dependencies = snapshotDependenciesOf(
       mergedSnapshotPackageJsonFor(terminalPackageJsonSources, {
         "exercise:06": "pnpm exercise",
@@ -412,7 +412,7 @@ describe("Code Explorer project files", () => {
 
   it("leaves the snapshots without a guard config without exercise-guard files or script", () => {
     for (const snapshot of projectSnapshots.filter(
-      (name) => name !== "session-03-solution",
+      (name) => name !== "session-01-solution" && name !== "session-03-solution",
     )) {
       const files = projectFilesForSnapshot(snapshot);
 
@@ -429,25 +429,28 @@ describe("Code Explorer project files", () => {
     }
   });
 
-  it("gives session-03-solution the exercise-guard vendor files and the guard script", () => {
-    const files = projectFilesForSnapshot("session-03-solution");
+  it.each(["session-01-solution", "session-03-solution"] as const)(
+    "gives %s the exercise-guard vendor files and the guard script",
+    (snapshot) => {
+      const files = projectFilesForSnapshot(snapshot);
 
-    expect(files["exercises/guard/guard.config.mjs"]).toBeDefined();
-    expect(
-      Object.keys(files).filter((file) =>
-        file.startsWith("vendor/exercise-guard/"),
-      ),
-    ).toEqual(
-      expect.arrayContaining([
-        "vendor/exercise-guard/cli.mjs",
-        "vendor/exercise-guard/judge.mjs",
-        "vendor/exercise-guard/render.mjs",
-      ]),
-    );
-    expect(JSON.parse(files["package.json"]!).scripts?.guard).toBe(
-      "node vendor/exercise-guard/cli.mjs",
-    );
-  });
+      expect(files["exercises/guard/guard.config.mjs"]).toBeDefined();
+      expect(
+        Object.keys(files).filter((file) =>
+          file.startsWith("vendor/exercise-guard/"),
+        ),
+      ).toEqual(
+        expect.arrayContaining([
+          "vendor/exercise-guard/cli.mjs",
+          "vendor/exercise-guard/judge.mjs",
+          "vendor/exercise-guard/render.mjs",
+        ]),
+      );
+      expect(JSON.parse(files["package.json"]!).scripts?.guard).toBe(
+        "node vendor/exercise-guard/cli.mjs",
+      );
+    },
+  );
 
   it.each([
     {
