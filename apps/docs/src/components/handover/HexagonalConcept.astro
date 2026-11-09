@@ -1,0 +1,603 @@
+---
+import StepControls from "../stepper/StepControls.astro";
+
+const frames = [
+  {
+    caption:
+      "業務の決まりを真ん中に置き、画面やデータベースとは出入口を通してつなぎます。矢印は依存の向きで、すべて内側を向きます。内側が外側に求める処理を型で表した出入口を port、外側でつなぐコードをアダプタと呼びます。",
+    alt: "中央に六角形が2重にあります。内側の六角形が業務の決まり、それを囲む六角形が手順です。画面とデータベースは、アダプタを挟んで外側にあります。画面側のアダプタから手順の入口へ、データベース側のアダプタから port へ、手順から業務の決まりへ、矢印がすべて内側を向いています。図には、内側、外側、外の世界の札が付いています。",
+  },
+  {
+    caption:
+      "依頼は画面から入り、データベースへ向かって外へ出ていきます。それでも矢印は内向きのままです。内側は port の型を決めるだけで、外側がその型を満たします。データベースの都合が変わっても、内側を直さずに済みます。",
+    alt: "画面からデータベースまで、アダプタと六角形を通り抜ける点線の矢印が加わっています。点線は依頼の流れです。依存の矢印の向きは、内側を向いたままです。",
+  },
+  {
+    caption:
+      "配布コードのディレクトリを重ねます。<code>domain/</code> と <code>useCase/</code> が内側、<code>adaptor/</code> が外側です。<code>app.ts</code> は内側と外側を組み立てます。",
+    alt: "ディレクトリの札が付いています。業務の決まりは domain/、手順は useCase/、画面側のアダプタは adaptor/primary/web/、データベース側のアダプタは adaptor/secondary/sqlite/ です。",
+  },
+  {
+    caption:
+      "S00 のコードには、この形に合わない所が1つあります。port に当たる型 <code>AppointmentRepository</code> が外側の <code>adaptor/secondary/sqlite/</code> にあり、内側の <code>useCase/</code> がそれを import しています。S06 では、この型を内側に移します。",
+    alt: "手順からデータベース側のアダプタへ向かう破線の矢印が加わっています。矢印は外側を向いていて、AppointmentRepository の型を内側の手順が外側から import していることを表します。port の印は、中が空になっています。",
+  },
+] as const;
+
+const words = {
+  screen: "画面",
+  adapter: "アダプタ",
+  database: "データベース",
+  procedure: "手順",
+  rule: "業務の決まり",
+  entry: "手順の入口",
+  port: "port",
+  exception: "AppointmentRepository",
+  core: "内側",
+  edge: "外側",
+  world: "外の世界",
+} as const;
+
+const directories = {
+  rule: "domain/",
+  procedure: "useCase/",
+  entry: "adaptor/primary/web/",
+  store: "adaptor/secondary/sqlite/",
+} as const;
+
+type Point = readonly [number, number];
+type Direction = "right" | "left" | "down" | "up";
+type Box = Readonly<{ x: number; y: number; w: number; h: number; textY: number }>;
+type Place = Readonly<{ x: number; y: number; anchor: "start" | "middle" | "end" }>;
+
+const SLOPE = Math.sqrt(3) / 3;
+const HEIGHT_RATIO = Math.sqrt(3) / 2;
+const MARK_SIZE = 10;
+const TAG_H = 18;
+const HEAD = 7;
+const unit: Readonly<Record<Direction, Point>> = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] };
+
+const hexPoints = (cx: number, cy: number, radius: number, startDegree: number) =>
+  Array.from({ length: 6 }, (_, k) => {
+    const angle = ((startDegree + 60 * k) * Math.PI) / 180;
+    return `${(cx + radius * Math.cos(angle)).toFixed(1)},${(cy + radius * Math.sin(angle)).toFixed(1)}`;
+  }).join(" ");
+
+const headPath = ([x, y]: Point, direction: Direction) => {
+  const [dx, dy] = unit[direction];
+  const bx = x - dx * HEAD;
+  const by = y - dy * HEAD;
+  return `M ${bx - dy * 4} ${by + dx * 4} L ${x} ${y} L ${bx + dy * 4} ${by - dx * 4} z`;
+};
+
+const arrow = (from: Point, tip: Point, direction: Direction) => {
+  const [dx, dy] = unit[direction];
+  return { line: `M ${from[0]} ${from[1]} L ${tip[0] - dx * HEAD} ${tip[1] - dy * HEAD}`, head: headPath(tip, direction) };
+};
+
+const tagWidth = (text: string, fontSize: number) => Math.ceil(text.length * 0.6 * fontSize + 12);
+const tag = (text: string, cx: number, y: number, fontSize: number) => ({ text, cx, y, w: tagWidth(text, fontSize) });
+const exceptionLines = words.exception.match(/[A-Z][a-z]+/g) ?? [words.exception];
+
+const horizontal = (() => {
+  const cx = 360;
+  const cy = 150;
+  const rOut = 120;
+  const rIn = 58;
+  const boxY = 124;
+  const boxH = 76;
+  const box = (x: number, w: number): Box => ({ x, y: boxY, w, h: boxH, textY: boxY + 24 });
+  const screen = box(4, 92);
+  const adapterIn = box(110, 88);
+  const adapterOut = box(522, 88);
+  const database = box(624, 92);
+  const mid = (b: Box) => b.x + b.w / 2;
+  const hexTop = cy - rOut * HEIGHT_RATIO;
+  const innerTop = cy - rIn * HEIGHT_RATIO;
+  const portY = 140;
+  const entryMark: Point = [cx - rOut + (cy - portY) * SLOPE, portY];
+  const portMark: Point = [cx + rOut - (cy - portY) * SLOPE, portY];
+  const requestY = 164;
+  const exceptionY = 65;
+  const exceptionX = adapterOut.x + 68;
+  const fs = 14;
+  return {
+    id: "h",
+    viewBox: "0 0 720 290",
+    boxes: { screen, adapterIn, adapterOut, database },
+    outerHex: hexPoints(cx, cy, rOut, 0),
+    innerHex: hexPoints(cx, cy, rIn, 0),
+    procedure: { x: cx, y: 70, anchor: "middle" } as Place,
+    rule: { x: cx, y: cy - 4, anchor: "middle" } as Place,
+    entryMark,
+    portMark,
+    entryLabel: { x: entryMark[0] + 4, y: 112, anchor: "end" } as Place,
+    portLabel: { x: portMark[0] - 4, y: 112, anchor: "start" } as Place,
+    arrows: [
+      arrow([adapterIn.x + adapterIn.w, portY], [entryMark[0] - MARK_SIZE / 2, portY], "right"),
+      arrow([adapterOut.x, portY], [portMark[0] + MARK_SIZE / 2, portY], "left"),
+      arrow([cx, 75], [cx, innerTop], "down"),
+    ],
+    request: {
+      line: `M ${screen.x + screen.w} ${requestY} L ${database.x - HEAD} ${requestY}`,
+      head: headPath([database.x, requestY], "right"),
+    },
+    exception: {
+      line: `M ${cx + 22} ${exceptionY} H ${exceptionX} V ${boxY - HEAD}`,
+      head: headPath([exceptionX, boxY], "down"),
+      label: { x: cx + 80, y: exceptionY - 8, anchor: "start" } as Place,
+      lines: [words.exception],
+      lineHeight: 0,
+    },
+    tags: [
+      tag(directories.rule, cx, cy + rIn * HEIGHT_RATIO - TAG_H / 2, fs),
+      tag(directories.procedure, cx, cy + rOut * HEIGHT_RATIO - TAG_H / 2, fs),
+      tag(directories.entry, mid(adapterIn), boxY + boxH + 8, fs),
+      tag(directories.store, mid(adapterOut), boxY + boxH + 8, fs),
+    ],
+    tiers: [
+      { text: words.world, x: mid(screen), y: boxY - 8, anchor: "middle" },
+      { text: words.world, x: mid(database), y: boxY - 8, anchor: "middle" },
+      { text: words.edge, x: mid(adapterIn), y: boxY - 8, anchor: "middle" },
+      { text: words.edge, x: mid(adapterOut), y: boxY - 8, anchor: "middle" },
+      { text: words.core, x: cx, y: hexTop - 8, anchor: "middle" },
+    ] as readonly (Place & { text: string })[],
+  };
+})();
+
+const vertical = (() => {
+  const cx = 200;
+  const rOut = 112;
+  const rIn = 60;
+  const smallH = 40;
+  const wideH = 56;
+  const gap = 34;
+  const outerBox = (y: number): Box => ({ x: cx - 85, y, w: 170, h: smallH, textY: y + 25 });
+  const adapterBox = (y: number): Box => ({ x: cx - 112, y, w: 224, h: wideH, textY: y + 20 });
+  const screen = outerBox(8);
+  const adapterIn = adapterBox(screen.y + screen.h + 30);
+  const hexTop = adapterIn.y + adapterIn.h + gap;
+  const cy = hexTop + rOut;
+  const hexBottom = cy + rOut;
+  const adapterOut = adapterBox(hexBottom + gap);
+  const database = outerBox(adapterOut.y + adapterOut.h + 30);
+  const innerTop = cy - rIn;
+  const requestX = cx + 75;
+  const exceptionX = cx - 72;
+  const fs = 13;
+  const mid = (b: Box) => b.y + b.h / 2 + 4;
+  return {
+    id: "v",
+    viewBox: `0 0 360 ${database.y + database.h + 8}`,
+    boxes: { screen, adapterIn, adapterOut, database },
+    outerHex: hexPoints(cx, cy, rOut, 30),
+    innerHex: hexPoints(cx, cy, rIn, 30),
+    procedure: { x: cx, y: cy - 85, anchor: "middle" } as Place,
+    rule: { x: cx, y: cy - 4, anchor: "middle" } as Place,
+    entryMark: [cx, hexTop] as Point,
+    portMark: [cx, hexBottom] as Point,
+    entryLabel: { x: cx - 12, y: hexTop - 8, anchor: "end" } as Place,
+    portLabel: { x: cx + 12, y: hexBottom + 22, anchor: "start" } as Place,
+    arrows: [
+      arrow([cx, adapterIn.y + adapterIn.h], [cx, hexTop - MARK_SIZE / 2], "down"),
+      arrow([cx, adapterOut.y], [cx, hexBottom + MARK_SIZE / 2], "up"),
+      arrow([cx, cy - 80], [cx, innerTop], "down"),
+    ],
+    request: {
+      line: `M ${requestX} ${screen.y + screen.h} L ${requestX} ${database.y - HEAD}`,
+      head: headPath([requestX, database.y], "down"),
+    },
+    exception: {
+      line: `M ${exceptionX} ${cy + 10} V ${adapterOut.y - HEAD}`,
+      head: headPath([exceptionX, adapterOut.y], "down"),
+      label: { x: exceptionX - 8, y: adapterOut.y - 16 - 14 * (exceptionLines.length - 1), anchor: "end" } as Place,
+      lines: exceptionLines,
+      lineHeight: 14,
+    },
+    tags: [
+      tag(directories.rule, cx, cy + 14, fs),
+      tag(directories.procedure, cx, cy + 68, fs),
+      tag(directories.entry, cx, adapterIn.y + 30, fs),
+      tag(directories.store, cx, adapterOut.y + 30, fs),
+    ],
+    tiers: [
+      { text: words.world, x: 4, y: mid(screen), anchor: "start" },
+      { text: words.edge, x: 4, y: mid(adapterIn), anchor: "start" },
+      { text: words.core, x: 4, y: cy + 4, anchor: "start" },
+      { text: words.edge, x: 4, y: mid(adapterOut), anchor: "start" },
+      { text: words.world, x: 4, y: mid(database), anchor: "start" },
+    ] as readonly (Place & { text: string })[],
+  };
+})();
+
+const layouts = [horizontal, vertical];
+const boxList = (layout: (typeof layouts)[number]) => [
+  { box: layout.boxes.screen, text: words.screen, outside: true },
+  { box: layout.boxes.database, text: words.database, outside: true },
+  { box: layout.boxes.adapterIn, text: words.adapter, outside: false },
+  { box: layout.boxes.adapterOut, text: words.adapter, outside: false },
+];
+---
+
+<figure class="hx" data-hexagonal aria-label="ヘキサゴナルアーキテクチャの考え方を示す図">
+  <StepControls />
+
+  <div aria-live="polite">
+    <ol class="hx__frames">
+      {frames.map((frame) => (
+        <li data-frame data-alt={frame.alt}>
+          <p class="hx__caption" set:html={frame.caption} />
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  {layouts.map((layout) => (
+    <svg class={`hx__svg hx__svg--${layout.id}`} viewBox={layout.viewBox} role="img" aria-label={frames[0].alt} data-hx-svg>
+      {boxList(layout).map(({ box, text, outside }) => (
+        <g class={outside ? "hx__outside" : "hx__adapter"}>
+          <rect x={box.x} y={box.y} width={box.w} height={box.h} rx="6"></rect>
+          <text x={box.x + box.w / 2} y={box.textY} text-anchor="middle" class="hx__t-box">{text}</text>
+        </g>
+      ))}
+
+      {layout.tiers.map((tier) => (
+        <text x={tier.x} y={tier.y} text-anchor={tier.anchor} class="hx__t-tier">{tier.text}</text>
+      ))}
+
+      <polygon points={layout.outerHex} class="hx__hex hx__hex--outer"></polygon>
+      <polygon points={layout.innerHex} class="hx__hex hx__hex--inner"></polygon>
+      <text x={layout.procedure.x} y={layout.procedure.y} text-anchor={layout.procedure.anchor} class="hx__t-hex">{words.procedure}</text>
+      <text x={layout.rule.x} y={layout.rule.y} text-anchor={layout.rule.anchor} class="hx__t-hex">{words.rule}</text>
+
+      {layout.arrows.map((item) => (
+        <>
+          <path d={item.line} class="hx__dep"></path>
+          <path d={item.head} class="hx__dep-head"></path>
+        </>
+      ))}
+
+      <rect x={layout.entryMark[0] - MARK_SIZE / 2} y={layout.entryMark[1] - MARK_SIZE / 2} width={MARK_SIZE} height={MARK_SIZE} class="hx__mark"></rect>
+      <rect x={layout.portMark[0] - MARK_SIZE / 2} y={layout.portMark[1] - MARK_SIZE / 2} width={MARK_SIZE} height={MARK_SIZE} class="hx__mark hx__mark--port"></rect>
+      <text x={layout.entryLabel.x} y={layout.entryLabel.y} text-anchor={layout.entryLabel.anchor} class="hx__t-note">{words.entry}</text>
+      <text x={layout.portLabel.x} y={layout.portLabel.y} text-anchor={layout.portLabel.anchor} class="hx__t-note">{words.port}</text>
+
+      <g class="hx__layer hx__request">
+        <path d={layout.request.line} class="hx__request-line"></path>
+        <path d={layout.request.head} class="hx__request-head"></path>
+      </g>
+
+      <g class="hx__layer hx__exception">
+        <path d={layout.exception.line} class="hx__exception-line"></path>
+        <path d={layout.exception.head} class="hx__exception-head"></path>
+        <text x={layout.exception.label.x} y={layout.exception.label.y} text-anchor={layout.exception.label.anchor} class="hx__t-exception">
+          {layout.exception.lines.map((line, index) => (
+            <tspan x={layout.exception.label.x} dy={index === 0 ? 0 : layout.exception.lineHeight}>{line}</tspan>
+          ))}
+        </text>
+      </g>
+
+      <g class="hx__layer hx__tags">
+        {layout.tags.map((item) => (
+          <g class="hx__tag">
+            <rect x={item.cx - item.w / 2} y={item.y} width={item.w} height={TAG_H} rx="4"></rect>
+            <text x={item.cx} y={item.y + 13} text-anchor="middle" class="hx__t-tag">{item.text}</text>
+          </g>
+        ))}
+      </g>
+    </svg>
+  ))}
+
+  <p class="hx__legend">
+    <span class="hx__legend-item"><span class="hx__legend-arrow" aria-hidden="true">→</span> 依存の向き（import）</span>
+    <span class="hx__legend-item hx__legend-flow"><span class="hx__legend-dots" aria-hidden="true">┈→</span> 依頼の流れ</span>
+  </p>
+</figure>
+
+<script>
+  import { mountStepper } from "../stepper/stepper";
+
+  document.querySelectorAll<HTMLElement>("[data-hexagonal]").forEach((root) => {
+    const svgs = [...root.querySelectorAll<SVGSVGElement>("[data-hx-svg]")];
+    const alts = [...root.querySelectorAll<HTMLElement>("[data-frame]")].map((panel) => panel.dataset.alt ?? "");
+    mountStepper({
+      root,
+      onStep: (step) => {
+        svgs.forEach((svg) => {
+          svg.dataset.scene = String(step + 1);
+          svg.setAttribute("aria-label", alts[step] ?? "");
+        });
+      },
+    });
+  });
+</script>
+
+<style>
+  .hx {
+    min-width: 0;
+    max-width: 100%;
+    margin: 1rem 0;
+  }
+
+  .hx__caption {
+    margin: 0;
+    font-weight: 700;
+    line-height: 1.7;
+  }
+
+  .hx__frames {
+    margin: 0.75rem 0 0;
+    padding-inline-start: 1.5rem;
+  }
+
+  .hx__frames > li {
+    min-width: 0;
+  }
+
+  .hx__frames > li + li {
+    margin-top: 0.5rem;
+  }
+
+  .hx__svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0.5rem auto 0;
+  }
+
+  .hx__svg--h {
+    --hx-fs-box: 13px;
+    --hx-fs-hex: 14px;
+    --hx-fs-note: 12px;
+    --hx-fs-tier: 12px;
+    --hx-fs-tag: 13px;
+    --hx-fs-exception: 12px;
+    max-height: clamp(15rem, 52vh, 26rem);
+  }
+
+  .hx__svg--v {
+    --hx-fs-box: 13px;
+    --hx-fs-hex: 14px;
+    --hx-fs-note: 13px;
+    --hx-fs-tier: 13px;
+    --hx-fs-tag: 13px;
+    --hx-fs-exception: 13px;
+    display: none;
+    max-width: 26rem;
+  }
+
+  .hx__outside rect {
+    fill: var(--role-surface);
+    stroke: var(--role-border);
+    stroke-width: 1.5;
+    stroke-dasharray: 5 3;
+  }
+
+  .hx__adapter rect {
+    fill: var(--role-surface);
+    stroke: var(--role-border);
+    stroke-width: 2;
+  }
+
+  .hx__hex {
+    stroke: var(--role-accent);
+    stroke-width: 2;
+    stroke-linejoin: round;
+  }
+
+  .hx__hex--outer {
+    fill: var(--role-surface);
+  }
+
+  .hx__hex--inner {
+    fill: var(--role-accent-soft);
+  }
+
+  .hx__mark {
+    fill: var(--role-accent);
+    stroke: var(--role-accent);
+    stroke-width: 2;
+  }
+
+  .hx__svg text {
+    fill: var(--role-text);
+    font-weight: 700;
+  }
+
+  .hx__t-box {
+    font-size: var(--hx-fs-box);
+  }
+
+  .hx__t-hex {
+    font-size: var(--hx-fs-hex);
+  }
+
+  .hx__t-note {
+    font-size: var(--hx-fs-note);
+  }
+
+  .hx__svg .hx__t-tier {
+    fill: var(--role-muted);
+    font-size: var(--hx-fs-tier);
+    font-weight: 600;
+  }
+
+  .hx__t-tag,
+  .hx__t-exception {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  }
+
+  .hx__t-tag {
+    font-size: var(--hx-fs-tag);
+  }
+
+  .hx__svg .hx__t-exception {
+    fill: var(--role-negative);
+    font-size: var(--hx-fs-exception);
+  }
+
+  .hx__dep {
+    fill: none;
+    stroke: var(--role-accent);
+    stroke-width: 2.2;
+  }
+
+  .hx__dep-head {
+    fill: var(--role-accent);
+  }
+
+  .hx__request-line {
+    fill: none;
+    stroke: var(--role-text);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 0.1 7;
+  }
+
+  .hx__request-head {
+    fill: var(--role-text);
+  }
+
+  .hx__exception-line {
+    fill: none;
+    stroke: var(--role-negative);
+    stroke-width: 2.5;
+    stroke-dasharray: 6 4;
+  }
+
+  .hx__exception-head {
+    fill: var(--role-negative);
+  }
+
+  .hx__tag rect {
+    fill: var(--role-surface);
+    stroke: var(--role-accent);
+    stroke-width: 1.5;
+  }
+
+  .hx__request,
+  .hx__exception {
+    opacity: 0;
+  }
+
+  .hx__svg[data-scene="2"] .hx__request,
+  .hx__svg[data-scene="4"] .hx__exception {
+    opacity: 1;
+  }
+
+  .hx__svg[data-scene="1"] .hx__tags,
+  .hx__svg[data-scene="2"] .hx__tags {
+    opacity: 0;
+  }
+
+  .hx__svg[data-scene="4"] .hx__mark--port {
+    fill: var(--role-surface);
+    stroke: var(--role-negative);
+  }
+
+  .hx__legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem 1.5rem;
+    margin: 0.5rem 0 0;
+    color: var(--role-text);
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .hx__legend-arrow {
+    color: var(--role-accent);
+  }
+
+  .hx[data-ready]:not([data-step="1"]) .hx__legend-flow {
+    visibility: hidden;
+  }
+
+  .hx[data-ready] .hx__frames {
+    display: grid;
+    padding-inline-start: 0;
+    list-style: none;
+  }
+
+  .hx[data-ready] .hx__frames > li {
+    grid-area: 1 / 1;
+    margin: 0;
+  }
+
+  .hx[data-ready] .hx__frames > li[hidden] {
+    display: block;
+    visibility: hidden;
+  }
+
+  .hx[data-ready] .hx__layer,
+  .hx[data-ready] .hx__mark {
+    transition: opacity 0.4s, fill 0.4s, stroke 0.4s;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hx[data-ready] .hx__svg[data-scene="2"] .hx__request-line {
+      animation: hx-flow 2.4s linear 1 both;
+    }
+  }
+
+  @keyframes hx-flow {
+    from {
+      stroke-dashoffset: 0;
+    }
+
+    to {
+      stroke-dashoffset: -213;
+    }
+  }
+
+  @media (max-width: 56rem) {
+    .hx__svg--h {
+      --hx-fs-box: 15px;
+      --hx-fs-hex: 16px;
+      --hx-fs-note: 14px;
+      --hx-fs-tier: 14px;
+      --hx-fs-tag: 14px;
+      --hx-fs-exception: 13.5px;
+    }
+  }
+
+  @media (max-height: 700px) {
+    .hx {
+      margin: 0.5rem 0;
+    }
+
+    .hx :global(.step-controls) {
+      margin-bottom: 0.375rem;
+    }
+
+    .hx__frames {
+      margin-top: 0.375rem;
+    }
+
+    .hx__svg {
+      margin-top: 0.25rem;
+    }
+
+    .hx__svg--h {
+      max-height: clamp(14rem, 44vh, 24rem);
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .hx__svg--h {
+      display: none;
+    }
+
+    .hx__svg--v {
+      display: block;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hx[data-ready] * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>
