@@ -296,7 +296,7 @@ describe("GuardExercise", () => {
     await settle();
   });
 
-  it("puts the guide in a closed details under the table once there is a result", async () => {
+  it("puts the guide in a closed details above the table once there is a result", async () => {
     const { host } = await mountExercise({
       guide: { title: "案内の題名", steps: ["手順Aです。", "手順Bです。"] },
     });
@@ -318,14 +318,14 @@ describe("GuardExercise", () => {
     expect(
       host.querySelector(".guard-exercise__table-area")?.compareDocumentPosition(guideDetails!) ??
         0,
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    ).toBe(Node.DOCUMENT_POSITION_PRECEDING);
   });
 
   it("keeps the table terms inside a details element while the table is rendered", async () => {
     const { host } = await mountExercise();
     await click(action(host, "run-guard"));
 
-    const terms = host.querySelector("details");
+    const terms = host.querySelector<HTMLDetailsElement>(".guard-exercise__terms");
     expect(terms?.open).toBe(false);
     expect(terms?.querySelector("summary")).not.toBeNull();
     expect(terms?.textContent?.length ?? 0).toBeGreaterThan(
@@ -344,7 +344,7 @@ describe("GuardExercise", () => {
     try {
       const { host } = await mountExercise();
       await click(action(host, "run-guard"));
-      const terms = host.querySelector("details")!;
+      const terms = host.querySelector<HTMLDetailsElement>(".guard-exercise__terms")!;
 
       await act(async () => {
         terms.dispatchEvent(new Event("toggle"));

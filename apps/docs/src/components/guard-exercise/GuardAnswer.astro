@@ -40,6 +40,8 @@ const languageOf = (path: string) => (path.endsWith(".mjs") ? "js" : "ts");
     if (!(target instanceof Element)) return;
     const close = target.closest("[data-guard-answer-close]");
     const details = close?.closest("details");
-    if (details !== null && details !== undefined) details.open = false;
+    if (details === null || details === undefined) return;
+    details.open = false;
+    details.querySelector<HTMLElement>(":scope > summary")?.focus();
   });
 </script>

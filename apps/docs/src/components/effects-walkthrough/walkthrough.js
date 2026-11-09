@@ -28,7 +28,7 @@ for (const root of roots) {
   const setDisabled = (el, value) => el.setAttribute("aria-disabled", String(value));
 
   const fitLive = () => {
-    if (reduced.matches || live.offsetWidth === 0) return;
+    if (live.offsetWidth === 0) return;
     const probe = live.cloneNode(false);
     probe.removeAttribute("aria-live");
     probe.removeAttribute("data-walk-live");

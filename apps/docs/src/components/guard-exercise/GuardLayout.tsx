@@ -173,6 +173,10 @@ export const GuardLayout = ({
             </div>
           ) : (
             <>
+              <details className="guard-exercise__guide-details">
+                <summary>{activeGuide.title}</summary>
+                <GuideSteps steps={activeGuide.steps} />
+              </details>
               <ResultTable
                 result={guard.result}
                 rows={rows}
@@ -182,10 +186,6 @@ export const GuardLayout = ({
                 passedNext={guide?.passedNext}
                 onLimitationChange={guard.setLimitation}
               />
-              <details className="guard-exercise__guide-details">
-                <summary>{activeGuide.title}</summary>
-                <GuideSteps steps={activeGuide.steps} />
-              </details>
             </>
           )}
         </div>

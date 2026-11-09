@@ -4,7 +4,9 @@ type Options = Readonly<{
   intervalMs?: number;
 }>;
 
-export const mountStepper = ({ root, onStep, intervalMs = 6000 }: Options): void => {
+type Stepper = Readonly<{ pause: () => void }>;
+
+export const mountStepper = ({ root, onStep, intervalMs = 6000 }: Options): Stepper | undefined => {
   if (root.dataset.ready !== undefined) return;
   const panels = [...root.querySelectorAll<HTMLElement>("[data-frame]")];
   const controls = root.querySelector<HTMLElement>("[data-controls]");
@@ -78,4 +80,5 @@ export const mountStepper = ({ root, onStep, intervalMs = 6000 }: Options): void
   measureControls();
   if (typeof ResizeObserver !== "undefined") new ResizeObserver(measureControls).observe(controls);
   show(0);
+  return { pause: stop };
 };
