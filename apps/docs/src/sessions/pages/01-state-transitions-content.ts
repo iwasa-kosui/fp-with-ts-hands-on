@@ -15,9 +15,8 @@ export const session: SessionSummary = {
     minutes: 3,
     pickCount: 2,
     questions: [
-      "検出されなかった変更は何を変えたのか",
-      "その変更を検出するには何を追加すればよいか",
-      "追加した仕組みで誤検知は発生しないか",
+      "`startExamination` は `CheckedIn` だけを受け取り、会計済み・キャンセル済みを型で拒否しますか。",
+      "`recordPayment` は `AwaitingPayment` だけを受け取り、診察結果の記録前には会計できない型ですか。",
     ],
   },
   solutionSnapshot: "session-01-solution",
