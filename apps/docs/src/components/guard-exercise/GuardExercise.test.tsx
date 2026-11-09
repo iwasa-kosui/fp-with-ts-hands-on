@@ -645,13 +645,31 @@ describe("GuardExercise", () => {
     await settle();
 
     expect(host.querySelector('[role="status"] progress')).not.toBeNull();
-    expect(host.textContent).toContain(phaseLabels.installing);
+    expect(host.querySelector(".guard-exercise__progress")?.textContent).toContain(
+      phaseLabels.installing,
+    );
     expect(action(host, "run-guard")?.disabled).toBe(true);
 
     await act(async () => started.resolve());
     await settle();
 
     expect(action(host, "run-guard")?.disabled).toBe(false);
+    expect(row(host, "B1-any-parser")?.textContent).toContain("すり抜け");
+  });
+
+  it("shows the judging step once the session is ready and the command is waiting", async () => {
+    const command = deferred<number>();
+    const { host } = await mountExercise({ runCommand: () => command.promise });
+
+    await click(action(host, "run-guard"));
+
+    expect(host.querySelector(".guard-exercise__progress")?.textContent).toBe(
+      "検出を確かめています。",
+    );
+
+    await act(async () => command.resolve(1));
+    await settle();
+
     expect(row(host, "B1-any-parser")?.textContent).toContain("すり抜け");
   });
 
@@ -735,10 +753,44 @@ describe("GuardExercise", () => {
 
     await click(action(host, "run-guard"));
 
-    expect(host.querySelector('[role="alert"]')?.textContent).toContain(
-      "結果を読み出せませんでした",
-    );
+    const alert = host.querySelector('[role="alert"]')?.textContent;
+    expect(alert).toContain("結果を読み出せませんでした");
+    expect(alert).toContain("もう一度");
+    expect(alert).not.toContain("ターミナル");
     expect(action(host, "run-guard")?.disabled).toBe(false);
+  });
+
+  it("reports a guard that timed out without a result, and disposes the session", async () => {
+    const { host, session } = await mountExercise({
+      exitCode: 124,
+      resultText: undefined,
+    });
+
+    await click(action(host, "run-guard"));
+
+    const alert = host.querySelector('[role="alert"]')?.textContent;
+    expect(alert).toContain("時間内に終わりませんでした");
+    expect(alert).not.toContain("ターミナル");
+    expect(session.dispose).toHaveBeenCalledOnce();
+  });
+
+  it("labels the table left beside a failed run as the previous result", async () => {
+    const { host } = await mountExercise({
+      readResults: [JSON.stringify(sampleGuardResult), undefined],
+    });
+
+    await click(action(host, "run-guard"));
+
+    expect(host.querySelector("table")).not.toBeNull();
+    expect(host.querySelector(".guard-exercise__badge")).toBeNull();
+
+    await click(action(host, "run-guard"));
+
+    expect(host.querySelector('[role="alert"]')).not.toBeNull();
+    expect(host.querySelector("table")).not.toBeNull();
+    expect(host.querySelector(".guard-exercise__badge")?.textContent).toBe(
+      "前回の結果",
+    );
   });
 
   it("reports a guard that ended with a configuration error", async () => {
@@ -932,6 +984,56 @@ describe("GuardExercise", () => {
       await settleUntil(() => host.querySelector("table") !== null);
 
       expect(runCommand).toHaveBeenCalledTimes(2);
+      expect(headlinePassed(host)).toBe("true");
+    });
+
+    it("shows the startup phase while the runtime is recreated, then the rejudging step", async () => {
+      const secondStart = deferred<void>();
+      const secondCommand = deferred<number>();
+      let starts = 0;
+      let commands = 0;
+      const runCommand = vi.fn(async () => {
+        commands += 1;
+        if (commands === 1) {
+          setVisibility("hidden");
+          return 1;
+        }
+        return secondCommand.promise;
+      });
+      const { host } = await mountExercise({
+        runCommand,
+        readResults: [undefined, JSON.stringify(passed)],
+        onStart: async (request) => {
+          starts += 1;
+          if (starts === 2) {
+            request.onPhase("installing");
+            await secondStart.promise;
+          }
+        },
+      });
+      const progressText = () =>
+        host.querySelector(".guard-exercise__progress")?.textContent;
+
+      await click(action(host, "run-guard"));
+      await settleUntil(() => commands === 1);
+      await settle();
+      await showTab();
+      await settleUntil(() => starts === 2);
+
+      expect(progressText()).toBe(phaseLabels.installing);
+      expect(progressText()).not.toBe("検出を確かめています。");
+      expect(progressText()).not.toContain("確かめ直しています");
+
+      await act(async () => secondStart.resolve());
+      await settleUntil(() => commands === 2);
+
+      expect(progressText()).toBe(
+        "タブが隠れていた間に時間切れになったため、確かめ直しています。",
+      );
+
+      await act(async () => secondCommand.resolve(1));
+      await settleUntil(() => host.querySelector("table") !== null);
+
       expect(headlinePassed(host)).toBe("true");
     });
 

@@ -168,16 +168,17 @@ export const useGuardRun = ({
     setStatus({ kind: "running", step: "starting" });
     try {
       for (let attempt = 0; ; attempt += 1) {
+        if (mounted.current) setStatus({ kind: "running", step: "starting" });
+        const session = await latest.current.acquireSession();
+        const { runCommand, readFile } = session;
+        if (runCommand === undefined || readFile === undefined) {
+          throw new Error("この実行環境では検出を確かめられません。");
+        }
         if (mounted.current) {
           setStatus({
             kind: "running",
             step: attempt === 0 ? "judging" : "rejudging",
           });
-        }
-        const session = await latest.current.acquireSession();
-        const { runCommand, readFile } = session;
-        if (runCommand === undefined || readFile === undefined) {
-          throw new Error("この実行環境では検出を確かめられません。");
         }
         let hiddenSeen = isHidden();
         const onVisibilityChange = () => {
@@ -228,7 +229,9 @@ export const useGuardRun = ({
         }
         if (parsed === undefined) {
           throw new Error(
-            "結果を読み出せませんでした。ターミナルを開くと出力を確認できます。",
+            exitCode === runCommandTimedOutExitCode
+              ? "検出を確かめる処理が時間内に終わりませんでした。eslint.config.mjs の規則やテストに、終わらない繰り返しがないか見直します。"
+              : "結果を読み出せませんでした。もう一度「検出を確かめる」を押してください。",
           );
         }
         const { store: currentStore, slug: currentSlug } = latest.current;
@@ -250,6 +253,8 @@ export const useGuardRun = ({
     } catch (error: unknown) {
       if (mounted.current) {
         setStatus({ kind: "failed", message: messageFrom(error) });
+        // この実行の結果はないので、残っている表は前回の結果として見せる。
+        setSource((current) => (current === "none" ? "none" : "restored"));
       }
     } finally {
       running.current = false;

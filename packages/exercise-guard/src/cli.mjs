@@ -116,7 +116,7 @@ const runWatched = ({ root, timeoutMs }) =>
         `検出を確かめる処理が ${Math.round(timeoutMs / 100) / 10} 秒で終わりませんでした。eslint.config.mjs の規則に、終わらない繰り返しがないか見直します。\n`,
       );
       stopVitest();
-      await exitNow(1);
+      await exitNow(124);
     }, timeoutMs);
     const interrupt = () => {
       clearTimeout(timer);

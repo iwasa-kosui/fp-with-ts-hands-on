@@ -79,7 +79,7 @@ describe("cli", () => {
 
     const result = await runCli(hangRoot, ["--root", hangRoot, "--timeout-ms", "8000"]);
 
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(124);
     expect(result.stdout).toContain(
       "検出を確かめる処理が 8 秒で終わりませんでした。eslint.config.mjs の規則に、終わらない繰り返しがないか見直します。",
     );
