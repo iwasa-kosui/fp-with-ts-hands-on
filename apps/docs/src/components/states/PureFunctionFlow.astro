@@ -271,7 +271,7 @@ const playerData = JSON.stringify(
         <p class="pure-function-flow__caption">{frame.caption}</p>
         {frame.code && (
           <figure class="code-block pure-function-flow__code" data-version={frame.code.key} data-lit={JSON.stringify(frame.code.lines.map((line) => line - 1))}>
-            <figcaption><span class="pure-function-flow__tag" data-version={frame.code.key}>{codeTagLabels[frame.code.key]}</span> {frame.code.key === "after" ? <code class="pure-function-flow__path">{afterLabel}</code> : <><code>startExamination</code>（説明用。配布コードにはありません）</>}</figcaption>
+            <figcaption><span class="pure-function-flow__tag" data-version={frame.code.key}>{codeTagLabels[frame.code.key]}</span> {frame.code.key === "after" ? <code class="pure-function-flow__path">{afterLabel}</code> : <><code>startExamination</code>（説明用。教材のコードにはありません）</>}</figcaption>
             <Code code={snippets[frame.code.key]} lang="ts" defaultColor="dark" wrap={null} />
           </figure>
         )}
@@ -704,6 +704,17 @@ const playerData = JSON.stringify(
 
   [data-animated] svg[data-scene="4"] .pure-function-flow__clock {
     transition: transform 0.9s ease-in-out, opacity 0.4s;
+  }
+
+  @media (max-height: 844px) {
+    .pure-function-flow[data-animated] > .pure-function-flow__title,
+    .pure-function-flow[data-animated] > .pure-function-flow__controls {
+      margin-block-end: 0.25rem;
+    }
+
+    .pure-function-flow__code {
+      margin-block-start: 0.5rem;
+    }
   }
 
   @media (max-width: 55rem) {

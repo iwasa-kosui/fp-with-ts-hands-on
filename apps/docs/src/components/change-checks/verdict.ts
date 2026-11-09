@@ -14,6 +14,6 @@ export const verdictOf = (
   if (outcome.notRun) return { tone: "neutral", text: "－ テストなし" };
   if (outcome.found) return { tone: "positive", text: "✓ 検出" };
   return changeCase.kind === "bad"
-    ? { tone: "negative", text: "▲ すり抜け" }
+    ? { tone: "negative", text: "▲ 未検出" }
     : { tone: "positive", text: "✓ 誤検知なし" };
 };

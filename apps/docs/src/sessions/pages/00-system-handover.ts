@@ -49,7 +49,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1,
-    role: "事前知識: 配布コードの構成の理由を示すために、ヘキサゴナルアーキテクチャの考え方を図で説明します。",
+    role: "事前知識: S00 のコードの構成の理由を示すために、ヘキサゴナルアーキテクチャの考え方を図で説明します。",
   },
   {
     slug: "when-noticed",
@@ -61,7 +61,7 @@ export const sessionPages = [
   },
   {
     slug: "goal",
-    title: "この研修で目指す状態",
+    title: "この教材で目指す状態",
     flow: "solution",
     kind: "review",
     minutes: 1,

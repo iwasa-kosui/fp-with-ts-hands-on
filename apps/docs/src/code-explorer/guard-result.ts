@@ -22,6 +22,7 @@ export type GuardVerdict =
   | "detected"
   | "slipped"
   | "unchanged"
+  | "undetermined"
   | "falsePositive"
   | "noFalsePositive";
 
@@ -71,6 +72,7 @@ const verdicts: readonly unknown[] = [
   "detected",
   "slipped",
   "unchanged",
+  "undetermined",
   "falsePositive",
   "noFalsePositive",
 ];
