@@ -1,8 +1,26 @@
+import { Code } from "astro:components";
 import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
 import { session06ChangeChecks } from "../../../components/effects-walkthrough/change-checks";
 
-<p>課題4は、直した状態を次の変更から守ることです。別の人が <code>new Date()</code> を戻しても、型検査は通ります。この演習の仕組みは Linter の規則とテストの2つで、表の型の列は対象外です。手を動かすのは検出の仕組みで、保存する側の実装は読むだけです。</p>
+<p>課題4は、直した状態を次の変更から守ることです。別の人が <code>new Date()</code> を戻しても、型検査は通ります。ここで扱う変更はどれも型検査を通るので、仕組みは Linter の規則とテストの2つです。手を動かすのは検出の仕組みで、保存する側の実装は読むだけです。</p>
 
 <p>変更を選んで結果を見比べてください。時刻や ID を直接作る変更は規則とテストの両方が、store を2回呼ぶ変更と clock を読み直す変更はテストだけが検出します。</p>
 
 <ChangeChecks set={session06ChangeChecks} />
+
+<details class="step-solution">
+  <summary>eslint.config.mjs の rules に足す設定の形（[…] の部分は自分で決めます）</summary>
+<p>規則は <code>no-restricted-syntax</code> です。<code>selector</code> の <code>[…]</code> には、検出する範囲を絞る条件を書きます。</p>
+<figure class="code-block">
+  <Code
+    code={`"no-restricted-syntax": ["error", {
+  selector: "CallExpression[callee.object.name='crypto'][callee.property.name='randomUUID']",
+  message: "ID を直接作らず、ID generator から受け取ります。",
+}, {
+  selector: "NewExpression[callee.name='Date'][…]",
+  message: "…",
+}]`}
+    lang="js"
+  />
+</figure>
+</details>

@@ -19,7 +19,7 @@ selector: "TSAsExpression > TSTypeReference[…]",`,
     id: "tests",
     name: "テスト",
     detail: "実行して値を確かめる",
-    code: `expect(cancel(scheduled, "schedule conflict", at))
+    code: `expect(cancel(scheduled, "schedule conflict", canceledAt))
   .toMatchObject({ reason: "schedule conflict", … });`,
   },
 ];

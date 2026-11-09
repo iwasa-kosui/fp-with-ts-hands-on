@@ -127,9 +127,9 @@ const cases: readonly ChangeCase[] = [
       { kind: "add", text: "      return \"invalid-state\";" },
     ],
     results: {
-      lint: { found: true, output: "Switch is not exhaustive. Cases not matched: \"AppointmentCancelled\"", setting: `"@typescript-eslint/switch-exhaustiveness-check"
+      lint: { found: true, output: "switch-exhaustiveness-check: Switch is not exhaustive. Cases not matched: \"AppointmentCancelled\"", setting: `"@typescript-eslint/switch-exhaustiveness-check"
 { considerDefaultExhaustiveForUnions: false }` },
-      tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true },
+      tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true, setting: "// この分岐のテストはまだありません" },
     },
     why: "`default` が受けるので、型検査は通ります。テストはまだ無いので、`default` を候補に数えない規則だけが見つけます。",
   },

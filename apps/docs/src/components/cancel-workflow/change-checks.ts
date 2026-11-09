@@ -32,10 +32,10 @@ const cases: readonly ChangeCase[] = [
       { kind: "add", text: "  presentAppointment(appointment).status;" },
     ],
     results: {
-      lint: { found: true, output: "'…/adaptor/primary/web/appointmentPresenter.js' import is restricted from being used by a pattern." },
-      tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true },
+      lint: { found: true, output: "no-restricted-imports: '…/adaptor/primary/web/appointmentPresenter.js' import is restricted from being used by a pattern." },
+      tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true, setting: "// import の向きは実行結果に現れません" },
     },
-    why: "import の先は実在するので、型検査は通ります。このファイルを実行するテストもありません。import の文字列を見る規則だけが見つけます。",
+    why: "import の先は実在するので、型検査は通ります。import の向きを変えても実行結果は変わらないので、値を確かめるテストでは見つけられません。import の文字列を見る規則だけが見つけます。",
   },
   {
     id: "B2-domain-imports-sqlite",
@@ -50,10 +50,10 @@ const cases: readonly ChangeCase[] = [
       { kind: "add", text: "export type PersistedAppointment = AppointmentRow;" },
     ],
     results: {
-      lint: { found: true, output: "'…/adaptor/secondary/sqlite/appointmentRow.js' import is restricted from being used by a pattern." },
-      tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true },
+      lint: { found: true, output: "no-restricted-imports: '…/adaptor/secondary/sqlite/appointmentRow.js' import is restricted from being used by a pattern." },
+      tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true, setting: "// import の向きは実行結果に現れません" },
     },
-    why: "型だけの import でも、domain は保存の形を知ることになります。規則は `import type` も同じように報告します。",
+    why: "型だけの import でも、domain は保存の形を知ることになります。実行結果は変わらないのでテストでは見つけられません。規則は `import type` も同じように報告します。",
   },
   {
     id: "B4-domain-imports-use-case",
@@ -68,10 +68,10 @@ const cases: readonly ChangeCase[] = [
       { kind: "add", text: "export type CancelFailure = CancelError;" },
     ],
     results: {
-      lint: { found: true, output: "'…/useCase/cancelAppointment.js' import is restricted from being used by a pattern." },
-      tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true },
+      lint: { found: true, output: "no-restricted-imports: '…/useCase/cancelAppointment.js' import is restricted from being used by a pattern." },
+      tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true, setting: "// import の向きは実行結果に現れません" },
     },
-    why: "useCase は domain の外側です。向きが逆でも型検査は通るので、規則だけが見つけます。",
+    why: "useCase は domain の外側です。向きが逆でも型検査は通り、実行結果も変わらないので、規則だけが見つけます。",
   },
   {
     id: "B3-cancel-paid",
@@ -112,9 +112,9 @@ const cases: readonly ChangeCase[] = [
     ],
     results: {
       lint: { found: false, output: "エラーなし" },
-      tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true },
+      tests: { found: false, output: "このファイルを実行するテストは 0 件", notRun: true, setting: "// import を足しても実行結果は変わりません" },
     },
-    why: "`webBookingChannel` は domain の中のファイルです。パターンをフォルダの単位で書けば、名前に web を含むだけのファイルは誤検知しません。",
+    why: "`webBookingChannel` は domain の中のファイルです。パターンをフォルダの単位で書けば、名前に web を含むだけのファイルを誤検知（正しいコードを悪い変更として検出すること）しません。",
   },
 ];
 

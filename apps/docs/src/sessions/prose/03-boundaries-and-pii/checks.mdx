@@ -1,9 +1,9 @@
 import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
 import { session03ChangeChecks } from "../../../components/boundary/change-checks";
 
-<p>直したコードも、次の変更で元に戻ることがあります。たとえば、別の人が <code>parse</code> に <code>raw: any</code> を戻しても、型検査は通ることがあります。ここから先の課題3は、直した状態を保つことです。</p>
+<p>直したコードも、次の変更で元に戻ることがあります。ここから先の課題3は、直した状態を保つことです。</p>
 
-<p>悪い変更を機械で検出する仕組みは、Linter の規則、値の性質のテスト、型のテストの3種類です。変更を選んで結果を見比べてください。<code>any</code> や <code>as</code> の書き方は規則とテストが、UUID の検査を外す変更はテストだけが、連絡先を足す変更は型のテストとテストが検出します。</p>
+<p>悪い変更を機械で検出する仕組みは、型のテスト、Linter の規則、値の性質のテストの3種類です。変更を選んで結果を見比べてください。<code>any</code> や <code>as</code> の書き方は規則と値の性質のテストが、UUID の検査を外す変更は値の性質のテストだけが、連絡先を足す変更は型のテストと値の性質のテストが検出します。</p>
 
 <ChangeChecks set={session03ChangeChecks} />
 

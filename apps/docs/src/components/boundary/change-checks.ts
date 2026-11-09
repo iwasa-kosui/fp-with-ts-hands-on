@@ -5,7 +5,8 @@ const mechanisms: readonly MechanismInfo[] = [
     id: "types",
     name: "型のテスト",
     detail: "型エラーになることを確かめる",
-    code: "// @ts-expect-error ← 次の行が型エラーでなければエラー",
+    code: `// @ts-expect-error ← 次の行が型エラーでなければエラー
+const extra: Extra = "ownerContact";`,
   },
   {
     id: "lint",
@@ -17,7 +18,8 @@ const mechanisms: readonly MechanismInfo[] = [
     id: "tests",
     name: "値の性質のテスト",
     detail: "ランダムな入力を多数試す",
-    code: "// 書き方は次のページで見ます",
+    code: `fc.property(notUuid, (id) => StartExaminationInput
+  .parse({ appointmentId: id, … }).isErr(),`,
   },
 ];
 
@@ -42,8 +44,8 @@ const cases: readonly ChangeCase[] = [
     ],
     results: {
       types: { found: false, output: "エラーなし" },
-      lint: { found: true, output: "no-explicit-any: Unexpected any. Specify a different type. ほか4件", setting: "\"@typescript-eslint/no-explicit-any\": \"error\"" },
-      tests: { found: true, output: "3件失敗: Property failed after 1 tests" },
+      lint: { found: true, output: "no-explicit-any: Unexpected any. Specify a different type.", setting: "\"@typescript-eslint/no-explicit-any\": \"error\"" },
+      tests: { found: true, output: "3件失敗: Property failed" },
     },
     why: "`any` は型検査を止めるので、tsc は通ります。書き方を見る規則と、不正な値を渡すテストが見つけます。",
   },
@@ -88,9 +90,10 @@ const cases: readonly ChangeCase[] = [
     ],
     results: {
       types: { found: false, output: "エラーなし" },
-      lint: { found: true, output: "no-unsafe-assignment: Unsafe assignment of an `any` value. ほか1件", setting: `"@typescript-eslint/no-unsafe-assignment": "error"
+      lint: { found: true, output: "no-unsafe-assignment: Unsafe assignment of an `any` value.", setting: `"@typescript-eslint/no-unsafe-assignment": "error"
 "@typescript-eslint/no-unsafe-argument": "error"` },
-      tests: { found: true, output: "1件失敗: Property failed after 1 tests" },
+      tests: { found: true, output: "1件失敗: Property failed after 1 tests", setting: `const seen = await call({ appointmentId: id, … });
+return seen.length === 0;` },
     },
     why: "`c.req.json()` の戻り値は `any` なので、そのまま渡しても型検査は通ります。`any` の受け渡しを見る規則と、不正な本文を渡すテストが見つけます。",
   },
@@ -112,7 +115,7 @@ const cases: readonly ChangeCase[] = [
     ],
     results: {
       types: { found: false, output: "エラーなし" },
-      lint: { found: false, output: "エラーなし" },
+      lint: { found: false, output: "エラーなし", setting: "// UUID の形は書き方に現れないので、どの規則も見つけません" },
       tests: { found: true, output: "2件失敗: Counterexample: [\"\"]" },
     },
     why: "UUID でなくても型は合い、書き方にも問題はありません。値を多数試すテストだけが見つけます。",
@@ -135,10 +138,10 @@ const cases: readonly ChangeCase[] = [
     ],
     results: {
       types: { found: true, output: "TS2578: Unused '@ts-expect-error' directive." },
-      lint: { found: false, output: "エラーなし" },
-      tests: { found: true, output: "1件失敗: Property failed after 1 tests" },
+      lint: { found: false, output: "エラーなし", setting: "// 項目の追加は書き方に現れないので、どの規則も見つけません" },
+      tests: { found: true, output: "1件失敗: Property failed after 1 tests", setting: "expect(toAuditPayload(appointment)).toEqual({ appointmentId: appointment.appointmentId, … });" },
     },
-    why: "項目が増えると型エラーが消えて、`// @ts-expect-error` の印が余ります。値のテストは余分な項目で失敗します。規則は書き方に問題がないので通します。",
+    why: "項目が増えると型エラーが消えて、`// @ts-expect-error` の印が余ります。値のテストは余分な項目で失敗します。模範解答の規則は書き方に問題を見つけないので通します。",
   },
   {
     id: "G3-as-const",
@@ -162,7 +165,7 @@ const cases: readonly ChangeCase[] = [
   ["error", { assertionStyle: "never" }]` },
       tests: { found: false, output: "5件成功" },
     },
-    why: "`as const` は値を変えず、型も偽らないので、`never` の設定でも規則は検出しません。",
+    why: "`as const` は値を変えず、型も偽らないので、`never` の設定でも規則は誤検知（正しいコードを悪い変更として検出すること）しません。",
   },
 ];
 

@@ -32,7 +32,8 @@ const cases: readonly ChangeCase[] = [
     ],
     results: {
       lint: { found: true, output: "no-restricted-syntax: 現在時刻を直接読まず、clock から受け取ります。" },
-      tests: { found: true, output: "2件失敗: expected +0 to be 1", setting: "expect(harness.clockReads).toBe(1);" },
+      tests: { found: true, output: "2件失敗: expected +0 to be 1", setting: `// harness に clock を読んだ回数 clockReads を足した場合
+expect(harness.clockReads).toBe(1);` },
     },
     why: "時刻は string のままなので、型検査は通ります。`new Date()` の形を見る規則と、clock を読んだ回数を確かめるテストが見つけます。",
   },
@@ -52,7 +53,8 @@ const cases: readonly ChangeCase[] = [
     results: {
       lint: { found: true, output: "no-restricted-syntax: 現在時刻を直接読まず、clock から受け取ります。", setting: `// selector: 検出するコードの形
 selector: "CallExpression[callee.object.name='Date'][…]",` },
-      tests: { found: true, output: "2件失敗: expected +0 to be 1", setting: "expect(harness.clockReads).toBe(1);" },
+      tests: { found: true, output: "2件失敗: expected +0 to be 1", setting: `// harness に clock を読んだ回数 clockReads を足した場合
+expect(harness.clockReads).toBe(1);` },
     },
     why: "`new Date()` の規則だけではこの書き方を見つけられないので、`Date.now` の形の規則を別に足します。",
   },
@@ -109,7 +111,8 @@ selector: "CallExpression[callee.object.name='crypto'][callee.property.name='ran
     ],
     results: {
       lint: { found: false, output: "エラーなし" },
-      tests: { found: true, output: "1件失敗: expected 2 to be 1", setting: "expect(harness.clockReads).toBe(1);" },
+      tests: { found: true, output: "1件失敗: expected 2 to be 1", setting: `// harness に clock を読んだ回数 clockReads を足した場合
+expect(harness.clockReads).toBe(1);` },
     },
     why: "`deps.clock.now()` は許された書き方なので、規則は通します。読んだ回数を確かめるテストだけが見つけます。",
   },

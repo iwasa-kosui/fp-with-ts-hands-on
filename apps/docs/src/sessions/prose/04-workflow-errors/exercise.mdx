@@ -19,7 +19,7 @@ export const guide = {
     "時間の目安は、読む1分、選ぶ2分、作る5分、確かめる2分です。",
     "読む: 左の一覧の悪い変更を読みます。useCase は直さず、検出する仕組みだけを足します。route の _unsafeUnwrap は対象外です。useCase の中のものは、任意の悪い変更で扱います。",
     "選ぶ: 1件目は規則でもテストでも検出できます。2件目と3件目は、テストでだけ検出できます。",
-    "作る: 規則は、前のページの設定を eslint.config.mjs の const rules = {} の {} の中に写します。テストは mine/startExamination.test.ts に書きます。最初の1件が書き方の例です。例外を投げると outcome.kind が threw になり、outcome.error に例外が入ります。",
+    "作る: 規則は、前のページの折りたたみ「useCase の throw を検出する規則」の設定を eslint.config.mjs の const rules = {} の {} の中に写します。テストは mine/startExamination.test.ts に書きます。最初の1件が書き方の例です。例外を投げると outcome.kind が threw になり、outcome.error に例外が入ります。",
     "確かめる: 「検出を確かめる」を押します。「誤検知」は、正しいコードを悪い変更として検出することです。",
     "合格すると、任意の悪い変更が一覧に増えます。その名前を押して、検出できないことを1文書き、班で話し合います。",
   ],
