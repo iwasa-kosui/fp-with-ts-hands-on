@@ -49,7 +49,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1,
-    role: "事前知識: store の戻り値は void であるため、保存の後もイベントを次の処理へ渡す andThrough を使います。",
+    role: "事前知識: store の成功の値は void であるため、保存の後もイベントを次の処理へ渡す andThrough を使います。",
   },
   {
     slug: "ports",

@@ -20,7 +20,7 @@ const scenes = [
     label: "条件付き更新",
     left: code.s06Update,
     right: code.finalUpdate,
-    text: "S06 は transaction の中で予約を読み直して分岐します。この形は、書き込みが直列に実行される SQLite に依存します。PostgreSQL の既定の分離レベルでは、2つの transaction がどちらも CheckedIn を読み、どちらも書き込めます。参照実装は、status が CheckedIn の行だけを更新します。このように WHERE に条件を付けた更新を条件付き更新と呼び、更新した行が0件なら競合です。WHERE の条件で判定するため、ほかのデータベースでも成り立ちます。",
+    text: "S06 は transaction の中で予約を再取得して分岐します。この形は、書き込みが直列に実行される SQLite に依存します。PostgreSQL の既定の分離レベルでは、2つの transaction がどちらも CheckedIn を取得し、どちらも書き込めます。参照実装は、status が CheckedIn の行だけを更新します。このように WHERE に条件を付けた更新を条件付き更新と呼び、更新した行が0件なら競合です。WHERE の条件で判定するため、ほかのデータベースでも成り立ちます。",
   },
   {
     label: "競合の伝え方",

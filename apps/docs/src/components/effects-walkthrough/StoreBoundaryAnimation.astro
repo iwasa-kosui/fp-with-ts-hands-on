@@ -5,6 +5,7 @@ import css from "./store-boundary.css?raw";
 import script from "./store-boundary.js?raw";
 import { excerptOf, type Part } from "./excerpt";
 import PathLabel from "./PathLabel.astro";
+import { breakBeforeMember } from "../break-before-member";
 import Walkthrough from "./Walkthrough.astro";
 
 type Box = "call" | "impl";
@@ -212,7 +213,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "off",
       },
       {
-        text: "transaction の中で予約を再度取得し、`current` に入れます。`CheckedIn` であるため先へ進みます。",
+        text: "transaction の中で予約を再度取得し、`current` に格納します。`CheckedIn` であるため先へ進みます。",
         call: null,
         impl: { pane: "after-read", lines: [0, 1] },
         tx: "open",
@@ -222,7 +223,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         read: true,
       },
       {
-        text: "`Appointment.startExamination` をもう一度実行します。受け取った `event` はそのまま保存せず、読み直した最新の予約 `current` から `committedEvent` を作り直して保存します。`eventId` と `occurredAt` は `event` の値を再利用します。",
+        text: "`Appointment.startExamination` を再度実行し、再取得した最新の予約 `current` から `committedEvent` を作り直して保存します。受け取った `event` をそのまま保存しないのは、ユースケースが予約を取得した後に変更された内容を、古い値で上書きしないためです。`eventId` と `occurredAt` は `event` の値を再利用します。",
         call: null,
         impl: { pane: "after-rebuild", lines: [0, 1, 2, 3] },
         tx: "open",
@@ -399,7 +400,7 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
                         <span class="sb-role">{box === "call" ? "呼び出し元" : "実装"}</span>
                       </span>
                     </figcaption>
-                    <Code code={excerpts[name].code} lang="ts" wrap />
+                    <Code code={excerpts[name].code} lang="ts" wrap transformers={[breakBeforeMember]} />
                   </figure>
                 ))}
               </div>
@@ -474,7 +475,7 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
                     {appointmentCards.map(({ id, old, code }) => (
                       <figure class={`sb-card${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
                         <figcaption class="sb-card__head"><span class="sb-chip" data-chip>{old ? "保存済み" : ""}</span></figcaption>
-                        <Code code={code} lang="ts" wrap />
+                        <Code code={code} lang="ts" wrap transformers={[breakBeforeMember]} />
                       </figure>
                     ))}
                   </div>
@@ -487,7 +488,7 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
                     <div class={`sb-cell${old ? "" : " sb-cell--landing"}`}>
                       <figure class={`sb-card${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
                         <figcaption class="sb-card__head"><span class="sb-chip" data-chip>{old ? "保存済み" : ""}</span></figcaption>
-                        <Code code={code} lang="ts" wrap />
+                        <Code code={code} lang="ts" wrap transformers={[breakBeforeMember]} />
                       </figure>
                     </div>
                   ))}

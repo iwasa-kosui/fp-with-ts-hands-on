@@ -92,7 +92,7 @@ const portsAndAdaptersSnippets = await loadSolutionSnippets({
     {
       path: "examples/final/src/adaptor/secondary/sqlite/store/appointmentEventStore.ts",
       symbol: "createAppointmentEventStore",
-      lines: [144, 150],
+      lines: [144, 148],
     },
     {
       path: "examples/final/src/app.ts",

@@ -7,4 +7,4 @@ import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.ast
   <StoreBoundaryAnimation scene="conflict" />
 </FigureSpace>
 
-<p>開始のコードの保存は <code>Promise&lt;void&gt;</code> を返すだけで、この競合を <code>Err</code> で返せません。読み直して分岐するこの形で競合を検出できるのは、SQLite が書き込みを1つずつ実行するためです。PostgreSQL の既定の分離レベル（transaction 同士が変更を読める範囲の設定）である READ COMMITTED では、2つの transaction が同時に <code>CheckedIn</code> を取得して両方が書き込めるため、この形では検出できません。Final の条件付き更新で扱います。</p>
+<p>開始のコードの保存は <code>Promise&lt;void&gt;</code> を返すだけで、この競合を <code>Err</code> で返せません。再取得して分岐するこの形で競合を検出できるのは、SQLite が書き込みを1つずつ実行するためです。PostgreSQL の既定の分離レベル（transaction 同士が変更を読める範囲の設定）である READ COMMITTED では、2つの transaction が同時に <code>CheckedIn</code> を取得して両方が書き込めるため、この形では検出できません。ほかのデータベースで競合を検出する方法は、Final の条件付き更新で扱います。</p>

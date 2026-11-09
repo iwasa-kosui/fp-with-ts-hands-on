@@ -436,7 +436,7 @@ const usedChips = new Set(
 );
 const usesFlow = shownScenes.some(({ frames }) => frames.some(({ flow }) => flow !== undefined));
 const legendLines = [
-  `右の札は、その行から次の行へ渡される値です。札「Ok」は成功の Result です${usedChips.has("応答") ? "、札「応答」は呼び出し元へ返す HTTP の応答です" : ""}。`,
+  `右の札は、その行から次の行へ渡される値です。札「Ok」は成功の Result です。${usedChips.has("応答") ? "札「応答」は呼び出し元へ返す HTTP の応答です。" : ""}`,
   ...(usedChips.has("Err") || usesFlow
     ? ["札「Err」は型に残る業務の失敗で、枠と線は破線です。札「reject」は型に残らず外へ出る例外で、枠と線は実線です。"]
     : []),

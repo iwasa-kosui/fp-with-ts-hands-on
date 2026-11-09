@@ -28,7 +28,6 @@ type Frame = Readonly<{
   lines?: readonly number[];
   out?: string;
   skipped?: readonly string[];
-  gloss?: string;
   treeFile?: string;
 }>;
 type Scene = Readonly<{ label: string; stop?: string; frames: readonly Frame[] }>;
@@ -278,7 +277,7 @@ const allScenes: readonly Scene[] = [
         text: "`store` は transaction の中で、`status` が `CheckedIn` の予約の行だけを更新します。",
         at: "effect",
         impl: "update",
-        lines: [4, 5],
+        lines: [4, 6],
       },
       {
         text: "更新が1行であるため、監査記録のテーブル `domainEventsTable` に `ExaminationStarted` を追加します。transaction に渡した関数が最後まで完了すると、状態と監査記録が同時に確定します。",
@@ -366,9 +365,8 @@ const allScenes: readonly Scene[] = [
         out: "c8",
       },
       {
-        text: "route の `Err` の分岐は使われず、応答は 500 です。SQLite の障害は業務の `Result` に含まれません。",
+        text: "route の `Err` の分岐は使われません。SQLite の障害は業務の `Result` に含まれません。例外境界が作った 500 がそのまま応答になります。",
         at: "answer",
-        gloss: "例外境界が作った 500 がそのまま応答になります。",
         treeFile: "app",
         out: "c9c",
       },

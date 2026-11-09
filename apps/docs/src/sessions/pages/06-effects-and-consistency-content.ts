@@ -165,7 +165,7 @@ export const guides = ([
   {
     id: "unchecked-current-state",
     title: "保存時に現在の状態を検証していない",
-    currentDesign: "保存しない store で来院済みかを確認した後、stateStore.save は現在の状態を検証せずに書き込みます。",
+    currentDesign: "保存しない store で来院済みかを確認した後、中央のカードの stateStore.save は現在の状態を検証せず書き込みます。",
     futureRisk: "別の依頼が先に診察を開始していても、結果は Ok のままです。",
     path: "src/useCase/startExamination.ts",
     highlights: [{ startLineNumber: 52, endLineNumber: 55 }],

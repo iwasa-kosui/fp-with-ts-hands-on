@@ -5,11 +5,11 @@ export const sessionSlug = "final";
 export const sessionPages = [
   {
     slug: "",
-    title: "ここまでで分けた5つの境界",
+    title: "ここまでの実装を整理する5つの境界",
     flow: "background",
     kind: "teach",
     minutes: 0.5,
-    role: "背景: ここまでの Session で分けた5つの境界を、S00 の5つのステップの図に対応付けて確認します。",
+    role: "背景: S01 から S06 までに実装した処理を、Final で初めて名前を付ける5つの境界として整理し、S00 の5つのステップとの違いを確認します。",
   },
   {
     slug: "reference",

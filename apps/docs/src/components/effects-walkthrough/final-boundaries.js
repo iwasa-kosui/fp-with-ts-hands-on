@@ -18,8 +18,6 @@ for (const figure of figures) {
       key: stage.dataset.stage,
       tag: stage.querySelector("[data-tag]"),
       open,
-      gloss: open.querySelector(".fb-gloss"),
-      glossText: open.querySelector(".fb-gloss").innerHTML,
       impls: [...open.querySelectorAll("[data-impl]")],
       outs: [...open.querySelectorAll("[data-out]")],
     };
@@ -94,10 +92,6 @@ for (const figure of figures) {
       part.tag.textContent = tagText[state] ?? "";
       part.open.toggleAttribute("data-current", state === "current");
       part.open.inert = state !== "current";
-      if (state === "current") {
-        if (frame.gloss === undefined) part.gloss.innerHTML = part.glossText;
-        else part.gloss.textContent = frame.gloss;
-      }
       if (state === "current") {
         for (const out of part.outs) out.toggleAttribute("data-active", out.dataset.out === frame.out);
         currentPart = part;

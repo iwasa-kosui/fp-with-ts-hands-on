@@ -7,7 +7,7 @@ import { session } from "../../pages/final-content";
       <p class="case-file__episode-label">動物病院の事例</p>
       {session.episode.map((line) => <p data-episode-line>{line}</p>)}
     </aside>
-    <p>S06 では、store が transaction で状態と監査記録を同時に保存することを確認しました。この回では、同じ構成が大きなコードの中でも維持されているかを確認します。題材は <a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/tree/main/examples/final"><code>examples/final</code></a> の参照実装です。<a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/tree/main/examples/session-06-solution"><code>examples/session-06-solution</code></a> は診察開始だけを修正したコードで、参照実装はログインやほかの業務も含む大きな見本です。</p>
+    <p>S06 では、store が transaction で状態と監査記録を同時に保存することを確認しました。この Session では、同じ構成が大きなコードの中でも維持されているかを確認します。題材は <a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/tree/main/examples/final"><code>examples/final</code></a> の参照実装です。<a href="https://github.com/iwasa-kosui/fp-with-ts-hands-on/tree/main/examples/session-06-solution"><code>examples/session-06-solution</code></a> は診察開始だけを修正したコードで、参照実装はログインやほかの業務も含む大きな見本です。</p>
     <p><strong>課題1</strong> 5つの境界は、大きなコードでも維持されているか。</p>
     <p><strong>課題2</strong> Linter のルールが参照実装を指摘した場合に、コードを修正するか、ルールを修正するか、理由を付けて残すか。</p>
   </div>

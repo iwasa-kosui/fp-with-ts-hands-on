@@ -1,5 +1,5 @@
 import RuleDecisions from "../../../components/final/RuleDecisions.astro";
 
-<p>各 Session の模範の Linter ルールを、参照実装の <code>src</code>（168ファイル）に適用すると、指摘は <code>app.ts</code> の1件だけです。clock の実装 <code>systemClock</code> が、現在時刻を取得するために <code>new Date()</code> を呼ぶ箇所です。診察開始以外のユースケースでも同じ事故を防ぐため、S04 の <code>throw</code> のルールと S06 の <code>new Date</code> のルールを <code>src/useCase</code> 全体に適用します。clock の実装は対象外です。<code>new Date</code> のルールは、引数のある場合も検出します。指摘は3件です。各カードで対処を1つ選ぶと、その結果が表示されます。合否はありません。</p>
+<p>各 Session の模範の Linter ルールを、参照実装の <code>src</code>（168ファイル）に適用すると、指摘は <code>app.ts</code> の1件です。clock の実装 <code>systemClock</code> が <code>new Date()</code> を呼ぶ箇所です。診察開始以外のユースケースも守るため、S04 の <code>throw</code> のルールと S06 の <code>new Date</code> のルールを <code>src/useCase</code> 全体に適用します。clock の実装は対象外です。<code>new Date</code> のルールは、広げすぎた場合に何が起きるかを確認するため、引数のある場合も検出する形で試します。指摘は3件です。各カードで対処を1つ選ぶと、結果が表示されます。合否はありません。</p>
 
 <RuleDecisions />
