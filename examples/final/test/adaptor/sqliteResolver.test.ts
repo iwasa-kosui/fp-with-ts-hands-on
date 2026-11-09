@@ -122,7 +122,7 @@ describe("SQLite resolvers", () => {
       `INSERT INTO owners (owner_id, name, email, phone) VALUES ('${ownerId}', 'Owner', 'owner@example.test', '090-0000-0000')`,
     ));
     db.run(sql.raw(
-      `INSERT INTO pets (pet_id, owner_id, name, species) VALUES ('${petId}', '${ownerId}', 'Mugi', 'Cat')`,
+      `INSERT INTO pets (pet_id, owner_id, name, species) VALUES ('${petId}', '${ownerId}', 'Mugi', 'Dog')`,
     ));
     const paidState = JSON.stringify({
       kind: "Paid",
@@ -326,7 +326,7 @@ describe("SQLite resolvers", () => {
       `INSERT INTO owners (owner_id, name, email, phone) VALUES ('${ownerId}', 'Owner', 'owner@example.test', '090-0000-0000')`,
     ));
     db.run(sql.raw(
-      `INSERT INTO pets (pet_id, owner_id, name, species) VALUES ('${petId}', '${ownerId}', 'Mugi', 'Cat')`,
+      `INSERT INTO pets (pet_id, owner_id, name, species) VALUES ('${petId}', '${ownerId}', 'Mugi', 'Dog')`,
     ));
     const state = JSON.stringify({
       examId,

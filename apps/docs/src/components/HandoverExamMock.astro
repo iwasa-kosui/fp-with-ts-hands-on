@@ -342,7 +342,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
             <li data-from="4" data-flash-at="4" data-slot="1"><Code code={'status: "in-examination"'} lang="ts" inline /></li>
             <li><Code code="amount: 4800" lang="ts" inline /></li>
             <li><Code code={'paidAt: "2026-08-30T07:10:00.000Z"'} lang="ts" inline /></li>
-            <li data-until="4" data-slot="4"><Code code="examinationStartedAt: 1回目の開始時刻" lang="ts" inline /></li>
+            <li data-until="4" data-slot="4"><Code code="examinationStartedAt: 1回目の時刻" lang="ts" inline /></li>
             <li data-from="4" data-flash-at="4" data-slot="4"><Code code="examinationStartedAt: 押した時刻" lang="ts" inline /></li>
           </ul>
         </div>
@@ -403,7 +403,7 @@ const layers = JSON.stringify(steps.map((step) => step.layers));
                 </li>
                 <li><Code code="amount: 4800" lang="ts" inline /></li>
                 <li><Code code={'paidAt: "2026-08-30T07:10:00.000Z"'} lang="ts" inline /></li>
-                <li><Code code={frame.key === "after" ? "examinationStartedAt: 押した時刻" : "examinationStartedAt: 1回目の開始時刻"} lang="ts" inline /></li>
+                <li><Code code={frame.key === "after" ? "examinationStartedAt: 押した時刻" : "examinationStartedAt: 1回目の時刻"} lang="ts" inline /></li>
               </ul>
             </div>
             <div class="hem__table">

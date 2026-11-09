@@ -24,7 +24,7 @@ export const sessionPages = [
     title: "なぜ会計済みの予約で診察を開始できたのか",
     flow: "problem",
     kind: "teach",
-    minutes: 2,
+    minutes: 1.5,
     role: "課題: 事故の操作1回を、画面、コード、データベースで追います。",
   },
   {
@@ -50,6 +50,14 @@ export const sessionPages = [
     kind: "teach",
     minutes: 0.5,
     role: "事前知識: 業務の決まりをコードに書く場所を知るために、配布コードの分け方を見ます。",
+  },
+  {
+    slug: "hexagonal",
+    title: "この分け方の名前と理由",
+    flow: "knowledge",
+    kind: "teach",
+    minutes: 0.5,
+    role: "事前知識: 配布コードがなぜこの分け方なのかを知るために、ヘキサゴナルアーキテクチャの考え方を見ます。",
   },
   {
     slug: "when-noticed",

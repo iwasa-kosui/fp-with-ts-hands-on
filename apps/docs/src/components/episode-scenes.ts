@@ -1,8 +1,7 @@
 import {
   arm,
-  cat,
-  catBack,
   dog,
+  dogBack,
   hamster,
   hedgehog,
   ink,
@@ -143,7 +142,7 @@ ${room("#fff8ce", "#f0d5a0", "#d9b87c", 198)}
 <rect x="30" y="204" width="76" height="18" rx="3" fill="#2236b8"/>
 
 ${shadow(76, 232, 52)}
-${cat(76, 228, 1, true)}
+<g transform="translate(76 228) scale(-1 1)" stroke-width="3">${dog(0, 0)}</g>
 <path d="M118 196H136M122 208H142M118 220H132" fill="none" stroke-width="2.5"/>
 
 <rect x="146" y="190" width="224" height="12" fill="#ffd21b"/>
@@ -152,7 +151,7 @@ ${cat(76, 228, 1, true)}
 ${screen(150, 14, 200, 164, 190)}
 <rect x="160" y="130" width="78" height="9" rx="2" fill="#cfd8e8" stroke-width="2.5"/>
 <rect x="166" y="139" width="66" height="30" fill="#fff" stroke-width="2.5"/>
-${cat(199, 130, 0.5)}
+<g transform="translate(199 130) scale(0.5 0.5)" stroke-width="4.8">${dog(0, 0)}</g>
 <rect x="164" y="48" width="70" height="26" rx="13" fill="#ff4f93" stroke-width="2.5"/>
 ${text(199, 67, 15, "診察中", { anchor: "middle" })}
 <g transform="rotate(5 294 100)"><rect x="252" y="56" width="84" height="104" fill="#fff"/></g>
@@ -336,7 +335,7 @@ ${room("#fff8ce", "#f0d5a0", "#d9b87c", 184)}
 <circle cx="20" cy="108" r="3" fill="#ffd21b" stroke-width="2"/>
 
 ${shadow(64, 190, 30)}
-${catBack(64, 188, 0.85)}
+${dogBack(64, 188, 0.85)}
 
 ${person(146, 108, 130, 54, 180, "#ffd21b", "#f6c9a0", "#3b2a4f")}
 <circle cx="139" cy="111" r="4.5" fill="#fff" stroke-width="2"/>
@@ -373,7 +372,7 @@ export const episodeScenes = {
     art: handoverPii,
   },
   "01-state-transitions": {
-    label: "会計を終えた猫の Mugi がドアから帰っていく。受付の大きな画面の中では、同じ Mugi の予約が診察中に戻って表示され、2枚目の請求書まで用意されている",
+    label: "会計を終えた犬の Mugi がドアから帰っていく。受付の大きな画面の中では、同じ Mugi の予約が診察中に戻って表示され、2枚目の請求書まで用意されている",
     art: stateTransitions,
   },
   "02-adt-and-exhaustiveness": {
@@ -397,7 +396,7 @@ export const episodeScenes = {
     art: effectsAndConsistency,
   },
   final: {
-    label: "猫の Mugi がドアから帰っていき、開発者だけが画面に向かっている。画面には入力、失敗、イベント、保存、例外の5つの行が並び、それぞれの行に注意の印が置かれている",
+    label: "犬の Mugi がドアから帰っていき、開発者だけが画面に向かっている。画面には入力、失敗、イベント、保存、例外の5つの行が並び、それぞれの行に注意の印が置かれている",
     art: finalScene,
   },
 } as const satisfies Readonly<Record<string, EpisodeScene>>;

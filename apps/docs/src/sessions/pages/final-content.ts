@@ -53,10 +53,10 @@ export const session: SessionSummary = {
   title: "参照実装で境界をたどる",
   durationMinutes: 10,
   timeBreakdown: { brief: 0, teach: 6, exercise: 0, review: 4 },
-  animal: { name: "Mugi", type: "cat", avatar: "🐈" },
+  animal: { name: "Mugi", type: "dog", avatar: "🐕" },
   summary: "ここまでの学習内容を、より大きな参照実装へ接続します。",
   episode: [
-    "S00 で飼い主がもう一度請求された猫の Mugi は、とっくに帰宅しました。",
+    "S00 で飼い主がもう一度請求された犬の Mugi は、とっくに帰宅しました。",
     "開発者は、直した形が大きなコードでも保たれているかを確かめるため、参照実装の前に残っています。",
     "事故が消えたわけではありません。事故ごとに、防ぐ場所が決まりました。",
   ],

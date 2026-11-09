@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createInMemoryExaminationStartedStore } from "../src/adaptor/inMemoryExaminationStartedStore.js";
+import { createInMemoryExaminationStartedStore } from "../src/adaptor/secondary/inMemory/inMemoryExaminationStartedStore.js";
 import { EventId } from "../src/domain/aggregate/eventId.js";
 import type { CheckedIn } from "../src/domain/appointment/index.js";
 import { Appointment } from "../src/domain/appointment/index.js";
