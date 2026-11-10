@@ -11,7 +11,7 @@ import { incidentRequest } from "../../pages/03-boundaries-and-pii-content";
       <p>サーバーは、受け取った値を検査しないまま、診察開始の処理へ進めました。</p>
     </aside>
     <p>URL の予約IDは正しい形です。body の <code>veterinarianId</code> には、獣医師のIDではなく <code>night-shift</code> が含まれています。</p>
-    <p>存在しない獣医師の値が、診察開始の処理へ進みました。その結果、獣医師名を表示できない記録が残りました。受付や獣医師は、誰が診察を始めたのかを後から調査できません。</p>
+    <p>獣医師のIDの形をしていない値が、診察開始の処理へ進みました。その結果、獣医師名を表示できない記録が残りました。受付や獣医師は、誰が診察を始めたのかを後から調査できません。</p>
   </div>
   <div>
     <EpisodeIllustration slug="03-boundaries-and-pii" />

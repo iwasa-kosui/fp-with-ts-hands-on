@@ -8,16 +8,13 @@ import { miniTree } from "./mini-tree/mini-tree";
 type Snippet = Readonly<{ path: string; code: string }>;
 type Props = Readonly<{
   code: Readonly<{
-    before: Snippet;
-    after: Snippet;
+    example: Snippet;
     schemaResult: Snippet;
   }>;
   part?: "schema" | "parse";
 }>;
 
 const { code, part } = Astro.props;
-
-const versionLabels = { before: "修正前", after: "修正後" } as const;
 
 type Transformer = NonNullable<ComponentProps<typeof Code>["transformers"]>[number];
 const KEY_MARK = /\s*\/\/ \[!schema-source-key\]$/;
@@ -37,11 +34,10 @@ const markKeyLines = keyedTransformer<Transformer>("schema-source-flow", {
 
 type Mode = "off" | "dim" | "on" | "focus";
 type ChipState = "off" | "home" | "through" | "stop";
-type ResultState = "off" | "warn" | "ok" | "err";
+type ResultState = "off" | "ok" | "err";
 type Frame = Readonly<{
   part: "schema" | "parse";
   caption: string;
-  stage: keyof typeof versionLabels | null;
   code?: Readonly<{ key: keyof Props["code"]; lines: readonly number[] }>;
   parts: Readonly<{
     typeBox: Mode;
@@ -53,10 +49,9 @@ type Frame = Readonly<{
     inside: Mode;
     sameName: Mode;
     unknown: Mode;
-    note: Mode;
   }>;
-  typeLabel: "name" | "hand" | "infer";
-  check: "plain" | "none" | "checked";
+  typeLabel: "name" | "infer";
+  check: "plain" | "checked";
   chips: readonly [ChipState, ChipState];
   results: readonly [ResultState, ResultState];
 }>;
@@ -65,8 +60,7 @@ const frames: readonly Frame[] = [
   {
     part: "schema",
     caption: "TypeScript の型は、型検査のときだけ使われます。JavaScript に変換すると型は消えます。実行時に受け取った値が型のとおりかどうかは、型とは別のコードで検証する必要があります。",
-    stage: null,
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "off", linkType: "off", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off", note: "off" },
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "off", linkType: "off", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off" },
     typeLabel: "name",
     check: "plain",
     chips: ["home", "off"],
@@ -74,21 +68,9 @@ const frames: readonly Frame[] = [
   },
   {
     part: "schema",
-    caption: "修正前は、StartExaminationInput の型を手動で定義しています。parse は raw（検査前の入力値）を any で受け取り、中身を検証せずに項目をコピーします。any は、どのような使い方も型検査で許可する型です。型はあっても実行時の検査がないため、night-shift も StartExaminationInput として内側へ進みます。",
-    stage: "before",
-    code: { key: "before", lines: [5, 6, 7, 8, 11, 12, 13, 14, 15] },
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "off", linkType: "off", linkCheck: "off", checkBox: "on", inside: "on", sameName: "off", unknown: "off", note: "off" },
-    typeLabel: "hand",
-    check: "none",
-    chips: ["through", "off"],
-    results: ["warn", "off"],
-  },
-  {
-    part: "schema",
-    caption: "修正後は、値が満たす形を schema というオブジェクトで定義するライブラリ Zod を使います。z.object は UUID の形の文字列を表す2つの schema をまとめ、.readonly() は取り出す型の項目を読み取り専用にします。",
-    stage: "after",
-    code: { key: "after", lines: [7, 8, 9, 10] },
-    parts: { typeBox: "dim", typeGhost: "dim", schemaBox: "focus", linkType: "off", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off", note: "off" },
+    caption: "z.object は、項目ごとの schema をまとめて、オブジェクト全体の schema を作ります。この例では、2つの項目がどちらも z.string().uuid() です。",
+    code: { key: "example", lines: [3, 4, 5, 6] },
+    parts: { typeBox: "dim", typeGhost: "dim", schemaBox: "focus", linkType: "off", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off" },
     typeLabel: "infer",
     check: "checked",
     chips: ["off", "off"],
@@ -97,9 +79,18 @@ const frames: readonly Frame[] = [
   {
     part: "schema",
     caption: "型は schema から取り出します。z.infer<typeof schema> は、schema が受け入れる値の型です。typeof は、値である schema の型を、型を指定する場所で使うための書き方です。型を手動で定義しないため、schema を修正すると型も同じように変わります。",
-    stage: "after",
-    code: { key: "after", lines: [12] },
-    parts: { typeBox: "focus", typeGhost: "on", schemaBox: "on", linkType: "focus", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off", note: "off" },
+    code: { key: "example", lines: [8] },
+    parts: { typeBox: "focus", typeGhost: "on", schemaBox: "on", linkType: "focus", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off" },
+    typeLabel: "infer",
+    check: "checked",
+    chips: ["off", "off"],
+    results: ["off", "off"],
+  },
+  {
+    part: "schema",
+    caption: "TypeScript では、型と値に同じ名前を付けられます。この例の StartExaminationInput は、z.infer で取り出した型と、schema を持つ値の両方の名前です。",
+    code: { key: "example", lines: [8, 9] },
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "on", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "focus", unknown: "off" },
     typeLabel: "infer",
     check: "checked",
     chips: ["off", "off"],
@@ -107,64 +98,48 @@ const frames: readonly Frame[] = [
   },
   {
     part: "parse",
-    caption: "実行時の検査も、同じ schema から作ります。この教材では、schema から検査を作る処理を schemaResult という関数が担当します。",
-    stage: "after",
+    caption: "実行時の検査も、同じ schema から作ります。この教材では、schema から検査を作る関数 schemaResult を使います。T は検査を通った値の型で、z.ZodType の残りの引数は読み飛ばしてかまいません。",
     code: { key: "schemaResult", lines: [1] },
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "focus", checkBox: "on", inside: "dim", sameName: "off", unknown: "off", note: "off" },
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "focus", checkBox: "on", inside: "dim", sameName: "off", unknown: "off" },
     typeLabel: "infer",
     check: "checked",
-    chips: ["home", "off"],
+    chips: ["home", "home"],
     results: ["off", "off"],
   },
   {
     part: "parse",
     caption: "schemaResult は、関数を返す関数です。schema を1つ受け取り、raw を受け取る別の関数を返します。返された関数が parse です。",
-    stage: "after",
     code: { key: "schemaResult", lines: [1, 2] },
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "on", checkBox: "focus", inside: "dim", sameName: "off", unknown: "off", note: "off" },
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "on", checkBox: "focus", inside: "dim", sameName: "off", unknown: "off" },
     typeLabel: "infer",
     check: "checked",
-    chips: ["home", "off"],
+    chips: ["home", "home"],
     results: ["off", "off"],
   },
   {
     part: "parse",
     caption: "返された関数は、raw を unknown として受け取ります。unknown は、中身を検証するまで項目を使えない型です。",
-    stage: "after",
     code: { key: "schemaResult", lines: [2] },
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "on", checkBox: "on", inside: "dim", sameName: "off", unknown: "on", note: "off" },
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "on", checkBox: "on", inside: "dim", sameName: "off", unknown: "on" },
     typeLabel: "infer",
     check: "checked",
-    chips: ["home", "off"],
+    chips: ["home", "home"],
     results: ["off", "off"],
   },
   {
     part: "parse",
     caption: "safeParse は、schema で raw を検査します。検査に失敗しても例外を投げず、成否を success に格納して返します。schemaResult は success を参照して、Ok か Err を返します。",
-    stage: "after",
     code: { key: "schemaResult", lines: [3, 4] },
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "focus", linkType: "dim", linkCheck: "on", checkBox: "on", inside: "dim", sameName: "off", unknown: "on", note: "off" },
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "focus", linkType: "dim", linkCheck: "on", checkBox: "on", inside: "dim", sameName: "off", unknown: "on" },
     typeLabel: "infer",
     check: "checked",
-    chips: ["home", "off"],
+    chips: ["home", "home"],
     results: ["off", "off"],
   },
   {
     part: "parse",
-    caption: "TypeScript では、型と値に同じ名前 StartExaminationInput を付けられます。",
-    stage: "after",
-    code: { key: "after", lines: [12, 14, 15, 16, 17] },
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "on", linkCheck: "on", checkBox: "on", inside: "dim", sameName: "focus", unknown: "off", note: "off" },
-    typeLabel: "infer",
-    check: "checked",
-    chips: ["off", "off"],
-    results: ["off", "off"],
-  },
-  {
-    part: "parse",
-    caption: "この関数を使うと、night-shift は Err になります。使う場所は「境界を通過した値だけを内側へ渡す構成」のページで確認します。",
-    stage: "after",
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "on", linkCheck: "on", checkBox: "on", inside: "on", sameName: "off", unknown: "off", note: "on" },
+    caption: "schemaResult が返す関数に night-shift を渡すと Err になり、UUID の形の値を渡すと Ok になって内側へ進みます。使う場所は「境界を通過した値だけを内側へ渡す構成」のページで確認します。",
+    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "on", linkCheck: "on", checkBox: "on", inside: "on", sameName: "off", unknown: "off" },
     typeLabel: "infer",
     check: "checked",
     chips: ["stop", "through"],
@@ -172,17 +147,9 @@ const frames: readonly Frame[] = [
   },
 ];
 
-const inputFile = { id: "input", name: "startExaminationInput.ts" };
-const treeBefore = miniTree("session-03", "src/", [{ folder: "adaptor/primary/web/", files: [inputFile] }]);
-const treeAfter = miniTree("session-03-solution", "src/", [
+const schemaResultTree = miniTree("session-03-solution", "src/", [
   { folder: "domain/shared/", files: [{ id: "schemaResult", name: "schemaResult.ts" }] },
-  { folder: "adaptor/primary/web/", files: [inputFile] },
 ]);
-const treeFor = (key: keyof Props["code"]) => {
-  if (key === "before") return { tree: treeBefore, current: ["input"] };
-  if (key === "schemaResult") return { tree: treeAfter, current: ["schemaResult"] };
-  return { tree: treeAfter, current: ["input"] };
-};
 
 const shownFrames = part === undefined ? frames : frames.filter((frame) => frame.part === part);
 const initial = shownFrames[0];
@@ -202,26 +169,16 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   </div>
 
   <svg
-    viewBox="0 0 340 494"
+    viewBox="0 36 340 440"
     role="img"
     aria-labelledby="schema-source-flow-title schema-source-flow-desc"
-    data-stage={initial.stage ?? undefined}
     data-type-label={initial.typeLabel}
     data-check={initial.check}
   >
     <title id="schema-source-flow-title">1つの schema から型と検査を作る仕組み</title>
     <desc id="schema-source-flow-desc">
-      上の帯は型検査のとき（TypeScript）、下の帯は実行時（JavaScript）です。JavaScript に変換すると型は消えるので、下の帯に型は残りません。schema は実行時の値なので下の帯にあり、z.infer の矢印だけが上の帯の型へ伸びます。修正前は、型を手動で定義し、parse は実行時の検査をしません。修正後は、1つの schema から z.infer で型を取り出し、schemaResult で実行時に検査する parse を作ります。修正前は night-shift という不正な値が内側へ進みます。修正後は night-shift が parse の検査で拒否され、UUID の形をした値だけが内側へ進みます。
+      上の帯は型検査のとき（TypeScript）、下の帯は実行時（JavaScript）です。JavaScript に変換すると型は消えるので、下の帯に型は残りません。schema は実行時の値であるため下の帯にあり、z.infer の矢印だけが上の帯の型へ伸びます。1つの schema から z.infer で型を取り出し、schemaResult で実行時に検査する parse を作ります。night-shift という値は parse の検査で Err になり、UUID の形をした値は Ok になって内側へ進みます。
     </desc>
-
-    <g class="schema-source-flow__badge schema-source-flow__badge--before">
-      <rect x="0" y="0" width="340" height="32" rx="8"></rect>
-      <text x="170" y="23" text-anchor="middle">修正前</text>
-    </g>
-    <g class="schema-source-flow__badge schema-source-flow__badge--after">
-      <rect x="0" y="0" width="340" height="32" rx="8"></rect>
-      <text x="170" y="23" text-anchor="middle">修正後</text>
-    </g>
 
     <rect x="0" y="40" width="340" height="136" rx="8" class="schema-source-flow__band-bg"></rect>
     <text x="8" y="58" class="schema-source-flow__band-label">型検査のとき（TypeScript）</text>
@@ -242,7 +199,6 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
       <rect x="10" y="80" width="136" height="52" rx="8"></rect>
       <text x="78" y="102" text-anchor="middle" class="schema-source-flow__type-label" data-label="name">StartExaminationInput</text>
       <text x="78" y="118" text-anchor="middle" class="schema-source-flow__type-label" data-label="name">型</text>
-      <text x="78" y="110" text-anchor="middle" class="schema-source-flow__type-label" data-label="hand">手動定義の型</text>
       <text x="78" y="102" text-anchor="middle" class="schema-source-flow__type-label" data-label="infer">z.infer で</text>
       <text x="78" y="118" text-anchor="middle" class="schema-source-flow__type-label" data-label="infer">取り出した型</text>
     </g>
@@ -251,7 +207,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
       <rect x="208" y="222" width="128" height="66" rx="8"></rect>
       <text x="272" y="240" text-anchor="middle" class="schema-source-flow__strong">schema</text>
       <text x="216" y="262" class="schema-source-flow__code-text schema-source-flow__mono">z.object({"{"}…{"}"})</text>
-      <text x="216" y="278" class="schema-source-flow__code-text schema-source-flow__mono">.readonly()</text>
+      <text x="216" y="278" class="schema-source-flow__code-text schema-source-flow__mono">z.string().uuid()</text>
     </g>
 
     <g class="schema-source-flow__part schema-source-flow__link" data-part="linkType" data-mode={initial.parts.linkType}>
@@ -270,7 +226,6 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__check" data-part="checkBox" data-mode={initial.parts.checkBox}>
       <rect x="116" y="326" width="106" height="114" rx="8"></rect>
       <text x="169" y="346" text-anchor="middle" class="schema-source-flow__check-label" data-label="plain">parse</text>
-      <text x="169" y="346" text-anchor="middle" class="schema-source-flow__check-label" data-label="none">parse（検査なし）</text>
       <text x="169" y="346" text-anchor="middle" class="schema-source-flow__check-label" data-label="checked">parse（検査あり）</text>
     </g>
 
@@ -295,10 +250,6 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     </g>
 
     <g class="schema-source-flow__result" data-result="0" data-state={initial.results[0]}>
-      <g class="schema-source-flow__result-pill schema-source-flow__result-pill--warn">
-        <rect x="141" y="375" width="54" height="20" rx="10"></rect>
-        <text x="168" y="389" text-anchor="middle">⚠ Ok</text>
-      </g>
       <g class="schema-source-flow__result-pill schema-source-flow__result-pill--err">
         <rect x="141" y="375" width="54" height="20" rx="10"></rect>
         <text x="168" y="389" text-anchor="middle">✕ Err</text>
@@ -321,16 +272,13 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
         <rect x="10" y="136" width="56" height="18" rx="9"></rect>
         <text x="38" y="149" text-anchor="middle">型として</text>
       </g>
-      <text x="208" y="320" text-anchor="end" class="schema-source-flow__name schema-source-flow__mono">StartExaminationInput</text>
+      <text x="336" y="300" text-anchor="end" class="schema-source-flow__name schema-source-flow__mono">StartExaminationInput</text>
       <g class="schema-source-flow__name-tag">
-        <rect x="116" y="444" width="56" height="18" rx="9"></rect>
-        <text x="144" y="457" text-anchor="middle">値として</text>
+        <rect x="280" y="305" width="56" height="18" rx="9"></rect>
+        <text x="308" y="318" text-anchor="middle">値として</text>
       </g>
     </g>
 
-    <g class="schema-source-flow__part" data-part="note" data-mode={initial.parts.note}>
-      <text x="170" y="487" text-anchor="middle" class="schema-source-flow__note">修正前は night-shift も ⚠ Ok になっていた</text>
-    </g>
   </svg>
 
   <div class="schema-source-flow__captions">
@@ -344,10 +292,10 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     {shownFrames.map((frame) => (
       <li data-frame data-has-code={frame.code ? "" : undefined}>
         <p class="schema-source-flow__caption">{frame.caption}</p>
-        {frame.code && frame.stage && <MiniTree tree={treeFor(frame.code.key).tree} current={treeFor(frame.code.key).current} />}
-        {frame.code && frame.stage && (
-          <figure class="code-block schema-source-flow__code" data-version={frame.stage}>
-            <figcaption><span class="schema-source-flow__tag" data-version={frame.stage}>{versionLabels[frame.stage]}</span> <code>{code[frame.code.key].path}</code></figcaption>
+        {frame.code?.key === "schemaResult" && <MiniTree tree={schemaResultTree} current={["schemaResult"]} />}
+        {frame.code && (
+          <figure class="code-block schema-source-flow__code">
+            <figcaption><code>{code[frame.code.key].path}</code></figcaption>
             <Code code={withMarks(code[frame.code.key].code, frame.code.lines)} lang="ts" defaultColor={false} transformers={[markKeyLines]} />
           </figure>
         )}
@@ -361,7 +309,6 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   type ChipState = "off" | "home" | "through" | "stop";
   type Frame = {
     caption: string;
-    stage: "before" | "after" | null;
     parts: Record<string, Mode>;
     typeLabel: string;
     check: string;
@@ -425,8 +372,6 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
 
       svg.dataset.typeLabel = frame.typeLabel;
       svg.dataset.check = frame.check;
-      if (frame.stage) svg.dataset.stage = frame.stage;
-      else delete svg.dataset.stage;
 
       live.textContent = frame.caption;
       progress.textContent = `${index + 1} / ${frames.length}`;
@@ -492,16 +437,6 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     min-width: 0;
     max-width: 100%;
     margin: 1.5rem 0;
-    --version-before: var(--case-pink);
-    --version-after: var(--case-highlight);
-  }
-
-  [data-version="before"] {
-    --version-color: var(--version-before);
-  }
-
-  [data-version="after"] {
-    --version-color: var(--version-after);
   }
 
   .schema-source-flow svg {
@@ -516,34 +451,6 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   .schema-source-flow svg:focus-visible {
     outline: 3px solid var(--case-blue);
     outline-offset: 2px;
-  }
-
-  .schema-source-flow__badge {
-    display: none;
-  }
-
-  .schema-source-flow svg[data-stage="before"] .schema-source-flow__badge--before,
-  .schema-source-flow svg[data-stage="after"] .schema-source-flow__badge--after {
-    display: block;
-  }
-
-  .schema-source-flow__badge rect {
-    stroke: var(--case-line);
-    stroke-width: 2;
-  }
-
-  .schema-source-flow__badge--before rect {
-    fill: var(--version-before);
-  }
-
-  .schema-source-flow__badge--after rect {
-    fill: var(--version-after);
-  }
-
-  .schema-source-flow__badge text {
-    fill: var(--case-paper);
-    font-size: 18px;
-    font-weight: 700;
   }
 
   .schema-source-flow__band-bg {
@@ -657,23 +564,17 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   }
 
   .schema-source-flow svg[data-type-label="name"] .schema-source-flow__type-label[data-label="name"],
-  .schema-source-flow svg[data-type-label="hand"] .schema-source-flow__type-label[data-label="hand"],
   .schema-source-flow svg[data-type-label="infer"] .schema-source-flow__type-label[data-label="infer"],
   .schema-source-flow svg[data-check="plain"] .schema-source-flow__check-label[data-label="plain"],
-  .schema-source-flow svg[data-check="none"] .schema-source-flow__check-label[data-label="none"],
   .schema-source-flow svg[data-check="checked"] .schema-source-flow__check-label[data-label="checked"] {
     display: block;
   }
 
-  .schema-source-flow svg[data-check="none"] .schema-source-flow__check rect {
-    stroke-dasharray: 6 4;
-  }
-
-  .schema-source-flow svg:not([data-check="none"]) .schema-source-flow__check rect {
+  .schema-source-flow svg .schema-source-flow__check rect {
     stroke-width: 2.5;
   }
 
-  .schema-source-flow svg:not([data-check="none"]) .schema-source-flow__check[data-mode="focus"] rect {
+  .schema-source-flow svg .schema-source-flow__check[data-mode="focus"] rect {
     stroke-width: 4;
   }
 
@@ -758,7 +659,6 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     opacity: 0;
   }
 
-  .schema-source-flow__result[data-state="warn"] .schema-source-flow__result-pill--warn,
   .schema-source-flow__result[data-state="err"] .schema-source-flow__result-pill--err,
   .schema-source-flow__result[data-state="ok"] .schema-source-flow__result-pill--ok {
     opacity: 1;
@@ -773,10 +673,6 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     fill: var(--case-ink);
     font-size: 11px;
     font-weight: 700;
-  }
-
-  .schema-source-flow__result-pill--warn rect {
-    fill: var(--case-cream);
   }
 
   .schema-source-flow__result-pill--err rect {
@@ -871,7 +767,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   .schema-source-flow__code {
     min-width: 0;
     margin: 0.5rem 0 0;
-    border-inline-start: 0.35rem solid var(--version-color);
+    border-inline-start: 0.35rem solid var(--case-line);
   }
 
   .schema-source-flow__code figcaption {
@@ -884,15 +780,6 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     font-size: 0.6875rem;
     white-space: normal;
     overflow-wrap: anywhere;
-  }
-
-  .schema-source-flow__tag {
-    display: inline-block;
-    padding: 0 0.4rem;
-    border-radius: 0.25rem;
-    background: var(--version-color);
-    color: var(--case-paper);
-    font-weight: 700;
   }
 
   .schema-source-flow__code :global(pre) {

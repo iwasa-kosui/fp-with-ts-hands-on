@@ -49,8 +49,8 @@ export default {
       kind: "bad",
       subject: "audit",
       title: "監査記録に飼い主の連絡先が入る",
-      allow: ["types", "lint", "tests"],
-      hint: "監査記録が3項目だけであることを、型のテスト、Linter のルール、テストのどれかで検証します。",
+      allow: ["types", "tests"],
+      hint: "監査記録が3項目だけであることを、型のテストかテストで検証します。",
       behavior: {
         input: { text: "診察中の予約から監査記録を作る" },
         expected: { text: "3項目だけ残る", value: "ownerContact なし" },

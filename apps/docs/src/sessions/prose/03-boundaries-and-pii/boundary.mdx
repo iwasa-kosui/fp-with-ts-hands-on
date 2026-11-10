@@ -1,7 +1,7 @@
 import BoundaryPlayer from "../../../components/BoundaryPlayer.astro";
 import { startExaminationWalkthrough } from "../../boundary-walkthroughs";
 
-<p>アプリの外から受け取る値は、どのような形か不明です。この値を検査する場所を、<strong>境界</strong>と呼びます。境界の外側は値の送信元（画面や HTTP）で、内側は診察開始のような業務の処理です。</p>
+<p>アプリの外から受け取る値は、どのような形か不明です。この値を検査する場所を、<strong>境界</strong>と呼びます。境界の役割は、S00 の図の画面側のアダプタ（<code>adaptor/primary/web/</code>）にある <code>parse</code> が担います。境界の外側は値の送信元（画面や HTTP）で、内側は診察開始のような業務の処理です。</p>
 
 <BoundaryPlayer walkthrough={startExaminationWalkthrough} scenarioIds={["before"]} codeless />
 

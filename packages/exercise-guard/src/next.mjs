@@ -72,7 +72,7 @@ const slippedSentence = (row) => {
  * @returns {string}
  */
 const passedSentence = (optionalRemaining) =>
-  `必須の誤った変更はすべて検出しました。${optionalRemaining > 0 ? `任意の誤った変更の残り ${optionalRemaining} 件は、時間に余裕がある場合に取り組みます。` : ""}画面の表で行の題名の ▶ を押し、少なくとも 1 つの行に「この仕組みで検出できないこと」を 1 文で記入します。`;
+  `必須の誤った変更はすべて検出しました。${optionalRemaining > 0 ? `任意の誤った変更の残り ${optionalRemaining} 件は、時間に余裕がある場合に取り組みます。` : ""}次へ進む前に、画面の表で行の題名の ▶ を押し、少なくとも 1 つの行に「この仕組みで検出できないこと」を 1 文で記入します。この記入は合格の条件ではありません。`;
 
 /**
  * @param {Readonly<{ rows: readonly Row[], problems: readonly Problem[], stageOpened: number, passed: boolean, typesAllowed?: boolean }>} input

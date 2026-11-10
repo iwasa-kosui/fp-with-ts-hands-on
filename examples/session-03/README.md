@@ -1,4 +1,4 @@
-# Session 03: 診察開始の入力を境界で検証する
+# Session 03: 境界で入力を検証し、監査記録から個人情報を除外する
 
 このディレクトリはSession 03の開始スナップショットです。解答は `examples/session-03-solution/src` にあります。
 

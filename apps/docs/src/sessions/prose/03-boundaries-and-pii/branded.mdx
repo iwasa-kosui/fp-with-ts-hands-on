@@ -1,8 +1,8 @@
 import BrandedIdFlow from "../../../components/BrandedIdFlow.astro";
 import { brandedIdCode } from "../../pages/03-boundaries-and-pii-content";
 
-<p>Branded Type は、同じ string でも用途ごとにブランド（型を区別する情報）を付けて、別の型として区別する書き方です。検査を通った値だけにブランドを付けると、検査していない文字列は ID の型として渡せません。予約IDを獣医師IDの引数へ渡す誤りも、型検査で検出できます。</p>
+<p>Branded Type は、同じ string でも用途ごとにブランド（型を区別する情報）を付けて、別の型として区別する書き方です。検査を通った値だけにブランドを付けると、検査していない文字列は ID の型として渡せません。</p>
 
-<p>現在のコードの <code>VeterinarianId</code> にはブランドが付いています。ただし <code>parse</code> が <code>any</code> を経由して値をコピーするため、<code>night-shift</code> が <code>VeterinarianId</code> 型として扱われました。図の「ブランドを付ける前」のコードは、ブランドの効果を見るための比較用です。</p>
+<p>S03 の修正は、<code>parse</code> が schema で値を検査することです。ブランドは検査済みの値だけを型で示す手段で、値の検査は行いません。現在のコードでは、<code>VeterinarianId</code> にブランドが付いていても、<code>parse</code> が <code>any</code> を経由して値をコピーするため、<code>night-shift</code> が通過します。</p>
 
 <BrandedIdFlow code={brandedIdCode} />

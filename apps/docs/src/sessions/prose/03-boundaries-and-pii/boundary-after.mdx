@@ -1,9 +1,9 @@
 import BoundaryPlayer from "../../../components/BoundaryPlayer.astro";
 import { startExaminationWalkthrough } from "../../boundary-walkthroughs";
 
-<p><code>StartExaminationInput.parse</code> は、<code>schemaResult</code> が <code>z.object</code> とブランドを付けた ID の schema から作った関数です。</p>
+<p><code>StartExaminationInput.parse</code> は、<code>schemaResult</code> が schema から作った関数です。この schema は、ID の schema（<code>AppointmentId.schema</code> と <code>VeterinarianId.schema</code>）を <code>z.object</code> でまとめ、<code>.readonly()</code> で項目を読み取り専用にしたものです。</p>
 
-<p><strong>解決したこと</strong>: 入力の検査の課題のうち、不正な値を内側へ渡さないことです。<strong>この仕組みで解決しないこと</strong>: 利用者へ返す応答は未解決で、現在は例外により HTTP ステータス 500 になります（S04 でも同じです）。ID の実在は検証しません。Branded Type が検出するのは、検査していない <code>string</code> や別の ID を ID の型の引数へ渡す、コードの誤りです。データベースの値は、この教材の境界の対象外です。</p>
+<p><strong>解決したこと</strong>: 不正な値を内側へ渡さないことです。<strong>この仕組みで解決しないこと</strong>: 利用者へ返す応答は未解決で、現在は route の例外により HTTP ステータス 500 になります。ID の実在は検証しません。データベースの値は、検査済みの値を保存している前提で検査しません。</p>
 
 <BoundaryPlayer
   walkthrough={startExaminationWalkthrough}

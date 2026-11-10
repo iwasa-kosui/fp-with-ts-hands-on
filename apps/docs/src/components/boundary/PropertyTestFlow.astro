@@ -144,7 +144,7 @@ const sensitiveFrames: readonly Frame[] = [
   },
   {
     caption:
-      "テストは、fast-check が作ったメールアドレスごとに JSON を作り、その文字列にメールアドレスが含まれていなければ true を返します。false を返す入力が1つでもあるか、例外が投げられると、テストは失敗します。clinicFixture は、このハンズオンのテスト用の固定データです。fc.string() は任意の文字列を作り、fc.uuid() は UUID の形の文字列を作ります。expect を使うときは vitest から import します。",
+      "テストは、fast-check が作ったメールアドレスごとに JSON を作り、その文字列にメールアドレスが含まれていなければ true を返します。false を返す入力が1つでもあるか、例外が投げられると、テストは失敗します。clinicFixture は、このハンズオンのテスト用の固定データです。fc.stringMatching は、正規表現に合う文字列を作ります。",
     columns: [
       {
         side: "plain",
@@ -218,7 +218,7 @@ const sensitiveFrames: readonly Frame[] = [
   },
   {
     caption:
-      "型のテストは、型エラーになるはずの行の直前に @ts-expect-error を置きます。変更前は、この行が型エラーになるので、tsc（TypeScript の型検査を実行するコマンド）は成功します。誤った変更で ownerEmail が string に代入できる型になると、型エラーが消えて、tsc は「未使用の @ts-expect-error」を報告します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
+      "型のテストでは、@ts-expect-error の次の行が型エラーであれば tsc は成功し、型エラーがなければ tsc は失敗します。declare const contact は、値を作らずに、型だけを宣言します。変更前は、次の行が型エラーになるので、tsc は成功します。誤った変更で ownerEmail が string に代入できる型になると、型エラーが消えて、tsc は「未使用の @ts-expect-error」を報告し、失敗します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
     columns: [
       {
         side: "before",
@@ -319,7 +319,7 @@ const uuidFailedCompile = `mine/ids.type-test.ts(${lineOf(idsTypeTestCode, "@ts-
 const uuidFrames: readonly Frame[] = [
   {
     caption:
-      "守りたい性質は、UUID でない文字列を予約ID として渡したとき、StartExaminationInput.parse が Err を返すことです。fast-check は、ランダムな入力を多数生成するライブラリです。",
+      "守りたい性質は、UUID でない文字列を予約ID として渡したとき、StartExaminationInput.parse が Err を返すことです。値の性質のテスト（プロパティベーステスト）は、ランダムな入力を多数生成して、この性質が常に成り立つかを検証します。fast-check は、その入力を生成するライブラリです。",
     columns: [
       {
         side: "plain",
@@ -425,7 +425,7 @@ const uuidFrames: readonly Frame[] = [
   },
   {
     caption:
-      "型のテストは、型エラーになるはずの行の直前に @ts-expect-error を置きます。変更前は、獣医師IDを予約IDの変数へ代入する行が型エラーになるので、tsc（TypeScript の型検査を実行するコマンド）は成功します。別の誤った変更で2つの ID が同じ型になると、型エラーが消えて、tsc は「未使用の @ts-expect-error」を報告します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
+      "型のテストでは、@ts-expect-error の次の行が型エラーであれば tsc は成功し、型エラーがなければ tsc は失敗します。declare const input は、値を作らずに、型だけを宣言します。変更前は、獣医師IDを予約IDの変数へ代入する次の行が型エラーになるので、tsc は成功します。別の誤った変更で2つの ID が同じ型になると、型エラーが消えて、tsc は「未使用の @ts-expect-error」を報告し、失敗します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
     columns: [
       {
         side: "before",

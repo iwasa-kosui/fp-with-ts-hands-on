@@ -1,7 +1,7 @@
 import AdtValueCount from "../../../components/AdtValueCount.astro";
 
-<p>この Session で数え上げるのは、状態を特定する項目が取れる値だけです。<code>Appointment</code> では <code>kind</code> がその項目で、取れる値は6個です。<code>kind: string</code> は取れる値を数え上げられません。ここでの「候補」は、その型が取れる値の1つです。「または」で組む直和型は、S01 の Union のことです。「かつ」で組む直積型は、TypeScript ではオブジェクト型で表現します。</p>
+<p>状態を特定する項目 <code>kind</code> の候補を数えます。ここでの「候補」は、その型が取れる値の1つです。<code>Appointment</code> の <code>kind</code> は候補が6個で、<code>kind: string</code> は候補を数え上げられません。「または」で組む直和型は、S01 の Union のことです。最後のコマで、「かつ」で組む直積型を示し、型を直積と直和で組み立てる考え方を代数的データ型（ADT）と呼ぶことを確認します。</p>
 
 <AdtValueCount part="count" />
 
-<p>候補を数え上げられると、<code>case</code> で処理した後に残る候補も数え上げられます。</p>
+<p>候補を数え上げられると、<code>case</code> で処理した後に残る候補も数え上げられます。追加漏れの検出には、残りの候補が0個であることを検証するコードも必要です。</p>

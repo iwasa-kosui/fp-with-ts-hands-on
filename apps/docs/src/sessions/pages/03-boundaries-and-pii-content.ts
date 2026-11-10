@@ -28,7 +28,7 @@ export const session: SessionSummary = {
   snapshot: "session-03",
   sequence: "03",
   kind: "exercise",
-  title: "診察開始の入力を境界で検証する",
+  title: "境界で入力を検証し、監査記録から個人情報を除外する",
   durationMinutes: 35,
   timeBreakdown: { brief: 2, teach: 13, exercise: 15, review: 5 },
   adv: { articulate: 2, delegate: 11, verify: 2 },
@@ -304,32 +304,13 @@ export const brandedIdCode = {
 const schemaSourceSnippets = await loadSolutionSnippets({
   solutions: [
     {
-      path: "examples/session-03/src/adaptor/primary/web/startExaminationInput.ts",
-      symbol: "StartExaminationInput",
-      lines: [1, 16],
-    },
-    {
-      path: "examples/session-03-solution/src/adaptor/primary/web/startExaminationInput.ts",
-      symbol: "StartExaminationInput",
-      lines: [1, 17],
-    },
-    {
       path: "examples/session-03-solution/src/domain/shared/schemaResult.ts",
       symbol: "schemaResult",
       lines: [23, 27],
     },
   ],
 });
-const [schemaBeforeSnippet, schemaAfterSnippet, schemaResultSnippet] = schemaSourceSnippets;
-const startExaminationInputPath = "src/adaptor/primary/web/startExaminationInput.ts";
-const schemaBefore = {
-  path: pathLabelOf("session-03", startExaminationInputPath),
-  code: schemaBeforeSnippet.code,
-};
-const schemaAfter = {
-  path: pathLabelOf("session-03-solution", startExaminationInputPath),
-  code: schemaAfterSnippet.code,
-};
+const [schemaResultSnippet] = schemaSourceSnippets;
 const schemaResultSource = {
   path: lineLabelOf(
     "session-03-solution",
@@ -340,8 +321,20 @@ const schemaResultSource = {
   code: schemaResultSnippet.code,
 };
 
+const schemaExample = {
+  path: "説明用の短い例",
+  code: `import { z } from "zod";
+
+const schema = z.object({
+  appointmentId: z.string().uuid(),
+  veterinarianId: z.string().uuid(),
+});
+
+export type StartExaminationInput = z.infer<typeof schema>;
+export const StartExaminationInput = { schema } as const;`,
+};
+
 export const schemaSourceCode = {
-  before: schemaBefore,
-  after: schemaAfter,
+  example: schemaExample,
   schemaResult: schemaResultSource,
 };

@@ -1,7 +1,7 @@
 import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
 import { session03ChangeChecks } from "../../../components/boundary/change-checks";
 
-<p>修正後の状態の維持には、前のページの値の性質のテストと型のテストに、Linter（コードを実行せずに書き方の問題を検出するツール）のルールを加えた3つの仕組みを使います。変更を選び、結果を比較してください。</p>
+<p>修正後の状態は、前のページの値の性質のテストと型のテストに、Linter（コードを実行せずに書き方の問題を検出するツール）のルールを加えた3つの仕組みで守ります。タブ「route が parse を通さない」のコードは、演習の題材の短い route で、本編の routes.ts とは異なります。</p>
 
 <ChangeChecks set={session03ChangeChecks} />
 

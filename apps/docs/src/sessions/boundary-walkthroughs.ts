@@ -162,19 +162,19 @@ const checkedFrames = (
       first: 'const schema = z.string().uuid().brand<"AppointmentId">();',
       zone: 1,
       status: "pass",
-      valueLabel: "appointmentId の検査: UUID の形であるため合格",
+      valueLabel: "appointmentId の検査: UUID の形であるため検査を通過",
       value: `"${appointmentUuid}"`,
-      text: "1つ目の項目です。予約IDはUUIDの形であるため合格します。",
+      text: "1つ目の項目です。予約IDはUUIDの形であるため検査を通過します。",
     }),
     startFrame("veterinarianId", {
       first: 'const schema = z.string().uuid().brand<"VeterinarianId">();',
       zone: 1,
       status: veterinarianPasses ? "pass" : "stop",
-      valueLabel: `veterinarianId の検査: ${veterinarianPasses ? "UUID の形であるため合格" : "UUID の形ではないので不合格"}`,
+      valueLabel: `veterinarianId の検査: ${veterinarianPasses ? "UUID の形であるため検査を通過" : "UUID の形ではないため検査を通過しない"}`,
       value: veterinarianLine,
       text: veterinarianPasses
-        ? "2つ目の項目です。担当獣医師IDの欄の値もUUIDの形であるため合格します。"
-        : "2つ目の項目です。UUIDの形ではないので不合格です。",
+        ? "2つ目の項目です。担当獣医師IDの欄の値もUUIDの形であるため検査を通過します。"
+        : "2つ目の項目です。UUIDの形ではないため検査を通過しません。",
     }),
   ];
 };
@@ -188,7 +188,7 @@ const passedFrames = (veterinarianUuidValue: string, lastText: string) => {
       status: "pass",
       valueLabel: "parse の結果",
       value: typed,
-      text: "全項目が合格したので、ok(parsed.data)を呼びます。型の上では、この値がStartExaminationInputになります。",
+      text: "全項目が検査を通過したので、ok(parsed.data)を呼びます。型の上では、この値がStartExaminationInputになります。",
     }),
     startFrame("schemaResult", {
       first: "export const ok = <T>(value: T): Result<T> => ({",
@@ -214,7 +214,7 @@ const passedFrames = (veterinarianUuidValue: string, lastText: string) => {
       status: "pass",
       valueLabel: "startExamination へ渡す値",
       value: `{\n  veterinarianId: "${veterinarianUuidValue}",\n  examinationStartedAt: "2026-08-30T06:30:00.000Z",\n}`,
-      text: "routeは、取り出したinputの獣医師IDと、routeに実装された固定の時刻を、startExaminationへ渡します。この時刻はS06で扱う固定値です。表示中の routes.ts は修正前のコードです。",
+      text: "routeは、取り出したinputの獣医師IDと、固定の時刻を、startExaminationへ渡します。",
     }),
     startFrame("transition", {
       first: "veterinarianId: VeterinarianId,",
@@ -234,7 +234,7 @@ const rejectedFrames = [
     status: "stop",
     valueLabel: "parse の結果",
     value: "Err()",
-    text: "不合格の項目があるので、err()を呼びます。この場合、parseはStartExaminationInputを返しません。",
+    text: "検査を通過しない項目があるので、err()を呼びます。この場合、parseはStartExaminationInputを返しません。",
   }),
   startFrame("schemaResult", {
     first: "export const err = <T>(): Result<T> => ({",
@@ -251,7 +251,7 @@ const rejectedFrames = [
     status: "stop",
     valueLabel: "route が受け取った結果",
     value: "Err()",
-    text: "routeがErrに_unsafeUnwrapを呼びます。内側へ渡す値はありません。S04でも、入力の検査の失敗は例外のままです。",
+    text: "routeがErrに_unsafeUnwrapを呼びます。Errには内側へ渡す値がありません。",
   }),
   startFrame("schemaResult", {
     first: 'throw new Error("Cannot unwrap an invalid boundary value");',
@@ -259,7 +259,7 @@ const rejectedFrames = [
     status: "stop",
     valueLabel: "内側に渡された値",
     value: "// なし",
-    text: "Errの_unsafeUnwrapは例外を投げ、startExaminationは呼ばれません。利用者へ返す応答は未解決で、現在は例外のため500になります。",
+    text: "Errの_unsafeUnwrapは例外を投げ、startExaminationは呼ばれません。利用者へ返す応答は未解決で、現在はrouteの例外により500になります。",
   }),
 ];
 
@@ -326,8 +326,8 @@ export const startExaminationWalkthrough: Walkthrough = {
     },
     {
       id: "before",
-      label: "同じ「夜勤」が、検査しない現在のコードに渡された",
-      note: "検査しない修正前の parse",
+      label: "検査しない現在の parse に「夜勤」が渡された",
+      note: 'veterinarianId は "night-shift"',
       frames: [
         ...arrivalFrames(`"night-shift"`),
         startFrame("parseBefore", {

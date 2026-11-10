@@ -9,11 +9,11 @@ export default {
       subject: "statusLabel",
       title: "Paid の case を消しても、default の assertNever が残っている",
       allow: ["lint", "tests"],
-      hint: "tsc の検出は最初から備わっているため、自分の仕組みとして数えません。自分で追加した仕組みでも検出できるかを確認します。",
+      hint: "tsc の検出は最初から備わっているため、自分の仕組みとして数えません。型エラーを無視して実行した場合や、tsc の結果を CI で失敗にしていない場合にも検出するため、自分で追加した仕組みでも検出できるかを確認します。",
       behavior: {
         input: { text: "会計済みの予約の表示名を求める" },
         expected: { text: "「会計済み」と表示" },
-        actual: { text: "tsc は型エラーを報告する。無視して実行すると例外で中断" },
+        actual: { text: "tsc は型エラーを報告する。無視して実行すると例外で中断。tsc の結果を CI で失敗にしていない場合に備えて、自分の仕組みでも検出する" },
       },
     },
     {
@@ -65,7 +65,7 @@ export default {
       allow: ["lint"],
       hint: "toStatusLabel だけでなく、同じファイルの別の関数でも検出できるかを確認します。",
       behavior: {
-        input: { text: "キャンセルの予約を toStatusTone に渡す" },
+        input: { text: "キャンセルの予約を、状態の色を決める関数 toStatusTone に渡す" },
         expected: { text: "Canceled の case を通る" },
         actual: { text: "case がなく default を通る", value: '"neutral"' },
       },

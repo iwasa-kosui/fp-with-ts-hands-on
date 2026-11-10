@@ -1,5 +1,5 @@
 import AdtValueCount from "../../../components/AdtValueCount.astro";
 
-<p>修正点は2つあります。引数の型を <code>Appointment</code> にすることと、<code>default</code> で <code>assertNever</code> を呼ぶことです。<code>assertNever</code> は、<code>never</code> 型の引数だけを受け取り、必ず例外を投げて値を返さない関数です。これを戻り値の型 <code>never</code> で表します。値を返さないため、<code>return assertNever(appointment);</code> は戻り値の型 <code>string</code> と矛盾しません。</p>
+<p>修正点は3つです。<code>assertNever</code> の追加、引数の型を <code>Appointment</code> にすること、<code>default</code> で呼ぶことです。<code>assertNever</code> は <code>never</code> 型の引数を受け取り、例外を投げます。返す値の候補が0個であるため、戻り値の型も <code>never</code> です。<code>never</code> 型の値は <code>string</code> の戻り値としても扱えます。</p>
 
 <AdtValueCount part="exhaustive" />

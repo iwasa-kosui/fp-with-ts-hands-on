@@ -125,7 +125,7 @@ describe("judge", () => {
     expect(result.hiddenCount).toBe(0);
     expect(result.problems).toEqual([]);
     expect(rowOf(result, "B5-any-result").cells.types.state).toBe("hit");
-    expect(result.next).toEqual(["必須の誤った変更はすべて検出しました。画面の表で行の題名の ▶ を押し、少なくとも 1 つの行に「この仕組みで検出できないこと」を 1 文で記入します。"]);
+    expect(result.next).toEqual(["必須の誤った変更はすべて検出しました。次へ進む前に、画面の表で行の題名の ▶ を押し、少なくとも 1 つの行に「この仕組みで検出できないこと」を 1 文で記入します。この記入は合格の条件ではありません。"]);
     expect(result.durations.total).toBeGreaterThan(0);
     expect(result.testsTimedOut).toBe(false);
   });
