@@ -36,7 +36,7 @@ for (const root of roots) {
     probe.style.cssText = `position:absolute;visibility:hidden;pointer-events:none;min-height:0;width:${live.offsetWidth}px`;
     live.after(probe);
     let tallest = 0;
-    for (const li of page ? items.flat() : items[scene]) {
+    for (const li of items.flat()) {
       probe.innerHTML = li.innerHTML;
       tallest = Math.max(tallest, probe.offsetHeight);
     }

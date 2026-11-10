@@ -58,6 +58,7 @@ export type CodeExplorerLayoutParts = Readonly<{
   terminalState: TerminalPanelStateKind;
   terminalPhase: TerminalPhase | undefined;
   acquireSession: () => Promise<TerminalSession>;
+  startSession: () => Promise<void>;
   releaseSession: () => Promise<void>;
 }>;
 
@@ -231,6 +232,12 @@ export const CodeExplorer = ({
     return session;
   }, [notifyCommandSent]);
 
+  const startSession = useCallback(async (): Promise<void> => {
+    const panel = terminalPanel.current;
+    if (panel === null) throw new Error("ターミナルを使用できません。");
+    await panel.ensureSession();
+  }, []);
+
   const releaseSession = useCallback(async (): Promise<void> => {
     await terminalPanel.current?.releaseSession();
   }, []);
@@ -359,7 +366,10 @@ export const CodeExplorer = ({
                   <p>教材が更新されました。前の編集を使いますか。</p>
                   <p>対象のファイル: {status.paths.join("、")}</p>
                   <p>
-                    更新後のコードで始めると、対象のファイルの前の編集は消え、元に戻せません。
+                    前の編集を使うと、対象のファイルは前の編集の内容のまま表示され、教材の更新は反映されません。更新後のコードで始めると、対象のファイルの前の編集は消え、元に戻せません。
+                  </p>
+                  <p>
+                    どちらかを選ぶまで、ファイルの切り替え、編集、実行の操作はできません。
                   </p>
                   <button
                     type="button"
@@ -467,6 +477,7 @@ export const CodeExplorer = ({
           terminalState,
           terminalPhase,
           acquireSession,
+          startSession,
           releaseSession,
         })}
       </>

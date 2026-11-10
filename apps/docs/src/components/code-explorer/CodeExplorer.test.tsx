@@ -715,16 +715,90 @@ describe("CodeExplorer file synchronization", () => {
       expect(view.dispose).not.toHaveBeenCalled();
     });
 
-    it("records the terminal output for the next visit", async () => {
+    it("records the terminal output for the next visit once a command was sent", async () => {
       const store = seedOutput();
-      const { root } = await createHarness({ store });
+      const { root, sendTerminalInput } = await createHarness({ store });
+      sendTerminalInput("ls\r");
+      await settle();
       await act(async () => root.unmount());
       roots.splice(roots.indexOf(root), 1);
 
       const saved = (await store.load(workspace.slug)).view;
 
-      expect(saved?.output).toContain(previousOutput);
-      expect(saved?.output).toContain("ここまでが前回の出力です");
+      expect(saved?.output.startsWith(previousOutput)).toBe(true);
+      expect(saved?.output.split("ここまでが前回の出力です")).toHaveLength(2);
+    });
+
+    const visitRunner = () => {
+      let request!: TerminalStartRequest;
+      const session: TerminalSession = {
+        writeInput: vi.fn(async () => undefined),
+        writeFile: vi.fn(async () => undefined),
+        resize: vi.fn(),
+        restartShell: vi.fn(async () => undefined),
+        dispose: vi.fn(async () => undefined),
+      };
+      return {
+        getRequest: () => request,
+        startSession: async (next: TerminalStartRequest) => {
+          request = next;
+          return session;
+        },
+      };
+    };
+
+    const visit = async (
+      store: MemoryStore,
+      runner: ReturnType<typeof visitRunner>,
+      sendCommand: boolean,
+    ) => {
+      const harness = await createHarness({
+        store,
+        startSession: runner.startSession,
+      });
+      await act(async () => {
+        runner.getRequest().onOutput("$ ");
+      });
+      if (sendCommand) {
+        harness.sendTerminalInput("ls\r");
+        await settle();
+        await act(async () => {
+          runner.getRequest().onOutput("package.json\r\n");
+        });
+      }
+      await act(async () => harness.root.unmount());
+      roots.splice(roots.indexOf(harness.root), 1);
+    };
+
+    it("keeps the saved output while the terminal is only started and closed again", async () => {
+      const store = seedOutput();
+      const runner = visitRunner();
+
+      await visit(store, runner, false);
+      await visit(store, runner, false);
+      await visit(store, runner, false);
+
+      expect(store.saveTerminalOutput).not.toHaveBeenCalled();
+      expect(store.viewOf(workspace.slug)?.output).toBe(previousOutput);
+      expect(store.viewOf(workspace.slug)?.lastOutputAt).toBe(2000);
+    });
+
+    it("adds one delimiter after the previous output when a command is sent after repeated visits", async () => {
+      const store = seedOutput();
+      const runner = visitRunner();
+
+      await visit(store, runner, false);
+      await visit(store, runner, false);
+      await visit(store, runner, false);
+      await visit(store, runner, true);
+
+      const output = store.viewOf(workspace.slug)?.output ?? "";
+      expect(output.startsWith(previousOutput)).toBe(true);
+      expect(output.split("ここまでが前回の出力です")).toHaveLength(2);
+      expect(output.endsWith("$ package.json\r\n")).toBe(true);
+      expect(output.indexOf("ここまでが前回の出力です")).toBeLessThan(
+        output.indexOf("$ package.json"),
+      );
     });
   });
 
@@ -816,8 +890,9 @@ describe("CodeExplorer file synchronization", () => {
       });
       await unmount(root);
 
-      expect(store.viewOf(workspace.slug)?.output).toBe("$ ");
-      expect(store.viewOf(workspace.slug)?.lastOutputAt).toBe(0);
+      expect(store.saveTerminalOutput).not.toHaveBeenCalled();
+      expect(store.viewOf(workspace.slug)?.output ?? "").toBe("");
+      expect(store.viewOf(workspace.slug)?.lastOutputAt ?? 0).toBe(0);
 
       const second = await createHarness({
         store,
@@ -833,6 +908,7 @@ describe("CodeExplorer file synchronization", () => {
       });
       await unmount(second.root);
 
+      expect(store.viewOf(workspace.slug)?.output).toBe("$ package.json\r\n");
       expect(store.viewOf(workspace.slug)?.lastOutputAt).toBeGreaterThan(0);
     });
 

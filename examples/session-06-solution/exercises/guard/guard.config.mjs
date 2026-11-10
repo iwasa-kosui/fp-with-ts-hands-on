@@ -86,6 +86,16 @@ export default {
       },
     },
     {
+      id: "B7-date-in-unrun-branch",
+      kind: "bad",
+      subject: "useCase",
+      title: "予約が見つからない分岐の中で、new Date() を呼ぶ",
+      stage: 2,
+      required: false,
+      allow: ["lint"],
+      hint: "テストが実行しない分岐の中の現在時刻の取得を、Linter のルールで検出します。",
+    },
+    {
       id: "R1-peer-change",
       kind: "bad",
       subject: "useCase",

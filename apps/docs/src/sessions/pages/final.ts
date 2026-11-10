@@ -37,11 +37,11 @@ export const sessionPages = [
   },
   {
     slug: "boundaries",
-    title: "成功の流れで5つの境界を追跡する",
+    title: "成功の流れで通過する4つの境界",
     flow: "solution",
     kind: "teach",
     minutes: 1.25,
-    role: "解決策: 課題1に答えます。1件の依頼が5つの境界を順に通ることを確認します。",
+    role: "解決策: 課題1に答えます。成功の依頼が通過する4つの境界を確認します。",
   },
   {
     slug: "boundary-failures",
@@ -57,7 +57,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "review",
     minutes: 1.5,
-    role: "解決策を守る: 課題2に答えます。Linter の指摘に対して、コードを修正するか、ルールを修正するか、理由を付けて残すかを判断します。",
+    role: "解決策: 課題2に答えます。Linter の指摘に対して、コードを修正するか、ルールを修正するか、理由を付けて残すかを判断します。",
   },
   {
     slug: "own-rule-review",

@@ -151,7 +151,7 @@ status: "in-examination"`,
     lit: ["use-case", "domain"],
   },
   {
-    text: "データベースの予約を、新しい内容で上書きします。<code>paid</code> は <code>in-examination</code> に変わります。<code>amount</code> と <code>paidAt</code> は残っているため、会計済みの予約が診察中の状態になりました。",
+    text: "データベースの予約を、新しい内容で上書きします。<code>paid</code> は <code>in-examination</code> に変わり、<code>examinationStartedAt</code> も押した時刻で上書きされます。画面の右の欄で、変わった行が強調表示されます。<code>amount</code> と <code>paidAt</code> は残っているため、会計済みの予約が診察中の状態になりました。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "repository.save(updated);", false),
     show: shown("use-case", useCaseCode, "repository.save(updated);", false),
@@ -165,7 +165,7 @@ status: "in-examination"`,
     lit: ["use-case", "db"],
   },
   {
-    text: "監査記録に、診察を開始した操作を1行追加します。<code>payload</code> には予約全体が含まれるため、調査に不要な飼い主の氏名、メールアドレス、電話番号も保存されます。これが課題2です。",
+    text: "監査記録に、診察を開始した操作を1行追加します。監査記録の <code>payload</code>（操作後の予約内容を保存する項目）には予約全体が含まれるため、調査に不要な飼い主の氏名、メールアドレス、電話番号も保存されます。これが課題2です。",
     file: "use-case",
     highlight: highlight("use-case", useCaseCode, "repository.appendAudit({", true),
     show: shown("use-case", useCaseCode, "repository.appendAudit({", true),
@@ -182,7 +182,7 @@ status: "in-examination"`,
     lit: ["use-case", "db"],
   },
   {
-    text: "サーバーの応答によって画面が更新され、表示は「診察中」に変わります。受付はこの画面から会計前の来院と判断し、会計担当が飼い主へ同じ4,800円を再度請求しました。これが課題1です。",
+    text: "サーバーの応答によって画面が更新され、表示は「診察中」に変わります。診察中の表示を見た受付が会計担当へ未精算と伝え、会計担当が飼い主へ同じ4,800円を再度請求しました。これが課題1です。",
     file: "",
     highlight: undefined,
     show: undefined,
@@ -347,11 +347,11 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
           <h6>現在の予約内容</h6>
           <ul class="hem__lines">
             <li data-until="4" data-focus-at="2" data-slot="1"><Code code={'status: "paid"'} lang="ts" inline /></li>
-            <li data-from="4" data-flash-at="4" data-slot="1"><Code code={'status: "in-examination"'} lang="ts" inline /></li>
+            <li data-from="4" data-flash-at="4" data-changed-at="4" data-slot="1"><Code code={'status: "in-examination"'} lang="ts" inline /></li>
             <li><Code code="amount: 4800" lang="ts" inline /></li>
             <li><Code code={'paidAt: "2026-08-30T07:10:00.000Z"'} lang="ts" inline /></li>
             <li data-until="4" data-slot="4"><Code code="examinationStartedAt: 1回目の時刻" lang="ts" inline /></li>
-            <li data-from="4" data-flash-at="4" data-slot="4"><Code code="examinationStartedAt: 押した時刻" lang="ts" inline /></li>
+            <li data-from="4" data-flash-at="4" data-changed-at="4" data-slot="4"><Code code="examinationStartedAt: 押した時刻" lang="ts" inline /></li>
           </ul>
         </div>
         <div class="hem__table">
@@ -607,6 +607,9 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
       player.querySelectorAll<HTMLElement>("[data-flash-at]").forEach((element) => {
         if (index !== Number(element.dataset.flashAt)) element.classList.remove("is-flash");
         else if (changed) restartFlash(element);
+      });
+      player.querySelectorAll<HTMLElement>("[data-changed-at]").forEach((element) => {
+        element.classList.toggle("is-changed", index === Number(element.dataset.changedAt));
       });
       player.querySelectorAll<HTMLElement>(".hem__impl > [data-at], .hem__values > [data-at]").forEach((element) => {
         element.classList.toggle("is-off", index !== Number(element.dataset.at));
@@ -1185,6 +1188,12 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
 
   .hem .hem__lines li.is-focus {
     background: color-mix(in srgb, var(--role-accent) 22%, var(--role-surface));
+  }
+
+  .hem .hem__lines li.is-changed {
+    background: color-mix(in srgb, var(--role-accent) 45%, var(--role-surface));
+    outline: 2px solid var(--role-accent);
+    outline-offset: 0;
   }
 
   .hem .hem__lines li > :global(code) {

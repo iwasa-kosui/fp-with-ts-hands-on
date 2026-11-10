@@ -26,7 +26,7 @@ type Frame = Readonly<{
 
 const tree = miniTree("session-01-solution", "", [
   { folder: "src/domain/appointment/", files: [{ id: "signature", name: "transitions.ts" }] },
-  { folder: "test/regression/type-fixtures/", files: [{ id: "typeError", name: "paid-cannot-start.ts" }] },
+  { folder: "test/regression/type-fixtures/", files: [{ id: "typeError", name: "paid-not-assignable-to-checked-in.ts" }] },
   { folder: "src/adaptor/primary/web/", files: [{ id: "route", name: "routes.ts" }] },
 ]);
 
@@ -45,7 +45,7 @@ const frames: readonly Frame[] = [
   },
   {
     caption:
-      "Paid 型の値を渡す呼び出しは、実行前の型検査で報告されます。",
+      "Paid は startExamination の引数の型に代入できないため、Paid 型の値を渡す呼び出しは、実行前の型検査で報告されます。",
     code: { key: "typeError", lines: [2, 3] },
     top: { mode: "normal", focus: [], hide: [], token: { label: "Paid", at: 1, result: "stop" } },
     bottom: { mode: "dim", focus: [], hide: [], token: null },

@@ -63,7 +63,7 @@ const frames: readonly Frame[] = [
   },
   {
     caption:
-      "port は参照実装では domain に配置した型です。S00 と S06 では useCase に配置しました。どちらも内側であるため、内側のコードは外側の実装に依存しません。ExaminationStartedStore は、ExaminationStarted を受け取って ResultAsync を返すという仕様だけを定義します。",
+      "port は参照実装では domain に配置した型です。S06 では useCase に配置しました。どちらも内側であるため、内側のコードは外側の実装に依存しません。ExaminationStartedStore は、ExaminationStarted を受け取って ResultAsync を返すという仕様だけを定義します。",
     code: { key: "port", lines: [2, 6] },
     nodes: "dim",
     focus: ["domain"],
@@ -101,7 +101,7 @@ const frames: readonly Frame[] = [
   },
   {
     caption:
-      "実行時は、route がユースケースを呼び出します。ユースケースは domain の関数で判定し、保存は port の型を通して SQLite の store に依頼します。呼び出しは外側まで到達します。",
+      "実行時は、route がユースケースを呼び出します。ユースケースは domain の関数で判定し、保存は port の型を通して SQLite の store に依頼します。実行時の呼び出しは、外側の route から内側のユースケースと domain を経由して、再び外側の store に至ります。",
     code: { key: "route", lines: [1, 2] },
     nodes: "dim",
     focus: ["primary", "useCase", "domain", "secondary"],

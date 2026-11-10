@@ -20,15 +20,18 @@ type Card = Readonly<{
   type: string;
   code: string;
   short: string;
+  origin?: string;
 }>;
 type Frame = Readonly<{
   text: string;
+  gloss?: string;
   at: string;
   impl?: string;
   lines?: readonly number[];
   out?: string;
   skipped?: readonly string[];
   treeFile?: string;
+  tags?: Readonly<Record<string, Readonly<{ text: string; kind: string }>>>;
 }>;
 type Scene = Readonly<{ label: string; stop?: string; frames: readonly Frame[] }>;
 type Props = Readonly<{ scenes: "success" | "failures" }>;
@@ -36,11 +39,11 @@ type Props = Readonly<{ scenes: "success" | "failures" }>;
 const { scenes: sceneKind } = Astro.props;
 
 const gates: readonly Gate[] = [
-  { key: "input", num: "1", name: "入力境界", gloss: "HTTP の入力を検証し、ユースケースの入力へ変換します。" },
-  { key: "business", num: "2", name: "業務上の失敗", gloss: "予約なしや状態不正などの業務上の失敗を、型付きの `Err` として返します。" },
-  { key: "event", num: "3", name: "出力イベント", gloss: "業務の検証に成功した経路だけが、`ExaminationStarted` の生成へ進みます。" },
-  { key: "effect", num: "4", name: "副作用", gloss: "予約の状態と監査記録を、1つの transaction で保存します。" },
-  { key: "exception", num: "5", name: "例外境界", gloss: "業務の `Result` に入らない障害を、共通の境界が受け取って 500 を返します。" },
+  { key: "input", num: "1", name: "入力の境界", gloss: "HTTP の入力を検証し、ユースケースの入力へ変換します。" },
+  { key: "business", num: "2", name: "業務上の失敗の境界", gloss: "予約なしや状態不正などの業務上の失敗を、型付きの `Err` として返します。" },
+  { key: "event", num: "3", name: "出力イベントの境界", gloss: "業務の検証に成功した経路だけが、`ExaminationStarted` の生成へ進みます。" },
+  { key: "effect", num: "4", name: "副作用の境界", gloss: "予約の状態と監査記録を、1つの transaction で保存します。" },
+  { key: "exception", num: "5", name: "例外の境界", gloss: "業務の `Result` に入らない障害を、共通の境界が受け取って 500 を返します。" },
   { key: "answer", num: "", name: "応答", gloss: "route が結果を HTTP の応答に変換します。" },
 ];
 
@@ -245,7 +248,16 @@ const cards: readonly Card[] = [
     code: `context.redirect("/appointments/a-1?error=appointment-conflict", 303)`,
     short: `303 /appointments/a-1?error=appointment-conflict`,
   },
-  { key: "c9c", stage: "answer", tone: "reject", chip: "応答", type: "Response", code: serverError, short: `500 Internal Server Error` },
+  {
+    key: "c9c",
+    stage: "answer",
+    tone: "reject",
+    chip: "応答",
+    type: "Response",
+    code: serverError,
+    short: `500 Internal Server Error`,
+    origin: "例外の境界が作成",
+  },
 ];
 
 const allScenes: readonly Scene[] = [
@@ -253,7 +265,7 @@ const allScenes: readonly Scene[] = [
     label: "成功",
     frames: [
       {
-        text: "診察開始の依頼を route の入力境界で受け取ります。`parseBody` が HTTP のフォームを読み取り、`schema.safeParse` が内容を検証します。検証を通過した値だけが、ユースケースの実行（`run`）に渡す入力（`UseCaseInput`）になります。",
+        text: "診察開始の依頼を route の入力の境界で受け取ります。`parseBody` が HTTP のフォームを読み取り、`schema.safeParse` が内容を検証します。検証を通過した値だけが、ユースケースの実行（`run`）に渡す入力（`UseCaseInput`）になります。",
         at: "input",
         impl: "parse",
         lines: [0, 2],
@@ -286,7 +298,7 @@ const allScenes: readonly Scene[] = [
         lines: [0, 3],
       },
       {
-        text: "route の `match`（`Result` を `Ok` と `Err` で分岐する処理）が `Ok` を受け取り、詳細ページへの 303 リダイレクトを返します。例外境界は通りません。",
+        text: "route の `match`（`Result` を `Ok` と `Err` で分岐する処理）が `Ok` を受け取り、詳細ページへの 303 リダイレクトを返します。例外の境界は通りません。",
         at: "answer",
         out: "c9a",
         skipped: ["exception"],
@@ -298,7 +310,7 @@ const allScenes: readonly Scene[] = [
     stop: "business",
     frames: [
       {
-        text: "予約がすでに `InExamination` だったとします。入力と検証は前のページの成功と同じく通過し、`ensureCheckedIn` で `kind` が異なるため、`InvalidAppointmentState` の `Err` を返します。以降のステップは実行されません。",
+        text: "予約がすでに `InExamination` だったとします。この失敗は読み取りの時点で判明し、利用者には「現在の予約状態ではこの操作を実行できません。画面を更新して状態を確認してください。」と通知します。入力と検証は前のページの成功と同じく通過し、`ensureCheckedIn` で `kind` が異なるため、`InvalidAppointmentState` の `Err` を返します。以降のステップは実行されません。",
         at: "business",
         impl: "checkedin",
         lines: [2, 4, 5],
@@ -318,7 +330,7 @@ const allScenes: readonly Scene[] = [
     stop: "effect",
     frames: [
       {
-        text: "別の依頼が先に診察を開始していたとします。`status` が `CheckedIn` の行が無いため、更新は0行で、`changes !== 1` になります。`store` は `AppointmentConflict` を `throw` し、transaction は取り消されます。",
+        text: "別の依頼が先に診察を開始していたとします。読み取りの時点では `CheckedIn` だったため、この失敗は保存の時点で判明し、利用者には「予約を更新できませんでした。最新の状態を確認してください。」と通知します。`status` が `CheckedIn` の行が無いため、更新は0行で、`changes !== 1` になります。`store` は `AppointmentConflict` を `throw` し、transaction は取り消されます。",
         at: "effect",
         impl: "commit-conflict",
         lines: [0, 2, 3, 4, 5, 6],
@@ -332,7 +344,7 @@ const allScenes: readonly Scene[] = [
         out: "c7c",
       },
       {
-        text: "route の `match` が `AppointmentConflict` を受け取り、`error=appointment-conflict` が付いた詳細ページへの 303 を返します。例外境界は通りません。",
+        text: "route の `match` が `AppointmentConflict` を受け取り、`error=appointment-conflict` が付いた詳細ページへの 303 を返します。例外の境界は通りません。",
         at: "answer",
         out: "c9d",
         skipped: ["exception"],
@@ -365,17 +377,19 @@ const allScenes: readonly Scene[] = [
         out: "c8",
       },
       {
-        text: "route の `Err` の分岐は使われません。SQLite の障害は業務の `Result` に含まれません。例外境界が作った 500 がそのまま応答になります。",
+        text: "route の `Err` の分岐は使われません。SQLite の障害は `Result` に含まれません。例外の境界が作った 500 がそのまま応答になります。",
+        gloss: "例外の境界が作った 500 を、そのまま応答にします。",
         at: "answer",
         treeFile: "app",
         out: "c9c",
+        tags: { exception: { text: "500 を作成", kind: "made" }, answer: { text: "500 を返す", kind: "sent" } },
       },
     ],
   },
 ];
 
 const scenes = sceneKind === "success" ? allScenes.slice(0, 1) : allScenes.slice(1);
-const title = sceneKind === "success" ? "診察開始の依頼が5つの境界を通る" : "失敗の依頼が5つの境界を進む範囲";
+const title = sceneKind === "success" ? "診察開始の依頼が成功の流れで通過する4つの境界" : "失敗の依頼が5つの境界を進む範囲";
 const lead =
   sceneKind === "success"
     ? "依頼カードの値が変わり、現在通過している境界の実コードが表示されます。"
@@ -416,7 +430,7 @@ const frameData = scenes.map(({ stop, frames }) => ({
     treeFile: frame.treeFile ?? (frame.impl === undefined ? "routes" : treeFiles[frame.impl]),
   })),
 }));
-const cardData = Object.fromEntries(cards.map(({ key, tone, chip, type, short }) => [key, { tone, chip, type, short }]));
+const cardData = Object.fromEntries(cards.map(({ key, tone, chip, type, short, origin }) => [key, { tone, chip, type, short, origin }]));
 ---
 
 <Walkthrough
@@ -445,12 +459,13 @@ const cardData = Object.fromEntries(cards.map(({ key, tone, chip, type, short })
           <span class="fb-card__label">依頼カード</span>
           <span class="fb-chip" data-card-chip></span>
           <code class="fb-card__type" data-card-type></code>
+          <span class="fb-card__origin" data-card-origin></span>
         </p>
         <p class="fb-card__val"><code data-card-val></code></p>
       </div>
       {gates.map((gate) => (
         <div class="fb-open" data-open={gate.key}>
-          <p class="fb-gloss">{gate.gloss.split("`").map((part, index) => (index % 2 === 1 ? <code>{part}</code> : part))}</p>
+          <p class="fb-gloss" data-gloss>{gate.gloss.split("`").map((part, index) => (index % 2 === 1 ? <code>{part}</code> : part))}</p>
           {Object.entries(impls).filter(([, impl]) => impl.stage === gate.key).map(([name, impl]) => (
             <figure class="fb-impl" data-impl={name}>
               <figcaption>
@@ -466,6 +481,7 @@ const cardData = Object.fromEntries(cards.map(({ key, tone, chip, type, short })
                 <span class="fb-out__label">出力</span>
                 <span class="fb-chip">{card.chip}</span>
                 <code class="fb-out__type">{card.type}</code>
+                {card.origin === undefined ? null : <span class="fb-out__origin">{card.origin}</span>}
               </figcaption>
               <Code code={card.code} lang="ts" wrap />
             </figure>

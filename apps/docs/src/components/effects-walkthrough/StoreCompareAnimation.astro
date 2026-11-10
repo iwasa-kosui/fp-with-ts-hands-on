@@ -18,7 +18,7 @@ const sides = [
 
 const frames: readonly Frame[] = [
   {
-    text: "SQLite は、`database.transaction` の中で `saveState` と `appendAudit` を呼び、`ok(undefined)` を返すと状態と監査記録を同時に確定します。in-memory は、新しい `Map` と配列 `nextEvents` を作り、`appointments` と `events` を続けて置き換えます。",
+    text: "SQLite は、`database.transaction` に渡した関数の中で `saveState` と `appendAudit` を呼びます。関数が例外を投げずに完了すると、transaction が確定し、状態と監査記録が同時に残ります。in-memory は、新しい `Map` と配列 `nextEvents` を作り、`appointments` と `events` を続けて置き換えます。",
     sqlite: {
       parts: [
         { from: "database.transaction((transaction) => {" },
@@ -34,7 +34,7 @@ const frames: readonly Frame[] = [
     },
   },
   {
-    text: "SQLite は、`transaction` の中で取得した `current` から `Appointment.startExamination` を再度実行し、作り直した `committedEvent` の状態を保存します。取得後に変更された予約を、古い値で上書きしないためです。in-memory は、渡された `event` の `aggregateState` をそのまま保存し、`event` も `nextEvents` に追加します。",
+    text: "SQLite は、`transaction` の中で取得した `current` から `Appointment.startExamination` を再度実行し、作り直した `committedEvent` の状態を保存します。ユースケースの取得後に `reason` などが変更されていても、変更後の値を古い `event` の値で上書きしないためです。in-memory は、渡された `event` の `aggregateState` をそのまま保存し、`event` も `nextEvents` に追加します。",
     sqlite: {
       parts: [
         { from: "const current = findInTransaction(transaction, event.appointmentId);" },

@@ -21,6 +21,7 @@ for (const figure of figures) {
   if (figure.hasAttribute("data-written-only")) chipText.home = "書き込み済み";
   const failed = figure.querySelector("[data-failed]");
   const issue = figure.querySelector("[data-issue]");
+  const compare = figure.querySelector("[data-compare]");
 
   const root = figure.closest("[data-walk]");
   const frames = JSON.parse(figure.dataset.frames);
@@ -130,6 +131,8 @@ for (const figure of figures) {
     appointments.toggleAttribute("data-read", frame.read === true);
     setOld("old-CheckedIn", frame.old === "CheckedIn", reset);
     setOld("old-InExamination", frame.old === "InExamination", reset);
+    if (cards["old-audit"] !== undefined) setOld("old-audit", frame.oldAudit === true, reset);
+    if (compare !== null) compare.toggleAttribute("data-on", frame.compare === true);
     setCard("state", frame.state, frame.tx !== "none", reset);
     const auditFailed = failed !== null && frame.audit.endsWith("failed");
     setCard("audit", auditFailed ? "off" : frame.audit, frame.tx !== "none", reset);

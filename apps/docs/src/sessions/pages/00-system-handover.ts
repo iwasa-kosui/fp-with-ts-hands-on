@@ -49,7 +49,7 @@ export const sessionPages = [
     flow: "knowledge",
     kind: "teach",
     minutes: 1,
-    role: "事前知識: S00 のコードの構成の理由を示すために、ヘキサゴナルアーキテクチャの考え方を図で説明します。",
+    role: "事前知識: この Session のコードの構成の理由を示すために、ヘキサゴナルアーキテクチャの考え方を図で説明します。",
   },
   {
     slug: "when-noticed",
@@ -69,11 +69,11 @@ export const sessionPages = [
   },
   {
     slug: "roadmap",
-    title: "Session ごとに実装する業務ルール",
+    title: "Session ごとに解決する内容",
     flow: "solution",
     kind: "review",
     minutes: 0.5,
-    role: "解決策: 目指す状態に至る順序を、Session ごとの業務ルールで確認します。",
+    role: "解決策: 目指す状態に至る順序を、Session ごとに解決する内容で確認します。",
   },
   {
     slug: "your-rule",

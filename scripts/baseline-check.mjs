@@ -24,7 +24,7 @@ export const UNCHANGED_FOLDERS = ["session-00", "final", "fixtures", "start-exam
 export const NEW_FOLDERS = ["session-05-solution"];
 
 export const FIXTURE_FILE_RENAMES = {
-  "s2-paid-cannot-start.ts": "paid-cannot-start.ts",
+  "s2-paid-cannot-start.ts": "paid-not-assignable-to-checked-in.ts",
   "s2-cancel-requires-reason.ts": "cancel-requires-reason.ts",
   "s2-payment-requires-completed-examination.ts": "payment-requires-completed-examination.ts",
   "s2-status-exhaustive.ts": "status-exhaustive.ts",
@@ -50,7 +50,7 @@ export const REGRESSION_LABELS = { 2: "S01", 3: "S03 補助演習", 4: "S03", 5:
 export const SESSION_02_COPIES_FROM_SESSION_03 = [
   "src/domain/appointment/transitions.ts",
   "test/regression/compileTypeFixture.ts",
-  "test/regression/type-fixtures/paid-cannot-start.ts",
+  "test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
   "test/regression/type-fixtures/cancel-requires-reason.ts",
   "test/regression/type-fixtures/transition-sources.ts",
 ];
@@ -71,6 +71,7 @@ export const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-01-solution/exercises/guard/cases/B3-cancel-keeps-visit-reason.ts",
   "examples/session-01-solution/exercises/guard/cases/B4-cast-via-unknown.ts",
   "examples/session-01-solution/exercises/guard/cases/B5-start-time-from-check-in.ts",
+  "examples/session-01-solution/exercises/guard/cases/B6-widened-record-payment.ts",
   "examples/session-01-solution/exercises/guard/cases/G1-transitions.ts",
   "examples/session-01-solution/exercises/guard/cases/G2-callers-check-state.ts",
   "examples/session-01-solution/exercises/guard/cases/G3-global-this-cast.ts",
@@ -83,6 +84,17 @@ export const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-01-solution/exercises/guard/subjects/callers.ts",
   "examples/session-01-solution/exercises/guard/subjects/lifecycle.ts",
   "examples/session-01-solution/exercises/guard/subjects/transitions.ts",
+  "examples/session-02/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
+  "examples/session-02-solution/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
+  "examples/session-03/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
+  "examples/session-03-solution/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
+  "examples/session-03-supplement/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
+  "examples/session-03-supplement-solution/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
+  "examples/session-04/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
+  "examples/session-04-solution/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
+  "examples/session-06/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
+  "examples/session-06-solution/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
+  "examples/session-01-solution/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
   "examples/session-03-solution/exercises/result-errors.test.ts",
   "examples/session-03-solution/package.json",
   "examples/session-03-solution/eslint.config.mjs",
@@ -145,6 +157,7 @@ export const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-06-solution/exercises/guard/cases/B4-two-saves.ts",
   "examples/session-06-solution/exercises/guard/cases/B5-clock-read-twice.ts",
   "examples/session-06-solution/exercises/guard/cases/B6-store-result-dropped.ts",
+  "examples/session-06-solution/exercises/guard/cases/B7-date-in-unrun-branch.ts",
   "examples/session-06-solution/exercises/guard/cases/G1-solution.ts",
   "examples/session-06-solution/exercises/guard/cases/G2-date-from-timestamp.ts",
   "examples/session-06-solution/exercises/guard/cases/R1-peer-change.ts",
@@ -365,6 +378,9 @@ const compareSession02Copies = ({ current, readCurrent, baseline }, problems) =>
     const expected = renameIdentifiers(
       applyLayoutMove(baselineFixturePath(file), baseline.get(baselinePath)).text,
       { ...solution, name: "session-02" },
+    ).replace(
+      "// @ts-expect-error Paid から診察を開始できません。",
+      "// @ts-expect-error Paid は startExamination の引数の型に代入できません。",
     );
     if (!current.includes(path) || readCurrent(path) !== expected) {
       problems.push(`${path} が基準 ${BASELINE_COMMIT} の ${baselinePath} の写しではありません`);

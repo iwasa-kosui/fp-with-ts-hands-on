@@ -1,0 +1,267 @@
+---
+import Walkthrough from "./Walkthrough.astro";
+
+const frames = [
+  { text: "診察開始では、予約の状態の更新と監査記録の追加を、1つの transaction の中で実行します。この時点の2つの書き込みは未確定で、データベースにはまだ残りません。" },
+  { text: "2つの書き込みがどちらも成功すると、transaction が確定します。予約の状態は診察中になり、監査記録も1件残ります。" },
+  { text: "2つ目の書き込みが失敗すると、transaction が取り消されます。成功していた1つ目の書き込みも破棄され、予約の状態は来院済みのままで、監査記録も残りません。" },
+] as const;
+
+const legendLines = ["破線の枠は、データベースにまだ残っていない書き込みです。実線の枠は、データベースに残った内容です。"];
+---
+
+<Walkthrough
+  id="transaction-walkthrough"
+  title="transaction の確定と取り消し"
+  lead="2つの書き込みが、transaction の中で確定される場合と、取り消される場合を追います。"
+  note="値は説明用の例です。"
+  scenes={[{ label: "transaction の確定と取り消し", frames }]}
+  page
+  legend={legendLines.length * 1.25 + 0.5}
+>
+  <div class="txf" aria-hidden="true">
+    <div class="txf__box"></div>
+
+    <p class="txf__head txf__head--tx">
+      <span class="txf__name">transaction</span>
+      <span class="txf__state" data-at="0">書き込みは未確定</span>
+      <span class="txf__state" data-at="1">確定</span>
+      <span class="txf__state" data-at="2">取り消し</span>
+    </p>
+    <p class="txf__head txf__head--db">データベースに残る内容</p>
+
+    <div class="txf__write txf__write--state">
+      <span class="txf__no">1</span>
+      <span class="txf__what">予約の状態を診察中に更新する</span>
+      <span class="txf__chip" data-at="0">未確定</span>
+      <span class="txf__chip txf__chip--ok" data-at="1">✓ 成功 → 確定</span>
+      <span class="txf__chip txf__chip--undone" data-at="2">✓ 成功 → 取り消し</span>
+    </div>
+    <span class="txf__arrow txf__arrow--state">→</span>
+    <div class="txf__cell txf__cell--state">
+      <p class="txf__cell-label">予約の状態</p>
+      <p class="txf__value" data-at="0 2">来院済み</p>
+      <p class="txf__value txf__value--new" data-at="1">診察中</p>
+    </div>
+
+    <div class="txf__write txf__write--audit">
+      <span class="txf__no">2</span>
+      <span class="txf__what">監査記録を追加する</span>
+      <span class="txf__chip" data-at="0">未確定</span>
+      <span class="txf__chip txf__chip--ok" data-at="1">✓ 成功 → 確定</span>
+      <span class="txf__chip txf__chip--fail" data-at="2">✕ 失敗</span>
+    </div>
+    <span class="txf__arrow txf__arrow--audit">→</span>
+    <div class="txf__cell txf__cell--audit">
+      <p class="txf__cell-label">監査記録</p>
+      <p class="txf__value txf__value--none" data-at="0 2">記録なし</p>
+      <p class="txf__value txf__value--new" data-at="1">診察開始の記録 1件</p>
+    </div>
+  </div>
+
+  <div slot="legend">
+    {legendLines.map((line) => <p>{line}</p>)}
+  </div>
+</Walkthrough>
+
+<style is:global>
+  .txf {
+    --txf-tone: var(--role-accent);
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) 2rem minmax(0, 1fr);
+    grid-template-rows: auto repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    height: 100%;
+    min-height: 0;
+    padding-block: 0.25rem;
+    color: var(--role-text);
+  }
+
+  .walk[data-frame="1"] .txf {
+    --txf-tone: var(--role-positive);
+  }
+
+  .walk[data-frame="2"] .txf {
+    --txf-tone: var(--role-negative);
+  }
+
+  .txf [data-at] {
+    display: none;
+  }
+
+  .walk[data-frame="0"] .txf [data-at~="0"],
+  .walk[data-frame="1"] .txf [data-at~="1"],
+  .walk[data-frame="2"] .txf [data-at~="2"] {
+    display: inline-flex;
+  }
+
+  .walk[data-frame="0"] .txf p[data-at~="0"],
+  .walk[data-frame="1"] .txf p[data-at~="1"],
+  .walk[data-frame="2"] .txf p[data-at~="2"] {
+    display: block;
+  }
+
+  .txf__box {
+    grid-area: 1 / 1 / 4 / 2;
+    border: 3px solid var(--txf-tone);
+    border-radius: 0.6rem;
+    background: color-mix(in srgb, var(--txf-tone) 10%, var(--role-surface));
+    transition: background-color 0.3s, border-color 0.3s;
+  }
+
+  .txf__head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1.5;
+  }
+
+  .txf__head--tx {
+    grid-area: 1 / 1;
+    color: var(--txf-tone);
+  }
+
+  .txf__head--db {
+    grid-area: 1 / 3;
+    color: var(--role-muted);
+  }
+
+  .txf__name {
+    font-size: 0.875rem;
+  }
+
+  .txf__state {
+    padding: 0 0.5rem;
+    border: 2px solid currentColor;
+    border-radius: 0.3rem;
+  }
+
+  .txf__write {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    align-self: center;
+    gap: 0.25rem 0.5rem;
+    margin: 0 0.5rem;
+    padding: 0.375rem 0.625rem;
+    border: 2px dashed var(--role-border);
+    border-radius: 0.4rem;
+    background: var(--role-surface);
+    font-size: 0.875rem;
+    line-height: 1.4;
+    transition: border-color 0.3s;
+  }
+
+  .walk[data-frame="1"] .txf__write {
+    border-style: solid;
+    border-color: var(--role-positive);
+  }
+
+  .txf__write--state {
+    grid-area: 2 / 1;
+  }
+
+  .txf__write--audit {
+    grid-area: 3 / 1;
+  }
+
+  .txf__no {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.375rem;
+    height: 1.375rem;
+    border-radius: 50%;
+    background: var(--role-text);
+    color: var(--role-surface);
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .txf__what {
+    flex: 1 1 8rem;
+    min-width: 0;
+    font-weight: 700;
+  }
+
+  .txf__chip {
+    align-items: center;
+    padding: 0 0.5rem;
+    border: 2px dashed var(--role-muted);
+    border-radius: 0.3rem;
+    color: var(--role-muted);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .txf__chip--ok {
+    border-style: solid;
+    border-color: var(--role-positive);
+    color: var(--role-positive);
+  }
+
+  .txf__chip--undone,
+  .txf__chip--fail {
+    border-style: solid;
+    border-color: var(--role-negative);
+    color: var(--role-negative);
+  }
+
+  .txf__arrow {
+    align-self: center;
+    justify-self: center;
+    color: var(--role-muted);
+    font-weight: 800;
+  }
+
+  .txf__arrow--state {
+    grid-area: 2 / 2;
+  }
+
+  .txf__arrow--audit {
+    grid-area: 3 / 2;
+  }
+
+  .txf__cell {
+    align-self: center;
+    padding: 0.375rem 0.625rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.4rem;
+    background: var(--role-surface);
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  .txf__cell--state {
+    grid-area: 2 / 3;
+  }
+
+  .txf__cell--audit {
+    grid-area: 3 / 3;
+  }
+
+  .txf__cell-label {
+    margin: 0;
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .txf__value {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .txf__value--none {
+    color: var(--role-muted);
+  }
+
+  .txf__value--new {
+    color: var(--role-positive);
+  }
+</style>

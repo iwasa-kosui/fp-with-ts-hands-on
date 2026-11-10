@@ -388,7 +388,7 @@ describe("基準差分の検査: テスト名の番号とファイル名", () =>
 
   test("9. type-fixtures のファイル名から旧番号が外れる", () => {
     const cases = [
-      ["s2-paid-cannot-start.ts", "paid-cannot-start.ts"],
+      ["s2-paid-cannot-start.ts", "paid-not-assignable-to-checked-in.ts"],
       ["s3-start-examination-requires-typed-ids.ts", "start-examination-requires-typed-ids.ts"],
       ["s4-exam-result-readonly.ts", "exam-result-readonly.ts"],
     ];

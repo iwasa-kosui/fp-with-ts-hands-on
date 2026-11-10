@@ -83,7 +83,7 @@ type Field = Readonly<{ label?: string; chips: readonly Chip[] }>;
 
 const scenes = {
   cancel: {
-    label: "キャンセルで予約の集約の現在の状態と履歴をそろえて保存する流れ",
+    label: "キャンセルで予約の集約の現在の状態と履歴を一致させて保存する流れ",
     from: "Scheduled",
     to: "Canceled",
     fromAudit: "予約された",
@@ -98,11 +98,11 @@ const scenes = {
       "予約1件の現在の状態と、その予約の履歴を、1つの枠で囲みます。キャンセルで変わるのは、この枠の中だけです。別の予約や飼い主のデータは変わりません。",
       "キャンセルの処理 Appointment.cancel は、イベント AppointmentCanceled を返します。このイベントは、キャンセル後の予約の状態（aggregateState）を持ちます。1つの値が、書き込む現在の状態と履歴の両方を表します。",
       "保存を2回に分けた場合です。現在の状態を書き込んだ後で履歴の追記が失敗すると、予約は Canceled ですが、履歴にキャンセルが残りません。整合性が崩れた状態です。",
-      "集約を単位に1回で保存すると、結果は、両方が書かれるか、どちらも書かれないかの2通りになります。どちらでも、現在の状態と履歴は食い違いません。",
+      "集約を単位に1回で保存すると、結果は、両方が書かれるか、どちらも書かれないかの2通りになります。どちらの場合も、現在の状態と履歴は一致します。",
     ],
   },
   "start-examination": {
-    label: "診察開始で予約の集約の現在の状態と履歴をそろえて保存する流れ",
+    label: "診察開始で予約の集約の現在の状態と履歴を一致させて保存する流れ",
     from: "CheckedIn",
     to: "InExamination",
     fromAudit: "来院を受け付けた",
@@ -119,10 +119,10 @@ const scenes = {
       keys: ['kind: "ExaminationStarted",', "aggregateState,"],
     },
     captions: [
-      "予約の集約は、予約1件の現在の状態と、その予約の履歴のまとまりです。外側の破線の枠が整合性境界で、診察開始の変更を1回で確定する範囲です。別の予約や飼い主のデータは変わりません。",
-      "診察開始の処理 Appointment.startExamination は、イベント ExaminationStarted を返します。このイベントは、診察開始後の予約の状態（aggregateState）を持ちます。1つの値が、書き込む現在の状態と履歴の両方を表します。",
+      "枠の中は、予約1件の現在の状態と履歴です。この枠は、一緒に扱うデータのまとまりとしては予約の集約、1回で変更を確定する範囲としては整合性境界と呼び、診察開始では同じ範囲です。別の予約や飼い主のデータは枠の外にあり、変わりません。",
+      "診察開始の処理 Appointment.startExamination は、イベント ExaminationStarted を返します。図のコードは、この処理の抜粋です（「…」は省略した部分）。ExaminationStarted は、診察開始後の予約の状態（aggregateState）を持ち、この1つの値が、書き込む現在の状態と履歴の両方を表します。",
       "保存を2回に分けた場合です。現在の状態を書き込んだ後で履歴の追記が失敗すると、予約は InExamination ですが、履歴に診察開始が残りません。整合性が崩れた状態です。",
-      "整合性境界を単位に1回で保存すると、結果は、両方が書かれるか、どちらも書かれないかの2通りになります。どちらでも、現在の状態と履歴は食い違いません。",
+      "整合性境界を単位に1回で保存すると、結果は、両方が書かれるか、どちらも書かれないかの2通りになります。どちらの場合も、現在の状態と履歴は一致します。",
     ],
   },
 } as const satisfies Record<SceneName, unknown>;
@@ -231,10 +231,8 @@ const frames: readonly Frame[] = [
 
         {frame.view === "aggregate" && (
           <div class="aggregate-flow__diagram">
-            <div class:list={["aggregate-flow__boundary", { "aggregate-flow__boundary--on": showBoundary }]}>
-            {showBoundary && <p class="aggregate-flow__boundary-title">整合性境界: 1回で変更を確定する範囲</p>}
-            <div class="aggregate-flow__aggregate">
-              <p class="aggregate-flow__aggregate-title">予約の集約</p>
+            <div class:list={["aggregate-flow__aggregate", { "aggregate-flow__aggregate--boundary": showBoundary }]}>
+              <p class="aggregate-flow__aggregate-title">予約の集約{showBoundary && <span class="aggregate-flow__alias">整合性境界</span>}</p>
               <div class="aggregate-flow__fields">
                 {appointmentFields(frame.ghost === true).map((field) => (
                   <div class="aggregate-flow__field">
@@ -258,12 +256,11 @@ const frames: readonly Frame[] = [
                 ))}
               </div>
             </div>
-            </div>
             <ul class="aggregate-flow__outside">
               <li class="aggregate-flow__other">別の予約</li>
               <li class="aggregate-flow__other">飼い主</li>
             </ul>
-            {frame.ghost && <p class="aggregate-flow__legend">点線: これから書き込む内容</p>}
+            {frame.ghost && <p class="aggregate-flow__legend">破線: これから書き込む内容</p>}
           </div>
         )}
 
@@ -284,8 +281,8 @@ const frames: readonly Frame[] = [
                 </li>
               </ol>
               <p class="aggregate-flow__result-label">結果</p>
-              <div class="aggregate-flow__aggregate">
-                <p class="aggregate-flow__aggregate-title">予約の集約</p>
+              <div class:list={["aggregate-flow__aggregate", { "aggregate-flow__aggregate--boundary": showBoundary }]}>
+                <p class="aggregate-flow__aggregate-title">予約の集約{showBoundary && <span class="aggregate-flow__alias">整合性境界</span>}</p>
                 <div class="aggregate-flow__fields">
                   {mismatchFields.map((field) => (
                     <div class="aggregate-flow__field">
@@ -303,7 +300,7 @@ const frames: readonly Frame[] = [
                   ))}
                 </div>
               </div>
-              <p class="aggregate-flow__verdict aggregate-flow__verdict--bad"><span aria-hidden="true">✕ </span>食い違い</p>
+              <p class="aggregate-flow__verdict aggregate-flow__verdict--bad"><span aria-hidden="true">✕ </span>状態と{auditLabel}が不一致</p>
             </section>
 
             <section class="aggregate-flow__side">
@@ -312,9 +309,8 @@ const frames: readonly Frame[] = [
                 outcomes.map((outcome) => (
                   <div class="aggregate-flow__outcome">
                     <p class="aggregate-flow__outcome-tag"><span class="aggregate-flow__tag aggregate-flow__tag--plain">{outcome.tag}</span></p>
-                    <div class:list={["aggregate-flow__boundary", { "aggregate-flow__boundary--on": showBoundary }]}>
-                    <div class="aggregate-flow__aggregate">
-                      <p class="aggregate-flow__aggregate-title">予約の集約</p>
+                    <div class:list={["aggregate-flow__aggregate", { "aggregate-flow__aggregate--boundary": showBoundary }]}>
+                      <p class="aggregate-flow__aggregate-title">予約の集約{showBoundary && <span class="aggregate-flow__alias">整合性境界</span>}</p>
                       <div class="aggregate-flow__fields">
                         {outcome.fields.map((field) => (
                           <div class="aggregate-flow__field">
@@ -332,8 +328,7 @@ const frames: readonly Frame[] = [
                         ))}
                       </div>
                     </div>
-                    </div>
-                    <p class="aggregate-flow__verdict aggregate-flow__verdict--good"><span aria-hidden="true">✓ </span>そろっている</p>
+                    <p class="aggregate-flow__verdict aggregate-flow__verdict--good"><span aria-hidden="true">✓ </span>状態と{auditLabel}が一致</p>
                   </div>
                 ))
               ) : (
@@ -510,18 +505,17 @@ const frames: readonly Frame[] = [
     color: var(--case-ink, #111116);
   }
 
-  .aggregate-flow__boundary--on {
-    padding: 0.35rem;
-    border: 2px dashed var(--case-line, #17204d);
-    border-radius: 0.9rem;
+  .aggregate-flow__aggregate--boundary {
+    background: color-mix(in srgb, var(--agg) 16%, var(--case-paper, #fffefa));
   }
 
-  .aggregate-flow__boundary-title {
-    margin: 0 0 0.3rem;
-    color: var(--case-ink, #111116);
+  .aggregate-flow__alias {
+    margin-inline-start: 0.5rem;
+    padding: 0 0.4rem;
+    border: 1.5px solid currentColor;
+    border-radius: 0.25rem;
     font-size: 0.75rem;
-    font-weight: 700;
-    line-height: 1.4;
+    white-space: nowrap;
   }
 
   .aggregate-flow__aggregate-title {
@@ -583,6 +577,8 @@ const frames: readonly Frame[] = [
   .aggregate-flow__chip--mono {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.75rem;
+    overflow-wrap: normal;
+    white-space: nowrap;
   }
 
   .aggregate-flow__chip--ghost {
@@ -617,7 +613,7 @@ const frames: readonly Frame[] = [
 
   .aggregate-flow__other {
     padding: 0.4rem 0.75rem;
-    border: 2px dashed var(--muted);
+    border: 2px solid var(--muted);
     border-radius: 0.5rem;
     background: color-mix(in srgb, var(--case-ink, #111116) 6%, var(--case-paper, #fffefa));
     color: var(--muted);
@@ -907,7 +903,7 @@ const frames: readonly Frame[] = [
   }
 
   :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side .aggregate-flow__fields {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(min-content, 1fr));
   }
 
   :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__outside {

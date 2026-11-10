@@ -11,7 +11,7 @@ const rows = sessionNavigationItems.flatMap(({ slug }) => {
 });
 ---
 
-<ol class="roadmap" aria-label="Session ごとに実装する業務ルール">
+<ol class="roadmap" aria-label="Session ごとに解決する内容">
   {rows.map((row) => (
     <li class="roadmap__row">
       <p class="roadmap__title"><a href={row.href} aria-label={row.openLabel}>{row.label}</a></p>

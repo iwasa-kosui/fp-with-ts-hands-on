@@ -15,11 +15,7 @@ export const session: SessionSummary = {
   peerReview: {
     minutes: 5,
     pickCount: 2,
-    questions: [
-      "時刻とイベント ID は実行ごとに一度だけ生成され、同じ `EventContext` に格納されますか。",
-      "状態と監査記録は、1つのイベントとして同じ `store` に渡されますか。",
-      "業務上の競合だけを `Result` で返し、保存障害は reject のまま伝播しますか。",
-    ],
+    questions: ["検出されなかった変更を検出するには、何を追加すればよいか"],
   },
   solutionSnapshot: "session-06-solution",
   solutionPresentation: "completed-file",
@@ -164,7 +160,7 @@ export const guides = ([
   {
     id: "unchecked-current-state",
     title: "保存時に現在の状態を検証していない",
-    currentDesign: "保存しない store で来院済みかを確認した後、中央のカードの stateStore.save は現在の状態を検証せず書き込みます。",
+    currentDesign: "S04 の startExamination の判定だけを流用するため、何も保存しない store を渡します。中央のカードの stateStore.save は現在の状態を検証せず書き込みます。",
     futureRisk: "別の依頼が先に診察を開始していても、結果は Ok のままです。",
     path: "src/useCase/startExamination.ts",
     highlights: [{ startLineNumber: 52, endLineNumber: 55 }],

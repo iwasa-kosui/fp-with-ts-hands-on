@@ -1,7 +1,7 @@
 import EffectsPipelineAnimation from "../../../components/effects-walkthrough/EffectsPipelineAnimation.astro";
 import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
 
-<p>reject は、S04 の例外が非同期で発生した形です。データベースの障害や保存データの破損には、利用者が選べる次の操作がないため、Err に変えず、reject のまま外側へ渡します。<code>fromSafePromise</code> は reject を変えず、<code>fromPromise</code> は reject を <code>Err</code> に変えます。<code>fromPromise</code> ですべてを <code>AppointmentConflict</code> に変えると、障害が競合の通知として扱われ、発見できません。</p>
+<p>reject は、S04 の例外が非同期で発生した形です。データベースの障害や保存データの破損には、利用者が選べる次の操作がないため、Err に変えず、reject のまま外側へ渡します。<code>fromPromise</code> は reject を <code>Err</code> に変える関数です。これですべてを <code>AppointmentConflict</code> に変えると、障害が競合の通知として扱われ、発見できません。</p>
 
 <FigureSpace reserve={162}>
   <EffectsPipelineAnimation scene="reject" />

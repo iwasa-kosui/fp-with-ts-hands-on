@@ -68,7 +68,7 @@ export const quotes = {
   ),
   solutionTypeError: quote(
     "session-01-solution",
-    "test/regression/type-fixtures/paid-cannot-start.ts",
+    "test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
     "declare const paid: Paid;",
     "startExamination(paid, clinicFixture.veterinarianId, clinicFixture.scheduledAt);",
   ),

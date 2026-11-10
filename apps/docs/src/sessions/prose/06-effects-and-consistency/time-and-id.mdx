@@ -3,8 +3,8 @@ import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.ast
 
 <p>課題2を解決します。<code>EventContext</code> は、イベントに記録する ID と時刻の組です。時刻と ID は直接生成せず、port の <code>Clock</code> と <code>EventIdGenerator</code> から受け取ります。<code>createEventContext</code> は1回の実行で1度だけ呼び出し、状態と監査記録の時刻を同じ値にします。</p>
 
-<FigureSpace reserve={150}>
+<FigureSpace reserve={173}>
   <TimeAndIdCompare />
 </FigureSpace>
 
-<p>S05 では、業務ロジックの外に I/O を配置しました（<a href="/sessions/05-business-events-and-workflows/io-outside/">S05 の説明</a>）。時刻と ID だけはイベントを作る時点で必要であるため、予約の確認が通った後の <code>map</code> の中で port から取得します。port を通すため、テストで固定できます。</p>
+<p>時刻と ID の取得も副作用です。S05 と同じく、<code>domain/</code> の業務ロジックの外で取得します（<a href="/sessions/05-business-events-and-workflows/io-outside/">S05 の説明</a>）。ユースケースが port を通して取得するため、業務ロジックは時計と乱数に依存せず、テストでは値を固定できます。イベントの生成に必要であるため、予約の確認が通った後で1回だけ取得します。</p>

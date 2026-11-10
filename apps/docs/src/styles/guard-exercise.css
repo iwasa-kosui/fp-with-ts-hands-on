@@ -482,6 +482,11 @@
   margin: 0;
 }
 
+.guard-exercise__next p + p {
+  display: block;
+  margin-top: 0.25rem;
+}
+
 .guard-exercise__next ol,
 .guard-exercise__problems ul,
 .guard-exercise__notes ul {
