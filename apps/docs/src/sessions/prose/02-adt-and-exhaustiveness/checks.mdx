@@ -1,6 +1,6 @@
 import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
 import { session02ChangeChecks } from "../../../components/session-02/change-checks";
 
-<p>不具合を生むコードの変更を、誤った変更と呼びます。正しいコードを誤って検出することを誤検知と呼びます。tsc（TypeScript の型検査を実行するコマンド）は最初からある検査で、追加する仕組みは型のテスト、Linter のルール、テストの3種類です。</p>
+<p><code>assertNever</code> を実装しても、後から <code>default</code> を「不明」を返す形に戻す変更が加えられる可能性があります。このように不具合を生むコードの変更を、誤った変更と呼びます。tsc（TypeScript の型検査コマンド）に追加する仕組みは、型のテスト、Linter のルール、テストの3種類です。</p>
 
 <ChangeChecks set={session02ChangeChecks} />

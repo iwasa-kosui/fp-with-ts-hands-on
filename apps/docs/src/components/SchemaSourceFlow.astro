@@ -177,7 +177,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   >
     <title id="schema-source-flow-title">1つの schema から型と検査を作る仕組み</title>
     <desc id="schema-source-flow-desc">
-      上の帯は型検査のとき（TypeScript）、下の帯は実行時（JavaScript）です。JavaScript に変換すると型は消えるので、下の帯に型は残りません。schema は実行時の値なので下の帯にあり、z.infer の矢印だけが上の帯の型へ伸びます。1つの schema から z.infer で型を取り出し、schemaResult で実行時に検査する parse を作ります。night-shift という値は parse の検査で Err になり、UUID の形をした値は Ok になって内側へ進みます。
+      上の帯は型検査のとき（TypeScript）、下の帯は実行時（JavaScript）です。JavaScript に変換すると型は消えるので、下の帯に型は残りません。schema は実行時の値であるため下の帯にあり、z.infer の矢印だけが上の帯の型へ伸びます。1つの schema から z.infer で型を取り出し、schemaResult で実行時に検査する parse を作ります。night-shift という値は parse の検査で Err になり、UUID の形をした値は Ok になって内側へ進みます。
     </desc>
 
     <rect x="0" y="40" width="340" height="136" rx="8" class="schema-source-flow__band-bg"></rect>
