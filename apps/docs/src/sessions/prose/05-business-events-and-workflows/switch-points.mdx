@@ -1,7 +1,7 @@
 import AndThenSwitchRail from "../../../components/cancel-workflow/AndThenSwitchRail.astro";
 
-<p>失敗のレールへ移る分岐を切り替え線と呼びます。S04 の <code>andThen</code> は、渡す関数が Err を返せるため切り替え線を持ち、<code>map</code> は持ちません。</p>
+<p>失敗のレールへ移る分岐を切り替え線と呼びます。切り替え線の有無は、渡す関数が Err を返すかどうかで異なります。S04 の <code>andThen</code> に渡す <code>ensureCheckedIn</code> は Err を返すため線を持ち、<code>map</code> に渡す関数は Err を返さないため線を持ちません。</p>
 
-<p>記録して返す工程の <code>andThrough</code> は、<code>andThen</code> と違い、渡した関数が Ok を返したときは、その値を捨てて元の値を次へ渡します。Err を返したときは、その Err が失敗のレールへ移ります。</p>
+<p>記録して返す工程の <code>andThrough</code> は、渡した関数が Ok を返すと、その値を捨てて元の値を次へ渡します。Err を返すと失敗のレールへ移ります。</p>
 
 <AndThenSwitchRail />

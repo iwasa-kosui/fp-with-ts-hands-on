@@ -72,7 +72,7 @@ export const sessionPages = [
     title: "キャンセル失敗時の流れ",
     flow: "solution",
     kind: "teach",
-    minutes: 1.5,
+    minutes: 1.25,
     role: "解決策: キャンセルが失敗する場合に、失敗の値がどこで切り替わりどこへ進むかを追跡します。",
   },
   {
@@ -88,8 +88,8 @@ export const sessionPages = [
     title: "domain から外側への依存の禁止",
     flow: "solution",
     kind: "teach",
-    minutes: 0.25,
-    role: "解決策を守る: 修正した構成も、次の変更で元に戻ることがあります。守るべき依存の向きを確認します。",
+    minutes: 0.5,
+    role: "解決策: 修正した構成も、今後の変更で元に戻ることがあります。守るべき依存の向きを確認します。",
   },
   {
     slug: "dependency-checks",
@@ -97,7 +97,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 0.5,
-    role: "解決策を守る: 依存の向きの違反を、Linter のルールとテストのどちらが検出するかを比較します。",
+    role: "解決策: 依存の向きの違反を、Linter のルールとテストのどちらが検出するかを比較します。",
   },
   {
     slug: "exercise",
@@ -105,7 +105,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "exercise",
     minutes: 6,
-    role: "解決策を守る: 工程の条件と依存の向きを守る仕組みを選択し、誤った変更を検出します。",
+    role: "解決策: 工程の条件と依存の向きを守る仕組みを選択し、誤った変更を検出します。",
   },
   {
     slug: "takeaways",
