@@ -13,6 +13,15 @@ export const unknownRuleCode = `"no-restricted-syntax": [
   },
 ],`;
 
+export const startExaminationForCode = `export const startExaminationFor = (
+  current: Appointment,
+  veterinarianId: string,
+  examinationStartedAt: string,
+): InExamination => {
+  if (current.kind !== "CheckedIn") throw new Error("Invalid appointment state");
+  return startExamination(current, veterinarianId, examinationStartedAt);
+};`;
+
 export const projectFiles = projectFilesForSnapshot(guardExercise.snapshot);
 export const workspace = guardExerciseWorkspaceFor(
   guardExercise,
@@ -34,13 +43,20 @@ export const guide = {
       ],
       reference: {
         summary: "Linter のルールの書き方",
-        text: "selector は、検出するコードの形を指定します。下の例の TSAsExpression は as の式、TSUnknownKeyword は unknown を表し、「A > B」は A の直下の B を表します。この組み合わせは、as の式の直下にある unknown を検出します。TSAsExpression だけを指定すると、正しいコードの as const も as の式であるため、誤検知（正しいコードを誤った変更として検出すること）になります。検出の範囲は、型の名前などで限定します。",
+        text: "selector は、検出するコードの形を指定します。下の例の TSAsExpression は as の式、TSUnknownKeyword は unknown を表し、「A > B」は A の直下の B を表します。この組み合わせは、as の式の直下にある unknown を検出します。TSAsExpression だけを指定すると、正しいコードの as const も as の式であるため、誤検知（正しいコードを誤った変更として検出すること）になります。検出の範囲は、型の名前などで限定します。Linter のルールは、as をすべて禁止する形にしません。表の「状態の型以外への as を残す正しいコード」の行は、状態の型以外への as が残る正しいコードであり、誤検知にしてはいけません。",
         caption: "実装先: eslint.config.mjs の const rules = {} の {} の中",
         code: unknownRuleCode,
       },
     },
-    "callers.test.ts が呼ぶ startExaminationFor と recordPaymentFor は、routes.ts の kind の検証を関数に切り出したもので、cases/G2-callers-check-state.ts に定義してあります。引数は、startExaminationFor が (current, veterinarianId, examinationStartedAt)、recordPaymentFor が (current, input, paidAt) です。",
-    "Linter のルールは、as をすべて禁止する形にしません。表の「状態の型以外への as を残す正しいコード」の行は、状態の型以外への as が残る正しいコードであり、誤検知にしてはいけません。",
+    {
+      text: "callers.test.ts が呼ぶ関数の定義を確認します。",
+      reference: {
+        summary: "callers.test.ts が呼ぶ関数の定義",
+        text: "callers.test.ts が呼ぶ startExaminationFor と recordPaymentFor は、routes.ts の kind の検証を関数に切り出したものです。引数は、startExaminationFor が (current, veterinarianId, examinationStartedAt)、recordPaymentFor が (current, input, paidAt) です。recordPaymentFor は、startExaminationFor と同じ形で、AwaitingPayment を検証します。",
+        caption: "callers.test.ts が呼ぶ startExaminationFor",
+        code: startExaminationForCode,
+      },
+    },
     "「検出を検証する」を押します。必須3件の検出結果と理由は、「解答の例を見る」で確認できます。",
     {
       text: "表の用語の意味は次のとおりです。",
@@ -52,7 +68,7 @@ export const guide = {
         "誤検知: 正しいコードを誤って検出した。",
       ],
     },
-    "合格すると表に行が追加されます。「相互レビューで作る誤った変更」の行は次のページで使います。「kind の検証を削除し、unknown を経由した as で渡す」「診察開始の時刻に来院の時刻を格納する」「会計の引数を Appointment 全体に広げる」の3件は、時間に余裕がある場合に取り組みます。",
+    "合格すると表に行が追加されます。「相互レビューで作る誤った変更」の行は次のページで使います。「kind の検証を削除し、unknown を経由した as で渡す」「診察開始の時刻に来院の時刻を格納する」「会計の引数を Appointment 全体に広げる」の3件は、説明のページで結果を見た3件です。時間に余裕がある場合に取り組む任意の課題です。",
   ],
 };
 

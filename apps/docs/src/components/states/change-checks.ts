@@ -46,7 +46,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: true, output: "no-restricted-syntax: unknown を経由した型アサーションで、型検査を回避しません。" },
       tests: { found: true, output: "callers.test.ts の 5 件失敗: expected [Function] to throw an error" },
     },
-    why: "`recordPaymentFor` は、routes.ts の会計の `kind` の検証を関数に切り出したもので、cases/G2-callers-check-state.ts に定義しています。`recordPayment` の引数の型は変わらないため、型のテストは通ります。unknown を経由した `as` を、Linter のルールが検出します。テストが検出する理由は、`kind` の検証を削除したことであり、`as` を書いたことではありません。",
+    why: "`recordPaymentFor` は、routes.ts の会計の `kind` の検証を関数に切り出したものです。`recordPayment` の引数の型は変わらないため、型のテストは通ります。unknown を経由した `as` を、Linter のルールが検出します。テストが検出する理由は、`kind` の検証を削除したことであり、`as` を書いたことではありません。",
   },
   {
     id: "B5-start-time-from-check-in",

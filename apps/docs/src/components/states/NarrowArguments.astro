@@ -89,7 +89,7 @@ const frames: readonly Readonly<{
     caption:
       "修正後のコードは、引数の型が CheckedIn、返す型が InExamination で、末尾が as const satisfies InExamination です。引数を CheckedIn に絞ったため、関数の中の requireKind は不要になりました。来院済みの予約を渡すと、診察中の予約が返ります。",
     explain:
-      "<code>as const satisfies InExamination</code> は、2 つの指定です。<code>as const</code> は、<code>\"InExamination\"</code> を string に広げず、その文字列のまま残します。<code>satisfies InExamination</code> は、戻す値が <code>InExamination</code> を満たすかを、値の定義の位置で型検査が検証します。型を上書きする <code>as</code> とは異なり、満たさなければ型検査が報告します。戻り値の型の指定だけでも、同じ誤りは報告されます。",
+      "<code>as const satisfies InExamination</code> は、2 つの指定です。<code>as const</code> は、<code>\"InExamination\"</code> を string に広げません。<code>satisfies InExamination</code> は、戻す値がその型を満たすかを、値の定義の位置で検証します。型を上書きする <code>as</code> とは異なり、満たさなければ型検査が報告します。戻り値の型の指定だけでも同じ誤りは報告されます。この教材は、戻り値の型を書かない箇所でも値の定義の位置で検査できるように、状態を作る値に同じ書き方を使います。",
   },
   {
     event: { label: "コードの誤り", text: "開発者が、会計済みの予約を startExamination へ渡すコードを書く" },
@@ -105,7 +105,7 @@ const frames: readonly Readonly<{
     input: "paid",
     output: { type: "rejected" },
     caption:
-      "データベースから取得する予約は、どの状態の値が返るかが、実行するまで分かりません。型は Appointment であるため、routes.ts（HTTP リクエストを受ける関数）が kind を検証し、CheckedIn でなければ依頼を拒否します。この検証は修正前からあり、この Session の修正では変わりません。検証の後は current が CheckedIn に絞り込まれ、startExamination に渡せます。演習では、同じ検証を関数に切り出した startExaminationFor（cases/G2-callers-check-state.ts）を扱います。",
+      "データベースから取得する予約は、どの状態の値が返るかが、実行するまで分かりません。型は Appointment であるため、routes.ts（HTTP リクエストを受けるファイル）が kind を検証し、CheckedIn でなければ依頼を拒否します。この検証は修正前からあり、この Session の修正では変わりません。検証の後は current が CheckedIn に絞り込まれ、startExamination に渡せます。演習では、同じ検証を関数に切り出した startExaminationFor を扱います。定義は演習の手順で確認できます。",
   },
 ];
 ---

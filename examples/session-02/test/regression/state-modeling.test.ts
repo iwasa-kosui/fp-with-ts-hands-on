@@ -4,7 +4,7 @@ import { compileTypeFixture } from "./compileTypeFixture.js";
 
 describe("Step 1: 会計済みの来院は診察を開始できない", () => {
   it("Paid を渡す呼び出しはコンパイルできない", () => {
-    expect(compileTypeFixture("paid-cannot-start.ts")).toEqual([]);
+    expect(compileTypeFixture("paid-not-assignable-to-checked-in.ts")).toEqual([]);
   });
 });
 

@@ -151,7 +151,7 @@ ${shadow(76, 232, 52)}
 ${screen(150, 14, 200, 164, 190)}
 <rect x="166" y="46" width="104" height="24" rx="6" fill="#ffd21b" stroke-width="2.5"/>
 ${text(172, 63, 13, "診察を開始する", { fit: 92 })}
-${cursor(254, 56)}
+${cursor(266, 60)}
 <rect x="166" y="88" width="168" height="72" rx="8" fill="#ffe0ee" stroke-width="2.5"/>
 ${text(250, 120, 24, "例外", { anchor: "middle", fill: "#ff4f93", outline: true })}
 ${text(250, 146, 12, "操作に失敗しました", { anchor: "middle" })}

@@ -347,11 +347,11 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
           <h6>現在の予約内容</h6>
           <ul class="hem__lines">
             <li data-until="4" data-focus-at="2" data-slot="1"><Code code={'status: "paid"'} lang="ts" inline /></li>
-            <li data-from="4" data-flash-at="4" data-slot="1"><Code code={'status: "in-examination"'} lang="ts" inline /></li>
+            <li data-from="4" data-flash-at="4" data-changed-at="4" data-slot="1"><Code code={'status: "in-examination"'} lang="ts" inline /></li>
             <li><Code code="amount: 4800" lang="ts" inline /></li>
             <li><Code code={'paidAt: "2026-08-30T07:10:00.000Z"'} lang="ts" inline /></li>
             <li data-until="4" data-slot="4"><Code code="examinationStartedAt: 1回目の時刻" lang="ts" inline /></li>
-            <li data-from="4" data-flash-at="4" data-slot="4"><Code code="examinationStartedAt: 押した時刻" lang="ts" inline /></li>
+            <li data-from="4" data-flash-at="4" data-changed-at="4" data-slot="4"><Code code="examinationStartedAt: 押した時刻" lang="ts" inline /></li>
           </ul>
         </div>
         <div class="hem__table">
@@ -607,6 +607,9 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
       player.querySelectorAll<HTMLElement>("[data-flash-at]").forEach((element) => {
         if (index !== Number(element.dataset.flashAt)) element.classList.remove("is-flash");
         else if (changed) restartFlash(element);
+      });
+      player.querySelectorAll<HTMLElement>("[data-changed-at]").forEach((element) => {
+        element.classList.toggle("is-changed", index === Number(element.dataset.changedAt));
       });
       player.querySelectorAll<HTMLElement>(".hem__impl > [data-at], .hem__values > [data-at]").forEach((element) => {
         element.classList.toggle("is-off", index !== Number(element.dataset.at));
@@ -1185,6 +1188,12 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
 
   .hem .hem__lines li.is-focus {
     background: color-mix(in srgb, var(--role-accent) 22%, var(--role-surface));
+  }
+
+  .hem .hem__lines li.is-changed {
+    background: color-mix(in srgb, var(--role-accent) 45%, var(--role-surface));
+    outline: 2px solid var(--role-accent);
+    outline-offset: 0;
   }
 
   .hem .hem__lines li > :global(code) {
