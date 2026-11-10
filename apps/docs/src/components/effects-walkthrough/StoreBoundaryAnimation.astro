@@ -22,8 +22,10 @@ type Frame = Readonly<{
   old: "CheckedIn" | "InExamination" | "none";
   state: CardState;
   audit: CardState;
+  oldAudit?: boolean;
   read?: boolean;
   issue?: boolean;
+  compare?: boolean;
 }>;
 
 interface Props {
@@ -98,6 +100,12 @@ const snippets: Readonly<Record<string, Snippet>> = {
     path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
     parts: [{ from: "const committedEvent = Appointment.startExamination({", to: "})(current, event.aggregateState.veterinarianId);" }],
   },
+  "after-conflict": {
+    box: "impl",
+    snapshot: "session-06-solution",
+    path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    parts: [{ from: 'if (current === undefined || current.kind !== "CheckedIn") {', to: "}" }],
+  },
   "after-save": {
     box: "impl",
     snapshot: "session-06-solution",
@@ -122,6 +130,12 @@ const snippets: Readonly<Record<string, Snippet>> = {
       { from: 'throw new AppointmentPersistenceError("append-audit", cause);' },
     ],
   },
+  "after-commit": {
+    box: "impl",
+    snapshot: "session-06-solution",
+    path: "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+    parts: [{ from: "database.transaction((transaction) => {" }, "…", { from: "return ok(undefined);" }, { from: "});" }],
+  },
 };
 
 const boxes: readonly Readonly<{ box: Box; label: string }>[] = [
@@ -144,6 +158,7 @@ const appointmentRows = [
   { id: "state", old: false, first: "InExamination", second: `{"kind":"InExamination",…}` },
 ] as const;
 const auditRows = [{ id: "audit", old: false, first: "e-1", second: "ExaminationStarted" }] as const;
+const oldAuditRow = { id: "old-audit", old: true, first: "e-0", second: "ExaminationStarted" } as const;
 
 const excerpts = Object.fromEntries(Object.entries(snippets).map(([name, snippet]) => [name, excerptOf(snippet)]));
 
@@ -162,7 +177,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "off",
       },
       {
-        text: "`stateStore.save` は `saveState(database, …)` で、`database` に直接書き込みます。`InExamination` は、その場ですぐ書き込まれます。",
+        text: "`stateStore.save` は `saveState(database, …)` で、`database` に直接書き込みます。transaction が無いため、`InExamination` の書き込みはこの時点で確定します（図の表示は「書き込み済み」）。",
         call: { pane: "before-call", lines: [0] },
         impl: { pane: "before-save", lines: [0, 3] },
         tx: "none",
@@ -195,9 +210,9 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
     label: "修正後: 成功",
     frames: [
       {
-        text: "ユースケースは `store(event)` を1回だけ呼びます。`Promise.resolve().then` は、`storeAtomically` が同期で投げた例外を、Promise（非同期処理の結果を表す値）の reject（非同期で発生した例外）にします。`fromSafePromise` は、reject を `Err` に変えず例外のまま残します。`.andThen((result) => result)` は、transaction が返した `Result` を `ResultAsync` の結果にします。",
+        text: "ユースケースは `store(event)` を1回だけ呼びます。`store` の中で `storeAtomically` が transaction を実行します。`fromSafePromise` などの変換は「保存先の障害と例外の伝播」のページで確認します。",
         call: { pane: "after-call", lines: [0] },
-        impl: { pane: "after-store", lines: [0, 1, 2, 3] },
+        impl: { pane: "after-store", lines: [0, 2] },
         tx: "wait",
         old: "CheckedIn",
         state: "off",
@@ -223,13 +238,14 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         read: true,
       },
       {
-        text: "`Appointment.startExamination` を再度実行し、再取得した最新の予約 `current` から `committedEvent` を作り直して保存します。受け取った `event` をそのまま保存しないのは、ユースケースが予約を取得した後に変更された内容を、古い値で上書きしないためです。`eventId` と `occurredAt` は `event` の値を再利用します。",
+        text: "`Appointment.startExamination` を再度実行し、再取得した最新の予約 `current` から `committedEvent` を作り直して保存します。`event` の `reason` はユースケースが取得した時点の値で、取得後に変更されると古くなります。`committedEvent` は `current` の最新の `reason` を持つため、古い値で上書きしません。`eventId` と `occurredAt` は `event` の値を再利用します。",
         call: null,
         impl: { pane: "after-rebuild", lines: [0, 1, 2, 3] },
         tx: "open",
         old: "CheckedIn",
         state: "off",
         audit: "off",
+        compare: true,
       },
       {
         text: "`saveState` が新しい状態を書き込みます。まだ未確定です。",
@@ -250,9 +266,9 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "tx",
       },
       {
-        text: "`ok(undefined)` を返すと transaction が確定し、状態と監査記録が同時に残ります。",
+        text: "`database.transaction` に渡した関数が例外を投げずに完了すると、transaction が確定し、状態と監査記録が同時に残ります。関数の戻り値は `ok(undefined)` です。",
         call: null,
-        impl: null,
+        impl: { pane: "after-commit", lines: [0, 2, 3] },
         tx: "commit",
         old: "none",
         state: "home",
@@ -311,7 +327,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         audit: "tx-gone",
       },
       {
-        text: "例外は、`store` が返す Promise の reject（非同期で発生した例外）になります。状態だけが残ることはありません。",
+        text: "`ResultAsync` の内側の Promise（非同期処理の結果を表す値）が reject（非同期処理が例外で終わること）すると、結果は `Ok` にも `Err` にもならず、`await` した場所で例外になります。状態だけが残ることはありません。",
         call: null,
         impl: null,
         tx: "rollback",
@@ -326,13 +342,14 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
     label: "修正後: 競合",
     frames: [
       {
-        text: "ユースケースが予約を取得した後、保存の前に、別の依頼が先に診察を開始していました。データベースの予約はすでに `InExamination` です。",
+        text: "ユースケースが予約を取得した後、保存の前に、別の依頼が先に診察を開始していました。データベースの予約はすでに `InExamination` で、audit_logs には先の依頼の `ExaminationStarted` が保存済みです。",
         call: null,
         impl: null,
         tx: "wait",
         old: "InExamination",
         state: "off",
         audit: "off",
+        oldAudit: true,
         issue: true,
       },
       {
@@ -343,17 +360,19 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
         old: "InExamination",
         state: "off",
         audit: "off",
+        oldAudit: true,
         read: true,
         issue: true,
       },
       {
-        text: "何も書き込まずに `err` で `AppointmentConflict` を返します。`err` も値であるため transaction は確定しますが、書き込みの前に返すため何も残らず、状態も監査記録も増えません。",
+        text: "`current` が `CheckedIn` ではないため、何も書き込まずに `err` で `AppointmentConflict` を返します。`current === undefined`（予約が存在しない）のときも、同じ `AppointmentConflict` を返します。関数は例外を投げずに完了するため transaction は確定しますが、書き込みの前に返すため、状態も監査記録も増えず、audit_logs は先の依頼の1行のままです。",
         call: null,
-        impl: null,
+        impl: { pane: "after-conflict", lines: [0, 1, 2, 3, 4] },
         tx: "ended",
         old: "InExamination",
         state: "off",
         audit: "off",
+        oldAudit: true,
         issue: true,
       },
     ],
@@ -366,11 +385,14 @@ if (scenes.length === 0) throw new Error(`StoreBoundaryAnimation: unknown scene 
 
 const writtenOnly = sceneKey === "dual-write";
 const hasFailure = scenes.some(({ frames }) => frames.some(({ audit }) => audit.endsWith("failed")));
+const hasOldAudit = scenes.some(({ frames }) => frames.some(({ oldAudit }) => oldAudit === true));
+const hasCompare = scenes.some(({ frames }) => frames.some(({ compare }) => compare === true));
 const legendLines = [
   writtenOnly
     ? "「保存済み」ははじめからある行、「書き込み済み」は書き込まれた行です。破線の空枠は、まだ行がない場所です。"
     : "「保存済み」ははじめからある行、「未確定」は transaction の中だけにある行、「確定」は書き込みが残った行です。",
 ];
+const oldChip = hasOldAudit ? "先の依頼・保存済み" : "保存済み";
 const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame }) => frame));
 ---
 
@@ -378,12 +400,12 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
   id="store-boundary-walkthrough"
   title="状態と監査記録を1回で保存する"
   lead="保存の途中で失敗が発生したとき、データベースに何が残るかを、修正前と修正後で1コマずつ追います。"
-  note="行の値は説明用の例です。列は一部だけを載せています。コードの insert(...).values(...) や select(...).from(...).where(...) は、データベースを操作するライブラリ Drizzle ORM の記法です。database.transaction に渡した関数の中の書き込みは、1つの transaction にまとまります。関数が値を返すと確定し、例外を投げると取り消されます。"
+  note="行の値は説明用の例です。列は一部だけを載せています。コードの insert(...).values(...) や select(...).from(...).where(...) は、データベースを操作するライブラリ Drizzle ORM の記法です。database.transaction に渡した関数の中の書き込みは、1つの transaction にまとまります。関数が例外を投げずに完了すると確定し、例外を投げると取り消されます。"
   scenes={scenes.map(({ label, frames }) => ({ label, frames: frames.map(({ text }) => ({ text })) }))}
   page={page}
   legend={page ? legendLines.length * 1.25 + 0.5 : undefined}
 >
-  <div class:list={["sb", { "sb--page": page }]} data-store-boundary data-written-only={writtenOnly ? "" : undefined} data-frames={JSON.stringify(frameData)}>
+  <div class:list={["sb", { "sb--page": page }]} data-store-boundary data-written-only={writtenOnly ? "" : undefined} data-wide-chip={hasOldAudit ? "" : undefined} data-frames={JSON.stringify(frameData)}>
     <div class="sb-code">
       {boxes.map(({ box, label }) => (
         <section class="sb-box" data-box={box}>
@@ -408,6 +430,20 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
           </div>
         </section>
       ))}
+      {page && hasCompare ? (
+        <div class="sb-compare" data-compare>
+          <div class="sb-compare__row">
+            <code>event.aggregateState.reason</code>
+            <code>"skin check"</code>
+            <span>取得時の値</span>
+          </div>
+          <div class="sb-compare__row">
+            <code>committedEvent.aggregateState.reason</code>
+            <code>"vaccination"</code>
+            <span>最新の値</span>
+          </div>
+        </div>
+      ) : null}
     </div>
     <div class:list={["sb-diagram", { "sb-diagram--failed": hasFailure }]} aria-hidden="true" inert>
       {page ? (
@@ -423,7 +459,7 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
             <div class="sb-cell">
               {appointmentRows.map(({ id, old, first, second }) => (
                 <div class={`sb-card sb-line${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
-                  <span class="sb-chip" data-chip>{old ? "保存済み" : ""}</span>
+                  <span class="sb-chip" data-chip>{old ? oldChip : ""}</span>
                   <code>{first}</code>
                   <code>{second}</code>
                 </div>
@@ -432,7 +468,14 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
           </div>
           <div class="sb-table" data-table="audit_logs">
             <div class="sb-table__name sb-line"><span>audit_logs</span><span>eventId（ID）</span><span>eventName（種類）</span></div>
-            <div class="sb-cell sb-cell--landing">
+            <div class:list={["sb-cell", { "sb-cell--landing": !hasOldAudit }]}>
+              {hasOldAudit ? (
+                <div class="sb-card sb-line sb-card--old" data-card={oldAuditRow.id} data-state="off">
+                  <span class="sb-chip" data-chip>{oldChip}</span>
+                  <code>{oldAuditRow.first}</code>
+                  <code>{oldAuditRow.second}</code>
+                </div>
+              ) : null}
               {auditRows.map(({ id, old, first, second }) => (
                 <div class={`sb-card sb-line${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
                   <span class="sb-chip" data-chip></span>

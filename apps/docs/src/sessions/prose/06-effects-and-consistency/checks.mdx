@@ -2,15 +2,15 @@ import { Code } from "astro:components";
 import ChangeChecks from "../../../components/change-checks/ChangeChecks.astro";
 import { session06ChangeChecks } from "../../../components/effects-walkthrough/change-checks";
 
-<p>課題1〜3を解決した状態を、次の変更から守る方法を扱います。別の人が <code>new Date()</code> を戻しても型検査は通るため、検出する仕組みは Linter のルールとテストの2つです。演習で実装するのは検出の仕組みで、保存する側の実装は参照するだけです。</p>
-
-<p>変更を選んで、2つの仕組みの結果を比較してください。テストの <code>harness</code> は、テスト用の <code>deps</code> と、保存されたイベント、store と clock を呼んだ回数をまとめたオブジェクトです。</p>
+<p>別の人が <code>new Date()</code> を戻しても型検査は通るため、課題1〜3の解決を守る仕組みは Linter のルールとテストの2つです。変更を選んで、2つの仕組みの結果を比較してください。比較のテストは模範の4件です。<code>harness</code> は、テスト用の <code>deps</code> と、保存されたイベント、store と clock を呼んだ回数をまとめたオブジェクトです。</p>
 
 <ChangeChecks set={session06ChangeChecks} />
 
+<p>Linter のルールは、コードを実行せずに全体を検査するため、テストが実行しない分岐の中の記述も検出します。判定できるのはコードの形だけです。テストは、実行した経路の結果を検証するため、コードの形に現れない誤りも検出します。ルールの検査対象は、診察開始のファイルだけです。</p>
+
 <details class="step-solution">
   <summary>eslint.config.mjs の rules に追加する設定の形（[…] の部分は自分で指定します）</summary>
-<p>Linter のルールは <code>no-restricted-syntax</code> です。<code>selector</code> の <code>[…]</code> には、検出する範囲を絞る条件を記述します。</p>
+<p><code>no-restricted-syntax</code> は、<code>selector</code> に一致するコードを禁止する Linter のルールです。<code>NewExpression</code> は、<code>new</code> の式を表す構文の名前です。S04 で <code>ThrowStatement</code> に使った書き方と同じです。引数なしの <code>new Date()</code> だけを検出するのは、<code>new Date(deps.clock.now())</code> のように port の値を使う記述を検出しないためです。</p>
 <figure class="code-block">
   <Code
     code={`"no-restricted-syntax": ["error", {

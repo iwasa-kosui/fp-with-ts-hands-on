@@ -10,6 +10,7 @@ for (const figure of figures) {
   const card = figure.querySelector("[data-card]");
   const cardChip = card.querySelector("[data-card-chip]");
   const cardType = card.querySelector("[data-card-type]");
+  const cardOrigin = card.querySelector("[data-card-origin]");
   const cardVal = card.querySelector("[data-card-val]");
   const parts = [...figure.querySelectorAll("[data-stage]")].map((stage) => {
     const open = figure.querySelector(`[data-open="${stage.dataset.stage}"]`);
@@ -18,6 +19,8 @@ for (const figure of figures) {
       key: stage.dataset.stage,
       tag: stage.querySelector("[data-tag]"),
       open,
+      gloss: open.querySelector("[data-gloss]"),
+      glossDefault: open.querySelector("[data-gloss]").innerHTML,
       impls: [...open.querySelectorAll("[data-impl]")],
       outs: [...open.querySelectorAll("[data-out]")],
     };
@@ -70,6 +73,7 @@ for (const figure of figures) {
     card.dataset.tone = data.tone;
     cardChip.textContent = data.chip;
     cardType.textContent = data.type;
+    cardOrigin.textContent = data.origin ?? "";
     cardVal.textContent = data.short;
 
     let currentPart;
@@ -89,9 +93,16 @@ for (const figure of figures) {
       stage.toggleAttribute("data-walk-focus", key === frame.at);
       if (state === "current") stage.setAttribute("aria-current", "step");
       else stage.removeAttribute("aria-current");
-      part.tag.textContent = tagText[state] ?? "";
+      const tag = frame.tags?.[key];
+      part.tag.textContent = tag?.text ?? tagText[state] ?? "";
+      if (tag === undefined) stage.removeAttribute("data-tag-kind");
+      else stage.dataset.tagKind = tag.kind;
       part.open.toggleAttribute("data-current", state === "current");
       part.open.inert = state !== "current";
+      if (state === "current") {
+        if (frame.gloss === undefined) part.gloss.innerHTML = part.glossDefault;
+        else part.gloss.textContent = frame.gloss;
+      }
       if (state === "current") {
         for (const out of part.outs) out.toggleAttribute("data-active", out.dataset.out === frame.out);
         currentPart = part;

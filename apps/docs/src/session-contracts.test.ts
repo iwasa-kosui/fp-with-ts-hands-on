@@ -245,11 +245,7 @@ const expectedExercises = [
     peerReview: {
       minutes: 5,
       pickCount: 2,
-      questions: [
-        "時刻とイベント ID は実行ごとに一度だけ生成され、同じ `EventContext` に格納されますか。",
-        "状態と監査記録は、1つのイベントとして同じ `store` に渡されますか。",
-        "業務上の競合だけを `Result` で返し、保存障害は reject のまま伝播しますか。",
-      ],
+      questions: ["検出されなかった変更を検出するには、何を追加すればよいか"],
     },
   },
 ] as const;
@@ -377,9 +373,9 @@ describe("page-owned session contracts", () => {
 
     const finalEpisode = sessions.find(({ slug }) => slug === "final")?.episode;
     expect(finalEpisode).toEqual([
-      "S00 で飼い主が再度請求された犬の Mugi は、すでに帰宅しました。",
-      "大きなコードで境界が崩れると、S00 の二重請求と同じ事故が、別の処理で再び発生します。開発者は、参照実装でも5つの境界が維持されているかを確認しています。",
-      "事故が消えたわけではありません。事故ごとに、防ぐ場所を割り当てました。",
+      "S06 までに修正した処理は、診察開始だけです。",
+      "大きなコードで境界が崩れると、S00 の二重請求と同じ事故が、別の処理で発生します。",
+      "開発者は、参照実装でも5つの境界が維持されているかを確認しています。",
     ]);
 
     const boundaryEpisode = sessions.find(

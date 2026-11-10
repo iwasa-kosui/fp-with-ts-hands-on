@@ -125,6 +125,15 @@
   color: var(--fb-reject);
 }
 
+.fb-stage[data-tag-kind="made"] .fb-tag {
+  background: var(--fb-reject);
+  color: var(--role-surface);
+}
+
+.fb-stage[data-tag-kind="sent"] .fb-tag {
+  color: var(--fb-reject);
+}
+
 .fb-stage[data-state="skipped"] {
   border-style: dashed;
   background: repeating-linear-gradient(
@@ -195,6 +204,18 @@
   min-width: 0;
   font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+.fb-card__origin {
+  padding: 0 0.4rem;
+  border: 2px solid var(--fb-reject);
+  border-radius: 0.3rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.fb-card__origin:empty {
+  display: none;
 }
 
 .fb-card__val {
@@ -380,6 +401,10 @@
   overflow-wrap: anywhere;
 }
 
+.fb-out__origin {
+  font-weight: 800;
+}
+
 @media (min-height: 701px) {
   .fb {
     --fb-height: clamp(14rem, calc(100dvh - 26.3rem), 32rem);
@@ -393,7 +418,7 @@
 }
 
 .fb[data-kind="failures"] {
-  --fb-height: clamp(13rem, calc(100dvh - 23.9rem), 32rem);
+  --fb-height: clamp(13rem, calc(100dvh - 25.4rem), 32rem);
 }
 
 @media (min-height: 701px) {

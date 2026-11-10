@@ -42,12 +42,6 @@ const afterLabel = lineLabelOf(
   "  eventId: deps.eventIdGenerator.generate(),",
   "  occurredAt: deps.clock.now(),",
 );
-const twiceLabel = lineLabelOf(
-  "session-06-solution",
-  "exercises/guard/cases/B5-clock-read-twice.ts",
-  "      .map(startExaminationEvent(deps, input.veterinarianId))",
-  "      .andThrough(deps.examinationStartedStore.store)",
-);
 const contextLabel = lineLabelOf(
   "session-06-solution",
   useCasePath,
@@ -95,7 +89,7 @@ const frames = [
         <figure class="sf-code" data-code="after"><Code code={afterContext} lang="ts" wrap /></figure>
       </div>
       <div class="tic__group" data-group="2">
-        <div class="tic__era"><span class="sf-tag sf-tag--err">誤った例</span><code><PathLabel label={twiceLabel} /></code></div>
+        <div class="tic__era"><span class="sf-tag sf-tag--err">誤った例（説明用）</span></div>
         <figure class="sf-code" data-code="twice"><Code code={twiceCode} lang="ts" wrap /></figure>
       </div>
       <div class="tic__group" data-group="3">

@@ -114,9 +114,29 @@ selector: "CallExpression[callee.object.name='crypto'][callee.property.name='ran
     why: "`deps.clock.now()` は許可された実装であるため、ルールは検出しません。この変更では、状態と監査記録の時刻が食い違います。clock を取得した回数を検証するテストだけが検出します。",
   },
   {
+    id: "B7-date-in-unrun-branch",
+    kind: "bad",
+    label: "予約なしの分岐で new Date() を呼ぶ",
+    baseCase: "G1-solution",
+    target: "ensureFound の部分",
+    diff: [
+      { kind: "del", text: "  (appointment: AppointmentState | undefined) =>" },
+      { kind: "del", text: "    ensureAppointmentFound(appointment, appointmentId);" },
+      { kind: "add", text: "  (appointment: AppointmentState | undefined) => {" },
+      { kind: "add", text: "    if (appointment === undefined) console.warn(new Date());" },
+      { kind: "add", text: "    return ensureAppointmentFound(appointment, appointmentId);" },
+      { kind: "add", text: "  };" },
+    ],
+    results: {
+      lint: { found: true, output: "no-restricted-syntax: 現在時刻を直接読まず、clock から受け取ります。" },
+      tests: { found: false, output: "テスト4件のうち4件成功" },
+    },
+    why: "テストは予約が見つからない経路を実行しないため、この変更を検出しません。Linter のルールは、分岐の中の `new Date()` も検出します。",
+  },
+  {
     id: "G2-date-from-timestamp",
     kind: "good",
-    label: "clock の時刻から Date を生成する（正しいコード）",
+    label: "clock の時刻から Date を作る（正しい例）",
     baseCase: "G1-solution",
     target: "createEventContext の部分",
     diff: [

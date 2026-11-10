@@ -3,7 +3,7 @@ const expectedPages = [
   ["reference", "大きなコードでの5つの境界の維持", "problem", "teach", 0.5],
   ["ports-and-adapters", "層の import の向き", "knowledge", "teach", 1.5],
   ["differences", "S06 との違い", "knowledge", "teach", 1],
-  ["boundaries", "成功の流れで5つの境界を追跡する", "solution", "teach", 1.25],
+  ["boundaries", "成功の流れで通過する4つの境界", "solution", "teach", 1.25],
   ["boundary-failures", "失敗の依頼の到達範囲", "solution", "teach", 1.25],
   ["all-rules", "ルールの適用範囲を広げたときの3件の指摘", "solution", "review", 1.5],
   ["own-rule-review", "S00 で記入した業務ルールを見直す", "work", "review", 0.5],

@@ -145,6 +145,7 @@ export const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-06-solution/exercises/guard/cases/B4-two-saves.ts",
   "examples/session-06-solution/exercises/guard/cases/B5-clock-read-twice.ts",
   "examples/session-06-solution/exercises/guard/cases/B6-store-result-dropped.ts",
+  "examples/session-06-solution/exercises/guard/cases/B7-date-in-unrun-branch.ts",
   "examples/session-06-solution/exercises/guard/cases/G1-solution.ts",
   "examples/session-06-solution/exercises/guard/cases/G2-date-from-timestamp.ts",
   "examples/session-06-solution/exercises/guard/cases/R1-peer-change.ts",

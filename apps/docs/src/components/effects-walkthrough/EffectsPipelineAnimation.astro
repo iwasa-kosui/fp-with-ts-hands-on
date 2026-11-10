@@ -33,6 +33,7 @@ type Frame = Readonly<{
   out?: string;
   skipped?: readonly string[];
   flow?: Flow;
+  screen?: string;
 }>;
 type SceneKey = "flow" | "reject" | "two-paths";
 type Scene = Readonly<{
@@ -248,7 +249,7 @@ const scenes: readonly Scene[] = [
         lines: [3, 4, 10],
       },
       {
-        text: "`startExaminationEvent` の中で `Appointment.startExamination` が `ExaminationStarted` を生成します。失敗しない計算であるため `map` でつなぎます。",
+        text: "`startExaminationEvent` の中で `Appointment.startExamination` が `ExaminationStarted` を生成します。`Err` を返さない処理であるため `map` でつなぎます。",
         at: "start",
         impl: "transition",
         lines: [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12],
@@ -288,11 +289,12 @@ const scenes: readonly Scene[] = [
         flow: { kind: "err", from: "through", to: "map" },
       },
       {
-        text: "呼び出し元の route が `Err` を受け取り、`/?notice=conflict` への 303 リダイレクトに変換します。",
+        text: "呼び出し元の route が `Err` を受け取り、`/?notice=conflict` への 303 リダイレクトに変換します。獣医師の画面には、次の通知が表示されます。",
         at: "route",
         impl: "notice",
         lines: [0, 1],
         out: "r7r",
+        screen: "conflict",
         skipped: ["map"],
         flow: { kind: "err", from: "through", to: "route" },
       },
@@ -310,21 +312,22 @@ const scenes: readonly Scene[] = [
         lines: [0, 1, 2, 3],
       },
       {
-        text: "SQLite の書き込みが失敗すると、`store` は `fromSafePromise` の中で reject します。`fromSafePromise` は Promise を `ResultAsync` に包み、reject は変えないため、`Err` になりません。`fromPromise` は reject を指定した `Err` に変えますが、ここでは使いません。",
+        text: "`Promise.resolve().then` は、同期で投げられた例外も reject にします。`fromSafePromise` は、reject を `Err` に変えず例外のまま残します。名前の `Safe` は、例外の処理を意味しません。",
         at: "through",
         impl: "store",
         lines: [1, 2],
         out: "r5x",
+        screen: "store",
         flow: { kind: "reject", from: "through", to: "through" },
       },
       {
-        text: "`store` の Promise が reject するため、`andThrough` は `Result` を受け取れず、最後の `map` も実行されません。reject は `Result` の経路の外へ出ます。",
+        text: "内側の Promise が reject した `ResultAsync` は、`Ok` にも `Err` にもならず、`await` した場所で例外になります。そのため `andThrough` は `Result` を受け取れず、最後の `map` も実行されません。",
         at: "map",
         skipped: ["map"],
         flow: { kind: "reject", from: "through", to: "onError" },
       },
       {
-        text: page ? "例外のまま外へ出て、外側で 500 を返します。詳細は含めません。業務の失敗の型は増えません。" : "外側の `app.onError` が受け取り、詳細を含まない 500 応答を返します。業務の失敗の型は増えません。",
+        text: page ? "例外のまま外へ出て、外側で 500 を返します。詳細は含めません。保存先の障害を `Err` の型に追加しないため、route が分岐する失敗は業務の失敗のままです。" : "外側の `app.onError` が受け取り、詳細を含まない 500 応答を返します。保存先の障害を `Err` の型に追加しないため、route が分岐する失敗は業務の失敗のままです。",
         at: "onError",
         out: "r7x",
         skipped: ["map"],
@@ -340,15 +343,16 @@ const twoPathsFailure: Scene = {
   settled: upstream,
   frames: [
     {
-      text: `${sameUntil}ここで SQLite の書き込みが失敗すると、\`store\` の Promise が reject します。\`Err\` にならず、型に残りません。`,
+      text: `${sameUntil}ここで SQLite の書き込みが失敗すると、\`store\` の \`ResultAsync\` の内側の Promise が reject します。\`Ok\` にも \`Err\` にもならず、型に残りません。`,
       at: "through",
       impl: "store",
       lines: [1, 2],
       out: "r5x",
+      screen: "store",
       flow: { kind: "reject", from: "through", to: "through" },
     },
     {
-      text: "最後の `map` は実行されず、reject は `Result` の経路の外へ出ます。外側で 500 を返し、詳細は含めません。業務の失敗の型は増えません。",
+      text: "最後の `map` は実行されず、reject は `Result` の経路の外へ出ます。外側で 500 を返し、詳細は含めません。保存先の障害を `Err` の型に追加しないため、route が分岐する失敗は業務の失敗のままです。",
       at: "onError",
       out: "r7x",
       skipped: ["map"],
@@ -428,6 +432,19 @@ const pageRows: readonly Readonly<{ key: string; code: string; label?: string; o
   },
 ];
 
+const storeCalloutLabel = lineLabelOf(
+  "session-06-solution",
+  "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+  "      ResultAsync.fromSafePromise(",
+  "      ).andThen((result) => result),",
+);
+const storeCalloutCode = quote(
+  "session-06-solution",
+  "src/adaptor/secondary/sqlite/examinationStartedStore.ts",
+  "ResultAsync.fromSafePromise(",
+  ").andThen((result) => result),",
+);
+
 const usedChips = new Set(
   shownScenes.flatMap(({ settled, frames }) => [
     ...Object.values(settled),
@@ -470,6 +487,24 @@ const legendLines = [
                   <span class="ep-sum__val">{card.short}</span>
                 </p>
               ))}
+              {row.key === "through" ? (
+                <div class="ep-callout" data-screen="store">
+                  <p class="ep-callout__path"><code>{storeCalloutLabel.slice(storeCalloutLabel.lastIndexOf("/") + 1)}</code></p>
+                  <Code code={storeCalloutCode} lang="ts" wrap />
+                </div>
+              ) : null}
+              {row.key === "route" ? (
+                <div class="ep-screen" data-screen="conflict" role="group" aria-label="獣医師の画面に表示される通知">
+                  <p class="ep-screen__who">獣医師の画面</p>
+                  <div class="ep-screen__dialog">
+                    <p class="ep-screen__title">操作のお知らせ</p>
+                    <p class="ep-screen__msg">
+                      <span>予約がほかの操作によって更新されました</span>
+                      <span class="ep-screen__btn">閉じる</span>
+                    </p>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         ))}
