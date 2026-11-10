@@ -216,7 +216,7 @@ export const ResultTable = ({
       <div className="guard-exercise__limits">
         {result.passed && passedNext === undefined ? (
           <p className="guard-exercise__limits-note">
-            行の題名の ▶ を押すと開く「この仕組みで検出できないこと」の欄に、表の少なくとも 1 つの行で 1 文を記入します。記入の内容はプログラムでは判定しません。
+            行の題名の ▶ を押すと開く「この仕組みで検出できないこと」の欄に、表の少なくとも 1 つの行で 1 文を記入します。この記入は合格の条件ではなく、次へ進む前に行う作業で、内容はプログラムでは判定しません。
           </p>
         ) : null}
         <details

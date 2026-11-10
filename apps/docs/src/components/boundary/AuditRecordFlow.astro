@@ -92,13 +92,13 @@ const frames = [
     caption: "診察を開始するたびに、監査記録が1件記録されます。",
   },
   {
-    caption: `${part === "problem" ? "現在" : "修正前"}のコードは、監査記録に ownerContact を含めています。個人情報（氏名・メールアドレス・電話番号）が、そのまま記録に残ります。`,
+    caption: `${part === "problem" ? "現在" : "修正前"}のコードは、監査記録に appointment と ownerContact を含めています。appointment は予約の全項目で、petId・ownerId・reason など、診察開始の調査に不要な項目を含みます。ownerContact は個人情報（氏名・メールアドレス・電話番号）で、そのまま記録に残ります。`,
   },
   {
-    caption: "修正後のコードは、appointmentId・veterinarianId・examinationStartedAt の3項目だけを記録に含めます。個人情報は含まれません。",
+    caption: "修正後のコードは、3項目だけを記録に含めます。appendExaminationStartedAudit が toAuditPayload を呼びます。",
   },
   {
-    caption: "個人情報を残さなくても、veterinarianId で「誰が」、examinationStartedAt で「いつ」診察を開始したかは確認できます。",
+    caption: "個人情報と appointment の全項目を残さなくても、「誰が」「いつ」診察を開始したかは確認できます。",
   },
 ] as const;
 
@@ -132,7 +132,7 @@ const litData = JSON.stringify(lit);
         <p class="audit-flow__record-title">監査記録 1件</p>
         <ul>
           <li class="audit-flow__row audit-flow__row--muted" data-from="1" style="--i: 0">
-            <span>appointment</span><span>予約の内容</span>
+            <span>appointment</span><span>予約の全項目</span>
           </li>
           <li class="audit-flow__row audit-flow__row--danger" data-from="1" style="--i: 1">
             <span>ownerName</span><span>{contact.ownerName}</span>
@@ -170,7 +170,7 @@ const litData = JSON.stringify(lit);
               <span>examinationStartedAt</span><span>いつ</span>
             </li>
             <li class="audit-flow__row audit-flow__row--ghost" data-from="3" style="--i: 3">
-              <span>ownerContact</span><span>残さない</span>
+              <span>appointment・ownerContact</span><span>残さない</span>
             </li>
           </ul>
         </div>

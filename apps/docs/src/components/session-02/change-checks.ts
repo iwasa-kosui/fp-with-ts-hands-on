@@ -24,7 +24,7 @@ toStatusLabel({ kind: "NoSuchState" });`,
   {
     id: "tests",
     name: "テスト",
-    detail: "値を渡して表示名を検証する。`as never` は、kind だけの値を渡すための型アサーション",
+    detail: "値を渡して表示名を検証する。テストは Linter の対象外で、`as never` を使えます",
     code: `// 6つの状態をそれぞれ渡す
 expect(toStatusLabel({ kind } as never)).toBe(label);`,
   },
@@ -34,7 +34,7 @@ const cases: readonly ChangeCase[] = [
   {
     id: "B2-missing-case-default",
     kind: "bad",
-    label: "Paid を消し、default を「不明」に戻す",
+    label: "Paid の case を消し、default を「不明」に戻す",
     baseCase: "G1-assert-never",
     target: "toStatusLabel の部分",
     diff: [
@@ -62,7 +62,7 @@ const cases: readonly ChangeCase[] = [
   {
     id: "B1-missing-case-assert-never",
     kind: "bad",
-    label: "Paid を消し、assertNever は残す",
+    label: "Paid の case を消し、assertNever は残す",
     baseCase: "G1-assert-never",
     target: "toStatusLabel の部分",
     diff: [
@@ -87,7 +87,7 @@ const cases: readonly ChangeCase[] = [
       lint: { found: true, output: `Switch is not exhaustive. Cases not matched: "Paid"` },
       tests: { found: true, output: `Paid: Unknown appointment status: {"kind":"Paid"}` },
     },
-    why: "assertNever が残っているため、tsc は Paid が足りないことを型エラーとして報告します。Linter のルールとテストも検出します。tsc の検出は最初から備わっているため、次の演習の表では自分の仕組みとして数えず「対象外」と表示されます。",
+    why: "assertNever が残っているため、tsc は Paid が足りないことを型エラーとして報告します。Linter のルールとテストも検出します。tsc の検出は最初から備わっているため、次の演習の表では「対象外」と表示されます。それでも自分の仕組みで検出するのは、型エラーを無視して実行した場合や、tsc の結果を CI で失敗にしていない場合にも検出するためです。",
   },
   {
     id: "B3-added-state-default",
@@ -201,8 +201,8 @@ const cases: readonly ChangeCase[] = [
 
 export const session02ChangeChecks: ChangeCheckSet = {
   example: "session-02-solution",
-  ariaLabel: "誤った変更と4つの検証の結果",
-  pickerLabel: "変更を選択してください（tsc、型のテスト、Linter のルール、テストの4つの結果が表示されます）",
+  ariaLabel: "誤った変更に対する、tsc と追加する3つの仕組みの検証結果",
+  pickerLabel: "変更を選択してください",
   mechanisms,
   cases,
 };

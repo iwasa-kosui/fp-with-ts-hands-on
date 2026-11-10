@@ -12,7 +12,7 @@ export const sessionNavigationItems = [
   },
   {
     slug: "03-boundaries-and-pii",
-    title: "診察開始の入力を境界で検証する",
+    title: "境界で入力を検証し、監査記録から個人情報を除外する",
   },
   { slug: "04-workflow-errors", title: "失敗をユースケースの結果として扱う" },
   {

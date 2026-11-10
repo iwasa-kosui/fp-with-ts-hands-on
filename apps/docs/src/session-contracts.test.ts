@@ -87,7 +87,7 @@ const expectedCurriculum = [
   {
     slug: "03-boundaries-and-pii",
     sequence: "03",
-    title: "診察開始の入力を境界で検証する",
+    title: "境界で入力を検証し、監査記録から個人情報を除外する",
     durationMinutes: 35,
     kind: "exercise",
     exerciseCommand: "pnpm exercise:03",
@@ -279,7 +279,7 @@ const expectedNavigation = [
     },
     next: {
       href: "/sessions/03-boundaries-and-pii/",
-      title: "診察開始の入力を境界で検証する",
+      title: "境界で入力を検証し、監査記録から個人情報を除外する",
     },
   },
   {
@@ -295,7 +295,7 @@ const expectedNavigation = [
   {
     previous: {
       href: "/sessions/03-boundaries-and-pii/",
-      title: "診察開始の入力を境界で検証する",
+      title: "境界で入力を検証し、監査記録から個人情報を除外する",
     },
     next: {
       href: "/sessions/05-business-events-and-workflows/",

@@ -41,7 +41,7 @@ export const sessionPages = [
     flow: "problem",
     kind: "teach",
     minutes: 0.5,
-    role: "課題: 境界の検査とは別に、内側から記録へ出ていく値にも問題があります。",
+    role: "課題: 境界は、外から入る値のほかに、内側から外へ出る値にもあります。監査記録に個人情報が残る問題を確認します。",
   },
   {
     slug: "result",
@@ -84,14 +84,6 @@ export const sessionPages = [
     role: "解決策: ここまでの知識を組み合わせて、境界の検査を作成します。",
   },
   {
-    slug: "terms",
-    title: "学習した概念の名前",
-    flow: "solution",
-    kind: "teach",
-    minutes: 0.5,
-    role: "解決策: ここまでに読んだ形の名前を知ると、担当業務で調査したり説明したりできます。",
-  },
-  {
     slug: "audit-record",
     title: "監査記録からの個人情報の除外",
     flow: "solution",
@@ -100,12 +92,20 @@ export const sessionPages = [
     role: "解決策: 出力する記録から、個人情報を除外します。",
   },
   {
+    slug: "terms",
+    title: "学習した概念の名前",
+    flow: "solution",
+    kind: "teach",
+    minutes: 0.5,
+    role: "解決策: ここまでに読んだ形の名前を知ると、担当業務で調査したり説明したりできます。",
+  },
+  {
     slug: "property-test",
     title: "値の性質のテストによる検証",
     flow: "solution",
     kind: "teach",
     minutes: 0.5,
-    role: "解決策を守る: 修正したコードも、次の変更で元の状態に戻る場合があります。守る仕組みのうち、値の性質のテストと型のテストの実装方法を学びます。",
+    role: "解決策: 修正したコードも、次の変更で元の状態に戻る場合があります。守る仕組みのうち、値の性質のテスト（プロパティベーステスト）と型のテストの実装方法を学びます。",
   },
   {
     slug: "checks",
@@ -113,7 +113,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 0.5,
-    role: "解決策を守る: 値の性質のテスト、型のテスト、Linter のルールで、誤った変更の検出結果を比較します。",
+    role: "解決策: 値の性質のテスト、型のテスト、Linter のルールで、誤った変更の検出結果を比較します。",
   },
   {
     slug: "exercise",
@@ -121,7 +121,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "exercise",
     minutes: 15,
-    role: "解決策を守る: 学んだ仕組みを追加して、誤った変更を検出します。",
+    role: "解決策: 学んだ仕組みを追加して、誤った変更を検出します。",
   },
   {
     slug: "peer-review",
@@ -129,7 +129,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "review",
     minutes: 3,
-    role: "解決策を守る: 自分の仕組みの不備を、隣の人に発見してもらいます。",
+    role: "解決策: 自分の仕組みの不備を、隣の人に発見してもらいます。",
   },
   {
     slug: "guard",

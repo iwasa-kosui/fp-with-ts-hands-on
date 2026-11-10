@@ -858,18 +858,19 @@ summary.session-frame__group-title:focus-visible {
     grid-row: 2;
   }
 
-  .session-split--guides.session-split--glossary-below [data-code-guide-card="unvalidated-start-examination-input"] {
-    grid-row: 1;
+  .session-split--guides.session-split--glossary-above [data-code-guide-card] {
+    grid-row: 2;
   }
 
-  .session-split--guides.session-split--glossary-below .session-glossary {
+  .session-split--guides.session-split--glossary-above .session-glossary {
     display: flex;
     flex-wrap: wrap;
     grid-column: 1 / -1;
+    grid-row: 1;
     gap: 0 1.5rem;
   }
 
-  .session-split--guides.session-split--glossary-below {
+  .session-split--guides.session-split--glossary-above {
     row-gap: 0.5rem;
   }
 }

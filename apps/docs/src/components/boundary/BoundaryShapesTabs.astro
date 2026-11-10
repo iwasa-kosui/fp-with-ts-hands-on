@@ -18,9 +18,9 @@ const rows = [
     note: "発展のページには、実物を短くした例を載せています。",
   },
   {
-    name: "検査結果",
+    name: "診察結果",
     scope: "教材のコードの補足",
-    outside: "検査機関から受け取る JSON",
+    outside: "診察結果を記録する画面から受け取る JSON",
     check: "examId、petId、items、needsFollowUp の形",
     inside: "ExamResult",
     path: "src/adaptor/primary/web/examResult.ts",
@@ -70,6 +70,7 @@ const zones = [
           </>
         ))}
       </div>
+      <p class="shapes__legend">青い丸は、値が外側から内側へ進む様子を表します。</p>
       <p class="shapes__path"><span>実物のコード</span> <code>{row.path}</code>{"note" in row && ` ${row.note}`}</p>
     </div>
   ))}
@@ -205,6 +206,7 @@ const zones = [
     display: grid;
     grid-template-columns: minmax(0, 1fr) 2rem minmax(0, 1.2fr) 2rem minmax(0, 1fr);
     align-items: stretch;
+    padding-block-start: 1.25rem;
   }
 
   .shapes__box {
@@ -262,7 +264,7 @@ const zones = [
 
   .shapes__dot {
     position: absolute;
-    inset-block-start: 50%;
+    inset-block-start: 0.5rem;
     inset-inline-start: 5%;
     z-index: 1;
     width: 1rem;
@@ -273,6 +275,12 @@ const zones = [
     opacity: 0;
     pointer-events: none;
     transform: translateY(-50%);
+  }
+
+  .shapes__legend {
+    margin: 0.5rem 0 0;
+    color: var(--case-muted);
+    font-size: 0.8125rem;
   }
 
   .shapes__path {
@@ -301,8 +309,13 @@ const zones = [
       transform: rotate(90deg);
     }
 
-    .shapes__dot {
+    .shapes__dot,
+    .shapes__legend {
       display: none;
+    }
+
+    .shapes__flow {
+      padding-block-start: 0;
     }
   }
 

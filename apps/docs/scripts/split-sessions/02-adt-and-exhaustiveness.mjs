@@ -10,13 +10,14 @@ const expectedPages = [
   ["exercise", "演習: 誤った変更を検出する仕組みを追加する", "solution", "exercise", 7],
   ["peer-review", "相互レビュー", "solution", "review", 2],
   ["guard", "担当業務での防止策", "work", "review", 1],
+  ["algebraic-data-types", "直積型と直和型による状態の表現", "advanced", "advanced", 0],
 ];
 
 export default {
   previous: "/sessions/01-state-transitions/",
   previousTitle: "予約の状態と遷移をモデル化する",
   next: "/sessions/03-boundaries-and-pii/",
-  nextTitle: "診察開始の入力を境界で検証する",
+  nextTitle: "境界で入力を検証し、監査記録から個人情報を除外する",
   pages: expectedPages.map(([slug]) => slug),
   expectedPages,
   lastInTime: "guard",

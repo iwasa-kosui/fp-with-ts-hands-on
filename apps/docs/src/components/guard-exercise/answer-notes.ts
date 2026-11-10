@@ -13,7 +13,7 @@ export const answerNotes: Readonly<
   },
   "02-adt-and-exhaustiveness": {
     "eslint.config.mjs":
-      "「Paid の case を消しても、default の assertNever が残っている」、「Paid の case を消し、default が「不明」を返す」、「7つ目の状態を追加し、表示名を実装していない」、「別の関数の switch で、状態の case が1つ足りない」（任意）を検出します。",
+      "「Paid の case を消しても、default の assertNever が残っている」、「Paid の case を消し、default が「不明」を返す」、「NoShow を追加し、default も「不明」に戻す」、「別の関数の switch で、状態の case が1つ足りない」（任意）を検出します。",
     "exercises/guard/mine/statusLabel.test.ts":
       "「Paid の case を消しても、default の assertNever が残っている」、「Paid の case を消し、default が「不明」を返す」、「switch をやめて if の連なりにし、Paid の判定が抜ける」（任意）を検出します。",
     "exercises/guard/mine/statusLabel.type-test.ts":

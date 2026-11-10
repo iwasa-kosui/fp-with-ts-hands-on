@@ -53,7 +53,7 @@ const cases = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Pa
     <div class="leak__side">
       <div class="leak__flow">
         <p class="leak__box leak__box--input">
-          <span>引数の型</span><code>{"Readonly<{ kind: string }>"}</code><small>kind がどんな文字列でも受け取る</small>
+          <span>引数の型</span><code>{"Readonly<{ kind: string }>"}</code><small>kind は string で、残る値を数えられない</small>
         </p>
         <div class="leak__cases">
           <p class="leak__title">case で扱う6状態</p>
@@ -79,7 +79,7 @@ const cases = ["Scheduled", "CheckedIn", "InExamination", "AwaitingPayment", "Pa
   <div class="leak__live" aria-live="polite">
     <ol class="leak__frames">
       <li data-frame>
-        <p class="leak__caption">1つ目の原因: 引数の型は <code>{"Readonly<{ kind: string }>"}</code> であるため、<code>kind</code> がどんな文字列でも受け取ります。そのため <code>NoShow</code> の予約も型検査を通過します。</p>
+        <p class="leak__caption">1つ目の原因: 引数の型が <code>{"Readonly<{ kind: string }>"}</code> であり、<code>kind</code> が <code>string</code> であるため、<code>case</code> の後に何が残るかを型検査が数えられません。</p>
       </li>
       <li data-frame>
         <p class="leak__caption">2つ目の原因: <code>default</code> が「不明」を返すため、<code>case</code> のない状態もそのまま「不明」として画面に表示されます。</p>

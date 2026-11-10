@@ -34,10 +34,10 @@ const lit = {
   2: litLines(after.codeLines, ["return assertNever"]),
 };
 
-const stages = ["実装", "型検査", "実行", "画面"] as const;
+const stages = ["型検査", "実行", "画面"] as const;
 ---
 
-<figure class="ff" data-fail-fast data-lit={JSON.stringify(lit)} aria-label="実装、型検査、実行、画面の順に、誤りを検出する時点を比べる図">
+<figure class="ff" data-fail-fast data-lit={JSON.stringify(lit)} aria-label="型検査、実行、画面の順に、誤りを検出する時点を比べる図">
   <StepControls />
 
   <div class="ff__main">
@@ -49,30 +49,29 @@ const stages = ["実装", "型検査", "実行", "画面"] as const;
       <section class="ff__lane ff__lane--bad">
         <p class="ff__lane-title">「不明」を返す場合</p>
         <div class="ff__grid">
-          {[0, 1, 2, 3].map((column) => (
+          {[0, 1, 2].map((column) => (
             <span class="ff__cell" data-from="0" style={`--i: ${column}`}>通過</span>
           ))}
-          <p class="ff__note" data-from="0" style="grid-column: 4; --i: 4">× 画面に「不明」と表示される。人が発見する</p>
+          <p class="ff__note" data-from="0" style="grid-column: 3; --i: 3">× 画面に「不明」と表示される。人が発見する</p>
         </div>
       </section>
 
       <section class="ff__lane ff__lane--good">
         <p class="ff__lane-title"><code>assertNever</code> を呼ぶ場合</p>
         <div class="ff__grid">
-          <span class="ff__cell" data-from="1" style="--i: 0">通過</span>
-          <span class="ff__cell" data-from="1" style="--i: 1">検出</span>
-          <span class="ff__cell" data-from="2" style="--i: 2">検出</span>
-          <span class="ff__cell ff__cell--ghost" data-from="2" style="--i: 3">画面へ渡されない</span>
-          <p class="ff__note" data-from="1" style="grid-column: 2; --i: 2">✓ 追加漏れを型検査で検出する</p>
-          <p class="ff__note" data-from="2" style="grid-column: 3; --i: 3">✓ 不正な値は、検出した場所で例外になる</p>
+          <span class="ff__cell" data-from="1" style="--i: 0">検出</span>
+          <span class="ff__cell" data-from="2" style="--i: 1">検出</span>
+          <span class="ff__cell ff__cell--ghost" data-from="2" style="--i: 2">画面へ渡されない</span>
+          <p class="ff__note" data-from="1" style="grid-column: 1; --i: 1">✓ 追加漏れを型検査で検出する</p>
+          <p class="ff__note" data-from="2" style="grid-column: 2; --i: 2">✓ 型エラーを無視して実行した場合は、検出した場所で例外になる</p>
         </div>
       </section>
 
       <section class="ff__lane ff__lane--outside" data-from="3">
-        <p class="ff__lane-title">HTTP の入力のように外部から渡される値（fail-fast の対象外）</p>
+        <p class="ff__lane-title">HTTP の入力のように外部から渡される値</p>
         <div class="ff__grid">
-          <span class="ff__cell ff__cell--outside" style="grid-column: 3; --i: 0">型の保証がない</span>
-          <p class="ff__note" style="grid-column: 4; --i: 1">S03 で別の方法で扱う</p>
+          <span class="ff__cell ff__cell--outside" style="grid-column: 2; --i: 0">型の保証がない</span>
+          <p class="ff__note" style="grid-column: 3; --i: 1">S03 で境界の検査を扱う</p>
         </div>
       </section>
     </div>
@@ -105,10 +104,10 @@ const stages = ["実装", "型検査", "実行", "画面"] as const;
         <p class="ff__caption"><code>assertNever</code> を呼ぶ分岐は、追加漏れを型検査で検出します。引数の型が <code>never</code> であるため、<code>case</code> が漏れている状態を渡すと、型エラーになります。</p>
       </li>
       <li data-frame>
-        <p class="ff__caption">型検査を通過した不正な値は、<code>assertNever</code> の <code>throw</code> で例外になります。例外はそこで処理を中断し、メッセージに未対応の値が含まれます。受付の画面は「不明」の代わりにエラーになります。ログに記録するかどうかは、例外を受け取る側で決めます。</p>
+        <p class="ff__caption">型エラーを無視して実行した場合や、型検査を通過した不正な値は、<code>assertNever</code> の <code>throw</code> で例外になります。例外はそこで処理を中断して不正な値が画面へ渡されるのを防止し、開発者は例外のメッセージに含まれる未対応の値から原因を調査できます。</p>
       </li>
       <li data-frame>
-        <p class="ff__caption">HTTP の入力のように外部から渡される値には、型の保証がありません。この不正は想定内の失敗であり、fail-fast の対象外です。S03 で別の方法で扱います。</p>
+        <p class="ff__caption">HTTP の入力のように外部から渡される値には、型の保証がありません。S03 では、外部入力を境界で検査して内側へ渡さない構成を扱います。利用者への応答は S03 では解決しません。</p>
       </li>
     </ol>
   </div>
@@ -173,7 +172,7 @@ const stages = ["実装", "型検査", "実行", "画面"] as const;
 
   .ff__stages {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.375rem;
     margin: 0;
     padding: 0;
@@ -234,7 +233,7 @@ const stages = ["実装", "型検査", "実行", "画面"] as const;
 
   .ff__grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.25rem 0.375rem;
   }
 

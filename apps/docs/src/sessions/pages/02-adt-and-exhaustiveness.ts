@@ -65,7 +65,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "teach",
     minutes: 1,
-    role: "解決策を守る: assertNever に修正したコードを、次の変更から守る仕組みを検討します。",
+    role: "解決策: assertNever に修正したコードを、次の変更から守る仕組みを検討します。",
   },
   {
     slug: "exercise",
@@ -73,7 +73,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "exercise",
     minutes: 7,
-    role: "解決策を守る: 学んだ仕組みを追加して、誤った変更を検出します。",
+    role: "解決策: 学んだ仕組みを追加して、誤った変更を検出します。",
   },
   {
     slug: "peer-review",
@@ -81,7 +81,7 @@ export const sessionPages = [
     flow: "solution",
     kind: "review",
     minutes: 2,
-    role: "解決策を守る: 自分の仕組みが検出できない変更を、隣の人に探してもらいます。",
+    role: "解決策: 自分の仕組みが検出できない変更を、隣の人に探してもらいます。",
   },
   {
     slug: "guard",
@@ -90,5 +90,13 @@ export const sessionPages = [
     kind: "review",
     minutes: 1,
     role: "業務で考える: 機械が検出するものと人が確認するものを分けて、担当業務に適用します。",
+  },
+  {
+    slug: "algebraic-data-types",
+    title: "直積型と直和型による状態の表現",
+    flow: "advanced",
+    kind: "advanced",
+    minutes: 0,
+    role: "あとで読む: 状態を直積型で表した場合と直和型で表した場合の、候補の数を比べます。",
   },
 ] as const satisfies readonly SessionPage[];

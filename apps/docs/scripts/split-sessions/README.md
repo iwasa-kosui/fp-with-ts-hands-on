@@ -5,7 +5,7 @@
 これらのファイルは Session ごとに分かれているので、並行の作業で衝突しません。`<slug>` は Session の slug（例は `03-boundaries-and-pii`）です。
 
 - `apps/docs/src/sessions/pages/<slug>.ts`: `sessionSlug` と `sessionPages` を export します。`apps/docs/src/sessions/pages/split-sessions.fixture.ts` が glob でこのファイルを読みます。
-  - `role` の先頭の段階名には、課題の番号を付けません。段階名は `課題`、`事前知識`、`解決策`、`解決策を守る`、`業務で考える`、`あとで読む` などです。役割の行では番号が定義されないので、番号を付けると参加者に意味の分からない番号が見えます。
+  - `role` の先頭の段階名には、課題の番号を付けません。段階名は `課題`、`事前知識`、`解決策`、`業務で考える`、`あとで読む` などです。役割の行では番号が定義されないので、番号を付けると参加者に意味の分からない番号が見えます。
 - `apps/docs/scripts/split-sessions/<slug>.mjs`: 期待値を default export します。参考は同じディレクトリの `03-boundaries-and-pii.mjs` です。`index.mjs` とテストはこのディレクトリのファイルを自動で集めるので、一覧を編集する必要はありません。項目の意味は次のとおりです。
   - `previous`、`previousTitle`、`next`、`nextTitle`: 前後の Session の href とタイトルです。S00 の前と Final の次は省略します。
   - `expectedPages`: `[slug, title, flow, kind, minutes]` の並びです。slug が空文字のページは Session の最初のページです。`kind` が `advanced` のページは時間外なので、`minutes` を 0 にします。
