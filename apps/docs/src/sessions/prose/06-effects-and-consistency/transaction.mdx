@@ -1,0 +1,8 @@
+import TransactionFlow from "../../../components/effects-walkthrough/TransactionFlow.astro";
+import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
+
+<p><strong>transaction</strong> は、データベースへの複数の書き込みを、全部残るか何も残らないかにまとめる仕組みです。書き込みを残すことを確定、残さずに破棄することを取り消し（rollback）と呼びます。</p>
+
+<FigureSpace reserve={119}>
+  <TransactionFlow />
+</FigureSpace>

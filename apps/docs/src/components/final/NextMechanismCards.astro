@@ -1,10 +1,18 @@
 ---
+import { sessionPageHref } from "../../sessions/pages/links";
 import { whats, wheres } from "./next-mechanism";
+
+const ruleHref = sessionPageHref("00-system-handover", "your-rule");
 ---
 
-<figure class="nm" data-next-mechanism aria-label="次に追加する仕組みと、実行する場所の選択">
+<figure class="nm" data-next-mechanism aria-label="S00 で記入した業務ルールと、次に追加する仕組みと実行する場所の選択">
+  <p class="nm__notice" data-empty-notice hidden>
+    S00 の業務ルールがこのブラウザに保存されていません。S00 に記入すると、ここに表示されます。<a href={ruleHref}>担当システムの暗黙の業務ルールを1つ選ぶ</a>
+  </p>
+  <p class="nm__rule" data-rule tabindex="0" hidden></p>
+
   <fieldset class="nm__group">
-    <legend>依頼文に記載したくなる内容</legend>
+    <legend>この業務ルールのために依頼文に記載したくなる内容</legend>
     <div class="nm__whats">
       {whats.map((what) => (
         <label class="nm__what">
@@ -34,6 +42,7 @@ import { whats, wheres } from "./next-mechanism";
 </figure>
 
 <script>
+  import { load as loadRule } from "../handover/own-rule-storage";
   import { load, save, type Selection } from "./next-mechanism";
 
   document.querySelectorAll<HTMLElement>("[data-next-mechanism]").forEach((root) => {
@@ -41,7 +50,17 @@ import { whats, wheres } from "./next-mechanism";
     const whereInputs = [...root.querySelectorAll<HTMLInputElement>("input[name='next-mechanism-where']")];
     const wheres = root.querySelector<HTMLFieldSetElement>("[data-wheres]");
     const hint = root.querySelector<HTMLElement>("[data-hint]");
-    if (!wheres || !hint) return;
+    const notice = root.querySelector<HTMLElement>("[data-empty-notice]");
+    const rule = root.querySelector<HTMLElement>("[data-rule]");
+    if (!wheres || !hint || !notice || !rule) return;
+
+    const savedRule = loadRule().rule;
+    if (savedRule.trim() === "") {
+      notice.hidden = false;
+    } else {
+      rule.textContent = savedRule;
+      rule.hidden = false;
+    }
 
     const render = (selection: Selection) => {
       const input = whatInputs.find((item) => item.value === selection.what);
@@ -90,6 +109,42 @@ import { whats, wheres } from "./next-mechanism";
     gap: 0.5rem;
     min-width: 0;
     margin: 1rem 0;
+  }
+
+  .nm__notice,
+  .nm__rule {
+    margin: 0;
+    padding: 0.25rem 0.75rem;
+    border: 2px solid var(--role-border);
+    border-radius: 0.5rem;
+    background: var(--role-surface);
+    color: var(--role-text);
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+
+  .nm__notice[hidden],
+  .nm__rule[hidden] {
+    display: none;
+  }
+
+  .nm__notice a {
+    margin-inline-start: 0.5rem;
+    color: var(--role-accent);
+    font-weight: 700;
+  }
+
+  .nm__rule {
+    max-height: 3.5rem;
+    overflow: auto;
+    font-weight: 800;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .nm__rule:focus-visible {
+    outline: 3px solid var(--role-accent);
+    outline-offset: 2px;
   }
 
   .nm__group {

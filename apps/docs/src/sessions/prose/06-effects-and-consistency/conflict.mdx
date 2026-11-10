@@ -1,10 +1,10 @@
 import StoreBoundaryAnimation from "../../../components/effects-walkthrough/StoreBoundaryAnimation.astro";
 import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
 
-<p>予約を取得した後、保存の前に、別の依頼が先に診察を開始していた場合を、競合と呼びます。保存の時点で <code>examinationStartedStore</code> が競合を検出し、<code>AppointmentConflict</code> を <code>Err</code> で返します。</p>
+<p>予約を取得した後、保存の前に、別の依頼が先に診察を開始していた場合を、競合と呼びます。<code>examinationStartedStore</code> は、保存の時点で予約が <code>CheckedIn</code> でなければ、競合として <code>AppointmentConflict</code> を <code>Err</code> で返します。</p>
 
-<FigureSpace reserve={190}>
+<FigureSpace reserve={150}>
   <StoreBoundaryAnimation scene="conflict" />
 </FigureSpace>
 
-<p>開始のコードの保存は <code>Promise&lt;void&gt;</code> を返すだけで、この競合を <code>Err</code> で返せません。再取得して分岐するこの形で競合を検出できるのは、SQLite が書き込みを1つずつ実行するためです。PostgreSQL の既定の分離レベル（transaction 同士が変更を読める範囲の設定）である READ COMMITTED では、2つの transaction が同時に <code>CheckedIn</code> を取得して両方が書き込めるため、この形では検出できません。ほかのデータベースで競合を検出する方法は、Final の条件付き更新で扱います。</p>
+<p>修正前のコードの保存は <code>Promise&lt;void&gt;</code> を返すだけで、この競合を <code>Err</code> で返せません。この教材のコードでは、SQLite が transaction を1つずつ順に実行するため、再取得と書き込みの間に別の依頼の書き込みが入りません。ほかのデータベースで競合を検出する方法は、Final の条件付き更新で扱います。</p>

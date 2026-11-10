@@ -49,7 +49,7 @@ export const answerNotes: Readonly<
   },
   "06-effects-and-consistency": {
     "eslint.config.mjs":
-      "「イベントの時刻を、clock ではなく new Date() から作る」、「イベントIDを、ID generator ではなく乱数から作る」、「イベントの時刻を、Date.now() から作る」を検出します。",
+      "「イベントの時刻を、clock ではなく new Date() から作る」、「イベントIDを、ID generator ではなく乱数から作る」、「イベントの時刻を、Date.now() から作る」、「予約が見つからない分岐の中で、new Date() を呼ぶ」（任意）を検出します。",
     "exercises/guard/mine/useCase.test.ts":
       "「イベントの時刻を、clock ではなく new Date() から作る」、「イベントIDを、ID generator ではなく乱数から作る」、「イベントの時刻を、Date.now() から作る」、「状態の保存と監査記録の保存で、store を2回呼ぶ」、「イベントの時刻を、診察開始の時刻とは別に clock から読み直す」（任意）、「store の結果を待たず、競合しても呼び出し側に Err が返らない」（任意）を検出します。",
   },

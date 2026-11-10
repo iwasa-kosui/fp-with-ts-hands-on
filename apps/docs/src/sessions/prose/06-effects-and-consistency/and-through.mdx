@@ -1,10 +1,10 @@
 import AndThroughCompare from "../../../components/effects-walkthrough/AndThroughCompare.astro";
 import FigureSpace from "../../../components/effects-walkthrough/FigureSpace.astro";
 
-<p>課題1の保存は、イベント1つを渡して <code>deps.examinationStartedStore.store</code> を1回呼ぶ形にします。保存は非同期のため、結果は <code>ResultAsync</code> で表します。ただし <code>store</code> の成功の値は <code>void</code> であるため、保存の後の <code>map</code> へ、保存したイベントを渡せません。最後の <code>map</code> は <code>event.aggregateState</code> を取り出すため、保存の後もイベントが必要です。図の <code>startExaminationEvent</code> は <code>ExaminationStarted</code> を生成する処理です。<code>store</code> とあわせて、実装は後のページで確認します。</p>
+<p>前のページの port の <code>store</code> の成功の値は <code>void</code> です。このため、<code>store</code> を <code>andThen</code> で連結すると、保存の後の <code>map</code> へ、保存したイベントを渡せません。最後の <code>map</code> は <code>event.aggregateState</code> を取り出すため、保存の後もイベントが必要です。図の <code>startExaminationEvent</code> は <code>ExaminationStarted</code> を生成する処理です。<code>startExaminationEvent</code> と <code>store</code> の実装は、後のページで確認します。</p>
 
 <FigureSpace reserve={233}>
   <AndThroughCompare />
 </FigureSpace>
 
-<p><code>andThrough</code> は、Ok の値を別の処理へ渡して実行し、その処理が Ok なら、元の値を次へ渡します。その処理が Err を返したら、結果はその Err になります。</p>
+<p><code>andThrough</code> は S05 で説明した関数です。渡した処理が Ok を返すと元の値を次へ渡し、Err を返すとその Err を結果にします。</p>

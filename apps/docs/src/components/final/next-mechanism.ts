@@ -31,15 +31,15 @@ export const whats = [
     id: "agent-context",
     wish: "同じ指示を毎回記載しない",
     name: "Agent が参照するコンテキストとスキル",
-    detail: "これは指示を伝える仕組みであり、守られなかった場合の検出はしません。検出する仕組みと組み合わせます。",
+    detail: "スキルは、Agent が必要なときに読み込む手順書です。コンテキストとスキルは指示を伝える仕組みであり、守られなかった場合の検出はしません。検出する仕組みと組み合わせます。",
     recommended: undefined,
   },
 ] as const;
 
 export const wheres = [
-  { id: "on-save", name: "保存時", text: "エディタがファイルを保存したときに実行されます。自分はすぐに結果を閲覧できますが、ほかの人には強制できません。" },
+  { id: "on-save", name: "保存時", text: "エディタの保存時に実行され、自分はすぐ結果を閲覧できますが、他の人には強制できません。" },
   { id: "pre-commit", name: "pre-commit", text: "git commit の直前に実行されます。commit の前に検出できますが、--no-verify で省略できます。" },
-  { id: "ci", name: "CI の必須チェック", text: "push の後にサーバーで実行され、成功するまで merge を拒否します。全員に同じ基準が適用されます。" },
+  { id: "ci", name: "CI の必須チェック", text: "push の後にサーバーで実行され、成功するまで merge を拒否します。全員に適用されます。" },
   { id: "agent-hook", name: "Agent の実行前 hook", text: "Agent がツールを実行する直前に起動し、実行を拒否できます。" },
 ] as const;
 

@@ -32,7 +32,7 @@ const scenes = [
     label: "port の配置先",
     left: code.s06Port,
     right: code.finalPort,
-    text: "S06 は port を useCase に配置しました。参照実装は domain に配置しました。どちらの場合も、port は外側の実装に依存しません。重要なのはこの点です。",
+    text: "S06 は port を useCase に配置しました。参照実装は domain に配置しました。どちらの場合も、port は外側の実装に依存しません。配置先が違っても、この依存の向きは変わりません。",
   },
 ] as const;
 ---

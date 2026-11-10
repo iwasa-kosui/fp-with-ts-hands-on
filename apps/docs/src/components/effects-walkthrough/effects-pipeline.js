@@ -14,6 +14,7 @@ for (const figure of figures) {
     impls: [...stage.querySelectorAll("[data-impl]")],
     outs: [...stage.querySelectorAll("[data-out]")],
     sums: [...stage.querySelectorAll("[data-sum]")],
+    screens: [...stage.querySelectorAll("[data-screen]")],
   }));
   const order = parts.map(({ key }) => key);
 
@@ -83,6 +84,9 @@ for (const figure of figures) {
       if (state === "current") {
         showImpl(part, frame.impl, frame.lines ?? [], reset);
         for (const out of part.outs) out.toggleAttribute("data-active", out.dataset.out === frame.out);
+      }
+      for (const screen of part.screens) {
+        screen.toggleAttribute("data-active", state === "current" && screen.dataset.screen === frame.screen);
       }
       for (const item of part.sums) {
         const active = page ? (shown[key] ?? []).includes(item.dataset.sum) : item.dataset.sum === settled[key];

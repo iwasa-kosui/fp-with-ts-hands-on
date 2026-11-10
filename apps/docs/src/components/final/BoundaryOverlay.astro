@@ -7,11 +7,11 @@ const { staticView = false } = Astro.props;
 
 const steps = [
   { text: "これが S00 で見た、1回の依頼が通る5つのステップです。" },
-  { label: "入力境界", from: 1, to: 1, lane: 2, text: "検証していない値を、内側へ渡しません。S03 で実装しました。" },
-  { label: "業務上の失敗", from: 2, to: 3, lane: 2, text: "予約なしや状態不正を例外にせず、型付きの Err で返します。S01、S02、S04 で実装しました。" },
-  { label: "出力イベント", from: 3, to: 3, lane: 3, text: "判断に成功した経路だけが、イベントを生成します。S05 と S06 で確認しました。" },
-  { label: "副作用", from: 4, to: 4, lane: 2, text: "保存の結果を、成功か競合の Err に限定します。S06 の整合性境界（1回で変更を確定する範囲）は、この境界の中にあります。S06 で実装しました。" },
-  { label: "例外境界", from: 5, to: 5, lane: 2, text: "障害を業務の結果に含めず、共通の箇所で 500 を返します。S04 で実装しました。" },
+  { label: "入力の境界", from: 1, to: 1, lane: 2, text: "検証していない値を、内側へ渡しません。S03 で実装しました。" },
+  { label: "業務上の失敗の境界", from: 2, to: 3, lane: 2, text: "予約なしや状態不正を例外にせず、型付きの Err で返します。S01、S02、S04 で実装しました。" },
+  { label: "出力イベントの境界", from: 3, to: 3, lane: 3, text: "判断に成功した経路だけが、イベントを生成します。S05 と S06 で確認しました。" },
+  { label: "副作用の境界", from: 4, to: 4, lane: 2, text: "保存の結果を、成功か競合の Err に限定します。S06 の整合性境界（1回で変更を確定する範囲）は、この境界の中にあります。S06 で実装しました。" },
+  { label: "例外の境界", from: 5, to: 5, lane: 2, text: "障害を業務の結果に含めず、共通の箇所で 500 を返します。S04 で実装しました。" },
 ] as const;
 
 const tags = steps.flatMap((step, index) => ("label" in step ? [{ ...step, at: index }] : []));
@@ -175,7 +175,7 @@ const tags = steps.flatMap((step, index) => ("label" in step ? [{ ...step, at: i
 
   .bo__grid {
     display: grid;
-    grid-template-columns: minmax(0, 20rem) 10rem 10rem;
+    grid-template-columns: minmax(0, 20rem) 12rem 12rem;
     grid-template-rows: repeat(5, minmax(2.5rem, auto));
     gap: 0.375rem 0.75rem;
     justify-content: start;

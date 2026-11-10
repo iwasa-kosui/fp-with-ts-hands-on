@@ -469,6 +469,10 @@
   line-height: 1.45;
 }
 
+.ep--page .ep-stage[data-stage="onError"] .line > span:nth-child(12) {
+  white-space: nowrap;
+}
+
 .ep--page .ep-stage[data-state="current"] .ep-stage__code {
   box-shadow: inset 0 0 0 2px var(--walk-blue);
 }
@@ -521,6 +525,97 @@
 
 .ep--page .ep-stage[data-state="skipped"] .ep-sum {
   display: none;
+}
+
+.ep--page .ep-sums {
+  position: relative;
+}
+
+.ep--page .ep-callout {
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline: 0;
+  z-index: 2;
+  display: none;
+  border: 2px solid var(--walk-blue);
+  background: var(--frame-code-surface, #24292e);
+  box-shadow: 0 0.2rem 0.5rem rgb(15 23 42 / 25%);
+}
+
+.ep--page .ep-callout[data-active] {
+  display: block;
+  animation: ep-in 0.4s ease both;
+}
+
+.ep--page .ep-callout__path {
+  margin: 0;
+  padding: 0 0.5rem;
+  background: var(--role-surface, var(--walk-paper));
+  color: var(--walk-muted);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+
+.ep--page .ep-callout pre {
+  margin: 0;
+  padding: 0.1rem 0.5rem;
+  border-radius: 0;
+  background: transparent !important;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.ep--page .ep-screen {
+  flex: 1 1 100%;
+  min-width: 0;
+  visibility: hidden;
+}
+
+.ep--page .ep-screen[data-active] {
+  visibility: visible;
+  animation: ep-in 0.4s ease both;
+}
+
+.ep--page .ep-screen p {
+  margin: 0;
+}
+
+.ep--page .ep-screen__who {
+  color: var(--role-text);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+
+.ep--page .ep-screen__dialog {
+  padding: 0.15rem 0.5rem 0.25rem;
+  border: 2px solid var(--walk-line);
+  border-radius: 0.4rem;
+  background: var(--role-bg, var(--walk-paper));
+  box-shadow: 0 0.2rem 0.5rem rgb(15 23 42 / 18%);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.ep--page .ep-screen__title {
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.ep--page .ep-screen__msg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.1rem 0.5rem;
+}
+
+.ep--page .ep-screen__btn {
+  padding: 0 0.5rem;
+  border-radius: 0.25rem;
+  background: var(--walk-blue);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
 }
 
 @media (max-height: 844px) {

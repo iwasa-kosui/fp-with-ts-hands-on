@@ -350,17 +350,15 @@ ${arm(170, 148, 162, 168, "#ffd21b", "#f6c9a0")}
 <rect x="136" y="166" width="46" height="6" rx="2" fill="#fff" stroke-width="2"/>
 ${screen(190, 22, 164, 144, 172)}
 ${[
-  ["入力", 46],
-  ["失敗", 67],
-  ["イベント", 88],
-  ["保存", 109],
-  ["例外", 130],
+  ["入力の境界", 46],
+  ["業務上の失敗の境界", 67],
+  ["出力イベントの境界", 88],
+  ["副作用の境界", 109],
+  ["例外の境界", 130],
 ].map(([label, y]) => `
 <rect x="200" y="${y}" width="144" height="19" rx="4" fill="#eef1ff" stroke-width="2"/>
-${text(208, Number(y) + 14.5, 12, String(label))}
-<path d="M326 ${Number(y) + 3}L335 ${Number(y) + 17}H317Z" fill="#ffd21b" stroke-width="2"/>
-<path d="M326 ${Number(y) + 8}V${Number(y) + 12}" fill="none" stroke-width="2"/>
-<circle cx="326" cy="${Number(y) + 14.5}" r="1" fill="${ink}" stroke-width="1"/>`).join("")}`;
+${text(208, Number(y) + 14.5, 11, String(label))}
+<rect x="319" y="${Number(y) + 2.5}" width="14" height="14" rx="2" fill="#fff" stroke-width="2"/>`).join("")}`;
 
 export const episodeScenes = {
   "00-system-handover": {
@@ -396,7 +394,7 @@ export const episodeScenes = {
     art: effectsAndConsistency,
   },
   final: {
-    label: "犬の Mugi がドアから帰っていき、開発者だけが画面に向かっている。画面には入力、失敗、イベント、保存、例外の5つの行が並び、それぞれの行に注意の印が置かれている",
+    label: "犬の Mugi がドアから帰っていき、開発者だけが画面に向かっている。画面には入力の境界、業務上の失敗の境界、出力イベントの境界、副作用の境界、例外の境界の5つの行が並び、それぞれの行の右端に、境界が維持されているかを確認するための空のチェックボックスが置かれている",
     art: finalScene,
   },
 } as const satisfies Readonly<Record<string, EpisodeScene>>;
