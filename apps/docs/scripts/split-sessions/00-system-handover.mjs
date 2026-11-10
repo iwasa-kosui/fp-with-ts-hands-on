@@ -7,7 +7,7 @@ const expectedPages = [
   ["hexagonal", "ヘキサゴナルアーキテクチャの考え方", "knowledge", "teach", 1],
   ["when-noticed", "誤りを検出できる4つの時点", "knowledge", "teach", 0.5],
   ["goal", "この教材で目指す状態", "solution", "review", 1],
-  ["roadmap", "Session ごとに実装する業務ルール", "solution", "review", 0.5],
+  ["roadmap", "Session ごとに解決する内容", "solution", "review", 0.5],
   ["your-rule", "担当システムの暗黙の業務ルールを1つ選ぶ", "work", "review", 1],
   ["demo-screen", "デモ画面をローカル環境で起動する", "advanced", "advanced", 0],
 ];

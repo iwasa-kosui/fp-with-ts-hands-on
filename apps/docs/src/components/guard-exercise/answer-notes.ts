@@ -3,13 +3,13 @@ export const answerNotes: Readonly<
 > = {
   "01-state-transitions": {
     "eslint.config.mjs":
-      "「型アサーション（as）で来院済みに偽って渡す」と「unknown を経由して会計でも状態を偽る」（任意）を検出します。",
+      "「kind の検証を削除し、型アサーション（as）で来院済みの型に変更して渡す」と「kind の検証を削除し、unknown を経由した as で渡す」（任意）を検出します。",
     "exercises/guard/mine/callers.test.ts":
-      "「型アサーション（as）で来院済みに偽って渡す」と「unknown を経由して会計でも状態を偽る」（任意）を検出します。",
+      "「kind の検証を削除し、型アサーション（as）で来院済みの型に変更して渡す」と「kind の検証を削除し、unknown を経由した as で渡す」（任意）を検出します。",
     "exercises/guard/mine/transitions.test.ts":
-      "「キャンセルの理由ではなく来院の理由が残る」と「診察を始めた時刻に来院の時刻が格納される」（任意）を検出します。",
+      "「キャンセルの理由ではなく来院の理由を格納する」と「診察開始の時刻に来院の時刻を格納する」（任意）を検出します。",
     "exercises/guard/mine/transitions.type-test.ts":
-      "「診察開始の引数が Appointment 全体に戻る」を検出します。",
+      "「診察開始の引数を Appointment 全体に広げる」と「会計の引数を Appointment 全体に広げる」（任意）を検出します。",
   },
   "02-adt-and-exhaustiveness": {
     "eslint.config.mjs":

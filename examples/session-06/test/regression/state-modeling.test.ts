@@ -4,7 +4,7 @@ import { compileTypeFixture } from "./compileTypeFixture.js";
 
 describe("S01 regression: 予約状態を型で制約する", () => {
   it("Paid を渡す診察開始はコンパイルできない", () => {
-    expect(compileTypeFixture("paid-cannot-start.ts")).toEqual([]);
+    expect(compileTypeFixture("paid-not-assignable-to-checked-in.ts")).toEqual([]);
   });
 
   it("reason を省くキャンセルはコンパイルできない", () => {

@@ -98,14 +98,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           <div class="section-head"><h2 id="problems-title">ところが、問題が増えてきました</h2><p>便利になった分だけ、要求も増えました。小さな改修を重ねるうちに、どの状態でどの操作を許可するのか、どの情報を外部へ出力してよいのかが不明確になっています。</p></div>
           <div class="timeline" aria-label="WAN NYAN OS に発生している問題">
             <article class="time-stop is-active"><time>Current / S00</time><strong>🐕 現状と事故を対応付ける</strong><span>業務の流れ、画面操作、保存先、ログを確認し、二重請求と、監査記録で個人情報を閲覧できる問題の発生箇所を確認します。</span></article>
-            <article class="time-stop"><time>Risk / S01</time><strong>🐇 許可されない状態遷移</strong><span>会計済み・キャンセル済みの予約を遷移関数へ渡すコードの誤りを、状態と遷移の型で実行前に検出します。</span></article>
+            <article class="time-stop"><time>Risk / S01</time><strong>🐇 許可されない状態遷移</strong><span>会計済み・キャンセルの予約を遷移関数へ渡すコードの誤りを、状態と遷移の型で実行前に検出します。</span></article>
             <article class="time-stop"><time>Risk / S02</time><strong>🦔 状態の分岐漏れ</strong><span>予約の状態を追加したときに、表示名などの分岐の修正漏れを、コンパイルエラーで防止します。</span></article>
             <article class="time-stop"><time>Risk / S03</time><strong>🐦 未検証の外部入力</strong><span>HTTPから受け取った値をZodで検証し、値の制約を型で表した診察開始の入力へ変換します。監査記録に個人情報を含めない形にします。</span></article>
             <article class="time-stop"><time>Risk / S04</time><strong>🐹 ユースケースの予期できる失敗</strong><span>throw と undefined で表している業務上の失敗を、呼び出し側が扱える結果へ変換します。</span></article>
             <article class="time-stop"><time>Workflow / S05</time><strong>🐈 予約キャンセルを設計する</strong><span>予約のデータから始め、キャンセルを工程に分けて失敗の流れを捉え、I/Oの分離を確認します。工程の条件を守る仕組みも選びます。</span></article>
             <article class="time-stop"><time>Risk / S06</time><strong>🐢 出力イベントと副作用</strong><span>時刻や保存処理を外部から渡し、状態と監査記録を同じ整合性境界で保存します。</span></article>
           </div>
-          <div class="learning-actions"><a href="/sessions/00-system-handover/roadmap/">教材の進み方（Session ごとに実装する業務ルール）を見る <span aria-hidden="true">→</span></a></div>
+          <div class="learning-actions"><a href="/sessions/00-system-handover/roadmap/">教材の進み方（Session ごとに解決する内容）を見る <span aria-hidden="true">→</span></a></div>
         </section>
 
         <div class="learning-actions landing-start">

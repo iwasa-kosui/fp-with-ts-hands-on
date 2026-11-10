@@ -10,6 +10,8 @@ import tseslint from "typescript-eslint";
 // 「B[x.y=/…/]」は、項目 x.y が
 // 正規表現に一致する B です。
 // TSAsExpression は as の式です。
+// as const も as の式（TSAsExpression）です。
+// 状態の型の名前で対象を限定します。
 // TSTypeReference は型の名前です。
 // TSUnknownKeyword は unknown です。
 const rules = {};

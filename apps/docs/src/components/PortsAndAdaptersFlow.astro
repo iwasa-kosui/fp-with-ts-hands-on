@@ -63,7 +63,7 @@ const frames: readonly Frame[] = [
   },
   {
     caption:
-      "port は参照実装では domain に配置した型です。S00 と S06 では useCase に配置しました。どちらも内側であるため、内側のコードは外側の実装に依存しません。ExaminationStartedStore は、ExaminationStarted を受け取って ResultAsync を返すという仕様だけを定義します。",
+      "port は参照実装では domain に配置した型です。S06 では useCase に配置しました。どちらも内側であるため、内側のコードは外側の実装に依存しません。ExaminationStartedStore は、ExaminationStarted を受け取って ResultAsync を返すという仕様だけを定義します。",
     code: { key: "port", lines: [2, 6] },
     nodes: "dim",
     focus: ["domain"],

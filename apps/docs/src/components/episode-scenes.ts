@@ -149,20 +149,15 @@ ${shadow(76, 232, 52)}
 <rect x="142" y="202" width="224" height="58" fill="#2236b8"/>
 <rect x="154" y="212" width="200" height="36" rx="6" fill="none" stroke="#5b70e6" stroke-width="2"/>
 ${screen(150, 14, 200, 164, 190)}
-<rect x="160" y="130" width="78" height="9" rx="2" fill="#cfd8e8" stroke-width="2.5"/>
-<rect x="166" y="139" width="66" height="30" fill="#fff" stroke-width="2.5"/>
-<g transform="translate(199 130) scale(0.5 0.5)" stroke-width="4.8">${dog(0, 0)}</g>
-<rect x="164" y="48" width="70" height="26" rx="13" fill="#ff4f93" stroke-width="2.5"/>
-${text(199, 67, 15, "診察中", { anchor: "middle" })}
-<g transform="rotate(5 294 100)"><rect x="252" y="56" width="84" height="104" fill="#fff"/></g>
-<g transform="rotate(-3 284 100)">
-<rect x="246" y="46" width="84" height="104" fill="#fff"/>
-${text(253, 68, 13, "請求書")}
-<path d="M253 80H322M253 92H322M253 104H304" stroke="#cfd4ee" stroke-width="3"/>
-<rect x="253" y="124" width="34" height="14" rx="3" fill="#ffd21b" stroke-width="2"/>
-</g>
-<rect x="292" y="37" width="46" height="20" rx="10" fill="#ff4f93" stroke-width="2.5"/>
-${text(315, 52, 12, "2枚目", { anchor: "middle" })}`;
+<rect x="166" y="46" width="104" height="24" rx="6" fill="#ffd21b" stroke-width="2.5"/>
+${text(172, 63, 13, "診察を開始する", { fit: 92 })}
+${cursor(266, 60)}
+<rect x="166" y="88" width="168" height="72" rx="8" fill="#ffe0ee" stroke-width="2.5"/>
+${text(250, 120, 24, "例外", { anchor: "middle", fill: "#ff4f93", outline: true })}
+${text(250, 146, 12, "操作に失敗しました", { anchor: "middle" })}
+<rect x="160" y="215" width="188" height="28" rx="6" fill="#fff" stroke-width="2.5"/>
+${check(178, 229, 9)}
+${text(194, 234, 14, "型検査 成功")}`;
 
 const adtAndExhaustiveness = `
 ${room("#fff1cf", "#f0d5a0", "#d9b87c")}
@@ -370,7 +365,7 @@ export const episodeScenes = {
     art: handoverPii,
   },
   "01-state-transitions": {
-    label: "会計を終えた犬の Mugi がドアから帰っていく。受付の大きな画面の中では、同じ Mugi の予約が診察中へ戻って表示され、2枚目の請求書まで用意されている",
+    label: "受付の画面で「診察を開始する」のボタンを押すと、例外の表示が出て、操作に失敗している。机の上の札には、型検査成功と緑のチェックが付いている。左のドアの前には犬がいる",
     art: stateTransitions,
   },
   "02-adt-and-exhaustiveness": {
