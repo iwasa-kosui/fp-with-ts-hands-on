@@ -793,7 +793,7 @@ describe("GuardExercise", () => {
     const detectionSentence =
       "「結果」の列は、「対象外」ではない列のどれか 1 つが検出すれば「検出」です。";
     const writingSentence =
-      "記入の内容はプログラムでは判定しません。";
+      "「この仕組みで検出できないこと」の記入の内容は、プログラムでは判定しません。";
 
     it("puts the sentence about the result column right before the table", async () => {
       const { host } = await mountExercise();

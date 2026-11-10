@@ -223,7 +223,7 @@ export const ResultTable = ({
       <div className="guard-exercise__limits">
         {result.passed && passedNext === undefined ? (
           <p className="guard-exercise__limits-note">
-            記入の内容はプログラムでは判定しません。
+            「この仕組みで検出できないこと」の記入の内容は、プログラムでは判定しません。
           </p>
         ) : null}
         <details
