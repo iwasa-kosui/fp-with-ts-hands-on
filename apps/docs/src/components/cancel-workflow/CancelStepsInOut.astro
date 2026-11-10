@@ -31,29 +31,29 @@ const stages: readonly Stage[] = [
     node: "入力を検査する",
     zone: "boundary",
     name: "入力を検査する",
-    where: "ユースケースの手前の境界",
+    where: "useCase の手前の境界",
     input: [
-      { label: "URL から渡される", value: `appointmentId: "11111111-…"`, tone: "muted" },
-      { label: "ログイン情報から渡される", value: `actorUserId: "（受付担当者の ID）"`, tone: "muted" },
-      { label: "フォームから渡されるキャンセル理由。検査するのはこれだけ", value: `reason: "owner request"`, tone: "accent" },
+      { label: "URL から渡される。形式を検査する", value: `appointmentId: "11111111-…"`, tone: "accent" },
+      { label: "認証の middleware がログイン情報から作成した値", value: `actorUserId: "（受付担当者の ID）"`, tone: "muted" },
+      { label: "フォームから渡されるキャンセル理由。空でないことを検査する", value: `reason: "owner request"`, tone: "accent" },
     ],
     functions: [],
     process: schemaCode,
-    failure: { when: "理由が空のとき。ユースケースは呼ばずに、入力エラーの画面を返す", kinds: [] },
+    failure: { when: "予約 ID の形式が不正なときは 404 を返し、理由が空のときは入力エラーの画面を返す。どちらも useCase は呼ばない", kinds: [] },
     output: [
       {
-        label: "ユースケースへ渡す入力",
+        label: "useCase へ渡す入力",
         value: `{\n  actorUserId: "（受付担当者の ID）",\n  appointmentId: "11111111-…",\n  reason: "owner request",\n}`,
       },
     ],
     caption:
-      "最初の検査は、ユースケースの手前の境界で行います。実行者はログイン情報から、予約 ID は URL から渡されるため、ここで検査するのは理由だけです。",
+      "最初の検査は、useCase の手前の境界で行います。外部から渡される予約 ID（URL）とキャンセル理由（フォーム）を検査します。実行者は、認証の middleware がログイン情報から作成した値を使います。コードは理由の検査です。",
   },
   {
     node: "実行者の確認",
     zone: "useCase",
     name: "実行者の確認",
-    where: "ユースケースの1つ目の工程",
+    where: "useCase の1つ目の工程",
     input: [{ label: "入力の actorUserId", value: `"（受付担当者の ID）"` }],
     functions: ["userResolver.resolveById", "ensureUserFound", "ensureCanManageClinic"],
     failure: { when: "実行者が存在しない、または管理する権限がない場合", kinds: ["Unauthorized"] },
@@ -65,7 +65,7 @@ const stages: readonly Stage[] = [
     node: "予約の確認",
     zone: "useCase",
     name: "予約の確認",
-    where: "ユースケースの2つ目の工程",
+    where: "useCase の2つ目の工程",
     input: [{ label: "入力の appointmentId", value: `"11111111-…"` }],
     functions: ["appointmentResolver.resolveById", "ensureAppointmentFound", "ensureCancellable"],
     failure: { when: "予約が存在しない、または診察開始前（Scheduled と CheckedIn）ではない場合", kinds: ["AppointmentNotFound", "InvalidAppointmentState"] },
@@ -77,7 +77,7 @@ const stages: readonly Stage[] = [
     node: "結果を作る",
     zone: "useCase",
     name: "結果を作る",
-    where: "ユースケースの3つ目の工程",
+    where: "useCase の3つ目の工程",
     input: [
       { label: "前の工程の予約", value: `{ kind: "Scheduled", … }` },
       { label: "入力のキャンセル理由 reason", value: `"owner request"` },
@@ -100,13 +100,13 @@ const stages: readonly Stage[] = [
     node: "記録して返す",
     zone: "useCase",
     name: "記録して返す",
-    where: "ユースケースの4つ目の工程",
+    where: "useCase の4つ目の工程",
     input: [{ label: "前の工程のイベント", value: `{ kind: "AppointmentCanceled", … }` }],
     functions: ["andThrough(appointmentCanceledStore.store)", "map((event) => …)"],
     failure: {
       when: "記録が別のリクエストと競合した場合",
       kinds: ["AppointmentConflict"],
-      note: "競合は、利用者が最新の内容を確認して操作をやり直せる（次の操作を選べる）ため Err、接続断は選べない障害であるため例外です。",
+      note: "競合は、利用者が最新の内容を確認して操作をやり直せる（次の操作を選べる）ため Err です。接続断は、利用者が次の操作を選べない障害であるため例外です。",
     },
     output: [{ label: "呼び出し側が受け取る値", value: `{\n  appointment: {\n    kind: "Canceled",\n    …\n  },\n}` }],
     caption:
@@ -122,8 +122,8 @@ const stages: readonly Stage[] = [
     {stages.map((stage, current) => (
       <li data-frame>
         <div class="sio__strip" aria-hidden="true">
-          <span class="sio__zone sio__zone--boundary">ユースケースの手前の境界</span>
-          <span class="sio__zone sio__zone--use-case">ユースケース <code>{useCaseLabel}</code></span>
+          <span class="sio__zone sio__zone--boundary">useCase の手前の境界</span>
+          <span class="sio__zone sio__zone--use-case">useCase <code>{useCaseLabel}</code></span>
           {stages.map((item, index) => (
             <span
               class="sio__node"

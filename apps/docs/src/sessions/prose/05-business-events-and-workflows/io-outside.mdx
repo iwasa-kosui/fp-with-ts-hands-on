@@ -1,4 +1,5 @@
 import { Code } from "astro:components";
+import SessionDetailsBody from "../../../components/SessionDetailsBody.astro";
 import { cancelSource } from "../../pages/05-business-events-and-workflows-content";
 import { lineLabelOf } from "../../source-quotes";
 
@@ -6,14 +7,19 @@ export const cancelLabel = lineLabelOf("session-05-solution", "src/domain/appoin
 
 <div class="session-split">
   <div>
-    <p>課題2を解決するには、業務ロジックの外に I/O を配置します。I/O は、データベースの読み書きや現在時刻の取得のように、関数の外部とやり取りする処理です。domain の業務ロジックは <code>Appointment.cancel</code>（結果の作成）です。useCase にある <code>ensureCancellable</code> は条件の検証で、「結果を作る」工程の <code>createEvent</code>（時刻と ID の取得）は I/O です。</p>
+    <p>課題2を解決するには、業務ロジックの外に I/O を配置します。I/O は、データベースの読み書きや現在時刻の取得のように、関数の外部とやり取りする処理です。業務ロジックは、結果を作る <code>Appointment.cancel</code> と、条件を判定する <code>ensureCancellable</code> です。<code>Appointment.cancel</code> は domain にあります。<code>ensureCancellable</code> は、S04 の <code>ensureCheckedIn</code> と同じく、1つの useCase だけが使う判定であるため useCase/ に置いています。「結果を作る」工程の <code>createEvent</code>（時刻と ID の取得）は I/O です。</p>
     <p>副作用がなく、同じ入力から必ず同じ結果を返す関数を<strong>純粋関数</strong>と呼びます（<a href="/sessions/01-state-transitions/pure-functions/">S01 の説明</a>）。<code>ensureCancellable</code> は予約の値だけで <code>ok</code> か <code>err</code> を返します。右は演習のコードの <code>cancel</code> で、予約、キャンセル理由、時刻の値だけで <code>Canceled</code> の予約を返します。</p>
-    <p>条件の検証は useCase の内部にあるため、Resolver、Store、時計の代替を useCase に渡して確認します（演習の Paid のテスト）。</p>
-    <p>参照実装の <code>Appointment.cancel</code> は、<code>petId</code> と <code>ownerId</code> も保持し、次の2点も異なります。</p>
-    <ul>
-      <li>結果を <code>Canceled</code> の予約だけではなく、イベント <code>AppointmentCanceled</code> で包んで返します。</li>
-      <li>時刻を引数の <code>canceledAt</code> ではなく、<code>context</code>（<code>eventId</code>、<code>occurredAt</code>、<code>actorUserId</code> をまとめた値）で受け取ります。<code>createEvent</code> が、時計と ID の生成器から取得して渡します。</li>
-    </ul>
+    <p>取得、保存、時刻の取得を、Resolver、Store、時計として引数で渡すため、テストでは代替の実装を useCase に渡して、条件の検証をデータベースなしで確認できます（演習の Paid のテスト）。<code>ensureCancellable</code> は純粋関数ですが、外部に公開していないため、直接は呼ばず useCase 経由でテストします。</p>
+    <details class="step-solution">
+      <summary>参照実装の Appointment.cancel との差分</summary>
+      <SessionDetailsBody as="div">
+        <p>参照実装の <code>Appointment.cancel</code> は、<code>petId</code> と <code>ownerId</code> も保持し、次の2点も異なります。</p>
+        <ul>
+          <li>結果を <code>Canceled</code> の予約だけではなく、イベント <code>AppointmentCanceled</code> で包んで返します。</li>
+          <li>時刻を引数の <code>canceledAt</code> ではなく、<code>context</code>（<code>eventId</code>、<code>occurredAt</code>、<code>actorUserId</code> をまとめた値）で受け取ります。<code>createEvent</code> が、時計と ID の生成器から取得して渡します。</li>
+        </ul>
+      </SessionDetailsBody>
+    </details>
   </div>
   <figure class="code-block">
     <figcaption>{cancelLabel}</figcaption>

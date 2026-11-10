@@ -114,7 +114,7 @@ const realRouteLabel = lineLabelOf("session-04-solution", "src/adaptor/primary/w
 const footnotes: readonly Readonly<{ text: string; file?: string }>[] = isBusiness
   ? [
     { text: "startExamination の引用元:", file: useCaseLabel },
-    { text: "route の match は説明用のコードです。解答のコードの route:", file: realRouteLabel },
+    { text: "route の match は、解答のコードから、S06 で扱う副作用と競合の分岐を省略した形です。解答のコードの route:", file: realRouteLabel },
   ]
   : [{ text: `引用元: ${paths.solutionUseCase}:29-44 と ${paths.solutionApp}:34` }];
 const connectorText = isBusiness ? "Err を返す" : "例外が伝わる";

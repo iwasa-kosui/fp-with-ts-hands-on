@@ -77,13 +77,13 @@ const overview: Step = {
   row: -1,
   failed: false,
   skipped: false,
-  text: "ユースケース全体は、<code>andThen</code>、<code>andThrough</code>、<code>map</code> を連結した1本の連鎖です。実行者の確認、予約の確認、結果を作る、記録して返す、の順に進みます。次のコマから、値の流れを1行ずつ追跡します。",
+  text: "useCase 全体は、<code>andThen</code>、<code>andThrough</code>、<code>map</code> を連結した1本の連鎖です。実行者の確認、予約の確認、結果を作る、記録して返す、の順に進みます。次のコマから、値の流れを1行ずつ追跡します。",
   input: "",
   output: "",
 };
 
 const untilAppointment = (kind: string): readonly Step[] => [
-  step(0, "ユースケースの手前の境界が、リクエストを検査します。ここはレールの外です。理由は空ではないため、<code>.min(1)</code> を通過します。", `{ reason: "owner request" }`, `{ …, reason: "owner request" }`),
+  step(0, "useCase の手前の境界が、リクエストを検査します。ここはレールの外です。理由は空ではないため、<code>.min(1)</code> を通過します。", `{ reason: "owner request" }`, `{ …, reason: "owner request" }`),
   step(1, "<code>resolveById</code> が、データベースから実行者を取得します。", `"（受付担当者の ID）"`, ok(user)),
   step(2, "<code>ensureUserFound</code> は、実行者を取得できたため <code>ok</code> を返します。", user, ok(user)),
   step(3, "<code>ensureCanManageClinic</code> が、権限を検証します。<code>Receptionist</code> には権限があります。", user, ok(user)),
@@ -97,8 +97,8 @@ const allScenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }
     steps: [
       overview,
       ...untilAppointment("Scheduled"),
-      step(6, "<code>ensureCancellable</code> が、状態を検証します。<code>Scheduled</code> は診察開始前であるため、<code>ok</code> を返します。", appointment("Scheduled"), ok(appointment("Scheduled"))),
-      step(7, "<code>createEvent</code> が、時計から時刻を、ID の生成器から ID を取得し、入力の <code>reason</code> とともに <code>Appointment.cancel</code> へ渡します。", appointment("Scheduled"), ok(event)),
+      step(6, "<code>ensureCancellable</code> が、状態を検証します。<code>Scheduled</code> は診察開始前であるため、<code>ok</code> を返します。err の <code>actualKind</code> は S04 の <code>actual</code> と同じ現在の状態で、<code>expectedKind</code> は通過できる状態です。", appointment("Scheduled"), ok(appointment("Scheduled"))),
+      step(7, "<code>createEvent</code> が、時計から時刻を、ID の生成器から ID を取得し、入力の <code>reason</code> とともに <code>Appointment.cancel</code> へ渡します。前後の工程と同じ ResultAsync の連鎖につなぐために、<code>ResultAsync.fromSafePromise</code> が、処理の結果を、Err にならない ResultAsync に包みます。", appointment("Scheduled"), ok(event)),
       { ...step(7, "<code>Appointment.cancel</code> は、渡された値だけで <code>AppointmentCanceled</code> を作ります。背景で見た3項目が変わり、時刻は <code>context.occurredAt</code> から取ります。", `予約、"owner request"、context`, event), view: cancelView },
       step(8, "<code>andThrough</code> は、Ok の場合だけ store を呼び、値をそのまま次へ渡します。予約の更新とイベントの追記を、1回の保存で行います。", event, ok(event)),
       step(9, "<code>map</code> が、イベントからキャンセル後の予約を取り出します。", event, ok(canceled)),
@@ -108,8 +108,8 @@ const allScenarios: readonly (Readonly<{ label: string; steps: readonly Step[] }
   {
     label: "理由が空",
     steps: [
-      failAt(0, "ユースケースの手前の境界が、リクエストを検査します。理由が空であるため、<code>.min(1)</code> で失敗します。", `{ reason: "" }`, `// 検査に失敗`),
-      failAt(0, "検査に失敗したリクエストは、ユースケースに渡されません。境界が入力エラーの画面を返し、レールの上の行は1行も実行しません。", `// 検査に失敗`, `// 入力エラーの画面を返す`),
+      failAt(0, "useCase の手前の境界が、リクエストを検査します。理由が空であるため、<code>.min(1)</code> で失敗します。", `{ reason: "" }`, `// 検査に失敗`),
+      failAt(0, "検査に失敗したリクエストは、useCase に渡されません。境界が入力エラーの画面を返し、レールの上の行は1行も実行しません。", `// 検査に失敗`, `// 入力エラーの画面を返す`),
     ],
   },
   {

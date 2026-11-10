@@ -35,15 +35,15 @@ export const answerNotes: Readonly<
   },
   "04-workflow-errors": {
     "eslint.config.mjs":
-      "「予約が見つからないとき、useCase が Err を返さずに例外を投げる」、「_unsafeUnwrap で、失敗を例外に変える」（任意）、「失敗の種類を足したのに、呼び出し側の分岐が default で受けてしまう」（任意）を検出します。",
+      "「予約が見つからないとき、useCase が Err を返さずに例外を投げる」、「_unsafeUnwrap で、失敗を例外に変える」（任意）、「追加した失敗の種類を、呼び出し側の分岐が default で受ける」（任意）を検出します。",
     "exercises/guard/mine/startExamination.test.ts":
-      "「予約が見つからないとき、useCase が Err を返さずに例外を投げる」、「失敗を返すのに、保存を呼んでしまう」、「保存の障害を、業務の失敗の Err に変換する」、「_unsafeUnwrap で、失敗を例外に変える」（任意）を検出します。",
+      "「予約が見つからないとき、useCase が Err を返さずに例外を投げる」、「失敗を返す場合にも、保存を実行する」、「保存の障害を、業務の失敗の Err に変換する」、「_unsafeUnwrap で、失敗を例外に変える」（任意）を検出します。",
   },
   "05-business-events-and-workflows": {
     "eslint.config.mjs":
-      "「domain の予約が、adaptor/primary/web の変換関数を import する」、「domain の予約が、adaptor/secondary/sqlite の行の型を import する」、「domain の予約が、ユースケース（useCase）を import する」（任意）を検出します。",
+      "「domain の予約が、adaptor/primary/web の変換関数を import する」、「domain の予約が、adaptor/secondary/sqlite の行の型を import する」、「domain の予約が、useCase を import する」（任意）を検出します。",
     "exercises/guard/mine/cancelAppointment.test.ts":
-      "「会計済みの予約も、キャンセルを通してしまう」を検出します。",
+      "「会計済みの予約のキャンセルを通す」を検出します。",
     "exercises/guard/mine/reason.test.ts":
       "「キャンセル理由が、空の文字列でも通る」（任意）を検出します。",
   },

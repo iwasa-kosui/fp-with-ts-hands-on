@@ -1,6 +1,6 @@
 import NoticeMapping from "../../../components/workflow-errors/NoticeMapping.astro";
 
-<p>課題1の2点目、route が文言で判別する点を、<code>match</code> で解決します。<code>match</code> は、Ok のときの処理と Err のときの処理を、1か所にまとめて渡す関数です。route は、useCase が返した Result を <code>match</code> で受け取り、文言ではなく失敗の種類（<code>kind</code>）ごとに画面のお知らせを定義します。</p>
+<p>課題1の2点目、route が文言で判別する点は、失敗の種類（<code>kind</code>）で分岐することで解決します。useCase が <code>kind</code> を持つ失敗を Result で返すため、route は文言を検証せずに、<code>kind</code> ごとに画面のお知らせを定義できます。<code>match</code> は、Ok のときの処理と Err のときの処理を1か所にまとめて渡し、Result を画面の応答に変換する関数です。</p>
 
 <NoticeMapping />
 

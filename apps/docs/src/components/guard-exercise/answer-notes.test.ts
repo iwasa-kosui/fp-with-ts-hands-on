@@ -25,7 +25,7 @@ describe("answerNoteFor", () => {
     expect(
       answerNoteFor("05-business-events-and-workflows", "eslint.config.mjs"),
     ).toBe(
-      "「domain の予約が、adaptor/primary/web の変換関数を import する」、「domain の予約が、adaptor/secondary/sqlite の行の型を import する」、「domain の予約が、ユースケース（useCase）を import する」（任意）を検出します。",
+      "「domain の予約が、adaptor/primary/web の変換関数を import する」、「domain の予約が、adaptor/secondary/sqlite の行の型を import する」、「domain の予約が、useCase を import する」（任意）を検出します。",
     );
   });
 

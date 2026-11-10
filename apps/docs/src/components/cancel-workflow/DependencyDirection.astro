@@ -17,10 +17,10 @@ const reverseImport = `import type { AppointmentPageView } from "../../adaptor/p
 
 type Layer = "web" | "useCase" | "domain";
 
-const layers: readonly Readonly<{ id: Layer; name: string; folder: string; role: string }>[] = [
-  { id: "web", name: "web", folder: "adaptor/primary/web/", role: "外側（入出力）" },
-  { id: "useCase", name: "useCase", folder: "useCase/", role: "外側（条件の検証と工程の連結）" },
-  { id: "domain", name: "domain", folder: "domain/", role: "内側（業務の知識）" },
+const layers: readonly Readonly<{ id: Layer; name: string; folder: string; role: readonly string[] }>[] = [
+  { id: "web", name: "web", folder: "adaptor/primary/web/", role: ["入出力を担当する"] },
+  { id: "useCase", name: "useCase", folder: "useCase/", role: ["web より内側、", "domain より外側"] },
+  { id: "domain", name: "domain", folder: "domain/", role: ["最も内側。業務ロジック"] },
 ];
 
 const webTree = miniTree("final", "src/", [{ folder: "adaptor/primary/web/routes/", files: [{ id: "web", name: "appointmentRoutes.ts" }] }]);
@@ -42,14 +42,14 @@ const frames: readonly Frame[] = [
     fixed: false,
     imports: { web: webImport, useCase: useCaseImport, domain: reverseImport },
     trees: { web: webTree, useCase: useCaseTree, domain: domainBadTree },
-    caption: "誤った向きの仮の例です。矢印は import の向きです。内側の domain が外側の web を import しているため、矢印が内側から外側へ逆向きに伸びます。",
+    caption: "誤った向きの仮の例です。矢印は import の向きです。最も内側の domain が web を import しているため、矢印が逆向きに伸びます。",
   },
   {
     tag: "正しい向き",
     fixed: true,
     imports: { web: webImport, useCase: useCaseImport, domain: domainImport },
     trees: { web: webTree, useCase: useCaseTree, domain: domainTree },
-    caption: "正しい向きです。矢印は import の向きです。web は useCase を、useCase は domain を import し、矢印は外側から内側へだけ向かいます。",
+    caption: "正しい向きです。矢印は import の向きです。web は useCase を、useCase は domain を import し、矢印は外側の層から内側の層へだけ向かいます。",
   },
 ];
 ---
@@ -60,7 +60,7 @@ const frames: readonly Frame[] = [
   <ol class="st-stack">
     {frames.map((frame, index) => (
       <li data-frame data-fixed={frame.fixed ? "true" : "false"}>
-        <svg viewBox="0 0 900 126" role="img" aria-label={frame.fixed ? "web から useCase、useCase から domain へ向かう矢印だけがある" : "web から useCase、useCase から domain へ向かう矢印に加えて、domain から web へ逆向きの矢印がある"}>
+        <svg viewBox="0 0 900 141" role="img" aria-label={frame.fixed ? "web から useCase、useCase から domain へ向かう矢印だけがある" : "web から useCase、useCase から domain へ向かう矢印に加えて、domain から web へ逆向きの矢印がある"}>
           <defs>
             <marker id={`dep-head-ok-${index}`} viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" orient="auto">
               <path d="M 0 0 L 10 5 L 0 10 z" class="dep__tip dep__tip--ok"></path>
@@ -80,21 +80,21 @@ const frames: readonly Frame[] = [
 
           {layers.map((layer, column) => (
             <g class="dep__layer" data-bad={!frame.fixed && layer.id === "domain" ? "" : undefined} transform={`translate(${50 + column * 300} 46)`}>
-              <rect width="200" height="70" rx="10"></rect>
+              <rect width="200" height="85" rx="10"></rect>
               <text x="100" y="27" text-anchor="middle">{layer.name}</text>
               <text x="100" y="45" text-anchor="middle" class="dep__folder">{layer.folder}</text>
-              <text x="100" y="62" text-anchor="middle" class="dep__role">{layer.role}</text>
+              {layer.role.map((line, row) => <text x="100" y={62 + row * 15} text-anchor="middle" class="dep__role">{line}</text>)}
             </g>
           ))}
 
-          <path d="M 254 81 H 346" class={frame.fixed ? "dep__arrow dep__arrow--ok" : "dep__arrow"} marker-end={frame.fixed ? `url(#dep-head-ok-${index})` : `url(#dep-head-plain-${index})`}></path>
-          <path d="M 554 81 H 646" class={frame.fixed ? "dep__arrow dep__arrow--ok" : "dep__arrow"} marker-end={frame.fixed ? `url(#dep-head-ok-${index})` : `url(#dep-head-plain-${index})`}></path>
+          <path d="M 254 88 H 346" class={frame.fixed ? "dep__arrow dep__arrow--ok" : "dep__arrow"} marker-end={frame.fixed ? `url(#dep-head-ok-${index})` : `url(#dep-head-plain-${index})`}></path>
+          <path d="M 554 88 H 646" class={frame.fixed ? "dep__arrow dep__arrow--ok" : "dep__arrow"} marker-end={frame.fixed ? `url(#dep-head-ok-${index})` : `url(#dep-head-plain-${index})`}></path>
 
           {frame.fixed ? (
             <>
-              <text x="300" y="69" text-anchor="middle" class="dep__mark dep__mark--ok">✓ import</text>
-              <text x="600" y="69" text-anchor="middle" class="dep__mark dep__mark--ok">✓ import</text>
-              <text x="450" y="26" text-anchor="middle" class="dep__mark dep__mark--ok">矢印は外側から内側へだけ向かう</text>
+              <text x="300" y="76" text-anchor="middle" class="dep__mark dep__mark--ok">✓ import</text>
+              <text x="600" y="76" text-anchor="middle" class="dep__mark dep__mark--ok">✓ import</text>
+              <text x="450" y="26" text-anchor="middle" class="dep__mark dep__mark--ok">矢印は外側の層から内側の層へだけ向かう</text>
             </>
           ) : (
             <>
