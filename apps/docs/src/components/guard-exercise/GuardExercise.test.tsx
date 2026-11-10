@@ -17,6 +17,7 @@ import type { EditorProps } from "../code-explorer/CodeExplorer";
 import { phaseLabels, type TerminalView } from "../code-explorer/TerminalPanel";
 import type { GuardGuide } from "./CaseList";
 import { GuardExercise } from "./GuardExercise";
+import { saveTerminalOpen } from "./terminal-open-storage";
 
 const TestEditor: ComponentType<EditorProps> = ({ value, readOnly }) => (
   <textarea
@@ -991,6 +992,29 @@ describe("GuardExercise", () => {
       ).toBe(true);
       expect(action(host, "toggle-terminal")?.getAttribute("aria-expanded")).toBe("false");
       expect(onStart).not.toHaveBeenCalled();
+    });
+
+    it("keeps the saved output when the terminal opens and closes again without a command", async () => {
+      const previous = "前回の出力です\r\n";
+      saveTerminalOpen(true);
+      for (let visit = 1; visit <= 3; visit += 1) {
+        const onStart = vi.fn(async (request: TerminalStartRequest) => {
+          request.onOutput("\r\n--- ここまでが前回の出力です ---\r\n$ ");
+        });
+        const { unmount } = await mountExercise({
+          onStart,
+          ...(visit === 1 ? { savedOutput: previous } : {}),
+        });
+        await settleUntil(() => onStart.mock.calls.length === 1);
+        await settle();
+        await unmount();
+      }
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+      });
+
+      const { view } = await createIndexedDbWorkspaceStore().load(workspace.slug);
+      expect(view?.output).toBe(previous);
     });
 
     it("does not reopen a terminal that opened by itself after a failure", async () => {

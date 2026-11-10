@@ -104,9 +104,9 @@ export const GuardLayout = ({
       parts.terminalState === "unstarted"
     ) {
       setResumeTerminal(false);
-      void parts.acquireSession().catch(() => undefined);
+      void parts.startSession().catch(() => undefined);
     }
-  }, [resumeTerminal, parts.locked, parts.terminalState, parts.acquireSession]);
+  }, [resumeTerminal, parts.locked, parts.terminalState, parts.startSession]);
   useEffect(() => {
     if (parts.terminalState === "failed") setTerminalOpen(true);
   }, [parts.terminalState]);
@@ -164,7 +164,7 @@ export const GuardLayout = ({
             aria-controls={terminalId}
             onClick={() => {
               if (!terminalOpen && !parts.locked && parts.terminalState === "unstarted") {
-                void parts.acquireSession().catch(() => undefined);
+                void parts.startSession().catch(() => undefined);
               }
               const next = !terminalOpen;
               saveTerminalOpen(next);
