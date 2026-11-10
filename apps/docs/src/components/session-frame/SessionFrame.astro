@@ -139,6 +139,7 @@ const progress = `${((sameKind.indexOf(page) + 1) / sameKind.length) * 100}%`;
           <a
             class="session-frame__link session-frame__link--next"
             rel="next"
+            data-next-page-title={next.title}
             href={next.href}
             aria-label={`${nextLabel}: ${next.title}`}
             title={next.title}

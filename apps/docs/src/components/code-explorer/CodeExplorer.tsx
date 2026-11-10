@@ -58,6 +58,7 @@ export type CodeExplorerLayoutParts = Readonly<{
   terminalState: TerminalPanelStateKind;
   terminalPhase: TerminalPhase | undefined;
   acquireSession: () => Promise<TerminalSession>;
+  startSession: () => Promise<void>;
   releaseSession: () => Promise<void>;
 }>;
 
@@ -230,6 +231,12 @@ export const CodeExplorer = ({
     notifyCommandSent();
     return session;
   }, [notifyCommandSent]);
+
+  const startSession = useCallback(async (): Promise<void> => {
+    const panel = terminalPanel.current;
+    if (panel === null) throw new Error("ターミナルを使用できません。");
+    await panel.ensureSession();
+  }, []);
 
   const releaseSession = useCallback(async (): Promise<void> => {
     await terminalPanel.current?.releaseSession();
@@ -467,6 +474,7 @@ export const CodeExplorer = ({
           terminalState,
           terminalPhase,
           acquireSession,
+          startSession,
           releaseSession,
         })}
       </>

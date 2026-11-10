@@ -122,6 +122,7 @@ export const useWorkspacePersistence = (
   const selectedDirtyRef = useRef<string>();
   const lastSelectedPathRef = useRef<string>();
   const commandSentRef = useRef(false);
+  const heldOutputRef = useRef("");
   const viewTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const updateStatus = useCallback((next: WorkspacePersistenceStatus) => {
@@ -180,10 +181,16 @@ export const useWorkspacePersistence = (
 
   const appendTerminalOutput = useCallback(
     (chunk: string) => {
+      if (!commandSentRef.current) {
+        heldOutputRef.current = trimTerminalOutput(
+          heldOutputRef.current + chunk,
+        );
+        return;
+      }
       outputBufferRef.current = trimTerminalOutput(
         outputBufferRef.current + chunk,
       );
-      if (commandSentRef.current) lastOutputAtRef.current = Date.now();
+      lastOutputAtRef.current = Date.now();
       outputDirtyRef.current = true;
       scheduleViewSave();
     },
@@ -192,7 +199,14 @@ export const useWorkspacePersistence = (
 
   const notifyCommandSent = useCallback(() => {
     commandSentRef.current = true;
-  }, []);
+    if (heldOutputRef.current === "") return;
+    outputBufferRef.current = trimTerminalOutput(
+      outputBufferRef.current + heldOutputRef.current,
+    );
+    heldOutputRef.current = "";
+    outputDirtyRef.current = true;
+    scheduleViewSave();
+  }, [scheduleViewSave]);
 
   const flushSave = useCallback(
     async (force: boolean): Promise<void> => {

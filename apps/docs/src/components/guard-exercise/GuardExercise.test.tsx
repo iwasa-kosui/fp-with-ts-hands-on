@@ -17,6 +17,7 @@ import type { EditorProps } from "../code-explorer/CodeExplorer";
 import { phaseLabels, type TerminalView } from "../code-explorer/TerminalPanel";
 import type { GuardGuide } from "./CaseList";
 import { GuardExercise } from "./GuardExercise";
+import { saveTerminalOpen } from "./terminal-open-storage";
 
 const TestEditor: ComponentType<EditorProps> = ({ value, readOnly }) => (
   <textarea
@@ -221,6 +222,13 @@ const editor = (host: HTMLElement) =>
 
 describe("GuardExercise", () => {
   beforeEach(() => {
+    const items = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => items.get(key) ?? null,
+      setItem: (key: string, value: string) => void items.set(key, value),
+      removeItem: (key: string) => void items.delete(key),
+      clear: () => items.clear(),
+    });
     globalThis.indexedDB = new IDBFactory();
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal(
@@ -786,7 +794,7 @@ describe("GuardExercise", () => {
     const detectionSentence =
       "「結果」の列は、「対象外」ではない列のどれか 1 つが検出すれば「検出」です。";
     const writingSentence =
-      "行の題名の ▶ を押すと開く「この仕組みで検出できないこと」の欄に、表の少なくとも 1 つの行で 1 文を記入します。記入の内容はプログラムでは判定しません。";
+      "「この仕組みで検出できないこと」の記入の内容は、プログラムでは判定しません。";
 
     it("puts the sentence about the result column right before the table", async () => {
       const { host } = await mountExercise();
@@ -845,6 +853,71 @@ describe("GuardExercise", () => {
 
       expect(nextText(host)).toBe("まだ仕組みがありません。");
     });
+
+    describe("the link to the next page", () => {
+      const nextPageSentence = (host: HTMLElement) =>
+        host.querySelector(".guard-exercise__next p:nth-of-type(2)");
+      const addNextLink = () => {
+        const link = document.createElement("a");
+        link.setAttribute("rel", "next");
+        link.setAttribute("data-next-page-title", "次のページの題名");
+        link.setAttribute("href", "/next-page/");
+        document.body.append(link);
+        return link;
+      };
+      let link: HTMLAnchorElement | undefined;
+
+      beforeEach(() => {
+        link = addNextLink();
+      });
+
+      afterEach(() => {
+        link?.remove();
+      });
+
+      it("names the next page after a pass", async () => {
+        const { host } = await mountExercise({
+          exitCode: 0,
+          resultText: JSON.stringify(passedResult),
+          guide: { title: "案内", steps: ["手順です。"] },
+        });
+
+        await click(action(host, "run-guard"));
+
+        expect(nextPageSentence(host)?.textContent).toBe(
+          "完了したら、次のページ「次のページの題名」へ進みます。",
+        );
+        expect(
+          nextPageSentence(host)?.querySelector("a")?.getAttribute("href"),
+        ).toBe("/next-page/");
+      });
+
+      it("does not name the next page while the guard has not passed", async () => {
+        const { host } = await mountExercise();
+
+        await click(action(host, "run-guard"));
+
+        expect(nextPageSentence(host)).toBeNull();
+        expect(host.querySelector(".guard-exercise__next")?.textContent).not.toContain(
+          "完了したら",
+        );
+      });
+
+      it("names the next page after a pass on a page whose guide gives the next step", async () => {
+        const { host } = await mountExercise({
+          exitCode: 0,
+          resultText: JSON.stringify(passedResult),
+          guide: { title: "案内", passedNext: "別の次の操作です。", steps: ["手順です。"] },
+        });
+
+        await click(action(host, "run-guard"));
+
+        expect(nextText(host)).toBe("別の次の操作です。");
+        expect(nextPageSentence(host)?.textContent).toBe(
+          "完了したら、次のページ「次のページの題名」へ進みます。",
+        );
+      });
+    });
   });
 
   describe("opening the terminal", () => {
@@ -887,6 +960,81 @@ describe("GuardExercise", () => {
       await click(action(host, "toggle-terminal"));
 
       expect(onStart).toHaveBeenCalledOnce();
+    });
+
+    it("opens the terminal again and starts it when the participant left it open", async () => {
+      const first = await mountExercise();
+      await click(action(first.host, "toggle-terminal"));
+      await first.unmount();
+
+      const onStart = vi.fn(async () => undefined);
+      const { host } = await mountExercise({ onStart });
+      await settleUntil(() => terminalState(host) === "ready");
+
+      expect(
+        host.querySelector<HTMLElement>(".guard-exercise__terminal")?.hidden,
+      ).toBe(false);
+      expect(action(host, "toggle-terminal")?.getAttribute("aria-expanded")).toBe("true");
+      expect(onStart).toHaveBeenCalledOnce();
+    });
+
+    it("keeps the terminal collapsed after the participant closed it", async () => {
+      const first = await mountExercise();
+      await click(action(first.host, "toggle-terminal"));
+      await click(action(first.host, "toggle-terminal"));
+      await first.unmount();
+
+      const onStart = vi.fn(async () => undefined);
+      const { host } = await mountExercise({ onStart });
+
+      expect(
+        host.querySelector<HTMLElement>(".guard-exercise__terminal")?.hidden,
+      ).toBe(true);
+      expect(action(host, "toggle-terminal")?.getAttribute("aria-expanded")).toBe("false");
+      expect(onStart).not.toHaveBeenCalled();
+    });
+
+    it("keeps the saved output when the terminal opens and closes again without a command", async () => {
+      const previous = "前回の出力です\r\n";
+      saveTerminalOpen(true);
+      for (let visit = 1; visit <= 3; visit += 1) {
+        const onStart = vi.fn(async (request: TerminalStartRequest) => {
+          request.onOutput("\r\n--- ここまでが前回の出力です ---\r\n$ ");
+        });
+        const { unmount } = await mountExercise({
+          onStart,
+          ...(visit === 1 ? { savedOutput: previous } : {}),
+        });
+        await settleUntil(() => onStart.mock.calls.length === 1);
+        await settle();
+        await unmount();
+      }
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+      });
+
+      const { view } = await createIndexedDbWorkspaceStore().load(workspace.slug);
+      expect(view?.output).toBe(previous);
+    });
+
+    it("does not reopen a terminal that opened by itself after a failure", async () => {
+      const first = await mountExercise({
+        onStart: async () => {
+          throw new Error("boom");
+        },
+      });
+      await click(action(first.host, "run-guard"));
+      expect(
+        first.host.querySelector<HTMLElement>(".guard-exercise__terminal")?.hidden,
+      ).toBe(false);
+      await first.unmount();
+
+      const { host } = await mountExercise();
+
+      expect(
+        host.querySelector<HTMLElement>(".guard-exercise__terminal")?.hidden,
+      ).toBe(true);
+      expect(action(host, "toggle-terminal")?.getAttribute("aria-expanded")).toBe("false");
     });
   });
 
