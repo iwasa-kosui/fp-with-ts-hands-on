@@ -33,17 +33,6 @@
 
 .we-fig .step-controls {
   margin: 0;
-  gap: 0.375rem 0.5rem;
-}
-
-.we-fig .step-controls button {
-  min-height: 2rem;
-  padding: 0 0.625rem;
-  font-size: 0.8125rem;
-}
-
-.we-fig .step-controls button[data-play] {
-  min-width: 6.5rem;
 }
 
 .we-fig--top > .step-controls {
@@ -55,14 +44,6 @@
 
 .we-fig.we-fig--top > .step-controls[data-controls] {
   gap: 0.25rem 0.375rem;
-}
-
-.we-fig.we-fig--top > .step-controls[data-controls] button:not(.walk__btn):not([hidden]) {
-  padding: 0 0.5rem;
-}
-
-.we-fig.we-fig--top > .step-controls[data-controls] button[data-play]:not(.walk__btn):not([hidden]) {
-  min-width: 5.5rem;
 }
 
 .we-frames {

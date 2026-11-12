@@ -258,6 +258,7 @@ const tree = miniTree("final", "src/", [
 
 <script>
   import { setMiniTreeCurrent } from "./mini-tree/mini-tree-client";
+  import { renderProgress } from "./stepper/step-progress";
 
   type Mark = "accent" | "negative";
 
@@ -267,10 +268,9 @@ const tree = miniTree("final", "src/", [
     const tabs = [...root.querySelectorAll<HTMLButtonElement>("[data-step-scene]")];
     const controls = root.querySelector<HTMLElement>("[data-controls]");
     const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
-    const play = root.querySelector<HTMLButtonElement>("[data-play]");
     const next = root.querySelector<HTMLButtonElement>("[data-next]");
     const progress = root.querySelector<HTMLElement>("[data-progress]");
-    if (!controls || !prev || !play || !next || !progress) return;
+    if (!controls || !prev || !next || !progress) return;
 
     frames.forEach((frame) => {
       const lit = JSON.parse(frame.dataset.lit ?? "[]") as number[];
@@ -281,16 +281,8 @@ const tree = miniTree("final", "src/", [
     });
 
     const inScene = (scene: number) => frames.filter((frame) => Number(frame.dataset.scene) === scene);
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let scene = 0;
     let index = 0;
-    let timer: number | undefined;
-
-    const stop = () => {
-      if (timer !== undefined) window.clearInterval(timer);
-      timer = undefined;
-      play.textContent = "▶ 再生";
-    };
 
     const show = () => {
       const list = inScene(scene);
@@ -301,52 +293,26 @@ const tree = miniTree("final", "src/", [
       });
       tabs.forEach((tab, tabIndex) => tab.setAttribute("aria-pressed", String(tabIndex === scene)));
       setMiniTreeCurrent(root, [list[index]?.dataset.miniCurrent ?? ""]);
-      progress.textContent = `${index + 1} / ${list.length}`;
+      renderProgress(progress, index, list.length);
       prev.disabled = index === 0;
       next.disabled = index === list.length - 1;
     };
 
-    play.addEventListener("click", () => {
-      if (timer !== undefined) {
-        stop();
-        return;
-      }
-      const last = inScene(scene).length - 1;
-      if (index === last) {
-        index = 0;
-        show();
-      }
-      play.textContent = "❚❚ 一時停止";
-      timer = window.setInterval(() => {
-        index = Math.min(index + 1, last);
-        show();
-        if (index === last) stop();
-      }, 6000);
-    });
     prev.addEventListener("click", () => {
-      stop();
       index = Math.max(index - 1, 0);
       show();
     });
     next.addEventListener("click", () => {
-      stop();
       index = Math.min(index + 1, inScene(scene).length - 1);
       show();
     });
     tabs.forEach((tab, tabIndex) =>
       tab.addEventListener("click", () => {
-        stop();
         scene = tabIndex;
         index = 0;
         show();
       }),
     );
-    const applyMotion = () => {
-      play.hidden = reducedMotion.matches;
-      if (reducedMotion.matches) stop();
-    };
-    reducedMotion.addEventListener("change", applyMotion);
-    applyMotion();
 
     root.dataset.ready = "";
     controls.hidden = false;

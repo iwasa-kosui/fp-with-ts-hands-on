@@ -1,61 +1,9 @@
 ---
-type Props = { play?: boolean };
-const { play = true } = Astro.props;
+import "./step-controls.css";
 ---
 
 <div class="step-controls" data-controls hidden>
-  <button type="button" data-prev disabled>← 前のコマ</button>
-  {play && <button type="button" data-play>▶ 再生</button>}
-  <button type="button" data-next>次のコマ →</button>
-  <span data-progress></span>
+  <button type="button" class="step-btn step-btn--prev" data-prev disabled>戻る</button>
+  <span class="step-progress" data-progress aria-live="polite"></span>
+  <button type="button" class="step-btn step-btn--next" data-next>次へ</button>
 </div>
-
-<style>
-  .step-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 0.75rem;
-    margin-block-end: 0.75rem;
-  }
-
-  .step-controls[hidden] {
-    display: none;
-  }
-
-  button {
-    min-height: 2.125rem;
-    padding: 0 0.75rem;
-    border: 1.5px solid var(--role-accent);
-    border-radius: 0.5rem;
-    background: transparent;
-    color: var(--role-accent);
-    cursor: pointer;
-    font: inherit;
-    font-size: 0.85rem;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-
-  button[data-play] {
-    min-width: 8.5rem;
-    background: var(--role-accent-soft);
-  }
-
-  button:disabled {
-    border-color: var(--role-rule);
-    color: var(--role-muted);
-    cursor: not-allowed;
-  }
-
-  button:focus-visible {
-    outline: 3px solid var(--role-accent);
-    outline-offset: 2px;
-  }
-
-  [data-progress] {
-    color: var(--case-muted);
-    font-size: 0.875rem;
-    font-variant-numeric: tabular-nums;
-  }
-</style>

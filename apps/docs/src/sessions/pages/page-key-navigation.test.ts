@@ -104,7 +104,6 @@ describe("コマ送りの操作部の中での左右キー", () => {
         <div data-frame>3</div>
         <div data-controls hidden>
           <button type="button" data-prev>前へ</button>
-          <button type="button" data-play>再生</button>
           <button type="button" data-next>次へ</button>
           <span data-progress></span>
         </div>
@@ -115,7 +114,7 @@ describe("コマ送りの操作部の中での左右キー", () => {
     return {
       outside: document.getElementById("outside") as HTMLElement,
       prev: button("[data-prev]"),
-      play: button("[data-play]"),
+      progress: root.querySelector("[data-progress]") as HTMLElement,
       next: button("[data-next]"),
       step: () => Number(root.dataset.step),
     };
@@ -136,13 +135,13 @@ describe("コマ送りの操作部の中での左右キー", () => {
   });
 
   it("ボタンとキーを交互に使っても、1回の操作で1コマずつ進む", () => {
-    const { prev, play, next, step } = mountThreeFrames();
-    play.focus();
+    const { prev, progress, next, step } = mountThreeFrames();
+    progress.focus();
     next.click();
     expect(step()).toBe(1);
-    press(play, "ArrowRight");
+    press(progress, "ArrowRight");
     expect(step()).toBe(2);
-    press(play, "ArrowLeft");
+    press(progress, "ArrowLeft");
     expect(step()).toBe(1);
     prev.click();
     expect(step()).toBe(0);
@@ -162,14 +161,14 @@ describe("コマ送りの操作部の中での左右キー", () => {
   });
 
   it("最後のコマの ArrowRight と最初のコマの ArrowLeft は何もしない", () => {
-    const { prev, play, next, step } = mountThreeFrames();
-    play.focus();
-    press(play, "ArrowLeft");
+    const { prev, progress, next, step } = mountThreeFrames();
+    progress.focus();
+    press(progress, "ArrowLeft");
     expect(step()).toBe(0);
     next.click();
     next.click();
     expect(step()).toBe(2);
-    press(play, "ArrowRight");
+    press(progress, "ArrowRight");
     expect(step()).toBe(2);
     prev.focus();
     press(prev, "ArrowRight");
@@ -206,8 +205,8 @@ describe("コマ送りの操作部の中での左右キー", () => {
   });
 
   it("操作部の中では、ページの移動の向きを返さない", () => {
-    const { play } = mountThreeFrames();
-    expect(pageKeyDirection(keyEvent(), play)).toBeNull();
+    const { progress } = mountThreeFrames();
+    expect(pageKeyDirection(keyEvent(), progress)).toBeNull();
   });
 });
 
@@ -232,7 +231,6 @@ describe("場面を選ぶボタンでの左右キー", () => {
         withControls
           ? `<div data-controls hidden>
               <button type="button" data-prev>前へ</button>
-              <button type="button" data-play>再生</button>
               <button type="button" data-next>次へ</button>
               <span data-progress></span>
             </div>`

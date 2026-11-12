@@ -460,7 +460,6 @@ const generationKeys = ["before", "after"] as const;
 
     fileButtons.forEach((button) => {
       button.addEventListener("click", () => {
-        stepper?.pause();
         chosen = button.dataset.file === frameView?.file ? null : (button.dataset.file ?? null);
         render();
       });
@@ -475,7 +474,7 @@ const generationKeys = ["before", "after"] as const;
 
     panels.forEach((panel) => panel.querySelector("pre")?.removeAttribute("tabindex"));
 
-    const stepper = mountStepper({
+    mountStepper({
       root,
       onStep: (index) => {
         frameView = frameViews[index];
