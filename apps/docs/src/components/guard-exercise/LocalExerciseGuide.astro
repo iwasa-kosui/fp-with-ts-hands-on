@@ -1,5 +1,5 @@
 ---
-import { Code } from "astro:components";
+import CodeBlock from "../CodeBlock.astro";
 
 interface Props {
   session: "01" | "02" | "03" | "04" | "05" | "06";
@@ -20,27 +20,44 @@ const { session } = Astro.props;
   <li>Git</li>
 </ul>
 
-<p>ターミナルで <code>node --version</code>、<code>pnpm --version</code>、<code>git --version</code> を実行し、版を確認します。pnpmが無い場合は、<code>npm install --global pnpm@9.12.0</code> でインストールします。</p>
+<p>ターミナルで次のコマンドを実行し、版を確認します。</p>
+
+<CodeBlock
+  code={`node --version
+pnpm --version
+git --version`}
+  language="shell"
+/>
+
+<p>pnpmが無い場合は、次のコマンドでインストールします。</p>
+
+<CodeBlock code="npm install --global pnpm@9.12.0" language="shell" />
 
 <h3>最初の1回だけ行う準備</h3>
 
 <p>ターミナルで次のコマンドを順に実行します。1行目でリポジトリをcloneし、3行目で依存パッケージをインストールします。</p>
 
-<Code
+<CodeBlock
   code={`git clone https://github.com/iwasa-kosui/fp-with-ts-hands-on.git
 cd fp-with-ts-hands-on
 pnpm install --frozen-lockfile`}
-  lang="sh"
+  language="shell"
 />
 
-<p>ほかのSessionの演習も、同じフォルダで解きます。以前にcloneしたフォルダを使う場合は、そのフォルダで <code>git pull</code> と <code>pnpm install --frozen-lockfile</code> を実行し、最新の状態にします。</p>
+<p>ほかのSessionの演習も、同じフォルダで解きます。以前にcloneしたフォルダを使う場合は、そのフォルダで次のコマンドを実行し、最新の状態にします。</p>
+
+<CodeBlock
+  code={`git pull
+pnpm install --frozen-lockfile`}
+  language="shell"
+/>
 
 <h3>演習を解く</h3>
 
 <ol>
   <li>エディタで、cloneした <code>fp-with-ts-hands-on</code> フォルダを開きます。</li>
   <li>
-    次のファイルを編集します。<code>exercises/guard/cases/</code> の誤った変更は編集しません。
+    次のファイルを編集します。<code>examples/session-{session}-solution/exercises/guard/cases/</code> の誤った変更は編集しません。
     <ul>
       <li><code>examples/session-{session}-solution/eslint.config.mjs</code></li>
       <li><code>examples/session-{session}-solution/exercises/guard/mine/</code> の中のファイル</li>
@@ -48,11 +65,11 @@ pnpm install --frozen-lockfile`}
   </li>
   <li>
     <code>fp-with-ts-hands-on</code> フォルダで次のコマンドを実行します。このコマンドは、ブラウザの「検出を検証する」と同じ判定を実行し、結果をターミナルに表示します。
-    <Code code={`pnpm guard:${session}`} lang="sh" />
+    <CodeBlock code={`pnpm guard:${session}`} language="shell" />
   </li>
 </ol>
 
-<p>解答の例は、このページの演習の「解答の例を見る」で確認できます。</p>
+<p>解答の例は、このページの演習の「解答の例を見る」で確認できます。<code>examples/session-{session}-solution/exercises/guard/answer/</code> にも解答の例があります。ただし、このフォルダのファイルは import のパスが <code>mine/</code> のファイルと異なるため、<code>mine/</code> にそのまま複写しても合格しません。解答の例を使うときは、「解答の例を見る」の内容を複写します。</p>
 
 <h3>判定の結果の読み方</h3>
 
@@ -70,4 +87,4 @@ pnpm install --frozen-lockfile`}
 
 <p>次のコマンドで、この演習のファイルへの編集を元に戻します。このコマンドは、自分で新しく作ったファイルを削除しません。</p>
 
-<Code code={`git restore examples/session-${session}-solution`} lang="sh" />
+<CodeBlock code={`git restore examples/session-${session}-solution`} language="shell" />
