@@ -18,6 +18,23 @@ describe("renderProgress", () => {
     expect(segs.map((seg) => seg.hasAttribute("data-on"))).toEqual([true, true, true, false, false]);
   });
 
+  it("8コマまでは区切りを8個描く", () => {
+    const bar = render(0, 8).querySelector(".step-progress__bar") as HTMLElement;
+    expect(bar.querySelectorAll(".step-progress__seg")).toHaveLength(8);
+    expect(bar.hasAttribute("data-continuous")).toBe(false);
+  });
+
+  it("9コマ以上は区切りを作らず、fill 1つの幅が割合になる", () => {
+    const progress = render(2, 12);
+    const bar = progress.querySelector(".step-progress__bar") as HTMLElement;
+    expect(bar.hasAttribute("data-continuous")).toBe(true);
+    expect(bar.querySelectorAll(".step-progress__seg")).toHaveLength(0);
+    const fills = bar.querySelectorAll<HTMLElement>(".step-progress__fill");
+    expect(fills).toHaveLength(1);
+    expect(fills[0]?.style.width).toBe("25%");
+    expect(progress.textContent).toBe("3 / 12");
+  });
+
   it("棒は支援技術に読み上げさせない", () => {
     expect(render(0, 3).querySelector(".step-progress__bar")?.getAttribute("aria-hidden")).toBe("true");
   });

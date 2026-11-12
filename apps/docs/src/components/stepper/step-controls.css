@@ -104,11 +104,33 @@
   flex: 1;
   height: 4px;
   border-radius: 2px;
-  background: var(--role-rule);
+  background: var(--role-border);
 }
 
 .step-progress__seg[data-on] {
   background: var(--role-accent);
+}
+
+.step-controls .step-progress__bar[data-continuous] {
+  display: block;
+  position: relative;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--role-border);
+  overflow: hidden;
+}
+
+.step-controls .step-progress__fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--role-accent);
+}
+
+@media (max-width: 480px) {
+  .step-controls .step-btn {
+    height: 2.25rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

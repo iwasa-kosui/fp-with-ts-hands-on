@@ -114,7 +114,6 @@ describe("コマ送りの操作部の中での左右キー", () => {
     return {
       outside: document.getElementById("outside") as HTMLElement,
       prev: button("[data-prev]"),
-      progress: root.querySelector("[data-progress]") as HTMLElement,
       next: button("[data-next]"),
       step: () => Number(root.dataset.step),
     };
@@ -135,13 +134,13 @@ describe("コマ送りの操作部の中での左右キー", () => {
   });
 
   it("ボタンとキーを交互に使っても、1回の操作で1コマずつ進む", () => {
-    const { prev, progress, next, step } = mountThreeFrames();
-    progress.focus();
+    const { prev, next, step } = mountThreeFrames();
+    next.focus();
     next.click();
     expect(step()).toBe(1);
-    press(progress, "ArrowRight");
+    press(next, "ArrowRight");
     expect(step()).toBe(2);
-    press(progress, "ArrowLeft");
+    press(next, "ArrowLeft");
     expect(step()).toBe(1);
     prev.click();
     expect(step()).toBe(0);
@@ -161,14 +160,14 @@ describe("コマ送りの操作部の中での左右キー", () => {
   });
 
   it("最後のコマの ArrowRight と最初のコマの ArrowLeft は何もしない", () => {
-    const { prev, progress, next, step } = mountThreeFrames();
-    progress.focus();
-    press(progress, "ArrowLeft");
+    const { prev, next, step } = mountThreeFrames();
+    next.focus();
+    press(next, "ArrowLeft");
     expect(step()).toBe(0);
     next.click();
     next.click();
     expect(step()).toBe(2);
-    press(progress, "ArrowRight");
+    press(next, "ArrowRight");
     expect(step()).toBe(2);
     prev.focus();
     press(prev, "ArrowRight");
@@ -205,8 +204,8 @@ describe("コマ送りの操作部の中での左右キー", () => {
   });
 
   it("操作部の中では、ページの移動の向きを返さない", () => {
-    const { progress } = mountThreeFrames();
-    expect(pageKeyDirection(keyEvent(), progress)).toBeNull();
+    const { next } = mountThreeFrames();
+    expect(pageKeyDirection(keyEvent(), next)).toBeNull();
   });
 });
 
