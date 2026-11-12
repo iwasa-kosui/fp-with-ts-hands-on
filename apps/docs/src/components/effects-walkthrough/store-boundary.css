@@ -626,6 +626,12 @@
   grid-template-columns: 8rem minmax(0, 7rem) minmax(0, 1fr);
 }
 
+@container walk (max-width: 34rem) {
+  .walk--page .sb-line {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .walk--page .sb[data-wide-chip]:not([data-no-code]) {
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
 }
