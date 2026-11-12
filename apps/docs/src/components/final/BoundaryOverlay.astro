@@ -218,7 +218,9 @@ const nameParts = (label: string): ReadonlyArray<string> => {
 
   .bo__name {
     min-width: 0;
-    white-space: nowrap;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
     font-size: 0.9375rem;
     font-weight: 800;
     line-height: 1.3;
@@ -283,9 +285,6 @@ const nameParts = (label: string): ReadonlyArray<string> => {
     }
 
     .bo__name {
-      white-space: normal;
-      word-break: keep-all;
-      overflow-wrap: anywhere;
       font-size: 0.875rem;
     }
 
