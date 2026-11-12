@@ -92,7 +92,7 @@ const paid = Appointment.recordPayment(paymentContext)(awaitingPayment.aggregate
 
 const paidAppointment: Paid = paid.aggregateState;
 
-// @ts-expect-error Paid から診察を開始できません。
+// @ts-expect-error Paid は startExamination の引数の型に代入できません。
 Appointment.startExamination(examinationContext)(paidAppointment, veterinarianId);
 
 // @ts-expect-error InExamination から直接会計できません。

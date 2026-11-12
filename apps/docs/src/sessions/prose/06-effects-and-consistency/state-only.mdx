@@ -10,7 +10,7 @@ import EpisodeIllustration from "../../../components/EpisodeIllustration.astro";
     </aside>
     <p><strong>課題1</strong>: 監査記録がないため、誰がいつ診察を開始したかを後から調査できません。ゴールは、状態と監査記録を、両方残すか、どちらも残さないかにすることです。</p>
     <p><strong>課題2</strong>: 時刻と ID を固定できないため、同じ入力でもテストの結果が毎回変わります。時刻を2回取得すると、状態と監査記録の時刻が食い違います。ゴールは、時刻と ID を外から渡して、テストの結果を毎回同じにすることです。</p>
-    <p><strong>課題3</strong>: 開始のコードは、競合（別の依頼が先に診察を開始していたこと）を <code>Err</code> で返せません。保存の時点で予約の現在の状態を検証せずに書き込むため、後の依頼が先の結果を上書きし、結果が <code>Ok</code> のままで、画面に失敗の通知が表示されません。ゴールは、競合を <code>Err</code> で返すことです。</p>
+    <p><strong>課題3</strong>: 現在の診察開始のコードは、競合（別の依頼が先に診察を開始していたこと）を <code>Err</code> で返せません。保存の時点で予約の現在の状態を検証せずに書き込むため、後の依頼が先の結果を上書きし、結果が <code>Ok</code> のままで、画面に失敗の通知が表示されません。ゴールは、競合を <code>Err</code> で返すことです。</p>
   </div>
   <div>
     <EpisodeIllustration slug="06-effects-and-consistency" />
