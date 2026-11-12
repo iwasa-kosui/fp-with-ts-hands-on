@@ -216,7 +216,10 @@ const frames: readonly Frame[] = [
 >
   <StepControls />
 
-  <p class="aggregate-flow__live" data-live aria-live="polite" hidden></p>
+  <div class="aggregate-flow__live-box">
+    <p class="aggregate-flow__live" data-live aria-live="polite" hidden></p>
+    {frames.map((frame) => <p class="aggregate-flow__live aggregate-flow__live-ghost" aria-hidden="true">{frame.caption}</p>)}
+  </div>
 
   <ol class="aggregate-flow__frames">
     {frames.map((frame) => (
@@ -261,7 +264,7 @@ const frames: readonly Frame[] = [
         {frame.view === "compare" && (
           <div class="aggregate-flow__compare">
             <section class="aggregate-flow__side">
-              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">もし2回に分けたら</span>状態と{auditLabel}を別々に保存する</p>
+              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">もし2回に分けたら</span><span class="aggregate-flow__phrase">状態と{auditLabel}を</span><span class="aggregate-flow__phrase">別々に保存する</span></p>
               <ol class="aggregate-flow__steps">
                 <li class="aggregate-flow__step">
                   <span class="aggregate-flow__step-no">1回目</span>
@@ -298,7 +301,7 @@ const frames: readonly Frame[] = [
             </section>
 
             <section class="aggregate-flow__side">
-              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">1回にまとめたら</span>{saveUnit}を単位に1回で保存する</p>
+              <p class="aggregate-flow__side-title"><span class="aggregate-flow__side-label">1回にまとめたら</span><span class="aggregate-flow__phrase">{saveUnit}を単位に</span><span class="aggregate-flow__phrase">1回で保存する</span></p>
               {frame.after ? (
                 outcomes.map((outcome) => (
                   <div class="aggregate-flow__outcome">
@@ -420,7 +423,8 @@ const frames: readonly Frame[] = [
     line-height: 1.7;
   }
 
-  .aggregate-flow__live[hidden] {
+  .aggregate-flow__live[hidden],
+  .aggregate-flow__live-ghost {
     display: none;
   }
 
@@ -854,6 +858,84 @@ const frames: readonly Frame[] = [
 
   :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__legend {
     margin-top: 0.25rem;
+  }
+
+  @media (max-width: 900px) {
+    :global(.session-frame) .aggregate-flow[data-animated] {
+      grid-template-rows: auto auto auto;
+      height: auto;
+    }
+
+    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__frames {
+      display: grid;
+    }
+
+    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__frames > li[data-frame] {
+      display: grid;
+      grid-area: 1 / 1;
+      height: auto;
+      min-height: 0;
+      align-content: start;
+      gap: 0.75rem;
+    }
+
+    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__frames > li[data-frame]:not(.is-current) {
+      visibility: hidden;
+    }
+
+    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__frames > li[data-view="aggregate"][data-frame] {
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      align-items: start;
+    }
+
+    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__frames > li[data-view="compare"][data-frame] {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+      gap: 0.5rem;
+    }
+
+    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side > .aggregate-flow__verdict {
+      margin: 0.5rem 0 0;
+    }
+
+    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side:has(.aggregate-flow__outcome) {
+      grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+      row-gap: 0.5rem;
+    }
+
+    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side:has(.aggregate-flow__outcome) > .aggregate-flow__side-title {
+      margin-bottom: 0;
+    }
+
+    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__side .aggregate-flow__fields {
+      grid-template-columns: repeat(auto-fit, minmax(min(7.5rem, 100%), 1fr));
+    }
+
+    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__phrase {
+      display: inline-block;
+    }
+
+    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__live-box {
+      display: grid;
+    }
+
+    :global(.session-frame) .aggregate-flow[data-animated] :is(.aggregate-flow__live, .aggregate-flow__live-ghost) {
+      grid-area: 1 / 1;
+    }
+
+    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__live-ghost {
+      display: block;
+      visibility: hidden;
+    }
+
+    @container (max-width: 480px) {
+      :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__frames > li[data-view][data-frame] {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
   }
 
   @media (prefers-reduced-motion: no-preference) {
