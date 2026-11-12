@@ -626,12 +626,6 @@
   grid-template-columns: 8rem minmax(0, 7rem) minmax(0, 1fr);
 }
 
-@container walk (max-width: 34rem) {
-  .walk--page .sb-line {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
 .walk--page .sb[data-wide-chip]:not([data-no-code]) {
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
 }
@@ -719,4 +713,83 @@
   .walk--page .sb-cell {
     margin-block: 0.2rem;
   }
+}
+
+@container walk (max-width: 34rem) {
+  .walk--page .sb,
+  .walk--page .sb[data-no-code],
+  .walk--page .sb[data-wide-chip]:not([data-no-code]) {
+    --sb-stacked: 1;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    height: auto;
+  }
+
+  .walk--page .sb[data-no-code] .sb-code {
+    display: none;
+  }
+
+  .walk--page[data-walk-ready] .sb-box[data-box="impl"] .sb-pane pre {
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .walk--page .sb-cap .path-seg:nth-child(-n + 4) {
+    display: none;
+  }
+
+  .walk--page .sb-cap .path-seg {
+    white-space: normal;
+  }
+
+  .walk--page .sb-pane figcaption code {
+    overflow-wrap: anywhere;
+  }
+
+  .walk--page .sb-compare {
+    position: static;
+    display: none;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .walk--page .sb-compare[data-on] {
+    display: grid;
+  }
+
+  .walk--page .sb-compare__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.15rem 0.75rem;
+  }
+
+  .walk--page .sb-compare__row code {
+    overflow-wrap: anywhere;
+  }
+
+  .walk--page .sb-compare__row code:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.walk--page[data-walk-ready][data-sb-stacked] {
+  display: block;
+  height: auto;
+}
+
+.walk--page[data-walk-ready][data-sb-stacked] .walk__sticky {
+  top: var(--frame-bar-height, 0px);
+  display: grid;
+  margin: 0 0 0.5rem;
+  padding: 0.3rem 0;
+  background: var(--role-bg, var(--walk-paper));
+}
+
+.walk--page[data-walk-ready][data-sb-stacked] .walk__bar,
+.walk--page[data-walk-ready][data-sb-stacked] .walk__live {
+  grid-area: auto;
+}
+
+.walk--page[data-walk-ready][data-sb-stacked] .walk__legend {
+  height: auto;
+  margin-block-start: 0.5rem;
 }
