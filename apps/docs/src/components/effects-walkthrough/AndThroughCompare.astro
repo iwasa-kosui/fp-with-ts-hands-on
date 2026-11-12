@@ -243,6 +243,13 @@ const lit = JSON.stringify([{ rows: [1] }, { rows: [3] }, { rows: [2] }, { rows:
     opacity: 0;
   }
 
+  @media (max-width: 700px) {
+    .atc__row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .atc[data-ready][data-step="0"] .atc__row[data-row="1"] .atc__value,
     .atc[data-ready][data-step="2"] .atc__row[data-row="1"] .atc__value,

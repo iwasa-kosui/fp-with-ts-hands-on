@@ -50,6 +50,10 @@
   line-height: 1.3;
 }
 
+.sc-pane figcaption .path-seg {
+  white-space: normal;
+}
+
 .sc-role {
   color: var(--walk-ink);
   font-size: 0.8125rem;

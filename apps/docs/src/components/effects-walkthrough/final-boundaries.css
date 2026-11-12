@@ -515,6 +515,12 @@
   }
 }
 
+@container walk (max-width: 56rem) {
+  .fb-impl figcaption .path-seg {
+    white-space: normal;
+  }
+}
+
 @container walk (max-width: 44rem) {
   .fb {
     display: block;
@@ -527,6 +533,15 @@
 
   .fb-panel {
     margin-block-start: 0.5rem;
+  }
+
+  .fb-open,
+  .fb-impl[data-active] {
+    flex: none;
+  }
+
+  .fb-out[data-active] {
+    max-height: none;
   }
 
   .fb-impl pre,

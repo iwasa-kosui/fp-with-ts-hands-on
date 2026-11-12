@@ -636,3 +636,21 @@
     line-height: 1.35;
   }
 }
+
+@media (max-width: 900px) {
+  .ep--page .ep-callout {
+    position: static;
+    flex: 1 1 100%;
+    min-width: 0;
+    box-shadow: none;
+  }
+
+  .ep--page .ep-callout[data-reserve] {
+    display: block;
+    visibility: hidden;
+  }
+
+  .ep--page .ep-callout[data-reserve][data-active] {
+    visibility: visible;
+  }
+}

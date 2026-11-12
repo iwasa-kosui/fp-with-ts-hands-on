@@ -65,7 +65,7 @@ const frames = [
           <p class="trf__none">まだ記録はありません</p>
           <div class="trf__record">
             <p><span>誰が</span><code>veterinarianId: "v-1"</code></p>
-            <p><span>いつ</span><code>occurredAt: "2026-08-30T06:30:00.000Z"</code></p>
+            <p><span>いつ</span><code>occurredAt: "2026-08-30<wbr>T06:30:00.000Z"</code></p>
             <span class="sf-tag sf-tag--ok">✓ 追加済み</span>
           </div>
         </div>
@@ -349,13 +349,24 @@ const frames = [
       grid-template-columns: minmax(6rem, 8rem) 2.5rem minmax(0, 1fr);
     }
 
+    .trf__dest h4 {
+      font-size: 0.875rem;
+    }
+  }
+
+  @media (max-width: 900px) {
     .trf__dest {
       grid-template-columns: minmax(0, 1fr);
       gap: 0.25rem;
     }
 
-    .trf__dest h4 {
-      font-size: 0.875rem;
+    .trf__record {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .trf__record .sf-tag {
+      grid-column: 1;
+      grid-row: auto;
     }
   }
 </style>

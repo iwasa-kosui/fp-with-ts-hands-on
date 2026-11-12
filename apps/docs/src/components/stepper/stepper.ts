@@ -41,4 +41,31 @@ export const mountStepper = ({ root, onStep }: Options): void => {
   measureControls();
   if (typeof ResizeObserver !== "undefined") new ResizeObserver(measureControls).observe(controls);
   show(0);
+
+  const stage = root.matches(".sf") ? root.querySelector<HTMLElement>(".sf-stage") : null;
+  if (stage !== null && typeof ResizeObserver !== "undefined") {
+    const narrow = matchMedia("(max-width: 900px)");
+    let width = 0;
+    const fitStage = () => {
+      stage.style.minHeight = "";
+      if (!narrow.matches) return;
+      const shown = current;
+      const regions = [...root.querySelectorAll("[aria-live]")];
+      regions.forEach((region) => region.setAttribute("aria-live", "off"));
+      let tallest = 0;
+      for (let index = 0; index <= last; index += 1) {
+        show(index);
+        tallest = Math.max(tallest, stage.getBoundingClientRect().height);
+      }
+      show(shown);
+      regions.forEach((region) => region.setAttribute("aria-live", "polite"));
+      stage.style.minHeight = `${Math.ceil(tallest)}px`;
+    };
+    new ResizeObserver(() => {
+      if (stage.offsetWidth === width) return;
+      width = stage.offsetWidth;
+      fitStage();
+    }).observe(stage);
+    narrow.addEventListener("change", fitStage);
+  }
 };
