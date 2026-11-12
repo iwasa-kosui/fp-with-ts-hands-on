@@ -28,7 +28,7 @@ const legendLines = ["破線の枠は、データベースにまだ残ってい�
       <span class="txf__state" data-at="1">確定</span>
       <span class="txf__state" data-at="2">取り消し</span>
     </p>
-    <p class="txf__head txf__head--db"><span>データベースに<wbr>残る内容</span></p>
+    <p class="txf__head txf__head--db"><span>データベースに<wbr>残る<wbr>内容</span></p>
 
     <div class="txf__write txf__write--state">
       <span class="txf__no">1</span>
@@ -55,7 +55,7 @@ const legendLines = ["破線の枠は、データベースにまだ残ってい�
     <div class="txf__cell txf__cell--audit">
       <p class="txf__cell-label">監査記録</p>
       <p class="txf__value txf__value--none" data-at="0 2">記録なし</p>
-      <p class="txf__value txf__value--new" data-at="1">診察開始の記録 <span class="txf__count">1件</span></p>
+      <p class="txf__value txf__value--new" data-at="1">診察開始の<wbr>記録 <span class="txf__count">1件</span></p>
     </div>
   </div>
 
@@ -263,6 +263,8 @@ const legendLines = ["破線の枠は、データベースにまだ残ってい�
   .txf__value {
     margin: 0;
     font-weight: 700;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
   }
 
   .txf__count {
@@ -275,5 +277,11 @@ const legendLines = ["破線の枠は、データベースにまだ残ってい�
 
   .txf__value--new {
     color: var(--role-positive);
+  }
+
+  @media (max-width: 40rem) {
+    .txf__head--db {
+      grid-column: 2 / 4;
+    }
   }
 </style>

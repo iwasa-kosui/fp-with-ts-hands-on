@@ -83,7 +83,7 @@ const frames = [
       <div class="tic__group" data-group="0">
         <div class="tic__era"><span class="sf-tag sf-tag--before">修正前</span><code><PathLabel label={beforeLabel} /></code></div>
         <figure class="sf-code" data-code="beforeTime"><Code code={beforeTime} lang="ts" wrap /></figure>
-        <figure class="sf-code" data-code="beforeId"><Code code={beforeId} lang="ts" wrap /></figure>
+        <figure class="sf-code" data-code="beforeId"><Code code={beforeId} lang="ts" wrap transformers={[breakBeforeMember]} /></figure>
       </div>
       <div class="tic__group" data-group="1">
         <div class="tic__era"><span class="sf-tag sf-tag--after">修正後</span><code><PathLabel label={afterLabel} /></code></div>
