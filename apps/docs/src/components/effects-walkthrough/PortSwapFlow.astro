@@ -3,6 +3,7 @@ import { Code } from "astro:components";
 import MiniTree from "../mini-tree/MiniTree.astro";
 import { miniTree } from "../mini-tree/mini-tree";
 import StepControls from "../stepper/StepControls.astro";
+import { breakBeforeMember } from "../break-before-member";
 import { quote } from "./quote";
 import "./step-figure.css";
 
@@ -110,31 +111,31 @@ const frames = [
 const ports = [
   {
     key: "resolver",
-    name: "deps.resolver",
+    name: ["deps", ".resolver"],
     from: 0,
-    real: ["SQLite", "データベースから予約を取得する"],
-    fake: ["fake の resolver", "メモリ上の予約を返す"],
+    real: ["SQLite", ["データベースから", "予約を", "取得する"]],
+    fake: ["fake の resolver", ["メモリ上の", "予約を返す"]],
   },
   {
     key: "store",
-    name: "deps.examinationStartedStore",
+    name: ["deps", ".examinationStartedStore"],
     from: 0,
-    real: ["SQLite", "データベースへ保存する"],
-    fake: ["fake の store", "メモリ上に保存し、呼ばれた回数を数える"],
+    real: ["SQLite", ["データベースへ", "保存する"]],
+    fake: ["fake の store", ["メモリ上に保存し、", "呼ばれた回数を", "数える"]],
   },
   {
     key: "clock",
-    name: "deps.clock",
+    name: ["deps", ".clock"],
     from: 1,
-    real: ["new Date()", "現在の時刻を返す"],
-    fake: ["固定の時刻", "2026-08-30T06:30:00.000Z を返す"],
+    real: ["new Date()", ["現在の時刻を", "返す"]],
+    fake: ["固定の時刻", [{ keep: "2026-08-30T06:30:00.000Z" }, " を返す"]],
   },
   {
     key: "id",
-    name: "deps.eventIdGenerator",
+    name: ["deps", ".eventIdGenerator"],
     from: 1,
-    real: ["randomUUID()", "実行のたびに新しい ID を返す"],
-    fake: ["固定の ID", "常に同じ ID を返す"],
+    real: ["randomUUID()", ["実行のたびに", "新しい ID を", "返す"]],
+    fake: ["固定の ID", ["常に同じ ID を", "返す"]],
   },
 ] as const;
 ---
@@ -159,48 +160,48 @@ const ports = [
       <div class="psf__group" data-group="0">
         <figure class="sf-code" data-code="resolver" data-ports={JSON.stringify([lineOf(resolverCode, "deps.resolver")])}>
           <figcaption><code>startExamination.ts</code><span class="sf-tag sf-tag--before">S04</span></figcaption>
-          <Code code={resolverCode} lang="ts" wrap />
+          <Code code={resolverCode} lang="ts" wrap transformers={[breakBeforeMember]} />
         </figure>
         <figure class="sf-code" data-code="store" data-ports={JSON.stringify([0])}>
           <figcaption><code>startExamination.ts</code><span class="sf-tag">S06</span></figcaption>
-          <Code code={storeCode} lang="ts" wrap />
+          <Code code={storeCode} lang="ts" wrap transformers={[breakBeforeMember]} />
         </figure>
         <figure class="sf-code" data-code="storeType" data-ports={JSON.stringify([0])}>
           <figcaption><code>dependencies.ts</code><span class="sf-tag">S06</span></figcaption>
-          <Code code={storeType} lang="ts" wrap />
+          <Code code={storeType} lang="ts" wrap transformers={[breakBeforeMember]} />
         </figure>
       </div>
 
       <div class="psf__group psf__group--grid" data-group="1">
         <figure class="sf-code psf__wide" data-code="context" data-ports={JSON.stringify([lineOf(contextDeps, "clock:"), lineOf(contextDeps, "eventIdGenerator:")])}>
           <figcaption><code>dependencies.ts</code></figcaption>
-          <Code code={contextDeps} lang="ts" wrap />
+          <Code code={contextDeps} lang="ts" wrap transformers={[breakBeforeMember]} />
         </figure>
         <figure class="sf-code" data-code="clock">
           <figcaption><code>clock.ts</code></figcaption>
-          <Code code={clockType} lang="ts" wrap />
+          <Code code={clockType} lang="ts" wrap transformers={[breakBeforeMember]} />
         </figure>
         <figure class="sf-code" data-code="generator">
           <figcaption><code>eventIdGenerator.ts</code></figcaption>
-          <Code code={generatorType} lang="ts" wrap />
+          <Code code={generatorType} lang="ts" wrap transformers={[breakBeforeMember]} />
         </figure>
       </div>
 
       <div class="psf__group" data-group="2">
         <figure class="sf-code psf__wide" data-code="sqlite">
           <figcaption><code>app.ts</code></figcaption>
-          <Code code={sqliteCode} lang="ts" wrap />
+          <Code code={sqliteCode} lang="ts" wrap transformers={[breakBeforeMember]} />
         </figure>
         <figure class="sf-code psf__wide" data-code="effects">
           <figcaption><code>app.ts</code></figcaption>
-          <Code code={effectsCode} lang="ts" wrap />
+          <Code code={effectsCode} lang="ts" wrap transformers={[breakBeforeMember]} />
         </figure>
       </div>
 
       <div class="psf__group" data-group="3">
         <figure class="sf-code" data-code="fake">
           <figcaption><code>in-memory-store.test.ts</code></figcaption>
-          <Code code={fakeCode} lang="ts" wrap />
+          <Code code={fakeCode} lang="ts" wrap transformers={[breakBeforeMember]} />
         </figure>
       </div>
     </div>
@@ -217,12 +218,12 @@ const ports = [
           <li class="psf__row" data-from={port.from}>
             <span class="psf__socket">
               <span class="sf-tag">port</span>
-              <code>{port.name}</code>
+              <code>{port.name.map((part, i) => (<Fragment>{i > 0 && <wbr />}{part}</Fragment>))}</code>
             </span>
             <span class="psf__slot">
-              <span class="psf__plug psf__plug--none">何もつながっていません</span>
-              <span class="psf__plug psf__plug--real"><strong>{port.real[0]}</strong><small>{port.real[1]}</small></span>
-              <span class="psf__plug psf__plug--fake"><strong>{port.fake[0]}</strong><small>{port.fake[1]}</small></span>
+              <span class="psf__plug psf__plug--none">何も<wbr>つながって<wbr>いません</span>
+              <span class="psf__plug psf__plug--real"><strong>{port.real[0]}</strong><small>{port.real[1].map((part, i) => (<Fragment>{i > 0 && <wbr />}{part}</Fragment>))}</small></span>
+              <span class="psf__plug psf__plug--fake"><strong>{port.fake[0]}</strong><small>{port.fake[1].map((part, i) => (<Fragment>{i > 0 && <wbr />}{typeof part === "string" ? part : <span class="psf__keep">{part.keep}</span>}</Fragment>))}</small></span>
             </span>
           </li>
         ))}
@@ -302,6 +303,10 @@ const ports = [
     grid-column: 1 / -1;
   }
 
+  .psf__codes :global(figcaption code) {
+    white-space: nowrap;
+  }
+
   .psf__codes :global(.psf__port-tag) {
     margin-inline-start: 0.75rem;
     padding: 0 0.4rem;
@@ -313,6 +318,7 @@ const ports = [
 
   .psf__diagram {
     display: grid;
+    container-type: inline-size;
     grid-template-rows: auto minmax(0, 1fr);
     gap: 0.5rem;
     min-width: 0;
@@ -382,6 +388,12 @@ const ports = [
     border: 2px solid var(--role-border);
     border-radius: 0.375rem;
     line-height: 1.35;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .psf__keep {
+    white-space: nowrap;
   }
 
   .psf__plug strong {
@@ -524,9 +536,25 @@ const ports = [
     }
   }
 
-  @media (max-width: 34rem) {
+  @container (max-width: 26rem) {
     .psf__row {
       grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (min-width: 52.0625rem) {
+    @container (max-width: 26rem) {
+      .psf__rows {
+        gap: 0.125rem;
+      }
+
+      .psf__row {
+        gap: 0.125rem;
+      }
+
+      .psf__plug {
+        padding-block: 0;
+      }
     }
   }
 </style>

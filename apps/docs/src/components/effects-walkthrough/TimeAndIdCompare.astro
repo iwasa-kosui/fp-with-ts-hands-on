@@ -1,6 +1,7 @@
 ---
 import { Code } from "astro:components";
 import StepControls from "../stepper/StepControls.astro";
+import { breakBeforeMember } from "../break-before-member";
 import { lineLabelOf } from "../../sessions/source-quotes";
 import PathLabel from "./PathLabel.astro";
 import { quote } from "./quote";
@@ -90,7 +91,7 @@ const frames = [
       </div>
       <div class="tic__group" data-group="2">
         <div class="tic__era"><span class="sf-tag sf-tag--err">誤った例（説明用）</span></div>
-        <figure class="sf-code" data-code="twice"><Code code={twiceCode} lang="ts" wrap /></figure>
+        <figure class="sf-code" data-code="twice"><Code code={twiceCode} lang="ts" wrap transformers={[breakBeforeMember]} /></figure>
       </div>
       <div class="tic__group" data-group="3">
         <div class="tic__era"><span class="sf-tag sf-tag--after">修正後</span><code><PathLabel label={contextLabel} /></code></div>

@@ -28,11 +28,11 @@ const legendLines = ["破線の枠は、データベースにまだ残ってい�
       <span class="txf__state" data-at="1">確定</span>
       <span class="txf__state" data-at="2">取り消し</span>
     </p>
-    <p class="txf__head txf__head--db">データベースに残る内容</p>
+    <p class="txf__head txf__head--db"><span>データベースに<wbr>残る内容</span></p>
 
     <div class="txf__write txf__write--state">
       <span class="txf__no">1</span>
-      <span class="txf__what">予約の状態を診察中に更新する</span>
+      <span class="txf__what">予約の状態を<wbr>診察中に<wbr>更新する</span>
       <span class="txf__chip" data-at="0">未確定</span>
       <span class="txf__chip txf__chip--ok" data-at="1">✓ 成功 → 確定</span>
       <span class="txf__chip txf__chip--undone" data-at="2">✓ 成功 → 取り消し</span>
@@ -46,7 +46,7 @@ const legendLines = ["破線の枠は、データベースにまだ残ってい�
 
     <div class="txf__write txf__write--audit">
       <span class="txf__no">2</span>
-      <span class="txf__what">監査記録を追加する</span>
+      <span class="txf__what">監査記録を<wbr>追加する</span>
       <span class="txf__chip" data-at="0">未確定</span>
       <span class="txf__chip txf__chip--ok" data-at="1">✓ 成功 → 確定</span>
       <span class="txf__chip txf__chip--fail" data-at="2">✕ 失敗</span>
@@ -129,6 +129,8 @@ const legendLines = ["破線の枠は、データベースにまだ残ってい�
   .txf__head--db {
     grid-area: 1 / 3;
     color: var(--role-muted);
+    word-break: keep-all;
+    overflow-wrap: anywhere;
   }
 
   .txf__name {
@@ -190,6 +192,8 @@ const legendLines = ["破線の枠は、データベースにまだ残ってい�
     flex: 1 1 8rem;
     min-width: 0;
     font-weight: 700;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
   }
 
   .txf__chip {
