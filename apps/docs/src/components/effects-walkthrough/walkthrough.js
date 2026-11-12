@@ -2,6 +2,7 @@ import { renderProgress } from "../stepper/step-progress";
 
 const roots = document.querySelectorAll("[data-walk]:not([data-walk-ready])");
 const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+const narrow = matchMedia("(max-width: 900px)");
 
 for (const root of roots) {
   root.setAttribute("data-walk-ready", "");
@@ -11,6 +12,7 @@ for (const root of roots) {
   const tabs = [...root.querySelectorAll("[data-walk-tab]")];
   const live = root.querySelector("[data-walk-live]");
   const sticky = root.querySelector(".walk__sticky");
+  const figure = root.querySelector(".walk__figure");
   const controls = root.querySelector("[data-controls]");
   const progress = root.querySelector("[data-progress]");
   const page = root.hasAttribute("data-walk-page");
@@ -39,6 +41,29 @@ for (const root of roots) {
     }
     probe.remove();
     live.style.minHeight = `max(${tallest}px, var(--walk-live-floor))`;
+  };
+
+  const fitFigure = () => {
+    figure.style.minHeight = "";
+    if (!narrow.matches || figure.querySelector("[data-store-boundary]") !== null) return;
+    const [currentScene, currentFrame] = [scene, frame];
+    const regions = [...root.querySelectorAll("[aria-live]")];
+    regions.forEach((region) => region.setAttribute("aria-live", "off"));
+    let tallest = 0;
+    items.forEach((list, sceneIndex) =>
+      list.forEach((_, frameIndex) => {
+        show(sceneIndex, frameIndex, false);
+        tallest = Math.max(tallest, figure.getBoundingClientRect().height);
+      }),
+    );
+    show(currentScene, currentFrame, false);
+    regions.forEach((region) => region.setAttribute("aria-live", "polite"));
+    figure.style.minHeight = `${Math.ceil(tallest)}px`;
+  };
+
+  const refit = () => {
+    fitLive();
+    fitFigure();
   };
 
   const reveal = () => {
@@ -106,8 +131,11 @@ for (const root of roots) {
   new ResizeObserver(() => {
     if (live.offsetWidth === width) return;
     width = live.offsetWidth;
-    fitLive();
+    refit();
   }).observe(live);
+  narrow.addEventListener("change", refit);
+  if (document.readyState === "complete") refit();
+  else addEventListener("load", refit, { once: true });
 
   controls.hidden = false;
   show(0, 0, false);

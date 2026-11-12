@@ -87,6 +87,7 @@ for (const figure of figures) {
       }
       for (const screen of part.screens) {
         screen.toggleAttribute("data-active", state === "current" && screen.dataset.screen === frame.screen);
+        screen.toggleAttribute("data-reserve", scene.frames.some((item) => item.screen === screen.dataset.screen));
       }
       for (const item of part.sums) {
         const active = page ? (shown[key] ?? []).includes(item.dataset.sum) : item.dataset.sum === settled[key];

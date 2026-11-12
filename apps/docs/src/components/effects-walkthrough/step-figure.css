@@ -31,6 +31,12 @@
   height: auto;
 }
 
+@media (max-width: 900px) {
+  .sf[data-ready] {
+    height: auto;
+  }
+}
+
 .sf .step-controls[data-controls] {
   margin-block-end: 0.5rem;
 }
