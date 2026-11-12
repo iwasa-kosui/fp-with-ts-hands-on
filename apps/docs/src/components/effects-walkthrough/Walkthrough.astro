@@ -1,6 +1,6 @@
 ---
+import StepControls from "../stepper/StepControls.astro";
 import css from "./walkthrough.css?raw";
-import script from "./walkthrough.js?raw";
 
 type Scene = Readonly<{
   label: string;
@@ -19,11 +19,6 @@ interface Props {
 
 const { id, title, lead, note, scenes, page = false, legend } = Astro.props;
 const pageStyle = page && legend !== undefined ? `--walk-legend: ${legend}rem` : undefined;
-const actions = [
-  ["prev", "← 前のコマ"],
-  ["play", "▶ 再生"],
-  ["next", "次のコマ →"],
-] as const;
 ---
 
 <section
@@ -50,18 +45,7 @@ const actions = [
     </div>
   ) : null}
   <div class="walk__sticky">
-    <div class="walk__bar" data-controls>
-      {actions.map(([name, label]) => (
-        <button
-          type="button"
-          class={`walk__btn walk__btn--${name}`}
-          data-walk-action={name}
-          data-prev={name === "prev" ? "" : undefined}
-          data-next={name === "next" ? "" : undefined}
-        >{label}</button>
-      ))}
-      <span class="walk__progress" data-walk-progress></span>
-    </div>
+    <StepControls />
     <p class="walk__live" aria-live="polite" data-walk-live></p>
   </div>
   <div class="walk__scenes">
@@ -82,4 +66,6 @@ const actions = [
   {Astro.slots.has("legend") ? <div class="walk__legend"><slot name="legend" /></div> : null}
 </section>
 <style is:inline set:html={css}></style>
-<script is:inline type="module" set:html={script}></script>
+<script>
+  import "./walkthrough.js";
+</script>

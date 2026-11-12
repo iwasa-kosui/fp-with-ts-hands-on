@@ -473,12 +473,12 @@
     display: contents;
   }
 
-  .walk:has([data-final-boundaries]) .walk__bar {
+  .walk:has([data-final-boundaries]) .step-controls {
     grid-column: 1 / -1;
     grid-row: 3;
   }
 
-  .walk:has([data-final-boundaries]) .walk__tabs + .walk__sticky .walk__bar {
+  .walk:has([data-final-boundaries]) .walk__tabs + .walk__sticky .step-controls {
     grid-column: 2;
   }
 
@@ -502,7 +502,7 @@
   }
 
   .walk[data-walk-ready]:has([data-kind="failures"]) .walk__tabs,
-  .walk:has([data-kind="failures"]) .walk__bar {
+  .walk:has([data-kind="failures"]) .step-controls {
     grid-row: 2;
   }
 
