@@ -11,7 +11,6 @@ import {
   SESSION_02_COPIES_FROM_SESSION_03,
   baselineFixturePath,
   findDemoScriptProblems,
-  findExerciseScriptProblems,
   findFileProblems,
   findReadmeProblems,
   renameIdentifiers,
@@ -31,7 +30,7 @@ const baselineFiles = () =>
     ["examples/session-00/README.md", "# session-00\n"],
     ["examples/session-00/src/zero.ts", "export const zero = 0;\n"],
     ["examples/session-02/package.json", '{"name":"@fp-with-ts/clinic-session-02"}\n'],
-    ["examples/session-02/src/a.ts", "// Session 02: pnpm exercise:02\n// S2 regression\n// s2-status-exhaustive.ts\n"],
+    ["examples/session-02/src/a.ts", "// Session 02: pnpm demo:02\n// S2 regression\n// s2-status-exhaustive.ts\n"],
     [`examples/session-02/${BASELINE_FIXTURE}`, "// s2-status-exhaustive.ts\n"],
     ...copyEntries("session-03", "03", baselineFixturePath),
     ["examples/final/src/final.ts", "export const final = 1;\n"],
@@ -44,15 +43,14 @@ const currentFiles = () =>
     ["examples/session-00/README.md", "# session-00\n"],
     ["examples/session-00/src/zero.ts", "export const zero = 0;\n"],
     ["examples/session-01/package.json", '{"name":"@fp-with-ts/clinic-session-01"}\n'],
-    ["examples/session-01/src/a.ts", "// Session 01: pnpm exercise:01\n// S01 regression\n// status-exhaustive.ts\n"],
+    ["examples/session-01/src/a.ts", "// Session 01: pnpm demo:01\n// S01 regression\n// status-exhaustive.ts\n"],
     [`examples/session-01/${FIXTURE}`, "// status-exhaustive.ts\n"],
     ["examples/session-02/package.json", '{"name":"@fp-with-ts/clinic-session-02"}\n'],
-    ["examples/session-02/src/a.ts", "// Session 02: pnpm exercise:02\n// S01 regression\n// status-exhaustive.ts\n"],
+    ["examples/session-02/src/a.ts", "// Session 02: pnpm demo:02\n// S01 regression\n// status-exhaustive.ts\n"],
     [`examples/session-02/${FIXTURE}`, "// status-exhaustive.ts\n"],
     ...copyEntries("session-02", "02"),
     ...copyEntries("session-01-solution", "01-solution"),
     ...copyEntries("session-02-solution", "02-solution"),
-    ...copyEntries("session-03-supplement", "03-supplement"),
     ["examples/final/src/final.ts", "export const final = 1;\n"],
     ["examples/fixtures/data.json", '{"fixture":true}\n'],
     ["examples/start-examination-continuity/src/continuity.ts", "export const c = 1;\n"],
@@ -73,16 +71,6 @@ const changed = (source, file) =>
 
 const copyMismatch = (file) =>
   `examples/session-02/${file} が基準 ${BASELINE_COMMIT} の examples/session-03/${baselineFixturePath(file)} の写しではありません`;
-
-const exerciseScripts = () => ({
-  test: "vitest run",
-  "exercise:01": "pnpm --filter @fp-with-ts/clinic-session-01 exercise",
-  "exercise:02": "pnpm --filter @fp-with-ts/clinic-session-02 exercise",
-  "exercise:03": "pnpm --filter @fp-with-ts/clinic-session-03 exercise",
-  "exercise:03-supplement": "pnpm --filter @fp-with-ts/clinic-session-03-supplement exercise",
-  "exercise:04": "pnpm --filter @fp-with-ts/clinic-session-04 exercise",
-  "exercise:06": "pnpm --filter @fp-with-ts/clinic-session-06 exercise",
-});
 
 describe("基準差分の検査: ファイル", () => {
   test("1. 識別子の振り直しだけの差分は OK になる", () => {
@@ -106,7 +94,7 @@ describe("基準差分の検査: ファイル", () => {
 
   test("2. 振り直し前の識別子が残っていると NG になる", () => {
     assert.deepEqual(
-      check((current) => current.set("examples/session-01/src/a.ts", "// Session 02: pnpm exercise:02\n")),
+      check((current) => current.set("examples/session-01/src/a.ts", "// Session 02: pnpm demo:02\n")),
       [changed("session-02", "examples/session-01/src/a.ts")],
     );
   });
@@ -127,7 +115,7 @@ describe("基準差分の検査: ファイル", () => {
       check((current) =>
         current.set(
           "examples/session-01/src/a.ts",
-          "// Session 01: pnpm exercise:01\n// S01 regression\n// s2-status-exhaustive.ts\n",
+          "// Session 01: pnpm demo:01\n// S01 regression\n// s2-status-exhaustive.ts\n",
         ),
       ),
       [changed("session-02", "examples/session-01/src/a.ts")],
@@ -136,7 +124,7 @@ describe("基準差分の検査: ファイル", () => {
       check((current) =>
         current.set(
           "examples/session-01/src/a.ts",
-          "// Session 01: pnpm exercise:01\n// S2 regression\n// status-exhaustive.ts\n",
+          "// Session 01: pnpm demo:01\n// S2 regression\n// status-exhaustive.ts\n",
         ),
       ),
       [changed("session-02", "examples/session-01/src/a.ts")],
@@ -163,8 +151,8 @@ describe("基準差分の検査: ファイル", () => {
       [changed("session-02", "examples/session-01/src/a.ts")],
     );
     assert.deepEqual(
-      check((current) => current.delete("examples/session-02/package.json")),
-      [changed("session-02", "examples/session-02/package.json")],
+      check((current) => current.delete("examples/session-02/src/a.ts")),
+      [changed("session-02", "examples/session-02/src/a.ts")],
     );
     assert.deepEqual(
       check((current) => current.delete(`examples/session-01-solution/${COPY_FILES[1]}`)),
@@ -184,7 +172,6 @@ describe("基準差分の検査: ファイル", () => {
         }
       }),
       [
-        changed("session-02", "examples/session-01/package.json"),
         changed("session-02", "examples/session-01/src/a.ts"),
         changed("session-02", `examples/session-01/${FIXTURE}`),
       ],
@@ -337,47 +324,13 @@ describe("基準差分の検査: フォルダ移動", () => {
   });
 });
 
-describe("基準差分の検査: exercise:*", () => {
-  test("8. 想定の6本なら OK になる", () => {
-    assert.deepEqual(findExerciseScriptProblems(exerciseScripts()), []);
-  });
-
-  test("8. 想定と違うと NG になる", () => {
-    const missing = exerciseScripts();
-    delete missing["exercise:06"];
-    assert.deepEqual(findExerciseScriptProblems(missing), [
-      "package.json の exercise:06 が想定と違います\n  想定: pnpm --filter @fp-with-ts/clinic-session-06 exercise\n  現在: (なし)",
-    ]);
-
-    assert.deepEqual(
-      findExerciseScriptProblems({
-        ...exerciseScripts(),
-        "exercise:05": "pnpm --filter @fp-with-ts/clinic-session-05 exercise",
-      }),
-      [
-        "package.json の exercise:05 が想定と違います\n  想定: (なし)\n  現在: pnpm --filter @fp-with-ts/clinic-session-05 exercise",
-      ],
-    );
-
-    assert.deepEqual(
-      findExerciseScriptProblems({
-        ...exerciseScripts(),
-        "exercise:04": "pnpm --filter @fp-with-ts/clinic-session-05 exercise",
-      }),
-      [
-        "package.json の exercise:04 が想定と違います\n  想定: pnpm --filter @fp-with-ts/clinic-session-04 exercise\n  現在: pnpm --filter @fp-with-ts/clinic-session-05 exercise",
-      ],
-    );
-  });
-});
-
 describe("基準差分の検査: テスト名の番号とファイル名", () => {
   const folder = RENAMED_FOLDERS.find(({ name }) => name === "session-03");
 
   test("9. 旧 S2 / S3 / S4 / S5 の regression は今の番号になる", () => {
     const cases = [
       ['describe("S2 regression: a")', 'describe("S01 regression: a")'],
-      ['describe("S3 regression: a")', 'describe("S03 補助演習 regression: a")'],
+      ['describe("S3 regression: a")', 'describe("S03 regression: a")'],
       ['describe("S4 regression: a")', 'describe("S03 regression: a")'],
       ['describe("S5 regression: a")', 'describe("S04 regression: a")'],
       ['describe("S5 Step 1 regression: a")', 'describe("S04 Step 1 regression: a")'],
@@ -410,8 +363,8 @@ const demoScripts = () => ({
 });
 
 describe("基準差分の検査: demo:*", () => {
-  test("10. 想定の14本なら OK になる", () => {
-    assert.equal(DEMO_FOLDERS.length, 14);
+  test("10. 想定の12本なら OK になる", () => {
+    assert.equal(DEMO_FOLDERS.length, 12);
     assert.deepEqual(findDemoScriptProblems(demoScripts()), []);
   });
 
@@ -456,7 +409,7 @@ describe("基準差分の検査: demo:*", () => {
   });
 });
 
-const FOLDERS = ["session-00", "session-03", "session-03-solution", "session-03-supplement", "session-05"];
+const FOLDERS = ["session-00", "session-03", "session-03-solution", "session-05"];
 
 const readmeProblems = (readmes) =>
   findReadmeProblems({ readmes: new Map(Object.entries(readmes)), folders: FOLDERS });
@@ -468,10 +421,9 @@ describe("README の番号の検査", () => {
         "session-03": [
           "pnpm demo:03",
           "pnpm --filter @fp-with-ts/clinic-session-03 test",
-          "`pnpm exercise:03` を実行します。解答は `examples/session-03-solution/src` にあります。",
+          "解答は `examples/session-03-solution/src` にあります。",
         ].join("\n"),
-        "session-03-solution": "pnpm demo:03-solution\npnpm exercise:03\n`examples/session-03` が開始です。",
-        "session-03-supplement": "pnpm demo:03-supplement\npnpm exercise:03-supplement",
+        "session-03-solution": "pnpm demo:03-solution\n`examples/session-03` が開始です。",
         "session-05": "`pnpm demo:05` で起動します。",
       }),
       [],
@@ -499,21 +451,6 @@ describe("README の番号の検査", () => {
   test("11. 存在しない examples/session-* を指すと NG になる", () => {
     assert.deepEqual(readmeProblems({ "session-03": "`examples/session-07/src` を見ます。\n" }), [
       "examples/session-03/README.md の examples/session-07 は存在しないフォルダを指しています",
-    ]);
-  });
-
-  test("11. pnpm exercise: は開始フォルダでは自分、-solution では対応する開始フォルダだけを許す", () => {
-    assert.deepEqual(readmeProblems({ "session-03": "pnpm exercise:04\n" }), [
-      "examples/session-03/README.md の pnpm exercise:04 が想定と違います (想定: pnpm exercise:03)",
-    ]);
-    assert.deepEqual(readmeProblems({ "session-03-solution": "pnpm exercise:03-supplement\n" }), [
-      "examples/session-03-solution/README.md の pnpm exercise:03-supplement が想定と違います (想定: pnpm exercise:03)",
-    ]);
-    assert.deepEqual(readmeProblems({ "session-03-supplement": "pnpm exercise:03\n" }), [
-      "examples/session-03-supplement/README.md の pnpm exercise:03 が想定と違います (想定: pnpm exercise:03-supplement)",
-    ]);
-    assert.deepEqual(readmeProblems({ "session-05": "pnpm exercise:05\n" }), [
-      "examples/session-05/README.md の pnpm exercise:05 が想定と違います (想定: exercise コマンドなし)",
     ]);
   });
 

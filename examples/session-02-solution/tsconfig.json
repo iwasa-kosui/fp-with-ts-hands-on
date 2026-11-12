@@ -13,9 +13,8 @@
     "test/**/*.tsx",
     "exercises/**/*.ts",
     "vitest.config.ts",
-    "vitest.exercises.config.ts",
     "vite.config.ts",
     "drizzle.config.ts"
   ],
-  "exclude": ["exercises/semantic-identifiers.test.ts", "exercises/guard/cases/B*.ts"]
+  "exclude": ["exercises/guard/cases/B*.ts"]
 }

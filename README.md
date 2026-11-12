@@ -31,7 +31,6 @@ pnpm dev
 | S0 | `pnpm demo:00` | なし |
 | S1 | `pnpm demo:01` | `pnpm demo:01-solution` |
 | S2 | `pnpm demo:02` | `pnpm demo:02-solution` |
-| S3 補助演習 | `pnpm demo:03-supplement` | `pnpm demo:03-supplement-solution` |
 | S3 | `pnpm demo:03` | `pnpm demo:03-solution` |
 | S4 | `pnpm demo:04` | `pnpm demo:04-solution` |
 | S5 | `pnpm demo:05` | なし |
@@ -57,7 +56,7 @@ pnpm test
 
 ## 第2回までの版と番号の振り直し
 
-第2回の後で、`examples/session-NN` と `pnpm exercise:NN` の番号を教材ページの番号にそろえました。第2回までのコードは、[コミット d6f13e3](https://github.com/iwasa-kosui/fp-with-ts-hands-on/tree/d6f13e3d34cf0666ea3be3fe611a62bc84cbaf84) で見られます。これから新しく clone する人は、この節の手順を実行する必要はありません。
+第2回の後で、`examples/session-NN` の番号を教材ページの番号にそろえました。CLI で実行する旧演習のコマンドは削除しました。第2回までのコードは、[コミット d6f13e3](https://github.com/iwasa-kosui/fp-with-ts-hands-on/tree/d6f13e3d34cf0666ea3be3fe611a62bc84cbaf84) で見られます。これから新しく clone する人は、この節の手順を実行する必要はありません。
 
 ### clone 済みで `examples/` を編集した人が pull するとき
 

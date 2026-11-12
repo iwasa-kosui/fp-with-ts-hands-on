@@ -1,3 +1,5 @@
+import { renderProgress } from "../stepper/step-progress";
+
 const roots = document.querySelectorAll("[data-walk]:not([data-walk-ready])");
 const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -9,23 +11,18 @@ for (const root of roots) {
   const tabs = [...root.querySelectorAll("[data-walk-tab]")];
   const live = root.querySelector("[data-walk-live]");
   const sticky = root.querySelector(".walk__sticky");
-  const progress = root.querySelector("[data-walk-progress]");
+  const controls = root.querySelector("[data-controls]");
+  const progress = root.querySelector("[data-progress]");
   const page = root.hasAttribute("data-walk-page");
-  const button = (name) => root.querySelector(`[data-walk-action="${name}"]`);
-  const prev = button("prev");
-  const play = button("play");
-  const next = button("next");
+  const prev = root.querySelector("[data-prev]");
+  const next = root.querySelector("[data-next]");
 
   let scene = 0;
   let frame = 0;
-  let playing = false;
-  let timer = 0;
   let width = 0;
   let revealToken = 0;
 
   const lastFrame = () => items[scene].length - 1;
-  const isDisabled = (el) => el.getAttribute("aria-disabled") === "true";
-  const setDisabled = (el, value) => el.setAttribute("aria-disabled", String(value));
 
   const fitLive = () => {
     if (live.offsetWidth === 0) return;
@@ -80,10 +77,6 @@ for (const root of roots) {
     requestAnimationFrame(tick);
   };
 
-  const renderPlay = () => {
-    play.textContent = playing ? "❚❚ 一時停止" : "▶ 再生";
-  };
-
   const show = (nextScene, nextFrame, follow = true) => {
     const sceneChanged = nextScene !== scene;
     scene = nextScene;
@@ -98,73 +91,24 @@ for (const root of roots) {
       }),
     );
     tabs.forEach((tab, index) => tab.setAttribute("aria-pressed", String(index === scene)));
-    progress.textContent = `${frame + 1} / ${items[scene].length}`;
+    renderProgress(progress, frame, items[scene].length);
     if (sceneChanged && !page) fitLive();
     live.innerHTML = items[scene][frame].innerHTML;
-    setDisabled(prev, frame === 0);
-    setDisabled(next, frame >= lastFrame());
-    renderPlay();
+    prev.disabled = frame === 0;
+    next.disabled = frame >= lastFrame();
     root.dispatchEvent(new CustomEvent("stepchange", { detail: { scene, frame } }));
     if (follow && !page) reveal();
   };
 
-  const stop = () => {
-    clearTimeout(timer);
-    playing = false;
-    renderPlay();
-  };
-
-  const schedule = () => {
-    clearTimeout(timer);
-    const length = items[scene][frame].textContent.length;
-    timer = setTimeout(advance, Math.max(4000, length * 130));
-  };
-
-  function advance() {
-    show(scene, frame + 1);
-    if (frame >= lastFrame()) stop();
-    else schedule();
-  }
-
-  prev.addEventListener("click", () => {
-    if (isDisabled(prev)) return;
-    stop();
-    show(scene, frame - 1);
-  });
-  next.addEventListener("click", () => {
-    if (isDisabled(next)) return;
-    stop();
-    show(scene, frame + 1);
-  });
-  play.addEventListener("click", () => {
-    if (playing) {
-      stop();
-      return;
-    }
-    if (frame >= lastFrame()) {
-      show(scene, 0);
-      playing = true;
-      renderPlay();
-      schedule();
-      return;
-    }
-    playing = true;
-    advance();
-  });
-  tabs.forEach((tab, index) =>
-    tab.addEventListener("click", () => {
-      stop();
-      show(index, 0);
-    }),
-  );
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) stop();
-  });
+  prev.addEventListener("click", () => show(scene, frame - 1));
+  next.addEventListener("click", () => show(scene, frame + 1));
+  tabs.forEach((tab, index) => tab.addEventListener("click", () => show(index, 0)));
   new ResizeObserver(() => {
     if (live.offsetWidth === width) return;
     width = live.offsetWidth;
     fitLive();
   }).observe(live);
 
+  controls.hidden = false;
   show(0, 0, false);
 }

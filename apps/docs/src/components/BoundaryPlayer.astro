@@ -2,6 +2,7 @@
 import { Code } from "astro:components";
 import type { Walkthrough } from "../sessions/boundary-walkthroughs";
 import MiniTree from "./mini-tree/MiniTree.astro";
+import StepControls from "./stepper/StepControls.astro";
 
 type Props = Readonly<{
   walkthrough: Walkthrough;
@@ -53,7 +54,7 @@ const texts = [
 <figure class="boundary-player" data-boundary-player data-step-figure>
   <figcaption>
     <strong>{walkthrough.title}</strong>
-    <span>{hasChoice ? "場面を選んで再生します。" : ""}{description}</span>
+    <span>{hasChoice ? "場面を選んで、コマを進めます。" : ""}{description}</span>
   </figcaption>
   <script is:inline type="application/json" data-player-data set:html={data} />
 
@@ -77,11 +78,8 @@ const texts = [
         class="boundary-player__tree"
       />
     )}
-    <div class="boundary-player__controls" data-controls>
-      <button type="button" data-action="prev" data-prev>← 前のコマ</button>
-      <button type="button" data-action="play" class="boundary-player__play">再生</button>
-      <button type="button" data-action="next" data-next>次のコマ →</button>
-      <span data-counter></span>
+    <div class="boundary-player__controls">
+      <StepControls />
     </div>
     <div class="boundary-player__track" data-track>
       {walkthrough.zones.map((zone, index) => (
@@ -147,194 +145,8 @@ const texts = [
   </div>
 </figure>
 
-<script is:inline>
-  (() => {
-  const frameMilliseconds = 3200;
-
-  const setUp = (root) => {
-    const { scenarios } = JSON.parse(
-      root.querySelector("[data-player-data]")?.textContent ?? "{}",
-    );
-    const need = (selector) => {
-      const element = root.querySelector(selector);
-      if (element === null) throw new Error(`${selector} is missing`);
-      return element;
-    };
-    const token = need("[data-token]");
-    const track = need("[data-track]");
-    const statusBox = need("[data-status-box]");
-    const valueLabel = need("[data-value-label]");
-    const values = [...root.querySelectorAll("[data-value-text]")];
-    const text = need("[data-text]");
-    const counter = need("[data-counter]");
-    const prev = need('[data-action="prev"]');
-    const play = need('[data-action="play"]');
-    const next = need('[data-action="next"]');
-    const scenarioButtons = [...root.querySelectorAll("[data-scenario]")];
-    const files = [...root.querySelectorAll("[data-file]")];
-    const miniFiles = [...root.querySelectorAll("[data-mini-file]")];
-
-    const codeOf = new Map(
-      files.map((file) => [
-        file,
-        { code: file.querySelector("pre code"), lines: [...file.querySelectorAll(".line")] },
-      ]),
-    );
-
-    const fold = () => {
-      const mark = document.createElement("span");
-      mark.className = "boundary-player__fold";
-      mark.setAttribute("aria-hidden", "true");
-      mark.textContent = "…";
-      return mark;
-    };
-
-    const rangeOf = (frame, total, rows) => {
-      const count = frame.to - frame.from + 1;
-      for (let size = rows; size >= count; size -= 1) {
-        const extra = size - count;
-        const roomAfter = total - 1 - frame.to;
-        const before = Math.min(frame.from, Math.floor(extra * 0.3));
-        const after = Math.min(roomAfter, extra - before);
-        const first = frame.from - Math.min(frame.from, extra - after);
-        const last = frame.to + after;
-        const folds = (first > 0 ? 1 : 0) + (last < total - 1 ? 1 : 0);
-        if (last - first + 1 + folds <= rows) return [first, last];
-      }
-      return [frame.from, frame.to];
-    };
-
-    const showWindow = ({ code, lines }, frame) => {
-      const pre = code?.parentElement;
-      if (!code || !pre) return;
-      const style = getComputedStyle(pre);
-      const lineHeight = Number.parseFloat(style.lineHeight) || Number.parseFloat(style.fontSize) * 1.45;
-      const inner = pre.clientHeight - Number.parseFloat(style.paddingTop) - Number.parseFloat(style.paddingBottom);
-      const count = frame.to - frame.from + 1;
-      for (let rows = Math.max(1, Math.floor(inner / lineHeight)); rows >= count; rows -= 1) {
-        const [first, last] = rangeOf(frame, lines.length, rows);
-        const items = [
-          ...(first > 0 ? [fold()] : []),
-          ...lines.slice(first, last + 1),
-          ...(last < lines.length - 1 ? [fold()] : []),
-        ];
-        code.replaceChildren(
-          ...items.flatMap((item, index) => (index === 0 ? [item] : [document.createTextNode("\n"), item])),
-        );
-        if (pre.scrollHeight <= pre.clientHeight + 1) break;
-      }
-      pre.scrollTop = 0;
-    };
-
-    let scenario = scenarios[0];
-    let index = 0;
-    let timer;
-
-    const stop = () => {
-      window.clearInterval(timer);
-      timer = undefined;
-      play.textContent = "再生";
-    };
-
-    const render = () => {
-      const frame = scenario?.frames[index];
-      if (scenario === undefined || frame === undefined) return;
-      scenarioButtons.forEach((button) => {
-        button.setAttribute("aria-pressed", String(button.dataset.scenario === scenario?.id));
-      });
-      track.dataset.status = frame.status;
-      track.dataset.zone = String(frame.zone);
-      token.style.setProperty("--token-position", `${frame.zone * 33.333 + 16.667}%`);
-      token.textContent = frame.status === "stop" ? "✕" : "値";
-      statusBox.dataset.status = frame.status;
-      valueLabel.textContent = frame.valueLabel;
-      for (const value of values) value.hidden = value.dataset.valueText !== frame.value;
-      text.textContent = frame.text;
-      counter.textContent = `${index + 1} / ${scenario.frames.length}`;
-      prev.disabled = index === 0;
-      next.disabled = index === scenario.frames.length - 1;
-
-      for (const miniFile of miniFiles) {
-        if (miniFile.dataset.miniFile === frame.fileId) {
-          miniFile.setAttribute("data-current", "");
-          miniFile.setAttribute("aria-current", "true");
-        } else {
-          miniFile.removeAttribute("data-current");
-          miniFile.removeAttribute("aria-current");
-        }
-      }
-
-      for (const file of files) {
-        const active = file.dataset.file === frame.fileId;
-        file.hidden = !active;
-        const shown = codeOf.get(file);
-        if (shown === undefined) continue;
-        shown.lines.forEach((line, lineIndex) => {
-          line.classList.toggle(
-            "is-active",
-            active && lineIndex >= frame.from && lineIndex <= frame.to,
-          );
-        });
-        if (active) showWindow(shown, frame);
-      }
-    };
-
-    const start = () => {
-      const lastIndex = (scenario?.frames.length ?? 1) - 1;
-      index = index >= lastIndex ? 0 : index + 1;
-      render();
-      if (index === lastIndex) {
-        stop();
-        return;
-      }
-      play.textContent = "一時停止";
-      timer = window.setInterval(() => {
-        if (scenario && index < scenario.frames.length - 1) {
-          index += 1;
-          render();
-        }
-        if (!scenario || index === scenario.frames.length - 1) stop();
-      }, frameMilliseconds);
-    };
-
-    prev.addEventListener("click", () => {
-      stop();
-      index = Math.max(0, index - 1);
-      render();
-    });
-    next.addEventListener("click", () => {
-      stop();
-      index = Math.min((scenario?.frames.length ?? 1) - 1, index + 1);
-      render();
-    });
-    play.addEventListener("click", () => {
-      if (timer === undefined) start();
-      else stop();
-    });
-    scenarioButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        stop();
-        scenario = scenarios.find(({ id }) => id === button.dataset.scenario) ?? scenario;
-        index = 0;
-        render();
-      });
-    });
-
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const applyMotion = () => {
-      play.hidden = reducedMotion.matches;
-      if (reducedMotion.matches) stop();
-    };
-    reducedMotion.addEventListener("change", applyMotion);
-    applyMotion();
-    window.addEventListener("resize", () => render());
-
-    root.dataset.ready = "true";
-    render();
-  };
-
-  setUp(document.currentScript.previousElementSibling);
-  })();
+<script>
+  import "./boundary-player.js";
 </script>
 
 <style>
@@ -409,44 +221,25 @@ const texts = [
     outline-offset: 2px;
   }
 
-  .boundary-player__controls button {
-    min-height: 2.125rem;
-    padding: 0.25rem 0.75rem;
-    border: 1.5px solid var(--role-accent, var(--case-blue));
-    border-radius: 0.5rem;
-    background: transparent;
-    color: var(--role-accent, var(--case-blue));
-    font-size: 0.85rem;
-  }
-
-  .boundary-player__controls button:disabled {
-    border-color: var(--role-rule, var(--case-divider));
-    color: var(--role-muted, var(--case-muted));
-    opacity: 1;
-  }
-
   button[aria-pressed="true"] {
     border-color: var(--role-accent, var(--case-blue));
     background: var(--role-accent, var(--case-blue));
     color: var(--role-on-accent, var(--case-paper));
   }
 
-  .boundary-player__controls .boundary-player__play {
-    background: var(--role-accent-soft, var(--case-paper));
-  }
-
-  .boundary-player__play { min-width: calc(4em + 1.5rem + 4px); }
-
   .boundary-player__controls {
     margin-block-start: 0.5rem;
+  }
+
+  .boundary-player__controls :global(.step-controls) {
+    margin: 0;
   }
 
   .boundary-player__live :global(.boundary-player__tree) {
     margin-block-start: 0.5rem;
   }
 
-  .boundary-player__scenarios,
-  .boundary-player__controls {
+  .boundary-player__scenarios {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
@@ -586,12 +379,6 @@ const texts = [
   .boundary-player__text p {
     margin: 0;
     font-weight: 700;
-  }
-
-  .boundary-player__controls span {
-    color: var(--case-muted);
-    font-size: 0.875rem;
-    font-variant-numeric: tabular-nums;
   }
 
   .boundary-player__files {

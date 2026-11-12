@@ -18,7 +18,6 @@ export const session: SessionSummary = {
     "開発者は、キャンセルで満たす条件（実行者の権限、診察開始前の予約、履歴の記録）と、変わるデータを見直すことにしました。",
   ],
   incident: "予約キャンセルで、実行者、予約の存在、現在状態、理由を一貫して確認できていない。",
-  steps: [],
   decisions: [],
   finalReferences: [],
 };

@@ -1,15 +1,12 @@
 import { posix } from "node:path";
 
 export const BASELINE_COMMIT = "088c2ef";
-export const EXERCISE_COMMANDS = ["01", "02", "03", "03-supplement", "04", "06"];
 
 export const RENAMED_FOLDERS = [
   { name: "session-01", source: "session-02", labels: { "02": "01", "01": "01" } },
   { name: "session-01-solution", source: "session-03", labels: { "03": "01" } },
   { name: "session-02", source: "session-02", labels: { "02": "02", "01": "02" } },
   { name: "session-02-solution", source: "session-03", labels: { "03": "02" } },
-  { name: "session-03-supplement", source: "session-03", labels: { "03": "03" } },
-  { name: "session-03-supplement-solution", source: "session-04", labels: { "04": "03", "03": "03" } },
   { name: "session-03", source: "session-04", labels: { "04": "03", "03": "03" } },
   { name: "session-03-solution", source: "session-05", labels: { "05": "03" } },
   { name: "session-04", source: "session-05", labels: { "05": "04", "04": "04" } },
@@ -45,7 +42,7 @@ export const baselineFixturePath = (path) =>
     return `${directory}${original ?? base}`;
   });
 
-export const REGRESSION_LABELS = { 2: "S01", 3: "S03 補助演習", 4: "S03", 5: "S04" };
+export const REGRESSION_LABELS = { 2: "S01", 3: "S03", 4: "S03", 5: "S04" };
 
 export const SESSION_02_COPIES_FROM_SESSION_03 = [
   "src/domain/appointment/transitions.ts",
@@ -88,8 +85,6 @@ export const ALLOWED_EXAMPLE_DIFFS = [
   "examples/session-02-solution/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
   "examples/session-03/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
   "examples/session-03-solution/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
-  "examples/session-03-supplement/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
-  "examples/session-03-supplement-solution/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
   "examples/session-04/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
   "examples/session-04-solution/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
   "examples/session-06/test/regression/type-fixtures/paid-not-assignable-to-checked-in.ts",
@@ -261,6 +256,48 @@ export const ALLOWED_EXAMPLE_DIFFS = [
   "examples/start-examination-continuity/test/session06To07.test.ts",
   "examples/start-examination-continuity/test/session00To04.test.ts",
   "examples/start-examination-continuity/test/session06.test.ts",
+  "examples/session-01/exercises/run-exercise-checks.mjs",
+  "examples/session-01/exercises/state-modeling.test.ts",
+  "examples/session-01/package.json",
+  "examples/session-01/tsconfig.exercises.json",
+  "examples/session-01/tsconfig.json",
+  "examples/session-01/vitest.exercises.config.ts",
+  "examples/session-01-solution/exercises/run-exercise-checks.mjs",
+  "examples/session-01-solution/exercises/semantic-identifiers.test.ts",
+  "examples/session-01-solution/test/regression/exercise-config.test.ts",
+  "examples/session-01-solution/tsconfig.exercises.json",
+  "examples/session-01-solution/tsconfig.json",
+  "examples/session-01-solution/vitest.exercises.config.ts",
+  "examples/session-02/exercises/run-exercise-checks.mjs",
+  "examples/session-02/exercises/state-modeling.test.ts",
+  "examples/session-02/package.json",
+  "examples/session-02/tsconfig.exercises.json",
+  "examples/session-02/tsconfig.json",
+  "examples/session-02/vitest.exercises.config.ts",
+  "examples/session-02-solution/exercises/run-exercise-checks.mjs",
+  "examples/session-02-solution/exercises/semantic-identifiers.test.ts",
+  "examples/session-02-solution/test/regression/exercise-config.test.ts",
+  "examples/session-02-solution/tsconfig.exercises.json",
+  "examples/session-02-solution/vitest.exercises.config.ts",
+  "examples/session-03/exercises/start-examination-input.test.ts",
+  "examples/session-03/package.json",
+  "examples/session-03/tsconfig.json",
+  "examples/session-03/vitest.exercises.config.ts",
+  "examples/session-03-solution/exercises/run-exercise-checks.mjs",
+  "examples/session-03-solution/tsconfig.exercises.json",
+  "examples/session-03-solution/tsconfig.json",
+  "examples/session-03-solution/vitest.exercises.config.ts",
+  "examples/session-04/exercises/run-exercise-checks.mjs",
+  "examples/session-04/package.json",
+  "examples/session-04/tsconfig.exercises.json",
+  "examples/session-04/tsconfig.json",
+  "examples/session-04/vitest.exercises.config.ts",
+  "examples/session-04-solution/tsconfig.json",
+  "examples/session-06/package.json",
+  "examples/session-06/tsconfig.json",
+  "examples/session-06/vitest.exercises.config.ts",
+  "examples/session-00/tsconfig.json",
+  "examples/session-00/vitest.exercises.config.ts",
 ];
 
 export const camelCaseFolder = (suffix) =>
@@ -289,7 +326,6 @@ export const renameIdentifiers = (text, { name, source, labels }) => {
     .replace(/(?<![A-Za-z0-9])S([2-5])((?: Step [0-9])? regression)/g, (match, number, rest) =>
       `${REGRESSION_LABELS[number]}${rest}`,
     )
-    .replace(new RegExp(`exercise:${from}(?!\\d)`, "g"), `exercise:${to}`)
     .replace(new RegExp(`demo:${from}(?!\\d)`, "g"), `demo:${to}`);
 };
 
@@ -419,18 +455,6 @@ const findPrefixedScriptProblems = (scripts, prefix, expected) => {
   return problems;
 };
 
-export const findExerciseScriptProblems = (scripts) =>
-  findPrefixedScriptProblems(
-    scripts,
-    "exercise:",
-    Object.fromEntries(
-      EXERCISE_COMMANDS.map((number) => [
-        `exercise:${number}`,
-        `pnpm --filter @fp-with-ts/clinic-session-${number} exercise`,
-      ]),
-    ),
-  );
-
 export const DEMO_FOLDERS = [
   ...UNCHANGED_FOLDERS.filter((name) => name.startsWith("session-")),
   ...RENAMED_FOLDERS.map(({ name }) => name),
@@ -450,12 +474,6 @@ export const findDemoScriptProblems = (scripts) =>
 
 const COMMAND_SUFFIX = "([0-9][0-9a-z]*(?:-[0-9a-z]+)*)";
 
-const allowedExerciseSuffixes = (folder) => {
-  const suffix = folder.slice("session-".length);
-  const start = suffix.endsWith("-solution") ? suffix.slice(0, -"-solution".length) : suffix;
-  return EXERCISE_COMMANDS.includes(start) ? [start] : [];
-};
-
 export const findReadmeProblems = ({ readmes, folders }) => {
   const problems = [];
   for (const [folder, text] of readmes) {
@@ -470,16 +488,6 @@ export const findReadmeProblems = ({ readmes, folders }) => {
       if (suffix !== own) {
         problems.push(
           `${readme} の clinic-session-${suffix} が自分のフォルダを指していません (想定: clinic-${folder})`,
-        );
-      }
-    }
-    const allowed = allowedExerciseSuffixes(folder);
-    for (const [, suffix] of text.matchAll(new RegExp(`pnpm exercise:${COMMAND_SUFFIX}`, "g"))) {
-      if (!allowed.includes(suffix)) {
-        problems.push(
-          `${readme} の pnpm exercise:${suffix} が想定と違います (想定: ${
-            allowed.length === 0 ? "exercise コマンドなし" : allowed.map((item) => `pnpm exercise:${item}`).join(", ")
-          })`,
         );
       }
     }
