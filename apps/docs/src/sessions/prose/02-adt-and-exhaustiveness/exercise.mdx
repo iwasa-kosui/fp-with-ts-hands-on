@@ -1,5 +1,6 @@
 import { GuardExercise } from "../../../components/guard-exercise/GuardExercise";
 import GuardAnswer from "../../../components/guard-exercise/GuardAnswer.astro";
+import LocalExerciseGuide from "../../../components/guard-exercise/LocalExerciseGuide.astro";
 import { projectFilesForSnapshot } from "../../../code-explorer/project-files";
 import { guardAnswerDisplayFiles } from "../../../code-explorer/guard-paths";
 import { guardExercise } from "../../pages/02-adt-and-exhaustiveness-exercise";
@@ -49,3 +50,5 @@ export const guide = {
 <GuardExercise client:load workspace={workspace} projectFiles={projectFiles} guide={guide}>
   <GuardAnswer files={guardAnswerDisplayFiles(projectFiles)} />
 </GuardExercise>
+
+<LocalExerciseGuide session="02" />

@@ -1,0 +1,90 @@
+---
+import CodeBlock from "../CodeBlock.astro";
+
+interface Props {
+  session: "01" | "02" | "03" | "04" | "05" | "06";
+}
+
+const { session } = Astro.props;
+---
+
+<h2>手元のエディタで解く</h2>
+
+<p>ブラウザの代わりに、手元のエディタで同じ演習を解くこともできます。編集するファイルと合否の判定は、ブラウザの演習と同じです。ブラウザで書いた内容は、手元のファイルに引き継がれません。</p>
+
+<h3>必要なツール</h3>
+
+<ul>
+  <li>Node.js 20以上</li>
+  <li>pnpm 9.12.0</li>
+  <li>Git</li>
+</ul>
+
+<p>ターミナルで次のコマンドを実行し、版を確認します。</p>
+
+<CodeBlock
+  code={`node --version
+pnpm --version
+git --version`}
+  language="shell"
+/>
+
+<p>pnpmが無い場合は、次のコマンドでインストールします。</p>
+
+<CodeBlock code="npm install --global pnpm@9.12.0" language="shell" />
+
+<h3>最初の1回だけ行う準備</h3>
+
+<p>ターミナルで次のコマンドを順に実行します。1行目でリポジトリをcloneし、3行目で依存パッケージをインストールします。</p>
+
+<CodeBlock
+  code={`git clone https://github.com/iwasa-kosui/fp-with-ts-hands-on.git
+cd fp-with-ts-hands-on
+pnpm install --frozen-lockfile`}
+  language="shell"
+/>
+
+<p>ほかのSessionの演習も、同じフォルダで解きます。以前にcloneしたフォルダを使う場合は、そのフォルダで次のコマンドを実行し、最新の状態にします。</p>
+
+<CodeBlock
+  code={`git pull
+pnpm install --frozen-lockfile`}
+  language="shell"
+/>
+
+<h3>演習を解く</h3>
+
+<ol>
+  <li>エディタで、cloneした <code>fp-with-ts-hands-on</code> フォルダを開きます。</li>
+  <li>
+    次のファイルを編集します。<code>examples/session-{session}-solution/exercises/guard/cases/</code> の誤った変更は編集しません。
+    <ul>
+      <li><code>examples/session-{session}-solution/eslint.config.mjs</code></li>
+      <li><code>examples/session-{session}-solution/exercises/guard/mine/</code> の中のファイル</li>
+    </ul>
+  </li>
+  <li>
+    <code>fp-with-ts-hands-on</code> フォルダで次のコマンドを実行します。このコマンドは、ブラウザの「検出を検証する」と同じ判定を実行し、結果をターミナルに表示します。
+    <CodeBlock code={`pnpm guard:${session}`} language="shell" />
+  </li>
+</ol>
+
+<p>解答の例は、このページの演習の「解答の例を見る」で確認できます。<code>examples/session-{session}-solution/exercises/guard/answer/</code> にも解答の例があります。ただし、このフォルダのファイルは import のパスが <code>mine/</code> のファイルと異なるため、<code>mine/</code> にそのまま複写しても合格しません。解答の例を使うときは、「解答の例を見る」の内容を複写します。</p>
+
+<h3>判定の結果の読み方</h3>
+
+<ul>
+  <li>先頭の「結果:」の行が合否を示します。「合格です」と表示されれば合格です。</li>
+  <li>誤った変更の行に「[検出]」と表示されれば、その変更を検出できています。「[未検出]」は、まだ検出できていないことを示します。</li>
+  <li>正しいコードの行には「[誤検知なし]」と表示されるのが正しい状態です。「[誤検知あり]」は、追加した検出の仕組みが正しいコードまで失敗として扱っていることを示します。</li>
+  <li>「[未判定]」は、実行のエラーで判定できなかったことを示します。「問題」の節に原因が表示されます。</li>
+  <li>各行の下の「型のテスト / Linter / テスト」は、検出の仕組みごとの結果です。「検出 N件」は検出した件数、「−」は検出なし、「対象外」はその行の合否に数えない仕組み、「エラー」は実行の失敗を示します。</li>
+  <li>「次にすること」の節は、次に取り組む作業を示します。</li>
+  <li>合格するまでは、最後に <code>ELIFECYCLE  Command failed with exit code 1.</code> と表示されます。この表示は不合格を示すもので、コマンドの不具合ではありません。</li>
+</ul>
+
+<h3>最初からやり直す</h3>
+
+<p>次のコマンドで、この演習のファイルへの編集を元に戻します。このコマンドは、自分で新しく作ったファイルを削除しません。</p>
+
+<CodeBlock code={`git restore examples/session-${session}-solution`} language="shell" />
