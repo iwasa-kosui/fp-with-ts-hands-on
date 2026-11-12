@@ -918,9 +918,7 @@
 .guard-exercise.code-playground .code-explorer__notice {
   grid-row: 2;
   grid-column: 1 / -1;
-  max-height: 6rem;
   padding: 0.4rem 0.6rem;
-  overflow: auto;
   font-size: 0.75rem;
 }
 
@@ -1106,6 +1104,19 @@
 .guard-answer figcaption {
   font-size: 0.8125rem;
   font-weight: 900;
+}
+
+.guard-answer__file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.guard-answer__file > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .guard-answer__note {

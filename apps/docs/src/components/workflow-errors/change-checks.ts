@@ -18,29 +18,6 @@ selector: "CallExpression[callee.property.name='_unsafeUnwrap']",`,
 
 const cases: readonly ChangeCase[] = [
   {
-    id: "B4-unsafe-unwrap",
-    kind: "bad",
-    label: "_unsafeUnwrap で例外に戻す",
-    baseCase: "G1-solution",
-    target: "startExamination の部分",
-    diff: [
-      { kind: "del", text: "    ensureAppointmentFound(" },
-      { kind: "add", text: "    const appointment = ensureAppointmentFound(" },
-      { kind: "skip", text: "      // 関数の本体を { } で囲む。resolveById と .andThen(ensureCheckedIn) は同じ" },
-      { kind: "add", text: "      ._unsafeUnwrap();" },
-      { kind: "add", text: "    const started = transitionToInExamination(" },
-      { kind: "skip", text: "      // 引数は同じ。元の 2 つの .map は消す" },
-      { kind: "add", text: "    deps.store.save(started);" },
-      { kind: "add", text: "    return ok(started);" },
-      { kind: "add", text: "  };" },
-    ],
-    results: {
-      lint: { found: true, output: "no-restricted-syntax: _unsafeUnwrap は失敗のとき例外を投げます。", setting: "selector: \"CallExpression[callee.property.name='_unsafeUnwrap']\"," },
-      tests: { found: true, output: "2件失敗: expected 'threw' to be 'returned'" },
-    },
-    why: "`_unsafeUnwrap` は失敗のとき例外を投げますが、型はそれを表しません。Linter のルールとテストの両方が検出します。演習の検証は、一覧の変更を格納した `cases/` の中のコードだけを検査するため、route の入力の検査が使う `_unsafeUnwrap` は検査されません。実際のプロジェクトでは、ESLint の設定の `files` で対象を useCase に限定します。",
-  },
-  {
     id: "B5-error-kind-swallowed",
     kind: "bad",
     label: "失敗の種類を追加して default で受ける",
@@ -62,6 +39,31 @@ const cases: readonly ChangeCase[] = [
       tests: { found: false, output: "このファイルを実行するテストは 0 件", noTest: true, setting: "// この分岐のテストはまだありません" },
     },
     why: "`default` が受けるため、型検査は通ります。Linter のルールが検出します。この分岐を検証するテストはまだありません。",
+  },
+  {
+    id: "B4-unsafe-unwrap",
+    kind: "bad",
+    label: "_unsafeUnwrap で例外に戻す",
+    baseCase: "G1-solution",
+    target: "startExamination の部分",
+    diff: [
+      { kind: "del", text: "    ensureAppointmentFound(" },
+      { kind: "add", text: "    const appointment = ensureAppointmentFound(" },
+      { kind: "skip", text: "      // 関数の本体を { } で囲む。resolveById と .andThen(ensureCheckedIn) は同じ" },
+      { kind: "add", text: "      ._unsafeUnwrap();" },
+      { kind: "add", text: "    const started = transitionToInExamination(" },
+      { kind: "skip", text: "      // 引数は同じ。元の 2 つの .map は消す" },
+      { kind: "add", text: "    deps.store.save(started);" },
+      { kind: "add", text: "    return ok(started);" },
+      { kind: "add", text: "  };" },
+    ],
+    results: {
+      lint: { found: true, output: "no-restricted-syntax: _unsafeUnwrap は失敗のとき例外を投げます。", setting: "selector: \"CallExpression[callee.property.name='_unsafeUnwrap']\"," },
+      tests: { found: true, output: "2件失敗: expected 'threw' to be 'returned'" },
+    },
+    why: "`_unsafeUnwrap` は失敗のとき例外を投げますが、型はそれを表しません。Linter のルールとテストの両方が検出します。演習の検証は、一覧の変更を格納した `cases/` の中のコードだけを検査するため、route の入力の検査が使う `_unsafeUnwrap` は検査されません。実際のプロジェクトでは、ESLint の設定の `files` で対象を useCase に限定します。",
+
+    conceal: "この変更は、演習の任意の誤った変更の1件と同じです。検出結果と理由は、演習を終えてから表示してください。",
   },
 ];
 
