@@ -12,7 +12,7 @@ type Props = Readonly<{
     example: Snippet;
     schemaResult: Snippet;
   }>;
-  part?: "schema" | "parse";
+  part: "schema" | "parse";
 }>;
 
 const { code, part } = Astro.props;
@@ -61,17 +61,17 @@ const frames: readonly Frame[] = [
   {
     part: "schema",
     caption: "TypeScript の型は、型検査のときだけ使われます。JavaScript に変換すると型は消えます。実行時に受け取った値が型のとおりかどうかは、型とは別のコードで検証する必要があります。",
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "off", linkType: "off", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off" },
+    parts: { typeBox: "focus", typeGhost: "on", schemaBox: "off", linkType: "off", linkCheck: "off", checkBox: "off", inside: "off", sameName: "off", unknown: "off" },
     typeLabel: "name",
     check: "plain",
-    chips: ["home", "off"],
+    chips: ["off", "off"],
     results: ["off", "off"],
   },
   {
     part: "schema",
     caption: "z.object は、項目ごとの schema をまとめて、オブジェクト全体の schema を作ります。この例では、2つの項目がどちらも z.string().uuid() です。",
     code: { key: "example", lines: [3, 4, 5, 6] },
-    parts: { typeBox: "dim", typeGhost: "dim", schemaBox: "focus", linkType: "off", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off" },
+    parts: { typeBox: "dim", typeGhost: "off", schemaBox: "focus", linkType: "dim", linkCheck: "off", checkBox: "off", inside: "off", sameName: "off", unknown: "off" },
     typeLabel: "infer",
     check: "checked",
     chips: ["off", "off"],
@@ -81,7 +81,7 @@ const frames: readonly Frame[] = [
     part: "schema",
     caption: "型は schema から取り出します。z.infer<typeof schema> は、schema が受け入れる値の型です。typeof は、値である schema の型を、型を指定する場所で使うための書き方です。型を手動で定義しないため、schema を修正すると型も同じように変わります。",
     code: { key: "example", lines: [8] },
-    parts: { typeBox: "focus", typeGhost: "on", schemaBox: "on", linkType: "focus", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "off", unknown: "off" },
+    parts: { typeBox: "on", typeGhost: "off", schemaBox: "on", linkType: "focus", linkCheck: "off", checkBox: "off", inside: "off", sameName: "off", unknown: "off" },
     typeLabel: "infer",
     check: "checked",
     chips: ["off", "off"],
@@ -91,7 +91,7 @@ const frames: readonly Frame[] = [
     part: "schema",
     caption: "TypeScript では、型と値に同じ名前を付けられます。この例の StartExaminationInput は、z.infer で取り出した型と、schema を持つ値の両方の名前です。",
     code: { key: "example", lines: [8, 9] },
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "on", linkCheck: "off", checkBox: "dim", inside: "dim", sameName: "focus", unknown: "off" },
+    parts: { typeBox: "on", typeGhost: "off", schemaBox: "on", linkType: "on", linkCheck: "off", checkBox: "off", inside: "off", sameName: "focus", unknown: "off" },
     typeLabel: "infer",
     check: "checked",
     chips: ["off", "off"],
@@ -101,46 +101,46 @@ const frames: readonly Frame[] = [
     part: "parse",
     caption: "実行時の検査も、同じ schema から作ります。この教材では、schema から検査を作る関数 schemaResult を使います。T は検査を通った値の型で、z.ZodType の残りの引数は読み飛ばしてかまいません。",
     code: { key: "schemaResult", lines: [1] },
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "focus", checkBox: "on", inside: "dim", sameName: "off", unknown: "off" },
+    parts: { typeBox: "off", typeGhost: "off", schemaBox: "on", linkType: "off", linkCheck: "focus", checkBox: "on", inside: "off", sameName: "off", unknown: "off" },
     typeLabel: "infer",
-    check: "checked",
-    chips: ["home", "home"],
+    check: "plain",
+    chips: ["off", "off"],
     results: ["off", "off"],
   },
   {
     part: "parse",
     caption: "schemaResult は、関数を返す関数です。schema を1つ受け取り、raw を受け取る別の関数を返します。返された関数が parse です。",
     code: { key: "schemaResult", lines: [1, 2] },
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "on", checkBox: "focus", inside: "dim", sameName: "off", unknown: "off" },
+    parts: { typeBox: "off", typeGhost: "off", schemaBox: "on", linkType: "off", linkCheck: "on", checkBox: "focus", inside: "off", sameName: "off", unknown: "off" },
     typeLabel: "infer",
     check: "checked",
-    chips: ["home", "home"],
+    chips: ["off", "off"],
     results: ["off", "off"],
   },
   {
     part: "parse",
     caption: "返された関数は、raw を unknown として受け取ります。unknown は、中身を検証するまで項目を使えない型です。",
     code: { key: "schemaResult", lines: [2] },
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "dim", linkCheck: "on", checkBox: "on", inside: "dim", sameName: "off", unknown: "on" },
+    parts: { typeBox: "off", typeGhost: "off", schemaBox: "dim", linkType: "off", linkCheck: "dim", checkBox: "on", inside: "off", sameName: "off", unknown: "on" },
     typeLabel: "infer",
     check: "checked",
-    chips: ["home", "home"],
+    chips: ["off", "off"],
     results: ["off", "off"],
   },
   {
     part: "parse",
     caption: "safeParse は、schema で raw を検査します。検査に失敗しても例外を投げず、成否を success に格納して返します。schemaResult は success を参照して、Ok か Err を返します。",
     code: { key: "schemaResult", lines: [3, 4] },
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "focus", linkType: "dim", linkCheck: "on", checkBox: "on", inside: "dim", sameName: "off", unknown: "on" },
+    parts: { typeBox: "off", typeGhost: "off", schemaBox: "focus", linkType: "off", linkCheck: "on", checkBox: "on", inside: "off", sameName: "off", unknown: "off" },
     typeLabel: "infer",
     check: "checked",
-    chips: ["home", "home"],
+    chips: ["off", "off"],
     results: ["off", "off"],
   },
   {
     part: "parse",
     caption: "schemaResult が返す関数に night-shift を渡すと Err になり、UUID の形の値を渡すと Ok になって内側へ進みます。使う場所は「境界を通過した値だけを内側へ渡す構成」のページで確認します。",
-    parts: { typeBox: "on", typeGhost: "on", schemaBox: "on", linkType: "on", linkCheck: "on", checkBox: "on", inside: "on", sameName: "off", unknown: "off" },
+    parts: { typeBox: "off", typeGhost: "off", schemaBox: "dim", linkType: "off", linkCheck: "dim", checkBox: "on", inside: "on", sameName: "off", unknown: "off" },
     typeLabel: "infer",
     check: "checked",
     chips: ["stop", "through"],
@@ -152,7 +152,7 @@ const schemaResultTree = miniTree("session-03-solution", "src/", [
   { folder: "domain/shared/", files: [{ id: "schemaResult", name: "schemaResult.ts" }] },
 ]);
 
-const shownFrames = part === undefined ? frames : frames.filter((frame) => frame.part === part);
+const shownFrames = frames.filter((frame) => frame.part === part);
 const initial = shownFrames[0];
 const nightShift = "\"night-shift\"";
 const uuidPreview = "\"3f2b…\"";
@@ -163,118 +163,152 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
 <div class="schema-source-flow" data-schema-source-flow data-frames={playerData}>
   <StepControls />
 
-  <svg
-    viewBox="0 36 340 440"
-    role="img"
-    aria-labelledby="schema-source-flow-title schema-source-flow-desc"
-    data-type-label={initial.typeLabel}
-    data-check={initial.check}
-  >
-    <title id="schema-source-flow-title">1つの schema から型と検査を作る仕組み</title>
-    <desc id="schema-source-flow-desc">
-      上の帯は型検査のとき（TypeScript）、下の帯は実行時（JavaScript）です。JavaScript に変換すると型は消えるので、下の帯に型は残りません。schema は実行時の値であるため下の帯にあり、z.infer の矢印だけが上の帯の型へ伸びます。1つの schema から z.infer で型を取り出し、schemaResult で実行時に検査する parse を作ります。night-shift という値は parse の検査で Err になり、UUID の形をした値は Ok になって内側へ進みます。
-    </desc>
+  {part === "parse" ? (
+    <svg
+      viewBox="0 212 340 214"
+      role="img"
+      aria-labelledby="schema-source-flow-title schema-source-flow-desc"
+      data-type-label={initial.typeLabel}
+      data-check={initial.check}
+      data-has-result={String(initial.results.some((state) => state !== "off"))}
+    >
+      <title id="schema-source-flow-title">1つの schema から実行時の検査を作る仕組み</title>
+      <desc id="schema-source-flow-desc">
+        schema から schemaResult で、実行時の検査である parse を作ります。parse は raw を unknown として受け取ります。night-shift という値は parse の検査で Err になり、UUID の形をした値は Ok になって内側へ進みます。
+      </desc>
 
-    <rect x="0" y="40" width="340" height="136" rx="8" class="schema-source-flow__band-bg"></rect>
-    <text x="8" y="58" class="schema-source-flow__band-label">型検査のとき（TypeScript）</text>
+      <rect x="0" y="216" width="340" height="206" rx="8" class="schema-source-flow__band-bg schema-source-flow__band-bg--runtime"></rect>
+      <text x="8" y="234" class="schema-source-flow__band-label">実行時（JavaScript）</text>
 
-    <line x1="8" y1="184" x2="332" y2="184" class="schema-source-flow__divider"></line>
-    <text x="8" y="196" class="schema-source-flow__note">JavaScript に変換すると、</text>
-    <text x="8" y="209" class="schema-source-flow__note">型は消える</text>
-
-    <rect x="0" y="216" width="340" height="254" rx="8" class="schema-source-flow__band-bg schema-source-flow__band-bg--runtime"></rect>
-    <text x="8" y="234" class="schema-source-flow__band-label">実行時（JavaScript）</text>
-
-    <g class="schema-source-flow__part schema-source-flow__ghost" data-part="typeGhost" data-mode={initial.parts.typeGhost}>
-      <rect x="10" y="256" width="136" height="52" rx="8"></rect>
-      <text x="78" y="286" text-anchor="middle">型は残らない</text>
-    </g>
-
-    <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__type" data-part="typeBox" data-mode={initial.parts.typeBox}>
-      <rect x="10" y="80" width="136" height="52" rx="8"></rect>
-      <text x="78" y="102" text-anchor="middle" class="schema-source-flow__type-label" data-label="name">StartExaminationInput</text>
-      <text x="78" y="118" text-anchor="middle" class="schema-source-flow__type-label" data-label="name">型</text>
-      <text x="78" y="102" text-anchor="middle" class="schema-source-flow__type-label" data-label="infer">z.infer で</text>
-      <text x="78" y="118" text-anchor="middle" class="schema-source-flow__type-label" data-label="infer">取り出した型</text>
-    </g>
-
-    <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__schema" data-part="schemaBox" data-mode={initial.parts.schemaBox}>
-      <rect x="208" y="222" width="128" height="66" rx="8"></rect>
-      <text x="272" y="240" text-anchor="middle" class="schema-source-flow__strong">schema</text>
-      <text x="216" y="262" class="schema-source-flow__code-text schema-source-flow__mono">z.object({"{"}…{"}"})</text>
-      <text x="216" y="278" class="schema-source-flow__code-text schema-source-flow__mono">z.string().uuid()</text>
-    </g>
-
-    <g class="schema-source-flow__part schema-source-flow__link" data-part="linkType" data-mode={initial.parts.linkType}>
-      <line x1="272" y1="222" x2="272" y2="112"></line>
-      <line x1="272" y1="112" x2="155" y2="112"></line>
-      <polygon points="146,112 155,107 155,117"></polygon>
-      <text x="214" y="104" text-anchor="middle" class="schema-source-flow__mono">z.infer</text>
-    </g>
-
-    <g class="schema-source-flow__part schema-source-flow__link" data-part="linkCheck" data-mode={initial.parts.linkCheck}>
-      <line x1="216" y1="288" x2="216" y2="316"></line>
-      <polygon points="216,325 211,316 221,316"></polygon>
-      <text x="224" y="308" class="schema-source-flow__mono">schemaResult</text>
-    </g>
-
-    <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__check" data-part="checkBox" data-mode={initial.parts.checkBox}>
-      <rect x="116" y="326" width="106" height="114" rx="8"></rect>
-      <text x="169" y="346" text-anchor="middle" class="schema-source-flow__check-label" data-label="plain">parse</text>
-      <text x="169" y="346" text-anchor="middle" class="schema-source-flow__check-label" data-label="checked">parse（検査あり）</text>
-    </g>
-
-    <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__inside" data-part="inside" data-mode={initial.parts.inside}>
-      <rect x="232" y="326" width="104" height="114" rx="8"></rect>
-      <text x="284" y="344" text-anchor="middle" class="schema-source-flow__strong">内側</text>
-      <text x="284" y="358" text-anchor="middle" class="schema-source-flow__small">（業務の処理）</text>
-    </g>
-
-    <g class="schema-source-flow__part schema-source-flow__unknown" data-part="unknown" data-mode={initial.parts.unknown}>
-      <rect x="8" y="346" width="62" height="18" rx="9"></rect>
-      <text x="39" y="359" text-anchor="middle" class="schema-source-flow__mono">unknown</text>
-    </g>
-
-    <g class="schema-source-flow__chip" data-chip="0" data-pos={initial.chips[0] === "off" ? "home" : initial.chips[0]} data-visible={String(initial.chips[0] !== "off")}>
-      <rect x="4" y="370" width="96" height="30" rx="6"></rect>
-      <text x="52" y="389" text-anchor="middle" class="schema-source-flow__mono">{nightShift}</text>
-    </g>
-    <g class="schema-source-flow__chip" data-chip="1" data-pos={initial.chips[1] === "off" ? "home" : initial.chips[1]} data-visible={String(initial.chips[1] !== "off")}>
-      <rect x="4" y="404" width="96" height="30" rx="6"></rect>
-      <text x="52" y="423" text-anchor="middle" class="schema-source-flow__mono">{uuidPreview}</text>
-    </g>
-
-    <g class="schema-source-flow__result" data-result="0" data-state={initial.results[0]}>
-      <g class="schema-source-flow__result-pill schema-source-flow__result-pill--err">
-        <rect x="141" y="375" width="54" height="20" rx="10"></rect>
-        <text x="168" y="389" text-anchor="middle">✕ Err</text>
+      <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__schema" data-part="schemaBox" data-mode={initial.parts.schemaBox}>
+        <rect x="208" y="226" width="128" height="44" rx="8"></rect>
+        <text x="272" y="244" text-anchor="middle" class="schema-source-flow__strong">schema</text>
+        <text x="216" y="260" class="schema-source-flow__code-text schema-source-flow__mono">z.object({"{"}…{"}"})</text>
       </g>
-      <g class="schema-source-flow__result-pill schema-source-flow__result-pill--ok">
-        <rect x="141" y="375" width="54" height="20" rx="10"></rect>
-        <text x="168" y="389" text-anchor="middle">✓ Ok</text>
-      </g>
-    </g>
-    <g class="schema-source-flow__result" data-result="1" data-state={initial.results[1]}>
-      <g class="schema-source-flow__result-pill schema-source-flow__result-pill--ok">
-        <rect x="141" y="409" width="54" height="20" rx="10"></rect>
-        <text x="168" y="423" text-anchor="middle">✓ Ok</text>
-      </g>
-    </g>
 
-    <g class="schema-source-flow__part schema-source-flow__same-name" data-part="sameName" data-mode={initial.parts.sameName}>
-      <text x="10" y="75" class="schema-source-flow__name schema-source-flow__mono">StartExaminationInput</text>
-      <g class="schema-source-flow__name-tag">
-        <rect x="10" y="136" width="56" height="18" rx="9"></rect>
-        <text x="38" y="149" text-anchor="middle">型として</text>
+      <g class="schema-source-flow__part schema-source-flow__link" data-part="linkCheck" data-mode={initial.parts.linkCheck}>
+        <line x1="216" y1="270" x2="216" y2="301"></line>
+        <polygon points="216,310 211,301 221,301"></polygon>
+        <text x="224" y="294" class="schema-source-flow__mono">schemaResult</text>
       </g>
-      <text x="336" y="300" text-anchor="end" class="schema-source-flow__name schema-source-flow__mono">StartExaminationInput</text>
-      <g class="schema-source-flow__name-tag">
-        <rect x="280" y="305" width="56" height="18" rx="9"></rect>
-        <text x="308" y="318" text-anchor="middle">値として</text>
-      </g>
-    </g>
 
-  </svg>
+      <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__check" data-part="checkBox" data-mode={initial.parts.checkBox}>
+        <rect x="116" y="310" width="106" height="102" rx="8"></rect>
+        <text x="169" y="330" text-anchor="middle" class="schema-source-flow__check-label" data-label="plain">検査</text>
+        <text x="169" y="330" text-anchor="middle" class="schema-source-flow__check-label" data-label="checked">parse（検査あり）</text>
+      </g>
+
+      <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__inside" data-part="inside" data-mode={initial.parts.inside}>
+        <rect x="232" y="310" width="104" height="102" rx="8"></rect>
+        <text x="284" y="328" text-anchor="middle" class="schema-source-flow__strong">内側</text>
+        <text x="284" y="342" text-anchor="middle" class="schema-source-flow__small">（業務の処理）</text>
+      </g>
+
+      <g class="schema-source-flow__part schema-source-flow__unknown" data-part="unknown" data-mode={initial.parts.unknown}>
+        <line x1="95" y1="328" x2="106" y2="328"></line>
+        <polygon points="115,328 106,323 106,333"></polygon>
+        <rect x="4" y="319" width="90" height="18" rx="9"></rect>
+        <text x="49" y="332" text-anchor="middle" class="schema-source-flow__mono">raw: unknown</text>
+      </g>
+
+      <g class="schema-source-flow__chip" data-chip="0" data-pos={initial.chips[0] === "off" ? "home" : initial.chips[0]} data-visible={String(initial.chips[0] !== "off")}>
+        <rect x="4" y="336" width="96" height="30" rx="6"></rect>
+        <text x="52" y="355" text-anchor="middle" class="schema-source-flow__mono">{nightShift}</text>
+      </g>
+      <g class="schema-source-flow__chip" data-chip="1" data-pos={initial.chips[1] === "off" ? "home" : initial.chips[1]} data-visible={String(initial.chips[1] !== "off")}>
+        <rect x="4" y="372" width="96" height="30" rx="6"></rect>
+        <text x="52" y="391" text-anchor="middle" class="schema-source-flow__mono">{uuidPreview}</text>
+      </g>
+
+      <g class="schema-source-flow__result" data-result="0" data-state={initial.results[0]}>
+        <g class="schema-source-flow__result-pill schema-source-flow__result-pill--err">
+          <rect x="141" y="341" width="54" height="20" rx="10"></rect>
+          <text x="168" y="355" text-anchor="middle">✕ Err</text>
+        </g>
+        <g class="schema-source-flow__result-pill schema-source-flow__result-pill--ok">
+          <rect x="141" y="341" width="54" height="20" rx="10"></rect>
+          <text x="168" y="355" text-anchor="middle">✓ Ok</text>
+        </g>
+      </g>
+      <g class="schema-source-flow__result" data-result="1" data-state={initial.results[1]}>
+        <g class="schema-source-flow__result-pill schema-source-flow__result-pill--ok">
+          <rect x="141" y="377" width="54" height="20" rx="10"></rect>
+          <text x="168" y="391" text-anchor="middle">✓ Ok</text>
+        </g>
+      </g>
+    </svg>
+  ) : (
+    <svg
+      viewBox="0 36 340 306"
+      role="img"
+      aria-labelledby="schema-source-flow-title schema-source-flow-desc"
+      data-type-label={initial.typeLabel}
+      data-check={initial.check}
+    >
+      <title id="schema-source-flow-title">1つの schema から型を取り出す仕組み</title>
+      <desc id="schema-source-flow-desc">
+        上の帯は型検査のとき（TypeScript）、下の帯は実行時（JavaScript）です。JavaScript に変換すると型は消えるので、下の帯に型は残りません。schema は実行時の値であるため下の帯にあり、z.infer の矢印だけが上の帯の型へ伸びます。同じ名前 StartExaminationInput を、取り出した型と schema を持つ値の両方に付けます。
+      </desc>
+
+      <rect x="0" y="40" width="340" height="136" rx="8" class="schema-source-flow__band-bg"></rect>
+      <text x="8" y="58" class="schema-source-flow__band-label">型検査のとき（TypeScript）</text>
+
+      <line x1="8" y1="184" x2="332" y2="184" class="schema-source-flow__divider"></line>
+      <text x="8" y="196" class="schema-source-flow__note">JavaScript に変換すると、</text>
+      <text x="8" y="209" class="schema-source-flow__note">型は消える</text>
+
+      <rect x="0" y="216" width="340" height="122" rx="8" class="schema-source-flow__band-bg schema-source-flow__band-bg--runtime"></rect>
+      <text x="8" y="234" class="schema-source-flow__band-label">実行時（JavaScript）</text>
+
+      <g class="schema-source-flow__part schema-source-flow__ghost" data-part="typeGhost" data-mode={initial.parts.typeGhost}>
+        <rect x="10" y="256" width="136" height="52" rx="8"></rect>
+        <text x="78" y="286" text-anchor="middle">型は残らない</text>
+      </g>
+
+      <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__type" data-part="typeBox" data-mode={initial.parts.typeBox}>
+        <rect x="10" y="80" width="136" height="52" rx="8"></rect>
+        <text x="78" y="102" text-anchor="middle" class="schema-source-flow__type-label" data-label="name">StartExaminationInput</text>
+        <text x="78" y="118" text-anchor="middle" class="schema-source-flow__type-label" data-label="name">型</text>
+        <text x="78" y="102" text-anchor="middle" class="schema-source-flow__type-label" data-label="infer">z.infer で</text>
+        <text x="78" y="118" text-anchor="middle" class="schema-source-flow__type-label" data-label="infer">取り出した型</text>
+      </g>
+
+      <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__schema" data-part="schemaBox" data-mode={initial.parts.schemaBox}>
+        <rect x="208" y="222" width="128" height="104" rx="8"></rect>
+        <text x="272" y="240" text-anchor="middle" class="schema-source-flow__strong">schema</text>
+        <text x="216" y="256" class="schema-source-flow__code-text schema-source-flow__mono">z.object({"{"}</text>
+        <rect x="220" y="262" width="108" height="20" rx="4" class="schema-source-flow__item"></rect>
+        <text x="274" y="276" text-anchor="middle" class="schema-source-flow__item-text schema-source-flow__mono">z.string().uuid()</text>
+        <rect x="220" y="286" width="108" height="20" rx="4" class="schema-source-flow__item"></rect>
+        <text x="274" y="300" text-anchor="middle" class="schema-source-flow__item-text schema-source-flow__mono">z.string().uuid()</text>
+        <text x="216" y="319" class="schema-source-flow__code-text schema-source-flow__mono">{"}"})</text>
+      </g>
+
+      <g class="schema-source-flow__part schema-source-flow__link" data-part="linkType" data-mode={initial.parts.linkType}>
+        <line x1="272" y1="222" x2="272" y2="112"></line>
+        <line x1="272" y1="112" x2="155" y2="112"></line>
+        <polygon points="146,112 155,107 155,117"></polygon>
+        <text x="218" y="104" text-anchor="middle" class="schema-source-flow__link-text schema-source-flow__mono">{"z.infer<typeof schema>"}</text>
+      </g>
+
+      <g class="schema-source-flow__part schema-source-flow__same-name" data-part="sameName" data-mode={initial.parts.sameName}>
+        <text x="10" y="75" class="schema-source-flow__name schema-source-flow__mono">StartExaminationInput</text>
+        <g class="schema-source-flow__name-tag">
+          <rect x="10" y="136" width="56" height="18" rx="9"></rect>
+          <text x="38" y="149" text-anchor="middle">型として</text>
+        </g>
+        <text x="10" y="266" class="schema-source-flow__name schema-source-flow__mono">StartExaminationInput</text>
+        <g class="schema-source-flow__name-link">
+          <line x1="154" y1="262" x2="198" y2="262"></line>
+          <polygon points="207,262 198,257 198,267"></polygon>
+        </g>
+        <g class="schema-source-flow__name-tag">
+          <rect x="10" y="272" width="56" height="18" rx="9"></rect>
+          <text x="38" y="285" text-anchor="middle">値として</text>
+        </g>
+      </g>
+    </svg>
+  )}
 
   <div class="schema-source-flow__captions">
     <p class="schema-source-flow__live" data-live aria-live="polite" hidden></p>
@@ -327,7 +361,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     const progress = root.querySelector<HTMLElement>("[data-progress]");
     const live = root.querySelector<HTMLElement>("[data-live]");
     if (!svg || !controls || !prev || !next || !progress || !live) return;
-    if (frames.length !== panels.length || chips.length !== 2 || results.length !== 2) return;
+    if (frames.length !== panels.length) return;
     root.dataset.ready = "";
 
     const last = frames.length - 1;
@@ -364,6 +398,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
 
       svg.dataset.typeLabel = frame.typeLabel;
       svg.dataset.check = frame.check;
+      svg.dataset.hasResult = String(frame.results.some((state) => state !== "off"));
 
       live.textContent = frame.caption;
       renderProgress(progress, index, frames.length);
@@ -482,6 +517,20 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     fill: var(--case-paper);
   }
 
+  .schema-source-flow__box text.schema-source-flow__item-text {
+    font-size: 10px;
+  }
+
+  .schema-source-flow__box rect.schema-source-flow__item {
+    stroke-width: 1.5;
+  }
+
+  .schema-source-flow__schema[data-mode="focus"] rect.schema-source-flow__item {
+    fill: var(--case-paper);
+    stroke: var(--case-blue);
+    stroke-width: 2.5;
+  }
+
   .schema-source-flow__inside rect {
     fill: var(--case-paper);
   }
@@ -515,8 +564,8 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     opacity: 0;
   }
 
-  .schema-source-flow__part[data-mode="dim"] :is(rect, line, polygon) {
-    opacity: 0.35;
+  .schema-source-flow__part[data-mode="dim"] {
+    opacity: 0.5;
   }
 
   .schema-source-flow__type-label,
@@ -532,7 +581,12 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   }
 
   .schema-source-flow svg .schema-source-flow__check rect {
+    height: 40px;
     stroke-width: 2.5;
+  }
+
+  .schema-source-flow svg[data-has-result="true"] .schema-source-flow__check rect {
+    height: 102px;
   }
 
   .schema-source-flow svg .schema-source-flow__check[data-mode="focus"] rect {
@@ -553,6 +607,10 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     font-size: 11px;
   }
 
+  .schema-source-flow__link text.schema-source-flow__link-text {
+    font-size: 10px;
+  }
+
   .schema-source-flow__link[data-mode="focus"] line {
     stroke: var(--case-blue);
     stroke-width: 4;
@@ -569,6 +627,17 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   .schema-source-flow__unknown rect,
   .schema-source-flow__name-tag rect {
     fill: var(--case-ink);
+  }
+
+  .schema-source-flow__unknown line,
+  .schema-source-flow__name-link line {
+    stroke: var(--case-line);
+    stroke-width: 2;
+  }
+
+  .schema-source-flow__unknown polygon,
+  .schema-source-flow__name-link polygon {
+    fill: var(--case-line);
   }
 
   .schema-source-flow__unknown text,
@@ -756,7 +825,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   [data-animated] .schema-source-flow__part,
   [data-animated] .schema-source-flow__part :is(rect, line, polygon),
   [data-animated] .schema-source-flow__result-pill {
-    transition: opacity 0.3s;
+    transition: opacity 0.3s, height 0.4s;
   }
 
   [data-animated] .schema-source-flow__chip {
