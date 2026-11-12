@@ -1131,8 +1131,8 @@ summary.session-frame__group-title:focus-visible {
   }
 }
 
-.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev], button[data-play]):not(.step-btn),
-.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev], button[data-play]):not(.step-btn):hover {
+.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev]):not(.step-btn),
+.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev]):not(.step-btn):hover {
   min-height: 2.125rem;
   border: 1.5px solid var(--role-accent);
   border-radius: 0.5rem;
@@ -1143,26 +1143,21 @@ summary.session-frame__group-title:focus-visible {
   opacity: 1;
 }
 
-.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev], button[data-play]):not(.step-btn)[data-play],
-.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev], button[data-play]):not(.step-btn)[data-play]:hover {
-  background: var(--role-accent-soft);
-}
-
-.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev], button[data-play]):not(.step-btn):disabled,
-.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev], button[data-play]):not(.step-btn):disabled:hover,
-.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev], button[data-play]):not(.step-btn)[aria-disabled="true"] {
+.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev]):not(.step-btn):disabled,
+.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev]):not(.step-btn):disabled:hover,
+.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev]):not(.step-btn)[aria-disabled="true"] {
   border-color: var(--role-rule);
   background: transparent;
   color: var(--role-muted);
   opacity: 1;
 }
 
-.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev], button[data-play]):not(.step-btn):not(.walk__btn) {
+.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev]):not(.step-btn):not(.walk__btn) {
   padding: 0 0.75rem;
   font-size: 0.85rem;
 }
 
-.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev], button[data-play]):not(.step-btn):focus-visible {
+.session-frame.session-frame.case-file--session :is([data-controls] button, button[data-next], button[data-prev]):not(.step-btn):focus-visible {
   outline: 3px solid var(--role-accent);
   outline-offset: 2px;
 }
@@ -1217,7 +1212,7 @@ summary.session-frame__group-title:focus-visible {
     margin-block-end: 0.25rem;
   }
 
-  .session-frame.session-frame.case-file--session[data-session="03-boundaries-and-pii"] :is([data-controls] button, button[data-next], button[data-prev], button[data-play]):not(.step-btn) {
+  .session-frame.session-frame.case-file--session[data-session="03-boundaries-and-pii"] :is([data-controls] button, button[data-next], button[data-prev]):not(.step-btn) {
     min-height: 1.875rem;
   }
 
