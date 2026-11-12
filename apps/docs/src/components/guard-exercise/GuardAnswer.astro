@@ -1,6 +1,7 @@
 ---
 import { Code } from "astro:components";
 import { answerNoteFor } from "./answer-notes";
+import { CopyButton } from "../CopyButton";
 
 interface Props {
   files: Readonly<Record<string, string>>;
@@ -28,7 +29,10 @@ const languageOf = (path: string) => (path.endsWith(".mjs") ? "js" : "ts");
       ) : (
         entries.map(([path, source]) => (
           <figure>
-            <figcaption>{path}</figcaption>
+            <figcaption class="guard-answer__file">
+              <span>{path}</span>
+              <CopyButton client:idle value={source} label={path} />
+            </figcaption>
             {answerNoteFor(slug, path) === undefined ? null : (
               <p class="guard-answer__note">{answerNoteFor(slug, path)}</p>
             )}
