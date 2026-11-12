@@ -216,7 +216,10 @@ const frames: readonly Frame[] = [
 >
   <StepControls />
 
-  <p class="aggregate-flow__live" data-live aria-live="polite" hidden></p>
+  <div class="aggregate-flow__live-box">
+    <p class="aggregate-flow__live" data-live aria-live="polite" hidden></p>
+    {frames.map((frame) => <p class="aggregate-flow__live aggregate-flow__live-ghost" aria-hidden="true">{frame.caption}</p>)}
+  </div>
 
   <ol class="aggregate-flow__frames">
     {frames.map((frame) => (
@@ -420,7 +423,8 @@ const frames: readonly Frame[] = [
     line-height: 1.7;
   }
 
-  .aggregate-flow__live[hidden] {
+  .aggregate-flow__live[hidden],
+  .aggregate-flow__live-ghost {
     display: none;
   }
 
@@ -914,43 +918,22 @@ const frames: readonly Frame[] = [
       display: inline-block;
     }
 
-    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__live {
-      min-height: 5.1em;
+    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__live-box {
+      display: grid;
     }
 
-    @container (max-width: 750px) {
-      :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__live {
-        min-height: 6.8em;
-      }
+    :global(.session-frame) .aggregate-flow[data-animated] :is(.aggregate-flow__live, .aggregate-flow__live-ghost) {
+      grid-area: 1 / 1;
     }
 
-    @container (max-width: 612px) {
-      :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__live {
-        min-height: 8.5em;
-      }
+    :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__live-ghost {
+      display: block;
+      visibility: hidden;
     }
 
     @container (max-width: 480px) {
       :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__frames > li[data-view][data-frame] {
         grid-template-columns: minmax(0, 1fr);
-      }
-    }
-
-    @container (max-width: 454px) {
-      :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__live {
-        min-height: 10.2em;
-      }
-    }
-
-    @container (max-width: 384px) {
-      :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__live {
-        min-height: 13.6em;
-      }
-    }
-
-    @container (max-width: 321px) {
-      :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__live {
-        min-height: 15.3em;
       }
     }
   }
