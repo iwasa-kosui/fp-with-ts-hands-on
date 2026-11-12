@@ -34,7 +34,7 @@ const markKeyLines = keyedTransformer<Transformer>("schema-source-flow", {
 });
 
 type Mode = "off" | "dim" | "on" | "focus";
-type ChipState = "off" | "home" | "through" | "stop";
+type ChipState = "off" | "home" | "stop";
 type ResultState = "off" | "ok" | "err";
 type Frame = Readonly<{
   part: "schema" | "parse";
@@ -51,7 +51,7 @@ type Frame = Readonly<{
     sameName: Mode;
     unknown: Mode;
   }>;
-  typeLabel: "name" | "infer";
+  typeLabel: "plain" | "infer";
   check: "plain" | "checked";
   chips: readonly [ChipState, ChipState];
   results: readonly [ResultState, ResultState];
@@ -62,7 +62,7 @@ const frames: readonly Frame[] = [
     part: "schema",
     caption: "TypeScript の型は、型検査のときだけ使われます。JavaScript に変換すると型は消えます。実行時に受け取った値が型のとおりかどうかは、型とは別のコードで検証する必要があります。",
     parts: { typeBox: "focus", typeGhost: "on", schemaBox: "off", linkType: "off", linkCheck: "off", checkBox: "off", inside: "off", sameName: "off", unknown: "off" },
-    typeLabel: "name",
+    typeLabel: "plain",
     check: "plain",
     chips: ["off", "off"],
     results: ["off", "off"],
@@ -72,7 +72,7 @@ const frames: readonly Frame[] = [
     caption: "z.object は、項目ごとの schema をまとめて、オブジェクト全体の schema を作ります。この例では、2つの項目がどちらも z.string().uuid() です。",
     code: { key: "example", lines: [3, 4, 5, 6] },
     parts: { typeBox: "dim", typeGhost: "off", schemaBox: "focus", linkType: "dim", linkCheck: "off", checkBox: "off", inside: "off", sameName: "off", unknown: "off" },
-    typeLabel: "infer",
+    typeLabel: "plain",
     check: "checked",
     chips: ["off", "off"],
     results: ["off", "off"],
@@ -131,7 +131,7 @@ const frames: readonly Frame[] = [
     part: "parse",
     caption: "safeParse は、schema で raw を検査します。検査に失敗しても例外を投げず、成否を success に格納して返します。schemaResult は success を参照して、Ok か Err を返します。",
     code: { key: "schemaResult", lines: [3, 4] },
-    parts: { typeBox: "off", typeGhost: "off", schemaBox: "focus", linkType: "off", linkCheck: "on", checkBox: "on", inside: "off", sameName: "off", unknown: "off" },
+    parts: { typeBox: "off", typeGhost: "off", schemaBox: "focus", linkType: "off", linkCheck: "on", checkBox: "on", inside: "off", sameName: "off", unknown: "dim" },
     typeLabel: "infer",
     check: "checked",
     chips: ["off", "off"],
@@ -143,7 +143,7 @@ const frames: readonly Frame[] = [
     parts: { typeBox: "off", typeGhost: "off", schemaBox: "dim", linkType: "off", linkCheck: "dim", checkBox: "on", inside: "on", sameName: "off", unknown: "off" },
     typeLabel: "infer",
     check: "checked",
-    chips: ["stop", "through"],
+    chips: ["stop", "home"],
     results: ["err", "ok"],
   },
 ];
@@ -181,59 +181,71 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
       <text x="8" y="234" class="schema-source-flow__band-label">実行時（JavaScript）</text>
 
       <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__schema" data-part="schemaBox" data-mode={initial.parts.schemaBox}>
-        <rect x="208" y="226" width="128" height="44" rx="8"></rect>
-        <text x="272" y="244" text-anchor="middle" class="schema-source-flow__strong">schema</text>
-        <text x="216" y="260" class="schema-source-flow__code-text schema-source-flow__mono">z.object({"{"}…{"}"})</text>
+        <rect x="148" y="226" width="128" height="44" rx="8"></rect>
+        <text x="212" y="244" text-anchor="middle" class="schema-source-flow__strong">schema</text>
+        <text x="156" y="260" class="schema-source-flow__code-text schema-source-flow__mono">z.object({"{"}…{"}"})</text>
       </g>
 
       <g class="schema-source-flow__part schema-source-flow__link" data-part="linkCheck" data-mode={initial.parts.linkCheck}>
-        <line x1="216" y1="270" x2="216" y2="301"></line>
-        <polygon points="216,310 211,301 221,301"></polygon>
-        <text x="224" y="294" class="schema-source-flow__mono">schemaResult</text>
+        <line x1="168" y1="270" x2="168" y2="301"></line>
+        <polygon points="168,310 163,301 173,301"></polygon>
+        <text x="176" y="294" class="schema-source-flow__mono">schemaResult</text>
       </g>
 
       <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__check" data-part="checkBox" data-mode={initial.parts.checkBox}>
-        <rect x="116" y="310" width="106" height="102" rx="8"></rect>
-        <text x="169" y="330" text-anchor="middle" class="schema-source-flow__check-label" data-label="plain">検査</text>
-        <text x="169" y="330" text-anchor="middle" class="schema-source-flow__check-label" data-label="checked">parse（検査あり）</text>
+        <rect x="110" y="310" width="106" height="102" rx="8"></rect>
+        <text x="163" y="330" text-anchor="middle" class="schema-source-flow__check-label" data-label="plain">検査</text>
+        <text x="163" y="330" text-anchor="middle" class="schema-source-flow__check-label" data-label="checked">parse（検査あり）</text>
       </g>
 
       <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__inside" data-part="inside" data-mode={initial.parts.inside}>
-        <rect x="232" y="310" width="104" height="102" rx="8"></rect>
-        <text x="284" y="328" text-anchor="middle" class="schema-source-flow__strong">内側</text>
-        <text x="284" y="342" text-anchor="middle" class="schema-source-flow__small">（業務の処理）</text>
+        <rect x="238" y="310" width="98" height="102" rx="8"></rect>
+        <text x="287" y="328" text-anchor="middle" class="schema-source-flow__strong">内側</text>
+        <text x="287" y="342" text-anchor="middle" class="schema-source-flow__small">（業務の処理）</text>
+        <rect x="252" y="372" width="70" height="30" rx="6" class="schema-source-flow__item"></rect>
+        <text x="287" y="391" text-anchor="middle" class="schema-source-flow__item-text schema-source-flow__mono">{uuidPreview}</text>
       </g>
 
       <g class="schema-source-flow__part schema-source-flow__unknown" data-part="unknown" data-mode={initial.parts.unknown}>
-        <line x1="95" y1="328" x2="106" y2="328"></line>
-        <polygon points="115,328 106,323 106,333"></polygon>
-        <rect x="4" y="319" width="90" height="18" rx="9"></rect>
-        <text x="49" y="332" text-anchor="middle" class="schema-source-flow__mono">raw: unknown</text>
+        <line x1="92" y1="328" x2="100" y2="328"></line>
+        <polygon points="109,328 100,323 100,333"></polygon>
+        <rect x="2" y="319" width="90" height="18" rx="9"></rect>
+        <text x="47" y="332" text-anchor="middle" class="schema-source-flow__mono">raw: unknown</text>
       </g>
 
       <g class="schema-source-flow__chip" data-chip="0" data-pos={initial.chips[0] === "off" ? "home" : initial.chips[0]} data-visible={String(initial.chips[0] !== "off")}>
-        <rect x="4" y="336" width="96" height="30" rx="6"></rect>
-        <text x="52" y="355" text-anchor="middle" class="schema-source-flow__mono">{nightShift}</text>
+        <rect x="2" y="336" width="86" height="30" rx="6"></rect>
+        <text x="45" y="355" text-anchor="middle" class="schema-source-flow__mono">{nightShift}</text>
       </g>
       <g class="schema-source-flow__chip" data-chip="1" data-pos={initial.chips[1] === "off" ? "home" : initial.chips[1]} data-visible={String(initial.chips[1] !== "off")}>
-        <rect x="4" y="372" width="96" height="30" rx="6"></rect>
-        <text x="52" y="391" text-anchor="middle" class="schema-source-flow__mono">{uuidPreview}</text>
+        <rect x="2" y="372" width="86" height="30" rx="6"></rect>
+        <text x="45" y="391" text-anchor="middle" class="schema-source-flow__mono">{uuidPreview}</text>
       </g>
 
       <g class="schema-source-flow__result" data-result="0" data-state={initial.results[0]}>
+        <g class="schema-source-flow__result-arrow">
+          <line x1="90" y1="351" x2="125" y2="351"></line>
+          <polygon points="134,351 125,346 125,356"></polygon>
+        </g>
         <g class="schema-source-flow__result-pill schema-source-flow__result-pill--err">
-          <rect x="141" y="341" width="54" height="20" rx="10"></rect>
-          <text x="168" y="355" text-anchor="middle">✕ Err</text>
+          <rect x="136" y="341" width="54" height="20" rx="10"></rect>
+          <text x="163" y="355" text-anchor="middle">✕ Err</text>
         </g>
         <g class="schema-source-flow__result-pill schema-source-flow__result-pill--ok">
-          <rect x="141" y="341" width="54" height="20" rx="10"></rect>
-          <text x="168" y="355" text-anchor="middle">✓ Ok</text>
+          <rect x="136" y="341" width="54" height="20" rx="10"></rect>
+          <text x="163" y="355" text-anchor="middle">✓ Ok</text>
         </g>
       </g>
       <g class="schema-source-flow__result" data-result="1" data-state={initial.results[1]}>
+        <g class="schema-source-flow__result-arrow">
+          <line x1="90" y1="387" x2="125" y2="387"></line>
+          <polygon points="134,387 125,382 125,392"></polygon>
+          <line x1="192" y1="387" x2="241" y2="387"></line>
+          <polygon points="250,387 241,382 241,392"></polygon>
+        </g>
         <g class="schema-source-flow__result-pill schema-source-flow__result-pill--ok">
-          <rect x="141" y="377" width="54" height="20" rx="10"></rect>
-          <text x="168" y="391" text-anchor="middle">✓ Ok</text>
+          <rect x="136" y="377" width="54" height="20" rx="10"></rect>
+          <text x="163" y="391" text-anchor="middle">✓ Ok</text>
         </g>
       </g>
     </svg>
@@ -266,11 +278,10 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
       </g>
 
       <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__type" data-part="typeBox" data-mode={initial.parts.typeBox}>
-        <rect x="10" y="80" width="136" height="52" rx="8"></rect>
-        <text x="78" y="102" text-anchor="middle" class="schema-source-flow__type-label" data-label="name">StartExaminationInput</text>
-        <text x="78" y="118" text-anchor="middle" class="schema-source-flow__type-label" data-label="name">型</text>
-        <text x="78" y="102" text-anchor="middle" class="schema-source-flow__type-label" data-label="infer">z.infer で</text>
-        <text x="78" y="118" text-anchor="middle" class="schema-source-flow__type-label" data-label="infer">取り出した型</text>
+        <rect x="10" y="88" width="136" height="52" rx="8"></rect>
+        <text x="78" y="118" text-anchor="middle" class="schema-source-flow__type-label" data-label="plain">型</text>
+        <text x="78" y="110" text-anchor="middle" class="schema-source-flow__type-label" data-label="infer">z.infer で</text>
+        <text x="78" y="126" text-anchor="middle" class="schema-source-flow__type-label" data-label="infer">取り出した型</text>
       </g>
 
       <g class="schema-source-flow__part schema-source-flow__box schema-source-flow__schema" data-part="schemaBox" data-mode={initial.parts.schemaBox}>
@@ -285,17 +296,17 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
       </g>
 
       <g class="schema-source-flow__part schema-source-flow__link" data-part="linkType" data-mode={initial.parts.linkType}>
-        <line x1="272" y1="222" x2="272" y2="112"></line>
-        <line x1="272" y1="112" x2="155" y2="112"></line>
-        <polygon points="146,112 155,107 155,117"></polygon>
-        <text x="218" y="104" text-anchor="middle" class="schema-source-flow__link-text schema-source-flow__mono">{"z.infer<typeof schema>"}</text>
+        <line x1="272" y1="222" x2="272" y2="114"></line>
+        <line x1="272" y1="114" x2="155" y2="114"></line>
+        <polygon points="146,114 155,109 155,119"></polygon>
+        <text x="218" y="106" text-anchor="middle" class="schema-source-flow__link-text schema-source-flow__mono">{"z.infer<typeof schema>"}</text>
       </g>
 
       <g class="schema-source-flow__part schema-source-flow__same-name" data-part="sameName" data-mode={initial.parts.sameName}>
-        <text x="10" y="75" class="schema-source-flow__name schema-source-flow__mono">StartExaminationInput</text>
+        <text x="10" y="80" class="schema-source-flow__name schema-source-flow__mono">StartExaminationInput</text>
         <g class="schema-source-flow__name-tag">
-          <rect x="10" y="136" width="56" height="18" rx="9"></rect>
-          <text x="38" y="149" text-anchor="middle">型として</text>
+          <rect x="10" y="144" width="56" height="18" rx="9"></rect>
+          <text x="38" y="157" text-anchor="middle">型として</text>
         </g>
         <text x="10" y="266" class="schema-source-flow__name schema-source-flow__mono">StartExaminationInput</text>
         <g class="schema-source-flow__name-link">
@@ -337,7 +348,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   import { renderProgress } from "./stepper/step-progress";
 
   type Mode = "off" | "dim" | "on" | "focus";
-  type ChipState = "off" | "home" | "through" | "stop";
+  type ChipState = "off" | "home" | "stop";
   type Frame = {
     caption: string;
     parts: Record<string, Mode>;
@@ -573,7 +584,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     display: none;
   }
 
-  .schema-source-flow svg[data-type-label="name"] .schema-source-flow__type-label[data-label="name"],
+  .schema-source-flow svg[data-type-label="plain"] .schema-source-flow__type-label[data-label="plain"],
   .schema-source-flow svg[data-type-label="infer"] .schema-source-flow__type-label[data-label="infer"],
   .schema-source-flow svg[data-check="plain"] .schema-source-flow__check-label[data-label="plain"],
   .schema-source-flow svg[data-check="checked"] .schema-source-flow__check-label[data-label="checked"] {
@@ -665,19 +676,11 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
 
   .schema-source-flow__chip text {
     fill: var(--case-ink);
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .schema-source-flow__chip[data-visible="false"] {
     opacity: 0;
-  }
-
-  .schema-source-flow__chip[data-pos="through"] {
-    transform: translateX(232px);
-  }
-
-  .schema-source-flow__chip[data-pos="stop"] {
-    transform: translateX(12px);
   }
 
   .schema-source-flow__chip[data-pos="stop"] rect {
@@ -685,13 +688,24 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
     stroke-width: 3;
   }
 
-  .schema-source-flow__result-pill {
+  .schema-source-flow__result-pill,
+  .schema-source-flow__result-arrow {
     opacity: 0;
   }
 
   .schema-source-flow__result[data-state="err"] .schema-source-flow__result-pill--err,
-  .schema-source-flow__result[data-state="ok"] .schema-source-flow__result-pill--ok {
+  .schema-source-flow__result[data-state="ok"] .schema-source-flow__result-pill--ok,
+  .schema-source-flow__result:is([data-state="err"], [data-state="ok"]) .schema-source-flow__result-arrow {
     opacity: 1;
+  }
+
+  .schema-source-flow__result-arrow line {
+    stroke: var(--case-line);
+    stroke-width: 2;
+  }
+
+  .schema-source-flow__result-arrow polygon {
+    fill: var(--case-line);
   }
 
   .schema-source-flow__result-pill rect {
@@ -824,7 +838,8 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
 
   [data-animated] .schema-source-flow__part,
   [data-animated] .schema-source-flow__part :is(rect, line, polygon),
-  [data-animated] .schema-source-flow__result-pill {
+  [data-animated] .schema-source-flow__result-pill,
+  [data-animated] .schema-source-flow__result-arrow {
     transition: opacity 0.3s, height 0.4s;
   }
 
