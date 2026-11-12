@@ -64,6 +64,18 @@ const pageSources = import.meta.glob<string>(
     import: "default",
   },
 );
+const sessionDirectorySources = import.meta.glob<string>(
+  ["../../pages/sessions/*/*.astro", "../../sessions/prose/*/*.mdx"],
+  {
+    eager: true,
+    query: "?raw",
+    import: "default",
+  },
+);
+const sessionDirectorySourcesFor = (slug: string) =>
+  Object.entries(sessionDirectorySources).filter(
+    ([path]) => path.split("/").at(-2) === slug,
+  );
 const legacyGuideModules = Object.keys(
   import.meta.glob("./*.ts", { eager: true }),
 ).filter((file) => !file.endsWith("code-guides.test.ts"));
@@ -98,7 +110,17 @@ describe("session code guides", () => {
       const pagePath = `../../pages/sessions/${session.slug}.astro`;
       const guides = pageModules[pagePath]?.guides;
 
-      expect(pageSources[pagePath]).not.toContain("code-explorer/code-guides/");
+      const directorySources = sessionDirectorySourcesFor(session.slug);
+      expect(
+        directorySources.some(([path]) => path.endsWith(".mdx")),
+        session.slug,
+      ).toBe(true);
+      for (const [path, source] of [
+        [pagePath, pageSources[pagePath]],
+        ...directorySources,
+      ]) {
+        expect(source, path).not.toContain("code-explorer/code-guides/");
+      }
       expect(guides, session.slug).toEqual(expect.any(Array));
       expect(guides!.length).toBeGreaterThanOrEqual(2);
       expect(guides!.length).toBeLessThanOrEqual(
