@@ -539,26 +539,10 @@ const ports = [
       align-content: start;
       height: auto;
     }
-  }
 
-  @container (max-width: 26rem) {
-    .psf__row {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-
-  @media (min-width: 52.0625rem) {
     @container (max-width: 26rem) {
-      .psf__rows {
-        gap: 0.125rem;
-      }
-
       .psf__row {
-        gap: 0.125rem;
-      }
-
-      .psf__plug {
-        padding-block: 0;
+        grid-template-columns: minmax(0, 1fr);
       }
     }
   }
