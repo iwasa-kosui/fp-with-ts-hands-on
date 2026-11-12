@@ -5,6 +5,7 @@ import { keyedTransformer } from "./code-cache-key";
 import appointmentSource from "../../../../examples/final/src/domain/appointment/appointment.ts?raw";
 import transitionsSource from "../../../../examples/session-06-solution/src/domain/appointment/transitions.ts?raw";
 import { lineLabelOf } from "../sessions/source-quotes";
+import StepControls from "./stepper/StepControls.astro";
 
 type SceneName = "cancel" | "start-examination";
 
@@ -127,7 +128,6 @@ const scenes = {
   },
 } as const satisfies Record<SceneName, unknown>;
 const config = scenes[scene];
-const stepperControls = scene === "start-examination";
 const showBoundary = scene === "start-examination";
 const saveUnit = showBoundary ? "整合性境界" : "集約";
 
@@ -214,13 +214,7 @@ const frames: readonly Frame[] = [
   aria-label={audit(config.label)}
   data-aggregate-flow
 >
-  <div class="aggregate-flow__controls" data-controls hidden>
-    <button type="button" data-prev disabled>← 前のコマ</button>
-    {stepperControls && <button type="button" data-play>▶ 再生</button>}
-    {!stepperControls && <span data-progress>1 / {frames.length}</span>}
-    <button type="button" data-next>次のコマ →</button>
-    {stepperControls && <span data-progress>1 / {frames.length}</span>}
-  </div>
+  <StepControls />
 
   <p class="aggregate-flow__live" data-live aria-live="polite" hidden></p>
 
@@ -355,6 +349,8 @@ const frames: readonly Frame[] = [
 </figure>
 
 <script>
+  import { renderProgress } from "./stepper/step-progress";
+
   const setUp = (root: HTMLElement) => {
     if (root.dataset.ready !== undefined) return;
     const panels = [...root.querySelectorAll<HTMLElement>("[data-frame]")];
@@ -362,7 +358,6 @@ const frames: readonly Frame[] = [
     const controls = root.querySelector<HTMLElement>("[data-controls]");
     const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
     const next = root.querySelector<HTMLButtonElement>("[data-next]");
-    const play = root.querySelector<HTMLButtonElement>("[data-play]");
     const progress = root.querySelector<HTMLElement>("[data-progress]");
     const live = root.querySelector<HTMLElement>("[data-live]");
     if (!controls || !prev || !next || !progress || !live) return;
@@ -370,40 +365,20 @@ const frames: readonly Frame[] = [
     root.dataset.ready = "";
 
     let current = 0;
-    let timer: number | undefined;
-    const stop = () => {
-      if (timer !== undefined) window.clearInterval(timer);
-      timer = undefined;
-      if (play) play.textContent = "▶ 再生";
-    };
     const show = (index: number) => {
       current = index;
       panels.forEach((panel, i) => panel.classList.toggle("is-current", i === index));
       live.textContent = captions[index];
-      progress.textContent = `${index + 1} / ${panels.length}`;
+      renderProgress(progress, index, panels.length);
       prev.disabled = index === 0;
       next.disabled = index === panels.length - 1;
     };
 
     prev.addEventListener("click", () => {
-      stop();
       show(Math.max(current - 1, 0));
     });
     next.addEventListener("click", () => {
-      stop();
       show(Math.min(current + 1, panels.length - 1));
-    });
-    play?.addEventListener("click", () => {
-      if (timer !== undefined) {
-        stop();
-        return;
-      }
-      if (current === panels.length - 1) show(0);
-      play.textContent = "❚❚ 一時停止";
-      timer = window.setInterval(() => {
-        show(Math.min(current + 1, panels.length - 1));
-        if (current === panels.length - 1) stop();
-      }, 6000);
     });
     root.addEventListener("keydown", (event) => {
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
@@ -436,35 +411,6 @@ const frames: readonly Frame[] = [
     min-width: 0;
     max-width: 100%;
     margin: 1.5rem 0;
-  }
-
-  .aggregate-flow__controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .aggregate-flow__controls[hidden] {
-    display: none;
-  }
-
-  .aggregate-flow__controls button {
-    min-height: 2.75rem;
-    padding: 0 1rem;
-    border: 2px solid var(--case-line, #17204d);
-    border-radius: 0.5rem;
-    background: var(--case-yellow, #ffd21b);
-    color: var(--case-ink, #111116);
-    cursor: pointer;
-    font-weight: 700;
-  }
-
-  .aggregate-flow__controls button:disabled {
-    background: var(--case-paper, #fffefa);
-    cursor: not-allowed;
-    opacity: 0.55;
   }
 
   .aggregate-flow__live,
@@ -826,12 +772,8 @@ const frames: readonly Frame[] = [
     margin-block: 0.25rem;
   }
 
-  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__controls {
+  :global(.session-frame) .aggregate-flow[data-animated] :global(.step-controls) {
     margin-bottom: 0.5rem;
-  }
-
-  :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__controls button {
-    min-height: 2.5rem;
   }
 
   :global(.session-frame) .aggregate-flow[data-animated] .aggregate-flow__live {
@@ -926,12 +868,6 @@ const frames: readonly Frame[] = [
     }
     to {
       opacity: 1;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .aggregate-flow__controls button[data-play] {
-      display: none;
     }
   }
 </style>

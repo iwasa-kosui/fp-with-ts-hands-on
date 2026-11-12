@@ -60,11 +60,8 @@
   background: var(--walk-paper);
 }
 
-.walk__bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
+.walk__sticky .step-controls {
+  margin: 0;
 }
 
 .walk__btn {
@@ -87,26 +84,9 @@
   outline-offset: 2px;
 }
 
-.walk__btn[aria-disabled="true"] {
-  border-color: var(--role-rule, var(--walk-divider));
-  color: var(--role-muted, var(--walk-muted));
-  cursor: default;
-}
-
 .walk__btn[aria-pressed="true"] {
   background: var(--walk-accent);
   color: var(--role-on-accent, var(--walk-paper));
-}
-
-.walk__btn--play {
-  min-width: 8.5rem;
-  background: var(--role-accent-soft, var(--walk-paper));
-}
-
-.walk__progress {
-  margin-inline-start: auto;
-  font-variant-numeric: tabular-nums;
-  font-weight: 800;
 }
 
 .walk__live {
@@ -127,24 +107,10 @@
     padding: 0.3rem 0.6rem;
   }
 
-  .walk__bar {
-    flex-wrap: nowrap;
-    gap: 0.2rem;
-  }
-
   .walk__btn {
     min-width: 0;
     min-height: 2.125rem;
     padding: 0.2rem 0.3rem;
-    font-size: clamp(0.72rem, 3.8cqi, 0.82rem);
-    white-space: nowrap;
-  }
-
-  .walk__btn--play {
-    min-width: calc(4em + 0.6rem + 4px);
-  }
-
-  .walk__progress {
     font-size: clamp(0.72rem, 3.8cqi, 0.82rem);
     white-space: nowrap;
   }
@@ -215,10 +181,6 @@
     animation: none !important;
   }
 
-  .walk__btn--play {
-    display: none;
-  }
-
   .walk__scene li[aria-current="step"] {
     font-weight: 800;
   }
@@ -262,11 +224,11 @@
   display: contents;
 }
 
-.walk--page[data-walk-ready] .walk__bar {
+.walk--page[data-walk-ready] .step-controls {
   grid-area: 1 / 2;
 }
 
-.walk--page[data-walk-ready]:not(.walk--tabs) .walk__bar {
+.walk--page[data-walk-ready]:not(.walk--tabs) .step-controls {
   grid-area: 1 / 1 / 2 / -1;
 }
 
