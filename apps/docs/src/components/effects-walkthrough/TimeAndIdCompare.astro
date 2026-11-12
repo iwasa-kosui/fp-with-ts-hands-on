@@ -152,7 +152,7 @@ const frames = [
 
       <div class="tic__view" data-view="3">
         <p class="tic__once"><span class="sf-tag sf-tag--value">1回の実行</span><code>createEventContext(deps)</code> を1度だけ呼ぶ</p>
-        <p class="tic__context"><code>{"{ eventId: \"e-1\", occurredAt: \"2026-08-30T06:30:00.000Z\" }"}</code></p>
+        <p class="tic__context"><code>{"{ eventId: \"e-1\", occurredAt: "}<span class="tic__time">{"\"2026-08-30T06:30:00.000Z\" }"}</span></code></p>
         <div class="tic__uses">
           <section class="tic__use">
             <h4>予約の状態</h4>
@@ -237,7 +237,7 @@ const frames = [
   .tic__runs,
   .tic__uses {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
     gap: 0.75rem;
   }
 
@@ -277,6 +277,10 @@ const frames = [
 
   .tic__use p {
     line-height: 1.5;
+  }
+
+  .tic__time {
+    white-space: nowrap;
   }
 
   .tic__verdict {

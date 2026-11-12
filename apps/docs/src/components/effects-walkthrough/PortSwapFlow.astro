@@ -518,7 +518,15 @@ const ports = [
   @media (max-width: 52rem) {
     .psf__stage {
       grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto;
+      align-content: start;
       height: auto;
+    }
+  }
+
+  @media (max-width: 34rem) {
+    .psf__row {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 </style>
