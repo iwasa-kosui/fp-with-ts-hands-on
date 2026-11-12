@@ -211,7 +211,7 @@ const ports = [
         <span class="psf__title">useCase</span>
         <span class="psf__era" data-era="2"><span class="sf-tag">本番の実装</span></span>
         <span class="psf__era" data-era="3"><span class="sf-tag sf-tag--empty">テスト用の実装（fake）</span></span>
-        <p class="psf__same">ユースケースのコードは、どちらでも同じです。</p>
+        <p class="psf__same">ユースケースの<wbr />コードは、<wbr />どちらでも<wbr />同じです。</p>
       </div>
       <ul class="psf__rows">
         {ports.map((port) => (
@@ -331,6 +331,7 @@ const ports = [
   .psf__head {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.75rem;
     min-height: 1.75rem;
   }
@@ -424,6 +425,10 @@ const ports = [
   }
 
   .psf__same {
+    flex: 1 1 12em;
+    text-align: right;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
     margin: 0 0 0 auto;
     color: var(--role-muted);
     font-size: 0.8125rem;
