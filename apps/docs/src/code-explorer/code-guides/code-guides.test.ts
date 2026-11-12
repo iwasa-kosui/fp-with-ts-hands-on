@@ -72,16 +72,30 @@ const sessionDirectorySources = import.meta.glob<string>(
     import: "default",
   },
 );
-const sessionDirectorySourcesFor = (slug: string) =>
-  Object.entries(sessionDirectorySources).filter(
-    ([path]) => path.split("/").at(-2) === slug,
-  );
 const legacyGuideModules = Object.keys(
   import.meta.glob("./*.ts", { eager: true }),
 ).filter((file) => !file.endsWith("code-guides.test.ts"));
 const sessions = Object.values(pageModules).map(({ session }) => session);
 
 describe("session code guides", () => {
+  it("keeps code guide modules out of every session page and prose source", () => {
+    const mdxPaths = Object.keys(sessionDirectorySources).filter((path) =>
+      path.endsWith(".mdx"),
+    );
+    for (const { slug } of sessions) {
+      expect(
+        mdxPaths.some((path) => path.split("/").at(-2) === slug),
+        slug,
+      ).toBe(true);
+    }
+    for (const [path, source] of Object.entries({
+      ...pageSources,
+      ...sessionDirectorySources,
+    })) {
+      expect(source, path).not.toContain("code-explorer/code-guides/");
+    }
+  });
+
   it("provides source-backed guides for every public Code Explorer session", () => {
     const codeExplorerSessions = sessions.flatMap((session) =>
       session.snapshot === undefined
@@ -110,17 +124,6 @@ describe("session code guides", () => {
       const pagePath = `../../pages/sessions/${session.slug}.astro`;
       const guides = pageModules[pagePath]?.guides;
 
-      const directorySources = sessionDirectorySourcesFor(session.slug);
-      expect(
-        directorySources.some(([path]) => path.endsWith(".mdx")),
-        session.slug,
-      ).toBe(true);
-      for (const [path, source] of [
-        [pagePath, pageSources[pagePath]],
-        ...directorySources,
-      ]) {
-        expect(source, path).not.toContain("code-explorer/code-guides/");
-      }
       expect(guides, session.slug).toEqual(expect.any(Array));
       expect(guides!.length).toBeGreaterThanOrEqual(2);
       expect(guides!.length).toBeLessThanOrEqual(
