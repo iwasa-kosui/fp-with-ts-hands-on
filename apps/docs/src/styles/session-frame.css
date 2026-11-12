@@ -1233,9 +1233,12 @@ summary.session-frame__group-title:focus-visible {
     padding-block: 0.25rem;
   }
 
-  .session-frame.case-file--session[data-session="03-boundaries-and-pii"] .case-file__content .boundary-player:has(.boundary-player__files) .boundary-player__zone,
   .session-frame.case-file--session[data-session="03-boundaries-and-pii"] .case-file__content .boundary-player:has(.boundary-player__files) .boundary-player__value {
     padding-block: 0.125rem;
+  }
+
+  .session-frame.case-file--session[data-session="03-boundaries-and-pii"] .case-file__content .boundary-player:has(.boundary-player__files) .boundary-player__zone {
+    padding-block: 0.125rem 2.25rem;
   }
 
   .session-frame.case-file--session[data-session="03-boundaries-and-pii"] .case-file__content .boundary-player:has(.boundary-player__files) .boundary-player__scenarios button {

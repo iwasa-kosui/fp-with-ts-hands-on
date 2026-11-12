@@ -52,11 +52,17 @@ for (const figure of figures) {
     pre.scrollTo({ top: Math.max(0, offset - Math.min(lineHeight * 1.5, room / 2)), behavior: instant || reduced.matches ? "instant" : "smooth" });
   };
 
+  const stacked = () => getComputedStyle(figure).getPropertyValue("--sb-stacked").trim() === "1";
+
   const fitImpl = (pane) => {
     const callStack = boxEls.call.querySelector(".sb-stack");
     const callHeight = boxEls.call.hasAttribute("data-hidden") ? 0 : parseFloat(callStack.style.height) || 0;
     const area = figure.querySelector(".sb-code");
     const pre = pane.querySelector("pre");
+    if (stacked()) {
+      pre.style.maxHeight = "";
+      return;
+    }
     const room = area.clientHeight - parseFloat(getComputedStyle(area).rowGap) - callHeight;
     pre.style.maxHeight = `${Math.max(0, room - (pane.getBoundingClientRect().height - pre.getBoundingClientRect().height))}px`;
   };
@@ -112,9 +118,8 @@ for (const figure of figures) {
     }
   };
 
-  const apply = (force = false) => {
-    const scene = Number(root.dataset.scene) || 0;
-    const frame = frames[scene]?.[Number(root.dataset.frame) || 0];
+  const apply = (force = false, scene = Number(root.dataset.scene) || 0, index = Number(root.dataset.frame) || 0) => {
+    const frame = frames[scene]?.[index];
     if (frame === undefined) return;
     const reset = force || scene !== lastScene;
     lastScene = scene;
@@ -144,11 +149,28 @@ for (const figure of figures) {
     }
   };
 
+  const fitStack = () => {
+    const isStacked = stacked();
+    root.toggleAttribute("data-sb-stacked", isStacked);
+    figure.style.minHeight = "";
+    if (isStacked) {
+      let tallest = 0;
+      frames.forEach((list, scene) =>
+        list.forEach((_, index) => {
+          apply(true, scene, index);
+          tallest = Math.max(tallest, figure.getBoundingClientRect().height);
+        }),
+      );
+      figure.style.minHeight = `${Math.ceil(tallest)}px`;
+    }
+    apply(true);
+  };
+
   root.addEventListener("stepchange", () => apply());
   new ResizeObserver(() => {
     if (figure.offsetWidth === width) return;
     width = figure.offsetWidth;
-    apply(true);
+    fitStack();
   }).observe(figure);
   apply();
 }
