@@ -265,6 +265,10 @@
 }
 
 @media (max-width: 900px) {
+  .walk[data-walk-ready] .walk__sticky {
+    top: var(--frame-bar-height, 0px);
+  }
+
   .walk--page[data-walk-ready]:not(:has([data-store-boundary])) {
     grid-template-rows: auto auto auto auto;
     height: auto;
