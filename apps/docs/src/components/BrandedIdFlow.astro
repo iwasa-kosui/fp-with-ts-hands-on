@@ -177,8 +177,8 @@ const treeGroups = [
   { folder: "domain/appointment/", files: [{ id: "appointmentId", name: "appointmentId.ts" }] },
   { folder: "domain/", files: [{ id: "test-types", name: "domain.test-types.ts" }] },
 ];
-const treeBefore = miniTree("session-03-supplement", "src/", treeGroups);
-const treeAfter = miniTree("session-03-supplement-solution", "src/", treeGroups);
+const treeBefore = miniTree("session-02-solution", "src/", treeGroups);
+const treeAfter = miniTree("session-03", "src/", treeGroups);
 const treeFor = (key: keyof Props["code"]) => ({
   tree: key === "beforeId" || key === "beforeSwap" ? treeBefore : treeAfter,
   current: [key === "beforeId" || key === "afterId" ? "appointmentId" : "test-types"],

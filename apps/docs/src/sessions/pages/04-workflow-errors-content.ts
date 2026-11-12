@@ -36,12 +36,6 @@ export const session: SessionSummary = {
     "画面には500とだけ表示され、後ろでは犬が吠え、列だけが伸びていきます。",
   ],
   incident: "状態不正の失敗が、Web側のcatchで処理されず、古い画面から診察開始を押した操作だけ500になった。",
-  exerciseCommand: "pnpm exercise:04",
-  exerciseModule: {
-    dir: "examples/session-04/src",
-    fileBudget: 3,
-    lineBudget: 80,
-  },
   delegationPrompt: {
     decisions: [
       "どの失敗に対して利用者が別の操作を選ぶか",
@@ -50,65 +44,6 @@ export const session: SessionSummary = {
       "要求された処理を完了できず、Resultへ変換せず外側へ伝えるシステムエラーは何か",
     ],
   },
-  steps: [
-    {
-      id: "s04-invalid-state",
-      goal: "来院済みでない状態を型付きの失敗として返す。",
-      startingFailure: "来院済みでない予約を、例外として処理している。",
-      targets: ["examples/session-04/src/useCase/errors.ts"],
-      solutions: [{
-        path: "examples/session-04-solution/src/useCase/errors.ts",
-        symbol: "ensureCheckedIn",
-        lines: [1, 31],
-        placement: "examples/session-04/src/useCase/errors.ts の全体を、このコードに置き換えます。",
-      }],
-    },
-    {
-      id: "s04-not-found",
-      goal: "予約が見つからない失敗を型付きの値として返す。",
-      startingFailure: "予約が見つからない場合も、例外として処理している。",
-      targets: ["examples/session-04/src/useCase/errors.ts"],
-      solutions: [{
-        path: "examples/session-04-solution/src/useCase/errors.ts",
-        symbol: "ensureAppointmentFound",
-        lines: [1, 31],
-        placement: "examples/session-04/src/useCase/errors.ts の全体を、このコードに置き換えます。",
-      }],
-    },
-    {
-      id: "s04-result-pipeline",
-      goal: "失敗理由をandThenで運び、失敗後の遷移と保存を実行しない。",
-      startingFailure: "ユースケースが失敗理由をResultで運ばず、型から後続処理の条件を読めない。",
-      targets: ["examples/session-04/src/useCase/startExamination.ts"],
-      solutions: [{
-        path: "examples/session-04-solution/src/useCase/startExamination.ts",
-        symbol: "startExamination",
-        lines: [7, 44],
-        placement: "examples/session-04/src/useCase/startExamination.ts の全体を、このコードに置き換えます。",
-      }],
-    },
-    {
-      id: "s04-exhaustive-web-handler",
-      goal: "Web側で業務エラーのkindを網羅し、それぞれ専用noticeへ変換する。",
-      startingFailure: "状態不正の例外をWeb側が処理せず、500エラーにする。",
-      targets: ["examples/session-04/src/adaptor/primary/web/routes.ts"],
-      solutions: [
-        {
-          path: "examples/session-04-solution/src/adaptor/primary/web/routes.ts",
-          symbol: "toStartExaminationNoticeCode",
-          lines: [22, 48],
-          placement: "examples/session-04/src/adaptor/primary/web/routes.ts の import 群の直後に、このコードを追加します。",
-        },
-        {
-          path: "examples/session-04/src/adaptor/primary/web/routes.ts",
-          sourcePath: "apps/docs/src/sessions/solutions/session-04-start-examination-handler.ts.txt",
-          symbol: "registerClinicRoutes",
-          lines: [1, 22],
-          placement: "examples/session-04/src/adaptor/primary/web/routes.ts の start-examination の app.post 全体を、このコードに置き換えます。",
-        },
-      ],
-    },
-  ],
   decisions: [
     {
       invariant: "利用者が失敗理由に応じて操作を選ぶ必要がある失敗は、戻り値に現れる。",
@@ -150,10 +85,9 @@ export const guides = ([
 export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
-  initialFile: "exercises/result-errors.test.ts",
+  initialFile: "src/useCase/startExamination.ts",
   description: "例外の種類が型に現れず、Web側にcatch漏れがある開始スナップショットを確認します。",
   visibleFiles: [
-    "exercises/result-errors.test.ts",
     "test/regression/boundary-and-ids.test.ts",
     "test/regression/state-modeling.test.ts",
     "src/adaptor/primary/web/examResult.ts",

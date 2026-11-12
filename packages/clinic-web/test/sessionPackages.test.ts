@@ -21,8 +21,6 @@ const sessionFolders = [
   "session-02-solution",
   "session-03",
   "session-03-solution",
-  "session-03-supplement",
-  "session-03-supplement-solution",
   "session-04",
   "session-04-solution",
   "session-05",
@@ -33,8 +31,6 @@ const exerciseCheckOnlySnapshots = ["session-05-solution"] as const;
 const appointmentModuleSessions = [
   "session-01-solution",
   "session-02-solution",
-  "session-03-supplement",
-  "session-03-supplement-solution",
   "session-03",
   "session-03-solution",
   "session-04",
@@ -48,7 +44,7 @@ const sessionsWithSemanticIds = [
   ...appointmentModuleSessions,
   ...appointmentApiModuleSessions,
 ] as const;
-const sessionFolderPattern = /^session-\d{2}(?:-supplement-solution|-supplement|-solution)?$/;
+const sessionFolderPattern = /^session-\d{2}(?:-solution)?$/;
 const ownedIdentifierPaths = [
   "domain/appointment/appointmentId.ts",
   "domain/appointment/veterinarianId.ts",
@@ -160,7 +156,7 @@ const moduleSpecifiers = (source: string): string[] => [
 ];
 
 const isSnapshotPackageImport = (specifier: string): boolean =>
-  /^@fp-with-ts\/clinic-session-\d{2}(?:-supplement-solution|-supplement|-solution)?(?:\/|$)/.test(specifier);
+  /^@fp-with-ts\/clinic-session-\d{2}(?:-solution)?(?:\/|$)/.test(specifier);
 
 const assertNoCrossSessionSourceImports = async (sessionUrl: URL): Promise<void> => {
   const sourceFiles = await collectTypeScriptFiles(new URL("src/", sessionUrl));
@@ -220,7 +216,7 @@ const assertAcyclicRelativeImports = async (files: URL[], sessionUrl: URL): Prom
     );
     const escapedSessionSourceImports = imports.filter(
       (target) =>
-        !target.pathname.startsWith(sessionSourceRoot) && /\/session-\d{2}(?:-supplement-solution|-supplement|-solution)?\/src\//.test(target.pathname),
+        !target.pathname.startsWith(sessionSourceRoot) && /\/session-\d{2}(?:-solution)?\/src\//.test(target.pathname),
     );
     if (escapedSessionSourceImports.length > 0) {
       throw new Error(

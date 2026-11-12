@@ -30,53 +30,12 @@ export const session: SessionSummary = {
     "本番で会計済みの予約に対してこの呼び出しが実行されると、例外が発生し、利用者の操作が失敗しました。",
   ],
   incident: "会計済みの予約が診察中へ戻され、同じ金額が2回請求された。",
-  exerciseCommand: "pnpm exercise:01",
-  exerciseModule: {
-    dir: "examples/session-01/src/domain/appointment",
-    fileBudget: 1,
-    lineBudget: 35,
-  },
   delegationPrompt: {
     decisions: [
       "どの状態からどの状態への遷移を許可するか",
       "各状態で必須にする情報は何か",
     ],
   },
-  steps: [
-    {
-      id: "s01-narrow-start",
-      goal: "会計済み・キャンセル済みの来院で診察を開始するコードを、コンパイルエラーにする。",
-      startingFailure: "会計済み・キャンセル済みの予約を渡す呼び出しが、型検査を通る。",
-      targets: ["examples/session-01/src/domain/appointment/transitions.ts"],
-      solutions: [{
-        path: "examples/session-01-solution/src/domain/appointment/transitions.ts",
-        symbol: "startExamination",
-        lines: [16, 26],
-      }],
-    },
-    {
-      id: "s01-require-cancel-reason",
-      goal: "キャンセルには必ず理由を残す。",
-      startingFailure: "理由を渡さない呼び出しが、型検査を通る。",
-      targets: ["examples/session-01/src/domain/appointment/transitions.ts"],
-      solutions: [{
-        path: "examples/session-01-solution/src/domain/appointment/transitions.ts",
-        symbol: "cancel",
-        lines: [47, 60],
-      }],
-    },
-    {
-      id: "s01-align-transitions",
-      goal: "診察結果の記録前に会計するコードをコンパイルエラーにし、残りの遷移関数も、許可された状態だけを引数で受け取る形にそろえる。",
-      startingFailure: "診察結果の記録前や、許可されていない状態の予約を渡す呼び出しが、型検査を通る。",
-      targets: ["examples/session-01/src/domain/appointment/transitions.ts"],
-      solutions: [{
-        path: "examples/session-01-solution/src/domain/appointment/transitions.ts",
-        symbol: "checkIn",
-        lines: [13, 45],
-      }],
-    },
-  ],
   decisions: [
     {
       invariant: "診察結果の記録前の会計と、許可されていない状態遷移を、型検査で拒否する。",
@@ -115,10 +74,9 @@ export const guides = ([
 export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
-  initialFile: "exercises/state-modeling.test.ts",
-  description: "演習の要件と作成対象を、開始スナップショットで確認します。",
+  initialFile: "test/transitions.test.ts",
+  description: "作成対象を、開始スナップショットで確認します。",
   visibleFiles: [
-    "exercises/state-modeling.test.ts",
     "test/transitions.test.ts",
     "test/setup.test.ts",
     "src/domain/appointment/appointment.ts",

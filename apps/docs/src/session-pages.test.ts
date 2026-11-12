@@ -92,11 +92,10 @@ const exerciseContracts = {
     workspace: {
       slug: "01-state-transitions",
       snapshot: "session-01",
-      initialFile: "exercises/state-modeling.test.ts",
+      initialFile: "test/transitions.test.ts",
       description:
-        "演習の要件と作成対象を、開始スナップショットで確認します。",
+        "作成対象を、開始スナップショットで確認します。",
       visibleFiles: [
-        "exercises/state-modeling.test.ts",
         "test/transitions.test.ts",
         "test/setup.test.ts",
         "src/domain/appointment/appointment.ts",
@@ -118,11 +117,10 @@ const exerciseContracts = {
     workspace: {
       slug: "02-adt-and-exhaustiveness",
       snapshot: "session-02",
-      initialFile: "exercises/state-modeling.test.ts",
+      initialFile: "src/domain/appointment/appointment.ts",
       description:
         "表示名の分岐と予約状態の定義を、開始スナップショットで確認します。",
       visibleFiles: [
-        "exercises/state-modeling.test.ts",
         "src/domain/appointment/appointment.ts",
         "src/domain/appointment/statusLabel.ts",
       ],
@@ -142,10 +140,9 @@ const exerciseContracts = {
     workspace: {
       slug: "03-boundaries-and-pii",
       snapshot: "session-03",
-      initialFile: "exercises/start-examination-input.test.ts",
+      initialFile: "test/regression/semantic-identifiers.test.ts",
       description: "HTTP入力を診察開始の型付き入力へ変換する境界を確認します。",
       visibleFiles: [
-        "exercises/start-examination-input.test.ts",
         "test/regression/semantic-identifiers.test.ts",
         "test/regression/state-modeling.test.ts",
         "src/domain/appointment/appointmentId.ts",
@@ -170,11 +167,10 @@ const exerciseContracts = {
     workspace: {
       slug: "04-workflow-errors",
       snapshot: "session-04",
-      initialFile: "exercises/result-errors.test.ts",
+      initialFile: "src/useCase/startExamination.ts",
       description:
         "例外の種類が型に現れず、Web側にcatch漏れがある開始スナップショットを確認します。",
       visibleFiles: [
-        "exercises/result-errors.test.ts",
         "test/regression/boundary-and-ids.test.ts",
         "test/regression/state-modeling.test.ts",
         "src/adaptor/primary/web/examResult.ts",
@@ -208,11 +204,10 @@ const exerciseContracts = {
     workspace: {
       slug: "06-effects-and-consistency",
       snapshot: "session-06",
-      initialFile: "exercises/effects-and-events.test.ts",
+      initialFile: "src/useCase/startExamination.ts",
       description:
         "出力イベントと副作用の要求を、開始スナップショットで確認します。",
       visibleFiles: [
-        "exercises/effects-and-events.test.ts",
         "test/regression/result-errors.test.ts",
         "src/domain/aggregate/clock.ts",
         "src/domain/aggregate/eventContext.ts",
@@ -379,13 +374,6 @@ describe("session pages", () => {
           expect.any(String),
         );
       }
-      for (const step of session.steps) {
-        for (const target of step.targets) {
-          const prefix = `examples/${session.snapshot}/`;
-          expect(target.startsWith(prefix), target).toBe(true);
-          expect(workspace.visibleFiles).toContain(target.slice(prefix.length));
-        }
-      }
     });
 
   }
@@ -446,13 +434,6 @@ describe("session pages", () => {
       ] ?? "";
 
     expect(session?.solutionPresentation).toBe("completed-file");
-    expect(
-      session?.steps.every((step) =>
-        step.solutions.every(
-          ({ presentation }) => presentation === "completed-file",
-        ),
-      ),
-    ).toBe(true);
     expect(twoPaths).toContain("業務の失敗");
     expect(twoPaths).toContain("障害");
   });

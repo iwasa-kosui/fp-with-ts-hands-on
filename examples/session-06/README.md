@@ -6,9 +6,10 @@
 pnpm demo:06
 pnpm --filter @fp-with-ts/clinic-session-06 typecheck
 pnpm --filter @fp-with-ts/clinic-session-06 test
-pnpm exercise:06
 ```
+
+S06 の演習は、ブラウザの演習の画面で、誤った変更を検出する仕組みを足します。
 
 デモは `http://localhost:3000` で起動し、`startExaminationWithEffects` の非決定値と2回書き込みを実際のrouteから実行します。
 
-`typecheck` と `test` は成功します。`exercise` は `startExaminationWithEffects` にある `Date` / `randomUUID` の直接呼び出しと、状態・監査記録の2回書き込みを4件の業務名付き assertion failure として再現します。S04 の `startExamination` は変更せず、S06 の効果付き経路だけを改善します。
+`typecheck` と `test` は成功します。S04 の `startExamination` は変更せず、S06 の効果付き経路だけを改善します。
