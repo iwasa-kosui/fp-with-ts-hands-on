@@ -85,7 +85,7 @@ export const guides = ([
 export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
-  initialFile: "test/regression/boundary-and-ids.test.ts",
+  initialFile: "src/useCase/startExamination.ts",
   description: "例外の種類が型に現れず、Web側にcatch漏れがある開始スナップショットを確認します。",
   visibleFiles: [
     "test/regression/boundary-and-ids.test.ts",

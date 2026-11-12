@@ -75,7 +75,7 @@ export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
   initialFile: "test/transitions.test.ts",
-  description: "演習の要件と作成対象を、開始スナップショットで確認します。",
+  description: "作成対象を、開始スナップショットで確認します。",
   visibleFiles: [
     "test/transitions.test.ts",
     "test/setup.test.ts",

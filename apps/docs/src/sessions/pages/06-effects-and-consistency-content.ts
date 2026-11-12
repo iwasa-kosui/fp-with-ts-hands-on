@@ -90,7 +90,7 @@ export const guides = ([
 export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
-  initialFile: "test/regression/result-errors.test.ts",
+  initialFile: "src/useCase/startExamination.ts",
   description: "出力イベントと副作用の要求を、開始スナップショットで確認します。",
   visibleFiles: [
     "test/regression/result-errors.test.ts",

@@ -94,7 +94,7 @@ const exerciseContracts = {
       snapshot: "session-01",
       initialFile: "test/transitions.test.ts",
       description:
-        "演習の要件と作成対象を、開始スナップショットで確認します。",
+        "作成対象を、開始スナップショットで確認します。",
       visibleFiles: [
         "test/transitions.test.ts",
         "test/setup.test.ts",
@@ -167,7 +167,7 @@ const exerciseContracts = {
     workspace: {
       slug: "04-workflow-errors",
       snapshot: "session-04",
-      initialFile: "test/regression/boundary-and-ids.test.ts",
+      initialFile: "src/useCase/startExamination.ts",
       description:
         "例外の種類が型に現れず、Web側にcatch漏れがある開始スナップショットを確認します。",
       visibleFiles: [
@@ -204,7 +204,7 @@ const exerciseContracts = {
     workspace: {
       slug: "06-effects-and-consistency",
       snapshot: "session-06",
-      initialFile: "test/regression/result-errors.test.ts",
+      initialFile: "src/useCase/startExamination.ts",
       description:
         "出力イベントと副作用の要求を、開始スナップショットで確認します。",
       visibleFiles: [
