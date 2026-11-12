@@ -2,18 +2,19 @@
 
 このディレクトリはSession 03の開始スナップショットです。解答は `examples/session-03-solution/src` にあります。
 
-S03の補助演習で区別したAppointmentIdとVeterinarianIdを、HTTPの文字列から作る境界を実装します。変更対象は `src/adaptor/primary/web/startExaminationInput.ts` の1ファイルです。
+この開始スナップショットでは、AppointmentIdとVeterinarianIdが別の型として区別済みです。この2つのIDをHTTPの文字列から作る境界を実装します。変更対象は `src/adaptor/primary/web/startExaminationInput.ts` の1ファイルです。
 
 ```bash
 pnpm demo:03
 pnpm --filter @fp-with-ts/clinic-session-03 typecheck
 pnpm --filter @fp-with-ts/clinic-session-03 test
-pnpm exercise:03
 ```
+
+S03 の演習は、ブラウザの演習の画面で、誤った変更を検出する仕組みを足します。
 
 デモは `http://localhost:3000` で起動します。診察開始routeは、path parameterの予約IDと外部から届く担当獣医師IDを `StartExaminationInput.parse` へ渡します。
 
-`typecheck` と `test` はS01、S02、S03の補助演習の回帰を確認します。`exercise` は、不正な予約IDと不正な担当獣医師IDを拒否できない2件で意図的に失敗します。
+`typecheck` と `test` は、S01 と S02 の回帰に加えて、AppointmentIdとVeterinarianIdを取り違えるとコンパイルできないことを確認します。
 
 ## 時間外の補足
 

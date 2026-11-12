@@ -1,19 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import type { ExerciseStep, SolutionReference } from "./types";
+import type { SolutionReference } from "./types";
 
 export const loadSolutionSnippets = async (
-  step: Pick<ExerciseStep, "solutions">,
+  step: Readonly<{ solutions: readonly [SolutionReference, ...SolutionReference[]] }>,
 ): Promise<
   readonly Readonly<{ solution: SolutionReference; code: string }>[]
 > => {
-  const presentations = new Set(
-    step.solutions.map(({ presentation }) => presentation ?? "excerpt"),
-  );
-  if (presentations.size !== 1) {
-    throw new Error(`1ステップ内の表示形式を統一してください: ${step.solutions[0].path}`);
-  }
-
   return Promise.all(
     step.solutions.map(async (solution) => {
       const [start, end] = solution.lines;
@@ -27,7 +20,7 @@ export const loadSolutionSnippets = async (
       }
 
       const source = await readFile(
-        resolve(process.cwd(), "../..", solution.sourcePath ?? solution.path),
+        resolve(process.cwd(), "../..", solution.path),
         "utf8",
       );
       const sourceLines = source.split("\n");

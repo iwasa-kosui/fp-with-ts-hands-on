@@ -7,9 +7,8 @@
 ```bash
 pnpm demo:01
 pnpm --filter @fp-with-ts/clinic-session-01 test
-pnpm exercise:01
 ```
 
-デモは `http://localhost:3000` で起動します。画面操作はこの開始スナップショットの遷移関数を呼びます。
+S01 の演習は、ブラウザの演習の画面で、誤った変更を検出する仕組みを足します。
 
-`pnpm exercise:01` は5つの型要件について、意図した失敗で始まります。
+デモは `http://localhost:3000` で起動します。画面操作はこの開始スナップショットの遷移関数を呼びます。

@@ -28,12 +28,6 @@ export const session: SessionSummary = {
     "再現テストでは時刻とイベント ID が毎回変わり、失敗したときの値を同じ形で確認できません。",
   ],
   incident: "実行のたびに変わる値でテスト結果が安定せず、状態だけ保存され監査記録が残らない予約が生まれた。",
-  exerciseCommand: "pnpm exercise:06",
-  exerciseModule: {
-    dir: "examples/session-06/src/useCase",
-    fileBudget: 3,
-    lineBudget: 55,
-  },
   delegationPrompt: {
     decisions: [
       "実行ごとに変わる値をいつ生成するか",
@@ -41,80 +35,6 @@ export const session: SessionSummary = {
       "保存障害をどの境界まで伝えるか",
     ],
   },
-  steps: [
-    {
-      id: "s06-inject-context",
-      goal: "Clock と ID generator を使って EventContext を一度だけ生成する。",
-      startingFailure: "同じ条件で実行しても、時刻とイベント ID が毎回変わる。",
-      targets: [
-        "examples/session-06/src/useCase/dependencies.ts",
-        "examples/session-06/src/useCase/startExamination.ts",
-      ],
-      solutions: [
-        {
-          path: "examples/session-06-solution/src/useCase/dependencies.ts",
-          symbol: "EventContextDependencies",
-          lines: [1, 35],
-          presentation: "completed-file",
-        },
-        {
-          path: "examples/session-06-solution/src/useCase/startExamination.ts",
-          symbol: "createEventContext",
-          lines: [1, 90],
-          presentation: "completed-file",
-        },
-      ],
-    },
-    {
-      id: "s06-atomic-store",
-      goal: "状態と監査記録を1回の保存で残す。",
-      startingFailure: "状態と監査記録を別々に保存している。",
-      targets: ["examples/session-06/src/useCase/dependencies.ts"],
-      solutions: [
-        {
-          path: "examples/session-06-solution/src/useCase/dependencies.ts",
-          symbol: "ExaminationStartedStore",
-          lines: [1, 35],
-          presentation: "completed-file",
-        },
-      ],
-    },
-    {
-      id: "s06-result-async",
-      goal: "非同期で保存しても、イベントを結果として返す。",
-      startingFailure: "保存後に、更新した予約の状態を受け取れない。",
-      targets: ["examples/session-06/src/useCase/startExamination.ts"],
-      solutions: [{
-        path: "examples/session-06-solution/src/useCase/startExamination.ts",
-        symbol: "startExaminationWithEffects",
-        lines: [1, 90],
-        presentation: "completed-file",
-      }],
-    },
-    {
-      id: "s06-propagate-store-failure",
-      goal: "競合は Err で返し、保存障害は Err へ変換せず、例外として外側の境界へ伝播する。",
-      startingFailure: "競合を Err で返せない。",
-      targets: [
-        "examples/session-06/src/useCase/errors.ts",
-        "examples/session-06/src/useCase/startExamination.ts",
-      ],
-      solutions: [
-        {
-          path: "examples/session-06-solution/src/useCase/errors.ts",
-          symbol: "AppointmentConflict",
-          lines: [1, 39],
-          presentation: "completed-file",
-        },
-        {
-          path: "examples/session-06-solution/src/useCase/startExamination.ts",
-          symbol: "startExaminationWithEffects",
-          lines: [1, 90],
-          presentation: "completed-file",
-        },
-      ],
-    },
-  ],
   decisions: [
     {
       invariant: "時刻とイベント ID は1回のユースケース実行で一度だけ生成し、同じ実行コンテキストから状態と監査記録を作る。",
@@ -170,10 +90,9 @@ export const guides = ([
 export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
-  initialFile: "exercises/effects-and-events.test.ts",
+  initialFile: "test/regression/result-errors.test.ts",
   description: "出力イベントと副作用の要求を、開始スナップショットで確認します。",
   visibleFiles: [
-    "exercises/effects-and-events.test.ts",
     "test/regression/result-errors.test.ts",
     "src/domain/aggregate/clock.ts",
     "src/domain/aggregate/eventContext.ts",

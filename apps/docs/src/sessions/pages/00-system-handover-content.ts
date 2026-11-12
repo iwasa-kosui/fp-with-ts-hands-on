@@ -17,7 +17,6 @@ export const session: SessionSummary = {
     "記録を調べると、飼い主の電話番号まで読めました。",
   ],
   incident: "会計済みの予約が診察中へ戻り、監査記録から飼い主の個人情報が読めた。",
-  steps: [],
   decisions: [],
   finalReferences: [],
 };

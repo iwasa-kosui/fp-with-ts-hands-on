@@ -31,30 +31,11 @@ export const session: SessionSummary = {
     "状態を追加したときは、対応漏れの分岐をコンパイラに検出させる必要があります。",
   ],
   incident: "NoShowの状態を追加したとき、表示名の分岐が default で「不明」を返し、型検査は成功した。",
-  exerciseCommand: "pnpm exercise:02",
-  exerciseModule: {
-    dir: "examples/session-02/src/domain/appointment",
-    fileBudget: 1,
-    lineBudget: 6,
-  },
   delegationPrompt: {
     decisions: [
       "状態追加時の分岐漏れをどこで検出するか",
     ],
   },
-  steps: [
-    {
-      id: "s02-exhaustive-label",
-      goal: "状態を追加したら表示名の分岐をコンパイルエラーにする。",
-      startingFailure: "状態を追加しても、表示名の分岐漏れを検出できない。",
-      targets: ["examples/session-02/src/domain/appointment/statusLabel.ts"],
-      solutions: [{
-        path: "examples/session-02-solution/src/domain/appointment/statusLabel.ts",
-        symbol: "toStatusLabel",
-        lines: [3, 24],
-      }],
-    },
-  ],
   decisions: [
     {
       invariant: "状態を追加したとき、未対応の分岐をコンパイルエラーにする。",
@@ -87,10 +68,9 @@ export const guides = ([
 export const workspace = ({
   slug: session.slug,
   snapshot: session.snapshot,
-  initialFile: "exercises/state-modeling.test.ts",
+  initialFile: "src/domain/appointment/appointment.ts",
   description: "表示名の分岐と予約状態の定義を、開始スナップショットで確認します。",
   visibleFiles: [
-    "exercises/state-modeling.test.ts",
     "src/domain/appointment/appointment.ts",
     "src/domain/appointment/statusLabel.ts",
   ],

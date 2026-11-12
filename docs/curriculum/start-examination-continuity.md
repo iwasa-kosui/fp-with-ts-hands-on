@@ -60,8 +60,7 @@
 | `session-05` | `session-00` と同じ利用者操作、fixture、SQLite上の事故を使います。別のMap実装へ戻しません。 | コードは変更しません。S5 のページで、予約のデータとキャンセルの工程を読み、工程の条件を守る仕組みを選びます。 | 解答はありません。`session-01` 以降の snapshot は `session-05` を前の段階として引き継がず、`session-00` の次に `session-01` が続きます。 | `session-05` 自身が持つDB adapterを使います。`session-00` のsourceはimportしません。 |
 | `session-01` | `session-00` の未改善状態に対して、状態型と遷移関数が広すぎるstarterです。診察開始は受付済みの予約だけに許可する、という業務上の事前条件を、この回で型と遷移に表します。SQLite接続は配布済みコードとして残します。 | `src/domain/appointment/transitions.ts` の1ファイルを変更します。 | `session-01-solution` がsolutionです。会計済みやキャンセル済みの予約から診察を開始できない状態型と遷移になります。 | `session-01` 自身のDB adapterがfile SQLiteへ保存します。状態更新と監査追記はまだ別の処理です。 |
 | `session-02` | S1 の解答が入った状態で、表示名の分岐が未知の状態を見逃すstarterです。 | `src/domain/appointment/statusLabel.ts` の1ファイルを変更します。 | `session-02-solution` がsolutionです。状態を追加すると、表示名の分岐がコンパイルエラーになります。 | `session-02` 自身のDB adapterがfile SQLiteへ保存します。状態更新と監査追記はまだ別の処理です。 |
-| `session-03-supplement` | `session-02` の解答に、用途を区別していないIDが残るstarterです。 | `src/domain` の5ファイルを変更します。 | `session-03-supplement-solution` がsolutionです。予約IDと獣医師IDをコード上で取り違えるとコンパイルできません。 | `session-03-supplement` 自身のDB adapterが、snapshot内のIDをSQLiteの値へ変換します。 |
-| `session-03` | `session-03-supplement` の解答に、未検証のHTTP入力と連絡先を含む監査payloadが残るstarterです。 | `src/adaptor/primary/web` の1ファイルを変更します。 | `session-03-solution` がsolutionです。不正な外部入力は診察開始へ渡りません。配布済みの永続化処理は、監査記録から飼い主の連絡先を除外します。 | `session-03` 自身のDB adapterを使います。`session-03-solution` では検証済み入力と必要最小限の監査payloadを保存します。 |
+| `session-03` | `session-02-solution` から始まり、AppointmentId と VeterinarianId が別の型として区別済みで、未検証のHTTP入力と連絡先を含む監査payloadが残るstarterです。 | `src/adaptor/primary/web` の1ファイルを変更します。 | `session-03-solution` がsolutionです。不正な外部入力は診察開始へ渡りません。配布済みの永続化処理は、監査記録から飼い主の連絡先を除外します。 | `session-03` 自身のDB adapterを使います。`session-03-solution` では検証済み入力と必要最小限の監査payloadを保存します。 |
 | `session-04` | `session-03` の解答に、例外と例外文言による失敗分類が残るstarterです。 | use case、エラー、呼び出し側の3ファイルを変更します。 | `session-04-solution` がsolutionです。予約なしと状態不正を別の業務エラーとして返し、SQLite障害を業務エラーへ変換しません。 | `session-04` 自身のresolverとstoreをDB adapterへ接続します。保存処理はまだS6で扱う改善前の形です。 |
 | `session-06` | `session-04` の解答に、処理内で生成する時刻とevent ID、予約状態と監査記録の二重書き込みが残るstarterです。 | `src/useCase` の3ファイルを変更します。 | `session-06-solution` がsolutionです。1回分の時刻とevent IDから診察開始eventを作り、予約状態と監査記録を一つの保存処理へ渡します。 | `session-06` 自身のportとDB adapterを使います。solutionではsnapshot内のDrizzle transactionで両方を保存します。 |
 | `session-06-solution` | `session-06` の全解答が入ったsnapshotです。S1〜S4 と S6 の全解答と全回帰テストを含み、到達点を兼ねます。 | 変更しません。Finalとの比較に使います。 | 診察開始の入力、業務エラー、event、保存、技術的失敗の責任が分かれた状態です。 | `session-06-solution` 自身のDB adapterがfile SQLite transactionで予約状態と監査記録を保存します。 |
@@ -69,16 +68,15 @@
 
 snapshot の番号は公開ページの S の番号と一致します。公開ページと snapshot の対応は次のとおりです。
 
-| ページ | 開始snapshot | 解答snapshot | 演習コマンド |
-| --- | --- | --- | --- |
-| S1 | session-01 | session-01-solution | `pnpm exercise:01` |
-| S2 | session-02 | session-02-solution | `pnpm exercise:02` |
-| S3 | session-03 | session-03-solution | `pnpm exercise:03` |
-| S3 補助演習 | session-03-supplement | session-03-supplement-solution | `pnpm exercise:03-supplement` |
-| S4 | session-04 | session-04-solution | `pnpm exercise:04` |
-| S6 | session-06 | session-06-solution | `pnpm exercise:06` |
+| ページ | 開始snapshot | 解答snapshot |
+| --- | --- | --- |
+| S1 | session-01 | session-01-solution |
+| S2 | session-02 | session-02-solution |
+| S3 | session-03 | session-03-solution |
+| S4 | session-04 | session-04-solution |
+| S6 | session-06 | session-06-solution |
 
-S5 は session-05 のカードを読む回で、開始snapshotと解答snapshotの組を持たず、演習コマンドもありません。
+演習は、各ページの演習の画面で行います。S5 は session-05 のカードを読む回で、開始snapshotと解答snapshotの組を持ちません。
 
 ## 事故ごとの解消確認
 
@@ -87,7 +85,7 @@ S5 は session-05 のカードを読む回で、開始snapshotと解答snapshot�
 | Session 00の未改善点 | 解消を確認する最初のsnapshot | 入力または失敗条件 | 確認する内容 |
 | --- | --- | --- | --- |
 | 会計済みの予約から診察を開始できる | `session-01-solution` | 共通fixtureの予約を会計済みにして診察開始を依頼します。 | 診察開始が状態不正として失敗し、予約は会計済みのままで、新しい監査記録が保存されません。 |
-| 用途の異なるIDをコード上で取り違えられる | `session-03-supplement-solution` | 予約IDと獣医師IDを入れ替えたコードをコンパイルします。正常系では共通fixtureの両IDで診察を開始します。 | 取り違えたコードがコンパイルに失敗します。正常系では診察開始が成功し、実行後の予約状態とSQLiteの監査記録に共通fixtureの予約IDと獣医師IDが残ります。実行時に同じ形式のUUIDの用途を判定できるとは主張しません。 |
+| 用途の異なるIDをコード上で取り違えられる | `session-03` | 予約IDと獣医師IDを入れ替えたコードをコンパイルします。正常系では共通fixtureの両IDで診察を開始します。 | 取り違えたコードがコンパイルに失敗します。正常系では診察開始が成功し、実行後の予約状態とSQLiteの監査記録に共通fixtureの予約IDと獣医師IDが残ります。実行時に同じ形式のUUIDの用途を判定できるとは主張しません。 |
 | 不正な外部入力を診察開始へ渡せる | `session-03-solution` | UUIDではない予約IDまたは獣医師IDで診察開始を依頼します。 | 入力エラーとして失敗し、予約状態と監査記録が変わりません。 |
 | 監査payloadへ飼い主の連絡先を保存する | `session-03-solution` | 共通fixtureで診察開始を成功させます。 | SQLiteに保存された監査記録に、飼い主の氏名、メールアドレス、電話番号が含まれません。 |
 | 予約なしと状態不正を例外文言で分類する | `session-04-solution` | 存在しない予約IDと、受付前の予約を別々に使います。 | 診察開始の実行結果が予約なしと状態不正を区別します。どちらの場合も予約状態と監査記録を変更しません。SQLite障害は業務エラーとして返しません。 |
@@ -118,7 +116,7 @@ HTTPのstatus、redirect先、画面へ返す業務エラーが必要な事故�
 
 ### 教材サイトの操作
 
-#107 はS1〜S4 と S6 のブラウザ上でREDを確認し、編集し、同じコマンドでGREENを確認する利用者フローを所有します。このテストはSQLiteの保存内容を検査しません。横断テストはCode Explorerの配置や画面構造を検査しません。
+#107 はS1〜S4 と S6 の演習の画面で、誤った変更の一覧を読み、検出する仕組みを足し、「検出を検証する」を押して合格を確認する利用者フローを所有します。このテストはSQLiteの保存内容を検査しません。横断テストはCode Explorerの配置や画面構造を検査しません。
 
 ### セキュリティ
 

@@ -9,27 +9,10 @@ export type SessionNavigation = Readonly<{
 
 export type SolutionPresentation = "excerpt" | "completed-file";
 
-export type ExerciseModule = Readonly<{
-  dir: string;
-  fileBudget: number;
-  lineBudget: number;
-}>;
-
-export type ExerciseStep = Readonly<{
-  id: string;
-  goal: string;
-  startingFailure: string;
-  targets: readonly string[];
-  solutions: readonly [SolutionReference, ...SolutionReference[]];
-}>;
-
 export type SolutionReference = Readonly<{
   path: string;
-  sourcePath?: string;
   symbol: string;
   lines: readonly [number, number];
-  presentation?: SolutionPresentation;
-  placement?: string;
 }>;
 
 export type Decision = Readonly<{
@@ -72,12 +55,9 @@ type SessionSummaryBase = Readonly<{
   summary: string;
   episode: readonly [string, string, string];
   incident: string;
-  exerciseCommand?: string;
-  exerciseModule?: ExerciseModule;
   solutionSnapshot?: ExampleSnapshot;
   solutionPresentation?: SolutionPresentation;
   peerReviewPromises?: "inline" | "reference";
-  steps: readonly ExerciseStep[];
   decisions: readonly Decision[];
   finalReferences: readonly string[];
 }>;
@@ -89,8 +69,6 @@ export type ExerciseSessionSummary = SessionSummaryBase &
     adv: AdvBreakdown;
     delegationPrompt: DelegationPrompt;
     peerReview: PeerReview;
-    exerciseCommand: string;
-    exerciseModule: ExerciseModule;
     solutionSnapshot: ExampleSnapshot;
     solutionPresentation: SolutionPresentation;
     peerReviewPromises: "inline" | "reference";
@@ -100,8 +78,6 @@ type NonExerciseMetadata = Readonly<{
   adv?: never;
   delegationPrompt?: never;
   peerReview?: never;
-  exerciseCommand?: never;
-  exerciseModule?: never;
   solutionSnapshot?: never;
   solutionPresentation?: never;
   peerReviewPromises?: never;
@@ -130,8 +106,6 @@ export type ExampleSnapshot =
   | "session-01-solution"
   | "session-02"
   | "session-02-solution"
-  | "session-03-supplement"
-  | "session-03-supplement-solution"
   | "session-03"
   | "session-03-solution"
   | "session-04"

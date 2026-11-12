@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { AppointmentId } from "../../src/domain/appointment/index.js";
 import { compileTypeFixture } from "./compileTypeFixture.js";
 
-describe("S03 補助演習 regression: 診察開始の識別子を取り違えない", () => {
+describe("S03 regression: 診察開始の識別子を取り違えない", () => {
   it("AppointmentIdとVeterinarianIdを相互に代入できない", () => {
     expect(
       compileTypeFixture("appointment-id-is-not-veterinarian-id.ts"),

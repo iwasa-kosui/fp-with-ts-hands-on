@@ -287,14 +287,14 @@ describe("CodeExplorer file synchronization", () => {
     vi.mocked(session.writeFile).mockReturnValueOnce(write.promise);
 
     await editCurrentFile(host, "export const value = 2;");
-    sendTerminalInput("pnpm exercise:01\r");
+    sendTerminalInput("pnpm test\r");
     await act(async () => undefined);
 
     expect(session.writeInput).not.toHaveBeenCalled();
 
     await act(async () => write.resolve());
 
-    expect(session.writeInput).toHaveBeenCalledWith("pnpm exercise:01\r");
+    expect(session.writeInput).toHaveBeenCalledWith("pnpm test\r");
   });
 
   it("waits for reset contents before rerunning the exercise", async () => {
@@ -309,14 +309,14 @@ describe("CodeExplorer file synchronization", () => {
         .querySelector<HTMLButtonElement>('[data-action="reset"]')
         ?.click();
     });
-    sendTerminalInput("pnpm exercise:01\r");
+    sendTerminalInput("pnpm test\r");
     await act(async () => undefined);
 
     expect(session.writeInput).not.toHaveBeenCalled();
 
     await act(async () => resetWrite.resolve());
 
-    expect(session.writeInput).toHaveBeenCalledWith("pnpm exercise:01\r");
+    expect(session.writeInput).toHaveBeenCalledWith("pnpm test\r");
   });
 
   it("does not rerun stale contents when editor synchronization fails", async () => {
@@ -325,7 +325,7 @@ describe("CodeExplorer file synchronization", () => {
     vi.mocked(session.writeFile).mockReturnValueOnce(write.promise);
 
     await editCurrentFile(host, "export const value = 2;");
-    sendTerminalInput("pnpm exercise:01\r");
+    sendTerminalInput("pnpm test\r");
     await act(async () => write.reject(new Error("sync failed")));
 
     expect(session.writeInput).not.toHaveBeenCalled();
@@ -612,7 +612,7 @@ describe("CodeExplorer file synchronization", () => {
         dispose: vi.fn(async () => undefined),
       };
       const { host } = await createHarness({
-        initialCommand: "pnpm exercise:02",
+        initialCommand: "pnpm test",
         startSession: async () => {
           await gate;
           return session;
@@ -627,7 +627,7 @@ describe("CodeExplorer file synchronization", () => {
         "src/example.ts",
         "export const value = 2;",
       );
-      expect(session.writeInput).toHaveBeenCalledWith("pnpm exercise:02\r");
+      expect(session.writeInput).toHaveBeenCalledWith("pnpm test\r");
       expect(
         vi.mocked(session.writeFile).mock.invocationCallOrder[0],
       ).toBeLessThan(
@@ -681,7 +681,7 @@ describe("CodeExplorer file synchronization", () => {
     it("does not rerun the exercise when the terminal starts", async () => {
       const { session, view } = await createHarness({
         store: seedOutput(),
-        initialCommand: "pnpm exercise:02",
+        initialCommand: "pnpm test",
       });
 
       expect(session.writeInput).not.toHaveBeenCalled();

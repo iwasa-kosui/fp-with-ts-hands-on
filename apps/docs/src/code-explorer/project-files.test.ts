@@ -62,8 +62,6 @@ const allSnapshots = [
   "session-01-solution",
   "session-02",
   "session-02-solution",
-  "session-03-supplement",
-  "session-03-supplement-solution",
   "session-03",
   "session-03-solution",
   "session-04",
@@ -79,17 +77,6 @@ const inMemoryAppSnapshots = ["session-03-solution", "session-04"] as const;
 
 const initialAppointmentExportFor = (snapshot: ExampleSnapshot): string =>
   `${snapshot.replace(/-(\w)/g, (_, initial: string) => initial.toUpperCase())}InitialAppointment`;
-
-const relativeToSnapshot = (
-  snapshot: ExampleSnapshot,
-  repoPath: string,
-): string => {
-  const prefix = `examples/${snapshot}/`;
-  expect(repoPath.startsWith(prefix), `${repoPath} must start with ${prefix}`).toBe(
-    true,
-  );
-  return repoPath.slice(prefix.length);
-};
 
 const importClosure = (
   files: ProjectFiles,
@@ -160,18 +147,14 @@ describe("Code Explorer project files", () => {
     }
   });
 
-  it("adds the documented session command to each exercise workspace", () => {
-    for (const sequence of ["01", "02", "03", "03-supplement", "04", "06"] as const) {
+  it("pins typescript in each exercise workspace", () => {
+    for (const sequence of ["01", "02", "03", "04", "06"] as const) {
       const packageJson = JSON.parse(
         projectFilesForSnapshot(`session-${sequence}`)["package.json"]!,
       ) as {
-        scripts: Record<string, string>;
         devDependencies: Record<string, string>;
       };
 
-      expect(packageJson.scripts[`exercise:${sequence}`]).toBe(
-        "pnpm exercise",
-      );
       expect(packageJson.devDependencies.typescript).toBe("5.9.3");
     }
   });
@@ -222,9 +205,7 @@ describe("Code Explorer project files", () => {
   it("covers every terminal workspace with the dependency snapshot built from the terminal workspaces and the solution snapshots", () => {
     expect(terminalPackageJsonSources).toHaveLength(11);
     const dependencies = snapshotDependenciesOf(
-      mergedSnapshotPackageJsonFor(terminalPackageJsonSources, {
-        "exercise:06": "pnpm exercise",
-      }),
+      mergedSnapshotPackageJsonFor(terminalPackageJsonSources),
     );
     const manifest = {
       hash: "0",
@@ -302,30 +283,6 @@ describe("Code Explorer project files", () => {
     }
   });
 
-  it("keeps every exercise target different between starter and solution snapshots", () => {
-    for (const { session, workspace } of exercisePages) {
-      const starterFiles = projectFilesForSnapshot(workspace.snapshot);
-      const solutionSnapshot = session.solutionSnapshot;
-      expect(solutionSnapshot, session.slug).not.toBe("session-05");
-      const solutionFiles = projectFilesForSnapshot(solutionSnapshot);
-
-      for (const step of session.steps) {
-        for (const targetPath of step.targets) {
-          const target = relativeToSnapshot(session.snapshot, targetPath);
-          expect(starterFiles[target], `${session.slug}: ${target}`).toEqual(
-            expect.any(String),
-          );
-          expect(solutionFiles[target], `${solutionSnapshot}: ${target}`).toEqual(
-            expect.any(String),
-          );
-          expect(starterFiles[target], `${session.slug}: ${target}`).not.toBe(
-            solutionFiles[target],
-          );
-        }
-      }
-    }
-  });
-
   it.each(inMemoryAppSnapshots)("bundles the clinic-web server sources and an in-memory app into the %s workspace", (snapshot) => {
     const files = projectFilesForSnapshot(snapshot);
 
@@ -343,9 +300,6 @@ describe("Code Explorer project files", () => {
     expect(files["src/app.ts"]).not.toContain("better-sqlite3");
     expect(files["src/app.ts"]).not.toContain("adaptor/secondary/sqlite");
     expect(files["src/app.ts"]).not.toContain("drizzle");
-    expect(files["vitest.exercises.config.ts"]).toContain(
-      "@fp-with-ts/clinic-web/server",
-    );
     expect(
       JSON.parse(files["tsconfig.json"]!).compilerOptions.paths,
     ).toEqual({
@@ -464,7 +418,7 @@ describe("Code Explorer project files", () => {
   it.each([
     {
       snapshot: "session-06" as const,
-      entrypoint: "exercises/effects-and-events.test.ts",
+      entrypoint: "test/regression/result-errors.test.ts",
     },
     {
       snapshot: "session-06-solution" as const,

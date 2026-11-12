@@ -8,9 +8,10 @@
 pnpm demo:02
 pnpm --filter @fp-with-ts/clinic-session-02 typecheck
 pnpm --filter @fp-with-ts/clinic-session-02 test
-pnpm exercise:02
 ```
+
+S02 の演習は、ブラウザの演習の画面で、誤った変更を検出する仕組みを足します。
 
 デモは `http://localhost:3000` で起動します。
 
-`typecheck` と `test` は成功します。`pnpm exercise:02` は、表示名の分岐が状態の追加を検出できない1件の型要件について、意図した失敗で始まります。
+`typecheck` と `test` は成功します。

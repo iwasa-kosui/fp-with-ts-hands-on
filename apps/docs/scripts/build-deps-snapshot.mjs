@@ -74,9 +74,7 @@ const buildPackageJson = async () => {
       ),
     ),
   );
-  const completed = mergedSnapshotPackageJsonFor(sources, {
-    "exercise:06": "pnpm exercise",
-  });
+  const completed = mergedSnapshotPackageJsonFor(sources);
   return {
     contents: JSON.stringify(completed, null, 2),
     dependencies: snapshotDependenciesOf(completed),

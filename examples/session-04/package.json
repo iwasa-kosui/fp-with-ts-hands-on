@@ -6,8 +6,7 @@
     "dev": "vite --port 3000",
     "build": "vite build --mode client && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "exercise": "node exercises/run-exercise-checks.mjs"
+    "test": "vitest run"
   },
   "dependencies": {
     "@fp-with-ts/clinic-web": "workspace:*",

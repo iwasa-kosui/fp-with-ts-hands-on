@@ -8,8 +8,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "exercise": "node exercises/run-exercise-checks.mjs"
+    "test": "vitest run"
   },
   "dependencies": {
     "@fp-with-ts/clinic-web": "workspace:*",

@@ -61,7 +61,6 @@ export const session: SessionSummary = {
     "開発者は、参照実装でも5つの境界が維持されているかを確認しています。",
   ],
   incident: "各 Session で実施した改善を、実運用を想定した構成へ接続する方法を確認する。",
-  steps: [],
   decisions: [],
   finalReferences: [
     "examples/final/src/useCase/startExaminationUseCase.ts",
