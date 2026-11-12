@@ -154,7 +154,7 @@ const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
       {isBusiness && (
         <p class="eo-notice" data-notice>
           <span class="we-chip" data-band="err"><code class="we-mono">AppointmentNotFound</code></span>
-          <span aria-hidden="true">→</span>
+          <span class="eo-notice__arrow" aria-hidden="true">→</span>
           <span class="we-box" data-tone="ok">「{noticeMessage("AppointmentNotFound")}」</span>
         </p>
       )}
@@ -396,6 +396,21 @@ const data = JSON.stringify(steps.map(({ text: _text, ...rest }) => rest));
 
     .eo-connector {
       display: none;
+    }
+
+    .eo-path__file {
+      white-space: normal;
+    }
+
+    .eo-notice {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .eo-notice__arrow {
+      display: inline-block;
+      margin-inline-start: 0.75rem;
+      transform: rotate(90deg);
     }
   }
 </style>

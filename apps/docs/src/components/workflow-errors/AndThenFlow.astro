@@ -239,5 +239,38 @@ const data = JSON.stringify(frames.map(({ mark }) => mark));
     .atf-layout {
       grid-template-columns: minmax(0, 1fr);
     }
+
+    .atf-lane:not(.atf-lane--empty) {
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      grid-template-areas:
+        "label label label"
+        "in arrow out"
+        "verdict verdict verdict";
+    }
+
+    .atf-lane--empty {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        "label"
+        "wait";
+    }
+
+    .atf-lane > :nth-child(4) {
+      justify-self: end;
+    }
+
+    .atf-lane :global(.rb__value) {
+      padding-inline: 0.375rem;
+      font-size: 0.8125rem;
+      white-space: nowrap;
+    }
+
+    .atf-lane :global(.rb) {
+      min-width: 0;
+    }
+
+    .atf-verdict {
+      max-width: none;
+    }
   }
 </style>
