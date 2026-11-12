@@ -31,7 +31,7 @@ const languageOf = (path: string) => (path.endsWith(".mjs") ? "js" : "ts");
           <figure>
             <figcaption class="guard-answer__file">
               <span>{path}</span>
-              <CopyButton client:idle value={source} />
+              <CopyButton client:idle value={source} label={path} />
             </figcaption>
             {answerNoteFor(slug, path) === undefined ? null : (
               <p class="guard-answer__note">{answerNoteFor(slug, path)}</p>

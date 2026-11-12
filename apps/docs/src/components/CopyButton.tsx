@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export const CopyButton = ({ value }: Readonly<{ value: string }>) => {
+export const CopyButton = ({ value, label }: Readonly<{ value: string; label?: string }>) => {
   const [copied, setCopied] = useState(false);
 
   const copy = async (): Promise<void> => {
@@ -12,9 +12,17 @@ export const CopyButton = ({ value }: Readonly<{ value: string }>) => {
     }
   };
 
+  const text = copied ? "コピーしました" : "コピーする";
+
   return (
-    <button type="button" className="copy-button" onClick={copy} aria-live="polite">
-      {copied ? "コピーしました" : "コピーする"}
+    <button
+      type="button"
+      className="copy-button"
+      onClick={copy}
+      aria-live="polite"
+      aria-label={label === undefined ? undefined : `${label}を${text}`}
+    >
+      {text}
     </button>
   );
 };

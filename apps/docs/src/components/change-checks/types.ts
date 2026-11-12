@@ -11,7 +11,6 @@ export type ChangeCase = Readonly<{
   diff: readonly DiffLine[];
   results: Partial<Record<Mechanism, Outcome>>;
   why: string;
-  conceal?: string;
 }>;
 export type MechanismInfo = Readonly<{ id: Mechanism; name: string; detail: string; code: string }>;
 export type ChangeCheckSet = Readonly<{

@@ -1114,6 +1114,10 @@
   flex-wrap: wrap;
 }
 
+.guard-answer__file .copy-button {
+  margin-left: auto;
+}
+
 .guard-answer__file > span {
   min-width: 0;
   overflow-wrap: anywhere;

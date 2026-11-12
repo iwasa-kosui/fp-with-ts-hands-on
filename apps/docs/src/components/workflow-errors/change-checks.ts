@@ -18,29 +18,6 @@ selector: "CallExpression[callee.property.name='_unsafeUnwrap']",`,
 
 const cases: readonly ChangeCase[] = [
   {
-    id: "B5-error-kind-swallowed",
-    kind: "bad",
-    label: "失敗の種類を追加して default で受ける",
-    baseCase: "G2-notice-assert-never",
-    target: "お知らせコードの部分",
-    diff: [
-      { kind: "skip", text: "// import は同じ。AppointmentCancelled 型を追加し、assertNever を消す" },
-      { kind: "same", text: "export const toStartExaminationNoticeCode = (" },
-      { kind: "del", text: "  error: StartExaminationError," },
-      { kind: "add", text: "  error: StartExaminationError | AppointmentCancelled," },
-      { kind: "skip", text: "    // 2 つの case は、戻り値を文字列で直接記述する" },
-      { kind: "same", text: "    default:" },
-      { kind: "del", text: "      return assertNever(error);" },
-      { kind: "add", text: "      return \"invalid-state\";" },
-    ],
-    results: {
-      lint: { found: true, output: "switch-exhaustiveness-check: Switch is not exhaustive. Cases not matched: \"AppointmentCancelled\"", setting: `"@typescript-eslint/switch-exhaustiveness-check"
-{ considerDefaultExhaustiveForUnions: false }` },
-      tests: { found: false, output: "このファイルを実行するテストは 0 件", noTest: true, setting: "// この分岐のテストはまだありません" },
-    },
-    why: "`default` が受けるため、型検査は通ります。Linter のルールが検出します。この分岐を検証するテストはまだありません。",
-  },
-  {
     id: "B4-unsafe-unwrap",
     kind: "bad",
     label: "_unsafeUnwrap で例外に戻す",
@@ -62,8 +39,29 @@ const cases: readonly ChangeCase[] = [
       tests: { found: true, output: "2件失敗: expected 'threw' to be 'returned'" },
     },
     why: "`_unsafeUnwrap` は失敗のとき例外を投げますが、型はそれを表しません。Linter のルールとテストの両方が検出します。演習の検証は、一覧の変更を格納した `cases/` の中のコードだけを検査するため、route の入力の検査が使う `_unsafeUnwrap` は検査されません。実際のプロジェクトでは、ESLint の設定の `files` で対象を useCase に限定します。",
-
-    conceal: "この変更は、演習の任意の誤った変更の1件と同じです。検出結果と理由は、演習を終えてから表示してください。",
+  },
+  {
+    id: "B5-error-kind-swallowed",
+    kind: "bad",
+    label: "失敗の種類を追加して default で受ける",
+    baseCase: "G2-notice-assert-never",
+    target: "お知らせコードの部分",
+    diff: [
+      { kind: "skip", text: "// import は同じ。AppointmentCancelled 型を追加し、assertNever を消す" },
+      { kind: "same", text: "export const toStartExaminationNoticeCode = (" },
+      { kind: "del", text: "  error: StartExaminationError," },
+      { kind: "add", text: "  error: StartExaminationError | AppointmentCancelled," },
+      { kind: "skip", text: "    // 2 つの case は、戻り値を文字列で直接記述する" },
+      { kind: "same", text: "    default:" },
+      { kind: "del", text: "      return assertNever(error);" },
+      { kind: "add", text: "      return \"invalid-state\";" },
+    ],
+    results: {
+      lint: { found: true, output: "switch-exhaustiveness-check: Switch is not exhaustive. Cases not matched: \"AppointmentCancelled\"", setting: `"@typescript-eslint/switch-exhaustiveness-check"
+{ considerDefaultExhaustiveForUnions: false }` },
+      tests: { found: false, output: "このファイルを実行するテストは 0 件", noTest: true, setting: "// この分岐のテストはまだありません" },
+    },
+    why: "`default` が受けるため、型検査は通ります。Linter のルールが検出します。この分岐を検証するテストはまだありません。",
   },
 ];
 

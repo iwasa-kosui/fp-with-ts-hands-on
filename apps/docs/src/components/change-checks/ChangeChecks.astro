@@ -40,13 +40,9 @@ const { cases, mechanisms } = set;
             class="cc__panel"
             data-panel={changeCase.id}
             data-active={index === 0}
-            data-concealed={changeCase.conceal !== undefined ? "" : undefined}
             data-kinds={JSON.stringify(changeCase.diff.map((line) => line.kind))}
           >
             <Code code={changeCase.diff.map((line) => line.text).join("\n")} lang="ts" />
-            {changeCase.conceal !== undefined && (
-              <div class="cc__conceal"><p>{changeCase.conceal}</p><button type="button" data-reveal>検出結果と理由を表示する</button></div>
-            )}
             <p class="cc__why">{changeCase.why.split("`").map((part, index) => (index % 2 === 1 ? <code>{part}</code> : part))}</p>
           </div>
         ))}
@@ -111,7 +107,6 @@ const { cases, mechanisms } = set;
     const live = root.querySelector<HTMLElement>("[data-live]");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let timers: number[] = [];
-    const revealed = new Set<string>();
 
     panels.forEach((panel) => {
       const kinds = JSON.parse(panel.dataset.kinds ?? "[]") as string[];
@@ -124,17 +119,8 @@ const { cases, mechanisms } = set;
     const announce = (input: HTMLInputElement) => {
       if (!live) return;
       const label = input.closest("label")?.textContent?.trim() ?? "";
-      if (root.hasAttribute("data-concealed")) {
-        live.textContent = `${label}。検出結果は、表示のボタンを押すまで閉じています。`;
-        return;
-      }
       const results = checks.map((check) => `${check.dataset.name ?? ""} ${verdictOf(input.value, check)}`);
       live.textContent = `${label}。${results.join("、")}`;
-    };
-
-    const updateConcealed = (id: string) => {
-      const panel = panels.find((candidate) => candidate.dataset.panel === id);
-      root.toggleAttribute("data-concealed", panel?.hasAttribute("data-concealed") === true && !revealed.has(id));
     };
 
     const select = (input: HTMLInputElement) => {
@@ -142,7 +128,6 @@ const { cases, mechanisms } = set;
       timers = [];
       panels.forEach((panel) => panel.toggleAttribute("data-active", panel.dataset.panel === input.value));
       outcomes.forEach((outcome) => outcome.toggleAttribute("data-active", outcome.dataset.outcome === input.value));
-      updateConcealed(input.value);
       announce(input);
 
       if (reducedMotion.matches) {
@@ -162,16 +147,6 @@ const { cases, mechanisms } = set;
     inputs.forEach((input) =>
       input.addEventListener("change", () => {
         if (input.checked) select(input);
-      }),
-    );
-
-    root.querySelectorAll<HTMLElement>("[data-reveal]").forEach((button) =>
-      button.addEventListener("click", () => {
-        const selected = inputs.find((input) => input.checked);
-        if (!selected) return;
-        revealed.add(selected.value);
-        root.removeAttribute("data-concealed");
-        announce(selected);
       }),
     );
 
@@ -355,46 +330,6 @@ const { cases, mechanisms } = set;
 
   .cc[data-running] .cc__why {
     opacity: 0;
-  }
-
-  .cc[data-concealed] .cc__why {
-    display: none;
-  }
-
-  .cc[data-concealed] .cc__checks .cc__outcome {
-    visibility: hidden;
-  }
-
-  .cc:not([data-concealed]) .cc__conceal {
-    display: none;
-  }
-
-  .cc__conceal {
-    margin: 0.25rem 0 0;
-    font-size: 0.875rem;
-    line-height: 1.45;
-  }
-
-  .cc__conceal p {
-    margin: 0;
-  }
-
-  .cc__conceal button {
-    margin-top: 0.25rem;
-    padding: 0.125rem 0.625rem;
-    border: 1px solid var(--role-border);
-    border-radius: 0.25rem;
-    background: var(--role-surface);
-    color: var(--role-text);
-    font: inherit;
-    font-size: 0.8125rem;
-    font-weight: 700;
-    cursor: pointer;
-  }
-
-  .cc__conceal button:focus-visible {
-    outline: 3px solid var(--role-accent);
-    outline-offset: 2px;
   }
 
   .cc__checks {

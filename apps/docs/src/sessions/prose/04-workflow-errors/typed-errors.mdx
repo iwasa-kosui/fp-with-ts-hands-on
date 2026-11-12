@@ -6,6 +6,6 @@ import FailureKinds from "../../../components/workflow-errors/FailureKinds.astro
 
 <p>予約が見つからない失敗が <code>AppointmentNotFound</code>、状態不正が <code>InvalidAppointmentState</code> です。<code>actual</code> には予約の現在の状態が格納されます。2つを <code>|</code> で組み合わせた型（ユニオン型）が <code>StartExaminationError</code> で、診察開始の失敗の型です。<code>kind</code> の使い方は、S01 で確認した Discriminated Union と同じです。</p>
 
-<p>図の2コマ目（状態不正の例）のコードにある <code>ensureCheckedIn</code> は、予約が受付済みかを判定する業務ロジックです。S00 では、業務ロジックを <code>domain/</code> に実装すると説明しました。ただし、<code>ensureCheckedIn</code> を使うのは診察開始の useCase だけであるため、<code>useCase/errors.ts</code> に置いています。</p>
+<p>図の2コマ目（状態不正の例）のコードにある <code>ensureCheckedIn</code> は、予約が受付済みかを判定する業務ロジックです。S00 では、業務ロジックを <code>domain/</code> に実装すると説明しました。ただし、<code>ensureCheckedIn</code> は複数の useCase が共有しない判定であるため、<code>useCase/errors.ts</code> に置いています。</p>
 
 <p>ここまでで、失敗に種類を付けて、戻り値の型に表せます。</p>
