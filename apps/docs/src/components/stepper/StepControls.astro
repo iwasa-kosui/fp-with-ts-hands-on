@@ -1,9 +1,11 @@
 ---
+type Props = { play?: boolean };
+const { play = true } = Astro.props;
 ---
 
 <div class="step-controls" data-controls hidden>
   <button type="button" data-prev disabled>← 前のコマ</button>
-  <button type="button" data-play>▶ 再生</button>
+  {play && <button type="button" data-play>▶ 再生</button>}
   <button type="button" data-next>次のコマ →</button>
   <span data-progress></span>
 </div>
