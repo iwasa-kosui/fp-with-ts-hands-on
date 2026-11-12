@@ -55,9 +55,7 @@ const tags = steps.flatMap((step, index) => ("label" in step ? [{ ...step, at: i
         data-shown={staticView ? "" : undefined}
         style={`grid-row: ${tag.from} / ${tag.to + 1}; grid-column: ${tag.lane}`}
       >
-        {tag.label.map((part, i) => (
-          <Fragment>{i > 0 && <wbr />}{part}</Fragment>
-        ))}
+        <span>{tag.label.map((part, i) => (<Fragment>{i > 0 && <wbr />}{part}</Fragment>))}</span>
       </div>
     ))}
   </div>
