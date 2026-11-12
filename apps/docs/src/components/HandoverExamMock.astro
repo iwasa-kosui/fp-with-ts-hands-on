@@ -174,7 +174,7 @@ status: "in-examination"`,
     impl: undefined,
     values: undefined,
     warn: undefined,
-    empty: "色の付いた4つのファイルのいずれにも、会計済みの予約を拒否する処理はありませんでした",
+    empty: "ここまでにたどった4つのファイル（routes.ts、startExamination.ts、appointment.ts、appointmentRepository.ts）のいずれにも、会計済みの予約を拒否する処理はありませんでした",
   },
 ] as const;
 
@@ -249,7 +249,7 @@ const files = JSON.stringify(steps.map((step) => step.file));
       </section>
 
       <section class="hem__col hem__col--code">
-        <h5 class="hem__col-title">コード（実行中のファイルと、ハイライトされた実行中の行）</h5>
+        <h5 class="hem__col-title">コード（見出しは実行中のファイル、ハイライトは実行中の行）</h5>
         <div class="hem__files" data-files-pane role="region" aria-label="コード">
           {
             steps.map((step, index) =>
