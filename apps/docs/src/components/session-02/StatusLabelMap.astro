@@ -12,6 +12,7 @@ const rows = kinds.map((kind) => {
   if (caseIndex < 0 || label === undefined) throw new Error(`StatusLabelMap: case "${kind}" の表示名が見つかりません`);
   return { kind, label };
 });
+const breakable = (name: string) => name.split(/(?<=[a-z])(?=[A-Z])/);
 ---
 
 <figure class="map" data-status-label-map aria-label="予約の6つの状態が、画面の表示名に対応する図">
@@ -21,9 +22,9 @@ const rows = kinds.map((kind) => {
     <p class="map__head map__head--kinds">予約の状態（<code>kind</code>）</p>
     <p class="map__head map__head--screen">受付の画面の表示名</p>
     {rows.map(({ kind }, index) => (
-      <p class="map__kind" style={`grid-row: ${index + 2}; --i: ${index}`}><code>{kind}</code></p>
+      <p class="map__kind" style={`grid-row: ${index + 2}; --i: ${index}`}><code>{breakable(kind).map((part, partIndex) => <>{partIndex > 0 && <wbr />}{part}</>)}</code></p>
     ))}
-    <p class="map__fn"><code>toStatusLabel</code><span>状態を表示名へ変換する関数</span></p>
+    <p class="map__fn"><code>toStatus<wbr />Label</code><span>状態を表示名へ変換する関数</span></p>
     {rows.map(({ label }, index) => (
       <p class="map__label" style={`grid-row: ${index + 2}; --i: ${index}`}>{label}</p>
     ))}
@@ -103,6 +104,8 @@ const rows = kinds.map((kind) => {
     font-size: 0.875rem;
     font-weight: 700;
     line-height: 1.4;
+    overflow-wrap: normal;
+    word-break: normal;
   }
 
   .map__kind {
@@ -116,6 +119,8 @@ const rows = kinds.map((kind) => {
 
   .map__kind code {
     font-size: 0.875rem;
+    overflow-wrap: normal;
+    word-break: normal;
   }
 
   .map__kind::after,
@@ -152,7 +157,8 @@ const rows = kinds.map((kind) => {
   .map__fn code {
     font-size: 0.9375rem;
     font-weight: 800;
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
+    word-break: normal;
   }
 
   .map__fn span {
@@ -222,13 +228,27 @@ const rows = kinds.map((kind) => {
 
   @media (max-width: 40rem) {
     .map__board {
-      column-gap: 1.5rem;
-      grid-template-columns: minmax(0, 1fr) minmax(5rem, 7rem) minmax(0, 1fr);
+      column-gap: 0.75rem;
+      grid-template-columns: minmax(0, 1fr) minmax(4.5rem, 5rem) minmax(0, 1fr);
+    }
+
+    .map__kind,
+    .map__label {
+      padding-inline: 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .map__kind code {
+      font-size: 0.75rem;
+    }
+
+    .map__fn {
+      padding-inline: 0.375rem;
     }
 
     .map__kind::after,
     .map__label::before {
-      width: 1.5rem;
+      width: 0.75rem;
     }
   }
 </style>

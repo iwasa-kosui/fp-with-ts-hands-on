@@ -513,6 +513,10 @@ const litData = JSON.stringify(lit);
     .audit-flow__columns {
       grid-template-columns: 1fr;
     }
+
+    .audit-flow[data-ready] .audit-flow__row:not(.is-shown) {
+      display: none;
+    }
   }
 
   @media (max-height: 844px) {

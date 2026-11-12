@@ -316,10 +316,44 @@ const terms = [
     .boundary-terms__stage {
       grid-template-columns: 1fr;
       row-gap: 1.75rem;
+      margin-block-end: 3.5rem;
+    }
+
+    .boundary-terms__zone {
+      align-content: start;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem 0.75rem;
+    }
+
+    .boundary-terms__zone h4 {
+      position: static;
+    }
+
+    .boundary-terms__gate {
+      margin-block-start: 3.25rem;
+    }
+
+    .boundary-terms__chip--typed {
+      margin-block-start: 2.75rem;
+    }
+
+    .boundary-terms__pin--zone {
+      inset-block-end: -3rem;
     }
 
     .boundary-terms__link {
       min-height: 2.5rem;
+    }
+
+    .boundary-terms__link--exit {
+      padding-block-start: 3.25rem;
+    }
+
+    .boundary-terms__link--exit .boundary-terms__pin {
+      inset-block-start: 0;
+      inset-block-end: auto;
+      width: max-content;
+      max-width: 12rem;
     }
 
     .boundary-terms__line {

@@ -420,4 +420,11 @@ const stages = ["型検査", "実行", "画面"] as const;
       transition: none;
     }
   }
+
+  @media (max-width: 51.99rem) {
+    .ff[data-ready] .ff__lane--good:not(:has(.is-shown)),
+    .ff[data-ready] .ff__lane--outside:not(.is-shown) {
+      display: none;
+    }
+  }
 </style>
