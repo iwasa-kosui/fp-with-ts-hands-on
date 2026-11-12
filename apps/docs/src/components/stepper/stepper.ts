@@ -14,7 +14,7 @@ export const mountStepper = ({ root, onStep, intervalMs = 6000 }: Options): Step
   const play = root.querySelector<HTMLButtonElement>("[data-play]");
   const next = root.querySelector<HTMLButtonElement>("[data-next]");
   const progress = root.querySelector<HTMLElement>("[data-progress]");
-  if (!controls || !prev || !play || !next || !progress || panels.length === 0) return;
+  if (!controls || !prev || !next || !progress || panels.length === 0) return;
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const last = panels.length - 1;
@@ -24,7 +24,7 @@ export const mountStepper = ({ root, onStep, intervalMs = 6000 }: Options): Step
   const stop = () => {
     if (timer !== undefined) window.clearInterval(timer);
     timer = undefined;
-    play.textContent = "▶ 再生";
+    if (play) play.textContent = "▶ 再生";
   };
 
   const show = (index: number) => {
@@ -39,21 +39,21 @@ export const mountStepper = ({ root, onStep, intervalMs = 6000 }: Options): Step
     onStep?.(index);
   };
 
-  const start = () => {
-    play.textContent = "❚❚ 一時停止";
+  const start = (button: HTMLButtonElement) => {
+    button.textContent = "❚❚ 一時停止";
     timer = window.setInterval(() => {
       show(Math.min(current + 1, last));
       if (current === last) stop();
     }, intervalMs);
   };
 
-  play.addEventListener("click", () => {
+  play?.addEventListener("click", () => {
     if (timer !== undefined) {
       stop();
       return;
     }
     if (current === last) show(0);
-    start();
+    start(play);
   });
   prev.addEventListener("click", () => {
     stop();
@@ -64,12 +64,14 @@ export const mountStepper = ({ root, onStep, intervalMs = 6000 }: Options): Step
     show(Math.min(current + 1, last));
   });
 
-  const applyMotion = () => {
-    play.hidden = reducedMotion.matches;
-    if (reducedMotion.matches) stop();
-  };
-  reducedMotion.addEventListener("change", applyMotion);
-  applyMotion();
+  if (play) {
+    const applyMotion = () => {
+      play.hidden = reducedMotion.matches;
+      if (reducedMotion.matches) stop();
+    };
+    reducedMotion.addEventListener("change", applyMotion);
+    applyMotion();
+  }
 
   root.dataset.ready = "";
   controls.hidden = false;

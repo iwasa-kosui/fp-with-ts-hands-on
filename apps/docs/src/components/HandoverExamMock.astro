@@ -4,8 +4,6 @@ import routesSource from "../../../../examples/session-00/src/adaptor/primary/we
 import startExaminationSource from "../../../../examples/session-00/src/useCase/startExamination.ts?raw";
 import repositorySource from "../../../../examples/session-00/src/adaptor/secondary/sqlite/appointmentRepository.ts?raw";
 import appointmentSource from "../../../../examples/session-00/src/domain/appointment/appointment.ts?raw";
-import MiniTree from "./mini-tree/MiniTree.astro";
-import { miniTree } from "./mini-tree/mini-tree";
 import StepControls from "./stepper/StepControls.astro";
 
 const appointmentId = "11111111-1111-4111-8111-111111111111";
@@ -78,13 +76,6 @@ const appointmentFile = "domain/appointment/appointment.ts";
 
 const updatedSummary = `updated: { status: "in-examination", amount: 4800, ... }`;
 
-const tree = miniTree("session-00", "src/", [
-  { folder: "adaptor/primary/web/", files: [{ id: "route", name: "routes.ts", note: "入口" }] },
-  { folder: "useCase/", files: [{ id: "use-case", name: "startExamination.ts", note: "ユースケース" }] },
-  { folder: "domain/appointment/", files: [{ id: "domain", name: "appointment.ts", note: "業務ロジック" }] },
-  { folder: "adaptor/secondary/sqlite/", files: [{ id: "db", name: "appointmentRepository.ts", note: "DB" }] },
-]);
-
 const steps = [
   {
     text: "会計が完了した Mugi の予約です。画面の「会計済み」と「Paid」、データベースの <code>paid</code> は、いずれも同じ状態の表記です。獣医師は別の予約と誤認して、この画面を開いています。",
@@ -95,7 +86,6 @@ const steps = [
     values: undefined,
     warn: undefined,
     empty: "サーバーの処理はまだ開始していません",
-    lit: [],
   },
   {
     text: "獣医師が「診察を開始する」を押します。入口は、予約の ID を受け取り、担当の獣医師の ID と合わせて次の処理へ渡します。受け取る値は ID のみであるため、サーバーはこの時点で予約の状態を把握していません。",
@@ -112,7 +102,6 @@ const steps = [
     },
     warn: undefined,
     empty: undefined,
-    lit: ["route"],
   },
   {
     text: "ユースケース（1つの業務の処理順序をまとめた関数）が、データベースから Mugi の予約を取得します。状態は <code>paid</code> であり、この時点でサーバーは会計済みであることを把握します。<code>repository</code> は、データベースを読み書きするオブジェクトです。",
@@ -129,7 +118,6 @@ const steps = [
     },
     warn: undefined,
     empty: undefined,
-    lit: ["use-case", "db"],
   },
   {
     text: "本来はここで処理を中断すべきです。しかし、業務ロジック（操作の可否などを判定する処理）を置く <code>domain/</code> の <code>updateStatus</code> は、受け取った値で <code>status</code> を上書きするだけで、現在の状態を検証しません。省略した行にも、状態を検証する処理はありません。",
@@ -148,7 +136,6 @@ status: "in-examination"`,
     },
     warn: "状態を検証する処理がない",
     empty: undefined,
-    lit: ["use-case", "domain"],
   },
   {
     text: "データベースの予約を、新しい内容で上書きします。<code>paid</code> は <code>in-examination</code> に変わり、<code>examinationStartedAt</code> も押した時刻で上書きされます。画面の右の欄で、変わった行が強調表示されます。<code>amount</code> と <code>paidAt</code> は残っているため、会計済みの予約が診察中の状態になりました。",
@@ -162,7 +149,6 @@ status: "in-examination"`,
     values: { input: updatedSummary, output: undefined },
     warn: undefined,
     empty: undefined,
-    lit: ["use-case", "db"],
   },
   {
     text: "監査記録に、診察を開始した操作を1行追加します。監査記録の <code>payload</code>（操作後の予約内容を保存する項目）には予約全体が含まれるため、調査に不要な飼い主の氏名、メールアドレス、電話番号も保存されます。これが課題2です。",
@@ -179,7 +165,6 @@ status: "in-examination"`,
     },
     warn: undefined,
     empty: undefined,
-    lit: ["use-case", "db"],
   },
   {
     text: "サーバーの応答によって画面が更新され、表示は「診察中」に変わります。診察中の表示を見た受付が会計担当へ未精算と伝え、会計担当が飼い主へ同じ4,800円を再度請求しました。これが課題1です。",
@@ -189,8 +174,7 @@ status: "in-examination"`,
     impl: undefined,
     values: undefined,
     warn: undefined,
-    empty: "色の付いた4つのファイルのいずれにも、会計済みの予約を拒否する処理はありませんでした",
-    lit: ["route", "use-case", "domain", "db"],
+    empty: "ここまでに表示した4つのファイルのいずれにも、会計済みの予約を拒否する処理はありませんでした",
   },
 ] as const;
 
@@ -225,12 +209,11 @@ const payloadLines = [
 const highlights = JSON.stringify(steps.map((step) => step.highlight ?? ""));
 const shows = JSON.stringify(steps.map((step) => step.show ?? ""));
 const files = JSON.stringify(steps.map((step) => step.file));
-const lit = JSON.stringify(steps.map((step) => step.lit));
 ---
 
-<figure class="hem" data-exam-mock data-highlights={highlights} data-shows={shows} data-files={files} data-lit={lit}>
+<figure class="hem" data-exam-mock data-highlights={highlights} data-shows={shows} data-files={files}>
   <div class="hem__player" data-player>
-    <StepControls />
+    <StepControls play={false} />
 
     <div aria-live="polite">
       <ol class="hem__frames">
@@ -238,12 +221,10 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
       </ol>
     </div>
 
-    <MiniTree tree={tree} class="hem__tree" />
-
     <div class="hem__grid">
       <section class="hem__col hem__col--screen" aria-label="画面">
         <h5 class="hem__col-title">画面</h5>
-        <div class="hem__screen" data-screen>
+        <div class="hem__screen">
           <section class="hem__card">
             <div class="hem__heading">
               <h6 class="hem__pet">Mugi</h6>
@@ -254,29 +235,21 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
               <dd data-switch-at="6" data-text-before="Paid" data-text-after="InExamination">Paid</dd>
             </dl>
             <div class="hem__actions" aria-label="予約操作">
-              {
-                actions.map((action) =>
-                  action.kind === "start" ? (
-                    <button class="hem__action hem__action--primary hem__start" type="button" data-start>
-                      <span>{action.label}</span>
-                    </button>
-                  ) : (
-                    <span class="hem__action hem__action--primary">
-                      <span>{action.label}</span>
-                    </span>
-                  ),
-                )
-              }
+              <p class="hem__label">操作</p>
+              <ul class="hem__action-list">
+                {
+                  actions.map((action) =>
+                    action.kind === "start" ? <li data-start>{action.label}</li> : <li>{action.label}</li>,
+                  )
+                }
+              </ul>
             </div>
           </section>
-          <svg class="hem__cursor" data-cursor viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
-            <path d="M3 2 L3 19 L8 14.5 L11.5 22 L14.5 20.6 L11 13.2 L18 13 Z" stroke-width="1.8" stroke-linejoin="round"></path>
-          </svg>
         </div>
       </section>
 
       <section class="hem__col hem__col--code">
-        <h5 class="hem__col-title">コード（上の色の付いたファイルが、現在の処理の位置）</h5>
+        <h5 class="hem__col-title">コード（見出しは実行中のファイル、ハイライトは実行中の行）</h5>
         <div class="hem__files" data-files-pane role="region" aria-label="コード">
           {
             steps.map((step, index) =>
@@ -394,13 +367,10 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
                 <dd>{frame.kind}</dd>
               </dl>
               <div class="hem__actions" aria-label="予約操作">
-                {
-                  actions.map((action) => (
-                    <span class="hem__action hem__action--primary">
-                      <span>{action.label}</span>
-                    </span>
-                  ))
-                }
+                <p class="hem__label">操作</p>
+                <ul class="hem__action-list">
+                  {actions.map((action) => <li>{action.label}</li>)}
+                </ul>
               </div>
             </section>
             <div class="hem__table">
@@ -500,20 +470,16 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
 </figure>
 
 <script>
-  import { setMiniTreeCurrent } from "./mini-tree/mini-tree-client";
   import { mountStepper } from "./stepper/stepper";
 
   document.querySelectorAll<HTMLElement>("[data-exam-mock]").forEach((root) => {
-    const screen = root.querySelector<HTMLElement>("[data-screen]");
     const startButton = root.querySelector<HTMLElement>("[data-player] [data-start]");
-    const cursor = root.querySelector<HTMLElement>("[data-cursor]");
     const pane = root.querySelector<HTMLElement>("[data-files-pane]");
-    if (!screen || !startButton || !cursor || !pane) return;
+    if (!startButton || !pane) return;
 
     const highlights = JSON.parse(root.dataset.highlights ?? "[]") as string[];
     const shows = JSON.parse(root.dataset.shows ?? "[]") as string[];
     const files = JSON.parse(root.dataset.files ?? "[]") as string[];
-    const lit = JSON.parse(root.dataset.lit ?? "[]") as string[][];
     const player = root.querySelector<HTMLElement>("[data-player]") ?? root;
     const blocks = [...pane.querySelectorAll<HTMLElement>("[data-code-file]")];
     const codeLines = new Map(
@@ -525,15 +491,6 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
       element.classList.remove("is-flash");
       void element.offsetWidth;
       element.classList.add("is-flash");
-    };
-
-    const placeCursor = (active: boolean) => {
-      const screenBox = screen.getBoundingClientRect();
-      const buttonBox = startButton.getBoundingClientRect();
-      const x = buttonBox.left - screenBox.left + buttonBox.width * 0.7 - 3;
-      const y = buttonBox.top - screenBox.top + buttonBox.height * 0.65 - 2;
-      cursor.style.transform = active ? `translate(${x}px, ${y}px)` : `translate(${x + 70}px, ${y - 60}px)`;
-      cursor.style.opacity = active ? "1" : "0";
     };
 
     const showCode = (index: number) => {
@@ -600,7 +557,6 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
       player.querySelectorAll<HTMLElement>("[data-empty-at]").forEach((element) => {
         element.hidden = index !== Number(element.dataset.emptyAt);
       });
-      setMiniTreeCurrent(player, lit[index] ?? []);
       player.querySelectorAll<HTMLElement>("[data-focus-at]").forEach((element) => {
         element.classList.toggle("is-focus", index === Number(element.dataset.focusAt));
       });
@@ -615,20 +571,12 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
         element.classList.toggle("is-off", index !== Number(element.dataset.at));
       });
 
-      startButton.setAttribute("aria-disabled", String(index !== 0));
-      startButton.classList.toggle("is-attention", index === 0);
-      startButton.classList.toggle("is-pressed", index === 1);
-      placeCursor(index === 1);
+      startButton.classList.toggle("is-attention", index <= 1);
       showCode(index);
     };
 
     player.querySelectorAll(".hem__lines code").forEach((code) => code.removeAttribute("tabindex"));
     mountStepper({ root, onStep: render });
-    startButton.addEventListener("click", () => {
-      if (rendered !== 0) return;
-      root.querySelector<HTMLButtonElement>("[data-next]")?.click();
-    });
-    new ResizeObserver(() => placeCursor(rendered === 1)).observe(screen);
   });
 </script>
 
@@ -787,14 +735,11 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
     line-height: 1.4;
   }
 
-  .hem__screen {
-    position: relative;
-  }
-
   .hem__card {
     display: grid;
-    gap: 10px;
-    padding: 10px;
+    gap: 6px;
+    min-width: 0;
+    padding: 6px;
     border: 1px solid var(--role-border);
     border-radius: 8px;
     background: var(--role-surface);
@@ -805,11 +750,11 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
     flex-direction: column;
     gap: 0 8px;
     margin: 0;
-    padding: 4px 8px;
+    padding: 4px 6px;
     border: 1px solid var(--role-border);
     border-radius: 6px;
     background: var(--role-bg);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     line-height: 1.4;
   }
 
@@ -834,13 +779,13 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 8px;
+    gap: 4px;
   }
 
   .hem .hem__pet {
     margin: 0;
     color: var(--role-text);
-    font-size: 1.25rem;
+    font-size: 1rem;
     line-height: 1.3;
   }
 
@@ -865,67 +810,29 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
   }
 
   .hem__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    display: grid;
+    gap: 2px;
   }
 
-  .hem .hem__action {
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 28px;
-    max-width: 100%;
-    padding: 0 8px;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    font: inherit;
-    font-size: 0.8rem;
-    font-weight: 600;
-    line-height: 1.25;
+  .hem .hem__action-list {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    list-style: none;
   }
 
-  .hem .hem__action--primary {
-    border-color: var(--role-accent);
-    background: var(--role-accent);
-    color: var(--role-surface);
+  .hem .hem__action-list li {
+    margin: 0;
+    padding: 0 2px;
+    overflow-wrap: anywhere;
   }
 
-  .hem button.hem__start {
-    cursor: pointer;
-    text-align: left;
-    transition: transform 0.15s ease 0.6s, filter 0.15s ease 0.6s;
-  }
-
-  .hem button.hem__start.is-attention {
-    outline: 2px solid var(--role-negative);
-    outline-offset: 2px;
-    animation: hem-pulse 2s ease-in-out infinite;
-  }
-
-  .hem button.hem__start.is-pressed {
-    transform: scale(0.95);
-    filter: brightness(0.85);
-  }
-
-  .hem__cursor {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 2;
-    opacity: 0;
-    pointer-events: none;
-    transition: transform 0.6s ease, opacity 0.6s ease;
-  }
-
-  .hem__cursor path {
-    fill: var(--role-surface);
-    stroke: var(--role-text);
-  }
-
-  .hem :global(.hem__tree) {
-    margin-block-end: 4px;
+  .hem .hem__action-list li.is-attention {
+    background: color-mix(in srgb, var(--role-accent) 22%, var(--role-surface));
+    font-weight: 700;
   }
 
   .hem__empty {
@@ -1226,15 +1133,6 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
     .hem__frames {
       margin-block-end: 2px;
     }
-
-    .hem :global(.hem__tree) {
-      margin-block-end: 2px;
-      row-gap: 0;
-    }
-
-    .hem :global(.hem__tree .mini-tree__file) {
-      padding-block: 0;
-    }
   }
 
   .hem__frames-static {
@@ -1295,17 +1193,6 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
     outline-offset: 2px;
   }
 
-  @keyframes hem-pulse {
-    0%,
-    100% {
-      box-shadow: 0 0 0 0 transparent;
-    }
-
-    50% {
-      box-shadow: 0 0 0 6px color-mix(in srgb, var(--role-negative) 45%, transparent);
-    }
-  }
-
   @keyframes hem-flash {
     from {
       background-color: color-mix(in srgb, var(--role-accent) 35%, var(--role-surface));
@@ -1314,7 +1201,7 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
 
   @container hem (min-width: 900px) {
     .hem__grid {
-      grid-template-columns: 170px minmax(0, 1fr) 290px;
+      grid-template-columns: 140px minmax(0, 1fr) 290px;
       height: var(--hem-grid-h);
     }
 
@@ -1324,9 +1211,6 @@ const lit = JSON.stringify(steps.map((step) => step.lit));
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .hem__cursor,
-    .hem button.hem__start,
-    .hem button.hem__start.is-attention,
     .hem .hem__block :global(.line),
     .hem .hem__lines li,
     .hem .is-flash {
