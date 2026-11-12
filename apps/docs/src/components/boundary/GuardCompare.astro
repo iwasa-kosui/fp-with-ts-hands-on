@@ -278,6 +278,21 @@ const groups = [
   }
 
   @media (max-width: 40rem) {
+    .guard__chips {
+      display: grid;
+      width: 100%;
+    }
+
+    .guard__chips button {
+      width: 100%;
+      text-align: start;
+    }
+
+    .guard__chips button small {
+      max-width: none;
+      margin-block-start: 0.125rem;
+    }
+
     .guard__groups {
       grid-template-columns: 1fr;
     }

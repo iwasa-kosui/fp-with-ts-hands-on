@@ -203,9 +203,9 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
 
 <div class="branded-id-flow" data-branded-id-flow data-frames={playerData}>
   <div class="branded-id-flow__controls" data-controls hidden>
-    <button type="button" data-prev disabled>← 前のコマ</button>
+    <button type="button" data-prev disabled>← 前<span class="branded-id-flow__more">のコマ</span></button>
     <span data-progress>1 / {frames.length}</span>
-    <button type="button" data-next>次のコマ →</button>
+    <button type="button" data-next>次<span class="branded-id-flow__more">のコマ</span> →</button>
     <div class="branded-id-flow__stage" data-stage hidden>
       <span class="branded-id-flow__tag" data-stage-tag hidden></span>
     </div>
@@ -260,14 +260,14 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
         <text x="24" y="318" class="branded-id-flow__node-text branded-id-flow__signature branded-id-flow__mono">acceptVeterinarianId(_id: VeterinarianId)</text>
         <g class="branded-id-flow__slot-tag branded-id-flow__slot-tag--string">
           <rect x="384" y="302" width="232" height="24" rx="12" class="branded-id-flow__pill-string"></rect>
-          <text x="500" y="319" text-anchor="middle" class="branded-id-flow__node-text">VeterinarianId（中身は string）</text>
+          <text x="500" y="319" text-anchor="middle" class="branded-id-flow__node-text"><tspan class="branded-id-flow__wide">VeterinarianId（</tspan>中身は string<tspan class="branded-id-flow__wide">）</tspan></text>
         </g>
         <g class="branded-id-flow__slot-tag branded-id-flow__slot-tag--brand" data-tone="veterinarian">
           <rect x="446" y="302" width="108" height="24" rx="12" class="branded-id-flow__pill-brand"></rect>
           <text x="500" y="319" text-anchor="middle" class="branded-id-flow__pill-text branded-id-flow__mono">VeterinarianId</text>
         </g>
         <rect x="290" y="338" width="190" height="64" rx="6" class="branded-id-flow__slot"></rect>
-        <text x="385" y="374" text-anchor="middle" class="branded-id-flow__note">引数</text>
+        <text x="385" y="374" text-anchor="middle" class="branded-id-flow__note branded-id-flow__slot-label">引数</text>
         <g class="branded-id-flow__verdict branded-id-flow__verdict--pass">
           <rect x="24" y="408" width="592" height="24" rx="6"></rect>
           <text x="320" y="425" text-anchor="middle">型検査: 通る（取り違えを検出できない）</text>
@@ -992,6 +992,108 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
 
     .branded-id-flow :global(.mini-tree) {
       line-height: 1.15;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .branded-id-flow svg[viewBox] {
+      max-height: none;
+    }
+
+    .branded-id-flow svg .branded-id-flow__band-label,
+    .branded-id-flow svg .branded-id-flow__node-text,
+    .branded-id-flow svg .branded-id-flow__signature,
+    .branded-id-flow svg .branded-id-flow__note,
+    .branded-id-flow svg .branded-id-flow__pill-text,
+    .branded-id-flow svg .branded-id-flow__badge text,
+    .branded-id-flow svg .branded-id-flow__reject text,
+    .branded-id-flow svg .branded-id-flow__verdict text {
+      font-size: 17px;
+    }
+
+    .branded-id-flow svg .branded-id-flow__wide {
+      display: none;
+    }
+
+    .branded-id-flow svg .branded-id-flow__badge circle,
+    .branded-id-flow svg .branded-id-flow__reject circle {
+      r: 12px;
+    }
+
+    .branded-id-flow svg .branded-id-flow__token > .branded-id-flow__strong {
+      transform: translateY(-2px);
+    }
+
+    .branded-id-flow svg .branded-id-flow__token > .branded-id-flow__mono,
+    .branded-id-flow svg .branded-id-flow__card > .branded-id-flow__mono {
+      transform: translateY(1px);
+    }
+
+    .branded-id-flow svg .branded-id-flow__tag-string rect,
+    .branded-id-flow svg .branded-id-flow__tag-brand rect {
+      x: 11px;
+      width: 168px;
+    }
+
+    .branded-id-flow svg .branded-id-flow__signature {
+      transform: translateX(-8px);
+    }
+
+    .branded-id-flow svg .branded-id-flow__slot-tag rect {
+      x: 454px;
+      width: 168px;
+    }
+
+    .branded-id-flow svg .branded-id-flow__slot-tag text {
+      transform: translateX(38px);
+    }
+
+    .branded-id-flow svg .branded-id-flow__slot {
+      x: 241px;
+      y: 328px;
+      width: 198px;
+      height: 76px;
+    }
+
+    .branded-id-flow svg .branded-id-flow__slot-label {
+      transform: translateX(-45px);
+    }
+
+    .branded-id-flow svg .branded-id-flow__reject {
+      transform: translateX(-40px);
+    }
+
+    .branded-id-flow svg .branded-id-flow__card[data-card="appointment"] {
+      transform: translate(100px, 166px);
+    }
+
+    .branded-id-flow svg .branded-id-flow__card[data-card="veterinarian"] {
+      transform: translate(350px, 166px);
+    }
+
+    .branded-id-flow svg[data-plug="slot"] .branded-id-flow__card[data-card="appointment"] {
+      transform: translate(245px, 332px);
+    }
+
+    .branded-id-flow svg[data-plug="stop"] .branded-id-flow__card[data-card="appointment"] {
+      transform: translate(30px, 332px);
+    }
+
+    .branded-id-flow__more {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .branded-id-flow__controls {
+      gap: 0.5rem;
+    }
+
+    .branded-id-flow__controls button {
+      padding: 0 0.75rem;
     }
   }
 

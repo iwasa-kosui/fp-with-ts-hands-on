@@ -747,6 +747,10 @@ const sideMark = { before: "●", after: "▲", plain: "■" } as const;
   }
 
   @media (max-width: 40rem) {
+    .property-flow[data-ready] .property-flow__frames > li[hidden] {
+      display: none;
+    }
+
     .property-flow__columns {
       grid-template-columns: minmax(0, 1fr);
     }
