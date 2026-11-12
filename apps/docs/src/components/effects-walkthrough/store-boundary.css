@@ -747,7 +747,7 @@
   }
 
   .walk--page .sb-line {
-    grid-template-columns: 5.5rem minmax(0, 6.5rem) minmax(0, 1fr);
+    grid-template-columns: 6rem minmax(0, 6rem) minmax(0, 1fr);
     gap: 0.4rem;
   }
 
@@ -755,8 +755,16 @@
     grid-template-columns: 8rem minmax(0, 5.5rem) minmax(0, 1fr);
   }
 
+  .walk--page .sb-table__name {
+    font-size: 0.75rem;
+  }
+
   .walk--page .sb-table__name span {
     overflow-wrap: anywhere;
+  }
+
+  .walk--page .sb-table__name span:first-child {
+    overflow-wrap: normal;
   }
 
   .walk--page .sb-compare {
