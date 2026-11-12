@@ -198,5 +198,18 @@ const data = JSON.stringify(frames.map(({ mark }) => mark));
     .mf-layout {
       grid-template-columns: minmax(0, 1fr);
     }
+
+    .mf-flow {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .mf-side {
+      min-width: 0;
+    }
+
+    .mf-call .mf-arrow {
+      display: inline-block;
+      transform: rotate(90deg);
+    }
   }
 </style>
