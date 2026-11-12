@@ -97,6 +97,6 @@ export const sessionPages = [
     flow: "advanced",
     kind: "advanced",
     minutes: 0,
-    role: "あとで読む: 状態を直積型で表した場合と直和型で表した場合の、候補の数を比べます。",
+    role: "あとで読む: 「かつ」で組む直積型を定義し、状態を直積型で表した場合と直和型で表した場合の候補の数を比べます。型を直積と直和で組み立てる考え方（代数的データ型）を示します。",
   },
 ] as const satisfies readonly SessionPage[];
