@@ -28,7 +28,7 @@ const frames = [
     bands: checkBands(isErrBranches, branchBands),
   },
   {
-    caption: "失敗する工程が1つ増えるたびに、同じ形の分岐がもう1組増えます。右端に + を付けた4行が、増えた工程と分岐です。処理の順序は、分岐の間に埋もれていきます。",
+    caption: "失敗する工程が1つ増えるたびに、同じ形の分岐がもう1組増えます。+ を付けた4行が、増えた工程と分岐です。処理の順序は、分岐の間に埋もれていきます。",
     view: "branches-3",
     code: isErrBranchesThree,
     bands: checkBands(isErrBranchesThree, branchBandsThree),
@@ -145,6 +145,23 @@ const rows = [
   @media (max-width: 48rem) {
     .fk-grid {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .we-code[data-added] :global(.line) {
+      position: relative;
+      padding-inline-start: 1.25rem;
+    }
+
+    .we-code[data-added] :global(.line:nth-last-child(-n + 4))::after {
+      content: none;
+    }
+
+    .we-code[data-added] :global(.line:nth-last-child(-n + 4))::before {
+      position: absolute;
+      inset-inline-start: 0.5rem;
+      color: var(--role-positive);
+      content: "+";
+      font-weight: 700;
     }
   }
 </style>

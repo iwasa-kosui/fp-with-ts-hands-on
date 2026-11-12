@@ -248,6 +248,13 @@ const data = JSON.stringify(frames.map(({ mark }) => mark));
         "verdict verdict verdict";
     }
 
+    .atf-lane--empty {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        "label"
+        "wait";
+    }
+
     .atf-lane > :nth-child(4) {
       justify-self: end;
     }
