@@ -228,8 +228,8 @@ const breakable = (name: string) => name.split(/(?<=[a-z])(?=[A-Z])/);
 
   @media (max-width: 40rem) {
     .map__board {
-      column-gap: 0.75rem;
-      grid-template-columns: minmax(0, 1fr) minmax(4.5rem, 5rem) minmax(0, 1fr);
+      column-gap: 0.5rem;
+      grid-template-columns: minmax(0, 1fr) minmax(5rem, 5.5rem) minmax(0, 1fr);
     }
 
     .map__kind,
@@ -246,9 +246,17 @@ const breakable = (name: string) => name.split(/(?<=[a-z])(?=[A-Z])/);
       padding-inline: 0.375rem;
     }
 
+    .map__fn code {
+      font-size: 0.75rem;
+    }
+
+    .map__fn span {
+      font-size: 0.6875rem;
+    }
+
     .map__kind::after,
     .map__label::before {
-      width: 0.75rem;
+      width: 0.5rem;
     }
   }
 </style>

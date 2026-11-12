@@ -220,7 +220,7 @@ const frames = part === "count" ? countFrames : part === "advanced" ? advancedFr
         <div class="adt-count__toggle" role="group" aria-label="修正前と修正後、状態の追加前、追加後を切り替える">
           <button type="button" data-toggle="0" data-step-scene aria-pressed="true">修正前と修正後</button>
           <button type="button" data-toggle="1" data-step-scene aria-pressed="false">状態の追加前</button>
-          <button type="button" data-toggle="2" data-step-scene aria-pressed="false">NoShow の追加後</button>
+          <button type="button" data-toggle="2" data-step-scene aria-pressed="false">NoShow <span>の追加後</span></button>
         </div>
       )
     }
@@ -519,6 +519,10 @@ const frames = part === "count" ? countFrames : part === "advanced" ? advancedFr
     cursor: pointer;
     font: inherit;
     font-weight: 700;
+  }
+
+  .adt-count__toggle button span {
+    white-space: nowrap;
   }
 
   .adt-count__toggle button[aria-pressed="true"] {
