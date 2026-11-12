@@ -258,14 +258,27 @@ const tags = steps.flatMap((step, index) => ("label" in step ? [{ ...step, at: i
   }
 
   @media (max-width: 40rem) {
-    .bo__grid {
-      grid-template-columns: minmax(0, 1fr) 7.5rem 7.5rem;
+    .bo__grid,
+    .bo[data-static] .bo__grid {
+      grid-template-columns: minmax(0, 1fr) 6.5rem 6.5rem;
       column-gap: 0.375rem;
     }
 
-    .bo__tag {
+    .bo__stage {
+      gap: 0.5rem;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .bo__name {
+      white-space: normal;
+      font-size: 0.875rem;
+    }
+
+    .bo__tag,
+    .bo[data-static] .bo__tag {
       padding: 0 0.5rem;
       font-size: 0.8125rem;
+      white-space: normal;
     }
   }
 
