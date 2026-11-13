@@ -427,12 +427,13 @@ const litData = JSON.stringify(lit);
   .audit-flow[data-ready] .audit-flow__row,
   .audit-flow[data-ready] .audit-flow__record,
   .audit-flow[data-ready] .audit-flow__tag {
-    transition: opacity 0.35s, transform 0.35s, background-color 0.25s, border-color 0.25s, filter 0.35s;
+    transition: opacity 0.35s, transform 0.35s, visibility 0.35s, background-color 0.25s, border-color 0.25s, filter 0.35s;
   }
 
   .audit-flow[data-ready] .audit-flow__row:not(.is-shown) {
     opacity: 0;
     transform: translateY(-0.5rem);
+    visibility: hidden;
   }
 
   .audit-flow[data-ready] .audit-flow__row.is-shown {
@@ -512,10 +513,6 @@ const litData = JSON.stringify(lit);
   @media (max-width: 40rem) {
     .audit-flow__columns {
       grid-template-columns: 1fr;
-    }
-
-    .audit-flow[data-ready] .audit-flow__row:not(.is-shown) {
-      display: none;
     }
   }
 
