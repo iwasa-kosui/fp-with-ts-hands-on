@@ -340,7 +340,8 @@
   transition: color 0.3s;
 }
 
-.fb-impl code[data-has-active] .line:not(.is-active) span {
+.fb-impl code[data-has-active] .line:not(.is-active) span,
+.fb-impl code[data-no-active] .line span {
   color: #959da5 !important;
 }
 
