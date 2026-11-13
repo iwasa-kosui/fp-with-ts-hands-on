@@ -612,6 +612,13 @@
   color: var(--role-surface, var(--walk-paper));
 }
 
+@media (prefers-color-scheme: dark) {
+  .walk--page .sb-table__name {
+    background: var(--role-rule);
+    color: var(--role-text);
+  }
+}
+
 .sb-db__head .sb-issue {
   margin-inline-start: auto;
 }
