@@ -211,7 +211,9 @@ const playerData = JSON.stringify(
   </div>
 
   <ol class="pure-function-flow__frames">
-    {frames.map((frame) => (
+    {frames.map((frame) => {
+      const code = codeOf(frame);
+      return (
       <li data-frame data-has-code={frame.code ? "" : undefined} data-code-borrowed={frame.code ? undefined : ""}>
         <div class="pure-function-flow__visual">
           <span class="pure-function-flow__badge" data-version={frame.version}>{versionLabels[frame.version]}</span>
@@ -271,12 +273,13 @@ const playerData = JSON.stringify(
           </svg>
         </div>
         <p class="pure-function-flow__caption">{frame.caption}</p>
-        <figure class="code-block pure-function-flow__code" data-version={codeOf(frame).key} data-lit={JSON.stringify(codeOf(frame).lines.map((line) => line - 1))}>
-          <figcaption><span class="pure-function-flow__tag" data-version={codeOf(frame).key}>{codeTagLabels[codeOf(frame).key]}</span> {codeOf(frame).key === "after" ? <code class="pure-function-flow__path">{afterLabel}</code> : <><code>startExamination</code>（説明用。教材のコードにはありません）</>}</figcaption>
-          <Code code={snippets[codeOf(frame).key]} lang="ts" defaultColor="dark" wrap={null} />
+        <figure class="code-block pure-function-flow__code" data-version={code.key} data-lit={JSON.stringify(code.lines.map((line) => line - 1))}>
+          <figcaption><span class="pure-function-flow__tag" data-version={code.key}>{codeTagLabels[code.key]}</span> {code.key === "after" ? <code class="pure-function-flow__path">{afterLabel}</code> : <><code>startExamination</code>（説明用。教材のコードにはありません）</>}</figcaption>
+          <Code code={snippets[code.key]} lang="ts" defaultColor="dark" wrap={null} />
         </figure>
       </li>
-    ))}
+      );
+    })}
   </ol>
 </figure>
 
@@ -552,6 +555,10 @@ const playerData = JSON.stringify(
 
   .pure-function-flow:not([data-animated]) [data-code-borrowed] .pure-function-flow__code {
     display: none;
+  }
+
+  .pure-function-flow[data-animated] [data-code-borrowed] .pure-function-flow__code :global(.line span) {
+    color: #959da5 !important;
   }
 
   .pure-function-flow__frames {
