@@ -28,11 +28,11 @@ const legendLines = ["破線の枠は、データベースにまだ残ってい�
       <span class="txf__state" data-at="1">確定</span>
       <span class="txf__state" data-at="2">取り消し</span>
     </p>
-    <p class="txf__head txf__head--db">データベースに残る内容</p>
+    <p class="txf__head txf__head--db"><span>データベースに<wbr>残る<wbr>内容</span></p>
 
     <div class="txf__write txf__write--state">
       <span class="txf__no">1</span>
-      <span class="txf__what">予約の状態を診察中に更新する</span>
+      <span class="txf__what">予約の状態を<wbr>診察中に<wbr>更新する</span>
       <span class="txf__chip" data-at="0">未確定</span>
       <span class="txf__chip txf__chip--ok" data-at="1">✓ 成功 → 確定</span>
       <span class="txf__chip txf__chip--undone" data-at="2">✓ 成功 → 取り消し</span>
@@ -46,7 +46,7 @@ const legendLines = ["破線の枠は、データベースにまだ残ってい�
 
     <div class="txf__write txf__write--audit">
       <span class="txf__no">2</span>
-      <span class="txf__what">監査記録を追加する</span>
+      <span class="txf__what">監査記録を<wbr>追加する</span>
       <span class="txf__chip" data-at="0">未確定</span>
       <span class="txf__chip txf__chip--ok" data-at="1">✓ 成功 → 確定</span>
       <span class="txf__chip txf__chip--fail" data-at="2">✕ 失敗</span>
@@ -55,7 +55,7 @@ const legendLines = ["破線の枠は、データベースにまだ残ってい�
     <div class="txf__cell txf__cell--audit">
       <p class="txf__cell-label">監査記録</p>
       <p class="txf__value txf__value--none" data-at="0 2">記録なし</p>
-      <p class="txf__value txf__value--new" data-at="1">診察開始の記録 1件</p>
+      <p class="txf__value txf__value--new" data-at="1">診察開始の<wbr>記録 <span class="txf__count">1件</span></p>
     </div>
   </div>
 
@@ -122,20 +122,26 @@ const legendLines = ["破線の枠は、データベースにまだ残ってい�
 
   .txf__head--tx {
     grid-area: 1 / 1;
+    flex-wrap: wrap;
     color: var(--txf-tone);
   }
 
   .txf__head--db {
     grid-area: 1 / 3;
     color: var(--role-muted);
+    word-break: keep-all;
+    overflow-wrap: anywhere;
   }
 
   .txf__name {
+    flex: none;
     font-size: 0.875rem;
+    white-space: nowrap;
   }
 
   .txf__state {
     padding: 0 0.5rem;
+    white-space: nowrap;
     border: 2px solid currentColor;
     border-radius: 0.3rem;
   }
@@ -186,6 +192,8 @@ const legendLines = ["破線の枠は、データベースにまだ残ってい�
     flex: 1 1 8rem;
     min-width: 0;
     font-weight: 700;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
   }
 
   .txf__chip {
@@ -255,6 +263,12 @@ const legendLines = ["破線の枠は、データベースにまだ残ってい�
   .txf__value {
     margin: 0;
     font-weight: 700;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .txf__count {
+    white-space: nowrap;
   }
 
   .txf__value--none {
@@ -263,5 +277,11 @@ const legendLines = ["破線の枠は、データベースにまだ残ってい�
 
   .txf__value--new {
     color: var(--role-positive);
+  }
+
+  @media (max-width: 40rem) {
+    .txf__head--db {
+      grid-column: 2 / 4;
+    }
   }
 </style>

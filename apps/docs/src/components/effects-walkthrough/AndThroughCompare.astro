@@ -1,6 +1,7 @@
 ---
 import { Code } from "astro:components";
 import StepControls from "../stepper/StepControls.astro";
+import { breakBeforeMember } from "../break-before-member";
 import { lineLabelOf } from "../../sessions/source-quotes";
 import PathLabel from "./PathLabel.astro";
 import { quoteRows } from "./quote";
@@ -58,7 +59,7 @@ const lit = JSON.stringify([{ rows: [1] }, { rows: [3] }, { rows: [2] }, { rows:
 
     <div class="atc__rows" data-code="rows">
       <div class="atc__row" data-row="0">
-        <div class="sf-code atc__code"><Code code={mapEvent} lang="ts" wrap /></div>
+        <div class="sf-code atc__code"><Code code={mapEvent} lang="ts" wrap transformers={[breakBeforeMember]} /></div>
         <div class="atc__out">
           <span class="sf-tag sf-tag--value">ExaminationStarted</span>
         </div>
@@ -66,8 +67,8 @@ const lit = JSON.stringify([{ rows: [1] }, { rows: [3] }, { rows: [2] }, { rows:
 
       <div class="atc__row" data-row="1">
         <div class="atc__variants">
-          <div class="sf-code atc__code" data-variant="before"><Code code={thenStore} lang="ts" wrap /></div>
-          <div class="sf-code atc__code" data-variant="after"><Code code={throughStore} lang="ts" wrap /></div>
+          <div class="sf-code atc__code" data-variant="before"><Code code={thenStore} lang="ts" wrap transformers={[breakBeforeMember]} /></div>
+          <div class="sf-code atc__code" data-variant="after"><Code code={throughStore} lang="ts" wrap transformers={[breakBeforeMember]} /></div>
         </div>
         <div class="atc__variants atc__out">
           <span class="atc__value" data-variant="before">
@@ -80,7 +81,7 @@ const lit = JSON.stringify([{ rows: [1] }, { rows: [3] }, { rows: [2] }, { rows:
       </div>
 
       <div class="atc__row" data-row="2">
-        <div class="sf-code atc__code"><Code code={mapState} lang="ts" wrap /></div>
+        <div class="sf-code atc__code"><Code code={mapState} lang="ts" wrap transformers={[breakBeforeMember]} /></div>
         <div class="atc__variants atc__out">
           <span class="atc__value" data-variant="before">
             <span class="sf-tag sf-tag--err">✗ 型のエラー</span>
@@ -244,8 +245,12 @@ const lit = JSON.stringify([{ rows: [1] }, { rows: [3] }, { rows: [2] }, { rows:
   }
 
   @media (max-width: 700px) {
+    .atc__rows {
+      grid-template-rows: none;
+    }
+
     .atc__row {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr);
       gap: 0.75rem;
     }
   }
