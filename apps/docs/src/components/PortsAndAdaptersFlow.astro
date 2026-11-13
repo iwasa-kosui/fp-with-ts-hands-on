@@ -55,6 +55,7 @@ const frames: readonly Frame[] = [
   {
     caption:
       "Final のコードは、内側（domain と useCase）と外側（adaptor）に分かれます。adaptor/primary は外部から依頼を受け取る側、adaptor/secondary はユースケースが外部に処理を要求する先です。",
+    code: { key: "port", lines: [] },
     nodes: "normal",
     focus: [],
     calls: "normal",
@@ -112,6 +113,7 @@ const frames: readonly Frame[] = [
   {
     caption:
       "import の矢印はすべて内側を向きます。app.ts が domain、useCase、adaptor を import して組み立てます。domain と useCase は adaptor を import しないため、テストでは代替の実装を渡せます。",
+    code: { key: "assembly", lines: [] },
     treeFile: "assembly",
     nodes: "normal",
     focus: [],
@@ -144,7 +146,10 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
         <button type="button" data-next>次のコマ →</button>
       </div>
 
-      <p class="ports-flow__live" data-live aria-live="polite" hidden></p>
+      <div class="ports-flow__live-area">
+        <p class="ports-flow__live" data-live aria-live="polite" hidden></p>
+        {frames.map((frame) => <p class="ports-flow__live ports-flow__live-ghost" aria-hidden="true">{frame.caption}</p>)}
+      </div>
     </div>
 
     <svg viewBox="0 0 240 416" role="img" aria-labelledby="ports-flow-title ports-flow-desc" data-nodes="normal" data-calls="normal" data-imports="normal">
@@ -216,7 +221,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
 
     <ol class="ports-flow__frames">
       {frames.map((frame) => (
-        <li data-frame data-has-code={frame.code ? "" : undefined} data-code-key={frame.treeFile ?? frame.code?.key ?? ""}>
+        <li data-frame data-has-code={frame.code ? "" : undefined} data-code-borrowed={frame.code && frame.code.lines.length === 0 ? "" : undefined} data-code-key={frame.treeFile ?? (frame.code && frame.code.lines.length > 0 ? frame.code.key : "")}>
           <p class="ports-flow__caption">{frame.caption}</p>
           {frame.code && (
             <figure class="code-block ports-flow__code">
@@ -505,6 +510,10 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     display: none;
   }
 
+  .ports-flow:not([data-animated]) [data-code-borrowed] .ports-flow__code {
+    display: none;
+  }
+
   .ports-flow__code {
     min-width: 0;
     margin: 0.5rem 0 0;
@@ -562,18 +571,37 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     margin: 0;
   }
 
+  [data-animated] .ports-flow__live-area {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  [data-animated] .ports-flow__live-area > * {
+    grid-area: 1 / 1;
+  }
+
+  .ports-flow__live-ghost {
+    visibility: hidden;
+  }
+
+  .ports-flow:not([data-animated]) .ports-flow__live-ghost {
+    display: none;
+  }
+
   [data-animated] .ports-flow__frames {
+    display: grid;
     padding-inline-start: 0;
     list-style: none;
   }
 
   [data-animated] .ports-flow__frames > li {
-    display: none;
+    grid-area: 1 / 1;
     margin: 0;
+    visibility: hidden;
   }
 
-  [data-animated] .ports-flow__frames > li.is-current[data-has-code] {
-    display: block;
+  [data-animated] .ports-flow__frames > li.is-current {
+    visibility: visible;
   }
 
   [data-animated] .ports-flow__caption {
@@ -669,7 +697,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
       margin: 0 0 0.5rem;
     }
 
-    [data-animated] .ports-flow__live {
+    [data-animated] .ports-flow__live-area {
       grid-column: 2;
       grid-row: 4;
       margin-bottom: 0.5rem;
