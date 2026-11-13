@@ -517,7 +517,8 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
   }
 
   .branded-id-flow svg:not([data-runtime]) .branded-id-flow__runtime-note {
-    display: none;
+    opacity: 0;
+    visibility: hidden;
   }
 
   .branded-id-flow__token rect {
@@ -602,11 +603,11 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
   }
 
   .branded-id-flow__card[data-card="appointment"] {
-    transform: translate(100px, 170px);
+    transform: translate(100px, 162px);
   }
 
   .branded-id-flow__card[data-card="veterinarian"] {
-    transform: translate(350px, 170px);
+    transform: translate(350px, 162px);
   }
 
   .branded-id-flow svg[data-plug="slot"] .branded-id-flow__card[data-card="appointment"] {
@@ -948,6 +949,14 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
     transition: transform 0.9s ease-in-out;
   }
 
+  [data-animated] .branded-id-flow__runtime-note {
+    transition: opacity 0.25s 0.9s;
+  }
+
+  [data-animated] svg:not([data-runtime]) .branded-id-flow__runtime-note {
+    transition: none;
+  }
+
   [data-animated] .branded-id-flow__tag-string,
   [data-animated] .branded-id-flow__tag-brand,
   [data-animated] .branded-id-flow__pill-brand,
@@ -1064,11 +1073,11 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
     }
 
     .branded-id-flow svg .branded-id-flow__card[data-card="appointment"] {
-      transform: translate(100px, 166px);
+      transform: translate(100px, 160px);
     }
 
     .branded-id-flow svg .branded-id-flow__card[data-card="veterinarian"] {
-      transform: translate(350px, 166px);
+      transform: translate(350px, 160px);
     }
 
     .branded-id-flow svg[data-plug="slot"] .branded-id-flow__card[data-card="appointment"] {
