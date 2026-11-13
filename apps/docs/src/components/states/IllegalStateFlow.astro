@@ -474,24 +474,67 @@ const generationKeys = ["before", "after"] as const;
 
     panels.forEach((panel) => panel.querySelector("pre")?.removeAttribute("tabindex"));
 
+    const apply = (index: number) => {
+      frameView = frameViews[index];
+      chosen = null;
+      if (!frameView) return;
+      root.dataset.focus = frameView.focus;
+      root.querySelectorAll<HTMLElement>("[data-tree-note]").forEach((note) => {
+        const visible = frameView?.treeNote?.file === note.dataset.treeNote;
+        note.textContent = visible ? (frameView?.treeNote?.text ?? "") : "";
+        note.hidden = !visible;
+      });
+      scratchViews.forEach((view) => {
+        view.hidden = view.dataset.scratch !== frameView?.scratch;
+      });
+      render();
+    };
+
+    let current = 0;
     mountStepper({
       root,
       onStep: (index) => {
-        frameView = frameViews[index];
-        chosen = null;
-        if (!frameView) return;
-        root.dataset.focus = frameView.focus;
-        root.querySelectorAll<HTMLElement>("[data-tree-note]").forEach((note) => {
-          const visible = frameView?.treeNote?.file === note.dataset.treeNote;
-          note.textContent = visible ? (frameView?.treeNote?.text ?? "") : "";
-          note.hidden = !visible;
-        });
-        scratchViews.forEach((view) => {
-          view.hidden = view.dataset.scratch !== frameView?.scratch;
-        });
-        render();
+        current = index;
+        apply(index);
       },
     });
+
+    const stage = root.querySelector<HTMLElement>(".illegal__stage");
+    if (stage && root.dataset.ready !== undefined && typeof ResizeObserver !== "undefined") {
+      const narrow = matchMedia("(max-width: 719px)");
+      let width = 0;
+      const fitStage = () => {
+        stage.style.height = "";
+        delete root.dataset.fit;
+        if (!narrow.matches) return;
+        const keep = chosen;
+        const keepShown = shown;
+        let tallest = 0;
+        frameViews.forEach((_, index) => {
+          shown = null;
+          apply(index);
+          tallest = Math.max(tallest, stage.getBoundingClientRect().height);
+        });
+        shown = null;
+        apply(current);
+        chosen = keep;
+        shown = null;
+        render();
+        shown = keepShown;
+        stage.style.height = `${Math.ceil(tallest)}px`;
+        root.dataset.fit = "";
+      };
+      new ResizeObserver(() => {
+        if (stage.offsetWidth === width) return;
+        width = stage.offsetWidth;
+        fitStage();
+      }).observe(stage);
+      narrow.addEventListener("change", fitStage);
+      document.fonts?.ready.then(() => {
+        width = stage.offsetWidth;
+        fitStage();
+      });
+    }
   });
 </script>
 
@@ -1197,12 +1240,21 @@ const generationKeys = ["before", "after"] as const;
     }
 
     .illegal__row--head {
+      position: relative;
       grid-template-areas: none;
       grid-template-columns: minmax(0, 1fr);
     }
 
     .illegal__row--head > :not(:nth-child(2)) {
-      display: none;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      border: 0;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
     }
 
     .illegal__row > :nth-child(1) {
@@ -1229,23 +1281,80 @@ const generationKeys = ["before", "after"] as const;
       height: auto;
     }
 
+    .illegal__stage,
+    .illegal[data-ready] .illegal__stage {
+      grid-template-rows: auto 1fr;
+    }
+
+    .illegal__tree-gen {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0 0.5rem;
+      align-items: center;
+    }
+
+    .illegal__tree-tag {
+      margin-block: 0;
+    }
+
+    .illegal__tree-dir {
+      grid-column: 1 / -1;
+    }
+
+    .illegal__tree-files {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 0.5rem;
+    }
+
+    .illegal__tree-files > li {
+      flex: none;
+    }
+
     .illegal__right,
     .illegal[data-ready] .illegal__right,
     .illegal[data-ready][data-focus="file"] .illegal__right,
     .illegal[data-ready][data-focus="board"] .illegal__right {
-      grid-template-rows: auto auto;
+      display: flex;
+      flex-direction: column;
       transition: none;
     }
 
-    .illegal[data-ready] .illegal__panel,
+    .illegal__file {
+      flex: 1 0 auto;
+    }
+
+    .illegal__scratch {
+      flex: none;
+    }
+
     .illegal[data-ready] .illegal__scratch-body {
       flex: none;
     }
 
+    .illegal[data-ready] .illegal__panel {
+      flex: 1 0 auto;
+    }
+
     .illegal__codebox,
     .illegal[data-ready] .illegal__codebox {
-      flex: none;
+      flex: 1 0 auto;
+      max-height: none;
+    }
+
+    .illegal__code {
       max-height: 18rem;
+    }
+
+    .illegal[data-ready][data-fit] .illegal__file,
+    .illegal[data-ready][data-fit] .illegal__panel,
+    .illegal[data-ready][data-fit] .illegal__codebox {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    .illegal[data-ready][data-fit] .illegal__code {
+      max-height: none;
     }
 
     .illegal__split {
@@ -1263,7 +1372,16 @@ const generationKeys = ["before", "after"] as const;
     }
 
     .illegal__row--head {
-      display: none;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      min-height: 0;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      border: 0;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
     }
   }
 </style>
