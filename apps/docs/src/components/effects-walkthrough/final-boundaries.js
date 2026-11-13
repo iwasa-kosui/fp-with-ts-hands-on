@@ -40,6 +40,27 @@ for (const figure of figures) {
       code.toggleAttribute("data-no-active", active && marked.size === 0);
       [...code.children].forEach((line, index) => line.classList.toggle("is-active", marked.has(index)));
     }
+    requestAnimationFrame(() => revealLines(part));
+  };
+
+  const revealLines = (part) => {
+    const impl = part.impls.find((item) => item.hasAttribute("data-active"));
+    if (impl === undefined) return;
+    const pre = impl.querySelector("pre");
+    const marked = [...pre.querySelectorAll(".line.is-active")];
+    if (marked.length === 0) {
+      pre.scrollTop = 0;
+      return;
+    }
+    const preTop = pre.getBoundingClientRect().top;
+    const first = marked[0];
+    const last = marked[marked.length - 1];
+    const top = first.getBoundingClientRect().top - preTop + pre.scrollTop;
+    const bottom = last.getBoundingClientRect().bottom - preTop + pre.scrollTop;
+    if (top >= pre.scrollTop && bottom <= pre.scrollTop + pre.clientHeight) return;
+    const lineHeight = parseFloat(getComputedStyle(first).lineHeight) || 20;
+    const room = Math.max(0, pre.clientHeight - (bottom - top));
+    pre.scrollTop = Math.max(0, top - Math.min(lineHeight, room / 2));
   };
 
   const apply = (force = false) => {
