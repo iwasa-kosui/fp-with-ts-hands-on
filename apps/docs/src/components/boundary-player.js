@@ -108,7 +108,8 @@ const setUp = (root) => {
 
     for (const file of files) {
       const active = file.dataset.file === frame.fileId;
-      file.hidden = !active;
+      file.toggleAttribute("data-current", active);
+      file.inert = !active;
       const shown = codeOf.get(file);
       if (shown === undefined) continue;
       shown.lines.forEach((line, lineIndex) => {
