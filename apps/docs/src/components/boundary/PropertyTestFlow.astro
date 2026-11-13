@@ -233,7 +233,7 @@ const sensitiveFrames: readonly Frame[] = [
   },
   {
     caption:
-      "誤った変更で ownerEmail が string に代入できる型になると、次の行の型エラーが消えます。tsc は「未使用の @ts-expect-error」を報告し、失敗します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
+      "誤った変更で ownerEmail の行から .transform(Sensitive.of) を外すと、ownerEmail が string に代入できる型になり、@ts-expect-error の次の行の型エラーが消えます。tsc は「未使用の @ts-expect-error」を報告し、失敗します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
     columns: [
       {
         side: "after",
@@ -446,7 +446,7 @@ const uuidFrames: readonly Frame[] = [
   },
   {
     caption:
-      "別の誤った変更で2つの ID が同じ型になると、次の行の型エラーが消えます。tsc は「未使用の @ts-expect-error」を報告し、失敗します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
+      "別の誤った変更として、veterinarianId の schema を AppointmentId.schema に変えます。2つの ID が同じ型になり、@ts-expect-error の次の行の型エラーが消えます。tsc は「未使用の @ts-expect-error」を報告し、失敗します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
     columns: [
       {
         side: "after",
