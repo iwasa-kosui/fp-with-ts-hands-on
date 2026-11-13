@@ -128,7 +128,7 @@ const ports = [
     name: ["deps", ".clock"],
     from: 1,
     real: ["new Date()", ["現在の時刻を", "返す"]],
-    fake: ["固定の時刻", [{ keep: "2026-08-30T06:30:00.000Z" }, " を返す"]],
+    fake: ["固定の時刻", [{ keep: "2026-08-30" }, { keep: "T06:30:00.000Z" }, " を返す"]],
   },
   {
     key: "id",
@@ -538,13 +538,6 @@ const ports = [
     }
   }
 
-  @container (max-width: 24rem) {
-    .psf__keep {
-      white-space: normal;
-      overflow-wrap: anywhere;
-    }
-  }
-
   @media (max-width: 52rem) {
     .psf__stage {
       grid-template-columns: minmax(0, 1fr);
@@ -560,7 +553,7 @@ const ports = [
     }
   }
 
-  @media (min-width: 56.3125rem) {
+  @media (min-width: 52.0625rem) {
     @container (max-width: 26rem) {
       .psf__rows {
         grid-template-columns: minmax(min-content, 1fr) minmax(0, 1.05fr);
@@ -583,7 +576,11 @@ const ports = [
       .psf__socket code {
         overflow-wrap: normal;
       }
+    }
+  }
 
+  @media (min-width: 56.3125rem) {
+    @container (max-width: 26rem) {
       .psf__head {
         row-gap: 0;
         min-height: 0;
@@ -602,6 +599,18 @@ const ports = [
       .psf__plug small {
         font-size: 0.6875rem;
       }
+    }
+  }
+
+  @media (min-width: 56.3125rem) and (max-width: 77.5rem) {
+    .psf__group {
+      gap: 0.25rem;
+    }
+
+    .psf__codes :global(.sf-code pre) {
+      padding-block: 0.25rem;
+      font-size: 0.75rem;
+      line-height: 1.4;
     }
   }
 </style>

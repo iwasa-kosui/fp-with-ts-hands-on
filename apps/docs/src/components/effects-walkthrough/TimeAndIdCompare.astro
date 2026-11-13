@@ -104,12 +104,12 @@ const frames = [
         <div class="tic__runs">
           <section class="tic__run">
             <h4>1回目の実行</h4>
-            <p><span>時刻</span><code>"2026-08-30T06:30:00.123Z"</code></p>
+            <p><span>時刻</span><code>"2026-08-30<wbr />T06:30:00.123Z"</code></p>
             <p><span>ID</span><code>"e-1"</code></p>
           </section>
           <section class="tic__run">
             <h4>2回目の実行</h4>
-            <p><span>時刻</span><code>"2026-08-30T06:30:07.456Z"</code></p>
+            <p><span>時刻</span><code>"2026-08-30<wbr />T06:30:07.456Z"</code></p>
             <p><span>ID</span><code>"e-2"</code></p>
           </section>
         </div>
@@ -121,12 +121,12 @@ const frames = [
         <div class="tic__runs">
           <section class="tic__run">
             <h4>1回目の実行</h4>
-            <p><span>時刻</span><code>"2026-08-30T06:30:00.000Z"</code></p>
+            <p><span>時刻</span><code>"2026-08-30<wbr />T06:30:00.000Z"</code></p>
             <p><span>ID</span><code>"e-1"</code></p>
           </section>
           <section class="tic__run">
             <h4>2回目の実行</h4>
-            <p><span>時刻</span><code>"2026-08-30T06:30:00.000Z"</code></p>
+            <p><span>時刻</span><code>"2026-08-30<wbr />T06:30:00.000Z"</code></p>
             <p><span>ID</span><code>"e-1"</code></p>
           </section>
         </div>
@@ -140,12 +140,12 @@ const frames = [
           <section class="tic__use">
             <h4>予約の状態</h4>
             <p><code>examinationStartedAt</code></p>
-            <p><code>"2026-08-30T06:30:00.000Z"</code></p>
+            <p><code>"2026-08-30<wbr />T06:30:00.000Z"</code></p>
           </section>
           <section class="tic__use">
             <h4>監査記録</h4>
             <p><code>occurredAt</code></p>
-            <p><code>"2026-08-30T06:30:01.000Z"</code></p>
+            <p><code>"2026-08-30<wbr />T06:30:01.000Z"</code></p>
           </section>
         </div>
         <p class="tic__verdict"><span class="sf-tag sf-tag--err">✗ 時刻が食い違う</span>診察を開始した時刻を、状態と監査記録から1つに確定できない</p>
@@ -158,12 +158,12 @@ const frames = [
           <section class="tic__use">
             <h4>予約の状態</h4>
             <p><code>examinationStartedAt</code></p>
-            <p><code>"2026-08-30T06:30:00.000Z"</code></p>
+            <p><code>"2026-08-30<wbr />T06:30:00.000Z"</code></p>
           </section>
           <section class="tic__use">
             <h4>監査記録</h4>
             <p><code>occurredAt</code></p>
-            <p><code>"2026-08-30T06:30:00.000Z"</code></p>
+            <p><code>"2026-08-30<wbr />T06:30:00.000Z"</code></p>
           </section>
         </div>
         <p class="tic__verdict"><span class="sf-tag sf-tag--ok">✓ 同じ時刻</span>2つの時刻は、同じ1回の値です</p>
@@ -240,6 +240,13 @@ const frames = [
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
     gap: 0.75rem;
+  }
+
+  @media (min-width: 56.3125rem) {
+    .tic__runs,
+    .tic__uses {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   .tic__run,
