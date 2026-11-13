@@ -2,6 +2,7 @@
 import { Code } from "astro:components";
 import MiniTree from "../mini-tree/MiniTree.astro";
 import { miniTree } from "../mini-tree/mini-tree";
+import StepControls from "../stepper/StepControls.astro";
 import { quotes } from "./quotes";
 
 const snippets = {
@@ -34,6 +35,7 @@ const frames: readonly Frame[] = [
   {
     caption:
       "startExamination は、kind が CheckedIn の予約を求めます。これが、呼び出し側に求める事前条件です。事前条件を検証する時点は、型検査のときと実行時の2つです。",
+    code: { key: "signature", lines: [] },
     top: { mode: "dim", focus: [1], hide: [], token: null },
     bottom: { mode: "dim", focus: [1], hide: [], token: null },
   },
@@ -53,6 +55,7 @@ const frames: readonly Frame[] = [
   {
     caption:
       "型は実行時には消えます。データベースから取得した値は、型検査が中身を検証していません。kind が Paid の値でも、型検査では報告されません。",
+    code: { key: "route", lines: [] },
     top: { mode: "dim", focus: [], hide: [], token: null },
     bottom: { mode: "normal", focus: [], hide: [], token: { label: "kind: Paid", at: 0 } },
   },
@@ -66,6 +69,7 @@ const frames: readonly Frame[] = [
   {
     caption:
       "kind が CheckedIn の予約は、検証を通り、startExamination が実行されます。型は誤った呼び出しを実行前に検出し、実行時の検証は、型検査の対象外の値を実行時に検出します。",
+    code: { key: "signature", lines: [] },
     top: { mode: "normal", focus: [], hide: [], token: { label: "CheckedIn", at: 2, result: "pass" } },
     bottom: { mode: "normal", focus: [], hide: [], token: { label: "CheckedIn", at: 2, result: "pass" } },
   },
@@ -126,12 +130,8 @@ const baseline = (index: number, node: DiagramNode) => {
 const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ caption, top, bottom })));
 ---
 
-<div class="precondition-flow" data-precondition-flow data-frames={playerData}>
-  <div class="precondition-flow__controls" data-controls hidden>
-    <button type="button" data-prev disabled>← 前のコマ</button>
-    <span data-progress>1 / {frames.length}</span>
-    <button type="button" data-next>次のコマ →</button>
-  </div>
+<div class="precondition-flow" data-precondition-flow data-step-figure data-frames={playerData}>
+  <StepControls />
 
   <svg viewBox="0 0 340 246" role="img" aria-labelledby="precondition-flow-title precondition-flow-desc">
     <title id="precondition-flow-title">事前条件を検証する2つの時点</title>
@@ -180,7 +180,7 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
 
   <ol class="precondition-flow__frames">
     {frames.map((frame) => (
-      <li data-frame data-has-code={frame.code ? "" : undefined}>
+      <li data-frame data-has-code={frame.code ? "" : undefined} data-code-borrowed={frame.code && frame.code.lines.length === 0 ? "" : undefined}>
         <p class="precondition-flow__caption">{frame.caption}</p>
         {frame.code && <MiniTree tree={tree} current={[frame.code.key]} />}
         {frame.code && (
@@ -195,6 +195,8 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
 </div>
 
 <script>
+  import { renderProgress } from "../stepper/step-progress";
+
   type Token = { label: string; at: number; result?: "stop" | "pass" };
   type BandFrame = { mode: "normal" | "dim"; focus: number[]; hide: number[]; token: Token | null };
   type Frame = { caption: string; top: BandFrame; bottom: BandFrame };
@@ -276,7 +278,7 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
       renderBand(top, frame.top, before?.top ?? null);
       renderBand(bottom, frame.bottom, before?.bottom ?? null);
       live.textContent = frame.caption;
-      progress.textContent = `${index + 1} / ${frames.length}`;
+      renderProgress(progress, index, frames.length);
       prev.disabled = index === 0;
       next.disabled = index === frames.length - 1;
     };
@@ -413,35 +415,6 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
     opacity: 0;
   }
 
-  .precondition-flow__controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .precondition-flow__controls[hidden] {
-    display: none;
-  }
-
-  .precondition-flow__controls button {
-    min-height: 2.75rem;
-    padding: 0 1rem;
-    border: 2px solid var(--case-line);
-    border-radius: 0.5rem;
-    background: var(--case-yellow);
-    color: var(--case-ink);
-    cursor: pointer;
-    font-weight: 700;
-  }
-
-  .precondition-flow__controls button:disabled {
-    background: var(--case-paper);
-    cursor: not-allowed;
-    opacity: 0.55;
-  }
-
   .precondition-flow__live,
   .precondition-flow__caption {
     margin: 0.75rem 0 0.5rem;
@@ -498,6 +471,15 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
     overflow-wrap: anywhere;
   }
 
+  .precondition-flow:not([data-animated]) [data-code-borrowed] .precondition-flow__code,
+  .precondition-flow:not([data-animated]) [data-code-borrowed] :global(.mini-tree) {
+    display: none;
+  }
+
+  .precondition-flow[data-animated] [data-code-borrowed] .precondition-flow__code :global(.line span) {
+    color: #959da5 !important;
+  }
+
   .precondition-flow :global(.line.is-lit) {
     display: inline-block;
     min-width: calc(100% + 0.5rem);
@@ -515,7 +497,7 @@ const playerData = JSON.stringify(frames.map(({ caption, top, bottom }) => ({ ca
     margin-block: 0.5rem;
   }
 
-  .precondition-flow[data-animated] > .precondition-flow__controls {
+  .precondition-flow[data-animated] > :global(.step-controls) {
     grid-column: 1 / -1;
   }
 
