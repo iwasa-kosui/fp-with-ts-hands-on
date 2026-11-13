@@ -715,7 +715,7 @@
   }
 }
 
-@container walk (max-width: 47rem) {
+@container walk (max-width: 56rem) {
   .walk--page .sb,
   .walk--page .sb[data-no-code],
   .walk--page .sb[data-wide-chip]:not([data-no-code]) {
@@ -744,19 +744,6 @@
 
   .walk--page .sb-pane figcaption code {
     overflow-wrap: anywhere;
-  }
-
-  .walk--page .sb-line {
-    grid-template-columns: 6rem minmax(0, 6rem) minmax(0, 1fr);
-    gap: 0.4rem;
-  }
-
-  .walk--page .sb[data-wide-chip] .sb-line {
-    grid-template-columns: 8rem minmax(0, 5.5rem) minmax(0, 1fr);
-  }
-
-  .walk--page .sb .sb-failed__row.sb-line {
-    grid-template-columns: 6rem auto minmax(0, 1fr);
   }
 
   .walk--page .sb-failed[data-on] {
@@ -801,6 +788,67 @@
 
   .walk--page .sb-compare__row code:first-child {
     grid-column: 1 / -1;
+  }
+}
+
+.walk--page .sb-diagram {
+  container: sbd / inline-size;
+}
+
+@container sbd (max-width: 26.5rem) {
+  .walk--page .sb:not([data-wide-chip]) .sb-line,
+  .walk--page .sb .sb-failed__row.sb-line {
+    grid-template-columns: 7rem minmax(0, 1fr);
+    gap: 0.25rem 0.5rem;
+  }
+
+  .walk--page .sb:not([data-wide-chip]) .sb-line > :first-child,
+  .walk--page .sb .sb-failed__row > :first-child {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .walk--page .sb:not([data-wide-chip]) .sb-line > .sb-chip:empty::before,
+  .walk--page .sb .sb-failed__row > .sb-chip:empty::before {
+    content: "\200b";
+  }
+}
+
+@container sbd (max-width: 28.5rem) {
+  .walk--page .sb[data-wide-chip] .sb-line {
+    grid-template-columns: 7rem minmax(0, 1fr);
+    gap: 0.25rem 0.5rem;
+  }
+
+  .walk--page .sb[data-wide-chip] .sb-line > :first-child {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .walk--page .sb[data-wide-chip] .sb-line > .sb-chip:empty::before {
+    content: "\200b";
+  }
+}
+
+@container sbd (max-width: 19.75rem) {
+  .walk--page .sb:not([data-wide-chip]) .sb-line,
+  .walk--page .sb[data-wide-chip] .sb-line,
+  .walk--page .sb .sb-failed__row.sb-line {
+    grid-template-columns: 6.25rem minmax(0, 1fr);
+    column-gap: 0.25rem;
+  }
+
+  .walk--page .sb .sb-line code {
+    font-size: 0.6875rem;
+  }
+
+  .walk--page .sb-card.sb-line {
+    padding-inline: 0.25rem;
+  }
+
+  .walk--page .sb-table__name {
+    padding-inline: 0.75rem;
+    font-size: 0.6875rem;
   }
 }
 
