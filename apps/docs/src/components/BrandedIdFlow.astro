@@ -206,7 +206,7 @@ const cards = [
 const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...frame }) => frame));
 ---
 
-<div class="branded-id-flow" data-branded-id-flow data-frames={playerData}>
+<div class="branded-id-flow" data-branded-id-flow data-step-figure data-frames={playerData}>
   <div class="branded-id-flow__controls">
     <StepControls />
     <div class="branded-id-flow__stage" data-stage hidden>
@@ -733,6 +733,10 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem 0.75rem;
+  }
+
+  .branded-id-flow:not([data-animated]) .branded-id-flow__controls {
+    display: none;
   }
 
   [data-animated] .branded-id-flow__controls {
