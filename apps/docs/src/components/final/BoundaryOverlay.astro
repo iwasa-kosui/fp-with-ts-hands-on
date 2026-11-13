@@ -1,5 +1,6 @@
 ---
 import { stages } from "../../sessions/overview-map";
+import StepControls from "../stepper/StepControls.astro";
 
 type Props = Readonly<{ staticView?: boolean }>;
 
@@ -33,13 +34,7 @@ const nameParts = (label: string): ReadonlyArray<string> => {
   data-step-figure={staticView ? undefined : ""}
   aria-label="5つのステップと、ステップごとの境界のラベル"
 >
-  {!staticView && (
-    <div class="bo__controls" data-controls hidden>
-      <button type="button" data-prev disabled>← 前のコマ</button>
-      <button type="button" data-next>次のコマ →</button>
-      <span class="bo__progress" data-progress>1 / {steps.length}</span>
-    </div>
-  )}
+  {!staticView && <StepControls />}
 
   {!staticView && (
     <ol class="bo__texts" aria-live="polite">
@@ -71,6 +66,8 @@ const nameParts = (label: string): ReadonlyArray<string> => {
 </figure>
 
 <script>
+  import { renderProgress } from "../stepper/step-progress";
+
   document.querySelectorAll<HTMLElement>("[data-boundary-overlay]").forEach((root) => {
     if (root.dataset.static !== undefined || root.dataset.ready !== undefined) return;
     const controls = root.querySelector<HTMLElement>("[data-controls]");
@@ -92,7 +89,7 @@ const nameParts = (label: string): ReadonlyArray<string> => {
         tag.toggleAttribute("data-shown", at <= index);
         tag.toggleAttribute("data-current", at === index);
       });
-      progress.textContent = `${index + 1} / ${texts.length}`;
+      renderProgress(progress, index, texts.length);
       prev.disabled = index === 0;
       next.disabled = index === last;
       root.dataset.step = String(index);
@@ -111,50 +108,6 @@ const nameParts = (label: string): ReadonlyArray<string> => {
   .bo {
     min-width: 0;
     margin: 1rem 0;
-  }
-
-  .bo__controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 0.75rem;
-    margin-block-end: 0.5rem;
-  }
-
-  .bo__controls[hidden] {
-    display: none;
-  }
-
-  .bo__controls button {
-    min-height: 2.5rem;
-    padding: 0 0.875rem;
-    border: 2px solid var(--role-accent);
-    border-radius: 0.5rem;
-    background: var(--role-accent);
-    color: var(--role-surface);
-    cursor: pointer;
-    font: inherit;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-
-  .bo__controls button:disabled {
-    border-color: var(--role-border);
-    background: var(--role-surface);
-    color: var(--role-text);
-    cursor: not-allowed;
-    opacity: 0.55;
-  }
-
-  .bo__controls button:focus-visible {
-    outline: 3px solid var(--role-accent);
-    outline-offset: 2px;
-  }
-
-  .bo__progress {
-    color: var(--role-muted);
-    font-size: 0.875rem;
-    font-variant-numeric: tabular-nums;
   }
 
   .bo__texts {
