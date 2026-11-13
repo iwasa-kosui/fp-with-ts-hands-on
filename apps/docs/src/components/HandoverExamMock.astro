@@ -329,23 +329,27 @@ const files = JSON.stringify(steps.map((step) => step.file));
         </div>
         <div class="hem__table">
           <h6>監査記録</h6>
-          <ul class="hem__lines">
-            {
-              auditSeed.map((name) => (
-                <li data-fold-from="5"><Code code={`"${name}"`} lang="ts" inline /></li>
-              ))
-            }
-            <li class="hem__fold-note" data-show-from="5">前の5行は省略</li>
-            <li class="hem__new" data-show-from="5" data-flash-at="5"><Code code={'"examination.started"'} lang="ts" inline /></li>
-            <li class="hem__fold-note hem__payload-label" data-show-from="5">payload</li>
-            {
-              payloadLines.map((line) => (
-                <li class:list={["hem__nested", line.pii && "hem__pii"]} data-show-from="5" data-flash-at="5">
-                  <Code code={line.code} lang="ts" inline />
-                </li>
-              ))
-            }
-          </ul>
+          <div class="hem__stack">
+            <ul class="hem__lines" data-fold-from="5">
+              {
+                auditSeed.map((name) => (
+                  <li><Code code={`"${name}"`} lang="ts" inline /></li>
+                ))
+              }
+            </ul>
+            <ul class="hem__lines" data-show-from="5">
+              <li class="hem__fold-note">前の5行は省略</li>
+              <li class="hem__new" data-flash-at="5"><Code code={'"examination.started"'} lang="ts" inline /></li>
+              <li class="hem__fold-note hem__payload-label">payload</li>
+              {
+                payloadLines.map((line) => (
+                  <li class:list={["hem__nested", line.pii && "hem__pii"]} data-flash-at="5">
+                    <Code code={line.code} lang="ts" inline />
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
         </div>
       </section>
     </div>
@@ -949,7 +953,17 @@ const files = JSON.stringify(steps.map((step) => step.file));
   }
 
   .hem .is-gone {
-    display: none;
+    visibility: hidden;
+  }
+
+  .hem__stack {
+    display: grid;
+  }
+
+  .hem__stack > .hem__lines {
+    grid-area: 1 / 1;
+    align-self: start;
+    min-width: 0;
   }
 
   .hem__block[hidden] {
