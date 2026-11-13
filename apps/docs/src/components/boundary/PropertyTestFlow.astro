@@ -218,7 +218,7 @@ const sensitiveFrames: readonly Frame[] = [
   },
   {
     caption:
-      "型のテストでは、@ts-expect-error の次の行が型エラーであれば tsc は成功し、型エラーがなければ tsc は失敗します。declare const contact は、値を作らずに、型だけを宣言します。変更前は、次の行が型エラーになるので、tsc は成功します。誤った変更で ownerEmail が string に代入できる型になると、型エラーが消えて、tsc は「未使用の @ts-expect-error」を報告し、失敗します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
+      "型のテストでは、@ts-expect-error の次の行が型エラーであれば tsc は成功し、型エラーがなければ tsc は失敗します。declare const contact は、値を作らずに、型だけを宣言します。変更前は、次の行が型エラーになるので、tsc は成功します。",
     columns: [
       {
         side: "before",
@@ -229,6 +229,12 @@ const sensitiveFrames: readonly Frame[] = [
           { kind: "result", label: "tsc の出力（説明用）", tone: "pass", text: passedCompile },
         ],
       },
+    ],
+  },
+  {
+    caption:
+      "誤った変更で ownerEmail が string に代入できる型になると、次の行の型エラーが消えます。tsc は「未使用の @ts-expect-error」を報告し、失敗します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
+    columns: [
       {
         side: "after",
         heading: afterHeading,
@@ -425,7 +431,7 @@ const uuidFrames: readonly Frame[] = [
   },
   {
     caption:
-      "型のテストでは、@ts-expect-error の次の行が型エラーであれば tsc は成功し、型エラーがなければ tsc は失敗します。declare const input は、値を作らずに、型だけを宣言します。変更前は、獣医師IDを予約IDの変数へ代入する次の行が型エラーになるので、tsc は成功します。別の誤った変更で2つの ID が同じ型になると、型エラーが消えて、tsc は「未使用の @ts-expect-error」を報告し、失敗します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
+      "型のテストでは、@ts-expect-error の次の行が型エラーであれば tsc は成功し、型エラーがなければ tsc は失敗します。declare const input は、値を作らずに、型だけを宣言します。変更前は、獣医師IDを予約IDの変数へ代入する次の行が型エラーになるので、tsc は成功します。",
     columns: [
       {
         side: "before",
@@ -436,6 +442,12 @@ const uuidFrames: readonly Frame[] = [
           { kind: "result", label: "tsc の出力（説明用）", tone: "pass", text: passedCompile },
         ],
       },
+    ],
+  },
+  {
+    caption:
+      "別の誤った変更で2つの ID が同じ型になると、次の行の型エラーが消えます。tsc は「未使用の @ts-expect-error」を報告し、失敗します。演習では exercises/guard/mine/ に *.type-test.ts という名前で置きます。",
+    columns: [
       {
         side: "after",
         heading: afterHeading,
@@ -747,10 +759,6 @@ const sideMark = { before: "●", after: "▲", plain: "■" } as const;
   }
 
   @media (max-width: 40rem) {
-    .property-flow[data-ready] .property-flow__frames > li[hidden] {
-      display: none;
-    }
-
     .property-flow__columns {
       grid-template-columns: minmax(0, 1fr);
     }
