@@ -52,6 +52,7 @@
   font-size: 0.8125rem;
   font-weight: 800;
   line-height: 1.5;
+  white-space: nowrap;
 }
 
 .st-fig .st-code {
@@ -127,6 +128,7 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.75rem;
   line-height: 1.5;
+  white-space: nowrap;
 }
 
 @media (prefers-reduced-motion: reduce) {
