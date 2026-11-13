@@ -125,11 +125,14 @@ for (const figure of figures) {
     lastScene = scene;
     if (reset) figure.classList.add("is-reset");
 
-    figure.toggleAttribute("data-no-code", frame.call === null && frame.impl === null);
+    const shown = [frame.call, frame.impl].filter((spec) => spec !== null);
+    figure.toggleAttribute("data-no-code", shown.length === 0);
+    figure.toggleAttribute("data-no-active", shown.length > 0 && shown.every((spec) => spec.lines.length === 0));
     showPane("call", frame.call, reset);
     showPane("impl", frame.impl, reset);
-    boxEls.impl.toggleAttribute("data-walk-focus", frame.impl !== null);
-    diagram.toggleAttribute("data-walk-focus", frame.impl === null);
+    const implIdle = frame.impl === null || frame.impl.lines.length === 0;
+    boxEls.impl.toggleAttribute("data-walk-focus", !implIdle);
+    diagram.toggleAttribute("data-walk-focus", implIdle);
     tx.dataset.tx = frame.tx;
     txLabel.textContent = page ? (pageTxText[frame.tx] ?? "") : (txText[frame.tx] ?? "transaction");
     if (issue !== null) issue.toggleAttribute("data-on", frame.issue === true);
