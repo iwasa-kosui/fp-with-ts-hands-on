@@ -171,8 +171,8 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
     frames: [
       {
         text: "`event` の生成が完了しました。予約はまだ `CheckedIn` で、監査記録はありません。",
-        call: null,
-        impl: null,
+        call: { pane: "before-call", lines: [] },
+        impl: { pane: "before-save", lines: [] },
         tx: "none",
         old: "CheckedIn",
         state: "off",
@@ -198,8 +198,8 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       },
       {
         text: "外側が例外を受け取り、500 を返します。状態は `InExamination` のまま、`ExaminationStarted` の監査記録はありません。誰が診察を開始したかを後から確認できません。",
-        call: null,
-        impl: null,
+        call: { pane: "before-call", lines: [] },
+        impl: { pane: "before-append", lines: [] },
         tx: "none",
         old: "none",
         state: "home",
@@ -322,7 +322,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       {
         text: "例外で transaction が取り消され、未確定だった状態の行も消えます。予約は `CheckedIn` のままで、監査記録もありません。",
         call: null,
-        impl: null,
+        impl: { pane: "after-audit", lines: [] },
         tx: "rollback",
         old: "CheckedIn",
         state: "tx-gone",
@@ -331,7 +331,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       {
         text: "`ResultAsync` の内側の Promise（非同期処理の結果を表す値）が reject（非同期処理が例外で終わること）すると、結果は `Ok` にも `Err` にもならず、`await` した場所で例外になります。状態だけが残ることはありません。",
         call: null,
-        impl: null,
+        impl: { pane: "after-audit", lines: [] },
         tx: "rollback",
         old: "CheckedIn",
         state: "off",
@@ -346,7 +346,7 @@ const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: reado
       {
         text: "ユースケースが予約を取得した後、保存の前に、別の依頼が先に診察を開始していました。データベースの予約はすでに `InExamination` で、audit_logs には先の依頼の `ExaminationStarted` が保存済みです。",
         call: null,
-        impl: null,
+        impl: { pane: "after-open", lines: [] },
         tx: "wait",
         old: "InExamination",
         state: "off",
