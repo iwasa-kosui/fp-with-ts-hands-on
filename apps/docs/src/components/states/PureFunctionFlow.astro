@@ -26,6 +26,7 @@ const afterLabel = lineLabelOf("session-01-solution", transitionsPath, firstLine
 
 const versionLabels = { before: "時刻を内部で取得する書き方", after: "時刻を引数で受け取る書き方", summary: "まとめ" } as const;
 const codeTagLabels = { before: "仮の書き方", after: "修正後" } as const;
+const codeOf = (frame: Frame) => frame.code ?? { key: frame.version === "before" ? ("before" as const) : ("after" as const), lines: [] };
 
 type Frame = Readonly<{
   scene: number;
@@ -197,15 +198,21 @@ const playerData = JSON.stringify(
   <StepControls />
 
   <div class="pure-function-flow__stage" data-stage hidden>
-    <span class="pure-function-flow__badge" data-stage-badge data-version="before">時刻を内部で取得する書き方</span>
+    <span class="pure-function-flow__badge-area">
+      <span class="pure-function-flow__badge" data-stage-badge data-version="before">時刻を内部で取得する書き方</span>
+      {Object.values(versionLabels).map((label) => <span class="pure-function-flow__badge pure-function-flow__badge-ghost" aria-hidden="true">{label}</span>)}
+    </span>
     <div data-stage-figure></div>
   </div>
 
-  <p class="pure-function-flow__live" data-live aria-live="polite" hidden></p>
+  <div class="pure-function-flow__live-area">
+    <p class="pure-function-flow__live" data-live aria-live="polite" hidden></p>
+    {frames.map((frame) => <p class="pure-function-flow__live pure-function-flow__live-ghost" aria-hidden="true">{frame.caption}</p>)}
+  </div>
 
   <ol class="pure-function-flow__frames">
     {frames.map((frame) => (
-      <li data-frame data-has-code={frame.code ? "" : undefined}>
+      <li data-frame data-has-code={frame.code ? "" : undefined} data-code-borrowed={frame.code ? undefined : ""}>
         <div class="pure-function-flow__visual">
           <span class="pure-function-flow__badge" data-version={frame.version}>{versionLabels[frame.version]}</span>
           <svg viewBox="0 0 340 212" role="img" aria-label={frame.alt} data-scene={frame.scene}>
@@ -264,12 +271,10 @@ const playerData = JSON.stringify(
           </svg>
         </div>
         <p class="pure-function-flow__caption">{frame.caption}</p>
-        {frame.code && (
-          <figure class="code-block pure-function-flow__code" data-version={frame.code.key} data-lit={JSON.stringify(frame.code.lines.map((line) => line - 1))}>
-            <figcaption><span class="pure-function-flow__tag" data-version={frame.code.key}>{codeTagLabels[frame.code.key]}</span> {frame.code.key === "after" ? <code class="pure-function-flow__path">{afterLabel}</code> : <><code>startExamination</code>（説明用。教材のコードにはありません）</>}</figcaption>
-            <Code code={snippets[frame.code.key]} lang="ts" defaultColor="dark" wrap={null} />
-          </figure>
-        )}
+        <figure class="code-block pure-function-flow__code" data-version={codeOf(frame).key} data-lit={JSON.stringify(codeOf(frame).lines.map((line) => line - 1))}>
+          <figcaption><span class="pure-function-flow__tag" data-version={codeOf(frame).key}>{codeTagLabels[codeOf(frame).key]}</span> {codeOf(frame).key === "after" ? <code class="pure-function-flow__path">{afterLabel}</code> : <><code>startExamination</code>（説明用。教材のコードにはありません）</>}</figcaption>
+          <Code code={snippets[codeOf(frame).key]} lang="ts" defaultColor="dark" wrap={null} />
+        </figure>
       </li>
     ))}
   </ol>
@@ -384,6 +389,20 @@ const playerData = JSON.stringify(
     background: var(--version-color);
     color: var(--role-surface);
     font-weight: 700;
+  }
+
+  .pure-function-flow__badge-area {
+    display: inline-grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pure-function-flow__badge-area > * {
+    grid-area: 1 / 1;
+    justify-self: start;
+  }
+
+  .pure-function-flow__badge-ghost {
+    visibility: hidden;
   }
 
   .pure-function-flow__badge {
@@ -523,6 +542,18 @@ const playerData = JSON.stringify(
     line-height: 1.7;
   }
 
+  .pure-function-flow__live-ghost {
+    visibility: hidden;
+  }
+
+  .pure-function-flow:not([data-animated]) .pure-function-flow__live-ghost {
+    display: none;
+  }
+
+  .pure-function-flow:not([data-animated]) [data-code-borrowed] .pure-function-flow__code {
+    display: none;
+  }
+
   .pure-function-flow__frames {
     margin: 0;
     padding-inline-start: 1.5rem;
@@ -594,10 +625,15 @@ const playerData = JSON.stringify(
     grid-row: 3 / span 2;
   }
 
-  .pure-function-flow[data-animated] > .pure-function-flow__live {
+  .pure-function-flow[data-animated] > .pure-function-flow__live-area {
     grid-column: 2;
     grid-row: 3;
-    min-height: calc(1.7em * 3);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pure-function-flow[data-animated] .pure-function-flow__live-area > * {
+    grid-area: 1 / 1;
     margin-block-start: 0;
   }
 
@@ -658,7 +694,7 @@ const playerData = JSON.stringify(
     }
 
     .pure-function-flow[data-animated] > .pure-function-flow__stage,
-    .pure-function-flow[data-animated] > .pure-function-flow__live,
+    .pure-function-flow[data-animated] > .pure-function-flow__live-area,
     .pure-function-flow[data-animated] > .pure-function-flow__frames {
       grid-column: 1;
       grid-row: auto;
