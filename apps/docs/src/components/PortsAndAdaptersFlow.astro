@@ -4,6 +4,7 @@ import type { ComponentProps } from "astro/types";
 import MiniTree from "./mini-tree/MiniTree.astro";
 import { miniTree } from "./mini-tree/mini-tree";
 import { keyedTransformer } from "./code-cache-key";
+import StepControls from "./stepper/StepControls.astro";
 
 type Snippet = Readonly<{
   code: string;
@@ -136,15 +137,10 @@ const rangeLabel = ({ solution }: Snippet) => `${solution.path}:${solution.lines
 const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, imports, token }) => ({ caption, nodes, focus, calls, imports, token })));
 ---
 
-<div class="ports-flow" data-ports-flow data-frames={playerData} role="group" aria-label={title}>
+<div class="ports-flow" data-ports-flow data-step-figure data-frames={playerData} role="group" aria-label={title}>
   <div class="ports-flow__stage">
     <div class="ports-flow__sticky">
-      <div class="ports-flow__controls" data-controls hidden>
-        <button type="button" data-first disabled>最初へ</button>
-        <button type="button" data-prev disabled>← 前のコマ</button>
-        <span data-progress>1 / {frames.length}</span>
-        <button type="button" data-next>次のコマ →</button>
-      </div>
+      <StepControls />
 
       <div class="ports-flow__live-area">
         <p class="ports-flow__live" data-live aria-live="polite" hidden></p>
@@ -239,6 +235,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
 
 <script>
   import { setMiniTreeCurrent } from "./mini-tree/mini-tree-client";
+  import { renderProgress } from "./stepper/step-progress";
 
   type Emphasis = "normal" | "dim" | "focus";
   type Frame = { caption: string; nodes: "normal" | "dim"; focus: string[]; calls: Emphasis; imports: Emphasis; token: boolean };
@@ -256,12 +253,11 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     const track = root.querySelector<SVGPathElement>("[data-track]");
     const token = root.querySelector<SVGCircleElement>("[data-token]");
     const controls = root.querySelector<HTMLElement>("[data-controls]");
-    const first = root.querySelector<HTMLButtonElement>("[data-first]");
     const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
     const next = root.querySelector<HTMLButtonElement>("[data-next]");
     const progress = root.querySelector<HTMLElement>("[data-progress]");
     const live = root.querySelector<HTMLElement>("[data-live]");
-    if (!svg || !track || !token || !controls || !first || !prev || !next || !progress || !live || frames.length !== panels.length) return;
+    if (!svg || !track || !token || !controls || !prev || !next || !progress || !live || frames.length !== panels.length) return;
     root.dataset.ready = "";
 
     let frameId = 0;
@@ -313,13 +309,11 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
       if (frame.token) runToken();
       else stopToken();
       live.textContent = frame.caption;
-      progress.textContent = `${index + 1} / ${frames.length}`;
-      first.disabled = index === 0;
+      renderProgress(progress, index, frames.length);
       prev.disabled = index === 0;
       next.disabled = index === frames.length - 1;
     };
 
-    first.addEventListener("click", () => show(0));
     prev.addEventListener("click", () => show(Math.max((current ?? 0) - 1, 0)));
     next.addEventListener("click", () => show(Math.min((current ?? 0) + 1, frames.length - 1)));
 
@@ -454,32 +448,8 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
     border-top-style: dashed;
   }
 
-  .ports-flow__controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .ports-flow__controls[hidden] {
-    display: none;
-  }
-
-  .ports-flow__controls button {
-    min-height: 2.75rem;
-    padding: 0 1rem;
-    border: 2px solid var(--case-line);
-    border-radius: 0.5rem;
-    background: var(--case-yellow);
-    color: var(--case-ink);
-    cursor: pointer;
-    font-weight: 700;
-  }
-
-  .ports-flow__controls button:disabled {
-    background: var(--case-paper);
-    cursor: not-allowed;
-    opacity: 0.55;
+  .ports-flow__sticky > :global(.step-controls) {
+    margin-block-end: 0;
   }
 
   .ports-flow__live,
@@ -649,15 +619,6 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
   }
 
   @container (max-width: 34rem) {
-    [data-animated] .ports-flow__controls {
-      flex-wrap: nowrap;
-      gap: 0.4rem;
-    }
-
-    [data-animated] .ports-flow__controls button {
-      padding: 0 0.6rem;
-    }
-
     [data-animated] .ports-flow__live {
       font-size: 0.85rem;
       line-height: 1.5;
@@ -677,9 +638,9 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
       display: contents;
     }
 
-    [data-animated] .ports-flow__controls {
+    .ports-flow[data-animated] .ports-flow__sticky > :global(.step-controls) {
       grid-column: 1 / -1;
-      margin-bottom: 0.75rem;
+      margin-block-end: 0.75rem;
     }
 
     [data-animated] svg {
