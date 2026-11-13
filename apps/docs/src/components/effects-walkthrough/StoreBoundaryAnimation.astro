@@ -160,6 +160,8 @@ const appointmentRows = [
 const auditRows = [{ id: "audit", old: false, first: "e-1", second: "ExaminationStarted" }] as const;
 const oldAuditRow = { id: "old-audit", old: true, first: "e-0", second: "ExaminationStarted" } as const;
 
+const breakJson = (value: string) => value.split(/(?<=[:,])/);
+
 const excerpts = Object.fromEntries(Object.entries(snippets).map(([name, snippet]) => [name, excerptOf(snippet)]));
 
 const allScenes: readonly Readonly<{ key: SceneKey; label: string; frames: readonly Frame[] }>[] = [
@@ -461,7 +463,7 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
                 <div class={`sb-card sb-line${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
                   <span class="sb-chip" data-chip>{old ? oldChip : ""}</span>
                   <code>{first}</code>
-                  <code>{second}</code>
+                  <code>{breakJson(second).map((part, i) => (<Fragment>{i > 0 && <wbr />}{part}</Fragment>))}</code>
                 </div>
               ))}
             </div>
@@ -473,14 +475,14 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
                 <div class="sb-card sb-line sb-card--old" data-card={oldAuditRow.id} data-state="off">
                   <span class="sb-chip" data-chip>{oldChip}</span>
                   <code>{oldAuditRow.first}</code>
-                  <code>{oldAuditRow.second}</code>
+                  <code>{breakJson(oldAuditRow.second).map((part, i) => (<Fragment>{i > 0 && <wbr />}{part}</Fragment>))}</code>
                 </div>
               ) : null}
               {auditRows.map(({ id, old, first, second }) => (
                 <div class={`sb-card sb-line${old ? " sb-card--old" : ""}`} data-card={id} data-state="off">
                   <span class="sb-chip" data-chip></span>
                   <code>{first}</code>
-                  <code>{second}</code>
+                  <code>{breakJson(second).map((part, i) => (<Fragment>{i > 0 && <wbr />}{part}</Fragment>))}</code>
                 </div>
               ))}
             </div>
@@ -493,7 +495,7 @@ const frameData = scenes.map(({ frames }) => frames.map(({ text: _text, ...frame
               <div class="sb-failed__row sb-line">
                 <span class="sb-chip">失敗</span>
                 <code>{first}</code>
-                <code>{second}</code>
+                <code>{breakJson(second).map((part, i) => (<Fragment>{i > 0 && <wbr />}{part}</Fragment>))}</code>
               </div>
             ))}
           </div>
