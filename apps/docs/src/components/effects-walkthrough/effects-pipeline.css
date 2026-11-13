@@ -368,6 +368,7 @@
   --ep-reject-bright: var(--role-negative, #c3a8f5);
   height: 100%;
   min-height: 0;
+  container-type: inline-size;
 }
 
 .ep--page .ep-flow {
@@ -518,6 +519,10 @@
   display: flex;
 }
 
+.ep--page .ep-sum__val {
+  word-break: keep-all;
+}
+
 .ep--page .ep-sum .ep-chip {
   color: var(--ep-tone);
   font-size: 0.75rem;
@@ -609,6 +614,10 @@
   gap: 0.1rem 0.5rem;
 }
 
+.ep--page .ep-screen__msg > span:not(.ep-screen__btn) {
+  word-break: keep-all;
+}
+
 .ep--page .ep-screen__btn {
   padding: 0 0.5rem;
   border-radius: 0.25rem;
@@ -652,5 +661,20 @@
 
   .ep--page .ep-callout[data-reserve][data-active] {
     visibility: visible;
+  }
+}
+
+@container (max-width: 40rem) {
+  .ep--page .ep-stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ep--page .ep-sums {
+    padding-inline-start: 0.9rem;
+  }
+
+  .ep--page .ep-sum,
+  .ep--page .ep-skip {
+    margin-block: 0.1rem 0.25rem;
   }
 }

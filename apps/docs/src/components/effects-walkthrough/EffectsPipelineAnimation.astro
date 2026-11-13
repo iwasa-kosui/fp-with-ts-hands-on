@@ -1,6 +1,7 @@
 ---
 import { Code } from "astro:components";
 import { lineLabelOf } from "../../sessions/source-quotes";
+import { breakBeforeMember } from "../break-before-member";
 import css from "./effects-pipeline.css?raw";
 import script from "./effects-pipeline.js?raw";
 import PathLabel from "./PathLabel.astro";
@@ -213,6 +214,17 @@ const cards: readonly Card[] = [
   { key: "r7r", stage: "route", tone: "err", chip: "応答", type: "Response", code: `context.redirect("/?notice=conflict", 303)`, short: `303 /?notice=conflict` },
   { key: "r7x", stage: "onError", tone: "reject", chip: "応答", type: "Response", code: `context.text("Internal Server Error", 500)`, short: `500 Internal Server Error` },
 ];
+
+const shortBreaks: Readonly<Record<string, readonly string[]>> = {
+  "append-audit の書き込みが失敗": ["append-audit の", "書き込みが失敗"],
+};
+const messageBreaks: Readonly<Record<string, readonly string[]>> = {
+  "予約がほかの操作によって更新されました": ["予約が", "ほかの操作によって", "更新されました"],
+};
+const breakParts = (text: string, table: Readonly<Record<string, readonly string[]>>): readonly string[] => {
+  const parts = table[text];
+  return parts && parts.join("") === text ? parts : [text];
+};
 
 const upstream = { resolve: "r0", found: "r1", checked: "r2", start: "r4" } as const;
 
@@ -476,7 +488,7 @@ const legendLines = [
           <div class="ep-stage" data-stage={row.key} data-state="future" data-outer={row.outer === true ? "" : undefined}>
             {row.label === undefined ? null : <p class="ep-file"><code><PathLabel label={row.label} /></code></p>}
             <div class="ep-stage__code">
-              <Code code={row.code} lang="ts" wrap />
+              <Code code={row.code} lang="ts" wrap transformers={[breakBeforeMember]} />
             </div>
             <div class="ep-sums">
               <p class="ep-skip">実行されない</p>
@@ -484,13 +496,13 @@ const legendLines = [
                 <p class="ep-sum" data-sum={card.key} data-tone={card.tone}>
                   <span class="ep-chip">{card.chip}</span>
                   <code class="ep-sum__type">{card.type}</code>
-                  <span class="ep-sum__val">{card.short}</span>
+                  <span class="ep-sum__val">{breakParts(card.short, shortBreaks).map((part, i) => (<Fragment>{i > 0 && <wbr />}{part}</Fragment>))}</span>
                 </p>
               ))}
               {row.key === "through" ? (
                 <div class="ep-callout" data-screen="store">
                   <p class="ep-callout__path"><code>{storeCalloutLabel.slice(storeCalloutLabel.lastIndexOf("/") + 1)}</code></p>
-                  <Code code={storeCalloutCode} lang="ts" wrap />
+                  <Code code={storeCalloutCode} lang="ts" wrap transformers={[breakBeforeMember]} />
                 </div>
               ) : null}
               {row.key === "route" ? (
@@ -499,7 +511,7 @@ const legendLines = [
                   <div class="ep-screen__dialog">
                     <p class="ep-screen__title">操作のお知らせ</p>
                     <p class="ep-screen__msg">
-                      <span>予約がほかの操作によって更新されました</span>
+                      <span>{breakParts("予約がほかの操作によって更新されました", messageBreaks).map((part, i) => (<Fragment>{i > 0 && <wbr />}{part}</Fragment>))}</span>
                       <span class="ep-screen__btn">閉じる</span>
                     </p>
                   </div>
