@@ -173,6 +173,22 @@ const impls: Readonly<Record<string, Impl>> = {
       { from: "app.onError((error) =>", to: ");" },
     ],
   },
+  respond: {
+    stage: "answer",
+    snapshot: "final",
+    path: "src/adaptor/primary/web/routes/appointmentRoutes.ts",
+    parts: [
+      { from: "return dependencies.startExamination" },
+      { from: ".run({ actorUserId: actor.value.user.userId, appointmentId: appointmentId.value, veterinarianId })" },
+      { from: ".match(" },
+      { from: "() => context.redirect(detailUrl(appointmentId.value), 303)," },
+      { from: "(error) => {" },
+      { from: "switch (error.kind) {" },
+      "…",
+      { from: "case \"InvalidAppointmentState\":", to: "return invalidState(context, appointmentId.value);" },
+      { from: "case \"AppointmentConflict\":", to: "return context.redirect(`${detailUrl(appointmentId.value)}?error=appointment-conflict`, 303);" },
+    ],
+  },
 };
 
 const excerpts = Object.fromEntries(Object.entries(impls).map(([name, impl]) => [name, excerptOf(impl)]));
@@ -300,6 +316,8 @@ const allScenes: readonly Scene[] = [
       {
         text: "route の `match`（`Result` を `Ok` と `Err` で分岐する処理）が `Ok` を受け取り、詳細ページへの 303 リダイレクトを返します。例外の境界は通りません。",
         at: "answer",
+        impl: "respond",
+        lines: [3],
         out: "c9a",
         skipped: ["exception"],
       },
@@ -320,6 +338,8 @@ const allScenes: readonly Scene[] = [
       {
         text: "route の `match` は `invalidState` を呼びます。応答は、`error=invalid-state` が付いた詳細ページへの 303 です。",
         at: "answer",
+        impl: "respond",
+        lines: [7, 8],
         out: "c9b",
         skipped: ["event", "effect", "exception"],
       },
@@ -346,6 +366,8 @@ const allScenes: readonly Scene[] = [
       {
         text: "route の `match` が `AppointmentConflict` を受け取り、`error=appointment-conflict` が付いた詳細ページへの 303 を返します。例外の境界は通りません。",
         at: "answer",
+        impl: "respond",
+        lines: [9, 10],
         out: "c9d",
         skipped: ["exception"],
       },
@@ -380,6 +402,8 @@ const allScenes: readonly Scene[] = [
         text: "route の `Err` の分岐は使われません。SQLite の障害は `Result` に含まれません。例外の境界が作った 500 がそのまま応答になります。",
         gloss: "例外の境界が作った 500 を、そのまま応答にします。",
         at: "answer",
+        impl: "respond",
+        lines: [],
         treeFile: "app",
         out: "c9c",
         tags: { exception: { text: "500 を作成", kind: "made" }, answer: { text: "500 を返す", kind: "sent" } },
@@ -407,6 +431,7 @@ const treeFiles: Readonly<Record<string, string>> = {
   convert: "store",
   checkedin: "errors",
   onError: "app",
+  respond: "routes",
 };
 
 const tree = miniTree("final", "src/", [

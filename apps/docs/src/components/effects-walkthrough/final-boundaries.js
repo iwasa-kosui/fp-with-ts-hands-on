@@ -37,6 +37,7 @@ for (const figure of figures) {
       const marked = new Set(active ? lines : []);
       impl.toggleAttribute("data-active", active);
       code.toggleAttribute("data-has-active", marked.size > 0);
+      code.toggleAttribute("data-no-active", active && marked.size === 0);
       [...code.children].forEach((line, index) => line.classList.toggle("is-active", marked.has(index)));
     }
   };
