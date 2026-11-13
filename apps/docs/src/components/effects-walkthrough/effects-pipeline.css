@@ -679,7 +679,7 @@
   }
 }
 
-@container (max-width: 19.5rem) {
+@container (max-width: 21rem) {
   .ep--page .ep-stage__code pre {
     font-size: 0.6875rem;
   }
