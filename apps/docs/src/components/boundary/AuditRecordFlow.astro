@@ -461,6 +461,15 @@ const litData = JSON.stringify(lit);
     background: transparent;
   }
 
+  .audit-flow[data-ready][data-phase="0"] .audit-flow__column[data-side="before"] .audit-flow__row {
+    border-inline-color: var(--case-divider);
+    background: transparent;
+    color: var(--case-muted);
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+  }
+
   .audit-flow[data-ready][data-phase="1"] .audit-flow__column[data-side="after"] .audit-flow__tag,
   .audit-flow[data-ready][data-phase="2"] .audit-flow__column[data-side="before"] .audit-flow__tag,
   .audit-flow[data-ready][data-phase="3"] .audit-flow__column[data-side="before"] .audit-flow__tag {
