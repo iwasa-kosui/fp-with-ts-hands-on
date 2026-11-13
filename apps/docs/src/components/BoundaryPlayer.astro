@@ -30,6 +30,11 @@ const scenarios = codeless
 const description = codeless
   ? (walkthrough.descriptionWithoutCode ?? walkthrough.description)
   : walkthrough.description;
+const usedFileIds = new Set(
+  scenarios.flatMap(({ frames }) => frames.map(({ fileId }) => fileId)),
+);
+const files = walkthrough.files.filter(({ id }) => usedFileIds.has(id));
+const codeRows = Math.max(...files.map(({ code }) => code.split("\n").length));
 const hasChoice = scenarios.length > 1;
 const data = JSON.stringify({
   scenarios,
@@ -113,8 +118,8 @@ const texts = [
   </div>
 
   {!codeless && (
-    <div class="boundary-player__files">
-      {walkthrough.files.map((file) => (
+    <div class="boundary-player__files" style={`--code-rows: ${codeRows}`}>
+      {files.map((file) => (
         <figure class="code-block" data-file={file.id}>
           <figcaption><code>{file.path}</code></figcaption>
           <div class="boundary-player__code" data-code-scroll>
@@ -395,9 +400,23 @@ const texts = [
     margin: 0;
   }
 
+  .boundary-player[data-ready] .boundary-player__files figure:not([data-current]) {
+    visibility: hidden;
+  }
+
   .boundary-player[data-ready] .boundary-player__code :global(pre) {
     max-height: 22rem;
     overflow: auto;
+  }
+
+  @media (max-width: 1099px) {
+    .boundary-player[data-ready] .boundary-player__files figure {
+      grid-area: 1 / 1;
+    }
+
+    .boundary-player[data-ready] .boundary-player__code :global(pre) {
+      height: min(22rem, calc(var(--code-rows) * 1lh + 2rem));
+    }
   }
 
   .boundary-player[data-ready] .boundary-player__code :global(:is(pre, code, .line)) {
