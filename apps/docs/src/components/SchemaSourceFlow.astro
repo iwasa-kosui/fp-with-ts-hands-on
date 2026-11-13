@@ -140,6 +140,7 @@ const frames: readonly Frame[] = [
   {
     part: "parse",
     caption: "schemaResult が返す関数に night-shift を渡すと Err になり、UUID の形の値を渡すと Ok になって内側へ進みます。使う場所は「境界を通過した値だけを内側へ渡す構成」のページで確認します。",
+    code: { key: "schemaResult", lines: [] },
     parts: { typeBox: "off", typeGhost: "off", schemaBox: "dim", linkType: "off", linkCheck: "dim", checkBox: "on", inside: "on", sameName: "off", unknown: "off" },
     typeLabel: "infer",
     check: "checked",
@@ -330,7 +331,7 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
 
   <ol class="schema-source-flow__frames">
     {shownFrames.map((frame) => (
-      <li data-frame data-has-code={frame.code ? "" : undefined}>
+      <li data-frame data-has-code={frame.code ? "" : undefined} data-code-borrowed={frame.code && frame.code.lines.length === 0 ? "" : undefined}>
         <p class="schema-source-flow__caption">{frame.caption}</p>
         {frame.code?.key === "schemaResult" && <MiniTree tree={schemaResultTree} current={["schemaResult"]} />}
         {frame.code && (
@@ -805,6 +806,15 @@ const playerData = JSON.stringify(shownFrames.map(({ code: _code, part: _part, .
   .schema-source-flow__code :global(:is(pre, code, .line)) {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+  }
+
+  .schema-source-flow:not([data-animated]) [data-code-borrowed] .schema-source-flow__code,
+  .schema-source-flow:not([data-animated]) [data-code-borrowed] :global(.mini-tree) {
+    display: none;
+  }
+
+  .schema-source-flow[data-animated] [data-code-borrowed] .schema-source-flow__code :global(.line span) {
+    color: #959da5 !important;
   }
 
   .schema-source-flow :global(.schema-source-flow__key) {
