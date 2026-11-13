@@ -122,6 +122,24 @@ const data = JSON.stringify(frames.map(({ mark }) => mark));
     display: none;
   }
 
+  .map-flow[data-ready] .mf-codes {
+    display: grid;
+  }
+
+  .map-flow[data-ready] .mf-codes > [data-code] {
+    display: flex;
+    flex-direction: column;
+    grid-area: 1 / 1;
+  }
+
+  .map-flow[data-ready] .mf-codes > [data-code] :global(.astro-code) {
+    flex: 1;
+  }
+
+  .map-flow[data-ready] .mf-codes > [data-code][hidden] {
+    visibility: hidden;
+  }
+
   .mf-right {
     display: grid;
     gap: 0.5rem;
