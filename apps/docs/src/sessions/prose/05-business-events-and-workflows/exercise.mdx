@@ -1,5 +1,6 @@
 import { GuardExercise } from "../../../components/guard-exercise/GuardExercise";
 import GuardAnswer from "../../../components/guard-exercise/GuardAnswer.astro";
+import LocalExerciseGuide from "../../../components/guard-exercise/LocalExerciseGuide.astro";
 import { projectFilesForSnapshot } from "../../../code-explorer/project-files";
 import { guardAnswerDisplayFiles } from "../../../code-explorer/guard-paths";
 import { guardExercise } from "../../pages/05-business-events-and-workflows-exercise";
@@ -44,3 +45,5 @@ export const guide = {
     </ul>
   </GuardAnswer>
 </GuardExercise>
+
+<LocalExerciseGuide session="05" />

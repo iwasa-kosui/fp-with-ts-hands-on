@@ -1,5 +1,6 @@
 import { GuardExercise } from "../../../components/guard-exercise/GuardExercise";
 import GuardAnswer from "../../../components/guard-exercise/GuardAnswer.astro";
+import LocalExerciseGuide from "../../../components/guard-exercise/LocalExerciseGuide.astro";
 import { projectFilesForSnapshot } from "../../../code-explorer/project-files";
 import { guardAnswerDisplayFiles } from "../../../code-explorer/guard-paths";
 import { guardExercise } from "../../pages/04-workflow-errors-exercise";
@@ -51,3 +52,5 @@ export const guide = {
     </ul>
   </GuardAnswer>
 </GuardExercise>
+
+<LocalExerciseGuide session="04" />
