@@ -531,7 +531,7 @@ const playerData = JSON.stringify(frames.map(({ caption, nodes, focus, calls, im
 
   [data-animated] .ports-flow__sticky {
     position: sticky;
-    top: calc(var(--case-scroll-offset, 1.5rem) - 1.5rem);
+    top: calc(var(--case-scroll-offset, 1.5rem) - 1.5rem + var(--frame-bar-height, 0px));
     z-index: 2;
     display: grid;
     gap: 0.4rem;
