@@ -110,7 +110,7 @@ type Candidate = Readonly<{
 const candidates: readonly Candidate[] = [
   {
     ok: true,
-    reason: "獣医師と開始時刻がそろっている",
+    reason: "獣医師と|開始時刻が|そろっている",
     before: `{
   status: "in-examination",
   veterinarianId: "vet-001",
@@ -124,7 +124,7 @@ const candidates: readonly Candidate[] = [
   },
   {
     ok: false,
-    reason: "診察中なのに、獣医師も開始時刻もない",
+    reason: "診察中なのに、|獣医師も|開始時刻もない",
     before: `{
   status: "in-examination",
 }`,
@@ -134,7 +134,7 @@ const candidates: readonly Candidate[] = [
   },
   {
     ok: false,
-    reason: "状態の綴りが誤っている",
+    reason: "状態の綴りが|誤っている",
     before: `{
   status: "in-examintion",
 }`,
@@ -287,7 +287,7 @@ const generationKeys = ["before", "after"] as const;
               {view.body === "value" && (
                 <p class="illegal__view-note">
                   <span class="st-tag">{generations[view.generation].tag}</span>
-                  <span><code>declare const</code> は、値があるものとして型検査だけに伝える書き方です。</span>
+                  <span class="illegal__note-text"><code>declare const</code> は、<wbr />値があるものとして<wbr />型検査だけに<wbr />伝える<wbr />書き方です。</span>
                 </p>
               )}
 
@@ -300,7 +300,7 @@ const generationKeys = ["before", "after"] as const;
                     <p class="illegal__result-title">
                       {view.generation === "before" ? "! 型検査: エラーなし" : "× 型検査: エラー"}
                     </p>
-                    <p>診察中の値に、次の項目がありません。</p>
+                    <p class="illegal__ja">診察中の値に、<wbr />次の項目が<wbr />ありません。</p>
                     <p class="illegal__blanks">
                       <span class="st-blank">veterinarianId</span>
                       <span class="st-blank">examinationStartedAt</span>
@@ -314,7 +314,7 @@ const generationKeys = ["before", "after"] as const;
                   <div class="illegal__row illegal__row--head" role="row">
                     <span role="columnheader">業務上</span>
                     <span role="columnheader">
-                      値（共通の項目は省略）
+                      <span class="illegal__ja">値（共通の<wbr />項目は<wbr />省略）</span>
                       <span class="st-tag">{generations[view.generation].tag}</span>
                     </span>
                     <span role="columnheader">型検査</span>
@@ -326,7 +326,7 @@ const generationKeys = ["before", "after"] as const;
                           {candidate.ok ? "✓" : "×"}
                         </span>
                         <span class="illegal__sr">{candidate.ok ? "業務上ありえる" : "業務上ありえない"}</span>
-                        <span>{candidate.reason}</span>
+                        <span class="illegal__reason">{candidate.reason.split("|").map((part, index) => (<Fragment>{index > 0 && <wbr />}{part}</Fragment>))}</span>
                       </span>
                       <span class="illegal__cell-value" role="cell">
                         <figure class="code-block st-code illegal__cell-code">
@@ -496,6 +496,10 @@ const generationKeys = ["before", "after"] as const;
 </script>
 
 <style>
+  .illegal {
+    container-type: inline-size;
+  }
+
   .illegal :global(.st-caption) {
     line-height: 1.5;
   }
@@ -941,9 +945,15 @@ const generationKeys = ["before", "after"] as const;
     line-height: 1.4;
   }
 
+  .illegal__ja,
+  .illegal__reason,
+  .illegal__note-text {
+    word-break: keep-all;
+  }
+
   .illegal__split {
     display: grid;
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.3fr) minmax(12rem, 1fr);
     gap: 0.5rem;
     align-items: start;
   }
@@ -1147,6 +1157,68 @@ const generationKeys = ["before", "after"] as const;
     .illegal[data-focus="board"] .illegal__codebox :global(.line),
     .illegal[data-focus="board"] .illegal__codebox :global(.illegal__gap) {
       min-height: 1.25em;
+    }
+  }
+
+  @media (min-width: 720px) {
+    @container (max-width: 700px) {
+      .illegal__split {
+        grid-template-columns: minmax(0, 1.3fr) minmax(10.5rem, 1fr);
+      }
+
+      .illegal__result {
+        padding-inline: 0.5rem;
+        font-size: 0.75rem;
+      }
+
+      .illegal .st-blank {
+        padding-inline: 0.375rem;
+        font-size: 0.6875rem;
+      }
+
+      .illegal .illegal__split :global(.st-code pre) {
+        font-size: 0.75rem;
+      }
+    }
+  }
+
+  @container (max-width: 800px) {
+    .illegal__table {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .illegal__row {
+      grid-column: auto;
+      grid-template-areas:
+        "verdict check"
+        "value value";
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.125rem 0.5rem;
+    }
+
+    .illegal__row--head {
+      grid-template-areas: none;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .illegal__row--head > :not(:nth-child(2)) {
+      display: none;
+    }
+
+    .illegal__row > :nth-child(1) {
+      grid-area: verdict;
+    }
+
+    .illegal__row > :nth-child(2) {
+      grid-area: value;
+    }
+
+    .illegal__row > :nth-child(3) {
+      grid-area: check;
+    }
+
+    .illegal__row--head > :nth-child(2) {
+      grid-area: auto;
     }
   }
 
