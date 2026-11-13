@@ -58,6 +58,7 @@ const frames: readonly Frame[] = [
   {
     caption: "予約IDと獣医師IDは、どちらもUUIDの形をした文字列です。値を見ただけでは、どちらのIDか判別できません。",
     stage: null,
+    code: { key: "beforeId", lines: [] },
     modes: ["normal", "dim", "dim", "dim"],
     tokens: ["home", "home", "off"],
     marks: "string",
@@ -122,6 +123,7 @@ const frames: readonly Frame[] = [
   {
     caption: "ブランドは型検査のときだけ使われます。TypeScript を JavaScript に変換すると型は消え、実行時の値はブランドなしと同じ文字列のままです。",
     stage: "after",
+    code: { key: "afterSwap", lines: [] },
     modes: ["dim", "dim", "normal", "dim"],
     tokens: ["home", "home", "off"],
     marks: "ghost",
@@ -183,6 +185,8 @@ const treeFor = (key: keyof Props["code"]) => ({
   tree: key === "beforeId" || key === "beforeSwap" ? treeBefore : treeAfter,
   current: [key === "beforeId" || key === "afterId" ? "appointmentId" : "test-types"],
 });
+
+const shownStage = (frame: Frame) => frame.stage ?? (frame.code?.key.startsWith("before") ? "before" : null);
 
 const initial = frames[0];
 const idPreview = (id: string) => `${id.slice(0, 8)}…`;
@@ -321,12 +325,12 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
 
   <ol class="branded-id-flow__frames">
     {frames.map((frame) => (
-      <li data-frame data-has-code={frame.code || frame.extra ? "" : undefined}>
+      <li data-frame data-has-code={frame.code || frame.extra ? "" : undefined} data-code-borrowed={frame.code && frame.code.lines.length === 0 ? "" : undefined}>
         <p class="branded-id-flow__caption">{frame.caption}</p>
-        {frame.code && frame.stage && <MiniTree tree={treeFor(frame.code.key).tree} current={treeFor(frame.code.key).current} />}
-        {frame.code && frame.stage && (
-          <figure class="code-block branded-id-flow__code" data-version={frame.stage}>
-            <figcaption><span class="branded-id-flow__tag" data-version={frame.stage}>{versionLabels[frame.stage]}</span> <code>{code[frame.code.key].path}</code></figcaption>
+        {frame.code && shownStage(frame) && <MiniTree tree={treeFor(frame.code.key).tree} current={treeFor(frame.code.key).current} />}
+        {frame.code && shownStage(frame) && (
+          <figure class="code-block branded-id-flow__code" data-version={shownStage(frame)}>
+            <figcaption><span class="branded-id-flow__tag" data-version={shownStage(frame)}>{versionLabels[shownStage(frame)!]}</span> <code>{code[frame.code.key].path}</code></figcaption>
             <Code code={withMarks(code[frame.code.key].code, frame.code.lines)} lang="ts" defaultColor={false} transformers={[markKeyLines]} />
           </figure>
         )}
@@ -755,6 +759,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
   }
 
   .branded-id-flow__stage {
+    min-width: calc(6em + 0.8rem);
     min-height: 1.75rem;
     margin-inline-start: auto;
   }
@@ -841,6 +846,15 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
     min-width: 0;
     margin: 0.5rem 0 0;
     border-inline-start: 0.35rem solid var(--version-color);
+  }
+
+  .branded-id-flow:not([data-animated]) [data-code-borrowed] .branded-id-flow__code,
+  .branded-id-flow:not([data-animated]) [data-code-borrowed] :global(.mini-tree) {
+    display: none;
+  }
+
+  .branded-id-flow[data-animated] [data-code-borrowed] .branded-id-flow__code :global(.line span) {
+    color: #959da5 !important;
   }
 
   .branded-id-flow__code figcaption {
