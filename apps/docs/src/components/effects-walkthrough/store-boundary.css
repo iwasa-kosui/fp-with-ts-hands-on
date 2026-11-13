@@ -110,7 +110,9 @@
 }
 
 .sb-pane code[data-has-active] .line:not(.is-active),
-.sb-pane code[data-has-active] .line:not(.is-active) span {
+.sb-pane code[data-has-active] .line:not(.is-active) span,
+.sb[data-no-active] .sb-pane .line,
+.sb[data-no-active] .sb-pane .line span {
   color: color-mix(in srgb, var(--frame-code-text, var(--role-surface)) 65%, var(--frame-code-surface, var(--role-text))) !important;
 }
 
