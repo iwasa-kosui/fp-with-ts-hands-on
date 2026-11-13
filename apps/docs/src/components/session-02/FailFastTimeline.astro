@@ -422,9 +422,24 @@ const stages = ["型検査", "実行", "画面"] as const;
   }
 
   @media (max-width: 51.99rem) {
-    .ff[data-ready] .ff__lane--good:not(:has(.is-shown)),
     .ff[data-ready] .ff__lane--outside:not(.is-shown) {
-      display: none;
+      visibility: hidden;
+    }
+
+    .ff[data-ready] .ff__side > .ff__code {
+      display: flex;
+      flex-direction: column;
+      grid-area: 1 / 1;
+    }
+
+    .ff[data-ready] .ff__side > .ff__code :global(pre) {
+      flex: 1;
+    }
+
+    .ff[data-ready][data-phase="0"] .ff__code--after,
+    .ff[data-ready][data-phase]:not([data-phase="0"]) .ff__code--before {
+      display: flex;
+      visibility: hidden;
     }
   }
 </style>
