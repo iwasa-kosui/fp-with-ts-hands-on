@@ -3,6 +3,7 @@ import { Code } from "astro:components";
 import type { ComponentProps } from "astro/types";
 import { keyedTransformer } from "./code-cache-key";
 import MiniTree from "./mini-tree/MiniTree.astro";
+import StepControls from "./stepper/StepControls.astro";
 import { miniTree } from "./mini-tree/mini-tree";
 import { clinicFixture } from "../../../../examples/fixtures/clinic";
 
@@ -202,10 +203,8 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
 ---
 
 <div class="branded-id-flow" data-branded-id-flow data-frames={playerData}>
-  <div class="branded-id-flow__controls" data-controls hidden>
-    <button type="button" data-prev disabled>← 前<span class="branded-id-flow__more">のコマ</span></button>
-    <span data-progress>1 / {frames.length}</span>
-    <button type="button" data-next>次<span class="branded-id-flow__more">のコマ</span> →</button>
+  <div class="branded-id-flow__controls">
+    <StepControls />
     <div class="branded-id-flow__stage" data-stage hidden>
       <span class="branded-id-flow__tag" data-stage-tag hidden></span>
     </div>
@@ -349,6 +348,8 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
 </div>
 
 <script>
+  import { renderProgress } from "./stepper/step-progress";
+
   type Mode = "normal" | "dim";
   type TokenState = "off" | "home" | "through" | "stop";
   type Frame = {
@@ -432,7 +433,7 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
       }
 
       live.textContent = frame.caption;
-      progress.textContent = `${index + 1} / ${frames.length}`;
+      renderProgress(progress, index, frames.length);
       prev.disabled = index === 0;
       next.disabled = index === frames.length - 1;
     };
@@ -728,30 +729,14 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem 0.75rem;
-    margin-bottom: 0.5rem;
   }
 
-  .branded-id-flow__controls[hidden] {
-    display: none;
+  [data-animated] .branded-id-flow__controls {
+    margin-bottom: 0.75rem;
   }
 
-  .branded-id-flow__controls button {
-    min-height: 2.5rem;
-    padding: 0 1rem;
-    border: 2px solid var(--case-blue);
-    border-radius: 0.5rem;
-    background: var(--case-blue);
-    color: var(--case-paper);
-    cursor: pointer;
-    font-weight: 700;
-  }
-
-  .branded-id-flow__controls button:disabled {
-    border-color: var(--case-line);
-    background: var(--case-paper);
-    color: var(--case-ink);
-    cursor: not-allowed;
-    opacity: 0.55;
+  .branded-id-flow__controls :global(.step-controls) {
+    margin-block-end: 0;
   }
 
   .branded-id-flow__stage {
@@ -1077,23 +1062,6 @@ const playerData = JSON.stringify(frames.map(({ code: _code, extra: _extra, ...f
 
     .branded-id-flow svg[data-plug="stop"] .branded-id-flow__card[data-card="appointment"] {
       transform: translate(30px, 332px);
-    }
-
-    .branded-id-flow__more {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip: rect(0 0 0 0);
-      white-space: nowrap;
-    }
-
-    .branded-id-flow__controls {
-      gap: 0.5rem;
-    }
-
-    .branded-id-flow__controls button {
-      padding: 0 0.75rem;
     }
   }
 
