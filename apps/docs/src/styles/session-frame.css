@@ -297,10 +297,13 @@ html[data-content-pending] .session-frame__content {
   margin-block-end: 0.625rem;
 }
 
-.session-frame__content > p,
-.session-frame__content li[data-frame] > p,
-.session-frame__content .session-split p {
-  text-wrap: pretty;
+/* WebKit の pretty は段落全体を均して日本語の右端が不ぞろいになるため */
+@supports not (font: -apple-system-body) {
+  .session-frame__content > p,
+  .session-frame__content li[data-frame] > p,
+  .session-frame__content .session-split p {
+    text-wrap: pretty;
+  }
 }
 
 .session-frame__content > :is(ul, ol) {
