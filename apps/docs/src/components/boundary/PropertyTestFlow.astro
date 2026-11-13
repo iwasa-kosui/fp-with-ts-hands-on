@@ -45,7 +45,6 @@ const goodContact = blockOf(
 const badContact = goodContact.replace(protectedLine, unprotectedLine);
 if (badContact === goodContact) throw new Error(`PropertyTestFlow: ${protectedLine} is not in ${contactPath}`);
 const emailLine = lineOf(goodContact, "ownerEmail:");
-const emailSourceLine = goodContact.split("\n")[emailLine - 1] ?? "";
 
 const teachingLabel = "説明用（教材のコードにはありません）";
 const contactBlockLabel = lineLabelOf(
@@ -54,7 +53,6 @@ const contactBlockLabel = lineLabelOf(
   "const OwnerContactSchema = z",
   "  .readonly();",
 );
-const emailLineLabel = lineLabelOf("session-03-solution", contactPath, emailSourceLine, emailSourceLine);
 
 const testCode = `import fc from "fast-check";
 import { it } from "vitest";
@@ -112,12 +110,6 @@ const typeTestItem: Item = {
   code: typeTestCode,
   marks: [lineOf(typeTestCode, "@ts-expect-error"), lineOf(typeTestCode, "const plain")],
 };
-const emailOnly = (code: string, path: string): Item => ({
-  kind: "code",
-  path,
-  code: code.split("\n")[emailLine - 1]?.trim() ?? "",
-  marks: [1],
-});
 
 const badLabel = (label: string) => `${teachingLabel} 実物: ${label}`;
 
@@ -224,7 +216,7 @@ const sensitiveFrames: readonly Frame[] = [
         side: "before",
         heading: beforeHeading,
         items: [
-          emailOnly(goodContact, emailLineLabel),
+          contactCode(goodContact, contactBlockLabel),
           typeTestItem,
           { kind: "result", label: "tsc の出力（説明用）", tone: "pass", text: passedCompile },
         ],
@@ -239,7 +231,7 @@ const sensitiveFrames: readonly Frame[] = [
         side: "after",
         heading: afterHeading,
         items: [
-          emailOnly(badContact, badLabel(emailLineLabel)),
+          contactCode(badContact, badLabel(contactBlockLabel)),
           typeTestItem,
           { kind: "result", label: "tsc の出力（説明用）", tone: "fail", text: failedCompile },
         ],
@@ -261,7 +253,6 @@ const swappedIds = goodInput.replace(veterinarianLine, "  veterinarianId: Appoin
 if (withoutUuid === goodInput || swappedIds === goodInput) throw new Error(`PropertyTestFlow: the schema lines are not in ${inputPath}`);
 const inputLine = lineOf(goodInput, "appointmentId:");
 const inputBlockLabel = lineLabelOf("session-03-solution", inputPath, inputOpen, inputClose);
-const veterinarianSourceLabel = lineLabelOf("session-03-solution", inputPath, veterinarianLine, veterinarianLine);
 
 const uuidTestCode = `import fc from "fast-check";
 import { it } from "vitest";
@@ -295,11 +286,11 @@ const idsTypeTestItem: Item = {
   code: idsTypeTestCode,
   marks: [lineOf(idsTypeTestCode, "@ts-expect-error"), lineOf(idsTypeTestCode, "const appointmentId")],
 };
-const veterinarianLineOnly = (code: string, path: string): Item => ({
+const veterinarianCode = (code: string, path: string): Item => ({
   kind: "code",
   path,
-  code: code.split("\n").find((line) => line.includes("veterinarianId:"))?.trim() ?? "",
-  marks: [1],
+  code,
+  marks: [lineOf(code, "veterinarianId:")],
 });
 
 const errText = "Err()";
@@ -437,7 +428,7 @@ const uuidFrames: readonly Frame[] = [
         side: "before",
         heading: beforeHeading,
         items: [
-          veterinarianLineOnly(goodInput, veterinarianSourceLabel),
+          veterinarianCode(goodInput, inputBlockLabel),
           idsTypeTestItem,
           { kind: "result", label: "tsc の出力（説明用）", tone: "pass", text: passedCompile },
         ],
@@ -452,7 +443,7 @@ const uuidFrames: readonly Frame[] = [
         side: "after",
         heading: afterHeading,
         items: [
-          veterinarianLineOnly(swappedIds, badLabel(veterinarianSourceLabel)),
+          veterinarianCode(swappedIds, badLabel(inputBlockLabel)),
           idsTypeTestItem,
           { kind: "result", label: "tsc の出力（説明用）", tone: "fail", text: uuidFailedCompile },
         ],
@@ -765,6 +756,11 @@ const sideMark = { before: "●", after: "▲", plain: "■" } as const;
 
     .property-flow__steps {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .property-flow__samples ul {
+      display: flex;
+      flex-wrap: wrap;
     }
 
     .property-flow__arrow {
