@@ -558,6 +558,12 @@
   }
 }
 
+@media (max-width: 40rem) {
+  .mini-tree.fb-tree {
+    display: none;
+  }
+}
+
 @media (max-height: 700px) {
   .fb-out[data-active],
   .fb-gloss {
