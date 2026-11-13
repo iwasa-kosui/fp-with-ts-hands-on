@@ -1,5 +1,6 @@
 ---
 import { Code } from "astro:components";
+import StepControls from "../stepper/StepControls.astro";
 
 type Snippet = Readonly<{ code: string; path: string }>;
 type Props = Readonly<{
@@ -38,16 +39,12 @@ const scenes = [
 ---
 
 <figure class="sd" data-store-differences data-step-figure aria-label="S06 と参照実装の、実装が異なる3点">
+  <StepControls />
   <div class="sd__bar">
     <div class="sd__tabs" role="group" aria-label="実装が異なる点を選ぶ">
       {scenes.map((scene, index) => (
         <button type="button" class="sd__tab" data-step-scene aria-pressed={index === 0 ? "true" : "false"}>{scene.label}</button>
       ))}
-    </div>
-    <div class="sd__controls" data-controls>
-      <button type="button" class="sd__step" data-prev disabled>← 前のコマ</button>
-      <span class="sd__progress" data-progress>1 / {scenes.length}</span>
-      <button type="button" class="sd__step" data-next>次のコマ →</button>
     </div>
   </div>
 
@@ -76,6 +73,8 @@ const scenes = [
 </figure>
 
 <script>
+  import { renderProgress } from "../stepper/step-progress";
+
   document.querySelectorAll<HTMLElement>("[data-store-differences]").forEach((root) => {
     if (root.dataset.ready !== undefined) return;
     const tabs = [...root.querySelectorAll<HTMLButtonElement>("[data-step-scene]")];
@@ -83,7 +82,8 @@ const scenes = [
     const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
     const next = root.querySelector<HTMLButtonElement>("[data-next]");
     const progress = root.querySelector<HTMLElement>("[data-progress]");
-    if (tabs.length === 0 || tabs.length !== scenes.length || !prev || !next || !progress) return;
+    const controls = root.querySelector<HTMLElement>(":scope > [data-controls]");
+    if (tabs.length === 0 || tabs.length !== scenes.length || !prev || !next || !progress || !controls) return;
 
     let current = 0;
     const select = (index: number) => {
@@ -93,7 +93,7 @@ const scenes = [
         scene.toggleAttribute("data-current", sceneIndex === index);
         scene.inert = sceneIndex !== index;
       });
-      progress.textContent = `${index + 1} / ${scenes.length}`;
+      renderProgress(progress, index, scenes.length);
       prev.disabled = index === 0;
       next.disabled = index === scenes.length - 1;
     };
@@ -102,6 +102,7 @@ const scenes = [
     prev.addEventListener("click", () => select(Math.max(current - 1, 0)));
     next.addEventListener("click", () => select(Math.min(current + 1, scenes.length - 1)));
     root.dataset.ready = "";
+    controls.hidden = false;
     select(0);
   });
 </script>
@@ -116,7 +117,6 @@ const scenes = [
     display: none;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
     gap: 0.5rem 1rem;
     margin-block-end: 0.5rem;
   }
@@ -125,45 +125,11 @@ const scenes = [
     display: flex;
   }
 
-  .sd__tabs,
-  .sd__controls {
+  .sd__tabs {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
-  }
-
-  .sd__step {
-    min-height: 2.5rem;
-    padding: 0 0.875rem;
-    border: 2px solid var(--role-accent);
-    border-radius: 0.5rem;
-    background: var(--role-accent);
-    color: var(--role-surface);
-    cursor: pointer;
-    font: inherit;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-
-  .sd__step:disabled {
-    border-color: var(--role-border);
-    background: var(--role-surface);
-    color: var(--role-text);
-    cursor: not-allowed;
-    opacity: 0.55;
-  }
-
-  .sd__step:focus-visible {
-    outline: 3px solid var(--role-accent);
-    outline-offset: 2px;
-  }
-
-  .sd__progress {
-    color: var(--role-muted);
-    font-size: 0.875rem;
-    font-variant-numeric: tabular-nums;
   }
 
   .sd__tab {
