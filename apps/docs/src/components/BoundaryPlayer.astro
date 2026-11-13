@@ -467,6 +467,31 @@ const texts = [
       width: 100%;
       padding: 0.25rem 0.625rem;
       text-align: start;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.25;
+    }
+
+    [data-scenario] small {
+      display: none;
+    }
+
+    .boundary-player__live :global(.boundary-player__tree) {
+      display: none;
+    }
+
+    .boundary-player[data-ready] .boundary-player__live {
+      display: contents;
+    }
+
+    .boundary-player__controls {
+      position: sticky;
+      top: var(--frame-bar-height, 0px);
+      z-index: 2;
+      margin-block-start: 0;
+      padding-block: 0.3rem;
+      background: var(--case-paper);
     }
 
     .boundary-player__zone-note {
