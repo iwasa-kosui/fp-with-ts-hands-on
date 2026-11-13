@@ -1232,6 +1232,24 @@ const generationKeys = ["before", "after"] as const;
       gap: 0.125rem 0.5rem;
     }
 
+    .illegal__row--head {
+      position: relative;
+      grid-template-areas: none;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .illegal__row--head > :not(:nth-child(2)) {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      border: 0;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
     .illegal__row > :nth-child(1) {
       grid-area: verdict;
     }
@@ -1242,6 +1260,10 @@ const generationKeys = ["before", "after"] as const;
 
     .illegal__row > :nth-child(3) {
       grid-area: check;
+    }
+
+    .illegal__row--head > :nth-child(2) {
+      grid-area: auto;
     }
   }
 
@@ -1329,6 +1351,19 @@ const generationKeys = ["before", "after"] as const;
       grid-column: auto;
       grid-template-columns: minmax(0, 1fr);
       gap: 0.125rem;
+    }
+
+    .illegal__row--head {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      min-height: 0;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      border: 0;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
     }
   }
 </style>
